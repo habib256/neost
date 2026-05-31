@@ -1,0 +1,9 @@
+[submodule "extern/Musashi"]
+	path = extern/Musashi
+	url = https://github.com/kstenerud/Musashi
+[submodule "extern/imgui"]
+	path = extern/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "extern/miniaudio"]
+	path = extern/miniaudio
+	url = https://github.com/mackron/miniaudio
