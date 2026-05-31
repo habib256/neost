@@ -19,6 +19,8 @@
 #endif
 #include <cstdint>
 #include <cstdio>
+#include <chrono>
+#include <thread>
 
 #include "core/Machine.hpp"
 
@@ -233,6 +235,14 @@ int main(int argc, char** argv) {
     std::printf("[main] Clic dans l'écran : capture souris | Échap : libère | "
                 "bouton Reset dans la fenêtre CPU | fermer la fenêtre : quitter\n");
 
+    // Bridage à 50 fps (PAL) : indispensable pour que le temps émulé colle au
+    // temps réel — sinon le compteur 200 Hz d'EmuTOS s'emballe et les écarts de
+    // double-clic (mesurés en tics) deviennent trop grands. Le vsync ne suffit
+    // pas (60 Hz, voire non limitant).
+    using clock = std::chrono::steady_clock;
+    constexpr auto kFramePeriod = std::chrono::microseconds(20000);   // 1/50 s
+    auto nextFrame = clock::now();
+
     double lastMx = 0, lastMy = 0;
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();                      // les transitions de boutons → onMouseButton
@@ -289,6 +299,12 @@ int main(int argc, char** argv) {
         }
 
         glfwSwapBuffers(window);
+
+        // Cadence à 50 Hz réels (resync si on a pris du retard, sans accumuler).
+        nextFrame += kFramePeriod;
+        const auto now = clock::now();
+        if (now < nextFrame) std::this_thread::sleep_until(nextFrame);
+        else                 nextFrame = now;
     }
 
 #if defined(NEOST_WITH_IMGUI)
