@@ -1,0 +1,48 @@
+# Artefacts CMake / build local
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# Binaires et objets
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.dSYM/
+neost
+neost-headless
+
+# Fichiers locaux de l'emulateur / GUI
+imgui.ini
+neost.cfg
+*.ppm
+
+# ROMs et images disque locales
+rom/*.img
+rom/*.rom
+rom/*.tos
+rom/*.bin
+disks/*.st
+disks/*.msa
+disks/*.stx
+disks/*.ipf
+
+# OS / editeurs
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Python utilise par les outils
+__pycache__/
+*.py[cod]
+.venv/
+venv/

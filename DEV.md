@@ -69,6 +69,21 @@ ligne GPIP), puis le `Bus` appelle `cpu->updateIpl()` après l'accès MMIO.
 
 En cas de doute, **MAME / Hatari** font foi (les deux sont installables), et la
 **source EmuTOS** documente précisément ce que le firmware attend du matériel.
+
+Correspondance composant NeoST ↔ source Hatari (la référence pour combler le
+TODO ; `git clone --depth 1 https://github.com/hatari/hatari`) :
+
+| NeoST            | Hatari `src/`                  |
+|------------------|--------------------------------|
+| `Cpu68k`         | `m68000.c`, `cycInt.c`, `cycles.c` |
+| `Mfp`            | `mfp.c` (timers A-D, modes)    |
+| `Ikbd`           | `ikbd.c` (souris/joy/commandes), `acia.c` |
+| `Shifter`        | `video.c` (bordures, sync, spec512), `screen.c` |
+| `Fdc`            | `fdc.c`, `floppy.c`, `dma`     |
+| `YM2149` / Audio | `psg.c`, `sound.c`, `dmaSnd.c` |
+| `Bus` / MMIO     | `ioMem.c`, `ioMemTabST.c`, `stMemory.c` |
+| (à venir)        | `blitter.c`, `rtc.c`, `gemdos.c`, `hdc.c` |
+
 Workflow type : tracer headless → localiser la boucle d'attente → lire le code
 EmuTOS correspondant → implémenter le registre/signal manquant. Exemples vécus :
 `timeout_gpip` (GPIP5 FDC), `_int_acia` (GPIP4 + clear ISR), `shifter_get_monitor_type`
