@@ -806,11 +806,14 @@ CMakeFiles/neost-headless.dir/src/headless/main_headless.cpp.o: /Users/factory/s
   /Users/factory/src/neost/src/core/Shifter.hpp \
   /Users/factory/src/neost/src/core/Tracer.hpp \
   /Users/factory/src/neost/src/core/YM2149.hpp \
+  /Users/factory/src/neost/src/io/Fdc.hpp \
   /Users/factory/src/neost/src/io/Ikbd.hpp \
   /Users/factory/src/neost/src/io/Mfp.hpp
 
 
 /Users/factory/src/neost/src/io/Mfp.hpp:
+
+/Users/factory/src/neost/src/io/Fdc.hpp:
 
 /Users/factory/src/neost/src/core/YM2149.hpp:
 

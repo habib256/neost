@@ -12,12 +12,16 @@ Machine::Machine(std::size_t ramBytes) : bus(ramBytes) {
     bus.glue    = &glue;
     bus.mfp     = &mfp;
     bus.ikbd    = &ikbd;
+    bus.fdc     = &fdc;
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
 }
 
 void Machine::runFrame() {
     for (int line = 0; line < LINES_PER_FRAME; ++line) {
         cpu.run(CYCLES_PER_LINE);              // cycles CPU de la ligne
+        // Timer B compte le Display Enable + HBL niveau 2 : actifs sur les lignes
+        // visibles seulement. Le HBL est gaté par le masque du SR (jeux/rasters).
+        if (line < VISIBLE_LINES) { mfp.hblank(); cpu.raiseHbl(); }
         // Timer C du MFP ≈ 200 Hz : 4 tics répartis sur la trame (50 Hz). Ce tic
         // système débloque l'accueil EmuTOS et fait vivre le bureau/horloge.
         if (line == 78 || line == 156 || line == 234 || line == 312) {

@@ -19,6 +19,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/neost_core.dir/src/core/Tracer.cpp.o.d"
   "CMakeFiles/neost_core.dir/src/core/YM2149.cpp.o"
   "CMakeFiles/neost_core.dir/src/core/YM2149.cpp.o.d"
+  "CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o"
+  "CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o.d"
   "CMakeFiles/neost_core.dir/src/io/Ikbd.cpp.o"
   "CMakeFiles/neost_core.dir/src/io/Ikbd.cpp.o.d"
   "CMakeFiles/neost_core.dir/src/io/Mfp.cpp.o"

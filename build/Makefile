@@ -587,6 +587,30 @@ src/headless/main_headless.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost-headless.dir/build.make CMakeFiles/neost-headless.dir/src/headless/main_headless.cpp.s
 .PHONY : src/headless/main_headless.cpp.s
 
+src/io/Fdc.o: src/io/Fdc.cpp.o
+.PHONY : src/io/Fdc.o
+
+# target to build an object file
+src/io/Fdc.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o
+.PHONY : src/io/Fdc.cpp.o
+
+src/io/Fdc.i: src/io/Fdc.cpp.i
+.PHONY : src/io/Fdc.i
+
+# target to preprocess a source file
+src/io/Fdc.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/src/io/Fdc.cpp.i
+.PHONY : src/io/Fdc.cpp.i
+
+src/io/Fdc.s: src/io/Fdc.cpp.s
+.PHONY : src/io/Fdc.s
+
+# target to generate assembly for a file
+src/io/Fdc.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/src/io/Fdc.cpp.s
+.PHONY : src/io/Fdc.cpp.s
+
 src/io/Ikbd.o: src/io/Ikbd.cpp.o
 .PHONY : src/io/Ikbd.o
 
@@ -724,6 +748,9 @@ help:
 	@echo "... src/headless/main_headless.o"
 	@echo "... src/headless/main_headless.i"
 	@echo "... src/headless/main_headless.s"
+	@echo "... src/io/Fdc.o"
+	@echo "... src/io/Fdc.i"
+	@echo "... src/io/Fdc.s"
 	@echo "... src/io/Ikbd.o"
 	@echo "... src/io/Ikbd.i"
 	@echo "... src/io/Ikbd.s"

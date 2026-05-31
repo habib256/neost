@@ -18,6 +18,7 @@ class YM2149;
 class Glue;
 class Mfp;
 class Ikbd;
+class Fdc;
 class Cpu68k;
 
 // -----------------------------------------------------------------------------
@@ -85,6 +86,7 @@ public:
     Glue*    glue    = nullptr;
     Mfp*     mfp     = nullptr;   // contrôleur d'interruptions 68901
     Ikbd*    ikbd    = nullptr;   // ACIA clavier
+    Fdc*     fdc     = nullptr;   // contrôleur disquette + DMA
     Cpu68k*  cpu     = nullptr;   // pour rafraîchir l'IPL après un accès MMIO
 
     // Données brutes exposées au débogueur (visualiseur hexa ImGui). Pas de

@@ -22,6 +22,7 @@ extern "C" {
 namespace {
     Bus*    g_bus = nullptr;        // bus actif vu par les callbacks Musashi
     bool    g_vblPending = false;   // VBL (niveau 4) en attente d'acquittement
+    bool    g_hblPending = false;   // HBL (niveau 2) en attente d'acquittement
     Tracer* g_tracer = nullptr;     // traceur optionnel (nullptr = aucun surcoût)
 }
 
@@ -39,6 +40,7 @@ static void neostUpdateIpl() {
     int lvl = 0;
     if (g_bus && g_bus->mfp && g_bus->mfp->irqPending()) lvl = 6;
     else if (g_vblPending)                               lvl = 4;
+    else if (g_hblPending)                               lvl = 2;
     m68k_set_irq(static_cast<unsigned int>(lvl));
 }
 
@@ -51,9 +53,9 @@ static int neostIntAck(int level) {
         neostUpdateIpl();
         return (v >= 0) ? v : static_cast<int>(M68K_INT_ACK_SPURIOUS);
     }
-    if (level == 4) {
+    if (level == 4 || level == 2) {
         if (g_tracer) g_tracer->onInterrupt(level, 24 + level);  // n° de vecteur auto-vectorisé
-        g_vblPending = false;
+        if (level == 4) g_vblPending = false; else g_hblPending = false;
         neostUpdateIpl();
     }
     return static_cast<int>(M68K_INT_ACK_AUTOVECTOR);
@@ -100,6 +102,13 @@ void Cpu68k::updateIpl() {
 void Cpu68k::raiseVbl() {
 #if defined(NEOST_HAS_MUSASHI)
     g_vblPending = true;
+    neostUpdateIpl();
+#endif
+}
+
+void Cpu68k::raiseHbl() {
+#if defined(NEOST_HAS_MUSASHI)
+    g_hblPending = true;
     neostUpdateIpl();
 #endif
 }

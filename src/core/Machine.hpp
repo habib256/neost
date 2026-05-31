@@ -19,6 +19,7 @@
 #include "core/Glue.hpp"
 #include "io/Mfp.hpp"
 #include "io/Ikbd.hpp"
+#include "io/Fdc.hpp"
 
 class Machine {
 public:
@@ -29,7 +30,8 @@ public:
 
     explicit Machine(std::size_t ramBytes = 512u * 1024u);
 
-    bool loadTos(const std::string& path) { return bus.loadTos(path); }
+    bool loadTos(const std::string& path)  { return bus.loadTos(path); }
+    bool loadDisk(const std::string& path) { return fdc.loadImage(path); }
     void reset() { cpu.reset(); }
 
     // Exécute UNE trame complète : 313 lignes de cycles CPU, 4 tics Timer C
@@ -43,5 +45,6 @@ public:
     Glue     glue;
     Mfp      mfp;
     Ikbd     ikbd{mfp};
+    Fdc      fdc{bus, psg, mfp};
     Cpu68k   cpu{bus};
 };

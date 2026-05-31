@@ -184,10 +184,24 @@ CMakeFiles/neost_core.dir/src/io/Ikbd.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/neost_core.dir/src/io/Ikbd.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -Wall -Wextra -Wpedantic -S /Users/factory/src/neost/src/io/Ikbd.cpp -o CMakeFiles/neost_core.dir/src/io/Ikbd.cpp.s
 
+CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o: CMakeFiles/neost_core.dir/flags.make
+CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o: /Users/factory/src/neost/src/io/Fdc.cpp
+CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o: CMakeFiles/neost_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -Wall -Wextra -Wpedantic -MD -MT CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o -MF CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o.d -o CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o -c /Users/factory/src/neost/src/io/Fdc.cpp
+
+CMakeFiles/neost_core.dir/src/io/Fdc.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/neost_core.dir/src/io/Fdc.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -Wall -Wextra -Wpedantic -E /Users/factory/src/neost/src/io/Fdc.cpp > CMakeFiles/neost_core.dir/src/io/Fdc.cpp.i
+
+CMakeFiles/neost_core.dir/src/io/Fdc.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/neost_core.dir/src/io/Fdc.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -Wall -Wextra -Wpedantic -S /Users/factory/src/neost/src/io/Fdc.cpp -o CMakeFiles/neost_core.dir/src/io/Fdc.cpp.s
+
 CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o: CMakeFiles/neost_core.dir/flags.make
 CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o: /Users/factory/src/neost/extern/Musashi/m68kcpu.c
 CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o: CMakeFiles/neost_core.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building C object CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building C object CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o -MF CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o.d -o CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o -c /Users/factory/src/neost/extern/Musashi/m68kcpu.c
 
 CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.i: cmake_force
@@ -201,7 +215,7 @@ CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.s: cmake_force
 CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o: CMakeFiles/neost_core.dir/flags.make
 CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o: /Users/factory/src/neost/extern/Musashi/m68kops.c
 CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o: CMakeFiles/neost_core.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building C object CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building C object CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o -MF CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o.d -o CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o -c /Users/factory/src/neost/extern/Musashi/m68kops.c
 
 CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.i: cmake_force
@@ -215,7 +229,7 @@ CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.s: cmake_force
 CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o: CMakeFiles/neost_core.dir/flags.make
 CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o: /Users/factory/src/neost/extern/Musashi/m68kdasm.c
 CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o: CMakeFiles/neost_core.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building C object CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building C object CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o -MF CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o.d -o CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o -c /Users/factory/src/neost/extern/Musashi/m68kdasm.c
 
 CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.i: cmake_force
@@ -229,7 +243,7 @@ CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.s: cmake_force
 CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.o: CMakeFiles/neost_core.dir/flags.make
 CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.o: /Users/factory/src/neost/extern/Musashi/softfloat/softfloat.c
 CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.o: CMakeFiles/neost_core.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building C object CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building C object CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.o -MF CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.o.d -o CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.o -c /Users/factory/src/neost/extern/Musashi/softfloat/softfloat.c
 
 CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.i: cmake_force
@@ -250,6 +264,7 @@ neost_core_OBJECTS = \
 "CMakeFiles/neost_core.dir/src/core/Tracer.cpp.o" \
 "CMakeFiles/neost_core.dir/src/io/Mfp.cpp.o" \
 "CMakeFiles/neost_core.dir/src/io/Ikbd.cpp.o" \
+"CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o" \
 "CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o" \
 "CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o" \
 "CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o" \
@@ -266,13 +281,14 @@ libneost_core.a: CMakeFiles/neost_core.dir/src/core/Machine.cpp.o
 libneost_core.a: CMakeFiles/neost_core.dir/src/core/Tracer.cpp.o
 libneost_core.a: CMakeFiles/neost_core.dir/src/io/Mfp.cpp.o
 libneost_core.a: CMakeFiles/neost_core.dir/src/io/Ikbd.cpp.o
+libneost_core.a: CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o
 libneost_core.a: CMakeFiles/neost_core.dir/extern/Musashi/m68kcpu.c.o
 libneost_core.a: CMakeFiles/neost_core.dir/extern/Musashi/m68kops.c.o
 libneost_core.a: CMakeFiles/neost_core.dir/extern/Musashi/m68kdasm.c.o
 libneost_core.a: CMakeFiles/neost_core.dir/extern/Musashi/softfloat/softfloat.c.o
 libneost_core.a: CMakeFiles/neost_core.dir/build.make
 libneost_core.a: CMakeFiles/neost_core.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Linking CXX static library libneost_core.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Linking CXX static library libneost_core.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/neost_core.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/neost_core.dir/link.txt --verbose=$(VERBOSE)
 

@@ -10,9 +10,12 @@
 // On indexe par l'offset bas (addr & 0x3F).
 uint8_t Mfp::read8(uint32_t addr) {
     switch (addr & 0x3F) {
-        case 0x01: {                // GPIP : bit4 = ligne ACIA (active BAS)
-            uint8_t v = gpip;
-            if (aciaLine_) v &= ~0x10; else v |= 0x10;
+        case 0x01: {                // GPIP : lignes d'ENTRÉE matérielles (les écritures
+                                    // CPU sur $FFFA01 ne doivent pas les écraser).
+            uint8_t v = 0xFF;            // bits au repos
+            if (!colorMonitor_) v &= ~0x80;  // bit7 = 0 → moniteur MONO (haute rés)
+            if (aciaLine_)      v &= ~0x10;  // bit4 = ACIA clavier (actif bas)
+            if (fdcLine_)       v &= ~0x20;  // bit5 = FDC (actif bas)
             return v;
         }
         case 0x03: return aer;
@@ -26,7 +29,9 @@ uint8_t Mfp::read8(uint32_t addr) {
         case 0x13: return imra;
         case 0x15: return imrb;
         case 0x17: return vr;
-        default:   return 0xFF;      // timers/USART non modélisés
+        case 0x1B: return tbcr_;     // Timer B control
+        case 0x21: return tbCounter_; // Timer B data (compteur courant)
+        default:   return timer_[addr & 0x3F];   // autres timers/USART : relisables
     }
 }
 
@@ -46,7 +51,19 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x13: imra = v; break;
         case 0x15: imrb = v; break;
         case 0x17: vr   = v; break;
-        default: break;             // timers : EmuTOS les programme, on les ignore
+        case 0x1B: tbcr_ = v; break;                  // Timer B control (0x08 = event-count)
+        case 0x21: tbReload_ = v; tbCounter_ = v; break;  // Timer B data → charge le compteur
+        default: timer_[addr & 0x3F] = v; break;      // autres timers/USART : mémorisés
+    }
+}
+
+void Mfp::hblank() {
+    // En mode event-count (TBCR bits 0-3 == 0x08), Timer B décompte d'une unité
+    // par ligne ; à 0 il recharge et lève l'IRQ Timer B (canal 8) si armée.
+    if ((tbcr_ & 0x0F) != 0x08 || tbCounter_ == 0) return;
+    if (--tbCounter_ == 0) {
+        tbCounter_ = tbReload_;
+        raise(SRC_TIMERB);
     }
 }
 

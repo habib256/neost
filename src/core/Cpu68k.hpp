@@ -38,6 +38,10 @@ public:
     // attente ; elle sera acquittée puis effacée au cycle IACK.
     void raiseVbl();
 
+    // Marque une interruption horizontale (HBL, niveau 2 auto-vectorisé) — une
+    // par ligne visible ; gatée par le masque du SR (utilisée par les jeux).
+    void raiseHbl();
+
     // État exposé en lecture directe pour le visualiseur de registres ImGui.
     uint32_t pc()  const;          // compteur programme courant
     uint32_t reg(int idx) const;   // 0-7 = D0-D7, 8-15 = A0-A7

@@ -35,3 +35,5 @@ CXX_FLAGS = -O3 -DNDEBUG -std=c++17 -arch arm64
 
 # Custom options: CMakeFiles/neost_core.dir/src/io/Ikbd.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
 
+# Custom options: CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
+

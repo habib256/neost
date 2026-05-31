@@ -21,8 +21,47 @@
 #include <cstdio>
 #include <chrono>
 #include <thread>
+#include <string>
+#include <cstdlib>
+#include <cctype>
+#include <fstream>
+#include <filesystem>
+#include <sys/stat.h>
 
 #include "core/Machine.hpp"
+
+namespace fs = std::filesystem;
+
+// Résout un chemin de données indépendamment du répertoire courant : tel quel,
+// puis relatif au répertoire de l'exécutable (utile quand on lance depuis build/).
+static bool fileExists(const std::string& p) { struct stat s; return ::stat(p.c_str(), &s) == 0; }
+static std::string resolveData(const std::string& given, const std::string& exeDir) {
+    const std::string cands[] = { given, exeDir + "/" + given, exeDir + "/../" + given, "../" + given };
+    for (const auto& c : cands) if (fileExists(c)) return c;
+    return given;
+}
+
+// --- Persistance des préférences (dernier ROM, type de moniteur) -------------
+// Fichier neost.cfg à la racine du projet (à côté de build/).
+struct Config { std::string rom; std::string disk; bool mono = false; };
+static std::string cfgPath(const std::string& exeDir) { return exeDir + "/../neost.cfg"; }
+static Config loadConfig(const std::string& exeDir) {
+    Config c;
+    std::ifstream f(cfgPath(exeDir));
+    if (!f) f.open("neost.cfg");
+    std::string line;
+    while (std::getline(f, line)) {
+        if      (line.rfind("rom=", 0)  == 0) c.rom  = line.substr(4);
+        else if (line.rfind("disk=", 0) == 0) c.disk = line.substr(5);
+        else if (line.rfind("mono=", 0) == 0) c.mono = (line.substr(5) == "1");
+    }
+    return c;
+}
+static void saveConfig(const std::string& exeDir, const Config& c) {
+    std::ofstream f(cfgPath(exeDir));
+    if (!f) f.open("neost.cfg");
+    if (f) f << "rom=" << c.rom << "\ndisk=" << c.disk << "\nmono=" << (c.mono ? 1 : 0) << "\n";
+}
 
 #if defined(NEOST_WITH_IMGUI)
 #include "imgui.h"
@@ -39,6 +78,8 @@ constexpr int MOUSE_Y_SIGN = +1;
 
 Ikbd* g_ikbd = nullptr;                // cible des callbacks clavier/souris GLFW
 bool  g_mouseCaptured = false;         // souris capturée → entrées dirigées vers le ST
+bool  g_dbgMouse = false;              // NEOST_DEBUG_MOUSE=1 → trace les paquets souris
+bool  g_showDisk = true, g_showHex = true, g_showCpu = true;  // fenêtres masquables
 
 void onGlfwError(int code, const char* desc) {
     std::fprintf(stderr, "GLFW erreur %d : %s\n", code, desc);
@@ -51,6 +92,7 @@ void onMouseButton(GLFWwindow* w, int /*button*/, int /*action*/, int /*mods*/) 
     if (!g_ikbd || !g_mouseCaptured) return;
     const bool l = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
     const bool r = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    if (g_dbgMouse) std::fprintf(stderr, "[souris] bouton  L=%d R=%d\n", l, r);
     g_ikbd->mouseEvent(0, 0, l, r);
 }
 
@@ -181,32 +223,93 @@ void drawCpuState(Cpu68k& cpu, bool& reqReset) {
     ImGui::End();
 }
 
-// Fenêtre dédiée à l'écran de l'Atari ST (framebuffer décodé, 1:1). Un clic dans
-// l'image demande la capture souris (reqCapture passe à true).
-void drawStScreen(const GlScreen& s, bool captured, bool& reqCapture) {
-    ImGui::Begin("Atari ST Screen");
-    ImGui::TextDisabled(captured
-        ? "Souris capturée — Échap pour la libérer"
-        : "Clic dans l'écran pour capturer la souris (curseur GEM)");
+// Fenêtre de l'écran ST : c'est la fenêtre de BASE (toujours là, ancrée sous les
+// barres, jamais au premier plan). L'image fait toujours 640×400 (taille du mode
+// monochrome) ; les 3 résolutions y sont normalisées. Clic = capture souris.
+void drawStScreen(const GlScreen& s, bool captured, bool& reqCapture, float topOffset) {
+    ImGui::SetNextWindowPos(ImVec2(0.0f, topOffset), ImGuiCond_Always);
+    ImGui::Begin("Atari ST Screen", nullptr,
+                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                 ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize |
+                 ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::TextDisabled(captured ? "Souris capturée — Échap pour la libérer"
+                                 : "Clic dans l'écran pour capturer la souris (curseur GEM)");
     const ImTextureID id = (ImTextureID)(intptr_t)s.tex;
-    ImGui::Image(id, ImVec2((float)s.w, (float)s.h));   // ligne 0 du ST en haut (uv par défaut)
+    ImGui::Image(id, ImVec2(640.0f, 400.0f));           // taille mode monochrome (rés. normalisées)
     if (!captured && ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         reqCapture = true;
+    ImGui::End();
+}
+
+// Bibliothèque de disquettes : liste les .st du dossier disks/, monte/éjecte sur
+// le lecteur A. reqMount = chemin à monter (sinon vide), reqEject = éjection.
+void drawDiskLibrary(const std::string& disksDir, const std::string& mounted,
+                     std::string& reqMount, bool& reqEject) {
+    ImGui::Begin("Disk Library");
+    const std::string curName = mounted.empty() ? "(vide)"
+                                                 : fs::path(mounted).filename().string();
+    ImGui::Text("Lecteur A : %s", curName.c_str());
+    if (!mounted.empty()) {
+        ImGui::SameLine();
+        if (ImGui::Button("Éjecter")) reqEject = true;
+    }
+    ImGui::Separator();
+    ImGui::TextDisabled("Images dans %s/", disksDir.c_str());
+
+    std::error_code ec;
+    if (fs::is_directory(disksDir, ec)) {
+        const std::string mountedName = mounted.empty() ? "" : fs::path(mounted).filename().string();
+        for (const auto& e : fs::directory_iterator(disksDir, ec)) {
+            if (!e.is_regular_file()) continue;
+            std::string ext = e.path().extension().string();
+            for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
+            if (ext != ".st" && ext != ".msa") continue;
+            const std::string name = e.path().filename().string();
+            ImGui::PushID(name.c_str());
+            if (name == mountedName) {
+                ImGui::TextDisabled("●");                  // montée
+            } else if (ImGui::SmallButton("Monter")) {
+                reqMount = e.path().string();
+            }
+            ImGui::SameLine();
+            ImGui::TextUnformatted(name.c_str());
+            ImGui::PopID();
+        }
+    } else {
+        ImGui::TextDisabled("(dossier disks/ introuvable)");
+    }
+    ImGui::Separator();
+    ImGui::TextDisabled("Monter puis Reset pour démarrer une disquette amorçable.");
     ImGui::End();
 }
 #endif // NEOST_WITH_IMGUI
 } // namespace
 
 int main(int argc, char** argv) {
-    // ROM par défaut : EmuTOS FR (libre) dans rom/ ; argument = autre image.
-    const char* tosPath = (argc > 1) ? argv[1] : "rom/etos192fr.img";
+    // Répertoire de l'exécutable (pour retrouver rom/ et disk/ depuis build/).
+    const std::string exeDir = [&] {
+        const std::string a0 = argv[0] ? argv[0] : "";
+        const auto i = a0.find_last_of('/');
+        return (i == std::string::npos) ? std::string(".") : a0.substr(0, i);
+    }();
+    // Préférences mémorisées (dernier ROM + type de moniteur).
+    Config cfg = loadConfig(exeDir);
+    const std::string defRom = cfg.rom.empty() ? std::string("rom/etos192us.img") : cfg.rom;
+    // Sans argument, ./neost recharge le dernier ROM (ou EmuTOS US par défaut).
+    const std::string romLogical = (argc > 1) ? std::string(argv[1]) : defRom;
+    const std::string tosPath  = resolveData(romLogical, exeDir);
+    const std::string defDisk  = cfg.disk.empty() ? std::string("disks/diskA.st") : cfg.disk;
+    const std::string diskPath = resolveData((argc > 2) ? argv[2] : defDisk, exeDir);
+    const std::string disksDir = resolveData("disks", exeDir);   // dossier pour la Disk Library
+
+    g_dbgMouse = std::getenv("NEOST_DEBUG_MOUSE") != nullptr;
 
     glfwSetErrorCallback(onGlfwError);
     if (!glfwInit()) return 1;
 
     // Pas de hint de profil → contexte legacy compatible (GL 2.1, immediate mode).
     // Fenêtre hôte large : elle héberge la fenêtre ImGui "Atari ST Screen" + le debug.
-    GLFWwindow* window = glfwCreateWindow(1024, 720, "NeoST — Atari ST", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1280, 860, "NeoST — Atari ST", nullptr, nullptr);
     if (!window) { glfwTerminate(); return 1; }
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);                    // VSync : cadence la boucle
@@ -214,7 +317,11 @@ int main(int argc, char** argv) {
     Machine machine;                        // toute la carte mère
     if (!machine.loadTos(tosPath))
         std::fprintf(stderr, "[main] Démarrage sans TOS (le CPU tournera à vide).\n");
+    if (!machine.loadDisk(diskPath))
+        std::fprintf(stderr, "[main] Aucune disquette montée (%s).\n", diskPath.c_str());
+    machine.mfp.setColorMonitor(!cfg.mono);   // moniteur mémorisé (avant le reset)
     machine.reset();
+    cfg.rom = romLogical; saveConfig(exeDir, cfg);   // mémorise dès le lancement
 
     GlScreen screen;
     screen.init();
@@ -257,10 +364,12 @@ int main(int argc, char** argv) {
         if (g_mouseCaptured) {                  // mouvement relatif → paquet IKBD (boutons inclus)
             double mx, my; glfwGetCursorPos(window, &mx, &my);
             const int dx = int(mx - lastMx), dy = int(my - lastMy);
-            lastMx = mx; lastMy = my;
             if (dx || dy) {
+                lastMx += dx; lastMy += dy;     // on ne consomme QUE l'entier → le reste
+                                                // fractionnaire s'accumule (drags lents)
                 const bool l = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
                 const bool r = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+                if (g_dbgMouse) std::fprintf(stderr, "[souris] mvt dx=%d dy=%d L=%d R=%d\n", dx, dy, l, r);
                 machine.ikbd.mouseEvent(dx * MOUSE_X_SIGN, dy * MOUSE_Y_SIGN, l, r);
             }
         }
@@ -277,18 +386,84 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT);
 
         bool reqReset = false, reqCapture = false;
+        int  reqMonitor = -1;
 #if defined(NEOST_WITH_IMGUI)
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        drawStScreen(screen, g_mouseCaptured, reqCapture);  // écran ST dans sa fenêtre
-        drawHexViewer(machine.bus);
-        drawCpuState(machine.cpu, reqReset);
+        std::string reqMount; bool reqEject = false;
+        const bool color = machine.mfp.colorMonitor();
+
+        // --- Menu (haut) -----------------------------------------------------
+        float menuH = 0.0f;
+        if (ImGui::BeginMainMenuBar()) {
+            menuH = ImGui::GetWindowSize().y;
+            if (ImGui::BeginMenu("Machine")) {
+                if (ImGui::MenuItem("Reset"))   reqReset = true;
+                ImGui::Separator();
+                if (ImGui::MenuItem("Quitter")) glfwSetWindowShouldClose(window, 1);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Résolution")) {
+                if (ImGui::MenuItem("Couleur (basse rés)", nullptr,  color)) reqMonitor = 1;
+                if (ImGui::MenuItem("Mono (haute rés)",    nullptr, !color)) reqMonitor = 0;
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Fenêtres")) {
+                ImGui::MenuItem("Disk Library",  nullptr, &g_showDisk);
+                ImGui::MenuItem("Mémoire (hex)", nullptr, &g_showHex);
+                ImGui::MenuItem("CPU 68000",     nullptr, &g_showCpu);
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
+
+        // --- Barre de boutons (sous le menu) ---------------------------------
+        ImGui::SetNextWindowPos(ImVec2(0.0f, menuH), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 0.0f), ImGuiCond_Always);
+        ImGui::Begin("##toolbar", nullptr,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+                     ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus);
+        if (ImGui::Button("Reset")) reqReset = true;
+        ImGui::SameLine();
+        if (ImGui::Button(color ? "Passer en Mono" : "Passer en Couleur"))
+            reqMonitor = color ? 0 : 1;
+        ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
+        ImGui::Checkbox("Disk", &g_showDisk);  ImGui::SameLine();
+        ImGui::Checkbox("Hex",  &g_showHex);   ImGui::SameLine();
+        ImGui::Checkbox("CPU",  &g_showCpu);
+        const float toolH = ImGui::GetWindowSize().y;
+        ImGui::End();
+
+        // --- Fenêtre écran (base) + fenêtres masquables ----------------------
+        drawStScreen(screen, g_mouseCaptured, reqCapture, menuH + toolH);
+        if (g_showDisk) drawDiskLibrary(disksDir, machine.fdc.mountedPath(), reqMount, reqEject);
+        if (g_showHex)  drawHexViewer(machine.bus);
+        if (g_showCpu)  drawCpuState(machine.cpu, reqReset);
         ImGui::Render();
         ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+
+        // Disk Library : montage / éjection à chaud du lecteur A.
+        if (!reqMount.empty()) {
+            machine.fdc.loadImage(reqMount);
+            cfg.disk = reqMount; saveConfig(exeDir, cfg);
+        }
+        if (reqEject) {
+            machine.fdc.eject();
+            cfg.disk.clear(); saveConfig(exeDir, cfg);
+        }
 #else
         screen.drawFullscreen();               // repli sans ImGui
 #endif
+        // Changement de moniteur (couleur/mono) → hard reset pour que TOS
+        // re-détecte la résolution au boot.
+        if (reqMonitor >= 0 && (reqMonitor == 1) != machine.mfp.colorMonitor()) {
+            machine.mfp.setColorMonitor(reqMonitor == 1);
+            machine.reset();
+            cfg.rom = romLogical; cfg.mono = (reqMonitor == 0);   // mémorise le mode
+            saveConfig(exeDir, cfg);
+        }
         if (reqReset) machine.reset();
         if (reqCapture) {                      // clic dans l'écran → on capture la souris
             g_mouseCaptured = true;
@@ -306,6 +481,12 @@ int main(int argc, char** argv) {
         if (now < nextFrame) std::this_thread::sleep_until(nextFrame);
         else                 nextFrame = now;
     }
+
+    // Mémorise le dernier ROM, la disquette montée et le moniteur pour la prochaine fois.
+    cfg.rom = romLogical;
+    cfg.disk = machine.fdc.mountedPath();
+    cfg.mono = !machine.mfp.colorMonitor();
+    saveConfig(exeDir, cfg);
 
 #if defined(NEOST_WITH_IMGUI)
     ImGui_ImplOpenGL2_Shutdown();

@@ -36,12 +36,14 @@ void Shifter::renderFrame() {
 
     for (int y = 0; y < curH_; ++y) {
         if (mode == Mode::High) {
-            // 1 plan : 1 mot = 16 pixels. Index 0/1 → palette[0]/palette[1].
+            // Haute résolution = moniteur MONOCHROME : blanc (0) / noir (1), sans
+            // tenir compte de la palette couleur (sinon un palette[1] non noir
+            // — ex. rouge sous TOS 1.02 — colore l'écran à tort).
             const uint32_t base = videoBase + static_cast<uint32_t>(y) * 80u;
             for (int g = 0; g < curW_ / 16; ++g) {
                 const uint16_t p0 = bus_.read16(base + static_cast<uint32_t>(g) * 2u);
                 for (int bit = 15; bit >= 0; --bit)
-                    *dst++ = stColorToArgb(palette[(p0 >> bit) & 1]);
+                    *dst++ = ((p0 >> bit) & 1) ? 0xFF000000u : 0xFFFFFFFFu;
             }
         } else if (mode == Mode::Medium) {
             // 2 plans entrelacés : 2 mots = 16 pixels. Index 0..3.

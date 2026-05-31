@@ -40,7 +40,7 @@ public:
     // --- État exposé au débogueur (lecture directe) -------------------------
     uint32_t videoBase = 0;                 // adresse RAM du framebuffer (registres haut/milieu/bas)
     std::array<uint16_t, 16> palette{};     // 16 registres couleur $FF8240 ($0RGB, 3 bits/canal)
-    Mode mode = Mode::High;                 // EmuTOS démarre en mono si moniteur mono détecté
+    Mode mode = Mode::Low;                  // moniteur couleur → basse résolution par défaut
 
 private:
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888

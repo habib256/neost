@@ -54,9 +54,34 @@ git submodule add https://github.com/ocornut/imgui    extern/imgui
 ```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
-./build/neost                 # charge rom/etos192fr.img par défaut
-./build/neost rom/etos192us.img   # ou la version US
+./neost                                    # auto : EmuTOS US + disks/diskA.st
+./neost rom/etos192fr.img                  # version FR
+./neost rom/etos192us.img disks/diskA.st   # ROM + image disquette explicites
 ```
+
+> Les chemins par défaut (`rom/`, `disks/`) sont résolus relativement au
+> répertoire courant ET à l'exécutable, donc `./neost` marche aussi bien depuis
+> la racine que depuis `build/`.
+
+### Disquette (FDC WD1772 + DMA)
+
+Le lecteur A monte une image `.st` (dump de secteurs brut). Une image FAT12 720 Ko
+de démonstration est fournie dans `disks/diskA.st`. Dans le GUI, la fenêtre
+**Disk Library** liste les `.st` de `disks/` et permet de **monter/éjecter** à
+chaud. Sur le bureau, double-clique **Disque A** pour parcourir les fichiers.
+Les écritures vont dans l'image en mémoire (pas encore recopiées dans le fichier).
+
+Outils (`tools/`) :
+
+```sh
+python3 tools/make_floppy.py                 # (re)génère disks/diskA.st (FAT12 de test)
+python3 tools/fetch_disk.py <url planetemu>  # télécharge une disquette de test (scrapling)
+```
+
+`fetch_disk.py` récupère une image depuis la zone
+[planetemu.net/machine/atari-st](https://www.planetemu.net/machine/atari-st) via
+**scrapling** (`pip install scrapling`). ⚠ À n'utiliser que pour des logiciels
+auxquels vous avez droit (domaine public, freeware, démos), pour tester l'émulateur.
 
 > Lancer depuis la racine du projet : la ROM par défaut est cherchée en
 > `rom/<image>` (chemin relatif au répertoire courant).

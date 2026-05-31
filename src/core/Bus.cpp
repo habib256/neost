@@ -10,6 +10,7 @@
 #include "core/Cpu68k.hpp"
 #include "io/Mfp.hpp"
 #include "io/Ikbd.hpp"
+#include "io/Fdc.hpp"
 
 #include <cstdio>
 #include <fstream>
@@ -32,7 +33,8 @@ bool Bus::loadTos(const std::string& path) {
     // L'emplacement de la ROM dépend de la version de TOS (cf. stmap) : un TOS
     // de 192 Ko vit à $FC0000, sinon (224/256 Ko) à $E00000.
     romBase = (rom.size() <= 192u * 1024u) ? stmap::ROM_FC0000 : stmap::ROM_E00000;
-    std::printf("[Bus] TOS chargé : %zu Ko @ $%06X\n", rom.size() / 1024, romBase);
+    std::fprintf(stderr, "[Bus] TOS chargé : %s (%zu Ko @ $%06X)\n",
+                 path.c_str(), rom.size() / 1024, romBase);
     return true;
 }
 
@@ -112,6 +114,8 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
         return shifter->read8(addr);
     if (addr >= stmap::PSG_BASE && addr < stmap::PSG_BASE + 4 && psg)
         return psg->read8(addr);
+    if (addr >= stmap::DMA_FDC_BASE && addr < stmap::DMA_FDC_BASE + 0x10 && fdc)
+        return fdc->read8(addr);          // contrôleur disquette + DMA ($FF8600)
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {
         const uint8_t v = mfp->read8(addr);
         if (cpu) cpu->updateIpl();        // l'état d'IRQ a pu changer
@@ -136,6 +140,11 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     }
     if (addr >= stmap::PSG_BASE && addr < stmap::PSG_BASE + 4 && psg) {
         psg->write8(addr, v);
+        return;
+    }
+    if (addr >= stmap::DMA_FDC_BASE && addr < stmap::DMA_FDC_BASE + 0x10 && fdc) {
+        fdc->write8(addr, v);             // contrôleur disquette + DMA
+        if (cpu) cpu->updateIpl();        // l'INTRQ FDC (GPIP5) a pu changer
         return;
     }
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {

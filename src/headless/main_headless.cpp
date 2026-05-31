@@ -57,12 +57,14 @@ int main(int argc, char** argv) {
     int         frames     = 200;
     std::string tracePath;
     std::string shotPath;
-    std::string romPath    = "rom/etos192fr.img";
+    std::string diskPath   = "disks/diskA.st";
+    std::string romPath    = "rom/etos192us.img";
     bool        regs       = false;
     bool        irq        = false;
     bool        haveUntil  = false;
     uint32_t    untilPc    = 0;
     bool        walkMouse  = false;
+    bool        machineMono = false;
 
     for (int i = 1; i < argc; ++i) {
         const char* a = argv[i];
@@ -75,7 +77,9 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--regs"))       regs      = true;
         else if (!std::strcmp(a, "--irq"))        irq       = true;
         else if (!std::strcmp(a, "--screenshot")) shotPath  = next(a);
+        else if (!std::strcmp(a, "--disk"))       diskPath  = next(a);
         else if (!std::strcmp(a, "--walk-mouse")) walkMouse = true;
+        else if (!std::strcmp(a, "--mono"))       machineMono = true;
         else if (!std::strcmp(a, "--until-pc"))   { untilPc = (uint32_t)std::strtoul(next(a), nullptr, 16); haveUntil = true; }
         else if (!std::strcmp(a, "-h") || !std::strcmp(a, "--help")) { usage(); return 0; }
         else if (a[0] == '-')                     { std::fprintf(stderr, "option inconnue: %s\n", a); usage(); return 2; }
@@ -87,6 +91,8 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[headless] impossible de charger %s\n", romPath.c_str());
         return 1;
     }
+    machine.loadDisk(diskPath);   // lecteur A (optionnel)
+    machine.mfp.setColorMonitor(!machineMono);   // --mono → moniteur mono (haute rés)
 
     Tracer tracer;
     if (!tracePath.empty()) {
@@ -115,21 +121,22 @@ int main(int argc, char** argv) {
     // Diagnostic souris : après boot, on déplace le pointeur en diagonale et on
     // clique au milieu du parcours, pour voir si le curseur GEM apparaît/bouge.
     if (walkMouse) {
-        auto idle    = [&](int frames) { for (int i = 0; i < frames; ++i) machine.runFrame(); };
-        auto packet  = [&](int dx, int dy, bool l) {
+        auto idle   = [&](int frames) { for (int i = 0; i < frames; ++i) machine.runFrame(); };
+        auto packet = [&](int dx, int dy, bool l) {
             machine.ikbd.mouseEvent(dx, dy, l, false);
             machine.cpu.updateIpl();
             machine.runFrame();
         };
-        // 1) Curseur (centre 320,200) → icône Disque A (~haut-gauche).
-        for (int i = 0; i < 58; ++i) packet(-5, -3, false);
+        // CLIC-GLISSÉ : prendre l'icône Disque A (haut-gauche) et la traîner au centre.
+        for (int i = 0; i < 58; ++i) packet(-5, -3, false);  // 1) aller sur Disque A
         idle(5);
-        // 2) Double-clic réaliste : on n'envoie un paquet QUE sur transition.
-        packet(0, 0, true);  idle(2);   // clic 1 bas
-        packet(0, 0, false); idle(3);   // clic 1 haut
-        packet(0, 0, true);  idle(2);   // clic 2 bas
-        packet(0, 0, false); idle(40);  // clic 2 haut, puis on laisse réagir
-        std::fprintf(stderr, "[headless] séquence : déplacement + double-clic Disque A\n");
+        packet(0, 0, true);                                  // 2) appui (bouton bas)
+        idle(3);
+        for (int i = 0; i < 45; ++i) packet(4, 4, true);     // 3) glisser bouton TENU
+        idle(3);
+        packet(0, 0, false);                                 // 4) relâcher
+        idle(40);
+        std::fprintf(stderr, "[headless] séquence : clic-glissé de Disque A vers le centre\n");
     }
 
     std::fprintf(stderr, "[headless] %llu instructions tracées\n",
