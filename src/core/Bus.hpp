@@ -16,6 +16,9 @@
 class Shifter;
 class YM2149;
 class Glue;
+class Mfp;
+class Ikbd;
+class Cpu68k;
 
 // -----------------------------------------------------------------------------
 //  Plan mémoire de l'Atari ST (bus d'adresses 24 bits → 16 Mo adressables).
@@ -71,10 +74,18 @@ public:
     void     write16(uint32_t addr, uint16_t v);
     void     write32(uint32_t addr, uint32_t v);
 
+    // Vrai si l'adresse n'est décodée par AUCUN circuit → bus error sur le 68000.
+    // Le matériel optionnel (blitter, etc.) est détecté par EmuTOS justement en
+    // provoquant ces bus errors : sans elles, EmuTOS croit le matériel présent.
+    bool busFault(uint32_t addr) const;
+
     // Composants branchés sur le bus (injectés par main.cpp, pas de propriété).
     Shifter* shifter = nullptr;
     YM2149*  psg     = nullptr;
     Glue*    glue    = nullptr;
+    Mfp*     mfp     = nullptr;   // contrôleur d'interruptions 68901
+    Ikbd*    ikbd    = nullptr;   // ACIA clavier
+    Cpu68k*  cpu     = nullptr;   // pour rafraîchir l'IPL après un accès MMIO
 
     // Données brutes exposées au débogueur (visualiseur hexa ImGui). Pas de
     // getters : l'accès direct est l'objet même de la "boîte à hack".

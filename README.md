@@ -54,10 +54,59 @@ git submodule add https://github.com/ocornut/imgui    extern/imgui
 ```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
-./build/neost chemin/vers/tos.img
+./build/neost                 # charge rom/etos192fr.img par défaut
+./build/neost rom/etos192us.img   # ou la version US
+```
+
+> Lancer depuis la racine du projet : la ROM par défaut est cherchée en
+> `rom/<image>` (chemin relatif au répertoire courant).
+
+## ROM (EmuTOS, libre)
+
+Les vrais TOS Atari sont sous copyright et ne sont pas redistribués ici. NeoST
+utilise par défaut **[EmuTOS](https://emutos.sourceforge.io/)** (GPL), placé dans
+`rom/` à la racine :
+
+```
+rom/
+  etos192fr.img   EmuTOS 192 Ko, français  (mappé à $FC0000, par défaut)
+  etos192us.img   EmuTOS 192 Ko, US
+```
+
+Récupération (déjà fait dans ce dépôt) :
+
+```sh
+curl -L -o /tmp/emutos.zip \
+  "https://sourceforge.net/projects/emutos/files/emutos/1.4/emutos-192k-1.4.zip/download"
+unzip -j /tmp/emutos.zip '*etos192fr.img' '*etos192us.img' -d rom/
 ```
 
 Options CMake : `-DNEOST_WITH_IMGUI=ON` (défaut), `-DNEOST_WARN_STRICT=ON` (défaut).
+
+## Mode headless & traces (comparaison MAME)
+
+Le cœur émulé (`neost_core`) est sans dépendance graphique : un second exécutable
+`neost-headless` exécute la **même machine** sans fenêtre, de façon déterministe,
+et produit des journaux fins comparables à la commande `trace` du débogueur MAME.
+
+```sh
+./build/neost-headless --frames 50 --trace trace.txt          # PC + désassemblage
+./build/neost-headless --frames 50 --trace trace.txt --regs   # + D0-D7/A0-A7/SR
+./build/neost-headless --frames 50 --trace trace.txt --irq    # + interruptions prises
+./build/neost-headless --until-pc FC0030 --trace -            # vers stdout
+./build/neost-headless --frames 250 --screenshot ecran.ppm    # dump framebuffer (PPM)
+```
+
+Format de trace (proche de MAME — la séquence de PC est le signal de diff) :
+
+```
+FC0030: bra     $fc004e
+FC004E: move    #$2700, SR
+>>> IRQ niveau 6, vecteur $45        (Timer C du MFP)
+```
+
+C'est cet outillage qui a permis de localiser le blocage de boot d'EmuTOS
+(auto-vectorisation Musashi au lieu des vecteurs MFP).
 
 ## Contrôles
 

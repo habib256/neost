@@ -11,10 +11,15 @@
 #include <cstdint>
 
 class Bus;
+class Tracer;
 
 class Cpu68k {
 public:
     explicit Cpu68k(Bus& bus);
+
+    // Branche (ou détache avec nullptr) le traceur : journalise chaque
+    // instruction et chaque interruption prise. Utilisé surtout en headless.
+    void setTracer(Tracer* t);
 
     // Reset matériel : Musashi lit SSP ($0) et PC ($4) via le bus, puis on
     // referme l'overlay de boot de la ROM (cf. Bus::bootOverlay).
@@ -25,8 +30,13 @@ public:
     // s'en sert pour synchroniser le Shifter.
     int run(int cycles);
 
-    // Pose une interruption auto-vectorisée (HBL=2, VBL=4 sur ST).
-    void setIrq(int level);
+    // Recalcule l'IPL présenté au 68000 à partir de l'état des sources
+    // (MFP niveau 6, VBL niveau 4). À appeler après tout changement d'IRQ.
+    void updateIpl();
+
+    // Marque une interruption verticale (VBL, niveau 4 auto-vectorisé) en
+    // attente ; elle sera acquittée puis effacée au cycle IACK.
+    void raiseVbl();
 
     // État exposé en lecture directe pour le visualiseur de registres ImGui.
     uint32_t pc()  const;          // compteur programme courant

@@ -1,29 +1,12 @@
 // =============================================================================
-//  Shifter.cpp — Décodage planaire ST → texture OpenGL (immediate mode).
+//  Shifter.cpp — Décodage planaire ST (basse/moyenne/haute) → buffer ARGB.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Shifter.hpp"
 
-#if defined(__APPLE__)
-#include <OpenGL/gl.h>      // macOS Silicon : framework OpenGL (legacy 2.1)
-#else
-#include <GL/gl.h>          // Linux : libGL (symboles legacy directs)
-#endif
-
 Shifter::Shifter(Bus& bus) : bus_(bus) {
-    frame_.assign(WIDTH * HEIGHT, 0xFF000000u);
-    glGenTextures(1, &texture_);
-    glBindTexture(GL_TEXTURE_2D, texture_);
-    // NEAREST : on veut des pixels ST nets, pas de filtrage.
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0,
-                 GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, frame_.data());
-}
-
-Shifter::~Shifter() {
-    if (texture_) glDeleteTextures(1, &texture_);
+    resizeFor(mode);
 }
 
 uint32_t Shifter::stColorToArgb(uint16_t c) {
@@ -35,51 +18,60 @@ uint32_t Shifter::stColorToArgb(uint16_t c) {
     return 0xFF000000u | (ex(r) << 16) | (ex(g) << 8) | ex(b);
 }
 
-void Shifter::decodeLineLow(int line) {
-    // Basse résolution : 4 bitplans entrelacés. Chaque groupe de 16 pixels =
-    // 4 mots de 16 bits (un par plan). Le bit n de chaque plan forme l'index
-    // de palette du pixel n. 320 px / 16 = 20 groupes, soit 160 octets/ligne.
-    const uint32_t lineAddr = videoBase + static_cast<uint32_t>(line) * 160u;
-    uint32_t* dst = &frame_[static_cast<std::size_t>(line) * WIDTH];
+void Shifter::resizeFor(Mode m) {
+    int w = 320, h = 200;
+    switch (m) {
+        case Mode::Low:    w = 320; h = 200; break;   // 16 couleurs
+        case Mode::Medium: w = 640; h = 200; break;   // 4 couleurs
+        case Mode::High:   w = 640; h = 400; break;   // monochrome
+    }
+    if (w == curW_ && h == curH_) return;
+    curW_ = w; curH_ = h;
+    frame_.assign(static_cast<std::size_t>(w) * h, 0xFF000000u);
+}
 
-    for (int group = 0; group < WIDTH / 16; ++group) {
-        const uint32_t a = lineAddr + static_cast<uint32_t>(group) * 8u;
-        const uint16_t p0 = bus_.read16(a + 0);
-        const uint16_t p1 = bus_.read16(a + 2);
-        const uint16_t p2 = bus_.read16(a + 4);
-        const uint16_t p3 = bus_.read16(a + 6);
+void Shifter::renderFrame() {
+    resizeFor(mode);                                  // suit un éventuel changement de rés.
+    uint32_t* dst = frame_.data();
 
-        for (int bit = 15; bit >= 0; --bit) {
-            const uint16_t m = static_cast<uint16_t>(1u << bit);
-            const int idx = ((p0 & m) ? 1 : 0) | ((p1 & m) ? 2 : 0)
-                          | ((p2 & m) ? 4 : 0) | ((p3 & m) ? 8 : 0);
-            *dst++ = stColorToArgb(palette[idx]);
+    for (int y = 0; y < curH_; ++y) {
+        if (mode == Mode::High) {
+            // 1 plan : 1 mot = 16 pixels. Index 0/1 → palette[0]/palette[1].
+            const uint32_t base = videoBase + static_cast<uint32_t>(y) * 80u;
+            for (int g = 0; g < curW_ / 16; ++g) {
+                const uint16_t p0 = bus_.read16(base + static_cast<uint32_t>(g) * 2u);
+                for (int bit = 15; bit >= 0; --bit)
+                    *dst++ = stColorToArgb(palette[(p0 >> bit) & 1]);
+            }
+        } else if (mode == Mode::Medium) {
+            // 2 plans entrelacés : 2 mots = 16 pixels. Index 0..3.
+            const uint32_t base = videoBase + static_cast<uint32_t>(y) * 160u;
+            for (int g = 0; g < curW_ / 16; ++g) {
+                const uint32_t a = base + static_cast<uint32_t>(g) * 4u;
+                const uint16_t p0 = bus_.read16(a + 0);
+                const uint16_t p1 = bus_.read16(a + 2);
+                for (int bit = 15; bit >= 0; --bit) {
+                    const int idx = ((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1);
+                    *dst++ = stColorToArgb(palette[idx]);
+                }
+            }
+        } else {
+            // Basse rés. : 4 plans entrelacés, 4 mots = 16 pixels. Index 0..15.
+            const uint32_t base = videoBase + static_cast<uint32_t>(y) * 160u;
+            for (int g = 0; g < curW_ / 16; ++g) {
+                const uint32_t a = base + static_cast<uint32_t>(g) * 8u;
+                const uint16_t p0 = bus_.read16(a + 0);
+                const uint16_t p1 = bus_.read16(a + 2);
+                const uint16_t p2 = bus_.read16(a + 4);
+                const uint16_t p3 = bus_.read16(a + 6);
+                for (int bit = 15; bit >= 0; --bit) {
+                    const int idx = ((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1)
+                                  | (((p2 >> bit) & 1) << 2) | (((p3 >> bit) & 1) << 3);
+                    *dst++ = stColorToArgb(palette[idx]);
+                }
+            }
         }
     }
-}
-
-void Shifter::renderScanline(int line) {
-    if (line < 0 || line >= HEIGHT) return;   // hors zone visible (bordure/VBlank)
-    // Pour l'instant seul le mode basse résolution est décodé (cas pédagogique).
-    if (mode == Mode::Low) decodeLineLow(line);
-}
-
-void Shifter::present() {
-    // 1) Téléversement du framebuffer ST dans la texture.
-    glBindTexture(GL_TEXTURE_2D, texture_);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WIDTH, HEIGHT,
-                    GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, frame_.data());
-
-    // 2) Quad plein écran en immediate mode (repère NDC -1..+1, V inversé pour
-    //    que la ligne 0 du ST soit en haut de l'écran).
-    glEnable(GL_TEXTURE_2D);
-    glBegin(GL_QUADS);
-        glTexCoord2f(0.f, 1.f); glVertex2f(-1.f, -1.f);
-        glTexCoord2f(1.f, 1.f); glVertex2f( 1.f, -1.f);
-        glTexCoord2f(1.f, 0.f); glVertex2f( 1.f,  1.f);
-        glTexCoord2f(0.f, 0.f); glVertex2f(-1.f,  1.f);
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
 }
 
 uint8_t Shifter::read8(uint32_t addr) {

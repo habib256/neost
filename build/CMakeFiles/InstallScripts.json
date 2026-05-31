@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/factory/src/neost/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
