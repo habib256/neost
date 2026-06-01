@@ -33,10 +33,11 @@ public:
     // délai daté (seek selon step-rate, transfert selon le débit) — cf. Phase 4.
     void setScheduler(Scheduler* s) { sched_ = s; }
 
-    bool loadImage(const std::string& path);   // monte une image .st dans le lecteur A
-    void eject();                               // retire la disquette
-    bool inserted() const { return !image_.empty(); }
-    const std::string& mountedPath() const { return path_; }
+    // Monte/éjecte une image (.st ou .msa) dans le lecteur `drive` (0 = A, 1 = B).
+    bool loadImage(const std::string& path, int drive = 0);
+    void eject(int drive = 0);
+    bool inserted(int drive = 0) const { return !drive_[drive & 1].image.empty(); }
+    const std::string& mountedPath(int drive = 0) const { return drive_[drive & 1].path; }
 
     // MMIO $FF8600-$FF860F (accès octets ; le 68000 y fait des mots big-endian).
     uint8_t read8(uint32_t addr);
@@ -46,14 +47,23 @@ public:
     void    onCommandComplete();
 
 private:
+    // Une disquette montée (lecteur A ou B).
+    struct FloppyDisk {
+        std::vector<uint8_t> image;             // contenu (.st brut, .msa décompressé)
+        std::string          path;              // chemin monté ("" = vide)
+        int  spt = 9, sides = 2;                // géométrie (BPB)
+        bool writeProtect = false;              // protégé en écriture
+        bool raw = true;                        // .st brut (writeBack possible) vs .msa
+    };
+
     void     executeCommand(uint8_t cmd);
     int64_t  commandDelayCycles(uint8_t cmd);   // durée réaliste avant fin de commande
-    void     writeBack(uint32_t off, uint32_t len);   // recopie les écritures dans le .st
+    void     writeBack(FloppyDisk& dk, uint32_t off, uint32_t len);  // recopie dans le .st
     uint8_t  readSectors(uint8_t cmd);          // renvoie le statut FDC
     uint8_t  writeSectors(uint8_t cmd);
     uint8_t  readAddress();
     int      currentSide() const;               // face d'après le port A du PSG
-    bool     driveASelected() const;
+    int      selectedDrive() const;             // 0 = A, 1 = B, -1 = aucun (PSG port A)
     uint8_t  dmaStatus() const;
     void     setIntrq(bool on);                 // pilote GPIP5
 
@@ -61,11 +71,8 @@ private:
     YM2149&  psg_;
     Mfp&     mfp_;
 
-    std::vector<uint8_t> image_;                // contenu de la disquette
-    std::string path_;                          // chemin de l'image montée ("" = vide)
-    int      spt_ = 9, sides_ = 2;              // géométrie (lue dans le BPB)
-    bool     writeProtect_ = false;             // disquette protégée en écriture
-    bool     rawImage_ = true;                  // .st brut (writeBack possible) vs .msa
+    FloppyDisk drive_[2];                        // lecteurs A et B
+    uint8_t    density_ = 0;                      // $FF860E : densité DD/HD
 
     // Registres WD1772.
     uint8_t  status_ = 0, track_ = 0, sector_ = 1, data_ = 0;

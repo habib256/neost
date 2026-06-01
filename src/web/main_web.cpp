@@ -283,8 +283,14 @@ EMSCRIPTEN_KEEPALIVE void neost_set_mono(int mono) {
 // → FS.writeFile → neost_mount_disk), puis reset pour booter dessus.
 EMSCRIPTEN_KEEPALIVE void neost_mount_disk(const char* path) {
     if (!g_machine || !path) return;
-    g_machine->fdc.loadImage(path);
+    g_machine->fdc.loadImage(path, 0);
     g_machine->reset();
+}
+
+// Monte une image dans le lecteur B (secondaire) — pas de reset (B ne boote pas).
+EMSCRIPTEN_KEEPALIVE void neost_mount_disk_b(const char* path) {
+    if (!g_machine || !path) return;
+    g_machine->fdc.loadImage(path, 1);
 }
 
 } // extern "C"
