@@ -49,3 +49,6 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# Hatari (référence, non committé)
+extern/hatari/

@@ -56,6 +56,10 @@ ligne-par-ligne (≈ pas cycle-accurate).
 
 ## Précision temporelle (le grand chantier)
 
+> Plan détaillé calqué sur Hatari : **[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md)**
+> (ordonnanceur d'événements datés, vidéo/MFP/FDC au cycle, validation par
+> `trace_diff` ↔ Hatari ; cas concret : le `$26E7` d'Arkanoid).
+
 - [ ] **Horloge cycle-accurate** (`cycles.c`, `cycInt.c`, `m68000.c`). Hatari
       compte les cycles bus précisément et planifie les interruptions au cycle
       près (`CycInt_AddRelativeInterrupt`). NeoST exécute 512 cycles/ligne en
@@ -190,13 +194,18 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 
 ## Cas concret à débloquer
 
-- [ ] **Arkanoid** (Imagine 1987) : charge + affiche son écran-titre via le FDC
-      (✓ basse rés couleur, TOS 1.02), puis se fige sur `tst.b $26E7 / bne`. Le
-      flag n'est effacé par aucun code exécuté ; le jeu n'utilise ni Xbtimer ni
-      timer MFP, son VBL ne touche pas `$26E7` (il appelle seulement
-      Getrez/Setscreen/Setpalette/Floprd). Piste : **diff de trace avec Hatari**
-      (`neost-headless --trace` vs trace Hatari du même point) pour isoler le
-      registre/signal divergent — probablement lié à un timing cycle-précis.
+- [ ] **Arkanoid** (Imagine 1987) : **auto-bootable via `AUTO\ARKANOID.PRG`**
+      (pas via le boot sector, checksum `$F9B9` ≠ `$1234`). Charge + affiche son
+      écran-titre (✓ basse rés couleur, TOS 1.02), puis se fige sur
+      `031736: tst.b $26E7 / 03173C: bne`. Constats par trace :
+      - le jeu installe son handler VBL en `$70` (`034CB2: move.l #$34c9a,$70`),
+        qui s'exécute bien (vectorisation auto-vecteur niv. 4 OK) et chaîne vers le
+        VBL TOS **sans** toucher `$26E7` ;
+      - `$26E7` doit donc être remis à 0 par une **autre IRQ à un cycle précis** ;
+        avec le modèle ligne/trame de NeoST, elle ne tombe pas au bon moment ;
+      - côté Hatari, le diff confirme que la divergence est temporelle.
+      → Correctif structurel : **[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md)**
+      (Phases 0→3 : ordonnanceur daté + vidéo + timers MFP au cycle).
 
 ## Outillage / qualité
 
