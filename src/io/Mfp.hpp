@@ -44,6 +44,11 @@ public:
     // event-count. TOS 1.x s'en sert pour se synchroniser à l'écran au boot.
     void hblank();
 
+    // Impulsion comptée par Timer A (entrée TAI) : sur STE, la fin de trame du
+    // son DMA y est câblée. En mode event-count (TACR bits0-3 == 0x08), décompte
+    // et lève l'IRQ Timer A (canal 13) à 0 — sert au double-buffering audio STE.
+    void timerA_eventCount();
+
     uint8_t read8(uint32_t addr);
     void    write8(uint32_t addr, uint8_t v);
 
@@ -88,6 +93,10 @@ public:
     // Timer B (event-count sur HBLANK). tbCounter_ = compteur courant (lu en
     // $FFFA21), tbReload_ = valeur rechargée à 0, tbcr_ = mode ($FFFA1B).
     uint8_t tbcr_ = 0, tbReload_ = 0, tbCounter_ = 0;
+
+    // Timer A en event-count (TAI = fin de trame son DMA sur STE). Compteur
+    // courant + valeur de recharge, chargés à l'écriture de TADR ($FFFA1F).
+    uint8_t taReload_ = 0, taCounter_ = 0;
 
     // Backing store des autres registres timer/USART : TOS les écrit puis relit
     // pour vérifier la présence du MFP, donc ils doivent renvoyer ce qu'on y a mis.

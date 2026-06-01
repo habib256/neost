@@ -56,7 +56,8 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         // Timers A/C/D : on mémorise le registre PUIS on (re)programme l'échéance.
         case 0x19: timer_[0x19] = v; scheduleTimer(0); break;             // TACR
         case 0x1D: timer_[0x1D] = v; scheduleTimer(2); scheduleTimer(3); break; // TCDCR (C+D)
-        case 0x1F: timer_[0x1F] = v; scheduleTimer(0); break;             // TADR
+        case 0x1F: timer_[0x1F] = v; taReload_ = taCounter_ = v;          // TADR (+ event-count)
+                   scheduleTimer(0); break;
         case 0x23: timer_[0x23] = v; scheduleTimer(2); break;             // TCDR
         case 0x25: timer_[0x25] = v; scheduleTimer(3); break;             // TDDR
         default: timer_[addr & 0x3F] = v; break;      // autres timers/USART : mémorisés
@@ -107,6 +108,16 @@ void Mfp::hblank() {
     if (--tbCounter_ == 0) {
         tbCounter_ = tbReload_;
         raise(SRC_TIMERB);
+    }
+}
+
+void Mfp::timerA_eventCount() {
+    // Idem pour Timer A en event-count (TACR bits0-3 == 0x08) : une impulsion sur
+    // TAI (fin de trame son DMA STE) décompte ; à 0, recharge et lève l'IRQ.
+    if ((timer_[0x19] & 0x0F) != 0x08 || taCounter_ == 0) return;
+    if (--taCounter_ == 0) {
+        taCounter_ = taReload_;
+        raise(SRC_TIMERA);
     }
 }
 

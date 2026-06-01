@@ -26,8 +26,9 @@ public:
     // par Machine) ; HBL niveau 2 = 508 ; VBL. Les Timers A/C/D (mode délai) sont
     // datés par le MFP lui-même (période calculée des registres TxCR/TxDR).
     // FDC = fin de commande (BUSY→INTRQ) ; FDC_INDEX = impulsion d'index du
-    // lecteur (1/tour, ~200 ms à 300 tr/min) tant que le moteur tourne.
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_C, TIMER_D, FDC, FDC_INDEX, HBL, VBL, SRC_COUNT };
+    // lecteur (1/tour, ~200 ms à 300 tr/min) tant que le moteur tourne ;
+    // DMASND = fin de trame du son DMA STE (→ event-count Timer A du MFP).
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_C, TIMER_D, FDC, FDC_INDEX, DMASND, HBL, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 

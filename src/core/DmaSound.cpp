@@ -5,6 +5,8 @@
 // =============================================================================
 #include "core/DmaSound.hpp"
 #include "core/Bus.hpp"
+#include "core/Scheduler.hpp"
+#include "io/Mfp.hpp"
 
 #include <cmath>
 
@@ -16,10 +18,31 @@ static const double kRate[4] = { 6258.0, 12517.0, 25033.0, 50066.0 };
 // pour laisser de la marge au YM2149 ; le volume fin relève du LMC1992, cf. TODO).
 static constexpr float kDmaGain = 0.7f;
 
+// Horloge CPU (Hz) pour dater la fin de trame en cycles (cf. Mfp / Scheduler).
+static constexpr int64_t CPU_HZ = 8021248;
+
+// Programme l'échéance « fin de trame » sur l'ordonnanceur (thread émulation) :
+// durée = nombre d'échantillons de la trame × cycles CPU par échantillon.
+void DmaSound::scheduleFrameEnd() {
+    if (!sched_) return;
+    if (endAddr_ <= startAddr_) { sched_->cancel(Scheduler::DMASND); return; }
+    const uint32_t step    = (mode_ & 0x80) ? 1u : 2u;        // mono 1 octet, stéréo 2
+    const int64_t  samples = (endAddr_ - startAddr_) / step;
+    const int64_t  rate    = int64_t(kRate[mode_ & 0x03]);
+    const int64_t  dur     = samples * CPU_HZ / rate;
+    sched_->schedule(Scheduler::DMASND, sched_->now() + (dur > 0 ? dur : 1));
+}
+
+void DmaSound::onFrameEnd() {
+    if (mfp_) mfp_->timerA_eventCount();          // impulsion TAI → event-count Timer A
+    if (ctrl_ & 0x02) scheduleFrameEnd();         // repeat : prochaine trame
+}
+
 void DmaSound::reset() {
     playing_ = false;
     ctrl_ = 0;
     phase_ = 0.0;
+    if (sched_) sched_->cancel(Scheduler::DMASND);
     mwMaster_ = 40; mwLeft_ = 20; mwRight_ = 20;   // LMC1992 à 0 dB (pas de mute au reset)
     mwBass_ = 6; mwTreble_ = 6; mwMixing_ = 0;
 }
@@ -97,8 +120,10 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
                 curAddr_ = startAddr_;
                 phase_   = 0.0;
                 playing_ = true;
+                scheduleFrameEnd();                    // date la fin de trame (→ Timer A)
             } else if (!(ctrl_ & 0x01)) {              // bit play à 0 : arrêt
                 playing_ = false;
+                if (sched_) sched_->cancel(Scheduler::DMASND);
             }
             break;
         }

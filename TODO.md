@@ -172,11 +172,13 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 - [~] **DMA sound STE** ($FF8900+, `DmaSound`) ✓ : lecture d'échantillons 8 bits
       signés en RAM, fréquence sélectionnable (6.25/12.5/25/50 kHz), mono/stéréo
       (downmix), play/repeat, compteur d'adresse exposé, mixage avec le YM2149
-      (GUI `Audio::render` + WASM `neost_audio_render`). Restent : **interruption
-      de fin de trame** (Timer A / MFP pour le double-buffering streamé — nécessite
-      de cadencer le DMA sur l'horloge d'émulation, pas le thread audio) et la
-      micro-précision du rééchantillonnage. Microwire ($FF8922/24) stocké, non
-      appliqué (cf. LMC1992 ci-dessous).
+      (GUI `Audio::render` + WASM `neost_audio_render`). **Interruption de fin de
+      trame** ✓ : datée sur l'ordonnanceur (thread émulation, `Scheduler::DMASND`)
+      → pulse l'entrée TAI du MFP (`Mfp::timerA_eventCount`) ; en event-count
+      (TACR=0x08) lève l'IRQ Timer A — débloque le double-buffering streamé STE.
+      Restent : décodage du son sur l'horloge d'émulation + anneau vers le thread
+      audio (aujourd'hui la forme d'onde est générée côté audio, seul l'instant
+      d'interruption est émulé-exact) et la micro-précision du rééchantillonnage.
 - [~] **LMC1992 / Microwire** ($FF8922/24, `DmaSound`) ✓ : décodage de la commande
       série (mot 11 bits %10 + reg + donnée), **volume maître + gauche/droite**
       appliqués en gain au mix (YM2149 + DMA), 0 dB par défaut. Restent : **basses/

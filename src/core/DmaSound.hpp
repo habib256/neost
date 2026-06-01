@@ -17,10 +17,21 @@
 #include <cstdint>
 
 class Bus;
+class Mfp;
+class Scheduler;
 
 class DmaSound {
 public:
     explicit DmaSound(Bus& bus) : bus_(bus) {}
+
+    // L'ordonnanceur date la fin de trame (→ event-count Timer A du MFP), sur le
+    // thread d'émulation : c'est là que doit tomber l'interruption, pas sur le
+    // thread audio (qui ne fait que générer le son). Branchés par Machine.
+    void setScheduler(Scheduler* s) { sched_ = s; }
+    void setMfp(Mfp* m) { mfp_ = m; }
+
+    // Échéance « fin de trame DMA » : pulse Timer A (TAI), reboucle si repeat.
+    void onFrameEnd();
 
     // MMIO $FF8900-$FF8925 (octets ; le 68000 y fait des mots big-endian).
     uint8_t read8(uint32_t addr);
@@ -40,8 +51,11 @@ public:
 private:
     int     sampleAt(uint32_t addr, bool stereo) const;   // octet(s) RAM → -128..127 mono
     void    decodeMicrowire();                            // décode la commande LMC1992
+    void    scheduleFrameEnd();                           // date la prochaine fin de trame
 
-    Bus&     bus_;
+    Bus&        bus_;
+    Mfp*        mfp_   = nullptr;
+    Scheduler*  sched_ = nullptr;
 
     // Registres. Adresses sur 24 bits (octets haut/moyen/bas, paires forcées).
     uint8_t  ctrl_ = 0;              // $FF8901 : bit0 = play, bit1 = repeat (loop)

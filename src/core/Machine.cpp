@@ -24,6 +24,8 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore) : bus(ramBytes), cpu(bus
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)
+    dmasnd.setScheduler(&sched);   // le son DMA date sa fin de trame (→ Timer A)
+    dmasnd.setMfp(&mfp);
 
     installSchedulerCallbacks();
 }
@@ -44,6 +46,8 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::FDC,     [this] { fdc.onCommandComplete(); cpu.updateIpl(); });
     // Impulsion d'index du lecteur (1/tour) : purement FDC (pas d'IRQ sur ST).
     sched.setCallback(Scheduler::FDC_INDEX, [this] { fdc.onIndexPulse(); });
+    // Fin de trame du son DMA STE : pulse Timer A (event-count) → IRQ canal 13.
+    sched.setCallback(Scheduler::DMASND, [this] { dmasnd.onFrameEnd(); cpu.updateIpl(); });
 }
 
 // Arme les événements VIDÉO de la trame courante, à des cycles ABSOLUS (horloge

@@ -74,6 +74,10 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
 - **LMC1992 / Microwire** ($FF8922/24) : décodage de la commande série (mot 11
   bits), volume maître + gauche/droite appliqués en gain linéaire au mix complet
   (0 dB par défaut). Basses/aigus/mixage stockés (filtrage = TODO).
+- **Interruption de fin de trame du son DMA STE** : datée sur l'ordonnanceur
+  (thread émulation, `Scheduler::DMASND`), elle pulse l'entrée TAI du MFP
+  (`Mfp::timerA_eventCount`) ; en mode event-count (TACR=0x08) Timer A lève
+  l'IRQ canal 13 → permet le double-buffering audio streamé des jeux/démos STE.
 - **Bruits mécaniques du lecteur de disquette** : le cœur émet des événements
   `FdcSound` (moteur on/off, pas, seek, index) depuis `Fdc` via un sink, sans
   dépendance audio. Frontends : `DriveSound` (miniaudio `ma_engine`) côté GUI,
