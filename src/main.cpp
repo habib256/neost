@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 
 #include "core/Machine.hpp"
+#include "audio/DriveSound.hpp"
 
 namespace fs = std::filesystem;
 
@@ -326,6 +327,13 @@ int main(int argc, char** argv) {
     machine.reset();
     cfg.rom = romLogical; saveConfig(exeDir, cfg);   // mémorise dès le lancement
 
+    // Bruits mécaniques du lecteur (cosmétique) : le cœur émet des FdcSound, ce
+    // frontend joue les WAV de rom/drivesound/ (jeu « epson_smd480l » = vrai lecteur).
+    DriveSound drive;
+    bool driveSoundOn = drive.init(resolveData("rom/drivesound/epson_smd480l", exeDir));
+    if (driveSoundOn)
+        machine.fdc.setSoundSink([&drive](FdcSound e) { drive.onEvent(e); });
+
     GlScreen screen;
     screen.init();
 
@@ -380,6 +388,7 @@ int main(int argc, char** argv) {
         machine.cpu.updateIpl();               // entrées reçues → réévalue l'IPL
 
         machine.runFrame();                    // une trame complète (timing + décodage)
+        drive.update();                        // coupe le ronron moteur après inactivité
         screen.update(machine.shifter.pixels(), machine.shifter.width(), machine.shifter.height());
 
         int fbw = 0, fbh = 0;
@@ -436,6 +445,10 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Disk", &g_showDisk);  ImGui::SameLine();
         ImGui::Checkbox("Hex",  &g_showHex);   ImGui::SameLine();
         ImGui::Checkbox("CPU",  &g_showCpu);
+        if (drive.ok()) {
+            ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
+            if (ImGui::Checkbox("Son lecteur", &driveSoundOn)) drive.setEnabled(driveSoundOn);
+        }
         const float toolH = ImGui::GetWindowSize().y;
         ImGui::End();
 

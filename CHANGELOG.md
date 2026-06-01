@@ -63,6 +63,11 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
 ## Audio
 
 - YM2149 : synthèse 3 voies carrées + bruit. Backend **miniaudio** (CoreAudio).
+- **Bruits mécaniques du lecteur de disquette** : le cœur émet des événements
+  `FdcSound` (moteur / pas / seek) depuis `Fdc::executeCommand` via un sink, sans
+  dépendance audio. Frontends : `DriveSound` (miniaudio `ma_engine`) côté GUI,
+  Web Audio côté WASM. Échantillons WAV de STeem SSE (freeware, échantillonnés
+  par Stefan jL) embarqués dans `rom/drivesound/`. Bascule on/off des deux côtés.
 
 ## Frontend & confort
 

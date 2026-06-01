@@ -46,6 +46,7 @@
   <div id="toolbar">
     <button id="btnReset">Reset</button>
     <button id="btnMono">Passer en Mono</button>
+    <button id="btnSound" title="Bruits mécaniques du lecteur de disquette">Son lecteur : on</button>
     <select id="cpuSel" title="Cœur CPU (recharge la page)">
       <option value="musashi">CPU : Musashi</option>
       <option value="moira">CPU : Moira (exp.)</option>
@@ -77,8 +78,12 @@
     var Module = {
       canvas: (function () {
         var c = document.getElementById('canvas');
-        // Le focus clavier suit le canvas dès qu'on clique dedans.
-        c.addEventListener('click', function () { c.focus(); });
+        // Le focus clavier suit le canvas dès qu'on clique dedans ; le clic est
+        // aussi le geste utilisateur qui débloque l'audio (politique navigateur).
+        c.addEventListener('click', function () {
+          c.focus();
+          if (window.drive && drive.ctx && drive.ctx.state === 'suspended') drive.ctx.resume();
+        });
         return c;
       })(),
       print: function (text) { console.log(text); },
@@ -101,7 +106,66 @@
       // qui a été embarqué (tout en local, EmuTOS+diskA pour le déploiement libre).
       populateSelect('diskSel', '/disks', /\.(st|msa)$/i);
       populateSelect('romSel', '/rom', /\.(img|rom|tos|bin)$/i, '/rom/etos192us.img');
+      driveLoad();   // précharge les WAV de bruits de lecteur (rom/drivesound/)
     };
+
+    // ===== Bruits mécaniques du lecteur de disquette (Web Audio) ==============
+    // Le cœur (C) appelle window.neostDriveSound(code) sur chaque événement FDC :
+    //   0 = moteur (boucle ronron + spin-up), 1 = pas de tête (clic), 2 = seek.
+    // Les échantillons WAV sont embarqués dans le FS virtuel (rom/drivesound/).
+    var drive = { ctx: null, buf: {}, motorSrc: null, enabled: true,
+                  stopTimer: null, dir: '/rom/drivesound/epson_smd480l/' };
+
+    function driveLoad() {
+      try { drive.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { console.warn('Web Audio indisponible :', e); return; }
+      var files = { spin: 'drive_spin.wav', startup: 'drive_startup.wav',
+                    click: 'drive_click.wav', seek: 'drive_seek.wav' };
+      Object.keys(files).forEach(function (k) {
+        try {
+          var d = Module.FS.readFile(drive.dir + files[k]);   // Uint8Array
+          var ab = d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength);
+          drive.ctx.decodeAudioData(ab,
+            function (b) { drive.buf[k] = b; },
+            function (e) { console.warn('decode ' + k, e); });
+        } catch (e) { console.warn('FS read ' + files[k], e); }
+      });
+    }
+
+    function driveOneShot(name) {
+      var b = drive.buf[name]; if (!b || !drive.ctx) return;
+      var s = drive.ctx.createBufferSource();
+      s.buffer = b; s.connect(drive.ctx.destination); s.start();
+    }
+    function driveMotorStart() {
+      if (drive.motorSrc || !drive.buf.spin) return;
+      var s = drive.ctx.createBufferSource();
+      s.buffer = drive.buf.spin; s.loop = true;
+      var g = drive.ctx.createGain(); g.gain.value = 0.7;
+      s.connect(g); g.connect(drive.ctx.destination); s.start();
+      drive.motorSrc = s;
+    }
+    function driveMotorStop() {
+      if (drive.motorSrc) { try { drive.motorSrc.stop(); } catch (e) {} drive.motorSrc = null; }
+    }
+
+    window.neostDriveSound = function (code) {
+      if (!drive.enabled || !drive.ctx) return;
+      if (drive.ctx.state === 'suspended') drive.ctx.resume();   // débloque après geste
+      if (code === 0) {                       // moteur : (re)lance la boucle + ré-arme l'arrêt
+        if (!drive.motorSrc) driveOneShot('startup');
+        driveMotorStart();
+        if (drive.stopTimer) clearTimeout(drive.stopTimer);
+        drive.stopTimer = setTimeout(driveMotorStop, 1500);
+      } else if (code === 1) { driveOneShot('click'); }
+      else if (code === 2) { driveOneShot('seek'); }
+    };
+
+    document.getElementById('btnSound').addEventListener('click', function () {
+      drive.enabled = !drive.enabled;
+      this.textContent = drive.enabled ? 'Son lecteur : on' : 'Son lecteur : off';
+      if (!drive.enabled) { driveMotorStop(); if (drive.stopTimer) clearTimeout(drive.stopTimer); }
+    });
 
     // Remplit un <select> avec les fichiers du dossier FS correspondant au filtre.
     function populateSelect(id, dir, rx, preselect) {

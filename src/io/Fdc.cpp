@@ -213,6 +213,20 @@ void Fdc::executeCommand(uint8_t cmd) {
 
     const int64_t delay = commandDelayCycles(cmd);     // AVANT de bouger track_
 
+    // --- Bruits mécaniques (cosmétique, cf. FdcSound) : toute commande énergise
+    //  le moteur ; les commandes type I (seek/restore/step) déplacent la tête →
+    //  « clic » d'un pas, ou bruit de seek si plusieurs pistes sont franchies.
+    emitSound(FdcSound::MotorOn);
+    if (!(cmd & 0x80)) {                               // type I : seek / restore / step
+        int steps = 1;
+        if      ((cmd & 0xF0) == 0x00) steps = track_;            // RESTORE → piste 0
+        else if ((cmd & 0xF0) == 0x10) {                          // SEEK → piste cible
+            steps = int(data_) - int(track_);
+            if (steps < 0) steps = -steps;
+        }
+        emitSound(steps > 1 ? FdcSound::Seek : FdcSound::Step);
+    }
+
     uint8_t result;
     switch (cmd & 0xF0) {
         case 0x00: track_ = 0;     result = FDC_TRACK0;                  break; // RESTORE

@@ -145,6 +145,7 @@ if(EMSCRIPTEN)
         target_link_options(neost-web PRIVATE
             "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom/etos192us.img@/rom/etos192us.img"
             "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom/etos192fr.img@/rom/etos192fr.img"
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom/drivesound@/rom/drivesound"
             "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/disks/diskA.st@/disks/diskA.st")
     else()
         target_link_options(neost-web PRIVATE
@@ -173,9 +174,11 @@ endif()
 
 add_executable(neost
     src/main.cpp
-    src/audio/Audio.cpp)
+    src/audio/Audio.cpp
+    src/audio/DriveSound.cpp)
 target_link_libraries(neost PRIVATE neost_core glfw OpenGL::GL Threads::Threads)
-set_source_files_properties(src/main.cpp PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
+set_source_files_properties(src/main.cpp src/audio/DriveSound.cpp
+    PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # miniaudio (header-only, implémentation dans Audio.cpp).
 target_include_directories(neost PRIVATE "${CMAKE_SOURCE_DIR}/extern/miniaudio")

@@ -325,6 +325,14 @@ int main(int argc, char** argv) {
     if (!machine.loadDisk(diskPath))
         std::fprintf(stderr, "[web] disquette introuvable (%s).\n", diskPath.c_str());
     machine.mfp.setColorMonitor(true);  // couleur (basse rés) par défaut
+
+    // Bruits mécaniques du lecteur : le cœur émet des FdcSound, la page les joue
+    // via Web Audio (cf. shell.html, window.neostDriveSound). Codes : 0 = moteur,
+    // 1 = pas (clic), 2 = seek — dans l'ordre de l'énum FdcSound.
+    machine.fdc.setSoundSink([](FdcSound e) {
+        EM_ASM({ if (window.neostDriveSound) window.neostDriveSound($0); }, static_cast<int>(e));
+    });
+
     machine.reset();
 
     initGl();

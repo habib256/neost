@@ -16,6 +16,7 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -25,6 +26,16 @@ class Bus;
 class YM2149;
 class Mfp;
 
+// Événements sonores « mécaniques » du lecteur (purement cosmétiques). Le cœur
+// ne fait que les SIGNALER ; c'est le frontend qui joue les échantillons WAV
+// (miniaudio côté GUI, Web Audio côté WASM) — cf. rom/drivesound/. Ainsi
+// neost_core reste sans aucune dépendance audio.
+enum class FdcSound {
+    MotorOn,   // accès disque → moteur énergisé (boucle ronron + spin-up si arrêté)
+    Step,      // un pas de tête (STEP) → « clic »
+    Seek,      // déplacement multi-pistes (RESTORE/SEEK) → bruit de seek
+};
+
 class Fdc {
 public:
     Fdc(Bus& bus, YM2149& psg, Mfp& mfp) : bus_(bus), psg_(psg), mfp_(mfp) {}
@@ -32,6 +43,10 @@ public:
     // Branche l'ordonnanceur : une commande pose BUSY puis l'INTRQ tombe APRÈS un
     // délai daté (seek selon step-rate, transfert selon le débit) — cf. Phase 4.
     void setScheduler(Scheduler* s) { sched_ = s; }
+
+    // Branche le « puits » de sons mécaniques (cf. FdcSound). Optionnel : sans
+    // sink, le FDC reste silencieux. Posé par le frontend (thread émulation).
+    void setSoundSink(std::function<void(FdcSound)> fn) { soundSink_ = std::move(fn); }
 
     // Monte/éjecte une image (.st ou .msa) dans le lecteur `drive` (0 = A, 1 = B).
     bool loadImage(const std::string& path, int drive = 0);
@@ -66,6 +81,9 @@ private:
     int      selectedDrive() const;             // 0 = A, 1 = B, -1 = aucun (PSG port A)
     uint8_t  dmaStatus() const;
     void     setIntrq(bool on);                 // pilote GPIP5
+    void     emitSound(FdcSound e) { if (soundSink_) soundSink_(e); }
+
+    std::function<void(FdcSound)> soundSink_;    // bruits mécaniques (cosmétique)
 
     Bus&     bus_;
     YM2149&  psg_;

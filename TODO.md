@@ -173,39 +173,28 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
       bass/treble, balance, masque/data `$FF8922/$FF8924`, timing de shift.
 - [ ] **IRQ/GPIP liés au DMA sound** : fin de frame, repeat/loop, interaction I7
       avec détection mono comme dans MAME `dmasound_set_state`.
-- [ ] **Bruits du lecteur de disquette** (confort/immersion : ronron moteur,
-      « clac » de pas de tête, click de chargement, tic d'index).
+- [x] **Bruits du lecteur de disquette** ✓ (confort/immersion : ronron moteur,
+      « clac » de pas de tête, bruit de seek).
 
-      *Où trouver la source ?* — Ce n'est **pas** du matériel : ni Hatari ni MAME
-      n'émulent les bruits **mécaniques** du lecteur (vérifié : `floppy.c`/`sound.c`
-      de Hatari ne contiennent aucun module de bruit-lecteur, et `--help` n'a pas
-      d'option dédiée). C'est **STeem SSE** qui a popularisé la fonctionnalité, à
-      partir d'**échantillons WAV** déclenchés sur les événements du FDC, pas d'une
-      synthèse. Donc la « source de vérité » ici, ce sont des **samples**.
-      **✓ Récupérés** : les WAV de STeem SSE sont dans `rom/drivesound/`
+      *Source* — Ce n'est **pas** du matériel : ni Hatari ni MAME n'émulent les
+      bruits **mécaniques** du lecteur. C'est **STeem SSE** qui a popularisé la
+      fonctionnalité, à partir d'**échantillons WAV** déclenchés sur les événements
+      du FDC. Les WAV de STeem SSE sont embarqués dans `rom/drivesound/`
       (`basic/` générique + `epson_smd480l/` = vrai lecteur, échantillonné par
-      Stefan jL). Quatre samples : `drive_spin` (boucle moteur), `drive_startup`
-      (mise en route), `drive_seek` (rafale de pas) et `drive_click` (un pas).
-      Autres sources possibles si besoin : freesound.org (domaine public) ou
-      enregistrer un vrai lecteur ST (boucle moteur, clac de pas, tic d'index
-      ~3.7 ms).
+      Stefan jL) : `drive_spin` (boucle moteur), `drive_startup` (mise en route),
+      `drive_seek` (rafale de pas), `drive_click` (un pas).
 
-      *Où brancher dans NeoST ?* — Sur les **événements** déjà présents dans
-      `src/io/Fdc.cpp`, sans toucher au timing :
-        - `executeCommand()` type I (RESTORE/SEEK/STEP) : un click `step` par
-          piste franchie (le nombre de pas est déjà calculé dans
-          `commandDelayCycles()` via le step-rate `{6,12,2,3} ms`) ;
-        - passage de `MOTOR_ON` à 1/0 (bit `FDC_MOTOR_ON`) : démarrer/arrêter la
-          boucle `motor` (avec la temporisation moteur-off à implémenter) ;
-        - option : tic `index` cadencé sur la rotation (~3.71 ms) quand le moteur
-          tourne.
-      Émettre ces événements via un petit *callback* (ex. `setSoundSink(fn)`) pour
-      garder `neost_core` sans dépendance audio. Le mixage se fait côté frontend :
-        - GUI : `src/audio/Audio.cpp` (miniaudio) — décoder les WAV et les mixer
-          au flux YM2149 ;
-        - WASM : `src/web/main_web.cpp` — Web Audio API (`AudioBufferSourceNode`),
-          échantillons préchargés via `--preload-file` (cf. `CMakeLists.txt`).
-      Prévoir un interrupteur on/off (menu GUI + bouton/`?sound=` côté WASM).
+      *Implémentation* — Le cœur reste sans dépendance audio : `Fdc` SIGNALE des
+      événements `FdcSound` (`MotorOn`/`Step`/`Seek`) via `setSoundSink(fn)`, émis
+      dans `executeCommand()` (toute commande → `MotorOn` ; type I → `Step` si un
+      seul pas, `Seek` si plusieurs). Le frontend JOUE :
+        - GUI : `src/audio/DriveSound.cpp` (miniaudio `ma_engine`) — boucle moteur
+          + one-shots, arrêt du moteur après inactivité ; bascule « Son lecteur ».
+        - WASM : `src/web/main_web.cpp` → `window.neostDriveSound(code)` dans
+          `web/shell.html` (Web Audio `AudioBufferSourceNode`), WAV préchargés via
+          `--preload-file` ; bouton « Son lecteur : on/off ».
+      Restes possibles : tic d'`index` (~3.71 ms/rotation), motor-off matériel
+      modélisé dans le cœur (auj. temporisé côté frontend), mixage avec le YM2149.
 
 ## Blitter, SCU & stockage
 
