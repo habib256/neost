@@ -185,7 +185,7 @@ set_source_files_properties(src/main.cpp src/audio/DriveSound.cpp
 target_include_directories(neost PRIVATE "${CMAKE_SOURCE_DIR}/extern/miniaudio")
 
 if(APPLE)
-    target_compile_definitions(neost PRIVATE GL_SILENCE_DEPRECATION=1)  # immediate mode legacy
+    target_compile_definitions(neost PRIVATE GL_SILENCE_DEPRECATION=)  # vide, comme imgui (évite la redéfinition)
     target_link_libraries(neost PRIVATE
         "-framework CoreFoundation" "-framework CoreAudio"
         "-framework AudioToolbox"   "-framework AudioUnit")

@@ -41,6 +41,23 @@ public:
     bool loadTos(const std::string& path)  { return bus.loadTos(path); }
     bool loadDisk(const std::string& path) { return fdc.loadImage(path); }
     void reset() { dmasnd.reset(); cpu.reset(); }
+    // Reset à FROID (power-cycle) : efface toute la ST-RAM, ce qui invalide le
+    // « memvalid » de TOS — il refait alors un boot COMPLET (re-détection mémoire,
+    // re-init OS) au lieu du boot à chaud d'un simple reset. Puis reset matériel.
+    void hardReset() { bus.ram.assign(bus.ram.size(), 0); dmasnd.reset(); cpu.reset(); }
+
+    // Reconfigure la machine À CHAUD sans recréer l'objet (son adresse reste
+    // stable → les références externes, p.ex. Audio→psg/dmasnd, restent valides) :
+    // change la taille de ST-RAM, le modèle matériel et le cœur 68000. Efface la
+    // RAM (boot à froid). Les composants déjà câblés au bus sont conservés.
+    // L'appelant recharge la ROM si besoin, repose le moniteur, puis reset().
+    void reconfigure(std::size_t ramBytes, CpuCore cpuCore, MachineType machine) {
+        bus.ram.assign(ramBytes, 0);
+        bus.machine     = machine;
+        machineType_    = machine;
+        glue.memConfig_ = memConfigForBytes(ramBytes);
+        cpu.setCore(cpuCore);              // bascule de cœur 68000 si nécessaire
+    }
 
     // Exécute UNE trame complète : 313 lignes de cycles CPU, 4 tics Timer C
     // (≈200 Hz) et un VBL niveau 4. Décode l'image en fin de trame.

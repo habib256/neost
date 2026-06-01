@@ -352,6 +352,22 @@ int main(int argc, char** argv) {
     GlScreen screen;
     screen.init();
 
+    // Applique la config courante (modèle / RAM / cœur / ROM) À CHAUD : reconfigure
+    // la Machine en place (son adresse ne change pas → les références d'Audio vers
+    // psg/dmasnd restent valides), recharge la ROM, repose le moniteur, puis reset.
+    // C'est un hard reset avec les nouveaux paramètres — aucun redémarrage de l'appli.
+    // Le disque monté est conservé.
+    auto applyConfig = [&] {
+        machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu),
+                            parseMachine(cfg.machine));
+        machine.loadTos(resolveData(cfg.rom, exeDir));
+        machine.mfp.setColorMonitor(!cfg.mono);
+        machine.reset();
+        std::fprintf(stderr, "[main] reconfig à chaud : cœur %s | machine %s | RAM %s\n",
+                     Cpu68k::coreName(machine.cpu.core()),
+                     machineName(parseMachine(cfg.machine)), cfg.mem.c_str());
+    };
+
     // Callbacks installés AVANT ImGui : ImGui chaîne les nôtres derrière les siens.
     g_ikbd = &machine.ikbd;
     glfwSetKeyCallback(window, onKey);
@@ -411,7 +427,7 @@ int main(int argc, char** argv) {
         glClearColor(0.10f, 0.10f, 0.12f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        bool reqReset = false, reqCapture = false;
+        bool reqReset = false, reqHardReset = false, reqRebuild = false, reqCapture = false;
         int  reqMonitor = -1;
 #if defined(NEOST_WITH_IMGUI)
         ImGui_ImplOpenGL2_NewFrame();
@@ -425,41 +441,40 @@ int main(int argc, char** argv) {
         if (ImGui::BeginMainMenuBar()) {
             menuH = ImGui::GetWindowSize().y;
             if (ImGui::BeginMenu("Machine")) {
-                if (ImGui::MenuItem("Reset"))   reqReset = true;
-                // Modèle figé à la construction (comme le cœur CPU) → s'applique
-                // au prochain lancement. On mémorise le choix dans neost.cfg.
-                if (ImGui::BeginMenu("Modèle (au redémarrage)")) {
+                if (ImGui::MenuItem("Reset"))      reqReset = true;
+                if (ImGui::MenuItem("Hard Reset")) reqHardReset = true;
+                // Modèle / RAM / cœur / ROM : appliqués À CHAUD (hard reset avec les
+                // nouveaux paramètres) — aucun redémarrage de l'appli. Mémorisés dans
+                // neost.cfg. `reqRebuild` déclenche la reconfiguration en fin de boucle.
+                if (ImGui::BeginMenu("Modèle")) {
                     const char* const ids[]   = { "st", "megast", "ste", "megaste" };
                     const char* const labels[] = { "ST", "Mega ST", "STE", "Mega STE" };
                     for (int i = 0; i < 4; ++i)
                         if (ImGui::MenuItem(labels[i], nullptr, cfg.machine == ids[i])) {
-                            cfg.machine = ids[i]; saveConfig(exeDir, cfg);
+                            cfg.machine = ids[i]; saveConfig(exeDir, cfg); reqRebuild = true;
                         }
                     ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Mémoire (au redémarrage)")) {
+                if (ImGui::BeginMenu("Mémoire")) {
                     const char* const mids[]   = { "256k", "512k", "1m", "2m", "4m" };
                     const char* const mlabels[] = { "256 Ko", "512 Ko", "1 Mo", "2 Mo", "4 Mo" };
                     for (int i = 0; i < 5; ++i)
                         if (ImGui::MenuItem(mlabels[i], nullptr, cfg.mem == mids[i])) {
-                            cfg.mem = mids[i]; saveConfig(exeDir, cfg);
+                            cfg.mem = mids[i]; saveConfig(exeDir, cfg); reqRebuild = true;
                         }
                     ImGui::EndMenu();
                 }
-                // Cœur 68000 figé à la construction de Machine → s'applique au
-                // prochain lancement. Mémorisé dans neost.cfg comme les autres.
-                if (ImGui::BeginMenu("Cœur CPU (au redémarrage)")) {
+                if (ImGui::BeginMenu("Cœur CPU")) {
                     const char* const cids[]    = { "moira", "musashi" };
                     const char* const clabels[] = { "Moira (cycle-exact)", "Musashi" };
                     for (int i = 0; i < 2; ++i)
                         if (ImGui::MenuItem(clabels[i], nullptr, cfg.cpu == cids[i])) {
-                            cfg.cpu = cids[i]; saveConfig(exeDir, cfg);
+                            cfg.cpu = cids[i]; saveConfig(exeDir, cfg); reqRebuild = true;
                         }
                     ImGui::EndMenu();
                 }
-                // Image TOS/EmuTOS (.img/.rom du dossier rom/) → chargée au
-                // prochain lancement. Mémorisée dans neost.cfg.
-                if (ImGui::BeginMenu("ROM (au redémarrage)")) {
+                // Image TOS/EmuTOS (.img/.rom du dossier rom/), chargée à chaud.
+                if (ImGui::BeginMenu("ROM")) {
                     std::error_code ec;
                     const std::string curRom = fs::path(cfg.rom).filename().string();
                     if (fs::is_directory(romsDir, ec)) {
@@ -470,7 +485,7 @@ int main(int argc, char** argv) {
                             if (ext != ".img" && ext != ".rom") continue;
                             const std::string name = e.path().filename().string();
                             if (ImGui::MenuItem(name.c_str(), nullptr, name == curRom)) {
-                                cfg.rom = e.path().string(); saveConfig(exeDir, cfg);
+                                cfg.rom = e.path().string(); saveConfig(exeDir, cfg); reqRebuild = true;
                             }
                         }
                     } else {
@@ -504,6 +519,9 @@ int main(int argc, char** argv) {
                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
                      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus);
         if (ImGui::Button("Reset")) reqReset = true;
+        ImGui::SameLine();
+        // Reset à froid : efface la ST-RAM → EmuTOS/TOS refait un boot complet.
+        if (ImGui::Button("Hard Reset")) reqHardReset = true;
         ImGui::SameLine();
         if (ImGui::Button(color ? "Passer en Mono" : "Passer en Couleur"))
             reqMonitor = color ? 0 : 1;
@@ -546,7 +564,10 @@ int main(int argc, char** argv) {
             cfg.rom = romLogical; cfg.mono = (reqMonitor == 0);   // mémorise le mode
             saveConfig(exeDir, cfg);
         }
-        if (reqReset) machine.reset();
+        // Application des requêtes (en fin de boucle, hors rendu ImGui) :
+        if (reqRebuild)   applyConfig();       // modèle/RAM/cœur/ROM → reconfig à chaud
+        if (reqHardReset) machine.hardReset(); // power-cycle (RAM effacée, boot à froid)
+        if (reqReset)     machine.reset();     // reset « doux » (RAM conservée)
         if (reqCapture) {                      // clic dans l'écran → on capture la souris
             g_mouseCaptured = true;
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);

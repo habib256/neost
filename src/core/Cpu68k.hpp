@@ -32,6 +32,11 @@ public:
     // Cœur réellement actif (peut différer du demandé si UAE pas dispo → repli).
     CpuCore core() const { return core_; }
 
+    // Bascule le cœur 68000 à CHAUD (Musashi ↔ Moira) sans recréer le Cpu68k :
+    // libère l'ancien cœur, ré-initialise le nouveau. L'appelant doit ensuite
+    // reset() (lecture SSP/PC). Permet de changer de cœur sans relancer l'appli.
+    void setCore(CpuCore core);
+
     // Branche (ou détache avec nullptr) le traceur : journalise chaque
     // instruction et chaque interruption prise. Utilisé surtout en headless.
     void setTracer(Tracer* t);
@@ -63,5 +68,7 @@ public:
     uint16_t sr()  const;          // status register
 
 private:
+    void initCore();   // (ré)initialise le cœur actif selon core_ (Musashi/Moira)
+
     CpuCore core_ = CpuCore::Musashi;   // cœur actif (après repli éventuel)
 };

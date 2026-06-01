@@ -123,7 +123,12 @@ const char* Cpu68k::coreName(CpuCore c) {
 
 Cpu68k::Cpu68k(Bus& bus, CpuCore core) : core_(core) {
     g_bus = &bus;
+    initCore();
+}
 
+// (Ré)initialise le cœur actif. Appelé par le constructeur ET par setCore() (bascule
+// à chaud). Suppose qu'un éventuel ancien cœur Moira a déjà été libéré par setCore().
+void Cpu68k::initCore() {
 #if defined(NEOST_HAS_MOIRA)
     if (core_ == CpuCore::Moira) {
         g_moira = new NeostMoira();         // backend cycle-exact (irqMode/USER, M68000)
@@ -142,6 +147,15 @@ Cpu68k::Cpu68k(Bus& bus, CpuCore core) : core_(core) {
     m68k_set_int_ack_callback(neostIntAck);   // vectorisation MFP + désarmement VBL
     m68k_set_instr_hook_callback(neostInstrHook);  // alimente le traceur (si branché)
 #endif
+}
+
+// Bascule de cœur à chaud : libère l'ancien Moira s'il existe, puis ré-init.
+void Cpu68k::setCore(CpuCore core) {
+#if defined(NEOST_HAS_MOIRA)
+    if (g_moira) { delete g_moira; g_moira = nullptr; }   // libère l'ancien cœur Moira
+#endif
+    core_ = core;
+    initCore();
 }
 
 void Cpu68k::setTracer(Tracer* t) {

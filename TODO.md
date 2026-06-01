@@ -36,14 +36,24 @@ machine + RAM appariées).
 - [x] Dump registres du Tracer **core-aware** ✓ : `--cpu moira --regs` affiche
       enfin les vrais registres Moira (`Tracer` câblé sur `Cpu68k::reg()/sr()`,
       avant il lisait Musashi non initialisé → garbage).
+- [x] **Reconfiguration à chaud** ✓ : modèle / RAM / cœur / ROM changeables depuis
+      le menu **sans relancer l'appli** (`Machine::reconfigure` + `Cpu68k::setCore`,
+      bascule de cœur Moira↔Musashi à chaud) — applique un hard reset avec les
+      nouveaux paramètres. Boutons **Reset** + **Hard Reset** (barre + menu).
+      Pratique pour basculer ST↔MegaST↔cœur pendant la comparaison Hatari.
 
 **À faire (priorisé, avec réf. Hatari)** :
-- [ ] ⚠ **Bus error `$FF80xx` à gater par modèle** — `Bus::busFault()` faute
-      `$FF8002-$FF81FF` *inconditionnellement* : juste pour **ST**, mais **FAUX
-      pour MegaST** (chipset IMP). Hatari `ioMem.c:IoMem_FixVoidAccessForMegaST()`
-      marque `$FF8000`, `$FF8002-$FF800D`, `$FF8A3E-3F` **void** (pas de bus
-      error) sur MegaST — c'est ainsi qu'EmuTOS distingue ST/MegaST. → **gater
-      `busFault()` selon `Bus::machine`** (cf. `IoMem_FixVoidAccessForST` vs `…MegaST`).
+- [x] ⚠ **Bus error `$FF80xx` gaté par modèle** ✓ — `Bus::busFault()` : sur
+      Mega ST/STE (`machineIsMega`), `$FF8002-$FF800D` est **void** (pas de bus
+      error) au lieu de fauter comme sur ST. Validé vérité Hatari : `tst.w $FF8006`
+      faute en `st`, pas en `megast` (réf. `IoMem_FixVoidAccessForMegaST`).
+- [ ] **RTC RP5C15 `$FFFC21` pour la détection Mega ST** — c'est le levier
+      restant pour qu'EmuTOS affiche « Mega ST » (le bus map gaté ne suffit pas, le
+      _MCH reste 0=ST). Trace Hatari megast : `tst.b $FFFC21` (sonde, FC0638), puis
+      écriture/relecture `$FFFC25`/`$FFFC27` (validation, FC2410+), absente en ST.
+      → ajouter une RP5C15 minimale gatée Mega (`rtc.c`, MAME `rp5c15`). NeoST
+      renvoie encore `0xFF` sur `$FFFC21` (no-fault) sur tout modèle → la validation
+      échoue → label « Atari ST ».
 - [ ] **Décodage banques MMU `$FF8001`** (détection mémoire exacte). Hatari
       `stMemory.c` : `STMemory_MMU_ConfToBank` (bits 2-3 banque0, 0-1 banque1 ;
       00=128K / 01=512K / 10=2M), `STMemory_MMU_Size`, et l'aliasing/miroir via
