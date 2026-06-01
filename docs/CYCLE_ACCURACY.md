@@ -288,11 +288,18 @@ Hatari), NeoST intègre **Moira** (cœur 68000 de vAmiga, **MIT**, C++20,
   `write8/16` vers le `Bus`, `irqMode = USER` + `readIrqUserVector` reproduisant
   le vectoring ST (MFP vectorisé niveau 6, VBL/HBL auto-vectorisés). `run()`
   exécute via `executeUntil`/`execute` et reporte `getClock()` à l'ordonnanceur.
-- **État** : Moira boote EmuTOS (1re trame **identique** à Musashi). **WIP** :
-  les IRQ MFP (niveau 6) ne sont pas encore délivrées dès la 2ᵉ trame
-  (échantillonnage IPL `setIPL`/`POLL_IPL` entre les `run()` à caler) → EmuTOS
-  part en boucle d'attente. À finaliser pour faire de Moira le cœur de référence
-  cycle-exact (et lever la limite « Musashi ≠ cycles » vue en §5).
+- **État** : Moira **boote EmuTOS pixel-identique** à Musashi, et **délivre
+  correctement les IRQ** — sur 100 trames : **538 IRQ niveau 6 (MFP) + 98 niveau
+  4 (VBL)**, contre 541+98 pour Musashi (quasi identique). Le `stop` du 68000 est
+  modélisé cycle-par-cycle par Moira (chaque cycle d'attente compte comme une
+  « instruction » tracée) → la trace gonfle sur les boucles `stop`, mais c'est un
+  artefact de trace, pas un bug.
+- **Reste (divergence fonctionnelle, PAS les IRQ)** : sous TOS 1.02 + Arkanoid,
+  l'autoloader GEM `AUTO\STARTGEM.PRG` s'exécute sous Moira (`$C000`) mais ne
+  lance pas `ARKANOID.PRG` (`$14000` jamais atteint) — l'écran reste au bureau.
+  À diagnostiquer par un diff de trace Moira ↔ Musashi de STARTGEM (probable
+  différence de comportement CPU/timing dans evnt_timer / Pexec). EmuTOS et le
+  boot de base, eux, sont identiques sous les deux cœurs.
 
 ## 6. Effort / risque
 

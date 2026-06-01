@@ -44,10 +44,13 @@ ligne-par-ligne (≈ pas cycle-accurate).
       `CpuCore` + sélection via `--cpu`, `neost.cfg` (`cpu=`) et l'UI WASM
       (`?cpu=`). **Musashi** (MAME, MIT) reste le défaut. **Moira** (cœur de
       vAmiga, MIT, **cycle-exact**, sous-module `extern/moira`, compilé en C++20)
-      boote EmuTOS (1re trame identique à Musashi). **WIP** : délivrance des IRQ
-      MFP (niveau 6) sous Moira dès la 2ᵉ trame (échantillonnage IPL
-      `setIPL`/`POLL_IPL`) à finaliser. Le cœur UAE/WinUAE (60k lignes, GPLv2) a
-      été écarté au profit de Moira (cf. `docs/CYCLE_ACCURACY.md`).
+      **boote EmuTOS pixel-identique** et **délivre correctement les IRQ** (≈538
+      niveau 6 + 98 niveau 4 sur 100 trames, comme Musashi). Le cœur UAE/WinUAE
+      (60k lignes, GPLv2) a été écarté au profit de Moira. **Reste (≠ IRQ)** :
+      sous TOS 1.02, l'autoloader `STARTGEM.PRG` ne lance pas `ARKANOID.PRG` sous
+      Moira (divergence fonctionnelle à diffé­rencier de Musashi) ; tracer regs
+      sous Moira (le Tracer lit encore les registres Musashi). Cf.
+      `docs/CYCLE_ACCURACY.md` §5bis.
 - [ ] **Horloge 8/16 MHz MegaSTE** : registre `$FF8E21` bit 1 (`ioMemTabSTE.c`,
       MAME `cache_w`) avec changement de fréquence CPU à chaud et recalcul des
       timings vidéo, MFP, DMA, FDC, ACIA.
