@@ -193,8 +193,15 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
         - WASM : `src/web/main_web.cpp` → `window.neostDriveSound(code)` dans
           `web/shell.html` (Web Audio `AudioBufferSourceNode`), WAV préchargés via
           `--preload-file` ; bouton « Son lecteur : on/off ».
-      Restes possibles : tic d'`index` (~3.71 ms/rotation), motor-off matériel
-      modélisé dans le cœur (auj. temporisé côté frontend), mixage avec le YM2149.
+      Modèle moteur/index **dans le cœur** ✓ : impulsion d'index datée 1/tour
+      (~200 ms à 300 tr/min, `Scheduler::FDC_INDEX`) → événements `Index` (léger
+      tic) ; le moteur s'arrête après `MOTOR_OFF_REVS` tours d'inactivité →
+      événement `MotorOff` (plus de minuterie côté frontend). Côté GUI, **mixage
+      avec le YM2149** ✓ : un seul périphérique miniaudio (`Audio::render`) somme
+      le PSG et la sortie « sans périphérique » de `DriveSound`.
+      Restes possibles : bit INDEX du statut WD1772 (protections), spin-up réel
+      (moteur prêt après N tours), mixage côté WASM (le PSG n'y est pas encore
+      synthétisé — le navigateur mixe déjà les flux Web Audio).
 
 ## Blitter, SCU & stockage
 

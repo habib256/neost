@@ -41,6 +41,8 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::TIMER_D, [this] { mfp.onTimerExpire(3); cpu.updateIpl(); });
     // Fin de commande disque : BUSY tombe, INTRQ levée (GPIP5 + canal 7).
     sched.setCallback(Scheduler::FDC,     [this] { fdc.onCommandComplete(); cpu.updateIpl(); });
+    // Impulsion d'index du lecteur (1/tour) : purement FDC (pas d'IRQ sur ST).
+    sched.setCallback(Scheduler::FDC_INDEX, [this] { fdc.onIndexPulse(); });
 }
 
 // Arme les événements VIDÉO de la trame courante, à des cycles ABSOLUS (horloge

@@ -180,6 +180,13 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
 // WD1772 : bit 0 du statut = BUSY (commande en cours).
 enum : uint8_t { FDC_BUSY = 0x01 };
 
+// Rotation du lecteur : 300 tr/min → 1 tour = 200 ms, et une impulsion d'index
+// par tour. (C'est le « tic » périodique du lecteur ; il sert aussi à compter
+// l'inactivité pour couper le moteur, comme le fait le WD1772.) Le moteur tourne
+// encore ~10 tours (≈ 2 s) après la dernière commande avant de s'arrêter.
+static constexpr int64_t INDEX_PERIOD_CYCLES = 200 * 8021;   // ~200 ms @ ~8 MHz
+static constexpr int     MOTOR_OFF_REVS      = 10;           // tours d'inactivité → moteur off
+
 // Durée réaliste d'une commande avant la fin (INTRQ). Type I : step-rate × pas ;
 // type II/III : ~temps de transfert par secteur. (Le débit réel est ~16 ms/secteur ;
 // on le modélise accéléré — l'essentiel est que la commande ne soit plus instantanée.)
@@ -213,10 +220,11 @@ void Fdc::executeCommand(uint8_t cmd) {
 
     const int64_t delay = commandDelayCycles(cmd);     // AVANT de bouger track_
 
-    // --- Bruits mécaniques (cosmétique, cf. FdcSound) : toute commande énergise
-    //  le moteur ; les commandes type I (seek/restore/step) déplacent la tête →
+    // Moteur (matériel + son) : toute commande l'énergise et relance le compte
+    //  d'inactivité ; le WD1772 le coupera après MOTOR_OFF_REVS tours (cf.
+    //  onIndexPulse). Les commandes type I (seek/restore/step) déplacent la tête →
     //  « clic » d'un pas, ou bruit de seek si plusieurs pistes sont franchies.
-    emitSound(FdcSound::MotorOn);
+    motorOn();
     if (!(cmd & 0x80)) {                               // type I : seek / restore / step
         int steps = 1;
         if      ((cmd & 0xF0) == 0x00) steps = track_;            // RESTORE → piste 0
@@ -264,6 +272,35 @@ void Fdc::onCommandComplete() {
     busy_   = false;
     status_ = pendingStatus_;               // BUSY tombe, statut final
     setIntrq(true);                         // fin de commande → GPIP5 bas + canal 7
+}
+
+// Énergise le moteur (à la première commande) et arme l'impulsion d'index. Toute
+// commande remet le compte d'inactivité à zéro pour garder le moteur en rotation.
+void Fdc::motorOn() {
+    idleRevs_ = 0;
+    if (motorRunning_) return;
+    motorRunning_ = true;
+    emitSound(FdcSound::MotorOn);
+    if (sched_) sched_->schedule(Scheduler::FDC_INDEX, sched_->now() + INDEX_PERIOD_CYCLES);
+}
+
+// Coupe le moteur : le bit MOTEUR retombe dans le statut, l'index se désarme.
+void Fdc::motorOff() {
+    if (!motorRunning_) return;
+    motorRunning_ = false;
+    status_ &= ~FDC_MOTOR_ON;
+    if (sched_) sched_->cancel(Scheduler::FDC_INDEX);
+    emitSound(FdcSound::MotorOff);
+}
+
+// Impulsion d'index (datée 1/tour par l'ordonnanceur tant que le moteur tourne) :
+// émet le « tic » et compte les tours d'inactivité ; au-delà du seuil, coupe le
+// moteur (comme le WD1772). Une commande en cours (BUSY) garde le moteur vif.
+void Fdc::onIndexPulse() {
+    if (!motorRunning_) return;
+    emitSound(FdcSound::Index);
+    if (!busy_ && ++idleRevs_ >= MOTOR_OFF_REVS) { motorOff(); return; }
+    if (sched_) sched_->schedule(Scheduler::FDC_INDEX, sched_->now() + INDEX_PERIOD_CYCLES);
 }
 
 // Numéro de secteur logique → offset image (.st : piste, puis face, puis secteur).

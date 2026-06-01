@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 
 #include "core/Machine.hpp"
+#include "audio/Audio.hpp"
 #include "audio/DriveSound.hpp"
 
 namespace fs = std::filesystem;
@@ -327,12 +328,16 @@ int main(int argc, char** argv) {
     machine.reset();
     cfg.rom = romLogical; saveConfig(exeDir, cfg);   // mémorise dès le lancement
 
-    // Bruits mécaniques du lecteur (cosmétique) : le cœur émet des FdcSound, ce
-    // frontend joue les WAV de rom/drivesound/ (jeu « epson_smd480l » = vrai lecteur).
+    // Son : un seul périphérique (Audio) mixe le YM2149 ET les bruits mécaniques
+    // du lecteur. Le cœur émet des FdcSound, DriveSound joue les WAV de
+    // rom/drivesound/ (jeu « epson_smd480l » = vrai lecteur) et Audio les
+    // additionne au flux PSG (cf. Audio::render).
     DriveSound drive;
-    bool driveSoundOn = drive.init(resolveData("rom/drivesound/epson_smd480l", exeDir));
+    bool driveSoundOn = drive.init(resolveData("rom/drivesound/epson_smd480l", exeDir), 48000);
     if (driveSoundOn)
         machine.fdc.setSoundSink([&drive](FdcSound e) { drive.onEvent(e); });
+    Audio audio(machine.psg, driveSoundOn ? &drive : nullptr);
+    audio.start();   // échec silencieux possible (CI / pas de carte son)
 
     GlScreen screen;
     screen.init();
@@ -388,7 +393,6 @@ int main(int argc, char** argv) {
         machine.cpu.updateIpl();               // entrées reçues → réévalue l'IPL
 
         machine.runFrame();                    // une trame complète (timing + décodage)
-        drive.update();                        // coupe le ronron moteur après inactivité
         screen.update(machine.shifter.pixels(), machine.shifter.width(), machine.shifter.height());
 
         int fbw = 0, fbh = 0;

@@ -110,11 +110,13 @@
     };
 
     // ===== Bruits mécaniques du lecteur de disquette (Web Audio) ==============
-    // Le cœur (C) appelle window.neostDriveSound(code) sur chaque événement FDC :
-    //   0 = moteur (boucle ronron + spin-up), 1 = pas de tête (clic), 2 = seek.
+    // Le cœur (C) appelle window.neostDriveSound(code) sur chaque événement FDC,
+    // codes dans l'ordre de l'énum FdcSound : 0 = moteur ON (boucle + spin-up),
+    // 1 = pas de tête (clic), 2 = seek, 3 = moteur OFF (coupé par le cœur après
+    // ~10 tours d'inactivité), 4 = impulsion d'index (léger « tic » 1/tour).
     // Les échantillons WAV sont embarqués dans le FS virtuel (rom/drivesound/).
     var drive = { ctx: null, buf: {}, motorSrc: null, enabled: true,
-                  stopTimer: null, dir: '/rom/drivesound/epson_smd480l/' };
+                  dir: '/rom/drivesound/epson_smd480l/' };
 
     function driveLoad() {
       try { drive.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -148,23 +150,32 @@
     function driveMotorStop() {
       if (drive.motorSrc) { try { drive.motorSrc.stop(); } catch (e) {} drive.motorSrc = null; }
     }
+    function driveTick() {                    // « tic » d'index : clic à volume bas
+      var b = drive.buf.click; if (!b || !drive.ctx) return;
+      var s = drive.ctx.createBufferSource(); s.buffer = b;
+      var g = drive.ctx.createGain(); g.gain.value = 0.18;
+      s.connect(g); g.connect(drive.ctx.destination); s.start();
+    }
 
     window.neostDriveSound = function (code) {
       if (!drive.enabled || !drive.ctx) return;
       if (drive.ctx.state === 'suspended') drive.ctx.resume();   // débloque après geste
-      if (code === 0) {                       // moteur : (re)lance la boucle + ré-arme l'arrêt
-        if (!drive.motorSrc) driveOneShot('startup');
-        driveMotorStart();
-        if (drive.stopTimer) clearTimeout(drive.stopTimer);
-        drive.stopTimer = setTimeout(driveMotorStop, 1500);
-      } else if (code === 1) { driveOneShot('click'); }
-      else if (code === 2) { driveOneShot('seek'); }
+      switch (code) {
+        case 0:                               // moteur ON : spin-up + boucle ronron
+          if (!drive.motorSrc) driveOneShot('startup');
+          driveMotorStart();
+          break;
+        case 1: driveOneShot('click'); break; // pas de tête
+        case 2: driveOneShot('seek');  break; // seek
+        case 3: driveMotorStop();      break; // moteur OFF (décidé par le cœur)
+        case 4: driveTick();           break; // impulsion d'index
+      }
     };
 
     document.getElementById('btnSound').addEventListener('click', function () {
       drive.enabled = !drive.enabled;
       this.textContent = drive.enabled ? 'Son lecteur : on' : 'Son lecteur : off';
-      if (!drive.enabled) { driveMotorStop(); if (drive.stopTimer) clearTimeout(drive.stopTimer); }
+      if (!drive.enabled) driveMotorStop();
     });
 
     // Remplit un <select> avec les fichiers du dossier FS correspondant au filtre.

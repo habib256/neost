@@ -34,6 +34,8 @@ enum class FdcSound {
     MotorOn,   // accès disque → moteur énergisé (boucle ronron + spin-up si arrêté)
     Step,      // un pas de tête (STEP) → « clic »
     Seek,      // déplacement multi-pistes (RESTORE/SEEK) → bruit de seek
+    MotorOff,  // moteur coupé (après N tours sans commande) → arrêt de la boucle
+    Index,     // impulsion d'index (1/tour) → léger « tic » périodique moteur tournant
 };
 
 class Fdc {
@@ -60,6 +62,10 @@ public:
 
     // Échéance de fin de commande : applique le statut final, BUSY tombe, INTRQ.
     void    onCommandComplete();
+
+    // Impulsion d'index (datée par l'ordonnanceur, 1/tour tant que le moteur
+    // tourne) : émet le « tic » et coupe le moteur après assez de tours d'inactivité.
+    void    onIndexPulse();
 
 private:
     // Une disquette montée (lecteur A ou B).
@@ -101,6 +107,14 @@ private:
     Scheduler* sched_ = nullptr;
     uint8_t    pendingStatus_ = 0;   // statut à appliquer à la fin de la commande
     bool       busy_ = false;
+
+    // Moteur & impulsion d'index (modèle matériel, pilote aussi le son). Le moteur
+    // s'énergise à la première commande et tourne encore quelques tours après la
+    // dernière (le WD1772 le coupe au bout de ~10 tours d'inactivité).
+    void     motorOn();                          // énergise le moteur (+ arme l'index)
+    void     motorOff();                         // coupe le moteur (+ désarme l'index)
+    bool     motorRunning_ = false;
+    int      idleRevs_ = 0;                       // tours écoulés depuis la dernière commande
 
     // Contrôleur DMA.
     uint16_t dmaMode_  = 0;                      // dernier $FF8606 écrit

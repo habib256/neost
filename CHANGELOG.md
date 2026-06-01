@@ -64,10 +64,16 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
 
 - YM2149 : synthèse 3 voies carrées + bruit. Backend **miniaudio** (CoreAudio).
 - **Bruits mécaniques du lecteur de disquette** : le cœur émet des événements
-  `FdcSound` (moteur / pas / seek) depuis `Fdc::executeCommand` via un sink, sans
+  `FdcSound` (moteur on/off, pas, seek, index) depuis `Fdc` via un sink, sans
   dépendance audio. Frontends : `DriveSound` (miniaudio `ma_engine`) côté GUI,
   Web Audio côté WASM. Échantillons WAV de STeem SSE (freeware, échantillonnés
   par Stefan jL) embarqués dans `rom/drivesound/`. Bascule on/off des deux côtés.
+- **Moteur & index modélisés dans le cœur** : impulsion d'index datée 1/tour
+  (~200 ms à 300 tr/min, `Scheduler::FDC_INDEX`) ; le WD1772 coupe le moteur
+  après ~10 tours d'inactivité (`MotorOff`). Plus de minuterie côté frontend.
+- **Mixage YM2149 + lecteur** (GUI) : un seul périphérique miniaudio
+  (`Audio::render`) somme le PSG et la sortie « sans périphérique » de
+  `DriveSound` — active aussi la sortie son du PSG dans le frontend fenêtré.
 
 ## Frontend & confort
 
