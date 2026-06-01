@@ -58,13 +58,16 @@
   <div id="status">Chargement du module WebAssembly…</div>
   <div class="hint">
     Cliquez dans l'écran pour <b>capturer la souris</b> (curseur GEM), <code>Échap</code> pour la libérer.
-    Le clavier est routé vers l'IKBD. Couleur = basse résolution, Mono = haute résolution.
+    Le clavier est routé vers l'IKBD. Couleur = basse résolution, Mono = haute résolution.<br>
+    <b>Disquettes de jeu</b> : « Monter + Reset » bascule au besoin sur <b>TOS 1.0x</b> (EmuTOS ne boote
+    que les disquettes système). Choisissez une ROM à la main pour figer ce choix.
   </div>
 
   <script type='text/javascript'>
     var statusEl = document.getElementById('status');
     var monoOn = false;
     var ready = false;
+    var romUserChosen = false;   // l'utilisateur a-t-il choisi une ROM à la main ?
 
     var Module = {
       canvas: (function () {
@@ -118,11 +121,20 @@
 
     document.getElementById('btnReset').addEventListener('click', callReset);
 
-    // Changer de ROM/TOS dans le menu = chargement à chaud + reset.
+    // Changer de ROM/TOS dans le menu = chargement à chaud + reset (choix explicite).
     document.getElementById('romSel').addEventListener('change', function () {
+      romUserChosen = true;
       callLoadTos(this.value);
       Module.setStatus('ROM : ' + this.value.split('/').pop());
     });
+
+    // Cherche une vraie ROM TOS 1.0x dans le menu (pour booter les jeux).
+    function findRealTos() {
+      var opts = document.getElementById('romSel').options;
+      for (var i = 0; i < opts.length; i++)
+        if (/tos.*1\.0|mega tos/i.test(opts[i].textContent)) return opts[i].value;
+      return null;
+    }
 
     document.getElementById('btnMono').addEventListener('click', function () {
       monoOn = !monoOn;
@@ -132,8 +144,17 @@
 
     document.getElementById('btnMount').addEventListener('click', function () {
       var p = document.getElementById('diskSel').value;
+      var rom = document.getElementById('romSel');
+      // Les disquettes de jeu ne bootent pas sous EmuTOS : si on y est encore (et
+      // que l'utilisateur n'a pas choisi de ROM), bascule sur TOS 1.0x avant de
+      // monter, sinon « monter » semble ne rien faire.
+      var note = '';
+      if (!romUserChosen && /etos|emutos/i.test(rom.value)) {
+        var tos = findRealTos();
+        if (tos) { rom.value = tos; callLoadTos(tos); note = ' — ROM : ' + tos.split('/').pop(); }
+      }
       callMount(p);
-      Module.setStatus('Monté : ' + p.split('/').pop());
+      Module.setStatus('Monté : ' + p.split('/').pop() + note);
     });
 
     // Upload d'une disquette .st depuis le disque local → FS virtuel → montage.
