@@ -27,15 +27,7 @@ imgui.ini
 neost.cfg
 *.ppm
 
-# ROMs et images disque locales
-rom/*.img
-rom/*.rom
-rom/*.tos
-rom/*.bin
-disks/*.st
-disks/*.msa
-disks/*.stx
-disks/*.ipf
+# ROMs et images disque : tout le contenu de rom/ et disks/ est suivi.
 
 # OS / editeurs
 .DS_Store
@@ -52,3 +44,4 @@ venv/
 
 # Hatari (référence, non committé)
 extern/hatari/
+extern/spsdeclib_*/

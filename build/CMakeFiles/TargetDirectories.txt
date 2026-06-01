@@ -1,5 +1,0 @@
-/Users/factory/src/neost/build/CMakeFiles/neost_core.dir
-/Users/factory/src/neost/build/CMakeFiles/neost-headless.dir
-/Users/factory/src/neost/build/CMakeFiles/neost.dir
-/Users/factory/src/neost/build/CMakeFiles/edit_cache.dir
-/Users/factory/src/neost/build/CMakeFiles/rebuild_cache.dir
