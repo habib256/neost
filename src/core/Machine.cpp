@@ -12,7 +12,10 @@
 // =============================================================================
 #include "core/Machine.hpp"
 
-Machine::Machine(std::size_t ramBytes, CpuCore cpuCore) : bus(ramBytes), cpu(bus, cpuCore) {
+Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
+    : bus(ramBytes), cpu(bus, cpuCore) {
+    machineType_ = machine;
+    bus.machine  = machine;         // profil matériel (gating MMIO / bus errors)
     // Branchement des puces sur le bus (le bus ne possède pas les composants).
     bus.shifter = &shifter;
     bus.psg     = &psg;

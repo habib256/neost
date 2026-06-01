@@ -46,7 +46,8 @@ static std::string resolveData(const std::string& given, const std::string& exeD
 // --- Persistance des préférences (dernier ROM, type de moniteur) -------------
 // Fichier neost.cfg à la racine du projet (à côté de build/).
 // cpu = cœur 68000 choisi AU DÉMARRAGE ("musashi" par défaut, ou "uae").
-struct Config { std::string rom; std::string disk; bool mono = false; std::string cpu = "musashi"; };
+struct Config { std::string rom; std::string disk; bool mono = false;
+                std::string cpu = "musashi"; std::string machine = "ste"; };
 static std::string cfgPath(const std::string& exeDir) { return exeDir + "/../neost.cfg"; }
 static Config loadConfig(const std::string& exeDir) {
     Config c;
@@ -58,6 +59,7 @@ static Config loadConfig(const std::string& exeDir) {
         else if (line.rfind("disk=", 0) == 0) c.disk = line.substr(5);
         else if (line.rfind("mono=", 0) == 0) c.mono = (line.substr(5) == "1");
         else if (line.rfind("cpu=", 0)  == 0) c.cpu  = line.substr(4);
+        else if (line.rfind("machine=", 0) == 0) c.machine = line.substr(8);
     }
     return c;
 }
@@ -65,7 +67,7 @@ static void saveConfig(const std::string& exeDir, const Config& c) {
     std::ofstream f(cfgPath(exeDir));
     if (!f) f.open("neost.cfg");
     if (f) f << "rom=" << c.rom << "\ndisk=" << c.disk << "\nmono=" << (c.mono ? 1 : 0)
-             << "\ncpu=" << c.cpu << "\n";
+             << "\ncpu=" << c.cpu << "\nmachine=" << c.machine << "\n";
 }
 
 #if defined(NEOST_WITH_IMGUI)
@@ -319,7 +321,7 @@ int main(int argc, char** argv) {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);                    // VSync : cadence la boucle
 
-    Machine machine(512u * 1024u, Cpu68k::parseCore(cfg.cpu));   // cœur CPU choisi (cfg)
+    Machine machine(512u * 1024u, Cpu68k::parseCore(cfg.cpu), parseMachine(cfg.machine));   // cœur + modèle (cfg)
     if (!machine.loadTos(tosPath))
         std::fprintf(stderr, "[main] Démarrage sans TOS (le CPU tournera à vide).\n");
     if (!machine.loadDisk(diskPath))
@@ -416,6 +418,17 @@ int main(int argc, char** argv) {
             menuH = ImGui::GetWindowSize().y;
             if (ImGui::BeginMenu("Machine")) {
                 if (ImGui::MenuItem("Reset"))   reqReset = true;
+                // Modèle figé à la construction (comme le cœur CPU) → s'applique
+                // au prochain lancement. On mémorise le choix dans neost.cfg.
+                if (ImGui::BeginMenu("Modèle (au redémarrage)")) {
+                    const char* const ids[]   = { "st", "megast", "ste", "megaste" };
+                    const char* const labels[] = { "ST", "Mega ST", "STE", "Mega STE" };
+                    for (int i = 0; i < 4; ++i)
+                        if (ImGui::MenuItem(labels[i], nullptr, cfg.machine == ids[i])) {
+                            cfg.machine = ids[i]; saveConfig(exeDir, cfg);
+                        }
+                    ImGui::EndMenu();
+                }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quitter")) glfwSetWindowShouldClose(window, 1);
                 ImGui::EndMenu();

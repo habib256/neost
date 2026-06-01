@@ -322,6 +322,14 @@ int main(int argc, char** argv) {
     }, cpuBuf);
     const CpuCore cpuCore = Cpu68k::parseCore(cpuBuf);
 
+    // Profil machine choisi par ?machine=st|megast|ste|megaste (défaut STE).
+    char machBuf[16] = "ste";
+    EM_ASM({
+        var m = new URLSearchParams(location.search).get('machine') || 'ste';
+        stringToUTF8(m, $0, 16);
+    }, machBuf);
+    const MachineType machType = parseMachine(machBuf);
+
     if (!glfwInit()) { std::fprintf(stderr, "[web] glfwInit a échoué\n"); return 1; }
 
     // L'écran ST le plus grand est 640×400 (mono) ; le canvas est dimensionné par
@@ -331,9 +339,10 @@ int main(int argc, char** argv) {
     if (!g_window) { std::fprintf(stderr, "[web] création fenêtre échouée\n"); glfwTerminate(); return 1; }
     glfwMakeContextCurrent(g_window);
 
-    static Machine machine(512u * 1024u, cpuCore);   // cœur choisi (statique : survit à main())
+    static Machine machine(512u * 1024u, cpuCore, machType); // cœur+machine choisis (statique)
     g_machine = &machine;
-    std::fprintf(stderr, "[web] cœur CPU : %s\n", Cpu68k::coreName(machine.cpu.core()));
+    std::fprintf(stderr, "[web] cœur CPU : %s | machine : %s\n",
+                 Cpu68k::coreName(machine.cpu.core()), machineName(machType));
     if (!machine.loadTos(romPath))
         std::fprintf(stderr, "[web] TOS introuvable (%s) — CPU à vide.\n", romPath.c_str());
     if (!machine.loadDisk(diskPath))

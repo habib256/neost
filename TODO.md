@@ -23,10 +23,13 @@ ligne-par-ligne (≈ pas cycle-accurate).
 
 ## Socle MegaSTE / types de machine
 
-- [ ] **Profils machine réels** ST / Mega ST / STE / **MegaSTE** (`configuration.h`,
-      `configuration.c`, MAME `atarist.cpp`) : ROM attendue, mémoire, blitter,
-      RTC, STE DMA sound, SCC, SCU, bus errors et registres présents/absents selon
-      le modèle. Aujourd'hui NeoST émule un ST de base avec quelques briques.
+- [~] **Profils machine réels** ST / Mega ST / STE / **MegaSTE** : socle posé
+      (`MachineType`, `Bus::machine`, `Machine(.., MachineType)`), sélectionnable
+      avant le boot (GUI menu « Modèle », WASM `?machine=`, headless `--machine`,
+      `neost.cfg`). Premier gating : **son DMA STE** présent sur STE/Mega STE,
+      bus error sur ST/Mega ST (comme le vrai matériel). Restent à câbler au type :
+      **blitter** (Mega ST/STE, émulation à venir), **RTC**, SCC, SCU, mémoire,
+      ROM attendue, et le reste des registres présents/absents selon le modèle.
 - [ ] **ROM TOS MegaSTE** : chargement fiable des TOS 2.05/2.06 256 Ko à
       `$E00000`, choix pays, vérification des checksums, fallback EmuTOS MegaSTE.
 - [ ] **ST-RAM MegaSTE 1/2/4 Mo** (`stMemory.c`, MAME `stmmu.cpp`) : banques

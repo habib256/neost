@@ -30,9 +30,13 @@ public:
     static constexpr int LINES_PER_FRAME = 313;
     static constexpr int VISIBLE_LINES   = 200;
 
-    // cpuCore : cœur 68000 à utiliser (choisi avant le démarrage).
+    // cpuCore : cœur 68000 à utiliser ; machine : profil matériel (ST/STE/…).
+    // Tous deux choisis AVANT le démarrage (figés à la construction).
     explicit Machine(std::size_t ramBytes = 512u * 1024u,
-                     CpuCore cpuCore = CpuCore::Musashi);
+                     CpuCore cpuCore = CpuCore::Musashi,
+                     MachineType machine = MachineType::Ste);
+
+    MachineType machineType() const { return machineType_; }
 
     bool loadTos(const std::string& path)  { return bus.loadTos(path); }
     bool loadDisk(const std::string& path) { return fdc.loadImage(path); }
@@ -70,6 +74,8 @@ private:
     void onTimerB();        // Timer B event-count sur DE (cycle 400)
     void onHbl();           // HBL niveau 2 (cycle 508)
     void onVbl();
+
+    MachineType machineType_ = MachineType::Ste;   // profil matériel (figé au boot)
 
     int64_t frameStart_ = 0;  // cycle (horloge continue) du début de la trame courante
     int renderLine_  = 0;     // prochaine scanline à décoder

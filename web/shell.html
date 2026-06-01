@@ -51,6 +51,12 @@
       <option value="musashi">CPU : Musashi</option>
       <option value="moira">CPU : Moira (exp.)</option>
     </select>
+    <select id="machineSel" title="Modèle de machine (recharge la page)">
+      <option value="st">Machine : ST</option>
+      <option value="megast">Machine : Mega ST</option>
+      <option value="ste">Machine : STE</option>
+      <option value="megaste">Machine : Mega STE</option>
+    </select>
     <select id="romSel" title="ROM / TOS (change + reset)"></select>
     <select id="diskSel" title="Disquette préchargée"></select>
     <button id="btnMount">Monter + Reset</button>
@@ -230,6 +236,17 @@
         var p = new URLSearchParams(location.search);
         p.set('cpu', sel.value);
         location.search = p.toString();   // recharge avec le cœur choisi
+      });
+    })();
+
+    // Sélecteur de modèle machine : figé à la construction → recharge avec ?machine=
+    (function () {
+      var sel = document.getElementById('machineSel');
+      sel.value = new URLSearchParams(location.search).get('machine') || 'ste';
+      sel.addEventListener('change', function () {
+        var p = new URLSearchParams(location.search);
+        p.set('machine', sel.value);
+        location.search = p.toString();   // recharge avec le modèle choisi
       });
     })();
 

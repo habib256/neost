@@ -87,6 +87,10 @@ bool Bus::busFault(uint32_t addr) const {
     // route ses tracés VDI (barre de menu, curseur souris) vers un blitter
     // fantôme et ils n'apparaissent pas.
     if (addr >= 0xFF8A00 && addr <= 0xFF8A3F) return true;
+    // Son DMA STE ($FF8900-$FF893F) : absent sur ST / Mega ST → bus error, comme
+    // sur le vrai matériel (c'est ainsi qu'EmuTOS conclut « pas de son DMA »).
+    if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && !machineHasDmaSound(machine))
+        return true;
     return false;
 }
 
@@ -117,8 +121,9 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
         return psg->read8(addr);
     if (addr >= stmap::DMA_FDC_BASE && addr < stmap::DMA_FDC_BASE + 0x10 && fdc)
         return fdc->read8(addr);          // contrôleur disquette + DMA ($FF8600)
-    if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && dmasnd)
-        return dmasnd->read8(addr);       // son DMA STE ($FF8900)
+    if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && dmasnd
+        && machineHasDmaSound(machine))
+        return dmasnd->read8(addr);       // son DMA STE ($FF8900) — STE/Mega STE
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {
         const uint8_t v = mfp->read8(addr);
         if (cpu) cpu->updateIpl();        // l'état d'IRQ a pu changer
@@ -150,8 +155,9 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
         if (cpu) cpu->updateIpl();        // l'INTRQ FDC (GPIP5) a pu changer
         return;
     }
-    if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && dmasnd) {
-        dmasnd->write8(addr, v);          // son DMA STE ($FF8900)
+    if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && dmasnd
+        && machineHasDmaSound(machine)) {
+        dmasnd->write8(addr, v);          // son DMA STE ($FF8900) — STE/Mega STE
         return;
     }
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {

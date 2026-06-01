@@ -97,6 +97,15 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   lecteur → le navigateur mixe YM2149 + lecteur. Le frontend navigateur a enfin
   du son (bips TOS, musiques).
 
+## Types de machine
+
+- **Profil machine** (`MachineType` : ST / Mega ST / STE / Mega STE) choisi avant
+  le boot, comme le cœur CPU. Porté par le `Bus` ; gating du matériel optionnel :
+  le **son DMA STE** ($FF8900) ne répond que sur STE/Mega STE et fait **bus error**
+  sur ST/Mega ST (fidèle, c'est ainsi qu'EmuTOS détecte le modèle). Défaut : STE.
+- Sélection : menu « Machine ▸ Modèle » (GUI, `neost.cfg`), `?machine=` (WASM),
+  `--machine st|megast|ste|megaste` (headless). Prépare le gating du blitter (Mega).
+
 ## Frontend & confort
 
 - Écran ST dans une fenêtre ImGui dédiée ; visualiseur hexa mémoire + registres

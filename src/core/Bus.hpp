@@ -8,6 +8,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
+#include "core/MachineType.hpp"
 #include <cstdint>
 #include <cstddef>
 #include <string>
@@ -91,6 +92,10 @@ public:
     Fdc*     fdc     = nullptr;   // contrôleur disquette + DMA
     DmaSound* dmasnd = nullptr;   // son DMA STE ($FF8900) — optionnel
     Cpu68k*  cpu     = nullptr;   // pour rafraîchir l'IPL après un accès MMIO
+
+    // Profil machine : décide quel matériel optionnel répond (son DMA STE, etc.)
+    // et où une bus error se produit. Posé par Machine. Défaut : 1040 STE.
+    MachineType machine = MachineType::Ste;
 
     // Données brutes exposées au débogueur (visualiseur hexa ImGui). Pas de
     // getters : l'accès direct est l'objet même de la "boîte à hack".
