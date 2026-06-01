@@ -76,3 +76,11 @@ inline bool machineHasDmaSound(MachineType t) {
 inline bool machineHasBlitter(MachineType t) {
     return t == MachineType::MegaSt || t == MachineType::MegaSte; // blitter (émulation à venir)
 }
+// Machines « Mega » à chipset combiné IMP (GLUE+MMU+Shifter en un ASIC) : le
+// décodage d'adresses diffère du ST/STE discret — certaines zones réservées y
+// sont « void » (lecture sans bus error) au lieu de fauter. Réf. Hatari
+// ioMem.c (IoMem_FixVoidAccessForMegaST). C'est un des signaux de détection de
+// modèle qu'EmuTOS lit au boot.
+inline bool machineIsMega(MachineType t) {
+    return t == MachineType::MegaSt || t == MachineType::MegaSte;
+}

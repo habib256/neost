@@ -102,7 +102,14 @@ bool Bus::busFault(uint32_t addr) const {
     // ($FF8200) : aucun périphérique → bus error sur vrai ST. EmuTOS y sonde le
     // matériel au boot (FC007C : tst.w $FF8006, vecteur bus error armé juste avant)
     // pour distinguer les modèles. Confirmé vérité Hatari. Cf. [[busfault-ff80xx]].
-    if (addr >= stmap::MMIO_BASE + 2 && addr < stmap::SHIFTER_BASE) return true;
+    if (addr >= stmap::MMIO_BASE + 2 && addr < stmap::SHIFTER_BASE) {
+        // Sur Mega ST/STE (chipset IMP), $FF8002-$FF800D est « void » (lecture
+        // sans bus error) au lieu de fauter : c'est la différence que sonde
+        // EmuTOS pour distinguer ST/Mega ST. Vérité Hatari : `tst.w $FF8006`
+        // faute sur ST mais pas sur Mega ST. Réf. IoMem_FixVoidAccessForMegaST.
+        if (machineIsMega(machine) && addr <= 0xFF800D) return false;
+        return true;
+    }
     return false;
 }
 

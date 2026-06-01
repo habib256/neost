@@ -45,9 +45,10 @@ static std::string resolveData(const std::string& given, const std::string& exeD
 
 // --- Persistance des préférences (dernier ROM, type de moniteur) -------------
 // Fichier neost.cfg à la racine du projet (à côté de build/).
-// cpu = cœur 68000 choisi AU DÉMARRAGE ("musashi" par défaut, ou "uae").
+// cpu = cœur 68000 choisi AU DÉMARRAGE ("moira" cycle-exact par défaut, ou "musashi").
+// Défaut machine : 512 Ko ST + cœur Moira.
 struct Config { std::string rom; std::string disk; bool mono = false;
-                std::string cpu = "musashi"; std::string machine = "ste";
+                std::string cpu = "moira"; std::string machine = "st";
                 std::string mem = "512k"; };
 static std::string cfgPath(const std::string& exeDir) { return exeDir + "/../neost.cfg"; }
 static Config loadConfig(const std::string& exeDir) {
@@ -310,6 +311,7 @@ int main(int argc, char** argv) {
     const std::string defDisk  = cfg.disk.empty() ? std::string("disks/diskA.st") : cfg.disk;
     const std::string diskPath = resolveData((argc > 2) ? argv[2] : defDisk, exeDir);
     const std::string disksDir = resolveData("disks", exeDir);   // dossier pour la Disk Library
+    const std::string romsDir  = resolveData("rom", exeDir);     // dossier pour le sélecteur de ROM
 
     g_dbgMouse = std::getenv("NEOST_DEBUG_MOUSE") != nullptr;
 
@@ -325,6 +327,9 @@ int main(int argc, char** argv) {
 
     Machine machine(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu),
                     parseMachine(cfg.machine));   // RAM + cœur + modèle (cfg)
+    std::fprintf(stderr, "[main] cœur CPU : %s | machine : %s | RAM : %s\n",
+                 Cpu68k::coreName(machine.cpu.core()),
+                 machineName(parseMachine(cfg.machine)), cfg.mem.c_str());
     if (!machine.loadTos(tosPath))
         std::fprintf(stderr, "[main] Démarrage sans TOS (le CPU tournera à vide).\n");
     if (!machine.loadDisk(diskPath))
@@ -439,6 +444,38 @@ int main(int argc, char** argv) {
                         if (ImGui::MenuItem(mlabels[i], nullptr, cfg.mem == mids[i])) {
                             cfg.mem = mids[i]; saveConfig(exeDir, cfg);
                         }
+                    ImGui::EndMenu();
+                }
+                // Cœur 68000 figé à la construction de Machine → s'applique au
+                // prochain lancement. Mémorisé dans neost.cfg comme les autres.
+                if (ImGui::BeginMenu("Cœur CPU (au redémarrage)")) {
+                    const char* const cids[]    = { "moira", "musashi" };
+                    const char* const clabels[] = { "Moira (cycle-exact)", "Musashi" };
+                    for (int i = 0; i < 2; ++i)
+                        if (ImGui::MenuItem(clabels[i], nullptr, cfg.cpu == cids[i])) {
+                            cfg.cpu = cids[i]; saveConfig(exeDir, cfg);
+                        }
+                    ImGui::EndMenu();
+                }
+                // Image TOS/EmuTOS (.img/.rom du dossier rom/) → chargée au
+                // prochain lancement. Mémorisée dans neost.cfg.
+                if (ImGui::BeginMenu("ROM (au redémarrage)")) {
+                    std::error_code ec;
+                    const std::string curRom = fs::path(cfg.rom).filename().string();
+                    if (fs::is_directory(romsDir, ec)) {
+                        for (const auto& e : fs::directory_iterator(romsDir, ec)) {
+                            if (!e.is_regular_file()) continue;
+                            std::string ext = e.path().extension().string();
+                            for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
+                            if (ext != ".img" && ext != ".rom") continue;
+                            const std::string name = e.path().filename().string();
+                            if (ImGui::MenuItem(name.c_str(), nullptr, name == curRom)) {
+                                cfg.rom = e.path().string(); saveConfig(exeDir, cfg);
+                            }
+                        }
+                    } else {
+                        ImGui::TextDisabled("(dossier rom/ introuvable)");
+                    }
                     ImGui::EndMenu();
                 }
                 ImGui::Separator();

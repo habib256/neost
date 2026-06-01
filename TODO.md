@@ -21,6 +21,69 @@ assez fidèle pour jeux, démos et utilitaires système.
 souris relative, son YM2149 tons+bruit. Modèle « DMA instantané » + horloge
 ligne-par-ligne (≈ pas cycle-accurate).
 
+## Chantier courant — MegaST & vérité Hatari (`extern/hatari/src`)
+
+Source de référence désormais en sous-module : **`extern/hatari/src`** (focus
+machine : **MegaST**). Méthode : traces CPU Hatari headless ↔ NeoST + diff
+resynchronisant (`SDL_VIDEODRIVER=dummy hatari --trace cpu_disasm --run-vbls N`,
+machine + RAM appariées).
+
+**Déjà corrigé (vérité Hatari, cœur Musashi par défaut)** :
+- [x] Bus error sur MMIO non décodé `$FF8002-$FF81FF` (dont `$FF8006`) ✓ — sonde
+      matérielle EmuTOS au boot (FC007C, vecteur bus error armé juste avant).
+- [x] Trou RAM `$80000-$3FFFFF` renvoie `0x00` (et non `0xFF`) ✓ — détection
+      mémoire (512K → 4M détectés ; boot ST 512K validé screenshot).
+- [x] Dump registres du Tracer **core-aware** ✓ : `--cpu moira --regs` affiche
+      enfin les vrais registres Moira (`Tracer` câblé sur `Cpu68k::reg()/sr()`,
+      avant il lisait Musashi non initialisé → garbage).
+
+**À faire (priorisé, avec réf. Hatari)** :
+- [ ] ⚠ **Bus error `$FF80xx` à gater par modèle** — `Bus::busFault()` faute
+      `$FF8002-$FF81FF` *inconditionnellement* : juste pour **ST**, mais **FAUX
+      pour MegaST** (chipset IMP). Hatari `ioMem.c:IoMem_FixVoidAccessForMegaST()`
+      marque `$FF8000`, `$FF8002-$FF800D`, `$FF8A3E-3F` **void** (pas de bus
+      error) sur MegaST — c'est ainsi qu'EmuTOS distingue ST/MegaST. → **gater
+      `busFault()` selon `Bus::machine`** (cf. `IoMem_FixVoidAccessForST` vs `…MegaST`).
+- [ ] **Décodage banques MMU `$FF8001`** (détection mémoire exacte). Hatari
+      `stMemory.c` : `STMemory_MMU_ConfToBank` (bits 2-3 banque0, 0-1 banque1 ;
+      00=128K / 01=512K / 10=2M), `STMemory_MMU_Size`, et l'aliasing/miroir via
+      `STMemory_MMU_Translate_Addr_STF` / `_STE` + `memory_map_Standard_RAM`.
+      NeoST mappe via `ram.size()` seul → la boucle de scan EmuTOS (FC0220-FC0274)
+      ne matche pas Hatari instr-pour-instr (sans impact fonctionnel actuel).
+- [ ] **Bus error réel `$400000-$F9FFFF`** (au-dessus de 4 Mo ST-RAM, sous
+      cartouche/ROM) : NeoST renvoie encore `0xFF`, doit fauter. Hatari
+      `cpu/memory.c:memory_map_Standard_RAM` (`BusErrMem_bank` à `0x400000`),
+      `ioMem.c:IoMem_SetBusErrorRegion`. (Note : un accès **DMA** à une zone
+      bus-error renvoie `0x0000`, pas d'exception.)
+- [ ] **Détection ST / STE / MegaST / MegaSTE par EmuTOS** : registres
+      présents/absents selon modèle. Hatari `ioMem.c:IoMem_Init` (table
+      `IoMemTable_ST` vs `_STE`) + gating : son DMA `$FF8900` (STE+), Microwire
+      `$FF8924`, joypads `$FF9200` (STE+), **RTC `$FFFC21`** (Mega+),
+      cache/vitesse `$FF8E21` + SCU `$FF8E0x` (MegaSTE). NeoST n'expose pas encore
+      ces différences → EmuTOS affiche « Atari ST » même en `--machine ste/megast`
+      (confirmé pré-existant, non lié aux fixes bus).
+- [ ] **Moira n'honore pas `busFault`** : `NeostMoira::read8/16` (`Cpu68k.cpp`)
+      appellent `g_bus` sans tester `busFault` → **aucun bus error sous Moira**
+      (les sondes blitter / son DMA / `$FF8006` ne fautent pas). Pas de hook propre
+      côté Moira : il faut throw `moira::BusError(makeFrame…)`, interne/fragile
+      (`extern/moira/Moira/MoiraExceptions_cpp.h`).
+
+**Souris / entrées (jeux)** :
+- [ ] **Vroom : boutons souris inopérants en jeu** (passage des vitesses). Piste :
+      en mode relatif l'IKBD ne renvoie l'état des boutons **qu'avec un mouvement**.
+      Hatari `ikbd.c:IKBD_SendRelMousePacket` (en-tête `0xF8`, bit1 = bouton G,
+      bit0 = D) envoie le paquet **au changement de bouton OU au mouvement** ;
+      `IKBD_SendOnMouseAction` + cmd `0x07` (`MouseAction`) gèrent le bouton-seul.
+      Vérifier que NeoST (`src/io/Ikbd.cpp`, `main.cpp:onMouseButton`) émet bien un
+      paquet sur changement de bouton sans mouvement ; sinon Vroom lit peut-être le
+      feu via le **port joystick** (ACIA `$FFFC02` ou pad STE `$FF9200`).
+- [ ] **Curseur GEM sort de l'écran et ne revient plus** : capture relative
+      (`GLFW_CURSOR_DISABLED`, `main.cpp:390-399`). Sans **seuil / échelle / axe Y /
+      bornage** IKBD, le curseur GEM peut filer en coin et rester bloqué. Réf.
+      Hatari `ikbd.c` (`SetMouseThreshold`, `SetMouseScale`, `SetYAxis*`, bornage
+      de position) + mode **absolu**. Vérifier signe/accumulation des deltas et la
+      libération de capture (Échap).
+
 ## Socle MegaSTE / types de machine
 
 - [~] **Profils machine réels** ST / Mega ST / STE / **MegaSTE** : socle posé
@@ -54,9 +117,9 @@ ligne-par-ligne (≈ pas cycle-accurate).
       niveau 6 + 98 niveau 4 sur 100 trames, comme Musashi). Le cœur UAE/WinUAE
       (60k lignes, GPLv2) a été écarté au profit de Moira. **Reste (≠ IRQ)** :
       sous TOS 1.02, l'autoloader `STARTGEM.PRG` ne lance pas `ARKANOID.PRG` sous
-      Moira (divergence fonctionnelle à diffé­rencier de Musashi) ; tracer regs
-      sous Moira (le Tracer lit encore les registres Musashi). Cf.
-      `docs/CYCLE_ACCURACY.md` §5bis.
+      Moira (divergence fonctionnelle à diffé­rencier de Musashi). Tracer regs
+      sous Moira **corrigé** ✓ (cf. chantier courant). **Reste** : Moira n'honore
+      pas `busFault` (aucun bus error). Cf. `docs/CYCLE_ACCURACY.md` §5bis.
 - [ ] **Horloge 8/16 MHz MegaSTE** : registre `$FF8E21` bit 1 (`ioMemTabSTE.c`,
       MAME `cache_w`) avec changement de fréquence CPU à chaud et recalcul des
       timings vidéo, MFP, DMA, FDC, ACIA.
