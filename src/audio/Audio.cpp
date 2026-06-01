@@ -36,8 +36,9 @@ void Audio::render(float* out, uint32_t frames, uint32_t sampleRate) {
         dma_->mix(out, frames, sampleRate);           // (2) son DMA STE → additionné
         const float g = dma_->masterGain();           // (3) volume maître LMC1992
         if (g != 1.0f) for (uint32_t i = 0; i < frames; ++i) out[i] *= g;
+        dma_->applyTone(out, frames, sampleRate);     // (4) basses/aigus LMC1992
     }
-    if (drive_) drive_->mix(out, frames);             // (4) bruits lecteur (hors LMC1992)
+    if (drive_) drive_->mix(out, frames);             // (5) bruits lecteur (hors LMC1992)
     for (uint32_t i = 0; i < frames; ++i)             // garde-fou anti-saturation
         out[i] = std::max(-1.0f, std::min(1.0f, out[i]));
 }

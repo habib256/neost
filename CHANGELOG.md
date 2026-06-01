@@ -72,8 +72,9 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   play/repeat, compteur d'adresse). Routé par le `Bus`, mixé au YM2149 par `Audio`
   (GUI) et `neost_audio_render` (WASM). Donne le son numérique des jeux/démos STE.
 - **LMC1992 / Microwire** ($FF8922/24) : décodage de la commande série (mot 11
-  bits), volume maître + gauche/droite appliqués en gain linéaire au mix complet
-  (0 dB par défaut). Basses/aigus/mixage stockés (filtrage = TODO).
+  bits), volume maître + gauche/droite appliqués en gain linéaire au mix complet,
+  et **basses/aigus** ±12 dB via deux filtres en plateau (RBJ shelving) sur le mix
+  YM2149 + DMA. 0 dB partout par défaut (bypass total, aucun coût).
 - **Interruption de fin de trame du son DMA STE** : datée sur l'ordonnanceur
   (thread émulation, `Scheduler::DMASND`), elle pulse l'entrée TAI du MFP
   (`Mfp::timerA_eventCount`) ; en mode event-count (TACR=0x08) Timer A lève

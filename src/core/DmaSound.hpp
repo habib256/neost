@@ -45,6 +45,11 @@ public:
     // défaut (0 dB) → aucun effet tant que le microwire n'est pas programmé.
     float   masterGain() const;
 
+    // Correcteur de tonalité du LMC1992 (basses/aigus, ±12 dB) appliqué au mix
+    // complet via deux filtres en plateau (shelving). Bypass total au défaut
+    // (0/0 dB) → aucun coût ni risque tant que la tonalité n'est pas programmée.
+    void    applyTone(float* out, uint32_t frames, uint32_t sampleRate);
+
     void    reset();                 // coupe la lecture (RESET machine)
     bool    playing() const { return playing_; }
 
@@ -76,4 +81,8 @@ private:
     // État de lecture (thread audio).
     bool     playing_ = false;
     double   phase_   = 0.0;         // accumulateur de rééchantillonnage
+
+    // État des filtres de tonalité (biquads Direct Form I), thread audio.
+    double   bx1_ = 0, bx2_ = 0, by1_ = 0, by2_ = 0;   // plateau basses
+    double   tx1_ = 0, tx2_ = 0, ty1_ = 0, ty2_ = 0;   // plateau aigus
 };

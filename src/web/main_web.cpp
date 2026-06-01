@@ -304,6 +304,7 @@ EMSCRIPTEN_KEEPALIVE void neost_audio_render(float* buf, int frames, int rate) {
     g_machine->dmasnd.mix(buf, n, r);              // + son DMA STE (additionné)
     const float g = g_machine->dmasnd.masterGain();   // volume maître LMC1992
     if (g != 1.0f) for (uint32_t i = 0; i < n; ++i) buf[i] *= g;
+    g_machine->dmasnd.applyTone(buf, n, r);           // basses/aigus LMC1992
 }
 
 } // extern "C"

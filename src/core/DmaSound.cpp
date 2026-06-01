@@ -71,6 +71,52 @@ void DmaSound::decodeMicrowire() {
     }
 }
 
+// Coefficients d'un filtre en plateau (shelving) d'après le « Audio EQ Cookbook »
+// de R. Bridson-Robert (pente S=1), normalisés par a0. lowShelf=true → basses.
+static void shelfCoeffs(bool lowShelf, double dB, double f0, double fs,
+                        double& b0, double& b1, double& b2, double& a1, double& a2) {
+    const double A  = std::pow(10.0, dB / 40.0);
+    const double w0 = 2.0 * M_PI * f0 / fs;
+    const double cw = std::cos(w0), sw = std::sin(w0);
+    const double alpha = sw / 2.0 * std::sqrt(2.0);          // S=1
+    const double tsa   = 2.0 * std::sqrt(A) * alpha;
+    double B0, B1, B2, A0, A1, A2;
+    if (lowShelf) {
+        B0 =    A * ((A + 1) - (A - 1) * cw + tsa);
+        B1 =  2 * A * ((A - 1) - (A + 1) * cw);
+        B2 =    A * ((A + 1) - (A - 1) * cw - tsa);
+        A0 =        (A + 1) + (A - 1) * cw + tsa;
+        A1 =   -2 * ((A - 1) + (A + 1) * cw);
+        A2 =        (A + 1) + (A - 1) * cw - tsa;
+    } else {                                                 // plateau aigus
+        B0 =    A * ((A + 1) + (A - 1) * cw + tsa);
+        B1 = -2 * A * ((A - 1) + (A + 1) * cw);
+        B2 =    A * ((A + 1) + (A - 1) * cw - tsa);
+        A0 =        (A + 1) - (A - 1) * cw + tsa;
+        A1 =    2 * ((A - 1) - (A + 1) * cw);
+        A2 =        (A + 1) - (A - 1) * cw - tsa;
+    }
+    b0 = B0 / A0; b1 = B1 / A0; b2 = B2 / A0; a1 = A1 / A0; a2 = A2 / A0;
+}
+
+void DmaSound::applyTone(float* out, uint32_t frames, uint32_t sampleRate) {
+    if ((mwBass_ == 6 && mwTreble_ == 6) || sampleRate == 0) return;   // 0/0 dB → bypass
+    const double bassDb = (mwBass_   - 6) * 2.0;   // 0..12 → -12..+12 dB
+    const double trebDb = (mwTreble_ - 6) * 2.0;
+    double bb0, bb1, bb2, ba1, ba2, tb0, tb1, tb2, ta1, ta2;
+    shelfCoeffs(true,  bassDb, 200.0,  sampleRate, bb0, bb1, bb2, ba1, ba2);   // basses ~200 Hz
+    shelfCoeffs(false, trebDb, 8000.0, sampleRate, tb0, tb1, tb2, ta1, ta2);   // aigus  ~8 kHz
+
+    for (uint32_t i = 0; i < frames; ++i) {
+        const double x = out[i];
+        const double yb = bb0 * x + bb1 * bx1_ + bb2 * bx2_ - ba1 * by1_ - ba2 * by2_;
+        bx2_ = bx1_; bx1_ = x;  by2_ = by1_; by1_ = yb;
+        const double yt = tb0 * yb + tb1 * tx1_ + tb2 * tx2_ - ta1 * ty1_ - ta2 * ty2_;
+        tx2_ = tx1_; tx1_ = yb; ty2_ = ty1_; ty1_ = yt;
+        out[i] = static_cast<float>(yt);
+    }
+}
+
 float DmaSound::masterGain() const {
     // Pas de 2 dB ; valeurs au-delà du max = 0 dB. Sortie mono → moyenne G/D.
     const double mdB = (mwMaster_ >= 40 ? 0 : (mwMaster_ - 40) * 2);
