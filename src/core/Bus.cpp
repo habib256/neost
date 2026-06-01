@@ -70,6 +70,87 @@ bool Bus::loadCart(const std::string& path) {
 }
 
 // -----------------------------------------------------------------------------
+//  Décodage de banques MMU (port fidèle de Hatari stMemory.c).
+//
+//  Le MMU de l'ST traduit une adresse LOGIQUE (vue CPU/Shifter) en adresse
+//  PHYSIQUE dans les puces RAM via les lignes RAS/CAS. Quand le registre de config
+//  $FF8001 déclare une banque plus GRANDE que la puce réellement posée, les lignes
+//  d'adresse hautes ne sont pas câblées → l'accès « aliase » dans la puce. C'est
+//  exactement ce dont se servent les tests de RAM (Test Kit) pour mesurer la taille
+//  installée : ils règlent $FF8001 au max puis écrivent/relisent en haut de chaque
+//  banque. Sans ce décodage, NeoST renvoyait 0 et le sizing échouait.
+// -----------------------------------------------------------------------------
+namespace {
+    constexpr uint32_t BANK_128 = 128u * 1024;
+    constexpr uint32_t BANK_512 = 512u * 1024;
+    constexpr uint32_t BANK_2M  = 2048u * 1024;
+
+    // 2 bits de $FF8001 → taille d'une banque MMU (00=128K, 01=512K, 10=2M, 11=invalide).
+    uint32_t mmuConfSize(uint8_t c) {
+        switch (c & 3) { case 0: return BANK_128; case 1: return BANK_512; case 2: return BANK_2M; }
+        return 0;
+    }
+    // RAM physiquement posée → taille des 2 banques (cf. STMemory_RAM_SetBankSize).
+    void ramBanks(std::size_t bytes, uint32_t& b0, uint32_t& b1) {
+        switch (bytes / 1024) {
+            case 128:  b0 = BANK_128; b1 = 0;        break;
+            case 256:  b0 = BANK_128; b1 = BANK_128; break;
+            case 512:  b0 = BANK_512; b1 = 0;        break;
+            case 640:  b0 = BANK_512; b1 = BANK_128; break;
+            case 1024: b0 = BANK_512; b1 = BANK_512; break;
+            case 2048: b0 = BANK_2M;  b1 = 0;        break;
+            case 4096: b0 = BANK_2M;  b1 = BANK_2M;  break;
+            default:   b0 = static_cast<uint32_t>(bytes); b1 = 0; break;
+        }
+    }
+    // STF / Mega STF : remappage RAS/CAS (STMemory_MMU_Translate_Addr_STF).
+    uint32_t mmuXlatSTF(uint32_t a, uint32_t ramSz, uint32_t mmuSz) {
+        uint32_t r;
+        if (ramSz == BANK_2M) {
+            if      (mmuSz == BANK_2M)  r = a;
+            else if (mmuSz == BANK_512) r = ((a & 0xffc00) << 1) | (a & 0x7ff);
+            else                        r = ((a & 0x7fe00) << 2) | (a & 0x7ff);
+        } else if (ramSz == BANK_512) {
+            if      (mmuSz == BANK_2M)  r = ((a & 0xff800) >> 1) | (a & 0x3ff);
+            else if (mmuSz == BANK_512) r = a;
+            else                        r = ((a & 0x3fe00) << 1) | (a & 0x3ff);
+        } else {  // ramSz == BANK_128
+            if      (mmuSz == BANK_2M)  r = ((a & 0x7f800) >> 2) | (a & 0x1ff);
+            else if (mmuSz == BANK_512) r = ((a & 0x3fc00) >> 1) | (a & 0x1ff);
+            else                        r = a;
+        }
+        return r & (ramSz - 1);                 // contenu dans la puce (aliasing)
+    }
+    // STE / Mega STE : RAS/CAS entrelacés (STMemory_MMU_Translate_Addr_STE).
+    uint32_t mmuXlatSTE(uint32_t a, uint32_t ramSz, uint32_t mmuSz) {
+        uint32_t r;
+        if (ramSz == BANK_2M)        r = a & (mmuSz == BANK_2M ? 0xffffffffu : 0x1fffff);
+        else if (ramSz == BANK_512)  r = (mmuSz == BANK_512) ? a : (a & 0x7ffff);
+        else                         r = (mmuSz == BANK_128) ? a : (a & 0x1ffff);
+        return r & (ramSz - 1);
+    }
+}
+
+// Traduit une adresse logique RAM (<4Mo) en index physique dans ram[], ou -1 si
+// la banque visée n'est pas peuplée (→ zone « void » : lecture 0, écriture perdue).
+int64_t Bus::mmuTranslate(uint32_t addr) const {
+    const uint8_t conf = glue ? glue->memConfig_ : memConfigForBytes(ram.size());
+    const uint32_t mmuB0 = mmuConfSize(static_cast<uint8_t>((conf >> 2) & 3));
+    const uint32_t mmuB1 = mmuConfSize(static_cast<uint8_t>(conf & 3));
+    uint32_t ramB0, ramB1; ramBanks(ram.size(), ramB0, ramB1);
+
+    uint32_t bankStart, ramSz, mmuSz;
+    if (addr < mmuB0)              { bankStart = 0;     ramSz = ramB0; mmuSz = mmuB0; }
+    else if (addr < mmuB0 + mmuB1) { bankStart = ramB0; ramSz = ramB1; mmuSz = mmuB1; }
+    else return -1;                              // au-delà de la config MMU → void
+    if (ramSz == 0) return -1;                   // banque déclarée mais sans puce → void
+
+    const uint32_t phys = (machineIsSte(machine) ? mmuXlatSTE(addr, ramSz, mmuSz)
+                                                 : mmuXlatSTF(addr, ramSz, mmuSz)) + bankStart;
+    return phys < ram.size() ? static_cast<int64_t>(phys) : -1;
+}
+
+// -----------------------------------------------------------------------------
 //  Lecture / écriture 8 bits — point d'aiguillage central du bus.
 // -----------------------------------------------------------------------------
 uint8_t Bus::read8(uint32_t addr) {
@@ -80,9 +161,11 @@ uint8_t Bus::read8(uint32_t addr) {
     if (bootOverlay && addr < 8 && addr < rom.size())
         return rom[addr];
 
-    // RAM ST (zone basse).
-    if (addr < ram.size())
-        return ram[addr];
+    // Espace RAM ($0-$3FFFFF) : décodé par le MMU (banques + aliasing).
+    if (addr < 0x400000) {
+        const int64_t phys = mmuTranslate(addr);
+        return phys >= 0 ? ram[static_cast<std::size_t>(phys)] : 0x00;   // banque vide → 0
+    }
 
     // ROM TOS.
     if (addr >= romBase && addr < romBase + rom.size())
@@ -99,22 +182,19 @@ uint8_t Bus::read8(uint32_t addr) {
     if (addr >= stmap::MMIO_BASE)
         return mmioRead8(addr);
 
-    // Zone décodée par le MMU mais sans puce RAM (ex. $80000-$3FFFFF sur 512K) :
-    // PAS de bus error sur vrai ST — le cycle est acquitté et la lecture renvoie 0.
-    // EmuTOS s'en sert pour trouver le sommet de RAM (FC0226 : cmp.w (a0)+,d0 attend
-    // 0 au-delà de la RAM installée). Confirmé vérité Hatari ($80008 → 0x0000).
-    if (addr < 0x400000)
-        return 0x00;
-
-    // Trou au-dessus de $400000 → bus error sur vrai ST ; ici on renvoie $FF.
+    // Trou au-dessus de $400000 (sous la ROM/cartouche) → bus error sur vrai ST ;
+    // ici on renvoie $FF.
     return 0xFF;
 }
 
 void Bus::write8(uint32_t addr, uint8_t v) {
     addr &= stmap::ADDR_MASK;
 
-    if (addr < ram.size()) {
-        ram[addr] = v;
+    // Espace RAM ($0-$3FFFFF) : décodé par le MMU (banques + aliasing). Une banque
+    // déclarée mais sans puce absorbe l'écriture dans le vide.
+    if (addr < 0x400000) {
+        const int64_t phys = mmuTranslate(addr);
+        if (phys >= 0) ram[static_cast<std::size_t>(phys)] = v;
         return;
     }
     if (addr >= stmap::MMIO_BASE) {

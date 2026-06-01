@@ -81,6 +81,11 @@ inline bool machineHasBlitter(MachineType t) {
 // sont « void » (lecture sans bus error) au lieu de fauter. Réf. Hatari
 // ioMem.c (IoMem_FixVoidAccessForMegaST). C'est un des signaux de détection de
 // modèle qu'EmuTOS lit au boot.
+// Famille STE (STE / Mega STE) : le MMU entrelace RAS/CAS différemment du STF
+// (cf. Hatari STMemory_MMU_Translate_Addr_STE vs _STF).
+inline bool machineIsSte(MachineType t) {
+    return t == MachineType::Ste || t == MachineType::MegaSte;
+}
 inline bool machineIsMega(MachineType t) {
     return t == MachineType::MegaSt || t == MachineType::MegaSte;
 }

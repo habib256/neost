@@ -126,4 +126,8 @@ public:
 private:
     uint8_t  mmioRead8 (uint32_t addr);
     void     mmioWrite8(uint32_t addr, uint8_t v);
+    // Décodage de banques MMU ($FF8001) : adresse logique RAM (<4Mo) → index
+    // physique dans ram[], ou -1 si la banque visée n'est pas peuplée (void).
+    // Port fidèle de Hatari stMemory.c (RAS/CAS + aliasing). Cf. Bus.cpp.
+    int64_t  mmuTranslate(uint32_t addr) const;
 };
