@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+#include "core/Scheduler.hpp"
+
 class Bus;
 class YM2149;
 class Mfp;
@@ -26,6 +28,10 @@ class Mfp;
 class Fdc {
 public:
     Fdc(Bus& bus, YM2149& psg, Mfp& mfp) : bus_(bus), psg_(psg), mfp_(mfp) {}
+
+    // Branche l'ordonnanceur : une commande pose BUSY puis l'INTRQ tombe APRÈS un
+    // délai daté (seek selon step-rate, transfert selon le débit) — cf. Phase 4.
+    void setScheduler(Scheduler* s) { sched_ = s; }
 
     bool loadImage(const std::string& path);   // monte une image .st dans le lecteur A
     void eject();                               // retire la disquette
@@ -36,8 +42,12 @@ public:
     uint8_t read8(uint32_t addr);
     void    write8(uint32_t addr, uint8_t v);
 
+    // Échéance de fin de commande : applique le statut final, BUSY tombe, INTRQ.
+    void    onCommandComplete();
+
 private:
     void     executeCommand(uint8_t cmd);
+    int64_t  commandDelayCycles(uint8_t cmd);   // durée réaliste avant fin de commande
     uint8_t  readSectors(uint8_t cmd);          // renvoie le statut FDC
     uint8_t  writeSectors(uint8_t cmd);
     uint8_t  readAddress();
@@ -57,6 +67,12 @@ private:
     // Registres WD1772.
     uint8_t  status_ = 0, track_ = 0, sector_ = 1, data_ = 0;
     bool     intrq_ = false;
+
+    // Timing (Phase 4) : pendant l'exécution d'une commande, BUSY est posé et le
+    // statut final est mémorisé ; l'INTRQ est levée à l'échéance Scheduler::FDC.
+    Scheduler* sched_ = nullptr;
+    uint8_t    pendingStatus_ = 0;   // statut à appliquer à la fin de la commande
+    bool       busy_ = false;
 
     // Contrôleur DMA.
     uint16_t dmaMode_  = 0;                      // dernier $FF8606 écrit

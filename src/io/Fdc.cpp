@@ -108,19 +108,69 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
     }
 }
 
-void Fdc::executeCommand(uint8_t cmd) {
-    switch (cmd & 0xF0) {
-        case 0x00: track_ = 0;     status_ = FDC_TRACK0;                  break; // RESTORE
-        case 0x10: track_ = data_; status_ = track_ ? 0 : FDC_TRACK0;    break; // SEEK
-        case 0x20: case 0x40: case 0x60:                                        // STEP/IN/OUT
-                   status_ = track_ ? 0 : FDC_TRACK0;                    break;
-        case 0x80: status_ = readSectors(cmd);                           break; // READ SECTOR
-        case 0xA0: status_ = writeSectors(cmd);                          break; // WRITE SECTOR
-        case 0xC0: status_ = readAddress();                              break; // READ ADDRESS
-        case 0xD0: /* FORCE INTERRUPT */                                 break;
-        default:   status_ = 0;                                          break;
+// WD1772 : bit 0 du statut = BUSY (commande en cours).
+enum : uint8_t { FDC_BUSY = 0x01 };
+
+// Durée réaliste d'une commande avant la fin (INTRQ). Type I : step-rate × pas ;
+// type II/III : ~temps de transfert par secteur. (Le débit réel est ~16 ms/secteur ;
+// on le modélise accéléré — l'essentiel est que la commande ne soit plus instantanée.)
+int64_t Fdc::commandDelayCycles(uint8_t cmd) {
+    constexpr int64_t MS = 8021;                       // cycles CPU par ms (~8 MHz)
+    if (!(cmd & 0x80)) {                               // type I : seek / restore / step
+        static constexpr int stepMs[4] = {6, 12, 2, 3};   // taux WD1772 (bits 0-1)
+        const int sr = stepMs[cmd & 0x03];
+        int steps = 1;
+        if      ((cmd & 0xF0) == 0x00) steps = track_;                 // RESTORE → TR00
+        else if ((cmd & 0xF0) == 0x10) {                               // SEEK
+            steps = int(data_) - int(track_);
+            if (steps < 0) steps = -steps;
+        }
+        if (steps < 1) steps = 1;
+        return MS * sr * steps;
     }
-    setIntrq(true);   // commande terminée → GPIP5 bas
+    const int count = dmaCount_ ? dmaCount_ : 1;       // type II/III : par secteur
+    return MS * count;                                 // ~1 ms/secteur (accéléré)
+}
+
+void Fdc::executeCommand(uint8_t cmd) {
+    // FORCE INTERRUPT ($Dx) : termine immédiatement la commande en cours.
+    if ((cmd & 0xF0) == 0xD0) {
+        if (sched_) sched_->cancel(Scheduler::FDC);
+        busy_ = false;
+        status_ &= ~FDC_BUSY;
+        setIntrq(true);
+        return;
+    }
+
+    const int64_t delay = commandDelayCycles(cmd);     // AVANT de bouger track_
+
+    uint8_t result;
+    switch (cmd & 0xF0) {
+        case 0x00: track_ = 0;     result = FDC_TRACK0;                  break; // RESTORE
+        case 0x10: track_ = data_; result = track_ ? 0 : FDC_TRACK0;    break; // SEEK
+        case 0x20: case 0x40: case 0x60:                                        // STEP/IN/OUT
+                   result = track_ ? 0 : FDC_TRACK0;                    break;
+        case 0x80: result = readSectors(cmd);                           break; // READ SECTOR
+        case 0xA0: result = writeSectors(cmd);                          break; // WRITE SECTOR
+        case 0xC0: result = readAddress();                              break; // READ ADDRESS
+        default:   result = 0;                                          break;
+    }
+
+    // Le transfert DMA est déjà fait (données en RAM) ; on POSE BUSY et on diffère
+    // l'INTRQ : pendant ce temps, le statut lu garde BUSY et l'INTRQ reste haut.
+    pendingStatus_ = result;
+    busy_   = true;
+    status_ = uint8_t(result | FDC_BUSY);
+    intrq_  = false;
+    mfp_.setFdcLine(false);
+    if (sched_) sched_->schedule(Scheduler::FDC, sched_->now() + delay);
+    else        onCommandComplete();        // sans ordonnanceur : repli instantané
+}
+
+void Fdc::onCommandComplete() {
+    busy_   = false;
+    status_ = pendingStatus_;               // BUSY tombe, statut final
+    setIntrq(true);                         // fin de commande → GPIP5 bas + canal 7
 }
 
 // Numéro de secteur logique → offset image (.st : piste, puis face, puis secteur).

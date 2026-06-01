@@ -22,6 +22,7 @@ Machine::Machine(std::size_t ramBytes) : bus(ramBytes) {
     bus.fdc     = &fdc;
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
+    fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)
 
     installSchedulerCallbacks();
 }
@@ -38,6 +39,8 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::TIMER_A, [this] { mfp.onTimerExpire(0); cpu.updateIpl(); });
     sched.setCallback(Scheduler::TIMER_C, [this] { mfp.onTimerExpire(2); cpu.updateIpl(); });
     sched.setCallback(Scheduler::TIMER_D, [this] { mfp.onTimerExpire(3); cpu.updateIpl(); });
+    // Fin de commande disque : BUSY tombe, INTRQ levée (GPIP5 + canal 7).
+    sched.setCallback(Scheduler::FDC,     [this] { fdc.onCommandComplete(); cpu.updateIpl(); });
 }
 
 // Arme les événements VIDÉO de la trame courante, à des cycles ABSOLUS (horloge
