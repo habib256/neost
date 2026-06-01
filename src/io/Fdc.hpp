@@ -48,6 +48,7 @@ public:
 private:
     void     executeCommand(uint8_t cmd);
     int64_t  commandDelayCycles(uint8_t cmd);   // durée réaliste avant fin de commande
+    void     writeBack(uint32_t off, uint32_t len);   // recopie les écritures dans le .st
     uint8_t  readSectors(uint8_t cmd);          // renvoie le statut FDC
     uint8_t  writeSectors(uint8_t cmd);
     uint8_t  readAddress();
@@ -63,6 +64,7 @@ private:
     std::vector<uint8_t> image_;                // contenu de la disquette
     std::string path_;                          // chemin de l'image montée ("" = vide)
     int      spt_ = 9, sides_ = 2;              // géométrie (lue dans le BPB)
+    bool     writeProtect_ = false;             // disquette protégée en écriture
 
     // Registres WD1772.
     uint8_t  status_ = 0, track_ = 0, sector_ = 1, data_ = 0;
