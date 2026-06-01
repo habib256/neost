@@ -1,5 +1,6 @@
 # Artefacts CMake / build local
 build/
+build-native/
 build-web*/
 _site/
 cmake-build-*/

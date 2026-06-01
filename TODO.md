@@ -200,10 +200,11 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 
 ## Outillage / qualité
 
-- [ ] **Comparaison automatique de traces Hatari ↔ NeoST** : Hatari sait tracer
-      le CPU (`--trace cpu_disasm`). Un script qui aligne les deux traces sur le
-      même ROM/disquette validerait la fidélité instruction par instruction et
-      localiserait les divergences (méthode pour Arkanoid & co).
+- [x] **Comparaison automatique de traces Hatari ↔ NeoST** ✓ : `tools/trace_diff.py`
+      aligne une trace NeoST (`neost-headless --trace --regs`) et une trace Hatari
+      (`--trace cpu_disasm[,cpu_regs]`) sur un PC commun (`--align-pc`) et localise
+      la première divergence — flux (PC) ET registres (D0-D7/A0-A7/SR). C'est la
+      méthode pour Arkanoid & co. (Reste à capturer la trace Hatari de référence.)
 - [ ] **Comparaison MAME ↔ NeoST** : exploiter le débogueur MAME et les logs
       devices pour comparer memory map, bus errors, FDC/MMU FIFO, blitter et SCC.
 - [ ] **Suite de ROMs de diagnostic** : Atari/MegaSTE diagnostics, Yaart/ST-RAM,

@@ -46,6 +46,7 @@
   <div id="toolbar">
     <button id="btnReset">Reset</button>
     <button id="btnMono">Passer en Mono</button>
+    <select id="romSel" title="ROM / TOS (change + reset)"></select>
     <select id="diskSel" title="Disquette préchargée"></select>
     <button id="btnMount">Monter + Reset</button>
     <label class="file">Charger un .st…
@@ -90,24 +91,38 @@
       if (statusEl) statusEl.textContent = 'Prêt — cliquez dans l\'écran pour jouer.';
       // Peuple le menu des disquettes depuis le FS virtuel : montre exactement ce
       // qui a été embarqué (tout en local, EmuTOS+diskA pour le déploiement libre).
+      populateSelect('diskSel', '/disks', /\.st$/i);
+      populateSelect('romSel', '/rom', /\.(img|rom|tos|bin)$/i, '/rom/etos192us.img');
+    };
+
+    // Remplit un <select> avec les fichiers du dossier FS correspondant au filtre.
+    function populateSelect(id, dir, rx, preselect) {
       try {
-        var sel = document.getElementById('diskSel');
-        var files = Module.FS.readdir('/disks')
-          .filter(function (f) { return /\.st$/i.test(f); }).sort();
+        var sel = document.getElementById(id);
+        var files = Module.FS.readdir(dir)
+          .filter(function (f) { return rx.test(f); }).sort();
         sel.innerHTML = '';
         files.forEach(function (f) {
           var o = document.createElement('option');
-          o.value = '/disks/' + f; o.textContent = f;
+          o.value = dir + '/' + f; o.textContent = f;
+          if (preselect && o.value === preselect) o.selected = true;
           sel.appendChild(o);
         });
-      } catch (e) { console.warn('FS.readdir /disks:', e); }
-    };
+      } catch (e) { console.warn('FS.readdir ' + dir + ':', e); }
+    }
 
-    function callReset()  { if (ready) Module.ccall('neost_reset'); }
-    function callMono(m)  { if (ready) Module.ccall('neost_set_mono', null, ['number'], [m]); }
-    function callMount(p) { if (ready) Module.ccall('neost_mount_disk', null, ['string'], [p]); }
+    function callReset()    { if (ready) Module.ccall('neost_reset'); }
+    function callMono(m)    { if (ready) Module.ccall('neost_set_mono', null, ['number'], [m]); }
+    function callMount(p)   { if (ready) Module.ccall('neost_mount_disk', null, ['string'], [p]); }
+    function callLoadTos(p) { if (ready) Module.ccall('neost_load_tos', null, ['string'], [p]); }
 
     document.getElementById('btnReset').addEventListener('click', callReset);
+
+    // Changer de ROM/TOS dans le menu = chargement à chaud + reset.
+    document.getElementById('romSel').addEventListener('change', function () {
+      callLoadTos(this.value);
+      Module.setStatus('ROM : ' + this.value.split('/').pop());
+    });
 
     document.getElementById('btnMono').addEventListener('click', function () {
       monoOn = !monoOn;

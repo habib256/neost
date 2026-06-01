@@ -110,7 +110,7 @@ if(EMSCRIPTEN)
         "-sUSE_GLFW=3"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,FS"
-        "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_set_mono,_neost_mount_disk"
+        "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_set_mono,_neost_mount_disk,_neost_load_tos"
         "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/web/shell.html")
 
     # Choix des données embarquées dans le FS virtuel (--preload-file). Pour un
@@ -134,10 +134,20 @@ endif()
 
 # =============================================================================
 #  neost — frontend fenêtré (GLFW3 + OpenGL + ImGui + miniaudio).
+#  Optionnel : si GLFW3/OpenGL sont absents (CI, machine sans pile graphique),
+#  on construit quand même neost_core + neost-headless (l'outil de debug n°1).
 # =============================================================================
-find_package(glfw3 REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(Threads REQUIRED)
+find_package(glfw3 QUIET)
+find_package(OpenGL QUIET)
+find_package(Threads QUIET)
+
+if(NOT glfw3_FOUND OR NOT OPENGL_FOUND)
+    message(STATUS
+        "GLFW3/OpenGL introuvables — frontend GUI 'neost' désactivé. "
+        "neost_core + neost-headless restent disponibles "
+        "(installer libglfw3-dev / mesa pour activer le GUI).")
+    return()
+endif()
 
 add_executable(neost
     src/main.cpp

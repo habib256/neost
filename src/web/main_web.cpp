@@ -263,6 +263,14 @@ EMSCRIPTEN_KEEPALIVE void neost_reset() {
     if (g_machine) g_machine->reset();
 }
 
+// Charge une autre ROM TOS (déjà présente dans le FS virtuel) et reset, comme un
+// changement de cartouche : permet de tester EmuTOS US/FR et TOS 1.02 à distance.
+EMSCRIPTEN_KEEPALIVE void neost_load_tos(const char* path) {
+    if (!g_machine || !path) return;
+    g_machine->loadTos(path);
+    g_machine->reset();
+}
+
 // mono != 0 → moniteur monochrome (haute résolution) ; sinon couleur (basse rés).
 // Comme sur le matériel, le type de moniteur est lu au reset → on reset.
 EMSCRIPTEN_KEEPALIVE void neost_set_mono(int mono) {
