@@ -133,36 +133,37 @@ Chaque phase est **validable** et garde le repo fonctionnel. On porte l'**idée*
 d'Hatari, pas son code (licences/architecture différentes) : NeoST garde son
 `Bus`-plan-mémoire et son cœur Musashi.
 
-### Phase 0 — Cycles par instruction (fondation)
+### Phase 0 — Cycles par instruction (fondation) — ✅ FAIT
 
-- Faire rendre à Musashi le **coût réel** de chaque instruction. `m68k_execute(N)`
-  exécute « au moins » N cycles et retourne le nombre **réellement** consommé ;
-  exécuter par petits paquets (voire 1 instruction) et lire le retour.
-- Introduire un compteur 64 bits de cycles dans `Machine` (ou un futur
-  `Scheduler`).
+- `Cpu68k::run(int cycles)` retourne déjà `m68k_execute(cycles)`, soit le nombre
+  de cycles **réellement** consommés (le 68000 finit toujours son instruction).
+  La fondation « coût réel par paquet » est donc acquise ; il restera (Phase 5) à
+  *carry* le dépassement entre paquets plutôt que de le jeter.
 - Référence : cœur UAE d'Hatari + `cycles.c`.
 
-### Phase 1 — `Scheduler` événementiel (refactor SANS changement de comportement)
+### Phase 1 — `Scheduler` événementiel (refactor iso-comportement) — ✅ FAIT
 
-- Nouveau composant `neost_core` : `Scheduler`
-  - table `Event { bool active; int64_t dueCycle; Callback cb; }` indexée par un
-    `enum Source { VBL, HBL, TIMER_A..D, TIMER_C, ACIA_IKBD, FDC, ... }` ;
-  - `addRelative(src, dCycles)`, `addAbsolute(src, period)` (replanifie depuis le
-    `dueCycle` précédent → pas de dérive), `remove(src)`, `nextDue()` ;
-  - gestion du **retard** : le handler reçoit `now - dueCycle`.
-- Réécrire `Machine::runFrame()` en boucle pilotée par événements :
+- Nouveau composant `neost_core` : `src/core/Scheduler.hpp` (header-only)
+  - une échéance en cycles par source (`enum Source { HBL, TIMER_C, VBL, … }`),
+    `schedule(src, atCycle)`, `cancel`, `nextDue()`, `runTo(cycle)` qui déclenche
+    les handlers échus **dans l'ordre des sources** (priorité à cycle égal) ;
+  - chaque handler se **replanifie** lui-même (idée `cycInt` : une seule échéance
+    « prochaine » par source).
+- `Machine::runFrame()` réécrit en boucle pilotée par événements (cf. `Machine.cpp`):
   ```cpp
-  while (cyclesThisFrame < FRAME_CYCLES) {
-      int64_t n = min(scheduler.nextDue() - now, capRestantTrame);
-      int ran  = cpu.runCycles(n);          // Musashi, retour = cycles réels
-      now += ran;
-      while (scheduler.dueAt(now)) fire();   // handlers au cycle (+ replanif.)
+  while (sched.now() < frameEnd) {
+      int64_t next = min(sched.nextDue(), sched.now() + CYCLES_PER_LINE);  // quantum = 1 ligne
+      cpu.run(next - sched.now());      // exécute le CPU jusqu'à l'événement
+      sched.runTo(next);                // déclenche HBL / Timer C / VBL (+ replanif.)
   }
   ```
-- **But de la phase** : reproduire **à l'identique** le timing actuel (VBL ligne
-  200, HBL par ligne visible, Timer C aux 4 lignes) — donc d'abord planifier ces
-  mêmes événements aux mêmes instants. **Validation : `trace_diff` montre un boot
-  EmuTOS/TOS inchangé** (zéro régression).
+- **Quantum CPU = la ligne (512 cycles)** : comme toutes les échéances sont sur la
+  grille de 512, chaque pas exécute exactement une ligne → **chunking et trace
+  identiques** au modèle « par blocs » précédent.
+- **Validation faite** : `diff` des traces (Arkanoid 3 058 584 instructions, et
+  EmuTOS avec registres) **strictement identiques** avant/après le refactor →
+  zéro régression. Le *carry* du dépassement et la subdivision du quantum
+  viendront aux phases suivantes (c'est là que le timing changera réellement).
 
 ### Phase 2 — Vidéo sur l'ordonnanceur (`video.c`)
 
