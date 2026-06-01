@@ -18,12 +18,27 @@
 #pragma once
 #include <cstdint>
 
+#include "core/Scheduler.hpp"
+
 class Mfp {
 public:
-    static constexpr int SRC_TIMERB = 8;   // Timer B (synchro vidéo / event-count)
-    static constexpr int SRC_TIMERC = 5;   // tic système 200 Hz
+    static constexpr int SRC_TIMERD = 4;   // Timer D (RS232 baud / délai)
+    static constexpr int SRC_TIMERC = 5;   // tic système 200 Hz (délai)
     static constexpr int SRC_ACIA   = 6;   // clavier/MIDI (GPIP4)
     static constexpr int SRC_FDC    = 7;   // FDC/DMA disquette (GPIP5)
+    static constexpr int SRC_TIMERB = 8;   // Timer B (synchro vidéo / event-count)
+    static constexpr int SRC_TIMERA = 13;  // Timer A (souvent musique/délai)
+
+    // Branche l'ordonnanceur : le MFP y date lui-même ses timers en mode délai
+    // (Timer A/C/D) à partir de leurs registres prescaler/données.
+    void setScheduler(Scheduler* s) { sched_ = s; }
+
+    // Période en CYCLES CPU d'un timer (0..3 = A/B/C/D) en mode délai, ou 0 s'il
+    // est arrêté ou en event-count. (Re)programme l'échéance sur l'ordonnanceur.
+    int64_t timerPeriodCycles(int timer) const;
+    void    scheduleTimer(int timer);
+    // Échéance atteinte : lève l'IRQ du timer et le replanifie (mode délai).
+    void    onTimerExpire(int timer);
 
     // Événement HBLANK (une fois par ligne) : fait décompter Timer B en mode
     // event-count. TOS 1.x s'en sert pour se synchroniser à l'écran au boot.
@@ -81,4 +96,6 @@ public:
 private:
     int highestPending() const;     // n° de source prête la plus prioritaire, -1 sinon
     int highestInService() const;   // n° de source en cours de service, -1 sinon
+
+    Scheduler* sched_ = nullptr;    // pour dater les timers (mode délai)
 };

@@ -60,17 +60,17 @@ private:
     void installSchedulerCallbacks();
     // Arme le premier événement de chaque source pour la trame courante.
     void scheduleFrameEvents();
-    // Handlers des événements datés (positions au cycle dans la ligne).
+    // Handlers des événements datés vidéo (positions au cycle dans la ligne).
+    // Les Timers A/C/D (mode délai) sont datés par le MFP lui-même.
     void onRender();        // décode la scanline (≈ fin Display-Enable, cycle 376)
     void onTimerB();        // Timer B event-count sur DE (cycle 400)
     void onHbl();           // HBL niveau 2 (cycle 508)
-    void onTimerC();
     void onVbl();
 
-    int timerCIndex_ = 0;   // tic Timer C courant (0..3) dans la trame
-    int renderLine_  = 0;   // prochaine scanline à décoder
-    int tbLine_      = 0;   // prochaine ligne pour le tic Timer B
-    int hblLine_     = 0;   // prochaine ligne pour le HBL niveau 2
+    int64_t frameStart_ = 0;  // cycle (horloge continue) du début de la trame courante
+    int renderLine_  = 0;     // prochaine scanline à décoder
+    int tbLine_      = 0;     // prochaine ligne pour le tic Timer B
+    int hblLine_     = 0;     // prochaine ligne pour le HBL niveau 2
 
     // Positions au cycle DANS la ligne (STF PAL 50 Hz, cf. Hatari video.h).
     static constexpr int DE_END_CYCLE   = 376;   // fin Display-Enable → rendu ligne

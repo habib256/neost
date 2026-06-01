@@ -67,10 +67,12 @@ ligne-par-ligne (≈ pas cycle-accurate).
 - [ ] **Wait states** d'accès YM2149 / mémoire (`psg.c` : 4 cycles + alignement).
 - [~] **Ordonnanceur unique d'événements** CPU/MFP/vidéo/FDC/DMA/ACIA : remplacer
       les tics par frame/ligne par des événements datés en cycles, comme Hatari
-      `CycInt_*` ou les timers MAME. **Phase 1 faite** : `src/core/Scheduler.hpp`
-      + `Machine::runFrame` événementiel (HBL/Timer C/VBL datés), iso-comportement
-      (trace identique). Reste : carry du dépassement, sources Timer A/B/D, FDC,
-      DMA, et subdivision du quantum (cf. `docs/CYCLE_ACCURACY.md`).
+      `CycInt_*` ou les timers MAME. **Phases 1-3 faites** : `src/core/Scheduler.hpp`,
+      `Machine::runFrame` événementiel à **horloge continue** avec carry du
+      dépassement ; vidéo au cycle (rendu/Timer B/HBL aux cycles 376/400/508) ;
+      **timers MFP réels** A/C/D en mode délai datés par le MFP (Timer C remplace
+      le faux, Timer D désormais actif). Reste : FDC/DMA datés, Timer B délai,
+      pulse-width, bordures, 50/60 Hz (cf. `docs/CYCLE_ACCURACY.md`).
 - [ ] **Modes PAL/NTSC** : quartz, nombre de lignes, 50/60 Hz, timings couleur et
       mono ; MegaSTE doit respecter les mêmes bases que STE.
 
@@ -78,7 +80,7 @@ ligne-par-ligne (≈ pas cycle-accurate).
 
 - [x] Timer C (200 Hz) et Timer B (event-count) approximatifs. ✓
 - [x] HBL niveau 2 + interruption FDC (canal 7). ✓
-- [ ] **Timers A et D** + modes complets de chaque timer : **delay** (prescaler
+- [~] **Timers A et D** + modes complets de chaque timer : **delay** (prescaler
       4/10/16/50/64/100/200), **event-count**, **pulse-width**. Compteur qui
       reboucle via `PendingCyclesOver` (cf. en-tête de `mfp.c`).
 - [ ] Timing d'interruption au cycle près (latence MFP, IACK), GPIP toutes lignes,
