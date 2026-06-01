@@ -173,6 +173,38 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
       bass/treble, balance, masque/data `$FF8922/$FF8924`, timing de shift.
 - [ ] **IRQ/GPIP liés au DMA sound** : fin de frame, repeat/loop, interaction I7
       avec détection mono comme dans MAME `dmasound_set_state`.
+- [ ] **Bruits du lecteur de disquette** (confort/immersion : ronron moteur,
+      « clac » de pas de tête, click de chargement, tic d'index).
+
+      *Où trouver la source ?* — Ce n'est **pas** du matériel : ni Hatari ni MAME
+      n'émulent les bruits **mécaniques** du lecteur (vérifié : `floppy.c`/`sound.c`
+      de Hatari ne contiennent aucun module de bruit-lecteur, et `--help` n'a pas
+      d'option dédiée). C'est **STeem SSE** qui a popularisé la fonctionnalité, à
+      partir d'**échantillons WAV** déclenchés sur les événements du FDC, pas d'une
+      synthèse. Donc la « source de vérité » ici, ce sont des **samples** :
+        - paquets de sons de lecteur de STeem SSE (cf. son dépôt / forums Atari) ;
+        - banques libres de bruits de floppy 3"½ (freesound.org, domaine public) ;
+        - ou enregistrer un **vrai lecteur ST** (le plus fidèle) : boucle moteur,
+          « clac » d'un pas de tête, chargement de tête, tic d'index ~3.7 ms.
+      Quatre échantillons suffisent : `motor` (boucle), `step` (un pas), `seek`
+      (rafale de pas, ou `step` répété au step-rate) et option `index`.
+
+      *Où brancher dans NeoST ?* — Sur les **événements** déjà présents dans
+      `src/io/Fdc.cpp`, sans toucher au timing :
+        - `executeCommand()` type I (RESTORE/SEEK/STEP) : un click `step` par
+          piste franchie (le nombre de pas est déjà calculé dans
+          `commandDelayCycles()` via le step-rate `{6,12,2,3} ms`) ;
+        - passage de `MOTOR_ON` à 1/0 (bit `FDC_MOTOR_ON`) : démarrer/arrêter la
+          boucle `motor` (avec la temporisation moteur-off à implémenter) ;
+        - option : tic `index` cadencé sur la rotation (~3.71 ms) quand le moteur
+          tourne.
+      Émettre ces événements via un petit *callback* (ex. `setSoundSink(fn)`) pour
+      garder `neost_core` sans dépendance audio. Le mixage se fait côté frontend :
+        - GUI : `src/audio/Audio.cpp` (miniaudio) — décoder les WAV et les mixer
+          au flux YM2149 ;
+        - WASM : `src/web/main_web.cpp` — Web Audio API (`AudioBufferSourceNode`),
+          échantillons préchargés via `--preload-file` (cf. `CMakeLists.txt`).
+      Prévoir un interrupteur on/off (menu GUI + bouton/`?sound=` côté WASM).
 
 ## Blitter, SCU & stockage
 
