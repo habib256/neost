@@ -70,6 +70,16 @@ if(EXISTS "${MUSASHI_DIR}/m68kops.c")
         "${MUSASHI_DIR}/softfloat/softfloat.c")
     target_include_directories(neost_core PUBLIC "${MUSASHI_DIR}")
     target_compile_definitions(neost_core PUBLIC  NEOST_HAS_MUSASHI=1)
+    # Les énormes tables globales de Musashi (m68ki_instruction_jump_table = 512 Ko,
+    # m68ki_cycles) sont des définitions provisoires C → section __common sur-alignée
+    # (0x8000) que l'éditeur de liens macOS doit rabaisser. -fno-common les place en
+    # __bss avec un alignement normal et supprime l'avertissement.
+    set_source_files_properties(
+        "${MUSASHI_DIR}/m68kcpu.c"
+        "${MUSASHI_DIR}/m68kops.c"
+        "${MUSASHI_DIR}/m68kdasm.c"
+        "${MUSASHI_DIR}/softfloat/softfloat.c"
+        PROPERTIES COMPILE_OPTIONS "-fno-common")
     # Active le hook d'instruction (traceur) ET l'acquittement d'interruption
     # vectorisé : sinon Musashi auto-vectorise TOUT et les vecteurs MFP du ST
     # (clavier, Timer C) ne sont jamais utilisés → EmuTOS reste bloqué.
