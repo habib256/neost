@@ -68,12 +68,16 @@ cmake --build build -j
 
 **▶ Essayer NeoST en ligne : <https://habib256.github.io/neost/>**
 
-> Le lien est publié par GitHub Pages via le workflow
-> [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml) (au push
-> sur `main`). Pour l'activer : **Settings → Pages → Source = GitHub Actions**.
-> La démo publique n'embarque que des contenus **libres** (EmuTOS GPL + `diskA.st`
-> générée) ; les jeux sous copyright ne sont pas redistribués — chargez vos
-> propres `.st` via le bouton « Charger un .st… ».
+Les artefacts compilés (`index.html`, `.js`, `.wasm`, `.data`) sont versionnés
+dans le dossier **[`wasm/`](wasm/)** — c'est ce dossier que sert GitHub Pages.
+
+> Le déploiement est automatisé par le workflow
+> [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml)
+> (recompile `wasm/` au push sur `main`). Pour activer le lien :
+> **Settings → Pages → Source = GitHub Actions**. La démo publique n'embarque que
+> des contenus **libres** (EmuTOS GPL + `diskA.st` générée) ; les jeux sous
+> copyright ne sont pas redistribués — chargez vos propres `.st` via le bouton
+> « Charger un .st… ».
 
 ![NeoST WASM — boot EmuTOS](web/neost-wasm-emutos.png)
 
@@ -84,19 +88,19 @@ boucle temporisée par `emscripten_set_main_loop`. Clic dans l'écran = capture
 souris (curseur GEM), `Échap` la libère ; le clavier est routé vers l'IKBD.
 
 Construction locale (nécessite l'[emsdk](https://emscripten.org/docs/getting_started/downloads.html)
-activé, `source .../emsdk_env.sh`) :
+activé, `source .../emsdk_env.sh`) — la cible `neost-web` écrit dans `wasm/` :
 
 ```sh
-emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release
-cmake --build build-web -j --target neost-web      # → build-web/index.{html,js,wasm,data}
+emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release -DNEOST_WEB_FREE_ONLY=ON
+cmake --build build-web -j --target neost-web      # → wasm/index.{html,js,wasm,data}
 # Servir en HTTP (les .wasm/.data ne se chargent pas en file://) :
-python3 -m http.server -d build-web 8000           # puis ouvrir http://localhost:8000/
+python3 -m http.server -d wasm 8000                # puis ouvrir http://localhost:8000/
 ```
 
 ROM et disquettes sont embarquées dans le FS virtuel via `--preload-file` ; le
-menu déroulant liste les images présentes. Option CMake
-`-DNEOST_WEB_FREE_ONLY=ON` pour n'embarquer que les contenus libres (utilisée
-par le déploiement public).
+menu déroulant liste les images présentes. Sans `-DNEOST_WEB_FREE_ONLY=ON`, tout
+`rom/` et `disks/` est embarqué (confort de test local, mais ne pas committer
+le `wasm/` ainsi produit : il contiendrait des contenus sous copyright).
 
 ### Disquette (FDC WD1772 + DMA)
 

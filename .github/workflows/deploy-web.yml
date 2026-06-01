@@ -45,18 +45,13 @@ jobs:
       - name: Configurer (WASM, contenus libres uniquement)
         run: emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release -DNEOST_WEB_FREE_ONLY=ON
 
-      - name: Compiler le frontend web
+      - name: Compiler le frontend web (sortie → wasm/)
         run: cmake --build build-web -j --target neost-web
-
-      - name: Assembler l'artefact Pages
-        run: |
-          mkdir -p _site
-          cp build-web/index.html build-web/index.js build-web/index.wasm build-web/index.data _site/
 
       - name: Téléverser l'artefact Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: wasm
 
   deploy:
     needs: build
