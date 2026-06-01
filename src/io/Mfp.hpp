@@ -17,6 +17,7 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
+#include <functional>
 
 #include "core/Scheduler.hpp"
 
@@ -65,6 +66,11 @@ public:
     // Type de moniteur lu sur GPIP bit7 : couleur (basse rés) ou mono (haute rés).
     // À changer AVANT un reset pour que TOS détecte la bonne résolution au boot.
     void setColorMonitor(bool c) { colorMonitor_ = c; }
+
+    // Récepteur du port série (RS-232) : chaque octet écrit dans l'UDR ($FFFA2F)
+    // y est transmis. Les ROMs de diagnostic y impriment leur rapport quand la
+    // vidéo n'est pas (encore) opérationnelle.
+    void setSerialSink(std::function<void(uint8_t)> sink) { serialSink_ = std::move(sink); }
     bool colorMonitor() const { return colorMonitor_; }
 
     // Déclenche une source : positionne le bit IPR si le canal est activé (IER).
@@ -107,4 +113,5 @@ private:
     int highestInService() const;   // n° de source en cours de service, -1 sinon
 
     Scheduler* sched_ = nullptr;    // pour dater les timers (mode délai)
+    std::function<void(uint8_t)> serialSink_;   // port série RS-232 (UDR $FFFA2F)
 };

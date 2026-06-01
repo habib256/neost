@@ -11,6 +11,7 @@
 #pragma once
 #include <cstdint>
 #include <array>
+#include <functional>
 #include <vector>
 
 #include "core/Bus.hpp"
@@ -45,6 +46,12 @@ public:
     uint8_t read8(uint32_t addr);
     void    write8(uint32_t addr, uint8_t v);
 
+    // Horloge faisceau : renvoie le nombre de cycles écoulés DANS la trame courante
+    // (0 au début de trame). Posée par Machine ; sert à reconstruire le compteur
+    // d'adresse vidéo $FF8205/07/09 (position courante du balayage). Cf. Hatari
+    // Video_ScreenCounter_ReadByte / Video_CalculateAddress.
+    void setBeamClock(std::function<int64_t()> fn) { beamClock_ = std::move(fn); }
+
     // --- État exposé au débogueur (lecture directe) -------------------------
     uint32_t videoBase = 0;                 // adresse RAM du framebuffer (registres haut/milieu/bas)
     std::array<uint16_t, 16> palette{};     // 16 registres couleur $FF8240 ($0RGB, 3 bits/canal)
@@ -53,9 +60,11 @@ public:
 private:
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
     void resizeFor(Mode m);                       // ajuste le buffer si la rés. change
+    uint32_t videoCounter() const;                // adresse vidéo courante ($FF8205/07/09)
 
     Bus&          bus_;
     int           curW_ = 0, curH_ = 0;     // résolution décodée courante
     Mode          frameMode_ = Mode::Low;   // résolution verrouillée pour la trame
     std::vector<uint32_t> frame_;           // curW_*curH_ pixels ARGB
+    std::function<int64_t()> beamClock_;    // cycles dans la trame (cf. setBeamClock)
 };

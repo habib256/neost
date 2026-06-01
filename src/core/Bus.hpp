@@ -42,6 +42,14 @@ namespace stmap {
     constexpr uint32_t ROM_FC0000     = 0xFC0000;
     constexpr uint32_t ROM_E00000     = 0xE00000;
 
+    // $FA0000-$FBFFFF : port cartouche (128 Ko max). Au reset, TOS/EmuTOS y lit
+    // un long word à $FA0000 : magic $FA52235F → cartouche de DIAGNOSTIC (le CPU
+    // saute aussitôt en $FA0004, avant même l'init RAM) ; magic $ABCDEF42 →
+    // cartouche applicative classique (lancée après l'init du TOS). NeoST n'a qu'à
+    // exposer la ROM cartouche ici : c'est le TOS qui détecte le magic et amorce.
+    constexpr uint32_t CART_BASE      = 0xFA0000;
+    constexpr uint32_t CART_END       = 0xFC0000; // exclu : $FA0000..$FBFFFF (128 Ko)
+
     // $FF8000-$FFFFFF : espace des registres matériels (MMIO).
     constexpr uint32_t MMIO_BASE      = 0xFF8000;
 
@@ -65,6 +73,11 @@ public:
 
     // Charge une image TOS ; positionne romBase selon la taille (192/256 Ko).
     bool loadTos(const std::string& path);
+
+    // Charge une image de cartouche (port $FA0000, 128 Ko max) : ROM de
+    // diagnostic (Test Kit) ou cartouche applicative. Le TOS détecte le magic
+    // et amorce. Renvoie false si le fichier est introuvable ou trop gros.
+    bool loadCart(const std::string& path);
 
     // -------------------------------------------------------------------------
     //  Accès vus par le CPU. Le 68000 est BIG-ENDIAN ; l'hôte (x86/arm64) est
@@ -101,6 +114,7 @@ public:
     // getters : l'accès direct est l'objet même de la "boîte à hack".
     std::vector<uint8_t> ram;
     std::vector<uint8_t> rom;
+    std::vector<uint8_t> cart;        // ROM cartouche ($FA0000) — vide si absente
     uint32_t romBase = stmap::ROM_E00000;
 
     // Overlay de boot : au reset, le 68000 lit SSP ($0) et PC ($4). Le GLUE

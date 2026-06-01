@@ -26,6 +26,9 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     bus.fdc     = &fdc;
     bus.dmasnd  = &dmasnd;
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
+    // Horloge faisceau pour le compteur d'adresse vidéo $FF8205/07/09 : cycles
+    // écoulés depuis le début de la trame courante (cf. Shifter::videoCounter).
+    shifter.setBeamClock([this] { return sched.now() - frameStart_; });
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)
     dmasnd.setScheduler(&sched);   // le son DMA date sa fin de trame (→ Timer A)

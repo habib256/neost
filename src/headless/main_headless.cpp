@@ -34,6 +34,7 @@ void usage() {
         "  --machine TYPE    profil : st, megast, ste (défaut), megaste\n"
         "  --mem SIZE        ST-RAM : 256k, 512k (défaut), 1m, 2m, 4m\n"
         "  --walk-mouse      après le boot, injecte un mouvement souris + clic (diag)\n"
+        "  --cart FILE       monte une cartouche ($FA0000) : Test Kit diagnostic, etc.\n"
         "  --screenshot PPM  dump du framebuffer final au format PPM\n"
         "  rom               image TOS (défaut rom/etos192fr.img)\n");
 }
@@ -62,6 +63,7 @@ int main(int argc, char** argv) {
     std::string shotPath;
     std::string diskPath   = "disks/diskA.st";
     std::string romPath    = "rom/etos192us.img";
+    std::string cartPath;
     bool        regs       = false;
     bool        irq        = false;
     bool        haveUntil  = false;
@@ -84,6 +86,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--irq"))        irq       = true;
         else if (!std::strcmp(a, "--screenshot")) shotPath  = next(a);
         else if (!std::strcmp(a, "--disk"))       diskPath  = next(a);
+        else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--walk-mouse")) walkMouse = true;
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
@@ -103,7 +106,13 @@ int main(int argc, char** argv) {
         return 1;
     }
     machine.loadDisk(diskPath);   // lecteur A (optionnel)
+    if (!cartPath.empty()) machine.loadCart(cartPath);   // cartouche $FA0000 (optionnelle)
     machine.mfp.setColorMonitor(!machineMono);   // --mono → moniteur mono (haute rés)
+
+    // Capture du port série (RS-232) : les ROMs de diagnostic y impriment leur
+    // rapport. On l'affiche sur stderr en fin d'exécution.
+    std::string serialOut;
+    machine.mfp.setSerialSink([&serialOut](uint8_t b) { serialOut.push_back(char(b)); });
 
     Tracer tracer;
     if (!tracePath.empty()) {
@@ -159,6 +168,10 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "[headless] capture écran → %s (%dx%d)\n",
                          shotPath.c_str(), machine.shifter.width(), machine.shifter.height());
     }
+
+    if (!serialOut.empty())
+        std::fprintf(stderr, "[headless] port série RS-232 (%zu octets) :\n%s\n",
+                     serialOut.size(), serialOut.c_str());
 
     tracer.close();
     return 0;

@@ -31,6 +31,10 @@ uint8_t Mfp::read8(uint32_t addr) {
         case 0x17: return vr;
         case 0x1B: return tbcr_;     // Timer B control
         case 0x21: return tbCounter_; // Timer B data (compteur courant)
+        case 0x2D: return uint8_t(timer_[0x2D] | 0x80);  // TSR : bit7 (Buffer Empty) toujours
+                                     // armé — on transmet instantanément (cf. Hatari
+                                     // RS232_TSR_ReadByte). Sans ça, les diagnostics qui
+                                     // impriment sur le port série bouclent à l'infini.
         default:   return timer_[addr & 0x3F];   // autres timers/USART : relisables
     }
 }
@@ -60,6 +64,9 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                    scheduleTimer(0); break;
         case 0x23: timer_[0x23] = v; scheduleTimer(2); break;             // TCDR
         case 0x25: timer_[0x25] = v; scheduleTimer(3); break;             // TDDR
+        case 0x2F: timer_[0x2F] = v;                  // UDR : octet émis sur le port série
+                   if (serialSink_) serialSink_(v);   // (RS-232). On le transmet aussitôt
+                   break;                             // (cf. Hatari RS232_UDR_WriteByte).
         default: timer_[addr & 0x3F] = v; break;      // autres timers/USART : mémorisés
     }
 }

@@ -96,8 +96,39 @@ uint8_t Shifter::read8(uint32_t addr) {
         return (addr & 1) ? static_cast<uint8_t>(palette[i])
                           : static_cast<uint8_t>(palette[i] >> 8);
     }
+    // Compteur d'adresse vidéo (lecture seule) : position courante du balayage.
+    // $FF8205 = bits 16-23, $FF8207 = 8-15, $FF8209 = 0-7 (cf. Hatari
+    // Video_ScreenCounter_ReadByte). Certains diagnostics (Test Kit) attendent
+    // que ce compteur reflète la base vidéo + l'avance du faisceau.
+    if (addr == 0xFF8205) return static_cast<uint8_t>(videoCounter() >> 16);
+    if (addr == 0xFF8207) return static_cast<uint8_t>(videoCounter() >> 8);
+    if (addr == 0xFF8209) return static_cast<uint8_t>(videoCounter());
     if (addr == 0xFF8260) return static_cast<uint8_t>(mode);
     return 0x00;
+}
+
+// Reconstruit l'adresse vidéo courante (Hatari Video_CalculateAddress, simplifié) :
+// au sommet de la trame le compteur vaut videoBase ; il avance de `bpl` octets par
+// ligne affichée (fenêtre Display-Enable), puis reste figé pendant le VBlank, et se
+// recharge à videoBase à la trame suivante (remise à zéro de l'horloge faisceau).
+uint32_t Shifter::videoCounter() const {
+    if (!beamClock_) return videoBase & 0xFFFFFF;       // pas d'horloge → base brute
+    const int64_t fc = beamClock_();                    // cycles dans la trame
+    constexpr int kCyclesPerLine = 512;
+    const int  bpl  = (frameMode_ == Mode::High) ? 80 : 160;   // octets/ligne affichée
+    const int  disp = (frameMode_ == Mode::High) ? 400 : 200;  // lignes affichées
+    const int  deEnd = 376;                             // fin Display-Enable (cf. Machine)
+    const int  line = static_cast<int>(fc / kCyclesPerLine);
+    uint32_t addr = videoBase;
+    if (line >= disp) {
+        addr += static_cast<uint32_t>(disp) * bpl;      // écran entièrement lu (avant VBL)
+    } else if (line > 0 || (fc % kCyclesPerLine) > (deEnd - bpl)) {
+        addr += static_cast<uint32_t>(line) * bpl;
+        int into = static_cast<int>(fc % kCyclesPerLine) - (deEnd - bpl);  // ~1 octet/cycle
+        if (into < 0) into = 0; else if (into > bpl) into = bpl;
+        addr += static_cast<uint32_t>(into);
+    }
+    return addr & 0xFFFFFF;
 }
 
 void Shifter::write8(uint32_t addr, uint8_t v) {

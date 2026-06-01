@@ -39,6 +39,36 @@ bool Bus::loadTos(const std::string& path) {
     return true;
 }
 
+bool Bus::loadCart(const std::string& path) {
+    std::ifstream f(path, std::ios::binary | std::ios::ate);
+    if (!f) {
+        std::fprintf(stderr, "[Bus] cartouche introuvable : %s\n", path.c_str());
+        return false;
+    }
+    const std::streamsize n = f.tellg();
+    const std::size_t maxSize = stmap::CART_END - stmap::CART_BASE;   // 128 Ko
+    if (n <= 0 || static_cast<std::size_t>(n) > maxSize) {
+        std::fprintf(stderr, "[Bus] cartouche invalide (%lld o, max %zu o) : %s\n",
+                     static_cast<long long>(n), maxSize, path.c_str());
+        return false;
+    }
+    f.seekg(0);
+    cart.resize(static_cast<std::size_t>(n));
+    f.read(reinterpret_cast<char*>(cart.data()), n);
+
+    // Le magic du long word de tête révèle le type de cartouche (cf. stmap).
+    const uint32_t magic = cart.size() >= 4
+        ? (uint32_t(cart[0]) << 24) | (uint32_t(cart[1]) << 16) |
+          (uint32_t(cart[2]) << 8)  |  uint32_t(cart[3])
+        : 0;
+    const char* kind = magic == 0xFA52235F ? "diagnostic (saut $FA0004 au reset)"
+                     : magic == 0xABCDEF42 ? "applicative (lancée par le TOS)"
+                     : "inconnue (magic absent)";
+    std::fprintf(stderr, "[Bus] cartouche chargée : %s (%zu Ko @ $FA0000, magic $%08X, %s)\n",
+                 path.c_str(), cart.size() / 1024, magic, kind);
+    return true;
+}
+
 // -----------------------------------------------------------------------------
 //  Lecture / écriture 8 bits — point d'aiguillage central du bus.
 // -----------------------------------------------------------------------------
@@ -57,6 +87,13 @@ uint8_t Bus::read8(uint32_t addr) {
     // ROM TOS.
     if (addr >= romBase && addr < romBase + rom.size())
         return rom[addr - romBase];
+
+    // Port cartouche ($FA0000-$FBFFFF) : si une cartouche est montée, on expose
+    // sa ROM ; le TOS lit le magic à $FA0000 et amorce (diagnostic/applicative).
+    // Hors cartouche, l'espace reste "ouvert" (octets hauts, cf. plus bas) et le
+    // magic ne correspond pas → boot normal.
+    if (!cart.empty() && addr >= stmap::CART_BASE && addr < stmap::CART_BASE + cart.size())
+        return cart[addr - stmap::CART_BASE];
 
     // Espace matériel.
     if (addr >= stmap::MMIO_BASE)

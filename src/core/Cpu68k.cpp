@@ -44,10 +44,31 @@ class NeostMoira : public moira::Moira {
 public:
     NeostMoira() { setModel(moira::Model::M68000); irqMode = moira::IrqMode::USER; }
 
-    moira::u8  read8 (moira::u32 a) const override { return g_bus->read8(a); }
-    moira::u16 read16(moira::u32 a) const override { return g_bus->read16(a); }
-    void write8 (moira::u32 a, moira::u8  v) const override { g_bus->write8(a, v); }
-    void write16(moira::u32 a, moira::u16 v) const override { g_bus->write16(a, v); }
+    // Une adresse non décodée déclenche une bus error : on lève l'exception
+    // moira::BusError (rattrapée par Moira::execute → execBusError) avec une trame
+    // d'exception de groupe 0 identique à celle que construit Moira::makeFrame
+    // (privée, donc reproduite ici). C'est ainsi qu'EmuTOS sonde le matériel
+    // optionnel — sans ça, Moira lit l'adresse fantôme et la détection HW d'EmuTOS
+    // part en vrille (bureau GEM sans menu ni curseur).
+    [[noreturn]] void raiseBusError(moira::u32 addr, bool write) const {
+        moira::StackFrame f{};
+        const moira::u16 ird = getIRD();
+        // code = IR(15..5) | function-code(2..0) | bit4 R/W (1 = lecture sur 68000).
+        f.code = (ird & 0xFFE0) | readFC() | (write ? 0 : 0x10);
+        f.addr = addr;
+        f.ird  = ird;
+        f.sr   = getSR();
+        f.pc   = getPC();
+        f.fc   = readFC();
+        f.ssw  = f.fc;
+        throw moira::BusError(f);
+    }
+
+    moira::u8  read8 (moira::u32 a) const override { if (g_bus->busFault(a)) raiseBusError(a, false); return g_bus->read8(a); }
+    moira::u16 read16(moira::u32 a) const override { if (g_bus->busFault(a)) raiseBusError(a, false); return g_bus->read16(a); }
+    void write8 (moira::u32 a, moira::u8  v) const override { if (g_bus->busFault(a)) raiseBusError(a, true); g_bus->write8(a, v); }
+    void write16(moira::u32 a, moira::u16 v) const override { if (g_bus->busFault(a)) raiseBusError(a, true); g_bus->write16(a, v); }
+    // Lecture du vecteur de reset (SSP/PC) via l'overlay ROM : jamais de bus error.
     moira::u16 read16OnReset(moira::u32 a) const override { return g_bus->read16(a); }
 
     // Le 68000 est-il en attente (instruction STOP) ? Permet à la boucle d'horloge
