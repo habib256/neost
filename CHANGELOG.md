@@ -63,6 +63,10 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
 ## Audio
 
 - YM2149 : synthèse 3 voies carrées + bruit. Backend **miniaudio** (CoreAudio).
+- **Enveloppe YM2149** (registres 11-13) : générateur de volume 0..15, formes
+  dent de scie / triangle / hold pilotées par Continue/Attack/Alternate/Hold ;
+  une voie suit l'enveloppe quand le bit 4 de son registre de volume est posé.
+  Écrire R13 réarme l'enveloppe (drapeau consommé côté thread audio).
 - **Bruits mécaniques du lecteur de disquette** : le cœur émet des événements
   `FdcSound` (moteur on/off, pas, seek, index) depuis `Fdc` via un sink, sans
   dépendance audio. Frontends : `DriveSound` (miniaudio `ma_engine`) côté GUI,

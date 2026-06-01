@@ -11,6 +11,36 @@ const std::array<float, 16> YM2149::kVolume = {
     0.0631f, 0.0891f, 0.1259f, 0.1778f, 0.2512f, 0.3548f, 0.5012f, 1.0000f
 };
 
+// Fait avancer l'enveloppe d'un cran. À la fin d'une rampe (niveau hors [0,15]),
+// les 4 bits de R13 décident de la suite (cf. les 8 formes utiles de l'AY/YM) :
+//   Continue=0           → une seule rampe puis niveau 0 figé (formes $0-$7) ;
+//   Continue=1, Hold=1   → une rampe puis figé (à l'extrémité atteinte, ou à
+//                          l'extrémité opposée si Alternate) ;
+//   Continue=1, Hold=0   → répétition : dent de scie (Alternate=0) ou
+//                          triangle (Alternate=1, on inverse le sens).
+void YM2149::clockEnvelope(uint8_t shape) {
+    if (envHold_) return;
+    const bool cont = shape & 0x08, attack = shape & 0x04;
+    const bool alt  = shape & 0x02, hold   = shape & 0x01;
+    (void)attack;
+
+    envLevel_ += envDir_;
+    if (envLevel_ >= 0 && envLevel_ <= 15) return;          // toujours dans la rampe
+
+    if (!cont) {                                            // $0-$7 : une rampe puis 0
+        envLevel_ = 0; envHold_ = true;
+    } else if (hold) {                                      // une rampe puis figé
+        envLevel_ = alt ? (envDir_ > 0 ? 0 : 15)            // Alternate : extrémité opposée
+                        : (envDir_ > 0 ? 15 : 0);           // sinon : extrémité atteinte
+        envHold_ = true;
+    } else if (alt) {                                       // triangle : on inverse le sens
+        envDir_ = -envDir_;
+        envLevel_ = (envDir_ > 0) ? 0 : 15;
+    } else {                                                // dent de scie : on repart
+        envLevel_ = (envDir_ > 0) ? 0 : 15;
+    }
+}
+
 void YM2149::synthesize(float* out, uint32_t frames, uint32_t sampleRate) {
     // Lecture directe des registres (écrits par le thread émulation) : course
     // bénigne ici, ce sont des octets. Un vrai modèle passerait par un anneau.
@@ -27,10 +57,19 @@ void YM2149::synthesize(float* out, uint32_t frames, uint32_t sampleRate) {
     const double noiseFreq = CLOCK_HZ / (16.0 * noisePer);
 
     const uint8_t mix = regs_[7];                   // bits 0-2 tons, 3-5 bruit (actifs à 0)
-    const float volA = kVolume[regs_[8]  & 0x0F];
-    const float volB = kVolume[regs_[9]  & 0x0F];
-    const float volC = kVolume[regs_[10] & 0x0F];
-    const float vol[3] = { volA, volB, volC };
+
+    // Enveloppe : période 16 bits (R11/R12), un pas de niveau à fclock/256/période.
+    const uint8_t shape   = regs_[13] & 0x0F;
+    const int     envPer  = (regs_[11] | (regs_[12] << 8)) ? (regs_[11] | (regs_[12] << 8)) : 1;
+    const double  envStepFreq = CLOCK_HZ / (256.0 * envPer);
+    const double  incE = envStepFreq / sampleRate;
+    if (envReload_) {                               // R13 écrit → réinitialise l'enveloppe
+        envReload_ = false;
+        envDir_   = (shape & 0x04) ? +1 : -1;       // Attack : monte, sinon descend
+        envLevel_ = (shape & 0x04) ? 0 : 15;
+        envHold_  = false;
+        envPhase_ = 0.0;
+    }
 
     const double incN = noiseFreq / sampleRate;
 
@@ -44,6 +83,11 @@ void YM2149::synthesize(float* out, uint32_t frames, uint32_t sampleRate) {
         }
         const float noiseLevel = (noiseLfsr_ & 1) ? 1.0f : -1.0f;
 
+        // Avance l'enveloppe ; son niveau sert de volume aux voies en mode enveloppe.
+        envPhase_ += incE;
+        while (envPhase_ >= 1.0) { envPhase_ -= 1.0; clockEnvelope(shape); }
+        const float envVol = kVolume[envLevel_ & 0x0F];
+
         float sample = 0.0f;
         for (int ch = 0; ch < 3; ++ch) {
             phase_[ch] += freq[ch] / sampleRate;
@@ -51,11 +95,14 @@ void YM2149::synthesize(float* out, uint32_t frames, uint32_t sampleRate) {
             const bool toneOn  = !((mix >> ch)        & 1);   // bit à 0 = activé
             const bool noiseOn = !((mix >> (ch + 3))  & 1);
             const float square = (phase_[ch] < 0.5) ? 1.0f : -1.0f;
+            // Volume voie : bit 4 du registre (8/9/10) → suit l'enveloppe, sinon fixe.
+            const uint8_t vreg = regs_[8 + ch];
+            const float vol = (vreg & 0x10) ? envVol : kVolume[vreg & 0x0F];
             float v = 0.0f;
             if (toneOn)  v += square;
             if (noiseOn) v += noiseLevel;
             if (toneOn && noiseOn) v *= 0.5f;                  // moyenne ton+bruit
-            sample += v * vol[ch];
+            sample += v * vol;
         }
         out[i] = sample * (1.0f / 3.0f);                       // mixe les 3 voies
     }

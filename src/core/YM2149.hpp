@@ -29,7 +29,13 @@ public:
     void write8(uint32_t addr, uint8_t v) {
         switch (addr & 3) {
             case 0: selected_ = v & 0x0F;  break;        // $FF8800 : choix du registre
-            case 2: regs_[selected_] = v;  break;        // $FF8802 : écriture donnée
+            case 2:                                       // $FF8802 : écriture donnée
+                regs_[selected_] = v;
+                // Écrire R13 (forme d'enveloppe) RÉARME l'enveloppe, même valeur
+                // identique (comportement matériel). Drapeau consommé par le thread
+                // audio (cf. synthesize) pour éviter de toucher son état ici.
+                if (selected_ == 13) envReload_ = true;
+                break;
             default: break;
         }
     }
@@ -37,6 +43,10 @@ public:
     // --- Synthèse (appelée par le thread audio miniaudio) -------------------
     // Remplit `out` (mono, float -1..+1) à la fréquence sampleRate.
     void synthesize(float* out, uint32_t frames, uint32_t sampleRate);
+
+    // Avance l'enveloppe d'un pas (niveau ±1) selon la forme R13 (bits Continue/
+    // Attack/Alternate/Hold) ; gère la fin de rampe (sawtooth / triangle / hold).
+    void clockEnvelope(uint8_t shape);
 
     // Registres bruts exposés au débogueur.
     std::array<uint8_t, 16> regs_{};
@@ -50,4 +60,11 @@ private:
     std::array<double, 3> phase_{};   // accumulateurs de phase des voies A/B/C
     uint32_t noiseLfsr_ = 1;          // registre à décalage du générateur de bruit
     double   noisePhase_ = 0.0;
+
+    // État de l'enveloppe (générateur de volume 0..15), thread audio.
+    double envPhase_  = 0.0;          // accumulateur de phase de l'enveloppe
+    int    envLevel_  = 15;           // niveau courant (0..15)
+    int    envDir_    = -1;           // sens : +1 montée, -1 descente
+    bool   envHold_   = false;        // enveloppe figée (fin de cycle non répété)
+    bool   envReload_ = false;        // R13 écrit → réinitialiser (posé par le CPU)
 };

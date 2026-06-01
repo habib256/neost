@@ -165,8 +165,10 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 
 ## Audio (`psg.c`, `dmaSnd.c`)
 
-- [ ] YM2149 : **enveloppe** (registres 11-13, 16 formes), **table de volume**
-      logarithmique correcte, port B (Centronics), filtrage.
+- [~] YM2149 : **enveloppe** ✓ (registres 11-13, 8 formes utiles via Continue/
+      Attack/Alternate/Hold ; voies en mode enveloppe par bit 4 de R8/9/10),
+      **table de volume** logarithmique ✓. Restent : **port B** (Centronics) et
+      **filtrage** RC de sortie ; enveloppe 5 bits (32 niveaux) vs 16 ici.
 - [ ] **DMA sound STE** ($FF8900+, `dmaSnd.c`) : fréquence sélectionnable,
       mono/stéréo, microwire ($FF8922), mixage avec le YM2149.
 - [ ] **LMC1992 / Microwire** (Hatari `dmaSnd.c`, MAME `lmc1992`) : volume,
