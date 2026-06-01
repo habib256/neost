@@ -165,11 +165,23 @@ d'Hatari, pas son code (licences/architecture différentes) : NeoST garde son
   zéro régression. Le *carry* du dépassement et la subdivision du quantum
   viendront aux phases suivantes (c'est là que le timing changera réellement).
 
-### Phase 2 — Vidéo sur l'ordonnanceur (`video.c`)
+### Phase 2 — Vidéo sur l'ordonnanceur (`video.c`) — ✅ FAIT (rendu scanline)
 
-- Événements par ligne aux **cycles exacts** : Display-Enable début/fin, ENDLINE,
-  HBL, VBL ; bascule 50/60 Hz.
-- Débloque : Timer B sur DE au cycle, base des **bordures** et rasters.
+- `Shifter::beginFrame()` (verrouille la résolution de la trame) + `renderLine(y)`
+  (décode UNE scanline avec l'état **courant** des registres palette/base vidéo).
+- `Machine` planifie un événement `RENDER` par ligne : la scanline est décodée à
+  la fin de sa ligne, donc un changement de palette/base via un handler HBL/VBL
+  s'applique **ligne à ligne** (rasters, scroll vertical par base). En mono
+  (400 lignes > 313 du cadre PAL), les lignes restantes sont finies après la
+  boucle.
+- Le rendu est purement « sortie » (lit la RAM, n'altère ni CPU ni IRQ) →
+  **trace CPU inchangée** ; **validation** : trace Arkanoid identique +
+  screenshots **pixel-identiques** (Arkanoid couleur, bureau EmuTOS, mono).
+- **Reste dans la Phase 2** (ces points CHANGENT la trace, à valider via Hatari) :
+  positionner **HBL et Display-Enable au cycle exact** dans la ligne (et non en
+  fin de ligne), `VIDEO_ENDLINE`, bascule 50/60 Hz, et rendu **sous-ligne** pour
+  Spec512 / changements multiples par scanline.
+- Débloque ensuite : Timer B sur DE au cycle, base des **bordures**.
 
 ### Phase 3 — Timers MFP datés (`mfp.c`) → **Arkanoid**
 

@@ -29,6 +29,7 @@ Machine::Machine(std::size_t ramBytes) : bus(ramBytes) {
 //  Ordonnanceur : câblage des handlers et programmation d'une trame.
 // -----------------------------------------------------------------------------
 void Machine::installSchedulerCallbacks() {
+    sched.setCallback(Scheduler::RENDER,  [this] { onRender(); });
     sched.setCallback(Scheduler::HBL,     [this] { onHbl(); });
     sched.setCallback(Scheduler::TIMER_C, [this] { onTimerC(); });
     sched.setCallback(Scheduler::VBL,     [this] { onVbl(); });
@@ -38,12 +39,28 @@ void Machine::installSchedulerCallbacks() {
 // se replanifient ensuite elles-mêmes dans leur handler.
 void Machine::scheduleFrameEvents() {
     timerCIndex_ = 0;
+    // Rendu : verrouille la résolution puis décode ligne 0 à la fin de la ligne 0.
+    shifter.beginFrame();
+    renderLine_ = 0;
+    sched.schedule(Scheduler::RENDER, CYCLES_PER_LINE);
     // HBL : fin de la ligne 0 (cycle 512), puis chaque ligne visible.
     sched.schedule(Scheduler::HBL, CYCLES_PER_LINE);
     // Timer C ≈ 200 Hz : 4 tics aux lignes 78/156/234/312 (fin de ligne).
     sched.schedule(Scheduler::TIMER_C, static_cast<int64_t>(78 + 1) * CYCLES_PER_LINE);
     // VBL niveau 4 : fin de la ligne 200 (début du VBlank).
     sched.schedule(Scheduler::VBL, static_cast<int64_t>(VISIBLE_LINES + 1) * CYCLES_PER_LINE);
+}
+
+void Machine::onRender() {
+    // Décode la scanline achevée avec l'état COURANT des registres (rasters), puis
+    // planifie la suivante à la fin de sa ligne. Le rendu est purement « sortie »
+    // (il lit la RAM, n'altère ni le CPU ni les IRQ) → trace CPU inchangée.
+    const int h = shifter.height();
+    if (renderLine_ < h) shifter.renderLine(renderLine_);
+    ++renderLine_;
+    const int64_t next = sched.now() + CYCLES_PER_LINE;
+    if (renderLine_ < h && next < static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE)
+        sched.schedule(Scheduler::RENDER, next);
 }
 
 void Machine::onHbl() {
@@ -92,5 +109,9 @@ void Machine::runFrame() {
         sched.runTo(next);                               // déclenche les handlers échus
     }
 
-    shifter.renderFrame();         // décode tout l'écran (rés. courante)
+    // Lignes restantes : en haute-rés mono (400 lignes), le cadre PAL 313 lignes
+    // ne fournit pas un créneau par ligne → on finit le décodage ici. En couleur
+    // (≤ 200 lignes) tout a déjà été décodé au fil de la trame : rien à faire.
+    const int h = shifter.height();
+    while (renderLine_ < h) shifter.renderLine(renderLine_++);
 }

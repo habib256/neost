@@ -21,12 +21,14 @@
 
 class Scheduler {
 public:
-    // Sources matérielles ordonnancées. L'ORDRE de l'énum = priorité de
-    // déclenchement à cycle égal (cf. runTo). Ici HBL avant Timer C avant VBL,
-    // pour reproduire l'ordre exact de l'ancienne boucle.
-    enum Source { HBL, TIMER_C, VBL, SRC_COUNT };
+    // Sources ordonnancées. L'ORDRE de l'énum = priorité de déclenchement à cycle
+    // égal (cf. runTo). RENDER (décodage de la ligne achevée) passe avant HBL ;
+    // puis Timer C, puis VBL — ordre des interruptions de l'ancienne boucle.
+    enum Source { RENDER, HBL, TIMER_C, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
+
+    Scheduler() { due_.fill(kInactive); }
 
     void setCallback(Source s, Callback cb) { cb_[s] = std::move(cb); }
 
@@ -65,7 +67,7 @@ public:
 
 private:
     static constexpr int64_t kInactive = -1;
-    std::array<int64_t, SRC_COUNT>  due_{{kInactive, kInactive, kInactive}};
+    std::array<int64_t, SRC_COUNT>  due_{};      // (rempli à kInactive au ctor)
     std::array<Callback, SRC_COUNT> cb_{};
     int64_t now_ = 0;
 };

@@ -60,10 +60,12 @@ private:
     void installSchedulerCallbacks();
     // Arme le premier événement de chaque source pour la trame courante.
     void scheduleFrameEvents();
-    // Handlers des événements datés (reproduisent l'ancienne boucle ligne/trame).
+    // Handlers des événements datés.
+    void onRender();        // décode la prochaine scanline (Phase 2)
     void onHbl();
     void onTimerC();
     void onVbl();
 
     int timerCIndex_ = 0;   // tic Timer C courant (0..3) dans la trame
+    int renderLine_  = 0;   // prochaine scanline à décoder dans la trame
 };

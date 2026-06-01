@@ -30,50 +30,63 @@ void Shifter::resizeFor(Mode m) {
     frame_.assign(static_cast<std::size_t>(w) * h, 0xFF000000u);
 }
 
-void Shifter::renderFrame() {
-    resizeFor(mode);                                  // suit un éventuel changement de rés.
-    uint32_t* dst = frame_.data();
+// Verrouille la résolution de la trame : le décodage ligne à ligne s'y tient
+// (un changement de $FF8260 en cours de trame ne prend effet qu'à la suivante,
+// comme l'ancien renderFrame qui figeait la rés. au moment du décodage).
+void Shifter::beginFrame() {
+    frameMode_ = mode;
+    resizeFor(frameMode_);
+}
 
-    for (int y = 0; y < curH_; ++y) {
-        if (mode == Mode::High) {
-            // Haute résolution = moniteur MONOCHROME : blanc (0) / noir (1), sans
-            // tenir compte de la palette couleur (sinon un palette[1] non noir
-            // — ex. rouge sous TOS 1.02 — colore l'écran à tort).
-            const uint32_t base = videoBase + static_cast<uint32_t>(y) * 80u;
-            for (int g = 0; g < curW_ / 16; ++g) {
-                const uint16_t p0 = bus_.read16(base + static_cast<uint32_t>(g) * 2u);
-                for (int bit = 15; bit >= 0; --bit)
-                    *dst++ = ((p0 >> bit) & 1) ? 0xFF000000u : 0xFFFFFFFFu;
+// Décode UNE scanline avec l'état COURANT des registres (palette, base vidéo).
+void Shifter::renderLine(int y) {
+    if (y < 0 || y >= curH_) return;
+    uint32_t* dst = frame_.data() + static_cast<std::size_t>(y) * curW_;
+
+    if (frameMode_ == Mode::High) {
+        // Haute résolution = moniteur MONOCHROME : blanc (0) / noir (1), sans
+        // tenir compte de la palette couleur (sinon un palette[1] non noir
+        // — ex. rouge sous TOS 1.02 — colore l'écran à tort).
+        const uint32_t base = videoBase + static_cast<uint32_t>(y) * 80u;
+        for (int g = 0; g < curW_ / 16; ++g) {
+            const uint16_t p0 = bus_.read16(base + static_cast<uint32_t>(g) * 2u);
+            for (int bit = 15; bit >= 0; --bit)
+                *dst++ = ((p0 >> bit) & 1) ? 0xFF000000u : 0xFFFFFFFFu;
+        }
+    } else if (frameMode_ == Mode::Medium) {
+        // 2 plans entrelacés : 2 mots = 16 pixels. Index 0..3.
+        const uint32_t base = videoBase + static_cast<uint32_t>(y) * 160u;
+        for (int g = 0; g < curW_ / 16; ++g) {
+            const uint32_t a = base + static_cast<uint32_t>(g) * 4u;
+            const uint16_t p0 = bus_.read16(a + 0);
+            const uint16_t p1 = bus_.read16(a + 2);
+            for (int bit = 15; bit >= 0; --bit) {
+                const int idx = ((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1);
+                *dst++ = stColorToArgb(palette[idx]);
             }
-        } else if (mode == Mode::Medium) {
-            // 2 plans entrelacés : 2 mots = 16 pixels. Index 0..3.
-            const uint32_t base = videoBase + static_cast<uint32_t>(y) * 160u;
-            for (int g = 0; g < curW_ / 16; ++g) {
-                const uint32_t a = base + static_cast<uint32_t>(g) * 4u;
-                const uint16_t p0 = bus_.read16(a + 0);
-                const uint16_t p1 = bus_.read16(a + 2);
-                for (int bit = 15; bit >= 0; --bit) {
-                    const int idx = ((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1);
-                    *dst++ = stColorToArgb(palette[idx]);
-                }
-            }
-        } else {
-            // Basse rés. : 4 plans entrelacés, 4 mots = 16 pixels. Index 0..15.
-            const uint32_t base = videoBase + static_cast<uint32_t>(y) * 160u;
-            for (int g = 0; g < curW_ / 16; ++g) {
-                const uint32_t a = base + static_cast<uint32_t>(g) * 8u;
-                const uint16_t p0 = bus_.read16(a + 0);
-                const uint16_t p1 = bus_.read16(a + 2);
-                const uint16_t p2 = bus_.read16(a + 4);
-                const uint16_t p3 = bus_.read16(a + 6);
-                for (int bit = 15; bit >= 0; --bit) {
-                    const int idx = ((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1)
-                                  | (((p2 >> bit) & 1) << 2) | (((p3 >> bit) & 1) << 3);
-                    *dst++ = stColorToArgb(palette[idx]);
-                }
+        }
+    } else {
+        // Basse rés. : 4 plans entrelacés, 4 mots = 16 pixels. Index 0..15.
+        const uint32_t base = videoBase + static_cast<uint32_t>(y) * 160u;
+        for (int g = 0; g < curW_ / 16; ++g) {
+            const uint32_t a = base + static_cast<uint32_t>(g) * 8u;
+            const uint16_t p0 = bus_.read16(a + 0);
+            const uint16_t p1 = bus_.read16(a + 2);
+            const uint16_t p2 = bus_.read16(a + 4);
+            const uint16_t p3 = bus_.read16(a + 6);
+            for (int bit = 15; bit >= 0; --bit) {
+                const int idx = ((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1)
+                              | (((p2 >> bit) & 1) << 2) | (((p3 >> bit) & 1) << 3);
+                *dst++ = stColorToArgb(palette[idx]);
             }
         }
     }
+}
+
+// Décode toute la trame d'un coup (repli / appel direct hors ordonnanceur).
+void Shifter::renderFrame() {
+    beginFrame();
+    for (int y = 0; y < curH_; ++y) renderLine(y);
 }
 
 uint8_t Shifter::read8(uint32_t addr) {

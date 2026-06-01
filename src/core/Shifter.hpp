@@ -28,6 +28,14 @@ public:
     // Décode tout le framebuffer visible selon la résolution courante.
     void renderFrame();
 
+    // --- Rendu scanline-par-scanline (cycle-accuracy, cf. docs/CYCLE_ACCURACY.md)
+    //  `beginFrame()` verrouille la résolution de la trame (la résolution ne peut
+    //  pas changer en cours de décodage) ; `renderLine(y)` décode UNE ligne avec
+    //  l'état COURANT des registres (palette/base vidéo) → les changements en
+    //  cours de trame (rasters, scroll par base) s'appliquent ligne à ligne.
+    void beginFrame();
+    void renderLine(int y);
+
     // Accès au buffer décodé (ARGB8888) pour le frontend ou un dump.
     const uint32_t* pixels() const { return frame_.data(); }
     int width()  const { return curW_; }
@@ -48,5 +56,6 @@ private:
 
     Bus&          bus_;
     int           curW_ = 0, curH_ = 0;     // résolution décodée courante
+    Mode          frameMode_ = Mode::Low;   // résolution verrouillée pour la trame
     std::vector<uint32_t> frame_;           // curW_*curH_ pixels ARGB
 };
