@@ -7,3 +7,6 @@
 [submodule "extern/miniaudio"]
 	path = extern/miniaudio
 	url = https://github.com/mackron/miniaudio
+[submodule "extern/moira"]
+	path = extern/moira
+	url = https://github.com/dirkwhoffmann/Moira

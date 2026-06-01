@@ -29,7 +29,9 @@ public:
     static constexpr int LINES_PER_FRAME = 313;
     static constexpr int VISIBLE_LINES   = 200;
 
-    explicit Machine(std::size_t ramBytes = 512u * 1024u);
+    // cpuCore : cœur 68000 à utiliser (choisi avant le démarrage).
+    explicit Machine(std::size_t ramBytes = 512u * 1024u,
+                     CpuCore cpuCore = CpuCore::Musashi);
 
     bool loadTos(const std::string& path)  { return bus.loadTos(path); }
     bool loadDisk(const std::string& path) { return fdc.loadImage(path); }

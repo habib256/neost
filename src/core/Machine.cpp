@@ -12,7 +12,7 @@
 // =============================================================================
 #include "core/Machine.hpp"
 
-Machine::Machine(std::size_t ramBytes) : bus(ramBytes) {
+Machine::Machine(std::size_t ramBytes, CpuCore cpuCore) : bus(ramBytes), cpu(bus, cpuCore) {
     // Branchement des puces sur le bus (le bus ne possède pas les composants).
     bus.shifter = &shifter;
     bus.psg     = &psg;

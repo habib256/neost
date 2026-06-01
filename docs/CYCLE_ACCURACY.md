@@ -275,6 +275,25 @@ recule**. Bonus : en cycle-accurate, les points d'insertion d'IRQ coïncident av
 Hatari → le diff index-par-index cesse d'être « bruité » par le décalage des
 interruptions (un bénéfice en soi).
 
+## 5bis. Second cœur CPU : Moira (cycle-exact) — sélectionnable
+
+Plutôt que de porter le cœur **UAE/WinUAE** (~60k lignes, GPLv2, très couplé à
+Hatari), NeoST intègre **Moira** (cœur 68000 de vAmiga, **MIT**, C++20,
+**cycle-exact** avec timing inter-instructions) en sous-module `extern/moira`.
+
+- Sélection **au démarrage** : `--cpu musashi|moira` (headless), `cpu=` dans
+  `neost.cfg` (GUI), `?cpu=` / sélecteur dans l'UI WASM. **Musashi reste le
+  défaut.**
+- Intégration (`Cpu68k`) : sous-classe `moira::Moira` routant `read8/16` et
+  `write8/16` vers le `Bus`, `irqMode = USER` + `readIrqUserVector` reproduisant
+  le vectoring ST (MFP vectorisé niveau 6, VBL/HBL auto-vectorisés). `run()`
+  exécute via `executeUntil`/`execute` et reporte `getClock()` à l'ordonnanceur.
+- **État** : Moira boote EmuTOS (1re trame **identique** à Musashi). **WIP** :
+  les IRQ MFP (niveau 6) ne sont pas encore délivrées dès la 2ᵉ trame
+  (échantillonnage IPL `setIPL`/`POLL_IPL` entre les `run()` à caler) → EmuTOS
+  part en boucle d'attente. À finaliser pour faire de Moira le cœur de référence
+  cycle-exact (et lever la limite « Musashi ≠ cycles » vue en §5).
+
 ## 6. Effort / risque
 
 | Phase | Effort | Risque | Gain |

@@ -9,13 +9,28 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
+#include <string>
 
 class Bus;
 class Tracer;
 
+// Cœur d'exécution 68000 sélectionnable AU DÉMARRAGE :
+//   - Musashi : cœur MAME (MIT), rapide, coût total par instruction.
+//   - Moira   : cœur de vAmiga (MIT, cycle-exact, timing inter-instructions).
+// Choisi via --cpu / neost.cfg / l'UI WASM (cf. docs/CYCLE_ACCURACY.md).
+enum class CpuCore { Musashi, Moira };
+
 class Cpu68k {
 public:
-    explicit Cpu68k(Bus& bus);
+    // core = cœur souhaité (choisi avant le reset, p. ex. via --cpu / config / UI).
+    explicit Cpu68k(Bus& bus, CpuCore core = CpuCore::Musashi);
+
+    // "musashi"/"uae" (insensible à la casse) → CpuCore ; défaut Musashi sinon.
+    static CpuCore parseCore(const std::string& s);
+    static const char* coreName(CpuCore c);
+
+    // Cœur réellement actif (peut différer du demandé si UAE pas dispo → repli).
+    CpuCore core() const { return core_; }
 
     // Branche (ou détache avec nullptr) le traceur : journalise chaque
     // instruction et chaque interruption prise. Utilisé surtout en headless.
@@ -46,4 +61,7 @@ public:
     uint32_t pc()  const;          // compteur programme courant
     uint32_t reg(int idx) const;   // 0-7 = D0-D7, 8-15 = A0-A7
     uint16_t sr()  const;          // status register
+
+private:
+    CpuCore core_ = CpuCore::Musashi;   // cœur actif (après repli éventuel)
 };

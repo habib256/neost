@@ -40,6 +40,14 @@ ligne-par-ligne (≈ pas cycle-accurate).
 
 ## CPU, cache, FPU, bus
 
+- [~] **Cœur CPU sélectionnable au démarrage (Musashi / Moira)** : abstraction
+      `CpuCore` + sélection via `--cpu`, `neost.cfg` (`cpu=`) et l'UI WASM
+      (`?cpu=`). **Musashi** (MAME, MIT) reste le défaut. **Moira** (cœur de
+      vAmiga, MIT, **cycle-exact**, sous-module `extern/moira`, compilé en C++20)
+      boote EmuTOS (1re trame identique à Musashi). **WIP** : délivrance des IRQ
+      MFP (niveau 6) sous Moira dès la 2ᵉ trame (échantillonnage IPL
+      `setIPL`/`POLL_IPL`) à finaliser. Le cœur UAE/WinUAE (60k lignes, GPLv2) a
+      été écarté au profit de Moira (cf. `docs/CYCLE_ACCURACY.md`).
 - [ ] **Horloge 8/16 MHz MegaSTE** : registre `$FF8E21` bit 1 (`ioMemTabSTE.c`,
       MAME `cache_w`) avec changement de fréquence CPU à chaud et recalcul des
       timings vidéo, MFP, DMA, FDC, ACIA.
