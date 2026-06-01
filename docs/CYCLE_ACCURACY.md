@@ -294,12 +294,17 @@ Hatari), NeoST intègre **Moira** (cœur 68000 de vAmiga, **MIT**, C++20,
   modélisé cycle-par-cycle par Moira (chaque cycle d'attente compte comme une
   « instruction » tracée) → la trace gonfle sur les boucles `stop`, mais c'est un
   artefact de trace, pas un bug.
-- **Reste (divergence fonctionnelle, PAS les IRQ)** : sous TOS 1.02 + Arkanoid,
-  l'autoloader GEM `AUTO\STARTGEM.PRG` s'exécute sous Moira (`$C000`) mais ne
-  lance pas `ARKANOID.PRG` (`$14000` jamais atteint) — l'écran reste au bureau.
-  À diagnostiquer par un diff de trace Moira ↔ Musashi de STARTGEM (probable
-  différence de comportement CPU/timing dans evnt_timer / Pexec). EmuTOS et le
-  boot de base, eux, sont identiques sous les deux cœurs.
+- **Reste (divergence fonctionnelle, PAS les IRQ) — diagnostic affiné** : sous
+  TOS 1.02 + Arkanoid, l'autoloader `STARTGEM.PRG` s'exécute correctement sous
+  Moira (il **hooke le vecteur LINE-F `$2C`** et dispatche les opcodes `$Fxxx` ;
+  le PC fauté empilé `A0=[A7+2]` est **identique** à Musashi). Le déclencheur
+  `$F2C8` finit même par matcher (sortie du dispatcher `$CD38` atteinte). MAIS le
+  `Pexec("A:ARKANOID.PRG")` qui suit **n'aboutit pas** : le FDC est sollicité
+  (~1500 accès `$FF860x`) mais `ARKANOID.PRG` (`$14000`) ne s'exécute jamais. La
+  divergence est donc dans le **chargement Pexec → FDC** sous le timing
+  cycle-exact de Moira (et non dans les IRQ ni le LINE-F). Prochaine étape : diff
+  de trace **NeoST ↔ Hatari (UAE, source de vérité)** sur la séquence Pexec/FDC
+  pour isoler l'écart (Musashi y sert seulement de proxy « qui marche »).
 
 ## 6. Effort / risque
 
