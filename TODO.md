@@ -143,12 +143,15 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 
 - [x] WD1772 instant DMA : Restore/Seek/Read/Write/ReadAddress, géométrie BPB. ✓
 - [~] **Timing réel** : commande non-instantanée (BUSY + INTRQ différé daté sur
-      l'ordonnanceur, Phase 4 cf. docs/CYCLE_ACCURACY.md). Reste : moteur on/off +
-      spin-up, **index pulse** (3.71 ms/rotation),
-      step rate, BUSY — nécessaire pour les protections et le timing fin.
-- [ ] **Write protect** + **détection de changement de média** (Mediach) : pour
-      monter/éjecter proprement à chaud (la Disk Library le fera alors sans reset).
-- [ ] **Densité** DD/HD ($FF860E), **Flopwr** complet → recopie dans le `.st`.
+      l'ordonnanceur, Phase 4) + **statut WD1772 fidèle** (cf. Hatari `fdc.c`) :
+      MOTOR_ON, SPIN_UP (type I), WPRT, TR00, RNF selon le type de commande.
+      Reste : moteur on/off temporisé + spin-up réel, **index pulse**
+      (3.71 ms/rotation), step rate exact — pour les protections et le timing fin.
+- [~] **Write protect** (✓ : refus d'écriture + bit WPRT) + **détection de
+      changement de média** (Mediach, reste à faire) : pour monter/éjecter à chaud
+      sans reset (la Disk Library).
+- [~] **Densité** DD/HD ($FF860E, reste à faire), **Flopwr** ✓ : les écritures
+      sont recopiées dans le fichier `.st` monté (`Fdc::writeBack`).
 - [ ] Formats : **.msa**, **.dim**, **.stx** (protégés, timing variable, le seul
       moyen de lancer beaucoup d'originaux), **.ipf**, et archives **.zip**
       (`file_archive.c`, `unzip.c`). NeoST ne lit que `.st` brut.

@@ -21,8 +21,16 @@ enum : uint16_t {
 };
 // --- Bits statut DMA ($FF8606 en lecture) ---
 enum : uint16_t { DMA_OK = 0x0001, DMA_SCNOT0 = 0x0002 };
-// --- Bits statut FDC ---
-enum : uint8_t { FDC_TRACK0 = 0x04, FDC_RNF = 0x10, FDC_WRPRO = 0x40 };
+// --- Bits statut WD1772 (cf. Hatari fdc.c) ---
+//   type I  : INDEX(2) TR00(4) CRC(8) SEEKERR(10) SPINUP(20) WPRT(40) MOTOR(80)
+//   type II/III : DRQ(2) LOSTDATA(4) CRC(8) RNF(10) RECTYPE(20) WPRT(40) MOTOR(80)
+enum : uint8_t {
+    FDC_TRACK0  = 0x04,   // type I : tête sur piste 0
+    FDC_RNF     = 0x10,   // type II/III : secteur introuvable (Record Not Found)
+    FDC_SPINUP  = 0x20,   // type I : séquence spin-up terminée
+    FDC_WRPRO   = 0x40,   // disquette protégée en écriture
+    FDC_MOTOR_ON = 0x80,  // moteur en rotation
+};
 
 bool Fdc::loadImage(const std::string& path) {
     std::ifstream f(path, std::ios::binary | std::ios::ate);
@@ -156,6 +164,15 @@ void Fdc::executeCommand(uint8_t cmd) {
         default:   result = 0;                                          break;
     }
 
+    // Statut WD1772 fidèle (cf. Hatari) : le moteur tourne pendant/après toute
+    // commande ; les commandes type I (seek/restore/step) signalent aussi le
+    // spin-up terminé et l'état write-protect de la disquette.
+    result |= FDC_MOTOR_ON;
+    if (!(cmd & 0x80)) {                               // type I
+        result |= FDC_SPINUP;
+        if (writeProtect_) result |= FDC_WRPRO;
+    }
+
     // Le transfert DMA est déjà fait (données en RAM) ; on POSE BUSY et on diffère
     // l'INTRQ : pendant ce temps, le statut lu garde BUSY et l'INTRQ reste haut.
     pendingStatus_ = result;
@@ -199,9 +216,11 @@ uint8_t Fdc::readSectors(uint8_t /*cmd*/) {
 
 uint8_t Fdc::writeSectors(uint8_t /*cmd*/) {
     if (image_.empty() || !driveASelected()) return FDC_RNF;
+    if (writeProtect_) return FDC_RNF | FDC_WRPRO;    // disquette protégée → refus
     const int side = currentSide();
     int count = dmaCount_ ? dmaCount_ : 1;
-    uint32_t off = lsnOffset(track_, side, sector_, spt_, sides_);
+    const uint32_t off0 = lsnOffset(track_, side, sector_, spt_, sides_);
+    uint32_t off = off0;
 
     for (int i = 0; i < count; ++i) {
         if (off + 512u > image_.size()) return FDC_RNF;
@@ -212,7 +231,18 @@ uint8_t Fdc::writeSectors(uint8_t /*cmd*/) {
         off += 512u; dmaAddr_ += 512u;
     }
     dmaCount_ = 0;
+    writeBack(off0, off - off0);     // Flopwr : recopie les secteurs dans le .st
     return 0;
+}
+
+// Recopie une zone modifiée de l'image en mémoire vers le fichier .st monté
+// (persistance des écritures — cf. TODO « Flopwr complet → recopie dans le .st »).
+void Fdc::writeBack(uint32_t off, uint32_t len) {
+    if (path_.empty() || off + len > image_.size()) return;
+    std::fstream f(path_, std::ios::binary | std::ios::in | std::ios::out);
+    if (!f) return;                  // image en lecture seule / FS virtuel non inscriptible
+    f.seekp(off);
+    f.write(reinterpret_cast<const char*>(image_.data() + off), len);
 }
 
 uint8_t Fdc::readAddress() {
