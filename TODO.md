@@ -152,7 +152,8 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
       sans reset (la Disk Library).
 - [~] **Densité** DD/HD ($FF860E, reste à faire), **Flopwr** ✓ : les écritures
       sont recopiées dans le fichier `.st` monté (`Fdc::writeBack`).
-- [ ] Formats : **.msa**, **.dim**, **.stx** (protégés, timing variable, le seul
+- [~] Formats : **.msa** ✓ (décompression RLE → .st en mémoire, `Fdc::decodeMsa`),
+      **.dim**, **.stx** (protégés, timing variable, le seul
       moyen de lancer beaucoup d'originaux), **.ipf**, et archives **.zip**
       (`file_archive.c`, `unzip.c`). NeoST ne lit que `.st` brut.
 - [ ] **Lecteur B** (sélection déjà décodée via PSG port A).

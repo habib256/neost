@@ -32,13 +32,65 @@ enum : uint8_t {
     FDC_MOTOR_ON = 0x80,  // moteur en rotation
 };
 
+// Décompresse une image .msa (Magic Shadow Archiver) en image .st brute.
+// En-tête (mots big-endian) : 0E0F, secteurs/piste, faces-1, piste début, fin.
+// Chaque piste : un mot de longueur ; si != spt*512, flux RLE (marqueur 0xE5
+// suivi de valeur + compteur mot). Cf. Hatari src/msa.c.
+static bool decodeMsa(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out) {
+    if (raw.size() < 10 || raw[0] != 0x0E || raw[1] != 0x0F) return false;
+    const int spt   = (raw[2] << 8) | raw[3];
+    const int sides = ((raw[4] << 8) | raw[5]) + 1;
+    const int t0    = (raw[6] << 8) | raw[7];
+    const int t1    = (raw[8] << 8) | raw[9];
+    if (spt < 1 || spt > 30 || sides < 1 || sides > 2 || t1 < t0) return false;
+    const std::size_t trackBytes = static_cast<std::size_t>(spt) * 512u;
+    out.clear();
+    std::size_t p = 10;
+    for (int track = t0; track <= t1; ++track)
+        for (int s = 0; s < sides; ++s) {
+            if (p + 2 > raw.size()) return false;
+            const int len = (raw[p] << 8) | raw[p + 1]; p += 2;
+            if (p + len > raw.size()) return false;
+            if (static_cast<std::size_t>(len) == trackBytes) {        // piste non compressée
+                out.insert(out.end(), raw.begin() + p, raw.begin() + p + len);
+                p += len;
+            } else {                                                   // piste RLE
+                const std::size_t target = out.size() + trackBytes;
+                const std::size_t end = p + len;
+                while (p < end && out.size() < target) {
+                    const uint8_t b = raw[p++];
+                    if (b == 0xE5 && p + 3 <= end) {                   // run-length
+                        const uint8_t val = raw[p];
+                        const int cnt = (raw[p + 1] << 8) | raw[p + 2]; p += 3;
+                        out.insert(out.end(), static_cast<std::size_t>(cnt), val);
+                    } else {
+                        out.push_back(b);
+                    }
+                }
+                if (out.size() != target) return false;                // piste mal décodée
+            }
+        }
+    return true;
+}
+
 bool Fdc::loadImage(const std::string& path) {
     std::ifstream f(path, std::ios::binary | std::ios::ate);
     if (!f) { std::fprintf(stderr, "[FDC] image introuvable : %s\n", path.c_str()); return false; }
     const std::streamsize n = f.tellg();
     f.seekg(0);
-    image_.resize(static_cast<std::size_t>(n));
-    f.read(reinterpret_cast<char*>(image_.data()), n);
+    std::vector<uint8_t> raw(static_cast<std::size_t>(n));
+    f.read(reinterpret_cast<char*>(raw.data()), n);
+
+    // .msa (compressé) → décompression en .st brut ; sinon image .st telle quelle.
+    std::vector<uint8_t> msa;
+    if (decodeMsa(raw, msa)) {
+        image_ = std::move(msa);
+        rawImage_ = false;                       // .msa : pas de recopie d'écritures
+        std::fprintf(stderr, "[FDC] image .msa décompressée : %s\n", path.c_str());
+    } else {
+        image_ = std::move(raw);                 // .st brut
+        rawImage_ = true;
+    }
 
     // Géométrie depuis le BPB (offsets 0x18 = secteurs/piste, 0x1A = faces).
     if (image_.size() >= 0x1C) {
@@ -238,7 +290,7 @@ uint8_t Fdc::writeSectors(uint8_t /*cmd*/) {
 // Recopie une zone modifiée de l'image en mémoire vers le fichier .st monté
 // (persistance des écritures — cf. TODO « Flopwr complet → recopie dans le .st »).
 void Fdc::writeBack(uint32_t off, uint32_t len) {
-    if (path_.empty() || off + len > image_.size()) return;
+    if (!rawImage_ || path_.empty() || off + len > image_.size()) return;  // .msa : pas de recopie
     std::fstream f(path_, std::ios::binary | std::ios::in | std::ios::out);
     if (!f) return;                  // image en lecture seule / FS virtuel non inscriptible
     f.seekp(off);

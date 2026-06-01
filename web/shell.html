@@ -54,7 +54,7 @@
     <select id="diskSel" title="Disquette préchargée"></select>
     <button id="btnMount">Monter + Reset</button>
     <label class="file">Charger un .st…
-      <input type="file" id="diskFile" accept=".st">
+      <input type="file" id="diskFile" accept=".st,.msa">
     </label>
   </div>
 
@@ -98,7 +98,7 @@
       if (statusEl) statusEl.textContent = 'Prêt — cliquez dans l\'écran pour jouer.';
       // Peuple le menu des disquettes depuis le FS virtuel : montre exactement ce
       // qui a été embarqué (tout en local, EmuTOS+diskA pour le déploiement libre).
-      populateSelect('diskSel', '/disks', /\.st$/i);
+      populateSelect('diskSel', '/disks', /\.(st|msa)$/i);
       populateSelect('romSel', '/rom', /\.(img|rom|tos|bin)$/i, '/rom/etos192us.img');
     };
 

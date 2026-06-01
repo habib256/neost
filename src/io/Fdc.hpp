@@ -65,6 +65,7 @@ private:
     std::string path_;                          // chemin de l'image montée ("" = vide)
     int      spt_ = 9, sides_ = 2;              // géométrie (lue dans le BPB)
     bool     writeProtect_ = false;             // disquette protégée en écriture
+    bool     rawImage_ = true;                  // .st brut (writeBack possible) vs .msa
 
     // Registres WD1772.
     uint8_t  status_ = 0, track_ = 0, sector_ = 1, data_ = 0;
