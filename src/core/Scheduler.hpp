@@ -25,7 +25,7 @@ public:
     // RENDER ≈ fin Display-Enable (376) ; TIMER_B = event-count sur DE (400, piloté
     // par Machine) ; HBL niveau 2 = 508 ; VBL. Les Timers A/C/D (mode délai) sont
     // datés par le MFP lui-même (période calculée des registres TxCR/TxDR).
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_C, TIMER_D, HBL, VBL, SRC_COUNT };
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_C, TIMER_D, FDC, HBL, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 

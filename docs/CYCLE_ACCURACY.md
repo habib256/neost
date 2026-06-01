@@ -227,9 +227,22 @@ d'Hatari, pas son code (licences/architecture différentes) : NeoST garde son
 > **Arkanoid** : rappel — ce dump cale au même endroit (`$26E7`) **dans Hatari
 > aussi** ; ce n'est pas un problème de timers. Cf. `TODO.md`.
 
-### Phase 4 — FDC/DMA temporel (`fdc.c`)
+### Phase 4 — FDC/DMA temporel (`fdc.c`) — ✅ FAIT (BUSY + INTRQ différé)
 
-- Spin-up, index pulse, BUSY, DRQ/INTRQ datés ; remplace le DMA instantané.
+- `Fdc::setScheduler` ; une commande WD1772 n'est plus instantanée : on POSE
+  **BUSY** (statut bit 0), on calcule une **durée** (`Fdc::commandDelayCycles` :
+  type I = step-rate × pas ; type II/III = ~temps de transfert par secteur), et
+  on date la fin sur `Scheduler::FDC`. À l'échéance (`onCommandComplete`), BUSY
+  tombe, le statut final s'applique et l'**INTRQ** est levée (GPIP5 pour le
+  polling TOS + canal 7 pour les jeux).
+- Le transfert DMA des données reste immédiat (données en RAM) ; seule la
+  **signalisation** (BUSY → INTRQ) est datée — suffisant pour que TOS/jeux qui
+  attendent la fin de commande voient un délai réaliste.
+- **Validation** : EmuTOS (sans disque) **pixel-identique** ; TOS 1.02 + diskA
+  boote ; **Arkanoid se charge et son titre est pixel-identique** (données FDC
+  correctes) ; smoke-test + montage WASM OK.
+- **Reste** : débit réel (~16 ms/secteur, ici accéléré ~1 ms), index pulse /
+  spin-up moteur, DRQ octet-par-octet, latence de rotation, write-protect/Mediach.
 
 ### Phase 5 — Unité interne CPU/MFP (`cycInt.c`)
 

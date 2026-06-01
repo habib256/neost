@@ -131,7 +131,9 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 ## Disquette (`fdc.c` 7600 lignes, `floppy.c`)
 
 - [x] WD1772 instant DMA : Restore/Seek/Read/Write/ReadAddress, géométrie BPB. ✓
-- [ ] **Timing réel** : moteur on/off + spin-up, **index pulse** (3.71 ms/rotation),
+- [~] **Timing réel** : commande non-instantanée (BUSY + INTRQ différé daté sur
+      l'ordonnanceur, Phase 4 cf. docs/CYCLE_ACCURACY.md). Reste : moteur on/off +
+      spin-up, **index pulse** (3.71 ms/rotation),
       step rate, BUSY — nécessaire pour les protections et le timing fin.
 - [ ] **Write protect** + **détection de changement de média** (Mediach) : pour
       monter/éjecter proprement à chaud (la Disk Library le fera alors sans reset).
