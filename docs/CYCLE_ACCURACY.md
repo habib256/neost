@@ -183,6 +183,25 @@ d'Hatari, pas son code (licences/architecture différentes) : NeoST garde son
   Spec512 / changements multiples par scanline.
 - Débloque ensuite : Timer B sur DE au cycle, base des **bordures**.
 
+### Phase 2b — Cycles vidéo exacts + carry du dépassement — ✅ FAIT
+
+- **Boucle avec carry** (`Machine::runFrame`) : plus de quantum « ligne » ; on
+  exécute le CPU jusqu'au prochain événement et on avance l'horloge du nombre de
+  cycles **réellement** consommés par `m68k_execute` (le dépassement est reporté,
+  comme Hatari) → l'événement échu se déclenche « en retard » de quelques cycles,
+  sans dérive. (C'est aussi la Phase 5 « carry ».)
+- **Événements vidéo au cycle exact dans la ligne** (constantes STF PAL 50 Hz,
+  `Hatari video.h`) : rendu de la scanline à la fin du Display-Enable (**cycle
+  376**), **Timer B** event-count à **400** (`376+24`), **HBL** niveau 2 à **508**
+  (`512-4`). Le rendu d'une ligne précède donc les handlers Timer B/HBL de la même
+  ligne (qui modifient les registres pour la ligne suivante) → rasters corrects.
+- **Validation** : screenshots **pixel-identiques** (bureau EmuTOS, Arkanoid
+  couleur, mono) malgré le changement de timing ; boot OK. `tools/trace_diff.py`
+  corrigé pour le vrai format Hatari `cpu_disasm` (`adresse octets disasm`) et
+  validé contre une trace Hatari réelle.
+- **Reste** : `VIDEO_ENDLINE`/bascule 50-60 Hz, rendu **sous-ligne** (Spec512),
+  positionnement cycle-exact du VBL et du Timer C (ce dernier en Phase 3).
+
 ### Phase 3 — Timers MFP datés (`mfp.c`) → **Arkanoid**
 
 - Timers A–D en événements (delay/event-count/pulse-width), latence IACK au cycle.

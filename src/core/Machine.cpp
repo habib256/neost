@@ -30,6 +30,7 @@ Machine::Machine(std::size_t ramBytes) : bus(ramBytes) {
 // -----------------------------------------------------------------------------
 void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::RENDER,  [this] { onRender(); });
+    sched.setCallback(Scheduler::TIMER_B, [this] { onTimerB(); });
     sched.setCallback(Scheduler::HBL,     [this] { onHbl(); });
     sched.setCallback(Scheduler::TIMER_C, [this] { onTimerC(); });
     sched.setCallback(Scheduler::VBL,     [this] { onVbl(); });
@@ -39,12 +40,15 @@ void Machine::installSchedulerCallbacks() {
 // se replanifient ensuite elles-mêmes dans leur handler.
 void Machine::scheduleFrameEvents() {
     timerCIndex_ = 0;
-    // Rendu : verrouille la résolution puis décode ligne 0 à la fin de la ligne 0.
-    shifter.beginFrame();
-    renderLine_ = 0;
-    sched.schedule(Scheduler::RENDER, CYCLES_PER_LINE);
-    // HBL : fin de la ligne 0 (cycle 512), puis chaque ligne visible.
-    sched.schedule(Scheduler::HBL, CYCLES_PER_LINE);
+    renderLine_  = 0;
+    tbLine_      = 0;
+    hblLine_     = 0;
+    shifter.beginFrame();                          // verrouille la résolution
+
+    // Premiers événements de la ligne 0, à leur CYCLE EXACT dans la ligne.
+    sched.schedule(Scheduler::RENDER,  DE_END_CYCLE);   // 376 : rendu de la ligne 0
+    sched.schedule(Scheduler::TIMER_B, TIMERB_CYCLE);   // 400 : tic event-count
+    sched.schedule(Scheduler::HBL,     HBL_CYCLE);      // 508 : HBL niveau 2
     // Timer C ≈ 200 Hz : 4 tics aux lignes 78/156/234/312 (fin de ligne).
     sched.schedule(Scheduler::TIMER_C, static_cast<int64_t>(78 + 1) * CYCLES_PER_LINE);
     // VBL niveau 4 : fin de la ligne 200 (début du VBlank).
@@ -52,25 +56,34 @@ void Machine::scheduleFrameEvents() {
 }
 
 void Machine::onRender() {
-    // Décode la scanline achevée avec l'état COURANT des registres (rasters), puis
-    // planifie la suivante à la fin de sa ligne. Le rendu est purement « sortie »
-    // (il lit la RAM, n'altère ni le CPU ni les IRQ) → trace CPU inchangée.
+    // Décode la scanline à la fin de son Display-Enable (cycle 376), avec l'état
+    // COURANT des registres (palette/base) — AVANT le tic Timer B (400) et le HBL
+    // (508) de la même ligne, dont les handlers changeront les registres pour la
+    // ligne SUIVANTE (rasters). Rendu purement « sortie » : n'altère ni CPU ni IRQ.
     const int h = shifter.height();
     if (renderLine_ < h) shifter.renderLine(renderLine_);
     ++renderLine_;
-    const int64_t next = sched.now() + CYCLES_PER_LINE;
-    if (renderLine_ < h && next < static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE)
-        sched.schedule(Scheduler::RENDER, next);
+    const int64_t due = static_cast<int64_t>(renderLine_) * CYCLES_PER_LINE + DE_END_CYCLE;
+    if (renderLine_ < h && due < static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE)
+        sched.schedule(Scheduler::RENDER, due);
+}
+
+void Machine::onTimerB() {
+    // Timer B en event-count : décompte une fois par ligne affichée (sur DE).
+    mfp.hblank();
+    cpu.updateIpl();                               // un underflow Timer B → IPL 6
+    ++tbLine_;
+    if (tbLine_ < VISIBLE_LINES)
+        sched.schedule(Scheduler::TIMER_B,
+                       static_cast<int64_t>(tbLine_) * CYCLES_PER_LINE + TIMERB_CYCLE);
 }
 
 void Machine::onHbl() {
-    // Timer B (event-count sur Display Enable) + HBL niveau 2 : lignes visibles.
-    mfp.hblank();
-    cpu.raiseHbl();
-    // Replanifie pour la prochaine ligne visible (HBL aux fins de lignes 0..199).
-    const int64_t next = sched.now() + CYCLES_PER_LINE;
-    if (next <= static_cast<int64_t>(VISIBLE_LINES) * CYCLES_PER_LINE)
-        sched.schedule(Scheduler::HBL, next);
+    cpu.raiseHbl();                                // HBL niveau 2 (gaté par le SR)
+    ++hblLine_;
+    if (hblLine_ < VISIBLE_LINES)
+        sched.schedule(Scheduler::HBL,
+                       static_cast<int64_t>(hblLine_) * CYCLES_PER_LINE + HBL_CYCLE);
 }
 
 void Machine::onTimerC() {
@@ -97,16 +110,15 @@ void Machine::runFrame() {
     const int64_t frameEnd = static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE;
     while (sched.now() < frameEnd) {
         int64_t next = sched.nextDue();
-        // Quantum CPU = une ligne (512 cycles) : on borne l'avance même si le
-        // prochain événement est plus loin. Comme toutes les échéances sont sur
-        // la grille de 512 cycles, chaque pas exécute exactement une ligne →
-        // chunking (et donc trace) IDENTIQUES à l'ancien modèle « par blocs ».
-        const int64_t cap = sched.now() + CYCLES_PER_LINE;
-        if (next < 0 || next > cap) next = cap;
-        if (next > frameEnd)        next = frameEnd;
+        if (next < 0 || next > frameEnd) next = frameEnd;
 
-        cpu.run(static_cast<int>(next - sched.now()));   // cycles CPU jusqu'à l'événement
-        sched.runTo(next);                               // déclenche les handlers échus
+        // Exécute le CPU jusqu'au prochain événement. m68k_execute termine son
+        // instruction en cours et peut DÉPASSER la cible : on AVANCE l'horloge du
+        // nombre RÉELLEMENT consommé (carry du dépassement, comme Hatari) → pas de
+        // dérive ; l'événement échu est déclenché « en retard » de quelques cycles.
+        const int64_t want = next - sched.now();
+        const int ran = cpu.run(static_cast<int>(want > 0 ? want : 1));
+        sched.runTo(sched.now() + ran);                  // déclenche les handlers échus
     }
 
     // Lignes restantes : en haute-rés mono (400 lignes), le cadre PAL 313 lignes
