@@ -18,6 +18,7 @@ via le wrapper `Cpu68k`.
 CMakeLists.txt
 src/
   main.cpp            Boucle d'horloge (cycles CPU ↔ lignes Shifter) + UI ImGui
+  web/main_web.cpp    Frontend WebAssembly (Emscripten + GLFW + shader WebGL)
   core/
     Bus.hpp/.cpp      Memory map ($0 RAM, $E00000/$FC0000 ROM TOS, $FF8000 MMIO)
     Cpu68k.hpp/.cpp   Wrapper Musashi (68000)
@@ -62,6 +63,40 @@ cmake --build build -j
 > Les chemins par défaut (`rom/`, `disks/`) sont résolus relativement au
 > répertoire courant ET à l'exécutable, donc `./neost` marche aussi bien depuis
 > la racine que depuis `build/`.
+
+## Version WebAssembly (dans le navigateur)
+
+**▶ Essayer NeoST en ligne : <https://habib256.github.io/neost/>**
+
+> Le lien est publié par GitHub Pages via le workflow
+> [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml) (au push
+> sur `main`). Pour l'activer : **Settings → Pages → Source = GitHub Actions**.
+> La démo publique n'embarque que des contenus **libres** (EmuTOS GPL + `diskA.st`
+> générée) ; les jeux sous copyright ne sont pas redistribués — chargez vos
+> propres `.st` via le bouton « Charger un .st… ».
+
+![NeoST WASM — boot EmuTOS](web/neost-wasm-emutos.png)
+
+Le même cœur `neost_core` (CPU Musashi inclus) est compilé en WebAssembly via
+**[Emscripten](https://emscripten.org/)**. Le frontend web dédié
+(`src/web/main_web.cpp`) remplace l'OpenGL immédiat par un shader WebGL et la
+boucle temporisée par `emscripten_set_main_loop`. Clic dans l'écran = capture
+souris (curseur GEM), `Échap` la libère ; le clavier est routé vers l'IKBD.
+
+Construction locale (nécessite l'[emsdk](https://emscripten.org/docs/getting_started/downloads.html)
+activé, `source .../emsdk_env.sh`) :
+
+```sh
+emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release
+cmake --build build-web -j --target neost-web      # → build-web/index.{html,js,wasm,data}
+# Servir en HTTP (les .wasm/.data ne se chargent pas en file://) :
+python3 -m http.server -d build-web 8000           # puis ouvrir http://localhost:8000/
+```
+
+ROM et disquettes sont embarquées dans le FS virtuel via `--preload-file` ; le
+menu déroulant liste les images présentes. Option CMake
+`-DNEOST_WEB_FREE_ONLY=ON` pour n'embarquer que les contenus libres (utilisée
+par le déploiement public).
 
 ### Disquette (FDC WD1772 + DMA)
 

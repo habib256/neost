@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<!--
+  shell.html — Page hôte de NeoST WebAssembly.
+  Fournit le canvas WebGL, quelques contrôles (Reset, moniteur, disquettes) et
+  branche les fonctions C exportées (neost_reset / neost_set_mono /
+  neost_mount_disk) via Module.ccall. (c) 2026 VERHILLE Arnaud — projet NeoST.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NeoST — Atari ST dans le navigateur</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; background: #16161a; color: #e8e8ec;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    h1 { font-size: 1.2rem; margin: 0.8rem 0 0.2rem; font-weight: 600; }
+    .sub { color: #8a8a96; font-size: 0.8rem; margin-bottom: 0.6rem; }
+    #toolbar {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+      margin-bottom: 0.6rem; max-width: 680px; justify-content: center;
+    }
+    button, select, label.file {
+      background: #2a2a33; color: #e8e8ec; border: 1px solid #3a3a45;
+      border-radius: 6px; padding: 0.4rem 0.7rem; font-size: 0.85rem; cursor: pointer;
+    }
+    button:hover, select:hover, label.file:hover { background: #343440; }
+    input[type=file] { display: none; }
+    #canvas {
+      border: 1px solid #000; background: #000;
+      image-rendering: pixelated; width: 640px; height: 400px;
+      outline: none;
+    }
+    #status { font-size: 0.78rem; color: #8a8a96; margin-top: 0.5rem; min-height: 1.1em; }
+    .hint { font-size: 0.75rem; color: #6a6a76; max-width: 660px; text-align: center; margin: 0.4rem 0 1rem; }
+    code { background: #2a2a33; padding: 0 0.3em; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>NeoST — émulateur Atari ST</h1>
+  <div class="sub">WebAssembly · cœur 68000 Musashi · EmuTOS</div>
+
+  <div id="toolbar">
+    <button id="btnReset">Reset</button>
+    <button id="btnMono">Passer en Mono</button>
+    <select id="diskSel" title="Disquette préchargée"></select>
+    <button id="btnMount">Monter + Reset</button>
+    <label class="file">Charger un .st…
+      <input type="file" id="diskFile" accept=".st">
+    </label>
+  </div>
+
+  <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+  <div id="status">Chargement du module WebAssembly…</div>
+  <div class="hint">
+    Cliquez dans l'écran pour <b>capturer la souris</b> (curseur GEM), <code>Échap</code> pour la libérer.
+    Le clavier est routé vers l'IKBD. Couleur = basse résolution, Mono = haute résolution.
+  </div>
+
+  <script type='text/javascript'>
+    var statusEl = document.getElementById('status');
+    var monoOn = false;
+    var ready = false;
+
+    var Module = {
+      canvas: (function () {
+        var c = document.getElementById('canvas');
+        // Le focus clavier suit le canvas dès qu'on clique dedans.
+        c.addEventListener('click', function () { c.focus(); });
+        return c;
+      })(),
+      print: function (text) { console.log(text); },
+      printErr: function (text) { console.warn(text); },
+      setStatus: function (text) {
+        // Une fois prêt, on ignore les setStatus('') tardifs d'Emscripten qui
+        // effaceraient notre message "Prêt".
+        if (ready && !text) return;
+        if (statusEl) statusEl.textContent = text || '';
+      }
+    };
+    Module.setStatus('Chargement du module WebAssembly…');
+
+    // « Prêt » est déclenché par le cœur C à sa première trame (cf. main_web.cpp,
+    // EM_ASM appelant neostOnReady) : garantit que le runtime tourne vraiment.
+    window.neostOnReady = function () {
+      ready = true;
+      if (statusEl) statusEl.textContent = 'Prêt — cliquez dans l\'écran pour jouer.';
+      // Peuple le menu des disquettes depuis le FS virtuel : montre exactement ce
+      // qui a été embarqué (tout en local, EmuTOS+diskA pour le déploiement libre).
+      try {
+        var sel = document.getElementById('diskSel');
+        var files = Module.FS.readdir('/disks')
+          .filter(function (f) { return /\.st$/i.test(f); }).sort();
+        sel.innerHTML = '';
+        files.forEach(function (f) {
+          var o = document.createElement('option');
+          o.value = '/disks/' + f; o.textContent = f;
+          sel.appendChild(o);
+        });
+      } catch (e) { console.warn('FS.readdir /disks:', e); }
+    };
+
+    function callReset()  { if (ready) Module.ccall('neost_reset'); }
+    function callMono(m)  { if (ready) Module.ccall('neost_set_mono', null, ['number'], [m]); }
+    function callMount(p) { if (ready) Module.ccall('neost_mount_disk', null, ['string'], [p]); }
+
+    document.getElementById('btnReset').addEventListener('click', callReset);
+
+    document.getElementById('btnMono').addEventListener('click', function () {
+      monoOn = !monoOn;
+      callMono(monoOn ? 1 : 0);
+      this.textContent = monoOn ? 'Passer en Couleur' : 'Passer en Mono';
+    });
+
+    document.getElementById('btnMount').addEventListener('click', function () {
+      var p = document.getElementById('diskSel').value;
+      callMount(p);
+      Module.setStatus('Monté : ' + p.split('/').pop());
+    });
+
+    // Upload d'une disquette .st depuis le disque local → FS virtuel → montage.
+    document.getElementById('diskFile').addEventListener('change', function (ev) {
+      var file = ev.target.files[0];
+      if (!file || !ready) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var data = new Uint8Array(reader.result);
+        var path = '/disks/_upload.st';
+        Module.FS.writeFile(path, data);
+        callMount(path);
+        Module.setStatus('Monté : ' + file.name + ' (' + data.length + ' octets)');
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>
