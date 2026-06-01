@@ -20,7 +20,7 @@ class Mfp;
 class Ikbd;
 class Fdc;
 class Cpu68k;
-
+class DmaSound;
 // -----------------------------------------------------------------------------
 //  Plan mémoire de l'Atari ST (bus d'adresses 24 bits → 16 Mo adressables).
 //  Les constantes documentent le POURQUOI de chaque zone.
@@ -50,6 +50,8 @@ namespace stmap {
     constexpr uint32_t SHIFTER_END    = 0xFF8260;
     constexpr uint32_t DMA_FDC_BASE   = 0xFF8600; // disquette / DMA
     constexpr uint32_t PSG_BASE       = 0xFF8800; // YM2149 (son)
+    constexpr uint32_t DMASND_BASE    = 0xFF8900; // son DMA STE ($FF8900-$FF8925)
+    constexpr uint32_t DMASND_END     = 0xFF8940;
     constexpr uint32_t MFP_BASE       = 0xFFFA00; // MFP 68901 (timers/IRQ)
     constexpr uint32_t ACIA_BASE      = 0xFFFC00; // clavier (IKBD) / MIDI
 
@@ -87,6 +89,7 @@ public:
     Mfp*     mfp     = nullptr;   // contrôleur d'interruptions 68901
     Ikbd*    ikbd    = nullptr;   // ACIA clavier
     Fdc*     fdc     = nullptr;   // contrôleur disquette + DMA
+    DmaSound* dmasnd = nullptr;   // son DMA STE ($FF8900) — optionnel
     Cpu68k*  cpu     = nullptr;   // pour rafraîchir l'IPL après un accès MMIO
 
     // Données brutes exposées au débogueur (visualiseur hexa ImGui). Pas de

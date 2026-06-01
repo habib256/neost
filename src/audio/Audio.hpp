@@ -13,11 +13,12 @@
 
 class YM2149;
 class DriveSound;
+class DmaSound;
 
 class Audio {
 public:
-    // drive peut être nul (pas de bruits lecteur) — seul le PSG sort alors.
-    explicit Audio(YM2149& psg, DriveSound* drive = nullptr);
+    // drive / dma peuvent être nuls — seul le PSG sort alors.
+    explicit Audio(YM2149& psg, DriveSound* drive = nullptr, DmaSound* dma = nullptr);
     ~Audio();
 
     bool start();              // ouvre et démarre le périphérique
@@ -31,6 +32,7 @@ public:
 private:
     YM2149&     psg_;
     DriveSound* drive_   = nullptr;
+    DmaSound*   dma_     = nullptr;
     bool        started_ = false;
     void*       device_  = nullptr;   // ma_device opaque (évite d'inclure miniaudio ici)
 };

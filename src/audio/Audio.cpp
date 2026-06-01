@@ -12,7 +12,9 @@
 #include "audio/Audio.hpp"
 #include "audio/DriveSound.hpp"
 #include "core/YM2149.hpp"
+#include "core/DmaSound.hpp"
 
+#include <algorithm>
 #include <cstdio>
 
 namespace {
@@ -23,13 +25,17 @@ void dataCallback(ma_device* dev, void* output, const void* /*input*/, ma_uint32
 }
 } // namespace
 
-Audio::Audio(YM2149& psg, DriveSound* drive) : psg_(psg), drive_(drive) {}
+Audio::Audio(YM2149& psg, DriveSound* drive, DmaSound* dma)
+    : psg_(psg), drive_(drive), dma_(dma) {}
 
 Audio::~Audio() { stop(); }
 
 void Audio::render(float* out, uint32_t frames, uint32_t sampleRate) {
-    psg_.synthesize(out, frames, sampleRate);     // (1) PSG → out (écrase)
-    if (drive_) drive_->mix(out, frames);         // (2) bruits lecteur → additionnés
+    psg_.synthesize(out, frames, sampleRate);         // (1) PSG → out (écrase)
+    if (dma_)   dma_->mix(out, frames, sampleRate);   // (2) son DMA STE → additionné
+    if (drive_) drive_->mix(out, frames);             // (3) bruits lecteur → additionnés
+    for (uint32_t i = 0; i < frames; ++i)             // garde-fou anti-saturation
+        out[i] = std::max(-1.0f, std::min(1.0f, out[i]));
 }
 
 bool Audio::start() {

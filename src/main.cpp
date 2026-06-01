@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
     bool driveSoundOn = drive.init(resolveData("rom/drivesound/epson_smd480l", exeDir), 48000);
     if (driveSoundOn)
         machine.fdc.setSoundSink([&drive](FdcSound e) { drive.onEvent(e); });
-    Audio audio(machine.psg, driveSoundOn ? &drive : nullptr);
+    Audio audio(machine.psg, driveSoundOn ? &drive : nullptr, &machine.dmasnd);
     audio.start();   // échec silencieux possible (CI / pas de carte son)
 
     GlScreen screen;

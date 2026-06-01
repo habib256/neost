@@ -43,6 +43,7 @@ add_library(neost_core STATIC
     src/core/Cpu68k.cpp
     src/core/Shifter.cpp
     src/core/YM2149.cpp
+    src/core/DmaSound.cpp
     src/core/Machine.cpp
     src/core/Tracer.cpp
     src/io/Mfp.cpp
@@ -53,7 +54,7 @@ target_include_directories(neost_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
 # (Cpu68k.cpp est traité à part : il inclut l'en-tête tiers Moira.h → C++20 sans
 #  -Wpedantic strict, cf. le bloc Moira plus bas.)
 set_source_files_properties(
-    src/core/Bus.cpp src/core/Shifter.cpp src/core/YM2149.cpp
+    src/core/Bus.cpp src/core/Shifter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Machine.cpp src/core/Tracer.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 

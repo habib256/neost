@@ -67,6 +67,10 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   dent de scie / triangle / hold pilotées par Continue/Attack/Alternate/Hold ;
   une voie suit l'enveloppe quand le bit 4 de son registre de volume est posé.
   Écrire R13 réarme l'enveloppe (drapeau consommé côté thread audio).
+- **Son DMA STE** (`DmaSound`, $FF8900-$FF8925) : nouveau composant `neost_core`
+  lisant des échantillons 8 bits signés en RAM (6.25/12.5/25/50 kHz, mono/stéréo,
+  play/repeat, compteur d'adresse). Routé par le `Bus`, mixé au YM2149 par `Audio`
+  (GUI) et `neost_audio_render` (WASM). Donne le son numérique des jeux/démos STE.
 - **Bruits mécaniques du lecteur de disquette** : le cœur émet des événements
   `FdcSound` (moteur on/off, pas, seek, index) depuis `Fdc` via un sink, sans
   dépendance audio. Frontends : `DriveSound` (miniaudio `ma_engine`) côté GUI,

@@ -11,6 +11,7 @@
 #include "io/Mfp.hpp"
 #include "io/Ikbd.hpp"
 #include "io/Fdc.hpp"
+#include "core/DmaSound.hpp"
 
 #include <cstdio>
 #include <fstream>
@@ -116,6 +117,8 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
         return psg->read8(addr);
     if (addr >= stmap::DMA_FDC_BASE && addr < stmap::DMA_FDC_BASE + 0x10 && fdc)
         return fdc->read8(addr);          // contrôleur disquette + DMA ($FF8600)
+    if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && dmasnd)
+        return dmasnd->read8(addr);       // son DMA STE ($FF8900)
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {
         const uint8_t v = mfp->read8(addr);
         if (cpu) cpu->updateIpl();        // l'état d'IRQ a pu changer
@@ -145,6 +148,10 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     if (addr >= stmap::DMA_FDC_BASE && addr < stmap::DMA_FDC_BASE + 0x10 && fdc) {
         fdc->write8(addr, v);             // contrôleur disquette + DMA
         if (cpu) cpu->updateIpl();        // l'INTRQ FDC (GPIP5) a pu changer
+        return;
+    }
+    if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && dmasnd) {
+        dmasnd->write8(addr, v);          // son DMA STE ($FF8900)
         return;
     }
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {

@@ -20,6 +20,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore) : bus(ramBytes), cpu(bus
     bus.mfp     = &mfp;
     bus.ikbd    = &ikbd;
     bus.fdc     = &fdc;
+    bus.dmasnd  = &dmasnd;
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)

@@ -16,6 +16,7 @@
 #include "core/Cpu68k.hpp"
 #include "core/Shifter.hpp"
 #include "core/YM2149.hpp"
+#include "core/DmaSound.hpp"
 #include "core/Glue.hpp"
 #include "core/Scheduler.hpp"
 #include "io/Mfp.hpp"
@@ -35,7 +36,7 @@ public:
 
     bool loadTos(const std::string& path)  { return bus.loadTos(path); }
     bool loadDisk(const std::string& path) { return fdc.loadImage(path); }
-    void reset() { cpu.reset(); }
+    void reset() { dmasnd.reset(); cpu.reset(); }
 
     // Exécute UNE trame complète : 313 lignes de cycles CPU, 4 tics Timer C
     // (≈200 Hz) et un VBL niveau 4. Décode l'image en fin de trame.
@@ -50,6 +51,7 @@ public:
     Bus       bus;
     Shifter   shifter{bus};
     YM2149    psg;
+    DmaSound  dmasnd{bus};
     Glue      glue;
     Mfp       mfp;
     Ikbd      ikbd{mfp};
