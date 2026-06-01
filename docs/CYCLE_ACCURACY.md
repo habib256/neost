@@ -290,10 +290,14 @@ Hatari), NeoST intègre **Moira** (cœur 68000 de vAmiga, **MIT**, C++20,
   exécute via `executeUntil`/`execute` et reporte `getClock()` à l'ordonnanceur.
 - **État** : Moira **boote EmuTOS pixel-identique** à Musashi, et **délivre
   correctement les IRQ** — sur 100 trames : **538 IRQ niveau 6 (MFP) + 98 niveau
-  4 (VBL)**, contre 541+98 pour Musashi (quasi identique). Le `stop` du 68000 est
-  modélisé cycle-par-cycle par Moira (chaque cycle d'attente compte comme une
-  « instruction » tracée) → la trace gonfle sur les boucles `stop`, mais c'est un
-  artefact de trace, pas un bug.
+  4 (VBL)**, contre 541+98 pour Musashi (quasi identique).
+- **Optimisation `stop`** : le 68000 en attente (`stop`) était simulé cycle par
+  cycle par Moira (~25× plus d'`execute()` par trame → en WASM temps-réel,
+  l'émulation ramait et EmuTOS restait coincé sur l'écran d'accueil). `Cpu68k::run`
+  détecte l'état STOP (`NeostMoira::isStopped`) et **saute** directement au prochain
+  événement daté (rien ne se passe avant lui) : ~6900 instr/2 trames au lieu de
+  158000, boot pixel-identique, IRQ inchangées, et **le bureau GEM s'affiche
+  désormais à pleine vitesse** (icônes disque A/B, corbeille, barre de menu).
 - **Reste (divergence fonctionnelle, PAS les IRQ) — diagnostic affiné** : sous
   TOS 1.02 + Arkanoid, l'autoloader `STARTGEM.PRG` s'exécute correctement sous
   Moira (il **hooke le vecteur LINE-F `$2C`** et dispatche les opcodes `$Fxxx` ;

@@ -50,6 +50,10 @@ public:
     void write16(moira::u32 a, moira::u16 v) const override { g_bus->write16(a, v); }
     moira::u16 read16OnReset(moira::u32 a) const override { return g_bus->read16(a); }
 
+    // Le 68000 est-il en attente (instruction STOP) ? Permet à la boucle d'horloge
+    // de SAUTER l'attente au lieu de la simuler cycle par cycle (cf. run()).
+    bool isStopped() const { return (flags & moira::State::STOPPED) != 0; }
+
     moira::u16 readIrqUserVector(moira::u8 level) const override {
         if (level == 6 && g_bus->mfp) {                 // MFP : vecteur fourni par le 68901
             const int v = g_bus->mfp->iack();
@@ -165,13 +169,18 @@ int Cpu68k::run(int cycles) {
     if (g_moira) {
         const moira::i64 c0 = g_moira->getClock();
         const moira::i64 target = c0 + cycles;
-        if (g_tracer) {                      // trace instruction par instruction
-            while (g_moira->getClock() < target) {
-                g_moira->execute();
-                g_tracer->onInstruction(g_moira->getPC0());
+        while (g_moira->getClock() < target) {
+            g_moira->execute();                          // une instruction
+            if (g_tracer) g_tracer->onInstruction(g_moira->getPC0());
+            // Si le CPU est en STOP après cette instruction, aucune IRQ pendante ne
+            // l'a réveillé (execute() les teste) : rien ne se passera avant le
+            // prochain événement (= `target`, fixé par l'ordonnanceur). On SAUTE
+            // l'attente au lieu de la simuler cycle par cycle (sinon ~25× plus lent
+            // et l'émulation rame en temps réel sur les STOP d'EmuTOS/TOS).
+            if (g_moira->isStopped() && g_moira->getClock() < target) {
+                g_moira->setClock(target);
+                break;
             }
-        } else {
-            g_moira->executeUntil(target);
         }
         return static_cast<int>(g_moira->getClock() - c0);
     }
