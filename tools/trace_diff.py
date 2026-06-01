@@ -25,10 +25,11 @@ import re
 import sys
 
 # --- Repérage d'une ligne d'instruction selon le format ----------------------
-#   NeoST  : "FC0030: bra     $fc004e [ D0=.. .. SR=2704]"
-#   Hatari : "$00fc0030 : 601c        bra.s     $fc004e"  (cpu_disasm)
-RE_NEOST  = re.compile(r'^([0-9A-Fa-f]{5,8})\s*:\s+(.*)$')
-RE_HATARI = re.compile(r'^\$([0-9A-Fa-f]{1,8})\s*:\s+(.*)$')
+#   NeoST  : "FC0030: bra     $fc004e [ D0=.. .. SR=2704]"   (adresse + ':')
+#   Hatari : "00fc0030 46fc 2700      move.w #$2700,sr"      (cpu_disasm, octets)
+#   Hatari : "$00fc0030 : 601c  bra.s $fc004e"               (ancien format ':')
+RE_NEOST  = re.compile(r'^([0-9A-Fa-f]{5,8}):\s+(.*)$')          # adresse + ':'
+RE_HATARI = re.compile(r'^([0-9A-Fa-f]{6,8})\s+([0-9A-Fa-f]{2,4}\s.*)$')  # adresse + octets
 
 # Registres, tolérant aux deux notations ("D0=12345678" ou "D0 12345678").
 RE_REG = re.compile(r'\b([DA][0-7])\s*[= ]\s*([0-9A-Fa-f]{1,8})\b')
@@ -55,10 +56,10 @@ class Insn:
 def detect_format(lines):
     """Devine le format (neost/hatari) en regardant les premières lignes."""
     for ln in lines[:200]:
+        if RE_NEOST.match(ln):       # NeoST d'abord ('adresse:' sans ambiguïté)
+            return 'neost'
         if RE_HATARI.match(ln):
             return 'hatari'
-        if RE_NEOST.match(ln):
-            return 'neost'
     return None
 
 

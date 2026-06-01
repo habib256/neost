@@ -22,9 +22,10 @@
 class Scheduler {
 public:
     // Sources ordonnancées. L'ORDRE de l'énum = priorité de déclenchement à cycle
-    // égal (cf. runTo). RENDER (décodage de la ligne achevée) passe avant HBL ;
-    // puis Timer C, puis VBL — ordre des interruptions de l'ancienne boucle.
-    enum Source { RENDER, HBL, TIMER_C, VBL, SRC_COUNT };
+    // égal (cf. runTo). Positions au cycle dans la ligne (STF PAL, cf. Hatari
+    // video.h) : RENDER ≈ fin Display-Enable (376), TIMER_B = 400 (event-count
+    // sur DE), HBL niveau 2 = 508 ; puis Timer C (système) et VBL.
+    enum Source { RENDER, TIMER_B, HBL, TIMER_C, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 
