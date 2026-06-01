@@ -103,7 +103,9 @@ if(EMSCRIPTEN)
     target_link_libraries(neost-web PRIVATE neost_core)
     set_source_files_properties(src/web/main_web.cpp
         PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
-    set_target_properties(neost-web PROPERTIES OUTPUT_NAME "index" SUFFIX ".html")
+    set_target_properties(neost-web PROPERTIES
+        OUTPUT_NAME "index" SUFFIX ".html"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/wasm")
     target_link_options(neost-web PRIVATE
         "-sUSE_GLFW=3"
         "-sALLOW_MEMORY_GROWTH=1"
