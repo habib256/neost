@@ -89,6 +89,48 @@ set_source_files_properties(src/headless/main_headless.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # =============================================================================
+#  neost-web — frontend WebAssembly (Emscripten + GLFW3 port + WebGL).
+#
+#  Réutilise tel quel neost_core ; remplace l'OpenGL immédiat par un shader
+#  WebGL et la boucle sleep par emscripten_set_main_loop. ROM + disquettes sont
+#  embarquées dans le FS virtuel via --preload-file. Construire avec emcmake :
+#    emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release
+#    cmake --build build-web -j           # → build-web/index.html (+ .js/.wasm/.data)
+#  puis servir le dossier en HTTP (les .wasm/.data ne se chargent pas en file://).
+# =============================================================================
+if(EMSCRIPTEN)
+    add_executable(neost-web src/web/main_web.cpp)
+    target_link_libraries(neost-web PRIVATE neost_core)
+    set_source_files_properties(src/web/main_web.cpp
+        PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
+    set_target_properties(neost-web PROPERTIES OUTPUT_NAME "index" SUFFIX ".html")
+    target_link_options(neost-web PRIVATE
+        "-sUSE_GLFW=3"
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,FS"
+        "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_set_mono,_neost_mount_disk"
+        "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/web/shell.html")
+
+    # Choix des données embarquées dans le FS virtuel (--preload-file). Pour un
+    # déploiement PUBLIC (GitHub Pages, cf. .github/workflows/deploy-web.yml), on
+    # n'embarque que des contenus LIBRES (EmuTOS GPL + diskA généré) afin de ne pas
+    # redistribuer le TOS propriétaire ni les jeux sous copyright. En local
+    # (défaut), on embarque tout rom/ et disks/ pour le confort de test.
+    option(NEOST_WEB_FREE_ONLY "WASM : n'embarquer que les ROM/disquettes libres" OFF)
+    if(NEOST_WEB_FREE_ONLY)
+        target_link_options(neost-web PRIVATE
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom/etos192us.img@/rom/etos192us.img"
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom/etos192fr.img@/rom/etos192fr.img"
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/disks/diskA.st@/disks/diskA.st")
+    else()
+        target_link_options(neost-web PRIVATE
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom@/rom"
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/disks@/disks")
+    endif()
+    return()   # sous Emscripten on ne construit QUE le cœur + le frontend web
+endif()
+
+# =============================================================================
 #  neost — frontend fenêtré (GLFW3 + OpenGL + ImGui + miniaudio).
 # =============================================================================
 find_package(glfw3 REQUIRED)

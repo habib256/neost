@@ -1,0 +1,70 @@
+# =============================================================================
+#  Déploiement de la version WebAssembly de NeoST sur GitHub Pages.
+#
+#  Construit le frontend web (Emscripten) avec NEOST_WEB_FREE_ONLY=ON : seuls
+#  EmuTOS (GPL) et la disquette de test générée diskA.st sont embarqués, afin de
+#  NE PAS redistribuer publiquement le TOS propriétaire ni les jeux sous copyright.
+#
+#  Prérequis côté dépôt : Settings → Pages → « Build and deployment » →
+#  Source = « GitHub Actions ». Le site est alors publié sur
+#  https://<utilisateur>.github.io/neost/
+# =============================================================================
+name: Déploiement web (WASM)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (avec sous-modules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Installer Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+
+      - name: Générer les opcodes Musashi
+        run: |
+          cc -o extern/Musashi/m68kmake extern/Musashi/m68kmake.c
+          ( cd extern/Musashi && ./m68kmake . m68k_in.c )
+
+      - name: Configurer (WASM, contenus libres uniquement)
+        run: emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release -DNEOST_WEB_FREE_ONLY=ON
+
+      - name: Compiler le frontend web
+        run: cmake --build build-web -j --target neost-web
+
+      - name: Assembler l'artefact Pages
+        run: |
+          mkdir -p _site
+          cp build-web/index.html build-web/index.js build-web/index.wasm build-web/index.data _site/
+
+      - name: Téléverser l'artefact Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Déployer sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,5 +1,7 @@
 # Artefacts CMake / build local
 build/
+build-web*/
+_site/
 cmake-build-*/
 CMakeFiles/
 CMakeCache.txt
