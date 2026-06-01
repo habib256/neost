@@ -172,6 +172,20 @@ FC004E: move    #$2700, SR
 C'est cet outillage qui a permis de localiser le blocage de boot d'EmuTOS
 (auto-vectorisation Musashi au lieu des vecteurs MFP).
 
+### Diff de traces Hatari ↔ NeoST
+
+`tools/trace_diff.py` aligne une trace NeoST et une trace Hatari du **même**
+ROM/disquette puis localise la **première divergence** (flux PC *et* registres) :
+
+```sh
+./build/neost-headless --frames 200 --trace neost.txt --regs --irq
+# Hatari : hatari --trace cpu_disasm,cpu_regs --log-file hatari.txt --tos ... --disk-a ...
+python3 tools/trace_diff.py neost.txt hatari.txt --align-pc FC0030 --regs
+```
+
+La sortie pointe l'instruction (et le registre) où les deux émulateurs cessent
+de concorder — la méthode pour débloquer Arkanoid & co.
+
 ## Contrôles
 
 | Touche | Action                          |
