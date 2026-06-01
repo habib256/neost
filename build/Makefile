@@ -395,6 +395,54 @@ extern/imgui/imgui_widgets.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost.dir/build.make CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.s
 .PHONY : extern/imgui/imgui_widgets.cpp.s
 
+extern/moira/Moira/Moira.o: extern/moira/Moira/Moira.cpp.o
+.PHONY : extern/moira/Moira/Moira.o
+
+# target to build an object file
+extern/moira/Moira/Moira.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/extern/moira/Moira/Moira.cpp.o
+.PHONY : extern/moira/Moira/Moira.cpp.o
+
+extern/moira/Moira/Moira.i: extern/moira/Moira/Moira.cpp.i
+.PHONY : extern/moira/Moira/Moira.i
+
+# target to preprocess a source file
+extern/moira/Moira/Moira.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/extern/moira/Moira/Moira.cpp.i
+.PHONY : extern/moira/Moira/Moira.cpp.i
+
+extern/moira/Moira/Moira.s: extern/moira/Moira/Moira.cpp.s
+.PHONY : extern/moira/Moira/Moira.s
+
+# target to generate assembly for a file
+extern/moira/Moira/Moira.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/extern/moira/Moira/Moira.cpp.s
+.PHONY : extern/moira/Moira/Moira.cpp.s
+
+extern/moira/Moira/MoiraDebugger.o: extern/moira/Moira/MoiraDebugger.cpp.o
+.PHONY : extern/moira/Moira/MoiraDebugger.o
+
+# target to build an object file
+extern/moira/Moira/MoiraDebugger.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/extern/moira/Moira/MoiraDebugger.cpp.o
+.PHONY : extern/moira/Moira/MoiraDebugger.cpp.o
+
+extern/moira/Moira/MoiraDebugger.i: extern/moira/Moira/MoiraDebugger.cpp.i
+.PHONY : extern/moira/Moira/MoiraDebugger.i
+
+# target to preprocess a source file
+extern/moira/Moira/MoiraDebugger.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/extern/moira/Moira/MoiraDebugger.cpp.i
+.PHONY : extern/moira/Moira/MoiraDebugger.cpp.i
+
+extern/moira/Moira/MoiraDebugger.s: extern/moira/Moira/MoiraDebugger.cpp.s
+.PHONY : extern/moira/Moira/MoiraDebugger.s
+
+# target to generate assembly for a file
+extern/moira/Moira/MoiraDebugger.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/extern/moira/Moira/MoiraDebugger.cpp.s
+.PHONY : extern/moira/Moira/MoiraDebugger.cpp.s
+
 src/audio/Audio.o: src/audio/Audio.cpp.o
 .PHONY : src/audio/Audio.o
 
@@ -418,6 +466,30 @@ src/audio/Audio.s: src/audio/Audio.cpp.s
 src/audio/Audio.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost.dir/build.make CMakeFiles/neost.dir/src/audio/Audio.cpp.s
 .PHONY : src/audio/Audio.cpp.s
+
+src/audio/DriveSound.o: src/audio/DriveSound.cpp.o
+.PHONY : src/audio/DriveSound.o
+
+# target to build an object file
+src/audio/DriveSound.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost.dir/build.make CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o
+.PHONY : src/audio/DriveSound.cpp.o
+
+src/audio/DriveSound.i: src/audio/DriveSound.cpp.i
+.PHONY : src/audio/DriveSound.i
+
+# target to preprocess a source file
+src/audio/DriveSound.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost.dir/build.make CMakeFiles/neost.dir/src/audio/DriveSound.cpp.i
+.PHONY : src/audio/DriveSound.cpp.i
+
+src/audio/DriveSound.s: src/audio/DriveSound.cpp.s
+.PHONY : src/audio/DriveSound.s
+
+# target to generate assembly for a file
+src/audio/DriveSound.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost.dir/build.make CMakeFiles/neost.dir/src/audio/DriveSound.cpp.s
+.PHONY : src/audio/DriveSound.cpp.s
 
 src/core/Bus.o: src/core/Bus.cpp.o
 .PHONY : src/core/Bus.o
@@ -466,6 +538,30 @@ src/core/Cpu68k.s: src/core/Cpu68k.cpp.s
 src/core/Cpu68k.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/src/core/Cpu68k.cpp.s
 .PHONY : src/core/Cpu68k.cpp.s
+
+src/core/DmaSound.o: src/core/DmaSound.cpp.o
+.PHONY : src/core/DmaSound.o
+
+# target to build an object file
+src/core/DmaSound.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/src/core/DmaSound.cpp.o
+.PHONY : src/core/DmaSound.cpp.o
+
+src/core/DmaSound.i: src/core/DmaSound.cpp.i
+.PHONY : src/core/DmaSound.i
+
+# target to preprocess a source file
+src/core/DmaSound.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/src/core/DmaSound.cpp.i
+.PHONY : src/core/DmaSound.cpp.i
+
+src/core/DmaSound.s: src/core/DmaSound.cpp.s
+.PHONY : src/core/DmaSound.s
+
+# target to generate assembly for a file
+src/core/DmaSound.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/neost_core.dir/build.make CMakeFiles/neost_core.dir/src/core/DmaSound.cpp.s
+.PHONY : src/core/DmaSound.cpp.s
 
 src/core/Machine.o: src/core/Machine.cpp.o
 .PHONY : src/core/Machine.o
@@ -724,15 +820,27 @@ help:
 	@echo "... extern/imgui/imgui_widgets.o"
 	@echo "... extern/imgui/imgui_widgets.i"
 	@echo "... extern/imgui/imgui_widgets.s"
+	@echo "... extern/moira/Moira/Moira.o"
+	@echo "... extern/moira/Moira/Moira.i"
+	@echo "... extern/moira/Moira/Moira.s"
+	@echo "... extern/moira/Moira/MoiraDebugger.o"
+	@echo "... extern/moira/Moira/MoiraDebugger.i"
+	@echo "... extern/moira/Moira/MoiraDebugger.s"
 	@echo "... src/audio/Audio.o"
 	@echo "... src/audio/Audio.i"
 	@echo "... src/audio/Audio.s"
+	@echo "... src/audio/DriveSound.o"
+	@echo "... src/audio/DriveSound.i"
+	@echo "... src/audio/DriveSound.s"
 	@echo "... src/core/Bus.o"
 	@echo "... src/core/Bus.i"
 	@echo "... src/core/Bus.s"
 	@echo "... src/core/Cpu68k.o"
 	@echo "... src/core/Cpu68k.i"
 	@echo "... src/core/Cpu68k.s"
+	@echo "... src/core/DmaSound.o"
+	@echo "... src/core/DmaSound.i"
+	@echo "... src/core/DmaSound.s"
 	@echo "... src/core/Machine.o"
 	@echo "... src/core/Machine.i"
 	@echo "... src/core/Machine.s"

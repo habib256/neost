@@ -3,17 +3,17 @@
 
 # compile C with /usr/bin/cc
 # compile CXX with /usr/bin/c++
-C_DEFINES = -DM68K_EMULATE_INT_ACK=1 -DM68K_INSTRUCTION_HOOK=1 -DNEOST_HAS_MUSASHI=1
+C_DEFINES = -DM68K_EMULATE_INT_ACK=1 -DM68K_INSTRUCTION_HOOK=1 -DNEOST_HAS_MOIRA=1 -DNEOST_HAS_MUSASHI=1
 
-C_INCLUDES = -I/Users/factory/src/neost/src -I/Users/factory/src/neost/extern/Musashi
+C_INCLUDES = -I/Users/factory/src/neost/src -I/Users/factory/src/neost/extern/Musashi -I/Users/factory/src/neost/extern/moira/Moira
 
 C_FLAGSarm64 = -O3 -DNDEBUG -std=gnu99 -arch arm64
 
 C_FLAGS = -O3 -DNDEBUG -std=gnu99 -arch arm64
 
-CXX_DEFINES = -DM68K_EMULATE_INT_ACK=1 -DM68K_INSTRUCTION_HOOK=1 -DNEOST_HAS_MUSASHI=1
+CXX_DEFINES = -DM68K_EMULATE_INT_ACK=1 -DM68K_INSTRUCTION_HOOK=1 -DNEOST_HAS_MOIRA=1 -DNEOST_HAS_MUSASHI=1
 
-CXX_INCLUDES = -I/Users/factory/src/neost/src -I/Users/factory/src/neost/extern/Musashi
+CXX_INCLUDES = -I/Users/factory/src/neost/src -I/Users/factory/src/neost/extern/Musashi -I/Users/factory/src/neost/extern/moira/Moira
 
 CXX_FLAGSarm64 = -O3 -DNDEBUG -std=c++17 -arch arm64
 
@@ -21,11 +21,13 @@ CXX_FLAGS = -O3 -DNDEBUG -std=c++17 -arch arm64
 
 # Custom options: CMakeFiles/neost_core.dir/src/core/Bus.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
 
-# Custom options: CMakeFiles/neost_core.dir/src/core/Cpu68k.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
+# Custom options: CMakeFiles/neost_core.dir/src/core/Cpu68k.cpp.o_OPTIONS = -std=c++20
 
 # Custom options: CMakeFiles/neost_core.dir/src/core/Shifter.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
 
 # Custom options: CMakeFiles/neost_core.dir/src/core/YM2149.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
+
+# Custom options: CMakeFiles/neost_core.dir/src/core/DmaSound.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
 
 # Custom options: CMakeFiles/neost_core.dir/src/core/Machine.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
 
@@ -36,4 +38,8 @@ CXX_FLAGS = -O3 -DNDEBUG -std=c++17 -arch arm64
 # Custom options: CMakeFiles/neost_core.dir/src/io/Ikbd.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
 
 # Custom options: CMakeFiles/neost_core.dir/src/io/Fdc.cpp.o_OPTIONS = -Wall;-Wextra;-Wpedantic
+
+# Custom options: CMakeFiles/neost_core.dir/extern/moira/Moira/Moira.cpp.o_OPTIONS = -std=c++20
+
+# Custom options: CMakeFiles/neost_core.dir/extern/moira/Moira/MoiraDebugger.cpp.o_OPTIONS = -std=c++20
 

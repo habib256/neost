@@ -802,8 +802,11 @@ CMakeFiles/neost-headless.dir/src/headless/main_headless.cpp.o
  /Library/Developer/CommandLineTools/usr/lib/clang/21/include/stdint.h
  /Users/factory/src/neost/src/core/Bus.hpp
  /Users/factory/src/neost/src/core/Cpu68k.hpp
+ /Users/factory/src/neost/src/core/DmaSound.hpp
  /Users/factory/src/neost/src/core/Glue.hpp
  /Users/factory/src/neost/src/core/Machine.hpp
+ /Users/factory/src/neost/src/core/MachineType.hpp
+ /Users/factory/src/neost/src/core/Scheduler.hpp
  /Users/factory/src/neost/src/core/Shifter.hpp
  /Users/factory/src/neost/src/core/Tracer.hpp
  /Users/factory/src/neost/src/core/YM2149.hpp

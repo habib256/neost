@@ -801,8 +801,11 @@ CMakeFiles/neost-headless.dir/src/headless/main_headless.cpp.o: /Users/factory/s
   /Library/Developer/CommandLineTools/usr/lib/clang/21/include/stdint.h \
   /Users/factory/src/neost/src/core/Bus.hpp \
   /Users/factory/src/neost/src/core/Cpu68k.hpp \
+  /Users/factory/src/neost/src/core/DmaSound.hpp \
   /Users/factory/src/neost/src/core/Glue.hpp \
   /Users/factory/src/neost/src/core/Machine.hpp \
+  /Users/factory/src/neost/src/core/MachineType.hpp \
+  /Users/factory/src/neost/src/core/Scheduler.hpp \
   /Users/factory/src/neost/src/core/Shifter.hpp \
   /Users/factory/src/neost/src/core/Tracer.hpp \
   /Users/factory/src/neost/src/core/YM2149.hpp \
@@ -821,9 +824,13 @@ CMakeFiles/neost-headless.dir/src/headless/main_headless.cpp.o: /Users/factory/s
 
 /Users/factory/src/neost/src/core/Shifter.hpp:
 
+/Users/factory/src/neost/src/core/MachineType.hpp:
+
 /Users/factory/src/neost/src/core/Machine.hpp:
 
 /Users/factory/src/neost/src/core/Glue.hpp:
+
+/Users/factory/src/neost/src/core/DmaSound.hpp:
 
 /Users/factory/src/neost/src/core/Cpu68k.hpp:
 
@@ -1258,6 +1265,8 @@ CMakeFiles/neost-headless.dir/src/headless/main_headless.cpp.o: /Users/factory/s
 /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__type_traits/is_fundamental.h:
 
 /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/time.h:
+
+/Users/factory/src/neost/src/core/Scheduler.hpp:
 
 /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__type_traits/is_function.h:
 

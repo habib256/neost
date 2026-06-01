@@ -100,10 +100,24 @@ CMakeFiles/neost.dir/src/audio/Audio.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/neost.dir/src/audio/Audio.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/factory/src/neost/src/audio/Audio.cpp -o CMakeFiles/neost.dir/src/audio/Audio.cpp.s
 
+CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o: CMakeFiles/neost.dir/flags.make
+CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o: /Users/factory/src/neost/src/audio/DriveSound.cpp
+CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o: CMakeFiles/neost.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -Wall -Wextra -Wpedantic -MD -MT CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o -MF CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o.d -o CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o -c /Users/factory/src/neost/src/audio/DriveSound.cpp
+
+CMakeFiles/neost.dir/src/audio/DriveSound.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/neost.dir/src/audio/DriveSound.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -Wall -Wextra -Wpedantic -E /Users/factory/src/neost/src/audio/DriveSound.cpp > CMakeFiles/neost.dir/src/audio/DriveSound.cpp.i
+
+CMakeFiles/neost.dir/src/audio/DriveSound.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/neost.dir/src/audio/DriveSound.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -Wall -Wextra -Wpedantic -S /Users/factory/src/neost/src/audio/DriveSound.cpp -o CMakeFiles/neost.dir/src/audio/DriveSound.cpp.s
+
 CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o: CMakeFiles/neost.dir/flags.make
 CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o: /Users/factory/src/neost/extern/imgui/imgui.cpp
 CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o: CMakeFiles/neost.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o -MF CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o.d -o CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o -c /Users/factory/src/neost/extern/imgui/imgui.cpp
 
 CMakeFiles/neost.dir/extern/imgui/imgui.cpp.i: cmake_force
@@ -117,7 +131,7 @@ CMakeFiles/neost.dir/extern/imgui/imgui.cpp.s: cmake_force
 CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o: CMakeFiles/neost.dir/flags.make
 CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o: /Users/factory/src/neost/extern/imgui/imgui_draw.cpp
 CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o: CMakeFiles/neost.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o -MF CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o.d -o CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o -c /Users/factory/src/neost/extern/imgui/imgui_draw.cpp
 
 CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.i: cmake_force
@@ -131,7 +145,7 @@ CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.s: cmake_force
 CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o: CMakeFiles/neost.dir/flags.make
 CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o: /Users/factory/src/neost/extern/imgui/imgui_tables.cpp
 CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o: CMakeFiles/neost.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o -MF CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o.d -o CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o -c /Users/factory/src/neost/extern/imgui/imgui_tables.cpp
 
 CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.i: cmake_force
@@ -145,7 +159,7 @@ CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.s: cmake_force
 CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.o: CMakeFiles/neost.dir/flags.make
 CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.o: /Users/factory/src/neost/extern/imgui/imgui_widgets.cpp
 CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.o: CMakeFiles/neost.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.o -MF CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.o.d -o CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.o -c /Users/factory/src/neost/extern/imgui/imgui_widgets.cpp
 
 CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.i: cmake_force
@@ -159,7 +173,7 @@ CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.s: cmake_force
 CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.o: CMakeFiles/neost.dir/flags.make
 CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.o: /Users/factory/src/neost/extern/imgui/backends/imgui_impl_glfw.cpp
 CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.o: CMakeFiles/neost.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.o -MF CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.o.d -o CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.o -c /Users/factory/src/neost/extern/imgui/backends/imgui_impl_glfw.cpp
 
 CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.i: cmake_force
@@ -173,7 +187,7 @@ CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_glfw.cpp.s: cmake_force
 CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.o: CMakeFiles/neost.dir/flags.make
 CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.o: /Users/factory/src/neost/extern/imgui/backends/imgui_impl_opengl2.cpp
 CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.o: CMakeFiles/neost.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.o -MF CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.o.d -o CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.o -c /Users/factory/src/neost/extern/imgui/backends/imgui_impl_opengl2.cpp
 
 CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.i: cmake_force
@@ -188,6 +202,7 @@ CMakeFiles/neost.dir/extern/imgui/backends/imgui_impl_opengl2.cpp.s: cmake_force
 neost_OBJECTS = \
 "CMakeFiles/neost.dir/src/main.cpp.o" \
 "CMakeFiles/neost.dir/src/audio/Audio.cpp.o" \
+"CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o" \
 "CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o" \
 "CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o" \
 "CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o" \
@@ -200,6 +215,7 @@ neost_EXTERNAL_OBJECTS =
 
 neost: CMakeFiles/neost.dir/src/main.cpp.o
 neost: CMakeFiles/neost.dir/src/audio/Audio.cpp.o
+neost: CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o
 neost: CMakeFiles/neost.dir/extern/imgui/imgui.cpp.o
 neost: CMakeFiles/neost.dir/extern/imgui/imgui_draw.cpp.o
 neost: CMakeFiles/neost.dir/extern/imgui/imgui_tables.cpp.o
@@ -211,7 +227,7 @@ neost: libneost_core.a
 neost: /opt/homebrew/lib/libglfw.3.4.dylib
 neost: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework
 neost: CMakeFiles/neost.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX executable neost"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/factory/src/neost/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable neost"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/neost.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

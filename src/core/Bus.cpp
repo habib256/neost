@@ -91,6 +91,11 @@ bool Bus::busFault(uint32_t addr) const {
     // sur le vrai matériel (c'est ainsi qu'EmuTOS conclut « pas de son DMA »).
     if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && !machineHasDmaSound(machine))
         return true;
+    // Zone réservée non décodée entre la config mémoire ($FF8000-01) et le shifter
+    // ($FF8200) : aucun périphérique → bus error sur vrai ST. EmuTOS y sonde le
+    // matériel au boot (FC007C : tst.w $FF8006, vecteur bus error armé juste avant)
+    // pour distinguer les modèles. Confirmé vérité Hatari. Cf. [[busfault-ff80xx]].
+    if (addr >= stmap::MMIO_BASE + 2 && addr < stmap::SHIFTER_BASE) return true;
     return false;
 }
 

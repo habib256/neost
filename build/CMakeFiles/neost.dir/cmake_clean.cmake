@@ -13,6 +13,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/neost.dir/extern/imgui/imgui_widgets.cpp.o.d"
   "CMakeFiles/neost.dir/src/audio/Audio.cpp.o"
   "CMakeFiles/neost.dir/src/audio/Audio.cpp.o.d"
+  "CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o"
+  "CMakeFiles/neost.dir/src/audio/DriveSound.cpp.o.d"
   "CMakeFiles/neost.dir/src/main.cpp.o"
   "CMakeFiles/neost.dir/src/main.cpp.o.d"
   "neost"

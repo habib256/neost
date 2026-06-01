@@ -24,9 +24,15 @@
 #include <cstdio>
 #include <string>
 
+class Cpu68k;
+
 class Tracer {
 public:
     ~Tracer() { close(); }
+
+    // CPU actif : les registres tracés sont lus via lui (core-aware Musashi/Moira).
+    // Sans ça, le dump retomberait sur l'API Musashi → faux quand Moira est actif.
+    void setCpu(const Cpu68k* c) { cpu_ = c; }
 
     bool open(const std::string& path);     // "" ou "-" → stdout
     void close();
@@ -43,6 +49,7 @@ public:
     uint64_t instructionCount() const { return count_; }
 
 private:
+    const Cpu68k* cpu_ = nullptr;
     std::FILE* f_ = nullptr;
     bool ownsFile_ = false;
     bool logRegs_  = false;

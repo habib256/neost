@@ -772,4 +772,5 @@ CMakeFiles/neost_core.dir/src/core/Shifter.cpp.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__locale_dir/wbuffer_convert.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__locale_dir/wstring_convert.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/cstdarg \
-  /Users/factory/src/neost/src/core/Bus.hpp
+  /Users/factory/src/neost/src/core/Bus.hpp \
+  /Users/factory/src/neost/src/core/MachineType.hpp

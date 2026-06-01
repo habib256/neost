@@ -666,6 +666,7 @@ CMakeFiles/neost-headless.dir/src/headless/main_headless.cpp.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/optional \
   /Users/factory/src/neost/src/core/Machine.hpp \
   /Users/factory/src/neost/src/core/Bus.hpp \
+  /Users/factory/src/neost/src/core/MachineType.hpp \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/vector \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__vector/comparison.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/lexicographical_compare_three_way.h \
@@ -776,11 +777,9 @@ CMakeFiles/neost-headless.dir/src/headless/main_headless.cpp.o: \
   /Users/factory/src/neost/src/core/Cpu68k.hpp \
   /Users/factory/src/neost/src/core/Shifter.hpp \
   /Users/factory/src/neost/src/core/YM2149.hpp \
+  /Users/factory/src/neost/src/core/DmaSound.hpp \
   /Users/factory/src/neost/src/core/Glue.hpp \
-  /Users/factory/src/neost/src/io/Mfp.hpp \
-  /Users/factory/src/neost/src/io/Ikbd.hpp \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/deque \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/deque.h \
+  /Users/factory/src/neost/src/core/Scheduler.hpp \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/functional \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__functional/binary_negate.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__functional/bind.h \
@@ -805,5 +804,9 @@ CMakeFiles/neost-headless.dir/src/headless/main_headless.cpp.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__functional/default_searcher.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__functional/not_fn.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__functional/perfect_forward.h \
+  /Users/factory/src/neost/src/io/Mfp.hpp \
+  /Users/factory/src/neost/src/io/Ikbd.hpp \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/deque \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/deque.h \
   /Users/factory/src/neost/src/io/Fdc.hpp \
   /Users/factory/src/neost/src/core/Tracer.hpp

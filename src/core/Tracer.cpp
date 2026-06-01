@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Tracer.hpp"
+#include "core/Cpu68k.hpp"
 
 #if defined(NEOST_HAS_MUSASHI)
 extern "C" {
@@ -38,19 +39,26 @@ void Tracer::onInstruction(uint32_t pc) {
     // Désassemble via les callbacks "disassembler" (lecture sans effet de bord).
     m68k_disassemble(dis, pc, M68K_CPU_TYPE_68000);
     if (logRegs_) {
+        // Registres lus via le CPU actif (core-aware) ; sans CPU câblé, repli sur
+        // l'API Musashi pour ne rien casser des anciens points d'appel.
+        uint32_t d[8], a[8];
+        uint16_t sr;
+        if (cpu_) {
+            for (int i = 0; i < 8; ++i) { d[i] = cpu_->reg(i); a[i] = cpu_->reg(8 + i); }
+            sr = cpu_->sr();
+        } else {
+            for (int i = 0; i < 8; ++i) {
+                d[i] = m68k_get_reg(nullptr, static_cast<m68k_register_t>(M68K_REG_D0 + i));
+                a[i] = m68k_get_reg(nullptr, static_cast<m68k_register_t>(M68K_REG_A0 + i));
+            }
+            sr = static_cast<uint16_t>(m68k_get_reg(nullptr, M68K_REG_SR));
+        }
         std::fprintf(f_, "%06X: %-38s "
             "D0=%08X D1=%08X D2=%08X D3=%08X D4=%08X D5=%08X D6=%08X D7=%08X "
             "A0=%08X A1=%08X A2=%08X A3=%08X A4=%08X A5=%08X A6=%08X A7=%08X SR=%04X\n",
             pc, dis,
-            m68k_get_reg(nullptr, M68K_REG_D0), m68k_get_reg(nullptr, M68K_REG_D1),
-            m68k_get_reg(nullptr, M68K_REG_D2), m68k_get_reg(nullptr, M68K_REG_D3),
-            m68k_get_reg(nullptr, M68K_REG_D4), m68k_get_reg(nullptr, M68K_REG_D5),
-            m68k_get_reg(nullptr, M68K_REG_D6), m68k_get_reg(nullptr, M68K_REG_D7),
-            m68k_get_reg(nullptr, M68K_REG_A0), m68k_get_reg(nullptr, M68K_REG_A1),
-            m68k_get_reg(nullptr, M68K_REG_A2), m68k_get_reg(nullptr, M68K_REG_A3),
-            m68k_get_reg(nullptr, M68K_REG_A4), m68k_get_reg(nullptr, M68K_REG_A5),
-            m68k_get_reg(nullptr, M68K_REG_A6), m68k_get_reg(nullptr, M68K_REG_A7),
-            m68k_get_reg(nullptr, M68K_REG_SR));
+            d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7],
+            a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], sr);
     } else {
         std::fprintf(f_, "%06X: %s\n", pc, dis);
     }

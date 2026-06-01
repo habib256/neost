@@ -846,13 +846,18 @@ CMakeFiles/neost.dir/src/main.cpp.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_types/_filesec_t.h \
   /Users/factory/src/neost/src/core/Machine.hpp \
   /Users/factory/src/neost/src/core/Bus.hpp \
+  /Users/factory/src/neost/src/core/MachineType.hpp \
   /Users/factory/src/neost/src/core/Cpu68k.hpp \
   /Users/factory/src/neost/src/core/Shifter.hpp \
   /Users/factory/src/neost/src/core/YM2149.hpp \
+  /Users/factory/src/neost/src/core/DmaSound.hpp \
   /Users/factory/src/neost/src/core/Glue.hpp \
+  /Users/factory/src/neost/src/core/Scheduler.hpp \
   /Users/factory/src/neost/src/io/Mfp.hpp \
   /Users/factory/src/neost/src/io/Ikbd.hpp \
   /Users/factory/src/neost/src/io/Fdc.hpp \
+  /Users/factory/src/neost/src/audio/Audio.hpp \
+  /Users/factory/src/neost/src/audio/DriveSound.hpp \
   /Users/factory/src/neost/extern/imgui/imgui.h \
   /Users/factory/src/neost/extern/imgui/imconfig.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/float.h \

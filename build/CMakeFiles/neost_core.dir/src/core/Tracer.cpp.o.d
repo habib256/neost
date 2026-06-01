@@ -665,5 +665,6 @@ CMakeFiles/neost_core.dir/src/core/Tracer.cpp.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/raw_storage_iterator.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/temporary_buffer.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/optional \
+  /Users/factory/src/neost/src/core/Cpu68k.hpp \
   /Users/factory/src/neost/extern/Musashi/m68k.h \
   /Users/factory/src/neost/extern/Musashi/m68kconf.h

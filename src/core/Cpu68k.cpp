@@ -146,6 +146,7 @@ Cpu68k::Cpu68k(Bus& bus, CpuCore core) : core_(core) {
 
 void Cpu68k::setTracer(Tracer* t) {
     g_tracer = t;
+    if (t) t->setCpu(this);    // le Tracer lit les registres via ce CPU (core-aware)
 }
 
 void Cpu68k::reset() {
