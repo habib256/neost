@@ -1,9 +1,11 @@
 # =============================================================================
 #  Déploiement de la version WebAssembly de NeoST sur GitHub Pages.
 #
-#  Construit le frontend web (Emscripten) avec NEOST_WEB_FREE_ONLY=ON : seuls
-#  EmuTOS (GPL) et la disquette de test générée diskA.st sont embarqués, afin de
-#  NE PAS redistribuer publiquement le TOS propriétaire ni les jeux sous copyright.
+#  Construit le frontend web (Emscripten) avec TOUT rom/ et disks/ embarqués
+#  (NEOST_WEB_FREE_ONLY=OFF) pour pouvoir tout tester à distance : EmuTOS US/FR,
+#  TOS 1.02 et les disquettes. ⚠ Le TOS propriétaire et les jeux sous copyright
+#  sont alors publiés publiquement — dépôt à garder privé si ce n'est pas voulu
+#  (passer NEOST_WEB_FREE_ONLY=ON pour ne publier qu'EmuTOS + diskA).
 #
 #  Prérequis côté dépôt : Settings → Pages → « Build and deployment » →
 #  Source = « GitHub Actions ». Le site est alors publié sur
@@ -42,8 +44,8 @@ jobs:
           cc -o extern/Musashi/m68kmake extern/Musashi/m68kmake.c
           ( cd extern/Musashi && ./m68kmake . m68k_in.c )
 
-      - name: Configurer (WASM, contenus libres uniquement)
-        run: emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release -DNEOST_WEB_FREE_ONLY=ON
+      - name: Configurer (WASM, tout rom/ et disks/ embarqués)
+        run: emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release -DNEOST_WEB_FREE_ONLY=OFF
 
       - name: Compiler le frontend web (sortie → wasm/)
         run: cmake --build build-web -j --target neost-web
