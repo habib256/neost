@@ -202,11 +202,30 @@ d'Hatari, pas son code (licences/architecture différentes) : NeoST garde son
 - **Reste** : `VIDEO_ENDLINE`/bascule 50-60 Hz, rendu **sous-ligne** (Spec512),
   positionnement cycle-exact du VBL et du Timer C (ce dernier en Phase 3).
 
-### Phase 3 — Timers MFP datés (`mfp.c`) → **Arkanoid**
+### Phase 3 — Timers MFP datés (`mfp.c`) — ✅ FAIT (mode délai A/C/D)
 
-- Timers A–D en événements (delay/event-count/pulse-width), latence IACK au cycle.
-- **Critère de réussite** : le diff NeoST↔Hatari ne diverge plus sur la séquence
-  de jeu, et la boucle `$26E7` sort → Arkanoid passe l'écran-titre vers l'in-game.
+- **Horloge continue** : `runFrame` ne remet plus l'horloge à 0 par trame ; les
+  événements vidéo sont armés à `frameStart_ + offset`. Les timers MFP traversent
+  donc les trames.
+- **MFP ↔ Scheduler** : `Mfp::setScheduler` ; sur écriture de TACR/TCDCR/TxDR, le
+  MFP calcule la **période en cycles CPU** (`prescaler × données × 31333/9600`,
+  conversion entière exacte MFP→CPU comme `cycInt.c`) et (re)date l'échéance du
+  timer. À l'échéance : IRQ levée + replanification (mode délai).
+- **Timer C réel** (remplace le faux « 4 tics/trame » de `Machine`) + **Timer D**
+  (jusque-là totalement absent) + Timer A. Timer B reste event-count sur DE.
+- **Validation fonctionnelle** : boot **pixel-identique** (bureau EmuTOS, Arkanoid),
+  et la trace `--irq` montre désormais les vecteurs Timer C (`$45`) **et** Timer D
+  (`$44`) qui se déclenchent réellement.
+- **Note** : le diff instruction-par-instruction avec Hatari diverge sur les
+  boucles de poll (ex. sync vidéo `FC0E3C` qui poll le compteur Timer B) car
+  **Musashi et l'UAE d'Hatari n'ont pas exactement les mêmes coûts cycles** ; les
+  deux sortent correctement la boucle. La validation pertinente est donc
+  fonctionnelle (rythme des timers, boot, rendu), pas l'égalité de trace.
+- **Reste** : Timer B mode délai, pulse-width, latence IACK au cycle, et la
+  position exacte du tic Timer C (phase au cycle de programmation).
+
+> **Arkanoid** : rappel — ce dump cale au même endroit (`$26E7`) **dans Hatari
+> aussi** ; ce n'est pas un problème de timers. Cf. `TODO.md`.
 
 ### Phase 4 — FDC/DMA temporel (`fdc.c`)
 

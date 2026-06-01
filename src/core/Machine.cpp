@@ -21,6 +21,7 @@ Machine::Machine(std::size_t ramBytes) : bus(ramBytes) {
     bus.ikbd    = &ikbd;
     bus.fdc     = &fdc;
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
+    mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
 
     installSchedulerCallbacks();
 }
@@ -32,27 +33,29 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::RENDER,  [this] { onRender(); });
     sched.setCallback(Scheduler::TIMER_B, [this] { onTimerB(); });
     sched.setCallback(Scheduler::HBL,     [this] { onHbl(); });
-    sched.setCallback(Scheduler::TIMER_C, [this] { onTimerC(); });
     sched.setCallback(Scheduler::VBL,     [this] { onVbl(); });
+    // Timers MFP en mode délai : datés par le MFP, déclenchés ici (IRQ + IPL).
+    sched.setCallback(Scheduler::TIMER_A, [this] { mfp.onTimerExpire(0); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::TIMER_C, [this] { mfp.onTimerExpire(2); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::TIMER_D, [this] { mfp.onTimerExpire(3); cpu.updateIpl(); });
 }
 
-// Arme le PREMIER événement de chaque source pour la trame courante. Les sources
-// se replanifient ensuite elles-mêmes dans leur handler.
+// Arme les événements VIDÉO de la trame courante, à des cycles ABSOLUS (horloge
+// continue) = frameStart_ + position dans la trame. Les Timers A/C/D persistent
+// d'une trame à l'autre (datés par le MFP) et ne sont PAS réarmés ici.
 void Machine::scheduleFrameEvents() {
-    timerCIndex_ = 0;
-    renderLine_  = 0;
-    tbLine_      = 0;
-    hblLine_     = 0;
+    renderLine_ = 0;
+    tbLine_     = 0;
+    hblLine_    = 0;
     shifter.beginFrame();                          // verrouille la résolution
 
     // Premiers événements de la ligne 0, à leur CYCLE EXACT dans la ligne.
-    sched.schedule(Scheduler::RENDER,  DE_END_CYCLE);   // 376 : rendu de la ligne 0
-    sched.schedule(Scheduler::TIMER_B, TIMERB_CYCLE);   // 400 : tic event-count
-    sched.schedule(Scheduler::HBL,     HBL_CYCLE);      // 508 : HBL niveau 2
-    // Timer C ≈ 200 Hz : 4 tics aux lignes 78/156/234/312 (fin de ligne).
-    sched.schedule(Scheduler::TIMER_C, static_cast<int64_t>(78 + 1) * CYCLES_PER_LINE);
+    sched.schedule(Scheduler::RENDER,  frameStart_ + DE_END_CYCLE);   // 376 : rendu ligne 0
+    sched.schedule(Scheduler::TIMER_B, frameStart_ + TIMERB_CYCLE);   // 400 : tic event-count
+    sched.schedule(Scheduler::HBL,     frameStart_ + HBL_CYCLE);      // 508 : HBL niveau 2
     // VBL niveau 4 : fin de la ligne 200 (début du VBlank).
-    sched.schedule(Scheduler::VBL, static_cast<int64_t>(VISIBLE_LINES + 1) * CYCLES_PER_LINE);
+    sched.schedule(Scheduler::VBL,
+                   frameStart_ + static_cast<int64_t>(VISIBLE_LINES + 1) * CYCLES_PER_LINE);
 }
 
 void Machine::onRender() {
@@ -63,9 +66,9 @@ void Machine::onRender() {
     const int h = shifter.height();
     if (renderLine_ < h) shifter.renderLine(renderLine_);
     ++renderLine_;
-    const int64_t due = static_cast<int64_t>(renderLine_) * CYCLES_PER_LINE + DE_END_CYCLE;
-    if (renderLine_ < h && due < static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE)
-        sched.schedule(Scheduler::RENDER, due);
+    if (renderLine_ < h && renderLine_ < LINES_PER_FRAME)
+        sched.schedule(Scheduler::RENDER,
+                       frameStart_ + static_cast<int64_t>(renderLine_) * CYCLES_PER_LINE + DE_END_CYCLE);
 }
 
 void Machine::onTimerB() {
@@ -75,7 +78,7 @@ void Machine::onTimerB() {
     ++tbLine_;
     if (tbLine_ < VISIBLE_LINES)
         sched.schedule(Scheduler::TIMER_B,
-                       static_cast<int64_t>(tbLine_) * CYCLES_PER_LINE + TIMERB_CYCLE);
+                       frameStart_ + static_cast<int64_t>(tbLine_) * CYCLES_PER_LINE + TIMERB_CYCLE);
 }
 
 void Machine::onHbl() {
@@ -83,17 +86,7 @@ void Machine::onHbl() {
     ++hblLine_;
     if (hblLine_ < VISIBLE_LINES)
         sched.schedule(Scheduler::HBL,
-                       static_cast<int64_t>(hblLine_) * CYCLES_PER_LINE + HBL_CYCLE);
-}
-
-void Machine::onTimerC() {
-    // Tic système 200 Hz : débloque l'accueil EmuTOS, fait vivre bureau/horloge.
-    mfp.raise(Mfp::SRC_TIMERC);
-    cpu.updateIpl();
-    static constexpr int kLines[4] = {78, 156, 234, 312};   // lignes des 4 tics
-    if (++timerCIndex_ < 4)
-        sched.schedule(Scheduler::TIMER_C,
-                       static_cast<int64_t>(kLines[timerCIndex_] + 1) * CYCLES_PER_LINE);
+                       frameStart_ + static_cast<int64_t>(hblLine_) * CYCLES_PER_LINE + HBL_CYCLE);
 }
 
 void Machine::onVbl() {
@@ -101,13 +94,14 @@ void Machine::onVbl() {
 }
 
 // -----------------------------------------------------------------------------
-//  Une trame : exécute le CPU d'événement en événement, puis décode l'écran.
+//  Une trame : horloge CONTINUE (les timers MFP la traversent). On exécute le CPU
+//  d'événement en événement (carry du dépassement), puis on finit le décodage.
 // -----------------------------------------------------------------------------
 void Machine::runFrame() {
-    sched.reset();                 // horloge de trame à 0
+    frameStart_ = sched.now();
     scheduleFrameEvents();
 
-    const int64_t frameEnd = static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE;
+    const int64_t frameEnd = frameStart_ + static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE;
     while (sched.now() < frameEnd) {
         int64_t next = sched.nextDue();
         if (next < 0 || next > frameEnd) next = frameEnd;

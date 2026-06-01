@@ -53,8 +53,51 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x17: vr   = v; break;
         case 0x1B: tbcr_ = v; break;                  // Timer B control (0x08 = event-count)
         case 0x21: tbReload_ = v; tbCounter_ = v; break;  // Timer B data → charge le compteur
+        // Timers A/C/D : on mémorise le registre PUIS on (re)programme l'échéance.
+        case 0x19: timer_[0x19] = v; scheduleTimer(0); break;             // TACR
+        case 0x1D: timer_[0x1D] = v; scheduleTimer(2); scheduleTimer(3); break; // TCDCR (C+D)
+        case 0x1F: timer_[0x1F] = v; scheduleTimer(0); break;             // TADR
+        case 0x23: timer_[0x23] = v; scheduleTimer(2); break;             // TCDR
+        case 0x25: timer_[0x25] = v; scheduleTimer(3); break;             // TDDR
         default: timer_[addr & 0x3F] = v; break;      // autres timers/USART : mémorisés
     }
+}
+
+// -----------------------------------------------------------------------------
+//  Timers en mode DÉLAI (A/C/D) datés sur l'ordonnanceur (cf. docs/CYCLE_ACCURACY).
+//  Le MFP tourne à 2457600 Hz, le CPU à 8021248 Hz : ratio EXACT 31333/9600
+//  (même conversion entière qu'Hatari cycInt.c, sans flottant).
+// -----------------------------------------------------------------------------
+int64_t Mfp::timerPeriodCycles(int timer) const {
+    static constexpr int kDiv[8] = {0, 4, 10, 16, 50, 64, 100, 200};   // prescalers MFP
+    int ctrl, data;
+    switch (timer) {
+        case 0: ctrl =  timer_[0x19] & 0x0F;       data = timer_[0x1F]; break;  // A
+        case 1: ctrl =  tbcr_ & 0x0F;              data = tbReload_;    break;  // B
+        case 2: ctrl = (timer_[0x1D] >> 4) & 0x07; data = timer_[0x23]; break;  // C
+        case 3: ctrl =  timer_[0x1D] & 0x07;       data = timer_[0x25]; break;  // D
+        default: return 0;
+    }
+    if (ctrl < 1 || ctrl > 7) return 0;       // 0 = arrêté ; 8+ = event-count/pulse (pas délai)
+    const int count = data ? data : 256;      // données = 0 → 256
+    const int64_t mfpCycles = static_cast<int64_t>(kDiv[ctrl]) * count;
+    return mfpCycles * 31333 / 9600;          // MFP → cycles CPU
+}
+
+void Mfp::scheduleTimer(int timer) {
+    if (!sched_ || timer == 1) return;        // Timer B = event-count, piloté par Machine
+    const Scheduler::Source src = timer == 0 ? Scheduler::TIMER_A
+                                : timer == 2 ? Scheduler::TIMER_C
+                                :              Scheduler::TIMER_D;
+    const int64_t period = timerPeriodCycles(timer);
+    if (period > 0) sched_->schedule(src, sched_->now() + period);
+    else            sched_->cancel(src);      // arrêté → plus d'échéance
+}
+
+void Mfp::onTimerExpire(int timer) {
+    static constexpr int kSrc[4] = {SRC_TIMERA, SRC_TIMERB, SRC_TIMERC, SRC_TIMERD};
+    raise(kSrc[timer]);                       // lève l'IRQ (si le canal est activé)
+    scheduleTimer(timer);                     // relance la période (mode délai)
 }
 
 void Mfp::hblank() {
