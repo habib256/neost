@@ -80,6 +80,25 @@ else()
         "puis générer m68kops.c (cf. README).")
 endif()
 
+# --- Moira (cœur 68000 cycle-exact, MIT) — 2e cœur CPU sélectionnable ---------
+# git submodule add https://github.com/dirkwhoffmann/Moira extern/moira
+# Moira nécessite C++20 (std::rotr/rotl, std::map::contains) → on compile ses
+# sources ET Cpu68k.cpp (qui inclut Moira.h) en C++20, le reste reste en C++17.
+set(MOIRA_DIR "${CMAKE_SOURCE_DIR}/extern/moira/Moira")
+if(EXISTS "${MOIRA_DIR}/Moira.cpp")
+    target_sources(neost_core PRIVATE
+        "${MOIRA_DIR}/Moira.cpp"
+        "${MOIRA_DIR}/MoiraDebugger.cpp")
+    target_include_directories(neost_core PUBLIC "${MOIRA_DIR}")
+    target_compile_definitions(neost_core PUBLIC NEOST_HAS_MOIRA=1)
+    set_source_files_properties("${MOIRA_DIR}/Moira.cpp" "${MOIRA_DIR}/MoiraDebugger.cpp"
+        PROPERTIES COMPILE_OPTIONS "-std=c++20")
+    set_source_files_properties(src/core/Cpu68k.cpp
+        PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS};-std=c++20")
+else()
+    message(STATUS "Moira absent (extern/moira) — seul le cœur Musashi sera disponible.")
+endif()
+
 # =============================================================================
 #  neost-headless — sans interface, pour les traces comparables à MAME.
 # =============================================================================

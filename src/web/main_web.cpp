@@ -293,6 +293,15 @@ int main(int argc, char** argv) {
     const std::string romPath  = (argc > 1) ? argv[1] : "/rom/etos192us.img";
     const std::string diskPath = (argc > 2) ? argv[2] : "/disks/diskA.st";
 
+    // Cœur CPU choisi AVANT le démarrage via le paramètre d'URL ?cpu=musashi|moira
+    // (le sélecteur de la page recharge avec ce paramètre — cf. shell.html).
+    char cpuBuf[16] = "musashi";
+    EM_ASM({
+        var c = new URLSearchParams(location.search).get('cpu') || 'musashi';
+        stringToUTF8(c, $0, 16);
+    }, cpuBuf);
+    const CpuCore cpuCore = Cpu68k::parseCore(cpuBuf);
+
     if (!glfwInit()) { std::fprintf(stderr, "[web] glfwInit a échoué\n"); return 1; }
 
     // L'écran ST le plus grand est 640×400 (mono) ; le canvas est dimensionné par
@@ -302,8 +311,9 @@ int main(int argc, char** argv) {
     if (!g_window) { std::fprintf(stderr, "[web] création fenêtre échouée\n"); glfwTerminate(); return 1; }
     glfwMakeContextCurrent(g_window);
 
-    static Machine machine;             // statique : survit après le retour de main()
+    static Machine machine(512u * 1024u, cpuCore);   // cœur choisi (statique : survit à main())
     g_machine = &machine;
+    std::fprintf(stderr, "[web] cœur CPU : %s\n", Cpu68k::coreName(machine.cpu.core()));
     if (!machine.loadTos(romPath))
         std::fprintf(stderr, "[web] TOS introuvable (%s) — CPU à vide.\n", romPath.c_str());
     if (!machine.loadDisk(diskPath))

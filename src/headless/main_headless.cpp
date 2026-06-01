@@ -30,6 +30,7 @@ void usage() {
         "  --regs            ajoute l'état des registres à chaque instruction\n"
         "  --irq             trace aussi les interruptions prises\n"
         "  --until-pc HEX    arrête dès que PC atteint cette adresse (hex)\n"
+        "  --cpu CORE        cœur 68000 : musashi (défaut) ou uae\n"
         "  --walk-mouse      après le boot, injecte un mouvement souris + clic (diag)\n"
         "  --screenshot PPM  dump du framebuffer final au format PPM\n"
         "  rom               image TOS (défaut rom/etos192fr.img)\n");
@@ -65,6 +66,7 @@ int main(int argc, char** argv) {
     uint32_t    untilPc    = 0;
     bool        walkMouse  = false;
     bool        machineMono = false;
+    CpuCore     cpuCore    = CpuCore::Musashi;
 
     for (int i = 1; i < argc; ++i) {
         const char* a = argv[i];
@@ -80,13 +82,15 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--disk"))       diskPath  = next(a);
         else if (!std::strcmp(a, "--walk-mouse")) walkMouse = true;
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
+        else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
         else if (!std::strcmp(a, "--until-pc"))   { untilPc = (uint32_t)std::strtoul(next(a), nullptr, 16); haveUntil = true; }
         else if (!std::strcmp(a, "-h") || !std::strcmp(a, "--help")) { usage(); return 0; }
         else if (a[0] == '-')                     { std::fprintf(stderr, "option inconnue: %s\n", a); usage(); return 2; }
         else                                      romPath   = a;
     }
 
-    Machine machine;
+    Machine machine(512u * 1024u, cpuCore);
+    std::fprintf(stderr, "[headless] cœur CPU : %s\n", Cpu68k::coreName(machine.cpu.core()));
     if (!machine.loadTos(romPath)) {
         std::fprintf(stderr, "[headless] impossible de charger %s\n", romPath.c_str());
         return 1;

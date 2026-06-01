@@ -43,7 +43,8 @@ static std::string resolveData(const std::string& given, const std::string& exeD
 
 // --- Persistance des préférences (dernier ROM, type de moniteur) -------------
 // Fichier neost.cfg à la racine du projet (à côté de build/).
-struct Config { std::string rom; std::string disk; bool mono = false; };
+// cpu = cœur 68000 choisi AU DÉMARRAGE ("musashi" par défaut, ou "uae").
+struct Config { std::string rom; std::string disk; bool mono = false; std::string cpu = "musashi"; };
 static std::string cfgPath(const std::string& exeDir) { return exeDir + "/../neost.cfg"; }
 static Config loadConfig(const std::string& exeDir) {
     Config c;
@@ -54,13 +55,15 @@ static Config loadConfig(const std::string& exeDir) {
         if      (line.rfind("rom=", 0)  == 0) c.rom  = line.substr(4);
         else if (line.rfind("disk=", 0) == 0) c.disk = line.substr(5);
         else if (line.rfind("mono=", 0) == 0) c.mono = (line.substr(5) == "1");
+        else if (line.rfind("cpu=", 0)  == 0) c.cpu  = line.substr(4);
     }
     return c;
 }
 static void saveConfig(const std::string& exeDir, const Config& c) {
     std::ofstream f(cfgPath(exeDir));
     if (!f) f.open("neost.cfg");
-    if (f) f << "rom=" << c.rom << "\ndisk=" << c.disk << "\nmono=" << (c.mono ? 1 : 0) << "\n";
+    if (f) f << "rom=" << c.rom << "\ndisk=" << c.disk << "\nmono=" << (c.mono ? 1 : 0)
+             << "\ncpu=" << c.cpu << "\n";
 }
 
 #if defined(NEOST_WITH_IMGUI)
@@ -314,7 +317,7 @@ int main(int argc, char** argv) {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);                    // VSync : cadence la boucle
 
-    Machine machine;                        // toute la carte mère
+    Machine machine(512u * 1024u, Cpu68k::parseCore(cfg.cpu));   // cœur CPU choisi (cfg)
     if (!machine.loadTos(tosPath))
         std::fprintf(stderr, "[main] Démarrage sans TOS (le CPU tournera à vide).\n");
     if (!machine.loadDisk(diskPath))
