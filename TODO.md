@@ -181,13 +181,14 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
       de Hatari ne contiennent aucun module de bruit-lecteur, et `--help` n'a pas
       d'option dédiée). C'est **STeem SSE** qui a popularisé la fonctionnalité, à
       partir d'**échantillons WAV** déclenchés sur les événements du FDC, pas d'une
-      synthèse. Donc la « source de vérité » ici, ce sont des **samples** :
-        - paquets de sons de lecteur de STeem SSE (cf. son dépôt / forums Atari) ;
-        - banques libres de bruits de floppy 3"½ (freesound.org, domaine public) ;
-        - ou enregistrer un **vrai lecteur ST** (le plus fidèle) : boucle moteur,
-          « clac » d'un pas de tête, chargement de tête, tic d'index ~3.7 ms.
-      Quatre échantillons suffisent : `motor` (boucle), `step` (un pas), `seek`
-      (rafale de pas, ou `step` répété au step-rate) et option `index`.
+      synthèse. Donc la « source de vérité » ici, ce sont des **samples**.
+      **✓ Récupérés** : les WAV de STeem SSE sont dans `rom/drivesound/`
+      (`basic/` générique + `epson_smd480l/` = vrai lecteur, échantillonné par
+      Stefan jL). Quatre samples : `drive_spin` (boucle moteur), `drive_startup`
+      (mise en route), `drive_seek` (rafale de pas) et `drive_click` (un pas).
+      Autres sources possibles si besoin : freesound.org (domaine public) ou
+      enregistrer un vrai lecteur ST (boucle moteur, clac de pas, tic d'index
+      ~3.7 ms).
 
       *Où brancher dans NeoST ?* — Sur les **événements** déjà présents dans
       `src/io/Fdc.cpp`, sans toucher au timing :
