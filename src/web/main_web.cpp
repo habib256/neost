@@ -330,6 +330,14 @@ int main(int argc, char** argv) {
     }, machBuf);
     const MachineType machType = parseMachine(machBuf);
 
+    // Taille de ST-RAM choisie par ?mem=256k|512k|1m|2m|4m (défaut 512 Ko).
+    char memBuf[16] = "512k";
+    EM_ASM({
+        var m = new URLSearchParams(location.search).get('mem') || '512k';
+        stringToUTF8(m, $0, 16);
+    }, memBuf);
+    const std::size_t ramBytes = parseRamBytes(memBuf);
+
     if (!glfwInit()) { std::fprintf(stderr, "[web] glfwInit a échoué\n"); return 1; }
 
     // L'écran ST le plus grand est 640×400 (mono) ; le canvas est dimensionné par
@@ -339,10 +347,10 @@ int main(int argc, char** argv) {
     if (!g_window) { std::fprintf(stderr, "[web] création fenêtre échouée\n"); glfwTerminate(); return 1; }
     glfwMakeContextCurrent(g_window);
 
-    static Machine machine(512u * 1024u, cpuCore, machType); // cœur+machine choisis (statique)
+    static Machine machine(ramBytes, cpuCore, machType); // RAM+cœur+machine (statique)
     g_machine = &machine;
-    std::fprintf(stderr, "[web] cœur CPU : %s | machine : %s\n",
-                 Cpu68k::coreName(machine.cpu.core()), machineName(machType));
+    std::fprintf(stderr, "[web] cœur CPU : %s | machine : %s | RAM : %s\n",
+                 Cpu68k::coreName(machine.cpu.core()), machineName(machType), ramLabel(ramBytes));
     if (!machine.loadTos(romPath))
         std::fprintf(stderr, "[web] TOS introuvable (%s) — CPU à vide.\n", romPath.c_str());
     if (!machine.loadDisk(diskPath))

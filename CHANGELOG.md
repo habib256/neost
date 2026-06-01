@@ -105,6 +105,9 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   sur ST/Mega ST (fidèle, c'est ainsi qu'EmuTOS détecte le modèle). Défaut : STE.
 - Sélection : menu « Machine ▸ Modèle » (GUI, `neost.cfg`), `?machine=` (WASM),
   `--machine st|megast|ste|megaste` (headless). Prépare le gating du blitter (Mega).
+- **Taille de ST-RAM** configurable (256 Ko / 512 Ko / 1 / 2 / 4 Mo) avant le boot :
+  menu « Machine ▸ Mémoire » (GUI), `?mem=` (WASM), `--mem` (headless). EmuTOS
+  détecte la `phystop` exacte par sondage ; `$FF8001` posé en cohérence.
 
 ## Frontend & confort
 

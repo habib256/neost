@@ -32,9 +32,12 @@ ligne-par-ligne (≈ pas cycle-accurate).
       ROM attendue, et le reste des registres présents/absents selon le modèle.
 - [ ] **ROM TOS MegaSTE** : chargement fiable des TOS 2.05/2.06 256 Ko à
       `$E00000`, choix pays, vérification des checksums, fallback EmuTOS MegaSTE.
-- [ ] **ST-RAM MegaSTE 1/2/4 Mo** (`stMemory.c`, MAME `stmmu.cpp`) : banques
-      MMU via `$FF8001`, remapping réel des banques 128/512/2048 Ko, zones non
-      peuplées, accès superviseur/utilisateur et bus errors cohérents.
+- [~] **ST-RAM 256 Ko / 512 Ko / 1 / 2 / 4 Mo** : taille choisie avant le boot
+      (`Machine(ramBytes,…)`, sélecteur GUI « Mémoire », WASM `?mem=`, headless
+      `--mem`, `neost.cfg`) ; `$FF8001` posé en cohérence (`memConfigForBytes`).
+      EmuTOS détecte la bonne `phystop` par sondage (validé en headless : 512 Ko→4 Mo
+      exacts). Restent : **remapping réel des banques** MMU (alias 128/512/2048 Ko),
+      zones non peuplées en **bus error** fidèles, et > 4 Mo (TT-RAM, hors ST-RAM).
 - [ ] **Bus map complet** (`ioMemTabST.c`, `ioMemTabSTE.c`, MAME `atarist.cpp`) :
       différencier registres ST, STE, Mega ST et MegaSTE, y compris les adresses
       qui renvoient `void`, `0x00`, `0xff`, open-bus ou bus error.

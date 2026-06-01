@@ -57,6 +57,13 @@
       <option value="ste">Machine : STE</option>
       <option value="megaste">Machine : Mega STE</option>
     </select>
+    <select id="memSel" title="Mémoire ST-RAM (recharge la page)">
+      <option value="256k">RAM : 256 Ko</option>
+      <option value="512k">RAM : 512 Ko</option>
+      <option value="1m">RAM : 1 Mo</option>
+      <option value="2m">RAM : 2 Mo</option>
+      <option value="4m">RAM : 4 Mo</option>
+    </select>
     <select id="romSel" title="ROM / TOS (change + reset)"></select>
     <select id="diskSel" title="Disquette préchargée"></select>
     <button id="btnMount">Monter + Reset</button>
@@ -247,6 +254,17 @@
         var p = new URLSearchParams(location.search);
         p.set('machine', sel.value);
         location.search = p.toString();   // recharge avec le modèle choisi
+      });
+    })();
+
+    // Sélecteur de mémoire : taille figée à la construction → recharge avec ?mem=
+    (function () {
+      var sel = document.getElementById('memSel');
+      sel.value = new URLSearchParams(location.search).get('mem') || '512k';
+      sel.addEventListener('change', function () {
+        var p = new URLSearchParams(location.search);
+        p.set('mem', sel.value);
+        location.search = p.toString();   // recharge avec la taille choisie
       });
     })();
 
