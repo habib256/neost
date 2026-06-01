@@ -115,6 +115,8 @@ private:
     void     motorOff();                         // coupe le moteur (+ désarme l'index)
     bool     motorRunning_ = false;
     int      idleRevs_ = 0;                       // tours écoulés depuis la dernière commande
+    int64_t  indexRef_ = 0;                       // cycle de référence de la phase d'index
+    bool     lastCmdTypeI_ = false;               // dernière commande de type I (bit INDEX valide)
 
     // Contrôleur DMA.
     uint16_t dmaMode_  = 0;                      // dernier $FF8606 écrit

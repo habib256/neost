@@ -74,6 +74,12 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
 - **Mixage YM2149 + lecteur** (GUI) : un seul périphérique miniaudio
   (`Audio::render`) somme le PSG et la sortie « sans périphérique » de
   `DriveSound` — active aussi la sortie son du PSG dans le frontend fenêtré.
+- **Bit INDEX du WD1772** : reflété sur les lectures de statut type I (trou
+  d'index ~1.46 ms, 1/tour) — phase dérivée de l'horloge de l'ordonnanceur.
+- **Son du PSG en WASM** : export `neost_audio_render` tiré par un
+  `ScriptProcessorNode` (Web Audio) partageant l'AudioContext des bruits de
+  lecteur → le navigateur mixe YM2149 + lecteur. Le frontend navigateur a enfin
+  du son (bips TOS, musiques).
 
 ## Frontend & confort
 

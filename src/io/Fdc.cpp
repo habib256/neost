@@ -25,12 +25,21 @@ enum : uint16_t { DMA_OK = 0x0001, DMA_SCNOT0 = 0x0002 };
 //   type I  : INDEX(2) TR00(4) CRC(8) SEEKERR(10) SPINUP(20) WPRT(40) MOTOR(80)
 //   type II/III : DRQ(2) LOSTDATA(4) CRC(8) RNF(10) RECTYPE(20) WPRT(40) MOTOR(80)
 enum : uint8_t {
+    FDC_INDEX   = 0x02,   // type I : tête au-dessus du trou d'index (1/tour)
     FDC_TRACK0  = 0x04,   // type I : tête sur piste 0
     FDC_RNF     = 0x10,   // type II/III : secteur introuvable (Record Not Found)
     FDC_SPINUP  = 0x20,   // type I : séquence spin-up terminée
     FDC_WRPRO   = 0x40,   // disquette protégée en écriture
     FDC_MOTOR_ON = 0x80,  // moteur en rotation
 };
+
+// Rotation du lecteur : 300 tr/min → 1 tour = 200 ms, et une impulsion d'index
+// par tour. (C'est le « tic » périodique du lecteur ; il sert aussi à compter
+// l'inactivité pour couper le moteur, comme le fait le WD1772.) Le moteur tourne
+// encore ~10 tours (≈ 2 s) après la dernière commande avant de s'arrêter.
+static constexpr int64_t INDEX_PERIOD_CYCLES = 200 * 8021;   // ~200 ms @ ~8 MHz
+static constexpr int64_t INDEX_PULSE_CYCLES  = 11710;        // ~1.46 ms : trou d'index visible
+static constexpr int     MOTOR_OFF_REVS      = 10;           // tours d'inactivité → moteur off
 
 // Décompresse une image .msa (Magic Shadow Archiver) en image .st brute.
 // En-tête (mots big-endian) : 0E0F, secteurs/piste, faces-1, piste début, fin.
@@ -144,7 +153,16 @@ uint8_t Fdc::read8(uint32_t addr) {
         case 0x5:                                    // data, octet bas
             if (dmaMode_ & DMA_SCREG) return uint8_t(dmaCount_);
             switch (dmaMode_ & (DMA_A1 | DMA_A0)) {
-                case 0:               setIntrq(false); return status_;  // FDC_CS : lire le statut efface l'INTRQ
+                case 0: {             // FDC_CS : lire le statut efface l'INTRQ
+                    setIntrq(false);
+                    uint8_t s = status_;
+                    // Bit INDEX (type I) : actif au passage du trou d'index, 1/tour.
+                    if (motorRunning_ && lastCmdTypeI_ && sched_) {
+                        const int64_t phase = (sched_->now() - indexRef_) % INDEX_PERIOD_CYCLES;
+                        if (phase >= 0 && phase < INDEX_PULSE_CYCLES) s |= FDC_INDEX;
+                    }
+                    return s;
+                }
                 case DMA_A0:          return track_;                    // FDC_TR
                 case DMA_A1:          return sector_;                   // FDC_SR
                 default:              return data_;                    // FDC_DR
@@ -179,13 +197,6 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
 
 // WD1772 : bit 0 du statut = BUSY (commande en cours).
 enum : uint8_t { FDC_BUSY = 0x01 };
-
-// Rotation du lecteur : 300 tr/min → 1 tour = 200 ms, et une impulsion d'index
-// par tour. (C'est le « tic » périodique du lecteur ; il sert aussi à compter
-// l'inactivité pour couper le moteur, comme le fait le WD1772.) Le moteur tourne
-// encore ~10 tours (≈ 2 s) après la dernière commande avant de s'arrêter.
-static constexpr int64_t INDEX_PERIOD_CYCLES = 200 * 8021;   // ~200 ms @ ~8 MHz
-static constexpr int     MOTOR_OFF_REVS      = 10;           // tours d'inactivité → moteur off
 
 // Durée réaliste d'une commande avant la fin (INTRQ). Type I : step-rate × pas ;
 // type II/III : ~temps de transfert par secteur. (Le débit réel est ~16 ms/secteur ;
@@ -225,6 +236,7 @@ void Fdc::executeCommand(uint8_t cmd) {
     //  onIndexPulse). Les commandes type I (seek/restore/step) déplacent la tête →
     //  « clic » d'un pas, ou bruit de seek si plusieurs pistes sont franchies.
     motorOn();
+    lastCmdTypeI_ = !(cmd & 0x80);                     // le bit INDEX n'a de sens qu'en type I
     if (!(cmd & 0x80)) {                               // type I : seek / restore / step
         int steps = 1;
         if      ((cmd & 0xF0) == 0x00) steps = track_;            // RESTORE → piste 0
@@ -280,6 +292,7 @@ void Fdc::motorOn() {
     idleRevs_ = 0;
     if (motorRunning_) return;
     motorRunning_ = true;
+    if (sched_) indexRef_ = sched_->now();        // origine de la phase d'index
     emitSound(FdcSound::MotorOn);
     if (sched_) sched_->schedule(Scheduler::FDC_INDEX, sched_->now() + INDEX_PERIOD_CYCLES);
 }

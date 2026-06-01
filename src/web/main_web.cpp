@@ -293,6 +293,15 @@ EMSCRIPTEN_KEEPALIVE void neost_mount_disk_b(const char* path) {
     g_machine->fdc.loadImage(path, 1);
 }
 
+// Synthèse audio du YM2149 : remplit `buf` (heap WASM) de `frames` échantillons
+// mono float à la fréquence `rate`. Appelé par le ScriptProcessorNode de la page
+// (Web Audio) ; les bruits de lecteur, eux, passent par leurs propres nœuds —
+// le navigateur mixe tous les nœuds connectés à la destination.
+EMSCRIPTEN_KEEPALIVE void neost_audio_render(float* buf, int frames, int rate) {
+    if (!g_machine || !buf || frames <= 0) return;
+    g_machine->psg.synthesize(buf, static_cast<uint32_t>(frames), static_cast<uint32_t>(rate));
+}
+
 } // extern "C"
 
 int main(int argc, char** argv) {

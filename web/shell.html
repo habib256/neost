@@ -107,7 +107,27 @@
       populateSelect('diskSel', '/disks', /\.(st|msa)$/i);
       populateSelect('romSel', '/rom', /\.(img|rom|tos|bin)$/i, '/rom/etos192us.img');
       driveLoad();   // précharge les WAV de bruits de lecteur (rom/drivesound/)
+      psgAudioStart();   // branche la sortie son du YM2149 (Web Audio)
     };
+
+    // ===== Son du YM2149 (Web Audio) ==========================================
+    // Un ScriptProcessorNode tire les échantillons synthétisés par le cœur
+    // (neost_audio_render) ; il partage l'AudioContext de DriveSound, donc le PSG
+    // et les bruits de lecteur sont mixés par le navigateur à la destination.
+    function psgAudioStart() {
+      if (!drive.ctx || drive.psgNode) return;
+      var size = 2048;                              // ~43 ms à 48 kHz : compromis latence/glitch
+      var node = drive.ctx.createScriptProcessor(size, 0, 1);
+      var ptr  = Module._malloc(size * 4);          // buffer float persistant côté heap WASM
+      node.onaudioprocess = function (e) {
+        var out = e.outputBuffer.getChannelData(0);
+        Module.ccall('neost_audio_render', null, ['number', 'number', 'number'],
+                     [ptr, size, drive.ctx.sampleRate]);
+        out.set(Module.HEAPF32.subarray(ptr >> 2, (ptr >> 2) + size));   // relu frais (mem growth)
+      };
+      node.connect(drive.ctx.destination);
+      drive.psgNode = node;
+    }
 
     // ===== Bruits mécaniques du lecteur de disquette (Web Audio) ==============
     // Le cœur (C) appelle window.neostDriveSound(code) sur chaque événement FDC,
@@ -115,7 +135,7 @@
     // 1 = pas de tête (clic), 2 = seek, 3 = moteur OFF (coupé par le cœur après
     // ~10 tours d'inactivité), 4 = impulsion d'index (léger « tic » 1/tour).
     // Les échantillons WAV sont embarqués dans le FS virtuel (rom/drivesound/).
-    var drive = { ctx: null, buf: {}, motorSrc: null, enabled: true,
+    var drive = { ctx: null, buf: {}, motorSrc: null, psgNode: null, enabled: true,
                   dir: '/rom/drivesound/epson_smd480l/' };
 
     function driveLoad() {
