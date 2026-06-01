@@ -73,7 +73,8 @@ static bool decodeMsa(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out
     return true;
 }
 
-bool Fdc::loadImage(const std::string& path) {
+bool Fdc::loadImage(const std::string& path, int drive) {
+    FloppyDisk& dk = drive_[drive & 1];
     std::ifstream f(path, std::ios::binary | std::ios::ate);
     if (!f) { std::fprintf(stderr, "[FDC] image introuvable : %s\n", path.c_str()); return false; }
     const std::streamsize n = f.tellg();
@@ -84,38 +85,44 @@ bool Fdc::loadImage(const std::string& path) {
     // .msa (compressé) → décompression en .st brut ; sinon image .st telle quelle.
     std::vector<uint8_t> msa;
     if (decodeMsa(raw, msa)) {
-        image_ = std::move(msa);
-        rawImage_ = false;                       // .msa : pas de recopie d'écritures
+        dk.image = std::move(msa);
+        dk.raw = false;                          // .msa : pas de recopie d'écritures
         std::fprintf(stderr, "[FDC] image .msa décompressée : %s\n", path.c_str());
     } else {
-        image_ = std::move(raw);                 // .st brut
-        rawImage_ = true;
+        dk.image = std::move(raw);               // .st brut
+        dk.raw = true;
     }
 
     // Géométrie depuis le BPB (offsets 0x18 = secteurs/piste, 0x1A = faces).
-    if (image_.size() >= 0x1C) {
-        const int spt   = image_[0x18] | (image_[0x19] << 8);
-        const int sides = image_[0x1A] | (image_[0x1B] << 8);
-        if (spt   >= 1 && spt   <= 30) spt_   = spt;
-        if (sides >= 1 && sides <= 2)  sides_ = sides;
+    if (dk.image.size() >= 0x1C) {
+        const int spt   = dk.image[0x18] | (dk.image[0x19] << 8);
+        const int sides = dk.image[0x1A] | (dk.image[0x1B] << 8);
+        if (spt   >= 1 && spt   <= 30) dk.spt   = spt;
+        if (sides >= 1 && sides <= 2)  dk.sides = sides;
     }
-    path_ = path;
-    std::fprintf(stderr, "[FDC] disquette montée : %s (%zu Ko, %d secteurs/piste, %d faces)\n",
-                 path.c_str(), image_.size() / 1024, spt_, sides_);
+    dk.path = path;
+    std::fprintf(stderr, "[FDC] lecteur %c : %s (%zu Ko, %d secteurs/piste, %d faces)\n",
+                 drive & 1 ? 'B' : 'A', path.c_str(), dk.image.size() / 1024, dk.spt, dk.sides);
     return true;
 }
 
-void Fdc::eject() {
-    image_.clear();
-    path_.clear();
-    std::fprintf(stderr, "[FDC] disquette éjectée\n");
+void Fdc::eject(int drive) {
+    FloppyDisk& dk = drive_[drive & 1];
+    dk.image.clear();
+    dk.path.clear();
+    std::fprintf(stderr, "[FDC] lecteur %c éjecté\n", drive & 1 ? 'B' : 'A');
 }
 
 int Fdc::currentSide() const {
     // Port A du PSG (registre 14), bit0 actif bas : 0 = face 1, 1 = face 0.
     return (psg_.regs_[14] & 0x01) ? 0 : 1;
 }
-bool Fdc::driveASelected() const { return (psg_.regs_[14] & 0x02) == 0; }
+// Sélection lecteur : port A du PSG bit1 = A (actif bas), bit2 = B (actif bas).
+int Fdc::selectedDrive() const {
+    if ((psg_.regs_[14] & 0x02) == 0) return 0;   // A prioritaire si les deux
+    if ((psg_.regs_[14] & 0x04) == 0) return 1;
+    return -1;
+}
 
 void Fdc::setIntrq(bool on) {
     intrq_ = on;
@@ -144,6 +151,7 @@ uint8_t Fdc::read8(uint32_t addr) {
             }
         case 0x6: return 0;                          // status, octet haut
         case 0x7: return uint8_t(dmaStatus());       // status, octet bas
+        case 0xE: case 0xF: return density_;         // $FF860E : densité DD/HD
         default:  return 0xFF;
     }
 }
@@ -164,6 +172,7 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
         case 0x9: dmaAddr_ = (dmaAddr_ & 0x00FFFF) | (uint32_t(v) << 16); return;
         case 0xB: dmaAddr_ = (dmaAddr_ & 0xFF00FF) | (uint32_t(v) << 8);  return;
         case 0xD: dmaAddr_ = (dmaAddr_ & 0xFFFF00) |  uint32_t(v);        return;
+        case 0xE: case 0xF: density_ = v; return;    // $FF860E : densité DD/HD
         default:  return;
     }
 }
@@ -222,7 +231,8 @@ void Fdc::executeCommand(uint8_t cmd) {
     result |= FDC_MOTOR_ON;
     if (!(cmd & 0x80)) {                               // type I
         result |= FDC_SPINUP;
-        if (writeProtect_) result |= FDC_WRPRO;
+        const int d = selectedDrive();
+        if (d >= 0 && drive_[d].writeProtect) result |= FDC_WRPRO;
     }
 
     // Le transfert DMA est déjà fait (données en RAM) ; on POSE BUSY et on diffère
@@ -249,16 +259,18 @@ static inline uint32_t lsnOffset(int track, int side, int sector, int spt, int s
 }
 
 uint8_t Fdc::readSectors(uint8_t /*cmd*/) {
-    if (image_.empty() || !driveASelected()) return FDC_RNF;
+    const int d = selectedDrive();
+    if (d < 0 || drive_[d].image.empty()) return FDC_RNF;
+    FloppyDisk& dk = drive_[d];
     const int side = currentSide();
     int count = dmaCount_ ? dmaCount_ : 1;
-    uint32_t off = lsnOffset(track_, side, sector_, spt_, sides_);
+    uint32_t off = lsnOffset(track_, side, sector_, dk.spt, dk.sides);
 
     for (int i = 0; i < count; ++i) {
-        if (off + 512u > image_.size()) return FDC_RNF;        // secteur hors disque
+        if (off + 512u > dk.image.size()) return FDC_RNF;      // secteur hors disque
         for (uint32_t j = 0; j < 512u; ++j) {                  // DMA → RAM
             const uint32_t a = (dmaAddr_ + j) & 0x00FFFFFF;
-            if (a < bus_.ram.size()) bus_.ram[a] = image_[off + j];
+            if (a < bus_.ram.size()) bus_.ram[a] = dk.image[off + j];
         }
         off += 512u; dmaAddr_ += 512u;
     }
@@ -267,38 +279,41 @@ uint8_t Fdc::readSectors(uint8_t /*cmd*/) {
 }
 
 uint8_t Fdc::writeSectors(uint8_t /*cmd*/) {
-    if (image_.empty() || !driveASelected()) return FDC_RNF;
-    if (writeProtect_) return FDC_RNF | FDC_WRPRO;    // disquette protégée → refus
+    const int d = selectedDrive();
+    if (d < 0 || drive_[d].image.empty()) return FDC_RNF;
+    FloppyDisk& dk = drive_[d];
+    if (dk.writeProtect) return FDC_RNF | FDC_WRPRO;  // disquette protégée → refus
     const int side = currentSide();
     int count = dmaCount_ ? dmaCount_ : 1;
-    const uint32_t off0 = lsnOffset(track_, side, sector_, spt_, sides_);
+    const uint32_t off0 = lsnOffset(track_, side, sector_, dk.spt, dk.sides);
     uint32_t off = off0;
 
     for (int i = 0; i < count; ++i) {
-        if (off + 512u > image_.size()) return FDC_RNF;
+        if (off + 512u > dk.image.size()) return FDC_RNF;
         for (uint32_t j = 0; j < 512u; ++j) {                  // RAM → image (en mémoire)
             const uint32_t a = (dmaAddr_ + j) & 0x00FFFFFF;
-            image_[off + j] = (a < bus_.ram.size()) ? bus_.ram[a] : 0;
+            dk.image[off + j] = (a < bus_.ram.size()) ? bus_.ram[a] : 0;
         }
         off += 512u; dmaAddr_ += 512u;
     }
     dmaCount_ = 0;
-    writeBack(off0, off - off0);     // Flopwr : recopie les secteurs dans le .st
+    writeBack(dk, off0, off - off0);     // Flopwr : recopie les secteurs dans le .st
     return 0;
 }
 
 // Recopie une zone modifiée de l'image en mémoire vers le fichier .st monté
 // (persistance des écritures — cf. TODO « Flopwr complet → recopie dans le .st »).
-void Fdc::writeBack(uint32_t off, uint32_t len) {
-    if (!rawImage_ || path_.empty() || off + len > image_.size()) return;  // .msa : pas de recopie
-    std::fstream f(path_, std::ios::binary | std::ios::in | std::ios::out);
+void Fdc::writeBack(FloppyDisk& dk, uint32_t off, uint32_t len) {
+    if (!dk.raw || dk.path.empty() || off + len > dk.image.size()) return;  // .msa : pas de recopie
+    std::fstream f(dk.path, std::ios::binary | std::ios::in | std::ios::out);
     if (!f) return;                  // image en lecture seule / FS virtuel non inscriptible
     f.seekp(off);
-    f.write(reinterpret_cast<const char*>(image_.data() + off), len);
+    f.write(reinterpret_cast<const char*>(dk.image.data() + off), len);
 }
 
 uint8_t Fdc::readAddress() {
-    if (image_.empty() || !driveASelected()) return FDC_RNF;
+    const int d = selectedDrive();
+    if (d < 0 || drive_[d].image.empty()) return FDC_RNF;
     // Champ ID renvoyé par DMA : piste, face, secteur, taille(2=512), CRC.
     const uint8_t id[6] = { track_, uint8_t(currentSide()), sector_, 0x02, 0, 0 };
     for (uint32_t j = 0; j < 6; ++j) {

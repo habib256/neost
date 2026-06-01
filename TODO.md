@@ -150,13 +150,14 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 - [~] **Write protect** (✓ : refus d'écriture + bit WPRT) + **détection de
       changement de média** (Mediach, reste à faire) : pour monter/éjecter à chaud
       sans reset (la Disk Library).
-- [~] **Densité** DD/HD ($FF860E, reste à faire), **Flopwr** ✓ : les écritures
-      sont recopiées dans le fichier `.st` monté (`Fdc::writeBack`).
-- [~] Formats : **.msa** ✓ (décompression RLE → .st en mémoire, `Fdc::decodeMsa`),
-      **.dim**, **.stx** (protégés, timing variable, le seul
-      moyen de lancer beaucoup d'originaux), **.ipf**, et archives **.zip**
-      (`file_archive.c`, `unzip.c`). NeoST ne lit que `.st` brut.
-- [ ] **Lecteur B** (sélection déjà décodée via PSG port A).
+- [~] **Densité** DD/HD ($FF860E ✓ : registre relisable), **Flopwr** ✓ : les
+      écritures sont recopiées dans le fichier `.st` monté (`Fdc::writeBack`).
+- [~] Formats : **.msa** ✓ (décompression RLE → .st en mémoire, `Fdc::decodeMsa`).
+      **.dim** (simple) à ajouter ; **.stx**/**.ipf** (flux bas niveau / protections)
+      et **.zip** (archive) restent hors périmètre actuel (nécessitent un moteur
+      flux ou une lib d'archive).
+- [x] **Lecteur B** ✓ : `drive_[2]` routé par le PSG (port A bits 1/2),
+      `loadImage(path, drive)` ; montage en B via l'UI WASM (`neost_mount_disk_b`).
 - [ ] **FIFO DMA/MMU** (`stmmu.cpp`) : secteur-count, status bits, DRQ/INTRQ,
       transfert par blocs, erreurs DMA, adresse 24 bits et interaction ACSI/FDC.
 - [ ] **Lecteur HD MegaSTE** : DIP `$FF9200`, densité DD/HD, WD1772 à fréquence

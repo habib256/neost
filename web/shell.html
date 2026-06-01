@@ -53,6 +53,7 @@
     <select id="romSel" title="ROM / TOS (change + reset)"></select>
     <select id="diskSel" title="Disquette préchargée"></select>
     <button id="btnMount">Monter + Reset</button>
+    <button id="btnMountB" title="Monter la disquette sélectionnée dans le lecteur B">→ B</button>
     <label class="file">Charger un .st…
       <input type="file" id="diskFile" accept=".st,.msa">
     </label>
@@ -121,6 +122,7 @@
     function callReset()    { if (ready) Module.ccall('neost_reset'); }
     function callMono(m)    { if (ready) Module.ccall('neost_set_mono', null, ['number'], [m]); }
     function callMount(p)   { if (ready) Module.ccall('neost_mount_disk', null, ['string'], [p]); }
+    function callMountB(p)  { if (ready) Module.ccall('neost_mount_disk_b', null, ['string'], [p]); }
     function callLoadTos(p) { if (ready) Module.ccall('neost_load_tos', null, ['string'], [p]); }
 
     // Sélecteur de cœur CPU : choisi AVANT le démarrage (le cœur est figé à la
@@ -152,6 +154,13 @@
         if (/tos.*1\.0|mega tos/i.test(opts[i].textContent)) return opts[i].value;
       return null;
     }
+
+    // Monte la disquette sélectionnée dans le lecteur B (pas de reset).
+    document.getElementById('btnMountB').addEventListener('click', function () {
+      var p = document.getElementById('diskSel').value;
+      callMountB(p);
+      Module.setStatus('Lecteur B : ' + p.split('/').pop());
+    });
 
     document.getElementById('btnMono').addEventListener('click', function () {
       monoOn = !monoOn;
