@@ -71,6 +71,9 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   lisant des échantillons 8 bits signés en RAM (6.25/12.5/25/50 kHz, mono/stéréo,
   play/repeat, compteur d'adresse). Routé par le `Bus`, mixé au YM2149 par `Audio`
   (GUI) et `neost_audio_render` (WASM). Donne le son numérique des jeux/démos STE.
+- **LMC1992 / Microwire** ($FF8922/24) : décodage de la commande série (mot 11
+  bits), volume maître + gauche/droite appliqués en gain linéaire au mix complet
+  (0 dB par défaut). Basses/aigus/mixage stockés (filtrage = TODO).
 - **Bruits mécaniques du lecteur de disquette** : le cœur émet des événements
   `FdcSound` (moteur on/off, pas, seek, index) depuis `Fdc` via un sink, sans
   dépendance audio. Frontends : `DriveSound` (miniaudio `ma_engine`) côté GUI,

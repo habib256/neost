@@ -29,11 +29,17 @@ public:
     // Additionne le canal numérique dans `out` (mono float) — thread audio.
     void    mix(float* out, uint32_t frames, uint32_t sampleRate);
 
+    // Gain de sortie linéaire (LMC1992 : volume maître + gauche/droite, en mono).
+    // S'applique à TOUT le son STE (YM2149 + DMA), comme la puce réelle. 1.0 par
+    // défaut (0 dB) → aucun effet tant que le microwire n'est pas programmé.
+    float   masterGain() const;
+
     void    reset();                 // coupe la lecture (RESET machine)
     bool    playing() const { return playing_; }
 
 private:
     int     sampleAt(uint32_t addr, bool stereo) const;   // octet(s) RAM → -128..127 mono
+    void    decodeMicrowire();                            // décode la commande LMC1992
 
     Bus&     bus_;
 
@@ -43,7 +49,15 @@ private:
     uint32_t startAddr_ = 0;         // $FF8903/05/07
     uint32_t endAddr_   = 0;         // $FF890F/11/13
     uint32_t curAddr_   = 0;         // $FF8909/0B/0D (compteur courant)
-    uint16_t mwData_ = 0, mwMask_ = 0;  // microwire $FF8922/$FF8924 (LMC1992, stockés)
+    uint16_t mwData_ = 0, mwMask_ = 0;  // microwire $FF8922/$FF8924 (mots 16 bits)
+
+    // LMC1992 décodé (volumes en pas de 2 dB). Défauts = 0 dB (aucune atténuation).
+    int      mwMaster_ = 40;         // 0..40 → -80..0 dB (volume maître)
+    int      mwLeft_   = 20;         // 0..20 → -40..0 dB
+    int      mwRight_  = 20;
+    int      mwBass_   = 6;          // stockés ; filtrage tonalité = TODO
+    int      mwTreble_ = 6;
+    int      mwMixing_ = 0;
 
     // État de lecture (thread audio).
     bool     playing_ = false;

@@ -302,6 +302,8 @@ EMSCRIPTEN_KEEPALIVE void neost_audio_render(float* buf, int frames, int rate) {
     const uint32_t n = static_cast<uint32_t>(frames), r = static_cast<uint32_t>(rate);
     g_machine->psg.synthesize(buf, n, r);          // YM2149 (écrase)
     g_machine->dmasnd.mix(buf, n, r);              // + son DMA STE (additionné)
+    const float g = g_machine->dmasnd.masterGain();   // volume maître LMC1992
+    if (g != 1.0f) for (uint32_t i = 0; i < n; ++i) buf[i] *= g;
 }
 
 } // extern "C"

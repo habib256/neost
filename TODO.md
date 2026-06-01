@@ -177,8 +177,11 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
       de cadencer le DMA sur l'horloge d'émulation, pas le thread audio) et la
       micro-précision du rééchantillonnage. Microwire ($FF8922/24) stocké, non
       appliqué (cf. LMC1992 ci-dessous).
-- [ ] **LMC1992 / Microwire** (Hatari `dmaSnd.c`, MAME `lmc1992`) : volume,
-      bass/treble, balance, masque/data `$FF8922/$FF8924`, timing de shift.
+- [~] **LMC1992 / Microwire** ($FF8922/24, `DmaSound`) ✓ : décodage de la commande
+      série (mot 11 bits %10 + reg + donnée), **volume maître + gauche/droite**
+      appliqués en gain au mix (YM2149 + DMA), 0 dB par défaut. Restent : **basses/
+      aigus** (filtrage, stockés seulement), **mixage** (reg 0) et le timing de
+      shift bit-à-bit (on décode le mot d'un coup).
 - [ ] **IRQ/GPIP liés au DMA sound** : fin de frame, repeat/loop, interaction I7
       avec détection mono comme dans MAME `dmasound_set_state`.
 - [x] **Bruits du lecteur de disquette** ✓ (confort/immersion : ronron moteur,

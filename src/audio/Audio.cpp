@@ -32,8 +32,12 @@ Audio::~Audio() { stop(); }
 
 void Audio::render(float* out, uint32_t frames, uint32_t sampleRate) {
     psg_.synthesize(out, frames, sampleRate);         // (1) PSG → out (écrase)
-    if (dma_)   dma_->mix(out, frames, sampleRate);   // (2) son DMA STE → additionné
-    if (drive_) drive_->mix(out, frames);             // (3) bruits lecteur → additionnés
+    if (dma_) {
+        dma_->mix(out, frames, sampleRate);           // (2) son DMA STE → additionné
+        const float g = dma_->masterGain();           // (3) volume maître LMC1992
+        if (g != 1.0f) for (uint32_t i = 0; i < frames; ++i) out[i] *= g;
+    }
+    if (drive_) drive_->mix(out, frames);             // (4) bruits lecteur (hors LMC1992)
     for (uint32_t i = 0; i < frames; ++i)             // garde-fou anti-saturation
         out[i] = std::max(-1.0f, std::min(1.0f, out[i]));
 }

@@ -6,6 +6,8 @@
 #include "core/DmaSound.hpp"
 #include "core/Bus.hpp"
 
+#include <cmath>
+
 // Fréquences d'échantillonnage STE (cristal 25.175 MHz / diviseurs), bits 0-1 de
 // $FF8921. Réf. doc matérielle / Hatari.
 static const double kRate[4] = { 6258.0, 12517.0, 25033.0, 50066.0 };
@@ -18,6 +20,42 @@ void DmaSound::reset() {
     playing_ = false;
     ctrl_ = 0;
     phase_ = 0.0;
+    mwMaster_ = 40; mwLeft_ = 20; mwRight_ = 20;   // LMC1992 à 0 dB (pas de mute au reset)
+    mwBass_ = 6; mwTreble_ = 6; mwMixing_ = 0;
+}
+
+// Décode une commande LMC1992 reçue par microwire. Le mot 16 bits ($FF8922) est
+// décalé en série, seuls les bits où le masque ($FF8924) vaut 1 sortent (MSB
+// d'abord). La commande utile fait 11 bits : %10 (adresse puce) + 3 bits de
+// registre + 6 bits de donnée. Registres : 3=volume maître, 4=droite, 5=gauche,
+// 1=basses, 2=aigus, 0=mixage (ces trois derniers stockés, filtrage = TODO).
+void DmaSound::decodeMicrowire() {
+    uint16_t cmd = 0; int bits = 0;
+    for (int i = 15; i >= 0; --i)
+        if (mwMask_ & (1u << i)) { cmd = uint16_t((cmd << 1) | ((mwData_ >> i) & 1)); ++bits; }
+    if (bits < 11) return;                         // commande incomplète
+    const uint16_t c = cmd & 0x7FF;
+    if ((c >> 9) != 0b10) return;                  // n'adresse pas le LMC1992
+    const int reg = (c >> 6) & 0x07, data = c & 0x3F;
+    switch (reg) {
+        case 0: mwMixing_ = data; break;
+        case 1: mwBass_   = data; break;
+        case 2: mwTreble_ = data; break;
+        case 3: mwMaster_ = data; break;           // 0..40 → -80..0 dB
+        case 4: mwRight_  = data; break;           // 0..20 → -40..0 dB
+        case 5: mwLeft_   = data; break;
+        default: break;
+    }
+}
+
+float DmaSound::masterGain() const {
+    // Pas de 2 dB ; valeurs au-delà du max = 0 dB. Sortie mono → moyenne G/D.
+    const double mdB = (mwMaster_ >= 40 ? 0 : (mwMaster_ - 40) * 2);
+    const double ldB = (mwLeft_   >= 20 ? 0 : (mwLeft_   - 20) * 2);
+    const double rdB = (mwRight_  >= 20 ? 0 : (mwRight_  - 20) * 2);
+    const double gL = std::pow(10.0, (mdB + ldB) / 20.0);
+    const double gR = std::pow(10.0, (mdB + rdB) / 20.0);
+    return static_cast<float>((gL + gR) * 0.5);
 }
 
 // Lecture d'un échantillon (mono -128..127). En stéréo, moyenne L+R (sortie mono).
@@ -42,8 +80,10 @@ uint8_t DmaSound::read8(uint32_t addr) {
         case 0x11: return uint8_t(endAddr_ >> 8);
         case 0x13: return uint8_t(endAddr_);
         case 0x21: return mode_;
-        case 0x22: return uint8_t(mwData_);           // microwire (LMC1992)
-        case 0x24: return uint8_t(mwMask_);
+        case 0x22: return uint8_t(mwData_ >> 8);      // microwire data (mot 16 bits)
+        case 0x23: return uint8_t(mwData_);
+        case 0x24: return uint8_t(mwMask_ >> 8);      // microwire mask
+        case 0x25: return uint8_t(mwMask_);
         default:   return 0xFF;
     }
 }
@@ -70,8 +110,12 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         case 0x11: endAddr_   = (endAddr_   & 0xFF00FF) | (uint32_t(v) << 8);  break;
         case 0x13: endAddr_   = (endAddr_   & 0xFFFF00) | (uint32_t(v) & 0xFE); break;
         case 0x21: mode_ = v; break;                   // fréquence + mono/stéréo
-        case 0x22: mwData_ = v; break;                 // microwire data
-        case 0x24: mwMask_ = v; break;                 // microwire mask
+        // Microwire : mots 16 bits ($FF8922 data, $FF8924 mask). On décode la
+        // commande LMC1992 quand l'octet bas de la donnée est écrit (mot complet).
+        case 0x22: mwData_ = uint16_t((mwData_ & 0x00FF) | (v << 8)); break;
+        case 0x23: mwData_ = uint16_t((mwData_ & 0xFF00) | v); decodeMicrowire(); break;
+        case 0x24: mwMask_ = uint16_t((mwMask_ & 0x00FF) | (v << 8)); break;
+        case 0x25: mwMask_ = uint16_t((mwMask_ & 0xFF00) | v); break;
         default: break;                                // compteur courant : lecture seule
     }
 }
