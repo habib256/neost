@@ -65,9 +65,12 @@ ligne-par-ligne (≈ pas cycle-accurate).
       près (`CycInt_AddRelativeInterrupt`). NeoST exécute 512 cycles/ligne en
       bloc → suffisant pour booter, insuffisant pour beaucoup de jeux/démos.
 - [ ] **Wait states** d'accès YM2149 / mémoire (`psg.c` : 4 cycles + alignement).
-- [ ] **Ordonnanceur unique d'événements** CPU/MFP/vidéo/FDC/DMA/ACIA : remplacer
+- [~] **Ordonnanceur unique d'événements** CPU/MFP/vidéo/FDC/DMA/ACIA : remplacer
       les tics par frame/ligne par des événements datés en cycles, comme Hatari
-      `CycInt_*` ou les timers MAME.
+      `CycInt_*` ou les timers MAME. **Phase 1 faite** : `src/core/Scheduler.hpp`
+      + `Machine::runFrame` événementiel (HBL/Timer C/VBL datés), iso-comportement
+      (trace identique). Reste : carry du dépassement, sources Timer A/B/D, FDC,
+      DMA, et subdivision du quantum (cf. `docs/CYCLE_ACCURACY.md`).
 - [ ] **Modes PAL/NTSC** : quartz, nombre de lignes, 50/60 Hz, timings couleur et
       mono ; MegaSTE doit respecter les mêmes bases que STE.
 

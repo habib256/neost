@@ -17,6 +17,7 @@
 #include "core/Shifter.hpp"
 #include "core/YM2149.hpp"
 #include "core/Glue.hpp"
+#include "core/Scheduler.hpp"
 #include "io/Mfp.hpp"
 #include "io/Ikbd.hpp"
 #include "io/Fdc.hpp"
@@ -36,15 +37,33 @@ public:
 
     // Exécute UNE trame complète : 313 lignes de cycles CPU, 4 tics Timer C
     // (≈200 Hz) et un VBL niveau 4. Décode l'image en fin de trame.
+    //
+    //  Depuis la Phase 1 de cycle-accuracy (cf. docs/CYCLE_ACCURACY.md), la trame
+    //  est pilotée par `sched` : on exécute le CPU jusqu'au prochain événement
+    //  daté (HBL/Timer C/VBL) puis on déclenche son handler. Le quantum CPU reste
+    //  la ligne (512 cycles) → timing IDENTIQUE au modèle « par blocs » d'avant.
     void runFrame();
 
     // Accès direct aux composants (frontend, débogueur, headless).
-    Bus      bus;
-    Shifter  shifter{bus};
-    YM2149   psg;
-    Glue     glue;
-    Mfp      mfp;
-    Ikbd     ikbd{mfp};
-    Fdc      fdc{bus, psg, mfp};
-    Cpu68k   cpu{bus};
+    Bus       bus;
+    Shifter   shifter{bus};
+    YM2149    psg;
+    Glue      glue;
+    Mfp       mfp;
+    Ikbd      ikbd{mfp};
+    Fdc       fdc{bus, psg, mfp};
+    Cpu68k    cpu{bus};
+    Scheduler sched;
+
+private:
+    // Câble les callbacks de l'ordonnanceur (appelé une fois, au constructeur).
+    void installSchedulerCallbacks();
+    // Arme le premier événement de chaque source pour la trame courante.
+    void scheduleFrameEvents();
+    // Handlers des événements datés (reproduisent l'ancienne boucle ligne/trame).
+    void onHbl();
+    void onTimerC();
+    void onVbl();
+
+    int timerCIndex_ = 0;   // tic Timer C courant (0..3) dans la trame
 };
