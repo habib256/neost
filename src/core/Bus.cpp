@@ -62,7 +62,14 @@ uint8_t Bus::read8(uint32_t addr) {
     if (addr >= stmap::MMIO_BASE)
         return mmioRead8(addr);
 
-    // Trou d'adressage → bus error sur vrai ST ; ici on renvoie $FF (lignes hautes).
+    // Zone décodée par le MMU mais sans puce RAM (ex. $80000-$3FFFFF sur 512K) :
+    // PAS de bus error sur vrai ST — le cycle est acquitté et la lecture renvoie 0.
+    // EmuTOS s'en sert pour trouver le sommet de RAM (FC0226 : cmp.w (a0)+,d0 attend
+    // 0 au-delà de la RAM installée). Confirmé vérité Hatari ($80008 → 0x0000).
+    if (addr < 0x400000)
+        return 0x00;
+
+    // Trou au-dessus de $400000 → bus error sur vrai ST ; ici on renvoie $FF.
     return 0xFF;
 }
 
