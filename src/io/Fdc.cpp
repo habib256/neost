@@ -39,10 +39,10 @@ enum : uint8_t {
 // Rotation du lecteur : 300 tr/min → 1 tour = 200 ms, et une impulsion d'index
 // par tour. (C'est le « tic » périodique du lecteur ; il sert aussi à compter
 // l'inactivité pour couper le moteur, comme le fait le WD1772.) Le moteur tourne
-// encore ~10 tours (≈ 2 s) après la dernière commande avant de s'arrêter.
+// encore ~9 tours (≈ 1,8 s) après la dernière commande avant de s'arrêter.
 static constexpr int64_t INDEX_PERIOD_CYCLES = 200 * 8021;   // ~200 ms @ ~8 MHz
-static constexpr int64_t INDEX_PULSE_CYCLES  = 11710;        // ~1.46 ms : trou d'index visible
-static constexpr int     MOTOR_OFF_REVS      = 10;           // tours d'inactivité → moteur off
+static constexpr int64_t INDEX_PULSE_CYCLES  = 29758;        // 3,71 ms : trou d'index visible (Hatari FDC_DELAY_US_INDEX_PULSE_LENGTH)
+static constexpr int     MOTOR_OFF_REVS      = 9;            // tours d'inactivité → moteur off (Hatari FDC_DELAY_IP_MOTOR_OFF)
 
 // Décompresse une image .msa (Magic Shadow Archiver) en image .st brute.
 // En-tête (mots big-endian) : 0E0F, secteurs/piste, faces-1, piste début, fin.
