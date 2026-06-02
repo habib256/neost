@@ -48,6 +48,6 @@ void MidiAcia::raiseIfReady() {
     // Comme l'ACIA clavier : la ligne d'IRQ est active si un octet est dispo et que
     // l'interruption de réception est armée (RIE) → on lève le canal 6 du MFP (GPIP4).
     const bool active = !rx_.empty() && (control_ & 0x80);
-    mfp_.setAciaLine(active);
+    mfp_.setAciaLineMidi(active);
     if (active) mfp_.raise(Mfp::SRC_ACIA);
 }

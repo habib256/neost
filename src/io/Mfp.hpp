@@ -61,11 +61,17 @@ public:
     uint8_t read8(uint32_t addr);
     void    write8(uint32_t addr, uint8_t v);
 
-    // Ligne d'interruption de l'ACIA clavier/MIDI, câblée sur GPIP4 (active BAS).
-    // Le handler _int_acia d'EmuTOS lit GPIP bit4 pour savoir quand cesser de
-    // vider l'ACIA, AVANT d'effacer son bit in-service. Sans elle, le canal 6
-    // reste bloqué après la première interruption.
-    void setAciaLine(bool active) { aciaLine_ = active; }
+    // Lignes d'interruption des DEUX ACIA (clavier ET MIDI), câblées en WIRE-OR
+    // sur la MÊME entrée GPIP4 (active BAS). Cf. Hatari MFP_Main_Compute_GPIP_LINE_ACIA
+    // (acia.c : « the 2 ACIA's IRQ pins are connected to the same MFP input »).
+    // Chaque ACIA a sa propre ligne : GPIP4 reste asserté (bit4=0) tant que l'UNE
+    // OU l'AUTRE a un octet en attente — sinon un MIDI inactif effaçait une IRQ
+    // clavier pendante (clobber). Le handler _int_acia d'EmuTOS lit GPIP bit4 pour
+    // savoir quand cesser de vider l'ACIA, AVANT d'effacer son bit in-service.
+    void setAciaLineKbd (bool active) { aciaLineKbd_  = active; }
+    void setAciaLineMidi(bool active) { aciaLineMidi_ = active; }
+    // Alias de compatibilité (l'ancienne API ne pilotait qu'une seule ligne).
+    void setAciaLine(bool active) { aciaLineKbd_ = active; }
 
     // Ligne d'interruption du FDC sur GPIP5 (active BAS). EmuTOS attend la fin
     // d'une commande disque en pollant GPIP bit5 (timeout_gpip).
@@ -118,7 +124,8 @@ public:
     uint8_t imra = 0, imrb = 0;   // mask
     uint8_t isra = 0, isrb = 0;   // in-service
     uint8_t vr   = 0;             // vector register (bit3 = software EOI)
-    bool    aciaLine_ = false;    // ligne ACIA (true = données dispo → GPIP4 bas)
+    bool    aciaLineKbd_  = false; // ligne ACIA clavier (true = octet dispo → GPIP4 bas)
+    bool    aciaLineMidi_ = false; // ligne ACIA MIDI    (true = octet dispo → GPIP4 bas)
     bool    fdcLine_  = false;    // ligne FDC  (true = commande finie → GPIP5 bas)
     bool    colorMonitor_ = true; // GPIP bit7 : true = couleur (basse rés)
     bool    busyLine_ = false;    // Centronics BUSY (GPIP0, actif bas) — bouclage port parallèle

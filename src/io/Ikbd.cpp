@@ -265,7 +265,7 @@ void Ikbd::raiseIfReady() {
     // L'ACIA active sa ligne d'IRQ (RDRF + RX int activé). On la publie sur GPIP4
     // (lue par _int_acia pour vider l'ACIA) ET on déclenche le canal 6 du MFP.
     const bool active = !rx_.empty() && (control_ & 0x80);
-    mfp_.setAciaLine(active);
+    mfp_.setAciaLineKbd(active);
     if (active)
         mfp_.raise(Mfp::SRC_ACIA);
 }
