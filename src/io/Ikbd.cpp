@@ -41,7 +41,14 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
     }
     // $FFFC02 : octet de commande envoyé à l'IKBD. On gère le reset 0x80,0x01.
     if (cmd0_ == 0x80 && v == 0x01) {
-        pushRx(0xF1);                // réponse "auto-test OK" attendue par EmuTOS
+        // L'IKBD fait son auto-test puis renvoie $F1 APRÈS ~502000 cycles (valeur
+        // Hatari IKBD_RESET_CYCLES). Répondre INSTANTANÉMENT casse les diagnostics
+        // qui arment l'IRQ ACIA puis attendent la réponse : l'IRQ serait levée
+        // avant l'armement (donc perdue) → « Keyboard not responding ». On diffère
+        // donc via l'ordonnanceur ; à défaut (pas de scheduler), repli immédiat.
+        constexpr int64_t kIkbdResetCycles = 502000;
+        if (sched_) sched_->schedule(Scheduler::IKBD, sched_->now() + kIkbdResetCycles);
+        else        pushRx(0xF1);
         cmd0_ = 0;
     } else {
         cmd0_ = v;                   // autres commandes : ignorées (modes souris, etc.)

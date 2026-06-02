@@ -100,9 +100,18 @@ uint8_t Shifter::read8(uint32_t addr) {
     // $FF8205 = bits 16-23, $FF8207 = 8-15, $FF8209 = 0-7 (cf. Hatari
     // Video_ScreenCounter_ReadByte). Certains diagnostics (Test Kit) attendent
     // que ce compteur reflète la base vidéo + l'avance du faisceau.
+    // Adresse de base vidéo ($FF8201/03, + octet bas STE $FF820D) : RELISIBLE —
+    // le ST renvoie la dernière valeur écrite (Hatari : IoMem_ReadWithoutInterception).
+    // Indispensable : les diagnostics RÉCUPÈRENT la base écran en relisant ces
+    // registres pour calculer leur framebuffer (sans ça → base 0 → ils dessinent
+    // sur la table des vecteurs et plantent).
+    if (addr == 0xFF8201) return static_cast<uint8_t>(videoBase >> 16);
+    if (addr == 0xFF8203) return static_cast<uint8_t>(videoBase >> 8);
+    if (addr == 0xFF820D) return static_cast<uint8_t>(videoBase);   // octet bas (STE)
     if (addr == 0xFF8205) return static_cast<uint8_t>(videoCounter() >> 16);
     if (addr == 0xFF8207) return static_cast<uint8_t>(videoCounter() >> 8);
     if (addr == 0xFF8209) return static_cast<uint8_t>(videoCounter());
+    if (addr == 0xFF820A) return sync;           // synchro 50/60 Hz (relisible)
     if (addr == 0xFF8260) return static_cast<uint8_t>(mode);
     return 0x00;
 }
@@ -137,6 +146,7 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
     switch (addr) {
         case 0xFF8201: videoBase = (videoBase & 0x00FF00) | (uint32_t(v) << 16); return;
         case 0xFF8203: videoBase = (videoBase & 0xFF0000) | (uint32_t(v) << 8);  return;
+        case 0xFF820A: sync = v; return;             // synchro 50/60 Hz
         case 0xFF8260: mode = static_cast<Mode>(v & 0x3); return;
         default: break;
     }

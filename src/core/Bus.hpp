@@ -91,10 +91,19 @@ public:
     void     write16(uint32_t addr, uint16_t v);
     void     write32(uint32_t addr, uint32_t v);
 
-    // Vrai si l'adresse n'est décodée par AUCUN circuit → bus error sur le 68000.
-    // Le matériel optionnel (blitter, etc.) est détecté par EmuTOS justement en
-    // provoquant ces bus errors : sans elles, EmuTOS croit le matériel présent.
+    // Vrai si un accès OCTET à `addr` provoque une bus error sur le 68000 (aucun
+    // circuit ne décode l'octet). Modèle porté de Hatari (ioMem.c + memory.c) :
+    // tout l'espace $FF8000-$FFFFFF est bus error PAR DÉFAUT, puis on « whiteliste »
+    // les registres réellement câblés selon le modèle (cf. ioFault_). Hors IO, les
+    // trous $400000-$F9FFFF et $FF0000-$FF7FFF fautent aussi. Le matériel optionnel
+    // (blitter, son DMA) est détecté par EmuTOS via ces bus errors.
     bool busFault(uint32_t addr) const;
+
+    // Bus error pour un accès de `n` octets (1/2/4) à partir de `addr`. Règle
+    // matérielle (Hatari) : un accès word/long ne FAUTE que si TOUS ses octets
+    // tombent en zone bus error. Ainsi `move.w $FF8204` fonctionne (octet pair
+    // fautif + octet impair valide) alors que `move.b $FF8204` faute.
+    bool busFaultN(uint32_t addr, unsigned n) const;
 
     // Composants branchés sur le bus (injectés par main.cpp, pas de propriété).
     Shifter* shifter = nullptr;
@@ -130,4 +139,12 @@ private:
     // physique dans ram[], ou -1 si la banque visée n'est pas peuplée (void).
     // Port fidèle de Hatari stMemory.c (RAS/CAS + aliasing). Cf. Bus.cpp.
     int64_t  mmuTranslate(uint32_t addr) const;
+
+    // Carte de bus error de l'espace IO ($FF8000-$FFFFFF), 1 octet par adresse
+    // (1 = bus error, 0 = registre câblé ou « void »). Construite à la demande
+    // depuis les tables Hatari (ioMemTabST/STE) selon `machine`. Cf. buildIoFault.
+    mutable std::vector<uint8_t> ioFault_;
+    mutable MachineType          ioFaultMachine_ = MachineType::St;
+    mutable bool                 ioFaultBuilt_   = false;
+    void buildIoFault() const;       // (re)construit ioFault_ pour `machine`
 };

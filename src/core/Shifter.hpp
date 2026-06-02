@@ -56,6 +56,11 @@ public:
     uint32_t videoBase = 0;                 // adresse RAM du framebuffer (registres haut/milieu/bas)
     std::array<uint16_t, 16> palette{};     // 16 registres couleur $FF8240 ($0RGB, 3 bits/canal)
     Mode mode = Mode::Low;                  // moniteur couleur → basse résolution par défaut
+    // Registre de synchro $FF820A : bit1 = 50/60 Hz (1 = 50 Hz), bit0 = sync externe.
+    // NeoST cadence une trame PAL 50 Hz (313 lignes, cf. Machine), donc ce registre
+    // doit refléter 50 Hz (bit1=1) — sinon un logiciel qui LIT la fréquence ici
+    // (diagnostics : « 50/60 Hz ») la croit 60 Hz et ses mesures timer/VBL faussent.
+    uint8_t sync = 0x02;                    // défaut : 50 Hz PAL (cohérent avec 313 lignes)
 
 private:
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888

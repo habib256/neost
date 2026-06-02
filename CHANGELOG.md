@@ -109,6 +109,42 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   menu « Machine ▸ Mémoire » (GUI), `?mem=` (WASM), `--mem` (headless). EmuTOS
   détecte la `phystop` exacte par sondage ; `$FF8001` posé en cohérence.
 
+## Bus error & cartouches de diagnostic
+
+- **Modèle de bus error réécrit comme un port fidèle de Hatari** (`ioMem.c` +
+  `ioMemTabST/STE.c` + `cpu/memory.c`) : tout `$FF8000-$FFFFFF` faute par défaut,
+  on whiteliste les registres câblés selon le modèle (`Bus::buildIoFault`, carte
+  octet par octet), + zones « void », + miroir PSG, + fixups ST/MegaST/MegaSTE.
+  Hors IO : `$400000-$F9FFFF` et `$FF0000-$FF7FFF` fautent (vrais trous). Règle
+  word/long : faute seulement si TOUS les octets fautent (`busFaultN`) → `move.w
+  $FF8204` marche, `move.b $FF8204` faute. Les DEUX cœurs (Musashi + Moira) la suivent.
+- **Double bus fault → halt CPU** : un code parti en vrille fautait en boucle
+  pendant l'empilement d'exception → segfault hôte. On halte désormais le CPU
+  comme un vrai 68000 (Musashi `m68k_pulse_halt`, Moira `flags|=HALTED`), ce qui
+  laisse `neost-headless` vider trace + port série au lieu de crasher.
+- **Trame de bus error 68000 dans Musashi** (`extern/Musashi/m68kcpu.h`) : Musashi
+  empilait la trame format-8 du 68010 (58 octets) au lieu de la trame 68000 de 14
+  octets (`m68ki_stack_frame_buserr`). Les handlers de bus error des ROMs/diags qui
+  font `adda #8 ; rte` (sondage matériel) revenaient sur une PC corrompue → vrille.
+- **Base écran relisible** (`$FF8201/03`, + octet bas STE `$FF820D`) dans le Shifter
+  (Hatari IoMem_ReadWithoutInterception) : les diagnostics RÉCUPÈRENT la base écran
+  en relisant ces registres pour situer leur framebuffer (sans ça → base 0 → ils
+  dessinent sur la table des vecteurs).
+- **Réponse de reset IKBD différée** (`$F1` ~502000 cycles après `$80,$01`, via
+  `Scheduler::IKBD`, cf. Hatari) : répondre instantanément levait l'IRQ ACIA avant
+  son armement par le logiciel.
+- **Registre de synchro `$FF820A` relisible** (Shifter, défaut $02 = 50 Hz PAL,
+  cohérent avec la trame 313 lignes) : un logiciel qui lit la fréquence vidéo
+  (diagnostics) ne la croit plus 60 Hz.
+- **Injection clavier headless** (`--keys "..."`) : pilote les menus des diagnostics
+  (scancodes ST pour A-Z, 0-9, Entrée).
+- **Cartouches de diagnostic** (`carts/`, magic `$FA52235F`) via `--cart` : rapport
+  à l'écran + port série. Grâce aux corrections ci-dessus, **`ST_Diagnostic` boote
+  jusqu'à son menu interactif** (self-tests bus error + clavier OK) sur les DEUX
+  cœurs, et **sa batterie de tests internes passe 7/8 avec un vrai TOS** (RAM, ROM,
+  Color, Keyboard, Audio, RTC, BLiT ; seul « T0 MFP timer » échoue — cycle-accuracy).
+  Non régressif : EmuTOS boote, jeux chargent (Musashi + Moira).
+
 ## Frontend & confort
 
 - Écran ST dans une fenêtre ImGui dédiée ; visualiseur hexa mémoire + registres

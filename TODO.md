@@ -21,6 +21,53 @@ assez fidèle pour jeux, démos et utilitaires système.
 souris relative, son YM2149 tons+bruit. Modèle « DMA instantané » + horloge
 ligne-par-ligne (≈ pas cycle-accurate).
 
+## Cartouches de diagnostic (`carts/`) — campagne en cours
+
+Objectif : faire passer SANS erreur les cartouches de test (`ST_Diagnostic_v4.4`,
+`STE_Test_v1.9`, `MegaSTE_Diagnostic_v1.5`). Elles s'exécutent au reset (magic
+`$FA52235F`, saut `$FA0004`) et impriment leur rapport sur le **port série**
+(`./build/neost-headless rom/etos192us.img --machine <m> --cart carts/<f> --frames 2500`).
+
+**ST_Diagnostic_v4.4 BOOTE JUSQU'À SON MENU INTERACTIF** (« Mega and ST Field
+Service Diagnostic Rev. 4.4 … 520k RAM Keyboard rev. 2 … Enter letter(s) »),
+self-tests de démarrage RÉUSSIS (bus error + clavier), à l'écran ET sur série, sur
+les DEUX cœurs (Musashi + Moira). 5 corrections (cf. mémoire cartridge-diagnostics) :
+
+1. **Bus error = whitelist Hatari** (`Bus::buildIoFault`/`busFault`/`busFaultN`,
+   port de `ioMem.c`+`ioMemTabST/STE.c`+`cpu/memory.c`).
+2. **Double bus fault → halt CPU** (Musashi `m68k_pulse_halt`, Moira `flags|=HALTED`)
+   au lieu de segfault hôte.
+3. **⭐ Trame bus error 68000 dans Musashi** (`extern/Musashi/m68kcpu.h`,
+   `m68ki_exception_bus_error`) : Musashi empilait la trame 68010 (format-8, 58 o)
+   au lieu de la trame 68000 (14 o, `m68ki_stack_frame_buserr`) → les handlers de
+   bus error des diags font `adda #8 ; rte` (trame 14 o) → revenaient sur PC
+   corrompue → vrille vers `$0`. C'est LE déblocage principal (menu atteint).
+4. **Readback base écran `$FF8201/03/0D`** (`Shifter::read8`, Hatari
+   IoMem_ReadWithoutInterception) : les diags relisent ces registres pour calculer
+   leur framebuffer ; sans readback → base 0 → dessinaient sur la table des vecteurs.
+5. **Reset IKBD différé** (`$F1` ~502000 cycles après `$80,$01`, via `Scheduler::IKBD`,
+   cf. Hatari IKBD_RESET_CYCLES) : répondre instantanément levait l'IRQ ACIA avant
+   que le diag l'arme → perdue → « K1 Keyboard not responding » (corrigé → « rev. 2 »).
+
+6. **Registre sync `$FF820A` relisible** (`Shifter`, défaut $02 = 50 Hz PAL, cohérent
+   313 lignes) — les diags lisaient 60 Hz et faussaient leurs mesures de fréquence.
++ Outil : option headless **`--keys "..."`** = injection clavier (pilote les menus :
+  `O`=ROM, `Z`=tests internes, `Q`=tout). Les tests s'affichent à l'ÉCRAN (pas série).
+
+« I7 Bus error not detected » = résultat CORRECT (écriture en `$0` = RAM, pas de faute).
+
+**Batterie Z avec un VRAI TOS Atari (`tos102uk.img`) : 7/8 PASSENT** (RAM, ROM, Color,
+Keyboard, Audio, RTC, BLiT) ; SEUL **« T0 MFP timer » échoue**. Avec EmuTOS le test ROM
+donne « cs error » (checksums ≠ TOS Atari → utiliser un vrai TOS pour le diag).
+
+**Reste à faire :**
+- **T0 MFP timer** : compare des relations cycle-EXACTES Timer A / HBL (`$208`) / VBL
+  (`$292`) / Timer B event-count (`$48`) — boucles d'attente `FA2D44`/`FA2DF6`. Demande
+  la précision cycle-exact (quantum < ligne) → cf. § « Précision temporelle » ci-dessous.
+- `STE_Test_v1.9` : écran bleu sans texte. `MegaSTE_Diagnostic` : « VME/FPU not found » puis stop.
+- À `--mem 256k`, ST_Diagnostic = écran NOIR (bloqué avant le menu) → bug **décodage MMU**
+  (`Bus::mmuTranslate` / sizing `$FF8001` à 128K+128K).
+
 ## Chantier courant — MegaST & vérité Hatari (`extern/hatari/src`)
 
 Source de référence désormais en sous-module : **`extern/hatari/src`** (focus

@@ -28,7 +28,10 @@ public:
     // FDC = fin de commande (BUSY→INTRQ) ; FDC_INDEX = impulsion d'index du
     // lecteur (1/tour, ~200 ms à 300 tr/min) tant que le moteur tourne ;
     // DMASND = fin de trame du son DMA STE (→ event-count Timer A du MFP).
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_C, TIMER_D, FDC, FDC_INDEX, DMASND, HBL, VBL, SRC_COUNT };
+    // IKBD = réponse différée du clavier (ex. $F1 ~502000 cycles après le reset
+    // $80,$01, comme Hatari) : l'IRQ ACIA doit arriver PENDANT que le code attend,
+    // pas instantanément (sinon elle est levée avant l'armement et perdue).
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_C, TIMER_D, FDC, FDC_INDEX, DMASND, IKBD, HBL, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 

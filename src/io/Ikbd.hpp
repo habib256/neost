@@ -16,14 +16,23 @@
 #include <cstdint>
 #include <deque>
 
+#include "core/Scheduler.hpp"
+
 class Mfp;
 
 class Ikbd {
 public:
     explicit Ikbd(Mfp& mfp) : mfp_(mfp) {}
 
+    // Ordonnanceur : l'IKBD y date sa réponse de reset (l'IRQ ACIA doit arriver
+    // APRÈS coup, pas pendant l'instruction qui envoie la commande).
+    void setScheduler(Scheduler* s) { sched_ = s; }
+
     uint8_t read8(uint32_t addr);            // $FFFC00 statut / $FFFC02 données
     void    write8(uint32_t addr, uint8_t v);
+
+    // Échéance : l'IKBD a fini son auto-test → envoie $F1 (réponse de reset).
+    void    onResetResponse() { pushRx(0xF1); }
 
     // Événement clavier venant de l'hôte (scancode ST déjà traduit).
     void keyEvent(uint8_t scancode, bool pressed);
@@ -37,6 +46,7 @@ private:
     void raiseIfReady();                     // tire GPIP4 si octet dispo et RIE actif
 
     Mfp& mfp_;
+    Scheduler* sched_ = nullptr;             // pour différer la réponse de reset
     std::deque<uint8_t> rx_;                 // file IKBD → CPU
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
     uint8_t cmd0_ = 0;                       // dernier octet de commande (détection reset 0x80,0x01)

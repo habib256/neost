@@ -34,6 +34,7 @@ void usage() {
         "  --machine TYPE    profil : st, megast, ste (défaut), megaste\n"
         "  --mem SIZE        ST-RAM : 256k, 512k (défaut), 1m, 2m, 4m\n"
         "  --walk-mouse      après le boot, injecte un mouvement souris + clic (diag)\n"
+        "  --keys STR        après le boot, tape STR au clavier (ex. menus de diag)\n"
         "  --cart FILE       monte une cartouche ($FA0000) : Test Kit diagnostic, etc.\n"
         "  --screenshot PPM  dump du framebuffer final au format PPM\n"
         "  rom               image TOS (défaut rom/etos192fr.img)\n");
@@ -69,6 +70,7 @@ int main(int argc, char** argv) {
     bool        haveUntil  = false;
     uint32_t    untilPc    = 0;
     bool        walkMouse  = false;
+    std::string keys;                 // touches à injecter après le boot (ex. "Z\n")
     bool        machineMono = false;
     CpuCore     cpuCore    = CpuCore::Musashi;
     MachineType machType   = MachineType::Ste;
@@ -88,6 +90,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--disk"))       diskPath  = next(a);
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--walk-mouse")) walkMouse = true;
+        else if (!std::strcmp(a, "--keys"))       keys      = next(a);
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
         else if (!std::strcmp(a, "--machine"))    machType  = parseMachine(next(a));
@@ -157,6 +160,35 @@ int main(int argc, char** argv) {
         packet(0, 0, false);                                 // 4) relâcher
         idle(40);
         std::fprintf(stderr, "[headless] séquence : clic-glissé de Disque A vers le centre\n");
+    }
+
+    // Injection de touches (pilotage des menus de diagnostic). Table de scancodes
+    // ST (jeu « PC/AT » du clavier ST) pour A-Z, 0-9 et Entrée ; on envoie make
+    // puis break, avec quelques trames de battement, puis on laisse tourner.
+    if (!keys.empty()) {
+        auto scancode = [](char c) -> uint8_t {
+            static const char* row = "qwertyuiop";   // $10-$19
+            static const char* row2 = "asdfghjkl";    // $1E-$26
+            static const char* row3 = "zxcvbnm";       // $2C-$32
+            c = (c >= 'A' && c <= 'Z') ? char(c + 32) : c;
+            if (c == '\n' || c == '\r') return 0x1C;   // Entrée
+            if (c == ' ') return 0x39;
+            for (int i = 0; row[i];  ++i) if (row[i]  == c) return uint8_t(0x10 + i);
+            for (int i = 0; row2[i]; ++i) if (row2[i] == c) return uint8_t(0x1E + i);
+            for (int i = 0; row3[i]; ++i) if (row3[i] == c) return uint8_t(0x2C + i);
+            if (c >= '1' && c <= '9') return uint8_t(0x02 + (c - '1'));
+            if (c == '0') return 0x0B;
+            return 0;
+        };
+        auto idle = [&](int n) { for (int i = 0; i < n; ++i) machine.runFrame(); };
+        for (char c : keys) {
+            const uint8_t sc = scancode(c);
+            if (!sc) continue;
+            machine.ikbd.keyEvent(sc, true);  machine.cpu.updateIpl(); idle(2);
+            machine.ikbd.keyEvent(sc, false); machine.cpu.updateIpl(); idle(2);
+        }
+        idle(frames);   // laisse les tests déclenchés s'exécuter
+        std::fprintf(stderr, "[headless] touches injectées : \"%s\"\n", keys.c_str());
     }
 
     std::fprintf(stderr, "[headless] %llu instructions tracées\n",

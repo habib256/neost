@@ -30,6 +30,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // écoulés depuis le début de la trame courante (cf. Shifter::videoCounter).
     shifter.setBeamClock([this] { return sched.now() - frameStart_; });
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
+    ikbd.setScheduler(&sched);  // l'IKBD diffère sa réponse de reset ($F1)
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)
     dmasnd.setScheduler(&sched);   // le son DMA date sa fin de trame (→ Timer A)
     dmasnd.setMfp(&mfp);
@@ -55,6 +56,8 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::FDC_INDEX, [this] { fdc.onIndexPulse(); });
     // Fin de trame du son DMA STE : pulse Timer A (event-count) → IRQ canal 13.
     sched.setCallback(Scheduler::DMASND, [this] { dmasnd.onFrameEnd(); cpu.updateIpl(); });
+    // Réponse de reset du clavier ($F1) : l'IKBD l'a datée → on l'émet + IRQ ACIA.
+    sched.setCallback(Scheduler::IKBD,   [this] { ikbd.onResetResponse(); cpu.updateIpl(); });
 }
 
 // Arme les événements VIDÉO de la trame courante, à des cycles ABSOLUS (horloge

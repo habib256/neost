@@ -204,30 +204,121 @@ void Bus::write8(uint32_t addr, uint8_t v) {
     // Écriture en ROM ou trou d'adressage : ignorée (lecture seule).
 }
 
+// -----------------------------------------------------------------------------
+//  Carte de bus error de l'espace IO — port fidèle de Hatari (ioMem.c + tables
+//  ioMemTabST.c / ioMemTabSTE.c). Principe : TOUT $FF8000-$FFFFFF faute par
+//  défaut, puis on déclare « non fautifs » (registre câblé OU zone « void »
+//  silencieuse) exactement les octets listés par la table du modèle. Un word/
+//  long ne faute que si TOUS ses octets sont fautifs (cf. busFaultN), ce qui
+//  reproduit le fait que `move.w $FF8204` marche mais `move.b $FF8204` faute.
+// -----------------------------------------------------------------------------
+namespace {
+    struct IoSpan { uint32_t addr; uint32_t span; };
+
+    // Octets NON fautifs communs à toutes les machines (registres réellement
+    // décodés). Le blitter ($FF8A00-$FF8A3F) est volontairement ABSENT : NeoST
+    // ne l'émule pas, donc il doit fauter (EmuTOS en conclut « pas de blitter »
+    // et bascule sur le VDI logiciel). Idem le son DMA, ajouté seulement si le
+    // modèle le possède.
+    // -- Modèle ST / Mega ST (table IoMemTabST) ------------------------------
+    const IoSpan ST_OK[] = {
+        {0xFF8001,1},                                            // config MMU
+        {0xFF8201,1},{0xFF8203,1},{0xFF8205,1},{0xFF8207,1},     // base/compteur vidéo
+        {0xFF8209,1},{0xFF820A,1},{0xFF820B,1},{0xFF820D,1},     // sync + void
+        {0xFF8240,32},                                           // palette 0-15 (16 mots)
+        {0xFF8260,1},{0xFF8261,1},{0xFF8262,30},                 // résolution + void →$FF827F
+        {0xFF8604,2},{0xFF8606,2},{0xFF8609,1},{0xFF860B,1},{0xFF860D,1}, // FDC/DMA
+        {0xFF8800,4},                                            // PSG (mirroir ajouté plus bas)
+    };
+    // -- Modèle STE / Mega STE (table IoMemTabSTE) ---------------------------
+    const IoSpan STE_OK[] = {
+        {0xFF8000,16},                                           // config + void $FF8000-$FF800F
+        {0xFF8200,16},                                           // base/compteur/sync vidéo (void inclus)
+        {0xFF8240,64},                                           // palette + rés. + scroll fin →$FF827F
+        {0xFF8604,12},                                           // FDC/DMA $FF8604-$FF860F (void inclus)
+        {0xFF8800,4},                                            // PSG
+        {0xFF9000,2},                                            // void
+        {0xFF9200,4},{0xFF9211,1},{0xFF9213,1},{0xFF9215,1},     // joypad/lightpen STE
+        {0xFF9217,1},{0xFF9220,4},
+    };
+}
+
+void Bus::buildIoFault() const {
+    ioFault_.assign(0x8000, 1);                  // défaut : tout faute (Hatari SetBusErrorRegion)
+    auto clear = [&](uint32_t a, uint32_t span) {
+        for (uint32_t i = 0; i < span; ++i) {
+            const uint32_t addr = a + i;
+            if (addr >= stmap::MMIO_BASE && addr <= 0xFFFFFF)
+                ioFault_[addr - stmap::MMIO_BASE] = 0;
+        }
+    };
+    const bool ste = machineIsSte(machine);
+    if (ste) for (const auto& s : STE_OK) clear(s.addr, s.span);
+    else     for (const auto& s : ST_OK)  clear(s.addr, s.span);
+
+    // Son DMA STE ($FF8900-$FF893F) : présent uniquement STE / Mega STE.
+    if (machineHasDmaSound(machine)) clear(0xFF8900, 0x40);
+
+    // MFP 68901 : registres aux adresses IMPAIRES uniquement ($FFFA01-$FFFA3F) ;
+    // les octets pairs fautent. RS232 et octets « void » inclus (tous impairs).
+    for (uint32_t a = 0xFFFA01; a <= 0xFFFA3F; a += 2) clear(a, 1);
+
+    // ACIA clavier/MIDI + RTC + zone void contiguë : $FFFC00-$FFFDFF non fautif.
+    clear(0xFFFC00, 0x200);
+
+    // PSG : miroir matériel des 4 registres sur tout $FF8800-$FF88FF (Hatari).
+    clear(0xFF8800, 0x100);
+
+    // Différences de chipset selon le modèle (Hatari IoMem_FixVoidAccess*).
+    if (machine == MachineType::St) {            // chipset Ricoh : 2 octets « void »
+        clear(0xFF820F, 1); clear(0xFF860F, 1);
+    } else if (machine == MachineType::MegaSt) { // chipset IMP : plus de zones void
+        const uint32_t voidAddr[] = {0xFF8000,0xFF8200,0xFF8202,0xFF8204,0xFF8206,
+                                     0xFF8208,0xFF820C,0xFF8608,0xFF860A,0xFF860C};
+        for (uint32_t a : voidAddr) clear(a, 1);
+        clear(0xFF8002, 0x0C);                   // $FF8002-$FF800D void
+    } else if (machine == MachineType::MegaSte) {
+        clear(0xFF8E01, 0x0F);                   // SCU (comme TT)
+        clear(0xFF8E20, 0x04);                   // cache/CPU control
+        clear(0xFF8C80, 0x08);                   // SCC série Z85C30
+        clear(0xFF860E, 0x02);                   // mode densité DD/HD
+    }
+
+    ioFaultMachine_ = machine;
+    ioFaultBuilt_   = true;
+}
+
 bool Bus::busFault(uint32_t addr) const {
     addr &= stmap::ADDR_MASK;
-    // Blitter ($FF8A00-$FF8A3F) : absent sur ST de base → la lecture provoque
-    // une bus error. EmuTOS s'en sert pour conclure "pas de blitter" ; sinon il
-    // route ses tracés VDI (barre de menu, curseur souris) vers un blitter
-    // fantôme et ils n'apparaissent pas.
-    if (addr >= 0xFF8A00 && addr <= 0xFF8A3F) return true;
-    // Son DMA STE ($FF8900-$FF893F) : absent sur ST / Mega ST → bus error, comme
-    // sur le vrai matériel (c'est ainsi qu'EmuTOS conclut « pas de son DMA »).
-    if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && !machineHasDmaSound(machine))
-        return true;
-    // Zone réservée non décodée entre la config mémoire ($FF8000-01) et le shifter
-    // ($FF8200) : aucun périphérique → bus error sur vrai ST. EmuTOS y sonde le
-    // matériel au boot (FC007C : tst.w $FF8006, vecteur bus error armé juste avant)
-    // pour distinguer les modèles. Confirmé vérité Hatari. Cf. [[busfault-ff80xx]].
-    if (addr >= stmap::MMIO_BASE + 2 && addr < stmap::SHIFTER_BASE) {
-        // Sur Mega ST/STE (chipset IMP), $FF8002-$FF800D est « void » (lecture
-        // sans bus error) au lieu de fauter : c'est la différence que sonde
-        // EmuTOS pour distinguer ST/Mega ST. Vérité Hatari : `tst.w $FF8006`
-        // faute sur ST mais pas sur Mega ST. Réf. IoMem_FixVoidAccessForMegaST.
-        if (machineIsMega(machine) && addr <= 0xFF800D) return false;
-        return true;
+
+    // RAM ($0-$3FFFFF) : décodée par le MMU ; jamais de bus error (banque vide → 0).
+    if (addr < 0x400000) return false;
+
+    // ROM TOS : jamais de bus error.
+    if (addr >= romBase && addr < romBase + rom.size()) return false;
+
+    // Port cartouche ($FA0000-$FBFFFF) : banque ROM sur le vrai matériel ; lit $FF
+    // si rien n'est branché → jamais de bus error (le TOS y lit le magic au reset).
+    if (addr >= stmap::CART_BASE && addr < stmap::CART_END) return false;
+
+    // Espace IO ($FF8000-$FFFFFF) : carte octet par octet (cf. buildIoFault).
+    if (addr >= stmap::MMIO_BASE) {
+        if (!ioFaultBuilt_ || ioFaultMachine_ != machine) buildIoFault();
+        return ioFault_[addr - stmap::MMIO_BASE] != 0;
     }
-    return false;
+
+    // Tout le reste — trous $400000-$F9FFFF (RAM absente, ROM cartouche basse,
+    // IDE, VME...) et $FF0000-$FF7FFF (sous l'espace IO) — n'est décodé par aucun
+    // circuit → bus error sur le vrai ST (Hatari BusErrMem_bank). C'est notamment
+    // ce que sondent les cartouches de diagnostic pour valider la gestion d'erreur.
+    return true;
+}
+
+bool Bus::busFaultN(uint32_t addr, unsigned n) const {
+    // Règle Hatari : faute uniquement si TOUS les octets de l'accès fautent.
+    for (unsigned i = 0; i < n; ++i)
+        if (!busFault(addr + i)) return false;
+    return true;
 }
 
 // --- Accès 16/32 bits : le 68000 est big-endian, on assemble octet par octet --

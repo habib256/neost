@@ -30,6 +30,13 @@ namespace {
     bool    g_vblPending = false;   // VBL (niveau 4) en attente d'acquittement
     bool    g_hblPending = false;   // HBL (niveau 2) en attente d'acquittement
     Tracer* g_tracer = nullptr;     // traceur optionnel (nullptr = aucun surcoût)
+    // Garde « double bus fault » : armée quand on déclenche une bus error, désarmée
+    // au début de l'instruction SUIVANTE (hook). Si une NOUVELLE bus error survient
+    // alors qu'elle est armée, c'est qu'un accès a fauté PENDANT l'empilement de la
+    // trame d'exception (SSP/PC corrompus, code parti en vrille) : sur un vrai 68000
+    // cela halte le CPU. On reproduit ce halt au lieu de récurser → l'hôte ne
+    // segfault plus et le mode headless peut vider sa trace/série.
+    bool    g_inBusError = false;
     void    neostUpdateIpl();       // recalcule l'IPL (dispatch Musashi/Moira)
 }
 
@@ -64,10 +71,20 @@ public:
         throw moira::BusError(f);
     }
 
-    moira::u8  read8 (moira::u32 a) const override { if (g_bus->busFault(a)) raiseBusError(a, false); return g_bus->read8(a); }
-    moira::u16 read16(moira::u32 a) const override { if (g_bus->busFault(a)) raiseBusError(a, false); return g_bus->read16(a); }
-    void write8 (moira::u32 a, moira::u8  v) const override { if (g_bus->busFault(a)) raiseBusError(a, true); g_bus->write8(a, v); }
-    void write16(moira::u32 a, moira::u16 v) const override { if (g_bus->busFault(a)) raiseBusError(a, true); g_bus->write16(a, v); }
+    // Déclenche la bus error, SAUF si une faute est déjà en cours (double bus
+    // fault pendant l'empilement de trame) → on halte le CPU comme le vrai 68000,
+    // au lieu de relancer une exception (qui aborterait l'hôte). Renvoie true si
+    // halté (l'appelant doit alors fournir une valeur neutre).
+    bool faultOrHalt(moira::u32 a, bool write) const {
+        if (g_inBusError) { const_cast<NeostMoira*>(this)->flags |= moira::State::HALTED; return true; }
+        g_inBusError = true;
+        raiseBusError(a, write);            // [[noreturn]] : lève moira::BusError
+        return true;                        // inatteignable
+    }
+    moira::u8  read8 (moira::u32 a) const override { if (g_bus->busFaultN(a, 1) && faultOrHalt(a, false)) return 0; return g_bus->read8(a); }
+    moira::u16 read16(moira::u32 a) const override { if (g_bus->busFaultN(a, 2) && faultOrHalt(a, false)) return 0; return g_bus->read16(a); }
+    void write8 (moira::u32 a, moira::u8  v) const override { if (g_bus->busFaultN(a, 1)) { if (faultOrHalt(a, true)) return; } g_bus->write8(a, v); }
+    void write16(moira::u32 a, moira::u16 v) const override { if (g_bus->busFaultN(a, 2)) { if (faultOrHalt(a, true)) return; } g_bus->write16(a, v); }
     // Lecture du vecteur de reset (SSP/PC) via l'overlay ROM : jamais de bus error.
     moira::u16 read16OnReset(moira::u32 a) const override { return g_bus->read16(a); }
 
@@ -111,7 +128,21 @@ void neostUpdateIpl() {
 #if defined(NEOST_HAS_MUSASHI)
 // Hook appelé par Musashi avant CHAQUE instruction (M68K_INSTRUCTION_HOOK=1).
 static void neostInstrHook(unsigned int pc) {
+    g_inBusError = false;          // une instruction démarre → la dernière bus error est retombée
     if (g_tracer) g_tracer->onInstruction(pc);
+}
+
+// Déclenche une bus error Musashi, ou HALTE le CPU en cas de double faute (cf.
+// g_inBusError). Retourne true si halté (l'appelant doit renvoyer une valeur neutre).
+static bool neostBusError() {
+    if (g_inBusError) {            // faute pendant le traitement d'une faute → double bus fault
+        m68k_pulse_halt();
+        m68k_end_timeslice();
+        return true;
+    }
+    g_inBusError = true;
+    m68k_pulse_bus_error();
+    return false;
 }
 
 // Cycle d'acquittement Musashi : MFP vectorisé, VBL/HBL auto-vectorisés/désarmés.
@@ -206,6 +237,8 @@ int Cpu68k::run(int cycles) {
         const moira::i64 c0 = g_moira->getClock();
         const moira::i64 target = c0 + cycles;
         while (g_moira->getClock() < target) {
+            g_inBusError = false;                        // nouvelle instruction → faute précédente retombée
+            if (g_moira->isHalted()) { g_moira->setClock(target); break; }  // double bus fault → CPU arrêté
             g_moira->execute();                          // une instruction
             if (g_tracer) g_tracer->onInstruction(g_moira->getPC0());
             // Si le CPU est en STOP après cette instruction, aucune IRQ pendante ne
@@ -285,13 +318,13 @@ extern "C" {
 
 // Une adresse non décodée déclenche une bus error (longjmp Musashi : avorte
 // l'instruction). C'est ainsi qu'EmuTOS sonde le matériel optionnel.
-unsigned int m68k_read_memory_8 (unsigned int a) { if (g_bus->busFault(a)) { m68k_pulse_bus_error(); return 0; } return g_bus->read8 (a); }
-unsigned int m68k_read_memory_16(unsigned int a) { if (g_bus->busFault(a)) { m68k_pulse_bus_error(); return 0; } return g_bus->read16(a); }
-unsigned int m68k_read_memory_32(unsigned int a) { if (g_bus->busFault(a)) { m68k_pulse_bus_error(); return 0; } return g_bus->read32(a); }
+unsigned int m68k_read_memory_8 (unsigned int a) { if (g_bus->busFaultN(a, 1)) { neostBusError(); return 0; } return g_bus->read8 (a); }
+unsigned int m68k_read_memory_16(unsigned int a) { if (g_bus->busFaultN(a, 2)) { neostBusError(); return 0; } return g_bus->read16(a); }
+unsigned int m68k_read_memory_32(unsigned int a) { if (g_bus->busFaultN(a, 4)) { neostBusError(); return 0; } return g_bus->read32(a); }
 
-void m68k_write_memory_8 (unsigned int a, unsigned int v) { if (g_bus->busFault(a)) { m68k_pulse_bus_error(); return; } g_bus->write8 (a, static_cast<uint8_t>(v)); }
-void m68k_write_memory_16(unsigned int a, unsigned int v) { if (g_bus->busFault(a)) { m68k_pulse_bus_error(); return; } g_bus->write16(a, static_cast<uint16_t>(v)); }
-void m68k_write_memory_32(unsigned int a, unsigned int v) { if (g_bus->busFault(a)) { m68k_pulse_bus_error(); return; } g_bus->write32(a, v); }
+void m68k_write_memory_8 (unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 1)) { neostBusError(); return; } g_bus->write8 (a, static_cast<uint8_t>(v)); }
+void m68k_write_memory_16(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 2)) { neostBusError(); return; } g_bus->write16(a, static_cast<uint16_t>(v)); }
+void m68k_write_memory_32(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 4)) { neostBusError(); return; } g_bus->write32(a, v); }
 
 // Accès "immuables" utilisés par le désassembleur : pas d'effet de bord MMIO.
 unsigned int m68k_read_disassembler_16(unsigned int a) { return g_bus->read16(a); }
