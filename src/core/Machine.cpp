@@ -11,6 +11,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Machine.hpp"
+#include <cstdio>
 
 Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     : bus(ramBytes), cpu(bus, cpuCore) {
@@ -27,6 +28,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     bus.dmasnd  = &dmasnd;
     bus.blitter = &blitter;
     bus.rtc     = &rtc;     // horloge RP5C15 (Mega ST / Mega STE)
+    bus.midi    = &midi;    // ACIA MIDI ($FFFC04) — bouclage OUT→IN
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
     // Horloge faisceau pour le compteur d'adresse vidéo $FF8205/07/09 : cycles
     // écoulés depuis le début de la trame courante (cf. Shifter::videoCounter).
@@ -34,6 +36,19 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // Horloge RTC : cycle CPU ABSOLU exact, même au milieu d'une lecture MMIO (on
     // ajoute le delta intra-quantum, car sched.now() ne bouge qu'aux frontières).
     rtc.setClock([this] { return sched.now() + cpu.cyclesRunInQuantum(); });
+    // Connecteur de bouclage RS232 : les sorties RTS (port A bit3) et DTR (bit4) du
+    // PSG recopient les entrées de contrôle du MFP — RTS→CTS (GPIP2), DTR→DCD (GPIP1)
+    // ET DTR→RI (GPIP6) — comme le câble de test du diagnostic « S RS232 ». Le port A
+    // est actif BAS (bit=0 → ligne assertée). On rafraîchit l'IPL (un canal a pu lever).
+    psg.setPortASink([this](uint8_t a) {
+        if (!mfp.loopback()) return;        // connecteur non branché → lignes inertes
+        const bool rts = (a & 0x08) != 0;   // bit3 = 1 → RTS assertée (repos bit=0 → désassertée)
+        const bool dtr = (a & 0x10) != 0;   // bit4 = 1 → DTR assertée
+        mfp.setRs232Cts(rts);
+        mfp.setRs232Dcd(dtr);
+        mfp.setRs232Ri(dtr);
+        cpu.updateIpl();
+    });
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
     ikbd.setScheduler(&sched);  // l'IKBD diffère sa réponse de reset ($F1)
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)

@@ -14,6 +14,7 @@
 #pragma once
 #include <cstdint>
 #include <array>
+#include <functional>
 
 class YM2149 {
 public:
@@ -23,8 +24,11 @@ public:
 
     // --- Interface MMIO (appelée par le Bus) --------------------------------
     uint8_t read8(uint32_t addr) {
-        if ((addr & 3) == 0) return regs_[selected_];   // $FF8800 : registre courant
-        return 0xFF;
+        // $FF8800 ET $FF8802 renvoient le registre sélectionné : le décodage du PSG
+        // sur l'ST est partiel (seul A1 distingue select/data en écriture). Les
+        // diagnostics font des read-modify-write (bclr/bset) sur la donnée $FF8802
+        // du port A (R14) → il FAUT relire la valeur courante, pas 0xFF.
+        return regs_[selected_];
     }
     void write8(uint32_t addr, uint8_t v) {
         switch (addr & 3) {
@@ -35,10 +39,18 @@ public:
                 // identique (comportement matériel). Drapeau consommé par le thread
                 // audio (cf. synthesize) pour éviter de toucher son état ici.
                 if (selected_ == 13) envReload_ = true;
+                // R14 = port A (I/O) : pilote sélection lecteur/face, strobe Centronics,
+                // et les sorties RS232 RTS (bit3)/DTR (bit4). Notifie l'abonné éventuel.
+                if (selected_ == 14 && portAsink_) portAsink_(v);
                 break;
             default: break;
         }
     }
+
+    // Abonné aux écritures du port A (R14) : reçoit la valeur écrite. Sert à câbler
+    // les sorties RS232 RTS (bit3)/DTR (bit4) sur les entrées de contrôle du MFP via
+    // un connecteur de bouclage (cf. Machine).
+    void setPortASink(std::function<void(uint8_t)> s) { portAsink_ = std::move(s); }
 
     // --- Synthèse (appelée par le thread audio miniaudio) -------------------
     // Remplit `out` (mono, float -1..+1) à la fréquence sampleRate.
@@ -67,4 +79,6 @@ private:
     int    envDir_    = -1;           // sens : +1 montée, -1 descente
     bool   envHold_   = false;        // enveloppe figée (fin de cycle non répété)
     bool   envReload_ = false;        // R13 écrit → réinitialiser (posé par le CPU)
+
+    std::function<void(uint8_t)> portAsink_;  // abonné aux écritures du port A (R14)
 };

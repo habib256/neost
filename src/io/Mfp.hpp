@@ -18,17 +18,22 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <deque>
 
 #include "core/Scheduler.hpp"
 
 class Mfp {
 public:
+    static constexpr int SRC_DCD    = 1;   // RS232 DCD (GPIP1)
+    static constexpr int SRC_CTS    = 2;   // RS232 CTS (GPIP2)
     static constexpr int SRC_TIMERD = 4;   // Timer D (RS232 baud / délai)
     static constexpr int SRC_TIMERC = 5;   // tic système 200 Hz (délai)
     static constexpr int SRC_ACIA   = 6;   // clavier/MIDI (GPIP4)
     static constexpr int SRC_FDC    = 7;   // FDC/DMA disquette (GPIP5)
     static constexpr int SRC_TIMERB = 8;   // Timer B (synchro vidéo / event-count)
+    static constexpr int SRC_RXFULL = 12;  // USART Receive Buffer Full (RS232)
     static constexpr int SRC_TIMERA = 13;  // Timer A (souvent musique/délai)
+    static constexpr int SRC_RI     = 14;  // RS232 Ring Indicator (GPIP6)
 
     // Branche l'ordonnanceur : le MFP y date lui-même ses timers en mode délai
     // (Timer A/C/D) à partir de leurs registres prescaler/données.
@@ -73,6 +78,18 @@ public:
     void setSerialSink(std::function<void(uint8_t)> sink) { serialSink_ = std::move(sink); }
     bool colorMonitor() const { return colorMonitor_; }
 
+    // Lignes de contrôle RS232 en ENTRÉE (vues sur le GPIP, actives BAS) :
+    //   CTS = GPIP2, DCD = GPIP1, RI = GPIP6.
+    // Sur l'ST elles sont pilotées par un périphérique externe ; avec un connecteur
+    // de BOUCLAGE elles recopient les sorties RTS/DTR du PSG (cf. Machine). On lève
+    // aussi le canal MFP correspondant si la ligne s'active (le test série peut
+    // utiliser l'IRQ). true = ligne assertée (→ bit GPIP à 0).
+    // Le test série lit ces lignes par POLLING du GPIP ; on ne lève pas d'IRQ GPIP
+    // (qui, au boot, parasiterait le canal ACIA du clavier). On met juste l'état.
+    void setRs232Cts(bool a) { ctsLine_ = a; }
+    void setRs232Dcd(bool a) { dcdLine_ = a; }
+    void setRs232Ri (bool a) { riLine_  = a; }
+
     // Déclenche une source : positionne le bit IPR si le canal est activé (IER).
     void raise(int source);
 
@@ -95,6 +112,23 @@ public:
     bool    aciaLine_ = false;    // ligne ACIA (true = données dispo → GPIP4 bas)
     bool    fdcLine_  = false;    // ligne FDC  (true = commande finie → GPIP5 bas)
     bool    colorMonitor_ = true; // GPIP bit7 : true = couleur (basse rés)
+    bool    ctsLine_  = false;    // RS232 CTS (GPIP2, actif bas) — bouclage RTS
+    bool    dcdLine_  = false;    // RS232 DCD (GPIP1, actif bas) — bouclage DTR
+    bool    riLine_   = false;    // RS232 RI  (GPIP6, actif bas) — bouclage DTR
+
+    // USART (RS232) : tampon de réception 1 OCTET (le 68901 n'a PAS de FIFO ; un
+    // nouvel octet écrase le précédent = overrun). rxFull_ = RSR bit7 (Buffer Full).
+    // loopback_ = connecteur de bouclage BRANCHÉ (cf. setLoopback). Par défaut NON
+    // branché : sinon l'écho du rapport série du diagnostic (imprimé en console)
+    // reviendrait en réception et serait lu comme entrée terminal → le test clavier
+    // échoue. Le câble n'est « branché » que pour tester le port série.
+    uint8_t rxByte_  = 0;
+    bool    rxFull_   = false;
+public:
+    void setLoopback(bool plugged) { loopback_ = plugged; }
+    bool loopback() const { return loopback_; }
+private:
+    bool    loopback_ = false;
 
     // Timer B (event-count sur HBLANK). tbCounter_ = compteur courant (lu en
     // $FFFA21), tbReload_ = valeur rechargée à 0, tbcr_ = mode ($FFFA1B).

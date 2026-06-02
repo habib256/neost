@@ -14,8 +14,11 @@ uint8_t Mfp::read8(uint32_t addr) {
                                     // CPU sur $FFFA01 ne doivent pas les écraser).
             uint8_t v = 0xFF;            // bits au repos
             if (!colorMonitor_) v &= ~0x80;  // bit7 = 0 → moniteur MONO (haute rés)
-            if (aciaLine_)      v &= ~0x10;  // bit4 = ACIA clavier (actif bas)
+            if (riLine_)        v &= ~0x40;  // bit6 = RS232 RI (actif bas)
             if (fdcLine_)       v &= ~0x20;  // bit5 = FDC (actif bas)
+            if (aciaLine_)      v &= ~0x10;  // bit4 = ACIA clavier (actif bas)
+            if (ctsLine_)       v &= ~0x04;  // bit2 = RS232 CTS (actif bas)
+            if (dcdLine_)       v &= ~0x02;  // bit1 = RS232 DCD (actif bas)
             return v;
         }
         case 0x03: return aer;
@@ -31,10 +34,15 @@ uint8_t Mfp::read8(uint32_t addr) {
         case 0x17: return vr;
         case 0x1B: return tbcr_;     // Timer B control
         case 0x21: return tbCounter_; // Timer B data (compteur courant)
+        case 0x2B:                   // RSR : bit7 = Buffer Full (octet reçu par bouclage)
+            return uint8_t((timer_[0x2B] & 0x7F) | (rxFull_ ? 0x80 : 0));
         case 0x2D: return uint8_t(timer_[0x2D] | 0x80);  // TSR : bit7 (Buffer Empty) toujours
                                      // armé — on transmet instantanément (cf. Hatari
                                      // RS232_TSR_ReadByte). Sans ça, les diagnostics qui
                                      // impriment sur le port série bouclent à l'infini.
+        case 0x2F:                   // UDR : lecture → consomme l'octet reçu (bouclage TxD→RxD)
+            if (rxFull_) { rxFull_ = false; return rxByte_; }
+            return timer_[0x2F];
         default:   return timer_[addr & 0x3F];   // autres timers/USART : relisables
     }
 }
@@ -66,7 +74,20 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x25: timer_[0x25] = v; scheduleTimer(3); break;             // TDDR
         case 0x2F: timer_[0x2F] = v;                  // UDR : octet émis sur le port série
                    if (serialSink_) serialSink_(v);   // (RS-232). On le transmet aussitôt
-                   break;                             // (cf. Hatari RS232_UDR_WriteByte).
+                   // Connecteur de bouclage TxD→RxD : l'octet émis revient en réception
+                   // (RSR Buffer Full + canal 12). Sans bouclage rien ne le lirait : le
+                   // diagnostic « S RS232 » en a besoin pour valider la boucle locale.
+                   // Le récepteur USART ne capte (et ne lève le canal 12) que s'il est
+                   // ACTIVÉ : RSR bit0 = Receiver Enable. Le diagnostic ne l'arme que
+                   // pendant le test « S RS232 » ; les impressions série normales (RE=0)
+                   // ne doivent donc PAS générer d'IRQ parasite (sinon le test clavier,
+                   // au boot, échoue). C'est le comportement matériel du MFP 68901.
+                   if (loopback_) {              // connecteur branché : TxD→RxD (buffer 1 octet)
+                       rxByte_ = v;
+                       rxFull_ = true;
+                       raise(SRC_RXFULL);        // canal 12 (si activé) — le test peut l'utiliser
+                   }
+                   break;
         default: timer_[addr & 0x3F] = v; break;      // autres timers/USART : mémorisés
     }
 }

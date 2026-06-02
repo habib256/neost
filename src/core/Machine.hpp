@@ -24,6 +24,7 @@
 #include "io/Ikbd.hpp"
 #include "io/Fdc.hpp"
 #include "io/Rtc.hpp"
+#include "io/MidiAcia.hpp"
 
 class Machine {
 public:
@@ -84,6 +85,7 @@ public:
     Ikbd      ikbd{mfp};
     Fdc       fdc{bus, psg, mfp};
     Rtc       rtc;
+    MidiAcia  midi{mfp};
     Cpu68k    cpu{bus};
     Scheduler sched;
 

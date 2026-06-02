@@ -36,6 +36,7 @@ void usage() {
         "  --walk-mouse      après le boot, injecte un mouvement souris + clic (diag)\n"
         "  --keys STR        après le boot, tape STR au clavier (ex. menus de diag)\n"
         "  --diskb FILE      monte une image dans le lecteur B (2e lecteur)\n"
+        "  --loopback        « branche » le connecteur de bouclage RS232 (test S série)\n"
         "  --cart FILE       monte une cartouche ($FA0000) : Test Kit diagnostic, etc.\n"
         "  --screenshot PPM  dump du framebuffer final au format PPM\n"
         "  rom               image TOS (défaut rom/etos192fr.img)\n");
@@ -73,6 +74,7 @@ int main(int argc, char** argv) {
     uint32_t    untilPc    = 0;
     bool        walkMouse  = false;
     std::string keys;                 // touches à injecter après le boot (ex. "Z\n")
+    bool        loopback   = false;   // « branche » le connecteur de bouclage RS232 (test S)
     bool        machineMono = false;
     CpuCore     cpuCore    = CpuCore::Musashi;
     MachineType machType   = MachineType::Ste;
@@ -94,6 +96,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--walk-mouse")) walkMouse = true;
         else if (!std::strcmp(a, "--keys"))       keys      = next(a);
+        else if (!std::strcmp(a, "--loopback"))   loopback  = true;
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
         else if (!std::strcmp(a, "--machine"))    machType  = parseMachine(next(a));
@@ -191,6 +194,11 @@ int main(int argc, char** argv) {
             machine.ikbd.keyEvent(sc, true);  machine.cpu.updateIpl(); idle(2);
             machine.ikbd.keyEvent(sc, false); machine.cpu.updateIpl(); idle(2);
         }
+        // « Branche » le connecteur de bouclage RS232 APRÈS la navigation clavier :
+        // s'il était branché plus tôt, l'écho du rapport série imprimé en console au
+        // boot reviendrait en réception et serait lu comme entrée terminal → le test
+        // clavier échouerait. Le technicien le branche juste avant de lancer le test S.
+        if (loopback) machine.mfp.setLoopback(true);
         idle(frames);   // laisse les tests déclenchés s'exécuter
         std::fprintf(stderr, "[headless] touches injectées : \"%s\"\n", keys.c_str());
     }

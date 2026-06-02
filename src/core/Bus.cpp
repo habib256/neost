@@ -14,6 +14,7 @@
 #include "core/DmaSound.hpp"
 #include "core/Blitter.hpp"
 #include "io/Rtc.hpp"
+#include "io/MidiAcia.hpp"
 
 #include <cstdio>
 #include <fstream>
@@ -378,8 +379,11 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
         if (cpu) cpu->updateIpl();
         return v;
     }
-    if (addr >= 0xFFFC04 && addr < 0xFFFC08)   // ACIA MIDI : statut "prêt, rien à lire"
-        return (addr & 2) ? 0x00 : 0x02;
+    if (addr >= 0xFFFC04 && addr < 0xFFFC08 && midi) {
+        const uint8_t v = midi->read8(addr);   // ACIA MIDI ($FFFC04/06) — bouclage OUT→IN
+        if (cpu) cpu->updateIpl();             // une lecture peut effacer l'IRQ ACIA
+        return v;
+    }
     if (addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine))
         return rtc->read8(addr);          // RTC RP5C15 — Mega ST / Mega STE
     if (glue)
@@ -420,8 +424,11 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
         if (cpu) cpu->updateIpl();
         return;
     }
-    if (addr >= 0xFFFC04 && addr < 0xFFFC08)   // ACIA MIDI : écritures ignorées
+    if (addr >= 0xFFFC04 && addr < 0xFFFC08 && midi) {
+        midi->write8(addr, v);            // ACIA MIDI ($FFFC04/06) — bouclage OUT→IN
+        if (cpu) cpu->updateIpl();        // un octet bouclé peut lever l'IRQ ACIA
         return;
+    }
     if (addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine)) {
         rtc->write8(addr, v);             // RTC RP5C15 — Mega ST / Mega STE
         return;
