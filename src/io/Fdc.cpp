@@ -44,6 +44,13 @@ static constexpr int64_t INDEX_PERIOD_CYCLES = 200 * 8021;   // ~200 ms @ ~8 MHz
 static constexpr int64_t INDEX_PULSE_CYCLES  = 29758;        // 3,71 ms : trou d'index visible (Hatari FDC_DELAY_US_INDEX_PULSE_LENGTH)
 static constexpr int     MOTOR_OFF_REVS      = 9;            // tours d'inactivité → moteur off (Hatari FDC_DELAY_IP_MOTOR_OFF)
 
+// Durée du créneau de transition média (éjection/insertion à chaud) pendant lequel
+// WPRT est forcé, calqué sur Hatari (FLOPPY_DRIVE_TRANSITION_DELAY_VBL ≈ 18 VBL ;
+// on prend ici quelques trames PAL, ce qui suffit à ce que TOS voie le flip WPRT).
+// Une trame = 313 lignes × 512 cycles = 160256 cycles ; ~4 trames de fenêtre.
+static constexpr int64_t FRAME_CYCLES               = 313 * 512;   // 160256 (cf. Machine)
+static constexpr int64_t TRANSITION_WINDOW_CYCLES   = 4 * FRAME_CYCLES;
+
 // Décompresse une image .msa (Magic Shadow Archiver) en image .st brute.
 // En-tête (mots big-endian) : 0E0F, secteurs/piste, faces-1, piste début, fin.
 // Chaque piste : un mot de longueur ; si != spt*512, flux RLE (marqueur 0xE5
@@ -87,6 +94,7 @@ static bool decodeMsa(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out
 
 bool Fdc::loadImage(const std::string& path, int drive) {
     FloppyDisk& dk = drive_[drive & 1];
+    const bool wasPresent = !dk.image.empty();   // disque déjà monté → échange à chaud
     std::ifstream f(path, std::ios::binary | std::ios::ate);
     if (!f) { std::fprintf(stderr, "[FDC] image introuvable : %s\n", path.c_str()); return false; }
     const std::streamsize n = f.tellg();
@@ -114,6 +122,18 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     }
     dk.path = path;
 
+    // Changement de média à chaud (cf. Hatari Floppy_DriveTransitionSetState) :
+    //  - échange à chaud (un disque était déjà présent) → on arme la phase
+    //    d'ÉJECTION (force WPRT le temps de la fenêtre) ; l'insertion qui suit ne
+    //    force rien, donc l'éjection seule suffit à provoquer le flip WPRT que TOS
+    //    surveille pour relire le répertoire de la nouvelle disquette ;
+    //  - premier montage (boot, aucun disque présent) → simple INSERTION, qui ne
+    //    force PAS WPRT : le chemin de boot reste donc rigoureusement inchangé.
+    if (sched_) {
+        dk.transitionPhase    = wasPresent ? FloppyDisk::TRANS_EJECT : FloppyDisk::TRANS_INSERT;
+        dk.transitionDeadline = sched_->now() + TRANSITION_WINDOW_CYCLES;
+    }
+
     // Write-protect auto-détecté d'après les permissions du fichier (cf. Hatari
     // floppy.c:Floppy_IsWriteProtected, mode « automatic ») : on stat() l'image et
     // on regarde le bit propriétaire S_IWUSR — si le fichier n'est pas inscriptible,
@@ -131,8 +151,16 @@ bool Fdc::loadImage(const std::string& path, int drive) {
 
 void Fdc::eject(int drive) {
     FloppyDisk& dk = drive_[drive & 1];
+    const bool wasPresent = !dk.image.empty();
     dk.image.clear();
     dk.path.clear();
+    // Éjection à chaud : on force WPRT pendant la fenêtre de transition (cf. Hatari
+    // Floppy_DriveTransitionSetState, STATE_EJECT). Une éjection « à vide » (aucun
+    // disque présent) n'arme rien.
+    if (wasPresent && sched_) {
+        dk.transitionPhase    = FloppyDisk::TRANS_EJECT;
+        dk.transitionDeadline = sched_->now() + TRANSITION_WINDOW_CYCLES;
+    }
     std::fprintf(stderr, "[FDC] lecteur %c éjecté\n", drive & 1 ? 'B' : 'A');
 }
 
@@ -145,6 +173,20 @@ int Fdc::selectedDrive() const {
     if ((psg_.regs_[14] & 0x02) == 0) return 0;   // A prioritaire si les deux
     if ((psg_.regs_[14] & 0x04) == 0) return 1;
     return -1;
+}
+
+// Transition de média (cf. Hatari Floppy_DriveTransitionUpdateState) : tant que la
+// phase d'ÉJECTION est active (échéance non dépassée), WPRT est forcé à 1 ; la phase
+// d'INSERTION ne force rien (Force=0). On expire la transition une fois l'échéance
+// franchie. Sans ordonnanceur (now() indispo), aucune transition n'est active.
+bool Fdc::transitionForceWprt(int drive) {
+    FloppyDisk& dk = drive_[drive & 1];
+    if (dk.transitionPhase == FloppyDisk::TRANS_NONE || !sched_) return false;
+    if (sched_->now() >= dk.transitionDeadline) {   // fenêtre écoulée → transition finie
+        dk.transitionPhase = FloppyDisk::TRANS_NONE;
+        return false;
+    }
+    return dk.transitionPhase == FloppyDisk::TRANS_EJECT;  // éjection → force WPRT
 }
 
 void Fdc::setIntrq(bool on) {
@@ -176,6 +218,11 @@ uint8_t Fdc::read8(uint32_t addr) {
                         const int64_t phase = (sched_->now() - indexRef_) % INDEX_PERIOD_CYCLES;
                         if (phase >= 0 && phase < INDEX_PULSE_CYCLES) s |= FDC_INDEX;
                     }
+                    // Changement de média à chaud : pendant la fenêtre d'éjection on
+                    // force WPRT (cf. Hatari ForceWPRT == 1), ce que TOS lit après un
+                    // Restore pour détecter le changement et relire le répertoire.
+                    const int d = selectedDrive();
+                    if (d >= 0 && transitionForceWprt(d)) s |= FDC_WRPRO;
                     return s;
                 }
                 case DMA_A0:          return track_;                    // FDC_TR

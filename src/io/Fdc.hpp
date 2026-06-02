@@ -75,6 +75,15 @@ private:
         int  spt = 9, sides = 2;                // géométrie (BPB)
         bool writeProtect = false;              // protégé en écriture
         bool raw = true;                        // .st brut (writeBack possible) vs .msa
+
+        // Détection de changement de média (Mediach) à chaud (cf. Hatari
+        // floppy.c:Floppy_DriveTransition*) : une éjection/insertion à chaud force
+        // brièvement WPRT, ce que TOS surveille pour relire le répertoire. On modélise
+        // ce créneau par une phase datée (en cycles CPU de l'ordonnanceur, horloge
+        // continue). 0 = aucune ; 1 = éjection (force WPRT) ; 2 = insertion (ne force rien).
+        enum TransitionPhase { TRANS_NONE = 0, TRANS_EJECT = 1, TRANS_INSERT = 2 };
+        int     transitionPhase    = TRANS_NONE;
+        int64_t transitionDeadline = 0;         // cycle CPU de fin de la phase courante
     };
 
     void     executeCommand(uint8_t cmd);
@@ -100,6 +109,11 @@ private:
     uint8_t  acsiStatus_ = 0;                    // statut renvoyé (0 = OK)
     int      currentSide() const;               // face d'après le port A du PSG
     int      selectedDrive() const;             // 0 = A, 1 = B, -1 = aucun (PSG port A)
+
+    // Renvoie true tant que la phase d'éjection (force WPRT=1) du lecteur `drive`
+    // est active ; expire la transition quand l'échéance est dépassée. Calqué sur
+    // Hatari Floppy_DriveTransitionUpdateState (Force=1 pendant l'éjection).
+    bool     transitionForceWprt(int drive);
     uint8_t  dmaStatus() const;
     void     setIntrq(bool on);                 // pilote GPIP5
     void     emitSound(FdcSound e) { if (soundSink_) soundSink_(e); }
