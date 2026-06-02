@@ -55,8 +55,8 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x13: imra = v; break;
         case 0x15: imrb = v; break;
         case 0x17: vr   = v; break;
-        case 0x1B: tbcr_ = v; break;                  // Timer B control (0x08 = event-count)
-        case 0x21: tbReload_ = v; tbCounter_ = v; break;  // Timer B data → charge le compteur
+        case 0x1B: tbcr_ = v; scheduleTimer(1); break;   // TBCR (0x08 = event-count ; 1-7 = délai)
+        case 0x21: tbReload_ = v; tbCounter_ = v; scheduleTimer(1); break;  // TBDR → recharge + (re)date le délai
         // Timers A/C/D : on mémorise le registre PUIS on (re)programme l'échéance.
         case 0x19: timer_[0x19] = v; scheduleTimer(0); break;             // TACR
         case 0x1D: timer_[0x1D] = v; scheduleTimer(2); scheduleTimer(3); break; // TCDCR (C+D)
@@ -93,13 +93,17 @@ int64_t Mfp::timerPeriodCycles(int timer) const {
 }
 
 void Mfp::scheduleTimer(int timer) {
-    if (!sched_ || timer == 1) return;        // Timer B = event-count, piloté par Machine
+    if (!sched_) return;
+    // Timer B (timer==1) : seul le mode DÉLAI (TBCR 1-7) est daté ici ; en event-count
+    // (TBCR=8) timerPeriodCycles renvoie 0 → on annule la source délai (le tic est
+    // alors piloté par Machine via mfp.hblank()).
     const Scheduler::Source src = timer == 0 ? Scheduler::TIMER_A
+                                : timer == 1 ? Scheduler::TIMER_B_DELAY
                                 : timer == 2 ? Scheduler::TIMER_C
                                 :              Scheduler::TIMER_D;
     const int64_t period = timerPeriodCycles(timer);
     if (period > 0) sched_->schedule(src, sched_->now() + period);
-    else            sched_->cancel(src);      // arrêté → plus d'échéance
+    else            sched_->cancel(src);      // arrêté / event-count → plus d'échéance délai
 }
 
 void Mfp::onTimerExpire(int timer) {

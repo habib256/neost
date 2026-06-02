@@ -51,6 +51,8 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::TIMER_A, [this] { mfp.onTimerExpire(0); cpu.updateIpl(); });
     sched.setCallback(Scheduler::TIMER_C, [this] { mfp.onTimerExpire(2); cpu.updateIpl(); });
     sched.setCallback(Scheduler::TIMER_D, [this] { mfp.onTimerExpire(3); cpu.updateIpl(); });
+    // Timer B en mode DÉLAI (≠ event-count) : daté par le MFP, déclenché ici.
+    sched.setCallback(Scheduler::TIMER_B_DELAY, [this] { mfp.onTimerExpire(1); cpu.updateIpl(); });
     // Fin de commande disque : BUSY tombe, INTRQ levée (GPIP5 + canal 7).
     sched.setCallback(Scheduler::FDC,     [this] { fdc.onCommandComplete(); cpu.updateIpl(); });
     // Impulsion d'index du lecteur (1/tour) : purement FDC (pas d'IRQ sur ST).

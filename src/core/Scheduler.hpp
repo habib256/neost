@@ -34,7 +34,11 @@ public:
     // MICROWIRE = shift série du registre Microwire ($FF8922) du son STE : 16
     // décalages (8 cycles chacun, cf. Hatari) avant que la commande LMC1992 soit
     // décodée et que $FF8922 retombe à 0. Des diagnostics POLLENT $FF8922 jusqu'à 0.
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_C, TIMER_D, FDC, FDC_INDEX, DMASND, IKBD, MICROWIRE, HBL, VBL, SRC_COUNT };
+    // TIMER_B = tic event-count de Timer B (une fois/ligne affichée, piloté par Machine).
+    // TIMER_B_DELAY = Timer B en mode DÉLAI (prescaler/données comme A/C/D), daté par le
+    // MFP. Les deux modes de Timer B sont exclusifs (TBCR = 8 → event-count, 1-7 → délai),
+    // d'où deux sources distinctes sans conflit.
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, FDC, FDC_INDEX, DMASND, IKBD, MICROWIRE, HBL, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 
