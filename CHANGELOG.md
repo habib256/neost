@@ -242,3 +242,42 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
 - EmuTOS (FR/US) : green desktop, fichiers disquette, double-clic, fenêtres.
 - TOS 1.02 Mega ST FR : boot complet, green desktop basse rés.
 - **Arkanoid** (Imagine 1987) : se lance via l'AUTO de la disquette, écran-titre.
+
+## Portage de fidélité Hatari (lot juin 2026)
+
+Lot de 14 portages ciblés depuis la **source de vérité `extern/hatari/src`**, issus
+d'un audit composant-par-composant (NeoST ↔ Hatari). Chacun a passé le filet de
+non-régression (build + boot EmuTOS sur les DEUX cœurs + les 3 cartouches de diag
+atteignant leur menu) ; les ajouts STE/Mega sont **gatés au modèle** pour laisser le
+chemin ST inchangé.
+
+- **YM2149** : table de volume **5 bits mesurée** (32 niveaux, `ymout1c5bit` +
+  `YmVolume4to5`) et **vitesse d'enveloppe corrigée** (diviseur de pas, `sound.c`) —
+  l'enveloppe balayait 16× trop lentement.
+- **FDC WD1772** : **write-protect auto-détecté** depuis les droits du fichier image
+  (`Floppy_IsWriteProtected`, .msa toujours protégé) ; **largeur d'impulsion INDEX**
+  fidèle (3.71 ms) + moteur off après 9 tours ; **détection de changement de média**
+  (Mediach via bascule WPRT à l'éjection/insertion à chaud, `Floppy_DriveTransition*`).
+- **IKBD HD6301** : vrai **analyseur de commandes multi-octets** (table de longueurs
+  `KeyboardCommands[]`, buffer d'accumulation ; reset `$80,$01`→`$F1` différé préservé) ;
+  **mode souris absolu** (`$09`/`$0D`/`$0E`, en-tête `$F7`) ; **joystick auto-report /
+  monitoring** (`$14`/`$15`/`$17`/`$18`, paquets `$FE`/`$FF` sur changement, hook VBL).
+- **MFP 68901** : lecture GPIP qui honore le **registre de direction (DDR)** et le
+  latch écrit par le CPU (`MFP_GPIP_ReadByte_Main`) — inputs forcés inchangés (DDR=0).
+- **ACIA (clavier + MIDI)** : les **deux lignes d'IRQ ACIA en OU câblé sur GPIP4**
+  (`MFP_Main_Compute_GPIP_LINE_ACIA`) — corrige l'écrasement d'une IRQ clavier en
+  attente quand le MIDI est au repos.
+- **Blitter** : **interruption de fin** sur **GPIP3** (canal I3, `MFP_INT_GPIP3`) et
+  effacement de BUSY+HOG sur `y_count==0` (Mega ST/STE/Mega STE).
+- **Son DMA STE** : ligne **XSINT → GPIP7** (moniteur XOR XSINT, gaté STE/Mega STE,
+  `DmaSnd_Update_XSINT_Line`).
+- **Bus / MMU** : banque 1 **miroir de la banque 0 sur STE/MegaSTE** (bits 0-1 de
+  `$FF8001` ignorés, `STMemory_MMU_ConfToBank`) — chemin ST/Mega ST identique.
+- **Shifter STE** (registres, gatés STE) : **fine scroll** `$FF8264/65`, **line width**
+  `$FF820F`, **base vidéo basse** `$FF820D`, **palette 4 bits/canal** (expansion STe
+  de `conv_st.c`), **relecture sync** `$FF820A` (bits inutilisés à 1). Le rendu
+  scroll/line-width réel reste à câbler (cf. chantier précision temporelle).
+
+*Reste différé (architectural, hors lot)* : ordonnanceur cycle-exact (bordures,
+spec512, latence IRQ/FDC au cycle, Arkanoid `$26E7`), SCC Z85C30, ACSI/SCSI/IDE,
+GEMDOS-HD, FPU 68881, bascule 8/16 MHz MegaSTE.
