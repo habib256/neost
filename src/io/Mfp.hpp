@@ -84,11 +84,14 @@ public:
     // de BOUCLAGE elles recopient les sorties RTS/DTR du PSG (cf. Machine). On lève
     // aussi le canal MFP correspondant si la ligne s'active (le test série peut
     // utiliser l'IRQ). true = ligne assertée (→ bit GPIP à 0).
-    // Le test série lit ces lignes par POLLING du GPIP ; on ne lève pas d'IRQ GPIP
-    // (qui, au boot, parasiterait le canal ACIA du clavier). On met juste l'état.
-    void setRs232Cts(bool a) { ctsLine_ = a; }
-    void setRs232Dcd(bool a) { dcdLine_ = a; }
-    void setRs232Ri (bool a) { riLine_  = a; }
+    // Le test série « lignes de contrôle » ENABLE le canal GPIP (RI/DCD/CTS) puis
+    // toggle la sortie (DTR/RTS) : l'EDGE sur l'entrée doit lever l'IRQ. On lève donc
+    // le canal sur tout changement d'état. C'est sûr : ces setters ne sont appelés que
+    // quand le connecteur est branché (cf. Machine, gardé par loopback()), donc jamais
+    // au boot où cela parasiterait le canal ACIA du clavier.
+    void setRs232Cts(bool a) { if (a != ctsLine_) raise(SRC_CTS); ctsLine_ = a; }
+    void setRs232Dcd(bool a) { if (a != dcdLine_) raise(SRC_DCD); dcdLine_ = a; }
+    void setRs232Ri (bool a) { if (a != riLine_)  raise(SRC_RI);  riLine_  = a; }
 
     // Déclenche une source : positionne le bit IPR si le canal est activé (IER).
     void raise(int source);

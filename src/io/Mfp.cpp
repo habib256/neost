@@ -154,6 +154,7 @@ void Mfp::timerA_eventCount() {
 }
 
 void Mfp::raise(int source) {
+    if (source == SRC_RXFULL && loopback_) { static uint8_t seen=0; if((iera&~seen)){ seen|=iera; fprintf(stderr,"[DBG] raise RXFULL iera=%02x imra=%02x\n", iera, imra);} }
     if (source >= 8) {
         const uint8_t bit = uint8_t(1u << (source - 8));
         if (iera & bit) ipra |= bit;     // l'IRQ ne devient pendante que si activée
@@ -188,6 +189,7 @@ bool Mfp::irqPending() const {
 
 int Mfp::iack() {
     const int s = highestPending();
+    if (loopback_) { static uint16_t seen=0; if(s>=0 && !(seen&(1<<s))){seen|=(1<<s); fprintf(stderr,"[DBG] iack canal %d (ipra=%02x imra=%02x)\n", s, ipra, imra);} }
     if (s < 0) return -1;
     const uint8_t bit = uint8_t(1u << (s & 7));
     if (s >= 8) { ipra &= ~bit; if (vr & 0x08) isra |= bit; }
