@@ -59,18 +59,28 @@ les DEUX cœurs (Musashi + Moira). 5 corrections (cf. mémoire cartridge-diagnos
 7. **Shift série Microwire `$FF8922`** (`DmaSound::onMicrowireShift` + `Scheduler::MICROWIRE`,
    port Hatari) : 16 décalages (8 cyc), `$FF8922` → 0, puis décode LMC1992. **A débloqué
    STE_Test ET MegaSTE_Diagnostic** (qui pollaient `$FF8922` jusqu'à 0).
+8. **Adresse fautive de trame bus error** (`m68ki_aerr_address/_write_mode/_fc`) → diags
+   affichent la VRAIE adresse (« Bus Error Access Address: $E00000… », sondage ROM).
+9. **Blitter** (`Blitter.cpp`, port fonctionnel Hatari, mode HOG) : HOP/LOP/FXSR/NFSR/
+   skew/smudge/halftone/endmasks. Présent Mega ST/STE/Mega STE. **Tests BLiT court+long
+   PASSENT** ; EmuTOS STE VDI OK ; « No Blitter installed » disparu.
 
-**LES 3 CARTOUCHES ATTEIGNENT LEUR MENU INTERACTIF** (vrai TOS, sur les 2 cœurs) :
+**LES 3 CARTOUCHES ATTEIGNENT LEUR MENU INTERACTIF** (vrai TOS par machine, 2 cœurs) :
 ST_Diagnostic, STE_Test, MegaSTE_Diagnostic.
 
-**ST_Diagnostic — batterie Z (vrai TOS) : 7/8 PASSENT** (RAM, ROM, Color, Keyboard,
-Audio, RTC, BLiT) ; SEUL **« T0 MFP timer » échoue**. Avec EmuTOS le test ROM donne
-« cs error » (checksums ≠ TOS Atari → utiliser un vrai TOS).
+**ST_Diagnostic batterie Z : 7/8 PASSENT** ; **STE_Test : ROM OK + BLiT OK**. Avec EmuTOS
+le ROM donne « cs error » (checksums ≠ TOS Atari → utiliser un vrai TOS).
 
-**Reste à faire :**
-- **T0 MFP timer** : compare des relations cycle-EXACTES Timer A / HBL (`$208`) / VBL
-  (`$292`) / Timer B event-count (`$48`) — boucles d'attente `FA2D44`/`FA2DF6`. Demande
-  la précision cycle-exact (quantum < ligne) → cf. § « Précision temporelle » ci-dessous.
+**Reste à faire (vers « zéro erreur ») :**
+- **T0 MFP timer** : relations cycle-EXACTES Timer A / HBL (`$208`) / VBL (`$292`) /
+  Timer B (`$48`) — boucles `FA2D44`/`FA2DF6`. Précision cycle-exact (quantum < ligne)
+  → cf. § « Précision temporelle » ci-dessous. (Affecte les 3 cartouches.)
+- **F8 DMA count error** (STE_Test floppy quick test, track 0) : à investiguer côté
+  FDC/DMA (`Fdc.cpp` : `dmaAddr_` avance bien de 512/secteur, `dmaCount_`→0 ; le
+  « DMA count » vérifié par le diag diverge subtilement — comparer à Hatari fdc.c).
+- **Drive B / Hard disk** : « Cannot write drive B », « Hard error » — périphériques
+  ABSENTS (un vrai ST sans 2e lecteur / disque dur donnerait les mêmes). Pour « zéro
+  erreur » de la batterie complète il faudrait les ATTACHER (pas un bug NeoST).
 - `STE_Test_v1.9` : écran bleu sans texte. `MegaSTE_Diagnostic` : « VME/FPU not found » puis stop.
 - **256K : PAS un bug NeoST** (écarté). Le diag FIGE `conf=$05` (512+512) au démarrage
   sans jamais l'adapter ; à 256K (banques 128K) ça sur-déclare → aliasing `$8`↔`$208`,

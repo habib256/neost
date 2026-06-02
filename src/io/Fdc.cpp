@@ -169,6 +169,13 @@ uint8_t Fdc::read8(uint32_t addr) {
             }
         case 0x6: return 0;                          // status, octet haut
         case 0x7: return uint8_t(dmaStatus());       // status, octet bas
+        // Adresse DMA ($FF8609/0B/0D) : RELISIBLE — le compteur incrémente pendant
+        // le transfert (cf. Hatari FDC_GetDMAAddress). Les diagnostics la relisent
+        // après une commande pour vérifier que la DMA a transféré le bon nombre
+        // d'octets (sinon « DMA count error »).
+        case 0x9: return uint8_t(dmaAddr_ >> 16);
+        case 0xB: return uint8_t(dmaAddr_ >> 8);
+        case 0xD: return uint8_t(dmaAddr_);
         case 0xE: case 0xF: return density_;         // $FF860E : densité DD/HD
         default:  return 0xFF;
     }
@@ -256,6 +263,8 @@ void Fdc::executeCommand(uint8_t cmd) {
         case 0x80: result = readSectors(cmd);                           break; // READ SECTOR
         case 0xA0: result = writeSectors(cmd);                          break; // WRITE SECTOR
         case 0xC0: result = readAddress();                              break; // READ ADDRESS
+        case 0xE0: result = readTrack();                                break; // READ TRACK
+        case 0xF0: result = writeTrack();                               break; // WRITE TRACK
         default:   result = 0;                                          break;
     }
 
@@ -385,5 +394,60 @@ uint8_t Fdc::readAddress() {
         if (a < bus_.ram.size()) bus_.ram[a] = id[j];
     }
     dmaAddr_ += 6;
+    return 0;
+}
+
+// WRITE TRACK ($F0) = formatage. La DMA fournit l'image MFM brute d'une piste
+// (gaps, sync, marques d'adresse, données). On la PARCOURT pour extraire les
+// secteurs (IDAM $FE → piste/face/secteur/taille, puis DAM $FB/$F8 → 512 octets de
+// données) et on les écrit dans l'image .ST là où la géométrie le permet. NB :
+// Hatari ne supporte PAS du tout WRITE TRACK sur .ST (renvoie « lost data ») ; on
+// fait mieux (best-effort) MAIS un reformatage à géométrie non standard (ex. 18
+// secteurs/piste sur une image 9 spt) ne tient pas — il faudrait une image flux/HD.
+// L'essentiel ici : CONSOMMER la DMA (sinon « DMA count error » côté diagnostic).
+uint8_t Fdc::writeTrack() {
+    const int d = selectedDrive();
+    if (d < 0 || drive_[d].image.empty()) return FDC_RNF;
+    FloppyDisk& dk = drive_[d];
+    if (dk.writeProtect) return FDC_WRPRO;
+    const uint32_t bytes = uint32_t(dmaCount_ ? dmaCount_ : 1) * 512u;
+    const uint32_t base  = dmaAddr_;
+    auto rb = [&](uint32_t k) -> uint8_t {
+        const uint32_t a = (base + k) & 0x00FFFFFF;
+        return a < bus_.ram.size() ? bus_.ram[a] : 0;
+    };
+    for (uint32_t i = 0; i + 6 < bytes; ) {
+        if (rb(i) == 0xFE) {                                   // IDAM : champ d'adresse
+            const uint8_t tr = rb(i + 1), sd = rb(i + 2), sec = rb(i + 3);
+            uint32_t k = i + 5;                                // cherche la marque de données
+            while (k < bytes && rb(k) != 0xFB && rb(k) != 0xF8) ++k;
+            if (k < bytes && k + 1 + 512 <= bytes) {
+                const uint32_t off = lsnOffset(tr, sd, sec, dk.spt, dk.sides);
+                if (off + 512u <= dk.image.size()) {
+                    for (uint32_t j = 0; j < 512u; ++j) dk.image[off + j] = rb(k + 1 + j);
+                    writeBack(dk, off, 512u);
+                }
+                i = k + 1 + 512;
+                continue;
+            }
+        }
+        ++i;
+    }
+    dmaAddr_ += bytes;        // la DMA a bien transféré toute la piste
+    dmaCount_ = 0;
+    return 0;
+}
+
+// READ TRACK ($E0) : lit la piste brute via DMA. On ne synthétise pas le format MFM
+// complet (gaps/marques) ; on CONSOMME la DMA pour que le compteur retombe à 0
+// (évite « DMA count error »). Les octets transférés sont au mieux approximatifs.
+uint8_t Fdc::readTrack() {
+    const uint32_t bytes = uint32_t(dmaCount_ ? dmaCount_ : 1) * 512u;
+    for (uint32_t j = 0; j < bytes; ++j) {
+        const uint32_t a = (dmaAddr_ + j) & 0x00FFFFFF;
+        if (a < bus_.ram.size()) bus_.ram[a] = 0;
+    }
+    dmaAddr_ += bytes;
+    dmaCount_ = 0;
     return 0;
 }

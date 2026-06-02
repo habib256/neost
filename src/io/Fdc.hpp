@@ -83,6 +83,8 @@ private:
     uint8_t  readSectors(uint8_t cmd);          // renvoie le statut FDC
     uint8_t  writeSectors(uint8_t cmd);
     uint8_t  readAddress();
+    uint8_t  writeTrack();                      // WRITE TRACK ($F0) : formatage (best-effort)
+    uint8_t  readTrack();                       // READ TRACK ($E0)
     int      currentSide() const;               // face d'après le port A du PSG
     int      selectedDrive() const;             // 0 = A, 1 = B, -1 = aucun (PSG port A)
     uint8_t  dmaStatus() const;
