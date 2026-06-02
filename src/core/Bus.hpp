@@ -23,6 +23,7 @@ class Fdc;
 class Cpu68k;
 class DmaSound;
 class Blitter;
+class Rtc;
 // -----------------------------------------------------------------------------
 //  Plan mémoire de l'Atari ST (bus d'adresses 24 bits → 16 Mo adressables).
 //  Les constantes documentent le POURQUOI de chaque zone.
@@ -117,6 +118,7 @@ public:
     Fdc*     fdc     = nullptr;   // contrôleur disquette + DMA
     DmaSound* dmasnd = nullptr;   // son DMA STE ($FF8900) — optionnel
     Blitter* blitter = nullptr;   // blitter ($FF8A00) — Mega ST / STE / Mega STE
+    Rtc*     rtc     = nullptr;   // horloge RP5C15 ($FFFC21) — Mega ST / Mega STE
     Cpu68k*  cpu     = nullptr;   // pour rafraîchir l'IPL après un accès MMIO
 
     // Profil machine : décide quel matériel optionnel répond (son DMA STE, etc.)

@@ -50,6 +50,12 @@ public:
     // s'en sert pour synchroniser le Shifter.
     int run(int cycles);
 
+    // Cycles consommés depuis le DÉBUT du quantum courant (l'appel run() en cours).
+    // L'ordonnanceur ne met `sched.now()` à jour qu'aux frontières de quantum ; une
+    // lecture MMIO en plein milieu (p.ex. le RTC) verrait donc un cycle périmé. Ce
+    // delta permet de reconstituer le cycle ABSOLU exact = sched.now() + ce delta.
+    int64_t cyclesRunInQuantum() const;
+
     // Recalcule l'IPL présenté au 68000 à partir de l'état des sources
     // (MFP niveau 6, VBL niveau 4). À appeler après tout changement d'IRQ.
     void updateIpl();
@@ -71,4 +77,8 @@ private:
     void initCore();   // (ré)initialise le cœur actif selon core_ (Musashi/Moira)
 
     CpuCore core_ = CpuCore::Musashi;   // cœur actif (après repli éventuel)
+
+    // Horloge Moira au début du quantum courant (cf. cyclesRunInQuantum). Pour
+    // Musashi on utilise directement m68k_cycles_run().
+    int64_t quantumStartClock_ = 0;
 };

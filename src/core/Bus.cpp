@@ -13,6 +13,7 @@
 #include "io/Fdc.hpp"
 #include "core/DmaSound.hpp"
 #include "core/Blitter.hpp"
+#include "io/Rtc.hpp"
 
 #include <cstdio>
 #include <fstream>
@@ -379,6 +380,8 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
     }
     if (addr >= 0xFFFC04 && addr < 0xFFFC08)   // ACIA MIDI : statut "prêt, rien à lire"
         return (addr & 2) ? 0x00 : 0x02;
+    if (addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine))
+        return rtc->read8(addr);          // RTC RP5C15 — Mega ST / Mega STE
     if (glue)
         return glue->read8(addr);         // MMU et reste du MMIO
     return 0xFF;
@@ -419,6 +422,10 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     }
     if (addr >= 0xFFFC04 && addr < 0xFFFC08)   // ACIA MIDI : écritures ignorées
         return;
+    if (addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine)) {
+        rtc->write8(addr, v);             // RTC RP5C15 — Mega ST / Mega STE
+        return;
+    }
     if (glue)
         glue->write8(addr, v);
 }

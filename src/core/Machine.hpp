@@ -23,6 +23,7 @@
 #include "io/Mfp.hpp"
 #include "io/Ikbd.hpp"
 #include "io/Fdc.hpp"
+#include "io/Rtc.hpp"
 
 class Machine {
 public:
@@ -82,6 +83,7 @@ public:
     Mfp       mfp;
     Ikbd      ikbd{mfp};
     Fdc       fdc{bus, psg, mfp};
+    Rtc       rtc;
     Cpu68k    cpu{bus};
     Scheduler sched;
 
@@ -103,6 +105,7 @@ private:
     int renderLine_  = 0;     // prochaine scanline à décoder
     int tbLine_      = 0;     // prochaine ligne pour le tic Timer B
     int hblLine_     = 0;     // prochaine ligne pour le HBL niveau 2
+    // (Le RTC avance en paresseux à la lecture, cf. Rtc::catchUp — plus de compteur ici.)
 
     // Positions au cycle DANS la ligne (STF PAL 50 Hz, cf. Hatari video.h).
     static constexpr int DE_END_CYCLE   = 376;   // fin Display-Enable → rendu ligne

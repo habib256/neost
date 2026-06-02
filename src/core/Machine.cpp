@@ -26,10 +26,14 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     bus.fdc     = &fdc;
     bus.dmasnd  = &dmasnd;
     bus.blitter = &blitter;
+    bus.rtc     = &rtc;     // horloge RP5C15 (Mega ST / Mega STE)
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
     // Horloge faisceau pour le compteur d'adresse vidéo $FF8205/07/09 : cycles
     // écoulés depuis le début de la trame courante (cf. Shifter::videoCounter).
     shifter.setBeamClock([this] { return sched.now() - frameStart_; });
+    // Horloge RTC : cycle CPU ABSOLU exact, même au milieu d'une lecture MMIO (on
+    // ajoute le delta intra-quantum, car sched.now() ne bouge qu'aux frontières).
+    rtc.setClock([this] { return sched.now() + cpu.cyclesRunInQuantum(); });
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
     ikbd.setScheduler(&sched);  // l'IKBD diffère sa réponse de reset ($F1)
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)
@@ -124,6 +128,8 @@ void Machine::onVbl() {
 // -----------------------------------------------------------------------------
 void Machine::runFrame() {
     frameStart_ = sched.now();
+    // Le RTC avance désormais en PARESSEUX à la lecture (cf. Rtc::catchUp), piloté
+    // par l'horloge émulée — rien à cadencer ici.
     scheduleFrameEvents();
 
     const int64_t frameEnd = frameStart_ + static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE;

@@ -249,6 +249,7 @@ int Cpu68k::run(int cycles) {
 #if defined(NEOST_HAS_MOIRA)
     if (g_moira) {
         const moira::i64 c0 = g_moira->getClock();
+        quantumStartClock_ = static_cast<int64_t>(c0);   // pour cyclesRunInQuantum()
         const moira::i64 target = c0 + cycles;
         while (g_moira->getClock() < target) {
             g_inBusError = false;                        // nouvelle instruction → faute précédente retombée
@@ -274,6 +275,17 @@ int Cpu68k::run(int cycles) {
     (void)cycles;
     return cycles;   // stub : avance le temps sans rien exécuter
 #endif
+}
+
+// Cycles écoulés depuis le début du quantum run() courant (cf. en-tête).
+int64_t Cpu68k::cyclesRunInQuantum() const {
+#if defined(NEOST_HAS_MOIRA)
+    if (g_moira) return static_cast<int64_t>(g_moira->getClock()) - quantumStartClock_;
+#endif
+#if defined(NEOST_HAS_MUSASHI)
+    return static_cast<int64_t>(m68k_cycles_run());
+#endif
+    return 0;
 }
 
 void Cpu68k::updateIpl() {
