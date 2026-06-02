@@ -174,12 +174,28 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   absent du STF. Les tests « BLiT » (court/long) des diagnostics **passent** ; EmuTOS
   STE peut l'utiliser pour le VDI (boot non régressé). Le STF garde la zone fautive
   (EmuTOS → VDI logiciel).
+- **Timer B en mode délai** (`Mfp::scheduleTimer` + `Scheduler::TIMER_B_DELAY`) : NeoST
+  ne gérait Timer B qu'en event-count (HBL). En mode délai (TBCR 1-7) il n'était jamais
+  daté → aucune IRQ. **Corrige « T0 MFP timer »** des diagnostics (qui programment Timer B
+  en délai et attendent ses interruptions). TBCR=8 reste l'event-count piloté par la trame.
+- **Lecteur B** (`--diskb <img>` headless, `Machine::loadDiskB`, export WASM
+  `_neost_mount_disk_b`) : monter une 2ᵉ image fait passer « Cannot write drive B ».
+- **RTC RP5C15** (`src/io/Rtc.{hpp,cpp}`, Mega ST / Mega STE, `$FFFC21-$FFFC3F`) : horloge
+  temps réel sauvegardée par pile. Modèle PARESSEUX déterministe (≠ Hatari qui lit le
+  `localtime` hôte, non reproductible) : on retient le cycle CPU du dernier top de seconde
+  et on rattrape les secondes écoulées à chaque accès (`Rtc::catchUp`), avec un cycle
+  absolu exact même en pleine lecture MMIO grâce à `Cpu68k::cyclesRunInQuantum()`. Gère le
+  registre RESET (`$FFFC3F` bit1 = reset du diviseur sous-seconde) et le débordement
+  calendaire BCD complet (jusqu'à l'année). **Corrige « C0 No clock installed » ET « C1
+  clock increment error »** du `MegaSTE_Diagnostic`.
 - **Cartouches de diagnostic** (`carts/`, magic `$FA52235F`) via `--cart` : rapport
   à l'écran + port série. Grâce aux corrections ci-dessus, **les TROIS cartouches
-  (`ST_Diagnostic`, `STE_Test`, `MegaSTE_Diagnostic`) bootent jusqu'à leur menu
-  interactif** sur les DEUX cœurs, avec un vrai TOS. La batterie de tests internes du
-  `ST_Diagnostic` passe **7/8** (RAM, ROM, Color, Keyboard, Audio, RTC, BLiT ; seul
-  « T0 MFP timer » échoue — cycle-accuracy). Non régressif : EmuTOS boote, jeux chargent.
+  (`ST_Diagnostic`, `STE_Test`, `MegaSTE_Diagnostic`) passent leur batterie de tests
+  internes (Z) SANS ERREUR**, sur les DEUX cœurs (musashi + moira), avec un vrai TOS :
+  `ST_Diagnostic` Z entièrement propre (R/O/C/K/A/T/L/G), `STE_Test` Z « Pass » (vert),
+  `MegaSTE` Z « Tests Completed » sans ligne d'erreur. Non régressif : EmuTOS boote
+  (bureau STE & Mega STE), jeux chargent. (Restes type « Hard error »/MIDI/RS232/VME/FPU =
+  périphériques absents, pas des bugs ; 256K = config MMU figée du diag.)
 
 ## Frontend & confort
 
