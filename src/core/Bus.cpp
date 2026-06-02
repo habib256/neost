@@ -147,7 +147,12 @@ namespace {
 int64_t Bus::mmuTranslate(uint32_t addr) const {
     const uint8_t conf = glue ? glue->memConfig_ : memConfigForBytes(ram.size());
     const uint32_t mmuB0 = mmuConfSize(static_cast<uint8_t>((conf >> 2) & 3));
-    const uint32_t mmuB1 = mmuConfSize(static_cast<uint8_t>(conf & 3));
+    // STMemory_MMU_ConfToBank (Hatari) : seuls le ST/Mega ST (Config_IsMachineST,
+    // MMU non-IMP) utilisent les bits 0-1 pour la banque 1 ; STE/Mega STE (IMP)
+    // ignorent ces bits et calquent la banque 1 sur la banque 0.
+    const uint32_t mmuB1 = (machine == MachineType::St || machine == MachineType::MegaSt)
+                               ? mmuConfSize(static_cast<uint8_t>(conf & 3))
+                               : mmuB0;
     uint32_t ramB0, ramB1; ramBanks(ram.size(), ramB0, ramB1);
 
     uint32_t bankStart, ramSz, mmuSz;
