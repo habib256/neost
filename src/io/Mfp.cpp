@@ -17,6 +17,7 @@ uint8_t Mfp::read8(uint32_t addr) {
             if (riLine_)        v &= ~0x40;  // bit6 = RS232 RI (actif bas)
             if (fdcLine_)       v &= ~0x20;  // bit5 = FDC (actif bas)
             if (aciaLineKbd_ || aciaLineMidi_) v &= ~0x10;  // bit4 = ACIA clavier OU MIDI (wire-OR, actif bas)
+            if (gpuLine_)       v &= ~0x08;  // bit3 = blitter GPU_DONE (actif bas)
             if (ctsLine_)       v &= ~0x04;  // bit2 = RS232 CTS (actif bas)
             if (dcdLine_)       v &= ~0x02;  // bit1 = RS232 DCD (actif bas)
             if (busyLine_)      v &= ~0x01;  // bit0 = Centronics BUSY (actif bas)

@@ -5,6 +5,7 @@
 // =============================================================================
 #include "core/Blitter.hpp"
 #include "core/Bus.hpp"
+#include "io/Mfp.hpp"
 
 namespace {
     // LOP : l'opérateur logique référence-t-il HOP (source/halftone) et/ou la
@@ -57,7 +58,11 @@ void Blitter::run() {
     uint16_t       yCount  = rd16(0x38);
     int            htLine  = ctrl & 0x0F;             // ligne halftone courante
 
-    if (xReset == 0 || yCount == 0) { reg_[0x3C] &= ~0x80; return; }   // rien à faire
+    // Démarrage dégénéré (xReset==0 ou yCount==0) : transfert déjà « complet » →
+    // efface BUSY (bit7) ET HOG (bit6), comme Hatari Blitter_Control_WriteByte
+    // (BlitterRegs.ctrl &= ~(0x80|0x40)). Pas d'IRQ GPIP3 ici (Hatari ne baisse pas
+    // la ligne GPU_DONE sur ce chemin, seulement à la vraie fin de transfert).
+    if (xReset == 0 || yCount == 0) { reg_[0x3C] &= ~0xC0; return; }   // rien à faire
 
     // Registre à décalage source (32 bits) + dernier mot lu (pour NFSR).
     uint32_t buffer = 0;
@@ -149,4 +154,12 @@ void Blitter::run() {
     wr16(0x36, xCount);
     wr16(0x38, yCount);
     reg_[0x3C] = uint8_t((ctrl & 0x30) | (htLine & 0x0F));   // BUSY(7)+HOG(6) effacés
+
+    // Fin de transfert (yCount==0) : le blitter abaisse la ligne GPU_DONE (GPIP3,
+    // active bas) et demande l'IRQ canal 3 (cf. Hatari Blitter_Start ligne 916).
+    // raise() respecte IERB → si le canal 3 n'est pas activé, aucun bit IPR n'est
+    // posé (inoffensif). updateIpl() après l'écriture MMIO de $FF8A3C présentera
+    // l'IRQ pendante. N'est atteint que sur Mega ST/STE/Mega STE (le blitter n'est
+    // câblé au bus que sur ces modèles → auto-gaté).
+    if (bus_.mfp) { bus_.mfp->setBlitterLine(true); bus_.mfp->raise(Mfp::SRC_GPU); }
 }

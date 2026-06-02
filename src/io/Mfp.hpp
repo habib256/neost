@@ -26,6 +26,7 @@ class Mfp {
 public:
     static constexpr int SRC_DCD    = 1;   // RS232 DCD (GPIP1)
     static constexpr int SRC_CTS    = 2;   // RS232 CTS (GPIP2)
+    static constexpr int SRC_GPU    = 3;   // Blitter GPU_DONE (GPIP3) — Mega ST/STE/Mega STE
     static constexpr int SRC_TIMERD = 4;   // Timer D (RS232 baud / délai)
     static constexpr int SRC_TIMERC = 5;   // tic système 200 Hz (délai)
     static constexpr int SRC_ACIA   = 6;   // clavier/MIDI (GPIP4)
@@ -77,6 +78,11 @@ public:
     // d'une commande disque en pollant GPIP bit5 (timeout_gpip).
     void setFdcLine(bool active) { fdcLine_ = active; }
 
+    // Ligne GPU_DONE du blitter sur GPIP3 (active BAS). Le blitter la met HAUT au
+    // démarrage puis BAS à la fin du transfert (cf. Hatari Blitter_Start). N'existe
+    // que sur Mega ST/STE/Mega STE (le blitter n'est câblé au bus que sur ces modèles).
+    void setBlitterLine(bool active) { gpuLine_ = active; }
+
     // Type de moniteur lu sur GPIP bit7 : couleur (basse rés) ou mono (haute rés).
     // À changer AVANT un reset pour que TOS détecte la bonne résolution au boot.
     void setColorMonitor(bool c) { colorMonitor_ = c; }
@@ -127,6 +133,7 @@ public:
     bool    aciaLineKbd_  = false; // ligne ACIA clavier (true = octet dispo → GPIP4 bas)
     bool    aciaLineMidi_ = false; // ligne ACIA MIDI    (true = octet dispo → GPIP4 bas)
     bool    fdcLine_  = false;    // ligne FDC  (true = commande finie → GPIP5 bas)
+    bool    gpuLine_  = false;    // ligne blitter GPU_DONE (true = blit fini → GPIP3 bas)
     bool    colorMonitor_ = true; // GPIP bit7 : true = couleur (basse rés)
     bool    busyLine_ = false;    // Centronics BUSY (GPIP0, actif bas) — bouclage port parallèle
     bool    ctsLine_  = false;    // RS232 CTS (GPIP2, actif bas) — bouclage RTS
