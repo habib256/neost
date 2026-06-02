@@ -71,16 +71,19 @@ ST_Diagnostic, STE_Test, MegaSTE_Diagnostic.
 **ST_Diagnostic batterie Z : 7/8 PASSENT** ; **STE_Test : ROM OK + BLiT OK**. Avec EmuTOS
 le ROM donne « cs error » (checksums ≠ TOS Atari → utiliser un vrai TOS).
 
+10. **Adresse DMA disquette relisible** (`$FF8609/0B/0D`, `Fdc::read8`) — le compteur
+    incrémente pendant le transfert (cf. Hatari `FDC_GetDMAAddress`). **A corrigé le
+    « F8 DMA count error »** de STE_Test (NeoST renvoyait `$FF`). + WRITE/READ TRACK
+    ($F0/$E0) consomment la DMA.
+
 **Reste à faire (vers « zéro erreur ») :**
-- **T0 MFP timer** : relations cycle-EXACTES Timer A / HBL (`$208`) / VBL (`$292`) /
-  Timer B (`$48`) — boucles `FA2D44`/`FA2DF6`. Précision cycle-exact (quantum < ligne)
-  → cf. § « Précision temporelle » ci-dessous. (Affecte les 3 cartouches.)
-- **F8 DMA count error** (STE_Test floppy quick test, track 0) : à investiguer côté
-  FDC/DMA (`Fdc.cpp` : `dmaAddr_` avance bien de 512/secteur, `dmaCount_`→0 ; le
-  « DMA count » vérifié par le diag diverge subtilement — comparer à Hatari fdc.c).
-- **Drive B / Hard disk** : « Cannot write drive B », « Hard error » — périphériques
-  ABSENTS (un vrai ST sans 2e lecteur / disque dur donnerait les mêmes). Pour « zéro
-  erreur » de la batterie complète il faudrait les ATTACHER (pas un bug NeoST).
+- **T0 MFP timer** — SEUL bug NeoST restant qui affecte les 3 cartouches : le test
+  copie du code en `$4000`, programme Timer A/B + HBL/VBL et mesure des interruptions
+  dans une fenêtre **sous-ligne** ; le quantum-ligne (512 cyc) de NeoST ne suffit pas.
+  → chantier « Précision temporelle » ci-dessous. **C'est LE blocage architectural.**
+- **Drive B / Hard disk** (PAS un bug NeoST) : « Cannot write drive B », « Hard error »
+  = périphériques ABSENTS. Un vrai ST minimal donnerait les mêmes. Pour « zéro erreur »
+  de la batterie complète il faudrait ATTACHER un 2ᵉ lecteur + un disque dur.
 - `STE_Test_v1.9` : écran bleu sans texte. `MegaSTE_Diagnostic` : « VME/FPU not found » puis stop.
 - **256K : PAS un bug NeoST** (écarté). Le diag FIGE `conf=$05` (512+512) au démarrage
   sans jamais l'adapter ; à 256K (banques 128K) ça sur-déclare → aliasing `$8`↔`$208`,
