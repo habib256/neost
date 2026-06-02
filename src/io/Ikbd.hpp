@@ -69,4 +69,14 @@ private:
     int inBufLen_ = 0;                       // octets déjà reçus pour la commande en cours
     int cmdExpected_ = 0;                    // octets attendus au total (0 = aucune commande en cours)
     std::function<void(uint8_t&, uint8_t&)> joyProbe_;   // état manettes (fixture de bouclage)
+
+    // --- Mode souris (cf. Hatari ikbd.c KeyboardProcessor.MouseMode) -----------
+    // REL = paquets relatifs $F8 (par défaut, bureau EmuTOS) ; ABS = position
+    // absolue accumulée et lue à la demande via $0D ; OFF = souris désactivée.
+    enum MouseMode { REL, ABS, OFF };
+    MouseMode mouseMode_ = REL;
+    uint16_t absX_ = 0, absY_ = 0;           // position absolue courante (mode ABS)
+    uint16_t absMaxX_ = 0, absMaxY_ = 0;     // bornes inclusives (commande $09)
+    uint8_t  prevAbsButtons_ = 0;            // boutons signalés à la dernière interrogation $0D
+    bool     prevL_ = false, prevR_ = false; // état persistant des boutons (mode ABS)
 };

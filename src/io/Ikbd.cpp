@@ -114,6 +114,41 @@ void Ikbd::dispatchCommand() {
                 else        pushRx(0xF1);
             }
             break;
+        case 0x09:
+            // $09 = SET ABSOLUTE MOUSE POSITION REPORTING (cf. Hatari
+            // IKBD_Cmd_AbsMouseMode) : bascule en mode absolu ; les bornes MaxX/
+            // MaxY sont inclusives (octets MSB/LSB). Plus de paquet $F8 émis.
+            mouseMode_ = ABS;
+            absMaxX_ = uint16_t((inBuf_[1] << 8) | inBuf_[2]);
+            absMaxY_ = uint16_t((inBuf_[3] << 8) | inBuf_[4]);
+            break;
+        case 0x0D: {
+            // $0D = INTERROGATE MOUSE POSITION (cf. Hatari IKBD_Cmd_ReadAbsMousePos) :
+            // l'IKBD renvoie un paquet $F7 + boutons + X(MSB,LSB) + Y(MSB,LSB).
+            // Nibble boutons : droite-bas=0x01 / droite-haut=0x02 / gauche-bas=0x04 /
+            // gauche-haut=0x08, relatif à la dernière interrogation (on masque les
+            // bits déjà signalés via prevAbsButtons_).
+            uint8_t buttons = 0;
+            buttons |= prevR_ ? 0x01 : 0x02;
+            buttons |= prevL_ ? 0x04 : 0x08;
+            const uint8_t prev = prevAbsButtons_;
+            prevAbsButtons_ = buttons;
+            buttons &= uint8_t(~prev);
+            pushRx(0xF7);
+            pushRx(buttons);
+            pushRx(uint8_t(absX_ >> 8));
+            pushRx(uint8_t(absX_ & 0xFF));
+            pushRx(uint8_t(absY_ >> 8));
+            pushRx(uint8_t(absY_ & 0xFF));
+            break;
+        }
+        case 0x0E:
+            // $0E = LOAD MOUSE POSITION (cf. Hatari IKBD_Cmd_SetInternalMousePos) :
+            // octet 1 = filler ; X = octets 2/3 ; Y = octets 4/5 (système mis à
+            // l'échelle ; aucun clamp ici, comme Hatari).
+            absX_ = uint16_t((inBuf_[2] << 8) | inBuf_[3]);
+            absY_ = uint16_t((inBuf_[4] << 8) | inBuf_[5]);
+            break;
         case 0x16: {
             // $16 = « interroger les joysticks » : l'IKBD répond IMMÉDIATEMENT par
             // un paquet $FD + état joystick 0 + état joystick 1 (cf. Hatari ikbd.c
@@ -146,6 +181,20 @@ void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
     // bit1=gauche), puis Δx et Δy signés sur 8 bits. Les en-têtes $F8-$FB ne
     // chevauchent aucun scancode (max ~$F2), d'où l'absence d'ambiguïté pour le
     // parseur IKBD d'EmuTOS qui lit ces flux entremêlés sur la même ACIA.
+    if (mouseMode_ == ABS) {
+        // Mode absolu (cf. Hatari ikbd.c, AUTOMODE_MOUSEABS) : on accumule Δ dans
+        // la position courante en la bornant à [0, Max], et on retient l'état des
+        // boutons. Aucun paquet $F8 n'est émis ; l'hôte lira la position via $0D.
+        int x = static_cast<int>(absX_) + dx;
+        int y = static_cast<int>(absY_) + dy;
+        if (x < 0) x = 0; else if (x > absMaxX_) x = absMaxX_;
+        if (y < 0) y = 0; else if (y > absMaxY_) y = absMaxY_;
+        absX_ = static_cast<uint16_t>(x);
+        absY_ = static_cast<uint16_t>(y);
+        prevL_ = left;
+        prevR_ = right;
+        return;
+    }
     auto clamp8 = [](int v) -> uint8_t {
         if (v < -128) v = -128; else if (v > 127) v = 127;
         return static_cast<uint8_t>(static_cast<int8_t>(v));
