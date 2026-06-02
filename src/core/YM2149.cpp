@@ -58,10 +58,14 @@ void YM2149::synthesize(float* out, uint32_t frames, uint32_t sampleRate) {
 
     const uint8_t mix = regs_[7];                   // bits 0-2 tons, 3-5 bruit (actifs à 0)
 
-    // Enveloppe : période 16 bits (R11/R12), un pas de niveau à fclock/256/période.
+    // Enveloppe : période 16 bits (R11/R12), un pas de niveau à fclock/16/période.
+    // Comme le compteur d'enveloppe de Hatari (YM2149_DoSamples_250) tick au même
+    // rythme que les compteurs de ton (un cran par cycle YM, comparé à Env_per), le
+    // diviseur est 16.0 comme pour le ton — la rampe complète de 16 crans dure alors
+    // 256*envPer/CLOCK (l'ancien 256.0 la rendait 16× trop lente).
     const uint8_t shape   = regs_[13] & 0x0F;
     const int     envPer  = (regs_[11] | (regs_[12] << 8)) ? (regs_[11] | (regs_[12] << 8)) : 1;
-    const double  envStepFreq = CLOCK_HZ / (256.0 * envPer);
+    const double  envStepFreq = CLOCK_HZ / (16.0 * envPer);
     const double  incE = envStepFreq / sampleRate;
     if (envReload_) {                               // R13 écrit → réinitialise l'enveloppe
         envReload_ = false;
