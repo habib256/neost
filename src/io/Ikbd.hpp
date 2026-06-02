@@ -13,6 +13,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
+#include <array>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -52,10 +53,20 @@ private:
     void pushRx(uint8_t b);                  // empile un octet IKBD → CPU
     void raiseIfReady();                     // tire GPIP4 si octet dispo et RIE actif
 
+    // Renvoie le nombre total d'octets (commande incluse) attendu pour `opcode`,
+    // d'après la table KeyboardCommands[] de Hatari (ikbd.c). 0 = opcode inconnu
+    // (traité comme une commande mono-octet ignorée).
+    static int cmdLength(uint8_t opcode);
+
+    // Exécute la commande IKBD complète accumulée dans inBuf_ (inBuf_[0] = opcode).
+    void dispatchCommand();
+
     Mfp& mfp_;
     Scheduler* sched_ = nullptr;             // pour différer la réponse de reset
     std::deque<uint8_t> rx_;                 // file IKBD → CPU
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
-    uint8_t cmd0_ = 0;                       // dernier octet de commande (détection reset 0x80,0x01)
+    std::array<uint8_t, 8> inBuf_{};         // accumulation des octets d'une commande multi-octets
+    int inBufLen_ = 0;                       // octets déjà reçus pour la commande en cours
+    int cmdExpected_ = 0;                    // octets attendus au total (0 = aucune commande en cours)
     std::function<void(uint8_t&, uint8_t&)> joyProbe_;   // état manettes (fixture de bouclage)
 };

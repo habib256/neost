@@ -32,6 +32,34 @@ uint8_t Ikbd::read8(uint32_t addr) {
     return b;
 }
 
+int Ikbd::cmdLength(uint8_t opcode) {
+    // Table portée de Hatari ikbd.c KeyboardCommands[] : nombre TOTAL d'octets
+    // (opcode inclus) que l'IKBD attend avant d'exécuter la commande. On ne
+    // référence que les commandes que NeoST encadre ; les autres opcodes sont
+    // traités comme des commandes mono-octet ignorées (NOP, cf. Hatari).
+    switch (opcode) {
+        case 0x07: return 2;   // MouseAction
+        case 0x09: return 5;   // AbsMouseMode
+        case 0x0A: return 3;   // MouseCursorKeycodes
+        case 0x0B: return 3;   // SetMouseThreshold
+        case 0x0C: return 3;   // SetMouseScale
+        case 0x0E: return 6;   // SetInternalMousePos
+        case 0x0F: return 1;   // SetYAxisDown
+        case 0x10: return 1;   // SetYAxisUp
+        case 0x12: return 1;   // DisableMouse
+        case 0x14: return 1;   // JoystickAuto
+        case 0x15: return 1;   // StopJoystick
+        case 0x16: return 1;   // InterrogateJoystick
+        case 0x17: return 2;   // SetJoystickMonitoring
+        case 0x18: return 1;   // FireButton
+        case 0x1A: return 1;   // DisableJoysticks
+        case 0x1B: return 7;   // SetClock
+        case 0x1C: return 1;   // ReadClock
+        case 0x80: return 2;   // Reset
+        default:   return 0;   // inconnu → mono-octet ignoré
+    }
+}
+
 void Ikbd::write8(uint32_t addr, uint8_t v) {
     if ((addr & 2) == 0) {
         // $FFFC00 : registre de contrôle (diviseur, format, RX int enable bit7).
@@ -39,31 +67,72 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         raiseIfReady();
         return;
     }
-    // $FFFC02 : octet de commande envoyé à l'IKBD. On gère le reset 0x80,0x01.
-    if (cmd0_ == 0x80 && v == 0x01) {
-        // L'IKBD fait son auto-test puis renvoie $F1 APRÈS ~502000 cycles (valeur
-        // Hatari IKBD_RESET_CYCLES). Répondre INSTANTANÉMENT casse les diagnostics
-        // qui arment l'IRQ ACIA puis attendent la réponse : l'IRQ serait levée
-        // avant l'armement (donc perdue) → « Keyboard not responding ». On diffère
-        // donc via l'ordonnanceur ; à défaut (pas de scheduler), repli immédiat.
-        constexpr int64_t kIkbdResetCycles = 502000;
-        if (sched_) sched_->schedule(Scheduler::IKBD, sched_->now() + kIkbdResetCycles);
-        else        pushRx(0xF1);
-        cmd0_ = 0;
-    } else if (v == 0x16) {
-        // $16 = « interroger les joysticks » : l'IKBD répond IMMÉDIATEMENT par un
-        // paquet $FD + état joystick 0 + état joystick 1 (cf. Hatari ikbd.c
-        // IKBD_Cmd_ReturnJoysticks). État neutre $00 par défaut (suffit à éviter
-        // « J2 Joystick time-out ») ; sous fixture de bouclage, la sonde reflète le
-        // port parallèle (cf. Machine) pour le test « Printer/Joystick » complet.
-        uint8_t joy0 = 0, joy1 = 0;
-        if (joyProbe_) joyProbe_(joy0, joy1);
-        pushRx(0xFD);
-        pushRx(joy0);
-        pushRx(joy1);
-        cmd0_ = v;
-    } else {
-        cmd0_ = v;                   // autres commandes : ignorées (modes souris, etc.)
+    // $FFFC02 : octet de commande envoyé à l'IKBD. Parseur multi-octets calqué
+    // sur Hatari IKBD_RunKeyboardCommand : on accumule dans inBuf_ jusqu'à ce que
+    // le nombre d'octets attendu (table KeyboardCommands[]) soit atteint, puis on
+    // exécute la commande et on vide le tampon.
+    if (cmdExpected_ == 0) {
+        // Pas de commande en cours : ce premier octet est l'opcode.
+        const int len = cmdLength(v);
+        if (len <= 1) {
+            // Mono-octet (ou opcode inconnu traité en NOP). On dispatche tout de suite.
+            inBuf_[0] = v;
+            inBufLen_ = 1;
+            dispatchCommand();
+            inBufLen_ = 0;
+        } else {
+            inBuf_[0] = v;
+            inBufLen_ = 1;
+            cmdExpected_ = len;
+        }
+        return;
+    }
+    // Commande en cours : on accumule les octets de paramètre.
+    if (inBufLen_ < static_cast<int>(inBuf_.size()))
+        inBuf_[inBufLen_] = v;
+    ++inBufLen_;
+    if (inBufLen_ >= cmdExpected_) {
+        dispatchCommand();
+        inBufLen_ = 0;
+        cmdExpected_ = 0;
+    }
+}
+
+void Ikbd::dispatchCommand() {
+    const uint8_t opcode = inBuf_[0];
+    switch (opcode) {
+        case 0x80:
+            // Reset 0x80,0x01 : l'IKBD fait son auto-test puis renvoie $F1 APRÈS
+            // ~502000 cycles (valeur Hatari IKBD_RESET_CYCLES). Répondre
+            // INSTANTANÉMENT casse les diagnostics qui arment l'IRQ ACIA puis
+            // attendent la réponse : l'IRQ serait levée avant l'armement (donc
+            // perdue) → « Keyboard not responding ». On diffère via
+            // l'ordonnanceur ; à défaut (pas de scheduler), repli immédiat.
+            if (inBuf_[1] == 0x01) {
+                constexpr int64_t kIkbdResetCycles = 502000;
+                if (sched_) sched_->schedule(Scheduler::IKBD, sched_->now() + kIkbdResetCycles);
+                else        pushRx(0xF1);
+            }
+            break;
+        case 0x16: {
+            // $16 = « interroger les joysticks » : l'IKBD répond IMMÉDIATEMENT par
+            // un paquet $FD + état joystick 0 + état joystick 1 (cf. Hatari ikbd.c
+            // IKBD_Cmd_ReturnJoysticks). État neutre $00 par défaut (suffit à
+            // éviter « J2 Joystick time-out ») ; sous fixture de bouclage, la sonde
+            // reflète le port parallèle (cf. Machine) pour le test « Printer/
+            // Joystick » complet.
+            uint8_t joy0 = 0, joy1 = 0;
+            if (joyProbe_) joyProbe_(joy0, joy1);
+            pushRx(0xFD);
+            pushRx(joy0);
+            pushRx(joy1);
+            break;
+        }
+        default:
+            // Autres commandes (modes souris, axe Y, joystick auto, horloge…) :
+            // simples no-op pour l'instant — le parseur a déjà consommé tous les
+            // octets de paramètre. Implémentations dédiées dans des tâches suivantes.
+            break;
     }
 }
 
