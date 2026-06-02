@@ -69,17 +69,23 @@ public:
     uint8_t selected_ = 0;
 
 private:
-    // Table de volume logarithmique 16 niveaux (normalisée 0..1), typique AY/YM.
-    static const std::array<float, 16> kVolume;
+    // Table de volume D/A 5 bits (32 niveaux, normalisée 0..1), MESURÉE sur un vrai
+    // ST (Hatari ymout1c5bit[32], chaque valeur ÷ 65535). Plus fidèle que l'ancienne
+    // approximation log 16 niveaux.
+    static const std::array<float, 32> kVolume;
+
+    // Conversion volume fixe 4 bits → index 5 bits dans kVolume (Hatari YmVolume4to5) :
+    // volume5 = volume4*2+1, sauf 0 et 1 qui restent 0 et 1 → [0,15] mappé sur [0,31].
+    static const std::array<uint8_t, 16> kVolume4to5;
 
     // État de synthèse (phase par voie + LFSR de bruit), thread audio.
     std::array<double, 3> phase_{};   // accumulateurs de phase des voies A/B/C
     uint32_t noiseLfsr_ = 1;          // registre à décalage du générateur de bruit
     double   noisePhase_ = 0.0;
 
-    // État de l'enveloppe (générateur de volume 0..15), thread audio.
+    // État de l'enveloppe (générateur de volume 0..31), thread audio.
     double envPhase_  = 0.0;          // accumulateur de phase de l'enveloppe
-    int    envLevel_  = 15;           // niveau courant (0..15)
+    int    envLevel_  = 31;           // niveau courant (0..31)
     int    envDir_    = -1;           // sens : +1 montée, -1 descente
     bool   envHold_   = false;        // enveloppe figée (fin de cycle non répété)
     bool   envReload_ = false;        // R13 écrit → réinitialiser (posé par le CPU)
