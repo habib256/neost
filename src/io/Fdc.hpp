@@ -85,6 +85,19 @@ private:
     uint8_t  readAddress();
     uint8_t  writeTrack();                      // WRITE TRACK ($F0) : formatage (best-effort)
     uint8_t  readTrack();                       // READ TRACK ($E0)
+
+    // --- Contrôleur ACSI (disque dur, $FF8606 bit DMA_CSACSI) ----------------
+    // Variante Atari de SCSI : commande de 6 octets envoyée octet par octet via la
+    // DMA ($FF8604) ; après chaque octet accepté, le contrôleur lève l'IRQ HDC
+    // (= INTRQ/GPIP5) pour que le CPU envoie le suivant (cf. Hatari Acsi_WriteCommandByte).
+    // Sans disque sur la cible → pas d'IRQ → le pilote conclut « pas de disque ».
+    void     writeAcsi(uint32_t addr, uint8_t v);
+    void     executeAcsi();                     // exécute la commande complète (DMA + statut)
+    std::vector<uint8_t> hd_;                    // disque dur virtuel (cible 0), alloué à la demande
+    uint8_t  acsiCmd_[6] = {0};
+    int      acsiByteCount_ = 0;
+    uint8_t  acsiTarget_ = 0;
+    uint8_t  acsiStatus_ = 0;                    // statut renvoyé (0 = OK)
     int      currentSide() const;               // face d'après le port A du PSG
     int      selectedDrive() const;             // 0 = A, 1 = B, -1 = aucun (PSG port A)
     uint8_t  dmaStatus() const;

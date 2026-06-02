@@ -51,6 +51,23 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     });
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
     ikbd.setScheduler(&sched);  // l'IKBD diffère sa réponse de reset ($F1)
+    // Fixture de bouclage parallèle→joystick (test « Printer/Joystick », sous
+    // --loopback) : le diagnostic écrit un motif sur le port parallèle (PSG port B,
+    // R15) et attend de le relire sur les lignes joystick. Câblage (décodé du test) :
+    //   • bits 0-2 de B → n : direction 1<<n (nibble bas → joy0, nibble haut → joy1)
+    //   • bit7 de B → bouton (feu) joystick 0 ; bit6 de B → bouton joystick 1
+    // Ligne BUSY Centronics (GPIP0) : sous fixture, le port parallèle (port B) bit7
+    // pilote BUSY, inversé (bit7=1 → BUSY assertée → GPIP0=0). Le test « P1 Busy ».
+    psg.setPortBSink([this](uint8_t b) {
+        if (mfp.loopback()) { mfp.setBusyLine((b & 0x80) != 0); cpu.updateIpl(); }
+    });
+    ikbd.setJoystickProbe([this](uint8_t& joy0, uint8_t& joy1) {
+        if (!mfp.loopback()) { joy0 = joy1 = 0; return; }   // pas de fixture → neutre
+        const uint8_t b = psg.regs_[15];
+        const uint8_t dir = uint8_t(1u << (b & 7));          // direction encodée sur 8 bits
+        joy0 = uint8_t((dir & 0x0F) | ((b & 0x80) ? 0x80 : 0));   // nibble bas + feu (bit7)
+        joy1 = uint8_t(((dir >> 4) & 0x0F) | ((b & 0x40) ? 0x80 : 0)); // nibble haut + feu (bit6)
+    });
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)
     dmasnd.setScheduler(&sched);   // le son DMA date sa fin de trame (→ Timer A)
     dmasnd.setMfp(&mfp);

@@ -49,8 +49,18 @@ awk '/^FCxxxx:/{...}' t.txt                 # désassembler la zone bloquée
 ```
 
 Options : `--cpu musashi|moira` (TESTER LES DEUX), `--machine st|megast|ste|megaste`,
-`--mem 256k|512k|1m|2m|4m`, `--cart FILE` (cartouche `$FA0000`), `--disk`, `--mono`
-(moniteur mono → haute rés), `--until-pc HEX`, `--walk-mouse` (injection souris).
+`--mem 256k|512k|1m|2m|4m`, `--cart FILE` (cartouche `$FA0000`), `--disk`, `--diskb`
+(2e lecteur), `--mono` (moniteur mono → haute rés), `--until-pc HEX`, `--walk-mouse`
+(injection souris), `--keys "STR"` (pilote les menus de diag), `--loopback`.
+
+**Connecteurs de bouclage (`--loopback`)** : les tests « individuels » du diagnostic
+(M MIDI, S Serial, P Printer/Joystick) supposent un câble de bouclage branché (TxD→RxD,
+RTS→CTS, parallèle→joystick…). NeoST les modélise mais SEULEMENT sous `--loopback`, et le
+branche APRÈS l'injection `--keys` — sinon l'écho du rapport série imprimé en console au
+boot reviendrait en réception et serait lu comme entrée terminal → le test clavier
+échouerait. Le disque dur ACSI (test J/H) n'a PAS besoin de `--loopback`. **VME RAM / FPU
+(MegaSTE) « not found » est CORRECT** : Hatari n'émule pas le VME (`scu_vme.c`) et défaut
+`FPU_NONE` — matériel optionnel absent d'un MegaSTE de base.
 
 **Méthode imposée (ordre strict)** : quand un test plante, NE PAS désassembler ni
 chercher le point de divergence d'emblée. D'ABORD comparer la source de vérité

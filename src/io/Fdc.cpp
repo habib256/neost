@@ -9,6 +9,7 @@
 #include "io/Mfp.hpp"
 
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 
 // --- Bits DMA control ($FF8606), cf. EmuTOS bios/dma.h -----------------------
@@ -152,6 +153,7 @@ uint8_t Fdc::read8(uint32_t addr) {
         case 0x4: return 0;                         // data, octet haut
         case 0x5:                                    // data, octet bas
             if (dmaMode_ & DMA_SCREG) return uint8_t(dmaCount_);
+            if (dmaMode_ & DMA_CSACSI) return acsiStatus_;   // statut du contrôleur ACSI
             switch (dmaMode_ & (DMA_A1 | DMA_A0)) {
                 case 0: {             // FDC_CS : lire le statut efface l'INTRQ
                     setIntrq(false);
@@ -186,6 +188,7 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
         case 0x4: dataHi_ = v; return;               // data, octet haut (latch)
         case 0x5:                                    // data, octet bas → action
             if (dmaMode_ & DMA_SCREG) { dmaCount_ = uint16_t((dataHi_ << 8) | v); return; }
+            if (dmaMode_ & DMA_CSACSI) { writeAcsi(addr, v); return; }   // disque dur ACSI
             switch (dmaMode_ & (DMA_A1 | DMA_A0)) {
                 case 0:               executeCommand(v); return;   // FDC_CS : commande
                 case DMA_A0:          track_  = v;       return;   // FDC_TR
@@ -329,6 +332,87 @@ void Fdc::onIndexPulse() {
 static inline uint32_t lsnOffset(int track, int side, int sector, int spt, int sides) {
     const int lsn = (track * sides + side) * spt + (sector - 1);
     return uint32_t(lsn) * 512u;
+}
+
+// -----------------------------------------------------------------------------
+//  Contrôleur ACSI (disque dur). Port minimal de Hatari hdc.c : commande de 6
+//  octets (classe 0) reçue octet par octet via la DMA, transfert DMA, statut.
+//  Un disque virtuel EN MÉMOIRE (cible 0) suffit au « Hard Disk DMA Exerciser »
+//  du diagnostic (écrit puis relit et vérifie — l'aller-retour doit être fidèle).
+// -----------------------------------------------------------------------------
+static constexpr uint32_t ACSI_DISK_CAP = 64u * 1024u * 1024u;   // plafond du disque virtuel
+
+void Fdc::writeAcsi(uint32_t /*addr*/, uint8_t v) {
+    setIntrq(false);                       // efface l'IRQ (réarmée si l'octet est accepté)
+    // Le « pin A1 » de l'ACSI est câblé sur le bit de contrôle DMA_A0 (0x02) : 0 pour le
+    // 1er octet du paquet (sélection cible + opcode), 1 pour les octets suivants. On
+    // ignore ce pin pour le 2e octet (byteCount==1), comme le vrai matériel (cf. Hatari).
+    const bool a1 = (dmaMode_ & DMA_A0) != 0;
+    if (!a1 && acsiByteCount_ != 1) {
+        // 1er octet du paquet (A1=0) : bits 7-5 = cible, bits 4-0 = opcode.
+        acsiTarget_ = uint8_t((v >> 5) & 7);
+        acsiCmd_[0] = uint8_t(v & 0x1F);
+        acsiByteCount_ = 1;
+    } else {
+        if (acsiByteCount_ < 6) acsiCmd_[acsiByteCount_++] = v;
+        if (acsiByteCount_ == 6) { executeAcsi(); acsiByteCount_ = 0; }
+    }
+    // Seule la cible 0 porte un disque : on acquitte (IRQ HDC = INTRQ/GPIP5) pour
+    // que le CPU poursuive. Toute autre cible reste muette → « pas de disque ».
+    if (acsiTarget_ == 0) setIntrq(true);
+}
+
+void Fdc::executeAcsi() {
+    const uint8_t op = acsiCmd_[0];
+    const uint32_t lba = (uint32_t(acsiCmd_[1] & 0x1F) << 16) | (uint32_t(acsiCmd_[2]) << 8) | acsiCmd_[3];
+    const int      cnt = acsiCmd_[4] ? acsiCmd_[4] : 256;
+    acsiStatus_ = 0;                                      // OK par défaut
+    // Disque virtuel agrandi à la demande (l'exerciser teste des LBA élevés, ~20 Mo)
+    // jusqu'à un plafond ; au-delà → erreur (cible inexistante).
+    const uint64_t need = uint64_t(lba + uint32_t(cnt)) * 512u;
+    if (need <= ACSI_DISK_CAP && hd_.size() < need) hd_.resize(size_t(need), 0);
+    auto toRam = [&](const uint8_t* src, uint32_t n) {
+        for (uint32_t j = 0; j < n; ++j) { const uint32_t a = (dmaAddr_ + j) & 0x00FFFFFF;
+            if (a < bus_.ram.size()) bus_.ram[a] = src[j]; }
+        dmaAddr_ += n;
+    };
+    switch (op) {
+        case 0x08: {                                     // READ(6) : disque → RAM
+            uint32_t off = lba * 512u;
+            for (int i = 0; i < cnt && off + 512u <= hd_.size(); ++i, off += 512u) toRam(&hd_[off], 512);
+            dmaCount_ = 0; break;
+        }
+        case 0x0A: {                                     // WRITE(6) : RAM → disque
+            uint32_t off = lba * 512u, src = dmaAddr_;
+            for (int i = 0; i < cnt && off + 512u <= hd_.size(); ++i, off += 512u)
+                for (uint32_t j = 0; j < 512u; ++j) { const uint32_t a = (src + uint32_t(i)*512u + j) & 0x00FFFFFF;
+                    if (a < bus_.ram.size()) hd_[off + j] = bus_.ram[a]; }
+            dmaAddr_ += uint32_t(cnt) * 512u; dmaCount_ = 0; break;
+        }
+        case 0x12: {                                     // INQUIRY : identité du périphérique
+            uint8_t inq[36] = {0};
+            inq[0] = 0x00;          // type : disque à accès direct
+            inq[1] = 0x00;          // non amovible
+            inq[2] = 0x02;          // version SCSI-2
+            inq[4] = 31;            // longueur additionnelle
+            std::memcpy(inq + 8, "NeoST   NeoST Hard Disk  1.0 ", 28);
+            toRam(inq, uint32_t(acsiCmd_[4] ? acsiCmd_[4] : 36)); dmaCount_ = 0; break;
+        }
+        case 0x25: {                                     // READ CAPACITY (classe 1, mais inoffensif ici)
+            const uint32_t last = ACSI_DISK_CAP / 512u - 1;
+            uint8_t cap[8] = { uint8_t(last >> 24), uint8_t(last >> 16), uint8_t(last >> 8), uint8_t(last),
+                               0, 0, 2, 0 };             // taille de bloc = 512
+            toRam(cap, 8); dmaCount_ = 0; break;
+        }
+        case 0x00:                                       // TEST UNIT READY
+        case 0x03:                                       // REQUEST SENSE
+        case 0x04:                                       // FORMAT UNIT
+        case 0x0B:                                       // SEEK(6)
+        case 0x15:                                       // MODE SELECT
+        case 0x1A:                                       // MODE SENSE
+        default:
+            acsiStatus_ = 0; break;                      // accepté (pas d'erreur)
+    }
 }
 
 uint8_t Fdc::readSectors(uint8_t /*cmd*/) {

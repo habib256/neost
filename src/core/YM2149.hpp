@@ -42,6 +42,9 @@ public:
                 // R14 = port A (I/O) : pilote sélection lecteur/face, strobe Centronics,
                 // et les sorties RS232 RTS (bit3)/DTR (bit4). Notifie l'abonné éventuel.
                 if (selected_ == 14 && portAsink_) portAsink_(v);
+                // R15 = port B = données du port parallèle (Centronics). Abonné éventuel
+                // (fixture de bouclage parallèle→BUSY/joystick du diagnostic).
+                if (selected_ == 15 && portBsink_) portBsink_(v);
                 break;
             default: break;
         }
@@ -51,6 +54,7 @@ public:
     // les sorties RS232 RTS (bit3)/DTR (bit4) sur les entrées de contrôle du MFP via
     // un connecteur de bouclage (cf. Machine).
     void setPortASink(std::function<void(uint8_t)> s) { portAsink_ = std::move(s); }
+    void setPortBSink(std::function<void(uint8_t)> s) { portBsink_ = std::move(s); }
 
     // --- Synthèse (appelée par le thread audio miniaudio) -------------------
     // Remplit `out` (mono, float -1..+1) à la fréquence sampleRate.
@@ -81,4 +85,5 @@ private:
     bool   envReload_ = false;        // R13 écrit → réinitialiser (posé par le CPU)
 
     std::function<void(uint8_t)> portAsink_;  // abonné aux écritures du port A (R14)
+    std::function<void(uint8_t)> portBsink_;  // abonné aux écritures du port B (R15)
 };

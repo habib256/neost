@@ -188,6 +188,31 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   registre RESET (`$FFFC3F` bit1 = reset du diviseur sous-seconde) et le débordement
   calendaire BCD complet (jusqu'à l'année). **Corrige « C0 No clock installed » ET « C1
   clock increment error »** du `MegaSTE_Diagnostic`.
+- **MIDI** (`MidiAcia`, ACIA 6850 `$FFFC04/06`) : bouclage OUT→IN (câble) + IRQ canal 6.
+  Le test « M MIDI » du diagnostic passe (**Pass**).
+- **Port série RS-232 / USART MFP** : réception (RSR Buffer Full, UDR), IRQ RxFull
+  (canal 12), TxEmpty (10), RxErr/overrun (11), TxErr/underrun (9), et lignes de
+  contrôle RTS→CTS (GPIP2), DTR→DCD (GPIP1) + RI (GPIP6) via le PSG port A. Tampon
+  de réception 1 octet (le 68901 n'a pas de FIFO). Connecteur de bouclage modélisé,
+  « branché » par l'option headless **`--loopback`** (sinon l'écho du rapport série
+  console casserait la détection clavier). Le test « S Serial Port » passe (**Pass**).
+- **Joystick** (IKBD `$16` interroger) : l'IKBD répond `$FD,joy0,joy1` (corrige
+  « J2 Joystick time-out »). Sous `--loopback`, fixture parallèle→joystick (port B
+  → directions/feu) + ligne BUSY (`$FF8606` Centronics, GPIP0). Test « P
+  Printer/Joystick » : **Pass**.
+- **Disque dur ACSI** (`Fdc`, port `$FF8604/06` bit `DMA_CSACSI`) : contrôleur ACSI
+  minimal (port de Hatari `hdc.c`) — commande 6 octets reçue octet par octet avec
+  handshake IRQ HDC (pin A1 = bit `DMA_A0`), commandes READ/WRITE(6), INQUIRY, READ
+  CAPACITY, TEST UNIT READY ; disque virtuel en mémoire agrandi à la demande (cap
+  64 Mo). Le « Hard Disk DMA Exerciser » tourne sans erreur de comparaison.
+- **PSG `$FF8802` relisible** (`YM2149::read8`) : renvoie le registre sélectionné
+  (décodage partiel de l'ST) — nécessaire aux read-modify-write `bclr/bset` du port A
+  (RTS/DTR) faits par le test série.
+- **VME / FPU (Mega STE) : « not found » est CORRECT et FIDÈLE à Hatari** — Hatari
+  `scu_vme.c` n'émule aucune carte VME (« we don't emulate any VME board ») et
+  `configuration.c` met `n_FPUType=FPU_NONE` par défaut. Un MegaSTE de base n'a ni
+  carte VME RAM ni coprocesseur 68881 ; les émuler dépasserait Hatari. Documenté
+  comme matériel optionnel absent (le SCU `$FF8E01-0F` existe néanmoins).
 - **Cartouches de diagnostic** (`carts/`, magic `$FA52235F`) via `--cart` : rapport
   à l'écran + port série. Grâce aux corrections ci-dessus, **les TROIS cartouches
   (`ST_Diagnostic`, `STE_Test`, `MegaSTE_Diagnostic`) passent leur batterie de tests

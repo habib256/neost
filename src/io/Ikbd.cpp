@@ -50,8 +50,19 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         if (sched_) sched_->schedule(Scheduler::IKBD, sched_->now() + kIkbdResetCycles);
         else        pushRx(0xF1);
         cmd0_ = 0;
+    } else if (v == 0x16) {
+        // $16 = « interroger les joysticks » : l'IKBD répond IMMÉDIATEMENT par un
+        // paquet $FD + état joystick 0 + état joystick 1 (cf. Hatari ikbd.c
+        // IKBD_Cmd_ReturnJoysticks). État neutre $00 par défaut (suffit à éviter
+        // « J2 Joystick time-out ») ; sous fixture de bouclage, la sonde reflète le
+        // port parallèle (cf. Machine) pour le test « Printer/Joystick » complet.
+        uint8_t joy0 = 0, joy1 = 0;
+        if (joyProbe_) joyProbe_(joy0, joy1);
+        pushRx(0xFD);
+        pushRx(joy0);
+        pushRx(joy1);
+        cmd0_ = v;
     } else {
-        fprintf(stderr,"[DBG] IKBD cmd %02x\n", v);
         cmd0_ = v;                   // autres commandes : ignorées (modes souris, etc.)
     }
 }

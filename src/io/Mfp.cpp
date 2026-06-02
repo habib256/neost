@@ -19,6 +19,7 @@ uint8_t Mfp::read8(uint32_t addr) {
             if (aciaLine_)      v &= ~0x10;  // bit4 = ACIA clavier (actif bas)
             if (ctsLine_)       v &= ~0x04;  // bit2 = RS232 CTS (actif bas)
             if (dcdLine_)       v &= ~0x02;  // bit1 = RS232 DCD (actif bas)
+            if (busyLine_)      v &= ~0x01;  // bit0 = Centronics BUSY (actif bas)
             return v;
         }
         case 0x03: return aer;

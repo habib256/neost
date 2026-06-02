@@ -15,6 +15,7 @@
 #pragma once
 #include <cstdint>
 #include <deque>
+#include <functional>
 
 #include "core/Scheduler.hpp"
 
@@ -34,6 +35,12 @@ public:
     // Échéance : l'IKBD a fini son auto-test → envoie $F1 (réponse de reset).
     void    onResetResponse() { pushRx(0xF1); }
 
+    // Sonde joystick : remplit (joy0, joy1) à l'interrogation `$16`. Par défaut
+    // neutre ($00). Le diagnostic « Printer/Joystick » branche un fixture de
+    // bouclage parallèle→joystick : Machine y connecte le port B du PSG (cf. le
+    // mapping du fixture). true = au moins une manette présente.
+    void    setJoystickProbe(std::function<void(uint8_t&, uint8_t&)> fn) { joyProbe_ = std::move(fn); }
+
     // Événement clavier venant de l'hôte (scancode ST déjà traduit).
     void keyEvent(uint8_t scancode, bool pressed);
 
@@ -50,4 +57,5 @@ private:
     std::deque<uint8_t> rx_;                 // file IKBD → CPU
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
     uint8_t cmd0_ = 0;                       // dernier octet de commande (détection reset 0x80,0x01)
+    std::function<void(uint8_t&, uint8_t&)> joyProbe_;   // état manettes (fixture de bouclage)
 };

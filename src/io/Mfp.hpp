@@ -92,6 +92,9 @@ public:
     // le canal sur tout changement d'état. C'est sûr : ces setters ne sont appelés que
     // quand le connecteur est branché (cf. Machine, gardé par loopback()), donc jamais
     // au boot où cela parasiterait le canal ACIA du clavier.
+    // Ligne BUSY Centronics (GPIP0, active BAS). Sous fixture de bouclage, recopie
+    // (inversée) le bit7 du port parallèle (cf. Machine, test « Printer/Joystick »).
+    void setBusyLine(bool a) { busyLine_ = a; }
     void setRs232Cts(bool a) { if (a != ctsLine_) raise(SRC_CTS); ctsLine_ = a; }
     void setRs232Dcd(bool a) { if (a != dcdLine_) raise(SRC_DCD); dcdLine_ = a; }
     void setRs232Ri (bool a) { if (a != riLine_)  raise(SRC_RI);  riLine_  = a; }
@@ -118,6 +121,7 @@ public:
     bool    aciaLine_ = false;    // ligne ACIA (true = données dispo → GPIP4 bas)
     bool    fdcLine_  = false;    // ligne FDC  (true = commande finie → GPIP5 bas)
     bool    colorMonitor_ = true; // GPIP bit7 : true = couleur (basse rés)
+    bool    busyLine_ = false;    // Centronics BUSY (GPIP0, actif bas) — bouclage port parallèle
     bool    ctsLine_  = false;    // RS232 CTS (GPIP2, actif bas) — bouclage RTS
     bool    dcdLine_  = false;    // RS232 DCD (GPIP1, actif bas) — bouclage DTR
     bool    riLine_   = false;    // RS232 RI  (GPIP6, actif bas) — bouclage DTR
