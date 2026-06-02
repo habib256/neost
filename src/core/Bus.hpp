@@ -79,6 +79,8 @@ public:
     // diagnostic (Test Kit) ou cartouche applicative. Le TOS détecte le magic
     // et amorce. Renvoie false si le fichier est introuvable ou trop gros.
     bool loadCart(const std::string& path);
+    void ejectCart();
+    const std::string& mountedCartPath() const { return cartPath_; }
 
     // -------------------------------------------------------------------------
     //  Accès vus par le CPU. Le 68000 est BIG-ENDIAN ; l'hôte (x86/arm64) est
@@ -149,4 +151,6 @@ private:
     mutable MachineType          ioFaultMachine_ = MachineType::St;
     mutable bool                 ioFaultBuilt_   = false;
     void buildIoFault() const;       // (re)construit ioFault_ pour `machine`
+
+    std::string cartPath_;           // chemin de l'image cartouche montée
 };

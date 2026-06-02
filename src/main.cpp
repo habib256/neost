@@ -47,7 +47,7 @@ static std::string resolveData(const std::string& given, const std::string& exeD
 // Fichier neost.cfg à la racine du projet (à côté de build/).
 // cpu = cœur 68000 choisi AU DÉMARRAGE ("moira" cycle-exact par défaut, ou "musashi").
 // Défaut machine : 512 Ko ST + cœur Moira.
-struct Config { std::string rom; std::string disk; bool mono = false;
+struct Config { std::string rom; std::string disk; std::string cart; bool mono = false;
                 std::string cpu = "moira"; std::string machine = "st";
                 std::string mem = "512k"; };
 static std::string cfgPath(const std::string& exeDir) { return exeDir + "/../neost.cfg"; }
@@ -59,6 +59,7 @@ static Config loadConfig(const std::string& exeDir) {
     while (std::getline(f, line)) {
         if      (line.rfind("rom=", 0)  == 0) c.rom  = line.substr(4);
         else if (line.rfind("disk=", 0) == 0) c.disk = line.substr(5);
+        else if (line.rfind("cart=", 0) == 0) c.cart = line.substr(5);
         else if (line.rfind("mono=", 0) == 0) c.mono = (line.substr(5) == "1");
         else if (line.rfind("cpu=", 0)  == 0) c.cpu  = line.substr(4);
         else if (line.rfind("machine=", 0) == 0) c.machine = line.substr(8);
@@ -69,7 +70,8 @@ static Config loadConfig(const std::string& exeDir) {
 static void saveConfig(const std::string& exeDir, const Config& c) {
     std::ofstream f(cfgPath(exeDir));
     if (!f) f.open("neost.cfg");
-    if (f) f << "rom=" << c.rom << "\ndisk=" << c.disk << "\nmono=" << (c.mono ? 1 : 0)
+    if (f) f << "rom=" << c.rom << "\ndisk=" << c.disk << "\ncart=" << c.cart
+             << "\nmono=" << (c.mono ? 1 : 0)
              << "\ncpu=" << c.cpu << "\nmachine=" << c.machine << "\nmem=" << c.mem << "\n";
 }
 
@@ -89,7 +91,7 @@ constexpr int MOUSE_Y_SIGN = +1;
 Ikbd* g_ikbd = nullptr;                // cible des callbacks clavier/souris GLFW
 bool  g_mouseCaptured = false;         // souris capturée → entrées dirigées vers le ST
 bool  g_dbgMouse = false;              // NEOST_DEBUG_MOUSE=1 → trace les paquets souris
-bool  g_showDisk = true, g_showHex = true, g_showCpu = true;  // fenêtres masquables
+bool  g_showDisk = true, g_showCart = true, g_showHex = true, g_showCpu = true;  // fenêtres masquables
 
 void onGlfwError(int code, const char* desc) {
     std::fprintf(stderr, "GLFW erreur %d : %s\n", code, desc);
@@ -292,6 +294,48 @@ void drawDiskLibrary(const std::string& disksDir, const std::string& mounted,
     ImGui::TextDisabled("Monter puis Reset pour démarrer une disquette amorçable.");
     ImGui::End();
 }
+
+// Bibliothèque de cartouches : liste les images du dossier carts/ et branche le
+// port $FA0000. Un reset reste nécessaire pour que le TOS relise le magic de boot.
+void drawCartLibrary(const std::string& cartsDir, const std::string& mounted,
+                     std::string& reqMount, bool& reqEject) {
+    ImGui::Begin("Cart Library");
+    const std::string curName = mounted.empty() ? "(vide)"
+                                                 : fs::path(mounted).filename().string();
+    ImGui::Text("Port cartouche : %s", curName.c_str());
+    if (!mounted.empty()) {
+        ImGui::SameLine();
+        if (ImGui::Button("Éjecter")) reqEject = true;
+    }
+    ImGui::Separator();
+    ImGui::TextDisabled("Images dans %s/", cartsDir.c_str());
+
+    std::error_code ec;
+    if (fs::is_directory(cartsDir, ec)) {
+        const std::string mountedName = mounted.empty() ? "" : fs::path(mounted).filename().string();
+        for (const auto& e : fs::directory_iterator(cartsDir, ec)) {
+            if (!e.is_regular_file()) continue;
+            std::string ext = e.path().extension().string();
+            for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
+            if (ext != ".bin" && ext != ".img" && ext != ".rom") continue;
+            const std::string name = e.path().filename().string();
+            ImGui::PushID(name.c_str());
+            if (name == mountedName) {
+                ImGui::TextDisabled("●");                  // branchée
+            } else if (ImGui::SmallButton("Brancher")) {
+                reqMount = e.path().string();
+            }
+            ImGui::SameLine();
+            ImGui::TextUnformatted(name.c_str());
+            ImGui::PopID();
+        }
+    } else {
+        ImGui::TextDisabled("(dossier carts/ introuvable)");
+    }
+    ImGui::Separator();
+    ImGui::TextDisabled("Brancher/éjecter relance la machine pour re-détecter la cartouche.");
+    ImGui::End();
+}
 #endif // NEOST_WITH_IMGUI
 } // namespace
 
@@ -310,7 +354,9 @@ int main(int argc, char** argv) {
     const std::string tosPath  = resolveData(romLogical, exeDir);
     const std::string defDisk  = cfg.disk.empty() ? std::string("disks/diskA.st") : cfg.disk;
     const std::string diskPath = resolveData((argc > 2) ? argv[2] : defDisk, exeDir);
+    const std::string cartPath = cfg.cart.empty() ? std::string() : resolveData(cfg.cart, exeDir);
     const std::string disksDir = resolveData("disks", exeDir);   // dossier pour la Disk Library
+    const std::string cartsDir = resolveData("carts", exeDir);   // dossier pour la Cart Library
     const std::string romsDir  = resolveData("rom", exeDir);     // dossier pour le sélecteur de ROM
 
     g_dbgMouse = std::getenv("NEOST_DEBUG_MOUSE") != nullptr;
@@ -334,6 +380,8 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[main] Démarrage sans TOS (le CPU tournera à vide).\n");
     if (!machine.loadDisk(diskPath))
         std::fprintf(stderr, "[main] Aucune disquette montée (%s).\n", diskPath.c_str());
+    if (!cartPath.empty() && !machine.loadCart(cartPath))
+        std::fprintf(stderr, "[main] Aucune cartouche montée (%s).\n", cartPath.c_str());
     machine.mfp.setColorMonitor(!cfg.mono);   // moniteur mémorisé (avant le reset)
     machine.reset();
     cfg.rom = romLogical; saveConfig(exeDir, cfg);   // mémorise dès le lancement
@@ -361,6 +409,8 @@ int main(int argc, char** argv) {
         machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu),
                             parseMachine(cfg.machine));
         machine.loadTos(resolveData(cfg.rom, exeDir));
+        if (cfg.cart.empty()) machine.ejectCart();
+        else                  machine.loadCart(resolveData(cfg.cart, exeDir));
         machine.mfp.setColorMonitor(!cfg.mono);
         machine.reset();
         std::fprintf(stderr, "[main] reconfig à chaud : cœur %s | machine %s | RAM %s\n",
@@ -434,6 +484,7 @@ int main(int argc, char** argv) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         std::string reqMount; bool reqEject = false;
+        std::string reqMountCart; bool reqEjectCart = false;
         const bool color = machine.mfp.colorMonitor();
 
         // --- Menu (haut) -----------------------------------------------------
@@ -493,6 +544,29 @@ int main(int argc, char** argv) {
                     }
                     ImGui::EndMenu();
                 }
+                if (ImGui::BeginMenu("Cartouche")) {
+                    if (machine.bus.mountedCartPath().empty()) {
+                        ImGui::TextDisabled("(aucune)");
+                    } else if (ImGui::MenuItem("Éjecter")) {
+                        reqEjectCart = true;
+                    }
+                    std::error_code ec;
+                    const std::string curCart = fs::path(machine.bus.mountedCartPath()).filename().string();
+                    if (fs::is_directory(cartsDir, ec)) {
+                        for (const auto& e : fs::directory_iterator(cartsDir, ec)) {
+                            if (!e.is_regular_file()) continue;
+                            std::string ext = e.path().extension().string();
+                            for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
+                            if (ext != ".bin" && ext != ".img" && ext != ".rom") continue;
+                            const std::string name = e.path().filename().string();
+                            if (ImGui::MenuItem(name.c_str(), nullptr, name == curCart))
+                                reqMountCart = e.path().string();
+                        }
+                    } else {
+                        ImGui::TextDisabled("(dossier carts/ introuvable)");
+                    }
+                    ImGui::EndMenu();
+                }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quitter")) glfwSetWindowShouldClose(window, 1);
                 ImGui::EndMenu();
@@ -504,6 +578,7 @@ int main(int argc, char** argv) {
             }
             if (ImGui::BeginMenu("Fenêtres")) {
                 ImGui::MenuItem("Disk Library",  nullptr, &g_showDisk);
+                ImGui::MenuItem("Cart Library",  nullptr, &g_showCart);
                 ImGui::MenuItem("Mémoire (hex)", nullptr, &g_showHex);
                 ImGui::MenuItem("CPU 68000",     nullptr, &g_showCpu);
                 ImGui::EndMenu();
@@ -527,6 +602,7 @@ int main(int argc, char** argv) {
             reqMonitor = color ? 0 : 1;
         ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
         ImGui::Checkbox("Disk", &g_showDisk);  ImGui::SameLine();
+        ImGui::Checkbox("Cart", &g_showCart);  ImGui::SameLine();
         ImGui::Checkbox("Hex",  &g_showHex);   ImGui::SameLine();
         ImGui::Checkbox("CPU",  &g_showCpu);
         if (drive.ok()) {
@@ -539,6 +615,7 @@ int main(int argc, char** argv) {
         // --- Fenêtre écran (base) + fenêtres masquables ----------------------
         drawStScreen(screen, g_mouseCaptured, reqCapture, menuH + toolH);
         if (g_showDisk) drawDiskLibrary(disksDir, machine.fdc.mountedPath(), reqMount, reqEject);
+        if (g_showCart) drawCartLibrary(cartsDir, machine.bus.mountedCartPath(), reqMountCart, reqEjectCart);
         if (g_showHex)  drawHexViewer(machine.bus);
         if (g_showCpu)  drawCpuState(machine.cpu, reqReset);
         ImGui::Render();
@@ -552,6 +629,18 @@ int main(int argc, char** argv) {
         if (reqEject) {
             machine.fdc.eject();
             cfg.disk.clear(); saveConfig(exeDir, cfg);
+        }
+        // Cart Library : branchement / éjection à chaud du port cartouche.
+        if (!reqMountCart.empty()) {
+            if (machine.loadCart(reqMountCart)) {
+                cfg.cart = reqMountCart; saveConfig(exeDir, cfg);
+                reqHardReset = true;       // le TOS sonde le port cartouche au boot
+            }
+        }
+        if (reqEjectCart) {
+            machine.ejectCart();
+            cfg.cart.clear(); saveConfig(exeDir, cfg);
+            reqHardReset = true;           // relance sans la ROM $FA0000
         }
 #else
         screen.drawFullscreen();               // repli sans ImGui
@@ -585,9 +674,10 @@ int main(int argc, char** argv) {
         else                 nextFrame = now;
     }
 
-    // Mémorise le dernier ROM, la disquette montée et le moniteur pour la prochaine fois.
+    // Mémorise le dernier ROM, la disquette/cartouche montée et le moniteur.
     cfg.rom = romLogical;
     cfg.disk = machine.fdc.mountedPath();
+    cfg.cart = machine.bus.mountedCartPath();
     cfg.mono = !machine.mfp.colorMonitor();
     saveConfig(exeDir, cfg);
 

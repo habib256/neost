@@ -65,9 +65,17 @@ bool Bus::loadCart(const std::string& path) {
     const char* kind = magic == 0xFA52235F ? "diagnostic (saut $FA0004 au reset)"
                      : magic == 0xABCDEF42 ? "applicative (lancée par le TOS)"
                      : "inconnue (magic absent)";
+    cartPath_ = path;
     std::fprintf(stderr, "[Bus] cartouche chargée : %s (%zu Ko @ $FA0000, magic $%08X, %s)\n",
                  path.c_str(), cart.size() / 1024, magic, kind);
     return true;
+}
+
+void Bus::ejectCart() {
+    if (!cart.empty())
+        std::fprintf(stderr, "[Bus] cartouche éjectée : %s\n", cartPath_.c_str());
+    cart.clear();
+    cartPath_.clear();
 }
 
 // -----------------------------------------------------------------------------

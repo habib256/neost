@@ -41,6 +41,7 @@ public:
 
     bool loadTos(const std::string& path)  { return bus.loadTos(path); }
     bool loadCart(const std::string& path) { return bus.loadCart(path); }
+    void ejectCart() { bus.ejectCart(); }
     bool loadDisk(const std::string& path) { return fdc.loadImage(path); }
     void reset() { dmasnd.reset(); cpu.reset(); }
     // Reset à FROID (power-cycle) : efface toute la ST-RAM, ce qui invalide le

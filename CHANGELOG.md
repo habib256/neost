@@ -146,6 +146,15 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   renseignés avant `m68k_pulse_bus_error`) : la trame de groupe 0 contient désormais la
   VRAIE adresse d'accès et le bit R/W ; les diagnostics affichent « Bus Error Access
   Address: ... » correctement (utile à leur détection de ROM par sondage).
+- **Adresse DMA disquette relisible** (`$FF8609/0B/0D`, `Fdc::read8`) : le compteur
+  d'adresse DMA incrémente pendant le transfert et est désormais relisible (cf. Hatari
+  `FDC_GetDMAAddress`). Sans ça NeoST renvoyait `$FF` → les diagnostics qui relisent
+  l'adresse pour vérifier le nombre d'octets transférés signalaient « DMA count error »
+  (corrigé sur STE_Test : le test floppy passe l'étape DMA).
+- **WRITE TRACK ($F0) / READ TRACK ($E0)** (`Fdc`) : consomment correctement la DMA
+  (compteur → 0) ; WRITE TRACK extrait les secteurs (IDAM/DAM) du tampon de formatage
+  vers l'image .ST (best-effort — un reformatage à géométrie non standard nécessite une
+  image flux/HD, non supporté ; Hatari ne supporte pas du tout WRITE TRACK sur .ST).
 - **Blitter (`Blitter.cpp`)** : port FONCTIONNEL du blitter ST ($FF8A00-$FF8A3F) depuis
   Hatari (HOP, LOP 16 ops, FXSR/NFSR, skew, smudge, halftone, endmasks, comptes X/Y,
   incréments signés), en mode HOG (transfert instantané — résultat de données fidèle).
