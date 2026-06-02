@@ -76,11 +76,19 @@ le ROM donne « cs error » (checksums ≠ TOS Atari → utiliser un vrai TOS).
     « F8 DMA count error »** de STE_Test (NeoST renvoyait `$FF`). + WRITE/READ TRACK
     ($F0/$E0) consomment la DMA.
 
+11. **Compteur vidéo `$FF8205/07/09` cycle-exact** (`Shifter::videoCounter`, port de
+    Hatari `Video_CalculateAddress` : 2 cyc/octet, LineStart 56@50Hz). Avant : 1 octet/
+    cycle dès le cycle 216 (faux mid-ligne). UN composant de T0 corrigé. Non régressif.
+
 **Reste à faire (vers « zéro erreur ») :**
-- **T0 MFP timer** — SEUL bug NeoST restant qui affecte les 3 cartouches : le test
-  copie du code en `$4000`, programme Timer A/B + HBL/VBL et mesure des interruptions
-  dans une fenêtre **sous-ligne** ; le quantum-ligne (512 cyc) de NeoST ne suffit pas.
-  → chantier « Précision temporelle » ci-dessous. **C'est LE blocage architectural.**
+- **T0 MFP timer** — SEUL bug NeoST restant qui affecte les 3 cartouches. Mécanisme
+  identifié au cycle près : le test met `$284=3`, attend dans une boucle de délai, et un
+  handler MFP partagé (`FA13FE`, sur Timer A/B/C) efface les bits de `$284` (`bclr`).
+  Pour PASSER, les bons timers doivent fire et effacer les 2 bits DANS la fenêtre →
+  **précision cycle-exact du timing IRQ vs cycles CPU** (NeoST fire aux cycles planifiés
+  mais le CPU avance par instruction = dépassement). + compteur vidéo lu au cycle près
+  (composant corrigé). → chantier « Précision temporelle » : resserrer le quantum sous
+  la ligne, valider par diff de trace Hatari. **C'est LE blocage architectural.**
 - **Drive B / Hard disk** (PAS un bug NeoST) : « Cannot write drive B », « Hard error »
   = périphériques ABSENTS. Un vrai ST minimal donnerait les mêmes. Pour « zéro erreur »
   de la batterie complète il faudrait ATTACHER un 2ᵉ lecteur + un disque dur.

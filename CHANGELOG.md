@@ -146,6 +146,12 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   renseignés avant `m68k_pulse_bus_error`) : la trame de groupe 0 contient désormais la
   VRAIE adresse d'accès et le bit R/W ; les diagnostics affichent « Bus Error Access
   Address: ... » correctement (utile à leur détection de ROM par sondage).
+- **Compteur d'adresse vidéo `$FF8205/07/09` cycle-exact** (`Shifter::videoCounter`,
+  port de Hatari `Video_CalculateAddress`) : `addr = base + ligne*bpl + ((X-LineStart)>>1)&~1`
+  (2 cycles/octet entre le cycle 56 en 50 Hz / 52 en 60 Hz et 376). L'ancienne version
+  supposait 1 octet/cycle depuis le cycle 216 → fausse en milieu de ligne. Corrige la
+  position vidéo lue par les diagnostics (sous-test « T0 » timing/Glue/Vidéo) et fiabilise
+  les effets raster. Non régressif (EmuTOS bureau, Vroom).
 - **Adresse DMA disquette relisible** (`$FF8609/0B/0D`, `Fdc::read8`) : le compteur
   d'adresse DMA incrémente pendant le transfert et est désormais relisible (cf. Hatari
   `FDC_GetDMAAddress`). Sans ça NeoST renvoyait `$FF` → les diagnostics qui relisent
