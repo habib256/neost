@@ -33,15 +33,33 @@ void DmaSound::scheduleFrameEnd() {
     sched_->schedule(Scheduler::DMASND, sched_->now() + (dur > 0 ? dur : 1));
 }
 
+// Câble le MFP et lui annonce que cette machine possède le son DMA (STE/Mega STE) :
+// seul ce signal autorise le MFP à XOR la ligne XSINT dans GPIP7 (cf. Hatari
+// MFP_Main_Compute_GPIP7). Sur un ST sans son DMA, le composant n'est pas câblé ici.
+void DmaSound::setMfp(Mfp* m) {
+    mfp_ = m;
+    if (mfp_) mfp_->setHasDmaSound(true);
+}
+
+// Met à jour la ligne XSINT et la propage au MFP (GPIP7). Réf. Hatari
+// DmaSnd_Update_XSINT_Line : HAUT = trame en cours, BAS = son DMA inactif.
+void DmaSound::setXsint(bool level) {
+    if (level == xsint_) return;                  // pas de transition → rien à faire
+    xsint_ = level;
+    if (mfp_) mfp_->setXsintLine(xsint_);
+}
+
 void DmaSound::onFrameEnd() {
+    setXsint(false);                              // fin de trame : XSINT → BAS (transition 1→0)
     if (mfp_) mfp_->timerA_eventCount();          // impulsion TAI → event-count Timer A
-    if (ctrl_ & 0x02) scheduleFrameEnd();         // repeat : prochaine trame
+    if (ctrl_ & 0x02) { setXsint(true); scheduleFrameEnd(); }  // repeat : nouvelle trame → XSINT HAUT
 }
 
 void DmaSound::reset() {
     playing_ = false;
     ctrl_ = 0;
     phase_ = 0.0;
+    setXsint(false);                               // son DMA inactif au reset → XSINT BAS
     if (sched_) sched_->cancel(Scheduler::DMASND);
     mwMaster_ = 40; mwLeft_ = 20; mwRight_ = 20;   // LMC1992 à 0 dB (pas de mute au reset)
     mwBass_ = 6; mwTreble_ = 6; mwMixing_ = 0;
@@ -181,9 +199,11 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
                 curAddr_ = startAddr_;
                 phase_   = 0.0;
                 playing_ = true;
+                setXsint(true);                        // début de trame : XSINT → HAUT (→ GPIP7)
                 scheduleFrameEnd();                    // date la fin de trame (→ Timer A)
             } else if (!(ctrl_ & 0x01)) {              // bit play à 0 : arrêt
                 playing_ = false;
+                setXsint(false);                       // arrêt : XSINT → BAS
                 if (sched_) sched_->cancel(Scheduler::DMASND);
             }
             break;

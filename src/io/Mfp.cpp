@@ -13,7 +13,12 @@ uint8_t Mfp::read8(uint32_t addr) {
         case 0x01: {                // GPIP : lignes d'ENTRÉE matérielles (les écritures
                                     // CPU sur $FFFA01 ne doivent pas les écraser).
             uint8_t v = 0xFF;            // bits au repos
-            if (!colorMonitor_) v &= ~0x80;  // bit7 = 0 → moniteur MONO (haute rés)
+            // bit7 : détection moniteur (couleur=1, mono=0). Sur STE/Mega STE, ce bit
+            // est XORé avec la ligne XSINT du son DMA (cf. Hatari MFP_Main_Compute_GPIP7).
+            // Sur les autres machines (hasDmaSound_=false) le calcul reste identique.
+            bool bit7 = colorMonitor_;
+            if (hasDmaSound_) bit7 ^= xsint_;
+            if (!bit7) v &= ~0x80;       // bit7 = 0 → moniteur MONO (haute rés) / XSINT
             if (riLine_)        v &= ~0x40;  // bit6 = RS232 RI (actif bas)
             if (fdcLine_)       v &= ~0x20;  // bit5 = FDC (actif bas)
             if (aciaLineKbd_ || aciaLineMidi_) v &= ~0x10;  // bit4 = ACIA clavier OU MIDI (wire-OR, actif bas)
@@ -165,6 +170,24 @@ void Mfp::timerA_eventCount() {
         taCounter_ = taReload_;
         raise(SRC_TIMERA);
     }
+}
+
+// Ligne XSINT du son DMA STE → GPIP7. La valeur du pin GPIP7 est (moniteur XOR XSINT)
+// ; on applique la règle de front d'Hatari (MFP_GPIP_Update_Interrupt) : un canal GPIP
+// se lève sur une transition de la ligne quand sa nouvelle valeur égale le bit AER
+// correspondant (AER=0 → front 1→0 ; AER=1 → front 0→1). raise() ne posera l'IPR que
+// si le canal 15 est activé (IERA bit7). Sur une machine sans son DMA, hasDmaSound_ est
+// faux et ce setter n'est jamais appelé avec une ligne active.
+void Mfp::setXsintLine(bool a) {
+    if (a == xsint_) return;                       // pas de transition
+    if (hasDmaSound_) {
+        const bool pinOld = colorMonitor_ ^ xsint_;    // niveau GPIP7 avant
+        const bool pinNew = colorMonitor_ ^ a;         // niveau GPIP7 après
+        const bool aerBit = (aer & 0x80) != 0;
+        if (pinOld != pinNew && pinNew == aerBit)      // front actif (cf. Hatari)
+            raise(SRC_GPIP7);                          // canal 15 (IERA bit7) si armé
+    }
+    xsint_ = a;
 }
 
 void Mfp::raise(int source) {

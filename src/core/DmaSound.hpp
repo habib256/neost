@@ -28,7 +28,10 @@ public:
     // thread d'émulation : c'est là que doit tomber l'interruption, pas sur le
     // thread audio (qui ne fait que générer le son). Branchés par Machine.
     void setScheduler(Scheduler* s) { sched_ = s; }
-    void setMfp(Mfp* m) { mfp_ = m; }
+    // Câble le MFP et lui SIGNALE la présence du son DMA (modèle STE/Mega STE) :
+    // le MFP n'XOR la ligne XSINT dans GPIP7 que si ce flag est posé (cf. Hatari
+    // MFP_Main_Compute_GPIP7 : XOR réservé à Config_IsMachineSTE()/TT()).
+    void setMfp(Mfp* m);
 
     // Échéance « fin de trame DMA » : pulse Timer A (TAI), reboucle si repeat.
     void onFrameEnd();
@@ -57,6 +60,7 @@ private:
     int     sampleAt(uint32_t addr, bool stereo) const;   // octet(s) RAM → -128..127 mono
     void    decodeMicrowire();                            // décode la commande LMC1992
     void    scheduleFrameEnd();                           // date la prochaine fin de trame
+    void    setXsint(bool level);                         // pilote la ligne XSINT (→ MFP GPIP7)
 
 public:
     // Une étape du shift série Microwire (datée par le Scheduler, source MICROWIRE) :
@@ -90,6 +94,12 @@ private:
     // État de lecture (thread audio).
     bool     playing_ = false;
     double   phase_   = 0.0;         // accumulateur de rééchantillonnage
+
+    // Ligne XSINT (External Sound INTerrupt) du son DMA STE : HAUT pendant qu'une
+    // trame joue, BAS à l'arrêt / fin de trame. Câblée à TAI (Timer A event-count,
+    // déjà géré via onFrameEnd) ET à GPIP7 du MFP (XOR avec la détection moniteur).
+    // Réf. Hatari DmaSnd_Update_XSINT_Line / DmaSnd_Get_XSINT_Line.
+    bool     xsint_ = false;
 
     // État des filtres de tonalité (biquads Direct Form I), thread audio.
     double   bx1_ = 0, bx2_ = 0, by1_ = 0, by2_ = 0;   // plateau basses

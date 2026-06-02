@@ -38,6 +38,7 @@ public:
     static constexpr int SRC_RXFULL = 12;  // USART Receive Buffer Full (RS232)
     static constexpr int SRC_TIMERA = 13;  // Timer A (souvent musique/délai)
     static constexpr int SRC_RI     = 14;  // RS232 Ring Indicator (GPIP6)
+    static constexpr int SRC_GPIP7  = 15;  // GPIP7 : moniteur XOR XSINT son DMA (STE)
 
     // Branche l'ordonnanceur : le MFP y date lui-même ses timers en mode délai
     // (Timer A/C/D) à partir de leurs registres prescaler/données.
@@ -87,6 +88,17 @@ public:
     // À changer AVANT un reset pour que TOS détecte la bonne résolution au boot.
     void setColorMonitor(bool c) { colorMonitor_ = c; }
 
+    // Présence du son DMA (STE / Mega STE) : seul ce drapeau autorise le XOR de la
+    // ligne XSINT dans GPIP7 (cf. Hatari MFP_Main_Compute_GPIP7, réservé aux STE/TT).
+    // Posé par DmaSound::setMfp ; sur un ST sans son DMA il reste faux → GPIP7 ne
+    // dépend QUE du moniteur, exactement comme avant.
+    void setHasDmaSound(bool h) { hasDmaSound_ = h; }
+    // Ligne XSINT du son DMA STE (cf. Hatari DmaSnd_Update_XSINT_Line) : HAUT pendant
+    // la lecture d'une trame, BAS sinon. Sur STE elle est XORée avec la détection
+    // moniteur pour former GPIP7. Toute transition peut lever le canal GPIP7 (I7) si
+    // armé (IERA bit7) et que le front correspond à l'AER — comme une entrée GPIP.
+    void setXsintLine(bool a);
+
     // Récepteur du port série (RS-232) : chaque octet écrit dans l'UDR ($FFFA2F)
     // y est transmis. Les ROMs de diagnostic y impriment leur rapport quand la
     // vidéo n'est pas (encore) opérationnelle.
@@ -135,6 +147,8 @@ public:
     bool    fdcLine_  = false;    // ligne FDC  (true = commande finie → GPIP5 bas)
     bool    gpuLine_  = false;    // ligne blitter GPU_DONE (true = blit fini → GPIP3 bas)
     bool    colorMonitor_ = true; // GPIP bit7 : true = couleur (basse rés)
+    bool    hasDmaSound_  = false;// machine avec son DMA (STE/Mega STE) → XOR XSINT sur GPIP7
+    bool    xsint_        = false;// ligne XSINT du son DMA STE (HAUT = trame en cours)
     bool    busyLine_ = false;    // Centronics BUSY (GPIP0, actif bas) — bouclage port parallèle
     bool    ctsLine_  = false;    // RS232 CTS (GPIP2, actif bas) — bouclage RTS
     bool    dcdLine_  = false;    // RS232 DCD (GPIP1, actif bas) — bouclage DTR
