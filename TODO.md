@@ -56,17 +56,27 @@ les DEUX cœurs (Musashi + Moira). 5 corrections (cf. mémoire cartridge-diagnos
 
 « I7 Bus error not detected » = résultat CORRECT (écriture en `$0` = RAM, pas de faute).
 
-**Batterie Z avec un VRAI TOS Atari (`tos102uk.img`) : 7/8 PASSENT** (RAM, ROM, Color,
-Keyboard, Audio, RTC, BLiT) ; SEUL **« T0 MFP timer » échoue**. Avec EmuTOS le test ROM
-donne « cs error » (checksums ≠ TOS Atari → utiliser un vrai TOS pour le diag).
+7. **Shift série Microwire `$FF8922`** (`DmaSound::onMicrowireShift` + `Scheduler::MICROWIRE`,
+   port Hatari) : 16 décalages (8 cyc), `$FF8922` → 0, puis décode LMC1992. **A débloqué
+   STE_Test ET MegaSTE_Diagnostic** (qui pollaient `$FF8922` jusqu'à 0).
+
+**LES 3 CARTOUCHES ATTEIGNENT LEUR MENU INTERACTIF** (vrai TOS, sur les 2 cœurs) :
+ST_Diagnostic, STE_Test, MegaSTE_Diagnostic.
+
+**ST_Diagnostic — batterie Z (vrai TOS) : 7/8 PASSENT** (RAM, ROM, Color, Keyboard,
+Audio, RTC, BLiT) ; SEUL **« T0 MFP timer » échoue**. Avec EmuTOS le test ROM donne
+« cs error » (checksums ≠ TOS Atari → utiliser un vrai TOS).
 
 **Reste à faire :**
 - **T0 MFP timer** : compare des relations cycle-EXACTES Timer A / HBL (`$208`) / VBL
   (`$292`) / Timer B event-count (`$48`) — boucles d'attente `FA2D44`/`FA2DF6`. Demande
   la précision cycle-exact (quantum < ligne) → cf. § « Précision temporelle » ci-dessous.
 - `STE_Test_v1.9` : écran bleu sans texte. `MegaSTE_Diagnostic` : « VME/FPU not found » puis stop.
-- À `--mem 256k`, ST_Diagnostic = écran NOIR (bloqué avant le menu) → bug **décodage MMU**
-  (`Bus::mmuTranslate` / sizing `$FF8001` à 128K+128K).
+- **256K : PAS un bug NeoST** (écarté). Le diag FIGE `conf=$05` (512+512) au démarrage
+  sans jamais l'adapter ; à 256K (banques 128K) ça sur-déclare → aliasing `$8`↔`$208`,
+  comportement CORRECT (formules = Hatari, vérifié). 512K/1M/2M/4M atteignent tous le
+  menu → `mmuTranslate` fidèle. Le diagnostic ne supporte simplement pas 256K (un vrai
+  260ST ferait pareil). Rien à corriger côté NeoST.
 
 ## Chantier courant — MegaST & vérité Hatari (`extern/hatari/src`)
 

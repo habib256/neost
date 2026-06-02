@@ -25,6 +25,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     bus.ikbd    = &ikbd;
     bus.fdc     = &fdc;
     bus.dmasnd  = &dmasnd;
+    bus.blitter = &blitter;
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
     // Horloge faisceau pour le compteur d'adresse vidéo $FF8205/07/09 : cycles
     // écoulés depuis le début de la trame courante (cf. Shifter::videoCounter).
@@ -58,6 +59,8 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::DMASND, [this] { dmasnd.onFrameEnd(); cpu.updateIpl(); });
     // Réponse de reset du clavier ($F1) : l'IKBD l'a datée → on l'émet + IRQ ACIA.
     sched.setCallback(Scheduler::IKBD,   [this] { ikbd.onResetResponse(); cpu.updateIpl(); });
+    // Étape de shift série Microwire ($FF8922 → 0) du son STE.
+    sched.setCallback(Scheduler::MICROWIRE, [this] { dmasnd.onMicrowireShift(); });
 }
 
 // Arme les événements VIDÉO de la trame courante, à des cycles ABSOLUS (horloge

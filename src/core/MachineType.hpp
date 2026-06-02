@@ -74,7 +74,8 @@ inline bool machineHasDmaSound(MachineType t) {
     return t == MachineType::Ste || t == MachineType::MegaSte;   // son numérique STE
 }
 inline bool machineHasBlitter(MachineType t) {
-    return t == MachineType::MegaSt || t == MachineType::MegaSte; // blitter (émulation à venir)
+    // Blitter présent sur Mega ST, STE et Mega STE ; absent du STF d'origine.
+    return t == MachineType::MegaSt || t == MachineType::Ste || t == MachineType::MegaSte;
 }
 // Machines « Mega » à chipset combiné IMP (GLUE+MMU+Shifter en un ASIC) : le
 // décodage d'adresses diffère du ST/STE discret — certaines zones réservées y

@@ -17,6 +17,7 @@
 #include "core/Shifter.hpp"
 #include "core/YM2149.hpp"
 #include "core/DmaSound.hpp"
+#include "core/Blitter.hpp"
 #include "core/Glue.hpp"
 #include "core/Scheduler.hpp"
 #include "io/Mfp.hpp"
@@ -74,6 +75,7 @@ public:
     Shifter   shifter{bus};
     YM2149    psg;
     DmaSound  dmasnd{bus};
+    Blitter   blitter{bus};
     Glue      glue;
     Mfp       mfp;
     Ikbd      ikbd{mfp};

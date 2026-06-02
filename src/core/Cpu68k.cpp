@@ -132,15 +132,29 @@ static void neostInstrHook(unsigned int pc) {
     if (g_tracer) g_tracer->onInstruction(pc);
 }
 
-// Déclenche une bus error Musashi, ou HALTE le CPU en cas de double faute (cf.
-// g_inBusError). Retourne true si halté (l'appelant doit renvoyer une valeur neutre).
-static bool neostBusError() {
+// Variables internes Musashi remplissant la trame de bus error (adresse fautive,
+// R/W, code fonction). On les renseigne avant m68k_pulse_bus_error pour que la
+// trame de groupe 0 contienne la VRAIE adresse d'accès — les ROMs de diagnostic
+// la lisent et l'affichent (« Bus Error Access Address: ... »).
+extern "C" {
+    extern unsigned int m68ki_aerr_address;
+    extern unsigned int m68ki_aerr_write_mode;
+    extern unsigned int m68ki_aerr_fc;
+}
+
+// Déclenche une bus error Musashi (avec adresse fautive `addr`), ou HALTE le CPU
+// en cas de double faute (cf. g_inBusError). Retourne true si halté (l'appelant
+// doit renvoyer une valeur neutre).
+static bool neostBusError(unsigned int addr, bool write) {
     if (g_inBusError) {            // faute pendant le traitement d'une faute → double bus fault
         m68k_pulse_halt();
         m68k_end_timeslice();
         return true;
     }
     g_inBusError = true;
+    m68ki_aerr_address    = addr & 0x00FFFFFF;   // adresse d'accès empilée dans la trame
+    m68ki_aerr_write_mode = write ? 0x00 : 0x10; // SSW bit R/W (1 = lecture sur 68000)
+    m68ki_aerr_fc         = 0x05;                // code fonction : superviseur, donnée
     m68k_pulse_bus_error();
     return false;
 }
@@ -318,13 +332,13 @@ extern "C" {
 
 // Une adresse non décodée déclenche une bus error (longjmp Musashi : avorte
 // l'instruction). C'est ainsi qu'EmuTOS sonde le matériel optionnel.
-unsigned int m68k_read_memory_8 (unsigned int a) { if (g_bus->busFaultN(a, 1)) { neostBusError(); return 0; } return g_bus->read8 (a); }
-unsigned int m68k_read_memory_16(unsigned int a) { if (g_bus->busFaultN(a, 2)) { neostBusError(); return 0; } return g_bus->read16(a); }
-unsigned int m68k_read_memory_32(unsigned int a) { if (g_bus->busFaultN(a, 4)) { neostBusError(); return 0; } return g_bus->read32(a); }
+unsigned int m68k_read_memory_8 (unsigned int a) { if (g_bus->busFaultN(a, 1)) { neostBusError(a, false); return 0; } return g_bus->read8 (a); }
+unsigned int m68k_read_memory_16(unsigned int a) { if (g_bus->busFaultN(a, 2)) { neostBusError(a, false); return 0; } return g_bus->read16(a); }
+unsigned int m68k_read_memory_32(unsigned int a) { if (g_bus->busFaultN(a, 4)) { neostBusError(a, false); return 0; } return g_bus->read32(a); }
 
-void m68k_write_memory_8 (unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 1)) { neostBusError(); return; } g_bus->write8 (a, static_cast<uint8_t>(v)); }
-void m68k_write_memory_16(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 2)) { neostBusError(); return; } g_bus->write16(a, static_cast<uint16_t>(v)); }
-void m68k_write_memory_32(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 4)) { neostBusError(); return; } g_bus->write32(a, v); }
+void m68k_write_memory_8 (unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 1)) { neostBusError(a, true); return; } g_bus->write8 (a, static_cast<uint8_t>(v)); }
+void m68k_write_memory_16(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 2)) { neostBusError(a, true); return; } g_bus->write16(a, static_cast<uint16_t>(v)); }
+void m68k_write_memory_32(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 4)) { neostBusError(a, true); return; } g_bus->write32(a, v); }
 
 // Accès "immuables" utilisés par le désassembleur : pas d'effet de bord MMIO.
 unsigned int m68k_read_disassembler_16(unsigned int a) { return g_bus->read16(a); }

@@ -71,6 +71,21 @@ void DmaSound::decodeMicrowire() {
     }
 }
 
+// Une étape du transfert série Microwire (datée toutes les 8 cycles par le
+// Scheduler). $FF8922 lit `data << (16 - étapes_restantes)` → atteint 0 après 16
+// décalages (port de Hatari DmaSnd_InterruptHandler_Microwire). À 0, on décode la
+// commande LMC1992. Le masque ($FF8924) tourne mais revient identique → decode OK.
+void DmaSound::onMicrowireShift() {
+    if (mwSteps_ <= 0) return;
+    --mwSteps_;
+    mwShift_ = uint16_t(mwData_ << (16 - mwSteps_));    // étapes=0 → <<16 = 0
+    if (mwSteps_ > 0) {
+        if (sched_) sched_->schedule(Scheduler::MICROWIRE, sched_->now() + 8);
+    } else {
+        decodeMicrowire();                              // transfert fini → applique la commande
+    }
+}
+
 // Coefficients d'un filtre en plateau (shelving) d'après le « Audio EQ Cookbook »
 // de R. Bridson-Robert (pente S=1), normalisés par a0. lowShelf=true → basses.
 static void shelfCoeffs(bool lowShelf, double dB, double f0, double fs,
@@ -149,8 +164,8 @@ uint8_t DmaSound::read8(uint32_t addr) {
         case 0x11: return uint8_t(endAddr_ >> 8);
         case 0x13: return uint8_t(endAddr_);
         case 0x21: return mode_;
-        case 0x22: return uint8_t(mwData_ >> 8);      // microwire data (mot 16 bits)
-        case 0x23: return uint8_t(mwData_);
+        case 0x22: return uint8_t(mwShift_ >> 8);     // microwire data : valeur EN COURS de shift
+        case 0x23: return uint8_t(mwShift_);          // (→ 0 quand le transfert est fini)
         case 0x24: return uint8_t(mwMask_ >> 8);      // microwire mask
         case 0x25: return uint8_t(mwMask_);
         default:   return 0xFF;
@@ -184,7 +199,18 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         // Microwire : mots 16 bits ($FF8922 data, $FF8924 mask). On décode la
         // commande LMC1992 quand l'octet bas de la donnée est écrit (mot complet).
         case 0x22: mwData_ = uint16_t((mwData_ & 0x00FF) | (v << 8)); break;
-        case 0x23: mwData_ = uint16_t((mwData_ & 0xFF00) | v); decodeMicrowire(); break;
+        case 0x23:
+            mwData_ = uint16_t((mwData_ & 0xFF00) | v);
+            // Écriture d'un mot data → démarre un transfert série Microwire (16
+            // décalages de 8 cycles, cf. Hatari DmaSnd_MicrowireData_WriteWord), SAUF
+            // si un transfert est déjà en cours. $FF8922 lira la valeur décalée
+            // jusqu'à 0, puis decodeMicrowire(). Sans scheduler → décodage immédiat.
+            if (mwSteps_ == 0) {
+                mwShift_ = mwData_;
+                if (sched_) { mwSteps_ = 16; sched_->schedule(Scheduler::MICROWIRE, sched_->now() + 8); }
+                else        { mwShift_ = 0; decodeMicrowire(); }
+            }
+            break;
         case 0x24: mwMask_ = uint16_t((mwMask_ & 0x00FF) | (v << 8)); break;
         case 0x25: mwMask_ = uint16_t((mwMask_ & 0xFF00) | v); break;
         default: break;                                // compteur courant : lecture seule

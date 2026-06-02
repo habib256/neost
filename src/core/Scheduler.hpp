@@ -31,7 +31,10 @@ public:
     // IKBD = réponse différée du clavier (ex. $F1 ~502000 cycles après le reset
     // $80,$01, comme Hatari) : l'IRQ ACIA doit arriver PENDANT que le code attend,
     // pas instantanément (sinon elle est levée avant l'armement et perdue).
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_C, TIMER_D, FDC, FDC_INDEX, DMASND, IKBD, HBL, VBL, SRC_COUNT };
+    // MICROWIRE = shift série du registre Microwire ($FF8922) du son STE : 16
+    // décalages (8 cycles chacun, cf. Hatari) avant que la commande LMC1992 soit
+    // décodée et que $FF8922 retombe à 0. Des diagnostics POLLENT $FF8922 jusqu'à 0.
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_C, TIMER_D, FDC, FDC_INDEX, DMASND, IKBD, MICROWIRE, HBL, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 

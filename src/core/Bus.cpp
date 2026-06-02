@@ -12,6 +12,7 @@
 #include "io/Ikbd.hpp"
 #include "io/Fdc.hpp"
 #include "core/DmaSound.hpp"
+#include "core/Blitter.hpp"
 
 #include <cstdio>
 #include <fstream>
@@ -259,6 +260,11 @@ void Bus::buildIoFault() const {
     // Son DMA STE ($FF8900-$FF893F) : présent uniquement STE / Mega STE.
     if (machineHasDmaSound(machine)) clear(0xFF8900, 0x40);
 
+    // Blitter ($FF8A00-$FF8A3F) : présent sur Mega ST / STE / Mega STE → ses
+    // registres répondent (pas de bus error). Sur STF d'origine, la zone reste
+    // fautive (EmuTOS en conclut « pas de blitter » → VDI logiciel).
+    if (machineHasBlitter(machine)) clear(0xFF8A00, 0x40);
+
     // MFP 68901 : registres aux adresses IMPAIRES uniquement ($FFFA01-$FFFA3F) ;
     // les octets pairs fautent. RS232 et octets « void » inclus (tous impairs).
     for (uint32_t a = 0xFFFA01; a <= 0xFFFA3F; a += 2) clear(a, 1);
@@ -351,6 +357,8 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
     if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && dmasnd
         && machineHasDmaSound(machine))
         return dmasnd->read8(addr);       // son DMA STE ($FF8900) — STE/Mega STE
+    if (addr >= 0xFF8A00 && addr <= 0xFF8A3F && blitter && machineHasBlitter(machine))
+        return blitter->read8(addr);      // blitter ($FF8A00) — Mega ST/STE/Mega STE
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {
         const uint8_t v = mfp->read8(addr);
         if (cpu) cpu->updateIpl();        // l'état d'IRQ a pu changer
@@ -385,6 +393,10 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && dmasnd
         && machineHasDmaSound(machine)) {
         dmasnd->write8(addr, v);          // son DMA STE ($FF8900) — STE/Mega STE
+        return;
+    }
+    if (addr >= 0xFF8A00 && addr <= 0xFF8A3F && blitter && machineHasBlitter(machine)) {
+        blitter->write8(addr, v);         // blitter ($FF8A00) — Mega ST/STE/Mega STE
         return;
     }
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {

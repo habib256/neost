@@ -138,12 +138,27 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   (diagnostics) ne la croit plus 60 Hz.
 - **Injection clavier headless** (`--keys "..."`) : pilote les menus des diagnostics
   (scancodes ST pour A-Z, 0-9, Entrée).
+- **Shift série Microwire `$FF8922`** (son STE, `DmaSound::onMicrowireShift` +
+  `Scheduler::MICROWIRE`, port de Hatari) : l'écriture du registre data démarre 16
+  décalages de 8 cycles ; `$FF8922` lit la valeur décalée jusqu'à 0, puis la commande
+  LMC1992 est décodée. Les diagnostics qui pollent `$FF8922` jusqu'à 0 ne bouclent plus.
+- **Adresse fautive dans la trame de bus error** (`m68ki_aerr_address`/`_write_mode`/`_fc`
+  renseignés avant `m68k_pulse_bus_error`) : la trame de groupe 0 contient désormais la
+  VRAIE adresse d'accès et le bit R/W ; les diagnostics affichent « Bus Error Access
+  Address: ... » correctement (utile à leur détection de ROM par sondage).
+- **Blitter (`Blitter.cpp`)** : port FONCTIONNEL du blitter ST ($FF8A00-$FF8A3F) depuis
+  Hatari (HOP, LOP 16 ops, FXSR/NFSR, skew, smudge, halftone, endmasks, comptes X/Y,
+  incréments signés), en mode HOG (transfert instantané — résultat de données fidèle).
+  Présent sur Mega ST / STE / Mega STE (`machineHasBlitter`, STE inclus désormais),
+  absent du STF. Les tests « BLiT » (court/long) des diagnostics **passent** ; EmuTOS
+  STE peut l'utiliser pour le VDI (boot non régressé). Le STF garde la zone fautive
+  (EmuTOS → VDI logiciel).
 - **Cartouches de diagnostic** (`carts/`, magic `$FA52235F`) via `--cart` : rapport
-  à l'écran + port série. Grâce aux corrections ci-dessus, **`ST_Diagnostic` boote
-  jusqu'à son menu interactif** (self-tests bus error + clavier OK) sur les DEUX
-  cœurs, et **sa batterie de tests internes passe 7/8 avec un vrai TOS** (RAM, ROM,
-  Color, Keyboard, Audio, RTC, BLiT ; seul « T0 MFP timer » échoue — cycle-accuracy).
-  Non régressif : EmuTOS boote, jeux chargent (Musashi + Moira).
+  à l'écran + port série. Grâce aux corrections ci-dessus, **les TROIS cartouches
+  (`ST_Diagnostic`, `STE_Test`, `MegaSTE_Diagnostic`) bootent jusqu'à leur menu
+  interactif** sur les DEUX cœurs, avec un vrai TOS. La batterie de tests internes du
+  `ST_Diagnostic` passe **7/8** (RAM, ROM, Color, Keyboard, Audio, RTC, BLiT ; seul
+  « T0 MFP timer » échoue — cycle-accuracy). Non régressif : EmuTOS boote, jeux chargent.
 
 ## Frontend & confort
 

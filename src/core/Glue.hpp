@@ -12,7 +12,6 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
-#include <cstdio>
 
 class Glue {
 public:
@@ -23,7 +22,7 @@ public:
     }
 
     void write8(uint32_t addr, uint8_t v) {
-        if (addr == 0xFF8001) { std::fprintf(stderr, "[CFG] $FF8001 <- %02X\n", v); memConfig_ = v; return; }
+        if (addr == 0xFF8001) { memConfig_ = v; return; }
         // Écritures MFP/ACIA ignorées pour l'instant (à brancher plus tard).
     }
 

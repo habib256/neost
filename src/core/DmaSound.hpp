@@ -58,6 +58,13 @@ private:
     void    decodeMicrowire();                            // décode la commande LMC1992
     void    scheduleFrameEnd();                           // date la prochaine fin de trame
 
+public:
+    // Une étape du shift série Microwire (datée par le Scheduler, source MICROWIRE) :
+    // décale $FF8922 vers 0 (16 étapes) puis, à 0, décode la commande LMC1992. Sans
+    // ce shift, les diagnostics qui pollent $FF8922 jusqu'à 0 (STE_Test) bouclent.
+    void    onMicrowireShift();
+private:
+
     Bus&        bus_;
     Mfp*        mfp_   = nullptr;
     Scheduler*  sched_ = nullptr;
@@ -69,6 +76,8 @@ private:
     uint32_t endAddr_   = 0;         // $FF890F/11/13
     uint32_t curAddr_   = 0;         // $FF8909/0B/0D (compteur courant)
     uint16_t mwData_ = 0, mwMask_ = 0;  // microwire $FF8922/$FF8924 (mots 16 bits)
+    uint16_t mwShift_ = 0;              // valeur LUE en $FF8922 pendant le shift (→ 0)
+    int      mwSteps_ = 0;              // décalages restants (16 au départ, 0 = fini)
 
     // LMC1992 décodé (volumes en pas de 2 dB). Défauts = 0 dB (aucune atténuation).
     int      mwMaster_ = 40;         // 0..40 → -80..0 dB (volume maître)
