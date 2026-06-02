@@ -23,7 +23,7 @@ public:
     static constexpr double CLOCK_HZ = 2'000'000.0;
 
     // --- Interface MMIO (appelée par le Bus) --------------------------------
-    uint8_t read8(uint32_t addr) {
+    uint8_t read8(uint32_t /*addr*/) {
         // $FF8800 ET $FF8802 renvoient le registre sélectionné : le décodage du PSG
         // sur l'ST est partiel (seul A1 distingue select/data en écriture). Les
         // diagnostics font des read-modify-write (bclr/bset) sur la donnée $FF8802

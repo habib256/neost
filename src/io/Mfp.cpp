@@ -34,13 +34,18 @@ uint8_t Mfp::read8(uint32_t addr) {
         case 0x17: return vr;
         case 0x1B: return tbcr_;     // Timer B control
         case 0x21: return tbCounter_; // Timer B data (compteur courant)
-        case 0x2B:                   // RSR : bit7 = Buffer Full (octet reçu par bouclage)
-            return uint8_t((timer_[0x2B] & 0x7F) | (rxFull_ ? 0x80 : 0));
-        case 0x2D: return uint8_t(timer_[0x2D] | 0x80);  // TSR : bit7 (Buffer Empty) toujours
-                                     // armé — on transmet instantanément (cf. Hatari
-                                     // RS232_TSR_ReadByte). Sans ça, les diagnostics qui
-                                     // impriment sur le port série bouclent à l'infini.
-        case 0x2F:                   // UDR : lecture → consomme l'octet reçu (bouclage TxD→RxD)
+        case 0x2B: {                 // RSR : bit7 = Buffer Full ; bit6 = Overrun Error
+            const uint8_t v = uint8_t((timer_[0x2B] & 0x3F) | (rxFull_ ? 0x80 : 0) | (rxOverrun_ ? 0x40 : 0));
+            rxOverrun_ = false;      // les bits d'erreur du RSR se vident à la LECTURE (pas l'UDR)
+            return v;
+        }
+        case 0x2D:                   // TSR : bit7 = Buffer Empty (TX instantané, cf. Hatari
+                                     // RS232_TSR_ReadByte) ; bit6 = Underrun Error. Notre
+                                     // transmetteur « instantané » tourne à vide dès qu'il est
+                                     // inactif → underrun (le test série attend cette erreur).
+            return uint8_t(timer_[0x2D] | 0x80 | (loopback_ ? 0x40 : 0));
+        case 0x2F:                   // UDR : lecture → consomme l'octet reçu (l'overrun, lui,
+                                     // ne se vide qu'à la lecture du RSR → le handler RxErr le voit)
             if (rxFull_) { rxFull_ = false; return rxByte_; }
             return timer_[0x2F];
         default:   return timer_[addr & 0x3F];   // autres timers/USART : relisables
@@ -83,9 +88,12 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                    // ne doivent donc PAS générer d'IRQ parasite (sinon le test clavier,
                    // au boot, échoue). C'est le comportement matériel du MFP 68901.
                    if (loopback_) {              // connecteur branché : TxD→RxD (buffer 1 octet)
+                       if (rxFull_) { rxOverrun_ = true; raise(SRC_RXERR); }  // octet sur buffer plein → overrun (canal 11)
                        rxByte_ = v;
                        rxFull_ = true;
-                       raise(SRC_RXFULL);        // canal 12 (si activé) — le test peut l'utiliser
+                       raise(SRC_TXERR);         // canal 9  : underrun (transmetteur idle après envoi)
+                       raise(SRC_TXEMPTY);       // canal 10 : buffer d'émission vidé (TX instantané)
+                       raise(SRC_RXFULL);        // canal 12 : octet reçu par le bouclage
                    }
                    break;
         default: timer_[addr & 0x3F] = v; break;      // autres timers/USART : mémorisés
@@ -154,7 +162,6 @@ void Mfp::timerA_eventCount() {
 }
 
 void Mfp::raise(int source) {
-    if (source == SRC_RXFULL && loopback_) { static uint8_t seen=0; if((iera&~seen)){ seen|=iera; fprintf(stderr,"[DBG] raise RXFULL iera=%02x imra=%02x\n", iera, imra);} }
     if (source >= 8) {
         const uint8_t bit = uint8_t(1u << (source - 8));
         if (iera & bit) ipra |= bit;     // l'IRQ ne devient pendante que si activée
@@ -189,7 +196,6 @@ bool Mfp::irqPending() const {
 
 int Mfp::iack() {
     const int s = highestPending();
-    if (loopback_) { static uint16_t seen=0; if(s>=0 && !(seen&(1<<s))){seen|=(1<<s); fprintf(stderr,"[DBG] iack canal %d (ipra=%02x imra=%02x)\n", s, ipra, imra);} }
     if (s < 0) return -1;
     const uint8_t bit = uint8_t(1u << (s & 7));
     if (s >= 8) { ipra &= ~bit; if (vr & 0x08) isra |= bit; }

@@ -51,6 +51,7 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         else        pushRx(0xF1);
         cmd0_ = 0;
     } else {
+        fprintf(stderr,"[DBG] IKBD cmd %02x\n", v);
         cmd0_ = v;                   // autres commandes : ignorées (modes souris, etc.)
     }
 }

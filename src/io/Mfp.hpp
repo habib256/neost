@@ -31,6 +31,9 @@ public:
     static constexpr int SRC_ACIA   = 6;   // clavier/MIDI (GPIP4)
     static constexpr int SRC_FDC    = 7;   // FDC/DMA disquette (GPIP5)
     static constexpr int SRC_TIMERB = 8;   // Timer B (synchro vidéo / event-count)
+    static constexpr int SRC_TXERR  = 9;   // USART Transmit Error (underrun)
+    static constexpr int SRC_TXEMPTY = 10; // USART Transmit Buffer Empty (RS232)
+    static constexpr int SRC_RXERR  = 11;  // USART Receive Error (overrun, etc.)
     static constexpr int SRC_RXFULL = 12;  // USART Receive Buffer Full (RS232)
     static constexpr int SRC_TIMERA = 13;  // Timer A (souvent musique/délai)
     static constexpr int SRC_RI     = 14;  // RS232 Ring Indicator (GPIP6)
@@ -127,6 +130,7 @@ public:
     // échoue. Le câble n'est « branché » que pour tester le port série.
     uint8_t rxByte_  = 0;
     bool    rxFull_   = false;
+    bool    rxOverrun_ = false;   // RSR bit6 : un octet est arrivé buffer déjà plein
 public:
     void setLoopback(bool plugged) { loopback_ = plugged; }
     bool loopback() const { return loopback_; }
