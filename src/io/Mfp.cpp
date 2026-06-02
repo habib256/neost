@@ -20,7 +20,11 @@ uint8_t Mfp::read8(uint32_t addr) {
             if (ctsLine_)       v &= ~0x04;  // bit2 = RS232 CTS (actif bas)
             if (dcdLine_)       v &= ~0x02;  // bit1 = RS232 DCD (actif bas)
             if (busyLine_)      v &= ~0x01;  // bit0 = Centronics BUSY (actif bas)
-            return v;
+            // Lignes en SORTIE (DDR=1) → on relit le verrou écrit par le CPU ; lignes
+            // en ENTRÉE (DDR=0) → la valeur calculée ci-dessus (cf. Hatari
+            // MFP_GPIP_ReadByte_Main : GPIP = (GPIP & DDR) | (entrées & ~DDR)).
+            // ddr vaut 0 par défaut (tout en entrée) → le résultat reste exactement v.
+            return uint8_t((gpip & ddr) | (v & ~ddr));
         }
         case 0x03: return aer;
         case 0x05: return ddr;
