@@ -149,6 +149,31 @@ void Ikbd::dispatchCommand() {
             absX_ = uint16_t((inBuf_[2] << 8) | inBuf_[3]);
             absY_ = uint16_t((inBuf_[4] << 8) | inBuf_[5]);
             break;
+        case 0x14: {
+            // $14 = SET JOYSTICK EVENT REPORTING (cf. Hatari IKBD_Cmd_ReturnJoystickAuto) :
+            // bascule en mode auto. Cette commande RAZ l'état joystick mémorisé,
+            // puis — hack des jeux Utopos/Double Bubble — émet AUSSITÔT un paquet
+            // $FE/$FF si l'état courant diffère de l'état remis à zéro (sans
+            // attendre la prochaine trame ni vérifier l'ACIA).
+            joyMode_ = JOY_AUTO;
+            prevJoy0_ = prevJoy1_ = 0;
+            sendAutoJoysticks();
+            break;
+        }
+        case 0x15:
+            // $15 = SET JOYSTICK INTERROGATION MODE (cf. Hatari IKBD_Cmd_StopJoystick) :
+            // retour au mode interrogation seule ($16). Plus de report spontané.
+            joyMode_ = JOY_OFF;
+            break;
+        case 0x17:
+            // $17 = SET JOYSTICK MONITORING (cf. Hatari IKBD_Cmd_SetJoystickMonitoring) :
+            // octet 1 = taux d'échantillonnage en 1/100 s. Implémentation minimale :
+            // on retient le mode et émet des paires état/feu depuis onVbl().
+            joyMode_ = JOY_MONITOR;
+            break;
+        case 0x18:
+            // $18 = SET FIRE BUTTON MONITORING : non implémenté (comme Hatari).
+            break;
         case 0x16: {
             // $16 = « interroger les joysticks » : l'IKBD répond IMMÉDIATEMENT par
             // un paquet $FD + état joystick 0 + état joystick 1 (cf. Hatari ikbd.c
@@ -169,6 +194,33 @@ void Ikbd::dispatchCommand() {
             // octets de paramètre. Implémentations dédiées dans des tâches suivantes.
             break;
     }
+}
+
+void Ikbd::sendAutoJoysticks() {
+    // Émet un paquet par manette dont l'état a changé depuis la dernière fois
+    // (cf. Hatari IKBD_SendAutoJoysticks) : $FE = joystick 0 / souris, $FF =
+    // joystick 1. La sonde reflète le port parallèle sous fixture de bouclage.
+    uint8_t joy0 = 0, joy1 = 0;
+    if (joyProbe_) joyProbe_(joy0, joy1);
+    if (joy0 != prevJoy0_) {
+        pushRx(0xFE);
+        pushRx(joy0);
+        prevJoy0_ = joy0;
+    }
+    if (joy1 != prevJoy1_) {
+        pushRx(0xFF);
+        pushRx(joy1);
+        prevJoy1_ = joy1;
+    }
+}
+
+void Ikbd::onVbl() {
+    // Report joystick auto : à chaque trame, on émet spontanément l'état des
+    // manettes qui ont changé. No-op strict hors mode auto (JOY_OFF par défaut),
+    // donc aucun impact sur le boot EmuTOS ni les cartes de diagnostic (qui
+    // interrogent en polled via $16).
+    if (joyMode_ == JOY_AUTO)
+        sendAutoJoysticks();
 }
 
 void Ikbd::keyEvent(uint8_t scancode, bool pressed) {

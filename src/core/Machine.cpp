@@ -152,6 +152,9 @@ void Machine::onHbl() {
 
 void Machine::onVbl() {
     cpu.raiseVbl();   // interruption trame (niveau 4) — une fois par trame
+    // Report joystick auto de l'IKBD (cf. Hatari IKBD_SendAutoJoysticks) : émis
+    // une fois par trame, no-op strict hors mode auto (défaut JOY_OFF).
+    ikbd.onVbl();
 }
 
 // -----------------------------------------------------------------------------

@@ -49,6 +49,13 @@ public:
     // dy>0 = bas (cf. signe choisi côté frontend). left/right = boutons enfoncés.
     void mouseEvent(int dx, int dy, bool left, bool right);
 
+    // Tic de trame (VBL) : en mode joystick auto, l'IKBD émet spontanément un
+    // paquet $FE/$FF dès qu'un état de manette change (cf. Hatari
+    // IKBD_SendAutoJoysticks). No-op strict si le mode joystick est désactivé
+    // (par défaut JOY_OFF) — donc le bureau EmuTOS et les cartes de diag (qui
+    // utilisent l'interrogation polled $16) ne sont pas affectés.
+    void onVbl();
+
 private:
     void pushRx(uint8_t b);                  // empile un octet IKBD → CPU
     void raiseIfReady();                     // tire GPIP4 si octet dispo et RIE actif
@@ -60,6 +67,10 @@ private:
 
     // Exécute la commande IKBD complète accumulée dans inBuf_ (inBuf_[0] = opcode).
     void dispatchCommand();
+
+    // Sonde les manettes et émet $FE+joy0 / $FF+joy1 pour celles dont l'état a
+    // changé depuis la dernière émission (cf. Hatari IKBD_SendAutoJoysticks).
+    void sendAutoJoysticks();
 
     Mfp& mfp_;
     Scheduler* sched_ = nullptr;             // pour différer la réponse de reset
@@ -79,4 +90,12 @@ private:
     uint16_t absMaxX_ = 0, absMaxY_ = 0;     // bornes inclusives (commande $09)
     uint8_t  prevAbsButtons_ = 0;            // boutons signalés à la dernière interrogation $0D
     bool     prevL_ = false, prevR_ = false; // état persistant des boutons (mode ABS)
+
+    // --- Mode joystick (cf. Hatari ikbd.c KeyboardProcessor.JoystickMode) -------
+    // JOY_OFF = interrogation seule via $16 (par défaut) ; JOY_AUTO = report
+    // automatique des changements d'état à chaque trame ($14) ; JOY_MONITOR =
+    // échantillonnage périodique ($17). prevJoy0_/prevJoy1_ = dernier état émis.
+    enum JoystickMode { JOY_OFF, JOY_AUTO, JOY_MONITOR };
+    JoystickMode joyMode_ = JOY_OFF;
+    uint8_t prevJoy0_ = 0, prevJoy1_ = 0;
 };
