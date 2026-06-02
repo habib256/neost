@@ -35,6 +35,7 @@ void usage() {
         "  --mem SIZE        ST-RAM : 256k, 512k (défaut), 1m, 2m, 4m\n"
         "  --walk-mouse      après le boot, injecte un mouvement souris + clic (diag)\n"
         "  --keys STR        après le boot, tape STR au clavier (ex. menus de diag)\n"
+        "  --diskb FILE      monte une image dans le lecteur B (2e lecteur)\n"
         "  --cart FILE       monte une cartouche ($FA0000) : Test Kit diagnostic, etc.\n"
         "  --screenshot PPM  dump du framebuffer final au format PPM\n"
         "  rom               image TOS (défaut rom/etos192fr.img)\n");
@@ -63,6 +64,7 @@ int main(int argc, char** argv) {
     std::string tracePath;
     std::string shotPath;
     std::string diskPath   = "disks/diskA.st";
+    std::string diskBPath;                       // lecteur B (optionnel, --diskb)
     std::string romPath    = "rom/etos192us.img";
     std::string cartPath;
     bool        regs       = false;
@@ -88,6 +90,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--irq"))        irq       = true;
         else if (!std::strcmp(a, "--screenshot")) shotPath  = next(a);
         else if (!std::strcmp(a, "--disk"))       diskPath  = next(a);
+        else if (!std::strcmp(a, "--diskb"))      diskBPath = next(a);
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--walk-mouse")) walkMouse = true;
         else if (!std::strcmp(a, "--keys"))       keys      = next(a);
@@ -109,6 +112,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     machine.loadDisk(diskPath);   // lecteur A (optionnel)
+    if (!diskBPath.empty()) machine.loadDiskB(diskBPath);   // lecteur B (optionnel)
     if (!cartPath.empty()) machine.loadCart(cartPath);   // cartouche $FA0000 (optionnelle)
     machine.mfp.setColorMonitor(!machineMono);   // --mono → moniteur mono (haute rés)
 

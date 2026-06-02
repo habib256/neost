@@ -146,6 +146,12 @@ n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
   renseignés avant `m68k_pulse_bus_error`) : la trame de groupe 0 contient désormais la
   VRAIE adresse d'accès et le bit R/W ; les diagnostics affichent « Bus Error Access
   Address: ... » correctement (utile à leur détection de ROM par sondage).
+- **Timer B en mode DÉLAI** (`Mfp` + `Scheduler::TIMER_B_DELAY`) : NeoST ne gérait Timer B
+  qu'en event-count (HBL) ; `scheduleTimer` faisait `if (timer==1) return`. Quand un
+  logiciel programme TBCR=1-7 (mode délai, comme Timer A/C/D), le timer n'était jamais
+  daté → aucune IRQ. **Corrige le test « T0 MFP timer »** des diagnostics (qui programme
+  Timer B en délai et attend ses interruptions) : ce test PASSE désormais sur les 3
+  cartouches. Écritures TBCR/TBDR re-datent le timer ; event-count (TBCR=8) inchangé.
 - **Compteur d'adresse vidéo `$FF8205/07/09` cycle-exact** (`Shifter::videoCounter`,
   port de Hatari `Video_CalculateAddress`) : `addr = base + ligne*bpl + ((X-LineStart)>>1)&~1`
   (2 cycles/octet entre le cycle 56 en 50 Hz / 52 en 60 Hz et 376). L'ancienne version

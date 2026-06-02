@@ -42,7 +42,8 @@ public:
     bool loadTos(const std::string& path)  { return bus.loadTos(path); }
     bool loadCart(const std::string& path) { return bus.loadCart(path); }
     void ejectCart() { bus.ejectCart(); }
-    bool loadDisk(const std::string& path) { return fdc.loadImage(path); }
+    bool loadDisk(const std::string& path)  { return fdc.loadImage(path, 0); }   // lecteur A
+    bool loadDiskB(const std::string& path) { return fdc.loadImage(path, 1); }   // lecteur B (optionnel)
     void reset() { dmasnd.reset(); cpu.reset(); }
     // Reset à FROID (power-cycle) : efface toute la ST-RAM, ce qui invalide le
     // « memvalid » de TOS — il refait alors un boot COMPLET (re-détection mémoire,
