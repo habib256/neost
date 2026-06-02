@@ -10,12 +10,21 @@ Shifter::Shifter(Bus& bus) : bus_(bus) {
 }
 
 uint32_t Shifter::stColorToArgb(uint16_t c) {
-    // Format ST : %0000 0RRR 0GGG 0BBB (3 bits par canal). On étire 3→8 bits.
-    const uint8_t r = (c >> 8) & 0x7;
-    const uint8_t g = (c >> 4) & 0x7;
-    const uint8_t b = (c >> 0) & 0x7;
-    auto ex = [](uint8_t v) -> uint32_t { return (v * 255u) / 7u; };
-    return 0xFF000000u | (ex(r) << 16) | (ex(g) << 8) | ex(b);
+    // Format STE : %0000 RRRR GGGG BBBB (4 bits par canal). Le ST n'utilise que
+    // les 3 bits bas de chaque nibble ; le STE ajoute un 4e bit (bit3) qui pèse
+    // une DEMI-marche, d'où des teintes intermédiaires. Port fidèle de Hatari
+    // conv_st.c (ConvST_SetupRGBTable) : v8 = ((c4&0x7)<<1)|((c4&0x8)>>3) puis
+    // v8 |= v8<<4 (réplique le nibble pour étirer 4→8 bits). Pour un coloris ST
+    // (bit3=0) cela donne la même nuance qu'avant (ex. 7 → 0xEE).
+    const uint8_t r4 = (c >> 8) & 0xF;
+    const uint8_t g4 = (c >> 4) & 0xF;
+    const uint8_t b4 = (c >> 0) & 0xF;
+    auto ex = [](uint8_t c4) -> uint32_t {
+        uint32_t v = ((c4 & 0x7u) << 1) | ((c4 & 0x8u) >> 3);
+        v |= v << 4;
+        return v;
+    };
+    return 0xFF000000u | (ex(r4) << 16) | (ex(g4) << 8) | ex(b4);
 }
 
 void Shifter::resizeFor(Mode m) {
@@ -107,12 +116,23 @@ uint8_t Shifter::read8(uint32_t addr) {
     // sur la table des vecteurs et plantent).
     if (addr == 0xFF8201) return static_cast<uint8_t>(videoBase >> 16);
     if (addr == 0xFF8203) return static_cast<uint8_t>(videoBase >> 8);
-    if (addr == 0xFF820D) return static_cast<uint8_t>(videoBase);   // octet bas (STE)
+    // Octet bas de la base vidéo $FF820D : STE seulement (sur ST il vaut toujours
+    // 0, cf. Hatari Video_BaseLow_ReadByte).
+    if (addr == 0xFF820D) return machineIsSte(bus_.machine) ? static_cast<uint8_t>(videoBase) : 0;
     if (addr == 0xFF8205) return static_cast<uint8_t>(videoCounter() >> 16);
     if (addr == 0xFF8207) return static_cast<uint8_t>(videoCounter() >> 8);
     if (addr == 0xFF8209) return static_cast<uint8_t>(videoCounter());
-    if (addr == 0xFF820A) return sync;           // synchro 50/60 Hz (relisible)
+    // Synchro $FF820A : bits inutilisés 2-7 forcés à 1 (ST et STE), cf. Hatari
+    // Video_Sync_ReadByte (IoMem[0xff820a] |= 0xfc). On NE masque PAS le champ
+    // stocké `sync` : videoCounter() s'en sert toujours via `sync & 2`.
+    if (addr == 0xFF820A) return static_cast<uint8_t>((sync & 0x03) | 0xFC);
+    // Largeur de ligne STE $FF820F : 0 sur ST (cf. Hatari Video_LineWidth_ReadByte).
+    if (addr == 0xFF820F) return machineIsSte(bus_.machine) ? lineWidth : 0;
     if (addr == 0xFF8260) return static_cast<uint8_t>(mode);
+    // Scroll fin : Hatari n'expose QUE $FF8265 en lecture (Video_HorScroll_Read).
+    if (addr == 0xFF8265) return hwScrollCount;
+    // Tout autre registre nouvellement routé mais non géré ($FF8266-$FF827F,
+    // etc.) : lecture bénigne (0x00), comme les zones « void » du shifter.
     return 0x00;
 }
 
@@ -148,11 +168,37 @@ uint32_t Shifter::videoCounter() const {
 void Shifter::write8(uint32_t addr, uint8_t v) {
     // Adresse de base vidéo : octets haut ($FF8201) et milieu ($FF8203). Le bit
     // bas est fixé à 0 (le ST aligne le framebuffer sur 256 octets).
+    const bool ste = machineIsSte(bus_.machine);
     switch (addr) {
-        case 0xFF8201: videoBase = (videoBase & 0x00FF00) | (uint32_t(v) << 16); return;
-        case 0xFF8203: videoBase = (videoBase & 0xFF0000) | (uint32_t(v) << 8);  return;
+        case 0xFF8201:
+            videoBase = (videoBase & 0x00FF00) | (uint32_t(v) << 16);
+            // STE/TT : écrire l'octet haut/milieu remet à 0 l'octet bas $FF820D
+            // (cf. Hatari Video_ScreenBase_WriteByte).
+            if (ste) videoBase &= 0xFFFF00;
+            return;
+        case 0xFF8203:
+            videoBase = (videoBase & 0xFF0000) | (uint32_t(v) << 8);
+            if (ste) videoBase &= 0xFFFF00;
+            return;
         case 0xFF820A: sync = v; return;             // synchro 50/60 Hz
+        // Octet bas de la base vidéo $FF820D (STE) : bit0 ignoré (aligné pair).
+        case 0xFF820D:
+            if (ste) videoBase = (videoBase & 0xFFFF00) | (uint32_t(v) & ~1u);
+            return;
+        // Largeur de ligne STE $FF820F (registre seulement ; câblage rendu différé).
+        case 0xFF820F:
+            if (ste) lineWidth = v;
+            return;
         case 0xFF8260: mode = static_cast<Mode>(v & 0x3); return;
+        // Scroll fin horizontal STE — état des registres uniquement (le décalage
+        // par pixel relève de la cycle-accuracy, différé). Cf. Hatari
+        // Video_HorScroll_Write : $FF8264 sans prefetch, $FF8265 avec prefetch.
+        case 0xFF8264:
+            if (ste) { hwScrollCount = v & 0x0F; hwScrollPrefetch = false; }
+            return;
+        case 0xFF8265:
+            if (ste) { hwScrollCount = v & 0x0F; hwScrollPrefetch = true; }
+            return;
         default: break;
     }
     if (addr >= 0xFF8240 && addr < 0xFF8260) {
@@ -160,4 +206,6 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
         if (addr & 1) palette[i] = (palette[i] & 0xFF00) | v;
         else          palette[i] = static_cast<uint16_t>((palette[i] & 0x00FF) | (uint16_t(v) << 8));
     }
+    // Tout autre registre nouvellement routé mais non géré ($FF8266-$FF827F) :
+    // écriture sans effet (no-op), comme les zones « void » du shifter.
 }

@@ -59,7 +59,7 @@ namespace stmap {
     // Décodage MMIO par puce (bornes basses, cf. dispatch dans Bus.cpp) :
     constexpr uint32_t MMU_CONFIG     = 0xFF8001; // config mémoire (banques)
     constexpr uint32_t SHIFTER_BASE   = 0xFF8200; // vidéo : base, palette, rés.
-    constexpr uint32_t SHIFTER_END    = 0xFF8260;
+    constexpr uint32_t SHIFTER_END    = 0xFF827F; // inclut scroll fin STE ($FF8264/65), linewidth ($FF820F)…
     constexpr uint32_t DMA_FDC_BASE   = 0xFF8600; // disquette / DMA
     constexpr uint32_t PSG_BASE       = 0xFF8800; // YM2149 (son)
     constexpr uint32_t DMASND_BASE    = 0xFF8900; // son DMA STE ($FF8900-$FF8925)

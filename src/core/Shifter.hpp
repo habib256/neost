@@ -62,6 +62,17 @@ public:
     // (diagnostics : « 50/60 Hz ») la croit 60 Hz et ses mesures timer/VBL faussent.
     uint8_t sync = 0x02;                    // défaut : 50 Hz PAL (cohérent avec 313 lignes)
 
+    // --- Registres STE supplémentaires (gardés à machineIsSte) ---------------
+    // Scroll fin horizontal $FF8264 (sans prefetch) / $FF8265 (avec prefetch) :
+    // on ne stocke QUE l'état des registres (le décalage par pixel relève de la
+    // cycle-accuracy, différé). Cf. Hatari Video_HorScroll_Write (HWScrollCount/
+    // HWScrollPrefetch).
+    uint8_t hwScrollCount = 0;              // 4 bits de scroll fin ($FF8264/65 & 0x0F)
+    bool    hwScrollPrefetch = false;       // écriture via $FF8265 → prefetch
+    // Largeur de ligne STE $FF820F (octets ajoutés au compteur shifter en fin de
+    // ligne). On la lit/réécrit ; le câblage dans renderLine reste différé (TODO).
+    uint8_t lineWidth = 0;                  // cf. Hatari Video_LineWidth_WriteByte
+
 private:
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
     void resizeFor(Mode m);                       // ajuste le buffer si la rés. change
