@@ -116,26 +116,31 @@ uint8_t Shifter::read8(uint32_t addr) {
     return 0x00;
 }
 
-// Reconstruit l'adresse vidéo courante (Hatari Video_CalculateAddress, simplifié) :
-// au sommet de la trame le compteur vaut videoBase ; il avance de `bpl` octets par
-// ligne affichée (fenêtre Display-Enable), puis reste figé pendant le VBlank, et se
-// recharge à videoBase à la trame suivante (remise à zéro de l'horloge faisceau).
+// Reconstruit l'adresse vidéo courante — port fidèle de Hatari Video_CalculateAddress :
+//   addr = videoBase + ligne*bpl + NbBytes, avec NbBytes = ((X - LineStartCycle) >> 1) & ~1
+// où X = cycles DANS la ligne et le shifter lit 2 cycles/octet entre LineStartCycle
+// (56 en 50 Hz, 52 en 60 Hz ; 0 en haute rés) et LineEndCycle (376). Après la dernière
+// ligne affichée, le compteur reste figé jusqu'au rechargement VBL. (L'ancienne version
+// supposait 1 octet/cycle depuis le cycle 216 — faux en milieu de ligne, d'où l'échec
+// du test « T0 » des diagnostics qui relisent $FF8205/07/09 au cycle près.)
 uint32_t Shifter::videoCounter() const {
     if (!beamClock_) return videoBase & 0xFFFFFF;       // pas d'horloge → base brute
     const int64_t fc = beamClock_();                    // cycles dans la trame
     constexpr int kCyclesPerLine = 512;
-    const int  bpl  = (frameMode_ == Mode::High) ? 80 : 160;   // octets/ligne affichée
-    const int  disp = (frameMode_ == Mode::High) ? 400 : 200;  // lignes affichées
-    const int  deEnd = 376;                             // fin Display-Enable (cf. Machine)
+    const bool hi   = (frameMode_ == Mode::High);
+    const int  bpl  = hi ? 80 : 160;                    // octets/ligne affichée
+    const int  disp = hi ? 400 : 200;                   // lignes affichées
+    const int  lineStart = hi ? 0 : ((sync & 2) ? 56 : 52);   // début Display-Enable (50/60 Hz)
     const int  line = static_cast<int>(fc / kCyclesPerLine);
     uint32_t addr = videoBase;
     if (line >= disp) {
         addr += static_cast<uint32_t>(disp) * bpl;      // écran entièrement lu (avant VBL)
-    } else if (line > 0 || (fc % kCyclesPerLine) > (deEnd - bpl)) {
-        addr += static_cast<uint32_t>(line) * bpl;
-        int into = static_cast<int>(fc % kCyclesPerLine) - (deEnd - bpl);  // ~1 octet/cycle
-        if (into < 0) into = 0; else if (into > bpl) into = bpl;
-        addr += static_cast<uint32_t>(into);
+    } else {
+        const int X = static_cast<int>(fc % kCyclesPerLine);
+        int nb = (X - lineStart) >> 1;                  // 2 cycles par octet
+        nb &= ~1;                                       // le shifter lit par MOTS
+        if (nb < 0) nb = 0; else if (nb > bpl) nb = bpl;
+        addr += static_cast<uint32_t>(line) * bpl + static_cast<uint32_t>(nb);
     }
     return addr & 0xFFFFFF;
 }
