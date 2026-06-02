@@ -12,6 +12,8 @@
 #include <cstring>
 #include <fstream>
 
+#include <sys/stat.h>
+
 // --- Bits DMA control ($FF8606), cf. EmuTOS bios/dma.h -----------------------
 enum : uint16_t {
     DMA_A0     = 0x0002, DMA_A1   = 0x0004,
@@ -111,8 +113,19 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         if (sides >= 1 && sides <= 2)  dk.sides = sides;
     }
     dk.path = path;
-    std::fprintf(stderr, "[FDC] lecteur %c : %s (%zu Ko, %d secteurs/piste, %d faces)\n",
-                 drive & 1 ? 'B' : 'A', path.c_str(), dk.image.size() / 1024, dk.spt, dk.sides);
+
+    // Write-protect auto-détecté d'après les permissions du fichier (cf. Hatari
+    // floppy.c:Floppy_IsWriteProtected, mode « automatic ») : on stat() l'image et
+    // on regarde le bit propriétaire S_IWUSR — si le fichier n'est pas inscriptible,
+    // la disquette est protégée. Une image .msa est TOUJOURS protégée car writeBack
+    // ne sait pas réencoder le format compressé (dk.raw == false).
+    struct stat st;
+    const bool writable = (::stat(path.c_str(), &st) == 0) && (st.st_mode & S_IWUSR);
+    dk.writeProtect = !dk.raw || !writable;
+
+    std::fprintf(stderr, "[FDC] lecteur %c : %s (%zu Ko, %d secteurs/piste, %d faces%s)\n",
+                 drive & 1 ? 'B' : 'A', path.c_str(), dk.image.size() / 1024, dk.spt, dk.sides,
+                 dk.writeProtect ? ", protégé en écriture" : "");
     return true;
 }
 
