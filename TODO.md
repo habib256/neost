@@ -160,10 +160,18 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       (`> 1`). Gros Δ drainés en plusieurs paquets. Émission **sur changement de bouton sans
       mouvement** (front bouton) portée aussi → boutons de Vroom remontés. Reset → seuils 1,
       échelle 0. Réf. `ikbd.c:IKBD_Cmd_SetMouseThreshold/SetMouseScale`. Validé moira (bureau
-      TOS 1.04 + clic-glissé, curseur suit). Reste sous-items : `0x07`/`0x0A`/horloge.
-- [ ] `MouseAction 0x07` / report bouton-en-touche / `MouseCursorKeycodes 0x0A` _(lot suivant)_
-      — réf. `ikbd.c:IKBD_Cmd_MouseAction`
-- [ ] Horloge IKBD (`SetClock 0x1B` / `ReadClock 0x1C`) _(lot suivant)_ — réf. `ikbd.c`
+      TOS 1.04 + clic-glissé, curseur suit).
+- [x] **`MouseAction 0x07` + `MouseCursorKeycodes 0x0A`** — ✅ FAIT (port `IKBD_SendOnMouseAction`
+      + `IKBD_SendCursorMousePacket`). `0x07` : bit2 = boutons remontés comme scancodes touche
+      (`0x74`/`0x75`, `|0x80` au relâché, **en plus** du paquet de mode) ; bits 0/1 = report de
+      position absolue à l'appui/relâchement (mode ABS). `0x0A` : mode CURSOR — le Δ sort en
+      flèches clavier (72/80/75/77) par pas de keycode-delta. `0x12` (DisableMouse → mode OFF)
+      câblé au passage.
+- [x] **Horloge IKBD (`SetClock 0x1B` / `ReadClock 0x1C`)** — ✅ FAIT (port `IKBD_UpdateClockOnVBL`
+      + helpers BCD `Check`/`Adjust`). 6 octets BCD (YY MM DD hh mm ss), avancée d'1 s par
+      1e6 µs cumulés au VBL (durée trame ≈ 20032 µs), propagation/retenue + jours/mois +
+      bissextile fidèles à la ROM HD6301 ; conservée au reset à chaud. Validé par test ciblé
+      (set/read/tic/octet non-BCD).
 - [ ] Keymap international / layouts TOS (FR/UK/DE, autorepeat) _(faible valeur)_ — réf. `keymap.c`
 
 ## ACIA 6850 (clavier + MIDI)

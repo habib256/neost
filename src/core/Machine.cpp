@@ -159,9 +159,12 @@ void Machine::onHbl() {
 
 void Machine::onVbl() {
     cpu.raiseVbl();   // interruption trame (niveau 4) — une fois par trame
-    // Report joystick auto de l'IKBD (cf. Hatari IKBD_SendAutoJoysticks) : émis
-    // une fois par trame, no-op strict hors mode auto (défaut JOY_OFF).
-    ikbd.onVbl();
+    // Tic VBL de l'IKBD (horloge interne $1B/$1C + report joystick auto). La durée
+    // d'une trame en µs se déduit de la géométrie : (lignes × cycles/ligne) à 8 MHz
+    // (horloge bus du Shifter, indépendante du 8/16 MHz CPU MegaSTE).
+    constexpr int64_t kVblMicro =
+        static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE / 8;   // ≈ 20032 µs (50 Hz)
+    ikbd.onVbl(kVblMicro);
 }
 
 // -----------------------------------------------------------------------------

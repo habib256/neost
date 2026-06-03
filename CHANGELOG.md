@@ -72,6 +72,12 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   (`$0C`), **signe d'axe Y** (`$0F`/`$10`), drain des gros Δ en plusieurs paquets, et émission
   **sur changement de bouton SANS mouvement** (détection de front — boutons de jeu type Vroom).
   Défauts de reset (REL, seuils 1, axe Y haut) remis sur `$80,$01`.
+- **MouseAction `$07`** (`IKBD_SendOnMouseAction`) : boutons remontés comme scancodes touche
+  (`$74`/`$75`, bit2) et/ou position absolue reportée à l'appui/relâchement (bits 0/1) ;
+  **mode curseur-clavier `$0A`** (`IKBD_SendCursorMousePacket`) : Δ souris converti en flèches
+  (72/80/75/77) ; **DisableMouse `$12`** (mode OFF).
+- **Horloge interne IKBD `$1B`/`$1C`** (`IKBD_UpdateClockOnVBL`) : 6 octets BCD avancés d'une
+  seconde par trame cumulée, propagation/retenue + bissextile fidèles à la ROM HD6301.
 - **Joystick** : auto-report (`$14`), stop (`$15`), monitoring (`$17`), durée de feu (`$18`) ;
   interrogation `$16` → `$FD,joy0,joy1`.
 

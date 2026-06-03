@@ -51,12 +51,11 @@ public:
     // bouton SANS mouvement. En mode absolu, accumule la position (échelle $0C).
     void mouseEvent(int dx, int dy, bool left, bool right);
 
-    // Tic de trame (VBL) : en mode joystick auto, l'IKBD émet spontanément un
-    // paquet $FE/$FF dès qu'un état de manette change (cf. Hatari
-    // IKBD_SendAutoJoysticks). No-op strict si le mode joystick est désactivé
-    // (par défaut JOY_OFF) — donc le bureau EmuTOS et les cartes de diag (qui
-    // utilisent l'interrogation polled $16) ne sont pas affectés.
-    void onVbl();
+    // Tic de trame (VBL), `vblMicro` = durée d'une trame en µs. Deux rôles :
+    //  - avance l'horloge interne IKBD ($1B/$1C, cf. IKBD_UpdateClockOnVBL) ;
+    //  - en mode joystick auto, émet spontanément un paquet $FE/$FF dès qu'un état
+    //    de manette change (cf. IKBD_SendAutoJoysticks ; no-op hors JOY_AUTO).
+    void onVbl(int64_t vblMicro);
 
 private:
     void pushRx(uint8_t b);                  // empile un octet IKBD → CPU
@@ -74,6 +73,23 @@ private:
     // changé depuis la dernière émission (cf. Hatari IKBD_SendAutoJoysticks).
     void sendAutoJoysticks();
 
+    // Reporting lié à MouseAction ($07, cf. IKBD_SendOnMouseAction) : boutons
+    // remontés comme scancodes (bit2), ou position absolue à l'appui/relâchement
+    // (bits 0/1, en mode ABS seulement). Comparé à l'ancien état (bOldL_/bOldR_).
+    void sendOnMouseAction(bool left, bool right);
+
+    // Émet le paquet $F7 « position absolue » (cf. IKBD_Cmd_ReadAbsMousePos) :
+    // boutons (changements depuis la dernière interrogation) + X/Y sur 16 bits.
+    void sendAbsMousePos(bool curL, bool curR);
+
+    // Émet le Δ souris comme pressions de flèches (cf. IKBD_SendCursorMousePacket,
+    // mode $0A) : 72 haut / 80 bas / 75 gauche / 77 droite par pas de keyCodeDelta.
+    void sendCursorKeys(int dx, int dy, bool left, bool right);
+
+    // Avance l'horloge interne BCD d'une seconde par 1e6 µs cumulés (cf.
+    // IKBD_UpdateClockOnVBL) avec la propagation/retenue de la ROM HD6301.
+    void updateClock(int64_t vblMicro);
+
     Mfp& mfp_;
     Scheduler* sched_ = nullptr;             // pour différer la réponse de reset
     std::deque<uint8_t> rx_;                 // file IKBD → CPU
@@ -85,8 +101,9 @@ private:
 
     // --- Mode souris (cf. Hatari ikbd.c KeyboardProcessor.MouseMode) -----------
     // REL = paquets relatifs $F8 (par défaut, bureau EmuTOS) ; ABS = position
-    // absolue accumulée et lue à la demande via $0D ; OFF = souris désactivée.
-    enum MouseMode { REL, ABS, OFF };
+    // absolue accumulée et lue à la demande via $0D ; CURSOR = Δ converti en
+    // flèches clavier ($0A) ; OFF = souris désactivée ($12).
+    enum MouseMode { REL, ABS, OFF, CURSOR };
     MouseMode mouseMode_ = REL;
     uint16_t absX_ = 0, absY_ = 0;           // position absolue courante (mode ABS)
     uint16_t absMaxX_ = 0, absMaxY_ = 0;     // bornes inclusives (commande $09)
@@ -106,6 +123,21 @@ private:
     int  xScale_ = 0, yScale_ = 0;
     int  yAxis_ = 1;
     bool bOldL_ = false, bOldR_ = false;
+
+    // --- MouseAction ($07) + mode curseur ($0A) (cf. KeyboardProcessor.Mouse) ---
+    // mouseAction_ : bit0 = position abs reportée à l'APPUI, bit1 = au RELÂCHEMENT
+    // (mode ABS), bit2 = boutons remontés comme scancodes touche (0x74 gauche /
+    // 0x75 droit, |0x80 au relâché). keyCodeDeltaX_/Y_ : pas (en pixels) entre deux
+    // pressions de flèche en mode CURSOR ($0A), défaut 1.
+    uint8_t mouseAction_ = 0;
+    int     keyCodeDeltaX_ = 1, keyCodeDeltaY_ = 1;
+
+    // --- Horloge interne IKBD ($1B/$1C, cf. pIKBD->Clock[6]) --------------------
+    // 6 octets BCD : année / mois / jour / heure / minute / seconde. Avancée d'une
+    // seconde chaque fois que clockMicro_ atteint 1e6 µs (cumul au VBL). Effacée à
+    // la construction (reset à froid) ; conservée au reset $80,$01 (reset à chaud).
+    uint8_t clock_[6] = {0, 0, 0, 0, 0, 0};
+    int64_t clockMicro_ = 0;
 
     // --- Mode joystick (cf. Hatari ikbd.c KeyboardProcessor.JoystickMode) -------
     // JOY_OFF = interrogation seule via $16 (par défaut) ; JOY_AUTO = report

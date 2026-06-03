@@ -14,6 +14,20 @@ enum : uint8_t {
     ACIA_IRQ  = 0x80,   // ligne d'interruption (vers GPIP4 du MFP)
 };
 
+// Horloge interne IKBD : l'octet est-il un nombre BCD valide ? (cf. Hatari
+// IKBD_BCD_Check) — SetClock ($1B) ignore les octets non BCD et garde les autres.
+static bool bcdCheck(uint8_t v) {
+    return ((v & 0x0f) <= 0x09) && ((v & 0xf0) <= 0x90);
+}
+
+// Ré-ajuste un octet en BCD après +1 (cf. Hatari IKBD_BCD_Adjust, instruction DAA
+// du HD6301) : propage les quartets > 9 vers le quartet supérieur.
+static uint8_t bcdAdjust(uint8_t v) {
+    if ((v & 0x0f) > 0x09) v += 0x06;
+    if ((v & 0xf0) > 0x90) v += 0x60;
+    return v;
+}
+
 uint8_t Ikbd::read8(uint32_t addr) {
     if ((addr & 2) == 0) {
         // $FFFC00 : statut. TX toujours prêt ; RX plein si la file n'est pas vide.
@@ -112,11 +126,14 @@ void Ikbd::dispatchCommand() {
                 // L'IKBD repart de ses défauts (cf. Hatari IKBD_Reset, l.565-569) :
                 // souris RELATIVE, seuils 1, pas d'échelle, axe Y vers le haut,
                 // état de bouton émis remis à zéro.
-                mouseMode_  = REL;
-                xThreshold_ = yThreshold_ = 1;
-                xScale_     = yScale_ = 0;
-                yAxis_      = 1;
-                bOldL_      = bOldR_ = false;
+                mouseMode_     = REL;
+                xThreshold_    = yThreshold_ = 1;
+                xScale_        = yScale_ = 0;
+                yAxis_         = 1;
+                mouseAction_   = 0;
+                keyCodeDeltaX_ = keyCodeDeltaY_ = 1;
+                bOldL_         = bOldR_ = false;
+                // L'horloge ($1B/$1C) est CONSERVÉE (reset à chaud, cf. Hatari).
                 constexpr int64_t kIkbdResetCycles = 502000;
                 if (sched_) sched_->schedule(Scheduler::IKBD, sched_->now() + kIkbdResetCycles);
                 else        pushRx(0xF1);
@@ -130,26 +147,43 @@ void Ikbd::dispatchCommand() {
             absMaxX_ = uint16_t((inBuf_[1] << 8) | inBuf_[2]);
             absMaxY_ = uint16_t((inBuf_[3] << 8) | inBuf_[4]);
             break;
-        case 0x0D: {
+        case 0x0D:
             // $0D = INTERROGATE MOUSE POSITION (cf. Hatari IKBD_Cmd_ReadAbsMousePos) :
-            // l'IKBD renvoie un paquet $F7 + boutons + X(MSB,LSB) + Y(MSB,LSB).
-            // Nibble boutons : droite-bas=0x01 / droite-haut=0x02 / gauche-bas=0x04 /
-            // gauche-haut=0x08, relatif à la dernière interrogation (on masque les
-            // bits déjà signalés via prevAbsButtons_).
-            uint8_t buttons = 0;
-            buttons |= prevR_ ? 0x01 : 0x02;
-            buttons |= prevL_ ? 0x04 : 0x08;
-            const uint8_t prev = prevAbsButtons_;
-            prevAbsButtons_ = buttons;
-            buttons &= uint8_t(~prev);
-            pushRx(0xF7);
-            pushRx(buttons);
-            pushRx(uint8_t(absX_ >> 8));
-            pushRx(uint8_t(absX_ & 0xFF));
-            pushRx(uint8_t(absY_ >> 8));
-            pushRx(uint8_t(absY_ & 0xFF));
+            // paquet $F7 + boutons + X/Y. État de bouton = dernier connu (prevL_/R_).
+            sendAbsMousePos(prevL_, prevR_);
             break;
-        }
+        case 0x07:
+            // $07 = SET MOUSE BUTTON ACTION (cf. Hatari IKBD_Cmd_MouseAction) :
+            // bit0 = report position abs à l'appui, bit1 = au relâchement, bit2 =
+            // boutons remontés comme scancodes. Remet le cache de boutons abs à la
+            // valeur « rien à signaler » (ABS_PREVBUTTONS = 0x0A).
+            mouseAction_   = inBuf_[1];
+            prevAbsButtons_ = 0x0A;
+            break;
+        case 0x0A:
+            // $0A = SET MOUSE KEYCODE MODE (cf. Hatari IKBD_Cmd_MouseCursorKeycodes) :
+            // les mouvements deviennent des flèches clavier ; octets 1/2 = pas X/Y.
+            mouseMode_     = CURSOR;
+            keyCodeDeltaX_ = inBuf_[1] ? inBuf_[1] : 1;
+            keyCodeDeltaY_ = inBuf_[2] ? inBuf_[2] : 1;
+            break;
+        case 0x12:
+            // $12 = DISABLE MOUSE (cf. Hatari IKBD_Cmd_TurnMouseOff) : plus aucun
+            // paquet souris émis jusqu'au prochain mode souris.
+            mouseMode_ = OFF;
+            break;
+        case 0x1B:
+            // $1B = SET CLOCK (cf. Hatari IKBD_Cmd_SetClock) : 6 octets BCD
+            // (YY MM DD hh mm ss). Les octets non BCD sont ignorés, les autres pris.
+            for (int i = 1; i <= 6; ++i)
+                if (bcdCheck(inBuf_[i])) clock_[i - 1] = inBuf_[i];
+            break;
+        case 0x1C:
+            // $1C = INTERROGATE CLOCK (cf. Hatari IKBD_Cmd_ReadClock) : paquet
+            // $FC + les 6 octets BCD de l'horloge.
+            pushRx(0xFC);
+            for (int i = 0; i < 6; ++i) pushRx(clock_[i]);
+            break;
         case 0x0E:
             // $0E = LOAD MOUSE POSITION (cf. Hatari IKBD_Cmd_SetInternalMousePos) :
             // octet 1 = filler ; X = octets 2/3 ; Y = octets 4/5 (système mis à
@@ -221,9 +255,9 @@ void Ikbd::dispatchCommand() {
             break;
         }
         default:
-            // Autres commandes (modes souris, axe Y, joystick auto, horloge…) :
-            // simples no-op pour l'instant — le parseur a déjà consommé tous les
-            // octets de paramètre. Implémentations dédiées dans des tâches suivantes.
+            // Opcodes restants (pause/reprise transmission, chargement mémoire
+            // contrôleur, exécution programme custom…) : no-op — le parseur a déjà
+            // consommé les octets de paramètre.
             break;
     }
 }
@@ -246,11 +280,13 @@ void Ikbd::sendAutoJoysticks() {
     }
 }
 
-void Ikbd::onVbl() {
-    // Report joystick auto : à chaque trame, on émet spontanément l'état des
-    // manettes qui ont changé. No-op strict hors mode auto (JOY_OFF par défaut),
-    // donc aucun impact sur le boot EmuTOS ni les cartes de diagnostic (qui
-    // interrogent en polled via $16).
+void Ikbd::onVbl(int64_t vblMicro) {
+    // 1) Avance l'horloge interne IKBD ($1B/$1C) du temps d'une trame.
+    updateClock(vblMicro);
+    // 2) Report joystick auto : à chaque trame, on émet spontanément l'état des
+    //    manettes qui ont changé. No-op strict hors mode auto (JOY_OFF par défaut),
+    //    donc aucun impact sur le boot EmuTOS ni les cartes de diagnostic (qui
+    //    interrogent en polled via $16).
     if (joyMode_ == JOY_AUTO)
         sendAutoJoysticks();
 }
@@ -261,16 +297,25 @@ void Ikbd::keyEvent(uint8_t scancode, bool pressed) {
 }
 
 void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
-    // Paquet "position relative" : en-tête %11111000 + boutons (bit0=droit,
-    // bit1=gauche), puis Δx et Δy signés sur 8 bits. Les en-têtes $F8-$FB ne
-    // chevauchent aucun scancode (max ~$F2), d'où l'absence d'ambiguïté pour le
-    // parseur IKBD d'EmuTOS qui lit ces flux entremêlés sur la même ACIA.
+    // Ordre calqué sur Hatari IKBD_SendAutoKeyboardCommands : d'ABORD le reporting
+    // lié à MouseAction ($07), qui compare l'état courant à l'ancien (bOldL_/bOldR_),
+    // PUIS le traitement propre au mode souris. bOldL_/bOldR_ ne sont mis à jour
+    // qu'après — ainsi un même front de bouton peut produire à la fois un scancode
+    // d'action ET un paquet de mode (comme sur le vrai IKBD).
+    sendOnMouseAction(left, right);
+
+    if (mouseMode_ == OFF) {
+        // Souris désactivée ($12) : aucun paquet, on retient juste l'état bouton.
+        bOldL_ = left; bOldR_ = right;
+        return;
+    }
+
     if (mouseMode_ == ABS) {
         // Mode absolu (cf. Hatari IKBD_UpdateInternalMousePosition, AUTOMODE_MOUSEABS) :
         // on accumule Δ dans la position courante en la bornant à [0, Max], en
         // appliquant l'échelle ($0C, si > 1) et le signe d'axe Y ($0F/$10), et on
         // retient l'état des boutons. Aucun paquet $F8 n'est émis ; l'hôte lira la
-        // position via $0D.
+        // position via $0D (ou via le report d'action ci-dessus).
         const int sx = (xScale_ > 1) ? dx * xScale_ : dx;
         const int sy = (yScale_ > 1) ? dy * yAxis_ * yScale_ : dy * yAxis_;
         int x = static_cast<int>(absX_) + sx;
@@ -279,8 +324,15 @@ void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
         if (y < 0) y = 0; else if (y > absMaxY_) y = absMaxY_;
         absX_ = static_cast<uint16_t>(x);
         absY_ = static_cast<uint16_t>(y);
-        prevL_ = left;
-        prevR_ = right;
+        prevL_ = left; prevR_ = right;
+        bOldL_ = left; bOldR_ = right;
+        return;
+    }
+
+    if (mouseMode_ == CURSOR) {
+        // Mode curseur-clavier ($0A) : le Δ sort en pressions de flèches.
+        sendCursorKeys(dx, dy, left, right);
+        bOldL_ = left; bOldR_ = right;
         return;
     }
 
@@ -308,6 +360,110 @@ void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
         dY -= by;
         bOldL_ = left;
         bOldR_ = right;
+    }
+}
+
+void Ikbd::sendOnMouseAction(bool left, bool right) {
+    // Port de Hatari IKBD_SendOnMouseAction. Émis quel que soit le mode souris.
+    if (mouseAction_ & 0x4) {
+        // Boutons remontés comme scancodes touche (0x74 gauche / 0x75 droit ;
+        // |0x80 au relâchement). Les bits 0/1 sont ignorés quand le bit2 est mis.
+        if (left && !bOldL_)       pushRx(0x74);
+        else if (!left && bOldL_)  pushRx(0x74 | 0x80);
+        if (right && !bOldR_)      pushRx(0x75);
+        else if (!right && bOldR_) pushRx(0x75 | 0x80);
+        return;
+    }
+    if (mouseAction_ & 0x3) {
+        // Report de la position absolue à l'appui (bit0) / au relâchement (bit1) ;
+        // on pré-positionne le cache de boutons abs comme le fait Hatari, puis on
+        // émet le paquet $F7 — uniquement en mode absolu.
+        bool report = false;
+        if (mouseAction_ & 0x1) {
+            if (left  && !bOldL_) { report = true; prevAbsButtons_ = (prevAbsButtons_ & ~0x04) | 0x02; }
+            if (right && !bOldR_) { report = true; prevAbsButtons_ = (prevAbsButtons_ & ~0x01) | 0x08; }
+        }
+        if (mouseAction_ & 0x2) {
+            if (!left  && bOldL_) { report = true; prevAbsButtons_ = (prevAbsButtons_ & ~0x08) | 0x01; }
+            if (!right && bOldR_) { report = true; prevAbsButtons_ = (prevAbsButtons_ & ~0x02) | 0x04; }
+        }
+        if (report && mouseMode_ == ABS)
+            sendAbsMousePos(left, right);
+    }
+}
+
+void Ikbd::sendAbsMousePos(bool curL, bool curR) {
+    // Port de Hatari IKBD_Cmd_ReadAbsMousePos : nibble boutons (droite-bas=0x01 /
+    // droite-haut=0x02 / gauche-bas=0x04 / gauche-haut=0x08), masqué par ce qui a
+    // déjà été signalé (prevAbsButtons_), puis position X/Y sur 16 bits.
+    uint8_t buttons = uint8_t((curR ? 0x01 : 0x02) | (curL ? 0x04 : 0x08));
+    const uint8_t prev = prevAbsButtons_;
+    prevAbsButtons_ = buttons;
+    buttons &= uint8_t(~prev);
+    pushRx(0xF7);
+    pushRx(buttons);
+    pushRx(uint8_t(absX_ >> 8));
+    pushRx(uint8_t(absX_ & 0xFF));
+    pushRx(uint8_t(absY_ >> 8));
+    pushRx(uint8_t(absY_ & 0xFF));
+}
+
+void Ikbd::sendCursorKeys(int dx, int dy, bool left, bool right) {
+    // Port de Hatari IKBD_SendCursorMousePacket : convertit le Δ en pressions de
+    // flèches (make immédiatement suivi de break) par pas de keyCodeDelta, plus les
+    // boutons comme touches (0x74/0x75). Borné à 10 itérations (le Δ hôte peut être
+    // bien plus grossier qu'un déplacement ST ; le reliquat est abandonné).
+    int dX = dx, dY = dy;
+    for (int i = 0; i < 10 &&
+                    (dX != 0 || dY != 0 || bOldL_ != left || bOldR_ != right); ++i) {
+        if (dX != 0) {
+            if (dX <= -keyCodeDeltaX_) { pushRx(75); pushRx(75 | 0x80); dX += keyCodeDeltaX_; }  // gauche
+            if (dX >=  keyCodeDeltaX_) { pushRx(77); pushRx(77 | 0x80); dX -= keyCodeDeltaX_; }  // droite
+        }
+        if (dY != 0) {
+            if (dY <= -keyCodeDeltaY_) { pushRx(72); pushRx(72 | 0x80); dY += keyCodeDeltaY_; }  // haut
+            if (dY >=  keyCodeDeltaY_) { pushRx(80); pushRx(80 | 0x80); dY -= keyCodeDeltaY_; }  // bas
+        }
+        if (left && !bOldL_)       pushRx(0x74);
+        else if (!left && bOldL_)  pushRx(0x74 | 0x80);
+        if (right && !bOldR_)      pushRx(0x75);
+        else if (!right && bOldR_) pushRx(0x75 | 0x80);
+        bOldL_ = left;
+        bOldR_ = right;
+    }
+}
+
+void Ikbd::updateClock(int64_t vblMicro) {
+    // Port de Hatari IKBD_UpdateClockOnVBL : on cumule la durée d'une trame ; chaque
+    // seconde écoulée incrémente l'horloge BCD (YY MM DD hh mm ss) avec la même
+    // logique de propagation/retenue (DAA) que la ROM du HD6301, bornée par le
+    // nombre de jours du mois (et l'année bissextile pour février).
+    clockMicro_ += vblMicro;
+    if (clockMicro_ < 1000000) return;
+    clockMicro_ -= 1000000;
+
+    static const uint8_t valMax[6]  = {0xFF, 0x13, 0x00, 0x24, 0x60, 0x60};
+    static const uint8_t dayMax[18] = {0x32,0x29,0x32,0x31,0x32,0x31,0x32,0x32,0x31,
+                                       0,0,0,0,0,0, 0x32,0x31,0x32};
+    for (int i = 5; i >= 0; --i) {
+        const uint8_t val = bcdAdjust(uint8_t(clock_[i] + 1));
+        uint8_t max;
+        if (i != 2) {
+            max = valMax[i];
+        } else {                              // jour : dépend du mois (et bissextile)
+            uint8_t month = clock_[1];
+            if (month > 0x12) month = 0x12;   // garde-fou (cf. Hatari)
+            if (month < 0x01) month = 0x01;   // NeoST : évite l'index -1 (mois non posé)
+            max = dayMax[month - 1];
+            if (clock_[1] == 2) {             // février : test bissextile (logique ROM)
+                uint8_t year = clock_[0];
+                if (year & 0x10) year += 0x0a;
+                if ((year & 0x03) == 0) max = 0x30;
+            }
+        }
+        if (val != max) { clock_[i] = val; break; }
+        else if (i == 1 || i == 2) clock_[i] = 1;   // jour/mois démarrent à 1
+        else                       clock_[i] = 0;   // heure/minute/seconde à 0
     }
 }
 
