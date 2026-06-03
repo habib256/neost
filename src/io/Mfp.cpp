@@ -12,24 +12,11 @@ uint8_t Mfp::read8(uint32_t addr) {
     switch (addr & 0x3F) {
         case 0x01: {                // GPIP : lignes d'ENTRÉE matérielles (les écritures
                                     // CPU sur $FFFA01 ne doivent pas les écraser).
-            uint8_t v = 0xFF;            // bits au repos
-            // bit7 : détection moniteur (couleur=1, mono=0). Sur STE/Mega STE, ce bit
-            // est XORé avec la ligne XSINT du son DMA (cf. Hatari MFP_Main_Compute_GPIP7).
-            // Sur les autres machines (hasDmaSound_=false) le calcul reste identique.
-            bool bit7 = colorMonitor_;
-            if (hasDmaSound_) bit7 ^= xsint_;
-            if (!bit7) v &= ~0x80;       // bit7 = 0 → moniteur MONO (haute rés) / XSINT
-            if (riLine_)        v &= ~0x40;  // bit6 = RS232 RI (actif bas)
-            if (fdcLine_)       v &= ~0x20;  // bit5 = FDC (actif bas)
-            if (aciaLineKbd_ || aciaLineMidi_) v &= ~0x10;  // bit4 = ACIA clavier OU MIDI (wire-OR, actif bas)
-            if (gpuLine_)       v &= ~0x08;  // bit3 = blitter GPU_DONE (actif bas)
-            if (ctsLine_)       v &= ~0x04;  // bit2 = RS232 CTS (actif bas)
-            if (dcdLine_)       v &= ~0x02;  // bit1 = RS232 DCD (actif bas)
-            if (busyLine_)      v &= ~0x01;  // bit0 = Centronics BUSY (actif bas)
             // Lignes en SORTIE (DDR=1) → on relit le verrou écrit par le CPU ; lignes
-            // en ENTRÉE (DDR=0) → la valeur calculée ci-dessus (cf. Hatari
+            // en ENTRÉE (DDR=0) → la valeur calculée par gpipInput() (cf. Hatari
             // MFP_GPIP_ReadByte_Main : GPIP = (GPIP & DDR) | (entrées & ~DDR)).
-            // ddr vaut 0 par défaut (tout en entrée) → le résultat reste exactement v.
+            // ddr vaut 0 par défaut (tout en entrée) → le résultat reste exactement les entrées.
+            const uint8_t v = gpipInput();
             return uint8_t((gpip & ddr) | (v & ~ddr));
         }
         case 0x03: return aer;
@@ -68,8 +55,14 @@ uint8_t Mfp::read8(uint32_t addr) {
 
 void Mfp::write8(uint32_t addr, uint8_t v) {
     switch (addr & 0x3F) {
-        case 0x01: gpip = v; break;
-        case 0x03: aer  = v; break;
+        case 0x01: gpip = v; break;   // latch des bits de SORTIE (les entrées sont calculées)
+        // Écriture AER : un changement du front actif peut DÉCLENCHER une IRQ GPIP même
+        // sans transition de la ligne d'entrée (cf. gpipUpdateInterrupt / démos « M »).
+        // GPIP (0x01) et DDR (0x05) ne peuvent PAS lever de front ici : les bits d'entrée
+        // sont calculés (gpipInput, inchangé par ces écritures) et les bits de sortie sont
+        // exclus (DDR=1). On ne réévalue donc que sur AER.
+        case 0x03: { const uint8_t aerOld = aer; aer = v;
+                     gpipUpdateInterrupt(gpipInput(), gpipInput(), aerOld, aer); break; }
         case 0x05: ddr  = v; break;
         // Désactiver un canal (IER=0) efface aussi son interruption pendante.
         case 0x07: iera = v; ipra &= iera; break;
@@ -253,6 +246,41 @@ void Mfp::setXsintLine(bool a) {
             raise(SRC_GPIP7);                          // canal 15 (IERA bit7) si armé
     }
     xsint_ = a;
+}
+
+// Octet des 8 lignes d'ENTRÉE du GPIP (actives BAS), tel que le voit le détecteur de
+// front. Identique au calcul de read8($FFFA01) avant application du DDR.
+uint8_t Mfp::gpipInput() const {
+    uint8_t v = 0xFF;                            // bits au repos (haut)
+    bool bit7 = colorMonitor_;                   // moniteur : couleur=1, mono=0
+    if (hasDmaSound_) bit7 ^= xsint_;            // STE/Mega STE : XOR ligne XSINT son DMA
+    if (!bit7)          v &= ~0x80;              // bit7 = moniteur^XSINT
+    if (riLine_)        v &= ~0x40;              // bit6 = RS232 RI
+    if (fdcLine_)       v &= ~0x20;              // bit5 = FDC
+    if (aciaLineKbd_ || aciaLineMidi_) v &= ~0x10;  // bit4 = ACIA clavier OU MIDI (wire-OR)
+    if (gpuLine_)       v &= ~0x08;              // bit3 = blitter GPU_DONE
+    if (ctsLine_)       v &= ~0x04;              // bit2 = RS232 CTS
+    if (dcdLine_)       v &= ~0x02;              // bit1 = RS232 DCD
+    if (busyLine_)      v &= ~0x01;              // bit0 = Centronics BUSY
+    return v;
+}
+
+// Port de MFP_GPIP_Update_Interrupt : sur un changement de GPIP/AER/DDR, on lève les
+// canaux GPIP dont le FRONT actif vient de se produire. État = GPIP ^ AER ; pour une
+// ligne en ENTRÉE (DDR=0) dont l'état bascule, le front est actif quand AER == niveau
+// GPIP (AER=0 → front 1→0, AER=1 → front 0→1). raise() ne pose l'IPR que si le canal
+// est activé (IER), comme MFP_InputOnChannel.
+void Mfp::gpipUpdateInterrupt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew) {
+    static constexpr int kChan[8] = {0, 1, 2, 3, 6, 7, 14, 15};   // bit GPIP → canal MFP
+    const uint8_t stateOld = gpipOld ^ aerOld;
+    const uint8_t stateNew = gpipNew ^ aerNew;
+    for (int bit = 0; bit < 8; ++bit) {
+        const uint8_t m = uint8_t(1u << bit);
+        if ((ddr & m) == 0                          // ligne configurée en ENTRÉE
+         && (stateOld & m) != (stateNew & m)        // l'état (GPIP^AER) a basculé
+         && (gpipNew & m) == (aerNew & m))          // front ACTIF (AER == niveau GPIP)
+            raise(kChan[bit]);
+    }
 }
 
 void Mfp::raise(int source) {

@@ -94,8 +94,12 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       non peuplées (`$400000-$F9FFFF` au-dessus de la RAM) — réf. `stMemory.c` + `cpu/memory.c`
 
 ## MFP 68901 + RS232 USART
-- [ ] Écritures AER/DDR/GPIP ne réévaluent pas les IRQ GPIP front-déclenchées _(risque élevé)_
-      — réf. `mfp.c:MFP_GPIP_Update_Interrupt`
+- [x] **IRQ GPIP front-déclenchées réévaluées à l'écriture AER** — ✅ FAIT (port
+      `MFP_GPIP_Update_Interrupt`). `Mfp::gpipUpdateInterrupt` : état = GPIP ^ AER ; basculer
+      le front actif (AER) alors qu'une ligne d'entrée est au niveau correspondant lève le
+      canal (gaté IER), même sans transition — cas des démos « M »/« Realtime ». GPIP/DDR
+      seuls ne lèvent rien dans le modèle « entrées calculées » (`gpipInput`). Boot +
+      histogramme IRQ inchangés (2 cœurs), clavier OK, Timing Pass.
 - [x] Bit3 GPIP (blitter busy/idle) en lecture — ✅ déjà câblé (`gpuLine_` via
       `Blitter` → `Mfp::setBlitterLine`, ligne GPU_DONE active bas dans `read8`).
 - [x] **Lecture data-register Timer A/B/C/D = compteur VIVANT** — ✅ FAIT (port
@@ -216,9 +220,9 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       renvoie `0xFF` → label « Atari ST »). C'est le levier restant pour le label « Mega ST ».
 
 ## CPU : IRQ, Moira, MegaSTE
-- [ ] **Moira n'honore pas `busFault`** : `NeostMoira::read8/16` appellent `g_bus` sans tester
-      `busFault` → aucun bus error sous Moira. Nécessite throw `moira::BusError(makeFrame…)`
-      _(risque élevé)_ — réf. `extern/moira/Moira/MoiraExceptions_cpp.h`
+- [x] **Moira honore `busFault`** — ✅ déjà fait (`NeostMoira::read8/16/write8/16` testent
+      `busFaultN` → `raiseBusError` lève `moira::BusError` avec trame de groupe 0 ; double-faute
+      → `HALTED`). Cf. [[moira-buserror-vdi]]. (Reste le bug texte VDI sous Moira, à part.)
 - [ ] **Bascule CPU 8/16 MHz MegaSTE** (`$FF8E21` bit1) — change le débit de cycles et tous
       les timings _(précision cycle)_ — réf. `m68000.c:MegaSTE_CPU_Cache_Update` + `clocks_timings.c`
 - [ ] **Cache MegaSTE 16 Ko** (`$FF8E21` bit0, off à 8 MHz) — au moins les effets de timing

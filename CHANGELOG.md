@@ -75,6 +75,12 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   la valeur de recharge — indispensable aux boucles de délai qui pollent le compteur. Test
   *Timing* (STE Field Service Diag) Pass sur les deux cœurs, boot byte-identique.
 - **Lecture GPIP** honore le registre de direction (DDR) et le latch CPU.
+- **IRQ GPIP front-déclenchées réévaluées à l'écriture AER** (`$FFFA03`, port
+  `MFP_GPIP_Update_Interrupt`) : état = GPIP ^ AER ; basculer le front actif (AER) alors
+  qu'une ligne d'entrée est déjà au niveau correspondant lève le canal — même sans
+  transition de la ligne (cas réel des démos « M »/« Realtime » : `bset/bclr #0,$FFFA03`).
+  Gaté IER comme `MFP_InputOnChannel`. Boot + histogramme d'IRQ inchangés (TOS n'arme pas
+  de front actif au boot), 2 cœurs.
 - Chaînage des lignes : **I3** blitter, **I4** ACIA (clavier+MIDI en OU câblé), **I5** FDC,
   **I7** son DMA XSINT (moniteur XOR XSINT).
 

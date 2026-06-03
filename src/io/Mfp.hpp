@@ -202,6 +202,18 @@ private:
     int highestPending() const;     // n° de source prête la plus prioritaire, -1 sinon
     int highestInService() const;   // n° de source en cours de service, -1 sinon
 
+    // Octet des 8 lignes d'ENTRÉE du GPIP (bit7 moniteur^XSINT … bit0 BUSY), tel que
+    // le voit le détecteur de front — c'est la valeur calculée dans read8($FFFA01)
+    // AVANT application du DDR. Centralisé ici pour servir aussi gpipUpdateInterrupt.
+    uint8_t gpipInput() const;
+
+    // Réévalue les IRQ GPIP front-déclenchées après un changement de GPIP/AER/DDR
+    // (port MFP_GPIP_Update_Interrupt). État = GPIP ^ AER : sur une ligne en ENTRÉE
+    // dont l'état bascule, on lève le canal si le front est ACTIF (AER == niveau GPIP).
+    // Cas réel : une écriture AER (ex. bset/bclr #0,$FFFA03 des démos « M »/« Realtime »)
+    // peut lever une IRQ alors même que la ligne d'entrée n'a pas bougé.
+    void gpipUpdateInterrupt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew);
+
     Scheduler* sched_ = nullptr;    // pour dater les timers (mode délai)
     std::function<void(uint8_t)> serialSink_;   // port série RS-232 (UDR $FFFA2F)
 };
