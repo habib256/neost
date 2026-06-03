@@ -142,7 +142,11 @@ void Mfp::scheduleTimer(int timer) {
                                 : timer == 2 ? Scheduler::TIMER_C
                                 :              Scheduler::TIMER_D;
     const int64_t period = timerPeriodCycles(timer);
-    if (period > 0) sched_->schedule(src, sched_->now() + period);
+    // liveNow() = cycle absolu EXACT de l'écriture TxCR/TxDR (et non le début du
+    // quantum) : un timer programmé en plein bloc CPU démarre à l'instant réel,
+    // comme Hatari (CycInt_AddRelativeInterrupt depuis l'horloge immédiate). La
+    // préemption du Scheduler coupe alors le bloc pour servir l'IRQ à temps.
+    if (period > 0) sched_->schedule(src, sched_->liveNow() + period);
     else            sched_->cancel(src);      // arrêté / event-count → plus d'échéance délai
 }
 

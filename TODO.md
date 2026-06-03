@@ -26,9 +26,17 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 > **Phases 1-3 faites** (`Scheduler.hpp`, `runFrame` événementiel à horloge continue,
 > vidéo au cycle, timers MFP A/C/D datés). Reste :
 
-- [ ] **Quantum CPU sous la ligne** — aujourd'hui le CPU avance par instruction (= dépasse
-      l'instant planifié) → latence IRQ grossière. C'est **LE blocage architectural** des
-      deux cas concrets ci-dessous — réf. `cycInt.c` + `m68000.c` + `cycles.c`
+- [x] **Quantum CPU sous la ligne** — ✅ FAIT (port `cycInt`). Deux mécanismes : (1)
+      **horloge live** (`Scheduler::liveNow`, = `Cycles_GetClockCounterImmediate`) → un
+      timer programmé en plein bloc est daté à l'instant réel de l'écriture, pas au début
+      du quantum ; (2) **préemption du timeslice** (`Cpu68k::endTimeslice` →
+      `m68k_end_timeslice` / drapeau Moira) → le CPU rend la main à la frontière
+      d'instruction quand un événement plus proche est armé. Latence IRQ timer **47513 →
+      134 cyc** (cas critique : timer court armé juste avant un `STOP`, sauté par l'optim
+      STOP de Moira). Boot EmuTOS/TOS pixel-identique, histogramme d'IRQ inchangé, Z/T0 Pass.
+      Métrique headless `timer IRQ retard max`. **Préférer `--cpu moira`** (cycle-exact,
+      horloge live à la sous-instruction). Reste (raffinement) : offset = cycles de
+      l'instruction d'écriture (le timer démarre à la FIN de l'instruction chez Hatari).
 - [ ] **Timer B event-count lié au Display Enable** par ligne (DE_start/end+24) et 50/60 Hz,
       pas figé au cycle 400 — réf. `video.c:Video_TimerB_GetPosFromDE`
 - [ ] **Latch palette/scroll mi-ligne** — la scanline est rendue une fois à DE_END (cycle
@@ -40,14 +48,14 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 - [ ] **Wait states** d'accès YM2149 / mémoire (4 cycles + alignement) et contention bus
       _(précision cycle)_ — réf. `psg.c`, `cycles.c`, MAME `stmmu.cpp::bus_contention`
 
-### Cas concrets à débloquer (dépendent du quantum cycle)
-- [ ] **Arkanoid** se fige sur `031736: tst.b $26E7 / bne`. Son handler VBL (`$70`) tourne
-      mais ne touche pas `$26E7` ; le flag doit être remis à 0 par une **autre IRQ à un
-      cycle précis** qui, en modèle ligne/trame, ne tombe pas au bon moment (diff Hatari
-      confirme : divergence temporelle).
-- [ ] **« T0 MFP timer »** (3 cartouches) : le test met `$284=3`, attend, et un handler MFP
-      partagé (`FA13FE`) efface les bits par `bclr` ; les bons timers doivent fire **dans la
-      fenêtre**. NeoST fire aux cycles planifiés mais le CPU avance par instruction → dépassement.
+### Cas concrets — état RÉEL mesuré (le quantum sous la ligne ne les débloque pas seul)
+- [x] **« T0 MFP timer »** : **PASSE** déjà (cause = mode Timer B délai manquant, corrigé ;
+      cf. CHANGELOG + [[cartridge-diagnostics-state]]) — PAS le quantum cycle. Vérifié après
+      le quantum sous la ligne : STE_Test Z = vert + « Pass », retard timer max ≤ 134 cyc.
+- [ ] **Arkanoid** : ne se fige PLUS sur `$31736` — il **part en vrille AVANT** (PC → garbage
+      `$26000000`→wrap `$0`) sur les DEUX cœurs, déjà avant le quantum. Bug de **loader**
+      (`STARTGEM.PRG` → `Pexec("A:ARKANOID.PRG")` → FDC), pas de timing IRQ. À diagnostiquer
+      séparément (diff trace NeoST↔Hatari sur la séquence Pexec/FDC ; cf. CYCLE_ACCURACY §5bis).
 
 ---
 

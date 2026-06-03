@@ -37,6 +37,11 @@ namespace {
     // cela halte le CPU. On reproduit ce halt au lieu de récurser → l'hôte ne
     // segfault plus et le mode headless peut vider sa trace/série.
     bool    g_inBusError = false;
+    // Préemption du timeslice sous Moira : posé par endTimeslice() (depuis un
+    // callback de l'ordonnanceur, en plein milieu d'une instruction), testé après
+    // chaque instruction dans la boucle run() pour rendre la main à l'horloge.
+    // Musashi a son propre mécanisme (m68k_end_timeslice), ce drapeau ne sert qu'à Moira.
+    bool    g_endSlice = false;
     void    neostUpdateIpl();       // recalcule l'IPL (dispatch Musashi/Moira)
 }
 
@@ -246,16 +251,23 @@ void Cpu68k::reset() {
 }
 
 int Cpu68k::run(int cycles) {
+    inRun_ = true;
+    struct RunGuard { bool& f; ~RunGuard() { f = false; } } guard{inRun_};   // hors run → delta intra-quantum = 0
 #if defined(NEOST_HAS_MOIRA)
     if (g_moira) {
         const moira::i64 c0 = g_moira->getClock();
         quantumStartClock_ = static_cast<int64_t>(c0);   // pour cyclesRunInQuantum()
+        g_endSlice = false;                              // un éventuel résidu de préemption ne doit pas couper le 1er pas
         const moira::i64 target = c0 + cycles;
         while (g_moira->getClock() < target) {
             g_inBusError = false;                        // nouvelle instruction → faute précédente retombée
             if (g_moira->isHalted()) { g_moira->setClock(target); break; }  // double bus fault → CPU arrêté
             g_moira->execute();                          // une instruction
             if (g_tracer) g_tracer->onInstruction(g_moira->getPC0());
+            // Préemption : une écriture matérielle pendant cette instruction a pu
+            // armer un événement plus proche que la cible → on rend la main pour
+            // que la boucle d'horloge le serve (cf. Scheduler::setEndSlice).
+            if (g_endSlice) { g_endSlice = false; break; }
             // Si le CPU est en STOP après cette instruction, aucune IRQ pendante ne
             // l'a réveillé (execute() les teste) : rien ne se passera avant le
             // prochain événement (= `target`, fixé par l'ordonnanceur). On SAUTE
@@ -279,6 +291,7 @@ int Cpu68k::run(int cycles) {
 
 // Cycles écoulés depuis le début du quantum run() courant (cf. en-tête).
 int64_t Cpu68k::cyclesRunInQuantum() const {
+    if (!inRun_) return 0;     // hors run : l'horloge sched.now() est déjà à jour
 #if defined(NEOST_HAS_MOIRA)
     if (g_moira) return static_cast<int64_t>(g_moira->getClock()) - quantumStartClock_;
 #endif
@@ -286,6 +299,15 @@ int64_t Cpu68k::cyclesRunInQuantum() const {
     return static_cast<int64_t>(m68k_cycles_run());
 #endif
     return 0;
+}
+
+void Cpu68k::endTimeslice() {
+#if defined(NEOST_HAS_MOIRA)
+    if (g_moira) { g_endSlice = true; return; }   // testé après l'instruction courante (cf. run)
+#endif
+#if defined(NEOST_HAS_MUSASHI)
+    m68k_end_timeslice();   // le CPU finit son instruction puis m68k_execute rend la main
+#endif
 }
 
 void Cpu68k::updateIpl() {

@@ -56,6 +56,13 @@ public:
     // delta permet de reconstituer le cycle ABSOLU exact = sched.now() + ce delta.
     int64_t cyclesRunInQuantum() const;
 
+    // Coupe le bloc d'exécution en cours : le CPU termine son instruction courante
+    // puis rend la main (run() retourne le nombre RÉEL de cycles consommés). Appelé
+    // par l'ordonnanceur quand un événement est armé avant la cible du bloc, pour
+    // que la boucle d'horloge le serve à temps (latence IRQ ~1 instruction).
+    // Musashi : m68k_end_timeslice() ; Moira : drapeau testé après chaque instruction.
+    void endTimeslice();
+
     // Recalcule l'IPL présenté au 68000 à partir de l'état des sources
     // (MFP niveau 6, VBL niveau 4). À appeler après tout changement d'IRQ.
     void updateIpl();
@@ -81,4 +88,10 @@ private:
     // Horloge Moira au début du quantum courant (cf. cyclesRunInQuantum). Pour
     // Musashi on utilise directement m68k_cycles_run().
     int64_t quantumStartClock_ = 0;
+
+    // Vrai UNIQUEMENT pendant un appel run() : hors run (ex. handlers d'événements
+    // appelés par Scheduler::runTo), le compteur intra-quantum est périmé (Musashi
+    // garde les cycles du dernier bloc) → cyclesRunInQuantum() doit alors valoir 0
+    // pour que liveNow() == now() (l'horloge a déjà été avancée par l'ordonnanceur).
+    bool inRun_ = false;
 };

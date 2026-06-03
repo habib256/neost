@@ -205,6 +205,10 @@ int main(int argc, char** argv) {
 
     std::fprintf(stderr, "[headless] %llu instructions tracées\n",
                  (unsigned long long)tracer.instructionCount());
+    // Métrique précision cycle : pire retard d'IRQ timer MFP + préemptions du
+    // timeslice CPU (cf. Scheduler). Retard faible = quantum « sous la ligne ».
+    std::fprintf(stderr, "[headless] timer IRQ retard max = %lld cyc | préemptions = %ld\n",
+                 (long long)machine.sched.timerMaxLate, machine.sched.preemptions);
 
     if (!shotPath.empty()) {
         if (writePpm(shotPath.c_str(), machine.shifter.pixels(),

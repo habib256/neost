@@ -32,6 +32,14 @@ Analyse par les traces (`neost-headless --trace` + Hatari `--trace cpu_disasm`) 
 C'est un cas d'école : **sans timing au cycle près, un flag effacé par IRQ au
 mauvais moment fige le jeu.** Beaucoup de jeux/démos sont dans ce cas.
 
+> **MAJ 2026 (après Phase 6).** Ce symptôme `$26E7` n'est PLUS celui qu'on observe :
+> Arkanoid part désormais en vrille **avant** d'y arriver (PC → `$26000000`, wrap
+> 24 bits → `$0`, exécution de garbage), sur les **deux cœurs** et déjà avant le
+> quantum sous la ligne. La cause est donc en **amont, dans le loader**
+> (`STARTGEM.PRG` → `Pexec("A:ARKANOID.PRG")` → FDC, cf. §5bis), pas dans la latence
+> d'IRQ. À diagnostiquer séparément (diff trace NeoST ↔ Hatari sur Pexec/FDC). Le
+> quantum sous la ligne reste justifié en soi (latence IRQ ÷ 350, cf. Phase 6).
+
 ## 2. État actuel de NeoST — le modèle « par blocs »
 
 `Machine::runFrame()` (cf. `src/core/Machine.cpp`) :
@@ -248,6 +256,47 @@ d'Hatari, pas son code (licences/architecture différentes) : NeoST garde son
 
 - Adopter la conversion entière 9600/31333 (ou un rationnel 64 bits) pour zéro
   dérive sur le long terme.
+
+### Phase 6 — Quantum « sous la ligne » : horloge live + préemption — ✅ FAIT
+
+Jusqu'ici, `runFrame` exécutait le CPU **jusqu'au prochain événement connu** puis
+ré-évaluait. Deux trous subsistaient, à l'origine de la « latence IRQ grossière » :
+
+1. **Datage au début du quantum.** Une puce (MFP) qui programmait un timer en plein
+   bloc le datait depuis `sched.now()` (= début du quantum), donc jusqu'à ~380
+   cycles trop tôt.
+2. **Pas de préemption.** Un timer court armé pendant un bloc n'était servi qu'à la
+   fin du bloc. Pire avec l'optimisation **STOP** de Moira : si le CPU faisait `STOP`
+   juste après avoir armé le timer, le saut STOP allait directement au prochain
+   événement *déjà connu* (souvent une période Timer C ≈ 40 000 cycles plus loin) →
+   le timer court fauté de **~47 000 cycles**.
+
+Port du modèle Hatari (`cycInt.c` : `CycInt_AddRelativeInterrupt` date depuis
+`Cycles_GetClockCounterImmediate`, et la boucle CPU re-teste `PendingInterruptCount`
+à chaque instruction) :
+
+- **`Scheduler::liveNow()`** = `now() + Cpu68k::cyclesRunInQuantum()` = cycle CPU
+  absolu EXACT au moment de l'écriture (sous Moira, précis à la **sous-instruction** ;
+  sous Musashi, à la frontière d'instruction car le coût cycle est débité en fin
+  d'opcode). `Mfp::scheduleTimer` l'utilise au lieu de `now()`.
+- **`Scheduler` préemptif** : `schedule(s, at)` appelle `endSlice_()` si `at` tombe
+  avant la cible du bloc en cours (`beginRun`/`endRun` autour de `cpu.run`).
+  `Cpu68k::endTimeslice()` → `m68k_end_timeslice()` (Musashi) ou drapeau testé après
+  chaque instruction (Moira). Le CPU finit son instruction, rend la main, la boucle
+  re-planifie et s'arrête **près** du timer.
+
+**Résultat mesuré** (batterie T0 de `STE_Test`, `--cpu moira`) : pire retard d'un
+timer MFP **47 513 → 134 cycles** (1 instruction). Boot **pixel-identique** (EmuTOS +
+TOS 1.02, 2 cœurs), **histogramme d'IRQ inchangé**, **Z/T0 = Pass**. Métrique exposée
+par le headless : `timer IRQ retard max = … | préemptions = …`.
+
+> **Cœur recommandé pour ce chantier : Moira** (cycle-exact, horloge live à la
+> sous-instruction, échantillonnage IPL au bon cycle). Musashi reste le défaut
+> compatibilité mais date à la frontière d'instruction seulement.
+
+> **Reste (raffinement sous-instruction)** : ajouter l'offset = nombre de cycles de
+> l'instruction d'écriture (chez Hatari le timer démarre à la FIN de l'opcode, pas à
+> son début ; cf. `CycInt_AddRelativeInterruptWithOffset`).
 
 ## 5. Validation continue — l'oracle existe déjà
 

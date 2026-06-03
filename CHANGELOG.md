@@ -12,6 +12,20 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   Moira (cycle-exact, sous-module) boote EmuTOS pixel-identique et délivre les IRQ.
 - **Reconfiguration à chaud** : modèle / RAM / cœur / ROM changeables depuis le menu
   sans relancer (`Machine::reconfigure`, hard reset avec les nouveaux paramètres).
+- **Ordonnanceur d'événements daté** (`Scheduler`, idée `cycInt.c`) : la trame est
+  pilotée par les échéances (vidéo, timers MFP, FDC, son DMA…) à horloge CONTINUE.
+- **Quantum CPU « sous la ligne »** (port du modèle Hatari `cycInt` + cœur cycle-exact
+  Moira). Deux mécanismes :
+  - **Horloge live** (`Scheduler::liveNow` = `Cycles_GetClockCounterImmediate`) : un
+    timer programmé en plein bloc CPU est daté à l'instant RÉEL de l'écriture (et non
+    au début du quantum), précis à la sous-instruction sous Moira.
+  - **Préemption du timeslice** (`Cpu68k::endTimeslice`) : quand une écriture matérielle
+    arme un événement plus proche que la cible du bloc, le CPU rend la main à la
+    frontière d'instruction suivante (`m68k_end_timeslice` / drapeau Moira) et la boucle
+    re-planifie. Latence d'IRQ timer ramenée de **~47 000 cyc** (un timer court armé
+    juste avant un `STOP` était sauté par l'optimisation STOP) à **~130 cyc** (1 instr),
+    sans changer le boot (EmuTOS/TOS pixel-identiques, histogramme d'IRQ inchangé).
+    Métrique exposée par le headless (`timer IRQ retard max` / `préemptions`).
 
 ## Types de machine & mémoire
 - **Profils** ST / Mega ST / STE / Mega STE (`MachineType`), choisis avant le boot

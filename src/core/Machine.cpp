@@ -36,6 +36,13 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // Horloge RTC : cycle CPU ABSOLU exact, même au milieu d'une lecture MMIO (on
     // ajoute le delta intra-quantum, car sched.now() ne bouge qu'aux frontières).
     rtc.setClock([this] { return sched.now() + cpu.cyclesRunInQuantum(); });
+    // Horloge « live » de l'ordonnanceur = même cycle absolu exact. Les puces qui
+    // datent un événement en plein bloc CPU (MFP timers…) s'en servent pour le caler
+    // sur l'instant RÉEL de l'accès et non sur le début du quantum (cf. Scheduler).
+    sched.setLiveClock([this] { return sched.now() + cpu.cyclesRunInQuantum(); });
+    // Préemption : l'ordonnanceur peut couper le bloc CPU quand un événement plus
+    // proche est armé (latence IRQ ~1 instruction, cf. Scheduler::schedule).
+    sched.setEndSlice([this] { cpu.endTimeslice(); });
     // Connecteur de bouclage RS232 : les sorties RTS (port A bit3) et DTR (bit4) du
     // PSG recopient les entrées de contrôle du MFP — RTS→CTS (GPIP2), DTR→DCD (GPIP1)
     // ET DTR→RI (GPIP6) — comme le câble de test du diagnostic « S RS232 ». Le port A
@@ -176,8 +183,13 @@ void Machine::runFrame() {
         // instruction en cours et peut DÉPASSER la cible : on AVANCE l'horloge du
         // nombre RÉELLEMENT consommé (carry du dépassement, comme Hatari) → pas de
         // dérive ; l'événement échu est déclenché « en retard » de quelques cycles.
+        // `beginRun(next)` arme la préemption : si une écriture CPU pendant le bloc
+        // arme un événement AVANT `next` (timer court…), le bloc est coupé à la
+        // prochaine frontière d'instruction et on ré-évalue (latence IRQ ~1 instr).
         const int64_t want = next - sched.now();
+        sched.beginRun(next);
         const int ran = cpu.run(static_cast<int>(want > 0 ? want : 1));
+        sched.endRun();
         sched.runTo(sched.now() + ran);                  // déclenche les handlers échus
     }
 
