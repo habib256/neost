@@ -371,11 +371,13 @@ int main(int argc, char** argv) {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);                    // VSync : cadence la boucle
 
+    // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
+    const MachineType machType0 = Machine::adjustMachineForTos(parseMachine(cfg.machine), tosPath);
     Machine machine(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu),
-                    parseMachine(cfg.machine));   // RAM + cœur + modèle (cfg)
+                    machType0);                   // RAM + cœur + modèle (cfg, ajusté au TOS)
     std::fprintf(stderr, "[main] cœur CPU : %s | machine : %s | RAM : %s\n",
                  Cpu68k::coreName(machine.cpu.core()),
-                 machineName(parseMachine(cfg.machine)), cfg.mem.c_str());
+                 machineName(machType0), cfg.mem.c_str());
     if (!machine.loadTos(tosPath))
         std::fprintf(stderr, "[main] Démarrage sans TOS (le CPU tournera à vide).\n");
     if (!machine.loadDisk(diskPath))
@@ -406,16 +408,18 @@ int main(int argc, char** argv) {
     // C'est un hard reset avec les nouveaux paramètres — aucun redémarrage de l'appli.
     // Le disque monté est conservé.
     auto applyConfig = [&] {
-        machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu),
-                            parseMachine(cfg.machine));
-        machine.loadTos(resolveData(cfg.rom, exeDir));
+        const std::string romP = resolveData(cfg.rom, exeDir);
+        // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
+        const MachineType machTypeR = Machine::adjustMachineForTos(parseMachine(cfg.machine), romP);
+        machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu), machTypeR);
+        machine.loadTos(romP);
         if (cfg.cart.empty()) machine.ejectCart();
         else                  machine.loadCart(resolveData(cfg.cart, exeDir));
         machine.mfp.setColorMonitor(!cfg.mono);
         machine.reset();
         std::fprintf(stderr, "[main] reconfig à chaud : cœur %s | machine %s | RAM %s\n",
                      Cpu68k::coreName(machine.cpu.core()),
-                     machineName(parseMachine(cfg.machine)), cfg.mem.c_str());
+                     machineName(machTypeR), cfg.mem.c_str());
     };
 
     // Callbacks installés AVANT ImGui : ImGui chaîne les nôtres derrière les siens.

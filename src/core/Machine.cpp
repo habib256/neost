@@ -12,6 +12,31 @@
 // =============================================================================
 #include "core/Machine.hpp"
 #include <cstdio>
+#include <cstdint>
+#include <fstream>
+
+// Port de Hatari TOS_CheckSysConfig (sous-ensemble utile à NeoST) : abaisse la
+// machine si le TOS chargé ne la supporte pas. Seul le cas « TOS <= 1.04 → ST »
+// est porté (les autres règles d'Hatari visent TT/Falcon, hors champ NeoST).
+MachineType Machine::adjustMachineForTos(MachineType requested, const std::string& romPath) {
+    std::ifstream f(romPath, std::ios::binary);
+    if (!f) return requested;                 // introuvable → loadTos signalera l'erreur
+    uint8_t b[2] = {0, 0};
+    f.seekg(2);                               // version TOS : mot big-endian à l'offset 2
+    f.read(reinterpret_cast<char*>(b), 2);
+    const uint16_t tosVer = uint16_t((b[0] << 8) | b[1]);
+    // TOS <= 1.04 (TOS 1.0x ; EmuTOS 192 Ko se présente en « Atari ST » 1.4) ne gère ni
+    // le STE ni le Mega STE → Hatari bascule en mode ST. machineIsSte() = STE || Mega STE
+    // (le Mega ST tourne nativement sous TOS 1.0x, donc PAS de bascule).
+    if (tosVer <= 0x0104 && machineIsSte(requested)) {
+        std::fprintf(stderr,
+            "[NeoST] TOS %u.%02u ne fonctionne qu'en mode ST (68000) — bascule %s -> ST.\n"
+            "        Pour le STE/Mega STE, utiliser EmuTOS 256 Ko (etos256*) ou TOS 1.62/2.06.\n",
+            tosVer >> 8, tosVer & 0xFF, machineName(requested));
+        return MachineType::St;
+    }
+    return requested;
+}
 
 Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     : bus(ramBytes), cpu(bus, cpuCore) {

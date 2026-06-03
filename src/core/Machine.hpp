@@ -41,6 +41,14 @@ public:
 
     MachineType machineType() const { return machineType_; }
 
+    // Abaisse le type machine si le TOS de `romPath` ne le supporte pas — port de
+    // Hatari `TOS_CheckSysConfig` : un TOS <= 1.04 (TOS 1.0x, EmuTOS 192 Ko qui se
+    // présente en « Atari ST » 1.4) ne tourne qu'en mode ST/68000 → sur STE/Mega STE
+    // on bascule en ST (avertissement sur stderr). Le Mega ST, lui, tourne nativement
+    // sous TOS 1.0x → conservé. À appeler AVANT de construire la Machine (lit la
+    // version dans l'en-tête ROM, mot big-endian à l'offset 2).
+    static MachineType adjustMachineForTos(MachineType requested, const std::string& romPath);
+
     bool loadTos(const std::string& path)  { return bus.loadTos(path); }
     bool loadCart(const std::string& path) { return bus.loadCart(path); }
     void ejectCart() { bus.ejectCart(); }

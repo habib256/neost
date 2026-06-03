@@ -107,6 +107,8 @@ int main(int argc, char** argv) {
         else                                      romPath   = a;
     }
 
+    // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
+    machType = Machine::adjustMachineForTos(machType, romPath);
     Machine machine(ramBytes, cpuCore, machType);
     std::fprintf(stderr, "[headless] cœur CPU : %s | machine : %s | RAM : %s\n",
                  Cpu68k::coreName(machine.cpu.core()), machineName(machType), ramLabel(ramBytes));

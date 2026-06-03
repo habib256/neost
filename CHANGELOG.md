@@ -33,6 +33,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   son DMA `$FF8900` et joypad `$FF9200` STE+, RTC Mega+, etc.
 - **ST-RAM 256 Ko → 4 Mo** configurable (`--mem`, menu, WASM `?mem=`) ; `$FF8001` posé
   en cohérence. EmuTOS détecte la `phystop` exacte par sondage.
+- **Bascule machine selon la version TOS** (`Machine::adjustMachineForTos`, port Hatari
+  `TOS_CheckSysConfig`) : un TOS **≤ 1.04** (TOS 1.0x ; EmuTOS 192 Ko se présente en
+  « Atari ST » 1.4) ne gère ni STE ni Mega STE → bascule en **mode ST** avec avertissement,
+  avant la construction. Le Mega ST (TOS 1.0x natif) est conservé. Évite l'écran noir
+  d'etos192 sur MegaSTE (SCU non programmé). Pour le STE/Mega STE : EmuTOS 256 Ko ou TOS 1.62/2.06.
 
 ## Vidéo (Shifter)
 - Décodage planaire basse (320×200/16c), moyenne (640×200/4c), haute (640×400 mono) →
