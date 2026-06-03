@@ -125,6 +125,7 @@ static constexpr int     CMD_COMPLETE     = 1 * 8;
 static constexpr int     CMD_IMMEDIATE    = 0;
 static constexpr int     WAIT_NO_DRIVE    = 50000;         // attente d'un lecteur/disque valide
 static constexpr int     REFRESH_INDEX    = 500;           // pas de mise à jour de l'index
+static constexpr int     FDC_FAST_FACTOR  = 10;            // « FDC rapide » : délais ÷ ce facteur (cf. Hatari)
 
 // --- Disposition standard d'une piste (gaps), cf. Hatari fdc.h --------------
 static constexpr int GAP1  = 60;   // pré-gap piste (0x4e)
@@ -378,6 +379,25 @@ int64_t Fdc::nextIndexCycles() const {
     int64_t res = CYCLES_PER_REV - (nowCyc() - indexTime_);
     if (res <= 1) res = CYCLES_PER_REV;
     return res;
+}
+
+// « FDC rapide » (cf. Hatari FDC_StartTimer_FdcCycles) : divise le délai de
+// COMMANDE/TRANSFERT par FDC_FAST_FACTOR (sauf les délais < ce facteur, pour ne pas
+// les annuler). N'est JAMAIS appliqué aux délais cadencés sur la rotation (spin-up,
+// arrêt moteur, attente d'index) : ceux-là gardent leur durée réelle, comme Hatari.
+int Fdc::applyFastFdc(int fdcCycles) const {
+    if (fastFloppy_ && fdcCycles > FDC_FAST_FACTOR) return fdcCycles / FDC_FAST_FACTOR;
+    return fdcCycles;
+}
+
+// Attente de la prochaine impulsion d'index (spin-up, arrêt moteur). Si un média est
+// présent, on saute directement à l'impulsion (délai cadencé sur la rotation, NON
+// accéléré par le FDC rapide) ; sinon on sonde périodiquement (l'index n'arrivera que
+// quand un disque sera là — ce délai-là, lui, est accéléré).
+int Fdc::spinWaitDelay() {
+    const int64_t ni = nextIndexCycles();
+    if (ni > 0) { delayIndexPaced_ = true; return int(ni); }
+    return REFRESH_INDEX;
 }
 
 // =============================================================================
@@ -649,8 +669,7 @@ int Fdc::updateMotorStop() {
         [[fallthrough]];
      case RUN_MOTOR_STOP_WAIT:
         if (indexCounter_ < IP_MOTOR_OFF) {                    // attend 9 tours d'inactivité
-            const int64_t ni = nextIndexCycles();
-            fdcCycles = (ni > 0) ? int(ni) : REFRESH_INDEX;
+            fdcCycles = spinWaitDelay();
             break;
         }
         [[fallthrough]];
@@ -677,11 +696,7 @@ int Fdc::updateRestore() {
         else                 { commandState_ = RUN_RE_SEEK0_MOTORON; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_RE_SEEK0_SPINUP:
-        if (indexCounter_ < IP_SPIN_UP) {
-            const int64_t ni = nextIndexCycles();
-            fdcCycles = (ni > 0) ? int(ni) : REFRESH_INDEX;
-            break;
-        }
+        if (indexCounter_ < IP_SPIN_UP) { fdcCycles = spinWaitDelay(); break; }
         [[fallthrough]];
      case RUN_RE_SEEK0_MOTORON:
         updateStr(0, STR_SPINUP);
@@ -750,11 +765,7 @@ int Fdc::updateSeek() {
         else                 { commandState_ = RUN_SE_TOTRACK_MOTORON; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_SE_TOTRACK_SPINUP:
-        if (indexCounter_ < IP_SPIN_UP) {
-            const int64_t ni = nextIndexCycles();
-            fdcCycles = (ni > 0) ? int(ni) : REFRESH_INDEX;
-            break;
-        }
+        if (indexCounter_ < IP_SPIN_UP) { fdcCycles = spinWaitDelay(); break; }
         [[fallthrough]];
      case RUN_SE_TOTRACK_MOTORON:
         updateStr(0, STR_SPINUP);
@@ -819,11 +830,7 @@ int Fdc::updateStep() {
         else                 { commandState_ = RUN_ST_ONCE_MOTORON; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_ST_ONCE_SPINUP:
-        if (indexCounter_ < IP_SPIN_UP) {
-            const int64_t ni = nextIndexCycles();
-            fdcCycles = (ni > 0) ? int(ni) : REFRESH_INDEX;
-            break;
-        }
+        if (indexCounter_ < IP_SPIN_UP) { fdcCycles = spinWaitDelay(); break; }
         [[fallthrough]];
      case RUN_ST_ONCE_MOTORON:
         updateStr(0, STR_SPINUP);
@@ -884,11 +891,7 @@ int Fdc::updateReadSectors() {
         else                 { commandState_ = RUN_RS_HEADLOAD; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_RS_SPINUP:
-        if (indexCounter_ < IP_SPIN_UP) {
-            const int64_t ni = nextIndexCycles();
-            fdcCycles = (ni > 0) ? int(ni) : REFRESH_INDEX;
-            break;
-        }
+        if (indexCounter_ < IP_SPIN_UP) { fdcCycles = spinWaitDelay(); break; }
         [[fallthrough]];
      case RUN_RS_HEADLOAD:
         if (cr_ & CMD_BIT_HEADLOAD) { commandState_ = RUN_RS_MOTORON; fdcCycles = int(HEAD_LOAD); break; }
@@ -971,11 +974,7 @@ int Fdc::updateWriteSectors() {
         else                 { commandState_ = RUN_WS_HEADLOAD; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_WS_SPINUP:
-        if (indexCounter_ < IP_SPIN_UP) {
-            const int64_t ni = nextIndexCycles();
-            fdcCycles = (ni > 0) ? int(ni) : REFRESH_INDEX;
-            break;
-        }
+        if (indexCounter_ < IP_SPIN_UP) { fdcCycles = spinWaitDelay(); break; }
         [[fallthrough]];
      case RUN_WS_HEADLOAD:
         if (cr_ & CMD_BIT_HEADLOAD) { commandState_ = RUN_WS_MOTORON; fdcCycles = int(HEAD_LOAD); break; }
@@ -1054,11 +1053,7 @@ int Fdc::updateReadAddress() {
         else                 { commandState_ = RUN_RA_HEADLOAD; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_RA_SPINUP:
-        if (indexCounter_ < IP_SPIN_UP) {
-            const int64_t ni = nextIndexCycles();
-            fdcCycles = (ni > 0) ? int(ni) : REFRESH_INDEX;
-            break;
-        }
+        if (indexCounter_ < IP_SPIN_UP) { fdcCycles = spinWaitDelay(); break; }
         [[fallthrough]];
      case RUN_RA_HEADLOAD:
         replaceCommandPossible_ = false;
@@ -1109,11 +1104,7 @@ int Fdc::updateReadTrack() {
         else                 { commandState_ = RUN_RT_HEADLOAD; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_RT_SPINUP:
-        if (indexCounter_ < IP_SPIN_UP) {
-            const int64_t ni = nextIndexCycles();
-            fdcCycles = (ni > 0) ? int(ni) : REFRESH_INDEX;
-            break;
-        }
+        if (indexCounter_ < IP_SPIN_UP) { fdcCycles = spinWaitDelay(); break; }
         [[fallthrough]];
      case RUN_RT_HEADLOAD:
         replaceCommandPossible_ = false;
@@ -1125,7 +1116,7 @@ int Fdc::updateReadTrack() {
             if (ni < 0) { fdcCycles = WAIT_NO_DRIVE; }
             else {
                 if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
-                commandState_ = RUN_RT_INDEX; fdcCycles = int(ni);
+                commandState_ = RUN_RT_INDEX; fdcCycles = int(ni); delayIndexPaced_ = true;
             }
         }
         break;
@@ -1159,11 +1150,7 @@ int Fdc::updateWriteTrack() {
         else                 { commandState_ = RUN_WT_HEADLOAD; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_WT_SPINUP:
-        if (indexCounter_ < IP_SPIN_UP) {
-            const int64_t ni = nextIndexCycles();
-            fdcCycles = (ni > 0) ? int(ni) : REFRESH_INDEX;
-            break;
-        }
+        if (indexCounter_ < IP_SPIN_UP) { fdcCycles = spinWaitDelay(); break; }
         [[fallthrough]];
      case RUN_WT_HEADLOAD:
         replaceCommandPossible_ = false;
@@ -1173,7 +1160,7 @@ int Fdc::updateWriteTrack() {
         {
             const int64_t ni = nextIndexCycles();
             if (ni < 0) { fdcCycles = WAIT_NO_DRIVE; }
-            else        { commandState_ = RUN_WT_INDEX; fdcCycles = int(ni); }
+            else        { commandState_ = RUN_WT_INDEX; fdcCycles = int(ni); delayIndexPaced_ = true; }
         }
         break;
      case RUN_WT_INDEX:
@@ -1273,7 +1260,9 @@ void Fdc::executeCommand(uint8_t cmd) {
     }
 
     replaceCommandPossible_ = true;     // remplaçable pendant prepare+spinup
-    if (sched_) sched_->schedule(Scheduler::FDC, nowCyc() + fdcCycles);
+    // Le délai de préparation (type I/II/III/IV) est une commande, donc accéléré en
+    // mode « FDC rapide » (jamais cadencé sur la rotation).
+    if (sched_) sched_->schedule(Scheduler::FDC, nowCyc() + applyFastFdc(fdcCycles));
 }
 
 // Échéance de la machine à états : avance d'une ou plusieurs phases (les phases
@@ -1282,6 +1271,7 @@ void Fdc::onFdcEvent() {
     int fdcCycles = 0;
     int guard = 0;                                            // garde-fou anti-boucle
     do {
+        delayIndexPaced_ = false;                            // remis par les états cadencés sur l'index
         indexCheckUpdate();
         if (command_ != CMD_NULL) {
             switch (command_) {
@@ -1298,8 +1288,12 @@ void Fdc::onFdcEvent() {
         }
     } while (command_ != CMD_NULL && fdcCycles == 0 && ++guard < 100000);
 
-    if (command_ != CMD_NULL && sched_)
-        sched_->schedule(Scheduler::FDC, nowCyc() + fdcCycles);
+    if (command_ != CMD_NULL && sched_) {
+        // Délai de commande/transfert → accéléré en mode « FDC rapide » ; délai cadencé
+        // sur la rotation (spin-up, arrêt moteur, attente d'index) → durée réelle.
+        const int delay = delayIndexPaced_ ? fdcCycles : applyFastFdc(fdcCycles);
+        sched_->schedule(Scheduler::FDC, nowCyc() + delay);
+    }
 }
 
 // =============================================================================

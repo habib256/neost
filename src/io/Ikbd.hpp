@@ -150,10 +150,14 @@ private:
     int64_t clockMicro_ = 0;
 
     // --- Mode joystick (cf. Hatari ikbd.c KeyboardProcessor.JoystickMode) -------
-    // JOY_OFF = interrogation seule via $16 (par défaut) ; JOY_AUTO = report
-    // automatique des changements d'état à chaque trame ($14) ; JOY_MONITOR =
-    // échantillonnage périodique ($17). prevJoy0_/prevJoy1_ = dernier état émis.
+    // JOY_OFF = interrogation seule via $16 ; JOY_AUTO = report automatique des
+    // changements d'état à chaque trame ($14) ; JOY_MONITOR = échantillonnage
+    // périodique ($17). prevJoy0_/prevJoy1_ = dernier état émis.
+    //   Défaut = JOY_AUTO, comme le boot ROM de l'IKBD (Hatari IKBD_Boot_ROM :
+    //   KeyboardProcessor.JoystickMode = AUTOMODE_JOYSTICK). Sans entrée hôte la
+    //   file reste vide (sendAutoJoysticks n'émet que sur changement) → aucun
+    //   impact sur le boot EmuTOS ni les diagnostics qui interrogent via $16.
     enum JoystickMode { JOY_OFF, JOY_AUTO, JOY_MONITOR };
-    JoystickMode joyMode_ = JOY_OFF;
+    JoystickMode joyMode_ = JOY_AUTO;
     uint8_t prevJoy0_ = 0, prevJoy1_ = 0;
 };

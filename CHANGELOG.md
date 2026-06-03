@@ -144,6 +144,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - **Adresse DMA relisible** (`$FF8609/0B/0D`, incrémente par blocs de 16 o pendant le transfert
   — corrige « DMA count error »). FIFO/compteur de secteurs, bit erreur DMA. **Lecteur B**
   (`--diskb`, PSG port A bits 1/2).
+- **FDC rapide** (`--fastfdc` headless, `Fdc::setFastFdc`, équivalent `hatari --fastfdc`) :
+  divise les délais de **commande/transfert** par 10 → accès disque ~10× plus courts (ex.
+  Arkanoid charge son `.PRG` à la trame ~300 au lieu de ~1000). La **rotation** (index,
+  spin-up, arrêt moteur) reste au rythme réel, comme Hatari — d'où une bonne compat (Arkanoid
+  reste jouable) ; ⚠ peut néanmoins casser les loaders maison très sensibles au timing.
 - **Write-protect auto-détecté** depuis les droits du fichier ; **changement de média**
   (Mediach via bascule WPRT à l'éjection/insertion à chaud).
 - Formats : `.st` (brut), `.msa` (décompression RLE), `.dim` (en-tête 32 o retiré, port

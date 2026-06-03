@@ -100,10 +100,14 @@ constexpr int MOUSE_Y_SIGN = +1;
 Ikbd* g_ikbd = nullptr;                // cible des callbacks clavier/souris GLFW
 bool  g_mouseCaptured = false;         // souris capturée → entrées dirigées vers le ST
 bool  g_dbgMouse = false;              // NEOST_DEBUG_MOUSE=1 → trace les paquets souris
+bool  g_dbgJoy = false;                // NEOST_DEBUG_JOY=1 → trace l'état brut des manettes
 bool  g_kbdJoy = false;                // émulation joystick au clavier (flèches + Ctrl droit)
 int   g_kbdJoyPort = 1;                // port ST visé par l'émulation clavier (0/1)
 float g_joyDeadzone = 0.30f;           // zone morte centrale des sticks analogiques [0,0.95]
+uint8_t g_lastJoy0 = 0, g_lastJoy1 = 0; // dernier octet composé posé sur l'IKBD (fenêtre Joystick)
 bool  g_showDisk = true, g_showCart = true, g_showHex = true, g_showCpu = true;  // fenêtres masquables
+bool  g_showJoy = false;               // fenêtre joystick (visualisation live)
+bool  g_joyCfgDirty = false;           // un réglage joystick a changé → resauver neost.cfg
 
 void onGlfwError(int code, const char* desc) {
     std::fprintf(stderr, "GLFW erreur %d : %s\n", code, desc);
@@ -251,6 +255,112 @@ void drawCpuState(Cpu68k& cpu, bool& reqReset) {
     ImGui::End();
 }
 
+// Fenêtre Joystick : visualisation LIVE de ce que voit l'hôte et de ce qui est
+// réellement envoyé au ST. Affiche, pour chaque manette présente, le nom, si elle
+// est reconnue « gamepad » (mapping SDL), ses axes (bruts + gamepad) sous forme de
+// barres avec la zone morte, ses boutons et son hat ; puis l'octet ST composé pour
+// chaque port avec les 5 bits décodés. Inclut les réglages (émulation clavier,
+// port, zone morte) modifiables ici. lastJoy0/1 = ce qui a été posé sur l'IKBD.
+void drawJoystickAxisBar(const char* label, float v, float dz) {
+    // v ∈ [-1,1] → barre [0,1] ; coloration si |v| dépasse la zone morte.
+    const float frac = (v + 1.0f) * 0.5f;
+    const bool active = (v < -dz) || (v > dz);
+    if (active) ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.20f, 0.80f, 0.30f, 1.0f));
+    char buf[32]; std::snprintf(buf, sizeof buf, "%+.2f", v);
+    ImGui::ProgressBar(frac, ImVec2(140.0f, 0.0f), buf);
+    if (active) ImGui::PopStyleColor();
+    ImGui::SameLine(); ImGui::TextUnformatted(label);
+}
+
+void drawJoyDirLed(const char* label, bool on) {
+    const ImVec4 col = on ? ImVec4(0.20f, 0.85f, 0.30f, 1.0f) : ImVec4(0.30f, 0.30f, 0.30f, 1.0f);
+    ImGui::TextColored(col, "%s", label);
+    ImGui::SameLine();
+}
+
+void drawJoystickWindow(GLFWwindow* win, uint8_t lastJoy0, uint8_t lastJoy1) {
+    ImGui::Begin("Joystick", &g_showJoy);
+
+    // --- Réglages (modifient les globals ; resauve via g_joyCfgDirty) -----------
+    if (ImGui::Checkbox("Émulation clavier (flèches + Ctrl droit)", &g_kbdJoy)) g_joyCfgDirty = true;
+    ImGui::SameLine(); ImGui::TextDisabled("(F11)");
+    ImGui::Text("Port émulé :"); ImGui::SameLine();
+    if (ImGui::RadioButton("1 (jeux)", g_kbdJoyPort == 1)) { g_kbdJoyPort = 1; g_joyCfgDirty = true; }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("0 (souris)", g_kbdJoyPort == 0)) { g_kbdJoyPort = 0; g_joyCfgDirty = true; }
+    ImGui::SetNextItemWidth(160.0f);
+    if (ImGui::SliderFloat("Zone morte", &g_joyDeadzone, 0.0f, 0.95f, "%.2f")) {
+        if (g_joyDeadzone < 0.0f) g_joyDeadzone = 0.0f;
+        if (g_joyDeadzone > 0.95f) g_joyDeadzone = 0.95f;
+    }
+    if (ImGui::IsItemDeactivatedAfterEdit()) g_joyCfgDirty = true;
+
+    ImGui::Separator();
+
+    // --- Sortie réellement envoyée au ST (le plus important) --------------------
+    auto decodeRow = [](const char* who, uint8_t v) {
+        ImGui::Text("%s  $%02X :", who, v); ImGui::SameLine();
+        drawJoyDirLed("HAUT",   v & stjoy::UP);
+        drawJoyDirLed("BAS",    v & stjoy::DOWN);
+        drawJoyDirLed("GAUCHE", v & stjoy::LEFT);
+        drawJoyDirLed("DROITE", v & stjoy::RIGHT);
+        drawJoyDirLed("FEU",    v & stjoy::FIRE);
+        ImGui::NewLine();
+    };
+    ImGui::TextDisabled("→ Envoyé à l'IKBD (ST) :");
+    decodeRow("Port 0", lastJoy0);
+    decodeRow("Port 1", lastJoy1);
+
+    ImGui::Separator();
+
+    // --- État brut de chaque manette présente -----------------------------------
+    int nPresent = 0;
+    for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid) {
+        if (!glfwJoystickPresent(jid)) continue;
+        ++nPresent;
+        const char* nm = glfwGetJoystickName(jid);
+        const int stPort = (nPresent == 1) ? 1 : (nPresent == 2 ? 0 : -1);
+        ImGui::Text("Manette %d : %s", jid, nm ? nm : "?");
+        if (stPort >= 0) { ImGui::SameLine(); ImGui::TextDisabled("→ port ST %d", stPort); }
+
+        GLFWgamepadstate gs;
+        if (glfwGetGamepadState(jid, &gs)) {
+            ImGui::TextColored(ImVec4(0.4f,0.8f,1.0f,1.0f), "  reconnue gamepad (mapping SDL)");
+            ImGui::Indent(8.0f);
+            drawJoystickAxisBar("LX", gs.axes[GLFW_GAMEPAD_AXIS_LEFT_X],  g_joyDeadzone);
+            drawJoystickAxisBar("LY", gs.axes[GLFW_GAMEPAD_AXIS_LEFT_Y],  g_joyDeadzone);
+            drawJoystickAxisBar("RX", gs.axes[GLFW_GAMEPAD_AXIS_RIGHT_X], g_joyDeadzone);
+            drawJoystickAxisBar("RY", gs.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y], g_joyDeadzone);
+            ImGui::Unindent(8.0f);
+        } else {
+            ImGui::TextColored(ImVec4(1.0f,0.7f,0.3f,1.0f), "  NON reconnue gamepad → lecture brute");
+        }
+
+        // Axes bruts (toujours affichés : révèlent un axe non centré au repos).
+        int axN = 0, btN = 0, hatN = 0;
+        const float*         ax  = glfwGetJoystickAxes(jid, &axN);
+        const unsigned char* bt  = glfwGetJoystickButtons(jid, &btN);
+        const unsigned char* hat = glfwGetJoystickHats(jid, &hatN);
+        ImGui::Text("  Axes bruts (%d) :", axN);
+        for (int i = 0; i < axN && ax; ++i) {
+            char lbl[16]; std::snprintf(lbl, sizeof lbl, "a%d%s", i,
+                                        (i == 0 ? " (X?)" : i == 1 ? " (Y?)" : ""));
+            ImGui::Indent(8.0f); drawJoystickAxisBar(lbl, ax[i], g_joyDeadzone); ImGui::Unindent(8.0f);
+        }
+        ImGui::Text("  Boutons (%d) :", btN); ImGui::SameLine();
+        for (int i = 0; i < btN && bt; ++i)
+            if (bt[i]) { ImGui::SameLine(); ImGui::Text("%d", i); }
+        if (hat && hatN >= 1)
+            ImGui::Text("  Hat0 : %s%s%s%s", (hat[0]&GLFW_HAT_UP)?"H":"", (hat[0]&GLFW_HAT_DOWN)?"B":"",
+                        (hat[0]&GLFW_HAT_LEFT)?"G":"", (hat[0]&GLFW_HAT_RIGHT)?"D":"");
+        ImGui::Text("  → octet ST de cette manette : $%02X", stjoy::readStick(jid, g_joyDeadzone));
+        ImGui::Separator();
+    }
+    if (nPresent == 0) ImGui::TextDisabled("Aucune manette détectée. (Clavier : active l'émulation ci-dessus.)");
+    (void)win;
+    ImGui::End();
+}
+
 // Fenêtre de l'écran ST : c'est la fenêtre de BASE (toujours là, ancrée sous les
 // barres, jamais au premier plan). L'image fait toujours 640×400 (taille du mode
 // monochrome) ; les 3 résolutions y sont normalisées. Clic = capture souris.
@@ -376,6 +486,7 @@ int main(int argc, char** argv) {
     const std::string romsDir  = resolveData("rom", exeDir);     // dossier pour le sélecteur de ROM
 
     g_dbgMouse = std::getenv("NEOST_DEBUG_MOUSE") != nullptr;
+    g_dbgJoy   = std::getenv("NEOST_DEBUG_JOY")   != nullptr;
 
     glfwSetErrorCallback(onGlfwError);
     if (!glfwInit()) return 1;
@@ -516,6 +627,9 @@ int main(int argc, char** argv) {
             uint8_t joy0 = 0, joy1 = 0;
             stjoy::compose(window, kbd, g_kbdJoyPort, g_joyDeadzone, joy0, joy1);
             machine.ikbd.setJoystick(joy0, joy1);
+            g_lastJoy0 = joy0; g_lastJoy1 = joy1;   // pour la fenêtre Joystick
+            // Diagnostic manette (NEOST_DEBUG_JOY=1) : ~3×/s, état brut des axes.
+            if (g_dbgJoy) { static int t = 0; if (++t % 16 == 0) stjoy::debug(window, kbd, g_kbdJoyPort, g_joyDeadzone); }
         }
 
         machine.cpu.updateIpl();               // entrées reçues → réévalue l'IPL
@@ -673,6 +787,7 @@ int main(int argc, char** argv) {
                 ImGui::MenuItem("Cart Library",  nullptr, &g_showCart);
                 ImGui::MenuItem("Mémoire (hex)", nullptr, &g_showHex);
                 ImGui::MenuItem("CPU 68000",     nullptr, &g_showCpu);
+                ImGui::MenuItem("Joystick",      nullptr, &g_showJoy);
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
@@ -696,7 +811,8 @@ int main(int argc, char** argv) {
         ImGui::Checkbox("Disk", &g_showDisk);  ImGui::SameLine();
         ImGui::Checkbox("Cart", &g_showCart);  ImGui::SameLine();
         ImGui::Checkbox("Hex",  &g_showHex);   ImGui::SameLine();
-        ImGui::Checkbox("CPU",  &g_showCpu);
+        ImGui::Checkbox("CPU",  &g_showCpu);   ImGui::SameLine();
+        ImGui::Checkbox("Joy",  &g_showJoy);
         if (drive.ok()) {
             ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
             if (ImGui::Checkbox("Son lecteur", &driveSoundOn)) drive.setEnabled(driveSoundOn);
@@ -710,6 +826,12 @@ int main(int argc, char** argv) {
         if (g_showCart) drawCartLibrary(cartsDir, machine.bus.mountedCartPath(), reqMountCart, reqEjectCart);
         if (g_showHex)  drawHexViewer(machine.bus);
         if (g_showCpu)  drawCpuState(machine.cpu, reqReset);
+        if (g_showJoy)  drawJoystickWindow(window, g_lastJoy0, g_lastJoy1);
+        // Un réglage joystick a changé dans la fenêtre → resauve neost.cfg.
+        if (g_joyCfgDirty) {
+            cfg.kbdjoy = g_kbdJoy; cfg.joyport = g_kbdJoyPort; cfg.joydeadzone = g_joyDeadzone;
+            saveConfig(exeDir, cfg); g_joyCfgDirty = false;
+        }
         ImGui::Render();
         ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 

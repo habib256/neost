@@ -123,10 +123,12 @@ void Ikbd::dispatchCommand() {
             // perdue) → « Keyboard not responding ». On diffère via
             // l'ordonnanceur ; à défaut (pas de scheduler), repli immédiat.
             if (inBuf_[1] == 0x01) {
-                // L'IKBD repart de ses défauts (cf. Hatari IKBD_Reset, l.565-569) :
-                // souris RELATIVE, seuils 1, pas d'échelle, axe Y vers le haut,
-                // état de bouton émis remis à zéro.
+                // L'IKBD repart de ses défauts (cf. Hatari IKBD_Boot_ROM) : souris
+                // RELATIVE, joystick AUTO, seuils 1, pas d'échelle, axe Y vers le
+                // haut, état de bouton/joystick émis remis à zéro.
                 mouseMode_     = REL;
+                joyMode_       = JOY_AUTO;
+                prevJoy0_      = prevJoy1_ = 0;
                 xThreshold_    = yThreshold_ = 1;
                 xScale_        = yScale_ = 0;
                 yAxis_         = 1;
@@ -284,10 +286,11 @@ void Ikbd::sendAutoJoysticks() {
 void Ikbd::onVbl(int64_t vblMicro) {
     // 1) Avance l'horloge interne IKBD ($1B/$1C) du temps d'une trame.
     updateClock(vblMicro);
-    // 2) Report joystick auto : à chaque trame, on émet spontanément l'état des
-    //    manettes qui ont changé. No-op strict hors mode auto (JOY_OFF par défaut),
-    //    donc aucun impact sur le boot EmuTOS ni les cartes de diagnostic (qui
-    //    interrogent en polled via $16).
+    // 2) Report joystick auto (mode par défaut du boot ROM IKBD) : à chaque trame,
+    //    on émet spontanément l'état des manettes qui ont changé. Sans entrée hôte
+    //    l'état reste neutre → sendAutoJoysticks n'émet rien (no-op), donc aucun
+    //    impact sur le boot EmuTOS ni les cartes de diagnostic (qui interrogent en
+    //    polled via $16). Émet seulement quand une manette/clavier bouge.
     if (joyMode_ == JOY_AUTO)
         sendAutoJoysticks();
 }

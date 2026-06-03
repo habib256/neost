@@ -54,6 +54,14 @@ public:
     // sink, le FDC reste silencieux. Posé par le frontend (thread émulation).
     void setSoundSink(std::function<void(FdcSound)> fn) { soundSink_ = std::move(fn); }
 
+    // « FDC rapide » (équivalent de `hatari --fastfdc`) : divise les délais de
+    // COMMANDE et de TRANSFERT par un facteur fixe pour accélérer les accès disque
+    // (chargements 10× plus courts). La ROTATION du disque (impulsions d'index,
+    // spin-up, arrêt moteur) reste au rythme réel, comme Hatari. ⚠ Peut casser les
+    // programmes au track-loader maison qui dépendent du débit physique du WD1772.
+    void setFastFdc(bool on) { fastFloppy_ = on; }
+    bool fastFdc() const { return fastFloppy_; }
+
     // Monte/éjecte une image (.st ou .msa) dans le lecteur `drive` (0 = A, 1 = B).
     bool loadImage(const std::string& path, int drive = 0);
     void eject(int drive = 0);
@@ -121,6 +129,8 @@ private:
 
     int      typeIPrepare(int cmdId, int runState);   // amorce une commande type I
     int      nextSectorID(int* pFdcCycles);     // latence jusqu'au prochain champ ID (cf. NextSectorID_FdcCycles_ST)
+    int      applyFastFdc(int fdcCycles) const; // divise le délai en mode « FDC rapide » (sauf délais cadencés sur l'index)
+    int      spinWaitDelay();                   // attente d'une impulsion d'index (spin-up / arrêt moteur)
 
     // --- Accès « bas niveau » à l'image .ST (cf. Hatari FDC_*_ST) --------------
     uint8_t  readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSize);
@@ -203,6 +213,8 @@ private:
     int      commandState_ = 0;       // sous-état (RUN_*)
     uint8_t  commandType_ = 1;        // 1/2/3/4
     bool     replaceCommandPossible_ = false; // remplaçable pendant prepare+spinup
+    bool     fastFloppy_ = false;     // « FDC rapide » (cf. setFastFdc) : délais /N
+    bool     delayIndexPaced_ = false;// le délai courant est cadencé sur la rotation (non accéléré)
     bool     statusTypeI_ = true;     // le STR rapporte un statut type I
     uint8_t  statusTemp_ = 0;         // statut intermédiaire (lecture secteur)
     int      indexCounter_ = 0;       // tours comptés (spin-up, motor-off, timeout)

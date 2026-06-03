@@ -20,6 +20,7 @@
 #pragma once
 #include <GLFW/glfw3.h>
 #include <cstdint>
+#include <cstdio>
 
 namespace stjoy {
 
@@ -82,10 +83,22 @@ inline uint8_t readStick(int jid, float deadzone) {
     // moins 16 boutons (« standard mapping » navigateur/SDL), les boutons 12-15
     // sont le D-pad → traités comme directions (et non comme feu) ; sinon tout
     // bouton est du feu (vieux sticks à un seul bouton réel).
-    int axN = 0, btN = 0;
-    const float*         ax = glfwGetJoystickAxes(jid, &axN);
-    const unsigned char* bt = glfwGetJoystickButtons(jid, &btN);
-    if (ax && axN >= 2) {
+    int axN = 0, btN = 0, hatN = 0;
+    const float*         ax  = glfwGetJoystickAxes(jid, &axN);
+    const unsigned char* bt  = glfwGetJoystickButtons(jid, &btN);
+    const unsigned char* hat = glfwGetJoystickHats(jid, &hatN);
+    const bool haveHat = (hat && hatN >= 1);
+    // Hat / POV (D-pad de beaucoup de manettes USB génériques) : numérique, donc
+    // FIABLE même si un axe analogique n'est pas centré au repos. Quand un hat
+    // existe, il fait autorité pour les directions et on IGNORE les axes
+    // analogiques bruts — c'est ce qui évite un « toujours à gauche/droite » sur
+    // une manette non reconnue dont l'axe 0/1 repose à une valeur extrême.
+    if (haveHat) {
+        if (hat[0] & GLFW_HAT_UP)    b |= UP;
+        if (hat[0] & GLFW_HAT_DOWN)  b |= DOWN;
+        if (hat[0] & GLFW_HAT_LEFT)  b |= LEFT;
+        if (hat[0] & GLFW_HAT_RIGHT) b |= RIGHT;
+    } else if (ax && axN >= 2) {
         if (ax[0] < -thr) b |= LEFT;  if (ax[0] > thr) b |= RIGHT;
         if (ax[1] < -thr) b |= UP;    if (ax[1] > thr) b |= DOWN;
     }
@@ -130,6 +143,40 @@ inline void compose(GLFWwindow* win, bool kbdEnabled, int kbdPort, float deadzon
 
     out0 = p[0];
     out1 = p[1];
+}
+
+// Diagnostic (NEOST_DEBUG_JOY=1) : imprime sur stderr l'état BRUT de chaque manette
+// présente — nom, reconnue « gamepad » ou non, tous les axes (bruts + gamepad si
+// mappée), boutons pressés, et l'octet ST composé. Sert à identifier un axe non
+// centré au repos / un mauvais index d'axe (cause d'un « toujours à gauche/droite »).
+inline void debug(GLFWwindow* win, bool kbdEnabled, int kbdPort, float deadzone) {
+    for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid) {
+        if (!glfwJoystickPresent(jid)) continue;
+        const char* nm = glfwGetJoystickName(jid);
+        std::fprintf(stderr, "[joy] jid=%d \"%s\"", jid, nm ? nm : "?");
+
+#ifndef __EMSCRIPTEN__
+        GLFWgamepadstate gs;
+        const bool mapped = glfwGetGamepadState(jid, &gs);
+        std::fprintf(stderr, " gamepad=%s", mapped ? "OUI" : "non");
+        if (mapped) {
+            std::fprintf(stderr, " | LX=%+.2f LY=%+.2f RX=%+.2f RY=%+.2f",
+                         gs.axes[GLFW_GAMEPAD_AXIS_LEFT_X],  gs.axes[GLFW_GAMEPAD_AXIS_LEFT_Y],
+                         gs.axes[GLFW_GAMEPAD_AXIS_RIGHT_X], gs.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
+        }
+#endif
+        int axN = 0, btN = 0;
+        const float*         ax = glfwGetJoystickAxes(jid, &axN);
+        const unsigned char* bt = glfwGetJoystickButtons(jid, &btN);
+        std::fprintf(stderr, " | axes(%d):", axN);
+        for (int i = 0; i < axN; ++i) std::fprintf(stderr, " a%d=%+.2f", i, ax ? ax[i] : 0.0f);
+        std::fprintf(stderr, " | btns(%d):", btN);
+        for (int i = 0; i < btN; ++i) if (bt && bt[i]) std::fprintf(stderr, " %d", i);
+        std::fprintf(stderr, " -> ST=$%02X\n", readStick(jid, deadzone));
+    }
+    uint8_t j0 = 0, j1 = 0;
+    compose(win, kbdEnabled, kbdPort, deadzone, j0, j1);
+    std::fprintf(stderr, "[joy] composé : port0=$%02X port1=$%02X (dz=%.2f)\n", j0, j1, deadzone);
 }
 
 } // namespace stjoy
