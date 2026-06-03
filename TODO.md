@@ -85,14 +85,16 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
 - [ ] Partage de bus (mode non-hog) au cycle près _(précision cycle)_ — réf. `blitter.c`
 
 ## FDC WD1772 + DMA disquette
-- [ ] **Support STX (Pasti)** — images BAS NIVEAU (pistes/secteurs bruts, IDs, CRC, bits
-      faibles/fuzzy, timing) pour les jeux protégés (ex. `disks/Stunt Car Racer.stx`).
-      🎯 étalon : **Dungeon Master** (FTL) — protection « fuzzy bits » + secteurs 8192 o.
-      Aujourd'hui DÉTECTÉ et refusé proprement (`Fdc::loadImage`, magic « RSY\0 »). Vrai
-      support = **gros chantier** : parser le conteneur Pasti (en-tête RSY, enregistrements
-      piste/secteur, données fuzzy/timing) + réécrire le WD1772 au niveau piste (ID fields,
-      CRC par secteur, tailles variables, densité, READ ADDRESS réel) — **dépend du FDC
-      cycle-exact** (item « Timing réel » ci-dessous). Réf. `floppies/stx.c` (~2100 lignes).
+- [x] **Support STX (Pasti)** — FAIT (port `floppies/stx.c` → `StxImage` + chemin `_STX`
+      du FDC ; cf. CHANGELOG §Disquette). Champs ID réels, statut/CRC par secteur, bits
+      fuzzy, timing variable, overlay d'écriture. 🎯 **Dungeon Master**, **Stunt Car Racer**,
+      **Tower of Babel** etc. jouables ; séquence de lecture IDENTIQUE à Hatari (oracle).
+      **Reste** (long tail des protections) : (1) certains jeux plantent après le titre
+      (ex. `Rick Dangerous.stx`, `SuperOffRoad` écran noir) — protection spécifique à
+      diff'er à l'oracle ; (2) `WRITE TRACK` sur STX non géré (no-op) ; (3) sauvegarde de
+      l'overlay d'écriture dans un fichier `.wd1772` (en mémoire pour l'instant, perdu à la
+      fermeture) ; (4) son qui démarre un peu tard sur certains STX (à investiguer) ;
+      (5) images STX HD / densité. Réf. `floppies/stx.c`.
 - [ ] Masquage d'adresse DMA (octet haut `&0x3f`, bas word-align `&0xfe`) _(faible valeur)_ —
       réf. `fdc.c:FDC_WriteDMAAddress`
 - [ ] Compteur de secteurs DMA non relisible sur le vrai HW _(risque élevé)_ — réf.

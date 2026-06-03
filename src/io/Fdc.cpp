@@ -16,6 +16,7 @@
 #include "io/Mfp.hpp"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <cmath>
 #include <fstream>
@@ -1182,7 +1183,10 @@ int Fdc::updateReadSectors() {
             statusTemp_ = readSectorST(uint8_t(drive_[driveSel_].headTrack), sr_, side_, &size);
             if (statusTemp_ & STR_RNF) { commandState_ = RUN_RS_RNF; fdcCycles = CMD_IMMEDIATE; }
             else {
-                updateStr(STR_RECTYPE, 0);                    // type d'enregistrement « normal »
+                // Type d'enregistrement (« deleted data ») depuis le statut du secteur
+                // (toujours 0 pour .ST, possiblement posé pour STX).
+                if (statusTemp_ & STR_RECTYPE) updateStr(0, STR_RECTYPE);
+                else                            updateStr(STR_RECTYPE, 0);
                 commandState_ = RUN_RS_TRANSFER_LOOP;
                 fdcCycles = int(bufferReadTiming());          // délai du 1er octet (timing STX variable)
             }
@@ -1194,7 +1198,10 @@ int Fdc::updateReadSectors() {
         else { commandState_ = RUN_RS_CRC; fdcCycles = int(2 * MFM_BYTE); }  // 2 octets de CRC
         break;
      case RUN_RS_CRC:
-        commandState_ = RUN_RS_MULTI; fdcCycles = CMD_IMMEDIATE;  // CRC toujours bon pour .ST
+        // CRC toujours bon pour .ST ; pour STX, une ERREUR CRC volontaire (protection)
+        // est remontée dans le statut et termine la commande (cf. Hatari READSECTORS_CRC).
+        if (statusTemp_ & STR_CRC) { updateStr(0, STR_CRC); fdcCycles = cmdComplete(true); }
+        else                       { commandState_ = RUN_RS_MULTI; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_RS_MULTI:
         if (cr_ & CMD_BIT_MULTI) {                            // multi-secteurs : secteur suivant
@@ -1452,6 +1459,12 @@ void Fdc::executeCommand(uint8_t cmd) {
     refreshDriveSide();
     cr_ = cmd;
     const uint8_t type = cmdType(cmd);
+    // Trace FDC optionnelle (NEOST_FDC_DEBUG=1) : commande + piste/secteur/horloge.
+    static const bool fdcDebug = getenv("NEOST_FDC_DEBUG") != nullptr;
+    if (fdcDebug)
+        std::fprintf(stderr, "[fdc] @%lldms cmd=%02x type=%d tr=%d sr=%d side=%d head=%d dmaCnt=%d motor=%d\n",
+            (long long)(nowCyc() / 8021), cmd, type, tr_, sr_, side_,
+            driveSel_ >= 0 ? drive_[driveSel_].headTrack : -1, dmaSectorCount_, (str_ & STR_MOTOR) ? 1 : 0);
 
     // Nouvelle commande : on efface l'IRQ du FDC (sauf « force interrupt immediate »).
     if ((irqSignal_ & IRQ_FORCED) && !(interruptCond_ & INT_COND_IMMEDIATE))

@@ -90,7 +90,11 @@ if(EXISTS "${MUSASHI_DIR}/m68kops.c")
     # (clavier, Timer C) ne sont jamais utilisés → EmuTOS reste bloqué.
     target_compile_definitions(neost_core PRIVATE
         M68K_INSTRUCTION_HOOK=1
-        M68K_EMULATE_INT_ACK=1)
+        M68K_EMULATE_INT_ACK=1
+        # Erreurs d'adresse 68000 (accès mot/long à adresse impaire) : indispensable
+        # aux protections de jeux (STX) qui déclenchent volontairement l'exception 3
+        # comme anti-debug. Moira les modélise déjà ; on aligne Musashi.
+        M68K_EMULATE_ADDRESS_ERROR=1)
 else()
     message(WARNING
         "Musashi introuvable — CPU en stub. "

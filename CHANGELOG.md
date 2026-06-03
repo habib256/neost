@@ -10,6 +10,13 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   (192 Ko → `$FC0000`, sinon `$E00000`).
 - **Cœur CPU sélectionnable** (`--cpu musashi|moira`, `neost.cfg`, WASM `?cpu=`).
   Moira (cycle-exact, sous-module) boote EmuTOS pixel-identique et délivre les IRQ.
+- **Moira en mode cycle-exact** (`MoiraConfig.h` : `MOIRA_PRECISE_TIMING = true`,
+  `MOIRA_MIMIC_MUSASHI = false`) — c'est l'apport de Moira sur Musashi : l'IPL est
+  échantillonné à la frontière de cycle exacte (sync avant chaque accès) au lieu de
+  fin d'instruction. Corrige les **labels d'icônes EmuTOS 192** (« DISK A »/« DISQUE A »/
+  « TRASH ») qui ne se traçaient pas sous Moira : une IRQ Timer C prise au mauvais cycle
+  (`$FD7B22`) détournait le flux du blit texte VDI avant le redessin des labels. Bureau,
+  diag ST (rapport série octet-identique à Musashi) et STX (Stunt Car Racer) inchangés.
 - **Reconfiguration à chaud** : modèle / RAM / cœur / ROM changeables depuis le menu
   sans relancer (`Machine::reconfigure`, hard reset avec les nouveaux paramètres).
 - **Ordonnanceur d'événements daté** (`Scheduler`, idée `cycInt.c`) : la trame est
@@ -156,8 +163,22 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - Formats : `.st` (brut), `.msa` (décompression RLE), `.dim` (en-tête 32 o retiré, port
   `floppies/dim.c` : ID 'BB', non compressé). Détection par CONTENU (indépendante de
   l'extension). Écritures recopiées dans le `.st` ; `.msa`/`.dim` protégées en écriture.
-  Les images `.stx` (Pasti, bas niveau) sont DÉTECTÉES (magic « RSY\0 ») et refusées
-  proprement — incompatibles avec le modèle FDC logique actuel (cf. TODO).
+- **Images STX (Pasti)** — port d'`extern/hatari/src/floppies/stx.c` (`StxImage` +
+  chemin `_STX` du FDC). Parse le conteneur Pasti (en-tête RSY, blocs piste/secteur) en
+  structures bas niveau avec **champs ID RÉELS** (piste/face/secteur/taille/CRC,
+  éventuellement NON standard), **statut FDC par secteur** (RNF, **erreur CRC**
+  volontaire, record-type), **bits fuzzy** (données différentes à chaque lecture) et
+  **timing variable** (vitesse par bloc de 16 o). Le FDC dispatche vers les variantes
+  `nextSectorIDStx`/`readSectorStx`/`readAddressStx`/`readTrackStx`/`writeSectorStx`
+  (écriture en overlay mémoire). Position angulaire via `BitPosition` (1 bit = 32 cyc),
+  rotation par piste (`cyclesPerRev` dérivé de la longueur réelle). Débloque les jeux
+  **PROTÉGÉS** : ✅ **Dungeon Master** (fuzzy bits), **Stunt Car Racer**, **Tower of
+  Babel**, Golden Axe, Chessmaster… (séquence de lecture identique à Hatari, vérifiée à
+  l'oracle). Quelques protections spécifiques restent à affiner (cf. TODO).
+- **Erreurs d'adresse 68000** (`M68K_EMULATE_ADDRESS_ERROR`, exception 3 sur accès
+  mot/long impair) activées sous Musashi (Moira les avait déjà) — requises par les
+  anti-debug de certaines protections. Boot EmuTOS byte-identique, batterie Z des
+  diagnostics inchangée.
 
 ## Audio
 - **YM2149** : 3 voies carrées + bruit, enveloppe (R11-13, formes via Continue/Attack/
