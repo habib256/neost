@@ -63,6 +63,11 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
       réf. `rs232.c:RS232_HandleUCR + RS232_SetBaudRateFromTimerD`
 
 ## Vidéo / Shifter
+- [ ] **Bug labels bureau EmuTOS 192 FR/US** : textes des icônes/menus mal affichés
+      (captures `etos192fr`/`etos192us`) — comparer rendu Shifter/VDI avec Hatari.
+- [ ] **Green desktop / GEM couleur corrompu** : bureau vert avec menus/fenêtres/icônes
+      parasités (capture `Pirates!`) — comparer palette, plans bitplanes, masques VDI et
+      rendu Shifter avec Hatari.
 - [ ] **Suppression de bordures** (gauche/droite/haut/bas, tricks 50/60 Hz) — base des démos
       _(précision cycle)_ — réf. `video.c` BORDERMASK_*
       🎯 étalon : **The Cuddly Demos** (4 bordures), **Enchanted Land** (sync-scroll horizontal)
@@ -138,10 +143,7 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
 - [ ] SR n'expose pas overrun/framing/parity _(faible valeur)_ — réf. `acia.c`
 
 ## RTC RP5C15
-- [ ] Aliasing BANK=1 AM/PM de `$FFFC25/27` (chemin TOS 1.0x) _(faible valeur)_ — réf.
-      `rtc.c:Rtc_Minutes*` (rtc_bank)
-- [ ] Détection **Mega ST** par EmuTOS : sonde `$FFFC21` + validation `$FFFC25/27` (NeoST
-      renvoie `0xFF` → label « Atari ST »). C'est le levier restant pour le label « Mega ST ».
+- [ ] Sauvegarde persistante de la date/heure RTC entre sessions _(faible valeur)_.
 
 ## CPU : IRQ, Moira, MegaSTE
 - [ ] **Bascule CPU 8/16 MHz MegaSTE** (`$FF8E21` bit1) — change le débit de cycles et tous
@@ -154,6 +156,8 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
       — réf. MAME `st_user_map`
 
 ## Stockage & contrôleurs
+- [ ] **STX / Pasti** : chantier commencé (parseur `StxImage` + premiers hooks FDC), à terminer
+      plus tard : montage réel, timings/fuzzy bits, champs ID et validation protections.
 - [ ] **GEMDOS HD** : monter un **dossier hôte comme lecteur C:** — très pratique sans image
       — réf. `gemdos.c`
 - [ ] **ACSI complet** (jusqu'à 8 périphériques, boot disque dur TOS) — réf. `hdc.c`, MAME

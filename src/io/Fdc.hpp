@@ -21,10 +21,12 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "core/Scheduler.hpp"
+#include "io/StxImage.hpp"
 
 class Bus;
 class YM2149;
@@ -86,6 +88,12 @@ private:
         bool writeProtect = false;              // protégé en écriture
         bool raw = true;                        // .st brut (writeBack possible) vs .msa
 
+        // Image STX (Pasti) : si présente, le FDC dispatche vers le chemin _STX
+        // (champs ID réels, statut par secteur, fuzzy/timing) au lieu du modèle .ST.
+        enum ImgType { IMG_ST = 0, IMG_STX = 1 };
+        int  imgType = IMG_ST;
+        std::unique_ptr<StxImage> stx;          // non nul ⇔ imgType == IMG_STX
+
         // Détection de changement de média (Mediach) à chaud (cf. Hatari
         // floppy.c:Floppy_DriveTransition*) : une éjection/insertion à chaud force
         // brièvement WPRT, ce que TOS surveille pour relire le répertoire. On modélise
@@ -98,15 +106,18 @@ private:
 
     // --- Géométrie / capacités du média (cf. Hatari FDC_Get*PerTrack/Disk) -----
     int      sectorsPerTrack(int drive) const { return drive_[drive].spt; }
-    int      sidesPerDisk(int drive)    const { return drive_[drive].sides; }
+    int      sidesPerDisk(int drive)    const;
     int      tracksPerDisk(int drive)   const;
-    int      bytesPerTrack()            const;  // piste DD standard (≈ 6268 o)
+    int      bytesPerTrack()            const;  // piste DD standard (≈ 6268 o) — .ST
+    int      bytesPerTrackStx(int track, int side) const;       // longueur réelle de la piste STX
+    int64_t  cyclesPerRev() const;              // période d'un tour (constante .ST, par piste STX)
 
     // --- Modèle rotationnel : impulsions d'index (cf. Hatari FDC_IndexPulse_*) --
     void     indexInit();                       // ancre l'index à une position « passée » aléatoire (déterministe)
     void     indexCheckUpdate();                // incrémente le compteur si un tour s'est écoulé
     void     indexIncrease(int64_t ipTime);     // valide une impulsion (compteur + son + force-int)
     int      indexCurrentPosBytes() const;      // position tête depuis l'index, en octets (−1 si pas de média)
+    int      indexCurrentPosCycles() const;     // position tête depuis l'index, en cycles FDC (STX)
     bool     indexState() const;                // signal d'index actif (≈ 3,71 ms/tour)
     int64_t  nextIndexCycles() const;           // cycles FDC avant la prochaine impulsion (−1 si pas de média)
 
@@ -132,7 +143,8 @@ private:
     int      applyFastFdc(int fdcCycles) const; // divise le délai en mode « FDC rapide » (sauf délais cadencés sur l'index)
     int      spinWaitDelay();                   // attente d'une impulsion d'index (spin-up / arrêt moteur)
 
-    // --- Accès « bas niveau » à l'image .ST (cf. Hatari FDC_*_ST) --------------
+    // --- Accès « bas niveau » à l'image .ST (cf. Hatari FDC_*_ST). Chacune dispatche
+    //     vers sa variante _STX en tête si l'image montée est une STX. -----------
     uint8_t  readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSize);
     uint8_t  writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size);
     uint8_t  readAddressST(uint8_t track, uint8_t sector, uint8_t side);
@@ -140,12 +152,22 @@ private:
     uint8_t  writeTrackBuffer();                // WRITE TRACK : extrait les secteurs du flux écrit
     void     writeBack(FloppyDisk& dk, uint32_t off, uint32_t len);  // recopie dans le .st
 
+    // --- Chemin STX (cf. Hatari FDC_*_STX) : champs ID réels, statut par secteur,
+    //     bits fuzzy, timing variable. Utilise stxNextSector_ posé par nextSectorIDStx.
+    int      nextSectorIDStx(int* pFdcCycles);
+    uint8_t  readSectorStx(int* pSize);
+    uint8_t  writeSectorStx(int size);
+    uint8_t  readAddressStx();
+    uint8_t  readTrackStx(int track, int side);
+
     // --- Tampon de transfert FDC↔DMA (cf. Hatari FDC_Buffer_*) ----------------
-    // Pour les images .ST chaque octet a un timing fixe (256 cycles FDC), on ne
-    // stocke donc que les octets ; le timing est constant.
-    void     bufferReset() { buf_.clear(); bufPos_ = 0; }
-    void     bufferAdd(uint8_t b) { buf_.push_back(b); }
+    // Chaque octet porte un TIMING (cycles FDC) : fixe 256 pour .ST (bufferAdd), ou
+    // variable pour STX (bufferAddTiming, secteurs « variable bit width »).
+    void     bufferReset() { buf_.clear(); bufTiming_.clear(); bufPos_ = 0; }
+    void     bufferAdd(uint8_t b) { buf_.push_back(b); bufTiming_.push_back(uint16_t(256)); }
+    void     bufferAddTiming(uint8_t b, uint16_t t) { buf_.push_back(b); bufTiming_.push_back(t); }
     uint8_t  bufferReadByte() { return buf_[bufPos_++]; }
+    uint16_t bufferReadTiming() const { return bufTiming_[bufPos_]; }
     uint8_t  bufferReadBytePos(int i) const { return buf_[i]; }
     int      bufferSize() const { return int(buf_.size()); }
 
@@ -244,5 +266,6 @@ private:
 
     // Tampon de transfert FDC↔DMA.
     std::vector<uint8_t> buf_;
+    std::vector<uint16_t> bufTiming_;   // cycles FDC/octet : 256 pour .ST, variable pour STX
     int      bufPos_ = 0;
 };

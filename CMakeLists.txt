@@ -50,6 +50,7 @@ add_library(neost_core STATIC
     src/io/Mfp.cpp
     src/io/Ikbd.cpp
     src/io/Fdc.cpp
+    src/io/StxImage.cpp
     src/io/Rtc.cpp
     src/io/MidiAcia.cpp)
 
@@ -59,7 +60,7 @@ target_include_directories(neost_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
 set_source_files_properties(
     src/core/Bus.cpp src/core/Shifter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Blitter.cpp
-    src/core/Machine.cpp src/core/Tracer.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp
+    src/core/Machine.cpp src/core/Tracer.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # --- Musashi (core 68000) en sous-module, compilé DANS le cœur -------------

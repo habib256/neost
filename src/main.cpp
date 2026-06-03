@@ -832,14 +832,27 @@ int main(int argc, char** argv) {
                     std::error_code ec;
                     const std::string curRom = fs::path(cfg.rom).filename().string();
                     if (fs::is_directory(romsDir, ec)) {
+                        std::vector<fs::path> roms;
                         for (const auto& e : fs::directory_iterator(romsDir, ec)) {
                             if (!e.is_regular_file()) continue;
                             std::string ext = e.path().extension().string();
                             for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
                             if (ext != ".img" && ext != ".rom") continue;
-                            const std::string name = e.path().filename().string();
+                            roms.push_back(e.path());
+                        }
+                        auto romSortKey = [](const fs::path& p) {
+                            std::string name = p.filename().string();
+                            for (auto& ch : name) ch = (char)std::tolower((unsigned char)ch);
+                            return name;
+                        };
+                        std::sort(roms.begin(), roms.end(),
+                                  [&](const fs::path& a, const fs::path& b) {
+                                      return romSortKey(a) < romSortKey(b);
+                                  });
+                        for (const auto& p : roms) {
+                            const std::string name = p.filename().string();
                             if (ImGui::MenuItem(name.c_str(), nullptr, name == curRom)) {
-                                cfg.rom = e.path().string(); saveConfig(exeDir, cfg); reqRebuild = true;
+                                cfg.rom = p.string(); saveConfig(exeDir, cfg); reqRebuild = true;
                             }
                         }
                     } else {

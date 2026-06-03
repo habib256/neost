@@ -5,6 +5,31 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Rtc.hpp"
+#include <ctime>
+
+Rtc::Rtc() {
+    initFromHostTime();
+}
+
+void Rtc::initFromHostTime() {
+    const std::time_t now = std::time(nullptr);
+    const std::tm* tm = std::localtime(&now);
+    if (!tm) return;                                      // garde la base de secours
+
+    auto set = [&](int u, int t, int v) {
+        if (v < 0) v = 0;
+        d_[u] = uint8_t(v % 10);
+        d_[t] = uint8_t((v / 10) % 10);
+    };
+
+    set(0, 1, tm->tm_sec);
+    set(2, 3, tm->tm_min);
+    set(4, 5, tm->tm_hour);
+    d_[6] = uint8_t(tm->tm_wday & 0x0F);                 // Hatari expose tm_wday (0=dimanche)
+    set(7, 8, tm->tm_mday);
+    set(9, 10, tm->tm_mon + 1);
+    set(11, 12, (tm->tm_year - 80) % 100);               // GEMDOS : années depuis 1980
+}
 
 // Rattrape les secondes entières écoulées depuis le dernier top (baseCycle_), en
 // avançant l'horloge BCD. Appelé à chaque accès → le temps lu reflète l'horloge
@@ -26,6 +51,8 @@ void Rtc::catchUp() {
 uint8_t Rtc::read8(uint32_t addr) {
     catchUp();
     const int i = static_cast<int>((addr - 0xFFFC21) >> 1) & 0x0F;
+    if ((mode_ & 0x01) && i == 2) return fakeAm_;          // BANK=1 : alias AM/PM TOS 1.0x
+    if ((mode_ & 0x01) && i == 3) return fakeAmz_;
     if (i < 13) return uint8_t(d_[i] & 0x0F);           // chiffre BCD (4 bits utiles)
     if (i == 13) return uint8_t((mode_ & 0x0F) | 0xF0); // mode : bits hauts à 1 (cf. Hatari)
     if (i == 14) return test_;
@@ -35,7 +62,9 @@ uint8_t Rtc::read8(uint32_t addr) {
 void Rtc::write8(uint32_t addr, uint8_t v) {
     catchUp();                                          // fige le temps courant AVANT d'écrire
     const int i = static_cast<int>((addr - 0xFFFC21) >> 1) & 0x0F;
-    if (i < 13)       d_[i]  = uint8_t(v & 0x0F);        // réglage de l'heure (chiffre BCD)
+    if ((mode_ & 0x01) && i == 2) fakeAm_  = uint8_t((v & 0x0F) | 0xF0);
+    else if ((mode_ & 0x01) && i == 3) fakeAmz_ = uint8_t((v & 0x0F) | 0xF0);
+    else if (i < 13)  d_[i]  = uint8_t(v & 0x0F);        // réglage de l'heure (chiffre BCD)
     else if (i == 13) mode_  = v;
     else if (i == 14) test_  = v;
     else {            reset_ = v;
@@ -62,7 +91,7 @@ void Rtc::tickOneSecond() {
     int h = get(4, 5) + 1;
     if (h < 24) { set(4, 5, h); return; }
     set(4, 5, 0);
-    d_[6] = uint8_t(d_[6] % 7 + 1);                     // jour de la semaine 1-7
+    d_[6] = uint8_t((d_[6] + 1) % 7);                   // jour de la semaine 0-6 (Hatari/tm_wday)
 
     static const int mlen[13] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     const int yr  = get(11, 12);

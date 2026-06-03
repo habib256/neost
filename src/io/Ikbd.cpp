@@ -6,6 +6,7 @@
 #include "io/Ikbd.hpp"
 #include "io/Mfp.hpp"
 #include <cstdio>
+#include <ctime>
 
 // Bits du registre de statut ACIA 6850.
 enum : uint8_t {
@@ -13,6 +14,10 @@ enum : uint8_t {
     ACIA_TDRE = 0x02,   // Transmit Data Register Empty
     ACIA_IRQ  = 0x80,   // ligne d'interruption (vers GPIP4 du MFP)
 };
+
+Ikbd::Ikbd(Mfp& mfp) : mfp_(mfp) {
+    initClockFromHostTime();
+}
 
 // Horloge interne IKBD : l'octet est-il un nombre BCD valide ? (cf. Hatari
 // IKBD_BCD_Check) — SetClock ($1B) ignore les octets non BCD et garde les autres.
@@ -26,6 +31,25 @@ static uint8_t bcdAdjust(uint8_t v) {
     if ((v & 0x0f) > 0x09) v += 0x06;
     if ((v & 0xf0) > 0x90) v += 0x60;
     return v;
+}
+
+void Ikbd::initClockFromHostTime() {
+    const std::time_t now = std::time(nullptr);
+    const std::tm* tm = std::localtime(&now);
+    if (!tm) return;                                      // garde la base de secours
+
+    auto bcd = [](int v) -> uint8_t {
+        if (v < 0) v = 0;
+        return uint8_t(((v / 10) % 10) << 4 | (v % 10));
+    };
+
+    clock_[0] = bcd((tm->tm_year + 1900) % 100);          // YY MM DD hh mm ss
+    clock_[1] = bcd(tm->tm_mon + 1);
+    clock_[2] = bcd(tm->tm_mday);
+    clock_[3] = bcd(tm->tm_hour);
+    clock_[4] = bcd(tm->tm_min);
+    clock_[5] = bcd(tm->tm_sec);
+    clockMicro_ = 0;
 }
 
 uint8_t Ikbd::read8(uint32_t addr) {

@@ -24,7 +24,7 @@ class Mfp;
 
 class Ikbd {
 public:
-    explicit Ikbd(Mfp& mfp) : mfp_(mfp) {}
+    explicit Ikbd(Mfp& mfp);
 
     // Ordonnanceur : l'IKBD y date sa réponse de reset (l'IRQ ACIA doit arriver
     // APRÈS coup, pas pendant l'instruction qui envoie la commande).
@@ -97,6 +97,7 @@ private:
 
     // Avance l'horloge interne BCD d'une seconde par 1e6 µs cumulés (cf.
     // IKBD_UpdateClockOnVBL) avec la propagation/retenue de la ROM HD6301.
+    void initClockFromHostTime();
     void updateClock(int64_t vblMicro);
 
     Mfp& mfp_;

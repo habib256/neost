@@ -389,7 +389,7 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
         if (cpu) cpu->updateIpl();             // une lecture peut effacer l'IRQ ACIA
         return v;
     }
-    if (addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine))
+    if ((addr & 1) && addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine))
         return rtc->read8(addr);          // RTC RP5C15 — Mega ST / Mega STE
     // STE / Mega STE : joypads / paddles / lightpen + DIP switches MegaSTE
     // ($FF9200-$FF9223). NeoST n'émule aucun de ces périphériques → on renvoie les
@@ -460,7 +460,7 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
         if (cpu) cpu->updateIpl();        // un octet bouclé peut lever l'IRQ ACIA
         return;
     }
-    if (addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine)) {
+    if ((addr & 1) && addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine)) {
         rtc->write8(addr, v);             // RTC RP5C15 — Mega ST / Mega STE
         return;
     }
