@@ -21,6 +21,112 @@ assez fidèle pour jeux, démos et utilitaires système.
 souris relative, son YM2149 tons+bruit. Modèle « DMA instantané » + horloge
 ligne-par-ligne (≈ pas cycle-accurate).
 
+## Audit de fidélité Hatari — inventaire complet (lot juin 2026)
+
+Inventaire NeoST ↔ **Hatari** (source de vérité) issu d'un audit composant-par-
+composant : **12 sous-systèmes, 71 écarts identifiés**. **14 portés** (lot juin 2026,
+branche `feat/hatari-fidelity-port`, chacun validé par le filet de non-régression :
+build + boot EmuTOS sur les 2 cœurs + 3 cartouches de diag atteignant leur menu ;
+détail dans `CHANGELOG.md`) ; **58 différés**, étiquetés :
+`lot suivant` = portable, faible risque · `précision cycle` = nécessite
+l'ordonnanceur daté (cf. `docs/CYCLE_ACCURACY.md`) · `risque élevé` = touche le
+modèle bus/IRQ déjà éprouvé · `gros contrôleur` = puce entière à écrire ·
+`faible valeur`. ✅ = fait, ☐ = à faire.
+
+### Bus / memory map / MMU
+- [x] **Banque 1 MMU miroir de la banque 0 sur STE/MegaSTE** (bits 0-1 de `$FF8001` ignorés) — réf. `stMemory.c:STMemory_MMU_ConfToBank` + `Config_IsMachineST`
+- [ ] Joypad/lightpen STE + DIP switches MegaSTE (`$FF9200-$FF9223`) whitelistés mais relisent `0xFF` _(différé : lot suivant)_ — réf. `ioMemTabSTE.c` (Joy_StePad*, IoMemTabMegaSTE_DIPSwitches_Read → `0xBF`)
+- [ ] Contrôle cache/CPU MegaSTE `$FF8E21` sans registre relisible (lit `0xFF`) _(différé : lot suivant)_ — réf. `ioMem.c:IoMem_FixAccessForMegaSTE` + `ioMemTabSTE.c:IoMemTabMegaSTE_CacheCpuCtrl_WriteByte`
+- [ ] Registres vidéo STE « void » doivent lire `0x00` (`$FF820B`, `$FF8262-63`, `$FF8266-7F`) _(différé : faible valeur)_ — réf. `ioMemTabSTE.c` (IoMem_VoidRead_00)
+- [ ] Fine-scroll/line-width STE `$FF8264/65/$FF820F` whitelistés mais non gérés au niveau Bus _(différé : lot suivant)_ — réf. `ioMemTabSTE.c` (Video_HorScroll/LineWidth)
+- [ ] La banque ROM doit couvrir toute la fenêtre 1 Mo (`$E00000-$EFFFFF`)/192 Ko, pas seulement la taille du fichier _(différé : risque élevé)_ — réf. `cpu/memory.c:memory_map_Standard_RAM` (ROMmem_bank + ROMmem_mask aliasing)
+- [ ] Les accès mémoire FDC/son-DMA court-circuitent la traduction MMU (utilisent `ram[]` physique) _(différé : risque élevé)_ — réf. `stMemory.c:STMemory_DMA_Read/Write*` (via STMemory_MMU_Translate_Addr)
+
+### MFP 68901 + RS232 USART
+- [x] **Lecture GPIP honore le registre de direction (DDR) + le latch CPU** — réf. `mfp.c:MFP_GPIP_ReadByte_Main`
+- [ ] Les écritures AER/DDR/GPIP ne réévaluent pas les IRQ GPIP front-déclenchées _(différé : risque élevé)_ — réf. `mfp.c:MFP_GPIP_Update_Interrupt` + AER/DDR/GPIP_WriteByte
+- [ ] Bit3 GPIP (blitter busy/idle) non représenté en lecture _(différé : lot suivant)_ — réf. `mfp.c:MFP_GPIP_ReadByte_Main`
+- [ ] Lecture du data-register Timer A/C/D renvoie la valeur de recharge, pas le compteur vivant _(différé : lot suivant)_ — réf. `mfp.c:MFP_ReadTimer_AB/CD`
+- [ ] Le replanning des timers délai perd le dépassement (pas de PendingCyclesOver) _(différé : lot suivant)_ — réf. `mfp.c:MFP_StartTimer_AB/CD` + Timer*_Interrupt
+- [ ] Timer A event-count ignore la polarité AER GPIP4 et recharge à 0 au lieu de 1 _(différé : lot suivant)_ — réf. `mfp.c:MFP_TimerA_Set_Line_Input`
+- [ ] Le chemin de réception loopback n'honore pas RSR Receiver-Enable (bit0) _(différé : faible valeur)_ — réf. `rs232.c:RS232_Update / RS232_RSR_ReadByte`
+- [ ] Config baud USART UCR/Timer-D non modélisée (backing-store seul) _(différé : faible valeur)_ — réf. `rs232.c:RS232_HandleUCR + RS232_SetBaudRateFromTimerD`
+
+### Vidéo / Shifter
+- [x] **Registres STE (lot) : fine-scroll `$FF8264/65`, line-width `$FF820F`, base-basse `$FF820D`, palette 4 bits/canal, relecture sync `$FF820A`** (état registre ; rendu scroll/line-width réel encore différé) — réf. `video.c` (HorScroll/LineWidth/ScreenBase/Sync) + `conv_st.c:ConvST_SetupRGBTable`
+- [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) non modélisé _(différé : risque élevé)_ — réf. `video.c:Video_ColorReg_WriteWord` (« special strange case »)
+- [ ] `$FF820D` en lecture renvoie l'octet bas sur ST au lieu de 0 forcé _(différé : lot suivant)_ — réf. `video.c:Video_BaseLow_ReadByte`
+- [ ] Suppression de bordures (gauche/droite/haut/bas, tricks 50/60 Hz) non émulée _(différé : précision cycle)_ — réf. `video.c` BORDERMASK_*
+- [ ] Spec512 (palette par scanline/par cycle, 512 couleurs) non émulé _(différé : précision cycle)_ — réf. `spec512.c` + `video.c:Video_ColorReg_WriteWord`
+
+### Timing machine / ordonnanceur
+- [ ] VBL (niv. 4) tiré ligne 201 au lieu de la fin de trame (~ligne 312 + offset 64 cyc) _(différé : risque élevé)_ — réf. `video.c:Video_InterruptHandler_VBL/HBL` (VBL_VIDEO_CYCLE_OFFSET)
+- [ ] Géométrie figée PAL 313×512 ; mono (71 Hz, 501×224) et 60 Hz (263×508) non modélisés _(différé : risque élevé)_ — réf. `video.h` CYCLES/SCANLINES_PER_LINE/FRAME
+- [ ] Timer B/HBL plafonnés à 200 lignes visibles même en 400 lignes (mono) _(différé : lot suivant)_ — réf. `video.c:Video_InterruptHandler_HBL`
+- [ ] Le quantum CPU = tout l'écart entre événements, pas le cycle bus → latence IRQ grossière _(différé : précision cycle)_ — réf. `cycInt.c` + `m68000.c` + `cycles.c`
+- [ ] Timer B event-count figé au cycle 400 ; devrait suivre Display-Enable (DE_start/end+24) par ligne et 50/60 Hz _(différé : précision cycle)_ — réf. `video.c:Video_TimerB_GetPosFromDE`
+- [ ] La scanline est rendue une fois à DE_END (cycle 376) ; pas de latch palette/scroll mi-ligne _(différé : précision cycle)_ — réf. `video.c` (shifter par cycle, Video_RenderLine)
+
+### Blitter
+- [x] **Interruption de fin sur MFP GPIP3 (canal I3 / GPU_DONE)** — réf. `blitter.c:Blitter_Start` (MFP_GPIP_LINE_GPU_DONE) + `mfp.c:MFP_INT_GPIP3`
+- [x] **Sortie anticipée `y_count==0` efface BUSY + HOG** — réf. `blitter.c:Blitter_Control_WriteByte` (efface bits 0x80|0x40)
+
+### FDC WD1772 + DMA disquette
+- [x] **Détection de changement de média (Mediach) à l'éjection/insertion à chaud (bascule WPRT)** — réf. `floppy.c:Floppy_DriveTransition*` + `fdc.c:FDC_DiskControllerStatus_ReadWord` (ForceWPRT)
+- [x] **Write-protect auto-détecté depuis les droits du fichier image** — réf. `floppy.c:Floppy_IsWriteProtected`
+- [x] **Largeur d'impulsion INDEX 3.71 ms + moteur off à 9 tours** — réf. `fdc.c:FDC_DELAY_US_INDEX_PULSE_LENGTH / FDC_DELAY_IP_MOTOR_OFF`
+- [ ] Loader d'image `.dim` (en-tête 32 o + charge `.st`) _(différé : lot suivant)_ — réf. `floppies/dim.c:DIM_ReadDisk`
+- [ ] Registre densité `$FF860E` exposé sur tout modèle ; devrait être void sur STE, réel seulement MegaSTE/TT/Falcon _(différé : faible valeur)_ — réf. `ioMemTabSTE.c` + `fdc.c:FDC_CanMachineHandleDensity`
+- [ ] Masquage d'adresse DMA absent (octet haut `&0x3f`, octet bas word-align `&0xfe`) _(différé : faible valeur)_ — réf. `fdc.c:FDC_WriteDMAAddress`
+- [ ] Le compteur de secteurs DMA n'est pas relisible sur le vrai HW (renvoie le dernier `$FF8604`) _(différé : risque élevé)_ — réf. `fdc.c:FDC_DiskControllerStatus_ReadWord`
+- [ ] Un accès octet à `$FF8604/06` devrait fauter sur un ST non-Falcon _(différé : risque élevé)_ — réf. `fdc.c` (M68000_BusError sur accès octet)
+- [ ] Durée BUSY réelle par commande + INTRQ différé / sémantique FIFO DRQ _(différé : précision cycle)_ — réf. `fdc.c` (FDC_DELAY_*, FIFO, FDC_UpdateAll)
+
+### YM2149 PSG
+- [x] **Fréquence de pas d'enveloppe corrigée (diviseur 16× trop lent)** — réf. `sound.c:YM2149_DoSamples_250` + YM2149_EnvPer
+- [x] **Table de volume 5 bits mesurée (32 niveaux) au lieu de 16 approx.** — réf. `sound.c` ymout1c5bit[32] + YmVolume4to5[16]
+- [ ] Données port B Centronics + front strobe (bit5) non émulés en sortie _(différé : faible valeur)_ — réf. `psg.c:PSG_Set_DataRegister` (Printer_TransferByteTo)
+- [ ] Filtre passe-bas RC de sortie (STF) non appliqué _(différé : faible valeur)_ — réf. `sound.c:LowPassFilter`
+- [ ] Masquage à l'écriture manquant + sélecteur de registre ≥ 16 mal géré _(différé : faible valeur)_ — réf. `psg.c:PSG_Set_SelectRegister/DataRegister`
+
+### Son DMA STE + Microwire/LMC1992
+- [x] **Ligne XSINT → GPIP7 (STE : GPIP7 = moniteur XOR XSINT)** — réf. `dmaSnd.c:DmaSnd_Update_XSINT_Line` + `mfp.c:MFP_Main_Compute_GPIP7`
+- [ ] Timer A event-count ignore le front AER et tire à 0 au lieu d'atteindre 1 _(différé : risque élevé)_ — réf. `mfp.c:MFP_TimerA_Set_Line_Input`
+- [ ] Cas limites start==end (stop/loop sans IRQ) non gérés _(différé : faible valeur)_ — réf. `dmaSnd.c:DmaSnd_StartNewFrame`
+- [ ] Décodage commande LMC1992 : collecte tous les bits masqués au lieu d'un run de masque contigu _(différé : faible valeur)_ — réf. `dmaSnd.c:DmaSnd_InterruptHandler_Microwire`
+- [ ] Registre masque Microwire `$FF8924` non tourné pendant le shift en relecture _(différé : faible valeur)_ — réf. `dmaSnd.c` (rotation du masque par pas)
+- [ ] Registre mixage LMC1992 (reg 0) décodé mais jamais appliqué au mix (mute/route YM) _(différé : faible valeur)_ — réf. `dmaSnd.c:DmaSnd_GenerateSamples`
+
+### IKBD HD6301 + joystick/souris
+- [x] **Analyseur de commandes IKBD multi-octets (table de longueurs)** — réf. `ikbd.c` KeyboardCommands[] + IKBD_RunKeyboardCommand
+- [x] **Mode souris absolu (AbsMouseMode 0x09, ReadAbsMousePos 0x0D, SetInternalMousePos 0x0E)** — réf. `ikbd.c:IKBD_Cmd_AbsMouseMode/ReadAbsMousePos/SetInternalMousePos`
+- [x] **Joystick auto-report (0x14), stop (0x15), monitoring (0x17), fire-duration (0x18)** — réf. `ikbd.c:IKBD_Cmd_ReturnJoystickAuto/StopJoystick/SetJoystickMonitoring`
+- [ ] Le paquet souris relatif ignore la direction d'axe Y (SetYAxisUp/Down 0x0F/0x10) _(différé : lot suivant)_ — réf. `ikbd.c:IKBD_SendRelMousePacket`
+- [ ] Pas de seuil (0x0B) ni d'échelle (0x0C) souris — deltas relatifs bruts _(différé : lot suivant)_ — réf. `ikbd.c:IKBD_Cmd_SetMouseThreshold/SetMouseScale`
+- [ ] Pas de MouseAction 0x07 / report bouton-en-touche / MouseCursorKeycodes 0x0A _(différé : lot suivant)_ — réf. `ikbd.c:IKBD_Cmd_MouseAction/SendOnMouseAction`
+- [ ] Pas d'horloge IKBD (SetClock 0x1B, ReadClock 0x1C) _(différé : lot suivant)_ — réf. `ikbd.c:IKBD_Cmd_SetClock/ReadClock`
+- [ ] Keymap international / layouts TOS non modélisés _(différé : faible valeur)_ — réf. `keymap.c` + ikbd.c (scancodes)
+
+### ACIA 6850 (clavier + MIDI)
+- [x] **Lignes d'IRQ ACIA clavier + MIDI en OU câblé sur GPIP4 (plus d'écrasement mutuel)** — réf. `mfp.c:MFP_Main_Compute_GPIP_LINE_ACIA`
+- [ ] IRQ émetteur (CR bits 5/6) et état TDRE non modélisés ; TDRE câblé à 1 _(différé : risque élevé)_ — réf. `acia.c:ACIA_UpdateIRQ` + `midi.c:MIDI_UpdateIRQ`
+- [ ] La lecture data-register renvoie 0x00 si FIFO vide au lieu du dernier RDR _(différé : faible valeur)_ — réf. `acia.c:ACIA_Read_RDR` + `midi.c:Midi_Data_ReadByte`
+- [ ] SR n'expose jamais overrun (0x20)/framing (0x10)/parity (0x40) _(différé : faible valeur)_ — réf. `acia.c` (ACIA_SR_BIT_*)
+- [ ] SR MIDI recalculé à chaque lecture au lieu d'un état effacé au master-reset _(différé : faible valeur)_ — réf. `midi.c:Midi_Reset/Control_WriteByte`
+
+### RTC RP5C15
+- [ ] Aliasing BANK=1 AM/PM de `$FFFC25/27` non modélisé (chemin TOS 1.0x) _(différé : faible valeur)_ — réf. `rtc.c:Rtc_Minutes*_Read/WriteByte` (rtc_bank)
+- [ ] Registres année (`$FFFC37/39`) en année calendaire 2 chiffres au lieu de l'offset GEMDOS Hatari _(différé : faible valeur)_ — réf. `rtc.c:Rtc_Init` (year_offset=80)
+
+### CPU : IRQ, bus error, Moira, MegaSTE
+- [ ] Registre cache/vitesse MegaSTE `$FF8E21` sans handler (lit 0xFF, écritures perdues) _(différé : lot suivant)_ — réf. `ioMemTabSTE.c` + `m68000.c:MegaSTE_CPU_Cache_*`
+- [ ] Masques d'IRQ SCU MegaSTE (`$FF8E01/$FF8E0D`) non modélisés ; IRQ atteignent l'IPL non filtrées _(différé : risque élevé)_ — réf. `scu_vme.c` (SCU_*) + `m68000.c:M68000_SetIRQ`
+- [ ] Pas de chemin IRQ niveau 5 (SCC) / pas de puce SCC sur MegaSTE _(différé : gros contrôleur)_ — réf. `m68000.c:M68000_Update_intlev` + `scc.c` (Z85C30)
+- [ ] Bascule CPU 8/16 MHz MegaSTE (`$FF8E21` bit1) ne change pas le débit de cycles/timings _(différé : précision cycle)_ — réf. `m68000.c:MegaSTE_CPU_Cache_Update` + `clocks_timings.c`
+
+> Le détail texte (current/correct/impl) de chaque écart reste disponible dans la trace
+> de l'audit ; les sections ci-dessous gardent la feuille de route thématique d'origine.
+
 ## Cartouches de diagnostic (`carts/`) — campagne en cours
 
 Objectif : faire passer SANS erreur les cartouches de test (`ST_Diagnostic_v4.4`,
@@ -253,23 +359,25 @@ machine + RAM appariées).
       reboucle via `PendingCyclesOver` (cf. en-tête de `mfp.c`).
 - [ ] Timing d'interruption au cycle près (latence MFP, IACK), GPIP toutes lignes,
       AER (edge), interruptions RS232/USART (canaux transmit/receive).
-- [ ] **Chaînage matériel complet** : I0 busy imprimante, I1 DCD, I2 CTS, I3
-      blitter, I4 ACIA, I5 FDC, I6 RI, I7 mono/DMA sound selon STE/MegaSTE
-      (cf. MAME `machine_start`, `psg_pa_w`, `dmasound_set_state`).
+- [~] **Chaînage matériel complet** : I3 blitter ✓, I4 ACIA (OU clavier+MIDI) ✓,
+      I5 FDC ✓, I7 DMA-sound XSINT ✓ (lot juin 2026) ; restent I0 busy imprimante,
+      I1 DCD, I2 CTS, I6 RI (cf. MAME `machine_start`, `psg_pa_w`, `dmasound_set_state`).
 - [ ] **Timer B lié au Display Enable** au cycle près, pas seulement par ligne,
       car les overscans et démos STE/MegaSTE s'en servent.
 
 ## IKBD HD6301 (`ikbd.c`, 3250 lignes)
 
-NeoST ne gère que souris relative + reset (réponse 0xF1). Hatari implémente le
-jeu de commandes complet (`IKBD_Cmd_*`) :
+NeoST gère désormais un **analyseur de commandes multi-octets** complet (table de
+longueurs, cf. inventaire ci-dessus), avec **souris relative + absolue** et
+**joystick auto-report/monitoring** ; le reset (réponse 0xF1 différée) est préservé.
+Restent du jeu de commandes Hatari (`IKBD_Cmd_*`) :
 
-- [ ] Souris : **mode absolu** (`AbsMouseMode`, `ReadAbsMousePos`,
-      `SetInternalMousePos`), **seuil** et **échelle** (`SetMouseThreshold`,
+- [~] Souris : **mode absolu** ✓ (`AbsMouseMode`, `ReadAbsMousePos`,
+      `SetInternalMousePos`) ; restent **seuil**/**échelle** (`SetMouseThreshold`,
       `SetMouseScale`), **axe Y haut/bas** (`SetYAxisUp/Down`),
       **mode keycode** (`MouseCursorKeycodes`), `TurnMouseOff`, `MouseAction`.
-- [ ] **Joystick** : auto-report, monitoring, durée de feu, curseur-joystick
-      (`ReturnJoystick*`, `SetJoystickMonitoring`, `SetJoystickFireDuration`).
+- [~] **Joystick** : auto-report / monitoring / stop / durée-de-feu ✓
+      (`ReturnJoystick*`, `SetJoystickMonitoring`) ; reste le curseur-joystick.
 - [ ] **Horloge IKBD** (`SetClock` / `IKBD_Cmd_ReadClock`) — date/heure.
 - [ ] Pause/resume transfert, exécution de programme custom 6301 (rare).
 - [ ] **Mapping clavier international** et layout TOS (`keymap.c`, MAME `stkbd`) :
@@ -281,16 +389,17 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 
 - [ ] **Suppression de bordures** (gauche/droite/haut/bas) par bascule 50/60 Hz
       et résolution — base de la plupart des démos (`BORDERMASK_*`).
-- [ ] **Sync 50/60 Hz** ($FF820A) et écrans « courts/longs » (171 lignes, etc.).
+- [~] **Sync 50/60 Hz** ($FF820A) : relecture (bits 2-7 forcés à 1) ✓ ; restent les
+      écrans « courts/longs » (171 lignes, etc.) — précision cycle.
 - [ ] **Spec512** : changement de palette par scanline → 512 couleurs.
 - [ ] **Hardware scrolling** STE ($FF8264/8265, fine scroll + line width $FF820F)
       et tricks STF (plane shifting, scroll 4 px).
 - [ ] **Compteur d'adresse vidéo** lisible ($FF8205/07/09) — utilisé par les jeux.
-- [ ] Palette STE **4 bits/canal** ($FF824x sur STE).
-- [ ] **Base vidéo basse STE** `$FF820D` et **line width** `$FF820F` :
-      indispensables pour le scrolling matériel et les écrans non standards.
-- [ ] **Registres fine scroll** `$FF8264/$FF8265` : préfetch/no-prefetch, effets
-      au cycle près, interactions avec line width.
+- [~] Palette STE **4 bits/canal** ($FF824x) ✓ (expansion STe, lot juin 2026).
+- [~] **Base vidéo basse STE** `$FF820D` et **line width** `$FF820F` : registres ✓
+      (relisibles, gatés STE) ; reste le câblage du stride/scroll dans le rendu.
+- [~] **Registres fine scroll** `$FF8264/$FF8265` : état registre ✓ ; reste le
+      décalage par pixel (préfetch/no-prefetch) au cycle près.
 - [ ] **Joypads/paddles/lightpen STE** (`joy.c`, MAME `$FF9200-$FF9222`) :
       directions, boutons, sélection multiplexée, entrées analogiques.
 - [ ] **DIP switches MegaSTE** `$FF9200` (`ioMemTabSTE.c`) : bit HD floppy,
@@ -304,9 +413,9 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
       MOTOR_ON, SPIN_UP (type I), WPRT, TR00, RNF selon le type de commande.
       Reste : moteur on/off temporisé + spin-up réel, **index pulse**
       (3.71 ms/rotation), step rate exact — pour les protections et le timing fin.
-- [~] **Write protect** (✓ : refus d'écriture + bit WPRT) + **détection de
-      changement de média** (Mediach, reste à faire) : pour monter/éjecter à chaud
-      sans reset (la Disk Library).
+- [x] **Write protect** (✓ refus d'écriture + bit WPRT, **auto-détecté** depuis les
+      droits du fichier image) + **détection de changement de média** ✓ (Mediach via
+      bascule WPRT à l'éjection/insertion à chaud — monter/éjecter sans reset).
 - [~] **Densité** DD/HD ($FF860E ✓ : registre relisable), **Flopwr** ✓ : les
       écritures sont recopiées dans le fichier `.st` monté (`Fdc::writeBack`).
 - [~] Formats : **.msa** ✓ (décompression RLE → .st en mémoire, `Fdc::decodeMsa`).
@@ -324,8 +433,9 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 
 - [~] YM2149 : **enveloppe** ✓ (registres 11-13, 8 formes utiles via Continue/
       Attack/Alternate/Hold ; voies en mode enveloppe par bit 4 de R8/9/10),
-      **table de volume** logarithmique ✓. Restent : **port B** (Centronics) et
-      **filtrage** RC de sortie ; enveloppe 5 bits (32 niveaux) vs 16 ici.
+      **table de volume** ✓ (désormais **5 bits mesurée Hatari, 32 niveaux**) +
+      **vitesse d'enveloppe corrigée** ✓. Restent : **port B** (Centronics) et
+      **filtrage** RC de sortie.
 - [~] **DMA sound STE** ($FF8900+, `DmaSound`) ✓ : lecture d'échantillons 8 bits
       signés en RAM, fréquence sélectionnable (6.25/12.5/25/50 kHz), mono/stéréo
       (downmix), play/repeat, compteur d'adresse exposé, mixage avec le YM2149
@@ -342,8 +452,8 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
       appliqués au mix YM2149 + DMA, bypass à 0 dB). 0 dB partout par défaut →
       aucun effet/coût hors programmation. Restent (mineur) : registre **mixage**
       (reg 0) et le timing de shift bit-à-bit (on décode le mot d'un coup).
-- [ ] **IRQ/GPIP liés au DMA sound** : fin de frame, repeat/loop, interaction I7
-      avec détection mono comme dans MAME `dmasound_set_state`.
+- [~] **IRQ/GPIP liés au DMA sound** : **ligne XSINT → GPIP7** ✓ (moniteur XOR XSINT,
+      gaté STE — lot juin 2026) ; restent repeat/loop et cas limites start==end.
 - [x] **Bruits du lecteur de disquette** ✓ (confort/immersion : ronron moteur,
       « clac » de pas de tête, bruit de seek).
 
@@ -380,9 +490,9 @@ NeoST décode un framebuffer fixe par trame. Hatari fait du raster cycle-précis
 
 ## Blitter, SCU & stockage
 
-- [ ] **Blitter** ($FF8A00, `blitter.c`) — actuellement bus error (= absent sur
-      ST de base). À émuler pour le Mega ST / MegaSTE : halftone RAM, HOP/LOP,
-      end masks, skew, FXSR/NFSR, smudge, hog/bus sharing, IRQ MFP I3.
+- [~] **Blitter** ($FF8A00, `blitter.c`) — émulé (halftone RAM, HOP/LOP, end masks,
+      skew, FXSR/NFSR, smudge, hog) sur Mega ST / STE / Mega STE ; **IRQ MFP I3** ✓
+      (lot juin 2026). Reste : partage de bus (non-hog) au cycle près.
 - [ ] **SCU MegaSTE** `$FF8E01-$FF8E0F` (`ioMem.c`, sources TT/MegaSTE Hatari) :
       system interrupt mask/state, interrupter registers, VME mask/state, GPR1/2.
 - [ ] **Cache/CPU control MegaSTE** `$FF8E21` (`ioMemTabSTE.c`) : lecture/écriture
