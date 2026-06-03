@@ -136,8 +136,11 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 - [ ] Partage de bus (mode non-hog) au cycle près _(précision cycle)_ — réf. `blitter.c`
 
 ## FDC WD1772 + DMA disquette
-- [ ] Loader d'image `.dim` (en-tête 32 o + charge `.st`) _(lot suivant)_ — réf.
-      `floppies/dim.c:DIM_ReadDisk`
+- [x] **Loader d'image `.dim`** — ✅ FAIT (`Fdc::decodeDim`, port `floppies/dim.c:DIM_ReadDisk`).
+      Validation d'en-tête fidèle Hatari (ID 'BB', offset 0x03=0 non compressé, 0x0A=0) puis
+      retrait des 32 octets → contenu `.st` ; géométrie relue dans le BPB. Détection par contenu.
+      Validé : boot de Vroom (`.dim`) **byte-identique** au `.st`. `.dim` compressées (pistes
+      utilisées seules) non gérées (rares). Écriture désactivée (en-tête à préserver).
 - [ ] Masquage d'adresse DMA (octet haut `&0x3f`, bas word-align `&0xfe`) _(faible valeur)_ —
       réf. `fdc.c:FDC_WriteDMAAddress`
 - [ ] Compteur de secteurs DMA non relisible sur le vrai HW _(risque élevé)_ — réf.

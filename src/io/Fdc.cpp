@@ -92,6 +92,21 @@ static bool decodeMsa(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out
     return true;
 }
 
+// Détecte/décharge une image .DIM : 32 octets d'en-tête suivis du contenu disque
+// BRUT, identique à une .st (cf. Hatari floppies/dim.c DIM_ReadDisk). On valide
+// l'en-tête exactement comme Hatari — ID 'BB' (0x42 0x42), offset 0x03 = 0 (image
+// NON compressée, toutes les pistes présentes) et offset 0x0A = 0 (piste de début
+// 0) — puis on retire les 32 octets. La géométrie est ensuite relue dans le BPB du
+// contenu (offsets 0x18/0x1A), comme pour une .st. Les .DIM « compressées »
+// (0x03 != 0, seules les pistes utilisées) ne sont pas gérées (rares).
+static bool decodeDim(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out) {
+    if (raw.size() < 32 + 512) return false;                  // en-tête + ≥ 1 secteur
+    if (raw[0x00] != 0x42 || raw[0x01] != 0x42) return false; // ID 'BB'
+    if (raw[0x03] != 0 || raw[0x0A] != 0) return false;       // toutes pistes, début piste 0
+    out.assign(raw.begin() + 32, raw.end());
+    return true;
+}
+
 bool Fdc::loadImage(const std::string& path, int drive) {
     FloppyDisk& dk = drive_[drive & 1];
     const bool wasPresent = !dk.image.empty();   // disque déjà monté → échange à chaud
@@ -102,12 +117,18 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     std::vector<uint8_t> raw(static_cast<std::size_t>(n));
     f.read(reinterpret_cast<char*>(raw.data()), n);
 
-    // .msa (compressé) → décompression en .st brut ; sinon image .st telle quelle.
-    std::vector<uint8_t> msa;
-    if (decodeMsa(raw, msa)) {
-        dk.image = std::move(msa);
+    // .msa (compressé) ou .dim (en-tête 32 o) → conversion en .st brut ; sinon image
+    // .st telle quelle. .msa/.dim sont marquées NON raw (pas de recopie d'écritures :
+    // .msa ne sait pas réencoder, .dim devrait préserver son en-tête).
+    std::vector<uint8_t> conv;
+    if (decodeMsa(raw, conv)) {
+        dk.image = std::move(conv);
         dk.raw = false;                          // .msa : pas de recopie d'écritures
         std::fprintf(stderr, "[FDC] image .msa décompressée : %s\n", path.c_str());
+    } else if (decodeDim(raw, conv)) {
+        dk.image = std::move(conv);
+        dk.raw = false;                          // .dim : en-tête 32 o à préserver
+        std::fprintf(stderr, "[FDC] image .dim (en-tête 32 o retiré) : %s\n", path.c_str());
     } else {
         dk.image = std::move(raw);               // .st brut
         dk.raw = true;

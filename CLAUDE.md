@@ -77,7 +77,7 @@ est CORRECT** (Hatari n'émule pas le VME, FPU_NONE par défaut).
 
 ## Disquettes & ROM
 
-Lecteur A monte une image `.st` (`.msa` aussi). Outils : `tools/make_floppy.py` (régénère
+Lecteur A monte une image `.st` (`.msa` et `.dim` aussi, détectés par contenu). Outils : `tools/make_floppy.py` (régénère
 `disks/diskA.st`), `tools/fetch_disk.py <url>` (télécharge depuis planetemu via scrapling — à
 n'utiliser que pour du domaine public / freeware / démos). ROMs TOS propriétaires → défaut
 **EmuTOS** (libre) dans `rom/`.

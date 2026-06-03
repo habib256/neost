@@ -105,7 +105,9 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   (Mediach via bascule WPRT à l'éjection/insertion à chaud).
 - **Bit INDEX** WD1772 reflété (trou ~1.46 ms, 1/tour) ; impulsion d'index datée 1/tour
   (~200 ms, `Scheduler::FDC_INDEX`), moteur off après ~9-10 tours.
-- Formats : `.st` (brut), `.msa` (décompression RLE). Écritures recopiées dans le `.st`.
+- Formats : `.st` (brut), `.msa` (décompression RLE), `.dim` (en-tête 32 o retiré, port
+  `floppies/dim.c` : ID 'BB', non compressé). Détection par CONTENU (indépendante de
+  l'extension). Écritures recopiées dans le `.st` ; `.msa`/`.dim` protégées en écriture.
 
 ## Audio
 - **YM2149** : 3 voies carrées + bruit, enveloppe (R11-13, formes via Continue/Attack/
