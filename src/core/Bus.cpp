@@ -414,6 +414,9 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
     // Bus.hpp megaSteCacheCtrl. $FF8E20/22/23 restent « void » (→ glue → 0xFF).
     if (machine == MachineType::MegaSte && addr == 0xFF8E21)
         return megaSteCacheCtrl;
+    // SCU MegaSTE : registres d'interruption ($FF8E01-$FF8E0F). cf. Scu.hpp.
+    if (machine == MachineType::MegaSte && addr >= 0xFF8E01 && addr <= 0xFF8E0F)
+        return scu.read8(addr);
     if (glue)
         return glue->read8(addr);         // MMU et reste du MMIO
     return 0xFF;
@@ -468,6 +471,12 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     if (machine == MachineType::MegaSte && addr == 0xFF8E21) {
         if ((v & 0x02) == 0 && (v & 0x01)) v &= 0xFE;   // cache impossible à 8 MHz
         megaSteCacheCtrl = v;
+        return;
+    }
+    // SCU MegaSTE ($FF8E01-$FF8E0F) : écrire un masque (dé)masque des IRQ → on
+    // recalcule l'IPL CPU. cf. Scu.hpp (gating conditionnel).
+    if (machine == MachineType::MegaSte && addr >= 0xFF8E01 && addr <= 0xFF8E0F) {
+        if (scu.write8(addr, v) && cpu) cpu->updateIpl();
         return;
     }
     if (glue)

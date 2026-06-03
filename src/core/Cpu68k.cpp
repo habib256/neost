@@ -117,10 +117,17 @@ NeostMoira* g_moira = nullptr;     // cœur Moira actif (nullptr = Musashi)
 namespace {
 // Recalcule l'IPL présenté au CPU ACTIF : MFP (6) > VBL (4) > HBL (2).
 void neostUpdateIpl() {
-    int lvl = 0;
-    if (g_bus && g_bus->mfp && g_bus->mfp->irqPending()) lvl = 6;
-    else if (g_vblPending)                               lvl = 4;
-    else if (g_hblPending)                               lvl = 2;
+    const bool mfp6 = g_bus && g_bus->mfp && g_bus->mfp->irqPending();
+    int lvl;
+    // MegaSTE : TOUTES les IRQ sont GATÉES par le SCU (SysIntMask/VmeIntMask) avant
+    // d'atteindre le CPU — toujours actif comme `SCU_IsEnabled()` d'Hatari (= MegaSTE/TT).
+    // Tout OS MegaSTE programme le SCU tôt au boot (TOS 2.06, EmuTOS 256K, diagnostic).
+    if (g_bus && g_bus->machine == MachineType::MegaSte) {
+        g_bus->scu.syncState(mfp6, g_vblPending, g_hblPending);   // état ← sources vivantes
+        lvl = g_bus->scu.gatedLevel();                            // plus haut niveau autorisé
+    } else {
+        lvl = mfp6 ? 6 : g_vblPending ? 4 : g_hblPending ? 2 : 0;
+    }
 #if defined(NEOST_HAS_MOIRA)
     if (g_moira) { g_moira->setIPL(static_cast<moira::u8>(lvl)); return; }
 #endif

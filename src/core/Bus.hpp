@@ -9,6 +9,7 @@
 // =============================================================================
 #pragma once
 #include "core/MachineType.hpp"
+#include "io/Scu.hpp"
 #include <cstdint>
 #include <cstddef>
 #include <string>
@@ -145,6 +146,11 @@ public:
     // IoMemTabMegaSTE_CacheCpuCtrl_WriteByte) — l'EFFET réel (débit cycles, cache)
     // relève d'items « précision cycle » séparés. Reset = 0 (8 MHz, sans cache).
     uint8_t megaSteCacheCtrl = 0;
+
+    // SCU MegaSTE ($FF8E01-$FF8E0F) : gate d'interruptions (cf. Scu.hpp), TOUJOURS actif
+    // sur MegaSTE (comme `SCU_IsEnabled` d'Hatari). La livraison d'IPL le consulte dans
+    // Cpu68k::neostUpdateIpl.
+    Scu scu;
 
 private:
     uint8_t  mmioRead8 (uint32_t addr);

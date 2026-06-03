@@ -231,19 +231,18 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       les timings _(précision cycle)_ — réf. `m68000.c:MegaSTE_CPU_Cache_Update` + `clocks_timings.c`
 - [ ] **Cache MegaSTE 16 Ko** (`$FF8E21` bit0, off à 8 MHz) — au moins les effets de timing
       visibles — réf. `ioMemTabSTE.c`
-- [ ] **SCU MegaSTE — gate d'IRQ complet** (`$FF8E01-$FF8E0F`) non modélisé _(risque élevé)_
-      — réf. `scu_vme.c` + `m68000.c`. **⚠ DIAGNOSTIQUÉ (2026-06)** : sur MegaSTE/TT le SCU est
-      TOUJOURS le chemin d'IRQ (`SCU_IsEnabled`) ; IPL CPU = `(SysIntState & SysIntMask & 0x9F)
-      | (VmeIntState & VmeIntMask & 0x60)` (MFP niv6 + SCC niv5 gatés par VmeIntMask, le reste
-      par SysIntMask). Registres : `$FF8E01` SysIntMask, `03` SysIntState (RO), `05`
-      SysInterrupter (IRQ1 soft), `09/0B` GPR1/2, `0D` VmeIntMask, `0F` VmeIntState. **BLOQUANT
-      pour le portage** : EmuTOS MegaSTE **n'écrit jamais** le SCU (trace) → dépend de la
-      livraison DIRECTE des IRQ ; un gating systématique (masques=0 au reset) **figerait
-      EmuTOS-MegaSTE** (boot OK aujourd'hui). TOS 2.06, lui, écrit `SysIntMask=0x14`,
-      `VmeIntMask=0x40→0xFF`. Hatari force `GPR1=0x01` au reset (« TOS v2/v3 crash sinon ») —
-      **mais GPR1=0x01 seul ne débloque PAS le gel TOS 2.06 « Memory Test Complete »** (testé),
-      gel postérieur à la config SCU. Piste : gating conditionnel (direct tant qu'aucun masque
-      écrit) pour préserver EmuTOS, + investiguer le gel TOS 2.06 à part.
+- [x] **SCU MegaSTE — gate d'IRQ complet** (`$FF8E01-$FF8E0F`) — ✅ FAIT (`Scu.hpp`, port
+      `scu_vme.c`). **Toujours actif** sur MegaSTE (comme `SCU_IsEnabled`) : IPL CPU =
+      `(SysIntState & SysIntMask & 0x9F) | (VmeIntState & VmeIntMask & 0x60)` ; état synchronisé
+      depuis les sources vivantes (MFP niv6, VBL niv4, HBL niv2, soft IRQ1) dans `neostUpdateIpl`,
+      gaté par les masques. 8 registres relisibles (`GPR1`=0x01 reset), écrire un masque reset
+      l'état. Validé 2 cœurs : TOS 2.06 + EmuTOS 256K (`Atari Mega STe`) → bureau GEM, diag
+      MegaSTE OK ; tous programment le SCU au boot (`SysIntMask=0x14`, `VmeIntMask=0x40/0x60`).
+      ST/STE inchangés. **NB** : l'« EmuTOS MegaSTE » testé au départ était le build 192 Ko
+      (TOS 1.4 / Atari ST) qu'Hatari REFUSE sur MegaSTE — récupéré `rom/etos256us/fr.img`
+      (build MegaSTE). Méthode de validation Hatari → [`docs/HATARI_AUTOMATION.md`](docs/HATARI_AUTOMATION.md).
+      TOS 2.06 « Memory Test Complete » = écran d'attente normal (barre ESPACE pour continuer),
+      pas un gel.
 - [ ] **MC68881 optionnel** : réponse à la sonde TOS/diagnostic, puis émulation ou trapping
       — réf. `configuration.h`, MAME
 - [ ] **Séparation user/supervisor** : bus errors en mode utilisateur sur I/O et ROM/low mem
