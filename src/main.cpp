@@ -982,13 +982,13 @@ int main(int argc, char** argv) {
             if (ImGui::Checkbox("Son lecteur", &driveSoundOn)) drive.setEnabled(driveSoundOn);
         }
         ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
+        if (IconButton(color ? ICON_FA_ADJUST : ICON_FA_PALETTE, color ? "Passer en Mono" : "Passer en Couleur"))
+            reqMonitor = color ? 0 : 1;
+        ImGui::SameLine();
         if (IconButton(ICON_FA_REDO, "Reset")) reqReset = true;
         ImGui::SameLine();
         // Reset à froid : efface la ST-RAM → EmuTOS/TOS refait un boot complet.
         if (IconButton(ICON_FA_POWER_OFF, "Hard Reset")) reqHardReset = true;
-        ImGui::SameLine();
-        if (IconButton(color ? ICON_FA_ADJUST : ICON_FA_PALETTE, color ? "Passer en Mono" : "Passer en Couleur"))
-            reqMonitor = color ? 0 : 1;
         const float toolH = ImGui::GetWindowSize().y;
         ImGui::End();
 
