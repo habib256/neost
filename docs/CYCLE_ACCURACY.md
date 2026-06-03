@@ -217,8 +217,14 @@ d'Hatari, pas son code (licences/architecture différentes) : NeoST garde son
   couleur, mono) malgré le changement de timing ; boot OK. `tools/trace_diff.py`
   corrigé pour le vrai format Hatari `cpu_disasm` (`adresse octets disasm`) et
   validé contre une trace Hatari réelle.
-- **Reste** : `VIDEO_ENDLINE`/bascule 50-60 Hz, rendu **sous-ligne** (Spec512),
-  positionnement cycle-exact du VBL et du Timer C (ce dernier en Phase 3).
+- **Géométries 50/60/71 Hz — ✅ FAIT** (`Shifter::Geometry`, port `video.h`) : cycles/ligne
+  (512/508/224), lignes/trame (313/263/501), lignes affichées (200/400) et DE start/end
+  dérivés de la résolution + `$FF820A`, **verrouillés à `beginFrame`**. `Machine` n'a plus de
+  313×512 figé (frameEnd, VBL, HBL, Timer B, durée VBL IKBD, mono à 400 lignes en suivent).
+  50 Hz byte-identique ; 60 Hz/mono rendu identique + Timer C remis à l'échelle de la trame.
+- **Reste** : `VIDEO_ENDLINE`, bascule 50/60 Hz **en cours de trame** (bordures — la géométrie
+  est aujourd'hui verrouillée par trame), rendu **sous-ligne** (Spec512), positionnement
+  cycle-exact du VBL (vraie fin de trame + offset 64/68) et du Timer C.
 
 ### Phase 3 — Timers MFP datés (`mfp.c`) — ✅ FAIT (mode délai A/C/D)
 

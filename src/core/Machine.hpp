@@ -28,7 +28,10 @@
 
 class Machine {
 public:
-    // Timing PAL basse résolution (cf. en-tête de main.cpp).
+    // Timing PAL basse résolution 50 Hz = valeurs de RÉFÉRENCE (et défaut). La
+    // géométrie RÉELLE d'une trame est désormais dynamique (50/60/71 Hz), dérivée
+    // de la résolution + $FF820A et verrouillée à beginFrame — cf. Shifter::Geometry
+    // et les membres cpl_/lpf_/disp_ ci-dessous.
     static constexpr int CYCLES_PER_LINE = 512;
     static constexpr int LINES_PER_FRAME = 313;
     static constexpr int VISIBLE_LINES   = 200;
@@ -121,6 +124,13 @@ private:
     int tbLine_      = 0;     // prochaine ligne pour le tic Timer B
     int hblLine_     = 0;     // prochaine ligne pour le HBL niveau 2
     // (Le RTC avance en paresseux à la lecture, cf. Rtc::catchUp — plus de compteur ici.)
+
+    // Géométrie de la trame COURANTE (50/60/71 Hz), verrouillée par scheduleFrameEvents
+    // depuis Shifter::geometry() juste après beginFrame. Défauts = 50 Hz PAL.
+    int cpl_   = CYCLES_PER_LINE;   // cycles par ligne (512/508/224)
+    int lpf_   = LINES_PER_FRAME;   // lignes par trame (313/263/501)
+    int disp_  = VISIBLE_LINES;     // scanlines affichées = HBL + Timer B + rendu (200/400)
+    int deEnd_ = DE_END_CYCLE;      // fin Display-Enable dans la ligne (376/372/160)
 
     // Positions au cycle DANS la ligne (STF PAL 50 Hz, cf. Hatari video.h).
     static constexpr int DE_END_CYCLE   = 376;   // fin Display-Enable → rendu ligne

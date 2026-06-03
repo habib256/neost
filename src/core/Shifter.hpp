@@ -30,17 +30,40 @@ public:
     void renderFrame();
 
     // --- Rendu scanline-par-scanline (cycle-accuracy, cf. docs/CYCLE_ACCURACY.md)
-    //  `beginFrame()` verrouille la résolution de la trame (la résolution ne peut
-    //  pas changer en cours de décodage) ; `renderLine(y)` décode UNE ligne avec
-    //  l'état COURANT des registres (palette/base vidéo) → les changements en
-    //  cours de trame (rasters, scroll par base) s'appliquent ligne à ligne.
+    //  `beginFrame()` verrouille la résolution ET la fréquence (50/60/71 Hz) de la
+    //  trame (ni l'une ni l'autre ne peut changer en cours de décodage) ;
+    //  `renderLine(y)` décode UNE ligne avec l'état COURANT des registres
+    //  (palette/base vidéo) → les changements en cours de trame (rasters, scroll
+    //  par base) s'appliquent ligne à ligne.
     void beginFrame();
     void renderLine(int y);
+
+    // Géométrie d'une trame, dérivée de la résolution (mono = 71 Hz) et, en
+    // basse/moyenne, de la fréquence 50/60 Hz ($FF820A bit1). Port des constantes
+    // STF de `extern/hatari/src/includes/video.h` (CYCLES_PER_LINE_*,
+    // SCANLINES_PER_FRAME_*, LINE_START/END_CYCLE_*). Verrouillée à beginFrame.
+    struct Geometry {
+        int cyclesPerLine;    // 512 (50 Hz) / 508 (60 Hz) / 224 (71 Hz mono)
+        int linesPerFrame;    // 313 / 263 / 501
+        int displayLines;     // scanlines affichées (= height) : 200 couleur / 400 mono
+        int lineStartCycle;   // début Display-Enable : 56 / 52 / 0
+        int lineEndCycle;     // fin Display-Enable (→ rendu de la scanline) : 376 / 372 / 160
+    };
+    // Géométrie de la trame VERROUILLÉE (cf. frameMode_/frameSync_, posés par beginFrame).
+    Geometry geometry() const { return geometryFor(frameMode_, frameSync_); }
 
     // Accès au buffer décodé (ARGB8888) pour le frontend ou un dump.
     const uint32_t* pixels() const { return frame_.data(); }
     int width()  const { return curW_; }
     int height() const { return curH_; }
+
+    // Fréquence de rafraîchissement COURANTE (mono = 71 Hz, sinon $FF820A bit1 :
+    // 50 Hz PAL / 60 Hz NTSC). Pour l'affichage / le débogage (la trame est cadencée
+    // par cette fréquence depuis les géométries vidéo, cf. geometry()).
+    int refreshHz() const {
+        if (mode == Mode::High) return 71;
+        return (sync & 0x02) ? 50 : 60;
+    }
 
     // Interface MMIO ($FF8200-$FF8260) appelée par le Bus.
     uint8_t read8(uint32_t addr);
@@ -95,9 +118,19 @@ private:
     void resizeFor(Mode m);                       // ajuste le buffer si la rés. change
     uint32_t videoCounter() const;                // adresse vidéo courante ($FF8205/07/09)
 
+    // Géométrie (cycles/ligne, lignes/trame, DE) pour une résolution + fréquence
+    // données. Statique : ne dépend que de (mode, sync) → réutilisée pour la trame
+    // verrouillée (geometry()) comme pour un calcul ponctuel.
+    static Geometry geometryFor(Mode m, uint8_t syncReg) {
+        if (m == Mode::High)      return {224, 501, 400, 0, 160};   // 71 Hz monochrome
+        if (syncReg & 0x02)       return {512, 313, 200, 56, 376};  // 50 Hz PAL (défaut)
+        return                           {508, 263, 200, 52, 372};  // 60 Hz NTSC
+    }
+
     Bus&          bus_;
     int           curW_ = 0, curH_ = 0;     // résolution décodée courante
     Mode          frameMode_ = Mode::Low;   // résolution verrouillée pour la trame
+    uint8_t       frameSync_ = 0x02;        // fréquence ($FF820A) verrouillée pour la trame
     std::vector<uint32_t> frame_;           // curW_*curH_ pixels ARGB
     std::function<int64_t()> beamClock_;    // cycles dans la trame (cf. setBeamClock)
 };

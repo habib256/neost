@@ -47,6 +47,19 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   leur framebuffer. Registre sync `$FF820A` relisible (défaut $02 = 50 Hz PAL).
 - **Compteur d'adresse vidéo cycle-exact** (`$FF8205/07/09`, port `Video_CalculateAddress`
   Hatari : 2 cycles/octet, LineStart 56@50Hz).
+- **Géométries vidéo 50/60/71 Hz** (port `video.h` : `CYCLES_PER_LINE_*`,
+  `SCANLINES_PER_FRAME_*`, `LINE_START/END_CYCLE_*`). Plus de cadre PAL 313×512 figé :
+  `Shifter::Geometry` dérive cycles/ligne, lignes/trame, lignes affichées et début/fin
+  Display-Enable de la **résolution** (mono → 71 Hz, 501×224) et de **`$FF820A` bit1**
+  (basse/moyenne → 50 Hz 313×512 ou 60 Hz 263×508), **verrouillée à `beginFrame`** (avec
+  la fréquence). `Machine::runFrame` en découle (frameEnd, VBL, HBL = `cpl-4`, Timer B,
+  rendu, durée VBL IKBD `lignes×cycles/8` = 20032/16700/14028 µs). Le **mono décode ses
+  400 lignes** par créneaux datés (fin du hack « lignes restantes »), et le compteur
+  `$FF8205/07/09` suit la fréquence verrouillée (512/56 n'étaient plus figés → correct en
+  60 Hz). Validé : **50 Hz byte-identique** (EmuTOS fr + TOS 1.02, 2 cœurs ; IRQ inchangé) ;
+  60 Hz / mono rendu **byte-identique** avec un **Timer C (200 Hz) remis à l'échelle** de la
+  trame raccourcie (374→310→262 IRQ/100 trames) ; batteries Z des diagnostics STE/MegaSTE
+  toujours Pass. *(Bascule 50/60 Hz EN COURS de trame pour les bordures → cf. TODO.)*
 - **Registres STE** (gatés STE) : fine scroll `$FF8264/65`, line width `$FF820F`, base
   basse `$FF820D`, palette 4 bits/canal, relecture sync.
 - **Rendu STE câblé** : `renderLine` décode en tampon d'index puis émet avec offset →

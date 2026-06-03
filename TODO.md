@@ -47,9 +47,23 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 - [ ] **Latch palette/scroll mi-ligne** — la scanline est rendue une fois à DE_END (cycle
       376) ; pas de changement intra-ligne — réf. `video.c:Video_RenderLine`
 - [ ] **VBL tiré en fin de trame** (~ligne 312 + offset 64 cyc), pas ligne 201 _(risque élevé)_
-      — réf. `video.c:Video_InterruptHandler_VBL` (VBL_VIDEO_CYCLE_OFFSET)
-- [ ] **Géométries vidéo** : mono (71 Hz, 501×224) et 60 Hz (263×508) en plus du PAL 313×512
-      figé _(risque élevé)_ — réf. `video.h` CYCLES/SCANLINES_PER_LINE/FRAME
+      — réf. `video.c:Video_InterruptHandler_VBL` (VBL_VIDEO_CYCLE_OFFSET). NB : le VBL est
+      désormais placé à `(lignes_affichées+1)` (= 201 couleur / 401 mono) au lieu de la
+      constante 201 figée ; reste à le caler en VRAIE fin de trame + offset 64/68.
+- [x] **Géométries vidéo** : mono (71 Hz, 501×224) et 60 Hz (263×508) en plus du PAL 313×512
+      — ✅ FAIT (port `video.h` CYCLES_PER_LINE_*/SCANLINES_PER_FRAME_*/LINE_START-END_CYCLE_*).
+      `Shifter::Geometry` dérive (cycles/ligne, lignes/trame, lignes affichées, DE start/end) de
+      la résolution (mono = 71 Hz) et de `$FF820A` bit1 (50/60 Hz), **verrouillée à `beginFrame`**
+      (avec la fréquence : `frameSync_`). `Machine::runFrame` n'a plus de 313×512 figé : frameEnd,
+      VBL, HBL (`cpl-4`), Timer B, rendu et durée VBL IKBD (`lpf×cpl/8` → 20032/16700/14028 µs)
+      en découlent ; le mono décode ses **400 lignes** par créneaux (plus de hack post-boucle) ;
+      `videoCounter` ($FF8205/07/09) utilise la fréquence verrouillée (512/56 n'étaient plus figés
+      → compteur correct en 60 Hz). **Validation** : 50 Hz **byte-identique** (EmuTOS fr + TOS 1.02,
+      2 cœurs, histogramme IRQ inchangé 374/166/98/6) ; 60 Hz (etos192us) et mono : rendu
+      **byte-identique** + Timer C (200 Hz) **mis à l'échelle** de la trame raccourcie (374→310→262
+      /100 trames) ; STE_Test Z = vert+Pass, MegaSTE Z « Completed » sans erreur (2 cœurs).
+      Reste : **bordures** (suppression L/R/H/B via bascules 50/60 Hz mi-trame, item ci-dessous)
+      qui exige la géométrie variable EN COURS de trame, pas seulement verrouillée.
 - [ ] **Wait states** d'accès YM2149 / mémoire (4 cycles + alignement) et contention bus
       _(précision cycle)_ — réf. `psg.c`, `cycles.c`, MAME `stmmu.cpp::bus_contention`
 

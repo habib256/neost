@@ -39,11 +39,14 @@ void Shifter::resizeFor(Mode m) {
     frame_.assign(static_cast<std::size_t>(w) * h, 0xFF000000u);
 }
 
-// Verrouille la résolution de la trame : le décodage ligne à ligne s'y tient
-// (un changement de $FF8260 en cours de trame ne prend effet qu'à la suivante,
-// comme l'ancien renderFrame qui figeait la rés. au moment du décodage).
+// Verrouille la résolution ET la fréquence de la trame : le décodage ligne à
+// ligne s'y tient (un changement de $FF8260 ou $FF820A en cours de trame ne prend
+// effet qu'à la suivante, comme l'ancien renderFrame qui figeait la rés. au moment
+// du décodage). La géométrie de la trame (cycles/ligne, lignes/trame) découle de
+// ce couple — cf. geometry() — et est lue par Machine juste après cet appel.
 void Shifter::beginFrame() {
     frameMode_ = mode;
+    frameSync_ = sync;
     resizeFor(frameMode_);
 }
 
@@ -153,11 +156,15 @@ uint8_t Shifter::read8(uint32_t addr) {
 uint32_t Shifter::videoCounter() const {
     if (!beamClock_) return videoBase & 0xFFFFFF;       // pas d'horloge → base brute
     const int64_t fc = beamClock_();                    // cycles dans la trame
-    constexpr int kCyclesPerLine = 512;
+    // Géométrie VERROUILLÉE de la trame (cycles/ligne et début DE dépendent de la
+    // fréquence 50/60/71 Hz : avant, 512 et 56/52 étaient figés → compteur faux en
+    // 60 Hz). frameSync_ est posé par beginFrame, comme frameMode_.
+    const Geometry g = geometry();
+    const int  kCyclesPerLine = g.cyclesPerLine;
     const bool hi   = (frameMode_ == Mode::High);
     const int  bpl  = hi ? 80 : 160;                    // octets/ligne affichée
-    const int  disp = hi ? 400 : 200;                   // lignes affichées
-    const int  lineStart = hi ? 0 : ((sync & 2) ? 56 : 52);   // début Display-Enable (50/60 Hz)
+    const int  disp = g.displayLines;                   // lignes affichées
+    const int  lineStart = g.lineStartCycle;            // début Display-Enable (50/60/71 Hz)
     // Stride réel d'une ligne = octets affichés + line-offset STE ($FF820F, en mots).
     // lineWidth=0 sur ST/STF → stride = bpl (compteur strictement inchangé).
     const int  stride = bpl + static_cast<int>(lineWidth) * 2;

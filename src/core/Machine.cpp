@@ -140,15 +140,21 @@ void Machine::scheduleFrameEvents() {
     renderLine_ = 0;
     tbLine_     = 0;
     hblLine_    = 0;
-    shifter.beginFrame();                          // verrouille la résolution
+    shifter.beginFrame();                          // verrouille résolution + fréquence
+    // Géométrie de la trame (50/60/71 Hz) figée pour toute la trame, lue ici.
+    const Shifter::Geometry g = shifter.geometry();
+    cpl_   = g.cyclesPerLine;
+    lpf_   = g.linesPerFrame;
+    disp_  = g.displayLines;
+    deEnd_ = g.lineEndCycle;
 
     // Premiers événements de la ligne 0, à leur CYCLE EXACT dans la ligne.
-    sched.schedule(Scheduler::RENDER,  frameStart_ + DE_END_CYCLE);   // 376 : rendu ligne 0
-    sched.schedule(Scheduler::TIMER_B, frameStart_ + timerBPos());    // tic event-count (position DE)
-    sched.schedule(Scheduler::HBL,     frameStart_ + HBL_CYCLE);      // 508 : HBL niveau 2
-    // VBL niveau 4 : fin de la ligne 200 (début du VBlank).
+    sched.schedule(Scheduler::RENDER,  frameStart_ + deEnd_);          // fin DE : rendu ligne 0
+    sched.schedule(Scheduler::TIMER_B, frameStart_ + timerBPos());     // tic event-count (position DE)
+    sched.schedule(Scheduler::HBL,     frameStart_ + (cpl_ - 4));      // HBL niveau 2 (≈ fin de ligne)
+    // VBL niveau 4 : juste après la dernière ligne affichée (début du VBlank).
     sched.schedule(Scheduler::VBL,
-                   frameStart_ + static_cast<int64_t>(VISIBLE_LINES + 1) * CYCLES_PER_LINE);
+                   frameStart_ + static_cast<int64_t>(disp_ + 1) * cpl_);
 }
 
 void Machine::onRender() {
@@ -159,9 +165,9 @@ void Machine::onRender() {
     const int h = shifter.height();
     if (renderLine_ < h) shifter.renderLine(renderLine_);
     ++renderLine_;
-    if (renderLine_ < h && renderLine_ < LINES_PER_FRAME)
+    if (renderLine_ < h && renderLine_ < lpf_)
         sched.schedule(Scheduler::RENDER,
-                       frameStart_ + static_cast<int64_t>(renderLine_) * CYCLES_PER_LINE + DE_END_CYCLE);
+                       frameStart_ + static_cast<int64_t>(renderLine_) * cpl_ + deEnd_);
 }
 
 void Machine::onTimerB() {
@@ -169,26 +175,26 @@ void Machine::onTimerB() {
     mfp.hblank();
     cpu.updateIpl();                               // un underflow Timer B → IPL 6
     ++tbLine_;
-    if (tbLine_ < VISIBLE_LINES)
+    if (tbLine_ < disp_)
         sched.schedule(Scheduler::TIMER_B,                         // position recalculée → suit
-                       frameStart_ + static_cast<int64_t>(tbLine_) * CYCLES_PER_LINE + timerBPos());
+                       frameStart_ + static_cast<int64_t>(tbLine_) * cpl_ + timerBPos());
 }
 
 void Machine::onHbl() {
     cpu.raiseHbl();                                // HBL niveau 2 (gaté par le SR)
     ++hblLine_;
-    if (hblLine_ < VISIBLE_LINES)
+    if (hblLine_ < disp_)
         sched.schedule(Scheduler::HBL,
-                       frameStart_ + static_cast<int64_t>(hblLine_) * CYCLES_PER_LINE + HBL_CYCLE);
+                       frameStart_ + static_cast<int64_t>(hblLine_) * cpl_ + (cpl_ - 4));
 }
 
 void Machine::onVbl() {
     cpu.raiseVbl();   // interruption trame (niveau 4) — une fois par trame
     // Tic VBL de l'IKBD (horloge interne $1B/$1C + report joystick auto). La durée
-    // d'une trame en µs se déduit de la géométrie : (lignes × cycles/ligne) à 8 MHz
-    // (horloge bus du Shifter, indépendante du 8/16 MHz CPU MegaSTE).
-    constexpr int64_t kVblMicro =
-        static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE / 8;   // ≈ 20032 µs (50 Hz)
+    // d'une trame en µs se déduit de la géométrie COURANTE : (lignes × cycles/ligne)
+    // à 8 MHz (horloge bus du Shifter, indépendante du 8/16 MHz CPU MegaSTE).
+    // ≈ 20032 µs (50 Hz) / 16700 µs (60 Hz) / 14028 µs (71 Hz mono).
+    const int64_t kVblMicro = static_cast<int64_t>(lpf_) * cpl_ / 8;
     ikbd.onVbl(kVblMicro);
 }
 
@@ -202,7 +208,7 @@ void Machine::runFrame() {
     // par l'horloge émulée — rien à cadencer ici.
     scheduleFrameEvents();
 
-    const int64_t frameEnd = frameStart_ + static_cast<int64_t>(LINES_PER_FRAME) * CYCLES_PER_LINE;
+    const int64_t frameEnd = frameStart_ + static_cast<int64_t>(lpf_) * cpl_;
     while (sched.now() < frameEnd) {
         int64_t next = sched.nextDue();
         if (next < 0 || next > frameEnd) next = frameEnd;

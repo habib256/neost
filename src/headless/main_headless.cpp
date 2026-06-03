@@ -211,6 +211,8 @@ int main(int argc, char** argv) {
     // timeslice CPU (cf. Scheduler). Retard faible = quantum « sous la ligne ».
     std::fprintf(stderr, "[headless] timer IRQ retard max = %lld cyc | préemptions = %ld\n",
                  (long long)machine.sched.timerMaxLate, machine.sched.preemptions);
+    std::fprintf(stderr, "[headless] vidéo : %dx%d @ %d Hz\n",
+                 machine.shifter.width(), machine.shifter.height(), machine.shifter.refreshHz());
 
     if (!shotPath.empty()) {
         if (writePpm(shotPath.c_str(), machine.shifter.pixels(),
