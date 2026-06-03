@@ -301,11 +301,17 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
 // WD1772 : bit 0 du statut = BUSY (commande en cours).
 enum : uint8_t { FDC_BUSY = 0x01 };
 
-// Durée réaliste d'une commande avant la fin (INTRQ). Type I : step-rate × pas ;
-// type II/III : ~temps de transfert par secteur. (Le débit réel est ~16 ms/secteur ;
-// on le modélise accéléré — l'essentiel est que la commande ne soit plus instantanée.)
+// Durée réaliste d'une commande avant la fin (INTRQ). Type I : step-rate × pas.
+// Type II/III : DURÉE DE TRANSFERT MFM RÉELLE (≈ 32 µs/octet à 250 kbit/s DD), et
+// non plus ~1 ms/secteur. C'EST CRITIQUE pour les jeux à track-loader maison
+// (Arkanoid…) : leur séquenceur de chargement suppose le débit physique du WD1772 ;
+// un FDC trop rapide leur fait prendre une mauvaise branche et les fige (exactement
+// ce que reproduit Hatari avec « --fastfdc on », dont l'aide note « can break some
+// programs »). Réf. Hatari fdc.c : FDC_DELAY_CYCLE_MFM_BYTE = 4 µs/bit × 8 bits ×
+// 8 MHz = 256 cycles/octet, et FDC_DELAY_US_HEAD_LOAD = 15 ms (chargement de tête).
 int64_t Fdc::commandDelayCycles(uint8_t cmd) {
-    constexpr int64_t MS = 8021;                       // cycles CPU par ms (~8 MHz)
+    constexpr int64_t MS       = 8021;                 // cycles CPU par ms (~8 MHz)
+    constexpr int64_t MFM_BYTE = 256;                  // FDC_DELAY_CYCLE_MFM_BYTE (DD)
     if (!(cmd & 0x80)) {                               // type I : seek / restore / step
         static constexpr int stepMs[4] = {6, 12, 2, 3};   // taux WD1772 (bits 0-1)
         const int sr = stepMs[cmd & 0x03];
@@ -318,8 +324,19 @@ int64_t Fdc::commandDelayCycles(uint8_t cmd) {
         if (steps < 1) steps = 1;
         return MS * sr * steps;
     }
-    const int count = dmaCount_ ? dmaCount_ : 1;       // type II/III : par secteur
-    return MS * count;                                 // ~1 ms/secteur (accéléré)
+    // Type II/III : nombre d'octets MFM réellement transférés × 256 cycles/octet,
+    // + 15 ms de chargement de tête (FDC_DELAY_US_HEAD_LOAD) pour le 1er accès.
+    int64_t bytes;
+    switch (cmd & 0xF0) {
+        case 0xC0: bytes = 6;    break;                // READ ADDRESS : champ ID seul
+        case 0xE0: case 0xF0: bytes = 6256; break;     // READ/WRITE TRACK : piste entière (~1 tour)
+        default: {                                     // READ/WRITE SECTOR : 512 o × secteurs
+            const int64_t count = dmaCount_ ? dmaCount_ : 1;
+            bytes = count * 512;
+            break;
+        }
+    }
+    return bytes * MFM_BYTE + 15 * MS;                 // transfert MFM + chargement de tête
 }
 
 void Fdc::executeCommand(uint8_t cmd) {
