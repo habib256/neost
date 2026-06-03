@@ -53,7 +53,7 @@ static std::string resolveData(const std::string& given, const std::string& exeD
 struct Config { std::string rom; std::string disk; std::string cart; bool mono = false;
                 std::string cpu = "moira"; std::string machine = "st";
                 std::string mem = "512k"; bool kbdjoy = false; int joyport = 1;
-                float joydeadzone = 0.30f; };
+                float joydeadzone = 0.30f; bool fastfdc = false; };
 static std::string cfgPath(const std::string& exeDir) { return exeDir + "/../neost.cfg"; }
 static Config loadConfig(const std::string& exeDir) {
     Config c;
@@ -71,6 +71,7 @@ static Config loadConfig(const std::string& exeDir) {
         else if (line.rfind("kbdjoy=", 0) == 0) c.kbdjoy = (line.substr(7) == "1");
         else if (line.rfind("joyport=", 0) == 0) c.joyport = (line.substr(8) == "0") ? 0 : 1;
         else if (line.rfind("joydeadzone=", 0) == 0) c.joydeadzone = std::strtof(line.substr(12).c_str(), nullptr);
+        else if (line.rfind("fastfdc=", 0) == 0) c.fastfdc = (line.substr(8) == "1");
     }
     return c;
 }
@@ -81,7 +82,7 @@ static void saveConfig(const std::string& exeDir, const Config& c) {
              << "\nmono=" << (c.mono ? 1 : 0)
              << "\ncpu=" << c.cpu << "\nmachine=" << c.machine << "\nmem=" << c.mem
              << "\nkbdjoy=" << (c.kbdjoy ? 1 : 0) << "\njoyport=" << c.joyport
-             << "\njoydeadzone=" << c.joydeadzone << "\n";
+             << "\njoydeadzone=" << c.joydeadzone << "\nfastfdc=" << (c.fastfdc ? 1 : 0) << "\n";
 }
 
 #if defined(NEOST_WITH_IMGUI)
@@ -512,6 +513,7 @@ int main(int argc, char** argv) {
     if (!cartPath.empty() && !machine.loadCart(cartPath))
         std::fprintf(stderr, "[main] Aucune cartouche montée (%s).\n", cartPath.c_str());
     machine.mfp.setColorMonitor(!cfg.mono);   // moniteur mémorisé (avant le reset)
+    machine.fdc.setFastFdc(cfg.fastfdc);      // FDC rapide mémorisé (accès disque ÷10)
     machine.reset();
     cfg.rom = romLogical; saveConfig(exeDir, cfg);   // mémorise dès le lancement
 
@@ -543,6 +545,7 @@ int main(int argc, char** argv) {
         if (cfg.cart.empty()) machine.ejectCart();
         else                  machine.loadCart(resolveData(cfg.cart, exeDir));
         machine.mfp.setColorMonitor(!cfg.mono);
+        machine.fdc.setFastFdc(cfg.fastfdc);   // ré-applique le FDC rapide après reconfig
         machine.reset();
         std::fprintf(stderr, "[main] reconfig à chaud : cœur %s | machine %s | RAM %s\n",
                      Cpu68k::coreName(machine.cpu.core()),
@@ -732,6 +735,14 @@ int main(int argc, char** argv) {
                         ImGui::TextDisabled("(dossier carts/ introuvable)");
                     }
                     ImGui::EndMenu();
+                }
+                ImGui::Separator();
+                // FDC rapide (équivalent hatari --fastfdc) : accès disque ÷10. Prend effet
+                // immédiatement (pas de reset), mémorisé dans neost.cfg.
+                if (ImGui::MenuItem("FDC rapide (accès disque ÷10)", nullptr, cfg.fastfdc)) {
+                    cfg.fastfdc = !cfg.fastfdc;
+                    machine.fdc.setFastFdc(cfg.fastfdc);
+                    saveConfig(exeDir, cfg);
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quitter")) glfwSetWindowShouldClose(window, 1);
