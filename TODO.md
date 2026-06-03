@@ -279,13 +279,8 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 - [ ] **Cartridge port** `$FA0000-$FBFFFF` générique (jeux, extensions de boot) — réf. `cart.c`
 
 ## Souris / entrées (jeux)
-- [~] **Vroom : boutons souris inopérants** (passage des vitesses). L'émission **sur
-      changement de bouton sans mouvement** est désormais portée fidèlement
-      (`IKBD_SendRelMousePacket`, front bouton via `bOldL_/bOldR_`). À confirmer sur le jeu réel
-      (disquette non libre → pas testable au headless ici).
-- [~] **Curseur GEM sort de l'écran et ne revient pas** : seuil/échelle/axe Y IKBD désormais
-      modélisés (deltas plus propres). Reste à vérifier sur cas réel le bornage + la libération
-      Échap côté frontend si le symptôme persiste.
+- [ ] **Vroom : Vers la droite accelere, vers la gauche ralentit, En bas tourne à droite et en haut tourne vers la gauche en mode souris ** 
+      (disquette  testable au headless).
 
 ## Outillage / qualité
 - [ ] **Comparaison MAME ↔ NeoST** (memory map, bus errors, FDC/MMU FIFO, blitter, SCC).

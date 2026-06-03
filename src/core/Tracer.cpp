@@ -53,17 +53,17 @@ void Tracer::onInstruction(uint32_t pc) {
             }
             sr = static_cast<uint16_t>(m68k_get_reg(nullptr, M68K_REG_SR));
         }
-        std::fprintf(f_, "%06X: %-38s "
+        std::fprintf(f_, "%08X: %-38s "
             "D0=%08X D1=%08X D2=%08X D3=%08X D4=%08X D5=%08X D6=%08X D7=%08X "
             "A0=%08X A1=%08X A2=%08X A3=%08X A4=%08X A5=%08X A6=%08X A7=%08X SR=%04X\n",
             pc, dis,
             d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7],
             a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], sr);
     } else {
-        std::fprintf(f_, "%06X: %s\n", pc, dis);
+        std::fprintf(f_, "%08X: %s\n", pc, dis);
     }
 #else
-    std::fprintf(f_, "%06X: <musashi absent>\n", pc);
+    std::fprintf(f_, "%08X: <musashi absent>\n", pc);
 #endif
 }
 

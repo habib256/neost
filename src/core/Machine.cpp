@@ -152,9 +152,15 @@ void Machine::scheduleFrameEvents() {
     sched.schedule(Scheduler::RENDER,  frameStart_ + deEnd_);          // fin DE : rendu ligne 0
     sched.schedule(Scheduler::TIMER_B, frameStart_ + timerBPos());     // tic event-count (position DE)
     sched.schedule(Scheduler::HBL,     frameStart_ + (cpl_ - 4));      // HBL niveau 2 (≈ fin de ligne)
-    // VBL niveau 4 : juste après la dernière ligne affichée (début du VBlank).
-    sched.schedule(Scheduler::VBL,
-                   frameStart_ + static_cast<int64_t>(disp_ + 1) * cpl_);
+    // VBL niveau 4 — port fidèle de Hatari (Video_InterruptHandler_VBL) : l'IRQ VBL
+    // est générée VBL_VIDEO_CYCLE_OFFSET cycles APRÈS la fin de la DERNIÈRE ligne de
+    // la trame (313×512 + 64 en 50 Hz STF), donc au tout début du vblank = ~SOMMET de
+    // la trame courante (la trame précédente vient de finir). On la cale à
+    // frameStart_ + offset, et NON plus à la ligne 201 (~112 lignes / 57000 cyc trop
+    // tôt) : le handler VBL du jeu (base écran, palette, sprites…) s'applique alors à
+    // la trame qui VA s'afficher, comme sur le vrai matériel. Offset STF=64, STE=68.
+    const int vblOffset = machineIsSte(machineType_) ? 68 : 64;       // VBL_VIDEO_CYCLE_OFFSET
+    sched.schedule(Scheduler::VBL, frameStart_ + vblOffset);
 }
 
 void Machine::onRender() {
