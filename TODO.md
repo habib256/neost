@@ -74,8 +74,11 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 ---
 
 ## Bus / memory map / MMU
-- [ ] Joypad/lightpen STE + DIP switches MegaSTE (`$FF9200-$FF9223`) whitelistés mais relisent
-      `0xFF` _(lot suivant)_ — réf. `ioMemTabSTE.c` (Joy_StePad*, DIP → `0xBF`)
+- [x] **Joypad/lightpen STE + DIP MegaSTE (`$FF9200-$FF9223`) : valeurs au repos** — ✅ FAIT
+      (`Bus::mmioRead8`, port `joy.c`). DIP MegaSTE `$FF9200` haut = `0xBF` (HD 1.44, logique
+      inversée), boutons/directions `0xFF`, paddle `0x24` (neutre), lightpen `0x0000`. Boot STE
+      byte-identique, MegaSTE inchangé. Reste : émulation réelle des entrées (item Vidéo) + le
+      bus error sur accès OCTET de `$FF9200/9220/9222` (mots seuls) _(risque élevé, à part)_.
 - [ ] Contrôle cache/CPU MegaSTE `$FF8E21` sans registre relisible _(lot suivant)_ — réf.
       `ioMem.c:IoMem_FixAccessForMegaSTE` + `ioMemTabSTE.c:...CacheCpuCtrl_WriteByte`
 - [ ] Registres vidéo STE « void » doivent lire `0x00` (`$FF820B`, `$FF8262-63`, `$FF8266-7F`)

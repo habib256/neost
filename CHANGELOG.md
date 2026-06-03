@@ -148,6 +148,10 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   6 octets, READ/WRITE(6), INQUIRY, READ CAPACITY, TEST UNIT READY ; disque virtuel
   agrandi à la demande (64 Mo).
 - **PSG `$FF8802` relisible** (read-modify-write `bclr/bset` du port A).
+- **Lectures STE joypad/paddle/lightpen + DIP MegaSTE** (`$FF9200-$FF9223`, port `joy.c`) :
+  valeurs au repos au lieu d'un `0xFF` générique — DIP MegaSTE `$FF9200` octet haut = `0xBF`
+  (lecteur HD 1.44 Mo, logique inversée), boutons/directions `0xFF` relâchés, paddle au neutre
+  `0x24`, lightpen `0x0000`. Boot STE byte-identique, MegaSTE (EmuTOS/diag) inchangé.
 - **Bus map gaté par modèle** : sur Mega ST/STE `$FF8002-$FF800D` est void (pas de faute)
   contrairement au ST (`IoMem_FixVoidAccessForMegaST`).
 

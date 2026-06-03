@@ -391,6 +391,25 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
     }
     if (addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine))
         return rtc->read8(addr);          // RTC RP5C15 — Mega ST / Mega STE
+    // STE / Mega STE : joypads / paddles / lightpen + DIP switches MegaSTE
+    // ($FF9200-$FF9223). NeoST n'émule aucun de ces périphériques → on renvoie les
+    // valeurs « au repos » d'Hatari (joy.c) au lieu d'un 0xFF générique. Le seul
+    // registre non trivial est l'octet HAUT de $FF9200 = DIP MegaSTE (0xBF : lecteur
+    // HD 1.44 Mo monté, son DMA actif ; logique inversée, cf. IoMemTabMegaSTE_DIPSwitches_Read).
+    if (machineIsSte(machine) && addr >= 0xFF9200 && addr <= 0xFF9223) {
+        switch (addr) {
+            // $FF9200.w = boutons feu (octet bas, 0xFF relâché) | DIP (octet haut).
+            case 0xFF9200: return machine == MachineType::MegaSte ? 0xBF : 0xFF;
+            // Paddle/analogique X/Y ($FF9211/13/15/17) : axe au NEUTRE (mid-value 0x24).
+            case 0xFF9211: case 0xFF9213:
+            case 0xFF9215: case 0xFF9217: return 0x24;
+            // Lightpen X/Y ($FF9220-$FF9223) : non supporté → 0 (mots à $FF9220/22).
+            case 0xFF9220: case 0xFF9221:
+            case 0xFF9222: case 0xFF9223: return 0x00;
+            // $FF9201 (DIP bas / boutons) et $FF9202/03 (directions+sélection) au repos.
+            default: return 0xFF;
+        }
+    }
     if (glue)
         return glue->read8(addr);         // MMU et reste du MMIO
     return 0xFF;
