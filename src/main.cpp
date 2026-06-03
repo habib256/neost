@@ -972,14 +972,6 @@ int main(int argc, char** argv) {
                      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
                      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus);
-        if (IconButton(ICON_FA_REDO, "Reset")) reqReset = true;
-        ImGui::SameLine();
-        // Reset à froid : efface la ST-RAM → EmuTOS/TOS refait un boot complet.
-        if (IconButton(ICON_FA_POWER_OFF, "Hard Reset")) reqHardReset = true;
-        ImGui::SameLine();
-        if (IconButton(color ? ICON_FA_ADJUST : ICON_FA_PALETTE, color ? "Passer en Mono" : "Passer en Couleur"))
-            reqMonitor = color ? 0 : 1;
-        ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
         ImGui::Checkbox("Disk", &g_showDisk);  ImGui::SameLine();
         ImGui::Checkbox("Cart", &g_showCart);  ImGui::SameLine();
         ImGui::Checkbox("Hex",  &g_showHex);   ImGui::SameLine();
@@ -989,6 +981,14 @@ int main(int argc, char** argv) {
             ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
             if (ImGui::Checkbox("Son lecteur", &driveSoundOn)) drive.setEnabled(driveSoundOn);
         }
+        ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
+        if (IconButton(ICON_FA_REDO, "Reset")) reqReset = true;
+        ImGui::SameLine();
+        // Reset à froid : efface la ST-RAM → EmuTOS/TOS refait un boot complet.
+        if (IconButton(ICON_FA_POWER_OFF, "Hard Reset")) reqHardReset = true;
+        ImGui::SameLine();
+        if (IconButton(color ? ICON_FA_ADJUST : ICON_FA_PALETTE, color ? "Passer en Mono" : "Passer en Couleur"))
+            reqMonitor = color ? 0 : 1;
         const float toolH = ImGui::GetWindowSize().y;
         ImGui::End();
 
@@ -1036,7 +1036,7 @@ int main(int argc, char** argv) {
         if (reqMonitor >= 0 && (reqMonitor == 1) != machine.mfp.colorMonitor()) {
             machine.mfp.setColorMonitor(reqMonitor == 1);
             machine.reset();
-            cfg.rom = romLogical; cfg.mono = (reqMonitor == 0);   // mémorise le mode
+            cfg.mono = (reqMonitor == 0);   // mémorise le mode
             saveConfig(exeDir, cfg);
         }
         // Application des requêtes (en fin de boucle, hors rendu ImGui) :
@@ -1061,7 +1061,6 @@ int main(int argc, char** argv) {
     }
 
     // Mémorise le dernier ROM, la disquette/cartouche montée et le moniteur.
-    cfg.rom = romLogical;
     cfg.disk = machine.fdc.mountedPath();
     cfg.cart = machine.bus.mountedCartPath();
     cfg.mono = !machine.mfp.colorMonitor();
