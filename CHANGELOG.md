@@ -1,283 +1,128 @@
 # Changelog — NeoST
 
-(c) 2026 VERHILLE Arnaud. Format chronologique par grandes étapes (le projet
-n'a pas encore de versions taguées ; tout est en 0.1.x « en cours »).
+(c) 2026 VERHILLE Arnaud. Ce qui est **implémenté et validé**. Pas encore de versions
+taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 
 ## Cœur & boot
+- `Bus` (memory map ST) + wrapper `Cpu68k` (Musashi) + `Shifter` (vidéo).
+- Lib `neost_core` sans dépendance GUI ; frontends `neost` (fenêtré) et `neost-headless`.
+- Boot 68000 : overlay ROM en `$0-$7` (SSP/PC), refermé après reset. TOS auto-détecté
+  (192 Ko → `$FC0000`, sinon `$E00000`).
+- **Cœur CPU sélectionnable** (`--cpu musashi|moira`, `neost.cfg`, WASM `?cpu=`).
+  Moira (cycle-exact, sous-module) boote EmuTOS pixel-identique et délivre les IRQ.
+- **Reconfiguration à chaud** : modèle / RAM / cœur / ROM changeables depuis le menu
+  sans relancer (`Machine::reconfigure`, hard reset avec les nouveaux paramètres).
 
-- Architecture de base : `Bus` (memory map ST), wrapper `Cpu68k` autour de
-  Musashi, `Shifter` (vidéo), squelettes `YM2149` / `Glue`.
-- Bibliothèque cœur `neost_core` sans dépendance GUI ; deux frontends
-  (`neost` fenêtré, `neost-headless` déterministe).
-- Boot 68000 : overlay ROM aux adresses `$0-$7` (SSP/PC), refermé après reset.
-- ROM TOS auto-détectée : 192 Ko → `$FC0000`, sinon `$E00000`.
+## Types de machine & mémoire
+- **Profils** ST / Mega ST / STE / Mega STE (`MachineType`), choisis avant le boot
+  (menu GUI, WASM `?machine=`, `--machine`). Matériel optionnel **gaté au modèle** :
+  son DMA `$FF8900` et joypad `$FF9200` STE+, RTC Mega+, etc.
+- **ST-RAM 256 Ko → 4 Mo** configurable (`--mem`, menu, WASM `?mem=`) ; `$FF8001` posé
+  en cohérence. EmuTOS détecte la `phystop` exacte par sondage.
 
-## Vidéo
-
-- Shifter : décodage planaire basse (320×200/16c), moyenne (640×200/4c),
-  haute (640×400 mono). Texture OpenGL, conversion couleur `$0RGB` → ARGB.
-- Haute résolution forcée en **blanc/noir** (moniteur mono), indépendamment de
-  la palette couleur (corrige un fond rouge sous TOS 1.02).
-- Détection moniteur via **GPIP bit7** : couleur (basse rés) / mono (haute rés).
-- Affichage GUI adaptatif : l'écran ST s'ajuste à la fenêtre ImGui (ratio 640×400).
+## Vidéo (Shifter)
+- Décodage planaire basse (320×200/16c), moyenne (640×200/4c), haute (640×400 mono) →
+  texture OpenGL, conversion `$0RGB` → ARGB. Haute rés forcée blanc/noir.
+- Détection moniteur via **GPIP bit7** (couleur basse rés / mono haute rés).
+- Base écran relisible (`$FF8201/03`, octet bas STE `$FF820D`) — les diagnostics y lisent
+  leur framebuffer. Registre sync `$FF820A` relisible (défaut $02 = 50 Hz PAL).
+- **Compteur d'adresse vidéo cycle-exact** (`$FF8205/07/09`, port `Video_CalculateAddress`
+  Hatari : 2 cycles/octet, LineStart 56@50Hz).
+- **Registres STE** (gatés STE) : fine scroll `$FF8264/65`, line width `$FF820F`, base
+  basse `$FF820D`, palette 4 bits/canal, relecture sync. *(Rendu scroll/line-width réel
+  encore à câbler — cf. TODO.)*
 
 ## Interruptions (MFP 68901)
+- IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.
+- **`M68K_EMULATE_INT_ACK`** activé dans Musashi (sans ça, IRQ auto-vectorisées, vecteurs
+  MFP inutilisés).
+- **Timer C 200 Hz** (tic système), **Timer B event-count** (Display Enable, lignes
+  visibles ; nécessaire à TOS 1.x), **Timer B mode délai** (TBCR 1-7, daté sur
+  l'ordonnanceur — corrige « T0 MFP timer »). VBL niveau 4 auto-vectorisé, latché.
+- **Timers A/C/D mode délai** datés par le MFP (`Scheduler`). Backing-store timer/USART.
+- **Lecture GPIP** honore le registre de direction (DDR) et le latch CPU.
+- Chaînage des lignes : **I3** blitter, **I4** ACIA (clavier+MIDI en OU câblé), **I5** FDC,
+  **I7** son DMA XSINT (moniteur XOR XSINT).
 
-- Contrôleur d'interruptions complet : IER/IPR/IMR/ISR + registre vecteur,
-  modes auto et software-EOI.
-- **Activation de `M68K_EMULATE_INT_ACK`** dans Musashi — sans ça toutes les IRQ
-  étaient auto-vectorisées et les vecteurs MFP (clavier, timers) inutilisés.
-- **Timer C 200 Hz** : tic système qui débloque l'accueil EmuTOS et fait vivre
-  le bureau.
-- **Timer B event-count** (compte le Display Enable, lignes visibles) : la
-  synchro vidéo de TOS 1.x ; sans elle TOS 1.02 reste en écran noir.
-- Backing store des registres timer/USART (TOS les écrit puis relit pour
-  détecter le MFP).
-- VBL niveau 4 auto-vectorisé, une fois par trame.
-
-## Clavier & souris (ACIA 6850 / IKBD)
-
-- ACIA clavier + file de scancodes ; mapping clavier GLFW → scancodes ST.
-- **Ligne GPIP4** câblée sur l'état RDRF de l'ACIA : `_int_acia` d'EmuTOS la lit
-  pour vider l'ACIA puis effacer l'ISR — sans elle le canal 6 restait bloqué dès
-  le boot (ni clavier ni souris).
-- Souris : paquets relatifs IKBD (en-tête `$F8`|boutons + Δx/Δy), boutons
-  événementiels (capte le double-clic rapide), accumulation sous-pixel.
-- Capture souris par clic dans l'écran ST, libération par Échap ; fenêtre ST
-  `NoMove` pour ne pas la déplacer en cliquant-glissant.
+## Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)
+- ACIA clavier + file de scancodes ; mapping GLFW → scancodes ST. Ligne **GPIP4** câblée
+  sur RDRF de l'ACIA. **Réponse de reset IKBD différée** (`$F1` ~502000 cyc après `$80,$01`).
+- **Analyseur de commandes multi-octets** (table de longueurs + buffer d'accumulation).
+- Souris **relative** (paquets `$F8`|boutons + Δx/Δy, boutons événementiels) **et absolue**
+  (`$09`/`$0D`/`$0E`).
+- **Joystick** : auto-report (`$14`), stop (`$15`), monitoring (`$17`), durée de feu (`$18`) ;
+  interrogation `$16` → `$FD,joy0,joy1`.
 
 ## Disquette (FDC WD1772 + DMA)
-
-- Accès indirect via le DMA (`$FF8600`) : registres FDC/sector-count, adresse DMA.
-- Commandes Restore/Seek/Step/Read/Write/ReadAddress ; modèle « DMA instantané ».
-- Sélection face/lecteur via le port A du YM2149 (actif bas).
-- INTRQ → **GPIP5** (poll `timeout_gpip` d'EmuTOS).
-- Image FAT12 720 Ko fabriquée à la main (`disks/diskA.st`).
-
-## Bus errors
-
-- Bus error sur la région blitter `$FF8A00` (absent sur ST de base) : EmuTOS la
-  sonde pour conclure « pas de blitter ». Sans ça, **barre de menu et curseur
-  GEM disparaissaient** (tracés VDI routés vers un blitter fantôme).
+- Accès indirect via DMA (`$FF8600`) ; Restore/Seek/Step/Read/Write/ReadAddress + WRITE/READ
+  TRACK ; modèle « DMA instantané ». Sélection face/lecteur via PSG port A. INTRQ → **GPIP5**.
+- **Adresse DMA relisible** (`$FF8609/0B/0D`, incrémente pendant le transfert — corrige
+  « DMA count error »). **Lecteur B** (`--diskb`, PSG port A bits 1/2).
+- **Write-protect auto-détecté** depuis les droits du fichier ; **changement de média**
+  (Mediach via bascule WPRT à l'éjection/insertion à chaud).
+- **Bit INDEX** WD1772 reflété (trou ~1.46 ms, 1/tour) ; impulsion d'index datée 1/tour
+  (~200 ms, `Scheduler::FDC_INDEX`), moteur off après ~9-10 tours.
+- Formats : `.st` (brut), `.msa` (décompression RLE). Écritures recopiées dans le `.st`.
 
 ## Audio
-
-- YM2149 : synthèse 3 voies carrées + bruit. Backend **miniaudio** (CoreAudio).
-- **Enveloppe YM2149** (registres 11-13) : générateur de volume 0..15, formes
-  dent de scie / triangle / hold pilotées par Continue/Attack/Alternate/Hold ;
-  une voie suit l'enveloppe quand le bit 4 de son registre de volume est posé.
-  Écrire R13 réarme l'enveloppe (drapeau consommé côté thread audio).
-- **Son DMA STE** (`DmaSound`, $FF8900-$FF8925) : nouveau composant `neost_core`
-  lisant des échantillons 8 bits signés en RAM (6.25/12.5/25/50 kHz, mono/stéréo,
-  play/repeat, compteur d'adresse). Routé par le `Bus`, mixé au YM2149 par `Audio`
-  (GUI) et `neost_audio_render` (WASM). Donne le son numérique des jeux/démos STE.
-- **LMC1992 / Microwire** ($FF8922/24) : décodage de la commande série (mot 11
-  bits), volume maître + gauche/droite appliqués en gain linéaire au mix complet,
-  et **basses/aigus** ±12 dB via deux filtres en plateau (RBJ shelving) sur le mix
-  YM2149 + DMA. 0 dB partout par défaut (bypass total, aucun coût).
-- **Interruption de fin de trame du son DMA STE** : datée sur l'ordonnanceur
-  (thread émulation, `Scheduler::DMASND`), elle pulse l'entrée TAI du MFP
-  (`Mfp::timerA_eventCount`) ; en mode event-count (TACR=0x08) Timer A lève
-  l'IRQ canal 13 → permet le double-buffering audio streamé des jeux/démos STE.
-- **Bruits mécaniques du lecteur de disquette** : le cœur émet des événements
-  `FdcSound` (moteur on/off, pas, seek, index) depuis `Fdc` via un sink, sans
-  dépendance audio. Frontends : `DriveSound` (miniaudio `ma_engine`) côté GUI,
-  Web Audio côté WASM. Échantillons WAV de STeem SSE (freeware, échantillonnés
-  par Stefan jL) embarqués dans `rom/drivesound/`. Bascule on/off des deux côtés.
-- **Moteur & index modélisés dans le cœur** : impulsion d'index datée 1/tour
-  (~200 ms à 300 tr/min, `Scheduler::FDC_INDEX`) ; le WD1772 coupe le moteur
-  après ~10 tours d'inactivité (`MotorOff`). Plus de minuterie côté frontend.
-- **Mixage YM2149 + lecteur** (GUI) : un seul périphérique miniaudio
-  (`Audio::render`) somme le PSG et la sortie « sans périphérique » de
-  `DriveSound` — active aussi la sortie son du PSG dans le frontend fenêtré.
-- **Bit INDEX du WD1772** : reflété sur les lectures de statut type I (trou
-  d'index ~1.46 ms, 1/tour) — phase dérivée de l'horloge de l'ordonnanceur.
-- **Son du PSG en WASM** : export `neost_audio_render` tiré par un
-  `ScriptProcessorNode` (Web Audio) partageant l'AudioContext des bruits de
-  lecteur → le navigateur mixe YM2149 + lecteur. Le frontend navigateur a enfin
-  du son (bips TOS, musiques).
-
-## Types de machine
-
-- **Profil machine** (`MachineType` : ST / Mega ST / STE / Mega STE) choisi avant
-  le boot, comme le cœur CPU. Porté par le `Bus` ; gating du matériel optionnel :
-  le **son DMA STE** ($FF8900) ne répond que sur STE/Mega STE et fait **bus error**
-  sur ST/Mega ST (fidèle, c'est ainsi qu'EmuTOS détecte le modèle). Défaut : STE.
-- Sélection : menu « Machine ▸ Modèle » (GUI, `neost.cfg`), `?machine=` (WASM),
-  `--machine st|megast|ste|megaste` (headless). Prépare le gating du blitter (Mega).
-- **Taille de ST-RAM** configurable (256 Ko / 512 Ko / 1 / 2 / 4 Mo) avant le boot :
-  menu « Machine ▸ Mémoire » (GUI), `?mem=` (WASM), `--mem` (headless). EmuTOS
-  détecte la `phystop` exacte par sondage ; `$FF8001` posé en cohérence.
+- **YM2149** : 3 voies carrées + bruit, enveloppe (R11-13, formes via Continue/Attack/
+  Alternate/Hold), **table de volume 5 bits mesurée** (32 niveaux), vitesse d'enveloppe
+  corrigée (diviseur de pas). Backend miniaudio (CoreAudio).
+- **Son DMA STE** (`DmaSound`, `$FF8900-$FF8925`) : échantillons 8 bits signés en RAM
+  (6.25/12.5/25/50 kHz, mono/stéréo, play/repeat, compteur d'adresse), mixé au YM2149.
+  **Interruption de fin de trame** datée (`Scheduler::DMASND`) → entrée TAI du MFP → IRQ
+  Timer A event-count (double-buffering streamé STE).
+- **LMC1992 / Microwire** (`$FF8922/24`) : décodage commande série 11 bits, volume
+  maître + G/D (gain), basses/aigus ±12 dB (filtres RBJ). **Shift série** `$FF8922`
+  (16 décalages de 8 cyc, `Scheduler::MICROWIRE` — les diags qui pollent jusqu'à 0 OK).
+- **Bruits mécaniques du lecteur** (immersion, pas du matériel — repris de STeem SSE) :
+  le cœur émet des événements `FdcSound` (moteur/pas/seek/index) via un sink ; frontends
+  GUI (`DriveSound`, miniaudio) et WASM (Web Audio). WAV embarqués dans `rom/drivesound/`.
+- **Son PSG en WASM** : export `neost_audio_render` tiré par un `ScriptProcessorNode`.
 
 ## Bus error & cartouches de diagnostic
+- **Modèle bus error = port fidèle Hatari** (`ioMem.c`+`ioMemTabST/STE.c`+`cpu/memory.c`) :
+  tout `$FF8000-$FFFFFF` faute par défaut, whitelist des registres câblés par modèle
+  (`Bus::buildIoFault`, carte octet par octet) + zones void + fixups ST/MegaST/MegaSTE.
+  Hors IO : `$400000-$F9FFFF` et `$FF0000-$FF7FFF` fautent. Règle word/long : faute
+  seulement si TOUS les octets fautent (`busFaultN`). Suivi par les DEUX cœurs.
+- **Double bus fault → halt CPU** (Musashi `m68k_pulse_halt`, Moira `flags|=HALTED`) au
+  lieu de segfault hôte → le headless peut vider trace + série.
+- **Trame de bus error 68000 dans Musashi** (`m68kcpu.h`) : empilait la trame 68010
+  (format-8, 58 o) au lieu de la trame 68000 (14 o) → les handlers `adda #8 ; rte` des
+  diags revenaient sur PC corrompue. **Le déblocage principal.** Adresse fautive
+  (`m68ki_aerr_*`) renseignée → diags affichent la vraie adresse.
+- **Blitter** (`Blitter.cpp`, port fonctionnel Hatari, mode HOG) : HOP, LOP 16 ops,
+  FXSR/NFSR, skew, smudge, halftone, endmasks, comptes X/Y, incréments signés. Présent
+  Mega ST/STE/Mega STE, absent STF. **IRQ de fin sur GPIP3**, BUSY+HOG effacés à `y_count==0`.
+- **RTC RP5C15** (Mega ST/Mega STE, `$FFFC21-$FFFC3F`) : modèle paresseux déterministe
+  (cycle CPU du dernier top de seconde + rattrapage), registre RESET, débordement BCD
+  calendaire. Corrige « C0 No clock installed » + « C1 clock increment error ».
+- **MIDI** (`MidiAcia`, `$FFFC04/06`) : bouclage OUT→IN + IRQ canal 6.
+- **Port série RS-232 / USART MFP** : RSR/UDR, IRQ RxFull (12)/TxEmpty (10)/RxErr (11)/
+  TxErr (9), lignes RTS→CTS (GPIP2)/DTR→DCD (GPIP1)/RI (GPIP6) via PSG port A.
+- **Disque dur ACSI** (`Fdc`, `$FF8604/06` bit `DMA_CSACSI`, port `hdc.c`) : commande
+  6 octets, READ/WRITE(6), INQUIRY, READ CAPACITY, TEST UNIT READY ; disque virtuel
+  agrandi à la demande (64 Mo).
+- **PSG `$FF8802` relisible** (read-modify-write `bclr/bset` du port A).
+- **Bus map gaté par modèle** : sur Mega ST/STE `$FF8002-$FF800D` est void (pas de faute)
+  contrairement au ST (`IoMem_FixVoidAccessForMegaST`).
 
-- **Modèle de bus error réécrit comme un port fidèle de Hatari** (`ioMem.c` +
-  `ioMemTabST/STE.c` + `cpu/memory.c`) : tout `$FF8000-$FFFFFF` faute par défaut,
-  on whiteliste les registres câblés selon le modèle (`Bus::buildIoFault`, carte
-  octet par octet), + zones « void », + miroir PSG, + fixups ST/MegaST/MegaSTE.
-  Hors IO : `$400000-$F9FFFF` et `$FF0000-$FF7FFF` fautent (vrais trous). Règle
-  word/long : faute seulement si TOUS les octets fautent (`busFaultN`) → `move.w
-  $FF8204` marche, `move.b $FF8204` faute. Les DEUX cœurs (Musashi + Moira) la suivent.
-- **Double bus fault → halt CPU** : un code parti en vrille fautait en boucle
-  pendant l'empilement d'exception → segfault hôte. On halte désormais le CPU
-  comme un vrai 68000 (Musashi `m68k_pulse_halt`, Moira `flags|=HALTED`), ce qui
-  laisse `neost-headless` vider trace + port série au lieu de crasher.
-- **Trame de bus error 68000 dans Musashi** (`extern/Musashi/m68kcpu.h`) : Musashi
-  empilait la trame format-8 du 68010 (58 octets) au lieu de la trame 68000 de 14
-  octets (`m68ki_stack_frame_buserr`). Les handlers de bus error des ROMs/diags qui
-  font `adda #8 ; rte` (sondage matériel) revenaient sur une PC corrompue → vrille.
-- **Base écran relisible** (`$FF8201/03`, + octet bas STE `$FF820D`) dans le Shifter
-  (Hatari IoMem_ReadWithoutInterception) : les diagnostics RÉCUPÈRENT la base écran
-  en relisant ces registres pour situer leur framebuffer (sans ça → base 0 → ils
-  dessinent sur la table des vecteurs).
-- **Réponse de reset IKBD différée** (`$F1` ~502000 cycles après `$80,$01`, via
-  `Scheduler::IKBD`, cf. Hatari) : répondre instantanément levait l'IRQ ACIA avant
-  son armement par le logiciel.
-- **Registre de synchro `$FF820A` relisible** (Shifter, défaut $02 = 50 Hz PAL,
-  cohérent avec la trame 313 lignes) : un logiciel qui lit la fréquence vidéo
-  (diagnostics) ne la croit plus 60 Hz.
-- **Injection clavier headless** (`--keys "..."`) : pilote les menus des diagnostics
-  (scancodes ST pour A-Z, 0-9, Entrée).
-- **Shift série Microwire `$FF8922`** (son STE, `DmaSound::onMicrowireShift` +
-  `Scheduler::MICROWIRE`, port de Hatari) : l'écriture du registre data démarre 16
-  décalages de 8 cycles ; `$FF8922` lit la valeur décalée jusqu'à 0, puis la commande
-  LMC1992 est décodée. Les diagnostics qui pollent `$FF8922` jusqu'à 0 ne bouclent plus.
-- **Adresse fautive dans la trame de bus error** (`m68ki_aerr_address`/`_write_mode`/`_fc`
-  renseignés avant `m68k_pulse_bus_error`) : la trame de groupe 0 contient désormais la
-  VRAIE adresse d'accès et le bit R/W ; les diagnostics affichent « Bus Error Access
-  Address: ... » correctement (utile à leur détection de ROM par sondage).
-- **Timer B en mode DÉLAI** (`Mfp` + `Scheduler::TIMER_B_DELAY`) : NeoST ne gérait Timer B
-  qu'en event-count (HBL) ; `scheduleTimer` faisait `if (timer==1) return`. Quand un
-  logiciel programme TBCR=1-7 (mode délai, comme Timer A/C/D), le timer n'était jamais
-  daté → aucune IRQ. **Corrige le test « T0 MFP timer »** des diagnostics (qui programme
-  Timer B en délai et attend ses interruptions) : ce test PASSE désormais sur les 3
-  cartouches. Écritures TBCR/TBDR re-datent le timer ; event-count (TBCR=8) inchangé.
-- **Compteur d'adresse vidéo `$FF8205/07/09` cycle-exact** (`Shifter::videoCounter`,
-  port de Hatari `Video_CalculateAddress`) : `addr = base + ligne*bpl + ((X-LineStart)>>1)&~1`
-  (2 cycles/octet entre le cycle 56 en 50 Hz / 52 en 60 Hz et 376). L'ancienne version
-  supposait 1 octet/cycle depuis le cycle 216 → fausse en milieu de ligne. Corrige la
-  position vidéo lue par les diagnostics (sous-test « T0 » timing/Glue/Vidéo) et fiabilise
-  les effets raster. Non régressif (EmuTOS bureau, Vroom).
-- **Adresse DMA disquette relisible** (`$FF8609/0B/0D`, `Fdc::read8`) : le compteur
-  d'adresse DMA incrémente pendant le transfert et est désormais relisible (cf. Hatari
-  `FDC_GetDMAAddress`). Sans ça NeoST renvoyait `$FF` → les diagnostics qui relisent
-  l'adresse pour vérifier le nombre d'octets transférés signalaient « DMA count error »
-  (corrigé sur STE_Test : le test floppy passe l'étape DMA).
-- **WRITE TRACK ($F0) / READ TRACK ($E0)** (`Fdc`) : consomment correctement la DMA
-  (compteur → 0) ; WRITE TRACK extrait les secteurs (IDAM/DAM) du tampon de formatage
-  vers l'image .ST (best-effort — un reformatage à géométrie non standard nécessite une
-  image flux/HD, non supporté ; Hatari ne supporte pas du tout WRITE TRACK sur .ST).
-- **Blitter (`Blitter.cpp`)** : port FONCTIONNEL du blitter ST ($FF8A00-$FF8A3F) depuis
-  Hatari (HOP, LOP 16 ops, FXSR/NFSR, skew, smudge, halftone, endmasks, comptes X/Y,
-  incréments signés), en mode HOG (transfert instantané — résultat de données fidèle).
-  Présent sur Mega ST / STE / Mega STE (`machineHasBlitter`, STE inclus désormais),
-  absent du STF. Les tests « BLiT » (court/long) des diagnostics **passent** ; EmuTOS
-  STE peut l'utiliser pour le VDI (boot non régressé). Le STF garde la zone fautive
-  (EmuTOS → VDI logiciel).
-- **Timer B en mode délai** (`Mfp::scheduleTimer` + `Scheduler::TIMER_B_DELAY`) : NeoST
-  ne gérait Timer B qu'en event-count (HBL). En mode délai (TBCR 1-7) il n'était jamais
-  daté → aucune IRQ. **Corrige « T0 MFP timer »** des diagnostics (qui programment Timer B
-  en délai et attendent ses interruptions). TBCR=8 reste l'event-count piloté par la trame.
-- **Lecteur B** (`--diskb <img>` headless, `Machine::loadDiskB`, export WASM
-  `_neost_mount_disk_b`) : monter une 2ᵉ image fait passer « Cannot write drive B ».
-- **RTC RP5C15** (`src/io/Rtc.{hpp,cpp}`, Mega ST / Mega STE, `$FFFC21-$FFFC3F`) : horloge
-  temps réel sauvegardée par pile. Modèle PARESSEUX déterministe (≠ Hatari qui lit le
-  `localtime` hôte, non reproductible) : on retient le cycle CPU du dernier top de seconde
-  et on rattrape les secondes écoulées à chaque accès (`Rtc::catchUp`), avec un cycle
-  absolu exact même en pleine lecture MMIO grâce à `Cpu68k::cyclesRunInQuantum()`. Gère le
-  registre RESET (`$FFFC3F` bit1 = reset du diviseur sous-seconde) et le débordement
-  calendaire BCD complet (jusqu'à l'année). **Corrige « C0 No clock installed » ET « C1
-  clock increment error »** du `MegaSTE_Diagnostic`.
-- **MIDI** (`MidiAcia`, ACIA 6850 `$FFFC04/06`) : bouclage OUT→IN (câble) + IRQ canal 6.
-  Le test « M MIDI » du diagnostic passe (**Pass**).
-- **Port série RS-232 / USART MFP** : réception (RSR Buffer Full, UDR), IRQ RxFull
-  (canal 12), TxEmpty (10), RxErr/overrun (11), TxErr/underrun (9), et lignes de
-  contrôle RTS→CTS (GPIP2), DTR→DCD (GPIP1) + RI (GPIP6) via le PSG port A. Tampon
-  de réception 1 octet (le 68901 n'a pas de FIFO). Connecteur de bouclage modélisé,
-  « branché » par l'option headless **`--loopback`** (sinon l'écho du rapport série
-  console casserait la détection clavier). Le test « S Serial Port » passe (**Pass**).
-- **Joystick** (IKBD `$16` interroger) : l'IKBD répond `$FD,joy0,joy1` (corrige
-  « J2 Joystick time-out »). Sous `--loopback`, fixture parallèle→joystick (port B
-  → directions/feu) + ligne BUSY (`$FF8606` Centronics, GPIP0). Test « P
-  Printer/Joystick » : **Pass**.
-- **Disque dur ACSI** (`Fdc`, port `$FF8604/06` bit `DMA_CSACSI`) : contrôleur ACSI
-  minimal (port de Hatari `hdc.c`) — commande 6 octets reçue octet par octet avec
-  handshake IRQ HDC (pin A1 = bit `DMA_A0`), commandes READ/WRITE(6), INQUIRY, READ
-  CAPACITY, TEST UNIT READY ; disque virtuel en mémoire agrandi à la demande (cap
-  64 Mo). Le « Hard Disk DMA Exerciser » tourne sans erreur de comparaison.
-- **PSG `$FF8802` relisible** (`YM2149::read8`) : renvoie le registre sélectionné
-  (décodage partiel de l'ST) — nécessaire aux read-modify-write `bclr/bset` du port A
-  (RTS/DTR) faits par le test série.
-- **VME / FPU (Mega STE) : « not found » est CORRECT et FIDÈLE à Hatari** — Hatari
-  `scu_vme.c` n'émule aucune carte VME (« we don't emulate any VME board ») et
-  `configuration.c` met `n_FPUType=FPU_NONE` par défaut. Un MegaSTE de base n'a ni
-  carte VME RAM ni coprocesseur 68881 ; les émuler dépasserait Hatari. Documenté
-  comme matériel optionnel absent (le SCU `$FF8E01-0F` existe néanmoins).
-- **Cartouches de diagnostic** (`carts/`, magic `$FA52235F`) via `--cart` : rapport
-  à l'écran + port série. Grâce aux corrections ci-dessus, **les TROIS cartouches
-  (`ST_Diagnostic`, `STE_Test`, `MegaSTE_Diagnostic`) passent leur batterie de tests
-  internes (Z) SANS ERREUR**, sur les DEUX cœurs (musashi + moira), avec un vrai TOS :
-  `ST_Diagnostic` Z entièrement propre (R/O/C/K/A/T/L/G), `STE_Test` Z « Pass » (vert),
-  `MegaSTE` Z « Tests Completed » sans ligne d'erreur. Non régressif : EmuTOS boote
-  (bureau STE & Mega STE), jeux chargent. (Restes type « Hard error »/MIDI/RS232/VME/FPU =
-  périphériques absents, pas des bugs ; 256K = config MMU figée du diag.)
+**Résultat** : les **3 cartouches** (`ST_Diagnostic`, `STE_Test`, `MegaSTE_Diagnostic`)
+atteignent leur menu et passent leur batterie de tests internes (Z) **sans erreur**, sur
+les **2 cœurs**, avec un vrai TOS. Restes (« Hard error »/VME/FPU) = périphériques absents,
+fidèles à Hatari, pas des bugs.
 
-## Frontend & confort
-
-- Écran ST dans une fenêtre ImGui dédiée ; visualiseur hexa mémoire + registres
-  68000 ; bouton Reset ; barre de boutons résolution (couleur/mono + hard reset).
-- Bridage **50 fps réels** (le compteur 200 Hz colle au temps réel → double-clic
-  correct).
-- Résolution de chemins robuste (rom/, disks/ trouvés depuis la racine ou build/).
-- **Persistance** (`neost.cfg`) : dernier ROM chargé + type de moniteur.
-
-## Outillage
-
-- `neost-headless` : trace d'instructions façon MAME, registres, interruptions,
-  capture PPM, injection souris, choix moniteur. C'est l'outil de débogage
-  principal (a permis de localiser tous les bugs ci-dessus).
+## Frontend & outillage
+- Écran ST dans une fenêtre ImGui ; visualiseur hexa + registres 68000 ; boutons Reset /
+  Hard Reset ; barre résolution. Bridage **50 fps réels**. Persistance (`neost.cfg`).
+- **`neost-headless`** : trace d'instructions façon MAME, registres, IRQ (`--irq`), capture
+  PPM, injection clavier (`--keys`) / souris (`--walk-mouse`), bouclage (`--loopback`).
+  C'est l'outil de débogage principal.
+- **`tools/trace_diff.py`** : aligne une trace NeoST et une trace Hatari sur un PC commun
+  (`--align-pc`) et localise la première divergence (flux PC + registres).
 
 ## Validé
-
 - EmuTOS (FR/US) : green desktop, fichiers disquette, double-clic, fenêtres.
 - TOS 1.02 Mega ST FR : boot complet, green desktop basse rés.
 - **Arkanoid** (Imagine 1987) : se lance via l'AUTO de la disquette, écran-titre.
-
-## Portage de fidélité Hatari (lot juin 2026)
-
-Lot de 14 portages ciblés depuis la **source de vérité `extern/hatari/src`**, issus
-d'un audit composant-par-composant (NeoST ↔ Hatari). Chacun a passé le filet de
-non-régression (build + boot EmuTOS sur les DEUX cœurs + les 3 cartouches de diag
-atteignant leur menu) ; les ajouts STE/Mega sont **gatés au modèle** pour laisser le
-chemin ST inchangé.
-
-- **YM2149** : table de volume **5 bits mesurée** (32 niveaux, `ymout1c5bit` +
-  `YmVolume4to5`) et **vitesse d'enveloppe corrigée** (diviseur de pas, `sound.c`) —
-  l'enveloppe balayait 16× trop lentement.
-- **FDC WD1772** : **write-protect auto-détecté** depuis les droits du fichier image
-  (`Floppy_IsWriteProtected`, .msa toujours protégé) ; **largeur d'impulsion INDEX**
-  fidèle (3.71 ms) + moteur off après 9 tours ; **détection de changement de média**
-  (Mediach via bascule WPRT à l'éjection/insertion à chaud, `Floppy_DriveTransition*`).
-- **IKBD HD6301** : vrai **analyseur de commandes multi-octets** (table de longueurs
-  `KeyboardCommands[]`, buffer d'accumulation ; reset `$80,$01`→`$F1` différé préservé) ;
-  **mode souris absolu** (`$09`/`$0D`/`$0E`, en-tête `$F7`) ; **joystick auto-report /
-  monitoring** (`$14`/`$15`/`$17`/`$18`, paquets `$FE`/`$FF` sur changement, hook VBL).
-- **MFP 68901** : lecture GPIP qui honore le **registre de direction (DDR)** et le
-  latch écrit par le CPU (`MFP_GPIP_ReadByte_Main`) — inputs forcés inchangés (DDR=0).
-- **ACIA (clavier + MIDI)** : les **deux lignes d'IRQ ACIA en OU câblé sur GPIP4**
-  (`MFP_Main_Compute_GPIP_LINE_ACIA`) — corrige l'écrasement d'une IRQ clavier en
-  attente quand le MIDI est au repos.
-- **Blitter** : **interruption de fin** sur **GPIP3** (canal I3, `MFP_INT_GPIP3`) et
-  effacement de BUSY+HOG sur `y_count==0` (Mega ST/STE/Mega STE).
-- **Son DMA STE** : ligne **XSINT → GPIP7** (moniteur XOR XSINT, gaté STE/Mega STE,
-  `DmaSnd_Update_XSINT_Line`).
-- **Bus / MMU** : banque 1 **miroir de la banque 0 sur STE/MegaSTE** (bits 0-1 de
-  `$FF8001` ignorés, `STMemory_MMU_ConfToBank`) — chemin ST/Mega ST identique.
-- **Shifter STE** (registres, gatés STE) : **fine scroll** `$FF8264/65`, **line width**
-  `$FF820F`, **base vidéo basse** `$FF820D`, **palette 4 bits/canal** (expansion STe
-  de `conv_st.c`), **relecture sync** `$FF820A` (bits inutilisés à 1). Le rendu
-  scroll/line-width réel reste à câbler (cf. chantier précision temporelle).
-
-*Reste différé (architectural, hors lot)* : ordonnanceur cycle-exact (bordures,
-spec512, latence IRQ/FDC au cycle, Arkanoid `$26E7`), SCC Z85C30, ACSI/SCSI/IDE,
-GEMDOS-HD, FPU 68881, bascule 8/16 MHz MegaSTE.
