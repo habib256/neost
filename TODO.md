@@ -152,10 +152,15 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       forme d'onde est générée côté audio, seul l'instant d'IRQ est exact) _(précision cycle)_
 
 ## IKBD HD6301 + souris/joystick
-- [ ] Paquet souris relatif ignore l'axe Y (`SetYAxisUp/Down 0x0F/0x10`) _(lot suivant)_ —
-      réf. `ikbd.c:IKBD_SendRelMousePacket`
-- [ ] Seuil (`0x0B`) / échelle (`0x0C`) souris — deltas bruts _(lot suivant)_ — réf.
-      `ikbd.c:IKBD_Cmd_SetMouseThreshold/SetMouseScale`
+- [x] **Paquet souris relatif : axe Y** (`SetYAxisUp/Down 0x0F/0x10`) — ✅ FAIT. `yAxis_`
+      (±1, défaut +1 = origine haut) applique son signe au Δy émis et à l'accumulation
+      absolue (port `IKBD_SendRelMousePacket` l.1409). Reset → +1.
+- [x] **Seuil (`0x0B`) / échelle (`0x0C`) souris** — ✅ FAIT. Seuil = porte d'émission du
+      paquet relatif (`|Δ| ≥ seuil`, défaut 1) ; échelle appliquée à l'accumulation absolue
+      (`> 1`). Gros Δ drainés en plusieurs paquets. Émission **sur changement de bouton sans
+      mouvement** (front bouton) portée aussi → boutons de Vroom remontés. Reset → seuils 1,
+      échelle 0. Réf. `ikbd.c:IKBD_Cmd_SetMouseThreshold/SetMouseScale`. Validé moira (bureau
+      TOS 1.04 + clic-glissé, curseur suit). Reste sous-items : `0x07`/`0x0A`/horloge.
 - [ ] `MouseAction 0x07` / report bouton-en-touche / `MouseCursorKeycodes 0x0A` _(lot suivant)_
       — réf. `ikbd.c:IKBD_Cmd_MouseAction`
 - [ ] Horloge IKBD (`SetClock 0x1B` / `ReadClock 0x1C`) _(lot suivant)_ — réf. `ikbd.c`
@@ -206,11 +211,13 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 - [ ] **Cartridge port** `$FA0000-$FBFFFF` générique (jeux, extensions de boot) — réf. `cart.c`
 
 ## Souris / entrées (jeux)
-- [ ] **Vroom : boutons souris inopérants** (passage des vitesses). En mode relatif l'IKBD ne
-      renvoie l'état des boutons qu'avec un mouvement → vérifier l'émission d'un paquet sur
-      **changement de bouton sans mouvement** (`IKBD_SendRelMousePacket`, en-tête `0xF8`).
-- [ ] **Curseur GEM sort de l'écran et ne revient pas** : sans seuil/échelle/axe Y/bornage
-      IKBD, le curseur file en coin. Vérifier signe/accumulation des deltas + libération Échap.
+- [~] **Vroom : boutons souris inopérants** (passage des vitesses). L'émission **sur
+      changement de bouton sans mouvement** est désormais portée fidèlement
+      (`IKBD_SendRelMousePacket`, front bouton via `bOldL_/bOldR_`). À confirmer sur le jeu réel
+      (disquette non libre → pas testable au headless ici).
+- [~] **Curseur GEM sort de l'écran et ne revient pas** : seuil/échelle/axe Y IKBD désormais
+      modélisés (deltas plus propres). Reste à vérifier sur cas réel le bornage + la libération
+      Échap côté frontend si le symptôme persiste.
 
 ## Outillage / qualité
 - [ ] **Comparaison MAME ↔ NeoST** (memory map, bus errors, FDC/MMU FIFO, blitter, SCC).

@@ -67,8 +67,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - ACIA clavier + file de scancodes ; mapping GLFW → scancodes ST. Ligne **GPIP4** câblée
   sur RDRF de l'ACIA. **Réponse de reset IKBD différée** (`$F1` ~502000 cyc après `$80,$01`).
 - **Analyseur de commandes multi-octets** (table de longueurs + buffer d'accumulation).
-- Souris **relative** (paquets `$F8`|boutons + Δx/Δy, boutons événementiels) **et absolue**
-  (`$09`/`$0D`/`$0E`).
+- Souris **relative** (paquets `$F8`|boutons + Δx/Δy) **et absolue** (`$09`/`$0D`/`$0E`).
+  Port fidèle de `IKBD_SendRelMousePacket` : **seuil d'émission** (`$0B`), **échelle** absolue
+  (`$0C`), **signe d'axe Y** (`$0F`/`$10`), drain des gros Δ en plusieurs paquets, et émission
+  **sur changement de bouton SANS mouvement** (détection de front — boutons de jeu type Vroom).
+  Défauts de reset (REL, seuils 1, axe Y haut) remis sur `$80,$01`.
 - **Joystick** : auto-report (`$14`), stop (`$15`), monitoring (`$17`), durée de feu (`$18`) ;
   interrogation `$16` → `$FD,joy0,joy1`.
 
