@@ -97,9 +97,14 @@ private:
     // Handlers des événements datés vidéo (positions au cycle dans la ligne).
     // Les Timers A/C/D (mode délai) sont datés par le MFP lui-même.
     void onRender();        // décode la scanline (≈ fin Display-Enable, cycle 376)
-    void onTimerB();        // Timer B event-count sur DE (cycle 400)
+    void onTimerB();        // Timer B event-count sur DE (position DE-dépendante)
     void onHbl();           // HBL niveau 2 (cycle 508)
     void onVbl();
+
+    // Position (cycle DANS la ligne) du tic Timer B event-count, dérivée du
+    // Display-Enable (résolution + 50/60 Hz du Shifter, front début/fin via l'AER du
+    // MFP) — cf. Shifter::timerBLinePos / Hatari Video_TimerB_GetDefaultPos.
+    int timerBPos() const { return shifter.timerBLinePos(mfp.timerBStartOfLine()); }
 
     MachineType machineType_ = MachineType::Ste;   // profil matériel (figé au boot)
 
@@ -111,6 +116,6 @@ private:
 
     // Positions au cycle DANS la ligne (STF PAL 50 Hz, cf. Hatari video.h).
     static constexpr int DE_END_CYCLE   = 376;   // fin Display-Enable → rendu ligne
-    static constexpr int TIMERB_CYCLE   = 400;   // 376 + 24 (TIMERB_VIDEO_CYCLE_OFFSET)
+    // (Timer B : position dérivée du Display-Enable, cf. timerBPos / Shifter::timerBLinePos.)
     static constexpr int HBL_CYCLE      = 508;   // 512 - 4 (Hbl_Int_Pos_Low_50)
 };

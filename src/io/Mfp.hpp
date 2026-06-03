@@ -55,6 +55,12 @@ public:
     // event-count. TOS 1.x s'en sert pour se synchroniser à l'écran au boot.
     void hblank();
 
+    // Front compté par Timer B en event-count (AER bit3 de $FFFA03) : 0 = FINS de
+    // ligne (défaut, DE_end+24), 1 = DÉBUTS de ligne (DE_start+24) — cf. Hatari
+    // Video_TimerB_GetPosFromDE (« Seven Gates of Jambala »). Le compte (1/ligne
+    // visible) est inchangé ; seule la POSITION du tic dans la ligne change.
+    bool timerBStartOfLine() const { return (aer & 0x08) != 0; }
+
     // Impulsion comptée par Timer A (entrée TAI) : sur STE, la fin de trame du
     // son DMA y est câblée. En mode event-count (TACR bits0-3 == 0x08), décompte
     // et lève l'IRQ Timer A (canal 13) à 0 — sert au double-buffering audio STE.

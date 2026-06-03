@@ -46,6 +46,22 @@ public:
     uint8_t read8(uint32_t addr);
     void    write8(uint32_t addr, uint8_t v);
 
+    // Position (cycle DANS la ligne) du tic Timer B en mode event-count, portée de
+    // Hatari `Video_TimerB_GetDefaultPos` : on compte les FINS de ligne (DE_end+24)
+    // par défaut, ou les DÉBUTS (DE_start+24) si l'AER du MFP sélectionne le front de
+    // début (`startOfLine`). Les positions Display-Enable dépendent de la résolution
+    // (haute = 71 Hz) et, en basse/moyenne, de la fréquence 50/60 Hz ($FF820A bit1).
+    // Constantes de `extern/hatari/src/includes/video.h` (LINE_START/END_CYCLE_*).
+    // Remplace l'ancienne position figée au cycle 400 (≙ 50 Hz / fin de ligne seule).
+    int timerBLinePos(bool startOfLine) const {
+        constexpr int kOffset = 24;          // TIMERB_VIDEO_CYCLE_OFFSET
+        int de;
+        if (mode == Mode::High)   de = startOfLine ? 0  : 160;   // 71 Hz mono
+        else if (sync & 0x02)     de = startOfLine ? 56 : 376;   // 50 Hz (défaut PAL)
+        else                      de = startOfLine ? 52 : 372;   // 60 Hz
+        return de + kOffset;
+    }
+
     // Horloge faisceau : renvoie le nombre de cycles écoulés DANS la trame courante
     // (0 au début de trame). Posée par Machine ; sert à reconstruire le compteur
     // d'adresse vidéo $FF8205/07/09 (position courante du balayage). Cf. Hatari

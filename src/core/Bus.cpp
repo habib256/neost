@@ -205,6 +205,8 @@ uint8_t Bus::read8(uint32_t addr) {
 
 void Bus::write8(uint32_t addr, uint8_t v) {
     addr &= stmap::ADDR_MASK;
+    if ((addr & ~3u) == 0x114u)   // [DEBUG TEMP] watch Timer C vector ($114)
+        std::fprintf(stderr, "[WATCH] write $%06X = $%02X  PC=$%06X\n", addr, v, cpu ? cpu->pc() : 0);
 
     // Espace RAM ($0-$3FFFFF) : décodé par le MMU (banques + aliasing). Une banque
     // déclarée mais sans puce absorbe l'écriture dans le vide.

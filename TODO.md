@@ -37,8 +37,13 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       Métrique headless `timer IRQ retard max`. **Préférer `--cpu moira`** (cycle-exact,
       horloge live à la sous-instruction). Reste (raffinement) : offset = cycles de
       l'instruction d'écriture (le timer démarre à la FIN de l'instruction chez Hatari).
-- [ ] **Timer B event-count lié au Display Enable** par ligne (DE_start/end+24) et 50/60 Hz,
-      pas figé au cycle 400 — réf. `video.c:Video_TimerB_GetPosFromDE`
+- [x] **Timer B event-count lié au Display Enable** — ✅ FAIT (port `Video_TimerB_GetDefaultPos`).
+      `Shifter::timerBLinePos(startOfLine)` : fins de ligne (`DE_end+24`) ou débuts
+      (`DE_start+24`) selon l'AER bit3 du MFP (`Mfp::timerBStartOfLine`), positions par
+      résolution (71 Hz=184/24) et fréquence (50 Hz=400/80, 60 Hz=396/76) ; recalculée par
+      ligne (suit un changement AER/sync mi-trame). Plus de cycle 400 figé. Défaut 50 Hz/fin
+      inchangé → boot EmuTOS pixel-identique, Z/T0 Pass. Reste : DE réel avec **bordures**
+      (suppression L/R) et le latch mi-ligne (items ci-dessous) pour le DE_start/end exact.
 - [ ] **Latch palette/scroll mi-ligne** — la scanline est rendue une fois à DE_END (cycle
       376) ; pas de changement intra-ligne — réf. `video.c:Video_RenderLine`
 - [ ] **VBL tiré en fin de trame** (~ligne 312 + offset 64 cyc), pas ligne 201 _(risque élevé)_

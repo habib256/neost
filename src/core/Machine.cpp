@@ -119,7 +119,7 @@ void Machine::scheduleFrameEvents() {
 
     // Premiers événements de la ligne 0, à leur CYCLE EXACT dans la ligne.
     sched.schedule(Scheduler::RENDER,  frameStart_ + DE_END_CYCLE);   // 376 : rendu ligne 0
-    sched.schedule(Scheduler::TIMER_B, frameStart_ + TIMERB_CYCLE);   // 400 : tic event-count
+    sched.schedule(Scheduler::TIMER_B, frameStart_ + timerBPos());    // tic event-count (position DE)
     sched.schedule(Scheduler::HBL,     frameStart_ + HBL_CYCLE);      // 508 : HBL niveau 2
     // VBL niveau 4 : fin de la ligne 200 (début du VBlank).
     sched.schedule(Scheduler::VBL,
@@ -145,8 +145,8 @@ void Machine::onTimerB() {
     cpu.updateIpl();                               // un underflow Timer B → IPL 6
     ++tbLine_;
     if (tbLine_ < VISIBLE_LINES)
-        sched.schedule(Scheduler::TIMER_B,
-                       frameStart_ + static_cast<int64_t>(tbLine_) * CYCLES_PER_LINE + TIMERB_CYCLE);
+        sched.schedule(Scheduler::TIMER_B,                         // position recalculée → suit
+                       frameStart_ + static_cast<int64_t>(tbLine_) * CYCLES_PER_LINE + timerBPos());
 }
 
 void Machine::onHbl() {

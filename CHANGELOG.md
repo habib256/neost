@@ -53,6 +53,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - **Timer C 200 Hz** (tic système), **Timer B event-count** (Display Enable, lignes
   visibles ; nécessaire à TOS 1.x), **Timer B mode délai** (TBCR 1-7, daté sur
   l'ordonnanceur — corrige « T0 MFP timer »). VBL niveau 4 auto-vectorisé, latché.
+- **Position du tic Timer B dérivée du Display-Enable** (port `Video_TimerB_GetDefaultPos`) :
+  compte les **fins** de ligne (`DE_end+24`) ou les **débuts** (`DE_start+24`) selon l'AER
+  bit3 du MFP (jeux/démos type *Seven Gates of Jambala*), positions selon résolution (71 Hz)
+  et fréquence (50 Hz = 400, 60 Hz = 396) — au lieu du cycle 400 figé. Défaut 50 Hz/fin
+  inchangé (boot pixel-identique).
 - **Timers A/C/D mode délai** datés par le MFP (`Scheduler`). Backing-store timer/USART.
 - **Lecture GPIP** honore le registre de direction (DDR) et le latch CPU.
 - Chaînage des lignes : **I3** blitter, **I4** ACIA (clavier+MIDI en OU câblé), **I5** FDC,
