@@ -36,7 +36,9 @@ reconfigure. Sous macOS, pas de `timeout`.
 ## ⭐ Méthode imposée (ordre strict)
 
 `extern/hatari/src` = **la source de vérité matérielle** (sources C complètes, lues et PAS
-compilées). Avec **MAME**, c'est la référence du comportement des puces.
+compilées). Avec **MAME**, c'est la référence du comportement des puces. Hatari est aussi
+installé (`/opt/homebrew/bin/hatari`) et peut être **exécuté en oracle headless** (boot →
+PNG, sans affichage) pour comparer à NeoST → [`docs/HATARI_AUTOMATION.md`](docs/HATARI_AUTOMATION.md).
 
 Quand un test/jeu plante, **NE PAS** désassembler ni chercher le point de divergence d'emblée.
 **D'ABORD** comparer la source de vérité (`extern/hatari/src`) au code NeoST et **porter ce qui
@@ -80,4 +82,6 @@ est CORRECT** (Hatari n'émule pas le VME, FPU_NONE par défaut).
 Lecteur A monte une image `.st` (`.msa` et `.dim` aussi, détectés par contenu). Outils : `tools/make_floppy.py` (régénère
 `disks/diskA.st`), `tools/fetch_disk.py <url>` (télécharge depuis planetemu via scrapling — à
 n'utiliser que pour du domaine public / freeware / démos). ROMs TOS propriétaires → défaut
-**EmuTOS** (libre) dans `rom/`.
+**EmuTOS** (libre) dans `rom/`. ⚠ Pour `--machine megaste`, utiliser un EmuTOS **256 Ko**
+(`rom/etos256us/fr.img`, build « Mega STe » qui programme le SCU) ou TOS 2.06 : l'EmuTOS
+192 Ko est un build « Atari ST » (TOS 1.4) qu'Hatari lui-même refuse sur MegaSTE.
