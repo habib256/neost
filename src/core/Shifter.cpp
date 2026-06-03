@@ -52,43 +52,50 @@ void Shifter::renderLine(int y) {
     if (y < 0 || y >= curH_) return;
     uint32_t* dst = frame_.data() + static_cast<std::size_t>(y) * curW_;
 
-    if (frameMode_ == Mode::High) {
-        // Haute résolution = moniteur MONOCHROME : blanc (0) / noir (1), sans
-        // tenir compte de la palette couleur (sinon un palette[1] non noir
-        // — ex. rouge sous TOS 1.02 — colore l'écran à tort).
-        const uint32_t base = videoBase + static_cast<uint32_t>(y) * 80u;
-        for (int g = 0; g < curW_ / 16; ++g) {
-            const uint16_t p0 = bus_.read16(base + static_cast<uint32_t>(g) * 2u);
-            for (int bit = 15; bit >= 0; --bit)
-                *dst++ = ((p0 >> bit) & 1) ? 0xFF000000u : 0xFFFFFFFFu;
-        }
-    } else if (frameMode_ == Mode::Medium) {
-        // 2 plans entrelacés : 2 mots = 16 pixels. Index 0..3.
-        const uint32_t base = videoBase + static_cast<uint32_t>(y) * 160u;
-        for (int g = 0; g < curW_ / 16; ++g) {
-            const uint32_t a = base + static_cast<uint32_t>(g) * 4u;
-            const uint16_t p0 = bus_.read16(a + 0);
-            const uint16_t p1 = bus_.read16(a + 2);
-            for (int bit = 15; bit >= 0; --bit) {
-                const int idx = ((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1);
-                *dst++ = stColorToArgb(palette[idx]);
-            }
-        }
+    const int  W      = curW_;
+    const bool hi     = (frameMode_ == Mode::High);
+    const int  planes = hi ? 1 : (frameMode_ == Mode::Medium ? 2 : 4);  // plans entrelacés
+    const int  bpl    = hi ? 80 : 160;                  // octets/ligne AFFICHÉE
+    const int  groupB = 2 * planes;                     // octets pour 16 px (1 mot/plan)
+    const int  groups = W / 16;                         // groupes de 16 px affichés
+    const int  scroll = hwScrollCount;                  // 0 hors STE scrollé ($FF8264/65)
+
+    // Line-offset STE ($FF820F) : le shifter saute `lineWidth` MOTS en fin de ligne
+    // → la ligne suivante démarre `bpl + lineWidth*2` octets plus loin (stride). Sur
+    // ST/STF lineWidth=0 → stride = bpl (rendu strictement inchangé).
+    const uint32_t stride = static_cast<uint32_t>(bpl) + static_cast<uint32_t>(lineWidth) * 2u;
+    const uint32_t base   = videoBase + static_cast<uint32_t>(y) * stride;
+
+    // Décode les pixels de la ligne en index de palette (ou bit mono) dans un tampon.
+    // Quand on scrolle, on décode un groupe de 16 px DE PLUS (lu juste après la
+    // ligne) pour fournir les `scroll` pixels qui entrent par la droite — modèle
+    // prefetch $FF8265 du Shifter STE (cf. Hatari Video_CopyScreenLine*). Le
+    // décalage fin par $FF8264 sans prefetch (départ 16 px plus tard, bord gauche
+    // à 0) et la dérive de compteur du prefetch relèvent de la cycle-accuracy et
+    // ne sont pas distingués ici.
+    const int decodeGroups = scroll ? groups + 1 : groups;
+    uint8_t idx[660];                                   // max (640/16 + 1) * 16 = 656
+    int px = 0;
+    for (int g = 0; g < decodeGroups; ++g) {
+        const uint32_t a  = base + static_cast<uint32_t>(g) * groupB;
+        const uint16_t p0 = bus_.read16(a);
+        const uint16_t p1 = planes > 1 ? bus_.read16(a + 2) : 0;
+        const uint16_t p2 = planes > 2 ? bus_.read16(a + 4) : 0;
+        const uint16_t p3 = planes > 3 ? bus_.read16(a + 6) : 0;
+        for (int bit = 15; bit >= 0; --bit)
+            idx[px++] = static_cast<uint8_t>(((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1)
+                                           | (((p2 >> bit) & 1) << 2) | (((p3 >> bit) & 1) << 3));
+    }
+
+    // Émet W pixels à partir de l'offset `scroll`. En haute résolution = moniteur
+    // MONOCHROME : blanc (0) / noir (1), sans la palette couleur (sinon un
+    // palette[1] non noir — ex. rouge sous TOS 1.02 — colore l'écran à tort).
+    if (hi) {
+        for (int c = 0; c < W; ++c)
+            dst[c] = (idx[c + scroll] & 1) ? 0xFF000000u : 0xFFFFFFFFu;
     } else {
-        // Basse rés. : 4 plans entrelacés, 4 mots = 16 pixels. Index 0..15.
-        const uint32_t base = videoBase + static_cast<uint32_t>(y) * 160u;
-        for (int g = 0; g < curW_ / 16; ++g) {
-            const uint32_t a = base + static_cast<uint32_t>(g) * 8u;
-            const uint16_t p0 = bus_.read16(a + 0);
-            const uint16_t p1 = bus_.read16(a + 2);
-            const uint16_t p2 = bus_.read16(a + 4);
-            const uint16_t p3 = bus_.read16(a + 6);
-            for (int bit = 15; bit >= 0; --bit) {
-                const int idx = ((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1)
-                              | (((p2 >> bit) & 1) << 2) | (((p3 >> bit) & 1) << 3);
-                *dst++ = stColorToArgb(palette[idx]);
-            }
-        }
+        for (int c = 0; c < W; ++c)
+            dst[c] = stColorToArgb(palette[idx[c + scroll]]);
     }
 }
 
@@ -151,16 +158,19 @@ uint32_t Shifter::videoCounter() const {
     const int  bpl  = hi ? 80 : 160;                    // octets/ligne affichée
     const int  disp = hi ? 400 : 200;                   // lignes affichées
     const int  lineStart = hi ? 0 : ((sync & 2) ? 56 : 52);   // début Display-Enable (50/60 Hz)
+    // Stride réel d'une ligne = octets affichés + line-offset STE ($FF820F, en mots).
+    // lineWidth=0 sur ST/STF → stride = bpl (compteur strictement inchangé).
+    const int  stride = bpl + static_cast<int>(lineWidth) * 2;
     const int  line = static_cast<int>(fc / kCyclesPerLine);
     uint32_t addr = videoBase;
     if (line >= disp) {
-        addr += static_cast<uint32_t>(disp) * bpl;      // écran entièrement lu (avant VBL)
+        addr += static_cast<uint32_t>(disp) * stride;   // écran entièrement lu (avant VBL)
     } else {
         const int X = static_cast<int>(fc % kCyclesPerLine);
         int nb = (X - lineStart) >> 1;                  // 2 cycles par octet
         nb &= ~1;                                       // le shifter lit par MOTS
         if (nb < 0) nb = 0; else if (nb > bpl) nb = bpl;
-        addr += static_cast<uint32_t>(line) * bpl + static_cast<uint32_t>(nb);
+        addr += static_cast<uint32_t>(line) * stride + static_cast<uint32_t>(nb);
     }
     return addr & 0xFFFFFF;
 }

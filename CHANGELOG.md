@@ -43,8 +43,13 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - **Compteur d'adresse vidéo cycle-exact** (`$FF8205/07/09`, port `Video_CalculateAddress`
   Hatari : 2 cycles/octet, LineStart 56@50Hz).
 - **Registres STE** (gatés STE) : fine scroll `$FF8264/65`, line width `$FF820F`, base
-  basse `$FF820D`, palette 4 bits/canal, relecture sync. *(Rendu scroll/line-width réel
-  encore à câbler — cf. TODO.)*
+  basse `$FF820D`, palette 4 bits/canal, relecture sync.
+- **Rendu STE câblé** : `renderLine` décode en tampon d'index puis émet avec offset →
+  **fine-scroll** horizontal 0-15 px (décalage gauche + groupe de 16 px lu en plus à droite,
+  modèle prefetch `$FF8265`), **line-offset** `$FF820F` (stride ligne `bpl + lineWidth*2`,
+  aussi dans le compteur `$FF8205/07/09`), **base-basse** `$FF820D` composée dans `videoBase`.
+  Défaut (scroll 0 / line-width 0) byte-identique au boot. *(Distinction prefetch/no-prefetch
+  fine + bordures → cycle-accuracy, cf. TODO.)*
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.

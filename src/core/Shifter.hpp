@@ -80,14 +80,15 @@ public:
 
     // --- Registres STE supplémentaires (gardés à machineIsSte) ---------------
     // Scroll fin horizontal $FF8264 (sans prefetch) / $FF8265 (avec prefetch) :
-    // on ne stocke QUE l'état des registres (le décalage par pixel relève de la
-    // cycle-accuracy, différé). Cf. Hatari Video_HorScroll_Write (HWScrollCount/
-    // HWScrollPrefetch).
+    // décalage de 0-15 px CÂBLÉ dans renderLine (décalage à gauche + groupe de 16 px
+    // lu en plus à droite, modèle prefetch). Cf. Hatari Video_HorScroll_Write
+    // (HWScrollCount/HWScrollPrefetch). La distinction prefetch/no-prefetch fine
+    // (bord gauche, dérive de compteur) relève de la cycle-accuracy, non modélisée.
     uint8_t hwScrollCount = 0;              // 4 bits de scroll fin ($FF8264/65 & 0x0F)
     bool    hwScrollPrefetch = false;       // écriture via $FF8265 → prefetch
-    // Largeur de ligne STE $FF820F (octets ajoutés au compteur shifter en fin de
-    // ligne). On la lit/réécrit ; le câblage dans renderLine reste différé (TODO).
-    uint8_t lineWidth = 0;                  // cf. Hatari Video_LineWidth_WriteByte
+    // Largeur de ligne STE $FF820F (line-offset, en MOTS, ajoutés au stride en fin
+    // de ligne) — CÂBLÉE dans renderLine et videoCounter. Cf. Video_LineWidth_WriteByte.
+    uint8_t lineWidth = 0;
 
 private:
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888

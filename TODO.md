@@ -102,16 +102,21 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       réf. `rs232.c:RS232_HandleUCR + RS232_SetBaudRateFromTimerD`
 
 ## Vidéo / Shifter
-- [ ] **Câbler le rendu** fine-scroll/line-width/base-basse STE (registres déjà relisibles,
-      stride/scroll absents du rendu) _(lot suivant→précision cycle)_ — réf. `video.c`
+- [x] **Rendu fine-scroll / line-width / base-basse STE** — ✅ FAIT. `renderLine` unifié décode
+      en tampon d'index puis émet avec offset : **fine-scroll** `$FF8264/65` (décalage 0-15 px à
+      gauche + groupe de 16 px lu en plus à droite = modèle prefetch `$FF8265`), **line-offset**
+      `$FF820F` (stride ligne = `bpl + lineWidth*2`, aussi dans `videoCounter`), **base-basse**
+      `$FF820D` déjà composée dans `videoBase`. Défaut (scroll=0/lw=0) **byte-identique** au boot.
+      Validé par test ciblé (10/10) + boot EmuTOS-STE/TOS 1.04 inchangés. Reste (précision cycle) :
+      distinction prefetch/no-prefetch fine (bord gauche, dérive compteur +8/ligne), bordures.
 - [ ] **Suppression de bordures** (gauche/droite/haut/bas, tricks 50/60 Hz) — base des démos
       _(précision cycle)_ — réf. `video.c` BORDERMASK_*
 - [ ] **Spec512** (palette par scanline/cycle, 512 couleurs) _(précision cycle)_ — réf.
       `spec512.c` + `video.c:Video_ColorReg_WriteWord`
 - [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) _(risque élevé)_ — réf.
       `video.c:Video_ColorReg_WriteWord`
-- [ ] `$FF820D` en lecture renvoie l'octet bas sur ST au lieu de 0 forcé _(lot suivant)_ —
-      réf. `video.c:Video_BaseLow_ReadByte`
+- [x] `$FF820D` en lecture renvoie 0 forcé sur ST (octet bas STE seulement) — ✅ déjà en place
+      (`Shifter::read8`), confirmé par test ciblé.
 - [ ] **Joypads/paddles/lightpen STE** (`$FF9200-$FF9222`) : directions, boutons, multiplexage,
       entrées analogiques — réf. `joy.c`, MAME
 - [ ] **DIP switches MegaSTE** `$FF9200` : bit HD floppy, désactivation DMA sound, logique
