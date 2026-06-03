@@ -154,17 +154,17 @@ if(EMSCRIPTEN)
     # déploiement PUBLIC (GitHub Pages, cf. .github/workflows/deploy-web.yml), on
     # n'embarque que des contenus LIBRES (EmuTOS GPL + diskA généré) afin de ne pas
     # redistribuer le TOS propriétaire ni les jeux sous copyright. En local
-    # (défaut), on embarque tout rom/ et disks/ pour le confort de test.
+    # (défaut), on embarque tout roms/ et disks/ pour le confort de test.
     option(NEOST_WEB_FREE_ONLY "WASM : n'embarquer que les ROM/disquettes libres" OFF)
     if(NEOST_WEB_FREE_ONLY)
         target_link_options(neost-web PRIVATE
-            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom/etos192us.img@/rom/etos192us.img"
-            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom/etos192fr.img@/rom/etos192fr.img"
-            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom/drivesound@/rom/drivesound"
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/roms/etos192us.img@/roms/etos192us.img"
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/roms/etos192fr.img@/roms/etos192fr.img"
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/roms/drivesound@/roms/drivesound"
             "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/disks/diskA.st@/disks/diskA.st")
     else()
         target_link_options(neost-web PRIVATE
-            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/rom@/rom"
+            "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/roms@/roms"
             "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/disks@/disks")
     endif()
     return()   # sous Emscripten on ne construit QUE le cœur + le frontend web

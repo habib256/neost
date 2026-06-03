@@ -89,6 +89,25 @@ static void saveConfig(const std::string& exeDir, const Config& c) {
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl2.h"
+// --- Pictogrammes Font Awesome 5 Free Solid (fonts/fa-solid-900.ttf, fusionnés dans
+// la police ImGui — cf. chargement dans main()). Chaînes UTF-8 des codepoints FA de la
+// zone à usage privé. À préfixer à un libellé : ICON_FA_REDO " Reset".
+#define ICON_FA_POWER_OFF     "\xef\x80\x91"
+#define ICON_FA_REDO          "\xef\x80\x9e"
+#define ICON_FA_ADJUST        "\xef\x81\x82"
+#define ICON_FA_EJECT         "\xef\x81\x92"
+#define ICON_FA_SAVE          "\xef\x83\x87"
+#define ICON_FA_BOLT          "\xef\x83\xa7"
+#define ICON_FA_DESKTOP       "\xef\x84\x88"
+#define ICON_FA_GAMEPAD       "\xef\x84\x9b"
+#define ICON_FA_KEYBOARD      "\xef\x84\x9c"
+#define ICON_FA_SERVER        "\xef\x88\xb3"
+#define ICON_FA_CLONE         "\xef\x89\x8d"
+#define ICON_FA_MICROCHIP     "\xef\x8b\x9b"
+#define ICON_FA_SIGN_OUT_ALT  "\xef\x8b\xb5"
+#define ICON_FA_COMPACT_DISC  "\xef\x94\x9f"
+#define ICON_FA_MEMORY        "\xef\x94\xb8"
+#define ICON_FA_PALETTE       "\xef\x94\xbf"
 #endif
 
 namespace {
@@ -210,11 +229,12 @@ uint8_t glfwToStScancode(int key) {
     }
 }
 
-// Callback clavier GLFW → IKBD. Échap est réservé à l'hôte (libère la souris),
-// donc jamais transmis au ST.
+// Callback clavier GLFW → IKBD. La touche Suppr (DEL) est réservée à l'hôte (elle
+// libère la souris capturée), donc jamais transmise au ST. Échap, lui, est bien
+// envoyé au ST (beaucoup de jeux/applications s'en servent).
 void onKey(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
     if (!g_ikbd || action == GLFW_REPEAT) return;   // l'IKBD gère sa propre répétition
-    if (key == GLFW_KEY_ESCAPE) return;             // touche hôte (libération souris)
+    if (key == GLFW_KEY_DELETE) return;             // touche hôte (libération souris)
 #if defined(NEOST_WITH_IMGUI)
     if (ImGui::GetIO().WantCaptureKeyboard) return;  // une saisie ImGui a le focus
 #endif
@@ -354,7 +374,16 @@ void drawJoystickWindow(GLFWwindow* win, uint8_t lastJoy0, uint8_t lastJoy1) {
         if (hat && hatN >= 1)
             ImGui::Text("  Hat0 : %s%s%s%s", (hat[0]&GLFW_HAT_UP)?"H":"", (hat[0]&GLFW_HAT_DOWN)?"B":"",
                         (hat[0]&GLFW_HAT_LEFT)?"G":"", (hat[0]&GLFW_HAT_RIGHT)?"D":"");
-        ImGui::Text("  → octet ST de cette manette : $%02X", stjoy::readStick(jid, g_joyDeadzone));
+        // Décomposition analogique / numérique + effet du filtre anti-bloqué.
+        const float thr = (g_joyDeadzone < 0.0f) ? 0.0f : (g_joyDeadzone > 0.95f ? 0.95f : g_joyDeadzone);
+        uint8_t an = 0, dg = 0; stjoy::readStickRaw(jid, thr, an, dg);
+        const uint8_t fin = stjoy::readStick(jid, g_joyDeadzone);
+        ImGui::Text("  analogique $%02X | numérique brut $%02X", an, dg);
+        if ((dg & ~fin) & ~an)
+            ImGui::TextColored(ImVec4(1.0f,0.7f,0.3f,1.0f),
+                               "  filtre anti-bloqué : bits numériques collés ignorés ($%02X)",
+                               uint8_t((dg & ~fin) & ~an));
+        ImGui::Text("  → octet ST envoyé : $%02X", fin);
         ImGui::Separator();
     }
     if (nPresent == 0) ImGui::TextDisabled("Aucune manette détectée. (Clavier : active l'émulation ci-dessus.)");
@@ -362,16 +391,22 @@ void drawJoystickWindow(GLFWwindow* win, uint8_t lastJoy0, uint8_t lastJoy1) {
     ImGui::End();
 }
 
-// Fenêtre de l'écran ST : c'est la fenêtre de BASE (toujours là, ancrée sous les
-// barres, jamais au premier plan). L'image fait toujours 640×400 (taille du mode
-// monochrome) ; les 3 résolutions y sont normalisées. Clic = capture souris.
+// Fenêtre de l'écran ST : fenêtre de BASE (toujours là, jamais au premier plan).
+// Placée sous les barres au 1er lancement, puis DÉPLAÇABLE par glissé de sa barre de
+// titre (ImGui mémorise sa position). L'image fait toujours 640×400 (taille du mode
+// monochrome) ; les 3 résolutions y sont normalisées. Clic dans l'image = capture souris.
 void drawStScreen(const GlScreen& s, bool captured, bool& reqCapture, float topOffset) {
-    ImGui::SetNextWindowPos(ImVec2(0.0f, topOffset), ImGuiCond_Always);
-    ImGui::Begin("Atari ST Screen", nullptr,
-                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+    // FirstUseEver (et non Always) : on ne fixe la position qu'au tout 1er affichage,
+    // sinon la fenêtre serait re-ancrée à chaque trame et impossible à déplacer.
+    ImGui::SetNextWindowPos(ImVec2(0.0f, topOffset), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse |
                  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize |
-                 ImGuiWindowFlags_NoBringToFrontOnFocus);
-    ImGui::TextDisabled(captured ? "Souris capturée — Échap pour la libérer"
+                 ImGuiWindowFlags_NoBringToFrontOnFocus;
+    // Souris capturée → tout le mouvement va au ST (curseur verrouillé) : on FIGE la
+    // fenêtre (pas de glissé). Une fois libérée (DEL), elle redevient déplaçable.
+    if (captured) flags |= ImGuiWindowFlags_NoMove;
+    ImGui::Begin("Atari ST Screen", nullptr, flags);
+    ImGui::TextDisabled(captured ? "Souris capturée — Suppr (DEL) pour la libérer"
                                  : "Clic dans l'écran pour capturer la souris (curseur GEM)");
     const ImTextureID id = (ImTextureID)(intptr_t)s.tex;
     ImGui::Image(id, ImVec2(640.0f, 400.0f));           // taille mode monochrome (rés. normalisées)
@@ -467,7 +502,7 @@ void drawCartLibrary(const std::string& cartsDir, const std::string& mounted,
 } // namespace
 
 int main(int argc, char** argv) {
-    // Répertoire de l'exécutable (pour retrouver rom/ et disk/ depuis build/).
+    // Répertoire de l'exécutable (pour retrouver roms/ et disk/ depuis build/).
     const std::string exeDir = [&] {
         const std::string a0 = argv[0] ? argv[0] : "";
         const auto i = a0.find_last_of('/');
@@ -475,7 +510,7 @@ int main(int argc, char** argv) {
     }();
     // Préférences mémorisées (dernier ROM + type de moniteur).
     Config cfg = loadConfig(exeDir);
-    const std::string defRom = cfg.rom.empty() ? std::string("rom/etos192us.img") : cfg.rom;
+    const std::string defRom = cfg.rom.empty() ? std::string("roms/etos192us.img") : cfg.rom;
     // Sans argument, ./neost recharge le dernier ROM (ou EmuTOS US par défaut).
     const std::string romLogical = (argc > 1) ? std::string(argv[1]) : defRom;
     const std::string tosPath  = resolveData(romLogical, exeDir);
@@ -484,7 +519,7 @@ int main(int argc, char** argv) {
     const std::string cartPath = cfg.cart.empty() ? std::string() : resolveData(cfg.cart, exeDir);
     const std::string disksDir = resolveData("disks", exeDir);   // dossier pour la Disk Library
     const std::string cartsDir = resolveData("carts", exeDir);   // dossier pour la Cart Library
-    const std::string romsDir  = resolveData("rom", exeDir);     // dossier pour le sélecteur de ROM
+    const std::string romsDir  = resolveData("roms", exeDir);     // dossier pour le sélecteur de ROM
 
     g_dbgMouse = std::getenv("NEOST_DEBUG_MOUSE") != nullptr;
     g_dbgJoy   = std::getenv("NEOST_DEBUG_JOY")   != nullptr;
@@ -519,10 +554,10 @@ int main(int argc, char** argv) {
 
     // Son : un seul périphérique (Audio) mixe le YM2149 ET les bruits mécaniques
     // du lecteur. Le cœur émet des FdcSound, DriveSound joue les WAV de
-    // rom/drivesound/ (jeu « epson_smd480l » = vrai lecteur) et Audio les
+    // roms/drivesound/ (jeu « epson_smd480l » = vrai lecteur) et Audio les
     // additionne au flux PSG (cf. Audio::render).
     DriveSound drive;
-    bool driveSoundOn = drive.init(resolveData("rom/drivesound/epson_smd480l", exeDir), 48000);
+    bool driveSoundOn = drive.init(resolveData("roms/drivesound/epson_smd480l", exeDir), 48000);
     if (driveSoundOn)
         machine.fdc.setSoundSink([&drive](FdcSound e) { drive.onEvent(e); });
     Audio audio(machine.psg, driveSoundOn ? &drive : nullptr, &machine.dmasnd);
@@ -563,12 +598,40 @@ int main(int argc, char** argv) {
 #if defined(NEOST_WITH_IMGUI)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    // Police de l'interface : DejaVu Sans (dossier fonts/), nettement plus lisible que
+    // la police bitmap intégrée d'ImGui. Doit être chargée AVANT le 1er rendu (l'atlas
+    // est construit à la 1re trame). Repli silencieux sur la police par défaut si absente.
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        const std::string fontPath = resolveData("fonts/DejaVuSans.ttf", exeDir);
+        if (fileExists(fontPath)) {
+            io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15.0f);
+        } else {
+            io.Fonts->AddFontDefault();   // base toujours présente (requis avant la fusion FA)
+            std::fprintf(stderr, "[main] police %s introuvable — police ImGui par défaut.\n",
+                         fontPath.c_str());
+        }
+        // Fusionne les pictogrammes Font Awesome dans la police courante (menus/boutons).
+        const std::string faPath = resolveData("fonts/fa-solid-900.ttf", exeDir);
+        if (fileExists(faPath)) {
+            static const ImWchar fa_ranges[] = { 0xf000, 0xf8ff, 0 };
+            ImFontConfig fcfg;
+            fcfg.MergeMode = true;            // ajoute les glyphes FA à la police de base
+            fcfg.PixelSnapH = true;
+            fcfg.GlyphMinAdvanceX = 14.0f;    // chasse fixe des icônes (alignement)
+            fcfg.GlyphOffset.y = 1.0f;        // léger recentrage vertical sur la ligne de texte
+            io.Fonts->AddFontFromFileTTF(faPath.c_str(), 13.0f, &fcfg, fa_ranges);
+        } else {
+            std::fprintf(stderr, "[main] police d'icônes %s introuvable — pas de pictogrammes.\n",
+                         faPath.c_str());
+        }
+    }
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL2_Init();
 #endif
 
-    std::printf("[main] Clic dans l'écran : capture souris | Échap : libère | "
+    std::printf("[main] Clic dans l'écran : capture souris | Suppr (DEL) : libère | "
                 "bouton Reset dans la fenêtre CPU | fermer la fenêtre : quitter\n");
     std::printf("[main] Joystick : manette USB auto (port 1) | F11 = émulation "
                 "clavier (flèches + Ctrl droit) | menu « Joystick »\n");
@@ -585,9 +648,9 @@ int main(int argc, char** argv) {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();                      // les transitions de boutons → onMouseButton
 
-        // Échap libère la souris si elle est capturée (le curseur GEM est piloté
-        // tant que la capture est active).
-        if (g_mouseCaptured && glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        // Suppr (DEL) libère la souris si elle est capturée (le curseur GEM est piloté
+        // tant que la capture est active). Échap, lui, reste disponible pour le ST.
+        if (g_mouseCaptured && glfwGetKey(window, GLFW_KEY_DELETE) == GLFW_PRESS) {
             g_mouseCaptured = false;
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
@@ -693,7 +756,7 @@ int main(int argc, char** argv) {
                         }
                     ImGui::EndMenu();
                 }
-                // Image TOS/EmuTOS (.img/.rom du dossier rom/), chargée à chaud.
+                // Image TOS/EmuTOS (.img/.rom du dossier roms/), chargée à chaud.
                 if (ImGui::BeginMenu("ROM")) {
                     std::error_code ec;
                     const std::string curRom = fs::path(cfg.rom).filename().string();
@@ -709,7 +772,7 @@ int main(int argc, char** argv) {
                             }
                         }
                     } else {
-                        ImGui::TextDisabled("(dossier rom/ introuvable)");
+                        ImGui::TextDisabled("(dossier roms/ introuvable)");
                     }
                     ImGui::EndMenu();
                 }

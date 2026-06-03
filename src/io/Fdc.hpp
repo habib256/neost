@@ -32,7 +32,7 @@ class Mfp;
 
 // Événements sonores « mécaniques » du lecteur (purement cosmétiques). Le cœur
 // ne fait que les SIGNALER ; c'est le frontend qui joue les échantillons WAV
-// (miniaudio côté GUI, Web Audio côté WASM) — cf. rom/drivesound/. Ainsi
+// (miniaudio côté GUI, Web Audio côté WASM) — cf. roms/drivesound/. Ainsi
 // neost_core reste sans aucune dépendance audio.
 enum class FdcSound {
     MotorOn,   // accès disque → moteur énergisé (boucle ronron + spin-up si arrêté)

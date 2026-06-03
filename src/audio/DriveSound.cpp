@@ -5,7 +5,7 @@
 //  contente d'appeler l'API haut niveau ma_engine_* / ma_sound_*, liée depuis
 //  Audio.cpp. Le moteur tourne en mode « sans périphérique » : sa sortie est
 //  tirée par Audio (mix) puis additionnée au YM2149. Les WAV proviennent de
-//  rom/drivesound/ (cf. son README).
+//  roms/drivesound/ (cf. son README).
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================

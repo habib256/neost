@@ -42,31 +42,35 @@ inline uint8_t kbdBit(int glfwKey) {
     }
 }
 
-// État d'une manette physique GLFW `jid` → octet ST. 0 si absente. `deadzone` =
-// zone morte centrale [0,1) : un axe analogique n'est considéré « poussé » que si
-// |valeur| dépasse ce seuil — évite le drift d'un stick mal centré (réglable par
-// l'utilisateur). Le D-pad (numérique) n'est pas concerné.
+// Octet ST d'une manette, AVANT filtrage anti-bloqué (cf. readStick). Sépare deux
+// classes de bits dans `analog`/`digital` :
+//  - analog  : directions venant d'un STICK analogique → soumises à la `deadzone`
+//    (un axe au repos non centré / un léger drift sont filtrés par le seuil).
+//  - digital : directions venant d'un D-PAD/HAT + le FEU des boutons → numériques.
+// Cette séparation permet d'appliquer le filtre anti-bloqué AU SEUL numérique
+// (cf. readStick), sans jamais brider la même direction venant du stick.
 //  - Natif (GLFW complet) : API gamepad (mapping SDL : Xbox/PS/Switch… reconnus)
-//    quand disponible, sinon repli axes/boutons bruts.
-//  - Web (port GLFW d'Emscripten) : pas de glfwGetGamepadState → on lit directement
-//    les axes/boutons bruts (l'API Gamepad du navigateur expose le « standard
-//    mapping » : axes 0/1 = stick gauche, boutons 12-15 = D-pad).
-inline uint8_t readStick(int jid, float deadzone) {
-    if (!glfwJoystickPresent(jid)) return 0;
-    const float thr = (deadzone < 0.0f) ? 0.0f : (deadzone > 0.95f ? 0.95f : deadzone);
-    uint8_t b = 0;
+//    quand disponible, sinon repli axes/boutons/hat bruts.
+//  - Web (port GLFW d'Emscripten) : pas de glfwGetGamepadState → lecture brute
+//    (l'API Gamepad du navigateur expose le « standard mapping » : axes 0/1 =
+//    stick gauche, boutons 12-15 = D-pad).
+inline void readStickRaw(int jid, float thr, uint8_t& analog, uint8_t& digital) {
+    analog = digital = 0;
 
 #ifndef __EMSCRIPTEN__
     GLFWgamepadstate gs;
     if (glfwGetGamepadState(jid, &gs)) {         // manette mappée (gamepad)
-        if (gs.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP])    b |= UP;
-        if (gs.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN])  b |= DOWN;
-        if (gs.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT])  b |= LEFT;
-        if (gs.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT]) b |= RIGHT;
-        if (gs.axes[GLFW_GAMEPAD_AXIS_LEFT_Y] < -thr) b |= UP;
-        if (gs.axes[GLFW_GAMEPAD_AXIS_LEFT_Y] >  thr) b |= DOWN;
-        if (gs.axes[GLFW_GAMEPAD_AXIS_LEFT_X] < -thr) b |= LEFT;
-        if (gs.axes[GLFW_GAMEPAD_AXIS_LEFT_X] >  thr) b |= RIGHT;
+        // Stick gauche → analogique (deadzone).
+        if (gs.axes[GLFW_GAMEPAD_AXIS_LEFT_Y] < -thr) analog |= UP;
+        if (gs.axes[GLFW_GAMEPAD_AXIS_LEFT_Y] >  thr) analog |= DOWN;
+        if (gs.axes[GLFW_GAMEPAD_AXIS_LEFT_X] < -thr) analog |= LEFT;
+        if (gs.axes[GLFW_GAMEPAD_AXIS_LEFT_X] >  thr) analog |= RIGHT;
+        // D-pad → numérique (anti-bloqué : un hat/dpad lu « collé » au repos, ex.
+        // DualShock 4 en Bluetooth/macOS, est ainsi neutralisé en aval).
+        if (gs.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP])    digital |= UP;
+        if (gs.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN])  digital |= DOWN;
+        if (gs.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT])  digital |= LEFT;
+        if (gs.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT]) digital |= RIGHT;
         // Joystick ST = un seul bouton de feu : n'importe quel bouton d'action
         // (A/B/X/Y + gâchettes) le déclenche (D-pad et boutons système exclus).
         for (int i = 0; i <= GLFW_GAMEPAD_BUTTON_LAST; ++i)
@@ -74,44 +78,59 @@ inline uint8_t readStick(int jid, float deadzone) {
                 i != GLFW_GAMEPAD_BUTTON_DPAD_UP   && i != GLFW_GAMEPAD_BUTTON_DPAD_DOWN &&
                 i != GLFW_GAMEPAD_BUTTON_DPAD_LEFT && i != GLFW_GAMEPAD_BUTTON_DPAD_RIGHT &&
                 i != GLFW_GAMEPAD_BUTTON_START     && i != GLFW_GAMEPAD_BUTTON_BACK &&
-                i != GLFW_GAMEPAD_BUTTON_GUIDE) { b |= FIRE; break; }
-        return b;
+                i != GLFW_GAMEPAD_BUTTON_GUIDE) { digital |= FIRE; break; }
+        return;
     }
 #endif
 
-    // Manette brute : stick gauche (axes 0/1) + boutons. Si la manette expose au
-    // moins 16 boutons (« standard mapping » navigateur/SDL), les boutons 12-15
-    // sont le D-pad → traités comme directions (et non comme feu) ; sinon tout
-    // bouton est du feu (vieux sticks à un seul bouton réel).
+    // Manette brute : stick gauche (axes 0/1) → analogique ; hat + boutons →
+    // numérique. Si la manette expose au moins 16 boutons (« standard mapping »
+    // navigateur/SDL), les boutons 12-15 sont le D-pad ; sinon tout bouton = feu.
     int axN = 0, btN = 0, hatN = 0;
     const float*         ax  = glfwGetJoystickAxes(jid, &axN);
     const unsigned char* bt  = glfwGetJoystickButtons(jid, &btN);
     const unsigned char* hat = glfwGetJoystickHats(jid, &hatN);
-    const bool haveHat = (hat && hatN >= 1);
-    // Hat / POV (D-pad de beaucoup de manettes USB génériques) : numérique, donc
-    // FIABLE même si un axe analogique n'est pas centré au repos. Quand un hat
-    // existe, il fait autorité pour les directions et on IGNORE les axes
-    // analogiques bruts — c'est ce qui évite un « toujours à gauche/droite » sur
-    // une manette non reconnue dont l'axe 0/1 repose à une valeur extrême.
-    if (haveHat) {
-        if (hat[0] & GLFW_HAT_UP)    b |= UP;
-        if (hat[0] & GLFW_HAT_DOWN)  b |= DOWN;
-        if (hat[0] & GLFW_HAT_LEFT)  b |= LEFT;
-        if (hat[0] & GLFW_HAT_RIGHT) b |= RIGHT;
-    } else if (ax && axN >= 2) {
-        if (ax[0] < -thr) b |= LEFT;  if (ax[0] > thr) b |= RIGHT;
-        if (ax[1] < -thr) b |= UP;    if (ax[1] > thr) b |= DOWN;
+    if (ax && axN >= 2) {
+        if (ax[0] < -thr) analog |= LEFT;  if (ax[0] > thr) analog |= RIGHT;
+        if (ax[1] < -thr) analog |= UP;    if (ax[1] > thr) analog |= DOWN;
+    }
+    if (hat && hatN >= 1) {
+        if (hat[0] & GLFW_HAT_UP)    digital |= UP;
+        if (hat[0] & GLFW_HAT_DOWN)  digital |= DOWN;
+        if (hat[0] & GLFW_HAT_LEFT)  digital |= LEFT;
+        if (hat[0] & GLFW_HAT_RIGHT) digital |= RIGHT;
     }
     if (bt) {
         const bool standard = btN >= 16;
         if (standard) {
-            if (bt[12]) b |= UP;   if (bt[13]) b |= DOWN;
-            if (bt[14]) b |= LEFT; if (bt[15]) b |= RIGHT;
+            if (bt[12]) digital |= UP;   if (bt[13]) digital |= DOWN;
+            if (bt[14]) digital |= LEFT; if (bt[15]) digital |= RIGHT;
         }
         const int fireMax = standard ? 12 : btN;   // exclut le D-pad du feu
-        for (int i = 0; i < fireMax; ++i) if (bt[i]) { b |= FIRE; break; }
+        for (int i = 0; i < fireMax; ++i) if (bt[i]) { digital |= FIRE; break; }
     }
-    return b;
+}
+
+// État d'une manette physique GLFW `jid` → octet ST (bits UP/DOWN/LEFT/RIGHT/FIRE).
+// 0 si absente. `deadzone` = zone morte centrale [0,0.95] des STICKS analogiques.
+//
+// Filtre ANTI-BLOQUÉ sur les bits NUMÉRIQUES (D-pad/hat/feu) : un bit numérique
+// n'est émis que s'il a été observé RELÂCHÉ (à 0) au moins une fois depuis la
+// connexion de la manette. Cela neutralise une entrée numérique « collée » dès le
+// départ (hat de DualShock 4 lu LEFT au repos, bouton fantôme…) tout en laissant
+// passer la MÊME direction venant du stick analogique (jamais filtrée). Une vraie
+// pression (qui démarre relâchée) fonctionne normalement. La calibration est par
+// manette et repart à zéro à la déconnexion.
+inline uint8_t readStick(int jid, float deadzone) {
+    static uint8_t trustedDigital[GLFW_JOYSTICK_LAST + 1] = {0};  // bits relâchés ≥ 1 fois
+    if (!glfwJoystickPresent(jid)) { trustedDigital[jid] = 0; return 0; }
+    const float thr = (deadzone < 0.0f) ? 0.0f : (deadzone > 0.95f ? 0.95f : deadzone);
+
+    uint8_t analog = 0, digital = 0;
+    readStickRaw(jid, thr, analog, digital);
+
+    trustedDigital[jid] |= uint8_t(~digital);   // tout bit numérique à 0 → « de confiance »
+    return uint8_t(analog | (digital & trustedDigital[jid]));
 }
 
 // Compose l'état des deux ports ST à partir de l'hôte et le pose sur l'IKBD.

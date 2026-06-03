@@ -61,18 +61,18 @@ git submodule update --init --recursive
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j                          # cibles : neost, neost-headless, neost_core
 ./build/neost                                   # auto : dernier ROM (neost.cfg) ou EmuTOS US
-./build/neost rom/etos192fr.img disks/diskA.st  # ROM + disquette explicites
+./build/neost roms/etos192fr.img disks/diskA.st  # ROM + disquette explicites
 ```
 
-> Les chemins par défaut (`rom/`, `disks/`) sont résolus depuis le répertoire courant
+> Les chemins par défaut (`roms/`, `disks/`) sont résolus depuis le répertoire courant
 > **et** depuis l'exécutable — `./neost` marche aussi bien depuis la racine que `build/`.
 
 ### Contrôles
 
-| Touche | Action                       |
-|--------|------------------------------|
-| F12    | Reset physique virtuel       |
-| Échap  | Libère la capture souris     |
+| Touche     | Action                       |
+|------------|------------------------------|
+| F12        | Reset physique virtuel       |
+| Suppr (DEL)| Libère la capture souris     |
 
 Clic dans l'écran ST = capture de la souris (curseur GEM) ; le clavier est routé vers
 l'IKBD. Le GUI ajoute un menu **Machine** (modèle, mémoire, cœur CPU) et une
@@ -81,11 +81,11 @@ l'IKBD. Le GUI ajoute un menu **Machine** (modèle, mémoire, cœur CPU) et une
 ## ROM : EmuTOS par défaut (libre)
 
 Les TOS Atari d'origine sont propriétaires et **ne sont pas redistribués** ici. NeoST
-utilise par défaut **[EmuTOS](https://emutos.sourceforge.io/)** (GPL), dans `rom/` :
+utilise par défaut **[EmuTOS](https://emutos.sourceforge.io/)** (GPL), dans `roms/` :
 
 ```
-rom/etos192fr.img   EmuTOS 192 Ko, français  (mappé à $FC0000, par défaut)
-rom/etos192us.img   EmuTOS 192 Ko, US
+roms/etos192fr.img   EmuTOS 192 Ko, français  (mappé à $FC0000, par défaut)
+roms/etos192us.img   EmuTOS 192 Ko, US
 ```
 
 ## Disquettes

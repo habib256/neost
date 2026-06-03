@@ -82,7 +82,7 @@ est CORRECT** (Hatari n'émule pas le VME, FPU_NONE par défaut).
 Lecteur A monte une image `.st` (`.msa` et `.dim` aussi, détectés par contenu). Outils : `tools/make_floppy.py` (régénère
 `disks/diskA.st`), `tools/fetch_disk.py <url>` (télécharge depuis planetemu via scrapling — à
 n'utiliser que pour du domaine public / freeware / démos). ROMs TOS propriétaires → défaut
-**EmuTOS** (libre) dans `rom/`. ⚠ Build EmuTOS selon la machine (cf. readmes EmuTOS) :
+**EmuTOS** (libre) dans `roms/`. ⚠ Build EmuTOS selon la machine (cf. readmes EmuTOS) :
 **192 Ko** (`etos192*`, se présente « Atari ST »/TOS 1.4) = **ST / Mega ST seulement**
 (pas d'autodétection du matériel additionnel, 68000 only) ; **256 Ko** (`etos256us/fr`,
 « STe/Mega STe », TOS 2-like) = **STE / Mega STE** (programme le SCU). NeoST bascule

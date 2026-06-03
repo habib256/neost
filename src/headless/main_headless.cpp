@@ -41,7 +41,7 @@ void usage() {
         "  --loopback        « branche » le connecteur de bouclage RS232 (test S série)\n"
         "  --cart FILE       monte une cartouche ($FA0000) : Test Kit diagnostic, etc.\n"
         "  --screenshot PPM  dump du framebuffer final au format PPM\n"
-        "  rom               image TOS (défaut rom/etos192fr.img)\n");
+        "  rom               image TOS (défaut roms/etos192fr.img)\n");
 }
 
 // Dump du framebuffer décodé en PPM binaire (P6) — comparable visuellement.
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     std::string diskPath   = "disks/diskA.st";
     std::string diskBPath;                       // lecteur B (optionnel, --diskb)
     bool        fastFdc    = false;   // FDC rapide (--fastfdc) : délais commande/transfert ÷10
-    std::string romPath    = "rom/etos192us.img";
+    std::string romPath    = "roms/etos192us.img";
     std::string cartPath;
     bool        regs       = false;
     bool        irq        = false;

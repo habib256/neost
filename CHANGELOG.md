@@ -144,11 +144,13 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - **Adresse DMA relisible** (`$FF8609/0B/0D`, incrémente par blocs de 16 o pendant le transfert
   — corrige « DMA count error »). FIFO/compteur de secteurs, bit erreur DMA. **Lecteur B**
   (`--diskb`, PSG port A bits 1/2).
-- **FDC rapide** (`--fastfdc` headless, `Fdc::setFastFdc`, équivalent `hatari --fastfdc`) :
-  divise les délais de **commande/transfert** par 10 → accès disque ~10× plus courts (ex.
-  Arkanoid charge son `.PRG` à la trame ~300 au lieu de ~1000). La **rotation** (index,
-  spin-up, arrêt moteur) reste au rythme réel, comme Hatari — d'où une bonne compat (Arkanoid
-  reste jouable) ; ⚠ peut néanmoins casser les loaders maison très sensibles au timing.
+- **FDC rapide** (équivalent `hatari --fastfdc`) : divise les délais de **commande/transfert**
+  par 10 → accès disque ~10× plus courts (ex. Arkanoid charge son `.PRG` à la trame ~300 au
+  lieu de ~1000). La **rotation** (index, spin-up, arrêt moteur) reste au rythme réel, comme
+  Hatari — d'où une bonne compat (Arkanoid reste jouable) ; ⚠ peut néanmoins casser les loaders
+  maison très sensibles au timing. Réglable partout : **`--fastfdc`** (headless), **menu GUI**
+  « Machine → FDC rapide » (effet immédiat, sans reset), **`fastfdc=` dans `neost.cfg`**
+  (mémorisé) ; API `Fdc::setFastFdc()`.
 - **Write-protect auto-détecté** depuis les droits du fichier ; **changement de média**
   (Mediach via bascule WPRT à l'éjection/insertion à chaud).
 - Formats : `.st` (brut), `.msa` (décompression RLE), `.dim` (en-tête 32 o retiré, port
@@ -175,7 +177,7 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   (16 décalages de 8 cyc, `Scheduler::MICROWIRE` — les diags qui pollent jusqu'à 0 OK).
 - **Bruits mécaniques du lecteur** (immersion, pas du matériel — repris de STeem SSE) :
   le cœur émet des événements `FdcSound` (moteur/pas/seek/index) via un sink ; frontends
-  GUI (`DriveSound`, miniaudio) et WASM (Web Audio). WAV embarqués dans `rom/drivesound/`.
+  GUI (`DriveSound`, miniaudio) et WASM (Web Audio). WAV embarqués dans `roms/drivesound/`.
 - **Son PSG en WASM** : export `neost_audio_render` tiré par un `ScriptProcessorNode`.
 
 ## Bus error & cartouches de diagnostic

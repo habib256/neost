@@ -12,7 +12,7 @@ s'appuie sur `--run-vbls` qui fait sortir Hatari tout seul.
 
 ```sh
 export SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy   # aucune fenêtre / audio (CI, headless)
-hatari --machine megaste --tos rom/etos256us.img --monitor rgb \
+hatari --machine megaste --tos roms/etos256us.img --monitor rgb \
        --sound off --fast-forward on --confirm-quit off --statusbar off \
        --alert-level fatal \
        --run-vbls 400 \
@@ -70,7 +70,7 @@ ffmpeg -y -i /tmp/h.avi -vf "select=eq(n\,300)" -frames:v 1 -update 1 /tmp/h.png
 
 ```sh
 curl -sL -o /tmp/e.zip "https://downloads.sourceforge.net/project/emutos/emutos/1.4/emutos-256k-1.4.zip"
-unzip -o /tmp/e.zip -d /tmp/e && cp /tmp/e/emutos-256k-1.4/etos256us.img rom/
+unzip -o /tmp/e.zip -d /tmp/e && cp /tmp/e/emutos-256k-1.4/etos256us.img roms/
 ```
 Le paquet `256k` contient toutes les langues (`etos256us.img`, `etos256fr.img`, …). Le
 paquet `192k` est pour ST/STE (TOS 1.x), le `256k` pour Mega ST/STE/TT/Falcon (TOS 2.x/3.x).

@@ -339,7 +339,7 @@ EMSCRIPTEN_KEEPALIVE void neost_audio_render(float* buf, int frames, int rate) {
 } // extern "C"
 
 int main(int argc, char** argv) {
-    const std::string romPath  = (argc > 1) ? argv[1] : "/rom/etos192us.img";
+    const std::string romPath  = (argc > 1) ? argv[1] : "/roms/etos192us.img";
     const std::string diskPath = (argc > 2) ? argv[2] : "/disks/diskA.st";
 
     // Cœur CPU choisi AVANT le démarrage via le paramètre d'URL ?cpu=musashi|moira

@@ -1,7 +1,7 @@
 // =============================================================================
 //  DriveSound.hpp — Bruits mécaniques du lecteur de disquette (GUI natif).
 //
-//  Rejoue les échantillons WAV de rom/drivesound/ (ronron du moteur en boucle,
+//  Rejoue les échantillons WAV de roms/drivesound/ (ronron du moteur en boucle,
 //  « clic » de pas, bruit de seek, léger « tic » d'index) en réaction aux
 //  événements FdcSound émis par le cœur (cf. Fdc::setSoundSink).
 //

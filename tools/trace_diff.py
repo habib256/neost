@@ -11,7 +11,7 @@
 #  Générer les traces :
 #    NeoST  : ./build/neost-headless --frames N --trace neost.txt --regs --irq
 #    Hatari : hatari --trace cpu_disasm --log-file hatari.txt \
-#                    --tos rom/etos192us.img --disk-a disks/diskA.st <...>
+#                    --tos roms/etos192us.img --disk-a disks/diskA.st <...>
 #             (ajouter cpu_regs au --trace pour comparer aussi les registres)
 #
 #  Exemples :

@@ -118,8 +118,8 @@
       // Peuple le menu des disquettes depuis le FS virtuel : montre exactement ce
       // qui a été embarqué (tout en local, EmuTOS+diskA pour le déploiement libre).
       populateSelect('diskSel', '/disks', /\.(st|msa)$/i);
-      populateSelect('romSel', '/rom', /\.(img|rom|tos|bin)$/i, '/rom/etos192us.img');
-      driveLoad();   // précharge les WAV de bruits de lecteur (rom/drivesound/)
+      populateSelect('romSel', '/roms', /\.(img|rom|tos|bin)$/i, '/roms/etos192us.img');
+      driveLoad();   // précharge les WAV de bruits de lecteur (roms/drivesound/)
       psgAudioStart();   // branche la sortie son du YM2149 (Web Audio)
     };
 
@@ -147,9 +147,9 @@
     // codes dans l'ordre de l'énum FdcSound : 0 = moteur ON (boucle + spin-up),
     // 1 = pas de tête (clic), 2 = seek, 3 = moteur OFF (coupé par le cœur après
     // ~10 tours d'inactivité), 4 = impulsion d'index (léger « tic » 1/tour).
-    // Les échantillons WAV sont embarqués dans le FS virtuel (rom/drivesound/).
+    // Les échantillons WAV sont embarqués dans le FS virtuel (roms/drivesound/).
     var drive = { ctx: null, buf: {}, motorSrc: null, psgNode: null, enabled: true,
-                  dir: '/rom/drivesound/epson_smd480l/' };
+                  dir: '/roms/drivesound/epson_smd480l/' };
 
     function driveLoad() {
       try { drive.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
