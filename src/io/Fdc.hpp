@@ -67,7 +67,7 @@ public:
     // Monte/éjecte une image (.st ou .msa) dans le lecteur `drive` (0 = A, 1 = B).
     bool loadImage(const std::string& path, int drive = 0);
     void eject(int drive = 0);
-    bool inserted(int drive = 0) const { return !drive_[drive & 1].image.empty(); }
+    bool inserted(int drive = 0) const { return drive_[drive & 1].present(); }
     const std::string& mountedPath(int drive = 0) const { return drive_[drive & 1].path; }
 
     // MMIO $FF8600-$FF860F (accès octets ; le 68000 y fait des mots big-endian).
@@ -93,6 +93,9 @@ private:
         enum ImgType { IMG_ST = 0, IMG_STX = 1 };
         int  imgType = IMG_ST;
         std::unique_ptr<StxImage> stx;          // non nul ⇔ imgType == IMG_STX
+
+        // Un disque est présent si on a des octets .ST OU une image STX montée.
+        bool present() const { return !image.empty() || stx != nullptr; }
 
         // Détection de changement de média (Mediach) à chaud (cf. Hatari
         // floppy.c:Floppy_DriveTransition*) : une éjection/insertion à chaud force
@@ -244,6 +247,7 @@ private:
 
     // Champ ID du prochain secteur (rempli par nextSectorID()).
     uint8_t  nextID_TR_ = 0, nextID_SR_ = 1, nextID_LEN_ = 2, nextID_CRCOK_ = 1;
+    int      stxNextSector_ = 0;     // index du secteur STX trouvé (cf. nextSectorIDStx)
 
     // Position rotationnelle : cycle CPU de la dernière impulsion d'index (0 =
     // inconnue) et PRNG déterministe pour la phase initiale (reproductible →

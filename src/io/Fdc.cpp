@@ -17,6 +17,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 #include <fstream>
 
 #include <sys/stat.h>
@@ -222,7 +223,7 @@ static bool decodeDim(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out
 
 bool Fdc::loadImage(const std::string& path, int drive) {
     FloppyDisk& dk = drive_[drive & 1];
-    const bool wasPresent = !dk.image.empty();   // disque déjà monté → échange à chaud
+    const bool wasPresent = dk.present();   // disque déjà monté → échange à chaud
     std::ifstream f(path, std::ios::binary | std::ios::ate);
     if (!f) { std::fprintf(stderr, "[FDC] image introuvable : %s\n", path.c_str()); return false; }
     const std::streamsize n = f.tellg();
@@ -231,14 +232,35 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     f.read(reinterpret_cast<char*>(raw.data()), n);
 
     // Format STX (Pasti, en-tête « RSY\0 ») : image disque BAS NIVEAU (pistes/secteurs
-    // bruts, IDs, CRC, bits faibles/timing) servant à préserver les protections. Notre
-    // modèle « _ST » est purement logique (secteur = offset linéaire), INCOMPATIBLE.
-    // On REFUSE proprement au lieu de monter les octets bruts comme une fausse .st.
+    // bruts, IDs réels, CRC, bits fuzzy, timing) qui préserve les PROTECTIONS. On la
+    // PARSE (StxImage) et le FDC dispatche vers le chemin _STX (champ ID véritable,
+    // statut par secteur, fuzzy/timing) au lieu du modèle .ST « secteur = offset ».
     if (raw.size() > 4 && raw[0] == 'R' && raw[1] == 'S' && raw[2] == 'Y' && raw[3] == 0) {
-        std::fprintf(stderr, "[FDC] format STX (Pasti) non supporté : %s — image bas niveau "
-                             "(protections) hors du modèle FDC actuel ; non montée.\n", path.c_str());
-        return false;
+        auto stx = std::make_unique<StxImage>();
+        if (!stx->parse(std::move(raw))) {
+            std::fprintf(stderr, "[FDC] image STX illisible : %s — non montée.\n", path.c_str());
+            return false;
+        }
+        dk.image.clear();
+        dk.imgType = FloppyDisk::IMG_STX;
+        dk.sides   = stx->sides();
+        const int tps = stx->tracksPerSide();
+        dk.stx     = std::move(stx);
+        dk.raw     = false;
+        dk.path    = path;
+        if (sched_) {                            // changement de média à chaud (cf. plus bas)
+            dk.transitionPhase    = wasPresent ? FloppyDisk::TRANS_EJECT : FloppyDisk::TRANS_INSERT;
+            dk.transitionDeadline = sched_->now() + 4 * 160256;
+        }
+        dk.writeProtect = false;                 // écritures en overlay mémoire (write sector)
+        std::fprintf(stderr, "[FDC] lecteur %c : %s (STX, %d pistes, %d face(s))\n",
+                     drive & 1 ? 'B' : 'A', path.c_str(), tps, dk.sides);
+        return true;
     }
+
+    // Image .ST/.msa/.dim → on (re)bascule en modèle logique (annule un éventuel STX).
+    dk.imgType = FloppyDisk::IMG_ST;
+    dk.stx.reset();
 
     // .msa (compressé) ou .dim (en-tête 32 o) → conversion en .st brut ; sinon image
     // .st telle quelle. .msa/.dim sont marquées NON raw (pas de recopie d'écritures).
@@ -288,8 +310,10 @@ bool Fdc::loadImage(const std::string& path, int drive) {
 
 void Fdc::eject(int drive) {
     FloppyDisk& dk = drive_[drive & 1];
-    const bool wasPresent = !dk.image.empty();
+    const bool wasPresent = dk.present();
     dk.image.clear();
+    dk.stx.reset();
+    dk.imgType = FloppyDisk::IMG_ST;
     dk.path.clear();
     // Éjection à chaud : on force WPRT pendant la fenêtre de transition (cf. Hatari
     // Floppy_DriveTransitionSetState, STATE_EJECT). Une éjection « à vide » n'arme rien.
@@ -314,12 +338,39 @@ int Fdc::selectedDrive() const {
     return -1;
 }
 
+int Fdc::sidesPerDisk(int drive) const {
+    const FloppyDisk& dk = drive_[drive];
+    if (dk.imgType == FloppyDisk::IMG_STX && dk.stx) return dk.stx->sides();
+    return dk.sides;
+}
 int Fdc::tracksPerDisk(int drive) const {
     const FloppyDisk& dk = drive_[drive];
+    if (dk.imgType == FloppyDisk::IMG_STX && dk.stx) return dk.stx->tracksPerSide();
     if (dk.image.empty() || dk.spt < 1 || dk.sides < 1) return 0;
     return int((dk.image.size() / 512u) / unsigned(dk.spt) / unsigned(dk.sides));
 }
 int Fdc::bytesPerTrack() const { return BYTES_PER_TRACK; }
+
+// Longueur RÉELLE d'une piste STX (octets MFM) — cf. FDC_GetBytesPerTrack_STX. La
+// rotation (cyclesPerRev) en dépend → des protections mesurent la durée du tour.
+int Fdc::bytesPerTrackStx(int track, int side) const {
+    const FloppyDisk& dk = drive_[driveSel_ < 0 ? 0 : driveSel_];
+    if (!dk.stx) return BYTES_PER_TRACK;
+    StxImage::Track* t = dk.stx->findTrack(track, side);
+    if (!t) return BYTES_PER_TRACK;
+    if (t->pTrackImage) return t->trackImageSize;
+    if ((t->flags & StxImage::TRACK_FLAG_SECTOR_BLOCK) == 0) return t->mfmSize / 8;  // MFMSize en bits
+    return t->mfmSize;
+}
+
+// Période d'un tour : constante pour .ST, dérivée de la longueur de piste pour STX.
+int64_t Fdc::cyclesPerRev() const {
+    if (driveSel_ >= 0 && drive_[driveSel_].imgType == FloppyDisk::IMG_STX) {
+        const int sz = bytesPerTrackStx(drive_[driveSel_].headTrack, side_);
+        return int64_t(sz) * MFM_BYTE;                 // densité DD (facteur 1)
+    }
+    return CYCLES_PER_REV;
+}
 
 // Relit lecteur/face du PSG ; au changement de lecteur, réinitialise la référence
 // d'index (cf. Hatari FDC_SetDriveSide).
@@ -329,7 +380,7 @@ void Fdc::refreshDriveSide() {
     if (nd != driveSel_) {
         indexTime_ = 0;                          // arrête le comptage d'index courant
         driveSel_ = nd;
-        if (nd >= 0 && !drive_[nd].image.empty() && (str_ & STR_MOTOR)) indexInit();
+        if (nd >= 0 && drive_[nd].present() && (str_ & STR_MOTOR)) indexInit();
     }
     side_ = ns;
 }
@@ -341,7 +392,7 @@ void Fdc::indexInit() {
     // Position initiale « dans le passé » (< 1 tour) déterministe mais variable
     // d'un démarrage à l'autre : reproductible pour le headless byte-exact, comme
     // Hatari_rand() côté Hatari (FDC_IndexPulse_Init).
-    const int64_t off = int64_t(rngNext() % uint32_t(CYCLES_PER_REV));
+    const int64_t off = int64_t(rngNext() % uint32_t(cyclesPerRev()));
     int64_t t = nowCyc() - off;
     if (t <= 0) t = 1;
     indexTime_ = t;
@@ -349,10 +400,11 @@ void Fdc::indexInit() {
 
 void Fdc::indexCheckUpdate() {
     if (!(str_ & STR_MOTOR)) return;                       // moteur arrêté
-    if (driveSel_ < 0 || drive_[driveSel_].image.empty()) return;   // pas de lecteur/disque
+    if (driveSel_ < 0 || !drive_[driveSel_].present()) return;   // pas de lecteur/disque
     if (indexTime_ == 0) indexInit();
-    while (nowCyc() - indexTime_ >= CYCLES_PER_REV)
-        indexIncrease(indexTime_ + CYCLES_PER_REV);
+    const int64_t rev = cyclesPerRev();
+    while (nowCyc() - indexTime_ >= rev)
+        indexIncrease(indexTime_ + rev);
 }
 
 void Fdc::indexIncrease(int64_t ipTime) {
@@ -368,6 +420,12 @@ int Fdc::indexCurrentPosBytes() const {
     return int(since / MFM_BYTE);                          // densité DD (facteur 1)
 }
 
+// Position tête depuis l'index en CYCLES FDC (STX : BitPosition est en bits/cycles).
+int Fdc::indexCurrentPosCycles() const {
+    if (driveSel_ < 0 || indexTime_ == 0) return -1;
+    return int(nowCyc() - indexTime_);
+}
+
 bool Fdc::indexState() const {
     if (driveSel_ < 0 || indexTime_ == 0) return false;
     const int64_t since = nowCyc() - indexTime_;
@@ -376,8 +434,9 @@ bool Fdc::indexState() const {
 
 int64_t Fdc::nextIndexCycles() const {
     if (driveSel_ < 0 || indexTime_ == 0) return -1;
-    int64_t res = CYCLES_PER_REV - (nowCyc() - indexTime_);
-    if (res <= 1) res = CYCLES_PER_REV;
+    const int64_t rev = cyclesPerRev();
+    int64_t res = rev - (nowCyc() - indexTime_);
+    if (res <= 1) res = rev;
     return res;
 }
 
@@ -486,6 +545,7 @@ uint16_t Fdc::dmaStatusWord() const {
 //  Accès « bas niveau » à l'image .ST (cf. Hatari FDC_*_ST).
 // =============================================================================
 uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSize) {
+    if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return readSectorStx(pSize);
     FloppyDisk& dk = drive_[driveSel_];
     const uint32_t off = lsnOffset(track, side, sector, dk.spt, dk.sides);
     if (off + 512u <= dk.image.size()) {
@@ -497,6 +557,7 @@ uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSiz
 }
 
 uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size) {
+    if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return writeSectorStx(size);
     FloppyDisk& dk = drive_[driveSel_];
     const uint32_t off = lsnOffset(track, side, sector, dk.spt, dk.sides);
     if (off + uint32_t(size) <= dk.image.size()) {
@@ -510,6 +571,7 @@ uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size
 // Champ ID synthétisé (les .ST n'en ont pas) : 3×A1, FE, TR, SIDE, SR, SIZE, CRC.
 // On ajoute au tampon les 6 octets utiles [TR..CRC2] (cf. FDC_ReadAddress_ST).
 uint8_t Fdc::readAddressST(uint8_t track, uint8_t sector, uint8_t side) {
+    if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return readAddressStx();
     if (track >= tracksPerDisk(driveSel_)) return STR_RNF;
     uint8_t id[10] = { 0xa1, 0xa1, 0xa1, 0xfe, track, side, sector, SECTOR_SIZE_512, 0, 0 };
     const uint16_t crc = crc16(id, 8);
@@ -520,6 +582,7 @@ uint8_t Fdc::readAddressST(uint8_t track, uint8_t sector, uint8_t side) {
 
 // Piste complète synthétisée (gaps, sync, IDAM, données, CRC) — cf. FDC_ReadTrack_ST.
 uint8_t Fdc::readTrackST(uint8_t track, uint8_t side) {
+    if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return readTrackStx(track, side);
     FloppyDisk& dk = drive_[driveSel_];
     if (track >= tracksPerDisk(driveSel_)) {            // piste inexistante → bruit
         for (int i = 0; i < bytesPerTrack(); ++i) bufferAdd(uint8_t(rngNext()));
@@ -557,8 +620,9 @@ uint8_t Fdc::readTrackST(uint8_t track, uint8_t side) {
 // → 512 o) et on les écrit dans l'image .ST. (Hatari renvoie « lost data » sur .ST ;
 // on fait mieux, en best-effort.)
 uint8_t Fdc::writeTrackBuffer() {
-    if (driveSel_ < 0 || drive_[driveSel_].image.empty()) return STR_LOST;
+    if (driveSel_ < 0 || !drive_[driveSel_].present()) return STR_LOST;
     FloppyDisk& dk = drive_[driveSel_];
+    if (dk.imgType == FloppyDisk::IMG_STX) return 0;       // WRITE TRACK sur STX : non géré (rare)
     const int n = bufferSize();
     auto rb = [&](int k) -> uint8_t { return (k >= 0 && k < n) ? buf_[k] : 0; };
     for (int i = 0; i + 6 < n; ) {
@@ -591,9 +655,198 @@ void Fdc::writeBack(FloppyDisk& dk, uint32_t off, uint32_t len) {
 }
 
 // =============================================================================
+//  Chemin STX (Pasti) — port d'extern/hatari/src/floppies/stx.c (FDC_*_STX).
+//  Champs ID RÉELS, statut FDC par secteur, bits fuzzy, timing variable. La
+//  position angulaire vient de BitPosition (en BITS, 1 bit = 32 cycles FDC).
+// =============================================================================
+static constexpr int MFM_BIT = 32;   // 4 µs/bit × 8 MHz = 32 cycles FDC (FDC_DELAY_CYCLE_MFM_BIT)
+
+// Latence jusqu'au prochain champ ID + champs ID du secteur trouvé (stxNextSector_).
+// Cf. FDC_NextSectorID_FdcCycles_STX.
+int Fdc::nextSectorIDStx(int* pFdcCycles) {
+    const int curPos = indexCurrentPosCycles();
+    if (curPos < 0) return RET_NO_DRIVE;
+    FloppyDisk& dk = drive_[driveSel_];
+    StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
+    if (!t || t->sectorsCount == 0) return RET_NO_DRIVE;
+
+    int i;
+    for (i = 0; i < t->sectorsCount; ++i)
+        if (curPos < int(t->sectors[i].bitPosition) * MFM_BIT - 4 * int(MFM_BYTE)) break;
+
+    int delay;
+    if (i == t->sectorsCount) {                 // après le dernier ID → 1er secteur du tour suivant
+        const int trackSize = bytesPerTrackStx(dk.headTrack, side_);
+        delay = trackSize * int(MFM_BYTE) - curPos + int(t->sectors[0].bitPosition) * MFM_BIT;
+        stxNextSector_ = 0;
+    } else {
+        delay = int(t->sectors[i].bitPosition) * MFM_BIT - curPos;
+        stxNextSector_ = i;
+    }
+
+    const StxImage::Sector& sec = t->sectors[stxNextSector_];
+    nextID_TR_  = sec.idTrack;
+    nextID_SR_  = sec.idSector;
+    nextID_LEN_ = sec.idSize;
+    // RNF + CRC tous deux posés ⇒ champ ID à CRC erroné.
+    nextID_CRCOK_ = ((sec.fdcStatus & StxImage::FLAG_RNF) && (sec.fdcStatus & StxImage::FLAG_CRC)) ? 0 : 1;
+
+    delay -= 4 * int(MFM_BYTE);                  // BitPosition pointe après l'IDAM → reculer aux 3×$A1
+    *pFdcCycles = delay;
+    return RET_OK;
+}
+
+// Lit le secteur stxNextSector_ dans le tampon, octet par octet, avec bits FUZZY
+// (aléatoire à chaque lecture) et TIMING variable. Cf. FDC_ReadSector_STX.
+uint8_t Fdc::readSectorStx(int* pSize) {
+    FloppyDisk& dk = drive_[driveSel_];
+    StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
+    if (!t || stxNextSector_ >= t->sectorsCount) return STR_RNF;
+    StxImage::Sector& sec = t->sectors[stxNextSector_];
+    if (sec.fdcStatus & StxImage::FLAG_RNF) return STR_RNF;
+
+    *pSize = sec.sectorSize;
+    uint32_t readTime = sec.readTime;
+
+    // Secteur réécrit par un 'write sector' → données de l'overlay, timing standard.
+    const uint8_t* writeData = nullptr;
+    if (sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size())) {
+        writeData = dk.stx->saveSectors[sec.saveIndex].data.data();
+        readTime = 0;
+    }
+    if (readTime == 0) readTime = 32u * sec.sectorSize;   // µs (valeur standard)
+    readTime *= 8;                                        // µs → cycles FDC à 8 MHz
+
+    double totalPrev = 0;
+    for (int i = 0; i < sec.sectorSize; ++i) {
+        uint8_t byte;
+        if (!writeData) {
+            byte = sec.pData ? sec.pData[i] : 0;
+            if (sec.pFuzzy)                              // bits fuzzy : aléatoire hors masque
+                byte = uint8_t((byte & sec.pFuzzy[i]) | (uint8_t(rngNext()) & ~sec.pFuzzy[i]));
+        } else {
+            byte = writeData[i];
+        }
+
+        uint16_t timing;
+        if (sec.pTiming && !writeData) {                // timing spécifique par bloc de 16 o
+            uint16_t tv = uint16_t((sec.pTiming[(i >> 4) * 2] << 8) + sec.pTiming[(i >> 4) * 2 + 1]);
+            tv = uint16_t(tv * 32 + 28);                // 1 unité = 32 cyc + 28 cyc/bloc (Pasti.prg)
+            if (i % 16 == 0) totalPrev = 0;
+            const double totalCur = (double(tv) * ((i % 16) + 1)) / 16.0;
+            timing = uint16_t(std::lround(totalCur - totalPrev));
+            totalPrev += timing;
+        } else {                                        // timing uniforme sur le secteur
+            const double totalCur = (double(readTime) * (i + 1)) / sec.sectorSize;
+            timing = uint16_t(std::lround(totalCur - totalPrev));
+            totalPrev += timing;
+        }
+        bufferAddTiming(byte, timing);
+    }
+    // On ne remonte que les bits CRC (3) et RECORD_TYPE (5) dans le statut.
+    return sec.fdcStatus & (StxImage::FLAG_CRC | StxImage::FLAG_RECORD_TYPE);
+}
+
+// 'write sector' sur STX : stocke les données dans un overlay EN MÉMOIRE (relues
+// ensuite à la place de l'original). Cf. FDC_WriteSector_STX. Perdu à la fermeture.
+uint8_t Fdc::writeSectorStx(int size) {
+    FloppyDisk& dk = drive_[driveSel_];
+    StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
+    if (!t || stxNextSector_ >= t->sectorsCount) return STR_RNF;
+    StxImage::Sector& sec = t->sectors[stxNextSector_];
+    if (sec.fdcStatus & StxImage::FLAG_RNF) return STR_RNF;
+    if (sec.fdcStatus & StxImage::FLAG_CRC) return STR_CRC;
+
+    if (sec.saveIndex < 0) {
+        StxImage::SaveSector ss;
+        ss.track = uint8_t(dk.headTrack); ss.side = side_; ss.bitPos = sec.bitPosition;
+        ss.data.resize(size, 0);
+        dk.stx->saveSectors.push_back(std::move(ss));
+        sec.saveIndex = int(dk.stx->saveSectors.size()) - 1;
+    }
+    auto& data = dk.stx->saveSectors[sec.saveIndex].data;
+    if (int(data.size()) < size) data.resize(size, 0);
+    for (int i = 0; i < size; ++i) data[i] = bufferReadBytePos(i);
+    return 0;
+}
+
+// READ ADDRESS sur STX : renvoie le VRAI champ ID du secteur. Cf. FDC_ReadAddress_STX.
+uint8_t Fdc::readAddressStx() {
+    FloppyDisk& dk = drive_[driveSel_];
+    StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
+    if (!t || stxNextSector_ >= t->sectorsCount) return STR_RNF;
+    const StxImage::Sector& sec = t->sectors[stxNextSector_];
+    bufferAdd(sec.idTrack);
+    bufferAdd(sec.idHead);
+    bufferAdd(sec.idSector);
+    bufferAdd(sec.idSize);
+    bufferAdd(uint8_t(sec.idCrc >> 8));
+    bufferAdd(uint8_t(sec.idCrc));
+    if ((sec.fdcStatus & StxImage::FLAG_RNF) && (sec.fdcStatus & StxImage::FLAG_CRC)) return STR_CRC;
+    return 0;
+}
+
+// READ TRACK sur STX : image MFM brute de la piste si présente, sinon piste standard
+// reconstruite à partir des secteurs. Cf. FDC_ReadTrack_STX.
+uint8_t Fdc::readTrackStx(int track, int side) {
+    FloppyDisk& dk = drive_[driveSel_];
+    StxImage::Track* t = dk.stx->findTrack(track, side);
+    if (!t) {                                            // piste absente → bruit
+        for (int i = 0; i < bytesPerTrackStx(track, side); ++i) bufferAdd(uint8_t(rngNext()));
+        return 0;
+    }
+    if (t->pTrackImage) {                                // dump MFM complet de la piste
+        const double readTime = 8000000.0 / 5.0;        // 1 tour à 300 tr/min
+        double totalPrev = 0;
+        for (int i = 0; i < t->trackImageSize; ++i) {
+            const double totalCur = (readTime * (i + 1)) / t->trackImageSize;
+            const uint16_t timing = uint16_t(std::lround(totalCur - totalPrev));
+            totalPrev += timing;
+            bufferAddTiming(t->pTrackImage[i], timing);
+        }
+        return 0;
+    }
+    // Pas d'image → reconstruire une piste standard à partir des secteurs.
+    int trackSize = t->mfmSize;
+    if ((t->flags & StxImage::TRACK_FLAG_SECTOR_BLOCK) == 0) trackSize /= 8;
+    if (t->sectorsCount == 0) {
+        for (int i = 0; i < trackSize; ++i) bufferAdd(uint8_t(rngNext()));
+        return 0;
+    }
+    auto crcAdd = [](uint16_t& c, uint8_t b) {
+        c ^= uint16_t(b) << 8;
+        for (int k = 0; k < 8; ++k) c = (c & 0x8000) ? uint16_t((c << 1) ^ 0x1021) : uint16_t(c << 1);
+    };
+    for (int i = 0; i < GAP1; ++i) bufferAdd(0x4e);
+    for (int s = 0; s < t->sectorsCount; ++s) {
+        const StxImage::Sector& sec = t->sectors[s];
+        const int ssz = sec.sectorSize;
+        if (bufferSize() + ssz + GAP2 + 10 + GAP3a + GAP3b + 4 + 2 + GAP4 >= trackSize) break;
+        for (int i = 0; i < GAP2; ++i) bufferAdd(0x00);
+        bufferAdd(0xa1); bufferAdd(0xa1); bufferAdd(0xa1); bufferAdd(0xfe);
+        bufferAdd(sec.idTrack); bufferAdd(sec.idHead); bufferAdd(sec.idSector); bufferAdd(sec.idSize);
+        bufferAdd(uint8_t(sec.idCrc >> 8)); bufferAdd(uint8_t(sec.idCrc));
+        for (int i = 0; i < GAP3a; ++i) bufferAdd(0x4e);
+        for (int i = 0; i < GAP3b; ++i) bufferAdd(0x00);
+        uint16_t crc = 0xFFFF;
+        bufferAdd(0xa1); crcAdd(crc, 0xa1); bufferAdd(0xa1); crcAdd(crc, 0xa1); bufferAdd(0xa1); crcAdd(crc, 0xa1);
+        bufferAdd(0xfb); crcAdd(crc, 0xfb);
+        const uint8_t* pData = sec.pData;
+        if (sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size()))
+            pData = dk.stx->saveSectors[sec.saveIndex].data.data();
+        for (int i = 0; i < ssz; ++i) { const uint8_t b = pData ? pData[i] : 0; bufferAdd(b); crcAdd(crc, b); }
+        bufferAdd(uint8_t(crc >> 8)); bufferAdd(uint8_t(crc));
+        for (int i = 0; i < GAP4; ++i) bufferAdd(0x4e);
+    }
+    while (bufferSize() < trackSize) bufferAdd(0x4e);
+    return 0;
+}
+
+// =============================================================================
 //  Recherche du prochain champ ID (latence rotationnelle), cf. FDC_NextSectorID_ST.
 // =============================================================================
 int Fdc::nextSectorID(int* pFdcCycles) {
+    if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return nextSectorIDStx(pFdcCycles);
     const int curPos = indexCurrentPosBytes();
     if (curPos < 0) return RET_NO_DRIVE;                         // pas de lecteur/disque
     FloppyDisk& dk = drive_[driveSel_];
@@ -638,7 +891,7 @@ bool Fdc::setMotorOn(uint8_t cr) {
     const bool wasOff = !(str_ & STR_MOTOR);
     updateStr(0, STR_MOTOR);                                    // démarre le moteur
     if (wasOff) emitSound(FdcSound::MotorOn);
-    if (driveSel_ >= 0 && !drive_[driveSel_].image.empty()) {
+    if (driveSel_ >= 0 && drive_[driveSel_].present()) {
         if (indexTime_ == 0) indexInit();                      // position d'index aléatoire au démarrage
     }
     return spinUp;
@@ -654,7 +907,7 @@ int Fdc::cmdComplete(bool doInt) {
 
 // Vérif piste type I : pour .ST la piste est toujours correcte, sauf face absente.
 bool Fdc::verifyTrack() {
-    if (driveSel_ < 0 || drive_[driveSel_].image.empty()) return false;
+    if (driveSel_ < 0 || !drive_[driveSel_].present()) return false;
     if (nextID_TR_ != tr_ || nextID_CRCOK_ == 0) return false;
     if (side_ == 1 && drive_[driveSel_].sides != 2) return false;
     return true;
@@ -711,10 +964,10 @@ int Fdc::updateRestore() {
             fdcCycles = cmdComplete(true);
             break;
         }
-        if (driveSel_ < 0 || drive_[driveSel_].image.empty() || drive_[driveSel_].headTrack != 0) {
+        if (driveSel_ < 0 || !drive_[driveSel_].present() || drive_[driveSel_].headTrack != 0) {
             updateStr(STR_TR00, 0);
             tr_--;
-            if (driveSel_ >= 0 && !drive_[driveSel_].image.empty())
+            if (driveSel_ >= 0 && drive_[driveSel_].present())
                 drive_[driveSel_].headTrack--;                // déplace la tête physique
             fdcCycles = STEP_RATE_MS[cr_ & 3] * 1000 * 8;
         } else {                                              // tête sur la piste 0
@@ -776,7 +1029,7 @@ int Fdc::updateSeek() {
             tr_ = uint8_t(tr_ + stepDir_);
             fdcCycles = STEP_RATE_MS[cr_ & 3] * 1000 * 8;
             updateStr(STR_TR00, 0);
-            if (driveSel_ >= 0 && !drive_[driveSel_].image.empty()) {
+            if (driveSel_ >= 0 && drive_[driveSel_].present()) {
                 int& ht = drive_[driveSel_].headTrack;
                 if (ht == MAX_TRACK && stepDir_ == 1) {       // au-delà de la piste max
                     commandState_ = RUN_SE_VERIFY; fdcCycles = CMD_IMMEDIATE;
@@ -838,7 +1091,7 @@ int Fdc::updateStep() {
         if (cr_ & CMD_BIT_UPDATETRACK) tr_ = uint8_t(tr_ + stepDir_);
         fdcCycles = STEP_RATE_MS[cr_ & 3] * 1000 * 8;
         updateStr(STR_TR00, 0);
-        if (driveSel_ >= 0 && !drive_[driveSel_].image.empty()) {
+        if (driveSel_ >= 0 && drive_[driveSel_].present()) {
             int& ht = drive_[driveSel_].headTrack;
             if (ht == MAX_TRACK && stepDir_ == 1)       fdcCycles = CMD_IMMEDIATE;
             else if (ht == 0 && stepDir_ == -1)         fdcCycles = CMD_IMMEDIATE;
@@ -931,13 +1184,13 @@ int Fdc::updateReadSectors() {
             else {
                 updateStr(STR_RECTYPE, 0);                    // type d'enregistrement « normal »
                 commandState_ = RUN_RS_TRANSFER_LOOP;
-                fdcCycles = int(MFM_BYTE);                    // délai du 1er octet
+                fdcCycles = int(bufferReadTiming());          // délai du 1er octet (timing STX variable)
             }
         }
         break;
      case RUN_RS_TRANSFER_LOOP:
         fifoPush(bufferReadByte());                           // 1 octet → FIFO DMA
-        if (bufPos_ < bufferSize()) fdcCycles = int(MFM_BYTE);
+        if (bufPos_ < bufferSize()) fdcCycles = int(bufferReadTiming());
         else { commandState_ = RUN_RS_CRC; fdcCycles = int(2 * MFM_BYTE); }  // 2 octets de CRC
         break;
      case RUN_RS_CRC:
@@ -962,7 +1215,7 @@ int Fdc::updateReadSectors() {
 int Fdc::updateWriteSectors() {
     int fdcCycles = 0;
     // Disquette protégée → on s'arrête tout de suite (cf. Hatari, contrôle en tête).
-    if (driveSel_ >= 0 && !drive_[driveSel_].image.empty() && drive_[driveSel_].writeProtect) {
+    if (driveSel_ >= 0 && drive_[driveSel_].present() && drive_[driveSel_].writeProtect) {
         updateStr(0, STR_WPRT);
         fdcCycles = cmdComplete(true);
     } else {
@@ -1081,11 +1334,11 @@ int Fdc::updateReadAddress() {
         statusTemp_ = readAddressST(uint8_t(drive_[driveSel_].headTrack), nextID_SR_, side_);
         sr_ = bufferReadBytePos(0);                           // 1er octet du champ ID → registre secteur
         commandState_ = RUN_RA_TRANSFER_LOOP;
-        fdcCycles = int(MFM_BYTE);
+        fdcCycles = int(bufferReadTiming());
         break;
      case RUN_RA_TRANSFER_LOOP:
         fifoPush(bufferReadByte());
-        if (bufPos_ < bufferSize()) fdcCycles = int(MFM_BYTE);
+        if (bufPos_ < bufferSize()) fdcCycles = int(bufferReadTiming());
         else { commandState_ = RUN_RA_COMPLETE; fdcCycles = CMD_COMPLETE; }
         break;
      case RUN_RA_RNF:
@@ -1129,11 +1382,11 @@ int Fdc::updateReadTrack() {
             statusTemp_ = readTrackST(uint8_t(drive_[driveSel_].headTrack), side_);
         }
         commandState_ = RUN_RT_TRANSFER_LOOP;
-        fdcCycles = int(MFM_BYTE);
+        fdcCycles = int(bufferReadTiming());
         break;
      case RUN_RT_TRANSFER_LOOP:
         fifoPush(bufferReadByte());
-        if (bufPos_ < bufferSize()) fdcCycles = int(MFM_BYTE);
+        if (bufPos_ < bufferSize()) fdcCycles = int(bufferReadTiming());
         else { commandState_ = RUN_RT_COMPLETE; fdcCycles = CMD_COMPLETE; }
         break;
      case RUN_RT_COMPLETE:
@@ -1332,7 +1585,7 @@ uint8_t Fdc::read8(uint32_t addr) {
                             if (dk.headTrack == 0) updateStr(0, STR_TR00); else updateStr(STR_TR00, 0);
                             if (indexState())      updateStr(0, STR_INDEX); else updateStr(STR_INDEX, 0);
                             updateStr(STR_CRC, 0);
-                            if (dk.image.empty() || dk.writeProtect) updateStr(0, STR_WPRT);
+                            if (!dk.present() || dk.writeProtect) updateStr(0, STR_WPRT);
                             else                                     updateStr(STR_WPRT, 0);
                             // Créneau de transition média (éjection) → force WPRT, ce que TOS
                             // lit après un Restore pour détecter le changement de disquette.
