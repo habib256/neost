@@ -119,11 +119,19 @@ public:
                     const int64_t late = now_ - due_[s];
                     if (late > timerMaxLate) timerMaxLate = late;
                 }
+                firingDue_ = due_[s];                // échéance servie (pour replanif. anti-dérive)
                 due_[s] = kInactive;                 // consommé avant l'appel…
                 if (cb_[s]) cb_[s]();                 // …le callback peut replanifier
             }
         }
+        firingDue_ = kInactive;
     }
+
+    // Échéance de l'événement en cours de dispatch (valide PENDANT son callback),
+    // -1 sinon. Permet à une source périodique de se replanifier ancrée sur SON
+    // échéance servie (et non l'horloge courante), ne perdant pas le dépassement de
+    // latence d'IRQ — port de PendingCyclesOver d'Hatari (cf. Mfp::onTimerExpire).
+    int64_t firingDue() const { return firingDue_; }
 
     // Diagnostics (chantier précision cycle) : pire retard d'un timer MFP daté, et
     // nombre de préemptions du timeslice CPU déclenchées. Lus par le headless.
@@ -138,6 +146,7 @@ private:
     std::array<int64_t, SRC_COUNT>  due_{};      // (rempli à kInactive au ctor)
     std::array<Callback, SRC_COUNT> cb_{};
     int64_t now_ = 0;
+    int64_t firingDue_ = kInactive;              // échéance de l'événement en cours de dispatch
     int64_t runTarget_ = kInactive;              // cible du bloc CPU courant (-1 = hors run)
     std::function<int64_t()> liveClock_{};       // horloge sous-quantum (cf. liveNow)
     std::function<void()>    endSlice_{};         // coupe le timeslice CPU (préemption)

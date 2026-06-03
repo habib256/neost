@@ -64,6 +64,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   et fréquence (50 Hz = 400, 60 Hz = 396) — au lieu du cycle 400 figé. Défaut 50 Hz/fin
   inchangé (boot pixel-identique).
 - **Timers A/C/D mode délai** datés par le MFP (`Scheduler`). Backing-store timer/USART.
+- **Replanification périodique anti-dérive** (port `PendingCyclesOver`) : un timer en mode
+  délai se relance ancré sur l'**échéance servie** (`Scheduler::firingDue`) + période, et non
+  sur l'horloge courante → le dépassement dû à la latence d'IRQ est absorbé, pas accumulé.
+  Sans dérive sur les longues durées (timers musique haute fréquence) ; boot et histogramme
+  d'IRQ inchangés (correction sous-trame).
 - **Lecture du compteur vivant** des registres de données Timer A/B/C/D (`$FFFA1F/21/23/25`,
   port `MFP_ReadTimer_AB/CD`) : en mode délai actif on reconstruit le compteur décompté
   (`ceil(cycles_MFP_restants / prescaler)` via `Scheduler::cyclesUntil`) au lieu de renvoyer

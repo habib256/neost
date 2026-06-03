@@ -97,8 +97,12 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       `ceil(cycles_MFP_restants / prescaler)` via `Scheduler::cyclesUntil` (= `CycInt_FindCyclesRemaining`) ;
       event-count (A/B) → compteur suivi ; arrêté → recharge. Test *Timing* Pass (2 cœurs),
       boot byte-identique. Reste : edge « stopping data reg entre 1 et 0 » (forcer TxDR).
-- [ ] Replanning des timers délai perd le dépassement (PendingCyclesOver) _(lot suivant)_ —
-      réf. `mfp.c:MFP_StartTimer_AB/CD`
+- [x] **Replanning des timers délai = anti-dérive (PendingCyclesOver)** — ✅ FAIT.
+      `Mfp::scheduleTimerAt` ancre la replanification PÉRIODIQUE sur l'échéance servie
+      (`Scheduler::firingDue`) + période (et non l'horloge courante) → le dépassement de
+      latence d'IRQ est absorbé, pas accumulé ; modulo si retard ≥ une période. Programmation
+      fraîche (écriture TxCR/TxDR) inchangée (ancrée sur `liveNow`). Boot/histogramme IRQ
+      inchangés ; +1 tic Timer C récupéré sur 80 s. Réf. `mfp.c:MFP_StartTimer_AB/CD`.
 - [ ] Timer A event-count ignore la polarité AER GPIP4 et recharge à 0 au lieu de 1 _(risque
       élevé)_ — réf. `mfp.c:MFP_TimerA_Set_Line_Input`
 - [ ] Config baud USART UCR/Timer-D non modélisée (backing-store seul) _(faible valeur)_ —

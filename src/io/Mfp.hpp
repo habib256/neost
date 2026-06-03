@@ -48,6 +48,10 @@ public:
     // est arrêté ou en event-count. (Re)programme l'échéance sur l'ordonnanceur.
     int64_t timerPeriodCycles(int timer) const;
     void    scheduleTimer(int timer);
+    // Programme l'échéance d'un timer (mode délai) à `anchor + période`. `anchor` =
+    // horloge live pour une programmation fraîche, ou l'échéance servie pour une
+    // replanification périodique anti-dérive (cf. onTimerExpire / PendingCyclesOver).
+    void    scheduleTimerAt(int timer, int64_t anchor);
 
     // Valeur lue dans le registre de données d'un timer (0..3 = A/B/C/D). En mode
     // DÉLAI actif, renvoie le COMPTEUR VIVANT (décompté depuis l'écriture, calculé

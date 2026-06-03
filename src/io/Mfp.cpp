@@ -172,6 +172,15 @@ uint8_t Mfp::readTimerData(int timer) const {
 }
 
 void Mfp::scheduleTimer(int timer) {
+    // Programmation FRAÎCHE (écriture TxCR/TxDR) : ancrée sur l'horloge live, le
+    // cycle absolu EXACT de l'écriture (et non le début du quantum) — un timer
+    // programmé en plein bloc CPU démarre à l'instant réel, comme Hatari
+    // (CycInt_AddRelativeInterrupt depuis l'horloge immédiate). La préemption du
+    // Scheduler coupe alors le bloc pour servir l'IRQ à temps.
+    scheduleTimerAt(timer, sched_ ? sched_->liveNow() : 0);
+}
+
+void Mfp::scheduleTimerAt(int timer, int64_t anchor) {
     if (!sched_) return;
     // Timer B (timer==1) : seul le mode DÉLAI (TBCR 1-7) est daté ici ; en event-count
     // (TBCR=8) timerPeriodCycles renvoie 0 → on annule la source délai (le tic est
@@ -181,18 +190,31 @@ void Mfp::scheduleTimer(int timer) {
                                 : timer == 2 ? Scheduler::TIMER_C
                                 :              Scheduler::TIMER_D;
     const int64_t period = timerPeriodCycles(timer);
-    // liveNow() = cycle absolu EXACT de l'écriture TxCR/TxDR (et non le début du
-    // quantum) : un timer programmé en plein bloc CPU démarre à l'instant réel,
-    // comme Hatari (CycInt_AddRelativeInterrupt depuis l'horloge immédiate). La
-    // préemption du Scheduler coupe alors le bloc pour servir l'IRQ à temps.
-    if (period > 0) sched_->schedule(src, sched_->liveNow() + period);
-    else            sched_->cancel(src);      // arrêté / event-count → plus d'échéance délai
+    if (period <= 0) { sched_->cancel(src); return; }   // arrêté / event-count
+    // Échéance = ancre + période. Pour une programmation fraîche, ancre = maintenant
+    // → maintenant + période. Pour une replanification périodique, ancre = échéance
+    // servie → échéance + période, ce qui ABSORBE le dépassement de latence d'IRQ
+    // (overshoot) au lieu de l'ajouter à chaque tour : pas de dérive.
+    int64_t next = anchor + period;
+    const int64_t now = sched_->liveNow();
+    if (next <= now) {
+        // Retard ≥ une période entière (cas rare : on a sauté des échéances) : on
+        // réaligne sur la grille d'origine sans tirer une rafale d'IRQ en retard —
+        // équivalent du modulo sur PendingCyclesOver d'Hatari (≤ une période).
+        const int64_t over = (now - anchor) % period;
+        next = now + period - over;
+    }
+    sched_->schedule(src, next);
 }
 
 void Mfp::onTimerExpire(int timer) {
     static constexpr int kSrc[4] = {SRC_TIMERA, SRC_TIMERB, SRC_TIMERC, SRC_TIMERD};
     raise(kSrc[timer]);                       // lève l'IRQ (si le canal est activé)
-    scheduleTimer(timer);                     // relance la période (mode délai)
+    // Relance la période ANCRÉE sur l'échéance qui vient d'expirer (port
+    // PendingCyclesOver) : le prochain tic tombe à échéance+période, gommant la
+    // latence d'IRQ. Repli sur l'horloge live si l'échéance n'est pas disponible.
+    const int64_t due = sched_ ? sched_->firingDue() : -1;
+    scheduleTimerAt(timer, due >= 0 ? due : (sched_ ? sched_->liveNow() : 0));
 }
 
 void Mfp::hblank() {
