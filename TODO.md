@@ -141,6 +141,13 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       retrait des 32 octets → contenu `.st` ; géométrie relue dans le BPB. Détection par contenu.
       Validé : boot de Vroom (`.dim`) **byte-identique** au `.st`. `.dim` compressées (pistes
       utilisées seules) non gérées (rares). Écriture désactivée (en-tête à préserver).
+- [ ] **Support STX (Pasti)** — images BAS NIVEAU (pistes/secteurs bruts, IDs, CRC, bits
+      faibles/fuzzy, timing) pour les jeux protégés (ex. `disks/Stunt Car Racer.stx`).
+      Aujourd'hui DÉTECTÉ et refusé proprement (`Fdc::loadImage`, magic « RSY\0 »). Vrai
+      support = **gros chantier** : parser le conteneur Pasti (en-tête RSY, enregistrements
+      piste/secteur, données fuzzy/timing) + réécrire le WD1772 au niveau piste (ID fields,
+      CRC par secteur, tailles variables, densité, READ ADDRESS réel) — **dépend du FDC
+      cycle-exact** (item « Timing réel » ci-dessous). Réf. `floppies/stx.c` (~2100 lignes).
 - [ ] Masquage d'adresse DMA (octet haut `&0x3f`, bas word-align `&0xfe`) _(faible valeur)_ —
       réf. `fdc.c:FDC_WriteDMAAddress`
 - [ ] Compteur de secteurs DMA non relisible sur le vrai HW _(risque élevé)_ — réf.

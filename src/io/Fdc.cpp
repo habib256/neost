@@ -117,6 +117,18 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     std::vector<uint8_t> raw(static_cast<std::size_t>(n));
     f.read(reinterpret_cast<char*>(raw.data()), n);
 
+    // Format STX (Pasti, en-tête « RSY\0 ») : image disque BAS NIVEAU (pistes/secteurs
+    // bruts, IDs, CRC, bits faibles/timing) servant à préserver les protections. Notre
+    // FDC est à modèle « DMA instantané » purement logique (secteur = offset linéaire),
+    // INCOMPATIBLE avec ce niveau. On REFUSE proprement au lieu de monter les octets
+    // bruts comme une fausse .st (qui ne booterait pas). Le vrai support STX = gros
+    // chantier dépendant du FDC cycle-exact (cf. TODO + Hatari floppies/stx.c).
+    if (raw.size() > 4 && raw[0] == 'R' && raw[1] == 'S' && raw[2] == 'Y' && raw[3] == 0) {
+        std::fprintf(stderr, "[FDC] format STX (Pasti) non supporté : %s — image bas niveau "
+                             "(protections) hors du modèle FDC actuel ; non montée.\n", path.c_str());
+        return false;
+    }
+
     // .msa (compressé) ou .dim (en-tête 32 o) → conversion en .st brut ; sinon image
     // .st telle quelle. .msa/.dim sont marquées NON raw (pas de recopie d'écritures :
     // .msa ne sait pas réencoder, .dim devrait préserver son en-tête).

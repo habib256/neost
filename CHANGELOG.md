@@ -108,6 +108,8 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - Formats : `.st` (brut), `.msa` (décompression RLE), `.dim` (en-tête 32 o retiré, port
   `floppies/dim.c` : ID 'BB', non compressé). Détection par CONTENU (indépendante de
   l'extension). Écritures recopiées dans le `.st` ; `.msa`/`.dim` protégées en écriture.
+  Les images `.stx` (Pasti, bas niveau) sont DÉTECTÉES (magic « RSY\0 ») et refusées
+  proprement — incompatibles avec le modèle FDC logique actuel (cf. TODO).
 
 ## Audio
 - **YM2149** : 3 voies carrées + bruit, enveloppe (R11-13, formes via Continue/Attack/
