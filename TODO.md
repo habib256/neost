@@ -57,10 +57,19 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 - [x] **« T0 MFP timer »** : **PASSE** déjà (cause = mode Timer B délai manquant, corrigé ;
       cf. CHANGELOG + [[cartridge-diagnostics-state]]) — PAS le quantum cycle. Vérifié après
       le quantum sous la ligne : STE_Test Z = vert + « Pass », retard timer max ≤ 134 cyc.
-- [ ] **Arkanoid** : ne se fige PLUS sur `$31736` — il **part en vrille AVANT** (PC → garbage
-      `$26000000`→wrap `$0`) sur les DEUX cœurs, déjà avant le quantum. Bug de **loader**
-      (`STARTGEM.PRG` → `Pexec("A:ARKANOID.PRG")` → FDC), pas de timing IRQ. À diagnostiquer
-      séparément (diff trace NeoST↔Hatari sur la séquence Pexec/FDC ; cf. CYCLE_ACCURACY §5bis).
+- [~] **Arkanoid** — DIAGNOSTIQUÉ. La « vrille » (PC → `$26000000` wrap→`$0`) = **corruption
+      de la table des vecteurs par aliasing MMU**. Chaîne : (1) le sizing mémoire de TOS 1.02
+      **sur-détecte 2 Mo de RAM à 512 Ko** (`phystop`=`$200000` même en `--mem 512k`) ; (2)
+      Pexec charge donc Arkanoid haut (~`$1F8000`) ; (3) la boucle de clear TOS `FC4BB6` écrit à
+      `$180114` qui, en config $08 (2 Mo déclaré, 512 Ko réel), **alias → phys `$114`** = vecteur
+      Timer C, mis à 0 ; (4) le Timer C suivant lit le vecteur 0 → saut `$0` → vrille. **Avec
+      `--mem 2m` : Arkanoid charge, AFFICHE son écran-titre, puis se fige sur `$31736/$26E7`**
+      (le symptôme documenté d'origine), sur les 2 cœurs — le quantum sous la ligne ne le
+      débloque pas. **Vrai bug NeoST = sur-détection mémoire** (Arkanoid 1987 tournait sur un
+      512 Ko réel) : `mmuTranslate` alias la zone sur-déclarée de la banque 0 (mmuSz=2M, ramSz=512K)
+      au lieu de la rendre « absente », donc le test mémoire TOS (boucle `FC0106`/`FC0672`, seuil
+      `$200000`) conclut 2 Mo. Fix à faire avec **Hatari `stMemory.c` comme oracle**. Le gel `$26E7`
+      lui-même reste à part (cf. note : peut caler aussi sous Hatari).
 
 ---
 

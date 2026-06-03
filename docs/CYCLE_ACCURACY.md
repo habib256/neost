@@ -32,13 +32,23 @@ Analyse par les traces (`neost-headless --trace` + Hatari `--trace cpu_disasm`) 
 C'est un cas d'école : **sans timing au cycle près, un flag effacé par IRQ au
 mauvais moment fige le jeu.** Beaucoup de jeux/démos sont dans ce cas.
 
-> **MAJ 2026 (après Phase 6).** Ce symptôme `$26E7` n'est PLUS celui qu'on observe :
-> Arkanoid part désormais en vrille **avant** d'y arriver (PC → `$26000000`, wrap
-> 24 bits → `$0`, exécution de garbage), sur les **deux cœurs** et déjà avant le
-> quantum sous la ligne. La cause est donc en **amont, dans le loader**
-> (`STARTGEM.PRG` → `Pexec("A:ARKANOID.PRG")` → FDC, cf. §5bis), pas dans la latence
-> d'IRQ. À diagnostiquer séparément (diff trace NeoST ↔ Hatari sur Pexec/FDC). Le
-> quantum sous la ligne reste justifié en soi (latence IRQ ÷ 350, cf. Phase 6).
+> **MAJ 2026 (après Phase 6) — diagnostic de la « vrille ».** Avec la RAM par défaut
+> (512 Ko), Arkanoid part en vrille (PC → `$26000000`, wrap 24 bits → `$0`) **avant**
+> d'atteindre `$26E7`. Cause tracée pas à pas :
+> 1. Le **sizing mémoire de TOS 1.02 sur-détecte 2 Mo** (`phystop` = `$200000` même
+>    en `--mem 512k` ; test `FC0106`/`FC0672`, seuil `$200000`, config `$FF8001=$08`).
+> 2. `Pexec` charge donc Arkanoid **haut** (~`$1F8000`).
+> 3. La boucle de clear TOS `FC4BB6` (`movem.l D1-D7/A3,-(A2)`) écrit à `$180114` qui,
+>    en config $08 (banque 0 déclarée 2 Mo, 512 Ko réel), **alias → phys `$114`** =
+>    vecteur Timer C, mis à `$0`.
+> 4. Le **Timer C suivant** lit le vecteur `$0` → saut `$0` → exécution de garbage.
+>
+> **Avec `--mem 2m`, plus de vrille** : Arkanoid charge, **affiche son écran-titre**,
+> puis se fige sur `$31736/$26E7` (le symptôme historique ci-dessus), sur les deux
+> cœurs — le quantum sous la ligne ne le débloque pas. Le **vrai bug NeoST** est la
+> **sur-détection mémoire** : `Bus::mmuTranslate` alias la zone sur-déclarée de la
+> banque 0 (`mmuSz=2M`, `ramSz=512K`) au lieu de la rendre « absente » (Arkanoid 1987
+> tournait sur un 512 Ko réel). **Fix à faire avec Hatari `stMemory.c` comme oracle.**
 
 ## 2. État actuel de NeoST — le modèle « par blocs »
 
