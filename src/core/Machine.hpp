@@ -57,11 +57,11 @@ public:
     void ejectCart() { bus.ejectCart(); }
     bool loadDisk(const std::string& path)  { return fdc.loadImage(path, 0); }   // lecteur A
     bool loadDiskB(const std::string& path) { return fdc.loadImage(path, 1); }   // lecteur B (optionnel)
-    void reset() { dmasnd.reset(); cpu.reset(); }
+    void reset() { psg.reset(); dmasnd.reset(); cpu.reset(); }
     // Reset à FROID (power-cycle) : efface toute la ST-RAM, ce qui invalide le
     // « memvalid » de TOS — il refait alors un boot COMPLET (re-détection mémoire,
     // re-init OS) au lieu du boot à chaud d'un simple reset. Puis reset matériel.
-    void hardReset() { bus.ram.assign(bus.ram.size(), 0); dmasnd.reset(); cpu.reset(); }
+    void hardReset() { bus.ram.assign(bus.ram.size(), 0); psg.reset(); dmasnd.reset(); cpu.reset(); }
 
     // Reconfigure la machine À CHAUD sans recréer l'objet (son adresse reste
     // stable → les références externes, p.ex. Audio→psg/dmasnd, restent valides) :

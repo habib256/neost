@@ -56,6 +56,24 @@ public:
     void setPortASink(std::function<void(uint8_t)> s) { portAsink_ = std::move(s); }
     void setPortBSink(std::function<void(uint8_t)> s) { portBsink_ = std::move(s); }
 
+    // Reset matériel du PSG : remet tous les registres à 0 → volumes 0 = SILENCE
+    // immédiat (et tonalités/bruit/enveloppe coupés), réarme l'état de synthèse.
+    // Indispensable pour que le son ne PERSISTE PAS après un reset (soft/hard) : un
+    // YM2149 laissé en tonalité continue de « biper » sinon (cf. retour utilisateur).
+    // regs_ est lu par le thread audio ; le mettre à 0 le rend silencieux aussitôt.
+    void reset() {
+        regs_.fill(0);
+        selected_   = 0;
+        phase_.fill(0.0);
+        noiseLfsr_  = 1;
+        noisePhase_ = 0.0;
+        envPhase_   = 0.0;
+        envLevel_   = 31;
+        envDir_     = -1;
+        envHold_    = false;
+        envReload_  = false;
+    }
+
     // --- Synthèse (appelée par le thread audio miniaudio) -------------------
     // Remplit `out` (mono, float -1..+1) à la fréquence sampleRate.
     void synthesize(float* out, uint32_t frames, uint32_t sampleRate);

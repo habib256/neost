@@ -213,9 +213,6 @@ int main(int argc, char** argv) {
                  (long long)machine.sched.timerMaxLate, machine.sched.preemptions);
     std::fprintf(stderr, "[headless] vidéo : %dx%d @ %d Hz\n",
                  machine.shifter.width(), machine.shifter.height(), machine.shifter.refreshHz());
-    std::fprintf(stderr, "[DBG] phystop($42E)=%08X memtop($436)=%08X _memvalid($420)=%08X FF8001=$%02X\n",
-                 machine.bus.read32(0x42E), machine.bus.read32(0x436),
-                 machine.bus.read32(0x420), machine.bus.read8(0xFF8001));
 
     if (!shotPath.empty()) {
         if (writePpm(shotPath.c_str(), machine.shifter.pixels(),

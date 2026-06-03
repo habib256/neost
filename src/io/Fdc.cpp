@@ -312,6 +312,14 @@ enum : uint8_t { FDC_BUSY = 0x01 };
 int64_t Fdc::commandDelayCycles(uint8_t cmd) {
     constexpr int64_t MS       = 8021;                 // cycles CPU par ms (~8 MHz)
     constexpr int64_t MFM_BYTE = 256;                  // FDC_DELAY_CYCLE_MFM_BYTE (DD)
+    // SPIN-UP : si le moteur était À L'ARRÊT, le WD1772 attend que le disque
+    // atteigne sa vitesse — 6 impulsions d'index ≈ 6 tours ≈ 1,2 s (Hatari
+    // FDC_DELAY_IP_SPIN_UP = 6). C'est le facteur de timing DOMINANT au 1er accès
+    // (mesuré sur Hatari : ~51 VBL). Sans lui, le chargement démarre ~1 s trop tôt
+    // et le séquenceur de chargement maison d'Arkanoid se fige. Le moteur reste vif
+    // pendant le chargement (MOTOR_OFF_REVS tours d'inactivité) → spin-up 1 seule fois.
+    // (commandDelayCycles est appelée AVANT motorOn() → motorRunning_ = état antérieur.)
+    const int64_t spinUp = motorRunning_ ? 0 : 6 * INDEX_PERIOD_CYCLES;
     if (!(cmd & 0x80)) {                               // type I : seek / restore / step
         static constexpr int stepMs[4] = {6, 12, 2, 3};   // taux WD1772 (bits 0-1)
         const int sr = stepMs[cmd & 0x03];
@@ -322,10 +330,11 @@ int64_t Fdc::commandDelayCycles(uint8_t cmd) {
             if (steps < 0) steps = -steps;
         }
         if (steps < 1) steps = 1;
-        return MS * sr * steps;
+        return spinUp + MS * sr * steps;
     }
     // Type II/III : nombre d'octets MFM réellement transférés × 256 cycles/octet,
-    // + 15 ms de chargement de tête (FDC_DELAY_US_HEAD_LOAD) pour le 1er accès.
+    // + 15 ms de chargement de tête (FDC_DELAY_US_HEAD_LOAD) + latence rotationnelle
+    // (~1 tour pour amener le secteur sous la tête) + spin-up éventuel.
     int64_t bytes;
     switch (cmd & 0xF0) {
         case 0xC0: bytes = 6;    break;                // READ ADDRESS : champ ID seul
@@ -336,7 +345,7 @@ int64_t Fdc::commandDelayCycles(uint8_t cmd) {
             break;
         }
     }
-    return bytes * MFM_BYTE + 15 * MS;                 // transfert MFM + chargement de tête
+    return spinUp + bytes * MFM_BYTE + 15 * MS + INDEX_PERIOD_CYCLES;
 }
 
 void Fdc::executeCommand(uint8_t cmd) {

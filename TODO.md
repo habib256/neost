@@ -1,6 +1,7 @@
 # TODO — NeoST
 
-(c) 2026 VERHILLE Arnaud. **Ce qui reste à faire.** Le fait est dans [`CHANGELOG.md`](CHANGELOG.md).
+(c) 2026 VERHILLE Arnaud. **Ce qui reste à faire.** Le fait (implémenté + validé) est dans
+[`CHANGELOG.md`](CHANGELOG.md) ; les diagnostics de bugs en cours sont en mémoire projet.
 
 **Sources de vérité à croiser systématiquement :**
 - **Hatari** (`extern/hatari/src/*.c`) — comportement ST/STE/MegaSTE éprouvé. La référence.
@@ -16,6 +17,11 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 `risque élevé` = touche le modèle bus/IRQ éprouvé · `gros contrôleur` = puce entière à
 écrire · `faible valeur`.
 
+**Validation par logiciels réels** : chaque gros chantier a un **logiciel étalon** qui
+n'affiche/sonne correctement QUE si l'effet limite est fidèle → catalogue par sous-système
+dans [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md). Repère `🎯 étalon : …` sur les items
+ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → Enchanted Land**.
+
 ---
 
 ## 🎯 Le grand chantier : précision cycle
@@ -23,81 +29,33 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 > Plan détaillé : **[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md)** (ordonnanceur
 > d'événements datés, vidéo/MFP/FDC au cycle, validation par `trace_diff` ↔ Hatari).
 >
-> **Phases 1-3 faites** (`Scheduler.hpp`, `runFrame` événementiel à horloge continue,
-> vidéo au cycle, timers MFP A/C/D datés). Reste :
+> **Phases 1-6 faites** (cf. CHANGELOG : `Scheduler`, `runFrame` événementiel à horloge
+> continue, vidéo au cycle, timers MFP A/B/C/D datés, géométries 50/60/71 Hz, quantum
+> « sous la ligne »). Reste :
 
-- [x] **Quantum CPU sous la ligne** — ✅ FAIT (port `cycInt`). Deux mécanismes : (1)
-      **horloge live** (`Scheduler::liveNow`, = `Cycles_GetClockCounterImmediate`) → un
-      timer programmé en plein bloc est daté à l'instant réel de l'écriture, pas au début
-      du quantum ; (2) **préemption du timeslice** (`Cpu68k::endTimeslice` →
-      `m68k_end_timeslice` / drapeau Moira) → le CPU rend la main à la frontière
-      d'instruction quand un événement plus proche est armé. Latence IRQ timer **47513 →
-      134 cyc** (cas critique : timer court armé juste avant un `STOP`, sauté par l'optim
-      STOP de Moira). Boot EmuTOS/TOS pixel-identique, histogramme d'IRQ inchangé, Z/T0 Pass.
-      Métrique headless `timer IRQ retard max`. **Préférer `--cpu moira`** (cycle-exact,
-      horloge live à la sous-instruction). Reste (raffinement) : offset = cycles de
-      l'instruction d'écriture (le timer démarre à la FIN de l'instruction chez Hatari).
-- [x] **Timer B event-count lié au Display Enable** — ✅ FAIT (port `Video_TimerB_GetDefaultPos`).
-      `Shifter::timerBLinePos(startOfLine)` : fins de ligne (`DE_end+24`) ou débuts
-      (`DE_start+24`) selon l'AER bit3 du MFP (`Mfp::timerBStartOfLine`), positions par
-      résolution (71 Hz=184/24) et fréquence (50 Hz=400/80, 60 Hz=396/76) ; recalculée par
-      ligne (suit un changement AER/sync mi-trame). Plus de cycle 400 figé. Défaut 50 Hz/fin
-      inchangé → boot EmuTOS pixel-identique, Z/T0 Pass. Reste : DE réel avec **bordures**
-      (suppression L/R) et le latch mi-ligne (items ci-dessous) pour le DE_start/end exact.
 - [ ] **Latch palette/scroll mi-ligne** — la scanline est rendue une fois à DE_END (cycle
       376) ; pas de changement intra-ligne — réf. `video.c:Video_RenderLine`
-- [ ] **VBL tiré en fin de trame** (~ligne 312 + offset 64 cyc), pas ligne 201 _(risque élevé)_
-      — réf. `video.c:Video_InterruptHandler_VBL` (VBL_VIDEO_CYCLE_OFFSET). NB : le VBL est
-      désormais placé à `(lignes_affichées+1)` (= 201 couleur / 401 mono) au lieu de la
-      constante 201 figée ; reste à le caler en VRAIE fin de trame + offset 64/68.
-- [x] **Géométries vidéo** : mono (71 Hz, 501×224) et 60 Hz (263×508) en plus du PAL 313×512
-      — ✅ FAIT (port `video.h` CYCLES_PER_LINE_*/SCANLINES_PER_FRAME_*/LINE_START-END_CYCLE_*).
-      `Shifter::Geometry` dérive (cycles/ligne, lignes/trame, lignes affichées, DE start/end) de
-      la résolution (mono = 71 Hz) et de `$FF820A` bit1 (50/60 Hz), **verrouillée à `beginFrame`**
-      (avec la fréquence : `frameSync_`). `Machine::runFrame` n'a plus de 313×512 figé : frameEnd,
-      VBL, HBL (`cpl-4`), Timer B, rendu et durée VBL IKBD (`lpf×cpl/8` → 20032/16700/14028 µs)
-      en découlent ; le mono décode ses **400 lignes** par créneaux (plus de hack post-boucle) ;
-      `videoCounter` ($FF8205/07/09) utilise la fréquence verrouillée (512/56 n'étaient plus figés
-      → compteur correct en 60 Hz). **Validation** : 50 Hz **byte-identique** (EmuTOS fr + TOS 1.02,
-      2 cœurs, histogramme IRQ inchangé 374/166/98/6) ; 60 Hz (etos192us) et mono : rendu
-      **byte-identique** + Timer C (200 Hz) **mis à l'échelle** de la trame raccourcie (374→310→262
-      /100 trames) ; STE_Test Z = vert+Pass, MegaSTE Z « Completed » sans erreur (2 cœurs).
-      Reste : **bordures** (suppression L/R/H/B via bascules 50/60 Hz mi-trame, item ci-dessous)
-      qui exige la géométrie variable EN COURS de trame, pas seulement verrouillée.
+      🎯 prérequis de **Spectrum 512** (changement de palette intra-ligne)
 - [ ] **Wait states** d'accès YM2149 / mémoire (4 cycles + alignement) et contention bus
       _(précision cycle)_ — réf. `psg.c`, `cycles.c`, MAME `stmmu.cpp::bus_contention`
 
-### Cas concrets — état RÉEL mesuré (le quantum sous la ligne ne les débloque pas seul)
-- [x] **« T0 MFP timer »** : **PASSE** déjà (cause = mode Timer B délai manquant, corrigé ;
-      cf. CHANGELOG + [[cartridge-diagnostics-state]]) — PAS le quantum cycle. Vérifié après
-      le quantum sous la ligne : STE_Test Z = vert + « Pass », retard timer max ≤ 134 cyc.
-- [~] **Arkanoid** — DIAGNOSTIQUÉ. La « vrille » (PC → `$26000000` wrap→`$0`) = **corruption
-      de la table des vecteurs par aliasing MMU**. Chaîne : (1) le sizing mémoire de TOS 1.02
-      **sur-détecte 2 Mo de RAM à 512 Ko** (`phystop`=`$200000` même en `--mem 512k`) ; (2)
-      Pexec charge donc Arkanoid haut (~`$1F8000`) ; (3) la boucle de clear TOS `FC4BB6` écrit à
-      `$180114` qui, en config $08 (2 Mo déclaré, 512 Ko réel), **alias → phys `$114`** = vecteur
-      Timer C, mis à 0 ; (4) le Timer C suivant lit le vecteur 0 → saut `$0` → vrille. **Avec
-      `--mem 2m` : Arkanoid charge, AFFICHE son écran-titre, puis se fige sur `$31736/$26E7`**
-      (le symptôme documenté d'origine), sur les 2 cœurs — le quantum sous la ligne ne le
-      débloque pas. **Vrai bug NeoST = sur-détection mémoire** (Arkanoid 1987 tournait sur un
-      512 Ko réel) : `mmuTranslate` alias la zone sur-déclarée de la banque 0 (mmuSz=2M, ramSz=512K)
-      au lieu de la rendre « absente », donc le test mémoire TOS (boucle `FC0106`/`FC0672`, seuil
-      `$200000`) conclut 2 Mo. Fix à faire avec **Hatari `stMemory.c` comme oracle**. Le gel `$26E7`
-      lui-même reste à part (cf. note : peut caler aussi sous Hatari).
+### Cas concrets — état RÉEL mesuré
+- [~] **Arkanoid** — RE-DIAGNOSTIQUÉ 2026 (détail vivant → [[arkanoid-freeze-investigation]]).
+      Symptôme : titre affiché puis **gel sur `$31736: tst.b $26e7 ; bne`** (`$26E7=$3F`), beep
+      YM continu. **L'ancienne piste « sur-détection mémoire » est ÉCARTÉE** : NeoST détecte
+      512K correctement (`phystop=$80000`, `$FF8001=$04`, identique Hatari) ; `mmuTranslate` est
+      un port exact de `stMemory.c`. **Cause confirmée = TIMING FDC** : `hatari --fastfdc on`
+      REPRODUIT le gel, Hatari défaut (FDC réaliste) **ne gèle pas** (`$31736` 1 hit / 12000 vbls,
+      titre animé). Facteur dominant = **spin-up** (6 tours ≈ 1 s, `FDC_DELAY_IP_SPIN_UP`) absent
+      de NeoST. **MAIS timing FDC nécessaire ≠ suffisant** : en portant transfert MFM réel +
+      spin-up + latence rotationnelle, le gel est **retardé** (frame ~450→~6000) mais **PAS
+      éliminé** (NeoST re-spinne ; Hatari non) → reste un bug NeoST spécifique. **Reste** :
+      (1) modèle FDC rotationnel propre (cf. « Timing réel » §FDC) ; (2) facteur NeoST-spécifique ;
+      (3) diff trace post-chargement NeoST↔Hatari.
 
 ---
 
 ## Bus / memory map / MMU
-- [x] **Joypad/lightpen STE + DIP MegaSTE (`$FF9200-$FF9223`) : valeurs au repos** — ✅ FAIT
-      (`Bus::mmioRead8`, port `joy.c`). DIP MegaSTE `$FF9200` haut = `0xBF` (HD 1.44, logique
-      inversée), boutons/directions `0xFF`, paddle `0x24` (neutre), lightpen `0x0000`. Boot STE
-      byte-identique, MegaSTE inchangé. Reste : émulation réelle des entrées (item Vidéo) + le
-      bus error sur accès OCTET de `$FF9200/9220/9222` (mots seuls) _(risque élevé, à part)_.
-- [x] **Contrôle cache/CPU MegaSTE `$FF8E21` relisible** — ✅ FAIT (`Bus`, port
-      `ioMemTabSTE.c:...CacheCpuCtrl_WriteByte`). Octet latché (bit0=cache, bit1=8/16 MHz) +
-      contrainte « cache impossible à 8 MHz » (bit0 forcé à 0 si bit1=0) ; reset = 0 ; gaté
-      MegaSTE. Boot MegaSTE byte-identique. L'EFFET réel (débit cycles, cache 16 Ko) reste les
-      items « précision cycle » de la section CPU.
 - [ ] Registres vidéo STE « void » doivent lire `0x00` (`$FF820B`, `$FF8262-63`, `$FF8266-7F`)
       _(faible valeur)_ — réf. `ioMemTabSTE.c` (IoMem_VoidRead_00)
 - [ ] La banque ROM doit couvrir toute la fenêtre 1 Mo (`$E00000-$EFFFFF`), pas la taille du
@@ -108,50 +66,18 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       non peuplées (`$400000-$F9FFFF` au-dessus de la RAM) — réf. `stMemory.c` + `cpu/memory.c`
 
 ## MFP 68901 + RS232 USART
-- [x] **IRQ GPIP front-déclenchées réévaluées à l'écriture AER** — ✅ FAIT (port
-      `MFP_GPIP_Update_Interrupt`). `Mfp::gpipUpdateInterrupt` : état = GPIP ^ AER ; basculer
-      le front actif (AER) alors qu'une ligne d'entrée est au niveau correspondant lève le
-      canal (gaté IER), même sans transition — cas des démos « M »/« Realtime ». GPIP/DDR
-      seuls ne lèvent rien dans le modèle « entrées calculées » (`gpipInput`). Boot +
-      histogramme IRQ inchangés (2 cœurs), clavier OK, Timing Pass.
-- [x] Bit3 GPIP (blitter busy/idle) en lecture — ✅ déjà câblé (`gpuLine_` via
-      `Blitter` → `Mfp::setBlitterLine`, ligne GPU_DONE active bas dans `read8`).
-- [x] **Lecture data-register Timer A/B/C/D = compteur VIVANT** — ✅ FAIT (port
-      `MFP_ReadTimer_AB/CD`). `Mfp::readTimerData` : en mode délai actif, compteur reconstruit
-      `ceil(cycles_MFP_restants / prescaler)` via `Scheduler::cyclesUntil` (= `CycInt_FindCyclesRemaining`) ;
-      event-count (A/B) → compteur suivi ; arrêté → recharge. Test *Timing* Pass (2 cœurs),
-      boot byte-identique. Reste : edge « stopping data reg entre 1 et 0 » (forcer TxDR).
-- [x] **Replanning des timers délai = anti-dérive (PendingCyclesOver)** — ✅ FAIT.
-      `Mfp::scheduleTimerAt` ancre la replanification PÉRIODIQUE sur l'échéance servie
-      (`Scheduler::firingDue`) + période (et non l'horloge courante) → le dépassement de
-      latence d'IRQ est absorbé, pas accumulé ; modulo si retard ≥ une période. Programmation
-      fraîche (écriture TxCR/TxDR) inchangée (ancrée sur `liveNow`). Boot/histogramme IRQ
-      inchangés ; +1 tic Timer C récupéré sur 80 s. Réf. `mfp.c:MFP_StartTimer_AB/CD`.
-- [x] **Timer A event-count : polarité AER GPIP4 + recharge à 1** — ✅ FAIT (port
-      `MFP_TimerA_Set_Line_Input`). `Mfp::timerA_setLineInput(bit)` piloté par le NIVEAU de la
-      ligne TAI (= XSINT son DMA, via `DmaSound::setXsint` qui alimente aussi GPIP7) : compte
-      sur le front où `bit == AER bit4` (défaut 0 → fins de trame), recharge depuis TADR à 1
-      (data reg 0 = 256 via wrap uint8), IRQ canal 13. Remplace l'impulsion inconditionnelle.
-      Boot byte-identique (2 cœurs), Timing Pass ; cas par défaut équivalent à l'ancien.
 - [ ] Config baud USART UCR/Timer-D non modélisée (backing-store seul) _(faible valeur)_ —
       réf. `rs232.c:RS232_HandleUCR + RS232_SetBaudRateFromTimerD`
 
 ## Vidéo / Shifter
-- [x] **Rendu fine-scroll / line-width / base-basse STE** — ✅ FAIT. `renderLine` unifié décode
-      en tampon d'index puis émet avec offset : **fine-scroll** `$FF8264/65` (décalage 0-15 px à
-      gauche + groupe de 16 px lu en plus à droite = modèle prefetch `$FF8265`), **line-offset**
-      `$FF820F` (stride ligne = `bpl + lineWidth*2`, aussi dans `videoCounter`), **base-basse**
-      `$FF820D` déjà composée dans `videoBase`. Défaut (scroll=0/lw=0) **byte-identique** au boot.
-      Validé par test ciblé (10/10) + boot EmuTOS-STE/TOS 1.04 inchangés. Reste (précision cycle) :
-      distinction prefetch/no-prefetch fine (bord gauche, dérive compteur +8/ligne), bordures.
 - [ ] **Suppression de bordures** (gauche/droite/haut/bas, tricks 50/60 Hz) — base des démos
       _(précision cycle)_ — réf. `video.c` BORDERMASK_*
+      🎯 étalon : **The Cuddly Demos** (4 bordures), **Enchanted Land** (sync-scroll horizontal)
 - [ ] **Spec512** (palette par scanline/cycle, 512 couleurs) _(précision cycle)_ — réf.
       `spec512.c` + `video.c:Video_ColorReg_WriteWord`
+      🎯 étalon : **Spectrum 512** (Inshape) — palette réécrite plusieurs fois/ligne
 - [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) _(risque élevé)_ — réf.
       `video.c:Video_ColorReg_WriteWord`
-- [x] `$FF820D` en lecture renvoie 0 forcé sur ST (octet bas STE seulement) — ✅ déjà en place
-      (`Shifter::read8`), confirmé par test ciblé.
 - [ ] **Joypads/paddles/lightpen STE** (`$FF9200-$FF9222`) : directions, boutons, multiplexage,
       entrées analogiques — réf. `joy.c`, MAME
 - [ ] **DIP switches MegaSTE** `$FF9200` : bit HD floppy, désactivation DMA sound, logique
@@ -161,13 +87,9 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 - [ ] Partage de bus (mode non-hog) au cycle près _(précision cycle)_ — réf. `blitter.c`
 
 ## FDC WD1772 + DMA disquette
-- [x] **Loader d'image `.dim`** — ✅ FAIT (`Fdc::decodeDim`, port `floppies/dim.c:DIM_ReadDisk`).
-      Validation d'en-tête fidèle Hatari (ID 'BB', offset 0x03=0 non compressé, 0x0A=0) puis
-      retrait des 32 octets → contenu `.st` ; géométrie relue dans le BPB. Détection par contenu.
-      Validé : boot de Vroom (`.dim`) **byte-identique** au `.st`. `.dim` compressées (pistes
-      utilisées seules) non gérées (rares). Écriture désactivée (en-tête à préserver).
 - [ ] **Support STX (Pasti)** — images BAS NIVEAU (pistes/secteurs bruts, IDs, CRC, bits
       faibles/fuzzy, timing) pour les jeux protégés (ex. `disks/Stunt Car Racer.stx`).
+      🎯 étalon : **Dungeon Master** (FTL) — protection « fuzzy bits » + secteurs 8192 o.
       Aujourd'hui DÉTECTÉ et refusé proprement (`Fdc::loadImage`, magic « RSY\0 »). Vrai
       support = **gros chantier** : parser le conteneur Pasti (en-tête RSY, enregistrements
       piste/secteur, données fuzzy/timing) + réécrire le WD1772 au niveau piste (ID fields,
@@ -178,8 +100,12 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 - [ ] Compteur de secteurs DMA non relisible sur le vrai HW _(risque élevé)_ — réf.
       `fdc.c:FDC_DiskControllerStatus_ReadWord`
 - [ ] Accès octet à `$FF8604/06` devrait fauter sur ST non-Falcon _(risque élevé)_ — réf. `fdc.c`
-- [ ] **Timing réel** : durée BUSY par commande, INTRQ différé, FIFO DRQ, spin-up
-      _(précision cycle)_ — réf. `fdc.c` (FDC_DELAY_*, FDC_UpdateAll)
+- [ ] **Timing réel** : modèle ROTATIONNEL fidèle (position tête / index, latence par secteur,
+      spin-up 6 tours, head-load, DRQ/FIFO octet par octet, INTRQ daté) _(précision cycle)_ —
+      réf. `fdc.c` (FDC_DELAY_*, FDC_UpdateAll, FDC_NextSectorID_NbBytes). **Débloque Arkanoid**
+      (cf. [[arkanoid-freeze-investigation]]) : une 1ère approche (spin-up + transfert MFM dans
+      `Fdc::commandDelayCycles`) retarde le gel sans le supprimer et sur-ralentit les lectures
+      multi-secteurs → le vrai modèle rotationnel est requis. Sert aussi au support STX.
 - [ ] **Lecteur HD MegaSTE** : DIP `$FF9200`, densité DD/HD, images 1.44 Mo — réf. `fdc.c`
 - [ ] **FIFO DMA/MMU** : secteur-count, status bits, transfert par blocs, interaction ACSI/FDC
       — réf. MAME `stmmu.cpp`
@@ -200,28 +126,11 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       valeur)_ — réf. `dmaSnd.c:DmaSnd_GenerateSamples`
 - [ ] Décodage du son sur l'horloge d'émulation + anneau vers le thread audio (aujourd'hui la
       forme d'onde est générée côté audio, seul l'instant d'IRQ est exact) _(précision cycle)_
+      🎯 étalon : **Xenon 2**, **Turrican** — digidrums (volume YM modulé par Timer A >8 kHz)
+- [ ] **Musique muette sur la majorité des titres** — à investiguer (PSG/digidrums/timing
+      d'écriture registres ; cf. retour utilisateur). Lié probablement à l'item ci-dessus.
 
 ## IKBD HD6301 + souris/joystick
-- [x] **Paquet souris relatif : axe Y** (`SetYAxisUp/Down 0x0F/0x10`) — ✅ FAIT. `yAxis_`
-      (±1, défaut +1 = origine haut) applique son signe au Δy émis et à l'accumulation
-      absolue (port `IKBD_SendRelMousePacket` l.1409). Reset → +1.
-- [x] **Seuil (`0x0B`) / échelle (`0x0C`) souris** — ✅ FAIT. Seuil = porte d'émission du
-      paquet relatif (`|Δ| ≥ seuil`, défaut 1) ; échelle appliquée à l'accumulation absolue
-      (`> 1`). Gros Δ drainés en plusieurs paquets. Émission **sur changement de bouton sans
-      mouvement** (front bouton) portée aussi → boutons de Vroom remontés. Reset → seuils 1,
-      échelle 0. Réf. `ikbd.c:IKBD_Cmd_SetMouseThreshold/SetMouseScale`. Validé moira (bureau
-      TOS 1.04 + clic-glissé, curseur suit).
-- [x] **`MouseAction 0x07` + `MouseCursorKeycodes 0x0A`** — ✅ FAIT (port `IKBD_SendOnMouseAction`
-      + `IKBD_SendCursorMousePacket`). `0x07` : bit2 = boutons remontés comme scancodes touche
-      (`0x74`/`0x75`, `|0x80` au relâché, **en plus** du paquet de mode) ; bits 0/1 = report de
-      position absolue à l'appui/relâchement (mode ABS). `0x0A` : mode CURSOR — le Δ sort en
-      flèches clavier (72/80/75/77) par pas de keycode-delta. `0x12` (DisableMouse → mode OFF)
-      câblé au passage.
-- [x] **Horloge IKBD (`SetClock 0x1B` / `ReadClock 0x1C`)** — ✅ FAIT (port `IKBD_UpdateClockOnVBL`
-      + helpers BCD `Check`/`Adjust`). 6 octets BCD (YY MM DD hh mm ss), avancée d'1 s par
-      1e6 µs cumulés au VBL (durée trame ≈ 20032 µs), propagation/retenue + jours/mois +
-      bissextile fidèles à la ROM HD6301 ; conservée au reset à chaud. Validé par test ciblé
-      (set/read/tic/octet non-BCD).
 - [ ] Keymap international / layouts TOS (FR/UK/DE, autorepeat) _(faible valeur)_ — réf. `keymap.c`
 
 ## ACIA 6850 (clavier + MIDI)
@@ -238,25 +147,10 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       renvoie `0xFF` → label « Atari ST »). C'est le levier restant pour le label « Mega ST ».
 
 ## CPU : IRQ, Moira, MegaSTE
-- [x] **Moira honore `busFault`** — ✅ déjà fait (`NeostMoira::read8/16/write8/16` testent
-      `busFaultN` → `raiseBusError` lève `moira::BusError` avec trame de groupe 0 ; double-faute
-      → `HALTED`). Cf. [[moira-buserror-vdi]]. (Reste le bug texte VDI sous Moira, à part.)
 - [ ] **Bascule CPU 8/16 MHz MegaSTE** (`$FF8E21` bit1) — change le débit de cycles et tous
       les timings _(précision cycle)_ — réf. `m68000.c:MegaSTE_CPU_Cache_Update` + `clocks_timings.c`
 - [ ] **Cache MegaSTE 16 Ko** (`$FF8E21` bit0, off à 8 MHz) — au moins les effets de timing
       visibles — réf. `ioMemTabSTE.c`
-- [x] **SCU MegaSTE — gate d'IRQ complet** (`$FF8E01-$FF8E0F`) — ✅ FAIT (`Scu.hpp`, port
-      `scu_vme.c`). **Toujours actif** sur MegaSTE (comme `SCU_IsEnabled`) : IPL CPU =
-      `(SysIntState & SysIntMask & 0x9F) | (VmeIntState & VmeIntMask & 0x60)` ; état synchronisé
-      depuis les sources vivantes (MFP niv6, VBL niv4, HBL niv2, soft IRQ1) dans `neostUpdateIpl`,
-      gaté par les masques. 8 registres relisibles (`GPR1`=0x01 reset), écrire un masque reset
-      l'état. Validé 2 cœurs : TOS 2.06 + EmuTOS 256K (`Atari Mega STe`) → bureau GEM, diag
-      MegaSTE OK ; tous programment le SCU au boot (`SysIntMask=0x14`, `VmeIntMask=0x40/0x60`).
-      ST/STE inchangés. **NB** : l'« EmuTOS MegaSTE » testé au départ était le build 192 Ko
-      (TOS 1.4 / Atari ST) qu'Hatari REFUSE sur MegaSTE — récupéré `rom/etos256us/fr.img`
-      (build MegaSTE). Méthode de validation Hatari → [`docs/HATARI_AUTOMATION.md`](docs/HATARI_AUTOMATION.md).
-      TOS 2.06 « Memory Test Complete » = écran d'attente normal (barre ESPACE pour continuer),
-      pas un gel.
 - [ ] **MC68881 optionnel** : réponse à la sonde TOS/diagnostic, puis émulation ou trapping
       — réf. `configuration.h`, MAME
 - [ ] **Séparation user/supervisor** : bus errors en mode utilisateur sur I/O et ROM/low mem
@@ -279,10 +173,16 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 - [ ] **Cartridge port** `$FA0000-$FBFFFF` générique (jeux, extensions de boot) — réf. `cart.c`
 
 ## Souris / entrées (jeux)
-- [ ] **Vroom : Vers la droite accelere, vers la gauche ralentit, En bas tourne à droite et en haut tourne vers la gauche en mode souris ** 
-      (disquette  testable au headless).
+- [ ] **Vroom** : vers la droite accélère, vers la gauche ralentit, en bas tourne à droite et
+      en haut tourne à gauche en mode souris (disquette testable au headless).
 
 ## Outillage / qualité
+- [ ] **Logiciels étalons au headless** — rapatrier les démos freeware via `tools/fetch_disk.py`
+      et les passer au headless (`--frames`/`--screenshot`/`--irq`, diff oracle Hatari) :
+      **The Cuddly Demos** (bordures), **The Union Demo** (réentrance IRQ Timer A+B),
+      **ST-STE Hardware Test** (Troed : timings Shifter/mémoire), **Hatari Test Suite** (68000).
+      Jeux commerciaux (Spectrum 512, Dungeon Master, Xenon 2, Enchanted Land) = images perso.
+      Catalogue complet → [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md).
 - [ ] **Comparaison MAME ↔ NeoST** (memory map, bus errors, FDC/MMU FIFO, blitter, SCC).
 - [ ] Capturer la **trace Hatari de référence** pour `trace_diff` (Arkanoid & co).
 - [ ] **Matrice de compatibilité MegaSTE** : TOS 2.05/06, EmuTOS, 1/2/4 Mo, 8/16 MHz, cache

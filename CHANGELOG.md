@@ -81,6 +81,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   bit3 du MFP (jeux/démos type *Seven Gates of Jambala*), positions selon résolution (71 Hz)
   et fréquence (50 Hz = 400, 60 Hz = 396) — au lieu du cycle 400 figé. Défaut 50 Hz/fin
   inchangé (boot pixel-identique).
+- **VBL niveau 4 tiré en fin de trame** (port `Video_InterruptHandler_VBL`) : l'IRQ VBL est
+  générée `VBL_VIDEO_CYCLE_OFFSET` cycles après la dernière ligne (64 STF / 68 STE = sommet
+  de la trame, début du vblank), et non plus à la ligne 201 (~112 lignes / 57000 cyc trop
+  tôt). Le handler VBL du jeu (base écran, palette, sprites) s'applique donc à la trame qui
+  va s'afficher, comme sur le matériel. Boot EmuTOS/TOS atteint son écran normalement.
 - **Timers A/C/D mode délai** datés par le MFP (`Scheduler`). Backing-store timer/USART.
 - **Replanification périodique anti-dérive** (port `PendingCyclesOver`) : un timer en mode
   délai se relance ancré sur l'**échéance servie** (`Scheduler::firingDue`) + période, et non
@@ -138,7 +143,9 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 ## Audio
 - **YM2149** : 3 voies carrées + bruit, enveloppe (R11-13, formes via Continue/Attack/
   Alternate/Hold), **table de volume 5 bits mesurée** (32 niveaux), vitesse d'enveloppe
-  corrigée (diviseur de pas). Backend miniaudio (CoreAudio).
+  corrigée (diviseur de pas). Backend miniaudio (CoreAudio). **`YM2149::reset()`** remet
+  tous les registres à 0 (volumes 0 = SILENCE) et est appelé par `Machine::reset()/hardReset()`
+  → le son ne PERSISTE plus après un reset (soft/hard), qui laissait sinon une tonalité bipée.
 - **Son DMA STE** (`DmaSound`, `$FF8900-$FF8925`) : échantillons 8 bits signés en RAM
   (6.25/12.5/25/50 kHz, mono/stéréo, play/repeat, compteur d'adresse), mixé au YM2149.
   **Ligne XSINT** datée (`Scheduler::DMASND`) câblée aux DEUX entrées MFP — GPIP7 ET TAI
@@ -218,4 +225,6 @@ fidèles à Hatari, pas des bugs.
 ## Validé
 - EmuTOS (FR/US) : green desktop, fichiers disquette, double-clic, fenêtres.
 - TOS 1.02 Mega ST FR : boot complet, green desktop basse rés.
-- **Arkanoid** (Imagine 1987) : se lance via l'AUTO de la disquette, écran-titre.
+- **Arkanoid** (Imagine 1987) : se lance via l'AUTO de la disquette et affiche son
+  écran-titre, puis **gèle** (`$31736`/`$26E7`) — bug de **timing FDC** identifié, pas
+  encore résolu (cf. `TODO.md` + [[arkanoid-freeze-investigation]]).
