@@ -55,7 +55,9 @@ static std::string resolveData(const std::string& given, const std::string& exeD
 struct Config { std::string rom; std::string disk; std::string cart; bool mono = false;
                 std::string cpu = "moira"; std::string machine = "st";
                 std::string mem = "512k"; bool kbdjoy = false; int joyport = 1;
-                float joydeadzone = 0.30f; bool fastfdc = false; };
+                float joydeadzone = 0.30f; bool fastfdc = false;
+                bool showDisk = true, showCart = true, showHex = true, showCpu = true;
+                bool showJoy = false; };
 static std::string cfgPath(const std::string& exeDir) { return exeDir + "/../neost.cfg"; }
 static Config loadConfig(const std::string& exeDir) {
     Config c;
@@ -74,6 +76,11 @@ static Config loadConfig(const std::string& exeDir) {
         else if (line.rfind("joyport=", 0) == 0) c.joyport = (line.substr(8) == "0") ? 0 : 1;
         else if (line.rfind("joydeadzone=", 0) == 0) c.joydeadzone = std::strtof(line.substr(12).c_str(), nullptr);
         else if (line.rfind("fastfdc=", 0) == 0) c.fastfdc = (line.substr(8) == "1");
+        else if (line.rfind("showDisk=", 0) == 0) c.showDisk = (line.substr(9) == "1");
+        else if (line.rfind("showCart=", 0) == 0) c.showCart = (line.substr(9) == "1");
+        else if (line.rfind("showHex=", 0) == 0) c.showHex = (line.substr(8) == "1");
+        else if (line.rfind("showCpu=", 0) == 0) c.showCpu = (line.substr(8) == "1");
+        else if (line.rfind("showJoy=", 0) == 0) c.showJoy = (line.substr(8) == "1");
     }
     return c;
 }
@@ -84,7 +91,12 @@ static void saveConfig(const std::string& exeDir, const Config& c) {
              << "\nmono=" << (c.mono ? 1 : 0)
              << "\ncpu=" << c.cpu << "\nmachine=" << c.machine << "\nmem=" << c.mem
              << "\nkbdjoy=" << (c.kbdjoy ? 1 : 0) << "\njoyport=" << c.joyport
-             << "\njoydeadzone=" << c.joydeadzone << "\nfastfdc=" << (c.fastfdc ? 1 : 0) << "\n";
+             << "\njoydeadzone=" << c.joydeadzone << "\nfastfdc=" << (c.fastfdc ? 1 : 0)
+             << "\nshowDisk=" << (c.showDisk ? 1 : 0)
+             << "\nshowCart=" << (c.showCart ? 1 : 0)
+             << "\nshowHex=" << (c.showHex ? 1 : 0)
+             << "\nshowCpu=" << (c.showCpu ? 1 : 0)
+             << "\nshowJoy=" << (c.showJoy ? 1 : 0) << "\n";
 }
 
 #if defined(NEOST_WITH_IMGUI)
@@ -564,6 +576,8 @@ int main(int argc, char** argv) {
     }();
     // Préférences mémorisées (dernier ROM + type de moniteur).
     Config cfg = loadConfig(exeDir);
+    g_showDisk = cfg.showDisk; g_showCart = cfg.showCart; g_showHex = cfg.showHex;
+    g_showCpu  = cfg.showCpu;  g_showJoy  = cfg.showJoy;
     const std::string defRom = cfg.rom.empty() ? std::string("roms/etos192us.img") : cfg.rom;
     // Sans argument, ./neost recharge le dernier ROM (ou EmuTOS US par défaut).
     const std::string romLogical = (argc > 1) ? std::string(argv[1]) : defRom;
@@ -1051,6 +1065,8 @@ int main(int argc, char** argv) {
     cfg.disk = machine.fdc.mountedPath();
     cfg.cart = machine.bus.mountedCartPath();
     cfg.mono = !machine.mfp.colorMonitor();
+    cfg.showDisk = g_showDisk; cfg.showCart = g_showCart; cfg.showHex = g_showHex;
+    cfg.showCpu  = g_showCpu;  cfg.showJoy  = g_showJoy;
     saveConfig(exeDir, cfg);
 
 #if defined(NEOST_WITH_IMGUI)
