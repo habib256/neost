@@ -36,11 +36,20 @@ public:
     // Échéance : l'IKBD a fini son auto-test → envoie $F1 (réponse de reset).
     void    onResetResponse() { pushRx(0xF1); }
 
-    // Sonde joystick : remplit (joy0, joy1) à l'interrogation `$16`. Par défaut
-    // neutre ($00). Le diagnostic « Printer/Joystick » branche un fixture de
-    // bouclage parallèle→joystick : Machine y connecte le port B du PSG (cf. le
-    // mapping du fixture). true = au moins une manette présente.
+    // Sonde joystick : peut RÉ-ÉCRIRE (joy0, joy1) à l'interrogation `$16`/au
+    // report auto. Les valeurs sont d'abord amorcées avec l'état hôte courant
+    // (cf. setJoystick) ; le diagnostic « Printer/Joystick » installe ici un
+    // fixture de bouclage parallèle→joystick (Machine connecte le port B du PSG)
+    // qui ÉCRASE cet état le temps du test. Hors fixture, la sonde laisse passer
+    // l'état hôte intact.
     void    setJoystickProbe(std::function<void(uint8_t&, uint8_t&)> fn) { joyProbe_ = std::move(fn); }
+
+    // État joystick venant de l'hôte (manette USB ou émulation clavier du
+    // frontend). Index 0 = port ST 0 (partagé souris), 1 = port ST 1 (port
+    // « jeux »). Bits : haut $01 / bas $02 / gauche $04 / droite $08 / feu $80
+    // (cf. Hatari ATARIJOY_BITMASK_*, joy.h). Lu à chaque interrogation $16 et,
+    // en mode auto ($14), à chaque trame via sendAutoJoysticks.
+    void    setJoystick(uint8_t joy0, uint8_t joy1) { hostJoy_[0] = joy0; hostJoy_[1] = joy1; }
 
     // Événement clavier venant de l'hôte (scancode ST déjà traduit).
     void keyEvent(uint8_t scancode, bool pressed);
@@ -97,7 +106,8 @@ private:
     std::array<uint8_t, 8> inBuf_{};         // accumulation des octets d'une commande multi-octets
     int inBufLen_ = 0;                       // octets déjà reçus pour la commande en cours
     int cmdExpected_ = 0;                    // octets attendus au total (0 = aucune commande en cours)
-    std::function<void(uint8_t&, uint8_t&)> joyProbe_;   // état manettes (fixture de bouclage)
+    std::function<void(uint8_t&, uint8_t&)> joyProbe_;   // override manettes (fixture de bouclage)
+    uint8_t hostJoy_[2] = {0, 0};            // état joystick hôte (port 0 / port 1), amorce la sonde
 
     // --- Mode souris (cf. Hatari ikbd.c KeyboardProcessor.MouseMode) -----------
     // REL = paquets relatifs $F8 (par défaut, bureau EmuTOS) ; ABS = position

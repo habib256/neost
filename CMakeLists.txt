@@ -147,7 +147,7 @@ if(EMSCRIPTEN)
         "-sUSE_GLFW=3"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,FS,HEAPF32"
-        "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_set_mono,_neost_mount_disk,_neost_mount_disk_b,_neost_load_tos,_neost_audio_render,_malloc,_free"
+        "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_set_mono,_neost_mount_disk,_neost_mount_disk_b,_neost_load_tos,_neost_set_kbd_joystick,_neost_set_joy_deadzone,_neost_audio_render,_malloc,_free"
         "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/web/shell.html")
 
     # Choix des données embarquées dans le FS virtuel (--preload-file). Pour un

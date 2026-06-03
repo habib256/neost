@@ -31,6 +31,7 @@
 #include "core/Machine.hpp"
 #include "audio/Audio.hpp"
 #include "audio/DriveSound.hpp"
+#include "JoystickInput.hpp"
 
 namespace fs = std::filesystem;
 
@@ -47,9 +48,12 @@ static std::string resolveData(const std::string& given, const std::string& exeD
 // Fichier neost.cfg à la racine du projet (à côté de build/).
 // cpu = cœur 68000 choisi AU DÉMARRAGE ("moira" cycle-exact par défaut, ou "musashi").
 // Défaut machine : 512 Ko ST + cœur Moira.
+// kbdjoy = émulation joystick au clavier active ; joyport = port ST visé par
+// l'émulation clavier (0 ou 1, défaut 1 = port « jeux »).
 struct Config { std::string rom; std::string disk; std::string cart; bool mono = false;
                 std::string cpu = "moira"; std::string machine = "st";
-                std::string mem = "512k"; };
+                std::string mem = "512k"; bool kbdjoy = false; int joyport = 1;
+                float joydeadzone = 0.30f; };
 static std::string cfgPath(const std::string& exeDir) { return exeDir + "/../neost.cfg"; }
 static Config loadConfig(const std::string& exeDir) {
     Config c;
@@ -64,6 +68,9 @@ static Config loadConfig(const std::string& exeDir) {
         else if (line.rfind("cpu=", 0)  == 0) c.cpu  = line.substr(4);
         else if (line.rfind("machine=", 0) == 0) c.machine = line.substr(8);
         else if (line.rfind("mem=", 0)  == 0) c.mem  = line.substr(4);
+        else if (line.rfind("kbdjoy=", 0) == 0) c.kbdjoy = (line.substr(7) == "1");
+        else if (line.rfind("joyport=", 0) == 0) c.joyport = (line.substr(8) == "0") ? 0 : 1;
+        else if (line.rfind("joydeadzone=", 0) == 0) c.joydeadzone = std::strtof(line.substr(12).c_str(), nullptr);
     }
     return c;
 }
@@ -72,7 +79,9 @@ static void saveConfig(const std::string& exeDir, const Config& c) {
     if (!f) f.open("neost.cfg");
     if (f) f << "rom=" << c.rom << "\ndisk=" << c.disk << "\ncart=" << c.cart
              << "\nmono=" << (c.mono ? 1 : 0)
-             << "\ncpu=" << c.cpu << "\nmachine=" << c.machine << "\nmem=" << c.mem << "\n";
+             << "\ncpu=" << c.cpu << "\nmachine=" << c.machine << "\nmem=" << c.mem
+             << "\nkbdjoy=" << (c.kbdjoy ? 1 : 0) << "\njoyport=" << c.joyport
+             << "\njoydeadzone=" << c.joydeadzone << "\n";
 }
 
 #if defined(NEOST_WITH_IMGUI)
@@ -91,6 +100,9 @@ constexpr int MOUSE_Y_SIGN = +1;
 Ikbd* g_ikbd = nullptr;                // cible des callbacks clavier/souris GLFW
 bool  g_mouseCaptured = false;         // souris capturée → entrées dirigées vers le ST
 bool  g_dbgMouse = false;              // NEOST_DEBUG_MOUSE=1 → trace les paquets souris
+bool  g_kbdJoy = false;                // émulation joystick au clavier (flèches + Ctrl droit)
+int   g_kbdJoyPort = 1;                // port ST visé par l'émulation clavier (0/1)
+float g_joyDeadzone = 0.30f;           // zone morte centrale des sticks analogiques [0,0.95]
 bool  g_showDisk = true, g_showCart = true, g_showHex = true, g_showCpu = true;  // fenêtres masquables
 
 void onGlfwError(int code, const char* desc) {
@@ -201,6 +213,10 @@ void onKey(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
 #if defined(NEOST_WITH_IMGUI)
     if (ImGui::GetIO().WantCaptureKeyboard) return;  // une saisie ImGui a le focus
 #endif
+    // Émulation joystick clavier active : les touches du joystick (flèches + Ctrl
+    // droit) pilotent la manette et NE sont PAS transmises au clavier ST (sinon
+    // double effet) ; elles sont scrutées par trame dans la boucle (cf. stjoy::compose).
+    if (g_kbdJoy && stjoy::kbdBit(key)) return;
     const uint8_t sc = glfwToStScancode(key);
     if (sc) g_ikbd->keyEvent(sc, action == GLFW_PRESS);
 }
@@ -424,6 +440,9 @@ int main(int argc, char** argv) {
 
     // Callbacks installés AVANT ImGui : ImGui chaîne les nôtres derrière les siens.
     g_ikbd = &machine.ikbd;
+    g_kbdJoy     = cfg.kbdjoy;          // émulation joystick clavier (mémorisée)
+    g_kbdJoyPort = cfg.joyport;
+    g_joyDeadzone = cfg.joydeadzone;    // zone morte des sticks (mémorisée)
     glfwSetKeyCallback(window, onKey);
     glfwSetMouseButtonCallback(window, onMouseButton);
 
@@ -437,6 +456,8 @@ int main(int argc, char** argv) {
 
     std::printf("[main] Clic dans l'écran : capture souris | Échap : libère | "
                 "bouton Reset dans la fenêtre CPU | fermer la fenêtre : quitter\n");
+    std::printf("[main] Joystick : manette USB auto (port 1) | F11 = émulation "
+                "clavier (flèches + Ctrl droit) | menu « Joystick »\n");
 
     // Bridage à 50 fps (PAL) : indispensable pour que le temps émulé colle au
     // temps réel — sinon le compteur 200 Hz d'EmuTOS s'emballe et les écarts de
@@ -468,6 +489,33 @@ int main(int argc, char** argv) {
                 if (g_dbgMouse) std::fprintf(stderr, "[souris] mvt dx=%d dy=%d L=%d R=%d\n", dx, dy, l, r);
                 machine.ikbd.mouseEvent(dx * MOUSE_X_SIGN, dy * MOUSE_Y_SIGN, l, r);
             }
+        }
+
+        // F11 (front montant) : bascule l'émulation joystick au clavier. Pratique
+        // surtout sans ImGui (pas de menu) ; mémorisé en config en fin de boucle.
+        {
+            static bool f11Prev = false;
+            const bool f11 = glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS;
+            if (f11 && !f11Prev) {
+                g_kbdJoy = !g_kbdJoy;
+                cfg.kbdjoy = g_kbdJoy; saveConfig(exeDir, cfg);
+                std::fprintf(stderr, "[joystick] émulation clavier %s (port %d)\n",
+                             g_kbdJoy ? "ON" : "OFF", g_kbdJoyPort);
+            }
+            f11Prev = f11;
+        }
+
+        // Joystick hôte → IKBD (manettes USB + émulation clavier). Scruté chaque
+        // trame : l'IKBD répond avec cet état aux interrogations $16 / au report
+        // auto $14. L'émulation clavier est inhibée si une saisie ImGui a le focus.
+        {
+            bool kbd = g_kbdJoy;
+#if defined(NEOST_WITH_IMGUI)
+            if (ImGui::GetIO().WantCaptureKeyboard) kbd = false;
+#endif
+            uint8_t joy0 = 0, joy1 = 0;
+            stjoy::compose(window, kbd, g_kbdJoyPort, g_joyDeadzone, joy0, joy1);
+            machine.ikbd.setJoystick(joy0, joy1);
         }
 
         machine.cpu.updateIpl();               // entrées reçues → réévalue l'IPL
@@ -578,6 +626,46 @@ int main(int argc, char** argv) {
             if (ImGui::BeginMenu("Résolution")) {
                 if (ImGui::MenuItem("Couleur (basse rés)", nullptr,  color)) reqMonitor = 1;
                 if (ImGui::MenuItem("Mono (haute rés)",    nullptr, !color)) reqMonitor = 0;
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Joystick")) {
+                // Émulation au clavier (flèches + Ctrl droit). F11 bascule aussi.
+                if (ImGui::MenuItem("Émulation clavier (flèches + Ctrl droit)", "F11", &g_kbdJoy)) {
+                    cfg.kbdjoy = g_kbdJoy; saveConfig(exeDir, cfg);
+                }
+                if (ImGui::BeginMenu("Port émulé au clavier")) {
+                    if (ImGui::MenuItem("Port 1 (jeux)", nullptr, g_kbdJoyPort == 1)) {
+                        g_kbdJoyPort = cfg.joyport = 1; saveConfig(exeDir, cfg);
+                    }
+                    if (ImGui::MenuItem("Port 0 (souris)", nullptr, g_kbdJoyPort == 0)) {
+                        g_kbdJoyPort = cfg.joyport = 0; saveConfig(exeDir, cfg);
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::Separator();
+                // Zone morte centrale des sticks analogiques (anti-drift). Le D-pad
+                // numérique n'est pas concerné. Mémorisée à la validation du slider.
+                ImGui::TextDisabled("Zone morte (sticks)");
+                ImGui::SetNextItemWidth(160.0f);
+                if (ImGui::SliderFloat("##deadzone", &g_joyDeadzone, 0.0f, 0.95f, "%.2f")) {
+                    if (g_joyDeadzone < 0.0f) g_joyDeadzone = 0.0f;
+                    if (g_joyDeadzone > 0.95f) g_joyDeadzone = 0.95f;
+                }
+                if (ImGui::IsItemDeactivatedAfterEdit()) {
+                    cfg.joydeadzone = g_joyDeadzone; saveConfig(exeDir, cfg);
+                }
+                ImGui::Separator();
+                // Manettes USB détectées (la 1re → port 1, la 2e → port 0).
+                ImGui::TextDisabled("Manettes USB détectées :");
+                int nPad = 0;
+                for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid) {
+                    if (!glfwJoystickPresent(jid)) continue;
+                    const char* nm = glfwGetGamepadName(jid);
+                    if (!nm) nm = glfwGetJoystickName(jid);
+                    ImGui::BulletText("Port %d : %s", (nPad == 0) ? 1 : 0, nm ? nm : "?");
+                    ++nPad;
+                }
+                if (nPad == 0) ImGui::BulletText("(aucune)");
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Fenêtres")) {

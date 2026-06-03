@@ -244,10 +244,11 @@ void Ikbd::dispatchCommand() {
             // $16 = « interroger les joysticks » : l'IKBD répond IMMÉDIATEMENT par
             // un paquet $FD + état joystick 0 + état joystick 1 (cf. Hatari ikbd.c
             // IKBD_Cmd_ReturnJoysticks). État neutre $00 par défaut (suffit à
-            // éviter « J2 Joystick time-out ») ; sous fixture de bouclage, la sonde
-            // reflète le port parallèle (cf. Machine) pour le test « Printer/
-            // Joystick » complet.
-            uint8_t joy0 = 0, joy1 = 0;
+            // éviter « J2 Joystick time-out ») ; on amorce avec l'état hôte
+            // (manette/clavier du frontend), puis sous fixture de bouclage la sonde
+            // l'écrase pour refléter le port parallèle (cf. Machine) — test
+            // « Printer/Joystick » complet.
+            uint8_t joy0 = hostJoy_[0], joy1 = hostJoy_[1];
             if (joyProbe_) joyProbe_(joy0, joy1);
             pushRx(0xFD);
             pushRx(joy0);
@@ -265,8 +266,8 @@ void Ikbd::dispatchCommand() {
 void Ikbd::sendAutoJoysticks() {
     // Émet un paquet par manette dont l'état a changé depuis la dernière fois
     // (cf. Hatari IKBD_SendAutoJoysticks) : $FE = joystick 0 / souris, $FF =
-    // joystick 1. La sonde reflète le port parallèle sous fixture de bouclage.
-    uint8_t joy0 = 0, joy1 = 0;
+    // joystick 1. Amorcé avec l'état hôte ; la sonde l'écrase sous fixture de bouclage.
+    uint8_t joy0 = hostJoy_[0], joy1 = hostJoy_[1];
     if (joyProbe_) joyProbe_(joy0, joy1);
     if (joy0 != prevJoy0_) {
         pushRx(0xFE);

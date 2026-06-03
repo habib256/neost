@@ -94,7 +94,9 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         if (mfp.loopback()) { mfp.setBusyLine((b & 0x80) != 0); cpu.updateIpl(); }
     });
     ikbd.setJoystickProbe([this](uint8_t& joy0, uint8_t& joy1) {
-        if (!mfp.loopback()) { joy0 = joy1 = 0; return; }   // pas de fixture → neutre
+        // Hors fixture de bouclage : conserver l'état hôte déjà amorcé par l'IKBD
+        // (manette USB / émulation clavier posée par le frontend via setJoystick).
+        if (!mfp.loopback()) return;
         const uint8_t b = psg.regs_[15];
         const uint8_t dir = uint8_t(1u << (b & 7));          // direction encodée sur 8 bits
         joy0 = uint8_t((dir & 0x0F) | ((b & 0x80) ? 0x80 : 0));   // nibble bas + feu (bit7)
@@ -121,10 +123,12 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::TIMER_D, [this] { mfp.onTimerExpire(3); cpu.updateIpl(); });
     // Timer B en mode DÉLAI (≠ event-count) : daté par le MFP, déclenché ici.
     sched.setCallback(Scheduler::TIMER_B_DELAY, [this] { mfp.onTimerExpire(1); cpu.updateIpl(); });
-    // Fin de commande disque : BUSY tombe, INTRQ levée (GPIP5 + canal 7).
-    sched.setCallback(Scheduler::FDC,     [this] { fdc.onCommandComplete(); cpu.updateIpl(); });
-    // Impulsion d'index du lecteur (1/tour) : purement FDC (pas d'IRQ sur ST).
-    sched.setCallback(Scheduler::FDC_INDEX, [this] { fdc.onIndexPulse(); });
+    // Machine à états du FDC (port Hatari) : chaque phase (spin-up, head-load,
+    // latence rotationnelle, transfert DMA octet par octet, INTRQ, arrêt moteur)
+    // est datée et avancée ici. L'INTRQ (GPIP5 + canal 7) peut être levée/effacée.
+    sched.setCallback(Scheduler::FDC,     [this] { fdc.onFdcEvent(); cpu.updateIpl(); });
+    // (Scheduler::FDC_INDEX n'est plus utilisé : l'index est géré dans la machine
+    // à états du FDC — comptage de tours pour spin-up / arrêt moteur, bit INDEX.)
     // Fin de trame du son DMA STE : pulse Timer A (event-count) → IRQ canal 13.
     sched.setCallback(Scheduler::DMASND, [this] { dmasnd.onFrameEnd(); cpu.updateIpl(); });
     // Réponse de reset du clavier ($F1) : l'IKBD l'a datée → on l'émet + IRQ ACIA.

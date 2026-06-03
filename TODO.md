@@ -40,18 +40,11 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
       _(précision cycle)_ — réf. `psg.c`, `cycles.c`, MAME `stmmu.cpp::bus_contention`
 
 ### Cas concrets — état RÉEL mesuré
-- [~] **Arkanoid** — RE-DIAGNOSTIQUÉ 2026 (détail vivant → [[arkanoid-freeze-investigation]]).
-      Symptôme : titre affiché puis **gel sur `$31736: tst.b $26e7 ; bne`** (`$26E7=$3F`), beep
-      YM continu. **L'ancienne piste « sur-détection mémoire » est ÉCARTÉE** : NeoST détecte
-      512K correctement (`phystop=$80000`, `$FF8001=$04`, identique Hatari) ; `mmuTranslate` est
-      un port exact de `stMemory.c`. **Cause confirmée = TIMING FDC** : `hatari --fastfdc on`
-      REPRODUIT le gel, Hatari défaut (FDC réaliste) **ne gèle pas** (`$31736` 1 hit / 12000 vbls,
-      titre animé). Facteur dominant = **spin-up** (6 tours ≈ 1 s, `FDC_DELAY_IP_SPIN_UP`) absent
-      de NeoST. **MAIS timing FDC nécessaire ≠ suffisant** : en portant transfert MFM réel +
-      spin-up + latence rotationnelle, le gel est **retardé** (frame ~450→~6000) mais **PAS
-      éliminé** (NeoST re-spinne ; Hatari non) → reste un bug NeoST spécifique. **Reste** :
-      (1) modèle FDC rotationnel propre (cf. « Timing réel » §FDC) ; (2) facteur NeoST-spécifique ;
-      (3) diff trace post-chargement NeoST↔Hatari.
+- [x] **Arkanoid** — RÉSOLU 2026 par le **modèle FDC rotationnel** (cf. CHANGELOG §Disquette,
+      [[arkanoid-freeze-investigation]]). Le gel `$31736` exigeait le **spin-up** (6 tours) ET
+      le **débit MFM réel** (256 cyc/octet) ET la **latence rotationnelle** par secteur — tout
+      cela fourni par le port de la machine à états `_ST` d'Hatari. L'écran-titre est désormais
+      stable (Musashi + Moira), comme Hatari sans `--fastfdc`.
 
 ---
 
@@ -100,15 +93,19 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
 - [ ] Compteur de secteurs DMA non relisible sur le vrai HW _(risque élevé)_ — réf.
       `fdc.c:FDC_DiskControllerStatus_ReadWord`
 - [ ] Accès octet à `$FF8604/06` devrait fauter sur ST non-Falcon _(risque élevé)_ — réf. `fdc.c`
-- [ ] **Timing réel** : modèle ROTATIONNEL fidèle (position tête / index, latence par secteur,
-      spin-up 6 tours, head-load, DRQ/FIFO octet par octet, INTRQ daté) _(précision cycle)_ —
-      réf. `fdc.c` (FDC_DELAY_*, FDC_UpdateAll, FDC_NextSectorID_NbBytes). **Débloque Arkanoid**
-      (cf. [[arkanoid-freeze-investigation]]) : une 1ère approche (spin-up + transfert MFM dans
-      `Fdc::commandDelayCycles`) retarde le gel sans le supprimer et sur-ralentit les lectures
-      multi-secteurs → le vrai modèle rotationnel est requis. Sert aussi au support STX.
-- [ ] **Lecteur HD MegaSTE** : DIP `$FF9200`, densité DD/HD, images 1.44 Mo — réf. `fdc.c`
-- [ ] **FIFO DMA/MMU** : secteur-count, status bits, transfert par blocs, interaction ACSI/FDC
-      — réf. MAME `stmmu.cpp`
+- [x] **Timing réel** : modèle ROTATIONNEL fidèle (position tête / index, latence par secteur,
+      spin-up 6 tours, head-load, DRQ/FIFO octet par octet, INTRQ daté) — port de la machine à
+      états `_ST` d'Hatari (`fdc.c` : `FDC_Update*Cmd`, `FDC_NextSectorID_FdcCycles_ST`,
+      `FDC_IndexPulse_*`, FIFO 16 o). **A débloqué Arkanoid** (cf. CHANGELOG §Disquette). Le
+      socle pour le support STX (réécriture WD1772 au niveau piste) est désormais en place.
+- [ ] **Lecteur HD MegaSTE** : DIP `$FF9200`, densité DD/HD, images 1.44 Mo — réf. `fdc.c`.
+      Le facteur de densité est câblé (DD=1) mais le modèle reste DD ; à étendre pour HD/ED.
+- [ ] **WRITE TRACK (format) sur `.ST`** : le modèle logique ne peut reformater à géométrie
+      non standard (limite partagée avec Hatari, qui renvoie `LOST_DATA`). On extrait en
+      best-effort les secteurs du flux écrit ; le « Floppy → Quick Test » du diagnostic Atari
+      échoue donc au formatage (attendu). Vrai support = images flux (STX/SCP).
+- [ ] **FIFO DMA/MMU** : ~~secteur-count, status bits, transfert par blocs~~ FAIT (port
+      `FDC_DMA_FIFO_Push/Pull`) ; reste l'interaction MMU/ACSI fine — réf. MAME `stmmu.cpp`
 
 ## YM2149 PSG
 - [ ] Données port B Centronics + front strobe (bit5) non émulés en sortie _(faible valeur)_ —

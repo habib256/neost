@@ -35,6 +35,7 @@ void usage() {
         "  --mem SIZE        ST-RAM : 256k, 512k (défaut), 1m, 2m, 4m\n"
         "  --walk-mouse      après le boot, injecte un mouvement souris + clic (diag)\n"
         "  --keys STR        après le boot, tape STR au clavier (ex. menus de diag)\n"
+        "  --joy P1[,P0]     maintient un état joystick (bits haut$01 bas$02 g$04 d$08 feu$80)\n"
         "  --diskb FILE      monte une image dans le lecteur B (2e lecteur)\n"
         "  --loopback        « branche » le connecteur de bouclage RS232 (test S série)\n"
         "  --cart FILE       monte une cartouche ($FA0000) : Test Kit diagnostic, etc.\n"
@@ -74,6 +75,8 @@ int main(int argc, char** argv) {
     uint32_t    untilPc    = 0;
     bool        walkMouse  = false;
     std::string keys;                 // touches à injecter après le boot (ex. "Z\n")
+    bool        haveJoy    = false;   // --joy : maintient un état joystick pendant le run
+    uint8_t     joy0Hold   = 0, joy1Hold = 0;  // bits ST (haut$01 bas$02 gauche$04 droite$08 feu$80)
     bool        loopback   = false;   // « branche » le connecteur de bouclage RS232 (test S)
     bool        machineMono = false;
     CpuCore     cpuCore    = CpuCore::Musashi;
@@ -96,6 +99,13 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--walk-mouse")) walkMouse = true;
         else if (!std::strcmp(a, "--keys"))       keys      = next(a);
+        else if (!std::strcmp(a, "--joy")) {      // état joystick maintenu : "P1" ou "P1,P0"
+            const char* s = next(a);
+            joy1Hold = (uint8_t)std::strtoul(s, nullptr, 0);   // port 1 (jeux) en premier
+            const char* comma = std::strchr(s, ',');
+            joy0Hold = comma ? (uint8_t)std::strtoul(comma + 1, nullptr, 0) : 0;  // port 0 optionnel
+            haveJoy = true;
+        }
         else if (!std::strcmp(a, "--loopback"))   loopback  = true;
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
@@ -138,6 +148,15 @@ int main(int argc, char** argv) {
     }
 
     machine.reset();
+
+    // Joystick maintenu (--joy) : pose l'état hôte sur l'IKBD (lu aux interrogations
+    // $16 et au report auto $14). Constant pour tout le run — utile pour piloter un
+    // jeu (« tient le feu/une direction ») ou valider le chemin de report joystick.
+    if (haveJoy) {
+        machine.ikbd.setJoystick(joy0Hold, joy1Hold);
+        std::fprintf(stderr, "[headless] joystick maintenu : port1=$%02X port0=$%02X\n",
+                     joy1Hold, joy0Hold);
+    }
 
     // Exécution déterministe : nombre fixe de trames (pas de Date/random/sleep).
     // Note : --until-pc s'évalue par trame (granularité d'une trame), suffisant

@@ -25,11 +25,15 @@
 #include <string>
 
 #include "core/Machine.hpp"
+#include "JoystickInput.hpp"
 
 namespace {
 
 Machine* g_machine = nullptr;            // carte mère (allouée dans main)
 GLFWwindow* g_window = nullptr;
+bool   g_kbdJoy = false;                 // émulation joystick clavier (flèches + Ctrl droit)
+int    g_kbdJoyPort = 1;                 // port ST visé par l'émulation clavier
+float  g_joyDeadzone = 0.30f;            // zone morte centrale des sticks analogiques
 
 // --- État vidéo WebGL --------------------------------------------------------
 GLuint g_tex = 0, g_prog = 0, g_vbo = 0;
@@ -201,6 +205,9 @@ void onKey(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
         }
         return;
     }
+    // Émulation joystick clavier active : les touches du joystick (flèches + Ctrl
+    // droit) pilotent la manette et ne sont PAS transmises au clavier ST.
+    if (g_kbdJoy && stjoy::kbdBit(key)) return;
     const uint8_t sc = glfwToStScancode(key);
     if (sc) g_machine->ikbd.keyEvent(sc, action == GLFW_PRESS);
 }
@@ -242,6 +249,14 @@ void mainLoop() {
             const bool r = glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
             g_machine->ikbd.mouseEvent(dx * MOUSE_X_SIGN, dy * MOUSE_Y_SIGN, l, r);
         }
+    }
+
+    // Joystick hôte → IKBD (manettes via l'API Gamepad du navigateur + émulation
+    // clavier). Scruté chaque trame, comme le frontend natif.
+    {
+        uint8_t joy0 = 0, joy1 = 0;
+        stjoy::compose(g_window, g_kbdJoy, g_kbdJoyPort, g_joyDeadzone, joy0, joy1);
+        g_machine->ikbd.setJoystick(joy0, joy1);
     }
 
     g_machine->cpu.updateIpl();
@@ -291,6 +306,20 @@ EMSCRIPTEN_KEEPALIVE void neost_mount_disk(const char* path) {
 EMSCRIPTEN_KEEPALIVE void neost_mount_disk_b(const char* path) {
     if (!g_machine || !path) return;
     g_machine->fdc.loadImage(path, 1);
+}
+
+// Émulation joystick au clavier (flèches + Ctrl droit) : enabled != 0 active,
+// port = 0/1 (défaut 1 = port « jeux »). Les manettes physiques (API Gamepad du
+// navigateur) sont toujours scrutées, indépendamment de ce réglage.
+EMSCRIPTEN_KEEPALIVE void neost_set_kbd_joystick(int enabled, int port) {
+    g_kbdJoy     = (enabled != 0);
+    g_kbdJoyPort = (port == 0) ? 0 : 1;
+}
+
+// Zone morte centrale des sticks analogiques (anti-drift), fraction [0,0.95].
+// Le D-pad numérique n'est pas concerné.
+EMSCRIPTEN_KEEPALIVE void neost_set_joy_deadzone(float dz) {
+    g_joyDeadzone = (dz < 0.0f) ? 0.0f : (dz > 0.95f ? 0.95f : dz);
 }
 
 // Synthèse audio du YM2149 : remplit `buf` (heap WASM) de `frames` échantillons

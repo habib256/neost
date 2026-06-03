@@ -126,14 +126,26 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   interrogation `$16` → `$FD,joy0,joy1`.
 
 ## Disquette (FDC WD1772 + DMA)
-- Accès indirect via DMA (`$FF8600`) ; Restore/Seek/Step/Read/Write/ReadAddress + WRITE/READ
-  TRACK ; modèle « DMA instantané ». Sélection face/lecteur via PSG port A. INTRQ → **GPIP5**.
-- **Adresse DMA relisible** (`$FF8609/0B/0D`, incrémente pendant le transfert — corrige
-  « DMA count error »). **Lecteur B** (`--diskb`, PSG port A bits 1/2).
+- **Modèle ROTATIONNEL daté** (port `extern/hatari/src/fdc.c`, chemin « _ST ») remplaçant
+  l'ancien « DMA instantané ». Machine à états par commande (Restore/Seek/Step, Read/Write
+  Sector, Read Address, Read/Write Track, Force Interrupt, Motor Stop) avançée par
+  `Scheduler::FDC` ; chaque phase renvoie un nombre de cycles FDC (≈ cycle CPU à ~8 MHz).
+  Modélise : **impulsions d'index** (300 tr/min, 1 tour = 1 604 249 cyc ≈ 200 ms),
+  **spin-up** (6 tours), **chargement de tête** (15 ms), **latence rotationnelle** jusqu'au
+  champ ID du secteur cherché (`FDC_NextSectorID_ST` : gaps GAP1/2/3, secteur brut 614 o),
+  **transfert DMA octet par octet** (FIFO 16 o, débit MFM 256 cyc/octet), **INTRQ datée**,
+  **arrêt moteur** après 9 tours d'inactivité. Validé : le diagnostic Atari « Floppy → Test
+  Speed » mesure ~200 ms/tour (300 RPM) ; **débloque Arkanoid** (le gel `$31736` exigeait le
+  spin-up + le débit MFM réels — cf. [[arkanoid-freeze-investigation]], comme Hatari sans
+  `--fastfdc`). Déterminisme headless préservé (PRNG reproductible pour la phase d'index).
+- Accès indirect via DMA (`$FF8600`). Sélection face/lecteur via PSG port A. INTRQ → **GPIP5**
+  (+ canal 7). Statut type I avec bits TR00/INDEX/WPRT en temps réel ; remplacement de
+  commande pendant prepare+spin-up ; Force Interrupt (`$Dx`) immédiat/sur-index.
+- **Adresse DMA relisible** (`$FF8609/0B/0D`, incrémente par blocs de 16 o pendant le transfert
+  — corrige « DMA count error »). FIFO/compteur de secteurs, bit erreur DMA. **Lecteur B**
+  (`--diskb`, PSG port A bits 1/2).
 - **Write-protect auto-détecté** depuis les droits du fichier ; **changement de média**
   (Mediach via bascule WPRT à l'éjection/insertion à chaud).
-- **Bit INDEX** WD1772 reflété (trou ~1.46 ms, 1/tour) ; impulsion d'index datée 1/tour
-  (~200 ms, `Scheduler::FDC_INDEX`), moteur off après ~9-10 tours.
 - Formats : `.st` (brut), `.msa` (décompression RLE), `.dim` (en-tête 32 o retiré, port
   `floppies/dim.c` : ID 'BB', non compressé). Détection par CONTENU (indépendante de
   l'extension). Écritures recopiées dans le `.st` ; `.msa`/`.dim` protégées en écriture.
@@ -226,5 +238,8 @@ fidèles à Hatari, pas des bugs.
 - EmuTOS (FR/US) : green desktop, fichiers disquette, double-clic, fenêtres.
 - TOS 1.02 Mega ST FR : boot complet, green desktop basse rés.
 - **Arkanoid** (Imagine 1987) : se lance via l'AUTO de la disquette et affiche son
-  écran-titre, puis **gèle** (`$31736`/`$26E7`) — bug de **timing FDC** identifié, pas
-  encore résolu (cf. `TODO.md` + [[arkanoid-freeze-investigation]]).
+  écran-titre **stable** (plus de gel `$31736`) — résolu par le **modèle FDC rotationnel**
+  (spin-up + débit MFM réels), sous Musashi ET Moira. Lemmings (cracktro), Out Run
+  (répertoire), etc. chargent depuis la disquette.
+- **Diagnostic ST « Field Service » v4.4** (cartouche) : batterie Z (RAM/ROM/Clavier/Audio/
+  MFP-Glue-Timing/BLiT) = Pass ; **Floppy → Test Speed** = ~200 ms/tour (300 RPM).
