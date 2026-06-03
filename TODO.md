@@ -79,8 +79,11 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       inversée), boutons/directions `0xFF`, paddle `0x24` (neutre), lightpen `0x0000`. Boot STE
       byte-identique, MegaSTE inchangé. Reste : émulation réelle des entrées (item Vidéo) + le
       bus error sur accès OCTET de `$FF9200/9220/9222` (mots seuls) _(risque élevé, à part)_.
-- [ ] Contrôle cache/CPU MegaSTE `$FF8E21` sans registre relisible _(lot suivant)_ — réf.
-      `ioMem.c:IoMem_FixAccessForMegaSTE` + `ioMemTabSTE.c:...CacheCpuCtrl_WriteByte`
+- [x] **Contrôle cache/CPU MegaSTE `$FF8E21` relisible** — ✅ FAIT (`Bus`, port
+      `ioMemTabSTE.c:...CacheCpuCtrl_WriteByte`). Octet latché (bit0=cache, bit1=8/16 MHz) +
+      contrainte « cache impossible à 8 MHz » (bit0 forcé à 0 si bit1=0) ; reset = 0 ; gaté
+      MegaSTE. Boot MegaSTE byte-identique. L'EFFET réel (débit cycles, cache 16 Ko) reste les
+      items « précision cycle » de la section CPU.
 - [ ] Registres vidéo STE « void » doivent lire `0x00` (`$FF820B`, `$FF8262-63`, `$FF8266-7F`)
       _(faible valeur)_ — réf. `ioMemTabSTE.c` (IoMem_VoidRead_00)
 - [ ] La banque ROM doit couvrir toute la fenêtre 1 Mo (`$E00000-$EFFFFF`), pas la taille du

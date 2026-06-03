@@ -140,6 +140,12 @@ public:
     // la vraie table des vecteurs en RAM accessible aux exceptions.
     bool bootOverlay = true;
 
+    // Registre Cache/CPU MegaSTE $FF8E21 (octet) : bit0 = cache 16 Ko (0=off),
+    // bit1 = vitesse CPU (0=8 MHz, 1=16 MHz). Latché et relisible (cf. Hatari
+    // IoMemTabMegaSTE_CacheCpuCtrl_WriteByte) — l'EFFET réel (débit cycles, cache)
+    // relève d'items « précision cycle » séparés. Reset = 0 (8 MHz, sans cache).
+    uint8_t megaSteCacheCtrl = 0;
+
 private:
     uint8_t  mmioRead8 (uint32_t addr);
     void     mmioWrite8(uint32_t addr, uint8_t v);

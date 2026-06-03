@@ -410,6 +410,10 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
             default: return 0xFF;
         }
     }
+    // Registre Cache/CPU MegaSTE $FF8E21, relisible (latch écrit par TOS 2.x). cf.
+    // Bus.hpp megaSteCacheCtrl. $FF8E20/22/23 restent « void » (→ glue → 0xFF).
+    if (machine == MachineType::MegaSte && addr == 0xFF8E21)
+        return megaSteCacheCtrl;
     if (glue)
         return glue->read8(addr);         // MMU et reste du MMIO
     return 0xFF;
@@ -455,6 +459,15 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     }
     if (addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine)) {
         rtc->write8(addr, v);             // RTC RP5C15 — Mega ST / Mega STE
+        return;
+    }
+    // Registre Cache/CPU MegaSTE $FF8E21 : latché + contrainte matérielle « le cache ne
+    // peut être actif qu'à 16 MHz » — si bit0 (cache) est demandé alors que bit1 (vitesse)
+    // = 0 (8 MHz), le matériel force bit0 à 0 (cf. Hatari IoMemTabMegaSTE_CacheCpuCtrl_WriteByte).
+    // L'EFFET réel (débit cycles 8/16 MHz, cache 16 Ko) relève d'items « précision cycle ».
+    if (machine == MachineType::MegaSte && addr == 0xFF8E21) {
+        if ((v & 0x02) == 0 && (v & 0x01)) v &= 0xFE;   // cache impossible à 8 MHz
+        megaSteCacheCtrl = v;
         return;
     }
     if (glue)

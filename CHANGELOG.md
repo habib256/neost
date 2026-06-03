@@ -152,6 +152,10 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   6 octets, READ/WRITE(6), INQUIRY, READ CAPACITY, TEST UNIT READY ; disque virtuel
   agrandi à la demande (64 Mo).
 - **PSG `$FF8802` relisible** (read-modify-write `bclr/bset` du port A).
+- **Registre Cache/CPU MegaSTE `$FF8E21` relisible** (port `IoMemTabMegaSTE_CacheCpuCtrl_WriteByte`) :
+  octet latché (bit0 = cache, bit1 = vitesse 8/16 MHz) avec la contrainte matérielle « cache
+  impossible à 8 MHz » (bit0 forcé à 0 si bit1=0). Reset = 0. L'EFFET (débit cycles, cache 16 Ko)
+  reste un item « précision cycle ». Boot MegaSTE byte-identique.
 - **Lectures STE joypad/paddle/lightpen + DIP MegaSTE** (`$FF9200-$FF9223`, port `joy.c`) :
   valeurs au repos au lieu d'un `0xFF` générique — DIP MegaSTE `$FF9200` octet haut = `0xBF`
   (lecteur HD 1.44 Mo, logique inversée), boutons/directions `0xFF` relâchés, paddle au neutre
