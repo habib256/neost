@@ -113,8 +113,12 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
       latence d'IRQ est absorbé, pas accumulé ; modulo si retard ≥ une période. Programmation
       fraîche (écriture TxCR/TxDR) inchangée (ancrée sur `liveNow`). Boot/histogramme IRQ
       inchangés ; +1 tic Timer C récupéré sur 80 s. Réf. `mfp.c:MFP_StartTimer_AB/CD`.
-- [ ] Timer A event-count ignore la polarité AER GPIP4 et recharge à 0 au lieu de 1 _(risque
-      élevé)_ — réf. `mfp.c:MFP_TimerA_Set_Line_Input`
+- [x] **Timer A event-count : polarité AER GPIP4 + recharge à 1** — ✅ FAIT (port
+      `MFP_TimerA_Set_Line_Input`). `Mfp::timerA_setLineInput(bit)` piloté par le NIVEAU de la
+      ligne TAI (= XSINT son DMA, via `DmaSound::setXsint` qui alimente aussi GPIP7) : compte
+      sur le front où `bit == AER bit4` (défaut 0 → fins de trame), recharge depuis TADR à 1
+      (data reg 0 = 256 via wrap uint8), IRQ canal 13. Remplace l'impulsion inconditionnelle.
+      Boot byte-identique (2 cœurs), Timing Pass ; cas par défaut équivalent à l'ancien.
 - [ ] Config baud USART UCR/Timer-D non modélisée (backing-store seul) _(faible valeur)_ —
       réf. `rs232.c:RS232_HandleUCR + RS232_SetBaudRateFromTimerD`
 

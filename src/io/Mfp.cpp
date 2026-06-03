@@ -154,7 +154,7 @@ uint8_t Mfp::readTimerData(int timer) const {
             return static_cast<uint8_t>(count & 0xFF);             // 256 → 0
         }
     }
-    // event-count (A/B, ctrl=8) → compteur suivi par hblank()/timerA_eventCount() ;
+    // event-count (A/B, ctrl=8) → compteur suivi par hblank()/timerA_setLineInput() ;
     // timer à l'arrêt → la recharge (== compteur courant) dans le backing store.
     switch (timer) {
         case 0: return taCounter_;
@@ -220,13 +220,22 @@ void Mfp::hblank() {
     }
 }
 
-void Mfp::timerA_eventCount() {
-    // Idem pour Timer A en event-count (TACR bits0-3 == 0x08) : une impulsion sur
-    // TAI (fin de trame son DMA STE) décompte ; à 0, recharge et lève l'IRQ.
-    if ((timer_[0x19] & 0x0F) != 0x08 || taCounter_ == 0) return;
-    if (--taCounter_ == 0) {
+void Mfp::timerA_setLineInput(bool bit) {
+    // Port de MFP_TimerA_Set_Line_Input. La ligne TAI (XSINT du son DMA sur STE) est
+    // associée à l'AER GPIP4. On ne compte que sur le FRONT actif : transition vers le
+    // niveau égal au bit4 de l'AER (par défaut AER bit4=0, partagé avec l'ACIA active
+    // bas → on compte les passages à 0 = fins de trame son DMA).
+    if (tai_ == bit) return;                       // pas de transition
+    tai_ = bit;
+    if ((timer_[0x19] & 0x0F) != 0x08) return;     // pas en event-count → rien
+    if (bit != ((aer >> 4) & 1)) return;           // front non sélectionné par l'AER GPIP4
+    // À 1, le compteur expire : recharge depuis TADR puis IRQ. Sinon décrément ; comme
+    // taCounter_ est un uint8_t, 0 décrémente vers 255 → data reg 0 vaut bien 256.
+    if (taCounter_ == 1) {
         taCounter_ = taReload_;
         raise(SRC_TIMERA);
+    } else {
+        taCounter_ = uint8_t(taCounter_ - 1);
     }
 }
 

@@ -72,10 +72,13 @@ public:
     // visible) est inchangé ; seule la POSITION du tic dans la ligne change.
     bool timerBStartOfLine() const { return (aer & 0x08) != 0; }
 
-    // Impulsion comptée par Timer A (entrée TAI) : sur STE, la fin de trame du
-    // son DMA y est câblée. En mode event-count (TACR bits0-3 == 0x08), décompte
-    // et lève l'IRQ Timer A (canal 13) à 0 — sert au double-buffering audio STE.
-    void timerA_eventCount();
+    // Ligne d'entrée TAI du Timer A (sur STE = ligne XSINT du son DMA, niveau HAUT
+    // pendant une trame). Port de MFP_TimerA_Set_Line_Input : en event-count (TACR
+    // bits0-3 == 0x08), on compte sur le FRONT sélectionné par l'AER GPIP4 (bit4) —
+    // par défaut AER bit4=0 → on compte les transitions vers 0 (= fins de trame son
+    // DMA). À 1, le compteur recharge (TADR) et lève l'IRQ Timer A (canal 13) ; sinon
+    // il décrémente (data reg 0 = 256 via le wrap). Sert au double-buffering audio STE.
+    void timerA_setLineInput(bool bit);
 
     uint8_t read8(uint32_t addr);
     void    write8(uint32_t addr, uint8_t v);
@@ -190,9 +193,11 @@ private:
     // $FFFA21), tbReload_ = valeur rechargée à 0, tbcr_ = mode ($FFFA1B).
     uint8_t tbcr_ = 0, tbReload_ = 0, tbCounter_ = 0;
 
-    // Timer A en event-count (TAI = fin de trame son DMA sur STE). Compteur
-    // courant + valeur de recharge, chargés à l'écriture de TADR ($FFFA1F).
+    // Timer A en event-count (TAI = ligne XSINT son DMA sur STE). Compteur courant
+    // + valeur de recharge, chargés à l'écriture de TADR ($FFFA1F). tai_ = dernier
+    // niveau de la ligne TAI (pour détecter les fronts, cf. timerA_setLineInput).
     uint8_t taReload_ = 0, taCounter_ = 0;
+    bool    tai_ = false;
 
     // Backing store des autres registres timer/USART : TOS les écrit puis relit
     // pour vérifier la présence du MFP, donc ils doivent renvoyer ce qu'on y a mis.

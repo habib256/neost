@@ -41,17 +41,22 @@ void DmaSound::setMfp(Mfp* m) {
     if (mfp_) mfp_->setHasDmaSound(true);
 }
 
-// Met à jour la ligne XSINT et la propage au MFP (GPIP7). Réf. Hatari
-// DmaSnd_Update_XSINT_Line : HAUT = trame en cours, BAS = son DMA inactif.
+// Met à jour la ligne XSINT et la propage au MFP. Réf. Hatari DmaSnd_Update_XSINT_Line :
+// HAUT = trame en cours, BAS = son DMA inactif. La ligne est câblée à DEUX entrées du
+// MFP — GPIP7 (XOR détection moniteur) ET TAI du Timer A (event-count) — donc chaque
+// transition pilote les deux. C'est la transition vers 0 (fin de trame, AER GPIP4=0 par
+// défaut) qui décompte le Timer A pour le double-buffering audio STE.
 void DmaSound::setXsint(bool level) {
     if (level == xsint_) return;                  // pas de transition → rien à faire
     xsint_ = level;
-    if (mfp_) mfp_->setXsintLine(xsint_);
+    if (mfp_) {
+        mfp_->setXsintLine(xsint_);               // → GPIP7
+        mfp_->timerA_setLineInput(xsint_);        // → TAI (Timer A event-count, polarité AER)
+    }
 }
 
 void DmaSound::onFrameEnd() {
-    setXsint(false);                              // fin de trame : XSINT → BAS (transition 1→0)
-    if (mfp_) mfp_->timerA_eventCount();          // impulsion TAI → event-count Timer A
+    setXsint(false);                              // fin de trame : XSINT → BAS (compte Timer A si AER bit4=0)
     if (ctrl_ & 0x02) { setXsint(true); scheduleFrameEnd(); }  // repeat : nouvelle trame → XSINT HAUT
 }
 

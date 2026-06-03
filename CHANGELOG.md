@@ -123,8 +123,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   corrigée (diviseur de pas). Backend miniaudio (CoreAudio).
 - **Son DMA STE** (`DmaSound`, `$FF8900-$FF8925`) : échantillons 8 bits signés en RAM
   (6.25/12.5/25/50 kHz, mono/stéréo, play/repeat, compteur d'adresse), mixé au YM2149.
-  **Interruption de fin de trame** datée (`Scheduler::DMASND`) → entrée TAI du MFP → IRQ
-  Timer A event-count (double-buffering streamé STE).
+  **Ligne XSINT** datée (`Scheduler::DMASND`) câblée aux DEUX entrées MFP — GPIP7 ET TAI
+  du Timer A — comme `DmaSnd_Update_XSINT_Line`. Timer A **event-count** (port
+  `MFP_TimerA_Set_Line_Input`) : compte sur le front sélectionné par l'AER GPIP4 (défaut
+  bit4=0 → fins de trame), recharge à 1 (data reg 0 = 256), IRQ canal 13 — double-buffering
+  streamé STE.
 - **LMC1992 / Microwire** (`$FF8922/24`) : décodage commande série 11 bits, volume
   maître + G/D (gain), basses/aigus ±12 dB (filtres RBJ). **Shift série** `$FF8922`
   (16 décalages de 8 cyc, `Scheduler::MICROWIRE` — les diags qui pollent jusqu'à 0 OK).
