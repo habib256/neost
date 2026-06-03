@@ -26,12 +26,14 @@
 #include <cctype>
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
+#include <vector>
 #include <sys/stat.h>
 
 #include "core/Machine.hpp"
 #include "audio/Audio.hpp"
 #include "audio/DriveSound.hpp"
-#include "JoystickInput.hpp"
+#include "io/JoystickInput.hpp"
 
 namespace fs = std::filesystem;
 
@@ -87,6 +89,7 @@ static void saveConfig(const std::string& exeDir, const Config& c) {
 
 #if defined(NEOST_WITH_IMGUI)
 #include "imgui.h"
+#include "imgui_internal.h"   // gestionnaire de réglages personnalisé (ImGuiSettingsHandler)
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl2.h"
 // --- Pictogrammes Font Awesome 5 Free Solid (fonts/fa-solid-900.ttf, fusionnés dans
@@ -108,6 +111,42 @@ static void saveConfig(const std::string& exeDir, const Config& c) {
 #define ICON_FA_COMPACT_DISC  "\xef\x94\x9f"
 #define ICON_FA_MEMORY        "\xef\x94\xb8"
 #define ICON_FA_PALETTE       "\xef\x94\xbf"
+
+// Bouton à ICÔNE SEULE (le texte est superflu quand le pictogramme est explicite) :
+// l'infobulle au survol rappelle l'action. Renvoie true au clic.
+static bool IconButton(const char* icon, const char* tooltip) {
+    const bool clicked = ImGui::Button(icon);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tooltip);
+    return clicked;
+}
+
+// --- Persistance de la taille de la fenêtre PRINCIPALE (fenêtre GLFW) dans imgui.ini ---
+// La fenêtre hôte n'est pas une fenêtre ImGui ; on enregistre donc sa taille via un
+// gestionnaire de réglages ImGui personnalisé, qui écrit/relit une section
+// « [NeoST][Window] Size=L,H » dans imgui.ini (à côté des positions des sous-fenêtres).
+static GLFWwindow* g_window = nullptr;        // fenêtre hôte (pour interroger/poser sa taille)
+static int  g_iniWinW = 0, g_iniWinH = 0;     // taille relue depuis imgui.ini
+static bool g_iniWinValid = false;
+
+static void* WinSettings_ReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* /*name*/) {
+    return (void*)1;                           // une seule entrée → on accepte toujours
+}
+static void WinSettings_ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void*, const char* line) {
+    int w = 0, h = 0;
+    if (std::sscanf(line, "Size=%d,%d", &w, &h) == 2 && w > 0 && h > 0) {
+        g_iniWinW = w; g_iniWinH = h; g_iniWinValid = true;
+    }
+}
+static void WinSettings_ApplyAll(ImGuiContext*, ImGuiSettingsHandler*) {
+    if (g_iniWinValid && g_window) glfwSetWindowSize(g_window, g_iniWinW, g_iniWinH);
+}
+static void WinSettings_WriteAll(ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
+    if (!g_window) return;
+    int w = 0, h = 0;
+    glfwGetWindowSize(g_window, &w, &h);
+    buf->appendf("[%s][Window]\n", handler->TypeName);
+    buf->appendf("Size=%d,%d\n\n", w, h);
+}
 #endif
 
 namespace {
@@ -267,7 +306,7 @@ void drawHexViewer(Bus& bus) {
 // reqReset passe à true si le bouton RESET est cliqué.
 void drawCpuState(Cpu68k& cpu, bool& reqReset) {
     ImGui::Begin("CPU 68000");
-    if (ImGui::Button("Reset (RESET physique)")) reqReset = true;
+    if (IconButton(ICON_FA_POWER_OFF, "Reset (RESET physique)")) reqReset = true;
     ImGui::Separator();
     ImGui::Text("PC = %08X    SR = %04X", cpu.pc(), cpu.sr());
     ImGui::Separator();
@@ -422,31 +461,46 @@ void drawDiskLibrary(const std::string& disksDir, const std::string& mounted,
     ImGui::Begin("Disk Library");
     const std::string curName = mounted.empty() ? "(vide)"
                                                  : fs::path(mounted).filename().string();
-    ImGui::Text("Lecteur A : %s", curName.c_str());
+    // Bouton Éjecter COMPLÈTEMENT À GAUCHE, puis le nom du disque monté à sa droite.
     if (!mounted.empty()) {
+        if (IconButton(ICON_FA_EJECT, "Éjecter")) reqEject = true;
         ImGui::SameLine();
-        if (ImGui::Button("Éjecter")) reqEject = true;
     }
+    ImGui::Text("Lecteur A : %s", curName.c_str());
     ImGui::Separator();
     ImGui::TextDisabled("Images dans %s/", disksDir.c_str());
 
     std::error_code ec;
     if (fs::is_directory(disksDir, ec)) {
+        const fs::path base(disksDir);
         const std::string mountedName = mounted.empty() ? "" : fs::path(mounted).filename().string();
-        for (const auto& e : fs::directory_iterator(disksDir, ec)) {
+        // Récolte RÉCURSIVE des images .st/.msa, triées par ordre alphabétique de
+        // DOSSIER puis de FICHIER (insensible à la casse) sur le chemin relatif à disks/.
+        std::vector<fs::path> images;
+        for (const auto& e : fs::recursive_directory_iterator(base, ec)) {
             if (!e.is_regular_file()) continue;
             std::string ext = e.path().extension().string();
             for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
-            if (ext != ".st" && ext != ".msa") continue;
-            const std::string name = e.path().filename().string();
-            ImGui::PushID(name.c_str());
-            if (name == mountedName) {
+            if (ext == ".st" || ext == ".msa") images.push_back(e.path());
+        }
+        auto sortKey = [&](const fs::path& p) {
+            std::string rel = fs::relative(p, base, ec).generic_string();   // "sous-dossier/fichier"
+            for (auto& ch : rel) ch = (char)std::tolower((unsigned char)ch);
+            return rel;
+        };
+        std::sort(images.begin(), images.end(),
+                  [&](const fs::path& a, const fs::path& b) { return sortKey(a) < sortKey(b); });
+
+        for (const auto& p : images) {
+            const std::string rel = fs::relative(p, base, ec).generic_string();  // affiché (montre le dossier)
+            ImGui::PushID(p.string().c_str());
+            if (!mountedName.empty() && p.filename().string() == mountedName) {
                 ImGui::TextDisabled("●");                  // montée
             } else if (ImGui::SmallButton("Monter")) {
-                reqMount = e.path().string();
+                reqMount = p.string();
             }
             ImGui::SameLine();
-            ImGui::TextUnformatted(name.c_str());
+            ImGui::TextUnformatted(rel.c_str());
             ImGui::PopID();
         }
     } else {
@@ -467,7 +521,7 @@ void drawCartLibrary(const std::string& cartsDir, const std::string& mounted,
     ImGui::Text("Port cartouche : %s", curName.c_str());
     if (!mounted.empty()) {
         ImGui::SameLine();
-        if (ImGui::Button("Éjecter")) reqEject = true;
+        if (IconButton(ICON_FA_EJECT, "Éjecter")) reqEject = true;
     }
     ImGui::Separator();
     ImGui::TextDisabled("Images dans %s/", cartsDir.c_str());
@@ -598,6 +652,23 @@ int main(int argc, char** argv) {
 #if defined(NEOST_WITH_IMGUI)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    // Enregistre la taille de la fenêtre PRINCIPALE dans imgui.ini : gestionnaire de
+    // réglages personnalisé, posé AVANT le 1er NewFrame (qui charge imgui.ini et applique
+    // la taille relue). Un resize marque les réglages « sales » → ImGui resauvegarde.
+    g_window = window;
+    {
+        ImGuiSettingsHandler h;
+        h.TypeName   = "NeoST";
+        h.TypeHash   = ImHashStr("NeoST");
+        h.ReadOpenFn = WinSettings_ReadOpen;
+        h.ReadLineFn = WinSettings_ReadLine;
+        h.ApplyAllFn = WinSettings_ApplyAll;
+        h.WriteAllFn = WinSettings_WriteAll;
+        ImGui::AddSettingsHandler(&h);
+    }
+    glfwSetWindowSizeCallback(window, [](GLFWwindow*, int, int) {
+        if (ImGui::GetCurrentContext()) ImGui::MarkIniSettingsDirty();
+    });
     // Police de l'interface : DejaVu Sans (dossier fonts/), nettement plus lisible que
     // la police bitmap intégrée d'ImGui. Doit être chargée AVANT le 1er rendu (l'atlas
     // est construit à la 1re trame). Repli silencieux sur la police par défaut si absente.
@@ -723,13 +794,13 @@ int main(int argc, char** argv) {
         float menuH = 0.0f;
         if (ImGui::BeginMainMenuBar()) {
             menuH = ImGui::GetWindowSize().y;
-            if (ImGui::BeginMenu("Machine")) {
-                if (ImGui::MenuItem("Reset"))      reqReset = true;
-                if (ImGui::MenuItem("Hard Reset")) reqHardReset = true;
+            if (ImGui::BeginMenu(ICON_FA_MICROCHIP " Machine")) {
+                if (ImGui::MenuItem(ICON_FA_REDO " Reset"))      reqReset = true;
+                if (ImGui::MenuItem(ICON_FA_POWER_OFF " Hard Reset")) reqHardReset = true;
                 // Modèle / RAM / cœur / ROM : appliqués À CHAUD (hard reset avec les
                 // nouveaux paramètres) — aucun redémarrage de l'appli. Mémorisés dans
                 // neost.cfg. `reqRebuild` déclenche la reconfiguration en fin de boucle.
-                if (ImGui::BeginMenu("Modèle")) {
+                if (ImGui::BeginMenu(ICON_FA_SERVER " Modèle")) {
                     const char* const ids[]   = { "st", "megast", "ste", "megaste" };
                     const char* const labels[] = { "ST", "Mega ST", "STE", "Mega STE" };
                     for (int i = 0; i < 4; ++i)
@@ -738,7 +809,7 @@ int main(int argc, char** argv) {
                         }
                     ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Mémoire")) {
+                if (ImGui::BeginMenu(ICON_FA_MEMORY " Mémoire")) {
                     const char* const mids[]   = { "256k", "512k", "1m", "2m", "4m" };
                     const char* const mlabels[] = { "256 Ko", "512 Ko", "1 Mo", "2 Mo", "4 Mo" };
                     for (int i = 0; i < 5; ++i)
@@ -747,7 +818,7 @@ int main(int argc, char** argv) {
                         }
                     ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Cœur CPU")) {
+                if (ImGui::BeginMenu(ICON_FA_MICROCHIP " Cœur CPU")) {
                     const char* const cids[]    = { "moira", "musashi" };
                     const char* const clabels[] = { "Moira (cycle-exact)", "Musashi" };
                     for (int i = 0; i < 2; ++i)
@@ -757,7 +828,7 @@ int main(int argc, char** argv) {
                     ImGui::EndMenu();
                 }
                 // Image TOS/EmuTOS (.img/.rom du dossier roms/), chargée à chaud.
-                if (ImGui::BeginMenu("ROM")) {
+                if (ImGui::BeginMenu(ICON_FA_SAVE " ROM")) {
                     std::error_code ec;
                     const std::string curRom = fs::path(cfg.rom).filename().string();
                     if (fs::is_directory(romsDir, ec)) {
@@ -776,10 +847,10 @@ int main(int argc, char** argv) {
                     }
                     ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Cartouche")) {
+                if (ImGui::BeginMenu(ICON_FA_COMPACT_DISC " Cartouche")) {
                     if (machine.bus.mountedCartPath().empty()) {
                         ImGui::TextDisabled("(aucune)");
-                    } else if (ImGui::MenuItem("Éjecter")) {
+                    } else if (ImGui::MenuItem(ICON_FA_EJECT " Éjecter")) {
                         reqEjectCart = true;
                     }
                     std::error_code ec;
@@ -802,26 +873,26 @@ int main(int argc, char** argv) {
                 ImGui::Separator();
                 // FDC rapide (équivalent hatari --fastfdc) : accès disque ÷10. Prend effet
                 // immédiatement (pas de reset), mémorisé dans neost.cfg.
-                if (ImGui::MenuItem("FDC rapide (accès disque ÷10)", nullptr, cfg.fastfdc)) {
+                if (ImGui::MenuItem(ICON_FA_BOLT " FDC rapide (accès disque ÷10)", nullptr, cfg.fastfdc)) {
                     cfg.fastfdc = !cfg.fastfdc;
                     machine.fdc.setFastFdc(cfg.fastfdc);
                     saveConfig(exeDir, cfg);
                 }
                 ImGui::Separator();
-                if (ImGui::MenuItem("Quitter")) glfwSetWindowShouldClose(window, 1);
+                if (ImGui::MenuItem(ICON_FA_SIGN_OUT_ALT " Quitter")) glfwSetWindowShouldClose(window, 1);
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Résolution")) {
-                if (ImGui::MenuItem("Couleur (basse rés)", nullptr,  color)) reqMonitor = 1;
-                if (ImGui::MenuItem("Mono (haute rés)",    nullptr, !color)) reqMonitor = 0;
+            if (ImGui::BeginMenu(ICON_FA_DESKTOP " Résolution")) {
+                if (ImGui::MenuItem(ICON_FA_PALETTE " Couleur (basse rés)", nullptr,  color)) reqMonitor = 1;
+                if (ImGui::MenuItem(ICON_FA_ADJUST " Mono (haute rés)",    nullptr, !color)) reqMonitor = 0;
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Joystick")) {
+            if (ImGui::BeginMenu(ICON_FA_GAMEPAD " Joystick")) {
                 // Émulation au clavier (flèches + Ctrl droit). F11 bascule aussi.
-                if (ImGui::MenuItem("Émulation clavier (flèches + Ctrl droit)", "F11", &g_kbdJoy)) {
+                if (ImGui::MenuItem(ICON_FA_KEYBOARD " Émulation clavier (flèches + Ctrl droit)", "F11", &g_kbdJoy)) {
                     cfg.kbdjoy = g_kbdJoy; saveConfig(exeDir, cfg);
                 }
-                if (ImGui::BeginMenu("Port émulé au clavier")) {
+                if (ImGui::BeginMenu(ICON_FA_GAMEPAD " Port émulé au clavier")) {
                     if (ImGui::MenuItem("Port 1 (jeux)", nullptr, g_kbdJoyPort == 1)) {
                         g_kbdJoyPort = cfg.joyport = 1; saveConfig(exeDir, cfg);
                     }
@@ -856,12 +927,12 @@ int main(int argc, char** argv) {
                 if (nPad == 0) ImGui::BulletText("(aucune)");
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Fenêtres")) {
-                ImGui::MenuItem("Disk Library",  nullptr, &g_showDisk);
-                ImGui::MenuItem("Cart Library",  nullptr, &g_showCart);
-                ImGui::MenuItem("Mémoire (hex)", nullptr, &g_showHex);
-                ImGui::MenuItem("CPU 68000",     nullptr, &g_showCpu);
-                ImGui::MenuItem("Joystick",      nullptr, &g_showJoy);
+            if (ImGui::BeginMenu(ICON_FA_CLONE " Fenêtres")) {
+                ImGui::MenuItem(ICON_FA_SAVE " Disk Library",  nullptr, &g_showDisk);
+                ImGui::MenuItem(ICON_FA_COMPACT_DISC " Cart Library",  nullptr, &g_showCart);
+                ImGui::MenuItem(ICON_FA_MEMORY " Mémoire (hex)", nullptr, &g_showHex);
+                ImGui::MenuItem(ICON_FA_MICROCHIP " CPU 68000",     nullptr, &g_showCpu);
+                ImGui::MenuItem(ICON_FA_GAMEPAD " Joystick",      nullptr, &g_showJoy);
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
@@ -874,12 +945,12 @@ int main(int argc, char** argv) {
                      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
                      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus);
-        if (ImGui::Button("Reset")) reqReset = true;
+        if (IconButton(ICON_FA_REDO, "Reset")) reqReset = true;
         ImGui::SameLine();
         // Reset à froid : efface la ST-RAM → EmuTOS/TOS refait un boot complet.
-        if (ImGui::Button("Hard Reset")) reqHardReset = true;
+        if (IconButton(ICON_FA_POWER_OFF, "Hard Reset")) reqHardReset = true;
         ImGui::SameLine();
-        if (ImGui::Button(color ? "Passer en Mono" : "Passer en Couleur"))
+        if (IconButton(color ? ICON_FA_ADJUST : ICON_FA_PALETTE, color ? "Passer en Mono" : "Passer en Couleur"))
             reqMonitor = color ? 0 : 1;
         ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
         ImGui::Checkbox("Disk", &g_showDisk);  ImGui::SameLine();
@@ -970,6 +1041,9 @@ int main(int argc, char** argv) {
     saveConfig(exeDir, cfg);
 
 #if defined(NEOST_WITH_IMGUI)
+    // Écrit imgui.ini avant l'arrêt → garantit la sauvegarde de la taille de fenêtre
+    // (et des positions de sous-fenêtres) même si rien d'autre n'a marqué les réglages.
+    if (ImGui::GetIO().IniFilename) ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
     ImGui_ImplOpenGL2_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

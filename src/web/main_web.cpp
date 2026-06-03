@@ -25,7 +25,7 @@
 #include <string>
 
 #include "core/Machine.hpp"
-#include "JoystickInput.hpp"
+#include "io/JoystickInput.hpp"
 
 namespace {
 
