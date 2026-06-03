@@ -466,8 +466,9 @@ void drawStScreen(const GlScreen& s, bool captured, bool& reqCapture, float topO
     ImGui::End();
 }
 
-// Bibliothèque de disquettes : liste les .st du dossier disks/, monte/éjecte sur
-// le lecteur A. reqMount = chemin à monter (sinon vide), reqEject = éjection.
+// Bibliothèque de disquettes : liste les images montables du dossier disks/,
+// monte/éjecte sur le lecteur A. reqMount = chemin à monter (sinon vide),
+// reqEject = éjection.
 void drawDiskLibrary(const std::string& disksDir, const std::string& mounted,
                      std::string& reqMount, bool& reqEject) {
     ImGui::Begin("Disk Library");
@@ -486,14 +487,15 @@ void drawDiskLibrary(const std::string& disksDir, const std::string& mounted,
     if (fs::is_directory(disksDir, ec)) {
         const fs::path base(disksDir);
         const std::string mountedName = mounted.empty() ? "" : fs::path(mounted).filename().string();
-        // Récolte RÉCURSIVE des images .st/.msa, triées par ordre alphabétique de
+        // Récolte RÉCURSIVE des images .st/.msa/.dim/.stx, triées par ordre alphabétique de
         // DOSSIER puis de FICHIER (insensible à la casse) sur le chemin relatif à disks/.
         std::vector<fs::path> images;
         for (const auto& e : fs::recursive_directory_iterator(base, ec)) {
             if (!e.is_regular_file()) continue;
             std::string ext = e.path().extension().string();
             for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
-            if (ext == ".st" || ext == ".msa") images.push_back(e.path());
+            if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx")
+                images.push_back(e.path());
         }
         auto sortKey = [&](const fs::path& p) {
             std::string rel = fs::relative(p, base, ec).generic_string();   // "sous-dossier/fichier"
