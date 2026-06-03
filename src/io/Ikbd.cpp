@@ -109,6 +109,14 @@ void Ikbd::dispatchCommand() {
             // perdue) → « Keyboard not responding ». On diffère via
             // l'ordonnanceur ; à défaut (pas de scheduler), repli immédiat.
             if (inBuf_[1] == 0x01) {
+                // L'IKBD repart de ses défauts (cf. Hatari IKBD_Reset, l.565-569) :
+                // souris RELATIVE, seuils 1, pas d'échelle, axe Y vers le haut,
+                // état de bouton émis remis à zéro.
+                mouseMode_  = REL;
+                xThreshold_ = yThreshold_ = 1;
+                xScale_     = yScale_ = 0;
+                yAxis_      = 1;
+                bOldL_      = bOldR_ = false;
                 constexpr int64_t kIkbdResetCycles = 502000;
                 if (sched_) sched_->schedule(Scheduler::IKBD, sched_->now() + kIkbdResetCycles);
                 else        pushRx(0xF1);
@@ -148,6 +156,30 @@ void Ikbd::dispatchCommand() {
             // l'échelle ; aucun clamp ici, comme Hatari).
             absX_ = uint16_t((inBuf_[2] << 8) | inBuf_[3]);
             absY_ = uint16_t((inBuf_[4] << 8) | inBuf_[5]);
+            break;
+        case 0x0B:
+            // $0B = SET MOUSE THRESHOLD (cf. Hatari IKBD_Cmd_SetMouseThreshold) :
+            // seuils X/Y (octets 1/2) d'émission du paquet relatif. En deçà, le
+            // mouvement n'est pas remonté → le jeu filtre les micro-déplacements.
+            xThreshold_ = inBuf_[1];
+            yThreshold_ = inBuf_[2];
+            break;
+        case 0x0C:
+            // $0C = SET MOUSE SCALE (cf. Hatari IKBD_Cmd_SetMouseScale) : facteur
+            // d'échelle X/Y (octets 1/2), appliqué à l'accumulation en mode ABSOLU
+            // si > 1. Sans effet sur le paquet relatif, comme Hatari.
+            xScale_ = inBuf_[1];
+            yScale_ = inBuf_[2];
+            break;
+        case 0x0F:
+            // $0F = SET Y AXIS DOWN (cf. Hatari IKBD_Cmd_SetYAxisDown) : origine Y
+            // en bas → le signe du Δy émis (et l'accumulation absolue) est inversé.
+            yAxis_ = -1;
+            break;
+        case 0x10:
+            // $10 = SET Y AXIS UP (cf. Hatari IKBD_Cmd_SetYAxisUp) : origine Y en
+            // haut (défaut de reset).
+            yAxis_ = 1;
             break;
         case 0x14: {
             // $14 = SET JOYSTICK EVENT REPORTING (cf. Hatari IKBD_Cmd_ReturnJoystickAuto) :
@@ -234,11 +266,15 @@ void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
     // chevauchent aucun scancode (max ~$F2), d'où l'absence d'ambiguïté pour le
     // parseur IKBD d'EmuTOS qui lit ces flux entremêlés sur la même ACIA.
     if (mouseMode_ == ABS) {
-        // Mode absolu (cf. Hatari ikbd.c, AUTOMODE_MOUSEABS) : on accumule Δ dans
-        // la position courante en la bornant à [0, Max], et on retient l'état des
-        // boutons. Aucun paquet $F8 n'est émis ; l'hôte lira la position via $0D.
-        int x = static_cast<int>(absX_) + dx;
-        int y = static_cast<int>(absY_) + dy;
+        // Mode absolu (cf. Hatari IKBD_UpdateInternalMousePosition, AUTOMODE_MOUSEABS) :
+        // on accumule Δ dans la position courante en la bornant à [0, Max], en
+        // appliquant l'échelle ($0C, si > 1) et le signe d'axe Y ($0F/$10), et on
+        // retient l'état des boutons. Aucun paquet $F8 n'est émis ; l'hôte lira la
+        // position via $0D.
+        const int sx = (xScale_ > 1) ? dx * xScale_ : dx;
+        const int sy = (yScale_ > 1) ? dy * yAxis_ * yScale_ : dy * yAxis_;
+        int x = static_cast<int>(absX_) + sx;
+        int y = static_cast<int>(absY_) + sy;
         if (x < 0) x = 0; else if (x > absMaxX_) x = absMaxX_;
         if (y < 0) y = 0; else if (y > absMaxY_) y = absMaxY_;
         absX_ = static_cast<uint16_t>(x);
@@ -247,13 +283,32 @@ void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
         prevR_ = right;
         return;
     }
-    auto clamp8 = [](int v) -> uint8_t {
-        if (v < -128) v = -128; else if (v > 127) v = 127;
-        return static_cast<uint8_t>(static_cast<int8_t>(v));
-    };
-    pushRx(uint8_t(0xF8 | (right ? 0x01 : 0) | (left ? 0x02 : 0)));
-    pushRx(clamp8(dx));
-    pushRx(clamp8(dy));
+
+    // Mode relatif (port fidèle de Hatari IKBD_SendRelMousePacket, l.1382-1422) :
+    // on draine le Δ de cette trame en paquets $F8 de 3 octets. Un paquet n'est
+    // émis QUE si le Δ borné à [-128,127] atteint le seuil EN VALEUR ABSOLUE, OU
+    // si un bouton a changé depuis le dernier paquet — cette seconde condition est
+    // ce qui fait remonter un appui/relâchement SANS mouvement (boutons de Vroom).
+    // Les gros Δ sortent en plusieurs paquets ; le signe de Δy suit yAxis_ ($0F/$10)
+    // mais la soustraction de drain utilise le Δy non signé (comme Hatari). Le
+    // reliquat sous le seuil est abandonné (Hatari écrase Δ à la trame suivante).
+    int dX = dx, dY = dy;
+    for (int guard = 0; guard < 16; ++guard) {
+        int bx = dX; if (bx > 127) bx = 127; else if (bx < -128) bx = -128;
+        int by = dY; if (by > 127) by = 127; else if (by < -128) by = -128;
+        const bool overThr =
+            (bx < 0 && bx <= -xThreshold_) || (bx > 0 && bx >= xThreshold_) ||
+            (by < 0 && by <= -yThreshold_) || (by > 0 && by >= yThreshold_);
+        const bool btnChanged = (bOldL_ != left) || (bOldR_ != right);
+        if (!overThr && !btnChanged) break;
+        pushRx(uint8_t(0xF8 | (right ? 0x01 : 0) | (left ? 0x02 : 0)));
+        pushRx(static_cast<uint8_t>(static_cast<int8_t>(bx)));
+        pushRx(static_cast<uint8_t>(static_cast<int8_t>(by * yAxis_)));
+        dX -= bx;
+        dY -= by;
+        bOldL_ = left;
+        bOldR_ = right;
+    }
 }
 
 void Ikbd::pushRx(uint8_t b) {

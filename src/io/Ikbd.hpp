@@ -45,8 +45,10 @@ public:
     // Événement clavier venant de l'hôte (scancode ST déjà traduit).
     void keyEvent(uint8_t scancode, bool pressed);
 
-    // Mouvement/boutons souris → paquet relatif IKBD de 3 octets. dx>0 = droite,
-    // dy>0 = bas (cf. signe choisi côté frontend). left/right = boutons enfoncés.
+    // Mouvement/boutons souris (cf. signe frontend : dx>0 = droite, dy>0 = bas).
+    // En mode relatif, draine le Δ en paquets $F8 de 3 octets sous contrôle du
+    // seuil ($0B), du signe d'axe Y ($0F/$10), et émet aussi sur changement de
+    // bouton SANS mouvement. En mode absolu, accumule la position (échelle $0C).
     void mouseEvent(int dx, int dy, bool left, bool right);
 
     // Tic de trame (VBL) : en mode joystick auto, l'IKBD émet spontanément un
@@ -90,6 +92,20 @@ private:
     uint16_t absMaxX_ = 0, absMaxY_ = 0;     // bornes inclusives (commande $09)
     uint8_t  prevAbsButtons_ = 0;            // boutons signalés à la dernière interrogation $0D
     bool     prevL_ = false, prevR_ = false; // état persistant des boutons (mode ABS)
+
+    // --- Paramètres du paquet souris relatif (cf. Hatari KeyboardProcessor.Mouse) ---
+    // Seuil ($0B) : un paquet n'est émis que si |Δ| ≥ seuil EN VALEUR ABSOLUE
+    // (défaut 1 → tout mouvement compte ; filtre le jitter quand un jeu le monte).
+    // Échelle ($0C) : multiplie le Δ accumulé en mode ABSOLU si > 1 (défaut 0 =
+    // pas d'échelle ; sans effet sur le paquet relatif, comme Hatari). yAxis_
+    // ($0F/$10) : +1 = origine Y en haut (défaut), -1 = en bas — applique son
+    // signe au Δy émis et à l'accumulation absolue. bOldL_/bOldR_ = dernier état
+    // de bouton émis : sert à remonter un clic/relâchement SANS mouvement
+    // (détection de front — boutons de passage de vitesse de Vroom).
+    int  xThreshold_ = 1, yThreshold_ = 1;
+    int  xScale_ = 0, yScale_ = 0;
+    int  yAxis_ = 1;
+    bool bOldL_ = false, bOldR_ = false;
 
     // --- Mode joystick (cf. Hatari ikbd.c KeyboardProcessor.JoystickMode) -------
     // JOY_OFF = interrogation seule via $16 (par défaut) ; JOY_AUTO = report
