@@ -48,6 +48,13 @@ public:
     // est arrêté ou en event-count. (Re)programme l'échéance sur l'ordonnanceur.
     int64_t timerPeriodCycles(int timer) const;
     void    scheduleTimer(int timer);
+
+    // Valeur lue dans le registre de données d'un timer (0..3 = A/B/C/D). En mode
+    // DÉLAI actif, renvoie le COMPTEUR VIVANT (décompté depuis l'écriture, calculé
+    // d'après les cycles restants avant l'IRQ) et non la valeur de recharge — port
+    // de MFP_ReadTimer_AB/CD (Hatari). En event-count (A/B) ou à l'arrêt, le
+    // compteur suivi (taCounter_/tbCounter_) ou la recharge convient déjà.
+    uint8_t readTimerData(int timer) const;
     // Échéance atteinte : lève l'IRQ du timer et le replanifie (mode délai).
     void    onTimerExpire(int timer);
 

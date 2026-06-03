@@ -90,10 +90,13 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 ## MFP 68901 + RS232 USART
 - [ ] Écritures AER/DDR/GPIP ne réévaluent pas les IRQ GPIP front-déclenchées _(risque élevé)_
       — réf. `mfp.c:MFP_GPIP_Update_Interrupt`
-- [ ] Bit3 GPIP (blitter busy/idle) non représenté en lecture _(lot suivant)_ — réf.
-      `mfp.c:MFP_GPIP_ReadByte_Main`
-- [ ] Lecture data-register Timer A/C/D renvoie la recharge, pas le compteur vivant _(lot
-      suivant)_ — réf. `mfp.c:MFP_ReadTimer_AB/CD`
+- [x] Bit3 GPIP (blitter busy/idle) en lecture — ✅ déjà câblé (`gpuLine_` via
+      `Blitter` → `Mfp::setBlitterLine`, ligne GPU_DONE active bas dans `read8`).
+- [x] **Lecture data-register Timer A/B/C/D = compteur VIVANT** — ✅ FAIT (port
+      `MFP_ReadTimer_AB/CD`). `Mfp::readTimerData` : en mode délai actif, compteur reconstruit
+      `ceil(cycles_MFP_restants / prescaler)` via `Scheduler::cyclesUntil` (= `CycInt_FindCyclesRemaining`) ;
+      event-count (A/B) → compteur suivi ; arrêté → recharge. Test *Timing* Pass (2 cœurs),
+      boot byte-identique. Reste : edge « stopping data reg entre 1 et 0 » (forcer TxDR).
 - [ ] Replanning des timers délai perd le dépassement (PendingCyclesOver) _(lot suivant)_ —
       réf. `mfp.c:MFP_StartTimer_AB/CD`
 - [ ] Timer A event-count ignore la polarité AER GPIP4 et recharge à 0 au lieu de 1 _(risque

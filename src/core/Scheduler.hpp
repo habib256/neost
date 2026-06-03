@@ -88,6 +88,16 @@ public:
 
     int64_t now() const { return now_; }
 
+    // Cycles CPU restants avant l'échéance de la source `s`, mesurés depuis
+    // l'horloge LIVE (sous-instruction). Renvoie -1 si la source n'est pas armée.
+    // Équivalent de `CycInt_FindCyclesRemaining` d'Hatari : permet à une puce (le
+    // MFP) de lire le COMPTEUR VIVANT d'un timer en mode délai (cf. MFP_ReadTimer_AB/CD).
+    int64_t cyclesUntil(Source s) const {
+        if (due_[s] == kInactive) return -1;
+        const int64_t rem = due_[s] - liveNow();
+        return rem > 0 ? rem : 0;
+    }
+
     // Cycle du prochain événement dû (>= now), ou -1 si aucun n'est armé.
     int64_t nextDue() const {
         int64_t best = -1;

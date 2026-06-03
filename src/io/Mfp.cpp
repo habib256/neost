@@ -44,7 +44,10 @@ uint8_t Mfp::read8(uint32_t addr) {
         case 0x15: return imrb;
         case 0x17: return vr;
         case 0x1B: return tbcr_;     // Timer B control
-        case 0x21: return tbCounter_; // Timer B data (compteur courant)
+        case 0x1F: return readTimerData(0);  // TADR : compteur VIVANT de Timer A
+        case 0x21: return readTimerData(1);  // TBDR : compteur VIVANT de Timer B
+        case 0x23: return readTimerData(2);  // TCDR : compteur VIVANT de Timer C
+        case 0x25: return readTimerData(3);  // TDDR : compteur VIVANT de Timer D
         case 0x2B: {                 // RSR : bit7 = Buffer Full ; bit6 = Overrun Error
             const uint8_t v = uint8_t((timer_[0x2B] & 0x3F) | (rxFull_ ? 0x80 : 0) | (rxOverrun_ ? 0x40 : 0));
             rxOverrun_ = false;      // les bits d'erreur du RSR se vident à la LECTURE (pas l'UDR)
@@ -130,6 +133,42 @@ int64_t Mfp::timerPeriodCycles(int timer) const {
     const int count = data ? data : 256;      // données = 0 → 256
     const int64_t mfpCycles = static_cast<int64_t>(kDiv[ctrl]) * count;
     return mfpCycles * 31333 / 9600;          // MFP → cycles CPU
+}
+
+// Port de MFP_ReadTimer_AB/CD (Hatari) : en mode délai actif, le registre de
+// données reflète le COMPTEUR qui décompte (data → 1 → recharge), pas la valeur
+// de recharge figée. On le reconstruit depuis les cycles CPU restants avant
+// l'IRQ programmée : count = ceil(cyclesMfpRestants / prescaler), avec la
+// conversion CPU→MFP inverse de timerPeriodCycles (× 9600 / 31333).
+uint8_t Mfp::readTimerData(int timer) const {
+    static constexpr int kDiv[8] = {0, 4, 10, 16, 50, 64, 100, 200};   // prescalers MFP
+    int ctrl;
+    Scheduler::Source src;
+    switch (timer) {
+        case 0: ctrl =  timer_[0x19] & 0x0F;       src = Scheduler::TIMER_A;       break;  // TACR
+        case 1: ctrl =  tbcr_ & 0x0F;              src = Scheduler::TIMER_B_DELAY; break;  // TBCR
+        case 2: ctrl = (timer_[0x1D] >> 4) & 0x07; src = Scheduler::TIMER_C;       break;  // TCDCR(C)
+        case 3: ctrl =  timer_[0x1D] & 0x07;       src = Scheduler::TIMER_D;       break;  // TCDCR(D)
+        default: return 0;
+    }
+    // Mode délai (ctrl 1-7) ET échéance armée → compteur vivant (MFP_CYCLE_TO_REG).
+    if (sched_ && ctrl >= 1 && ctrl <= 7) {
+        const int64_t remCpu = sched_->cyclesUntil(src);
+        if (remCpu >= 0) {
+            const int64_t remMfp = remCpu * 9600 / 31333;          // cycles CPU → MFP
+            const int     div    = kDiv[ctrl];
+            const int64_t count  = (remMfp + div - 1) / div;       // ceil (round vers le haut)
+            return static_cast<uint8_t>(count & 0xFF);             // 256 → 0
+        }
+    }
+    // event-count (A/B, ctrl=8) → compteur suivi par hblank()/timerA_eventCount() ;
+    // timer à l'arrêt → la recharge (== compteur courant) dans le backing store.
+    switch (timer) {
+        case 0: return taCounter_;
+        case 1: return tbCounter_;
+        case 2: return timer_[0x23];
+        default:return timer_[0x25];
+    }
 }
 
 void Mfp::scheduleTimer(int timer) {

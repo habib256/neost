@@ -64,6 +64,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   et fréquence (50 Hz = 400, 60 Hz = 396) — au lieu du cycle 400 figé. Défaut 50 Hz/fin
   inchangé (boot pixel-identique).
 - **Timers A/C/D mode délai** datés par le MFP (`Scheduler`). Backing-store timer/USART.
+- **Lecture du compteur vivant** des registres de données Timer A/B/C/D (`$FFFA1F/21/23/25`,
+  port `MFP_ReadTimer_AB/CD`) : en mode délai actif on reconstruit le compteur décompté
+  (`ceil(cycles_MFP_restants / prescaler)` via `Scheduler::cyclesUntil`) au lieu de renvoyer
+  la valeur de recharge — indispensable aux boucles de délai qui pollent le compteur. Test
+  *Timing* (STE Field Service Diag) Pass sur les deux cœurs, boot byte-identique.
 - **Lecture GPIP** honore le registre de direction (DDR) et le latch CPU.
 - Chaînage des lignes : **I3** blitter, **I4** ACIA (clavier+MIDI en OU câblé), **I5** FDC,
   **I7** son DMA XSINT (moniteur XOR XSINT).
