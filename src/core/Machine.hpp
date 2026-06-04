@@ -129,8 +129,13 @@ private:
     // depuis Shifter::geometry() juste après beginFrame. Défauts = 50 Hz PAL.
     int cpl_   = CYCLES_PER_LINE;   // cycles par ligne (512/508/224)
     int lpf_   = LINES_PER_FRAME;   // lignes par trame (313/263/501)
-    int disp_  = VISIBLE_LINES;     // scanlines affichées = HBL + Timer B + rendu (200/400)
+    int disp_  = VISIBLE_LINES;     // scanlines affichées = Timer B + rendu (200/400)
     int deEnd_ = DE_END_CYCLE;      // fin Display-Enable dans la ligne (376/372/160)
+    // Numéro de la PREMIÈRE scanline affichée (VDE_On : 63/34/34, cf. Shifter::Geometry).
+    // L'affichage actif occupe les scanlines [dispStart_, dispStart_+disp_) ; les lignes
+    // 0..dispStart_-1 sont la bordure HAUTE, dispStart_+disp_..lpf_-1 la bordure BASSE.
+    // Avant, l'affichage commençait à la ligne 0 (pas de bordure haute dans la timeline).
+    int dispStart_ = 63;            // VDE_On de la trame courante (verrouillé par scheduleFrameEvents)
 
     // Positions au cycle DANS la ligne (STF PAL 50 Hz, cf. Hatari video.h).
     static constexpr int DE_END_CYCLE   = 376;   // fin Display-Enable → rendu ligne

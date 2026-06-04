@@ -101,17 +101,30 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   byte-identique (décodage inchangé, juste recadré). Médium/mono sans bordure pour l'instant.
   **Fenêtre GUI « Atari ST Screen »** redimensionnée selon la résolution courante (bordures
   incluses), aspect pixel ST respecté (basse rés ×2/×2 → 832×552).
-- **Retrait de bordures — SOCLE** (Phase 2/3 en cours) : écritures sync `$FF820A` / résolution
-  `$FF8260` datées au cycle live (`recordSyncWrite`) ; rendu fenêtré par ligne `renderBordersFrame()`
-  avec **fenêtre d'affichage élargie + adresse vidéo ACCUMULÉE** (port `Video_CalculateAddress` :
-  une ligne plus large décale les suivantes) + palette roulante (raster + spec512). **Gaté par
-  détection** → écrans normaux byte-INCHANGÉS (vérifié : EmuTOS, titre The Cuddly Demos, bee
-  spec512 identiques à la Phase 1). **La détection (`computeBorderWindows`) reste un STUB** :
-  mesure oracle sur The Cuddly Demos (écran overscan, 64 switches/trame) → les démos réelles
-  enchaînent par ligne des pulses freq 60/50 + res hi/lo en FIN de ligne (cyc ~300-450) avec
-  dérive −2 cyc/ligne (sync-scroll) ; les interpréter EXIGE le portage de la **machine d'état
-  Glue complète** d'Hatari (`Video_Update_Glue_State` + `Video_EndHBL`) + l'alignement timeline
-  sur HBL 63 — gros morceau restant (cf. TODO). Étalon en place : `disks/demos/The_Cuddly_demo.msa`.
+- **Timeline alignée sur VDE_On** (port `VIDEO_START_HBL_*`) : l'affichage actif commence
+  désormais à la scanline **63** (50 Hz) / 34 (60/71 Hz) au lieu de la ligne 0 — la trame
+  modélise les vraies bordures haut/bas, le HBL est émis à **chaque** scanline (313/263/501,
+  comme le matériel), et `videoCounter`/le replay spec512 suivent l'offset. Prérequis du
+  retrait de bordures (les manipulations 50/60 Hz se font DANS les bordures) et correction du
+  décalage `dLine` spec512. **Non-régression vérifiée** : EmuTOS (fr/us/STE, 2 cœurs)
+  byte-identique, histogramme IRQ inchangé (373/166/97 = Timer C/D/VBL), STE_Test Z et
+  Arkanoid inchangés.
+- **Retrait de bordures — MACHINE GLUE complète** (port fidèle de `Video_Update_Glue_State` +
+  `Video_StartHBL` + section verticale, `video.c`, chemin STF) : rejouée **hors-ligne** en fin
+  de trame sur les écritures freq/res datées (`replayGlue`/`updateGlueState`/`startHBL`) → la
+  timeline live reste inchangée (zéro régression). Calcule par scanline `DisplayStartCycle/
+  EndCycle/BorderMask/PixelShift` (port `SHIFTER_LINE`) et les bordures haut/bas
+  (`nStartHBL`/`nEndHBL` + `V_OVERSCAN_*`). Tricks portés : LEFT_OFF, LEFT_PLUS_2, RIGHT_MINUS_2,
+  RIGHT_OFF, STOP_MIDDLE, NO_DE, BLANK, NO_SYNC + retrait HAUT/BAS. Rendu fenêtré
+  `renderGlueFrame()` : fenêtre d'affichage par ligne + **adresse vidéo ACCUMULÉE**
+  (`Video_CalculateAddress`) + palette roulante (raster + spec512). **Validé par oracle Hatari**
+  (`--trace video_border_v`) sur des programmes de test overscan faits-main
+  (`tools/make_overscan_test.py`, bootsecteurs hand-assemblés) : **retrait HAUT** (bordure haute
+  → contenu, « detect remove top ») et **retrait BAS** (« detect remove bottom ») reproduits au
+  pixel comme Hatari, avec **zéro régression** (EmuTOS/diags/Arkanoid byte-identiques, titre
+  Cuddly inchangé). Trace de debug `NEOST_BORDER_TRACE=1` pour le diff oracle. **Reste**
+  (cf. TODO) : validation positive gauche/droite (test cycle-exact), `DisplayPixelShift` au rendu,
+  wakeup-state WS3, med-res overscan.
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.

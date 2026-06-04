@@ -150,15 +150,21 @@ void Machine::scheduleFrameEvents() {
     shifter.beginFrame();                          // verrouille résolution + fréquence
     // Géométrie de la trame (50/60/71 Hz) figée pour toute la trame, lue ici.
     const Shifter::Geometry g = shifter.geometry();
-    cpl_   = g.cyclesPerLine;
-    lpf_   = g.linesPerFrame;
-    disp_  = g.displayLines;
-    deEnd_ = g.lineEndCycle;
+    cpl_       = g.cyclesPerLine;
+    lpf_       = g.linesPerFrame;
+    disp_      = g.displayLines;
+    deEnd_     = g.lineEndCycle;
+    dispStart_ = g.dispStartLine;   // VDE_On : l'affichage actif commence à cette scanline
 
-    // Premiers événements de la ligne 0, à leur CYCLE EXACT dans la ligne.
-    sched.schedule(Scheduler::RENDER,  frameStart_ + deEnd_);          // fin DE : rendu ligne 0
-    sched.schedule(Scheduler::TIMER_B, frameStart_ + timerBPos());     // tic event-count (position DE)
-    sched.schedule(Scheduler::HBL,     frameStart_ + (cpl_ - 4));      // HBL niveau 2 (≈ fin de ligne)
+    // Premiers événements, à leur CYCLE EXACT dans la trame. Le RENDER et le Timer B
+    // (event-count sur Display-Enable) ne se déclenchent QUE sur les lignes affichées,
+    // donc d'abord à la scanline VDE_On (63 en 50 Hz) — l'affichage actif est centré
+    // dans la trame, encadré des bordures haut/bas (port Hatari nStartHBL). Le HBL
+    // niveau 2, lui, est émis à CHAQUE scanline (0..lpf-1) comme sur le vrai matériel
+    // (Video_InterruptHandler_HBL) — il restera l'ancre de Video_EndHBL (bordures H/B).
+    sched.schedule(Scheduler::RENDER,  frameStart_ + static_cast<int64_t>(dispStart_) * cpl_ + deEnd_);
+    sched.schedule(Scheduler::TIMER_B, frameStart_ + static_cast<int64_t>(dispStart_) * cpl_ + timerBPos());
+    sched.schedule(Scheduler::HBL,     frameStart_ + (cpl_ - 4));      // HBL niveau 2 (≈ fin de ligne 0)
     // VBL niveau 4 — port fidèle de Hatari (Video_InterruptHandler_VBL) : l'IRQ VBL
     // est générée VBL_VIDEO_CYCLE_OFFSET cycles APRÈS la fin de la DERNIÈRE ligne de
     // la trame (313×512 + 64 en 50 Hz STF), donc au tout début du vblank = ~SOMMET de
@@ -178,9 +184,10 @@ void Machine::onRender() {
     const int h = shifter.activeHeight();          // lignes ACTIVES (≠ buffer overscan)
     if (renderLine_ < h) shifter.renderLine(renderLine_);
     ++renderLine_;
-    if (renderLine_ < h && renderLine_ < lpf_)
+    // L'index actif renderLine_ correspond à la scanline (dispStart_ + renderLine_).
+    if (renderLine_ < h && dispStart_ + renderLine_ < lpf_)
         sched.schedule(Scheduler::RENDER,
-                       frameStart_ + static_cast<int64_t>(renderLine_) * cpl_ + deEnd_);
+                       frameStart_ + static_cast<int64_t>(dispStart_ + renderLine_) * cpl_ + deEnd_);
 }
 
 void Machine::onTimerB() {
@@ -188,15 +195,18 @@ void Machine::onTimerB() {
     mfp.hblank();
     cpu.updateIpl();                               // un underflow Timer B → IPL 6
     ++tbLine_;
+    // Timer B event-count : une fois par ligne AFFICHÉE → scanline (dispStart_ + tbLine_).
     if (tbLine_ < disp_)
         sched.schedule(Scheduler::TIMER_B,                         // position recalculée → suit
-                       frameStart_ + static_cast<int64_t>(tbLine_) * cpl_ + timerBPos());
+                       frameStart_ + static_cast<int64_t>(dispStart_ + tbLine_) * cpl_ + timerBPos());
 }
 
 void Machine::onHbl() {
     cpu.raiseHbl();                                // HBL niveau 2 (gaté par le SR)
     ++hblLine_;
-    if (hblLine_ < disp_)
+    // HBL émis à CHAQUE scanline (hblLine_ = numéro de ligne absolu 0..lpf-1), comme
+    // sur le vrai matériel — y compris dans les bordures haut/bas (ancre Video_EndHBL).
+    if (hblLine_ < lpf_)
         sched.schedule(Scheduler::HBL,
                        frameStart_ + static_cast<int64_t>(hblLine_) * cpl_ + (cpl_ - 4));
 }

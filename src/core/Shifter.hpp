@@ -63,6 +63,15 @@ public:
         int displayLines;     // scanlines affichées (= height) : 200 couleur / 400 mono
         int lineStartCycle;   // début Display-Enable : 56 / 52 / 0
         int lineEndCycle;     // fin Display-Enable (→ rendu de la scanline) : 376 / 372 / 160
+        // Numéro de la PREMIÈRE scanline affichée dans la trame (VDE_On), port des
+        // constantes Hatari VIDEO_START_HBL_* : 63 (50 Hz) / 34 (60 Hz) / 34 (71 Hz).
+        // Avant ce champ, NeoST faisait commencer l'affichage actif à la ligne 0 (pas
+        // de bordure HAUTE dans la timeline) ; aligner sur VDE_On place l'affichage au
+        // bon endroit de la trame (lignes 63..262 en 50 Hz) — prérequis du retrait de
+        // bordures (les manipulations 50/60 Hz se font DANS les bordures haut/bas) et
+        // corrige le décalage dLine du spec512. La fin d'affichage = dispStartLine +
+        // displayLines (VDE_Off : 263 / 234 / 434).
+        int dispStartLine;
     };
     // Géométrie de la trame VERROUILLÉE (cf. frameMode_/frameSync_, posés par beginFrame).
     Geometry geometry() const { return geometryFor(frameMode_, frameSync_); }
@@ -153,18 +162,44 @@ private:
     // Video_Update_Glue_State). `isRes` = $FF8260, sinon $FF820A.
     void recordSyncWrite(bool isRes, uint8_t val);
 
-    // --- Retrait de bordures (Phase 2 : gauche/droite, basse rés STF) -----------
-    // Une écriture freq/res datée, pour rejouer la machine Glue en fin de trame.
+    // --- Retrait de bordures : MACHINE GLUE (port Hatari Video_Update_Glue_State +
+    //     Video_StartHBL + Video_EndHBL, video.c) -------------------------------
+    // Une écriture freq($FF820A)/res($FF8260) datée, pour rejouer la machine Glue
+    // hors-ligne en fin de trame (la timeline live est inchangée → zéro régression).
     struct SyncWrite { int32_t frameCycle; uint8_t val; bool isRes; };
     std::vector<SyncWrite> syncWrites_;             // écritures freq/res de la trame
-    bool   bordersTrick_ = false;                   // ≥1 ligne avec retrait détecté
-    // Fenêtre d'affichage par ligne (cycles) : par défaut 56..376 (50 Hz), élargie
-    // par les tricks (gauche off → début 4 ; droite off → fin 460). Indexée par
-    // ligne active (0..199). Calculée par computeBorderWindows() en fin de trame.
-    std::array<int16_t, 256> lineDispStart_{};      // cycle début display par ligne
-    std::array<int16_t, 256> lineDispEnd_{};        // cycle fin display par ligne
-    void computeBorderWindows();                    // rejoue les switches → fenêtres
-    void renderBordersFrame();                      // re-rendu fenêtré + adresse accumulée
+    bool   bordersTrick_ = false;                   // ≥1 ligne avec une bordure retirée
+
+    // État d'affichage d'UNE scanline, port de Hatari SHIFTER_LINE. Calculé par le
+    // replay Glue (replayGlue) puis consommé par le rendu fenêtré (renderGlueFrame).
+    struct GlueLine {
+        int16_t  displayStartCycle;   // début DE (cycle dans la ligne) ; -1 = pas encore posé
+        int16_t  displayEndCycle;     // fin DE (0/160/372/376/458/512…)
+        int16_t  displayPixelShift;   // décalage pixels (<0 = vers la gauche)
+        uint32_t borderMask;          // BORDERMASK_* (cf. Shifter.cpp)
+    };
+    std::vector<GlueLine> glueLines_;               // état par scanline (taille lpf+2)
+    int  glueStartHBL_   = 63;                       // nStartHBL : 1ʳᵉ ligne affichée (peut baisser → top retiré)
+    int  glueEndHBL_     = 263;                      // nEndHBL : dernière ligne+1 (peut monter → bottom retiré)
+    uint32_t glueVOverscan_ = 0;                     // V_OVERSCAN_* (NO_TOP/NO_BOTTOM/NO_DE…)
+    int  glueBlankLines_ = 0;                        // lignes blanches insérées (no-sync)
+    int  nScreenRefreshRate_ = 50;                   // fréquence NOMINALE de l'écran (50/60), cf. replayGlue
+
+    // Rejoue la machine Glue sur les syncWrites_ de la trame (ligne par ligne :
+    // StartHBL defaults + Update_Glue_State par écriture + détection top/bottom) →
+    // remplit glueLines_ / glueStartHBL_ / glueEndHBL_ et arme bordersTrick_.
+    void replayGlue();
+    // Port fidèle de Video_Update_Glue_State (chemin STF) : applique une écriture
+    // freq/res au cycle `lineCycles` de la scanline `line` → met à jour la GlueLine
+    // (DE start/end, BorderMask, PixelShift) et les bordures haut/bas (nStartHBL/End).
+    void updateGlueState(int line, int lineCycles, bool writeToRes, int curFreqHz);
+    // Valeurs par défaut d'une ligne selon res/freq courants (port Video_StartHBL).
+    void startHBL(int line, int curRes, int curFreqHz);
+    // Re-rendu fenêtré : pour chaque scanline affichée [glueStartHBL_, glueEndHBL_),
+    // décode [displayStartCycle, displayEndCycle) avec adresse vidéo ACCUMULÉE
+    // (Video_CalculateAddress) + palette roulante (raster/spec512). Hors fenêtre =
+    // couleur de bordure (registre 0 au cycle courant).
+    void renderGlueFrame();
 
     // Décode `nPix` pixels d'une ligne à partir de l'adresse vidéo `base` (modèle
     // fenêtré pour les bordures) dans `idx`. Comme decodeLineIndices mais largeur
@@ -184,9 +219,9 @@ private:
     // données. Statique : ne dépend que de (mode, sync) → réutilisée pour la trame
     // verrouillée (geometry()) comme pour un calcul ponctuel.
     static Geometry geometryFor(Mode m, uint8_t syncReg) {
-        if (m == Mode::High)      return {224, 501, 400, 0, 160};   // 71 Hz monochrome
-        if (syncReg & 0x02)       return {512, 313, 200, 56, 376};  // 50 Hz PAL (défaut)
-        return                           {508, 263, 200, 52, 372};  // 60 Hz NTSC
+        if (m == Mode::High)      return {224, 501, 400, 0, 160, 34};   // 71 Hz monochrome
+        if (syncReg & 0x02)       return {512, 313, 200, 56, 376, 63};  // 50 Hz PAL (défaut)
+        return                           {508, 263, 200, 52, 372, 34};  // 60 Hz NTSC
     }
 
     // --- Bordures (overscan) — port des dimensions visibles Hatari (conv_st.h) ----
