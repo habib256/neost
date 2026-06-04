@@ -75,6 +75,24 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   aussi dans le compteur `$FF8205/07/09`), **base-basse** `$FF820D` composée dans `videoBase`.
   Défaut (scroll 0 / line-width 0) byte-identique au boot. *(Distinction prefetch/no-prefetch
   fine + bordures → cycle-accuracy, cf. TODO.)*
+- **Latch palette intra-ligne + moteur Spectrum 512** (port du modèle `spec512.c` Hatari) :
+  chaque écriture palette `$FF824x` est **datée au cycle live de Moira** (`recordColorWrite`,
+  via `setLiveFrameClock`). Si une trame réécrit la palette **> 1024 fois** (image Spectrum
+  512 / color-cycling, ≈ 48 couleurs × 200 lignes), `Shifter::finishFrame` **re-rend toutes
+  les lignes** avec une **palette roulante** mise à jour AU CYCLE de chaque écriture (curseur
+  unique, cycles-pixel monotones) → jusqu'à **512 couleurs/trame**. Mapping **physique** (1
+  cyc/pixel basse rés, écriture au cycle F → pixel balayé au cycle F, **aucune constante
+  empirique**). Gaté par le seuil → **zéro régression** : EmuTOS/jeux normaux byte-inchangés
+  (le re-rendu ne s'active jamais sous le seuil). Étalon : `BEE512.SPC` (Antic) via SPSLIDE8
+  en `AUTO` — auto-affiché, comme l'oracle Hatari.
+  - **Diff oracle Hatari (`--trace video_color`)** : les écritures NeoST **matchent** Hatari
+    en couleur et en synchro de LIGNE (`dLine=−60` constant). **Limite connue** : la position
+    *intra-ligne* dérive de **~2 cyc/ligne** (`dLC` −4 ligne 40 → −124 ligne 100) car **Moira
+    est un 68000 pur** sans **wait states / contention bus ST** (vidéo volant des cycles CPU)
+    qu'Hatari modélise → sur BEE512 le haut sort net puis dérive vers le bas. Correctif de
+    fond = wait states + contention (TODO « précision cycle »), socle commun avec la
+    suppression de bordures. Le mécanisme est correct : il rendra l'image au pixel près dès
+    que le flux d'écritures sera au cycle près.
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.
@@ -216,6 +234,19 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - **Blitter** (`Blitter.cpp`, port fonctionnel Hatari, mode HOG) : HOP, LOP 16 ops,
   FXSR/NFSR, skew, smudge, halftone, endmasks, comptes X/Y, incréments signés. Présent
   Mega ST/STE/Mega STE, absent STF. **IRQ de fin sur GPIP3**, BUSY+HOG effacés à `y_count==0`.
+- **Blitter — icônes GEM correctes (Mega ST/STE)** : les icônes de fenêtre du bureau
+  (TOS/EmuTOS) étaient corrompues (franges rouge/cyan, plans désalignés). Trois correctifs
+  de fidélité Hatari, validés **byte-identiques** au VDI logiciel (mode `st`) sur les deux
+  cœurs (capture bureau Pirates + TOS 1.02 FR, `megast` vs `st` = 0 octet) :
+  - **Écriture mot/long ATOMIQUE du registre contrôle** (`Bus::write16/32`→`Blitter::write16/32`).
+    *Le bug principal.* `move.w …,$FF8A3C` pose contrôle (BUSY, octet haut) **et** skew
+    (`$FF8A3D`, octet bas) ; l'ancienne décomposition octet-par-octet déclenchait `run()`
+    sur l'octet de contrôle **avant** l'écriture du skew → le blit du plan 0 partait avec
+    le **skew périmé** de l'opération précédente, désalignant le plan 0 des plans 1-3.
+  - **`bus_word`** (dernier mot du BUS : lecture src/dst **et** écriture dst, cf.
+    `Blitter_ReadWord/WriteWord`) réinjecté par NFSR — et non plus la dernière source.
+  - **2ᵉ passe du cas spécial NFSR** (`x_count==1`) après l'écriture + **persistance** du
+    registre à décalage `buffer`/`bus_word` entre blits (remis à 0 au seul reset matériel).
 - **RTC RP5C15** (Mega ST/Mega STE, `$FFFC21-$FFFC3F`) : modèle paresseux déterministe
   (cycle CPU du dernier top de seconde + rattrapage), registre RESET, débordement BCD
   calendaire. Corrige « C0 No clock installed » + « C1 clock increment error ».

@@ -22,6 +22,12 @@ public:
 
     uint8_t read8(uint32_t addr);            // $FF8A00-$FF8A3F (relisible)
     void    write8(uint32_t addr, uint8_t v);
+    // Écritures MOT/LONG ATOMIQUES : le matériel ne démarre le blitter qu'une fois la
+    // case bus terminée. Un « move.w …,$FF8A3C » pose le contrôle (BUSY, octet haut)
+    // ET le skew ($FF8A3D, octet bas) ; il faut écrire les DEUX octets AVANT de tester
+    // BUSY, sinon run() partirait avec un skew périmé (icônes GEM aux plans désalignés).
+    void    write16(uint32_t addr, uint16_t v);
+    void    write32(uint32_t addr, uint32_t v);
 
     void reset();
 
@@ -36,4 +42,8 @@ private:
 
     Bus&    bus_;
     uint8_t reg_[0x40] = {};                 // backing store big-endian ($FF8A00 base)
+    // Hatari : le registre à décalage source (buffer) et le dernier mot du bus
+    // (bus_word) PERSISTENT entre blits (remis à 0 seulement au reset matériel).
+    uint32_t buffer_  = 0;
+    uint16_t busWord_ = 0;
 };

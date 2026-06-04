@@ -33,11 +33,15 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
 > continue, vidéo au cycle, timers MFP A/B/C/D datés, géométries 50/60/71 Hz, quantum
 > « sous la ligne »). Reste :
 
-- [ ] **Latch palette/scroll mi-ligne** — la scanline est rendue une fois à DE_END (cycle
-      376) ; pas de changement intra-ligne — réf. `video.c:Video_RenderLine`
-      🎯 prérequis de **Spectrum 512** (changement de palette intra-ligne)
+- [x] **Latch palette mi-ligne** — FAIT pour la PALETTE (port `spec512.c`) : écritures
+      `$FF824x` datées au cycle live de Moira, re-rendu de fin de trame à palette roulante
+      (cf. CHANGELOG §Vidéo + item **Spec512** ci-dessous). Reste le **scroll** fin mi-ligne
+      (sync-scroll Enchanted Land) et la latence sous-pixel — réf. `video.c:Video_RenderLine`.
 - [ ] **Wait states** d'accès YM2149 / mémoire (4 cycles + alignement) et contention bus
-      _(précision cycle)_ — réf. `psg.c`, `cycles.c`, MAME `stmmu.cpp::bus_contention`
+      _(précision cycle)_ — réf. `psg.c`, `cycles.c`, MAME `stmmu.cpp::bus_contention`.
+      🎯 **DÉBLOQUE Spectrum 512** : Moira (68000 pur) écrit la palette ~2 cyc/ligne trop tôt
+      vs Hatari (qui modélise ces wait states) → le flux spec512 dérive intra-ligne. Socle
+      commun avec la **suppression de bordures**.
 
 ### Cas concrets — état RÉEL mesuré
 - [x] **Arkanoid** — RÉSOLU 2026 par le **modèle FDC rotationnel** (cf. CHANGELOG §Disquette,
@@ -71,9 +75,14 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
 - [ ] **Suppression de bordures** (gauche/droite/haut/bas, tricks 50/60 Hz) — base des démos
       _(précision cycle)_ — réf. `video.c` BORDERMASK_*
       🎯 étalon : **The Cuddly Demos** (4 bordures), **Enchanted Land** (sync-scroll horizontal)
-- [ ] **Spec512** (palette par scanline/cycle, 512 couleurs) _(précision cycle)_ — réf.
-      `spec512.c` + `video.c:Video_ColorReg_WriteWord`
-      🎯 étalon : **Spectrum 512** (Inshape) — palette réécrite plusieurs fois/ligne
+- [~] **Spec512** (palette par scanline/cycle, 512 couleurs) _(précision cycle)_ — MÉCANISME
+      FAIT (port `spec512.c` : enregistrement daté + re-rendu palette roulante, détection
+      > 1024 écritures/trame, jusqu'à 512 couleurs ; cf. CHANGELOG §Vidéo). **Bloqué pixel-perfect**
+      par la dérive ~2 cyc/ligne du flux d'écritures (Moira 68000 pur sans wait states /
+      contention bus → cf. item **Wait states** ci-dessus). Diff oracle Hatari : couleurs et
+      synchro ligne OK, position intra-ligne dérive (BEE512 net en haut, dérive en bas).
+      🎯 étalon : **Spectrum 512** (Antic) — `BEE512.SPC` via SPSLIDE8 en `AUTO` (auto-affiché).
+      Réf. `Shifter::finishFrame/recordColorWrite`, `spec512.c`, `video.c:Video_ColorReg_WriteWord`.
 - [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) _(risque élevé)_ — réf.
       `video.c:Video_ColorReg_WriteWord`
 - [ ] **Joypads/paddles/lightpen STE** (`$FF9200-$FF9222`) : directions, boutons, multiplexage,

@@ -38,6 +38,21 @@ public:
     void beginFrame();
     void renderLine(int y);
 
+    // Fin de trame : si une image Spectrum 512 / du color-cycling a été détecté
+    // (palette réécrite intra-ligne, cf. recordColorWrite), re-rend TOUTES les
+    // lignes affichées avec une palette qui change AU CYCLE de chaque écriture
+    // (port du modèle Hatari spec512.c → jusqu'à 512 couleurs). Sinon ne fait
+    // rien : le rendu ligne-à-ligne (palette figée par ligne) suffit et reste
+    // strictement inchangé (zéro régression hors spec512).
+    void finishFrame();
+    bool spec512Active() const { return spec512Active_; }
+
+    // Horloge « live » = cycle EXACT dans la trame (delta intra-quantum CPU inclus)
+    // au moment d'une écriture palette. Indispensable au spec512 : plusieurs
+    // écritures par ligne doivent être datées au cycle près, pas au quantum.
+    // Posée par Machine (sched.liveNow() - frameStart_). Cf. setBeamClock.
+    void setLiveFrameClock(std::function<int64_t()> fn) { liveFrameClock_ = std::move(fn); }
+
     // Géométrie d'une trame, dérivée de la résolution (mono = 71 Hz) et, en
     // basse/moyenne, de la fréquence 50/60 Hz ($FF820A bit1). Port des constantes
     // STF de `extern/hatari/src/includes/video.h` (CYCLES_PER_LINE_*,
@@ -117,6 +132,25 @@ private:
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
     void resizeFor(Mode m);                       // ajuste le buffer si la rés. change
     uint32_t videoCounter() const;                // adresse vidéo courante ($FF8205/07/09)
+
+    // Décode les index de palette (ou bit mono) d'une ligne dans `idx` selon la
+    // résolution VERROUILLÉE (lecture planaire + scroll fin STE). Partagé par
+    // renderLine (palette figée) et finishFrame (palette intra-ligne spec512).
+    // `idx` doit pouvoir tenir W + scroll pixels (≤ 656). Renvoie le décalage scroll.
+    int decodeLineIndices(int y, uint8_t* idx) const;
+
+    // Enregistre une écriture palette (registre `index`) avec son cycle live dans
+    // la trame, pour le re-rendu spec512. Met à jour le compteur de détection.
+    void recordColorWrite(int index);
+
+    // --- Spec512 : palette intra-ligne (port Hatari spec512.c) --------------
+    // Une écriture palette dans la trame, datée au cycle (façon CyclePalettes[]).
+    struct ColorWrite { int32_t frameCycle; uint16_t colour; uint8_t index; };
+    std::vector<ColorWrite>  colorWrites_;          // écritures palette de la trame (ordre d'exécution)
+    std::array<uint16_t, 16> frameStartPalette_{};  // palette au début de trame (base du replay)
+    int  paletteAccesses_ = 0;                      // nb d'écritures palette dans la trame
+    bool spec512Active_   = false;                  // seuil franchi → image spec512
+    std::function<int64_t()> liveFrameClock_;       // cycle live dans la trame (cf. setLiveFrameClock)
 
     // Géométrie (cycles/ligne, lignes/trame, DE) pour une résolution + fréquence
     // données. Statique : ne dépend que de (mode, sync) → réutilisée pour la trame

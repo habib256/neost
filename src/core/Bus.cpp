@@ -350,10 +350,22 @@ uint32_t Bus::read32(uint32_t addr) {
     return (static_cast<uint32_t>(read16(addr)) << 16) | read16(addr + 2);
 }
 void Bus::write16(uint32_t addr, uint16_t v) {
+    // Blitter ($FF8A00-$FF8A3F) : écriture MOT atomique — le registre contrôle
+    // (BUSY, $FF8A3C) et le skew ($FF8A3D) tiennent dans un même mot ; il faut poser
+    // les DEUX octets avant que BUSY ne démarre run() (sinon skew périmé → plans
+    // d'icône désalignés). Cf. Blitter::write16.
+    if (addr >= 0xFF8A00 && addr + 1 <= 0xFF8A3F && blitter && machineHasBlitter(machine)) {
+        blitter->write16(addr, v);
+        return;
+    }
     write8(addr,     static_cast<uint8_t>(v >> 8));
     write8(addr + 1, static_cast<uint8_t>(v));
 }
 void Bus::write32(uint32_t addr, uint32_t v) {
+    if (addr >= 0xFF8A00 && addr + 3 <= 0xFF8A3F && blitter && machineHasBlitter(machine)) {
+        blitter->write32(addr, v);    // écriture LONG atomique (idem write16)
+        return;
+    }
     write16(addr,     static_cast<uint16_t>(v >> 16));
     write16(addr + 2, static_cast<uint16_t>(v));
 }

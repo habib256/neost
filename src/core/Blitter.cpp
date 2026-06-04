@@ -15,7 +15,7 @@ namespace {
     constexpr bool LOP_USES_DST[16] = {0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0};   // sauf 0,3,C,F
 }
 
-void Blitter::reset() { for (auto& b : reg_) b = 0; }
+void Blitter::reset() { for (auto& b : reg_) b = 0; buffer_ = 0; busWord_ = 0; }
 
 uint16_t Blitter::readWord(uint32_t addr) { return bus_.read16(addr & 0xFFFFFE); }
 void     Blitter::writeWord(uint32_t addr, uint16_t v) { bus_.write16(addr & 0xFFFFFE, v); }
@@ -27,6 +27,27 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
     reg_[off] = v;
     // Écriture du registre contrôle ($FF8A3C) avec le bit BUSY (bit7) → démarre.
     if (off == 0x3C && (v & 0x80)) run();
+}
+
+// Écritures mot/long ATOMIQUES : on pose TOUS les octets, PUIS on démarre si le
+// registre contrôle ($FF8A3C, offset 0x3C) faisait partie de l'écriture et porte le
+// bit BUSY. Garantit que le skew ($FF8A3D) est en place avant run() (cf. write16/32
+// déclarés dans Blitter.hpp). Sinon « move.w …,$FF8A3C » lancerait le blit avec
+// l'ancien skew → plan 0 décalé par rapport aux plans 1-3 (franges de couleur).
+void Blitter::write16(uint32_t addr, uint16_t v) {
+    const uint32_t off = addr & 0x3F;
+    reg_[off]            = uint8_t(v >> 8);
+    reg_[(off + 1) & 0x3F] = uint8_t(v);
+    if ((off <= 0x3C && off + 1 >= 0x3C) && (reg_[0x3C] & 0x80)) run();
+}
+
+void Blitter::write32(uint32_t addr, uint32_t v) {
+    const uint32_t off = addr & 0x3F;
+    reg_[off]              = uint8_t(v >> 24);
+    reg_[(off + 1) & 0x3F] = uint8_t(v >> 16);
+    reg_[(off + 2) & 0x3F] = uint8_t(v >> 8);
+    reg_[(off + 3) & 0x3F] = uint8_t(v);
+    if ((off <= 0x3C && off + 3 >= 0x3C) && (reg_[0x3C] & 0x80)) run();
 }
 
 // -----------------------------------------------------------------------------
@@ -64,16 +85,24 @@ void Blitter::run() {
     // la ligne GPU_DONE sur ce chemin, seulement à la vraie fin de transfert).
     if (xReset == 0 || yCount == 0) { reg_[0x3C] &= ~0xC0; return; }   // rien à faire
 
-    // Registre à décalage source (32 bits) + dernier mot lu (pour NFSR).
-    uint32_t buffer = 0;
-    uint16_t lastSrc = 0;
+    // Registre à décalage source (32 bits) + dernier mot ayant transité sur le BUS.
+    // Hatari : BlitterState.bus_word est mis à jour à CHAQUE accès bus du blitter —
+    // lecture source, lecture destination ET écriture destination (cf. blitter.c
+    // Blitter_ReadWord l.440 / Blitter_WriteWord l.446). Le cas particulier NFSR
+    // (Blitter_SourceFetch(true)) réinjecte ce bus_word dans le registre à décalage.
+    // Au dernier mot d'une ligne NFSR la lecture source normale est SAUTÉE, donc le
+    // dernier accès bus est la lecture (ou l'écriture) de la destination : c'est bien
+    // CE mot qui est réinjecté, pas la dernière source. (Bug corrigé : on suivait
+    // « lastSrc » = dernière source, d'où des pixels parasites sur les icônes GEM.)
+    uint32_t buffer  = buffer_;     // persistance Hatari (pas de remise à 0 par blit)
+    uint16_t busWord = busWord_;
     uint16_t xCount = xReset;
     bool     haveFxsr = false;
     bool     nfsrInt  = false;
 
     auto srcShift = [&]() { if (srcXinc < 0) buffer >>= 16; else buffer <<= 16; };
     auto srcFetch = [&](bool nfsrOn) {
-        const uint32_t w = nfsrOn ? lastSrc : (lastSrc = readWord(srcAddr));
+        const uint32_t w = nfsrOn ? busWord : (busWord = readWord(srcAddr));
         if (srcXinc < 0) buffer |= w << 16; else buffer |= w;
     };
     auto srcRead = [&]() -> uint16_t { return uint16_t(buffer >> skew); };
@@ -106,8 +135,11 @@ void Blitter::run() {
         if (needSrc && !nfsrInt) {                              // lecture source normale
             srcShift(); srcFetch(false); fetchSrc = true;
         }
-        const uint16_t dstWord = needDst ? readWord(dstAddr) : 0;
-        if (nfsr && xCount == 1) { srcShift(); srcFetch(true); }   // cas particulier NFSR
+        // Lecture destination : met aussi à jour busWord (Blitter_ReadWord).
+        const uint16_t dstWord = needDst ? (busWord = readWord(dstAddr)) : busWord;
+        // Cas particulier NFSR (1/2) : AVANT le LOP. Réinjecte busWord (= la dst qu'on
+        // vient de lire, la source normale ayant été sautée) dans le registre source.
+        if (nfsr && xCount == 1) { srcShift(); srcFetch(true); }
 
         const uint16_t hopv = computeHOP();
         uint16_t lopv;
@@ -132,6 +164,13 @@ void Blitter::run() {
         const uint16_t out = (endMask != 0xFFFF)
             ? uint16_t((lopv & endMask) | (dstWord & ~endMask)) : lopv;
         writeWord(dstAddr, out);
+        busWord = out;                         // l'écriture dst met aussi à jour bus_word
+
+        // Cas particulier NFSR (2/2) : APRÈS l'écriture. Hatari répète le shift+fetch
+        // (blitter.c l.738-743) ; réinjecte le mot qu'on vient d'écrire. Sans FXSR le
+        // registre source est conservé d'une ligne à l'autre, donc cette 2ᵉ passe doit
+        // être fidèlement reproduite pour l'alignement du registre à décalage.
+        if (nfsr && xCount == 1) { srcShift(); srcFetch(true); }
 
         // --- mise à jour compteurs/adresses ---
         if (xCount == 2 && nfsr) nfsrInt = true;
@@ -147,6 +186,8 @@ void Blitter::run() {
             dstAddr += dstXinc;
         }
     }
+
+    buffer_ = buffer; busWord_ = busWord;   // persistance Hatari du registre à décalage
 
     // Recopie l'état final dans les registres relisibles, efface BUSY/HOG.
     wr16(0x24, uint16_t(srcAddr >> 16)); wr16(0x26, uint16_t(srcAddr));
