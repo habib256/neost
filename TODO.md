@@ -80,12 +80,15 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
       verticale, rejouée hors-ligne : `replayGlue`/`updateGlueState`/`startHBL`/`renderGlueFrame`
       dans `Shifter`) → **retrait HAUT et BAS validés au pixel contre l'oracle Hatari** (tests
       overscan faits-main `tools/make_overscan_test.py`, `--trace video_border_v`), zéro régression.
-      **Reste** : (1) **validation positive GAUCHE/DROITE** (LEFT_OFF/RIGHT_OFF portés mais testés
-      seulement en non-régression → écrire un test 68k overscan L/D cycle-exact + diff oracle) ;
-      (2) appliquer `DisplayPixelShift` au rendu (décalage 4 px du left-off) ; (3) wakeup-state WS3
-      (+1 cyc, sous-pixel) ; (4) med-res overscan ; (5) blank lines / NO_SYNC au rendu.
-      🎯 étalons : programmes `make_overscan_test.py` (haut/bas ✅), **The Cuddly Demos** (4 bordures,
-      navigation espace), **Enchanted Land** (sync-scroll horizontal).
+      **Gauche/droite VALIDÉES** : auto-test déterministe `neost-headless --glue-selftest`
+      (`Shifter::glueSelfTest`, 19/19 vs valeurs Hatari : LEFT_OFF DE_start=4, RIGHT_OFF DE_end=462,
+      RIGHT_MINUS_2, STOP_MIDDLE, top/bottom, normal) + test 68k end-to-end `make_overscan_lr.py`
+      (oracle Hatari ouvre L/D). **`DisplayPixelShift` appliqué au rendu** (décalage 4 px du left-off).
+      **Reste** (raffinements, faible priorité) : (1) wakeup-state WS3 (+1 cyc, sous-pixel) ;
+      (2) med-res overscan ; (3) rendu des blank lines / NO_SYNC ; (4) pixel-perfect L/D end-to-end
+      (dépend des wait states / contention bus, cf. item ci-dessus).
+      🎯 étalons : `make_overscan_test.py` (haut/bas ✅), `make_overscan_lr.py` (gauche/droite ✅),
+      **The Cuddly Demos** (4 bordures, navigation espace), **Enchanted Land** (sync-scroll).
 - [~] **Spec512** (palette par scanline/cycle, 512 couleurs) _(précision cycle)_ — MÉCANISME
       FAIT (port `spec512.c` : enregistrement daté + re-rendu palette roulante, détection
       > 1024 écritures/trame, jusqu'à 512 couleurs ; cf. CHANGELOG §Vidéo). **Bloqué pixel-perfect**

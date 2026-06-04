@@ -47,6 +47,14 @@ public:
     void finishFrame();
     bool spec512Active() const { return spec512Active_; }
 
+    // Auto-test DÉTERMINISTE de la machine Glue (chemin STF) : injecte des écritures
+    // freq/res synthétiques à des cycles EXACTS et vérifie l'état d'affichage résultant
+    // (DisplayStartCycle/EndCycle/BorderMask, nStartHBL/nEndHBL) contre les valeurs
+    // documentées d'Hatari (Video_Update_Glue_State). Valide les retraits gauche/droite/
+    // haut/bas sans dépendre du timing CPU (≠ test 68k cycle-exact). Renvoie true si OK ;
+    // détaille les échecs sur stderr. Appelé par neost-headless --glue-selftest.
+    bool glueSelfTest();
+
     // Horloge « live » = cycle EXACT dans la trame (delta intra-quantum CPU inclus)
     // au moment d'une écriture palette. Indispensable au spec512 : plusieurs
     // écritures par ligne doivent être datées au cycle près, pas au quantum.

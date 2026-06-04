@@ -36,10 +36,12 @@ void usage() {
         "  --walk-mouse      après le boot, injecte un mouvement souris + clic (diag)\n"
         "  --keys STR        après le boot, tape STR au clavier (ex. menus de diag)\n"
         "  --joy P1[,P0]     maintient un état joystick (bits haut$01 bas$02 g$04 d$08 feu$80)\n"
+        "  --disk FILE       monte une image dans le lecteur A (défaut disks/diskA.st)\n"
         "  --diskb FILE      monte une image dans le lecteur B (2e lecteur)\n"
         "  --fastfdc         FDC rapide (délais ÷10) — accélère les accès disque\n"
         "  --loopback        « branche » le connecteur de bouclage RS232 (test S série)\n"
         "  --cart FILE       monte une cartouche ($FA0000) : Test Kit diagnostic, etc.\n"
+        "  --glue-selftest   auto-test de la machine Glue (bordures) puis quitte\n"
         "  --screenshot PPM  dump du framebuffer final au format PPM\n"
         "  rom               image TOS (défaut roms/etos192fr.img)\n");
 }
@@ -81,6 +83,7 @@ int main(int argc, char** argv) {
     uint8_t     joy0Hold   = 0, joy1Hold = 0;  // bits ST (haut$01 bas$02 gauche$04 droite$08 feu$80)
     bool        loopback   = false;   // « branche » le connecteur de bouclage RS232 (test S)
     bool        machineMono = false;
+    bool        glueSelfTest = false; // auto-test déterministe de la machine Glue (bordures)
     CpuCore     cpuCore    = CpuCore::Musashi;
     MachineType machType   = MachineType::Ste;
     std::size_t ramBytes   = 512u * 1024u;
@@ -111,6 +114,7 @@ int main(int argc, char** argv) {
         }
         else if (!std::strcmp(a, "--loopback"))   loopback  = true;
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
+        else if (!std::strcmp(a, "--glue-selftest")) glueSelfTest = true;
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
         else if (!std::strcmp(a, "--machine"))    machType  = parseMachine(next(a));
         else if (!std::strcmp(a, "--mem"))        ramBytes  = parseRamBytes(next(a));
@@ -123,6 +127,9 @@ int main(int argc, char** argv) {
     // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
     machType = Machine::adjustMachineForTos(machType, romPath);
     Machine machine(ramBytes, cpuCore, machType);
+    // Auto-test de la machine Glue (bordures) : pas besoin de ROM/boot, on teste
+    // directement la logique du Shifter contre les valeurs documentées d'Hatari.
+    if (glueSelfTest) return machine.shifter.glueSelfTest() ? 0 : 1;
     std::fprintf(stderr, "[headless] cœur CPU : %s | machine : %s | RAM : %s\n",
                  Cpu68k::coreName(machine.cpu.core()), machineName(machType), ramLabel(ramBytes));
     if (!machine.loadTos(romPath)) {

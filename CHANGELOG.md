@@ -122,9 +122,21 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   (`tools/make_overscan_test.py`, bootsecteurs hand-assemblés) : **retrait HAUT** (bordure haute
   → contenu, « detect remove top ») et **retrait BAS** (« detect remove bottom ») reproduits au
   pixel comme Hatari, avec **zéro régression** (EmuTOS/diags/Arkanoid byte-identiques, titre
-  Cuddly inchangé). Trace de debug `NEOST_BORDER_TRACE=1` pour le diff oracle. **Reste**
-  (cf. TODO) : validation positive gauche/droite (test cycle-exact), `DisplayPixelShift` au rendu,
-  wakeup-state WS3, med-res overscan.
+  Cuddly inchangé). Trace de debug `NEOST_BORDER_TRACE=1` pour le diff oracle.
+- **Bordures GAUCHE/DROITE validées** + `DisplayPixelShift` au rendu : auto-test déterministe
+  `neost-headless --glue-selftest` (`Shifter::glueSelfTest`, **19/19**) qui injecte des écritures
+  freq/res à des cycles EXACTS et vérifie l'état contre les valeurs Hatari — LEFT_OFF (DE_start=4),
+  RIGHT_OFF (DE_end=462), RIGHT_MINUS_2, STOP_MIDDLE, retraits haut/bas, écran normal. Test 68k
+  end-to-end L/D (`tools/make_overscan_lr.py`, impulsion hi-res par ligne) : NeoST ET Hatari
+  ouvrent les bordures latérales (oracle `video_border_h` : « detect remove left/right »). Le rendu
+  applique `DisplayPixelShift` (décalage 4 px du retrait gauche ; no-op si 0 → écrans normaux
+  inchangés). **Reste** (cf. TODO #7) : wakeup-state WS3 (+1 cyc, sous-pixel), med-res overscan,
+  rendu des blank lines/NO_SYNC, et le pixel-perfect L/D end-to-end (lié aux wait states).
+- **spec512 — boot du diaporama étalon** : `spec_auto.st` (SPSLIDE8 dans `\AUTO\`) s'auto-lance
+  sous **vrai TOS** (`tos100us/fr` + `--disk`), PAS sous EmuTOS (qui ne traite pas l'AUTO de la
+  même façon). Une image Spectrum 512 s'affiche (frame ~1800) : **haut net** (l'alignement vertical
+  `dLine` est corrigé par la timeline VDE_On), bas qui dérive (wait states, cf. TODO). Nouveau flag
+  headless `--disk FILE` (lecteur A explicite, plus besoin d'écraser `disks/diskA.st`).
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.

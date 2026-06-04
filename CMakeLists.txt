@@ -106,21 +106,23 @@ endif()
 # git submodule add https://github.com/dirkwhoffmann/Moira extern/moira
 # Moira nécessite C++20 (std::rotr/rotl, std::map::contains) → on compile ses
 # sources ET Cpu68k.cpp (qui inclut Moira.h) en C++20, le reste reste en C++17.
-set(MOIRA_DIR "${CMAKE_SOURCE_DIR}/extern/moira/Moira")
-if(EXISTS "${MOIRA_DIR}/Moira.cpp")
-    target_sources(neost_core PRIVATE
-        "${MOIRA_DIR}/Moira.cpp"
-        "${MOIRA_DIR}/MoiraDebugger.cpp")
-    target_include_directories(neost_core PUBLIC "${MOIRA_DIR}")
-    target_compile_definitions(neost_core PUBLIC NEOST_HAS_MOIRA=1)
+set(MOIRA_SRC_DIR "${CMAKE_SOURCE_DIR}/extern/moira/Moira")
+set(MOIRA_BUILD_DIR "${CMAKE_BINARY_DIR}/generated/moira/Moira")
+if(EXISTS "${MOIRA_SRC_DIR}/Moira.cpp")
+    file(MAKE_DIRECTORY "${MOIRA_BUILD_DIR}")
+    file(GLOB _moira_files CONFIGURE_DEPENDS "${MOIRA_SRC_DIR}/*")
+    foreach(_moira_file IN LISTS _moira_files)
+        if(NOT IS_DIRECTORY "${_moira_file}")
+            get_filename_component(_moira_name "${_moira_file}" NAME)
+            configure_file("${_moira_file}" "${MOIRA_BUILD_DIR}/${_moira_name}" COPYONLY)
+        endif()
+    endforeach()
+
     # NeoST EXIGE Moira en mode cycle-exact — c'est son apport sur Musashi :
     # PRECISE_TIMING=true (IPL échantillonné à la frontière de cycle, sync avant
-    # chaque accès) + MIMIC_MUSASHI=false. Ces réglages vivent dans le MoiraConfig.h
-    # du SOUS-MODULE → on les RÉIMPOSE à chaque configuration pour qu'un
-    # `git submodule update` ne les perde pas silencieusement (sinon, sous Moira, le
-    # texte des labels d'icônes EmuTOS cesse d'être tracé — cf. CHANGELOG « Moira en
-    # mode cycle-exact »). Réécriture uniquement si la valeur diffère (pas de rebuild inutile).
-    set(_moira_cfg "${MOIRA_DIR}/MoiraConfig.h")
+    # chaque accès) + MIMIC_MUSASHI=false. Ces réglages vivent dans MoiraConfig.h ;
+    # on les applique sur la COPIE générée pour garder le sous-module upstream propre.
+    set(_moira_cfg "${MOIRA_BUILD_DIR}/MoiraConfig.h")
     file(READ "${_moira_cfg}" _moira_cfg_txt)
     string(REGEX REPLACE "#define[ \t]+MOIRA_PRECISE_TIMING[ \t]+(true|false)"
         "#define MOIRA_PRECISE_TIMING true" _moira_cfg_new "${_moira_cfg_txt}")
@@ -128,9 +130,15 @@ if(EXISTS "${MOIRA_DIR}/Moira.cpp")
         "#define MOIRA_MIMIC_MUSASHI false" _moira_cfg_new "${_moira_cfg_new}")
     if(NOT _moira_cfg_new STREQUAL _moira_cfg_txt)
         file(WRITE "${_moira_cfg}" "${_moira_cfg_new}")
-        message(STATUS "Moira : MoiraConfig.h réimposé (PRECISE_TIMING=true, MIMIC_MUSASHI=false).")
+        message(STATUS "Moira : MoiraConfig.h configuré dans ${MOIRA_BUILD_DIR}.")
     endif()
-    set_source_files_properties("${MOIRA_DIR}/Moira.cpp" "${MOIRA_DIR}/MoiraDebugger.cpp"
+
+    target_sources(neost_core PRIVATE
+        "${MOIRA_BUILD_DIR}/Moira.cpp"
+        "${MOIRA_BUILD_DIR}/MoiraDebugger.cpp")
+    target_include_directories(neost_core PUBLIC "${MOIRA_BUILD_DIR}")
+    target_compile_definitions(neost_core PUBLIC NEOST_HAS_MOIRA=1)
+    set_source_files_properties("${MOIRA_BUILD_DIR}/Moira.cpp" "${MOIRA_BUILD_DIR}/MoiraDebugger.cpp"
         PROPERTIES COMPILE_OPTIONS "-std=c++20")
     # Cpu68k.cpp inclut Moira.h (en-tête tiers) → C++20, sans -Wpedantic strict.
     set_source_files_properties(src/core/Cpu68k.cpp

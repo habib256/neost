@@ -629,10 +629,13 @@ void Shifter::renderGlueFrame() {
     for (int row = 0; row < curH_; ++row) {
         const int sl = baseStart + (row - activeY_);       // scanline de cette ligne buffer
         const bool displayed = (sl >= glueStartHBL_ && sl < glueEndHBL_ && sl >= 0 && sl < nLines);
-        int ds = 0, de = 0; uint32_t bm = 0;
-        if (displayed) { const GlueLine& L = glueLines_[sl]; ds = L.displayStartCycle; de = L.displayEndCycle; bm = L.borderMask; }
+        int ds = 0, de = 0, shift = 0; uint32_t bm = 0;
+        if (displayed) { const GlueLine& L = glueLines_[sl]; ds = L.displayStartCycle; de = L.displayEndCycle; bm = L.borderMask; shift = L.displayPixelShift; }
         const bool lineHasDE = displayed && !(bm & glue::NO_DE) && de > ds;
         const int  nPix = lineHasDE ? (de - ds) : 0;
+        // decodeWindowIndices décode des GROUPES de 16 px : la plage valide de idx est
+        // [0, nDec) avec nDec arrondi au groupe supérieur → marge pour le DisplayPixelShift.
+        const int  nDec = lineHasDE ? ((nPix + 15) / 16) * 16 : 0;
         if (nPix > 0) decodeWindowIndices(addr, nPix, idx);
 
         uint32_t* dst = frame_.data() + static_cast<std::size_t>(row) * W;
@@ -643,13 +646,86 @@ void Shifter::renderGlueFrame() {
                 pal[colorWrites_[cur].index] = colorWrites_[cur].colour;
                 ++cur;
             }
-            if (lineHasDE && cyc >= ds && cyc < de)
-                dst[x] = stColorToArgb(pal[idx[cyc - ds]]); // dans la fenêtre → contenu
-            else
-                dst[x] = stColorToArgb(pal[0]);             // hors fenêtre / bordure → registre 0
+            if (lineHasDE && cyc >= ds && cyc < de) {
+                // Décalage pixel de la ligne (Hatari DisplayPixelShift : <0 = vers la
+                // gauche, p.ex. -4 sur le retrait gauche hi/lo). 0 pour les lignes
+                // normales → aucun effet (top/bottom/écran standard inchangés).
+                int s = (cyc - ds) - shift;
+                if (s < 0) s = 0; else if (s >= nDec) s = nDec - 1;
+                dst[x] = stColorToArgb(pal[idx[s]]);       // dans la fenêtre → contenu
+            } else {
+                dst[x] = stColorToArgb(pal[0]);            // hors fenêtre / bordure → registre 0
+            }
         }
         if (nPix > 0) addr += static_cast<uint32_t>(nPix / bytePerPix);  // adresse vidéo accumulée
     }
+}
+
+// Auto-test déterministe de la machine Glue (cf. déclaration). Chaque scénario
+// injecte des écritures freq/res à des cycles exacts puis vérifie l'état calculé
+// contre les valeurs Hatari. Affiche un récap sur stderr ; renvoie true si tout OK.
+bool Shifter::glueSelfTest() {
+    frameMode_ = Mode::Low;                       // STF 50 Hz basse rés
+    frameSync_ = 0x02;
+    resizeFor(frameMode_);
+    const int cpl = geometry().cyclesPerLine;     // 512
+    int pass = 0, fail = 0;
+
+    // Rejoue une liste d'écritures {line, cycle, isRes(0=freq/1=res), val}.
+    auto run = [&](std::vector<std::array<int,4>> writes) {
+        syncWrites_.clear();
+        for (const auto& v : writes)
+            syncWrites_.push_back({ v[0] * cpl + v[1],
+                                    static_cast<uint8_t>(v[3]), v[2] != 0 });
+        replayGlue();
+    };
+    auto chk = [&](const char* name, long got, long want) {
+        if (got == want) { ++pass; }
+        else { ++fail; std::fprintf(stderr, "  FAIL %-26s got=%ld want=%ld\n", name, got, want); }
+    };
+
+    // 1. Bordure DROITE : 60 Hz @ cyc 374 puis 50 Hz @ 380, ligne 100.
+    run({ {100,374,0,0x00}, {100,380,0,0x02} });
+    chk("right DE_start", glueLines_[100].displayStartCycle, 56);
+    chk("right DE_end",   glueLines_[100].displayEndCycle,   462);   // cpl-50 (RIGHT_OFF)
+    chk("right mask",     (glueLines_[100].borderMask & glue::RIGHT_OFF) ? 1 : 0, 1);
+
+    // 2. Bordure GAUCHE : hi-rés @ 2 puis lo-rés @ 6, ligne 100.
+    run({ {100,2,1,0x02}, {100,6,1,0x00} });
+    chk("left DE_start",  glueLines_[100].displayStartCycle, 4);     // HDE_On_Hi
+    chk("left DE_end",    glueLines_[100].displayEndCycle,   376);
+    chk("left mask",      (glueLines_[100].borderMask & glue::LEFT_OFF) ? 1 : 0, 1);
+
+    // 3. RIGHT-2 (ligne 60 Hz) : 60 Hz @ 100 puis 50 Hz @ 400, ligne 100.
+    run({ {100,100,0,0x00}, {100,400,0,0x02} });
+    chk("right-2 DE_end", glueLines_[100].displayEndCycle,   372);   // HDE_Off_Low_60
+    chk("right-2 mask",   (glueLines_[100].borderMask & glue::RIGHT_MINUS_2) ? 1 : 0, 1);
+
+    // 4. Retrait HAUT : 60 Hz @ ligne 10, 50 Hz @ ligne 40.
+    run({ {10,100,0,0x00}, {40,100,0,0x02} });
+    chk("top nStartHBL",  glueStartHBL_, 34);                        // VDE_On_60
+    chk("top NO_TOP",     (glueVOverscan_ & glue::VO_NO_TOP) ? 1 : 0, 1);
+    chk("top nEndHBL",    glueEndHBL_, 263);                         // bas inchangé
+
+    // 5. Retrait BAS : 60 Hz @ ligne 261.
+    run({ {261,100,0,0x00} });
+    chk("bottom nEndHBL", glueEndHBL_, 310);                         // VDE_Off_NoBottom_50
+
+    // 6. Écran NORMAL (aucune écriture) : aucune bordure retirée.
+    run({});
+    chk("normal nStartHBL", glueStartHBL_, 63);
+    chk("normal nEndHBL",   glueEndHBL_, 263);
+    chk("normal DE_start",  glueLines_[100].displayStartCycle, 56);
+    chk("normal DE_end",    glueLines_[100].displayEndCycle, 376);
+    chk("normal trick",     bordersTrick_ ? 1 : 0, 0);
+
+    // 7. STOP_MIDDLE : hi-rés @ cyc 100 (entre DE, ≤160), ligne 100.
+    run({ {100,100,1,0x02}, {100,500,1,0x00} });
+    chk("stopmid DE_end", glueLines_[100].displayEndCycle, 164);     // HDE_Off_Hi
+    chk("stopmid mask",   (glueLines_[100].borderMask & glue::STOP_MIDDLE) ? 1 : 0, 1);
+
+    std::fprintf(stderr, "[glue-selftest] %d OK, %d FAIL\n", pass, fail);
+    return fail == 0;
 }
 
 // Décode toute la trame d'un coup (repli / appel direct hors ordonnanceur).
