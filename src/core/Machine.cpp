@@ -175,7 +175,7 @@ void Machine::onRender() {
     // COURANT des registres (palette/base) — AVANT le tic Timer B (400) et le HBL
     // (508) de la même ligne, dont les handlers changeront les registres pour la
     // ligne SUIVANTE (rasters). Rendu purement « sortie » : n'altère ni CPU ni IRQ.
-    const int h = shifter.height();
+    const int h = shifter.activeHeight();          // lignes ACTIVES (≠ buffer overscan)
     if (renderLine_ < h) shifter.renderLine(renderLine_);
     ++renderLine_;
     if (renderLine_ < h && renderLine_ < lpf_)
@@ -243,7 +243,7 @@ void Machine::runFrame() {
     // Lignes restantes : en haute-rés mono (400 lignes), le cadre PAL 313 lignes
     // ne fournit pas un créneau par ligne → on finit le décodage ici. En couleur
     // (≤ 200 lignes) tout a déjà été décodé au fil de la trame : rien à faire.
-    const int h = shifter.height();
+    const int h = shifter.activeHeight();          // lignes ACTIVES (≠ buffer overscan)
     while (renderLine_ < h) shifter.renderLine(renderLine_++);
 
     // Trame complète décodée : si une image Spectrum 512 a été détectée (palette

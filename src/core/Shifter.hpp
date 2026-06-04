@@ -69,8 +69,13 @@ public:
 
     // Accès au buffer décodé (ARGB8888) pour le frontend ou un dump.
     const uint32_t* pixels() const { return frame_.data(); }
-    int width()  const { return curW_; }
-    int height() const { return curH_; }
+    int width()  const { return curW_; }      // largeur du buffer (overscan inclus)
+    int height() const { return curH_; }      // hauteur du buffer (overscan inclus)
+    // Nombre de lignes ACTIVES (display-enable) à décoder : 200 (couleur) / 400 (mono).
+    // ≠ height() quand l'overscan ajoute des bordures haut/bas. La boucle de rendu de
+    // Machine itère sur activeHeight() ; renderLine(y) place la ligne active y à
+    // l'offset bordure-haut dans le buffer (cf. activeY_).
+    int activeHeight() const { return curAH_; }
 
     // Fréquence de rafraîchissement COURANTE (mono = 71 Hz, sinon $FF820A bit1 :
     // 50 Hz PAL / 60 Hz NTSC). Pour l'affichage / le débogage (la trame est cadencée
@@ -143,6 +148,29 @@ private:
     // la trame, pour le re-rendu spec512. Met à jour le compteur de détection.
     void recordColorWrite(int index);
 
+    // Enregistre une écriture sync $FF820A (50/60 Hz) ou résolution $FF8260 au cycle
+    // live, pour la détection de RETRAIT de bordures (port machine Glue Hatari,
+    // Video_Update_Glue_State). `isRes` = $FF8260, sinon $FF820A.
+    void recordSyncWrite(bool isRes, uint8_t val);
+
+    // --- Retrait de bordures (Phase 2 : gauche/droite, basse rés STF) -----------
+    // Une écriture freq/res datée, pour rejouer la machine Glue en fin de trame.
+    struct SyncWrite { int32_t frameCycle; uint8_t val; bool isRes; };
+    std::vector<SyncWrite> syncWrites_;             // écritures freq/res de la trame
+    bool   bordersTrick_ = false;                   // ≥1 ligne avec retrait détecté
+    // Fenêtre d'affichage par ligne (cycles) : par défaut 56..376 (50 Hz), élargie
+    // par les tricks (gauche off → début 4 ; droite off → fin 460). Indexée par
+    // ligne active (0..199). Calculée par computeBorderWindows() en fin de trame.
+    std::array<int16_t, 256> lineDispStart_{};      // cycle début display par ligne
+    std::array<int16_t, 256> lineDispEnd_{};        // cycle fin display par ligne
+    void computeBorderWindows();                    // rejoue les switches → fenêtres
+    void renderBordersFrame();                      // re-rendu fenêtré + adresse accumulée
+
+    // Décode `nPix` pixels d'une ligne à partir de l'adresse vidéo `base` (modèle
+    // fenêtré pour les bordures) dans `idx`. Comme decodeLineIndices mais largeur
+    // explicite et base fournie (pas de stride interne).
+    int decodeWindowIndices(uint32_t base, int nPix, uint8_t* idx) const;
+
     // --- Spec512 : palette intra-ligne (port Hatari spec512.c) --------------
     // Une écriture palette dans la trame, datée au cycle (façon CyclePalettes[]).
     struct ColorWrite { int32_t frameCycle; uint16_t colour; uint8_t index; };
@@ -161,8 +189,25 @@ private:
         return                           {508, 263, 200, 52, 372};  // 60 Hz NTSC
     }
 
+    // --- Bordures (overscan) — port des dimensions visibles Hatari (conv_st.h) ----
+    // Buffer visible basse rés couleur = 48+320+48 px × 29+200+47 lignes = 416×276,
+    // l'écran actif 320×200 centré (bordures = couleur registre 0). Phase 1 :
+    // bordures VISIBLES, sans encore les tricks de RETRAIT (50/60 Hz, hi/lo res) —
+    // ceux-ci élargiront la fenêtre d'affichage par ligne (cf. TODO §Vidéo bordures).
+    // Médium/mono restent sans bordure pour l'instant (rares en démo / spec512 = low).
+    static constexpr int kBorderLeftPx   = 48;
+    static constexpr int kBorderRightPx  = 48;
+    static constexpr int kBorderTopLines = 29;    // OVERSCAN_TOP
+    static constexpr int kBorderBotLines = 47;    // MAX_OVERSCAN_BOTTOM
+    static constexpr bool kBordersEnabled = true;
+    bool bordered() const { return frameMode_ == Mode::Low && kBordersEnabled; }
+    // Largeur de l'écran ACTIF (sans les bordures) : 320 (low) / 640 (med/mono).
+    int activeWidth() const { return curW_ - (bordered() ? (kBorderLeftPx + kBorderRightPx) : 0); }
+
     Bus&          bus_;
-    int           curW_ = 0, curH_ = 0;     // résolution décodée courante
+    int           curW_ = 0, curH_ = 0;     // dimensions du buffer (overscan inclus)
+    int           curAH_ = 0;               // lignes actives à décoder (200/400)
+    int           activeX_ = 0, activeY_ = 0;  // offset de l'écran actif dans le buffer
     Mode          frameMode_ = Mode::Low;   // résolution verrouillée pour la trame
     uint8_t       frameSync_ = 0x02;        // fréquence ($FF820A) verrouillée pour la trame
     std::vector<uint32_t> frame_;           // curW_*curH_ pixels ARGB

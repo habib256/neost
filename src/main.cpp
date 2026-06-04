@@ -444,8 +444,11 @@ void drawJoystickWindow(GLFWwindow* win, uint8_t lastJoy0, uint8_t lastJoy1) {
 
 // Fenêtre de l'écran ST : fenêtre de BASE (toujours là, jamais au premier plan).
 // Placée sous les barres au 1er lancement, puis DÉPLAÇABLE par glissé de sa barre de
-// titre (ImGui mémorise sa position). L'image fait toujours 640×400 (taille du mode
-// monochrome) ; les 3 résolutions y sont normalisées. Clic dans l'image = capture souris.
+// titre (ImGui mémorise sa position). La taille d'affichage suit la résolution
+// COURANTE du buffer (bordures overscan INCLUSES) en respectant l'aspect pixel ST :
+// basse rés ×2/×2, moyenne ×1/×2, mono ×1/×1 — l'écran actif occupe donc toujours
+// ~640×400 et les bordures s'ajoutent autour (low res bordée = 416×276 → 832×552).
+// Clic dans l'image = capture souris.
 void drawStScreen(const GlScreen& s, bool captured, bool& reqCapture, float topOffset) {
     // FirstUseEver (et non Always) : on ne fixe la position qu'au tout 1er affichage,
     // sinon la fenêtre serait re-ancrée à chaque trame et impossible à déplacer.
@@ -460,7 +463,13 @@ void drawStScreen(const GlScreen& s, bool captured, bool& reqCapture, float topO
     ImGui::TextDisabled(captured ? "Souris capturée — Suppr (DEL) pour la libérer"
                                  : "Clic dans l'écran pour capturer la souris (curseur GEM)");
     const ImTextureID id = (ImTextureID)(intptr_t)s.tex;
-    ImGui::Image(id, ImVec2(640.0f, 400.0f));           // taille mode monochrome (rés. normalisées)
+    // Aspect pixel ST : la basse rés a des pixels 2× plus larges/hauts que la mono
+    // (320×200 et 640×400 couvrent la même surface écran). On dérive l'échelle des
+    // dimensions du buffer (overscan inclus) : largeur ×2 si ≤ 480 px (classe basse
+    // rés), hauteur ×2 si ≤ 300 lignes (classe 200 lignes).
+    const float sx = (s.w <= 480) ? 2.0f : 1.0f;
+    const float sy = (s.h <= 300) ? 2.0f : 1.0f;
+    ImGui::Image(id, ImVec2(s.w * sx, s.h * sy));
     if (!captured && ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         reqCapture = true;
     ImGui::End();

@@ -55,12 +55,21 @@ uint32_t Shifter::stColorToArgb(uint16_t c) {
 }
 
 void Shifter::resizeFor(Mode m) {
-    int w = 320, h = 200;
+    // Lignes ACTIVES (display-enable) décodées et offset de l'écran actif dans le
+    // buffer. En basse rés bordée, le buffer overscan ajoute des bordures autour
+    // de l'écran 320×200 (cf. kBorder*). Sinon le buffer = l'écran actif (offset 0).
+    int aw = 320, ah = 200;                       // dimensions de l'écran ACTIF
     switch (m) {
-        case Mode::Low:    w = 320; h = 200; break;   // 16 couleurs
-        case Mode::Medium: w = 640; h = 200; break;   // 4 couleurs
-        case Mode::High:   w = 640; h = 400; break;   // monochrome
+        case Mode::Low:    aw = 320; ah = 200; break;   // 16 couleurs
+        case Mode::Medium: aw = 640; ah = 200; break;   // 4 couleurs
+        case Mode::High:   aw = 640; ah = 400; break;   // monochrome
     }
+    const bool border = (m == Mode::Low) && kBordersEnabled;
+    activeX_ = border ? kBorderLeftPx   : 0;
+    activeY_ = border ? kBorderTopLines : 0;
+    const int w = border ? (kBorderLeftPx + aw + kBorderRightPx) : aw;
+    const int h = border ? (kBorderTopLines + ah + kBorderBotLines) : ah;
+    curAH_ = ah;
     if (w == curW_ && h == curH_) return;
     curW_ = w; curH_ = h;
     frame_.assign(static_cast<std::size_t>(w) * h, 0xFF000000u);
@@ -82,12 +91,23 @@ void Shifter::beginFrame() {
     paletteAccesses_ = 0;
     spec512Active_   = false;
     frameStartPalette_ = palette;
+    syncWrites_.clear();
+    bordersTrick_ = false;
+    // Fond bordure : remplit tout le buffer overscan avec la couleur de bordure
+    // (registre 0) au début de trame. Les lignes actives écrasent leur zone ; les
+    // bordures haut/bas et les côtés non réécrits restent à cette couleur. (Phase 1 :
+    // couleur de bordure figée à la trame ; les barres raster en bordure haut/bas
+    // viendront avec le retrait de bordures et le suivi du registre 0 par ligne.)
+    if (bordered()) {
+        const uint32_t bg = stColorToArgb(palette[0]);
+        std::fill(frame_.begin(), frame_.end(), bg);
+    }
 }
 
 // Décode les index de palette (ou bit mono) d'UNE scanline dans `idx`, selon la
 // résolution VERROUILLÉE de la trame. Renvoie le décalage scroll fin STE.
 int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
-    const int  W      = curW_;
+    const int  W      = activeWidth();             // pixels de l'écran actif (hors bordures)
     const bool hi     = (frameMode_ == Mode::High);
     const int  planes = hi ? 1 : (frameMode_ == Mode::Medium ? 2 : 4);  // plans entrelacés
     const int  bpl    = hi ? 80 : 160;                  // octets/ligne AFFICHÉE
@@ -122,15 +142,18 @@ int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
     return scroll;
 }
 
-// Décode UNE scanline avec l'état COURANT des registres (palette, base vidéo).
+// Décode UNE scanline active (display-enable) avec l'état COURANT des registres
+// (palette, base vidéo) et la place à l'offset bordure dans le buffer overscan.
 void Shifter::renderLine(int y) {
-    if (y < 0 || y >= curH_) return;
-    uint32_t* dst = frame_.data() + static_cast<std::size_t>(y) * curW_;
-    const int  W   = curW_;
+    if (y < 0 || y >= curAH_) return;
+    const int  W   = activeWidth();
     const bool hi  = (frameMode_ == Mode::High);
 
     uint8_t idx[660];                                   // max (640/16 + 1) * 16 = 656
     const int scroll = decodeLineIndices(y, idx);
+
+    // Début de la zone ACTIVE dans le buffer (décalée des bordures gauche/haut).
+    uint32_t* dst = frame_.data() + static_cast<std::size_t>(activeY_ + y) * curW_ + activeX_;
 
     // Émet W pixels à partir de l'offset `scroll`. En haute résolution = moniteur
     // MONOCHROME : blanc (0) / noir (1), sans la palette couleur (sinon un
@@ -142,6 +165,14 @@ void Shifter::renderLine(int y) {
         for (int c = 0; c < W; ++c)
             dst[c] = stColorToArgb(palette[idx[c + scroll]]);
     }
+
+    // Bordures latérales de CETTE ligne = couleur registre 0 courante (Phase 1).
+    if (bordered()) {
+        const uint32_t bg = stColorToArgb(palette[0]);
+        uint32_t* row = frame_.data() + static_cast<std::size_t>(activeY_ + y) * curW_;
+        for (int x = 0; x < activeX_; ++x)         row[x] = bg;
+        for (int x = activeX_ + W; x < curW_; ++x) row[x] = bg;
+    }
 }
 
 // Fin de trame : re-rendu spec512 (palette intra-ligne) si détecté. Port du
@@ -151,7 +182,17 @@ void Shifter::renderLine(int y) {
 // palette qu'une fois tous les 4 cycles (bus 16 bits), donc au plus ~1 changement
 // tous les 4 pixels en basse résolution → jusqu'à 512 couleurs à l'écran.
 void Shifter::finishFrame() {
-    if (!spec512Active_ || frameMode_ == Mode::High) return;   // trame normale/mono : rien
+    if (frameMode_ == Mode::High) return;                      // mono : ni spec512 ni bordures
+
+    // Calcule la fenêtre d'affichage par ligne d'après les switches freq/res
+    // enregistrés (détection de retrait de bordures). Bon marché si aucun switch.
+    computeBorderWindows();
+
+    // Si un retrait de bordure est détecté, le rendu fenêtré (palette roulante)
+    // gère TOUT : bordures ouvertes + raster par ligne + spec512 intra-ligne.
+    if (bordersTrick_) { renderBordersFrame(); return; }
+
+    if (!spec512Active_) return;                               // trame normale : rendu ligne-à-ligne conservé
 
     // Tri stable par cycle : les écritures d'un même move.l / movem partagent un
     // cycle ; l'ordre d'insertion (= ordre des registres) doit être conservé pour
@@ -162,7 +203,7 @@ void Shifter::finishFrame() {
                      });
 
     const Geometry g   = geometry();
-    const int W        = curW_;
+    const int W        = activeWidth();            // pixels de l'écran actif (hors bordures)
     const int cpl      = g.cyclesPerLine;
     const int lineStart= g.lineStartCycle;
     const int span     = g.lineEndCycle - g.lineStartCycle;    // cycles couvrant les W pixels affichés
@@ -175,9 +216,10 @@ void Shifter::finishFrame() {
     std::size_t cur = 0;
 
     uint8_t idx[660];
-    for (int y = 0; y < curH_; ++y) {
+    for (int y = 0; y < curAH_; ++y) {
         const int scroll = decodeLineIndices(y, idx);
-        uint32_t* dst = frame_.data() + static_cast<std::size_t>(y) * W;
+        // Zone active dans le buffer overscan (décalée des bordures gauche/haut).
+        uint32_t* dst = frame_.data() + static_cast<std::size_t>(activeY_ + y) * curW_ + activeX_;
         for (int c = 0; c < W; ++c) {
             // Cycle (dans la trame) où le pixel c de la ligne y sort du shifter
             // (1 cycle/pixel en basse résolution, 0,5 en moyenne). Le décalage
@@ -205,10 +247,141 @@ void Shifter::recordColorWrite(int index) {
     if (++paletteAccesses_ >= kSpec512Threshold) spec512Active_ = true;
 }
 
+void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
+    if (!liveFrameClock_) return;
+    const int64_t fc = liveFrameClock_();
+    if (fc < 0) return;
+    syncWrites_.push_back({ static_cast<int32_t>(fc), val, isRes });
+}
+
+// Rejoue les écritures freq($FF820A)/res($FF8260) de la trame pour calculer la
+// fenêtre d'affichage [start,end] (cycles) de chaque ligne ACTIVE.
+//
+// ⚠ DÉTECTION PARTIELLE (stub). Mesure oracle sur The Cuddly Demos (écran overscan,
+// 64 switches/trame) : les démos réelles enchaînent par ligne des pulses freq 60/50
+// et res hi/lo EN FIN de ligne (cyc ~300-450) qui enveloppent la frontière de ligne,
+// avec une dérive de −2 cyc/ligne (sync-scroll sub-pixel) — PAS les switches « manuel »
+// au cycle ≤4 que ce stub détecte. Les interpréter correctement EXIGE le portage de la
+// MACHINE D'ÉTAT GLUE complète d'Hatari (Video_Update_Glue_State + Video_EndHBL, ~400
+// lignes, DisplayStartCycle/EndCycle/PixelShift incrémentaux + tables pVideoTiming) et
+// l'alignement de la timeline sur HBL 63. Ce stub ne se déclenche donc PAS sur le Cuddly
+// (vérifié) ; il reste gaté (zéro régression) en attendant le port complet (cf. TODO).
+//
+// Sous-ensemble actuel (port idéalisé de Video_Update_Glue_State) :
+//   • RETRAIT GAUCHE : bascule en haute rés ($FF8260 bit1) à un cycle ≤ 4 puis retour
+//     basse rés ≤ 4 → l'affichage démarre cycle 4 (au lieu de 56) = +26 octets / +52 px.
+//   • RETRAIT DROITE : bascule 60 Hz puis 50 Hz autour de la fin de ligne (≈ 372→376)
+//     → l'affichage finit cycle 460 (au lieu de 376) = +44 octets / +88 px.
+// (Les cas haut/bas, blank/no-DE, left+2, STE, sont laissés aux phases suivantes.)
+// Réf. video.h LINE_START/END_CYCLE_*, LINE_END_CYCLE_NO_RIGHT (460).
+void Shifter::computeBorderWindows() {
+    const Geometry g = geometry();
+    const int cpl = g.cyclesPerLine;
+    const int defStart = g.lineStartCycle;       // 56 (50 Hz) / 52 (60 Hz)
+    const int defEnd   = g.lineEndCycle;         // 376 / 372
+    for (int y = 0; y < curAH_ && y < 256; ++y) {
+        lineDispStart_[y] = static_cast<int16_t>(defStart);
+        lineDispEnd_[y]   = static_cast<int16_t>(defEnd);
+    }
+    if (frameMode_ == Mode::High) return;        // pas de tricks bordure modélisés en mono
+
+    // Parcourt les switches dans l'ordre (déjà ~chronologiques) et applique les
+    // transitions sur la ligne concernée. On suit l'état res (haute/basse) pour
+    // détecter le couple hi→lo du retrait gauche.
+    std::stable_sort(syncWrites_.begin(), syncWrites_.end(),
+                     [](const SyncWrite& a, const SyncWrite& b){ return a.frameCycle < b.frameCycle; });
+    bool resHiPending[256] = { false };          // une bascule hi vue tôt sur la ligne
+    for (const SyncWrite& w : syncWrites_) {
+        const int line = w.frameCycle / cpl;
+        const int lc   = w.frameCycle % cpl;
+        if (line < 0 || line >= curAH_ || line >= 256) continue;
+        if (w.isRes) {
+            const bool hi = (w.val & 0x02) != 0;            // bit1 → haute rés (71 Hz)
+            if (hi && lc <= 4) {                            // bascule HI tôt → arme retrait gauche
+                resHiPending[line] = true;
+            } else if (!hi && lc <= 8 && resHiPending[line]) {  // retour LO tôt après HI → bord gauche ouvert
+                lineDispStart_[line] = 4;                   // HDE_On_Hi : +52 px à gauche
+                resHiPending[line] = false;
+                bordersTrick_ = true;
+            }
+        } else {
+            const bool is60 = (w.val & 0x02) == 0;          // bit1=0 → 60 Hz
+            // RETRAIT DROITE : passage 60 Hz juste avant la fin de ligne 50 Hz (≈ 372)
+            // empêchant le DE-off à 376 → l'affichage continue jusqu'à 460.
+            if (is60 && lc >= 360 && lc <= 376) {
+                lineDispEnd_[line] = 460;                   // LINE_END_CYCLE_NO_RIGHT : +88 px à droite
+                bordersTrick_ = true;
+            }
+        }
+    }
+}
+
+// Décode `nPix` index planaires à partir de l'adresse vidéo `base` (rendu fenêtré
+// des bordures : largeur explicite, base fournie). `idx` doit tenir nPix+16 octets.
+int Shifter::decodeWindowIndices(uint32_t base, int nPix, uint8_t* idx) const {
+    const int planes = (frameMode_ == Mode::Medium) ? 2 : 4;   // low=4, med=2
+    const int groupB = 2 * planes;                             // octets pour 16 px
+    const int groups = (nPix + 15) / 16;
+    int px = 0;
+    for (int gI = 0; gI < groups; ++gI) {
+        const uint32_t a  = base + static_cast<uint32_t>(gI) * groupB;
+        const uint16_t p0 = bus_.read16(a);
+        const uint16_t p1 = planes > 1 ? bus_.read16(a + 2) : 0;
+        const uint16_t p2 = planes > 2 ? bus_.read16(a + 4) : 0;
+        const uint16_t p3 = planes > 3 ? bus_.read16(a + 6) : 0;
+        for (int bit = 15; bit >= 0; --bit)
+            idx[px++] = static_cast<uint8_t>(((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1)
+                                           | (((p2 >> bit) & 1) << 2) | (((p3 >> bit) & 1) << 3));
+    }
+    return px;
+}
+
+// Re-rendu de la trame avec RETRAIT de bordures : fenêtre d'affichage par ligne
+// (lineDispStart_/End_) + ADRESSE VIDÉO ACCUMULÉE (une ligne plus large lit plus
+// d'octets → décale les suivantes, port de Video_CalculateAddress). La palette est
+// la palette ROULANTE (gère raster par ligne ET spec512 intra-ligne). Hors fenêtre
+// = couleur de bordure (registre 0 au cycle courant).
+void Shifter::renderBordersFrame() {
+    const Geometry g    = geometry();
+    const int W         = curW_;                           // largeur buffer (overscan)
+    const int cpl       = g.cyclesPerLine;
+    const int visFirst  = g.lineStartCycle - kBorderLeftPx;   // cycle correspondant à buffer x=0 (56-48=8)
+    const int bytePerPix = (frameMode_ == Mode::Medium) ? 4 : 2;  // px par octet (low=2, med=4)
+
+    std::stable_sort(colorWrites_.begin(), colorWrites_.end(),
+                     [](const ColorWrite& a, const ColorWrite& b){ return a.frameCycle < b.frameCycle; });
+    std::array<uint16_t, 16> pal = frameStartPalette_;
+    const std::size_t n = colorWrites_.size();
+    std::size_t cur = 0;
+    uint32_t addr = videoBase & 0xFFFFFFu;
+
+    uint8_t idx[520];                                      // max ~456 px + marge
+    for (int y = 0; y < curAH_; ++y) {
+        const int ds   = lineDispStart_[y];
+        const int de   = lineDispEnd_[y];
+        const int nPix = (de > ds) ? (de - ds) : 0;
+        decodeWindowIndices(addr, nPix, idx);
+        uint32_t* row = frame_.data() + static_cast<std::size_t>(activeY_ + y) * W;
+        for (int x = 0; x < W; ++x) {
+            const int cyc = visFirst + x;                  // cycle du pixel balayé à cette colonne
+            const int64_t limit = static_cast<int64_t>(y) * cpl + cyc - kSpec512AlignCyc;
+            while (cur < n && colorWrites_[cur].frameCycle <= limit) {
+                pal[colorWrites_[cur].index] = colorWrites_[cur].colour;
+                ++cur;
+            }
+            if (cyc >= ds && cyc < de)
+                row[x] = stColorToArgb(pal[idx[cyc - ds]]); // dans la fenêtre → contenu
+            else
+                row[x] = stColorToArgb(pal[0]);             // hors fenêtre → couleur bordure
+        }
+        addr += static_cast<uint32_t>(nPix / bytePerPix);   // octets lus sur cette ligne (adresse accumulée)
+    }
+}
+
 // Décode toute la trame d'un coup (repli / appel direct hors ordonnanceur).
 void Shifter::renderFrame() {
     beginFrame();
-    for (int y = 0; y < curH_; ++y) renderLine(y);
+    for (int y = 0; y < curAH_; ++y) renderLine(y);   // lignes ACTIVES (bordures déjà posées)
 }
 
 uint8_t Shifter::read8(uint32_t addr) {
@@ -300,7 +473,7 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
             videoBase = (videoBase & 0xFF0000) | (uint32_t(v) << 8);
             if (ste) videoBase &= 0xFFFF00;
             return;
-        case 0xFF820A: sync = v; return;             // synchro 50/60 Hz
+        case 0xFF820A: recordSyncWrite(false, v); sync = v; return;   // synchro 50/60 Hz (+ détection bordures)
         // Octet bas de la base vidéo $FF820D (STE) : bit0 ignoré (aligné pair).
         case 0xFF820D:
             if (ste) videoBase = (videoBase & 0xFFFF00) | (uint32_t(v) & ~1u);
@@ -309,7 +482,7 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
         case 0xFF820F:
             if (ste) lineWidth = v;
             return;
-        case 0xFF8260: mode = static_cast<Mode>(v & 0x3); return;
+        case 0xFF8260: recordSyncWrite(true, v); mode = static_cast<Mode>(v & 0x3); return;  // résolution (+ détection bordures)
         // Scroll fin horizontal STE — état des registres uniquement (le décalage
         // par pixel relève de la cycle-accuracy, différé). Cf. Hatari
         // Video_HorScroll_Write : $FF8264 sans prefetch, $FF8265 avec prefetch.

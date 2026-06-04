@@ -72,8 +72,19 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
 - [ ] **Green desktop / GEM couleur corrompu** : bureau vert avec menus/fenêtres/icônes
       parasités (capture `Pirates!`) — comparer palette, plans bitplanes, masques VDI et
       rendu Shifter avec Hatari.
-- [ ] **Suppression de bordures** (gauche/droite/haut/bas, tricks 50/60 Hz) — base des démos
-      _(précision cycle)_ — réf. `video.c` BORDERMASK_*
+- [~] **Bordures** (gauche/droite/haut/bas, tricks 50/60 Hz) — base des démos _(précision cycle)_.
+      **Phase 1 FAITE** : overscan VISIBLE (buffer 416×276 = dims Hatari, actif centré, bordure
+      = registre 0 ; fenêtre GUI ajustée ; timeline inchangée → zéro régression). **Reste le
+      RETRAIT** : **socle FAIT** (enregistrement switches sync/res au cycle ; rendu fenêtré par
+      ligne + adresse vidéo accumulée ; gaté → zéro régression vérifiée). MAIS la **détection**
+      (`computeBorderWindows`) n'est qu'un STUB idéalisé : **mesure oracle sur The Cuddly Demos**
+      (écran overscan, 64 switches/trame) → les démos enchaînent par ligne des pulses freq 60/50
+      + res hi/lo EN FIN de ligne (cyc ~300-450) enveloppant la frontière, avec dérive −2 cyc/ligne
+      (sync-scroll). **Le retrait réel EXIGE le portage de la MACHINE GLUE complète d'Hatari**
+      (`Video_Update_Glue_State` + `Video_EndHBL`, ~400 lignes : DisplayStartCycle/EndCycle/PixelShift
+      incrémentaux + tables `pVideoTiming`) **et l'alignement de la timeline sur HBL 63** (display à
+      la ligne 63 — corrige aussi le décalage spec512 dLine=−60). C'est le gros morceau restant.
+      🎯 étalon en place : `disks/demos/The_Cuddly_demo.msa` (charge ; titre byte-identique Hatari).
       🎯 étalon : **The Cuddly Demos** (4 bordures), **Enchanted Land** (sync-scroll horizontal)
 - [~] **Spec512** (palette par scanline/cycle, 512 couleurs) _(précision cycle)_ — MÉCANISME
       FAIT (port `spec512.c` : enregistrement daté + re-rendu palette roulante, détection

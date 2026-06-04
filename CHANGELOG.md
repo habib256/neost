@@ -93,6 +93,25 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
     fond = wait states + contention (TODO « précision cycle »), socle commun avec la
     suppression de bordures. Le mécanisme est correct : il rendra l'image au pixel près dès
     que le flux d'écritures sera au cycle près.
+- **Bordures overscan VISIBLES** (Phase 1 — basse rés couleur) : le Shifter rend désormais
+  un buffer **416×276** (dimensions visibles Hatari : 48+320+48 px × 29+200+47 lignes,
+  `conv_st.h` `NUM_VISIBLE_*`), l'écran actif 320×200 **centré** (offset 48,29), bordures =
+  couleur registre 0. La **timeline d'événements est INCHANGÉE** (Machine itère sur
+  `activeHeight()` ; faible risque) → IRQ/timers/diag byte-identiques, contenu actif
+  byte-identique (décodage inchangé, juste recadré). Médium/mono sans bordure pour l'instant.
+  **Fenêtre GUI « Atari ST Screen »** redimensionnée selon la résolution courante (bordures
+  incluses), aspect pixel ST respecté (basse rés ×2/×2 → 832×552).
+- **Retrait de bordures — SOCLE** (Phase 2/3 en cours) : écritures sync `$FF820A` / résolution
+  `$FF8260` datées au cycle live (`recordSyncWrite`) ; rendu fenêtré par ligne `renderBordersFrame()`
+  avec **fenêtre d'affichage élargie + adresse vidéo ACCUMULÉE** (port `Video_CalculateAddress` :
+  une ligne plus large décale les suivantes) + palette roulante (raster + spec512). **Gaté par
+  détection** → écrans normaux byte-INCHANGÉS (vérifié : EmuTOS, titre The Cuddly Demos, bee
+  spec512 identiques à la Phase 1). **La détection (`computeBorderWindows`) reste un STUB** :
+  mesure oracle sur The Cuddly Demos (écran overscan, 64 switches/trame) → les démos réelles
+  enchaînent par ligne des pulses freq 60/50 + res hi/lo en FIN de ligne (cyc ~300-450) avec
+  dérive −2 cyc/ligne (sync-scroll) ; les interpréter EXIGE le portage de la **machine d'état
+  Glue complète** d'Hatari (`Video_Update_Glue_State` + `Video_EndHBL`) + l'alignement timeline
+  sur HBL 63 — gros morceau restant (cf. TODO). Étalon en place : `disks/demos/The_Cuddly_demo.msa`.
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.
