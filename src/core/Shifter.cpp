@@ -33,6 +33,23 @@ static constexpr int kSpec512AlignCyc = -24;
 // 1024 (qui comptait 2 octets par mot), frontière de détection inchangée.
 static constexpr int kSpec512Threshold = 512;
 
+// Correction de datation de la LECTURE du compteur vidéo $FF8205/07/09, en cycles.
+// Pendant côté lecture de kSpec512AlignCyc (qui aligne les ÉCRITURES). Port du modèle
+// Hatari Video_CalculateAddress : Hatari date la lecture PLUS TÔT que le cycle de bus
+// brut — FrameCycles = Video_GetCyclesSinceVbl_OnReadAccess() − 8 (le « magic 8 »),
+// plus l'offset « read effective N cyc avant la fin de l'instruction » (cycles.c,
+// Cycles_GetInternalCycleOnReadAccess). NeoST échantillonne au cycle de lecture brut de
+// Moira (liveNow) → 2 cyc trop tard. Sans correction, la valeur tombe PILE sur la
+// frontière de cellule-mot de la quantification (X−lineStart)>>1 &~1 (granularité 4 cyc) :
+// les démos spec512 à auto-synchro (BEE512…) qui lisent $FF8209 puis sautent dans un
+// nop-slide calculé atterrissent ±4 cyc une trame sur deux → image STATIQUE qui clignote
+// à 25 Hz (~1418 px/trame). −2 cyc recentre la lecture dans la cellule. Valeur EXACTE
+// (pas un simple ≡2 mod 4 anti-flicker) calée sur l'oracle Hatari (TRACE_VIDEO_COLOR) :
+// 1ʳᵉ écriture palette ligne 64 datée cyc=80 stable côté Hatari ; NeoST sans correction
+// oscille 76↔80, avec −2 se verrouille sur 80 (= Hatari). Flicker plein-diaporama
+// (BEE512/sun/PLANET/ANIMAL, fenêtre 540..1010) : 111 paires → 0.
+static constexpr int kVideoCounterReadOffsetCyc = -2;
+
 // =============================================================================
 //  Machine GLUE — retrait de bordures (port fidèle de Hatari video.c :
 //  Video_Update_Glue_State + Video_StartHBL + section verticale Video_EndHBL).
@@ -850,7 +867,8 @@ uint8_t Shifter::read8(uint32_t addr) {
 uint32_t Shifter::videoCounter() const {
     if (!beamClock_) return videoBase & 0xFFFFFF;       // pas d'horloge → base brute
     int64_t fc = beamClock_();                          // cycles dans la trame
-    static const char* vco = std::getenv("NEOST_VC_OFF");   // DEBUG : offset lecture compteur
+    fc += kVideoCounterReadOffsetCyc;                   // datation lecture façon Hatari (anti-flicker spec512)
+    static const char* vco = std::getenv("NEOST_VC_OFF");   // DEBUG : offset ADDITIONNEL (relatif à la correction)
     if (vco) fc += std::atoi(vco);
     // Géométrie VERROUILLÉE de la trame (cycles/ligne et début DE dépendent de la
     // fréquence 50/60/71 Hz : avant, 512 et 56/52 étaient figés → compteur faux en

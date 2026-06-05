@@ -92,6 +92,18 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
     décalage de datation de Moira (~4 cyc). Cale le front couleur sur le front pixel.
   - **Fusion octet→mot** de `recordColorWrite` : un `move.w` passe par le bus en 2 `write8`
     (gros-boutiste) ; on n'enregistre **qu'une écriture par mot** (valeur finale), comme Hatari.
+  - **Datation de la LECTURE du compteur `$FF8205/07/09`** (`kVideoCounterReadOffsetCyc = −2`,
+    port `Video_CalculateAddress`) — pendant côté **lecture** de `kSpec512AlignCyc`. Hatari date
+    la lecture du compteur vidéo PLUS TÔT que le cycle de bus brut (`−8` « magic » + offset
+    read-access de `cycles.c`) ; NeoST échantillonnait au cycle de lecture brut de Moira → **2 cyc
+    trop tard**, tombant **pile sur la frontière de cellule-mot** de la quantification
+    `(X−lineStart)>>1 &~1`. Les démos spec512 à **auto-synchro** (lecture `$FF8209` puis saut dans
+    un nop-slide calculé) atterrissaient alors ±4 cyc **une trame sur deux** → image STATIQUE
+    clignotant à 25 Hz (~1418 px/trame, ~110 paires/diaporama). `−2` recentre la lecture dans la
+    cellule. Calé sur l'oracle Hatari (`TRACE_VIDEO_COLOR`) : 1ʳᵉ écriture palette ligne 64 datée
+    **cyc=80 stable** (sans correction, NeoST oscillait 76↔80). **Flicker plein-diaporama : 0** ;
+    STE_Test Timing (« MFP, Glue, Video ») **Pass**, rapport série byte-identique. Vérif :
+    `tools/spec512_flicker_check.sh`, oracle `tools/hatari_oracle.sh`.
   - **Étalon** : slideshow `disks/utils/spectrum_512_auto_diapo.st` (auto sous TOS 1.00) →
     **BEE512** (l'abeille), photo **cougar**, scène sci-fi : honeycomb, dégradés et rayures
     nets, **identiques à Hatari** (`--avirecord`, frame ~850). Gaté par le seuil → **zéro
