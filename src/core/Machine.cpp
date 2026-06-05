@@ -57,7 +57,14 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     bus.cpu     = &cpu;     // pour rafraîchir l'IPL après chaque accès MMIO
     // Horloge faisceau pour le compteur d'adresse vidéo $FF8205/07/09 : cycles
     // écoulés depuis le début de la trame courante (cf. Shifter::videoCounter).
-    shifter.setBeamClock([this] { return sched.now() - frameStart_; });
+    // Horloge LIVE (delta intra-quantum inclus) — INDISPENSABLE : `sched.now()` est
+    // figé pendant un bloc CPU et ne bouge qu'aux frontières d'événement, donc un code
+    // qui POLLE $FF8209 en boucle serrée (sync raster des démos spec512 : `tst.b (a5);
+    // beq`) verrait un compteur GELÉ qui ne saute qu'aux events → la valeur lue ne
+    // correspond pas au cycle réel et le stabilisateur (saut calculé dans un nop-slide)
+    // se cale de travers → clignotement ±16 cyc. Avec liveNow le compteur suit le cycle
+    // exact de l'accès (comme Hatari Video_GetCyclesSinceVbl_OnReadAccess).
+    shifter.setBeamClock([this] { return sched.liveNow() - frameStart_; });
     // Horloge LIVE dans la trame (delta intra-quantum CPU inclus) : date au cycle
     // près chaque écriture palette pour le re-rendu spec512 (cf. Shifter::finishFrame).
     shifter.setLiveFrameClock([this] { return sched.liveNow() - frameStart_; });

@@ -849,7 +849,9 @@ uint8_t Shifter::read8(uint32_t addr) {
 // du test « T0 » des diagnostics qui relisent $FF8205/07/09 au cycle près.)
 uint32_t Shifter::videoCounter() const {
     if (!beamClock_) return videoBase & 0xFFFFFF;       // pas d'horloge → base brute
-    const int64_t fc = beamClock_();                    // cycles dans la trame
+    int64_t fc = beamClock_();                          // cycles dans la trame
+    static const char* vco = std::getenv("NEOST_VC_OFF");   // DEBUG : offset lecture compteur
+    if (vco) fc += std::atoi(vco);
     // Géométrie VERROUILLÉE de la trame (cycles/ligne et début DE dépendent de la
     // fréquence 50/60/71 Hz : avant, 512 et 56/52 étaient figés → compteur faux en
     // 60 Hz). frameSync_ est posé par beginFrame, comme frameMode_.
