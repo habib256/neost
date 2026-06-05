@@ -87,9 +87,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
     suivantes**. Rejoué HORS-LIGNE sur les écritures palette. Sans lui, la boucle d'affichage
     (24× `move.l (a3)+,(ax)+` + `dbra` = **510 cyc/ligne** sous Moira 68000 pur) dérivait de
     **−2 cyc/ligne** ; avec, elle tient les 512 cyc/ligne du matériel.
-  - **Offset pixel↔couleur** `kSpec512AlignCyc = −24` : port du « +7 spans » de
+  - **Offset pixel↔couleur** `kSpec512AlignCyc = −23` : port du « +7 spans » de
     `Spec512_StartScanLine` (alignement pipeline shifter, `LineStartCycle + 28`) corrigé du
-    décalage de datation de Moira (~4 cyc). Cale le front couleur sur le front pixel.
+    décalage de datation de Moira (~4 cyc). Cale le front couleur sur le front pixel. Affiné
+    de −24 à −23 (1 cyc) une fois le flicker corrigé : la correction du compteur vidéo a
+    verrouillé l'état des écritures, figeant l'alignement rendu optimal à −23.
   - **Fusion octet→mot** de `recordColorWrite` : un `move.w` passe par le bus en 2 `write8`
     (gros-boutiste) ; on n'enregistre **qu'une écriture par mot** (valeur finale), comme Hatari.
   - **Datation de la LECTURE du compteur `$FF8205/07/09`** (`kVideoCounterReadOffsetCyc = −2`,
@@ -104,11 +106,16 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
     **cyc=80 stable** (sans correction, NeoST oscillait 76↔80). **Flicker plein-diaporama : 0** ;
     STE_Test Timing (« MFP, Glue, Video ») **Pass**, rapport série byte-identique. Vérif :
     `tools/spec512_flicker_check.sh`, oracle `tools/hatari_oracle.sh`.
-  - **Étalon** : slideshow `disks/utils/spectrum_512_auto_diapo.st` (auto sous TOS 1.00) →
-    **BEE512** (l'abeille), photo **cougar**, scène sci-fi : honeycomb, dégradés et rayures
-    nets, **identiques à Hatari** (`--avirecord`, frame ~850). Gaté par le seuil → **zéro
-    régression** (EmuTOS/jeux normaux byte-inchangés ; tos104us, Enchanted Land vérifiés). Outils :
-    `--shot-every N PREFIX`, `NEOST_SPEC512_TRACE`, `NEOST_DISASM=addr,len` (headless).
+  - **Étalon — 100 % PIXEL-IDENTIQUE à l'oracle Hatari** : slideshow
+    `disks/utils/spectrum_512_auto_diapo.st` (auto sous TOS 1.00) → les **4** images spec512
+    (**BEE512** l'abeille, **sun** dégradé, **PLANET** sci-fi, **cougar** photo) diffent à
+    **0 px** vs Hatari (zone active 320×200, `compare -metric AE`). Méthode : diff pixel par
+    image figée (les 9552 écritures palette/trame matchent Hatari écriture-par-écriture, Δcyc
+    constant absorbé par `kSpec512AlignCyc`). À l'ancien `−24` il restait 122/54/210/319 px
+    (frontières décalées d'1 px). Gaté par le seuil → **zéro régression** (EmuTOS/jeux normaux
+    byte-inchangés ; tos104us, Enchanted Land vérifiés). Outils : `--shot-every N PREFIX`,
+    `--screenshot`, `NEOST_SPEC512_TRACE`, `NEOST_VC_OFF`/`NEOST_ALIGN_OFF` (sweep oracle),
+    `NEOST_DISASM=addr,len` (headless).
 - **Bordures overscan VISIBLES** (Phase 1 — basse rés couleur) : le Shifter rend désormais
   un buffer **416×276** (dimensions visibles Hatari : 48+320+48 px × 29+200+47 lignes,
   `conv_st.h` `NUM_VISIBLE_*`), l'écran actif 320×200 **centré** (offset 48,29), bordures =

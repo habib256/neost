@@ -17,12 +17,16 @@
 // pipeline du shifter documenté (« [NP] '7' is required to align pixels and colors »).
 // Une écriture à la position-ligne L apparaît donc au pixel (L − LineStartCycle − 28).
 // Côté NeoST, Moira date l'écriture au DÉBUT du cycle bus (~4 cyc avant la convention
-// Hatari instr_end−8), d'où un net de −28 + 4 = −24. Validé par diff pixel contre
-// l'oracle Hatari (BEE512 + photo « cougar » du slideshow Spectrum 512 : nettes au
-// pixel). La résolution intrinsèque est de 4 cyc (la palette ne peut changer que tous
-// les 4 cycles), donc ±4 px ne change rien. Indissociable de applyShifterBusAlignment
-// (sans le recalage des wait states bus, la position dérive de −2 cyc/ligne).
-static constexpr int kSpec512AlignCyc = -24;
+// Hatari instr_end−8), d'où un net de −28 + 4 = −24, AFFINÉ à −23 (1 cyc) une fois le
+// flicker spec512 corrigé (cf. kVideoCounterReadOffsetCyc) : la correction du compteur
+// vidéo a VERROUILLÉ l'état des écritures (qui oscillait ±4 cyc une trame sur deux), si
+// bien que l'alignement rendu optimal s'est figé à −23. Indissociable de
+// applyShifterBusAlignment (sans le recalage des wait states bus, la position dérive de
+// −2 cyc/ligne). VALIDÉ : diff pixel vs oracle Hatari = **0 px** sur LES 4 images du
+// slideshow Spectrum 512 — BEE512 (honeycomb), sun (dégradé), PLANET (sci-fi), cougar
+// (photo) — soit 100 % pixel-identique. À −24 il restait 122/54/210/319 px (frontières
+// décalées d'1 px sur les images à arêtes nettes). Sweep en V confirmant −23 sur chaque.
+static constexpr int kSpec512AlignCyc = -23;
 
 // Seuil de détection « image spec512 » : nombre d'écritures palette MOT par trame
 // au-delà duquel on bascule sur le re-rendu intra-ligne. Bien au-dessus d'un usage
@@ -308,6 +312,9 @@ void Shifter::finishFrame() {
     const std::size_t n = colorWrites_.size();
     std::size_t cur = 0;
 
+    static const char* alo = std::getenv("NEOST_ALIGN_OFF");   // DEBUG : offset ADDITIONNEL (relatif à kSpec512AlignCyc) pour re-calibrer le rendu vs oracle
+    const int alignOff = alo ? std::atoi(alo) : 0;
+
     uint8_t idx[660];
     for (int y = 0; y < curAH_; ++y) {
         const int scroll = decodeLineIndices(y, idx);
@@ -321,7 +328,7 @@ void Shifter::finishFrame() {
             // kSpec512AlignCyc cale le front couleur sur le front pixel.
             const int64_t pixCyc = static_cast<int64_t>(dispStart + y) * cpl + lineStart
                                  + static_cast<int64_t>(c) * span / W;
-            const int64_t limit = pixCyc - kSpec512AlignCyc;
+            const int64_t limit = pixCyc - kSpec512AlignCyc + alignOff;
             while (cur < n && colorWrites_[cur].frameCycle <= limit) {
                 pal[colorWrites_[cur].index] = colorWrites_[cur].colour;
                 ++cur;
