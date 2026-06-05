@@ -128,6 +128,8 @@ Le déploiement GitHub Pages est automatisé par `.github/workflows/deploy-web.y
 
 EmuTOS (FR/US) et TOS 1.02 bootent (green desktop, disquette, souris, son). Les trois
 cartouches de diagnostic atteignent leur menu et passent leurs tests internes sur les
-deux cœurs. **Arkanoid** se lance et affiche son écran-titre. Le grand chantier en
-cours est la **précision cycle** (bordures, spec512, timing fin des jeux/démos) — voir
-[`TODO.md`](TODO.md) et [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md).
+deux cœurs. **Arkanoid** se lance et affiche son écran-titre. Les images **Spectrum 512**
+(palette intra-ligne, jusqu'à 512 couleurs) sont rendues **100 % pixel-identiques à
+l'oracle Hatari**, sans flicker. Le grand chantier en cours est la **précision cycle**
+(bordures, timing fin des jeux/démos) — voir [`TODO.md`](TODO.md) et
+[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md).

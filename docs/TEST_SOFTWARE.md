@@ -20,7 +20,8 @@ tester avec ses propres images.
 
 Du plus simple au plus violent, chaque étape suppose la précédente acquise :
 
-1. **Spectrum 512** — stabilité de la palette par ligne (synchro CPU↔faisceau de base).
+1. **Spectrum 512** — ✅ **RÉSOLU** (100 % pixel-identique à Hatari, sans flicker) : stabilité
+   de la palette par ligne (synchro CPU↔faisceau de base).
 2. **The Cuddly Demos** — suppression des 4 bordures (timings HSYNC/VSYNC).
 3. **Enchanted Land** — sync-scroll horizontal (bascule 50/60 Hz au cycle exact).
 
@@ -35,7 +36,7 @@ Hatari : `video.c`, `spec512.c`.
 
 | Étalon | Éditeur | Mécanisme | Cas limite testé | TODO NeoST |
 |--------|---------|-----------|------------------|------------|
-| **Spectrum 512** | Inshape | Réécrit la palette plusieurs fois par ligne → >512 couleurs affichées | Synchro cycle-près `MOVE.W` ↔ position du faisceau. Défaut : couleurs décalées verticalement, bandes/flicker | « Spec512 » + « Latch palette/scroll mi-ligne » |
+| **Spectrum 512** | Inshape | Réécrit la palette plusieurs fois par ligne → >512 couleurs affichées | Synchro cycle-près `MOVE.W` ↔ position du faisceau. Défaut : couleurs décalées verticalement, bandes/flicker | ✅ **RÉSOLU** — diaporama étalon **0 px vs Hatari** (4 images), flicker éliminé. Reste : scroll fin mi-ligne |
 | **Enchanted Land** | Thalion | Scrolling horizontal pixel-près SANS Blitter : bascule 50↔60 Hz en fin de ligne pour tromper le compteur d'adresse interne du Shifter et décaler l'adresse de base | 1 cycle d'erreur → écran qui saute/déchire ou plante. Exige la géométrie variable EN COURS de trame | « Suppression de bordures » (géométrie mi-trame) |
 | **The Cuddly Demos** | The Carebears (TCB), 1989 | 1ʳᵉ démo à ouvrir les **4 bordures** (haut/bas/gauche/droite) simultanément : boucles de NOP calibrées qui commutent la fréquence au moment où le canon atteint les limites de l'affichage standard | Précision des timings de génération HSYNC/VSYNC + tampons internes Shifter | « Suppression de bordures » (BORDERMASK_*) |
 

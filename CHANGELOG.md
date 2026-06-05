@@ -79,8 +79,9 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   bus `m68000.c`). Chaque écriture palette `$FF824x` est **datée au cycle live de Moira**
   (`recordColorWrite`) ; une trame qui réécrit la palette **> 512 fois** (image Spectrum 512,
   ≈ 48 couleurs × 200 lignes) déclenche en fin de trame (`finishFrame`) un re-rendu à **palette
-  roulante** mise à jour AU CYCLE de chaque écriture → jusqu'à **512 couleurs/trame**. Deux
-  correctifs ont rendu le résultat **identique à l'oracle Hatari** (diff pixel) :
+  roulante** mise à jour AU CYCLE de chaque écriture → jusqu'à **512 couleurs/trame**. Quatre
+  correctifs ont rendu le résultat **100 % pixel-identique à l'oracle Hatari** (0 px de diff
+  sur les 4 images du diaporama, flicker éliminé) :
   - **Alignement bus 4 cyc du shifter** (`applyShifterBusAlignment`, port `M68000_SyncCpuBus`) :
     les registres couleur ne s'accèdent que sur une frontière de 4 cycles → une écriture mot
     non alignée gèle le CPU jusqu'à la frontière (0-3 cyc), ce qui **décale les écritures

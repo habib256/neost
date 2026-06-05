@@ -20,7 +20,7 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 **Validation par logiciels réels** : chaque gros chantier a un **logiciel étalon** qui
 n'affiche/sonne correctement QUE si l'effet limite est fidèle → catalogue par sous-système
 dans [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md). Repère `🎯 étalon : …` sur les items
-ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → Enchanted Land**.
+ci-dessous. Ordre de débogage affichage : **Spectrum 512 ✅ → Cuddly Demos → Enchanted Land**.
 
 ---
 
@@ -93,18 +93,24 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
       (dépend des wait states / contention bus, cf. item ci-dessus).
       🎯 étalons : `make_overscan_test.py` (haut/bas ✅), `make_overscan_lr.py` (gauche/droite ✅),
       **The Cuddly Demos** (4 bordures, navigation espace), **Enchanted Land** (sync-scroll).
-- [x] **Spec512** (palette par scanline/cycle, 512 couleurs) — **RÉSOLU 2026** (port `spec512.c`).
-      Re-rendu à palette roulante datée + **2 correctifs décisifs** validés au pixel contre
-      l'oracle Hatari : (1) **alignement bus 4 cyc du shifter** rejoué hors-ligne
-      (`applyShifterBusAlignment`, port `M68000_SyncCpuBus`) — sans ça la boucle d'écriture
-      (24× `move.l (a3)+,(ax)+` + `dbra` = 510 cyc/ligne sous Moira pur) dérivait de −2 cyc/ligne
-      au lieu de 0 ; (2) **offset d'alignement pixel↔couleur** `kSpec512AlignCyc = −24` (port du
-      « +7 spans » de `Spec512_StartScanLine` − le décalage de datation de Moira). Fusion
-      octet→mot de `recordColorWrite` (un `move.w` = 1 écriture, comme Hatari). Slideshow
-      `disks/utils/spectrum_512_auto_diapo.st` : **BEE512, cougar, scène sci-fi rendus
-      identiques à Hatari** (diapo auto sous TOS 1.00). Outils : `--shot-every N PREFIX`,
-      `NEOST_SPEC512_TRACE`, `NEOST_DISASM` (headless). Reste : scroll fin sync mi-ligne
-      (Enchanted Land). Réf. `Shifter::finishFrame/applyShifterBusAlignment/recordColorWrite`.
+- [x] **Spec512** (palette par scanline/cycle, 512 couleurs) — **RÉSOLU 2026, 100 % PIXEL-
+      IDENTIQUE À HATARI** (port `spec512.c`). Re-rendu à palette roulante datée + **4 correctifs
+      décisifs** validés au pixel (0 px de diff) contre l'oracle Hatari : (1) **alignement bus
+      4 cyc du shifter** rejoué hors-ligne (`applyShifterBusAlignment`, port `M68000_SyncCpuBus`)
+      — sans ça la boucle d'écriture (24× `move.l (a3)+,(ax)+` + `dbra` = 510 cyc/ligne sous
+      Moira pur) dérivait de −2 cyc/ligne ; (2) **offset d'alignement pixel↔couleur**
+      `kSpec512AlignCyc = −23` (port du « +7 spans » de `Spec512_StartScanLine` − le décalage de
+      datation de Moira) ; (3) **fusion octet→mot** de `recordColorWrite` (un `move.w` = 1
+      écriture, comme Hatari) ; (4) **datation de la LECTURE du compteur vidéo `$FF820x`**
+      `kVideoCounterReadOffsetCyc = −2` (port `Video_CalculateAddress`) — élimine le **flicker
+      25 Hz** des images statiques (le compteur tombait sur une frontière de cellule-mot, la
+      synchro des démos basculait ±4 cyc une trame sur deux). Slideshow
+      `disks/utils/spectrum_512_auto_diapo.st` : les **4 images (BEE512, sun, PLANET, cougar)
+      diffent à 0 px vs Hatari** (diapo auto sous TOS 1.00). Outils : `--shot-every N PREFIX`,
+      `--screenshot`, `NEOST_SPEC512_TRACE`, `NEOST_VC_OFF`/`NEOST_ALIGN_OFF` (sweep oracle),
+      `NEOST_DISASM`, `tools/spec512_flicker_check.sh`, `tools/hatari_oracle.sh`. Reste : scroll
+      fin sync mi-ligne (Enchanted Land), indépendant. Réf.
+      `Shifter::finishFrame/applyShifterBusAlignment/recordColorWrite/videoCounter`.
 - [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) _(risque élevé)_ — réf.
       `video.c:Video_ColorReg_WriteWord`
 - [ ] **Joypads/paddles/lightpen STE** (`$FF9200-$FF9222`) : directions, boutons, multiplexage,
