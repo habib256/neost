@@ -37,11 +37,15 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
       `$FF824x` datées au cycle live de Moira, re-rendu de fin de trame à palette roulante
       (cf. CHANGELOG §Vidéo + item **Spec512** ci-dessous). Reste le **scroll** fin mi-ligne
       (sync-scroll Enchanted Land) et la latence sous-pixel — réf. `video.c:Video_RenderLine`.
-- [ ] **Wait states** d'accès YM2149 / mémoire (4 cycles + alignement) et contention bus
+- [~] **Wait states** d'accès YM2149 / mémoire (4 cycles + alignement) et contention bus
       _(précision cycle)_ — réf. `psg.c`, `cycles.c`, MAME `stmmu.cpp::bus_contention`.
-      🎯 **DÉBLOQUE Spectrum 512** : Moira (68000 pur) écrit la palette ~2 cyc/ligne trop tôt
-      vs Hatari (qui modélise ces wait states) → le flux spec512 dérive intra-ligne. Socle
-      commun avec la **suppression de bordures**.
+      **FAIT pour l'alignement bus 4 cyc du SHIFTER** (port `M68000_SyncCpuBus`, `m68000.c`) :
+      les registres couleur/résolution s'accèdent sur une frontière de 4 cycles → une écriture
+      mot non alignée gèle le CPU jusqu'à la frontière (0-3 cyc), ce qui décale les suivantes.
+      Rejoué **HORS-LIGNE** sur les écritures palette (`Shifter::applyShifterBusAlignment`),
+      timeline live INCHANGÉE → **Spectrum 512 RÉSOLU** (cf. ci-dessous). **Reste** : wait states
+      YM2149/MFP (E-clock), contention DMA vidéo générale sur la RAM (pour le pixel-perfect L/D
+      des bordures end-to-end). Socle commun avec la **suppression de bordures**.
 
 ### Cas concrets — état RÉEL mesuré
 - [x] **Arkanoid** — RÉSOLU 2026 par le **modèle FDC rotationnel** (cf. CHANGELOG §Disquette,
@@ -89,14 +93,18 @@ ci-dessous. Ordre de débogage affichage : **Spectrum 512 → Cuddly Demos → E
       (dépend des wait states / contention bus, cf. item ci-dessus).
       🎯 étalons : `make_overscan_test.py` (haut/bas ✅), `make_overscan_lr.py` (gauche/droite ✅),
       **The Cuddly Demos** (4 bordures, navigation espace), **Enchanted Land** (sync-scroll).
-- [~] **Spec512** (palette par scanline/cycle, 512 couleurs) _(précision cycle)_ — MÉCANISME
-      FAIT (port `spec512.c` : enregistrement daté + re-rendu palette roulante, détection
-      > 1024 écritures/trame, jusqu'à 512 couleurs ; cf. CHANGELOG §Vidéo). **Bloqué pixel-perfect**
-      par la dérive ~2 cyc/ligne du flux d'écritures (Moira 68000 pur sans wait states /
-      contention bus → cf. item **Wait states** ci-dessus). Diff oracle Hatari : couleurs et
-      synchro ligne OK, position intra-ligne dérive (BEE512 net en haut, dérive en bas).
-      🎯 étalon : **Spectrum 512** (Antic) — `BEE512.SPC` via SPSLIDE8 en `AUTO` (auto-affiché).
-      Réf. `Shifter::finishFrame/recordColorWrite`, `spec512.c`, `video.c:Video_ColorReg_WriteWord`.
+- [x] **Spec512** (palette par scanline/cycle, 512 couleurs) — **RÉSOLU 2026** (port `spec512.c`).
+      Re-rendu à palette roulante datée + **2 correctifs décisifs** validés au pixel contre
+      l'oracle Hatari : (1) **alignement bus 4 cyc du shifter** rejoué hors-ligne
+      (`applyShifterBusAlignment`, port `M68000_SyncCpuBus`) — sans ça la boucle d'écriture
+      (24× `move.l (a3)+,(ax)+` + `dbra` = 510 cyc/ligne sous Moira pur) dérivait de −2 cyc/ligne
+      au lieu de 0 ; (2) **offset d'alignement pixel↔couleur** `kSpec512AlignCyc = −24` (port du
+      « +7 spans » de `Spec512_StartScanLine` − le décalage de datation de Moira). Fusion
+      octet→mot de `recordColorWrite` (un `move.w` = 1 écriture, comme Hatari). Slideshow
+      `disks/utils/spectrum_512_auto_diapo.st` : **BEE512, cougar, scène sci-fi rendus
+      identiques à Hatari** (diapo auto sous TOS 1.00). Outils : `--shot-every N PREFIX`,
+      `NEOST_SPEC512_TRACE`, `NEOST_DISASM` (headless). Reste : scroll fin sync mi-ligne
+      (Enchanted Land). Réf. `Shifter::finishFrame/applyShifterBusAlignment/recordColorWrite`.
 - [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) _(risque élevé)_ — réf.
       `video.c:Video_ColorReg_WriteWord`
 - [ ] **Joypads/paddles/lightpen STE** (`$FF9200-$FF9222`) : directions, boutons, multiplexage,

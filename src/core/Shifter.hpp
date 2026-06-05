@@ -216,12 +216,23 @@ private:
 
     // --- Spec512 : palette intra-ligne (port Hatari spec512.c) --------------
     // Une écriture palette dans la trame, datée au cycle (façon CyclePalettes[]).
-    struct ColorWrite { int32_t frameCycle; uint16_t colour; uint8_t index; };
+    struct ColorWrite { int32_t frameCycle; uint16_t colour; uint8_t index; uint32_t pc; };
     std::vector<ColorWrite>  colorWrites_;          // écritures palette de la trame (ordre d'exécution)
     std::array<uint16_t, 16> frameStartPalette_{};  // palette au début de trame (base du replay)
     int  paletteAccesses_ = 0;                      // nb d'écritures palette dans la trame
     bool spec512Active_   = false;                  // seuil franchi → image spec512
     std::function<int64_t()> liveFrameClock_;       // cycle live dans la trame (cf. setLiveFrameClock)
+
+    // Aligne les écritures palette sur la frontière de bus 4 cycles du shifter et
+    // propage les wait states (port HORS-LIGNE de Hatari M68000_SyncCpuBus). Les
+    // registres couleur/résolution ne s'accèdent que tous les 4 cycles : une écriture
+    // qui tombe à un cycle non multiple de 4 fait attendre le CPU (4-(cyc&3)) cycles,
+    // ce qui DÉCALE toutes les écritures suivantes (le CPU est gelé). Moira est un
+    // 68000 PUR (pas de wait states) → sans ce modèle la boucle spec512 (24× move.l
+    // + dbra = 510 cyc/ligne) dérive de ~2 cyc/ligne ; avec, elle tient les 512 cyc/
+    // ligne du matériel (dérive nulle). Rejoué offline sur colorWrites_ (timeline live
+    // INCHANGÉE = zéro régression). Voir CHANGELOG « spec512 ».
+    void applyShifterBusAlignment();
 
     // Géométrie (cycles/ligne, lignes/trame, DE) pour une résolution + fréquence
     // données. Statique : ne dépend que de (mode, sync) → réutilisée pour la trame

@@ -75,24 +75,28 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   aussi dans le compteur `$FF8205/07/09`), **base-basse** `$FF820D` composée dans `videoBase`.
   Défaut (scroll 0 / line-width 0) byte-identique au boot. *(Distinction prefetch/no-prefetch
   fine + bordures → cycle-accuracy, cf. TODO.)*
-- **Latch palette intra-ligne + moteur Spectrum 512** (port du modèle `spec512.c` Hatari) :
-  chaque écriture palette `$FF824x` est **datée au cycle live de Moira** (`recordColorWrite`,
-  via `setLiveFrameClock`). Si une trame réécrit la palette **> 1024 fois** (image Spectrum
-  512 / color-cycling, ≈ 48 couleurs × 200 lignes), `Shifter::finishFrame` **re-rend toutes
-  les lignes** avec une **palette roulante** mise à jour AU CYCLE de chaque écriture (curseur
-  unique, cycles-pixel monotones) → jusqu'à **512 couleurs/trame**. Mapping **physique** (1
-  cyc/pixel basse rés, écriture au cycle F → pixel balayé au cycle F, **aucune constante
-  empirique**). Gaté par le seuil → **zéro régression** : EmuTOS/jeux normaux byte-inchangés
-  (le re-rendu ne s'active jamais sous le seuil). Étalon : `BEE512.SPC` (Antic) via SPSLIDE8
-  en `AUTO` — auto-affiché, comme l'oracle Hatari.
-  - **Diff oracle Hatari (`--trace video_color`)** : les écritures NeoST **matchent** Hatari
-    en couleur et en synchro de LIGNE (`dLine=−60` constant). **Limite connue** : la position
-    *intra-ligne* dérive de **~2 cyc/ligne** (`dLC` −4 ligne 40 → −124 ligne 100) car **Moira
-    est un 68000 pur** sans **wait states / contention bus ST** (vidéo volant des cycles CPU)
-    qu'Hatari modélise → sur BEE512 le haut sort net puis dérive vers le bas. Correctif de
-    fond = wait states + contention (TODO « précision cycle »), socle commun avec la
-    suppression de bordures. Le mécanisme est correct : il rendra l'image au pixel près dès
-    que le flux d'écritures sera au cycle près.
+- **Spectrum 512 — palette intra-ligne PIXEL-PERFECT vs Hatari** (port `spec512.c` + alignement
+  bus `m68000.c`). Chaque écriture palette `$FF824x` est **datée au cycle live de Moira**
+  (`recordColorWrite`) ; une trame qui réécrit la palette **> 512 fois** (image Spectrum 512,
+  ≈ 48 couleurs × 200 lignes) déclenche en fin de trame (`finishFrame`) un re-rendu à **palette
+  roulante** mise à jour AU CYCLE de chaque écriture → jusqu'à **512 couleurs/trame**. Deux
+  correctifs ont rendu le résultat **identique à l'oracle Hatari** (diff pixel) :
+  - **Alignement bus 4 cyc du shifter** (`applyShifterBusAlignment`, port `M68000_SyncCpuBus`) :
+    les registres couleur ne s'accèdent que sur une frontière de 4 cycles → une écriture mot
+    non alignée gèle le CPU jusqu'à la frontière (0-3 cyc), ce qui **décale les écritures
+    suivantes**. Rejoué HORS-LIGNE sur les écritures palette. Sans lui, la boucle d'affichage
+    (24× `move.l (a3)+,(ax)+` + `dbra` = **510 cyc/ligne** sous Moira 68000 pur) dérivait de
+    **−2 cyc/ligne** ; avec, elle tient les 512 cyc/ligne du matériel.
+  - **Offset pixel↔couleur** `kSpec512AlignCyc = −24` : port du « +7 spans » de
+    `Spec512_StartScanLine` (alignement pipeline shifter, `LineStartCycle + 28`) corrigé du
+    décalage de datation de Moira (~4 cyc). Cale le front couleur sur le front pixel.
+  - **Fusion octet→mot** de `recordColorWrite` : un `move.w` passe par le bus en 2 `write8`
+    (gros-boutiste) ; on n'enregistre **qu'une écriture par mot** (valeur finale), comme Hatari.
+  - **Étalon** : slideshow `disks/utils/spectrum_512_auto_diapo.st` (auto sous TOS 1.00) →
+    **BEE512** (l'abeille), photo **cougar**, scène sci-fi : honeycomb, dégradés et rayures
+    nets, **identiques à Hatari** (`--avirecord`, frame ~850). Gaté par le seuil → **zéro
+    régression** (EmuTOS/jeux normaux byte-inchangés ; tos104us, Enchanted Land vérifiés). Outils :
+    `--shot-every N PREFIX`, `NEOST_SPEC512_TRACE`, `NEOST_DISASM=addr,len` (headless).
 - **Bordures overscan VISIBLES** (Phase 1 — basse rés couleur) : le Shifter rend désormais
   un buffer **416×276** (dimensions visibles Hatari : 48+320+48 px × 29+200+47 lignes,
   `conv_st.h` `NUM_VISIBLE_*`), l'écran actif 320×200 **centré** (offset 48,29), bordures =
@@ -132,11 +136,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   applique `DisplayPixelShift` (décalage 4 px du retrait gauche ; no-op si 0 → écrans normaux
   inchangés). **Reste** (cf. TODO #7) : wakeup-state WS3 (+1 cyc, sous-pixel), med-res overscan,
   rendu des blank lines/NO_SYNC, et le pixel-perfect L/D end-to-end (lié aux wait states).
-- **spec512 — boot du diaporama étalon** : `spec_auto.st` (SPSLIDE8 dans `\AUTO\`) s'auto-lance
-  sous **vrai TOS** (`tos100us/fr` + `--disk`), PAS sous EmuTOS (qui ne traite pas l'AUTO de la
-  même façon). Une image Spectrum 512 s'affiche (frame ~1800) : **haut net** (l'alignement vertical
-  `dLine` est corrigé par la timeline VDE_On), bas qui dérive (wait states, cf. TODO). Nouveau flag
-  headless `--disk FILE` (lecteur A explicite, plus besoin d'écraser `disks/diskA.st`).
+- **spec512 — boot du diaporama étalon** : `spectrum_512_auto_diapo.st` (SPSLIDE8 dans `\AUTO\`)
+  s'auto-lance sous **vrai TOS** (`tos100us/fr` + `--disk`), PAS sous EmuTOS (qui ne traite pas
+  l'AUTO de la même façon). Les images Spectrum 512 s'affichent **nettes de haut en bas**
+  (cf. ci-dessus, dérive corrigée). Nouveau flag headless `--disk FILE` (lecteur A explicite,
+  plus besoin d'écraser `disks/diskA.st`).
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.

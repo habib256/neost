@@ -20,6 +20,7 @@
 
 #include "core/Machine.hpp"
 #include "core/Tracer.hpp"
+#include "m68k.h"
 
 namespace {
 void usage() {
@@ -84,6 +85,8 @@ int main(int argc, char** argv) {
     bool        loopback   = false;   // « branche » le connecteur de bouclage RS232 (test S)
     bool        machineMono = false;
     bool        glueSelfTest = false; // auto-test déterministe de la machine Glue (bordures)
+    int         shotEvery   = 0;      // --shot-every N : dump une capture toutes les N trames
+    std::string shotPrefix;           // --shot-every PREFIX : préfixe des captures périodiques
     CpuCore     cpuCore    = CpuCore::Musashi;
     MachineType machType   = MachineType::Ste;
     std::size_t ramBytes   = 512u * 1024u;
@@ -115,6 +118,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--loopback"))   loopback  = true;
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
         else if (!std::strcmp(a, "--glue-selftest")) glueSelfTest = true;
+        else if (!std::strcmp(a, "--shot-every"))  { shotEvery = std::atoi(next(a)); shotPrefix = next(a); }
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
         else if (!std::strcmp(a, "--machine"))    machType  = parseMachine(next(a));
         else if (!std::strcmp(a, "--mem"))        ramBytes  = parseRamBytes(next(a));
@@ -174,6 +178,12 @@ int main(int argc, char** argv) {
     // pour borner une capture autour d'un point d'intérêt.
     for (int frame = 0; frame < frames; ++frame) {
         machine.runFrame();
+        if (shotEvery > 0 && (frame % shotEvery) == 0) {
+            char path[512];
+            std::snprintf(path, sizeof(path), "%s%05d.ppm", shotPrefix.c_str(), frame);
+            writePpm(path, machine.shifter.pixels(),
+                     machine.shifter.width(), machine.shifter.height());
+        }
         if (haveUntil && machine.cpu.pc() == untilPc) {
             std::fprintf(stderr, "[headless] PC=$%06X atteint à la trame %d\n", untilPc, frame);
             break;
@@ -249,6 +259,19 @@ int main(int argc, char** argv) {
                      machine.shifter.width(), machine.shifter.height()))
             std::fprintf(stderr, "[headless] capture écran → %s (%dx%d)\n",
                          shotPath.c_str(), machine.shifter.width(), machine.shifter.height());
+    }
+
+    // --disasm ADDR,LEN : désassemble LEN octets à partir de ADDR (hexa) via Musashi.
+    if (const char* da = std::getenv("NEOST_DISASM")) {
+        uint32_t addr = 0, len = 0;
+        std::sscanf(da, "%x,%x", &addr, &len);
+        char buf[256];
+        uint32_t pc = addr;
+        while (pc < addr + len) {
+            unsigned int n = m68k_disassemble(buf, pc, M68K_CPU_TYPE_68000);
+            std::fprintf(stderr, "%06X: %s\n", pc, buf);
+            pc += n ? n : 2;
+        }
     }
 
     if (!serialOut.empty())

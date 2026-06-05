@@ -4,35 +4,34 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Shifter.hpp"
+#include "core/Bus.hpp"
+#include "core/Cpu68k.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 
 // Décalage d'alignement pixel↔couleur du re-rendu spec512, en cycles (8 MHz).
-// MAPPING PHYSIQUE : une écriture datée au cycle F (horloge live de Moira) colore
-// le pixel balayé au cycle F → décalage nul. On ne CALIBRE PAS d'offset empirique :
-// le re-rendu est correct DÈS QUE le flux d'écritures est au cycle près. Or il ne
-// l'est pas encore tout à fait (cf. limite ci-dessous), mais on garde le mapping
-// honnête plutôt qu'une constante magique qui deviendrait fausse une fois le timing
-// corrigé.
-//
-// ⚠ LIMITE CONNUE (diff oracle Hatari, cf. CHANGELOG / TODO) : les écritures palette
-// de NeoST matchent Hatari en couleur ET en synchro de ligne, mais leur position
-// INTRA-ligne dérive de ~2 cycles/ligne (mesuré dLC −4 ligne 40 → −124 ligne 100).
-// Cause : Moira est un 68000 PUR — il ne modélise pas les wait states / la contention
-// de bus du ST (la vidéo vole des cycles au CPU) qu'Hatari ajoute. Résultat : sur une
-// vraie image Spectrum 512 (BEE512), le haut sort net puis les couleurs dérivent vers
-// le bas. Le correctif de fond = wait states + contention bus (TODO « précision cycle »),
-// socle partagé avec la suppression de bordures.
-static constexpr int kSpec512AlignCyc = 0;
+// Port de l'alignement d'Hatari (spec512.c Spec512_StartScanLine) : avant de tracer
+// le 1ᵉʳ pixel affiché, Hatari fait avancer ScanLineCycleCount de (LineStartCycle/4 + 7)
+// périodes de 4 cycles, soit LineStartCycle + 28 — le « +7 » étant le décalage
+// pipeline du shifter documenté (« [NP] '7' is required to align pixels and colors »).
+// Une écriture à la position-ligne L apparaît donc au pixel (L − LineStartCycle − 28).
+// Côté NeoST, Moira date l'écriture au DÉBUT du cycle bus (~4 cyc avant la convention
+// Hatari instr_end−8), d'où un net de −28 + 4 = −24. Validé par diff pixel contre
+// l'oracle Hatari (BEE512 + photo « cougar » du slideshow Spectrum 512 : nettes au
+// pixel). La résolution intrinsèque est de 4 cyc (la palette ne peut changer que tous
+// les 4 cycles), donc ±4 px ne change rien. Indissociable de applyShifterBusAlignment
+// (sans le recalage des wait states bus, la position dérive de −2 cyc/ligne).
+static constexpr int kSpec512AlignCyc = -24;
 
-// Seuil de détection « image spec512 » : nombre d'écritures palette par trame
-// au-delà duquel on bascule sur le re-rendu intra-ligne. Bien au-dessus d'un
-// usage normal (16 couleurs posées une fois = 16, ou raster-bars ~ quelques
-// centaines) pour ne JAMAIS toucher les trames ordinaires. Une image Spectrum
-// 512 réécrit ~48 couleurs/ligne sur 200 lignes (~10000/trame). Note : on compte
-// les écritures OCTET (un mot = 2), d'où une marge confortable.
-static constexpr int kSpec512Threshold = 1024;
+// Seuil de détection « image spec512 » : nombre d'écritures palette MOT par trame
+// au-delà duquel on bascule sur le re-rendu intra-ligne. Bien au-dessus d'un usage
+// normal (16 couleurs posées une fois = 16, ou raster-bars ~ quelques centaines) pour
+// ne JAMAIS toucher les trames ordinaires. Une image Spectrum 512 réécrit ~48 couleurs/
+// ligne sur 200 lignes (~9600 mots/trame). Depuis la fusion octet→mot de recordColorWrite
+// (un move.w = 1 écriture, comme Hatari), on compte les MOTS : 512 ⇔ l'ancien seuil de
+// 1024 (qui comptait 2 octets par mot), frontière de détection inchangée.
+static constexpr int kSpec512Threshold = 512;
 
 // =============================================================================
 //  Machine GLUE — retrait de bordures (port fidèle de Hatari video.c :
@@ -254,6 +253,30 @@ void Shifter::finishFrame() {
                          return a.frameCycle < b.frameCycle;
                      });
 
+    // Wait states d'alignement bus 4 cycles du shifter (cf. applyShifterBusAlignment) :
+    // recale les positions intra-ligne sur le vrai HW (sans ça, dérive -2 cyc/ligne).
+    applyShifterBusAlignment();
+
+    // DEBUG (NEOST_SPEC512_TRACE) : dump des écritures palette converties en
+    // (ligne, position dans la ligne) — format comparable au trace `video_color`
+    // d'Hatari (« spec store col line N cyc=H idx=I col=RGB »). Diff oracle.
+    static const char* spcTrace = std::getenv("NEOST_SPEC512_TRACE");
+    if (spcTrace) {
+        const Geometry gg = geometry();
+        FILE* tf = std::fopen(spcTrace, "w");
+        if (tf) {
+            for (const auto& w : colorWrites_) {
+                const int line = static_cast<int>(w.frameCycle / gg.cyclesPerLine);
+                const int hpos = static_cast<int>(w.frameCycle % gg.cyclesPerLine);
+                std::fprintf(tf, "line %d cyc=%d idx=%d col=%03x pc=%06x\n",
+                             line, hpos, w.index, w.colour & 0xFFF, w.pc);
+            }
+            std::fclose(tf);
+            std::fprintf(stderr, "[spec512] %zu écritures palette → %s\n",
+                         colorWrites_.size(), spcTrace);
+        }
+    }
+
     const Geometry g   = geometry();
     const int W        = activeWidth();            // pixels de l'écran actif (hors bordures)
     const int cpl      = g.cyclesPerLine;
@@ -291,14 +314,51 @@ void Shifter::finishFrame() {
     }
 }
 
+// Rejoue HORS-LIGNE les wait states d'alignement bus du shifter (port fidèle de
+// Hatari M68000_SyncCpuBus, video.c:5382). Les registres couleur ($FF824x) ne
+// s'accèdent que sur une frontière de 4 cycles : une écriture mot qui arrive à un
+// cycle non multiple de 4 fait patienter le CPU jusqu'à la frontière, soit
+// (4 - cyc%4) cycles de gel. Le CPU étant gelé, CE wait DÉCALE D'AUTANT toutes les
+// écritures suivantes → on accumule le décalage et on le propage. Moira (68000 pur)
+// ne modélise pas ces wait states ; la boucle spec512 (24 move.l (a3)+,(ax)+ + dbra
+// = 510 cyc/ligne sous Moira) dérive alors de -2 cyc/ligne au lieu de +4 sur vrai HW.
+// En recalant chaque écriture sur sa frontière de 4 cycles ON RECONSTRUIT le timing
+// matériel, sans toucher la timeline live (zéro régression). colorWrites_ est déjà
+// trié par cycle d'exécution (croissant) en entrée.
+void Shifter::applyShifterBusAlignment() {
+    int64_t accumWait = 0;                 // total des wait states injectés jusqu'ici
+    for (auto& w : colorWrites_) {
+        const int64_t arrival = static_cast<int64_t>(w.frameCycle) + accumWait;
+        const int64_t wait = (4 - (arrival & 3)) & 3;     // 0..3 jusqu'à la frontière de 4
+        accumWait += wait;
+        w.frameCycle = static_cast<int32_t>(arrival + wait);
+    }
+}
+
 // Enregistre l'écriture palette du registre `index` (valeur déjà posée dans
 // palette[index]) avec son cycle live dans la trame, pour le re-rendu spec512.
 void Shifter::recordColorWrite(int index) {
     if (!liveFrameClock_) return;
     const int64_t fc = liveFrameClock_();
     if (fc < 0) return;                              // hors trame courante
+
+    // Une écriture MOT ($FF824x) passe par le bus en DEUX write8 (gros-boutiste,
+    // même cycle) : le 1ᵉʳ pose l'octet haut (valeur transitoire haut-neuf/bas-vieux),
+    // le 2ᵉ l'octet bas (valeur finale). Sur le vrai 68000 c'est UN seul accès mot.
+    // On fusionne donc les deux : si la dernière écriture vise le MÊME registre au
+    // MÊME cycle, on met simplement à jour sa couleur (valeur finale) — un seul
+    // ColorWrite par mot, comme Hatari (CyclePalettes[] = 1 entrée/écriture mot).
+    if (!colorWrites_.empty()) {
+        ColorWrite& last = colorWrites_.back();
+        if (last.frameCycle == static_cast<int32_t>(fc) &&
+            last.index == static_cast<uint8_t>(index)) {
+            last.colour = palette[index];
+            return;
+        }
+    }
+    const uint32_t wpc = bus_.cpu ? bus_.cpu->pc() : 0;
     colorWrites_.push_back({ static_cast<int32_t>(fc), palette[index],
-                             static_cast<uint8_t>(index) });
+                             static_cast<uint8_t>(index), wpc });
     if (++paletteAccesses_ >= kSpec512Threshold) spec512Active_ = true;
 }
 
@@ -619,6 +679,14 @@ void Shifter::renderGlueFrame() {
 
     std::stable_sort(colorWrites_.begin(), colorWrites_.end(),
                      [](const ColorWrite& a, const ColorWrite& b){ return a.frameCycle < b.frameCycle; });
+    // Recalage spec512 (wait states bus + offset pixel↔couleur) UNIQUEMENT pour une
+    // vraie image spec512 (palette réécrite intra-ligne). Pour un écran glue ordinaire
+    // (desktop 60 Hz, barres raster), la palette est posée une fois hors-affichage :
+    // on garde l'ancien chemin (offset 0, pas de wait states) → rendu byte-identique,
+    // zéro régression. Les démos overscan spec512 (palette intra-ligne + bordures)
+    // bénéficient du même recalage que le chemin sans bordure.
+    const int glueAlignCyc = spec512Active_ ? kSpec512AlignCyc : 0;
+    if (spec512Active_) applyShifterBusAlignment();
     std::array<uint16_t, 16> pal = frameStartPalette_;
     const std::size_t n = colorWrites_.size();
     std::size_t cur = 0;
@@ -641,7 +709,7 @@ void Shifter::renderGlueFrame() {
         uint32_t* dst = frame_.data() + static_cast<std::size_t>(row) * W;
         for (int x = 0; x < W; ++x) {
             const int cyc = visFirst + x;                  // cycle du pixel balayé à cette colonne
-            const int64_t limit = static_cast<int64_t>(sl) * cpl + cyc - kSpec512AlignCyc;
+            const int64_t limit = static_cast<int64_t>(sl) * cpl + cyc - glueAlignCyc;
             while (cur < n && colorWrites_[cur].frameCycle <= limit) {
                 pal[colorWrites_[cur].index] = colorWrites_[cur].colour;
                 ++cur;
