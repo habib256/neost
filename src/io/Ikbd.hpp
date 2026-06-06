@@ -36,6 +36,11 @@ public:
     // Échéance : l'IKBD a fini son auto-test → envoie $F1 (réponse de reset).
     void    onResetResponse() { pushRx(0xF1); }
 
+    // Échéance : le registre d'émission de l'ACIA s'est vidé (~1 octet série après
+    // une écriture $FFFC02 sous TIE) → TDRE repasse à 1 et ré-arme l'IRQ TX. Datée
+    // par write8 seulement quand l'IRQ d'émission est armée (cf. raiseIfReady).
+    void    onTxEmpty();
+
     // Sonde joystick : peut RÉ-ÉCRIRE (joy0, joy1) à l'interrogation `$16`/au
     // report auto. Les valeurs sont d'abord amorcées avec l'état hôte courant
     // (cf. setJoystick) ; le diagnostic « Printer/Joystick » installe ici un
@@ -68,7 +73,8 @@ public:
 
 private:
     void pushRx(uint8_t b);                  // empile un octet IKBD → CPU
-    void raiseIfReady();                     // tire GPIP4 si octet dispo et RIE actif
+    void raiseIfReady();                     // tire GPIP4 si une cause d'IRQ ACIA est active
+    bool irqActive() const;                  // cause d'IRQ : RX (RDRF & RIE) OU TX (TIE & TDRE)
 
     // Renvoie le nombre total d'octets (commande incluse) attendu pour `opcode`,
     // d'après la table KeyboardCommands[] de Hatari (ikbd.c). 0 = opcode inconnu
@@ -77,6 +83,26 @@ private:
 
     // Exécute la commande IKBD complète accumulée dans inBuf_ (inBuf_[0] = opcode).
     void dispatchCommand();
+
+    // --- Code 6301 custom ($20 LoadMemory / $22 Execute) -----------------------
+    // Port du mécanisme d'Hatari (ikbd.c) : faute d'émuler un vrai HD6301, on
+    // calcule le CRC32 du programme téléversé et, s'il correspond à un programme
+    // connu (menus de démos / protections), on installe un handler qui reproduit
+    // son protocole. Inconnu (ex. Vroom) → ignoré, comme Hatari.
+    void loadMemoryByte(uint8_t v);          // octet du programme chargé via $20
+    void commonBoot(uint8_t v);              // boot-stub : accumule le prog principal en ExeMode
+    void customWriteDispatch(uint8_t v);     // écriture $FFFC02 → handler custom actif
+    void customReadDispatch();               // event clavier/souris/VBL → handler custom actif
+    void exitExeMode();                      // sortie du mode Execute (jmp $f000 / reset 68000)
+    int  checkPressedKey() const;            // 1er scancode pressé dans scanState_, ou -1
+    // Handlers de programmes connus (cf. CustomCodeDefinitions[] de Hatari).
+    void froggiesWrite(uint8_t v);
+    void transbeauce2Read();
+    void dragonnelsWrite(uint8_t v);
+    void chaosRead();
+    void chaosWrite(uint8_t v);
+    void audioSculptureRead(bool colorMode);
+    void audioSculptureWrite(uint8_t v);
 
     // Sonde les manettes et émet $FE+joy0 / $FF+joy1 pour celles dont l'état a
     // changé depuis la dernière émission (cf. Hatari IKBD_SendAutoJoysticks).
@@ -104,6 +130,8 @@ private:
     Scheduler* sched_ = nullptr;             // pour différer la réponse de reset
     std::deque<uint8_t> rx_;                 // file IKBD → CPU
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
+    bool    txEnableInt_ = false;            // IRQ d'émission armée : CR bits5-6 = 01 (ex. $b6, Hades Nebula)
+    bool    tdre_ = true;                    // Transmit Data Register Empty : 1 au repos, 0 en émission sous TIE
     std::array<uint8_t, 8> inBuf_{};         // accumulation des octets d'une commande multi-octets
     int inBufLen_ = 0;                       // octets déjà reçus pour la commande en cours
     int cmdExpected_ = 0;                    // octets attendus au total (0 = aucune commande en cours)
@@ -161,4 +189,26 @@ private:
     enum JoystickMode { JOY_OFF, JOY_AUTO, JOY_MONITOR };
     JoystickMode joyMode_ = JOY_AUTO;
     uint8_t prevJoy0_ = 0, prevJoy1_ = 0;
+
+    // --- État du code 6301 custom ($20/$22, cf. Hatari ikbd.c) ------------------
+    // Identifie le handler actif (NeoST utilise des id plutôt que des pointeurs de
+    // fonction membre). CW_ = écritures $FFFC02 ; CR_ = lectures (event-driven).
+    enum CustomW { CW_NONE, CW_BOOT, CW_FROGGIES, CW_DRAGONNELS, CW_CHAOSAD, CW_AS };
+    enum CustomR { CR_NONE, CR_TRANSB2, CR_CHAOSAD, CR_AS_COLOR, CR_AS_MONO };
+    CustomW   customWrite_ = CW_NONE;
+    CustomR   customRead_  = CR_NONE;
+    bool      exeMode_     = false;          // le 6301 exécute du code custom ($22)
+    int       memLoadLeft_ = 0;              // octets restant à charger ($20)
+    int       memLoadTotal_ = 0;             // total chargé (pour le log/CRC)
+    int       memExeNbBytes_ = 0;            // octets reçus en ExeMode (CommonBoot)
+    uint32_t  memLoadCrc_  = 0xFFFFFFFF;     // CRC32 cumulé (poly IEEE 802.3)
+    // État de suivi pour les handlers (équivalents des globales d'Hatari).
+    uint8_t   scanState_[128] = {};          // 1 = touche pressée (ScanCodeState[])
+    int       mDeltaX_ = 0, mDeltaY_ = 0;    // Δ souris accumulé sur la trame (ExeMode)
+    bool      lmb_ = false;                  // bouton souris gauche courant
+    // ChaosAD (décodeur de protection) + Audio Sculpture (déchiffrement).
+    bool      chaosFirst_ = true;
+    int       chaosIgnore_ = 8, chaosIndex_ = 0, chaosCount_ = 0;
+    bool      asMagic_ = false;
+    int       asReadCount_ = 0;
 };

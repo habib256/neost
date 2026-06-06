@@ -255,7 +255,11 @@ basse) → Enchanted Land (plante après le LOADING)**.
 
 ## Souris / entrées (jeux)
 - [ ] **Vroom** : vers la droite accélère, vers la gauche ralentit, en bas tourne à droite et
-      en haut tourne à gauche en mode souris (disquette testable au headless).
+      en haut tourne à gauche en mode souris (disquette testable au headless). MOUSE_X_SIGN/MOUSE_Y_SIGN sont tous deux
+  +1 et le format paquet $F8 est dx-puis-dy standard (sinon TOUS les jeux souris seraient
+  affectés, pas seulement Vroom). Ta description = contrôles tournés de 90° (X↔Y) uniquement
+  pour Vroom → ça sent le code 6301 custom que Vroom téléverse via $20/$22 (les
+  CustomCodeDefinitions de Hatari)
 
 ## Outillage / qualité
 - [ ] **Logiciels étalons au headless** — rapatrier les démos freeware via `tools/fetch_disk.py`

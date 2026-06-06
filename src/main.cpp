@@ -287,7 +287,11 @@ void onKey(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
     if (!g_ikbd || action == GLFW_REPEAT) return;   // l'IKBD gère sa propre répétition
     if (key == GLFW_KEY_DELETE) return;             // touche hôte (libération souris)
 #if defined(NEOST_WITH_IMGUI)
-    if (ImGui::GetIO().WantCaptureKeyboard) return;  // une saisie ImGui a le focus
+    // On ne cède le clavier à ImGui (saisie d'un champ) QUE hors capture souris :
+    // souris capturée = l'utilisateur « est dans » le ST, les touches (espace
+    // inclus) doivent toujours l'atteindre, jamais être avalées par un widget
+    // resté focalisé (sinon le clavier ST « se déconnecte »).
+    if (!g_mouseCaptured && ImGui::GetIO().WantCaptureKeyboard) return;
 #endif
     // Émulation joystick clavier active : les touches du joystick (flèches + Ctrl
     // droit) pilotent la manette et NE sont PAS transmises au clavier ST (sinon
@@ -301,7 +305,15 @@ void onKey(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
 void drawHexViewer(Bus& bus) {
     static int base = 0;
     ImGui::Begin("Mémoire (hex)");
-    ImGui::InputInt("Adresse base", &base, 16, 256, ImGuiInputTextFlags_CharsHexadecimal);
+    ImGui::InputInt("Adresse base", &base, 16, 256,
+                    ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue);
+    // Le champ ne doit pas confisquer durablement le clavier du ST : dès qu'il
+    // perd l'édition (Entrée/Échap/clic ailleurs), on relâche le focus fenêtre
+    // pour que WantCaptureKeyboard retombe et que les touches (espace inclus)
+    // repartent vers le ST. Sinon le clavier ST « se déconnecte » tant que ce
+    // champ garde le focus.
+    if (ImGui::IsItemDeactivated())
+        ImGui::SetWindowFocus(nullptr);
     if (base < 0) base = 0;
     const auto& mem = bus.ram;
     for (int row = 0; row < 16; ++row) {
@@ -788,7 +800,7 @@ int main(int argc, char** argv) {
         {
             bool kbd = g_kbdJoy;
 #if defined(NEOST_WITH_IMGUI)
-            if (ImGui::GetIO().WantCaptureKeyboard) kbd = false;
+            if (!g_mouseCaptured && ImGui::GetIO().WantCaptureKeyboard) kbd = false;
 #endif
             uint8_t joy0 = 0, joy1 = 0;
             stjoy::compose(window, kbd, g_kbdJoyPort, g_joyDeadzone, joy0, joy1);

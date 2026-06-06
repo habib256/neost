@@ -15,6 +15,31 @@ enum : uint8_t {
     ACIA_IRQ  = 0x80,   // ligne d'interruption (vers GPIP4 du MFP)
 };
 
+// Temps « série » d'un octet émis CPU → IKBD (~7812,5 bauds, trame de 10 bits) en
+// cycles 68000 à 8 MHz. Ordre de grandeur de l'ACIA_CYCLES d'Hatari : sert à dater
+// le re-remplissage de TDRE sous TIE (cf. onTxEmpty) — assez long pour ne pas
+// noyer le CPU d'IRQ d'émission, assez court pour ne pas freiner l'envoi.
+static constexpr int64_t kAciaTxByteCycles = 7200;
+
+// CRC32 (poly IEEE 802.3, MSB-first) — port exact de Hatari utils.c (crc32_*). On
+// reconnaît un programme 6301 custom à son CRC plutôt que d'émuler un vrai HD6301.
+namespace {
+void crc32Reset(uint32_t& crc) { crc = 0xFFFFFFFFu; }
+void crc32AddByte(uint32_t& crc, uint8_t c) {
+    for (int b = 0; b < 8; ++b) {
+        const bool topC   = (c   & 0x80u)       != 0;
+        const bool topCrc = (crc & 0x80000000u) != 0;
+        crc = (topC ^ topCrc) ? ((crc << 1) ^ 0x04C11DB7u) : (crc << 1);
+        c = uint8_t(c << 1);
+    }
+}
+// CRC des boot-stubs ($20) connus (tous gérés par CommonBoot). 0xbc0c206d sert aux
+// deux variantes d'Audio Sculpture (départagées au CRC du prog principal en ExeMode).
+const uint32_t kKnownLoadCrc[] = {
+    0x2efb11b1u, 0xadb6b503u, 0x33c23cdfu, 0x9ad7fcdfu, 0xbc0c206du,
+};
+} // namespace
+
 Ikbd::Ikbd(Mfp& mfp) : mfp_(mfp) {
     initClockFromHostTime();
 }
@@ -54,12 +79,11 @@ void Ikbd::initClockFromHostTime() {
 
 uint8_t Ikbd::read8(uint32_t addr) {
     if ((addr & 2) == 0) {
-        // $FFFC00 : statut. TX toujours prêt ; RX plein si la file n'est pas vide.
-        uint8_t s = ACIA_TDRE;
-        if (!rx_.empty()) {
-            s |= ACIA_RDRF;
-            if (control_ & 0x80) s |= ACIA_IRQ;   // IRQ visible si RX int activé (RIE)
-        }
+        // $FFFC00 : statut. TDRE = 1 au repos (0 pendant l'émission sous TIE) ;
+        // RDRF si la file n'est pas vide ; IRQ si une cause RX ou TX est active.
+        uint8_t s = tdre_ ? ACIA_TDRE : 0;
+        if (!rx_.empty()) s |= ACIA_RDRF;
+        if (irqActive())  s |= ACIA_IRQ;
         return s;
     }
     // $FFFC02 : lecture de la donnée → consomme un octet (efface RDRF).
@@ -90,9 +114,13 @@ int Ikbd::cmdLength(uint8_t opcode) {
         case 0x16: return 1;   // InterrogateJoystick
         case 0x17: return 2;   // SetJoystickMonitoring
         case 0x18: return 1;   // FireButton
+        case 0x19: return 7;   // SetJoystickFireDuration (anti-désync : 6 octets de param)
         case 0x1A: return 1;   // DisableJoysticks
         case 0x1B: return 7;   // SetClock
         case 0x1C: return 1;   // ReadClock
+        case 0x20: return 4;   // LoadMemory (en-tête $20 ADRMSB ADRLSB NUM ; NUM octets suivent)
+        case 0x21: return 3;   // ReadMemory (anti-désync : 2 octets d'adresse)
+        case 0x22: return 3;   // Execute (adresse de sous-routine custom)
         case 0x80: return 2;   // Reset
         default:   return 0;   // inconnu → mono-octet ignoré
     }
@@ -100,11 +128,36 @@ int Ikbd::cmdLength(uint8_t opcode) {
 
 void Ikbd::write8(uint32_t addr, uint8_t v) {
     if ((addr & 2) == 0) {
-        // $FFFC00 : registre de contrôle (diviseur, format, RX int enable bit7).
+        // $FFFC00 : registre de contrôle (diviseur, format, bit7 = RX int enable).
+        // Bits 5-6 = contrôle émetteur : 01 arme l'IRQ d'émission (TIE), cf. ACIA
+        // 6850 et acia.c ACIA_Write_CR. Hors TIE, TDRE reste câblé à 1 : le modèle
+        // d'émission ne s'active QUE quand un logiciel pilote l'IKBD par IRQ TX
+        // (ex. jeu armant CR=$b6 au lieu de $96, type Hades Nebula).
         control_ = v;
+        txEnableInt_ = ((v & 0x60) == 0x20);
+        if (!txEnableInt_) {                 // TIE coupé → registre d'émission réputé prêt
+            tdre_ = true;
+            if (sched_) sched_->cancel(Scheduler::IKBD_TX);
+        }
         raiseIfReady();
         return;
     }
+    // Émission CPU → IKBD : sous TIE, écrire la donnée vide TDRE (transmetteur
+    // occupé) ; il se re-remplit ~1 octet série plus tard (Scheduler IKBD_TX →
+    // onTxEmpty), ce qui re-lève l'IRQ « transmetteur prêt » et cadence l'envoi
+    // des commandes piloté par interruption. Le parseur reçoit l'octet tout de
+    // suite (NeoST ne perd jamais d'octet) : TDRE ne sert qu'au statut et à l'IRQ TX.
+    if (txEnableInt_ && sched_) {
+        tdre_ = false;
+        sched_->schedule(Scheduler::IKBD_TX, sched_->now() + kAciaTxByteCycles);
+        raiseIfReady();                      // TDRE tombé → désarme l'IRQ TX jusqu'au re-remplissage
+    }
+
+    // Code 6301 custom : en mode Execute, l'octet va au handler du programme ;
+    // pendant un LoadMemory ($20), il alimente le code téléversé. Sinon : parseur.
+    if (exeMode_ && customWrite_ != CW_NONE) { customWriteDispatch(v); return; }
+    if (memLoadLeft_ > 0)                    { loadMemoryByte(v);      return; }
+
     // $FFFC02 : octet de commande envoyé à l'IKBD. Parseur multi-octets calqué
     // sur Hatari IKBD_RunKeyboardCommand : on accumule dans inBuf_ jusqu'à ce que
     // le nombre d'octets attendu (table KeyboardCommands[]) soit atteint, puis on
@@ -159,11 +212,22 @@ void Ikbd::dispatchCommand() {
                 mouseAction_   = 0;
                 keyCodeDeltaX_ = keyCodeDeltaY_ = 1;
                 bOldL_         = bOldR_ = false;
+                // Le reset annule tout code 6301 custom en cours (cf. Hatari
+                // IKBD_Boot_ROM : LoadMemory/ExeMode coupés).
+                exeMode_ = false; customRead_ = CR_NONE; customWrite_ = CW_NONE;
+                memLoadLeft_ = 0;
                 // L'horloge ($1B/$1C) est CONSERVÉE (reset à chaud, cf. Hatari).
                 constexpr int64_t kIkbdResetCycles = 502000;
                 if (sched_) sched_->schedule(Scheduler::IKBD, sched_->now() + kIkbdResetCycles);
                 else        pushRx(0xF1);
             }
+            break;
+        case 0x08:
+            // $08 = SET RELATIVE MOUSE POSITION REPORTING (cf. Hatari
+            // IKBD_Cmd_RelMouseMode) : retour aux paquets relatifs $F8 (mode par
+            // défaut). Sans ce case, un jeu repassant en relatif depuis ABS/CURSOR/
+            // OFF gardait l'ancien mode → souris muette ou flèches parasites.
+            mouseMode_ = REL;
             break;
         case 0x09:
             // $09 = SET ABSOLUTE MOUSE POSITION REPORTING (cf. Hatari
@@ -257,6 +321,13 @@ void Ikbd::dispatchCommand() {
             // retour au mode interrogation seule ($16). Plus de report spontané.
             joyMode_ = JOY_OFF;
             break;
+        case 0x1A:
+            // $1A = DISABLE JOYSTICKS (cf. Hatari IKBD_Cmd_DisableJoysticks) : coupe
+            // tout report spontané ; retour à l'interrogation seule, comme $15. Sans
+            // ce case, joyMode_ restait JOY_AUTO et des paquets $FE/$FF non sollicités
+            // continuaient d'être émis.
+            joyMode_ = JOY_OFF;
+            break;
         case 0x17:
             // $17 = SET JOYSTICK MONITORING (cf. Hatari IKBD_Cmd_SetJoystickMonitoring) :
             // octet 1 = taux d'échantillonnage en 1/100 s. Implémentation minimale :
@@ -281,10 +352,29 @@ void Ikbd::dispatchCommand() {
             pushRx(joy1);
             break;
         }
+        case 0x20:
+            // $20 = LOAD MEMORY (cf. Hatari IKBD_Cmd_LoadMemory) : en-tête
+            // $20 ADRMSB ADRLSB NUM ; les NUM octets suivants sont le programme
+            // 6301 téléversé (avalés + CRC, cf. loadMemoryByte).
+            memLoadTotal_ = inBuf_[3];
+            memLoadLeft_  = inBuf_[3];
+            crc32Reset(memLoadCrc_);
+            break;
+        case 0x21:
+            // $21 = READ MEMORY (cf. Hatari IKBD_Cmd_ReadMemory) : en-tête $F6 $20
+            // puis 6 octets nuls (NeoST n'émule pas la RAM interne du 6301).
+            pushRx(0xF6);
+            pushRx(0x20);
+            for (int i = 0; i < 6; ++i) pushRx(0x00);
+            break;
+        case 0x22:
+            // $22 = CONTROLLER EXECUTE (cf. Hatari IKBD_Cmd_Execute) : bascule le
+            // 6301 en mode custom SI un programme connu a été reconnu au chargement.
+            if (customWrite_ != CW_NONE) exeMode_ = true;
+            break;
         default:
-            // Opcodes restants (pause/reprise transmission, chargement mémoire
-            // contrôleur, exécution programme custom…) : no-op — le parseur a déjà
-            // consommé les octets de paramètre.
+            // Opcodes restants (pause/reprise transmission…) : no-op — le parseur a
+            // déjà consommé les octets de paramètre.
             break;
     }
 }
@@ -310,6 +400,14 @@ void Ikbd::sendAutoJoysticks() {
 void Ikbd::onVbl(int64_t vblMicro) {
     // 1) Avance l'horloge interne IKBD ($1B/$1C) du temps d'une trame.
     updateClock(vblMicro);
+    // ExeMode : appel périodique du handler de lecture custom (cf. Hatari, qui
+    // l'invoque dans le traitement clavier de trame), puis Δ souris consommé. Pas
+    // de report joystick auto tant que le 6301 exécute du code custom.
+    if (exeMode_) {
+        customReadDispatch();
+        mDeltaX_ = mDeltaY_ = 0;
+        return;
+    }
     // 2) Report joystick auto (mode par défaut du boot ROM IKBD) : à chaque trame,
     //    on émet spontanément l'état des manettes qui ont changé. Sans entrée hôte
     //    l'état reste neutre → sendAutoJoysticks n'émet rien (no-op), donc aucun
@@ -320,11 +418,21 @@ void Ikbd::onVbl(int64_t vblMicro) {
 }
 
 void Ikbd::keyEvent(uint8_t scancode, bool pressed) {
-    // Make à l'appui, break (make | 0x80) au relâchement.
+    // Suivi d'état (lu par les handlers 6301 custom) puis make/break.
+    scanState_[scancode & 0x7F] = pressed ? 1 : 0;
+    // En ExeMode, le scan clavier normal est supprimé (cf. Hatari IKBD_Cmd_Return_Byte) :
+    // seul le handler custom peut émettre, via customReadDispatch().
+    if (exeMode_) { customReadDispatch(); return; }
     pushRx(pressed ? scancode : uint8_t(scancode | 0x80));
 }
 
 void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
+    // En ExeMode, le 6301 ne génère pas de paquet souris standard : on accumule le
+    // Δ et l'état du bouton, lus par les handlers custom (Froggies/Dragonnels…).
+    if (exeMode_) {
+        mDeltaX_ += dx; mDeltaY_ += dy; lmb_ = left;
+        return;
+    }
     // Ordre calqué sur Hatari IKBD_SendAutoKeyboardCommands : d'ABORD le reporting
     // lié à MouseAction ($07), qui compare l'état courant à l'ancien (bOldL_/bOldR_),
     // PUIS le traitement propre au mode souris. bOldL_/bOldR_ ne sont mis à jour
@@ -500,11 +608,185 @@ void Ikbd::pushRx(uint8_t b) {
     raiseIfReady();
 }
 
+bool Ikbd::irqActive() const {
+    // Cause d'IRQ de l'ACIA 6850 (cf. acia.c ACIA_UpdateIRQ) : RX = octet dispo et
+    // RX int activé (RIE, bit7) ; TX = registre d'émission vide et IRQ d'émission
+    // armée (TIE). CTS = GND sur l'ST → toujours 0, omis.
+    return (!rx_.empty() && (control_ & 0x80)) || (txEnableInt_ && tdre_);
+}
+
 void Ikbd::raiseIfReady() {
-    // L'ACIA active sa ligne d'IRQ (RDRF + RX int activé). On la publie sur GPIP4
-    // (lue par _int_acia pour vider l'ACIA) ET on déclenche le canal 6 du MFP.
-    const bool active = !rx_.empty() && (control_ & 0x80);
+    // L'ACIA active sa ligne d'IRQ dès qu'une cause (RX ou TX) est active. On la
+    // publie sur GPIP4 (lue par _int_acia pour vider l'ACIA) ET on déclenche le
+    // canal 6 du MFP.
+    const bool active = irqActive();
     mfp_.setAciaLineKbd(active);
     if (active)
         mfp_.raise(Mfp::SRC_ACIA);
+}
+
+void Ikbd::onTxEmpty() {
+    // Le registre d'émission de l'ACIA s'est vidé (octet « transmis » à l'IKBD) :
+    // TDRE repasse à 1 → re-lève l'IRQ « transmetteur prêt » tant que TIE est armé.
+    tdre_ = true;
+    raiseIfReady();
+}
+
+// ============================================================================
+//  Code 6301 custom ($20 LoadMemory / $22 Execute) — port de Hatari ikbd.c.
+//  Faute d'émuler un vrai HD6301, on reconnaît le programme téléversé à son CRC
+//  et un handler reproduit son protocole. Programme inconnu (ex. Vroom) → ignoré,
+//  exactement comme Hatari (le jeu retombe sur la souris/clavier normale).
+// ============================================================================
+
+void Ikbd::loadMemoryByte(uint8_t v) {
+    // Octet du programme chargé via $20 : on cumule le CRC ; au dernier octet, si
+    // le CRC correspond à un boot-stub connu, on arme CommonBoot pour la suite.
+    crc32AddByte(memLoadCrc_, v);
+    if (--memLoadLeft_ > 0) return;
+    for (uint32_t crc : kKnownLoadCrc) {
+        if (crc == memLoadCrc_) {
+            crc32Reset(memLoadCrc_);
+            memExeNbBytes_ = 0;
+            customRead_  = CR_NONE;
+            customWrite_ = CW_BOOT;          // ExeBootHandler = CommonBoot
+            return;
+        }
+    }
+    customRead_  = CR_NONE;                  // code inconnu → aucun handler
+    customWrite_ = CW_NONE;
+}
+
+void Ikbd::commonBoot(uint8_t v) {
+    // Boot-stub commun : en ExeMode, on accumule le programme principal et son CRC
+    // jusqu'à reconnaître un programme connu, puis on installe ses handlers R/W.
+    struct Def { int nb; uint32_t crc; CustomR r; CustomW w; };
+    static const Def defs[] = {
+        { 167, 0xe7110b6du, CR_NONE,     CW_FROGGIES   },   // Froggies Over The Fence
+        { 165, 0x5617c33cu, CR_TRANSB2,  CW_NONE       },   // Transbeauce 2
+        {  83, 0xdf3e5a88u, CR_NONE,     CW_DRAGONNELS },   // Dragonnels
+        { 109, 0xa11d8be5u, CR_CHAOSAD,  CW_CHAOSAD    },   // Chaos A.D.
+        {  91, 0x119b26edu, CR_AS_COLOR, CW_AS         },   // Audio Sculpture (couleur)
+        {  91, 0x63b5f4dfu, CR_AS_MONO,  CW_AS         },   // Audio Sculpture (mono)
+    };
+    crc32AddByte(memLoadCrc_, v);
+    ++memExeNbBytes_;
+    for (const auto& d : defs) {
+        if (d.nb == memExeNbBytes_ && d.crc == memLoadCrc_) {
+            customRead_  = d.r;
+            customWrite_ = d.w;
+            if (d.w == CW_CHAOSAD) { chaosFirst_ = true; chaosIgnore_ = 8; chaosIndex_ = 0; chaosCount_ = 0; }
+            if (d.w == CW_AS)      { asMagic_ = false; asReadCount_ = 0; }
+            rx_.clear();                     // flush des octets en file (BufferHead=Tail=0)
+            return;
+        }
+    }
+    // Pas (encore) de correspondance : on continue d'accumuler.
+}
+
+void Ikbd::customWriteDispatch(uint8_t v) {
+    switch (customWrite_) {
+        case CW_BOOT:       commonBoot(v);          break;
+        case CW_FROGGIES:   froggiesWrite(v);       break;
+        case CW_DRAGONNELS: dragonnelsWrite(v);     break;
+        case CW_CHAOSAD:    chaosWrite(v);          break;
+        case CW_AS:         audioSculptureWrite(v); break;
+        default: break;
+    }
+}
+
+void Ikbd::customReadDispatch() {
+    switch (customRead_) {
+        case CR_TRANSB2:  transbeauce2Read();        break;
+        case CR_CHAOSAD:  chaosRead();               break;
+        case CR_AS_COLOR: audioSculptureRead(true);  break;
+        case CR_AS_MONO:  audioSculptureRead(false); break;
+        default: break;
+    }
+}
+
+void Ikbd::exitExeMode() {
+    // Sortie du mode Execute (le 6301 fait jmp $f000) : retour au comportement ROM.
+    exeMode_     = false;
+    customRead_  = CR_NONE;
+    customWrite_ = CW_NONE;
+    memLoadLeft_ = 0;
+}
+
+int Ikbd::checkPressedKey() const {
+    for (int i = 0; i < 128; ++i) if (scanState_[i]) return i;
+    return -1;
+}
+
+// --- Froggies Over The Fence : renvoie le Δ souris/clavier sur demande ----------
+void Ikbd::froggiesWrite(uint8_t v) {
+    if (v & 0x80) { exitExeMode(); return; }      // octet <0 → le 6301 quitte ExeMode
+    uint8_t res80 = 0, res81 = 0, res82 = 0;
+    const uint8_t res83 = 0xFC;                    // valeur fixe (inutilisée par la démo)
+    if (mDeltaY_ < 0) res80 = 0x7A;
+    if (mDeltaY_ > 0) res80 = 0x06;
+    if (mDeltaX_ < 0) res81 = 0x7A;
+    if (mDeltaX_ > 0) res81 = 0x06;
+    if (lmb_)         res82 |= 0x80;
+    if (scanState_[0x48]) res80 |= 0x7A;           // flèche haut
+    if (scanState_[0x50]) res80 |= 0x06;           // flèche bas
+    if (scanState_[0x4B]) res81 |= 0x7A;           // flèche gauche
+    if (scanState_[0x4D]) res81 |= 0x06;           // flèche droite
+    if (scanState_[0x70]) res82 |= 0x80;           // pavé numérique 0
+    res80 |= res82;                                // bit7 = bouton gauche
+    res81 |= res82;
+    if (v == 1)      pushRx(res80);                // demande 1 octet
+    else if (v == 4) { pushRx(res83); pushRx(res82); pushRx(res81); pushRx(res80); }  // 4 octets
+}
+
+// --- Transbeauce 2 : 1 octet d'état clavier/joystick ----------------------------
+void Ikbd::transbeauce2Read() {
+    uint8_t res = 0;
+    if (scanState_[0x48]) res |= 0x01;             // haut
+    if (scanState_[0x50]) res |= 0x02;             // bas
+    if (scanState_[0x4B]) res |= 0x04;             // gauche
+    if (scanState_[0x4D]) res |= 0x08;             // droite
+    if (scanState_[0x62]) res |= 0x40;             // Help
+    if (scanState_[0x39]) res |= 0x80;             // Espace
+    res |= uint8_t(hostJoy_[1] & 0x8F);            // joystick (bits 0-3 + feu bit7)
+    pushRx(res);
+}
+
+// --- Dragonnels : Y souris + bouton gauche --------------------------------------
+void Ikbd::dragonnelsWrite(uint8_t /*v*/) {
+    uint8_t res = 0;
+    if (mDeltaY_ < 0) res = 0xFC;
+    if (mDeltaY_ > 0) res = 0x04;
+    if (lmb_)         res = 0x80;
+    pushRx(res);
+}
+
+// --- Chaos A.D. : décodeur de protection (XOR avec une clé de 8 octets) ----------
+void Ikbd::chaosRead() {
+    if (chaosFirst_) pushRx(0xFE);                 // « prêt à recevoir »
+    chaosFirst_ = false;
+}
+void Ikbd::chaosWrite(uint8_t v) {
+    static const uint8_t key[8] = { 0xCA, 0x0A, 0xBC, 0x00, 0xDE, 0xDE, 0xFE, 0xCA };
+    if (chaosIgnore_ > 0) { --chaosIgnore_; return; }   // 8 octets de clé déjà connus
+    if (chaosCount_ <= 6080) {                          // 6081 octets à décoder
+        ++chaosCount_;
+        v = uint8_t(v ^ key[chaosIndex_]);
+        chaosIndex_ = (chaosIndex_ + 1) & 0x07;
+        pushRx(v);
+    } else if (v == 0x08) {
+        exitExeMode();
+    }
+}
+
+// --- Audio Sculpture : déchiffrement (magic $42 → renvoie la clé $4B $13) --------
+void Ikbd::audioSculptureRead(bool colorMode) {
+    if (asMagic_) {
+        if (++asReadCount_ == 2) { exitExeMode(); asMagic_ = false; asReadCount_ = 0; }
+    } else if ((!colorMode && checkPressedKey() >= 0) || scanState_[0x39]) {
+        pushRx(0x39);                              // scancode Espace
+    }
+}
+void Ikbd::audioSculptureWrite(uint8_t v) {
+    if (v == 0x42) { asMagic_ = true; pushRx(0x4B); pushRx(0x13); }
 }
