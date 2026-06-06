@@ -161,6 +161,21 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   l'AUTO de la même façon). Les images Spectrum 512 s'affichent **nettes de haut en bas**
   (cf. ci-dessus, dérive corrigée). Nouveau flag headless `--disk FILE` (lecteur A explicite,
   plus besoin d'écraser `disks/diskA.st`).
+- **Compteur vidéo `$FF8205/07/09` : VDE_On LIVE (retrait bordure HAUTE)** — port du
+  comportement `nStartHBL` de Hatari (`Video_Update_Glue_State`). Le compteur d'adresse
+  vidéo n'avance qu'à partir de la 1ʳᵉ ligne **affichée** (VDE_On) ; une bascule 60 Hz
+  pendant la **bordure haute** ouvre le haut de l'écran → VDE_On passe de 63 (50 Hz) à
+  34, et `$FF8209` commence donc à monter dès la ligne 34. Suivi en **live** par
+  `updateLiveStartHBL` (membre `liveStartHBL_`, lu par `videoCounter`), verrouillé pour
+  la trame (la décision matérielle est latchée au passage de ligne). Corrige le **flicker
+  « à mort » du menu fullscreen de The Cuddly Demo** : sa boucle d'auto-synchro sonde
+  `$FF8209` pour se caler au faisceau ; sans VDE_On live le compteur ne montait qu'à la
+  ligne 63 et la régulation `$1D10` (entrée de la boucle) divergeait (oscillation −5
+  lignes/trame → géométrie fullscreen qui changeait chaque trame). Désormais **STABLE et
+  pixel-conforme** au menu briques d'Hatari (briques brunes, robot, échelles, fissures
+  bleues). **Zéro régression** : un écran 50 Hz ordinaire ne fait aucune bascule freq →
+  `liveStartHBL_` reste 63 (compteur inchangé) ; glue self-test 19/19, EmuTOS/TOS boot OK.
+  *(Reste : scroller de la bordure BASSE du menu non rendu — cf. TODO, retrait bas live.)*
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.

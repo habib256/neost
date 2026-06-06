@@ -170,6 +170,18 @@ private:
     // Video_Update_Glue_State). `isRes` = $FF8260, sinon $FF820A.
     void recordSyncWrite(bool isRes, uint8_t val);
 
+    // VDE_On LIVE pour le compteur vidéo $FF8205/07/09 (port du retrait de bordure
+    // HAUTE de Hatari Video_Update_Glue_State / Video_EndHBL). Le compteur d'adresse
+    // n'avance qu'à partir de la 1ʳᵉ ligne AFFICHÉE (VDE_On) ; une bascule 60 Hz dans
+    // la bordure haute (ligne < 63) avance ce VDE_On à 34 (retrait haut), ce qui
+    // fait monter $FF8209 PLUS TÔT. Les boucles d'auto-synchro fullscreen (Cuddly Demo)
+    // sondent $FF8209 et S'EN SERVENT pour se verrouiller : sans VDE_On live, le compteur
+    // ne monte qu'à la ligne 63 (50 Hz) et le verrouillage échoue → flicker. Mis à jour
+    // par recordSyncWrite (écritures freq), lu par videoCounter. 50 Hz normal → reste 63
+    // (zéro régression). Réinitialisé à beginFrame.
+    int liveStartHBL_ = 63;
+    void updateLiveStartHBL(int32_t frameCycle, bool isRes, uint8_t val);
+
     // --- Retrait de bordures : MACHINE GLUE (port Hatari Video_Update_Glue_State +
     //     Video_StartHBL + Video_EndHBL, video.c) -------------------------------
     // Une écriture freq($FF820A)/res($FF8260) datée, pour rejouer la machine Glue

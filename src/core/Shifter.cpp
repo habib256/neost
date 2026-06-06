@@ -164,6 +164,10 @@ void Shifter::beginFrame() {
     frameStartPalette_ = palette;
     syncWrites_.clear();
     bordersTrick_ = false;
+    // VDE_On live du compteur vidéo : valeur nominale selon la fréquence verrouillée
+    // (50 Hz → 63, 60 Hz → 34). Les bascules freq de la trame peuvent l'avancer
+    // (retrait bordure haute) via updateLiveStartHBL.
+    liveStartHBL_ = (frameSync_ & 0x02) ? 63 : 34;
     // Fond bordure : remplit tout le buffer overscan avec la couleur de bordure
     // (registre 0) au début de trame. Les lignes actives écrasent leur zone ; les
     // bordures haut/bas et les côtés non réécrits restent à cette couleur. (Phase 1 :
@@ -391,6 +395,34 @@ void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
     const int64_t fc = liveFrameClock_();
     if (fc < 0) return;
     syncWrites_.push_back({ static_cast<int32_t>(fc), val, isRes });
+    updateLiveStartHBL(static_cast<int32_t>(fc), isRes, val);   // VDE_On live (retrait haut)
+}
+
+// Met à jour le VDE_On LIVE du compteur vidéo sur une écriture freq — détection du
+// RETRAIT de bordure HAUTE (port du comportement de Hatari Video_Update_Glue_State /
+// nStartHBL, video.c ~2895). Sur le vrai matériel, une bascule 60 Hz pendant la
+// bordure haute (avant VDE_On 50 Hz = ligne 63) ouvre le haut de l'écran : la 1ʳᵉ
+// ligne affichée passe à 34 (VDE_On 60 Hz) et le compteur d'adresse vidéo commence
+// donc à monter dès la ligne 34 au lieu de 63. C'est exactement ce dont dépendent les
+// boucles d'auto-synchro fullscreen (Cuddly Demo) qui sondent $FF8209 pour se caler.
+//
+// Modèle (approximation fidèle au RÉSULTAT) : toute bascule 60 Hz dans la bordure haute
+// VERROUILLE VDE_On=34 pour la trame — on ne fait que BAISSER (jamais remonter). En
+// effet la boucle d'auto-synchro toggle 60→50 Hz à chaque itération ; sur le matériel
+// la décision est latchée au passage de la ligne et le 50 Hz qui suit ne la ré-ferme
+// pas. Un retrait gauche/droite (sur les lignes AFFICHÉES ≥ 63) ou bas (ligne 262)
+// n'entre pas dans la fenêtre [0,63) → non concerné. Un écran 50 Hz ordinaire ne fait
+// AUCUNE bascule freq → liveStartHBL_ reste 63 (zéro régression). On NE touche QUE
+// liveStartHBL_ (lu par videoCounter) ; la géométrie de rendu (replayGlue) est inchangée.
+void Shifter::updateLiveStartHBL(int32_t frameCycle, bool isRes, uint8_t val) {
+    if (frameMode_ == Mode::High) return;            // mono : pas concerné
+    if (isRes) return;                               // seules les bascules freq bougent VDE_On ici
+    const Geometry g = geometry();
+    const int line = frameCycle / g.cyclesPerLine;
+    constexpr int VDE_On_50 = 63, VDE_On_60 = 34;
+    const bool freq60 = !(val & 0x02);               // bit1=0 → 60 Hz
+    if (freq60 && line < VDE_On_50 && VDE_On_60 < liveStartHBL_)
+        liveStartHBL_ = VDE_On_60;                   // retrait haut verrouillé (sticky)
 }
 
 // Valeurs par défaut d'une scanline selon res/freq COURANTS au début de la ligne
@@ -894,7 +926,10 @@ uint32_t Shifter::videoCounter() const {
     // de (line-dispStart) strides + l'offset intra-ligne ; après (bordure BASSE), il
     // reste figé sur l'écran entièrement lu jusqu'au rechargement VBL. Port fidèle de
     // Hatari Video_CalculateAddress (VideoBase + (HblCounterVideo-nStartHBL)*bpl + NbBytes).
-    const int  dispStart = g.dispStartLine;             // VDE_On (63/34/34)
+    // VDE_On LIVE (cf. liveStartHBL_) : reflète un retrait de bordure HAUTE en cours
+    // (bascule 60 Hz dans la bordure haute → 34) → le compteur monte plus tôt, comme
+    // sur le vrai matériel (Hatari nStartHBL). Un écran 50 Hz normal garde 63.
+    const int  dispStart = liveStartHBL_;
     const int  line = static_cast<int>(fc / kCyclesPerLine);
     uint32_t addr = videoBase;
     if (line < dispStart) {
