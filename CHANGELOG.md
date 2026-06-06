@@ -82,12 +82,17 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   roulante** mise à jour AU CYCLE de chaque écriture → jusqu'à **512 couleurs/trame**. Quatre
   correctifs ont rendu le résultat **100 % pixel-identique à l'oracle Hatari** (0 px de diff
   sur les 4 images du diaporama, flicker éliminé) :
-  - **Alignement bus 4 cyc du shifter** (`applyShifterBusAlignment`, port `M68000_SyncCpuBus`) :
-    les registres couleur ne s'accèdent que sur une frontière de 4 cycles → une écriture mot
-    non alignée gèle le CPU jusqu'à la frontière (0-3 cyc), ce qui **décale les écritures
-    suivantes**. Rejoué HORS-LIGNE sur les écritures palette. Sans lui, la boucle d'affichage
-    (24× `move.l (a3)+,(ax)+` + `dbra` = **510 cyc/ligne** sous Moira 68000 pur) dérivait de
-    **−2 cyc/ligne** ; avec, elle tient les 512 cyc/ligne du matériel.
+  - **Alignement bus 4 cyc du shifter** (port `M68000_SyncCpuBus`) : les registres couleur
+    ($FF8240-5F), résolution ($FF8260) et scroll fin ($FF8264/65) ne s'accèdent que sur une
+    frontière de 4 cycles → un accès non aligné gèle le CPU jusqu'à la frontière (0-3 cyc), ce
+    qui **décale les accès suivants**. Désormais appliqué **EN LIVE** (`Shifter::syncCpuBus` →
+    `Cpu68k::addBusWaitCycles` : le cœur Moira avance son horloge à chaque accès concerné) ; les
+    écritures palette sont donc datées au cycle ALIGNÉ dès `recordColorWrite`, ce qui rend
+    l'ancien recalage hors-ligne (`applyShifterBusAlignment`) **redondant (no-op)**. Sans cette
+    contention, la boucle d'affichage (24× `move.l (a3)+,(ax)+` + `dbra` = **510 cyc/ligne** sous
+    Moira 68000 pur) dérivait de **−2 cyc/ligne** ; avec, elle tient les 512 cyc/ligne du
+    matériel. Spec512 reste **pixel-identique** (diaporama étalon byte-identique avant/après) ;
+    Musashi (non cycle-exact) reste sans contention.
   - **Offset pixel↔couleur** `kSpec512AlignCyc = −23` : port du « +7 spans » de
     `Spec512_StartScanLine` (alignement pipeline shifter, `LineStartCycle + 28`) corrigé du
     décalage de datation de Moira (~4 cyc). Cale le front couleur sur le front pixel. Affiné

@@ -170,6 +170,16 @@ private:
     // Video_Update_Glue_State). `isRes` = $FF8260, sinon $FF820A.
     void recordSyncWrite(bool isRes, uint8_t val);
 
+    // Wait state de bus 4 cycles (port LIVE de Hatari M68000_SyncCpuBus) : appelé AU
+    // DÉBUT d'un accès CPU à un registre couleur ($FF8240-5F) / résolution ($FF8260) /
+    // scroll fin ($FF8264/65) du Shifter. Aligne l'accès sur la frontière de bus 4
+    // cycles en faisant patienter le CPU (cf. Cpu68k::addBusWaitCycles) → l'écriture
+    // palette suivante est datée au cycle ALIGNÉ (recordColorWrite), exactement comme le
+    // faisait l'ancien recalage HORS-LIGNE (applyShifterBusAlignment, désormais no-op car
+    // les cycles enregistrés sont déjà alignés). Indispensable au timing cycle-exact des
+    // démos (spec512, boucles d'auto-synchro fullscreen).
+    void syncCpuBus();
+
     // VDE_On LIVE pour le compteur vidéo $FF8205/07/09 (port du retrait de bordure
     // HAUTE de Hatari Video_Update_Glue_State / Video_EndHBL). Le compteur d'adresse
     // n'avance qu'à partir de la 1ʳᵉ ligne AFFICHÉE (VDE_On) ; une bascule 60 Hz dans

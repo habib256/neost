@@ -390,6 +390,17 @@ void Shifter::recordColorWrite(int index) {
     if (++paletteAccesses_ >= kSpec512Threshold) spec512Active_ = true;
 }
 
+// Wait state de bus 4 cycles (port LIVE de Hatari M68000_SyncCpuBus, cf. .hpp). Le
+// cycle de référence est le cycle LIVE dans la trame (même horloge que recordColorWrite) ;
+// on aligne sur la frontière de 4 en faisant patienter le CPU d'autant.
+void Shifter::syncCpuBus() {
+    if (!liveFrameClock_ || !bus_.cpu) return;
+    const int64_t fc = liveFrameClock_();
+    if (fc < 0) return;                                  // hors trame courante
+    const int wait = static_cast<int>((4 - (fc & 3)) & 3);   // 0..3 jusqu'à la frontière
+    if (wait) bus_.cpu->addBusWaitCycles(wait);
+}
+
 void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
     if (!liveFrameClock_) return;
     const int64_t fc = liveFrameClock_();
@@ -861,6 +872,7 @@ void Shifter::renderFrame() {
 uint8_t Shifter::read8(uint32_t addr) {
     // Palette $FF8240-$FF825F : 16 mots, big-endian.
     if (addr >= 0xFF8240 && addr < 0xFF8260) {
+        syncCpuBus();          // wait state bus 4 cycles (lecture registre couleur)
         const int i = (addr - 0xFF8240) / 2;
         return (addr & 1) ? static_cast<uint8_t>(palette[i])
                           : static_cast<uint8_t>(palette[i] >> 8);
@@ -888,9 +900,9 @@ uint8_t Shifter::read8(uint32_t addr) {
     if (addr == 0xFF820A) return static_cast<uint8_t>((sync & 0x03) | 0xFC);
     // Largeur de ligne STE $FF820F : 0 sur ST (cf. Hatari Video_LineWidth_ReadByte).
     if (addr == 0xFF820F) return machineIsSte(bus_.machine) ? lineWidth : 0;
-    if (addr == 0xFF8260) return static_cast<uint8_t>(mode);
+    if (addr == 0xFF8260) { syncCpuBus(); return static_cast<uint8_t>(mode); }
     // Scroll fin : Hatari n'expose QUE $FF8265 en lecture (Video_HorScroll_Read).
-    if (addr == 0xFF8265) return hwScrollCount;
+    if (addr == 0xFF8265) { syncCpuBus(); return hwScrollCount; }
     // Tout autre registre nouvellement routé mais non géré ($FF8266-$FF827F,
     // etc.) : lecture bénigne (0x00), comme les zones « void » du shifter.
     return 0x00;
@@ -970,23 +982,26 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
         case 0xFF820F:
             if (ste) lineWidth = v;
             return;
-        case 0xFF8260: recordSyncWrite(true, v); mode = static_cast<Mode>(v & 0x3); return;  // résolution (+ détection bordures)
+        case 0xFF8260: syncCpuBus(); recordSyncWrite(true, v); mode = static_cast<Mode>(v & 0x3); return;  // résolution (+ bordures + wait state bus)
         // Scroll fin horizontal STE — état des registres uniquement (le décalage
         // par pixel relève de la cycle-accuracy, différé). Cf. Hatari
         // Video_HorScroll_Write : $FF8264 sans prefetch, $FF8265 avec prefetch.
         case 0xFF8264:
+            syncCpuBus();
             if (ste) { hwScrollCount = v & 0x0F; hwScrollPrefetch = false; }
             return;
         case 0xFF8265:
+            syncCpuBus();
             if (ste) { hwScrollCount = v & 0x0F; hwScrollPrefetch = true; }
             return;
         default: break;
     }
     if (addr >= 0xFF8240 && addr < 0xFF8260) {
+        syncCpuBus();          // wait state bus 4 cycles AVANT de dater l'écriture
         const int i = (addr - 0xFF8240) / 2;
         if (addr & 1) palette[i] = (palette[i] & 0xFF00) | v;
         else          palette[i] = static_cast<uint16_t>((palette[i] & 0x00FF) | (uint16_t(v) << 8));
-        recordColorWrite(i);   // spec512 : date l'écriture au cycle (palette intra-ligne)
+        recordColorWrite(i);   // spec512 : date l'écriture au cycle ALIGNÉ (palette intra-ligne)
     }
     // Tout autre registre nouvellement routé mais non géré ($FF8266-$FF827F) :
     // écriture sans effet (no-op), comme les zones « void » du shifter.

@@ -296,6 +296,19 @@ int Cpu68k::run(int cycles) {
 #endif
 }
 
+// Wait states de bus (cf. en-tête / Hatari M68000_SyncCpuBus). Appelé par le Shifter
+// PENDANT l'exécution d'une instruction (depuis read8/write8 d'un registre aligné 4
+// cycles) : on avance l'horloge du cœur, ce qui rallonge l'instruction en cours et
+// décale tous les accès suivants. Moira (cycle-exact) avance son clock ; Musashi ne
+// modélise pas la contention → no-op.
+void Cpu68k::addBusWaitCycles(int n) {
+    if (n <= 0) return;
+#if defined(NEOST_HAS_MOIRA)
+    if (g_moira) { g_moira->setClock(g_moira->getClock() + n); return; }
+#endif
+    (void)n;
+}
+
 // Cycles écoulés depuis le début du quantum run() courant (cf. en-tête).
 int64_t Cpu68k::cyclesRunInQuantum() const {
     if (!inRun_) return 0;     // hors run : l'horloge sched.now() est déjà à jour

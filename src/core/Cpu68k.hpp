@@ -50,6 +50,18 @@ public:
     // s'en sert pour synchroniser le Shifter.
     int run(int cycles);
 
+    // Wait states de bus (port LIVE de Hatari M68000_SyncCpuBus) : sur le 68000, les
+    // registres couleur ($FF8240-5F), résolution ($FF8260) et scroll fin ($FF8264/65)
+    // du Shifter ne s'accèdent que sur une frontière de bus de 4 cycles ; un accès qui
+    // tombe hors frontière fait PATIENTER le CPU jusqu'à la prochaine (0..3 cycles). Le
+    // Shifter appelle ceci à chaque accès concerné ; le cœur AVANCE son horloge d'autant
+    // → l'instruction consomme ces cycles et tous les accès suivants sont décalés (la
+    // contention de bus du vrai matériel). Remplace EN LIVE l'ancien recalage hors-ligne
+    // (applyShifterBusAlignment) : les écritures palette sont désormais datées au cycle
+    // ALIGNÉ dès recordColorWrite. Moira (cycle-exact) avance son clock ; Musashi (cœur
+    // « rapide », non cycle-exact) ne modélise pas la contention → no-op.
+    void addBusWaitCycles(int n);
+
     // Cycles consommés depuis le DÉBUT du quantum courant (l'appel run() en cours).
     // L'ordonnanceur ne met `sched.now()` à jour qu'aux frontières de quantum ; une
     // lecture MMIO en plein milieu (p.ex. le RTC) verrait donc un cycle périmé. Ce
