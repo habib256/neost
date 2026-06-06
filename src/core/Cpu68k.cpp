@@ -269,6 +269,7 @@ int Cpu68k::run(int cycles) {
         while (g_moira->getClock() < target) {
             g_inBusError = false;                        // nouvelle instruction → faute précédente retombée
             if (g_moira->isHalted()) { g_moira->setClock(target); break; }  // double bus fault → CPU arrêté
+            instrStartClock_ = static_cast<int64_t>(g_moira->getClock());   // repère « 1er accès » des wait states
             g_moira->execute();                          // une instruction
             if (g_tracer) g_tracer->onInstruction(g_moira->getPC0());
             // Préemption : une écriture matérielle pendant cette instruction a pu
@@ -307,6 +308,46 @@ void Cpu68k::addBusWaitCycles(int n) {
     if (g_moira) { g_moira->setClock(g_moira->getClock() + n); return; }
 #endif
     (void)n;
+}
+
+// Wait states YM2149 PSG (port Hatari psg.c:PSG_WaitState). 4 cycles au PREMIER accès
+// de l'instruction ; les accès suivants de la MÊME instruction n'ajoutent rien (le cas
+// movem +4 cyc tous les 4 accès est omis : aucun logiciel réel n'accède au PSG via movem).
+void Cpu68k::addPsgWaitCycles() {
+#if defined(NEOST_HAS_MOIRA)
+    if (!g_moira) return;                                 // Musashi non cycle-exact → no-op
+    if (instrStartClock_ != psgPrevInstrClock_) {         // nouvelle instruction → 4 cyc
+        psgPrevInstrClock_ = instrStartClock_;
+        addBusWaitCycles(4);
+    }
+#endif
+}
+
+// Wait state MFP 68901 (port Hatari mfp.c : M68000_WaitState(4) sur CHAQUE handler de
+// lecture/écriture de registre). 4 cycles à chaque accès, sans dédup par instruction.
+void Cpu68k::addMfpWaitCycles() {
+#if defined(NEOST_HAS_MOIRA)
+    if (!g_moira) return;
+    addBusWaitCycles(4);
+#endif
+}
+
+// Wait states ACIA 6850 (port Hatari acia.c:ACIA_AddWaitCycles). 6 cycles à chaque accès,
+// plus la synchro sur l'E-Clock (1 MHz = CPU/10) UNIQUEMENT au premier accès de
+// l'instruction : on patiente jusqu'au prochain multiple de 10 cycles (0..8 cyc, motif
+// [0 8 6 4 2] ; port M68000_WaitEClock).
+void Cpu68k::addAciaWaitCycles() {
+#if defined(NEOST_HAS_MOIRA)
+    if (!g_moira) return;
+    int cycles = 6;                                       // coût de base par accès
+    if (instrStartClock_ != aciaPrevInstrClock_) {        // 1er accès ACIA de l'instruction
+        aciaPrevInstrClock_ = instrStartClock_;
+        int toNextE = 10 - static_cast<int>(g_moira->getClock() % 10);
+        if (toNextE == 10) toNextE = 0;                   // déjà aligné sur l'E-Clock
+        cycles += toNextE;
+    }
+    addBusWaitCycles(cycles);
+#endif
 }
 
 // Cycles écoulés depuis le début du quantum run() courant (cf. en-tête).

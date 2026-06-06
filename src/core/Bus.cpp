@@ -377,8 +377,10 @@ void Bus::write32(uint32_t addr, uint32_t v) {
 uint8_t Bus::mmioRead8(uint32_t addr) {
     if (addr >= stmap::SHIFTER_BASE && addr <= stmap::SHIFTER_END && shifter)
         return shifter->read8(addr);
-    if (addr >= stmap::PSG_BASE && addr < stmap::PSG_BASE + 4 && psg)
+    if (addr >= stmap::PSG_BASE && addr < stmap::PSG_BASE + 4 && psg) {
+        if (cpu) cpu->addPsgWaitCycles();     // wait state YM2149 (4 cyc / 1er accès instr.)
         return psg->read8(addr);
+    }
     if (addr >= stmap::DMA_FDC_BASE && addr < stmap::DMA_FDC_BASE + 0x10 && fdc)
         return fdc->read8(addr);          // contrôleur disquette + DMA ($FF8600)
     if (addr >= stmap::DMASND_BASE && addr < stmap::DMASND_END && dmasnd
@@ -387,16 +389,19 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
     if (addr >= 0xFF8A00 && addr <= 0xFF8A3F && blitter && machineHasBlitter(machine))
         return blitter->read8(addr);      // blitter ($FF8A00) — Mega ST/STE/Mega STE
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {
+        if (cpu) cpu->addMfpWaitCycles();      // wait state MFP (4 cyc / accès)
         const uint8_t v = mfp->read8(addr);
         if (cpu) cpu->updateIpl();        // l'état d'IRQ a pu changer
         return v;
     }
     if (addr >= stmap::ACIA_BASE && addr < stmap::ACIA_BASE + 4 && ikbd) {
+        if (cpu) cpu->addAciaWaitCycles();     // wait state ACIA (6 cyc + E-Clock)
         const uint8_t v = ikbd->read8(addr);   // ACIA clavier $FFFC00/$FFFC02
         if (cpu) cpu->updateIpl();
         return v;
     }
     if (addr >= 0xFFFC04 && addr < 0xFFFC08 && midi) {
+        if (cpu) cpu->addAciaWaitCycles();     // ACIA MIDI : même timing que l'ACIA clavier
         const uint8_t v = midi->read8(addr);   // ACIA MIDI ($FFFC04/06) — bouclage OUT→IN
         if (cpu) cpu->updateIpl();             // une lecture peut effacer l'IRQ ACIA
         return v;
@@ -440,6 +445,7 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
         return;
     }
     if (addr >= stmap::PSG_BASE && addr < stmap::PSG_BASE + 4 && psg) {
+        if (cpu) cpu->addPsgWaitCycles();      // wait state YM2149 (4 cyc / 1er accès instr.)
         psg->write8(addr, v);
         return;
     }
@@ -458,16 +464,19 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
         return;
     }
     if (addr >= stmap::MFP_BASE && addr < stmap::MFP_BASE + 0x40 && mfp) {
+        if (cpu) cpu->addMfpWaitCycles();      // wait state MFP (4 cyc / accès)
         mfp->write8(addr, v);
         if (cpu) cpu->updateIpl();        // (dé)masquage, fin d'interruption...
         return;
     }
     if (addr >= stmap::ACIA_BASE && addr < stmap::ACIA_BASE + 4 && ikbd) {
+        if (cpu) cpu->addAciaWaitCycles();     // wait state ACIA (6 cyc + E-Clock)
         ikbd->write8(addr, v);
         if (cpu) cpu->updateIpl();
         return;
     }
     if (addr >= 0xFFFC04 && addr < 0xFFFC08 && midi) {
+        if (cpu) cpu->addAciaWaitCycles();     // ACIA MIDI : même timing que l'ACIA clavier
         midi->write8(addr, v);            // ACIA MIDI ($FFFC04/06) — bouclage OUT→IN
         if (cpu) cpu->updateIpl();        // un octet bouclé peut lever l'IRQ ACIA
         return;

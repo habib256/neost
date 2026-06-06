@@ -62,6 +62,22 @@ public:
     // « rapide », non cycle-exact) ne modélise pas la contention → no-op.
     void addBusWaitCycles(int n);
 
+    // Wait states d'accès aux périphériques 8 bits du bus, portés de Hatari (psg.c,
+    // mfp.c, acia.c). Sur le vrai 68000 chaque lecture/écriture d'un de ces composants
+    // « lents » coûte des cycles de bus supplémentaires ; le Bus appelle l'un de ces
+    // helpers AVANT de router vers la puce (le cœur avance son horloge, comme
+    // addBusWaitCycles). Moira (cycle-exact) seul ; Musashi → no-op.
+    //
+    //  - PSG YM2149  : 4 cyc au PREMIER accès de l'instruction (port PSG_WaitState ;
+    //    les accès suivants de la même instruction n'ajoutent rien — le cas movem
+    //    +4/4e accès, inexistant dans le logiciel réel, est volontairement omis).
+    //  - MFP 68901   : 4 cyc à CHAQUE accès registre (port M68000_WaitState(4)).
+    //  - ACIA 6850   : 6 cyc à chaque accès + synchro E-Clock (0..8 cyc, port
+    //    ACIA_AddWaitCycles) au PREMIER accès de l'instruction seulement.
+    void addPsgWaitCycles();
+    void addMfpWaitCycles();
+    void addAciaWaitCycles();
+
     // Cycles consommés depuis le DÉBUT du quantum courant (l'appel run() en cours).
     // L'ordonnanceur ne met `sched.now()` à jour qu'aux frontières de quantum ; une
     // lecture MMIO en plein milieu (p.ex. le RTC) verrait donc un cycle périmé. Ce
@@ -100,6 +116,16 @@ private:
     // Horloge Moira au début du quantum courant (cf. cyclesRunInQuantum). Pour
     // Musashi on utilise directement m68k_cycles_run().
     int64_t quantumStartClock_ = 0;
+
+    // Détection « premier accès de l'instruction courante » pour les wait states
+    // PSG/ACIA (cf. add*WaitCycles). `instrStartClock_` est l'horloge Moira figée
+    // AVANT chaque execute() : constante durant l'instruction, distincte d'une
+    // instruction à l'autre (toute instr. consomme ≥4 cyc). Un helper compare cette
+    // valeur à la dernière mémorisée pour savoir s'il s'agit du 1er accès de l'instr.
+    // (équivaut au test `PrevClock != CyclesGlobalClockCounter` de Hatari).
+    int64_t instrStartClock_   = -1;   // horloge au début de l'instruction en cours
+    int64_t psgPrevInstrClock_ = -1;   // instr. du dernier accès PSG (wait 4 cyc)
+    int64_t aciaPrevInstrClock_ = -1;  // instr. du dernier accès ACIA (synchro E-Clock)
 
     // Vrai UNIQUEMENT pendant un appel run() : hors run (ex. handlers d'événements
     // appelés par Scheduler::runTo), le compteur intra-quantum est périmé (Musashi

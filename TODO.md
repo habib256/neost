@@ -47,8 +47,18 @@ basse) → Enchanted Land (plante après le LOADING)**.
       ce qui décale les suivants. Appliqué LIVE (`Shifter::syncCpuBus` → `Cpu68k::addBusWaitCycles`,
       le cœur Moira avance son horloge) ; l'ancien recalage hors-ligne `applyShifterBusAlignment`
       est devenu redondant (no-op). **Spectrum 512 reste pixel-identique** (byte-identique avant/après).
-      Cf. CHANGELOG. **Reste** : wait states YM2149/MFP (E-clock), contention DMA vidéo générale sur
-      la RAM (pour le pixel-perfect L/D des bordures end-to-end).
+      **FAIT aussi pour les périphériques 8 bits PSG / MFP / ACIA** (port `psg.c` / `mfp.c` /
+      `acia.c`) : PSG = 4 cyc / 1ᵉʳ accès d'instruction ; MFP = 4 cyc / accès ; ACIA = 6 cyc +
+      synchro E-Clock (`M68000_WaitEClock`, 1ᵉʳ accès). Injectés par le `Bus` via
+      `Cpu68k::add{Psg,Mfp,Acia}WaitCycles` (Moira ; Musashi no-op). Non-régression : glue
+      self-test 19/19, Spec512 stable, boot propre. Cf. CHANGELOG. Effet attendu : le timing
+      absolu CPU↔vidéo se décale → la démo `make_overscan_lr.py` a été re-calibrée (PAD1 20→12).
+      **Reste** : **contention DMA vidéo générale** sur la RAM (shifter volant des cycles bus au
+      CPU pendant l'affichage actif). ⚠ **Hatari NE la modélise PAS** (seulement l'alignement
+      registre shifter + l'arbitrage blitter) — c'est un modèle **MAME** (`stmmu.cpp::bus_contention`).
+      L'ajouter ferait DIVERGER NeoST de l'oracle Hatari (qui valide Spec512/bordures au pixel) ;
+      non portable depuis la source de vérité → laissé de côté (ne concerne que la fidélité
+      matériel réel que Hatari lui-même n'atteint pas).
 
 ### Cas concrets — état RÉEL mesuré
 - [~] **Arkanoid** — écran-titre RÉSOLU, **mais le jeu ne démarre jamais** (retour utilisateur :

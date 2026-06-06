@@ -36,7 +36,12 @@ def dbra(reg, n):                          # dbra Dreg,label  (0x51C8|reg + disp
 def lea_pc(n, areg):                        # lea (d16,pc),Areg
     w(0x41FA | ((areg & 7) << 9)); fixups.append((len(code), n, 'pcrel')); code.extend(b'\x00\x00')
 
-PAD1 = int(sys.argv[2]) if len(sys.argv) > 2 else 20   # entrée→hi-res  (~cycle 250)
+# PAD1/PAD2 calibrent la position de l'impulsion hi-res DANS la ligne. Re-calibrés
+# (20→12) après l'ajout des wait states périphériques PSG/MFP/ACIA : ceux-ci décalent
+# le timing absolu CPU↔vidéo (le boot+setup paient désormais le coût réel des accès), ce
+# qui déplace la phase d'entrée du HBL. PAD1=12 redonne un retrait L+D PLEIN et propre
+# (white bord-à-bord, bordures haut/bas noires) ; cf. CHANGELOG §Wait states.
+PAD1 = int(sys.argv[2]) if len(sys.argv) > 2 else 12   # entrée→hi-res  (~cycle 250)
 PAD2 = int(sys.argv[3]) if len(sys.argv) > 3 else 23   # hi-res→lo-res  (~cycle 490)
 
 # offset 0 : bra.s code (saute le BPB)

@@ -33,6 +33,25 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
     juste avant un `STOP` était sauté par l'optimisation STOP) à **~130 cyc** (1 instr),
     sans changer le boot (EmuTOS/TOS pixel-identiques, histogramme d'IRQ inchangé).
     Métrique exposée par le headless (`timer IRQ retard max` / `préemptions`).
+- **Wait states d'accès aux périphériques 8 bits** (PSG / MFP / ACIA) — port fidèle de
+  Hatari (`psg.c`, `mfp.c`, `acia.c`). Sur le vrai 68000 chaque accès à une de ces puces
+  « lentes » coûte des cycles de bus supplémentaires ; le `Bus` les injecte AVANT de router
+  vers la puce, via le même mécanisme que l'alignement shifter (`Cpu68k::add{Psg,Mfp,Acia}-
+  WaitCycles` → `addBusWaitCycles` → l'horloge Moira avance ; Musashi non cycle-exact → no-op) :
+  - **YM2149 PSG** : **4 cyc** au PREMIER accès de l'instruction (port `PSG_WaitState` ; la
+    détection « 1er accès » réutilise `instrStartClock_` figé avant chaque `execute()`, comme
+    le test `PrevClock != CyclesGlobalClockCounter` de Hatari). Le surcoût movem `+4/4ᵉ accès`
+    est omis (aucun logiciel réel n'accède au PSG via movem).
+  - **MFP 68901** : **4 cyc** à CHAQUE accès registre (lecture ou écriture ; `M68000_WaitState(4)`).
+  - **ACIA 6850** (clavier + MIDI) : **6 cyc** par accès **+ synchro E-Clock** (1 MHz = CPU/10 ;
+    `10 − clock%10`, motif `[0 8 6 4 2]`, port `M68000_WaitEClock`) au seul 1ᵉʳ accès de l'instruction.
+  Non-régression vérifiée : boot EmuTOS/TOS propre, **glue self-test 19/19** (géométrie bordures
+  inchangée), **Spec512 stable** (diaporama : mêmes paires de flicker, mêmes magnitudes —
+  une transition de diapo décalée d'1 trame, effet attendu du temps CPU réel passé à scruter
+  MFP/PSG). NB : le timing absolu CPU↔vidéo se décale légèrement (le boot et les setups passent
+  désormais le coût réel des accès périphériques), ce qui a demandé de **re-calibrer** la disquette
+  de démo overscan gauche/droite `make_overscan_lr.py` (PAD1 20→12, rendu L+D plein PLUS propre
+  qu'avant). Cf. TODO §Wait states.
 
 ## Types de machine & mémoire
 - **Profils** ST / Mega ST / STE / Mega STE (`MachineType`), choisis avant le boot
