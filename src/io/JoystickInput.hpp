@@ -91,8 +91,10 @@ inline void readStickRaw(int jid, float thr, uint8_t& analog, uint8_t& digital) 
     const unsigned char* bt  = glfwGetJoystickButtons(jid, &btN);
     const unsigned char* hat = glfwGetJoystickHats(jid, &hatN);
     if (ax && axN >= 2) {
-        if (ax[0] < -thr) analog |= LEFT;  if (ax[0] > thr) analog |= RIGHT;
-        if (ax[1] < -thr) analog |= UP;    if (ax[1] > thr) analog |= DOWN;
+        if (ax[0] < -thr) analog |= LEFT;
+        if (ax[0] >  thr) analog |= RIGHT;
+        if (ax[1] < -thr) analog |= UP;
+        if (ax[1] >  thr) analog |= DOWN;
     }
     if (hat && hatN >= 1) {
         if (hat[0] & GLFW_HAT_UP)    digital |= UP;
@@ -103,8 +105,10 @@ inline void readStickRaw(int jid, float thr, uint8_t& analog, uint8_t& digital) 
     if (bt) {
         const bool standard = btN >= 16;
         if (standard) {
-            if (bt[12]) digital |= UP;   if (bt[13]) digital |= DOWN;
-            if (bt[14]) digital |= LEFT; if (bt[15]) digital |= RIGHT;
+            if (bt[12]) digital |= UP;
+            if (bt[13]) digital |= DOWN;
+            if (bt[14]) digital |= LEFT;
+            if (bt[15]) digital |= RIGHT;
         }
         const int fireMax = standard ? 12 : btN;   // exclut le D-pad du feu
         for (int i = 0; i < fireMax; ++i) if (bt[i]) { digital |= FIRE; break; }

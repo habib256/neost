@@ -415,7 +415,7 @@ void drawJoystickWindow(GLFWwindow* win, uint8_t lastJoy0, uint8_t lastJoy1) {
         const unsigned char* hat = glfwGetJoystickHats(jid, &hatN);
         ImGui::Text("  Axes bruts (%d) :", axN);
         for (int i = 0; i < axN && ax; ++i) {
-            char lbl[16]; std::snprintf(lbl, sizeof lbl, "a%d%s", i,
+            char lbl[24]; std::snprintf(lbl, sizeof lbl, "a%d%s", i,
                                         (i == 0 ? " (X?)" : i == 1 ? " (Y?)" : ""));
             ImGui::Indent(8.0f); drawJoystickAxisBar(lbl, ax[i], g_joyDeadzone); ImGui::Unindent(8.0f);
         }
