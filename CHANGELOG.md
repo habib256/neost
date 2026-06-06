@@ -176,10 +176,13 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   « à mort » du menu fullscreen de The Cuddly Demo** : sa boucle d'auto-synchro sonde
   `$FF8209` pour se caler au faisceau ; sans VDE_On live le compteur ne montait qu'à la
   ligne 63 et la régulation `$1D10` (entrée de la boucle) divergeait (oscillation −5
-  lignes/trame → géométrie fullscreen qui changeait chaque trame). Désormais **STABLE et
-  pixel-conforme** au menu briques d'Hatari (briques brunes, robot, échelles, fissures
-  bleues). **Zéro régression** : un écran 50 Hz ordinaire ne fait aucune bascule freq →
-  `liveStartHBL_` reste 63 (compteur inchangé) ; glue self-test 19/19, EmuTOS/TOS boot OK.
+  lignes/trame → géométrie fullscreen qui changeait chaque trame). Le menu STATIQUE est
+  désormais **stable** et conforme aux briques d'Hatari (briques brunes, robot, échelles,
+  fissures bleues). **Zéro régression** : un écran 50 Hz ordinaire ne fait aucune bascule
+  freq → `liveStartHBL_` reste 63 (compteur inchangé) ; glue self-test 19/19, spec512
+  pixel-identique, EmuTOS/TOS boot OK. ⚠ **Reste** (cf. TODO) : quand le robot se déplace,
+  le **scrolling saute** (gros sauts d'images au lieu d'un défilement fluide) ; et le
+  **scroller de la bordure BASSE** n'est pas rendu (retrait bas non modélisé dans le rendu live).
   *(Reste : scroller de la bordure BASSE du menu non rendu — cf. TODO, retrait bas live.)*
 
 ## Interruptions (MFP 68901)
@@ -386,7 +389,8 @@ fidèles à Hatari, pas des bugs.
 - TOS 1.02 Mega ST FR : boot complet, green desktop basse rés.
 - **Arkanoid** (Imagine 1987) : se lance via l'AUTO de la disquette et affiche son
   écran-titre **stable** (plus de gel `$31736`) — résolu par le **modèle FDC rotationnel**
-  (spin-up + débit MFM réels), sous Musashi ET Moira. Lemmings (cracktro), Out Run
+  (spin-up + débit MFM réels), sous Musashi ET Moira. ⚠ **Le jeu ne démarre pas encore**
+  (on atteint le titre, jamais la partie — cf. TODO §FDC). Lemmings (cracktro), Out Run
   (répertoire), etc. chargent depuis la disquette.
 - **Diagnostic ST « Field Service » v4.4** (cartouche) : batterie Z (RAM/ROM/Clavier/Audio/
   MFP-Glue-Timing/BLiT) = Pass ; **Floppy → Test Speed** = ~200 ms/tour (300 RPM).
