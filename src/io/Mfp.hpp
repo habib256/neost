@@ -44,6 +44,14 @@ public:
     // (Timer A/C/D) à partir de leurs registres prescaler/données.
     void setScheduler(Scheduler* s) { sched_ = s; }
 
+    // RESET matériel du MFP (port de MFP_Reset, mfp.c:519-569). Remet à zéro les
+    // registres d'interruption (GPIP/AER/DDR, IER/IPR/IMR/ISR, VR), les timers (mode,
+    // recharge, compteurs, backing store) et annule les échéances en attente → plus
+    // d'IRQ Timer A / GPIP7 « fantôme » survivant à un reset à chaud. NE TOUCHE PAS aux
+    // propriétés machine/fixture (moniteur, son DMA, bouclage) ni aux lignes d'ENTRÉE
+    // pilotées par les autres puces (reforcées à la lecture, puces resynchronisées).
+    void reset();
+
     // Période en CYCLES CPU d'un timer (0..3 = A/B/C/D) en mode délai, ou 0 s'il
     // est arrêté ou en event-count. (Re)programme l'échéance sur l'ordonnanceur.
     int64_t timerPeriodCycles(int timer) const;

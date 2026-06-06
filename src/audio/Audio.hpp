@@ -10,6 +10,9 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
+#include <vector>
+
+#include "audio/SampleRing.hpp"
 
 class YM2149;
 class DriveSound;
@@ -25,9 +28,16 @@ public:
     void stop();
     bool ok() const { return started_; }
 
-    // Remplit `out` (mono float) : PSG synthétisé puis bruits lecteur mixés.
-    // Appelé par le callback miniaudio (thread audio) — public pour cet usage.
+    // Consommateur (thread audio miniaudio) : recopie l'anneau dans `out`, silence si
+    // underrun. Ne synthétise plus rien — toute la génération est faite en amont par
+    // produceFrame sur le thread d'émulation (modèle « push » de la Phase C).
     void render(float* out, uint32_t frames, uint32_t sampleRate);
+
+    // Producteur (thread d'émulation) : génère le son d'UNE trame (PSG horodaté + son DMA
+    // + LMC1992 + bruits lecteur, clampé) et le pousse dans l'anneau. `frameCycles` = durée
+    // de la trame en cycles CPU (pour dater les écritures PSG et calibrer le nombre
+    // d'échantillons). À appeler APRÈS Machine::runFrame.
+    void produceFrame(int64_t frameCycles);
 
 private:
     YM2149&     psg_;
@@ -35,4 +45,12 @@ private:
     DmaSound*   dma_     = nullptr;
     bool        started_ = false;
     void*       device_  = nullptr;   // ma_device opaque (évite d'inclure miniaudio ici)
+
+    // --- Modèle « push » (Phase C) : anneau émulation → audio --------------------
+    SampleRing         ring_{32768};     // SPSC : produceFrame (émulation) → render (audio) ; ~680 ms de marge
+    std::vector<float> scratch_;         // tampon de travail de produceFrame (thread émulation)
+    uint32_t           rate_ = 48000;    // fréquence de sortie réelle du périphérique
+    double             sampleCarry_ = 0.0; // report fractionnaire (nb d'échantillons/trame exact à long terme)
+    uint32_t           primeSamples_ = 4000; // coussin cible (≈ latence visée, ~85 ms) — amorçage + asservissement
+    bool               primed_ = false;  // (thread audio) : l'anneau a-t-il atteint le coussin ? sinon → silence
 };

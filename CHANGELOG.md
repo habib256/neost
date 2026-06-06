@@ -206,6 +206,13 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.
+- **Reset matériel du MFP** (`Mfp::reset`, port de `MFP_Reset` mfp.c:519-569, appelé par
+  `Machine::reset/hardReset` AVANT `cpu.reset()` comme `reset.c:74`) : remet à zéro GPIP/AER/DDR,
+  IER/IPR/IMR/ISR, VR, les timers (mode/recharge/compteurs/backing store) et annule les échéances
+  Scheduler → plus d'**IRQ Timer A / GPIP7 fantôme** survivant à un reset à chaud (Ctrl+reset)
+  qui pouvait faire s'emballer/parasiter une musique chip. PRÉSERVE le moniteur, le flag son DMA
+  et le bouclage (propriétés posées avant le reset) ; les lignes d'entrée des autres puces sont
+  reforcées à la lecture du GPIP.
 - **`M68K_EMULATE_INT_ACK`** activé dans Musashi (sans ça, IRQ auto-vectorisées, vecteurs
   MFP inutilisés).
 - **Timer C 200 Hz** (tic système), **Timer B event-count** (Display Enable, lignes
@@ -310,10 +317,61 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 
 ## Audio
 - **YM2149** : 3 voies carrées + bruit, enveloppe (R11-13, formes via Continue/Attack/
-  Alternate/Hold), **table de volume 5 bits mesurée** (32 niveaux), vitesse d'enveloppe
-  corrigée (diviseur de pas). Backend miniaudio (CoreAudio). **`YM2149::reset()`** remet
-  tous les registres à 0 (volumes 0 = SILENCE) et est appelé par `Machine::reset()/hardReset()`
-  → le son ne PERSISTE plus après un reset (soft/hard), qui laissait sinon une tonalité bipée.
+  Alternate/Hold), vitesse d'enveloppe corrigée (diviseur de pas). Backend miniaudio (CoreAudio).
+  **`YM2149::reset()`** remet tous les registres à 0 (volumes 0 = SILENCE) et est appelé par
+  `Machine::reset()/hardReset()` → le son ne PERSISTE plus après un reset (soft/hard), qui
+  laissait sinon une tonalité bipée. Port A (R14) remis à `0xFF` au reset (lignes I/O actives
+  bas toutes inactives, cf. `psg.c:223`) → plus de sélection lecteur/face parasite au boot.
+- **DAC non linéaire + porte ton/bruit + filtres de sortie** (port fidèle de Hatari `sound.c`,
+  suite à l'analyse comparative `docs/SOUND_HATARI_DIFF.md`). Trois corrections dans `synthesize` :
+  - **Table DAC 32×32×32 modélisée** (`YM2149_BuildModelVolumeTable`, sound.c:615-678) en
+    remplacement de la somme linéaire des 3 voies ÷ 3 : le DAC du YM2149 débite dans une
+    résistance de charge commune, la sortie suit la loi non linéaire (2^-¼)^(n-31) → empiler des
+    voies n'additionne PAS les amplitudes (3 voies pleines ≈ ×1, pas ×3), et un volume « moyen »
+    (index 8) est ~23 dB sous le plein volume. Index `(idxC<<10)|(idxB<<5)|idxA`, table normalisée
+    construite une fois. Remplace l'ancienne table 1D `ymout1c5bit`.
+  - **Combinaison ton+bruit par ET LOGIQUE** (porte) au lieu d'une moyenne arithmétique
+    (sound.c:1098-1111) : la porteuse hache le bruit → bruitages ton+bruit (explosions, moteurs)
+    rendus correctement. Voie désactivée ⇒ terme toujours haut.
+  - **Filtres de sortie analogiques du ST** : passe-haut sous-sonique ~15 Hz anti-DC
+    (`Subsonic_IIR_HPF`, sound.c:382-394 — indispensable car la table DAC est unipolaire :
+    couplage AC du vrai HW) + passe-bas PWM par défaut de Hatari (`PWMaliasFilter`, sound.c:479-492,
+    réduit l'aliasing des aiguës). État des filtres remis à zéro au reset.
+  - Niveau de sortie aligné sur Hatari (`YM_OUTPUT_LEVEL=0x7fff` → float) : ~6 dB sous l'ancien
+    modèle linéaire mais c'est le vrai niveau du DAC ST ; jamais clampé (3 voies pleines crêtent
+    à ±0.5, transitoire d'attaque ≤1.0).
+- **Demi-amplitude YM sur STE/Mega STE** (`YM2149::setOutputScale`, port de `YM_OUTPUT_LEVEL>>1`,
+  sound.c:780-784) : le mixeur STE met le YM à ½ amplitude pour laisser la marge au son DMA →
+  plus d'écrêtage dur quand YM + DMA jouent fort ensemble (YM 3 voies ≈ ±0.25 + DMA ≤ ±0.7 < 1.0).
+  Posée par `Machine` selon le type machine (ST/Mega ST = pleine amplitude, pas de DMA), et suivie
+  par la bascule auto STE→ST des TOS ≤ 1.04 (`adjustMachineForTos`). Non remise à zéro par reset.
+- **Modèle « push » horodaté + anneau émulation→audio** (Phase C — le son est désormais GÉNÉRÉ sur
+  le thread d'émulation, à l'horloge CPU, et le thread audio ne fait plus que recopier) :
+  - **Écritures PSG horodatées** : `YM2149::write8` enregistre chaque écriture de registre sonore
+    (0-13) avec son cycle CPU dans la trame (horloge câblée par le frontend, `Machine::frameRelCycle`).
+  - **Synthèse par rejeu** (`YM2149::synthesizeFrame`) : rejoue ces écritures à leur position exacte
+    (cycle → échantillon), en synthétisant par segments → capture les modulations SOUS-BUFFER
+    (digidrums, sync-buzzer, arpèges très rapides) que l'ancien modèle « pull » (une lecture des
+    registres par buffer audio) ratait complètement (testé : modulation rms 0.31 vs 0.00 en legacy).
+  - **Anneau SPSC lock-free** (`SampleRing`, 32768 ech.) émulation→audio : `Audio::produceFrame` (après
+    `runFrame`) génère PSG+DMA+LMC+lecteur, clampe et empile ; `Audio::render` (callback miniaudio) ne
+    fait que drainer (plus aucune course sur l'état de synthèse).
+  - **Amorçage + asservissement** (corrige « la musique démarre 30 s trop tard, seuls les drums au
+    début ») : le consommateur attend un coussin de ~85 ms avant de jouer (sinon on draine un anneau
+    quasi-vide en underrun permanent où seules les transitoires passent) et **ré-amorce après tout
+    underrun** ; le producteur calibre le nombre d'échantillons par report fractionnaire + un
+    asservissement proportionnel (|adj| ≤ 8 ech., < 0,8 % de hauteur) qui remplit vite à l'amorçage
+    et recale ensuite. Latence régime ~80 ms, stable. **Validé à l'oreille sur _Magic Pocket_.**
+  - Chemins **headless** (pas d'audio) et **WASM** (`synthesize` direct) inchangés : le modèle push
+    n'est armé que si le frontend pose l'horloge (`setCycleClock`). _Reste (refinements) : synthèse YM
+    interne 250 kHz + rééchantillonnage, FIFO/anti-repliement DMA (cf. `docs/SOUND_HATARI_DIFF.md`)._
+- **Fidélité I/O du PSG** (port de `psg.c:252-358`) : sélecteur de registre stocké sur **8 bits non
+  masqués** ; registre **≥ 16 → écriture ignorée, lecture 0xFF** (le YM2149 n'a que 16 registres ;
+  compat *European Demo* qui « désactive » le PSG ainsi). **Masquage à l'écriture** des bits inutilisés :
+  tons grossiers A/B/C (R1/3/5) + forme d'enveloppe (R13) sur 4 bits ; ampli A/B/C (R8/9/10) + bruit (R6)
+  sur 5 bits → la relecture renvoie la valeur masquée, comme le matériel. `$FF8802` reste **relisible**
+  (choix délibéré pour les RMW des cartouches de diagnostic). Revalidé : batterie `Z` du diagnostic ST
+  (RAM/ROM/Clavier/**Audio sweep A·B·C**/Timing) **byte-identique sur Musashi ET Moira**.
 - **Son DMA STE** (`DmaSound`, `$FF8900-$FF8925`) : échantillons 8 bits signés en RAM
   (6.25/12.5/25/50 kHz, mono/stéréo, play/repeat, compteur d'adresse), mixé au YM2149.
   **Ligne XSINT** datée (`Scheduler::DMASND`) câblée aux DEUX entrées MFP — GPIP7 ET TAI
@@ -321,9 +379,22 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   `MFP_TimerA_Set_Line_Input`) : compte sur le front sélectionné par l'AER GPIP4 (défaut
   bit4=0 → fins de trame), recharge à 1 (data reg 0 = 256), IRQ canal 13 — double-buffering
   streamé STE.
+- **Fidélité DMA STE** (port de `dmaSnd.c`, suite à `docs/SOUND_HATARI_DIFF.md`) :
+  - **Cas `start==end`** (`DmaSnd_StartNewFrame`, dmaSnd.c:471-480) : trame vide + repeat off →
+    arrêt SANS lever XSINT (`startNewFrame()`), corrige le GPIP7 figé HAUT (détection moniteur
+    faussée, demos start==end type Amberstar cracktro).
+  - **Adresse de trame à l'arrêt** = `startAddr`, pas la dernière position lue (`DmaSnd_GetFrameCount`,
+    dmaSnd.c:756-759). _L'avance live cycle-exacte du compteur reste Phase C._
+  - **Reset à chaud vs à froid** : le LMC1992/Microwire n'a pas de broche de reset → ses volumes/
+    mixage PERSISTENT au reset à chaud (`reset(bool cold)`, propagé par `Machine::reset/hardReset`).
 - **LMC1992 / Microwire** (`$FF8922/24`) : décodage commande série 11 bits, volume
-  maître + G/D (gain), basses/aigus ±12 dB (filtres RBJ). **Shift série** `$FF8922`
+  maître + G/D (gain), basses/aigus ±12 dB (filtres RBJ ; codes de tonalité **13-15 saturés à
+  +12 dB** comme la table `LMC1992_Bass_Treble_Table` de Hatari, au lieu de +14/+16/+18). **Shift série** `$FF8922`
   (16 décalages de 8 cyc, `Scheduler::MICROWIRE` — les diags qui pollent jusqu'à 0 OK).
+  **Registre de mixage (reg 0) désormais appliqué** dans `mix()` : mixing==1 → YM2149+DMA,
+  0/2/3 → DMA SEUL qui écrase le YM (réf. `dmaSnd.c:555-568`), uniquement pendant une trame DMA
+  (DMA à l'arrêt → le YM passe intact). EmuTOS STE programme mixing=1 au boot (vérifié) → YM
+  audible par défaut, la correction ne mute le YM que si un programme route explicitement DMA-seul.
 - **Bruits mécaniques du lecteur** (immersion, pas du matériel — repris de STeem SSE) :
   le cœur émet des événements `FdcSound` (moteur/pas/seek/index) via un sink ; frontends
   GUI (`DriveSound`, miniaudio) et WASM (Web Audio). WAV embarqués dans `roms/drivesound/`.

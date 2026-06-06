@@ -182,22 +182,35 @@ basse) → Enchanted Land (plante après le LOADING)**.
 ## YM2149 PSG
 - [ ] Données port B Centronics + front strobe (bit5) non émulés en sortie _(faible valeur)_ —
       réf. `psg.c:PSG_Set_DataRegister`
-- [ ] Filtre passe-bas RC de sortie (STF) non appliqué _(faible valeur)_ — réf.
-      `sound.c:LowPassFilter`
-- [ ] Masquage à l'écriture + sélecteur de registre ≥ 16 _(faible valeur)_ — réf. `psg.c`
+- [x] **Mixage DAC non linéaire 32³ + porte ton/bruit (ET logique) + filtres de sortie**
+      (passe-haut anti-DC `Subsonic_IIR_HPF` + passe-bas PWM par défaut) — port fidèle de
+      `sound.c` (table modélisée, mixage, filtres). Cf. `CHANGELOG.md` § Audio et
+      `docs/SOUND_HATARI_DIFF.md`. _Reste : filtre passe-bas STF alternatif (`LowPassFilter`)
+      sélectionnable, et table 16³ interpolée (`interpolate_volumetable`) en option._
+- [x] **Masquage à l'écriture + sélecteur de registre ≥ 16** (`YM2149::write8/read8`, port psg.c:252-358) :
+      select 8 bits non masqué ; registre ≥16 → écriture ignorée / lecture 0xFF (compat *European Demo*) ;
+      masquage R1/3/5/13→&0x0F, R6/8/9/10→&0x1F. `$FF8802` reste relisible (choix délibéré RMW diags,
+      revalidé : batterie `Z` du diagnostic ST byte-identique sur Musashi ET Moira). _Reste (très faible
+      valeur) : read-latch `regReadData_`, $FF8801/03→0xFF (risque word-read, non fait)._
 
 ## Son DMA STE + Microwire/LMC1992
-- [ ] Cas limites start==end (stop/loop sans IRQ) _(faible valeur)_ — réf.
-      `dmaSnd.c:DmaSnd_StartNewFrame`
+- [x] **Cas limites start==end** (`DmaSnd_StartNewFrame`) : trame vide + repeat off → arrêt
+      SANS lever XSINT (`startNewFrame()`, corrige GPIP7 figé HAUT). Adresse de trame relue =
+      `startAddr` à l'arrêt (`DmaSnd_GetFrameCount`). Reset cold/warm : le LMC1992 (sans broche
+      de reset) persiste au reset à chaud. _Reste : avance live cycle-exacte du compteur (Phase C)._
 - [ ] Décodage commande LMC1992 : run de masque contigu au lieu de tous les bits _(faible
       valeur)_ — réf. `dmaSnd.c:DmaSnd_InterruptHandler_Microwire`
-- [ ] Registre mixage LMC1992 (reg 0) décodé mais jamais appliqué (mute/route YM) _(faible
-      valeur)_ — réf. `dmaSnd.c:DmaSnd_GenerateSamples`
-- [ ] Décodage du son sur l'horloge d'émulation + anneau vers le thread audio (aujourd'hui la
-      forme d'onde est générée côté audio, seul l'instant d'IRQ est exact) _(précision cycle)_
-      🎯 étalon : **Xenon 2**, **Turrican** — digidrums (volume YM modulé par Timer A >8 kHz)
-- [ ] **Musique muette sur la majorité des titres** — à investiguer (PSG/digidrums/timing
-      d'écriture registres ; cf. retour utilisateur). Lié probablement à l'item ci-dessus.
+- [x] **Registre mixage LMC1992 (reg 0) appliqué** (`DmaSound::mix`) : mixing==1 → YM2149+DMA,
+      0/2/3 → DMA seul (écrase le YM), uniquement trame en cours. Réf. `dmaSnd.c:555-568`.
+      _NB : EmuTOS STE programme mixing=1 au boot → YM audible par défaut._
+- [x] **Décodage du son sur l'horloge d'émulation + anneau vers le thread audio** (Phase C) :
+      écritures PSG horodatées + rejeu (`YM2149::synthesizeFrame`) → capture les modulations
+      sous-buffer ; anneau SPSC (`SampleRing`) ; `Audio::produceFrame` (émulation) / `render` (drain).
+      🎯 étalon : **Xenon 2**, **Turrican** — digidrums. _Reste : synthèse interne 250 kHz +
+      rééchantillonnage, FIFO/anti-repliement DMA, ajustement latence/anti-dérive **à valider à l'oreille**._
+- [x] **Musique muette sur la majorité des titres** — RÉSOLU par la Phase C (écritures registres
+      horodatées/rejouées) + le fix d'amorçage de l'anneau (latence ~80 ms au lieu de « 30 s »).
+      **Validé à l'oreille sur _Magic Pocket_.**
 
 ## IKBD HD6301 + souris/joystick
 - [ ] Keymap international / layouts TOS (FR/UK/DE, autorepeat) _(faible valeur)_ — réf. `keymap.c`

@@ -53,13 +53,17 @@ public:
     // (0/0 dB) → aucun coût ni risque tant que la tonalité n'est pas programmée.
     void    applyTone(float* out, uint32_t frames, uint32_t sampleRate);
 
-    void    reset();                 // coupe la lecture (RESET machine)
+    // RESET machine : coupe la lecture. `cold` = reset à FROID (power-cycle) → ré-init
+    // du LMC1992 ; à chaud (Ctrl+reset) le Microwire n'a PAS de signal de reset et
+    // conserve ses volumes/mixage (cf. Hatari DmaSnd_Reset, bloc `if (bCold)`).
+    void    reset(bool cold = false);
     bool    playing() const { return playing_; }
 
 private:
     int     sampleAt(uint32_t addr, bool stereo) const;   // octet(s) RAM → -128..127 mono
     void    decodeMicrowire();                            // décode la commande LMC1992
     void    scheduleFrameEnd();                           // date la prochaine fin de trame
+    void    startNewFrame();                              // (re)démarre une trame (gère start==end)
     void    setXsint(bool level);                         // pilote la ligne XSINT (→ MFP GPIP7)
 
 public:

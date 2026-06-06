@@ -55,19 +55,48 @@ void DmaSound::setXsint(bool level) {
     }
 }
 
-void DmaSound::onFrameEnd() {
-    setXsint(false);                              // fin de trame : XSINT → BAS (compte Timer A si AER bit4=0)
-    if (ctrl_ & 0x02) { setXsint(true); scheduleFrameEnd(); }  // repeat : nouvelle trame → XSINT HAUT
+// (Re)démarre une trame DMA : recale le compteur sur l'adresse de début et arme
+// l'échéance de fin. Port de Hatari DmaSnd_StartNewFrame (dmaSnd.c:462-480) : si
+// début == fin ET repeat OFF, la trame est VIDE → on coupe la lecture SANS lever
+// XSINT (sinon GPIP7 resterait figé HAUT, faussant la détection moniteur ; bug des
+// demos start==end comme l'Amberstar cracktro). Repeat ON → on ne coupe pas.
+void DmaSound::startNewFrame() {
+    curAddr_ = startAddr_;
+    phase_   = 0.0;
+    if (endAddr_ <= startAddr_ && !(ctrl_ & 0x02)) {   // trame vide, pas de repeat → arrêt sec
+        playing_ = false;
+        ctrl_   &= ~0x01;
+        setXsint(false);                               // surtout PAS de XSINT HAUT
+        if (sched_) sched_->cancel(Scheduler::DMASND);
+        return;
+    }
+    playing_ = true;
+    setXsint(true);                                    // début de trame : XSINT → HAUT (→ GPIP7)
+    scheduleFrameEnd();                                // date la fin de trame (→ Timer A)
 }
 
-void DmaSound::reset() {
+void DmaSound::onFrameEnd() {
+    setXsint(false);                              // fin de trame : XSINT → BAS (compte Timer A si AER bit4=0)
+    if (ctrl_ & 0x02) startNewFrame();            // repeat : nouvelle trame (→ XSINT HAUT, gère start==end)
+}
+
+void DmaSound::reset(bool cold) {
     playing_ = false;
-    ctrl_ = 0;
+    ctrl_  = 0;
+    mode_  = 0;
     phase_ = 0.0;
+    startAddr_ = endAddr_ = curAddr_ = 0;          // Hatari met start/end à 0 même au warm reset (fix 'Brace')
+    mwShift_ = 0; mwSteps_ = 0;                     // transfert série Microwire éventuel annulé
     setXsint(false);                               // son DMA inactif au reset → XSINT BAS
     if (sched_) sched_->cancel(Scheduler::DMASND);
-    mwMaster_ = 40; mwLeft_ = 20; mwRight_ = 20;   // LMC1992 à 0 dB (pas de mute au reset)
-    mwBass_ = 6; mwTreble_ = 6; mwMixing_ = 0;
+    // Le LMC1992/Microwire n'a PAS de broche de reset : ses registres (volumes, basses/
+    // aigus, mixage) PERSISTENT au reset à chaud (cf. Hatari, bloc `if (bCold)`). On ne
+    // les réinitialise qu'à FROID. NeoST garde des défauts à 0 dB (et non muets comme le
+    // vrai HW/Hatari) pour rester audible si l'OS ne programme pas le LMC.
+    if (cold) {
+        mwMaster_ = 40; mwLeft_ = 20; mwRight_ = 20;   // LMC1992 à 0 dB
+        mwBass_ = 6; mwTreble_ = 6; mwMixing_ = 0;
+    }
 }
 
 // Décode une commande LMC1992 reçue par microwire. Le mot 16 bits ($FF8922) est
@@ -139,8 +168,13 @@ static void shelfCoeffs(bool lowShelf, double dB, double f0, double fs,
 
 void DmaSound::applyTone(float* out, uint32_t frames, uint32_t sampleRate) {
     if ((mwBass_ == 6 && mwTreble_ == 6) || sampleRate == 0) return;   // 0/0 dB → bypass
-    const double bassDb = (mwBass_   - 6) * 2.0;   // 0..12 → -12..+12 dB
-    const double trebDb = (mwTreble_ - 6) * 2.0;
+    // Codes 0-12 → -12..+12 dB (pas de 2 dB) ; codes 13-15 SATURENT à +12 dB, comme la
+    // table LMC1992_Bass_Treble_Table de Hatari (dmaSnd.c:211-214) — sans ça les codes
+    // 13-15 donnaient +14/+16/+18 dB.
+    const int bassCode = mwBass_   < 12 ? mwBass_   : 12;
+    const int trebCode = mwTreble_ < 12 ? mwTreble_ : 12;
+    const double bassDb = (bassCode - 6) * 2.0;
+    const double trebDb = (trebCode - 6) * 2.0;
     double bb0, bb1, bb2, ba1, ba2, tb0, tb1, tb2, ta1, ta2;
     shelfCoeffs(true,  bassDb, 200.0,  sampleRate, bb0, bb1, bb2, ba1, ba2);   // basses ~200 Hz
     shelfCoeffs(false, trebDb, 8000.0, sampleRate, tb0, tb1, tb2, ta1, ta2);   // aigus  ~8 kHz
@@ -180,9 +214,12 @@ uint8_t DmaSound::read8(uint32_t addr) {
         case 0x03: return uint8_t(startAddr_ >> 16);
         case 0x05: return uint8_t(startAddr_ >> 8);
         case 0x07: return uint8_t(startAddr_);
-        case 0x09: return uint8_t(curAddr_ >> 16);    // compteur courant (position de lecture)
-        case 0x0B: return uint8_t(curAddr_ >> 8);
-        case 0x0D: return uint8_t(curAddr_);
+        // Compteur courant (position de lecture). À l'ARRÊT, le vrai HW renvoie
+        // l'adresse de DÉBUT, pas la dernière position (cf. Hatari DmaSnd_GetFrameCount,
+        // dmaSnd.c:756-759). NB : l'avance live cycle-exacte (Sound_Update) = Phase C.
+        case 0x09: return uint8_t((playing_ ? curAddr_ : startAddr_) >> 16);
+        case 0x0B: return uint8_t((playing_ ? curAddr_ : startAddr_) >> 8);
+        case 0x0D: return uint8_t (playing_ ? curAddr_ : startAddr_);
         case 0x0F: return uint8_t(endAddr_ >> 16);
         case 0x11: return uint8_t(endAddr_ >> 8);
         case 0x13: return uint8_t(endAddr_);
@@ -201,11 +238,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
             const bool wasPlaying = ctrl_ & 0x01;
             ctrl_ = v & 0x03;
             if ((ctrl_ & 0x01) && !wasPlaying) {       // 0→1 : (re)démarre la trame
-                curAddr_ = startAddr_;
-                phase_   = 0.0;
-                playing_ = true;
-                setXsint(true);                        // début de trame : XSINT → HAUT (→ GPIP7)
-                scheduleFrameEnd();                    // date la fin de trame (→ Timer A)
+                startNewFrame();                       // recale + arme la fin (gère start==end)
             } else if (!(ctrl_ & 0x01)) {              // bit play à 0 : arrêt
                 playing_ = false;
                 setXsint(false);                       // arrêt : XSINT → BAS
@@ -248,8 +281,15 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
     const bool   stereo = !(mode_ & 0x80);                    // bit7=0 → stéréo entrelacé
     const uint32_t step = stereo ? 2u : 1u;                   // octets par trame DMA
 
+    // Registre de mixage du LMC1992 (commande 0) : seul mixing==1 mélange YM2149 + DMA ;
+    // 0/2/3 routent le DMA SEUL → il écrase le YM (cf. Hatari DmaSnd_GenerateSamples,
+    // dmaSnd.c:555-568). N'a d'effet qu'ici, trame en cours : DMA à l'arrêt → `mix` sort
+    // plus haut et le YM passe intact (pas de mute du YM hors lecture DMA).
+    const bool addYm = (mwMixing_ == 1);
     for (uint32_t i = 0; i < frames; ++i) {
-        out[i] += (sampleAt(curAddr_, stereo) / 128.0f) * kDmaGain;
+        const float dma = (sampleAt(curAddr_, stereo) / 128.0f) * kDmaGain;
+        if (addYm) out[i] += dma;                             // YM2149 + DMA
+        else       out[i]  = dma;                             // DMA seul (écrase le YM)
         phase_ += inc;
         while (phase_ >= 1.0) {                                // avance dans la RAM
             phase_ -= 1.0;

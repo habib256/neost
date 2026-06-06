@@ -115,6 +115,9 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)
     dmasnd.setScheduler(&sched);   // le son DMA date sa fin de trame (→ Timer A)
     dmasnd.setMfp(&mfp);
+    // STE/Mega STE : le YM2149 est mixé à DEMI-amplitude (marge pour le son DMA, évite la
+    // saturation) ; ST/Mega ST : pleine amplitude. Cf. YM2149::setOutputScale.
+    psg.setOutputScale(machineIsSte(machineType_) ? 0.5f : 1.0f);
 
     installSchedulerCallbacks();
 }

@@ -44,6 +44,15 @@ public:
 
     MachineType machineType() const { return machineType_; }
 
+    // --- Audio « push » (Phase C) : horloge pour dater les écritures registres -----
+    // Durée de la trame courante en cycles CPU (lignes × cycles/ligne). Sert à calibrer
+    // le nombre d'échantillons produits et à mapper les écritures horodatées.
+    int64_t frameCycles() const { return static_cast<int64_t>(lpf_) * cpl_; }
+    // Cycle CPU écoulé depuis le début de la trame (horloge LIVE, delta intra-quantum
+    // inclus) : c'est l'estampille d'une écriture PSG faite en plein bloc CPU. À câbler
+    // sur YM2149::setCycleClock côté frontend audio (cf. main.cpp).
+    int64_t frameRelCycle() const { return sched.liveNow() - frameStart_; }
+
     // Abaisse le type machine si le TOS de `romPath` ne le supporte pas — port de
     // Hatari `TOS_CheckSysConfig` : un TOS <= 1.04 (TOS 1.0x, EmuTOS 192 Ko qui se
     // présente en « Atari ST » 1.4) ne tourne qu'en mode ST/68000 → sur STE/Mega STE
@@ -57,11 +66,11 @@ public:
     void ejectCart() { bus.ejectCart(); }
     bool loadDisk(const std::string& path)  { return fdc.loadImage(path, 0); }   // lecteur A
     bool loadDiskB(const std::string& path) { return fdc.loadImage(path, 1); }   // lecteur B (optionnel)
-    void reset() { psg.reset(); dmasnd.reset(); cpu.reset(); }
+    void reset() { psg.reset(); dmasnd.reset(/*cold=*/false); mfp.reset(); cpu.reset(); }   // à chaud : LMC1992 préservé
     // Reset à FROID (power-cycle) : efface toute la ST-RAM, ce qui invalide le
     // « memvalid » de TOS — il refait alors un boot COMPLET (re-détection mémoire,
     // re-init OS) au lieu du boot à chaud d'un simple reset. Puis reset matériel.
-    void hardReset() { bus.ram.assign(bus.ram.size(), 0); psg.reset(); dmasnd.reset(); cpu.reset(); }
+    void hardReset() { bus.ram.assign(bus.ram.size(), 0); psg.reset(); dmasnd.reset(/*cold=*/true); mfp.reset(); cpu.reset(); }
 
     // Reconfigure la machine À CHAUD sans recréer l'objet (son adresse reste
     // stable → les références externes, p.ex. Audio→psg/dmasnd, restent valides) :
@@ -74,6 +83,7 @@ public:
         machineType_    = machine;
         glue.memConfig_ = memConfigForBytes(ramBytes);
         cpu.setCore(cpuCore);              // bascule de cœur 68000 si nécessaire
+        psg.setOutputScale(machineIsSte(machine) ? 0.5f : 1.0f);   // ½ ampli YM sur STE (cf. ctor)
     }
 
     // Exécute UNE trame complète : 313 lignes de cycles CPU, 4 tics Timer C

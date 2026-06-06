@@ -6,6 +6,38 @@
 #include "io/Mfp.hpp"
 #include <cstdio>
 
+// RESET matériel du MC68901 (port de MFP_Reset, mfp.c:519-569). Le vrai MFP n'a PAS
+// de signal de reset dédié pour le GPIP/USART, mais sur l'ST la broche /RESET du 68000
+// le réinitialise (cf. reset.c:74, AVANT M68000_Reset). NeoST l'omettait → des IRQ
+// Timer A / GPIP7 pouvaient survivre à un reset à chaud (musique chip qui s'emballe ou
+// notes parasites après Ctrl+reset). On remet ici tout l'état d'interruption et les
+// timers à zéro. PRÉSERVÉ : colorMonitor_/hasDmaSound_/loopback_ (propriétés posées
+// AVANT le reset) et les lignes d'ENTRÉE des autres puces (FDC/ACIA/RS232), reforcées
+// à la lecture du GPIP et resynchronisées par leurs puces respectives.
+void Mfp::reset() {
+    gpip = 0xFF; aer = 0; ddr = 0;        // GPIP au repos (entrées non assertées), AER/DDR neutres
+    iera = ierb = 0;                      // enable
+    ipra = iprb = 0;                      // pending
+    imra = imrb = 0;                      // mask
+    isra = isrb = 0;                      // in-service
+    vr   = 0;                             // registre vecteur (mode auto, base 0)
+    // Timers : mode + recharge + compteurs vivants + backing store des données/contrôle
+    // (TACR $FFFA19, TBCR $FFFA1B, TCDCR $FFFA1D, TADR/TBDR/TCDR/TDDR…) tous remis à 0.
+    tbcr_ = tbReload_ = tbCounter_ = 0;
+    taReload_ = taCounter_ = 0;
+    tai_ = false;                         // ligne d'entrée Timer A (XSINT) au repos
+    for (uint8_t& b : timer_) b = 0;
+    xsint_ = false;                       // ligne XSINT son DMA (re-synchronisée ensuite par DmaSound::reset)
+    rxByte_ = 0; rxFull_ = false; rxOverrun_ = false;   // USART : tampon vidé (pas de RXFULL fantôme)
+    if (sched_) {                         // annule toute échéance de timer en attente
+        sched_->cancel(Scheduler::TIMER_A);
+        sched_->cancel(Scheduler::TIMER_B);
+        sched_->cancel(Scheduler::TIMER_B_DELAY);
+        sched_->cancel(Scheduler::TIMER_C);
+        sched_->cancel(Scheduler::TIMER_D);
+    }
+}
+
 // Les registres MFP sont sur les adresses IMPAIRES à partir de $FFFA00.
 // On indexe par l'offset bas (addr & 0x3F).
 uint8_t Mfp::read8(uint32_t addr) {

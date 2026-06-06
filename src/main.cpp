@@ -641,6 +641,10 @@ int main(int argc, char** argv) {
         machine.fdc.setSoundSink([&drive](FdcSound e) { drive.onEvent(e); });
     Audio audio(machine.psg, driveSoundOn ? &drive : nullptr, &machine.dmasnd);
     audio.start();   // échec silencieux possible (CI / pas de carte son)
+    // Modèle « push » (Phase C) : on ARME l'horodatage des écritures PSG (cycle CPU dans
+    // la trame). Dès lors, write8 enregistre les écritures et la synthèse les rejoue au bon
+    // instant (digidrums/sync-buzzer). produceFrame (après runFrame) génère et empile la trame.
+    machine.psg.setCycleClock([&machine] { return machine.frameRelCycle(); });
 
     GlScreen screen;
     screen.init();
@@ -797,6 +801,7 @@ int main(int argc, char** argv) {
         machine.cpu.updateIpl();               // entrées reçues → réévalue l'IPL
 
         machine.runFrame();                    // une trame complète (timing + décodage)
+        audio.produceFrame(machine.frameCycles());   // génère le son de la trame → anneau (modèle push)
         screen.update(machine.shifter.pixels(), machine.shifter.width(), machine.shifter.height());
 
         int fbw = 0, fbh = 0;
