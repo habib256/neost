@@ -11,6 +11,34 @@ Rtc::Rtc() {
     initFromHostTime();
 }
 
+Rtc::DateTime Rtc::getDateTime() {
+    catchUp();
+    auto get = [&](int u, int t) { return d_[u] + d_[t] * 10; };
+    return { get(0, 1), get(2, 3), get(4, 5), int(d_[6]), get(7, 8), get(9, 10), get(11, 12) };
+}
+
+void Rtc::setDateTime(const DateTime& dt) {
+    auto set = [&](int u, int t, int v) {
+        if (v < 0) v = 0;
+        d_[u] = uint8_t(v % 10);
+        d_[t] = uint8_t((v / 10) % 10);
+    };
+    set(0, 1, dt.sec);
+    set(2, 3, dt.min);
+    set(4, 5, dt.hour);
+    d_[6] = uint8_t(dt.wday & 0x0F);
+    set(7, 8, dt.day);
+    set(9, 10, dt.month);
+    set(11, 12, dt.year);
+    primed_ = false;                             // recale la phase au prochain accès MMIO
+}
+
+void Rtc::advanceSeconds(int64_t n) {
+    if (n <= 0) return;
+    if (n > 90000) n = 90000;                    // même borne que catchUp (>1 jour ignoré)
+    while (n-- > 0) tickOneSecond();
+}
+
 void Rtc::initFromHostTime() {
     const std::time_t now = std::time(nullptr);
     const std::tm* tm = std::localtime(&now);

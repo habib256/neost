@@ -30,6 +30,8 @@ basse) → Enchanted Land (plante après le LOADING)**.
 
 > Plan détaillé : **[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md)** (ordonnanceur
 > d'événements datés, vidéo/MFP/FDC au cycle, validation par `trace_diff` ↔ Hatari).
+> **Inventaire exhaustif du travail restant** (diff Hatari ↔ NeoST par sous-système,
+> trié par priorité) : **[`docs/CYCLE_EXACT_INVENTORY.md`](docs/CYCLE_EXACT_INVENTORY.md)**.
 >
 > **Phases 1-6 faites** (cf. CHANGELOG : `Scheduler`, `runFrame` événementiel à horloge
 > continue, vidéo au cycle, timers MFP A/B/C/D datés, géométries 50/60/71 Hz, quantum
@@ -160,11 +162,13 @@ basse) → Enchanted Land (plante après le LOADING)**.
       l'overlay d'écriture dans un fichier `.wd1772` (en mémoire pour l'instant, perdu à la
       fermeture) ; (4) son qui démarre un peu tard sur certains STX (à investiguer) ;
       (5) images STX HD / densité. Réf. `floppies/stx.c`.
-- [ ] Masquage d'adresse DMA (octet haut `&0x3f`, bas word-align `&0xfe`) _(faible valeur)_ —
-      réf. `fdc.c:FDC_WriteDMAAddress`
-- [ ] Compteur de secteurs DMA non relisible sur le vrai HW _(risque élevé)_ — réf.
-      `fdc.c:FDC_DiskControllerStatus_ReadWord`
-- [ ] Accès octet à `$FF8604/06` devrait fauter sur ST non-Falcon _(risque élevé)_ — réf. `fdc.c`
+- [x] **Masquage d'adresse DMA** (octet haut `&0x3f/0x7f/0xff`, bas word-align `&0xfe`) —
+      port `FDC_WriteDMAAddress` / `DMA_MaskAddressHigh` (cf. CHANGELOG §Disquette).
+- [x] **Compteur de secteurs DMA non relisible** : lecture SCREG renvoie `ff8604recent_`
+      (pas `dmaSectorCount_`) ; statut DMA bits 3-15 depuis le dernier accès $FF8604 —
+      réf. `fdc.c:FDC_DiskControllerStatus_ReadWord`, `FDC_DmaStatus_ReadWord`.
+- [x] **Accès octet à `$FF8604/06` → bus error** (ST non-Falcon) : largeur d'accès
+      propagée par le bus ; faute dans le handler FDC — réf. `fdc.c`, `ioMemTabSTE.c`.
 - [x] **Timing réel** : modèle ROTATIONNEL fidèle (position tête / index, latence par secteur,
       spin-up 6 tours, head-load, DRQ/FIFO octet par octet, INTRQ daté) — port de la machine à
       états `_ST` d'Hatari (`fdc.c` : `FDC_Update*Cmd`, `FDC_NextSectorID_FdcCycles_ST`,
@@ -207,7 +211,11 @@ basse) → Enchanted Land (plante après le LOADING)**.
       écritures PSG horodatées + rejeu (`YM2149::synthesizeFrame`) → capture les modulations
       sous-buffer ; anneau SPSC (`SampleRing`) ; `Audio::produceFrame` (émulation) / `render` (drain).
       🎯 étalon : **Xenon 2**, **Turrican** — digidrums. _Reste : synthèse interne 250 kHz +
-      rééchantillonnage, FIFO/anti-repliement DMA, ajustement latence/anti-dérive **à valider à l'oreille**._
+      rééchantillonnage, FIFO/anti-repliement DMA. La latence/anti-dérive est VALIDÉE :
+      le « son haché et ralenti » venait de la CADENCE de la boucle GUI (1 trame/itération
+      à ~40 fps réels + vsync bloquant + bridage 20 ms fixe ≠ géométrie 60 Hz) — résolu
+      par la boucle de RATTRAPAGE (cf. CHANGELOG §Audio, 0 underrun mesuré ; compteur
+      d'underruns + cadence observée désormais imprimés sur stderr en cas de problème)._
 - [x] **Musique muette sur la majorité des titres** — RÉSOLU par la Phase C (écritures registres
       horodatées/rejouées) + le fix d'amorçage de l'anneau (latence ~80 ms au lieu de « 30 s »).
       **Validé à l'oreille sur _Magic Pocket_.**
@@ -236,8 +244,6 @@ basse) → Enchanted Land (plante après le LOADING)**.
       — réf. MAME `st_user_map`
 
 ## Stockage & contrôleurs
-- [ ] **STX / Pasti** : chantier commencé (parseur `StxImage` + premiers hooks FDC), à terminer
-      plus tard : montage réel, timings/fuzzy bits, champs ID et validation protections.
 - [ ] **GEMDOS HD** : monter un **dossier hôte comme lecteur C:** — très pratique sans image
       — réf. `gemdos.c`
 - [ ] **ACSI complet** (jusqu'à 8 périphériques, boot disque dur TOS) — réf. `hdc.c`, MAME
@@ -262,12 +268,14 @@ basse) → Enchanted Land (plante après le LOADING)**.
   CustomCodeDefinitions de Hatari)
 
 ## Outillage / qualité
-- [ ] **Logiciels étalons au headless** — rapatrier les démos freeware via `tools/fetch_disk.py`
-      et les passer au headless (`--frames`/`--screenshot`/`--irq`, diff oracle Hatari) :
-      **The Cuddly Demos** (bordures), **The Union Demo** (réentrance IRQ Timer A+B),
-      **ST-STE Hardware Test** (Troed : timings Shifter/mémoire), **Hatari Test Suite** (68000).
-      Jeux commerciaux (Spectrum 512, Dungeon Master, Xenon 2, Enchanted Land) = images perso.
-      Catalogue complet → [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md).
+- [~] **Logiciels étalons au headless** — infra en place : `tools/etalons.json` (manifeste),
+      `tools/fetch_etalons.py` (fetch freeware), `tools/run_etalons.py` (captures +
+      régression vs `tests/reference/`), `tools/compare_screenshot.py` (diff pixel,
+      crop active/buffer), `tools/hatari_oracle.sh` (oracle PNG, `--oracle`). Étalon
+      intégrés : glue_selftest, EmuTOS STE boot, Spectrum 512 diapo, overscan_top ;
+      fetch auto : Cuddly Demos (fujiology). **Reste** : calibrer frames + références
+      Cuddly/Union/Troed/Hatari Test Suite ; rapatrier Union (planetemu manuel).
+      Catalogue → [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md).
 - [ ] **Comparaison MAME ↔ NeoST** (memory map, bus errors, FDC/MMU FIFO, blitter, SCC).
 - [ ] Capturer la **trace Hatari de référence** pour `trace_diff` (Arkanoid & co).
 - [ ] **Matrice de compatibilité MegaSTE** : TOS 2.05/06, EmuTOS, 1/2/4 Mo, 8/16 MHz, cache

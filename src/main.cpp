@@ -19,6 +19,7 @@
 #endif
 #include <cstdint>
 #include <cstdio>
+#include <ctime>
 #include <chrono>
 #include <thread>
 #include <string>
@@ -57,8 +58,33 @@ struct Config { std::string rom; std::string disk; std::string cart; bool mono =
                 std::string mem = "512k"; bool kbdjoy = false; int joyport = 1;
                 float joydeadzone = 0.30f; bool fastfdc = false;
                 bool showDisk = true, showCart = true, showHex = true, showCpu = true;
-                bool showJoy = false; };
+                bool showJoy = false;
+                std::string rtc; std::time_t rtcSaved = 0; };
 static std::string cfgPath(const std::string& exeDir) { return exeDir + "/../neost.cfg"; }
+
+static bool parseRtcConfig(const std::string& s, Rtc::DateTime& dt) {
+    return std::sscanf(s.c_str(), "%d,%d,%d,%d,%d,%d,%d",
+                       &dt.sec, &dt.min, &dt.hour, &dt.wday,
+                       &dt.day, &dt.month, &dt.year) == 7;
+}
+static void loadRtcFromConfig(Machine& m, const Config& c) {
+    Rtc::DateTime dt;
+    if (!c.rtc.empty() && parseRtcConfig(c.rtc, dt)) {
+        m.rtc.setDateTime(dt);
+        if (c.rtcSaved > 0) {
+            const std::time_t now = std::time(nullptr);
+            if (now > c.rtcSaved) m.rtc.advanceSeconds(now - c.rtcSaved);
+        }
+    }
+}
+static void snapshotRtc(Machine& m, Config& c) {
+    const Rtc::DateTime dt = m.rtc.getDateTime();
+    char buf[80];
+    std::snprintf(buf, sizeof(buf), "%d,%d,%d,%d,%d,%d,%d",
+                  dt.sec, dt.min, dt.hour, dt.wday, dt.day, dt.month, dt.year);
+    c.rtc = buf;
+    c.rtcSaved = std::time(nullptr);
+}
 static Config loadConfig(const std::string& exeDir) {
     Config c;
     std::ifstream f(cfgPath(exeDir));
@@ -81,10 +107,13 @@ static Config loadConfig(const std::string& exeDir) {
         else if (line.rfind("showHex=", 0) == 0) c.showHex = (line.substr(8) == "1");
         else if (line.rfind("showCpu=", 0) == 0) c.showCpu = (line.substr(8) == "1");
         else if (line.rfind("showJoy=", 0) == 0) c.showJoy = (line.substr(8) == "1");
+        else if (line.rfind("rtc_saved=", 0) == 0) c.rtcSaved = std::strtoll(line.substr(10).c_str(), nullptr, 10);
+        else if (line.rfind("rtc=", 0) == 0) c.rtc = line.substr(4);
     }
     return c;
 }
-static void saveConfig(const std::string& exeDir, const Config& c) {
+static void saveConfig(const std::string& exeDir, Config& c, Machine* machine = nullptr) {
+    if (machine) snapshotRtc(*machine, c);
     std::ofstream f(cfgPath(exeDir));
     if (!f) f.open("neost.cfg");
     if (f) f << "rom=" << c.rom << "\ndisk=" << c.disk << "\ncart=" << c.cart
@@ -96,7 +125,8 @@ static void saveConfig(const std::string& exeDir, const Config& c) {
              << "\nshowCart=" << (c.showCart ? 1 : 0)
              << "\nshowHex=" << (c.showHex ? 1 : 0)
              << "\nshowCpu=" << (c.showCpu ? 1 : 0)
-             << "\nshowJoy=" << (c.showJoy ? 1 : 0) << "\n";
+             << "\nshowJoy=" << (c.showJoy ? 1 : 0)
+             << "\nrtc=" << c.rtc << "\nrtc_saved=" << c.rtcSaved << "\n";
 }
 
 #if defined(NEOST_WITH_IMGUI)
@@ -123,6 +153,7 @@ static void saveConfig(const std::string& exeDir, const Config& c) {
 #define ICON_FA_COMPACT_DISC  "\xef\x94\x9f"
 #define ICON_FA_MEMORY        "\xef\x94\xb8"
 #define ICON_FA_PALETTE       "\xef\x94\xbf"
+#define ICON_FA_CLOCK         "\xef\x80\x97"
 
 // Bouton à ICÔNE SEULE (le texte est superflu quand le pictogramme est explicite) :
 // l'infobulle au survol rappelle l'action. Renvoie true au clic.
@@ -623,7 +654,15 @@ int main(int argc, char** argv) {
     GLFWwindow* window = glfwCreateWindow(1280, 860, "NeoST — Atari ST", nullptr, nullptr);
     if (!window) { glfwTerminate(); return 1; }
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);                    // VSync : cadence la boucle
+    // VSync DÉSACTIVÉ : la boucle est cadencée par le bridage au temps émulé
+    // (sleep_until, cf. plus bas), pas par l'écran. Avec vsync ON, swapBuffers
+    // BLOQUE jusqu'au vblank suivant : sur un écran 60 Hz, le sleep à ~20 ms +
+    // l'attente du vblank faisaient battre la boucle à ~30-37 fps au lieu de 50 →
+    // temps émulé ralenti de 25-40 % (musique LENTE, tempo cadencé par les IRQ
+    // émulées) et anneau audio produit sous le débit drainé (son HACHÉ, bruits
+    // lecteur compris — même anneau). Le modèle « push » audio exige que la boucle
+    // tienne EXACTEMENT la cadence des trames émulées.
+    glfwSwapInterval(0);
 
     // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
     const MachineType machType0 = Machine::adjustMachineForTos(parseMachine(cfg.machine), tosPath);
@@ -641,7 +680,8 @@ int main(int argc, char** argv) {
     machine.mfp.setColorMonitor(!cfg.mono);   // moniteur mémorisé (avant le reset)
     machine.fdc.setFastFdc(cfg.fastfdc);      // FDC rapide mémorisé (accès disque ÷10)
     machine.reset();
-    cfg.rom = romLogical; saveConfig(exeDir, cfg);   // mémorise dès le lancement
+    loadRtcFromConfig(machine, cfg);                 // horloge Mega : reprise neost.cfg + pont hôte
+    cfg.rom = romLogical; saveConfig(exeDir, cfg, &machine);
 
     // Son : un seul périphérique (Audio) mixe le YM2149 ET les bruits mécaniques
     // du lecteur. Le cœur émet des FdcSound, DriveSound joue les WAV de
@@ -748,13 +788,21 @@ int main(int argc, char** argv) {
     std::printf("[main] Joystick : manette USB auto (port 1) | F11 = émulation "
                 "clavier (flèches + Ctrl droit) | menu « Joystick »\n");
 
-    // Bridage à 50 fps (PAL) : indispensable pour que le temps émulé colle au
-    // temps réel — sinon le compteur 200 Hz d'EmuTOS s'emballe et les écarts de
-    // double-clic (mesurés en tics) deviennent trop grands. Le vsync ne suffit
-    // pas (60 Hz, voire non limitant).
+    // Bridage à la durée ÉMULÉE de chaque trame : indispensable pour que le temps
+    // émulé colle au temps réel — sinon le compteur 200 Hz d'EmuTOS s'emballe et les
+    // écarts de double-clic (mesurés en tics) deviennent trop grands. Le vsync ne
+    // suffit pas (60 Hz, voire non limitant). ⚠ La période N'EST PAS fixe : la
+    // géométrie vidéo (50/60/71 Hz, cf. Shifter::Geometry) change la durée d'une
+    // trame — 313×512 cyc ≈ 19,98 ms (50 Hz), 263×508 ≈ 16,66 ms (60 Hz, le défaut
+    // d'EmuTOS US et de beaucoup de jeux NTSC), 501×224 ≈ 13,99 ms (mono 71 Hz).
+    // L'ancien bridage FIXE à 20 ms ralentissait un écran 60 Hz de ~17 % : temps
+    // émulé < temps réel → musique RALENTIE et anneau audio affamé (son HACHÉ, y
+    // compris les bruits du lecteur, mixés dans le même anneau) — produceFrame
+    // pousse `frameCycles × rate / 8 MHz` échantillons par trame, le thread audio
+    // en draine `rate` par seconde : la cadence trame doit suivre la géométrie.
     using clock = std::chrono::steady_clock;
-    constexpr auto kFramePeriod = std::chrono::microseconds(20000);   // 1/50 s
-    auto nextFrame = clock::now();
+    static constexpr double kCpuHz = 8021248.0;   // horloge CPU/bus (PAL)
+    auto emuNext = clock::now();   // échéance réelle de la prochaine trame émulée
 
     double lastMx = 0, lastMy = 0;
     while (!glfwWindowShouldClose(window)) {
@@ -787,7 +835,7 @@ int main(int argc, char** argv) {
             const bool f11 = glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS;
             if (f11 && !f11Prev) {
                 g_kbdJoy = !g_kbdJoy;
-                cfg.kbdjoy = g_kbdJoy; saveConfig(exeDir, cfg);
+                cfg.kbdjoy = g_kbdJoy; saveConfig(exeDir, cfg, &machine);
                 std::fprintf(stderr, "[joystick] émulation clavier %s (port %d)\n",
                              g_kbdJoy ? "ON" : "OFF", g_kbdJoyPort);
             }
@@ -812,8 +860,32 @@ int main(int argc, char** argv) {
 
         machine.cpu.updateIpl();               // entrées reçues → réévalue l'IPL
 
-        machine.runFrame();                    // une trame complète (timing + décodage)
-        audio.produceFrame(machine.frameCycles());   // génère le son de la trame → anneau (modèle push)
+        // RATTRAPAGE : on émule autant de trames que le temps réel l'exige depuis la
+        // dernière itération (pattern émulateur classique). Une itération GUI coûte
+        // ce qu'elle coûte (ImGui + GL + granularité de sleep macOS ≈ 22-25 ms,
+        // App Nap, fenêtre déplacée…) : si on n'exécutait qu'UNE trame par tour, la
+        // boucle plafonnait à ~40 trames/s → temps émulé RALENTI de 20 % et anneau
+        // audio affamé (son HACHÉ — le bug « musique lente + hachée »). Ici le temps
+        // émulé suit le temps réel quel que soit le débit du GUI : tour lent → 2
+        // trames émulées (l'affichage en saute une, inaperçu), tour rapide → 0 ou 1.
+        // `emuNext` = échéance réelle de la PROCHAINE trame émulée ; chaque trame la
+        // repousse de SA durée émulée (géométrie 50/60/71 Hz). Garde-fou : après une
+        // longue pause (drag de fenêtre…), on abandonne le retard au-delà de 4 trames
+        // au lieu de spiraler.
+        {
+            // 6 trames max ≈ 120 ms de retard résorbable d'un coup : un stall GUI
+            // ponctuel (drag de fenêtre, rafale disque) plus court que ça se rattrape
+            // SANS trou audible (le coussin de l'anneau fait ~85 ms).
+            int ran = 0;
+            while (clock::now() >= emuNext && ran < 6) {
+                machine.runFrame();                          // une trame (timing + décodage)
+                audio.produceFrame(machine.frameCycles());   // son de la trame → anneau (push)
+                emuNext += std::chrono::nanoseconds(
+                    static_cast<int64_t>(double(machine.frameCycles()) * 1e9 / kCpuHz));
+                ++ran;
+            }
+            if (ran == 6 && clock::now() > emuNext) emuNext = clock::now();  // pause longue : resync
+        }
         screen.update(machine.shifter.pixels(), machine.shifter.width(), machine.shifter.height());
 
         int fbw = 0, fbh = 0;
@@ -847,7 +919,7 @@ int main(int argc, char** argv) {
                     const char* const labels[] = { "ST", "Mega ST", "STE", "Mega STE" };
                     for (int i = 0; i < 4; ++i)
                         if (ImGui::MenuItem(labels[i], nullptr, cfg.machine == ids[i])) {
-                            cfg.machine = ids[i]; saveConfig(exeDir, cfg); reqRebuild = true;
+                            cfg.machine = ids[i]; saveConfig(exeDir, cfg, &machine); reqRebuild = true;
                         }
                     ImGui::EndMenu();
                 }
@@ -856,7 +928,7 @@ int main(int argc, char** argv) {
                     const char* const mlabels[] = { "256 Ko", "512 Ko", "1 Mo", "2 Mo", "4 Mo" };
                     for (int i = 0; i < 5; ++i)
                         if (ImGui::MenuItem(mlabels[i], nullptr, cfg.mem == mids[i])) {
-                            cfg.mem = mids[i]; saveConfig(exeDir, cfg); reqRebuild = true;
+                            cfg.mem = mids[i]; saveConfig(exeDir, cfg, &machine); reqRebuild = true;
                         }
                     ImGui::EndMenu();
                 }
@@ -865,9 +937,15 @@ int main(int argc, char** argv) {
                     const char* const clabels[] = { "Moira (cycle-exact)", "Musashi" };
                     for (int i = 0; i < 2; ++i)
                         if (ImGui::MenuItem(clabels[i], nullptr, cfg.cpu == cids[i])) {
-                            cfg.cpu = cids[i]; saveConfig(exeDir, cfg); reqRebuild = true;
+                            cfg.cpu = cids[i]; saveConfig(exeDir, cfg, &machine); reqRebuild = true;
                         }
                     ImGui::EndMenu();
+                }
+                if (machineIsMega(machine.bus.machine)) {
+                    const Rtc::DateTime dt = machine.rtc.getDateTime();
+                    ImGui::Separator();
+                    ImGui::Text(ICON_FA_CLOCK " RTC : %02d/%02d/%04d  %02d:%02d:%02d",
+                                dt.day, dt.month, 1980 + dt.year, dt.hour, dt.min, dt.sec);
                 }
                 // Image TOS/EmuTOS (.img/.rom du dossier roms/), chargée à chaud.
                 if (ImGui::BeginMenu(ICON_FA_SAVE " ROM")) {
@@ -894,7 +972,7 @@ int main(int argc, char** argv) {
                         for (const auto& p : roms) {
                             const std::string name = p.filename().string();
                             if (ImGui::MenuItem(name.c_str(), nullptr, name == curRom)) {
-                                cfg.rom = p.string(); saveConfig(exeDir, cfg); reqRebuild = true;
+                                cfg.rom = p.string(); saveConfig(exeDir, cfg, &machine); reqRebuild = true;
                             }
                         }
                     } else {
@@ -931,7 +1009,7 @@ int main(int argc, char** argv) {
                 if (ImGui::MenuItem(ICON_FA_BOLT " FDC rapide (accès disque ÷10)", nullptr, cfg.fastfdc)) {
                     cfg.fastfdc = !cfg.fastfdc;
                     machine.fdc.setFastFdc(cfg.fastfdc);
-                    saveConfig(exeDir, cfg);
+                    saveConfig(exeDir, cfg, &machine);
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem(ICON_FA_SIGN_OUT_ALT " Quitter")) glfwSetWindowShouldClose(window, 1);
@@ -945,14 +1023,14 @@ int main(int argc, char** argv) {
             if (ImGui::BeginMenu(ICON_FA_GAMEPAD " Joystick")) {
                 // Émulation au clavier (flèches + Ctrl droit). F11 bascule aussi.
                 if (ImGui::MenuItem(ICON_FA_KEYBOARD " Émulation clavier (flèches + Ctrl droit)", "F11", &g_kbdJoy)) {
-                    cfg.kbdjoy = g_kbdJoy; saveConfig(exeDir, cfg);
+                    cfg.kbdjoy = g_kbdJoy; saveConfig(exeDir, cfg, &machine);
                 }
                 if (ImGui::BeginMenu(ICON_FA_GAMEPAD " Port émulé au clavier")) {
                     if (ImGui::MenuItem("Port 1 (jeux)", nullptr, g_kbdJoyPort == 1)) {
-                        g_kbdJoyPort = cfg.joyport = 1; saveConfig(exeDir, cfg);
+                        g_kbdJoyPort = cfg.joyport = 1; saveConfig(exeDir, cfg, &machine);
                     }
                     if (ImGui::MenuItem("Port 0 (souris)", nullptr, g_kbdJoyPort == 0)) {
-                        g_kbdJoyPort = cfg.joyport = 0; saveConfig(exeDir, cfg);
+                        g_kbdJoyPort = cfg.joyport = 0; saveConfig(exeDir, cfg, &machine);
                     }
                     ImGui::EndMenu();
                 }
@@ -966,7 +1044,7 @@ int main(int argc, char** argv) {
                     if (g_joyDeadzone > 0.95f) g_joyDeadzone = 0.95f;
                 }
                 if (ImGui::IsItemDeactivatedAfterEdit()) {
-                    cfg.joydeadzone = g_joyDeadzone; saveConfig(exeDir, cfg);
+                    cfg.joydeadzone = g_joyDeadzone; saveConfig(exeDir, cfg, &machine);
                 }
                 ImGui::Separator();
                 // Manettes USB détectées (la 1re → port 1, la 2e → port 0).
@@ -1009,6 +1087,12 @@ int main(int argc, char** argv) {
             ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
             if (ImGui::Checkbox("Son lecteur", &driveSoundOn)) drive.setEnabled(driveSoundOn);
         }
+        if (machineIsMega(machine.bus.machine)) {
+            const Rtc::DateTime dt = machine.rtc.getDateTime();
+            ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
+            ImGui::Text(ICON_FA_CLOCK " %02d/%02d/%04d %02d:%02d:%02d",
+                        dt.day, dt.month, 1980 + dt.year, dt.hour, dt.min, dt.sec);
+        }
         ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
         if (IconButton(color ? ICON_FA_ADJUST : ICON_FA_PALETTE, color ? "Passer en Mono" : "Passer en Couleur"))
             reqMonitor = color ? 0 : 1;
@@ -1030,7 +1114,7 @@ int main(int argc, char** argv) {
         // Un réglage joystick a changé dans la fenêtre → resauve neost.cfg.
         if (g_joyCfgDirty) {
             cfg.kbdjoy = g_kbdJoy; cfg.joyport = g_kbdJoyPort; cfg.joydeadzone = g_joyDeadzone;
-            saveConfig(exeDir, cfg); g_joyCfgDirty = false;
+            saveConfig(exeDir, cfg, &machine); g_joyCfgDirty = false;
         }
         ImGui::Render();
         ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
@@ -1038,22 +1122,22 @@ int main(int argc, char** argv) {
         // Disk Library : montage / éjection à chaud du lecteur A.
         if (!reqMount.empty()) {
             machine.fdc.loadImage(reqMount);
-            cfg.disk = reqMount; saveConfig(exeDir, cfg);
+            cfg.disk = reqMount; saveConfig(exeDir, cfg, &machine);
         }
         if (reqEject) {
             machine.fdc.eject();
-            cfg.disk.clear(); saveConfig(exeDir, cfg);
+            cfg.disk.clear(); saveConfig(exeDir, cfg, &machine);
         }
         // Cart Library : branchement / éjection à chaud du port cartouche.
         if (!reqMountCart.empty()) {
             if (machine.loadCart(reqMountCart)) {
-                cfg.cart = reqMountCart; saveConfig(exeDir, cfg);
+                cfg.cart = reqMountCart; saveConfig(exeDir, cfg, &machine);
                 reqHardReset = true;       // le TOS sonde le port cartouche au boot
             }
         }
         if (reqEjectCart) {
             machine.ejectCart();
-            cfg.cart.clear(); saveConfig(exeDir, cfg);
+            cfg.cart.clear(); saveConfig(exeDir, cfg, &machine);
             reqHardReset = true;           // relance sans la ROM $FA0000
         }
 #else
@@ -1065,7 +1149,7 @@ int main(int argc, char** argv) {
             machine.mfp.setColorMonitor(reqMonitor == 1);
             machine.reset();
             cfg.mono = (reqMonitor == 0);   // mémorise le mode
-            saveConfig(exeDir, cfg);
+            saveConfig(exeDir, cfg, &machine);
         }
         // Application des requêtes (en fin de boucle, hors rendu ImGui) :
         if (reqRebuild)   applyConfig();       // modèle/RAM/cœur/ROM → reconfig à chaud
@@ -1081,11 +1165,17 @@ int main(int argc, char** argv) {
 
         glfwSwapBuffers(window);
 
-        // Cadence à 50 Hz réels (resync si on a pris du retard, sans accumuler).
-        nextFrame += kFramePeriod;
+        // Dort jusqu'à l'échéance de la prochaine trame émulée (posée par la boucle
+        // de rattrapage ci-dessus). En retard → pas de sommeil, le rattrapage du
+        // prochain tour exécutera les trames dues. Le sommeil est plafonné à une
+        // trame : on garde le GUI réactif même si l'horloge dérive.
         const auto now = clock::now();
-        if (now < nextFrame) std::this_thread::sleep_until(nextFrame);
-        else                 nextFrame = now;
+        if (now < emuNext) {
+            auto wake = emuNext;
+            const auto cap = now + std::chrono::milliseconds(20);
+            if (wake > cap) wake = cap;
+            std::this_thread::sleep_until(wake);
+        }
     }
 
     // Mémorise le dernier ROM, la disquette/cartouche montée et le moniteur.
@@ -1094,7 +1184,7 @@ int main(int argc, char** argv) {
     cfg.mono = !machine.mfp.colorMonitor();
     cfg.showDisk = g_showDisk; cfg.showCart = g_showCart; cfg.showHex = g_showHex;
     cfg.showCpu  = g_showCpu;  cfg.showJoy  = g_showJoy;
-    saveConfig(exeDir, cfg);
+    saveConfig(exeDir, cfg, &machine);
 
 #if defined(NEOST_WITH_IMGUI)
     // Écrit imgui.ini avant l'arrêt → garantit la sauvegarde de la taille de fenêtre

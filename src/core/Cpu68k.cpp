@@ -42,7 +42,7 @@ namespace {
     // chaque instruction dans la boucle run() pour rendre la main à l'horloge.
     // Musashi a son propre mécanisme (m68k_end_timeslice), ce drapeau ne sert qu'à Moira.
     bool    g_endSlice = false;
-    void    neostUpdateIpl();       // recalcule l'IPL (dispatch Musashi/Moira)
+    void    neostUpdateIpl(bool commit = false);   // recalcule l'IPL (dispatch Musashi/Moira)
 }
 
 // -----------------------------------------------------------------------------
@@ -97,6 +97,18 @@ public:
     // de SAUTER l'attente au lieu de la simuler cycle par cycle (cf. run()).
     bool isStopped() const { return (flags & moira::State::STOPPED) != 0; }
 
+    // Committe l'IPL : broche + registre échantillonné (reg.ipl). setIPL ne pose que
+    // la broche, que Moira n'échantillonne qu'au point de poll de l'instruction
+    // SUIVANTE (pipeline IPL fidèle au 68000) — correct pour un changement en plein
+    // accès MMIO, mais à une frontière d'instruction (événement daté MFP_IRQ, délai
+    // 4 cyc déjà écoulé) l'exception doit partir AVANT l'instruction suivante,
+    // comme Hatari (MFP_ProcessIRQ au test de frontière). Cf. Cpu68k::updateIplNow.
+    void commitIpl(moira::u8 lvl) {
+        setIPL(lvl);                       // broche (+ CHECK_IRQ si changement)
+        reg.ipl = lvl;                     // déjà échantillonné : visible immédiatement
+        flags |= moira::State::CHECK_IRQ;  // force le re-test même si la broche n'a pas bougé
+    }
+
     moira::u16 readIrqUserVector(moira::u8 level) const override {
         if (level == 6 && g_bus->mfp) {                 // MFP : vecteur fourni par le 68901
             const int v = g_bus->mfp->iack();
@@ -116,7 +128,11 @@ NeostMoira* g_moira = nullptr;     // cœur Moira actif (nullptr = Musashi)
 
 namespace {
 // Recalcule l'IPL présenté au CPU ACTIF : MFP (6) > VBL (4) > HBL (2).
-void neostUpdateIpl() {
+// `commit` (frontière d'instruction UNIQUEMENT) : sous Moira, pose aussi reg.ipl
+// (valeur déjà échantillonnée) pour que l'exception parte avant l'instruction
+// suivante — cf. NeostMoira::commitIpl. Musashi prend l'IRQ à la frontière de
+// toute façon (m68k_set_irq suffit dans les deux modes).
+void neostUpdateIpl(bool commit) {
     const bool mfp6 = g_bus && g_bus->mfp && g_bus->mfp->irqPending();
     int lvl;
     // MegaSTE : TOUTES les IRQ sont GATÉES par le SCU (SysIntMask/VmeIntMask) avant
@@ -129,8 +145,13 @@ void neostUpdateIpl() {
         lvl = mfp6 ? 6 : g_vblPending ? 4 : g_hblPending ? 2 : 0;
     }
 #if defined(NEOST_HAS_MOIRA)
-    if (g_moira) { g_moira->setIPL(static_cast<moira::u8>(lvl)); return; }
+    if (g_moira) {
+        if (commit) g_moira->commitIpl(static_cast<moira::u8>(lvl));
+        else        g_moira->setIPL(static_cast<moira::u8>(lvl));
+        return;
+    }
 #endif
+    (void)commit;
 #if defined(NEOST_HAS_MUSASHI)
     m68k_set_irq(static_cast<unsigned int>(lvl));
 #endif
@@ -375,6 +396,10 @@ void Cpu68k::updateIpl() {
     neostUpdateIpl();
 }
 
+void Cpu68k::updateIplNow() {
+    neostUpdateIpl(/*commit=*/true);
+}
+
 void Cpu68k::raiseVbl() {
     g_vblPending = true;
     neostUpdateIpl();
@@ -416,6 +441,18 @@ uint16_t Cpu68k::sr() const {
     return static_cast<uint16_t>(m68k_get_reg(nullptr, M68K_REG_SR));
 #else
     return 0;
+#endif
+}
+
+bool Cpu68k::triggerBusError(uint32_t addr, bool write) {
+#if defined(NEOST_HAS_MOIRA)
+    if (g_moira) return g_moira->faultOrHalt(addr, write);
+#endif
+#if defined(NEOST_HAS_MUSASHI)
+    return neostBusError(addr, write);
+#else
+    (void)addr; (void)write;
+    return false;
 #endif
 }
 

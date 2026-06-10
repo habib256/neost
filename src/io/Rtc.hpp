@@ -22,6 +22,13 @@
 
 class Rtc {
 public:
+    // Date/heure décimale (année = 0..99 depuis 1980, comme GEMDOS).
+    struct DateTime {
+        int sec = 0, min = 0, hour = 0;
+        int wday = 0;                    // 0 = dimanche (tm_wday)
+        int day = 1, month = 1, year = 0;
+    };
+
     Rtc();
 
     // Source de l'horloge ÉMULÉE (cycle CPU absolu, continu). Branchée par Machine
@@ -31,6 +38,11 @@ public:
 
     uint8_t read8(uint32_t addr);            // $FFFC21-$FFFC3F (adresses impaires)
     void    write8(uint32_t addr, uint8_t v);
+
+    // Instantané après rattrapage (émulation + persistance neost.cfg).
+    DateTime getDateTime();
+    void     setDateTime(const DateTime& dt);
+    void     advanceSeconds(int64_t n);      // pont horloge hôte entre deux sessions (borné)
 
 private:
     void initFromHostTime(); // initialise la date comme Hatari (année GEMDOS depuis 1980)

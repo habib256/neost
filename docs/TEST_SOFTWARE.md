@@ -69,6 +69,31 @@ reproduit pas. → réf. NeoST : `Fdc` ; Hatari : `fdc.c`, `floppies/stx.c`.
 |--------|-----------|------------------|------------|
 | **Dungeon Master** | FTL | « **Fuzzy bits** » : flux affaibli volontairement → le WD1772 lit alternativement 0 ou 1 à chaque passage. + secteurs de tailles exotiques (8192 o) | Fidélité au flux physique (format `.STX`/`.IPF`) : timing de rotation exact + registres d'erreur du contrôleur. Une émulation logique échoue à lancer le jeu | « Support STX (Pasti) » + « Timing réel » (FDC cycle-exact) |
 
+## Suite headless NeoST (`tools/run_etalons.py`)
+
+Infra de non-régression par captures PPM (déterministe, sans GUI) :
+
+```sh
+# 1. Rapatrier les disques freeware listés dans tools/etalons.json
+python3 tools/fetch_etalons.py
+
+# 2. Générer les captures de référence (1ʳᵉ fois ou après correctif validé)
+python3 tools/run_etalons.py --update-ref
+
+# 3. Régression (compare NeoST vs tests/reference/*.ppm)
+python3 tools/run_etalons.py
+
+# Sous-ensemble + oracle Hatari pour une nouvelle référence externe
+python3 tools/run_etalons.py --only spectrum512_diapo --oracle
+python3 tools/compare_screenshot.py tests/out/foo_neost.ppm tests/reference/foo.png --crop active
+```
+
+Étalons intégrés aujourd'hui : **glue_selftest**, **EmuTOS STE boot**, **Spectrum 512 diapo**,
+**overscan_top** ; fetch auto : **Cuddly Demos** (`disks/etalons/cuddly_demos.msa`). Union Demo
+et Troed : à rapatrier / calibrer (frames `etalons.json`).
+
+---
+
 ## 5. Suites de test automatisées
 
 Micro-tests formalisés par la communauté (Hatari, Steem), à exécuter au headless plutôt

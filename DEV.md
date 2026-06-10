@@ -102,6 +102,10 @@ GUI), qui produit des **traces façon MAME** et des **captures PPM**.
 ./build/neost-headless <rom> --frames N --trace t.txt --regs --irq
 tail t.txt                                   # localiser la boucle d'attente (PC qui tourne)
 ./build/neost-headless <rom> --frames N --screenshot s.ppm   # sips -s format png s.ppm --out s.png
+
+# Suite étalons (captures + régression) : tools/run_etalons.py — voir docs/TEST_SOFTWARE.md
+python3 tools/fetch_etalons.py && python3 tools/run_etalons.py --update-ref
+python3 tools/run_etalons.py
 ```
 
 Options : `--cpu musashi|moira` (TESTER LES DEUX), `--machine st|megast|ste|megaste`,

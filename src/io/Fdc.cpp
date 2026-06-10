@@ -11,6 +11,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Fdc.hpp"
+#include "core/Cpu68k.hpp"
 #include "core/Bus.hpp"
 #include "core/YM2149.hpp"
 #include "io/Mfp.hpp"
@@ -31,6 +32,21 @@ enum : uint16_t {
     DMA_FLOPPY = 0x0080,        // gate DRQ disquette
     DMA_WRBIT  = 0x0100,        // sens : écriture vers la disquette
 };
+
+// Masque d'adresse DMA (port de Hatari m68000.c:DMA_MaskAddressHigh + fdc.c:FDC_WriteDMAAddress).
+// Octet haut limité selon la RAM (≤4 Mo → 0x3f, ≤8 Mo → 0x7f, >8 Mo → 0xff) ; bit0 du
+// bas forcé à 0 (alignement mot). move.b #$ff,$ff8609 → relu $3f ; move.b #$ff,$ff860d → $fe.
+namespace {
+uint32_t dmaMaskAddressHigh(std::size_t ramBytes) {
+    const std::size_t kb = ramBytes / 1024;
+    if (kb > 8u * 1024u) return 0xffu;
+    if (kb > 4u * 1024u) return 0x7fu;
+    return 0x3fu;
+}
+uint32_t dmaAddressMask(std::size_t ramBytes) {
+    return 0xff00fffeu | (dmaMaskAddressHigh(ramBytes) << 16);
+}
+} // namespace
 
 // --- Bits du registre de statut WD1772 (cf. Hatari fdc.h) -------------------
 //   type I  : INDEX(2) TR00(4) CRC(8) SEEKERR/RNF(10) SPINUP(20) WPRT(40) MOTOR(80)
@@ -498,7 +514,7 @@ void Fdc::fifoPush(uint8_t b) {
         const uint32_t a = (dmaAddr_ + uint32_t(j)) & 0x00FFFFFF;
         if (a < bus_.ram.size()) bus_.ram[a] = fifo_[j];
     }
-    dmaAddr_ = (dmaAddr_ + 16) & 0x00FFFFFF;
+    dmaAddr_ = (dmaAddr_ + 16) & dmaAddressMask(bus_.ram.size());
     fifoSize_ = 0;
     ff8604recent_ = uint16_t((fifo_[14] << 8) | fifo_[15]);
     dmaBytesInSector_ -= 16;
@@ -516,7 +532,7 @@ uint8_t Fdc::fifoPull() {
             const uint32_t a = (dmaAddr_ + uint32_t(j)) & 0x00FFFFFF;
             fifo_[j] = (a < bus_.ram.size()) ? bus_.ram[a] : 0;
         }
-        dmaAddr_ = (dmaAddr_ + 16) & 0x00FFFFFF;
+        dmaAddr_ = (dmaAddr_ + 16) & dmaAddressMask(bus_.ram.size());
         fifoSize_ = 15;
         ff8604recent_ = uint16_t((fifo_[14] << 8) | fifo_[15]);
         dmaBytesInSector_ -= 16;
@@ -539,7 +555,8 @@ uint16_t Fdc::dmaStatusWord() const {
     uint16_t s = 0;
     if (!dmaError_)            s |= 0x1;   // bit0 = pas d'erreur
     if (dmaSectorCount_ != 0) s |= 0x2;   // bit1 = compteur de secteurs ≠ 0
-    return s;
+    // Bits 3-15 = dernier accès $FF8604 (vérifié sur STF réel, cf. Hatari FDC_DmaStatus_ReadWord).
+    return uint16_t(s | (ff8604recent_ & 0xfff8));
 }
 
 // =============================================================================
@@ -1579,11 +1596,24 @@ bool Fdc::transitionForceWprt(int drive) {
 //  Accès mémoire MMIO $FF8600-$FF860F.
 // =============================================================================
 uint8_t Fdc::read8(uint32_t addr) {
+    // $FF8604/06 : accès octet → bus error sur ST (registres mot-seulement, cf. fdc.c).
+    if (bus_.ioAccessWidth() == 1) {
+        const unsigned off = addr & 0xF;
+        if (off >= 4 && off <= 7 && bus_.cpu) {
+            if (bus_.cpu->triggerBusError(addr, false)) return 0;
+        }
+    }
+    auto noteFf8604 = [&](uint8_t b) {
+        if (!(dmaMode_ & DMA_SCREG))
+            ff8604recent_ = uint16_t((ff8604recent_ & 0xff00) | b);
+    };
     switch (addr & 0xF) {
-        case 0x4: return 0;                          // data, octet haut (registre 8 bits)
+        case 0x4:                                    // data, octet haut
+            if (dmaMode_ & DMA_SCREG) return uint8_t(ff8604recent_ >> 8);
+            return 0;
         case 0x5:                                    // data, octet bas
-            if (dmaMode_ & DMA_SCREG)  return uint8_t(dmaSectorCount_);
-            if (dmaMode_ & DMA_CSACSI) return acsiStatus_;       // statut du contrôleur ACSI
+            if (dmaMode_ & DMA_SCREG) return uint8_t(ff8604recent_);
+            if (dmaMode_ & DMA_CSACSI) { const uint8_t v = acsiStatus_; noteFf8604(v); return v; }
             switch (dmaMode_ & (DMA_A1 | DMA_A0)) {
                 case 0: {             // FDC_CS : registre de statut
                     refreshDriveSide();
@@ -1609,11 +1639,12 @@ uint8_t Fdc::read8(uint32_t addr) {
                     if ((irqSignal_ & IRQ_FORCED) && !(interruptCond_ & INT_COND_IMMEDIATE))
                         irqSignal_ &= ~IRQ_FORCED;
                     fdcClearIrq();
+                    noteFf8604(str_);
                     return str_;
                 }
-                case DMA_A0: return tr_;                                // FDC_TR
-                case DMA_A1: return sr_;                                // FDC_SR
-                default:     return dr_;                                // FDC_DR
+                case DMA_A0: noteFf8604(tr_); return tr_;               // FDC_TR
+                case DMA_A1: noteFf8604(sr_); return sr_;               // FDC_SR
+                default:     noteFf8604(dr_); return dr_;               // FDC_DR
             }
         case 0x6: return 0;                          // status, octet haut
         case 0x7: return uint8_t(dmaStatusWord());   // status, octet bas
@@ -1629,6 +1660,12 @@ uint8_t Fdc::read8(uint32_t addr) {
 }
 
 void Fdc::write8(uint32_t addr, uint8_t v) {
+    if (bus_.ioAccessWidth() == 1) {
+        const unsigned off = addr & 0xF;
+        if (off >= 4 && off <= 7 && bus_.cpu) {
+            if (bus_.cpu->triggerBusError(addr, true)) return;
+        }
+    }
     switch (addr & 0xF) {
         case 0x4: dataHi_ = v; return;               // data, octet haut (latch)
         case 0x5:                                    // data, octet bas → action
@@ -1659,9 +1696,18 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
             if ((prev ^ dmaMode_) & 0x0100) dmaResetFifo();  // bascule du bit 8 → reset DMA
             return;
         }
-        case 0x9: dmaAddr_ = (dmaAddr_ & 0x00FFFF) | (uint32_t(v) << 16); return;
-        case 0xB: dmaAddr_ = (dmaAddr_ & 0xFF00FF) | (uint32_t(v) << 8);  return;
-        case 0xD: dmaAddr_ = (dmaAddr_ & 0xFFFF00) |  uint32_t(v);        return;
+        case 0x9:
+            dmaAddr_ = (dmaAddr_ & 0x00FFFFu) | (uint32_t(v) << 16);
+            dmaAddr_ &= dmaAddressMask(bus_.ram.size());   // FDC_WriteDMAAddress
+            return;
+        case 0xB:
+            dmaAddr_ = (dmaAddr_ & 0xFF00FFu) | (uint32_t(v) << 8);
+            dmaAddr_ &= dmaAddressMask(bus_.ram.size());
+            return;
+        case 0xD:
+            dmaAddr_ = (dmaAddr_ & 0xFFFF00u) | uint32_t(v);
+            dmaAddr_ &= dmaAddressMask(bus_.ram.size());
+            return;
         case 0xE: case 0xF: densityMode_ = v; return;    // $FF860E : densité DD/HD
         default:  return;
     }
@@ -1703,7 +1749,7 @@ void Fdc::executeAcsi() {
     auto toRam = [&](const uint8_t* src, uint32_t n) {
         for (uint32_t j = 0; j < n; ++j) { const uint32_t a = (dmaAddr_ + j) & 0x00FFFFFF;
             if (a < bus_.ram.size()) bus_.ram[a] = src[j]; }
-        dmaAddr_ += n;
+        dmaAddr_ = (dmaAddr_ + n) & dmaAddressMask(bus_.ram.size());
     };
     switch (op) {
         case 0x08: {                                     // READ(6) : disque → RAM
@@ -1716,7 +1762,8 @@ void Fdc::executeAcsi() {
             for (int i = 0; i < cnt && off + 512u <= hd_.size(); ++i, off += 512u)
                 for (uint32_t j = 0; j < 512u; ++j) { const uint32_t a = (src + uint32_t(i)*512u + j) & 0x00FFFFFF;
                     if (a < bus_.ram.size()) hd_[off + j] = bus_.ram[a]; }
-            dmaAddr_ += uint32_t(cnt) * 512u; dmaSectorCount_ = 0; break;
+            dmaAddr_ = (dmaAddr_ + uint32_t(cnt) * 512u) & dmaAddressMask(bus_.ram.size());
+            dmaSectorCount_ = 0; break;
         }
         case 0x12: {                                     // INQUIRY : identité du périphérique
             uint8_t inq[36] = {0};

@@ -99,26 +99,40 @@ void DmaSound::reset(bool cold) {
     }
 }
 
-// Décode une commande LMC1992 reçue par microwire. Le mot 16 bits ($FF8922) est
-// décalé en série, seuls les bits où le masque ($FF8924) vaut 1 sortent (MSB
-// d'abord). La commande utile fait 11 bits : %10 (adresse puce) + 3 bits de
-// registre + 6 bits de donnée. Registres : 3=volume maître, 4=droite, 5=gauche,
-// 1=basses, 2=aigus, 0=mixage (ces trois derniers stockés, filtrage = TODO).
+// Décode une commande LMC1992 reçue par microwire (port dmaSnd.c:DmaSnd_InterruptHandler_Microwire).
+// Une commande = un run CONTIGU de bits à 1 dans le masque ($FF8924) ; les bits à 0 du masque
+// terminent la commande. Si le run ne forme pas une adresse LMC valide (%10 + ≥9 bits), on
+// reprend la recherche au prochain '1' du masque (commandes invalides ignorées).
 void DmaSound::decodeMicrowire() {
-    uint16_t cmd = 0; int bits = 0;
-    for (int i = 15; i >= 0; --i)
-        if (mwMask_ & (1u << i)) { cmd = uint16_t((cmd << 1) | ((mwData_ >> i) & 1)); ++bits; }
-    if (bits < 11) return;                         // commande incomplète
-    const uint16_t c = cmd & 0x7FF;
-    if ((c >> 9) != 0b10) return;                  // n'adresse pas le LMC1992
-    const int reg = (c >> 6) & 0x07, data = c & 0x3F;
-    switch (reg) {
-        case 0: mwMixing_ = data; break;
-        case 1: mwBass_   = data; break;
-        case 2: mwTreble_ = data; break;
-        case 3: mwMaster_ = data; break;           // 0..40 → -80..0 dB
-        case 4: mwRight_  = data; break;           // 0..20 → -40..0 dB
-        case 5: mwLeft_   = data; break;
+    uint16_t cmd = 0;
+    int      cmdLen = 0;
+    for (int i = 15; i >= 0; --i) {
+        if (!(mwMask_ & (1u << i))) continue;
+        do {
+            cmd = uint16_t(cmd << 1);
+            ++cmdLen;
+            if (mwData_ & (1u << i)) cmd |= 1;
+            --i;
+        } while (i >= 0 && (mwMask_ & (1u << i)));
+
+        if (cmdLen >= 11 && ((cmd >> (cmdLen - 2)) & 0x03) == 0x02)
+            break;
+
+        if (i < 0) return;
+        cmd = 0;
+        cmdLen = 0;
+    }
+
+    if (cmdLen < 11 || ((cmd >> (cmdLen - 2)) & 0x03) != 0x02)
+        return;
+
+    switch ((cmd >> 6) & 0x07) {
+        case 0: mwMixing_ = cmd & 0x03; break;
+        case 1: mwBass_   = cmd & 0x0F; break;
+        case 2: mwTreble_ = cmd & 0x0F; break;
+        case 3: mwMaster_ = cmd & 0x3F; break;   // 0..40 → -80..0 dB
+        case 4: mwRight_  = cmd & 0x1F; break;   // 0..20 → -40..0 dB
+        case 5: mwLeft_   = cmd & 0x1F; break;
         default: break;
     }
 }

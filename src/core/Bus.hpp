@@ -111,6 +111,10 @@ public:
     // fautif + octet impair valide) alors que `move.b $FF8204` faute.
     bool busFaultN(uint32_t addr, unsigned n) const;
 
+    // Largeur de l'accès MMIO en cours (1/2/4 octets). Les registres FDC $FF8604/06
+    // ne tolèrent que les mots (Hatari nIoMemAccessSize) ; read16/write16 posent 2.
+    uint8_t ioAccessWidth() const { return ioAccessWidth_; }
+
     // Composants branchés sur le bus (injectés par main.cpp, pas de propriété).
     Shifter* shifter = nullptr;
     YM2149*  psg     = nullptr;
@@ -167,6 +171,8 @@ private:
     mutable MachineType          ioFaultMachine_ = MachineType::St;
     mutable bool                 ioFaultBuilt_   = false;
     void buildIoFault() const;       // (re)construit ioFault_ pour `machine`
+
+    mutable uint8_t ioAccessWidth_ = 1;   // largeur accès CPU courant (cf. ioAccessWidth)
 
     std::string cartPath_;           // chemin de l'image cartouche montée
 };

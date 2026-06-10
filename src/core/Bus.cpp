@@ -344,12 +344,22 @@ bool Bus::busFaultN(uint32_t addr, unsigned n) const {
 
 // --- Accès 16/32 bits : le 68000 est big-endian, on assemble octet par octet --
 uint16_t Bus::read16(uint32_t addr) {
-    return static_cast<uint16_t>((read8(addr) << 8) | read8(addr + 1));
+    const uint8_t saved = ioAccessWidth_;
+    ioAccessWidth_ = 2;
+    const uint16_t v = static_cast<uint16_t>((read8(addr) << 8) | read8(addr + 1));
+    ioAccessWidth_ = saved;
+    return v;
 }
 uint32_t Bus::read32(uint32_t addr) {
-    return (static_cast<uint32_t>(read16(addr)) << 16) | read16(addr + 2);
+    const uint8_t saved = ioAccessWidth_;
+    ioAccessWidth_ = 4;
+    const uint32_t v = (static_cast<uint32_t>(read16(addr)) << 16) | read16(addr + 2);
+    ioAccessWidth_ = saved;
+    return v;
 }
 void Bus::write16(uint32_t addr, uint16_t v) {
+    const uint8_t saved = ioAccessWidth_;
+    ioAccessWidth_ = 2;
     // Blitter ($FF8A00-$FF8A3F) : écriture MOT atomique — le registre contrôle
     // (BUSY, $FF8A3C) et le skew ($FF8A3D) tiennent dans un même mot ; il faut poser
     // les DEUX octets avant que BUSY ne démarre run() (sinon skew périmé → plans
@@ -360,14 +370,18 @@ void Bus::write16(uint32_t addr, uint16_t v) {
     }
     write8(addr,     static_cast<uint8_t>(v >> 8));
     write8(addr + 1, static_cast<uint8_t>(v));
+    ioAccessWidth_ = saved;
 }
 void Bus::write32(uint32_t addr, uint32_t v) {
+    const uint8_t saved = ioAccessWidth_;
+    ioAccessWidth_ = 4;
     if (addr >= 0xFF8A00 && addr + 3 <= 0xFF8A3F && blitter && machineHasBlitter(machine)) {
         blitter->write32(addr, v);    // écriture LONG atomique (idem write16)
         return;
     }
     write16(addr,     static_cast<uint16_t>(v >> 16));
     write16(addr + 2, static_cast<uint16_t>(v));
+    ioAccessWidth_ = saved;
 }
 
 // -----------------------------------------------------------------------------

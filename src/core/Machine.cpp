@@ -136,6 +136,13 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::TIMER_D, [this] { mfp.onTimerExpire(3); cpu.updateIpl(); });
     // Timer B en mode DÉLAI (≠ event-count) : daté par le MFP, déclenché ici.
     sched.setCallback(Scheduler::TIMER_B_DELAY, [this] { mfp.onTimerExpire(1); cpu.updateIpl(); });
+    // Visibilité différée du signal IRQ MFP : le 68901 met 4 cycles à propager IRQ
+    // vers le CPU (port MFP_IRQ_DELAY_TO_CPU). Le MFP arme cet événement à
+    // irqTime+4 ; on recalcule alors l'IPL en mode COMMIT (frontière d'instruction,
+    // délai écoulé → l'exception doit partir avant l'instruction suivante, comme
+    // Hatari MFP_ProcessIRQ — sinon le délai s'additionnerait au pipeline IPL de
+    // Moira et le test « T4 Video Counter » des diagnostics échoue).
+    sched.setCallback(Scheduler::MFP_IRQ, [this] { cpu.updateIplNow(); });
     // Machine à états du FDC (port Hatari) : chaque phase (spin-up, head-load,
     // latence rotationnelle, transfert DMA octet par octet, INTRQ, arrêt moteur)
     // est datée et avancée ici. L'INTRQ (GPIP5 + canal 7) peut être levée/effacée.

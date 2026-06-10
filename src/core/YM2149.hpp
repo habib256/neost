@@ -26,14 +26,17 @@ public:
     static constexpr double CLOCK_HZ = 2'000'000.0;
 
     // --- Interface MMIO (appelée par le Bus) --------------------------------
-    uint8_t read8(uint32_t /*addr*/) {
-        // $FF8800 ET $FF8802 renvoient le registre sélectionné : le décodage du PSG
-        // sur l'ST est partiel (seul A1 distingue select/data en écriture). Les
-        // diagnostics font des read-modify-write (bclr/bset) sur la donnée $FF8802
-        // du port A (R14) → il FAUT relire la valeur courante, pas 0xFF (choix délibéré
-        // NeoST conservé). Sélecteur ≥ 16 (registre invalide) → 0xFF, comme le YM2149
-        // réel qui n'a que 16 registres (port de psg.c:283).
-        return (selected_ < 16) ? regs_[selected_] : uint8_t(0xFF);
+    uint8_t read8(uint32_t addr) {
+        // Décodage partiel du PSG sur l'ST (A0/A1) : $FF8801/03 sont des lectures
+        // « void » → 0xFF (psg.c:PSG_ff880x_ReadByte). $FF8800/02 renvoient le
+        // registre sélectionné ; $FF8802 reste relisible pour les RMW diagnostics
+        // (bclr/bset port A R14) — choix délibéré NeoST, cf. CHANGELOG. Sélecteur ≥16
+        // → 0xFF (psg.c:283).
+        switch (addr & 3) {
+            case 1: case 3: return 0xFF;
+            default:
+                return (selected_ < 16) ? regs_[selected_] : uint8_t(0xFF);
+        }
     }
     void write8(uint32_t addr, uint8_t v) {
         switch (addr & 3) {
@@ -83,18 +86,21 @@ public:
     // regs_ est lu par le thread audio ; le mettre à 0 le rend silencieux aussitôt.
     void reset() {
         regs_.fill(0);
+        regs_[7]    = 0xFF;     // mixeur : tons/bruit désactivés au reset (cf. Sound_Reset → R7=0xff)
         regs_[14]   = 0xFF;     // port A au repos : lignes I/O (actives bas) toutes inactives — cf. psg.c:223
         selected_   = 0;
-        phase_.fill(0.0);
-        noiseLfsr_  = 1;
-        noisePhase_ = 0.0;
-        envPhase_   = 0.0;
-        envLevel_   = 31;
-        envDir_     = -1;
-        envHold_    = false;
+        tonePer_.fill(0); toneCnt_.fill(0); toneVal_.fill(0);
+        noisePer_ = noiseCnt_ = 0; noiseVal_ = 0;
+        envPer_ = envCnt_ = 0; envPos_ = 0; envShape_ = 0;
+        mixerT_.fill(0); mixerN_.fill(0);
+        envMask3_ = vol3_ = 0;
+        rndLfsr_ = 1; freqDiv2_ = 0;
+        buf250_.fill(0.0f); buf250Wr_ = buf250Rd_ = 0;
+        resampleFracN_ = 0;
         envReload_  = false;
-        hpfX1_ = hpfY0_ = 0.0;            // états des filtres de sortie (anti-DC + PWM)
-        lpfX1_ = lpfY0_ = 0.0f;
+        lpf250X1_ = lpf250Y0_ = 0.0f;
+        hpfX1_ = hpfY0_ = 0.0;
+        updateFromRegs(regs_.data());
         audioRegs_ = regs_;               // resynchronise l'ombre audio (rejeu) sur les registres
         events_.clear();                  // jette les écritures horodatées en attente
     }
@@ -129,10 +135,6 @@ public:
     // Remplit `out` (mono, float -1..+1) à la fréquence sampleRate.
     void synthesize(float* out, uint32_t frames, uint32_t sampleRate);
 
-    // Avance l'enveloppe d'un pas (niveau ±1) selon la forme R13 (bits Continue/
-    // Attack/Alternate/Hold) ; gère la fin de rampe (sawtooth / triangle / hold).
-    void clockEnvelope(uint8_t shape);
-
     // Registres bruts exposés au débogueur.
     std::array<uint8_t, 16> regs_{};
     uint8_t selected_ = 0;
@@ -147,6 +149,19 @@ private:
     // (push, r=audioRegs_, appelé par segments entre deux écritures rejouées).
     void synthBlock(const uint8_t* r, float* out, uint32_t frames, uint32_t sampleRate);
 
+    // Met à jour périodes/mixeurs/volumes depuis les registres (port Sound_WriteReg).
+    void updateFromRegs(const uint8_t* r);
+    // Génère `n` échantillons internes à 250 kHz (YM2149_DoSamples_250).
+    void doSamples250(int n);
+    // Assure assez d'échantillons 250 kHz pour le prochain resample (marge Hatari).
+    void ensureMargin(uint32_t sampleRate);
+    // Rééchantillonnage pondéré N (YM2149_Next_Resample_Weighted_Average_N).
+    float nextResampleWeightedN(uint32_t sampleRate);
+    // Passe-bas PWM appliqué à 250 kHz (PWMaliasFilter, sound.c).
+    float applyPwm250(float x0);
+    // Table des 16 formes d'enveloppe (YmEnvWaves, construite une fois).
+    static const std::array<std::array<uint16_t, 96>, 16>& envWaves();
+
     // Table de conversion DAC 32×32×32 → échantillon float (modèle de circuit Hatari,
     // YM2149_BuildModelVolumeTable). Index = (idxC<<10)|(idxB<<5)|idxA, valeurs déjà
     // normalisées (+ gain de compensation). Construite une seule fois (cf. .cpp).
@@ -156,21 +171,33 @@ private:
     // volume5 = volume4*2+1, sauf 0 et 1 qui restent 0 et 1 → [0,15] mappé sur [0,31].
     static const std::array<uint8_t, 16> kVolume4to5;
 
-    // État de synthèse (phase par voie + LFSR de bruit), thread audio.
-    std::array<double, 3> phase_{};   // accumulateurs de phase des voies A/B/C
-    uint32_t noiseLfsr_ = 1;          // registre à décalage du générateur de bruit
-    double   noisePhase_ = 0.0;
+    // Moteur interne 250 kHz (YM2149_DoSamples_250, port sound.c).
+    static constexpr int   YM_BUF_250_SIZE = 32768;
+    static constexpr int   YM_BUF_250_MASK = YM_BUF_250_SIZE - 1;
+    static constexpr int   YM_250_HZ       = 250'000;
+    static constexpr uint32_t YM_SQUARE_UP = 0x1f;
 
-    // État de l'enveloppe (générateur de volume 0..31), thread audio.
-    double envPhase_  = 0.0;          // accumulateur de phase de l'enveloppe
-    int    envLevel_  = 31;           // niveau courant (0..31)
-    int    envDir_    = -1;           // sens : +1 montée, -1 descente
-    bool   envHold_   = false;        // enveloppe figée (fin de cycle non répété)
-    bool   envReload_ = false;        // R13 écrit → réinitialiser (posé par le CPU)
+    std::array<uint16_t, 3> tonePer_{}, toneCnt_{};
+    std::array<uint16_t, 3> toneVal_{};
+    uint16_t noisePer_ = 0, noiseCnt_ = 0;
+    uint32_t noiseVal_ = 0;
+    uint16_t envPer_ = 0, envCnt_ = 0;
+    uint32_t envPos_ = 0;
+    int      envShape_ = 0;
+    std::array<uint32_t, 3> mixerT_{}, mixerN_{};
+    uint16_t envMask3_ = 0, vol3_ = 0;
+    uint32_t rndLfsr_ = 1;            // LFSR 17 bits Hatari (taps 17,14)
+    uint16_t freqDiv2_ = 0;           // bruit à 125 kHz (moitié de 250 kHz)
 
-    // État des filtres de sortie analogiques du ST (un pôle chacun), thread audio.
-    double hpfX1_ = 0.0, hpfY0_ = 0.0;   // passe-haut sous-sonique anti-DC (couplage AC)
-    float  lpfX1_ = 0.0f, lpfY0_ = 0.0f; // passe-bas PWM (réduction d'aliasing)
+    std::array<float, YM_BUF_250_SIZE> buf250_{};
+    int      buf250Wr_ = 0, buf250Rd_ = 0;
+    uint32_t resampleFracN_ = 0;      // position fractionnelle (16.16) pour Weighted_Average_N
+
+    bool envReload_ = false;          // R13 écrit → réinitialiser Env_pos/Env_count
+
+    // Filtres de sortie : PWM à 250 kHz, HPF à la fréquence de sortie (comme Hatari).
+    float  lpf250X1_ = 0.0f, lpf250Y0_ = 0.0f;
+    double hpfX1_ = 0.0, hpfY0_ = 0.0;
 
     // Échelle de sortie (1.0 ST, 0.5 STE) — propriété machine, voir setOutputScale().
     float  outScale_ = 1.0f;

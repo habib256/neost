@@ -142,18 +142,45 @@ public:
     // Scroll fin horizontal $FF8264 (sans prefetch) / $FF8265 (avec prefetch) :
     // décalage de 0-15 px CÂBLÉ dans renderLine (décalage à gauche + groupe de 16 px
     // lu en plus à droite, modèle prefetch). Cf. Hatari Video_HorScroll_Write
-    // (HWScrollCount/HWScrollPrefetch). La distinction prefetch/no-prefetch fine
-    // (bord gauche, dérive de compteur) relève de la cycle-accuracy, non modélisée.
+    // (HWScrollCount/HWScrollPrefetch). Une écriture PENDANT l'affichage d'une ligne
+    // est DIFFÉRÉE à la fin de cette ligne (port NewHWScrollCount, cf. write8/endVideoLine).
     uint8_t hwScrollCount = 0;              // 4 bits de scroll fin ($FF8264/65 & 0x0F)
     bool    hwScrollPrefetch = false;       // écriture via $FF8265 → prefetch
     // Largeur de ligne STE $FF820F (line-offset, en MOTS, ajoutés au stride en fin
-    // de ligne) — CÂBLÉE dans renderLine et videoCounter. Cf. Video_LineWidth_WriteByte.
+    // de ligne) — CÂBLÉE dans renderLine et videoCounter. Une écriture APRÈS la fin
+    // du Display-Enable de la ligne courante est DIFFÉRÉE (port NewLineWidth).
     uint8_t lineWidth = 0;
 
 private:
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
     void resizeFor(Mode m);                       // ajuste le buffer si la rés. change
     uint32_t videoCounter() const;                // adresse vidéo courante ($FF8205/07/09)
+
+    // --- Compteur vidéo MATÉRIALISÉ (port pVideoRaster d'Hatari, video.c) --------
+    // Le compteur n'est plus purement analytique (base + y×stride) : il est LATCHÉ
+    // depuis $FF8201/03 au début de trame (≙ Video_ClearOnVBL → RestartVideoCounter)
+    // puis AVANCE d'un stride à chaque fin de ligne active (endVideoLine, ≙ fin de
+    // Video_CopyScreenLine). Conséquences fidèles au matériel : une écriture de la
+    // BASE en cours de trame ne s'applique qu'à la trame suivante ; les écritures du
+    // COMPTEUR $FF8205/07/09 (STE) et les changements LINEWIDTH/HSCROLL différés
+    // s'accumulent ligne à ligne au lieu de rétro-s'appliquer.
+    uint32_t vcFrameBase_ = 0;     // base latchée au début de trame (lecture bordure haute)
+    uint32_t vcLineBase_  = 0;     // adresse de début de la PROCHAINE ligne active à rendre
+    int      vcLineY_     = 0;     // index (0..disp-1) de cette ligne active
+    // Écritures STE différées, appliquées en fin de ligne (port video.c : NewHWScrollCount,
+    // NewLineWidth, VideoCounterDelayedOffset). -1 = rien en attente.
+    int      newHwScrollCount_   = -1;
+    bool     newHwScrollPrefetch_ = false;
+    int      newLineWidth_       = -1;
+    int      vcDelayedOffset_    = 0;   // écart compteur (écriture $FF8205/07/09 pendant le DE)
+    // Fin de ligne active (≙ fin de Video_CopyScreenLine) : avance vcLineBase_ du
+    // stride (+2 si scroll fin = prefetch d'un mot), applique l'offset compteur
+    // différé puis les valeurs HSCROLL/LINEWIDTH en attente. Appelée par renderLine.
+    void endVideoLine();
+    // Position du faisceau : ligne absolue + cycle dans la ligne. false si pas d'horloge.
+    bool beamPos(int& line, int& lineCyc) const;
+    // Écriture du compteur vidéo $FF8205/07/09 (STE) — port Video_ScreenCounter_WriteByte.
+    void writeVideoCounterByte(uint32_t addr, uint8_t v);
 
     // Décode les index de palette (ou bit mono) d'une ligne dans `idx` selon la
     // résolution VERROUILLÉE (lecture planaire + scroll fin STE). Partagé par

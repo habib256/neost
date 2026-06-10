@@ -1,0 +1,96 @@
+{
+  "_comment": "Logiciels étalons NeoST — freeware / domaine public uniquement. Voir docs/TEST_SOFTWARE.md.",
+  "etalons": [
+    {
+      "id": "glue_selftest",
+      "name": "Glue bordures (auto-test déterministe)",
+      "subsystem": "shifter/glue",
+      "type": "glue_selftest",
+      "max_diff_px": 0
+    },
+    {
+      "id": "etos_ste_boot",
+      "name": "Boot EmuTOS STE (bureau)",
+      "subsystem": "integration",
+      "rom": "roms/etos256us.img",
+      "machine": "ste",
+      "mem": "512k",
+      "cpu": "moira",
+      "frames": 250,
+      "frame": 240,
+      "crop": "active",
+      "max_diff_px": 64
+    },
+    {
+      "id": "spectrum512_diapo",
+      "name": "Spectrum 512 auto diapo (frame stable)",
+      "subsystem": "shifter/spec512",
+      "rom": "roms/tos102uk.img",
+      "disk": "disks/utils/spectrum_512_auto_diapo.st",
+      "machine": "st",
+      "mem": "512k",
+      "cpu": "moira",
+      "fastfdc": true,
+      "frames": 810,
+      "frame": 800,
+      "crop": "active",
+      "max_diff_px": 0
+    },
+    {
+      "id": "overscan_top",
+      "name": "Overscan retrait bordure HAUTE (make_overscan_test)",
+      "subsystem": "shifter/glue",
+      "rom": "roms/tos102uk.img",
+      "disk": "disks/etalons/overscan_top.st",
+      "disk_generate": "tools/make_overscan_test.py",
+      "machine": "st",
+      "mem": "512k",
+      "cpu": "moira",
+      "frames": 400,
+      "frame": 380,
+      "crop": "buffer",
+      "max_diff_px": 0
+    },
+    {
+      "id": "cuddly_demos",
+      "name": "The Cuddly Demos (boot menu)",
+      "subsystem": "shifter/borders",
+      "rom": "roms/tos102uk.img",
+      "disk": "disks/etalons/cuddly_demos.msa",
+      "machine": "st",
+      "mem": "512k",
+      "cpu": "moira",
+      "fastfdc": true,
+      "frames": 3500,
+      "frame": 3400,
+      "crop": "active",
+      "max_diff_px": 500,
+      "fetch": {
+        "url": "https://ftp.untergrund.net/users/ltk_tscc/fujiology/ST/T/TCB/CUDDLY_P.ZIP",
+        "member": "CUDDLY_P.MSA",
+        "save_as": "disks/etalons/cuddly_demos.msa"
+      },
+      "optional": true
+    },
+    {
+      "id": "union_demo",
+      "name": "The Union Demo (menu interactif)",
+      "subsystem": "mfp/irq",
+      "rom": "roms/tos102uk.img",
+      "disk": "disks/etalons/union_demo.msa",
+      "machine": "st",
+      "mem": "512k",
+      "cpu": "moira",
+      "fastfdc": true,
+      "frames": 4000,
+      "frame": 3900,
+      "crop": "active",
+      "max_diff_px": 800,
+      "fetch": {
+        "url": "https://www.planetemu.net/roms/atari-st-demos",
+        "hint": "The Union Demo — rapatrier à la main si fetch auto échoue (freeware)."
+      },
+      "optional": true
+    }
+  ]
+}

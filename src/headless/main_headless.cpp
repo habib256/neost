@@ -63,6 +63,45 @@ bool writePpm(const char* path, const uint32_t* px, int w, int h) {
     std::fclose(f);
     return true;
 }
+
+uint8_t stScancode(char c) {
+    switch (c) {
+        case '1': return 0x02; case '2': return 0x03;
+        case '3': return 0x04; case '4': return 0x05;
+        case '5': return 0x06; case '6': return 0x07;
+        case '7': return 0x08; case '8': return 0x09;
+        case '9': return 0x0A; case '0': return 0x0B;
+        case '\n': case '\r': return 0x1C;
+        case 'a': case 'A': return 0x1E;
+        case 's': case 'S': return 0x1F;
+        case 'd': case 'D': return 0x20;
+        case 'f': case 'F': return 0x21;
+        case 'g': case 'G': return 0x22;
+        case 'h': case 'H': return 0x23;
+        case 'j': case 'J': return 0x24;
+        case 'k': case 'K': return 0x25;
+        case 'l': case 'L': return 0x26;
+        case 'z': case 'Z': return 0x2C;
+        case 'x': case 'X': return 0x2D;
+        case 'c': case 'C': return 0x2E;
+        case 'v': case 'V': return 0x2F;
+        case 'b': case 'B': return 0x30;
+        case 'n': case 'N': return 0x31;
+        case 'm': case 'M': return 0x32;
+        case ' ': return 0x39;
+        case 'q': case 'Q': return 0x10;
+        case 'w': case 'W': return 0x11;
+        case 'e': case 'E': return 0x12;
+        case 'r': case 'R': return 0x13;
+        case 't': case 'T': return 0x14;
+        case 'y': case 'Y': return 0x15;
+        case 'u': case 'U': return 0x16;
+        case 'i': case 'I': return 0x17;
+        case 'o': case 'O': return 0x18;
+        case 'p': case 'P': return 0x19;
+        default: return 0x00;
+    }
+}
 } // namespace
 
 int main(int argc, char** argv) {
@@ -87,6 +126,14 @@ int main(int argc, char** argv) {
     bool        glueSelfTest = false; // auto-test déterministe de la machine Glue (bordures)
     int         shotEvery   = 0;      // --shot-every N : dump une capture toutes les N trames
     std::string shotPrefix;           // --shot-every PREFIX : préfixe des captures périodiques
+    int         shotFrom    = 0;      // --shot-from N : ne capture qu'à partir de la trame N
+    // Injections DATÉES dans la boucle principale (≠ --keys/--joy qui agissent après/avant) :
+    // indispensables pour piloter un menu de démo (intro → menu → déplacement) tout en
+    // gardant --shot-every actif (calibration d'étalons, diagnostic scrolling).
+    int         keysAtFrame = -1;     // --keys-at N STR : tape STR à partir de la trame N
+    std::string keysAt;
+    int         joyAtFrame  = -1;     // --joy-at N P1 : pose l'état joystick port 1 à la trame N
+    uint8_t     joyAt1      = 0;
     CpuCore     cpuCore    = CpuCore::Musashi;
     MachineType machType   = MachineType::Ste;
     std::size_t ramBytes   = 512u * 1024u;
@@ -119,6 +166,9 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
         else if (!std::strcmp(a, "--glue-selftest")) glueSelfTest = true;
         else if (!std::strcmp(a, "--shot-every"))  { shotEvery = std::atoi(next(a)); shotPrefix = next(a); }
+        else if (!std::strcmp(a, "--shot-from"))   shotFrom = std::atoi(next(a));
+        else if (!std::strcmp(a, "--keys-at"))     { keysAtFrame = std::atoi(next(a)); keysAt = next(a); }
+        else if (!std::strcmp(a, "--joy-at"))      { joyAtFrame = std::atoi(next(a)); joyAt1 = (uint8_t)std::strtoul(next(a), nullptr, 0); }
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
         else if (!std::strcmp(a, "--machine"))    machType  = parseMachine(next(a));
         else if (!std::strcmp(a, "--mem"))        ramBytes  = parseRamBytes(next(a));
@@ -162,6 +212,11 @@ int main(int argc, char** argv) {
         machine.cpu.setTracer(&tracer);    // active le hook d'instruction
     }
 
+    // Mode déterministe absolu : l'horloge RTC Mega ST(E) doit être constante.
+    // Sinon EmuTOS STE affiche l'heure système réelle sur le bureau, ce qui casse
+    // la comparaison pixel au pixel (test `etos_ste_boot`).
+    machine.rtc.setDateTime(Rtc::DateTime{0, 0, 12, 1, 1, 1, 26}); // 1er jan 2026, 12:00:00
+
     machine.reset();
 
     // Joystick maintenu (--joy) : pose l'état hôte sur l'IKBD (lu aux interrogations
@@ -177,8 +232,26 @@ int main(int argc, char** argv) {
     // Note : --until-pc s'évalue par trame (granularité d'une trame), suffisant
     // pour borner une capture autour d'un point d'intérêt.
     for (int frame = 0; frame < frames; ++frame) {
+        // Injections datées (--keys-at / --joy-at) : pilotage d'un menu de démo en
+        // PLEINE boucle (l'intro Cuddly attend espace ; le robot du menu, le stick),
+        // sans perdre --shot-every. Une touche = make à +0, break à +2, 4 trames/char.
+        if (keysAtFrame >= 0 && frame >= keysAtFrame) {
+            const int rel = frame - keysAtFrame;
+            const int idx = rel / 4;
+            if (idx < (int)keysAt.size()) {
+                const uint8_t sc = stScancode(keysAt[idx]);
+                if (sc) {
+                    if      (rel % 4 == 0) { machine.ikbd.keyEvent(sc, true);  machine.cpu.updateIpl(); }
+                    else if (rel % 4 == 2) { machine.ikbd.keyEvent(sc, false); machine.cpu.updateIpl(); }
+                }
+            }
+        }
+        if (joyAtFrame >= 0 && frame == joyAtFrame) {
+            machine.ikbd.setJoystick(0, joyAt1);
+            std::fprintf(stderr, "[headless] joystick posé à la trame %d : port1=$%02X\n", frame, joyAt1);
+        }
         machine.runFrame();
-        if (shotEvery > 0 && (frame % shotEvery) == 0) {
+        if (shotEvery > 0 && frame >= shotFrom && (frame % shotEvery) == 0) {
             char path[512];
             std::snprintf(path, sizeof(path), "%s%05d.ppm", shotPrefix.c_str(), frame);
             writePpm(path, machine.shifter.pixels(),
@@ -215,23 +288,9 @@ int main(int argc, char** argv) {
     // ST (jeu « PC/AT » du clavier ST) pour A-Z, 0-9 et Entrée ; on envoie make
     // puis break, avec quelques trames de battement, puis on laisse tourner.
     if (!keys.empty()) {
-        auto scancode = [](char c) -> uint8_t {
-            static const char* row = "qwertyuiop";   // $10-$19
-            static const char* row2 = "asdfghjkl";    // $1E-$26
-            static const char* row3 = "zxcvbnm";       // $2C-$32
-            c = (c >= 'A' && c <= 'Z') ? char(c + 32) : c;
-            if (c == '\n' || c == '\r') return 0x1C;   // Entrée
-            if (c == ' ') return 0x39;
-            for (int i = 0; row[i];  ++i) if (row[i]  == c) return uint8_t(0x10 + i);
-            for (int i = 0; row2[i]; ++i) if (row2[i] == c) return uint8_t(0x1E + i);
-            for (int i = 0; row3[i]; ++i) if (row3[i] == c) return uint8_t(0x2C + i);
-            if (c >= '1' && c <= '9') return uint8_t(0x02 + (c - '1'));
-            if (c == '0') return 0x0B;
-            return 0;
-        };
         auto idle = [&](int n) { for (int i = 0; i < n; ++i) machine.runFrame(); };
         for (char c : keys) {
-            const uint8_t sc = scancode(c);
+            const uint8_t sc = stScancode(c);
             if (!sc) continue;
             machine.ikbd.keyEvent(sc, true);  machine.cpu.updateIpl(); idle(2);
             machine.ikbd.keyEvent(sc, false); machine.cpu.updateIpl(); idle(2);

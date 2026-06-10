@@ -9,6 +9,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
+#include <atomic>
 #include <cstdint>
 #include <vector>
 
@@ -53,4 +54,13 @@ private:
     double             sampleCarry_ = 0.0; // report fractionnaire (nb d'échantillons/trame exact à long terme)
     uint32_t           primeSamples_ = 4000; // coussin cible (≈ latence visée, ~85 ms) — amorçage + asservissement
     bool               primed_ = false;  // (thread audio) : l'anneau a-t-il atteint le coussin ? sinon → silence
+
+    // Diagnostic « son haché » : nombre d'underruns de l'anneau (le thread audio a
+    // voulu drainer plus que produit → trou de ~85 ms le temps de re-amorcer).
+    // Incrémenté par render() (thread audio), surveillé par produceFrame() (thread
+    // émulation) qui avertit sur stderr — un underrun RÉPÉTÉ signifie que la boucle
+    // d'émulation ne tient pas la cadence des trames (cf. bridage dans main.cpp).
+    std::atomic<uint32_t> underruns_{0};
+    uint32_t              underrunsSeen_ = 0;   // (thread émulation) dernier total signalé
+    int64_t               underrunMuteFrames_ = 0; // anti-spam : trames restantes avant re-signalement
 };

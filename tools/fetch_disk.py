@@ -21,6 +21,7 @@ import io, os, re, sys, zipfile, urllib.request
 
 BASE = "https://www.planetemu.net/machine/atari-st"
 DISKS_DIR = os.path.join(os.path.dirname(__file__), "..", "disks")
+ETALONS_DIR = os.path.join(DISKS_DIR, "etalons")
 EXTS = (".st", ".msa", ".stx", ".zip")
 UA = {"User-Agent": "Mozilla/5.0 (NeoST test fetcher)"}
 
@@ -69,16 +70,24 @@ def download(url, dest_dir):
 
 def main():
     if len(sys.argv) < 2:
-        sys.exit(f"usage: {sys.argv[0]} <url planetemu | lien direct>\nzone : {BASE}")
-    url = sys.argv[1]
-    os.makedirs(DISKS_DIR, exist_ok=True)
+        sys.exit(f"usage: {sys.argv[0]} [--dest DIR] <url planetemu | lien direct>\n"
+                 f"zone planetemu : {BASE}")
+    dest = DISKS_DIR
+    args = sys.argv[1:]
+    if args[0] == "--dest":
+        if len(args) < 3:
+            sys.exit(f"usage: {sys.argv[0]} --dest DIR <url>")
+        dest = args[1]
+        args = args[2:]
+    url = args[0]
+    os.makedirs(dest, exist_ok=True)
     targets = [url] if url.lower().endswith(EXTS) else find_download_links(url)
     if not targets:
         sys.exit("aucun lien de téléchargement trouvé sur la page.")
     saved = []
     for t in targets:
         try:
-            saved += download(t, DISKS_DIR)
+            saved += download(t, dest)
             if saved:
                 break          # un disque suffit
         except Exception as e:  # noqa

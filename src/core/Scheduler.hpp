@@ -42,7 +42,11 @@ public:
     // TIMER_B_DELAY = Timer B en mode DÉLAI (prescaler/données comme A/C/D), daté par le
     // MFP. Les deux modes de Timer B sont exclusifs (TBCR = 8 → event-count, 1-7 → délai),
     // d'où deux sources distinctes sans conflit.
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, FDC, FDC_INDEX, DMASND, IKBD, IKBD_TX, MICROWIRE, HBL, VBL, SRC_COUNT };
+    // MFP_IRQ = instant où le signal IRQ du MFP devient VISIBLE du CPU : le 68901 met
+    // 4 cycles à propager IRQ vers le 68000 (port MFP_IRQ_DELAY_TO_CPU, mfp.c:374).
+    // Le MFP l'arme à irqTime+4 quand son IRQ monte ; le callback recalcule l'IPL.
+    // Placé APRÈS les timers (à cycle égal, l'IPL est recalculé une fois les IRQ levées).
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_TX, MICROWIRE, HBL, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 

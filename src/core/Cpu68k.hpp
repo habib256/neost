@@ -95,6 +95,17 @@ public:
     // (MFP niveau 6, VBL niveau 4). À appeler après tout changement d'IRQ.
     void updateIpl();
 
+    // Comme updateIpl(), mais l'IPL est COMMITTÉ : sous Moira, la valeur est posée
+    // à la fois sur la broche ET dans le registre échantillonné (reg.ipl), comme si
+    // le poll IPL de l'instruction précédente l'avait déjà vue → l'exception part
+    // AVANT l'instruction suivante. À n'appeler qu'à une FRONTIÈRE d'instruction
+    // (callback de l'ordonnanceur), jamais en plein accès MMIO. C'est l'équivalent
+    // du chemin Hatari MFP_ProcessIRQ : au test de frontière, si clock-IRQ_Time ≥ 4,
+    // l'exception est déclenchée immédiatement (pas un poll d'instruction plus tard).
+    // Sans ça, le délai 4 cyc du MFP s'ADDITIONNERAIT au pipeline IPL de Moira
+    // (~1 instruction de trop → le test « T4 Video Counter » des diagnostics échoue).
+    void updateIplNow();
+
     // Marque une interruption verticale (VBL, niveau 4 auto-vectorisé) en
     // attente ; elle sera acquittée puis effacée au cycle IACK.
     void raiseVbl();
@@ -102,6 +113,10 @@ public:
     // Marque une interruption horizontale (HBL, niveau 2 auto-vectorisé) — une
     // par ligne visible ; gatée par le masque du SR (utilisée par les jeux).
     void raiseHbl();
+
+    // Bus error déclenchée par un périphérique (ex. FDC $FF8604/06 en mode octet).
+    // Renvoie true si le CPU est halté (double faute) — l'appelant fournit alors 0.
+    bool triggerBusError(uint32_t addr, bool write);
 
     // État exposé en lecture directe pour le visualiseur de registres ImGui.
     uint32_t pc()  const;          // compteur programme courant

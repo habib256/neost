@@ -151,14 +151,25 @@ public:
     void setRs232Dcd(bool a) { if (a != dcdLine_) raise(SRC_DCD); dcdLine_ = a; }
     void setRs232Ri (bool a) { if (a != riLine_)  raise(SRC_RI);  riLine_  = a; }
 
-    // Déclenche une source : positionne le bit IPR si le canal est activé (IER).
+    // Déclenche une source : positionne le bit IPR si le canal est activé (IER), sinon
+    // l'EFFACE (port MFP_InputOnChannel). Date l'événement à l'horloge live ; raiseAt
+    // permet d'ANTIDATER (timer servi en retard → l'IRQ est datée de l'échéance réelle,
+    // port Interrupt_Delayed_Cycles). Met à jour le signal IRQ interne (updateIrq).
     void raise(int source);
+    void raiseAt(int source, int64_t when);
 
-    // Une interruption MFP doit-elle être présentée au CPU (IPL 6) ?
+    // Une interruption MFP doit-elle être présentée au CPU (IPL 6) ? Tient compte du
+    // DÉLAI DE PROPAGATION de 4 cycles du 68901 (port MFP_IRQ_DELAY_TO_CPU / MFP_GetIRQ_CPU,
+    // mfp.c:374,783) : le signal IRQ levé au cycle T n'est visible du CPU qu'à T+4.
+    // Quand le délai court encore, updateIrq a armé Scheduler::MFP_IRQ à T+4 pour que
+    // l'IPL soit recalculé pile à l'instant où l'IRQ devient visible.
     bool irqPending() const;
 
-    // Acquittement (cycle IACK) : renvoie le vecteur de la source la plus
-    // prioritaire, met à jour IPR/ISR. -1 si plus rien en attente.
+    // Acquittement (cycle IACK) : RÉ-ÉVALUE d'abord le signal IRQ (port MFP_ProcessIACK,
+    // mfp.c:812-854 — une IRQ plus prioritaire survenue entre le début de l'exception et
+    // la lecture du vecteur PEUT remplacer le vecteur ; sous Moira, cycle-exact, l'appel
+    // arrive bien ~12 cycles après le début de l'exception), puis renvoie le vecteur de
+    // currentInt_, met à jour IPR/ISR. -1 si plus rien en attente (spurious).
     int iack();
 
     // Registres exposés au débogueur.
@@ -214,6 +225,32 @@ private:
 private:
     int highestPending() const;     // n° de source prête la plus prioritaire, -1 sinon
     int highestInService() const;   // n° de source en cours de service, -1 sinon
+
+    // --- Signal IRQ daté (port mfp.c : MFP_UpdateIRQ / MFP_InputOnChannel) ---------
+    // Le 68901 ne présente pas « IPR & IMR » directement au CPU : il a un signal IRQ
+    // interne, recalculé sur chaque changement de registre/entrée, avec :
+    //   • CHRONOLOGIE : à priorités égales devant le câblage, les requêtes pendantes
+    //     arrivées dans la même fenêtre sont servies dans l'ordre d'ARRIVÉE
+    //     (pendingTime_/pendingTimeMin_, port Pending_Time[] mfp.c:963-1120) ;
+    //   • DÉLAI : un front montant d'IRQ n'est visible du CPU que 4 cycles plus tard
+    //     (irqTime_ + kIrqDelayToCpu ; la retombée, elle, est immédiate, comme Hatari).
+    static constexpr int64_t kIrqDelayToCpu = 4;     // MFP_IRQ_DELAY_TO_CPU (mfp.c:374)
+    static constexpr int64_t kNever = INT64_MAX;
+    // Recalcule le signal IRQ (port MFP_UpdateIRQ). `eventTime` = cycle de l'événement
+    // déclencheur (écriture registre, IACK) ; 0 = « venant d'un timer/entrée » → on
+    // date le front montant de pendingTime_[canal élu] (antidatage des timers servis
+    // en retard). Arme/annule Scheduler::MFP_IRQ pour la visibilité différée.
+    void updateIrq(int64_t eventTime);
+    // Source pendante éligible la plus prioritaire (port MFP_CheckPendingInterrupts) :
+    // pendante ET non masquée ET la plus ANCIENNE de la fenêtre courante ET aucune
+    // source de priorité ≥ en service. -1 si aucune.
+    int  checkPendingInterrupts() const;
+
+    bool    irq_        = false;     // signal IRQ interne du 68901
+    int64_t irqTime_    = 0;         // cycle du dernier front montant d'IRQ
+    int     currentInt_ = -1;        // canal élu (vecteur présenté à l'IACK)
+    int64_t pendingTime_[16] = {};   // cycle d'arrivée de chaque requête (kNever au repos)
+    int64_t pendingTimeMin_ = kNever;// plus ancienne requête non masquée de la fenêtre
 
     // Octet des 8 lignes d'ENTRÉE du GPIP (bit7 moniteur^XSINT … bit0 BUSY), tel que
     // le voit le détecteur de front — c'est la valeur calculée dans read8($FFFA01)

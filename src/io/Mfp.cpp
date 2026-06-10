@@ -29,12 +29,17 @@ void Mfp::reset() {
     for (uint8_t& b : timer_) b = 0;
     xsint_ = false;                       // ligne XSINT son DMA (re-synchronisée ensuite par DmaSound::reset)
     rxByte_ = 0; rxFull_ = false; rxOverrun_ = false;   // USART : tampon vidé (pas de RXFULL fantôme)
+    // Signal IRQ daté : tout retombe (port MFP_Reset — IRQ/IRQ_Time/Pending_Time).
+    irq_ = false; irqTime_ = 0; currentInt_ = -1;
+    for (int64_t& t : pendingTime_) t = kNever;
+    pendingTimeMin_ = kNever;
     if (sched_) {                         // annule toute échéance de timer en attente
         sched_->cancel(Scheduler::TIMER_A);
         sched_->cancel(Scheduler::TIMER_B);
         sched_->cancel(Scheduler::TIMER_B_DELAY);
         sched_->cancel(Scheduler::TIMER_C);
         sched_->cancel(Scheduler::TIMER_D);
+        sched_->cancel(Scheduler::MFP_IRQ);
     }
 }
 
@@ -96,17 +101,21 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x03: { const uint8_t aerOld = aer; aer = v;
                      gpipUpdateInterrupt(gpipInput(), gpipInput(), aerOld, aer); break; }
         case 0x05: ddr  = v; break;
+        // Tout changement de IER/IPR/IMR/ISR/VR RÉ-ÉVALUE le signal IRQ (port Hatari :
+        // MFP_UpdateIRQ_All après chaque écriture de ces registres) — daté du cycle
+        // d'écriture : démasquer une requête déjà pendante fait monter IRQ MAINTENANT
+        // (visible du CPU 4 cycles plus tard), pas à la date d'arrivée de la requête.
         // Désactiver un canal (IER=0) efface aussi son interruption pendante.
-        case 0x07: iera = v; ipra &= iera; break;
-        case 0x09: ierb = v; iprb &= ierb; break;
+        case 0x07: iera = v; ipra &= iera; updateIrq(sched_ ? sched_->liveNow() : 0); break;
+        case 0x09: ierb = v; iprb &= ierb; updateIrq(sched_ ? sched_->liveNow() : 0); break;
         // IPR/ISR : on n'EFFACE que les bits écrits à 0 (les 1 laissent inchangé).
-        case 0x0B: ipra &= v; break;
-        case 0x0D: iprb &= v; break;
-        case 0x0F: isra &= v; break;
-        case 0x11: isrb &= v; break;
-        case 0x13: imra = v; break;
-        case 0x15: imrb = v; break;
-        case 0x17: vr   = v; break;
+        case 0x0B: ipra &= v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
+        case 0x0D: iprb &= v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
+        case 0x0F: isra &= v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
+        case 0x11: isrb &= v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
+        case 0x13: imra = v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
+        case 0x15: imrb = v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
+        case 0x17: vr   = v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
         case 0x1B: tbcr_ = v; scheduleTimer(1); break;   // TBCR (0x08 = event-count ; 1-7 = délai)
         case 0x21: tbReload_ = v; tbCounter_ = v; scheduleTimer(1); break;  // TBDR → recharge + (re)date le délai
         // Timers A/C/D : on mémorise le registre PUIS on (re)programme l'échéance.
@@ -234,12 +243,17 @@ void Mfp::scheduleTimerAt(int timer, int64_t anchor) {
 
 void Mfp::onTimerExpire(int timer) {
     static constexpr int kSrc[4] = {SRC_TIMERA, SRC_TIMERB, SRC_TIMERC, SRC_TIMERD};
-    raise(kSrc[timer]);                       // lève l'IRQ (si le canal est activé)
+    // L'IRQ est ANTIDATÉE de l'échéance réelle du timer (et non de l'horloge live,
+    // en retard de la latence de dispatch) — port d'Interrupt_Delayed_Cycles
+    // (mfp.c:1741+) : le délai de visibilité de 4 cycles court depuis l'expiration
+    // matérielle du timer, pas depuis le moment où l'émulateur a servi l'événement.
+    const int64_t due = sched_ ? sched_->firingDue() : -1;
+    const int64_t when = due >= 0 ? due : (sched_ ? sched_->liveNow() : 0);
+    raiseAt(kSrc[timer], when);               // lève l'IRQ (si le canal est activé)
     // Relance la période ANCRÉE sur l'échéance qui vient d'expirer (port
     // PendingCyclesOver) : le prochain tic tombe à échéance+période, gommant la
     // latence d'IRQ. Repli sur l'horloge live si l'échéance n'est pas disponible.
-    const int64_t due = sched_ ? sched_->firingDue() : -1;
-    scheduleTimerAt(timer, due >= 0 ? due : (sched_ ? sched_->liveNow() : 0));
+    scheduleTimerAt(timer, when);
 }
 
 void Mfp::hblank() {
@@ -324,14 +338,76 @@ void Mfp::gpipUpdateInterrupt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, 
     }
 }
 
+// Port de MFP_InputOnChannel (mfp.c:1088-1131) : une requête sur un canal ACTIVÉ
+// (IER=1) pose le bit pendant et DATE son arrivée (pendingTime_) ; sur un canal
+// désactivé elle l'EFFACE. La plus ancienne requête non masquée de la fenêtre est
+// suivie (pendingTimeMin_) pour servir les requêtes simultanées dans l'ordre
+// chronologique. `when` peut être ANTÉRIEUR à l'horloge (timer servi en retard).
 void Mfp::raise(int source) {
-    if (source >= 8) {
-        const uint8_t bit = uint8_t(1u << (source - 8));
-        if (iera & bit) ipra |= bit;     // l'IRQ ne devient pendante que si activée
+    raiseAt(source, sched_ ? sched_->liveNow() : 0);
+}
+
+void Mfp::raiseAt(int source, int64_t when) {
+    const uint8_t bit = uint8_t(1u << (source & 7));
+    uint8_t& ier = source >= 8 ? iera : ierb;
+    uint8_t& ipr = source >= 8 ? ipra : iprb;
+    const uint8_t imr = source >= 8 ? imra : imrb;
+    if (ier & bit) {
+        ipr |= bit;
+        pendingTime_[source] = when;
+        if ((imr & bit) && when < pendingTimeMin_) pendingTimeMin_ = when;
     } else {
-        const uint8_t bit = uint8_t(1u << source);
-        if (ierb & bit) iprb |= bit;
+        ipr &= ~bit;                      // canal désactivé : la requête est perdue
     }
+    updateIrq(0);                         // 0 → front daté de pendingTime_[canal élu]
+}
+
+// Port de MFP_UpdateIRQ (mfp.c:946-985) : recalcule le signal IRQ du 68901. Sur un
+// front MONTANT, l'instant du front (irqTime_) = eventTime (écriture registre/IACK)
+// ou, à 0, la date d'arrivée de la requête élue — c'est ce qui antidate correctement
+// un timer servi avec quelques cycles de latence. La visibilité CPU est différée de
+// kIrqDelayToCpu : on arme Scheduler::MFP_IRQ pour recalculer l'IPL pile à temps
+// (le callback Machine appelle cpu.updateIpl()). La retombée est immédiate.
+void Mfp::updateIrq(int64_t eventTime) {
+    int newInt = -1;
+    if ((ipra & imra) | (iprb & imrb)) newInt = checkPendingInterrupts();
+    if (newInt >= 0) {
+        if (!irq_) irqTime_ = eventTime != 0 ? eventTime : pendingTime_[newInt];
+        irq_ = true;
+        currentInt_ = newInt;
+    } else {
+        irq_ = false;                     // pendantes bloquées par une in-service, ou rien
+    }
+    pendingTimeMin_ = kNever;             // la fenêtre chronologique est consommée
+    if (!sched_) return;
+    if (irq_) {
+        const int64_t visibleAt = irqTime_ + kIrqDelayToCpu;
+        if (sched_->liveNow() < visibleAt) sched_->schedule(Scheduler::MFP_IRQ, visibleAt);
+    } else {
+        sched_->cancel(Scheduler::MFP_IRQ);
+    }
+}
+
+// Port de MFP_CheckPendingInterrupts + MFP_InterruptRequest (mfp.c:993-1071) :
+// balayage par priorité décroissante (sources 15..8 puis 7..0) ; une source n'est
+// éligible que si (1) pendante et non masquée, (2) la plus ANCIENNE de la fenêtre
+// courante (pendingTime_ ≤ pendingTimeMin_ : deux requêtes dans la même instruction
+// sont servies dans l'ordre d'arrivée, pas de priorité), (3) aucune source de
+// priorité ≥ n'est en service (l'ISR n'est non nul qu'en mode software-EOI, le test
+// inconditionnel est donc équivalent au câblage réel).
+int Mfp::checkPendingInterrupts() const {
+    const uint8_t pa = ipra & imra;
+    const uint8_t pb = iprb & imrb;
+    const int hi = highestInService();
+    for (int b = 7; b >= 0; --b) {
+        const int s = 8 + b;
+        if ((pa & (1u << b)) && pendingTime_[s] <= pendingTimeMin_ && hi < s) return s;
+    }
+    for (int b = 7; b >= 0; --b) {
+        const int s = b;
+        if ((pb & (1u << b)) && pendingTime_[s] <= pendingTimeMin_ && hi < s) return s;
+    }
+    return -1;
 }
 
 int Mfp::highestPending() const {
@@ -348,20 +424,27 @@ int Mfp::highestInService() const {
     return -1;
 }
 
+// Signal IRQ tel que VU DU CPU (port MFP_GetIRQ_CPU + MFP_ProcessIRQ, mfp.c:737/899) :
+// le front montant n'est visible qu'après kIrqDelayToCpu cycles. Pendant la fenêtre,
+// Scheduler::MFP_IRQ garantit qu'un updateIpl() sera rejoué à irqTime_+4.
 bool Mfp::irqPending() const {
-    const int s = highestPending();
-    if (s < 0) return false;
-    // En mode "software EOI" (VR bit3), une source en service bloque les sources
-    // de priorité ≤ tant que son bit ISR n'est pas effacé par le handler.
-    if (vr & 0x08) return s > highestInService();
-    return true;
+    if (!irq_) return false;
+    if (!sched_) return true;             // pas d'ordonnanceur (tests unitaires) → immédiat
+    return sched_->liveNow() - irqTime_ >= kIrqDelayToCpu;
 }
 
+// Port de MFP_ProcessIACK (mfp.c:812-854). Appelé par le cœur CPU au cycle de lecture
+// du vecteur (sous Moira, cycle-exact, ~12 cycles après le début de l'exception) : on
+// RÉ-ÉVALUE d'abord le signal (une IRQ plus prioritaire — ou un pending reposé —
+// survenu entre-temps peut changer le vecteur), puis on sert currentInt_.
 int Mfp::iack() {
-    const int s = highestPending();
-    if (s < 0) return -1;
+    const int64_t now = sched_ ? sched_->liveNow() : 0;
+    updateIrq(now != 0 ? now : 0);
+    if (!irq_ || currentInt_ < 0) return -1;          // plus rien → spurious interrupt
+    const int s = currentInt_;
     const uint8_t bit = uint8_t(1u << (s & 7));
-    if (s >= 8) { ipra &= ~bit; if (vr & 0x08) isra |= bit; }
-    else        { iprb &= ~bit; if (vr & 0x08) isrb |= bit; }
+    if (s >= 8) { ipra &= ~bit; if (vr & 0x08) isra |= bit; else isra &= ~bit; }
+    else        { iprb &= ~bit; if (vr & 0x08) isrb |= bit; else isrb &= ~bit; }
+    updateIrq(now != 0 ? now : 0);                    // le signal retombe (ou re-monte)
     return (vr & 0xF0) | s;               // vecteur MFP
 }

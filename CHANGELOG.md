@@ -206,6 +206,34 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.
+- **Chaîne IRQ fine du 68901** (port `mfp.c` : `MFP_UpdateIRQ` / `MFP_InputOnChannel` /
+  `MFP_ProcessIACK`) — trois latences réelles du circuit désormais modélisées :
+  - **Délai IRQ→CPU de 4 cycles** (`MFP_IRQ_DELAY_TO_CPU`, mfp.c:374) : le signal IRQ
+    levé au cycle T n'est visible du 68000 qu'à T+4. Signal interne daté (`irq_`/
+    `irqTime_`) + événement `Scheduler::MFP_IRQ` armé à T+4 qui recalcule l'IPL en mode
+    **COMMIT** (`Cpu68k::updateIplNow` → `NeostMoira::commitIpl` : broche + `reg.ipl` +
+    CHECK_IRQ) — à une frontière d'instruction, délai écoulé, l'exception part AVANT
+    l'instruction suivante comme `MFP_ProcessIRQ`. Sans le commit, le délai s'ajoutait
+    au pipeline IPL fidèle de Moira (poll à l'instruction suivante) → ~1 instruction de
+    latence en trop, et le test « **T4 Video Counter** » des diagnostics échouait
+    (régression détectée puis re-validée : T Pass sur les 3 batteries, 2 cœurs).
+  - **Chronologie multi-IRQ** (`Pending_Time[]`, mfp.c:963-1120) : chaque requête
+    pendante est datée (`pendingTime_`) ; les requêtes d'une même fenêtre sont servies
+    dans l'ordre d'ARRIVÉE (gate `pendingTimeMin_`), pas seulement par priorité. Les
+    timers servis en retard par l'ordonnanceur sont **antidatés** de leur échéance
+    réelle (`raiseAt(due)`, port `Interrupt_Delayed_Cycles`) → le délai de 4 cycles
+    court depuis l'expiration matérielle, pas depuis le dispatch de l'émulateur.
+  - **Ré-évaluation du vecteur à l'IACK** (`MFP_ProcessIACK`, mfp.c:812-854) : `iack()`
+    recalcule le signal au cycle de lecture du vecteur (sous Moira, cycle-exact, ~12
+    cycles après le début de l'exception) — une IRQ plus prioritaire survenue
+    entre-temps remplace le vecteur ; plus rien de pendant → -1 (spurious). Une requête
+    sur un canal désactivé EFFACE désormais son bit pendant (port `MFP_InputOnChannel`).
+  Les écritures IER/IPR/IMR/ISR/VR ré-évaluent le signal au cycle d'écriture (port
+  `MFP_UpdateIRQ_All`). Validation : batteries Z des 3 diagnostics (ST/STE/MegaSTE)
+  Pass sur Moira ET Musashi, timer IRQ retard max 130-140 cyc, boot/étalons inchangés.
+  NB : l'« offset fin d'instruction » (`CycInt_AddRelativeInterruptWithOffset`) est déjà
+  couvert : en mode CE Hatari date à `clock + currcycle` (cycles.c:315-321) = exactement
+  `Scheduler::liveNow()` sous Moira (sous-instruction).
 - **Reset matériel du MFP** (`Mfp::reset`, port de `MFP_Reset` mfp.c:519-569, appelé par
   `Machine::reset/hardReset` AVANT `cpu.reset()` comme `reset.c:74`) : remet à zéro GPIP/AER/DDR,
   IER/IPR/IMR/ISR, VR, les timers (mode/recharge/compteurs/backing store) et annule les échéances
@@ -316,6 +344,24 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   diagnostics inchangée.
 
 ## Audio
+- **Son haché et ralenti (GUI) — RÉSOLU** par la refonte de la cadence de la boucle
+  principale (`main.cpp`). Trois causes superposées, mesurées au compteur d'underruns :
+  (1) le bridage FIXE à 20 ms ne suivait pas la durée émulée des trames — un écran
+  60 Hz (263×508 cyc ≈ 16,66 ms, le défaut d'EmuTOS US) tournait 17 % trop lent ;
+  (2) le **vsync** (`glfwSwapInterval(1)`) faisait bloquer `swapBuffers` jusqu'au
+  vblank suivant → battements à ~30-37 fps sur écran 60 Hz ; (3) même corrigée, une
+  itération GUI coûte ~22-25 ms réels (ImGui + GL + granularité de sommeil macOS) →
+  à 1 trame émulée par itération, plafond ~40 trames/s = déficit permanent de 20 % :
+  temps émulé RALENTI (tempo des musiques cadencé par les IRQ émulées) et anneau
+  audio du modèle « push » affamé (son HACHÉ, bruits lecteur compris — même anneau).
+  Correctif : **boucle de RATTRAPAGE** (pattern émulateur classique) — chaque
+  itération GUI exécute autant de trames émulées que le temps réel l'exige (`emuNext`
+  repoussé de la durée ÉMULÉE de chaque trame, géométrie 50/60/71 Hz ; garde-fou
+  4 trames après une pause), l'affichage saute les trames intermédiaires. Vsync off
+  (le sommeil cadence), sommeil plafonné à 20 ms (GUI réactif). **Mesuré : 0 underrun
+  en 20 s** (contre ~6/s avant). Diagnostic pérenne : compteur d'underruns atomique +
+  message stderr avec la cadence observée (`[Audio] underrun anneau … trames/s`) —
+  un son haché s'auto-explique désormais dans la console.
 - **YM2149** : 3 voies carrées + bruit, enveloppe (R11-13, formes via Continue/Attack/
   Alternate/Hold), vitesse d'enveloppe corrigée (diviseur de pas). Backend miniaudio (CoreAudio).
   **`YM2149::reset()`** remet tous les registres à 0 (volumes 0 = SILENCE) et est appelé par

@@ -168,6 +168,15 @@ void Shifter::beginFrame() {
     // (50 Hz → 63, 60 Hz → 34). Les bascules freq de la trame peuvent l'avancer
     // (retrait bordure haute) via updateLiveStartHBL.
     liveStartHBL_ = (frameSync_ & 0x02) ? 63 : 34;
+    // Compteur vidéo matérialisé : LATCH de la base au début de trame (port
+    // Video_ClearOnVBL → Video_RestartVideoCounter : pVideoRaster = &STRam[VideoBase]).
+    // Une écriture $FF8201/03 en cours de trame ne réapparaîtra qu'ici, à la trame
+    // suivante — comme sur le vrai matériel. Les écritures différées (NewHWScrollCount,
+    // NewLineWidth, offset compteur) ne sont PAS effacées : Hatari ne les purge qu'au
+    // reset vidéo, elles s'appliquent à la prochaine fin de ligne active.
+    vcFrameBase_ = videoBase & 0xFFFFFFu;
+    vcLineBase_  = vcFrameBase_;
+    vcLineY_     = 0;
     // Fond bordure : remplit tout le buffer overscan avec la couleur de bordure
     // (registre 0) au début de trame. Les lignes actives écrasent leur zone ; les
     // bordures haut/bas et les côtés non réécrits restent à cette couleur. (Phase 1 :
@@ -194,7 +203,13 @@ int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
     // → la ligne suivante démarre `bpl + lineWidth*2` octets plus loin (stride). Sur
     // ST/STF lineWidth=0 → stride = bpl (rendu strictement inchangé).
     const uint32_t stride = static_cast<uint32_t>(bpl) + static_cast<uint32_t>(lineWidth) * 2u;
-    const uint32_t base   = videoBase + static_cast<uint32_t>(y) * stride;
+    // Adresse de la ligne : le compteur MATÉRIALISÉ (vcLineBase_, ≙ pVideoRaster) pour
+    // le rendu live séquentiel — il accumule les strides RÉELS (lineWidth variable,
+    // écritures du compteur $FF8205/07/09, scroll) — sinon repli analytique depuis la
+    // base latchée de la trame (re-rendus spec512/renderFrame, où ces effets STE
+    // dynamiques ne sont pas rejoués).
+    const uint32_t base = (y == vcLineY_) ? vcLineBase_
+                                          : vcFrameBase_ + static_cast<uint32_t>(y) * stride;
 
     // Quand on scrolle, on décode un groupe de 16 px DE PLUS (lu juste après la
     // ligne) pour fournir les `scroll` pixels qui entrent par la droite — modèle
@@ -248,6 +263,51 @@ void Shifter::renderLine(int y) {
         for (int x = 0; x < activeX_; ++x)         row[x] = bg;
         for (int x = activeX_ + W; x < curW_; ++x) row[x] = bg;
     }
+
+    // Fin de la ligne active : le compteur matérialisé avance et les écritures STE
+    // différées s'appliquent (uniquement sur le rendu live séquentiel — un re-rendu
+    // hors séquence, spec512/renderFrame, ne doit pas re-avancer le compteur).
+    if (y == vcLineY_) endVideoLine();
+}
+
+// Fin de Video_CopyScreenLine (video.c:3833-3872), adaptée au modèle NeoST : la
+// ligne active vient d'être décodée → le compteur vidéo avance de son stride réel,
+// puis les modifications STE différées pendant la ligne s'appliquent, dans l'ordre
+// d'Hatari : scroll-prefetch (+1 mot), line-offset, offset compteur ($FF8205/07/09
+// écrits pendant le DE), nouveau scroll fin, nouvelle largeur de ligne.
+void Shifter::endVideoLine() {
+    const int bpl = (frameMode_ == Mode::High) ? 80 : 160;
+    vcLineBase_ += static_cast<uint32_t>(bpl);
+    if (hwScrollCount) vcLineBase_ += 2;                   // prefetch : le compteur avance d'un mot
+    vcLineBase_ += static_cast<uint32_t>(lineWidth) * 2u;  // line-offset STE (mots sautés)
+    if (vcDelayedOffset_ != 0) {                           // écriture compteur pendant le DE
+        vcLineBase_ += static_cast<uint32_t>(vcDelayedOffset_ & ~1);
+        vcDelayedOffset_ = 0;
+    }
+    if (newHwScrollCount_ >= 0) {                          // HSCROLL différé (NewHWScrollCount)
+        hwScrollCount    = static_cast<uint8_t>(newHwScrollCount_);
+        hwScrollPrefetch = newHwScrollPrefetch_;
+        newHwScrollCount_ = -1;
+    }
+    if (newLineWidth_ >= 0) {                              // LINEWIDTH différé (NewLineWidth)
+        lineWidth = static_cast<uint8_t>(newLineWidth_);
+        newLineWidth_ = -1;
+    }
+    vcLineBase_ &= 0xFFFFFFu;
+    ++vcLineY_;
+}
+
+// Position du faisceau (ligne absolue + cycle dans la ligne) depuis l'horloge de
+// trame. Sert aux décisions immédiat/différé des écritures STE (port
+// Video_GetPosition_OnWriteAccess). false si aucune horloge n'est branchée (tests).
+bool Shifter::beamPos(int& line, int& lineCyc) const {
+    if (!beamClock_) return false;
+    const Geometry g = geometry();
+    const int64_t fc = beamClock_();
+    if (fc < 0) return false;
+    line    = static_cast<int>(fc / g.cyclesPerLine);
+    lineCyc = static_cast<int>(fc % g.cyclesPerLine);
+    return true;
 }
 
 // Fin de trame : re-rendu spec512 (palette intra-ligne) si détecté. Port du
@@ -757,7 +817,7 @@ void Shifter::renderGlueFrame() {
     std::array<uint16_t, 16> pal = frameStartPalette_;
     const std::size_t n = colorWrites_.size();
     std::size_t cur = 0;
-    uint32_t addr = videoBase & 0xFFFFFFu;                 // compteur vidéo (rechargé au VBL)
+    uint32_t addr = vcFrameBase_ & 0xFFFFFFu;              // compteur vidéo latché au VBL (≙ Video_ClearOnVBL)
     const int nLines = static_cast<int>(glueLines_.size());
 
     uint8_t idx[700];                                      // max DE (462-4) + marge
@@ -891,9 +951,12 @@ uint8_t Shifter::read8(uint32_t addr) {
     // Octet bas de la base vidéo $FF820D : STE seulement (sur ST il vaut toujours
     // 0, cf. Hatari Video_BaseLow_ReadByte).
     if (addr == 0xFF820D) return machineIsSte(bus_.machine) ? static_cast<uint8_t>(videoBase) : 0;
-    if (addr == 0xFF8205) return static_cast<uint8_t>(videoCounter() >> 16);
-    if (addr == 0xFF8207) return static_cast<uint8_t>(videoCounter() >> 8);
-    if (addr == 0xFF8209) return static_cast<uint8_t>(videoCounter());
+    // Une écriture du compteur pendant le DE est en attente (vcDelayedOffset_) : la
+    // relecture doit déjà la refléter (port Video_ScreenCounter_ReadByte qui ajoute
+    // VideoCounterDelayedOffset & ~1 à l'adresse calculée).
+    if (addr == 0xFF8205) return static_cast<uint8_t>((videoCounter() + (vcDelayedOffset_ & ~1)) >> 16);
+    if (addr == 0xFF8207) return static_cast<uint8_t>((videoCounter() + (vcDelayedOffset_ & ~1)) >> 8);
+    if (addr == 0xFF8209) return static_cast<uint8_t>(videoCounter() + (vcDelayedOffset_ & ~1));
     // Synchro $FF820A : bits inutilisés 2-7 forcés à 1 (ST et STE), cf. Hatari
     // Video_Sync_ReadByte (IoMem[0xff820a] |= 0xfc). On NE masque PAS le champ
     // stocké `sync` : videoCounter() s'en sert toujours via `sync & 2`.
@@ -930,32 +993,87 @@ uint32_t Shifter::videoCounter() const {
     const int  bpl  = hi ? 80 : 160;                    // octets/ligne affichée
     const int  disp = g.displayLines;                   // lignes affichées
     const int  lineStart = g.lineStartCycle;            // début Display-Enable (50/60/71 Hz)
-    // Stride réel d'une ligne = octets affichés + line-offset STE ($FF820F, en mots).
-    // lineWidth=0 sur ST/STF → stride = bpl (compteur strictement inchangé).
-    const int  stride = bpl + static_cast<int>(lineWidth) * 2;
-    // L'affichage couvre les lignes [dispStart, dispStart+disp) (VDE_On..VDE_Off).
-    // Avant VDE_On (bordure HAUTE) le compteur reste à la base ; pendant, il avance
-    // de (line-dispStart) strides + l'offset intra-ligne ; après (bordure BASSE), il
-    // reste figé sur l'écran entièrement lu jusqu'au rechargement VBL. Port fidèle de
-    // Hatari Video_CalculateAddress (VideoBase + (HblCounterVideo-nStartHBL)*bpl + NbBytes).
+    // Stride réel d'une ligne = octets affichés + line-offset STE ($FF820F, en mots)
+    // + 1 mot si scroll fin (prefetch). lineWidth=0 et scroll=0 sur ST/STF → bpl.
+    const int  stride = bpl + static_cast<int>(lineWidth) * 2 + (hwScrollCount ? 2 : 0);
+    // Compteur MATÉRIALISÉ (≙ pVideoRaster) : vcLineBase_ = début de la ligne active
+    // vcLineY_ (les lignes déjà rendues ont déjà accumulé leur stride réel — lineWidth
+    // variable, écritures du compteur, scroll). L'affichage couvre les lignes
+    // [dispStart, dispStart+disp) (VDE_On..VDE_Off) ; avant (bordure HAUTE) le
+    // compteur reste à la base latchée ; pendant, il vaut base de ligne + offset
+    // intra-ligne ; après (bordure BASSE), il reste figé sur l'écran entièrement lu.
     // VDE_On LIVE (cf. liveStartHBL_) : reflète un retrait de bordure HAUTE en cours
     // (bascule 60 Hz dans la bordure haute → 34) → le compteur monte plus tôt, comme
     // sur le vrai matériel (Hatari nStartHBL). Un écran 50 Hz normal garde 63.
     const int  dispStart = liveStartHBL_;
     const int  line = static_cast<int>(fc / kCyclesPerLine);
-    uint32_t addr = videoBase;
-    if (line < dispStart) {
-        /* bordure haute : compteur non encore avancé */
-    } else if (line >= dispStart + disp) {
-        addr += static_cast<uint32_t>(disp) * stride;   // écran entièrement lu (avant VBL)
-    } else {
-        const int X = static_cast<int>(fc % kCyclesPerLine);
-        int nb = (X - lineStart) >> 1;                  // 2 cycles par octet
-        nb &= ~1;                                       // le shifter lit par MOTS
-        if (nb < 0) nb = 0; else if (nb > bpl) nb = bpl;
-        addr += static_cast<uint32_t>(line - dispStart) * stride + static_cast<uint32_t>(nb);
+    const int  X    = static_cast<int>(fc % kCyclesPerLine);
+    const int  la   = line - dispStart;                 // index de ligne active du faisceau
+    uint32_t addr = vcLineBase_;
+    if (la >= 0) {
+        // Ligne au-delà de celle du compteur matérialisé (rendu pas encore passé) :
+        // extrapole au stride courant. Bordure basse : figé à l'écran entièrement lu.
+        const int laEff = la < disp ? la : disp;
+        if (laEff > vcLineY_)
+            addr += static_cast<uint32_t>(laEff - vcLineY_) * static_cast<uint32_t>(stride);
+        // Offset intra-ligne UNIQUEMENT si la ligne courante n'a pas déjà été rendue
+        // (la < vcLineY_ = bordure droite : le stride de la ligne est déjà accumulé).
+        if (la < disp && laEff >= vcLineY_) {
+            int nb = (X - lineStart) >> 1;              // 2 cycles par octet
+            nb &= ~1;                                   // le shifter lit par MOTS
+            if (nb < 0) nb = 0; else if (nb > bpl) nb = bpl;
+            addr += static_cast<uint32_t>(nb);
+        }
     }
+    // ⚠ RESTART du compteur en fin de trame (Video_RestartVideoCounter : rechargement
+    // depuis $FF8201/03 au HBL 310/260, cycle 56/60, AVANT le VBL — ULM DSOTS) :
+    // VOLONTAIREMENT NON PORTÉ. Tenté puis retiré : les logiciels qui se synchronisent
+    // en pollant « compteur revenu à la base » (ex. make_overscan_test) sortent alors
+    // de leur poll à la ligne 310 au lieu du VBL et posent leur bascule 60/50 Hz PILE
+    // à la frontière de trame — or beginFrame VERROUILLE la géométrie par trame : un
+    // registre sync à 60 Hz à cet instant bascule TOUTE la trame en 263 lignes
+    // (étalon overscan_top : 0 détection de bordure, 8 % de diff). Hatari n'a pas ce
+    // problème (machine d'état continue, ligne à ligne). À reporter avec le chantier
+    // « géométrie par ligne / bascule 50-60 Hz en cours de trame » (cf. inventaire).
     return addr & 0xFFFFFF;
+}
+
+// Écriture du compteur vidéo $FF8205/07/09 (STE/TT) — port fidèle de
+// Video_ScreenCounter_WriteByte (video.c:5145-5250). On reconstruit la nouvelle
+// adresse en remplaçant UN octet de la valeur courante (corrigée d'une éventuelle
+// modification déjà différée), puis :
+//   • affichage pas commencé sur la ligne (cycle ≤ MMUStart = HDE_On − 16 si scroll),
+//     ligne déjà rendue (bordure droite — notre rendu à DE_end est déjà passé, ce qui
+//     équivaut au pVideoRasterDelayed d'Hatari appliqué en fin de ligne), ou faisceau
+//     hors zone affichée → application IMMÉDIATE au compteur matérialisé ;
+//   • écriture PENDANT le DE → on mémorise l'ÉCART (vcDelayedOffset_), appliqué à la
+//     fin de la ligne (endVideoLine) — sur un vrai STE cela produit des artefacts,
+//     l'adresse de fin de ligne est en revanche exacte. Étalons : Stardust Tunnel STE,
+//     Braindamage End Part.
+void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
+    // Octet haut limité comme la base/DMA : adresses vidéo ≤ $3FFFFF sur les machines
+    // ≤ 4 Mo (port DMA_MaskAddressHigh — NeoST plafonne la ST-RAM à 4 Mo).
+    if (addr == 0xFF8205) v &= 0x3F;
+    const uint32_t cur = videoCounter();                       // adresse courante (brute)
+    uint32_t an = (cur + static_cast<uint32_t>(vcDelayedOffset_)) & 0xFFFFFFu;
+    if (addr == 0xFF8205)      an = (an & 0x00FFFFu) | (uint32_t(v) << 16);
+    else if (addr == 0xFF8207) an = (an & 0xFF00FFu) | (uint32_t(v) << 8);
+    else                       an = (an & 0xFFFF00u) | uint32_t(v);
+
+    int line = 0, cyc = 0;
+    const Geometry g  = geometry();
+    const bool havePos = beamPos(line, cyc);
+    const int  la      = havePos ? line - liveStartHBL_ : -1;
+    const bool active  = havePos && la >= 0 && la < g.displayLines;
+    // Le MMU commence à lire 16 cycles AVANT le HDE_On quand le scroll fin est armé
+    // (prefetch) — port Video_GetMMUStartCycle.
+    const int mmuStart = g.lineStartCycle - (hwScrollCount ? 16 : 0);
+    if (!havePos || !active || cyc <= mmuStart || la < vcLineY_) {
+        vcLineBase_ = an;                                      // application immédiate
+        vcDelayedOffset_ = 0;
+    } else {
+        vcDelayedOffset_ = static_cast<int>(an) - static_cast<int>(cur);  // pendant le DE → fin de ligne
+    }
 }
 
 void Shifter::write8(uint32_t addr, uint8_t v) {
@@ -974,25 +1092,50 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
             if (ste) videoBase &= 0xFFFF00;
             return;
         case 0xFF820A: recordSyncWrite(false, v); sync = v; return;   // synchro 50/60 Hz (+ détection bordures)
+        // Compteur vidéo $FF8205/07/09 : INSCRIPTIBLE sur STE/TT seulement (port
+        // Video_ScreenCounter_WriteByte) — immédiat hors affichage, différé sinon.
+        case 0xFF8205: case 0xFF8207: case 0xFF8209:
+            if (ste) writeVideoCounterByte(addr, v);
+            return;
         // Octet bas de la base vidéo $FF820D (STE) : bit0 ignoré (aligné pair).
         case 0xFF820D:
             if (ste) videoBase = (videoBase & 0xFFFF00) | (uint32_t(v) & ~1u);
             return;
-        // Largeur de ligne STE $FF820F (registre seulement ; câblage rendu différé).
+        // Largeur de ligne STE $FF820F — port Video_LineWidth_WriteByte : applicable
+        // IMMÉDIATEMENT si le Display-Enable de la ligne courante n'est pas terminé
+        // (ou faisceau hors zone affichée) ; sinon DIFFÉRÉ à la fin de la ligne
+        // (NewLineWidth, cf. endVideoLine). Étalon : Pacemaker (bump mapping).
         case 0xFF820F:
-            if (ste) lineWidth = v;
+            if (ste) {
+                int line = 0, cyc = 0;
+                const Geometry g = geometry();
+                const int la = beamPos(line, cyc) ? line - liveStartHBL_ : -1;
+                const bool active = la >= 0 && la < g.displayLines;
+                if (!active || cyc <= g.lineEndCycle) { lineWidth = v; newLineWidth_ = -1; }
+                else                                  { newLineWidth_ = v; }
+            }
             return;
         case 0xFF8260: syncCpuBus(); recordSyncWrite(true, v); mode = static_cast<Mode>(v & 0x3); return;  // résolution (+ bordures + wait state bus)
-        // Scroll fin horizontal STE — état des registres uniquement (le décalage
-        // par pixel relève de la cycle-accuracy, différé). Cf. Hatari
-        // Video_HorScroll_Write : $FF8264 sans prefetch, $FF8265 avec prefetch.
-        case 0xFF8264:
+        // Scroll fin horizontal STE — port Video_HorScroll_Write : $FF8264 sans
+        // prefetch, $FF8265 avec. Applicable IMMÉDIATEMENT si l'affichage de la ligne
+        // courante n'a pas commencé (cycle ≤ HDE_On, ou faisceau hors zone affichée) ;
+        // sinon la nouvelle valeur est DIFFÉRÉE à la fin de la ligne (NewHWScrollCount,
+        // cf. endVideoLine). Étalons : Mindrewind, Digiworld 2, cool_ste.
+        case 0xFF8264: case 0xFF8265:
             syncCpuBus();
-            if (ste) { hwScrollCount = v & 0x0F; hwScrollPrefetch = false; }
-            return;
-        case 0xFF8265:
-            syncCpuBus();
-            if (ste) { hwScrollCount = v & 0x0F; hwScrollPrefetch = true; }
+            if (ste) {
+                const uint8_t sc       = v & 0x0F;
+                const bool    prefetch = (addr == 0xFF8265);
+                int line = 0, cyc = 0;
+                const Geometry g = geometry();
+                const int la = beamPos(line, cyc) ? line - liveStartHBL_ : -1;
+                const bool active = la >= 0 && la < g.displayLines;
+                if (!active || cyc <= g.lineStartCycle) {
+                    hwScrollCount = sc; hwScrollPrefetch = prefetch; newHwScrollCount_ = -1;
+                } else {
+                    newHwScrollCount_ = sc; newHwScrollPrefetch_ = prefetch;
+                }
+            }
             return;
         default: break;
     }

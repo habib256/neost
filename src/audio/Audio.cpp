@@ -15,6 +15,7 @@
 #include "core/DmaSound.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 
 namespace {
@@ -36,11 +37,20 @@ Audio::~Audio() { stop(); }
 // transitoires (drums) passent et la musique continue se perd ; l'anneau mettrait des
 // dizaines de secondes à se remplir. Après tout underrun, on RÉ-AMORCE le coussin.
 void Audio::render(float* out, uint32_t frames, uint32_t /*sampleRate*/) {
+    // Diagnostic : taille réelle des blocs demandés par le backend (3 premiers
+    // callbacks). Un bloc PLUS GRAND que le coussin (primeSamples_) rendrait
+    // l'underrun STRUCTUREL : chaque callback viderait l'anneau tout juste amorcé.
+    static int dbg = 0;
+    if (dbg < 3) { std::fprintf(stderr, "[Audio] callback: %u frames (anneau %zu, coussin %u)\n",
+                                frames, ring_.available(), primeSamples_); ++dbg; }
     if (!primed_) {
         if (ring_.available() < primeSamples_) { std::fill(out, out + frames, 0.0f); return; }
         primed_ = true;                                   // coussin atteint → on démarre la lecture
     }
-    if (ring_.pull(out, frames) < frames) primed_ = false;  // underrun → on reconstitue le coussin
+    if (ring_.pull(out, frames) < frames) {                 // underrun → on reconstitue le coussin
+        primed_ = false;
+        underruns_.fetch_add(1, std::memory_order_relaxed); // diagnostic « son haché »
+    }
 }
 
 // PRODUCTEUR (thread d'émulation, après runFrame) : génère le son de la trame et le
@@ -81,6 +91,26 @@ void Audio::produceFrame(int64_t frameCycles) {
         out[i] = std::max(-1.0f, std::min(1.0f, out[i]));
 
     ring_.push(out, size_t(n));                           // → thread audio (render). Surplus jeté si plein.
+
+    // Diagnostic : un underrun isolé peut arriver (chargement, déplacement de fenêtre) ;
+    // RÉPÉTÉ, c'est que la boucle d'émulation ne tient pas la cadence des trames (son
+    // haché + temps émulé ralenti). On signale avec la CADENCE OBSERVÉE de la boucle
+    // (appels produceFrame/s réels) pour rendre le déficit lisible — limité ~1 msg/5 s.
+    using dclock = std::chrono::steady_clock;
+    static dclock::time_point t0 = dclock::now();
+    static long calls = 0;
+    ++calls;
+    if (underrunMuteFrames_ > 0) --underrunMuteFrames_;
+    const uint32_t u = underruns_.load(std::memory_order_relaxed);
+    if (u != underrunsSeen_ && underrunMuteFrames_ <= 0) {
+        const double secs = std::chrono::duration<double>(dclock::now() - t0).count();
+        std::fprintf(stderr, "[Audio] underrun anneau (total %u) — boucle émulation : %.1f trames/s "
+                             "réelles (attendu ~50/60), anneau %zu\n",
+                     u, secs > 0 ? calls / secs : 0.0, ring_.available());
+        underrunsSeen_ = u;
+        underrunMuteFrames_ = 250;                        // ≈ 5 s à 50 trames/s
+        t0 = dclock::now(); calls = 0;                    // fenêtre de mesure suivante
+    }
 }
 
 bool Audio::start() {
@@ -112,6 +142,7 @@ bool Audio::start() {
     sampleCarry_ = 0.0;
     std::printf("[Audio] miniaudio démarré : %u Hz mono, latence ~%u ms (modèle push : PSG horodaté + DMA + lecteur)\n",
                 rate_, primeSamples_ * 1000 / rate_);
+    std::fflush(stdout);   // visible même si l'appli est tuée (diagnostic)
     return true;
 }
 
