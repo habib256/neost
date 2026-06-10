@@ -198,13 +198,7 @@ uint8_t glfwToStScancode(int key) {
 
 void onKey(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
     if (!g_machine || action == GLFW_REPEAT) return;   // l'IKBD gère sa répétition
-    if (key == GLFW_KEY_ESCAPE) {                       // Échap = touche hôte (libère la souris)
-        if (g_mouseCaptured && action == GLFW_PRESS) {
-            g_mouseCaptured = false;
-            glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-        return;
-    }
+    if (key == GLFW_KEY_DELETE) return;                 // touche hôte (libération souris)
     // Émulation joystick clavier active : les touches du joystick (flèches + Ctrl
     // droit) pilotent la manette et ne sont PAS transmises au clavier ST.
     if (g_kbdJoy && stjoy::kbdBit(key)) return;
@@ -238,6 +232,12 @@ void mainLoop() {
     }
 
     glfwPollEvents();
+
+    // Aligné sur le frontend natif : Échap reste envoyé au ST, Suppr libère l'hôte.
+    if (g_mouseCaptured && glfwGetKey(g_window, GLFW_KEY_DELETE) == GLFW_PRESS) {
+        g_mouseCaptured = false;
+        glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
 
     if (g_mouseCaptured) {                  // mouvement relatif → paquet IKBD
         double mx, my;
@@ -400,7 +400,7 @@ int main(int argc, char** argv) {
     glfwSetKeyCallback(g_window, onKey);
     glfwSetMouseButtonCallback(g_window, onMouseButton);
 
-    std::printf("[web] NeoST démarré. Clic = capture souris, Échap = libère.\n");
+    std::printf("[web] NeoST démarré. Clic = capture souris, Suppr (DEL) = libère.\n");
 
     // fps=0 → requestAnimationFrame ; simulate_infinite_loop=1 → main() ne rend
     // pas la main (le cœur reste vivant via la Machine statique).

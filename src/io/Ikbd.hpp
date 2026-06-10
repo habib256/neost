@@ -34,7 +34,7 @@ public:
     void    write8(uint32_t addr, uint8_t v);
 
     // Échéance : l'IKBD a fini son auto-test → envoie $F1 (réponse de reset).
-    void    onResetResponse() { pushRx(0xF1); }
+    void    onResetResponse();
 
     // Échéance : le registre d'émission de l'ACIA s'est vidé (~1 octet série après
     // une écriture $FFFC02 sous TIE) → TDRE repasse à 1 et ré-arme l'IRQ TX. Datée
@@ -106,7 +106,14 @@ private:
 
     // Sonde les manettes et émet $FE+joy0 / $FF+joy1 pour celles dont l'état a
     // changé depuis la dernière émission (cf. Hatari IKBD_SendAutoJoysticks).
+    void readJoystickState(uint8_t& joy0, uint8_t& joy1) const;
     void sendAutoJoysticks();
+    void sendAutoJoysticksMonitoring();
+
+    // Drain VBL des événements souris accumulés par le frontend, comme l'auto-send
+    // Hatari : MouseAction, position absolue, paquets relatifs ou mode curseur.
+    void processMouseFrame();
+    void sendRelMousePacket(int dx, int dy, bool left, bool right);
 
     // Reporting lié à MouseAction ($07, cf. IKBD_SendOnMouseAction) : boutons
     // remontés comme scancodes (bit2), ou position absolue à l'appui/relâchement
@@ -162,6 +169,8 @@ private:
     int  xScale_ = 0, yScale_ = 0;
     int  yAxis_ = 1;
     bool bOldL_ = false, bOldR_ = false;
+    int  mouseDeltaX_ = 0, mouseDeltaY_ = 0;  // Δ souris hôte accumulé jusqu'au VBL
+    bool mouseLeft_ = false, mouseRight_ = false;
 
     // --- MouseAction ($07) + mode curseur ($0A) (cf. KeyboardProcessor.Mouse) ---
     // mouseAction_ : bit0 = position abs reportée à l'APPUI, bit1 = au RELÂCHEMENT
@@ -189,6 +198,8 @@ private:
     enum JoystickMode { JOY_OFF, JOY_AUTO, JOY_MONITOR };
     JoystickMode joyMode_ = JOY_AUTO;
     uint8_t prevJoy0_ = 0, prevJoy1_ = 0;
+    uint32_t vblCount_ = 0;                   // garde Hatari : pas d'auto-send avant 20 VBL
+    bool duringResetCriticalTime_ = false;    // bloque les sorties jusqu'à la réponse $F1
 
     // --- État du code 6301 custom ($20/$22, cf. Hatari ikbd.c) ------------------
     // Identifie le handler actif (NeoST utilise des id plutôt que des pointeurs de

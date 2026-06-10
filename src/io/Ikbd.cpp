@@ -44,6 +44,11 @@ Ikbd::Ikbd(Mfp& mfp) : mfp_(mfp) {
     initClockFromHostTime();
 }
 
+void Ikbd::onResetResponse() {
+    duringResetCriticalTime_ = false;
+    pushRx(0xF1);
+}
+
 // Horloge interne IKBD : l'octet est-il un nombre BCD valide ? (cf. Hatari
 // IKBD_BCD_Check) — SetClock ($1B) ignore les octets non BCD et garde les autres.
 static bool bcdCheck(uint8_t v) {
@@ -212,6 +217,10 @@ void Ikbd::dispatchCommand() {
                 mouseAction_   = 0;
                 keyCodeDeltaX_ = keyCodeDeltaY_ = 1;
                 bOldL_         = bOldR_ = false;
+                mouseDeltaX_   = mouseDeltaY_ = 0;
+                mouseLeft_     = mouseRight_ = false;
+                rx_.clear();                   // BufferHead=Tail=0 dans IKBD_Boot_ROM
+                duringResetCriticalTime_ = true;
                 // Le reset annule tout code 6301 custom en cours (cf. Hatari
                 // IKBD_Boot_ROM : LoadMemory/ExeMode coupés).
                 exeMode_ = false; customRead_ = CR_NONE; customWrite_ = CW_NONE;
@@ -219,7 +228,7 @@ void Ikbd::dispatchCommand() {
                 // L'horloge ($1B/$1C) est CONSERVÉE (reset à chaud, cf. Hatari).
                 constexpr int64_t kIkbdResetCycles = 502000;
                 if (sched_) sched_->schedule(Scheduler::IKBD, sched_->now() + kIkbdResetCycles);
-                else        pushRx(0xF1);
+                else        onResetResponse();
             }
             break;
         case 0x08:
@@ -330,9 +339,10 @@ void Ikbd::dispatchCommand() {
             break;
         case 0x17:
             // $17 = SET JOYSTICK MONITORING (cf. Hatari IKBD_Cmd_SetJoystickMonitoring) :
-            // octet 1 = taux d'échantillonnage en 1/100 s. Implémentation minimale :
-            // on retient le mode et émet des paires état/feu depuis onVbl().
+            // octet 1 = taux d'échantillonnage en 1/100 s. NeoST échantillonne au VBL
+            // (plutôt qu'au timer exact), mais respecte le format et coupe la souris.
             joyMode_ = JOY_MONITOR;
+            mouseMode_ = OFF;
             break;
         case 0x18:
             // $18 = SET FIRE BUTTON MONITORING : non implémenté (comme Hatari).
@@ -345,8 +355,8 @@ void Ikbd::dispatchCommand() {
             // (manette/clavier du frontend), puis sous fixture de bouclage la sonde
             // l'écrase pour refléter le port parallèle (cf. Machine) — test
             // « Printer/Joystick » complet.
-            uint8_t joy0 = hostJoy_[0], joy1 = hostJoy_[1];
-            if (joyProbe_) joyProbe_(joy0, joy1);
+            uint8_t joy0 = 0, joy1 = 0;
+            readJoystickState(joy0, joy1);
             pushRx(0xFD);
             pushRx(joy0);
             pushRx(joy1);
@@ -379,12 +389,23 @@ void Ikbd::dispatchCommand() {
     }
 }
 
+void Ikbd::readJoystickState(uint8_t& joy0, uint8_t& joy1) const {
+    joy0 = hostJoy_[0];
+    joy1 = hostJoy_[1];
+    if (joyProbe_) joyProbe_(joy0, joy1);
+
+    // Sur Atari ST, le port joystick 0 est partagé avec la souris : tant que la
+    // souris est active, Hatari le force à zéro (hors quirk souris+joy simultanés).
+    if (mouseMode_ != OFF)
+        joy0 = 0x00;
+}
+
 void Ikbd::sendAutoJoysticks() {
     // Émet un paquet par manette dont l'état a changé depuis la dernière fois
     // (cf. Hatari IKBD_SendAutoJoysticks) : $FE = joystick 0 / souris, $FF =
     // joystick 1. Amorcé avec l'état hôte ; la sonde l'écrase sous fixture de bouclage.
-    uint8_t joy0 = hostJoy_[0], joy1 = hostJoy_[1];
-    if (joyProbe_) joyProbe_(joy0, joy1);
+    uint8_t joy0 = 0, joy1 = 0;
+    readJoystickState(joy0, joy1);
     if (joy0 != prevJoy0_) {
         pushRx(0xFE);
         pushRx(joy0);
@@ -397,9 +418,17 @@ void Ikbd::sendAutoJoysticks() {
     }
 }
 
+void Ikbd::sendAutoJoysticksMonitoring() {
+    uint8_t joy0 = 0, joy1 = 0;
+    readJoystickState(joy0, joy1);
+    pushRx(uint8_t(((joy0 & 0x80) >> 6) | ((joy1 & 0x80) >> 7)));
+    pushRx(uint8_t(((joy0 & 0x0F) << 4) | (joy1 & 0x0F)));
+}
+
 void Ikbd::onVbl(int64_t vblMicro) {
     // 1) Avance l'horloge interne IKBD ($1B/$1C) du temps d'une trame.
     updateClock(vblMicro);
+    ++vblCount_;
     // ExeMode : appel périodique du handler de lecture custom (cf. Hatari, qui
     // l'invoque dans le traitement clavier de trame), puis Δ souris consommé. Pas
     // de report joystick auto tant que le 6301 exécute du code custom.
@@ -408,16 +437,25 @@ void Ikbd::onVbl(int64_t vblMicro) {
         mDeltaX_ = mDeltaY_ = 0;
         return;
     }
-    // 2) Report joystick auto (mode par défaut du boot ROM IKBD) : à chaque trame,
-    //    on émet spontanément l'état des manettes qui ont changé. Sans entrée hôte
-    //    l'état reste neutre → sendAutoJoysticks n'émet rien (no-op), donc aucun
-    //    impact sur le boot EmuTOS ni les cartes de diagnostic (qui interrogent en
-    //    polled via $16). Émet seulement quand une manette/clavier bouge.
+    if (duringResetCriticalTime_ || vblCount_ <= 20)
+        return;
+
+    // 2) Drain souris à cadence IKBD (auto-send Hatari), pas à chaque événement hôte.
+    if (joyMode_ != JOY_MONITOR)
+        processMouseFrame();
+
+    // 3) Report joystick auto / monitoring.
+    if (joyMode_ == JOY_MONITOR) {
+        sendAutoJoysticksMonitoring();
+        return;
+    }
     if (joyMode_ == JOY_AUTO)
         sendAutoJoysticks();
 }
 
 void Ikbd::keyEvent(uint8_t scancode, bool pressed) {
+    if (joyMode_ == JOY_MONITOR)
+        return;
     // Suivi d'état (lu par les handlers 6301 custom) puis make/break.
     scanState_[scancode & 0x7F] = pressed ? 1 : 0;
     // En ExeMode, le scan clavier normal est supprimé (cf. Hatari IKBD_Cmd_Return_Byte) :
@@ -433,6 +471,19 @@ void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
         mDeltaX_ += dx; mDeltaY_ += dy; lmb_ = left;
         return;
     }
+    mouseDeltaX_ += dx;
+    mouseDeltaY_ += dy;
+    mouseLeft_ = left;
+    mouseRight_ = right;
+}
+
+void Ikbd::processMouseFrame() {
+    const int dx = mouseDeltaX_;
+    const int dy = mouseDeltaY_;
+    const bool left = mouseLeft_;
+    const bool right = mouseRight_;
+    mouseDeltaX_ = mouseDeltaY_ = 0;
+
     // Ordre calqué sur Hatari IKBD_SendAutoKeyboardCommands : d'ABORD le reporting
     // lié à MouseAction ($07), qui compare l'état courant à l'ancien (bOldL_/bOldR_),
     // PUIS le traitement propre au mode souris. bOldL_/bOldR_ ne sont mis à jour
@@ -472,6 +523,12 @@ void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
         return;
     }
 
+    sendRelMousePacket(dx, dy, left, right);
+    bOldL_ = left;
+    bOldR_ = right;
+}
+
+void Ikbd::sendRelMousePacket(int dx, int dy, bool left, bool right) {
     // Mode relatif (port fidèle de Hatari IKBD_SendRelMousePacket, l.1382-1422) :
     // on draine le Δ de cette trame en paquets $F8 de 3 octets. Un paquet n'est
     // émis QUE si le Δ borné à [-128,127] atteint le seuil EN VALEUR ABSOLUE, OU
@@ -604,6 +661,8 @@ void Ikbd::updateClock(int64_t vblMicro) {
 }
 
 void Ikbd::pushRx(uint8_t b) {
+    if (duringResetCriticalTime_)
+        return;
     rx_.push_back(b);
     raiseIfReady();
 }
