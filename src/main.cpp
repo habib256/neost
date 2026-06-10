@@ -153,7 +153,6 @@ static void saveConfig(const std::string& exeDir, Config& c, Machine* machine = 
 #define ICON_FA_COMPACT_DISC  "\xef\x94\x9f"
 #define ICON_FA_MEMORY        "\xef\x94\xb8"
 #define ICON_FA_PALETTE       "\xef\x94\xbf"
-#define ICON_FA_CLOCK         "\xef\x80\x97"
 
 // Bouton à ICÔNE SEULE (le texte est superflu quand le pictogramme est explicite) :
 // l'infobulle au survol rappelle l'action. Renvoie true au clic.
@@ -941,12 +940,6 @@ int main(int argc, char** argv) {
                         }
                     ImGui::EndMenu();
                 }
-                if (machineIsMega(machine.bus.machine)) {
-                    const Rtc::DateTime dt = machine.rtc.getDateTime();
-                    ImGui::Separator();
-                    ImGui::Text(ICON_FA_CLOCK " RTC : %02d/%02d/%04d  %02d:%02d:%02d",
-                                dt.day, dt.month, 1980 + dt.year, dt.hour, dt.min, dt.sec);
-                }
                 // Image TOS/EmuTOS (.img/.rom du dossier roms/), chargée à chaud.
                 if (ImGui::BeginMenu(ICON_FA_SAVE " ROM")) {
                     std::error_code ec;
@@ -1086,12 +1079,6 @@ int main(int argc, char** argv) {
         if (drive.ok()) {
             ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
             if (ImGui::Checkbox("Son lecteur", &driveSoundOn)) drive.setEnabled(driveSoundOn);
-        }
-        if (machineIsMega(machine.bus.machine)) {
-            const Rtc::DateTime dt = machine.rtc.getDateTime();
-            ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
-            ImGui::Text(ICON_FA_CLOCK " %02d/%02d/%04d %02d:%02d:%02d",
-                        dt.day, dt.month, 1980 + dt.year, dt.hour, dt.min, dt.sec);
         }
         ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
         if (IconButton(color ? ICON_FA_ADJUST : ICON_FA_PALETTE, color ? "Passer en Mono" : "Passer en Couleur"))
