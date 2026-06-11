@@ -76,6 +76,14 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   d'etos192 sur MegaSTE (SCU non programmé). Pour le STE/Mega STE : EmuTOS 256 Ko ou TOS 1.62/2.06.
 
 ## Vidéo (Shifter)
+- **Adresse vidéo accumulée par OCTETS FIXES selon les drapeaux de bordure**
+  (`renderGlueFrame`, port des `BORDERBYTES_*` de `Video_CopyScreenLineColor`,
+  video.h:111-115) au lieu de `(DE_end−DE_start)/2` : une ligne RIGHT_OFF lit 204
+  octets (160+44, bord réel cycle 464) alors que la fenêtre s'arrête à 462 —
+  l'ancien calcul perdait 1 octet PAR LIGNE et le décor des écrans overscan
+  dérivait cumulativement (loader TDA de Rick Dangerous : bandes de garbage
+  empirant vers le bas, maintenant net). Étalons (glue selftest 19/19,
+  overscan_top, spec512, scrolls STE) inchangés.
 - Décodage planaire basse (320×200/16c), moyenne (640×200/4c), haute (640×400 mono) →
   texture OpenGL, conversion `$0RGB` → ARGB. Haute rés forcée blanc/noir.
 - Détection moniteur via **GPIP bit7** (couleur basse rés / mono haute rés).

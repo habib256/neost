@@ -939,7 +939,23 @@ void Shifter::renderGlueFrame() {
                 dst[x] = stColorToArgb(pal[0]);            // hors fenêtre / bordure → registre 0
             }
         }
-        if (nPix > 0) addr += static_cast<uint32_t>(nPix / bytePerPix);  // adresse vidéo accumulée
+        // Adresse vidéo ACCUMULÉE : avance par NOMBRES D'OCTETS FIXES selon les
+        // drapeaux de bordure (port de Video_CopyScreenLineColor / BORDERBYTES_*,
+        // video.h:111-115) et NON par (DE_end-DE_start)/2 : la fenêtre RIGHT_OFF
+        // s'arrête à cpl-50=462 mais le shifter lit 160+44=204 octets (bord réel
+        // 464) — l'ancien calcul perdait 1 octet PAR LIGNE et le décor dérivait
+        // cumulativement vers le bas (loader TDA de Rick Dangerous : bandes de
+        // garbage qui empirent ligne à ligne).
+        if (lineHasDE) {
+            int bytes = 160;                                        // BORDERBYTES_NORMAL
+            if (bm & glue::LEFT_OFF)        bytes += 26;            // BORDERBYTES_LEFT
+            else if (bm & glue::LEFT_PLUS_2) bytes += 2;
+            if (bm & glue::STOP_MIDDLE)     bytes -= 106;
+            else if (bm & glue::RIGHT_MINUS_2) bytes -= 2;
+            else if (bm & glue::RIGHT_OFF)  bytes += 44;            // BORDERBYTES_RIGHT
+            if (bm & glue::RIGHT_OFF_FULL)  bytes += 22;            // BORDERBYTES_RIGHT_FULL
+            addr += static_cast<uint32_t>(bytes);
+        }
     }
 }
 
