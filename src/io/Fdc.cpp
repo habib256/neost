@@ -181,6 +181,51 @@ static inline uint32_t lsnOffset(int track, int side, int sector, int spt, int s
     return uint32_t(lsn) * 512u;
 }
 
+// -----------------------------------------------------------------------------
+//  Détection de géométrie (port fidèle de Hatari floppy.c) — le BPB du secteur
+//  de boot est souvent FAUX sur les disquettes de jeux/cracks (Xenon 2 : faces=1
+//  au lieu de 2 ; Epic : BPB entièrement bidon ; Super Hang-On : 9 spt au lieu
+//  de 10). Hatari recoupe le BPB avec la TAILLE RÉELLE de l'image et recalcule
+//  spt/faces en cas d'incohérence — sinon les chargements multi-secteurs lisent
+//  les mauvais octets (bombes / retry infini).
+// -----------------------------------------------------------------------------
+
+// Cf. Hatari Floppy_DoubleCheckFormat (floppy.c:765) : devine faces et spt
+// depuis la taille de l'image quand le BPB ne colle pas.
+static void doubleCheckFormat(long diskSize, int& sides, int& spt) {
+    const int sidesFixed = (diskSize < 500 * 1024) ? 1 : 2;   // >500 Ko → 2 faces
+    const long totalSectors = diskSize / 512;
+
+    int sptFixed = -1;
+    for (int s = 9; s <= 12 && sptFixed < 0; ++s)             // formats courants :
+        for (int t = 80; t <= 84; ++t)                        // 80..84 pistes × 9..12 spt
+            if (totalSectors == long(t) * s * sidesFixed) { sptFixed = s; break; }
+    if (sptFixed < 0) {
+        if (spt >= 5 && spt <= 48)
+            sptFixed = spt;                                   // disquettes ED : BPB crédible
+        else
+            sptFixed = int(totalSectors / 80 / sidesFixed);   // BPB irrécupérable : 80 pistes
+    }
+    sides = sidesFixed;
+    spt   = sptFixed;
+}
+
+// Cf. Hatari Floppy_FindDiskDetails (floppy.c:839) : lit le BPB et ne lui fait
+// confiance que s'il est cohérent avec la taille de l'image.
+static void findDiskDetails(const std::vector<uint8_t>& image, int& spt, int& sides) {
+    if (image.size() < 0x1C) return;
+    int bpbSpt    = image[0x18] | (image[0x19] << 8);          // secteurs/piste
+    int bpbSides  = image[0x1A] | (image[0x1B] << 8);          // faces
+    const int bpbTotal = image[0x13] | (image[0x14] << 8);     // secteurs totaux
+
+    if (bpbTotal != int(image.size() / 512) || bpbSides == 0 || bpbSides > 2 ||
+        bpbSpt == 0 || bpbSpt > 48)
+        doubleCheckFormat(long(image.size()), bpbSides, bpbSpt);
+
+    spt   = bpbSpt;
+    sides = bpbSides;
+}
+
 // =============================================================================
 //  Décodage des formats d'image (.msa, .dim) — inchangé.
 // =============================================================================
@@ -295,11 +340,12 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         dk.raw = true;
     }
 
-    // Géométrie depuis le BPB (offsets 0x18 = secteurs/piste, 0x1A = faces).
-    if (dk.image.size() >= 0x1C) {
-        const int spt   = dk.image[0x18] | (dk.image[0x19] << 8);
-        const int sides = dk.image[0x1A] | (dk.image[0x1B] << 8);
-        if (spt   >= 1 && spt   <= 30) dk.spt   = spt;
+    // Géométrie : BPB recoupé avec la taille réelle de l'image (cf. Hatari
+    // Floppy_FindDiskDetails) — le BPB seul est souvent faux sur les cracks.
+    {
+        int spt = dk.spt, sides = dk.sides;
+        findDiskDetails(dk.image, spt, sides);
+        if (spt   >= 1 && spt   <= 48) dk.spt   = spt;
         if (sides >= 1 && sides <= 2)  dk.sides = sides;
     }
     dk.path = path;
