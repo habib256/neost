@@ -84,7 +84,18 @@ void DmaSound::startNewFrame() {
 
 void DmaSound::onFrameEnd() {
     setXsint(false);                              // fin de trame : XSINT → BAS (compte Timer A si AER bit4=0)
-    if (ctrl_ & 0x02) startNewFrame();            // repeat : nouvelle trame (→ XSINT HAUT, gère start==end)
+    if (ctrl_ & 0x02) {
+        startNewFrame();                          // repeat : nouvelle trame (→ XSINT HAUT, gère start==end)
+    } else {
+        // Trame one-shot terminée : le MATÉRIEL auto-efface le bit PLAY (port
+        // DmaSnd_EndOfFrameReached, dmaSnd.c:510) — $FF8901 doit relire 0. Le TOS
+        // (handler VBL) surveille ce bit pour sa détection moniteur/son : un PLAY
+        // qui reste collé déclenche un RESET en boucle (démo STE « Faster »).
+        // L'effacement vit ICI dans le moteur DMA, pas dans le mixeur audio hôte
+        // (mix() ne tourne pas en headless).
+        ctrl_   &= ~0x01;
+        playing_ = false;
+    }
 }
 
 void DmaSound::reset(bool cold) {

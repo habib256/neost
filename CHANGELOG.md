@@ -493,6 +493,11 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   diagnostics inchangée.
 
 ## Audio
+- **Bit PLAY ($FF8901) auto-effacé en fin de trame DMA one-shot** dans le MOTEUR DMA
+  (`DmaSound::onFrameEnd`, port `DmaSnd_EndOfFrameReached` dmaSnd.c:510) et plus
+  seulement dans le mixeur hôte (qui ne tourne pas en headless). Le handler VBL du TOS
+  surveille ce bit (détection moniteur/son) : un PLAY collé déclenchait un RESET en
+  boucle — la démo STE **Faster** rebootait au lieu d'entrer en course.
 - **Son haché et ralenti (GUI) — RÉSOLU** par la refonte de la cadence de la boucle
   principale (`main.cpp`). Trois causes superposées, mesurées au compteur d'underruns :
   (1) le bridage FIXE à 20 ms ne suivait pas la durée émulée des trames — un écran
