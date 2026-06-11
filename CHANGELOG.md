@@ -51,7 +51,7 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   MFP/PSG). NB : le timing absolu CPU↔vidéo se décale légèrement (le boot et les setups passent
   désormais le coût réel des accès périphériques), ce qui a demandé de **re-calibrer** la disquette
   de démo overscan gauche/droite `make_overscan_lr.py` (PAD1 20→12, rendu L+D plein PLUS propre
-  qu'avant). Cf. TODO §Wait states.
+  qu'avant).
 
 ## Types de machine & mémoire
 - **Profils** ST / Mega ST / STE / Mega STE (`MachineType`), choisis avant le boot
@@ -85,7 +85,7 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   60 Hz). Validé : **50 Hz byte-identique** (EmuTOS fr + TOS 1.02, 2 cœurs ; IRQ inchangé) ;
   60 Hz / mono rendu **byte-identique** avec un **Timer C (200 Hz) remis à l'échelle** de la
   trame raccourcie (374→310→262 IRQ/100 trames) ; batteries Z des diagnostics STE/MegaSTE
-  toujours Pass. *(Bascule 50/60 Hz EN COURS de trame pour les bordures → cf. TODO.)*
+  toujours Pass.
 - **Registres STE** (gatés STE) : fine scroll `$FF8264/65`, line width `$FF820F`, base
   basse `$FF820D`, palette 4 bits/canal, relecture sync.
 - **Zones « void » du shifter fidèles par machine** (port `ioMemTabST.c`/`ioMemTabSTE.c`,
@@ -98,8 +98,7 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   **fine-scroll** horizontal 0-15 px (décalage gauche + groupe de 16 px lu en plus à droite,
   modèle prefetch `$FF8265`), **line-offset** `$FF820F` (stride ligne `bpl + lineWidth*2`,
   aussi dans le compteur `$FF8205/07/09`), **base-basse** `$FF820D` composée dans `videoBase`.
-  Défaut (scroll 0 / line-width 0) byte-identique au boot. *(Distinction prefetch/no-prefetch
-  fine + bordures → cycle-accuracy, cf. TODO.)*
+  Défaut (scroll 0 / line-width 0) byte-identique au boot.
 - **Spectrum 512 — palette intra-ligne PIXEL-PERFECT vs Hatari** (port `spec512.c` + alignement
   bus `m68000.c`). Chaque écriture palette `$FF824x` est **datée au cycle live de Moira**
   (`recordColorWrite`) ; une trame qui réécrit la palette **> 512 fois** (image Spectrum 512,
@@ -184,8 +183,8 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   end-to-end L/D (`tools/make_overscan_lr.py`, impulsion hi-res par ligne) : NeoST ET Hatari
   ouvrent les bordures latérales (oracle `video_border_h` : « detect remove left/right »). Le rendu
   applique `DisplayPixelShift` (décalage 4 px du retrait gauche ; no-op si 0 → écrans normaux
-  inchangés). **Reste** (cf. TODO #7) : wakeup-state WS3 (+1 cyc, sous-pixel), med-res overscan,
-  rendu des blank lines/NO_SYNC, et le pixel-perfect L/D end-to-end (lié aux wait states).
+  inchangés). Raffinements restants (WS3, med-res overscan, blank lines, pixel-perfect L/D,
+  scrolling Cuddly) → cf. TODO §Bordures.
 - **spec512 — boot du diaporama étalon** : `spectrum_512_auto_diapo.st` (SPSLIDE8 dans `\AUTO\`)
   s'auto-lance sous **vrai TOS** (`tos100us/fr` + `--disk`), PAS sous EmuTOS (qui ne traite pas
   l'AUTO de la même façon). Les images Spectrum 512 s'affichent **nettes de haut en bas**
@@ -205,10 +204,7 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   désormais **stable** et conforme aux briques d'Hatari (briques brunes, robot, échelles,
   fissures bleues). **Zéro régression** : un écran 50 Hz ordinaire ne fait aucune bascule
   freq → `liveStartHBL_` reste 63 (compteur inchangé) ; glue self-test 19/19, spec512
-  pixel-identique, EmuTOS/TOS boot OK. ⚠ **Reste** (cf. TODO) : quand le robot se déplace,
-  le **scrolling saute** (gros sauts d'images au lieu d'un défilement fluide) ; et le
-  **scroller de la bordure BASSE** n'est pas rendu (retrait bas non modélisé dans le rendu live).
-  *(Reste : scroller de la bordure BASSE du menu non rendu — cf. TODO, retrait bas live.)*
+  pixel-identique, EmuTOS/TOS boot OK. Scrolling robot + scroller bordure basse → cf. TODO.
 - **Machine Glue LIVE → compteur vidéo par-ligne — DÉBLOQUE ENCHANTED LAND** (Thalion
   1990, qui passait « LOADING » puis écran noir à jamais). La machine Glue STF complète
   (`startHBL` + `updateGlueState`, port `Video_Update_Glue_State`) tourne désormais
@@ -401,7 +397,14 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   rotation par piste (`cyclesPerRev` dérivé de la longueur réelle). Débloque les jeux
   **PROTÉGÉS** : ✅ **Dungeon Master** (fuzzy bits), **Stunt Car Racer**, **Tower of
   Babel**, Golden Axe, Chessmaster… (séquence de lecture identique à Hatari, vérifiée à
-  l'oracle). Quelques protections spécifiques restent à affiner (cf. TODO).
+  l'oracle).   Quelques protections spécifiques restent à affiner (cf. TODO).
+- **Masquage d'adresse DMA** (port `FDC_WriteDMAAddress` / `DMA_MaskAddressHigh`) :
+  octet haut `&0x3f/0x7f/0xff` selon le modèle, bas forcé word-align `&0xfe`.
+- **Compteur de secteurs DMA non relisible** : lecture SCREG `$FF8604` renvoie
+  `ff8604recent_` (pas `dmaSectorCount_`) ; bits statut DMA 3-15 depuis le dernier
+  accès `$FF8604` (`FDC_DiskControllerStatus_ReadWord`, `FDC_DmaStatus_ReadWord`).
+- **Accès octet à `$FF8604/06` → bus error** (ST non-Falcon) : largeur d'accès
+  propagée par le bus, faute dans le handler FDC (`ioMemTabSTE.c`).
 - **Erreurs d'adresse 68000** (`M68K_EMULATE_ADDRESS_ERROR`, exception 3 sur accès
   mot/long impair) activées sous Musashi (Moira les avait déjà) — requises par les
   anti-debug de certaines protections. Boot EmuTOS byte-identique, batterie Z des
@@ -541,6 +544,9 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - **RTC RP5C15** (Mega ST/Mega STE, `$FFFC21-$FFFC3F`) : modèle paresseux déterministe
   (cycle CPU du dernier top de seconde + rattrapage), registre RESET, débordement BCD
   calendaire. Corrige « C0 No clock installed » + « C1 clock increment error ».
+- **Persistance RTC entre sessions** (`neost.cfg` : clés `rtc=` date/heure BCD,
+  `rtc_saved=` horodatage hôte) : reprise au boot avec rattrapage du temps écoulé ;
+  snapshot à chaque sauvegarde de config (`saveConfig` / `snapshotRtc`).
 - **MIDI** (`MidiAcia`, `$FFFC04/06`) : bouclage OUT→IN + IRQ canal 6.
 - **Port série RS-232 / USART MFP** : RSR/UDR, IRQ RxFull (12)/TxEmpty (10)/RxErr (11)/
   TxErr (9), lignes RTS→CTS (GPIP2)/DTR→DCD (GPIP1)/RI (GPIP6) via PSG port A.
@@ -593,6 +599,11 @@ fidèles à Hatari, pas des bugs.
   C'est l'outil de débogage principal.
 - **`tools/trace_diff.py`** : aligne une trace NeoST et une trace Hatari sur un PC commun
   (`--align-pc`) et localise la première divergence (flux PC + registres).
+- **Suite étalons headless** : `tools/etalons.json` (manifeste), `fetch_etalons.py`
+  (fetch freeware), `run_etalons.py` (captures + régression vs `tests/reference/`),
+  `compare_screenshot.py` (diff pixel, crop active/buffer), `hatari_oracle.sh`
+  (oracle PNG, `--oracle`). Étalon intégrés : glue_selftest, EmuTOS STE boot,
+  Spectrum 512 diapo, overscan_top ; fetch auto : Cuddly Demos (`fujiology`).
 - **Horloge IKBD figée en headless** (`Ikbd::setClock`, 1ᵉʳ jan 2026 12:00:00 comme la
   RTC) : EmuTOS affiche la date/heure du bureau depuis l'horloge IKBD (commande `$1C`),
   pas la RTC — elle suivait l'heure HÔTE et cassait le diff pixel de `etos_ste_boot`
@@ -604,8 +615,13 @@ fidèles à Hatari, pas des bugs.
 - TOS 1.02 Mega ST FR : boot complet, green desktop basse rés.
 - **Arkanoid** (Imagine 1987) : se lance via l'AUTO de la disquette et affiche son
   écran-titre **stable** (plus de gel `$31736`) — résolu par le **modèle FDC rotationnel**
-  (spin-up + débit MFM réels), sous Musashi ET Moira. ⚠ **Le jeu ne démarre pas encore**
-  (on atteint le titre, jamais la partie — cf. TODO §FDC). Lemmings (cracktro), Out Run
+  (spin-up + débit MFM réels), sous Musashi ET Moira.   ⚠ **Le jeu ne démarre pas encore**
+  (on atteint le titre, jamais la partie — cf. TODO §Arkanoid). Lemmings (cracktro), Out Run
   (répertoire), etc. chargent depuis la disquette.
 - **Diagnostic ST « Field Service » v4.4** (cartouche) : batterie Z (RAM/ROM/Clavier/Audio/
   MFP-Glue-Timing/BLiT) = Pass ; **Floppy → Test Speed** = ~200 ms/tour (300 RPM).
+- **Enchanted Land** (Thalion 1990) : logo + pluie conformes à l'oracle Hatari, **jeu jouable**
+  après une touche (2 cœurs) — débloqué par la machine Glue LIVE dans `videoCounter()`
+  (calibration fullscreen du loader sur `$FF8209`).
+- **The Cuddly Demos** : menu fullscreen statique stable (flicker résolu par VDE_On live) ;
+  conforme aux briques d'Hatari.
