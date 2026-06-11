@@ -99,6 +99,24 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   modèle prefetch `$FF8265`), **line-offset** `$FF820F` (stride ligne `bpl + lineWidth*2`,
   aussi dans le compteur `$FF8205/07/09`), **base-basse** `$FF820D` composée dans `videoBase`.
   Défaut (scroll 0 / line-width 0) byte-identique au boot.
+- **Scroll fin STE — prefetch vs $FF8264 + avance compteur EXACTE** (port
+  `Video_CopyScreenLineColor`/`Mono` + `Video_GetMMUStartCycle`), validé **pixel-identique
+  à l'oracle Hatari** sur étalon synthétique :
+  - **$FF8265 (prefetch)** : le compteur vidéo avance d'**1 mot PAR PLAN** par ligne
+    (+8 octets en basse rés, +4 en moyenne, +2 en mono) — l'ancien pas uniforme (+2)
+    désalignait les PLANS sur un remplissage contigu (couleurs parasites, lignes
+    fantômes 1/4). Sur le motif de test, la dérive donne la DIAGONALE de 16 px/ligne
+    du vrai matériel (`scrollCounterAdvance`, appliqué au compteur matérialisé, au
+    stride analytique et au stride du compteur live `$FF8205/07/09`).
+  - **$FF8264 (sans prefetch)** : désormais DISTINGUÉ — aucun mot supplémentaire lu,
+    aucune avance compteur ; l'affichage démarre 16 px plus tard : les 16 premiers
+    pixels sont couleur 0 et `dst[c] = source[c-16+scroll]` (memmove+memset d'Hatari,
+    pré-transformé dans `decodeLineIndices` → les émetteurs, spec512 inclus, héritent).
+  - **MMU start −16 cycles** gaté sur le prefetch seul (avant : sur tout scroll).
+  - **Étalons permanents** : `tools/make_scroll_test.py` (motif 1 colonne/64 px sur
+    remplissage contigu — rend visibles décalage ET pas du compteur) → disques générés
+    `scroll_8265.st`/`scroll_8264.st`, références verrouillées à **0 px d'écart**
+    (`etalons.json`), conformes à l'oracle Hatari ligne par ligne.
 - **Spectrum 512 — palette intra-ligne PIXEL-PERFECT vs Hatari** (port `spec512.c` + alignement
   bus `m68000.c`). Chaque écriture palette `$FF824x` est **datée au cycle live de Moira**
   (`recordColorWrite`) ; une trame qui réécrit la palette **> 512 fois** (image Spectrum 512,

@@ -44,7 +44,16 @@ def bra_s(name):
     code.extend(b'\x60\x00')
 
 out    = sys.argv[1] if len(sys.argv) > 1 else "/tmp/scroll_test.st"
-mode   = sys.argv[2] if len(sys.argv) > 2 else '8265'
+# Mode explicite (argv[2]) ou INFÉRÉ du nom de fichier (« …8264… » / « …8265… ») —
+# le runner d'étalons (run_etalons.py, disk_generate) ne passe que le chemin.
+if len(sys.argv) > 2:
+    mode = sys.argv[2]
+elif '8264' in out:
+    mode = '8264'
+elif '8265' in out:
+    mode = '8265'
+else:
+    mode = 'off'
 scroll = int(sys.argv[3]) if len(sys.argv) > 3 else 4
 assert mode in ('8265', '8264', 'off')
 assert 0 <= scroll <= 15

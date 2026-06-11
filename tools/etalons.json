@@ -91,6 +91,36 @@
         "hint": "The Union Demo — rapatrier à la main si fetch auto échoue (freeware)."
       },
       "optional": true
+    },
+    {
+      "id": "scroll_8265",
+      "name": "Scroll fin STE $8265 (avec prefetch) — make_scroll_test",
+      "subsystem": "shifter/hscroll",
+      "rom": "roms/tos162us.img",
+      "disk": "disks/etalons/scroll_8265.st",
+      "disk_generate": "tools/make_scroll_test.py",
+      "machine": "ste",
+      "mem": "512k",
+      "cpu": "moira",
+      "frames": 400,
+      "frame": 380,
+      "crop": "active",
+      "max_diff_px": 0
+    },
+    {
+      "id": "scroll_8264",
+      "name": "Scroll fin STE $8264 (sans prefetch) — make_scroll_test",
+      "subsystem": "shifter/hscroll",
+      "rom": "roms/tos162us.img",
+      "disk": "disks/etalons/scroll_8264.st",
+      "disk_generate": "tools/make_scroll_test.py",
+      "machine": "ste",
+      "mem": "512k",
+      "cpu": "moira",
+      "frames": 400,
+      "frame": 380,
+      "crop": "active",
+      "max_diff_px": 0
     }
   ]
 }
