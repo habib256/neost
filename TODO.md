@@ -223,6 +223,8 @@ basse) → Enchanted Land (plante après le LOADING)**.
       **Validé à l'oreille sur _Magic Pocket_.**
 
 ## IKBD HD6301 + souris/joystick
+- [x] ~~Délais de réponse + buffer de sortie borné~~ — FAIT (Phase 2 du plan) : délais
+      initiaux fixes des réponses $FD/$FC/$F6/$F7, buffer 1024 + rejet paquet-entier.
 - [ ] Keymap international / layouts TOS (FR/UK/DE, autorepeat) _(faible valeur)_ — réf. `keymap.c`
 
 ## ACIA 6850 (clavier + MIDI)

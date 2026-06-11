@@ -48,6 +48,10 @@ class Fdc {
 public:
     Fdc(Bus& bus, YM2149& psg, Mfp& mfp) : bus_(bus), psg_(psg), mfp_(mfp) {}
 
+    // À la destruction, on persiste les overlays STX en attente (.wd1772) des deux
+    // lecteurs (sauvegardes de jeux STX préservées au reboot). Cf. Hatari STX_Eject.
+    ~Fdc();
+
     // Branche l'ordonnanceur : la machine à états du FDC est datée via la source
     // Scheduler::FDC (chaque phase reprogramme l'événement au cycle voulu).
     void setScheduler(Scheduler* s) { sched_ = s; }
@@ -154,6 +158,7 @@ private:
     uint8_t  readTrackST(uint8_t track, uint8_t side);
     uint8_t  writeTrackBuffer();                // WRITE TRACK : extrait les secteurs du flux écrit
     void     writeBack(FloppyDisk& dk, uint32_t off, uint32_t len);  // recopie dans le .st
+    void     flushWd1772(FloppyDisk& dk);       // persiste l'overlay STX (.wd1772) si écritures en attente
 
     // --- Chemin STX (cf. Hatari FDC_*_STX) : champs ID réels, statut par secteur,
     //     bits fuzzy, timing variable. Utilise stxNextSector_ posé par nextSectorIDStx.
@@ -162,6 +167,10 @@ private:
     uint8_t  writeSectorStx(int size);
     uint8_t  readAddressStx();
     uint8_t  readTrackStx(int track, int side);
+    uint8_t  writeTrackStx();                   // WRITE TRACK sur STX (overlay piste + .wd1772)
+    // Données du secteur `idSector` dans l'overlay de piste FORMATÉE (WRITE TRACK) de
+    // (track, side), ou nullptr si pas d'overlay / secteur absent. Prime sur l'original.
+    const StxImage::FormattedSector* formattedSectorStx(int track, int side, uint8_t idSector) const;
 
     // --- Tampon de transfert FDC↔DMA (cf. Hatari FDC_Buffer_*) ----------------
     // Chaque octet porte un TIMING (cycles FDC) : fixe 256 pour .ST (bufferAdd), ou

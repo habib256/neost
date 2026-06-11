@@ -1,6 +1,8 @@
 // =============================================================================
 //  MidiAcia.cpp — ACIA 6850 MIDI avec bouclage OUT→IN (cf. MidiAcia.hpp).
 //
+//  Modèle aligné sur l'ACIA clavier (Ikbd.cpp) et midi.c/acia.c d'Hatari.
+//
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/MidiAcia.hpp"
@@ -15,39 +17,69 @@ enum : uint8_t {
 
 uint8_t MidiAcia::read8(uint32_t addr) {
     if ((addr & 2) == 0) {
-        // $FFFC04 : statut. TX toujours prêt ; RX plein si le bouclage a livré un octet.
-        uint8_t s = ACIA_TDRE;
-        if (!rx_.empty()) {
-            s |= ACIA_RDRF;
-            if (control_ & 0x80) s |= ACIA_IRQ;   // IRQ visible si RX int activé (RIE)
-        }
+        // $FFFC04 : statut. TDRE = 1 au repos ; RDRF si un octet a été livré au RDR
+        // (bouclage MIDI IN) et pas encore lu ; IRQ si une cause RX ou TX est active.
+        uint8_t s = tdre_ ? ACIA_TDRE : 0;
+        if (rdrf_)       s |= ACIA_RDRF;
+        if (irqActive()) s |= ACIA_IRQ;
         return s;
     }
-    // $FFFC06 : donnée reçue → consomme un octet (efface RDRF).
-    if (rx_.empty()) return 0x00;
-    const uint8_t b = rx_.front();
-    rx_.pop_front();
-    raiseIfReady();                  // octet suivant éventuel → ré-arme l'IRQ
+    // $FFFC06 : donnée reçue. À vide, le RDR conserve le dernier octet reçu (RDR
+    // persistant, cf. Hatari acia.c). Sinon : consomme l'octet livré (efface RDRF)
+    // et livre aussitôt le suivant éventuel (le MIDI n'a pas besoin de cadence).
+    if (!rdrf_)
+        return rdr_;
+    const uint8_t b = rdr_;
+    rdrf_ = false;
+    if (!rx_.empty()) {              // octet suivant du bouclage → devient le RDR courant
+        rdr_  = rx_.front();
+        rx_.pop_front();
+        rdrf_ = true;
+    }
+    raiseIfReady();
     return b;
 }
 
 void MidiAcia::write8(uint32_t addr, uint8_t v) {
     if ((addr & 2) == 0) {
-        // $FFFC04 : contrôle. Bits0-1 = 11 → master reset de l'ACIA (vide la file).
+        // $FFFC04 : registre de contrôle. Bits 5-6 = contrôle émetteur : 01 arme
+        // l'IRQ d'émission (TIE) ; hors TIE, TDRE reste câblé à 1.
         control_ = v;
-        if ((v & 0x03) == 0x03) rx_.clear();
+        txEnableInt_ = ((v & 0x60) == 0x20);
+        if (!txEnableInt_)
+            tdre_ = true;
+        if ((v & 0x03) == 0x03) {
+            // MASTER RESET 6850 (CR bits 0-1 = 11, cf. acia.c ACIA_MasterReset) :
+            // le SR retombe à TDRE seul (RDRF effacé, l'octet du RDR est perdu) et la
+            // ligne IRQ est relâchée. La file de réception n'est PAS purgée (les
+            // octets « en transit » arrivent quand même après le reset).
+            rdrf_ = false;
+            tdre_ = true;
+        }
         raiseIfReady();
         return;
     }
     // $FFFC06 : octet émis sur MIDI OUT → bouclé aussitôt sur MIDI IN (câble OUT→IN).
-    rx_.push_back(v);
+    // S'il n'y a pas d'octet déjà dans le RDR, il y est livré directement ; sinon il
+    // attend dans la file (RDR persistant, lecture FIFO).
+    if (!rdrf_) {
+        rdr_  = v;
+        rdrf_ = true;
+    } else {
+        rx_.push_back(v);
+    }
     raiseIfReady();
 }
 
+bool MidiAcia::irqActive() const {
+    // Cause d'IRQ de l'ACIA 6850 (cf. midi.c MIDI_UpdateIRQ) : RX = octet livré
+    // (RDRF) et RX int activé (RIE, bit7) ; TX = registre d'émission vide (TDRE)
+    // et IRQ d'émission armée (TIE, CR bits5-6 = 01).
+    return (rdrf_ && (control_ & 0x80)) || (txEnableInt_ && tdre_);
+}
+
 void MidiAcia::raiseIfReady() {
-    // Comme l'ACIA clavier : la ligne d'IRQ est active si un octet est dispo et que
-    // l'interruption de réception est armée (RIE) → on lève le canal 6 du MFP (GPIP4).
-    const bool active = !rx_.empty() && (control_ & 0x80);
+    const bool active = irqActive();
     mfp_.setAciaLineMidi(active);
     if (active) mfp_.raise(Mfp::SRC_ACIA);
 }

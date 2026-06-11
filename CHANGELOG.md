@@ -277,6 +277,32 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - Chaînage des lignes : **I3** blitter, **I4** ACIA (clavier+MIDI en OU câblé), **I5** FDC,
   **I7** son DMA XSINT (moniteur XOR XSINT).
 
+## Phase 2 du plan d'écarts Hatari (cf. docs/HATARI_GAP_PLAN.md §8)
+Validée par campagne complète (15/15 tests IKBD, 3 boots pixel-identiques, étalons,
+diagnostics ST/MegaSTE, test fonctionnel .wd1772, axes Vroom) :
+- **ACIA MIDI alignée sur l'ACIA clavier** (`MIDI_UpdateIRQ`/`ACIA_MasterReset`) :
+  cause d'IRQ TX (TIE+TDRE), RDR persistant, master reset SANS purge de la file —
+  **le test « M MIDI » du diagnostic ST passe désormais** (échouait avant).
+- **IKBD : délais de réponse initiaux** (fixes, déterministes — $FD≈8000, $FC/$F6≈7200,
+  $F7=10800 cyc, cf. `IKBD_Cmd_Return_Byte_Delay`) et **buffer de sortie borné 1024**
+  avec rejet PAQUET-ENTIER (`IKBD_OutputBuffer_CheckFreeCount` — flood Downfall/Fokker,
+  mémoire bornée).
+- **Son DMA STE : compteur de trame $FF8909/0B/0D calculé sur l'horloge d'émulation**
+  (`liveCounterAddr`, déterministe, vivant en headless — effets calés sur la position :
+  Mental Hangover, Power Up Plus) + **filtre anti-repliement** (1,2,1)/4 par échantillon
+  DMA quand la fréquence DMA dépasse la sortie hôte (port `DmaSnd_LowPassFilter*`).
+- **STX : WRITE TRACK** (overlay piste brut + secteurs interprétés du flux MFM, relus
+  en priorité — Hatari laisse pDataRead NULL, écart documenté) et **persistance des
+  écritures dans `<image>.wd1772`** (format Hatari, interop : SECT/TRCK), sauvegardé à
+  l'éjection/remplacement/destruction, rechargé à l'insertion. Les sauvegardes de jeux
+  STX survivent au reboot.
+- **Vidéo : ligne BLANK sans NO_DE** (= `BORDERMASK_BLANK_LINE`) rendue couleur 0 avec
+  compteur vidéo avancé (octets fetchés) ; les lignes vides injectées par NO_SYNC/
+  SYNC_HIGH repoussent le bas de l'affichage (`glueEndHBL_ + glueBlankLines_`).
+  Le VBL `frameStart+offset` a été analysé NON-divergent (mêmes instants absolus
+  que Hatari). Reste de phase : `bSteBorderFlag` 336 px, `LEFT_OFF_2_STE`,
+  Timer B/AER mid-frame (cf. plan §8).
+
 ## Phase 1 du plan d'écarts Hatari (cf. docs/HATARI_GAP_PLAN.md)
 Sept correctifs « S » à fort impact, chaque item vérifié contre l'oracle des deux côtés
 et validé par campagne complète (tests unitaires dédiés, 3 boots pixel-identiques,

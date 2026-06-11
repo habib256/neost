@@ -14,6 +14,7 @@
 // =============================================================================
 #pragma once
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -83,6 +84,18 @@ private:
     void armRx();                            // date la livraison du prochain octet de la file
     void raiseIfReady();                     // tire GPIP4 si une cause d'IRQ ACIA est active
     bool irqActive() const;                  // cause d'IRQ : RX (RDRF & RIE) OU TX (TIE & TDRE)
+
+    // Place pour `n` octets dans la file de sortie IKBD bornée à 1024 (cf. Hatari
+    // IKBD_OutputBuffer_CheckFreeCount, ikbd.c:945-959). Une émission de PAQUET
+    // teste la taille TOTALE du paquet AVANT le 1er pushRx : buffer plein → paquet
+    // jeté en entier (jamais de demi-paquet), comme Hatari.
+    bool rxFree(std::size_t n) const;
+
+    // Pose le délai de la PREMIÈRE livraison d'une réponse de commande (§7.4) :
+    // n'a d'effet QUE si la chaîne de livraison est au repos (file vide, pas
+    // d'octet livré non lu, pas de livraison en vol) — sinon le délai d'un octet
+    // déjà cadencé fausserait l'horodatage. Consommé par armRx().
+    void armResponseDelay(int64_t cycles);
 
     // Renvoie le nombre total d'octets (commande incluse) attendu pour `opcode`,
     // d'après la table KeyboardCommands[] de Hatari (ikbd.c). 0 = opcode inconnu
@@ -155,6 +168,9 @@ private:
                                              // (relire à vide le renvoie, cf. acia.c)
     bool    rdrf_ = false;                   // RDR plein (octet livré non encore lu)
     bool    rxPending_ = false;              // une livraison IKBD_RX est déjà datée
+    int64_t nextDelay_ = 0;                  // délai (cyc) à appliquer à la PREMIÈRE livraison
+                                             // d'une réponse de commande (cf. dispatchCommand /
+                                             // armRx, §7.4). 0 = cadence normale 10240.
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
     bool    clockDividerSet_ = false;        // CR écrit avec un diviseur valide (≠ master
                                              // reset) : avant ça, l'IKBD parle dans le vide

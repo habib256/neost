@@ -6,6 +6,7 @@
 // =============================================================================
 #include "io/StxImage.hpp"
 
+#include <cstdio>
 #include <cstring>
 
 // --- Lectures little-endian (le conteneur STX est LE ; seul l'ID_CRC est BE) ----
@@ -224,4 +225,201 @@ StxImage::Track* StxImage::findTrack(int track, int side) {
     for (Track& t : tracks_)
         if (t.trackNumber == want) return &t;
     return nullptr;
+}
+
+// =============================================================================
+//  Overlays d'écriture : interprétation WRITE TRACK + persistance « .wd1772 ».
+//  Port de extern/hatari/src/floppies/stx.c (STX_WriteDisk / STX_LoadSaveFile /
+//  FDC_WriteTrack_STX). Cf. StxImage.hpp.
+// =============================================================================
+
+// --- E/S BIG-endian (le .wd1772 stocke les multi-octets en BE, cf. Mem_WriteU*_BE). -
+static inline void wr16be(std::vector<uint8_t>& v, uint16_t x) { v.push_back(uint8_t(x >> 8)); v.push_back(uint8_t(x)); }
+static inline void wr32be(std::vector<uint8_t>& v, uint32_t x) {
+    v.push_back(uint8_t(x >> 24)); v.push_back(uint8_t(x >> 16));
+    v.push_back(uint8_t(x >> 8));  v.push_back(uint8_t(x));
+}
+static inline uint16_t rd16be(const uint8_t* p) { return uint16_t((p[0] << 8) | p[1]); }
+static inline uint32_t rd32be(const uint8_t* p) {
+    return (uint32_t(p[0]) << 24) | (uint32_t(p[1]) << 16) | (uint32_t(p[2]) << 8) | uint32_t(p[3]);
+}
+
+bool StxImage::dirty() const {
+    for (const SaveSector& s : saveSectors) if (s.used) return true;
+    return !saveTracks.empty();
+}
+
+const std::vector<StxImage::FormattedSector>* StxImage::findFormatted(int track, int side) const {
+    auto it = formattedTracks.find(trackKey(track, side));
+    return it == formattedTracks.end() ? nullptr : &it->second;
+}
+
+// Interprète le flux MFM brut d'un WRITE TRACK pour en extraire des secteurs
+// (champ ID via IDAM $FE, données via DAM $FB/$F8). Même logique que le chemin .ST
+// de Fdc::writeTrackBuffer. Le résultat alimente formattedTracks[key], consulté en
+// premier par les lectures. ÉCART assumé p/r à Hatari (qui n'interprète pas le flux).
+void StxImage::buildFormattedFromWriteTrack(int track, int side, const std::vector<uint8_t>& mfm) {
+    std::vector<FormattedSector> secs;
+    const int n = int(mfm.size());
+    auto rb = [&](int k) -> uint8_t { return (k >= 0 && k < n) ? mfm[k] : 0; };
+    for (int i = 0; i + 6 < n; ) {
+        if (rb(i) == 0xFE) {                                   // IDAM : champ d'adresse
+            FormattedSector fs;
+            fs.idTrack  = rb(i + 1);
+            fs.idHead   = rb(i + 2);
+            fs.idSector = rb(i + 3);
+            fs.idSize   = rb(i + 4);
+            const uint16_t ssz = uint16_t(128 << (fs.idSize & 0x03));
+            int k = i + 5;                                     // cherche la marque de données
+            while (k < n && rb(k) != 0xFB && rb(k) != 0xF8) ++k;
+            if (k < n && k + 1 + ssz <= n) {
+                fs.sectorSize = ssz;
+                fs.idCrc      = crc16({ 0xa1, 0xa1, 0xa1, 0xfe, fs.idTrack, fs.idHead, fs.idSector, fs.idSize });
+                fs.data.resize(ssz);
+                for (int j = 0; j < ssz; ++j) fs.data[j] = rb(k + 1 + j);
+                secs.push_back(std::move(fs));
+                i = k + 1 + ssz;
+                continue;
+            }
+        }
+        ++i;
+    }
+    if (!secs.empty()) formattedTracks[trackKey(track, side)] = std::move(secs);
+    else               formattedTracks.erase(trackKey(track, side));
+}
+
+// Sérialise les overlays (write-sector PUIS write-track) dans un fichier compagnon
+// au FORMAT HATARI : en-tête « WD1772 » + version/révision + nombres BE de blocs,
+// puis blocs SECT (secteurs réécrits « used ») et TRCK (pistes réécrites brutes).
+// Cf. STX_WriteDisk. Ne crée rien s'il n'y a aucune écriture à sauvegarder.
+bool StxImage::saveWd1772(const std::string& path) const {
+    // Compte les secteurs réellement utilisés (StructIsUsed != 0 chez Hatari).
+    uint32_t usedSectors = 0;
+    for (const SaveSector& s : saveSectors) if (s.used) ++usedSectors;
+    if (usedSectors == 0 && saveTracks.empty()) return true;   // rien à écrire (pas de fichier)
+
+    std::vector<uint8_t> out;
+    // En-tête (16 o) : « WD1772 » (6) + version(1) + revision(1) + counts BE.
+    const char id[] = "WD1772";
+    out.insert(out.end(), id, id + 6);
+    out.push_back(1);                                          // WD1772_SAVE_VERSION
+    out.push_back(0);                                          // WD1772_SAVE_REVISION
+    wr32be(out, usedSectors);
+    wr32be(out, uint32_t(saveTracks.size()));
+
+    // Blocs SECT (uniquement les entrées utilisées).
+    for (const SaveSector& s : saveSectors) {
+        if (!s.used) continue;
+        const char sid[] = "SECT";
+        out.insert(out.end(), sid, sid + 4);
+        // BlockLen = 20-4 + SectorSize = 16 + SectorSize (longueur après le champ BlockLen).
+        wr32be(out, uint32_t(16 + s.sectorSize));
+        out.push_back(s.track);
+        out.push_back(s.side);
+        wr16be(out, s.bitPos);
+        out.push_back(s.idTrack);
+        out.push_back(s.idHead);
+        out.push_back(s.idSector);
+        out.push_back(s.idSize);
+        wr16be(out, s.idCrc);
+        wr16be(out, s.sectorSize);
+        out.insert(out.end(), s.data.begin(), s.data.begin() + s.sectorSize);
+    }
+
+    // Blocs TRCK (octets bruts écrits, comme pDataWrite).
+    for (const SaveTrack& t : saveTracks) {
+        const char tid[] = "TRCK";
+        out.insert(out.end(), tid, tid + 4);
+        const uint16_t sz = uint16_t(t.dataWrite.size());
+        // BlockLen = 12-4 + TrackSizeWrite = 8 + TrackSizeWrite.
+        wr32be(out, uint32_t(8 + sz));
+        out.push_back(t.track);
+        out.push_back(t.side);
+        wr16be(out, sz);
+        out.insert(out.end(), t.dataWrite.begin(), t.dataWrite.end());
+    }
+
+    std::FILE* f = std::fopen(path.c_str(), "wb");
+    if (!f) return false;
+    const bool ok = std::fwrite(out.data(), 1, out.size(), f) == out.size();
+    std::fclose(f);
+    return ok;
+}
+
+// Recharge un fichier compagnon « .wd1772 » (format Hatari) et reconstitue les
+// overlays write-sector (rattachés par BitPosition) et write-track (réinterprétés
+// en secteurs formatés). Cf. STX_LoadSaveFile / _SECT / _TRCK. Renvoie false si le
+// fichier est absent / illisible / de format invalide (l'image reste utilisable).
+bool StxImage::loadWd1772(const std::string& path) {
+    std::FILE* f = std::fopen(path.c_str(), "rb");
+    if (!f) return false;
+    std::fseek(f, 0, SEEK_END);
+    long sz = std::ftell(f);
+    std::fseek(f, 0, SEEK_SET);
+    if (sz < 16) { std::fclose(f); return false; }
+    std::vector<uint8_t> in(static_cast<std::size_t>(sz));
+    const bool rok = std::fread(in.data(), 1, size_t(sz), f) == size_t(sz);
+    std::fclose(f);
+    if (!rok) return false;
+
+    const uint8_t* base = in.data();
+    const uint8_t* endp = base + in.size();
+    if (std::memcmp(base, "WD1772", 6) != 0) return false;
+    const uint8_t version = base[6], revision = base[7];
+    if (version != 1 || revision != 0) return false;
+    // (counts en +8/+12 ; on n'en a pas strictement besoin, on parcourt les blocs.)
+
+    saveSectors.clear();
+    saveTracks.clear();
+    formattedTracks.clear();
+
+    const uint8_t* p = base + 16;
+    while (p + 8 <= endp) {
+        const uint8_t* pSave = p;
+        const uint32_t blockLen = rd32be(p + 4);
+        if (std::memcmp(p, "SECT", 4) == 0) {
+            const uint8_t* q = p + 8;                          // payload du SECT
+            if (q + 12 > endp) break;
+            SaveSector s;
+            s.track   = q[0];
+            s.side    = q[1];
+            s.bitPos  = rd16be(q + 2);
+            s.idTrack = q[4];
+            s.idHead  = q[5];
+            s.idSector= q[6];
+            s.idSize  = q[7];
+            s.idCrc   = rd16be(q + 8);
+            s.sectorSize = rd16be(q + 10);
+            const uint8_t* d = q + 12;
+            if (d + s.sectorSize > endp) break;
+            s.data.assign(d, d + s.sectorSize);
+            s.used = true;
+            const int idx = int(saveSectors.size());
+            saveSectors.push_back(std::move(s));
+            // Rattache au secteur d'origine par (Track, Side, BitPosition).
+            const SaveSector& ss = saveSectors[idx];
+            if (Track* t = findTrack(ss.track, ss.side))
+                for (Sector& sec : t->sectors)
+                    if (sec.bitPosition == ss.bitPos) { sec.saveIndex = idx; break; }
+        } else if (std::memcmp(p, "TRCK", 4) == 0) {
+            const uint8_t* q = p + 8;                          // payload du TRCK
+            if (q + 4 > endp) break;
+            SaveTrack t;
+            t.track = q[0];
+            t.side  = q[1];
+            const uint16_t tsz = rd16be(q + 2);
+            const uint8_t* d = q + 4;
+            if (d + tsz > endp) break;
+            t.dataWrite.assign(d, d + tsz);
+            const int idx = int(saveTracks.size());
+            // Réinterprète le flux écrit en secteurs (overlay de lecture).
+            buildFormattedFromWriteTrack(t.track, t.side, t.dataWrite);
+            saveTracks.push_back(std::move(t));
+            if (Track* trk = findTrack(t.track, t.side)) trk->saveTrackIndex = idx;
+        }
+        // Bloc suivant : pSave+4 (après l'ID) + blockLen.
+        p = pSave + 4 + blockLen;
+        if (p <= pSave) break;                                 // garde-fou
+    }
+    return true;
 }

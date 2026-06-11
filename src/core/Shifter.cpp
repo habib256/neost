@@ -823,10 +823,19 @@ void Shifter::renderGlueFrame() {
     uint8_t idx[700];                                      // max DE (462-4) + marge
     for (int row = 0; row < curH_; ++row) {
         const int sl = baseStart + (row - activeY_);       // scanline de cette ligne buffer
-        const bool displayed = (sl >= glueStartHBL_ && sl < glueEndHBL_ && sl >= 0 && sl < nLines);
+        // Les lignes vides injectées par NO_SYNC/SYNC_HIGH repoussent le bas de
+        // l'affichage (cf. Hatari « nHBL >= nEndHBL + BlankLines »).
+        const bool displayed = (sl >= glueStartHBL_ && sl < glueEndHBL_ + glueBlankLines_
+                                && sl >= 0 && sl < nLines);
         int ds = 0, de = 0, shift = 0; uint32_t bm = 0;
         if (displayed) { const GlueLine& L = glueLines_[sl]; ds = L.displayStartCycle; de = L.displayEndCycle; bm = L.borderMask; shift = L.displayPixelShift; }
         const bool lineHasDE = displayed && !(bm & glue::NO_DE) && de > ds;
+        // Ligne BLANK sans NO_DE (≙ BORDERMASK_BLANK_LINE d'Hatari, switch 50/60
+        // dans la fenêtre HBlank 24-28) : le Shifter a FETCHÉ ses octets — le
+        // compteur vidéo avance normalement — mais l'affichage est éteint : toute
+        // la ligne sort en couleur 0 (cf. Video_CopyScreenLineColor, memset après
+        // l'avance de pVideoRaster).
+        const bool blankOut = displayed && (bm & glue::BLANK) != 0;
         const int  nPix = lineHasDE ? (de - ds) : 0;
         // decodeWindowIndices décode des GROUPES de 16 px : la plage valide de idx est
         // [0, nDec) avec nDec arrondi au groupe supérieur → marge pour le DisplayPixelShift.
@@ -842,6 +851,10 @@ void Shifter::renderGlueFrame() {
                 ++cur;
             }
             if (lineHasDE && cyc >= ds && cyc < de) {
+                // Ligne BLANK (affichage éteint mais octets fetchés) : la sortie
+                // est couleur 0 sur toute la fenêtre — l'adresse vidéo, elle,
+                // avance normalement en fin de ligne (cf. blankOut plus haut).
+                if (blankOut) { dst[x] = stColorToArgb(pal[0]); continue; }
                 // Décalage pixel de la ligne (Hatari DisplayPixelShift : <0 = vers la
                 // gauche, p.ex. -4 sur le retrait gauche hi/lo). 0 pour les lignes
                 // normales → aucun effet (top/bottom/écran standard inchangés).

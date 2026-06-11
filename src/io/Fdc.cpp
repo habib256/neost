@@ -16,6 +16,7 @@
 #include "core/YM2149.hpp"
 #include "io/Mfp.hpp"
 
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -42,6 +43,23 @@ uint32_t dmaMaskAddressHigh(std::size_t ramBytes) {
     if (kb > 8u * 1024u) return 0xffu;
     if (kb > 4u * 1024u) return 0x7fu;
     return 0x3fu;
+}
+
+// Chemin du fichier compagnon « .wd1772 » d'une image STX (cf. Hatari STX_FileNameToSave) :
+// on remplace l'extension « .stx » ou « .stx.gz » (insensible à la casse) par « .wd1772 » ;
+// à défaut, on ajoute « .wd1772 » au chemin complet.
+std::string wd1772Path(const std::string& stxPath) {
+    auto endsWithCI = [&](const char* ext) {
+        const std::size_t n = std::strlen(ext);
+        if (stxPath.size() < n) return false;
+        for (std::size_t i = 0; i < n; ++i)
+            if (std::tolower(static_cast<unsigned char>(stxPath[stxPath.size() - n + i])) != ext[i])
+                return false;
+        return true;
+    };
+    if (endsWithCI(".stx.gz")) return stxPath.substr(0, stxPath.size() - 7) + ".wd1772";
+    if (endsWithCI(".stx"))    return stxPath.substr(0, stxPath.size() - 4) + ".wd1772";
+    return stxPath + ".wd1772";
 }
 uint32_t dmaAddressMask(std::size_t ramBytes) {
     return 0xff00fffeu | (dmaMaskAddressHigh(ramBytes) << 16);
@@ -241,6 +259,7 @@ static bool decodeDim(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out
 bool Fdc::loadImage(const std::string& path, int drive) {
     FloppyDisk& dk = drive_[drive & 1];
     const bool wasPresent = dk.present();   // disque déjà monté → échange à chaud
+    flushWd1772(dk);                        // remplacement de média : persiste l'overlay STX sortant
     std::ifstream f(path, std::ios::binary | std::ios::ate);
     if (!f) { std::fprintf(stderr, "[FDC] image introuvable : %s\n", path.c_str()); return false; }
     const std::streamsize n = f.tellg();
@@ -262,6 +281,11 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         dk.imgType = FloppyDisk::IMG_STX;
         dk.sides   = stx->sides();
         const int tps = stx->tracksPerSide();
+        // Recharge un éventuel fichier compagnon « .wd1772 » (écritures persistées :
+        // write sector + write track). Cf. Hatari STX_Insert → STX_LoadSaveFile.
+        const std::string wd = wd1772Path(path);
+        if (stx->loadWd1772(wd))
+            std::fprintf(stderr, "[FDC] overlay STX rechargé depuis %s\n", wd.c_str());
         dk.stx     = std::move(stx);
         dk.raw     = false;
         dk.path    = path;
@@ -325,9 +349,28 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     return true;
 }
 
+// Persiste l'overlay STX dans son fichier compagnon « .wd1772 » s'il y a eu des
+// écritures (write sector / write track). Appelé à l'éjection / au remplacement de
+// média / à la destruction. Cf. Hatari STX_Eject → STX_WriteDisk.
+void Fdc::flushWd1772(FloppyDisk& dk) {
+    if (dk.imgType != FloppyDisk::IMG_STX || !dk.stx || dk.path.empty()) return;
+    if (!dk.stx->dirty()) return;
+    const std::string wd = wd1772Path(dk.path);
+    if (dk.stx->saveWd1772(wd))
+        std::fprintf(stderr, "[FDC] overlay STX sauvegardé dans %s\n", wd.c_str());
+    else
+        std::fprintf(stderr, "[FDC] échec sauvegarde overlay STX %s\n", wd.c_str());
+}
+
+Fdc::~Fdc() {
+    flushWd1772(drive_[0]);
+    flushWd1772(drive_[1]);
+}
+
 void Fdc::eject(int drive) {
     FloppyDisk& dk = drive_[drive & 1];
     const bool wasPresent = dk.present();
+    flushWd1772(dk);                        // persiste les écritures STX en attente
     dk.image.clear();
     dk.stx.reset();
     dk.imgType = FloppyDisk::IMG_ST;
@@ -640,7 +683,7 @@ uint8_t Fdc::readTrackST(uint8_t track, uint8_t side) {
 uint8_t Fdc::writeTrackBuffer() {
     if (driveSel_ < 0 || !drive_[driveSel_].present()) return STR_LOST;
     FloppyDisk& dk = drive_[driveSel_];
-    if (dk.imgType == FloppyDisk::IMG_STX) return 0;       // WRITE TRACK sur STX : non géré (rare)
+    if (dk.imgType == FloppyDisk::IMG_STX) return writeTrackStx();
     const int n = bufferSize();
     auto rb = [&](int k) -> uint8_t { return (k >= 0 && k < n) ? buf_[k] : 0; };
     for (int i = 0; i + 6 < n; ) {
@@ -663,6 +706,47 @@ uint8_t Fdc::writeTrackBuffer() {
     return 0;
 }
 
+// WRITE TRACK sur STX (cf. FDC_WriteTrack_STX, stx.c:2027-2133). On stocke les octets
+// BRUTS de la piste réécrite dans un overlay par (piste, face) — réutilisé pour le bloc
+// TRCK du .wd1772 (interop Hatari) — et on SUPPRIME les overlays write-sector antérieurs
+// de cette piste (le 'write track' prime). NeoST va au-delà d'Hatari : il interprète
+// aussi le flux MFM écrit en secteurs (formattedTracks) pour que les lectures suivantes
+// (read sector / read address / read track) voient la piste réécrite (écart documenté).
+uint8_t Fdc::writeTrackStx() {
+    FloppyDisk& dk = drive_[driveSel_];
+    StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
+    if (!t) return STR_LOST;                                   // piste absente → LOST_DATA (cf. Hatari)
+
+    // Tampon brut écrit par la DMA (timings ignorés).
+    std::vector<uint8_t> raw(bufferSize());
+    for (int i = 0; i < bufferSize(); ++i) raw[i] = bufferReadBytePos(i);
+
+    // Réutilise l'entrée saveTracks de cette piste si elle existe déjà, sinon en crée une.
+    if (t->saveTrackIndex < 0) {
+        StxImage::SaveTrack st;
+        st.track = uint8_t(dk.headTrack); st.side = side_;
+        st.dataWrite = std::move(raw);
+        dk.stx->saveTracks.push_back(std::move(st));
+        t->saveTrackIndex = int(dk.stx->saveTracks.size()) - 1;
+    } else {
+        dk.stx->saveTracks[t->saveTrackIndex].dataWrite = std::move(raw);
+    }
+
+    // Overlay de lecture : interprète le flux écrit en secteurs.
+    dk.stx->rebuildFormatted(dk.headTrack, side_, dk.stx->saveTracks[t->saveTrackIndex].dataWrite);
+
+    // Le 'write track' prime sur les 'write sector' antérieurs de cette piste : on
+    // libère leurs overlays (StructIsUsed = 0 → non écrits dans le .wd1772).
+    for (StxImage::Sector& sec : t->sectors) {
+        if (sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size())) {
+            dk.stx->saveSectors[sec.saveIndex].used = false;
+            dk.stx->saveSectors[sec.saveIndex].data.clear();
+            sec.saveIndex = -1;
+        }
+    }
+    return 0;
+}
+
 // Recopie une zone modifiée de l'image en mémoire vers le fichier .st monté.
 void Fdc::writeBack(FloppyDisk& dk, uint32_t off, uint32_t len) {
     if (!dk.raw || dk.path.empty() || off + len > dk.image.size()) return;  // .msa : pas de recopie
@@ -678,6 +762,19 @@ void Fdc::writeBack(FloppyDisk& dk, uint32_t off, uint32_t len) {
 //  position angulaire vient de BitPosition (en BITS, 1 bit = 32 cycles FDC).
 // =============================================================================
 static constexpr int MFM_BIT = 32;   // 4 µs/bit × 8 MHz = 32 cycles FDC (FDC_DELAY_CYCLE_MFM_BIT)
+
+// Cherche le secteur `idSector` dans l'overlay de piste FORMATÉE (issu d'un WRITE
+// TRACK) de (track, side). Cet overlay PRIME sur l'overlay write-sector et sur les
+// données d'origine pour les chemins de lecture STX. Renvoie nullptr si absent.
+const StxImage::FormattedSector* Fdc::formattedSectorStx(int track, int side, uint8_t idSector) const {
+    const FloppyDisk& dk = drive_[driveSel_ < 0 ? 0 : driveSel_];
+    if (!dk.stx) return nullptr;
+    const std::vector<StxImage::FormattedSector>* fmt = dk.stx->findFormatted(track, side);
+    if (!fmt) return nullptr;
+    for (const StxImage::FormattedSector& fs : *fmt)
+        if (fs.idSector == idSector) return &fs;
+    return nullptr;
+}
 
 // Latence jusqu'au prochain champ ID + champs ID du secteur trouvé (stxNextSector_).
 // Cf. FDC_NextSectorID_FdcCycles_STX.
@@ -726,9 +823,14 @@ uint8_t Fdc::readSectorStx(int* pSize) {
     *pSize = sec.sectorSize;
     uint32_t readTime = sec.readTime;
 
-    // Secteur réécrit par un 'write sector' → données de l'overlay, timing standard.
+    // Source des données, par ordre de priorité : overlay de piste FORMATÉE (WRITE
+    // TRACK) → overlay write-sector → données d'origine de l'STX. Les deux overlays
+    // donnent un timing standard (pas de fuzzy / timing variable).
     const uint8_t* writeData = nullptr;
-    if (sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size())) {
+    if (const StxImage::FormattedSector* fs = formattedSectorStx(dk.headTrack, side_, sec.idSector)) {
+        writeData = fs->data.data();
+        readTime = 0;
+    } else if (sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size())) {
         writeData = dk.stx->saveSectors[sec.saveIndex].data.data();
         readTime = 0;
     }
@@ -778,6 +880,11 @@ uint8_t Fdc::writeSectorStx(int size) {
     if (sec.saveIndex < 0) {
         StxImage::SaveSector ss;
         ss.track = uint8_t(dk.headTrack); ss.side = side_; ss.bitPos = sec.bitPosition;
+        // On copie le champ ID du secteur d'origine (cf. STX_WriteSector_STX) pour le
+        // bloc SECT du .wd1772 (interop Hatari).
+        ss.idTrack = sec.idTrack; ss.idHead = sec.idHead; ss.idSector = sec.idSector;
+        ss.idSize = sec.idSize;   ss.idCrc  = sec.idCrc;  ss.sectorSize = uint16_t(size);
+        ss.used = true;
         ss.data.resize(size, 0);
         dk.stx->saveSectors.push_back(std::move(ss));
         sec.saveIndex = int(dk.stx->saveSectors.size()) - 1;
@@ -849,8 +956,11 @@ uint8_t Fdc::readTrackStx(int track, int side) {
         uint16_t crc = 0xFFFF;
         bufferAdd(0xa1); crcAdd(crc, 0xa1); bufferAdd(0xa1); crcAdd(crc, 0xa1); bufferAdd(0xa1); crcAdd(crc, 0xa1);
         bufferAdd(0xfb); crcAdd(crc, 0xfb);
+        // Priorité : overlay piste formatée (WRITE TRACK) → write-sector → origine.
         const uint8_t* pData = sec.pData;
-        if (sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size()))
+        if (const StxImage::FormattedSector* fs = formattedSectorStx(track, side, sec.idSector))
+            pData = fs->data.data();
+        else if (sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size()))
             pData = dk.stx->saveSectors[sec.saveIndex].data.data();
         for (int i = 0; i < ssz; ++i) { const uint8_t b = pData ? pData[i] : 0; bufferAdd(b); crcAdd(crc, b); }
         bufferAdd(uint8_t(crc >> 8)); bufferAdd(uint8_t(crc));

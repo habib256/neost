@@ -99,6 +99,21 @@ private:
     bool     playing_ = false;
     double   phase_   = 0.0;         // accumulateur de rééchantillonnage
 
+    // Compteur de trame côté ÉMULATION (cf. Hatari DmaSnd_GetFrameCount) : la
+    // position lue en $FF8909/0B/0D est calculée depuis les cycles écoulés depuis
+    // le début de trame (déterministe, indépendante du thread audio — qui peut ne
+    // pas exister en headless). frameStartCycle_ = horloge live au démarrage.
+    int64_t  frameStartCycle_ = 0;
+    uint32_t liveCounterAddr() const;
+
+    // Filtre anti-repliement du canal DMA (port de Hatari DmaSnd_LowPassFilter*) :
+    // FIR (1,2,1)/4 appliqué à CHAQUE échantillon DMA fetché quand la fréquence
+    // DMA dépasse la fréquence de sortie hôte (50066 Hz → 48 kHz) ; hors filtre,
+    // un retard d'un échantillon est conservé (gain 4/4) comme l'oracle.
+    int      lpIn0_ = 0, lpIn1_ = 0; // historique des 2 derniers échantillons bruts
+    float    curSample_ = 0.0f;      // échantillon courant (filtré) tenu en ZOH
+    bool     primeSample_ = true;    // 1er échantillon de trame à fetcher
+
     // Ligne XSINT (External Sound INTerrupt) du son DMA STE : HAUT pendant qu'une
     // trame joue, BAS à l'arrêt / fin de trame. Câblée à TAI (Timer A event-count,
     // déjà géré via onFrameEnd) ET à GPIP7 du MFP (XOR avec la détection moniteur).

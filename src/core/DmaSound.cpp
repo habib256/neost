@@ -63,6 +63,8 @@ void DmaSound::setXsint(bool level) {
 void DmaSound::startNewFrame() {
     curAddr_ = startAddr_;
     phase_   = 0.0;
+    primeSample_ = true;                               // 1er échantillon à re-fetcher
+    frameStartCycle_ = sched_ ? sched_->liveNow() : 0; // ancre du compteur live ($FF8909+)
     if (endAddr_ <= startAddr_ && !(ctrl_ & 0x02)) {   // trame vide, pas de repeat → arrêt sec
         playing_ = false;
         ctrl_   &= ~0x01;
@@ -213,6 +215,24 @@ float DmaSound::masterGain() const {
     return static_cast<float>((gL + gR) * 0.5);
 }
 
+// Position courante du compteur de trame ($FF8909/0B/0D), calculée sur l'horloge
+// d'émulation : début de trame + (cycles écoulés × fréquence DMA / horloge CPU)
+// échantillons, bornée à l'adresse de fin, toujours PAIRE (le DMA lit des mots —
+// cf. Hatari dma.frameCounterAddr). À l'arrêt : adresse de début. Sans
+// ordonnanceur (tests) : repli sur le pointeur du thread audio.
+uint32_t DmaSound::liveCounterAddr() const {
+    if (!playing_) return startAddr_;
+    if (!sched_)   return curAddr_ & ~1u;
+    const uint32_t step = (mode_ & 0x80) ? 1u : 2u;        // mono 1 octet/échantillon, stéréo 2
+    const int64_t  rate = int64_t(kRate[mode_ & 0x03]);
+    int64_t elapsed = sched_->liveNow() - frameStartCycle_;
+    if (elapsed < 0) elapsed = 0;
+    const int64_t samples = elapsed * rate / CPU_HZ;
+    uint32_t addr = startAddr_ + uint32_t(samples) * step;
+    if (addr > endAddr_) addr = endAddr_;
+    return addr & ~1u;
+}
+
 // Lecture d'un échantillon (mono -128..127). En stéréo, moyenne L+R (sortie mono).
 int DmaSound::sampleAt(uint32_t addr, bool stereo) const {
     const auto rd = [&](uint32_t a) -> int {
@@ -228,12 +248,14 @@ uint8_t DmaSound::read8(uint32_t addr) {
         case 0x03: return uint8_t(startAddr_ >> 16);
         case 0x05: return uint8_t(startAddr_ >> 8);
         case 0x07: return uint8_t(startAddr_);
-        // Compteur courant (position de lecture). À l'ARRÊT, le vrai HW renvoie
-        // l'adresse de DÉBUT, pas la dernière position (cf. Hatari DmaSnd_GetFrameCount,
-        // dmaSnd.c:756-759). NB : l'avance live cycle-exacte (Sound_Update) = Phase C.
-        case 0x09: return uint8_t((playing_ ? curAddr_ : startAddr_) >> 16);
-        case 0x0B: return uint8_t((playing_ ? curAddr_ : startAddr_) >> 8);
-        case 0x0D: return uint8_t (playing_ ? curAddr_ : startAddr_);
+        // Compteur courant (position de lecture) : calculé sur l'horloge
+        // d'ÉMULATION depuis le début de trame (cf. liveCounterAddr) — les effets
+        // calés sur $FF8909 (Mental Hangover, Power Up Plus) le voient avancer,
+        // y compris en headless. À l'ARRÊT, le vrai HW renvoie l'adresse de DÉBUT
+        // (cf. Hatari DmaSnd_GetFrameCount, dmaSnd.c:756-759).
+        case 0x09: return uint8_t(liveCounterAddr() >> 16);
+        case 0x0B: return uint8_t(liveCounterAddr() >> 8);
+        case 0x0D: return uint8_t(liveCounterAddr());
         case 0x0F: return uint8_t(endAddr_ >> 16);
         case 0x11: return uint8_t(endAddr_ >> 8);
         case 0x13: return uint8_t(endAddr_);
@@ -295,13 +317,27 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
     const bool   stereo = !(mode_ & 0x80);                    // bit7=0 → stéréo entrelacé
     const uint32_t step = stereo ? 2u : 1u;                   // octets par trame DMA
 
+    // Filtre ANTI-REPLIEMENT (port de Hatari DmaSnd_LowPassFilterLeft/Right) :
+    // actif quand la fréquence DMA dépasse la fréquence de sortie (50066 Hz →
+    // 48 kHz) — FIR (1,2,1)/4 appliqué à CHAQUE échantillon DMA fetché. Hors
+    // filtre, Hatari garde un retard d'un échantillon (out = prev << 2, gain 4/4)
+    // pour une latence constante — reproduit ici.
+    const bool lowPass = kRate[mode_ & 0x03] > double(sampleRate);
+    auto pushSample = [&](int raw) {
+        const int flt = lowPass ? (lpIn0_ + 2 * lpIn1_ + raw) : (lpIn1_ << 2);
+        lpIn0_ = lpIn1_;
+        lpIn1_ = raw;
+        curSample_ = float(flt) * 0.25f;
+    };
+    if (primeSample_) { pushSample(sampleAt(curAddr_, stereo)); primeSample_ = false; }
+
     // Registre de mixage du LMC1992 (commande 0) : seul mixing==1 mélange YM2149 + DMA ;
     // 0/2/3 routent le DMA SEUL → il écrase le YM (cf. Hatari DmaSnd_GenerateSamples,
     // dmaSnd.c:555-568). N'a d'effet qu'ici, trame en cours : DMA à l'arrêt → `mix` sort
     // plus haut et le YM passe intact (pas de mute du YM hors lecture DMA).
     const bool addYm = (mwMixing_ == 1);
     for (uint32_t i = 0; i < frames; ++i) {
-        const float dma = (sampleAt(curAddr_, stereo) / 128.0f) * kDmaGain;
+        const float dma = (curSample_ / 128.0f) * kDmaGain;
         if (addYm) out[i] += dma;                             // YM2149 + DMA
         else       out[i]  = dma;                             // DMA seul (écrase le YM)
         phase_ += inc;
@@ -317,6 +353,7 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
                     return;                                    // reste de `out` = silence
                 }
             }
+            pushSample(sampleAt(curAddr_, stereo));            // nouvel échantillon DMA → filtre
         }
     }
 }

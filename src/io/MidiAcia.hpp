@@ -12,6 +12,10 @@
 //  Hors diagnostic, aucun logiciel ST courant ne dépend de l'absence de bouclage
 //  MIDI ; on garde le câble toujours « branché » par simplicité.
 //
+//  Modèle ACIA aligné sur l'ACIA clavier (cf. Ikbd.cpp) et midi.c/acia.c d'Hatari :
+//  cause d'IRQ TX (TIE + TDRE), RDR persistant (relire à vide renvoie le dernier
+//  octet), master reset 6850 qui NE purge PAS la file de réception en transit.
+//
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
@@ -28,9 +32,15 @@ public:
     void    write8(uint32_t addr, uint8_t v);
 
 private:
-    void raiseIfReady();                     // lève le canal 6 du MFP si octet dispo + RIE
+    void raiseIfReady();                     // lève le canal 6 du MFP si une cause d'IRQ est active
+    bool irqActive() const;                  // cause d'IRQ : RX (RDRF & RIE) OU TX (TIE & TDRE)
 
     Mfp&    mfp_;
     std::deque<uint8_t> rx_;                 // file MIDI IN (alimentée par le bouclage)
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
+    uint8_t rdr_ = 0;                        // Receive Data Register : dernier octet livré
+                                             // (relire à vide le renvoie, cf. acia.c)
+    bool    rdrf_ = false;                   // RDR plein (octet livré non encore lu)
+    bool    txEnableInt_ = false;            // IRQ d'émission armée : CR bits5-6 = 01 (TIE)
+    bool    tdre_ = true;                    // Transmit Data Register Empty : 1 au repos
 };

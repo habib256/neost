@@ -207,13 +207,27 @@ axes Vroom, cœur Moira — cf. commit)
 5. ✅ §7.2 master reset 6850 clavier (SR=$02, file non purgée) + §7.3 Clock_Divider
    (octets jetés tant que le CR n'est pas programmé).
 
-### Phase 2 — fidélité jeux/démos (M)
-6. §7.1 MidiAcia alignée sur l'ACIA clavier (réutiliser le modèle d'Ikbd).
-7. §5.2 compteur DMA sur l'horloge émulation (+ §5.3 filtre anti-repliement).
-8. §3.1 persistance `.wd1772` + §3.2 WRITE TRACK STX.
-9. §1.A1 `bSteBorderFlag` 336 px + §1.A2 `LEFT_OFF_2_STE` (timings STE).
-10. §1.A4/A5 EMPTY/BLANK_LINE + rendu NO_SYNC ; §1.B2 VBL fin-de-trame.
-11. §2.4 Timer B/AER mid-frame ; §7.4 délais de réponse IKBD ; §7.5 buffer borné.
+### Phase 2 — fidélité jeux/démos (M) — ✅ largement FAITE (3 items vidéo restants)
+6. ✅ §7.1 MidiAcia alignée sur l'ACIA clavier (TIE/TDRE, RDR persistant, master
+   reset sans purge) — le test « M MIDI » du diagnostic ST passe désormais (il
+   échouait avant : « M0 MIDI not received »).
+7. ✅ §5.2 compteur de trame DMA calculé sur l'horloge d'émulation
+   (`DmaSound::liveCounterAddr`, déterministe, vivant en headless) + §5.3 filtre
+   anti-repliement (1,2,1)/4 par échantillon DMA fetché.
+8. ✅ §3.1 persistance `.wd1772` (format Hatari, interop ; sauvegarde à l'éjection /
+   remplacement / destruction, rechargement à l'insertion) + §3.2 WRITE TRACK STX
+   (overlay piste brut pour le bloc TRCK + secteurs interprétés `formattedTracks`
+   relus en priorité — NeoST va au-delà d'Hatari qui laisse pDataRead à NULL).
+9. ⏳ RESTE : §1.A1 `bSteBorderFlag` 336 px + §1.A2 `LEFT_OFF_2_STE` (exigent la
+   table de timings STE distincte des ancres STF).
+10. ✅ §1.A4/A5 : ligne `BLANK` sans NO_DE (= BLANK_LINE Hatari) rendue couleur 0
+    avec compteur vidéo avancé ; lignes vides NO_SYNC repoussent le bas
+    (`glueEndHBL_ + glueBlankLines_`). §1.B2 VBL : analysé NON-DIVERGENT
+    (frameStart+offset = frontière de trame précédente + offset — mêmes instants
+    absolus que Hatari), rien à changer.
+11. ⏳ RESTE : §2.4 Timer B/AER mid-frame. ✅ §7.4 délais de réponse IKBD (fixes,
+    déterministes : $FD≈8000, $FC/$F6≈7200, $F7=10800 cyc) ; ✅ §7.5 buffer de
+    sortie borné 1024 + rejet paquet-entier.
 
 ### Phase 3 — chantiers structurels (L)
 12. **Glue vidéo « live »** (lève le verrou : §1.B1, §1.C3, §1.C5, §1.C6, §1.A6).
