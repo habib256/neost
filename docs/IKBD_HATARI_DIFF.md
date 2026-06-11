@@ -112,8 +112,8 @@ tourne autour d'un point : NeoST réduit le bit IRQ du 6850 à `RDRF & RIE`, san
   `Write_CR` (`acia.c:841`) et `Write_TDR` (`acia.c:901`).
 
 **Validation Phase A.** Tester avec une cartouche/PRG qui arme `CR=$b6` puis pilote l'IKBD via
-IRQ ACIA. En headless : `--cart`/`--keys` + `--irq` pour tracer GPIP4/canal 6 ; comparer aux DEUX
-cœurs (`--cpu musashi|moira`). L'IRQ « transmetteur prêt » doit apparaître dès l'armement.
+IRQ ACIA. En headless : `--cart`/`--keys` + `--irq` pour tracer GPIP4/canal 6 (cœur Moira,
+cycle-exact). L'IRQ « transmetteur prêt » doit apparaître dès l'armement.
 
 ### Phase B — Robustesse : master reset, fenêtre critique de reset, flush au reset
 
@@ -244,5 +244,5 @@ touche/manette tenue).
 - **Pivot pratique** : valider via une **cartouche de diagnostic** (`--cart` + `--keys`, rapport
   sur port série, `--loopback` branché APRÈS `--keys`) qui programme l'ACIA clavier et lit le SR —
   c'est le moyen le plus fiable de valider Phase A (TIE) et Phase B (master reset → SR=`0x02`)
-  indépendamment d'un titre commercial. Tester les DEUX cœurs (`--cpu musashi|moira`).
+  indépendamment d'un titre commercial. Cœur 68000 : Moira (seul cœur, cycle-exact).
 - **Faux positif à connaître** : « VME/FPU MegaSTE not found » est CORRECT (cf. `CLAUDE.md`).

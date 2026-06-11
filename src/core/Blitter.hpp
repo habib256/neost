@@ -18,9 +18,8 @@
 //     blit (progression par tranche) ; effacer BUSY pendant le transfert met le
 //     blitter en PAUSE (repris au prochain BUSY=1), comme sur le vrai matériel.
 //  Granularité : la tranche se découpe à la frontière de MOT (un mot peut
-//  déborder le budget de ≤3 accès) et le bug « 63 accès » d'Hatari n'est pas
-//  modélisé. Sous Musashi (non cycle-exact), le stall CPU est un no-op : seule
-//  la DURÉE du blit (BUSY, IRQ) est modélisée, comme les autres wait states.
+//  déborder le budget de ≤3 accès). Le stall CPU avance l'horloge cycle-exact de
+//  Moira, comme les autres wait states de bus.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================

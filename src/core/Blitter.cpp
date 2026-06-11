@@ -39,8 +39,7 @@ void     Blitter::writeWord(uint32_t addr, uint16_t v) { ++sliceBus_; bus_.write
 
 // Facture le temps de bus du blitter au CPU : 4 cycles par accès + les cycles
 // d'arbitration (prise 4/8, restitution 4). Moira avance son horloge (le CPU
-// « attend » que le blitter rende le bus) ; Musashi → no-op (cf.
-// addBusWaitCycles), seule la durée BUSY/IRQ est alors modélisée.
+// « attend » que le blitter rende le bus, cf. addBusWaitCycles).
 void Blitter::stallCpu(int busAccesses, int arbCycles) {
     const int cycles = busAccesses * 4 + arbCycles;
     if (busAccesses > 0 && bus_.cpu) bus_.cpu->addBusWaitCycles(cycles);
@@ -158,9 +157,8 @@ void Blitter::onSlice() {
 
 // Fenêtre PRE_START [t, t+4) : pendant ces 4 cycles le bit BUSY est posé mais le
 // blitter n'a pas encore le bus — il compte pourtant déjà les accès. Un accès bus
-// CPU dans la fenêtre (signalé par les callbacks mémoire de Moira via Bus) lui
-// vole un accès : la tranche suivante n'en fera que 63. Musashi (non cycle-exact)
-// ne signale pas ses accès → toujours 64, durée seule modélisée.
+// CPU dans la fenêtre (signalé par les accès mémoire de Moira via Bus) lui
+// vole un accès : la tranche suivante n'en fera que 63.
 void Blitter::armPreStartWindow(int64_t now) {
     bus_.blitterWinStart = now;
     bus_.blitterWinEnd   = now + kPreStartCycles;

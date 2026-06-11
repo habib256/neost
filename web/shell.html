@@ -41,16 +41,12 @@
 </head>
 <body>
   <h1>NeoST — émulateur Atari ST</h1>
-  <div class="sub">WebAssembly · cœur 68000 Musashi · EmuTOS</div>
+  <div class="sub">WebAssembly · cœur 68000 Moira (cycle-exact) · EmuTOS</div>
 
   <div id="toolbar">
     <button id="btnReset">Reset</button>
     <button id="btnMono">Passer en Mono</button>
     <button id="btnSound" title="Bruits mécaniques du lecteur de disquette">Son lecteur : on</button>
-    <select id="cpuSel" title="Cœur CPU (recharge la page)">
-      <option value="musashi">CPU : Musashi</option>
-      <option value="moira">CPU : Moira (exp.)</option>
-    </select>
     <select id="machineSel" title="Modèle de machine (recharge la page)">
       <option value="st">Machine : ST</option>
       <option value="megast">Machine : Mega ST</option>
@@ -233,18 +229,8 @@
     function callMountB(p)  { if (ready) Module.ccall('neost_mount_disk_b', null, ['string'], [p]); }
     function callLoadTos(p) { if (ready) Module.ccall('neost_load_tos', null, ['string'], [p]); }
 
-    // Sélecteur de cœur CPU : choisi AVANT le démarrage (le cœur est figé à la
-    // construction de la Machine) → on recharge la page avec ?cpu=…
-    (function () {
-      var sel = document.getElementById('cpuSel');
-      var cur = new URLSearchParams(location.search).get('cpu') || 'musashi';
-      sel.value = (cur === 'moira') ? 'moira' : 'musashi';
-      sel.addEventListener('change', function () {
-        var p = new URLSearchParams(location.search);
-        p.set('cpu', sel.value);
-        location.search = p.toString();   // recharge avec le cœur choisi
-      });
-    })();
+    // NeoST n'a plus qu'un seul cœur 68000 : Moira (cycle-exact). Le sélecteur de
+    // cœur a été retiré (le paramètre d'URL ?cpu= reste toléré côté C++ pour compat).
 
     // Sélecteur de modèle machine : figé à la construction → recharge avec ?machine=
     (function () {

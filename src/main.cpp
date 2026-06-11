@@ -49,7 +49,8 @@ static std::string resolveData(const std::string& given, const std::string& exeD
 
 // --- Persistance des préférences (dernier ROM, type de moniteur) -------------
 // Fichier neost.cfg à la racine du projet (à côté de build/).
-// cpu = cœur 68000 choisi AU DÉMARRAGE ("moira" cycle-exact par défaut, ou "musashi").
+// cpu = cœur 68000 (toujours "moira", cycle-exact ; clé conservée pour rétro-compat —
+// une ancienne valeur "musashi" est tolérée puis ramenée à "moira" avec un avertissement).
 // Défaut machine : 512 Ko ST + cœur Moira.
 // kbdjoy = émulation joystick au clavier active ; joyport = port ST visé par
 // l'émulation clavier (0 ou 1, défaut 1 = port « jeux »).
@@ -1149,15 +1150,6 @@ int main(int argc, char** argv) {
                     for (int i = 0; i < 5; ++i)
                         if (ImGui::MenuItem(mlabels[i], nullptr, cfg.mem == mids[i])) {
                             cfg.mem = mids[i]; saveConfig(exeDir, cfg, &machine); reqRebuild = true;
-                        }
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu(ICON_FA_MICROCHIP " Cœur CPU")) {
-                    const char* const cids[]    = { "moira", "musashi" };
-                    const char* const clabels[] = { "Moira (cycle-exact)", "Musashi" };
-                    for (int i = 0; i < 2; ++i)
-                        if (ImGui::MenuItem(clabels[i], nullptr, cfg.cpu == cids[i])) {
-                            cfg.cpu = cids[i]; saveConfig(exeDir, cfg, &machine); reqRebuild = true;
                         }
                     ImGui::EndMenu();
                 }

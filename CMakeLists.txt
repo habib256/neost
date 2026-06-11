@@ -36,7 +36,7 @@ endif()
 
 # =============================================================================
 #  Bibliothèque cœur — AUCUNE dépendance GUI (ni GL ni GLFW).
-#  Contient la carte mère + le CPU (Musashi) + le traceur.
+#  Contient la carte mère + le CPU (Moira, cycle-exact) + le traceur.
 # =============================================================================
 add_library(neost_core STATIC
     src/core/Bus.cpp
@@ -63,47 +63,10 @@ set_source_files_properties(
     src/core/Machine.cpp src/core/Tracer.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
-# --- Musashi (core 68000) en sous-module, compilé DANS le cœur -------------
-# git submodule add https://github.com/kstenerud/Musashi extern/Musashi
-# ( cd extern/Musashi && cc -o m68kmake m68kmake.c && ./m68kmake . m68k_in.c )
-set(MUSASHI_DIR "${CMAKE_SOURCE_DIR}/extern/Musashi")
-if(EXISTS "${MUSASHI_DIR}/m68kops.c")
-    target_sources(neost_core PRIVATE
-        "${MUSASHI_DIR}/m68kcpu.c"
-        "${MUSASHI_DIR}/m68kops.c"
-        "${MUSASHI_DIR}/m68kdasm.c"
-        "${MUSASHI_DIR}/softfloat/softfloat.c")
-    target_include_directories(neost_core PUBLIC "${MUSASHI_DIR}")
-    target_compile_definitions(neost_core PUBLIC  NEOST_HAS_MUSASHI=1)
-    # Les énormes tables globales de Musashi (m68ki_instruction_jump_table = 512 Ko,
-    # m68ki_cycles) sont des définitions provisoires C → section __common sur-alignée
-    # (0x8000) que l'éditeur de liens macOS doit rabaisser. -fno-common les place en
-    # __bss avec un alignement normal et supprime l'avertissement.
-    set_source_files_properties(
-        "${MUSASHI_DIR}/m68kcpu.c"
-        "${MUSASHI_DIR}/m68kops.c"
-        "${MUSASHI_DIR}/m68kdasm.c"
-        "${MUSASHI_DIR}/softfloat/softfloat.c"
-        PROPERTIES COMPILE_OPTIONS "-fno-common")
-    # Active le hook d'instruction (traceur) ET l'acquittement d'interruption
-    # vectorisé : sinon Musashi auto-vectorise TOUT et les vecteurs MFP du ST
-    # (clavier, Timer C) ne sont jamais utilisés → EmuTOS reste bloqué.
-    target_compile_definitions(neost_core PRIVATE
-        M68K_INSTRUCTION_HOOK=1
-        M68K_EMULATE_INT_ACK=1
-        # Erreurs d'adresse 68000 (accès mot/long à adresse impaire) : indispensable
-        # aux protections de jeux (STX) qui déclenchent volontairement l'exception 3
-        # comme anti-debug. Moira les modélise déjà ; on aligne Musashi.
-        M68K_EMULATE_ADDRESS_ERROR=1)
-else()
-    message(WARNING
-        "Musashi introuvable — CPU en stub. "
-        "git submodule add https://github.com/kstenerud/Musashi extern/Musashi "
-        "puis générer m68kops.c (cf. README).")
-endif()
-
-# --- Moira (cœur 68000 cycle-exact, MIT) — 2e cœur CPU sélectionnable ---------
+# --- Moira (cœur 68000 cycle-exact, MIT) — SEUL cœur CPU de NeoST ------------
 # git submodule add https://github.com/dirkwhoffmann/Moira extern/moira
+# L'ancien cœur Musashi (rapide mais NON cycle-exact) a été retiré : Moira est
+# désormais le seul cœur 68000, et il est REQUIS pour bâtir NeoST.
 # Moira nécessite C++20 (std::rotr/rotl, std::map::contains) → on compile ses
 # sources ET Cpu68k.cpp (qui inclut Moira.h) en C++20, le reste reste en C++17.
 set(MOIRA_SRC_DIR "${CMAKE_SOURCE_DIR}/extern/moira/Moira")
@@ -118,9 +81,10 @@ if(EXISTS "${MOIRA_SRC_DIR}/Moira.cpp")
         endif()
     endforeach()
 
-    # NeoST EXIGE Moira en mode cycle-exact — c'est son apport sur Musashi :
-    # PRECISE_TIMING=true (IPL échantillonné à la frontière de cycle, sync avant
-    # chaque accès) + MIMIC_MUSASHI=false. Ces réglages vivent dans MoiraConfig.h ;
+    # NeoST EXIGE Moira en mode cycle-exact : PRECISE_TIMING=true (IPL échantillonné
+    # à la frontière de cycle, sync avant chaque accès) + MIMIC_MUSASHI=false (priorité
+    # à la précision plutôt qu'à la compat avec l'ancien Musashi). Ces réglages vivent
+    # dans MoiraConfig.h ;
     # on les applique sur la COPIE générée pour garder le sous-module upstream propre.
     set(_moira_cfg "${MOIRA_BUILD_DIR}/MoiraConfig.h")
     file(READ "${_moira_cfg}" _moira_cfg_txt)
@@ -144,7 +108,9 @@ if(EXISTS "${MOIRA_SRC_DIR}/Moira.cpp")
     set_source_files_properties(src/core/Cpu68k.cpp
         PROPERTIES COMPILE_OPTIONS "-std=c++20")
 else()
-    message(STATUS "Moira absent (extern/moira) — seul le cœur Musashi sera disponible.")
+    message(FATAL_ERROR
+        "Moira introuvable (extern/moira) — c'est le SEUL cœur 68000 de NeoST et il est requis. "
+        "Initialisez le sous-module : git submodule update --init extern/moira")
 endif()
 
 # =============================================================================

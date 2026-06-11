@@ -1,9 +1,9 @@
 // =============================================================================
-//  Cpu68k.hpp — Wrapper C++ autour du core Musashi (Motorola 68000).
+//  Cpu68k.hpp — Wrapper C++ autour du core Moira (Motorola 68000, cycle-exact).
 //
-//  On NE réimplémente PAS le 68000 : Musashi est intégré en sous-module et
-//  exposé via cette façade. Le wrapper relie les callbacks mémoire C de Musashi
-//  à notre Bus, et expose juste ce qu'il faut au débogueur.
+//  On NE réimplémente PAS le 68000 : Moira est intégré en sous-module et exposé
+//  via cette façade. Le wrapper relie les accès mémoire de Moira à notre Bus et
+//  expose juste ce qu'il faut au débogueur.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -14,35 +14,36 @@
 class Bus;
 class Tracer;
 
-// Cœur d'exécution 68000 sélectionnable AU DÉMARRAGE :
-//   - Musashi : cœur MAME (MIT), rapide, coût total par instruction.
-//   - Moira   : cœur de vAmiga (MIT, cycle-exact, timing inter-instructions).
-// Choisi via --cpu / neost.cfg / l'UI WASM (cf. docs/CYCLE_ACCURACY.md).
-enum class CpuCore { Musashi, Moira };
+// NeoST n'a plus qu'UN SEUL cœur 68000 : Moira (cœur de vAmiga, MIT, cycle-exact,
+// timing inter-instructions). L'ancien cœur Musashi — rapide mais NON cycle-exact —
+// a été retiré : il n'apportait plus rien face à Moira. L'énum subsiste avec une
+// seule valeur pour garder les signatures (Machine, headless, WASM, neost.cfg) et
+// la rétro-compat de configuration (cf. parseCore).
+enum class CpuCore { Moira };
 
 class Cpu68k {
 public:
-    // core = cœur souhaité (choisi avant le reset, p. ex. via --cpu / config / UI).
-    explicit Cpu68k(Bus& bus, CpuCore core = CpuCore::Musashi);
+    // core = cœur souhaité (toujours Moira ; paramètre conservé pour compat API).
+    explicit Cpu68k(Bus& bus, CpuCore core = CpuCore::Moira);
 
-    // "musashi"/"uae" (insensible à la casse) → CpuCore ; défaut Musashi sinon.
+    // Tolère l'ancienne clé "musashi"/"uae" (insensible à la casse) : on AVERTIT et
+    // on bascule sur Moira, seul cœur disponible. Toute autre valeur → Moira aussi.
     static CpuCore parseCore(const std::string& s);
     static const char* coreName(CpuCore c);
 
-    // Cœur réellement actif (peut différer du demandé si UAE pas dispo → repli).
+    // Cœur réellement actif (toujours Moira).
     CpuCore core() const { return core_; }
 
-    // Bascule le cœur 68000 à CHAUD (Musashi ↔ Moira) sans recréer le Cpu68k :
-    // libère l'ancien cœur, ré-initialise le nouveau. L'appelant doit ensuite
-    // reset() (lecture SSP/PC). Permet de changer de cœur sans relancer l'appli.
+    // Conservé pour compat (reconfigure à chaud) : ré-initialise simplement le cœur.
+    // L'appelant doit ensuite reset() (lecture SSP/PC).
     void setCore(CpuCore core);
 
     // Branche (ou détache avec nullptr) le traceur : journalise chaque
     // instruction et chaque interruption prise. Utilisé surtout en headless.
     void setTracer(Tracer* t);
 
-    // Reset matériel : Musashi lit SSP ($0) et PC ($4) via le bus, puis on
-    // referme l'overlay de boot de la ROM (cf. Bus::bootOverlay).
+    // Reset matériel : Moira lit SSP ($0) et PC ($4) via le bus (overlay ROM de
+    // boot, cf. Bus::bootOverlay), puis on referme l'overlay.
     void reset();
 
     // Exécute AU MOINS `cycles` cycles BUS (horloge 8 MHz de l'ordonnanceur) ;
@@ -55,15 +56,11 @@ public:
 
     // Bascule 8/16 MHz du Mega STE ($FF8E21 bit1) — port de Hatari
     // MegaSTE_CPU_Cache_Update / MegaSTE_CPU_Set_16Mhz. Appelé par le Bus à
-    // l'écriture du registre, et au reset (retour 8 MHz).
-    //  - Moira (cycle-exact) : l'horloge du cœur passe en cycles CPU 16 MHz ;
-    //    les accès RAM ST restent cadencés par le bus 8 MHz (créneau de 8 cycles
-    //    CPU + accès 8 cycles, cf. wait_cpu_cycle_read_megaste_16) sauf hit du
-    //    cache 16 Ko (4 cycles). ROM/cartouche/IO : « FAST », pas de wait state
-    //    (mesuré sur vrai STF par Hatari) → 2× plus rapides.
-    //  - Musashi (non cycle-exact) : simple doublement du débit, comme Hatari en
-    //    mode non cycle-exact (Configuration_ChangeCpuFreq(16) sans les fonctions
-    //    d'accès spéciales).
+    // l'écriture du registre, et au reset (retour 8 MHz). L'horloge du cœur passe
+    // en cycles CPU 16 MHz ; les accès RAM ST restent cadencés par le bus 8 MHz
+    // (créneau de 8 cycles CPU + accès 8 cycles, cf. wait_cpu_cycle_read_megaste_16)
+    // sauf hit du cache 16 Ko (4 cycles). ROM/cartouche/IO : « FAST », pas de wait
+    // state (mesuré sur vrai STF par Hatari) → 2× plus rapides.
     void setMegaSteSpeed(bool sixteenMhz);
     bool megaSte16Mhz() const;
 
@@ -79,15 +76,14 @@ public:
     // → l'instruction consomme ces cycles et tous les accès suivants sont décalés (la
     // contention de bus du vrai matériel). Remplace EN LIVE l'ancien recalage hors-ligne
     // (applyShifterBusAlignment) : les écritures palette sont désormais datées au cycle
-    // ALIGNÉ dès recordColorWrite. Moira (cycle-exact) avance son clock ; Musashi (cœur
-    // « rapide », non cycle-exact) ne modélise pas la contention → no-op.
+    // ALIGNÉ dès recordColorWrite.
     void addBusWaitCycles(int n);
 
     // Wait states d'accès aux périphériques 8 bits du bus, portés de Hatari (psg.c,
     // mfp.c, acia.c). Sur le vrai 68000 chaque lecture/écriture d'un de ces composants
     // « lents » coûte des cycles de bus supplémentaires ; le Bus appelle l'un de ces
     // helpers AVANT de router vers la puce (le cœur avance son horloge, comme
-    // addBusWaitCycles). Moira (cycle-exact) seul ; Musashi → no-op.
+    // addBusWaitCycles).
     //
     //  - PSG YM2149  : 4 cyc au PREMIER accès de l'instruction (port PSG_WaitState ;
     //    les accès suivants de la même instruction n'ajoutent rien — le cas movem
@@ -108,23 +104,23 @@ public:
     // Coupe le bloc d'exécution en cours : le CPU termine son instruction courante
     // puis rend la main (run() retourne le nombre RÉEL de cycles consommés). Appelé
     // par l'ordonnanceur quand un événement est armé avant la cible du bloc, pour
-    // que la boucle d'horloge le serve à temps (latence IRQ ~1 instruction).
-    // Musashi : m68k_end_timeslice() ; Moira : drapeau testé après chaque instruction.
+    // que la boucle d'horloge le serve à temps (latence IRQ ~1 instruction). Sous
+    // Moira : drapeau testé après chaque instruction.
     void endTimeslice();
 
     // Recalcule l'IPL présenté au 68000 à partir de l'état des sources
     // (MFP niveau 6, VBL niveau 4). À appeler après tout changement d'IRQ.
     void updateIpl();
 
-    // Comme updateIpl(), mais l'IPL est COMMITTÉ : sous Moira, la valeur est posée
-    // à la fois sur la broche ET dans le registre échantillonné (reg.ipl), comme si
-    // le poll IPL de l'instruction précédente l'avait déjà vue → l'exception part
-    // AVANT l'instruction suivante. À n'appeler qu'à une FRONTIÈRE d'instruction
-    // (callback de l'ordonnanceur), jamais en plein accès MMIO. C'est l'équivalent
-    // du chemin Hatari MFP_ProcessIRQ : au test de frontière, si clock-IRQ_Time ≥ 4,
-    // l'exception est déclenchée immédiatement (pas un poll d'instruction plus tard).
-    // Sans ça, le délai 4 cyc du MFP s'ADDITIONNERAIT au pipeline IPL de Moira
-    // (~1 instruction de trop → le test « T4 Video Counter » des diagnostics échoue).
+    // Comme updateIpl(), mais l'IPL est COMMITTÉ : la valeur est posée à la fois sur
+    // la broche ET dans le registre échantillonné (reg.ipl), comme si le poll IPL de
+    // l'instruction précédente l'avait déjà vue → l'exception part AVANT l'instruction
+    // suivante. À n'appeler qu'à une FRONTIÈRE d'instruction (callback de
+    // l'ordonnanceur), jamais en plein accès MMIO. C'est l'équivalent du chemin Hatari
+    // MFP_ProcessIRQ : au test de frontière, si clock-IRQ_Time ≥ 4, l'exception est
+    // déclenchée immédiatement (pas un poll d'instruction plus tard). Sans ça, le délai
+    // 4 cyc du MFP s'ADDITIONNERAIT au pipeline IPL de Moira (~1 instruction de trop →
+    // le test « T4 Video Counter » des diagnostics échoue).
     void updateIplNow();
 
     // Marque une interruption verticale (VBL, niveau 4 auto-vectorisé) en
@@ -144,21 +140,23 @@ public:
     uint32_t reg(int idx) const;   // 0-7 = D0-D7, 8-15 = A0-A7
     uint16_t sr()  const;          // status register
 
+    // Désassemble l'instruction à `addr` (lecture sans effet de bord via le bus) :
+    // écrit le texte dans `str` (≥256 octets recommandés) et renvoie sa longueur en
+    // octets. Utilisé par le Tracer et le mode --disasm du headless. Le désassembleur
+    // de Moira reproduit la syntaxe Musashi (cf. setDasmSyntax) → format inchangé.
+    int disassemble(char* str, uint32_t addr) const;
+
 private:
-    void initCore();   // (ré)initialise le cœur actif selon core_ (Musashi/Moira)
+    void initCore();   // (ré)initialise le cœur Moira
 
-    CpuCore core_ = CpuCore::Musashi;   // cœur actif (après repli éventuel)
+    CpuCore core_ = CpuCore::Moira;   // cœur actif (toujours Moira)
 
-    // Horloge Moira au début du quantum courant (cf. cyclesRunInQuantum). Pour
-    // Musashi on utilise directement m68k_cycles_run().
+    // Horloge Moira au début du quantum courant (cf. cyclesRunInQuantum).
     int64_t quantumStartClock_ = 0;
     // Équivalent BUS (8 MHz) de quantumStartClock_, figé au début du quantum : la
     // bascule 8/16 MHz peut survenir EN PLEIN quantum (écriture $FF8E21), le point
     // de départ doit donc être mémorisé sous l'ancienne conversion (cf. run()).
     int64_t quantumStartBus_ = 0;
-    // Musashi 16 MHz : cycle CPU impair résiduel pas encore facturé en cycles bus
-    // (1 cycle bus = 2 cycles CPU ; on reporte le reste au quantum suivant).
-    int64_t musashiCarry_ = 0;
 
     // Détection « premier accès de l'instruction courante » pour les wait states
     // PSG/ACIA (cf. add*WaitCycles). `instrStartClock_` est l'horloge Moira figée
@@ -171,8 +169,8 @@ private:
     int64_t aciaPrevInstrClock_ = -1;  // instr. du dernier accès ACIA (synchro E-Clock)
 
     // Vrai UNIQUEMENT pendant un appel run() : hors run (ex. handlers d'événements
-    // appelés par Scheduler::runTo), le compteur intra-quantum est périmé (Musashi
-    // garde les cycles du dernier bloc) → cyclesRunInQuantum() doit alors valoir 0
-    // pour que liveNow() == now() (l'horloge a déjà été avancée par l'ordonnanceur).
+    // appelés par Scheduler::runTo), le compteur intra-quantum est périmé →
+    // cyclesRunInQuantum() doit alors valoir 0 pour que liveNow() == now() (l'horloge
+    // a déjà été avancée par l'ordonnanceur).
     bool inRun_ = false;
 };

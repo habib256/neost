@@ -31,9 +31,8 @@ montage de disquettes, bascule couleur/mono, et **upload** de votre propre `.st`
   Service** (ST / STE / MegaSTE) passent leur batterie de tests internes sans erreur.
 - 🖥️ **4 profils machine** — ST, Mega ST, STE, Mega STE, choisis avant le boot, avec
   le matériel optionnel correctement présent/absent selon le modèle.
-- ⚙️ **Deux cœurs 68000 interchangeables** — [Musashi](https://github.com/kstenerud/Musashi)
-  (rapide, défaut) et [Moira](https://github.com/dirkwhoffmann/Moira) (cycle-exact),
-  permutables à chaud pour comparer.
+- ⚙️ **Cœur 68000 cycle-exact** — [Moira](https://github.com/dirkwhoffmann/Moira)
+  (timing inter-instructions, IPL échantillonné au cycle, contention de bus).
 - 🐞 **Débogueur intégré** — visualiseur hexa de la RAM et registres 68000 en direct
   (Dear ImGui), plus un **mode headless déterministe** qui produit des traces façon
   MAME (l'arme secrète pour diagnostiquer un jeu qui bloque).
@@ -47,12 +46,11 @@ montage de disquettes, bascule couleur/mono, et **upload** de votre propre `.st`
 
 - **GLFW3** — `brew install glfw` (macOS) / `pacman -S glfw` (CachyOS/Arch)
 - **OpenGL** — fourni par le système (framework Apple / Mesa)
-- Sous-modules : `extern/Musashi`, `extern/imgui`, `extern/miniaudio`, `extern/moira`
+- Sous-modules : `extern/moira` (cœur 68000), `extern/imgui`, `extern/miniaudio`
 
 ```sh
 git submodule update --init --recursive
-# Musashi génère son cœur d'opcodes après le clone :
-( cd extern/Musashi && cc -o m68kmake m68kmake.c && ./m68kmake . m68k_in.c )
+# Aucune étape de génération : Moira se compile tel quel (C++20).
 ```
 
 ### Build & run
@@ -127,8 +125,8 @@ Le déploiement GitHub Pages est automatisé par `.github/workflows/deploy-web.y
 ## État
 
 EmuTOS (FR/US) et TOS 1.02 bootent (green desktop, disquette, souris, son). Les trois
-cartouches de diagnostic atteignent leur menu et passent leurs tests internes sur les
-deux cœurs. **Arkanoid** se lance et affiche son écran-titre. Les images **Spectrum 512**
+cartouches de diagnostic atteignent leur menu et passent leurs tests internes.
+**Arkanoid** se lance et affiche son écran-titre. Les images **Spectrum 512**
 (palette intra-ligne, jusqu'à 512 couleurs) sont rendues **100 % pixel-identiques à
 l'oracle Hatari**, sans flicker. Le grand chantier en cours est la **précision cycle**
 (bordures, timing fin des jeux/démos) — voir [`TODO.md`](TODO.md) et

@@ -270,7 +270,7 @@ void Machine::runFrame() {
         int64_t next = sched.nextDue();
         if (next < 0 || next > frameEnd) next = frameEnd;
 
-        // Exécute le CPU jusqu'au prochain événement. m68k_execute termine son
+        // Exécute le CPU jusqu'au prochain événement. cpu.run() termine son
         // instruction en cours et peut DÉPASSER la cible : on AVANCE l'horloge du
         // nombre RÉELLEMENT consommé (carry du dépassement, comme Hatari) → pas de
         // dérive ; l'événement échu est déclenché « en retard » de quelques cycles.

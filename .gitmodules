@@ -1,6 +1,3 @@
-[submodule "extern/Musashi"]
-	path = extern/Musashi
-	url = git@github.com:habib256/Musashi.git
 [submodule "extern/imgui"]
 	path = extern/imgui
 	url = https://github.com/ocornut/imgui

@@ -3,7 +3,7 @@
 Hub d'orientation pour Claude Code (claude.ai/code). **Ces instructions priment.**
 
 NeoST — émulateur Atari ST « boîte à hack » pédagogique. C++17, GLFW3 + OpenGL (immediate
-mode) + Dear ImGui (GUI), miniaudio (son), Musashi/Moira (68000) en sous-modules. Cibles :
+mode) + Dear ImGui (GUI), miniaudio (son), Moira (68000 cycle-exact) en sous-modules. Cibles :
 macOS Silicon / CachyOS Linux. **Commentaires en français.**
 
 ## Où trouver quoi
@@ -27,8 +27,8 @@ cmake --build build -j                 # cibles : neost (GUI), neost-headless, n
 ./build/neost <rom> <disk.st>          # ROM + disquette explicites
 ```
 
-Sous-modules : `extern/Musashi`, `extern/imgui`, `extern/miniaudio`, `extern/moira`. Pour
-Musashi, générer les opcodes : `( cd extern/Musashi && cc -o m68kmake m68kmake.c && ./m68kmake . m68k_in.c )`.
+Sous-modules : `extern/moira` (cœur 68000), `extern/imgui`, `extern/miniaudio`. Aucune
+étape de génération : Moira se compile tel quel (C++20). Le cœur Musashi a été retiré.
 
 ⚠ Ne PAS faire `rm -rf build` (casse le shell si l'utilisateur y est `cd`) ; `cmake -B build`
 reconfigure. Sous macOS, pas de `timeout`.
@@ -47,7 +47,7 @@ et que l'erreur persiste qu'on investigue en détail (trace → boucle → sourc
 [github.com/emutos/emutos](https://github.com/emutos/emutos)).
 
 Bugs trouvés ainsi (cf. `CHANGELOG.md`) : int-ack vectorisé, GPIP4/5/7, Timer B/C, modèle de
-bus error (whitelist Hatari), double bus fault → halt, trame bus error 68000 dans Musashi.
+bus error (whitelist Hatari), double bus fault → halt, trame de bus error 68000.
 
 Fichiers Hatari clés (← composant NeoST) — table complète dans `DEV.md` :
 - `ioMem.c` + `ioMemTabST/STE.c` → carte des bus errors MMIO (← `Bus::busFault/buildIoFault`).
@@ -64,8 +64,9 @@ MAME + captures PPM). **Procédure complète, options et techniques vérifiées 
 ./build/neost-headless <rom> --frames N --screenshot s.ppm           # sips -s format png ...
 ```
 
-Points critiques (détail dans `DEV.md`) : `--irq` indispensable pour les bugs d'IRQ ; tester
-les DEUX cœurs (`--cpu musashi|moira`) ; `--cart` + `--keys` pour les cartouches de diagnostic
+Points critiques (détail dans `DEV.md`) : `--irq` indispensable pour les bugs d'IRQ ; le cœur
+68000 est Moira (cycle-exact, seul cœur ; `--cpu moira` est la seule valeur, conservée pour
+compat) ; `--cart` + `--keys` pour les cartouches de diagnostic
 (rapport sur port série) ; `--loopback` branché APRÈS `--keys`. **VME/FPU MegaSTE « not found »
 est CORRECT** (Hatari n'émule pas le VME, FPU_NONE par défaut).
 

@@ -20,7 +20,6 @@
 
 #include "core/Machine.hpp"
 #include "core/Tracer.hpp"
-#include "m68k.h"
 
 namespace {
 void usage() {
@@ -31,7 +30,7 @@ void usage() {
         "  --regs            ajoute l'état des registres à chaque instruction\n"
         "  --irq             trace aussi les interruptions prises\n"
         "  --until-pc HEX    arrête dès que PC atteint cette adresse (hex)\n"
-        "  --cpu CORE        cœur 68000 : musashi (défaut) ou moira\n"
+        "  --cpu CORE        cœur 68000 : moira (seul disponible, cycle-exact)\n"
         "  --machine TYPE    profil : st, megast, ste (défaut), megaste\n"
         "  --fpu             peuple le socket MC68881 du Mega STE ($FFFA40, sonde +\n"
         "                    dialogue CIR journalisé — défaut absent : « not found »)\n"
@@ -161,7 +160,7 @@ int main(int argc, char** argv) {
     // relâcher) le feu et de bouger une sélection dans un menu joystick (ex. Vroom).
     int         joyScrFrame = -1;
     std::string joyScr;
-    CpuCore     cpuCore    = CpuCore::Musashi;
+    CpuCore     cpuCore    = CpuCore::Moira;   // seul cœur disponible (cycle-exact)
     MachineType machType   = MachineType::Ste;
     std::size_t ramBytes   = 512u * 1024u;
     bool        fpuPresent = false;     // --fpu : MC68881 Mega STE (cf. Fpu.hpp)
@@ -404,16 +403,16 @@ int main(int argc, char** argv) {
                          shotPath.c_str(), machine.shifter.width(), machine.shifter.height());
     }
 
-    // --disasm ADDR,LEN : désassemble LEN octets à partir de ADDR (hexa) via Musashi.
+    // --disasm ADDR,LEN : désassemble LEN octets à partir de ADDR (hexa) via Moira.
     if (const char* da = std::getenv("NEOST_DISASM")) {
         uint32_t addr = 0, len = 0;
         std::sscanf(da, "%x,%x", &addr, &len);
         char buf[256];
         uint32_t pc = addr;
         while (pc < addr + len) {
-            unsigned int n = m68k_disassemble(buf, pc, M68K_CPU_TYPE_68000);
+            int n = machine.cpu.disassemble(buf, pc);
             std::fprintf(stderr, "%06X: %s\n", pc, buf);
-            pc += n ? n : 2;
+            pc += n > 0 ? (uint32_t)n : 2u;
         }
     }
 

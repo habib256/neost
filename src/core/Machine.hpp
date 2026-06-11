@@ -36,10 +36,10 @@ public:
     static constexpr int LINES_PER_FRAME = 313;
     static constexpr int VISIBLE_LINES   = 200;
 
-    // cpuCore : cœur 68000 à utiliser ; machine : profil matériel (ST/STE/…).
-    // Tous deux choisis AVANT le démarrage (figés à la construction).
+    // cpuCore : cœur 68000 (toujours Moira) ; machine : profil matériel (ST/STE/…).
+    // Le profil machine est choisi AVANT le démarrage (figé à la construction).
     explicit Machine(std::size_t ramBytes = 512u * 1024u,
-                     CpuCore cpuCore = CpuCore::Musashi,
+                     CpuCore cpuCore = CpuCore::Moira,
                      MachineType machine = MachineType::Ste);
 
     MachineType machineType() const { return machineType_; }

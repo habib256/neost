@@ -343,11 +343,12 @@ int main(int argc, char** argv) {
     const std::string romPath  = (argc > 1) ? argv[1] : "/roms/etos192us.img";
     const std::string diskPath = (argc > 2) ? argv[2] : "/disks/diskA.st";
 
-    // Cœur CPU choisi AVANT le démarrage via le paramètre d'URL ?cpu=musashi|moira
-    // (le sélecteur de la page recharge avec ce paramètre — cf. shell.html).
-    char cpuBuf[16] = "musashi";
+    // NeoST n'a plus qu'un seul cœur 68000 : Moira (cycle-exact). Le paramètre d'URL
+    // ?cpu= est encore lu pour rétro-compat (ancienne valeur "musashi" tolérée puis
+    // ramenée à Moira avec un avertissement, cf. Cpu68k::parseCore).
+    char cpuBuf[16] = "moira";
     EM_ASM({
-        var c = new URLSearchParams(location.search).get('cpu') || 'musashi';
+        var c = new URLSearchParams(location.search).get('cpu') || 'moira';
         stringToUTF8(c, $0, 16);
     }, cpuBuf);
     const CpuCore cpuCore = Cpu68k::parseCore(cpuBuf);

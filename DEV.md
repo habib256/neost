@@ -9,7 +9,7 @@ Deux idées structurantes : **le `Bus` *est* le plan mémoire** (il ne fait que 
 read8/write8 vers les composants), et **le cœur ne dépend pas du GUI**.
 
 - **`neost_core`** (lib statique, aucune dépendance GUI) = la carte mère : `Bus`, `Cpu68k`
-  (wrapper Musashi/Moira), `Shifter`, `Mfp`, `Ikbd`, `Fdc`, `YM2149`, `DmaSound`,
+  (wrapper Moira), `Shifter`, `Mfp`, `Ikbd`, `Fdc`, `YM2149`, `DmaSound`,
   `Blitter`, `Rtc`, `Glue`, plus `Machine`, `Scheduler` et `Tracer`.
 - **`Machine`** assemble les composants, les branche au `Bus`, encapsule `runFrame()`.
 - **`neost`** (GUI) et **`neost-headless`** partagent `Machine`. Le GUI ajoute
@@ -21,7 +21,7 @@ src/
                             clavier/souris → IKBD, barre résolution, persistance.
   core/
     Bus.{hpp,cpp}           Memory map + dispatch MMIO + bus errors (busFault/buildIoFault).
-    Cpu68k.{hpp,cpp}        Wrapper Musashi/Moira : callbacks mémoire, int-ack vectorisé,
+    Cpu68k.{hpp,cpp}        Wrapper Moira (cycle-exact) : accès mémoire, int-ack vectorisé,
                             hook d'instruction (traceur), reset/IPL.
     Shifter.{hpp,cpp}       Décodage planaire basse/moyenne/haute → buffer ARGB.
     YM2149.{hpp,cpp}        PSG : registres + synthèse 3 voies + bruit + enveloppe.
@@ -39,7 +39,7 @@ src/
   audio/                    Backend miniaudio (Audio, DriveSound).
   headless/                 Runner déterministe + traces.
   web/main_web.cpp          Frontend WebAssembly (Emscripten + WebGL).
-extern/  Musashi/ moira/ imgui/ miniaudio/   (sous-modules)
+extern/  moira/ imgui/ miniaudio/   (sous-modules)
 extern/hatari/src           SOURCE DE VÉRITÉ matérielle (lue, pas compilée)
 ```
 
@@ -64,17 +64,27 @@ error**. Modèle **WHITELIST** porté de Hatari (`ioMem.c`) : tout `$FF8000-$FFF
 les registres câblés du modèle (+ zones « void » silencieuses). Hors IO, `$400000-$F9FFFF` et
 `$FF0000-$FF7FFF` fautent ; RAM/ROM/port cartouche jamais.
 
-## Le CPU (Musashi / Moira)
+## Le CPU (Moira, cycle-exact)
 
-Musashi communique via des fonctions C globales (`m68k_read_memory_*`) redirigées vers
-`g_bus`. Activé dans CMake :
-- `M68K_INSTRUCTION_HOOK=1` → hook par instruction (alimente le `Tracer`).
-- `M68K_EMULATE_INT_ACK=1` → acquittement d'IRQ **vectorisé** (indispensable aux vecteurs
-  MFP). `neostIntAck` renvoie le vecteur MFP (niveau 6) et désarme le VBL (niveau 4).
-  `neostUpdateIpl` recalcule l'IPL (MFP 6 > VBL 4).
+NeoST n'a qu'**un seul cœur 68000 : Moira** (vAmiga, MIT, C++20, sous-module `extern/moira`).
+L'ancien cœur Musashi — rapide mais **non cycle-exact** — a été retiré : il n'apportait plus
+rien face à Moira et doublait inutilement chaque chemin du wrapper. Moira est **requis** pour
+bâtir (CMake faute si `extern/moira` est absent), et compilé en mode cycle-exact
+(`MOIRA_PRECISE_TIMING=true`, `MOIRA_MIMIC_MUSASHI=false`, cf. `CMakeLists.txt`).
 
-Moira (cycle-exact, C++20, sous-module) est sélectionnable via `--cpu moira`. **Limite
-connue** : `NeostMoira::read8/16` n'honore pas encore `busFault` → aucun bus error sous Moira.
+`Cpu68k` (`NeostMoira`, sous-classe de `moira::Moira`) route les accès mémoire vers `g_bus` :
+- `read8/16` et `write8/16` consultent `busFaultN` (whitelist Hatari) → lèvent `moira::BusError`
+  (trame de groupe 0 reconstruite dans `raiseBusError`) ou haltent le CPU en double faute.
+- `readIrqUserVector` (irqMode USER) reproduit le vectoring ST : vecteur MFP (niveau 6) via
+  `mfp->iack()`, VBL/HBL (4/2) auto-vectorisés. `neostUpdateIpl` recalcule l'IPL (MFP 6 > VBL 4
+  > HBL 2 ; gaté par le SCU sur MegaSTE).
+- Le `Tracer` reçoit `onInstruction(pc)` après chaque `execute()` et désassemble via
+  `Cpu68k::disassemble` → `moira::disassemble` (syntaxe `Syntax::MUSASHI`, format de trace
+  inchangé pour le diff MAME).
+
+L'option `--cpu` (headless) et la clé `cpu=` (`neost.cfg`) ne valent plus que `moira` ; une
+ancienne valeur `musashi`/`uae` est tolérée (rétro-compat) mais **avertit** puis bascule sur
+Moira (`Cpu68k::parseCore`).
 
 ## Chaîne d'interruption (subtile)
 
@@ -108,7 +118,7 @@ python3 tools/fetch_etalons.py && python3 tools/run_etalons.py --update-ref
 python3 tools/run_etalons.py
 ```
 
-Options : `--cpu musashi|moira` (TESTER LES DEUX), `--machine st|megast|ste|megaste`,
+Options : `--cpu moira` (seul cœur, optionnel), `--machine st|megast|ste|megaste`,
 `--mem 256k|512k|1m|2m|4m`, `--cart FILE`, `--disk`, `--diskb`, `--mono`, `--until-pc HEX`,
 `--walk-mouse`, `--keys "STR"`, `--loopback`. Pilotage daté (menus de jeux/démos) :
 `--keys-at N "STR"` (scancodes étendus : flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`),
@@ -137,9 +147,8 @@ FC0030: bra     $fc004e
 - **Sensibilité à `--mem`** : un même diag peut échouer différemment selon la taille RAM →
   révèle un bug de décodage MMU (`mmuTranslate`).
 - **Garde double bus fault** (`Cpu68k.cpp`, `g_inBusError`) : un code en vrille fautait en
-  boucle → segfault hôte. On halte désormais le CPU comme un vrai 68000 (Musashi
-  `m68k_pulse_halt`, Moira `flags|=HALTED`). Si EXIT≠0 réapparaît, vérifier cette garde sur
-  les DEUX cœurs.
+  boucle → segfault hôte. On halte désormais le CPU comme un vrai 68000 (Moira
+  `flags|=HALTED`, cf. `faultOrHalt`). Si EXIT≠0 réapparaît, vérifier cette garde.
 - **`tools/trace_diff.py`** : aligne une trace NeoST et une trace Hatari du même ROM/disquette
   sur un PC commun et localise la première divergence (flux PC + registres) :
   ```sh
@@ -182,7 +191,7 @@ attend du matériel.
   concerné — blitter et DMA passent par `read8/write8` sans test (BusMode Hatari).
 - **MegaSTE 16 MHz** : l'ordonnanceur reste en cycles BUS 8 MHz ; seul `Cpu68k` convertit
   (×2 sous `$FF8E21` bit1). Une boucle en RAM SANS cache ne va PAS plus vite à 16 MHz
-  (accès cadencés bus) ; ROM et cache 16 Ko si. Sous Musashi : ×2 uniforme (non-CE).
+  (accès cadencés bus) ; ROM et cache 16 Ko si (cf. `readMste16Mhz`/`chipWait16`).
 - **VBL/HBL autovecteurs LATCHÉS** (comme Hatari, « cleared only when processed ») :
   `g_vblPending` reste armé tant que le CPU n'a pas servi l'IRQ (mask ≥ niveau). Si le SR
   ré-autorise le niveau 4 après une longue période masquée, la VBL en attente part AUSSITÔT

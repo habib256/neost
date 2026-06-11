@@ -1,8 +1,8 @@
 // =============================================================================
 //  Tracer.hpp — Journalisation fine de l'exécution, pour diff avec MAME.
 //
-//  Branché sur le hook d'instruction de Musashi (une entrée par instruction
-//  AVANT exécution). Format pensé pour se comparer à la commande `trace` du
+//  Branché sur le hook d'instruction du cœur (une entrée par instruction
+//  exécutée). Format pensé pour se comparer à la commande `trace` du
 //  débogueur MAME :
 //
 //      00FC0030: move.w  #$2700,SR
@@ -30,8 +30,7 @@ class Tracer {
 public:
     ~Tracer() { close(); }
 
-    // CPU actif : les registres tracés sont lus via lui (core-aware Musashi/Moira).
-    // Sans ça, le dump retomberait sur l'API Musashi → faux quand Moira est actif.
+    // CPU actif : le désassemblage et les registres tracés sont lus via lui.
     void setCpu(const Cpu68k* c) { cpu_ = c; }
 
     bool open(const std::string& path);     // "" ou "-" → stdout
@@ -41,7 +40,7 @@ public:
     void setLogRegs(bool b)       { logRegs_ = b; }
     void setLogInterrupts(bool b) { logIrq_  = b; }
 
-    // Appelé par le hook Musashi, avant exécution de l'instruction en `pc`.
+    // Appelé pour chaque instruction exécutée en `pc`.
     void onInstruction(uint32_t pc);
     // Appelé au cycle d'acquittement d'interruption.
     void onInterrupt(int level, int vector);
