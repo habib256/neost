@@ -885,6 +885,7 @@ int main(int argc, char** argv) {
             uint8_t joy0 = 0, joy1 = 0;
             stjoy::compose(window, kbd, g_kbdJoyPort, g_joyDeadzone, joy0, joy1);
             machine.ikbd.setJoystick(joy0, joy1);
+            machine.bus.stePads.setJoystick(joy0, joy1);   // joypads STE ($FF9200/02) — même état
             g_lastJoy0 = joy0; g_lastJoy1 = joy1;   // pour la fenêtre Joystick
             // Diagnostic manette (NEOST_DEBUG_JOY=1) : ~3×/s, état brut des axes.
             if (g_dbgJoy) { static int t = 0; if (++t % 16 == 0) stjoy::debug(window, kbd, g_kbdJoyPort, g_joyDeadzone); }

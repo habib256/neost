@@ -257,6 +257,7 @@ void mainLoop() {
         uint8_t joy0 = 0, joy1 = 0;
         stjoy::compose(g_window, g_kbdJoy, g_kbdJoyPort, g_joyDeadzone, joy0, joy1);
         g_machine->ikbd.setJoystick(joy0, joy1);
+        g_machine->bus.stePads.setJoystick(joy0, joy1);   // joypads STE ($FF9200/02)
     }
 
     g_machine->cpu.updateIpl();

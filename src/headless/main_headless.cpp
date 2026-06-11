@@ -251,6 +251,7 @@ int main(int argc, char** argv) {
     // jeu (« tient le feu/une direction ») ou valider le chemin de report joystick.
     if (haveJoy) {
         machine.ikbd.setJoystick(joy0Hold, joy1Hold);
+        machine.bus.stePads.setJoystick(joy0Hold, joy1Hold);   // joypads STE ($FF9200/02)
         std::fprintf(stderr, "[headless] joystick maintenu : port1=$%02X port0=$%02X\n",
                      joy1Hold, joy0Hold);
     }
@@ -275,6 +276,7 @@ int main(int argc, char** argv) {
         }
         if (joyAtFrame >= 0 && frame == joyAtFrame) {
             machine.ikbd.setJoystick(0, joyAt1);
+            machine.bus.stePads.setJoystick(0, joyAt1);   // joypads STE ($FF9200/02)
             std::fprintf(stderr, "[headless] joystick posé à la trame %d : port1=$%02X\n", frame, joyAt1);
         }
         // Script souris daté (--mouse-at) : 1 token = 1 trame. Pilote un menu souris.
@@ -316,6 +318,7 @@ int main(int argc, char** argv) {
                     default:  st = 0x00; break;    // '.' = neutre
                 }
                 machine.ikbd.setJoystick(0, st);
+                machine.bus.stePads.setJoystick(0, st);   // joypads STE ($FF9200/02)
                 machine.cpu.updateIpl();
             }
         }

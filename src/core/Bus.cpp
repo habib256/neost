@@ -422,22 +422,27 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
     }
     if ((addr & 1) && addr >= 0xFFFC21 && addr <= 0xFFFC3F && rtc && machineIsMega(machine))
         return rtc->read8(addr);          // RTC RP5C15 — Mega ST / Mega STE
-    // STE / Mega STE : joypads / paddles / lightpen + DIP switches MegaSTE
-    // ($FF9200-$FF9223). NeoST n'émule aucun de ces périphériques → on renvoie les
-    // valeurs « au repos » d'Hatari (joy.c) au lieu d'un 0xFF générique. Le seul
-    // registre non trivial est l'octet HAUT de $FF9200 = DIP MegaSTE (0xBF : lecteur
-    // HD 1.44 Mo monté, son DMA actif ; logique inversée, cf. IoMemTabMegaSTE_DIPSwitches_Read).
+    // STE / Mega STE : joypads / paddles / lightpen + DIP switches Mega STE
+    // ($FF9200-$FF9223). Port fidèle de Hatari joy.c via StePads (multiplexage par
+    // le masque écrit en $FF9202, mapping directions/feu des pads A/B, valeurs au
+    // repos). L'octet HAUT de $FF9200 = DIP Mega STE (0xBF par défaut ; logique
+    // inversée, cf. StePads / IoMemTabMegaSTE_DIPSwitches_Read). Les registres mots
+    // ($FF9200/02/20/22) renvoient l'octet voulu en big-endian (haut = adresse paire).
     if (machineIsSte(machine) && addr >= 0xFF9200 && addr <= 0xFF9223) {
         switch (addr) {
-            // $FF9200.w = boutons feu (octet bas, 0xFF relâché) | DIP (octet haut).
-            case 0xFF9200: return machine == MachineType::MegaSte ? 0xBF : 0xFF;
-            // Paddle/analogique X/Y ($FF9211/13/15/17) : axe au NEUTRE (mid-value 0x24).
+            // $FF9200.w : boutons feu (octet bas) + DIP Mega STE (octet haut).
+            case 0xFF9200: return uint8_t(stePads.readButtonsDip() >> 8);   // DIP
+            case 0xFF9201: return uint8_t(stePads.readButtonsDip() & 0xFF); // boutons
+            // $FF9202.w : directions + boutons (info utile dans l'octet HAUT $FF9202).
+            case 0xFF9202: return uint8_t(stePads.readDirections() >> 8);
+            case 0xFF9203: return uint8_t(stePads.readDirections() & 0xFF);
+            // Paddle/analogique X/Y ($FF9211/13/15/17) : axe au NEUTRE (0x24).
             case 0xFF9211: case 0xFF9213:
-            case 0xFF9215: case 0xFF9217: return 0x24;
+            case 0xFF9215: case 0xFF9217: return stePads.readAnalog();
             // Lightpen X/Y ($FF9220-$FF9223) : non supporté → 0 (mots à $FF9220/22).
             case 0xFF9220: case 0xFF9221:
-            case 0xFF9222: case 0xFF9223: return 0x00;
-            // $FF9201 (DIP bas / boutons) et $FF9202/03 (directions+sélection) au repos.
+            case 0xFF9222: case 0xFF9223: return uint8_t(stePads.readLightpen() >> (addr & 1 ? 0 : 8));
+            // Octets non décodés de la plage ($FF9204-$FF9210, etc.) : au repos.
             default: return 0xFF;
         }
     }
@@ -499,6 +504,16 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
         rtc->write8(addr, v);             // RTC RP5C15 — Mega ST / Mega STE
         return;
     }
+    // STE / Mega STE : $FF9202 = latch de sélection des lignes des joypads (cf.
+    // Joy_StePadMulti_WriteWord). Les autres registres $FF92xx sont en lecture
+    // seule / sans effet (joy.c : Joy_StePadButtons_DIPSwitches_WriteWord ne fait
+    // rien). On latche les deux octets du mot $FF9202/$FF9203.
+    if (machineIsSte(machine) && (addr == 0xFF9202 || addr == 0xFF9203)) {
+        stePads.writeSelectByte(addr, v);
+        return;
+    }
+    if (machineIsSte(machine) && addr >= 0xFF9200 && addr <= 0xFF9223)
+        return;                           // joypad/paddle/lightpen : écriture ignorée
     // Registre Cache/CPU MegaSTE $FF8E21 : latché + contrainte matérielle « le cache ne
     // peut être actif qu'à 16 MHz » — si bit0 (cache) est demandé alors que bit1 (vitesse)
     // = 0 (8 MHz), le matériel force bit0 à 0 (cf. Hatari IoMemTabMegaSTE_CacheCpuCtrl_WriteByte).

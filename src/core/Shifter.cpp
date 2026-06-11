@@ -966,9 +966,17 @@ uint8_t Shifter::read8(uint32_t addr) {
     if (addr == 0xFF8260) { syncCpuBus(); return static_cast<uint8_t>(mode); }
     // Scroll fin : Hatari n'expose QUE $FF8265 en lecture (Video_HorScroll_Read).
     if (addr == 0xFF8265) { syncCpuBus(); return hwScrollCount; }
-    // Tout autre registre nouvellement routé mais non géré ($FF8266-$FF827F,
-    // etc.) : lecture bénigne (0x00), comme les zones « void » du shifter.
-    return 0x00;
+    // Tout autre registre routé mais non géré : zones « void » du shifter.
+    // Port fidèle Hatari (ioMem.c IoMem_VoidRead/IoMem_VoidRead_00) :
+    //  - STE/MegaSTE : $FF820B, $FF8262-63 et $FF8266-7F lisent 0x00
+    //    (ioMemTabSTE.c IoMem_VoidRead_00) ; le reste (dont $FF820C/$FF820E)
+    //    lit 0xFF (IoMem_VoidRead).
+    //  - ST/MegaST : TOUTES les zones void lisent 0xFF (ioMemTabST.c).
+    if (machineIsSte(bus_.machine) &&
+        (addr == 0xFF820B || addr == 0xFF8262 || addr == 0xFF8263 ||
+         (addr >= 0xFF8266 && addr <= 0xFF827F)))
+        return 0x00;
+    return 0xFF;
 }
 
 // Reconstruit l'adresse vidéo courante — port fidèle de Hatari Video_CalculateAddress :

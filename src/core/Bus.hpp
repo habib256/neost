@@ -10,6 +10,7 @@
 #pragma once
 #include "core/MachineType.hpp"
 #include "io/Scu.hpp"
+#include "io/StePads.hpp"
 #include <cstdint>
 #include <cstddef>
 #include <string>
@@ -155,6 +156,11 @@ public:
     // sur MegaSTE (comme `SCU_IsEnabled` d'Hatari). La livraison d'IPL le consulte dans
     // Cpu68k::neostUpdateIpl.
     Scu scu;
+
+    // Joypads / paddles / lightpen STE et Mega STE ($FF9200-$FF9222). Alimenté par
+    // le MÊME état joystick que l'IKBD (les frontends appellent setJoystick sur les
+    // deux). Cf. StePads.hpp pour le multiplexage et les DIP switches Mega STE.
+    StePads stePads;
 
 private:
     uint8_t  mmioRead8 (uint32_t addr);
