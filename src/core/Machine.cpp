@@ -117,6 +117,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         joy1 = uint8_t(((dir >> 4) & 0x0F) | ((b & 0x40) ? 0x80 : 0)); // nibble haut + feu (bit6)
     });
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)
+    blitter.setScheduler(&sched);  // tranches non-hog du blitter (cf. Scheduler::BLITTER)
     dmasnd.setScheduler(&sched);   // le son DMA date sa fin de trame (→ Timer A)
     dmasnd.setMfp(&mfp);
     // STE/Mega STE : le YM2149 est mixé à DEMI-amplitude (marge pour le son DMA, évite la
@@ -168,6 +169,9 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::MIDI_TX, [this] { midi.onTxEmpty(); cpu.updateIpl(); });
     // Étape de shift série Microwire ($FF8922 → 0) du son STE.
     sched.setCallback(Scheduler::MICROWIRE, [this] { dmasnd.onMicrowireShift(); });
+    // Tranche non-hog du blitter (64 accès bus / 64 accès CPU) : la fin de blit
+    // peut lever l'IRQ GPIP3 (canal 3 MFP) → IPL recalculé.
+    sched.setCallback(Scheduler::BLITTER, [this] { blitter.onSlice(); cpu.updateIpl(); });
 }
 
 // Arme les événements VIDÉO de la trame courante, à des cycles ABSOLUS (horloge

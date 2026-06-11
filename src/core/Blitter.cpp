@@ -1,10 +1,11 @@
 // =============================================================================
-//  Blitter.cpp — Implémentation du Blitter ST (port fonctionnel de Hatari).
+//  Blitter.cpp — Implémentation du Blitter ST (port de Hatari, données + bus).
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Blitter.hpp"
 #include "core/Bus.hpp"
+#include "core/Cpu68k.hpp"
 #include "io/Mfp.hpp"
 
 namespace {
@@ -13,32 +14,58 @@ namespace {
     // dst seulement pour celles-là.
     constexpr bool LOP_USES_HOP[16] = {0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0};   // sauf 0,5,A,F
     constexpr bool LOP_USES_DST[16] = {0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0};   // sauf 0,3,C,F
+
+    // Partage de bus non-hog (blitter.c BLITTER_NONHOG_BUS_*) : 64 accès pour le
+    // blitter, puis 64 accès (= 256 cycles) pour le CPU. Un accès bus = 4 cycles.
+    constexpr int kNonHogBusBlitter = 64;
+    constexpr int kNonHogCpuCycles  = 64 * 4;
 }
 
-void Blitter::reset() { for (auto& b : reg_) b = 0; buffer_ = 0; busWord_ = 0; }
+void Blitter::reset() {
+    for (auto& b : reg_) b = 0;
+    buffer_ = 0; busWord_ = 0;
+    midBlit_ = false; haveFxsr_ = false; nfsrInt_ = false;
+    if (sched_) sched_->cancel(Scheduler::BLITTER);
+}
 
-uint16_t Blitter::readWord(uint32_t addr) { return bus_.read16(addr & 0xFFFFFE); }
-void     Blitter::writeWord(uint32_t addr, uint16_t v) { bus_.write16(addr & 0xFFFFFE, v); }
+uint16_t Blitter::readWord(uint32_t addr) { ++sliceBus_; return bus_.read16(addr & 0xFFFFFE); }
+void     Blitter::writeWord(uint32_t addr, uint16_t v) { ++sliceBus_; bus_.write16(addr & 0xFFFFFE, v); }
+
+// Facture le temps de bus du blitter au CPU : 4 cycles par accès. Moira avance
+// son horloge (le CPU « attend » que le blitter rende le bus) ; Musashi → no-op
+// (cf. addBusWaitCycles), seule la durée BUSY/IRQ est alors modélisée.
+void Blitter::stallCpu(int busAccesses) {
+    if (busAccesses > 0 && bus_.cpu) bus_.cpu->addBusWaitCycles(busAccesses * 4);
+}
 
 uint8_t Blitter::read8(uint32_t addr) { return reg_[addr & 0x3F]; }
 
 void Blitter::write8(uint32_t addr, uint8_t v) {
     const uint32_t off = addr & 0x3F;
     reg_[off] = v;
-    // Écriture du registre contrôle ($FF8A3C) avec le bit BUSY (bit7) → démarre.
-    if (off == 0x3C && (v & 0x80)) run();
+    if (off == 0x3C) {
+        // Écriture du registre contrôle ($FF8A3C) : BUSY (bit7) à 1 → démarre ou
+        // REPREND ; à 0 pendant un transfert → PAUSE (le CPU peut arrêter le
+        // blitter en non-hog, cf. blitter.c:88 — état conservé, reprise au
+        // prochain BUSY=1).
+        if (v & 0x80) start();
+        else if (midBlit_ && sched_) sched_->cancel(Scheduler::BLITTER);
+    }
 }
 
 // Écritures mot/long ATOMIQUES : on pose TOUS les octets, PUIS on démarre si le
 // registre contrôle ($FF8A3C, offset 0x3C) faisait partie de l'écriture et porte le
-// bit BUSY. Garantit que le skew ($FF8A3D) est en place avant run() (cf. write16/32
-// déclarés dans Blitter.hpp). Sinon « move.w …,$FF8A3C » lancerait le blit avec
-// l'ancien skew → plan 0 décalé par rapport aux plans 1-3 (franges de couleur).
+// bit BUSY. Garantit que le skew ($FF8A3D) est en place avant le départ (cf.
+// Blitter.hpp). Sinon « move.w …,$FF8A3C » lancerait le blit avec l'ancien skew
+// → plan 0 décalé par rapport aux plans 1-3 (franges de couleur).
 void Blitter::write16(uint32_t addr, uint16_t v) {
     const uint32_t off = addr & 0x3F;
-    reg_[off]            = uint8_t(v >> 8);
+    reg_[off]              = uint8_t(v >> 8);
     reg_[(off + 1) & 0x3F] = uint8_t(v);
-    if ((off <= 0x3C && off + 1 >= 0x3C) && (reg_[0x3C] & 0x80)) run();
+    if (off <= 0x3C && off + 1 >= 0x3C) {
+        if (reg_[0x3C] & 0x80) start();
+        else if (midBlit_ && sched_) sched_->cancel(Scheduler::BLITTER);
+    }
 }
 
 void Blitter::write32(uint32_t addr, uint32_t v) {
@@ -47,15 +74,78 @@ void Blitter::write32(uint32_t addr, uint32_t v) {
     reg_[(off + 1) & 0x3F] = uint8_t(v >> 16);
     reg_[(off + 2) & 0x3F] = uint8_t(v >> 8);
     reg_[(off + 3) & 0x3F] = uint8_t(v);
-    if ((off <= 0x3C && off + 3 >= 0x3C) && (reg_[0x3C] & 0x80)) run();
+    if (off <= 0x3C && off + 3 >= 0x3C) {
+        if (reg_[0x3C] & 0x80) start();
+        else if (midBlit_ && sched_) sched_->cancel(Scheduler::BLITTER);
+    }
 }
 
 // -----------------------------------------------------------------------------
-//  Transfert complet (mode HOG). Port de Hatari Blitter_Step/ProcessWord, mais
-//  synchrone (sans comptage d'accès bus ni partage CPU). Le résultat de données
-//  est identique au vrai matériel.
+//  Démarrage / reprise (BUSY écrit à 1). Mode HOG : tout le transfert d'un coup,
+//  CPU arrêté pour la durée totale. Non-hog : 1re tranche de 64 accès tout de
+//  suite (le blitter prend le bus en premier), puis alternance via l'ordonnanceur.
 // -----------------------------------------------------------------------------
-void Blitter::run() {
+void Blitter::start() {
+    // Transfert dégénéré (xCount==0 ou yCount==0) : « déjà complet » → efface
+    // BUSY (bit7) ET HOG (bit6), comme Hatari Blitter_Control_WriteByte. Pas
+    // d'IRQ GPIP3 ici (la ligne GPU_DONE ne bouge qu'à une vraie fin de blit).
+    const uint16_t xc = uint16_t((reg_[0x36] << 8) | reg_[0x37]);
+    const uint16_t yc = uint16_t((reg_[0x38] << 8) | reg_[0x39]);
+    if (xc == 0 || yc == 0) { reg_[0x3C] &= ~0xC0; midBlit_ = false; return; }
+
+    if (!midBlit_) {                       // vrai départ (pas une reprise de pause)
+        xReset_   = xc;                    // latch de la recharge X (Hatari x_count_reset)
+        haveFxsr_ = false;
+        nfsrInt_  = false;
+        midBlit_  = true;
+    }
+
+    if (reg_[0x3C] & 0x40) {               // mode HOG : bus gardé jusqu'à y_count=0
+        sliceBus_ = 0;
+        runSlice(-1);
+        stallCpu(sliceBus_);               // le CPU a attendu TOUT le transfert
+        return;
+    }
+    // Non-hog : une tranche de 64 accès maintenant, la suite par l'ordonnanceur.
+    sliceBus_ = 0;
+    const bool done = runSlice(kNonHogBusBlitter);
+    stallCpu(sliceBus_);
+    if (!done && sched_)
+        sched_->schedule(Scheduler::BLITTER, sched_->liveNow() + kNonHogCpuCycles);
+}
+
+// Tranche non-hog suivante (échéance Scheduler::BLITTER) : 64 accès bus de plus.
+// Ici on est à une frontière d'événement : avancer l'horloge CPU (stallCpu)
+// retarde d'autant le prochain bloc d'exécution — le CPU « perd » la part du
+// blitter, puis garde le bus 256 cycles avant la tranche suivante.
+void Blitter::onSlice() {
+    if (!(reg_[0x3C] & 0x80)) return;      // BUSY retombé (pause/reset) → rien
+    sliceBus_ = 0;
+    const bool done = runSlice(kNonHogBusBlitter);
+    stallCpu(sliceBus_);
+    if (!done && sched_)
+        sched_->schedule(Scheduler::BLITTER,
+                         sched_->now() + int64_t(sliceBus_) * 4 + kNonHogCpuCycles);
+}
+
+// Fin de transfert (yCount==0) : le blitter abaisse la ligne GPU_DONE (GPIP3,
+// active bas) et demande l'IRQ canal 3 (cf. Hatari Blitter_Start ligne 916).
+// raise() respecte IERB → si le canal 3 n'est pas activé, aucun bit IPR n'est
+// posé (inoffensif). N'est atteint que sur Mega ST/STE/Mega STE (le blitter
+// n'est câblé au bus que sur ces modèles → auto-gaté).
+void Blitter::finishTransfer() {
+    midBlit_ = false;
+    if (bus_.mfp) { bus_.mfp->setBlitterLine(true); bus_.mfp->raise(Mfp::SRC_GPU); }
+}
+
+// -----------------------------------------------------------------------------
+//  Transfert par tranche — port de Hatari Blitter_Step/ProcessWord. L'état de
+//  reprise vit dans les registres relisibles (adresses, X/Y count, ligne
+//  halftone) + les membres haveFxsr_/nfsrInt_/buffer_/busWord_ : une tranche
+//  reprend exactement où la précédente s'est arrêtée. `maxBusAccesses` < 0 =
+//  transfert complet (HOG) ; la découpe se fait à la frontière de MOT.
+// -----------------------------------------------------------------------------
+bool Blitter::runSlice(int maxBusAccesses) {
     // Le blitter prend le bus via BGACK → le cache 16 Ko du Mega STE est invalidé
     // (Hatari MegaSTE_Cache_Flush) : ses écritures RAM ne passent pas par le cache.
     bus_.megaSteCacheFlushIfEnabled();
@@ -78,15 +168,10 @@ void Blitter::run() {
     const uint16_t em1 = rd16(0x28), em2 = rd16(0x2A), em3 = rd16(0x2C);
     const int32_t  dstXinc = s16(0x2E), dstYinc = s16(0x30);
     uint32_t       dstAddr = rd32(0x32) & 0xFFFFFE;
-    const uint16_t xReset  = rd16(0x36);
+    const uint16_t xReset  = xReset_;
+    uint16_t       xCount  = rd16(0x36);              // compteur VIVANT (relisible)
     uint16_t       yCount  = rd16(0x38);
     int            htLine  = ctrl & 0x0F;             // ligne halftone courante
-
-    // Démarrage dégénéré (xReset==0 ou yCount==0) : transfert déjà « complet » →
-    // efface BUSY (bit7) ET HOG (bit6), comme Hatari Blitter_Control_WriteByte
-    // (BlitterRegs.ctrl &= ~(0x80|0x40)). Pas d'IRQ GPIP3 ici (Hatari ne baisse pas
-    // la ligne GPU_DONE sur ce chemin, seulement à la vraie fin de transfert).
-    if (xReset == 0 || yCount == 0) { reg_[0x3C] &= ~0xC0; return; }   // rien à faire
 
     // Registre à décalage source (32 bits) + dernier mot ayant transité sur le BUS.
     // Hatari : BlitterState.bus_word est mis à jour à CHAQUE accès bus du blitter —
@@ -99,9 +184,8 @@ void Blitter::run() {
     // « lastSrc » = dernière source, d'où des pixels parasites sur les icônes GEM.)
     uint32_t buffer  = buffer_;     // persistance Hatari (pas de remise à 0 par blit)
     uint16_t busWord = busWord_;
-    uint16_t xCount = xReset;
-    bool     haveFxsr = false;
-    bool     nfsrInt  = false;
+    bool     haveFxsr = haveFxsr_;
+    bool     nfsrInt  = nfsrInt_;
 
     auto srcShift = [&]() { if (srcXinc < 0) buffer >>= 16; else buffer <<= 16; };
     auto srcFetch = [&](bool nfsrOn) {
@@ -122,6 +206,9 @@ void Blitter::run() {
     };
 
     while (yCount > 0) {
+        // Budget de bus de la tranche épuisé → on rend la main (frontière de mot).
+        if (maxBusAccesses >= 0 && sliceBus_ >= maxBusAccesses) break;
+
         const bool firstWord = (xCount == xReset);
         const uint16_t endMask = (firstWord || xReset == 1) ? em1
                                : (xCount == 1)              ? em3 : em2;
@@ -190,20 +277,19 @@ void Blitter::run() {
         }
     }
 
+    // État de reprise : registres relisibles (progression visible du CPU) + membres.
     buffer_ = buffer; busWord_ = busWord;   // persistance Hatari du registre à décalage
-
-    // Recopie l'état final dans les registres relisibles, efface BUSY/HOG.
+    haveFxsr_ = haveFxsr; nfsrInt_ = nfsrInt;
     wr16(0x24, uint16_t(srcAddr >> 16)); wr16(0x26, uint16_t(srcAddr));
     wr16(0x32, uint16_t(dstAddr >> 16)); wr16(0x34, uint16_t(dstAddr));
     wr16(0x36, xCount);
     wr16(0x38, yCount);
-    reg_[0x3C] = uint8_t((ctrl & 0x30) | (htLine & 0x0F));   // BUSY(7)+HOG(6) effacés
 
-    // Fin de transfert (yCount==0) : le blitter abaisse la ligne GPU_DONE (GPIP3,
-    // active bas) et demande l'IRQ canal 3 (cf. Hatari Blitter_Start ligne 916).
-    // raise() respecte IERB → si le canal 3 n'est pas activé, aucun bit IPR n'est
-    // posé (inoffensif). updateIpl() après l'écriture MMIO de $FF8A3C présentera
-    // l'IRQ pendante. N'est atteint que sur Mega ST/STE/Mega STE (le blitter n'est
-    // câblé au bus que sur ces modèles → auto-gaté).
-    if (bus_.mfp) { bus_.mfp->setBlitterLine(true); bus_.mfp->raise(Mfp::SRC_GPU); }
+    if (yCount > 0) {                       // tranche finie, transfert pas terminé
+        reg_[0x3C] = uint8_t(0x80 | (ctrl & 0x70) | (htLine & 0x0F));   // BUSY maintenu
+        return false;
+    }
+    reg_[0x3C] = uint8_t((ctrl & 0x30) | (htLine & 0x0F));   // BUSY(7)+HOG(6) effacés
+    finishTransfer();
+    return true;
 }

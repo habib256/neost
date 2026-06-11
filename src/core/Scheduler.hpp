@@ -55,7 +55,9 @@ public:
     // re-remplit ~1 octet MIDI (10 bits à 31250 bauds = 2560 cycles) après une
     // écriture donnée sous TIE — cadence l'IRQ « transmetteur prêt » des
     // séquenceurs qui streament la sortie MIDI par interruption (cf. midi.c).
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MICROWIRE, HBL, VBL, SRC_COUNT };
+    // BLITTER = tranche non-hog suivante du blitter : 64 accès bus blitter (256
+    // cycles, CPU arrêté) alternés avec 64 accès CPU (cf. Blitter::onSlice).
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MICROWIRE, BLITTER, HBL, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 

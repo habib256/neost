@@ -188,6 +188,11 @@ private:
     // `idx` doit pouvoir tenir W + scroll pixels (≤ 656). Renvoie le décalage scroll.
     int decodeLineIndices(int y, uint8_t* idx) const;
 
+    // Avance compteur SUPPLÉMENTAIRE par ligne due au scroll fin (port des
+    // `pVideoRaster += n*2` de Video_CopyScreenLine*) : prefetch ($FF8265) =
+    // 1 mot PAR PLAN (+8 basse rés, +4 moyenne) ; $FF8264 = 0 ; mono = +2.
+    int scrollCounterAdvance() const;
+
     // Enregistre une écriture palette (registre `index`) avec son cycle live dans
     // la trame, pour le re-rendu spec512. Met à jour le compteur de détection.
     void recordColorWrite(int index);

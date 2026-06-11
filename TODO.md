@@ -42,45 +42,32 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
       contre Hatari (`--keys`/`--joy`, trace IRQ). 🎯 étalon suite FDC/protection.
 
 ## Bus / memory map / MMU
-- [x] Banque ROM = toute la fenêtre décodée — FAIT (cf. `CHANGELOG.md`) : 1 Mo à
-      `$E00000` (lecture 0 au-delà du fichier, écriture fautive partout), 192 Ko
-      à `$FC0000` (= le fichier). `Bus::romWindowSize`.
-- [x] Accès FDC/ACSI/son-DMA via le plan mémoire — FAIT : `Bus::dmaRead8/dmaWrite8`
-      (port `STMemory_DMA_Read/WriteByte`) : traduction MMU incluse, jamais de bus
-      error (lecture fautive → 0, écriture perdue).
-- [x] Remapping réel des banques MMU + bus error des zones non peuplées — DÉJÀ
-      couvert : `Bus::mmuTranslate` (port `STMemory_MMU_Translate_Addr` STF/STE,
-      aliasing 128/512/2048 Ko, validé par le sizing RAM du Test Kit) ; bus error
-      `$400000-$F9FFFF` hors cartouche/ROM (carte `busFault`). Reste éventuel
-      _(très faible valeur)_ : la zone void `[fin RAM, $400000)` lit 0 au lieu du
-      dernier mot du bus (`regs.db`, cf. `VoidMem_bget` — « no program known to
-      depend on it » dixit Hatari).
-
-## MFP 68901 + RS232 USART
-- [x] Config baud USART UCR/Timer-D — FAIT (cf. `CHANGELOG.md`) : `Mfp::updateSerialConfig`
-      (port `RS232_SetBaudRateFromTimerD` + `RS232_HandleUCR`) calcule bauds + format à
-      chaque écriture UCR/TDDR/TCDCR, exposés (`serialBaud()`) et journalisés. Comme
-      Hatari, pure config (tty hôte chez lui) : le débit émulé reste instantané.
+- [ ] Zone void `[fin RAM, $400000)` : lire le dernier mot du bus (`regs.db`,
+      `VoidMem_bget`) au lieu de 0 _(très faible valeur — « no program known to
+      depend on it » dixit Hatari)_.
 
 ## Vidéo / Shifter
-- [x] Quirk miroir d'écriture octet de palette — FAIT (cf. `CHANGELOG.md`) : write .B
-      → octet dupliqué sur les 2 moitiés du mot ; couleur STOCKÉE masquée ($777 ST /
-      $FFF STE) → readback correct (détection ST/STE des jeux). Validé par mini-ROM
-      (relecture $0707/$0777/$0FFF) + étalons byte-identiques (spec512).
 - [ ] **Bordures — raffinements** _(précision cycle, faible priorité)_ :
       (1) wakeup-state WS3 (+1 cyc, sous-pixel) ; (2) med-res overscan ; (3) blank lines /
       NO_SYNC ; (4) pixel-perfect L/D end-to-end ; (5) **Cuddly Demos — scrolling qui SAUTE**
       quand le robot bouge ; (6) **scroller bordure BASSE** du menu Cuddly non rendu.
       🎯 étalons : `make_overscan_test.py` / `make_overscan_lr.py` (✅), **The Cuddly Demos**.
-- [x] **Joypads STE** — FAIT (cf. `CHANGELOG.md`) : bus error sur accès octet de
-      `$FF9200` (adresse paire, R+W) et `$FF9220/22` (lecture) comme `joy.c` ;
-      paddles analogiques réels (port `Joy_GetStickAnalogData` : plage $04-$43,
-      axes manette GLFW + repli numérique façon mode clavier Hatari). Lightpen :
-      reste « non supporté » (0 + bus error octet) — FIDÈLE à Hatari, qui ne
-      l'émule pas non plus.
+      **Investigation (6) faite (2026-06)** : `renderGlueFrame` décode DÉJÀ correctement
+      la bordure basse retirée (rangées 229-275 du buffer, scanlines → 309) — le maillon
+      cassé est la DÉTECTION : sur le menu Cuddly, `recordSyncWrite`/`replayGlue` ne
+      voient AUCUN retrait (`NEOST_BORDER_TRACE=1` muet, `bordersTrick_` jamais armé)
+      → tracer les écritures $FF820A/$FF8260 du menu (cycle dans la ligne, autour de
+      `RemoveBottomBorder_Pos=502`) et comparer à `Video_EndHBL`. Atteindre le menu :
+      SPACE au titre (`--keys-at 1500 " "`), menu ≈ trame 2800. (5) probablement même
+      chemin (géométrie par ligne). ⚠ Oracle Hatari du menu IMPOSSIBLE avec le binaire
+      Homebrew (pas d'injection clavier headless : ni `keypress` debugger ni cmd-fifo) —
+      rebuilder Hatari avec le debugger complet, ou breakpoint+memwrite sur la boucle
+      de poll. Captures de réf. : /tmp/cuddly_keep/ (volatil).
 
 ## Blitter
-- [ ] Partage de bus (mode non-hog) au cycle près _(précision cycle)_ — réf. `blitter.c`
+- [ ] Bug « 63 accès au lieu de 64 » de la 1re tranche non-hog + arbitration cycles
+      _(très faible valeur — cf. blitter.c:69-79 ; l'alternance 64/64 est FAITE,
+      cf. CHANGELOG)_.
 
 ## FDC WD1772 + DMA disquette
 - [ ] **Lecteur HD MegaSTE** : DIP `$FF9200`, densité DD/HD, images 1.44 Mo — réf. `fdc.c`.
@@ -100,48 +87,14 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
 - [ ] Read-latch `regReadData_`, `$FF8801/03` → 0xFF _(faible valeur, risque word-read)_.
 
 ## Son DMA STE + Microwire/LMC1992
-- [x] Avance live cycle-exacte du compteur DMA — FAIT (cf. `CHANGELOG.md`) :
-      `DmaSound::liveCounter` ($FF8909/0B/0D dérivés de l'horloge émulée, trame
-      latchée au play comme `DmaSnd_StartNewFrame`). Compteur enfin VIVANT en
-      headless. Validé par mini-ROM (125 octets / 20 000 cycles à 50066 Hz, 2 cœurs).
-- [x] Synthèse YM interne 250 kHz + rééchantillonnage : DÉJÀ FAIT (port
-      `YM2149_DoSamples_250` + `Resample_Weighted_Average_N` + PWM 250 dans
-      `YM2149.cpp` — l'item était périmé). Anti-repliement DMA — FAIT : FIR (1,2,1)/4
-      à la cadence DMA quand elle dépasse la sortie hôte (port `DmaSnd_LowPassFilter`).
 - [ ] FIFO 8 octets du DMA son remplie sur HBL (`DmaSnd_FIFO_Refill/PullByte`,
       dmaSnd.c:343-410) _(refinement résiduel : timing ±8 octets des débuts/fins de
       trame et drain post-PLAY ; le gros de la Phase C est fait)_.
 
-## IKBD HD6301 + souris/joystick
-- [x] Keymap international / layouts TOS — FAIT (cf. `CHANGELOG.md`) : mapping
-      SYMBOLIQUE port de `sdl/keymap.c` (caractère hôte via `glfwGetKeyName` →
-      scancode ST, surcharges US/DE/FR/UK choisies par le pays de la ROM, os_conf
-      `$1C`). Autorepeat déjà conforme (GLFW_REPEAT ignoré, TOS répète lui-même).
-      Reste éventuel : autres pays (ES/IT/SE/CH…) en surcharges dédiées (la table
-      par défaut couvre déjà leurs lettres nationales) et fichier de remap utilisateur.
-
-## ACIA 6850 (clavier + MIDI)
-- [x] IRQ émetteur (CR bits 5/6) + état TDRE — FAIT (cf. `CHANGELOG.md`) : clavier
-      (existant, IKBD_TX) **et MIDI** (`Scheduler::MIDI_TX`, TDRE re-rempli après
-      2560 cyc = 1 octet à 31250 bauds). Hors TIE, TDRE reste câblé à 1 (simplification).
-- [x] SR overrun — FAIT : bit OVRN porté de `acia.c` (livraison SCI continue, octet
-      perdu si RDR plein, OVRN posé à la lecture RDR, acquitté par SR→RDR). FE/PE
-      restent à 0 (la liaison émulée ne produit pas d'erreur de trame/parité).
-
 ## CPU : IRQ, Moira, MegaSTE
-- [x] **Bascule CPU 8/16 MHz MegaSTE** (`$FF8E21` bit1) — FAIT (cf. `CHANGELOG.md`) :
-      conversion horloge CPU↔bus dans `Cpu68k` (Moira cycle-exact : wait states RAM par
-      créneau bus ; Musashi : débit ×2 comme Hatari non-CE).
-- [x] **Cache MegaSTE 16 Ko** (`$FF8E21` bit0, off à 8 MHz) — FAIT : port de
-      `MegaSTE_Cache_*` dans `Bus` (timing Moira) ; flush sur disable/reset/bus
-      error/BGACK (blitter + DMA FDC/ACSI).
-- [~] **MC68881 optionnel** : FAIT au niveau « sonde + trapping » (`--fpu`, CIR
-      $FFFA40-$FFFA5F journalisés, réponses neutres — cf. `src/io/Fpu.hpp`). RESTE :
-      l'arithmétique flottante (registres FP0-7, formats simple/double/étendu/packed,
-      dialogue Command/Response complet) — réf. MC68881 UM §7, MAME.
-- [x] **Séparation user/supervisor** : FAIT — bus errors en mode utilisateur sur
-      $0-$7FF et IO, écritures ROM/cartouche/$0-$7 fautives (Hatari `SysMem_*`,
-      `ROMmem_*put`, `is_super_access` d'`ioMem.c`).
+- [ ] **MC68881 — arithmétique flottante** (la sonde + trapping est FAITE, cf.
+      `CHANGELOG.md` / `src/io/Fpu.hpp`) : registres FP0-7, formats simple/double/
+      étendu/packed, dialogue Command/Response complet — réf. MC68881 UM §7, MAME.
 
 ## Stockage & contrôleurs
 - [ ] **GEMDOS HD** : monter un dossier hôte comme lecteur C: — réf. `gemdos.c`

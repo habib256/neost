@@ -582,9 +582,22 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   (format-8, 58 o) au lieu de la trame 68000 (14 o) → les handlers `adda #8 ; rte` des
   diags revenaient sur PC corrompue. **Le déblocage principal.** Adresse fautive
   (`m68ki_aerr_*`) renseignée → diags affichent la vraie adresse.
-- **Blitter** (`Blitter.cpp`, port fonctionnel Hatari, mode HOG) : HOP, LOP 16 ops,
-  FXSR/NFSR, skew, smudge, halftone, endmasks, comptes X/Y, incréments signés. Présent
-  Mega ST/STE/Mega STE, absent STF. **IRQ de fin sur GPIP3**, BUSY+HOG effacés à `y_count==0`.
+- **Blitter** (`Blitter.cpp`, port Hatari) : HOP, LOP 16 ops, FXSR/NFSR, skew, smudge,
+  halftone, endmasks, comptes X/Y, incréments signés. Présent Mega ST/STE/Mega STE,
+  absent STF. **IRQ de fin sur GPIP3**, BUSY+HOG effacés à `y_count==0`.
+- **Blitter — partage de bus (hog ET non-hog)** (port du modèle non-CE d'Hatari,
+  blitter.c:864-944) : le transfert n'est plus instantané. **HOG** (bit6) : le blitter
+  garde le bus jusqu'à `y_count=0`, le CPU est arrêté toute la durée (4 cycles par
+  accès bus réellement effectué, facturés via `addBusWaitCycles` — Moira). **Non-hog** :
+  TRANCHES de 64 accès bus (256 cycles, CPU arrêté) alternées avec 64 accès CPU
+  (256 cycles), via `Scheduler::BLITTER` — l'alternance 64/64 du vrai matériel. Le
+  moteur de données est devenu REPRENABLE (état de reprise dans les registres
+  relisibles + `xReset_/haveFxsr_/nfsrInt_`) : **BUSY et compteurs/adresses sont
+  lisibles EN COURS de blit** (progression par tranche), et effacer BUSY pendant le
+  transfert met le blitter en PAUSE (reprise au prochain BUSY=1), comme le « CPU can
+  stop the blitter » d'Hatari. Limites documentées : découpe à la frontière de mot
+  (±3 accès), bug « 63 accès » non modélisé, stall no-op sous Musashi (durée
+  BUSY/IRQ seule). Étalons byte-identiques (bureau EmuTOS STE dessiné au blitter).
 - **Blitter — icônes GEM correctes (Mega ST/STE)** : les icônes de fenêtre du bureau
   (TOS/EmuTOS) étaient corrompues (franges rouge/cyan, plans désalignés). Trois correctifs
   de fidélité Hatari, validés **byte-identiques** au VDI logiciel (mode `st`) sur les deux

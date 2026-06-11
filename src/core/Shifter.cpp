@@ -8,6 +8,7 @@
 #include "core/Cpu68k.hpp"
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 
 // Décalage d'alignement pixel↔couleur du re-rendu spec512, en cycles (8 MHz).
@@ -250,8 +251,10 @@ int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
 
     // Line-offset STE ($FF820F) : le shifter saute `lineWidth` MOTS en fin de ligne
     // → la ligne suivante démarre `bpl + lineWidth*2` octets plus loin (stride). Sur
-    // ST/STF lineWidth=0 → stride = bpl (rendu strictement inchangé).
-    const uint32_t stride = static_cast<uint32_t>(bpl) + static_cast<uint32_t>(lineWidth) * 2u;
+    // ST/STF lineWidth=0 → stride = bpl (rendu strictement inchangé). Le scroll fin
+    // avec prefetch ajoute 1 mot par plan (cf. scrollCounterAdvance).
+    const uint32_t stride = static_cast<uint32_t>(bpl) + static_cast<uint32_t>(lineWidth) * 2u
+                          + static_cast<uint32_t>(scrollCounterAdvance());
     // Adresse de la ligne : le compteur MATÉRIALISÉ (vcLineBase_, ≙ pVideoRaster) pour
     // le rendu live séquentiel — il accumule les strides RÉELS (lineWidth variable,
     // écritures du compteur $FF8205/07/09, scroll) — sinon repli analytique depuis la
@@ -260,14 +263,20 @@ int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
     const uint32_t base = (y == vcLineY_) ? vcLineBase_
                                           : vcFrameBase_ + static_cast<uint32_t>(y) * stride;
 
-    // Quand on scrolle, on décode un groupe de 16 px DE PLUS (lu juste après la
-    // ligne) pour fournir les `scroll` pixels qui entrent par la droite — modèle
-    // prefetch $FF8265 du Shifter STE (cf. Hatari Video_CopyScreenLine*). Le
-    // décalage fin par $FF8264 sans prefetch (départ 16 px plus tard, bord gauche
-    // à 0) et la dérive de compteur du prefetch relèvent de la cycle-accuracy et
-    // ne sont pas distingués ici.
-    const int decodeGroups = scroll ? groups + 1 : groups;
-    int px = 0;
+    // Deux variantes matérielles (port Video_CopyScreenLineColor) :
+    //  • $FF8265 (PREFETCH) : le shifter lit un groupe de 16 px DE PLUS (1 mot par
+    //    plan, juste après la ligne) pour fournir les `scroll` pixels qui entrent
+    //    par la droite — la ligne entière est décalée À GAUCHE de `scroll` px.
+    //  • $FF8264 (SANS prefetch) : aucun mot supplémentaire — l'affichage démarre
+    //    16 px plus tard (premiers 16 px = couleur 0) et s'arrête au point normal :
+    //    dst[c] = source[c-16+scroll]. On pré-transforme idx pour que l'émetteur
+    //    (`idx[c + scroll]`) produise ce résultat : données décodées à partir de
+    //    idx[16], puis idx[0..16+scroll) mis à l'index 0 (memmove+memset d'Hatari).
+    //    En MONO, Hatari ne distingue pas le prefetch (Video_CopyScreenLineMono) →
+    //    toujours le modèle prefetch.
+    const bool prefetch = hwScrollPrefetch || hi;
+    const int decodeGroups = (scroll && prefetch) ? groups + 1 : groups;
+    int px = (scroll && !prefetch) ? 16 : 0;
     for (int g = 0; g < decodeGroups; ++g) {
         const uint32_t a  = base + static_cast<uint32_t>(g) * groupB;
         const uint16_t p0 = bus_.read16(a);
@@ -278,7 +287,20 @@ int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
             idx[px++] = static_cast<uint8_t>(((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1)
                                            | (((p2 >> bit) & 1) << 2) | (((p3 >> bit) & 1) << 3));
     }
+    if (scroll && !prefetch)
+        std::memset(idx, 0, static_cast<std::size_t>(16 + scroll));   // bord gauche couleur 0
     return scroll;
+}
+
+// Avance SUPPLÉMENTAIRE du compteur vidéo par ligne due au scroll fin (port des
+// `pVideoRaster += n*2` de Video_CopyScreenLine*) : avec PREFETCH ($FF8265) le
+// shifter a consommé 1 mot PAR PLAN de plus (8 octets en basse rés, 4 en moyenne) ;
+// sans prefetch ($FF8264) : rien. En mono, Hatari avance toujours d'1 mot.
+int Shifter::scrollCounterAdvance() const {
+    if (!hwScrollCount) return 0;
+    if (frameMode_ == Mode::High) return 2;
+    if (!hwScrollPrefetch) return 0;
+    return frameMode_ == Mode::Medium ? 4 : 8;
 }
 
 // Décode UNE scanline active (display-enable) avec l'état COURANT des registres
@@ -327,7 +349,7 @@ void Shifter::renderLine(int y) {
 void Shifter::endVideoLine() {
     const int bpl = (frameMode_ == Mode::High) ? 80 : 160;
     vcLineBase_ += static_cast<uint32_t>(bpl);
-    if (hwScrollCount) vcLineBase_ += 2;                   // prefetch : le compteur avance d'un mot
+    vcLineBase_ += static_cast<uint32_t>(scrollCounterAdvance());   // prefetch : +1 mot PAR PLAN
     vcLineBase_ += static_cast<uint32_t>(lineWidth) * 2u;  // line-offset STE (mots sautés)
     if (vcDelayedOffset_ != 0) {                           // écriture compteur pendant le DE
         vcLineBase_ += static_cast<uint32_t>(vcDelayedOffset_ & ~1);
@@ -1054,8 +1076,9 @@ uint32_t Shifter::videoCounter() const {
     const int  disp = g.displayLines;                   // lignes affichées
     const int  lineStart = g.lineStartCycle;            // début Display-Enable (50/60/71 Hz)
     // Stride réel d'une ligne = octets affichés + line-offset STE ($FF820F, en mots)
-    // + 1 mot si scroll fin (prefetch). lineWidth=0 et scroll=0 sur ST/STF → bpl.
-    const int  stride = bpl + static_cast<int>(lineWidth) * 2 + (hwScrollCount ? 2 : 0);
+    // + 1 mot PAR PLAN si scroll fin avec prefetch (cf. scrollCounterAdvance).
+    // lineWidth=0 et scroll=0 sur ST/STF → bpl.
+    const int  stride = bpl + static_cast<int>(lineWidth) * 2 + scrollCounterAdvance();
     // Compteur MATÉRIALISÉ (≙ pVideoRaster) : vcLineBase_ = début de la ligne active
     // vcLineY_ (les lignes déjà rendues ont déjà accumulé leur stride réel — lineWidth
     // variable, écritures du compteur, scroll). L'affichage couvre les lignes
@@ -1144,8 +1167,8 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     const int  la      = havePos ? line - liveStartHBL_ : -1;
     const bool active  = havePos && la >= 0 && la < g.displayLines;
     // Le MMU commence à lire 16 cycles AVANT le HDE_On quand le scroll fin est armé
-    // (prefetch) — port Video_GetMMUStartCycle.
-    const int mmuStart = g.lineStartCycle - (hwScrollCount ? 16 : 0);
+    // AVEC PREFETCH ($FF8265 ; rien via $FF8264) — port Video_GetMMUStartCycle.
+    const int mmuStart = g.lineStartCycle - ((hwScrollCount && hwScrollPrefetch) ? 16 : 0);
     if (!havePos || !active || cyc <= mmuStart || la < vcLineY_) {
         vcLineBase_ = an;                                      // application immédiate
         vcDelayedOffset_ = 0;
