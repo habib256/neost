@@ -26,6 +26,24 @@ basse) → Enchanted Land (plante après le LOADING)**.
 
 ---
 
+## Plan d'écarts Hatari ↔ NeoST — état des phases
+
+> Plan complet avec références exactes : **[`docs/HATARI_GAP_PLAN.md`](docs/HATARI_GAP_PLAN.md)**
+
+- ✅ **Phase 1** (quick wins S) — FAITE : palette ST/STE masquée, TxDR timer, void STE/ROM
+  window, bruit YM, master reset ACIA, Clock_Divider guard.
+- ✅ **Phase 2** (fidélité M) — LARGEMENT FAITE. Items restants :
+  - `[ ]` §1.A1 **Bordure STE 336 px** (`bSteBorderFlag`) — Obsession, Just Musix 2
+  - `[ ]` §1.A2 **`LEFT_OFF_2_STE`** — LoSTE (même prérequis : table timings STE)
+  - `[ ]` §2.4 **Timer B repositionné sur AER mid-frame** — Seven Gates of Jambala
+- 🔜 **Phase 3** (chantiers structurels L) :
+  1. **Glue vidéo « live »** — débloque Timer B/DE réel, restart compteur vidéo,
+     bascule 50/60 mid-frame, rendu live bordure basse (Closure, ULM Dark Side, Enchanted Land).
+  2. **Modèle temporel blitter** — partage de bus 64/64, HOG, BUSY observable, IRQ datée.
+  3. **Pipeline audio stéréo DMA STE** — décision d'architecture (channels=2), gains LMC G/D.
+
+---
+
 ## 🎯 Le grand chantier : précision cycle
 
 > Plan détaillé : **[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md)** (ordonnanceur
@@ -92,6 +110,10 @@ basse) → Enchanted Land (plante après le LOADING)**.
 ## MFP 68901 + RS232 USART
 - [ ] Config baud USART UCR/Timer-D non modélisée (backing-store seul) _(faible valeur)_ —
       réf. `rs232.c:RS232_HandleUCR + RS232_SetBaudRateFromTimerD`
+- [ ] **Timer B repositionné sur changement AER mid-frame** : quand le bit3 de l'AER bascule
+      EN COURS de trame, la position du prochain tic Timer B (calée sur DE) doit être recalculée.
+      Actuellement la position est figée au `beginFrame`. — réf. `mfp.c:MFP_ActiveEdge_WriteByte`
+      l.2775-2811. 🎯 étalon : **Seven Gates of Jambala** (cf. `Mfp.hpp:80`). _(lot suivant)_
 
 ## Vidéo / Shifter
 - [ ] **Bug labels bureau EmuTOS 192 FR/US** : textes des icônes/menus mal affichés
@@ -116,7 +138,8 @@ basse) → Enchanted Land (plante après le LOADING)**.
       `$FF8209` dès la ligne 34 → **le menu fullscreen de The Cuddly Demos ne flicke plus** (sa
       boucle d'auto-synchro se verrouille au faisceau comme sur le vrai matériel ; conforme au menu
       briques d'Hatari). Cf. CHANGELOG. **Reste** (raffinements, faible priorité) : (1) wakeup-state
-      WS3 (+1 cyc, sous-pixel) ; (2) med-res overscan ; (3) rendu des blank lines / NO_SYNC ;
+      WS3 (+1 cyc, sous-pixel) ; (2) med-res overscan ; (3) ~~rendu des blank lines / NO_SYNC~~
+      ✅ FAIT (Phase 2 : `BLANK_LINE` → couleur 0, `glueBlankLines_` repousse le bas) ;
       (4) pixel-perfect L/D end-to-end (dépend des wait states / contention bus, cf. item ci-dessus) ;
       (5) **menu Cuddly — scrolling qui SAUTE** quand le robot se déplace (gros sauts d'images au
       lieu du défilement fluide attendu — à diff'er à l'oracle : mécanisme de scroll = base vidéo
@@ -143,6 +166,14 @@ basse) → Enchanted Land (plante après le LOADING)**.
       `NEOST_DISASM`, `tools/spec512_flicker_check.sh`, `tools/hatari_oracle.sh`. Reste : scroll
       fin sync mi-ligne (Enchanted Land), indépendant. Réf.
       `Shifter::finishFrame/applyShifterBusAlignment/recordColorWrite/videoCounter`.
+- [ ] **Bordure STE 336 px (`bSteBorderFlag`)** : combo `$FF8265>0` puis `$FF8264=0` dans le
+      même VBL (≤40 cyc) → +16 px gauche, adresse −8 octets. Exige une table de timings STE
+      distincte (`Preload_Start_*`) des ancres STF dans `updateGlueState`. — réf.
+      `video.c:Video_HorScroll_Write` l.5843-5921 + rendu l.4028-4040. 🎯 étalon :
+      **Obsession** (Sync), **Just Musix 2**, **Digiworld 2**. _(lot suivant, M)_
+- [ ] **`LEFT_OFF_2_STE`** (retrait gauche court STE, +20 octets, décalage −8 px) : même
+      prérequis que ci-dessus (table timings STE). — réf. `Video_Update_Glue_State`
+      video.c:2523-2529 + rendu l.3949-3951. 🎯 étalon : **LoSTE** (Sync). _(lot suivant, M)_
 - [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) _(risque élevé)_ — réf.
       `video.c:Video_ColorReg_WriteWord`
 - [ ] **Joypads/paddles/lightpen STE** (`$FF9200-$FF9222`) : directions, boutons, multiplexage,
@@ -160,10 +191,12 @@ basse) → Enchanted Land (plante après le LOADING)**.
       **Tower of Babel** etc. jouables ; séquence de lecture IDENTIQUE à Hatari (oracle).
       **Reste** (long tail des protections) : (1) certains jeux plantent après le titre
       (ex. `Rick Dangerous.stx`, `SuperOffRoad` écran noir) — protection spécifique à
-      diff'er à l'oracle ; (2) `WRITE TRACK` sur STX non géré (no-op) ; (3) sauvegarde de
-      l'overlay d'écriture dans un fichier `.wd1772` (en mémoire pour l'instant, perdu à la
-      fermeture) ; (4) son qui démarre un peu tard sur certains STX (à investiguer) ;
-      (5) images STX HD / densité. Réf. `floppies/stx.c`.
+      diff'er à l'oracle ; (2) ~~`WRITE TRACK` sur STX non géré (no-op)~~ ✅ **FAIT Phase 2**
+      (overlay piste brut `SaveTrack` + `rebuildFormatted()` → `formattedTracks` lus en priorité ;
+      fichier `.wd1772` au format Hatari, interopérable) ; (3) ~~sauvegarde `.wd1772`~~
+      ✅ **FAIT Phase 2** (sauvegarde à l'éjection/remplacement/destruction, rechargement à
+      l'insertion — `flushWd1772` / `loadWd1772` / `saveWd1772`) ; (4) son qui démarre un peu
+      tard sur certains STX (à investiguer) ; (5) images STX HD / densité. Réf. `floppies/stx.c`.
 - [x] **Masquage d'adresse DMA** (octet haut `&0x3f/0x7f/0xff`, bas word-align `&0xfe`) —
       port `FDC_WriteDMAAddress` / `DMA_MaskAddressHigh` (cf. CHANGELOG §Disquette).
 - [x] **Compteur de secteurs DMA non relisible** : lecture SCREG renvoie `ff8604recent_`
@@ -203,7 +236,9 @@ basse) → Enchanted Land (plante après le LOADING)**.
 - [x] **Cas limites start==end** (`DmaSnd_StartNewFrame`) : trame vide + repeat off → arrêt
       SANS lever XSINT (`startNewFrame()`, corrige GPIP7 figé HAUT). Adresse de trame relue =
       `startAddr` à l'arrêt (`DmaSnd_GetFrameCount`). Reset cold/warm : le LMC1992 (sans broche
-      de reset) persiste au reset à chaud. _Reste : avance live cycle-exacte du compteur (Phase C)._
+      de reset) persiste au reset à chaud. ✅ _Avance live cycle-exacte du compteur FAITE (Phase 2) :
+      `DmaSound::liveCounterAddr()` calcule `$FF8909/0B/0D` depuis `frameStartCycle_` + cycles
+      écoulés × débit DMA, déterministe en headless. Étalons : Mental Hangover, Power Up Plus._
 - [ ] Décodage commande LMC1992 : run de masque contigu au lieu de tous les bits _(faible
       valeur)_ — réf. `dmaSnd.c:DmaSnd_InterruptHandler_Microwire`
 - [x] **Registre mixage LMC1992 (reg 0) appliqué** (`DmaSound::mix`) : mixing==1 → YM2149+DMA,
@@ -212,8 +247,9 @@ basse) → Enchanted Land (plante après le LOADING)**.
 - [x] **Décodage du son sur l'horloge d'émulation + anneau vers le thread audio** (Phase C) :
       écritures PSG horodatées + rejeu (`YM2149::synthesizeFrame`) → capture les modulations
       sous-buffer ; anneau SPSC (`SampleRing`) ; `Audio::produceFrame` (émulation) / `render` (drain).
-      🎯 étalon : **Xenon 2**, **Turrican** — digidrums. _Reste : synthèse interne 250 kHz +
-      rééchantillonnage, FIFO/anti-repliement DMA. La latence/anti-dérive est VALIDÉE :
+      🎯 étalon : **Xenon 2**, **Turrican** — digidrums. ✅ _Filtre anti-repliement DMA FAIT
+      (Phase 2) : FIR (1,2,1)/4 par échantillon DMA fetché quand freq DMA > freq hôte.
+      Reste : synthèse interne 250 kHz + rééchantillonnage complet, FIFO DMA 8 octets. La latence/anti-dérive est VALIDÉE :
       le « son haché et ralenti » venait de la CADENCE de la boucle GUI (1 trame/itération
       à ~40 fps réels + vsync bloquant + bridage 20 ms fixe ≠ géométrie 60 Hz) — résolu
       par la boucle de RATTRAPAGE (cf. CHANGELOG §Audio, 0 underrun mesuré ; compteur
@@ -228,8 +264,11 @@ basse) → Enchanted Land (plante après le LOADING)**.
 - [ ] Keymap international / layouts TOS (FR/UK/DE, autorepeat) _(faible valeur)_ — réf. `keymap.c`
 
 ## ACIA 6850 (clavier + MIDI)
-- [ ] IRQ émetteur (CR bits 5/6) + état TDRE (câblé à 1) _(risque élevé)_ — réf.
-      `acia.c:ACIA_UpdateIRQ` + `midi.c`
+- [x] ~~IRQ émetteur MIDI (TIE/TDRE)~~ — **FAIT Phase 2** : `MidiAcia` alignée sur le modèle
+      clavier (TIE bit CR5-6, TDRE persistant, RDR persistent, master reset sans purge de file) ;
+      le test « M MIDI not received » du diagnostic ST passe désormais. Réf. `acia.c:ACIA_UpdateIRQ`
+      + `midi.c`. — _Reste : IRQ TX sur l'ACIA clavier (TIE côté hôte→ST, presque jamais
+      programmé ; câblé à TDRE=1 permanent, ce qui suffit à tous les jeux connus)._
 - [x] ~~Lecture data-register renvoie 0x00 si FIFO vide au lieu du dernier RDR~~ — RDR
       persistant porté avec la livraison cadencée (cf. `CHANGELOG` §Clavier).
 - [ ] SR n'expose pas overrun/framing/parity _(faible valeur)_ — réf. `acia.c` ; noter que
