@@ -183,9 +183,13 @@ uint8_t Bus::read8(uint32_t addr) {
         return phys >= 0 ? ram[static_cast<std::size_t>(phys)] : 0x00;   // banque vide → 0
     }
 
-    // ROM TOS.
-    if (addr >= romBase && addr < romBase + rom.size())
-        return rom[addr - romBase];
+    // ROM TOS : la fenêtre DÉCODÉE fait 192 Ko à $FC0000 (3 banques) ou 1 Mo à
+    // $E00000 (16 banques), comme Hatari (memory.c:1776-1784 map_banks). Une
+    // lecture dans la fenêtre AU-DELÀ de la taille de l'image ne faute pas :
+    // elle renvoie 0x00 (zone ROM non chargée — buffer zéroté chez Hatari).
+    // Les sondes/checksums ROM des diagnostics balayent toute la fenêtre.
+    if (!rom.empty() && addr >= romBase && addr < romBase + romWindowSize())
+        return (addr - romBase < rom.size()) ? rom[addr - romBase] : 0x00;
 
     // Port cartouche ($FA0000-$FBFFFF) : si une cartouche est montée, on expose
     // sa ROM ; le TOS lit le magic à $FA0000 et amorce (diagnostic/applicative).
@@ -299,7 +303,10 @@ void Bus::buildIoFault() const {
         for (uint32_t a : voidAddr) clear(a, 1);
         clear(0xFF8002, 0x0C);                   // $FF8002-$FF800D void
     } else if (machine == MachineType::MegaSte) {
-        clear(0xFF8E01, 0x0F);                   // SCU (comme TT)
+        // SCU (comme TT) : registres aux adresses IMPAIRES uniquement — Hatari
+        // n'intercepte que $FF8E01/03/.../0F (ioMem.c:215-222), les octets PAIRS
+        // $FF8E02-$FF8E0E restent en bus error.
+        for (uint32_t a = 0xFF8E01; a <= 0xFF8E0F; a += 2) clear(a, 1);
         clear(0xFF8E20, 0x04);                   // cache/CPU control
         clear(0xFF8C80, 0x08);                   // SCC série Z85C30
         clear(0xFF860E, 0x02);                   // mode densité DD/HD
@@ -315,8 +322,10 @@ bool Bus::busFault(uint32_t addr) const {
     // RAM ($0-$3FFFFF) : décodée par le MMU ; jamais de bus error (banque vide → 0).
     if (addr < 0x400000) return false;
 
-    // ROM TOS : jamais de bus error.
-    if (addr >= romBase && addr < romBase + rom.size()) return false;
+    // ROM TOS : la fenêtre décodée complète (192 Ko à $FC0000 / 1 Mo à $E00000)
+    // ne faute jamais, même au-delà de la taille de l'image (cf. read8). L'AUTRE
+    // fenêtre ROM reste fautive (défaut), comme Hatari (memory.c:1779/1784).
+    if (!rom.empty() && addr >= romBase && addr < romBase + romWindowSize()) return false;
 
     // Port cartouche ($FA0000-$FBFFFF) : banque ROM sur le vrai matériel ; lit $FF
     // si rien n'est branché → jamais de bus error (le TOS y lit le magic au reset).
@@ -389,6 +398,17 @@ void Bus::write32(uint32_t addr, uint32_t v) {
 //  ne fait QUE router, il ne connaît pas les détails internes des composants.
 // -----------------------------------------------------------------------------
 uint8_t Bus::mmioRead8(uint32_t addr) {
+    // Octets « void » du shifter qui lisent une valeur FIXE selon le modèle (cf.
+    // ioMemTabST.c / ioMemTabSTE.c) : sur STE ils lisent 0x00 (IoMem_VoidRead_00,
+    // « return 0 not ff ») — TOS/diagnostics s'en servent pour la détection vidéo
+    // STE ; sur ST ils lisent 0xFF (IoMem_VoidRead).
+    if (addr == 0xFF820B || addr == 0xFF8262 || addr == 0xFF8263 ||
+        (addr >= 0xFF8266 && addr <= 0xFF827F))
+        return machineIsSte(machine) ? 0x00 : 0xFF;
+    // $FF820D (base basse) / $FF820F (line-width) n'existent que sur STE ; sur
+    // ST/Mega ST ce sont des octets void → 0xFF (Hatari ioMemTabST.c), pas 0.
+    if (!machineIsSte(machine) && (addr == 0xFF820D || addr == 0xFF820F))
+        return 0xFF;
     if (addr >= stmap::SHIFTER_BASE && addr <= stmap::SHIFTER_END && shifter)
         return shifter->read8(addr);
     if (addr >= stmap::PSG_BASE && addr < stmap::PSG_BASE + 4 && psg) {

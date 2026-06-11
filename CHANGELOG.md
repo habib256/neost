@@ -277,6 +277,33 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - Chaînage des lignes : **I3** blitter, **I4** ACIA (clavier+MIDI en OU câblé), **I5** FDC,
   **I7** son DMA XSINT (moniteur XOR XSINT).
 
+## Phase 1 du plan d'écarts Hatari (cf. docs/HATARI_GAP_PLAN.md)
+Sept correctifs « S » à fort impact, chaque item vérifié contre l'oracle des deux côtés
+et validé par campagne complète (tests unitaires dédiés, 3 boots pixel-identiques,
+étalons, diagnostics ST/MegaSTE inchangés, axes Vroom, cœurs Musashi+Moira) :
+- **Palette masquée par machine** (`Video_ColorReg_WriteWord`) : écriture $FF8240-5F
+  masquée `&0x777` sur ST/Mega ST (bit3 non câblé, 512 couleurs), `&0xFFF` sur STE ;
+  relecture masquée → la détection STF/STE par write/read de $FF8240 fonctionne.
+- **MFP : écrire TxDR d'un timer EN MARCHE** ne touche plus le compteur vivant et ne
+  replanifie plus l'échéance (effet au rebouclage suivant, cf. `MFP_TimerxData_WriteByte`) ;
+  timer arrêté (TxCR=0) → compteur = valeur. Corrige les sauts de phase des replays
+  changeant la période à la volée (digidrums).
+- **MFP : VR bit3 1→0 (software→auto EOI) efface ISRA/ISRB** (`MFP_VectorReg_WriteByte`) —
+  sinon des in-service restés posés bloquaient les IRQ basses pour toujours.
+- **Bus : octets « void » du shifter par machine** : $FF820B/$FF8262-63/$FF8266-7F
+  lisent 0x00 sur STE (`IoMem_VoidRead_00`), 0xFF sur ST ; $FF820D/$FF820F lisent 0xFF
+  sur ST (registres STE inexistants). Détection vidéo STE des TOS/diagnostics.
+- **Bus : fenêtre ROM décodée complète** (192 Ko à $FC0000 / 1 Mo à $E00000, cf.
+  `memory.c` map_banks) : lecture au-delà de l'image → 0x00 SANS bus error ; l'autre
+  fenêtre ROM faute. + **SCU MegaSTE : seuls les octets IMPAIRS répondent** (les pairs
+  $FF8E02-0E fautent, comme `ioMem.c`).
+- **YM2149 : test de rechargement du bruit à 250 kHz** (hors du garde 125 kHz, période
+  0 admise — cf. `YM2149_DoSamples_250`) : le bruit le plus aigu (R6=0) retrouve son
+  octave (recharge LFSR à 250 kHz au lieu de 125).
+- **ACIA clavier : master reset 6850** (CR bits 0-1 = 11 → SR=$02, RDRF/IRQ effacés,
+  file IKBD NON purgée — fix Froggies/Overdrive) et **liaison non initialisée** (octets
+  IKBD jetés tant que le CR n'a pas reçu un diviseur valide, cf. `Clock_Divider`).
+
 ## Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)
 - ACIA clavier + file de scancodes ; mapping GLFW → scancodes ST. Ligne **GPIP4** câblée
   sur RDRF de l'ACIA. **Réponse de reset IKBD différée** (`$F1` ~502000 cyc après `$80,$01`).

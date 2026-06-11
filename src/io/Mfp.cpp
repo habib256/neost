@@ -115,16 +115,35 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x11: isrb &= v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
         case 0x13: imra = v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
         case 0x15: imrb = v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
-        case 0x17: vr   = v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
+        case 0x17: {
+            // VR : vecteur + bit3 = mode EOI (1 = software, 0 = automatique). Le
+            // passage software → automatique VIDE les bits in-service (cf. Hatari
+            // MFP_VectorReg_WriteByte) — sinon des ISR restés posés bloqueraient
+            // les IRQ de priorité inférieure pour toujours.
+            const uint8_t oldVr = vr;
+            vr = v;
+            if (((oldVr ^ v) & 0x08) && !(v & 0x08)) { isra = 0; isrb = 0; }
+            updateIrq(sched_ ? sched_->liveNow() : 0);
+            break;
+        }
         case 0x1B: tbcr_ = v; scheduleTimer(1); break;   // TBCR (0x08 = event-count ; 1-7 = délai)
-        case 0x21: tbReload_ = v; tbCounter_ = v; scheduleTimer(1); break;  // TBDR → recharge + (re)date le délai
-        // Timers A/C/D : on mémorise le registre PUIS on (re)programme l'échéance.
+        // Écriture du registre de DONNÉES d'un timer (TxDR) : met à jour la valeur
+        // de RECHARGE, mais ne touche le compteur vivant QUE si le timer est arrêté
+        // (TxCR==0) et ne replanifie JAMAIS une échéance en cours — la nouvelle
+        // valeur prend effet au prochain rebouclage, comme le 68901 (cf. Hatari
+        // MFP_TimerAData_WriteByte etc., mfp.c:3354-3480). Sans ça, les musiques
+        // chip qui changent la période à la volée (digidrums) sautent de phase.
+        case 0x21: tbReload_ = v;
+                   if ((tbcr_ & 0x0F) == 0) tbCounter_ = v;
+                   break;                                             // TBDR
+        // Timers A/C/D : on mémorise le registre de CONTRÔLE puis on (re)programme.
         case 0x19: timer_[0x19] = v; scheduleTimer(0); break;             // TACR
         case 0x1D: timer_[0x1D] = v; scheduleTimer(2); scheduleTimer(3); break; // TCDCR (C+D)
-        case 0x1F: timer_[0x1F] = v; taReload_ = taCounter_ = v;          // TADR (+ event-count)
-                   scheduleTimer(0); break;
-        case 0x23: timer_[0x23] = v; scheduleTimer(2); break;             // TCDR
-        case 0x25: timer_[0x25] = v; scheduleTimer(3); break;             // TDDR
+        case 0x1F: timer_[0x1F] = v; taReload_ = v;                       // TADR
+                   if ((timer_[0x19] & 0x0F) == 0) taCounter_ = v;
+                   break;
+        case 0x23: timer_[0x23] = v; break;                               // TCDR
+        case 0x25: timer_[0x25] = v; break;                               // TDDR
         case 0x2F: timer_[0x2F] = v;                  // UDR : octet émis sur le port série
                    if (serialSink_) serialSink_(v);   // (RS-232). On le transmet aussitôt
                    // Connecteur de bouclage TxD→RxD : l'octet émis revient en réception

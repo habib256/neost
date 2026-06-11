@@ -196,12 +196,16 @@ position absolue tous modes, fenêtre critique + garde 20 VBL.
 
 ## 8. Ordre d'attaque proposé
 
-### Phase 1 — « quick wins » S à fort impact (1 PR groupée possible)
-1. §1.C1 palette ST/STE masquée + half-step gaté (validation : écrire/relire $FF8240 en headless ST vs STE ; étalons inchangés).
-2. §2.1 TxDR timer en marche + §2.2 VR→auto efface ISR (validation : test synthétique MFP + boots/étalons).
-3. §6.1 void STE → 0x00 + §6.2 fenêtre ROM 1 Mo + §6.3 SCU pairs fautent (validation : diags ST/STE/MegaSTE série).
-4. §5.1 bruit 250 kHz (validation : oreille + dump WAV headless R6=0).
-5. §7.2 master reset clavier + §7.3 Clock_Divider (validation : tests synthétiques Ikbd existants).
+### Phase 1 — « quick wins » S à fort impact — ✅ **FAITE** (validée par campagne complète :
+tests unitaires dédiés, 3 boots pixel-identiques, étalons, diags ST/MegaSTE inchangés,
+axes Vroom, cœur Moira — cf. commit)
+1. ✅ §1.C1 palette ST/STE masquée (`&0x777`/`&0xFFF` à l'écriture, relecture masquée).
+2. ✅ §2.1 TxDR timer en marche (effet au rebouclage) + §2.2 VR→auto efface ISRA/ISRB.
+3. ✅ §6.1 void STE → 0x00 (+ $FF820D/0F → 0xFF sur ST) + §6.2 fenêtre ROM décodée
+   complète + §6.3 octets pairs SCU fautent.
+4. ✅ §5.1 bruit rechargé à 250 kHz (période 0 admise). _Validation à l'oreille à faire._
+5. ✅ §7.2 master reset 6850 clavier (SR=$02, file non purgée) + §7.3 Clock_Divider
+   (octets jetés tant que le CR n'est pas programmé).
 
 ### Phase 2 — fidélité jeux/démos (M)
 6. §7.1 MidiAcia alignée sur l'ACIA clavier (réutiliser le modèle d'Ikbd).

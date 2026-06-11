@@ -120,7 +120,7 @@ void YM2149::updateFromRegs(const uint8_t* r) {
     tonePer_[0] = tonePeriod(r[1], r[0]);
     tonePer_[1] = tonePeriod(r[3], r[2]);
     tonePer_[2] = tonePeriod(r[5], r[4]);
-    noisePer_   = std::max(1u, uint32_t(r[6] & 0x1f));
+    noisePer_   = uint32_t(r[6] & 0x1f);   // 0 ADMIS : le LFSR recharge alors à 250 kHz (cf. doSamples250)
     uint32_t ep = (r[12] << 8) | r[11];
     envPer_     = uint16_t(std::max(1u, ep));
     envShape_   = r[13] & 0x0f;
@@ -162,14 +162,17 @@ void YM2149::doSamples250(int n) {
     int pos = buf250Wr_;
 
     for (int i = 0; i < n; ++i) {
-        // Bruit à 125 kHz (moitié de la cadence interne).
+        // Bruit : le COMPTEUR avance à 125 kHz (moitié de la cadence interne)
+        // mais le TEST de rechargement reste à 250 kHz, HORS du garde — c'est ce
+        // qui fait qu'une période 0 recharge le LFSR à 250 kHz (un cran plus aigu
+        // que période 1 à 125 kHz), comme le vrai YM (cf. Hatari
+        // YM2149_DoSamples_250, sound.c:1051-1058).
         freqDiv2_ ^= 1;
-        if (freqDiv2_ == 0) {
+        if (freqDiv2_ == 0)
             noiseCnt_++;
-            if (noiseCnt_ >= noisePer_) {
-                noiseCnt_ = 0;
-                noiseVal_ = rndCompute(rndLfsr_);
-            }
+        if (noiseCnt_ >= noisePer_) {
+            noiseCnt_ = 0;
+            noiseVal_ = rndCompute(rndLfsr_);
         }
 
         for (int ch = 0; ch < 3; ++ch) {

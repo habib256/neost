@@ -78,10 +78,12 @@ basse) → Enchanted Land (plante après le LOADING)**.
 ---
 
 ## Bus / memory map / MMU
-- [ ] Registres vidéo STE « void » doivent lire `0x00` (`$FF820B`, `$FF8262-63`, `$FF8266-7F`)
-      _(faible valeur)_ — réf. `ioMemTabSTE.c` (IoMem_VoidRead_00)
-- [ ] La banque ROM doit couvrir toute la fenêtre 1 Mo (`$E00000-$EFFFFF`), pas la taille du
-      fichier _(risque élevé)_ — réf. `cpu/memory.c:memory_map_Standard_RAM` (ROMmem aliasing)
+- [x] ~~Registres vidéo STE « void » doivent lire `0x00`~~ — FAIT (Phase 1 du
+      `docs/HATARI_GAP_PLAN.md`) : `$FF820B`/`$FF8262-63`/`$FF8266-7F` → 0x00 sur STE,
+      0xFF sur ST (+ `$FF820D`/`$FF820F` → 0xFF sur ST).
+- [x] ~~La banque ROM doit couvrir toute la fenêtre~~ — FAIT (Phase 1) : fenêtre décodée
+      complète (192 Ko à `$FC0000`, 1 Mo à `$E00000`), lecture hors image → 0x00 sans
+      bus error, l'autre fenêtre faute. + octets PAIRS du SCU MegaSTE fautent.
 - [ ] Accès mémoire FDC/son-DMA via la traduction MMU au lieu de `ram[]` physique _(risque
       élevé)_ — réf. `stMemory.c:STMemory_DMA_Read/Write*`
 - [ ] **Remapping réel des banques MMU** (alias 128/512/2048 Ko) + bus error fidèle des zones

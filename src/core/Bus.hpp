@@ -139,6 +139,14 @@ public:
     std::vector<uint8_t> cart;        // ROM cartouche ($FA0000) — vide si absente
     uint32_t romBase = stmap::ROM_E00000;
 
+    // Taille de la fenêtre d'adresses DÉCODÉE pour la ROM (indépendante de la
+    // taille de l'image) : 3 banques de 64 Ko à $FC0000, 16 à $E00000 — cf.
+    // Hatari memory.c:1776-1784 (map_banks). Lue par read8/busFault : lecture
+    // au-delà de l'image → 0x00, jamais de bus error DANS la fenêtre.
+    uint32_t romWindowSize() const {
+        return romBase == stmap::ROM_FC0000 ? 0x30000u : 0x100000u;
+    }
+
     // Overlay de boot : au reset, le 68000 lit SSP ($0) et PC ($4). Le GLUE
     // route ces tout premiers accès vers la ROM. On désactive l'overlay dès
     // que les vecteurs ont été lus (cf. Cpu68k::reset), pour rendre ensuite

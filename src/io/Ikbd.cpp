@@ -170,6 +170,22 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
             tdre_ = true;
             if (sched_) sched_->cancel(Scheduler::IKBD_TX);
         }
+        if ((v & 0x03) == 0x03) {
+            // MASTER RESET 6850 (CR bits 0-1 = 11, cf. acia.c ACIA_MasterReset) :
+            // le SR retombe à TDRE seul (RDRF/overrun effacés, l'octet du RDR est
+            // perdu) et la ligne IRQ est relâchée. La file IKBD n'est PAS purgée :
+            // les octets « en transit » sur la liaison série arrivent quand même
+            // après le reset (fix Froggies/Overdrive, cf. ikbd.c:37-40) — un
+            // loader (Transbeauce 2) attend SR==$02 juste après le reset.
+            rdrf_ = false;
+            tdre_ = true;
+            armRx();                         // relance la livraison de la file
+        } else {
+            // CR avec un diviseur valide (00/01/10) : la liaison série de l'ACIA
+            // est désormais initialisée (cf. acia.c Clock_Divider) — l'IKBD peut
+            // livrer ses octets (avant ça, ils sont jetés, cf. pushRx).
+            clockDividerSet_ = true;
+        }
         raiseIfReady();
         return;
     }
@@ -823,6 +839,11 @@ void Ikbd::updateClock(int64_t vblMicro) {
 
 void Ikbd::pushRx(uint8_t b) {
     if (duringResetCriticalTime_)
+        return;
+    // Liaison série de l'ACIA jamais initialisée (aucune écriture du CR avec un
+    // diviseur valide) : l'octet est JETÉ, comme Hatari (ikbd.c:1027-1032
+    // « acia not initialized, can't send byte »).
+    if (!clockDividerSet_)
         return;
     rx_.push_back(b);
     armRx();

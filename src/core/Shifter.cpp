@@ -1144,6 +1144,12 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
         const int i = (addr - 0xFF8240) / 2;
         if (addr & 1) palette[i] = (palette[i] & 0xFF00) | v;
         else          palette[i] = static_cast<uint16_t>((palette[i] & 0x00FF) | (uint16_t(v) << 8));
+        // Masquage par machine (cf. Hatari Video_ColorReg_WriteWord) : le ST n'a
+        // que 3 bits par canal (512 couleurs, bit3 non câblé → relu à 0), le STE 4
+        // (4096). Sans ce masque, un programme ST qui écrit puis relit $FF8240
+        // voit $xFFF au lieu de $x777 → détection STF/STE faussée, et le rendu
+        // applique des demi-teintes STE inexistantes sur ST.
+        palette[i] &= machineIsSte(bus_.machine) ? 0x0FFF : 0x0777;
         recordColorWrite(i);   // spec512 : date l'écriture au cycle ALIGNÉ (palette intra-ligne)
     }
     // Tout autre registre nouvellement routé mais non géré ($FF8266-$FF827F) :

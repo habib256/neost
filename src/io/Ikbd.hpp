@@ -156,6 +156,9 @@ private:
     bool    rdrf_ = false;                   // RDR plein (octet livré non encore lu)
     bool    rxPending_ = false;              // une livraison IKBD_RX est déjà datée
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
+    bool    clockDividerSet_ = false;        // CR écrit avec un diviseur valide (≠ master
+                                             // reset) : avant ça, l'IKBD parle dans le vide
+                                             // (octets jetés, cf. acia.c Clock_Divider)
     bool    txEnableInt_ = false;            // IRQ d'émission armée : CR bits5-6 = 01 (ex. $b6, Hades Nebula)
     bool    tdre_ = true;                    // Transmit Data Register Empty : 1 au repos, 0 en émission sous TIE
     std::array<uint8_t, 8> inBuf_{};         // accumulation des octets d'une commande multi-octets
