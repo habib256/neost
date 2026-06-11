@@ -56,6 +56,9 @@ void Blitter::write32(uint32_t addr, uint32_t v) {
 //  est identique au vrai matériel.
 // -----------------------------------------------------------------------------
 void Blitter::run() {
+    // Le blitter prend le bus via BGACK → le cache 16 Ko du Mega STE est invalidé
+    // (Hatari MegaSTE_Cache_Flush) : ses écritures RAM ne passent pas par le cache.
+    bus_.megaSteCacheFlushIfEnabled();
     auto rd16 = [&](uint32_t o) -> uint16_t { return uint16_t((reg_[o] << 8) | reg_[o + 1]); };
     auto wr16 = [&](uint32_t o, uint16_t w) { reg_[o] = uint8_t(w >> 8); reg_[o + 1] = uint8_t(w); };
     auto rd32 = [&](uint32_t o) -> uint32_t { return (uint32_t(rd16(o)) << 16) | rd16(o + 2); };

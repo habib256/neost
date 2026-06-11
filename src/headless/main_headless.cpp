@@ -33,6 +33,8 @@ void usage() {
         "  --until-pc HEX    arrête dès que PC atteint cette adresse (hex)\n"
         "  --cpu CORE        cœur 68000 : musashi (défaut) ou moira\n"
         "  --machine TYPE    profil : st, megast, ste (défaut), megaste\n"
+        "  --fpu             peuple le socket MC68881 du Mega STE ($FFFA40, sonde +\n"
+        "                    dialogue CIR journalisé — défaut absent : « not found »)\n"
         "  --mem SIZE        ST-RAM : 256k, 512k (défaut), 1m, 2m, 4m\n"
         "  --walk-mouse      après le boot, injecte un mouvement souris + clic (diag)\n"
         "  --keys STR        après le boot, tape STR au clavier (ex. menus de diag)\n"
@@ -162,6 +164,7 @@ int main(int argc, char** argv) {
     CpuCore     cpuCore    = CpuCore::Musashi;
     MachineType machType   = MachineType::Ste;
     std::size_t ramBytes   = 512u * 1024u;
+    bool        fpuPresent = false;     // --fpu : MC68881 Mega STE (cf. Fpu.hpp)
 
     for (int i = 1; i < argc; ++i) {
         const char* a = argv[i];
@@ -198,6 +201,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--joy-script"))  { joyScrFrame = std::atoi(next(a)); joyScr = next(a); }
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
         else if (!std::strcmp(a, "--machine"))    machType  = parseMachine(next(a));
+        else if (!std::strcmp(a, "--fpu"))        fpuPresent = true;
         else if (!std::strcmp(a, "--mem"))        ramBytes  = parseRamBytes(next(a));
         else if (!std::strcmp(a, "--until-pc"))   { untilPc = (uint32_t)std::strtoul(next(a), nullptr, 16); haveUntil = true; }
         else if (!std::strcmp(a, "-h") || !std::strcmp(a, "--help")) { usage(); return 0; }
@@ -208,6 +212,11 @@ int main(int argc, char** argv) {
     // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
     machType = Machine::adjustMachineForTos(machType, romPath);
     Machine machine(ramBytes, cpuCore, machType);
+    if (fpuPresent) {
+        if (machType == MachineType::MegaSte) machine.bus.setFpuPresent(true);
+        else std::fprintf(stderr, "[headless] --fpu ignoré : socket 68881 présent "
+                                  "uniquement sur Mega STE (--machine megaste)\n");
+    }
     // Auto-test de la machine Glue (bordures) : pas besoin de ROM/boot, on teste
     // directement la logique du Shifter contre les valeurs documentées d'Hatari.
     if (glueSelfTest) return machine.shifter.glueSelfTest() ? 0 : 1;

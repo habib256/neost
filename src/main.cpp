@@ -55,7 +55,8 @@ static std::string resolveData(const std::string& given, const std::string& exeD
 // l'émulation clavier (0 ou 1, défaut 1 = port « jeux »).
 struct Config { std::string rom; std::string disk; std::string cart; bool mono = false;
                 std::string cpu = "moira"; std::string machine = "st";
-                std::string mem = "512k"; bool kbdjoy = false; int joyport = 1;
+                std::string mem = "512k"; bool fpu = false;   // MC68881 Mega STE (cf. Fpu.hpp)
+                bool kbdjoy = false; int joyport = 1;
                 float joydeadzone = 0.30f; bool fastfdc = false;
                 bool showDisk = true, showCart = true, showHex = true, showCpu = true;
                 bool showJoy = false;
@@ -98,6 +99,7 @@ static Config loadConfig(const std::string& exeDir) {
         else if (line.rfind("cpu=", 0)  == 0) c.cpu  = line.substr(4);
         else if (line.rfind("machine=", 0) == 0) c.machine = line.substr(8);
         else if (line.rfind("mem=", 0)  == 0) c.mem  = line.substr(4);
+        else if (line.rfind("fpu=", 0)  == 0) c.fpu  = (line.substr(4) == "1");
         else if (line.rfind("kbdjoy=", 0) == 0) c.kbdjoy = (line.substr(7) == "1");
         else if (line.rfind("joyport=", 0) == 0) c.joyport = (line.substr(8) == "0") ? 0 : 1;
         else if (line.rfind("joydeadzone=", 0) == 0) c.joydeadzone = std::strtof(line.substr(12).c_str(), nullptr);
@@ -119,6 +121,7 @@ static void saveConfig(const std::string& exeDir, Config& c, Machine* machine = 
     if (f) f << "rom=" << c.rom << "\ndisk=" << c.disk << "\ncart=" << c.cart
              << "\nmono=" << (c.mono ? 1 : 0)
              << "\ncpu=" << c.cpu << "\nmachine=" << c.machine << "\nmem=" << c.mem
+             << "\nfpu=" << (c.fpu ? 1 : 0)
              << "\nkbdjoy=" << (c.kbdjoy ? 1 : 0) << "\njoyport=" << c.joyport
              << "\njoydeadzone=" << c.joydeadzone << "\nfastfdc=" << (c.fastfdc ? 1 : 0)
              << "\nshowDisk=" << (c.showDisk ? 1 : 0)
@@ -711,6 +714,8 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[main] Aucune cartouche montée (%s).\n", cartPath.c_str());
     machine.mfp.setColorMonitor(!cfg.mono);   // moniteur mémorisé (avant le reset)
     machine.fdc.setFastFdc(cfg.fastfdc);      // FDC rapide mémorisé (accès disque ÷10)
+    // Socket MC68881 (Mega STE uniquement, cf. Fpu.hpp) : sonde + trapping.
+    machine.bus.setFpuPresent(cfg.fpu && machType0 == MachineType::MegaSte);
     machine.reset();
     loadRtcFromConfig(machine, cfg);                 // horloge Mega : reprise neost.cfg + pont hôte
     cfg.rom = romLogical; saveConfig(exeDir, cfg, &machine);
@@ -748,6 +753,7 @@ int main(int argc, char** argv) {
         else                  machine.loadCart(resolveData(cfg.cart, exeDir));
         machine.mfp.setColorMonitor(!cfg.mono);
         machine.fdc.setFastFdc(cfg.fastfdc);   // ré-applique le FDC rapide après reconfig
+        machine.bus.setFpuPresent(cfg.fpu && machTypeR == MachineType::MegaSte);
         machine.reset();
         std::fprintf(stderr, "[main] reconfig à chaud : cœur %s | machine %s | RAM %s\n",
                      Cpu68k::coreName(machine.cpu.core()),
@@ -954,6 +960,14 @@ int main(int argc, char** argv) {
                         if (ImGui::MenuItem(labels[i], nullptr, cfg.machine == ids[i])) {
                             cfg.machine = ids[i]; saveConfig(exeDir, cfg, &machine); reqRebuild = true;
                         }
+                    // Socket MC68881 du Mega STE ($FFFA40, sonde + trapping — cf.
+                    // Fpu.hpp). Décoché (défaut) : bus error → « FPU not found ».
+                    if (cfg.machine == "megaste") {
+                        ImGui::Separator();
+                        if (ImGui::MenuItem("FPU 68881 (sonde)", nullptr, cfg.fpu)) {
+                            cfg.fpu = !cfg.fpu; saveConfig(exeDir, cfg, &machine); reqRebuild = true;
+                        }
+                    }
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu(ICON_FA_MEMORY " Mémoire")) {

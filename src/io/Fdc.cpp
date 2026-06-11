@@ -510,6 +510,7 @@ void Fdc::fifoPush(uint8_t b) {
     dmaError_ = false;
     fifo_[fifoSize_++] = b;
     if (fifoSize_ < 16) return;                                // FIFO pas encore pleine
+    bus_.megaSteCacheFlushIfEnabled();   // DMA via BGACK → cache Mega STE invalidé
     for (int j = 0; j < 16; ++j) {                             // flush 16 o → RAM
         const uint32_t a = (dmaAddr_ + uint32_t(j)) & 0x00FFFFFF;
         if (a < bus_.ram.size()) bus_.ram[a] = fifo_[j];
@@ -528,6 +529,7 @@ uint8_t Fdc::fifoPull() {
     if (fifoSize_ > 0) {
         b = fifo_[16 - (fifoSize_--)];                        // octet en position 0,1,..,15
     } else {
+        bus_.megaSteCacheFlushIfEnabled();   // DMA via BGACK → cache Mega STE invalidé
         for (int j = 0; j < 16; ++j) {                        // recharge 16 o ← RAM
             const uint32_t a = (dmaAddr_ + uint32_t(j)) & 0x00FFFFFF;
             fifo_[j] = (a < bus_.ram.size()) ? bus_.ram[a] : 0;
@@ -1740,6 +1742,7 @@ void Fdc::writeAcsi(uint32_t /*addr*/, uint8_t v) {
 }
 
 void Fdc::executeAcsi() {
+    bus_.megaSteCacheFlushIfEnabled();   // DMA disque dur via BGACK → cache invalidé
     const uint8_t op = acsiCmd_[0];
     const uint32_t lba = (uint32_t(acsiCmd_[1] & 0x1F) << 16) | (uint32_t(acsiCmd_[2]) << 8) | acsiCmd_[3];
     const int      cnt = acsiCmd_[4] ? acsiCmd_[4] : 256;

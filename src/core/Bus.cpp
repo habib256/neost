@@ -17,6 +17,7 @@
 #include "io/MidiAcia.hpp"
 
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 
 Bus::Bus(std::size_t ramBytes) {
@@ -303,6 +304,9 @@ void Bus::buildIoFault() const {
         clear(0xFF8E20, 0x04);                   // cache/CPU control
         clear(0xFF8C80, 0x08);                   // SCC série Z85C30
         clear(0xFF860E, 0x02);                   // mode densité DD/HD
+        // MC68881 optionnel : ses CIR ($FFFA40-$FFFA5F) ne répondent que si le
+        // socket est peuplé — sinon bus error et la sonde conclut « not found ».
+        if (fpu.present) clear(Fpu::BASE, Fpu::END - Fpu::BASE);
     }
 
     ioFaultMachine_ = machine;
@@ -335,11 +339,91 @@ bool Bus::busFault(uint32_t addr) const {
     return true;
 }
 
-bool Bus::busFaultN(uint32_t addr, unsigned n) const {
-    // Règle Hatari : faute uniquement si TOUS les octets de l'accès fautent.
+bool Bus::busFaultN(uint32_t addr, unsigned n, bool write) const {
+    addr &= stmap::ADDR_MASK;
+
+    // 1) Écritures TOUJOURS fautives, même en superviseur (cf. Bus.hpp) : la ROM
+    //    TOS et le port cartouche sont physiquement en lecture seule (Hatari
+    //    ROMmem_*put → bus error — certains chargeurs s'en servent), et les 8
+    //    premiers octets de RAM sont un miroir ROM des vecteurs reset (SysMem_*put :
+    //    « write protected »).
+    if (write) {
+        if (addr < 0x8) return true;
+        if (addr >= romBase && addr < romBase + rom.size()) return true;
+        if (addr >= stmap::CART_BASE && addr < stmap::CART_END) return true;
+    }
+
+    // 2) Protection superviseur (GLUE/MMU) : en mode utilisateur, $0-$7FF et tout
+    //    l'espace IO ($FF8000-$FFFFFF) fautent — port de SysMem_*get/put (memory.c)
+    //    et du test is_super_access d'ioMem.c. Le bit S n'est consulté QUE si
+    //    l'adresse est concernée (l'immense majorité des accès l'évite).
+    if (addr < 0x800 || addr >= stmap::MMIO_BASE) {
+        if (cpu && !cpu->supervisor()) return true;
+    }
+
+    // 3) Carte par octet (whitelist Hatari) : faute uniquement si TOUS les octets
+    //    de l'accès fautent.
     for (unsigned i = 0; i < n; ++i)
         if (!busFault(addr + i)) return false;
     return true;
+}
+
+// -----------------------------------------------------------------------------
+//  Cache externe 16 Ko du Mega STE — port fidèle de Hatari m68000.c
+//  (MegaSTE_Cache_Addr_Cacheable / _Read / _Update / _Flush). Données pures :
+//  la facturation des cycles est faite par le cœur Moira (cf. Cpu68k.cpp).
+// -----------------------------------------------------------------------------
+void Bus::megaSteCacheFlush() {
+    std::memset(megaSteCache.valid, 0, sizeof megaSteCache.valid);
+}
+
+bool Bus::megaSteCacheable(uint32_t addr, int size, bool write, bool super) const {
+    addr &= stmap::ADDR_MASK;                    // 68000 : 24 bits d'adresse
+    // Un accès qui provoquerait une address/bus error n'est jamais caché.
+    if (size == 2 && (addr & 1)) return false;   // mot sur adresse impaire
+    if (addr < 0x4 && write) return false;       // écriture vecteurs reset (miroir ROM)
+    if (addr < 0x800 && !super) return false;    // RAM système en mode utilisateur
+    // RAM ST installée (< 4 Mo) : cachable en lecture comme en écriture.
+    if (addr < ram.size() && addr < 0x400000) return true;
+    // ROM TOS : cachable en LECTURE seulement (écrire fauterait).
+    if (addr >= romBase && addr < romBase + rom.size() && !write) return true;
+    // IO, cartouche, trous : jamais cachés.
+    return false;
+}
+
+bool Bus::megaSteCacheRead(uint32_t addr, int size, uint16_t& val, bool super) {
+    addr &= stmap::ADDR_MASK;
+    if (!megaSteCacheable(addr, size, /*write=*/false, super)) return false;
+    const uint16_t line = (addr >> 1) & 0x1FFF;          // bits 1-13
+    const uint16_t tag  = (addr >> 14) & 0x3FF;          // bits 14-23
+    if (!megaSteCache.valid[line] || megaSteCache.tag[line] != tag) return false;
+    val = megaSteCache.value[line];                      // hit : le mot caché
+    if (size == 1)                                       // accès octet : moitié voulue
+        val = (addr & 1) ? (val & 0xFF) : ((val >> 8) & 0xFF);
+    return true;
+}
+
+bool Bus::megaSteCacheUpdate(uint32_t addr, int size, uint16_t val, bool write, bool super) {
+    addr &= stmap::ADDR_MASK;
+    if (!megaSteCacheable(addr, size, write, super)) return false;
+    const uint16_t line = (addr >> 1) & 0x1FFF;
+    const uint16_t tag  = (addr >> 14) & 0x3FF;
+    if (size == 2) {                                     // accès mot : remplace la ligne
+        megaSteCache.valid[line] = 1;
+        megaSteCache.tag[line]   = tag;
+        megaSteCache.value[line] = val;
+        return true;
+    }
+    // Écriture octet : ne met à jour la ligne QUE si elle cache déjà ce mot (le
+    // bus ne porte qu'un octet, pas de quoi remplir l'autre moitié de la ligne).
+    if (megaSteCache.valid[line] && megaSteCache.tag[line] == tag) {
+        val &= 0xFF;
+        megaSteCache.value[line] = (addr & 1)
+            ? uint16_t((megaSteCache.value[line] & 0xFF00) | val)
+            : uint16_t((megaSteCache.value[line] & 0x00FF) | (val << 8));
+        return true;
+    }
+    return false;
 }
 
 // --- Accès 16/32 bits : le 68000 est big-endian, on assemble octet par octet --
@@ -450,6 +534,10 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
     // Bus.hpp megaSteCacheCtrl. $FF8E20/22/23 restent « void » (→ glue → 0xFF).
     if (machine == MachineType::MegaSte && addr == 0xFF8E21)
         return megaSteCacheCtrl;
+    // Coprocesseur MC68881 optionnel ($FFFA40-$FFFA5F) — cf. Fpu.hpp.
+    if (machine == MachineType::MegaSte && fpu.present
+        && addr >= Fpu::BASE && addr < Fpu::END)
+        return fpu.read8(addr);
     // SCU MegaSTE : registres d'interruption ($FF8E01-$FF8E0F). cf. Scu.hpp.
     if (machine == MachineType::MegaSte && addr >= 0xFF8E01 && addr <= 0xFF8E0F)
         return scu.read8(addr);
@@ -517,10 +605,20 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     // Registre Cache/CPU MegaSTE $FF8E21 : latché + contrainte matérielle « le cache ne
     // peut être actif qu'à 16 MHz » — si bit0 (cache) est demandé alors que bit1 (vitesse)
     // = 0 (8 MHz), le matériel force bit0 à 0 (cf. Hatari IoMemTabMegaSTE_CacheCpuCtrl_WriteByte).
-    // L'EFFET réel (débit cycles 8/16 MHz, cache 16 Ko) relève d'items « précision cycle ».
+    // EFFET réel (port MegaSTE_CPU_Cache_Update) : cache désactivé → invalidation
+    // complète ; bit1 → bascule du débit cycles 8/16 MHz du cœur CPU.
     if (machine == MachineType::MegaSte && addr == 0xFF8E21) {
         if ((v & 0x02) == 0 && (v & 0x01)) v &= 0xFE;   // cache impossible à 8 MHz
         megaSteCacheCtrl = v;
+        if ((v & 0x01) == 0) megaSteCacheFlush();
+        if (cpu) cpu->setMegaSteSpeed((v & 0x02) != 0);
+        return;
+    }
+    // Coprocesseur MC68881 optionnel ($FFFA40-$FFFA5F) — cf. Fpu.hpp. Quand il est
+    // absent (défaut), la zone n'est pas whitelistée → bus error avant d'arriver ici.
+    if (machine == MachineType::MegaSte && fpu.present
+        && addr >= Fpu::BASE && addr < Fpu::END) {
+        fpu.write8(addr, v);
         return;
     }
     // SCU MegaSTE ($FF8E01-$FF8E0F) : écrire un masque (dé)masque des IRQ → on

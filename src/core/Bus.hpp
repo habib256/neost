@@ -9,6 +9,7 @@
 // =============================================================================
 #pragma once
 #include "core/MachineType.hpp"
+#include "io/Fpu.hpp"
 #include "io/Scu.hpp"
 #include "io/StePads.hpp"
 #include <cstdint>
@@ -106,11 +107,19 @@ public:
     // (blitter, son DMA) est détecté par EmuTOS via ces bus errors.
     bool busFault(uint32_t addr) const;
 
-    // Bus error pour un accès de `n` octets (1/2/4) à partir de `addr`. Règle
-    // matérielle (Hatari) : un accès word/long ne FAUTE que si TOUS ses octets
-    // tombent en zone bus error. Ainsi `move.w $FF8204` fonctionne (octet pair
-    // fautif + octet impair valide) alors que `move.b $FF8204` faute.
-    bool busFaultN(uint32_t addr, unsigned n) const;
+    // Bus error pour un accès CPU de `n` octets (1/2/4) à partir de `addr`.
+    // Trois étages, portés de Hatari :
+    //  1. Écritures TOUJOURS fautives (ROMmem_put / SysMem_put) : ROM TOS, port
+    //     cartouche, et les 8 premiers octets de RAM (miroir ROM des vecteurs reset).
+    //  2. Mode UTILISATEUR (bit S du SR = 0) : $0-$7FF (variables système) et tout
+    //     l'espace IO $FF8000-$FFFFFF sont réservés au superviseur (SysMem_get/put +
+    //     is_super_access d'ioMem.c) — c'est la « protection mémoire » du GLUE/MMU.
+    //     Seul le CPU est concerné : blitter/DMA passent par read8/write8 sans ce test
+    //     (équivalent BusMode != BUS_MODE_CPU d'Hatari).
+    //  3. Carte par octet (whitelist) : un accès word/long ne FAUTE que si TOUS ses
+    //     octets tombent en zone bus error. Ainsi `move.w $FF8204` fonctionne (octet
+    //     pair fautif + octet impair valide) alors que `move.b $FF8204` faute.
+    bool busFaultN(uint32_t addr, unsigned n, bool write) const;
 
     // Largeur de l'accès MMIO en cours (1/2/4 octets). Les registres FDC $FF8604/06
     // ne tolèrent que les mots (Hatari nIoMemAccessSize) ; read16/write16 posent 2.
@@ -148,9 +157,45 @@ public:
 
     // Registre Cache/CPU MegaSTE $FF8E21 (octet) : bit0 = cache 16 Ko (0=off),
     // bit1 = vitesse CPU (0=8 MHz, 1=16 MHz). Latché et relisible (cf. Hatari
-    // IoMemTabMegaSTE_CacheCpuCtrl_WriteByte) — l'EFFET réel (débit cycles, cache)
-    // relève d'items « précision cycle » séparés. Reset = 0 (8 MHz, sans cache).
+    // IoMemTabMegaSTE_CacheCpuCtrl_WriteByte). L'écriture applique l'EFFET réel :
+    // bascule du débit cycles via Cpu68k::setMegaSteSpeed + invalidation du cache
+    // si bit0 retombe. Reset = 0 (8 MHz, sans cache) — cf. megaSteReset().
     uint8_t megaSteCacheCtrl = 0;
+
+    // ---- Cache externe 16 Ko du Mega STE (port Hatari m68000.c MegaSTE_Cache_*) --
+    // 8192 lignes × 1 mot (2 puces TAG RAM 35 ns + 2 RAM 85 ns sans wait state).
+    // Adresse 24 bits → tag = bits 14-23, ligne = bits 1-13, bit 0 ignoré (mots).
+    // Ici : les DONNÉES seulement (tags + valeurs) ; la facturation des cycles
+    // (hit = 4 cycles CPU 16 MHz, miss = accès cadencé bus 8 MHz) est faite par le
+    // cœur Moira dans Cpu68k.cpp. Cachable : RAM ST (< 4 Mo) toujours, ROM TOS en
+    // lecture ; JAMAIS l'IO ni la cartouche. Invalidé par : bit0 de $FF8E21 → 0,
+    // reset, bus error, et usage de BGACK (blitter / DMA disque) — cf. les appels
+    // à megaSteCacheFlushIfEnabled().
+    struct MegaSteCache {
+        uint8_t  valid[8192];
+        uint16_t tag[8192];
+        uint16_t value[8192];
+    };
+    MegaSteCache megaSteCache = {};
+    bool megaSteCacheEnabled() const { return (megaSteCacheCtrl & 0x01) != 0; }
+    void megaSteCacheFlush();
+    void megaSteCacheFlushIfEnabled() { if (megaSteCacheEnabled()) megaSteCacheFlush(); }
+    // `super` = bit S du SR au moment de l'accès (un accès user < $800 fauterait,
+    // donc n'est jamais caché — cf. MegaSTE_Cache_Addr_Cacheable).
+    bool megaSteCacheable(uint32_t addr, int size, bool write, bool super) const;
+    bool megaSteCacheRead(uint32_t addr, int size, uint16_t& val, bool super);
+    bool megaSteCacheUpdate(uint32_t addr, int size, uint16_t val, bool write, bool super);
+    // Reset matériel du couple cache/vitesse (MegaSTE_CPU_Cache_Reset) : $FF8E21=0.
+    // L'appelant repasse aussi le CPU à 8 MHz (Cpu68k::setMegaSteSpeed(false)).
+    void megaSteReset() { megaSteCacheCtrl = 0; megaSteCacheFlush(); }
+
+    // Coprocesseur MC68881 OPTIONNEL du Mega STE, mappé $FFFA40-$FFFA5F (cf.
+    // Fpu.hpp — niveau « sonde + trapping »). Défaut : absent → bus error, la
+    // sonde TOS/diagnostic conclut « FPU not found » comme Hatari. Passer par
+    // setFpuPresent (et non fpu.present directement) : la carte des bus errors
+    // ($FFFA40 whitelisté ou non) doit être reconstruite.
+    Fpu fpu;
+    void setFpuPresent(bool present) { fpu.present = present; ioFaultBuilt_ = false; }
 
     // SCU MegaSTE ($FF8E01-$FF8E0F) : gate d'interruptions (cf. Scu.hpp), TOUJOURS actif
     // sur MegaSTE (comme `SCU_IsEnabled` d'Hatari). La livraison d'IPL le consulte dans

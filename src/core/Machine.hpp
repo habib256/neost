@@ -66,11 +66,22 @@ public:
     void ejectCart() { bus.ejectCart(); }
     bool loadDisk(const std::string& path)  { return fdc.loadImage(path, 0); }   // lecteur A
     bool loadDiskB(const std::string& path) { return fdc.loadImage(path, 1); }   // lecteur B (optionnel)
-    void reset() { psg.reset(); dmasnd.reset(/*cold=*/false); mfp.reset(); cpu.reset(); }   // à chaud : LMC1992 préservé
+    // À chaud : LMC1992 préservé. Mega STE : $FF8E21 → 0 (8 MHz, cache invalidé,
+    // port de Hatari MegaSTE_CPU_Cache_Reset) + FPU au repos.
+    void reset() {
+        psg.reset(); dmasnd.reset(/*cold=*/false); mfp.reset();
+        bus.megaSteReset(); cpu.setMegaSteSpeed(false); bus.fpu.reset();
+        cpu.reset();
+    }
     // Reset à FROID (power-cycle) : efface toute la ST-RAM, ce qui invalide le
     // « memvalid » de TOS — il refait alors un boot COMPLET (re-détection mémoire,
     // re-init OS) au lieu du boot à chaud d'un simple reset. Puis reset matériel.
-    void hardReset() { bus.ram.assign(bus.ram.size(), 0); psg.reset(); dmasnd.reset(/*cold=*/true); mfp.reset(); cpu.reset(); }
+    void hardReset() {
+        bus.ram.assign(bus.ram.size(), 0);
+        psg.reset(); dmasnd.reset(/*cold=*/true); mfp.reset();
+        bus.megaSteReset(); cpu.setMegaSteSpeed(false); bus.fpu.reset();
+        cpu.reset();
+    }
 
     // Reconfigure la machine À CHAUD sans recréer l'objet (son adresse reste
     // stable → les références externes, p.ex. Audio→psg/dmasnd, restent valides) :
@@ -82,6 +93,8 @@ public:
         bus.machine     = machine;
         machineType_    = machine;
         glue.memConfig_ = memConfigForBytes(ramBytes);
+        bus.megaSteReset();                // $FF8E21 → 0 (8 MHz, cache invalidé)
+        cpu.setMegaSteSpeed(false);
         cpu.setCore(cpuCore);              // bascule de cœur 68000 si nécessaire
         psg.setOutputScale(machineIsSte(machine) ? 0.5f : 1.0f);   // ½ ampli YM sur STE (cf. ctor)
     }

@@ -160,6 +160,8 @@ attend du matériel.
 | `Bus` régions hors-IO    | `cpu/memory.c` (init_mem_banks, BusErrMem_bank)|
 | `Bus::mmuTranslate`      | `stMemory.c` (STMemory_MMU_Translate_*)        |
 | `Cpu68k`                 | `m68000.c`, `cycInt.c`, `cycles.c`             |
+| 8/16 MHz + cache MegaSTE | `m68000.c` (`MegaSTE_CPU_Cache_Update`, `MegaSTE_Cache_*`, `mem_access_delay_*_megaste_16`) |
+| `Fpu` (68881 optionnel)  | (Hatari n'émule pas le socket : bus error `$FFFA40` ; cf. MC68881 UM §7) |
 | `Mfp`                    | `mfp.c` (timers A-D, modes, GPIP)              |
 | `Ikbd` / `MidiAcia`      | `ikbd.c`, `acia.c`, `midi.c`, `keymap.c`       |
 | `Shifter` / `Machine`    | `video.c` (HBL/VBL/Timer B, bordures, spec512), `screen.c` |
@@ -174,6 +176,13 @@ attend du matériel.
   ses octets fautent (`busFaultN`). C'est pourquoi `move.w $FF8204` marche mais
   `move.b $FF8204` faute. Les octets PAIRS du MFP (`$FFFAxx`) fautent (registres aux adresses
   **impaires** uniquement : `$FFFA01`, `$FFFA03`…).
+- **Protection superviseur (GLUE)** : en mode utilisateur (bit S=0), `$0-$7FF` et TOUT
+  l'espace IO `$FF8000-$FFFFFF` fautent AVANT la whitelist (`busFaultN(addr, n, write)`).
+  Les écritures ROM TOS / cartouche / `$0-$7` fautent même en superviseur. Le CPU seul est
+  concerné — blitter et DMA passent par `read8/write8` sans test (BusMode Hatari).
+- **MegaSTE 16 MHz** : l'ordonnanceur reste en cycles BUS 8 MHz ; seul `Cpu68k` convertit
+  (×2 sous `$FF8E21` bit1). Une boucle en RAM SANS cache ne va PAS plus vite à 16 MHz
+  (accès cadencés bus) ; ROM et cache 16 Ko si. Sous Musashi : ×2 uniforme (non-CE).
 - **VBL/HBL autovecteurs LATCHÉS** (comme Hatari, « cleared only when processed ») :
   `g_vblPending` reste armé tant que le CPU n'a pas servi l'IRQ (mask ≥ niveau). Si le SR
   ré-autorise le niveau 4 après une longue période masquée, la VBL en attente part AUSSITÔT

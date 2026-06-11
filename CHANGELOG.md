@@ -567,8 +567,50 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   « Atari ST » (TOS 1.4) qu'Hatari refuse aussi sur MegaSTE → utiliser `etos256us/fr` ou TOS 2.06.
 - **Registre Cache/CPU MegaSTE `$FF8E21` relisible** (port `IoMemTabMegaSTE_CacheCpuCtrl_WriteByte`) :
   octet latché (bit0 = cache, bit1 = vitesse 8/16 MHz) avec la contrainte matérielle « cache
-  impossible à 8 MHz » (bit0 forcé à 0 si bit1=0). Reset = 0. L'EFFET (débit cycles, cache 16 Ko)
-  reste un item « précision cycle ». Boot MegaSTE byte-identique.
+  impossible à 8 MHz » (bit0 forcé à 0 si bit1=0). Reset = 0.
+- **Bascule CPU 8/16 MHz MegaSTE — EFFET RÉEL** (`$FF8E21` bit1, port
+  `m68000.c:MegaSTE_CPU_Cache_Update` / `MegaSTE_CPU_Set_16Mhz`) : l'ordonnanceur et
+  toutes les puces restent en cycles **bus 8 MHz** ; le cœur CPU convertit
+  (`Cpu68k.cpp` : `bus = (clock + biais) / mul`, biais rebasé à chaque bascule pour
+  une horloge bus **continue**, même en plein quantum). **Moira (cycle-exact)** : port
+  des `mem_access_delay_*_megaste_16` — accès **RAM ST** cadencés bus (attente du
+  créneau CPU/Shifter de 8 cycles CPU + accès 8 cycles au lieu de 4), **ROM/cartouche/
+  IO « FAST »** sans wait state (mesuré sur vrai STF par Hatari) → 2× plus rapides ;
+  wait states PSG/MFP/ACIA et alignement shifter ×2 ; E-Clock recalée sur l'horloge
+  bus. **Musashi** : débit ×2 uniforme, comme Hatari **non** cycle-exact. Validé par
+  ROMs de test synthétiques (boucle `nop`+`bra` comptée sur 10 trames, Moira) :
+  **ROM 16 MHz = 2.000×**, **RAM 16 MHz sans cache = 0,88×** (aucun bénéfice, le bus
+  8 MHz domine — fidèle au matériel), **RAM 16 MHz + cache = 2.000×** ; Musashi = 2×
+  partout (non-CE assumé). Reset/reconfigure → retour 8 MHz (`MegaSTE_CPU_Cache_Reset`).
+- **Cache externe 16 Ko MegaSTE** (`$FF8E21` bit0, port `m68000.c:MegaSTE_Cache_*`) :
+  8192 lignes × 1 mot (tag = bits 14-23, ligne = bits 1-13, bit 0 ignoré), données
+  dans `Bus::megaSteCache`, facturation des cycles côté Moira (hit = 4 cycles CPU
+  16 MHz ; miss → accès bus + remplissage, lecture octet remplie par le MOT du bus ;
+  écriture **write-through**, jamais accélérée, maj de ligne octet seulement si déjà
+  cachée). Cachable : RAM ST installée (< 4 Mo) + ROM TOS en lecture ; jamais IO/
+  cartouche, ni accès fautifs (mot impair, `$0-$3` en écriture, `$0-$7FF` en user).
+  **Invalidation** : bit0 → 0, reset, bus error, et BGACK (départ blitter, DMA
+  FDC/ACSI) — les écritures DMA ne traversent pas le cache, comme sur le vrai matériel.
+- **Séparation user/supervisor** (`Bus::busFaultN(addr, n, write)`, port des banques
+  `SysMem_*`/`ROMmem_*` de `cpu/memory.c` + `is_super_access` d'`ioMem.c`) — pour TOUS
+  les modèles : en mode **utilisateur** (bit S=0, lu via `Cpu68k::supervisor()`), tout
+  accès à `$0-$7FF` (variables système) ou à l'espace **IO** `$FF8000-$FFFFFF` → bus
+  error ; en **écriture** (même superviseur) : ROM TOS, port cartouche et `$0-$7`
+  (miroir ROM des vecteurs reset) → bus error. Code fonction de la trame d'exception
+  (user/super) désormais correct sous Musashi aussi. Blitter/DMA exemptés (équivalent
+  `BusMode != BUS_MODE_CPU`). Validé : ROMs de test (lecture `$400` en user → handler
+  de bus error atteint, écriture ROM en superviseur → idem, 2 cœurs) ; étalons
+  ST/STE/MegaSTE inchangés (EmuTOS/TOS ne violent jamais ces protections).
+- **MC68881 optionnel — sonde + trapping** (`src/io/Fpu.hpp`, `--fpu` headless /
+  case « FPU 68881 » du menu Modèle, `neost.cfg fpu=1`) : interface mémoire des
+  registres coprocesseur (CIR) du socket 68881 du Mega STE en `$FFFA40-$FFFA5F`.
+  Par défaut **absent** = fidèle Hatari (bus error, TOS/diagnostic concluent « FPU
+  not found », cf. `M68000_IsVerboseBusError` qui silence la sonde `$fffa42`). Avec
+  `--fpu` : la zone répond (Response CIR = `$0802` « null primitive, processing
+  finished », Save CIR = trame IDLE `$1F18`, autres registres latched) → **TOS 2.06
+  détecte le FPU** (lecture du Response CIR observée, cookie `_FPU`) et le dialogue
+  CIR est **journalisé** sur stderr (trapping : tout usage flottant réel est visible).
+  L'arithmétique 68881 n'est PAS émulée (cf. `TODO.md`).
 - **Joypads STE COMPLETS + DIP MegaSTE** (`$FF9200-$FF9223`, port fidèle `joy.c` /
   `ioMemTabSTE.c`) : le stub « valeurs au repos » est remplacé par un vrai module
   `StePads` (`src/io/StePads.hpp`, membre `Bus::stePads`) — **multiplexage** par le

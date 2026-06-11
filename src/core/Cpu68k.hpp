@@ -45,10 +45,31 @@ public:
     // referme l'overlay de boot de la ROM (cf. Bus::bootOverlay).
     void reset();
 
-    // Exécute AU MOINS `cycles` cycles ; renvoie le nombre réellement consommé
-    // (le 68000 termine toujours l'instruction en cours). La boucle d'horloge
-    // s'en sert pour synchroniser le Shifter.
+    // Exécute AU MOINS `cycles` cycles BUS (horloge 8 MHz de l'ordonnanceur) ;
+    // renvoie le nombre réellement consommé (le 68000 termine toujours
+    // l'instruction en cours). La boucle d'horloge s'en sert pour synchroniser
+    // le Shifter. En mode Mega STE 16 MHz, 1 cycle bus = 2 cycles CPU : la
+    // conversion est interne (cf. setMegaSteSpeed), l'ordonnanceur et toutes les
+    // puces restent cadencés à 8 MHz comme sur le vrai matériel.
     int run(int cycles);
+
+    // Bascule 8/16 MHz du Mega STE ($FF8E21 bit1) — port de Hatari
+    // MegaSTE_CPU_Cache_Update / MegaSTE_CPU_Set_16Mhz. Appelé par le Bus à
+    // l'écriture du registre, et au reset (retour 8 MHz).
+    //  - Moira (cycle-exact) : l'horloge du cœur passe en cycles CPU 16 MHz ;
+    //    les accès RAM ST restent cadencés par le bus 8 MHz (créneau de 8 cycles
+    //    CPU + accès 8 cycles, cf. wait_cpu_cycle_read_megaste_16) sauf hit du
+    //    cache 16 Ko (4 cycles). ROM/cartouche/IO : « FAST », pas de wait state
+    //    (mesuré sur vrai STF par Hatari) → 2× plus rapides.
+    //  - Musashi (non cycle-exact) : simple doublement du débit, comme Hatari en
+    //    mode non cycle-exact (Configuration_ChangeCpuFreq(16) sans les fonctions
+    //    d'accès spéciales).
+    void setMegaSteSpeed(bool sixteenMhz);
+    bool megaSte16Mhz() const;
+
+    // Bit S du SR : vrai si le CPU est en mode superviseur. Consulté par le Bus
+    // pour la protection mémoire du GLUE ($0-$7FF et IO réservés superviseur).
+    bool supervisor() const;
 
     // Wait states de bus (port LIVE de Hatari M68000_SyncCpuBus) : sur le 68000, les
     // registres couleur ($FF8240-5F), résolution ($FF8260) et scroll fin ($FF8264/65)
@@ -131,6 +152,13 @@ private:
     // Horloge Moira au début du quantum courant (cf. cyclesRunInQuantum). Pour
     // Musashi on utilise directement m68k_cycles_run().
     int64_t quantumStartClock_ = 0;
+    // Équivalent BUS (8 MHz) de quantumStartClock_, figé au début du quantum : la
+    // bascule 8/16 MHz peut survenir EN PLEIN quantum (écriture $FF8E21), le point
+    // de départ doit donc être mémorisé sous l'ancienne conversion (cf. run()).
+    int64_t quantumStartBus_ = 0;
+    // Musashi 16 MHz : cycle CPU impair résiduel pas encore facturé en cycles bus
+    // (1 cycle bus = 2 cycles CPU ; on reporte le reste au quantum suivant).
+    int64_t musashiCarry_ = 0;
 
     // Détection « premier accès de l'instruction courante » pour les wait states
     // PSG/ACIA (cf. add*WaitCycles). `instrStartClock_` est l'horloge Moira figée

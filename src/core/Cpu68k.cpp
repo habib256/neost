@@ -42,6 +42,20 @@ namespace {
     // chaque instruction dans la boucle run() pour rendre la main à l'horloge.
     // Musashi a son propre mécanisme (m68k_end_timeslice), ce drapeau ne sert qu'à Moira.
     bool    g_endSlice = false;
+    // ---- Bascule 8/16 MHz du Mega STE ($FF8E21 bit1, cf. Cpu68k::setMegaSteSpeed) --
+    // L'ordonnanceur et toutes les puces vivent en cycles BUS (8 MHz) ; le cœur
+    // CPU, lui, compte ses propres cycles. À 16 MHz : 1 cycle bus = 2 cycles CPU.
+    // Sous Moira la conversion est : bus = (clock + g_cpuBias) / g_cpuMul, le biais
+    // étant rebasé à chaque bascule pour que l'horloge bus reste CONTINUE (port de
+    // l'esprit de Hatari cpucycleunit = CYCLE_UNIT/2 dans clocks_timings.c/newcpu).
+    int     g_cpuMul  = 1;   // 1 = 8 MHz, 2 = 16 MHz
+    int64_t g_cpuBias = 0;   // biais de conversion (0 tant qu'on reste à 8 MHz)
+    inline int64_t busOfClock(int64_t c) {
+        return g_cpuMul == 1 ? c + g_cpuBias : (c + g_cpuBias) >> 1;
+    }
+    inline int64_t cpuClockForBus(int64_t b) {
+        return g_cpuMul == 1 ? b - g_cpuBias : (b << 1) - g_cpuBias;
+    }
     void    neostUpdateIpl(bool commit = false);   // recalcule l'IPL (dispatch Musashi/Moira)
 }
 
@@ -82,14 +96,64 @@ public:
     // halté (l'appelant doit alors fournir une valeur neutre).
     bool faultOrHalt(moira::u32 a, bool write) const {
         if (g_inBusError) { const_cast<NeostMoira*>(this)->flags |= moira::State::HALTED; return true; }
+        g_bus->megaSteCacheFlushIfEnabled();   // une bus error invalide le cache Mega STE (Hatari)
         g_inBusError = true;
         raiseBusError(a, write);            // [[noreturn]] : lève moira::BusError
         return true;                        // inatteignable
     }
-    moira::u8  read8 (moira::u32 a) const override { if (g_bus->busFaultN(a, 1) && faultOrHalt(a, false)) return 0; return g_bus->read8(a); }
-    moira::u16 read16(moira::u32 a) const override { if (g_bus->busFaultN(a, 2) && faultOrHalt(a, false)) return 0; return g_bus->read16(a); }
-    void write8 (moira::u32 a, moira::u8  v) const override { if (g_bus->busFaultN(a, 1)) { if (faultOrHalt(a, true)) return; } g_bus->write8(a, v); }
-    void write16(moira::u32 a, moira::u16 v) const override { if (g_bus->busFaultN(a, 2)) { if (faultOrHalt(a, true)) return; } g_bus->write16(a, v); }
+
+    // ---- Mega STE 16 MHz : accès mémoire cadencés bus + cache 16 Ko ------------
+    // Port des mem_access_delay_*_megaste_16 de Hatari. Moira facture déjà 4 cycles
+    // CPU par accès bus ; à 16 MHz un accès RAM ST réel en coûte 8 (le bus reste à
+    // 8 MHz) APRÈS attente du créneau CPU/Shifter (le GSTMCU partage la RAM par
+    // créneaux de 4 cycles bus = 8 cycles CPU 16 MHz). D'où : attente d'alignement
+    // + 4 cycles additionnels, sauf hit du cache 16 Ko (RAM rapide dédiée, 4 cycles
+    // = rien à ajouter). ROM/cartouche/IO sont « FAST » (aucun wait state, mesuré
+    // sur vrai matériel par Hatari) → plein débit 16 MHz.
+    void chipWait16() const {
+        auto* self = const_cast<NeostMoira*>(this);
+        const moira::i64 c = self->getClock();
+        const int slot = int((c + g_cpuBias) & 7);       // position dans le créneau bus
+        self->setClock(c + ((8 - slot) & 7) + 4);
+    }
+    bool superNow() const { return (getSR() & 0x2000) != 0; }
+
+    moira::u16 readMste16Mhz(moira::u32 a, int size) const {
+        a &= 0x00FFFFFF;
+        uint16_t v;
+        if (a >= 0x400000) {                 // ROM/cartouche/IO : « FAST », plein 16 MHz
+            v = size == 2 ? g_bus->read16(a) : g_bus->read8(a);
+            if (g_bus->megaSteCacheEnabled())
+                g_bus->megaSteCacheUpdate(a, size, v, false, superNow());
+            return v;
+        }
+        const bool super = superNow();       // RAM ST, partagée avec le Shifter
+        if (g_bus->megaSteCacheEnabled() && g_bus->megaSteCacheRead(a, size, v, super))
+            return v;                        // hit : 4 cycles CPU (déjà facturés par Moira)
+        chipWait16();                        // miss / cache off : accès cadencé bus 8 MHz
+        v = size == 2 ? g_bus->read16(a) : g_bus->read8(a);
+        if (g_bus->megaSteCacheEnabled()) {
+            if (size == 2) g_bus->megaSteCacheUpdate(a, 2, v, false, super);
+            // Lecture octet : le bus porte le MOT entier à cette adresse → la ligne
+            // est remplie avec le mot pair complet (si cachable sans bus error).
+            else if (g_bus->megaSteCacheable(a & ~1u, 2, false, super))
+                g_bus->megaSteCacheUpdate(a & ~1u, 2, g_bus->read16(a & ~1u), false, super);
+        }
+        return v;
+    }
+
+    void writeMste16Mhz(moira::u32 a, int size, moira::u16 v) const {
+        a &= 0x00FFFFFF;
+        if (a < 0x400000) chipWait16();      // écriture RAM ST : toujours cadencée bus
+        if (size == 2) g_bus->write16(a, v); else g_bus->write8(a, moira::u8(v));
+        if (g_bus->megaSteCacheEnabled())    // write-through : maj du mot déjà caché
+            g_bus->megaSteCacheUpdate(a, size, v, true, superNow());
+    }
+
+    moira::u8  read8 (moira::u32 a) const override { if (g_bus->busFaultN(a, 1, false) && faultOrHalt(a, false)) return 0; if (g_cpuMul == 2) return moira::u8(readMste16Mhz(a, 1)); return g_bus->read8(a); }
+    moira::u16 read16(moira::u32 a) const override { if (g_bus->busFaultN(a, 2, false) && faultOrHalt(a, false)) return 0; if (g_cpuMul == 2) return readMste16Mhz(a, 2); return g_bus->read16(a); }
+    void write8 (moira::u32 a, moira::u8  v) const override { if (g_bus->busFaultN(a, 1, true)) { if (faultOrHalt(a, true)) return; } if (g_cpuMul == 2) { writeMste16Mhz(a, 1, v); return; } g_bus->write8(a, v); }
+    void write16(moira::u32 a, moira::u16 v) const override { if (g_bus->busFaultN(a, 2, true)) { if (faultOrHalt(a, true)) return; } if (g_cpuMul == 2) { writeMste16Mhz(a, 2, v); return; } g_bus->write16(a, v); }
     // Lecture du vecteur de reset (SSP/PC) via l'overlay ROM : jamais de bus error.
     moira::u16 read16OnReset(moira::u32 a) const override { return g_bus->read16(a); }
 
@@ -184,10 +248,13 @@ static bool neostBusError(unsigned int addr, bool write) {
         m68k_end_timeslice();
         return true;
     }
+    g_bus->megaSteCacheFlushIfEnabled();         // une bus error invalide le cache Mega STE
     g_inBusError = true;
     m68ki_aerr_address    = addr & 0x00FFFFFF;   // adresse d'accès empilée dans la trame
     m68ki_aerr_write_mode = write ? 0x00 : 0x10; // SSW bit R/W (1 = lecture sur 68000)
-    m68ki_aerr_fc         = 0x05;                // code fonction : superviseur, donnée
+    // Code fonction : donnée superviseur (5) ou utilisateur (1) selon le bit S —
+    // depuis la séparation user/supervisor, une faute peut venir du mode user.
+    m68ki_aerr_fc = (m68k_get_reg(nullptr, M68K_REG_SR) & 0x2000) ? 0x05 : 0x01;
     m68k_pulse_bus_error();
     return false;
 }
@@ -285,11 +352,15 @@ int Cpu68k::run(int cycles) {
     if (g_moira) {
         const moira::i64 c0 = g_moira->getClock();
         quantumStartClock_ = static_cast<int64_t>(c0);   // pour cyclesRunInQuantum()
+        // Cible et résultat en cycles BUS (8 MHz). Le point de départ est FIGÉ ici :
+        // une écriture $FF8E21 en plein quantum rebase la conversion (g_cpuBias),
+        // mais celle-ci reste continue → les deltas restent exacts.
+        quantumStartBus_ = busOfClock(c0);
         g_endSlice = false;                              // un éventuel résidu de préemption ne doit pas couper le 1er pas
-        const moira::i64 target = c0 + cycles;
-        while (g_moira->getClock() < target) {
+        const int64_t targetBus = quantumStartBus_ + cycles;
+        while (busOfClock(g_moira->getClock()) < targetBus) {
             g_inBusError = false;                        // nouvelle instruction → faute précédente retombée
-            if (g_moira->isHalted()) { g_moira->setClock(target); break; }  // double bus fault → CPU arrêté
+            if (g_moira->isHalted()) { g_moira->setClock(cpuClockForBus(targetBus)); break; }  // double bus fault → CPU arrêté
             instrStartClock_ = static_cast<int64_t>(g_moira->getClock());   // repère « 1er accès » des wait states
             g_moira->execute();                          // une instruction
             if (g_tracer) g_tracer->onInstruction(g_moira->getPC0());
@@ -302,15 +373,25 @@ int Cpu68k::run(int cycles) {
             // prochain événement (= `target`, fixé par l'ordonnanceur). On SAUTE
             // l'attente au lieu de la simuler cycle par cycle (sinon ~25× plus lent
             // et l'émulation rame en temps réel sur les STOP d'EmuTOS/TOS).
-            if (g_moira->isStopped() && g_moira->getClock() < target) {
-                g_moira->setClock(target);
+            if (g_moira->isStopped() && busOfClock(g_moira->getClock()) < targetBus) {
+                g_moira->setClock(cpuClockForBus(targetBus));
                 break;
             }
         }
-        return static_cast<int>(g_moira->getClock() - c0);
+        return static_cast<int>(busOfClock(g_moira->getClock()) - quantumStartBus_);
     }
 #endif
 #if defined(NEOST_HAS_MUSASHI)
+    if (g_cpuMul == 2) {
+        // Mega STE 16 MHz, cœur non cycle-exact : simple doublement du débit (2
+        // cycles CPU par cycle bus), comme Hatari hors mode cycle-exact. Le cycle
+        // CPU impair non encore facturé en bus est reporté au quantum suivant.
+        int64_t wantCpu = static_cast<int64_t>(cycles) * 2 - musashiCarry_;
+        if (wantCpu < 1) wantCpu = 1;
+        const int64_t ranCpu = m68k_execute(static_cast<int>(wantCpu)) + musashiCarry_;
+        musashiCarry_ = ranCpu & 1;
+        return static_cast<int>(ranCpu >> 1);
+    }
     return m68k_execute(cycles);
 #else
     (void)cycles;
@@ -326,7 +407,9 @@ int Cpu68k::run(int cycles) {
 void Cpu68k::addBusWaitCycles(int n) {
     if (n <= 0) return;
 #if defined(NEOST_HAS_MOIRA)
-    if (g_moira) { g_moira->setClock(g_moira->getClock() + n); return; }
+    // `n` est en cycles BUS (8 MHz) : à 16 MHz l'horloge du cœur compte des cycles
+    // CPU, deux fois plus fins → ×g_cpuMul.
+    if (g_moira) { g_moira->setClock(g_moira->getClock() + n * g_cpuMul); return; }
 #endif
     (void)n;
 }
@@ -363,7 +446,9 @@ void Cpu68k::addAciaWaitCycles() {
     int cycles = 6;                                       // coût de base par accès
     if (instrStartClock_ != aciaPrevInstrClock_) {        // 1er accès ACIA de l'instruction
         aciaPrevInstrClock_ = instrStartClock_;
-        int toNextE = 10 - static_cast<int>(g_moira->getClock() % 10);
+        // E-Clock = horloge BUS / 10 (1 MHz), indépendante du 8/16 MHz CPU MegaSTE
+        // (Hatari M68000_WaitEClock travaille sur CyclesGlobalClockCounter).
+        int toNextE = 10 - static_cast<int>(busOfClock(g_moira->getClock()) % 10);
         if (toNextE == 10) toNextE = 0;                   // déjà aligné sur l'E-Clock
         cycles += toNextE;
     }
@@ -375,9 +460,12 @@ void Cpu68k::addAciaWaitCycles() {
 int64_t Cpu68k::cyclesRunInQuantum() const {
     if (!inRun_) return 0;     // hors run : l'horloge sched.now() est déjà à jour
 #if defined(NEOST_HAS_MOIRA)
-    if (g_moira) return static_cast<int64_t>(g_moira->getClock()) - quantumStartClock_;
+    // En cycles BUS (8 MHz), domaine de l'ordonnanceur — d'où la conversion 16 MHz.
+    if (g_moira) return busOfClock(static_cast<int64_t>(g_moira->getClock())) - quantumStartBus_;
 #endif
 #if defined(NEOST_HAS_MUSASHI)
+    if (g_cpuMul == 2)
+        return (static_cast<int64_t>(m68k_cycles_run()) + musashiCarry_) >> 1;
     return static_cast<int64_t>(m68k_cycles_run());
 #endif
     return 0;
@@ -389,6 +477,42 @@ void Cpu68k::endTimeslice() {
 #endif
 #if defined(NEOST_HAS_MUSASHI)
     m68k_end_timeslice();   // le CPU finit son instruction puis m68k_execute rend la main
+#endif
+}
+
+// Bascule 8/16 MHz du Mega STE — cf. Cpu68k.hpp. Le rebasage de g_cpuBias garde
+// l'horloge bus CONTINUE au cycle courant (la bascule arrive en plein quantum,
+// pendant l'écriture $FF8E21) : busOfClock(c) garde la même valeur avant/après.
+void Cpu68k::setMegaSteSpeed(bool sixteenMhz) {
+    const int mul = sixteenMhz ? 2 : 1;
+    if (mul == g_cpuMul) return;
+#if defined(NEOST_HAS_MOIRA)
+    if (g_moira) {
+        const int64_t c = static_cast<int64_t>(g_moira->getClock());
+        const int64_t b = busOfClock(c);
+        g_cpuMul  = mul;
+        g_cpuBias = (mul == 2) ? (2 * b - c) : (b - c);
+        std::fprintf(stderr, "[cpu] Mega STE : 68000 à %d MHz\n", sixteenMhz ? 16 : 8);
+        return;
+    }
+#endif
+    g_cpuMul = mul;
+    musashiCarry_ = 0;
+    std::fprintf(stderr, "[cpu] Mega STE : 68000 à %d MHz (cœur Musashi : débit ×%d, "
+                 "sans wait states ni cache — comme Hatari non cycle-exact)\n",
+                 sixteenMhz ? 16 : 8, mul);
+}
+
+bool Cpu68k::megaSte16Mhz() const { return g_cpuMul == 2; }
+
+bool Cpu68k::supervisor() const {
+#if defined(NEOST_HAS_MOIRA)
+    if (g_moira) return (g_moira->getSR() & 0x2000) != 0;
+#endif
+#if defined(NEOST_HAS_MUSASHI)
+    return (m68k_get_reg(nullptr, M68K_REG_SR) & 0x2000) != 0;
+#else
+    return true;   // stub sans cœur : pas de protection superviseur
 #endif
 }
 
@@ -464,13 +588,13 @@ extern "C" {
 
 // Une adresse non décodée déclenche une bus error (longjmp Musashi : avorte
 // l'instruction). C'est ainsi qu'EmuTOS sonde le matériel optionnel.
-unsigned int m68k_read_memory_8 (unsigned int a) { if (g_bus->busFaultN(a, 1)) { neostBusError(a, false); return 0; } return g_bus->read8 (a); }
-unsigned int m68k_read_memory_16(unsigned int a) { if (g_bus->busFaultN(a, 2)) { neostBusError(a, false); return 0; } return g_bus->read16(a); }
-unsigned int m68k_read_memory_32(unsigned int a) { if (g_bus->busFaultN(a, 4)) { neostBusError(a, false); return 0; } return g_bus->read32(a); }
+unsigned int m68k_read_memory_8 (unsigned int a) { if (g_bus->busFaultN(a, 1, false)) { neostBusError(a, false); return 0; } return g_bus->read8 (a); }
+unsigned int m68k_read_memory_16(unsigned int a) { if (g_bus->busFaultN(a, 2, false)) { neostBusError(a, false); return 0; } return g_bus->read16(a); }
+unsigned int m68k_read_memory_32(unsigned int a) { if (g_bus->busFaultN(a, 4, false)) { neostBusError(a, false); return 0; } return g_bus->read32(a); }
 
-void m68k_write_memory_8 (unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 1)) { neostBusError(a, true); return; } g_bus->write8 (a, static_cast<uint8_t>(v)); }
-void m68k_write_memory_16(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 2)) { neostBusError(a, true); return; } g_bus->write16(a, static_cast<uint16_t>(v)); }
-void m68k_write_memory_32(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 4)) { neostBusError(a, true); return; } g_bus->write32(a, v); }
+void m68k_write_memory_8 (unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 1, true)) { neostBusError(a, true); return; } g_bus->write8 (a, static_cast<uint8_t>(v)); }
+void m68k_write_memory_16(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 2, true)) { neostBusError(a, true); return; } g_bus->write16(a, static_cast<uint16_t>(v)); }
+void m68k_write_memory_32(unsigned int a, unsigned int v) { if (g_bus->busFaultN(a, 4, true)) { neostBusError(a, true); return; } g_bus->write32(a, v); }
 
 // Accès "immuables" utilisés par le désassembleur : pas d'effet de bord MMIO.
 unsigned int m68k_read_disassembler_16(unsigned int a) { return g_bus->read16(a); }

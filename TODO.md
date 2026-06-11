@@ -99,14 +99,19 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
       shifter pendant que RDR est plein ; NeoST retient l'octet suivant jusqu'à lecture RDR.
 
 ## CPU : IRQ, Moira, MegaSTE
-- [ ] **Bascule CPU 8/16 MHz MegaSTE** (`$FF8E21` bit1) — débit cycles + timings
-      _(précision cycle)_ — réf. `m68000.c:MegaSTE_CPU_Cache_Update` + `clocks_timings.c`
-- [ ] **Cache MegaSTE 16 Ko** (`$FF8E21` bit0, off à 8 MHz) — effets de timing visibles
-      _(précision cycle)_ — réf. `ioMemTabSTE.c`
-- [ ] **MC68881 optionnel** : sonde TOS/diagnostic, puis émulation ou trapping — réf.
-      `configuration.h`, MAME
-- [ ] **Séparation user/supervisor** : bus errors en mode utilisateur sur I/O et ROM/low mem
-      — réf. MAME `st_user_map`
+- [x] **Bascule CPU 8/16 MHz MegaSTE** (`$FF8E21` bit1) — FAIT (cf. `CHANGELOG.md`) :
+      conversion horloge CPU↔bus dans `Cpu68k` (Moira cycle-exact : wait states RAM par
+      créneau bus ; Musashi : débit ×2 comme Hatari non-CE).
+- [x] **Cache MegaSTE 16 Ko** (`$FF8E21` bit0, off à 8 MHz) — FAIT : port de
+      `MegaSTE_Cache_*` dans `Bus` (timing Moira) ; flush sur disable/reset/bus
+      error/BGACK (blitter + DMA FDC/ACSI).
+- [~] **MC68881 optionnel** : FAIT au niveau « sonde + trapping » (`--fpu`, CIR
+      $FFFA40-$FFFA5F journalisés, réponses neutres — cf. `src/io/Fpu.hpp`). RESTE :
+      l'arithmétique flottante (registres FP0-7, formats simple/double/étendu/packed,
+      dialogue Command/Response complet) — réf. MC68881 UM §7, MAME.
+- [x] **Séparation user/supervisor** : FAIT — bus errors en mode utilisateur sur
+      $0-$7FF et IO, écritures ROM/cartouche/$0-$7 fautives (Hatari `SysMem_*`,
+      `ROMmem_*put`, `is_super_access` d'`ioMem.c`).
 
 ## Stockage & contrôleurs
 - [ ] **GEMDOS HD** : monter un dossier hôte comme lecteur C: — réf. `gemdos.c`
