@@ -505,8 +505,23 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
     asservissement proportionnel (|adj| ≤ 8 ech., < 0,8 % de hauteur) qui remplit vite à l'amorçage
     et recale ensuite. Latence régime ~80 ms, stable. **Validé à l'oreille sur _Magic Pocket_.**
   - Chemins **headless** (pas d'audio) et **WASM** (`synthesize` direct) inchangés : le modèle push
-    n'est armé que si le frontend pose l'horloge (`setCycleClock`). _Reste (refinements) : synthèse YM
-    interne 250 kHz + rééchantillonnage, FIFO/anti-repliement DMA (cf. `docs/SOUND_HATARI_DIFF.md`)._
+    n'est armé que si le frontend pose l'horloge (`setCycleClock`). _Reste (refinement) : FIFO
+    8 octets du DMA remplie sur HBL (cf. `docs/SOUND_HATARI_DIFF.md`)._
+- **Compteur de trame DMA LIVE cycle-exact** (`DmaSound::liveCounter`, équivalent du
+  `Sound_Update` en tête de `DmaSnd_GetFrameCount`) : `$FF8909/0B/0D` sont désormais
+  dérivés de l'**horloge émulée** (trame latchée au démarrage — début/fin/cycle de
+  départ, comme `DmaSnd_StartNewFrame` — puis position = écoulé × fréquence, bornée à
+  la fin de trame ; l'événement DMASND gère repeat/arrêt). Avant, le compteur ne
+  bougeait qu'au rythme de la synthèse audio HÔTE : **figé en headless** (mix jamais
+  appelé) et imprécis pour les lecteurs qui le POLLENT pour se synchroniser. Validé
+  par mini-ROM (trame $1000-$2000 mono 50066 Hz : $107D→$10FA→$1177 à ~20 000 cycles
+  d'intervalle = 125 octets exacts, identique Moira/Musashi ; avant : figé à $1000).
+- **Anti-repliement du canal DMA** (port `DmaSnd_LowPassFilter`, dmaSnd.c:1316-1349) :
+  FIR 3 points (1,2,1)/4 appliqué à CHAQUE octet tiré **à la cadence DMA** quand elle
+  dépasse la fréquence de sortie hôte (50066 Hz → 48 kHz) ; filtre coupé = retard d'un
+  échantillon ×4 (gain/latence constants, « divide by 4 » d'Hatari au mixage). Au
+  passage, l'octet courant est TENU entre deux pas DMA (plus de relecture RAM par
+  trame de sortie).
 - **Fidélité I/O du PSG** (port de `psg.c:252-358`) : sélecteur de registre stocké sur **8 bits non
   masqués** ; registre **≥ 16 → écriture ignorée, lecture 0xFF** (le YM2149 n'a que 16 registres ;
   compat *European Demo* qui « désactive » le PSG ainsi). **Masquage à l'écriture** des bits inutilisés :

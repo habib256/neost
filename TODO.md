@@ -100,9 +100,17 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
 - [ ] Read-latch `regReadData_`, `$FF8801/03` → 0xFF _(faible valeur, risque word-read)_.
 
 ## Son DMA STE + Microwire/LMC1992
-- [ ] Avance live cycle-exacte du compteur DMA _(Phase C)_ — réf. `dmaSnd.c`.
-- [ ] Synthèse YM interne 250 kHz + rééchantillonnage, FIFO/anti-repliement DMA
-      _(refinements, cf. `docs/SOUND_HATARI_DIFF.md`)_.
+- [x] Avance live cycle-exacte du compteur DMA — FAIT (cf. `CHANGELOG.md`) :
+      `DmaSound::liveCounter` ($FF8909/0B/0D dérivés de l'horloge émulée, trame
+      latchée au play comme `DmaSnd_StartNewFrame`). Compteur enfin VIVANT en
+      headless. Validé par mini-ROM (125 octets / 20 000 cycles à 50066 Hz, 2 cœurs).
+- [x] Synthèse YM interne 250 kHz + rééchantillonnage : DÉJÀ FAIT (port
+      `YM2149_DoSamples_250` + `Resample_Weighted_Average_N` + PWM 250 dans
+      `YM2149.cpp` — l'item était périmé). Anti-repliement DMA — FAIT : FIR (1,2,1)/4
+      à la cadence DMA quand elle dépasse la sortie hôte (port `DmaSnd_LowPassFilter`).
+- [ ] FIFO 8 octets du DMA son remplie sur HBL (`DmaSnd_FIFO_Refill/PullByte`,
+      dmaSnd.c:343-410) _(refinement résiduel : timing ±8 octets des débuts/fins de
+      trame et drain post-PLAY ; le gros de la Phase C est fait)_.
 
 ## IKBD HD6301 + souris/joystick
 - [x] Keymap international / layouts TOS — FAIT (cf. `CHANGELOG.md`) : mapping

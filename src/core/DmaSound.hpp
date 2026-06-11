@@ -65,6 +65,12 @@ private:
     void    scheduleFrameEnd();                           // date la prochaine fin de trame
     void    startNewFrame();                              // (re)démarre une trame (gère start==end)
     void    setXsint(bool level);                         // pilote la ligne XSINT (→ MFP GPIP7)
+    // Position LIVE cycle-exacte du compteur de trame ($FF8909/0B/0D) : calculée
+    // depuis l'horloge ÉMULÉE (équivalent du Sound_Update en tête de
+    // DmaSnd_GetFrameCount chez Hatari), pas depuis la production audio hôte —
+    // indispensable en headless (mix() n'y tourne jamais → compteur figé avant)
+    // et pour les programmes qui POLLENT le compteur pour se synchroniser.
+    uint32_t liveCounter() const;
 
 public:
     // Une étape du shift série Microwire (datée par le Scheduler, source MICROWIRE) :
@@ -82,7 +88,13 @@ private:
     uint8_t  mode_ = 0;              // $FF8921 : bits0-1 fréquence, bit7 = mono
     uint32_t startAddr_ = 0;         // $FF8903/05/07
     uint32_t endAddr_   = 0;         // $FF890F/11/13
-    uint32_t curAddr_   = 0;         // $FF8909/0B/0D (compteur courant)
+    uint32_t curAddr_   = 0;         // position de la SYNTHÈSE audio hôte (cf. mix)
+    // Trame DMA en cours, LATCHÉE au démarrage (port DmaSnd_StartNewFrame : le HW
+    // fige début/fin à l'ouverture de la trame ; réécrire $FF8903+ pendant la
+    // lecture ne vaut que pour la trame SUIVANTE). Sert au compteur live $FF8909+.
+    uint32_t frameStartAddr_  = 0;   // adresse de début latchée
+    uint32_t frameEndAddr_    = 0;   // adresse de fin latchée
+    int64_t  frameStartCycle_ = 0;   // cycle (horloge émulée live) du début de trame
     uint16_t mwData_ = 0, mwMask_ = 0;  // microwire $FF8922/$FF8924 (mots 16 bits)
     uint16_t mwShift_ = 0;              // valeur LUE en $FF8922 pendant le shift (→ 0)
     int      mwSteps_ = 0;              // décalages restants (16 au départ, 0 = fini)
@@ -98,6 +110,12 @@ private:
     // État de lecture (thread audio).
     bool     playing_ = false;
     double   phase_   = 0.0;         // accumulateur de rééchantillonnage
+    // Échantillon DMA COURANT, filtré à la cadence DMA (cf. lowPassPull) — tenu
+    // entre deux octets (zéro-bloquant côté sortie, FIR côté entrée).
+    float    lowPassPull(int in, bool enabled);
+    float    dmaCur_  = 0.0f;
+    bool     haveCur_ = false;
+    float    lpW0_ = 0.0f, lpW1_ = 0.0f;   // retards du FIR (1,2,1)/4 anti-repliement
 
     // Ligne XSINT (External Sound INTerrupt) du son DMA STE : HAUT pendant qu'une
     // trame joue, BAS à l'arrêt / fin de trame. Câblée à TAI (Timer A event-count,

@@ -63,6 +63,7 @@ void DmaSound::setXsint(bool level) {
 void DmaSound::startNewFrame() {
     curAddr_ = startAddr_;
     phase_   = 0.0;
+    haveCur_ = false;                                  // 1er octet (re)tiré et filtré au prochain mix
     if (endAddr_ <= startAddr_ && !(ctrl_ & 0x02)) {   // trame vide, pas de repeat → arrêt sec
         playing_ = false;
         ctrl_   &= ~0x01;
@@ -70,6 +71,12 @@ void DmaSound::startNewFrame() {
         if (sched_) sched_->cancel(Scheduler::DMASND);
         return;
     }
+    // Latch de la trame (port DmaSnd_StartNewFrame) + cycle de départ pour le
+    // compteur live $FF8909+ (liveNow : un play lancé en plein bloc CPU est daté
+    // au cycle exact de l'écriture, pas au début du quantum).
+    frameStartAddr_  = startAddr_;
+    frameEndAddr_    = endAddr_;
+    frameStartCycle_ = sched_ ? sched_->liveNow() : 0;
     playing_ = true;
     setXsint(true);                                    // début de trame : XSINT → HAUT (→ GPIP7)
     scheduleFrameEnd();                                // date la fin de trame (→ Timer A)
@@ -85,6 +92,7 @@ void DmaSound::reset(bool cold) {
     ctrl_  = 0;
     mode_  = 0;
     phase_ = 0.0;
+    haveCur_ = false; dmaCur_ = 0.0f; lpW0_ = lpW1_ = 0.0f;   // FIR anti-repliement à zéro
     startAddr_ = endAddr_ = curAddr_ = 0;          // Hatari met start/end à 0 même au warm reset (fix 'Brace')
     mwShift_ = 0; mwSteps_ = 0;                     // transfert série Microwire éventuel annulé
     setXsint(false);                               // son DMA inactif au reset → XSINT BAS
@@ -223,18 +231,38 @@ int DmaSound::sampleAt(uint32_t addr, bool stereo) const {
     return stereo ? (rd(addr) + rd(addr + 1)) / 2 : rd(addr);
 }
 
+// Position live du compteur de trame DMA — forme fermée depuis le cycle de début
+// de trame : octets lus = échantillons écoulés × octets/échantillon, où
+// échantillons = (cycles écoulés) × fréquence / horloge CPU. Bornée à la fin de
+// trame latchée : le franchissement réel (repeat → nouveau latch, arrêt) est géré
+// par l'événement DMASND de l'ordonnanceur. NB : un changement de fréquence EN
+// COURS de trame fausserait la forme fermée (cas pathologique, les lecteurs
+// posent $FF8921 avant play) — Hatari avance incrémentalement via Sound_Update.
+uint32_t DmaSound::liveCounter() const {
+    if (!playing_) return startAddr_;                  // à l'arrêt : adresse de DÉBUT
+    if (!sched_)   return curAddr_;                    // sans ordonnanceur (tests)
+    const int64_t  elapsed = sched_->liveNow() - frameStartCycle_;
+    if (elapsed <= 0) return frameStartAddr_;
+    const uint32_t step    = (mode_ & 0x80) ? 1u : 2u; // octets par échantillon
+    const int64_t  rate    = int64_t(kRate[mode_ & 0x03]);
+    int64_t addr = int64_t(frameStartAddr_) + (elapsed * rate / CPU_HZ) * step;
+    if (addr > int64_t(frameEndAddr_)) addr = frameEndAddr_;
+    return uint32_t(addr);
+}
+
 uint8_t DmaSound::read8(uint32_t addr) {
     switch (addr & 0xFF) {
         case 0x01: return ctrl_;
         case 0x03: return uint8_t(startAddr_ >> 16);
         case 0x05: return uint8_t(startAddr_ >> 8);
         case 0x07: return uint8_t(startAddr_);
-        // Compteur courant (position de lecture). À l'ARRÊT, le vrai HW renvoie
-        // l'adresse de DÉBUT, pas la dernière position (cf. Hatari DmaSnd_GetFrameCount,
-        // dmaSnd.c:756-759). NB : l'avance live cycle-exacte (Sound_Update) = Phase C.
-        case 0x09: return uint8_t((playing_ ? curAddr_ : startAddr_) >> 16);
-        case 0x0B: return uint8_t((playing_ ? curAddr_ : startAddr_) >> 8);
-        case 0x0D: return uint8_t (playing_ ? curAddr_ : startAddr_);
+        // Compteur courant (position de lecture) : position LIVE cycle-exacte
+        // dérivée de l'horloge émulée (cf. liveCounter — port DmaSnd_GetFrameCount
+        // qui appelle Sound_Update en tête). À l'ARRÊT, le vrai HW renvoie
+        // l'adresse de DÉBUT, pas la dernière position (dmaSnd.c:756-759).
+        case 0x09: return uint8_t(liveCounter() >> 16);
+        case 0x0B: return uint8_t(liveCounter() >> 8);
+        case 0x0D: return uint8_t(liveCounter());
         case 0x0F: return uint8_t(endAddr_ >> 16);
         case 0x11: return uint8_t(endAddr_ >> 8);
         case 0x13: return uint8_t(endAddr_);
@@ -290,11 +318,26 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
     }
 }
 
+// Filtre anti-repliement du canal DMA — port du DmaSnd_LowPassFilter d'Hatari
+// (dmaSnd.c:1316-1349) : FIR 3 points (1,2,1)/4 appliqué à CHAQUE octet tiré à la
+// cadence DMA quand elle dépasse la fréquence de sortie hôte (50066 Hz → 48 kHz :
+// sans lui, le repliement siffle). Filtre coupé : simple retard d'un échantillon
+// (×4), pour garder gain et latence constants — le /4 est appliqué au mixage,
+// comme le « Divide by 4 to account for DmaSnd_LowPassFilter » d'Hatari.
+float DmaSound::lowPassPull(int in, bool enabled) {
+    const float x = float(in);
+    const float y = enabled ? (lpW0_ + 2.0f * lpW1_ + x) : (lpW1_ * 4.0f);
+    lpW0_ = lpW1_;
+    lpW1_ = x;
+    return y;
+}
+
 void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
     if (!playing_ || sampleRate == 0) return;
     const double inc    = kRate[mode_ & 0x03] / sampleRate;   // pas de rééchantillonnage
     const bool   stereo = !(mode_ & 0x80);                    // bit7=0 → stéréo entrelacé
     const uint32_t step = stereo ? 2u : 1u;                   // octets par trame DMA
+    const bool lowPass  = kRate[mode_ & 0x03] > double(sampleRate);   // anti-repliement
 
     // Registre de mixage du LMC1992 (commande 0) : seul mixing==1 mélange YM2149 + DMA ;
     // 0/2/3 routent le DMA SEUL → il écrase le YM (cf. Hatari DmaSnd_GenerateSamples,
@@ -302,7 +345,11 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
     // plus haut et le YM passe intact (pas de mute du YM hors lecture DMA).
     const bool addYm = (mwMixing_ == 1);
     for (uint32_t i = 0; i < frames; ++i) {
-        const float dma = (sampleAt(curAddr_, stereo) / 128.0f) * kDmaGain;
+        if (!haveCur_) {                                      // 1er échantillon de la trame
+            dmaCur_  = lowPassPull(sampleAt(curAddr_, stereo), lowPass);
+            haveCur_ = true;
+        }
+        const float dma = (dmaCur_ / 4.0f / 128.0f) * kDmaGain;   // /4 = gain du FIR
         if (addYm) out[i] += dma;                             // YM2149 + DMA
         else       out[i]  = dma;                             // DMA seul (écrase le YM)
         phase_ += inc;
@@ -318,6 +365,9 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
                     return;                                    // reste de `out` = silence
                 }
             }
+            // Octet suivant tiré à la cadence DMA → filtré ICI (pas à la cadence
+            // hôte) : c'est ce qui fait l'anti-repliement.
+            dmaCur_ = lowPassPull(sampleAt(curAddr_, stereo), lowPass);
         }
     }
 }
