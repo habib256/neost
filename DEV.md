@@ -110,7 +110,13 @@ python3 tools/run_etalons.py
 
 Options : `--cpu musashi|moira` (TESTER LES DEUX), `--machine st|megast|ste|megaste`,
 `--mem 256k|512k|1m|2m|4m`, `--cart FILE`, `--disk`, `--diskb`, `--mono`, `--until-pc HEX`,
-`--walk-mouse`, `--keys "STR"`, `--loopback`.
+`--walk-mouse`, `--keys "STR"`, `--loopback`. Pilotage daté (menus de jeux/démos) :
+`--keys-at N "STR"` (scancodes étendus : flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`),
+`--joy-at N VAL`, `--joy-script N "SCRIPT"` (U/D/L/R/F/`.` = 1 trame),
+`--mouse-at N "SCRIPT"` (L/R/U/D = ±8 px, `1`/`2` = clic gauche/droit, `.` = idle — c'est
+ainsi qu'on pilote Vroom : clic droit au titre, clic droit en course). Debug entrées :
+`NEOST_DEBUG_IKBD=1` (commandes reçues par l'IKBD), `NEOST_DEBUG_ACIA=1` (chaque lecture
+du data register $FFFC02 : valeur, file restante, cycle).
 
 Format de trace (la séquence de PC est le signal de diff) :
 ```

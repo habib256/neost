@@ -293,7 +293,43 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - **Horloge interne IKBD `$1B`/`$1C`** (`IKBD_UpdateClockOnVBL`) : 6 octets BCD avancés d'une
   seconde par trame cumulée, propagation/retenue + bissextile fidèles à la ROM HD6301.
 - **Joystick** : auto-report (`$14`), stop (`$15`), monitoring (`$17`), durée de feu (`$18`) ;
-  interrogation `$16` → `$FD,joy0,joy1`.
+  interrogation `$16` → `$FD,joy0,joy1` (les DEUX ports bruts, sans couper le port 0 — comme
+  `IKBD_Cmd_ReturnJoystick`).
+- **Livraison série IKBD → ACIA cadencée** (`Scheduler::IKBD_RX`, ~10240 cyc/octet = 10 bits
+  à 7812,5 bauds, la cadence du SCI d'Hatari) : un octet de la file ne lève RDRF/IRQ qu'à
+  son tour, le suivant ~1,28 ms après sa lecture. **Corrige les axes souris « tournés de
+  90° » de _Vroom_** (TODO historique) : le jeu identifie les octets du paquet `$F8,Δx,Δy`
+  à leur cadence d'arrivée, pas à l'en-tête — la livraison instantanée des 3 octets lui
+  faisait prendre Δy pour Δx (haut/bas braquait, gauche/droite accélérait). Diagnostiqué en
+  comparant le flux consommé (`NEOST_DEBUG_ACIA`) au comportement d'`IKBD_Send_Byte_Delay`/
+  SCI ; validé en course headless (`--mouse-at`) : gauche/droite braquent, haut/bas non.
+  Boots EmuTOS/TOS 1.04/2.06 + drag GEM pixel-identiques, diag ST inchangé.
+- **RDR persistant** : relire `$FFFC02` sans nouvel octet renvoie le DERNIER octet reçu
+  (cf. `acia.c:ACIA_Read_RDR`), plus `$00`.
+- **Duplication feu joystick ↔ boutons souris** (`IKBD_DuplicateMouseFireButtons`) : sur le
+  vrai IKBD ce sont les MÊMES lignes. Souris coupée → boutons souris émis comme feux
+  joystick (`$FE`/`$FF` bit7) ; souris active → le feu du joystick 1 est RETIRÉ du paquet
+  joystick et remonte comme **bouton droit** dans le paquet souris (Big Run, et le bouton
+  de feu de _Magic Pockets_ qui restait muet).
+- **`$14` coupe la souris** (comme `IKBD_Cmd_ReturnJoystickAuto`), avec les quirks de la
+  **fenêtre de reset** portés d'Hatari : `$08`+`$14` (Barbarian), `$12`+`$14` (Hammerfist)
+  et `$12`+`$1A` (`IKBD_CheckResetDisableBug`) ré-activent souris ET joystick ensemble
+  (`bothMouseAndJoy`) — le port 0 reste alors branché en souris relative.
+- **PAUSE OUTPUT `$13` / RESUME `$11`** : gèle la livraison IKBD → ACIA jusqu'à la
+  prochaine commande valide ; ignoré pendant la fenêtre de reset (loader de Just Bugging).
+- **Commandes de rapport `$87-$9A`** (`IKBD_Cmd_Report*`) : réponse `$F6` + 7 octets d'état
+  (mode souris, seuils, échelle, axe Y, disponibilité souris/joystick…).
+- **Position absolue interne mise à jour dans TOUS les modes souris**
+  (`IKBD_UpdateInternalMousePosition`) + bornes/position remises aux défauts sur reset.
+- Frontend : **relâchements de touche toujours transmis** au ST si l'appui l'a été (une
+  touche n'est plus « collée » quand ImGui prend le focus entre make et break) ; mapping
+  clavier complété façon Hatari (`sdl/keymap.c`) : **pavé numérique**, Help (Impr. écran),
+  Undo (Fin), `(`/`)` (PgUp/PgDn).
+- Debug : `NEOST_DEBUG_IKBD=1` trace les commandes reçues par l'IKBD ;
+  `NEOST_DEBUG_ACIA=1` trace chaque lecture du data register (valeur, file, cycle).
+  Headless : `--mouse-at N "SCRIPT"` (script souris daté L/R/U/D/1/2/.) et
+  `--joy-script N "SCRIPT"` (état joystick par trame U/D/L/R/F/.) pour piloter des menus
+  de jeux ; `stScancode` étendu (flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`…).
 
 ## Disquette (FDC WD1772 + DMA)
 - **Modèle ROTATIONNEL daté** (port `extern/hatari/src/fdc.c`, chemin « _ST ») remplaçant
