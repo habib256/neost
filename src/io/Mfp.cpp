@@ -120,11 +120,15 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x21: tbReload_ = v; tbCounter_ = v; scheduleTimer(1); break;  // TBDR → recharge + (re)date le délai
         // Timers A/C/D : on mémorise le registre PUIS on (re)programme l'échéance.
         case 0x19: timer_[0x19] = v; scheduleTimer(0); break;             // TACR
-        case 0x1D: timer_[0x1D] = v; scheduleTimer(2); scheduleTimer(3); break; // TCDCR (C+D)
+        case 0x1D: timer_[0x1D] = v; scheduleTimer(2); scheduleTimer(3);  // TCDCR (C+D)
+                   updateSerialConfig(); break;   // Timer D = horloge USART (cf. mfp.c:3474)
         case 0x1F: timer_[0x1F] = v; taReload_ = taCounter_ = v;          // TADR (+ event-count)
                    scheduleTimer(0); break;
         case 0x23: timer_[0x23] = v; scheduleTimer(2); break;             // TCDR
-        case 0x25: timer_[0x25] = v; scheduleTimer(3); break;             // TDDR
+        case 0x25: timer_[0x25] = v; scheduleTimer(3);                    // TDDR
+                   updateSerialConfig(); break;   // nouveau diviseur → bauds USART (mfp.c:3311)
+        case 0x29: timer_[0x29] = v;                                      // UCR
+                   updateSerialConfig(); break;   // format du mot / prescaler (rs232.c:623)
         case 0x2F: timer_[0x2F] = v;                  // UDR : octet émis sur le port série
                    if (serialSink_) serialSink_(v);   // (RS-232). On le transmet aussitôt
                    // Connecteur de bouclage TxD→RxD : l'octet émis revient en réception
@@ -146,6 +150,36 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                    break;
         default: timer_[addr & 0x3F] = v; break;      // autres timers/USART : mémorisés
     }
+}
+
+// -----------------------------------------------------------------------------
+//  Config effective de l'USART — port de Hatari rs232.c (RS232_SetBaudRateFromTimerD
+//  + RS232_HandleUCR). Le Timer D du MFP (2.4576 MHz) cadence l'USART ; chaque
+//  expiration BASCULE la ligne d'horloge (÷2) et l'USART asynchrone divise encore
+//  par 16 (UCR bit7 — seul mode supporté, comme Hatari). Quelques quotients « moches »
+//  produits par le TOS sont arrondis aux bauds standards (80→75…), comme Hatari le
+//  fait pour son tty hôte. Pure configuration : le débit émulé reste instantané.
+// -----------------------------------------------------------------------------
+void Mfp::updateSerialConfig() {
+    const int ctrl = timer_[0x1D] & 0x07;          // prescaler Timer D (mode délai)
+    if (!ctrl) return;                             // Timer D arrêté → config inchangée
+    static constexpr int kDiv[8] = {0, 4, 10, 16, 50, 64, 100, 200};
+    const int data = timer_[0x25] ? timer_[0x25] : 256;   // données 0 = 256
+    int baud = 2457600 / data / 2 / 16 / kDiv[ctrl];
+    switch (baud) {                                // arrondis « TOS » → bauds standards
+        case 80:   baud = 75;   break;
+        case 109:  case 120:  baud = 110;  break;
+        case 1745: case 1920: baud = 1800; break;
+    }
+    const uint8_t ucr = timer_[0x29];
+    if (baud == serialBaud_ && ucr == serialUcr_) return;   // rien de neuf → silence
+    serialBaud_ = baud;
+    serialUcr_  = ucr;
+    static const char* kStops[4] = {"sync", "1", "1.5", "2"};   // UCR bits 3-4
+    std::fprintf(stderr, "[mfp] USART : %d bauds, %d%c%s (UCR=$%02X, TDDR=%d, prescaler /%d)\n",
+                 baud, 8 - ((ucr >> 5) & 3),                    // taille du mot (bits 5-6)
+                 (ucr & 4) ? ((ucr & 2) ? 'E' : 'O') : 'N',     // parité (bits 1-2)
+                 kStops[(ucr >> 3) & 3], ucr, data, kDiv[ctrl]);
 }
 
 // -----------------------------------------------------------------------------

@@ -57,8 +57,10 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
       depend on it » dixit Hatari).
 
 ## MFP 68901 + RS232 USART
-- [ ] Config baud USART UCR/Timer-D non modélisée (backing-store seul) _(faible valeur)_ —
-      réf. `rs232.c:RS232_HandleUCR + RS232_SetBaudRateFromTimerD`
+- [x] Config baud USART UCR/Timer-D — FAIT (cf. `CHANGELOG.md`) : `Mfp::updateSerialConfig`
+      (port `RS232_SetBaudRateFromTimerD` + `RS232_HandleUCR`) calcule bauds + format à
+      chaque écriture UCR/TDDR/TCDCR, exposés (`serialBaud()`) et journalisés. Comme
+      Hatari, pure config (tty hôte chez lui) : le débit émulé reste instantané.
 
 ## Vidéo / Shifter
 - [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) _(risque élevé)_ — réf.

@@ -133,6 +133,15 @@ public:
     void setSerialSink(std::function<void(uint8_t)> sink) { serialSink_ = std::move(sink); }
     bool colorMonitor() const { return colorMonitor_; }
 
+    // Config EFFECTIVE de l'USART (port de rs232.c RS232_SetBaudRateFromTimerD +
+    // RS232_HandleUCR) : bauds dérivés du Timer D (horloge de l'USART, prescaler
+    // /16 de l'UCR) et format du mot depuis l'UCR. Comme chez Hatari c'est de la
+    // pure CONFIGURATION (appliquée au tty hôte chez lui, état + journal ici) : le
+    // débit d'émission émulé reste instantané (cf. RS232_TSR_ReadByte). Recalculée
+    // à chaque écriture UCR ($FFFA29), TDDR ($FFFA25) ou TCDCR ($FFFA1D).
+    int     serialBaud() const { return serialBaud_; }   // 0 = jamais configurée
+    uint8_t serialUcr()  const { return serialUcr_; }
+
     // Lignes de contrôle RS232 en ENTRÉE (vues sur le GPIP, actives BAS) :
     //   CTS = GPIP2, DCD = GPIP1, RI = GPIP6.
     // Sur l'ST elles sont pilotées par un périphérique externe ; avec un connecteur
@@ -264,6 +273,12 @@ private:
     // peut lever une IRQ alors même que la ligne d'entrée n'a pas bougé.
     void gpipUpdateInterrupt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew);
 
+    // Recalcule la config USART effective (cf. serialBaud) et la journalise au
+    // premier réglage / à chaque CHANGEMENT (boîte à hack : on VOIT la négociation).
+    void updateSerialConfig();
+
     Scheduler* sched_ = nullptr;    // pour dater les timers (mode délai)
     std::function<void(uint8_t)> serialSink_;   // port série RS-232 (UDR $FFFA2F)
+    int     serialBaud_ = 0;        // bauds effectifs (0 = USART jamais configurée)
+    uint8_t serialUcr_  = 0;        // UCR au moment du dernier calcul (format du mot)
 };
