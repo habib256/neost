@@ -243,6 +243,9 @@ int main(int argc, char** argv) {
     // Sinon EmuTOS STE affiche l'heure système réelle sur le bureau, ce qui casse
     // la comparaison pixel au pixel (test `etos_ste_boot`).
     machine.rtc.setDateTime(Rtc::DateTime{0, 0, 12, 1, 1, 1, 26}); // 1er jan 2026, 12:00:00
+    // Même chose pour l'horloge IKBD (commande $1C) : EmuTOS STE/ST affiche la
+    // date/heure du bureau depuis l'IKBD, pas la RTC — figée pour le déterminisme.
+    machine.ikbd.setClock(26, 1, 1, 12, 0, 0);
 
     machine.reset();
 

@@ -63,6 +63,16 @@ public:
     // en mode auto ($14), à chaque trame via sendAutoJoysticks.
     void    setJoystick(uint8_t joy0, uint8_t joy1) { hostJoy_[0] = joy0; hostJoy_[1] = joy1; }
 
+    // Force l'horloge IKBD (YY MM DD hh mm ss, décimal). Utilisé par le headless
+    // pour un boot DÉTERMINISTE : EmuTOS/TOS lit la date/heure du bureau via la
+    // commande IKBD $1C — sans ça l'horloge hôte casse les diffs pixel à pixel.
+    void    setClock(int yy, int mm, int dd, int hh, int mi, int ss) {
+        auto bcd = [](int v) { return uint8_t(((v / 10) << 4) | (v % 10)); };
+        clock_[0] = bcd(yy); clock_[1] = bcd(mm); clock_[2] = bcd(dd);
+        clock_[3] = bcd(hh); clock_[4] = bcd(mi); clock_[5] = bcd(ss);
+        clockMicro_ = 0;
+    }
+
     // Événement clavier venant de l'hôte (scancode ST déjà traduit).
     void keyEvent(uint8_t scancode, bool pressed);
 

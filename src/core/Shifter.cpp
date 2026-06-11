@@ -186,6 +186,55 @@ void Shifter::beginFrame() {
         const uint32_t bg = stColorToArgb(palette[0]);
         std::fill(frame_.begin(), frame_.end(), bg);
     }
+    // Machine Glue LIVE : prépare l'état par-ligne de la nouvelle trame. Mêmes
+    // structures que replayGlue — qui ré-écrase TOUT en fin de trame à partir des
+    // mêmes syncWrites_, donc live et replay donnent le même résultat ; entre-temps
+    // videoCounter() peut consulter la fenêtre DE réelle de la ligne courante.
+    if (frameMode_ != Mode::High) {
+        const Geometry g = geometry();
+        glueLines_.assign(static_cast<std::size_t>(g.linesPerFrame) + 2, GlueLine{ -1, 0, 0, 0 });
+        glueStartHBL_   = g.dispStartLine;
+        glueEndHBL_     = g.dispStartLine + g.displayLines;
+        glueVOverscan_  = 0;
+        glueBlankLines_ = 0;
+        nScreenRefreshRate_ = (frameSync_ & 0x02) ? 50 : 60;
+    }
+    liveGlueLine_   = -1;
+    liveGlueWi_     = 0;
+    liveGlueRes_    = (frameMode_ == Mode::Medium) ? 1 : (frameMode_ == Mode::High ? 2 : 0);
+    liveGlueFreq50_ = (frameSync_ & 0x02) ? 1 : 0;
+}
+
+// Avance la machine Glue LIVE jusqu'à la ligne `targetLine` incluse : startHBL sur
+// les lignes nouvellement atteintes + consommation des écritures freq/res déjà
+// enregistrées, en ordre chronologique — exactement la boucle de replayGlue, mais
+// au fil de la trame (les écritures arrivent triées : recordSyncWrite est daté live).
+void Shifter::liveGlueCatchUp(int targetLine) {
+    if (frameMode_ == Mode::High || glueLines_.size() < 2) return;
+    const int maxLine = static_cast<int>(glueLines_.size()) - 2;
+    if (targetLine > maxLine) targetLine = maxLine;
+    const int cpl = geometry().cyclesPerLine;
+    for (;;) {
+        // Écriture en attente sur une ligne déjà initialisée → consommer AVANT
+        // d'avancer (elle conditionne res/freq des lignes suivantes).
+        if (liveGlueWi_ < syncWrites_.size()) {
+            const SyncWrite& w = syncWrites_[liveGlueWi_];
+            int wl = w.frameCycle / cpl;
+            if (wl > maxLine) wl = maxLine;
+            if (wl <= liveGlueLine_) {
+                if (w.isRes) liveGlueRes_    = w.val & 0x03;
+                else         liveGlueFreq50_ = (w.val & 0x02) ? 1 : 0;
+                const int freqHz = (liveGlueRes_ == 2) ? 71 : (liveGlueFreq50_ ? 50 : 60);
+                updateGlueState(wl, w.frameCycle % cpl, w.isRes, freqHz);
+                ++liveGlueWi_;
+                continue;
+            }
+        }
+        if (liveGlueLine_ >= targetLine) break;
+        ++liveGlueLine_;
+        const int freqHz = (liveGlueRes_ == 2) ? 71 : (liveGlueFreq50_ ? 50 : 60);
+        startHBL(liveGlueLine_, liveGlueRes_, freqHz);
+    }
 }
 
 // Décode les index de palette (ou bit mono) d'UNE scanline dans `idx`, selon la
@@ -467,6 +516,9 @@ void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
     if (fc < 0) return;
     syncWrites_.push_back({ static_cast<int32_t>(fc), val, isRes });
     updateLiveStartHBL(static_cast<int32_t>(fc), isRes, val);   // VDE_On live (retrait haut)
+    // Machine Glue LIVE : consomme l'écriture immédiatement (fenêtre DE de la ligne
+    // courante à jour pour les lectures $FF8209 qui suivent).
+    liveGlueCatchUp(static_cast<int>(fc / geometry().cyclesPerLine));
 }
 
 // Met à jour le VDE_On LIVE du compteur vidéo sur une écriture freq — détection du
@@ -1027,9 +1079,27 @@ uint32_t Shifter::videoCounter() const {
         // Offset intra-ligne UNIQUEMENT si la ligne courante n'a pas déjà été rendue
         // (la < vcLineY_ = bordure droite : le stride de la ligne est déjà accumulé).
         if (la < disp && laEff >= vcLineY_) {
-            int nb = (X - lineStart) >> 1;              // 2 cycles par octet
+            // Fenêtre DE RÉELLE de la ligne courante (machine Glue LIVE) : une bascule
+            // 60/50 Hz mi-ligne déplace la fin du DE (right-2, stop-middle, retraits) et
+            // le compteur doit le refléter EN DIRECT — port de Video_CalculateAddress,
+            // qui lit ShifterLines[HBL].DisplayStartCycle/EndCycle. C'est ce que mesure
+            // la calibration fullscreen d'Enchanted Land sur $FF8209 (impulsion 60→50
+            // enjambant le comparateur 372 → ligne -2 octets). Trame SANS écriture
+            // freq/res → chemin historique inchangé (zéro régression).
+            int ds = lineStart, lineBytes = bpl;
+            if (frameMode_ != Mode::High && !syncWrites_.empty()
+                && static_cast<std::size_t>(line) + 1 < glueLines_.size()) {
+                const_cast<Shifter*>(this)->liveGlueCatchUp(line);
+                const GlueLine& L = glueLines_[static_cast<std::size_t>(line)];
+                if (L.displayStartCycle >= 0) {
+                    ds = L.displayStartCycle;
+                    lineBytes = (L.displayEndCycle - L.displayStartCycle) >> 1;
+                    if (lineBytes < 0) lineBytes = 0;
+                }
+            }
+            int nb = (X - ds) >> 1;                     // 2 cycles par octet
             nb &= ~1;                                   // le shifter lit par MOTS
-            if (nb < 0) nb = 0; else if (nb > bpl) nb = bpl;
+            if (nb < 0) nb = 0; else if (nb > lineBytes) nb = lineBytes;
             addr += static_cast<uint32_t>(nb);
         }
     }

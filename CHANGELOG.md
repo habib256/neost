@@ -88,6 +88,12 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   toujours Pass. *(Bascule 50/60 Hz EN COURS de trame pour les bordures → cf. TODO.)*
 - **Registres STE** (gatés STE) : fine scroll `$FF8264/65`, line width `$FF820F`, base
   basse `$FF820D`, palette 4 bits/canal, relecture sync.
+- **Zones « void » du shifter fidèles par machine** (port `ioMemTabST.c`/`ioMemTabSTE.c`,
+  handlers `IoMem_VoidRead`=0xFF / `IoMem_VoidRead_00`=0x00) : sur **STE/MegaSTE**,
+  `$FF820B`, `$FF8262-63` et `$FF8266-7F` lisent **0x00** ; le reste (dont `$FF820C/0E`)
+  lit **0xFF**. Sur **ST/MegaST**, TOUTES les zones void lisent **0xFF** (l'ancien
+  fallback renvoyait 0x00 partout). Whitelist bus-error inchangée (déjà conforme).
+  Validé : glue self-test 19/19, boots ST 192 / STE byte-stables.
 - **Rendu STE câblé** : `renderLine` décode en tampon d'index puis émet avec offset →
   **fine-scroll** horizontal 0-15 px (décalage gauche + groupe de 16 px lu en plus à droite,
   modèle prefetch `$FF8265`), **line-offset** `$FF820F` (stride ligne `bpl + lineWidth*2`,
@@ -203,6 +209,28 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   le **scrolling saute** (gros sauts d'images au lieu d'un défilement fluide) ; et le
   **scroller de la bordure BASSE** n'est pas rendu (retrait bas non modélisé dans le rendu live).
   *(Reste : scroller de la bordure BASSE du menu non rendu — cf. TODO, retrait bas live.)*
+- **Machine Glue LIVE → compteur vidéo par-ligne — DÉBLOQUE ENCHANTED LAND** (Thalion
+  1990, qui passait « LOADING » puis écran noir à jamais). La machine Glue STF complète
+  (`startHBL` + `updateGlueState`, port `Video_Update_Glue_State`) tourne désormais
+  **au fil de la trame** via un curseur incrémental (`liveGlueCatchUp` : startHBL des
+  lignes atteintes + consommation chronologique des écritures freq/res — exactement la
+  boucle de `replayGlue`, qui ré-écrase tout en fin de trame → live et replay donnent
+  le même résultat par construction). `videoCounter()` lit alors la **fenêtre DE réelle
+  de la ligne courante** (`displayStartCycle/EndCycle`) au lieu des constantes de la
+  géométrie de trame — port fidèle de `Video_CalculateAddress`, qui lit
+  `ShifterLines[HBL]`. Pourquoi c'est indispensable : le loader d'Enchanted Land embarque
+  une **routine de calibration fullscreen** ($EE76-$EFCC) qui se cale au faisceau
+  (poll `$FF8209` 0→≠0 + compensation de gigue `lsr.w d2,d2` + saut calculé dans un tapis
+  de NOPs), puis émet une **impulsion 60→50 Hz dos à dos** ($820A=0 puis =2, 8 cyc d'écart)
+  en balayant la position cycle par cycle, et **mesure sur `$FF8209`** si l'impulsion a
+  raccourci la ligne (-2 octets : comparateur HDE_Off 60 Hz = cycle 372 < 376) — deux
+  lectures consécutives + un test « compteur figé / fini à `…9E` au lieu de `…A0` ».
+  Sans l'effet live, la calibration scanne à l'infini → noir. Avec : logo Thalion +
+  pluie **conformes à l'oracle Hatari** (trames 1300-9000), puis **JEU JOUABLE** après
+  une touche (écran de gameplay complet, 2 cœurs Musashi ET Moira). Trame sans écriture
+  freq/res → chemin historique strictement inchangé. **Zéro régression** : glue
+  self-test 19/19, étalons `run_etalons` TOUS OK (boot STE, spec512 diapo, overscan top),
+  overscan L/D (`make_overscan_lr`) ouvre toujours les bordures, menu Cuddly stable.
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.
@@ -535,10 +563,20 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   octet latché (bit0 = cache, bit1 = vitesse 8/16 MHz) avec la contrainte matérielle « cache
   impossible à 8 MHz » (bit0 forcé à 0 si bit1=0). Reset = 0. L'EFFET (débit cycles, cache 16 Ko)
   reste un item « précision cycle ». Boot MegaSTE byte-identique.
-- **Lectures STE joypad/paddle/lightpen + DIP MegaSTE** (`$FF9200-$FF9223`, port `joy.c`) :
-  valeurs au repos au lieu d'un `0xFF` générique — DIP MegaSTE `$FF9200` octet haut = `0xBF`
-  (lecteur HD 1.44 Mo, logique inversée), boutons/directions `0xFF` relâchés, paddle au neutre
-  `0x24`, lightpen `0x0000`. Boot STE byte-identique, MegaSTE (EmuTOS/diag) inchangé.
+- **Joypads STE COMPLETS + DIP MegaSTE** (`$FF9200-$FF9223`, port fidèle `joy.c` /
+  `ioMemTabSTE.c`) : le stub « valeurs au repos » est remplacé par un vrai module
+  `StePads` (`src/io/StePads.hpp`, membre `Bus::stePads`) — **multiplexage** par le
+  latch de sélection `$FF9202` (nibble bas = pad A, haut = pad B, ligne active à 0),
+  **boutons feu** `$FF9201` (feu A pad A → bit1, pad B → bit3), **directions** lues en
+  `$FF9202` (`~dir`, nibble par pad), paddles `$FF9211-17` au neutre `0x24`, lightpen
+  `$FF9220/22` à `0x0000`. **DIP MegaSTE** octet haut de `$FF9200` = `0xBF` (logique
+  inversée : switch 7 ON → lecteur HD 1.44 monté, switch 8 OFF → son DMA actif, fidèle
+  `IoMemTabMegaSTE_DIPSwitches_Read`) ; STE simple → `0xFF`. Les pads reçoivent le
+  **même état joystick** que l'IKBD (pad A = port 1 « jeux », pad B = port 0) depuis le
+  GUI, le web et le headless (`--joy`/`--joy-at`/`--joy-script`), comme le mapping
+  manette global d'Hatari. Validé : glue self-test 19/19, boots STE/MegaSTE propres,
+  `--joy 0x88` maintenu sans faute parasite. *(Reste : bus error sur accès octet de
+  `$FF9200/20/22` — Hatari faute, NeoST whiteliste ; sans impact TOS/EmuTOS.)*
 - **Bus map gaté par modèle** : sur Mega ST/STE `$FF8002-$FF800D` est void (pas de faute)
   contrairement au ST (`IoMem_FixVoidAccessForMegaST`).
 
@@ -555,6 +593,11 @@ fidèles à Hatari, pas des bugs.
   C'est l'outil de débogage principal.
 - **`tools/trace_diff.py`** : aligne une trace NeoST et une trace Hatari sur un PC commun
   (`--align-pc`) et localise la première divergence (flux PC + registres).
+- **Horloge IKBD figée en headless** (`Ikbd::setClock`, 1ᵉʳ jan 2026 12:00:00 comme la
+  RTC) : EmuTOS affiche la date/heure du bureau depuis l'horloge IKBD (commande `$1C`),
+  pas la RTC — elle suivait l'heure HÔTE et cassait le diff pixel de `etos_ste_boot`
+  (la référence embarquait l'heure de sa capture). Référence régénérée, étalon
+  désormais **déterministe** et au vert.
 
 ## Validé
 - EmuTOS (FR/US) : green desktop, fichiers disquette, double-clic, fenêtres.

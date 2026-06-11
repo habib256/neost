@@ -20,9 +20,10 @@ nécessite l'ordonnanceur daté ([`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.
 **Validation par logiciels réels** : chaque gros chantier a un **logiciel étalon** qui
 n'affiche/sonne correctement QUE si l'effet limite est fidèle → catalogue par sous-système
 dans [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md). Repère `🎯 étalon : …` sur les items
-ci-dessous. Ordre de débogage affichage : **Spectrum 512 ✅ → Cuddly Demos (menu statique :
-flicker RÉSOLU ✅ ; reste : scrolling qui saute quand le robot bouge, + scroller de bordure
-basse) → Enchanted Land (plante après le LOADING)**.
+ci-dessous. Ordre de débogage affichage : **Spectrum 512 ✅ → Enchanted Land (JOUABLE ✅,
+machine Glue live ; reste le sync-scroll fin en jeu à valider) → Cuddly Demos (menu
+statique : flicker RÉSOLU ✅ ; reste : scrolling qui saute quand le robot bouge, +
+scroller de bordure basse)**.
 
 ---
 
@@ -39,8 +40,10 @@ basse) → Enchanted Land (plante après le LOADING)**.
 
 - [x] **Latch palette mi-ligne** — FAIT pour la PALETTE (port `spec512.c`) : écritures
       `$FF824x` datées au cycle live de Moira, re-rendu de fin de trame à palette roulante
-      (cf. CHANGELOG §Vidéo + item **Spec512** ci-dessous). Reste le **scroll** fin mi-ligne
-      (sync-scroll Enchanted Land) et la latence sous-pixel — réf. `video.c:Video_RenderLine`.
+      (cf. CHANGELOG §Vidéo + item **Spec512** ci-dessous). La **fenêtre DE par-ligne est
+      désormais LIVE** dans le compteur vidéo (machine Glue live, débloque Enchanted Land —
+      cf. §Cas concrets). Reste le **scroll** fin mi-ligne dans le RENDU et la latence
+      sous-pixel — réf. `video.c:Video_RenderLine`.
 - [~] **Wait states** d'accès YM2149 / mémoire (4 cycles + alignement) et contention bus
       _(précision cycle)_ — réf. `psg.c`, `cycles.c`, MAME `stmmu.cpp::bus_contention`.
       **FAIT pour l'alignement bus 4 cyc du SHIFTER, désormais EN LIVE** (port `M68000_SyncCpuBus`) :
@@ -70,16 +73,19 @@ basse) → Enchanted Land (plante après le LOADING)**.
       [[arkanoid-freeze-investigation]]. **Reste à investiguer** : le passage titre → jeu (appui
       bouton/touche ? second chargement disque ? protection ? IRQ ?) — à diff'er contre l'oracle
       Hatari (`--keys`/`--joy`, trace IRQ). 🎯 étalon de la suite FDC/protection.
-- [ ] **Enchanted Land** (Thalion 1990, `disks/Enchanted Land (1990)(Thalion).st`) — affiche
-      **LOADING puis PLANTE** (retour utilisateur). À investiguer : bus error / instruction
-      illégale (trace headless `--irq`, comparer la divergence à l'oracle Hatari), ou protection/
-      loader FDC. Étalon sync-scroll prévu, mais bloqué bien avant l'effet pour l'instant.
+- [x] **Enchanted Land** (Thalion 1990) — **RÉSOLU : JOUABLE** (logo Thalion + pluie
+      conformes à l'oracle Hatari, gameplay atteint après une touche, 2 cœurs). Ce n'était
+      ni un plantage ni le FDC : le loader embarque une **calibration fullscreen** qui
+      mesure sur `$FF8209` si une impulsion 60→50 Hz mi-ligne raccourcit la ligne de
+      2 octets (comparateur HDE_Off 372/376) — il fallait la **machine Glue LIVE** dans
+      `videoCounter()` (curseur incrémental `liveGlueCatchUp`, cf. CHANGELOG §Vidéo).
+      Étalon sync-scroll désormais accessible pour la suite (scroll fin mi-ligne).
 
 ---
 
 ## Bus / memory map / MMU
-- [ ] Registres vidéo STE « void » doivent lire `0x00` (`$FF820B`, `$FF8262-63`, `$FF8266-7F`)
-      _(faible valeur)_ — réf. `ioMemTabSTE.c` (IoMem_VoidRead_00)
+- [x] ~~Registres vidéo STE « void » doivent lire `0x00`~~ — FAIT (cf. CHANGELOG §Vidéo) :
+      STE → 0x00 pour `$FF820B`/`$FF8262-63`/`$FF8266-7F`, 0xFF ailleurs ; ST → 0xFF partout.
 - [ ] La banque ROM doit couvrir toute la fenêtre 1 Mo (`$E00000-$EFFFFF`), pas la taille du
       fichier _(risque élevé)_ — réf. `cpu/memory.c:memory_map_Standard_RAM` (ROMmem aliasing)
 - [ ] Accès mémoire FDC/son-DMA via la traduction MMU au lieu de `ram[]` physique _(risque
@@ -143,10 +149,13 @@ basse) → Enchanted Land (plante après le LOADING)**.
       `Shifter::finishFrame/applyShifterBusAlignment/recordColorWrite/videoCounter`.
 - [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) _(risque élevé)_ — réf.
       `video.c:Video_ColorReg_WriteWord`
-- [ ] **Joypads/paddles/lightpen STE** (`$FF9200-$FF9222`) : directions, boutons, multiplexage,
-      entrées analogiques — réf. `joy.c`, MAME
-- [ ] **DIP switches MegaSTE** `$FF9200` : bit HD floppy, désactivation DMA sound, logique
-      inversée — réf. `ioMemTabSTE.c`
+- [x] **Joypads/paddles/lightpen STE** (`$FF9200-$FF9222`) — FAIT (module `StePads`, port
+      `joy.c` : multiplexage `$FF9202`, feux `$FF9201`, directions, branché sur l'état
+      joystick GUI/web/headless ; cf. CHANGELOG §Bus error & diag). _Reste : paddles
+      analogiques réels et lightpen (pas d'entrée hôte → neutre fidèle Hatari), bus error
+      sur accès octet de `$FF9200/20/22`._
+- [x] **DIP switches MegaSTE** `$FF9200` — FAIT (octet haut `0xBF`, logique inversée,
+      bit HD/DMA-sound, port `IoMemTabMegaSTE_DIPSwitches_Read`).
 
 ## Blitter
 - [ ] Partage de bus (mode non-hog) au cycle près _(précision cycle)_ — réf. `blitter.c`
@@ -202,8 +211,9 @@ basse) → Enchanted Land (plante après le LOADING)**.
       SANS lever XSINT (`startNewFrame()`, corrige GPIP7 figé HAUT). Adresse de trame relue =
       `startAddr` à l'arrêt (`DmaSnd_GetFrameCount`). Reset cold/warm : le LMC1992 (sans broche
       de reset) persiste au reset à chaud. _Reste : avance live cycle-exacte du compteur (Phase C)._
-- [ ] Décodage commande LMC1992 : run de masque contigu au lieu de tous les bits _(faible
-      valeur)_ — réf. `dmaSnd.c:DmaSnd_InterruptHandler_Microwire`
+- [x] ~~Décodage commande LMC1992 : run de masque contigu~~ — déjà FAIT
+      (`DmaSound::decodeMicrowire` parcourt le run contigu du masque, commandes
+      invalides ignorées) ; l'item était périmé.
 - [x] **Registre mixage LMC1992 (reg 0) appliqué** (`DmaSound::mix`) : mixing==1 → YM2149+DMA,
       0/2/3 → DMA seul (écrase le YM), uniquement trame en cours. Réf. `dmaSnd.c:555-568`.
       _NB : EmuTOS STE programme mixing=1 au boot → YM audible par défaut._
@@ -234,7 +244,9 @@ basse) → Enchanted Land (plante après le LOADING)**.
       suivant jusqu'à la lecture du RDR.
 
 ## RTC RP5C15
-- [ ] Sauvegarde persistante de la date/heure RTC entre sessions _(faible valeur)_.
+- [x] ~~Sauvegarde persistante de la date/heure RTC entre sessions~~ — déjà FAIT
+      (`neost.cfg` : clés `rtc=`/`rtc_saved=`, reprise + rattrapage du temps écoulé au
+      boot, snapshot à chaque sauvegarde de config) ; l'item était périmé.
 
 ## CPU : IRQ, Moira, MegaSTE
 - [ ] **Bascule CPU 8/16 MHz MegaSTE** (`$FF8E21` bit1) — change le débit de cycles et tous

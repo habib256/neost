@@ -252,6 +252,16 @@ private:
     void updateGlueState(int line, int lineCycles, bool writeToRes, int curFreqHz);
     // Valeurs par défaut d'une ligne selon res/freq courants (port Video_StartHBL).
     void startHBL(int line, int curRes, int curFreqHz);
+    // Machine Glue LIVE : curseur incrémental qui fait tourner startHBL/updateGlueState
+    // AU FIL de la trame (mêmes structures que replayGlue, qui ré-écrase tout en fin de
+    // trame). Permet à videoCounter() de refléter EN DIRECT la fenêtre DE réelle de la
+    // ligne courante (bascules 60/50 mi-ligne : right-2, stop, retraits) — c'est ce que
+    // mesurent les routines de calibration fullscreen (Enchanted Land) sur $FF8209.
+    void liveGlueCatchUp(int targetLine);
+    int         liveGlueLine_   = -1;   // dernière ligne initialisée (startHBL) par le live
+    std::size_t liveGlueWi_     = 0;    // prochaine écriture syncWrites_ à consommer
+    int         liveGlueRes_    = 0;    // res courante du curseur live (0/1/2)
+    int         liveGlueFreq50_ = 1;    // freq courante du curseur live (bit1 $FF820A)
     // Re-rendu fenêtré : pour chaque scanline affichée [glueStartHBL_, glueEndHBL_),
     // décode [displayStartCycle, displayEndCycle) avec adresse vidéo ACCUMULÉE
     // (Video_CalculateAddress) + palette roulante (raster/spec512). Hors fenêtre =
