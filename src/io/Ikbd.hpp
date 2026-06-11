@@ -165,6 +165,13 @@ private:
                                              // (relire à vide le renvoie, cf. acia.c)
     bool    rdrf_ = false;                   // RDR plein (octet livré non encore lu)
     bool    rxPending_ = false;              // une livraison IKBD_RX est déjà datée
+    // Overrun récepteur (port acia.c) : le SCI livre EN CONTINU ; un octet qui
+    // arrive RDR plein est PERDU (rxOverrun_ pendant, maintient l'IRQ RX). Le bit
+    // OVRN du SR (ovrn_) n'est posé qu'à la lecture de RDR, et acquitté par la
+    // séquence « lire SR (srRead_) puis RDR » — cf. ACIA_Read_RDR/SR_Read.
+    bool    rxOverrun_ = false;              // octet(s) perdu(s) non encore signalé(s)
+    bool    ovrn_ = false;                   // bit OVRN visible dans le SR
+    bool    srRead_ = false;                 // SR lu depuis la dernière lecture RDR
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
     bool    txEnableInt_ = false;            // IRQ d'émission armée : CR bits5-6 = 01 (ex. $b6, Hades Nebula)
     bool    tdre_ = true;                    // Transmit Data Register Empty : 1 au repos, 0 en émission sous TIE

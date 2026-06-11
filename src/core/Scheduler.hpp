@@ -51,7 +51,11 @@ public:
     // cycles), comme le SCI d'Hatari. Des jeux (Vroom) identifient les octets du
     // paquet souris à leur CADENCE d'arrivée : une livraison instantanée des 3
     // octets fait perdre la synchro de leur parseur (axes souris « tournés »).
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MICROWIRE, HBL, VBL, SRC_COUNT };
+    // MIDI_TX = même rôle qu'IKBD_TX pour l'ACIA MIDI ($FFFC04/06) : TDRE se
+    // re-remplit ~1 octet MIDI (10 bits à 31250 bauds = 2560 cycles) après une
+    // écriture donnée sous TIE — cadence l'IRQ « transmetteur prêt » des
+    // séquenceurs qui streament la sortie MIDI par interruption (cf. midi.c).
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MICROWIRE, HBL, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 

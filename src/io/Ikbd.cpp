@@ -13,8 +13,11 @@
 enum : uint8_t {
     ACIA_RDRF = 0x01,   // Receive Data Register Full
     ACIA_TDRE = 0x02,   // Transmit Data Register Empty
+    ACIA_OVRN = 0x20,   // Receiver Overrun : octet(s) perdu(s), posé à la lecture RDR
     ACIA_IRQ  = 0x80,   // ligne d'interruption (vers GPIP4 du MFP)
 };
+// (DCD/CTS sont à la masse sur l'ST → bits 2/3 toujours 0 ; FE/PE n'arrivent
+// jamais : la liaison émulée ne produit ni erreur de trame ni erreur de parité.)
 
 // Temps « série » d'un octet émis CPU → IKBD (~7812,5 bauds, trame de 10 bits) en
 // cycles 68000 à 8 MHz. Ordre de grandeur de l'ACIA_CYCLES d'Hatari : sert à dater
@@ -88,31 +91,42 @@ uint8_t Ikbd::read8(uint32_t addr) {
     if ((addr & 2) == 0) {
         // $FFFC00 : statut. TDRE = 1 au repos (0 pendant l'émission sous TIE) ;
         // RDRF si un octet a été LIVRÉ (cadence série, cf. onRxDeliver) et pas
-        // encore lu ; IRQ si une cause RX ou TX est active. Sous PAUSE OUTPUT
-        // ($13), la livraison est gelée → RDRF ne remonte plus (octets en file).
+        // encore lu ; OVRN si un overrun a été constaté à la lecture de RDR ;
+        // IRQ si une cause RX ou TX est active. Sous PAUSE OUTPUT ($13), la
+        // livraison est gelée → RDRF ne remonte plus (octets en file). Lire SR
+        // est mémorisé (srRead_) : la prochaine lecture de RDR effacera OVRN
+        // (séquence SR→RDR du 6850, cf. acia.c pACIA->SR_Read).
         uint8_t s = tdre_ ? ACIA_TDRE : 0;
         if (rdrf_)       s |= ACIA_RDRF;
+        if (ovrn_)       s |= ACIA_OVRN;
         if (irqActive()) s |= ACIA_IRQ;
+        srRead_ = true;
         return s;
     }
     // $FFFC02 : lecture de la donnée → consomme l'octet livré (efface RDRF) et
-    // date la livraison du suivant (~1 octet série). À vide, le RDR conserve le
-    // dernier octet reçu (cf. Hatari acia.c ACIA_Read_RDR).
+    // gère l'overrun (port de Hatari ACIA_Read_RDR) : si SR a été lu avant, OVRN
+    // retombe ; si un overrun est PENDANT (octet perdu pendant que RDR était
+    // plein, cf. onRxDeliver), OVRN se pose MAINTENANT — pas au moment de la
+    // perte. À vide, le RDR conserve le dernier octet reçu.
     // NEOST_DEBUG_ACIA=1 : trace chaque lecture du data register.
     static const bool dbgRdr = std::getenv("NEOST_DEBUG_ACIA") != nullptr;
-    if (!rdrf_) {
-        if (dbgRdr)
-            std::fprintf(stderr, "[acia] rd VIDE (rdr=$%02X) cyc=%lld\n",
-                         rdr_, sched_ ? (long long)sched_->now() : 0LL);
-        return rdr_;
-    }
-    const uint8_t b = rdr_;          // valeur AVANT que armRx ne livre la suivante
+    const uint8_t b = rdr_;          // RDR courant (conservé si relu à vide)
+    const bool had = rdrf_;
     rdrf_ = false;
+    if (srRead_) {                   // séquence SR puis RDR → OVRN acquitté
+        srRead_ = false;
+        ovrn_ = false;
+    }
+    if (rxOverrun_) {                // octet(s) perdu(s) depuis la dernière lecture
+        ovrn_ = true;
+        rxOverrun_ = false;
+    }
     if (dbgRdr)
-        std::fprintf(stderr, "[acia] rd $%02X reste=%zu cyc=%lld\n",
-                     b, rx_.size(), sched_ ? (long long)sched_->now() : 0LL);
+        std::fprintf(stderr, "[acia] rd %s$%02X%s reste=%zu cyc=%lld\n",
+                     had ? "" : "VIDE (", b, had ? "" : ")",
+                     rx_.size(), sched_ ? (long long)sched_->now() : 0LL);
     armRx();                         // octet suivant éventuel → livraison datée
-    raiseIfReady();
+    raiseIfReady();                  // RDRF/overrun retombés → l'IRQ RX peut retomber
     return b;
 }
 
@@ -169,6 +183,13 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         if (!txEnableInt_) {                 // TIE coupé → registre d'émission réputé prêt
             tdre_ = true;
             if (sched_) sched_->cancel(Scheduler::IKBD_TX);
+        }
+        // Bits 0-1 = 11 → master reset de l'ACIA (cf. acia.c ACIA_MasterReset) :
+        // SR repart à TDRE seul → RDRF/OVRN effacés. La file IKBD et la livraison
+        // en vol sont CONSERVÉES (elles vivent côté 6301, pas côté ACIA).
+        if ((v & 0x03) == 0x03) {
+            rdrf_ = false;
+            rxOverrun_ = ovrn_ = srRead_ = false;
         }
         raiseIfReady();
         return;
@@ -273,6 +294,7 @@ void Ikbd::dispatchCommand() {
                 pauseOutput_   = false;
                 rx_.clear();                   // BufferHead=Tail=0 dans IKBD_Boot_ROM
                 rdrf_ = false;                 // RDR vidé + livraison en vol annulée
+                rxOverrun_ = ovrn_ = srRead_ = false;   // overrun oublié (reset IKBD)
                 rxPending_ = false;
                 if (sched_) sched_->cancel(Scheduler::IKBD_RX);
                 duringResetCriticalTime_ = true;
@@ -830,35 +852,49 @@ void Ikbd::pushRx(uint8_t b) {
 
 void Ikbd::armRx() {
     // Date la livraison du prochain octet de la file : ~1 octet série (10 bits à
-    // 7812,5 bauds = 10240 cycles à 8 MHz, cadence du SCI d'Hatari). Pas de
-    // livraison tant que le RDR courant n'est pas lu, ni sous PAUSE OUTPUT ($13).
-    // Sans ordonnanceur (tests unitaires), repli : livraison immédiate.
-    if (rdrf_ || rx_.empty() || pauseOutput_ || rxPending_)
+    // 7812,5 bauds = 10240 cycles à 8 MHz, cadence du SCI d'Hatari). Le SCI de
+    // l'IKBD shifte EN CONTINU, que le RDR soit lu ou non — c'est onRxDeliver qui
+    // constate l'overrun si RDR est encore plein. Seule PAUSE OUTPUT ($13) gèle
+    // l'émission (côté firmware 6301, pas côté ACIA). Sans ordonnanceur (tests
+    // unitaires), repli : livraison immédiate — qui ne peut PAS écraser un RDR
+    // plein, sinon pushRx → perte immédiate (cf. garde rdrf_ dans onRxDeliver).
+    if (rx_.empty() || pauseOutput_ || rxPending_)
         return;
     constexpr int64_t kAciaRxByteCycles = 10240;
     if (sched_) {
         rxPending_ = true;
         sched_->schedule(Scheduler::IKBD_RX, sched_->now() + kAciaRxByteCycles);
-    } else {
+    } else if (!rdrf_) {
         onRxDeliver();
     }
 }
 
 void Ikbd::onRxDeliver() {
     rxPending_ = false;
-    if (rdrf_ || rx_.empty() || pauseOutput_)
+    if (rx_.empty() || pauseOutput_)
         return;
-    rdr_ = rx_.front();
+    const uint8_t b = rx_.front();
     rx_.pop_front();
-    rdrf_ = true;
+    if (rdrf_) {
+        // RDR pas encore lu quand l'octet suivant finit d'arriver : OVERRUN. Le
+        // nouvel octet est PERDU, RDR conserve l'ancien (cf. acia.c ACIA_Clock_RX,
+        // état STOP_BIT). Le bit OVRN ne se posera qu'à la lecture de RDR ; en
+        // attendant la cause d'IRQ RX reste active (RX_Overrun dans ACIA_UpdateIRQ).
+        rxOverrun_ = true;
+    } else {
+        rdr_ = b;
+        rdrf_ = true;
+    }
+    armRx();                         // le SCI enchaîne sur l'octet suivant de la file
     raiseIfReady();
 }
 
 bool Ikbd::irqActive() const {
     // Cause d'IRQ de l'ACIA 6850 (cf. acia.c ACIA_UpdateIRQ) : RX = octet LIVRÉ
-    // (RDRF) et RX int activé (RIE, bit7) ; TX = registre d'émission vide et IRQ
-    // d'émission armée (TIE). CTS = GND sur l'ST → toujours 0, omis.
-    return (rdrf_ && (control_ & 0x80)) || (txEnableInt_ && tdre_);
+    // (RDRF) OU overrun pendant, et RX int activé (RIE, bit7) ; TX = registre
+    // d'émission vide et IRQ d'émission armée (TIE). CTS = GND sur l'ST →
+    // toujours 0, omis (de même DCD).
+    return ((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_);
 }
 
 void Ikbd::raiseIfReady() {
@@ -925,6 +961,7 @@ void Ikbd::commonBoot(uint8_t v) {
             if (d.w == CW_AS)      { asMagic_ = false; asReadCount_ = 0; }
             rx_.clear();                     // flush des octets en file (BufferHead=Tail=0)
             rdrf_ = false;
+            rxOverrun_ = ovrn_ = srRead_ = false;
             rxPending_ = false;
             if (sched_) sched_->cancel(Scheduler::IKBD_RX);
             return;

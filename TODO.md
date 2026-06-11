@@ -42,12 +42,19 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
       contre Hatari (`--keys`/`--joy`, trace IRQ). 🎯 étalon suite FDC/protection.
 
 ## Bus / memory map / MMU
-- [ ] La banque ROM doit couvrir toute la fenêtre 1 Mo (`$E00000-$EFFFFF`), pas la taille du
-      fichier _(risque élevé)_ — réf. `cpu/memory.c:memory_map_Standard_RAM`
-- [ ] Accès mémoire FDC/son-DMA via la traduction MMU au lieu de `ram[]` physique _(risque
-      élevé)_ — réf. `stMemory.c:STMemory_DMA_Read/Write*`
-- [ ] **Remapping réel des banques MMU** (alias 128/512/2048 Ko) + bus error fidèle des zones
-      non peuplées (`$400000-$F9FFFF` au-dessus de la RAM) — réf. `stMemory.c` + `cpu/memory.c`
+- [x] Banque ROM = toute la fenêtre décodée — FAIT (cf. `CHANGELOG.md`) : 1 Mo à
+      `$E00000` (lecture 0 au-delà du fichier, écriture fautive partout), 192 Ko
+      à `$FC0000` (= le fichier). `Bus::romWindowSize`.
+- [x] Accès FDC/ACSI/son-DMA via le plan mémoire — FAIT : `Bus::dmaRead8/dmaWrite8`
+      (port `STMemory_DMA_Read/WriteByte`) : traduction MMU incluse, jamais de bus
+      error (lecture fautive → 0, écriture perdue).
+- [x] Remapping réel des banques MMU + bus error des zones non peuplées — DÉJÀ
+      couvert : `Bus::mmuTranslate` (port `STMemory_MMU_Translate_Addr` STF/STE,
+      aliasing 128/512/2048 Ko, validé par le sizing RAM du Test Kit) ; bus error
+      `$400000-$F9FFFF` hors cartouche/ROM (carte `busFault`). Reste éventuel
+      _(très faible valeur)_ : la zone void `[fin RAM, $400000)` lit 0 au lieu du
+      dernier mot du bus (`regs.db`, cf. `VoidMem_bget` — « no program known to
+      depend on it » dixit Hatari).
 
 ## MFP 68901 + RS232 USART
 - [ ] Config baud USART UCR/Timer-D non modélisée (backing-store seul) _(faible valeur)_ —
@@ -90,13 +97,20 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
       _(refinements, cf. `docs/SOUND_HATARI_DIFF.md`)_.
 
 ## IKBD HD6301 + souris/joystick
-- [ ] Keymap international / layouts TOS (FR/UK/DE, autorepeat) _(faible valeur)_ — réf. `keymap.c`
+- [x] Keymap international / layouts TOS — FAIT (cf. `CHANGELOG.md`) : mapping
+      SYMBOLIQUE port de `sdl/keymap.c` (caractère hôte via `glfwGetKeyName` →
+      scancode ST, surcharges US/DE/FR/UK choisies par le pays de la ROM, os_conf
+      `$1C`). Autorepeat déjà conforme (GLFW_REPEAT ignoré, TOS répète lui-même).
+      Reste éventuel : autres pays (ES/IT/SE/CH…) en surcharges dédiées (la table
+      par défaut couvre déjà leurs lettres nationales) et fichier de remap utilisateur.
 
 ## ACIA 6850 (clavier + MIDI)
-- [ ] IRQ émetteur (CR bits 5/6) + état TDRE (câblé à 1) _(risque élevé)_ — réf.
-      `acia.c:ACIA_UpdateIRQ` + `midi.c`
-- [ ] SR n'expose pas overrun/framing/parity _(faible valeur)_ — le SCI réel continue de
-      shifter pendant que RDR est plein ; NeoST retient l'octet suivant jusqu'à lecture RDR.
+- [x] IRQ émetteur (CR bits 5/6) + état TDRE — FAIT (cf. `CHANGELOG.md`) : clavier
+      (existant, IKBD_TX) **et MIDI** (`Scheduler::MIDI_TX`, TDRE re-rempli après
+      2560 cyc = 1 octet à 31250 bauds). Hors TIE, TDRE reste câblé à 1 (simplification).
+- [x] SR overrun — FAIT : bit OVRN porté de `acia.c` (livraison SCI continue, octet
+      perdu si RDR plein, OVRN posé à la lecture RDR, acquitté par SR→RDR). FE/PE
+      restent à 0 (la liaison émulée ne produit pas d'erreur de trame/parité).
 
 ## CPU : IRQ, Moira, MegaSTE
 - [x] **Bascule CPU 8/16 MHz MegaSTE** (`$FF8E21` bit1) — FAIT (cf. `CHANGELOG.md`) :

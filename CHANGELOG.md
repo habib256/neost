@@ -330,6 +330,35 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   Boots EmuTOS/TOS 1.04/2.06 + drag GEM pixel-identiques, diag ST inchangé.
 - **RDR persistant** : relire `$FFFC02` sans nouvel octet renvoie le DERNIER octet reçu
   (cf. `acia.c:ACIA_Read_RDR`), plus `$00`.
+- **Overrun récepteur (bit OVRN, `$20` du SR)** — port de `acia.c` (`ACIA_Clock_RX`
+  état STOP_BIT + `ACIA_Read_RDR`/`SR_Read`) : le SCI de l'IKBD livre EN CONTINU
+  (~10240 cyc/octet), que le CPU lise ou non — un octet qui arrive RDR plein est
+  **PERDU** (RDR conserve l'ancien) et `rxOverrun_` reste pendant (la cause d'IRQ RX
+  reste active, comme `RX_Overrun` dans `ACIA_UpdateIRQ`). Le bit **OVRN** ne se pose
+  qu'à la **lecture de RDR** (pas au moment de la perte) et s'acquitte par la séquence
+  « lire SR puis RDR ». Master reset ACIA (`CR` bits 0-1 = 11) efface RDRF/OVRN sans
+  toucher la file IKBD (elle vit côté 6301). Avant : NeoST RETENAIT l'octet suivant
+  jusqu'à la lecture de RDR (flow-control irréaliste, l'ancien TODO « SR n'expose pas
+  overrun »). FE/PE restent à 0 : la liaison émulée ne produit ni erreur de trame ni
+  de parité ; DCD/CTS à la masse sur l'ST.
+- **Keymap international (layouts TOS FR/UK/DE…)** — port du mapping SYMBOLIQUE de
+  Hatari `sdl/keymap.c` dans le GUI : une touche imprimable est traduite par le
+  CARACTÈRE qu'elle produit sur la disposition HÔTE (`glfwGetKeyName`, UTF-8 décodé)
+  via la table par défaut + surcharges par PAYS du TOS chargé (US/DE/FR/UK —
+  `Keymap_SetCountry`, pays lu dans l'en-tête ROM `os_conf $1C >> 1`, re-détecté à
+  chaque changement de ROM ; 127 = EmuTOS multilangue → défaut). Un hôte AZERTY sous
+  TOS FR tape « a » → scancode `$10`, un hôte QWERTY sous TOS FR obtient aussi les
+  bons caractères. Touches non imprimables (Entrée, flèches, F1-F10, pavé, modifs) :
+  mapping positionnel inchangé. **Autorepeat** : déjà conforme — `GLFW_REPEAT` ignoré,
+  c'est le TOS qui répète (l'IKBD n'émet qu'un make par appui), comme Hatari. Pays
+  vérifié sur les 40 ROMs du dépôt (FR/UK/DE/ES/IT/US/multilangue corrects).
+- **IRQ d'émission ACIA MIDI (TIE, CR bits 5-6 = 01) + TDRE cadencé** — l'ACIA MIDI
+  (`$FFFC04/06`) suit désormais le même modèle que l'ACIA clavier (port
+  `ACIA_Write_CR`/`ACIA_UpdateIRQ`) : écrire une donnée sous TIE vide TDRE, re-rempli
+  ~1 octet MIDI plus tard (10 bits à 31250 bauds = **2560 cycles**, `Scheduler::MIDI_TX`)
+  → IRQ « transmetteur prêt » qui cadence la sortie des séquenceurs MIDI. Hors TIE,
+  TDRE reste câblé à 1 (statut), comme côté clavier. L'ancien TODO « TDRE câblé à 1 +
+  CR bits 5/6 ignorés » de l'ACIA MIDI est levé.
 - **Duplication feu joystick ↔ boutons souris** (`IKBD_DuplicateMouseFireButtons`) : sur le
   vrai IKBD ce sont les MÊMES lignes. Souris coupée → boutons souris émis comme feux
   joystick (`$FE`/`$FF` bit7) ; souris active → le feu du joystick 1 est RETIRÉ du paquet
@@ -519,6 +548,19 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   (`Bus::buildIoFault`, carte octet par octet) + zones void + fixups ST/MegaST/MegaSTE.
   Hors IO : `$400000-$F9FFFF` et `$FF0000-$FF7FFF` fautent. Règle word/long : faute
   seulement si TOUS les octets fautent (`busFaultN`). Suivi par les DEUX cœurs.
+- **Fenêtre ROM complète** (`Bus::romWindowSize`, port `memory.c` map_banks ROMmem) :
+  une ROM à `$E00000` répond sur TOUT `$E00000-$EFFFFF` (1 Mo, 16 banques), pas
+  seulement sur la taille du fichier — lire au-delà du TOS chargé renvoie 0 (tampon
+  Hatari) SANS bus error ; les ÉCRITURES fautent sur toute la fenêtre. ROM historique
+  `$FC0000` : 3 banques = 192 Ko (= le fichier). Le cache Mega STE cache toute la
+  fenêtre en lecture (comme Hatari `$E00000-$F00000`).
+- **DMA via le plan mémoire** (`Bus::dmaRead8/dmaWrite8`, port
+  `STMemory_DMA_ReadByte/WriteByte`) : les accès RAM du FDC (FIFO 16 octets), de
+  l'ACSI et du son DMA STE traversent désormais le MÊME plan mémoire que le CPU —
+  traduction MMU / aliasing de banques inclus, ROM lisible — au lieu de `ram[]`
+  physique. Jamais de bus error côté DMA : lire une zone fautive renvoie 0
+  (`DMA_READ_BYTE_BUS_ERR`), y écrire est perdu. Pas de wait states ni de test
+  superviseur (protections propres aux accès CPU, équivalent `BusMode` d'Hatari).
 - **Double bus fault → halt CPU** (Musashi `m68k_pulse_halt`, Moira `flags|=HALTED`) au
   lieu de segfault hôte → le headless peut vider trace + série.
 - **Trame de bus error 68000 dans Musashi** (`m68kcpu.h`) : empilait la trame 68010

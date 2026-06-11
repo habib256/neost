@@ -511,10 +511,8 @@ void Fdc::fifoPush(uint8_t b) {
     fifo_[fifoSize_++] = b;
     if (fifoSize_ < 16) return;                                // FIFO pas encore pleine
     bus_.megaSteCacheFlushIfEnabled();   // DMA via BGACK → cache Mega STE invalidé
-    for (int j = 0; j < 16; ++j) {                             // flush 16 o → RAM
-        const uint32_t a = (dmaAddr_ + uint32_t(j)) & 0x00FFFFFF;
-        if (a < bus_.ram.size()) bus_.ram[a] = fifo_[j];
-    }
+    for (int j = 0; j < 16; ++j)                               // flush 16 o → RAM
+        bus_.dmaWrite8(dmaAddr_ + uint32_t(j), fifo_[j]);      // via le plan mémoire (MMU)
     dmaAddr_ = (dmaAddr_ + 16) & dmaAddressMask(bus_.ram.size());
     fifoSize_ = 0;
     ff8604recent_ = uint16_t((fifo_[14] << 8) | fifo_[15]);
@@ -530,10 +528,8 @@ uint8_t Fdc::fifoPull() {
         b = fifo_[16 - (fifoSize_--)];                        // octet en position 0,1,..,15
     } else {
         bus_.megaSteCacheFlushIfEnabled();   // DMA via BGACK → cache Mega STE invalidé
-        for (int j = 0; j < 16; ++j) {                        // recharge 16 o ← RAM
-            const uint32_t a = (dmaAddr_ + uint32_t(j)) & 0x00FFFFFF;
-            fifo_[j] = (a < bus_.ram.size()) ? bus_.ram[a] : 0;
-        }
+        for (int j = 0; j < 16; ++j)                          // recharge 16 o ← RAM
+            fifo_[j] = bus_.dmaRead8(dmaAddr_ + uint32_t(j)); // via le plan mémoire (MMU)
         dmaAddr_ = (dmaAddr_ + 16) & dmaAddressMask(bus_.ram.size());
         fifoSize_ = 15;
         ff8604recent_ = uint16_t((fifo_[14] << 8) | fifo_[15]);
@@ -1750,8 +1746,8 @@ void Fdc::executeAcsi() {
     const uint64_t need = uint64_t(lba + uint32_t(cnt)) * 512u;
     if (need <= ACSI_DISK_CAP && hd_.size() < need) hd_.resize(size_t(need), 0);
     auto toRam = [&](const uint8_t* src, uint32_t n) {
-        for (uint32_t j = 0; j < n; ++j) { const uint32_t a = (dmaAddr_ + j) & 0x00FFFFFF;
-            if (a < bus_.ram.size()) bus_.ram[a] = src[j]; }
+        for (uint32_t j = 0; j < n; ++j)
+            bus_.dmaWrite8(dmaAddr_ + j, src[j]);        // via le plan mémoire (MMU)
         dmaAddr_ = (dmaAddr_ + n) & dmaAddressMask(bus_.ram.size());
     };
     switch (op) {
@@ -1763,8 +1759,8 @@ void Fdc::executeAcsi() {
         case 0x0A: {                                     // WRITE(6) : RAM → disque
             uint32_t off = lba * 512u, src = dmaAddr_;
             for (int i = 0; i < cnt && off + 512u <= hd_.size(); ++i, off += 512u)
-                for (uint32_t j = 0; j < 512u; ++j) { const uint32_t a = (src + uint32_t(i)*512u + j) & 0x00FFFFFF;
-                    if (a < bus_.ram.size()) hd_[off + j] = bus_.ram[a]; }
+                for (uint32_t j = 0; j < 512u; ++j)
+                    hd_[off + j] = bus_.dmaRead8(src + uint32_t(i) * 512u + j);   // via MMU
             dmaAddr_ = (dmaAddr_ + uint32_t(cnt) * 512u) & dmaAddressMask(bus_.ram.size());
             dmaSectorCount_ = 0; break;
         }

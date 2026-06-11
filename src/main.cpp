@@ -332,13 +332,173 @@ uint8_t glfwToStScancode(int key) {
     }
 }
 
+// -----------------------------------------------------------------------------
+//  Keymap international — port de Hatari sdl/keymap.c (mapping SYMBOLIQUE).
+//
+//  Le mapping positionnel ci-dessus (glfwToStScancode) suppose un hôte ET un TOS
+//  QWERTY US. Hatari mappe d'abord par le CARACTÈRE que la touche produit sur la
+//  disposition HÔTE (SDL keysym ↔ ici glfwGetKeyName), à travers une table par
+//  défaut + des surcharges selon le PAYS du TOS chargé (Keymap_SetCountry, pays
+//  lu dans l'en-tête ROM, mot os_conf à $1C >> 1). Ainsi un hôte AZERTY tape « a »
+//  → scancode ST 0x10 (position du A sur un clavier ST français) quand un TOS FR
+//  est chargé, et l'hôte QWERTY sous TOS FR obtient aussi les bons caractères.
+//  Les touches NON imprimables (Entrée, flèches, F1-F10, pavé…) restent sur le
+//  mapping positionnel. L'AUTOREPEAT, lui, est déjà conforme : les GLFW_REPEAT
+//  sont ignorés (cf. onKey) — sur le vrai ST, c'est le TOS qui répète (l'IKBD
+//  n'émet qu'un make par appui), comme Hatari.
+// -----------------------------------------------------------------------------
+// Pays du TOS chargé (codes Hatari tos.h : 0=US, 1=DE, 2=FR, 3=UK… 127=EmuTOS
+// multilangue → table par défaut). -1 tant qu'aucune ROM n'est chargée.
+int g_kbdCountry = -1;
+
+// Premier point de code Unicode d'une chaîne UTF-8 (les noms de touches GLFW
+// sont en UTF-8 : « é », « ù », « § »… sur les claviers nationaux).
+uint32_t utf8First(const char* s) {
+    const auto* u = reinterpret_cast<const unsigned char*>(s);
+    if (u[0] < 0x80) return u[0];
+    if ((u[0] & 0xE0) == 0xC0 && u[1]) return uint32_t(u[0] & 0x1F) << 6 | (u[1] & 0x3F);
+    if ((u[0] & 0xF0) == 0xE0 && u[1] && u[2])
+        return uint32_t(u[0] & 0x0F) << 12 | uint32_t(u[1] & 0x3F) << 6 | (u[2] & 0x3F);
+    return 0;
+}
+
+// Table SYMBOLIQUE par défaut (port de Keymap_SymbolicToStScanCode_default,
+// partie imprimable — le reste passe par le mapping positionnel). 0xFF = pas de
+// correspondance symbolique → repli positionnel.
+uint8_t symbolicDefault(uint32_t cp) {
+    switch (cp) {
+        case '!':  return 0x09;   // hôte azerty
+        case '"':  return 0x04;
+        case '#':  return 0x2B;   // hôte DE/UK, pour TOS FR/UK/DK/NL
+        case '$':  return 0x1B;
+        case '&':  return 0x02;
+        case '\'': return 0x28;
+        case '(':  return 0x63;   // ( pavé num. ST
+        case ')':  return 0x64;
+        case '*':  return 0x66;
+        case '+':  return 0x4E;
+        case ',':  return 0x33;
+        case '-':  return 0x35;   // défaut DE/IT/SE/CH/FI/NO/DK/CZ
+        case '.':  return 0x34;
+        case '/':  return 0x35;
+        case '0':  return 0x0B;
+        case '1':  return 0x02; case '2': return 0x03; case '3': return 0x04;
+        case '4':  return 0x05; case '5': return 0x06; case '6': return 0x07;
+        case '7':  return 0x08; case '8': return 0x09; case '9': return 0x0A;
+        case ':':  return 0x34;
+        case ';':  return 0x27;
+        case '<':  return 0x60;
+        case '=':  return 0x0D;
+        case '>':  return 0x34;
+        case '?':  return 0x35;
+        case '@':  return 0x28;
+        case '[':  return 0x1A;
+        case '\\': return 0x2B;
+        case ']':  return 0x1B;
+        case '^':  return 0x2B;
+        case '_':  return 0x0C;
+        case '`':  return 0x29;
+        case 'a':  return 0x1E; case 'b': return 0x30; case 'c': return 0x2E;
+        case 'd':  return 0x20; case 'e': return 0x12; case 'f': return 0x21;
+        case 'g':  return 0x22; case 'h': return 0x23; case 'i': return 0x17;
+        case 'j':  return 0x24; case 'k': return 0x25; case 'l': return 0x26;
+        case 'm':  return 0x32; case 'n': return 0x31; case 'o': return 0x18;
+        case 'p':  return 0x19; case 'q': return 0x10; case 'r': return 0x13;
+        case 's':  return 0x1F; case 't': return 0x14; case 'u': return 0x16;
+        case 'v':  return 0x2F; case 'w': return 0x11; case 'x': return 0x2D;
+        case 'y':  return 0x15; case 'z': return 0x2C;
+        // Lettres nationales (latin-1+, mêmes valeurs que Hatari) :
+        case 167:  return 0x29;   // § suisse
+        case 168:  return 0x1B;   // ¨ suisse
+        case 176:  return 0x35;   // ° espagnol
+        case 178:  return 0x29;   // ² français
+        case 180:  return 0x0D;   // ´ allemand
+        case 223:  return 0x0C;   // ß allemand
+        case 224:  return 0x0B;   // à français
+        case 225:  return 0x09;   // á tchèque
+        case 228:  return 0x28;   // ä allemand
+        case 229:  return 0x1A;   // å suédois
+        case 231:  return 0x0A;   // ç français
+        case 232:  return 0x08;   // è français
+        case 233:  return 0x03;   // é français
+        case 236:  return 0x0D;   // ì italien
+        case 237:  return 0x0A;   // í tchèque
+        case 241:  return 0x27;   // ñ espagnol
+        case 242:  return 0x27;   // ò italien
+        case 243:  return 0x02;   // ó tchèque
+        case 246:  return 0x27;   // ö allemand
+        case 249:  return 0x28;   // ù français
+        case 250:  return 0x1A;   // ú tchèque
+        case 252:  return 0x1A;   // ü allemand
+        case 253:  return 0x08;   // ý tchèque
+        default:   return 0xFF;
+    }
+}
+
+// Surcharges par pays du TOS (ports de Keymap_SymbolicToStScanCode_US/DE/FR/UK).
+// Les autres pays Hatari (ES/IT/SE/CH/NO/DK/NL/CZ) retombent sur la table par
+// défaut — leurs lettres nationales y sont déjà.
+uint8_t symbolicForCountry(uint32_t cp) {
+    switch (g_kbdCountry) {
+        case 0:   // TOS US
+            if (cp == '-') return 0x0C;
+            break;
+        case 1:   // TOS allemand (QWERTZ : y/z croisés, # + / déplacés)
+            switch (cp) {
+                case '#': return 0x29; case '+': return 0x1B; case '/': return 0x65;
+                case 'y': return 0x2C; case 'z': return 0x15;
+            }
+            break;
+        case 2:   // TOS français (AZERTY : a/q, z/w, m, ponctuation déplacée)
+            switch (cp) {
+                case '\'': return 0x05; case '(': return 0x06; case ')': return 0x0C;
+                case ',':  return 0x32; case '-': return 0x0D; case ';': return 0x33;
+                case '=':  return 0x35; case '^': return 0x1A;
+                case 'a':  return 0x10; case 'm': return 0x27; case 'q': return 0x1E;
+                case 'w':  return 0x2C; case 'z': return 0x11;
+                case 167:  return 0x07;   // §
+            }
+            break;
+        case 3:   // TOS UK
+            if (cp == '-')  return 0x0C;
+            if (cp == '\\') return 0x60;
+            break;
+    }
+    return symbolicDefault(cp);
+}
+
+// Scancode ST d'une touche GLFW : d'abord le SYMBOLIQUE (touches imprimables,
+// caractère donné par la disposition hôte via glfwGetKeyName), sinon repli
+// POSITIONNEL (fonctions, flèches, pavé, modificateurs — et touches sans nom).
+uint8_t stScancodeFor(int key, int scancode) {
+    if (key >= GLFW_KEY_SPACE && key < GLFW_KEY_ESCAPE) {        // plage « imprimable »
+        const char* name = glfwGetKeyName(key, scancode);
+        if (name && name[0]) {
+            const uint8_t sc = symbolicForCountry(utf8First(name));
+            if (sc != 0xFF) return sc;
+        }
+    }
+    return glfwToStScancode(key);
+}
+
+// Lit le pays du TOS chargé dans son en-tête ROM (mot os_conf à $1C, pays =
+// os_conf >> 1 — cf. Hatari tos.c) et arme les surcharges symboliques.
+void updateKbdCountry(const std::vector<uint8_t>& rom) {
+    if (rom.size() < 0x1E) { g_kbdCountry = -1; return; }
+    g_kbdCountry = ((rom[0x1C] << 8) | rom[0x1D]) >> 1;
+    static const char* names[] = {"US", "DE", "FR", "UK"};
+    std::fprintf(stderr, "[kbd] disposition TOS : %s (mapping symbolique)\n",
+                 g_kbdCountry >= 0 && g_kbdCountry <= 3 ? names[g_kbdCountry]
+                 : g_kbdCountry == 127 ? "multilangue (défaut)" : "autre (défaut)");
+}
+
 // Callback clavier GLFW → IKBD. La touche Suppr (DEL) est réservée à l'hôte (elle
 // libère la souris capturée), donc jamais transmise au ST. Échap, lui, est bien
 // envoyé au ST (beaucoup de jeux/applications s'en servent).
-void onKey(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
-    if (!g_ikbd || action == GLFW_REPEAT) return;   // l'IKBD gère sa propre répétition
+void onKey(GLFWwindow*, int key, int scancode, int action, int /*mods*/) {
+    if (!g_ikbd || action == GLFW_REPEAT) return;   // TOS gère sa propre répétition (pas l'IKBD)
     if (key == GLFW_KEY_DELETE) return;             // touche hôte (libération souris)
-    const uint8_t sc = glfwToStScancode(key);
+    const uint8_t sc = stScancodeFor(key, scancode);   // symbolique (layout hôte + pays TOS) → positionnel
     if (!sc) return;
     // Suivi des touches dont le MAKE a été transmis au ST : leur BREAK doit
     // TOUJOURS partir, même si entre-temps un widget ImGui a pris le focus ou
@@ -708,6 +868,7 @@ int main(int argc, char** argv) {
                  machineName(machType0), cfg.mem.c_str());
     if (!machine.loadTos(tosPath))
         std::fprintf(stderr, "[main] Démarrage sans TOS (le CPU tournera à vide).\n");
+    updateKbdCountry(machine.bus.rom);    // pays du TOS → surcharges keymap (FR/DE/UK…)
     if (!machine.loadDisk(diskPath))
         std::fprintf(stderr, "[main] Aucune disquette montée (%s).\n", diskPath.c_str());
     if (!cartPath.empty() && !machine.loadCart(cartPath))
@@ -749,6 +910,7 @@ int main(int argc, char** argv) {
         const MachineType machTypeR = Machine::adjustMachineForTos(parseMachine(cfg.machine), romP);
         machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu), machTypeR);
         machine.loadTos(romP);
+        updateKbdCountry(machine.bus.rom);   // la nouvelle ROM peut changer de pays clavier
         if (cfg.cart.empty()) machine.ejectCart();
         else                  machine.loadCart(resolveData(cfg.cart, exeDir));
         machine.mfp.setColorMonitor(!cfg.mono);

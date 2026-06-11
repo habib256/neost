@@ -99,6 +99,25 @@ public:
     void     write16(uint32_t addr, uint16_t v);
     void     write32(uint32_t addr, uint32_t v);
 
+    // Accès mémoire des contrôleurs DMA (FDC, ACSI, son STE) — port de Hatari
+    // stMemory.c STMemory_DMA_ReadByte/WriteByte : le DMA traverse le MÊME plan
+    // mémoire que le CPU (traduction MMU / aliasing de banques inclus, ROM lisible)
+    // mais ne déclenche JAMAIS de bus error — lire une zone fautive renvoie une
+    // constante (0), y écrire est perdu. Pas de wait states ni de test superviseur :
+    // ces protections sont propres aux accès CPU (BusMode d'Hatari).
+    uint8_t  dmaRead8 (uint32_t addr);
+    void     dmaWrite8(uint32_t addr, uint8_t v);
+
+    // Fenêtre d'adresses décodée vers la ROM TOS (port memory.c map_banks ROMmem) :
+    // une ROM à $E00000 répond sur TOUT $E00000-$EFFFFF (1 Mo, 16 banques), pas
+    // seulement sur la taille du fichier — au-delà du TOS chargé on lit 0 (tampon
+    // Hatari à zéro), jamais de bus error en LECTURE ; les ÉCRITURES fautent sur
+    // toute la fenêtre. Une ROM historique à $FC0000 occupe 3 banques (192 Ko =
+    // exactement le fichier).
+    uint32_t romWindowSize() const {
+        return romBase == stmap::ROM_E00000 ? 0x100000u : 0x30000u;
+    }
+
     // Vrai si un accès OCTET à `addr` provoque une bus error sur le 68000 (aucun
     // circuit ne décode l'octet). Modèle porté de Hatari (ioMem.c + memory.c) :
     // tout l'espace $FF8000-$FFFFFF est bus error PAR DÉFAUT, puis on « whiteliste »

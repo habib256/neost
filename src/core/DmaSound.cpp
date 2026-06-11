@@ -214,10 +214,11 @@ float DmaSound::masterGain() const {
 }
 
 // Lecture d'un échantillon (mono -128..127). En stéréo, moyenne L+R (sortie mono).
+// Le DMA son traverse le plan mémoire complet (traduction MMU / aliasing de
+// banques) comme le DMA disque — port STMemory_DMA_ReadByte, cf. Bus::dmaRead8.
 int DmaSound::sampleAt(uint32_t addr, bool stereo) const {
     const auto rd = [&](uint32_t a) -> int {
-        a &= stmap::ADDR_MASK;
-        return (a < bus_.ram.size()) ? static_cast<int8_t>(bus_.ram[a]) : 0;
+        return static_cast<int8_t>(bus_.dmaRead8(a));
     };
     return stereo ? (rd(addr) + rd(addr + 1)) / 2 : rd(addr);
 }

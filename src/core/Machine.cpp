@@ -96,6 +96,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     });
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
     ikbd.setScheduler(&sched);  // l'IKBD diffère sa réponse de reset ($F1)
+    midi.setScheduler(&sched);  // l'ACIA MIDI date son TDRE sous TIE (cf. MIDI_TX)
     // Fixture de bouclage parallèle→joystick (test « Printer/Joystick », sous
     // --loopback) : le diagnostic écrit un motif sur le port parallèle (PSG port B,
     // R15) et attend de le relire sur les lignes joystick. Câblage (décodé du test) :
@@ -162,6 +163,9 @@ void Machine::installSchedulerCallbacks() {
     // Re-remplissage du registre d'émission ACIA (TDRE→1) ~1 octet série après une
     // écriture $FFFC02 sous TIE : ré-arme l'IRQ « transmetteur prêt » (cf. onTxEmpty).
     sched.setCallback(Scheduler::IKBD_TX, [this] { ikbd.onTxEmpty(); cpu.updateIpl(); });
+    // Idem pour l'ACIA MIDI (~1 octet à 31250 bauds = 2560 cycles) : cadence l'IRQ
+    // d'émission des séquenceurs MIDI (cf. MidiAcia::onTxEmpty).
+    sched.setCallback(Scheduler::MIDI_TX, [this] { midi.onTxEmpty(); cpu.updateIpl(); });
     // Étape de shift série Microwire ($FF8922 → 0) du son STE.
     sched.setCallback(Scheduler::MICROWIRE, [this] { dmasnd.onMicrowireShift(); });
 }

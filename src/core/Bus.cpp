@@ -184,9 +184,11 @@ uint8_t Bus::read8(uint32_t addr) {
         return phys >= 0 ? ram[static_cast<std::size_t>(phys)] : 0x00;   // banque vide → 0
     }
 
-    // ROM TOS.
-    if (addr >= romBase && addr < romBase + rom.size())
-        return rom[addr - romBase];
+    // ROM TOS. La fenêtre décodée dépasse le fichier (1 Mo à $E00000, cf.
+    // romWindowSize) : au-delà du TOS chargé on lit 0, comme le tampon ROM
+    // d'Hatari (memory.c) — PAS de bus error dans la fenêtre.
+    if (addr >= romBase && addr < romBase + romWindowSize())
+        return addr < romBase + rom.size() ? rom[addr - romBase] : 0x00;
 
     // Port cartouche ($FA0000-$FBFFFF) : si une cartouche est montée, on expose
     // sa ROM ; le TOS lit le magic à $FA0000 et amorce (diagnostic/applicative).
@@ -319,8 +321,9 @@ bool Bus::busFault(uint32_t addr) const {
     // RAM ($0-$3FFFFF) : décodée par le MMU ; jamais de bus error (banque vide → 0).
     if (addr < 0x400000) return false;
 
-    // ROM TOS : jamais de bus error.
-    if (addr >= romBase && addr < romBase + rom.size()) return false;
+    // ROM TOS : jamais de bus error sur TOUTE la fenêtre décodée (1 Mo à $E00000,
+    // 192 Ko à $FC0000 — cf. romWindowSize), pas seulement la taille du fichier.
+    if (addr >= romBase && addr < romBase + romWindowSize()) return false;
 
     // Port cartouche ($FA0000-$FBFFFF) : banque ROM sur le vrai matériel ; lit $FF
     // si rien n'est branché → jamais de bus error (le TOS y lit le magic au reset).
@@ -349,7 +352,7 @@ bool Bus::busFaultN(uint32_t addr, unsigned n, bool write) const {
     //    « write protected »).
     if (write) {
         if (addr < 0x8) return true;
-        if (addr >= romBase && addr < romBase + rom.size()) return true;
+        if (addr >= romBase && addr < romBase + romWindowSize()) return true;
         if (addr >= stmap::CART_BASE && addr < stmap::CART_END) return true;
     }
 
@@ -385,8 +388,9 @@ bool Bus::megaSteCacheable(uint32_t addr, int size, bool write, bool super) cons
     if (addr < 0x800 && !super) return false;    // RAM système en mode utilisateur
     // RAM ST installée (< 4 Mo) : cachable en lecture comme en écriture.
     if (addr < ram.size() && addr < 0x400000) return true;
-    // ROM TOS : cachable en LECTURE seulement (écrire fauterait).
-    if (addr >= romBase && addr < romBase + rom.size() && !write) return true;
+    // ROM TOS (fenêtre décodée complète) : cachable en LECTURE seulement
+    // (écrire fauterait) — Hatari cache tout $E00000-$F00000.
+    if (addr >= romBase && addr < romBase + romWindowSize() && !write) return true;
     // IO, cartouche, trous : jamais cachés.
     return false;
 }
@@ -424,6 +428,24 @@ bool Bus::megaSteCacheUpdate(uint32_t addr, int size, uint16_t val, bool write, 
         return true;
     }
     return false;
+}
+
+// -----------------------------------------------------------------------------
+//  Accès DMA (FDC / ACSI / son STE) — port de STMemory_DMA_ReadByte/WriteByte :
+//  même plan mémoire que le CPU (MMU, ROM…), mais une zone fautive lit 0 /
+//  absorbe l'écriture au lieu de déclencher une bus error (le DMA n'a pas de
+//  cycle d'exception). Cf. Bus.hpp.
+// -----------------------------------------------------------------------------
+uint8_t Bus::dmaRead8(uint32_t addr) {
+    addr &= stmap::ADDR_MASK;
+    if (busFault(addr)) return 0x00;         // DMA_READ_BYTE_BUS_ERR
+    return read8(addr);
+}
+
+void Bus::dmaWrite8(uint32_t addr, uint8_t v) {
+    addr &= stmap::ADDR_MASK;
+    if (busFault(addr)) return;              // écriture en zone fautive perdue
+    write8(addr, v);
 }
 
 // --- Accès 16/32 bits : le 68000 est big-endian, on assemble octet par octet --
