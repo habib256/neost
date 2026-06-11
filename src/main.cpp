@@ -1054,6 +1054,17 @@ int main(int argc, char** argv) {
             stjoy::compose(window, kbd, g_kbdJoyPort, g_joyDeadzone, joy0, joy1);
             machine.ikbd.setJoystick(joy0, joy1);
             machine.bus.stePads.setJoystick(joy0, joy1);   // joypads STE ($FF9200/02) — même état
+            // Paddles / axes analogiques STE ($FF9211-17) : axes BRUTS de la
+            // première manette hôte (stick gauche, sans zone morte — la plage
+            // $04-$43 du STE est déjà grossière). Pad A = port « jeux ».
+            for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid) {
+                GLFWgamepadstate gs;
+                if (glfwJoystickPresent(jid) && glfwGetGamepadState(jid, &gs)) {
+                    machine.bus.stePads.setAnalog(0, gs.axes[GLFW_GAMEPAD_AXIS_LEFT_X],
+                                                     gs.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
+                    break;
+                }
+            }
             g_lastJoy0 = joy0; g_lastJoy1 = joy1;   // pour la fenêtre Joystick
             // Diagnostic manette (NEOST_DEBUG_JOY=1) : ~3×/s, état brut des axes.
             if (g_dbgJoy) { static int t = 0; if (++t % 16 == 0) stjoy::debug(window, kbd, g_kbdJoyPort, g_joyDeadzone); }

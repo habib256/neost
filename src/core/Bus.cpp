@@ -535,6 +535,15 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
     // inversée, cf. StePads / IoMemTabMegaSTE_DIPSwitches_Read). Les registres mots
     // ($FF9200/02/20/22) renvoient l'octet voulu en big-endian (haut = adresse paire).
     if (machineIsSte(machine) && addr >= 0xFF9200 && addr <= 0xFF9223) {
+        // Accès OCTET interdits (port joy.c) : $FF9200 « n'aime pas être lu en
+        // octet » à l'adresse PAIRE ($FF9201 reste lisible en octet), et les mots
+        // lightpen $FF9220/22 ne se lisent qu'en mot → bus error déclenchée par
+        // le périphérique (comme le FDC $FF8604 en mode octet).
+        if (ioAccessWidth_ == 1 && cpu
+            && (addr == 0xFF9200 || (addr >= 0xFF9220 && addr <= 0xFF9223))) {
+            cpu->triggerBusError(addr, false);   // longjmp/throw, sauf double faute
+            return 0xFF;                         // double faute → CPU halté
+        }
         switch (addr) {
             // $FF9200.w : boutons feu (octet bas) + DIP Mega STE (octet haut).
             case 0xFF9200: return uint8_t(stePads.readButtonsDip() >> 8);   // DIP
@@ -542,9 +551,10 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
             // $FF9202.w : directions + boutons (info utile dans l'octet HAUT $FF9202).
             case 0xFF9202: return uint8_t(stePads.readDirections() >> 8);
             case 0xFF9203: return uint8_t(stePads.readDirections() & 0xFF);
-            // Paddle/analogique X/Y ($FF9211/13/15/17) : axe au NEUTRE (0x24).
+            // Paddle/analogique X/Y ($FF9211/13/15/17) : axes hôte ou repli
+            // numérique, plage $04-$43 (cf. StePads::readAnalog).
             case 0xFF9211: case 0xFF9213:
-            case 0xFF9215: case 0xFF9217: return stePads.readAnalog();
+            case 0xFF9215: case 0xFF9217: return stePads.readAnalog(addr);
             // Lightpen X/Y ($FF9220-$FF9223) : non supporté → 0 (mots à $FF9220/22).
             case 0xFF9220: case 0xFF9221:
             case 0xFF9222: case 0xFF9223: return uint8_t(stePads.readLightpen() >> (addr & 1 ? 0 : 8));
@@ -620,6 +630,13 @@ void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     // rien). On latche les deux octets du mot $FF9202/$FF9203.
     if (machineIsSte(machine) && (addr == 0xFF9202 || addr == 0xFF9203)) {
         stePads.writeSelectByte(addr, v);
+        return;
+    }
+    // Écriture OCTET sur $FF9200 (adresse paire) → bus error, comme en lecture
+    // (Joy_StePadButtons_DIPSwitches_WriteWord). Les autres écritures de la plage
+    // (lightpen incluse : IoMem_WriteWithoutInterception) sont ignorées sans faute.
+    if (machineIsSte(machine) && addr == 0xFF9200 && ioAccessWidth_ == 1 && cpu) {
+        cpu->triggerBusError(addr, true);
         return;
     }
     if (machineIsSte(machine) && addr >= 0xFF9200 && addr <= 0xFF9223)

@@ -127,11 +127,41 @@ public:
         return uint16_t((nData << 8) | 0x00FF);
     }
 
-    // $FF9211/13/15/17 : paddles / axes analogiques STE (octet). NeoST n'a pas
-    // d'entrée analogique réelle → axe au NEUTRE (mid-value 0x24, cf. joy.c
-    // STE_JOY_ANALOG_MID_VALUE). Lecture octet directe.
+    // $FF9211/13/15/17 : paddles / axes analogiques STE (octet) — port de
+    // Joy_GetStickAnalogData : plage $04 (butée min) .. $43 (butée max), neutre
+    // $24. Deux sources, comme Hatari :
+    //  - axes ANALOGIQUES hôte (manette, cf. setAnalog) si le frontend en fournit
+    //    (mode JOYSTICK_REALSTICK : val = MIN + (upos>>8)/4 sur l'axe 16 bits) ;
+    //  - sinon, dérivés du joystick NUMÉRIQUE du pad (gauche/haut → MIN,
+    //    droite/bas → MAX, repos → MID), comme le mode clavier d'Hatari.
+    static constexpr uint8_t ANALOG_MIN = 0x04;
     static constexpr uint8_t ANALOG_MID = 0x24;
-    uint8_t readAnalog() const { return ANALOG_MID; }
+    static constexpr uint8_t ANALOG_MAX = 0x43;
+
+    // Axes hôte du pad (`pad` 0 = A/$9211-13, 1 = B/$9215-17), valeurs −1..+1.
+    void setAnalog(int pad, float x, float y) {
+        analog_[pad & 1][0] = x;
+        analog_[pad & 1][1] = y;
+        hasAnalog_[pad & 1] = true;
+    }
+
+    uint8_t readAnalog(uint32_t addr) const {
+        const int  pad   = ((addr & 0x0F) >= 0x5) ? 1 : 0;   // $9211/13 = A, $9215/17 = B
+        const bool xAxis = ((addr & 0x3) == 0x1);             // $..1/..5 = X, $..3/..7 = Y
+        if (hasAnalog_[pad]) {
+            // Port exact de la conversion REALSTICK d'Hatari : axe −32768..32767
+            // → MIN + (octet haut de l'axe non signé) / 4 → $04..$43.
+            float f = analog_[pad][xAxis ? 0 : 1];
+            if (f < -1.f) f = -1.f; else if (f > 1.f) f = 1.f;
+            int pos = static_cast<int>(f * 32767.f);
+            const unsigned upos = static_cast<unsigned>(32768 + pos);
+            return uint8_t(ANALOG_MIN + ((upos & 0xFF00) >> 8) / ANALOG_MIN);
+        }
+        const uint8_t st = pad ? padB_ : padA_;               // repli numérique
+        if (st & (xAxis ? LEFT : UP))    return ANALOG_MIN;
+        if (st & (xAxis ? RIGHT : DOWN)) return ANALOG_MAX;
+        return ANALOG_MID;
+    }
 
     // $FF9220/22 : lightpen X/Y (mot). Non supporté (comme Hatari) → 0.
     uint16_t readLightpen() const { return 0x0000; }
@@ -149,4 +179,6 @@ private:
     uint8_t  padA_   = 0;        // pad A = port 1 (« jeux »)
     uint8_t  padB_   = 0;        // pad B = port 0 (souris)
     bool     megaSte_ = false;   // possède les DIP switches motherboard
+    float    analog_[2][2] = {{0.f, 0.f}, {0.f, 0.f}};   // axes hôte X/Y par pad (−1..+1)
+    bool     hasAnalog_[2] = {false, false};             // setAnalog appelé → mode réel
 };

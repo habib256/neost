@@ -592,6 +592,16 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 - **MIDI** (`MidiAcia`, `$FFFC04/06`) : bouclage OUT→IN + IRQ canal 6.
 - **Port série RS-232 / USART MFP** : RSR/UDR, IRQ RxFull (12)/TxEmpty (10)/RxErr (11)/
   TxErr (9), lignes RTS→CTS (GPIP2)/DTR→DCD (GPIP1)/RI (GPIP6) via PSG port A.
+- **Config effective de l'USART** (`Mfp::updateSerialConfig`, port de `rs232.c`
+  `RS232_SetBaudRateFromTimerD` + `RS232_HandleUCR`) : bauds dérivés du Timer D
+  (2.4576 MHz, sortie ÷2, prescaler /16 de l'UCR — seul mode supporté, comme Hatari)
+  avec les arrondis « TOS » vers les bauds standards (80→75, 109/120→110,
+  1745/1920→1800), format du mot depuis l'UCR (taille bits 5-6, parité bits 1-2,
+  stops bits 3-4). Recalculée à chaque écriture UCR/TDDR/TCDCR, exposée
+  (`serialBaud()`/`serialUcr()`) et JOURNALISÉE au changement — au boot on voit
+  EmuTOS/TOS négocier `9600 bauds, 8N1`. Comme chez Hatari c'est de la pure
+  configuration (appliquée à son tty hôte) : le débit d'émission émulé reste
+  instantané (`RS232_TSR_ReadByte`), backing-store des registres inchangé.
 - **Disque dur ACSI** (`Fdc`, `$FF8604/06` bit `DMA_CSACSI`, port `hdc.c`) : commande
   6 octets, READ/WRITE(6), INQUIRY, READ CAPACITY, TEST UNIT READY ; disque virtuel
   agrandi à la demande (64 Mo).
@@ -665,8 +675,26 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   **même état joystick** que l'IKBD (pad A = port 1 « jeux », pad B = port 0) depuis le
   GUI, le web et le headless (`--joy`/`--joy-at`/`--joy-script`), comme le mapping
   manette global d'Hatari. Validé : glue self-test 19/19, boots STE/MegaSTE propres,
-  `--joy 0x88` maintenu sans faute parasite. *(Reste : bus error sur accès octet de
-  `$FF9200/20/22` — Hatari faute, NeoST whiteliste ; sans impact TOS/EmuTOS.)*
+  `--joy 0x88` maintenu sans faute parasite.
+- **Joypads STE — finitions** (port `joy.c`) : **bus error sur accès OCTET** de
+  `$FF9200` (adresse paire seulement, lecture ET écriture — `$FF9201` reste lisible
+  en octet) et des mots lightpen `$FF9220/22` en lecture (écritures ignorées sans
+  faute, `IoMem_WriteWithoutInterception`) — déclenchée par le périphérique comme le
+  FDC `$FF8604` octet. **Paddles analogiques réels** (`StePads::readAnalog`, port
+  `Joy_GetStickAnalogData`) : plage `$04`-`$43` (neutre `$24`), axes manette hôte
+  (stick gauche GLFW, conversion REALSTICK exacte `MIN + (upos>>8)/4`) avec REPLI
+  numérique façon « mode clavier » Hatari (gauche/haut → `$04`, droite/bas → `$43`).
+  Lightpen : non supporté (0 + bus error octet), fidèle à Hatari. Validé par mini-ROM
+  (3 fautes attendues prises, `$FF9201`/mot sans faute, paddle `$24`→`$43` sous
+  `--joy 0x08`, identique Moira/Musashi) + étalons inchangés.
+- **Quirk palette — écriture octet miroir + masque** (port `Video_ColorReg_WriteWord`) :
+  une écriture OCTET sur `$FF8240-$FF825F` duplique l'octet sur les DEUX moitiés du
+  mot (le 68000 pose l'octet sur les deux moitiés du bus de données, le Shifter
+  latche le mot : `move.b #$07,$FF8240` → couleur `$0707`, adresse paire ou impaire) ;
+  la couleur est STOCKÉE masquée — `$777` (ST, 512 couleurs) / `$FFF` (STE, 4096) —
+  donc RELUE masquée : des jeux écrivent `$FFFF` et relisent pour détecter le STE.
+  Validé par mini-ROM (`$0707` ; `$FFFF`→`$0777` ST / `$0FFF` STE ; octet impair
+  `$AB`→`$0323`/`$0BAB`) ; étalons byte-identiques (gate spec512).
 - **Bus map gaté par modèle** : sur Mega ST/STE `$FF8002-$FF800D` est void (pas de faute)
   contrairement au ST (`IoMem_FixVoidAccessForMegaST`).
 

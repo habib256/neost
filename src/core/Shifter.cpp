@@ -1220,8 +1220,21 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
     if (addr >= 0xFF8240 && addr < 0xFF8260) {
         syncCpuBus();          // wait state bus 4 cycles AVANT de dater l'écriture
         const int i = (addr - 0xFF8240) / 2;
-        if (addr & 1) palette[i] = (palette[i] & 0xFF00) | v;
-        else          palette[i] = static_cast<uint16_t>((palette[i] & 0x00FF) | (uint16_t(v) << 8));
+        uint16_t col;
+        if (bus_.ioAccessWidth() == 1) {
+            // Quirk matériel (port Video_ColorReg_WriteWord) : sur une écriture
+            // OCTET, le 68000 pose l'octet sur les DEUX moitiés du bus de données
+            // et le Shifter latche le MOT entier → l'octet est dupliqué, que
+            // l'adresse soit paire ou impaire (move.b #$07,$FF8240 → couleur $707).
+            col = uint16_t((uint16_t(v) << 8) | v);
+        } else {
+            // Écriture mot/long : le bus la découpe en deux write8 (big-endian).
+            col = (addr & 1) ? uint16_t((palette[i] & 0xFF00) | v)
+                             : uint16_t((palette[i] & 0x00FF) | (uint16_t(v) << 8));
+        }
+        // La couleur est STOCKÉE masquée — palette ST 512 couleurs ($777) ou STE
+        // 4096 ($FFF) : des jeux écrivent $FFFF et RELISENT pour détecter le STE.
+        palette[i] = col & (ste ? 0x0FFF : 0x0777);
         recordColorWrite(i);   // spec512 : date l'écriture au cycle ALIGNÉ (palette intra-ligne)
     }
     // Tout autre registre nouvellement routé mais non géré ($FF8266-$FF827F) :

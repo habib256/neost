@@ -63,15 +63,21 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
       Hatari, pure config (tty hôte chez lui) : le débit émulé reste instantané.
 
 ## Vidéo / Shifter
-- [ ] Quirk miroir d'écriture octet de palette (`$FF824x` .B) _(risque élevé)_ — réf.
-      `video.c:Video_ColorReg_WriteWord`
+- [x] Quirk miroir d'écriture octet de palette — FAIT (cf. `CHANGELOG.md`) : write .B
+      → octet dupliqué sur les 2 moitiés du mot ; couleur STOCKÉE masquée ($777 ST /
+      $FFF STE) → readback correct (détection ST/STE des jeux). Validé par mini-ROM
+      (relecture $0707/$0777/$0FFF) + étalons byte-identiques (spec512).
 - [ ] **Bordures — raffinements** _(précision cycle, faible priorité)_ :
       (1) wakeup-state WS3 (+1 cyc, sous-pixel) ; (2) med-res overscan ; (3) blank lines /
       NO_SYNC ; (4) pixel-perfect L/D end-to-end ; (5) **Cuddly Demos — scrolling qui SAUTE**
       quand le robot bouge ; (6) **scroller bordure BASSE** du menu Cuddly non rendu.
       🎯 étalons : `make_overscan_test.py` / `make_overscan_lr.py` (✅), **The Cuddly Demos**.
-- [ ] **Joypads STE** — reste : paddles analogiques réels, lightpen (entrée hôte), bus error
-      sur accès octet de `$FF9200/20/22` (Hatari faute, NeoST whiteliste).
+- [x] **Joypads STE** — FAIT (cf. `CHANGELOG.md`) : bus error sur accès octet de
+      `$FF9200` (adresse paire, R+W) et `$FF9220/22` (lecture) comme `joy.c` ;
+      paddles analogiques réels (port `Joy_GetStickAnalogData` : plage $04-$43,
+      axes manette GLFW + repli numérique façon mode clavier Hatari). Lightpen :
+      reste « non supporté » (0 + bus error octet) — FIDÈLE à Hatari, qui ne
+      l'émule pas non plus.
 
 ## Blitter
 - [ ] Partage de bus (mode non-hog) au cycle près _(précision cycle)_ — réf. `blitter.c`
