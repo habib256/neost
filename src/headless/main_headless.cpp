@@ -89,6 +89,21 @@ uint8_t stScancode(char c) {
         case 'n': case 'N': return 0x31;
         case 'm': case 'M': return 0x32;
         case ' ': return 0x39;
+        // Touches spéciales pour piloter des menus (scancodes ST) : flèches, Esc,
+        // F1-F3, Tab, Backspace, Delete. Conventions ASCII libres choisies ici.
+        case '<': return 0x48;   // flèche HAUT
+        case '>': return 0x50;   // flèche BAS
+        case '[': return 0x4B;   // flèche GAUCHE
+        case ']': return 0x4D;   // flèche DROITE
+        case '=': return 0x01;   // Esc
+        case '!': return 0x3B;   // F1
+        case '@': return 0x3C;   // F2
+        case '#': return 0x3D;   // F3
+        case '$': return 0x3E;   // F4
+        case '%': return 0x3F;   // F5
+        case '\t': return 0x0F;  // Tab
+        case '^': return 0x0E;   // Backspace
+        case '~': return 0x53;   // Delete
         case 'q': case 'Q': return 0x10;
         case 'w': case 'W': return 0x11;
         case 'e': case 'E': return 0x12;
@@ -134,6 +149,16 @@ int main(int argc, char** argv) {
     std::string keysAt;
     int         joyAtFrame  = -1;     // --joy-at N P1 : pose l'état joystick port 1 à la trame N
     uint8_t     joyAt1      = 0;
+    // --mouse-at N "SCRIPT" : pilote la souris (mode REL) à partir de la trame N pour
+    // naviguer un menu souris (ex. Vroom). Un token = une trame ; L/R/U/D = déplacement
+    // (±8 px), '1' = clic gauche, '2' = clic droit (appui+relâche sur 2 trames), '.' = idle.
+    int         mouseAtFrame = -1;
+    std::string mouseAt;
+    // --joy-script N "SCRIPT" : pose l'état joystick port 1 trame par trame à partir de N.
+    // Tokens : U/D/L/R = direction, F = feu, '.' = neutre. Permet de PULSER (presser puis
+    // relâcher) le feu et de bouger une sélection dans un menu joystick (ex. Vroom).
+    int         joyScrFrame = -1;
+    std::string joyScr;
     CpuCore     cpuCore    = CpuCore::Musashi;
     MachineType machType   = MachineType::Ste;
     std::size_t ramBytes   = 512u * 1024u;
@@ -169,6 +194,8 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--shot-from"))   shotFrom = std::atoi(next(a));
         else if (!std::strcmp(a, "--keys-at"))     { keysAtFrame = std::atoi(next(a)); keysAt = next(a); }
         else if (!std::strcmp(a, "--joy-at"))      { joyAtFrame = std::atoi(next(a)); joyAt1 = (uint8_t)std::strtoul(next(a), nullptr, 0); }
+        else if (!std::strcmp(a, "--mouse-at"))    { mouseAtFrame = std::atoi(next(a)); mouseAt = next(a); }
+        else if (!std::strcmp(a, "--joy-script"))  { joyScrFrame = std::atoi(next(a)); joyScr = next(a); }
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
         else if (!std::strcmp(a, "--machine"))    machType  = parseMachine(next(a));
         else if (!std::strcmp(a, "--mem"))        ramBytes  = parseRamBytes(next(a));
@@ -249,6 +276,48 @@ int main(int argc, char** argv) {
         if (joyAtFrame >= 0 && frame == joyAtFrame) {
             machine.ikbd.setJoystick(0, joyAt1);
             std::fprintf(stderr, "[headless] joystick posé à la trame %d : port1=$%02X\n", frame, joyAt1);
+        }
+        // Script souris daté (--mouse-at) : 1 token = 1 trame. Pilote un menu souris.
+        if (mouseAtFrame >= 0 && frame >= mouseAtFrame) {
+            const int idx = frame - mouseAtFrame;
+            if (idx < (int)mouseAt.size()) {
+                static bool mClickL = false, mClickR = false;
+                const char t = mouseAt[idx];
+                int dx = 0, dy = 0; bool l = false, r = false;
+                switch (t) {
+                    case 'L': dx = -8; break;
+                    case 'R': dx =  8; break;
+                    case 'U': dy = -8; break;
+                    case 'D': dy =  8; break;
+                    case '1': l = true; mClickL = true; break;   // clic gauche : appui
+                    case '2': r = true; mClickR = true; break;   // clic droit : appui
+                    default: break;                              // '.' = idle
+                }
+                // Maintien d'un clic : si la trame précédente était un appui et celle-ci
+                // ne l'est pas, on relâche (paquet bouton=0) pour finir le clic.
+                if (t != '1' && mClickL) { l = false; mClickL = false; }
+                if (t != '2' && mClickR) { r = false; mClickR = false; }
+                machine.ikbd.mouseEvent(dx, dy, l, r);
+                machine.cpu.updateIpl();
+            }
+        }
+        // Script joystick daté (--joy-script) : 1 token = 1 trame. Pulse feu / déplace
+        // une sélection dans un menu joystick (ex. menu Vroom atteint au feu).
+        if (joyScrFrame >= 0 && frame >= joyScrFrame) {
+            const int idx = frame - joyScrFrame;
+            if (idx < (int)joyScr.size()) {
+                uint8_t st = 0;
+                switch (joyScr[idx]) {
+                    case 'U': st = 0x01; break;
+                    case 'D': st = 0x02; break;
+                    case 'L': st = 0x04; break;
+                    case 'R': st = 0x08; break;
+                    case 'F': st = 0x80; break;
+                    default:  st = 0x00; break;    // '.' = neutre
+                }
+                machine.ikbd.setJoystick(0, st);
+                machine.cpu.updateIpl();
+            }
         }
         machine.runFrame();
         if (shotEvery > 0 && frame >= shotFrom && (frame % shotEvery) == 0) {

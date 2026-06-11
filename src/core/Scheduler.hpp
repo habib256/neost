@@ -46,7 +46,12 @@ public:
     // 4 cycles à propager IRQ vers le 68000 (port MFP_IRQ_DELAY_TO_CPU, mfp.c:374).
     // Le MFP l'arme à irqTime+4 quand son IRQ monte ; le callback recalcule l'IPL.
     // Placé APRÈS les timers (à cycle égal, l'IPL est recalculé une fois les IRQ levées).
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_TX, MICROWIRE, HBL, VBL, SRC_COUNT };
+    // IKBD_RX = livraison cadencée IKBD → ACIA : un octet de la file ne devient
+    // visible (RDRF) qu'après ~1 octet série (10 bits à 7812,5 bauds = 10240
+    // cycles), comme le SCI d'Hatari. Des jeux (Vroom) identifient les octets du
+    // paquet souris à leur CADENCE d'arrivée : une livraison instantanée des 3
+    // octets fait perdre la synchro de leur parseur (axes souris « tournés »).
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MICROWIRE, HBL, VBL, SRC_COUNT };
 
     using Callback = std::function<void()>;
 

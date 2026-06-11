@@ -306,6 +306,25 @@ uint8_t glfwToStScancode(int key) {
         case GLFW_KEY_UP: return 0x48; case GLFW_KEY_LEFT: return 0x4B;
         case GLFW_KEY_RIGHT: return 0x4D; case GLFW_KEY_DOWN: return 0x50;
         case GLFW_KEY_INSERT: return 0x52; case GLFW_KEY_DELETE: return 0x53;
+        // Touches spécifiques ST sans équivalent direct (mapping Hatari sdl/keymap.c) :
+        // Help/Undo + parenthèses du pavé numérique ST.
+        case GLFW_KEY_PRINT_SCREEN: return 0x62;            // Help
+        case GLFW_KEY_END: return 0x61;                     // Undo
+        case GLFW_KEY_PAGE_UP: return 0x63;                 // ( pavé num. ST
+        case GLFW_KEY_PAGE_DOWN: return 0x64;               // ) pavé num. ST
+        // Pavé numérique (scancodes ST 0x65-0x72 + 0x4A/0x4E, cf. Hatari).
+        case GLFW_KEY_KP_0: return 0x70; case GLFW_KEY_KP_1: return 0x6D;
+        case GLFW_KEY_KP_2: return 0x6E; case GLFW_KEY_KP_3: return 0x6F;
+        case GLFW_KEY_KP_4: return 0x6A; case GLFW_KEY_KP_5: return 0x6B;
+        case GLFW_KEY_KP_6: return 0x6C; case GLFW_KEY_KP_7: return 0x67;
+        case GLFW_KEY_KP_8: return 0x68; case GLFW_KEY_KP_9: return 0x69;
+        case GLFW_KEY_KP_DECIMAL: return 0x71;
+        case GLFW_KEY_KP_DIVIDE: return 0x65;
+        case GLFW_KEY_KP_MULTIPLY: return 0x66;
+        case GLFW_KEY_KP_SUBTRACT: return 0x4A;
+        case GLFW_KEY_KP_ADD: return 0x4E;
+        case GLFW_KEY_KP_ENTER: return 0x72;
+        case GLFW_KEY_KP_EQUAL: return 0x61;                // Undo (comme Hatari)
         default: return 0x00;
     }
 }
@@ -316,6 +335,20 @@ uint8_t glfwToStScancode(int key) {
 void onKey(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
     if (!g_ikbd || action == GLFW_REPEAT) return;   // l'IKBD gère sa propre répétition
     if (key == GLFW_KEY_DELETE) return;             // touche hôte (libération souris)
+    const uint8_t sc = glfwToStScancode(key);
+    if (!sc) return;
+    // Suivi des touches dont le MAKE a été transmis au ST : leur BREAK doit
+    // TOUJOURS partir, même si entre-temps un widget ImGui a pris le focus ou
+    // que l'émulation joystick a été (dés)activée. Sinon la touche reste
+    // « collée » côté ST (make sans break) et le clavier semble en panne.
+    static bool stHeld[128] = {};
+    if (action != GLFW_PRESS) {
+        if (stHeld[sc & 0x7F]) {
+            stHeld[sc & 0x7F] = false;
+            g_ikbd->keyEvent(sc, false);
+        }
+        return;
+    }
 #if defined(NEOST_WITH_IMGUI)
     // On ne cède le clavier à ImGui (saisie d'un champ) QUE hors capture souris :
     // souris capturée = l'utilisateur « est dans » le ST, les touches (espace
@@ -327,8 +360,8 @@ void onKey(GLFWwindow*, int key, int /*scancode*/, int action, int /*mods*/) {
     // droit) pilotent la manette et NE sont PAS transmises au clavier ST (sinon
     // double effet) ; elles sont scrutées par trame dans la boucle (cf. stjoy::compose).
     if (g_kbdJoy && stjoy::kbdBit(key)) return;
-    const uint8_t sc = glfwToStScancode(key);
-    if (sc) g_ikbd->keyEvent(sc, action == GLFW_PRESS);
+    stHeld[sc & 0x7F] = true;
+    g_ikbd->keyEvent(sc, true);
 }
 
 #if defined(NEOST_WITH_IMGUI)

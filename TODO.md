@@ -226,9 +226,12 @@ basse) → Enchanted Land (plante après le LOADING)**.
 ## ACIA 6850 (clavier + MIDI)
 - [ ] IRQ émetteur (CR bits 5/6) + état TDRE (câblé à 1) _(risque élevé)_ — réf.
       `acia.c:ACIA_UpdateIRQ` + `midi.c`
-- [ ] Lecture data-register renvoie 0x00 si FIFO vide au lieu du dernier RDR _(faible valeur)_
-      — réf. `acia.c:ACIA_Read_RDR`
-- [ ] SR n'expose pas overrun/framing/parity _(faible valeur)_ — réf. `acia.c`
+- [x] ~~Lecture data-register renvoie 0x00 si FIFO vide au lieu du dernier RDR~~ — RDR
+      persistant porté avec la livraison cadencée (cf. `CHANGELOG` §Clavier).
+- [ ] SR n'expose pas overrun/framing/parity _(faible valeur)_ — réf. `acia.c` ; noter que
+      la livraison RX est désormais cadencée (10240 cyc/octet) mais SANS perte : le SCI
+      réel continue de shifter pendant que RDR est plein (overrun) — NeoST retient l'octet
+      suivant jusqu'à la lecture du RDR.
 
 ## RTC RP5C15
 - [ ] Sauvegarde persistante de la date/heure RTC entre sessions _(faible valeur)_.
@@ -260,12 +263,13 @@ basse) → Enchanted Land (plante après le LOADING)**.
 - [ ] **Cartridge port** `$FA0000-$FBFFFF` générique (jeux, extensions de boot) — réf. `cart.c`
 
 ## Souris / entrées (jeux)
-- [ ] **Vroom** : vers la droite accélère, vers la gauche ralentit, en bas tourne à droite et
-      en haut tourne à gauche en mode souris (disquette testable au headless). MOUSE_X_SIGN/MOUSE_Y_SIGN sont tous deux
-  +1 et le format paquet $F8 est dx-puis-dy standard (sinon TOUS les jeux souris seraient
-  affectés, pas seulement Vroom). Ta description = contrôles tournés de 90° (X↔Y) uniquement
-  pour Vroom → ça sent le code 6301 custom que Vroom téléverse via $20/$22 (les
-  CustomCodeDefinitions de Hatari)
+- [x] ~~**Vroom** : axes souris tournés de 90° (droite accélérait, bas tournait à droite)~~ —
+      RÉSOLU par la **livraison série IKBD → ACIA cadencée** (cf. `CHANGELOG` §Clavier).
+      Ce n'était PAS du code 6301 custom (Vroom n'envoie AUCUNE commande IKBD — vérifié au
+      `NEOST_DEBUG_IKBD`) : le jeu identifie les octets du paquet `$F8,Δx,Δy` à leur
+      CADENCE d'arrivée (1 octet série = 1,28 ms) ; livrés d'un bloc, son parseur prenait
+      Δy pour Δx. Validé en course headless (`--mouse-at`, clic droit au titre puis en
+      course) : gauche/droite braquent, haut/bas accélèrent/freinent.
 
 ## Outillage / qualité
 - [~] **Logiciels étalons au headless** — infra en place : `tools/etalons.json` (manifeste),

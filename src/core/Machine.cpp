@@ -153,6 +153,9 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::DMASND, [this] { dmasnd.onFrameEnd(); cpu.updateIpl(); });
     // Réponse de reset du clavier ($F1) : l'IKBD l'a datée → on l'émet + IRQ ACIA.
     sched.setCallback(Scheduler::IKBD,   [this] { ikbd.onResetResponse(); cpu.updateIpl(); });
+    // Livraison cadencée IKBD → ACIA (un octet série ≈ 10240 cycles) : l'octet en
+    // tête de file devient visible (RDRF) et lève l'IRQ ACIA (cf. onRxDeliver).
+    sched.setCallback(Scheduler::IKBD_RX, [this] { ikbd.onRxDeliver(); cpu.updateIpl(); });
     // Re-remplissage du registre d'émission ACIA (TDRE→1) ~1 octet série après une
     // écriture $FFFC02 sous TIE : ré-arme l'IRQ « transmetteur prêt » (cf. onTxEmpty).
     sched.setCallback(Scheduler::IKBD_TX, [this] { ikbd.onTxEmpty(); cpu.updateIpl(); });
