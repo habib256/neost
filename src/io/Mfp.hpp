@@ -53,13 +53,27 @@ public:
     void reset();
 
     // Période en CYCLES CPU d'un timer (0..3 = A/B/C/D) en mode délai, ou 0 s'il
-    // est arrêté ou en event-count. (Re)programme l'échéance sur l'ordonnanceur.
-    int64_t timerPeriodCycles(int timer) const;
+    // est arrêté ou en event-count. `fromCounter` : période calculée depuis le
+    // COMPTEUR courant (démarrage/continuation, cf. MFP_StartTimer_AB qui part de
+    // TA_MAINCOUNTER) au lieu de la valeur de RECHARGE (rechargement à expiration).
+    int64_t timerPeriodCycles(int timer, bool fromCounter) const;
     void    scheduleTimer(int timer);
     // Programme l'échéance d'un timer (mode délai) à `anchor + période`. `anchor` =
     // horloge live pour une programmation fraîche, ou l'échéance servie pour une
     // replanification périodique anti-dérive (cf. onTimerExpire / PendingCyclesOver).
-    void    scheduleTimerAt(int timer, int64_t anchor);
+    void    scheduleTimerAt(int timer, int64_t anchor, bool fromCounter);
+
+    // Contrôle BRUT d'un timer (TACR/TBCR 0-15, moitiés de TCDCR 0-7).
+    int     timerCtrl(int timer) const;
+    // Écriture d'un registre de contrôle (port des MFP_TimerXCtrl_WriteByte) :
+    // valeur inchangée → aucun effet (ne redate PAS un timer qui court) ; arrêt
+    // d'un délai → fige le compteur courant (relisible, continuation possible) ;
+    // démarrage → échéance calculée depuis le COMPTEUR (pas la recharge).
+    void    writeTimerCtrl(int timer, uint8_t newCtrl);
+    // Fige le compteur vivant d'un délai qu'on arrête (port MFP_ReadTimerX(stopping)).
+    void    storeStoppedCounter(int timer);
+    // Référence du compteur (backing store) d'un timer.
+    uint8_t& timerCounterRef(int timer);
 
     // Valeur lue dans le registre de données d'un timer (0..3 = A/B/C/D). En mode
     // DÉLAI actif, renvoie le COMPTEUR VIVANT (décompté depuis l'écriture, calculé
@@ -220,6 +234,9 @@ private:
     // Timer B (event-count sur HBLANK). tbCounter_ = compteur courant (lu en
     // $FFFA21), tbReload_ = valeur rechargée à 0, tbcr_ = mode ($FFFA1B).
     uint8_t tbcr_ = 0, tbReload_ = 0, tbCounter_ = 0;
+    // Compteurs C/D figés (timer arrêté en plein décompte → relisible, et le
+    // délai REPREND de là au prochain démarrage, cf. Hatari TC/TD_MAINCOUNTER).
+    uint8_t tcCounter_ = 0, tdCounter_ = 0;
 
     // Timer A en event-count (TAI = ligne XSINT son DMA sur STE). Compteur courant
     // + valeur de recharge, chargés à l'écriture de TADR ($FFFA1F). tai_ = dernier

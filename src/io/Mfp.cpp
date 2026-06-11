@@ -25,6 +25,7 @@ void Mfp::reset() {
     // (TACR $FFFA19, TBCR $FFFA1B, TCDCR $FFFA1D, TADR/TBDR/TCDR/TDDR…) tous remis à 0.
     tbcr_ = tbReload_ = tbCounter_ = 0;
     taReload_ = taCounter_ = 0;
+    tcCounter_ = tdCounter_ = 0;
     tai_ = false;                         // ligne d'entrée Timer A (XSINT) au repos
     for (uint8_t& b : timer_) b = 0;
     xsint_ = false;                       // ligne XSINT son DMA (re-synchronisée ensuite par DmaSound::reset)
@@ -116,16 +117,27 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x13: imra = v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
         case 0x15: imrb = v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
         case 0x17: vr   = v; updateIrq(sched_ ? sched_->liveNow() : 0); break;
-        case 0x1B: tbcr_ = v; scheduleTimer(1); break;   // TBCR (0x08 = event-count ; 1-7 = délai)
-        case 0x21: tbReload_ = v; tbCounter_ = v; scheduleTimer(1); break;  // TBDR → recharge + (re)date le délai
-        // Timers A/C/D : on mémorise le registre PUIS on (re)programme l'échéance.
-        case 0x19: timer_[0x19] = v; scheduleTimer(0); break;             // TACR
-        case 0x1D: timer_[0x1D] = v; scheduleTimer(2); scheduleTimer(3);  // TCDCR (C+D)
+        // TxCR : changement de mode (port des MFP_TimerXCtrl_WriteByte) — une valeur
+        // INCHANGÉE ne redate pas le timer ; un arrêt fige le compteur courant ; un
+        // démarrage part du compteur (continuation), pas de la recharge.
+        case 0x19: writeTimerCtrl(0, uint8_t(v & 0x0F)); break;           // TACR (bit4 reset ignoré, cf. Hatari)
+        case 0x1B: writeTimerCtrl(1, uint8_t(v & 0x0F)); break;           // TBCR (0x08 = event-count ; 1-7 = délai)
+        case 0x1D: writeTimerCtrl(2, uint8_t((v >> 4) & 0x07));           // TCDCR : C bits 4-6, D bits 0-2
+                   writeTimerCtrl(3, uint8_t(v & 0x07));
                    updateSerialConfig(); break;   // Timer D = horloge USART (cf. mfp.c:3474)
-        case 0x1F: timer_[0x1F] = v; taReload_ = taCounter_ = v;          // TADR (+ event-count)
-                   scheduleTimer(0); break;
-        case 0x23: timer_[0x23] = v; scheduleTimer(2); break;             // TCDR
-        case 0x25: timer_[0x25] = v; scheduleTimer(3);                    // TDDR
+        // TxDR : SEULE la valeur de recharge change. Un timer en délai qui court n'est
+        // NI rechargé NI redaté (cf. MFP_TimerAData_WriteByte : « if timer is running
+        // do not set ») — Captain Blood réécrit TADR en boucle et compare au compteur
+        // VIVANT qui continue de décompter ; un timer ARRÊTÉ (ctrl=0) charge aussi le
+        // compteur. Le nouveau délai s'applique au prochain rechargement.
+        case 0x1F: timer_[0x1F] = v; taReload_ = v;                       // TADR
+                   if (timerCtrl(0) == 0) taCounter_ = v; break;
+        case 0x21: tbReload_ = v;                                         // TBDR
+                   if (timerCtrl(1) == 0) tbCounter_ = v; break;
+        case 0x23: timer_[0x23] = v;                                      // TCDR
+                   if (timerCtrl(2) == 0) tcCounter_ = v; break;
+        case 0x25: timer_[0x25] = v;                                      // TDDR
+                   if (timerCtrl(3) == 0) tdCounter_ = v;
                    updateSerialConfig(); break;   // nouveau diviseur → bauds USART (mfp.c:3311)
         case 0x29: timer_[0x29] = v;                                      // UCR
                    updateSerialConfig(); break;   // format du mot / prescaler (rs232.c:623)
@@ -187,20 +199,95 @@ void Mfp::updateSerialConfig() {
 //  Le MFP tourne à 2457600 Hz, le CPU à 8021248 Hz : ratio EXACT 31333/9600
 //  (même conversion entière qu'Hatari cycInt.c, sans flottant).
 // -----------------------------------------------------------------------------
-int64_t Mfp::timerPeriodCycles(int timer) const {
-    static constexpr int kDiv[8] = {0, 4, 10, 16, 50, 64, 100, 200};   // prescalers MFP
-    int ctrl, data;
+// Prescalers MFP et utilitaires communs aux timers. Les modes « pulse » des
+// timers A/B (bit3 + bits 0-2 ≠ 0, soit ctrl 9-15) se comportent comme le mode
+// délai correspondant (cf. Hatari MFP_StartTimer_AB : « clear bit 3, pulse
+// width mode -> delay mode ») ; 8 = event-count, géré par hblank()/TAI.
+static constexpr int kMfpDiv[8] = {0, 4, 10, 16, 50, 64, 100, 200};
+static inline int delayCtrl(int ctrl) { return (ctrl > 8) ? (ctrl & 0x07) : ctrl; }
+static constexpr Scheduler::Source kTimerSrc[4] = {
+    Scheduler::TIMER_A, Scheduler::TIMER_B_DELAY, Scheduler::TIMER_C, Scheduler::TIMER_D };
+
+int Mfp::timerCtrl(int timer) const {
     switch (timer) {
-        case 0: ctrl =  timer_[0x19] & 0x0F;       data = timer_[0x1F]; break;  // A
-        case 1: ctrl =  tbcr_ & 0x0F;              data = tbReload_;    break;  // B
-        case 2: ctrl = (timer_[0x1D] >> 4) & 0x07; data = timer_[0x23]; break;  // C
-        case 3: ctrl =  timer_[0x1D] & 0x07;       data = timer_[0x25]; break;  // D
-        default: return 0;
+        case 0:  return timer_[0x19] & 0x0F;          // TACR
+        case 1:  return tbcr_ & 0x0F;                 // TBCR
+        case 2:  return (timer_[0x1D] >> 4) & 0x07;   // TCDCR moitié C
+        default: return timer_[0x1D] & 0x07;          // TCDCR moitié D
     }
-    if (ctrl < 1 || ctrl > 7) return 0;       // 0 = arrêté ; 8+ = event-count/pulse (pas délai)
+}
+
+uint8_t& Mfp::timerCounterRef(int timer) {
+    switch (timer) {
+        case 0:  return taCounter_;
+        case 1:  return tbCounter_;
+        case 2:  return tcCounter_;
+        default: return tdCounter_;
+    }
+}
+
+int64_t Mfp::timerPeriodCycles(int timer, bool fromCounter) const {
+    const int ctrl = delayCtrl(timerCtrl(timer));
+    if (ctrl < 1 || ctrl > 7) return 0;       // 0 = arrêté ; 8 = event-count (pas délai)
+    int data;
+    switch (timer) {                          // recharge, ou compteur courant (continuation)
+        case 0:  data = fromCounter ? taCounter_ : timer_[0x1F]; break;  // A
+        case 1:  data = fromCounter ? tbCounter_ : tbReload_;    break;  // B
+        case 2:  data = fromCounter ? tcCounter_ : timer_[0x23]; break;  // C
+        default: data = fromCounter ? tdCounter_ : timer_[0x25]; break;  // D
+    }
     const int count = data ? data : 256;      // données = 0 → 256
-    const int64_t mfpCycles = static_cast<int64_t>(kDiv[ctrl]) * count;
+    const int64_t mfpCycles = static_cast<int64_t>(kMfpDiv[ctrl]) * count;
     return mfpCycles * 31333 / 9600;          // MFP → cycles CPU
+}
+
+// Port des MFP_TimerXCtrl_WriteByte (Hatari). Trois règles importantes :
+//  - réécrire la MÊME valeur de contrôle ne touche à rien (pas de redatage) ;
+//  - arrêter un délai en cours (1-7 → 0) fige le compteur courant, qui reste
+//    relisible et sert de point de REPRISE si on redémarre sans réécrire TxDR ;
+//  - démarrer programme l'échéance depuis le COMPTEUR (MFP_StartTimer_AB part
+//    de TA_MAINCOUNTER), la recharge ne servant qu'aux rechargements suivants.
+void Mfp::writeTimerCtrl(int timer, uint8_t newCtrl) {
+    const int old = timerCtrl(timer);
+    if (old == newCtrl) return;                       // valeur inchangée → aucun effet
+    const int oldDelay = delayCtrl(old);
+    if (newCtrl == 0 && oldDelay >= 1 && oldDelay <= 7)
+        storeStoppedCounter(timer);                   // arrêt : fige le compteur courant
+    switch (timer) {                                  // mémorise le nouveau contrôle
+        case 0: timer_[0x19] = newCtrl; break;
+        case 1: tbcr_ = newCtrl; break;
+        case 2: timer_[0x1D] = uint8_t((timer_[0x1D] & 0x0F) | (newCtrl << 4)); break;
+        case 3: timer_[0x1D] = uint8_t((timer_[0x1D] & 0xF0) | newCtrl); break;
+    }
+    // Délai (1-7 ou pulse) → échéance fraîche depuis le compteur ; 0/8 → annule
+    // l'échéance délai (scheduleTimerAt cancel via période nulle).
+    scheduleTimer(timer);
+}
+
+// Port de MFP_ReadTimerX(…, TimerIsStopping=true) : à l'arrêt d'un délai, le
+// compteur vivant est figé dans le backing store. Cas limite Hatari : s'il
+// reste moins d'une unité de prescaler (compteur interne < 1), le data reg
+// vaudra la RECHARGE au prochain redémarrage.
+void Mfp::storeStoppedCounter(int timer) {
+    const int ctrl = delayCtrl(timerCtrl(timer));     // contrôle AVANT l'arrêt
+    uint8_t reload;
+    switch (timer) {
+        case 0:  reload = timer_[0x1F]; break;
+        case 1:  reload = tbReload_;    break;
+        case 2:  reload = timer_[0x23]; break;
+        default: reload = timer_[0x25]; break;
+    }
+    uint8_t count = reload;
+    if (sched_ && ctrl >= 1 && ctrl <= 7) {
+        const int64_t remCpu = sched_->cyclesUntil(kTimerSrc[timer]);
+        if (remCpu >= 0) {
+            const int64_t remMfp = remCpu * 9600 / 31333;          // cycles CPU → MFP
+            const int     div    = kMfpDiv[ctrl];
+            if (remMfp >= div)                                     // sinon : règle « < 1 » → recharge
+                count = static_cast<uint8_t>(((remMfp + div - 1) / div) & 0xFF);
+        }
+    }
+    timerCounterRef(timer) = count;
 }
 
 // Port de MFP_ReadTimer_AB/CD (Hatari) : en mode délai actif, le registre de
@@ -209,55 +296,56 @@ int64_t Mfp::timerPeriodCycles(int timer) const {
 // l'IRQ programmée : count = ceil(cyclesMfpRestants / prescaler), avec la
 // conversion CPU→MFP inverse de timerPeriodCycles (× 9600 / 31333).
 uint8_t Mfp::readTimerData(int timer) const {
-    static constexpr int kDiv[8] = {0, 4, 10, 16, 50, 64, 100, 200};   // prescalers MFP
-    int ctrl;
-    Scheduler::Source src;
-    switch (timer) {
-        case 0: ctrl =  timer_[0x19] & 0x0F;       src = Scheduler::TIMER_A;       break;  // TACR
-        case 1: ctrl =  tbcr_ & 0x0F;              src = Scheduler::TIMER_B_DELAY; break;  // TBCR
-        case 2: ctrl = (timer_[0x1D] >> 4) & 0x07; src = Scheduler::TIMER_C;       break;  // TCDCR(C)
-        case 3: ctrl =  timer_[0x1D] & 0x07;       src = Scheduler::TIMER_D;       break;  // TCDCR(D)
-        default: return 0;
-    }
+    const int ctrl = delayCtrl(timerCtrl(timer));
     // Mode délai (ctrl 1-7) ET échéance armée → compteur vivant (MFP_CYCLE_TO_REG).
     if (sched_ && ctrl >= 1 && ctrl <= 7) {
-        const int64_t remCpu = sched_->cyclesUntil(src);
-        if (remCpu >= 0) {
+        int64_t remCpu = sched_->rawCyclesUntil(kTimerSrc[timer]);
+        if (remCpu != INT64_MIN) {
+            // Échéance passée mais pas encore dispatchée (lecture sous-instruction
+            // entre l'expiration et la fin du bloc CPU) : le matériel a DÉJÀ
+            // rechargé → repli modulo la période de recharge. Hatari obtient le
+            // même effet en avançant les timers (MFP_UpdateTimers) avant la lecture.
+            // Sans ce repli, l'écrêtage à 0 rend la valeur de recharge ILLISIBLE
+            // (Captain Blood compare TADR au compteur vivant et ne sort jamais).
+            if (remCpu <= 0) {
+                const int64_t period = timerPeriodCycles(timer, /*fromCounter=*/false);
+                if (period > 0) remCpu = period - ((-remCpu) % period);
+                else            remCpu = 0;
+            }
             const int64_t remMfp = remCpu * 9600 / 31333;          // cycles CPU → MFP
-            const int     div    = kDiv[ctrl];
+            const int     div    = kMfpDiv[ctrl];
             const int64_t count  = (remMfp + div - 1) / div;       // ceil (round vers le haut)
             return static_cast<uint8_t>(count & 0xFF);             // 256 → 0
         }
     }
     // event-count (A/B, ctrl=8) → compteur suivi par hblank()/timerA_setLineInput() ;
-    // timer à l'arrêt → la recharge (== compteur courant) dans le backing store.
+    // timer à l'arrêt → compteur figé par storeStoppedCounter()/écriture TxDR.
     switch (timer) {
-        case 0: return taCounter_;
-        case 1: return tbCounter_;
-        case 2: return timer_[0x23];
-        default:return timer_[0x25];
+        case 0:  return taCounter_;
+        case 1:  return tbCounter_;
+        case 2:  return tcCounter_;
+        default: return tdCounter_;
     }
 }
 
 void Mfp::scheduleTimer(int timer) {
-    // Programmation FRAÎCHE (écriture TxCR/TxDR) : ancrée sur l'horloge live, le
+    // Programmation FRAÎCHE (démarrage via TxCR) : ancrée sur l'horloge live, le
     // cycle absolu EXACT de l'écriture (et non le début du quantum) — un timer
     // programmé en plein bloc CPU démarre à l'instant réel, comme Hatari
     // (CycInt_AddRelativeInterrupt depuis l'horloge immédiate). La préemption du
-    // Scheduler coupe alors le bloc pour servir l'IRQ à temps.
-    scheduleTimerAt(timer, sched_ ? sched_->liveNow() : 0);
+    // Scheduler coupe alors le bloc pour servir l'IRQ à temps. La première
+    // échéance part du COMPTEUR courant (continuation après un arrêt) ; les
+    // suivantes (onTimerExpire) repartiront de la recharge.
+    scheduleTimerAt(timer, sched_ ? sched_->liveNow() : 0, /*fromCounter=*/true);
 }
 
-void Mfp::scheduleTimerAt(int timer, int64_t anchor) {
+void Mfp::scheduleTimerAt(int timer, int64_t anchor, bool fromCounter) {
     if (!sched_) return;
     // Timer B (timer==1) : seul le mode DÉLAI (TBCR 1-7) est daté ici ; en event-count
     // (TBCR=8) timerPeriodCycles renvoie 0 → on annule la source délai (le tic est
     // alors piloté par Machine via mfp.hblank()).
-    const Scheduler::Source src = timer == 0 ? Scheduler::TIMER_A
-                                : timer == 1 ? Scheduler::TIMER_B_DELAY
-                                : timer == 2 ? Scheduler::TIMER_C
-                                :              Scheduler::TIMER_D;
-    const int64_t period = timerPeriodCycles(timer);
+    const Scheduler::Source src = kTimerSrc[timer];
+    const int64_t period = timerPeriodCycles(timer, fromCounter);
     if (period <= 0) { sched_->cancel(src); return; }   // arrêté / event-count
     // Échéance = ancre + période. Pour une programmation fraîche, ancre = maintenant
     // → maintenant + période. Pour une replanification périodique, ancre = échéance
@@ -284,10 +372,17 @@ void Mfp::onTimerExpire(int timer) {
     const int64_t due = sched_ ? sched_->firingDue() : -1;
     const int64_t when = due >= 0 ? due : (sched_ ? sched_->liveNow() : 0);
     raiseAt(kSrc[timer], when);               // lève l'IRQ (si le canal est activé)
+    // À l'expiration, le compteur RECHARGE depuis le data reg (data → 1 → reload).
+    switch (timer) {
+        case 0:  taCounter_ = taReload_;    break;
+        case 1:  tbCounter_ = tbReload_;    break;
+        case 2:  tcCounter_ = timer_[0x23]; break;
+        default: tdCounter_ = timer_[0x25]; break;
+    }
     // Relance la période ANCRÉE sur l'échéance qui vient d'expirer (port
     // PendingCyclesOver) : le prochain tic tombe à échéance+période, gommant la
     // latence d'IRQ. Repli sur l'horloge live si l'échéance n'est pas disponible.
-    scheduleTimerAt(timer, when);
+    scheduleTimerAt(timer, when, /*fromCounter=*/false);
 }
 
 void Mfp::hblank() {

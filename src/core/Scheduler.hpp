@@ -117,6 +117,16 @@ public:
         return rem > 0 ? rem : 0;
     }
 
+    // Variante NON écrêtée : peut renvoyer un reste NÉGATIF si l'échéance est
+    // passée mais pas encore dispatchée (lecture sous-instruction entre le cycle
+    // d'expiration et la fin du bloc CPU). Le MFP s'en sert pour replier le
+    // compteur vivant modulo la période de RECHARGE (le matériel a déjà rechargé).
+    // INT64_MIN si la source n'est pas armée.
+    int64_t rawCyclesUntil(Source s) const {
+        if (due_[s] == kInactive) return INT64_MIN;
+        return due_[s] - liveNow();
+    }
+
     // Cycle du prochain événement dû (>= now), ou -1 si aucun n'est armé.
     int64_t nextDue() const {
         int64_t best = -1;

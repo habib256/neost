@@ -4,7 +4,17 @@
 taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 
 ## Cœur & boot
-- `Bus` (memory map ST) + wrapper `Cpu68k` (Musashi) + `Shifter` (vidéo).
+- **Cœur Musashi RETIRÉ — Moira seul cœur 68000.** L'ancien cœur Musashi (rapide mais
+  **non cycle-exact**) n'apportait plus rien face à Moira (cycle-exact) et doublait chaque
+  chemin du wrapper `Cpu68k`. Suppression : sous-module `extern/Musashi` (`git rm`,
+  `.gitmodules`), sources `m68k*.c`/étape `m68kmake` (CMake), tous les `#if NEOST_HAS_MUSASHI`
+  de `Cpu68k`/`Tracer`/`Blitter`, sélecteur de cœur du GUI et de l'UI WASM. Moira devient
+  **requis** (CMake faute s'il manque). Désassemblage du `Tracer` et du `--disasm` headless
+  reporté sur `moira::disassemble` (`Syntax::MUSASHI` → format de trace inchangé). **Rétro-compat
+  conservée** : `--cpu`/`cpu=`/`?cpu=` n'acceptent plus que `moira`, mais une ancienne valeur
+  `musashi`/`uae` est tolérée — on AVERTIT puis on bascule sur Moira (`Cpu68k::parseCore`).
+  Boot EmuTOS 192 → bureau GEM et diagnostics inchangés.
+- `Bus` (memory map ST) + wrapper `Cpu68k` (Moira) + `Shifter` (vidéo).
 - Lib `neost_core` sans dépendance GUI ; frontends `neost` (fenêtré) et `neost-headless`.
 - Boot 68000 : overlay ROM en `$0-$7` (SSP/PC), refermé après reset. TOS auto-détecté
   (192 Ko → `$FC0000`, sinon `$E00000`).
@@ -248,6 +258,18 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.
+- **Modèle recharge/compteur des timers fidèle à Hatari** (port des
+  `MFP_TimerXCtrl/Data_WriteByte` + `MFP_ReadTimer_AB/CD`) : écrire TxDR pendant qu'un
+  délai court ne touche NI le compteur NI l'échéance (seule la RECHARGE change, appliquée
+  au prochain rechargement) ; réécrire la même valeur de TxCR ne redate pas le timer ;
+  arrêter un délai FIGE le compteur courant (relisible, et le timer REPREND de là si
+  relancé sans réécrire TxDR — règle « < 1 unité → recharge » comprise) ; démarrer part
+  du COMPTEUR (continuation), pas de la recharge. Lecture du compteur vivant : repli
+  modulo la période quand l'échéance vient d'expirer mais n'est pas encore dispatchée
+  (`Scheduler::rawCyclesUntil`, reste négatif sous-instruction) — le matériel a déjà
+  rechargé, l'écrêtage à 0 rendait la valeur de recharge illisible. Débloque **Captain
+  Blood** (le player musical réécrit TADR en boucle et compare au compteur vivant —
+  l'ancien modèle redémarrait le timer à chaque écriture → boucle infinie, écran noir).
 - **Chaîne IRQ fine du 68901** (port `mfp.c` : `MFP_UpdateIRQ` / `MFP_InputOnChannel` /
   `MFP_ProcessIACK`) — trois latences réelles du circuit désormais modélisées :
   - **Délai IRQ→CPU de 4 cycles** (`MFP_IRQ_DELAY_TO_CPU`, mfp.c:374) : le signal IRQ
@@ -403,6 +425,13 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   de jeux ; `stScancode` étendu (flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`…).
 
 ## Disquette (FDC WD1772 + DMA)
+- **Détection de géométrie recoupée par la taille de l'image** (port `floppy.c` :
+  `Floppy_FindDiskDetails` + `Floppy_DoubleCheckFormat`). Le BPB du secteur de boot est
+  souvent FAUX sur les cracks ; on ne lui fait confiance que si `secteurs totaux ==
+  taille/512` et spt/faces plausibles, sinon recalcul depuis la taille (faces = 2 si
+  ≥ 500 Ko ; spt ∈ {9,10,11,12} × 80-84 pistes). Débloque **Xenon 2** (BPB faces=1 au
+  lieu de 2 → code corrompu, 4 bombes), **Epic** (BPB bidon → 9 spt au lieu de 11,
+  11 bombes) et **Super Hang-On** (9 spt au lieu de 10 → retry infini, écran noir).
 - **Modèle ROTATIONNEL daté** (port `extern/hatari/src/fdc.c`, chemin « _ST ») remplaçant
   l'ancien « DMA instantané ». Machine à états par commande (Restore/Seek/Step, Read/Write
   Sector, Read Address, Read/Write Track, Force Interrupt, Motor Stop) avançée par
