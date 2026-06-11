@@ -614,8 +614,20 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   lisibles EN COURS de blit** (progression par tranche), et effacer BUSY pendant le
   transfert met le blitter en PAUSE (reprise au prochain BUSY=1), comme le « CPU can
   stop the blitter » d'Hatari. Limites documentées : découpe à la frontière de mot
-  (±3 accès), bug « 63 accès » non modélisé, stall no-op sous Musashi (durée
-  BUSY/IRQ seule). Étalons byte-identiques (bureau EmuTOS STE dessiné au blitter).
+  (±3 accès), stall no-op sous Musashi (durée BUSY/IRQ seule). Étalons
+  byte-identiques (bureau EmuTOS STE dessiné au blitter).
+- **Blitter — cycles d'arbitration + bug « 63 accès »** (port `Blitter_BusArbitration`
+  + `Blitter_HOG_CPU_mem_access_before`, blitter.c:69-79 et 380-420) : prendre le bus
+  coûte **4 cycles (8 sur Mega STE**, avec flush du cache externe — déjà fait), le
+  rendre au CPU **4 cycles** — facturés dans le stall de chaque tranche/blit. En
+  non-hog, chaque prise de bus est précédée d'une fenêtre **PRE_START de 4 cycles**
+  (BUSY posé, bus pas encore pris — la 1re tranche est désormais DATÉE à +4, le CPU
+  finit son instruction) pendant laquelle le blitter compte déjà les accès : un accès
+  bus CPU qui tombe dans la fenêtre (signalé par les callbacks mémoire de Moira via
+  `Bus::blitterWinStart/End`, daté à l'horloge bus absolue) lui **vole un accès** →
+  tranche de **63** au lieu de 64 (cf. la calibration de « Relapse » citée par
+  Hatari). Sous Musashi : pas de datation sous-instruction → toujours 64, durée
+  seule. Étalons byte-identiques, diags blitter Pass (G/Y/Z).
 - **Blitter — icônes GEM correctes (Mega ST/STE)** : les icônes de fenêtre du bureau
   (TOS/EmuTOS) étaient corrompues (franges rouge/cyan, plans désalignés). Trois correctifs
   de fidélité Hatari, validés **byte-identiques** au VDI logiciel (mode `st`) sur les deux

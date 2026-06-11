@@ -19,23 +19,31 @@ namespace {
     // blitter, puis 64 accès (= 256 cycles) pour le CPU. Un accès bus = 4 cycles.
     constexpr int kNonHogBusBlitter = 64;
     constexpr int kNonHogCpuCycles  = 64 * 4;
+    // Latence avant la prise de bus (phase PRE_START, blitter.c « t+0..t+4 ») et
+    // arbitration de restitution blitter → CPU (Blitter_BusArbitration).
+    constexpr int kPreStartCycles   = 4;
+    constexpr int kArbOut           = 4;
 }
 
 void Blitter::reset() {
     for (auto& b : reg_) b = 0;
     buffer_ = 0; busWord_ = 0;
     midBlit_ = false; haveFxsr_ = false; nfsrInt_ = false;
+    busCountError_ = false;
+    clearPreStartWindow();
     if (sched_) sched_->cancel(Scheduler::BLITTER);
 }
 
 uint16_t Blitter::readWord(uint32_t addr) { ++sliceBus_; return bus_.read16(addr & 0xFFFFFE); }
 void     Blitter::writeWord(uint32_t addr, uint16_t v) { ++sliceBus_; bus_.write16(addr & 0xFFFFFE, v); }
 
-// Facture le temps de bus du blitter au CPU : 4 cycles par accès. Moira avance
-// son horloge (le CPU « attend » que le blitter rende le bus) ; Musashi → no-op
-// (cf. addBusWaitCycles), seule la durée BUSY/IRQ est alors modélisée.
-void Blitter::stallCpu(int busAccesses) {
-    if (busAccesses > 0 && bus_.cpu) bus_.cpu->addBusWaitCycles(busAccesses * 4);
+// Facture le temps de bus du blitter au CPU : 4 cycles par accès + les cycles
+// d'arbitration (prise 4/8, restitution 4). Moira avance son horloge (le CPU
+// « attend » que le blitter rende le bus) ; Musashi → no-op (cf.
+// addBusWaitCycles), seule la durée BUSY/IRQ est alors modélisée.
+void Blitter::stallCpu(int busAccesses, int arbCycles) {
+    const int cycles = busAccesses * 4 + arbCycles;
+    if (busAccesses > 0 && bus_.cpu) bus_.cpu->addBusWaitCycles(cycles);
 }
 
 uint8_t Blitter::read8(uint32_t addr) { return reg_[addr & 0x3F]; }
@@ -49,7 +57,7 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
         // blitter en non-hog, cf. blitter.c:88 — état conservé, reprise au
         // prochain BUSY=1).
         if (v & 0x80) start();
-        else if (midBlit_ && sched_) sched_->cancel(Scheduler::BLITTER);
+        else if (midBlit_) pauseTransfer();
     }
 }
 
@@ -64,7 +72,7 @@ void Blitter::write16(uint32_t addr, uint16_t v) {
     reg_[(off + 1) & 0x3F] = uint8_t(v);
     if (off <= 0x3C && off + 1 >= 0x3C) {
         if (reg_[0x3C] & 0x80) start();
-        else if (midBlit_ && sched_) sched_->cancel(Scheduler::BLITTER);
+        else if (midBlit_) pauseTransfer();
     }
 }
 
@@ -76,7 +84,7 @@ void Blitter::write32(uint32_t addr, uint32_t v) {
     reg_[(off + 3) & 0x3F] = uint8_t(v);
     if (off <= 0x3C && off + 3 >= 0x3C) {
         if (reg_[0x3C] & 0x80) start();
-        else if (midBlit_ && sched_) sched_->cancel(Scheduler::BLITTER);
+        else if (midBlit_) pauseTransfer();
     }
 }
 
@@ -100,32 +108,78 @@ void Blitter::start() {
         midBlit_  = true;
     }
 
+    // Cycles d'arbitration de bus (port Blitter_BusArbitration) : prendre le bus
+    // coûte 4 cycles (8 sur Mega STE), le rendre au CPU 4 cycles.
+    const int arbIn = (bus_.machine == MachineType::MegaSte) ? 8 : 4;
+
     if (reg_[0x3C] & 0x40) {               // mode HOG : bus gardé jusqu'à y_count=0
         sliceBus_ = 0;
         runSlice(-1);
-        stallCpu(sliceBus_);               // le CPU a attendu TOUT le transfert
+        stallCpu(sliceBus_, arbIn + kArbOut);   // CPU stallé : arbitration + tout le blit
         return;
     }
-    // Non-hog : une tranche de 64 accès maintenant, la suite par l'ordonnanceur.
-    sliceBus_ = 0;
-    const bool done = runSlice(kNonHogBusBlitter);
-    stallCpu(sliceBus_);
-    if (!done && sched_)
-        sched_->schedule(Scheduler::BLITTER, sched_->liveNow() + kNonHogCpuCycles);
+    // Non-hog : sur le vrai matériel, le blitter ne prend pas le bus tout de
+    // suite — phase PRE_START de 4 cycles (le CPU tourne encore) puis arbitration.
+    // On date la 1re tranche à +4 et on ARME la fenêtre PRE_START : un accès bus
+    // CPU dans [maintenant, +4) sera compté à tort par le blitter (bug « 63 accès »,
+    // cf. notePreStartCpuAccess). Sans ordonnanceur : tranche immédiate.
+    if (sched_) {
+        armPreStartWindow(sched_->liveNow());
+        sched_->schedule(Scheduler::BLITTER, sched_->liveNow() + kPreStartCycles);
+    } else {
+        onSlice();
+    }
 }
 
-// Tranche non-hog suivante (échéance Scheduler::BLITTER) : 64 accès bus de plus.
-// Ici on est à une frontière d'événement : avancer l'horloge CPU (stallCpu)
-// retarde d'autant le prochain bloc d'exécution — le CPU « perd » la part du
-// blitter, puis garde le bus 256 cycles avant la tranche suivante.
+// Tranche non-hog (échéance Scheduler::BLITTER) : jusqu'à 64 accès bus — 63 si un
+// accès CPU est tombé dans la fenêtre PRE_START (le blitter le compte à tort comme
+// sien, cf. blitter.c:69-79). Ici on est à une frontière d'événement : avancer
+// l'horloge CPU (stallCpu) retarde d'autant le prochain bloc d'exécution — le CPU
+// « perd » arbitration + part du blitter, puis garde le bus 256 cycles (64 accès)
+// avant la tranche suivante (précédée de sa propre fenêtre PRE_START).
 void Blitter::onSlice() {
-    if (!(reg_[0x3C] & 0x80)) return;      // BUSY retombé (pause/reset) → rien
+    if (!(reg_[0x3C] & 0x80)) { clearPreStartWindow(); return; }   // pause/reset
+    const int arbIn  = (bus_.machine == MachineType::MegaSte) ? 8 : 4;
+    const int budget = kNonHogBusBlitter - (busCountError_ ? 1 : 0);
+    busCountError_ = false;
+    clearPreStartWindow();
     sliceBus_ = 0;
-    const bool done = runSlice(kNonHogBusBlitter);
-    stallCpu(sliceBus_);
-    if (!done && sched_)
-        sched_->schedule(Scheduler::BLITTER,
-                         sched_->now() + int64_t(sliceBus_) * 4 + kNonHogCpuCycles);
+    const bool done = runSlice(budget);
+    stallCpu(sliceBus_, arbIn + kArbOut);
+    if (!done && sched_) {
+        // Prochaine prise de bus : part CPU (256 cyc) + latence PRE_START (4 cyc),
+        // après le stall qu'on vient de facturer. Fenêtre 63/64 armée juste avant.
+        const int64_t stall = int64_t(sliceBus_) * 4 + arbIn + kArbOut;
+        const int64_t next  = sched_->now() + stall + kNonHogCpuCycles + kPreStartCycles;
+        armPreStartWindow(next - kPreStartCycles);
+        sched_->schedule(Scheduler::BLITTER, next);
+    }
+}
+
+// Fenêtre PRE_START [t, t+4) : pendant ces 4 cycles le bit BUSY est posé mais le
+// blitter n'a pas encore le bus — il compte pourtant déjà les accès. Un accès bus
+// CPU dans la fenêtre (signalé par les callbacks mémoire de Moira via Bus) lui
+// vole un accès : la tranche suivante n'en fera que 63. Musashi (non cycle-exact)
+// ne signale pas ses accès → toujours 64, durée seule modélisée.
+void Blitter::armPreStartWindow(int64_t now) {
+    bus_.blitterWinStart = now;
+    bus_.blitterWinEnd   = now + kPreStartCycles;
+}
+
+void Blitter::clearPreStartWindow() {
+    bus_.blitterWinStart = bus_.blitterWinEnd = -1;
+}
+
+void Blitter::notePreStartCpuAccess() {
+    busCountError_ = true;                 // port Blitter_HOG_CPU_BusCountError = 1
+}
+
+// PAUSE du transfert (BUSY effacé par le CPU pendant un blit non-hog) : l'état
+// reste en place (reprise au prochain BUSY=1), la tranche datée est annulée.
+void Blitter::pauseTransfer() {
+    clearPreStartWindow();
+    busCountError_ = false;
+    if (sched_) sched_->cancel(Scheduler::BLITTER);
 }
 
 // Fin de transfert (yCount==0) : le blitter abaisse la ligne GPU_DONE (GPIP3,

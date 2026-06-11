@@ -153,6 +153,12 @@ public:
     Fdc*     fdc     = nullptr;   // contrôleur disquette + DMA
     DmaSound* dmasnd = nullptr;   // son DMA STE ($FF8900) — optionnel
     Blitter* blitter = nullptr;   // blitter ($FF8A00) — Mega ST / STE / Mega STE
+    // Fenêtre PRE_START du blitter non-hog (cycles bus ABSOLUS, -1 = inactive) :
+    // un accès bus CPU daté dans [start, end) est signalé au blitter, qui le compte
+    // à tort comme sien — bug « 63 accès » (cf. Blitter::notePreStartCpuAccess).
+    // Champs ICI pour que le test du chemin chaud CPU soit un simple load (Cpu68k.cpp).
+    int64_t blitterWinStart = -1;
+    int64_t blitterWinEnd   = -1;
     Rtc*     rtc     = nullptr;   // horloge RP5C15 ($FFFC21) — Mega ST / Mega STE
     MidiAcia* midi   = nullptr;   // ACIA MIDI ($FFFC04) — bouclage OUT→IN
     Cpu68k*  cpu     = nullptr;   // pour rafraîchir l'IPL après un accès MMIO

@@ -17,8 +17,7 @@ fidèle pour jeux, démos et utilitaires.
 `gros contrôleur` = puce entière · `faible valeur`.
 
 **Validation** : catalogue logiciels étalon → [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md).
-Ordre affichage : **Spectrum 512 ✅ → Enchanted Land (JOUABLE ✅) → Cuddly Demos** (menu
-statique ✅ ; reste scrolling robot + scroller bordure basse).
+Ordre affichage : **Spectrum 512 ✅ → Enchanted Land → Cuddly Demos** (scrolling robot + scroller bordure basse).
 
 ---
 
@@ -31,9 +30,6 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
 > machine Glue live, VDE_On live, Spec512 pixel-perfect, bordures haut/bas/gauche/droite :
 > **FAIT** (cf. CHANGELOG).
 
-- [ ] **Scroll fin mi-ligne dans le RENDU** + latence sous-pixel _(précision cycle)_ —
-      réf. `video.c:Video_RenderLine`. Fenêtre DE par-ligne déjà live (Enchanted Land OK).
-      🎯 étalon : **Enchanted Land** (sync-scroll en jeu).
 - [ ] **Contention DMA vidéo sur la RAM** _(précision cycle, reporté)_ — modèle MAME
       (`stmmu.cpp::bus_contention`), **non porté depuis Hatari** (qui ne le modélise pas) ;
       divergerait de l'oracle pixel. À ne traiter que si besoin matériel réel hors Hatari.
@@ -63,11 +59,6 @@ statique ✅ ; reste scrolling robot + scroller bordure basse).
       Homebrew (pas d'injection clavier headless : ni `keypress` debugger ni cmd-fifo) —
       rebuilder Hatari avec le debugger complet, ou breakpoint+memwrite sur la boucle
       de poll. Captures de réf. : /tmp/cuddly_keep/ (volatil).
-
-## Blitter
-- [ ] Bug « 63 accès au lieu de 64 » de la 1re tranche non-hog + arbitration cycles
-      _(très faible valeur — cf. blitter.c:69-79 ; l'alternance 64/64 est FAITE,
-      cf. CHANGELOG)_.
 
 ## FDC WD1772 + DMA disquette
 - [ ] **Lecteur HD MegaSTE** : DIP `$FF9200`, densité DD/HD, images 1.44 Mo — réf. `fdc.c`.

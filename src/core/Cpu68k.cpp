@@ -9,6 +9,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Cpu68k.hpp"
+#include "core/Blitter.hpp"
 #include "core/Bus.hpp"
 #include "core/Tracer.hpp"
 #include "io/Mfp.hpp"
@@ -57,6 +58,7 @@ namespace {
         return g_cpuMul == 1 ? b - g_cpuBias : (b << 1) - g_cpuBias;
     }
     void    neostUpdateIpl(bool commit = false);   // recalcule l'IPL (dispatch Musashi/Moira)
+    void    noteBlitterPreStart();   // accès CPU pendant la fenêtre PRE_START du blitter ?
 }
 
 // -----------------------------------------------------------------------------
@@ -150,10 +152,10 @@ public:
             g_bus->megaSteCacheUpdate(a, size, v, true, superNow());
     }
 
-    moira::u8  read8 (moira::u32 a) const override { if (g_bus->busFaultN(a, 1, false) && faultOrHalt(a, false)) return 0; if (g_cpuMul == 2) return moira::u8(readMste16Mhz(a, 1)); return g_bus->read8(a); }
-    moira::u16 read16(moira::u32 a) const override { if (g_bus->busFaultN(a, 2, false) && faultOrHalt(a, false)) return 0; if (g_cpuMul == 2) return readMste16Mhz(a, 2); return g_bus->read16(a); }
-    void write8 (moira::u32 a, moira::u8  v) const override { if (g_bus->busFaultN(a, 1, true)) { if (faultOrHalt(a, true)) return; } if (g_cpuMul == 2) { writeMste16Mhz(a, 1, v); return; } g_bus->write8(a, v); }
-    void write16(moira::u32 a, moira::u16 v) const override { if (g_bus->busFaultN(a, 2, true)) { if (faultOrHalt(a, true)) return; } if (g_cpuMul == 2) { writeMste16Mhz(a, 2, v); return; } g_bus->write16(a, v); }
+    moira::u8  read8 (moira::u32 a) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 1, false) && faultOrHalt(a, false)) return 0; if (g_cpuMul == 2) return moira::u8(readMste16Mhz(a, 1)); return g_bus->read8(a); }
+    moira::u16 read16(moira::u32 a) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 2, false) && faultOrHalt(a, false)) return 0; if (g_cpuMul == 2) return readMste16Mhz(a, 2); return g_bus->read16(a); }
+    void write8 (moira::u32 a, moira::u8  v) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 1, true)) { if (faultOrHalt(a, true)) return; } if (g_cpuMul == 2) { writeMste16Mhz(a, 1, v); return; } g_bus->write8(a, v); }
+    void write16(moira::u32 a, moira::u16 v) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 2, true)) { if (faultOrHalt(a, true)) return; } if (g_cpuMul == 2) { writeMste16Mhz(a, 2, v); return; } g_bus->write16(a, v); }
     // Lecture du vecteur de reset (SSP/PC) via l'overlay ROM : jamais de bus error.
     moira::u16 read16OnReset(moira::u32 a) const override { return g_bus->read16(a); }
 
@@ -191,6 +193,21 @@ NeostMoira* g_moira = nullptr;     // cœur Moira actif (nullptr = Musashi)
 #endif
 
 namespace {
+// Bug « 63 accès » du blitter (port Blitter_HOG_CPU_mem_access_before, phase
+// PRE_START) : si cet accès bus CPU tombe dans la fenêtre de 4 cycles précédant
+// la prise de bus du blitter non-hog, le blitter le compte à tort comme un de SES
+// accès (la tranche suivante n'en fera que 63). Date de l'accès = horloge bus
+// absolue (busOfClock, même domaine que Scheduler::liveNow). Moira seul — sous
+// Musashi les callbacks n'ont pas d'horloge sous-instruction utile.
+void noteBlitterPreStart() {
+#if defined(NEOST_HAS_MOIRA)
+    if (!g_moira || !g_bus->blitter) return;
+    const int64_t t = busOfClock(static_cast<int64_t>(g_moira->getClock()));
+    if (t >= g_bus->blitterWinStart && t < g_bus->blitterWinEnd)
+        g_bus->blitter->notePreStartCpuAccess();
+#endif
+}
+
 // Recalcule l'IPL présenté au CPU ACTIF : MFP (6) > VBL (4) > HBL (2).
 // `commit` (frontière d'instruction UNIQUEMENT) : sous Moira, pose aussi reg.ipl
 // (valeur déjà échantillonnée) pour que l'exception parte avant l'instruction

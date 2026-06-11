@@ -60,9 +60,22 @@ private:
     void start();                            // BUSY écrit à 1 : démarre/reprend le blit
     bool runSlice(int maxBusAccesses);       // ≤ N accès bus (-1 = tout) ; true = terminé
     void finishTransfer();                   // y_count = 0 : BUSY/HOG effacés + IRQ GPIP3
-    void stallCpu(int busAccesses);          // facture 4 cycles/accès au CPU (Moira)
+    void stallCpu(int busAccesses, int arbCycles);   // 4 cyc/accès + arbitration (Moira)
+    void pauseTransfer();                    // BUSY effacé pendant un blit : tranche annulée
+    // Fenêtre PRE_START de 4 cycles avant chaque prise de bus non-hog (cf. .cpp) :
+    // armée dans Bus::blitterWinStart/End, consultée par les callbacks mémoire de
+    // Moira (Cpu68k.cpp) qui signalent un accès CPU tombé dedans.
+    void armPreStartWindow(int64_t now);
+    void clearPreStartWindow();
     uint16_t readWord(uint32_t addr);
     void     writeWord(uint32_t addr, uint16_t v);
+
+public:
+    // Bug matériel « 63 accès au lieu de 64 » (blitter.c:69-79) : un accès bus CPU
+    // pendant la fenêtre PRE_START est compté à tort par le blitter — la prochaine
+    // tranche non-hog ne fera que 63 accès. Appelé par Cpu68k.cpp (Moira seul).
+    void notePreStartCpuAccess();
+private:
 
     Bus&       bus_;
     Scheduler* sched_ = nullptr;
@@ -80,4 +93,5 @@ private:
     bool     haveFxsr_ = false;              // lecture source extra déjà faite (ligne)
     bool     nfsrInt_  = false;              // dernière lecture source de la ligne sautée
     int      sliceBus_ = 0;                  // accès bus consommés par la tranche en cours
+    bool     busCountError_ = false;         // accès CPU « volé » en PRE_START → tranche de 63
 };
