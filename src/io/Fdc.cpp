@@ -508,7 +508,24 @@ int64_t Fdc::nextIndexCycles() const {
 // les annuler). N'est JAMAIS appliqué aux délais cadencés sur la rotation (spin-up,
 // arrêt moteur, attente d'index) : ceux-là gardent leur durée réelle, comme Hatari.
 int Fdc::applyFastFdc(int fdcCycles) const {
-    if (fastFloppy_ && fdcCycles > FDC_FAST_FACTOR) return fdcCycles / FDC_FAST_FACTOR;
+    // ÉCART assumé avec Hatari (anti-piège) : les protections des images STX
+    // MESURENT les durées (timing par octet, rotation) — un FDC accéléré les
+    // casse (Stunt Car Racer : 11 bombes ; Hatari avertit lui-même que son
+    // --fastfdc « can break some programs »). Une image STX montée dans le
+    // lecteur sélectionné neutralise donc l'accélération, avec avertissement.
+    if (fastFloppy_ && fdcCycles > FDC_FAST_FACTOR) {
+        const int dr = driveSel_ < 0 ? 0 : driveSel_;
+        if (drive_[dr].imgType == FloppyDisk::IMG_STX) {
+            static bool warned = false;
+            if (!warned) {
+                warned = true;
+                std::fprintf(stderr, "[FDC] image STX (protections à mesure de temps) : "
+                                     "FDC rapide neutralisé pour ce lecteur\n");
+            }
+            return fdcCycles;
+        }
+        return fdcCycles / FDC_FAST_FACTOR;
+    }
     return fdcCycles;
 }
 

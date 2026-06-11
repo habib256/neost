@@ -825,6 +825,19 @@ void Shifter::replayGlue() {
         }
     }
 
+    // Stat Glue (gated NEOST_GLUE_STAT) : liste les écritures freq/res datées de la
+    // trame (ligne, cycle, registre, valeur) — diagnostic « pourquoi pas de trick ».
+    if (!syncWrites_.empty() && std::getenv("NEOST_GLUE_STAT")) {
+        std::fprintf(stderr, "[gluestat] %zu écritures :", syncWrites_.size());
+        for (std::size_t i = 0; i < syncWrites_.size() && i < 24; ++i) {
+            const SyncWrite& w = syncWrites_[i];
+            std::fprintf(stderr, " %s=%02X@%lld+%d", w.isRes ? "res" : "frq", w.val,
+                         (long long)(w.frameCycle / cpl), (int)(w.frameCycle % cpl));
+        }
+        std::fprintf(stderr, " | trick=%d start=%d end=%d\n", bordersTrick_ ? 1 : 0,
+                     glueStartHBL_, glueEndHBL_);
+    }
+
     // Trace bordure (gated NEOST_BORDER_TRACE) : pour le diff oracle Hatari
     // (video_border_h/v). Émet les retraits détectés cette trame, format comparable.
     if (bordersTrick_ && std::getenv("NEOST_BORDER_TRACE")) {

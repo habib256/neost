@@ -425,6 +425,12 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   de jeux ; `stScancode` étendu (flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`…).
 
 ## Disquette (FDC WD1772 + DMA)
+- **FDC rapide neutralisé sur image STX** (écart assumé avec Hatari, anti-piège) : les
+  protections Pasti MESURENT les durées (timing par octet, rotation) — `fastfdc` ÷10 les
+  casse (Stunt Car Racer : 11 bombes en GUI avec `fastfdc=1` persisté, écran blanc en
+  headless ; Hatari casse pareil avec son `--fastfdc on`). Une STX montée dans le lecteur
+  sélectionné ignore l'accélération (avertissement stderr une fois). Stunt Car Racer
+  atteint son titre même avec `fastfdc=1`.
 - **Détection de géométrie recoupée par la taille de l'image** (port `floppy.c` :
   `Floppy_FindDiskDetails` + `Floppy_DoubleCheckFormat`). Le BPB du secteur de boot est
   souvent FAUX sur les cracks ; on ne lui fait confiance que si `secteurs totaux ==
