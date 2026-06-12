@@ -341,13 +341,41 @@ void Shifter::renderLine(int y) {
     if (y == vcLineY_) endVideoLine();
 }
 
+// Octets RÉELLEMENT lus par le shifter sur la scanline `scanline` (hors line-offset
+// STE et scroll, ajoutés par l'appelant) : 160 nominal, modulé par les drapeaux de
+// bordure de la machine Glue (port BORDERBYTES_* / Video_CopyScreenLineColor). Sans
+// écriture freq/res cette trame (cas ultra-majoritaire), renvoie le bpl nominal.
+int Shifter::glueLineBytes(int scanline) const {
+    const int bpl = (frameMode_ == Mode::High) ? 80 : 160;
+    if (frameMode_ == Mode::High || syncWrites_.empty()) return bpl;
+    if (scanline < 0 || scanline + 1 >= static_cast<int>(glueLines_.size())) return bpl;
+    const GlueLine& L = glueLines_[static_cast<std::size_t>(scanline)];
+    if (L.displayStartCycle < 0) return bpl;             // ligne sans état glue calculé
+    if (L.borderMask & glue::NO_DE) return 0;            // ligne sans display-enable
+    int bytes = 160;                                     // BORDERBYTES_NORMAL
+    const uint32_t bm = L.borderMask;
+    if (bm & glue::LEFT_OFF)           bytes += 26;      // BORDERBYTES_LEFT
+    else if (bm & glue::LEFT_PLUS_2)   bytes += 2;
+    if (bm & glue::STOP_MIDDLE)        bytes -= 106;
+    else if (bm & glue::RIGHT_MINUS_2) bytes -= 2;
+    else if (bm & glue::RIGHT_OFF)     bytes += 44;      // BORDERBYTES_RIGHT
+    if (bm & glue::RIGHT_OFF_FULL)     bytes += 22;      // BORDERBYTES_RIGHT_FULL
+    return bytes;
+}
+
 // Fin de Video_CopyScreenLine (video.c:3833-3872), adaptée au modèle NeoST : la
 // ligne active vient d'être décodée → le compteur vidéo avance de son stride réel,
 // puis les modifications STE différées pendant la ligne s'appliquent, dans l'ordre
 // d'Hatari : scroll-prefetch (+1 mot), line-offset, offset compteur ($FF8205/07/09
 // écrits pendant le DE), nouveau scroll fin, nouvelle largeur de ligne.
 void Shifter::endVideoLine() {
-    const int bpl = (frameMode_ == Mode::High) ? 80 : 160;
+    // Stride réel de la scanline qui se termine : les retraits de bordure de CETTE
+    // ligne modifient le nombre d'octets lus (accumulation inter-lignes — la
+    // calibration fullscreen d'Enchanted Land mesure $FF8209 à travers des lignes
+    // élargies/raccourcies). Sans trick, glueLineBytes == bpl (chemin historique).
+    if (!syncWrites_.empty())
+        liveGlueCatchUp(liveStartHBL_ + vcLineY_);
+    const int bpl = glueLineBytes(liveStartHBL_ + vcLineY_);
     vcLineBase_ += static_cast<uint32_t>(bpl);
     vcLineBase_ += static_cast<uint32_t>(scrollCounterAdvance());   // prefetch : +1 mot PAR PLAN
     vcLineBase_ += static_cast<uint32_t>(lineWidth) * 2u;  // line-offset STE (mots sautés)
@@ -946,16 +974,7 @@ void Shifter::renderGlueFrame() {
         // 464) — l'ancien calcul perdait 1 octet PAR LIGNE et le décor dérivait
         // cumulativement vers le bas (loader TDA de Rick Dangerous : bandes de
         // garbage qui empirent ligne à ligne).
-        if (lineHasDE) {
-            int bytes = 160;                                        // BORDERBYTES_NORMAL
-            if (bm & glue::LEFT_OFF)        bytes += 26;            // BORDERBYTES_LEFT
-            else if (bm & glue::LEFT_PLUS_2) bytes += 2;
-            if (bm & glue::STOP_MIDDLE)     bytes -= 106;
-            else if (bm & glue::RIGHT_MINUS_2) bytes -= 2;
-            else if (bm & glue::RIGHT_OFF)  bytes += 44;            // BORDERBYTES_RIGHT
-            if (bm & glue::RIGHT_OFF_FULL)  bytes += 22;            // BORDERBYTES_RIGHT_FULL
-            addr += static_cast<uint32_t>(bytes);
-        }
+        if (lineHasDE) addr += static_cast<uint32_t>(glueLineBytes(sl));
     }
 }
 
@@ -1126,8 +1145,20 @@ uint32_t Shifter::videoCounter() const {
         // Ligne au-delà de celle du compteur matérialisé (rendu pas encore passé) :
         // extrapole au stride courant. Bordure basse : figé à l'écran entièrement lu.
         const int laEff = la < disp ? la : disp;
-        if (laEff > vcLineY_)
-            addr += static_cast<uint32_t>(laEff - vcLineY_) * static_cast<uint32_t>(stride);
+        if (laEff > vcLineY_) {
+            if (!syncWrites_.empty() && frameMode_ != Mode::High) {
+                // Trame à tricks : somme des octets RÉELS par ligne (machine Glue
+                // live) — une ligne élargie (left/right off) ou raccourcie (-2)
+                // décale toutes les suivantes (accumulation inter-lignes, port de
+                // Video_CalculateAddress qui parcourt ShifterLines[]).
+                const_cast<Shifter*>(this)->liveGlueCatchUp(line);
+                const int extra = static_cast<int>(lineWidth) * 2 + scrollCounterAdvance();
+                for (int y = vcLineY_; y < laEff; ++y)
+                    addr += static_cast<uint32_t>(glueLineBytes(dispStart + y) + extra);
+            } else {
+                addr += static_cast<uint32_t>(laEff - vcLineY_) * static_cast<uint32_t>(stride);
+            }
+        }
         // Offset intra-ligne UNIQUEMENT si la ligne courante n'a pas déjà été rendue
         // (la < vcLineY_ = bordure droite : le stride de la ligne est déjà accumulé).
         if (la < disp && laEff >= vcLineY_) {

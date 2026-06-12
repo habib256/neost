@@ -177,6 +177,9 @@ private:
     // stride (+2 si scroll fin = prefetch d'un mot), applique l'offset compteur
     // différé puis les valeurs HSCROLL/LINEWIDTH en attente. Appelée par renderLine.
     void endVideoLine();
+    // Octets lus par le shifter sur une scanline (160 nominal, modulé par les
+    // drapeaux de bordure glue — port BORDERBYTES_*). Hors line-offset/scroll STE.
+    int  glueLineBytes(int scanline) const;
     // Position du faisceau : ligne absolue + cycle dans la ligne. false si pas d'horloge.
     bool beamPos(int& line, int& lineCyc) const;
     // Écriture du compteur vidéo $FF8205/07/09 (STE) — port Video_ScreenCounter_WriteByte.
