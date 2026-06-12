@@ -505,8 +505,12 @@ int64_t Fdc::nextIndexCycles() const {
 
 // « FDC rapide » (cf. Hatari FDC_StartTimer_FdcCycles) : divise le délai de
 // COMMANDE/TRANSFERT par FDC_FAST_FACTOR (sauf les délais < ce facteur, pour ne pas
-// les annuler). N'est JAMAIS appliqué aux délais cadencés sur la rotation (spin-up,
-// arrêt moteur, attente d'index) : ceux-là gardent leur durée réelle, comme Hatari.
+// les annuler). ÉCART ASSUMÉ avec Hatari : les délais cadencés sur la rotation
+// (spin-up, arrêt moteur, attente d'index — delayIndexPaced_) gardent leur durée
+// réelle, alors qu'Hatari divise TOUT (fdc.c:459 « Divide ALL delays »). Son
+// --fastfdc « can break some programs » (ex. l'écran-titre d'Arkanoid gèle) ; le
+// nôtre reste inoffensif au prix de chargements moins accélérés (ex. Dragon Ninja
+// met ~16 s de plus que Hatari fastfdc à atteindre son titre, 200 ms réels/piste).
 int Fdc::applyFastFdc(int fdcCycles) const {
     // ÉCART assumé avec Hatari (anti-piège) : les protections des images STX
     // MESURENT les durées (timing par octet, rotation) — un FDC accéléré les
