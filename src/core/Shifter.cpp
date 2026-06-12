@@ -53,6 +53,11 @@ static constexpr int kSpec512Threshold = 512;
 // 1ʳᵉ écriture palette ligne 64 datée cyc=80 stable côté Hatari ; NeoST sans correction
 // oscille 76↔80, avec −2 se verrouille sur 80 (= Hatari). Flicker plein-diaporama
 // (BEE512/sun/PLANET/ANIMAL, fenêtre 540..1010) : 111 paires → 0.
+// Datation des LECTURES du compteur vidéo. -2 est calibré sur deux étalons
+// sensibles : le flicker spec512 ET la calibration du loader d'Enchanted Land
+// (poll $FF8209 0→≠0 ; -8 « façon Hatari Video_CalculateAddress » la casse —
+// écran noir après LOADING). L'écart lecture↔écriture résiduel vit côté
+// écritures (kSyncWriteOffsetCyc).
 static constexpr int kVideoCounterReadOffsetCyc = -2;
 
 // =============================================================================
@@ -560,10 +565,26 @@ void Shifter::syncCpuBus() {
     if (wait) bus_.cpu->addBusWaitCycles(wait);
 }
 
+// Datation des ÉCRITURES freq/res : l'accès bus en ÉCRITURE est daté en FIN
+// d'instruction par Hatari (Cycles_GetClockCounterOnWriteAccess, mode CE), alors
+// que l'horloge live NeoST date le début de l'accès. Décalage CALIBRÉ contre
+// l'oracle (Enchanted Land : impulsions du jeu verrouillées à L63 c376→384 chez
+// Hatari ; NeoST les datait ~16 cycles plus tôt et les comparateurs
+// 372/376/462/502 n'étaient jamais enjambés → aucune détection de bordure en
+// jeu, bordures fermées, scroll cassé). À re-dériver proprement avec le
+// chantier wait states / datation des accès bus.
+static constexpr int kSyncWriteOffsetCyc = 16;
+
 void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
     if (!liveFrameClock_) return;
-    const int64_t fc = liveFrameClock_();
+    int64_t fc = liveFrameClock_();
     if (fc < 0) return;
+    fc += kSyncWriteOffsetCyc;
+    // DEBUG (NEOST_SYNC_OFF) : offset ADDITIONNEL de datation des écritures freq/res —
+    // sert à mesurer un écart systématique de datation CPU↔glue contre l'oracle.
+    static const int syncOff = [] { const char* s = std::getenv("NEOST_SYNC_OFF"); return s ? std::atoi(s) : 0; }();
+    fc += syncOff;
+    if (fc < 0) fc = 0;
     syncWrites_.push_back({ static_cast<int32_t>(fc), val, isRes });
     updateLiveStartHBL(static_cast<int32_t>(fc), isRes, val);   // VDE_On live (retrait haut)
     // Machine Glue LIVE : consomme l'écriture immédiatement (fenêtre DE de la ligne
@@ -1193,6 +1214,7 @@ uint32_t Shifter::videoCounter() const {
             // enjambant le comparateur 372 → ligne -2 octets). Trame SANS écriture
             // freq/res → chemin historique inchangé (zéro régression).
             int ds = lineStart, lineBytes = bpl;
+            bool leftTrick = false;
             if (frameMode_ != Mode::High && !syncWrites_.empty()
                 && static_cast<std::size_t>(line) + 1 < glueLines_.size()) {
                 const_cast<Shifter*>(this)->liveGlueCatchUp(line);
@@ -1201,10 +1223,23 @@ uint32_t Shifter::videoCounter() const {
                     ds = L.displayStartCycle;
                     lineBytes = (L.displayEndCycle - L.displayStartCycle) >> 1;
                     if (lineBytes < 0) lineBytes = 0;
+                    leftTrick = (L.borderMask & (glue::LEFT_OFF | glue::LEFT_PLUS_2)) != 0;
                 }
             }
+            // Scroll fin STE avec PREFETCH : le MMU démarre 16 cycles AVANT le HDE_On
+            // et lit 8 octets de plus (port Video_CalculateAddress : « shifter starts
+            // reading 16 pixels earlier when scrolling with prefetching », sauf si un
+            // trick gauche fixe déjà le départ). C'est l'ANCRE que mesure la
+            // calibration sync-scroll d'Enchanted Land en pollant $FF8209 : sans ce
+            // -16, toutes ses impulsions visaient ~16 cycles trop tôt et aucun
+            // comparateur (372/376/462/502) n'était enjambé → bordures fermées.
+            if (hwScrollCount && hwScrollPrefetch && !leftTrick) { ds -= 16; lineBytes += 8; }
             int nb = (X - ds) >> 1;                     // 2 cycles par octet
             nb &= ~1;                                   // le shifter lit par MOTS
+            // Bordure gauche ouverte : 2 octets de moins que la valeur théorique
+            // (26 octets non multiples de 4 cycles — Video_CalculateAddress).
+            if (leftTrick && nb > 0 && (glueLines_[static_cast<std::size_t>(line)].borderMask & glue::LEFT_OFF))
+                nb -= 2;
             if (nb < 0) nb = 0; else if (nb > lineBytes) nb = lineBytes;
             addr += static_cast<uint32_t>(nb);
         }
