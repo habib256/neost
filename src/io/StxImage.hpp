@@ -17,6 +17,7 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
+#include <string>
 #include <vector>
 
 class StxImage {
@@ -61,6 +62,7 @@ public:
         const uint8_t* pTiming       = nullptr;
         uint16_t timingFlags = 0, timingSize = 0;
         const uint8_t* pTimingData   = nullptr;
+        int saveTrackIndex = -1;        // index dans saveTracks (WRITE TRACK) ou -1
     };
 
     // Drapeaux de piste.
@@ -78,10 +80,34 @@ public:
     int  tracksPerSide() const;         // nombre de pistes par face
     Track* findTrack(int track, int side);
 
-    // Overlay d'écriture EN MÉMOIRE (write sector → données relues plus tard). Perdu
-    // à la fermeture (pas de fichier .wd1772 dans cette première version).
-    struct SaveSector { uint8_t track, side; uint16_t bitPos; std::vector<uint8_t> data; };
+    // Overlay d'écriture (cf. Hatari STX_SaveStruct) : une STX est en lecture seule ;
+    // les 'write sector' et 'write track' vont dans ces structures, relues en
+    // priorité, et PERSISTÉES dans un fichier compagnon « .wd1772 » (format
+    // identique à Hatari : en-tête WD1772 + blocs SECT/TRCK, multi-octets BE).
+    struct SaveSector {
+        uint8_t  track = 0, side = 0;
+        uint16_t bitPos = 0;
+        uint8_t  idTrack = 0, idHead = 0, idSector = 0, idSize = 0;  // champ ID (bloc SECT)
+        uint16_t idCrc = 0;
+        bool     used = true;           // false = invalidé par un WRITE TRACK ultérieur
+        std::vector<uint8_t> data;
+    };
+    // Piste réécrite par WRITE TRACK : flux BRUT écrit par le programme (timings
+    // ignorés). Comme Hatari, on ne la ré-interprète pas en lecture (TODO partagé) ;
+    // on la conserve et on la persiste pour fidélité du fichier .wd1772.
+    struct SaveTrack {
+        uint8_t  track = 0, side = 0;
+        std::vector<uint8_t> data;
+    };
     std::vector<SaveSector> saveSectors;
+    std::vector<SaveTrack>  saveTracks;
+
+    // Persistance .wd1772 (cf. Hatari STX_WriteDisk / STX_LoadSaveFile). save :
+    // n'écrit RIEN s'il n'y a aucun overlay ; load : associe chaque bloc SECT à son
+    // secteur (par piste/face/bitPosition) et chaque TRCK à sa piste.
+    bool saveWd1772(const std::string& path) const;
+    bool loadWd1772(const std::string& path);
+    Sector* findSectorByPosition(int track, int side, uint16_t bitPos);
 
 private:
     std::vector<uint8_t> buf_;          // octets bruts (les pointeurs ci-dessus pointent dedans)

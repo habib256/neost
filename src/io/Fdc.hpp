@@ -84,6 +84,7 @@ private:
         std::vector<uint8_t> image;             // contenu (.st brut, .msa décompressé)
         std::string          path;              // chemin monté ("" = vide)
         int  spt = 9, sides = 2;                // géométrie (BPB)
+        int  density = 1;                       // densité du média : 1=DD, 2=HD, 4=ED (cf. Hatari FloppyDensity)
         int  headTrack = 0;                     // position PHYSIQUE de la tête (≠ registre TR)
         bool writeProtect = false;              // protégé en écriture
         bool raw = true;                        // .st brut (writeBack possible) vs .msa
@@ -93,6 +94,7 @@ private:
         enum ImgType { IMG_ST = 0, IMG_STX = 1 };
         int  imgType = IMG_ST;
         std::unique_ptr<StxImage> stx;          // non nul ⇔ imgType == IMG_STX
+        std::string wd1772Path;                 // fichier compagnon des écritures STX ("" = aucun)
 
         // Un disque est présent si on a des octets .ST OU une image STX montée.
         bool present() const { return !image.empty() || stx != nullptr; }
@@ -111,9 +113,21 @@ private:
     int      sectorsPerTrack(int drive) const { return drive_[drive].spt; }
     int      sidesPerDisk(int drive)    const;
     int      tracksPerDisk(int drive)   const;
-    int      bytesPerTrack()            const;  // piste DD standard (≈ 6268 o) — .ST
+    int      bytesPerTrack()            const;  // piste .ST : 6268 o × facteur de densité (DD/HD/ED)
     int      bytesPerTrackStx(int track, int side) const;       // longueur réelle de la piste STX
     int64_t  cyclesPerRev() const;              // période d'un tour (constante .ST, par piste STX)
+
+    // --- Densité du média (cf. Hatari FDC_ComputeFloppyDensity & co) -----------
+    // La densité (DD=1, HD=2, ED=4) est DÉDUITE de la géométrie : 18 spt → HD,
+    // 36 spt → ED (.ST), ou de la longueur réelle de piste (STX). Le débit MFM
+    // est multiplié d'autant (256 cyc/octet en DD, 128 en HD) ; la rotation
+    // (300 tr/min) ne change pas. Sur Mega STE, $FF860E (bits 0-1) doit être
+    // accordé à la densité du média, sinon RNF/LOST_DATA (CanMachineHandleDensity).
+    int      computeFloppyDensity(const FloppyDisk& dk, int track, int side) const;
+    void     updateFloppyDensity(int drive);    // rafraîchit FloppyDisk::density (sélection, seek/step)
+    int      densityFactor() const;             // facteur du lecteur sélectionné (1 si aucun)
+    bool     canHandleDensity() const;          // porte $FF860E (Mega STE seulement)
+    int      transferDelay(int nbBytes) const;  // n octets MFM en cycles FDC (cf. FDC_TransferByte_FdcCycles)
 
     // --- Modèle rotationnel : impulsions d'index (cf. Hatari FDC_IndexPulse_*) --
     void     indexInit();                       // ancre l'index à une position « passée » aléatoire (déterministe)
@@ -162,12 +176,14 @@ private:
     uint8_t  writeSectorStx(int size);
     uint8_t  readAddressStx();
     uint8_t  readTrackStx(int track, int side);
+    uint8_t  writeTrackStx();                   // WRITE TRACK sur STX (flux brut conservé)
+    void     stxPersist(FloppyDisk& dk);        // recopie les overlays dans le .wd1772
 
     // --- Tampon de transfert FDC↔DMA (cf. Hatari FDC_Buffer_*) ----------------
-    // Chaque octet porte un TIMING (cycles FDC) : fixe 256 pour .ST (bufferAdd), ou
-    // variable pour STX (bufferAddTiming, secteurs « variable bit width »).
+    // Chaque octet porte un TIMING (cycles FDC) : 256/densité pour .ST (bufferAdd),
+    // ou variable pour STX (bufferAddTiming, secteurs « variable bit width »).
     void     bufferReset() { buf_.clear(); bufTiming_.clear(); bufPos_ = 0; }
-    void     bufferAdd(uint8_t b) { buf_.push_back(b); bufTiming_.push_back(uint16_t(256)); }
+    void     bufferAdd(uint8_t b);              // timing = transferDelay(1)
     void     bufferAddTiming(uint8_t b, uint16_t t) { buf_.push_back(b); bufTiming_.push_back(t); }
     uint8_t  bufferReadByte() { return buf_[bufPos_++]; }
     uint16_t bufferReadTiming() const { return bufTiming_[bufPos_]; }
@@ -231,7 +247,7 @@ private:
     uint8_t  side_ = 0;      // face sélectionnée (0/1)
     int      driveSel_ = -1; // lecteur sélectionné (0/1) ou −1
     uint8_t  irqSignal_ = 0; // sources d'IRQ actives (cf. IRQ_SOURCE_*)
-    uint16_t densityMode_ = 0; // $FF860E (bits densité DD/HD)
+    uint16_t densityMode_ = 0; // $FF860E : bits 0-1 = mode FDC (0x00 DD, 0x03 HD) — porte Mega STE
 
     // État de la machine à états.
     int      command_ = 0;            // commande en cours (CMD_*) ; 0 = inactif
