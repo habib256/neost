@@ -83,6 +83,17 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   d'etos192 sur MegaSTE (SCU non programmé). Pour le STE/Mega STE : EmuTOS 256 Ko ou TOS 1.62/2.06.
 
 ## Vidéo (Shifter)
+- **Sync-scroll / bordures EN JEU (Enchanted Land)** — chaîne complète :
+  `videoCounter` consulte la machine Glue **LIVE** (VDE_On/Off + fenêtre DE réelle,
+  re-fermeture comprise — l'ancien « sticky » mentait aux calibrations) ; tics
+  **Timer B pilotés par la Glue live** (par scanline, un retrait haut/bas en cours de
+  trame ajoute ses tics comme `Video_AddInterruptTimerB`) ; **datation des écritures
+  freq/res +16 cycles** (accès bus daté en fin d'instruction comme Hatari CE —
+  calibré oracle : impulsions du jeu verrouillées à L63 c376→384) ; ancre **prefetch
+  STE** (MMU −16 cyc / +8 octets, port `Video_CalculateAddress`). Résultat :
+  Enchanted Land en jeu passe de 0 à 5800+/12000 trames avec tricks détectés,
+  **bordures gauche/droite ouvertes** (haut partiel — stabilité haut/bas = chantier
+  wait states). Étalons inchangés (spec512, overscan_top, scrolls, glue 19/19).
 - **Adresse vidéo accumulée par OCTETS FIXES selon les drapeaux de bordure**
   (`renderGlueFrame`, port des `BORDERBYTES_*` de `Video_CopyScreenLineColor`,
   video.h:111-115) au lieu de `(DE_end−DE_start)/2` : une ligne RIGHT_OFF lit 204
