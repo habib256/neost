@@ -147,12 +147,18 @@ public:
             g_bus->megaSteCacheUpdate(a, size, v, true, superNow());
     }
 
-    moira::u8  read8 (moira::u32 a) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 1, false) && faultOrHalt(a, false)) return 0; if (g_cpuMul == 2) return moira::u8(readMste16Mhz(a, 1)); return g_bus->read8(a); }
-    moira::u16 read16(moira::u32 a) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 2, false) && faultOrHalt(a, false)) return 0; if (g_cpuMul == 2) return readMste16Mhz(a, 2); return g_bus->read16(a); }
-    void write8 (moira::u32 a, moira::u8  v) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 1, true)) { if (faultOrHalt(a, true)) return; } if (g_cpuMul == 2) { writeMste16Mhz(a, 1, v); return; } g_bus->write8(a, v); }
-    void write16(moira::u32 a, moira::u16 v) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 2, true)) { if (faultOrHalt(a, true)) return; } if (g_cpuMul == 2) { writeMste16Mhz(a, 2, v); return; } g_bus->write16(a, v); }
+    // Chaque accès CPU abouti latche le « dernier mot du bus de données » dans
+    // Bus::cpuDb (≈ regs.db du cœur UAE : mot = valeur, octet = dupliqué sur les
+    // deux voies — cf. cpu_prefetch.h). Les lectures en RAM « void » le relisent.
+    void latchDb(moira::u16 v) const { g_bus->cpuDb = v; }
+    void latchDb8(moira::u8 v) const { g_bus->cpuDb = moira::u16((moira::u16(v) << 8) | v); }
+
+    moira::u8  read8 (moira::u32 a) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 1, false) && faultOrHalt(a, false)) return 0; const moira::u8 v = (g_cpuMul == 2) ? moira::u8(readMste16Mhz(a, 1)) : g_bus->read8(a); latchDb8(v); return v; }
+    moira::u16 read16(moira::u32 a) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 2, false) && faultOrHalt(a, false)) return 0; const moira::u16 v = (g_cpuMul == 2) ? readMste16Mhz(a, 2) : g_bus->read16(a); latchDb(v); return v; }
+    void write8 (moira::u32 a, moira::u8  v) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 1, true)) { if (faultOrHalt(a, true)) return; } latchDb8(v); if (g_cpuMul == 2) { writeMste16Mhz(a, 1, v); return; } g_bus->write8(a, v); }
+    void write16(moira::u32 a, moira::u16 v) const override { if (g_bus->blitterWinEnd >= 0) noteBlitterPreStart(); if (g_bus->busFaultN(a, 2, true)) { if (faultOrHalt(a, true)) return; } latchDb(v); if (g_cpuMul == 2) { writeMste16Mhz(a, 2, v); return; } g_bus->write16(a, v); }
     // Lecture du vecteur de reset (SSP/PC) via l'overlay ROM : jamais de bus error.
-    moira::u16 read16OnReset(moira::u32 a) const override { return g_bus->read16(a); }
+    moira::u16 read16OnReset(moira::u32 a) const override { const moira::u16 v = g_bus->read16(a); latchDb(v); return v; }
     // Lecture pour le désassembleur : pas d'effet de bord MMIO ni de bus error
     // (équivaut aux anciens m68k_read_disassembler_* de Musashi).
     moira::u16 read16Dasm(moira::u32 a) const override { return g_bus->read16(a); }

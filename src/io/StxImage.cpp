@@ -309,7 +309,7 @@ bool StxImage::loadWd1772(const std::string& path) {
     const std::streamsize n = f.tellg();
     if (n < 16) return false;
     f.seekg(0);
-    std::vector<uint8_t> in(std::size_t(n));
+    std::vector<uint8_t> in(static_cast<std::size_t>(n));
     f.read(reinterpret_cast<char*>(in.data()), n);
     if (!f) return false;
 

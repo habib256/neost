@@ -71,6 +71,16 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   qu'avant).
 
 ## Types de machine & mémoire
+- **Zone RAM « void » : on relit le dernier mot du bus de données** (port Hatari
+  `VoidMem_bget/wget` → `regs.db`). Une lecture dans une banque absente / au-delà
+  de la config MMU (< `$400000`) renvoyait 0 ; rien ne pilote le bus sur le vrai
+  matériel → il garde sa dernière valeur. `Bus::cpuDb` est latché par les
+  overrides mémoire de NeostMoira (mot = valeur, octet = dupliqué sur les deux
+  voies, comme UAE `cpu_prefetch.h`) ; un accès mot void relit exactement
+  `cpuDb` (octet fort à l'adresse paire), un accès octet l'octet faible
+  (`VoidMem_bget`). Les fetches vidéo/blitter/DMA ne polluent PAS le latch
+  (registre du CPU, pas du bus). Validé : sondage RAM EmuTOS intact
+  (`phystop` exact pour 256k/512k/1m/2m/4m) et boots 60/50 Hz byte-identiques.
 - **Profils** ST / Mega ST / STE / Mega STE (`MachineType`), choisis avant le boot
   (menu GUI, WASM `?machine=`, `--machine`). Matériel optionnel **gaté au modèle** :
   son DMA `$FF8900` et joypad `$FF9200` STE+, RTC Mega+, etc.
@@ -451,6 +461,47 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   de jeux ; `stScancode` étendu (flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`…).
 
 ## Disquette (FDC WD1772 + DMA)
+- **WRITE TRACK (formatage) sur image .ST** : le flux MFM écrit par le programme
+  (via DMA) est PARSÉ en deux passes — extraction des secteurs (IDAM $FE →
+  piste/face/secteur/taille, DAM $FB/$F8 → 512 o) puis, si la géométrie est
+  STANDARD et complète (taille 512, secteurs 1..spt, compte == spt, piste/face
+  dans l'image), écriture tout-ou-rien dans l'image + `writeBack`. Géométrie non
+  standard → **LOST_DATA sans rien écrire** (limite assumée : une .ST ne
+  représente qu'un format standard ; Hatari, lui, refuse TOUT write track sur
+  .ST — `FDC_WriteTrack_ST` = TODO). Validé headless par programme 68k en
+  secteur de boot (XBIOS Flopfmt) : format piste 4 spt=9 → piste remplie du
+  motif « virgin » $E5E5, D0=0 ; Flopfmt spt=11 sur image 9 spt → D0=−16
+  (EWRITF), image byte-identique (md5).
+- **Écritures STX persistées en fichier compagnon `.wd1772`** (port stx.c :
+  `STX_WriteDisk`/`STX_LoadSaveFile`, format **byte-compatible Hatari** — en-tête
+  « WD1772 » v1.0 + blocs SECT/TRCK, multi-octets BE) : les 'write sector' (overlay
+  par secteur, champs ID inclus) et 'write track' (flux brut de la piste) sont
+  écrits AU FIL DE L'EAU dans `<image>.wd1772` (Hatari ne sauve qu'à l'éjection)
+  et **restaurés au montage** (association SECT→secteur par piste/face/bitPosition,
+  TRCK→piste). `Fdc::writeTrackStx` porté (`FDC_WriteTrack_STX`) : conserve le flux
+  écrit, invalide les overlays secteur de la piste (le write track prime) ; comme
+  Hatari, la piste réécrite n'est pas ré-interprétée en lecture (TODO partagé).
+  L'image `.stx` d'origine n'est JAMAIS modifiée. Validé headless (boot 68k XBIOS) :
+  Flopwr $CAFE → `.wd1772` créé (bloc SECT), remontage → « écritures restaurées »,
+  Floprd → motif relu ; Flopfmt → bloc TRCK, md5 de la `.stx` inchangé.
+- **Disquettes HD 1,44 Mo (et ED) + porte de densité Mega STE** (port `fdc.c` :
+  `FDC_ComputeFloppyDensity`/`FDC_TransferByte_FdcCycles`/`FDC_CanMachineHandleDensity`).
+  La densité du média est DÉDUITE de la géométrie (18 spt → HD, 36 → ED ; longueur
+  réelle de piste pour les STX, marges ×1,5/×3) et rafraîchie au montage, à la
+  sélection lecteur/face et à chaque pas de tête. Le WD1772 reste à 8 MHz : le débit
+  MFM est divisé par le facteur (DD 256 cyc/octet, HD 128), la piste porte 6268 ×
+  facteur octets, la rotation (300 tr/min) ne change pas — `transferDelay()` partout
+  (recherche d'ID, gaps, CRC, write, position depuis l'index). Sur **Mega STE**, le
+  registre `$FF860E` (octets haut/bas corrects, routé Mega STE seulement, cf. patch
+  Hatari `IoMem_FixAccessForMegaSTE`) doit être ACCORDÉ à la densité du média, sinon
+  champ ID introuvable → RNF (type I verify, read/write sector, read address),
+  bruit (read track) ou LOST_DATA (write track) — fidèle `FDC_CanMachineHandleDensity` ;
+  ST/STE acceptent tout (convenance, comme Hatari). DIP `$FF9200` déjà à 0xBF
+  (« lecteur HD présent »). Validé headless : image 1,44 Mo FAT12 lue sur STE et
+  Mega STE (entrées de répertoire vérifiées en RAM, 0 RNF) ; oracle Hatari confirme
+  qu'EmuTOS 256 programme `$FF860E=3` puis lit, et la séquence d'auto-détection sur
+  média DD (sonde HD → 1 RNF → bascule DD) est reproduite ; **non-régression DD
+  byte-identique** (boot 60/50 Hz, Arkanoid, Enchanted Land — facteur 1 ⇒ délais inchangés).
 - **FDC rapide neutralisé sur image STX** (écart assumé avec Hatari, anti-piège) : les
   protections Pasti MESURENT les durées (timing par octet, rotation) — `fastfdc` ÷10 les
   casse (Stunt Car Racer : 11 bombes en GUI avec `fastfdc=1` persisté, écran blanc en

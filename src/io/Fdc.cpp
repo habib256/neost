@@ -634,6 +634,10 @@ int Fdc::spinWaitDelay() {
 //  IRQ / INTRQ (câblée sur GPIP5 + canal 7 du MFP).
 // =============================================================================
 void Fdc::setIntrqLine(bool on) {
+    static const bool fdcDebug = getenv("NEOST_FDC_DEBUG") != nullptr;
+    if (fdcDebug)
+        std::fprintf(stderr, "[fdc-irq] @%lldms intrq=%d (sig=%02x)\n",
+                     (long long)(nowCyc() / 8021), on ? 1 : 0, irqSignal_);
     mfp_.setFdcLine(on);                 // ligne GPIP5 (polling, ex. EmuTOS)
     if (on) mfp_.raise(Mfp::SRC_FDC);    // ET interruption canal 7 (jeux qui l'utilisent)
 }
@@ -797,7 +801,6 @@ uint8_t Fdc::readTrackST(uint8_t track, uint8_t side) {
 uint8_t Fdc::writeTrackBuffer() {
     if (driveSel_ < 0 || !drive_[driveSel_].present()) return STR_LOST;
     FloppyDisk& dk = drive_[driveSel_];
-    if (dk.imgType == FloppyDisk::IMG_STX) return 0;       // WRITE TRACK sur STX : non géré (rare)
     if (dk.imgType == FloppyDisk::IMG_STX) return writeTrackStx();
     const int n = bufferSize();
 
@@ -1675,7 +1678,11 @@ int Fdc::updateWriteTrack() {
         }
         updateStr(STR_WPRT, 0);
         bufferReset();
-        dmaBytesToTransfer_ = bytesPerTrack();
+        // Longueur de piste : réelle pour une STX, standard × densité pour une .ST
+        // (cf. Hatari FDC_GetBytesPerTrack qui dispatche selon le type d'image).
+        dmaBytesToTransfer_ = (drive_[driveSel_].imgType == FloppyDisk::IMG_STX)
+                            ? bytesPerTrackStx(drive_[driveSel_].headTrack, side_)
+                            : bytesPerTrack();
         commandState_ = RUN_WT_TRANSFER_LOOP;
         fdcCycles = CMD_IMMEDIATE;
         break;
@@ -1798,6 +1805,20 @@ void Fdc::onFdcEvent() {
             }
         }
     } while (command_ != CMD_NULL && fdcCycles == 0 && ++guard < 100000);
+
+    // Trace des TRANSITIONS d'état (NEOST_FDC_DEBUG=1) : une ligne par changement
+    // de commande/sous-état — complète la trace des écritures de commande
+    // (executeCommand) pour suivre spin-up, latence rotationnelle et transferts.
+    static const bool fdcDebug = getenv("NEOST_FDC_DEBUG") != nullptr;
+    if (fdcDebug) {
+        static int lastCmd = -1, lastState = -1;
+        if (command_ != lastCmd || commandState_ != lastState) {
+            std::fprintf(stderr, "[fdc-st] @%lldms cmd=%d state=%d drv=%d idxTime=%lld idxCnt=%d str=%02x delay=%d\n",
+                (long long)(nowCyc() / 8021), command_, commandState_, driveSel_,
+                (long long)indexTime_, indexCounter_, str_, fdcCycles);
+            lastCmd = command_; lastState = commandState_;
+        }
+    }
 
     if (command_ != CMD_NULL && sched_) {
         // Délai de commande/transfert → accéléré en mode « FDC rapide » ; délai cadencé

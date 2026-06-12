@@ -144,7 +144,8 @@ namespace {
 }
 
 // Traduit une adresse logique RAM (<4Mo) en index physique dans ram[], ou -1 si
-// la banque visée n'est pas peuplée (→ zone « void » : lecture 0, écriture perdue).
+// la banque visée n'est pas peuplée (→ zone « void » : on relit le dernier mot du
+// bus de données [cpuDb], l'écriture est perdue — cf. Hatari VoidMem_*).
 int64_t Bus::mmuTranslate(uint32_t addr) const {
     const uint8_t conf = glue ? glue->memConfig_ : memConfigForBytes(ram.size());
     const uint32_t mmuB0 = mmuConfSize(static_cast<uint8_t>((conf >> 2) & 3));
@@ -181,7 +182,14 @@ uint8_t Bus::read8(uint32_t addr) {
     // Espace RAM ($0-$3FFFFF) : décodé par le MMU (banques + aliasing).
     if (addr < 0x400000) {
         const int64_t phys = mmuTranslate(addr);
-        return phys >= 0 ? ram[static_cast<std::size_t>(phys)] : 0x00;   // banque vide → 0
+        if (phys >= 0) return ram[static_cast<std::size_t>(phys)];
+        // Banque vide / au-delà de la config MMU : rien ne pilote le bus de
+        // données → on relit le dernier mot qui y a transité (cf. Hatari
+        // VoidMem_bget/wget → regs.db). Pour un accès MOT (assemblé ici octet
+        // par octet), l'adresse paire porte l'octet fort : le mot relu vaut
+        // exactement cpuDb, comme VoidMem_wget.
+        if (ioAccessWidth_ >= 2) return uint8_t((addr & 1) ? cpuDb : cpuDb >> 8);
+        return uint8_t(cpuDb);                   // accès octet : VoidMem_bget
     }
 
     // ROM TOS. La fenêtre décodée dépasse le fichier (1 Mo à $E00000, cf.

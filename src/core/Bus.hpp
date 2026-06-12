@@ -167,6 +167,14 @@ public:
     // et où une bus error se produit. Posé par Machine. Défaut : 1040 STE.
     MachineType machine = MachineType::Ste;
 
+    // Dernier mot vu sur le bus de DONNÉES par le CPU (≈ regs.db du cœur UAE,
+    // mis à jour par les overrides mémoire de NeostMoira : mot = valeur, octet =
+    // valeur dupliquée sur les deux voies). Une lecture dans la zone RAM « void »
+    // (banque absente / au-delà de la config MMU, < $400000) relit ce mot au lieu
+    // de 0 : rien ne pilote le bus, il garde sa dernière valeur (cf. Hatari
+    // VoidMem_bget/wget → regs.db).
+    uint16_t cpuDb = 0;
+
     // Données brutes exposées au débogueur (visualiseur hexa ImGui). Pas de
     // getters : l'accès direct est l'objet même de la "boîte à hack".
     std::vector<uint8_t> ram;
