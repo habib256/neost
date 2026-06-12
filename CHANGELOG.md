@@ -20,6 +20,13 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   (192 Ko → `$FC0000`, sinon `$E00000`).
 - **Cœur CPU sélectionnable** (`--cpu musashi|moira`, `neost.cfg`, WASM `?cpu=`).
   Moira (cycle-exact, sous-module) boote EmuTOS pixel-identique et délivre les IRQ.
+- **Erreur d'adresse 68000 émulée** (`MOIRA_EMULATE_ADDRESS_ERROR = true`, appliqué
+  comme PRECISE_TIMING sur la copie générée de MoiraConfig.h) : un accès word/long
+  à adresse IMPAIRE déclenche l'exception 3, comme Hatari (`exception3_*`). Des
+  cracks s'en servent délibérément — le cracktro TDA de **Rick Dangerous** installe
+  son handler et provoque des accès impairs : sans l'exception, Moira « réussissait »
+  l'accès et le PC partait à $0 (écran de points rouges) ; désormais cracktro →
+  trainer (y/n) → **écran-titre du jeu**. Étalons et jeux déjà validés inchangés.
 - **Moira en mode cycle-exact** (`MoiraConfig.h` : `MOIRA_PRECISE_TIMING = true`,
   `MOIRA_MIMIC_MUSASHI = false`) — c'est l'apport de Moira sur Musashi : l'IPL est
   échantillonné à la frontière de cycle exacte (sync avant chaque accès) au lieu de

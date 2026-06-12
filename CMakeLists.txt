@@ -92,6 +92,11 @@ if(EXISTS "${MOIRA_SRC_DIR}/Moira.cpp")
         "#define MOIRA_PRECISE_TIMING true" _moira_cfg_new "${_moira_cfg_txt}")
     string(REGEX REPLACE "#define[ \t]+MOIRA_MIMIC_MUSASHI[ \t]+(true|false)"
         "#define MOIRA_MIMIC_MUSASHI false" _moira_cfg_new "${_moira_cfg_new}")
+    # ERREUR D'ADRESSE 68000 (exception 3, accès word/long impair) : indispensable —
+    # des protections/cracktros s'en servent délibérément (TDA Rick Dangerous installe
+    # son handler et provoque des accès impairs). Hatari l'émule (exception3_*).
+    string(REGEX REPLACE "#define[ \t]+MOIRA_EMULATE_ADDRESS_ERROR[ \t]+(true|false)"
+        "#define MOIRA_EMULATE_ADDRESS_ERROR true" _moira_cfg_new "${_moira_cfg_new}")
     if(NOT _moira_cfg_new STREQUAL _moira_cfg_txt)
         file(WRITE "${_moira_cfg}" "${_moira_cfg_new}")
         message(STATUS "Moira : MoiraConfig.h configuré dans ${MOIRA_BUILD_DIR}.")
