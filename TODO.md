@@ -176,10 +176,11 @@ ou `disks/stx/` (`.stx`).
 
 ## CPU : IRQ, Moira, MegaSTE
 
-- [ ] **MC68881 — arithmétique flottante** (la sonde + trapping est FAITE, cf.
+- [x] **MC68881 — arithmétique flottante** FAITE (cf. `CHANGELOG.md` /
   ```
-  `CHANGELOG.md` / `src/io/Fpu.hpp`) : registres FP0-7, formats simple/double/
-  étendu/packed, dialogue Command/Response complet — réf. MC68881 UM §7, MAME.
+  `src/io/Fpu.{hpp,cpp}`) : FP0-7 étendu 80 bits, formats B/W/L/S/D/X/P, dialogue
+  Command/Response/Operand/Condition/Save/Restore complet, FMOVECR bit-exact.
+  Limite documentée : calculs en double hôte (53 bits de mantisse, pas 64).
   ```
 
 ## Stockage & contrôleurs

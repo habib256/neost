@@ -30,7 +30,9 @@ montage de disquettes, bascule couleur/mono, et **upload** de votre propre `.st`
   les références de l'émulation Atari. Les vraies **cartouches de diagnostic Field
   Service** (ST / STE / MegaSTE) passent leur batterie de tests internes sans erreur.
 - 🖥️ **4 profils machine** — ST, Mega ST, STE, Mega STE, choisis avant le boot, avec
-  le matériel optionnel correctement présent/absent selon le modèle.
+  le matériel optionnel correctement présent/absent selon le modèle. Sur Mega STE :
+  68000 8/16 MHz + cache, et **FPU MC68881 émulé** (socket périphérique `$FFFA40`,
+  option `--fpu` / menu Modèle — chose qu'Hatari n'émule pas).
 - ⚙️ **Cœur 68000 cycle-exact** — [Moira](https://github.com/dirkwhoffmann/Moira)
   (timing inter-instructions, IPL échantillonné au cycle, contention de bus).
 - 🐞 **Débogueur intégré** — visualiseur hexa de la RAM et registres 68000 en direct

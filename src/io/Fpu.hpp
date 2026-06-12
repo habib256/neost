@@ -1,29 +1,34 @@
 // =============================================================================
-//  Fpu.hpp — Interface mémoire du coprocesseur MC68881 du Mega STE (OPTIONNEL).
+//  Fpu.hpp — Coprocesseur MC68881 du Mega STE (OPTIONNEL), mode périphérique.
 //
 //  Sur Mega STE, le 68000 ne possède pas le protocole coprocesseur des 68020+ :
 //  le 68881 (socket interne, ou carte SFP004 sur Mega ST) est câblé en
 //  PÉRIPHÉRIQUE, ses registres d'interface coprocesseur (CIR) étant mappés en
-//  $FFFA40-$FFFA5F. Le logiciel dialogue alors « à la main » : écrire le mot de
-//  commande dans le Command CIR, scruter le Response CIR, transférer les
-//  opérandes via l'Operand CIR (cf. MC68881/MC68882 User's Manual, §7 ; MAME
-//  mc68881 ; Hatari configuration.h n_FPUType — Hatari N'ÉMULE PAS ce socket :
-//  $FFFA40 reste une bus error, et TOS comme les diagnostics concluent
-//  « FPU not found », comportement NeoST par défaut).
+//  $FFFA40-$FFFA5F. Le logiciel dialogue « à la main » : écrire le mot de
+//  commande F-line dans le Command CIR ($FFFA4A), scruter le Response CIR
+//  ($FFFA40) tant qu'il vaut $8900 (« null, come again » = occupé), puis
+//  transférer les opérandes via l'Operand CIR ($FFFA50). Réf. : MC68881/MC68882
+//  User's Manual §7, note d'application Motorola AN-947, et la glue SFP004 de
+//  Michael Ritzert (MiNTLib) qui est la spec de facto côté logiciel.
 //
-//  Niveau d'émulation NeoST = « sonde + trapping » : quand le FPU est activé
-//  (--fpu / option GUI), la zone $FFFA40-$FFFA5F répond (plus de bus error) →
-//  la sonde du TOS (cookie _FPU) et du diagnostic détecte un 68881. Le dialogue
-//  CIR est JOURNALISÉ sur stderr et reçoit des réponses neutres (« null
-//  primitive, processing finished ») : tout programme qui tente du calcul
-//  flottant matériel est ainsi visible et n'attend pas indéfiniment, mais
-//  l'ARITHMÉTIQUE n'est pas émulée (cf. TODO.md). Par défaut : ABSENT.
+//  Hatari N'ÉMULE PAS ce socket ($FFFA40 reste une bus error → « FPU not
+//  found ») : il n'y a donc RIEN à porter depuis extern/hatari/src ; les
+//  références comportementales sont le manuel Motorola et MAME (m68kfpu).
+//
+//  Niveau d'émulation NeoST = FONCTIONNEL : dialogue CIR complet (Command/
+//  Response/Operand/Condition/Save/Restore), registres FP0-FP7 en étendu
+//  80 bits, FPCR/FPSR/FPIAR, formats B/W/L/S/D/X/P, constantes ROM FMOVECR
+//  bit-exactes, arithmétique + transcendantes via le FPU hôte (précision
+//  double 53 bits — pas les 64 bits de mantisse du vrai 68881, suffisant pour
+//  le logiciel ST ; les FMOVE.X sans calcul restent bit-exacts). Les
+//  exceptions FP positionnent FPSR mais ne lèvent pas d'IRQ (le socket Mega
+//  STE se scrute, la glue SFP004 n'utilise pas d'interruption).
+//  Par défaut : ABSENT (fidèle Hatari) — activer via --fpu / option GUI.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
 #include <cstdint>
-#include <cstdio>
 
 class Fpu {
 public:
@@ -38,49 +43,58 @@ public:
     //   $00 Response (R)  $02 Control (W)   $04 Save (R)      $06 Restore (R/W)
     //   $08 Operation (W) $0A Command (W)   $0E Condition (W)
     //   $10-$13 Operand   $14 Register Select (R)  $18 Instr Addr  $1C Operand Addr
-    uint8_t read8(uint32_t addr) {
-        const uint32_t off = (addr - BASE) & 0x1F;
-        uint16_t v;
-        switch (off & ~1u) {
-            // Response : « null primitive, PF=1 (processing finished), CA=0,
-            // pas d'exception, TF=0 (prédicat faux) » — le scrutateur sort
-            // aussitôt de sa boucle, sans transfert d'opérande demandé.
-            case 0x00: v = 0x0802; break;
-            // Save : mot de format d'une trame IDLE de 68881 (version $1F,
-            // longueur $18) — état « au repos, rien en cours ».
-            case 0x04: v = 0x1F18; break;
-            default:   trace("lecture", off, latch_[off]);
-                       return latch_[off];          // Restore/Operand/latches
-        }
-        trace("lecture", off, uint8_t(off & 1 ? v : v >> 8));
-        return uint8_t(off & 1 ? v : v >> 8);       // big-endian : octet pair = poids fort
-    }
-
-    void write8(uint32_t addr, uint8_t v) {
-        const uint32_t off = (addr - BASE) & 0x1F;
-        latch_[off] = v;
-        trace("écriture", off, v);
-    }
-
-    void reset() {
-        for (auto& b : latch_) b = 0;
-        traceCount_ = 0;
-    }
+    uint8_t read8(uint32_t addr);
+    void    write8(uint32_t addr, uint8_t v);
+    void    reset();
 
 private:
-    // Journalise le dialogue CIR (les 64 premiers accès — anti-spam) : c'est le
-    // « trapping » qui rend visible tout usage réel du FPU non encore émulé.
-    void trace(const char* op, uint32_t off, uint8_t v) {
-        if (traceCount_ >= 64) return;
-        static const char* names[16] = {
-            "Response", "Control", "Save", "Restore", "Operation", "Command",
-            "(réservé)", "Condition", "Operand", "Operand+2", "RegSelect", "(réservé)",
-            "InstrAddr", "InstrAddr+2", "OperandAddr", "OperandAddr+2"};
-        std::fprintf(stderr, "[fpu] %s CIR $%02X %s = $%02X%s\n", op, off,
-                     names[(off >> 1) & 15], v,
-                     ++traceCount_ == 64 ? " (suite du dialogue non journalisée)" : "");
-    }
+    // ---- Valeur au format étendu 80 bits du 68881 (mot signe/exposant biais
+    //      $3FFF + mantisse 64 bits à bit entier EXPLICITE). C'est le format de
+    //      stockage des registres : un FMOVE.X aller-retour est bit-exact.
+    struct Ext {
+        uint16_t se  = 0x7FFF;             // défaut au reset : NaN (comme le 68881)
+        uint64_t man = 0xFFFFFFFFFFFFFFFFull;
+    };
 
-    uint8_t latch_[0x20] = {};   // octets écrits, relus tels quels (Restore...)
-    int traceCount_ = 0;
+    // ---- État programmeur ----
+    Ext      fp_[8];
+    uint32_t fpcr_ = 0, fpsr_ = 0, fpiar_ = 0;
+
+    // ---- Interface CIR ----
+    uint16_t response_ = 0x0802;           // null : PF=1 (idle), TF=0
+    uint8_t  latch_[0x20] = {};            // derniers octets écrits (relisibles)
+
+    // Tampon de transfert de l'Operand CIR ($10-$13) : les transferts > 4
+    // octets bouclent sur la même fenêtre, octet par octet, poids fort d'abord.
+    uint8_t  buf_[96] = {};                // max : FMOVEM des 8 registres (8×12)
+    int      bufLen_ = 0, bufPos_ = 0;
+    bool     bufIn_  = false;              // true = on attend des octets du CPU
+    enum class After { None, GenOp, MoveOutDone, CtrlIn, MovemIn, RestoreIn };
+    After    after_  = After::None;        // quoi faire une fois le tampon plein/vidé
+    uint16_t cmd_    = 0;                  // mot de commande en cours
+
+    // ---- Décodage / exécution ----
+    void command(uint16_t cmd);            // écriture du Command CIR
+    void condition(uint16_t pred);         // écriture du Condition CIR
+    void restoreHeader(uint16_t fmt);      // écriture du Restore CIR
+    void completeInput();                  // tampon d'entrée plein → exécuter
+    void genOp(uint16_t cmd, Ext src);     // opérations opclass 000/010 (opmode)
+    void startMoveOut(uint16_t cmd);       // opclass 011 : FMOVE FPn → mémoire
+    void armOut(int len, After after);     // prépare un transfert FPU → CPU
+    void armIn(int len, After after);      // prépare un transfert CPU → FPU
+    void setIdle();                        // response = null PF=1
+
+    // ---- Conversions de formats ----
+    static int    fmtLen(int fmt);         // longueur en octets d'un format
+    Ext           decodeFmt(int fmt, const uint8_t* b);
+    void          encodeFmt(int fmt, const Ext& v, uint8_t* b, int k);
+    static double extToD(const Ext& e);
+    static Ext    dToExt(double d);
+    void          setCC(const Ext& v);     // FPSR N/Z/I/NAN d'après une valeur
+    double        roundMode(double v) const;
+    static Ext    romConstant(int off);    // table ROM FMOVECR (bit-exacte)
+
+    // Journalise les commandes décodées (anti-spam) — débogage du dialogue CIR.
+    void trace(const char* what, uint16_t v);
+    int  traceCount_ = 0;
 };

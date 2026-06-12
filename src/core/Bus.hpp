@@ -223,7 +223,7 @@ public:
     void megaSteReset() { megaSteCacheCtrl = 0; megaSteCacheFlush(); }
 
     // Coprocesseur MC68881 OPTIONNEL du Mega STE, mappé $FFFA40-$FFFA5F (cf.
-    // Fpu.hpp — niveau « sonde + trapping »). Défaut : absent → bus error, la
+    // Fpu.hpp — émulation fonctionnelle). Défaut : absent → bus error, la
     // sonde TOS/diagnostic conclut « FPU not found » comme Hatari. Passer par
     // setFpuPresent (et non fpu.present directement) : la carte des bus errors
     // ($FFFA40 whitelisté ou non) doit être reconstruite.

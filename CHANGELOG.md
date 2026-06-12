@@ -838,6 +838,26 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   détecte le FPU** (lecture du Response CIR observée, cookie `_FPU`) et le dialogue
   CIR est **journalisé** sur stderr (trapping : tout usage flottant réel est visible).
   L'arithmétique 68881 n'est PAS émulée (cf. `TODO.md`).
+- **MC68881 FONCTIONNEL — mode périphérique complet** (`src/io/Fpu.{hpp,cpp}`) : le
+  niveau « sonde + trapping » devient une vraie émulation du 68881 câblé en
+  périphérique (MC68881 UM §7 + AN-947 ; Hatari n'émule pas ce socket — rien à
+  porter, références = manuel Motorola, MAME `m68kfpu`, et la **glue SFP004 de la
+  MiNTLib** qui est la spec de facto : écrire le mot de commande F-line en `$FFFA4A`,
+  scruter `$FFFA40` tant qu'il vaut `$8900`, transférer par `$FFFA50`). Implémenté :
+  registres **FP0-FP7 en étendu 80 bits** (FMOVE.X aller-retour bit-exact),
+  FPCR/FPSR/FPIAR, machine à états CIR (Command/Response avec primitives de
+  transfert `$95xx/$96xx/$B1xx/$B2xx`, fenêtre Operand bouclante, Condition avec les
+  32 prédicats, Save/Restore trame IDLE `$1F18` + reset par trame nulle), formats
+  **B/W/L/S/D/X/P** (packed BCD avec k-factor), **FMOVECR bit-exact** (table ROM
+  silicium recoupée MAME/Previous/WinUAE, y compris le `e` à 1 ulp), FMOVEM données
+  et registres de contrôle, et toute l'arithmétique (FADD/FSUB/FMUL/FDIV/FSQRT/
+  FCMP/FTST/FREM/FMOD/FSCALE/FGETEXP/FGETMAN/FINT/FINTRZ/FSGLMUL/FSGLDIV/FSINCOS +
+  transcendantes via libm hôte), codes condition N/Z/I/NAN, octet quotient,
+  exceptions OPERR/DZ/OVFL/BSUN en bits FPSR (pas d'IRQ : le socket se scrute).
+  **Limite documentée** : calculs en double hôte (53 bits de mantisse au lieu de
+  64). Validation : mini-ROM `tools/make_fpu_testrom.py` (dialogue SFP004 réel) —
+  FADD.S, FDIV.D, FMOVECR π **bit-exact**, FSQRT.D **bit-exact**, FINTRZ+FMOVE.L
+  → 5/5 PASS ; défaut sans `--fpu` inchangé (« FPU not found » fidèle Hatari).
 - **Joypads STE COMPLETS + DIP MegaSTE** (`$FF9200-$FF9223`, port fidèle `joy.c` /
   `ioMemTabSTE.c`) : le stub « valeurs au repos » est remplacé par un vrai module
   `StePads` (`src/io/StePads.hpp`, membre `Bus::stePads`) — **multiplexage** par le

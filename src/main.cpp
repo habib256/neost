@@ -1134,11 +1134,11 @@ int main(int argc, char** argv) {
                         if (ImGui::MenuItem(labels[i], nullptr, cfg.machine == ids[i])) {
                             cfg.machine = ids[i]; saveConfig(exeDir, cfg, &machine); reqRebuild = true;
                         }
-                    // Socket MC68881 du Mega STE ($FFFA40, sonde + trapping — cf.
-                    // Fpu.hpp). Décoché (défaut) : bus error → « FPU not found ».
+                    // Socket MC68881 du Mega STE ($FFFA40, émulation fonctionnelle —
+                    // cf. Fpu.hpp). Décoché (défaut) : bus error → « FPU not found ».
                     if (cfg.machine == "megaste") {
                         ImGui::Separator();
-                        if (ImGui::MenuItem("FPU 68881 (sonde)", nullptr, cfg.fpu)) {
+                        if (ImGui::MenuItem("FPU 68881", nullptr, cfg.fpu)) {
                             cfg.fpu = !cfg.fpu; saveConfig(exeDir, cfg, &machine); reqRebuild = true;
                         }
                     }

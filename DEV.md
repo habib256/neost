@@ -170,7 +170,7 @@ attend du matériel.
 | `Bus::mmuTranslate`      | `stMemory.c` (STMemory_MMU_Translate_*)        |
 | `Cpu68k`                 | `m68000.c`, `cycInt.c`, `cycles.c`             |
 | 8/16 MHz + cache MegaSTE | `m68000.c` (`MegaSTE_CPU_Cache_Update`, `MegaSTE_Cache_*`, `mem_access_delay_*_megaste_16`) |
-| `Fpu` (68881 optionnel)  | (Hatari n'émule pas le socket : bus error `$FFFA40` ; cf. MC68881 UM §7) |
+| `Fpu` (68881 optionnel)  | (Hatari n'émule pas le socket — réf. MC68881 UM §7 + AN-947, glue SFP004 MiNTLib ; émulation fonctionnelle, test : `tools/make_fpu_testrom.py`) |
 | `Mfp`                    | `mfp.c` (timers A-D, modes, GPIP)              |
 | `Ikbd` / `MidiAcia`      | `ikbd.c`, `acia.c`, `midi.c`, `keymap.c`       |
 | `Shifter` / `Machine`    | `video.c` (HBL/VBL/Timer B, bordures, spec512), `screen.c` |

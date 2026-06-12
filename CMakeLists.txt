@@ -52,7 +52,8 @@ add_library(neost_core STATIC
     src/io/Fdc.cpp
     src/io/StxImage.cpp
     src/io/Rtc.cpp
-    src/io/MidiAcia.cpp)
+    src/io/MidiAcia.cpp
+    src/io/Fpu.cpp)
 
 target_include_directories(neost_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
 # (Cpu68k.cpp est traité à part : il inclut l'en-tête tiers Moira.h → C++20 sans
@@ -60,7 +61,7 @@ target_include_directories(neost_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
 set_source_files_properties(
     src/core/Bus.cpp src/core/Shifter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Blitter.cpp
-    src/core/Machine.cpp src/core/Tracer.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp
+    src/core/Machine.cpp src/core/Tracer.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # --- Moira (cœur 68000 cycle-exact, MIT) — SEUL cœur CPU de NeoST ------------
