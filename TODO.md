@@ -22,6 +22,64 @@ Ordre affichage : **Spectrum 512 ✅ → Enchanted Land → Cuddly Demos** (scro
 
 ---
 
+## Catalogue logiciels — bugs en cours
+
+Rapports terrain (2026-06). TOS 1.02fr sauf mention contraire. Chemins sous `disks/st/` (`.st`)
+ou `disks/stx/` (`.stx`).
+
+- [ ] **Arkanoid (1987)** (`Arkanoid (1987)(Imagine).st`) — plante sur la page de titre
+  ```
+  (« ARkanoid ») sans jamais arriver au jeu, même avec TOS 1.02fr. Cf. aussi §Précision cycle
+  / FDC (gel titre → partie). Oracle : `--keys`/`--joy`, trace IRQ, diff Hatari.
+  ```
+- [ ] **Captain Blood (1988)** (`Captain Blood (1988)(ERE)(ST)[cr 42-Crew][one disk].st`) —
+  ```
+  arrive au jeu puis plante et redémarre.
+  ```
+- [ ] **Enchanted Land (1990)** (`Enchanted Land (1990)(Thalion).st`) — logo + gouttes Thalion
+  ```
+  OK ; son Talion absent (press bouton joystick) ; scrolling saute terriblement en jeu
+  (symptôme proche du bug Cuddly / sync-scroll). Cf. §Bordures.
+  ```
+- [ ] **Super Hang-On (1988)** (`Super Hang-On (1988)(Sega).st`) — démarre ; musique abîmée
+  ```
+  par un bruit blanc de fond anormal ; lignes colorées horribles sur les 3/4 bas de l'écran.
+  À corriger (son DMA/PSG ? géométrie vidéo ?). Cf. CHANGELOG (retry secteurs FDC).
+  ```
+- [ ] **Shadow Warriors (2Hot2Handle)** (`ShadowWarriors[2Hot2Handle]-D1/2/3.stx`) — après
+  ```
+  SPACE : page de titre + musique OK ; appuyer sur un bouton joystick ne lance pas le jeu.
+  (Castle Warrior fonctionne parfaitement.)
+  ```
+- [ ] **Rick Dangerous II (1989)** (`Rick Dangerous II (1989)(Core Design)[cr Empire][t +2][a].st`) —
+  ```
+  SPACE, puis `n`, encore `n` : plante avec 4 bombes.
+  ```
+- [ ] **Stardust (1994)** (`Stardust (1994)(Daze Marketing Ltd.)(Disk 1 of 3)[cr Hardcore][t].st`) —
+  ```
+  plante sur écran noir.
+  ```
+- [ ] **Lethal Xcess** (`Lethal_Xcess_Disk_1.STX`, `Lethal_Xcess_Disk_2.STX`) — ne démarre
+  ```
+  pas du tout (écran noir). Cf. §STX long tail protections.
+  ```
+- [ ] **Stardust Bloodhouse** (`stardust_bloodhouse_a/b/c.STX`) — plante au démarrage
+  ```
+  (écran noir).
+  ```
+- [ ] **Wings of Death** (`Wings_Of_Death_Disk_1/2.stx`) — après bouton : page de titre
+  ```
+  avec forte corruption graphique ; chargement avec son ralenti/bizarre ; SPACE lance le jeu
+  qui fonctionne très bien ensuite.
+  ```
+- [ ] **The Cuddly Demos** (`disks/etalons/cuddly_demos.msa`) — première page OK mais son de
+  ```
+  mauvaise qualité ; après une touche, menu de sélection (robot) : scrolling complètement
+  bugué qui saute. Cf. §Bordures (items 5-6).
+  ```
+
+---
+
 ## 🎯 Précision cycle
 
 > Plan : `[docs/CYCLE_ACCURACY.md](docs/CYCLE_ACCURACY.md)` · Inventaire :
@@ -36,10 +94,11 @@ Ordre affichage : **Spectrum 512 ✅ → Enchanted Land → Cuddly Demos** (scro
   (`stmmu.cpp::bus_contention`), **non porté depuis Hatari** (qui ne le modélise pas) ;
   divergerait de l'oracle pixel. À ne traiter que si besoin matériel réel hors Hatari.
   ```
-- [ ] **Arkanoid** — écran-titre OK (FDC rotationnel, cf. CHANGELOG), **mais le jeu ne
+- [ ] **Arkanoid** — page de titre « ARkanoid » atteinte (FDC rotationnel, cf. CHANGELOG),
   ```
-  démarre jamais** (titre → partie : protection ? second chargement ? IRQ ?). À diff'er
-  contre Hatari (`--keys`/`--joy`, trace IRQ). 🎯 étalon suite FDC/protection.
+  **mais plante / ne franchit jamais la partie** (même TOS 1.02fr — protection ? second
+  chargement ? IRQ ?). Détail terrain → §Catalogue logiciels. À diff'er contre Hatari
+  (`--keys`/`--joy`, trace IRQ). 🎯 étalon suite FDC/protection.
   ```
 
 ## Bus / memory map / MMU
@@ -159,9 +218,3 @@ Ordre affichage : **Spectrum 512 ✅ → Enchanted Land → Cuddly Demos** (scro
   on/off, DD/HD, mono/couleur.
   ```
 - [ ] Tests de non-régression (screenshots de référence EmuTOS/TOS 1.02).
-- [ ] CMake `FetchContent` pour les sous-modules ; CI Linux + macOS.
-
-## Confort GUI
-
-- [ ] Chargeur de ROM **dans l'appli** (la Disk Library gère déjà les disquettes).
-- [ ] Désassembleur live + points d'arrêt ; plein écran ; zoom réglable.

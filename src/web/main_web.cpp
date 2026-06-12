@@ -340,7 +340,6 @@ EMSCRIPTEN_KEEPALIVE void neost_audio_render(float* buf, int frames, int rate) {
 } // extern "C"
 
 int main(int argc, char** argv) {
-    const std::string romPath  = (argc > 1) ? argv[1] : "/roms/etos192us.img";
     const std::string diskPath = (argc > 2) ? argv[2] : "/disks/diskA.st";
 
     // NeoST n'a plus qu'un seul cœur 68000 : Moira (cycle-exact). Le paramètre d'URL
@@ -353,21 +352,30 @@ int main(int argc, char** argv) {
     }, cpuBuf);
     const CpuCore cpuCore = Cpu68k::parseCore(cpuBuf);
 
-    // Profil machine choisi par ?machine=st|megast|ste|megaste (défaut STE).
-    char machBuf[16] = "ste";
+    // Profil machine choisi par ?machine=st|megast|ste|megaste (défaut Mega STE).
+    char machBuf[16] = "megaste";
     EM_ASM({
-        var m = new URLSearchParams(location.search).get('machine') || 'ste';
+        var m = new URLSearchParams(location.search).get('machine') || 'megaste';
         stringToUTF8(m, $0, 16);
     }, machBuf);
     const MachineType machType = parseMachine(machBuf);
 
-    // Taille de ST-RAM choisie par ?mem=256k|512k|1m|2m|4m (défaut 512 Ko).
-    char memBuf[16] = "512k";
+    // Taille de ST-RAM choisie par ?mem=256k|512k|1m|2m|4m (défaut 1 Mo).
+    char memBuf[16] = "1m";
     EM_ASM({
-        var m = new URLSearchParams(location.search).get('mem') || '512k';
+        var m = new URLSearchParams(location.search).get('mem') || '1m';
         stringToUTF8(m, $0, 16);
     }, memBuf);
     const std::size_t ramBytes = parseRamBytes(memBuf);
+
+    // ROM par défaut adaptée à la machine : EmuTOS 256 Ko (« STe/Mega STe »,
+    // programme le SCU) pour STE/Mega STE, EmuTOS 192 Ko pour ST/Mega ST
+    // (cf. CLAUDE.md § Disquettes & ROM). Repli sur 192 Ko si la 256 Ko n'est
+    // pas embarquée (déploiement NEOST_WEB_FREE_ONLY réduit).
+    const bool wantsSteTos = (machType == MachineType::Ste ||
+                              machType == MachineType::MegaSte);
+    const std::string romPath = (argc > 1) ? argv[1]
+        : (wantsSteTos ? "/roms/etos256us.img" : "/roms/etos192us.img");
 
     if (!glfwInit()) { std::fprintf(stderr, "[web] glfwInit a échoué\n"); return 1; }
 
@@ -382,8 +390,11 @@ int main(int argc, char** argv) {
     g_machine = &machine;
     std::fprintf(stderr, "[web] cœur CPU : %s | machine : %s | RAM : %s\n",
                  Cpu68k::coreName(machine.cpu.core()), machineName(machType), ramLabel(ramBytes));
-    if (!machine.loadTos(romPath))
-        std::fprintf(stderr, "[web] TOS introuvable (%s) — CPU à vide.\n", romPath.c_str());
+    if (!machine.loadTos(romPath)) {
+        std::fprintf(stderr, "[web] TOS introuvable (%s) — repli EmuTOS 192 Ko.\n", romPath.c_str());
+        if (romPath != "/roms/etos192us.img" && !machine.loadTos("/roms/etos192us.img"))
+            std::fprintf(stderr, "[web] aucun TOS chargeable — CPU à vide.\n");
+    }
     if (!machine.loadDisk(diskPath))
         std::fprintf(stderr, "[web] disquette introuvable (%s).\n", diskPath.c_str());
     machine.mfp.setColorMonitor(true);  // couleur (basse rés) par défaut

@@ -1,88 +1,226 @@
 <!DOCTYPE html>
 <!--
   shell.html — Page hôte de NeoST WebAssembly.
-  Fournit le canvas WebGL, quelques contrôles (Reset, moniteur, disquettes) et
-  branche les fonctions C exportées (neost_reset / neost_set_mono /
-  neost_mount_disk) via Module.ccall. (c) 2026 VERHILLE Arnaud — projet NeoST.
+  Fournit le canvas WebGL (habillé en « moniteur »), les contrôles (machine,
+  ROM, disquettes, plein écran, joystick clavier) et branche les fonctions C
+  exportées (neost_reset / neost_set_mono / neost_mount_disk / …) via
+  Module.ccall. Défaut : Atari Mega STE, 1 Mo, EmuTOS 256 Ko.
+  (c) 2026 VERHILLE Arnaud — projet NeoST.
 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NeoST — Atari ST dans le navigateur</title>
+  <title>NeoST — Atari Mega STE dans le navigateur</title>
   <style>
-    :root { color-scheme: dark; }
+    :root {
+      color-scheme: dark;
+      --bg: #101014;
+      --panel: #1a1a21;
+      --panel2: #22222b;
+      --border: #32323e;
+      --text: #e8e8ec;
+      --muted: #9a9aa6;
+      --faint: #6a6a76;
+      --accent: #7aa2ff;
+      --accent2: #57d9a3;
+      --on: #2f5d46;
+    }
+    * { box-sizing: border-box; }
     body {
-      margin: 0; background: #16161a; color: #e8e8ec;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 0 1rem 2rem;
     }
-    h1 { font-size: 1.2rem; margin: 0.8rem 0 0.2rem; font-weight: 600; }
-    .sub { color: #8a8a96; font-size: 0.8rem; margin-bottom: 0.6rem; }
-    #toolbar {
-      display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
-      margin-bottom: 0.6rem; max-width: 680px; justify-content: center;
+
+    /* --- En-tête : bandes « Fuji » Atari + titre --------------------------- */
+    header { text-align: center; margin: 1rem 0 0.8rem; }
+    .fuji {
+      display: inline-flex; gap: 4px; vertical-align: middle; margin-right: 10px;
     }
-    button, select, label.file {
-      background: #2a2a33; color: #e8e8ec; border: 1px solid #3a3a45;
-      border-radius: 6px; padding: 0.4rem 0.7rem; font-size: 0.85rem; cursor: pointer;
+    .fuji span { width: 7px; height: 26px; border-radius: 2px; transform: skewX(-12deg); }
+    .fuji span:nth-child(1) { background: #e8443a; }
+    .fuji span:nth-child(2) { background: #f5a623; height: 30px; }
+    .fuji span:nth-child(3) { background: #f8e71c; height: 33px; }
+    .fuji span:nth-child(4) { background: #57d9a3; height: 30px; }
+    .fuji span:nth-child(5) { background: #4a90d9; }
+    h1 { display: inline; font-size: 1.35rem; font-weight: 700; letter-spacing: 0.02em; }
+    .sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.35rem; }
+
+    /* --- Le « moniteur » : bezel autour du canvas ------------------------- */
+    #monitor {
+      background: linear-gradient(180deg, #2b2b33, #1d1d24);
+      border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 14px 10px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      width: min(96vw, 760px);
     }
-    button:hover, select:hover, label.file:hover { background: #343440; }
-    input[type=file] { display: none; }
+    #bezel {
+      background: #000; border-radius: 6px; overflow: hidden;
+      border: 1px solid #000; position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #bezel.dragover { outline: 3px dashed var(--accent); outline-offset: -6px; }
     #canvas {
-      border: 1px solid #000; background: #000;
-      image-rendering: pixelated; width: 640px; height: 400px;
-      outline: none;
+      display: block; background: #000; image-rendering: pixelated;
+      width: 100%; height: auto; outline: none;
     }
-    #status { font-size: 0.78rem; color: #8a8a96; margin-top: 0.5rem; min-height: 1.1em; }
-    .hint { font-size: 0.75rem; color: #6a6a76; max-width: 660px; text-align: center; margin: 0.4rem 0 1rem; }
-    code { background: #2a2a33; padding: 0 0.3em; border-radius: 4px; }
+    #bezel:fullscreen { border-radius: 0; }
+    #bezel:fullscreen #canvas { width: 100%; height: 100%; object-fit: contain; }
+
+    /* Barre d'état sous l'écran : statut + badge machine + plein écran */
+    #screenbar {
+      display: flex; align-items: center; gap: 0.6rem;
+      margin-top: 8px; min-height: 1.8em;
+    }
+    #status { flex: 1; font-size: 0.8rem; color: var(--muted);
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #status.ok { color: var(--accent2); }
+    .badge {
+      font-size: 0.72rem; color: var(--text); background: var(--panel2);
+      border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.6rem;
+      white-space: nowrap;
+    }
+    .iconbtn {
+      background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.25rem 0.55rem; font-size: 0.8rem; cursor: pointer;
+    }
+    .iconbtn:hover { background: #2d2d38; }
+
+    /* --- Panneaux de contrôles -------------------------------------------- */
+    #controls {
+      display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center;
+      margin-top: 0.9rem; width: min(96vw, 760px);
+    }
+    fieldset {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.55rem 0.7rem 0.65rem; margin: 0; flex: 1 1 220px; min-width: 220px;
+    }
+    legend {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--faint); padding: 0 0.35rem;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+    button, select, label.file {
+      background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+      border-radius: 7px; padding: 0.38rem 0.65rem; font-size: 0.83rem; cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover, select:hover, label.file:hover { background: #2d2d38; border-color: #444452; }
+    button.primary { background: #2c4a86; border-color: #3c5fa6; }
+    button.primary:hover { background: #355699; }
+    button.toggle.on { background: var(--on); border-color: #3f7a5c; }
+    select { max-width: 100%; }
+    input[type=file] { display: none; }
+
+    /* --- Aide -------------------------------------------------------------- */
+    details {
+      width: min(96vw, 760px); margin-top: 0.9rem;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.5rem 0.8rem; font-size: 0.8rem; color: var(--muted);
+    }
+    summary { cursor: pointer; color: var(--text); font-size: 0.83rem; }
+    details ul { margin: 0.5rem 0 0.2rem; padding-left: 1.2rem; line-height: 1.55; }
+    code { background: var(--panel2); padding: 0 0.3em; border-radius: 4px; }
+    kbd {
+      background: var(--panel2); border: 1px solid var(--border); border-bottom-width: 2px;
+      border-radius: 4px; padding: 0 0.35em; font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
-  <h1>NeoST — émulateur Atari ST</h1>
-  <div class="sub">WebAssembly · cœur 68000 Moira (cycle-exact) · EmuTOS</div>
+  <header>
+    <div class="fuji" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    <h1>NeoST</h1>
+    <div class="sub">Atari Mega STE dans le navigateur · WebAssembly · 68000 Moira cycle-exact · EmuTOS</div>
+  </header>
 
-  <div id="toolbar">
-    <button id="btnReset">Reset</button>
-    <button id="btnMono">Passer en Mono</button>
-    <button id="btnSound" title="Bruits mécaniques du lecteur de disquette">Son lecteur : on</button>
-    <select id="machineSel" title="Modèle de machine (recharge la page)">
-      <option value="st">Machine : ST</option>
-      <option value="megast">Machine : Mega ST</option>
-      <option value="ste">Machine : STE</option>
-      <option value="megaste">Machine : Mega STE</option>
-    </select>
-    <select id="memSel" title="Mémoire ST-RAM (recharge la page)">
-      <option value="256k">RAM : 256 Ko</option>
-      <option value="512k">RAM : 512 Ko</option>
-      <option value="1m">RAM : 1 Mo</option>
-      <option value="2m">RAM : 2 Mo</option>
-      <option value="4m">RAM : 4 Mo</option>
-    </select>
-    <select id="romSel" title="ROM / TOS (change + reset)"></select>
-    <select id="diskSel" title="Disquette préchargée"></select>
-    <button id="btnMount">Monter + Reset</button>
-    <button id="btnMountB" title="Monter la disquette sélectionnée dans le lecteur B">→ B</button>
-    <label class="file">Charger un .st…
-      <input type="file" id="diskFile" accept=".st,.msa">
-    </label>
+  <div id="monitor">
+    <div id="bezel">
+      <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+    </div>
+    <div id="screenbar">
+      <span id="status">Chargement du module WebAssembly…</span>
+      <span class="badge" id="machineBadge">—</span>
+      <button class="iconbtn" id="btnFullscreen" title="Plein écran (Échap pour sortir)">⛶ Plein écran</button>
+    </div>
   </div>
 
-  <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
-  <div id="status">Chargement du module WebAssembly…</div>
-  <div class="hint">
-    Cliquez dans l'écran pour <b>capturer la souris</b> (curseur GEM), <code>Échap</code> pour la libérer.
-    Le clavier est routé vers l'IKBD. Couleur = basse résolution, Mono = haute résolution.<br>
-    <b>Disquettes de jeu</b> : « Monter + Reset » bascule au besoin sur <b>TOS 1.0x</b> (EmuTOS ne boote
-    que les disquettes système). Choisissez une ROM à la main pour figer ce choix.
+  <div id="controls">
+    <fieldset>
+      <legend>Machine</legend>
+      <div class="row">
+        <select id="machineSel" title="Modèle de machine (recharge la page)">
+          <option value="st">Atari ST</option>
+          <option value="megast">Atari Mega ST</option>
+          <option value="ste">Atari STE</option>
+          <option value="megaste">Atari Mega STE</option>
+        </select>
+        <select id="memSel" title="Mémoire ST-RAM (recharge la page)">
+          <option value="256k">256 Ko</option>
+          <option value="512k">512 Ko</option>
+          <option value="1m">1 Mo</option>
+          <option value="2m">2 Mo</option>
+          <option value="4m">4 Mo</option>
+        </select>
+        <select id="romSel" title="ROM / TOS (change + reset)"></select>
+        <button id="btnReset" title="Reset à froid de la machine">Reset</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Disquettes</legend>
+      <div class="row">
+        <select id="diskSel" title="Disquette préchargée"></select>
+        <button id="btnMount" class="primary" title="Monte en A: et reboote">Monter A: + Reset</button>
+        <button id="btnMountB" title="Monter la disquette sélectionnée dans le lecteur B (sans reset)">→ B:</button>
+        <label class="file" title="Charger une image disquette depuis votre disque (ou glissez-la sur l'écran)">
+          Ouvrir un fichier…
+          <input type="file" id="diskFile" accept=".st,.msa,.dim,.stx">
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Affichage &amp; périphériques</legend>
+      <div class="row">
+        <button id="btnMono" class="toggle" title="Bascule moniteur couleur (basse/moyenne rés.) ↔ monochrome (haute rés.) — provoque un reset">Écran : Couleur</button>
+        <button id="btnJoy" class="toggle" title="Flèches + Ctrl droit = joystick port 1 (les manettes USB sont toujours détectées)">Joystick clavier : off</button>
+        <button id="btnSound" class="toggle on" title="Bruits mécaniques du lecteur de disquette">Son lecteur : on</button>
+      </div>
+    </fieldset>
   </div>
+
+  <details>
+    <summary>Aide &amp; raccourcis</summary>
+    <ul>
+      <li><b>Souris</b> : cliquez dans l'écran pour la <b>capturer</b> (curseur GEM), <kbd>Suppr</kbd> pour la libérer. <kbd>Échap</kbd> est envoyée au ST.</li>
+      <li><b>Clavier</b> : routé vers l'IKBD (disposition US). <b>Joystick clavier</b> : flèches + <kbd>Ctrl droit</kbd> = bouton feu (port 1).</li>
+      <li><b>Disquettes de jeu</b> : « Monter A: + Reset » bascule au besoin sur un <b>vrai TOS</b> (EmuTOS ne boote que les disquettes système) — TOS 2.06 sur STE/Mega STE, TOS 1.0x sur ST. Choisissez une ROM à la main pour figer ce choix.</li>
+      <li><b>Glisser-déposer</b> : lâchez une image <code>.st</code> / <code>.msa</code> / <code>.dim</code> / <code>.stx</code> directement sur l'écran pour la monter en A: et rebooter.</li>
+      <li><b>Machine &amp; RAM</b> : figées à la construction de la machine → leur changement recharge la page (paramètres d'URL <code>?machine=</code> et <code>?mem=</code>, partageables).</li>
+      <li><b>Son</b> : le navigateur exige un geste utilisateur — cliquez une fois dans l'écran pour débloquer l'audio (YM2149 + DMA STE + bruits de lecteur).</li>
+    </ul>
+  </details>
 
   <script type='text/javascript'>
     var statusEl = document.getElementById('status');
     var monoOn = false;
+    var joyOn = false;
     var ready = false;
     var romUserChosen = false;   // l'utilisateur a-t-il choisi une ROM à la main ?
+
+    // Paramètres de construction (machine + RAM), lus une fois : aussi affichés
+    // dans le badge sous l'écran et utilisés pour préselectionner la bonne ROM.
+    var urlParams = new URLSearchParams(location.search);
+    var machineParam = urlParams.get('machine') || 'megaste';
+    var memParam = urlParams.get('mem') || '1m';
+    var isSteFamily = (machineParam === 'ste' || machineParam === 'megaste');
+
+    var MACHINE_LABELS = { st: 'ST', megast: 'Mega ST', ste: 'STE', megaste: 'Mega STE' };
+    var MEM_LABELS = { '256k': '256 Ko', '512k': '512 Ko', '1m': '1 Mo', '2m': '2 Mo', '4m': '4 Mo' };
+    document.getElementById('machineBadge').textContent =
+      'Atari ' + (MACHINE_LABELS[machineParam] || machineParam) + ' · ' + (MEM_LABELS[memParam] || memParam);
 
     var Module = {
       canvas: (function () {
@@ -101,20 +239,26 @@
         // Une fois prêt, on ignore les setStatus('') tardifs d'Emscripten qui
         // effaceraient notre message "Prêt".
         if (ready && !text) return;
-        if (statusEl) statusEl.textContent = text || '';
+        if (statusEl) { statusEl.textContent = text || ''; statusEl.className = ''; }
       }
     };
     Module.setStatus('Chargement du module WebAssembly…');
+
+    function setStatusOk(text) {
+      if (statusEl) { statusEl.textContent = text; statusEl.className = 'ok'; }
+    }
 
     // « Prêt » est déclenché par le cœur C à sa première trame (cf. main_web.cpp,
     // EM_ASM appelant neostOnReady) : garantit que le runtime tourne vraiment.
     window.neostOnReady = function () {
       ready = true;
-      if (statusEl) statusEl.textContent = 'Prêt — cliquez dans l\'écran pour jouer.';
-      // Peuple le menu des disquettes depuis le FS virtuel : montre exactement ce
-      // qui a été embarqué (tout en local, EmuTOS+diskA pour le déploiement libre).
-      populateSelect('diskSel', '/disks', /\.(st|msa)$/i);
-      populateSelect('romSel', '/roms', /\.(img|rom|tos|bin)$/i, '/roms/etos192us.img');
+      setStatusOk('Prêt — cliquez dans l\'écran pour jouer.');
+      // Peuple les menus depuis le FS virtuel : montre exactement ce qui a été
+      // embarqué (tout en local, EmuTOS+diskA pour le déploiement libre). La ROM
+      // présélectionnée suit la machine : EmuTOS 256 Ko (STE/Mega STE) ou 192 Ko.
+      populateSelect('diskSel', '/disks', /\.(st|msa|dim|stx)$/i, '/disks/diskA.st');
+      populateSelect('romSel', '/roms', /\.(img|rom|tos|bin)$/i,
+                     isSteFamily ? '/roms/etos256us.img' : '/roms/etos192us.img');
       driveLoad();   // précharge les WAV de bruits de lecteur (roms/drivesound/)
       psgAudioStart();   // branche la sortie son du YM2149 (Web Audio)
     };
@@ -204,6 +348,7 @@
     document.getElementById('btnSound').addEventListener('click', function () {
       drive.enabled = !drive.enabled;
       this.textContent = drive.enabled ? 'Son lecteur : on' : 'Son lecteur : off';
+      this.classList.toggle('on', drive.enabled);
       if (!drive.enabled) driveMotorStop();
     });
 
@@ -228,6 +373,7 @@
     function callMount(p)   { if (ready) Module.ccall('neost_mount_disk', null, ['string'], [p]); }
     function callMountB(p)  { if (ready) Module.ccall('neost_mount_disk_b', null, ['string'], [p]); }
     function callLoadTos(p) { if (ready) Module.ccall('neost_load_tos', null, ['string'], [p]); }
+    function callKbdJoy(on) { if (ready) Module.ccall('neost_set_kbd_joystick', null, ['number', 'number'], [on ? 1 : 0, 1]); }
 
     // NeoST n'a plus qu'un seul cœur 68000 : Moira (cycle-exact). Le sélecteur de
     // cœur a été retiré (le paramètre d'URL ?cpu= reste toléré côté C++ pour compat).
@@ -235,7 +381,7 @@
     // Sélecteur de modèle machine : figé à la construction → recharge avec ?machine=
     (function () {
       var sel = document.getElementById('machineSel');
-      sel.value = new URLSearchParams(location.search).get('machine') || 'ste';
+      sel.value = machineParam;
       sel.addEventListener('change', function () {
         var p = new URLSearchParams(location.search);
         p.set('machine', sel.value);
@@ -246,7 +392,7 @@
     // Sélecteur de mémoire : taille figée à la construction → recharge avec ?mem=
     (function () {
       var sel = document.getElementById('memSel');
-      sel.value = new URLSearchParams(location.search).get('mem') || '512k';
+      sel.value = memParam;
       sel.addEventListener('change', function () {
         var p = new URLSearchParams(location.search);
         p.set('mem', sel.value);
@@ -256,18 +402,31 @@
 
     document.getElementById('btnReset').addEventListener('click', callReset);
 
+    // Plein écran sur le bezel (le canvas s'y étire en conservant le ratio).
+    document.getElementById('btnFullscreen').addEventListener('click', function () {
+      var bezel = document.getElementById('bezel');
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (bezel.requestFullscreen) bezel.requestFullscreen();
+      document.getElementById('canvas').focus();
+    });
+
     // Changer de ROM/TOS dans le menu = chargement à chaud + reset (choix explicite).
     document.getElementById('romSel').addEventListener('change', function () {
       romUserChosen = true;
       callLoadTos(this.value);
-      Module.setStatus('ROM : ' + this.value.split('/').pop());
+      setStatusOk('ROM : ' + this.value.split('/').pop());
     });
 
-    // Cherche une vraie ROM TOS 1.0x dans le menu (pour booter les jeux).
+    // Cherche un vrai TOS adapté à la machine (pour booter les jeux) : TOS 2.06
+    // puis 1.62 sur STE/Mega STE (qui exigent un TOS ≥ 1.06), TOS 1.0x sur ST.
     function findRealTos() {
+      var prefs = isSteFamily
+        ? [/tos2?06us/i, /tos2?06uk/i, /tos2?06/i, /tos162us/i, /tos162/i]
+        : [/tos.*10[024]us/i, /tos.*10[024]uk/i, /tos.*1\.0|mega tos/i, /tos10/i];
       var opts = document.getElementById('romSel').options;
-      for (var i = 0; i < opts.length; i++)
-        if (/tos.*1\.0|mega tos/i.test(opts[i].textContent)) return opts[i].value;
+      for (var p = 0; p < prefs.length; p++)
+        for (var i = 0; i < opts.length; i++)
+          if (prefs[p].test(opts[i].textContent)) return opts[i].value;
       return null;
     }
 
@@ -275,44 +434,86 @@
     document.getElementById('btnMountB').addEventListener('click', function () {
       var p = document.getElementById('diskSel').value;
       callMountB(p);
-      Module.setStatus('Lecteur B : ' + p.split('/').pop());
+      setStatusOk('Lecteur B : ' + p.split('/').pop());
     });
 
     document.getElementById('btnMono').addEventListener('click', function () {
       monoOn = !monoOn;
       callMono(monoOn ? 1 : 0);
-      this.textContent = monoOn ? 'Passer en Couleur' : 'Passer en Mono';
+      this.textContent = monoOn ? 'Écran : Monochrome' : 'Écran : Couleur';
+      this.classList.toggle('on', monoOn);
     });
 
-    document.getElementById('btnMount').addEventListener('click', function () {
-      var p = document.getElementById('diskSel').value;
+    document.getElementById('btnJoy').addEventListener('click', function () {
+      joyOn = !joyOn;
+      callKbdJoy(joyOn);
+      this.textContent = joyOn ? 'Joystick clavier : on' : 'Joystick clavier : off';
+      this.classList.toggle('on', joyOn);
+      document.getElementById('canvas').focus();
+    });
+
+    // Monte une disquette en A: et reboote. Les disquettes de jeu ne bootent pas
+    // sous EmuTOS : si on y est encore (et que l'utilisateur n'a pas choisi de
+    // ROM), bascule sur un vrai TOS adapté à la machine avant de monter, sinon
+    // « monter » semble ne rien faire.
+    function mountWithAutoTos(path, displayName) {
       var rom = document.getElementById('romSel');
-      // Les disquettes de jeu ne bootent pas sous EmuTOS : si on y est encore (et
-      // que l'utilisateur n'a pas choisi de ROM), bascule sur TOS 1.0x avant de
-      // monter, sinon « monter » semble ne rien faire.
       var note = '';
       if (!romUserChosen && /etos|emutos/i.test(rom.value)) {
         var tos = findRealTos();
         if (tos) { rom.value = tos; callLoadTos(tos); note = ' — ROM : ' + tos.split('/').pop(); }
       }
-      callMount(p);
-      Module.setStatus('Monté : ' + p.split('/').pop() + note);
+      callMount(path);
+      setStatusOk('Monté : ' + displayName + note);
+    }
+
+    document.getElementById('btnMount').addEventListener('click', function () {
+      var p = document.getElementById('diskSel').value;
+      mountWithAutoTos(p, p.split('/').pop());
     });
 
-    // Upload d'une disquette .st depuis le disque local → FS virtuel → montage.
-    document.getElementById('diskFile').addEventListener('change', function (ev) {
-      var file = ev.target.files[0];
+    // Charge une image disquette locale (File) → FS virtuel → montage en A:.
+    function mountLocalFile(file) {
       if (!file || !ready) return;
+      var m = /\.(st|msa|dim|stx)$/i.exec(file.name);
+      if (!m) { Module.setStatus('Format non reconnu : ' + file.name + ' (.st/.msa/.dim/.stx)'); return; }
       var reader = new FileReader();
       reader.onload = function () {
         var data = new Uint8Array(reader.result);
-        var path = '/disks/_upload.st';
+        // L'extension d'origine est conservée : le FDC détecte aussi par contenu,
+        // mais STX (Pasti) se repère par son en-tête + extension.
+        var path = '/disks/_upload.' + m[1].toLowerCase();
         Module.FS.writeFile(path, data);
-        callMount(path);
-        Module.setStatus('Monté : ' + file.name + ' (' + data.length + ' octets)');
+        mountWithAutoTos(path, file.name + ' (' + data.length + ' octets)');
       };
       reader.readAsArrayBuffer(file);
+    }
+
+    document.getElementById('diskFile').addEventListener('change', function (ev) {
+      mountLocalFile(ev.target.files[0]);
+      ev.target.value = '';   // permet de recharger le même fichier
     });
+
+    // Glisser-déposer d'une image disquette directement sur l'écran.
+    (function () {
+      var bezel = document.getElementById('bezel');
+      ['dragenter', 'dragover'].forEach(function (t) {
+        bezel.addEventListener(t, function (e) {
+          e.preventDefault(); e.stopPropagation();
+          bezel.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(function (t) {
+        bezel.addEventListener(t, function (e) {
+          e.preventDefault(); e.stopPropagation();
+          bezel.classList.remove('dragover');
+        });
+      });
+      bezel.addEventListener('drop', function (e) {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length)
+          mountLocalFile(e.dataTransfer.files[0]);
+      });
+    })();
   </script>
   {{{ SCRIPT }}}
 </body>
