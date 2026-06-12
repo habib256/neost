@@ -1133,18 +1133,29 @@ uint32_t Shifter::videoCounter() const {
     // [dispStart, dispStart+disp) (VDE_On..VDE_Off) ; avant (bordure HAUTE) le
     // compteur reste à la base latchée ; pendant, il vaut base de ligne + offset
     // intra-ligne ; après (bordure BASSE), il reste figé sur l'écran entièrement lu.
-    // VDE_On LIVE (cf. liveStartHBL_) : reflète un retrait de bordure HAUTE en cours
-    // (bascule 60 Hz dans la bordure haute → 34) → le compteur monte plus tôt, comme
-    // sur le vrai matériel (Hatari nStartHBL). Un écran 50 Hz normal garde 63.
-    const int  dispStart = liveStartHBL_;
+    // VDE_On/Off LIVE : sur une trame à écritures freq/res, on consulte la machine
+    // Glue LIVE (glueStartHBL_/glueEndHBL_, mêmes règles que Hatari nStartHBL/nEndHBL,
+    // re-fermeture comprise) — l'ancien modèle « sticky » (liveStartHBL_, retrait
+    // verrouillé à la 1ʳᵉ bascule) MENTAIT aux calibrations qui testent une impulsion
+    // puis vérifient si elle a réellement ouvert le haut (Enchanted Land en jeu :
+    // le moteur croyait sa visée bonne alors que le GLUE la refusait). Un écran sans
+    // écriture freq/res garde le chemin historique (liveStartHBL_ = 63, zéro régression).
     const int  line = static_cast<int>(fc / kCyclesPerLine);
     const int  X    = static_cast<int>(fc % kCyclesPerLine);
+    int dispStart = liveStartHBL_;
+    int disp2     = disp;
+    if (frameMode_ != Mode::High && !syncWrites_.empty()
+        && static_cast<std::size_t>(line) + 1 < glueLines_.size()) {
+        const_cast<Shifter*>(this)->liveGlueCatchUp(line);
+        dispStart = glueStartHBL_;
+        disp2     = glueEndHBL_ - glueStartHBL_;        // bordure basse retirée → plus long
+    }
     const int  la   = line - dispStart;                 // index de ligne active du faisceau
     uint32_t addr = vcLineBase_;
     if (la >= 0) {
         // Ligne au-delà de celle du compteur matérialisé (rendu pas encore passé) :
         // extrapole au stride courant. Bordure basse : figé à l'écran entièrement lu.
-        const int laEff = la < disp ? la : disp;
+        const int laEff = la < disp2 ? la : disp2;
         if (laEff > vcLineY_) {
             if (!syncWrites_.empty() && frameMode_ != Mode::High) {
                 // Trame à tricks : somme des octets RÉELS par ligne (machine Glue
@@ -1161,7 +1172,7 @@ uint32_t Shifter::videoCounter() const {
         }
         // Offset intra-ligne UNIQUEMENT si la ligne courante n'a pas déjà été rendue
         // (la < vcLineY_ = bordure droite : le stride de la ligne est déjà accumulé).
-        if (la < disp && laEff >= vcLineY_) {
+        if (la < disp2 && laEff >= vcLineY_) {
             // Fenêtre DE RÉELLE de la ligne courante (machine Glue LIVE) : une bascule
             // 60/50 Hz mi-ligne déplace la fin du DE (right-2, stop-middle, retraits) et
             // le compteur doit le refléter EN DIRECT — port de Video_CalculateAddress,
