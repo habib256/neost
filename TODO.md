@@ -176,12 +176,13 @@ ou `disks/stx/` (`.stx`).
 
 ## CPU : IRQ, Moira, MegaSTE
 
-- [x] **MC68881 — arithmétique flottante** FAITE (cf. `CHANGELOG.md` /
-  ```
+- [x] ~~MC68881 — arithmétique flottante~~ → **FAIT** (cf. `CHANGELOG.md`,
   `src/io/Fpu.{hpp,cpp}`) : FP0-7 étendu 80 bits, formats B/W/L/S/D/X/P, dialogue
-  Command/Response/Operand/Condition/Save/Restore complet, FMOVECR bit-exact.
-  Limite documentée : calculs en double hôte (53 bits de mantisse, pas 64).
-  ```
+  Command/Response/Operand/Condition/Save/Restore complet, FMOVECR bit-exact ;
+  validé mini-ROM SFP004 (`tools/make_fpu_testrom.py`, 7/7) + diag MegaSTE
+  « FPU idle ». _Reste (faible priorité) : mantisse 64 bits réelle (softfloat —
+  les calculs passent par le double hôte, 53 bits) ; IRQ d'exception FP non
+  câblée (le socket se scrute, la glue SFP004 n'en a pas besoin)._
 
 ## Stockage & contrôleurs
 

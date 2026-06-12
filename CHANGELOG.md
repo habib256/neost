@@ -855,9 +855,14 @@ taguées (0.1.x). Le restant est dans [`TODO.md`](TODO.md).
   transcendantes via libm hôte), codes condition N/Z/I/NAN, octet quotient,
   exceptions OPERR/DZ/OVFL/BSUN en bits FPSR (pas d'IRQ : le socket se scrute).
   **Limite documentée** : calculs en double hôte (53 bits de mantisse au lieu de
-  64). Validation : mini-ROM `tools/make_fpu_testrom.py` (dialogue SFP004 réel) —
-  FADD.S, FDIV.D, FMOVECR π **bit-exact**, FSQRT.D **bit-exact**, FINTRZ+FMOVE.L
-  → 5/5 PASS ; défaut sans `--fpu` inchangé (« FPU not found » fidèle Hatari).
+  64). Validations : mini-ROM `tools/make_fpu_testrom.py` (dialogue SFP004 réel)
+  — FADD.S, FDIV.D, FMOVECR π **bit-exact**, FSQRT.D **bit-exact**, FINTRZ+
+  FMOVE.L, FCMP+Condition CIR, aller-retour FPCR → **7/7 PASS** ; diagnostic
+  cartouche MegaSTE (tos206us) : boot self-test « **FPU idle** » (détecté via la
+  trame Save CIR) avec `--fpu`, « FPU not found » fidèle Hatari sans (la
+  cartouche n'a pas de test FPU dédié au menu : F = Floppy, V = VME) ;
+  non-régression : écrans byte-identiques avec/sans `--fpu` (EmuTOS 256K,
+  TOS 2.06 megaste) et gate EmuTOS 192K/ST intact.
 - **Joypads STE COMPLETS + DIP MegaSTE** (`$FF9200-$FF9223`, port fidèle `joy.c` /
   `ioMemTabSTE.c`) : le stub « valeurs au repos » est remplacé par un vrai module
   `StePads` (`src/io/StePads.hpp`, membre `Bus::stePads`) — **multiplexage** par le
