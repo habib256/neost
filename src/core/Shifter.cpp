@@ -598,6 +598,18 @@ void Shifter::updateLiveStartHBL(int32_t frameCycle, bool isRes, uint8_t val) {
         liveStartHBL_ = VDE_On_60;                   // retrait haut verrouillé (sticky)
 }
 
+// Scanline affichée d'après la machine Glue LIVE (cf. déclaration).
+bool Shifter::liveLineDisplayed(int line) {
+    if (frameMode_ != Mode::High && !syncWrites_.empty()
+        && static_cast<std::size_t>(line) + 1 < glueLines_.size()) {
+        liveGlueCatchUp(line);
+        if (line < glueStartHBL_ || line >= glueEndHBL_) return false;
+        return !(glueLines_[static_cast<std::size_t>(line)].borderMask & glue::NO_DE);
+    }
+    const Geometry g = geometry();                       // fenêtre nominale (zéro trick)
+    return line >= g.dispStartLine && line < g.dispStartLine + g.displayLines;
+}
+
 // Valeurs par défaut d'une scanline selon res/freq COURANTS au début de la ligne
 // (port de Hatari Video_StartHBL). DisplayStartCycle n'est posé que s'il vaut -1
 // (une écriture de la ligne précédente a pu le pré-positionner : right-off full).

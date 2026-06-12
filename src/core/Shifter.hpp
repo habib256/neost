@@ -180,6 +180,16 @@ private:
     // Octets lus par le shifter sur une scanline (160 nominal, modulé par les
     // drapeaux de bordure glue — port BORDERBYTES_*). Hors line-offset/scroll STE.
     int  glueLineBytes(int scanline) const;
+
+public:
+    // La scanline est-elle AFFICHÉE (Display-Enable vertical) d'après la machine
+    // Glue LIVE ? Fenêtre nominale [VDE_On, VDE_Off) sans écriture freq/res ; avec
+    // tricks, glueStartHBL_/glueEndHBL_ + NO_DE par ligne (avance liveGlueCatchUp).
+    // Pilote les tics Timer B event-count (Machine::onTimerB), comme Hatari
+    // Video_AddInterruptTimerB recalculé par ligne.
+    bool liveLineDisplayed(int line);
+
+private:
     // Position du faisceau : ligne absolue + cycle dans la ligne. false si pas d'horloge.
     bool beamPos(int& line, int& lineCyc) const;
     // Écriture du compteur vidéo $FF8205/07/09 (STE) — port Video_ScreenCounter_WriteByte.

@@ -197,7 +197,10 @@ void Machine::scheduleFrameEvents() {
     // niveau 2, lui, est émis à CHAQUE scanline (0..lpf-1) comme sur le vrai matériel
     // (Video_InterruptHandler_HBL) — il restera l'ancre de Video_EndHBL (bordures H/B).
     sched.schedule(Scheduler::RENDER,  frameStart_ + static_cast<int64_t>(dispStart_) * cpl_ + deEnd_);
-    sched.schedule(Scheduler::TIMER_B, frameStart_ + static_cast<int64_t>(dispStart_) * cpl_ + timerBPos());
+    // Timer B : événement à CHAQUE scanline (comme le HBL) ; le tic n'est compté que
+    // si la ligne est réellement AFFICHÉE d'après la machine Glue LIVE (cf. onTimerB) —
+    // un retrait de bordure haut/bas en cours de trame déplace les tics, comme Hatari.
+    sched.schedule(Scheduler::TIMER_B, frameStart_ + timerBPos());
     sched.schedule(Scheduler::HBL,     frameStart_ + (cpl_ - 4));      // HBL niveau 2 (≈ fin de ligne 0)
     // VBL niveau 4 — port fidèle de Hatari (Video_InterruptHandler_VBL) : l'IRQ VBL
     // est générée VBL_VIDEO_CYCLE_OFFSET cycles APRÈS la fin de la DERNIÈRE ligne de
@@ -225,14 +228,19 @@ void Machine::onRender() {
 }
 
 void Machine::onTimerB() {
-    // Timer B en event-count : décompte une fois par ligne affichée (sur DE).
-    mfp.hblank();
-    cpu.updateIpl();                               // un underflow Timer B → IPL 6
+    // Timer B en event-count : décompte une fois par ligne AFFICHÉE (sur DE). La
+    // fenêtre verticale est LIVE (machine Glue) : un retrait de bordure haut (60 Hz
+    // vers la ligne 33 → VDE_On 34) ou bas en COURS de trame ajoute ses tics, comme
+    // Hatari (Video_AddInterruptTimerB par ligne) — Enchanted Land VÉRIFIE l'effet
+    // de ses impulsions en comptant les événements DE. tbLine_ = scanline ABSOLUE.
+    if (shifter.liveLineDisplayed(tbLine_)) {
+        mfp.hblank();
+        cpu.updateIpl();                           // un underflow Timer B → IPL 6
+    }
     ++tbLine_;
-    // Timer B event-count : une fois par ligne AFFICHÉE → scanline (dispStart_ + tbLine_).
-    if (tbLine_ < disp_)
+    if (tbLine_ < lpf_)
         sched.schedule(Scheduler::TIMER_B,                         // position recalculée → suit
-                       frameStart_ + static_cast<int64_t>(dispStart_ + tbLine_) * cpl_ + timerBPos());
+                       frameStart_ + static_cast<int64_t>(tbLine_) * cpl_ + timerBPos());
 }
 
 void Machine::onHbl() {
