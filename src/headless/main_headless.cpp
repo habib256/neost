@@ -44,6 +44,7 @@ void usage() {
         "  --loopback        « branche » le connecteur de bouclage RS232 (test S série)\n"
         "  --cart FILE       monte une cartouche ($FA0000) : Test Kit diagnostic, etc.\n"
         "  --glue-selftest   auto-test de la machine Glue (bordures) puis quitte\n"
+        "  --dump-at N A L F dump brut de L octets de RAM dès $A (hex) après la trame N → F\n"
         "  --screenshot PPM  dump du framebuffer final au format PPM\n"
         "  rom               image TOS (défaut roms/etos192fr.img)\n");
 }
@@ -160,6 +161,12 @@ int main(int argc, char** argv) {
     // relâcher) le feu et de bouger une sélection dans un menu joystick (ex. Vroom).
     int         joyScrFrame = -1;
     std::string joyScr;
+    // --dump-at N ADDR LEN FILE : dump brut de LEN octets de RAM à partir d'ADDR
+    // (hex) après la trame N — diff de buffers contre l'oracle Hatari (débogueur
+    // « m addr len »). Lectures via bus.read8 (RAM : sans effet de bord).
+    int         dumpAtFrame = -1;
+    uint32_t    dumpAddr = 0, dumpLen = 0;
+    std::string dumpPath;
     CpuCore     cpuCore    = CpuCore::Moira;   // seul cœur disponible (cycle-exact)
     MachineType machType   = MachineType::Ste;
     std::size_t ramBytes   = 512u * 1024u;
@@ -198,6 +205,10 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--joy-at"))      { joyAtFrame = std::atoi(next(a)); joyAt1 = (uint8_t)std::strtoul(next(a), nullptr, 0); }
         else if (!std::strcmp(a, "--mouse-at"))    { mouseAtFrame = std::atoi(next(a)); mouseAt = next(a); }
         else if (!std::strcmp(a, "--joy-script"))  { joyScrFrame = std::atoi(next(a)); joyScr = next(a); }
+        else if (!std::strcmp(a, "--dump-at"))     { dumpAtFrame = std::atoi(next(a));
+                                                     dumpAddr = (uint32_t)std::strtoul(next(a), nullptr, 16);
+                                                     dumpLen  = (uint32_t)std::strtoul(next(a), nullptr, 0);
+                                                     dumpPath = next(a); }
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
         else if (!std::strcmp(a, "--machine"))    machType  = parseMachine(next(a));
         else if (!std::strcmp(a, "--fpu"))        fpuPresent = true;
@@ -283,6 +294,18 @@ int main(int argc, char** argv) {
                     if      (rel % 4 == 0) { machine.ikbd.keyEvent(sc, true);  machine.cpu.updateIpl(); }
                     else if (rel % 4 == 2) { machine.ikbd.keyEvent(sc, false); machine.cpu.updateIpl(); }
                 }
+            }
+        }
+        if (dumpAtFrame >= 0 && frame == dumpAtFrame && dumpLen) {
+            std::FILE* df = std::fopen(dumpPath.c_str(), "wb");
+            if (df) {
+                for (uint32_t k = 0; k < dumpLen; ++k) {
+                    const uint8_t b = machine.bus.read8((dumpAddr + k) & 0xFFFFFFu);
+                    std::fwrite(&b, 1, 1, df);
+                }
+                std::fclose(df);
+                std::fprintf(stderr, "[headless] dump RAM trame %d : $%06X+%u → %s\n",
+                             frame, dumpAddr, dumpLen, dumpPath.c_str());
             }
         }
         if (joyAtFrame >= 0 && frame == joyAtFrame) {
