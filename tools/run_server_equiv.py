@@ -166,6 +166,34 @@ def main():
     check("le script joystick a un effet observable",
           ref_script != run_cli(SCRIPT_FRAMES, script=False), True)
 
+    # 2 ter. FIDÉLITÉ DE REPRISE D'UNE CELLULE : reprendre un emplacement doit rejouer
+    #    à l'identique QUEL QUE SOIT ce que le client a fait entre-temps. La première
+    #    version reposait au « load » le joystick tenu AU MOMENT DU LOAD, pas celui du
+    #    « save » : même cellule, deux hachages RAM selon la branche explorée (fuzz).
+    direct = run_server(["run 30", "play F*10", "save 0", "run 20", "observe"])
+    branch = run_server(["run 30", "play F*10", "save 0", "play .*5", "load 0", "run 20", "observe"])
+    d = [l[len("ok "):] for l in direct if l.startswith("ok frame=")][-1]
+    b = [l[len("ok "):] for l in branch if l.startswith("ok frame=")][-1]
+    check("reprise d'une cellule : identique quelle que soit la branche entre-temps", b, d)
+
+    # 2 quater. « joy » (serveur) et --joy (ligne de commande) lisent le MÊME masque.
+    #    --joy lisait « 80 » en base 0 (80 décimal = $50, bas+droite) là où le serveur
+    #    lisait de l'hexa : le bit FEU, le plus utilisé, était celui qui cassait.
+    cli_joy = subprocess.run([HEADLESS, ROM] + COMMON + OBSERVE +
+                             ["--frames", "60", "--joy", "80", "--probe-every", "60"],
+                             capture_output=True, text=True)
+    cli_ram = [l for l in cli_joy.stdout.splitlines()
+               if l.startswith("probe ")][-1][len("probe "):].split(" ", 1)[1]
+    srv_joy = run_server(["joy 80", "run 60"])
+    srv_ram = [l[len("ok "):] for l in srv_joy if l.startswith("ok frame=")][-1].split(" ", 1)[1]
+    check("--joy 80 (ligne de commande) == joy 80 (serveur)", srv_ram, cli_ram)
+
+    # 2 quinquies. La même session rejouée deux fois rend les mêmes octets.
+    session = ["run 20", "play " + SCRIPT, "save 0", "key make 39", "run 5", "key break 39",
+               "mouse 8 -4 1", "run 5", "peek 400 32", "load 0", "run 10", "observe"]
+    check("session rejouée deux fois : réponses identiques",
+          run_server(session), run_server(session))
+
     # 3. Un état EXPORTÉ par le serveur doit se relire par --load-state, sinon
     #    l'archive du pilote ne serait pas rejouable hors serveur.
     run_server(["play " + SCRIPT, "save 0", "export 0 " + exported])

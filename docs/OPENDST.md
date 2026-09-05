@@ -147,14 +147,14 @@ ROM n'est chargée qu'une fois, et les états tiennent dans des **emplacements e
 | Commande | Effet |
 |---|---|
 | `hello` | identité de la configuration figée : version, machine, RAM, médias |
-| `run N` | exécute N trames, entrées inchangées |
+| `run N` | exécute N trames (≤ 10 M par commande), entrées inchangées |
 | `play SCRIPT` | script joystick (même grammaire qu'`--joy-script`) : un masque par trame |
-| `joy P1 [P0]` | état joystick **tenu** (masques hexa) |
+| `joy P1 [P0]` | état joystick **tenu** (masques hexa — `80` = feu, comme `--joy 80` et `--joy-at N 80` côté ligne de commande, désormais hexa aussi) |
 | `key make\|break SC` | touche, scancode ST en hexa (`39` = espace) |
 | `mouse DX DY BTN` | souris relative ; `BTN` bit 0 = gauche, bit 1 = droite |
-| `peek ADR LEN` | LEN octets (≤ 4096) en hexa, sans effet de bord |
+| `peek ADR LEN` | LEN octets (≤ 4096) en hexa, sans effet de bord — l'espace I/O `$FF8000+` se lit `$FF`, comme `--probe` |
 | `observe` | un échantillon **sans avancer d'une trame** |
-| `save N` / `load N` | emplacement d'état en mémoire (`--server-slots`, 64 par défaut) |
+| `save N` / `load N` | emplacement d'état en mémoire (`--server-slots`, 64 par défaut). `load` reprend aussi l'état joystick **tenu au moment du `save`** : reprendre une cellule, c'est reprendre ses entrées |
 | `export N FICHIER` | grave un emplacement — le fichier est relisible par `--load-state` |
 | `import N FICHIER` | charge un fichier d'état dans un emplacement |
 | `probe SPEC` | ajoute une sonde à chaud (`NOM=ADR:LEN`) |
@@ -165,7 +165,8 @@ ROM n'est chargée qu'une fois, et les états tiennent dans des **emplacements e
 `run`, `play`, `load` et `observe` répondent avec **les champs d'observation** (`frame=`,
 `screen=`, `ram=`, sondes) : un rollout entier ne coûte qu'un aller-retour.
 
-Deux précisions de contrat : `hello` est **informatif** — ses chemins peuvent contenir des
+Trois précisions de contrat : une ligne vide ou un commentaire `#` ne produit **aucune
+réponse** (un client strict requête/réponse ne doit pas en envoyer) ; `hello` est **informatif** — ses chemins peuvent contenir des
 espaces, ne pas le découper en `clé=valeur` ; et `import` remet la datation de l'emplacement
 à **0** (un fichier ne porte pas de numéro de trame), là où `save`/`load` la conservent.
 `play` pilote le port 1 et **neutralise le port 0**, comme `--joy-script`.

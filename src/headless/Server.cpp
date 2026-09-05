@@ -41,6 +41,7 @@
 #include "util/JoyScript.hpp"
 
 #include <cerrno>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -57,13 +58,26 @@ namespace {
 struct Slot {
     std::vector<uint8_t> data;
     long long            frame = 0;
+    uint8_t              joy0  = 0;    // état joystick TENU par le client au moment du save :
+    uint8_t              joy1  = 0;    // reprendre une cellule, c'est reprendre aussi ses entrées
     bool                 used  = false;
 };
 
-void reply(const std::string& s) {
-    std::printf("%s\n", s.c_str());
-    std::fflush(stdout);            // le client attend la ligne : jamais de tampon retenu
+// Renvoie false si la ligne n'a pas pu être écrite : un stdout plein ou fermé
+// laissait le serveur « répondre » dans le vide et sortir 0 (mesuré sur /dev/full).
+// fwrite et non printf : un NUL dans une ligne du client tronquait l'écho.
+bool reply(const std::string& s) {
+    const bool ok = std::fwrite(s.data(), 1, s.size(), stdout) == s.size()
+                 && std::fputc('\n', stdout) != EOF
+                 && std::fflush(stdout) == 0;   // le client attend la ligne : jamais de tampon retenu
+    if (!ok) std::fprintf(stderr, "[server] cannot write a reply on stdout — stopping\n");
+    return ok;
 }
+
+// Longueur maximale d'un « run » : celle d'un script (JoyScript::kMaxFrames, ~55 h
+// de temps ST). « run 9223372036854775807 » gelait la session sans recours ; un
+// fuzz aléatoire a trouvé le cas seul (« run 53453622 »).
+constexpr long kMaxRunFrames = 10L * 1000L * 1000L;
 
 // Découpe « verbe reste-de-la-ligne ». Le reste n'est PAS re-découpé : un script
 // joystick et un chemin de fichier contiennent des espaces.
@@ -110,6 +124,12 @@ std::vector<std::string> words(const std::string& s) {
     return out;
 }
 
+// Arité STRICTE : « save 0 nimportequoi » répondait « ok » en ignorant la suite —
+// la classe de faute que parseLong ferme sur les nombres, rouverte sur le compte.
+bool arity(const std::vector<std::string>& a, std::size_t lo, std::size_t hi) {
+    return a.size() >= lo && a.size() <= hi;
+}
+
 // Pose l'état joystick sur les DEUX chemins (IKBD et pads STE $FF9200/02),
 // exactement comme la boucle --frames — un frontend qui n'en poserait qu'un
 // rendrait le rejoué au tuyau différent du rejoué en ligne de commande.
@@ -130,6 +150,10 @@ int run(Machine& machine, const Options& opts) {
     std::fprintf(stderr, "[server] ready — %zu slots, %zu probes. Commands on stdin.\n",
                  slots.size(), set.probes.size());
 
+    // Un client mort faisait mourir le serveur par SIGPIPE AVANT la fermeture propre de
+    // la trace (fichier tronqué, code de signal). Ignoré, l'écriture échoue en EPIPE,
+    // reply() le voit et la boucle sort par le chemin normal.
+    std::signal(SIGPIPE, SIG_IGN);
     std::string line;
     while (std::getline(std::cin, line)) {
         while (!line.empty() && (line.back() == '\r' || line.back() == '\n')) line.pop_back();
@@ -146,23 +170,24 @@ int run(Machine& machine, const Options& opts) {
             return true;
         };
 
-        if (cmd == "quit" || cmd == "exit") { reply("ok bye"); return 0; }
+        if (cmd == "quit" || cmd == "exit") { return reply("ok bye") ? 0 : 1; }
 
-        if (cmd == "hello") { reply("ok " + opts.identity); continue; }
+        if (cmd == "hello") { if (!reply("ok " + opts.identity)) return 1; continue; }
 
         if (cmd == "run") {
-            if (a.empty()) { reply("err run expects a frame count"); continue; }
+            if (!arity(a, 1, 1)) { if (!reply("err run expects exactly one frame count")) return 1; continue; }
             long n = 0;
-            if (!parseLong(a[0], n) || n < 0) { reply("err run expects a non-negative frame count"); continue; }
+            if (!parseLong(a[0], n) || n < 0) { if (!reply("err run expects a non-negative frame count")) return 1; continue; }
+            if (n > kMaxRunFrames) { if (!reply("err run: at most 10000000 frames per command")) return 1; continue; }
             for (long i = 0; i < n; ++i) { machine.runFrame(); ++frame; }
-            reply("ok " + fields());
+            if (!reply("ok " + fields())) return 1;
             continue;
         }
 
         if (cmd == "play") {
             std::vector<uint8_t> masks;
             std::string err;
-            if (!joyscript::parse(rest, masks, err)) { reply("err " + err); continue; }
+            if (!joyscript::parse(rest, masks, err)) { if (!reply("err " + err)) return 1; continue; }
             // MÊME ordre que la boucle --frames : l'entrée est posée AVANT la
             // trame qu'elle doit influencer.
             // Un script décrit l'état COMPLET des deux ports, trame par trame : la
@@ -176,60 +201,61 @@ int run(Machine& machine, const Options& opts) {
                 machine.runFrame();
                 ++frame;
             }
-            reply("ok " + fields());
+            if (!reply("ok " + fields())) return 1;
             continue;
         }
 
         if (cmd == "joy") {
-            if (a.empty()) { reply("err joy expects a port-1 mask"); continue; }
+            if (!arity(a, 1, 2)) { if (!reply("err joy expects 'P1 [P0]' (hex masks)")) return 1; continue; }
             uint32_t p1 = 0, p0 = 0;
-            if (!joyscript::parseHexU32(a[0], p1) || p1 > 0xFF) { reply("err bad port-1 mask"); continue; }
+            if (!joyscript::parseHexU32(a[0], p1) || p1 > 0xFF) { if (!reply("err bad port-1 mask")) return 1; continue; }
             if (a.size() > 1 && (!joyscript::parseHexU32(a[1], p0) || p0 > 0xFF)) {
-                reply("err bad port-0 mask"); continue;
+                if (!reply("err bad port-0 mask")) return 1;
+                continue;
             }
             joy1 = uint8_t(p1);
             joy0 = uint8_t(p0);
             applyJoy(machine, joy0, joy1);
-            reply("ok");
+            if (!reply("ok")) return 1;
             continue;
         }
 
         if (cmd == "key") {
             uint32_t sc = 0;
-            if (a.size() < 2 || (a[0] != "make" && a[0] != "break")
+            if (!arity(a, 2, 2) || (a[0] != "make" && a[0] != "break")
                 || !joyscript::parseHexU32(a[1], sc) || sc == 0 || sc > 0x7F) {
-                reply("err key expects 'make|break <ST scancode in hex>'");
+                if (!reply("err key expects 'make|break <ST scancode in hex>'")) return 1;
                 continue;
             }
             machine.ikbd.keyEvent(uint8_t(sc), a[0] == "make");
             machine.cpu.updateIpl();
-            reply("ok");
+            if (!reply("ok")) return 1;
             continue;
         }
 
         if (cmd == "mouse") {
-            if (a.size() < 3) { reply("err mouse expects 'DX DY BUTTONS'"); continue; }
+            if (!arity(a, 3, 3)) { if (!reply("err mouse expects 'DX DY BUTTONS'")) return 1; continue; }
             long dx = 0, dy = 0, bt = 0;
             if (!parseLong(a[0], dx) || !parseLong(a[1], dy) || !parseLong(a[2], bt)
                 || dx < -32768 || dx > 32767 || dy < -32768 || dy > 32767 || bt < 0 || bt > 3) {
-                reply("err mouse expects 'DX DY BUTTONS' (integers, buttons 0-3)");
+                if (!reply("err mouse expects 'DX DY BUTTONS' (integers, buttons 0-3)")) return 1;
                 continue;
             }
             machine.ikbd.mouseEvent(int(dx), int(dy), (bt & 1) != 0, (bt & 2) != 0);
             machine.cpu.updateIpl();
-            reply("ok");
+            if (!reply("ok")) return 1;
             continue;
         }
 
         if (cmd == "peek") {
             uint32_t addr = 0;
-            if (a.size() < 2 || !joyscript::parseHexU32(a[0], addr)) {
-                reply("err peek expects 'ADDR LEN' (address in hex)");
+            if (!arity(a, 2, 2) || !joyscript::parseHexU32(a[0], addr)) {
+                if (!reply("err peek expects 'ADDR LEN' (address in hex)")) return 1;
                 continue;
             }
             long len = 0;
             if (!parseLong(a[1], len) || len <= 0 || len > 4096) {
-                reply("err peek length must be 1..4096");
+                if (!reply("err peek length must be 1..4096")) return 1;
                 continue;
             }
             std::string hex;
@@ -239,37 +265,43 @@ int run(Machine& machine, const Options& opts) {
                 std::snprintf(b, sizeof b, "%02X", observe::read8(machine, addr + uint32_t(k)));
                 hex += b;
             }
-            reply("ok " + hex);
+            if (!reply("ok " + hex)) return 1;
             continue;
         }
 
-        if (cmd == "observe") { reply("ok " + fields()); continue; }
+        if (cmd == "observe") { if (!reply("ok " + fields())) return 1; continue; }
 
         if (cmd == "save") {
             std::size_t s = 0;
-            if (a.empty() || !slotIndex(a[0], s)) { reply("err save expects a slot index"); continue; }
+            if (!arity(a, 1, 1) || !slotIndex(a[0], s)) { if (!reply("err save expects a slot index")) return 1; continue; }
             machine.saveState(slots[s].data);
             slots[s].frame = frame;
+            slots[s].joy0  = joy0;
+            slots[s].joy1  = joy1;
             slots[s].used  = true;
-            reply("ok bytes=" + std::to_string(slots[s].data.size()));
+            if (!reply("ok bytes=" + std::to_string(slots[s].data.size()))) return 1;
             continue;
         }
 
         if (cmd == "load") {
             std::size_t s = 0;
-            if (a.empty() || !slotIndex(a[0], s)) { reply("err load expects a slot index"); continue; }
-            if (!slots[s].used) { reply("err slot " + a[0] + " is empty"); continue; }
+            if (!arity(a, 1, 1) || !slotIndex(a[0], s)) { if (!reply("err load expects a slot index")) return 1; continue; }
+            if (!slots[s].used) { if (!reply("err slot " + a[0] + " is empty")) return 1; continue; }
             if (!machine.loadState(slots[s].data.data(), slots[s].data.size())) {
-                reply("err state in slot " + a[0] + " rejected (machine config mismatch?)");
+                if (!reply("err state in slot " + a[0] + " rejected — reason on stderr (CRC, "
+                           "version, ROM, machine or RAM mismatch, or truncated)")) return 1;
                 continue;
             }
             frame = slots[s].frame;
-            // L'état restauré rétablit le joystick SAUVEGARDÉ (généralement
-            // neutre) : on repose celui que le client tient, sinon un « joy 80 »
-            // suivi d'un « load » relâcherait le feu en silence — le même piège
-            // que --load-state + --joy dans la boucle --frames.
+            // Reprendre une cellule, c'est reprendre AUSSI l'entrée qui y était tenue.
+            // Reposer le joystick tenu MAINTENANT (ancienne version) rendait le rejeu
+            // dépendant de la branche explorée entre-temps : même cellule, deux
+            // hachages RAM différents (mesuré). Pour un état importé (fichier), on ne
+            // sait rien : on laisse ce que l'état porte et on remet le tenu à zéro.
+            joy0 = slots[s].joy0;
+            joy1 = slots[s].joy1;
             applyJoy(machine, joy0, joy1);
-            reply("ok " + fields());
+            if (!reply("ok " + fields())) return 1;
             continue;
         }
 
@@ -278,19 +310,20 @@ int run(Machine& machine, const Options& opts) {
             std::string head, path;
             splitFirst(rest, head, path);
             if (head.empty() || path.empty() || !slotIndex(head, s)) {
-                reply("err export expects 'SLOT FILE'"); continue;
+                if (!reply("err export expects 'SLOT FILE'")) return 1;
+                continue;
             }
-            if (!slots[s].used) { reply("err slot " + head + " is empty"); continue; }
+            if (!slots[s].used) { if (!reply("err slot " + head + " is empty")) return 1; continue; }
             std::ofstream f(path, std::ios::binary);
-            if (!f) { reply("err cannot write " + path); continue; }
+            if (!f) { if (!reply("err cannot write " + path)) return 1; continue; }
             f.write(reinterpret_cast<const char*>(slots[s].data.data()),
                     std::streamsize(slots[s].data.size()));
             // Fermeture EXPLICITE avant le verdict : un disque plein ne se manifeste
             // parfois qu'au vidage final, et l'échec serait passé pour un « ok » —
             // le piège que writePpm garde déjà côté captures.
             f.close();
-            if (!f) { reply("err write failed for " + path); continue; }
-            reply("ok bytes=" + std::to_string(slots[s].data.size()));
+            if (!f) { if (!reply("err write failed for " + path)) return 1; continue; }
+            if (!reply("ok bytes=" + std::to_string(slots[s].data.size()))) return 1;
             continue;
         }
 
@@ -299,16 +332,17 @@ int run(Machine& machine, const Options& opts) {
             std::string head, path;
             splitFirst(rest, head, path);
             if (head.empty() || path.empty() || !slotIndex(head, s)) {
-                reply("err import expects 'SLOT FILE'"); continue;
+                if (!reply("err import expects 'SLOT FILE'")) return 1;
+                continue;
             }
             std::ifstream f(path, std::ios::binary | std::ios::ate);
-            if (!f) { reply("err cannot read " + path); continue; }
+            if (!f) { if (!reply("err cannot read " + path)) return 1; continue; }
             // Même borne que Machine::loadStateFile : un état légitime, c'est la
             // RAM (≤ 4 Mo) plus les puces. Sans ce garde-fou, un chemin erroné
             // (une image disque, une vidéo) se ferait avaler tout entier en RAM.
             const std::streamoff n = f.tellg();
             if (n <= 0 || n > 64 * 1024 * 1024) {
-                reply("err " + path + " is empty or too large to be a state");
+                if (!reply("err " + path + " is empty or too large to be a state")) return 1;
                 continue;
             }
             f.seekg(0);
@@ -318,50 +352,54 @@ int run(Machine& machine, const Options& opts) {
             // une « config différente ».
             std::vector<uint8_t> buf{std::istreambuf_iterator<char>(f),
                                      std::istreambuf_iterator<char>()};
-            if (buf.empty()) { reply("err " + path + " is empty"); continue; }
+            if (buf.empty()) { if (!reply("err " + path + " is empty")) return 1; continue; }
             // Magie 'NSTS' vérifiée DÈS l'import : sans ça, un chemin erroné ne se
             // trahissait qu'au « load », plusieurs commandes plus loin, et le client
             // croyait tenir une cellule.
             if (buf.size() < 4 || buf[0] != 'S' || buf[1] != 'T' || buf[2] != 'S' || buf[3] != 'N') {
-                reply("err " + path + " is not a NeoST save-state");
+                if (!reply("err " + path + " is not a NeoST save-state")) return 1;
                 continue;
             }
             slots[s].data  = std::move(buf);
             slots[s].frame = 0;          // datation inconnue : un fichier ne la porte pas
+            slots[s].joy0  = 0;          // entrée tenue inconnue : l'état porte la sienne
+            slots[s].joy1  = 0;
             slots[s].used  = true;
-            reply("ok bytes=" + std::to_string(slots[s].data.size()));
+            if (!reply("ok bytes=" + std::to_string(slots[s].data.size()))) return 1;
             continue;
         }
 
         if (cmd == "probe") {
             observe::ProbeSpec p;
             std::string err;
-            if (!observe::parseProbeSpec(rest, p, err)) { reply("err " + err); continue; }
-            set.probes.push_back(p);
-            reply("ok");
+            if (!observe::parseProbeSpec(rest, p, err) || !observe::addProbe(set, p, err)) {
+                if (!reply("err " + err)) return 1;
+                continue;
+            }
+            if (!reply("ok")) return 1;
             continue;
         }
 
         if (cmd == "shot") {
-            if (rest.empty()) { reply("err shot expects a file name"); continue; }
+            if (rest.empty()) { if (!reply("err shot expects a file name")) return 1; continue; }
             if (!observe::writePpm(rest.c_str(), machine.shifter.pixels(),
                                    machine.shifter.width(), machine.shifter.height())) {
-                reply("err cannot write " + rest);
+                if (!reply("err cannot write " + rest)) return 1;
                 continue;
             }
-            reply("ok");
+            if (!reply("ok")) return 1;
             continue;
         }
 
         if (cmd == "slots") {
             std::size_t used = 0, bytes = 0;
             for (const auto& s : slots) if (s.used) { ++used; bytes += s.data.size(); }
-            reply("ok used=" + std::to_string(used) + "/" + std::to_string(slots.size())
-                  + " bytes=" + std::to_string(bytes));
+            if (!reply("ok used=" + std::to_string(used) + "/" + std::to_string(slots.size())
+                  + " bytes=" + std::to_string(bytes))) return 1;
             continue;
         }
 
-        reply("err unknown command '" + cmd + "'");
+        if (!reply("err unknown command '" + cmd.substr(0, 40) + (cmd.size() > 40 ? "…" : "") + "'")) return 1;
     }
     return 0;      // fin de stdin : même sortie que « quit »
 }

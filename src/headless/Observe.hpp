@@ -91,6 +91,24 @@ inline bool parseProbeSpec(const std::string& arg, ProbeSpec& p, std::string& er
         return false;
     }
     if (p.name.empty()) { char b[16]; std::snprintf(b, sizeof b, "$%06X", p.addr); p.name = b; }
+    // Le nom est une CLÉ du format « clé=valeur séparés par des espaces » : une espace
+    // ou un « = » dedans casse tout parseur, et un nom de 116 caractères faisait
+    // déborder le tampon de formatage — la VALEUR disparaissait de la ligne (mesuré).
+    if (p.name.size() > 64) { err = "probe name longer than 64 characters"; return false; }
+    for (const char c : p.name)
+        if (c == ' ' || c == '\t' || c == '=' || c == '\r' || c == '\n') {
+            err = "probe name must not contain spaces or '='";
+            return false;
+        }
+    return true;
+}
+
+// Ajout dans un jeu de sondes : deux sondes de même nom rendraient deux clés
+// identiques sur la même ligne — un dictionnaire en perd une en silence.
+inline bool addProbe(ProbeSet& set, const ProbeSpec& p, std::string& err) {
+    for (const auto& q : set.probes)
+        if (q.name == p.name) { err = "duplicate probe name '" + p.name + "'"; return false; }
+    set.probes.push_back(p);
     return true;
 }
 
@@ -110,7 +128,10 @@ inline std::string probeFields(long long frame, Machine& m, const ProbeSet& set)
         out += buf;
     }
     for (const auto& p : set.probes) {
-        std::snprintf(buf, sizeof buf, " %s=0x%0*X", p.name.c_str(), int(p.len * 2), probeValue(m, p));
+        // Nom hors du tampon fixe (borné à 64, mais autant ne pas dépendre de la borne).
+        std::snprintf(buf, sizeof buf, "=0x%0*X", int(p.len * 2), probeValue(m, p));
+        out += ' ';
+        out += p.name;
         out += buf;
     }
     return out;

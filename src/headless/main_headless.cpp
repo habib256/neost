@@ -1303,10 +1303,23 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--walk-mouse")) walkMouse = true;
         else if (!std::strcmp(a, "--keys"))       keys      = next(a);
         else if (!std::strcmp(a, "--joy")) {      // état joystick maintenu : "P1" ou "P1,P0"
-            const char* s = next(a);
-            joy1Hold = (uint8_t)std::strtoul(s, nullptr, 0);   // port 1 (jeux) en premier
-            const char* comma = std::strchr(s, ',');
-            joy0Hold = comma ? (uint8_t)std::strtoul(comma + 1, nullptr, 0) : 0;  // port 0 optionnel
+            // HEXA, comme l'aide l'écrit (« fire$80 ») et comme le serveur (« joy 80 ») :
+            // strtoul en base 0 lisait « 80 » comme 80 DÉCIMAL ($50 : bas+droite) et « $80 »
+            // comme 0 — trois notations, trois masques, aucun message. Le bit FEU, le plus
+            // utilisé, était précisément celui qui cassait. Aucune recette du dépôt
+            // n'écrit --joy en décimal nu (vérifié) ; « 0x80 » reste valide.
+            const std::string txt = next(a);
+            const std::size_t comma = txt.find(',');
+            uint32_t p1 = 0, p0 = 0;
+            if (!neost::joyscript::parseHexU32(txt.substr(0, comma), p1) || p1 > 0xFF
+                || (comma != std::string::npos
+                    && (!neost::joyscript::parseHexU32(txt.substr(comma + 1), p0) || p0 > 0xFF))) {
+                std::fprintf(stderr, "--joy expects P1[,P0] as hex masks, e.g. 80 or 0x80,0 (got '%s')\n",
+                             txt.c_str());
+                return 2;
+            }
+            joy1Hold = uint8_t(p1);   // port 1 (jeux) en premier
+            joy0Hold = uint8_t(p0);   // port 0 optionnel
             haveJoy = true;
         }
         else if (!std::strcmp(a, "--loopback"))   loopback  = true;
@@ -1346,9 +1359,16 @@ int main(int argc, char** argv) {
                                                          if (*t == ',') ++t;
                                                      }
                                                      scanAtList.emplace_back(f, std::move(sc)); }
-        else if (!std::strcmp(a, "--joy-at"))      { const int f = std::atoi(next(a));
-                                                     const uint8_t v = (uint8_t)std::strtoul(next(a), nullptr, 0);
-                                                     joyAtList.emplace_back(f, v); }
+        else if (!std::strcmp(a, "--joy-at")) {
+            const int f = std::atoi(next(a));
+            const std::string txt = next(a);
+            uint32_t v = 0;
+            if (!neost::joyscript::parseHexU32(txt, v) || v > 0xFF) {   // hexa, comme --joy et « joy »
+                std::fprintf(stderr, "--joy-at expects a hex mask (got '%s')\n", txt.c_str());
+                return 2;
+            }
+            joyAtList.emplace_back(f, uint8_t(v));
+        }
         else if (!std::strcmp(a, "--mouse-at"))    { const int f = std::atoi(next(a)); mouseAtList.emplace_back(f, next(a)); }
         else if (!std::strcmp(a, "--joy-script")) {
             const int f = std::atoi(next(a));
@@ -1389,7 +1409,7 @@ int main(int argc, char** argv) {
                 std::fprintf(stderr, "--probe: %s\n", e.c_str());
                 return 2;
             }
-            probeSet.probes.push_back(p);
+            if (!observe::addProbe(probeSet, p, e)) { std::fprintf(stderr, "--probe: %s\n", e.c_str()); return 2; }
         }
         else if (!std::strcmp(a, "--probe-every")) {
             // Strict : « abc » et « 0 » devenaient 1 en silence, à rebours de la rigueur
@@ -2023,18 +2043,17 @@ int main(int argc, char** argv) {
         server::Options so;
         so.probes = probeSet;
         so.slots  = serverSlots;
-        char id[768];
-        std::snprintf(id, sizeof id,
-                      "neost=%s machine=%s ram=%s tos=%s disk=%s diskb=%s fastfdc=%d",
+        so.identity = std::string("neost=") +
 #ifdef NEOST_VERSION
-                      NEOST_VERSION,
+                      NEOST_VERSION
 #else
-                      "unknown",
+                      "unknown"
 #endif
-                      machineName(machType), ramLabel(ramBytes), romPath.c_str(),
-                      diskPath.c_str(), diskBPath.empty() ? "-" : diskBPath.c_str(),
-                      fastFdc ? 1 : 0);
-        so.identity = id;
+                      + " machine=" + machineName(machType) + " ram=" + ramLabel(ramBytes)
+                      + " tos=" + romPath + " disk=" + diskPath
+                      + " diskb=" + (diskBPath.empty() ? std::string("-") : diskBPath)
+                      + " fastfdc=" + (fastFdc ? "1" : "0");   // plus de tampon fixe : un chemin
+                                                              // long coupait la ligne au milieu
         const int rc = server::run(machine, so);
         // La trace se ferme ICI aussi : le serveur sort par `return`, donc la garde
         // de fin de programme ne le voyait pas passer — un « --server --trace f »
