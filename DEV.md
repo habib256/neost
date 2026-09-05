@@ -313,7 +313,11 @@ Options : `--cpu moira` (seul cœur, optionnel), `--machine st|megast|ste|megast
 un TOS FR : A/Q, Z/W, M permutés, sinon « M » tombe en virgule dans un sélecteur GEM),
 `--joy-at N VAL`, `--joy-script N "SCRIPT"` / `--joy-script-file N FICHIER` (1 token =
 1 trame : `U/D/L/R/F/.`, combinaison `[UF]`, masque brut `[$88]`, répétition `TOKEN*N` —
-grammaire et raisons dans `src/util/JoyScript.hpp`, testée par `neost-selftest`),
+grammaire et raisons dans `src/util/JoyScript.hpp`, testée par `neost-selftest`). ⚠ Deux
+ruptures assumées avec l'ancien parseur : un caractère inconnu **refuse le run avant le
+boot** (il valait « neutre »), et les minuscules `u/d/l/r/f` valent la direction (elles
+valaient « neutre ») — une recette archivée avec un caractère de remplissage doit être
+réécrite avec `.`,
 `--mouse-at N "SCRIPT"` (L/R/U/D = ±8 px, `1`/`2` = clic gauche/droit, `.` = idle — c'est
 ainsi qu'on pilote Vroom : clic droit au titre, clic droit en course). Debug entrées :
 `NEOST_DEBUG_IKBD=1` (commandes reçues par l'IKBD), `NEOST_DEBUG_ACIA=1` (chaque lecture

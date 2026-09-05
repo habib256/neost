@@ -18,7 +18,8 @@
 //  PROTOCOLE (texte, une commande par ligne ; réponse « ok … » ou « err … ») :
 //    hello                    identité : version, machine, RAM, médias
 //    run N                    exécute N trames, entrées inchangées
-//    play SCRIPT              script joystick (JoyScript.hpp) : 1 masque = 1 trame
+//    play SCRIPT              script joystick (JoyScript.hpp) : 1 masque = 1 trame ;
+//                             pilote le port 1 et NEUTRALISE le port 0 (comme --joy-script)
 //    joy P1 [P0]              état joystick TENU (masques hexa)
 //    key make|break SC        touche, scancode ST en hexa (ex. 39 = espace)
 //    mouse DX DY BTN          souris relative ; BTN bit0 gauche, bit1 droite
@@ -164,7 +165,12 @@ int run(Machine& machine, const Options& opts) {
             if (!joyscript::parse(rest, masks, err)) { reply("err " + err); continue; }
             // MÊME ordre que la boucle --frames : l'entrée est posée AVANT la
             // trame qu'elle doit influencer.
+            // Un script décrit l'état COMPLET des deux ports, trame par trame : la
+            // boucle --frames écrit le port 0 à zéro pendant qu'il joue (setJoystick(0,
+            // st)). « play » préservait le port 0 tenu par « joy » — divergence
+            // serveur ↔ boucle dès qu'un port 0 est tenu. Même sémantique ici.
             for (const uint8_t mask : masks) {
+                joy0 = 0;
                 joy1 = mask;
                 applyJoy(machine, joy0, joy1);
                 machine.runFrame();

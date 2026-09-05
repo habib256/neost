@@ -1088,6 +1088,7 @@ int main(int argc, char** argv) {
                                       // de démo — sans traîner des Go de boot)
     std::string shotPath;
     std::string diskPath   = "disks/diskA.st";
+    bool        diskRequested = false;   // --disk explicite (ou neost.cfg) : seul cas où son absence est fatale en --server
     std::string diskBPath;                       // lecteur B (optionnel, --diskb)
     bool        fastFdc    = false;   // FDC rapide (--fastfdc) : délais commande/transfert ÷10
     bool        diskRo     = false;   // A14 (--disk-ro) : les écritures ne touchent PAS le fichier hôte
@@ -1250,7 +1251,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--regs"))       regs      = true;
         else if (!std::strcmp(a, "--irq"))        irq       = true;
         else if (!std::strcmp(a, "--screenshot")) shotPath  = next(a);
-        else if (!std::strcmp(a, "--disk"))       diskPath  = next(a);
+        else if (!std::strcmp(a, "--disk"))       { diskPath  = next(a); diskRequested = true; }
         else if (!std::strcmp(a, "--diskb"))      diskBPath = next(a);
         else if (!std::strcmp(a, "--fastfdc"))    fastFdc   = true;
         else if (!std::strcmp(a, "--disk-ro"))    diskRo    = true;
@@ -1362,6 +1363,14 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--joy-script-file")) {
             const int f = std::atoi(next(a));
             const char* path = next(a);
+            // is_regular_file AVANT d'ouvrir : sous Linux, ouvrir un RÉPERTOIRE réussit
+            // et c'est la lecture qui lève une ios_failure non rattrapée — « --joy-script-file
+            // 0 /tmp » terminait le processus (core dump) au lieu du message promis.
+            std::error_code fec;
+            if (!std::filesystem::is_regular_file(path, fec)) {
+                std::fprintf(stderr, "cannot read joystick script %s (not a regular file)\n", path);
+                return 2;
+            }
             std::ifstream jf(path);
             if (!jf) { std::fprintf(stderr, "cannot read joystick script %s\n", path); return 2; }
             const std::string all((std::istreambuf_iterator<char>(jf)),
@@ -1382,7 +1391,18 @@ int main(int argc, char** argv) {
             }
             probeSet.probes.push_back(p);
         }
-        else if (!std::strcmp(a, "--probe-every")) probeEvery = std::max(1, std::atoi(next(a)));
+        else if (!std::strcmp(a, "--probe-every")) {
+            // Strict : « abc » et « 0 » devenaient 1 en silence, à rebours de la rigueur
+            // affichée pour --probe et --server-slots.
+            const char* txt = next(a);
+            char* end = nullptr;
+            const long v = std::strtol(txt, &end, 10);
+            if (*end || end == txt || v < 1 || v > 1000000000L) {
+                std::fprintf(stderr, "--probe-every expects a positive integer (got '%s')\n", txt);
+                return 2;
+            }
+            probeEvery = int(v);
+        }
         else if (!std::strcmp(a, "--hash-ram")) {
             // LEN borné à la plus grande ST-RAM (4 Mo) : « 0:FFFFFFFF » faisait
             // boucler quatre milliards de lectures À CHAQUE échantillon.
@@ -1392,7 +1412,7 @@ int main(int argc, char** argv) {
                                        || !neost::joyscript::parseHexU32(t.substr(c + 1), probeSet.hashRamLen)
                                        || probeSet.hashRamLen == 0
                                        || probeSet.hashRamLen > 0x400000u) {
-                std::fprintf(stderr, "--hash-ram expects ADDR:LEN, both hex, LEN in 1..400000\n");
+                std::fprintf(stderr, "--hash-ram expects ADDR:LEN, both hex, LEN in $1..$400000 (4 MB)\n");
                 return 2;
             }
             probeSet.hashRam = true;
@@ -1471,7 +1491,7 @@ int main(int argc, char** argv) {
             while (std::getline(cf, ln))
                 neost::appconfig::parseConfigLine(fc, std::move(ln));
             if (!fc.rom.empty())    romPath   = resolve(fc.rom);
-            if (!fc.disk.empty())   diskPath  = resolve(fc.disk);
+            if (!fc.disk.empty())   { diskPath  = resolve(fc.disk); diskRequested = true; }
             if (!fc.diskb.empty())  diskBPath = resolve(fc.diskb);
             if (!fc.cart.empty())   cartPath  = resolve(fc.cart);
             if (!fc.gemdos.empty()) gemdosDir = resolve(fc.gemdos);
@@ -1524,6 +1544,14 @@ int main(int argc, char** argv) {
         if (ins.empty()) std::printf("  (none plugged in)\n");
         return 0;
     }
+    // Sondes et trace partagent stdout : trois lignes « probe » au milieu de 21 000
+    // lignes de trace, c'est un diff d'oracle faux. Le serveur refuse déjà ; ici aussi.
+    if (probeEvery > 0 && tracePath == "-") {
+        std::fprintf(stderr, "[headless] --probe-every and --trace - both write stdout; "
+                             "trace to a file instead\n");
+        return 2;
+    }
+
     // --joy-script-compile : écrit le script COMPILÉ (un masque par trame) et sort.
     // C'est ainsi que l'oracle différentiel donne le MÊME script à Hatari sans
     // réimplémenter la grammaire ailleurs (cf. tools/hatari_neost_oracle.patch).
@@ -1577,9 +1605,12 @@ int main(int argc, char** argv) {
     // En mode serveur, « hello » ANNONCE les médias : démarrer sans la disquette
     // demandée servirait au pilote un bureau nu en lui affirmant qu'il a le jeu.
     // La boucle --frames, elle, garde son comportement historique.
+    // Seul un média DEMANDÉ compte : la disquette par défaut « disks/diskA.st » n'est
+    // qu'un confort de développement, et son absence (binaire installé, autre cwd,
+    // borne) rendait le serveur inutilisable — mesuré, RC=1 depuis /tmp.
     const bool diskAOk = machine.loadDisk(diskPath);          // lecteur A (optionnel)
     const bool diskBOk = diskBPath.empty() || machine.loadDiskB(diskBPath);
-    if (serverMode && (!diskAOk || !diskBOk)) outFail = true;
+    if (serverMode && ((diskRequested && !diskAOk) || !diskBOk)) outFail = true;
     machine.fdc.setFastFdc(fastFdc);   // FDC rapide (--fastfdc) : accès disque ÷10
     // A14 : --disk-ro protège le FICHIER, pas la disquette. Les écritures continuent
     // d'aller dans l'image en RAM (le programme invité relit ce qu'il a écrit, rien
@@ -1604,7 +1635,7 @@ int main(int argc, char** argv) {
     // Imprimante Centronics (--printer FILE) : capture les octets imprimés dans FILE.
     if (!printerPath.empty()) {
         if (machine.setPrinterFile(printerPath))
-            std::printf("[headless] Centronics printer → %s\n", printerPath.c_str());
+            std::fprintf(stderr, "[headless] Centronics printer → %s\n", printerPath.c_str());
         else
             std::fprintf(stderr, "[headless] cannot open %s for the printer\n", printerPath.c_str());
     }
@@ -1960,14 +1991,35 @@ int main(int argc, char** argv) {
                                  "trace to a file instead\n");
             return 2;
         }
+        // Points d'arrêt : leur unique lecteur est la boucle --frames. En serveur, un
+        // hit GELAIT le CPU et le protocole continuait de répondre « ok frame=… » sur
+        // une machine figée — mesuré : compteur 200 Hz arrêté à la trame 10, RC=0.
+        if (!breakAddrs.empty() || !watchAddrs.empty() || !breakSyms.empty()) {
+            std::fprintf(stderr, "[server] --break/--watch/--break-sym are not supported in "
+                                 "server mode (a hit would freeze the CPU silently); use the "
+                                 "--frames loop\n");
+            return 2;
+        }
+        // Pompes hôte (modem, anneau MIDI, NE2000) : appelées UNIQUEMENT par la boucle
+        // --frames — en serveur elles étaient annoncées puis jamais servies (file UDP
+        // jamais drainée, mesuré). Et elles cassent le déterminisme que le serveur
+        // vend (docs/OPENDST.md § 1) : refus, pas avertissement.
+        if (modemFlag || !midiNetPeer.empty() || ethernecFlag || netusbeeFlag || slirpFlag) {
+            std::fprintf(stderr, "[server] --modem/--midi-net/--ethernec/--netusbee/--slirp are "
+                                 "not supported in server mode: their host pumps only run in the "
+                                 "--frames loop, and they break determinism\n");
+            return 2;
+        }
         if (!joyScrList.empty())
             std::fprintf(stderr, "[server] ignoring --joy-script/--joy-script-file: "
                                  "use the 'play' command instead\n");
         if (!shotPath.empty() || !soundDumpPath.empty() || !saveStatePath.empty()
+            || !serialDumpPath.empty() || !midiDumpPath.empty()
             || shotEvery > 0 || dumpAtFrame >= 0 || probeEvery > 0)
             std::fprintf(stderr, "[server] ignoring end-of-run options (--screenshot, "
-                                 "--sound-dump, --save-state, --shot-every, --dump-at, "
-                                 "--probe-every): use the shot/save/observe commands\n");
+                                 "--sound-dump, --save-state, --serial-dump, --midi-dump, "
+                                 "--shot-every, --dump-at, --probe-every): use the "
+                                 "shot/save/observe commands\n");
         server::Options so;
         so.probes = probeSet;
         so.slots  = serverSlots;
@@ -1983,7 +2035,16 @@ int main(int argc, char** argv) {
                       diskPath.c_str(), diskBPath.empty() ? "-" : diskBPath.c_str(),
                       fastFdc ? 1 : 0);
         so.identity = id;
-        return server::run(machine, so);
+        const int rc = server::run(machine, so);
+        // La trace se ferme ICI aussi : le serveur sort par `return`, donc la garde
+        // de fin de programme ne le voyait pas passer — un « --server --trace f »
+        // dont l'écriture échouait (disque plein) rendait 0 avec un fichier tronqué.
+        if (!tracer.close() && !tracePath.empty()) {
+            std::fprintf(stderr, "[headless] FAILED to finish the trace %s — it is "
+                         "TRUNCATED (disk full?)\n", tracePath.c_str());
+            return 1;
+        }
+        return rc;
     }
 
     bool traceAttached = false;   // --trace-from réellement atteint ? (cf. garde de fin)

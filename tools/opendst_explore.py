@@ -42,9 +42,21 @@ ACTIONS = ["." , "U", "D", "L", "R", "F", "[UF]", "[DF]", "[LF]", "[RF]",
 class Server:
     """Le serveur NeoST au bout d'un tuyau : une commande, une réponse."""
 
-    def __init__(self, argv):
+    def __init__(self, argv, log_path):
+        # stderr du serveur → fichier : un serveur qui meurt doit pouvoir DIRE pourquoi
+        # (ROM absente, disquette absente…), pas seulement « code 1 ».
+        self.log_path = log_path
+        self.log = open(log_path, "w")
         self.p = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                  stderr=subprocess.DEVNULL, text=True, bufsize=1)
+                                  stderr=self.log, text=True, bufsize=1)
+
+    def tail(self, n=6):
+        try:
+            self.log.flush()
+            with open(self.log_path) as f:
+                return "".join("  | " + l for l in f.readlines()[-n:])
+        except OSError:
+            return ""
 
     def cmd(self, line):
         # L'écriture est gardée elle aussi : si le serveur est déjà mort, c'est
@@ -54,15 +66,15 @@ class Server:
             self.p.stdin.write(line + "\n")
             self.p.stdin.flush()
         except (BrokenPipeError, ValueError):
-            raise RuntimeError("le serveur s'est arrêté (commande : %s), code %s"
-                               % (line, self.p.poll()))
+            raise RuntimeError("le serveur s'est arrêté (commande : %s), code %s\n%s"
+                               % (line, self.p.poll(), self.tail()))
         rsp = self.p.stdout.readline()
         # Ligne vide = fin de flux : le serveur est mort. Sans ce test, chaque
         # commande suivante rendait "" et la boucle continuait sur du vide, en
         # archivant des cellules dont la clé était la chaîne vide.
         if rsp == "":
-            raise RuntimeError("le serveur s'est arrêté (commande : %s), code %s"
-                               % (line, self.p.poll()))
+            raise RuntimeError("le serveur s'est arrêté (commande : %s), code %s\n%s"
+                               % (line, self.p.poll(), self.tail()))
         rsp = rsp.rstrip("\n")
         if rsp.startswith("err "):
             raise RuntimeError("%s → %s" % (line, rsp))
@@ -82,7 +94,10 @@ class Server:
             self.cmd("quit")
         except Exception:
             pass
-        self.p.wait(timeout=10)
+        try:
+            self.p.wait(timeout=10)
+        finally:
+            self.log.close()
 
 
 def main():
@@ -124,7 +139,17 @@ def main():
     out = args.out or os.path.join(ROOT, "tests", "out", "explore")
     os.makedirs(out, exist_ok=True)
 
-    srv = Server(argv)
+    # F4 : --score sur une sonde non déclarée dégénérait en nouveauté pure, score 0
+    # partout, sans un mot — précisément le réglage vendu comme décisif.
+    probe_names = [p.split("=", 1)[0] for p in args.probe if "=" in p]
+    if args.score and args.score not in probe_names:
+        sys.exit("--score %s : aucune --probe de ce nom (déclarées : %s)"
+                 % (args.score, ", ".join(probe_names) or "aucune"))
+    # F18 : --load-state rend les options de boot muettes — le dire.
+    if args.load_state and (args.boot_frames or args.boot_script):
+        print("⚠ --load-state donné : --boot-frames/--boot-script/--boot-repeat sont ignorés")
+
+    srv = Server(argv, os.path.join(out, "server.log"))
     try:
         print(srv.cmd("hello"))
 
@@ -202,6 +227,13 @@ def main():
                 path = "%s/cell_%05d.state" % (out, next_id[0])
                 srv.cmd("save 2")
                 srv.cmd("export 2 " + path)
+                if not new:
+                    # Cellule AMÉLIORÉE : l'ancien fichier n'est plus référencé — sans
+                    # ceci, huit orphelins de 1,4 Mo pour une seule cellule (mesuré).
+                    try:
+                        os.remove(archive[nk][0])
+                    except OSError:
+                        pass
                 archive[nk] = [path, 0, sc, int(f["frame"])]
                 new_cells += new
                 best = max(best, sc)
@@ -220,4 +252,13 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.stdout.reconfigure(errors="replace")   # lisible même en locale ASCII
+    except Exception:
+        pass
+    try:
+        sys.exit(main())
+    except (RuntimeError, FileNotFoundError) as e:
+        # Un message, pas une trace : la cause (stderr du serveur) est dedans.
+        print("ÉCHEC : %s" % e, file=sys.stderr)
+        sys.exit(1)

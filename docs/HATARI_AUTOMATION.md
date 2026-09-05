@@ -49,9 +49,16 @@ git -C extern/hatari apply ../../tools/hatari_neost_oracle.patch
 cmake --build extern/hatari/build -j
 ```
 
+⚠ **Deux ancres de version en désaccord, à trancher** : `tools/hatari_oracle.sh` épingle
+l'oracle sur `HATARI_PIN=f0736b24…` (2026-08-18), le patch déclare sa base `981f291` et le
+clone local est sur `981f291` — d'où l'avertissement « oracle Hatari NON ÉPINGLÉ » à chaque run.
+Il faut soit remonter l'épingle, soit rebaser le patch ; le clone local étant superficiel,
+l'application du patch sur `f0736b2` n'a pas pu être vérifiée.
+
 ⚠ Figer la graine ne rend PAS les deux timelines parallèles : le décalage NeoST↔Hatari
 **dérive** et saute à chaque chargement disque (mesuré sur Super Sprint, graine 1 : −7
-trames à la trame 600, −11 à 1000, −110 à 1500, −200 à 2000). Cf. `docs/OPENDST.md` § 9.
+trames à la trame 600, −11 à 1000, −110 à 1500 ; le −200 à 2000 égale la demi-fenêtre
+utilisée et peut être un artefact d'ancre statique, cf. `docs/OPENDST.md` § 9). Cf. `docs/OPENDST.md` § 9.
 
 ## Se procurer l'oracle (rien ne le fait à votre place)
 

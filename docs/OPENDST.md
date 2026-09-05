@@ -54,12 +54,15 @@ jeu réel (Rick Dangerous, 900 trames, `--fastfdc`) :
 
 | Grandeur | Valeur |
 |---|---|
-| Débit | ~1 030 trames/s au boot, **~700/s en jeu** (1,44 ms/trame, sprites et blitter) |
+| Une trame | **1,45 ms** (EmuTOS au bureau comme Rick Dangerous en jeu — mesuré dans les deux cas) |
 | Reproductibilité | deux exécutions → PPM **et** dump de 32 Ko de RAM au **même md5** |
 | Save-state | **1,35 Mo** en 512 Ko de RAM (non compressé) |
-| Reprise d'un état | **3,9 ms** (`load` en mémoire) — était 21,6 ms avant l'optimisation du CRC |
-| Sauvegarde d'un état | **2,6 ms** — était 10,2 ms |
-| Itération « reprise + 60 trames + sauvegarde » | **~61 ms**, dont 86 % d'émulation pure |
+| Reprise d'un état | **5,1 ms** (`load` en mémoire) — était 21,6 ms avant l'optimisation du CRC |
+| Sauvegarde d'un état | **3,1 ms** — était 10,2 ms |
+| Itération « reprise + 60 trames + sauvegarde » | 5,1 + 60 × 1,45 + 3,1 ≈ **95 ms**, dont **91 %** d'émulation pure |
+
+(Mesures du 2026-09-05 sur le code publié, machine au repos ; les chiffres « était » viennent
+de la lignée précédente, même code.)
 
 Une itération d'exploration coûte donc quelques dizaines de millisecondes, dominées par
 l'émulation elle-même. Les itérations sont indépendantes : elles se parallélisent en
@@ -162,6 +165,11 @@ ROM n'est chargée qu'une fois, et les états tiennent dans des **emplacements e
 `run`, `play`, `load` et `observe` répondent avec **les champs d'observation** (`frame=`,
 `screen=`, `ram=`, sondes) : un rollout entier ne coûte qu'un aller-retour.
 
+Deux précisions de contrat : `hello` est **informatif** — ses chemins peuvent contenir des
+espaces, ne pas le découper en `clé=valeur` ; et `import` remet la datation de l'emplacement
+à **0** (un fichier ne porte pas de numéro de trame), là où `save`/`load` la conservent.
+`play` pilote le port 1 et **neutralise le port 0**, comme `--joy-script`.
+
 ```
 $ printf 'hello\nplay R*20 [DF]*8\nsave 0\nrun 40\nload 0\nquit\n' \
       | ./build/neost-headless <rom> --machine st --disk <jeu> --fastfdc \
@@ -182,10 +190,12 @@ ok bye
 | reprise + 5 trames | 79/s | **109/s** |
 | reprise + 60 trames + sauvegarde | 15,1/s | **16,3/s** |
 
-Autrement dit : le serveur gagne franchement sur les **rollouts courts** et sur les boucles
-qui sauvegardent beaucoup, et presque rien quand l'émulation domine — ce qui est la vérité
-et pas une déception : à 1,44 ms la trame, 60 trames coûtent 86 ms qu'aucune tuyauterie ne
-fera disparaître. Le vrai gain de ce lot, pour les deux modes, vient de l'optimisation du
+(Rapport mesuré sur la lignée précédente, Rick Dangerous en jeu ; les valeurs absolues du
+tableau de § 2 sont plus récentes — c'est le RAPPORT qui compte ici.) Autrement dit : le
+serveur gagne franchement sur les **rollouts courts** et sur les boucles qui sauvegardent
+beaucoup, et presque rien quand l'émulation domine — ce qui est la vérité et pas une
+déception : à 1,45 ms la trame, 60 trames coûtent 87 ms qu'aucune tuyauterie ne fera
+disparaître. Le vrai gain de ce lot, pour les deux modes, vient de l'optimisation du
 CRC ci-dessus.
 
 **Le contrat, vérifié en CI.** Une session serveur rend exactement ce que rend la boucle
@@ -261,7 +271,8 @@ un point de comparaison gratuit contre la référence matérielle.
 ```sh
 python3 tools/opendst_oracle.py --rom roms/tos102uk.img --disk <jeu.st> \
     --frames 2600 --joy-at 1500 --joy-script-file rollout.joy
-# → VERDICT : IDENTIQUE — trame NeoST 2600 == trame Hatari 2465 (décalage -135)
+# → alignement : trame NeoST 1500 == trame Hatari 1390  →  décalage -110 (unique sur 301 images)
+# → VERDICT : IDENTIQUE — trame NeoST 2600 == trame Hatari 2465 (décalage -135, alignement -110)
 ```
 
 **Deux obstacles, tous deux traités.**
@@ -279,7 +290,12 @@ python3 tools/opendst_oracle.py --rom roms/tos102uk.img --disk <jeu.st> \
 **L'alignement en deux passes**, et pourquoi il ne suffit pas d'« ancrer sur une attente » :
 
 - passe A — sans aucune entrée, on cherche la trame Hatari identique à la trame NeoST
-  d'ancrage. Le décalage de boot est ainsi **mesuré**, pas supposé ;
+  d'ancrage, sur **toute** la fenêtre. Le décalage n'est retenu que si cette image est
+  **unique** : sur une scène statique (bureau, écran-titre figé) toutes les images de la
+  fenêtre sont identiques et « la plus petite » n'est que la borne basse — le décalage
+  vaudrait mécaniquement `−scan` et le verdict final serait trivialement « identique »
+  (mesuré : 121 images sur 121). L'outil **refuse** alors (`ALIGNEMENT AMBIGU`) et demande
+  une ancre sur une scène qui bouge d'une trame à l'autre, avant toute entrée ;
 - passe B — on rejoue avec `NEOST_JOY_START = ancre + décalage`, si bien que chaque entrée
   tombe au même instant-programme des deux côtés.
 
@@ -295,7 +311,12 @@ entrée** :
 
 | trame NeoST | 600 | 1000 | 1500 | 2000 | 2500 |
 |---|---|---|---|---|---|
-| décalage Hatari | −7 | −11 | −110 | −200 | *aucune trame identique* |
+| décalage Hatari | −7 | −11 | −110 | −200 ⚠ | *aucune trame identique* |
+
+⚠ Le point **−200 à la trame 2000** vaut exactement la demi-fenêtre utilisée (±200) : il a été
+mesuré AVANT que l'outil ne détecte les ancres statiques, et peut n'être que l'artefact décrit
+ci-dessus. À re-mesurer avec la version actuelle ; les trois premiers points (≠ −scan) ne sont
+pas concernés.
 
 Conséquence : une comparaison n'est fiable que si l'ancre et la cible ne sont **pas séparées
 par un chargement**.

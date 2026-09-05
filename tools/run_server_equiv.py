@@ -74,6 +74,20 @@ def md5(path):
         return hashlib.md5(f.read()).hexdigest()
 
 
+class EmulatorFailed(Exception):
+    """Le binaire est sorti ≠ 0 : le message du binaire DOIT remonter, sinon le
+    verdict fast n'est qu'un traceback CalledProcessError sans la cause."""
+
+
+def run_bin(cmd, stdin=None):
+    r = subprocess.run(cmd, input=stdin, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise EmulatorFailed("%s\n  → code %d\n%s" % (" ".join(cmd[:4]) + " …", r.returncode,
+                                                       "\n".join("  | " + l for l in
+                                                                  r.stderr.splitlines()[-8:])))
+    return r.stdout
+
+
 def run_cli(frames, shot=None, script=True):
     """Boucle --frames : la référence."""
     cmd = [HEADLESS, ROM] + COMMON + OBSERVE + ["--frames", str(frames),
@@ -82,9 +96,10 @@ def run_cli(frames, shot=None, script=True):
         cmd += ["--joy-script", "0", SCRIPT]
     if shot:
         cmd += ["--screenshot", shot]
-    out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
+    out = run_bin(cmd)
     lines = [l for l in out.splitlines() if l.startswith("probe ")]
-    assert lines, "la boucle --frames n'a émis aucun échantillon"
+    if not lines:
+        raise EmulatorFailed("la boucle --frames n'a émis aucun échantillon")
     return lines[-1][len("probe "):]
 
 
@@ -92,8 +107,7 @@ def run_server(commands, shot=None):
     """Session serveur : rend la liste des réponses."""
     cmd = [HEADLESS, ROM] + COMMON + OBSERVE + ["--server"]
     script = "\n".join(commands) + "\nquit\n"
-    out = subprocess.run(cmd, input=script, capture_output=True, text=True, check=True).stdout
-    return out.splitlines()
+    return run_bin(cmd, stdin=script).splitlines()
 
 
 def main():
@@ -158,7 +172,7 @@ def main():
     cmd = ([HEADLESS, ROM] + COMMON + OBSERVE +
            ["--load-state", exported, "--frames", str(rest),
             "--probe-every", str(rest)])
-    out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
+    out = run_bin(cmd)
     lines = [l for l in out.splitlines() if l.startswith("probe ")]
     after = lines[-1][len("probe "):]
     # La datation repart de 0 après --load-state : on compare tout sauf « frame= ».
@@ -183,4 +197,13 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.stdout.reconfigure(errors="replace")   # verdict lisible même en locale ASCII
+    except Exception:
+        pass
+    try:
+        sys.exit(main())
+    except EmulatorFailed as e:
+        print("  FAIL l'émulateur a échoué :\n%s" % e)
+        print("[server-equiv] ÉCHEC")
+        sys.exit(1)

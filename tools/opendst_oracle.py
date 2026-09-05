@@ -45,6 +45,7 @@
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -98,6 +99,7 @@ def main():
 
     out = args.out_dir or tempfile.mkdtemp(prefix="neost-oracle-")
     os.makedirs(out, exist_ok=True)
+    temp_out = not args.out_dir      # ménage sur verdict IDENTIQUE seulement (cf. fin)
     compiled = os.path.join(out, "script.bin")
     neost_ppm = os.path.join(out, "neost.ppm")
     hatari_png = os.path.join(out, "hatari.png")
@@ -142,7 +144,10 @@ def main():
         if script_start is not None and "joystick script loaded" not in rr.stdout:
             sys.exit("Hatari n'a pas chargé le script : patch appliqué et recompilé ?")
         d = png[:-4] + ".scan"
-        return d, sorted(f for f in os.listdir(d) if f.endswith(".png"))
+        # Tri NUMÉRIQUE : « f_100000.png » se classe avant « f_99999.png » en
+        # lexicographique, et « la plus petite trame identique » devenait fausse.
+        files = [f for f in os.listdir(d) if f.endswith(".png")]
+        return d, sorted(files, key=lambda f: int(re.search(r"(\d+)", f).group(1)))
 
     def compare_one(path):
         rr = run([sys.executable, COMPARE, ref_holder[0], path,
@@ -155,17 +160,24 @@ def main():
 
     ref_holder = [None]
 
-    def find_exact(ref_ppm, scan_dir, files):
+    def find_exact(ref_ppm, scan_dir, files, exhaustive=False):
         """Trame IDENTIQUE, jamais « la moins pire » : accepter une image presque
         juste est exactement la façon dont un oracle cesse de servir.
 
         Comparaisons par LOTS parallèles — une fenêtre large fait plusieurs
         centaines d'images, et un sous-processus par image mettait l'oracle à la
-        dizaine de minutes. Les lots gardent la sortie anticipée, et le résultat
-        ne dépend pas de l'ordre d'arrivée : dans un lot, c'est toujours la plus
-        petite trame identique qui gagne."""
+        dizaine de minutes. Le résultat ne dépend pas de l'ordre d'arrivée : c'est
+        toujours la plus petite trame identique qui gagne.
+
+        exhaustive=True (passe d'ALIGNEMENT) : on parcourt TOUTE la fenêtre et on
+        rend aussi le NOMBRE d'images identiques. Sur une scène statique — bureau,
+        écran-titre figé — toutes le sont, et « la plus petite » n'est que la borne
+        basse de la fenêtre : le décalage vaudrait mécaniquement −scan, et le
+        verdict final serait trivialement « identique » (mesuré : 121 images sur
+        121). Un alignement n'est mesuré que s'il est UNIQUE."""
         ref_holder[0] = ref_ppm
         best, best_n = None, None
+        hits_all = []
         batch = max(1, (os.cpu_count() or 4))
         for i in range(0, len(files), batch):
             chunk = [(int(re.search(r"(\d+)", f).group(1)), os.path.join(scan_dir, f))
@@ -173,18 +185,28 @@ def main():
             with ThreadPoolExecutor(max_workers=batch) as ex:
                 results = list(ex.map(compare_one, [p for _, p in chunk]))
             hits = [n for (n, _), (ok, _) in zip(chunk, results) if ok]
-            if hits:
+            hits_all += hits
+            if hits and not exhaustive:
                 return min(hits), 0
             for (n, _), (_, d) in zip(chunk, results):
                 if d is not None and (best is None or d < best):
                     best, best_n = d, n
+        if hits_all:
+            return min(hits_all), len(hits_all)
         return None, (best, best_n)
 
     # --- Passe A : mesurer le décalage de boot, SANS aucune entrée -------------
     anchor = args.align_at if args.align_at >= 0 else args.joy_at
     align_ppm = neost_shot(anchor, os.path.join(out, "align.ppm"), with_script=False)
     sdir, files = hatari_window(anchor, args.scan, "align", script_start=None)
-    hit, info = find_exact(align_ppm, sdir, files)
+    hit, info = find_exact(align_ppm, sdir, files, exhaustive=True)
+    if hit is not None and info > 1:
+        print("\nALIGNEMENT AMBIGU : %d images de la fenêtre sont identiques à la trame NeoST %d."
+              % (info, anchor))
+        print("  La scène d'ancrage est STATIQUE — le décalage ne peut pas être mesuré, il")
+        print("  vaudrait la borne basse de la fenêtre. Choisir --align-at sur une scène qui")
+        print("  BOUGE d'une trame à l'autre (défilement, animation), avant toute entrée.")
+        return 1
     if hit is None:
         best, best_n = info
         print("\nÉCHEC D'ALIGNEMENT : aucune trame Hatari identique à la trame NeoST %d"
@@ -193,7 +215,7 @@ def main():
         # de « diff_px= » : sans cette garde, le diagnostic devenait un TypeError.
         if best is not None:
             print("  la plus proche : %d, %d px — élargir --scan, ou choisir --align-at sur"
-                  " une scène stable." % (best_n, best))
+                  " une scène ANIMÉE mais déterministe (pas un écran figé)." % (best_n, best))
         else:
             print("  aucune image comparable — fenêtre vide ? élargir --scan et vérifier"
                   " que Hatari a bien produit un AVI.")
@@ -201,7 +223,8 @@ def main():
               " d'abord avec run_etalons.py --oracle)")
         return 1
     delta = hit - anchor
-    print("alignement : trame NeoST %d == trame Hatari %d  →  décalage %+d" % (anchor, hit, delta))
+    print("alignement : trame NeoST %d == trame Hatari %d  →  décalage %+d (unique sur %d images)"
+          % (anchor, hit, delta, len(files)))
 
     # --- Passe B : rejeu avec les entrées posées au MÊME instant-programme -----
     neost_shot(args.frames, neost_ppm, with_script=True)
@@ -217,7 +240,14 @@ def main():
     if exact is not None:
         print("VERDICT : IDENTIQUE — trame NeoST %d == trame Hatari %d (décalage %+d,"
               " alignement %+d)" % (args.frames, exact, exact - args.frames, delta))
+        # Ménage sur SUCCÈS seulement : une fenêtre par défaut, c'est ~300 PNG plein
+        # écran par run, laissés dans /tmp. En divergence on garde tout — les images
+        # SONT le diagnostic — et on dit où.
+        if temp_out:
+            shutil.rmtree(out, ignore_errors=True)
         return 0
+    if temp_out:
+        print("  artefacts conservés dans %s" % out)
     print("VERDICT : DIVERGENCE — aucune trame de la fenêtre n'est identique.")
     if best is not None:
         print("  la plus proche : trame Hatari %d, %d px d'écart" % (best_n, best))
