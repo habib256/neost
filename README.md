@@ -212,6 +212,7 @@ French.
 | [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) | What is implemented, chip by chip — "does NeoST do X?" |
 | [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md) | Storage, network, MIDI and dongle hardware you can plug in |
 | [`docs/KIOSK.md`](docs/KIOSK.md) | Arcade cabinet mode, gamepad menu, Raspberry Pi |
+| [`docs/OPENDST.md`](docs/OPENDST.md) | Driving NeoST from an external program: `--server` protocol, memory probes, state-space exploration (Go-Explore), differential oracle against Hatari |
 | [`TODO.md`](TODO.md) | What is left — game catalogue and per-subsystem roadmap |
 | [`CLAUDE.md`](CLAUDE.md) | Working method and sources of truth (also the map to everything else) |
 | [`docs/`](docs/) | Deep dives: cycle accuracy, Hatari divergences, headless oracle, reference software |
