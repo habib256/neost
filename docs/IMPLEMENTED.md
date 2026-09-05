@@ -697,6 +697,11 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   `run`/`play`/`load`/`observe` répondent avec les champs d'observation : un rollout = UN
   aller-retour. Équivalence avec la boucle `--frames` vérifiée au palier `fast`
   (`tools/run_server_equiv.py`), verdict MUTATION-TESTÉ.
+- **Point d'entrée unique** `tools/opendst.py` (menu : `server`, `memdiff`, `explore`,
+  `oracle`, `compile`, `equiv`, `hatari`, `doc`) et **`tools/opendst_memdiff.py`** : trouver
+  les variables d'un jeu en RAM par diff d'états pilotés par le serveur (candidats = « change
+  avec l'entrée » − « change avec le temps »), 512 Ko en 0,4 s. Spécification du protocole
+  serveur, indépendante du langage, dans `docs/OPENDST.md` § 5.
 - **Save-states plus rapides** : CRC-32 par table (il était calculé bit à bit) et filet de
   `loadState` sérialisé sans CRC — reprise 21,6 → 3,9 ms, sauvegarde 10,2 → 2,6 ms
   (mesuré sur la lignée précédente), à format et valeurs INCHANGÉS. Le GUI (F7/F8) en

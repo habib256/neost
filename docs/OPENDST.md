@@ -16,6 +16,36 @@ décrits ici sont génériques : ils servent tout autant nos propres campagnes d
 (livré, libre), il faut ses propres dumps. Les recettes ci-dessous nomment des fichiers qui
 ne sont pas redistribuables.
 
+## 0. Démarrer en cinq commandes
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j      # 1. bâtir
+python3 tools/opendst.py                                                 # 2. le menu
+python3 tools/opendst.py server roms/etos192fr.img --machine st --disk jeu.st --fastfdc \
+        --probe x=1A34:2 --probe ammo=1A40:1                              # 3. un serveur
+#   → sur son stdin :  hello / run 2000 / save 0 / play "R*30 [DF]*8" / observe / load 0 / quit
+python3 tools/opendst.py memdiff --rom … --disk … --load-state cell0.state --input "R*30"
+                                                                         # 4. trouver les variables
+python3 tools/opendst.py explore --rom … --disk … --load-state cell0.state \
+        --cell-from probes --probe x=1A34:2 --iterations 200             # 5. explorer
+```
+
+Tout est piloté par **`tools/opendst.py`** — un verbe, le reste de la ligne passe à l'outil :
+
+| verbe | ce que ça fait | section |
+|---|---|---|
+| `server` | `neost-headless --server` : la machine au bout d'un tuyau | § 5 |
+| `memdiff` | **trouver les variables du jeu en RAM** par diff d'états (position, munitions…) | § 10 |
+| `explore` | boucle Go-Explore minimale (archive de cellules) | § 10 |
+| `oracle` | rejouer le même script sous NeoST **et** Hatari, comparer | § 9 |
+| `compile` | compiler un script joystick en masques (un octet par trame) | § 3 |
+| `equiv` | le verdict : le serveur rend exactement ce que rend la boucle `--frames` | § 5 |
+| `hatari` | installer l'oracle Hatari épinglé, patch NeoST appliqué | § 9 |
+| `doc` | où lire quoi | — |
+
+Le client Java (ou autre) est à écrire côté planner : le **contrat du protocole** est en § 5,
+exhaustif et sans dépendance au C++ — c'est tout ce qu'il faut.
+
 ## 1. Le contrat de déterminisme
 
 NeoST est déterministe **à configuration figée**. Le déterminisme n'est pas une propriété
@@ -209,6 +239,76 @@ fausserait toute l'archive d'un pilote, silencieusement, puisque les deux « mar
 quand le script s'épuise) : terminer par `.` pour relâcher. `load` repose l'état joystick
 que le client tient, sinon un `joy 80` suivi d'un `load` relâcherait le feu en silence.
 
+### Spécification du protocole (pour écrire un client)
+
+**Transport.** Un processus `neost-headless … --server`. Commandes sur **stdin**, une par
+ligne (terminée par `\n` ; un `\r` final est toléré). Réponses sur **stdout**, une par
+commande, vidées immédiatement. **Tout journal va sur stderr** — stdout ne porte que des
+réponses. Aucune sortie sur stdout avant la première commande.
+
+**Forme des réponses.** Exactement trois : `ok`, `ok <champs>`, `err <message>`. Une ligne
+vide ou commençant par `#` ne produit **aucune** réponse (ne pas en envoyer si le client
+compte les réponses). Un verbe inconnu répond `err unknown command '…'`.
+
+**Champs d'observation** (`run`, `play`, `load`, `observe`) — jetons `clé=valeur` séparés
+par une espace, dans cet ordre : `frame=<entier>` `screen=<16 chiffres hexa>`
+`[ram=<16 chiffres hexa>]` puis une paire par sonde, `nom=0x<hexa>` (2, 4 ou 8 chiffres
+selon la longueur). Les noms de sonde ne contiennent ni espace ni `=` (refusés sinon) et
+sont uniques. `screen`/`ram` sont des FNV-1a 64 bits ; `ram` n'apparaît qu'avec `--hash-ram`.
+
+**Nombres.** Masques joystick, adresses et longueurs de `--hash-ram` : **hexadécimal**, préfixe
+`$` ou `0x` facultatif (`80`, `$80`, `0x80` = feu). Comptes de trames, indices d'emplacement,
+longueur de `peek`, `mouse` : **décimal strict** (le jeton entier doit être un nombre).
+Arité stricte : un argument de trop est une erreur.
+
+| commande | réponse | sémantique et bornes |
+|---|---|---|
+| `hello` | `ok neost=… machine=… ram=… tos=… disk=… diskb=… fastfdc=…` | informatif : les chemins peuvent contenir des espaces |
+| `run N` | `ok <champs>` | N trames, 0 ≤ N ≤ 10 000 000 ; entrées inchangées |
+| `play SCRIPT` | `ok <champs>` | grammaire § 3 ; un masque **posé avant** chaque trame ; le dernier masque **reste posé** ; le port 0 est **mis à zéro** pendant le script ; total ≤ 10 M trames ; un script fautif ne joue **rien** |
+| `joy P1 [P0]` | `ok` | état tenu jusqu'au prochain `joy`/`play` ; bits haut 01 bas 02 gauche 04 droite 08 feu 80 |
+| `key make SC` / `key break SC` | `ok` | scancode ST hexa, 01..7F (`39` = espace) |
+| `mouse DX DY BTN` | `ok` | relatif, DX/DY ∈ ±32767, BTN 0..3 (bit 0 gauche, bit 1 droite) |
+| `peek ADR LEN` | `ok <2·LEN chiffres hexa>` | 1 ≤ LEN ≤ 4096 ; adresse 24 bits, reboucle ; **sans effet de bord**, l'espace I/O `$FF8000+` se lit `FF` |
+| `observe` | `ok <champs>` | sans avancer |
+| `save N` | `ok bytes=<taille>` | emplacement 0 ≤ N < `--server-slots` (64 par défaut, max 4096) ; mémorise l'état, la trame **et le joystick tenu** |
+| `load N` | `ok <champs>` | restaure les trois ; `err` si vide ou refusé (raison sur stderr) — la machine reste intacte |
+| `export N FICHIER` | `ok bytes=<taille>` | le fichier est relisible par `--load-state` et par `import` |
+| `import N FICHIER` | `ok bytes=<taille>` | magie vérifiée à l'import ; la trame de l'emplacement devient **0** et le joystick tenu **0** (un fichier ne les porte pas) |
+| `probe NOM=ADR:LEN` | `ok` | ajoute une sonde (LEN 1, 2 ou 4) ; nom ≤ 64 caractères, unique |
+| `shot FICHIER.ppm` | `ok` | capture PPM (P6) |
+| `slots` | `ok used=<n>/<max> bytes=<total>` | |
+| `quit` | `ok bye` | puis le processus sort (code 0) ; une fin de stdin fait pareil |
+
+**Compteur de trames.** Il part de 0 au démarrage (ou après `--load-state`), avance de 1 par
+trame émulée, et **est restauré par `load`** : la trame publiée après un `load` est celle du
+`save`. C'est ce qui rend la datation des cellules comparable d'une branche à l'autre.
+
+**Garanties.** Une même séquence de commandes, sur un même binaire et une même configuration
+(§ 1), rend des réponses **identiques octet pour octet** — y compris à travers
+`save`/`load`/`export`/`import` (vérifié par `equiv`, dont le verdict est mutation-testé).
+Une commande en erreur ne modifie **ni** la machine **ni** les emplacements. Si le client
+meurt, le serveur sort proprement (EPIPE) ; si stdout devient inutilisable (disque plein),
+il sort avec un code ≠ 0 au lieu de répondre dans le vide.
+
+**Coûts** (§ 2) : ~1,45 ms la trame, ~5 ms un `load`, ~3 ms un `save`, ~0,5 ms un `observe`
+(hachage de l'écran), 25 µs de plancher par commande. Un `run`/`play` long **bloque** la
+réponse d'autant : prévoir le délai côté client, pas de délai d'attente court.
+
+### Paralléliser
+
+Les itérations d'une exploration sont indépendantes : **N serveurs sur N cœurs**, chacun
+avec ses emplacements, et les cellules circulent entre eux par fichiers (`export`/`import`).
+Un serveur = un processus = un cœur ; il n'y a rien d'autre à faire. Ce qui NE se partage
+pas : un emplacement en mémoire n'existe que dans son serveur — passer par `export`.
+
+```python
+# N serveurs, une file de cellules à explorer, des états échangés par fichiers
+from concurrent.futures import ProcessPoolExecutor
+with ProcessPoolExecutor(max_workers=8) as ex:
+    ex.map(explore_one_cell, cells)          # chaque worker lance SON neost-headless --server
+```
+
 ## 6. La boucle d'exploration, en ligne de commande
 
 ```sh
@@ -350,7 +450,33 @@ fait : NeoST avec le script de tir contre Hatari **sans** script, sur 241 trames
 fenêtre, aucune trame identique (la plus proche à 2 280 px). Avec le script des deux
 côtés, **0 px**.
 
-## 10. Client d'exemple — `tools/opendst_explore.py`
+## 10. Outils — `memdiff`, `explore`
+
+### Trouver les variables du jeu — `tools/opendst_memdiff.py`
+
+C'est le premier travail sur tout nouveau jeu : de quelle adresse faire une clé de cellule ?
+L'outil applique la méthode des « cheat engines », rendue **exacte** par le déterminisme :
+
+1. point de départ commun (état importé, ou N trames de boot) ;
+2. rollout neutre de N trames → image D1 ; rollout neutre de 2N → D2 : ce qui diffère bouge
+   **avec le temps** (compteurs, animations) — exclu ;
+3. rollout avec **ton entrée**, même longueur → DI : ce qui diffère de D1 a bougé **à cause de
+   l'entrée**.
+
+Candidats = (DI ≠ D1) − (D2 ≠ D1) : *change quand j'appuie, pas quand j'attends*. Lecture par
+`peek` (sans effet de bord), 512 Ko analysés en **0,4 s**.
+
+```sh
+python3 tools/opendst.py memdiff --rom roms/tos102uk.img --disk <jeu.st> --machine st \
+    --load-state rick_l1.state --input "R*30"          # « aller à droite 30 trames »
+```
+
+Auto-test sans jeu (EmuTOS, `--input "R*20 [UF]*10"`) : les compteurs TOS `$465`, `$469`,
+`$4BC` sont bien **exclus comme temporels**, et l'entrée joystick laisse sa trace en
+`$25A7..$25B2` — 6 octets candidats sur 512 Ko. Pour affiner : refaire avec une autre entrée
+(`L*30`) et croiser ; puis `--probe x=$ADR:2` et `--cell-from probes` dans l'explorateur.
+
+### Client d'exemple — `tools/opendst_explore.py`
 
 Une boucle Go-Explore minimale, ~200 lignes, qui pilote le serveur : archive de cellules,
 reprise d'une cellule peu visitée, rollout d'actions **tenues** (pas du bruit par trame),

@@ -6,6 +6,21 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05)
+
+Pour qu'un planner externe s'y mette vite : **`tools/opendst.py`**, un verbe et le reste de la
+ligne (`server`, `memdiff`, `explore`, `oracle`, `compile`, `equiv`, `hatari`, `doc`) ;
+`docs/OPENDST.md` § 0 « démarrer en cinq commandes » et § 5 **spécification complète du
+protocole serveur** (transport, forme des réponses, format des champs, bornes, sémantique du
+compteur de trames et du joystick tenu, garanties, coûts) — de quoi écrire un client dans
+n'importe quel langage sans lire le C++ ; « paralléliser » = N serveurs, cellules par fichiers.
+
+**`tools/opendst_memdiff.py`** : le premier travail sur tout nouveau jeu — trouver en RAM la
+position, les munitions, le numéro d'écran — par diff d'états pilotés par le serveur.
+Candidats = (change avec l'entrée) − (change avec le temps), exact grâce au déterminisme,
+512 Ko en 0,4 s, lecture `peek` sans effet de bord. Auto-test EmuTOS : compteurs TOS exclus,
+trace joystick trouvée en 6 octets.
+
 ## Pilotage externe déterministe de NeoST (2026-09-04)
 
 **But** : rendre `neost-headless` conduisible par un programme tiers — planner, fuzzer,
