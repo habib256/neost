@@ -30,8 +30,12 @@
 #      cmake --build extern/hatari/build -j
 #  Recettes et pièges : docs/HATARI_AUTOMATION.md.
 #
-#  Base : hatari 981f291 (« Add mime type configuration for IPF and SCP disk
-#  images », v2.6.1-devel). Un rebase amont peut demander un rafraîchissement.
+#  Base : l'ÉPINGLE du projet, hatari f0736b24 (« Fix value for MINGW_PREFIX for
+#  the mingw win32 build », v2.6.1-devel, 2026-08-18) — celle de tools/setup_hatari.sh
+#  et tools/hatari_oracle.sh. Hunks régénérés SUR l'épingle le 2026-09-05 (git diff dans
+#  extern/hatari placé sur f0736b24), vérifiés « git apply --check » = 0 sur un arbre propre.
+#  tools/setup_hatari.sh l'applique automatiquement ; un déplacement d'épingle doit
+#  re-vérifier l'application AVANT d'être commis.
 # =============================================================================
 diff --git a/src/control.c b/src/control.c
 index 0eb5e80..1d54c65 100644
@@ -54,7 +58,7 @@ index 0eb5e80..1d54c65 100644
  		Keyboard.bRButtonDown |= BUTTON_MOUSE;
  		return true;
 diff --git a/src/cpu/newcpu.c b/src/cpu/newcpu.c
-index 836afe8..0005995 100644
+index 1912005..c97465b 100644
 --- a/src/cpu/newcpu.c
 +++ b/src/cpu/newcpu.c
 @@ -113,6 +113,7 @@ int m68k_pc_indirect;
@@ -65,7 +69,7 @@ index 836afe8..0005995 100644
  static bool m68k_reset_delay;
  static bool ismoves_nommu;
  static bool need_opcode_swap;
-@@ -3035,6 +3036,16 @@ static void Exception_ce000 (int nr)
+@@ -3040,6 +3041,16 @@ static void Exception_ce000 (int nr)
  //fprintf ( stderr , "ex in %d %ld %ld\n" , nr , currcycle , CyclesGlobalClockCounter );
  	start = 6;
  	interrupt = nr >= 24 && nr < 24 + 8;
@@ -82,7 +86,7 @@ index 836afe8..0005995 100644
  	if (!interrupt) {
  		start = 4;
  		if (nr == 7) { // TRAPV
-@@ -5008,6 +5019,11 @@ void ipl_fetch_next(void)
+@@ -5013,6 +5024,11 @@ void ipl_fetch_next(void)
  	} else {
  		regs.ipl[1] = regs.ipl_pin;
  	}
@@ -94,7 +98,7 @@ index 836afe8..0005995 100644
  }
  
  void intlev_load(void)
-@@ -5021,6 +5037,10 @@ void intlev_load(void)
+@@ -5026,6 +5042,10 @@ void intlev_load(void)
  static void update_ipl(int ipl)
  {
  	evt_t c = get_cycles();
@@ -223,10 +227,10 @@ index 22c73be..bdb7e02 100644
  	Main_Init(argc, argv);
  
 diff --git a/src/video.c b/src/video.c
-index 6a06fc3..565c91f 100644
+index 7e87713..886fecf 100644
 --- a/src/video.c
 +++ b/src/video.c
-@@ -3889,6 +3889,13 @@ static void Video_CopyScreenLineColor(void)
+@@ -3907,6 +3907,13 @@ static void Video_CopyScreenLineColor(void)
  	int i;
  	uint32_t VideoMask;
  

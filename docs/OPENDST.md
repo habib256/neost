@@ -314,7 +314,10 @@ entrée** :
 |---|---|---|---|---|---|
 | décalage Hatari | −7 | −11 | −110 | −200 ⚠ | *aucune trame identique* |
 
-⚠ Le point **−200 à la trame 2000** vaut exactement la demi-fenêtre utilisée (±200) : il a été
+⚠ Tout ce tableau a été mesuré contre un oracle **non épinglé** (`981f291`, sept semaines
+plus vieux que l'épingle `f0736b2`, avec un `fdc.c` différent de 176 lignes — là où la dérive
+saute) : à refaire contre l'épingle. Et le point **−200 à la trame 2000** vaut exactement la
+demi-fenêtre utilisée (±200) : il a été
 mesuré AVANT que l'outil ne détecte les ancres statiques, et peut n'être que l'artefact décrit
 ci-dessus. À re-mesurer avec la version actuelle ; les trois premiers points (≠ −scan) ne sont
 pas concernés.

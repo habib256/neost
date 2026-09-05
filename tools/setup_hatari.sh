@@ -51,6 +51,22 @@ echo "→ mise à la version épinglée ${PIN:0:12}"
 git -C "$DIR" fetch --tags origin
 git -C "$DIR" checkout --detach "$PIN"
 
+# Instrumentation NeoST de l'oracle (événements souris de la fifo, script joystick
+# daté par VBL, graine HATARI_SEED figeable, diagnostics sous variable d'environnement).
+# extern/hatari est gitignoré : sans cette étape, une installation fraîche donnait un
+# Hatari NU, et tools/opendst_oracle.py s'arrêtait net (« Hatari n'a pas chargé le
+# script »). Le patch est versionné dans le dépôt NeoST ; il ne change pas le matériel
+# émulé (cf. son en-tête). On échoue ici plutôt que de livrer un oracle qui « marche »
+# sans répondre aux entrées.
+PATCH="$ROOT/tools/hatari_neost_oracle.patch"
+echo "→ application de l'instrumentation NeoST ($(basename "$PATCH"))"
+if ! git -C "$DIR" apply --check "$PATCH"; then
+  echo "échec : $PATCH ne s'applique pas sur ${PIN:0:12} — rebaser le patch avant de" >&2
+  echo "        déplacer l'épingle (cf. docs/HATARI_AUTOMATION.md)." >&2
+  exit 1
+fi
+git -C "$DIR" apply "$PATCH"
+
 # Les deux options macOS sont OBLIGATOIRES : sans -DCMAKE_OSX_ARCHITECTURES=arm64 le
 # build tombe en x86_64 sous Rosetta, et ENABLE_OSX_BUNDLE=0 est requis pour obtenir
 # un binaire en ligne de commande utilisable en headless (et non un .app).

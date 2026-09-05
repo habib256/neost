@@ -49,11 +49,18 @@ git -C extern/hatari apply ../../tools/hatari_neost_oracle.patch
 cmake --build extern/hatari/build -j
 ```
 
-⚠ **Deux ancres de version en désaccord, à trancher** : `tools/hatari_oracle.sh` épingle
-l'oracle sur `HATARI_PIN=f0736b24…` (2026-08-18), le patch déclare sa base `981f291` et le
-clone local est sur `981f291` — d'où l'avertissement « oracle Hatari NON ÉPINGLÉ » à chaque run.
-Il faut soit remonter l'épingle, soit rebaser le patch ; le clone local étant superficiel,
-l'application du patch sur `f0736b2` n'a pas pu être vérifiée.
+**L'épingle est la référence, le patch la suit.** Tranché le 2026-09-05 : l'épingle
+`f0736b24` (2026-08-18) protège les 11 références `ref_kind: oracle` du dépôt ; le clone local
+était sur `981f291` (2026-07-01), un **ancêtre** en retard de 26 commits dont `fdc.c` (+176),
+`video.c`, `cpu/newcpu.c`. Remonter l'épingle aurait fait *reculer* la référence de sept
+semaines et invalidé onze images pour rien. Le patch s'applique tel quel sur l'épingle
+(`git apply --check` = 0), et **`tools/setup_hatari.sh` l'applique désormais lui-même** —
+une installation fraîche ne peut plus donner un oracle nu.
+
+⚠ Corollaire : les décalages NeoST↔Hatari mesurés le 2026-09-04 (Super Sprint, ci-dessous)
+l'ont été contre le clone **non épinglé et plus vieux** — précisément sur un `fdc.c` différent,
+là où la dérive saute. À re-mesurer contre l'épingle quand les ROM propriétaires seront de
+retour sur cette machine.
 
 ⚠ Figer la graine ne rend PAS les deux timelines parallèles : le décalage NeoST↔Hatari
 **dérive** et saute à chaque chargement disque (mesuré sur Super Sprint, graine 1 : −7
