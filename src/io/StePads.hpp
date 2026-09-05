@@ -185,6 +185,12 @@ private:
     uint8_t  padA_   = 0;        // pad A = port 1 (« jeux »)
     uint8_t  padB_   = 0;        // pad B = port 0 (souris)
     bool     megaSte_ = false;   // possède les DIP switches motherboard
+    // Bourrage EXPLICITE et initialisé : StePads est sérialisée d'un bloc (ar(stePads)),
+    // et 5 octets de bourrage implicite partaient non initialisés dans chaque save-state
+    // (même raison et même méthode que Fpu::pad0_). Offsets et sizeof inchangés.
+    uint8_t  pad0_[3] = {};      // 5..7 : bool → float aligné sur 4
     float    analog_[2][2] = {{0.f, 0.f}, {0.f, 0.f}};   // axes hôte X/Y par pad (−1..+1)
     bool     hasAnalog_[2] = {false, false};             // setAnalog appelé → mode réel
+    uint8_t  pad1_[2] = {};                              // 26..27 : queue, alignement 4 (cf. pad0_)
 };
+static_assert(sizeof(StePads) == 28, "StePads : format de save-state (bloc de 28 octets, bourrage explicite)");

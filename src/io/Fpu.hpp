@@ -46,6 +46,16 @@ public:
     // Présence du coprocesseur (socket peuplé). false = fidèle Hatari : la zone
     // $FFFA40-$FFFA5F déclenche une bus error et la sonde conclut « not found ».
     bool present = false;
+    // Bourrage EXPLICITE et initialisé. Fpu est sérialisée d'un bloc (Bus::serialize,
+    // ar(fpu)) : chaque octet de l'objet part dans le save-state et entre dans son
+    // CRC. Le bourrage implicite du compilateur n'est jamais initialisé — valgrind :
+    // « Syscall param writev points to uninitialised byte(s) », 61 octets par état,
+    // CRC dépendant de mémoire indéfinie, et des octets de mémoire du processus dans
+    // tout .state partagé. Les pads reproduisent EXACTEMENT les trous mesurés (sonde à
+    // 0xAA sur un objet construit en place), donc les offsets et sizeof ne bougent
+    // pas : format inchangé, états existants toujours lisibles. Verrou : les
+    // static_assert de taille ci-dessous.
+    uint8_t pad0_[7] = {};                  // 1..7 : bool → Ext aligné sur 8
 
     static constexpr uint32_t BASE = 0xFFFA40;   // premier CIR (Response)
     static constexpr uint32_t END  = 0xFFFA60;   // exclu : $FFFA40-$FFFA5F
@@ -64,8 +74,18 @@ private:
     //      stockage des registres : un FMOVE.X aller-retour est bit-exact.
     struct Ext {
         uint16_t se  = 0x7FFF;             // défaut au reset : NaN (comme le 68881)
+        uint8_t  pad_[6] = {};             // 2..7 : uint16 → uint64 aligné sur 8 (cf. pad0_)
         uint64_t man = 0xFFFFFFFFFFFFFFFFull;
+        // Constructeurs EXPLICITES : avec pad_ au milieu, une initialisation agrégée
+        // « Ext{se, man} » (une dizaine dans Fpu.cpp) rangeait la mantisse dans pad_[0]
+        // — narrowing, et man laissé à sa valeur par défaut. Un constructeur à deux
+        // arguments retire à Ext son statut d'agrégat : chaque Ext{a, b} l'appelle,
+        // aucun site d'appel ne change, et la classe reste trivialement copiable
+        // (exigence de StateArchive).
+        Ext() = default;
+        Ext(uint16_t s, uint64_t m) : se(s), man(m) {}
     };
+    static_assert(sizeof(Ext) == 16, "Fpu::Ext : format de save-state (16 octets par registre)");
 
     // ---- État programmeur ----
     Ext      fp_[8];
@@ -79,6 +99,7 @@ private:
     // Tampon de transfert de l'Operand CIR ($10-$13) : les transferts > 4
     // octets bouclent sur la même fenêtre, octet par octet, poids fort d'abord.
     uint8_t  buf_[96] = {};                // max : FMOVEM des 8 registres (8×12)
+    uint8_t  pad1_ = 0;                    // 279 : → int aligné sur 4 (cf. pad0_)
 public:
     // Le FPU n'a pas de serialize() : Bus le copie en bloc (POD). Cette garde permet
     // au Bus de valider les index APRÈS restauration sans changer le format du
@@ -91,9 +112,11 @@ public:
 private:
     int      bufLen_ = 0, bufPos_ = 0;
     bool     bufIn_  = false;              // true = on attend des octets du CPU
+    uint8_t  pad2_[3] = {};                // 289..291 : bool → enum aligné sur 4 (cf. pad0_)
     enum class After { None, GenOp, MoveOutDone, CtrlIn, MovemIn, RestoreIn };
     After    after_  = After::None;        // quoi faire une fois le tampon plein/vidé
     uint16_t cmd_    = 0;                  // mot de commande en cours
+    uint8_t  pad3_[2] = {};                // 298..299 : uint16 → int aligné sur 4 (cf. pad0_)
 
     // ---- Décodage / exécution ----
     void command(uint16_t cmd);            // écriture du Command CIR
@@ -128,9 +151,10 @@ private:
     sf::Status sfStatus() const;           // état d'arrondi softfloat depuis le FPCR
     void       sfFold(uint8_t flags);      // replie les drapeaux softfloat dans le FPSR (EXC + AEXC)
     static sf::f80 toF(const Ext& e) { return sf::f80{ e.se, e.man }; }
-    static Ext     toE(sf::f80 f)    { return Ext{ f.high, f.low }; }
+    static Ext     toE(sf::f80 f)    { return Ext{ f.high, f.low }; }   // via le constructeur (pad_ au milieu)
 
     // Journalise les commandes décodées (anti-spam) — débogage du dialogue CIR.
     void trace(const char* what, uint16_t v);
     int  traceCount_ = 0;
 };
+static_assert(sizeof(Fpu) == 304, "Fpu : format de save-state (bloc de 304 octets, bourrage explicite)");

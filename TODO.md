@@ -26,29 +26,19 @@ conditionne plus l'objectif.
 
 ---
 
-## Save-states : octets NON INITIALISÉS gravés et hachés (trouvé le 2026-09-05, cœur)
+## Save-states : octets non initialisés — RÉSOLU le 2026-09-05
 
-`Machine::saveState` sérialise `Fpu` d'un bloc (`src/core/Bus.cpp` : `ar(fpu)`), or la
-classe a du **bourrage** — `struct Ext { uint16_t se; uint64_t man; }` (6 octets de padding
-par registre × 8), plus les alignements après `present`, `excVector_`/`buf_`, `bufIn_`,
-`cmd_`. Valgrind sur un `export` du serveur : `Syscall param writev(vector[1]) points to
-uninitialised byte(s)` + `Use of uninitialised value of size 8` dans le CRC de `saveState`
-ET sa vérification dans `loadState`. Premier octet fautif à l'offset 565 383 = **premier
-octet du bloc `fpu`** (`NEOST_STATE_MAP=1` : `cpu @ 565723`, et `sizeof(Fpu)+sizeof(Scu)
-+sizeof(StePads) = 304+8+28 = 340`). Reproduit à l'identique par `--frames 2 --save-state`
-— ce n'est pas propre au serveur.
-
-Conséquences : le CRC32 d'un état dépend de mémoire indéfinie (stable en pratique sur 3
-processus et 3 environnements, mais rien ne le garantit), et un `.state` partagé emporte
-des octets de mémoire du processus. Le projet applique déjà le bon remède à `DmaEvent`
-(`objVec` champ par champ, `DmaSound.hpp`) mais pas ici.
-
-Recette : `printf 'save 0\nexport 0 /tmp/x.state\nquit\n' | valgrind --leak-check=no
-./build/neost-headless roms/etos192fr.img --machine st --server` → 67 erreurs, 2 contextes.
-Remède à trancher : sérialiser `Fpu` champ par champ (format inchangé si l'ordre et les
-tailles sont conservés) ou déclarer le bourrage explicitement avec initialiseurs. Vérifier
-ensuite au valgrind ET par `--save-state-test`. Non corrigé à chaud : cœur, hors périmètre
-du chantier « pilotage externe ».
+Trouvé par un agent de fuzz (valgrind sur un `export` : 67 erreurs, `writev` d'octets non
+initialisés, CRC de `saveState` dépendant de mémoire indéfinie) : `Fpu` (61 octets) et
+`StePads` (5) étaient sérialisées d'un bloc avec leur **bourrage implicite**. Cartographié à
+l'octet par une sonde à `0xAA` sur un objet construit en place, puis comblé par des champs de
+bourrage EXPLICITES et initialisés aux emplacements exacts — offsets et `sizeof` inchangés
+(verrouillés par `static_assert` : `Ext` 16, `Fpu` 304, `StePads` 28), donc **format de
+save-state inchangé** et états existants relus (vérifié). Piège rencontré : une dizaine de
+`Ext{se, man}` positionnels dans `Fpu.cpp` rangeaient la mantisse dans le bourrage une fois
+celui-ci inséré — réglé par un constructeur `Ext(se, man)`, la classe restant trivialement
+copiable. Après : sonde 0 octet, valgrind 0 erreur, `--save-state-test` OK, verdict FPU PASS.
+Leçon : toute classe passée à `ar(obj)` d'un bloc doit être sondée à `0xAA` (`Scu` : 0 octet).
 
 ## 🚨 BLOQUANT RELEASE — l'historique est PURGÉ (2026-08-30) ; restent les paquets et les vieilles releases
 
