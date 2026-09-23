@@ -157,7 +157,11 @@ FAST = [
 _GUI_SHOT = ROOT / "tests" / "out" / "gui_boot.ppm"
 GUI_STEPS = [
     ("Boot GUI (400 trames EmuTOS, capture du framebuffer)",
-     [str(GUI), "roms/etos192us.img", "--run-frames", "400", "--shot", str(_GUI_SHOT)]),
+     # La disquette est passée EXPLICITEMENT : sans elle, le GUI monte le lecteur A du
+     # neost.cfg de l'utilisateur — un banc tiers y avait laissé une image qui rendait
+     # une capture uniforme, et le palier accusait le boot (2026-09-23).
+     [str(GUI), "roms/etos192us.img", "disks/diskA.st", "--run-frames", "400",
+      "--shot", str(_GUI_SHOT)]),
     ("Boot GUI — la capture montre quelque chose",
      [sys.executable, str(TOOLS / "check_ppm_nonuniform.py"), str(_GUI_SHOT)]),
 ]

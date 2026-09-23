@@ -52,6 +52,21 @@ if(NOT NEOST_VERSION_SEED STREQUAL PROJECT_VERSION)
     set(NEOST_VERSION_SEED "${PROJECT_VERSION}" CACHE INTERNAL "PROJECT_VERSION ayant ensemencé NEOST_VERSION_STR")
 endif()
 
+# Identité de build (commit git + empreinte des modifications + horodatage), regénérée À
+# CHAQUE BUILD par cmake/BuildInfo.cmake — le fichier n'est réécrit (donc recompilé) que si
+# l'identité change. Liée à neost et neost-headless : `--version` et `hello` l'annoncent.
+set(NEOST_BUILD_INFO_CPP "${CMAKE_BINARY_DIR}/build_info.cpp")
+execute_process(COMMAND "${CMAKE_COMMAND}" -DSRC_DIR=${CMAKE_SOURCE_DIR}
+                        -DOUT=${NEOST_BUILD_INFO_CPP} -P "${CMAKE_SOURCE_DIR}/cmake/BuildInfo.cmake")
+add_custom_target(neost_build_info_gen
+    COMMAND "${CMAKE_COMMAND}" -DSRC_DIR=${CMAKE_SOURCE_DIR}
+            -DOUT=${NEOST_BUILD_INFO_CPP} -P "${CMAKE_SOURCE_DIR}/cmake/BuildInfo.cmake"
+    BYPRODUCTS "${NEOST_BUILD_INFO_CPP}"
+    COMMENT "NeoST: refreshing build identity" VERBATIM)
+add_library(neost_build_info STATIC "${NEOST_BUILD_INFO_CPP}")
+target_include_directories(neost_build_info PUBLIC "${CMAKE_SOURCE_DIR}/src")
+add_dependencies(neost_build_info neost_build_info_gen)
+
 option(NEOST_WITH_IMGUI  "Greffe Dear ImGui (visualiseur hexa + registres)" ON)
 option(NEOST_WARN_STRICT "Compilation stricte (-Wall -Wextra -Wpedantic)"   ON)
 # Réseau hôte : sockets réelles (modem Hayes, anneau MIDI). OFF → aucune socket
@@ -293,6 +308,7 @@ if(WIN32)
     target_link_libraries(neost-headless PRIVATE winmm)
 endif()
 target_compile_definitions(neost-headless PRIVATE NEOST_VERSION="${NEOST_VERSION_STR}")
+target_link_libraries(neost-headless PRIVATE neost_build_info)
 set_source_files_properties(src/headless/main_headless.cpp src/headless/Server.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
@@ -646,6 +662,7 @@ if(WIN32)
     target_compile_definitions(neost PRIVATE NEOST_MIDI_WINMM=1)
 endif()
 target_compile_definitions(neost PRIVATE NEOST_VERSION="${NEOST_VERSION_STR}")
+target_link_libraries(neost PRIVATE neost_build_info)
 # Les modules d'interface sortis de main.cpp (A9) gardent la MÊME sévérité que lui :
 # sans cette ligne, extraire du code aurait silencieusement désarmé -Wall/-Wextra
 # sur les 2 400 lignes déplacées.

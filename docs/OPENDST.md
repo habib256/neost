@@ -176,7 +176,7 @@ ROM n'est chargée qu'une fois, et les états tiennent dans des **emplacements e
 
 | Commande | Effet |
 |---|---|
-| `hello` | identité de la configuration figée : version, machine, RAM, médias |
+| `hello` | identité de la configuration figée : version, **commit et date de build**, machine, RAM, médias |
 | `run N` | exécute N trames (≤ 10 M par commande), entrées inchangées |
 | `play SCRIPT` | script joystick (même grammaire qu'`--joy-script`) : un masque par trame |
 | `joy P1 [P0]` | état joystick **tenu** (masques hexa — `80` = feu, comme `--joy 80` et `--joy-at N 80` côté ligne de commande, désormais hexa aussi) |
@@ -263,7 +263,7 @@ Arité stricte : un argument de trop est une erreur.
 
 | commande | réponse | sémantique et bornes |
 |---|---|---|
-| `hello` | `ok neost=… machine=… ram=… tos=… disk=… diskb=… fastfdc=…` | informatif : les chemins peuvent contenir des espaces |
+| `hello` | `ok neost=… machine=… ram=… tos=… disk=… diskb=… fastfdc=… commit=… built=…` | informatif : les chemins peuvent contenir des espaces. `commit` = hash court de HEAD, suffixé `+xxxxxxxx` si l'arbre de travail diffère de HEAD, `nogit` hors dépôt ; `built` = ISO 8601 sans espace. Un banc compare `commit` à `git rev-parse --short=12 HEAD` et **refuse un binaire périmé** (même valeur en tête de `--version`) |
 | `run N` | `ok <champs>` | N trames, 0 ≤ N ≤ 10 000 000 ; entrées inchangées |
 | `play SCRIPT` | `ok <champs>` | grammaire § 3 ; un masque **posé avant** chaque trame ; le dernier masque **reste posé** ; le port 0 est **mis à zéro** pendant le script ; total ≤ 10 M trames ; un script fautif ne joue **rien** |
 | `joy P1 [P0]` | `ok` | état tenu jusqu'au prochain `joy`/`play` ; bits haut 01 bas 02 gauche 04 droite 08 feu 80 |

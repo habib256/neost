@@ -26,6 +26,37 @@ conditionne plus l'objectif.
 
 ---
 
+## Retours d'un client du protocole `--server` (bancs TOS File Cmd, 2026-09-23) — RÉSOLU le 2026-09-23
+
+Constaté en écrivant `bench/archives.py` de TOS File Cmd (lecteur GEMDOS hôte C: + disquette A:).
+
+- **Binaire `build/neost-headless` périmé, rien ne le signale.** Un banc échouait à chaque
+  lancement (au moins 5 fois de suite, même scénario) : `Fclose` d'un handle du lecteur hôte
+  (64, rendu par `Fcreate` juste avant, `Fwrite` et `Fdatime` passés) répondait **EIHNDL**.
+  Après un simple `make neost-headless` sur HEAD `8ee8de0`, plus aucun échec (10 passages,
+  5 dispositions mémoire différentes du programme). L'ancien binaire est écrasé : impossible
+  de dire si c'était un bug de GemdosHd corrigé depuis ou autre chose — **non reproduit, à ne
+  pas classer comme bug** sans nouvelle occurrence. Ce qui manque : un moyen pour le client de
+  savoir quel NeoST il pilote. Proposition : `--version` (hash git + date de build) et la même
+  information dans la première réponse du serveur, pour qu'un banc refuse un binaire plus vieux
+  que les sources.
+- **La trace `NEOST_GEMDOS_TRACE` ne donne pas les résultats.** Elle journalise
+  `call 0x3E at PC …` mais ni le handle, ni D0 au retour, ni **qui a traité l'appel**
+  (lecteur hôte ou TOS, quand `getValidFileHandle` renvoie -1 et que l'appel retombe dans
+  TOS). C'est justement ce qu'il fallait pour le cas ci-dessus : j'ai dû ajouter ponctuellement
+  (puis retirer) une ligne en fin de `GemdosHd` dispatch :
+  `"[gemdos]   -> %s d0=%d (arg w=%d)", finished ? "host" : "TOS", reg(0), readWord(params)`.
+  À intégrer pour de bon (seulement si la trace est active), avec le code d'erreur en clair.
+
+**Fait le 2026-09-23.** `cmake/BuildInfo.cmake` grave à chaque build le commit (hash court,
+`+xxxxxxxx` = empreinte des modifications non commitées, `nogit` hors dépôt) et l'horodatage
+ISO : `--version` des deux binaires les affichent, `hello` répond `commit=… built=…`
+(`docs/OPENDST.md` § 5). Le fichier n'est réécrit que si l'identité change — un rebuild sans
+modification ne relie rien. La trace GEMDOS nomme l'appel, montre le handle (Fclose, Fread,
+Fwrite, Fseek, Fforce, Fdatime) et termine par `-> host d0=… (ENOM)` ou `-> TOS`. Le
+Fclose→EIHNDL d'origine reste non reproduit (binaire écrasé) ; s'il revient, la trace dira
+désormais qui a répondu.
+
 ## Save-states : octets non initialisés — RÉSOLU le 2026-09-05
 
 Trouvé par un agent de fuzz (valgrind sur un `export` : 67 erreurs, `writev` d'octets non

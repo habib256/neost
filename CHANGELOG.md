@@ -6,6 +6,30 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Identité de build et trace GEMDOS parlante — retours de TOS File Cmd (2026-09-23)
+
+Un client externe du protocole `--server` a perdu une matinée sur un `build/neost-headless`
+**périmé** : un banc échouait cinq fois de suite, un rebuild l'a « corrigé », et rien ne disait
+quel NeoST il pilotait. Désormais `cmake/BuildInfo.cmake` grave à **chaque build** le commit
+git (hash court, `+xxxxxxxx` = empreinte des modifications non commitées, `nogit` hors dépôt)
+et l'horodatage ISO ; `--version` de `neost` et `neost-headless` les affichent, et `hello`
+répond `commit=… built=…` — un banc compare au `git rev-parse` des sources et refuse un binaire
+plus vieux. Le fichier généré n'est réécrit que si l'identité change : un rebuild sans
+modification ne recompile ni ne relie rien.
+
+`NEOST_GEMDOS_TRACE=1` disait `call 0x3E at PC …` et rien du résultat. Il nomme maintenant
+l'appel, montre le handle quand il y en a un, et termine par **qui a répondu** :
+`-> host d0=-37 (EIHNDL)` ou `-> TOS` — la ligne qu'il fallait pour trancher entre « le lecteur
+hôte a refusé » et « le handle n'était pas à lui et TOS a répondu ».
+
+Trouvé en validant : le palier `fast` accusait le rendu pour deux raisons étrangères à
+NeoST. `compare_screenshot.py` lit désormais les PNG 8 bits **sans ffmpeg** (décodeur zlib en
+Python pur, 0,6 s l'image ; ffmpeg ne sert plus qu'aux JPEG et PNG exotiques) — un ffmpeg
+Homebrew à la bibliothèque x265 disparue faisait échouer `trace_odd` et `scroll_8264` par
+SIGABRT. Et le boot GUI de `run_all.py` passe la disquette **explicitement** : sans elle, il
+montait le lecteur A du `neost.cfg` de l'utilisateur, où un banc tiers avait laissé une image
+qui rendait une capture uniforme.
+
 ## Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05)
 
 Pour qu'un planner externe s'y mette vite : **`tools/opendst.py`**, un verbe et le reste de la

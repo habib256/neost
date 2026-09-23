@@ -148,6 +148,35 @@ namespace {
   GEMDOS_ENHNDL=-35, GEMDOS_EACCDN=-36, GEMDOS_ENSMEM=-39, GEMDOS_EDRIVE=-46,
   GEMDOS_ENMFIL=-49, GEMDOS_ERANGE=-64, GEMDOS_EINTRN=-65, GEMDOS_EPLFMT=-66;
 
+// Noms pour la trace NEOST_GEMDOS_TRACE (appels « fichier » ≥ 0x36 et codes d'erreur TOS).
+static const char* gemdosCallName(uint16_t call) {
+    switch (call) {
+    case 0x36: return "Dfree";   case 0x39: return "Dcreate"; case 0x3a: return "Ddelete";
+    case 0x3b: return "Dsetpath"; case 0x3c: return "Fcreate"; case 0x3d: return "Fopen";
+    case 0x3e: return "Fclose";  case 0x3f: return "Fread";   case 0x40: return "Fwrite";
+    case 0x41: return "Fdelete"; case 0x42: return "Fseek";   case 0x43: return "Fattrib";
+    case 0x44: return "Mxalloc"; case 0x45: return "Fdup";    case 0x46: return "Fforce";
+    case 0x47: return "Dgetpath";
+    case 0x48: return "Malloc";  case 0x49: return "Mfree";   case 0x4a: return "Mshrink";
+    case 0x4b: return "Pexec";   case 0x4c: return "Pterm";   case 0x4e: return "Fsfirst";
+    case 0x4f: return "Fsnext";  case 0x56: return "Frename"; case 0x57: return "Fdatime";
+    default:   return "?";
+    }
+}
+static const char* gemdosErrorName(int32_t d0) {   // « » si ce n'est pas un code d'erreur
+    switch (d0) {
+    case GEMDOS_ERROR:  return " (ERROR)";  case GEMDOS_E_SEEK: return " (E_SEEK)";
+    case GEMDOS_EWRPRO: return " (EWRPRO)"; case GEMDOS_EINVFN: return " (EINVFN)";
+    case GEMDOS_EFILNF: return " (EFILNF)"; case GEMDOS_EPTHNF: return " (EPTHNF)";
+    case GEMDOS_ENHNDL: return " (ENHNDL)"; case GEMDOS_EACCDN: return " (EACCDN)";
+    case -37:           return " (EIHNDL)"; case GEMDOS_ENSMEM: return " (ENSMEM)";
+    case GEMDOS_EDRIVE: return " (EDRIVE)"; case GEMDOS_ENMFIL: return " (ENMFIL)";
+    case GEMDOS_ERANGE: return " (ERANGE)"; case GEMDOS_EINTRN: return " (EINTRN)";
+    case GEMDOS_EPLFMT: return " (EPLFMT)";
+    default:            return "";
+    }
+}
+
 constexpr uint8_t FA_READONLY=0x01, FA_VOLUME=0x08, FA_DIR=0x10, FA_ARCHIVE=0x20;
 constexpr int IGNORED_FILE_ATTRIBS = FA_ARCHIVE | FA_READONLY;   // 0x21
 
@@ -1629,8 +1658,26 @@ int GemdosHd::trap() {
     uint16_t call = readWord(params);
     params += 2;
 
-    if (trace_ && call >= 0x36)   // journalise les appels « fichier » (≥ Dfree)
-        std::fprintf(stderr, "[gemdos] call 0x%02X at PC $%06X\n", call, callingPC_);
+    // Trace (NEOST_GEMDOS_TRACE) des appels « fichier » (≥ Dfree) : nom de l'appel, handle
+    // quand l'appel en prend un, puis QUI l'a traité et D0 — c'est ce qui manquait à un
+    // client (TOS File Cmd, 2026-09-23) pour comprendre un Fclose répondant EIHNDL :
+    // lecteur hôte, ou TOS parce que getValidFileHandle a refusé le handle ?
+    const bool traced = trace_ && call >= 0x36;
+    if (traced) {
+        int handle = -1;
+        switch (call) {
+        case 0x3e: case 0x3f: case 0x40: handle = readWord(params);     break;  // Fclose/Fread/Fwrite
+        case 0x42: case 0x57:            handle = readWord(params + 4); break;  // Fseek/Fdatime
+        case 0x46:                       handle = readWord(params + 2); break;  // Fforce (nh)
+        default: break;
+        }
+        if (handle >= 0)
+            std::fprintf(stderr, "[gemdos] call 0x%02X %s handle=%d at PC $%06X\n",
+                         call, gemdosCallName(call), handle, callingPC_);
+        else
+            std::fprintf(stderr, "[gemdos] call 0x%02X %s at PC $%06X\n",
+                         call, gemdosCallName(call), callingPC_);
+    }
 
     sr &= ~SR_OVERFLOW;
 
@@ -1663,6 +1710,15 @@ int GemdosHd::trap() {
     case 0x56: finished = gemRename(params); break;
     case 0x57: finished = gemGSDToF(params); break;
     default: break;   // tout le reste → TOS
+    }
+
+    if (traced) {
+        if (finished) {
+            const int32_t d0 = (int32_t)reg(0);
+            std::fprintf(stderr, "[gemdos]   -> host d0=%d%s\n", d0, gemdosErrorName(d0));
+        } else {
+            std::fprintf(stderr, "[gemdos]   -> TOS\n");   // D0 n'est connu qu'au retour de TOS
+        }
     }
 
     if (finished) sr |= SR_ZERO;

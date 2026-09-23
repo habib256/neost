@@ -31,7 +31,9 @@ le reste est ci-dessous.
 3. ⚠ **Reconfigurer une fois avec `-DNEOST_VERSION_STR=x.y.z`.** C'est une variable de
    **cache** CMake : sans ce passage, le binaire continue d'annoncer l'ancienne version
    et `--version` **ment**. (Déjà écrit dans `CLAUDE.md` ; répété ici parce que c'est
-   l'étape qu'on saute.)
+   l'étape qu'on saute.) Le `(commit …, built …)` qui suit la version, lui, ne ment pas :
+   il est regénéré à chaque build par `cmake/BuildInfo.cmake` — un `+xxxxxxxx` derrière le
+   hash signale un arbre de travail modifié, donc un binaire qui n'est PAS celui du tag.
 4. **Écrire l'entrée de release** dans le `CHANGELOG.md` : ce que l'utilisateur gagne,
    pas la liste des commits. Les chantiers datés vivent déjà en dessous.
 5. **`python3 tools/run_all.py --tier full`** — vert, sur un poste au repos. Le palier

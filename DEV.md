@@ -442,7 +442,10 @@ Mécanisme (port fidèle, adapté à Moira) :
 Helpers Bus : `hostRamPtr(addr,len)` (pointeur RAM contigu, traduction MMU — port de
 `STMemory_STAddrToPointer`+`CheckAreaType`) et `tosVersion` (en-tête ROM offset 2).
 Debug : `NEOST_GEMDOS_TRACE=1` journalise hook, traductions de chemin et appels
-fichier. Simplifications vs Hatari : `bUseTos` toujours vrai, pas d'images
+fichier — pour chacun le nom (`Fclose`…), le handle s'il en prend un, puis **qui l'a
+traité** (`-> host d0=-37 (EIHNDL)` ou `-> TOS`, D0 inconnu avant le retour de TOS) : c'est
+la ligne qui distingue « le lecteur hôte a refusé » de « le handle n'était pas à lui et TOS a
+répondu ». Simplifications vs Hatari : `bUseTos` toujours vrai, pas d'images
 ACSI/IDE (lecteurs dès C:), pas d'autostart INF ni de conversion de charset.
 
 ## Pièges matériels (vérifiés en debug)

@@ -14,6 +14,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Pacing.hpp"
+#include "BuildInfo.hpp"       // commit + horodatage de build (--version, hello)
 #include "core/Framing.hpp"   // stContentRegion (diagnostic NEOST_FRAMING_DIAG)
 #include <algorithm>
 #include <cerrno>
@@ -1234,10 +1235,14 @@ int main(int argc, char** argv) {
             return argv[++i];
         };
         if (!std::strcmp(a, "--version")) {       // identité de build
+            // Version + commit + horodatage (cf. src/BuildInfo.hpp) : c'est ce qui permet
+            // à un banc externe de refuser un binaire plus vieux que les sources.
 #ifdef NEOST_VERSION
-            std::printf("neost-headless %s\n", NEOST_VERSION);
+            std::printf("neost-headless %s (commit %s, built %s)\n", NEOST_VERSION,
+                        neost::build::kCommit, neost::build::kDate);
 #else
-            std::printf("neost-headless (unknown version)\n");
+            std::printf("neost-headless (unknown version) (commit %s, built %s)\n",
+                        neost::build::kCommit, neost::build::kDate);
 #endif
             return 0;
         }
@@ -2052,8 +2057,10 @@ int main(int argc, char** argv) {
                       + " machine=" + machineName(machType) + " ram=" + ramLabel(ramBytes)
                       + " tos=" + romPath + " disk=" + diskPath
                       + " diskb=" + (diskBPath.empty() ? std::string("-") : diskBPath)
-                      + " fastfdc=" + (fastFdc ? "1" : "0");   // plus de tampon fixe : un chemin
+                      + " fastfdc=" + (fastFdc ? "1" : "0")    // plus de tampon fixe : un chemin
                                                               // long coupait la ligne au milieu
+                      + " commit=" + neost::build::kCommit     // identité de build : un client
+                      + " built="  + neost::build::kDate;      // refuse un binaire périmé
         const int rc = server::run(machine, so);
         // La trace se ferme ICI aussi : le serveur sort par `return`, donc la garde
         // de fin de programme ne le voyait pas passer — un « --server --trace f »

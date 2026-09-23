@@ -12,6 +12,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Pacing.hpp"
+#include "BuildInfo.hpp"       // commit + horodatage de build (--version, hello)
 #include "gui/GlHeaders.hpp"   // GLFW + GL, l'inclusion au même endroit pour tous
 #include "gui/CrtEffectStack.h"   // passe d'effets CRT (opt-in, façade moniteur)
 #include "core/Symbols.hpp"       // table de symboles du débogueur (noms ↔ adresses)
@@ -124,9 +125,11 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
         const std::string a = argv[i] ? argv[i] : "";
         if (a == "--version") {           // identité de build (release-readiness)
 #ifdef NEOST_VERSION
-            std::printf("NeoST %s\n", NEOST_VERSION);
+            std::printf("NeoST %s (commit %s, built %s)\n", NEOST_VERSION,
+                        neost::build::kCommit, neost::build::kDate);
 #else
-            std::printf("NeoST (unknown version)\n");
+            std::printf("NeoST (unknown version) (commit %s, built %s)\n",
+                        neost::build::kCommit, neost::build::kDate);
 #endif
             return 0;
         }

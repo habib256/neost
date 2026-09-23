@@ -67,9 +67,90 @@ def _read_ppm(path: Path) -> tuple[int, int, bytes]:
     return w, h, px
 
 
+def _read_png(path: Path) -> tuple[int, int, bytes]:
+    """Décodeur PNG en Python pur (zlib seulement) : 8 bits, gris/RGB/RGBA (± alpha),
+    non entrelacé — ce que sont TOUTES les références (captures d'oracle Hatari).
+    Repli quand ffmpeg manque OU plante (2026-09-23 : un ffmpeg Homebrew dont la
+    bibliothèque x265 avait disparu abattait deux étalons du palier fast avec un
+    SIGABRT, et le palier accusait le rendu). Lève ValueError sur un PNG hors
+    contrat (palette, 16 bits, entrelacé) — l'appelant retombe alors sur ffmpeg."""
+    import struct
+    import zlib
+
+    data = path.read_bytes()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError(f"{path} : pas un PNG")
+    pos = 8
+    w = h = 0
+    ctype = depth = interlace = -1
+    idat = bytearray()
+    while pos + 8 <= len(data):
+        length, kind = struct.unpack(">I4s", data[pos : pos + 8])
+        body = data[pos + 8 : pos + 8 + length]
+        pos += 12 + length
+        if kind == b"IHDR":
+            w, h, depth, ctype, _c, _f, interlace = struct.unpack(">IIBBBBB", body)
+        elif kind == b"IDAT":
+            idat += body
+        elif kind == b"IEND":
+            break
+    channels = {0: 1, 2: 3, 4: 2, 6: 4}.get(ctype)
+    if channels is None or depth != 8 or interlace != 0:
+        raise ValueError(f"{path} : PNG hors contrat (type {ctype}, {depth} bits, "
+                         f"entrelacé={interlace})")
+    raw = zlib.decompress(bytes(idat))
+    stride = w * channels
+    if len(raw) != h * (stride + 1):
+        raise ValueError(f"{path} : données IDAT incohérentes")
+    prev = bytearray(stride)
+    out = bytearray(w * h * 3)
+    bpp = channels
+    for row in range(h):
+        base = row * (stride + 1)
+        ftype = raw[base]
+        cur = bytearray(raw[base + 1 : base + 1 + stride])
+        if ftype == 1:                       # Sub
+            for i in range(bpp, stride):
+                cur[i] = (cur[i] + cur[i - bpp]) & 0xFF
+        elif ftype == 2:                     # Up
+            for i in range(stride):
+                cur[i] = (cur[i] + prev[i]) & 0xFF
+        elif ftype == 3:                     # Average
+            for i in range(stride):
+                left = cur[i - bpp] if i >= bpp else 0
+                cur[i] = (cur[i] + ((left + prev[i]) >> 1)) & 0xFF
+        elif ftype == 4:                     # Paeth
+            for i in range(stride):
+                a = cur[i - bpp] if i >= bpp else 0
+                b = prev[i]
+                c = prev[i - bpp] if i >= bpp else 0
+                pp = a + b - c
+                pa, pb, pc = abs(pp - a), abs(pp - b), abs(pp - c)
+                pred = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+                cur[i] = (cur[i] + pred) & 0xFF
+        elif ftype != 0:
+            raise ValueError(f"{path} : filtre PNG inconnu {ftype}")
+        o = row * w * 3
+        if channels == 3:
+            out[o : o + stride] = cur
+        elif channels == 4:
+            out[o : o + w * 3] = bytes(v for i, v in enumerate(cur) if i & 3 != 3)
+        elif channels == 1:
+            out[o : o + w * 3] = bytes(v for v in cur for _ in range(3))
+        else:                                # gris + alpha
+            out[o : o + w * 3] = bytes(cur[i] for i in range(0, stride, 2) for _ in range(3))
+        prev = cur
+    return w, h, bytes(out)
+
+
 def _load_image(path: Path) -> tuple[int, int, bytes]:
     if path.suffix.lower() == ".ppm":
         return _read_ppm(path)
+    if path.suffix.lower() == ".png":
+        try:
+            return _read_png(path)           # sans dépendance : d'abord
+        except ValueError:
+            pass                             # PNG hors contrat → ffmpeg ci-dessous
     if path.suffix.lower() in (".png", ".jpg", ".jpeg"):
         # mkstemp rend un descripteur OUVERT : le refermer avant de laisser ffmpeg
         # écrire dans le fichier. Sous POSIX l'oubli ne se voyait pas (une simple
@@ -86,9 +167,11 @@ def _load_image(path: Path) -> tuple[int, int, bytes]:
                      "-f", "image2", "-pix_fmt", "rgb24", str(tmp)],
                     check=True,
                 )
-            except FileNotFoundError as exc:
+            except (FileNotFoundError, subprocess.CalledProcessError) as exc:
                 raise RuntimeError(
-                    "ffmpeg est requis pour lire les références PNG/JPEG "
+                    "ffmpeg est requis pour lire les références JPEG et les PNG "
+                    "hors contrat (palette, 16 bits, entrelacé) — les PNG 8 bits "
+                    "se lisent sans lui — "
                     "(macOS : brew install ffmpeg ; Debian/Ubuntu : "
                     "sudo apt install ffmpeg)"
                 ) from exc
