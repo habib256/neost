@@ -77,6 +77,15 @@ Moira::execIllegal(u16 opcode)
 {
     AVAILABILITY(Core::C68000)
 
+    // NEOST : opcode traité par le sous-classeur → consommé comme un NOP
+    // (cf. Moira.h illegalOpcodeHook).
+    if (illegalOpcodeHook(opcode)) {
+
+        prefetch<C, POLL>();
+        FINALIZE
+        return;
+    }
+
     execException<C>(M68kException::ILLEGAL);
 
     CYCLES_68000(34)

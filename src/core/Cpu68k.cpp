@@ -273,6 +273,31 @@ public:
         neostUpdateIpl();
     }
 
+    // ---- Opcodes magiques GEMDOS HD (port de OpCode_GemDos/Pexec/SysInit) ----
+    // La cartouche système ($FA0000) place des opcodes « illégaux » magiques
+    // (8=GEMDOS, 9=PEXEC, 10=SYSINIT). Quand le HD GEMDOS est actif et que le PC est
+    // DANS la cartouche, on traite l'appel en C (lit/écrit les registres + pose les
+    // codes condition du SR) et Moira consomme l'opcode comme un NOP — exactement
+    // comme CpuDoNOP chez Hatari. Hors cartouche, un vrai $0008 reste illégal.
+    //
+    // ⚠ Comme Hatari, le traitement vit DANS le gestionnaire de l'instruction
+    // (execIllegal), pas avant execute() : il n'a lieu que si l'instruction s'exécute
+    // vraiment. L'ancienne interception, faite avant execute(), servait l'appel sur
+    // l'hôte PUIS laissait execute() prendre une interruption en attente : le PC
+    // empilé désignait encore l'opcode magique, rejoué au rte → un Fread servi deux
+    // fois, un bloc de fichier sauté en silence (TOSFC, Verify sur C:).
+    bool illegalOpcodeHook(moira::u16 opcode) override {
+        if (opcode < 0x0008 || opcode > 0x000A || !g_cur->bus || !g_cur->bus->gemdos)
+            return false;
+        const moira::u32 pc0 = getPC0() & 0x00FFFFFF;
+        if (pc0 < 0xFA0000 || pc0 >= 0xFC0000) return false;
+        // Filet : les primitives de GemdosHd sont non-fautives (checkArea) ; une
+        // BusError qui s'échapperait (régression future) abandonne l'appel au lieu
+        // de devenir une bus error invitée sur un opcode de cartouche.
+        try { return g_cur->bus->gemdos->handleOpcode(opcode); }
+        catch (const moira::BusError&) { return true; }
+    }
+
     // ---- Traçage des exceptions de groupe 0 (bus error / address error) --------
     // Moira notifie ces deux délégués À L'ENTRÉE (MoiraExceptions_cpp.h:268 et :305)
     // et À LA SORTIE (:296 et :333) de execAddressError/execBusError. On s'en sert
@@ -920,32 +945,6 @@ int Cpu68k::run(int cycles) {
         state_->inBusError = false;                        // nouvelle instruction → faute précédente retombée
         if (state_->moira->isHalted()) { state_->moira->setClock(cpuClockForBus(targetBus)); break; }  // double bus fault → CPU arrêté
         instrStartClock_ = static_cast<int64_t>(state_->moira->getClock());   // repère « 1er accès » des wait states
-        // Interception GEMDOS HD (port de OpCode_GemDos/Pexec/SysInit + CpuDoNOP
-        // d'Hatari) : la cartouche système ($FA0000) place des opcodes « illégaux »
-        // magiques (8=GEMDOS, 9=PEXEC, 10=SYSINIT). Quand le HD GEMDOS est actif et
-        // que le PC est DANS la cartouche, on traite l'appel en C (lit/écrit les
-        // registres + pose les codes condition du SR), puis on remplace l'opcode par
-        // un NOP (0x4E71) : l'execute() ci-dessous le consomme, avançant PC et
-        // prefetch comme une instruction d'un mot — exactement comme CpuDoNOP. Hors
-        // cartouche, un vrai $0008 reste une instruction illégale normale.
-        if (state_->bus->gemdos) {
-            const moira::u16 ird = state_->moira->getIRD();
-            if (ird >= 0x0008 && ird <= 0x000A) {
-                const uint32_t pc0 = state_->moira->getPC0() & 0x00FFFFFF;
-                if (pc0 >= 0xFA0000 && pc0 < 0xFC0000) {
-                    // Filet : handleOpcode tourne HORS execute(), un BusError qui
-                    // s'en échapperait (accès invité non gardé) traverserait
-                    // runFrame sans catch → std::terminate. Les primitives de
-                    // GemdosHd sont non-fautives (checkArea), ceci ne couvre
-                    // qu'une régression future — l'appel est alors abandonné.
-                    bool handled = false;
-                    try { handled = state_->bus->gemdos->handleOpcode(ird); }
-                    catch (const moira::BusError&) { handled = true; }
-                    if (handled)
-                        state_->moira->setIRD(0x4E71);     // → exécuté comme NOP
-                }
-            }
-        }
         // DIAG (gated NEOST_HTRACE) — trace cycle-exact d'UNE itération du handler en jeu
         // pour le diff Moira↔WinUAE (traque du +20). Capture le PC + désasm AVANT execute
         // (sinon getPC0() renvoie l'instruction SUIVANTE → désalignement off-by-one), et le

@@ -158,6 +158,27 @@ NeoST les surcharge dans `NeostMoira` (`src/core/Cpu68k.cpp`), sous `NEOST_IACK_
 (défaut ON). ⚠ **Patch STRUCTURANT** : le retirer déverrouille le beam-sync (Enchanted
 Land, Cuddly Demos, Lethal Xcess).
 
+## Patch local : instruction illégale délégable (`illegalOpcodeHook`) (2026-10-01)
+
+Le disque hôte GEMDOS (`--gemdos`) repose sur des opcodes « illégaux » magiques
+($0008 GEMDOS, $0009 PEXEC, $000A SYSINIT) placés dans la cartouche système. NeoST les
+interceptait dans `Cpu68k::run`, **avant** `execute()`, et remplaçait l'IRD par un NOP. Or
+`execute()` arbitre les interruptions avant d'exécuter l'IRD : si une IRQ était prenable à
+cette frontière, l'appel hôte était déjà servi, l'IRQ prise, et le PC empilé désignait encore
+l'opcode magique, rejoué au `rte`. Résultat : un Fread servi deux fois et un bloc sauté en
+silence (TOSFC, Verify sur C:). Hatari traite ces opcodes **dans** leur gestionnaire
+d'instruction (`OpCode_GemDos`), donc une seule fois par exécution réelle. Le patch fait
+de même.
+
+Fichiers touchés vs upstream :
+- `Moira/Moira.h` — virtuelle `illegalOpcodeHook(u16)`, valeur de repli `false` (≡ upstream).
+- `Moira/MoiraExec_cpp.h` — `execIllegal` l'appelle avant `execException(ILLEGAL)` ;
+  `true` → l'opcode est consommé comme un NOP (`prefetch<C, POLL>`, 4 cycles).
+
+NeoST la surcharge dans `NeostMoira` (`src/core/Cpu68k.cpp`). Garde : auto-test série
+`gemdos_irq` (`tools/make_gemdos_irq_test.py`), dont le verdict `gdforced` rend l'IRQ
+prenable pile à la frontière de $0008.
+
 ## Patch local : diagnostic d'exception (`NEOST_EXC_DIAG`)
 
 Instrumentation OFF par défaut (`std::getenv`, `static const` → évaluée une fois) qui date

@@ -6,6 +6,24 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Disque hôte GEMDOS : un appel n'est plus jamais servi deux fois (2026-10-01)
+
+Signalé par TOS File Cmd : avec Verify, la relecture de `C:\DISK.ST` échouait. Le programme
+faisait 22 `trap #1` Fread, mais l'hôte en servait 23 et un bloc de 32 Ko était sauté en
+silence. Cause : l'opcode magique de la cartouche ($0008) était traité **avant**
+`execute()`. Quand une IRQ (VBL, Timer C) était prenable à cette frontière, l'appel hôte
+était fait, puis l'IRQ prise, et le `rte` revenait sur l'opcode, qui était donc rejoué.
+Hatari traite l'opcode dans son gestionnaire d'instruction ; NeoST fait de même via un délégué
+Moira `illegalOpcodeHook` (patch vendorisé, `extern/moira/NEOST_VENDOR.md`). Même cause pour
+le défaut `--fastfdc` de TOSFC (`fastfdc_format.py`, un Fread de 2 octets rejoué) : il
+réapparaît sur l'ancien code et disparaît avec le correctif.
+
+Garde : auto-test série **`gemdos_irq`** (`tools/make_gemdos_irq_test.py`, palier `fast`).
+`C:\AUTO\GDIRQ.PRG` fait 3 000 Fwrite et 3 000 Fread contrôlés (retour, octets,
+`Fseek(0,h,1)`) pendant que VBL et Timer C tournent. Puis `gdforced` fait 24 Fread où l'IRQ
+est rendue prenable pile à la frontière de $0008 (masque à 7, attente, entrée dans le
+gestionnaire par un `rte` à $2300). Les trois verdicts échouent sur l'ancien code.
+
 ## Identité de build et trace GEMDOS parlante — retours de TOS File Cmd (2026-09-23)
 
 Un client externe du protocole `--server` a perdu une matinée sur un `build/neost-headless`
