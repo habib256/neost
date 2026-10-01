@@ -6,6 +6,30 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Serveur : disquette à chaud, lecteur B débranché — demandes des bancs TOS File Cmd (2026-10-01)
+
+**`insert A|B FICHIER` / `eject A|B`** changent la disquette en cours de session serveur,
+comme la main de l'utilisateur, et `hello` annonce désormais les médias montés à l'instant.
+Les premiers essais ont montré que le TOS ne voyait pas l'échange : TOSFC relistait l'ancien
+contenu. Cause : la fenêtre de changement de média (WPRT forcé pendant l'éjection) durait 4
+trames. Or le TOS ne lit WPRT qu'une VBL sur 8, en alternant les lecteurs (EmuTOS `flopvbl`,
+comme Atari TOS), donc toutes les 16 VBL pour A. Elle dure maintenant **18 VBL**, comme
+`FLOPPY_DRIVE_TRANSITION_DELAY_VBL` d'Hatari (« min of 16 VBLs »). Le changement à chaud du GUI
+en profite aussi.
+
+**`--drive-b off`** débranche le lecteur B (port de `FDC_Drive_Set_Enable` d'Hatari et de son
+option `--drive-b off`). Un lecteur débranché vaut « aucun lecteur sélectionné » : pas
+d'index, TR00/INDEX/WPRT éteints, et le Restore du TOS n'atteint jamais la piste 0. Le TOS
+compte donc un seul lecteur : `_nflops` ($4A6) = 1, comme sous Hatari avec la même option
+(vérifié à l'oracle). ⚠ EmuTOS ne crée **pas** de lecteur logique B: sur un ST à un lecteur
+(`_drvbits` = A seul, Hatari idem) : le dialogue « Insert disk B: » n'existe qu'avec un TOS
+Atari.
+
+Garde : `tools/check_server_media.py` (palier `fast`). Un témoin dans C:\AUTO relit A: en
+boucle et écrit ce qu'il voit sur le disque hôte. Le test vérifie insert, refus, eject,
+réinsertion et `_nflops`, puis fait **16 échanges décalés d'une trame**, soit toutes les phases
+de lecture du TOS. Avec l'ancienne fenêtre de 4 trames, il en rate 7 sur 16.
+
 ## Disque hôte GEMDOS : un appel n'est plus jamais servi deux fois (2026-10-01)
 
 Signalé par TOS File Cmd : avec Verify, la relecture de `C:\DISK.ST` échouait. Le programme

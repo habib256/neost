@@ -130,6 +130,9 @@ void usage() {
         "  --joy P1[,P0]     hold a joystick state (bits up$01 down$02 l$04 r$08 fire$80)\n"
         "  --disk FILE       mount an image in drive A (default disks/diskA.st)\n"
         "  --diskb FILE      mount an image in drive B (second drive)\n"
+        "  --drive-b on|off  connect drive B (default on). off = single-drive ST:\n"
+        "                    TOS finds one drive (_nflops = 1) and asks to swap\n"
+        "                    disks in A for B: (as hatari --drive-b off)\n"
         "  --fastfdc         fast FDC (delays /10) — speeds up disk access\n"
         "  --disk-ro         floppy writes stay in RAM: the host .st/.msa/.dim file\n"
         "                    (and the .wd1772 STX overlay) is never modified. The\n"
@@ -1091,6 +1094,7 @@ int main(int argc, char** argv) {
     std::string diskPath   = "disks/diskA.st";
     bool        diskRequested = false;   // --disk explicite (ou neost.cfg) : seul cas où son absence est fatale en --server
     std::string diskBPath;                       // lecteur B (optionnel, --diskb)
+    bool        driveB     = true;    // --drive-b off : lecteur B débranché (_nflops = 1)
     bool        fastFdc    = false;   // FDC rapide (--fastfdc) : délais commande/transfert ÷10
     bool        diskRo     = false;   // A14 (--disk-ro) : les écritures ne touchent PAS le fichier hôte
     std::string romPath    = "roms/etos192us.img";
@@ -1258,6 +1262,12 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--screenshot")) shotPath  = next(a);
         else if (!std::strcmp(a, "--disk"))       { diskPath  = next(a); diskRequested = true; }
         else if (!std::strcmp(a, "--diskb"))      diskBPath = next(a);
+        else if (!std::strcmp(a, "--drive-b")) {
+            const char* v = next(a);
+            if (!std::strcmp(v, "on")) driveB = true;
+            else if (!std::strcmp(v, "off")) driveB = false;
+            else { std::fprintf(stderr, "--drive-b expects 'on' or 'off'\n"); return 2; }
+        }
         else if (!std::strcmp(a, "--fastfdc"))    fastFdc   = true;
         else if (!std::strcmp(a, "--disk-ro"))    diskRo    = true;
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
@@ -1633,6 +1643,13 @@ int main(int argc, char** argv) {
     // Seul un média DEMANDÉ compte : la disquette par défaut « disks/diskA.st » n'est
     // qu'un confort de développement, et son absence (binaire installé, autre cwd,
     // borne) rendait le serveur inutilisable — mesuré, RC=1 depuis /tmp.
+    // Lecteur B débranché (--drive-b off) : posé AVANT le boot, le TOS ne compte qu'un
+    // lecteur. Une image --diskb n'y aurait aucun sens : refusée, et dit.
+    machine.fdc.setDriveEnabled(1, driveB);
+    if (!driveB && !diskBPath.empty()) {
+        std::fprintf(stderr, "[headless] --diskb ignored: drive B is disconnected (--drive-b off)\n");
+        diskBPath.clear();
+    }
     const bool diskAOk = machine.loadDisk(diskPath);          // lecteur A (optionnel)
     const bool diskBOk = diskBPath.empty() || machine.loadDiskB(diskBPath);
     if (serverMode && ((diskRequested && !diskAOk) || !diskBOk)) outFail = true;
@@ -2048,15 +2065,17 @@ int main(int argc, char** argv) {
         server::Options so;
         so.probes = probeSet;
         so.slots  = serverSlots;
-        so.identity = std::string("neost=") +
+        // Les médias (disk=, diskb=) sont composés par le serveur À CHAQUE « hello » :
+        // insert/eject les changent en cours de session.
+        so.identityHead = std::string("neost=") +
 #ifdef NEOST_VERSION
                       NEOST_VERSION
 #else
                       "unknown"
 #endif
                       + " machine=" + machineName(machType) + " ram=" + ramLabel(ramBytes)
-                      + " tos=" + romPath + " disk=" + diskPath
-                      + " diskb=" + (diskBPath.empty() ? std::string("-") : diskBPath)
+                      + " tos=" + romPath;
+        so.identityTail = std::string(" driveb=") + (driveB ? "on" : "off")
                       + " fastfdc=" + (fastFdc ? "1" : "0")    // plus de tampon fixe : un chemin
                                                               // long coupait la ligne au milieu
                       + " commit=" + neost::build::kCommit     // identité de build : un client

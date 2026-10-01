@@ -65,6 +65,18 @@ public:
     // programmes au track-loader maison qui dépendent du débit physique du WD1772.
     void setFastFdc(bool on) { fastFloppy_ = on; }
 
+    // Lecteur BRANCHÉ ou non (port de Hatari FDC_Drive_Set_Enable, option
+    // `--drive-b off`). Un lecteur débranché se comporte comme « aucun lecteur
+    // sélectionné » : pas d'index, TR00/INDEX/WPRT éteints, Restore qui n'atteint
+    // jamais la piste 0. C'est ce que sonde le TOS au boot pour compter ses lecteurs :
+    // B débranché → _nflops ($4A6) = 1, et GEMDOS demande « Insert disk B: » dans A.
+    void setDriveEnabled(int drive, bool on) { driveEnabled_[drive & 1] = on; refreshDriveSide(); }
+    bool driveEnabled(int drive) const { return driveEnabled_[drive & 1]; }
+
+    // Longueur de la trame COURANTE en cycles bus (posée à chaque VBL par Machine) :
+    // elle date la fenêtre de changement de média en VBL, comme Hatari.
+    void setFrameCycles(int64_t c) { if (c > 0) frameCycles_ = c; }
+
     // A14 — écriture HÔTE des images disquette (write-through). ON par défaut :
     // NeoST persiste chaque secteur écrit au fil de l'eau, ce qui est le bon
     // comportement pour un utilisateur (une coupure ne perd pas la sauvegarde du
@@ -406,6 +418,7 @@ private:
     // est active ; expire la transition quand l'échéance est dépassée. Calqué sur
     // Hatari Floppy_DriveTransitionUpdateState (Force=1 pendant l'éjection).
     bool     transitionForceWprt(int drive);
+    int64_t  transitionWindow() const;          // durée d'une phase Mediach (18 VBL)
     void     emitSound(FdcSound e) { if (soundSink_) soundSink_(e); }
 
     // Horloge FDC = horloge CPU « live » (sous-instruction si dispo), absolue et
@@ -439,6 +452,8 @@ private:
     int      commandState_ = 0;       // sous-état (RUN_*)
     uint8_t  commandType_ = 1;        // 1/2/3/4
     bool     replaceCommandPossible_ = false; // remplaçable pendant prepare+spinup
+    int64_t  frameCycles_ = 160256;             // trame courante (cf. setFrameCycles), PAL au boot
+    bool     driveEnabled_[2] = {true, true};   // cf. setDriveEnabled (config, pas d'état)
     bool     fastFloppy_ = false;     // « FDC rapide » (cf. setFastFdc) : délais /N
     bool     hostWriteBack_ = true;   // écrire les secteurs dans le FICHIER (cf. setHostWriteBack)
     bool     delayIndexPaced_ = false;// le délai courant est cadencé sur la rotation (non accéléré)

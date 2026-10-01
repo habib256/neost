@@ -137,6 +137,11 @@ FAST = [
     # et silencieusement — les deux « marchent ». Verdict MUTATION-TESTÉ.
     ("Serveur == boucle --frames (observation, entrées, écran, état exporté)",
      [sys.executable, str(TOOLS / "run_server_equiv.py")]),
+    # Disquette changée à chaud par le serveur (insert/eject) et lecteur B débranché
+    # (--drive-b off) : on vérifie ce que voit le TOS, à toutes les phases VBL — une
+    # fenêtre de changement de média trop courte passait entre ses lectures de WPRT.
+    ("Serveur : disquette à chaud vue par le TOS, lecteur B débranché (_nflops = 1)",
+     [sys.executable, str(TOOLS / "check_server_media.py")]),
     # Disquette livrée dans TOUS les paquets : elle avait été écrasée par un test
     # d'écriture secteur et n'était plus lisible sous TOS (issue #38), sans qu'aucun
     # palier ne relise jamais cette image.

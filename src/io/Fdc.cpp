@@ -635,7 +635,7 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         dk.path    = path;
         if (sched_) {                            // changement de média à chaud (cf. plus bas)
             dk.transitionPhase    = wasPresent ? FloppyDisk::TRANS_EJECT : FloppyDisk::TRANS_INSERT;
-            dk.transitionDeadline = sched_->now() + 4 * 160256;
+            dk.transitionDeadline = sched_->now() + transitionWindow();
         }
         dk.writeProtect = false;                 // écritures en overlay (persisté en .wd1772)
         updateFloppyDensity(drive & 1);
@@ -723,7 +723,7 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     //  - premier montage (boot) → simple INSERTION, qui ne force PAS WPRT.
     if (sched_) {
         dk.transitionPhase    = wasPresent ? FloppyDisk::TRANS_EJECT : FloppyDisk::TRANS_INSERT;
-        dk.transitionDeadline = sched_->now() + 4 * 160256;   // ~4 trames PAL
+        dk.transitionDeadline = sched_->now() + transitionWindow();
     }
 
     // Write-protect auto-détecté d'après les permissions du fichier (cf. Hatari
@@ -767,7 +767,7 @@ void Fdc::eject(int drive) {
     // Floppy_DriveTransitionSetState, STATE_EJECT). Une éjection « à vide » n'arme rien.
     if (wasPresent && sched_) {
         dk.transitionPhase    = FloppyDisk::TRANS_EJECT;
-        dk.transitionDeadline = sched_->now() + 4 * 160256;
+        dk.transitionDeadline = sched_->now() + transitionWindow();
     }
     std::fprintf(stderr, "[FDC] drive %c ejected\n", drive & 1 ? 'B' : 'A');
 }
@@ -829,10 +829,13 @@ int Fdc::currentSide() const {
     return (psg_.regs_[14] & 0x01) ? 0 : 1;
 }
 // Sélection lecteur : port A du PSG bit1 = A (actif bas), bit2 = B (actif bas).
+// Un lecteur débranché vaut « aucun » : Hatari teste `DriveSelSignal < 0 ||
+// !Enabled` à chaque endroit où le lecteur compte (fdc.c, index, TR00, statut type I).
 int Fdc::selectedDrive() const {
-    if ((psg_.regs_[14] & 0x02) == 0) return 0;   // A prioritaire si les deux
-    if ((psg_.regs_[14] & 0x04) == 0) return 1;
-    return -1;
+    int d = -1;
+    if ((psg_.regs_[14] & 0x02) == 0) d = 0;        // A prioritaire si les deux
+    else if ((psg_.regs_[14] & 0x04) == 0) d = 1;
+    return (d >= 0 && !driveEnabled_[d]) ? -1 : d;
 }
 
 int Fdc::sidesPerDisk(int drive) const {
@@ -2536,6 +2539,16 @@ void Fdc::onFdcEvent() {
 // =============================================================================
 //  Transition de média (cf. Hatari Floppy_DriveTransitionUpdateState).
 // =============================================================================
+// Durée d'une phase de changement de média : FLOPPY_DRIVE_TRANSITION_DELAY_VBL = 18
+// VBL chez Hatari (floppy.h, « min of 16 VBLs »). Le TOS n'échantillonne WPRT qu'à
+// une VBL sur 8, en alternant les lecteurs quand il en a deux (EmuTOS flopvbl, comme
+// Atari TOS) : le lecteur A n'est lu que toutes les 16 VBL. L'ancienne fenêtre de
+// 4 trames passait le plus souvent entre deux lectures — la disquette changée à chaud
+// n'était pas vue (mesuré : TOSFC relistait l'ancien contenu après « insert A »).
+int64_t Fdc::transitionWindow() const {
+    return 18 * frameCycles_;
+}
+
 bool Fdc::transitionForceWprt(int drive) {
     FloppyDisk& dk = drive_[drive & 1];
     if (dk.transitionPhase == FloppyDisk::TRANS_NONE || !sched_) return false;
