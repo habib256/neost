@@ -17,7 +17,10 @@ namespace neost::server {
 
 struct Options {
     observe::ProbeSet probes;        // sondes déclarées en ligne de commande
-    std::string       identity;      // réponse à « hello » : version, machine, médias
+    // Réponse à « hello » : identityHead + « disk=… diskb=… » (médias montés À
+    // L'INSTANT, insert/eject les changent) + identityTail.
+    std::string       identityHead;  // version, machine, RAM, TOS
+    std::string       identityTail;  // lecteur B, FDC rapide, commit, date de build
     int               slots = 64;    // emplacements d'état EN MÉMOIRE (~1,4 Mo pièce)
 };
 

@@ -568,6 +568,7 @@ void Machine::onVbl() {
     // ≈ 20032 µs (50 Hz) / 16700 µs (60 Hz) / 14028 µs (71 Hz mono).
     const int64_t kVblMicro = static_cast<int64_t>(lpf_) * cpl_ / 8;
     ikbd.onVbl(kVblMicro);
+    fdc.setFrameCycles(static_cast<int64_t>(lpf_) * cpl_);   // fenêtre Mediach en VBL
     ports.onVbl(mfp);   // relâche le bouton Multiface/URC enfoncé pendant la trame
 }
 

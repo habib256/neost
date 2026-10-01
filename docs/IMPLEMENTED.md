@@ -693,7 +693,9 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   **aucun effet de bord**, donc l'espace I/O se lit `$FF`.
 - **Mode serveur** (`--server`) : boucle de commandes texte sur stdin/stdout — `run N`,
   `play SCRIPT`, `joy`, `key`, `mouse`, `peek`, `observe`, `save`/`load` sur des
-  emplacements d'état **en mémoire**, `export`/`import`, `probe`, `shot`, `slots`.
+  emplacements d'état **en mémoire**, `export`/`import`, `probe`, `shot`, `slots`,
+  `insert`/`eject` (disquette changée à chaud, vue par le TOS à toutes les phases VBL —
+  `tools/check_server_media.py`).
   `run`/`play`/`load`/`observe` répondent avec les champs d'observation : un rollout = UN
   aller-retour. Équivalence avec la boucle `--frames` vérifiée au palier `fast`
   (`tools/run_server_equiv.py`), verdict MUTATION-TESTÉ.
@@ -713,6 +715,11 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   `tools/opendst_explore.py`.
 
 ## Disquette (FDC WD1772 + DMA)
+
+- **Lecteur B débranché** (`--drive-b off`, port de `FDC_Drive_Set_Enable` d'Hatari) : vaut
+  « aucun lecteur sélectionné » (pas d'index, TR00/INDEX/WPRT éteints) → le TOS ne compte
+  qu'un lecteur, `_nflops` = 1 (identique à l'oracle). **Changement de média** : fenêtre de
+  transition de **18 VBL** (WPRT forcé à l'éjection), `FLOPPY_DRIVE_TRANSITION_DELAY_VBL`.
 - **WRITE TRACK (formatage) sur image .ST** : le flux MFM écrit par le programme
   (via DMA) est PARSÉ en deux passes — extraction des secteurs (IDAM $FE →
   piste/face/secteur/taille, DAM $FB/$F8 → 512 o) puis, si la géométrie est

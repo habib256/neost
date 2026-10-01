@@ -176,7 +176,7 @@ ROM n'est chargée qu'une fois, et les états tiennent dans des **emplacements e
 
 | Commande | Effet |
 |---|---|
-| `hello` | identité de la configuration figée : version, **commit et date de build**, machine, RAM, médias |
+| `hello` | identité : version, **commit et date de build**, machine, RAM, médias **montés à l'instant** (`insert`/`eject` les changent), lecteur B branché ou non |
 | `run N` | exécute N trames (≤ 10 M par commande), entrées inchangées |
 | `play SCRIPT` | script joystick (même grammaire qu'`--joy-script`) : un masque par trame |
 | `joy P1 [P0]` | état joystick **tenu** (masques hexa — `80` = feu, comme `--joy 80` et `--joy-at N 80` côté ligne de commande, désormais hexa aussi) |
@@ -190,6 +190,8 @@ ROM n'est chargée qu'une fois, et les états tiennent dans des **emplacements e
 | `probe SPEC` | ajoute une sonde à chaud (`NOM=ADR:LEN`) |
 | `shot FICHIER.ppm` | capture d'écran |
 | `slots` | occupation des emplacements |
+| `insert A\|B FICHIER` | change la disquette **à chaud** (.st/.msa/.dim/.stx), comme la main de l'utilisateur |
+| `eject A\|B` | retire la disquette (lecteur vide) |
 | `quit` | fin de session (la fin de stdin fait pareil) |
 
 `run`, `play`, `load` et `observe` répondent avec **les champs d'observation** (`frame=`,
@@ -263,7 +265,7 @@ Arité stricte : un argument de trop est une erreur.
 
 | commande | réponse | sémantique et bornes |
 |---|---|---|
-| `hello` | `ok neost=… machine=… ram=… tos=… disk=… diskb=… fastfdc=… commit=… built=…` | informatif : les chemins peuvent contenir des espaces. `commit` = hash court de HEAD, suffixé `+xxxxxxxx` si l'arbre de travail diffère de HEAD, `nogit` hors dépôt ; `built` = ISO 8601 sans espace. Un banc compare `commit` à `git rev-parse --short=12 HEAD` et **refuse un binaire périmé** (même valeur en tête de `--version`) |
+| `hello` | `ok neost=… machine=… ram=… tos=… disk=… diskb=… driveb=on\|off fastfdc=… commit=… built=…` | informatif : les chemins peuvent contenir des espaces ; `disk`/`diskb` = image montée **à l'instant**, `-` si le lecteur est vide. `commit` = hash court de HEAD, suffixé `+xxxxxxxx` si l'arbre de travail diffère de HEAD, `nogit` hors dépôt ; `built` = ISO 8601 sans espace. Un banc compare `commit` à `git rev-parse --short=12 HEAD` et **refuse un binaire périmé** (même valeur en tête de `--version`) |
 | `run N` | `ok <champs>` | N trames, 0 ≤ N ≤ 10 000 000 ; entrées inchangées |
 | `play SCRIPT` | `ok <champs>` | grammaire § 3 ; un masque **posé avant** chaque trame ; le dernier masque **reste posé** ; le port 0 est **mis à zéro** pendant le script ; total ≤ 10 M trames ; un script fautif ne joue **rien** |
 | `joy P1 [P0]` | `ok` | état tenu jusqu'au prochain `joy`/`play` ; bits haut 01 bas 02 gauche 04 droite 08 feu 80 |
@@ -278,11 +280,15 @@ Arité stricte : un argument de trop est une erreur.
 | `probe NOM=ADR:LEN` | `ok` | ajoute une sonde (LEN 1, 2 ou 4) ; nom ≤ 64 caractères, unique |
 | `shot FICHIER.ppm` | `ok` | capture PPM (P6) |
 | `slots` | `ok used=<n>/<max> bytes=<total>` | |
+| `insert A\|B FICHIER` | `ok drive=<A\|B> path=<FICHIER>` | aucune trame ne passe. Arme la fenêtre de changement de média d'Hatari (**WPRT forcé 18 VBL**), que le TOS lit pour remarquer l'échange (`Mediach`). `err` si l'image est illisible (le lecteur reste **tel quel**) ou si B est débranché (`--drive-b off`). ⚠ Laisser passer **≥ 40 trames** avant que le programme ne touche le lecteur : le TOS ne lit WPRT de A que toutes les 16 VBL, et un accès < 0,5 s après le précédent pendant que WPRT est haut lui fait conclure « pas de changement » (EmuTOS `flop_mediach`, comme Atari TOS). Les écritures suivent `--disk-ro` |
+| `eject A\|B` | `ok drive=<A\|B> path=-` | même fenêtre (WPRT forcé), puis lecteur vide (le TOS lit « Drive not ready ») |
 | `quit` | `ok bye` | puis le processus sort (code 0) ; une fin de stdin fait pareil |
 
 **Compteur de trames.** Il part de 0 au démarrage (ou après `--load-state`), avance de 1 par
 trame émulée, et **est restauré par `load`** : la trame publiée après un `load` est celle du
 `save`. C'est ce qui rend la datation des cellules comparable d'une branche à l'autre.
+
+**Médias et états.** Un save-state ne contient **pas** la disquette (ni son contenu ni son chemin, comme `--save-state`) : `load` après un `insert` reprend la machine **avec la disquette montée maintenant**. Pour rejouer une cellule, rejouer aussi ses `insert`.
 
 **Garanties.** Une même séquence de commandes, sur un même binaire et une même configuration
 (§ 1), rend des réponses **identiques octet pour octet** — y compris à travers

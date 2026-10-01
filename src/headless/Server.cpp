@@ -30,6 +30,8 @@
 //    import N FICHIER         charge un fichier d'état dans un emplacement
 //    probe SPEC               ajoute une sonde à chaud (NOM=ADR:LEN)
 //    shot FICHIER.ppm         capture d'écran
+//    insert A|B FICHIER       change la disquette À CHAUD (.st/.msa/.dim/.stx)
+//    eject A|B                retire la disquette (lecteur vide)
 //    slots                    occupation des emplacements
 //    quit                     fin de session
 //  « run », « play », « load » et « observe » répondent avec les champs
@@ -172,7 +174,15 @@ int run(Machine& machine, const Options& opts) {
 
         if (cmd == "quit" || cmd == "exit") { return reply("ok bye") ? 0 : 1; }
 
-        if (cmd == "hello") { if (!reply("ok " + opts.identity)) return 1; continue; }
+        if (cmd == "hello") {
+            auto media = [&](int d) {
+                const std::string& p = machine.fdc.mountedPath(d);
+                return p.empty() ? std::string("-") : p;
+            };
+            if (!reply("ok " + opts.identityHead + " disk=" + media(0) + " diskb=" + media(1)
+                       + opts.identityTail)) return 1;
+            continue;
+        }
 
         if (cmd == "run") {
             if (!arity(a, 1, 1)) { if (!reply("err run expects exactly one frame count")) return 1; continue; }
@@ -388,6 +398,39 @@ int run(Machine& machine, const Options& opts) {
                 continue;
             }
             if (!reply("ok")) return 1;
+            continue;
+        }
+
+        // Changement de disquette À CHAUD, comme la main de l'utilisateur : Fdc::loadImage
+        // arme la fenêtre de transition d'Hatari (WPRT forcé ~4 tours), ce qui fait voir
+        // le changement de média au TOS (hdv_mediach). Aucune trame ne passe ici : le
+        // pilote enchaîne « run » pour laisser le programme le constater.
+        if (cmd == "insert" || cmd == "eject") {
+            std::string head, path;
+            splitFirst(rest, head, path);
+            const int d = (head == "A" || head == "a") ? 0 : (head == "B" || head == "b") ? 1 : -1;
+            const bool isInsert = cmd == "insert";
+            if (d < 0 || (isInsert ? path.empty() : !path.empty())) {
+                if (!reply(isInsert ? "err insert expects 'A|B FILE'" : "err eject expects 'A|B'")) return 1;
+                continue;
+            }
+            const std::string letter(1, char('A' + d));
+            if (!machine.fdc.driveEnabled(d)) {
+                if (!reply("err drive " + letter + " is disconnected (--drive-b off)")) return 1;
+                continue;
+            }
+            if (!isInsert) {
+                machine.fdc.eject(d);
+                if (!reply("ok drive=" + letter + " path=-")) return 1;
+                continue;
+            }
+            // Un échec laisse le lecteur tel qu'il était (loadImage ne touche le lecteur
+            // qu'une fois l'image lue et reconnue) — la raison est sur stderr.
+            if (!machine.fdc.loadImage(path, d)) {
+                if (!reply("err cannot mount " + path + " — reason on stderr")) return 1;
+                continue;
+            }
+            if (!reply("ok drive=" + letter + " path=" + path)) return 1;
             continue;
         }
 

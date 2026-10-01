@@ -33,8 +33,8 @@ conditionne plus l'objectif.
 le Fread de 2 octets était rejoué au `rte`. Corrigé en traitant l'opcode dans le gestionnaire
 d'instruction, comme Hatari (CHANGELOG 2026-10-01). Le repro échoue sur l'ancien code et passe
 avec le correctif (4 cas sur 4). Le `--fastfdc` ne faisait que déplacer le minutage.
-Garde : auto-test série `gemdos_irq`. **Restent ouverts** : les deux souhaits en fin de
-section.
+Garde : auto-test série `gemdos_irq`. Les deux souhaits en fin de section sont livrés eux
+aussi.
 
 **Reproduction** (TOS File Cmd commit `f477b3c`, EmuTOS 192 Ko US de l'arbre, `--machine st --mem 1m`) :
 
@@ -72,6 +72,10 @@ signale proprement.
 lecteur (`insert A <image>` / `eject A`) — la copie de disquette à un seul lecteur de TOSFC
 demande des échanges et n'est vérifiée que sur l'hôte faute de mieux — et une option
 **`_nflops = 1`** (un seul lecteur déclaré), pour vérifier les dialogues « Insert disk B: ».
+
+→ **Livrés le 2026-10-01** (CHANGELOG) : commandes serveur `insert A|B FICHIER` / `eject A|B`
+et option `--drive-b off` (`_nflops` = 1). Limite : EmuTOS ne crée pas de B: logique sur un ST
+à un lecteur, donc les dialogues « Insert disk B: » ne se vérifient qu'avec un TOS Atari.
 
 ## Retours d'un client du protocole `--server` (bancs TOS File Cmd, 2026-09-23) — RÉSOLU le 2026-09-23
 
