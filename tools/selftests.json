@@ -52,6 +52,21 @@
     "nubscr",
     "nubnic"
    ]
+  },
+  {
+   "id": "gemdos_irq",
+   "name": "GEMDOS HD — un opcode magique = UN appel hôte, même avec une IRQ à la frontière (C:\\AUTO\\GDIRQ.PRG) — verdict série",
+   "rom": "roms/etos192us.img",
+   "machine": "st",
+   "mem": "512k",
+   "frames": 900,
+   "gemdos_generate": "tools/make_gemdos_irq_test.py",
+   "expect": [
+    "gdwrite",
+    "gdread",
+    "gdforced"
+   ],
+   "rom_note": "Bug du 2026-10-01 (TOSFC, Verify sur C:) : l'appel hôte était servi AVANT execute(), qui prenait alors une IRQ en attente au lieu du NOP — l'opcode magique était rejoué au rte. gdforced rend le cas déterministe (IRQ prenable pile à la frontière de $0008) ; il ÉCHOUE sur l'ancien code."
   }
  ]
 }

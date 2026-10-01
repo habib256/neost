@@ -26,6 +26,53 @@ conditionne plus l'objectif.
 
 ---
 
+## `--fastfdc` : mémoire altérée après une série de Flopfmt (bancs TOS File Cmd, 2026-09-23) — RÉSOLU le 2026-10-01
+
+**Résolution** : ce n'était ni le DMA ni EmuTOS. Un appel GEMDOS du disque hôte était
+**servi deux fois** quand une IRQ était prenable à la frontière de l'opcode magique $0008 :
+le Fread de 2 octets était rejoué au `rte`. Corrigé en traitant l'opcode dans le gestionnaire
+d'instruction, comme Hatari (CHANGELOG 2026-10-01). Le repro échoue sur l'ancien code et passe
+avec le correctif (4 cas sur 4). Le `--fastfdc` ne faisait que déplacer le minutage.
+Garde : auto-test série `gemdos_irq`. **Restent ouverts** : les deux souhaits en fin de
+section.
+
+**Reproduction** (TOS File Cmd commit `f477b3c`, EmuTOS 192 Ko US de l'arbre, `--machine st --mem 1m`) :
+
+    cd ../tosfilecmd && make disk && python3 bench/repro/fastfdc_format.py
+
+| mode | formatage 720 Ko de B: puis écriture d'un .MSA sur B: | écriture seule |
+|---|---|---|
+| `--fastfdc` | **« Floppy not written / Track 73 / Unknown floppy format »** | OK |
+| FDC réel (sans `--fastfdc`) | OK | OK |
+
+Reproduit à chaque passage (5 sur 5, dans trois scripts différents). Le formatage fait 160 `Flopfmt` (XBIOS 10,
+entrelacement 1, `$E5E5`), puis 18 `Flopwr`/`Floprd` d'un secteur ; l'écriture relit
+`C:\SAMPLE.MSA` (lecteur hôte) piste par piste et fait `Flopfmt`+`Flopwr`+`Floprd` par piste.
+
+**Ce qu'on voit** : `NEOST_GEMDOS_TRACE` montre, pour la piste fautive, `Fseek` correct puis
+`Fread` de 2 octets (l'en-tête de piste, qui vaut 4 dans le fichier) puis un `Fread` de
+**2** octets au lieu de 4 : la longueur lue juste avant a changé en mémoire (variable locale
+sur la pile de TOSFC) entre les deux appels. Selon la disposition mémoire du programme, le
+symptôme se déplace (piste 73, ou dès l'index du .MSA) ou disparaît (ajouter ~150 octets de
+code à TOSFC suffit).
+
+**Ce qui est exclu côté TOSFC** : le même code passe sur l'hôte (faux GEMDOS/XBIOS,
+AddressSanitizer) ; aucun de ses gestionnaires d'interruption (souris IKBD, `etv_critic`) n'écrit
+ailleurs que dans ses propres variables ; le changement de disquette forcé (`hdv_mediach`) seul,
+sans formatage, ne déclenche rien ; seul le mode `--fastfdc` change l'issue. **Hypothèse** :
+un transfert DMA (ou l'état DMA laissé par WRITE TRACK en mode rapide) qui écrit en mémoire
+hors de la fenêtre du dernier appel XBIOS — à confirmer contre Hatari ; EmuTOS n'est pas exclu.
+Côté TOSFC, `bench/disktools.py` tourne donc sans `--fastfdc` en attendant.
+
+À titre d'information (pas un bug) : formater 10 ou 11 secteurs sur une image .ST de 9 est
+refusé (`Flopfmt` → −16 ou −2 selon les passages), comme Hatari ; TOSFC le
+signale proprement.
+
+**Deux souhaits pour les bancs**, liés : une commande serveur pour **changer la disquette** d'un
+lecteur (`insert A <image>` / `eject A`) — la copie de disquette à un seul lecteur de TOSFC
+demande des échanges et n'est vérifiée que sur l'hôte faute de mieux — et une option
+**`_nflops = 1`** (un seul lecteur déclaré), pour vérifier les dialogues « Insert disk B: ».
+
 ## Retours d'un client du protocole `--server` (bancs TOS File Cmd, 2026-09-23) — RÉSOLU le 2026-09-23
 
 Constaté en écrivant `bench/archives.py` de TOS File Cmd (lecteur GEMDOS hôte C: + disquette A:).

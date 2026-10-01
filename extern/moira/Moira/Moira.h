@@ -362,6 +362,14 @@ protected:
     virtual int iackSyncBefore(u8 level) { return 4; }
     virtual int iackSyncAfter(u8 level) { return 4; }
 
+    // NEOST : instruction illégale DÉLÉGABLE. Appelé par execIllegal<C>() AVANT la
+    // prise de l'exception ILLEGAL, donc quand l'instruction s'exécute VRAIMENT
+    // (interruptions et trace déjà arbitrées par execute()). Renvoie true si le
+    // sous-classeur a traité l'opcode : il est alors consommé comme un NOP
+    // (prefetch, 4 cycles). Sert aux opcodes magiques GEMDOS HD de NeoST
+    // ($0008-$000A), comme les gestionnaires OpCode_GemDos/Pexec/SysInit d'Hatari.
+    virtual bool illegalOpcodeHook(u16 opcode) { return false; }
+
     // Called when the CPU jumps to an exception vector
     virtual void didJumpToVector(int nr, u32 addr) { }
 

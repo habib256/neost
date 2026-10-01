@@ -18,6 +18,7 @@
 # =============================================================================
 import argparse
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -151,6 +152,14 @@ def run_one(entry, args) -> bool:
         cmd += ["--sd2", str(ROOT / entry["sd2"])]
     if entry.get("netusbee"):
         cmd.append("--netusbee")
+    # Disque hôte GEMDOS : dossier RÉGÉNÉRÉ à chaque passage dans tests/out (le
+    # programme y écrit et y efface un fichier — rien de committé, rien de périmé).
+    if entry.get("gemdos_generate"):
+        hd = OUT_DIR / f"{eid}_hd"
+        shutil.rmtree(hd, ignore_errors=True)
+        run_timed([sys.executable, str(ROOT / entry["gemdos_generate"]), str(hd)],
+                  60, cwd=ROOT, check=True)
+        cmd += ["--gemdos", str(hd)]
     print("  $", " ".join(cmd))
     # Le dump série n'est écrit qu'À LA FIN de main() côté headless : s'il reste celui
     # du run PRÉCÉDENT, un émulateur qui segfaute (ou qui sort tôt) laisse le runner
