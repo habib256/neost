@@ -155,7 +155,10 @@ int run(Machine& machine, const Options& opts) {
     // Un client mort faisait mourir le serveur par SIGPIPE AVANT la fermeture propre de
     // la trace (fichier tronqué, code de signal). Ignoré, l'écriture échoue en EPIPE,
     // reply() le voit et la boucle sort par le chemin normal.
+    // Windows ne définit pas SIGPIPE : le tuyau fermé y échoue directement en écriture.
+#ifdef SIGPIPE
     std::signal(SIGPIPE, SIG_IGN);
+#endif
     std::string line;
     while (std::getline(std::cin, line)) {
         while (!line.empty() && (line.back() == '\r' || line.back() == '\n')) line.pop_back();

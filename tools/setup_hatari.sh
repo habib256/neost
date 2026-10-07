@@ -60,12 +60,17 @@ git -C "$DIR" checkout --detach "$PIN"
 # sans répondre aux entrées.
 PATCH="$ROOT/tools/hatari_neost_oracle.patch"
 echo "→ application de l'instrumentation NeoST ($(basename "$PATCH"))"
-if ! git -C "$DIR" apply --check "$PATCH"; then
+if git -C "$DIR" apply --check "$PATCH" 2>/dev/null; then
+  git -C "$DIR" apply "$PATCH"
+elif git -C "$DIR" apply --reverse --check "$PATCH" 2>/dev/null; then
+  # Le cache CI garde l'arbre instrumenté : checkout sur la même épingle
+  # conserve le patch. Vérifier son inverse prouve qu'il est déjà complet.
+  echo "→ instrumentation NeoST déjà présente"
+else
   echo "échec : $PATCH ne s'applique pas sur ${PIN:0:12} — rebaser le patch avant de" >&2
   echo "        déplacer l'épingle (cf. docs/HATARI_AUTOMATION.md)." >&2
   exit 1
 fi
-git -C "$DIR" apply "$PATCH"
 
 # Les deux options macOS sont OBLIGATOIRES : sans -DCMAKE_OSX_ARCHITECTURES=arm64 le
 # build tombe en x86_64 sous Rosetta, et ENABLE_OSX_BUNDLE=0 est requis pour obtenir

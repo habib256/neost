@@ -102,7 +102,8 @@ jobs:
           echo "pin Hatari : $PIN"
 
       # L'arbre complet (source + build) pèse ~136 Mo ; le bâtir prend ~5 min.
-      # La clé porte le PIN : changer d'oracle invalide le cache tout seul, ce
+      # La clé porte le PIN et le patch : changer d'oracle ou d'instrumentation
+      # invalide le cache tout seul, ce
       # qui est exactement le comportement voulu — un cache qui survivrait à un
       # changement de pin ferait tourner l'ANCIEN Hatari en prétendant valider
       # le nouveau.
@@ -110,7 +111,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: extern/hatari
-          key: hatari-${{ runner.os }}-${{ steps.pin.outputs.pin }}
+          key: hatari-${{ runner.os }}-${{ steps.pin.outputs.pin }}-${{ hashFiles('tools/hatari_neost_oracle.patch') }}
 
       - name: Cloner et bâtir Hatari au pin (idempotent)
         run: tools/setup_hatari.sh
