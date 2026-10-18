@@ -12,10 +12,10 @@
 //  Michael Ritzert (MiNTLib) qui est la spec de facto côté logiciel.
 //
 //  Hatari N'ÉMULE PAS ce socket ($FFFA40 reste une bus error → « FPU not
-//  found ») : il n'y a donc RIEN à porter depuis extern/hatari/src ; les
-//  références comportementales sont le manuel Motorola et MAME (m68kfpu).
+//  found »). Son moteur 6888x fournit toutefois la référence des opérations,
+//  constantes et conversions ; le dialogue CIR suit le manuel Motorola et MAME.
 //
-//  Niveau d'émulation NeoST = COMPLET : dialogue CIR complet (Command/Response/
+//  Interface émulée : dialogue CIR (Command/Response/
 //  Operand/Condition/Save/Restore), registres FP0-FP7 en étendu 80 bits,
 //  FPCR/FPSR/FPIAR, formats B/W/L/S/D/X/P, constantes ROM FMOVECR bit-exactes.
 //  • Arithmétique ALGÉBRIQUE (FADD/FSUB/FMUL/FDIV/FSQRT/FCMP/FINT/FREM/FMOD/

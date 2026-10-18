@@ -53,7 +53,7 @@ public:
     void    write16(uint32_t addr, uint16_t v);
     void    write32(uint32_t addr, uint32_t v);
 
-    void reset();
+    void reset(bool cold = false);
 
     // Échéance Scheduler::BLITTER : tranche non-hog suivante (64 accès bus).
     void onSlice();
@@ -80,9 +80,11 @@ public:
         ar(sliceBus_);          // accès bus consommés par la tranche en cours
         ar(cpuBusCnt_);         // accès bus CPU consommés (fenêtre COUNT_CPU_BUS)
         ar(busCountError_);     // accès CPU volé en PRE_START → tranche de 63
+        ar.arr(ioRaw_);         // v22 : tampon IoMem brut, visible en lecture octet
     }
 
 private:
+    void writeRegisters(uint32_t off, uint32_t value, unsigned bytes);
     void start();                            // BUSY écrit à 1 : démarre/reprend le blit
     bool runSlice(int maxBusAccesses);       // ≤ N accès bus (-1 = tout) ; true = terminé
     void finishTransfer();                   // y_count = 0 : BUSY/HOG effacés + IRQ GPIP3
@@ -112,6 +114,10 @@ private:
     uint8_t reg_[0x40] = {};                 // backing store big-endian ($FF8A00 base)
     // Hatari : le registre à décalage source (buffer) et le dernier mot du bus
     // (bus_word) PERSISTENT entre blits (remis à 0 seulement au reset matériel).
+    // Blitter_CheckAccess_Byte n'actualise pas IoMem sur un registre mot : les
+    // octets lus sont ceux du dernier accès CPU, pas les compteurs vivants.
+    // Initialisé à l'allocation / reset froid, préservé par le reset matériel.
+    uint8_t ioRaw_[0x3A] = {};
     uint32_t buffer_  = 0;
     uint16_t busWord_ = 0;
     // État de REPRISE entre tranches (équivalents BlitterVars d'Hatari) : le X

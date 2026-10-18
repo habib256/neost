@@ -9,7 +9,7 @@
 //  Modèle (comme le YM2149) : la lecture des échantillons se fait sur le thread
 //  audio (mix), par rééchantillonnage bloquant-zéro vers la fréquence de sortie.
 //  Le compteur d'adresse courant est exposé (lecture CPU). Le mixage final
-//  (YM2149 + ce canal) est fait par Audio (GUI) / neost_audio_render (WASM).
+//  (YM2149 + ce canal) passe par AudioMix sur tous les frontends livrés.
 //
 //  Réf. : Hatari dmaSnd.c, doc registres STE. (c) 2026 VERHILLE Arnaud — NeoST.
 // =============================================================================
@@ -48,8 +48,8 @@ public:
     uint8_t read8(uint32_t addr);
     void    write8(uint32_t addr, uint8_t v);
 
-    // Additionne le canal numérique dans `out` (mono float) — thread audio. Chemin
-    // LEGACY conservé pour la sortie mono WASM (neost_audio_render).
+    // API mono de compatibilité (`out` contient le YM). Aucun frontend livré ne
+    // l'appelle : GUI/headless/WASM/Android passent par AudioMix + mixStereo.
     void    mix(float* out, uint32_t frames, uint32_t sampleRate);
 
     // Version STÉRÉO (chemin natif GUI) : écrit `st` ENTRELACÉ L/R (2×frames floats)
@@ -260,7 +260,7 @@ private:
     double   phase_   = 0.0;         // accumulateur de rééchantillonnage
     // Échantillon DMA COURANT, filtré à la cadence DMA (cf. lowPassPull) — tenu
     // entre deux octets (zéro-bloquant côté sortie, FIR côté entrée).
-    float    lowPassPull(int in, bool enabled);
+    float    lowPassPull(float in, bool enabled);
     float    dmaCur_  = 0.0f;
     bool     haveCur_ = false;
     float    lpW0_ = 0.0f, lpW1_ = 0.0f;   // retards du FIR (1,2,1)/4 anti-repliement (chemin mono)

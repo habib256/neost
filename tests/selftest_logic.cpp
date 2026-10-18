@@ -20,6 +20,7 @@
 #include "util/JoyScript.hpp"
 #include "util/ConfigPath.hpp"
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <vector>
@@ -56,6 +57,19 @@ using namespace neost;
 using hostpath::Style;
 
 static int g_ok = 0, g_fail = 0;
+
+bool testSccBrg(); // banc SCC + ordonnanceur dans selftest_scc.cpp
+int testAcsiIrqTiming(); // banc IRQ DMA ACSI dans fdc_acsi_logic.cpp
+int testMachineScc(); // câblage BRG après changement de modèle
+int testFdcRegisters(); // retenues d'adresse DMA et reset FIFO
+int testMmuMapping(); // trou MMU STF et distinction reset chaud/froid
+int testFdcSelection(); // sélection PSG et index vivant avant accès WD1772
+int testMmioFidelity(); // lectures octet blitter et registre de densité disque
+int testIkbdResponses(); // délais firmware des réponses IKBD
+int testFdcTiming(); // attentes des registres FDC et ancrage anti-dérive
+int testIkbdMonitor(); // taux d'échantillonnage joystick $17
+int testIkbdMonitorMachine(); // câblage du timer dans la machine complète
+int testDmaSoundMono(); // précision du repli mono et drainage après STOP
 
 static void checkStr(const char* what, const std::string& got, const std::string& want) {
     if (got == want) { ++g_ok; return; }
@@ -1708,6 +1722,152 @@ static void testFdcTruthTable() {
 
     // --- 7. Un registre hors carte relit $FF (pas 0) -------------------------
     checkHex("$FF8600 (hors carte) relit $FF", r.fdc.read8(FDCR + 0x00), 0xFF);
+
+    // Floppy_FindDiskDetails est relu par Hatari après une écriture du boot :
+    // une nouvelle géométrie valide doit changer les accès suivants sans remontage.
+    // 720 Ko : 80×9×2 devient 160×9×1 (même nombre de secteurs, même densité).
+    // On ne sonde que les pistes 0/1 : aucune tête n'a besoin d'atteindre 159.
+    std::filesystem::path work;
+    bool created = false;
+    for (int n = 0; n < 1000 && !created; ++n) {
+        work = std::filesystem::temp_directory_path()
+             / ("neost-selftest-fdc-bpb-" + std::to_string(n));
+        std::error_code ec;
+        created = std::filesystem::create_directory(work, ec);
+        if (ec) break;
+    }
+    checkBool("BPB : répertoire temporaire exclusif", created, true);
+    if (!created) return;
+    struct RemoveDisk {
+        std::filesystem::path path;
+        ~RemoveDisk() { std::error_code ec; std::filesystem::remove_all(path, ec); }
+    } removeDisk{work};
+    const auto path = work / "disk.st";
+    std::vector<uint8_t> image(80u * 9u * 2u * 512u, 0x39);
+    image[0x13] = 0xA0; image[0x14] = 0x05;  // 1440 secteurs
+    image[0x18] = 9; image[0x19] = 0;
+    image[0x1A] = 2; image[0x1B] = 0;
+    FILE* disk = std::fopen(path.string().c_str(), "wb");
+    checkBool("BPB : création image temporaire", disk != nullptr, true);
+    if (!disk) return;
+    const bool saved = std::fwrite(image.data(), 1, image.size(), disk) == image.size();
+    const bool closed = std::fclose(disk) == 0;
+    checkBool("BPB : image temporaire complète", saved && closed, true);
+    if (!saved || !closed) return;
+    FdcRig g;
+    g.fdc.setHostWriteBack(false);
+    checkBool("BPB : montage image double face", g.fdc.loadImage(path.string()), true);
+    if (!g.fdc.inserted()) return;
+    auto reg = [&](uint16_t mode, uint8_t value) {
+        g.setMode(mode);
+        g.fdc.write8(FDCR + 4, 0);
+        g.fdc.write8(FDCR + 5, value);
+    };
+    auto sector = [&](bool write, uint8_t side, uint8_t number,
+                      uint8_t command = 0, uint8_t count = 1) {
+        g.psg.write8(0xFF8800, 14);
+        g.psg.write8(0xFF8802, uint8_t(0x05 & ~side));
+        g.fdc.refreshDriveSide();
+        g.setMode(write ? 0x0080 : 0x0180); // bascule WRBIT : reset FIFO/compteur
+        g.setMode(write ? 0x0180 : 0x0080);
+        g.setDmaAddr(0x2000);
+        reg(write ? 0x0190 : 0x0090, count);
+        reg(write ? 0x0182 : 0x0082, 0);  // TR
+        reg(write ? 0x0184 : 0x0084, number); // SR
+        reg(write ? 0x0180 : 0x0080, command ? command : (write ? 0xA8 : 0x88)); // pas de spin-up
+        const int64_t deadline = g.sched.now() + 16'000'000;
+        uint8_t status;
+        unsigned events = 0;
+        while ((status = g.fdc.read8(FDCR + 5)) & 1) {
+            const int64_t due = g.sched.nextDue();
+            if (due < 0 || due > deadline || ++events > 200000) break;
+            g.sched.runTo(due);
+        }
+        checkBool("BPB : commande terminée", (status & 1) == 0, true);
+        return status;
+    };
+    // Les accès passent par la vraie machine à états et la FIFO DMA.
+    checkHex("BPB double face : lecture face 1", sector(false, 1, 1) & 0x10, 0);
+    checkHex("BPB double face : données face 1", g.bus.ram[0x2000], 0x39);
+    std::fill_n(g.bus.ram.begin() + 0x2000, 512, uint8_t(0xA5));
+    checkHex("BPB double face : écriture face 1", sector(true, 1, 1) & 0x50, 0);
+    checkHex("BPB double face : relecture face 1", sector(false, 1, 1) & 0x10, 0);
+    checkHex("BPB double face : écriture relue", g.bus.ram[0x2000], 0xA5);
+    auto writeBoot = [&](uint8_t sides, uint8_t spt = 9) {
+        std::copy_n(image.begin(), 512, g.bus.ram.begin() + 0x2000);
+        g.bus.ram[0x2018] = spt;
+        g.bus.ram[0x201A] = sides;
+        checkHex("BPB : écriture nouveau boot", sector(true, 0, 1) & 0x50, 0);
+    };
+    writeBoot(1);
+    checkHex("BPB simple face : lecture face 1 RNF", sector(false, 1, 1) & 0x10, 0x10);
+    std::fill_n(g.bus.ram.begin() + 0x2000, 512, uint8_t(0x5A));
+    checkHex("BPB simple face : écriture face 1 RNF", sector(true, 1, 1) & 0x10, 0x10);
+    checkHex("BPB simple face : lecture face 0", sector(false, 0, 2) & 0x10, 0);
+    checkHex("BPB simple face : données intactes", g.bus.ram[0x2000], 0x39);
+    // BPB invalide : le repli Hatari devine 80×9×2 depuis la taille.
+    writeBoot(0);
+    checkHex("BPB invalide : repli double face", sector(false, 1, 1) & 0x10, 0);
+    checkHex("BPB invalide : écriture RNF sans effet", g.bus.ram[0x2000], 0xA5);
+
+    // Le formateur WRITE TRACK valide les neuf secteurs sous l'ancienne
+    // géométrie, puis publie le nouveau BPB. Le reste de la piste doit être écrit.
+    std::vector<uint8_t> track(60, 0x4E);
+    for (uint8_t sec = 1; sec <= 9; ++sec) {
+        track.insert(track.end(), 12, 0);
+        track.insert(track.end(), {0xA1, 0xA1, 0xA1, 0xFE, 0, 0, sec, 2, 0, 0});
+        track.insert(track.end(), 22, 0x4E);
+        track.insert(track.end(), 12, 0);
+        track.insert(track.end(), {0xA1, 0xA1, 0xA1, 0xFB});
+        const size_t data = track.size();
+        track.insert(track.end(), 512, uint8_t(0x60 + sec));
+        if (sec == 1) {
+            std::copy_n(image.begin(), 512, track.begin() + data);
+            track[data + 0x1A] = 1;
+        }
+        track.insert(track.end(), 2, 0); // CRC synthétisé à la relecture
+        track.insert(track.end(), 40, 0x4E);
+    }
+    track.resize(6268, 0x4E);
+    std::copy(track.begin(), track.end(), g.bus.ram.begin() + 0x2000);
+    checkHex("BPB WRITE TRACK : formatage complet", sector(true, 0, 1, 0xF8, 13) & 0x54, 0);
+    checkHex("BPB WRITE TRACK : nouvelle face absente", sector(false, 1, 1) & 0x10, 0x10);
+    checkHex("BPB WRITE TRACK : secteur suivant lisible", sector(false, 0, 2) & 0x10, 0);
+    checkHex("BPB WRITE TRACK : données secteur suivant", g.bus.ram[0x2000], 0x62);
+
+    // Conteneur MSA 80×9×2 non compressé. Le BPB logique peut devenir
+    // non représentable en MSA ; la persistance doit conserver TOUS les octets.
+    std::vector<uint8_t> msa{0x0E, 0x0F, 0, 9, 0, 1, 0, 0, 0, 79};
+    for (size_t off = 0; off < image.size(); off += 9 * 512) {
+        msa.insert(msa.end(), {0x12, 0x00});
+        msa.insert(msa.end(), image.begin() + off, image.begin() + off + 9 * 512);
+    }
+    const auto msaPath = work / "disk.msa";
+    disk = std::fopen(msaPath.string().c_str(), "wb");
+    checkBool("BPB MSA : création image", disk != nullptr, true);
+    if (!disk) return;
+    const bool msaSaved = std::fwrite(msa.data(), 1, msa.size(), disk) == msa.size();
+    const bool msaClosed = std::fclose(disk) == 0;
+    checkBool("BPB MSA : image complète", msaSaved && msaClosed, true);
+    if (!msaSaved || !msaClosed) return;
+    g.fdc.setHostWriteBack(true);
+    checkBool("BPB MSA : montage", g.fdc.loadImage(msaPath.string()), true);
+    writeBoot(1); // 160 pistes : encodeMsa refuse ce découpage, pas les données.
+    checkBool("BPB MSA : remontage après boot SS", g.fdc.loadImage(msaPath.string()), true);
+    checkHex("BPB MSA : boot SS persisté", sector(false, 0, 1) & 0x10, 0);
+    checkHex("BPB MSA : face SS persistée", g.bus.ram[0x201A], 1);
+    checkHex("BPB MSA : face 1 absente après remontage", sector(false, 1, 1) & 0x10, 0x10);
+    std::fill_n(g.bus.ram.begin() + 0x2000, 512, uint8_t(0x5A));
+    checkHex("BPB MSA : écriture après boot SS", sector(true, 0, 2) & 0x50, 0);
+    checkBool("BPB MSA : remontage données", g.fdc.loadImage(msaPath.string()), true);
+    checkHex("BPB MSA : lecture données persistées", sector(false, 0, 2) & 0x10, 0);
+    checkHex("BPB MSA : données persistées", g.bus.ram[0x2000], 0x5A);
+    writeBoot(2, 11); // 1440 secteurs n'est pas divisible par 11×2.
+    checkBool("BPB MSA : remontage BPB spt 11", g.fdc.loadImage(msaPath.string()), true);
+    checkHex("BPB MSA : lecture BPB spt 11", sector(false, 0, 1) & 0x10, 0);
+    checkHex("BPB MSA : spt 11 persisté", g.bus.ram[0x2018], 11);
+    checkHex("BPB MSA : données encore présentes", sector(false, 0, 2) & 0x10, 0);
+    checkHex("BPB MSA : données préservées au repli", g.bus.ram[0x2000], 0x5A);
 }
 
 // -----------------------------------------------------------------------------
@@ -2442,6 +2602,18 @@ int main() {
     testBlitterTruthTable();
     testDmaSoundTruthTable();
     testFdcTruthTable();
+    if (testSccBrg()) ++g_ok; else ++g_fail;
+    if (const int failures = testAcsiIrqTiming()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMachineScc()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcRegisters()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMmuMapping()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcSelection()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMmioFidelity()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdResponses()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcTiming()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdMonitor()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdMonitorMachine()) g_fail += failures; else ++g_ok;
+    if (const int failures = testDmaSoundMono()) g_fail += failures; else ++g_ok;
     testPacing();
     testMmioTable();
     testTwoCpus();

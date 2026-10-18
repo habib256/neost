@@ -86,7 +86,7 @@ void Shifter::endVideoLine() {
     static const bool noSnap = envFlag("NEOST_NO_SNAP", false);
     if (!noSnap && (!syncWrites_.empty() || spec512Active_) && bpl > 0 &&
         sl >= 0 && sl < static_cast<int>(lineSnapLen_.size())) {
-        int n = bpl + scrollCounterAdvance() + 8;
+        int n = bpl + scrollCounterAdvance(sl) + 8;
         if (n > kLineSnapBytes - kSnapLead) n = kLineSnapBytes - kSnapLead;
         uint8_t* snap = lineSnap_.data() + static_cast<std::size_t>(sl) * kLineSnapBytes;
         // kSnapLead octets de garde AVANT la base de ligne (offsets sources
@@ -95,15 +95,14 @@ void Shifter::endVideoLine() {
             snap[i] = bus_.read8((vcLineBase_ - static_cast<uint32_t>(kSnapLead)
                                   + static_cast<uint32_t>(i)) & 0xFFFFFFu);
         lineSnapLen_[sl] = static_cast<uint16_t>(n);
-        // Scroll fin de CETTE ligne (capturé AVANT le latch différé newHwScrollCount_
-        // quelques lignes plus bas) — consommé par renderGlueFrame (idx[s + scroll]).
-        // Bit 4 = mode prefetch ($FF8265 vs $FF8264) : le décodage (groupe 16 px
-        // en plus vs départ à idx[16]) doit suivre le mode de CETTE ligne, pas la
-        // valeur de fin de trame — un split $FF8264/65 à mi-trame déplaçait de
-        // 16 px les lignes re-rendues (spec512) de l'autre moitié.
-        if (sl < static_cast<int>(lineScrollSnap_.size()))
-            lineScrollSnap_[sl] = uint8_t(hwScrollCount | (hwScrollPrefetch ? 0x10 : 0));
     }
+    // Métadonnées TOUJOURS capturées, même sans copie RAM : une première écriture
+    // palette tardive peut déclencher le replay de lignes déjà terminées. Leur
+    // latch ne doit pas devenir celui de fin de trame (split 320/336, par ex.).
+    // Bit 6 = ligne committée, 5 = latch 336 px, 4 = prefetch, 0-3 = scroll.
+    if (sl >= 0 && sl < static_cast<int>(lineScrollSnap_.size()))
+        lineScrollSnap_[sl] = uint8_t(0x40 | hwScrollCount | (hwScrollPrefetch ? 0x10 : 0)
+                                     | (steBorderFlag_ ? 0x20 : 0));
     vcLineBase_ += static_cast<uint32_t>(bpl);
     // Prefetch et line-offset STE ne s'appliquent QUE sur une ligne réellement
     // affichée : chez Hatari les deux sont dans la branche « else » de la ligne
@@ -113,7 +112,7 @@ void Shifter::endVideoLine() {
     // le compteur vidéo d'autant d'octets par ligne non affichée — visible sur STE
     // à scrolling matériel dès qu'une trame se termine avant sa fin nominale.
     if (bpl > 0) {
-        vcLineBase_ += static_cast<uint32_t>(scrollCounterAdvance());   // prefetch : +1 mot PAR PLAN
+        vcLineBase_ += static_cast<uint32_t>(scrollCounterAdvance(sl));
         vcLineBase_ += static_cast<uint32_t>(lineWidth) * 2u;  // line-offset STE (mots sautés)
     }
     if (vcDelayedOffset_ != 0) {                           // écriture compteur pendant le DE
@@ -123,6 +122,7 @@ void Shifter::endVideoLine() {
     if (newHwScrollCount_ >= 0) {                          // HSCROLL différé (NewHWScrollCount)
         hwScrollCount    = static_cast<uint8_t>(newHwScrollCount_);
         hwScrollPrefetch = newHwScrollPrefetch_;
+        steBorderFlag_  = newSteBorderFlag_;
         newHwScrollCount_ = -1;
     }
     if (newLineWidth_ >= 0) {                              // LINEWIDTH différé (NewLineWidth)
@@ -297,9 +297,9 @@ uint32_t Shifter::videoCounter() {
                 // raccourcie) ne fait avancer NI line-offset NI prefetch — l'ajouter
                 // ici faisait diverger l'extrapolation du commit, et le compteur
                 // reculait entre deux lectures $FF8205/07/09 encadrant un HBL.
-                const int extra = static_cast<int>(lineWidth) * 2 + scrollCounterAdvance();
                 for (int y = vcLineY_; y < laEff; ++y) {
                     const int lb = glueLineBytes(dispStart + y);
+                    const int extra = static_cast<int>(lineWidth) * 2 + scrollCounterAdvance(dispStart + y);
                     addr += static_cast<uint32_t>(lb + (lb > 0 ? extra : 0));
                 }
             } else {
@@ -342,8 +342,10 @@ uint32_t Shifter::videoCounter() {
                     // l'offset intra-ligne, et la borne de gel LineEndCycle tombait
                     // 40 cycles trop tôt. Ordre repris d'Hatari : LEFT_OFF garde la
                     // priorité, LEFT_PLUS_2 reste APRÈS les variantes STE.
-                    else if (bm & (glue::LEFT_OFF_2_STE | glue::LEFT_OFF_2_STE_MED)) curSize += 20;
+                    else if (bm & glue::LEFT_OFF_2_STE) curSize += 20 + (steBorderFlag_ ? 8 : 0);
+                    else if (bm & glue::LEFT_OFF_2_STE_MED) curSize += 20;
                     else if (bm & glue::LEFT_PLUS_2)   curSize += 2;
+                    else if (steBorderFlag_)          curSize += 8;
                     else if (hwScrollCount && hwScrollPrefetch) curSize += 8;
                     if (bm & glue::STOP_MIDDLE)        curSize -= 106;
                     else if (bm & glue::RIGHT_MINUS_2) curSize -= 2;
@@ -351,7 +353,7 @@ uint32_t Shifter::videoCounter() {
                     if (bm & glue::RIGHT_OFF_FULL)     curSize += 22; // BORDERBYTES_RIGHT_FULL
                     if (bm & glue::LEFT_PLUS_2)        ds = 52;       // LINE_START_CYCLE_60
                     else if (leftOff)                  ds = 0;        // LINE_START_CYCLE_71
-                    else if (hwScrollCount && hwScrollPrefetch) ds = lineStart - 16;
+                    else if (steBorderFlag_ || (hwScrollCount && hwScrollPrefetch)) ds = lineStart - 16;
                     lineBytes = curSize;
                 }
             }
@@ -359,7 +361,8 @@ uint32_t Shifter::videoCounter() {
             // cycles avant le HDE_On et lit 8 octets de plus (l'ANCRE que mesure la
             // calibration sync-scroll d'EL — sans ce −16 ses impulsions visaient
             // ~16 cyc trop tôt et aucun comparateur n'était enjambé).
-            if (!haveGlue && hwScrollCount && hwScrollPrefetch) { ds -= 16; lineBytes += 8; }
+            if (!haveGlue && frameMode_ != Mode::High
+                && (steBorderFlag_ || (hwScrollCount && hwScrollPrefetch))) { ds -= 16; lineBytes += 8; }
             int Xc = X;
             if (Xc < ds) Xc = ds;
             else if (Xc > ds + lineBytes * 2) {
@@ -430,7 +433,7 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     const bool active  = havePos && la >= 0 && la < g.displayLines;
     // Le MMU commence à lire 16 cycles AVANT le HDE_On quand le scroll fin est armé
     // AVEC PREFETCH ($FF8265 ; rien via $FF8264) — port Video_GetMMUStartCycle.
-    const int mmuStart = g.lineStartCycle - ((hwScrollCount && hwScrollPrefetch) ? 16 : 0);
+    const int mmuStart = g.lineStartCycle - ((steBorderFlag_ || (hwScrollCount && hwScrollPrefetch)) ? 16 : 0);
     if (!havePos || !active || cyc <= mmuStart || la < vcLineY_) {
         vcLineBase_ = an;                                      // application immédiate
         vcDelayedOffset_ = 0;

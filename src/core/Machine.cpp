@@ -297,6 +297,9 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         joy1 = uint8_t(((dir >> 4) & 0x0F) | ((b & 0x40) ? 0x80 : 0)); // nibble haut + feu (bit6)
     });
     fdc.setScheduler(&sched);   // le FDC diffère la fin de commande (BUSY → INTRQ)
+    // Le profil peut devenir Mega STE via reconfigure() sans recréer les puces.
+    // Le bus expose le SCC seulement sur ce modèle ; reset() annule ses timers.
+    scc.setScheduler(&sched);
     blitter.setScheduler(&sched);  // tranches non-hog du blitter (cf. Scheduler::BLITTER)
     dmasnd.setScheduler(&sched);   // le son DMA date sa consommation DAC (FIFO → Timer A)
     dmasnd.setMfp(&mfp);
@@ -339,6 +342,9 @@ void Machine::installSchedulerCallbacks() {
     // latence rotationnelle, transfert DMA octet par octet, INTRQ, arrêt moteur)
     // est datée et avancée ici. L'INTRQ (GPIP5 + canal 7) peut être levée/effacée.
     sched.setCallback(Scheduler::FDC,     [this] { fdc.onFdcEvent(); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::ACSI_IRQ, [this] { fdc.onAcsiIrq(); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::SCC_BRG_A, [this] { scc.onBrgEvent(0); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::SCC_BRG_B, [this] { scc.onBrgEvent(1); cpu.updateIpl(); });
     // (Scheduler::FDC_INDEX n'est plus utilisé : l'index est géré dans la machine
     // à états du FDC — comptage de tours pour spin-up / arrêt moteur, bit INDEX.)
     // (Scheduler::DMASND n'est plus armé : la fin de trame du son DMA STE est
@@ -348,6 +354,7 @@ void Machine::installSchedulerCallbacks() {
     // Livraison cadencée IKBD → ACIA (un octet série ≈ 10240 cycles) : l'octet en
     // tête de file devient visible (RDRF) et lève l'IRQ ACIA (cf. onRxDeliver).
     sched.setCallback(Scheduler::IKBD_RX, [this] { ikbd.onRxDeliver(); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::IKBD_MONITOR, [this] { ikbd.onJoystickMonitor(); cpu.updateIpl(); });
     // Re-remplissage du registre d'émission ACIA (TDRE→1) ~1 octet série après une
     // écriture $FFFC02 sous TIE : ré-arme l'IRQ « transmetteur prêt » (cf. onTxEmpty).
     sched.setCallback(Scheduler::IKBD_TX, [this] { ikbd.onTxEmpty(); cpu.updateIpl(); });
@@ -705,11 +712,16 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 19;
+static constexpr uint16_t kStateVersion = 23; // période et échéance du monitoring joystick IKBD
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v19 : + EMPREINTE CRC32 DE LA ROM dans l'en-tête.
+    uint16_t version = kStateVersion; // v23 : monitoring joystick IKBD
+                                      // v22 : réponse IKBD et lectures octet blitter ;
+                                      // v21 : échéances ACSI/SCC et périodes BRG ;
+                                      // v20 : latch STE 336 px, valeur différée et date
+                                      // de la dernière écriture $8265 dans Shifter ;
+                                      // v19 : + EMPREINTE CRC32 DE LA ROM dans l'en-tête.
                                       // Les 2 octets de version TOS ne distinguaient pas
                                       // deux ROM localisées différentes (tos104us/uk/fr/de/es
                                       // portent toutes $0104, etos192us et etos192fr aussi) :
@@ -869,7 +881,7 @@ void Machine::serializeState(StateArchive& ar) {
     }
 }
 
-// En-tête d'un .state v19 : magic(4) version(2) machine(1) ram(4) tos(2) flags(1)
+// En-tête d'un .state v23 (inchangé depuis v19) : magic(4) version(2) machine(1) ram(4) tos(2) flags(1)
 // cartFp(4) romFp(4) crc32(4) — le CRC du payload reste le DERNIER champ de l'en-tête.
 static constexpr std::size_t kStateHeaderSize = 26;
 static constexpr std::size_t kStateCrcOffset  = 22;

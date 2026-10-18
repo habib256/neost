@@ -335,7 +335,11 @@ set_source_files_properties(src/headless/main_headless.cpp src/headless/Server.c
 # logé (le dossier de destination n'était jamais créé) alors que la règle PURE
 # d'A36, elle, était testée. Le fichier ne dépend pas d'ImGui — il compile tel quel
 # contre neost_core.
-add_executable(neost-selftest tests/selftest_logic.cpp src/audio/MidiInHost.cpp
+add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp
+    tests/fdc_acsi_logic.cpp tests/fdc_register_logic.cpp tests/machine_scc_logic.cpp
+    tests/mmu_logic.cpp tests/fdc_selection_logic.cpp tests/mmio_fidelity_logic.cpp
+    tests/ikbd_response_logic.cpp tests/fdc_timing_logic.cpp tests/ikbd_monitor_logic.cpp
+    tests/ikbd_monitor_machine_logic.cpp tests/dmasound_mono_logic.cpp src/audio/MidiInHost.cpp
     src/audio/GmSynth.cpp src/gui/AppConfig.cpp)
 target_link_libraries(neost-selftest PRIVATE neost_core)
 target_include_directories(neost-selftest PRIVATE "${CMAKE_SOURCE_DIR}/src"

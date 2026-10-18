@@ -1,0 +1,221 @@
+// Délais firmware des réponses IKBD, sans modifier la cadence série des octets.
+// Référence : Hatari ikbd.c Send_Byte_Delay / SCI_Set_Line_TX et Cmd_Read/Report*.
+#include "io/Ikbd.hpp"
+#include "io/Mfp.hpp"
+#include <cstdio>
+#include <cstring>
+#include <initializer_list>
+#include <vector>
+
+namespace {
+struct Checks {
+    int count = 0, failures = 0;
+    void equal(const char* label, int64_t got, int64_t expected) {
+        ++count;
+        if (got == expected) return;
+        ++failures;
+        std::fprintf(stderr, "[ikbd-responses] FAIL %s: got %lld, expected %lld\n",
+                     label, (long long)got, (long long)expected);
+    }
+};
+struct Rig {
+    Scheduler sched;
+    Mfp mfp;
+    Ikbd ikbd{mfp};
+    int64_t live = 0;
+    Rig() {
+        ikbd.setScheduler(&sched);
+        sched.setLiveClock([this] { return live; });
+        sched.setCallback(Scheduler::IKBD_RX, [this] { ikbd.onRxDeliver(); });
+        sched.setCallback(Scheduler::IKBD_TX, [this] { ikbd.onTxEmpty(); });
+        sched.setCallback(Scheduler::IKBD, [this] { ikbd.onResetResponse(); });
+        ikbd.write8(0xFFFC00, 0x96);
+        ikbd.setClock(26, 10, 18, 12, 34, 56);
+    }
+    void command(std::initializer_list<uint8_t> bytes) {
+        for (uint8_t b : bytes) ikbd.write8(0xFFFC02, b);
+    }
+    void advance(int64_t cycle) { live = cycle; sched.runTo(cycle); }
+    int ready() { return ikbd.read8(0xFFFC00) & 1; }
+    int data() { return ikbd.read8(0xFFFC02); }
+    int64_t due() { return sched.rawCyclesUntil(Scheduler::IKBD_RX) + live; }
+    std::vector<uint8_t> save() {
+        std::vector<uint8_t> bytes;
+        auto ar = StateArchive::saver(bytes); ikbd.serialize(ar); sched.serialize(ar);
+        return bytes;
+    }
+    bool load(const std::vector<uint8_t>& bytes) {
+        auto ar = StateArchive::loader(bytes.data(), bytes.size());
+        ikbd.serialize(ar); sched.serialize(ar); live = sched.now(); return ar.ok();
+    }
+    void froggies() {
+        // Charges synthétiques aux CRC reconnus, pas de code propriétaire :
+        // bootstrap 4 octets CRC2efb11b1, puis 163 zéros + suffixe CRCe7110b6d.
+        command({0x20, 0, 0x80, 4, 0x02, 0x39, 0xFF, 0x95});
+        command({0x22, 0, 0x80});
+        for (int i = 0; i < 163; ++i) command({0});
+        command({0xAA, 0x0A, 0xF0, 0xB8});
+    }
+};
+}
+
+int testIkbdResponses() {
+    Checks c;
+    struct Case { uint8_t opcode, header; int delay, size; };
+    const Case cases[] = {
+        {0x0D, 0xF7, 10240, 6}, {0x16, 0xFD, 8192, 3}, {0x1C, 0xFC, 7168, 7},
+        {0x21, 0xF6, 7168, 8}, {0x87, 0xF6, 7168, 8}, {0x88, 0xF6, 7168, 8},
+        {0x89, 0xF6, 7168, 8}, {0x8A, 0xF6, 7168, 8}, {0x8B, 0xF6, 7168, 8},
+        {0x8C, 0xF6, 7168, 8}, {0x8F, 0xF6, 7168, 8}, {0x90, 0xF6, 7168, 8},
+        {0x92, 0xF6, 7168, 8}, {0x94, 0xF6, 7168, 8}, {0x95, 0xF6, 7168, 8},
+        {0x99, 0xF6, 7168, 8}, {0x9A, 0xF6, 7168, 8},
+    };
+    for (const auto& tc : cases) {
+        Rig r;
+        r.live = 100; // MMIO au milieu d'un quantum, sched.now() reste à zéro.
+        if (tc.opcode == 0x21) r.command({tc.opcode, 0, 0});
+        else r.command({tc.opcode});
+        c.equal("firmware wait uses live clock", r.due(), 100 + tc.delay);
+        r.advance(100 + tc.delay);
+        c.equal("wait ends before serial byte", r.ready(), 0);
+        c.equal("serial delay remains additive", r.due(), 100 + tc.delay + 10240);
+        r.advance(100 + tc.delay + 10239);
+        c.equal("header not one cycle early", r.ready(), 0);
+        r.advance(100 + tc.delay + 10240);
+        c.equal("header delivered", r.data(), tc.header);
+        for (int i = 1; i < tc.size; ++i) {
+            r.advance(100 + tc.delay + (i + 1) * 10240);
+            c.equal("payload byte at unchanged cadence", r.ready(), 1);
+            const int b = r.data();
+            if (tc.opcode == 0x1C) {
+                const uint8_t clock[] = {0x26, 0x10, 0x18, 0x12, 0x34, 0x56};
+                c.equal("clock snapshot payload", b, clock[i - 1]);
+            }
+        }
+        c.equal("response ends without extra byte", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
+    }
+    {
+        Rig r;
+        r.command({0x1C}); r.advance(1000); r.command({0x16});
+        c.equal("new response replaces pending wait", r.due(), 1000 + 8192);
+        r.advance(9192); r.advance(19432);
+        c.equal("global wait preserves queue order", r.data(), 0xFC);
+        c.equal("replacement is not per packet", r.due(), 29672);
+    }
+    {
+        Rig r;
+        r.ikbd.keyEvent(0x39, true); r.advance(1000); r.command({0x1C});
+        c.equal("new response preserves byte in flight", r.due(), 10240);
+        r.advance(10240); c.equal("old byte arrives first", r.data(), 0x39);
+        c.equal("wait starts at next idle", r.due(), 10240 + 7168);
+        r.advance(17408); r.advance(27648);
+        c.equal("reply follows global wait and serial byte", r.data(), 0xFC);
+    }
+    {
+        Rig r;
+        r.command({0x1C}); r.advance(1000); r.command({0x13});
+        r.advance(7168);
+        c.equal("pause does not freeze firmware wait", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
+        r.advance(20000); r.command({0x11});
+        c.equal("resume after elapsed wait only shifts byte", r.due(), 30240);
+        r.advance(30240); c.equal("resume keeps queued header", r.data(), 0xFC);
+    }
+    {
+        Rig r;
+        r.command({0x1C}); r.advance(1000); r.command({0x13});
+        r.advance(2000); r.command({0x16});
+        c.equal("reply resumes paused queue after new wait", r.due(), 2000 + 8192);
+        r.advance(10192); r.advance(20432);
+        c.equal("resumed old response keeps priority", r.data(), 0xFC);
+    }
+    {
+        Rig r;
+        r.command({0x1C}); r.advance(1000); r.ikbd.bootRom();
+        r.advance(7168);
+        c.equal("warm boot drains wait despite empty queue", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
+        r.advance(503000);
+        c.equal("reset reply has no leftover response wait", r.due(), 513240);
+        r.advance(513240); c.equal("warm reset response", r.data(), 0xF1);
+    }
+    {
+        Rig r;
+        r.command({0x1C}); r.advance(1000); r.ikbd.resetHw();
+        c.equal("hardware reset cancels wait", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
+        r.advance(503000);
+        c.equal("hardware reset reply starts normal serial", r.due(), 513240);
+    }
+    {
+        Rig r;
+        r.command({0x1C}); r.advance(1000);
+        const auto state = r.save();
+        Rig restored;
+        c.equal("waiting response state loads", restored.load(state), true);
+        c.equal("load preserves wait deadline", restored.due(), 7168);
+        restored.advance(7168); restored.advance(17408);
+        c.equal("load preserves waiting response", restored.data(), 0xFC);
+        const auto serialState = restored.save();
+        Rig serial;
+        c.equal("serial phase state loads", serial.load(serialState), true);
+        serial.advance(27648); c.equal("serial phase resumes payload", serial.data(), 0x26);
+    }
+    {
+        Rig r;
+        r.command({0x1C}); r.advance(8000);
+        c.equal("late wait dispatch anchors serial to due", r.due(), 7168 + 10240);
+    }
+    {
+        Rig r;
+        // Tampon exactement plein avant la réponse : le rejet ne pose aucun délai.
+        for (int i = 0; i < 1024; ++i) r.ikbd.keyEvent(0x39, true);
+        r.command({0x1C});
+        c.equal("full queue keeps current byte deadline", r.due(), 10240);
+        r.advance(10240); r.data();
+        c.equal("dropped reply does not delay old queue", r.due(), 20480);
+    }
+    {
+        Rig r;
+        r.froggies(); r.command({4});
+        c.equal("Froggies four byte reply waits six bits", r.due(), 6144);
+        r.advance(6144); r.advance(16384);
+        c.equal("Froggies RAM83 header", r.data(), 0xFC);
+        for (int i = 1; i < 4; ++i) {
+            r.advance(16384 + i * 10240);
+            c.equal("Froggies remaining payload", r.data(), 0);
+        }
+        const int64_t now = r.live;
+        r.command({1});
+        c.equal("Froggies one byte reply has no firmware wait", r.due(), now + 10240);
+    }
+    {
+        Rig r;
+        r.froggies();
+        for (int i = 0; i < 1024; ++i) r.command({1});
+        r.command({4});
+        c.equal("full custom queue preserves byte in flight", r.due(), 10240);
+        r.advance(10240); r.data();
+        c.equal("full custom reply still sets global wait", r.due(), 10240 + 6144);
+        r.advance(16384);
+        c.equal("full custom queue resumes serial after wait", r.due(), 26624);
+    }
+    {
+        Rig r;
+        std::vector<uint8_t> state;
+        auto save = StateArchive::saver(state); r.ikbd.serialize(save);
+        // Les nouveaux champs terminent l'état IKBD : int puis bool.
+        const auto at = state.size() - sizeof(int) - sizeof(bool);
+        for (int bad : {-1, 11}) {
+            auto forged = state; std::memcpy(forged.data() + at, &bad, sizeof(bad));
+            auto load = StateArchive::loader(forged.data(), forged.size()); r.ikbd.serialize(load);
+            c.equal("forged response delay rejected", load.ok(), false);
+        }
+        state.back() = 1;
+        auto load = StateArchive::loader(state.data(), state.size()); r.ikbd.serialize(load);
+        c.equal("forged wait phase rejected", load.ok(), false);
+    }
+    std::printf("[ikbd-responses] %d checks, %d FAIL\n", c.count, c.failures);
+    return c.failures;
+}
+
+#ifdef NEOST_IKBD_RESPONSE_TEST_MAIN
+int main() { return testIkbdResponses() ? 1 : 0; }
+#endif

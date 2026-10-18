@@ -102,6 +102,33 @@ def command(cmd):                       # écrire le Command CIR puis attendre
     poll()
 
 
+def fpcr(value):
+    command(0x9000)
+    movel_imm_absl(value, OPER)
+
+
+def operand_x(se, man):                 # opérande étendu, mot réservé à zéro
+    movel_imm_absl(se << 16, OPER)
+    movel_imm_absl(man >> 32, OPER)
+    movel_imm_absl(man & 0xFFFFFFFF, OPER)
+
+
+def expect_x(n, se, man):
+    command(0x6800)                     # FMOVE.X FP0 → mémoire
+    for dn, value in enumerate((se << 16, man >> 32, man & 0xFFFFFFFF)):
+        movel_absl_dn(OPER, dn)
+        cmpil_dn(value, dn)
+        bne_to(f"fail{n}")
+
+
+def expect_fpsr(n, mask, value):
+    command(0xA800)
+    movel_absl_dn(OPER, 0)
+    w16(0x0280); w32(mask)               # andi.l #mask,d0
+    cmpil_dn(value, 0)
+    bne_to(f"fail{n}")
+
+
 # ---- programme ---------------------------------------------------------------
 # Test 1 : FADD.S — 2.5 + 1.25 = 3.75 ($40700000)
 fail_n = 1
@@ -253,6 +280,384 @@ movel_absl_dn(OPER, 0)
 w16(0x0280); w32(0x00002080)             # andi.l #$2080,d0  → OPERR (bit13) | IOP (bit7)
 cmpil_dn(0x00002080, 0); bne_to("fail14")
 
+# Test 15 : FSGLMUL garde l'exposant ÉTENDU malgré sa mantisse 24 bits.
+# 2^200 × 1,5 = 1,5 × 2^200, et non +inf comme avec roundAndPack(32).
+command(0x4800); operand_x(0x40C7, 0x8000000000000000)
+command(0x4827); operand_x(0x3FFF, 0xC000000000000000)
+expect_fpsr(15, 0x0000FF00, 0)
+expect_x(15, 0x40C7, 0xC000000000000000)
+
+# Test 16 : même garde en bas de plage pour FSGLDIV ; 2^-200 / 3 est
+# représentable en étendu et s'arrondit sur 24 bits, sans UNFL.
+command(0x4800); operand_x(0x3F37, 0x8000000000000000)
+command(0x4824); operand_x(0x4000, 0xC000000000000000)
+expect_fpsr(16, 0x0000FF00, 0x00000200)  # INEX2 seulement
+expect_x(16, 0x3F35, 0xAAAAAB0000000000)
+
+# Test 17 : FSGLMUL tronque les ENTRÉES après normalisation, FSGLDIV garde
+# leurs 64 bits et n'arrondit que le résultat (softfloat.c:2618 / 2762).
+# 1 + 3*2^-25 : la multiplication par 1 tronque à 1 ; la division par 1
+# doit arrondir à 1 + 2^-23. FPCR double ne change pas les 24 bits FSGLxxx.
+fpcr(0x80)
+command(0x4800); operand_x(0x3FFF, 0x800000C000000000)
+command(0x4827); operand_x(0x3FFF, 0x8000000000000000)
+expect_fpsr(17, 0x0000FF00, 0)
+expect_x(17, 0x3FFF, 0x8000000000000000)
+command(0x4800); operand_x(0x3FFF, 0x800000C000000000)
+command(0x4824); operand_x(0x3FFF, 0x8000000000000000)
+expect_fpsr(17, 0x0000FF00, 0x00000200)
+expect_x(17, 0x3FFF, 0x8000010000000000)
+fpcr(0)
+
+# Test 18 : ne pas tronquer un NaN ni un dénormal AVANT les cas spéciaux.
+# Le plus petit dénormal × 2^64 atteint exactement le minimum normal.
+command(0x4800); operand_x(0, 1)
+command(0x4827); operand_x(0x403F, 0x8000000000000000)
+expect_x(18, 1, 0x8000000000000000)
+command(0x4800); operand_x(0x7FFF, 0xC00000000BADF00D)
+command(0x4827); operand_x(0x3FFF, 0x8000000000000000)
+expect_x(18, 0x7FFF, 0xC00000000BADF00D)
+
+# Test 19 : FMOD ré-arrondit le dividende même si |a| < |b|/2 (quotient 0).
+# 1 + 3*2^-25 modulo 4 → 1 + 2^-23 en précision simple, avec INEX2.
+command(0x4800); operand_x(0x3FFF, 0x800000C000000000)
+fpcr(0x40)
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4821); operand_x(0x4001, 0x8000000000000000)
+expect_fpsr(19, 0x00FFFFFF, 0x00000208)  # quotient nul ; INEX2 + AEXC_INEX
+expect_x(19, 0x3FFF, 0x8000010000000000)
+fpcr(0)
+
+# Test 20 : FMOVECR arrondit pi à 24 bits APRÈS l'ajustement ROM RN/RZ/RM/RP.
+# Relire en X expose les bits de registre ; une sortie S masquerait le défaut.
+for mode, man in ((0x40, 0xC90FDB0000000000), (0x50, 0xC90FDA0000000000),
+                  (0x60, 0xC90FDA0000000000), (0x70, 0xC90FDB0000000000)):
+    fpcr(mode)
+    command(0x5C00)
+    expect_x(20, 0x4000, man)
+
+# Test 21 : précision double (et motif FPCR réservé 11) → mantisse 53 bits.
+for mode in (0x90, 0xD0):
+    fpcr(mode)
+    command(0x5C00)
+    expect_x(21, 0x4000, 0xC90FDAA22168C000)
+
+# Test 22 : FMOVECR garde aussi sa plage d'exposant ÉTENDUE en simple.
+# 10^4096 ne doit pas déborder vers +inf à cause de la précision FPCR.
+fpcr(0x40)
+command(0x5C3F)
+expect_fpsr(22, 0x0000FF00, 0x00000200)
+expect_x(22, 0x7525, 0xC460520000000000)
+
+# Test 23 : 10^16 est EXACT dans la table ROM mais perd des bits à 24 bits.
+# L'arrondi supplémentaire doit donc armer INEX2/AEXC_INEX à lui seul.
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x5C37)
+expect_fpsr(23, 0x0000FFFF, 0x00000208)
+expect_x(23, 0x4034, 0x8E1BCA0000000000)
+fpcr(0)
+
+# Tests 24–26 : FMOVE/FABS/FNEG arrondissent leur résultat, après changement
+# du signe, dans chacun des quatre modes. 1 + 3*2^-25 est aux 3/4 d'un ulp
+# simple ; une sortie X expose les bits de registre que masquerait FMOVE.S.
+for n, op, source_se in ((24, 0x00, 0x3FFF), (25, 0x18, 0xBFFF), (26, 0x1A, 0x3FFF)):
+    negative = op == 0x1A
+    for mode in range(4):
+        fpcr(0x40 | (mode << 4))
+        command(0x8800); movel_imm_absl(0, OPER)
+        command(0x4800 | op); operand_x(source_se, 0x800000C000000000)
+        expect_fpsr(n, 0x0000FFFF, 0x00000208)
+        increment = mode == 0 or mode == (2 if negative else 3)
+        expect_x(n, 0xBFFF if negative else 0x3FFF,
+                 0x8000010000000000 if increment else 0x8000000000000000)
+
+# Test 27 : même contrôle en double (53 bits), et FPCR réservé 11 → double.
+# 1 + 3*2^-54 perd ses bits bas, là où les opérations unaires ne faisaient
+# auparavant que recopier/changer le signe de la mantisse étendue.
+for precision in (0x80, 0xC0):
+    for op in (0x00, 0x18, 0x1A):
+        fpcr(precision)
+        command(0x8800); movel_imm_absl(0, OPER)
+        command(0x4800 | op); operand_x(0xBFFF if op == 0x18 else 0x3FFF, 0x8000000000000600)
+        expect_fpsr(27, 0x0000FFFF, 0x00000208)
+        expect_x(27, 0xBFFF if op == 0x1A else 0x3FFF, 0x8000000000000800)
+
+# Test 28 : les unaires limitent AUSSI la plage d'exposant du FPCR, à la
+# différence de FMOVECR/FSGLxxx. Une puissance de deux exacte déborde avec
+# OVFL et AEXC_OVFL/INEX mais sans INEX2 (roundAndPackFloatx80 d'Hatari).
+for op in (0x00, 0x18, 0x1A):
+    fpcr(0x40)
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x4800 | op); operand_x(0xC0C7 if op == 0x18 else 0x40C7, 0x8000000000000000)
+    expect_fpsr(28, 0x0000FFFF, 0x00001048)
+    expect_x(28, 0xFFFF if op == 0x1A else 0x7FFF, 0)
+    fpcr(0x90)                           # double, vers zéro → max fini
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x4800 | op); operand_x(0xC7CF if op == 0x18 else 0x47CF, 0x8000000000000000)
+    expect_fpsr(28, 0x0000FFFF, 0x00001048)
+    expect_x(28, 0xC3FE if op == 0x1A else 0x43FE, 0xFFFFFFFFFFFFF800)
+
+# Test 29 : underflow simple inexact de 2^-200 ; le port 68881 conserve
+# l'exposant $3F81 avec une mantisse nulle (motif brut vérifié contre Hatari).
+# En RP, un résultat positif devient le plus petit subnormal simple.
+for op in (0x00, 0x18, 0x1A):
+    fpcr(0x40)
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x4800 | op); operand_x(0xBF37 if op == 0x18 else 0x3F37, 0x8000000000000000)
+    expect_fpsr(29, 0x0000FFFF, 0x00000A28)
+    expect_x(29, 0xBF81 if op == 0x1A else 0x3F81, 0)
+fpcr(0x70)
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4800); operand_x(0x3F37, 0x8000000000000000)
+expect_fpsr(29, 0x0000FFFF, 0x00000A28)
+expect_x(29, 0x3F81, 0x0000010000000000)
+
+# Test 30 : dénormal étendu normalisé AVANT l'arrondi ; le minimum étendu
+# reste exact, avec UNFL seul (pas d'UNFL accumulé sans INEX2).
+fpcr(0)
+for op in (0x00, 0x18, 0x1A):
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x4800 | op); operand_x(0x8000 if op == 0x18 else 0, 1)
+    expect_fpsr(30, 0x0000FFFF, 0x00000800)
+    expect_x(30, 0x8000 if op == 0x1A else 0, 1)
+
+# Test 31 : signes de zéro et infini, et NaN (signe/payload inchangés même
+# sous FABS/FNEG ; SNaN quiété et SNAN/IOP). Ces cas contournent l'arrondi.
+fpcr(0x40)
+for op in (0x00, 0x18, 0x1A):
+    for source_se, man in ((0, 0), (0x8000, 0), (0x7FFF, 0), (0xFFFF, 0x8000000000000000),
+                           (0xFFFF, 0xC00000000BADF00D), (0xFFFF, 0x800000000BADF00D)):
+        command(0x8800); movel_imm_absl(0, OPER)
+        command(0x4800 | op); operand_x(source_se, man)
+        nan = (source_se & 0x7FFF) == 0x7FFF and (man & 0x7FFFFFFFFFFFFFFF) != 0
+        snan = nan and (man & 0x4000000000000000) == 0
+        result_se = source_se if nan or op == 0 else ((source_se & 0x7FFF) if op == 0x18 else source_se ^ 0x8000)
+        expect_fpsr(31, 0x0000FFFF, 0x00004080 if snan else 0)
+        expect_x(31, result_se, man | 0x4000000000000000 if nan else man)
+
+# Test 32 : INEX2 activé pendant un FMOVE à précision simple → exception
+# CIR vecteur 49, exactement comme les opérations algébriques.
+fpcr(0x240)
+command(0x4800); operand_x(0x3FFF, 0x800000C000000000)
+movew_absl_dn(RESP, 0); cmpiw_dn(0x7031, 0); bne_to("fail32")
+fpcr(0)
+
+# Tests 33–40 : offsets FMOVECR indéfinis, patterns et FPSR issus directement de
+# fpu_get_constant + softfloat Hatari épinglé (tools/check_fmovecr_oracle.py).
+# Le transfert X conserve les motifs bruts (zéro non canonique, NaN signalant,
+# bit entier absent), là où une conversion simple/double les masquerait.
+fpcr(0)
+for off, se, man, cc in (
+    (1, 0x4001, 0xFE00068200000000, 0),
+    (2, 0x4001, 0xFFC0050380000000, 0),
+    (3, 0x2000, 0x7FFFFFFF00000000, 0x01000000),
+    (4, 0x0000, 0xFFFFFFFFFFFFFFFF, 0),
+    (5, 0x3C00, 0xFFFFFFFFFFFFF800, 0),
+    (6, 0x3F80, 0xFFFFFF0000000000, 0),
+    (7, 0x0001, 0xF65D8D9C00000000, 0x01000000),
+    (8, 0x7FFF, 0x001E000000000000, 0x01000000),
+    (9, 0x43FF, 0x000E000000000000, 0),
+    (10, 0x407F, 0x0006000000000000, 0),
+    (0x10, 0x4000, 0, 0x04000000),
+):
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x5C00 | off)
+    expect_fpsr(33, 0x0FFFFFFF, cc)
+    expect_x(33, se, man)
+
+# Corrections du mot haut APRÈS arrondi : les ±$80 matériels sont visibles
+# pour les quatre arrondis sur 1/7, et en RP sur 2.
+for mode in range(4):
+    fpcr(0x40 | (mode << 4))
+    for off, se, man in (
+        (1, 0x4001, 0xFE00070000000000 if mode == 3 else 0xFE00068000000000),
+        (2, 0x4001, 0xFFC0058000000000 if mode == 3 else 0xFFC0050000000000),
+    ):
+        command(0x8800); movel_imm_absl(0, OPER)
+        command(0x5C00 | off)
+        expect_fpsr(34, 0x0FFFFFFF, 0x00000208)
+        expect_x(34, se, man)
+
+# CC I/NAN forcés, même si le motif brut d'offset3 reste fini.
+for mode in range(4):
+    fpcr(0x40 | (mode << 4))
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x5C03)
+    upward = mode in (0, 3)
+    expect_fpsr(35, 0x0FFFFFFF, (0x02000000 if upward else 0x01000000) | 0x208)
+    expect_x(35, 0x2000, 0x8000000000000000 if upward else 0x7FFFFF0000000000)
+
+for mode in range(4):
+    fpcr(0x40 | (mode << 4))
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x5C07)
+    expect_fpsr(36, 0x0FFFFFFF, 0x01000208)
+    expect_x(36, 1, 0xF65D8E0000000000 if mode == 3 else 0xF65D8D8000000000)
+
+# Le SNaN brut de ROM n'est ni quiété ni arrondi ; SNAN n'est pas levé.
+for precision in (0, 0x40, 0x80, 0xC0):
+    fpcr(precision)
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x5C08)
+    expect_fpsr(37, 0x0FFFFFFF, 0x01000000)
+    expect_x(37, 0x7FFF, 0x001E000000000000)
+
+# Le pseudo-dénormal d'offset4 est normalisé AVANT l'arrondi ; RN/RP
+# passent à l'exposant1, RZ/RM conservent le motif exp0 arrondi.
+for precision in (0x40, 0x80, 0xC0):
+    for mode in (0, 1):
+        fpcr(precision | (mode << 4))
+        command(0x8800); movel_imm_absl(0, OPER)
+        command(0x5C04)
+        expect_fpsr(38, 0x0FFFFFFF, 0x208)
+        expect_x(38, 1 if mode == 0 else 0,
+                 0x8000000000000000 if mode == 0 else
+                 (0xFFFFFF0000000000 if precision == 0x40 else 0xFFFFFFFFFFFFF800))
+
+# Une constante ne modifie pas le quotient ni les exceptions accumulées,
+# et efface l'octet EXC de l'instruction précédente.
+fpcr(0)
+command(0x8800); movel_imm_absl(0x00AAFFF8, OPER)
+command(0x5C10)
+expect_fpsr(39, 0x0FFFFFFF, 0x04AA00F8)
+expect_x(39, 0x4000, 0)
+
+# INEX2 produit par la précision simple livre le vecteur49 ; le SNaN de
+# ROM seul ne livre aucune exception même avec SNAN activé.
+fpcr(0x240)
+command(0x5C01)
+movew_absl_dn(RESP, 0); cmpiw_dn(0x7031, 0); bne_to("fail40")
+fpcr(0x4040)
+command(0x5C08)
+movew_absl_dn(RESP, 0); cmpiw_dn(0x0802, 0); bne_to("fail40")
+fpcr(0)
+
+# Tests 41–52 : décimal empaqueté, comparé au C Hatari épinglé par
+# tools/test_fpu_decimal_oracle.py. Les mots attendus restent des fixtures,
+# sans calcul flottant hôte dans le générateur.
+def operand_p(words):
+    for word in words:
+        movel_imm_absl(word, OPER)
+
+
+def expect_p(n, words, k=17, dynamic=False):
+    command(0x7C00 if dynamic else 0x6C00 | (k & 0x7F))
+    for dn, value in enumerate(words):
+        movel_absl_dn(OPER, dn)
+        cmpil_dn(value, dn)
+        bne_to(f"fail{n}")
+
+
+# 17 chiffres entrants exigent les 64 bits : l'ancien strtod perdait 11 bits.
+for mode in range(4):
+    fpcr(mode << 4)
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x4C00); operand_p((0x00000001, 0x23456789, 0x01234567))
+    expect_fpsr(41, 0x0000FFFF, 0x108)
+    expect_x(41, 0x3FFF, 0x9E06521462CFD859 if mode == 3 else 0x9E06521462CFD858)
+
+# INEX1 est livré par le CIR ; l'instruction exacte suivante efface EXC
+# tout en gardant INEX accumulé. Une entrée P dyadique n'est pas inexacte.
+fpcr(0x100)
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4C00); operand_p((0x40010001, 0, 0))  # 0,1
+movew_absl_dn(RESP, 0); cmpiw_dn(0x7031, 0); bne_to("fail42")
+expect_fpsr(42, 0x0000FFFF, 0x108)
+fpcr(0)
+command(0x4800); operand_x(0x3FFF, 0x8000000000000000)
+expect_fpsr(42, 0x0000FFFF, 0x008)
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4C00); operand_p((0x00000001, 0x25000000, 0))
+expect_fpsr(42, 0x0000FFFF, 0)
+expect_x(42, 0x3FFF, 0xA000000000000000)
+
+# Une conversion P suivie de l'arrondi simple conserve INEX1 ET INEX2.
+fpcr(0x40)
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4C00); operand_p((0x40010001, 0, 0))
+expect_fpsr(43, 0x0000FFFF, 0x308)
+expect_x(43, 0x3FFB, 0xCCCCCD0000000000)
+
+# k=-1 : 1,25 à une décimale, égalité au pair et arrondis dirigés signés.
+for negative in (False, True):
+    for mode in range(4):
+        fpcr(mode << 4)
+        command(0x8800); movel_imm_absl(0, OPER)
+        command(0x4800); operand_x(0xBFFF if negative else 0x3FFF, 0xA000000000000000)
+        up = mode == (2 if negative else 3)
+        expect_p(44, ((0x80000000 if negative else 0) | 1,
+                      0x30000000 if up else 0x20000000, 0), k=-1)
+        expect_fpsr(44, 0x0000FFFF, 0x208)
+
+# k=0 est un arrondi à l'unité ; k=2 sélectionne deux chiffres significatifs.
+fpcr(0)
+for k, frac in ((0, 0), (2, 0x20000000)):
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x4800); operand_x(0x3FFF, 0xA000000000000000)
+    expect_p(45, (1, frac, 0), k=k)
+    expect_fpsr(45, 0x0000FFFF, 0x208)
+
+# 1/3 étendu → 17 chiffres sans passage par les 53 bits du double hôte.
+fpcr(0)
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4800); operand_x(0x3FFD, 0xAAAAAAAAAAAAAAAB)
+expect_p(46, (0x40010003, 0x33333333, 0x33333333))
+expect_fpsr(46, 0x0000FFFF, 0x208)
+
+# Style fixe au-delà de l'unité : 12345,625 → 12345,62, égalité au pair.
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4800); operand_x(0x400C, 0xC0E6800000000000)
+expect_p(47, (0x00040001, 0x23456200, 0), k=-2)
+expect_fpsr(47, 0x0000FFFF, 0x208)
+
+# En mode périphérique, Dn est inaccessible : k dynamique garde le défaut17.
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4800); operand_x(0x3FFD, 0xAAAAAAAAAAAAAAAB)
+expect_p(48, (0x40010003, 0x33333333, 0x33333333), dynamic=True)
+expect_fpsr(48, 0x0000FFFF, 0x208)
+
+# Zéro signé ignore l'exposant BCD non nul ; pas de décalage de 64 bits.
+for negative in (False, True):
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x4C00); operand_p((0xC9990000 if negative else 0x09990000, 0, 0))
+    expect_fpsr(49, 0x0000FFFF, 0)
+    expect_x(49, 0x8000 if negative else 0, 0)
+    expect_p(49, (0x80000000 if negative else 0, 0, 0), k=63)
+    expect_fpsr(49, 0x0000FFFF, 0)
+
+# SNaN P entrant : payload quiété et SNAN, puis format P sortant bit à bit.
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4C00); operand_p((0x7FFF0000, 0, 0x12345))
+expect_fpsr(50, 0x0000FFFF, 0x4080)
+expect_p(50, (0x7FFF0000, 0x40000000, 0x12345))
+for high in (0x7FFF, 0xFFFF):
+    command(0x8800); movel_imm_absl(0, OPER)
+    command(0x4C00); operand_p((high << 16, 0, 0))
+    expect_fpsr(50, 0x0000FFFF, 0)
+    expect_p(50, (high << 16, 0, 0))
+
+# Les causes de l'opération priment sur INEX1 de la conversion, sans le perdre.
+command(0xD080); operand_x(0x7FFF, 0x0000000000012345)  # FMOVEM brut → FP0 SNaN
+command(0x8800); movel_imm_absl(0, OPER)
+fpcr(0x4100)                           # SNAN et INEX1 activés
+command(0x4C22); operand_p((0x40010001, 0, 0))
+movew_absl_dn(RESP, 0); cmpiw_dn(0x7036, 0); bne_to("fail51")
+expect_fpsr(51, 0x0000FFFF, 0x4188)
+fpcr(0x2100)                           # OPERR et INEX1 activés
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4C04); operand_p((0xC0010001, 0, 0))  # sqrt(-0,1)
+movew_absl_dn(RESP, 0); cmpiw_dn(0x7034, 0); bne_to("fail51")
+expect_fpsr(51, 0x0000FFFF, 0x2188)
+fpcr(0)
+
+# Trou FMOVECR accessible par le CPU : unnormal → OPERR/NaN en sortie P.
+# L'oracle décimal C ne garde pas cet encodage et peut décaler négativement.
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x5C10)
+expect_p(52, (0x7FFF0000, 0xFFFFFFFF, 0xFFFFFFFF))
+expect_fpsr(52, 0x0000FFFF, 0x2080)
+fpcr(0)
+
 # Test 9 : livraison d'exception FP. On ACTIVE DZ dans le FPCR (bit10), puis FDIV
 # par 0 → le Response CIR doit livrer « Take Pre-Instruction Exception » (CA=0,
 # vecteur DZ $32 en octet bas) = $7032 au lieu du null $0802.
@@ -272,7 +677,7 @@ movel_label_a3("pass_str")              # move.l #pass_str,a3
 bsr_to("emit")
 w16(0x60FE)                             # bra.s *
 
-for n in range(1, 15):                   # FAILn : D7 = -n (compat trace) → verdict commun
+for n in range(1, 53):                   # FAILn : D7 = -n (compat trace) → verdict commun
     labels[f"fail{n}"] = len(code)
     w16(0x7E00 | ((-n) & 0xFF))          # moveq #-n,d7
     bra_to("fail_common")

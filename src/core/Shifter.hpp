@@ -278,6 +278,15 @@ public:
     uint8_t hwScrollReg8264_ = 0;
 
 private:
+    // Latch STE 336 px : $8265>0 puis $8264=0, même trame et au plus 40 cycles.
+    // Le timestamp ne représente que la dernière écriture POSITIVE à $8265 ;
+    // −1 signifie aucune écriture positive valable dans la trame courante.
+    bool steBorderFlag_ = false;
+    bool newSteBorderFlag_ = false;
+    int32_t lastScroll8265Cycle_ = -1;
+    // Signal VBlank reconstruit depuis la même histoire freq/res, en live et
+    // au replay : aucun état supplémentaire dans les save-states.
+    bool vblankAtLine(int scanline) const;
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
     void resizeFor(Mode m);                       // ajuste le buffer si la rés. change
     // A32 : NON const. Elle l'était, et se rattrapait avec quatre `const_cast`
@@ -374,7 +383,9 @@ private:
     // Avance compteur SUPPLÉMENTAIRE par ligne due au scroll fin (port des
     // `pVideoRaster += n*2` de Video_CopyScreenLine*) : prefetch ($FF8265) =
     // 1 mot PAR PLAN (+8 basse rés, +4 moyenne) ; $FF8264 = 0 ; mono = +2.
-    int scrollCounterAdvance() const;
+    // Le latch 336 px ajoute 8 octets, selon les priorités des bordures Glue.
+    int scrollCounterAdvance(int scanline = -1) const;
+    static int steBorderBytes(uint32_t borderMask);
 
     // Enregistre une écriture palette (registre `index`) avec son cycle live dans
     // la trame, pour le re-rendu spec512. Met à jour le compteur de détection.
@@ -591,6 +602,11 @@ public:
         ar(hwScrollPrefetch);
         ar(lineWidth);
         ar(hwScrollReg8264_);
+        ar(steBorderFlag_);
+        ar(newSteBorderFlag_);
+        ar(lastScroll8265Cycle_);
+        ar.check(lastScroll8265Cycle_ >= -1 && lastScroll8265Cycle_ <= 1048576,
+                 "Shifter::lastScroll8265Cycle_ hors bornes");
 
         // --- Compteur d'adresse vidéo matérialisé + écritures STE différées ---
         ar(vcFrameBase_);
@@ -610,16 +626,15 @@ public:
         // --- Captures par-ligne (échantillon faisceau) ---
         ar.vec(lineSnap_);          // std::vector<uint8_t>
         ar.podVec(lineSnapLen_);    // std::vector<uint16_t>
-        ar.vec(lineScrollSnap_);    // scroll fin STE par ligne (v9 ; bit 4 = prefetch)
+        ar.vec(lineScrollSnap_);    // bits 0-3 = scroll, 4 = prefetch, 5 = 336 px, 6 = valide
         // Invariant : les tableaux sont indexés ENSEMBLE (lineSnap_ par tranches
         // de kLineSnapBytes, borné par lineSnapLen_.size()) — un fichier forgé
         // désynchronisé ferait écrire endLine() hors du tas ; lineScrollSnap_ est
-        // lu par renderGlueFrame sous la même borne : compteur 4 bits + bit 4 de
-        // mode prefetch (un fichier antérieur, bit 4 toujours à 0, reste lisible —
-        // au pire une trame re-rendue avec l'ancien comportement au chargement).
+        // lu par renderGlueFrame sous la même borne : compteur 4 bits, bit 4 de
+        // mode prefetch, bit 5 du latch 336 px et bit 6 de validité (format v20).
         ar.check(lineSnap_.size() == lineSnapLen_.size() * kLineSnapBytes);
         ar.check(lineScrollSnap_.size() == lineSnapLen_.size());
-        for (uint8_t s : lineScrollSnap_) ar.check(s <= 0x1F);
+        for (uint8_t s : lineScrollSnap_) ar.check(s <= 0x7F);
 
         // --- Filtre Glue « même valeur ignorée » (persistant inter-trames) ---
         ar(lastGlueFreq_);
@@ -714,6 +729,8 @@ public:
         ar.check(frame_.size() == static_cast<std::size_t>(curW_) * static_cast<std::size_t>(curH_));
         ar.check(curAH_ >= 0 && activeX_ >= 0 && activeY_ >= 0 &&
                  activeY_ + curAH_ <= curH_ && activeX_ + activeWidth() <= curW_);
+        ar.check(!bordered() || !(steBorderFlag_ || newSteBorderFlag_) || activeX_ >= 16,
+                 "Shifter::bordure gauche trop courte pour 336 px");
         // vcLineY_ est le curseur de ligne active, rattrapé par des boucles
         // « while (vcLineY_ < cible) endVideoLine(); » (videoCounter, endFrame).
         // Une valeur très négative forgée les rend praticables mais interminables

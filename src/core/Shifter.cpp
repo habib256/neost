@@ -165,6 +165,9 @@ void Shifter::reset() {
     hwScrollCount        = 0;
     hwScrollPrefetch     = false;
     hwScrollReg8264_     = 0;
+    steBorderFlag_       = false;
+    newSteBorderFlag_    = false;
+    lastScroll8265Cycle_ = -1;
     newLineWidth_        = -1;
     newHwScrollCount_    = -1;
     newHwScrollPrefetch_ = false;
@@ -261,6 +264,7 @@ void Shifter::resizeFor(Mode m) {
 // du décodage). La géométrie de la trame (cycles/ligne, lignes/trame) découle de
 // ce couple — cf. geometry() — et est lue par Machine juste après cet appel.
 void Shifter::beginFrame() {
+    lastScroll8265Cycle_ = -1;   // la paire d'écritures doit appartenir à la même VBL
     frameMode_ = mode;
     frameSync_ = sync;
     resizeFor(frameMode_);
@@ -343,7 +347,7 @@ void Shifter::beginFrame() {
 // Décode les index de palette (ou bit mono) d'UNE scanline dans `idx`, selon la
 // résolution VERROUILLÉE de la trame. Renvoie le décalage scroll fin STE.
 int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
-    const int  W      = activeWidth();             // pixels de l'écran actif (hors bordures)
+    const int  W      = activeWidth() + ((steBorderFlag_ && bordered()) ? 16 : 0);
     const bool hi     = (frameMode_ == Mode::High);
     const int  planes = hi ? 1 : (frameMode_ == Mode::Medium ? 2 : 4);  // plans entrelacés
     const int  bpl    = hi ? 80 : 160;                  // octets/ligne AFFICHÉE
@@ -362,8 +366,11 @@ int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
     // écritures du compteur $FF8205/07/09, scroll) — sinon repli analytique depuis la
     // base latchée de la trame (re-rendus spec512/renderFrame, où ces effets STE
     // dynamiques ne sont pas rejoués).
-    const uint32_t base = (y == vcLineY_) ? vcLineBase_
-                                          : vcFrameBase_ + static_cast<uint32_t>(y) * stride;
+    uint32_t base = (y == vcLineY_) ? vcLineBase_
+                                    : vcFrameBase_ + static_cast<uint32_t>(y) * stride;
+    // En moyenne résolution, la fenêtre hôte commence au pixel actif : les
+    // 8 octets supplémentaires à gauche restent hors du framebuffer.
+    if (steBorderFlag_ && frameMode_ == Mode::Medium) base += 8;
 
     // Deux variantes matérielles (port Video_CopyScreenLineColor) :
     //  • $FF8265 (PREFETCH) : le shifter lit un groupe de 16 px DE PLUS (1 mot par
@@ -412,7 +419,19 @@ int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
 // `pVideoRaster += n*2` de Video_CopyScreenLine*) : avec PREFETCH ($FF8265) le
 // shifter a consommé 1 mot PAR PLAN de plus (8 octets en basse rés, 4 en moyenne) ;
 // sans prefetch ($FF8264) : rien. En mono, Hatari avance toujours d'1 mot.
-int Shifter::scrollCounterAdvance() const {
+int Shifter::steBorderBytes(uint32_t bm) {
+    // Priorités des branches de recopie Hatari video.c:4020-4075. Le retrait
+    // court STE LOW se cumule avec +8 octets, pas le retrait MED ni LEFT_PLUS_2.
+    return (bm & (glue::LEFT_OFF | glue::LEFT_OFF_MED | glue::LEFT_OFF_2_STE_MED
+                  | glue::LEFT_PLUS_2)) ? 0 : 8;
+}
+
+int Shifter::scrollCounterAdvance(int scanline) const {
+    if (steBorderFlag_ && frameMode_ != Mode::High) {
+        const uint32_t bm = scanline >= 0 && scanline < static_cast<int>(glueLines_.size())
+            ? glueLines_[scanline].borderMask : 0;
+        return steBorderBytes(bm);
+    }
     if (!hwScrollCount) return 0;
     if (frameMode_ == Mode::High) return 2;
     if (!hwScrollPrefetch) return 0;
@@ -438,14 +457,15 @@ void Shifter::renderLine(int y) {
     // de la ligne courante est consultée EN DIRECT. Le re-rendu hors séquence
     // (spec512/renderFrame) n'avance jamais le compteur (y ≤ vcLineY_).
     while (vcLineY_ < y) endVideoLine();
-    const int  W   = activeWidth();
+    const int lead = (steBorderFlag_ && bordered()) ? 16 : 0;
+    const int  W   = activeWidth() + lead;
     const bool hi  = (frameMode_ == Mode::High);
 
     uint8_t idx[660];                                   // max (640/16 + 1) * 16 = 656
     const int scroll = decodeLineIndices(y, idx);
 
     // Début de la zone ACTIVE dans le buffer (décalée des bordures gauche/haut).
-    uint32_t* dst = frame_.data() + static_cast<std::size_t>(activeY_ + y) * curW_ + activeX_;
+    uint32_t* dst = frame_.data() + static_cast<std::size_t>(activeY_ + y) * curW_ + activeX_ - lead;
 
     // Émet W pixels à partir de l'offset `scroll`. En haute résolution = moniteur
     // MONOCHROME : seule la polarité vient du registre 0 de la palette — reg0
@@ -478,8 +498,8 @@ void Shifter::renderLine(int y) {
         const uint32_t bgLeft  = stColorToArgb(leftBorderPal0_);   // ligne précédente
         const uint32_t bgRight = stColorToArgb(palette[0]);        // courant
         uint32_t* row = frame_.data() + static_cast<std::size_t>(activeY_ + y) * curW_;
-        for (int x = 0; x < activeX_; ++x)         row[x] = bgLeft;
-        for (int x = activeX_ + W; x < curW_; ++x) row[x] = bgRight;
+        for (int x = 0; x < activeX_ - lead; ++x) row[x] = bgLeft;
+        for (int x = activeX_ + activeWidth(); x < curW_; ++x) row[x] = bgRight;
         leftBorderPal0_ = palette[0];   // pour le bord gauche de la ligne suivante
     }
 
@@ -551,7 +571,11 @@ void Shifter::finishFrame() {
     // les bordures au latch par-ligne de renderLine (banc poll : bascules à
     // x=45..47 dans la bordure gauche et pal[0] roulant haut/bas manquants).
     // Trame sans AUCUNE écriture palette : rendu ligne-à-ligne conservé.
-    if (bordersTrick_ || spec512Active_) renderGlueFrame();
+    // Deux checks OFF manqués peuvent garder VBlank actif jusqu'à l'aire normale,
+    // sans retrait de bordure ni écriture palette : le replay doit aussi l'effacer.
+    const Geometry vg = geometry();
+    if (bordersTrick_ || spec512Active_ || vblankAtLine(vg.dispStartLine + vg.displayLines - 1))
+        renderGlueFrame();
 
     // Snapshot Glue stable pour le zoom kiosk : capturé ICI, après replayGlue() /
     // renderGlueFrame(), AVANT que beginFrame_() du cycle suivant ne remette à zéro
@@ -817,13 +841,25 @@ void Shifter::renderGlueFrame() {
         // (pas de DE) et LINE_END_FULL (512, hors table).
         if (ds > 0) ds -= wsInc;
         if (de > 0 && de != glue::LINE_END_FULL) de -= wsInc;
+        // Le latch 336 px suit CETTE scanline, comme le scroll fin (bit 5 du
+        // snapshot). Une bascule mid-trame ne doit pas changer les lignes passées.
+        const bool snapHere = sl >= 0 && sl < static_cast<int>(lineSnapLen_.size())
+                              && lineSnapLen_[sl] > 0;
+        const bool scrollSnapped = sl >= 0 && sl < static_cast<int>(lineScrollSnap_.size())
+                                   && (lineScrollSnap_[sl] & 0x40);
+        const bool lineBorder = scrollSnapped ? (lineScrollSnap_[sl] & 0x20) != 0 : steBorderFlag_;
+        if (lineBorder && steBorderBytes(bm)) {
+            if (bm & glue::LEFT_OFF_2_STE) ds = 0;
+            else ds -= 16;
+        }
         const bool lineHasDE = displayed && !(bm & glue::NO_DE) && de > ds;
         // Ligne BLANK (bascule 60/50 près du blanking) : le shifter LIT ses octets
         // (le compteur avance, cf. glueLineBytes) mais le signal vidéo est coupé —
         // Hatari efface la ligne à l'index couleur 0 APRÈS l'avoir copiée
         // (video.c:4081 memset → couleur 0 ; le « vrai noir » est un TODO Hatari,
         // video.c:3983). On rend donc pal[0] sur toute la ligne, sans décoder.
-        const bool lineBlank = lineHasDE && (bm & glue::BLANK) != 0;
+        const bool vblank = vblankAtLine(sl);
+        const bool lineBlank = vblank || (lineHasDE && (bm & glue::BLANK) != 0);
         // V2 — résolution PAR LIGNE (port Video_StoreResolution, video.c:3729-3733) :
         // une ligne marquée OVERSCAN_MED_RES / LEFT_OFF_2_STE_MED se décode en
         // MOYENNE résolution (2 plans, 2 px/cycle) au sein d'une trame basse rés.
@@ -854,9 +890,6 @@ void Shifter::renderGlueFrame() {
         // de trame dès qu'une écriture palette déclenchait renderGlueFrame
         // (spec512Active_, seuil 1). Repli : valeur de fin de trame (lignes non
         // committées — même approximation que la relecture RAM ci-dessous).
-        const bool snapHere = sl >= 0 && sl < static_cast<int>(lineSnapLen_.size())
-                              && lineSnapLen_[sl] > 0;
-        const bool scrollSnapped = snapHere && sl < static_cast<int>(lineScrollSnap_.size());
         // Compteur (bits 0-3) ET mode prefetch (bit 4) de CETTE ligne : le
         // décodage (groupe en plus / départ à idx[16] / memset de tête) doit
         // suivre la même paire que l'émission — les membres vivants portent la
@@ -1023,8 +1056,11 @@ void Shifter::renderGlueFrame() {
         //   1 mot PAR PLAN), comme l'accumulation par ligne de videoCounter — les
         //   `pVideoRaster += LineWidth*2` / `+= n*2` de Video_CopyScreenLineColor.
         //   0 sur ST/STF (chemin historique inchangé).
-        if (lineHasDE) addr += static_cast<uint32_t>(glueLineBytes(sl)
-                             + static_cast<int>(lineWidth) * 2 + scrollCounterAdvance());
+        if (lineHasDE && !vblank) {
+            const int extra = lineBorder ? steBorderBytes(bm)
+                : (lineScroll && linePref ? (frameMode_ == Mode::Medium ? 4 : 8) : 0);
+            addr += static_cast<uint32_t>(glueLineBytes(sl) + static_cast<int>(lineWidth) * 2 + extra);
+        }
     }
 }
 
@@ -1345,6 +1381,10 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
             if (ste) {
                 const uint8_t sc       = v & 0x0F;
                 const bool    prefetch = (addr == 0xFF8265);
+                const int64_t fc = beamClock_ ? beamClock_() : 0;
+                const bool add16 = !prefetch && sc == 0 && lastScroll8265Cycle_ >= 0
+                    && fc >= lastScroll8265Cycle_ && fc - lastScroll8265Cycle_ <= 40;
+                if (prefetch) lastScroll8265Cycle_ = sc ? static_cast<int32_t>(fc) : -1;
                 // $FF8264 : mémorise l'octet BRUT pour la relecture (Hatari laisse
                 // IoMem tel quel — la lecture n'est pas interceptée, video.c:5813).
                 if (!prefetch) hwScrollReg8264_ = v;
@@ -1354,8 +1394,10 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
                 const bool active = la >= 0 && la < g.displayLines;
                 if (!active || cyc <= g.lineStartCycle) {
                     hwScrollCount = sc; hwScrollPrefetch = prefetch; newHwScrollCount_ = -1;
+                    steBorderFlag_ = add16;
                 } else {
                     newHwScrollCount_ = sc; newHwScrollPrefetch_ = prefetch;
+                    newSteBorderFlag_ = add16;
                 }
             }
             return;

@@ -7,6 +7,33 @@ vient répondre à « NeoST gère-t-il X ? ».
 Pour *quand* une chose est arrivée → [`../CHANGELOG.md`](../CHANGELOG.md).
 Pour ce qui reste → [`../TODO.md`](../TODO.md).
 
+## Compléments de fidélité du 2026-10-18
+
+- **ACSI** : IRQ de fin de DMA différée de 1000 cycles CPU, soit 1000 cycles bus
+  à 8 MHz ou 500 à 16 MHz ; une bascule de fréquence recalcule le délai restant.
+  Les registres DMA reproduisent aussi les retenues d’adresse ST/Mega ST et
+  préservent le statut d’erreur lors du reset FIFO ; le reset matériel l’efface.
+  L’acquittement immédiat des octets de commande est conservé. Délai repris
+  d’Hatari pour Idris OS ; ce système n’a pas été testé ici.
+- **VBlank couleur** : comparateurs de fin de ligne 50/60 Hz et remise à ON au
+  VSYNC ; masquage à la palette 0 et suppression de l’avancement de base vidéo.
+  Les deux étalons générés `vblank_on/off` correspondent à l’oracle Hatari.
+- **Registres Blitter** : miroir MMIO brut pour les lectures octet des registres
+  mot rejetées par les handlers Hatari. Les lectures mot/long rafraîchissent ce
+  miroir ; reset chaud le conserve, reset froid l’efface. $FF860E/F est un registre
+  de densité uniquement sur Mega STE, void ailleurs quand l’accès est autorisé.
+- **Réponses IKBD** : attente firmware globale, puis transmission série ; valeurs
+  centrales déterministes des plages Hatari, quantifiées à 1024 cycles par bit.
+  Horloge, joysticks, position absolue, rapports et réponse Froggies sont couverts.
+  Phase sous-octet et transit CPU→IKBD restent approximatifs.
+- **Monitoring joystick $17** : période demandée en centièmes de seconde,
+  indépendante du VBL et de la vitesse CPU, avec sauvegarde de la phase.
+- **FDC** : attentes des handlers de registres portées (4 cycles CPU, avec
+  exclusions SCREG en lecture, statut DMA et adresses). Le registre de densité Mega STE a aussi son attente.
+- **Sauvegardes v23** : période/échéance du monitoring ajoutées au délai IKBD
+  et miroir Blitter v22, aux échéances ACSI/SCC et période BRG v21. Les anciens formats sont refusés
+  explicitement ; le VBlank est reconstruit sans champ ajouté.
+
 ## Cœur & boot
 - **Cœur Musashi RETIRÉ — Moira seul cœur 68000.** L'ancien cœur Musashi (rapide mais
   **non cycle-exact**) n'apportait plus rien face à Moira (cycle-exact) et doublait chaque
@@ -160,6 +187,12 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   d'etos192 sur MegaSTE (SCU non programmé). Pour le STE/Mega STE : EmuTOS 256 Ko ou TOS 1.62/2.06.
 
 ## Vidéo (Shifter)
+- **Mode STE 336 px (2026-10-18)** : `$FF8265>0` suivi de `$FF8264=0` dans les
+  40 cycles de la même VBL ouvre 16 pixels à gauche et consomme 168 octets par
+  ligne en basse résolution. Le compteur MMU, l'application différée en fin de
+  ligne et le re-rendu palette suivent ce latch. Son état et sa séquence d'armement
+  sont sauvegardés (depuis le format v20). Cinq étalons libres `scroll_336*` et l'auto-test
+  Glue STE couvrent activation, annulation, délai, mi-écran et restauration.
 - **Ancre verticale du commit de scanline = fenêtre Glue LIVE — Lethal Xcess (STX) EN JEU
   réparé (2026-07-12)** : régression du commit au HBL ci-dessous. `commitScanline` /
   `endVideoLine` calaient la scanline committée sur `liveStartHBL_` (VDE_On **sticky** :
@@ -774,6 +807,12 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   ≥ 500 Ko ; spt ∈ {9,10,11,12} × 80-84 pistes). Débloque **Xenon 2** (BPB faces=1 au
   lieu de 2 → code corrompu, 4 bombes), **Epic** (BPB bidon → 9 spt au lieu de 11,
   11 bombes) et **Super Hang-On** (9 spt au lieu de 10 → retry infini, écran noir).
+- **Géométrie relue après écriture du boot (2026-10-18)** : WRITE SECTOR et
+  WRITE TRACK actualisent la géométrie BPB pour les accès suivants, comme les
+  lectures `Floppy_FindDiskDetails` d'Hatari. Une face supprimée répond RNF en
+  lecture et en écriture. Pour MSA, si le BPB n'est pas représentable dans le
+  conteneur, le ré-encodage utilise son découpage initial et préserve tous les
+  octets, y compris le nouveau BPB. Tests FDC par DMA et remontage du fichier réel.
 - **Modèle ROTATIONNEL daté** (port `extern/hatari/src/fdc.c`, chemin « _ST ») remplaçant
   l'ancien « DMA instantané ». Machine à états par commande (Restore/Seek/Step, Read/Write
   Sector, Read Address, Read/Write Track, Force Interrupt, Motor Stop) avançée par
@@ -1458,8 +1497,15 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   DTR→DSR (/SYNC) et **BREAK émis (WR5 bit4) → RR0 bit7 Break/Abort** au retour — le
   mécanisme de détection des prises du test « I SCC » du diagnostic MegaSTE, qui rend
   **Pass** (Port A, Port B et LAN détectés, async, modem control, IRQ ext-status).
-  _Non porté (faible valeur ici) : timers du BRG (Zero Count), baudrate temporisé,
-  série hôte réelle._
+  **BRG / Zero Count (2026-10-18)** : PCLK/RTxC, WR4, constantes WR12/13 et
+  activation WR14 alimentent deux événements Scheduler. IRQ externes masquées,
+  vecteurs, IUS, reset et restauration de phase sont gardés par le banc SCC.
+  Le câblage BRG suit aussi les changements de profil ST → Mega STE.
+  **Miroirs RR6/RR7** : sélection WR15 locale au canal et lecture RR2/RR3 locale,
+  vecteur actualisé et soft IACK compris (Zilog/MAME, correction du défaut partagé
+  avec Hatari). La FIFO SDLC reste non implémentée.
+  Le reset matériel annule les événements dont WR14 a désactivé la source.
+  _Restent la cadence TX/RX des octets et la série hôte réelle._
 - **SCC No-Vector → vecteur spurious 24** (`Cpu68k::readIrqUserVector`) : sur IACK niveau 5 avec
   WR9 NV armé (`Scc::processIack()` = -1), le wrapper renvoie désormais le vecteur **spurious 24**
   ($60) — comme la branche MFP et `iack_cycle` d'Hatari (`vector<0 → 24`) — au lieu de
@@ -1577,6 +1623,30 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   et `rnd[4]` (ajustement des 32 bits de poids faible par mode d'arrondi RN/RZ/RM/RP). `FMOVECR`
   applique l'ajustement selon le mode FPCR, puis arme `EXC_INEX2`/`AEXC_INEX` et déclenche la
   livraison d'exception si activée — au lieu de toujours renvoyer la valeur RN sans drapeau. Mini-ROM FPU 9/9.
+- **MC68881 — précision FPCR de FMOVECR (2026-10-18)** : après l'ajustement de la
+  table, arrondi de la mantisse à 24 ou 53 bits, avec la plage d'exposant étendue
+  (`roundSigAndPack`, comme `fpp_round32/64` d'Hatari). Une constante exacte en étendu
+  mais inexacte à la précision demandée lève aussi INEX2. La ROM CIR passe à **23 tests** :
+  les nouveaux cas gardent les quatre modes d'arrondi, la précision double/réservée,
+  les grands exposants et les drapeaux ; ils couvrent aussi FSGLMUL/FSGLDIV et FMOD,
+  dont les corrections étaient déjà présentes.
+- **MC68881 — précision des unaires et constantes indéfinies (2026-10-18)** :
+  FMOVE/FABS/FNEG appliquent la précision FPCR et sa plage d'exposant simple/double,
+  avec OVFL/UNFL/INEX2 ; les NaN gardent signe/payload et les SNaN sont quiétés.
+  FMOVECR reproduit aussi les onze motifs `fpp_cr_undef`, les ajustements du mot
+  haut de mantisse et les codes de condition particuliers des offsets 3 et 7.
+  Les comparaisons CIR utilisent les véritables fonctions Hatari compilées :
+  1 443 cas unaires et 2 048 combinaisons offset/précision/arrondi pour FMOVECR.
+- **MC68881 — décimal empaqueté (2026-10-18)** : `SoftFloatDecimal.hpp` porte
+  les conversions d'Hatari en entiers exacts, dans les deux sens : 17 chiffres,
+  quatre arrondis, k positif ou négatif, grands exposants, zéros et NaN/SNaN.
+  INEX1 entrant et INEX2 sortant remontent au FPSR et au Response CIR ; les
+  exceptions de conversion sont conservées pendant l'opération. Une garde
+  OPERR+NaN rejette les étendus non canoniques en sortie P (l'oracle peut y faire
+  des décalages indéfinis). Le k dynamique reste fixé à 17 en mode périphérique.
+  `tools/test_fpu_decimal_oracle.py --sanitize` : **161 348 contrôles, zéro échec**,
+  conversions et emballage 96 bits comparés au source C original, gardes vérifiées
+  sous UBSan.
 - **Joypads STE COMPLETS + DIP MegaSTE** (`$FF9200-$FF9223`, port fidèle `joy.c` /
   `ioMemTabSTE.c`) : le stub « valeurs au repos » est remplacé par un vrai module
   `StePads` (`src/io/StePads.hpp`, membre `Bus::stePads`) — **multiplexage** par le

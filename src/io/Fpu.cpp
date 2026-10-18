@@ -17,14 +17,13 @@
 //  sont devenues le 2026-09-02 : FMOVE.L/W/B passent par sf::toInt et FMOVE.S/D par
 //  sf::toFloat32/64, au lieu de traverser un `double` hôte qui arrondissait une
 //  PREMIÈRE fois (64 → 53 bits) avant l'arrondi demandé — double arrondi, mode FPCR
-//  ignoré et INEX2 jamais levé. Reste sur `double` : les TRANSCENDANTES (cf. Fpu.hpp)
-//  et le décimal empaqueté (P), qui passe par snprintf. Constantes ROM FMOVECR
+//  ignoré et INEX2 jamais levé. Reste sur `double` : les TRANSCENDANTES (cf. Fpu.hpp). Le décimal empaqueté (P) passe par SoftFloatDecimal.hpp. Constantes ROM FMOVECR
 //  bit-exactes (dumps silicium recoupés MAME/Previous/WinUAE).
 // =============================================================================
 #include "Fpu.hpp"
+#include "io/SoftFloatDecimal.hpp"
 #include <cmath>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <limits>
 
@@ -130,10 +129,11 @@ void Fpu::sfFold(uint8_t f) {
     if (f & sf::flag_overflow)  fpsr_ |= EXC_OVFL  | AEXC_OVFL;
     if (f & sf::flag_underflow) fpsr_ |= EXC_UNFL;
     if (f & sf::flag_inexact)   fpsr_ |= EXC_INEX2;
+    if (f & sf::flag_decimal)   fpsr_ |= EXC_INEX1;
     // Octet AEXC accumulé (cf. Hatari updateaccrued / fpsr_make_status) : UNFL n'est
     // accumulé que si INEXACT l'est AUSSI ; INEX est accumulé sur INEX2 OU OVFL.
     if ((f & sf::flag_underflow) && (f & sf::flag_inexact)) fpsr_ |= AEXC_UNFL;
-    if (f & (sf::flag_inexact | sf::flag_overflow))         fpsr_ |= AEXC_INEX;
+    if (f & (sf::flag_inexact | sf::flag_decimal | sf::flag_overflow))         fpsr_ |= AEXC_INEX;
 }
 
 // Livraison d'exception FP via le Response CIR (cf. Fpu.hpp). Octet enable du FPCR
@@ -208,7 +208,23 @@ Fpu::Ext Fpu::romConstant(int off, int roundMode, bool& inexact) {
             return Ext{r.se, man};
         }
     inexact = false;
-    return Ext{0, 0};                            // offsets non documentés → 0.0
+    // Dump silicium commun aux 68881/68882 : fpp_cr_undef (Hatari fpp.c).
+    // Les trous au-delà de $0A reprennent l'entrée 0, un zéro NON canonique
+    // dont l'exposant $4000 doit survivre à FMOVE.X/FMOVEM.
+    static const Ext undefined[] = {
+        {0x4000, 0x0000000000000000ull},
+        {0x4001, 0xFE00068200000000ull},
+        {0x4001, 0xFFC0050380000000ull},
+        {0x2000, 0x7FFFFFFF00000000ull},
+        {0x0000, 0xFFFFFFFFFFFFFFFFull},
+        {0x3C00, 0xFFFFFFFFFFFFF800ull},
+        {0x3F80, 0xFFFFFF0000000000ull},
+        {0x0001, 0xF65D8D9C00000000ull},
+        {0x7FFF, 0x001E000000000000ull},
+        {0x43FF, 0x000E000000000000ull},
+        {0x407F, 0x0006000000000000ull},
+    };
+    return undefined[off <= 10 ? off : 0];
 }
 
 // =============================================================================
@@ -246,19 +262,11 @@ Fpu::Ext Fpu::decodeFmt(int fmt, const uint8_t* b) {
         }
         case 2:  return Ext{uint16_t(b[0] << 8 | b[1]), get64(b + 4)}; // X (bit-exact)
         case 3: {                                                     // P (BCD)
-            // SM(b95) SE(b94) YY | E2 E1 E0 | [E3] D16 | D15..D0 → via strtod.
-            char s[32]; int p = 0;
-            if (b[0] & 0x80) s[p++] = '-';
-            s[p++] = char('0' + (b[3] & 0x0F)); s[p++] = '.';
-            for (int i = 4; i < 12; i++) {
-                s[p++] = char('0' + (b[i] >> 4)); s[p++] = char('0' + (b[i] & 0x0F));
-            }
-            s[p++] = 'e';
-            if (b[0] & 0x40) s[p++] = '-';
-            s[p++] = char('0' + (b[0] & 0x0F));
-            s[p++] = char('0' + (b[1] >> 4)); s[p++] = char('0' + (b[1] & 0x0F));
-            s[p] = 0;
-            return dToExt(std::strtod(s, nullptr));
+            const uint32_t words[3] = {get32(b), get32(b + 4), get32(b + 8)};
+            sf::Status st = sfStatus();
+            const sf::f80 result = sf::fromPacked(words, st);
+            sfFold(st.exceptionFlags);
+            return Ext{result.high, result.low};
         }
         case 4:  return dToExt(double(int16_t(b[0] << 8 | b[1])));    // W
         case 5: {                                                     // D — élargissement EXACT
@@ -286,7 +294,6 @@ Fpu::Ext Fpu::decodeFmt(int fmt, const uint8_t* b) {
 }
 
 void Fpu::encodeFmt(int fmt, const Ext& v, uint8_t* b, int k) {
-    const double d = extToD(v);
     // Entier (L/W/B) : conversion DIRECTE depuis la mantisse 64 bits, via le port de
     // floatx80_to_int32/16/8 (sf::toInt). ⚠ NE PAS repasser par `d` : l'étendu vaut
     // 64 bits de mantisse contre 53 au `double`, et arrondir deux fois de suite ne
@@ -315,43 +322,14 @@ void Fpu::encodeFmt(int fmt, const Ext& v, uint8_t* b, int k) {
             b[0] = uint8_t(v.se >> 8); b[1] = uint8_t(v.se);
             b[2] = b[3] = 0; put64(b + 4, v.man); break;
         case 3: case 7: {                                                       // P
-            // ±INFINI / NaN : le 68881 n'émet PAS de BCD — il recopie le motif étendu,
-            // dont les 12 bits bas du premier mot valent alors $FFF, l'exposant
-            // « spécial » du format P (port de fp_from_pack, fpp_softfloat.c:702-706 :
-            // `if ((f.high & 0x7FFF) == 0x7FFF) { wrd[0] = f.high << 16; … }`).
-            // AVANT : on tombait dans le snprintf ci-dessous, où la libc rend « +inf »
-            // et où le parseur BCD tirait des chiffres arbitraires de « inf ».
-            if ((v.se & 0x7FFF) == 0x7FFF) {
-                b[0] = uint8_t(v.se >> 8); b[1] = uint8_t(v.se);
-                b[2] = b[3] = 0; put64(b + 4, v.man);
-                break;
-            }
-            // k-factor : nombre de digits significatifs (k ≤ 0 = style point
-            // fixe, approché ici par 17 digits — limite documentée).
-            // k > 17 arme OPERR : le format P ne porte que 17 chiffres significatifs
-            // (≙ softfloat_decimal.c:412-414, `kfactor = 17; float_raise(invalid)`).
-            // AVANT : écrêtage à 17 EN SILENCE. Ne concerne que le k POSITIF — un k
-            // négatif sélectionne le style point fixe, que ce test ne vise pas.
-            if (!(k & 0x40) && k > 17) fpsr_ |= EXC_OPERR | AEXC_IOP;
-            int digits = (k & 0x40) ? 17 : k;                // k signé 7 bits
-            if (digits < 1 || digits > 17) digits = 17;
-            char s[40];
-            std::snprintf(s, sizeof s, "%+.*e", digits - 1, d);
-            std::memset(b, 0, 12);
-            if (s[0] == '-') b[0] |= 0x80;
-            b[3] = uint8_t(s[1] - '0');                      // D16 (partie entière)
-            int bi = 4, hi = 1;                              // fraction → b[4..11]
-            const char* c = s + 2;
-            if (*c == '.') c++;                              // "%.0e" n'émet pas de point
-            for (; *c && *c != 'e' && bi < 12; c++) {
-                if (hi) b[bi] = uint8_t((*c - '0') << 4); else b[bi++] |= uint8_t(*c - '0');
-                hi ^= 1;
-            }
-            const char* e = std::strchr(s, 'e');
-            int ev = e ? std::atoi(e + 1) : 0;
-            if (ev < 0) { b[0] |= 0x40; ev = -ev; }
-            b[0] |= uint8_t((ev / 100) % 10);
-            b[1] = uint8_t(((ev / 10) % 10) << 4 | (ev % 10));
+            sf::Status st = sfStatus();
+            uint32_t words[3];
+            // k statique est un entier signé sur 7 bits ; k<=0 sélectionne
+            // le style à point fixe, k>0 le nombre de chiffres significatifs.
+            const int signedK = (k & 0x40) ? (k & 0x7F) - 128 : (k & 0x7F);
+            sf::toPacked(sf::f80{v.se, v.man}, signedK, words, st);
+            sfFold(st.exceptionFlags);
+            put32(b, words[0]); put32(b + 4, words[1]); put32(b + 8, words[2]);
             break;
         }
         case 4: {                                                               // W
@@ -482,11 +460,44 @@ void Fpu::command(uint16_t cmd) {
             const int fmt = (cmd >> 10) & 7;
             if (fmt == 7) {                      // FMOVECR (offset ROM bits 6-0)
                 bool inexact = false;
-                const Ext c = romConstant(cmd & 0x7F, (fpcr_ >> 4) & 3, inexact);
+                const int off = cmd & 0x7F;
+                const int prec = (fpcr_ >> 6) & 3, rm = (fpcr_ >> 4) & 3;
+                Ext c = romConstant(off, rm, inexact);
+                int highAdjust = 0;
+                uint32_t extraCC = 0;
+                // Quirks des champs indéfinis de fpu_get_constant : certains
+                // corrigent le mot HAUT de mantisse APRÈS l'arrondi simple ;
+                // d'autres imposent NAN/I même avec un motif fini en registre.
+                if ((off == 1 || off == 7) && prec == 1) {
+                    if (rm == 0) highAdjust = -1;
+                    else if (rm == 1 || rm == 2) highAdjust = 1;
+                }
+                if (off == 2 && prec == 1 && rm == 3) highAdjust = -1;
+                if (off == 3) extraCC = (prec == 1 && (rm == 0 || rm == 3)) ? CC_I : CC_NAN;
+                if (off == 7) extraCC = CC_NAN;
+                // Après l'ajustement de la table, FPCR sélectionne la mantisse
+                // 24/53 bits SANS réduire la plage d'exposant étendue : fpp.c
+                // appelle fpp_round32/64, pas fpp_round_single/double. Une
+                // constante exacte en étendu peut ainsi devenir inexacte ici.
+                sf::Status st = sfStatus();
+                // Les wrappers floatx80_round32/64 préservent NaN et les zéros
+                // non canoniques ; exp=0 est normalisé avant roundSigAndPack.
+                if (st.roundingPrecision != sf::prec_extended && c.man && (c.se & 0x7FFF) != 0x7FFF) {
+                    int32_t exp = c.se & 0x7FFF;
+                    uint64_t man = c.man;
+                    if (!exp) sf::normalizeSubnormal(man, exp, man);
+                    c = toE(sf::roundSigAndPack(st.roundingPrecision, c.se >> 15, exp, man, 0, st));
+                }
+                if (highAdjust) {
+                    const uint32_t hi = uint32_t(c.man >> 32) + uint32_t(highAdjust * 0x80);
+                    c.man = uint64_t(hi) << 32 | uint32_t(c.man);
+                }
                 fp_[(cmd >> 7) & 7] = c;
                 fpsr_ &= ~0x0000FF00u;            // EXC effacé (instruction courante)
                 if (inexact) fpsr_ |= EXC_INEX2 | AEXC_INEX;   // constante inexacte → INEX2
+                sfFold(st.exceptionFlags);
                 setCC(c);
+                fpsr_ |= extraCC;
                 checkException();                // livre l'exception INEX si armée dans le FPCR
                 break;                           // response déjà idle (PF=1)
             }
@@ -549,7 +560,7 @@ void Fpu::startMoveOut(uint16_t cmd) {
     fpsr_ &= ~0x0000FF00u;                       // EXC effacé en début d'instruction
     // P à k-factor dynamique (fmt 111) : k vit dans un registre Dn du CPU,
     // inaccessible en mode périphérique → défaut 17 digits.
-    encodeFmt(fmt, src, buf_, fmt == 7 ? 0 : cmd & 0x7F);
+    encodeFmt(fmt, src, buf_, fmt == 7 ? 17 : cmd & 0x7F);
     setCC(src);
     armOut(fmt == 7 ? 12 : fmtLen(fmt), After::MoveOutDone);
 }
@@ -557,9 +568,18 @@ void Fpu::startMoveOut(uint16_t cmd) {
 // Tampon d'entrée complet → exécution selon le contexte.
 void Fpu::completeInput() {
     switch (after_) {
-        case After::GenOp:
-            genOp(cmd_, decodeFmt((cmd_ >> 10) & 7, buf_));
+        case After::GenOp: {
+            // La conversion P peut lever INEX1 avant l'opération. genOp efface
+            // EXC à son entrée : préserver ces causes, puis réévaluer la priorité
+            // après fusion (SNAN/OPERR de l'opération priment sur INEX1).
+            fpsr_ &= ~0x0000FF00u;
+            const Ext operand = decodeFmt((cmd_ >> 10) & 7, buf_);
+            const uint32_t conversionExc = fpsr_ & 0x0000FF00u;
+            genOp(cmd_, operand);
+            fpsr_ |= conversionExc;
+            checkException();
             break;
+        }
         case After::CtrlIn: {
             int p = 0;
             // Masques 68881 (cf. Hatari get_features) : FPCR bits 3-0 et FPSR bits
@@ -640,22 +660,30 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
     const int op = cmd & 0x7F;
     fpsr_ &= ~0x0000FF00u;                       // EXC effacé en début d'instruction
 
-    // -------- Opérations BIT-EXACTES (pas de calcul) ------------------------
-    // Une entrée SNaN est QUIÉTÉE + FPSR.SNAN levé, comme floatx80_move/abs/neg
-    // (propagateFloatx80NaNOneArg) — l'ancien code stockait le SNaN brut sans drapeau.
+    // -------- FMOVE / FABS / FNEG : arrondi à la précision du FPCR ---------
+    // Port de floatx80_move/abs/neg (Hatari softfloat.c:3279-3417). Contrairement
+    // à FMOVECR, roundAndPack réduit AUSSI la plage d'exposant en simple/double.
     if (op == 0x00 || op == 0x18 || op == 0x1A) {
-        Ext r = src;
-        sf::f80 f = toF(r);
+        sf::Status st = sfStatus();
+        sf::f80 f = toF(src);
         if (sf::isNaN(f)) {
-            // Tout NaN traverse propagateNaNOneArg (quiété, signe INCHANGÉ — abs/neg
-            // ne touchent pas le signe d'un NaN chez floatx80_abs/neg).
-            sf::Status q{};
-            f = sf::propagateNaN1(q, f);
-            sfFold(q.exceptionFlags);
-            r = toE(f);
+            // NaN : payload et signe préservés, même sur FABS/FNEG ; SNaN quiété.
+            f = sf::propagateNaN1(st, f);
+        } else {
+            if (op == 0x18) f.high &= 0x7FFF;   // FABS, y compris −0 / −∞
+            else if (op == 0x1A) f.high ^= 0x8000;
+            const int exp = sf::expOf(f), sign = sf::signOf(f);
+            // ±∞ et ±0 ne traversent pas l'arrondi : zéro garde son signe, un
+            // infini chargé garde son bit entier (modèle 68881, pas 68060).
+            if (exp != 0x7FFF && (exp != 0 || f.low != 0)) {
+                if (exp == 0)
+                    f = sf::normalizeRoundAndPack(st.roundingPrecision, sign, exp, f.low, 0, st);
+                else
+                    f = sf::roundAndPack(st.roundingPrecision, sign, exp, f.low, 0, st);
+            }
         }
-        else if (op == 0x18) r.se &= 0x7FFF;                                  // FABS
-        else if (op == 0x1A) r.se ^= 0x8000;                                  // FNEG
+        sfFold(st.exceptionFlags);
+        const Ext r = toE(f);
         fp_[dn] = r; setCC(r); setIdle(); checkException(); return;
     }
 

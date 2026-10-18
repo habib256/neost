@@ -118,7 +118,7 @@ public:
         psg.reset(); dmasnd.reset(/*cold=*/true); mfp.reset();
         shifter.reset();           // cf. reset() : couverture Hatari reset.c
         fdc.reset(/*cold=*/true);
-        blitter.reset();
+        blitter.reset(/*cold=*/true); // miroir MMIO brut effacé à la mise sous tension
         ikbd.resetHw();
         bus.megaSteReset(); cpu.setMegaSteSpeed(false); bus.fpu.reset(); bus.scu.reset(/*cold=*/true);
         gemdos.reset();    // ferme les fichiers HD GEMDOS ouverts (no-op si inactif)
@@ -166,6 +166,7 @@ public:
         // aux défauts — le reset() chaud que l'appelant enchaîne les PRÉSERVE, et sans
         // ça l'état microwire d'une session STE (mixing/tonalité) colorait la suivante.
         dmasnd.reset(/*cold=*/true);
+        blitter.reset(/*cold=*/true);
     }
 
     // Exécute UNE trame complète : 313 lignes de cycles CPU, 4 tics Timer C

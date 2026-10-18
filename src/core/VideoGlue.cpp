@@ -180,8 +180,62 @@ void Shifter::liveGlueCatchUp(int targetLine) {
 }
 
 
+// Video_Update_Glue_State mémorise FreqHz aux quatre comparaisons VBlank ;
+// Video_EndHBL applique le résultat à la ligne SUIVANTE (cycle de test fixe502,
+// indépendant du wakestate). Le même réducteur sert au compteur live et au rendu.
+bool Shifter::vblankAtLine(int scanline) const {
+    if (frameMode_ == Mode::High) return false;   // CopyScreenLineMono ignore VBlank
+    struct Check { int line, cycle, freq; bool signal, vsync; };
+    const int restartPos = machineIsSte(bus_.machine) ? 60 : 56;
+    const Check checks[] = {{15,502,60,false,false}, {24,502,50,false,false},
+                            {257,502,60,true,false}, {260,restartPos,60,true,true},
+                            {307,502,50,true,false}, {310,restartPos,50,true,true}};
+    // Video_ClearOnVBL appelle ResetShifterTimings à chaque VBL : ON en couleur,
+    // OFF en mono, même si tous les checks ON de la trame précédente ont raté.
+    bool signal = true;
+    const int cpl = geometry().cyclesPerLine;
+    for (const auto& check : checks) {
+        if (scanline < check.line || (!check.vsync && scanline == check.line)) break;
+        // VSYNC260 n'est testé que sur une trame60Hz ; VSYNC310 selon le bit
+        // freq au restart, quelle que soit la résolution courante (video.c:3280).
+        if (check.vsync && check.line == 260 && (frameSync_ & 2)) continue;
+        int64_t start = int64_t(check.line) * cpl;
+        int64_t end = start + cpl;
+        // Une ligne raccourcie/longue conserve sa position dans la grille V3.
+        // En live le HBL a déjà construit le début de la ligne suivante ; le
+        // replay conserve cette grille, comme le lecteur du compteur vidéo.
+        if (lineLenAttrEnv() && check.line + 1 < static_cast<int>(glueLineStart_.size())
+            && glueLineStart_[check.line] > 0) {
+            start = glueLineStart_[check.line];
+            if (glueLineStart_[check.line + 1] > start) end = glueLineStart_[check.line + 1];
+            else end = start + cpl;
+        }
+        int res = static_cast<int>(frameMode_) & 3;
+        int freq50 = (frameSync_ & 2) != 0;
+        // ResetShifterTimings initialise les latches par la fréquence de trame
+        // (res3 est couleur ici). Après une écriture, Update_Glue_State décode
+        // res&2 et res3 devient71Hz pour ces comparateurs, comme chez Hatari.
+        int freq = freq50 ? 50 : 60;
+        for (const auto& w : syncWrites_) {
+            if (w.frameCycle >= end || w.frameCycle > start + check.cycle + 1) break;
+            // STF : la résolution est latchée un cycle avant la fréquence.
+            const int lead = w.isRes && !check.vsync && !machineIsSte(bus_.machine) ? 1 : 0;
+            if (w.frameCycle > start + check.cycle + lead) continue;
+            if (w.isRes) res = w.val & 3;
+            else freq50 = (w.val & 2) != 0;
+            freq = (res & 2) ? 71 : (freq50 ? 50 : 60);
+        }
+        if (check.vsync) freq = freq50 ? 50 : 60;
+        if (freq == check.freq) signal = check.signal;
+    }
+    return signal;
+}
+
 int Shifter::glueLineBytes(int scanline) const {
     const int bpl = (frameMode_ == Mode::High) ? 80 : 160;
+    // VBlank efface la ligne SANS lecture RAM ni avance pVideoRaster, à la
+    // différence d'une ligne BLANK (video.c:3993/4120).
+    if (vblankAtLine(scanline)) return 0;
     if (frameMode_ == Mode::High || syncWrites_.empty()) return bpl;
     if (scanline < 0 || scanline + 1 >= static_cast<int>(glueLines_.size())) return bpl;
     const GlueLine& L = glueLines_[static_cast<std::size_t>(scanline)];
@@ -715,6 +769,17 @@ void Shifter::updateGlueRes(int line, int lineCycles, int prevRes, int newRes) {
         GL.displayPixelShift = -16;
     }
 
+    // Hatari Video_WriteToGlueRes : le retrait court LOW se cumule avec le
+    // latch 336 px (28 octets à gauche, DE au cycle 0). Le replay utilise le
+    // latch capturé sur la ligne, le calcul live celui des registres courants.
+    const bool snapped = line >= 0 && line < static_cast<int>(lineScrollSnap_.size())
+                         && (lineScrollSnap_[line] & 0x40);
+    const bool border336 = snapped ? (lineScrollSnap_[line] & 0x20) != 0 : steBorderFlag_;
+    if ((GL.borderMask & LEFT_OFF_2_STE) && newRes == 0 && border336) {
+        GL.displayStartCycle = static_cast<int16_t>(T.Preload_Start_Hi);
+        GL.displayPixelShift = -8;
+    }
+
     // Retrait gauche hi/MED puis retour LO tôt : c'était un stab med (retrait
     // gauche low « propre ») ou un scroll hardware droite 13/9/5/1 px — la ligne
     // n'est PAS en med res. (video.c:1687)
@@ -1060,7 +1125,132 @@ bool Shifter::glueSelfTest() {
         chk("left2ste DE_start", glueLines_[100].displayStartCycle, T.Preload_Start_Hi + 16);
         chk("left2ste mask",  (glueLines_[100].borderMask & glue::LEFT_OFF_2_STE) ? 1 : 0, 1);
         chk("left2ste shift", glueLines_[100].displayPixelShift, -8);
+        steBorderFlag_ = true;
+        run({ {100,2,1,0x02}, {100,4,1,0x00} });
+        chk("left2ste 336 DE_start", glueLines_[100].displayStartCycle, T.Preload_Start_Hi);
+        chk("left2ste 336 extra", scrollCounterAdvance(100), 8);
+        run({ {100,2,1,0x02}, {100,8,1,0x00} });
+        chk("leftoff 336 no extra", scrollCounterAdvance(100), 0);
+        steBorderFlag_ = false;
+
+        // Latch 336 px et save-state : mêmes MMIO que le programme oracle.
+        // Les horloges synthétiques permettent aussi la coupure ENTRE les deux
+        // écritures et pendant le changement différé de fin de ligne.
+        const auto oldBeam = beamClock_;
+        const auto oldLive = liveFrameClock_;
+        int64_t fc = 100;
+        beamClock_ = [&] { return fc; };
+        liveFrameClock_ = {};
+        reset(); sync = 2; beginFrame();
+        auto save = [&] {
+            std::vector<uint8_t> bytes;
+            auto ar = StateArchive::saver(bytes); serialize(ar); return bytes;
+        };
+        auto load = [&](const std::vector<uint8_t>& bytes) {
+            auto ar = StateArchive::loader(bytes.data(), bytes.size()); serialize(ar);
+            chk("336 state valid", ar.ok(), true);
+        };
+        write8(0xFF8265, 4);
+        const auto armed = save();
+        reset(); load(armed);
+        fc = 140; write8(0xFF8264, 0);
+        chk("336 restore armed <=40", steBorderFlag_, true);
+        chk("336 stride", scrollCounterAdvance(), 8);
+        const auto active = save();
+        reset(); load(active);
+        chk("336 restore active", steBorderFlag_, true);
+        beginFrame();
+        chk("336 persists VBL", steBorderFlag_, true);
+        write8(0xFF8265, 0);
+        chk("336 clear 8265", steBorderFlag_, false);
+        load(armed); fc = 144; write8(0xFF8264, 0);
+        chk("336 rejects >40", steBorderFlag_, false);
+        load(armed); beginFrame(); fc = 104; write8(0xFF8264, 0);
+        chk("336 rejects next VBL", steBorderFlag_, false);
+
+        fc = 100 * cpl + 100;
+        write8(0xFF8265, 4); fc += 16; write8(0xFF8264, 0);
+        chk("336 change delayed", steBorderFlag_, false);
+        chk("336 pending", newSteBorderFlag_, true);
+        const auto pending = save();
+        reset(); load(pending);
+        vcLineY_ = 37; commitAnchor_ = 63; endVideoLine();
+        chk("336 restore pending", steBorderFlag_, true);
+        chk("336 metadata without RAM", lineScrollSnap_[100], 0x40);
+        chk("336 no RAM snapshot", lineSnapLen_[100], 0);
+        const uint32_t base = vcLineBase_;
+        endVideoLine();
+        chk("336 committed stride", vcLineBase_ - base, 168);
+        chk("336 metadata next line", lineScrollSnap_[101], 0x60);
+        reset();
+        chk("336 reset", steBorderFlag_, false);
+        beamClock_ = oldBeam; liveFrameClock_ = oldLive;
     }
+
+    // VBlank : limites du comparateur502, quatre checks et forçage par VSYNC.
+    auto vb = [&](int hz, std::vector<std::array<int,4>> writes) {
+        reset(); mode = Mode::Low; sync = hz == 50 ? 2 : 0; beginFrame();
+        for (const auto& w : writes)
+            syncWrites_.push_back({w[0] * geometry().cyclesPerLine + w[1],
+                                   static_cast<uint8_t>(w[3]), w[2] != 0});
+    };
+    vb(50, {});
+    chk("vblank PAL off before", vblankAtLine(24), true);
+    chk("vblank PAL off after", vblankAtLine(25), false);
+    chk("vblank PAL on before", vblankAtLine(307), false);
+    chk("vblank PAL on after", vblankAtLine(308), true);
+    vb(60, {});
+    chk("vblank NTSC off before", vblankAtLine(15), true);
+    chk("vblank NTSC off after", vblankAtLine(16), false);
+    chk("vblank NTSC on before", vblankAtLine(257), false);
+    chk("vblank NTSC on after", vblankAtLine(258), true);
+    for (int hz : {50,60}) for (bool on : {false,true}) {
+        const int checkLine = hz == 50 ? (on ? 307 : 24) : (on ? 257 : 15);
+        for (int cycle : {502,503}) {
+            vb(hz, {{checkLine,cycle,0,hz == 50 ? 0 : 2}});
+            chk("vblank freq502 deadline", vblankAtLine(checkLine + 1),
+                cycle == 502 ? !on : on);
+        }
+    }
+    if (!machineIsSte(bus_.machine)) {
+        vb(50, {{307,503,1,2}});
+        chk("vblank STF res lead", vblankAtLine(308), false);
+        vb(50, {{307,504,1,2}});
+        chk("vblank STF res late", vblankAtLine(308), true);
+    }
+    vb(50, {{307,500,0,0}, {308,0,0,2}});
+    chk("vblank missed check", vblankAtLine(308), false);
+    chk("vblank VSYNC310", vblankAtLine(310), true);
+    vb(60, {{257,500,0,2}, {258,0,0,0}});
+    chk("vblank missed NTSC check", vblankAtLine(258), false);
+    chk("vblank VSYNC260", vblankAtLine(260), true);
+    // Grille réelle : une écriture avant502 dans la ligne307 raccourcie doit
+    // être attribuée à cette ligne, sans réutiliser la grille nominale.
+    if (lineLenAttrEnv()) {
+        vb(50, {});
+        const int64_t start = int64_t(307) * geometry().cyclesPerLine - 64;
+        glueLineStart_[307] = start; glueLineStart_[308] = start + 508;
+        syncWrites_.push_back({static_cast<int32_t>(start + 503),0,false});
+        chk("vblank real grid deadline", vblankAtLine(308), true);
+    }
+    // La copie de ligne VBlank ne crédite ni octets, ni prefetch/line-offset.
+    vb(50, {});
+    vcLineY_ = 245; commitAnchor_ = 63; lineWidth = 7;
+    hwScrollCount = 4; hwScrollPrefetch = true;
+    const uint32_t oldBase = vcLineBase_;
+    endVideoLine();
+    chk("vblank no counter stride", vcLineBase_, oldBase);
+    chk("vblank no RAM snapshot", lineSnapLen_[308], 0);
+    // Le signal est entièrement reconstructible avec les champs déjà sauvés.
+    vb(50, {{307,500,0,0}, {308,0,0,2}});
+    std::vector<uint8_t> state;
+    auto save = StateArchive::saver(state); serialize(save);
+    reset();
+    auto load = StateArchive::loader(state.data(), state.size()); serialize(load);
+    chk("vblank state valid", load.ok(), true);
+    chk("vblank state missed check", vblankAtLine(308), false);
+    chk("vblank state vsync", vblankAtLine(310), true);
+    reset();
 
     std::fprintf(stderr, "[glue-selftest] %d OK, %d FAIL\n", pass, fail);
     return fail == 0;
