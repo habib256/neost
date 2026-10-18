@@ -123,6 +123,11 @@ public:
     // cours d'une ou plusieurs phases et reprogramme la prochaine échéance.
     void    onFdcEvent();
 
+    // Échéance ACSI indépendante des commandes du WD1772 : IRQ post-DMA.
+    void    onAcsiIrq();
+    // Le délai ACSI est compté en cycles CPU, à convertir dans l'horloge bus.
+    void    onCpuSpeedChange(bool was16Mhz, bool is16Mhz);
+
     // Reset matériel (bouton reset / power-cycle) — port de Hatari FDC_Reset :
     // registres WD1772, machine à états, DMA/FIFO et INTRQ au repos ; à froid,
     // TR/DR et le mot $FF8604 rémanent sont aussi effacés. Les images montées
@@ -261,6 +266,10 @@ private:
         // .msa = ré-encodage RLE du fichier ENTIER (port de MSA_WriteDisk).
         enum ImgFormat { FMT_ST = 0, FMT_MSA = 1, FMT_DIM = 2 };
         int  imgFormat = FMT_ST;
+        // Géométrie du conteneur MSA au montage (hors save-state, comme image).
+        // Le BPB invité peut demander 160 pistes ou un nombre de secteurs ne
+        // divisant pas l'image : ces valeurs logiques ne sont pas ré-encodables.
+        int  msaSpt = 9, msaSides = 2;
 
         // Image STX (Pasti) : si présente, le FDC dispatche vers le chemin _STX
         // (champs ID réels, statut par secteur, fuzzy/timing) au lieu du modèle .ST.
@@ -283,6 +292,7 @@ private:
     };
 
     // --- Géométrie / capacités du média (cf. Hatari FDC_Get*PerTrack/Disk) -----
+    void     refreshImageGeometry(FloppyDisk& dk); // BPB courant, après montage/écriture du boot
     int      sectorsPerTrack(int drive) const { return drive_[drive].spt; }
     int      sidesPerDisk(int drive)    const;
     int      tracksPerDisk(int drive)   const;
@@ -381,7 +391,9 @@ private:
     void     fifoPush(uint8_t b);               // octet lu du FDC → FIFO → RAM (par blocs de 16)
     uint8_t  fifoPull();                         // octet RAM → FIFO → FDC (par blocs de 16)
     void     dmaResetFifo();                     // bascule du bit 8 de $FF8606 : reset DMA
+    void     writeDmaAddressByte(uint32_t addr, uint8_t value); // retenue CPU STF + masque
     uint16_t dmaStatusWord() const;
+    void     registerWait();                    // WaitState(4 CPU), une fois par mot
 
     // --- IRQ / INTRQ (câblée sur GPIP5 + canal 7 du MFP) ----------------------
     void     fdcSetIrq(uint8_t source);
@@ -397,6 +409,7 @@ private:
     Acsi     acsi_;
     void     writeAcsi(uint32_t addr, uint8_t v);   // un octet de commande ACSI
     void     acsiDmaTransfer();                      // transfert DMA RAM↔image (Acsi_DmaTransfer)
+    void     clearHdcIrq();                          // n'acquitte pas une IRQ disquette
 
 public:
     // Boîtier de test DMA du kit Field Service (test « D DMA Port » des diagnostics

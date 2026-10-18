@@ -610,8 +610,8 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
 // sans lui, le repliement siffle). Filtre coupé : simple retard d'un échantillon
 // (×4), pour garder gain et latence constants — le /4 est appliqué au mixage,
 // comme le « Divide by 4 to account for DmaSnd_LowPassFilter » d'Hatari.
-float DmaSound::lowPassPull(int in, bool enabled) {
-    const float x = float(in);
+float DmaSound::lowPassPull(float in, bool enabled) {
+    const float x = in;
     const float y = enabled ? (lpW0_ + 2.0f * lpW1_ + x) : (lpW1_ * 4.0f);
     lpW0_ = lpW1_;
     lpW1_ = x;
@@ -633,7 +633,9 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
         if (!haveCur_) {                                      // 1er échantillon de la trame
             int l, r;
             if (capPullLR(stereo, l, r)) {
-                dmaCur_  = lowPassPull((l + r) / 2, lowPass); // sortie mono → moyenne L+R
+                // Moyenne en flottant : une paire de somme impaire conserve son
+                // demi-échantillon, comme la moyenne des deux voies FIR stéréo.
+                dmaCur_  = lowPassPull((l + r) * 0.5f, lowPass);
                 haveCur_ = true;
             }
         }
@@ -654,7 +656,7 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
             phase_ -= 1.0;
             // Octet suivant tiré à la cadence DMA → filtré ICI (pas à la cadence
             // hôte) : c'est ce qui fait l'anti-repliement.
-            dmaCur_ = lowPassPull((l + r) / 2, lowPass);
+            dmaCur_ = lowPassPull((l + r) * 0.5f, lowPass);
         }
     }
 }

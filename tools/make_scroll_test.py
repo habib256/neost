@@ -15,7 +15,13 @@
 #      Sans prefetch ($FF8264) : aucune avance → colonnes VERTICALES, mais les
 #      16 premiers px de chaque ligne sont couleur 0 (affichage inset).
 #
-#  Usage : make_scroll_test.py <out.st> <8265|8264|off> [scroll=4]
+#  Mode 336 : séquence $FF8265>0 puis $FF8264=0, affichage 16 px plus tôt
+#  et stride de 168 octets. Les témoins 336_late (>40 cycles), 336_clear
+#  (annulation par une nouvelle écriture) et 336_word (premier accès mot)
+#  distinguent ce latch d'un simple scroll fin. 336_split l'active au milieu
+#  de l'écran, à chaque VBL (STOP), puis touche la palette plus bas : le replay
+#  doit connaître les latches antérieurs même sans capture RAM sur ces lignes.
+#  Usage : make_scroll_test.py <out.st> <8265|8264|off|336[_late|_clear|_word|_split]> [scroll=4]
 #  Oracle : tools/hatari_oracle.sh <tos> <out.st> 400 380 out.png ste
 #
 #  Le 68000 est BIG-ENDIAN : mots assemblés octet par octet. Secteur de boot
@@ -52,10 +58,12 @@ elif '8264' in out:
     mode = '8264'
 elif '8265' in out:
     mode = '8265'
+elif '336' in out:
+    mode = next((m for m in ('336_late', '336_clear', '336_word', '336_split') if m in out), '336')
 else:
     mode = 'off'
 scroll = int(sys.argv[3]) if len(sys.argv) > 3 else 4
-assert mode in ('8265', '8264', 'off')
+assert mode in ('8265', '8264', 'off', '336', '336_late', '336_clear', '336_word', '336_split')
 assert 0 <= scroll <= 15
 
 # bra.s code (saute le BPB)
@@ -90,15 +98,47 @@ if mode == '8265':
     w(0x11FC, scroll, 0x8265)     # move.b #scroll,$8265.w  (avec prefetch)
 elif mode == '8264':
     w(0x11FC, scroll, 0x8264)     # move.b #scroll,$8264.w  (sans prefetch)
+elif mode.startswith('336') and mode != '336_split':
+    assert scroll > 0, 'le latch 336 exige $FF8265 > 0'
+    if mode == '336_word':
+        w(0x31FC, scroll, 0x8264) # move.w #scroll,$8264.w (haut=0, bas>0)
+    else:
+        w(0x11FC, scroll, 0x8265)
+    if mode == '336_late':
+        for _ in range(12):
+            w(0x4E71)            # 48 cycles : hors fenêtre Hatari de 40 cycles
+    w(0x4238, 0x8264)             # clr.b $8264.w → latch +16 pixels
+    if mode == '336_clear':
+        w(0x4238, 0x8265)         # toute nouvelle écriture annule le latch
 
-label('halt')
-bra_s('halt')                     # bra.s * (image statique)
+if mode == '336_split':
+    w(0x4238, 0xFA07, 0x4238, 0xFA09)  # IRQ MFP coupées (IERA/B)
+    w(0x43FA)                    # lea vbl(pc),a1
+    fixups.append((len(code), 'vbl')); w(0)
+    w(0x21C9, 0x0070)            # move.l a1,$70.w
+    label('idle')
+    w(0x4E72, 0x2300)            # STOP : ancrage VBL indépendant du boot
+    bra_s('idle')
+    label('vbl')
+    w(0x4238, 0x8265)            # moitié haute normale
+    label('wait_middle')
+    w(0x0C38, 0x0040, 0x8207)    # cmpi.b #$40,$8207.w (adresse vidéo >=$024000)
+    fixups.append((len(code), 'wait_middle')); w(0x6500)  # bcs.s
+    w(0x11FC, scroll, 0x8265, 0x4238, 0x8264)
+    label('wait_palette')
+    w(0x0C38, 0x0060, 0x8207)    # première palette seulement après l'adresse $026000
+    fixups.append((len(code), 'wait_palette')); w(0x6500)
+    w(0x31FC, 0x0777, 0x8242)    # force un replay des lignes déjà committées
+    w(0x4E73)                    # rte
+else:
+    label('halt')
+    bra_s('halt')                # bra.s * (image statique)
 
 # ---- fixups ----
 for off, name in fixups:
     target = labels[name]
     op = code[off]
-    if op == 0x60:                                  # bra.s : disp 8 bits
+    if 0x60 <= op <= 0x6F:                          # bcc.s : disp 8 bits
         disp = target - (off + 2)
         assert -128 <= disp <= 127
         code[off + 1] = disp & 0xFF

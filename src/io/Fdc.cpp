@@ -674,6 +674,8 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     if (decodeMsa(raw, conv)) {
         dk.image = std::move(conv);
         dk.imgFormat = FloppyDisk::FMT_MSA;
+        dk.msaSpt = (raw[2] << 8) | raw[3];
+        dk.msaSides = ((raw[4] << 8) | raw[5]) + 1;
         std::fprintf(stderr, "[FDC] .msa image decompressed: %s\n", path.c_str());
     } else if (decodeDim(raw, conv)) {
         dk.image = std::move(conv);
@@ -710,12 +712,7 @@ bool Fdc::loadImage(const std::string& path, int drive) {
 
     // Géométrie : BPB recoupé avec la taille réelle de l'image (cf. Hatari
     // Floppy_FindDiskDetails) — le BPB seul est souvent faux sur les cracks.
-    {
-        int spt = dk.spt, sides = dk.sides;
-        findDiskDetails(dk.image, spt, sides);
-        if (spt   >= 1 && spt   <= 48) dk.spt   = spt;
-        if (sides >= 1 && sides <= 2)  dk.sides = sides;
-    }
+    refreshImageGeometry(dk);
     dk.path = path;
 
     // Changement de média à chaud (cf. Hatari Floppy_DriveTransitionSetState) :
@@ -808,9 +805,9 @@ void Fdc::reset(bool cold) {
     indexTime_    = 0;
 
     // DMA : statut « pas d'erreur, compteur 0 », mode 0, FIFO et tampon vidés.
+    dmaError_ = false;             // FDC_Reset force Status=1, à froid ET à chaud
     dmaResetFifo();
     dmaMode_ = 0;
-    dmaBytesToTransfer_ = 0;
     bufferReset();
 
     // Une commande datée en vol ne doit pas survivre au reset (sinon la machine à
@@ -818,6 +815,7 @@ void Fdc::reset(bool cold) {
     if (sched_) {
         sched_->cancel(Scheduler::FDC);
         sched_->cancel(Scheduler::FDC_INDEX);
+        sched_->cancel(Scheduler::ACSI_IRQ);
     }
 }
 
@@ -836,6 +834,14 @@ int Fdc::selectedDrive() const {
     if ((psg_.regs_[14] & 0x02) == 0) d = 0;        // A prioritaire si les deux
     else if ((psg_.regs_[14] & 0x04) == 0) d = 1;
     return (d >= 0 && !driveEnabled_[d]) ? -1 : d;
+}
+
+void Fdc::refreshImageGeometry(FloppyDisk& dk) {
+    if (dk.imgType != FloppyDisk::IMG_ST) return;
+    int spt = dk.spt, sides = dk.sides;
+    findDiskDetails(dk.image, spt, sides);
+    if (spt   >= 1 && spt   <= 48) dk.spt   = spt;
+    if (sides >= 1 && sides <= 2)  dk.sides = sides;
 }
 
 int Fdc::sidesPerDisk(int drive) const {
@@ -1103,6 +1109,13 @@ void Fdc::fdcClearIrq() {
     }
 }
 
+void Fdc::clearHdcIrq() {
+    // FDC_ClearHdcIRQ : la ligne GPIP5 est partagée avec le WD1772. Ne pas
+    // effacer une IRQ disquette en acquittant seulement le contrôleur ACSI.
+    irqSignal_ &= ~IRQ_HDC;
+    if (irqSignal_ == 0) setIntrqLine(false);
+}
+
 // =============================================================================
 //  Tampon FDC↔DMA et FIFO 16 octets.
 // =============================================================================
@@ -1209,8 +1222,25 @@ void Fdc::dmaResetFifo() {
     fifoSize_ = 0;
     dmaBytesInSector_ = 512;
     dmaSectorCount_ = 0;            // après reset, compteur = 0 (vérifié sur STF réel)
-    dmaError_ = false;
+    dmaBytesToTransfer_ = 0;        // interrompt aussi la boucle WRITE SECTOR/TRACK
+    // FDC_ResetDMA conserve Status : seul un transfert suivant actualise l'erreur,
+    // ou un reset matériel FDC_Reset la remet à « pas d'erreur ».
     acsi_.resetCommand();          // purge le statut ACSI (le paquet en vol continue)
+}
+
+void Fdc::writeDmaAddressByte(uint32_t addr, uint8_t value) {
+    const unsigned shift = (0x0D - (addr & 0x0F)) * 4; // $09/$0B/$0D : 16/8/0
+    const uint32_t old = dmaAddr_;
+    uint32_t address = (old & ~(0xFFu << shift)) | (uint32_t(value) << shift);
+    // FDC_DmaAddress_WriteByte : le compteur STF (ST et Mega ST) propage
+    // une retenue si bit7 ou bit15 tombe, même lors d'une écriture CPU.
+    // Tester AVANT la retenue et le masque ; le else-if évite de compter deux
+    // fois le débordement de l'octet médian provoqué par la retenue du bas.
+    if (bus_.machine == MachineType::St || bus_.machine == MachineType::MegaSt) {
+        if ((old & 0x80) && !(address & 0x80)) address += 0x100;
+        else if ((old & 0x8000) && !(address & 0x8000)) address += 0x10000;
+    }
+    dmaAddr_ = address & dmaAddressMask(bus_.ram.size());
 }
 
 uint16_t Fdc::dmaStatusWord() const {
@@ -1219,6 +1249,15 @@ uint16_t Fdc::dmaStatusWord() const {
     if (dmaSectorCount_ != 0) s |= 0x2;   // bit1 = compteur de secteurs ≠ 0
     // Bits 3-15 = dernier accès $FF8604 (vérifié sur STF réel, cf. Hatari FDC_DmaStatus_ReadWord).
     return uint16_t(s | (ff8604recent_ & 0xfff8));
+}
+
+void Fdc::registerWait() {
+    // Hatari M68000_WaitState(4) ajoute des cycles CPU, avant l'action du
+    // registre. addBusWaitCycles reçoit des cycles BUS : 4 à 8 MHz, 2 à 16 MHz.
+    // Cette conversion suit la source, sans prétendre à une mesure Mega STE.
+    // Les lectures d'observation hors opcode ne font pas avancer la machine.
+    if (bus_.cpu && bus_.cpu->inRun())
+        bus_.cpu->addBusWaitCycles(bus_.cpu->megaSte16Mhz() ? 2 : 4);
 }
 
 // =============================================================================
@@ -1253,6 +1292,11 @@ uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size
     const uint64_t off = lsnOffset(track, side, sector, dk.spt, dk.sides);
     if (size >= 0 && off + uint64_t(size) <= dk.image.size()) {
         for (int i = 0; i < size; ++i) dk.image[off + i] = bufferReadBytePos(i);
+        // Hatari Floppy_Read/WriteSectors et FDC_Get* relisent le BPB à chaque
+        // accès. Le cache NeoST doit donc être invalidé dès que le boot change,
+        // avant le prochain secteur (y compris au sein d'une commande multiple).
+        // L'offset de l'écriture courante vient encore de l'ANCIENNE géométrie.
+        if (off == 0) refreshImageGeometry(dk);
         writeBack(dk, off, uint64_t(size));   // Flopwr : recopie dans le .st
         return 0;
     }
@@ -1322,7 +1366,7 @@ uint8_t Fdc::writeTrackBuffer() {
     const int n = bufferSize();
 
     // 1re passe : extraire tous les secteurs du flux, sans rien écrire.
-    struct Found { uint8_t tr, sd, sec; int dataPos; };
+    struct Found { int dataPos; uint64_t offset; };
     std::vector<Found> found;
     for (int i = 0; i + 6 < n; ) {
         if (buf_[i] != 0xFE) { ++i; continue; }                // IDAM : champ d'adresse
@@ -1333,18 +1377,22 @@ uint8_t Fdc::writeTrackBuffer() {
         if ((len & 3) != SECTOR_SIZE_512) return STR_LOST;     // seule la taille 512 o est standard
         if (sec < 1 || sec > dk.spt)      return STR_LOST;     // secteur hors géométrie
         if (sd >= dk.sides || tr >= tracksPerDisk(driveSel_)) return STR_LOST;
-        found.push_back({tr, sd, sec, k + 1});
+        found.push_back({k + 1, lsnOffset(tr, sd, sec, dk.spt, dk.sides)});
         i = k + 1 + 512;
     }
     if (int(found.size()) != dk.spt) return STR_LOST;          // piste incomplète / surnuméraire
 
     // 2de passe : géométrie standard confirmée → écriture des secteurs.
     for (const Found& f : found) {
-        const uint64_t off = lsnOffset(f.tr, f.sd, f.sec, dk.spt, dk.sides);
+        const uint64_t off = f.offset;
         if (off + 512u > dk.image.size()) return STR_LOST;     // garde-fou (ne devrait pas arriver)
         for (int j = 0; j < 512; ++j) dk.image[off + j] = buf_[f.dataPos + j];
-        writeBack(dk, off, 512u);
     }
+    // WRITE TRACK est un transfert unique : ses offsets restent ceux validés
+    // avant l'écriture. Les commandes suivantes voient ensuite le nouveau BPB.
+    for (const Found& f : found)
+        if (f.offset == 0) { refreshImageGeometry(dk); break; }
+    for (const Found& f : found) writeBack(dk, f.offset, 512u);
     return 0;
 }
 
@@ -1363,7 +1411,12 @@ void Fdc::writeBack(FloppyDisk& dk, uint64_t off, uint64_t len) {
         // « write-through » que NeoST applique déjà aux .st (Hatari, lui, ne sauve
         // qu'à l'éjection — une coupure y perd la partie sauvegardée).
         std::vector<uint8_t> enc;
-        if (!encodeMsa(dk.image, dk.spt, dk.sides, enc)) {
+        // Préférer la géométrie BPB courante, comme MSA_WriteDisk. Si elle n'est
+        // pas représentable (ex. 720 Ko, 9 spt, 1 face → 160 pistes), conserver
+        // le découpage du conteneur monté : les mêmes octets bruts, BPB compris,
+        // sont préservés sans produire une MSA que decodeMsa refuserait ensuite.
+        if (!encodeMsa(dk.image, dk.spt, dk.sides, enc)
+            && !encodeMsa(dk.image, dk.msaSpt, dk.msaSides, enc)) {
             std::fprintf(stderr, "[FDC] %s: cannot re-encode .msa (geometry "
                                  "%d spt x %d sides incompatible with %zu B) — "
                                  "write NOT persisted\n",
@@ -1410,8 +1463,8 @@ void Fdc::writeBack(FloppyDisk& dk, uint64_t off, uint64_t len) {
     // .ST brut, et .DIM dont seul l'en-tête de 32 o décale les données : écriture
     // partielle in situ. L'en-tête .dim déjà présent dans le fichier est PRÉSERVÉ tel
     // quel — c'est aussi ce que fait Hatari, qui relit l'ancien en-tête pour ne pas
-    // perdre ses champs non documentés (dim.c:134-149) ; la géométrie, elle, ne change
-    // pas en cours de session.
+    // perdre ses champs non documentés (dim.c:134-149). Cet en-tête du conteneur
+    // reste distinct du BPB invité modifiable dans le secteur de boot.
     const uint64_t fileOff = off + (dk.imgFormat == FloppyDisk::FMT_DIM ? 32u : 0u);
     std::fstream f(dk.path, std::ios::binary | std::ios::in | std::ios::out);
     if (!f) {                        // image en lecture seule / FS virtuel non inscriptible
@@ -2580,11 +2633,15 @@ uint8_t Fdc::read8(uint32_t addr) {
             return 0;
         case 0x5:                                    // data, octet bas
             if (dmaMode_ & DMA_SCREG) return uint8_t(ff8604recent_);
+            registerWait(); // FDC/HDC seulement ; lecture SCREG sans attente
             if (dmaMode_ & DMA_CSACSI) { const uint8_t v = acsi_.status(); noteFf8604(v); return v; }
+            refreshDriveSide();
+            // FDC_UpdateAll précède TOUS les registres WD1772, pas seulement STR.
+            // L'horloge live peut franchir un index pendant l'instruction CPU,
+            // avant que le Scheduler ait dispatché son prochain événement FDC.
+            indexCheckUpdate();
             switch (dmaMode_ & (DMA_A1 | DMA_A0)) {
                 case 0: {             // FDC_CS : registre de statut
-                    refreshDriveSide();
-                    indexCheckUpdate();
                     // Pour un statut type I, certains bits sont mis à jour en temps réel
                     // d'après les signaux (TR00, INDEX, WPRT). Sinon, on renvoie STR tel quel.
                     if (statusTypeI_) {
@@ -2625,8 +2682,12 @@ uint8_t Fdc::read8(uint32_t addr) {
         case 0xD: return uint8_t(dmaAddr_);
         // $FF860E : mot de densité (Mega STE/TT) — bit1 densité (0=DD, 1=HD),
         // bit0 fréquence FDC. TOS y écrit 0x0003 pour le mode HD.
-        case 0xE: return uint8_t(densityMode_ >> 8);
-        case 0xF: return uint8_t(densityMode_);
+        case 0xE:
+            // Hatari accepte aussi les octets sur la densité (Mega STE câblé
+            // par le Bus). Un mot ne facture qu'à son dernier octet $860F.
+            if (bus_.ioAccessWidth() == 1) registerWait();
+            return uint8_t(densityMode_ >> 8);
+        case 0xF: registerWait(); return uint8_t(densityMode_);
         default:  return 0xFF;
     }
 }
@@ -2641,15 +2702,21 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
     switch (addr & 0xF) {
         case 0x4: dataHi_ = v; return;               // data, octet haut (latch)
         case 0x5:                                    // data, octet bas → action
+            registerWait(); // écriture $8604 : SCREG, FDC et HDC attendent tous
             // SCREG AVANT le stockage de ff8604recent_ : Hatari retourne sans le
             // mettre à jour (fdc.c:4695-4703, store à :4702 seulement après) — le
             // compteur de secteurs reste NON relisible via les bits rémanents.
             if (dmaMode_ & DMA_SCREG)  { dmaSectorCount_ = uint16_t(((dataHi_ << 8) | v) & 0xff); return; }
             ff8604recent_ = uint16_t((ff8604recent_ & 0xff00) | v);
             if (dmaMode_ & DMA_CSACSI) { writeAcsi(addr, v); return; }   // disque dur ACSI
+            refreshDriveSide();
+            // Même ordre que FDC_DiskController_WriteWord : émettre d'abord un
+            // index échu, puis accepter/ignorer la commande ou modifier TR/SR/DR.
+            // Une nouvelle commande peut effacer INTRQ, mais son front a déjà
+            // été capturé par le MFP (IRQ index de la commande précédente).
+            indexCheckUpdate();
             switch (dmaMode_ & (DMA_A1 | DMA_A0)) {
                 case 0: {                            // FDC_CS : commande
-                    refreshDriveSide();
                     if (str_ & STR_BUSY) {           // FDC occupé : seuls force-int / remplacement
                         const uint8_t tn = cmdType(v);
                         const bool ok = (tn == 4)
@@ -2666,6 +2733,7 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
             }
         case 0x6: ctrlHi_ = v; return;               // control, octet haut (latch)
         case 0x7: {                                  // control, octet bas
+            registerWait(); // écriture $8606 seulement ; lecture statut sans attente
             const uint16_t prev = dmaMode_;
             dmaMode_ = uint16_t((ctrlHi_ << 8) | v);
             if ((prev ^ dmaMode_) & 0x0100) dmaResetFifo();  // bascule du bit 8 → reset DMA
@@ -2675,22 +2743,15 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
                 acsiDmaTransfer();
             return;
         }
-        case 0x9:
-            dmaAddr_ = (dmaAddr_ & 0x00FFFFu) | (uint32_t(v) << 16);
-            dmaAddr_ &= dmaAddressMask(bus_.ram.size());   // FDC_WriteDMAAddress
-            return;
-        case 0xB:
-            dmaAddr_ = (dmaAddr_ & 0xFF00FFu) | (uint32_t(v) << 8);
-            dmaAddr_ &= dmaAddressMask(bus_.ram.size());
-            return;
-        case 0xD:
-            dmaAddr_ = (dmaAddr_ & 0xFFFF00u) | uint32_t(v);
-            dmaAddr_ &= dmaAddressMask(bus_.ram.size());
-            return;
+        case 0x9: case 0xB: case 0xD: writeDmaAddressByte(addr, v); return;
         // $FF860E : mot de densité (cf. read8) — seuls les bits 0-1 comptent
         // pour la porte canHandleDensity().
-        case 0xE: densityMode_ = uint16_t((densityMode_ & 0x00FF) | (uint32_t(v) << 8)); return;
-        case 0xF: densityMode_ = uint16_t((densityMode_ & 0xFF00) | v); return;
+        case 0xE:
+            if (bus_.ioAccessWidth() == 1) registerWait();
+            densityMode_ = uint16_t((densityMode_ & 0x00FF) | (uint32_t(v) << 8)); return;
+        case 0xF:
+            registerWait();
+            densityMode_ = uint16_t((densityMode_ & 0xFF00) | v); return;
         default:  return;
     }
 }
@@ -2706,8 +2767,7 @@ void Fdc::writeAcsi(uint32_t /*addr*/, uint8_t v) {
     // Port de FDC_ClearHdcIRQ (fdc.c) : n'efface QUE la source HDC — la ligne
     // INTRQ est partagée avec le FDC, la rabaisser inconditionnellement perdrait
     // une IRQ disquette encore pendante (elle est réarmée si l'octet est accepté).
-    irqSignal_ &= ~IRQ_HDC;
-    if (irqSignal_ == 0) setIntrqLine(false);
+    clearHdcIrq();
     // La broche A1 de l'ACSI est câblée sur le bit de contrôle DMA_A0 (0x02) : 0 pour le
     // 1er octet du paquet (sélection cible + opcode), 1 pour les octets suivants. On
     // ignore A1 pour le 2e octet (byteCount==1), comme le vrai matériel (pilotes bogués).
@@ -2775,6 +2835,24 @@ void Fdc::dmaFixtureTransfer(bool toFixture) {
     fdcSetIrq(IRQ_HDC);                              // IRQ GPIP5 de fin de transfert
 }
 
+// Port de HDC_ACSI_InterruptHandler_Update : le Scheduler consomme l'échéance
+// avant ce callback. Une nouvelle commande n'annule pas cette fin différée.
+void Fdc::onAcsiIrq() {
+    fdcSetIrq(IRQ_HDC);
+}
+
+void Fdc::onCpuSpeedChange(bool was16Mhz, bool is16Mhz) {
+    if (!sched_ || bus_.machine != MachineType::MegaSte || was16Mhz == is16Mhz) return;
+    const int64_t remaining = sched_->rawCyclesUntil(Scheduler::ACSI_IRQ);
+    // Ni source inactive ni échéance déjà échue : ne jamais repousser une IRQ
+    // qui attend seulement le prochain dispatch. Hatari conserve les ticks CPU
+    // restants lors de la bascule ; seuls les cycles bus correspondants changent.
+    if (remaining <= 0) return;
+    // Une demi-période à 16 MHz est arrondie au cycle bus suivant.
+    const int64_t delay = is16Mhz ? (remaining + 1) / 2 : remaining * 2;
+    sched_->schedule(Scheduler::ACSI_IRQ, nowCyc() + delay);
+}
+
 // Transfert DMA RAM↔image (port de Acsi_DmaTransfer). dmaMode_/dmaAddr_ sont à nous.
 void Fdc::acsiDmaTransfer() {
     if ((dmaMode_ & 0xC0) != 0x00 || acsi_.dataLen() == 0) return;   // pas un DMA ACSI / rien à faire
@@ -2802,5 +2880,13 @@ void Fdc::acsiDmaTransfer() {
     // dmaError_ (« erreur ») = l'erreur ACSI telle quelle. L'ancien `!` inversé
     // rapportait une erreur DMA après chaque transfert RÉUSSI.
     dmaError_ = acsi_.dmaError() || !rangeOk;
-    fdcSetIrq(IRQ_HDC);                  // IRQ HDC de fin de transfert (FDC_SetIRQ)
+    // Hatari hdc.c:ACSI_TRANSFER_MIN_CYCLES : la copie reste immédiate, mais
+    // Idris OS attend un délai avant l'IRQ de fin. 1000 cycles CPU est
+    // l'approximation fixe d'Hatari, pas une durée physique mesurée du bus ACSI.
+    // Le Scheduler compte des cycles BUS à 8 MHz : 1000 cycles CPU correspondent
+    // à 500 cycles bus sur Mega STE à 16 MHz. fastFloppy_ ne change pas ce délai.
+    clearHdcIrq();
+    const bool fastCpu = bus_.machine == MachineType::MegaSte && (bus_.megaSteCacheCtrl & 2);
+    if (sched_) sched_->schedule(Scheduler::ACSI_IRQ, nowCyc() + (fastCpu ? 500 : 1000));
+    else onAcsiIrq();  // contrôleur isolé sans horloge : conserver la fin synchrone
 }

@@ -61,8 +61,9 @@ namespace {
     }
 }
 
-void Blitter::reset() {
+void Blitter::reset(bool cold) {
     for (auto& b : reg_) b = 0;
+    if (cold) std::fill(std::begin(ioRaw_), std::end(ioRaw_), 0);
     buffer_ = 0; busWord_ = 0; yLatch_ = 0;
     midBlit_ = false; haveFxsr_ = false; nfsrInt_ = false;
     haveSrc_ = false; haveDst_ = false; fetchSrc_ = false; dstWord_ = 0;
@@ -126,11 +127,24 @@ uint8_t Blitter::read8(uint32_t addr) {
     // $FF8A3E/$FF8A3F : zone void du blitter (Hatari ioMemTabSTE.c:199 = IoMem_VoidRead,
     // « No bus error here ») → lit 0xFF, pas la case reg_ (qui valait 0x00).
     if (off >= 0x3E) return 0xFF;
+    if (off < 0x3A) {
+        // Le handler mot ne touche pas IoMem pour une lecture octet. En lecture
+        // mot/long, il rafraîchit TOUT son registre (4 octets pour src/dst_addr),
+        // même si le bus ne demande que la moitié de l'adresse.
+        if (bus_.ioAccessWidth() == 1) return ioRaw_[off];
+        const uint32_t first = (off >= 0x24 && off < 0x28) ? 0x24
+                             : (off >= 0x32 && off < 0x36) ? 0x32 : off & ~1u;
+        const uint32_t size = (first == 0x24 || first == 0x32) ? 4 : 2;
+        std::copy(reg_ + first, reg_ + first + size, ioRaw_ + first);
+    }
     return reg_[off];
 }
 
 void Blitter::write8(uint32_t addr, uint8_t v) {
     const uint32_t off = addr & 0x3F;
+    // IoMem_bput stocke l'octet AVANT Blitter_CheckAccess_Byte : l'écriture
+    // rejetée reste donc relisible sans modifier le registre matériel.
+    if (off < 0x3A) { ioRaw_[off] = v; return; }
     // Accès OCTET valides UNIQUEMENT pour les registres 8 bits HOP/LOP/contrôle/
     // skew ($FF8A3A-$FF8A3D) ; un accès octet à un registre MOT (halftone RAM,
     // adresses, incréments, endmasks, compteurs : $FF8A00-$FF8A39) est IGNORÉ,
@@ -152,6 +166,25 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
     }
 }
 
+void Blitter::writeRegisters(uint32_t off, uint32_t value, unsigned bytes) {
+    // IoMem_wput/lput posent d'abord tous les octets bruts, puis chaque handler
+    // reconstruit son registre entier. Une écriture mot sur src/dst_addr doit
+    // donc reprendre l'autre moitié dans IoMem, y compris ses octets rejetés.
+    for (unsigned i = 0; i < bytes && off + i < 0x3E; ++i) {
+        const uint8_t v = uint8_t(value >> (8 * (bytes - 1 - i)));
+        if (off + i < 0x3A) ioRaw_[off + i] = v;
+        else reg_[off + i] = v & regWriteMask(off + i);
+    }
+    for (uint32_t pos = off; pos < off + bytes && pos < 0x3A; ) {
+        const uint32_t first = (pos >= 0x24 && pos < 0x28) ? 0x24
+                             : (pos >= 0x32 && pos < 0x36) ? 0x32 : pos & ~1u;
+        const uint32_t size = (first == 0x24 || first == 0x32) ? 4 : 2;
+        for (uint32_t i = first; i < first + size; ++i)
+            reg_[i] = ioRaw_[i] & regWriteMask(i);
+        pos = first + size;
+    }
+}
+
 // Écritures mot/long ATOMIQUES : on pose TOUS les octets, PUIS on démarre si le
 // registre contrôle ($FF8A3C, offset 0x3C) faisait partie de l'écriture et porte le
 // bit BUSY. Garantit que le skew ($FF8A3D) est en place avant le départ (cf.
@@ -159,8 +192,7 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
 // → plan 0 décalé par rapport aux plans 1-3 (franges de couleur).
 void Blitter::write16(uint32_t addr, uint16_t v) {
     const uint32_t off = addr & 0x3F;
-    reg_[off]              = uint8_t(v >> 8) & regWriteMask(off);
-    reg_[(off + 1) & 0x3F] = uint8_t(v)      & regWriteMask((off + 1) & 0x3F);
+    writeRegisters(off, v, 2);
     // X count ($FF8A36) : recharge x_count_reset latchée À CHAQUE écriture du
     // registre (Hatari Blitter_WordsPerLine_WriteWord, blitter.c:1338-1350) — pas
     // seulement au départ du blit. La règle 0→65536 est portée par la
@@ -181,10 +213,7 @@ void Blitter::write16(uint32_t addr, uint16_t v) {
 
 void Blitter::write32(uint32_t addr, uint32_t v) {
     const uint32_t off = addr & 0x3F;
-    reg_[off]              = uint8_t(v >> 24) & regWriteMask(off);
-    reg_[(off + 1) & 0x3F] = uint8_t(v >> 16) & regWriteMask((off + 1) & 0x3F);
-    reg_[(off + 2) & 0x3F] = uint8_t(v >> 8)  & regWriteMask((off + 2) & 0x3F);
-    reg_[(off + 3) & 0x3F] = uint8_t(v)       & regWriteMask((off + 3) & 0x3F);
+    writeRegisters(off, v, 4);
     // X count ($FF8A36) couvert par l'écriture longue → latch de x_count_reset
     // (cf. write16 / Hatari Blitter_WordsPerLine_WriteWord).
     if (off <= 0x36 && off + 3 >= 0x37)

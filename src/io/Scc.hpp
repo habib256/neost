@@ -11,8 +11,9 @@
 //  registre via WR0), commandes WR0/WR9, reset matériel/canal, RR0 (statut TX/RX +
 //  lignes), RR2 (vecteur + statut), RR3 (IP), sources d'interruption, IRQ niv5 +
 //  IACK vectorisé. TX immédiat (puits série, ou bouclage local interne si WR14 bit4=1,
-//  cf. note dans serialWriteByte) ; RX par injection externe. Non porté (faible valeur
-//  ici) : timers du BRG (Zero Count), baudrate temporisé, série hôte réelle.
+//  cf. note dans serialWriteByte) ; RX par injection externe.
+//  BRG cadencé et interruption Zero Count portés de Hatari. Restent : débit
+//  temporisé des octets TX/RX et série hôte réelle.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -21,6 +22,8 @@
 #include <functional>
 
 #include "core/StateArchive.hpp"
+#include "core/Scheduler.hpp"
+#include "core/Pacing.hpp"
 
 class Scc {
 public:
@@ -28,6 +31,10 @@ public:
 
     // Reset matériel complet (SCC_Reset). Appelé au reset machine.
     void reset();
+
+    // Horloge bus du Mega STE : callbacks SCC_BRG_A/B branchés par Machine.
+    void setScheduler(Scheduler* scheduler) { sched_ = scheduler; }
+    void onBrgEvent(int channel);
 
     // Accès MMIO $FF8C80-$FF8C87 (le 68000 y fait des mots ; seuls les octets
     // IMPAIRS portent un registre, les pairs lisent $FF / ignorent l'écriture).
@@ -62,6 +69,12 @@ public:
         // normalisation existe pour fermer.
         for (auto& ch : chn_) ar.fixBools(ch.rr0Latched, ch.txWritten, ch.tsrFull);
         ar(irqLine_); ar(ius_); ar(activeReg_);
+        for (int64_t& period : brgPeriod_) {
+            ar(period);
+            // SCC_Compute_BaudRate écrête le débit à 1 Hz : au plus une seconde.
+            ar.check((period == 0 || period >= 4) && period <= neost::pacing::kCpuHzInt,
+                     "Scc::BRG period out of range");
+        }
         // writeControl fait « ch.WR[activeReg_] = value » : un état forgé passant le CRC
         // écrirait hors du tableau WR[16] (même convention de garde qu'Acsi::serialize).
         ar.check(activeReg_ >= 0 && activeReg_ <= 15);
@@ -84,6 +97,8 @@ private:
     uint8_t irqLine_  = 1;     // 1 = OFF (haut), 0 = ON (bas)
     uint8_t ius_      = 0;     // Interrupt Under Service (mêmes bits que RR3 0-5)
     int     activeReg_ = 0;
+    int64_t brgPeriod_[2] = {0, 0};
+    Scheduler* sched_ = nullptr;  // câblage hôte, non sérialisé
     std::function<void(int, uint8_t)> sink_;
     bool    trace_ = false;
     bool    extLoopback_ = false;   // prises de bouclage Field Service branchées (cf. setLoopback)
@@ -118,6 +133,7 @@ private:
 
     void    copyTdrTsr(int chn, uint8_t tdr);
     void    processTX(int chn);
+    void    updateBrg(int channel);
 
     uint16_t getCTS(int chn) const;
     uint16_t getDCD(int chn) const;

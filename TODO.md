@@ -200,13 +200,15 @@ est continue, les trous sont du travail fait.
 - **A3 ◐ — Le corpus de régression n'est pas livrable — et depuis la purge du
   2026-08-30 il est LOCAL par construction** : jeux et ROM propriétaires ne sont plus
   suivis par git, chaque machine les restaure via `tools/private_assets.sh unpack`
-  (§ BLOQUANT). Recompté 2026-09-02 (pose de `dmasnd_poll`) : **15 étalons
-  pixel sur 19** survivent au retrait des TOS Atari (`etos_ste_boot`, `overscan_top`,
+  (§ BLOQUANT). Recompté 2026-10-18 (cinq variantes STE 336 px et deux VBlank) : **22 étalons
+  pixel sur 26** survivent au retrait des TOS Atari (`etos_ste_boot`, `overscan_top`,
   `trace_odd`, `scroll_8264`, `scroll_8265`, `blitter_timer`, `blitter_hog`, `mfp_poll`,
   plus `cuddly_demos`, `nocooper`, `nocooper_greetings` et `closure` migrés/posés sur
   EmuTOS, `spec512_bands` — l'étalon GÉNÉRÉ qui rend la couverture « palette en cours
   de ligne » —, `freq_switch`, l'exhibiteur généré de V3, et `dmasnd_poll`, celui de la
-  quantification HBL du refill FIFO son) ; les 4 restants sont le reliquat d'**A10**.
+  quantification HBL du refill FIFO son ; enfin `scroll_336`, `scroll_336_word`,
+  `scroll_336_late`, `scroll_336_clear`, `scroll_336_split`, `vblank_on` et `vblank_off`) ; les 4 restants
+  sont le reliquat d'**A10**.
 - **A9 ◐ — `main.cpp` : 5 100 → 28 lignes ; reste LA BOUCLE.** Fait le 2026-08-30
   (détail au `CHANGELOG.md`). `main()` tient en **10 lignes** — `appInit` → `appLoop`
   → `appShutdown` — et les **84 globaux `g_*` n'existent plus** : ils sont les membres
@@ -665,18 +667,20 @@ décroissant, par priorité d'impact :
    📌 Leçon : la borne « 157 cycles » qui justifiait ce chantier était une métrique
    (`Scheduler::timerMaxLate`, maximum sur toute la trace, boot compris), pas un écart de
    rendu — et l'inventaire l'a portée un an sans qu'on la confronte à une image.
-4. ◐ **[FPU]** ~~arrondis de conversion sortante~~ **FAITS le 2026-09-02** (double arrondi,
-   INEX2, mode FPCR en sortie, payload NaN — cf. § Roadmap / FPU, banc porté à 12 tests) ;
-   restent la précision FSGLMUL/FSGLDIV, le décimal empaqueté et FMOVECR/FMOD.
+4. ✅ **[FPU]** Arrondis de conversion sortante (2026-09-02), précision FPCR de
+   FMOVE/FABS/FNEG et FMOVECR, constantes indéfinies et décimal empaqueté (2026-10-18)
+   portés et comparés au moteur Hatari. FSGLMUL/FSGLDIV et FMOD étaient déjà portés.
+   Limites restantes : transcendantes en double hôte, k dynamique remplacé par 17
+   en mode périphérique ; détails et bancs reproductibles ci-dessous.
 5. **[BLITTER]** résidu BL5 : ~10 cyc par démarrage de blit + ~3,3 par reprise de tranche,
    **paradoxe de signe non levé** — cf. Garde-fous (aucune correction sans 3ᵉ mesure).
-6. **[VIDÉO, P3]** wakeup-state WS3 sous-pixel, mode 336 px STE (`bSteBorderFlag`), rendu
+6. **[VIDÉO, P3]** wakeup-state WS3 sous-pixel, rendu
    live du retrait bas, interfoliage blitter → `docs/CYCLE_ACCURACY.md` §4.
+   Le mode 336 px STE est porté le 2026-10-18, avec cinq étalons oracle dédiés.
 
-**Faisables sans oracle** : FPU packed decimal **bit-exact** (port de `softfloat_decimal.c`) —
-détaillé dans `docs/HATARI_DIVERGENCES.md`. ✅ Les deux points BORNÉS de cette puce sont faits
-le 2026-09-02 (±inf/NaN → exposant $FFF, OPERR si k > 17) ; INEX1 reste délibérément non posé
-tant que la conversion entrante passe par `strtod` — cf. § Roadmap / FPU. ✅ La **recomposition Unicode NFD→NFC (cible macOS)** est FAITE le
+**Portages achevés** : décimal empaqueté FPU (2026-10-18, comparaison au vrai
+`softfloat_decimal.c`), y compris INEX1 et k ≤ 0. La **recomposition Unicode NFD→NFC
+(cible macOS)** est faite le
 2026-09-02 : `neost::hostpath::precomposeUtf8`, branchée sur `matchHostDirEntry` et le listing
 Fsfirst. Le bug était réel et mesuré — sans elle, un fichier accentué écrit en NFD (ce que macOS
 rend à `readdir`) est INTROUVABLE depuis le TOS (vérifié par mutation sur APFS). Gardé à deux
@@ -719,15 +723,31 @@ densité HD/ED STX (NeoST plus cohérent) ; RTC en temps émulé (déterminisme 
   assumées (baril/vignette sur le buffer entier en kiosk ; GL 2.1 → passthrough).
 
 ### Stockage & contrôleurs
+- FDC : index synchronisé avant tous les accès WD1772 (2026-10-18). Le push PSG
+  lecteur/face était déjà porté ; gardes de sélection tardive et changement de face
+  ajoutées. Attentes des registres portées ; contention DMA et ancrage anti-dérive
+  étaient déjà présents (entrées périmées corrigées).
+- IKBD : délais de réponse firmware portés (valeurs centrales déterministes,
+  quantifiées en bits). Restent la phase SCI exacte, le transit CPU→IKBD et
+  l’autosend normal ; le taux de monitoring $17 est maintenant temporisé et
+  sauvegardé. Aucune validation de la démo Froggies complète ici.
 - **SCSI / NCR5380** — TT/Falcon **uniquement** (le MegaSTE n'en a pas). Hors périmètre,
   non commencé. Réf. `ncr5380.c`.
-- SCC : restes faible valeur — timers du BRG / Zero Count, baudrate temporisé, série hôte.
+- SCC : BRG / Zero Count porté le 2026-10-18 (deux canaux, IRQ, phase sauvegardée).
+  Miroirs RR6/RR7 et câblage après changement de profil corrigés le même jour.
+  Restent la cadence TX/RX, la FIFO SDLC et la série hôte.
+- ACSI : délai de fin DMA porté le 2026-10-18, 1 000 cycles CPU comme Hatari ;
+  acquittement des octets de commande conservé. Aucun essai Idris OS effectué.
 - ⭘ **Test F (disquette) de la cartouche STE_Test v1.9 : « Cannot write drive A/B »,
   drives vus SS** (pré-existant au chantier MegaSTE ; le test F du diagnostic MegaSTE,
   lui, PASSE avec le même FDC émulé — la cartouche STE détecte les faces/l'écriture
   autrement). Trace façon FDC + Hatari en oracle sur la même cartouche. _Valeur moyenne._
+  Passe du 2026-10-18 : cartouche absente, donc diagnostic toujours ouvert. Un
+  défaut distinct est corrigé : la géométrie BPB était figée au montage, même
+  après réécriture du boot. Régression DMA et persistance MSA gardées ; aucun
+  lien causal établi avec le test F.
 
-### FPU MC68881 (audit 2026-07-12 — différés)
+### FPU MC68881 (audit 2026-07-12 — actualisé le 2026-10-18)
 - ✅ **Arrondis de conversion SORTANTE bit-exacts — FAIT le 2026-09-02.**
   `floatx80_to_int32/16/8` et `floatx80_to_float32/64` (+ leurs `roundAndPack*`) sont portés
   dans `src/io/SoftFloatX80.hpp` (`sf::toInt`, `sf::toFloat32/64`) et `Fpu::encodeFmt` ne
@@ -747,28 +767,30 @@ densité HD/ED STX (NeoST plus cohérent) ; RTC en temps émulé (déterminisme 
   invisibles du palier tant qu'on ne l'avait pas re-commise. Et une ROM `rom_generate`
   manquante était classée « TOS Atari absent » donc SKIP (vert sans rien exécuter) : garde
   corrigée dans `tools/run_selftests.py`.
-  **Reste sur cette puce** : FSGLMUL/FSGLDIV (plage d'exposant ÉTENDUE avec mantisse 24 bits
-  → porter `roundSigAndPackFloatx80`, softfloat.c:1502) — non touché.
-- ◐ **Packed decimal — 2 des 3 points FAITS le 2026-09-02.**
-  ✅ **±inf/NaN → exposant $FFF** : le 68881 n'émet pas de BCD pour un infini ou un NaN, il
-  recopie le motif étendu (≙ `fp_from_pack`, fpp_softfloat.c:702). NeoST tombait dans son
-  `snprintf("%+.*e")`, où la libc rend « +inf » et où le parseur BCD tirait des chiffres
-  ARBITRAIRES de « inf ». Le payload d'un NaN traverse désormais intact (vérifié).
-  ✅ **OPERR si k > 17** (≙ softfloat_decimal.c:412-414) : l'écrêtage à 17 se faisait EN
-  SILENCE. Ne vise que le k positif — un k négatif sélectionne le style point fixe.
-  Gardés par les tests 13 et 14 du banc (`make_fpu_testrom.py`, 12 → 14 tests), chacun
-  vérifié par mutation.
-  ⏸ **INEX1 : DÉLIBÉRÉMENT NON FAIT**, et la raison n'est pas le temps. Chez Hatari le
-  drapeau est `float_flag_decimal` → `FPSR_INEX1` (fpp_softfloat.c:100), et il est armé sur
-  la direction **décimal → étendu** (`floatdecimal_to_floatx80`, softfloat_decimal.c:369),
-  pas sur la sortie. Or NeoST approxime cette direction par `std::strtod` (53 bits pour
-  17 chiffres décimaux) : on ne SAIT pas quand la conversion a été exacte. Poser le drapeau
-  à l'estime serait pire que ne pas l'avoir — un programme qui teste INEX1 se fierait à une
-  information parfois fausse. Le débloquer demande le vrai `floatdecimal_to_floatx80`.
-  **Reste donc** : port de `softfloat_decimal.c` (génération de chiffres bit-exacte,
-  direction entrante, style point fixe k ≤ 0), qui livrerait INEX1 au passage.
-- FMOVECR : précision FPCR non appliquée après la table ; offsets indéfinis → table silicium
-  (`fpp_cr_undef`) au lieu de 0.0. FMOD précision < étendu : ré-arrondir a (expDiff<−1).
+  **FSGLMUL/FSGLDIV : déjà portés, revalidés le 2026-10-18.** `roundSigAndPack`
+  conserve la plage d'exposant ÉTENDUE avec une mantisse 24 bits. Les nouveaux tests
+  CIR gardent les grands exposants, l'arrondi, les NaN et les dénormalisés ; la mention
+  « reste à porter » était périmée.
+- ✅ **Décimal empaqueté — port bit-exact (2026-10-18).**
+  `src/io/SoftFloatDecimal.hpp` reprend `softfloat_decimal.c` et les wrappers
+  `fp_to_pack/from_pack` d'Hatari : 17 chiffres, quatre arrondis, exposants étendus,
+  k positif ou ≤ 0, NaN/SNaN, INEX1 entrant et INEX2 sortant. Les exceptions de
+  conversion survivent à l'opération et sont livrables par le Response CIR.
+  Les zéros sont protégés avant normalisation. Les étendus non canoniques en
+  sortie P produisent OPERR+NaN : garde volontaire là où l'oracle peut faire un
+  décalage indéfini. Le k dynamique reste fixé à 17 (registre CPU Dn inaccessible).
+- ✅ **FMOVECR — précision FPCR et offsets indéfinis (2026-10-18).** Table silicium
+  `fpp_cr_undef`, ajustements de mantisse et codes de condition portés ; 2 048
+  combinaisons CIR comparées au véritable `fpu_get_constant` d'Hatari.
+  FMOD à précision réduite était déjà porté et reçoit un test CIR dédié.
+- ✅ **FMOVE/FABS/FNEG — précision FPCR (2026-10-18).** Port de
+  `floatx80_move/abs/neg`, avec limites d'exposant simple/double, NaN/SNaN et
+  exceptions ; 1 443 cas comparés au véritable SoftFloat d'Hatari. Le mutant
+  qui rétablit le comportement précédent provoque 507 échecs.
+
+- **Limites restantes** : transcendantes en double hôte ; k dynamique non transmis
+  par le dialogue périphérique actuel. Les bancs comparent les opérations au moteur
+  Hatari ; ils ne constituent pas une mesure sur un 68881 physique.
 
 ### Périphériques & profils machine
 - **A13 — Save-states × GEMDOS HD** : les handles fichiers hôtes ouverts / suivi Pexec de

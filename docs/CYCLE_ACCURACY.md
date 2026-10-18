@@ -111,7 +111,7 @@ sévérité + `fichier:ligne` des deux côtés dans
 | **P1** | Rendu live du retrait BAS + lignes EMPTY/BLANK/NO_DE | moyen | scroller bordure basse Cuddly |
 | **P2** | Blitter : interfoliage `CycInt_Process` par accès bus + `cpu_bus_rmw` (le partage 64/64 est PORTÉ) | moyen | démos CPU+blitter simultanés |
 | **P2** | Son DMA STE : quantification HBL du refill à confronter à l'oracle (compteur live et FIFO PORTÉS) | moyen | STE_Test, sync zik/raster |
-| **P2** | Restes vidéo : `VIDEO_ENDLINE`, VBL au cycle exact, phase Timer C, mode 336 px STE | moyen | démos fullscreen, Obsession |
+| **P2** | Restes vidéo : `VIDEO_ENDLINE`, VBL au cycle exact, phase Timer C | moyen | démos fullscreen |
 | **P3** | Wakeup states WS1-4, branche STE de la Glue, overscan med-res NO_SYNC | élevé | démos « extrêmes » (Closure…) |
 | **P3** | Unité interne ×256, fréquences exactes centralisées | faible | dérive long terme |
 
@@ -139,9 +139,12 @@ elle reste un outil d'A/B, pas un chantier.
 
 ### P1 — Registres vidéo STE : 2 restes
 
-- **`bSteBorderFlag` / mode 336 px** (`video.c:530`) : combo `$FF8265>0` puis `$FF8264=0`
-  → 16 px de plus à gauche (prefetch sans scroll). Absent. *Effort moyen.* Étalon : Obsession,
-  Pacemaker.
+- ✅ **`bSteBorderFlag` / mode 336 px (2026-10-18)** : combo `$FF8265>0` puis
+  `$FF8264=0` dans les 40 cycles de la même VBL → 16 px de plus à gauche et
+  8 octets supplémentaires par ligne. Latch persistant, écriture différée, compteur
+  vidéo et re-rendu par ligne portés. Cinq étalons générés `scroll_336*` couvrent
+  activation octet/mot, délai dépassé, annulation et activation mi-écran suivie d'une
+  palette tardive. Obsession et Pacemaker n'ont pas été rejoués dans cette passe.
 - **`RestartVideoCounter` ligne 310/260** : ✅ **PORTÉ (2026-07-02)** — événement
   `Scheduler::VC_RESTART` (`src/core/Machine.cpp:319-323` callback, `:386-390` planification).
   Reste couplé à la géométrie par-ligne (V3) pour les bascules 50/60 Hz en cours de trame :

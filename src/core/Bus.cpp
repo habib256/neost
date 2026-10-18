@@ -859,8 +859,14 @@ void Bus::wrPsg(uint32_t a, uint8_t v) {
     psg->write8(a, v);
 }
 
-uint8_t Bus::rdFdc(uint32_t a) { return fdc->read8(a); }   // disquette + DMA ($FF8600)
+uint8_t Bus::rdFdc(uint32_t a) {
+    // Le registre de densité est câblé seulement sur Mega STE (ioMem.c).
+    // Ailleurs, les octets autorisés par la carte des bus errors sont void.
+    if (a >= 0xFF860E && machine != MachineType::MegaSte) return 0xFF;
+    return fdc->read8(a);
+}
 void    Bus::wrFdc(uint32_t a, uint8_t v) {
+    if (a >= 0xFF860E && machine != MachineType::MegaSte) return;
     fdc->write8(a, v);
     if (cpu) cpu->updateIpl();            // l'INTRQ FDC (GPIP5) a pu changer
 }
@@ -989,6 +995,9 @@ void Bus::wrMsteCtl(uint32_t, uint8_t v) {
     // MegaSTE_CPU_Cache_Update) : cache désactivé → invalidation complète ; bit1 →
     // bascule du débit cycles 8/16 MHz du cœur CPU.
     if ((v & 0x02) == 0 && (v & 0x01)) v &= 0xFE;   // cache impossible à 8 MHz
+    // L'ACSI compte son délai en cycles CPU, le Scheduler en cycles bus 8 MHz.
+    // Conserver le nombre de cycles CPU restants lors d'une bascule 8/16 MHz.
+    if (fdc) fdc->onCpuSpeedChange((megaSteCacheCtrl & 2) != 0, (v & 2) != 0);
     megaSteCacheCtrl = v;
     if ((v & 0x01) == 0) megaSteCacheFlush();
     if (cpu) cpu->setMegaSteSpeed((v & 0x02) != 0);

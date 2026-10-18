@@ -55,12 +55,12 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | memory.c:676-896 (SysMem_*) | Bus.cpp:388-400 + Blitter.cpp:74 | porté | Écriture $0-$7 et user <$800 fautent (CPU) ; blitter ignore sans fauter. |
 | memory.c:899-926 (VoidMem → regs.db) | Bus.hpp:200-206 + Bus.cpp:210-216 (cpuDb) | porté | Latch CPU seulement (fetches vidéo/DMA exclus). |
 | memory.c:1022-1076 + cart.c:117 (ROMmem, fenêtres) | Bus.hpp:129-136 + Bus.cpp:219-238, 388-392 | porté | Cartouche vide = 0xFF exactement cart.c:117 (le faux positif de la 2ᵉ passe est clos). |
-| memory.c:1622-1631 (carve-out void $40000-$7FFFF si MMU 128K/2048K) | — | **absent ⚠** | CONFIRMÉ : mmuTranslate (Bus.cpp:156-176) n'a AUCUN cas spécial ; le commit 6df9432 ne porte PAS ce carve-out, contrairement à HATARI_DIVERGENCES.md:525 (marqué à tort ✅). Le cas vit dans le mapping de banques memory.c, pas dans Translate_Addr. |
+| memory.c:1622-1631 (carve-out void $40000-$7FFFF si MMU 128K/2048K) | Bus.cpp (mmuTranslate) | porté | Présent depuis le 2026-08-13 ; ancienne mention « absent » périmée, revérifiée le 2026-10-18. ST/Mega ST uniquement, STE ignore les bits de banque 1. Garde : tests/mmu_logic.cpp. |
 | stMemory.c:851-900 (MMU_ConfToBank + MMU_Size) | Bus.cpp:107-111, 157-164 | porté | bank1 bits 0-1 sur ST/Mega ST seulement, conf 11 → 0. |
 | stMemory.c:1052-1308 (Translate_Addr STF/STE) | Bus.cpp:126-150 + 156-176 | porté | Masques RAS/CAS vérifiés terme à terme (9 cas STF). |
 | stMemory.c:1005-1031 (RAM_SetBankSize) | Bus.cpp:113-124 (ramBanks) | **partiel ⚠** | 2176 et 2560 Ko manquants (le default les traiterait faux) ; sans impact tant que parseRamBytes n'expose que 256k-4m (MachineType.hpp:40-47). |
 | stMemory.c:908-940 ($FF8001 R/W) | MmuGlue.hpp:26,32 lu live par mmuTranslate | porté | Pas de remap : relu à chaque accès, effet identique. |
-| stMemory.c:93-102 (STMemory_Reset : $FF8001=0 à froid) | — | **absent ⚠** | CONFIRMÉ : memConfig_ posé une fois au constructeur (Machine.cpp:69 dans l'arbre) et jamais touché par reset()/hardReset() (Machine.hpp:86-114) → aliasing MMU différent pendant la détection RAM au boot froid. |
+| stMemory.c:93-102 (STMemory_Reset : $FF8001=0 à froid) | Machine.hpp (hardReset) | porté au reset | hardReset remet 0 ; reset chaud préserve. Constructeur/reconfigure préremplissent encore la configuration RAM (divergence assumée avant le TOS). Vérifié le 2026-10-18 ; tests/mmu_logic.cpp couvre chaud/froid sur les quatre profils. |
 | stMemory.c:558-571, 724-768 (DMA Read/Write + CheckAddr) | Bus.cpp:481-491 (dmaRead8/dmaWrite8) | porté | Zone fautive lit 0x00, écriture perdue, jamais d'exception. |
 | stMemory.c:532-592 (STAddrToPointer/CheckAreaType) | Bus.cpp:183-193 (hostRamPtr) | porté | Test de contiguïté plus strict, repli octet par octet. |
 | stMemory.c:250-252 (miroir vecteurs ROM $0/$4) | Bus.cpp:510-513 (seedResetVectors) | porté | Le reste de SetDefaultConfig = fastboot, volontairement non porté. |
@@ -87,7 +87,7 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | video.c:5108 (ScreenCounter_ReadByte) | Shifter.cpp:1581-1618 | porté | vcDelayedOffset_ reflété ; wait défaut 0 (RAM_SLOT fournit le +2). |
 | video.c:5144-5250 (ScreenCounter_WriteByte) | Shifter.cpp:1880-1905 (writeVideoCounterByte) | **partiel ⚠** | CONFIRMÉ : quirks E605 (+6 movep, video.c:5217-5220) et Tekila (+2 wrap, 5222-5235) absents de tout src/ (grep opcode 0x01c9ffc3 = 0). |
 | video.c:5080/5252 (ScreenBase R/W) | Shifter.cpp:1872-1901 + read8 | porté | STE : haut/milieu effacent $FF820D, bit0 ignoré. |
-| video.c:4608 + 3262-3286 (RestartVideoCounter) | Shifter.cpp:602-605 + Machine.cpp:250-254 (VC_RESTART) | porté | Ligne 310/260, freq relue live. Manque le signal VSync/VBlank posé au même point. |
+| video.c:4608 + 3262-3286 (RestartVideoCounter) | Shifter.cpp:602-605 + Machine.cpp:250-254 (VC_RESTART) | porté | Ligne 310/260, freq relue live. Remise à ON de VBlank au même point portée dans vblankAtLine (2026-10-18). |
 | video.c:3037/5241 (Sync_WriteByte/ReadByte) | Shifter.cpp:1892 + recordSyncWrite + read8 | porté | Filtre « même Freq » inter-trames, wait 4 cyc, datation +2. |
 | video.c:1618-1860 (WriteToGlueRes, détections) | Shifter.cpp:1956-1960 (recordSyncWrite res) | **partiel ⚠** | CONFIRMÉ : filtre/latch −1 cyc/pixelShift −4 portés ; TOUTES les détections 1637-1834 absentes (med-res overscan, stab, scrolls hw 13/9/5/1 px, closure/DOLB). = V2, squelette NEOST_V2 opt-in. → candidat n°24. |
 | video.c:1871+ (WriteToShifterRes) + ioMemTabST.c:71 ($FF8261) | — | **absent ⚠** | CONFIRMÉ : res=3 (shifter stoppé, hardscroll 4 px Troed/Sync) non modélisé, $FF8261 lit 0xFF / écrit no-op (seule la whitelist bus-error existe, Bus.cpp:280). |
@@ -96,10 +96,10 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | spec512.c:152-226 (StoreCyclePalette) | Shifter.cpp:769-792 (recordColorWrite) | volontaire | Datation live Moira au cycle. ⚠ le SEUIL 512 mots/trame vs 1 chez Hatari est un écart confirmé → candidat n°11. |
 | spec512.c:133-335 (StartVBL/StartScanLine/UpdatePaletteSpan) | Shifter.cpp:626-741 + kSpec512AlignCyc=−25 | porté | Modèle spans 4 cyc exact ; validé 10/10 images diapo à 0 px. |
 | video.c:3676-3760 (HBLPalettes/StoreResolution) | renderLine + colorWrites_ rejoués | volontaire | Sous le seuil sans trick : palette de fin de ligne (≠ Hatari seuil 1). |
-| video.c:5826-5916 + 5813 (HorScroll) | Shifter.cpp:1926-1944, 1632-1637, 422-460 | partiel | Immédiat/différé, prefetch, octet brut relu : portés. ABSENT : bSteBorderFlag (336 px, Obsession/Pacemaker). |
+| video.c:5826-5916 + 5813 (HorScroll) | Shifter.cpp:1926-1944, 1632-1637, 422-460 | partiel | Immédiat/différé, prefetch, octet brut relu : portés. Mise à jour 2026-10-18 : latch 336 px porté dans Shifter/VideoCounter/VideoGlue, cinq étalons oracle scroll_336*. |
 | video.c:5326 (LineWidth_WriteByte) | Shifter.cpp:1906-1915 + endVideoLine | porté | Immédiat si DE pas fini, sinon différé ; stride partout. |
 | video.c:1299/1283/1204 (GetCyclesSinceVbl/ConvertPosition) | Machine.cpp:79-82 + offsets read −6 / write +2 | porté | Paire d'offsets fidèles §8 — ne bouger QUE par paire. ConvertPosition à longueur réelle = LINELEN opt-in. |
-| video.c:598-600, 3443-3487 (signal VBlank/VSync) | — | absent | Lignes masquées par VBlank non modélisées (documenté). |
+| video.c:598-600, 3443-3487 (signal VBlank/VSync) | VideoGlue.cpp (vblankAtLine) | porté | Comparateurs 50/60 Hz, VSYNC, palette 0 et suppression du stride ; deux étalons oracle (2026-10-18). |
 | video.c:927-1074, 624 (VideoTimings WS1-4) | Shifter.cpp:102-149 (table wakestate) + Machine.cpp:49-63 | porté **✗** | L'« hybride WS1/WS3 à trancher » est **RÉFUTÉ/PÉRIMÉ** : tranché WS3 dans l'arbre de travail (2026-07-08) — wakestate() défaut 3, kWsInc +1, kHblOff défaut 0 (HBL 512), VBL 64/60 cohérent. Seule la doc (HATARI_DIVERGENCES.md:64, 549-556) reste à mettre à jour. |
 | (esprit CopyScreenLineColor : copie au fil du faisceau) | Shifter.cpp:566-574 (lineSnap_) + 1323-1353, 1434-1441 | partiel | Capture datée au faisceau mais seulement sur trames à écritures freq/res ; Hatari copie TOUJOURS par-ligne. |
 
@@ -152,7 +152,7 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 
 | Hatari | NeoST | Statut | Note |
 |---|---|---|---|
-| fdc.c:2307-2372 (InterruptHandler_Update) | Fdc.cpp:1860-1901 (onFdcEvent) | **partiel ⚠** | CONFIRMÉ : boucle d'états identique MAIS replanification à liveNow()+delay au lieu de −PendingCyclesOver (fdc.c:2370) → le retard de dispatch S'ACCUMULE (1 evt/octet en transfert). firingDue() existe (utilisé par le MFP) mais pas par le FDC. → candidat n°2. |
+| fdc.c:2307-2372 (InterruptHandler_Update) | Fdc.cpp (onFdcEvent) | porté | Ancrage firingDue()+stall+delay déjà présent, vérifié le 2026-10-18. Le stall n’est pas absorbé par la compensation du retard. |
 | fdc.c:4487+ (ExecuteCommand types I-IV) | Fdc.cpp:1782-1856 | porté | Délais PREPARE identiques. |
 | fdc.c (WriteCommandRegister pendant busy) | Fdc.cpp:2000-2010 | porté | Remplacement type-à-type (Overdrive Demos). |
 | fdc.c:2563/2732/2908 (Restore/Seek/Step) | Fdc.cpp:1253-1446 | porté | Spin-up 6 IP, butées, VERIFY, densité STX. |
@@ -163,14 +163,14 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | fdc.c:5127 (NextSectorID_FdcCycles_ST) | Fdc.cpp:1153-1186 | porté | Mêmes gaps, même retour NO_DRIVE. |
 | fdc.c:5240-5470 (Read/WriteSector_ST etc.) | Fdc.cpp:770-844 | porté | CRC16 CCITT, writeBack au fil de l'eau. |
 | fdc.c:5477 (WriteTrack_ST, TODO Hatari) | Fdc.cpp:855-886 | volontaire | NeoST PARSE le flux MFM (mieux que le LOST_DATA d'Hatari), documenté. |
-| fdc.c:1311/1370 (FIFO Push/Pull) | Fdc.cpp:714-749 | **partiel ⚠** | CONFIRMÉ : tout porté SAUF le stall CPU 32 cyc au flush 16 octets (M68000_AddCycles_CE(4*16/2), fdc.c:1340/1396) = divergence D3. → candidat n°3. |
-| fdc.c:1233 (ResetDMA) | Fdc.cpp:751-757 | **partiel ⚠** | CONFIRMÉ : dmaBytesToTransfer_ non remis (variable VIVE chez Hatari) ; EN TROP dmaError_=false forcé (FDC_ResetDMA ne touche pas Status). Nuance : la moitié « bufPos_ » vise des variables MORTES chez Hatari (FIXME REMOVE) — impact nul pour celle-ci. |
+| fdc.c:1311/1370 (FIFO Push/Pull) | Fdc.cpp (billDmaCycles, fifoPush/fifoPull) | porté | Stall 32 cycles bus et report sur l’échéance suivante ; D3 clos depuis 2026-08-26. |
+| fdc.c:1233 (ResetDMA) | Fdc.cpp (dmaResetFifo) | porté 2026-10-18 | Préserve le statut d’erreur, annule les octets restants. Les positions de tampon amont sont mortes ; banc tests/fdc_register_logic.cpp. |
 | fdc.c:1172 (FDC_Reset) | Fdc.cpp:413-451 | porté | Froid/chaud, porté à la 5ᵉ passe (bc15a67). |
-| fdc.c:4760 (DiskControllerStatus_ReadWord) | Fdc.cpp:1919-1983 (read8) | partiel | Bits type I vivants, clear IRQ, HDC : portés ; manquent WaitState(4) et FDC_UpdateAll complet. **Verdict non rendu** (agent de vérification perdu). |
+| fdc.c:4760 (DiskControllerStatus_ReadWord) | Fdc.cpp (read8/write8) | porté pour UpdateAll | Index actualisé avant tous les accès WD1772, hors compteur DMA/ACSI (2026-10-18). Garde horloge live avant dispatch dans tests/fdc_selection_logic.cpp ; wait states hors de ce lot. |
 | fdc.c:4924/4978 (DmaModeControl/DmaStatus) | Fdc.cpp:2016-2026, 759-765 | porté | Toggle bit 8, bits rémanents $8604 (vérifié STF). |
-| fdc.c:5026-5067 (ripple-carry adresse DMA ST) | — | **absent ⚠** | CONFIRMÉ : $FF860B/0D bit7/15 1→0 devrait incrémenter l'octet supérieur (Ijor) ; Fdc.cpp:2027-2038 remplace sans retenue. |
+| fdc.c:5026-5067 (ripple-carry adresse DMA ST) | Fdc.cpp (write8) | porté 2026-10-18 | Retenue des bits 7/15 sur ST/Mega ST, avant masque d’adresse ; tests/fdc_register_logic.cpp. |
 | fdc.c:5090 + m68000.c (DMA_MaskAddressHigh) | Fdc.cpp:40-48, 723/740, 2028-2037 | porté | Bit0 forcé, masque haut selon RAM, adresse relisible. |
-| fdc.c:1720 (SetDriveSide PUSH depuis psg.c) | Fdc.cpp:571-583 (refreshDriveSide PULL) | **partiel ⚠** | CONFIRMÉ : logique identique mais relue seulement au prochain accès registre FDC — flip de face mid-transfert vu en retard (les handlers utilisent le side_ caché). Le hook portAsink existe côté PSG mais n'est abonné que pour le loopback RS232. → candidat n°19. |
+| fdc.c:1720 (SetDriveSide PUSH depuis psg.c) | Machine.cpp (setPortASink), Fdc.cpp (refreshDriveSide) | porté | Appelé à chaque écriture R14, indépendamment du loopback série. Ancienne mention pull périmée, revérifiée le 2026-10-18. |
 | fdc.c:1881/1932/1100 (densité, TransferByte) | Fdc.cpp:492-544 | porté | DD/HD/ED, porte $FF860E Mega STE, repli DD. |
 | fdc.c:2227/2268 (SetIRQ/ClearIRQ) | Fdc.cpp:683-709 | porté | IRQ forcée survit au clear, GPIP5 par front. |
 | fdc.c:1078-1086 (fastfdc ÷10) | Fdc.cpp:648-668 (applyFastFdc) | volontaire | Épargne les délais rotation + neutralisé sur STX (anti-casse protections). |
@@ -302,7 +302,7 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | blitter.c:1393-1483 (Control_WriteByte) | Blitter.cpp:88-153, 160-231, 294-299 | porté | Restart TOS, pause/reprise ; écritures mot/long atomiques (Bus.cpp:543/555). |
 | blitter.c:1489-1495 (Skew + latches) | Blitter.cpp:327-334 | porté | Relecture en début de tranche = granularité identique. |
 | blitter.c:1338-1367 (WordsPerLine/Lines) | Blitter.cpp:116-127, 140-148 | porté | Y 0→65536 à l'écriture (B1). |
-| blitter.c:972-989 (CheckAccess_Byte) | Blitter.cpp:95 (write) / 86 (read) | **partiel ⚠** | CONFIRMÉ : écriture octet rejetée ; LECTURE octet rend la valeur VIVE au lieu de l'IoMem rance (résidu BL-R). → candidat n°36. |
+| blitter.c:972-989 (CheckAccess_Byte) | Blitter.cpp (read8/writeRegisters) | porté 2026-10-18 | Miroir MMIO brut séparé des registres vivants ; lecture mot/long le rafraîchit, accès octet rejeté conserve le miroir. État v22. |
 | blitter.c (masques matériels à l'écriture) | Blitter.cpp:41-46 (regWriteMask) | porté | Relecture fidèle. |
 | blitter.c:1574-1593 (bug « 63 accès ») | Blitter.cpp:278-289 + Cpu68k.cpp:294-297, 454-468 | porté | Fenêtre PRE_START datée à l'horloge bus absolue. |
 | blitter.c:1603-1626 (fenêtre CPU 64 accès réels) | Blitter.cpp:264-272 via Bus::blitterCountCpu | porté | Modèle CE (callbacks mémoire Moira). |
@@ -377,6 +377,24 @@ GEMDOS + VHD montés ensemble) ; conversion charset des noms de fichiers (S — 
 
 ---
 
+### SCC — générateur de débit (actualisé le 2026-10-18)
+
+| Hatari | NeoST | Statut | Note |
+|---|---|---|---|
+| `scc.c` : `SCC_Compute_BaudRate`, `SCC_Start_InterruptHandler_BRG`, `SCC_InterruptHandler_BRG` | `Scc::updateBrg/onBrgEvent`, `Scheduler::SCC_BRG_A/B` | porté | PCLK/RTxC MegaSTE, WR4/12/13/14, pulse Zero Count, masques et IRQ. Période mémorisée et phase sauvegardées ; TX/RX restent immédiats. |
+| `scc.c` : `SCC_ResetChannel/Full` | `Scc::resetChannel/resetFull` | porté avec garde | Reset canal conserve le BRG. Reset matériel annule les événements après désactivation WR14 ; l'amont omet cette annulation. |
+
+## 11. FPU 68881 — opérations et conversions (actualisé le 2026-10-18)
+
+Hatari ne fournit pas le socket périphérique MegaSTE. Son moteur 6888x sert
+d'oracle aux opérations, via des sondes qui exercent les registres CIR de NeoST.
+
+| Hatari | NeoST | Statut | Note |
+|---|---|---|---|
+| `softfloat.c` : `floatx80_move/abs/neg` | `Fpu::genOp` | porté | Précision FPCR, plage d'exposant simple/double, NaN/SNaN, zéros signés et exceptions. Banc reproductible `tools/test_fpu_unary_oracle.py`. |
+| `fpp.c` : `fpu_get_constant`, `fpp_cr_undef` ; `softfloat.c` : `floatx80_round32/64` | `Fpu::romConstant`, `Fpu::command` | porté | Constantes définies et indéfinies, corrections de mantisse, codes de condition particuliers ; arrondi de mantisse avec exposant étendu. |
+| `softfloat_decimal.c` ; `fpp_softfloat.c` : `fp_to_pack/from_pack` | `SoftFloatDecimal.hpp`, `Fpu::decodeFmt/encodeFmt/sfFold/completeInput` | porté | Conversions sans flottant hôte, k signé, INEX1/INEX2 et livraison CIR. Garde supplémentaire OPERR+NaN sur les étendus non canoniques pour éviter l'UB amont ; k dynamique fixé à 17. |
+
 ## Docs à corriger
 
 Issues regroupées par fichier (suggestion en italique). Les entrées liées au tranchage
@@ -386,7 +404,7 @@ WS3 tiennent compte de l'arbre de travail.
 
 | Ligne(s) | Problème | Suggestion |
 |---|---|---|
-| 33 + 525 + 50 | « Trou MMU STF 128K/2048K » marqué ✅ corrigé via 6df9432 — **FAUX** (vérifié : le commit ne porte pas le carve-out memory.c:1622-1631 ; Bus.cpp:156-176 n'a aucun cas spécial). L'entrée historique :357 était la bonne. | *Repasser en ouverte [basse], corriger le bandeau :33 et le compteur « 0/2 » → « 0/3 ».* |
+| 33 + 525 + 50 | Ancien audit : le commit cité ne portait pas le trou MMU. | Port réellement présent depuis le 2026-08-13 ; entrée de mapping corrigée le 2026-10-18. |
 | 64, 549-556 | L'« hybride WS1/WS3 à trancher » est TRANCHÉ WS3 dans l'arbre (Shifter.cpp:102-149, Machine.cpp:49-63). | *Marquer résolu, décrire la table wakestate (NEOST_WS pour A/B).* |
 | 195-199 | La § bus déclare « conforme » sans mentionner le cold reset $FF8001=0 non porté (stMemory.c:93-102). | *Ajouter entrée [basse] « cold reset $FF8001=0 absent ».* |
 | 91, 97, 99 | Références périmées : conversion MFP = Mfp.cpp:267-268 (pas :255), retombée IRQ = Mfp.cpp:543-544 (pas :529), wait MFP = Bus.cpp:590 (pas :540). | *Rafraîchir les trois références.* |
@@ -472,9 +490,9 @@ timing d'abord. Effort : S (< ½ journée, localisé) / M (chantier borné) / L 
 
 | # | Candidat | Hatari | NeoST | Effort |
 |---|---|---|---|---|
-| 1 | **Wait-state 4 cyc FDC/DMA $FF8604/06** (triple confirmation bus/FDC/CPU ; respecter l'asymétrie : rien sur read $8606 ni $8609/0B/0D) | fdc.c:4688, 4783/4791, 4937, 5515/5544 | Bus.cpp:579-580, 681-684 (mécanisme prêt : Bus.cpp:576/590/600) | S |
-| 2 | **Ancrage anti-dérive des événements FDC** (−PendingCyclesOver ; le retard s'accumule à CHAQUE octet transféré → durée de commande et INTRQ dérivent, protections STX à mesure de temps) | fdc.c:2310-2316, 2370 | Fdc.cpp:1855, 1899 ; utiliser Scheduler::firingDue() (Scheduler.hpp:173-186, déjà consommé par le MFP) | S |
-| 3 | **Stall CPU 32 cyc au flush FIFO DMA 16 octets (D3)** (~dérive de phase faisceau pendant tout chargement) | fdc.c:1340, 1396 | Fdc.cpp:714-749 (aucun coût CPU) | M |
+| 1 | **Wait states FDC/DMA portés le 2026-10-18** : 4 cycles CPU par handler, lecture SCREG/statut DMA et adresses sans attente | fdc.c (DiskController*_Word, DmaModeControl), m68000.c (WaitState) | Fdc.cpp (registerWait), tests/fdc_timing_logic.cpp | clos |
+| 2 | **Ancrage anti-dérive déjà porté**, avec conservation du stall DMA | fdc.c:2310-2316, 2370 | Fdc.cpp (onFdcEvent), vérifié 2026-10-18 | clos |
+| 3 | **Stall FIFO DMA déjà porté**, 32 cycles bus au flush de 16 octets | fdc.c:1340,1396 | Fdc.cpp (billDmaCycles), clos 2026-08-26 | clos |
 | 4 | ~~**Conversion MFP→CPU avec reste accumulé**~~ **PORTÉE** (2026-08-14) : échéances absolues ×256, plafond vers le Scheduler, phase sérialisée (v11) ; Timer C 200 Hz = 40106,238 cycles sans dérive | cycInt.c:21-47, cycInt.h:53-63, mfp.c:1408-1423 | Mfp.cpp (`timerPeriodSubCycles`, `scheduleTimerAt`) | — |
 | 5 | **MFP_UpdateTimers avant lecture IPR/ISR/TBDR** (poll vu ≤1 instruction en retard en mode bloc ; runTo ciblé sur les sources TIMER_* au read MMIO $FFFAxx, sans réactiver le sync-driven réfuté) | mfp.c:681-692 (+ ~30 handlers) | Mfp.cpp:62-104 ; Bus.cpp:586-593 | M |
 | 6 | **Interfoliage des événements pendant le blit** (CycInt_Process par accès bus ; écritures blitter vs capture lineSnap_/événements MFP — divergence pixel directe sur écran dessiné au blitter en cours de trame) | blitter.c:342-375 (366), 417-418, 437-438, 451-452 | Blitter.cpp:81-84, 210-214, 246-248 ; Shifter.cpp:594-599 | M |
@@ -495,18 +513,18 @@ timing d'abord. Effort : S (< ½ journée, localisé) / M (chantier borné) / L 
 
 | # | Candidat | Hatari | NeoST | Effort |
 |---|---|---|---|---|
-| 14 | **Instruction RESET → reset périphériques** (customreset : IKBD fenêtre 502000+$F1, Glue, PSG, MFP, FDC — divergence de COMPORTEMENT ; le hook Moira didExecute est déjà armé pour Instr::RESET, jamais surchargé → fix trivial) | hatari-glue.c:49-77, newcpu.c:9167-9231 | MoiraExec_cpp.h:4918-4935 ; MoiraConfig.h:94 ; Machine.hpp:86-97 | S |
+| 14 | **Instruction RESET : déjà portée** via le hook Moira | hatari-glue.c:49-77 | Cpu68k.cpp (didExecute), Bus.cpp (peripheralReset) | clos |
 | 15 | **Transit série CPU→IKBD + TDRE clavier hors TIE** (chaque octet de commande ~10240 cyc trop tôt, multi-octets sans pacing — plus gros écart timing du sous-système) | acia.c:893-902, 954-1027 ; ikbd.c:755-819, 891 | Ikbd.cpp:197-242 (parse dans write8, tdre_ figé à 1 hors TIE) | M |
-| 16 | **Délais de réponse IKBD** (7000-10800 cyc avant le 1er octet ; couvre aussi le $83 Froggies ; valeur médiane fixe = déterministe) | ikbd.c:2085, 2271, 2442, 2497, 2547-2758, 3049, 1035 | Ikbd.cpp:289-531 (pushRx immédiat) | S |
-| 17 | **Autosend au timer 150000 cyc + taux monitoring $17** (phase des paquets glisse vs faisceau chez Hatari ; Rate jamais lu) | ikbd.c:622-624, 1804, 2308-2311 | Ikbd.cpp:638-704 (onVbl) ; 413-419 | M |
+| 16 | **Délais de réponse IKBD portés le 2026-10-18** : attente globale quantifiée en bits, valeur centrale déterministe des plages Hatari ; interrogations et Froggies | ikbd.c (Send_Byte_Delay, SCI_Set_Line_TX) | Ikbd.cpp (pushRxDelayed/armRx), tests/ikbd_response_logic.cpp | clos, phase bit exacte non simulée |
+| 17 | **Monitoring $17 porté le 2026-10-18** : timer dédié au taux demandé ; autosend normal reste lié au VBL | ikbd.c (SetJoystickMonitoring, InterruptHandler_AutoSend) | Ikbd.cpp (onJoystickMonitor), Scheduler::IKBD_MONITOR | partiel : autosend général ouvert |
 | 18 | **Cadence ACIA dérivée du Clock_Divider + garde init** (div 1/16 → liaison 64×/4× ; Divider==0 → IKBD muet) | acia.c:800-804 ; ikbd.c:1027-1032 | Ikbd.cpp:922 (10240 en dur), 898-910 | S |
-| 19 | **Drive/side « push » à l'écriture port A PSG** (index ré-ancré à l'instant du changement ; protections STX mesurant le tour, flip de face mid-transfert — le hook portAsink existe déjà) | psg.c:420 → fdc.c:1720-1766 | Fdc.cpp:571-583 (pull) ; YM2149.hpp:78-86 ; Machine.cpp:161-170 | S |
-| 20 | **IRQ HDC différée de 1000 cyc post-DMA ACSI** (« Idris OS » ; passer par fdcSetIrq(IRQ_HDC) au passage) | hdc.c:81, 1162-1163, 1253-1257 ; fdc.c:2284 | Fdc.cpp:2096 (setIntrqLine immédiat) | S |
-| 21 | **Cold reset : $FF8001 = 0** (banques 128K/128K jusqu'à l'écriture TOS → aliasing MMU pendant la détection RAM, contenu RAM post-test type Yolanda) | stMemory.c:93-102 ; reset.c:57 | Machine.cpp:69 (ctor) ; Machine.hpp:103-115 (hardReset n'y touche pas) | S |
-| 22 | **Trou MMU STF bank0=128K/bank1=2048K → void $40000-$7FFFF** (marqué à tort corrigé dans les divergences ; 3 lignes dans mmuTranslate, chemin void cpuDb existant) | memory.c:1623-1631 ; stMemory.c:1044-1048 | Bus.cpp:156-177 (aucun carve-out) | S |
+| 19 | **Drive/side push déjà porté** à chaque écriture port A PSG | psg.c:420 → fdc.c:1720-1766 | Machine.cpp (setPortASink), Fdc.cpp (refreshDriveSide) | clos |
+| 20 ✅ | **IRQ HDC différée de 1000 cycles CPU post-DMA ACSI** — portée le 2026-10-18 ; acquittements de commande conservés, échéance sauvegardée | hdc.c `Acsi_DmaTransfer`, `HDC_ACSI_InterruptHandler_Update` | Fdc.cpp `acsiDmaTransfer/onAcsiIrq`, Scheduler::ACSI_IRQ | — |
+| 21 | **Cold reset : déjà porté** ; constructeur/reconfigure préremplissent encore la configuration RAM | stMemory.c:93-102 ; reset.c:57 | Machine.hpp (hardReset), vérifié le 2026-10-18 | clos pour hardReset |
+| 22 | **Trou MMU STF bank0=128K/bank1=2048K : déjà porté** depuis le 2026-08-13 | memory.c:1623-1631 | Bus.cpp (mmuTranslate), vérifié le 2026-10-18 | clos |
 | 23 | **Filler 0xFF des octets fautifs en accès mot partiel** (⚠ exemple phare $FF8204 FAUX — Shifter rend déjà 0xFF ; l'écart réel = octets PAIRS du MFP : move.w $FFFA00 rend 0x00xx vs 0xFFxx, et pairs latchés relisibles ; idem $FF860E/0F Ricoh. Correctif ciblé Mfp::read8/write8 plutôt que filler générique) | ioMem.c:835-849 ; ioMemTabST.c:117-141 | Mfp.cpp:103, 190 ; Fdc.cpp:1980-1981 | S |
 | 24 | **V2 — tricks par changement de résolution** (med-res overscan No Cooper/PYM, stab, scrolls hw 13/9/5/1 px, $FF8261/res=3 Troed/Sync — plus gros bloc STF restant de video.c) | video.c:1618-1857, 1871-1961 ; ioMemTabST.c:71-72 | Shifter.cpp:1956-1960 seul ; squelette NEOST_V2 Machine.cpp:118-150 | L |
-| 25 | **V1 — branche STE de la Glue + bSteBorderFlag 336 px** (Cuddly « trop propre » en STE, Obsession/Pacemaker faux ; faisable maintenant que WS3 est tranché) | video.c:2440-2652, 1520/1538/1603, 5826-5916 | Shifter.cpp:977-981 (STF seul) ; bSteBorderFlag : 0 occurrence | L |
+| 25 | **V1 — branche STE de la Glue + bSteBorderFlag 336 px** (Cuddly « trop propre » en STE, Obsession/Pacemaker faux ; faisable maintenant que WS3 est tranché) | video.c:2440-2652, 1520/1538/1603, 5826-5916 | Référence historique Shifter.cpp:977-981 ; mise à jour 2026-10-18 : bSteBorderFlag porté (steBorderFlag_), cinq étalons oracle | L |
 | 26 | **Écritures ombres $FF8801/03 en accès octet/movep** (fix X-Out : musique muette ; ioAccessWidth_ déjà disponible) | psg.c:577-606, 637-666, 39-59 | YM2149.hpp:92 (default ignore) ; Bus.cpp:676-679 | S |
 
 ### P4 — Audio (registre-exactitude et chaîne STE)
@@ -522,7 +540,7 @@ timing d'abord. Effort : S (< ½ journée, localisé) / M (chantier borné) / L 
 | 33 | **Signe ×−1 du canal DMA + HPF subsonique sur le MIX** (phase relative YM/DMA inversée en mixing=1 ; DC du DMA jamais filtré — deux corrections locales pour le diff WAV bit-à-bit vs oracle) | dmaSnd.c:524-534, 557-565 ; 699, 706 | DmaSound.cpp:24, 556-557, 601-603 ; YM2149.cpp:332-334 | S |
 | 34 | **Filtre LMC1992 exact (plateaux Savinkoff)** (118.276/8438.756 Hz 1ᵉʳ ordre vs RBJ 200/8000 Hz 2ᵉ ordre — timbre dès bass/treble ≠ 0 dB) | dmaSnd.c:89-92, 1262-1462, 1418-1419 | DmaSound.cpp:285-363 | M |
 | 35 | **DC-hold du dernier échantillon DMA** (offset tenu + mute YM si mixing≠1 après trame one-shot ; à trancher avant tout diff WAV sérieux) | dmaSnd.c:547-574, 150-151 | DmaSound.cpp:583-584, 608-612 ; choix DmaSound.hpp:53-58 | S |
-| 36 | **BL-R : lecture octet des registres blitter mot** (valeur vive vs IoMem rance — comportement registre, pas timing) | blitter.c:972-989, 1049-1055 | Blitter.cpp:86 | S |
+| 36 | **BL-R : porté le 2026-10-18**, miroir brut des registres mot | blitter.c (CheckAccess_Byte), ioMem.c | Blitter.cpp (ioRaw_) | clos |
 
 ### ✗ Candidats réfutés (mémo anti-faux-positifs)
 

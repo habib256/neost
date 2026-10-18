@@ -20,7 +20,7 @@
   },
   {
    "id": "fpu_cir",
-   "name": "MC68881 CIR (Mega STE) — 14 tests FPU (verdict série)",
+   "name": "MC68881 CIR (Mega STE) — 52 tests FPU (verdict série)",
    "rom": "disks/etalons/fpu_testrom.img",
    "rom_generate": "tools/make_fpu_testrom.py",
    "machine": "megaste",

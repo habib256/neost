@@ -21,6 +21,7 @@
 #include <type_traits>
 
 #include "core/Scheduler.hpp"
+#include "core/Pacing.hpp"
 #include "core/StateArchive.hpp"
 
 class Mfp;
@@ -63,6 +64,9 @@ public:
     // jeux (Vroom) synchronisent leur parseur de paquets souris dessus — une
     // livraison instantanée des 3 octets leur fait confondre dx et dy.
     void    onRxDeliver();
+
+    // Échantillon joystick $17 : timer indépendant du VBL, en cycles bus 8 MHz.
+    void    onJoystickMonitor();
 
     // Sonde joystick : peut RÉ-ÉCRIRE (joy0, joy1) à l'interrogation `$16`/au
     // report auto. Les valeurs sont d'abord amorcées avec l'état hôte courant
@@ -264,15 +268,27 @@ public:
         // le cast dans l'enum — l'ancien ar.check ici lisait l'enum déjà hors-domaine.)
         ar(asMagic_);
         ar(asReadCount_);
+        ar(joystickMonitorPeriod_);
+        ar.check(joystickMonitorPeriod_ == 0 ||
+                 (joystickMonitorPeriod_ >= neost::pacing::kCpuHzInt / 100 &&
+                  joystickMonitorPeriod_ <= neost::pacing::kCpuHzInt * 255 / 100),
+                 "Ikbd::joystick monitor period out of range");
+        ar(responseDelayBits_);
+        ar(rxWaitingDelay_);
+        ar.check(responseDelayBits_ >= 0 && responseDelayBits_ <= 10,
+                 "Ikbd::response delay out of range");
+        ar.check(!rxWaitingDelay_ || (rxPending_ && responseDelayBits_ > 0),
+                 "Ikbd::response delay phase invalid");
     }
 
 private:
     void pushRx(uint8_t b);                  // empile un octet IKBD → CPU (livraison cadencée)
+    void pushRxDelayed(uint8_t b, int delayCycles); // attente firmware globale avant le SCI
     // Place pour `n` octets dans le tampon de sortie IKBD borné à 1024 (port de
     // Hatari IKBD_OutputBuffer_CheckFreeCount) : un émetteur de PAQUET teste la
     // taille TOTALE avant son 1er pushRx → paquet entier ou rien (jamais coupé).
     bool rxFree(std::size_t n) const;
-    void armRx();                            // date la livraison du prochain octet de la file
+    void armRx(int64_t baseCycle = -1);       // date attente firmware ou prochain octet
     void raiseIfReady();                     // tire GPIP4 si une cause d'IRQ ACIA est active
     bool irqActive() const;                  // cause d'IRQ : RX (RDRF & RIE) OU TX (TIE & TDRE)
 
@@ -311,6 +327,7 @@ private:
     void readJoystickState(uint8_t& joy0, uint8_t& joy1) const;
     void sendAutoJoysticks(uint8_t joy0, uint8_t joy1);
     void sendAutoJoysticksMonitoring(uint8_t joy0, uint8_t joy1);
+    void stopJoystickMonitoring();
 
     // Quirk matériel « disable souris ET joystick pendant le reset » (cf. Hatari
     // IKBD_CheckResetDisableBug) : $12 + $1A reçus pendant la fenêtre de reset →
@@ -329,7 +346,7 @@ private:
 
     // Émet le paquet $F7 « position absolue » (cf. IKBD_Cmd_ReadAbsMousePos) :
     // boutons (changements depuis la dernière interrogation) + X/Y sur 16 bits.
-    void sendAbsMousePos(bool curL, bool curR);
+    void sendAbsMousePos(bool curL, bool curR, int delayCycles = 0);
 
     // Émet le Δ souris comme pressions de flèches (cf. IKBD_SendCursorMousePacket,
     // mode $0A) : 72 haut / 80 bas / 75 gauche / 77 droite par pas de keyCodeDelta.
@@ -347,6 +364,8 @@ private:
                                              // (relire à vide le renvoie, cf. acia.c)
     bool    rdrf_ = false;                   // RDR plein (octet livré non encore lu)
     bool    rxPending_ = false;              // une livraison IKBD_RX est déjà datée
+    int     responseDelayBits_ = 0;          // SCI_TX_Delay global, 1024 cycles/bit
+    bool    rxWaitingDelay_ = false;         // IKBD_RX termine l'attente, pas un octet
     // Overrun récepteur (port acia.c) : le SCI livre EN CONTINU ; un octet qui
     // arrive RDR plein est PERDU (rxOverrun_ pendant, maintient l'IRQ RX). Le bit
     // OVRN du SR (ovrn_) n'est posé qu'à la lecture de RDR, et acquitté par la
@@ -420,6 +439,7 @@ private:
     JoystickMode joyMode_ = JOY_AUTO;
     uint8_t prevJoy0_ = 0, prevJoy1_ = 0;
     uint32_t vblCount_ = 0;                   // garde Hatari : pas d'auto-send avant 20 VBL
+    int64_t joystickMonitorPeriod_ = 0;       // commande $17, zéro = timer désarmé
     bool duringResetCriticalTime_ = false;    // bloque les sorties jusqu'à la réponse $F1
 
     // --- Quirks « souris + joystick simultanés » (cf. Hatari bMouseDisabled etc.) ---

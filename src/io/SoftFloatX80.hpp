@@ -34,7 +34,7 @@ enum { round_nearest_even = 0, round_down = 1, round_up = 2, round_to_zero = 3 }
 // Drapeaux d'exception IEEE (valeurs SoftFloat). flag_signaling (extension 680x0) =
 // entrée SNaN → distinct de flag_invalid pour mapper sur FPSR.SNAN (et non OPERR).
 enum { flag_invalid = 0x01, flag_signaling = 0x02, flag_divzero = 0x04, flag_overflow = 0x08,
-       flag_underflow = 0x10, flag_inexact = 0x20 };
+       flag_underflow = 0x10, flag_inexact = 0x20, flag_decimal = 0x40 };
 // Précision d'arrondi (bits 7-6 du FPCR → 80 étendu / 64 double / 32 simple).
 enum { prec_extended = 80, prec_double = 64, prec_single = 32 };
 
@@ -350,8 +350,8 @@ inline f80 sub(f80 a, f80 b, Status& st) {
 }
 
 // --- Arrondi à la précision SANS réduction de plage d'exposant -------------------
-// Port de roundSigAndPackFloatx80 (softfloat.c:1503), utilisé par les seules FSGLMUL /
-// FSGLDIV. Différence ESSENTIELLE avec roundAndPack : la mantisse est arrondie à 24 ou
+// Port de roundSigAndPackFloatx80 (softfloat.c:1503), utilisé par FSGLMUL / FSGLDIV
+// et FMOVECR (fpp_round32/64). Différence avec roundAndPack : la mantisse est arrondie à 24 ou
 // 53 bits, mais l'exposant garde la plage ÉTENDUE (seuils 0x7FFE / 0), là où roundAndPack
 // applique en plus un expOffset qui rabat la plage sur celle du simple/double précision.
 // Passer par roundAndPack faisait donc déborder FSGLMUL/FSGLDIV vers 2^±126 au lieu de

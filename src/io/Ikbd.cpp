@@ -24,6 +24,10 @@ enum : uint8_t {
 // le re-remplissage de TDRE sous TIE (cf. onTxEmpty) — assez long pour ne pas
 // noyer le CPU d'IRQ d'émission, assez court pour ne pas freiner l'envoi.
 static constexpr int64_t kAciaTxByteCycles = 7200;
+// Milieux déterministes des fourchettes IKBD_Delay_Random d'Hatari. Le SCI
+// quantifie ensuite par division entière en bits de 1024 cycles (ikbd.c:1035).
+static constexpr int kResponseDelayCycles = 7250;   // [7000,7500[
+static constexpr int kJoystickDelayCycles = 8750;   // [7500,10000[
 
 // CRC32 (poly IEEE 802.3, MSB-first) — port exact de Hatari utils.c (crc32_*). On
 // reconnaît un programme 6301 custom à son CRC plutôt que d'émuler un vrai HD6301.
@@ -272,9 +276,9 @@ void Ikbd::dispatchCommand() {
     // Toute commande VALIDE complète lève la pause de sortie ($13) — cf. Hatari
     // IKBD_RunKeyboardCommand. Les opcodes inconnus (NOP) ne la lèvent pas ;
     // $13 lui-même la re-pose dans son case.
-    if (cmdLength(opcode) != 0 && pauseOutput_) {
+    const bool resumed = cmdLength(opcode) != 0 && pauseOutput_;
+    if (resumed) {
         pauseOutput_ = false;
-        armRx();                         // les octets gelés en file redeviennent livrables
     }
     switch (opcode) {
         case 0x80:
@@ -311,7 +315,8 @@ void Ikbd::dispatchCommand() {
             // active (même ligne physique — bRButtonDown|BUTTON_JOYSTICK posé par
             // IKBD_DuplicateMouseFireButtons au VBL chez Hatari).
             sendAbsMousePos(mouseLeft_,
-                            mouseRight_ || (mouseMode_ != OFF && (hostJoy_[1] & 0x80)));
+                            mouseRight_ || (mouseMode_ != OFF && (hostJoy_[1] & 0x80)),
+                            18000 - 7200); // IKBD_Cmd_ReadAbsMousePos : 18000-ACIA_CYCLES
             break;
         case 0x07:
             // $07 = SET MOUSE BUTTON ACTION (cf. Hatari IKBD_Cmd_MouseAction) :
@@ -363,7 +368,7 @@ void Ikbd::dispatchCommand() {
             // $FC + les 6 octets BCD de l'horloge. Garde « paquet entier ou
             // rien » (IKBD_OutputBuffer_CheckFreeCount(7)) : tampon plein → jeté.
             if (!rxFree(7)) break;
-            pushRx(0xFC);
+            pushRxDelayed(0xFC, kResponseDelayCycles);
             for (int i = 0; i < 6; ++i) pushRx(clock_[i]);
             break;
         case 0x0E:
@@ -404,6 +409,7 @@ void Ikbd::dispatchCommand() {
             // lieu du bouton droit souris). Exceptions pendant la fenêtre de
             // reset : $08+$14 (Barbarian) ou $12+$14 (Hammerfist) → souris ET
             // joystick reportés ensemble (bothMouseAndJoy_).
+            stopJoystickMonitoring();
             joyMode_ = JOY_AUTO;
             mouseMode_ = OFF;
             if (duringResetCriticalTime_ && mouseEnabledDuringReset_) {
@@ -425,6 +431,7 @@ void Ikbd::dispatchCommand() {
         case 0x15:
             // $15 = SET JOYSTICK INTERROGATION MODE (cf. Hatari IKBD_Cmd_StopJoystick) :
             // retour au mode interrogation seule ($16). Plus de report spontané.
+            stopJoystickMonitoring();
             joyMode_ = JOY_OFF;
             break;
         case 0x1A:
@@ -432,22 +439,27 @@ void Ikbd::dispatchCommand() {
             // tout report spontané ; retour à l'interrogation seule, comme $15. Sans
             // ce case, joyMode_ restait JOY_AUTO et des paquets $FE/$FF non sollicités
             // continuaient d'être émis.
+            stopJoystickMonitoring();
             joyMode_ = JOY_OFF;
             joystickDisabled_ = true;
             checkResetDisableBug();
             break;
         case 0x17:
             // $17 = SET JOYSTICK MONITORING (cf. Hatari IKBD_Cmd_SetJoystickMonitoring) :
-            // octet 1 = taux d'échantillonnage en 1/100 s. NeoST échantillonne au VBL
-            // (plutôt qu'au timer exact), mais respecte le format et coupe la souris.
+            // octet 1 = taux en 1/100 s, zéro ramené à un. La source utilise
+            // 8021247 Hz ; notre base bus centralisée vaut 1 Hz de plus (écart
+            // maximal de trois cycles à Rate255). L'auto-send normal reste au VBL.
             joyMode_ = JOY_MONITOR;
             mouseMode_ = OFF;
+            joystickMonitorPeriod_ = neost::pacing::kCpuHzInt * (inBuf_[1] ? inBuf_[1] : 1) / 100;
+            if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR,
+                                         sched_->liveNow() + joystickMonitorPeriod_);
             break;
         case 0x18:
             // $18 = SET FIRE BUTTON MONITORING : non implémenté (comme Hatari).
             break;
         case 0x16: {
-            // $16 = « interroger les joysticks » : l'IKBD répond IMMÉDIATEMENT par
+            // $16 = « interroger les joysticks » : l'IKBD répond après traitement par
             // un paquet $FD + état joystick 0 + état joystick 1 (cf. Hatari ikbd.c
             // IKBD_Cmd_ReturnJoystick — qui lit les DEUX ports bruts, sans couper
             // le port 0 quand la souris est active). État neutre $00 par défaut
@@ -460,7 +472,7 @@ void Ikbd::dispatchCommand() {
             uint8_t joy0 = hostJoy_[0], joy1 = hostJoy_[1];
             if (joyProbe_) joyProbe_(joy0, joy1);
             if (!rxFree(3)) break;
-            pushRx(0xFD);
+            pushRxDelayed(0xFD, kJoystickDelayCycles);
             pushRx(joy0);
             pushRx(joy1);
             break;
@@ -478,7 +490,7 @@ void Ikbd::dispatchCommand() {
             // puis 6 octets nuls (NeoST n'émule pas la RAM interne du 6301).
             // Paquet de 8 octets entier ou rien (CheckFreeCount(8), comme Hatari).
             if (!rxFree(8)) break;
-            pushRx(0xF6);
+            pushRxDelayed(0xF6, kResponseDelayCycles);
             pushRx(0x20);
             for (int i = 0; i < 6; ++i) pushRx(0x00);
             break;
@@ -494,13 +506,13 @@ void Ikbd::dispatchCommand() {
         // est gardée « paquet entier ou rien » (CheckFreeCount(8), comme Hatari).
         case 0x87: {                          // REPORT MOUSE BUTTON ACTION
             if (!rxFree(8)) break;
-            pushRx(0xF6); pushRx(0x07); pushRx(mouseAction_);
+            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(0x07); pushRx(mouseAction_);
             for (int i = 0; i < 5; ++i) pushRx(0x00);
             break;
         }
         case 0x88: case 0x89: case 0x8A: {    // REPORT MOUSE MODE
             if (!rxFree(8)) break;
-            pushRx(0xF6);
+            pushRxDelayed(0xF6, kResponseDelayCycles);
             switch (mouseMode_) {
                 case ABS:
                     pushRx(0x09);
@@ -524,34 +536,34 @@ void Ikbd::dispatchCommand() {
         }
         case 0x8B:                            // REPORT MOUSE THRESHOLD
             if (!rxFree(8)) break;
-            pushRx(0xF6); pushRx(0x0B);
+            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(0x0B);
             pushRx(uint8_t(xThreshold_)); pushRx(uint8_t(yThreshold_));
             for (int i = 0; i < 4; ++i) pushRx(0x00);
             break;
         case 0x8C:                            // REPORT MOUSE SCALE
             if (!rxFree(8)) break;
-            pushRx(0xF6); pushRx(0x0C);
+            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(0x0C);
             pushRx(uint8_t(xScale_)); pushRx(uint8_t(yScale_));
             for (int i = 0; i < 4; ++i) pushRx(0x00);
             break;
         case 0x8F: case 0x90:                 // REPORT MOUSE VERTICAL COORDINATES
             if (!rxFree(8)) break;
-            pushRx(0xF6); pushRx(yAxis_ == -1 ? 0x0F : 0x10);
+            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(yAxis_ == -1 ? 0x0F : 0x10);
             for (int i = 0; i < 6; ++i) pushRx(0x00);
             break;
         case 0x92:                            // REPORT MOUSE AVAILABILITY
             if (!rxFree(8)) break;
-            pushRx(0xF6); pushRx(mouseMode_ == OFF ? 0x12 : 0x00);
+            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(mouseMode_ == OFF ? 0x12 : 0x00);
             for (int i = 0; i < 6; ++i) pushRx(0x00);
             break;
         case 0x94: case 0x95: case 0x99:      // REPORT JOYSTICK MODE
             if (!rxFree(8)) break;
-            pushRx(0xF6); pushRx(joyMode_ == JOY_AUTO ? 0x14 : 0x15);
+            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(joyMode_ == JOY_AUTO ? 0x14 : 0x15);
             for (int i = 0; i < 6; ++i) pushRx(0x00);
             break;
         case 0x9A:                            // REPORT JOYSTICK AVAILABILITY
             if (!rxFree(8)) break;
-            pushRx(0xF6); pushRx(joyMode_ == JOY_OFF ? 0x1A : 0x00);
+            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(joyMode_ == JOY_OFF ? 0x1A : 0x00);
             for (int i = 0; i < 6; ++i) pushRx(0x00);
             break;
         default:
@@ -559,6 +571,9 @@ void Ikbd::dispatchCommand() {
             // paramètre.
             break;
     }
+    // Le délai d'une nouvelle réponse doit être installé avant de relancer une
+    // ancienne file gelée ; Hatari ne recharge le TDR qu'au prochain bit SCI.
+    if (resumed) armRx();
 }
 
 void Ikbd::resetHw() {
@@ -567,6 +582,8 @@ void Ikbd::resetHw() {
     // Côté NeoST le shift register de sortie du 6301 est matérialisé par
     // l'échéance IKBD_RX (octet en cours d'acheminement vers l'ACIA).
     rxPending_ = false;
+    responseDelayBits_ = 0;
+    rxWaitingDelay_ = false;
     if (sched_) sched_->cancel(Scheduler::IKBD_RX);
     // ACIA CLAVIER : reset.c:111 ACIA_Reset remet LES DEUX ACIA — même référence
     // que MidiAcia::reset(). Sans quoi un TIE armé ($FFFC00 = $b6) survivait au
@@ -594,6 +611,7 @@ void Ikbd::bootRom() {
     //
     // L'IKBD repart de ses défauts : souris RELATIVE, joystick AUTO, seuils 1,
     // pas d'échelle, axe Y vers le haut, état de bouton/joystick émis remis à zéro.
+    stopJoystickMonitoring();
     mouseMode_     = REL;
     joyMode_       = JOY_AUTO;
     prevJoy0_      = prevJoy1_ = 0;
@@ -642,6 +660,7 @@ void Ikbd::checkResetDisableBug() {
     // les deux reports sont ré-activés ensemble (des jeux comptent dessus pour
     // recevoir souris et joystick en même temps).
     if (mouseDisabled_ && joystickDisabled_ && duringResetCriticalTime_) {
+        stopJoystickMonitoring();
         mouseMode_ = REL;
         joyMode_   = JOY_AUTO;
         bothMouseAndJoy_ = true;
@@ -678,6 +697,32 @@ void Ikbd::sendAutoJoysticksMonitoring(uint8_t joy0, uint8_t joy1) {
     if (!rxFree(2)) return;                   // paquet monitoring (2 octets) entier ou rien
     pushRx(uint8_t(((joy0 & 0x80) >> 6) | ((joy1 & 0x80) >> 7)));
     pushRx(uint8_t(((joy0 & 0x0F) << 4) | (joy1 & 0x0F)));
+}
+
+void Ikbd::stopJoystickMonitoring() {
+    joystickMonitorPeriod_ = 0;
+    if (sched_) sched_->cancel(Scheduler::IKBD_MONITOR);
+}
+
+void Ikbd::onJoystickMonitor() {
+    if (!sched_ || joystickMonitorPeriod_ <= 0 || joyMode_ != JOY_MONITOR) return;
+    const int64_t due = sched_->firingDue();
+    sched_->schedule(Scheduler::IKBD_MONITOR,
+                     (due >= 0 ? due : sched_->liveNow()) + joystickMonitorPeriod_);
+    // IKBD_InterruptHandler_AutoSend garde les vingt premiers VBL ; le timer
+    // continue pendant reset, pause ou ExeMode, sans produire de paquet indu.
+    if (duringResetCriticalTime_ || vblCount_ <= 20 || exeMode_) return;
+    uint8_t joy0, joy1;
+    readJoystickState(joy0, joy1);
+    // Même préparation que le tick VBL, sans consommer une seconde fois le Δ
+    // souris : les boutons souris et feux joystick partagent les lignes physiques.
+    if (mouseMode_ == OFF) {
+        if (mouseLeft_) joy0 |= 0x80;
+        if (mouseRight_) joy1 |= 0x80;
+    } else if (joy1 & 0x80) {
+        joy1 = uint8_t(joy1 & ~0x80);
+    }
+    sendAutoJoysticksMonitoring(joy0, joy1);
 }
 
 void Ikbd::onVbl(int64_t vblMicro) {
@@ -737,7 +782,7 @@ void Ikbd::onVbl(int64_t vblMicro) {
 
     // 6) Monitoring ($17) : seul report émis, le reste de la trame est coupé.
     if (joyMode_ == JOY_MONITOR) {
-        sendAutoJoysticksMonitoring(joy0, joy1);
+        if (!sched_) sendAutoJoysticksMonitoring(joy0, joy1); // repli puce sans horloge
         return;
     }
 
@@ -859,7 +904,7 @@ void Ikbd::sendOnMouseAction(bool left, bool right) {
     }
 }
 
-void Ikbd::sendAbsMousePos(bool curL, bool curR) {
+void Ikbd::sendAbsMousePos(bool curL, bool curR, int delayCycles) {
     // Port de Hatari IKBD_Cmd_ReadAbsMousePos : nibble boutons (droite-bas=0x01 /
     // droite-haut=0x02 / gauche-bas=0x04 / gauche-haut=0x08), masqué par ce qui a
     // déjà été signalé (prevAbsButtons_), puis position X/Y sur 16 bits.
@@ -868,7 +913,7 @@ void Ikbd::sendAbsMousePos(bool curL, bool curR) {
     prevAbsButtons_ = buttons;
     buttons &= uint8_t(~prev);
     if (!rxFree(6)) return;                   // paquet $F7 (6 octets) entier ou rien
-    pushRx(0xF7);
+    pushRxDelayed(0xF7, delayCycles);
     pushRx(buttons);
     pushRx(uint8_t(absX_ >> 8));
     pushRx(uint8_t(absX_ & 0xFF));
@@ -963,7 +1008,26 @@ void Ikbd::pushRx(uint8_t b) {
     armRx();
 }
 
-void Ikbd::armRx() {
+void Ikbd::pushRxDelayed(uint8_t b, int delayCycles) {
+    // Le délai est global, pas associé à l'octet : une nouvelle réponse remplace
+    // SCI_TX_Delay, même si une ancienne réponse attend déjà dans la file.
+    if (duringResetCriticalTime_) return;
+    if (sched_ && delayCycles > 0) {
+        responseDelayBits_ = delayCycles / 1024;
+        if (rxWaitingDelay_) {
+            // Le SCI attend encore (pas de start bit) : remplacer le délai
+            // restant, sans additionner l'attente de la commande précédente.
+            sched_->schedule(Scheduler::IKBD_RX,
+                             sched_->liveNow() + int64_t(responseDelayBits_) * 1024);
+        }
+    }
+    pushRx(b);
+    // Hatari pose SCI_TX_Delay avant la garde de capacité : les réponses custom
+    // (Froggies) peuvent retarder la file même si leur en-tête est rejeté.
+    armRx();
+}
+
+void Ikbd::armRx(int64_t baseCycle) {
     // Date la livraison du prochain octet de la file : ~1 octet série (10 bits à
     // 7812,5 bauds = 10240 cycles à 8 MHz, cadence du SCI d'Hatari). Le SCI de
     // l'IKBD shifte EN CONTINU, que le RDR soit lu ou non — c'est onRxDeliver qui
@@ -971,12 +1035,21 @@ void Ikbd::armRx() {
     // l'émission (côté firmware 6301, pas côté ACIA). Sans ordonnanceur (tests
     // unitaires), repli : livraison immédiate — qui ne peut PAS écraser un RDR
     // plein, sinon pushRx → perte immédiate (cf. garde rdrf_ dans onRxDeliver).
-    if (rx_.empty() || pauseOutput_ || rxPending_)
-        return;
+    if (rxPending_) return;
     constexpr int64_t kAciaRxByteCycles = 10240;
+    // Le SCI décrémente son attente même sans octet ou sous PAUSE OUTPUT.
+    // L'événement distinct préserve aussi l'octet déjà engagé sur la liaison.
+    if (sched_ && responseDelayBits_ > 0) {
+        rxPending_ = rxWaitingDelay_ = true;
+        const int64_t anchor = baseCycle >= 0 ? baseCycle : sched_->liveNow();
+        sched_->schedule(Scheduler::IKBD_RX, anchor + int64_t(responseDelayBits_) * 1024);
+        return;
+    }
+    if (rx_.empty() || pauseOutput_) return;
     if (sched_) {
         rxPending_ = true;
-        sched_->schedule(Scheduler::IKBD_RX, sched_->now() + kAciaRxByteCycles);
+        sched_->schedule(Scheduler::IKBD_RX,
+                         (baseCycle >= 0 ? baseCycle : sched_->now()) + kAciaRxByteCycles);
     } else if (!rdrf_) {
         onRxDeliver();
     }
@@ -984,8 +1057,17 @@ void Ikbd::armRx() {
 
 void Ikbd::onRxDeliver() {
     rxPending_ = false;
-    if (rx_.empty() || pauseOutput_)
+    const int64_t due = sched_ ? sched_->firingDue() : -1;
+    if (rxWaitingDelay_) {
+        rxWaitingDelay_ = false;
+        responseDelayBits_ = 0;
+        armRx(due);             // ancre théorique : le retard de dispatch ne s'ajoute pas
         return;
+    }
+    if (rx_.empty() || pauseOutput_) {
+        armRx(responseDelayBits_ > 0 ? due : -1);
+        return;
+    }
     const uint8_t b = rx_.front();
     rx_.pop_front();
     if (rdrf_) {
@@ -998,7 +1080,7 @@ void Ikbd::onRxDeliver() {
         rdr_ = b;
         rdrf_ = true;
     }
-    armRx();                         // le SCI enchaîne sur l'octet suivant de la file
+    armRx(responseDelayBits_ > 0 ? due : -1); // attente globale au prochain SCI idle
     raiseIfReady();
 }
 
@@ -1138,7 +1220,7 @@ void Ikbd::froggiesWrite(uint8_t v) {
     res80 |= res82;                                // bit7 = bouton gauche
     res81 |= res82;
     if (v == 1)      pushRx(res80);                // demande 1 octet
-    else if (v == 4) { pushRx(res83); pushRx(res82); pushRx(res81); pushRx(res80); }  // 4 octets
+    else if (v == 4) { pushRxDelayed(res83, 7000); pushRx(res82); pushRx(res81); pushRx(res80); }
 }
 
 // --- Transbeauce 2 : 1 octet d'état clavier/joystick ----------------------------

@@ -6,6 +6,204 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Fidélité matérielle, suite : attentes FDC et monitoring joystick (2026-10-18)
+
+- **FDC/DMA** : attentes de 4 cycles CPU selon les handlers Hatari : écriture
+  $8604/$8606, lecture $8604 hors compteur DMA. Statut DMA et adresses sans attente ; densité Mega STE avec attente ; accès octet fautif rejeté avant facturation. À 16 MHz, 4 cycles
+  CPU valent 2 cycles bus ; cette conversion suit la source, sans mesure physique.
+  310 contrôles CPU réels passent, contre 58 échecs avant correction.
+- **Ancrage FDC** : déjà conforme (`due + stall + delay`), contrairement au vieux
+  mapping. Une mutation réancrant sur l’heure courante produit 10 échecs ciblés.
+- **IKBD $17** : taux de monitoring joystick respecté par un timer dédié,
+  indépendant du VBL et de la vitesse CPU ; taux zéro ramené à un. 73 contrôles
+  passent (52 échecs avant), ainsi que 16 contrôles Machine et ASan/UBSan.
+  Autosend général, MouseAction et mise à jour souris restent au VBL ; la
+  configuration mixte $07+$17 n’est pas rendue exacte par ce lot. La base centrale
+  8021248 Hz diffère de 1 Hz de la constante Hatari (≤3 cycles au taux maximal).
+- **Audio mono** : moyenne L/R en flottant, sans troncature des demi-échantillons.
+  230 contrôles passent, contre 33 échecs avant. Le drainage après STOP était déjà
+  présent. Cette ancienne API n’est utilisée par aucun frontend actuel ; aucun
+  changement audible revendiqué dans le GUI ou WASM, qui utilisent le stéréo.
+- **État v23** : période et échéance joystick sauvegardées. Véritable état v22
+  refusé explicitement ; aller-retour Mega STE identique (écran et état).
+  Build et 500 verdicts logiques réussis.
+- **Étalons** : les attentes FDC décalent le démarrage de Cuddly de dix trames :
+  70 images consécutives restent identiques ; seule la date de capture change.
+  `dmasnd_poll`, snapshot figé sans oracle reproductible, change de phase (1280 px) :
+  débit de 382 octets conservé, 40 paliers, sauts 6/8 après le premier saut de 10.
+  Référence renouvelée après preuve A/B (sans attentes FDC : ancienne référence
+  exacte) et mutation : remplir le FIFO à la lecture supprime tous les paliers
+  et produit 1608 pixels divergents. Mesures détaillées dans le manifeste.
+- **Validation finale** : tous les paliers disponibles passent, dont 22 étalons
+  pixel et le démarrage GUI. Quatre étalons propriétaires, Cubase Lite et le
+  diagnostic Mega STE restent sautés faute de données locales.
+
+## Fidélité matérielle, suite : réponses IKBD et accès MMIO (2026-10-18)
+
+- **IKBD** : délai firmware avant les réponses horloge, joystick, souris absolue,
+  configuration et Froggies. Attente globale en bits, indépendante du CPU 8/16 MHz,
+  puis transmission série existante. Les plages aléatoires Hatari sont remplacées
+  par leur valeur centrale ; la phase SCI sous-octet reste approximative.
+  Pause, tampon plein, octet en vol, resets et restauration sont couverts :
+  256 contrôles réussis, dont 62 échecs fonctionnels avant correction et trois
+  gardes supplémentaires d’état ; ASan/UBSan passent.
+- **Blitter BL-R** : miroir brut des registres mot, comme le tampon IoMem Hatari.
+  Les lectures octet voient ce miroir ; lectures mot/long le rafraîchissent.
+  Une écriture octet rejetée ne change pas le registre matériel, mais reste dans
+  le miroir. Reconstruction des adresses longues sur écriture mot partielle.
+  Reset chaud préserve le miroir ; reset froid l’efface. Ce comportement est
+  comparé aux handlers Hatari, sans nouvelle mesure sur silicium.
+- **Densité disque** : $FF860E/F est actif uniquement sur Mega STE ; les accès
+  permis sur les autres modèles sont void. Banc Blitter/MMIO : 413 contrôles réussis.
+  $FF8A3E/F était déjà conforme ; une garde remplace l’ancienne entrée périmée.
+- **FDC** : mise à jour de l’index avant tous les accès aux registres WD1772,
+  hors compteur DMA et ACSI. Banc : 89 contrôles, 19 échecs avant et zéro après.
+  Le push PSG lecteur/face était déjà porté ; sélection tardive et changement
+  de face sont désormais gardés.
+- **État v22** : attente IKBD et miroir Blitter sérialisés. Un véritable état v21
+  est refusé explicitement ; aller-retour Mega STE identique (écran et état).
+  Build et 496 verdicts logiques réussis.
+- **Closure** : les délais IKBD déplacent la phase de son écran alterné. Capture
+  passée de 10500 à 10501 trames, référence inchangée. Causalité vérifiée en
+  neutralisant uniquement les délais (0 px à l’ancienne date) ; scan de 120 trames,
+  chaque trame paire reste à zéro pixel de la référence. Le changement FDC n’est
+  pas causal (A/B séparé).
+- **Suite complète** : tous les paliers disponibles passent, dont 22 étalons
+  pixel et le démarrage GUI. Quatre étalons propriétaires, Cubase Lite et le
+  diagnostic Mega STE restent sautés faute de données locales.
+
+## Fidélité matérielle, suite : registres DMA et miroirs SCC (2026-10-18)
+
+- **DMA ST/Mega ST** : retenues des bits 7/15 lors des écritures d’adresse,
+  avant le masque matériel. Le reset FIFO conserve l’erreur DMA et annule les
+  octets restant à transférer ; le reset matériel chaud/froid efface l’erreur.
+  Banc MMIO : 77 contrôles réussis, dont interruption d’un WRITE SECTOR.
+  Première version du banc : 19 échecs avant correction, zéro après.
+- **SCC** : miroirs RR6/RR7 et choix WR15 propres au canal ; vecteur actualisé
+  et soft IACK du miroir RR2. Correction conforme Zilog/MAME d’un défaut partagé
+  par Hatari. 98 contrôles réussis (16 échecs avant correction), ASan/UBSan passent.
+- **Changement de profil** : le BRG reste câblé lorsque la machine passe de ST
+  à Mega STE. Banc d’intégration : 12 contrôles, 4 échecs avant et zéro après.
+- **MMU** : les deux absences indiquées dans le mapping étaient périmées.
+  Le trou STF $40000–$7FFFF et le reset froid de $FF8001 étaient déjà présents.
+  292 contrôles ajoutés ; retirer les comportements provoque respectivement
+  188 et 8 échecs. Constructeur/reconfigure gardent leur préconfiguration assumée.
+- **Validation intégrée** : 493 verdicts logiques sans échec ; aller-retour de
+  sauvegarde Mega STE identique (écran et état). Format v21 inchangé.
+  Suite `full` réussie : 22 étalons pixel disponibles et démarrage GUI passent.
+  Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE restent
+  sautés faute de données locales.
+
+## Fidélité matérielle, suite : ACSI, SCC et VBlank (2026-10-18)
+
+- **ACSI** : IRQ post-DMA différée de 1000 cycles CPU, conversion 8/16 MHz et
+  rééchelonnement lors d’une bascule Mega STE. Acquittements de commande conservés.
+  65 vérifications dédiées ; délai hérité d’Hatari, sans essai d’Idris OS.
+- **SCC** : générateur BRG et interruptions ZeroCount, horloges PCLK/RTxC,
+  multiplicateurs, latch, priorités, resets et phase sauvegardée. 56 vérifications.
+  La cadence reste indépendante de la vitesse CPU ; TX/RX restent instantanés.
+- **Vidéo** : comparateurs VBlank et remise à ON au VSYNC, palette 0 et stride
+  des lignes masquées. Deux étalons Hatari libres : `vblank_on` passe de 640 pixels
+  divergents à zéro ; `vblank_off` garde le cas où le comparateur est évité.
+  Auto-tests Glue : 64 assertions ST et 88 STE, zéro échec.
+- **État v21** : nouvelles échéances ACSI/SCC et périodes BRG ; rejet explicite
+  d’un véritable état v20. Aller-retour Mega STE : écran et état identiques.
+
+## Fidélité matérielle, suite : précision et décimal du 68881 (2026-10-18)
+
+**FMOVE/FABS/FNEG.** Les unaires appliquent maintenant la précision FPCR, avec
+la plage d'exposant simple/double et les exceptions OVFL/UNFL/INEX2. NaN/SNaN,
+zéros signés, infinis et dénormalisés suivent les fonctions SoftFloat d'Hatari.
+
+**FMOVECR.** Les offsets indéfinis utilisent les onze motifs silicium
+`fpp_cr_undef`, leurs ajustements de mantisse et les codes de condition particuliers.
+Les wrappers d'arrondi préservent les NaN et les zéros non canoniques et normalisent
+les dénormalisés. Les constantes restent en plage d'exposant étendue.
+
+**Décimal empaqueté.** Nouveau `SoftFloatDecimal.hpp`, port des conversions
+`softfloat_decimal.c` et de l'emballage 96 bits `fp_to_pack/from_pack` : 17 chiffres,
+quatre arrondis, k positif ou ≤ 0, grands exposants, NaN/SNaN. Plus de passage
+par `strtod` ou `snprintf`. INEX1 entrant et INEX2 sortant sont conservés jusqu'au
+Response CIR, avec la priorité correcte si l'opération lève une autre exception.
+La revue a trouvé deux familles de décalages indéfinis dans les chemins amont :
+zéro décimal avec exposant non nul et étendu non canonique. Le premier garde son
+signe ; le second produit OPERR+NaN en sortie P. Ces gardes sont testées séparément
+de l'oracle. Le k dynamique reste fixé à 17 (registre CPU Dn inaccessible).
+
+**Bancs conservés dans le dépôt**, compilant les véritables fonctions de l'oracle
+épinglé `f0736b24` dans un répertoire temporaire, sans ROM propriétaire :
+
+- `tools/test_fpu_unary_oracle.py --check-mutation` : **1 443 cas, zéro écart** ;
+  rétablir l'ancien comportement produit 507 échecs.
+- `tools/check_fmovecr_oracle.py` : **2 048 cas, zéro écart**, valeur étendue et FPSR.
+  Les mutations table/ajustements/CC/NaN sont détectées. Les offsets $40–$7F
+  exercent la fonction ROM par CIR ; le décodeur F-line d'Hatari est hors de ce banc.
+- `tools/test_fpu_decimal_oracle.py --sanitize` : **161 348 contrôles, zéro échec**,
+  comparaisons de conversion/emballage et gardes sous UBSan. Une revue indépendante
+  de 668 cas limites passe aussi ASan/UBSan.
+
+La mini-ROM CIR passe de **23 à 52 groupes de tests**, y compris la livraison
+INEX1, sa combinaison avec INEX2, les priorités SNAN/OPERR, l'effacement EXC et
+l'accumulation AEXC. La ROM suivie a été régénérée et comparée à une génération
+indépendante. Aucun champ d'état FPU ajouté ; le format reste v20.
+
+**Validation globale** : build Release puis `tools/run_all.py --tier full` réussis
+sur macOS arm64, boot GUI inclus (hors bac à sable macOS). Les 52 groupes FPU et
+les 20 étalons pixel disponibles passent. Quatre étalons pixel, Cubase Lite et le
+diagnostic MegaSTE restent non exécutés faute de données propriétaires.
+
+## Fidélité matérielle : vidéo STE 336 px, précision FMOVECR, géométrie FDC (2026-10-18)
+
+**Vidéo STE.** La séquence `$FF8265>0` puis `$FF8264=0`, dans les 40 cycles de la
+même VBL, active maintenant les 16 pixels supplémentaires à gauche. Le latch
+persiste entre trames ; les écritures pendant l'affichage s'appliquent en fin de
+ligne. Le compteur MMU, la consommation de 168 octets par ligne et les priorités
+des retraits de bordure suivent les branches d'Hatari. Les métadonnées de scroll,
+prefetch et latch sont conservées pour chaque ligne, même avant la première
+écriture palette : une palette tardive ne transforme plus rétroactivement des
+lignes 320 px en 336 px.
+
+Cinq étalons libres `scroll_336*` viennent du générateur existant et de l'oracle
+épinglé `f0736b24` : séquence octet, séquence mot, délai dépassé, annulation et
+activation mi-écran suivie d'une palette tardive. **0 pixel divergent sur les cinq**.
+L'ancien code diffère de 1 544 pixels sur les deux activations simples ; la revue
+croisée a exposé le défaut de métadonnées tardives (1 310 pixels avant sa correction).
+L'auto-test Glue STE vérifie aussi la limite 40/44 cycles, le changement de VBL,
+les combinaisons de bordures et la restauration de la séquence en cours.
+
+**Sauvegardes : format v20.** Les trois nouveaux champs du Shifter sont sérialisés
+(6 octets) et le bit de validité des métadonnées par ligne est contrôlé. Les états
+v19 et antérieurs sont refusés explicitement ; aucun convertisseur n'est fourni.
+Le test de déterminisme avec le latch actif retrouve le même écran et les mêmes
+octets d'état après restauration ; le refus d'un véritable état v19 a été vérifié.
+
+**FPU.** FMOVECR arrondit désormais la mantisse selon la précision FPCR après
+l'ajustement de la table ROM, en gardant la plage d'exposant étendue. Les drapeaux
+INEX2 remontent aussi quand une constante exacte en étendu devient inexacte en
+24/53 bits. Banc CIR **14 → 23 tests**, ROM suivie régénérée : les nouveaux cas
+couvrent les quatre arrondis, la précision double/réservée, les grands exposants
+et INEX2. FSGLMUL/FSGLDIV et FMOD étaient déjà portés, contrairement au TODO ; ils
+reçoivent des régressions dédiées. Quatorze attentes ont été comparées au vrai
+`softfloat.c` d'Hatari, et les mutations des chemins d'arrondi font échouer les tests.
+Restent FMOVE/FABS/FNEG selon FPCR, le décimal empaqueté et les offsets FMOVECR indéfinis.
+
+**FDC.** Après WRITE SECTOR ou WRITE TRACK du secteur de boot, les accès suivants
+utilisent la nouvelle géométrie BPB, comme `Floppy_FindDiskDetails` chez Hatari.
+Une face retirée répond RNF en lecture et en écriture, sans altérer son ancien
+contenu. WRITE TRACK conserve les offsets validés pour le transfert courant.
+La revue croisée a trouvé une conséquence pour MSA : une géométrie BPB valide
+pour les accès peut être impossible à encoder (160 pistes, ou nombre de pistes
+non entier). Le ré-encodage utilise alors le découpage initial du conteneur et
+préserve tous les octets, nouveau BPB compris. Tests par DMA, WRITE TRACK et
+persistance/remontage du fichier MSA ; le témoin initial produisait trois échecs.
+**Aucune conclusion sur STE_Test v1.9**, dont la cartouche et les ROM Atari sont absentes.
+
+**Validation d'ensemble** : build Release complet puis `tools/run_all.py --tier full`
+réussis sur macOS arm64, y compris le boot GUI. **488 assertions de logique, 62
+assertions Glue STE, 23 tests FPU et 20 étalons pixel exécutés sans échec**.
+Quatre étalons pixel, le séquenceur Cubase Lite et le diagnostic MegaSTE restent
+sautés faute de leurs données propriétaires ; ils ne sont pas inclus dans ces résultats.
+
 ## Serveur : disquette à chaud, lecteur B débranché — demandes des bancs TOS File Cmd (2026-10-01)
 
 **`insert A|B FICHIER` / `eject A|B`** changent la disquette en cours de session serveur,

@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
+#include <algorithm>
 
 namespace {
 constexpr int SCC_IRQ_ON = 0, SCC_IRQ_OFF = 1;
@@ -44,7 +46,12 @@ constexpr uint8_t RR3_EXT_IP_B = 0x01, RR3_TX_IP_B = 0x02, RR3_RX_IP_B = 0x04,
     RR3_EXT_IP_A = 0x08, RR3_TX_IP_A = 0x10, RR3_RX_IP_A = 0x20;
 // Sources d'interruption (bitmask interne)
 constexpr uint32_t INT_RX_CHAR = 1u << 0, INT_RX_OVERRUN = 1u << 1, INT_RX_FRAMING = 1u << 2,
-    INT_RX_PARITY = 1u << 4, INT_TX_BUFFER_EMPTY = 1u << 5;
+    INT_RX_PARITY = 1u << 4, INT_TX_BUFFER_EMPTY = 1u << 5,
+    INT_EXT_ZERO_COUNT = 1u << 6;
+
+Scheduler::Source brgSource(int channel) {
+    return channel == 0 ? Scheduler::SCC_BRG_A : Scheduler::SCC_BRG_B;
+}
 } // namespace
 
 // -----------------------------------------------------------------------------
@@ -57,6 +64,11 @@ void Scc::resetChannel(int c, bool hw) {
     ch.WR[1] &= 0x24; ch.WR[3] &= 0xfe; ch.WR[4] |= 0x04; ch.WR[5] &= 0x61;
     ch.WR[15] = 0xf8; ch.WR7p = 0x20;
     if (hw) {
+        // WR9 force-hardware-reset désactive WR14 : annuler aussi son événement.
+        // Hatari laisse ici un timer fantôme (ResetChannel ne le retire pas),
+        // contrairement à son reset machine global qui réinitialise CycInt.
+        brgPeriod_[c] = 0;
+        if (sched_) sched_->cancel(brgSource(c));
         chn_[0].WR[9] &= 0x03; chn_[0].WR[9] |= 0xC0; ius_ = 0;
         ch.WR[10] = 0x00; ch.WR[11] = 0x08; ch.WR[14] &= 0xC0; ch.WR[14] |= 0x30;
     } else {
@@ -83,6 +95,48 @@ void Scc::reset() {
     trace_ = getenv("NEOST_SCC_TRACE") != nullptr;
     for (auto& c : chn_) { std::memset(c.WR, 0, sizeof(c.WR)); std::memset(c.RR, 0, sizeof(c.RR)); }
     resetFull(true);
+}
+
+// -----------------------------------------------------------------------------
+// BRG : port de SCC_Compute_BaudRate et SCC_InterruptHandler_BRG (scc.c).
+// Les modes TX/RX de WR11 n'empêchent PAS le BRG de tourner. Seul le débit BRG
+// est porté ici ; le transfert des octets garde son comportement immédiat.
+// -----------------------------------------------------------------------------
+void Scc::updateBrg(int c) {
+    const Chn& ch = chn_[c];
+    brgPeriod_[c] = 0;
+    if (!(ch.WR[14] & 1)) {
+        if (sched_) sched_->cancel(brgSource(c));
+        return;
+    }
+    static constexpr int multiplier[4] = {1, 16, 32, 64};
+    const int mult = (ch.WR[4] & 0x0C) ? multiplier[ch.WR[4] >> 6] : 1;
+    const int tc = (int(ch.WR[13]) << 8) | ch.WR[12];
+    // Mega STE : PCLK=CLK8 (clocks_timings.c), RTxCA/B=OSC 3,672 MHz
+    // (scc.c:107-109, SCC_Get_RTxC_Freq). « PCLK4 » n'est PAS PCLK / 4.
+    const int64_t source = (ch.WR[14] & 2) ? neost::pacing::kCpuHzInt : 3'672'000;
+    // Hatari arrondit le quotient FLOAT avant de convertir baud→cycles entiers.
+    // Garder les deux étapes : la période n'est pas simplement 2*mult*(TC+2).
+    const int baud = std::max(1, int(std::round(float(source) / (2 * mult * (tc + 2)))));
+    // Échéance en cycles BUS CLK8 : elle ne change pas quand le CPU passe 8/16 MHz.
+    // Hatari utilise CPU_Freq=CLK16 même en mode CPU 8 MHz, où son BRG tourne
+    // donc deux fois trop lentement. Ne pas reproduire cette dépendance parasite.
+    brgPeriod_[c] = neost::pacing::kCpuHzInt / baud;
+    if (sched_) sched_->schedule(brgSource(c), sched_->liveNow() + brgPeriod_[c]);
+}
+
+void Scc::onBrgEvent(int c) {
+    if (c < 0 || c > 1 || !sched_ || brgPeriod_[c] == 0 || !(chn_[c].WR[14] & 1)) return;
+    const int64_t due = sched_->firingDue();
+    const int64_t anchor = due >= 0 ? due : sched_->liveNow();
+    sched_->schedule(brgSource(c), anchor + brgPeriod_[c]);
+    // Même approximation que Hatari : pulse ZC puis effacement interne sans
+    // recalcul immédiat de RR0. RR3/INT conservent la cause jusqu'au WR0 Reset
+    // External/Status ; RR0 ZC ne reste donc pas bloqué à 1 après cet acquittement.
+    updateRR0Set(c, RR0_ZERO_COUNT);
+    intSourcesSet(c, INT_EXT_ZERO_COUNT);
+    updateRR0Clear(c, RR0_ZERO_COUNT);
+    chn_[c].intSources &= ~INT_EXT_ZERO_COUNT;
 }
 
 // -----------------------------------------------------------------------------
@@ -306,7 +360,13 @@ void Scc::writeDataReg(int c, uint8_t v) {
 // -----------------------------------------------------------------------------
 uint8_t Scc::readControl(int c) {
     uint8_t value = 0;
-    switch (activeReg_) {
+    uint8_t reg = activeReg_;
+    // Zilog UM0109, table Z85X30 : RR6B/RR7B sont les images RR2B/RR3B,
+    // sélectionnées par WR15B (idem A). Hatari scc.c teste et lit ici A seul.
+    // MAME scc_register_read remappe aussi avant do_sccreg_rr2 : réutiliser la
+    // lecture réelle garde le vecteur courant et son soft IACK (WR9 bit5).
+    if ((reg == 6 || reg == 7) && !(chn_[c].WR[15] & WR15_STATUS_FIFO)) reg -= 4;
+    switch (reg) {
     case 0: case 4: updateRR0(c); value = chn_[c].RR[0]; break;
     case 1: case 5: value = chn_[c].RR[1]; break;
     case 2:
@@ -316,8 +376,7 @@ uint8_t Scc::readControl(int c) {
         break;
     case 3: value = c ? 0 : chn_[0].RR[3]; break;
     case 6: case 7:
-        if (chn_[0].WR[15] & WR15_STATUS_FIFO) value = chn_[c].RR[activeReg_];
-        else value = chn_[0].RR[activeReg_ - 4];
+        value = chn_[c].RR[reg];
         break;
     case 8: value = readDataReg(c); break;
     case 10: case 14: value = chn_[c].RR[10]; break;
@@ -367,6 +426,7 @@ void Scc::writeControl(int c, uint8_t value) {
     case 4: {
         ch.parityBits = (value & WR4_PARITY_ENABLE) ? 1 : 0;
         if (((value >> 2) & 3) != WR4_STOP_SYNC) updateRR0Set(c, RR0_TX_UNDERRUN_EOM);
+        updateBrg(c);
         break;
     }
     case 5:                                               // RTS/DTR/break : lignes non câblées…
@@ -390,6 +450,9 @@ void Scc::writeControl(int c, uint8_t value) {
         }
         break;
     case 8: writeDataReg(c, value); break;
+    case 11: case 12: case 13: case 14:
+        updateBrg(c);
+        break;
     case 9: {
         chn_[0].WR[9] = value;
         if ((value & WR9_MIE) == 0) ius_ = 0;

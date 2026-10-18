@@ -72,7 +72,12 @@ public:
     // SERIAL_RX = livraison cadencée d'un octet RX à l'USART MFP (injection côté
     // hôte : modem Hayes — cf. Mfp::receiveByte). Un octet toutes
     // les ~10 périodes bit au débit configuré, IRQ RxFull (canal 12) par octet.
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MIDI_RX, SERIAL_RX, MICROWIRE, BLITTER, VC_RESTART, HBL, VBL, SRC_COUNT };
+    // ACSI_IRQ = fin DMA du disque dur après le délai minimal de 1000 cycles CPU
+    // (500 cycles bus lorsque le Mega STE tourne à 16 MHz),
+    // (Hatari HDC_ACSI_InterruptHandler_Update), distincte des acquittements octet.
+    // SCC_BRG_A/B = passages à zéro des générateurs de débit SCC (Mega STE).
+    // IKBD_MONITOR : échantillonnage joystick périodique demandé par $17.
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MIDI_RX, SERIAL_RX, MICROWIRE, BLITTER, VC_RESTART, HBL, VBL, ACSI_IRQ, SCC_BRG_A, SCC_BRG_B, IKBD_MONITOR, SRC_COUNT };
 
     using Callback = std::function<void()>;
 
