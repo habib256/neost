@@ -1,0 +1,517 @@
+                /ÿÿÿÿÿÿÿ7/ÿÿ7\             /ÿÿÿÿÿÿÿ7/ÿÿ7\
+               /  /\7  //  / /            /  /\7  //  / /
+              /  / /\ÿÿ/   ÿÿÿÿ7/ÿÿ7\/ÿÿ7/  / /\ÿÿ/   ÿÿÿÿ7/ÿÿ7\/ÿÿ7\
+             /  / /  ÿ7  /\7  //  / /  //  / /  ÿ7  /\7  //  / /  / /
+            /  / /ÿÿ7/  / /  //  / /  //  /_/ÿÿ7/  / /  //  / /  / /
+           /   ÿÿ  //  / /  //   ÿÿ  //       //  / /  //   ÿÿ  / /
+           \ÿÿÿÿÿÿÿ\\ÿÿ\/\ÿÿ\\ÿÿÿÿÿÿÿ\\ÿÿÿÿÿÿÿ\\ÿÿ\/\ÿÿ\\ÿÿÿÿÿÿÿ\/
+            ÿÿÿÿÿÿÿÿ ÿÿÿ  ÿÿÿ ÿÿÿÿÿÿÿÿ ÿÿÿÿÿÿÿÿ ÿÿÿ  ÿÿÿ ÿÿÿÿÿÿÿÿ
+             /ÿÿÿÿÿÿÿ7\                 /ÿÿ7\             /ÿÿ7\    /ÿÿ7\
+            /  /\7  / /                /  / /            /  / /   /  / /
+           /  / /  //ÿÿÿÿÿÿÿ7/ÿÿÿÿÿÿÿ7/  / /ÿÿ7/ÿÿÿÿÿÿÿ7/   ÿÿÿ7\ 7 / /
+          /  /ÿÿ  //  /\7  //  /\ÿÿÿÿ/   ÿÿ  //  /\7  //  /\ÿÿÿ\// / /
+         /  /  --//  / /  //  / /ÿÿÿ7    ÿÿÿ7/   ÿÿ  //  / /ÿÿÿÿ \ÿ\/ 
+        /  /    //   ÿÿ  //   ÿÿÿÿ7/  /\7  //   ÿÿÿÿ7/   ÿÿÿÿ7\/ÿ7\ÿ
+        \ÿÿ\ÿÿÿÿ\\ÿÿÿÿÿÿÿ\\ÿÿÿÿÿÿÿ\\ÿÿ\/\ÿÿ\\ÿÿÿÿÿÿÿ\\ÿÿÿÿÿÿÿ\/\ÿ\/
+         ÿÿÿÿÿÿÿÿ ÿÿÿÿÿÿÿÿ ÿÿÿÿÿÿÿÿ ÿÿÿ  ÿÿÿ ÿÿÿÿÿÿÿÿ ÿÿÿÿÿÿÿÿ  ÿÿ
+                !            !            !         .^--^.
+             /ÿ\  /ÿ\     /ÿ\  /ÿ\     /ÿ\  /ÿ\    / //   \  /7
+            /  /ÿÿ\  \   /  /ÿÿ\  \   /  /ÿÿ\  \   |___    |//
+            \_/* * \_/   \_/* * \_/   \_/* * \_/   vVVv|   |\\
+              |  _ |_()    |  _ |_()    |  _ |_()  |ÿÿÿ   /=''
+             (ÿ)___/)     (ÿ)___/)     (ÿ)___/)    (\__(ÿÿ)
+              ÿ    ÿ       ÿ    ÿ       ÿ    ÿ      ÿÿ  ÿÿ
+
+
+
+
+
+==============================================================================
+                                CHU CHU ROCKET
+==============================================================================
+                                  build 1.18
+==============================================================================
+                           a game by reservoir gods
+==============================================================================
+
+
+[ intro ]
+==============================================================================
+
+We're late, and our noses are long.
+
+Sitting here in RGHQ, it's like being a Pinocchio lookalike contest.
+
+In fact, reaching the keyboard is proving to be difficult due our excessive
+facial protruberances.
+
+In the words of Kings Of Tomorrow, "Finally".
+
+We hope you enjoy this little ray of sunshine into the dark cave of ST
+gaming.
+
+
+
+Chu Chu Rocket is a game of skill, cunning & manic mice. 
+
+It's Tom & Jerry made into (digital) flesh.
+
+Like all the great games the basic premise is simple, but the results are
+fiendishly addictive.
+
+Chu Chu Rocket was originally created by legendary game makers Sonic Team
+as the first ever network console game for the ill fated DreamCast.
+
+We bring 128bit entertainment to your humble 16bit ST!
+
+
+[ requirements ]
+==============================================================================
+
+The LITE version of "Chu Chu Rocket" requires 1MB of memory to run.
+
+It will work on the following machines:
+
+ Atari STFM
+ Atari STE
+ Atari TT
+ Atari Falcon
+
+
+[ glossary ]
+==============================================================================
+
+Chu     - those cute little mice
+Kapu    - that nasty cat
+Rocket  - dome shaped target
+Spinner - random event generator
+
+
+[ objectives ]
+==============================================================================
+
+The aim of the game is simple.
+
+Guide as many chus into your rocket as possible.
+
+Avoid getting kapus into your rocket as they will eat one third of your mice.
+
+Creatures have a well defined movement. When they hit a wall, they always turn
+right.
+
+You can divert creatures paths by laying down arrow tiles on the board.
+
+Use these to guide mice into your rocket and cats into opponents rockets.
+
+If a creature falls into a hole, itwill die.
+
+If a kapu moves into a chu, it will eat it.
+
+
+[ controls ]
+==============================================================================
+
+Chu Chu Rocket supports the following
+controllers:
+
+* Keyboard
+* Mice
+* Joysticks
+* Jaguar Pads
+* Team Taps
+
+Keyboard controls are cursor keys for movement and space for fire.
+
+Press 'UNDO' to exit screens in the front end.
+
+When using Jaguar Pads, 'Fire A' is the main fire button and 'Fire B' acts
+as the exit/undo button.
+
+
+To place a an arrow, first move the cursor over the desired tile. Now
+hold down fire. You will notice your cursor changes into an arrow. Whilst 
+still holding down fire, move in the direction in which you want to the
+arrow to face. Now release fire and your arrrow will be placed.
+
+In puzzle mode you can remove arrows from the board by clicking on them.
+
+The control select screen which is presented before starting any game allows
+you to assign controllers to any of the four players, or to set them to be
+computer controlled.
+
+The control select features intelligent assignment - it will not allow you to
+select a combination of incompatible controllers. For example, if you chose
+a mouse as a controller, all players currently under joystick control will be
+switched to a more suitable controller type as both mouse and joystick cannot
+operate simulataneously.
+
+
+[ demo mode ]
+==============================================================================
+
+If you leave the game inactive whilst in the front end, after a while it will
+enter demo mode. A random level will be displayed and four computer controlled
+players will battle things out. This can be useful to watch when learning how
+the game works.
+
+Press fire on any controller to exit demo mode.
+
+
+
+[ level select ]
+==============================================================================
+
+After you have chosen your game mode, you will be thrust into the level 
+select screen.
+
+Press left or right to choose your stage. You will be shown a preview
+of the level layout in the bottom right hand corner of the screen.
+
+In 'puzzle' mode, you can press up and down to select your world - 
+provided you have unlocked them.
+
+To unlock worlds in puzzle mode you have to complete all 25 levels.
+
+To leave the level select screen press 'UNDO' or 'Fire B' on jag pads.
+
+
+[ 4p battle ]
+==============================================================================
+
+This is the main multiplayer game for up to four players. If you haven't got
+enough friends, you can set up the AI to control some of the players.
+
+Your aim is get more mice into your rocket than anyone else.
+
+The player with the highest mouse count when the time runs out is the
+winner.
+
+You can only lay down 3 arrows at anyon time. Arrows have a limited life
+span, and after some time they will start flashing and then disappear.
+
+If a kapu hits an arrow from the opposite direction it will cause
+damage to it. Arrows can only survive two such hits before disappearing.
+
+There are two special types of Chus that you should look out for.
+
+GOLD CHUS
+These are worth 50 normal chus, so make every effort to get them into
+your rocket.
+
+PURPLE CHUS
+These trigger a spinner that cause random events to happen. It is generally 
+advantageous to guide purple chus into your rocket as they can cause 
+misfortune to befall your opponents.
+
+The player with the most points when time runs out is the winner.
+
+
+[ team battle ]
+==============================================================================
+
+Co-operation is the key to success inthis 2 vs 2 game.
+
+This mode plays exactly like 4p battle except that their are two teams 
+competing for the chu chu championship.
+
+The first team consists of players one and two, and their rockets are coloured
+yellow and blue.
+
+Team two is players three and four and they have the green and red rockets.
+
+Work with your teammate to collect the most chus and guide kapus into your
+opponents rockets.
+
+Each chu is worth one point and gold chus are worth 50 points.
+The team with the most points when time runs out is the winner.
+
+
+[ puzzle ]
+==============================================================================
+
+Use your brain!
+
+In puzzle mode it is your mind not your fingers that has to work fast.
+
+Your mission; guide the chus into the rocket. Avoid kapus and avoid
+holes.
+
+Along the bottom of the screen all the arrows available to you on this
+level are displayed.
+
+Work out the route to rocket, and place down the arrows from the
+available set.
+
+Once you are confident you have the correct path laid out, move your
+cursor to the left of the screen and click on 'GO' to set the level
+in motion.
+
+If you want to speed through the level you can click on 'FFWD'.
+
+If you realise you have made a mistake and want to restart the
+level, click on 'REDO'.
+
+To leave puzzle mode, click on the 'EXIT' button.
+
+Once you have started the level ( after clicking 'GO' or 'FFWD' )
+you cannot edit the arrow layout.
+
+Before the level is in motion, you can remove arrows by clicking
+on them, pressing fire b ( or UNDO or right mouse button ),
+or you can simply click on 'REDO' to reset the entire level.
+
+If you manage to complete all the puzzle levels you will be
+rewarded with a secret bonus.
+
+
+[ stage challenge ]
+==============================================================================
+
+Stage Challenge level presents a series or live action puzzles.
+
+Like 'puzzle' mode, you have to use your brain to work out the solution to 
+each level, but this time you have think on your feet and place arrows whilst 
+the game is in motion.
+
+Unlike 'puzzle' mode, you don't have a limited set of arrows; you can place
+down three different arrows at any one time like in '4p battle' and 'team
+battle' modes.
+
+In this mode, different levels have different objectives and you will have to 
+complete a number of different tasks to become master of the stage challenge 
+level.
+
+If you do manage to complete all stage challenges levels you will be rewarded 
+with a secret bonus.
+
+Stage Challenge mode can be played solo, but it best played with a friend -
+co-operate to complete each task.
+
+When each stage challenge level starts, you have 3 seconds to familarise
+yourself with this level. During this time none of the chus or kapus move,
+you can move your pointer about but you can't place arrows. It gives you
+a chance to work out what to do and get into position before the action
+begins.
+
+
+[ pause ]
+==============================================================================
+
+To pause the game, press 'F1' or 'Pause' on jaguar pads.
+
+Whilst in pause mode, move left then press fire to quit the game. 
+Move left then press fire to leave pause mode and continue with the game.
+
+
+[ quit ]
+==============================================================================
+
+To quit the game and return to the front end, press 'F10'.
+
+
+[ help ]
+==============================================================================
+
+From the front end you can access a series of help screens that provide basic 
+gameplay information.
+
+Press fire to move through help screens.
+
+
+[ options ]
+==============================================================================
+
+To navigate the options screen, move up and down to move the cursor to the 
+desired option, and use left and right to change the selection.
+
+You can edit the following options:
+
+WINS             - defines the number of victories needed to become champion 
+                   in the '4p battle' and 'team battle' modes.
+
+TIME             - defines how long each game lasts for in the '4p battle' and 
+                   'team battle' modes
+
+SPEED            - sets how frantic the game is in the '4p battle' and 
+                  'team battle' modes.
+
+GOLD FREQUENCY   - defines the amount of gold chus that appear in the '4p 
+                   battle' and 'team battle' modes.
+
+PURPLE FREQUENCY - defines the amount of purple chus appear '4p battle' and 
+                   'team battle' modes.
+
+SPRITES          - this secret bonus feature can be unlocked on completing
+                   the 'puzzle' and 'stage  challenge' modes.
+
+SOUND FX         - toggles sound effects on and off. the game speed on STe 
+		           may be improved if sound effects are disabled.
+
+MUSIC            - toggles music on and off.
+
+SFX TEST         - allows you to listen to all the sound effects in the game. 
+                   popular with japanese.
+
+MUSIC TEST       - allows you to listen to all the tunes in the game. 
+			       popular with grazey.
+
+SPEAKER          - toggles the internal speaker on and off. falcon only.
+
+
+[ save ]
+==============================================================================
+
+On exiting the game from the front end and returning to GEM, the game will
+create a save file which includes all your current configuration settings,
+options, level completion status and times for stage challenge mode.
+
+Remember, to keep your high scores you must quit to GEM, don't just turn off
+your Atari!
+
+
+[ screen adjust ]
+==============================================================================
+
+If you are running the game on a Falcon with a RGB monitor or TV, you can
+centre the screen position using the Numeric Keypad keys '4' and '6'.
+
+Press '4' to move the screen display left.
+Press '6' to move the screen display right.
+
+
+[ rsc ]
+==============================================================================
+
+Included in this packed is a file entitled 'CHUCHU.RSC'.
+This contains some icons for ChuChu rocket that you can add to your desktop.
+These graphics were designed by neo.
+
+
+[ credits ]
+==============================================================================
+
+
+              ------------------------------------------------------
+                      ProjectLeader . Coding . Publicity
+
+                                     MrPink
+              ------------------------------------------------------
+
+
+              ------------------------------------------------------
+                      Graphics . Logos . Fonts . Sprites
+
+                                      sh3
+              -----------------------------------------------------
+
+
+              -----------------------------------------------------
+                            Music . Audio . Testing
+
+                                      msg
+              ----------------------------------------------------
+
+
+              ----------------------------------------------------
+                Graphics . FrontEnd . Tiles . Sprites . Testing
+
+                                      neo
+              ----------------------------------------------------
+
+
+              ----------------------------------------------------
+                               Technical Support
+
+                                     griff
+              ----------------------------------------------------
+
+
+              ----------------------------------------------------
+                                 Sid Sound Replay
+
+                                 MC / Animal Mine 
+              ----------------------------------------------------
+
+
+              ----------------------------------------------------
+                                 Sid Sound Replay
+
+                               Defjam / Checkpoint
+              ----------------------------------------------------
+
+
+              ----------------------------------------------------
+                                 Sid Sound Replay
+
+                                Frost / Sector One
+              ----------------------------------------------------
+
+
+              ----------------------------------------------------
+                          Videl Routs & Sid Sound Replay
+
+                                   Evil / DHS
+              ----------------------------------------------------
+
+
+              ----------------------------------------------------
+                                 TeamTap Routs
+
+                                  scy / .tSCc.
+              ----------------------------------------------------
+
+              ----------------------------------------------------
+                                 TT Video Routs
+
+                                  ray / .tSCc.
+              ----------------------------------------------------
+
+
+              ----------------------------------------------------
+                              Additional Testing
+
+                                swe / YesCrew
+              -----------------------------------------------------
+
+
+              ----------------------------------------------------
+                      Additional Testing / Massive Support
+
+                               Adam Klobukowski
+              -----------------------------------------------------
+
+
+              ----------------------------------------------------
+                              Additional Testing
+
+                              Dma-SC / SectorOne
+              -----------------------------------------------------
+
+
+              ----------------------------------------------------
+                             Original Game Concept
+
+                                   Sonic Team
+              -----------------------------------------------------
+
+
+
+[ contact ]
+==============================================================================
+
+Chu Chu Rocket is freeware, but if you like it and want us to continue making
+productions for the atari, drop us a line and say hello!
+
+
+MrPink   : mrpink.rg@zetnet.co.uk
+msg      : msg@atari.org
+sh3      : shthree@supanet.com
+neo      : matt@atarishack.co.uk
+griff    : griffster@btinternet.com
+
+HomePage : http://rg.atari.org
+
+
+==============================================================================
+ [c] 1999-2001 Sonic Team / Reservoir Gods
+==============================================================================

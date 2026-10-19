@@ -6,6 +6,454 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Fidélité matérielle, suite : fronts BREAK et reconfiguration série (2026-10-18)
+
+- **SCC BREAK** : assertion et fin conservées même pendant un verrou externe
+  déjà fermé (Zilog p.58). WR0 sert les polarités mémorisées ; répétitions
+  coalescées, sans FIFO RX ni framing inventés. Nouveau banc : 14 échecs
+  initiaux ; treize bancs SCC ASan/UBSan réussis, revue croisée sans défaut restant.
+- **MIDI diviseur en vol** : fronts TSR restants recadencés lors du changement
+  CR0..1, données et format conservés. Aucun nouveau champ MIDI. Nouveau banc :
+  162 contrôles réussis ; suite MIDI de 543 contrôles sous ASan/UBSan verte.
+  Ancienne attente de durée figée corrigée, suite du scénario décalée sans
+  retour en arrière du Scheduler. Chargement TDR au repos now+bit encore approximatif.
+- **IKBD reprise BREAK** : phase réancrée au changement de diviseur CR, pour
+  la liaison usuelle /64 8N1. Échéances TX déjà franchies traitées avant les
+  écritures CR/TDR, sans annuler un TSR engagé ni écraser son ancienne donnée.
+  Nouveau banc 18 contrôles ASan/UBSan réussis, plus régressions CPU série,
+  format ACIA, PAUSE et capacité (27/19/33/24). Formats non usuels, départ
+  TX ordinaire et phase SCI exacte toujours hors de cette tranche.
+- **États v39** : fronts BREAK SCC et phase de reprise IKBD sauvegardés.
+- **Validation finale** : build sans avertissement, 546 verdicts logiques réussis ;
+  tous les paliers disponibles de `--tier full` passent, dont 22 étalons pixel
+  inchangés et le démarrage GUI. Aller-retour Mega STE v39 identique et véritable
+  v38 refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales. Ancres et chiffres documentaires vérifiés.
+
+
+## Fidélité matérielle, suite : retenue RTC, verrous SCC et reprise MIDI (2026-10-18)
+
+- **RTC TIMER EN** : une retenue du diviseur est conservée pendant l’arrêt,
+  puis délivrée immédiatement à la reprise. Phase sous-seconde continue et
+  retenue saturante, sans rattrapage des secondes arrêtées (Ricoh p.7).
+  RESET/ADJ annulent cette retenue, déduction du reset des étages documentée
+  sans mesure matérielle revendiquée. 35 contrôles timer et 359 banque passent
+  sous ASan/UBSan ; baseline timer : 21 échecs. Anciennes attentes d’arrêt corrigées.
+- **SCC External/Status** : WR15 contrôle les verrous indépendamment de
+  WR1 D0, qui masque uniquement l’IP (Zilog p.56–57, MAME WR1). La
+  réactivation retrouve un verrou fermé, même pour un Zero Count expiré.
+  Anciennes fixtures de broches brutes désarment explicitement WR15.
+  Nouveau banc : 12 échecs avant correction ; douze bancs SCC ASan/UBSan verts.
+- **MIDI BREAK** : reprise au prochain front ancré au dernier changement
+  de diviseur CR, conservé dans les états. 73 contrôles nouveaux, 37 échecs
+  avant ; six bancs MIDI, 380 contrôles ASan/UBSan réussis. La durée du TSR
+  actif et le chargement TDR au repos gardent leurs approximations existantes.
+- **États v38** : retenue RTC et phase de reprise BREAK MIDI ajoutées.
+- **Validation finale** : build sans avertissement, 543 verdicts logiques réussis ;
+  tous les paliers disponibles de `--tier full` passent, dont 22 étalons pixel
+  inchangés et le démarrage GUI. Aller-retour Mega STE v38 identique et véritable
+  v37 refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales. Ancres et chiffres documentaires vérifiés.
+
+## Fidélité matérielle, suite : banques RTC et parité SCC (2026-10-18)
+
+- **RTC RP5C15** : banque 1 indépendante du calendrier, alarmes et RESET
+  isolés, réservés ignorés, CLKOUT mémorisé sans sortie. ADJ arrondit à la
+  minute avec retenue et remise à zéro sous-seconde ; format matériel 12/24 h
+  avec écritures partielles conservées et API DateTime 24 h. Compteur bissextile
+  indépendant du chiffre d’année. Ricoh EK-086-9908 p.6–7 ; sonde TOS conservée.
+  359 contrôles sous ASan/UBSan réussis, contre 169 échecs avant correction ;
+  ancien banc des secondes également vert. Sorties ALARM/CLKOUT et TEST absents.
+- **SCC RX court** : la parité émise connue des bouclages de même largeur
+  est restituée après les données 5/6/7 bits, conformément à WR4 p.152.
+  Valeur figée au chargement TSR, conservée en FIFO et dans les sauvegardes.
+  L’API d’octets hôtes ne fournit aucune parité physique ; formats discordants
+  et erreurs de parité/framing restent hors du modèle. Nouveau banc : 16 échecs
+  avant correction ; après, nouveau banc et dix régressions SCC sous ASan/UBSan verts.
+- **Audit FDC** : aucun défaut supplémentaire démontré pour WRITE SECTOR /
+  WRITE TRACK après changement de protection ou éjection. Dix contrôles
+  temporaires sous ASan/UBSan réussis ; contrôle WPRT à l’index pour WRITE TRACK
+  conforme à Hatari. Aucun comportement ni test permanent ajouté pour cet audit.
+- **États v37** : banque RTC de treize octets et parité du TSR SCC sauvegardées.
+- **Validation finale** : build sans avertissement, 539 verdicts logiques réussis ;
+  tous les paliers disponibles de `--tier full` passent, dont 22 étalons pixel
+  inchangés et le démarrage GUI. Aller-retour Mega STE v37 identique et véritable
+  v36 refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales. Ancres et chiffres documentaires vérifiés.
+
+## Fidélité matérielle, suite : Zero Count, effacement UE et sélection FDC (2026-10-18)
+
+- **SCC Zero Count** : compteur avant /2 et WR4, période (TC+2)/source et
+  retenue rationnelle. TC modifié effectif au prochain reload, phase inchangée
+  par WR4/WR11. RR0 suit une pulse d’un cycle source, non latchée et masquée
+  par WR15 ; IRQ mémorisée malgré un dispatch CPU tardif. Zilog p.57/71/177
+  et MAME contredisent ici l’ancien raccourci d’Hatari. Les assertions héritées
+  du raccourci sont corrigées : 96 réussies, plus nouveau banc et neuf bancs
+  SCC sous ASan/UBSan. Ancien code : 4010 échecs du nouveau banc.
+- **MFP underrun** : une lecture conserve UE tant qu’une période TX complète
+  n’a pas passé depuis son apparition ; lecture éligible restitue UE puis
+  l’efface. Débits engagés et phase conservés. Seuil de la trame et seuil de
+  l’erreur séparés pour traiter une ancienne UE effacée pendant la trame
+  suivante. Ce scénario révélé en revue échouait avant correction. 88 contrôles
+  clear, 74 TX et 31 underrun sous ASan/UBSan réussis ; 30 échecs sur les
+  79 contrôles initiaux avant port. Banc Bus/Machine adapté au délai matériel.
+- **FDC sélection live** : les secteurs ST/MSA/DIM sont revérifiés contre la
+  géométrie du lecteur actuellement sélectionné. Changer pour un média ayant
+  moins de secteurs renvoie RNF, sans lire ni écraser la face/piste suivante.
+  STX conserve sa délégation. Nouveau banc 22 contrôles, quatre échecs avant
+  correction ; six bancs FDC/ACSI, 598 contrôles, réussis sous ASan/UBSan
+  (FDC et bancs instrumentés, reste de la bibliothèque précompilé standard).
+- **États v36** : fraction/pulse Zero Count SCC et deux échéances UE MFP
+  sauvegardées ; contrôles d’archives et offsets des bancs adaptés.
+- **Validation finale** : build et 537 verdicts logiques réussis ; tous les
+  paliers disponibles de `--tier full` passent, dont 22 étalons pixel inchangés
+  et le démarrage GUI. Aller-retour Mega STE v36 identique et véritable v35
+  refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales.
+
+## Fidélité matérielle, suite : cadence BRG et frontières série/disquette (2026-10-18)
+
+- **SCC caractères BRG** : rapport exact PCLK/RTxC, WR12/13 et WR4, sans
+  arrondi du baud ni seuil à 1 baud. Fractions TX/RX existantes réutilisées ;
+  constantes et formats changés au prochain caractère. Cas TC maximal et /64,
+  retenue sur 128 caractères, snapshots et longue suspension BREAK vérifiés
+  sous ASan/UBSan, avec huit bancs SCC de régression. Timer Zero Count entier
+  inchangé. **États v35** : gardes étendues à PCLK et longues suspensions, sans
+  nouveau champ ni précision sous-bit de BREAK.
+- **USART underrun** : tant que UE reste mémorisé, les fins de transmissions
+  suivantes ne redemandent pas TXERR. UDR conserve UE ; lecture TSR ou TE=0
+  le réarme. Nouveau banc 31 contrôles sous ASan/UBSan, contre deux échecs
+  initiaux ; anciens turnaround 110 et TX 72 passent. Le délai minimal d’un
+  front TX avant effacement UE par lecture reste non modélisé.
+- **FDC INDEX** : éjection du lecteur actif supprime immédiatement sa phase ;
+  insertion moteur lancé en amorce une nouvelle. Le lecteur non sélectionné
+  ne change pas la phase active. Banc FORCE INTERRUPT : 35 contrôles, deux
+  échecs avant correction ; avec sélection/timing/registres/ACSI, 576 contrôles
+  réussis. FDC et cinq bancs instrumentés ASan/UBSan, reste de la bibliothèque
+  précompilé standard. FORCE INTERRUPT, IRQ forcée et statut I/II étaient déjà
+  conformes à Hatari ; aucun nouveau champ FDC.
+- **Validation finale** : build et 534 verdicts logiques réussis ; tous les
+  paliers disponibles de `--tier full` passent, dont 22 étalons pixel inchangés
+  et le démarrage GUI. Aller-retour Mega STE v35 identique et véritable v34
+  refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales.
+
+## Fidélité matérielle, suite : horloges SCC et fin USART au repos (2026-10-18)
+
+- **Horloges directes SCC** : RTxC/TRxC utilisent le rapport rationnel exact,
+  sans troncature de chaque bit. Retenues TX/RX indépendantes par canal,
+  différence des plafonds cumulés correcte même au retour du reste à zéro.
+  Reconfiguration au caractère suivant, reprise après silence ancrée sur
+  l’horloge vive ; reprise BREAK sans consommer une nouvelle fraction.
+  Banc sur les deux canaux et sources, diviseurs 1/16/32/64, 128 caractères
+  consécutifs, snapshots et reconfiguration ; sept bancs SCC sous ASan/UBSan
+  réussis. Ancien calcul en échec sur les échéances directes. BRG/Zero Count
+  entier inchangé, BREAK sans phase exacte de bit. **États v34** pour les fractions.
+- **USART MFP END/AT** : arrêter au repos pose END immédiatement ; AT active
+  RE et se désarme. En vol, effets conservés à la fin du caractère. IRQ END sur
+  nouveau front seulement, à la date MMIO ou au stop théorique. TDR retenu,
+  RDR et données reçues conservés. 110 contrôles sous ASan/UBSan plus anciens
+  bancs USART 1162 et TX 72 ; six échecs sur le sous-ensemble initial avant correction.
+- **Audit IKBD** : `$18` et `$19` restent des NOP, comme dans Hatari ; `$19`
+  consomme sept octets en tout et `$99` est un alias de rapport, sans support
+  keycode. La documentation n’annonce plus ces modes comme implémentés.
+  Aucun changement de comportement ni banc redondant ajouté pour cet audit.
+- **Validation finale** : build et 531 verdicts logiques réussis ; tous les
+  paliers disponibles de `--tier full` passent, dont 22 étalons pixel inchangés
+  et le démarrage GUI. Aller-retour Mega STE v34 identique et véritable v33
+  refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales.
+
+## Fidélité matérielle, suite : BREAK SCC et frontières des tampons série (2026-10-18)
+
+- **SCC SEND BREAK** : TSR suspendu, TDR retenu, reprise du temps restant.
+  Un caractère interrompu n’est pas livré comme un octet intact. Rattrapage
+  des fins déjà passées avant une écriture WR5 tardive, avec conservation de
+  la phase du caractère suivant. Banc deux canaux et régressions SCC sous
+  ASan/UBSan ; ancien comportement : 18 échecs avant les contrôles finaux.
+  La revue a ajouté deux scénarios tardifs qui détectaient quatre erreurs de
+  rattrapage, corrigées. Limites : résolution au caractère, sans phase de bit,
+  erreurs RX synthétiques ni auto-clear X21. Indication RR0 bouclée immédiate
+  conservée. **États v33** pour suspension et temps restant.
+- **USART MFP** : écritures RSR limitées à RE/SS, plus F/S en synchrone ;
+  les bits de statut matériel ne peuvent plus être créés par logiciel. Droits
+  TSR déjà corrects, revérifiés. 1162 contrôles sous ASan/UBSan contre 234
+  échecs avant correction ; anciens bancs RX enable et TX passent aussi.
+- **Capacité IKBD** : les 1024 places firmware comptent uniquement les octets
+  en attente, sans inclure le SCI ni le RDR ACIA. Admission des paquets entiers
+  et overrun aval préservés. Archives dépassant la capacité rejetées avant
+  lecture de la file, soustraction protégée. Nouveau banc 24 contrôles sous
+  ASan/UBSan contre 15 échecs avant correction ; sept anciens bancs, 447
+  contrôles, toujours verts.
+- **Validation finale** : build et 529 verdicts logiques réussis ; tous les
+  paliers disponibles de `--tier full` passent, dont 22 étalons pixel inchangés
+  et le démarrage GUI. Aller-retour Mega STE v33 identique et véritable v32
+  refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales.
+
+## Fidélité matérielle, suite : arrêt SCC, PAUSE IKBD et statut RX MFP (2026-10-18)
+
+- **SCC TX Enable** : WR5 bit3 bas laisse finir la trame engagée à son échéance
+  initiale ; le TDR attend sans écraser le TSR. CTS, RTS différé, All Sent et
+  IRQ conservés. Banc deux canaux sous ASan/UBSan, snapshot et reset compris ;
+  ancien comportement : 20 échecs avant les derniers contrôles CTS/IRQ.
+- **IKBD PAUSE** : registre SCI sortant distinct de la file firmware. $13 retient
+  les prochains départs, laisse finir l’unique octet en vol. $11 et master reset
+  ACIA conservent sa phase ; boot ROM conserve l’octet, reset matériel l’annule.
+  Hatari ne précharge pas de second octet pendant la trame : l’ancienne note
+  « jusqu’à deux octets » est corrigée. Nouveau banc 33 contrôles et six anciens
+  bancs 414 contrôles passent sous ASan/UBSan ; ancien handler : dix échecs sur
+  les trente contrôles initiaux.
+- **MFP RX** : RE=0 efface RSR, Buffer Full et overrun, sans effacer les données
+  ni les IRQ MFP pendantes. UDR vide restitue toujours le registre RX, sans
+  exposer un ancien octet TX. Banc 18 contrôles sous ASan/UBSan, contre quatre
+  échecs avant correction. La reprise au milieu d’un caractère reste une limite
+  explicite du transport par octets ; aucun abandon arbitraire ajouté.
+- **États v32** : départ TX SCC et registre SCI IKBD sauvegardés.
+- **Validation finale** : build et 526 verdicts logiques réussis ; tous les
+  paliers disponibles de `--tier full` passent, dont 22 étalons pixel inchangés
+  et le démarrage GUI. Aller-retour Mega STE v32 identique et véritable v31
+  refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales.
+
+## Alt+Entrée : plein écran et capture souris (2026-10-18)
+
+- Alt+Entrée (pavé numérique compris) bascule entre écran ST plein écran avec
+  souris capturée et fenêtre restaurée avec curseur hôte. Taille et position
+  sont conservées, delta souris recalé, raccourci consommé côté hôte.
+- Build et aller-retour GUI vérifiés : capture, libération, géométrie et
+  conservation du réglage joystick clavier.
+
+## Fidélité matérielle, suite : formats série MFP, SCC et MIDI (2026-10-18)
+
+- **USART RX MFP** : mots hôtes de 5..8 bits alignés à droite, bits inutilisés
+  à zéro. Largeur fixée au départ du caractère, conservée en vol et dans les
+  sauvegardes ; repli synchrone huit bits explicite. 6167 contrôles sous
+  ASan/UBSan, contre 1091 échecs avant correction. Aucune erreur de parité ou
+  framing inventée depuis le callback d’octet ; bouclage ordonnancé déjà masqué.
+- **SCC TX** : WR5 « cinq bits ou moins » décode 1..5 bits depuis le TDR ;
+  masquage aussi en 6/7 bits. Données et longueur sont fixées au chargement
+  TSR ; la durée suit cette longueur. Banc sur les deux canaux sous ASan/UBSan,
+  snapshots et TDR reconfiguré compris ; ancien comportement : 14 échecs.
+- **MIDI TX** : huit formats ACIA (7/8 données, parité, 1/2 stops), diviseurs
+  /1, /16, /64. Données masquées et échéance active mémorisent le format du
+  TSR ; le prochain TDR prend la nouvelle configuration. BREAK reprend au
+  front du diviseur sélectionné. 183 contrôles sous ASan/UBSan, contre 96
+  échecs avant correction ; anciens bancs pipeline et BREAK toujours verts.
+  Source RX hôte conservée à 31250 bauds 8N1, sans erreurs physiques simulées.
+  Les anciens tests de pipeline programment explicitement /16 8N1.
+- **États v31** : largeur RX MFP et longueur du TSR SCC sauvegardées.
+- **Validation finale** : build et 523 verdicts logiques réussis ; tous les
+  paliers disponibles de `--tier full` passent, dont 22 étalons pixel inchangés
+  et le démarrage GUI. Aller-retour Mega STE v31 identique et véritable v30
+  refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales.
+
+## Fidélité matérielle, suite : rapport USART exact et filtrage SCC/IKBD (2026-10-18)
+
+- **USART MFP** : TX/RX utilisent directement le rapport Timer D/UCR exact.
+  Les débits non entiers ne dérivent plus à cause du débit entier informatif.
+  La fraction survit aux changements de débit, le caractère engagé reste stable,
+  et l’arrêt du Timer D conserve la configuration effective du transport.
+  107 contrôles clock, 104 RX et 72 TX passent sous ASan/UBSan. L’ancien
+  calcul échoue sur six contrôles, dont 2000 échéances erronées par direction.
+  **États v30** pour le facteur d’horloge exact ; fronts physiques non simulés.
+- **SCC WR3 Sync Character Load Inhibit** : retrait des caractères égaux à WR6
+  avant FIFO, overrun et IRQ, y compris en asynchrone selon le manuel Zilog.
+  SDLC exclu, exception Bisync 12 bits. Banc sur les deux canaux sous ASan/UBSan ;
+  retirer le filtre provoque 28 échecs. Aucun synchroniseur de bits ajouté.
+- **IKBD $07+$17** : MouseAction et position absolue précèdent le monitoring
+  joystick. La cadence de $17 reste commune après changement de mode, jusqu’au
+  boot ROM qui rétablit 150000 sans déplacer l’échéance. Base fixe 8021247 comme
+  Hatari. Nouveau banc 17/17 et anciens monitoring 73/73, autosend 22/22 sous
+  ASan/UBSan ; ancien handler monitoring : dix échecs du nouveau banc.
+- **Validation finale** : build et 520 verdicts logiques réussis ; tous les
+  paliers disponibles de `--tier full` passent, dont 22 étalons pixel inchangés
+  et le démarrage GUI. Aller-retour Mega STE v30 identique et véritable v29
+  refusé. Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE
+  restent sautés faute de données locales.
+
+## Fidélité matérielle, suite : diviseur USART, BREAK MIDI et RTS SCC (2026-10-18)
+
+- **USART MFP** : UCR7 sélectionne /1 ou /16, jusqu’à 307200 bauds. Retrait
+  du plancher RX de 640 cycles et des arrondis tty hôte ; TX/RX suivent le
+  débit matériel. Reconfiguration au caractère suivant. 90 contrôles passent
+  sous ASan/UBSan ; 22 échouaient avant correction. Mode synchrone en repli
+  8N1 /16 ; débits non entiers encore tronqués.
+- **MIDI BREAK** : le TSR actif finit, le TDR reste en attente et reprend au
+  front de bit suivant. Réception et IRQ préservées, sans forme d’onde bit à bit.
+  36 contrôles sous ASan/UBSan, dont le partage GPIP4 clavier/MIDI ; neuf
+  contrôles échouaient avec l’ancien comportement.
+- **SCC RTS** : en asynchrone Auto Enables, la désactivation attend le dernier
+  stop, TDR compris. Le bouclage CTS suit la sortie physique plutôt que WR5.
+  Banc sur les deux canaux, snapshots et RR0 verrouillé ; 14 contrôles
+  échouaient avant correction. **États v29** pour cette sortie physique.
+- **Validation** : build, 518 verdicts logiques et tous les paliers disponibles
+  de `--tier full` passent. Les 22 références pixel restent inchangées ; boot
+  GUI réussi. Aller-retour Mega STE v29 identique et véritable v28 refusé.
+  Quatre étalons propriétaires, Cubase Lite et le diagnostic Mega STE restent
+  sautés faute de données locales.
+
+## Fidélité matérielle, suite : USART TX, phase MIDI et Auto Enables SCC (2026-10-18)
+
+- **USART MFP TX** : TDR écrasable et TSR en vol, durée selon UCR et baud,
+  sortie et bouclage à la fin du caractère. Buffer Empty et IRQ TXEMPTY suivent
+  le transfert TDR→TSR ; underrun/EOT, désactivation différée et reprise du TDR
+  sont distingués. Échéances et retenue fractionnaire sauvegardées. 72 contrôles
+  passent sous ASan/UBSan, plus les contrôles Bus/Machine ; l’ancien transport
+  échoue sur 14 des 24 contrôles initiaux. Phase du premier front TC, mode
+  synchrone, horloge /1 et forme d’onde BREAK restent approximatifs. Le puits
+  hôte reste un callback d’octet sans horodatage ; les IRQ conservent leur date.
+- **Bancs série** : les générateurs FPU, diagnostic, UltraSatan et GEMDOS IRQ
+  activent désormais UCR/TE et scrutent TSR7 avant chaque UDR. Ils ne peuvent
+  plus compter sur le puits série instantané. Images commises régénérées ;
+  les 54 groupes FPU sont inchangés.
+  La cartouche IPL lisait hors Display Enable avec son ancien délai et confondait
+  numéro de ligne avec latence (octet bas du compteur). Mesure désormais en DE,
+  adresse modulo 160 : colonne 132 sur les deux moteurs. Ajouter deux NOPs
+  décale à 136 et fait échouer la bande 130–134 ; `--break ipl` échoue aussi.
+- **MIDI RX** : armement initial sur l’horloge CPU vive, poursuite sur l’échéance
+  précédente et conservation de phase aux resets/remplacements de source.
+  Les resets rapprochés ne peuvent plus affamer l’entrée. 25 contrôles passent
+  sous ASan/UBSan, contre 21 échecs quand ces seuls changements sont retirés.
+- **SCC WR3 Auto Enables** : CTS qualifie l’émission, DCD la réception, après
+  les bits logiciels. Le TSR engagé se termine si CTS tombe ; le TDR attend.
+  DCD coupe le caractère en cours sans purger la FIFO ni les futurs octets hôtes.
+  Qualification sur broches brutes, indépendante du verrou RR0 ; exceptions
+  local loopback/auto echo selon Zilog/MAME. La désactivation RTS asynchrone
+  différée jusqu’au dernier caractère reste ouverte dans le câblage de banc.
+- **États v28** : pipeline USART TX et nouvelle échéance SERIAL_TX.
+  Véritable état v27 refusé ; aller-retour Mega STE : écran et état identiques.
+  Build et 515 verdicts logiques réussis ; 26 contrôles USART via Bus/Machine.
+  Cartouche, 54 groupes FPU, UltraSatan/NetUSBee et stress GEMDOS IRQ passent
+  avec les nouveaux émetteurs des programmes de test.
+- **Validation finale** : tous les paliers disponibles passent, dont 22 étalons
+  pixel sans recalibrage et le démarrage GUI. Quatre étalons propriétaires,
+  Cubase Lite et le diagnostic Mega STE restent sautés faute de données locales.
+
+## Fidélité matérielle, suite : réception MIDI, cadence USART et formats SCC (2026-10-18)
+
+- **MIDI RX** : un seul RDR pour les caractères achevés. Le registre à décalage
+  ne constitue pas une seconde case de réception. Un octet reçu pendant RDRF est
+  perdu ; l’erreur pendante devient OVRN à la lecture de RDR, et SR→RDR acquitte
+  le statut. Registre persistant, master reset, cadence source 2560 cycles,
+  sauvegarde et IRQ partagée avec le clavier couverts par 26 contrôles ASan/UBSan.
+  L’ancien modèle à deux caractères achevés et sans OVRN est abandonné.
+- **USART MFP RX** : durée selon UCR (5 à 8 données, parité et 1/1,5/2 stops),
+  cadence ancrée sans dérive après dépassement CPU, reste fractionnaire exact.
+  L’échéance du caractère en cours survit à une reconfiguration, la suivante
+  utilise le nouveau format. Phase entière + reste sauvegardés, sans timestamp
+  Q32 limité aux premières minutes. 104 contrôles ASan/UBSan passent, dont
+  restauration, longue durée et états forgés ; 95 échecs avec l’ancien calcul
+  parmi les 98 premiers contrôles. Le débit /16 existant et le repli synchrone
+  8N1 historique sont conservés ; ce n’est pas une simulation bit à bit.
+- **SCC asynchrone** : bits inutilisés de RR8 forcés à un selon WR3 (Zilog
+  UM010904, p.148), au moment de la réception. Une réécriture du format conserve
+  les octets déjà dans la FIFO. 83 contrôles passent sous ASan/UBSan, contre
+  39 échecs avant. Deux canaux, formats, FIFO, cadence et bouclage couverts.
+- **Anneau MIDI** : l’ancien remplissage du RDR par trame aurait limité l’entrée
+  réseau à un octet par trame après correction du registre. Le tampon de gigue
+  alimente maintenant `MIDI_RX` au débit du câble ; UDP reste collecté par trame.
+  En cas de choix simultané, l’anneau ouvert remplace les appareils MIDI IN hôtes,
+  avec journal explicite. Contrôle UDP local : 20 octets ordonnés en 51200 cycles.
+- **États v27** : RDR/OVRN MIDI et phase fractionnaire de réception USART MFP.
+  Véritable état v26 refusé ; aller-retour Mega STE v27 : écran et état
+  sérialisé identiques. Build et 511 verdicts logiques réussis ; 30 contrôles
+  MIDI passent par Bus/Machine, dont RDR, OVRN et la ligne GPIP4.
+- **Validation finale** : tous les paliers disponibles passent, dont 22 étalons
+  pixel sans changement de référence et le démarrage GUI. Le raccordement réseau
+  est validé séparément après rebuild headless : contrôle UDP local sous ASan/UBSan
+  et lancement CLI en boucle locale. Quatre étalons propriétaires, Cubase Lite et
+  le diagnostic Mega STE sont sautés faute de données locales.
+
+## Fidélité matérielle, suite : émission MIDI, break clavier et overrun USART (2026-10-18)
+
+- **MIDI OUT** : TDR et TSR distincts. TDRE remonte au chargement du TSR après
+  un bit de 256 cycles, l’octet atteint le puits ou le bouclage au bit de stop.
+  Une écriture prématurée remplace le seul TDR en attente. TIE ne règle que
+  l’IRQ, les horodatages reflètent l’échéance série même après un callback tardif.
+  Modèle /16 8N1 ; autres formats, diviseurs et break MIDI restent ouverts.
+  Réception MIDI inchangée. 37 contrôles ASan/UBSan passent ; rétablir l’ancien
+  transport produit huit échecs. Sauvegarde en cours d’envoi, resets et rejet des
+  échéances forgées couverts ; repli synchrone conservé pour les puces sans horloge.
+- **Break ACIA clavier** : le TSR engagé se termine, le TDR attend pendant le
+  break puis repart au prochain front /64. 19 contrôles passent (six échecs avant),
+  ainsi que les 27 contrôles de transit existants, sous ASan/UBSan. La ligne
+  physique basse, la récupération des erreurs de trame et les autres formats
+  nécessitent une simulation bit à bit ; ils restent ouverts.
+- **USART MFP** : la réception hôte ne remplace plus l’octet non lu en cas
+  de débordement et ne repose plus RXFULL. Le nouvel octet est perdu et RXERR
+  signale l’erreur, comme le chemin de bouclage existant et les sources Hatari/MAME.
+  Dix contrôles passent sous ASan/UBSan, contre deux échecs avant correction.
+  La datation existante des erreurs RSR est conservée.
+- **États v26** : TDR/TSR MIDI et échéances série ajoutés.
+  Un véritable fichier v25 est refusé ; aller-retour Mega STE v26 : écran et
+  état sérialisé identiques. Build et 508 verdicts logiques réussis, dont 18
+  contrôles MIDI via Bus/Machine sur ST et Mega STE.
+- **Validation finale** : tous les paliers disponibles passent, dont les 22 étalons
+  pixel sans recalibrage et le démarrage GUI. Quatre étalons propriétaires,
+  Cubase Lite et le diagnostic Mega STE sont sautés faute de données locales.
+
+## Fidélité matérielle, suite : transit clavier et FIFO SCC (2026-10-18)
+
+- **CPU→IKBD** : le parseur ne reçoit plus les commandes au moment de l’écriture
+  CPU. Un TDR et un TSR reproduisent la liaison clavier /64 8N1 : TDRE au prochain
+  tick bit de 1024 cycles, octet reçu au stop. Une écriture prématurée remplace le
+  TDR, sans corrompre le TSR en cours. TIE ne contrôle que l’IRQ. Resets,
+  dépassements d’échéance et restauration couverts par 27 contrôles, ASan/UBSan
+  propres ; rétablir le seul ancien transport provoque 13 échecs.
+  Les autres formats/diviseurs ACIA et le break restent ouverts. Les bancs de
+  firmware injectent désormais les octets à la sortie du récepteur série ; les
+  bancs de transport et Machine passent par les registres CPU.
+- **SCC** : FIFO matérielle RX de trois octets, distincte de la file hôte.
+  Ordre, débordement remplaçant l’octet le plus récent, erreurs par emplacement,
+  RR1 persistant, interruptions premier/tous/spécial, verrouillage et Error Reset
+  suivent le manuel Zilog UM0109 et MAME. Un RR1 persistant ne fait pas perdre
+  un caractère propre. Rebouclage, deux canaux, reset, réception temporisée et
+  restauration couverts ; ASan/UBSan propres. Hatari garde son modèle mono-octet.
+- **FPU — audit sans correctif** : 739328 comparaisons CIR avec SoftFloat Hatari
+  sur FSQRT, FGETEXP, FGETMAN, FMOD, FREM, FSCALE, FCMP et FTST : aucun écart.
+  Le nouveau banc `tools/test_fpu_arithmetic_oracle.py --check-mutation` vérifie
+  résultats, exceptions, CC, quotient et conservation du registre destination ;
+  une mutation FCMP sur les zéros signés provoque 32 échecs. Mini-ROM inchangé,
+  54 groupes. Transcendantes hôte et k dynamique restent ouverts.
+- **États v25** : registres et phase du transport clavier, FIFO/erreurs SCC.
+  Véritable fichier v24 refusé explicitement ; aller-retour Mega STE : écran et
+  état identiques. Build et 504 verdicts logiques réussis.
+- **Étalon DMA** : `dmasnd_poll` change de phase de démarrage (872 pixels).
+  Seul l’ancien transport clavier rétabli récupère l’ancienne référence à zéro.
+  Cent images consécutives identiques, huit répliques des 100 mots cohérentes,
+  progression de 382 octets et 39 paliers conservés. Refaire le remplissage FIFO
+  à la lecture produit une rampe sans palier, 100 valeurs distinctes et 1760 pixels
+  divergents. Référence renouvelée, mesures détaillées dans le manifeste.
+- **Validation finale** : tous les paliers disponibles passent, dont 22 étalons
+  pixel et le démarrage GUI. Quatre étalons propriétaires, Cubase Lite et le
+  diagnostic Mega STE sont sautés faute de données locales.
+
+## Fidélité matérielle, suite : série SCC, autosend IKBD et FINTRZ (2026-10-18)
+
+- **SCC Mega STE** : caractères TX/RX temporisés selon format et horloge sélectionnés,
+  TDR/TSR distincts et IRQ TX au transfert vers TSR. Le second octet attend le premier ;
+  All Sent ne monte qu’après vidage. Réception hôte cadencée et bouclage livré en fin TX.
+  Tests sur les deux canaux, callbacks Machine après changement de profil, reset,
+  pause d’horloge, restauration et échéance dépassée ; ASan/UBSan réussis.
+  FIFO RX matérielle et SDLC, DPLL et série hôte réelle restent ouverts.
+- **IKBD** : autosend normal sur timer libre de 150000 cycles bus, au lieu du VBL.
+  Réarmement sur l’échéance précédente, conservée pendant les resets rapprochés.
+  Souris et joystick auto, pause, garde initiale et monitoring séparé : 22 contrôles
+  réussis, contre 12 échecs avant correction. Le transit CPU→IKBD reste approximatif.
+- **FPU FINTRZ** : les exceptions de l’arrondi forcé vers zéro étaient perdues.
+  INEX2/SNAN parviennent maintenant à FPSR et au Response CIR. 1156 comparaisons
+  FINT/FINTRZ contre SoftFloat Hatari passent ; rétablir l’ancien code provoque
+  354 échecs. Mini-ROM série étendu de 52 à 54 groupes pour garder INEX2 et SNAN.
+- **États v24** : échéances SCC TX/RX et autosend, ainsi que file RX SCC.
+  Les anciens formats sont refusés explicitement.
+  Un véritable fichier v23 est refusé ; l’aller-retour Mega STE v24 reproduit
+  exactement l’écran et l’état sérialisé. Build et 502 verdicts logiques réussis.
+- **Validation finale** : tous les paliers disponibles passent, dont les 22 étalons
+  pixel (références inchangées) et le démarrage GUI. Quatre étalons propriétaires,
+  Cubase Lite et le diagnostic Mega STE sont sautés faute de données locales.
+
 ## Fidélité matérielle, suite : attentes FDC et monitoring joystick (2026-10-18)
 
 - **FDC/DMA** : attentes de 4 cycles CPU selon les handlers Hatari : écriture

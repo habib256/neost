@@ -10,10 +10,10 @@
 //  Modèle fonctionnel fidèle : jeu complet WR0-15 / RR0-15 par canal (pointeur de
 //  registre via WR0), commandes WR0/WR9, reset matériel/canal, RR0 (statut TX/RX +
 //  lignes), RR2 (vecteur + statut), RR3 (IP), sources d'interruption, IRQ niv5 +
-//  IACK vectorisé. TX immédiat (puits série, ou bouclage local interne si WR14 bit4=1,
-//  cf. note dans serialWriteByte) ; RX par injection externe.
-//  BRG cadencé et interruption Zero Count portés de Hatari. Restent : débit
-//  temporisé des octets TX/RX et série hôte réelle.
+//  IACK vectorisé. TX cadencé (puits série, ou bouclage local interne si WR14 bit4=1,
+//  cf. note dans serialWriteByte) ; RX par injection externe mise en file et cadencée.
+//  BRG cadencé et interruption Zero Count portés de Hatari. FIFO RX matérielle
+//  de trois octets distincte de la file hôte. Restent : série hôte réelle et DPLL.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -35,6 +35,7 @@ public:
     // Horloge bus du Mega STE : callbacks SCC_BRG_A/B branchés par Machine.
     void setScheduler(Scheduler* scheduler) { sched_ = scheduler; }
     void onBrgEvent(int channel);
+    void onSerialEvent(int channel, bool tx);
 
     // Accès MMIO $FF8C80-$FF8C87 (le 68000 y fait des mots ; seuls les octets
     // IMPAIRS portent un registre, les pairs lisent $FF / ignorent l'écriture).
@@ -49,7 +50,8 @@ public:
 
     // Puits série en sortie (TX) — optionnel ; ch = 0 (A) / 1 (B). Comme le MFP.
     void setSerialSink(std::function<void(int ch, uint8_t b)> fn) { sink_ = std::move(fn); }
-    // Injection d'un octet reçu sur le canal `ch` (RX) — bouclage / source externe.
+    // Injection d'un octet hôte de données (RX), sans bit de parité physique.
+    // Seuls les bouclages du TSR possèdent les métadonnées de parité émises.
     void receiveByte(int ch, uint8_t b);
     // Connecteurs de bouclage EXTERNES du kit Field Service (test « I SCC » : prises
     // Port A / Port B / LAN) : TxD→RxD, RTS→CTS, DTR→DCD et DTR→DSR (/SYNC) sur
@@ -67,12 +69,38 @@ public:
         // polarités (`if (!ch.rr0Latched)`, `if (!ch.tsrFull)` puis `if (ch.tsrFull)`),
         // un octet valant 63 ferait prendre les deux branches — l'UB même que la
         // normalisation existe pour fermer.
-        for (auto& ch : chn_) ar.fixBools(ch.rr0Latched, ch.txWritten, ch.tsrFull);
+        for (auto& ch : chn_) {
+            ar.fixBools(ch.rr0Latched, ch.breakRaw, ch.txWritten, ch.tsrFull, ch.txActive, ch.txInterrupted, ch.rtsAsserted, ch.rxFirstArmed, ch.rxFirstPending, ch.rxLocked);
+            ar.check(ch.txRemaining >= 0 && ch.txRemaining <= 64 * neost::pacing::kCpuHzInt,
+                     "Scc::BREAK TX remainder out of range");
+            ar.check(!ch.txInterrupted || ch.txActive, "Scc::interrupted TX without active frame");
+            ar.check(!ch.txRemaining || (ch.txInterrupted && ch.txActive), "Scc::BREAK remainder without active frame");
+            ar.check(ch.breakPending <= 3, "Scc::invalid BREAK edge mask");
+            ar.check(!ch.txActive || ch.tsrFull, "Scc::active TX without TSR");
+            ar.check(ch.brgSource == 0 || ch.brgSource == 3672000 || ch.brgSource == neost::pacing::kCpuHzInt,
+                     "Scc::invalid BRG source");
+            ar.check(ch.brgSource ? ch.brgFraction < ch.brgSource : ch.brgFraction == 0,
+                     "Scc::invalid BRG fraction");
+            ar.check((ch.brgPulseStart == -1 && ch.brgPulseEnd == -1)
+                     || (ch.brgPulseStart >= 0 && ch.brgPulseEnd > ch.brgPulseStart
+                         && ch.brgPulseEnd - ch.brgPulseStart <= 3), "Scc::invalid BRG pulse");
+            for (int i = 0; i < 2; ++i) {
+                ar.check(ch.serialDivisor[i] == 0 || ch.serialDivisor[i] == 2*3672000
+                         || ch.serialDivisor[i] == 2*2457600
+                         || ch.serialDivisor[i] == 2*neost::pacing::kCpuHzInt, "Scc::invalid serial clock divisor");
+                ar.check(ch.serialDivisor[i] ? ch.serialFraction[i] < ch.serialDivisor[i]
+                         : ch.serialFraction[i] == 0, "Scc::invalid serial clock fraction");
+            }
+            ar.check(ch.rxFifoHead < 3 && ch.rxFifoCount <= 3);
+            ar.check(ch.rxHead < 256 && ch.rxCount <= 256);
+            ar.check(ch.txBits >= 5 && ch.txBits <= 8 && ch.rxBits >= 5 && ch.rxBits <= 8
+                     && ch.tsrParity <= 2 && ch.tsrBits >= 1 && ch.tsrBits <= 8 && ch.parityBits <= 1, "Scc::invalid character format");
+        }
         ar(irqLine_); ar(ius_); ar(activeReg_);
         for (int64_t& period : brgPeriod_) {
             ar(period);
-            // SCC_Compute_BaudRate écrête le débit à 1 Hz : au plus une seconde.
-            ar.check((period == 0 || period >= 4) && period <= neost::pacing::kCpuHzInt,
+            // Intervalle ZC (TC+2) : au moins deux cycles, au plus une seconde.
+            ar.check((period == 0 || period >= 2) && period <= neost::pacing::kCpuHzInt,
                      "Scc::BRG period out of range");
         }
         // writeControl fait « ch.WR[activeReg_] = value » : un état forgé passant le CRC
@@ -86,12 +114,29 @@ private:
         uint8_t  WR7p   = 0;
         uint8_t  RR[16] = {0};
         bool     rr0Latched = false;
+        bool     breakRaw = false;
+        uint8_t  breakPending = 0; // D0=front montant, D1=descendant ; répétitions coalescées.
         uint8_t  rr0NoLatch = 0;
         bool     txWritten  = false;
         uint8_t  tsr        = 0;
+        uint8_t  tsrParity  = 2; // 0/1 = bit émis connu ; 2 = parité absente.
+        uint8_t  tsrBits    = 8; // Format du caractère chargé, distinct du WR5 courant.
         bool     tsrFull    = false;
+        bool     txActive   = false; // Trame partie, à terminer même si WR5 TX Enable tombe.
+        bool     txInterrupted = false; // Un BREAK a coupé ce caractère : aucun octet intact à livrer.
+        int64_t  txRemaining = 0; // Cycles TSR suspendus par BREAK (approximation au caractère).
+        bool     rtsAsserted = false; // État réel /RTS, distinct du bit WR5.
         uint32_t intSources = 0;
+        uint32_t brgFraction = 0, brgSource = 0;
+        int64_t brgPulseStart = -1, brgPulseEnd = -1;
+        uint32_t serialFraction[2] = {}; // Restes RX/TX des horloges directes.
+        uint32_t serialDivisor[2] = {}; // Dénominateurs associés, zéro = nouveau flux.
         uint8_t  txBits = 8, rxBits = 8, parityBits = 0;
+        uint8_t rxFifo[3] = {}, rxErrors[3] = {};
+        uint8_t rxFifoHead = 0, rxFifoCount = 0;
+        bool rxFirstArmed = true, rxFirstPending = false, rxLocked = false;
+        uint8_t rxQueue[256] = {};
+        uint16_t rxHead = 0, rxCount = 0;
     };
     Chn     chn_[2];
     uint8_t irqLine_  = 1;     // 1 = OFF (haut), 0 = ON (bas)
@@ -118,7 +163,7 @@ private:
     void    updateRR0(int chn);
     void    updateRR0Clear(int chn, int bits) { chn_[chn].rr0NoLatch &= ~bits; }
     void    updateRR0Set(int chn, int bits)   { chn_[chn].rr0NoLatch |= bits; }
-    void    updateRR0LatchOff(int chn) { chn_[chn].rr0Latched = false; updateRR0(chn); }
+    void    updateRR0LatchOff(int chn);
     void    updateRR2();
     void    updateRR3Bit(bool set, uint8_t bit);
     void    updateRR3(int chn);
@@ -134,6 +179,15 @@ private:
     void    copyTdrTsr(int chn, uint8_t tdr);
     void    processTX(int chn);
     void    updateBrg(int channel);
+    int64_t nextBrgPeriod(int channel);
+    int64_t serialPeriod(int channel, bool tx, bool advance = false);
+    void updateSerial(int channel);
+    bool receiveAllowed(int channel) const;
+    bool transmitAllowed(int channel) const;
+    void updateRts(int channel);
+    void deliverByte(int channel, uint8_t byte, int parity = -1);
+    void refreshRx(int channel);
+    void popRx(int channel);
 
     uint16_t getCTS(int chn) const;
     uint16_t getDCD(int chn) const;

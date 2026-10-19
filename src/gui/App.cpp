@@ -487,6 +487,44 @@ void App::applyConfig() {
 // false et NON à A.kbdJoy — à ce point A.kbdJoy vaut A.kiosk, donc lancé en borne
 // on capturerait true et la sortie vers le bureau avalerait les flèches + Ctrl
 // droit du ST sans rien afficher. La branche GUI→KIOSK le rafraîchit ensuite.
+void App::toggleFullscreen() {
+    if (kiosk) { switchKioskMode(false); return; }
+    if (!fullscreen) {
+        GLFWmonitor* mon = glfwGetPrimaryMonitor();
+        glfwGetWindowPos(window, &winX, &winY);
+        glfwGetWindowSize(window, &winW, &winH);
+        // Choisir le moniteur qui contient le centre de la fenêtre.
+        int count = 0;
+        GLFWmonitor** monitors = glfwGetMonitors(&count);
+        for (int i = 0; i < count; ++i) {
+            int x, y; glfwGetMonitorPos(monitors[i], &x, &y);
+            const GLFWvidmode* mode = glfwGetVideoMode(monitors[i]);
+            if (mode && winX + winW / 2 >= x && winX + winW / 2 < x + mode->width
+                     && winY + winH / 2 >= y && winY + winH / 2 < y + mode->height) {
+                mon = monitors[i]; break;
+            }
+        }
+        const GLFWvidmode* mode = mon ? glfwGetVideoMode(mon) : nullptr;
+        if (!mode) return;
+        winGeomValid = true;
+        glfwSetWindowAttrib(window, GLFW_AUTO_ICONIFY, GLFW_FALSE);
+        glfwSetWindowMonitor(window, mon, 0, 0, mode->width, mode->height, mode->refreshRate);
+        fullscreen = true;
+    } else {
+        glfwSetWindowMonitor(window, nullptr, winX, winY, winW, winH, GLFW_DONT_CARE);
+        glfwSetWindowAttrib(window, GLFW_AUTO_ICONIFY, GLFW_TRUE);
+        fullscreen = false;
+    }
+    mouseCaptured = fullscreen;
+    if (glfwRawMouseMotionSupported())
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, fullscreen ? GLFW_TRUE : GLFW_FALSE);
+    glfwSetInputMode(window, GLFW_CURSOR, fullscreen ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    if (ikbd) ikbd->mouseEvent(0, 0, false, false);
+    mouseAccX = mouseAccY = 0;
+    glfwGetCursorPos(window, &lastMx, &lastMy);
+    emuNext = std::chrono::steady_clock::now();
+}
+
 void App::switchKioskMode(bool on) {
     App& A = *this;
     Machine& machine = *A.machine;

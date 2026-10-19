@@ -294,13 +294,20 @@ Mesuré A/B sur 40 échéances de 50 ms vers le Circuit Tracks :
 
 ## Anneau MIDI réseau — MIDIMaze en ligne (`--midi-net H:P[:L]`)
 
-MIDI Maze relie les ST en **anneau** par câbles MIDI (OUT de l'un → IN du suivant). On
-transporte l'anneau sur UDP : `MidiAcia::setMidiSink` envoie les octets MIDI OUT vers le
-pair aval, et les datagrammes de l'amont entrent par `receiveExternal`. Le 6850 ne tient
-que 2 octets → `MidiRing` a un **tampon de gigue** et n'injecte que lorsque l'ACIA a de
-la place (fidèle au matériel). Vérifié : `MIDITEST.TOS` (source `dev/netdemo/`) — 10
-octets OUT→UDP→pair (ordre exact) et round-trip complet OUT→réseau→IN→ACIA.
-`src/net/MidiRing.cpp`.
+MIDI Maze relie les ST en **anneau** par câbles MIDI (OUT de l’un → IN du suivant).
+`MidiAcia::setMidiSink` transmet les octets achevés vers le pair aval. Les datagrammes
+amont sont collectés une fois par trame dans le tampon de gigue de `MidiRing` ;
+`tryPop` alimente ensuite la source série à **un octet toutes les 2560 cycles**.
+Il n’y a pas d’appel UDP par octet. Le 6850 n’a qu’un seul RDR : si le CPU ne le lit
+pas, le caractère suivant est perdu et l’overrun matériel est signalé. Le tampon
+réseau ne constitue pas une extension du RDR.
+
+En headless, un anneau ouvert prend la place des appareils MIDI IN hôtes sur cette
+entrée DIN ; si les deux ont été demandés, le choix est signalé dans le journal.
+Le contrôle local `tests/midi_ring_logic.cpp` reçoit 20 octets dans l’ordre en
+51200 cycles après une seule collecte UDP (127.0.0.1 uniquement). Le test historique
+`MIDITEST.TOS` (`dev/netdemo/`) avait aussi validé le round-trip OUT→UDP→IN→ACIA.
+Implémentation : `src/net/MidiRing.cpp`.
 
 ## UltraSatan — interface SD/MMC sur le bus ACSI (`--ultrasatan`, GUI Hard Disks)
 

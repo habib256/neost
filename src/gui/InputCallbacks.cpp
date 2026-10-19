@@ -52,6 +52,19 @@ void onMouseButton(GLFWwindow* w, int button, int action, int /*mods*/) {
 // transmises au ST (beaucoup de jeux/applications s'en servent).
 void onKey(GLFWwindow*, int key, int scancode, int action, int mods) {
     if (!A.ikbd || action == GLFW_REPEAT) return;   // TOS gère sa propre répétition (pas l'IKBD)
+    // Raccourci hôte : absorber aussi le relâchement si Alt est déjà relâché.
+    static bool fullscreenChordHeld = false;
+    if (key == GLFW_KEY_ENTER || key == GLFW_KEY_KP_ENTER) {
+        if (action == GLFW_PRESS && (mods & GLFW_MOD_ALT)) {
+            fullscreenChordHeld = true;
+            A.fullscreenToggleReq = !A.fullscreenToggleReq;
+            return;
+        }
+        if (action == GLFW_RELEASE && fullscreenChordHeld) {
+            fullscreenChordHeld = false;
+            return;
+        }
+    }
     // Secours pour les trackpads et souris à deux boutons : même bascule que le clic
     // molette. Ctrl+Alt+G est réservé à l'hôte, mais G SEUL poursuit normalement
     // vers l'IKBD. Le latch absorbe aussi le BREAK du raccourci si Ctrl/Alt sont

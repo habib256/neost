@@ -14,6 +14,9 @@ int testIkbdMonitorMachine() {
     constexpr int64_t samplePeriod = neost::pacing::kCpuHzInt / 100;
     for (MachineType profile : {MachineType::St, MachineType::Ste}) {
         m->reconfigure(1024u * 1024u, CpuCore::Moira, profile);
+        // L'autosend tourne aussi pendant le drainage du reset : neutraliser
+        // les entrées conservées avant toute avance de l'ordonnanceur.
+        m->ikbd.setJoystick(0, 0);
         m->reset();
         const int64_t resetDue = m->sched.liveNow() + 502000;
         m->sched.runTo(resetDue); m->sched.runTo(resetDue + 10240);
@@ -23,8 +26,15 @@ int testIkbdMonitorMachine() {
         m->ikbd.setJoystick(0, 0);
         for (int i = 0; i < 21; ++i) m->ikbd.onVbl(20000);
         m->bus.write8(0xFFFC00, 0x96);
+        auto send = [&](uint8_t byte) {
+            m->bus.write8(0xFFFC02, byte);
+            // Attendre le registre à décalage, pas seulement TDRE : le banc
+            // mesure ensuite la période firmware après réception complète.
+            while (m->sched.cyclesUntil(Scheduler::IKBD_TX) >= 0)
+                m->sched.runTo(m->sched.now() + m->sched.cyclesUntil(Scheduler::IKBD_TX));
+        };
+        send(0x17); send(1);
         m->ikbd.setJoystick(0x89, 0x86);
-        m->bus.write8(0xFFFC02, 0x17); m->bus.write8(0xFFFC02, 1);
         const int64_t due = m->sched.liveNow() + samplePeriod;
         check(m->sched.cyclesUntil(Scheduler::IKBD_MONITOR) == samplePeriod,
               "command through Bus arms monitoring");
@@ -43,6 +53,24 @@ int testIkbdMonitorMachine() {
               "Machine reset cancels monitoring phase");
         check(m->sched.cyclesUntil(Scheduler::IKBD_RX) < 0,
               "Machine reset cancels queued monitoring data");
+    }
+    for (MachineType profile : {MachineType::St, MachineType::MegaSte}) {
+        // Le constructeur doit armer la scrutation même avant le premier reset.
+        auto normal = std::make_unique<Machine>(1024u * 1024u, CpuCore::Moira, profile);
+        normal->bus.write8(0xFFFC00, 0x96);
+        for (int i = 0; i < 21; ++i) normal->ikbd.onVbl(20000);
+        normal->ikbd.mouseEvent(3, 0, false, false);
+        check(normal->sched.cyclesUntil(Scheduler::IKBD_AUTOSEND) == 150000,
+              "constructor arms normal autosend");
+        normal->sched.runTo(149999);
+        check((normal->bus.read8(0xFFFC00) & 1) == 0, "normal input waits firmware scan");
+        normal->sched.runTo(150000);
+        check(normal->sched.cyclesUntil(Scheduler::IKBD_RX) == 10240,
+              "Machine autosend callback enqueues serial packet");
+        normal->sched.runTo(160240);
+        check(normal->bus.read8(0xFFFC02) == 0xF8, "normal packet header through Bus");
+        normal->sched.runTo(170480);
+        check(normal->bus.read8(0xFFFC02) == 3, "normal mouse movement through Bus");
     }
     std::printf("[ikbd-monitor-machine] %d checks, %d FAIL\n", checks, failures);
     return failures;

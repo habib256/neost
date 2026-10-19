@@ -129,6 +129,7 @@ you are actually running.
 | Key | Action |
 |-----|--------|
 | <kbd>F5</kbd> / <kbd>F7</kbd> | Save / load state |
+| <kbd>Alt</kbd>+<kbd>Enter</kbd> | Full screen with mouse capture / window with host cursor |
 | <kbd>F8</kbd> / <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> | Toggle kiosk (cabinet) mode |
 | *Windows → Keyboard* | On-screen ST keyboard (photo): click any key, sticky Shift/Control/Alternate |
 | *Machine → MIDI* | Real MIDI devices in and out, built-in GM synth, Roland MT-32/CM-32L (Munt, ROMs in `roms/mt32/`), or a virtual port (macOS/Linux; on Windows install loopMIDI) |

@@ -699,8 +699,12 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
         case 0x23: rf = sf::mul(d, s, st);              break;                 // FMUL
         case 0x28: rf = sf::sub(d, s, st);              break;                 // FSUB
         case 0x01: rf = sf::roundToInt(s, st);          break;                 // FINT
-        case 0x03: { sf::Status z = st; z.roundingMode = sf::round_to_zero;    // FINTRZ
-                     rf = sf::roundToInt(s, z); }       break;
+        case 0x03: {                                                         // FINTRZ
+            sf::Status z = st; z.roundingMode = sf::round_to_zero;
+            // FINTRZ force le mode, mais conserve INEX2/SNAN pour FPSR et CIR.
+            rf = sf::roundToInt(s, z); st.exceptionFlags |= z.exceptionFlags;
+            break;
+        }
         case 0x1F: rf = sf::getMan(s, st);              break;                 // FGETMAN
         case 0x1E: {                                                           // FGETEXP
             // Ordre d'Hatari (softfloat.c:3201) : le NaN passe par propagateNaN1, qui

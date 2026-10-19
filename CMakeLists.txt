@@ -335,11 +335,33 @@ set_source_files_properties(src/headless/main_headless.cpp src/headless/Server.c
 # logé (le dossier de destination n'était jamais créé) alors que la règle PURE
 # d'A36, elle, était testée. Le fichier ne dépend pas d'ImGui — il compile tel quel
 # contre neost_core.
-add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp
+add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp tests/scc_serial_logic.cpp
+    tests/scc_rx_fifo_logic.cpp tests/ikbd_cpu_serial_logic.cpp
+    tests/midi_serial_logic.cpp tests/ikbd_acia_format_logic.cpp
+    tests/machine_midi_logic.cpp tests/mfp_serial_logic.cpp
+    tests/midi_rx_logic.cpp tests/mfp_rx_timing_logic.cpp tests/scc_async_logic.cpp
+    tests/mfp_tx_logic.cpp tests/midi_rx_phase_logic.cpp tests/scc_auto_enables_logic.cpp
+    tests/machine_mfp_tx_logic.cpp
+    tests/mfp_clock_logic.cpp tests/midi_break_logic.cpp tests/scc_rts_logic.cpp
+    tests/scc_sync_logic.cpp
+    tests/ikbd_mouse_monitor_logic.cpp
+    tests/mfp_rx_format_logic.cpp tests/midi_tx_format_logic.cpp tests/scc_tx_format_logic.cpp
+    tests/scc_tx_enable_logic.cpp
+    tests/mfp_rx_enable_logic.cpp tests/ikbd_pause_logic.cpp
+    tests/mfp_usart_control_logic.cpp
+    tests/scc_break_logic.cpp tests/ikbd_output_capacity_logic.cpp
+    tests/scc_clock_logic.cpp tests/mfp_turnaround_logic.cpp
+    tests/scc_brg_clock_logic.cpp tests/mfp_underrun_logic.cpp
+    tests/fdc_force_interrupt_logic.cpp
+    tests/scc_zero_count_logic.cpp tests/mfp_underrun_clear_logic.cpp tests/fdc_live_media_logic.cpp
+    tests/scc_rx_parity_logic.cpp tests/rtc_bank_logic.cpp
+    tests/rtc_timer_logic.cpp tests/scc_ext_status_logic.cpp
+    tests/midi_tx_control_logic.cpp
+    tests/midi_tx_reclock_logic.cpp tests/ikbd_tx_control_logic.cpp tests/scc_break_status_logic.cpp
     tests/fdc_acsi_logic.cpp tests/fdc_register_logic.cpp tests/machine_scc_logic.cpp
     tests/mmu_logic.cpp tests/fdc_selection_logic.cpp tests/mmio_fidelity_logic.cpp
     tests/ikbd_response_logic.cpp tests/fdc_timing_logic.cpp tests/ikbd_monitor_logic.cpp
-    tests/ikbd_monitor_machine_logic.cpp tests/dmasound_mono_logic.cpp src/audio/MidiInHost.cpp
+    tests/ikbd_monitor_machine_logic.cpp tests/ikbd_autosend_logic.cpp tests/dmasound_mono_logic.cpp src/audio/MidiInHost.cpp
     src/audio/GmSynth.cpp src/gui/AppConfig.cpp)
 target_link_libraries(neost-selftest PRIVATE neost_core)
 target_include_directories(neost-selftest PRIVATE "${CMAKE_SOURCE_DIR}/src"

@@ -691,6 +691,10 @@ plateforme) et `gemdos-selftest` pour le câblage, avec un vrai fichier sur disq
 la bordure haute est retirée (A41 — Hatari amorce avec des écritures postérieures de
 380 cycles) ; SCC `WR14` bit4 loopback (datasheet Zilog, NeoST plus fidèle) ; WRITE/READ TRACK STX réinterprétés (NeoST rend la piste lisible) ;
 densité HD/ED STX (NeoST plus cohérent) ; RTC en temps émulé (déterminisme headless).
+Banques RTC indépendantes et contrôles ADJ/12–24 h/bissextile portés selon Ricoh ;
+restent les sorties CLKOUT/ALARM et les modes d’inspection TEST.
+TIMER EN conserve une retenue saturante à l’arrêt et la délivre à la reprise,
+sans décaler la phase sous-seconde (Ricoh p.7).
 
 > **L'oracle se bâtit, il n'arrive pas tout seul** : `extern/hatari` est GITIGNORÉ et n'est
 > PAS un sous-module — sur une machine fraîche il est ABSENT. `tools/setup_hatari.sh` clone au
@@ -726,16 +730,67 @@ densité HD/ED STX (NeoST plus cohérent) ; RTC en temps émulé (déterminisme 
 - FDC : index synchronisé avant tous les accès WD1772 (2026-10-18). Le push PSG
   lecteur/face était déjà porté ; gardes de sélection tardive et changement de face
   ajoutées. Attentes des registres portées ; contention DMA et ancrage anti-dérive
-  étaient déjà présents (entrées périmées corrigées).
+  étaient déjà présents (entrées périmées corrigées). Phase INDEX effacée à
+  l’éjection et réamorcée à l’insertion ; FORCE INTERRUPT déjà conforme à Hatari.
+  Secteur revérifié sur le lecteur actif pendant transfert, sans alias vers la
+  face/piste suivante si le nouveau média possède moins de secteurs.
 - IKBD : délais de réponse firmware portés (valeurs centrales déterministes,
-  quantifiées en bits). Restent la phase SCI exacte, le transit CPU→IKBD et
-  l’autosend normal ; le taux de monitoring $17 est maintenant temporisé et
-  sauvegardé. Aucune validation de la démo Froggies complète ici.
+  quantifiées en bits). Le transit CPU→IKBD passe par TDR/TSR : le firmware ne reçoit
+  l’octet qu’au bit de stop. Restent les formats/diviseurs ACIA hors liaison
+  clavier usuelle /64 8N1 et la phase SCI sortante exacte. Reprise BREAK
+  désormais ancrée au changement de diviseur, accès CR/TDR tardifs rattrapés ;
+  départ TX ordinaire encore sur la grille historique. Le break
+  bloque les nouveaux départs TX ; la ligne physique et les erreurs de trame
+  qui en découlent restent hors modèle. L’autosend normal suit maintenant un timer de
+  150 000 cycles ; $17 remplace cette cadence commune jusqu’au boot ROM,
+  même après sortie du monitoring. MouseAction et position absolue sont traités
+  avant les paquets joystick. Cadence et échéance sauvegardées. Aucune validation
+  de la démo Froggies complète ici. PAUSE $13 laisse finir l’unique octet SCI
+  engagé ; la file firmware attend la reprise. Ses 1024 places sont indépendantes
+  du SCI et du RDR ACIA, et bornées au chargement des sauvegardes. Les modes
+  `$18` (monitoring du feu) et `$19` (keycode joystick) restent non émulés,
+  comme dans Hatari ; leurs commandes sont reconnues et consommées.
 - **SCSI / NCR5380** — TT/Falcon **uniquement** (le MegaSTE n'en a pas). Hors périmètre,
   non commencé. Réf. `ncr5380.c`.
 - SCC : BRG / Zero Count porté le 2026-10-18 (deux canaux, IRQ, phase sauvegardée).
   Miroirs RR6/RR7 et câblage après changement de profil corrigés le même jour.
-  Restent la cadence TX/RX, la FIFO SDLC et la série hôte.
+  Cadence TX/RX portée : caractères, registre de décalage et registre
+  d’attente TX, réception hôte mise en file. FIFO RX matérielle de trois octets portée (Zilog/MAME),
+  avec erreurs associées, débordement et modes d’interruption. Restent la
+  FIFO SDLC, la DPLL et la série hôte. En asynchrone, les bits inutilisés
+  de RR8 sont maintenant forcés à un selon WR3. Auto Enables qualifie TX/RX
+  par CTS/DCD ; RTS se désactive après vidage TX en asynchrone Auto Enables.
+  WR3 Sync Character Load Inhibit filtre WR6 avant FIFO, aussi en asynchrone,
+  selon Zilog. TX 1..8 bits : encodage WR5 cinq bits ou moins, masquage et
+  durée du TSR mémorisés. TX Enable bas laisse finir la trame engagée, TDR
+  retenu jusqu’à reprise. BREAK suspend le TSR, conserve le TDR et reprend
+  le temps restant sans livrer comme intact un caractère coupé. Restent phase
+  de bit, erreurs RX de BREAK, X21 et synchronisation bit à bit. RTxC/TRxC
+  directs et BRG utilisent désormais une cadence rationnelle TX/RX indépendante.
+  Zero Count est aussi rationnel, avant /2 et WR4 ; RR0 suit une pulse d’un
+  cycle source. La phase initiale lors d’un changement source/enable reste une
+  abstraction sans phase analogique de l’oscillateur.
+  Parité reçue visible pour les mots courts en bouclage de même largeur ;
+  l’API d’octets hôtes et les formats TX/RX discordants restent sans décodage
+  des bits physiques ni détection des erreurs de parité/framing.
+  Verrous External/Status WR15 indépendants du masque maître WR1 ; ce dernier
+  masque l’IP sans effacer les statuts retenus.
+  Deux transitions BREAK conservées pendant une autre cause externe ; répétitions
+  coalescées par polarité, sans FIFO RX/framing physique inventé.
+- USART MFP : réception hôte selon le format UCR et phase fractionnaire
+  sauvegardée, sans dérive aux callbacks tardifs. RX hôte 5..8 bits alignés à
+  droite, bits inutilisés à zéro et largeur fixée au départ du caractère.
+  RE=0 efface le statut RX sans perdre la donnée ; UDR vide conserve RX.
+  Les droits d’écriture RSR sont portés (RE/SS, F/S seulement en synchrone).
+  Restent le modèle synchrone, la réacquisition après réactivation au milieu
+  d’un caractère et la phase du premier front TC. /1 et /16 suivent le rapport Timer D exact,
+  y compris aux débits non entiers, sans arrondis tty ni plancher RX. Émission TDR/TSR
+  cadencée selon UCR, avec Buffer Empty, underrun et EOT ; la forme d’onde
+  BREAK n’est pas simulée. END et auto-turnaround sont immédiats au repos,
+  différés en vol ; IRQ END uniquement sur nouveau front. Underrun mémorisé :
+  TXERR n’est pas redemandé tant que UE n’est pas effacé (lecture TSR ou TE=0).
+  Le délai minimal d’une période TX avant cet effacement est porté, avec
+  seuils distincts pour trame en cours et UE mémorisé.
 - ACSI : délai de fin DMA porté le 2026-10-18, 1 000 cycles CPU comme Hatari ;
   acquittement des octets de commande conservé. Aucun essai Idris OS effectué.
 - ⭘ **Test F (disquette) de la cartouche STE_Test v1.9 : « Cannot write drive A/B »,
@@ -788,6 +843,8 @@ densité HD/ED STX (NeoST plus cohérent) ; RTC en temps émulé (déterminisme 
   exceptions ; 1 443 cas comparés au véritable SoftFloat d'Hatari. Le mutant
   qui rétablit le comportement précédent provoque 507 échecs.
 
+- **FINTRZ (2026-10-18)** : INEX2 et SNAN propagés à FPSR et au Response CIR ;
+  1 156 comparaisons FINT/FINTRZ avec SoftFloat Hatari, 54 groupes mini-ROM.
 - **Limites restantes** : transcendantes en double hôte ; k dynamique non transmis
   par le dialogue périphérique actuel. Les bancs comparent les opérations au moteur
   Hatari ; ils ne constituent pas une mesure sur un 68881 physique.
@@ -821,6 +878,14 @@ densité HD/ED STX (NeoST plus cohérent) ; RTC en temps émulé (déterminisme 
   de ce qu'il a supprimé.
 
 ### Station MIDI — le ST comme séquenceur d'un studio moderne (relevé 2026-08-29)
+
+- **Émission ACIA (2026-10-18)** : TDR/TSR, TDRE au chargement du TSR et
+  sortie réelle au bit de stop, y compris bouclage et horodatages hôtes.
+  RX : un seul RDR, overrun et acquittement SR→RDR ; phase continue aux
+  callbacks tardifs et aux resets/remplacements de source. TX respecte les huit
+  formats ACIA et les diviseurs /1, /16, /64 ; source RX hôte encore limitée au
+  câble MIDI 31250 bauds 8N1. BREAK retient le TDR et laisse finir le TSR ;
+  sa forme d’onde et les erreurs de format physiques ne sont pas simulées.
 
 > Cas d'usage visé : un Mac porte les AU/VST et les claviers USB, le ST porte Cubase ou
 > Notator et mène la séance. La **sortie** est déjà au niveau : gigue σ 0,4-1,7 ms et
@@ -932,6 +997,7 @@ densité HD/ED STX (NeoST plus cohérent) ; RTC en temps émulé (déterminisme 
   `docs/CASE_STUDIES.md`, et **livrer les pilotes libres GPL** dans les paquets.
 - **Modem/STinG** : documenter l'installation STinG (noyau + `sting.inf` dans `AUTO`,
   modules dans `C:\STING`) dans `docs/TEST_SOFTWARE.md` ; banc SLIP bout-en-bout.
-- **MIDI ring** : option GUI (saisie du pair) ; test en anneau à 2 nœuds (deux instances
+- **MIDI ring** : réception headless cadencée sur l’horloge série (tampon UDP par
+  trame, un octet par 2560 cycles). Restent l’option GUI (saisie du pair) ; test en anneau à 2 nœuds (deux instances
   NeoST — ⚠ bloqué par le mono-instance A33 si c'est en un seul processus).
 - **Sécurité** : liste blanche de domaines optionnelle pour les backends sortants.

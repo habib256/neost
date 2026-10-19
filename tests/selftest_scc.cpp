@@ -1,7 +1,6 @@
 // =============================================================================
 // SCC BRG / Zero Count et miroirs : puce nue et Scheduler, MMIO public uniquement.
-// Référence : Hatari scc.c SCC_Compute_BaudRate / SCC_InterruptHandler_BRG.
-// Les périodes fixées ci-dessous gardent aussi l'arrondi FLOAT puis CPU/baud.
+// Référence : Zilog UM0109 p.57/p.71/p.177 : compteur avant /2 et WR4.
 // =============================================================================
 #include "io/Scc.hpp"
 #include "core/Pacing.hpp"
@@ -51,36 +50,38 @@ bool testSccBrg() {
         Rig r;
         c.equal("reset: no event", r.sched.nextDue(), -1);
         r.wr(0, 2, 0x40); r.wr(0, 9, 9); r.arm(0);
-        c.equal("PCLK TC0 x1: 4 cycles", r.sched.nextDue(), 4);
-        r.sched.runTo(3); c.equal("no IRQ before count zero", r.scc.irqActive(), false);
-        r.sched.runTo(4);
+        c.equal("PCLK TC0 x1: 2 cycles", r.sched.nextDue(), 2);
+        r.sched.runTo(1); c.equal("no IRQ before count zero", r.scc.irqActive(), false);
+        r.sched.runTo(2);
         c.equal("A zero count: IRQ", r.scc.irqActive(), true);
         c.equal("A zero count: external IP", r.rr(0, 3), 8);
-        c.equal("RR0 zero count pulse not stuck", r.rr(0, 0) & 2, 0);
+        c.equal("RR0 current zero count pulse", r.rr(0, 0) & 2, 2);
         c.equal("vector A external", r.scc.processIack(), 0x4A);
         c.equal("IACK hides IRQ through IUS", r.scc.irqActive(), false);
-        r.sched.runTo(8);
+        r.sched.runTo(4);
         c.equal("IUS blocks next zero count", r.scc.irqActive(), false);
         r.command(0, 0x38);
         c.equal("release IUS reveals pending IP", r.scc.irqActive(), true);
         r.command(0, 0x10);
         c.equal("reset external status clears IP", r.rr(0, 3), 0);
         c.equal("reset external status clears IRQ", r.scc.irqActive(), false);
-        r.sched.runTo(12);
+        r.sched.runTo(6);
         c.equal("later zero count retriggers", r.scc.irqActive(), true);
     }
     {
         Rig r;
         r.wr(0, 9, 8); r.arm(0);
         r.wr(0, 1, 0);
-        r.sched.runTo(4);
+        r.sched.runTo(2);
         c.equal("WR1 masks zero count", r.rr(0, 3), 0);
         c.equal("masked BRG still runs", r.events[0], 1);
         r.wr(0, 1, 1); r.wr(0, 15, 0);
-        r.sched.runTo(8);
+        // WR1 réactive la cause déjà verrouillée ; la servir avant de tester WR15.
+        r.command(0, 0x10);
+        r.sched.runTo(4);
         c.equal("WR15 masks zero count", r.rr(0, 3), 0);
         r.wr(0, 15, 2); r.wr(0, 9, 0);
-        r.sched.runTo(12);
+        r.sched.runTo(6);
         c.equal("MIE off preserves external IP", r.rr(0, 3), 8);
         c.equal("MIE off masks IRQ", r.scc.irqActive(), false);
         r.wr(0, 9, 8);
@@ -93,24 +94,19 @@ bool testSccBrg() {
     }
     {
         Rig r;
-        r.arm(0, 0x44);             // async x16 : TC0 → 64 cycles
-        c.equal("WR4 x16", r.sched.nextDue(), 64);
-        r.sched.runTo(11);
-        r.wr(0, 12, 10);            // round(PCLK/384)=20889 ; CPU/20889=383
-        c.equal("TC low restarts with Hatari rounding", r.sched.nextDue(), 11 + 383);
-        r.wr(0, 13, 1);             // TC266 : round(PCLK/8576)=935 ; period8578
-        c.equal("TC high affects period", r.sched.nextDue(), 11 + 8578);
-        r.wr(0, 12, 0); r.wr(0, 13, 0);
-        r.wr(0, 4, 0xC0);           // sync : force x1 même avec WR4 bits6-7=11
-        c.equal("sync forces x1", r.sched.nextDue(), 15);
-        r.wr(0, 4, 0xC4);
-        c.equal("async x64", r.sched.nextDue(), 267);
-        r.wr(0, 4, 4); r.wr(0, 14, 1);
-        c.equal("RTxC dedicated 3672000 oscillator", r.sched.nextDue(), 19);
-        r.wr(0, 11, 0xF8);          // sources TX/RX non supportées : BRG indépendant
-        c.equal("WR11 does not disable BRG", r.sched.nextDue(), 19);
-        r.wr(0, 4, 0xC4); r.wr(0, 12, 255); r.wr(0, 13, 255);
-        c.equal("baud minimum 1 Hz", r.sched.nextDue(), 11 + neost::pacing::kCpuHzInt);
+        r.arm(0, 0x44);
+        c.equal("WR4 x16 does not divide Zero Count", r.sched.nextDue(), 2);
+        r.sched.runTo(1); r.wr(0, 12, 10); r.wr(0, 13, 1);
+        c.equal("TC writes preserve active counter", r.sched.nextDue(), 2);
+        r.sched.runTo(2);
+        c.equal("new TC applied at reload", r.sched.nextDue(), 270);
+        r.wr(0, 4, 0xC4); r.wr(0, 11, 0xF8);
+        c.equal("WR4 and WR11 leave counter phase", r.sched.nextDue(), 270);
+        r.wr(0, 14, 1);
+        c.equal("RTxC source restarts with exact fraction", r.sched.nextDue(), 588);
+        r.wr(0, 14, 0); r.wr(0, 12, 255); r.wr(0, 13, 255); r.wr(0, 14, 1);
+        c.equal("TC max counter has no baud clamp", r.sched.nextDue(),
+                2 + (neost::pacing::kCpuHzInt*65537 + 3671999)/3672000);
     }
     {
         Rig r;
@@ -133,14 +129,14 @@ bool testSccBrg() {
         r.arm(1, 0x44);
         r.sched.runTo(1);
         r.wr(0, 9, 0x80);           // reset canal A : BRG enable/source conservés
-        c.equal("channel reset preserves BRG phase", r.sched.nextDue(), 4);
-        r.sched.runTo(4);
-        c.equal("channel reset keeps cached baud", r.sched.nextDue(), 8);
-        c.equal("channel reset clears WR1 interrupt enable", r.rr(0, 3), 0);
+        c.equal("channel reset preserves BRG phase", r.sched.nextDue(), 2);
+        r.sched.runTo(2);
+        c.equal("channel reset preserves counter cadence", r.sched.nextDue(), 4);
+        c.equal("channel reset clears WR1 interrupt enable", r.rr(0, 3) & 8, 0);
         r.wr(0, 14, 2);
-        c.equal("A disabled leaves B event", r.sched.nextDue(), 64);
+        c.equal("A disabled leaves B event", r.sched.nextDue(), 4);
         r.wr(1, 9, 0x40);
-        c.equal("channel B reset preserves BRG phase", r.sched.nextDue(), 64);
+        c.equal("channel B reset preserves BRG phase", r.sched.nextDue(), 4);
         r.wr(0, 9, 0xC0);
         c.equal("WR9 full hardware reset cancels both BRGs", r.sched.nextDue(), -1);
         r.arm(0); r.scc.reset();
@@ -148,28 +144,28 @@ bool testSccBrg() {
     }
     {
         Rig r;
-        r.wr(0, 9, 8); r.arm(0, 0x44); r.sched.runTo(19);
+        r.wr(0, 9, 8); r.arm(0, 0x44); r.sched.runTo(1);
         std::vector<uint8_t> state;
         auto save = StateArchive::saver(state); r.scc.serialize(save); r.sched.serialize(save);
         r.sched.runTo(64); r.command(0, 0x10); r.scc.reset();
         auto load = StateArchive::loader(state.data(), state.size());
         r.scc.serialize(load); r.sched.serialize(load);
         c.equal("save-state valid", load.ok(), true);
-        c.equal("save-state restores clock", r.sched.now(), 19);
-        c.equal("save-state preserves remaining BRG phase", r.sched.nextDue(), 64);
-        r.sched.runTo(63); c.equal("restored BRG not early", r.scc.irqActive(), false);
-        r.sched.runTo(64); c.equal("restored BRG IRQ", r.scc.irqActive(), true);
-        c.equal("restored BRG next period", r.sched.nextDue(), 128);
+        c.equal("save-state restores clock", r.sched.now(), 1);
+        c.equal("save-state preserves remaining BRG phase", r.sched.nextDue(), 2);
+        r.sched.runTo(1); c.equal("restored BRG not early", r.scc.irqActive(), false);
+        r.sched.runTo(2); c.equal("restored BRG IRQ", r.scc.irqActive(), true);
+        c.equal("restored BRG next period", r.sched.nextDue(), 4);
     }
     {
         Rig r;
         int64_t live = 100;
         r.sched.setLiveClock([&live] { return live; });
         r.arm(0);
-        c.equal("programming uses live CPU clock", r.sched.nextDue(), 104);
+        c.equal("programming uses live CPU clock", r.sched.nextDue(), 102);
         live = 106;
         r.sched.runTo(106);
-        c.equal("dispatch overshoot does not drift", r.sched.nextDue(), 108);
+        c.equal("dispatch overshoot does not drift", r.sched.nextDue(), 104);
     }
     {
         Rig r;

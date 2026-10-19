@@ -658,6 +658,30 @@ expect_p(52, (0x7FFF0000, 0xFFFFFFFF, 0xFFFFFFFF))
 expect_fpsr(52, 0x0000FFFF, 0x2080)
 fpcr(0)
 
+# Test 53 : FINTRZ conserve INEX2/INEX malgré son mode local vers zéro.
+# FPCR ne change pas le résultat ; les quatre précisions et modes sont couverts.
+for precision in range(4):
+    for mode in range(4):
+        fpcr((precision << 6) | (mode << 4))
+        command(0x8800); movel_imm_absl(0, OPER)
+        command(0x4803); operand_x(0xBFFF, 0xC000000000000000)  # -1,5 → -1
+        expect_fpsr(53, 0x0000FFFF, 0x0208)
+        expect_x(53, 0xBFFF, 0x8000000000000000)
+fpcr(0x240)                            # INEX2 activé, précision simple
+command(0x4803); operand_x(0x3FFF, 0xC000000000000000)
+movew_absl_dn(RESP, 0); cmpiw_dn(0x7031, 0); bne_to("fail53")
+fpcr(0)
+
+# Test 54 : FINTRZ quiète le SNaN et conserve SNAN/IOP puis livre le vecteur54.
+command(0x8800); movel_imm_absl(0, OPER)
+command(0x4803); operand_x(0xFFFF, 0x800000000BADF00D)
+expect_fpsr(54, 0x0000FFFF, 0x4080)
+expect_x(54, 0xFFFF, 0xC00000000BADF00D)
+fpcr(0x4000)                           # SNAN activé
+command(0x4803); operand_x(0x7FFF, 0x800000000BADF00D)
+movew_absl_dn(RESP, 0); cmpiw_dn(0x7036, 0); bne_to("fail54")
+fpcr(0)
+
 # Test 9 : livraison d'exception FP. On ACTIVE DZ dans le FPCR (bit10), puis FDIV
 # par 0 → le Response CIR doit livrer « Take Pre-Instruction Exception » (CA=0,
 # vecteur DZ $32 en octet bas) = $7032 au lieu du null $0802.
@@ -677,7 +701,7 @@ movel_label_a3("pass_str")              # move.l #pass_str,a3
 bsr_to("emit")
 w16(0x60FE)                             # bra.s *
 
-for n in range(1, 53):                   # FAILn : D7 = -n (compat trace) → verdict commun
+for n in range(1, 55):                   # FAILn : D7 = -n (compat trace) → verdict commun
     labels[f"fail{n}"] = len(code)
     w16(0x7E00 | ((-n) & 0xFF))          # moveq #-n,d7
     bra_to("fail_common")
@@ -688,10 +712,17 @@ w16(0x60FE)                             # bra.s *
 
 # Sous-routine emit : a3 = chaîne 0-terminée → écrit chaque octet dans l'UDR $FFFA2F.
 label("emit")
+# Le verdict utilise l'USART réel : /16, 8N1 et transmetteur activé.
+w16(0x13FC); w16(0x0088); w32(0x00FFFA29)  # move.b #$88,UCR.l
+w16(0x13FC); w16(0x0001); w32(0x00FFFA2D)  # move.b #1,TSR.l
+label("emit_next")
 w16(0x121B)                              # move.b (a3)+,d1
 beq_to("emit_ret")                       # beq.w emit_ret
+label("emit_wait")
+w16(0x0839); w16(7); w32(0x00FFFA2D)       # btst #7,TSR.l (buffer vide)
+beq_to("emit_wait")
 w16(0x13C1); w32(0x00FFFA2F)             # move.b d1,$FFFA2F.l
-bra_to("emit")
+bra_to("emit_next")
 label("emit_ret")
 w16(0x4E75)                              # rts
 emit_string("pass_str", "NEOST-TEST: fpu PASS\r\n")

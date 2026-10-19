@@ -165,6 +165,10 @@ public:
     // (IPR/ISR + chronologie pendingTime_), lignes d'ENTRÉE GPIP et champs dérivés
     // persistants. NE TOUCHE PAS aux liaisons moteur (sched_, serialSink_) ni aux
     // static/constexpr. Note : le MFP n'a PAS de FIFO série (deque) — buffer 1 octet.
+    // Fin de caractère TX : sortie hôte et bouclage, puis transfert TDR→TSR.
+    // Deux registres au plus, sans FIFO ; le TDR plein est écrasé par UDR.
+    // Le transport sans Scheduler conserve le raccourci instantané des fixtures.
+    void onSerialTxEvent();
     void serialize(StateArchive& ar) {
         // --- Registres d'interruption exposés au débogueur (publics) -----------------
         ar(gpip); ar(aer); ar(ddr);
@@ -221,6 +225,14 @@ public:
         // --- Config USART effective (dérivée du Timer D / UCR) -----------------------
         ar(serialBaud_);
         ar(serialUcr_);
+        ar(serialClockFactor_);
+        ar(serialRxMask_);
+        ar.check(serialRxMask_ == 0xFF || serialRxMask_ == 0x7F ||
+                 serialRxMask_ == 0x3F || serialRxMask_ == 0x1F,
+                 "Mfp::serialRxMask_");
+        ar.check(serialClockFactor_ > 0 && serialClockFactor_ <= 819200,
+                 "Mfp::serialClockFactor_");
+        ar.check(serialBaud_ >= 0 && serialBaud_ <= 307200, "Mfp::serialBaud_");
 
         // --- File RX côté hôte (v10) : deque via vector, comme MidiAcia --------------
         {
@@ -231,7 +243,33 @@ public:
                 hostRx_.assign(q.begin(), q.end());
             }
         }
+        ar(serialTxBusy_); ar(serialTxFull_); ar(serialTxUnderrun_); ar(serialTxEnd_);
+        ar(serialTxByte_); ar(serialTxHolding_);
+        ar(serialTxCycle_); ar(serialTxRemainder_); ar(serialTxDivisor_);
+        ar(serialTxFrameClearCycle_);
+        ar.check(serialTxFrameClearCycle_ >= 0 &&
+                 serialTxFrameClearCycle_ <= INT64_MAX - 1000000000,
+                 "Mfp::serialTxFrameClearCycle_");
+        ar(serialTxUnderrunClearCycle_);
+        ar.check(serialTxUnderrunClearCycle_ >= 0 &&
+                 serialTxUnderrunClearCycle_ <= INT64_MAX - 1000000000,
+                 "Mfp::serialTxUnderrunClearCycle_");
+        ar.check(serialTxCycle_ >= 0 && serialTxCycle_ <= INT64_MAX - 1000000000,
+                 "Mfp::serialTxCycle_");
+        ar.check(serialTxDivisor_ > 0 && serialTxDivisor_ <= 2457600,
+                 "Mfp::serialTxDivisor_");
+        ar.check(serialTxRemainder_ >= 0 && serialTxRemainder_ < serialTxDivisor_,
+                 "Mfp::serialTxRemainder_");
         ar(serialRxArmed_);
+        ar(serialRxCycle_);
+        ar(serialRxRemainder_);
+        ar(serialRxDivisor_);
+        ar.check(serialRxCycle_ >= 0 && serialRxCycle_ <= INT64_MAX - 200000000,
+                 "Mfp::serialRxCycle_");
+        ar.check(serialRxDivisor_ > 0 && serialRxDivisor_ <= 2457600,
+                 "Mfp::serialRxDivisor_");
+        ar.check(serialRxRemainder_ >= 0 && serialRxRemainder_ < serialRxDivisor_,
+                 "Mfp::serialRxRemainder_");
     }
 
     // Lignes d'interruption des DEUX ACIA (clavier ET MIDI), câblées en WIRE-OR
@@ -392,7 +430,20 @@ public:
     static constexpr std::size_t kHostRxMax = 4096;
     std::deque<uint8_t> hostRx_;
     bool serialRxArmed_ = false;
-    void scheduleSerialRx();
+    uint8_t serialRxMask_ = 0xFF; // largeur du caractère hôte déjà engagé
+    int64_t serialRxCycle_ = 0;       // partie entière de la prochaine fin de caractère
+    int64_t serialRxRemainder_ = 0;   // fraction exacte / serialRxDivisor_
+    int serialRxDivisor_ = 1;
+    void scheduleSerialRx(bool continuation = false);
+    void startSerialTx(bool continuation);
+    void finishSerialTx(int64_t when);
+    bool serialTxBusy_ = false, serialTxFull_ = false;
+    bool serialTxUnderrun_ = false, serialTxEnd_ = false;
+    uint8_t serialTxByte_ = 0, serialTxHolding_ = 0;
+    int64_t serialTxCycle_ = 0, serialTxRemainder_ = 0;
+    int serialTxDivisor_ = 1;
+    int64_t serialTxFrameClearCycle_ = 0; // seuil potentiel de la trame TSR courante
+    int64_t serialTxUnderrunClearCycle_ = 0; // premier cycle autorisant clear UE
 public:
     void setLoopback(bool plugged) { loopback_ = plugged; }
     bool loopback() const { return loopback_; }
@@ -485,6 +536,7 @@ private:
 
     Scheduler* sched_ = nullptr;    // pour dater les timers (mode délai)
     std::function<void(uint8_t)> serialSink_;   // port série RS-232 (UDR $FFFA2F)
-    int     serialBaud_ = 0;        // bauds effectifs (0 = USART jamais configurée)
+    int     serialClockFactor_ = 128; // prescaler × données × division UCR, défaut 9600
+    int     serialBaud_ = 0;        // bauds informatifs tronqués (0 = USART jamais configurée)
     uint8_t serialUcr_  = 0;        // UCR au moment du dernier calcul (format du mot)
 };

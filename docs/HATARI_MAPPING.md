@@ -152,6 +152,8 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 
 | Hatari | NeoST | Statut | Note |
 |---|---|---|---|
+| `floppy.c:Floppy_ReadSectors/Floppy_WriteSectors` | `Fdc::readSectorST/writeSectorST` | porté | Validation du secteur sur le média actif, même après changement de lecteur pendant transfert ; RNF sans alias face/piste, délégation STX inchangée. |
+| `fdc.c:FDC_InsertFloppy/FDC_EjectFloppy` | `Fdc::loadImage/eject` | porté | Phase INDEX supprimée à l’éjection, réamorcée au montage du lecteur actif ; lecteur non sélectionné sans effet. FORCE INTERRUPT et IRQ forcée revérifiés. |
 | fdc.c:2307-2372 (InterruptHandler_Update) | Fdc.cpp (onFdcEvent) | porté | Ancrage firingDue()+stall+delay déjà présent, vérifié le 2026-10-18. Le stall n’est pas absorbé par la compensation du retard. |
 | fdc.c:4487+ (ExecuteCommand types I-IV) | Fdc.cpp:1782-1856 | porté | Délais PREPARE identiques. |
 | fdc.c (WriteCommandRegister pendant busy) | Fdc.cpp:2000-2010 | porté | Remplacement type-à-type (Overdrive Demos). |
@@ -257,7 +259,7 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | acia.c:472-485 (cadence 1024 cyc/bit) | Ikbd.cpp:912-929 (10240 cyc/octet) | porté | Granularité octet (écart de phase ≤1024 cyc). |
 | acia.c:669-705 (MasterReset) | Ikbd.cpp:190-193 | porté | File 6301 et octet en vol conservés. |
 | acia.c:785-842 (Write_CR) | Ikbd.cpp:174-195 | **partiel ⚠** | CONFIRMÉ : TIE + master reset portés ; manquent Clock_Divider (cadence en dur : RX 10240, TX 7200), mode break, et la garde « Divider==0 → IKBD muet » (ikbd.c:1027-1032). → candidat n°18. |
-| acia.c:893-902 + 913-1027 (Write_TDR + Clock_TX) | Ikbd.cpp:197-206 + 968-973 | **partiel ⚠** | CONFIRMÉ : Hatari efface TDRE à CHAQUE écriture (même sans TIE) et le rend au rythme bit ; NeoST hors TIE garde TDRE=1 → poll TOS voit un émetteur infiniment rapide. Documenté seulement pour le MIDI (doc:646) — même défaut côté clavier. → candidat n°15. |
+| acia.c:893-902 + 913-1027 (Write_TDR + Clock_TX) | Ikbd.cpp (write8, onTxEmpty, receiveSerialByte) | porté pour /64 8N1 | TDR/TSR, TDRE à la grille bit, commande au stop, remplacement du TDR occupé, reset et sauvegarde (2026-10-18). Formats/diviseurs et break restent bornés. |
 | acia.c Clock_TX → ikbd.c:755-819, 891 (transit série CPU→IKBD) | Ikbd.cpp:210-241 (parse immédiat) | **absent ⚠** | CONFIRMÉ : chaque octet de commande prend effet ~10240 cyc trop tôt, multi-octets sans pacing (commentaire NeoST l'assume). Plus gros écart de timing du sous-système. → candidat n°15. |
 | acia.c:715-748 (UpdateIRQ) | Ikbd.cpp:951-966 | porté | Wire-OR GPIP4 clavier+MIDI. |
 | acia.c:546-561 (AddWaitCycles) | Bus.cpp:600,607 + Cpu68k.cpp:673-684 | porté | 6 cyc + E-Clock. |
@@ -269,8 +271,8 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | ikbd.c:2085-2758, 3049 (Delay_Random 7000-10800 avant réponses) | Ikbd.cpp:289-531 (pushRx immédiat) | **partiel ⚠** | CONFIRMÉ : contenu octet pour octet, mais réponses ~7000-10800 cyc trop tôt (le délai Hatari est ADDITIF au transfert). → candidat n°16. |
 | ikbd.c:945-959 (OutputBuffer 1024) | Ikbd.cpp:888-910 | porté | Testé avant le 1er octet (Downfall/Fokker). |
 | ikbd.c (PauseOutput $13/$11) | Ikbd.cpp:256-262, 318-329, 920 | porté | Ignoré pendant la fenêtre critique (Just Bugging). |
-| ikbd.c:1783-1813, 1672-1729 (AutoSend timer 150000 cyc) | Ikbd.cpp:638-704 (onVbl) | **partiel ⚠** | CONFIRMÉ : ordre de trame porté mais tick au VBL au lieu du timer libre 150000 cyc (qui GLISSE vs faisceau chez Hatari). → candidat n°17. |
-| ikbd.c:2293-2312 (SetJoystickMonitoring, taux) | Ikbd.cpp:414-420, 632-636 | **partiel ⚠** | CONFIRMÉ : le byte Rate n'est jamais lu (échantillonnage au VBL fixe). → candidat n°17. |
+| ikbd.c:1783-1813, 1672-1729 (AutoSend timer 150000 cyc) | Ikbd.cpp (onAutoSend, sendAutoInput) | porté | Timer indépendant du VBL, phase conservée lors des resets rapprochés (2026-10-18). |
+| ikbd.c:2293-2312 (SetJoystickMonitoring, taux) | `Ikbd::onJoystickMonitor/sendAutoInput` | porté (2026-10-18) | Taux respecté, cadence commune conservée après changement de mode ; MouseAction avant monitoring. |
 | ikbd.c:1429-1437, 1344, 2219-2228 (joysticks, quirks reset) | Ikbd.cpp:606-616, 665-672, 375-399, 594-604 | porté | Barbarian/Hammerfist/$12+$1A. |
 | ikbd.c:1484 + $14 immédiat (Utopos) | Ikbd.cpp:618-636, 391-397 | porté | PrevJoyData même si tampon plein. |
 | ikbd.c:1382-1422, 2050-2095 (paquets souris) | Ikbd.cpp:745-852, 706-718, 808-823 | porté | Seuil/échelle/axe Y/front sans mouvement (Vroom). |
@@ -279,9 +281,10 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | ikbd.c:1736-1757 (PressSTKey) | Ikbd.cpp:720-730 | porté | ScanCodeState, filtrage monitoring. |
 | keymap.c | gui/InputCallbacks.cpp (onKey) + gui/StKeys | volontaire | Plomberie frontend (GLFW vs SDL). |
 | midi.c:143-184 (MIDI_UpdateIRQ + Control_Read) | MidiAcia.cpp:21-40, 81-89 | porté | Wire-OR GPIP4. |
-| midi.c:245-288 (TDR/TSR : vide après 1 bit=256 cyc) | MidiAcia.cpp:42-79 | **partiel ⚠** | CONFIRMÉ : TDRE tombe seulement sous TIE et revient à 2560 cyc (octet plein) vs 256 cyc TSR libre — le timing du fix « Notator ». → candidat n°29. |
-| midi.c:294-331 (RX hôte cadencé) | MidiAcia.cpp:69-71 (bouclage instantané) | volontaire | Fixture diagnostic --loopback, pas d'hôte MIDI. |
-| ikbd.c:2324 ($18, non implémenté) | Ikbd.cpp:421-423 | porté | NOP des deux côtés (noms $18/$19 intervertis en commentaire). |
+| midi.c:245-288 (TDR/TSR : vide après 1 bit=256 cyc) | MidiAcia.cpp (write8, advanceTx) | porté TX | Huit formats CR2..4 et /1,/16,/64 ; TDR→TSR après un bit, données et durée mémorisées, attente écrasable, IRQ indépendante et horodatages série (2026-10-18). RX hôte reste 31250 8N1. |
+| acia.c:800–804,451–454,479–484 (diviseur et timer TX générique) | `MidiAcia::write8`, `txClockPhase_` | porté pour reprise BREAK | Phase ancrée au changement CR0..1 et sauvegardée v38 ; libération BREAK au prochain front de cette phase. Changement diviseur en vol recadence les fronts TSR restants ; TDR au repos now+bit reste approximatif ; pas de modèle bit à bit. |
+| midi.c:294-331 (RX hôte cadencé) + acia.c (RX STOP / Read_RDR) | MidiAcia.cpp (onRxPace, pushRx, read8) | porté avec modèle ACIA | Source hôte à 2560 cycles/caractère ; un RDR, RX_Overrun puis OVRN, acquittement SR→RDR. Bouclage livré au stop TX ; le RSR ne retient pas un second caractère achevé (2026-10-18). |
+| `ikbd.c:2324,2351`, table des commandes | `Ikbd::cmdLength/dispatch` | NOP comme Hatari | `$18` reconnu (1 octet), `$19` consommé (7 octets) ; ces deux modes ne sont pas émulés. `$99` reste un alias du rapport `$94/$95`. |
 
 ## 8. Blitter (blitter.c)
 
@@ -365,7 +368,7 @@ plafond de dépense) — relecture directe des deux côtés, **sans vérificatio
 | cart.c/cartData.c (cartouche système) | GemdosHd.cpp:37-45 `Cart_data` | divergent-volontaire | Programme info renommé `NEOST.TOS`, texte = raccourcis NeoST, C-BSIZ `$1E7` (2026-07-08) ; en-tête, code 68000 et adresses `$FA0024`/`$FA002A` inchangés. |
 | cart_asm.s:37 `VDI_OPCODE` (12, résolutions VDI étendues) | — | volontaire | Pas de mode VDI étendu dans NeoST ; l'opcode `$000C` est dans `Cart_data` mais jamais intercepté (Cpu68k.cpp:585 ne prend que 8-10). |
 | cart.c (exclusivité cartouche externe ↔ système) | main.cpp (démarrage + menu Disque dur) | porté | Depuis le 2026-07-08 : monter le GEMDOS éjecte la cartouche et inversement. |
-| rtc.c (RP5C15 Mega ST / Mega STE) | Rtc.cpp/.hpp | porté | Divergence assumée sur la source d'heure : modèle « paresseux déterministe » persisté dans neost.cfg (`rtc=`/`rtc_saved=`) au lieu de l'heure hôte directe. |
+| rtc.c (RP5C15 Mega ST / Mega STE) | Rtc.cpp/.hpp | porté avec extensions Ricoh | Divergence assumée sur la source d'heure : modèle « paresseux déterministe » persisté dans neost.cfg (`rtc=`/`rtc_saved=`) au lieu de l'heure hôte directe. Banque 1 indépendante selon Ricoh EK-086-9908 ; aucune sortie ALARM/CLKOUT. |
 | scu_vme.c (SCU MegaSTE/TT, `SysIntMask`/`VmeIntMask`) | Scu.hpp | porté | IPL = (SysIntState & SysIntMask & `$9F`) OU (VmeIntState & VmeIntMask & `$60`) ; MFP (niv. 6) et SCC (niv. 5) gatés par VmeIntMask. Bus VME non émulé (comme Hatari — « VME not found » CORRECT). TT hors périmètre. |
 | joy.c `Joy_GetStickData` + pads STE `$FF9200/02` | JoystickInput.hpp (`stjoy::compose`) + StePads.hpp | porté | Manette USB + émulation clavier → IKBD (`$16`/`$14`) et joypads STE (même état). |
 | joy.c:671 paddles analogiques `$FF9211-17` (plage `$04-$43`) | StePads.hpp + main.cpp (`setAnalog`) | porté | Axes bruts du stick gauche, plage grossière STE respectée. |
@@ -377,11 +380,48 @@ GEMDOS + VHD montés ensemble) ; conversion charset des noms de fichiers (S — 
 
 ---
 
+### USART MFP — réception (actualisé le 2026-10-18)
+
+| Référence | NeoST | Statut | Note |
+|---|---|---|---|
+| rs232.c:329-365 (format UCR), MAME mc68901.cpp USART | Mfp::scheduleSerialRx/onSerialRxEvent | porté pour le transport asynchrone hôte | 5..8 données masquées à droite (bits hauts zéro, largeur mémorisée au départ), parité, 1/1,5/2 stops ; retenue rationnelle, phase entière et reste sauvegardés. Reconfiguration au caractère suivant ; UCR7 /1 ou /16 et rapport Timer D exact, sans arrondis tty ni plancher RX ; repli synchrone 8N1 /16. MC68901UM §7.1.3. |
+| MAME mc68901.cpp:958-1015,1387-1432 (USART TX) | Mfp::startSerialTx/onSerialTxEvent, SERIAL_TX | porté avec limites | TDR/TSR, UCR, TE et fin différée, Buffer Empty/underrun/EOT, phase sauvegardée. Rapport Timer D exact et fraction conservée aux reconfigurations. Front TC initial, synchro et waveform BREAK restent approximatifs. Hatari émet directement vers le tty. |
+| MAME `tx_clock/REGISTER_UDR` | `Mfp::onSerialTxEvent` | porté avec limite | UE mémorisé : TXERR sur nouveau front seulement ; UDR ne l’efface pas. Lecture TSR ou TE=0 réarme ; délai minimal d’une période TX sauvegardé, seuil de trame distinct du seuil UE. |
+| MC68901UM §7.3.2, MAME `tx_clock` | `Mfp::finishSerialTx` | porté | END/AT immédiats au repos, différés en vol ; activation RE sans perdre RDR/TDR, IRQ sur nouveau front uniquement. |
+| MC68901UM §7.2.2/7.3.2, MAME `REGISTER_RSR/REGISTER_TSR` | `Mfp::write8` | porté | RE/SS contrôlables, F/S en synchrone uniquement ; statuts matériels préservés. Droits TSR revérifiés. |
+| MAME mc68901.cpp `REGISTER_RSR/REGISTER_UDR` | `Mfp::write8/read8` | porté avec limites | RE=0 efface RSR/BF/overrun sans effacer les données RX ni IPR ; UDR vide restitue RX. Réacquisition à mi-caractère encore approximative. |
+
+### IKBD — PAUSE et octet SCI engagé (actualisé le 2026-10-18)
+
+| Référence | NeoST | Statut | Note |
+|---|---|---|---|
+| `ikbd.h:44-45`, `ikbd.c:918-929,945-958` | `Ikbd::rxFree/pushRx/serialize` | porté | 1024 octets firmware en attente, indépendants du SCI et du RDR ACIA. Paquets entiers, garde de capacité au chargement. |
+| `ikbd.c:835-866,917-929` | `Ikbd::armRx/onRxDeliver`, `rxShiftData_` | porté | Un seul octet engagé peut finir après PAUSE ; la file firmware attend. Boot ROM le conserve, reset matériel annule, phase sauvegardée. |
+
+### IKBD — cadence commune et monitoring (actualisé le 2026-10-18)
+
+| Référence | NeoST | Statut | Note |
+|---|---|---|---|
+| `ikbd.c:1688-1696,2292-2311`, `IKBD_Boot_ROM` | `Ikbd::onJoystickMonitor/sendAutoInput/bootRom` | porté | MouseAction et position absolue avant monitoring. $17 remplace la cadence commune, conservée après changement de mode ; boot rétablit 150000 en préservant l’échéance. Base fixe 8021247 comme Hatari. |
+
 ### SCC — générateur de débit (actualisé le 2026-10-18)
 
 | Hatari | NeoST | Statut | Note |
 |---|---|---|---|
-| `scc.c` : `SCC_Compute_BaudRate`, `SCC_Start_InterruptHandler_BRG`, `SCC_InterruptHandler_BRG` | `Scc::updateBrg/onBrgEvent`, `Scheduler::SCC_BRG_A/B` | porté | PCLK/RTxC MegaSTE, WR4/12/13/14, pulse Zero Count, masques et IRQ. Période mémorisée et phase sauvegardées ; TX/RX restent immédiats. |
+| `scc.c` : `SCC_Compute_BaudRate`, `SCC_Start_InterruptHandler_BRG`, `SCC_InterruptHandler_BRG` | `Scc::updateBrg/onBrgEvent`, `Scheduler::SCC_BRG_A/B` | porté | PCLK/RTxC MegaSTE, WR12/13/14, ZC=(TC+2)/source avant /2 et WR4 ; retenue rationnelle, pulse RR0 non latchée, masques et IRQ. Période mémorisée et phase sauvegardées ; caractères TX/RX temporisés par des événements distincts. |
+| `scc.c:1660-1679,1986-2040,2139-2173` : TDR/TSR et événements caractère | `Scc::serialPeriod/updateSerial/onSerialEvent`, `Scheduler::SCC_TX_A/B`, `SCC_RX_A/B` | porté | Formats et horloges indépendants, file RX hôte bornée, bouclage à la fin TX. FIFO RX matérielle de trois octets portée selon Zilog/MAME ; bits inutilisés RR8=1 en asynchrone, format figé à la réception ; DPLL ouverte. |
+| Zilog UM0109 WR3 p.149, MAME receive_allowed / cts_w / tra_complete | Scc::receiveAllowed/transmitAllowed/updateSerial | porté avec limites | CTS/DCD bruts, exceptions de bouclage, TX engagé terminé, DCD ne purge pas les caractères déjà en FIFO. RTS asynchrone Auto Enables différé jusqu’au dernier stop ; CTS suit la sortie physique (UM0109 p.95/p.154). |
+| Zilog UM0109 WR12/13 p.167–168 et WR14 p.172 | `Scc::serialPeriod` | porté pour les caractères BRG | Rapport exact PCLK/RTxC et TC, sans arrondi baud ni seuil1Hz. Fractions TX/RX et longues suspensions sauvegardées ; Zero Count rationnel et indépendant. |
+| Zilog UM0109 WR4/WR11, MAME clocks séparées | `Scc::serialPeriod` | porté pour RTxC/TRxC directs | Rapport rationnel et fractions TX/RX par canal sauvegardées ; changement source au prochain caractère. Cadence BRG des caractères désormais rationnelle ; Zero Count rationnel et indépendant. |
+| Zilog UM0109 WR5 p.153 Send Break, MAME `tra_callback/tra_complete` | `Scc::updateSerial/processTX` | porté avec limites | TSR suspendu, TDR retenu, temps restant sauvegardé ; caractère interrompu non livré comme intact. Phase bit, erreurs RX et X21 non portés. |
+| Zilog UM0109 WR5 p.153, Transmit Enable | `Scc::updateSerial/processTX` | porté | Désactivation TX termine la trame déjà engagée ; TDR retenu, CTS et RTS différé respectés. Départ TX sauvegardé. |
+| Zilog UM0109 WR5 p.153 et chargement TSR p.114 | `Scc::copyTdrTsr/serialPeriod` | porté | TX 1..8 bits ; encodage cinq bits ou moins, masquage et longueur mémorisée dans TSR. |
+| Zilog UM0109 WR3 p.149 | `Scc::deliverByte` | porté | Sync Character Load Inhibit : comparaison WR6 avant FIFO, même en asynchrone ; SDLC exclu et exception Bisync 12 bits. Aucun synchroniseur ajouté ; absent de Hatari. |
+| Zilog UM0109 WR4 p.152 | `Scc::copyTdrTsr/serialWriteByte/deliverByte` | porté pour les bouclages de même largeur | RX 5/6/7 bits restitue la parité émise après les données ; format conservé en FIFO, parité du TSR sauvegardée. L’API hôte sans bits série et les formats discordants ne permettent pas de reconstruire parité/framing. |
+| Zilog UM0109 p.58 BREAK/Abort | `Scc::updateRR0/updateRR0LatchOff` | porté avec limites | Deux polarités BREAK retenues pendant un verrou existant ; répétitions coalescées, service WR0, champs v39. Pas de RX FIFO/framing synthétiques. |
+| acia.c Write_CR/Set_Timers/Clock_TX | `Ikbd::write8/advanceTx`, `txClockPhase_` | porté pour reprise BREAK /64 | Phase réancrée au changement diviseur ; événements TX échus servis avant CR/TDR. TX ordinaire et formats non usuels restent approximatifs ; phase sauvegardée v39. |
+| Zilog UM0109 p.56–57, MAME WR1 | `Scc::updateRR0/onBrgEvent/writeControl` | porté | WR15 arme les verrous indépendamment de WR1 D0 ; ce dernier masque uniquement l’IP. WR0 ouvre les verrous et réarme selon le niveau actuel. |
+| Ricoh EK-086-9908 p.7, note TIMER EN | `Rtc::catchUp/write8` | porté | Phase sous-seconde continue ; retenue saturante délivrée dès reprise, sauvegardée en v38. Annulation RESET/ADJ déduite de la remise à zéro des étages. |
 | `scc.c` : `SCC_ResetChannel/Full` | `Scc::resetChannel/resetFull` | porté avec garde | Reset canal conserve le BRG. Reset matériel annule les événements après désactivation WR14 ; l'amont omet cette annulation. |
 
 ## 11. FPU 68881 — opérations et conversions (actualisé le 2026-10-18)
@@ -514,9 +554,9 @@ timing d'abord. Effort : S (< ½ journée, localisé) / M (chantier borné) / L 
 | # | Candidat | Hatari | NeoST | Effort |
 |---|---|---|---|---|
 | 14 | **Instruction RESET : déjà portée** via le hook Moira | hatari-glue.c:49-77 | Cpu68k.cpp (didExecute), Bus.cpp (peripheralReset) | clos |
-| 15 | **Transit série CPU→IKBD + TDRE clavier hors TIE** (chaque octet de commande ~10240 cyc trop tôt, multi-octets sans pacing — plus gros écart timing du sous-système) | acia.c:893-902, 954-1027 ; ikbd.c:755-819, 891 | Ikbd.cpp:197-242 (parse dans write8, tdre_ figé à 1 hors TIE) | M |
+| 15 | **Transit CPU→IKBD porté pour /64 8N1 (2026-10-18)** | acia.c:893-902, 954-1027 ; ikbd.c:755-819 | Ikbd.cpp (write8, onTxEmpty, receiveSerialByte) | porté ; formats/diviseurs et break ouverts |
 | 16 | **Délais de réponse IKBD portés le 2026-10-18** : attente globale quantifiée en bits, valeur centrale déterministe des plages Hatari ; interrogations et Froggies | ikbd.c (Send_Byte_Delay, SCI_Set_Line_TX) | Ikbd.cpp (pushRxDelayed/armRx), tests/ikbd_response_logic.cpp | clos, phase bit exacte non simulée |
-| 17 | **Monitoring $17 porté le 2026-10-18** : timer dédié au taux demandé ; autosend normal reste lié au VBL | ikbd.c (SetJoystickMonitoring, InterruptHandler_AutoSend) | Ikbd.cpp (onJoystickMonitor), Scheduler::IKBD_MONITOR | partiel : autosend général ouvert |
+| 17 | **Monitoring $17 porté le 2026-10-18** : cadence commune au taux demandé ; autosend normal à 150000 cycles | ikbd.c (SetJoystickMonitoring, InterruptHandler_AutoSend) | Ikbd.cpp (onJoystickMonitor), Scheduler::IKBD_MONITOR | porté ; phase SCI et formats ACIA non usuels restent approximatifs |
 | 18 | **Cadence ACIA dérivée du Clock_Divider + garde init** (div 1/16 → liaison 64×/4× ; Divider==0 → IKBD muet) | acia.c:800-804 ; ikbd.c:1027-1032 | Ikbd.cpp:922 (10240 en dur), 898-910 | S |
 | 19 | **Drive/side push déjà porté** à chaque écriture port A PSG | psg.c:420 → fdc.c:1720-1766 | Machine.cpp (setPortASink), Fdc.cpp (refreshDriveSide) | clos |
 | 20 ✅ | **IRQ HDC différée de 1000 cycles CPU post-DMA ACSI** — portée le 2026-10-18 ; acquittements de commande conservés, échéance sauvegardée | hdc.c `Acsi_DmaTransfer`, `HDC_ACSI_InterruptHandler_Update` | Fdc.cpp `acsiDmaTransfer/onAcsiIrq`, Scheduler::ACSI_IRQ | — |
@@ -533,7 +573,7 @@ timing d'abord. Effort : S (< ½ journée, localisé) / M (chantier borné) / L 
 |---|---|---|---|---|
 | 27 | **Horloge YM réelle (YM_Freq/8) + rejeu à la frontière 250 kHz** (pitch −4,6/−2,3 cents, écart ST↔STE absent, phase R13 sync-buzzer au grain 4 µs vs 21 µs) | sound.c:234-235, 864-878, 1243 ; psg.c:342 ; clocks_timings.c:211,243 | YM2149.hpp:212 (250000 figé) ; YM2149.cpp:343-355 | M |
 | 28 | **XSINT et BUSY via gpipSetLine** (DDR respecté ; GPIP0 jamais levé sur front BUSY — fix trivial, le port centralisé existe) | mfp.c:1180-1219 (DDR :1201) ; psg.c:390 ; dmaSnd.c:308 | Mfp.cpp:459-469 ; Mfp.hpp:177 | S |
-| 29 | **MIDI : datation TDRE fidèle (fix Notator)** (TDRE tombe à chaque écriture ; revient 1 bit=256 cyc si TSR libre vs 2560 fixes) | midi.c:47, 256-271, 303-306 | MidiAcia.cpp:42-72 | S |
+| 29 | **MIDI TDR/TSR porté (2026-10-18)** | midi.c:47,256-271,303-306 ; acia.c Clock_TX | MidiAcia.cpp (advanceTx) | porté TX huit formats, /1,/16,/64 et suspension/reprise BREAK ; RX hôte 31250 8N1, waveform ouverte |
 | 30 | **Quantifier le refill au HBL dans liveCounter** ($FF8909 pollé mid-ligne : figé/quanta FIFO chez Hatari vs top-up immédiat — LA divergence résiduelle du port S2 ; retirer le fifoRefill de liveCounter suffit, fifoPull couvre le cas vide) | dmaSnd.c:748-761, 361, 393, 733/740 | DmaSound.cpp:429-433 | S |
 | 31 | **DMA_MaskAddressHigh sur $FF8903/$FF890F** (readback ET fetch registre-exacts ; convention déjà en place côté FDC et vidéo) | dmaSnd.c:867, 909, 948 ; m68000.c:958-971 | DmaSound.cpp:482, 485 ; read8:438, 448 | S |
 | 32 | **Lecture mot $FF8900 (pair = 0) et $FF8920 (= 0)** (move.w $FF8900 = 0xFF0x vs 0x000x — deux cases de switch) | dmaSnd.c:768-771 ; ioMemTabSTE.c:142, 162 | DmaSound.cpp:435-459 (default 0xFF) | S |

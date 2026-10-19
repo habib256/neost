@@ -19,11 +19,11 @@ enum : uint8_t {
 // (DCD/CTS sont à la masse sur l'ST → bits 2/3 toujours 0 ; FE/PE n'arrivent
 // jamais : la liaison émulée ne produit ni erreur de trame ni erreur de parité.)
 
-// Temps « série » d'un octet émis CPU → IKBD (~7812,5 bauds, trame de 10 bits) en
-// cycles 68000 à 8 MHz. Ordre de grandeur de l'ACIA_CYCLES d'Hatari : sert à dater
-// le re-remplissage de TDRE sous TIE (cf. onTxEmpty) — assez long pour ne pas
-// noyer le CPU d'IRQ d'émission, assez court pour ne pas freiner l'envoi.
-static constexpr int64_t kAciaTxByteCycles = 7200;
+// Liaison CPU → IKBD : grille 7812,5 bauds, 8N1. acia.c ACIA_Write_TDR /
+// ACIA_Clock_TX : TDRE remonte au transfert TDR→TSR ; ikbd.c SCI_Get_Line_RX
+// ne livre la commande qu'au bit de stop. Format/diviseur restent bornés
+// au protocole clavier ST usuel (CR=$96/$B6) ; break inhibe les départs.
+static constexpr int64_t kAciaTxBitCycles = 1024;
 // Milieux déterministes des fourchettes IKBD_Delay_Random d'Hatari. Le SCI
 // quantifie ensuite par division entière en bits de 1024 cycles (ikbd.c:1035).
 static constexpr int kResponseDelayCycles = 7250;   // [7000,7500[
@@ -181,6 +181,15 @@ int Ikbd::cmdLength(uint8_t opcode) {
 }
 
 void Ikbd::write8(uint32_t addr, uint8_t v) {
+    // Un accès CPU peut précéder le dispatch d'un front TX déjà passé sur le
+    // fil. Transférer/terminer ces caractères avant de modifier CR ou TDR.
+    if (sched_) for (;;) {
+        const int64_t remaining = sched_->rawCyclesUntil(Scheduler::IKBD_TX);
+        if (remaining == INT64_MIN || remaining > 0) break;
+        const int64_t deadline = sched_->liveNow() + remaining;
+        sched_->cancel(Scheduler::IKBD_TX);
+        advanceTx(deadline);
+    }
     if ((addr & 2) == 0) {
         // $FFFC00 : registre de contrôle (diviseur, format, bit7 = RX int enable).
         // Bits 5-6 = contrôle émetteur : 01 arme l'IRQ d'émission (TIE), cf. ACIA
@@ -188,6 +197,12 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         // temps de transmission, lui, est modélisé dans tous les cas (cf. write
         // des données plus bas) — un pilote qui SCRUTE TDRE est freiné comme un
         // pilote qui interrompt (jeu armant CR=$b6 au lieu de $96, Hades Nebula).
+        const bool wasBreak = (control_ & 0x60) == 0x60;
+        // Hatari acia.c ACIA_Write_CR/ACIA_Set_Timers_IKBD : seul un
+        // changement de CR0..1 non reset redémarre le timer série. La tranche
+        // CPU→IKBD reste bornée à /64 8N1 ; mémoriser sa phase pour BREAK.
+        if ((v & 3) != 3 && (v & 3) != (control_ & 3))
+            txClockPhase_ = sched_ ? sched_->liveNow() % kAciaTxBitCycles : 0;
         control_ = v;
         txEnableInt_ = ((v & 0x60) == 0x20);
         // ⚠ Changer les bits d'émission ne remet PAS l'émetteur au repos : seul le
@@ -201,28 +216,43 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
             rdrf_ = false;
             rxOverrun_ = ovrn_ = srRead_ = false;
             tdre_ = true;
+            txShifting_ = false;
             if (sched_) sched_->cancel(Scheduler::IKBD_TX);
+        }
+        // acia.c ACIA_Clock_TX : break n'agit qu'au repos. Le TSR engagé finit
+        // normalement ; le TDR reste plein tant que CR demande le break.
+        // La ligne physique basse et les erreurs SCI associées restent hors modèle.
+        if (sched_ && !txShifting_) {
+            if ((control_ & 0x60) == 0x60)
+                sched_->cancel(Scheduler::IKBD_TX);
+            else if (wasBreak && !tdre_) {
+                const int64_t now = sched_->liveNow();
+                const int64_t elapsed = (now % kAciaTxBitCycles - txClockPhase_
+                                         + kAciaTxBitCycles) % kAciaTxBitCycles;
+                sched_->schedule(Scheduler::IKBD_TX, now + kAciaTxBitCycles - elapsed);
+            }
         }
         raiseIfReady();
         return;
     }
-    // Émission CPU → IKBD : sous TIE, écrire la donnée vide TDRE (transmetteur
-    // occupé) ; il se re-remplit ~1 octet série plus tard (Scheduler IKBD_TX →
-    // onTxEmpty), ce qui re-lève l'IRQ « transmetteur prêt » et cadence l'envoi
-    // des commandes piloté par interruption. Le parseur reçoit l'octet tout de
-    // suite (NeoST ne perd jamais d'octet) : TDRE ne sert qu'au statut et à l'IRQ TX.
-    // TDRE tombe à CHAQUE écriture, TIE ou non — port de acia.c ACIA_Write_TDR
-    // (« pACIA->SR &= ~ACIA_SR_BIT_TDRE », hors de toute condition), qui sert
-    // AUSSI l'ACIA du clavier (acia.c:643). Ne le modéliser que sous TIE laissait
-    // la boucle d'attente TDRE d'un pilote qui SCRUTE — le cas d'Ikbdws du TOS —
-    // passer sans jamais attendre : les octets d'une commande IKBD partaient tous
-    // au même cycle au lieu d'être cadencés par la liaison série.
-    if (sched_) {
-        tdre_ = false;
-        sched_->schedule(Scheduler::IKBD_TX, sched_->now() + kAciaTxByteCycles);
-        raiseIfReady();                      // TDRE tombé → désarme l'IRQ TX jusqu'au re-remplissage
+    if (!sched_) {
+        // Repli synchrone pour les tests nus du protocole uniquement.
+        receiveSerialByte(v);
+        return;
     }
+    // Un TDR et un TSR, jamais une file illimitée : une écriture prématurée
+    // remplace le TDR, sans toucher à l'octet déjà engagé sur la ligne.
+    txData_ = v;
+    tdre_ = false;
+    if (!txShifting_ && (control_ & 0x60) != 0x60) {
+        const int64_t now = sched_->liveNow();
+        sched_->schedule(Scheduler::IKBD_TX,
+                         (now / kAciaTxBitCycles + 1) * kAciaTxBitCycles);
+    }
+    raiseIfReady();
+}
 
+void Ikbd::receiveSerialByte(uint8_t v) {
     // Code 6301 custom : en mode Execute, l'octet va au handler du programme ;
     // pendant un LoadMemory ($20), il alimente le code téléversé. Sinon : parseur.
     if (exeMode_ && customWrite_ != CW_NONE) { customWriteDispatch(v); return; }
@@ -351,8 +381,8 @@ void Ikbd::dispatchCommand() {
             // pause » ci-dessus ; case explicite pour la lisibilité.
             break;
         case 0x13:
-            // $13 = PAUSE OUTPUT (cf. Hatari IKBD_Cmd_StopKeyboardTransfer) : gèle
-            // la livraison IKBD → ACIA jusqu'à la prochaine commande valide.
+            // $13 = PAUSE OUTPUT (cf. Hatari IKBD_Cmd_StopKeyboardTransfer) :
+            // bloque les nouveaux départs SCI ; la trame engagée se termine.
             // Ignorée pendant le reset (loader de « Just Bugging » par ACF).
             if (!duringResetCriticalTime_)
                 pauseOutput_ = true;
@@ -409,7 +439,6 @@ void Ikbd::dispatchCommand() {
             // lieu du bouton droit souris). Exceptions pendant la fenêtre de
             // reset : $08+$14 (Barbarian) ou $12+$14 (Hammerfist) → souris ET
             // joystick reportés ensemble (bothMouseAndJoy_).
-            stopJoystickMonitoring();
             joyMode_ = JOY_AUTO;
             mouseMode_ = OFF;
             if (duringResetCriticalTime_ && mouseEnabledDuringReset_) {
@@ -431,7 +460,6 @@ void Ikbd::dispatchCommand() {
         case 0x15:
             // $15 = SET JOYSTICK INTERROGATION MODE (cf. Hatari IKBD_Cmd_StopJoystick) :
             // retour au mode interrogation seule ($16). Plus de report spontané.
-            stopJoystickMonitoring();
             joyMode_ = JOY_OFF;
             break;
         case 0x1A:
@@ -439,19 +467,19 @@ void Ikbd::dispatchCommand() {
             // tout report spontané ; retour à l'interrogation seule, comme $15. Sans
             // ce case, joyMode_ restait JOY_AUTO et des paquets $FE/$FF non sollicités
             // continuaient d'être émis.
-            stopJoystickMonitoring();
             joyMode_ = JOY_OFF;
             joystickDisabled_ = true;
             checkResetDisableBug();
             break;
         case 0x17:
             // $17 = SET JOYSTICK MONITORING (cf. Hatari IKBD_Cmd_SetJoystickMonitoring) :
-            // octet 1 = taux en 1/100 s, zéro ramené à un. La source utilise
-            // 8021247 Hz ; notre base bus centralisée vaut 1 Hz de plus (écart
-            // maximal de trois cycles à Rate255). L'auto-send normal reste au VBL.
+            // octet 1 = taux en 1/100 s, zéro ramené à un ; même base fixe
+            // 8021247 Hz que Hatari. Cette cadence reste commune à tous les
+            // reports jusqu’au boot ROM, même après sortie du mode monitoring.
             joyMode_ = JOY_MONITOR;
             mouseMode_ = OFF;
-            joystickMonitorPeriod_ = neost::pacing::kCpuHzInt * (inBuf_[1] ? inBuf_[1] : 1) / 100;
+            joystickMonitorPeriod_ = int64_t(8021247) * (inBuf_[1] ? inBuf_[1] : 1) / 100;
+            if (sched_) sched_->cancel(Scheduler::IKBD_AUTOSEND);
             if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR,
                                          sched_->liveNow() + joystickMonitorPeriod_);
             break;
@@ -582,6 +610,7 @@ void Ikbd::resetHw() {
     // Côté NeoST le shift register de sortie du 6301 est matérialisé par
     // l'échéance IKBD_RX (octet en cours d'acheminement vers l'ACIA).
     rxPending_ = false;
+    rxShiftData_ = 0;
     responseDelayBits_ = 0;
     rxWaitingDelay_ = false;
     if (sched_) sched_->cancel(Scheduler::IKBD_RX);
@@ -589,9 +618,11 @@ void Ikbd::resetHw() {
     // que MidiAcia::reset(). Sans quoi un TIE armé ($FFFC00 = $b6) survivait au
     // Ctrl-Alt-Del : l'échéance IKBD_TX en vol re-levait l'IRQ TX dans le boot
     // suivant et $FFFC04 gardait un statut périmé jusqu'à la re-programmation TOS.
-    control_ = 0;
+    control_ = 0; txClockPhase_ = 0;
     txEnableInt_ = false;
     tdre_ = true;
+    txShifting_ = false;
+    txData_ = txShiftData_ = 0;
     rdrf_ = false;
     rxOverrun_ = ovrn_ = srRead_ = false;
     if (sched_) sched_->cancel(Scheduler::IKBD_TX);
@@ -611,7 +642,15 @@ void Ikbd::bootRom() {
     //
     // L'IKBD repart de ses défauts : souris RELATIVE, joystick AUTO, seuils 1,
     // pas d'échelle, axe Y vers le haut, état de bouton/joystick émis remis à zéro.
-    stopJoystickMonitoring();
+    // Le boot remet la période à 150000 sans déplacer une échéance active.
+    if (sched_ && joystickMonitorPeriod_ > 0) {
+        const auto remain = sched_->rawCyclesUntil(Scheduler::IKBD_MONITOR);
+        if (remain != INT64_MIN)
+            sched_->schedule(Scheduler::IKBD_AUTOSEND, sched_->liveNow() + remain);
+        sched_->cancel(Scheduler::IKBD_MONITOR);
+    }
+    joystickMonitorPeriod_ = 0;
+    startAutoSend();
     mouseMode_     = REL;
     joyMode_       = JOY_AUTO;
     prevJoy0_      = prevJoy1_ = 0;
@@ -660,7 +699,6 @@ void Ikbd::checkResetDisableBug() {
     // les deux reports sont ré-activés ensemble (des jeux comptent dessus pour
     // recevoir souris et joystick en même temps).
     if (mouseDisabled_ && joystickDisabled_ && duringResetCriticalTime_) {
-        stopJoystickMonitoring();
         mouseMode_ = REL;
         joyMode_   = JOY_AUTO;
         bothMouseAndJoy_ = true;
@@ -699,36 +737,45 @@ void Ikbd::sendAutoJoysticksMonitoring(uint8_t joy0, uint8_t joy1) {
     pushRx(uint8_t(((joy0 & 0x0F) << 4) | (joy1 & 0x0F)));
 }
 
-void Ikbd::stopJoystickMonitoring() {
-    joystickMonitorPeriod_ = 0;
-    if (sched_) sched_->cancel(Scheduler::IKBD_MONITOR);
-}
-
 void Ikbd::onJoystickMonitor() {
-    if (!sched_ || joystickMonitorPeriod_ <= 0 || joyMode_ != JOY_MONITOR) return;
+    if (!sched_ || joystickMonitorPeriod_ <= 0) return;
     const int64_t due = sched_->firingDue();
     sched_->schedule(Scheduler::IKBD_MONITOR,
                      (due >= 0 ? due : sched_->liveNow()) + joystickMonitorPeriod_);
-    // IKBD_InterruptHandler_AutoSend garde les vingt premiers VBL ; le timer
-    // continue pendant reset, pause ou ExeMode, sans produire de paquet indu.
-    if (duringResetCriticalTime_ || vblCount_ <= 20 || exeMode_) return;
-    uint8_t joy0, joy1;
-    readJoystickState(joy0, joy1);
-    // Même préparation que le tick VBL, sans consommer une seconde fois le Δ
-    // souris : les boutons souris et feux joystick partagent les lignes physiques.
-    if (mouseMode_ == OFF) {
-        if (mouseLeft_) joy0 |= 0x80;
-        if (mouseRight_) joy1 |= 0x80;
-    } else if (joy1 & 0x80) {
-        joy1 = uint8_t(joy1 & ~0x80);
-    }
-    sendAutoJoysticksMonitoring(joy0, joy1);
+    // $17 utilise le même traitement que l'auto-send : MouseAction et position
+    // interne précèdent le report monitoring, même quand MouseMode vaut OFF.
+    sendAutoInput();
 }
 
 void Ikbd::onVbl(int64_t vblMicro) {
     // 1) Avance l'horloge interne IKBD ($1B/$1C) du temps d'une trame.
     updateClock(vblMicro);
     ++vblCount_;
+    if (!sched_) sendAutoInput();
+}
+
+void Ikbd::startAutoSend() {
+    // IKBD_Boot_ROM n'écrase pas une échéance active : les RESET rapprochés
+    // ne doivent pas repousser indéfiniment la scrutation (Hatari ikbd.c:620).
+    if (sched_ && joystickMonitorPeriod_ == 0 &&
+        sched_->cyclesUntil(Scheduler::IKBD_AUTOSEND) < 0)
+        sched_->schedule(Scheduler::IKBD_AUTOSEND, sched_->liveNow() + 150000);
+}
+
+void Ikbd::onAutoSend() {
+    if (joystickMonitorPeriod_ > 0) return;
+    // Réarmement sur l'échéance dispatchée, pas sur l'horloge CPU live : une
+    // instruction dépassant la frontière ne décale pas les scrutations suivantes.
+    if (sched_) {
+        const int64_t due = sched_->firingDue();
+        sched_->schedule(Scheduler::IKBD_AUTOSEND,
+                         (due >= 0 ? due : sched_->liveNow()) + 150000);
+    }
+    sendAutoInput();
+}
+
+void Ikbd::sendAutoInput() {
+    if (duringResetCriticalTime_ || vblCount_ <= 20) return;
     // ExeMode : appel périodique du handler de lecture custom (cf. Hatari, qui
     // l'invoque dans le traitement clavier de trame), puis Δ souris consommé. Pas
     // de report joystick auto tant que le 6301 exécute du code custom.
@@ -744,9 +791,6 @@ void Ikbd::onVbl(int64_t vblMicro) {
         customReadDispatch();
         return;
     }
-    if (duringResetCriticalTime_ || vblCount_ <= 20)
-        return;
-
     // --- Trame IKBD, ordre calqué sur Hatari IKBD_SendAutoKeyboardCommands ---
     // 2) Lecture des manettes pour cette trame (joy0 coupé si la souris occupe le
     //    port 0, sauf mode « souris + joystick simultanés »).
@@ -782,7 +826,7 @@ void Ikbd::onVbl(int64_t vblMicro) {
 
     // 6) Monitoring ($17) : seul report émis, le reste de la trame est coupé.
     if (joyMode_ == JOY_MONITOR) {
-        if (!sched_) sendAutoJoysticksMonitoring(joy0, joy1); // repli puce sans horloge
+        sendAutoJoysticksMonitoring(joy0, joy1);
         return;
     }
 
@@ -987,22 +1031,22 @@ void Ikbd::updateClock(int64_t vblMicro) {
 bool Ikbd::rxFree(std::size_t n) const {
     // Place pour `n` octets dans le tampon de sortie de l'IKBD (port de Hatari
     // IKBD_OutputBuffer_CheckFreeCount). Capacité = SIZE_KEYBOARD_BUFFER = 1024 ;
-    // on compte AUSSI l'octet déjà livré au RDR (il occupe encore la liaison). Un
-    // émetteur de paquet teste la taille TOTALE avant son 1er pushRx → entier ou rien.
+    // seuls les octets EN ATTENTE comptent. Le SCI engagé et le RDR de l’ACIA
+    // vivent hors de cette file (ikbd.c Check_New_TDR décrémente le compteur).
+    // Un paquet teste sa taille totale avant le premier pushRx : entier ou rien.
     constexpr std::size_t kBufSize = 1024;
-    const std::size_t used = rx_.size() + (rdrf_ ? 1u : 0u);
-    return kBufSize - used >= n;
+    return rx_.size() <= kBufSize && n <= kBufSize - rx_.size();
 }
 
 void Ikbd::pushRx(uint8_t b) {
     if (duringResetCriticalTime_)
         return;
-    // Tampon de sortie borné à 1024 octets (SIZE_KEYBOARD_BUFFER du vrai HD6301) :
+    // File firmware bornée à 1024 octets (SIZE_KEYBOARD_BUFFER de Hatari) :
     // plein → l'octet est jeté. TOUS les émetteurs de paquets (événements ET
     // réponses de commande) testent rxFree() avant le 1er octet (jamais de
     // demi-paquet, cf. IKBD_OutputBuffer_CheckFreeCount) ; ce garde ne fait que
     // borner les pushRx isolés ($F1, handlers custom) — robustesse mémoire absolue.
-    if (rx_.size() + (rdrf_ ? 1u : 0u) >= 1024)
+    if (rx_.size() >= 1024)
         return;
     rx_.push_back(b);
     armRx();
@@ -1031,8 +1075,8 @@ void Ikbd::armRx(int64_t baseCycle) {
     // Date la livraison du prochain octet de la file : ~1 octet série (10 bits à
     // 7812,5 bauds = 10240 cycles à 8 MHz, cadence du SCI d'Hatari). Le SCI de
     // l'IKBD shifte EN CONTINU, que le RDR soit lu ou non — c'est onRxDeliver qui
-    // constate l'overrun si RDR est encore plein. Seule PAUSE OUTPUT ($13) gèle
-    // l'émission (côté firmware 6301, pas côté ACIA). Sans ordonnanceur (tests
+    // constate l'overrun si RDR est encore plein. PAUSE OUTPUT ($13) bloque
+    // le prochain départ, sans interrompre une trame. Sans ordonnanceur (tests
     // unitaires), repli : livraison immédiate — qui ne peut PAS écraser un RDR
     // plein, sinon pushRx → perte immédiate (cf. garde rdrf_ dans onRxDeliver).
     if (rxPending_) return;
@@ -1047,6 +1091,10 @@ void Ikbd::armRx(int64_t baseCycle) {
     }
     if (rx_.empty() || pauseOutput_) return;
     if (sched_) {
+        // Check_New_TDR est appelé en SCI IDLE uniquement : un seul octet
+        // sort de la file avant DATA/STOP, sans préchargement du suivant.
+        rxShiftData_ = rx_.front();
+        rx_.pop_front();
         rxPending_ = true;
         sched_->schedule(Scheduler::IKBD_RX,
                          (baseCycle >= 0 ? baseCycle : sched_->now()) + kAciaRxByteCycles);
@@ -1056,6 +1104,7 @@ void Ikbd::armRx(int64_t baseCycle) {
 }
 
 void Ikbd::onRxDeliver() {
+    const bool shifting = rxPending_ && !rxWaitingDelay_;
     rxPending_ = false;
     const int64_t due = sched_ ? sched_->firingDue() : -1;
     if (rxWaitingDelay_) {
@@ -1064,12 +1113,14 @@ void Ikbd::onRxDeliver() {
         armRx(due);             // ancre théorique : le retard de dispatch ne s'ajoute pas
         return;
     }
-    if (rx_.empty() || pauseOutput_) {
+    if (!shifting && (rx_.empty() || pauseOutput_)) {
         armRx(responseDelayBits_ > 0 ? due : -1);
         return;
     }
-    const uint8_t b = rx_.front();
-    rx_.pop_front();
+    // Le SCI est indépendant de PauseOutput et de la file firmware : même
+    // après un boot ROM qui vide cette dernière, le stop bit arrive à l'ACIA.
+    const uint8_t b = shifting ? rxShiftData_ : rx_.front();
+    if (!shifting) rx_.pop_front();
     if (rdrf_) {
         // RDR pas encore lu quand l'octet suivant finit d'arriver : OVERRUN. Le
         // nouvel octet est PERDU, RDR conserve l'ancien (cf. acia.c ACIA_Clock_RX,
@@ -1102,9 +1153,26 @@ void Ikbd::raiseIfReady() {
 }
 
 void Ikbd::onTxEmpty() {
-    // Le registre d'émission de l'ACIA s'est vidé (octet « transmis » à l'IKBD) :
-    // TDRE repasse à 1 → re-lève l'IRQ « transmetteur prêt » tant que TIE est armé.
-    tdre_ = true;
+    if (!sched_) return;
+    // Ancrage sur l'échéance servie, sans dérive liée au dépassement CPU.
+    const int64_t due = sched_->firingDue();
+    const int64_t at = due >= 0 ? due : sched_->liveNow();
+    advanceTx(at);
+}
+
+void Ikbd::advanceTx(int64_t at) {
+    if (txShifting_) {
+        const uint8_t byte = txShiftData_;
+        txShifting_ = false;
+        receiveSerialByte(byte);               // bit de stop reçu côté HD6301
+        if (!tdre_ && (control_ & 0x60) != 0x60)
+            sched_->schedule(Scheduler::IKBD_TX, at + kAciaTxBitCycles);
+    } else if (!tdre_ && (control_ & 0x60) != 0x60) {
+        txShiftData_ = txData_;
+        txShifting_ = true;
+        tdre_ = true;                       // TDR → TSR, IRQ indépendante du transit
+        sched_->schedule(Scheduler::IKBD_TX, at + 9 * kAciaTxBitCycles);
+    }
     raiseIfReady();
 }
 

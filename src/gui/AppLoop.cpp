@@ -132,6 +132,12 @@ void appLoop(App& A) {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();                      // les transitions de boutons → onMouseButton
 
+        if (A.fullscreenToggleReq) {
+            A.fullscreenToggleReq = false;
+            A.mouseCaptureToggleReq = false;
+            A.toggleFullscreen();
+        }
+
         // Le callback ne touche pas aux coordonnées locales de cette boucle : il
         // pose une requête, puis la bascule est faite ici avant de lire un delta.
         if (A.mouseCaptureToggleReq) {
@@ -151,6 +157,7 @@ void appLoop(App& A) {
         if (A.kioskSwitchReq) {
             const bool on = (A.kioskSwitchReq == 1);
             A.kioskSwitchReq = 0;
+            if (A.fullscreen) A.toggleFullscreen();
             A.switchKioskMode(on);
         }
 
@@ -468,7 +475,7 @@ void appLoop(App& A) {
         int fbw = 0, fbh = 0;
         glfwGetFramebufferSize(window, &fbw, &fbh);
         glViewport(0, 0, fbw, fbh);
-        if (A.kiosk) glClearColor(0.f, 0.f, 0.f, 1.f);   // kiosk : barres noires
+        if (A.kiosk || A.fullscreen) glClearColor(0.f, 0.f, 0.f, 1.f);
         else         glClearColor(0.10f, 0.10f, 0.12f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -501,7 +508,7 @@ void appLoop(App& A) {
         std::string reqMount, reqMountB; bool reqEject = false, reqEjectB = false;
         std::string reqMountCart; bool reqEjectCart = false;
         std::string reqMountGemdos, reqMountAcsi; bool reqEjectGemdos = false, reqEjectAcsi = false;
-        if (!A.kiosk) {                          // KIOSK : aucun chrome ImGui (menu/toolbar/fenêtres)
+        if (!A.kiosk && !A.fullscreen) {          // plein écran : aucun chrome ImGui
         const bool color = machine.mfp.colorMonitor();
 
         // --- Menu (haut) -----------------------------------------------------
@@ -1162,7 +1169,7 @@ void appLoop(App& A) {
         // KIOSK : aucun chrome dessiné, mais on garde le nœud d'ancrage VIVANT
         // (KeepAliveOnly ne soumet rien de visible). Sans ça, un aller-retour
         // GUI → kiosk → GUI rendrait toutes les fenêtres flottantes.
-        if (A.kiosk) renderDockSpace(A, false);
+        if (A.kiosk || A.fullscreen) renderDockSpace(A, false);
 
         // --- Kiosk : menu in-game (START manette ou F9), jeu en PAUSE ------------
         // Modèle « vraie machine » : (A) INSÈRE la disquette choisie SANS jamais
@@ -1604,7 +1611,7 @@ void appLoop(App& A) {
         }
 
         ImGui::Render();
-        if (A.kiosk) drawStKiosk(A, screen, fbw, fbh, kTop, kH, kW);   // rendu adaptatif (ImGui vide au-dessus)
+        if (A.kiosk || A.fullscreen) drawStKiosk(A, screen, fbw, fbh, kTop, kH, kW);
         ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 
         // --- Glisser-déposer : le TYPE du support décide de la destination ----
@@ -1777,7 +1784,7 @@ void appLoop(App& A) {
             reqHardReset = true;
         }
 #else
-        if (A.kiosk) drawStKiosk(A, screen, fbw, fbh, kTop, kH, kW);   // kiosk : zoom adaptatif
+        if (A.kiosk || A.fullscreen) drawStKiosk(A, screen, fbw, fbh, kTop, kH, kW);
         else GlScreen::blitTexFullscreen(crtApply(A, screen, fbw, fbh));  // repli sans ImGui + CRT
 #endif
         // Changement de moniteur (couleur/mono) → hard reset pour que TOS

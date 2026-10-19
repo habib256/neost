@@ -230,7 +230,15 @@ def build_code() -> 'Asm':
 
     # ---- emit : a3 = chaîne 0-terminée → UDR (a4) ------------------------------------
     a.lbl('emit')
-    a.w(0x121B); a.br(0x6700, 'emit_ret'); a.w(0x1881); a.br(0x6000, 'emit')
+    # Émetteur réel : activer 8N1/TE et attendre le TDR au lieu de l'écraser.
+    a.w(0x13FC, 0x0088); a.l32(0x00FFFA29)  # move.b #$88,UCR
+    a.w(0x13FC, 0x0001); a.l32(0x00FFFA2D)  # move.b #1,TSR
+    a.lbl('emit_next')
+    a.w(0x121B); a.br(0x6700, 'emit_ret')
+    a.lbl('emit_wait')
+    a.w(0x0839, 7); a.l32(0x00FFFA2D)        # btst #7,TSR
+    a.br(0x6700, 'emit_wait')
+    a.w(0x1881); a.br(0x6000, 'emit_next')
     a.lbl('emit_ret'); a.w(0x4E75)
 
     # ---- données ----------------------------------------------------------------------

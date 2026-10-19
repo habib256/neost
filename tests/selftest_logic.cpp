@@ -59,6 +59,50 @@ using hostpath::Style;
 static int g_ok = 0, g_fail = 0;
 
 bool testSccBrg(); // banc SCC + ordonnanceur dans selftest_scc.cpp
+bool testSccSerial(); // cadence des caractères SCC, registres TDR/TSR et réception
+int testMfpTx(); // pipeline USART MFP
+int testMfpClock(); // diviseurs USART /1 et /16
+int testMidiBreak(); // suspension et reprise TX MIDI
+bool testSccRts(); // sortie RTS différée jusqu’au dernier stop
+bool testSccSync(); // filtre WR3 Sync Character Load Inhibit
+int testIkbdMouseMonitor(); // MouseAction et cadence commune après $17
+int testMfpRxFormat(); // mots courts RX et format en vol
+int testMidiTxFormat(); // formats et diviseurs TX ACIA
+bool testSccTxFormat(); // WR5 cinq bits ou moins et format du TSR
+bool testSccTxEnable(); // fin du caractère actif après désactivation TX
+int testMfpRxEnable(); // arrêt RX, statut et registre UDR persistant
+int testIkbdPause(); // PAUSE termine le caractère SCI engagé
+int testMfpUsartControl(); // droits des bits de contrôle et de statut USART
+bool testSccBreak(); // suspension TSR pendant SEND BREAK
+int testIkbdOutputCapacity(); // capacité firmware indépendante du RDR ACIA
+bool testSccClock(); // rapport rationnel des horloges directes SCC
+int testMfpTurnaround(); // END au repos et auto-turnaround USART
+bool testSccBrgClock(); // cadence rationnelle des caractères issus du BRG
+int testMfpUnderrun(); // underrun mémorisé et front TXERR
+int testFdcForceInterrupt(); // IRQ forcée et phase INDEX du média
+bool testSccZeroCount(); // compteur BRG avant les diviseurs de sortie
+bool testSccRxParity(); // parité reçue visible en bouclage avec mots courts
+int testRtcBank(); // registres de banque indépendants du calendrier
+int testRtcTimer(); // retenue du diviseur pendant arrêt TIMER EN
+bool testSccExtStatus(); // verrous RR0 indépendants du masque maître WR1
+int testMidiTxControl(); // phase du diviseur conservée à la sortie BREAK
+int testMidiTxReclock(); // diviseur modifié pendant le caractère MIDI
+int testIkbdTxControl(); // phase de reprise BREAK CPU vers IKBD
+bool testSccBreakStatus(); // fronts BREAK conservés pendant un verrou externe
+int testMfpUnderrunClear(); // délai matériel avant effacement UE
+int testFdcLiveMedia(); // sélection live et validation CHS du nouveau média
+int testMidiRxPhase(); // horloge MIDI RX continue
+bool testSccAutoEnables(); // qualification CTS/DCD des canaux SCC
+int testMachineMfpTx(); // émission via Bus/Machine
+int testMidiRx(); // RDR MIDI et acquittement de l’overrun
+int testMfpRxTiming(); // format et phase des caractères USART
+bool testSccAsync(); // lecture RR8 dans les formats courts SCC
+int testMidiSerial(); // pipeline MIDI /16 8N1
+int testIkbdAciaFormat(); // break ACIA clavier
+int testMachineMidi(); // callbacks MIDI à travers Bus et Machine
+int testMfpSerial(); // réception USART et débordement
+bool testSccRxFifo(); // FIFO matérielle de réception trois octets
+int testIkbdCpuSerial(); // transit CPU→IKBD et registres TDR/TSR
 int testAcsiIrqTiming(); // banc IRQ DMA ACSI dans fdc_acsi_logic.cpp
 int testMachineScc(); // câblage BRG après changement de modèle
 int testFdcRegisters(); // retenues d'adresse DMA et reset FIFO
@@ -70,6 +114,7 @@ int testFdcTiming(); // attentes des registres FDC et ancrage anti-dérive
 int testIkbdMonitor(); // taux d'échantillonnage joystick $17
 int testIkbdMonitorMachine(); // câblage du timer dans la machine complète
 int testDmaSoundMono(); // précision du repli mono et drainage après STOP
+int testIkbdAutoSend(); // autosend indépendant de la fréquence vidéo
 
 static void checkStr(const char* what, const std::string& got, const std::string& want) {
     if (got == want) { ++g_ok; return; }
@@ -879,21 +924,21 @@ static void testMidiTdre() {
         midi.write8(kData, 0x90);
         return tdre();
     };
-    checkBool("TIE armé : TDRE tombe",   ecritUnOctet(0x20) == 0, true);
+    checkBool("TIE armé : TDRE tombe",   ecritUnOctet(0x35) == 0, true);
     // ⚠ Régression : TDRE n'était modélisé QUE sous TIE. Un pilote scrutant le
     // statut (le cas de Notator, cf. Hatari midi.c:243) le voyait éternellement à
     // 1 et émettait sans jamais attendre — 1000 octets collés au même cycle.
-    checkBool("TIE coupé : TDRE tombe aussi", ecritUnOctet(0x00) == 0, true);
-    checkBool("RIE seul : TDRE tombe aussi",  ecritUnOctet(0x80) == 0, true);
+    checkBool("TIE coupé : TDRE tombe aussi", ecritUnOctet(0x15) == 0, true);
+    checkBool("RIE seul : TDRE tombe aussi",  ecritUnOctet(0x95) == 0, true);
 
     // Le master reset, LUI, remet bien l'émetteur au repos.
-    midi.reset(); midi.write8(kCtrl, 0x00); midi.write8(kData, 0x90);
+    midi.reset(); midi.write8(kCtrl, 0x15); midi.write8(kData, 0x90);
     checkBool("émetteur occupé après écriture", tdre() == 0, true);
     midi.write8(kCtrl, 0x03);
     checkBool("master reset : émetteur au repos", tdre() == 1, true);
 
     // Un pilote qui scrute n'enchaîne pas les octets sans attendre.
-    midi.reset(); midi.write8(kCtrl, 0x03); midi.write8(kCtrl, 0x00);
+    midi.reset(); midi.write8(kCtrl, 0x03); midi.write8(kCtrl, 0x15);
     int envoyes = 0;
     for (int i = 0; i < 50 && tdre(); ++i) { midi.write8(kData, uint8_t(i)); ++envoyes; }
     checkBool("scrutation : 1 seul octet avant l'attente", envoyes == 1, true);
@@ -902,11 +947,12 @@ static void testMidiTdre() {
     // (acia.c, état STOP_BIT). Jeter le plus ancien faisait disparaître le STATUS
     // d'un message MIDI et laissait des octets de données orphelins.
     midi.setLoopback(true);
-    midi.reset(); midi.write8(kCtrl, 0x03); midi.write8(kCtrl, 0x00);
-    midi.write8(kData, 0x90); midi.write8(kData, 0x3C); midi.write8(kData, 0x40);
+    midi.reset(); midi.write8(kCtrl, 0x03); midi.write8(kCtrl, 0x15);
+    // Octets déjà reçus : le transport TX est gardé par midi_serial_logic.
+    midi.receiveExternal(0x90); midi.receiveExternal(0x3C); midi.receiveExternal(0x40);
     const uint8_t o1 = midi.read8(kData), o2 = midi.read8(kData);
     checkBool("débordement : le status $90 survit", o1 == 0x90, true);
-    checkBool("débordement : puis $3C",             o2 == 0x3C, true);
+    checkBool("débordement : relire RDR garde $90", o2 == 0x90, true);
 }
 
 // -----------------------------------------------------------------------------
@@ -1145,8 +1191,8 @@ static void testMidiInJitter() {
     {
         Rig r;
         // Un message complet, puis de quoi noyer la puce (running status : 2 octets
-        // par note supplémentaire). Le flux entrant dans l'ACIA commence donc par
-        // 90 3C, et ce sont ces deux octets-là qui doivent survivre.
+        // par note supplémentaire). Le flux commence par 90 3C : seul le RDR
+        // contenant $90 peut survivre quand aucune lecture CPU ne le vide.
         std::vector<uint8_t> flot = {0x90, 0x3C, 0x40};
         for (int i = 0; i < 20; ++i) { flot.push_back(0x90); flot.push_back(uint8_t(0x40 + i)); flot.push_back(0x40); }
         r.in.pushForTest(0, flot.data(), flot.size());
@@ -1155,10 +1201,10 @@ static void testMidiInJitter() {
         // périodes ne ferait donc entrer qu'un octet — ce serait mesurer le test, pas
         // la puce. L'émulateur avance lui aussi par quanta courts.
         for (int i = 0; i < 20 * 4; ++i) r.sched.runTo(r.sched.now() + kByte / 4);
-        // personne ne lit : le 6850 garde 2 octets et perd tout le reste
+        // Personne ne lit : un seul RDR, les caractères suivants sont perdus.
         const uint8_t o1 = r.midi.read8(kData), o2 = r.midi.read8(kData);
         checkBool("overrun 6850 : le premier octet survit", o1 == 0x90, true);
-        checkBool("overrun 6850 : puis le deuxième",        o2 == 0x3C, true);
+        checkBool("overrun 6850 : RDR persistant relu",    o2 == 0x90, true);
     }
 
     // (3b) SAVE-STATE CROISÉ : un état sauvé SANS appareil MIDI IN, rechargé (F7)
@@ -1346,8 +1392,9 @@ static void testRtcSecond() {
     clk += 5 * kSec;
     checkBool("TIMER EN coupé : l'heure est figée", rtc.getDateTime().sec == fige, true);
     rtc.write8(kMode, 0x08);                       // compteur réarmé
+    checkBool("TIMER EN réarmé : retenue délivrée", rtc.getDateTime().sec == fige + 1, true);
     clk += kSec;
-    checkBool("TIMER EN réarmé : l'heure repart", rtc.getDateTime().sec == fige + 1, true);
+    checkBool("TIMER EN réarmé : l'heure repart", rtc.getDateTime().sec == fige + 2, true);
 }
 
 // -----------------------------------------------------------------------------
@@ -2331,9 +2378,16 @@ struct IkbdRig {
         ikbd.write8(kIkbdCtrl, 0x96);          // format 8N1, RX int armée
     }
     void send(std::initializer_list<uint8_t> bytes) {
-        for (uint8_t b : bytes) { ikbd.write8(kIkbdData, b); run(4000); }
+        for (uint8_t b : bytes) { ikbd.write8(kIkbdData, b); run(11264); }
     }
-    void run(int64_t cycles) { sched.runTo(sched.now() + cycles); }
+    void run(int64_t cycles) {
+        const int64_t end = sched.now() + cycles;
+        // Comme la boucle Machine : servir chaque échéance. runTo ne rejoue
+        // une source qu'une fois par lot ; un saut unique manquerait le stop TX.
+        while (sched.nextDue() >= 0 && sched.nextDue() <= end)
+            sched.runTo(sched.nextDue());
+        sched.runTo(end);
+    }
     // Draine ce que l'IKBD a mis en file : RDRF (bit0 du statut) = un octet prêt.
     std::vector<uint8_t> drain(int64_t cycles = 400000) {
         std::vector<uint8_t> out;
@@ -2603,6 +2657,50 @@ int main() {
     testDmaSoundTruthTable();
     testFdcTruthTable();
     if (testSccBrg()) ++g_ok; else ++g_fail;
+    if (testSccSerial()) ++g_ok; else ++g_fail;
+    if (const int failures = testMfpTx()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpClock()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMidiBreak()) g_fail += failures; else ++g_ok;
+    if (testSccRts()) ++g_ok; else ++g_fail;
+    if (testSccSync()) ++g_ok; else ++g_fail;
+    if (const int failures = testIkbdMouseMonitor()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpRxFormat()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMidiTxFormat()) g_fail += failures; else ++g_ok;
+    if (testSccTxFormat()) ++g_ok; else ++g_fail;
+    if (testSccTxEnable()) ++g_ok; else ++g_fail;
+    if (const int failures = testMfpRxEnable()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdPause()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpUsartControl()) g_fail += failures; else ++g_ok;
+    if (testSccBreak()) ++g_ok; else ++g_fail;
+    if (const int failures = testIkbdOutputCapacity()) g_fail += failures; else ++g_ok;
+    if (testSccClock()) ++g_ok; else ++g_fail;
+    if (const int failures = testMfpTurnaround()) g_fail += failures; else ++g_ok;
+    if (testSccBrgClock()) ++g_ok; else ++g_fail;
+    if (const int failures = testMfpUnderrun()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcForceInterrupt()) g_fail += failures; else ++g_ok;
+    if (testSccZeroCount()) ++g_ok; else ++g_fail;
+    if (testSccRxParity()) ++g_ok; else ++g_fail;
+    if (const int failures = testRtcBank()) g_fail += failures; else ++g_ok;
+    if (const int failures = testRtcTimer()) g_fail += failures; else ++g_ok;
+    if (testSccExtStatus()) ++g_ok; else ++g_fail;
+    if (const int failures = testMidiTxControl()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMidiTxReclock()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdTxControl()) g_fail += failures; else ++g_ok;
+    if (testSccBreakStatus()) ++g_ok; else ++g_fail;
+    if (const int failures = testMfpUnderrunClear()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcLiveMedia()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMidiRxPhase()) g_fail += failures; else ++g_ok;
+    if (testSccAutoEnables()) ++g_ok; else ++g_fail;
+    if (const int failures = testMachineMfpTx()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMidiRx()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpRxTiming()) g_fail += failures; else ++g_ok;
+    if (testSccAsync()) ++g_ok; else ++g_fail;
+    if (const int failures = testMidiSerial()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdAciaFormat()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMachineMidi()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpSerial()) g_fail += failures; else ++g_ok;
+    if (testSccRxFifo()) ++g_ok; else ++g_fail;
+    if (const int failures = testIkbdCpuSerial()) g_fail += failures; else ++g_ok;
     if (const int failures = testAcsiIrqTiming()) g_fail += failures; else ++g_ok;
     if (const int failures = testMachineScc()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcRegisters()) g_fail += failures; else ++g_ok;
@@ -2614,6 +2712,7 @@ int main() {
     if (const int failures = testIkbdMonitor()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdMonitorMachine()) g_fail += failures; else ++g_ok;
     if (const int failures = testDmaSoundMono()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdAutoSend()) g_fail += failures; else ++g_ok;
     testPacing();
     testMmioTable();
     testTwoCpus();

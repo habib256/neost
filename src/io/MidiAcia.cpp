@@ -13,32 +13,47 @@
 enum : uint8_t {
     ACIA_RDRF = 0x01,   // Receive Data Register Full
     ACIA_TDRE = 0x02,   // Transmit Data Register Empty
+    ACIA_OVRN = 0x20,   // Receiver Overrun, visible après lecture de RDR
     ACIA_IRQ  = 0x80,   // ligne d'interruption (vers GPIP4 du MFP)
 };
 
 // Temps série d'un octet MIDI (trame de 10 bits à 31250 bauds) en cycles 68000 à
-// 8 MHz : 8 000 000 × 10 / 31250 = 2560. C'est la cadence du re-remplissage de
-// TDRE sous TIE (l'horloge MIDI est /16 d'un quartz 500 kHz, cf. Hatari midi.c).
-static constexpr int64_t kMidiTxByteCycles = 2560;
+// 8 MHz : 8 000 000 × 10 / 31250 = 2560 (horloge /16 du quartz 500 kHz).
+static constexpr int64_t kMidiRxByteCycles = 2560;
+
+// acia.c ACIA_Serial_Params : start + données + parité éventuelle + stop(s).
+static constexpr uint8_t kTxFrameBits[8] = {11,11,10,10,11,10,11,11};
+
+int64_t MidiAcia::txBitCycles() const {
+    // Le master reset conserve une base sûre /1 ; il n'émet aucun octet engagé.
+    static constexpr int64_t bits[4] = {16,256,1024,16};
+    return bits[control_ & 3];
+}
+
+uint8_t MidiAcia::txData(uint8_t data) const {
+    return ((control_ >> 2) & 7) < 4 ? data & 0x7f : data;
+}
 
 uint8_t MidiAcia::read8(uint32_t addr) {
+    advanceTx(sched_ ? sched_->liveNow() : 0);
     if ((addr & 2) == 0) {
-        // $FFFC04 : statut. TDRE = 1 au repos (0 pendant l'émission sous TIE) ;
+        // $FFFC04 : statut. TDRE indique la case TDR, indépendamment de TIE ;
         // RX plein si le bouclage a livré un octet ; IRQ si une cause RX ou TX
         // est active (cf. acia.c ACIA_UpdateIRQ).
         uint8_t s = tdre_ ? ACIA_TDRE : 0;
         if (rdrf_) s |= ACIA_RDRF;
-        if ((rdrf_ && (control_ & 0x80)) || (txEnableInt_ && tdre_))
+        if (ovrn_) s |= ACIA_OVRN;
+        if (((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_))
             s |= ACIA_IRQ;
+        srRead_ = true;
         return s;
     }
-    // $FFFC06 : donnée reçue → consomme un octet (efface RDRF). À vide, le 6850
-    // renvoie le DERNIER octet reçu (RDR persistant, cf. acia.c ACIA_Read_RDR), pas 0.
-    if (rx_.empty()) return rdr_;
-    rdr_ = rx_.front();
-    rx_.pop_front();
-    rdrf_ = !rx_.empty();            // RDRF ne reste vrai que s'il reste un octet en file
-    raiseIfReady();                  // octet suivant éventuel → ré-arme l'IRQ
+    // acia.c Read_RDR : acquitte l'ancien OVRN avant de publier la perte
+    // pendante. Une lecture à vide conserve RDR mais effectue aussi ce protocole.
+    rdrf_ = false;
+    if (srRead_) { srRead_ = false; ovrn_ = false; }
+    if (rxOverrun_) { ovrn_ = true; rxOverrun_ = false; }
+    raiseIfReady();
     return rdr_;
 }
 
@@ -46,68 +61,129 @@ void MidiAcia::write8(uint32_t addr, uint8_t v) {
     if ((addr & 2) == 0) {
         // $FFFC04 : contrôle. Bits 5-6 = contrôle émetteur (01 → TIE, cf. ACIA_Write_CR) ;
         // bits 0-1 = 11 → master reset.
+        advanceTx(sched_ ? sched_->liveNow() : 0);
+        const bool wasBreak = (control_ & 0x60) == 0x60;
+        const uint8_t oldDivider = control_ & 3;
+        const int64_t oldBitCycles = txBitCycles();
         control_ = v;
+        if (sched_ && tsrBusy_ && (v & 3) != 3 && oldDivider != (v & 3)) {
+            // ACIA_Write_CR redémarre le timer de bit sans vider TSR. Le
+            // dernier stop reste un front : compter ceux encore à émettre,
+            // puis les recadencer depuis le nouveau timer (now + période).
+            // advanceTx a déjà consommé les fronts arrivés sous l'ancien CR.
+            const int64_t now = sched_->liveNow();
+            const int64_t remaining = 1 + (txCompleteDue_ - now - 1) / oldBitCycles;
+            // Au plus dix fronts après le start (trame 11 bits). Borner
+            // aussi les échéances incohérentes d'un snapshot avant multiplication.
+            const int64_t edges = remaining > 10 ? 10 : remaining;
+            txCompleteDue_ = now + edges * txBitCycles();
+        }
+        // ACIA_Write_CR redémarre le timer seulement si CR0..1 changent.
+        // BREAK/TIE/RTS seuls conservent les fronts ancrés à ce changement.
+        if ((v & 3) != 3 && oldDivider != (v & 3))
+            txClockPhase_ = sched_ ? sched_->liveNow() % txBitCycles() : 0;
+        else txClockPhase_ %= txBitCycles(); // base sûre pendant master reset
         txEnableInt_ = ((v & 0x60) == 0x20);
         // ⚠ Changer les bits d'émission ne remet PAS l'émetteur au repos : seul le
         // master reset le fait. L'ancien « TIE coupé → tdre_ = true » rendait
         // l'émetteur instantanément prêt à chaque écriture du CR, ce qui annulait
         // le temps de transmission pour tout pilote retouchant le CR entre octets.
-        // Master reset (bits 0-1 = 11) : efface RDRF et remet l'émetteur au repos
-        // (SR → TDRE seul, cf. acia.c ACIA_MasterReset) mais NE PURGE PAS la file
-        // RX — le 6850 ne perd pas l'octet en transit (note ikbd.c « don't clear
-        // bytes in transit »). RDRF distinct de la file → on peut l'effacer tout en
-        // gardant l'octet relisible.
+        // acia.c MasterReset : efface RDRF/OVRN et la perte pendante,
+        // abandonne le registre à décalage, mais conserve RDR et SR_Read.
         if ((v & 0x03) == 0x03) {
             rdrf_ = false;
+            rxOverrun_ = ovrn_ = false;
             tdre_ = true;
+            tsrBusy_ = false;
+            txLoadDue_ = txCompleteDue_ = -1;
             if (sched_) sched_->cancel(Scheduler::MIDI_TX);
         }
+        // acia.c Clock_TX : break ne bloque que les nouveaux départs ; le
+        // TSR engagé finit au stop. Relâcher break reprend au front de bit suivant.
+        if (!tsrBusy_) {
+            if ((control_ & 0x60) == 0x60) txLoadDue_ = -1;
+            else if (wasBreak && !tdre_) {
+                if (sched_) {
+                    const int64_t now = sched_->liveNow(), bit = txBitCycles();
+                    const int64_t elapsed = (now % bit - txClockPhase_ + bit) % bit;
+                    txLoadDue_ = now + bit - elapsed;
+                }
+                else { tdre_ = true; emitTx(txData(tdr_), 0); }
+            }
+        }
+        if (sched_ && !tsrBusy_ && !tdre_ && !wasBreak
+            && (control_ & 0x60) != 0x60 && oldBitCycles != txBitCycles())
+            txLoadDue_ = sched_->liveNow() + txBitCycles();
+        armTx();
         raiseIfReady();
         return;
     }
-    // $FFFC06 : octet émis sur MIDI OUT. TDRE tombe (transmetteur occupé) et se
-    // re-remplit ~1 octet MIDI plus tard (Scheduler::MIDI_TX → onTxEmpty) : c'est
-    // ce qui cadence la sortie d'un séquenceur, par IRQ sous TIE et par SCRUTATION
-    // du statut sinon. L'octet lui-même est bouclé aussitôt sur MIDI IN (câble
-    // OUT→IN) — NeoST ne perd jamais l'octet émis, TDRE ne porte que le rythme.
-    // TDRE tombe à CHAQUE écriture, que TIE soit armé OU NON. Port de Hatari
-    // midi.c Midi_Data_WriteByte, où « MidiStatusRegister &= ~ACIA_SR_TX_EMPTY »
-    // est hors de toute condition, sous le commentaire « required to accurately
-    // emulate the TDRE bit in status register (fix the program 'Notator') ».
-    // Ne le modéliser que sous TIE laissait un pilote qui SCRUTE TDRE — le cas
-    // classique, et celui de Notator — le voir éternellement à 1 : il émettait
-    // sans jamais attendre, tous les octets collés au même cycle (mesuré : 1000
-    // octets d'affilée). Le tempo d'un séquenceur en dépend.
-    if (sched_) {
-        tdre_ = false;
-        sched_->schedule(Scheduler::MIDI_TX, sched_->now() + kMidiTxByteCycles);
+    // acia.c ACIA_Write_TDR : une seule case d'attente, écrasable même pleine.
+    // Le temps MMIO est l'horloge CPU vive, pas la fin du dernier quantum.
+    if (!sched_) {
+        // Banc sans horloge : repli synchrone historique, sans état bloqué.
+        if ((control_ & 0x60) == 0x60) { tdr_ = v; tdre_ = false; }
+        else emitTx(txData(v), 0);
+        raiseIfReady();
+        return;
     }
-    // Pont MIDI RÉSEAU actif : l'octet part vers l'anneau au lieu de reboucler
-    // (sinon on s'entendrait soi-même). Les octets de l'anneau reviennent par
-    // receiveExternal (cf. MidiRing). Sans sink : bouclage interne SI la fiche est
-    // branchée (setLoopback) — débranchée par défaut, comme sur un vrai ST.
-    // NEOST_MIDI_TRACE=1 : chaque octet émis, daté au cycle (diagnostic tempo/gigue).
+    const int64_t now = sched_->liveNow();
+    advanceTx(now);
+    tdr_ = v;
+    tdre_ = false;
+    if (!tsrBusy_ && txLoadDue_ < 0 && (control_ & 0x60) != 0x60)
+        txLoadDue_ = now + txBitCycles();
+    armTx();
+    raiseIfReady();
+}
+
+void MidiAcia::emitTx(uint8_t v, int64_t cycle) {
     static const bool traceOut = std::getenv("NEOST_MIDI_TRACE") != nullptr;
     if (traceOut) std::fprintf(stderr, "[midi] %lld %02X\n",
-                               static_cast<long long>(sched_ ? sched_->now() : 0), v);
-    if (midiSinkTimed_) { midiSinkTimed_(v, sched_ ? sched_->now() : 0); return; }
+                               static_cast<long long>(cycle), v);
+    if (midiSinkTimed_) { midiSinkTimed_(v, cycle); return; }
     if (midiSink_) { midiSink_(v); return; }
-    if (loopback_) pushRx(v);        // bouclage OUT→IN (câble physique, optionnel)
+    if (loopback_) pushRx(v);
+}
+
+void MidiAcia::armTx() {
+    if (!sched_) return;
+    const int64_t due = tsrBusy_ ? txCompleteDue_ : txLoadDue_;
+    if (due >= 0) sched_->schedule(Scheduler::MIDI_TX, due);
+    else sched_->cancel(Scheduler::MIDI_TX);
+}
+
+void MidiAcia::advanceTx(int64_t cycle) {
+    // Le TSR capture le format au chargement ; un changement de diviseur
+    // recadence ses fronts restants dans write8 sans changer ses données.
+    // Break inhibe les départs, sans ligne basse ni erreur de trame synthétique.
+    for (;;) {
+        if (tsrBusy_) {
+            if (txCompleteDue_ > cycle) break;
+            const int64_t done = txCompleteDue_;
+            const uint8_t byte = tsr_;
+            tsrBusy_ = false;
+            txCompleteDue_ = -1;
+            txLoadDue_ = (tdre_ || (control_ & 0x60) == 0x60) ? -1 : done + txBitCycles();
+            emitTx(byte, done);
+        } else {
+            if (txLoadDue_ < 0 || txLoadDue_ > cycle) break;
+            tsr_ = txData(tdr_);
+            tsrBusy_ = true;
+            tdre_ = true;
+            txCompleteDue_ = txLoadDue_ + (kTxFrameBits[(control_ >> 2) & 7] - 1) * txBitCycles();
+            txLoadDue_ = -1;
+            raiseIfReady();
+        }
+    }
+    armTx();
 }
 
 void MidiAcia::pushRx(uint8_t v) {
-    // Profondeur physique d'un 6850 : RDR + registre à décalage. Récepteur PLEIN :
-    // c'est le NOUVEL octet qui tombe, le RDR gardant l'ancien — acia.c, état
-    // STOP_BIT : « if ((SR & RDRF) == 0) { RDR = RSR; SR |= RDRF; } else RX_Overrun = 1 ».
-    // NeoST jetait au contraire le PLUS ANCIEN, ce qui est le pire choix pour du
-    // MIDI : sur un note-on $90 $3C $40 lu trop tard, le STATUS disparaissait et il
-    // ne restait que deux octets de données orphelins ($3C $40) — parseur
-    // désynchronisé. Le matériel perd le 3e octet et garde $90 $3C.
-    // Le bit OVRN lui-même reste non modélisé ICI (il l'est sur l'ACIA clavier,
-    // cf. Ikbd::rxOverrun_) — divergence inventoriée, cf. HATARI_DIVERGENCES.md.
-    if (rx_.size() >= kMidiRxMax) return;   // rdrf_ est déjà vrai : rien à ré-armer
-    rx_.push_back(v);
-    rdrf_ = true;                    // un octet disponible (RDRF)
+    // acia.c RX STOP_BIT : si RDR est encore plein, le nouvel octet est
+    // perdu. Le registre à décalage ne stocke pas une seconde trame achevée.
+    if (rdrf_) rxOverrun_ = true;
+    else { rdr_ = v; rdrf_ = true; }
     raiseIfReady();
 }
 
@@ -127,9 +203,11 @@ void MidiAcia::setRxSource(std::function<bool(uint8_t&)> fn) {
 void MidiAcia::armRxPace() {
     // L'horloge tourne en PERMANENCE tant qu'un appareil est branché, même sans
     // octet à faire entrer : c'est ce que fait un vrai récepteur série, et ça évite
-    // d'avoir à réveiller l'ordonnanceur depuis le thread de l'hôte.
-    if (rxSource_ && sched_)
-        sched_->schedule(Scheduler::MIDI_RX, sched_->now() + kMidiTxByteCycles);
+    // d'avoir à réveiller l'ordonnanceur depuis le thread de l'hôte. Reset et
+    // remplacement de source préservent une trame déjà en vol ; seule une
+    // connexion sans échéance démarre une période depuis le temps CPU vivant.
+    if (rxSource_ && sched_ && sched_->cyclesUntil(Scheduler::MIDI_RX) < 0)
+        sched_->schedule(Scheduler::MIDI_RX, sched_->liveNow() + kMidiRxByteCycles);
 }
 
 void MidiAcia::onRxPace() {
@@ -139,20 +217,23 @@ void MidiAcia::onRxPace() {
     // tombe. C'est l'overrun du MATÉRIEL, et il est désormais au bon endroit — l'hôte
     // ne retient plus rien pour l'éviter, il livre au débit du câble.
     if (rxSource_(b)) pushRx(b);
-    armRxPace();
+    // CycInt_AddRelativeInterrupt conserve PendingCyclesOver : le retard du
+    // dispatch ne décale pas le débit du câble. Le Scheduler porte déjà la phase.
+    if (rxSource_ && sched_) {
+        const int64_t due = sched_->firingDue();
+        sched_->schedule(Scheduler::MIDI_RX,
+                         (due >= 0 ? due : sched_->liveNow()) + kMidiRxByteCycles);
+    }
 }
 
 void MidiAcia::onTxEmpty() {
-    // Le registre d'émission s'est vidé (octet « parti » sur MIDI OUT) : TDRE
-    // repasse à 1 → re-lève l'IRQ « transmetteur prêt » tant que TIE est armé.
-    tdre_ = true;
-    raiseIfReady();
+    advanceTx(sched_ ? sched_->now() : 0);
 }
 
 void MidiAcia::raiseIfReady() {
     // L'ACIA active sa ligne d'IRQ dès qu'une cause RX (octet dispo + RIE) ou TX
     // (TDRE + TIE) est active → canal 6 du MFP via GPIP4 (cf. ACIA_UpdateIRQ).
-    const bool active = (rdrf_ && (control_ & 0x80)) || (txEnableInt_ && tdre_);
+    const bool active = ((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_);
     // Le canal 6 est levé par le détecteur de FRONT du setter (wire-OR avec le
     // clavier : si GPIP4 est déjà bas, pas de nouveau front → pas d'IRQ, comme
     // sur le vrai MFP). Pas de raise() manuel.
