@@ -6,6 +6,43 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## IRQ clavier : échéance série conservée jusqu’au MFP (2026-10-19)
+
+- **Datation** : GPIP4 suit désormais le cycle TDR→TSR et le stop RX,
+  au lieu du cycle tardif de dispatch. Un accès CR/TDR rattrapant plusieurs
+  bits publie l’IRQ TX dès le START ; le délai MFP de quatre cycles part
+  de ce front. AER/DDR et OU câblé avec MIDI conservés ; CR/RDR restent
+  datés au cycle de l’accès CPU. Aucun changement de format v47.
+- **Banc ciblé** : 77 contrôles, dix échecs avant correction, zéro après
+  sous ASan/UBSan avec IKBD et MFP instrumentés. RX/TX, retards 0/1/3/4/40,
+  rattrapages MMIO, MIDI, DDR, AER et changements CR exercés.
+- **Régression** : 14 bancs IKBD instrumentés, 6 655 contrôles verts ;
+  compilation et 610 verdicts logiques réussis. Véritable état v47 antérieur
+  chargé puis réécrit byte-identique. Omission de classement de
+  `NEOST_KBD_TRACE` réparée dans `tools/env_locks.json` ; contrôle dédié vert.
+- **Validation finale** : palier `full` réussi après correction de l’inventaire,
+  dont 22 références pixel inchangées et démarrage GUI. Quatre étalons
+  propriétaires, Cubase Lite et diagnostic MegaSTE sautés faute de données.
+  Ancres, chiffres et diff vérifiés.
+
+## Trace clavier permanente (2026-10-19)
+
+- **`NEOST_KBD_TRACE=1`** : journal stderr daté en cycles bus, des scancodes
+  hôtes aux lectures RDR. Inclut CR/TDR, octets SCI et commandes complètes,
+  mise en file firmware, rejets, overruns, stop SCI invalide et resets.
+  Échéances théoriques conservées dans les callbacks série tardifs ; aucun
+  journal par bit ni à chaque scrutation SR. Anciens diagnostics conservés.
+- **Usage** documenté dans `DEV.md` ; souhait retiré de `TODO.md`.
+  Variable classée comme trace dans `tools/env_locks.json` (complété dans le
+  lot IRQ clavier). Aucun champ émulé ni format de sauvegarde modifié.
+- **Validation** : compilation réussie ; 609 verdicts logiques verts avec
+  trace désactivée puis activée, dont rejets, overruns et stop SCI invalide.
+  État complet et image byte-identiques avec/sans trace depuis un snapshot
+  commun. Comparaisons pixel disponibles réussies ; démarrage GUI bloqué
+  par le sandbox macOS : instance arrêtée, même contrôle GUI rejoué hors
+  sandbox avec succès (400 trames, capture non uniforme). Quatre étalons
+  propriétaires, Cubase Lite et diagnostic MegaSTE sautés faute de données.
+
 ## Transit CPU→SCI interrompu par un reset (2026-10-19)
 
 - **Réception reconstruite** : progression des bits du TSR ACIA conservée,

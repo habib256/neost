@@ -276,7 +276,7 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | acia.c:785-842 (Write_CR) | Ikbd.cpp:174-195 | **partiel ⚠** | CONFIRMÉ : TIE + master reset portés ; manquent Clock_Divider (cadence en dur : RX 10240, TX 7200), mode break, et la garde « Divider==0 → IKBD muet » (ikbd.c:1027-1032). → candidat n°18. |
 | acia.c:893-902 + 913-1027 (Write_TDR + Clock_TX) | Ikbd.cpp (write8, onTxEmpty, receiveSerialByte) | porté pour /64 8N1 | TDR/TSR, TDRE à la grille bit, commande au stop, remplacement du TDR occupé, reset et sauvegarde (2026-10-18). Formats/diviseurs et break restent bornés. |
 | acia.c Clock_TX → ikbd.c:755-819, 891 (transit série CPU→IKBD) | `Ikbd::write8/onTxEmpty/receiveSerialByte` | déjà porté pour /64 8N1 | Commande consommée au stop, TDR/TSR séparés et TDRE à la grille bit. Formats/diviseurs hors liaison usuelle restent bornés ; ancien parse immédiat supprimé le 2026-10-18. |
-| acia.c:715-748 (UpdateIRQ) | Ikbd.cpp:951-966 | porté | Wire-OR GPIP4 clavier+MIDI. |
+| acia.c:372-389, 715-748, 954-1023 (IRQ, Clock_TX/RX) | `Ikbd::raiseIfReady/onRxDeliver/catchUpCpuTx`, `Mfp::setAciaLineKbdAt` | porté | OU câblé GPIP4 clavier+MIDI ; fronts TDR→TSR et stop RX datés à l’échéance, même au rattrapage MMIO (2026-10-19). Propagation MFP +4 ; accès CR/RDR datés au cycle CPU courant. |
 | acia.c:546-561 (AddWaitCycles) | Bus.cpp:600,607 + Cpu68k.cpp:673-684 | porté | 6 cyc + E-Clock. |
 | ioMemTabST.c ($FFFC01/03/05/07 void) | Bus.cpp:599,606,703,710 | porté | Un accès mot ne touche l'ACIA qu'une fois. |
 | ikbd.c:499-627 + 107 (IKBD_Reset/Boot_ROM, 502000 cyc) | Ikbd.cpp:539-592 + Machine.hpp:91,108 | porté | Delay_Random omis (déterminisme headless, assumé). |

@@ -320,6 +320,16 @@ valaient « neutre ») — une recette archivée avec un caractère de remplissa
 réécrite avec `.`,
 `--mouse-at N "SCRIPT"` (L/R/U/D = ±8 px, `1`/`2` = clic gauche/droit, `.` = idle — c'est
 ainsi qu'on pilote Vroom : clic droit au titre, clic droit en course). Debug entrées :
+`NEOST_KBD_TRACE=1` écrit sur stderr une trace permanente de la chaîne clavier :
+scancodes ST reçus de l'hôte (appui/relâchement et mode), écritures CR/TDR,
+octets reconstruits au stop SCI, commandes complètes, file firmware (et rejets),
+livraisons RDR ou pertes par overrun, lectures RDR et reset matériel.
+Chaque ligne commence par `[kbd] cycle=N` (cycles bus 8 MHz ; échéance théorique
+dans les callbacks série, même lors d'un dispatch tardif). Les lectures de statut
+scrutées ne sont pas tracées. Exemple :
+`NEOST_KBD_TRACE=1 ./build/neost-headless --frames 120 --keys a 2> /tmp/neost-kbd.log`.
+Sans variable, la trace est inactive ; format des sauvegardes inchangé.
+Les diagnostics existants restent disponibles :
 `NEOST_DEBUG_IKBD=1` (commandes reçues par l'IKBD), `NEOST_DEBUG_ACIA=1` (chaque lecture
 du data register $FFFC02 : valeur, file restante, cycle). MIDI : `--midi-dump FILE`
 (chaque octet MIDI OUT daté du cycle 68000 → `tools/midi_compare.py`), `--midi-list`

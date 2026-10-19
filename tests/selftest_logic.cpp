@@ -117,6 +117,7 @@ int testDmaSoundMicrowireByte(); // fusion octet depuis DATA visible après déc
 int testDmaSoundMicrowireTiming(); // grille série et accès MMIO après fronts échus
 int testRtcWriteOnly(); // TEST/RESET en écriture seule
 int testMidiIrqTiming(); // ligne IRQ MIDI datée au transfert série
+int testIkbdIrqTiming(); // ligne IRQ clavier datée aux fronts série
 int testMfpVectorRegister(); // bits réservés VR nuls, S et base préservés
 int testFdcTrackIdLocation(); // IDs de piste ST compatibles avec tête et face réelles
 int testMfpInternalLoopback(); // TSR H/L sélectionne le bouclage matériel interne
@@ -2778,6 +2779,7 @@ int main() {
     if (const int failures = testDmaSoundMicrowireTiming()) g_fail += failures; else ++g_ok;
     if (const int failures = testRtcWriteOnly()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiIrqTiming()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdIrqTiming()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpVectorRegister()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcTrackIdLocation()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpInternalLoopback()) g_fail += failures; else ++g_ok;

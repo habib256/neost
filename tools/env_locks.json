@@ -42,6 +42,7 @@
  },
  "trace": {
   "_comment": "OBSERVATION SEULEMENT : traces, dumps et diagnostics. Aucune ne doit changer un pixel ni un cycle — si l'une le fait, c'est un bug, pas un réglage.",
+  "NEOST_KBD_TRACE": "chaîne clavier datée : scancodes hôtes, CR/TDR, réception SCI, commandes, file firmware, rejets, réception ACIA et lectures RDR ; stderr uniquement.",
   "NEOST_FRAMING_DIAG": "cadrage adaptatif (autozoom) décidé par stContentRegion, imprimé par trame sur neost-headless : zone active, étendue live de la Glue, les deux moitiés du signal de bordure (lignes élargies / lignes affichées) et le cadre retenu. Instrument du chantier « autozoom Enchanted Land » (2026-09-02). N'influe sur AUCUN calcul d'émulation.",
   "NEOST_TRACE_CYC": 1,
   "NEOST_WATCH": 1,

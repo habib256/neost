@@ -724,8 +724,6 @@ sans décaler la phase sous-seconde (Ricoh p.7).
   capturé/relatif (`g_mouseCaptured`, `GLFW_RAW_MOUSE_MOTION`), pensé pour les jeux.
   🎯 Un mode absolu (position curseur hôte → curseur ST, sans capture) pour l'usage
   GEM/desktop/navigateur — confort, pas bug.
-- ⭘ **Trace clavier permanente `NEOST_KBD_TRACE`** (comme `NEOST_ENEC_TRACE`) — éviterait
-  un cycle rebuild/revert au prochain doute clavier. _Valeur faible, coût nul._
 - Cosmétique : membres `srcW_`/`srcH_` morts dans `CrtEffectStack` ; répétition de
   navigation kiosk (tenir gauche/droite bloque la répétition haut/bas). Limitations CRT v1
   assumées (baril/vignette sur le buffer entier en kiosk ; GL 2.1 → passthrough).
@@ -838,6 +836,9 @@ grille Glue. Jeu Seven Gates of Jambala encore à valider sur ses données.
 - MIDI : les événements RX/TX et le stop de bouclage datent leur front IRQ
   MFP à l’échéance série, même servis en retard ; AER/DDR et ligne partagée
   clavier conservés (2026-10-19). CR/RDR restent datés de l’accès courant.
+- Clavier : fronts IRQ TDR→TSR et stop RX datés au cycle série, même en
+  dispatch tardif ou rattrapage avant écriture CR/TDR (2026-10-19).
+  Propagation MFP, AER/DDR et OU câblé MIDI conservés ; CR/RDR au cycle CPU.
 - USART MFP : réception hôte selon le format UCR et phase fractionnaire
   sauvegardée, sans dérive aux callbacks tardifs. RXFULL datée au stop,
   overrun OE/RXERR différé jusqu’à lecture UDR puis blocage jusqu’à RSR,
