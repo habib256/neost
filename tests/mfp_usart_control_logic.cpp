@@ -22,7 +22,7 @@ int testMfpUsartControl() {
         m.write8(0xFFFA29,0x88);m.write8(0xFFFA2B,1);m.write8(0xFFFA07,0x18);
         m.receiveByte(0x55);m.receiveByte(0x66);s.runTo(s.nextDue());s.runTo(s.nextDue());
         const auto pending=m.ipra;
-        m.write8(0xFFFA2B,1);eq("status matériel préservé",m.read8(0xFFFA2B),0xC1);
+        m.write8(0xFFFA2B,1);eq("BF préservé, OE retenu avant UDR",m.read8(0xFFFA2B),0x81);
         m.write8(0xFFFA2B,0xFF);eq("pas faux statut",m.read8(0xFFFA2B),0x83);
         m.write8(0xFFFA2B,0xFE);eq("RE0 clear",m.read8(0xFFFA2B),0);
         eq("RE0 garde données",m.read8(0xFFFA2F),0x55);eq("RE0 garde IRQ",m.ipra,pending);

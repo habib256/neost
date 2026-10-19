@@ -5,7 +5,8 @@
 //  cart_asm.s/cartData.c). Les simplifications par rapport à Hatari :
 //   - bUseTos est TOUJOURS vrai (NeoST exécute toujours un TOS/EmuTOS) → les
 //     chemins « mode test sans TOS » sont omis ;
-//   - pas d'images ACSI/SCSI/IDE → 0 partition à sauter, lecteurs dès C: ;
+//   - partitions ACSI prises en compte pour décaler un dossier simple ;
+//     contrôleurs SCSI/IDE hors des machines supportées ;
 //   - pas d'autostart INF (INF_* traités comme inactifs) ni de symboles debug ;
 //   - conversion de jeu de caractères et write-protect désactivées par défaut.
 //  La LOGIQUE de redirection (chemins, handles, DTA, Pexec) est portée 1:1.
@@ -272,6 +273,8 @@ int clip_to_83(std::string& name) {
 // Conversion hôte → Atari pour le nom DTA (Str_Filename_Host2Atari simplifié :
 // majuscules, 8+3, caractères invalides → '+', sans conversion de charset).
 std::string host2atari(const std::string& src) {
+    // Str_Filename_Host2Atari : le premier point de « .. » n'est pas invalide.
+    if (src == "..") return src;
     std::string s = src;
     size_t dot = s.rfind('.');
     if (dot != std::string::npos) {
@@ -354,12 +357,11 @@ bool GemdosHd::setDirectory(const std::string& hostDir) {
     // et vide la table de lecteurs. L'appeler puis constater « aucun lecteur mappé »
     // laissait le montage PRÉCÉDENT en miettes — un simple dossier disparu (clé USB
     // retirée) suffisait à tuer le C: de la session, sans reset ni retour en arrière.
-    if (countMappableDrives(absDir) == 0) {
-        std::fprintf(stderr, "[gemdos] no GEMDOS drive mapped from %s "
-                     "(current mount kept)\n", hostDir.c_str());
+    if (!initDrives(absDir)) {
+        std::fprintf(stderr, "[gemdos] no available GEMDOS drive from %s (current mount kept)\n", hostDir.c_str());
         return false;
     }
-    initDrives(absDir);
+    mountedDirectory_ = absDir;
     // Installe la cartouche système ($FA0000) : le TOS exécutera son C-INIT au boot.
     // ⚠ Écrase une éventuelle cartouche utilisateur (même stockage) : on efface donc
     // AUSSI son chemin, sans quoi unmount() croirait plus tard qu'une cartouche
@@ -381,6 +383,7 @@ void GemdosHd::unmount() {
     clearAllFileHandles();
     for (auto& d : emudrives_) { d.used = false; d.driveNumber = -1; d.hdEmuDir.clear(); }
     nDrives_ = 0;
+    mountedDirectory_.clear();
     connectedDriveMask_ = 0;
     bootDrive_ = 0;
     currentDrive_ = 0;
@@ -395,6 +398,29 @@ void GemdosHd::unmount() {
 }
 
 void GemdosHd::reset() {
+    const uint32_t previousMask = driveMask();
+    // Frontière de session : aucun handle ne doit changer de lecteur en plein vol.
+    // Une résolution impossible désactive les lettres, pas la configuration hôte.
+    if (active_ && !mountedDirectory_.empty() && !initDrives(mountedDirectory_)) {
+        // Au reset, une ancienne lettre pourrait désormais appartenir à ACSI.
+        // Garder la configuration et la cartouche, mais aucune redirection périmée.
+        for (auto& drive : emudrives_) drive = EmuDrive{};
+        nDrives_ = 0;
+        connectedDriveMask_ = 0;
+        bootDrive_ = 0;
+        clearAllInternalDTAs();
+    }
+    if (driveMask() != previousMask) {
+        std::string letters;
+        for (int drive = 2; drive < 26; ++drive)
+            if (driveMask() & (uint32_t(1) << drive)) {
+                if (!letters.empty()) letters += ", ";
+                letters += char('A' + drive);
+                letters += ':';
+            }
+        std::fprintf(stderr, "[gemdos] drive mapping updated: %s\n",
+                     letters.empty() ? "no available drive" : letters.c_str());
+    }
     initGemdos_ = false;
     initCurPaths();
     actPd_ = 0;
@@ -501,40 +527,38 @@ static bool determineMaxPartitions(const std::string& dir, int& maxDrives) {
     return multi;
 }
 
-// Combien de lecteurs `hostDir` mapperait-il ? MÊMES règles qu'initDrives, mais SANS
-// aucun effet de bord — indispensable pour valider AVANT de détruire : initDrives ferme
-// les fichiers ouverts, purge les DTA et vide la table de lecteurs, PUIS seulement on
-// découvrait qu'aucun lecteur n'était mappable. Un setDirectory en échec (dossier
-// disparu, clé USB retirée, faute de frappe) tuait donc le C: en cours de session.
-int GemdosHd::countMappableDrives(const std::string& hostDir) {
-    int nMaxDrives = 0;
-    const bool multi = determineMaxPartitions(hostDir, nMaxDrives);
-    int n = 0;
-    for (int i = 0; i < nMaxDrives && i < MAX_HARDDRIVES; i++) {
-        std::string dir = hostDir;
-        cleanFileName(dir);
-        if (multi) { dir.push_back(PATHSEP); dir.push_back((char)('C' + i)); }
-        if (hostDriveFolderExists(dir, 2 + i)) ++n;
-    }
-    return n;
+uint32_t GemdosHd::driveMask() const {
+    uint32_t mask = 0;
+    for (const auto& drive : emudrives_)
+        if (drive.used) mask |= uint32_t(1) << drive.driveNumber;
+    return mask;
 }
 
-void GemdosHd::initDrives(const std::string& hostDir) {
-    clearAllFileHandles();
-    clearAllInternalDTAs();
-    for (auto& d : emudrives_) { d.used = false; d.driveNumber = -1; }
-    nDrives_ = 0;
-    connectedDriveMask_ = 0;
+int GemdosHd::firstMappedDrive() const {
+    for (const auto& drive : emudrives_)
+        if (drive.used) return drive.driveNumber;
+    return -1;
+}
 
+int GemdosHd::partitionCount() const {
+    return partitionCountProvider_ ? partitionCountProvider_() : 0;
+}
+
+bool GemdosHd::initDrives(const std::string& hostDir) {
     int nMaxDrives = 0;
     bool multi = determineMaxPartitions(hostDir, nMaxDrives);
 
-    for (int i = 0; i < nMaxDrives && i < MAX_HARDDRIVES; i++) {
-        EmuDrive& d = emudrives_[i];
+    const int skipped = multi ? 0 : partitionCount();
+    if (skipped < 0 || skipped >= MAX_HARDDRIVES) return false;
+    EmuDrive candidate[MAX_HARDDRIVES];
+    int mapped = 0;
+    uint32_t mask = 0;
+    for (int i = 0; i < nMaxDrives && i + skipped < MAX_HARDDRIVES; i++) {
+        EmuDrive& d = candidate[i + skipped];
         d.hdEmuDir = hostDir;
         cleanFileName(d.hdEmuDir);
         if (multi) { d.hdEmuDir.push_back(PATHSEP); d.hdEmuDir.push_back((char)('C' + i)); }
-        int driveNumber = 2 + i;
+        int driveNumber = 2 + i + skipped;
         if (hostDriveFolderExists(d.hdEmuDir, driveNumber)) {
             // SÉCURITÉ/correction — canonicaliser PHYSIQUEMENT la racine du lecteur au
             // montage (le dossier vient d'être confirmé existant). Sans ça, hdEmuDir
@@ -551,16 +575,24 @@ void GemdosHd::initDrives(const std::string& hostDir) {
             d.hdEmuDir = physicalCanon(d.hdEmuDir);
             d.driveNumber = driveNumber;
             d.used = true;
-            connectedDriveMask_ |= (1u << driveNumber);
-            nDrives_++;
+            mask |= (1u << driveNumber);
+            mapped++;
         } else {
             d.used = false;
         }
     }
+    if (!mapped) return false;
+    // Valider toute la table avant de fermer les fichiers du montage précédent.
+    clearAllFileHandles();
+    clearAllInternalDTAs();
+    for (int i = 0; i < MAX_HARDDRIVES; ++i) emudrives_[i] = std::move(candidate[i]);
+    nDrives_ = mapped;
+    connectedDriveMask_ = mask;
     initCurPaths();
     // Lecteur de boot : C: si présent, sinon A:. (Affiné par _bootdev au boot.)
     bootDrive_ = 0;
     if (emudrives_[0].used) bootDrive_ = 2;
+    return true;
 }
 
 void GemdosHd::initCurPaths() {
@@ -1256,14 +1288,15 @@ bool GemdosHd::gemGetDir(uint32_t p) {
 // -----------------------------------------------------------------------------
 //  DTA : Fsfirst / Fsnext (port de PopulateDTA / GemDOS_SFirst / GemDOS_SNext)
 // -----------------------------------------------------------------------------
-bool GemdosHd::populateDTA(InternalDta& iDTA, const std::string& fname, uint32_t dtaGemdos) {
+GemdosHd::DtaResult GemdosHd::populateDTA(InternalDta& iDTA, const std::string& fname, uint32_t dtaGemdos) {
     std::string tempstr = iDTA.path + std::string(1, PATHSEP) + fname;
     struct stat st;
-    if (stat(tempstr.c_str(), &st) != 0) return false;   // (DTA_SKIP/ERR géré par appelant)
+    if (stat(tempstr.c_str(), &st) != 0)
+        return errno == ENOENT ? DtaResult::Skip : DtaResult::Error;
 
     int nFileAttr = convertAttribute(st.st_mode, tempstr.c_str());
     int nAttrMask = iDTA.dta_attrib | IGNORED_FILE_ATTRIBS;
-    if (nFileAttr != 0 && !(nAttrMask & nFileAttr)) return false;   // SKIP
+    if (nFileAttr != 0 && !(nAttrMask & nFileAttr)) return DtaResult::Skip;
 
     uint16_t tw, dw; dateTime2Tos(st.st_mtime, tw, dw);
     flushCache();
@@ -1274,7 +1307,7 @@ bool GemdosHd::populateDTA(InternalDta& iDTA, const std::string& fname, uint32_t
     writeByte(dtaGemdos + 21, (uint8_t)nFileAttr);       // dta_attrib
     for (int i = 0; i < TOS_NAMELEN; i++)                // dta_name[14]
         writeByte(dtaGemdos + 30 + i, (uint8_t)(i < (int)atari.size() ? atari[i] : 0));
-    return true;
+    return DtaResult::Ok;
 }
 
 bool GemdosHd::gemSNext(bool /*trace*/) {
@@ -1289,17 +1322,17 @@ bool GemdosHd::gemSNext(bool /*trace*/) {
     if (isVolumeLabel(dtas_[index].dta_attrib)) { setD0(cpu_, GEMDOS_ENMFIL); return true; }
 
     InternalDta& dta = dtas_[index];
-    bool ok;
+    DtaResult result;
     do {
         if (dta.centry >= (int)dta.found.size()) {
             if (bus_.tosVersion < 0x0400) { flushCache(); writeByte(dtaGemdos + 30, 0); }
             setD0(cpu_, GEMDOS_ENMFIL);
             return true;
         }
-        ok = populateDTA(dta, dta.found[dta.centry++], dtaGemdos);
-    } while (!ok);
+        result = populateDTA(dta, dta.found[dta.centry++], dtaGemdos);
+    } while (result == DtaResult::Skip);
 
-    setD0(cpu_, GEMDOS_EOK);
+    setD0(cpu_, result == DtaResult::Error ? GEMDOS_EINTRN : GEMDOS_EOK);
     return true;
 }
 
@@ -1369,14 +1402,9 @@ bool GemdosHd::gemSFirst(uint32_t p) {
     closedir(dir);
     std::sort(all.begin(), all.end());
 
-    // Divergence NeoST (vs Hatari) : on N'énumère JAMAIS « . » / « .. », ni à la
-    // racine ni en sous-répertoire. Hatari (comme un vrai FAT) expose « . » et
-    // « .. » dans les sous-dossiers, mais côté HÔTE ce sont des entrées Unix qui
-    // polluent le bureau TOS (l'utilisateur ne veut pas voir les « points d'Unix »).
-    // subdir=false → fsfirst_match rejette tout nom commençant par « . ». La
-    // navigation « parent » d'un chemin (« ..\FOO ») reste gérée par
-    // createHostFileName, indépendante de ce listing.
-    const bool subdir = false;
+    // fsfirst_dirname / GemDOS_SFirst : seuls les sous-dossiers possèdent
+    // « . » et « .. ». Les deux chemins sont déjà physiques et bornés au montage.
+    const bool subdir = dirPath != emudrives_[drive - 2].hdEmuDir;
 
     dtas_[useidx].centry = 0;
     dtas_[useidx].found.clear();
@@ -1728,7 +1756,6 @@ int GemdosHd::trap() {
 }
 
 void GemdosHd::boot() {
-    if (initGemdos_) reset();
     initGemdos_ = true;
 
     if (!active_) return;
@@ -1762,6 +1789,7 @@ void GemdosHd::boot() {
 }
 
 void GemdosHd::sysInit() {
+    reset(); // résout aussi ACSI monté après le dossier GEMDOS, avant _drvbits
     // Ajoute nos lecteurs au masque _drvbits ($4c2), après ce que TOS a posé.
     connectedDriveMask_ |= readLong(0x4c2);
     writeLong(0x4c2, connectedDriveMask_);

@@ -53,8 +53,8 @@ int testMidiBreak() {
     // MMIO en avance sur le dispatch rattrape sous l'ancien CR.
     live=7500; data(0x44); live=8000; cr(0x75);
     run(10060); eq("late CR preserves started TSR",out.size(),2);
-    eq("late CR timestamp",out.at(1).second,10060);
-    live=11000; cr(0x15); data(0x55); live=11100; cr(0x75);
+    eq("late CR timestamp",out.at(1).second,9984);
+    live=11000; cr(0x15); data(0x55); live=11005; cr(0x75); // avant le front réel 11008
     run(14000); eq("break before load cancels departure",out.size(),2);
     // RX et son horloge restent actifs en break ; IRQ RX survit au TIE coupé.
     int polls=0;

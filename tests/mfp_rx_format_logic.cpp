@@ -52,7 +52,7 @@ int testMfpRxFormat() {
     }
     { // Un masque forgé ne doit pas être accepté par le chargeur d'archive.
         Mfp m;std::vector<uint8_t> state;auto save=StateArchive::saver(state);m.serialize(save);
-        const size_t tail=sizeof(uint32_t)+4*sizeof(bool)+2*sizeof(uint8_t)
+        const size_t tail=sizeof(uint32_t)+4*sizeof(bool)+3*sizeof(uint8_t)
             +4*sizeof(int64_t)+sizeof(int)+sizeof(bool)+2*sizeof(int64_t)+sizeof(int);
         state[state.size()-tail-sizeof(uint8_t)]=0;
         auto load=StateArchive::loader(state.data(),state.size());m.serialize(load);

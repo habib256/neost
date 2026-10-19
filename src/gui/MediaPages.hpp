@@ -13,6 +13,7 @@
 // =============================================================================
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 
@@ -24,8 +25,11 @@ void drawFloppyPage(const std::string& disksDir,
 void drawCartPage(const std::string& cartsDir, const std::string& mounted,
                   std::string& reqMount, bool& reqEject);
 
+// Lettres effectives du bureau, regroupées en plages contiguës.
+std::string hardDiskDriveLetters(uint32_t mask);
+
 void drawHardDiskPage(const std::string& hdDir, const std::string& gemdosDefault,
-                      const std::string& curGemdos, bool gemdosActive,
+                      const std::string& curGemdos, bool gemdosActive, uint32_t gemdosDrives,
                       const std::string& curAcsi, bool acsiActive, int acsiParts,
                       bool usatanOn, const std::string& curSd2,
                       std::string& reqMountGemdos, bool& reqEjectGemdos,

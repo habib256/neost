@@ -37,8 +37,7 @@ void Rtc::setDateTime(const DateTime& dt) {
 
 void Rtc::advanceSeconds(int64_t n) {
     if (n <= 0) return;
-    if (n > 90000) n = 90000;                    // même borne que catchUp (>1 jour ignoré)
-    while (n-- > 0) tickOneSecond();
+    advanceWholeSeconds(uint64_t(n));
 }
 
 void Rtc::initFromHostTime() {
@@ -69,16 +68,17 @@ void Rtc::catchUp() {
     if (!now_) return;
     const int64_t t = now_();
     if (!primed_) { baseCycle_ = t; primed_ = true; return; }  // 1er accès : on cale la phase
-    int64_t secs = (t - baseCycle_) / secondCycles_;
-    if (secs <= 0) return;
-    baseCycle_ += secs * secondCycles_;                 // avance la phase d'un multiple entier de 1 s
+    if (t <= baseCycle_) return;
+    // La différence positive peut dépasser INT64_MAX (horloge ou état forgé).
+    const uint64_t elapsed = uint64_t(t) - uint64_t(baseCycle_);
+    const uint64_t secs = elapsed / uint64_t(secondCycles_);
+    if (!secs) return;
+    baseCycle_ = t - int64_t(elapsed % uint64_t(secondCycles_));
     // Ricoh EK-086-9908 p7 : les étages sous-seconde continuent ; leur
     // retenue est mémorisée tant que TIMER EN=0, puis délivrée au redémarrage.
     // Un seul carry est retenu, sans accumuler toutes les secondes arrêtées.
     if (!(mode_ & 0x08)) { timerCarry_ = true; return; }
-    if (secs > 90000) secs = 90000;              // borne le travail (>1 jour) : la date exacte
-                                                 // au-delà n'intéresse aucun diagnostic
-    while (secs-- > 0) tickOneSecond();
+    advanceWholeSeconds(secs);
 }
 
 // addr → index de registre : ($FFFC21,23,...,3F) = 16 registres aux adresses impaires.
@@ -94,8 +94,9 @@ uint8_t Rtc::read8(uint32_t addr) {
     }
     if (i < 13) return uint8_t(d_[i] & 0x0F);           // chiffre BCD (4 bits utiles)
     if (i == 13) return uint8_t((mode_ & 0x0F) | 0xF0); // mode : bits hauts à 1 (cf. Hatari)
-    if (i == 14) return test_;
-    return reset_;
+    // Ricoh EK-086-9908 p7 : Eh/Fh sont uniquement accessibles en écriture.
+    // Comme MAME rp5c15_device::read, ne pas exposer les commandes mémorisées.
+    return 0;
 }
 
 void Rtc::write8(uint32_t addr, uint8_t v) {
@@ -193,4 +194,65 @@ void Rtc::tickOneSecond() {
     set(9, 10, 1);
     bank1_[11] = uint8_t((bank1_[11] + 1) & 3);
     set(11, 12, (yr + 1) % 100);                        // année (2 chiffres, débord à 00)
+}
+
+// Même cascade que tickOneSecond, sans coût proportionnel au nombre de secondes.
+// Un étage invalide ne transmet qu'une retenue au prochain incrément, comme le
+// scalaire ; les étages non atteints gardent leurs chiffres MMIO bruts.
+void Rtc::advanceWholeSeconds(uint64_t seconds) {
+    if (!seconds) return;
+    if (seconds == 1) { tickOneSecond(); return; }
+    auto get = [&](int u, int t) { return int(d_[u]) + 10*int(d_[t]); };
+    auto set = [&](int u, int t, int value) {
+        d_[u] = uint8_t(value % 10); d_[t] = uint8_t(value / 10);
+    };
+    auto advance = [](int value, uint64_t increments, int limit, int& next) {
+        if (!increments) { next = value; return uint64_t(0); }
+        const uint64_t untilCarry = value >= limit ? 1 : uint64_t(limit - value);
+        if (increments < untilCarry) {
+            next = value + int(increments);
+            return uint64_t(0);
+        }
+        increments -= untilCarry;
+        next = int(increments % uint64_t(limit));
+        return 1 + increments / uint64_t(limit);
+    };
+    int value;
+    uint64_t carries = advance(get(0, 1), seconds, 60, value);
+    set(0, 1, value);
+    if (!carries) return;
+    carries = advance(get(2, 3), carries, 60, value);
+    set(2, 3, value);
+    if (!carries) return;
+    carries = advance(hour24(), carries, 24, value);
+    setHour24(value);
+    if (carries) advanceDays(carries);
+}
+
+void Rtc::advanceDays(uint64_t days) {
+    auto get = [&](int u, int t) { return int(d_[u]) + 10*int(d_[t]); };
+    auto set = [&](int u, int t, int value) {
+        d_[u] = uint8_t(value % 10); d_[t] = uint8_t(value / 10);
+    };
+    d_[6] = uint8_t((uint64_t(d_[6]) + days) % 7);
+    static constexpr int lengths[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
+    while (days) {
+        int day = get(7, 8), month = get(9, 10), year = get(11, 12);
+        // 100 ans rétablissent l'année à deux chiffres ET le compteur bissextile
+        // indépendant (période 4). Le weekday a déjà reçu tous les jours ci-dessus.
+        if (day == 1 && month == 1 && year < 100 && d_[11] < 10 && d_[12] < 10 && days >= 36525) {
+            days %= 36525;
+            if (!days) return;
+        }
+        const int length = month >= 1 && month <= 12
+            ? (month == 2 && bank1_[11] == 0 ? 29 : lengths[month]) : 31;
+        const uint64_t untilMonth = day > length ? 1 : uint64_t(length - day + 1);
+        if (days < untilMonth) { set(7, 8, day + int(days)); return; }
+        days -= untilMonth;
+        set(7, 8, 1);
+        if (++month <= 12) { set(9, 10, month); continue; }
+        set(9, 10, 1);
+        bank1_[11] = uint8_t((bank1_[11] + 1) & 3);
+        set(11, 12, (year + 1) % 100);
+    }
 }

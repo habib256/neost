@@ -68,8 +68,11 @@ bool Acsi::mount(int target, const std::string& path) {
     // Un slot UltraSatan reste PEUPLÉ même si l'image est refusée (appareil
     // présent, carte absente) — comme après unmountAll().
     const bool devicePopulated = usatanSlot(target) >= 0;
-    if (ec || sz == 0 || (sz & 511)) {
-        std::fprintf(stderr, "[acsi] invalid image (zero size or not a multiple of 512): %s\n",
+    // hdSize compte les blocs en uint32 : 2^32 blocs deviendraient zéro,
+    // puis READ CAPACITY annoncerait une capacité sans rapport avec les accès.
+    // Refuser avant fopen/conversion plutôt que monter une image tronquée.
+    if (ec || sz == 0 || (sz & 511) || sz / 512 > UINT32_MAX) {
+        std::fprintf(stderr, "[acsi] invalid image (zero size, not a multiple of 512, or exceeds 32-bit block count): %s\n",
                      path.c_str());
         d.path.clear();          // même raison qu'unmountAll : pas de chemin sans image
         d.enabled = devicePopulated;
@@ -117,6 +120,8 @@ void Acsi::unmountAll() {
 
 void Acsi::reset() {
     target_ = 0;
+    dmaTarget_ = 0;
+    dmaBlockAddr_ = 0;
     byteCount_ = 0;
     std::memset(command_, 0, sizeof command_);
     opcode_ = 0;
@@ -166,6 +171,7 @@ void Acsi::executeUltraSatan() {
         return;
     }
     if (usatan_->isWrite()) {                   // 'Wr…' : le secteur ST→appareil suit (DMA write)
+        dmaTarget_ = target_;
         dataLen_ = usatan_->dataLen();
         prepRespBuf(dataLen_);
         dmaWrite_ = true;
@@ -366,8 +372,10 @@ void Acsi::cmdReadSector() {
                    dev.setLastBlockAddr = true; return; }
     // Borne sur lba ET lba+count (cf. écriture) : le dernier secteur lu doit
     // exister aussi, sinon INVADDR — pas une lecture courte requalifiée.
+    // Le compte CDB est non négatif ; garder le reste en uint32 évite de
+    // transformer >=2^31 secteurs disponibles en une borne signée négative.
     if (dev.lastBlockAddr >= dev.hdSize ||
-        count() > int(dev.hdSize - dev.lastBlockAddr) ||
+        uint32_t(count()) > dev.hdSize - dev.lastBlockAddr ||
         fseeko(dev.fp, (off_t)dev.lastBlockAddr * dev.blockSize, SEEK_SET) != 0) {
         status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_INVADDR;
     } else {
@@ -390,7 +398,7 @@ void Acsi::cmdWriteSector() {
     // passait le test du seul secteur de départ puis faisait GRANDIR le fichier
     // image hôte au-delà de hdSize×blockSize (secteurs ensuite illisibles).
     if (dev.lastBlockAddr >= dev.hdSize ||
-        count() > int(dev.hdSize - dev.lastBlockAddr) ||
+        uint32_t(count()) > dev.hdSize - dev.lastBlockAddr ||
         fseeko(dev.fp, (off_t)dev.lastBlockAddr * dev.blockSize, SEEK_SET) != 0) {
         status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_INVADDR;
     } else {
@@ -398,6 +406,8 @@ void Acsi::cmdWriteSector() {
         if (dataLen_) {
             prepRespBuf(dataLen_);
             dmaWrite_ = true;                  // l'écriture se fait au transfert DMA
+            dmaTarget_ = target_;
+            dmaBlockAddr_ = dev.lastBlockAddr;
             status_ = HD_STATUS_OK; dev.lastError = HD_REQSENS_OK;
         } else {
             status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR;
@@ -407,8 +417,10 @@ void Acsi::cmdWriteSector() {
 }
 
 void Acsi::writeToDisk(const uint8_t* src, int len) {
-    Dev& dev = devs_[target_];
-    if (usatanPending_ && usatan_ && usatanSlot(target_) >= 0) {   // secteur d'un 'USWr…'
+    // Hatari conserve dmawrite_to_fh et sa position après le CDB WRITE.
+    // Une nouvelle sélection avant ouverture du DMA ne change pas sa destination.
+    Dev& dev = devs_[dmaTarget_];
+    if (usatanPending_ && usatan_ && usatanSlot(dmaTarget_) >= 0) {   // secteur d'un 'USWr…'
         usatanPending_ = false;
         const int st = usatan_->writeData(src, len);
         status_ = st ? HD_STATUS_ERROR : HD_STATUS_OK;
@@ -416,7 +428,10 @@ void Acsi::writeToDisk(const uint8_t* src, int len) {
         return;
     }
     if (!dev.fp || dev.readOnly) { status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR; return; }
-    fseeko(dev.fp, (off_t)dev.lastBlockAddr * dev.blockSize, SEEK_SET);
+    if (fseeko(dev.fp, (off_t)dmaBlockAddr_ * dev.blockSize, SEEK_SET) != 0) {
+        status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR;
+        return; // ne jamais écrire au curseur résiduel après un seek échoué
+    }
     int n = (int)fwrite(src, 1, len, dev.fp);
     fflush(dev.fp);
     if (n != len) { status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR; }

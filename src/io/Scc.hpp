@@ -70,7 +70,7 @@ public:
         // un octet valant 63 ferait prendre les deux branches — l'UB même que la
         // normalisation existe pour fermer.
         for (auto& ch : chn_) {
-            ar.fixBools(ch.rr0Latched, ch.breakRaw, ch.txWritten, ch.tsrFull, ch.txActive, ch.txInterrupted, ch.rtsAsserted, ch.rxFirstArmed, ch.rxFirstPending, ch.rxLocked);
+            ar.fixBools(ch.rr0Latched, ch.breakRaw, ch.txWritten, ch.tsrFull, ch.txActive, ch.txInterrupted, ch.rtsAsserted, ch.rxFirstArmed, ch.rxFirstPending, ch.rxLocked, ch.rxEchoStarted, ch.rxEchoEligible, ch.rxReceiveEligible);
             ar.check(ch.txRemaining >= 0 && ch.txRemaining <= 64 * neost::pacing::kCpuHzInt,
                      "Scc::BREAK TX remainder out of range");
             ar.check(!ch.txInterrupted || ch.txActive, "Scc::interrupted TX without active frame");
@@ -91,6 +91,7 @@ public:
                 ar.check(ch.serialDivisor[i] ? ch.serialFraction[i] < ch.serialDivisor[i]
                          : ch.serialFraction[i] == 0, "Scc::invalid serial clock fraction");
             }
+            ar.check(!ch.rxEchoEligible || ch.rxEchoStarted, "Scc::echo eligible without RX frame");
             ar.check(ch.rxFifoHead < 3 && ch.rxFifoCount <= 3);
             ar.check(ch.rxHead < 256 && ch.rxCount <= 256);
             ar.check(ch.txBits >= 5 && ch.txBits <= 8 && ch.rxBits >= 5 && ch.rxBits <= 8
@@ -134,6 +135,7 @@ private:
         uint8_t  txBits = 8, rxBits = 8, parityBits = 0;
         uint8_t rxFifo[3] = {}, rxErrors[3] = {};
         uint8_t rxFifoHead = 0, rxFifoCount = 0;
+        bool rxEchoStarted = false, rxEchoEligible = false, rxReceiveEligible = false;
         bool rxFirstArmed = true, rxFirstPending = false, rxLocked = false;
         uint8_t rxQueue[256] = {};
         uint16_t rxHead = 0, rxCount = 0;
@@ -161,6 +163,7 @@ private:
 
     uint8_t getVectorStatus();
     void    updateRR0(int chn);
+    bool    breakStatusAllowed(int chn) const;
     void    updateRR0Clear(int chn, int bits) { chn_[chn].rr0NoLatch &= ~bits; }
     void    updateRR0Set(int chn, int bits)   { chn_[chn].rr0NoLatch |= bits; }
     void    updateRR0LatchOff(int chn);
@@ -183,6 +186,9 @@ private:
     int64_t serialPeriod(int channel, bool tx, bool advance = false);
     void updateSerial(int channel);
     bool receiveAllowed(int channel) const;
+    bool localLoopbackOnly(int channel) const;
+    bool echoByteAllowed(int channel) const;
+    void startRxFrame(int channel);
     bool transmitAllowed(int channel) const;
     void updateRts(int channel);
     void deliverByte(int channel, uint8_t byte, int parity = -1);

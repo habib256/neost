@@ -95,7 +95,7 @@ citent les anciens identifiants.*
 | MC ✅ | MFP | ~~**Conversion MFP→CPU tronquée par période, sans reste accumulé**~~ **corrigée (2026-08-14)** : échéances absolues ×256, plafond vers le Scheduler, phase sérialisée v11 | moyenne-basse | `Mfp.cpp` (`timerPeriodSubCycles`, `scheduleTimerAt`) | unités internes ×256 `cycInt.c:26-45` |
 | BU1 ✅ | Bus | **Miroir matériel du PSG `$FF8804-$FF88FF`** non routé vers le YM2149 (lit `0xFF`, écritures ignorées) | moyenne | `Bus.cpp:501-502` | `IoMem_Init` shadow PSG `ioMem.c:386-393` |
 | BL2 ✅ | Blitter | Accès **OCTET** aux registres mot/long non rejetés | moyenne | `Blitter.cpp:99-105` | `Blitter_CheckAccess_Byte` `blitter.c:972-989` |
-| SC1 ✅ | SCC | TX/RX cadencés, fractions directes/BRG et Zero Count avant /2/WR4 ; bouclage local WR14 honoré selon Zilog (absent d’Hatari). Restent phase sous-bit, DPLL/SDLC et backend hôte. | limites documentées | `Scc::serialPeriod/updateBrg/onBrgEvent/serialWriteByte` | `SCC_WriteDataReg/SCC_Process_TX`, Zilog UM0109 et MAME |
+| SC1 ✅ | SCC | TX/RX cadencés, fractions directes/BRG et Zero Count avant /2/WR4 ; bouclage local et multiplexage RxD/TxD portés. Restent phase sous-bit, DPLL/SDLC et backend hôte. | limites documentées | `Scc::serialPeriod/updateBrg/onBrgEvent/serialWriteByte` | `SCC_WriteDataReg/SCC_Process_TX`, Zilog UM0109 et MAME |
 | D4 ✖ | FDC | ~~Piste 6268 vs 6250~~ **FAUX POSITIF (5ᵉ passe)** : le `#define FDC_TRACK_BYTES_STANDARD` actif d'Hatari vaut **6268** (la formule 6250 y est commentée) = NeoST | — | `Fdc.cpp:161` | `fdc.c:~410` |
 
 ---
@@ -103,6 +103,17 @@ citent les anciens identifiants.*
 ## Détail par sous-système
 
 ### MFP 68901 — `Mfp.cpp` ↔ `mfp.c`
+
+- ✅ **GPIP7 composé et XSINT (2026-10-19)** : détection du front après
+  calcul complet du niveau, incluant le bouton Multiface déjà modélisé.
+  Plus d’IRQ parasite lorsque XSINT change sous un bouton maintenant la pin
+  basse ; DDR/AER conservés. Aucun nouveau modèle électrique Multiface.
+
+- ✅ **VR bits réservés (2026-10-19)** : bits2..0 lus zéro et ignorés en
+  écriture, selon Motorola MC68HC901UM §4.1.3 et MAME REGISTER_VR. Base
+  vectorielle et bit S inchangés ; anciennes valeurs brutes sauvegardées
+  masquées à la lecture. Hatari garde les bits permissifs, contrairement au
+  manuel. Aucun champ ajouté ni changement de format v44.
 Chaîne IRQ (IER/IPR/IMR/ISR/VR, élection priorité + chronologie, délai 4 cyc, IACK, EOI
 auto/software, antidatage), timers datés, compteur vivant, event-count Timer A/B : **conformes**.
 
@@ -164,10 +175,57 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
 - **[basse]** Bordures uniquement en basse résolution (overscan med-res non géré, `Shifter.hpp:334`).
 
 ### FDC WD1772 + DMA + STX — `Fdc.cpp`, `StxImage.cpp` ↔ `fdc.c`, `floppies/stx.c`
-Machines à états type I-IV, bits de statut par type, timings (spin-up, head-load, index),
-`NextSectorID`, FIFO 16 o, densité `$FF860E`, fuzzy/timing STX, persistance `.wd1772`
-byte-compatible : **conformes** (vérifiés ligne à ligne).
 
+- ✅ **STX WRITE SECTOR A8/A9 (2026-10-19)** : bit0 choisit FB normal
+  ou F8 supprimé, statut RECTYPE et CRC du READ TRACK reconstruit cohérents.
+  F8 persiste dans un supplément SECT `NDAM` + marque ; ancien SECT sans
+  métadonnée = FB. Hatari lit les données mais ignore la métadonnée ; une
+  réécriture par Hatari/ancien NeoST peut la perdre. Archive v45 inchangée,
+  commande déjà sérialisée et contenu média hors snapshot (pas de rewind).
+  Refus WRITE sur CRC inchangé. READ TRACK : fusion locale des overlays
+  sur image décodée dans le périmètre qualifié ci-dessous ; ST/MSA/DIM sans
+  DAM persistante, pas de moteur MFM général ajouté.
+- ✅ **READ TRACK et image décodée (2026-10-19)** : fusion locale des
+  overlays SECT dans une copie du dump, y compris champs coupés par l’index.
+  Parcours circulaire strictement inférieur à un tour, synchronisation zéro,
+  ancrage ID aligné dans le dump, données non fuzzy et CRC concordants.
+  Seuls DAM/données/CRC sont remplacés ; longueur, timings et octets extérieurs
+  conservés. Collisions circulaires, ambiguïtés et champs incomplets refusés,
+  de même que la traversée d’une fin artificielle de dump écrêté. Aucune
+  reconstruction de secours ni mutation du dump source. Extension NeoST.
+- ✅ **STX réécrit et F8 (2026-10-19)** : WRITE TRACK conserve la marque
+  supprimée en RECTYPE lors de READ SECTOR et dans READ TRACK reconstruit.
+  CRC régénérée sur la marque choisie ; snapshot et .wd1772 conservés.
+  Extension de réinterprétation NeoST : Hatari READ SECTOR rend le flag,
+  son READ TRACK reconstruit encore FB ; aucun flux physique exact revendiqué.
+
+READ ADDRESS : CRC ID signalé après le sixième octet depuis le 2026-10-19,
+selon WD1772/MAME ; Hatari partageait l’omission. CRC de données sans effet ici.
+
+Machines à états type I-IV, bits de statut par type, timings (spin-up, head-load, index),
+`NextSectorID`, FIFO 16 o, densité `$FF860E`, fuzzy/timing STX et persistance
+`.wd1772` : **conformes dans le périmètre décrit** ; conteneur lisible par Hatari,
+extension DAM NeoST qualifiée ci-dessus.
+
+- ✅ **WRITE TRACK ST, emplacement des IDs (2026-10-19)** : les champs
+  C/H doivent correspondre à la tête physique et à la face sélectionnée ;
+  chaque numéro de secteur doit être unique. Un flux non représentable en ST
+  retourne LOST_DATA avant toute copie, sans modifier les pistes/secteurs
+  voisins. Extension de réinterprétation NeoST conservée ; Hatari refuse
+  tout WRITE TRACK ST. Les IDs WD1772 n’actionnent ni STEP ni SIDE.
+- ✅ **Secteur long et sélection STX→ST (2026-10-19)** : WRITE SECTOR
+  engagé sur un ID STX de 1 024 octets puis terminé sur un lecteur ST est
+  limité à 512 octets dans l’image cible. Corrige l’écrasement du voisin ou
+  le faux RNF à la fin de l’image ; DMA engagé inchangé. Référence Hatari
+  `FDC_WriteSector_ST` / `Floppy_WriteSectors`, un secteur logique par appel.
+- ✅ **Changements rapides de média (2026-10-19)** : première action puis
+  dernière action opposée, répétition de la première annulant la seconde ;
+  remplacement direct par éjection/insertion, comme `Floppy_DriveTransitionSetState`.
+  Deux phases persistées en v41. Fenêtre historique de 18 durées de trame,
+  pas quatre ; désormais 18 VBL réels par phase, même lors d’un changement
+  PAL/NTSC/monochrome. Compteur et fins VBL sauvegardés en v43. Le compteur
+  survit au reset FDC pour préserver le contrat existant ; aucune équivalence
+  du reset global Hatari (Video_Reset remet nVBLs à zéro) revendiquée.
 - **[D0 — moyenne] ✅ CORRIGÉ (2026-08-01)** — `.MSA`/`.DIM` étaient montées en **LECTURE
   SEULE**, et le bit **WPRT était présenté au programme émulé** (`writeProtect = !raw ||
   !writable`). Hatari ne dérive WPRT que du réglage et de `stat()` — **jamais du format
@@ -199,6 +257,10 @@ byte-compatible : **conformes** (vérifiés ligne à ligne).
   protections « formate + relit une piste corrompue » (Copylock/Rob Northen) « nettoyées » par
   NeoST ; mais utilisabilité accrue pour les formateurs ordinaires.*
 - **[D2 — moyenne]** READ TRACK STX renvoie la piste réécrite (conséquence de D1, `Fdc.cpp:1553`).
+- ✅ **STX piste effacée (2026-10-19)** : un WRITE TRACK sans secteur
+  exploitable remplace aussi la vue des secteurs par une vue vide. Les anciennes
+  données ne réapparaissent plus, même après remontage du `.wd1772`. Choix
+  D1/D2 conservés ; READ TRACK reste une reconstruction, sans promesse de flux brut exact.
 - ✅ **D3 déjà porté** : stall 32 cycles bus aux flushs FIFO, échéance suivante
   `due + stall + delay`. Revérifié le 2026-10-18 ; voir le bilan D3 en tête.
 - **[D4 — faux positif, revérifié le 2026-10-18]** La piste standard de repli
@@ -228,6 +290,18 @@ byte-compatible : **conformes** (vérifiés ligne à ligne).
 - **[basse]** Hot-swap : 1 phase (eject) vs 2 (eject+insert) chez Hatari (`floppy.c:438-514`).
 
 ### Son (YM2149 + DMA STE) — `YM2149.cpp`, `DmaSound.cpp` ↔ `psg.c`, `dmaSnd.c`, `sound.c`
+
+- ✅ **Microwire DATA octet (2026-10-19)** : fusion avec la valeur visible
+  après décalage, sans réutiliser l’autre octet d’une ancienne commande.
+  Déclenchements high/low isolés, staging mot/long, rejet occupé et état v45
+  conservés ; commande LMC effective vérifiée avec et sans Scheduler.
+
+- ✅ **Retard Microwire (2026-10-19)** : les décalages dus sont rattrapés
+  sur la grille de huit cycles, au plus seize fronts, selon le principe
+  PendingCyclesOver de Hatari. Data/Mask sont actualisés avant MMIO ; nouveau
+  départ à liveNow+8. Busy, mots haut/bas et décodage unique final préservés,
+  sans dispatch général ni nouveau champ. Les anciennes mentions de signe
+  LMC manquant, shelves RBJ et HPF YM seul sont périmées dans le code actuel.
 Moteur 250 kHz, table DAC 32³, ET logique ton/bruit, LFSR, enveloppe, demi-amplitude STE,
 PWM+HPF, FIR anti-repliement DMA, Microwire/LMC (gains/panoramique), XSINT→GPIP7+Timer A,
 cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, a été **supprimé**).
@@ -297,6 +371,12 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
   le départ d’un nouveau TSR, sans tronquer celui déjà engagé. Le TDR reste
   plein et repart au prochain front après libération. Ligne physique basse et
   récupération des erreurs SCI restent hors modèle ; formats/diviseurs inchangés.
+- ✅ **Date du front IRQ MIDI (2026-10-19)** : RX hôte cadencé,
+  transfert TDR→TSR et retour au stop de bouclage transmettent l’échéance
+  série au détecteur GPIP4, au lieu de l’heure tardive du callback. Même
+  qualification AER/DDR et ligne partagée clavier ; délai MFP quatre cycles
+  conservé. CR/RDR et autres lignes restent à leur date d’accès actuelle.
+  Aucun nouveau champ ni changement de format v44.
 - ✅ **Phase MIDI RX (2026-10-18)** : initialisation sur `liveNow`, puis
   échéance précédente +2560 cycles ; resets et remplacement de source gardent
   une échéance active. Le flux ne dérive plus aux callbacks tardifs et les resets
@@ -323,6 +403,19 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
   Références : ikbd.h:44-45, `IKBD_OutputBuffer_CheckFreeCount` et
   `IKBD_Check_New_TDR`. Admission des paquets entiers préservée ; overrun
   toujours traité en aval. Archives dépassant 1024 octets refusées.
+- ✅ **Initialisation ACIA clavier (2026-10-19)** : sorties firmware rejetées
+  avant initialisation du diviseur, comme IKBD_Send_Byte_Delay ; aucun octet
+  ni délai ne ressuscite ensuite. Latch conservé aux resets et sauvegardé v46.
+  CR00 identique initial ne l’arme pas ; reset03 puis CR00 l’arme.
+- ✅ **Registres ACIA au reset matériel (2026-10-19)** : CR/SR/RDR, erreurs,
+  TDR/TSR et causes IRQ conservés, comme ACIA_Reset sans broche de reset.
+  SCI sortant annulé séparément par IKBD_Reset, puis boot ROM ; ligne IRQ
+  republiée après reset du MFP. Ancienne remise à zéro CR/SR corrigée.
+- ✅ **Transit CPU→SCI au reset matériel (2026-10-19)** : progression des
+  bits ACIA conservée, SCI remis en attente de start et horloge réancrée.
+  Tout zéro ultérieur peut réamorcer la réception ; données, stop, bits de repos
+  et caractère suivant participent au décodage, selon les états Hatari.
+  Port borné au /64 8N1 ; autres formats/diviseurs physiques différés.
 - ✅ **PAUSE IKBD $13 (2026-10-18)** : seul le prochain départ SCI est
   bloqué ; l’octet engagé finit à son échéance. Il est distinct de la file
   firmware et sauvegardé en v32. Boot ROM conserve cet octet, reset matériel
@@ -334,6 +427,13 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
 - **[basse, assumée]** Horloge IKBD amorcée sur l'heure hôte à la construction (Hatari l'efface au cold boot, ikbd.c:539) — confort bureau ; `--keys`/`setClock` couvrent le déterminisme headless. Idem : état des handlers 6301 custom ré-initialisé à chaque reconnaissance (les `static` d'Hatari casseraient un 2ᵉ lancement).
 
 ### Bus / mémoire / bus-error — `Bus.cpp` ↔ `ioMem*.c`, `memory.c`, `stMemory.c`
+
+- ✅ **API Bus, miroir blitter atomique (2026-10-19)** : adresse masquée
+  sur 24 bits avant les raccourcis write16/write32, comme pour les octets.
+  Les miroirs gardent l’écriture contrôle/skew atomique, la largeur MMIO
+  est restaurée et le rebouclage en RAM conservé. Défaut de l’API Bus directe
+  et des outils ; Moira normalise déjà ses cycles CPU, aucune nouvelle
+  régression CPU68000 corrigée revendiquée.
 MMU/banques ST vs STE (`ConfToBank` : `bank1=bank0` sur STE), aliasing RAS/CAS, whitelist
 bus-error par modèle (octet par octet, patches MegaST/MegaSTE, SCU octets impairs), fenêtres
 ROM, accès DMA (retour 0/écriture ignorée en zone fautive), protection superviseur `<0x800`,
@@ -355,6 +455,11 @@ règle word/long : **conformes**.
   (`regs.db`, `VoidMem`). Différence théorique, sans impact connu.
 
 ### Blitter — `Blitter.cpp` ↔ `blitter.c`
+
+- ✅ **Reset chaud (2026-10-19)** : conserve RAM halftone et pipeline
+  source comme `Blitter_Reset` Hatari ; transfert annulé et registres de
+  commande remis à zéro. Initialisation froide déterministe NeoST conservée,
+  sans nouvelle mesure de la valeur power-on matérielle.
 Logique de données **fidèle** (HOP/LOP 16 cas + tables `need_src`/`need_dst`, FXSR/NFSR, smudge,
 halftone, masques de bord, bug « 63 accès », IRQ GPIP3 fin de blit, arbitration MegaSTE/STE).
 
@@ -414,23 +519,49 @@ halftone, masques de bord, bug « 63 accès », IRQ GPIP3 fin de blit, arbitrati
   `blitter.c:1641`) : le CPU est stallé en bloc pendant la tranche, ses cycles internes ne
   recouvrent pas le blit (sauf les 4 cycles PRE_START). Nécessiterait des hooks par-cycle dans
   Moira. Aussi : hits du cache MegaSTE 16 MHz comptés comme accès bus (approximation), et le
-  cycle RMW (`bset`/TAS) ne retient pas la prise de bus (`cpu_bus_rmw` d'Hatari).
+  cycle RMW/TAS est en revanche déjà atomique dans le modèle courant : aucun
+  dispatch Scheduler entre lecture et écriture CPU. Banc réel ajouté le 2026-10-19 ;
+  propriété à conserver si le dispatch CPU devient interne à l’instruction.
 - ~~**[basse]** HOP/LOP et bit4 du contrôle masqués seulement à l'exécution, pas à la relecture du registre.~~
   *(obsolète : `regWriteMask` masque à l'écriture depuis la refonte — relecture fidèle.)*
 
+- ✅ **Reset PSG R7 (2026-10-19)** : valeur remise à zéro selon Hatari/MAME,
+  ancien $FF supprimé. Silence legacy/push, registres, ports, strobe et snapshot
+  qualifiés ; aucune modification de la déviation documentée de lecture $FF8802.
+
+- ✅ **Coexistence GEMDOS/ACSI (2026-10-19)** : dossier simple après le nombre
+  de partitions ACSI, réévalué au montage et au reset/boot ; lettres explicites
+  C..Z inchangées. Ancien montage/handles conservés après refus d’un nouveau
+  dossier ; table vidée au reset si aucune lettre disponible, sans perdre la
+  configuration. Retrait ACSI puis reset remappe le dossier. UI n’annonce plus
+  systématiquement une collision C:, elle utilise le masque GEMDOS réel.
+  Limite commune à Hatari : comptage des racines DOS/Atari, pas d’exploration XGM.
+
 ### USART MFP — réception hôte
 
-- ✅ **Overrun RX (2026-10-18)** : un octet non lu est conservé ; le nouvel
-  octet est perdu et RXERR est levé, sans nouvelle demande RXFULL. Le chemin hôte
-  rejoint la règle déjà appliquée au bouclage. Références : Hatari `rs232.c:277`
-  et [MAME mc68901.cpp](https://github.com/mamedev/mame/blob/master/src/devices/machine/mc68901.cpp),
-  `rx_async_frame_complete` et `rx_sync_frame_complete`.
-  Le modèle existant de datation des erreurs RSR n’est pas modifié.
+- ✅ **Bouclage USART interne (2026-10-19)** : TSR H/L=11 sélectionne TX
+  vers RX sans fixture externe ; SI/RC hôte déconnectés, même si TE=0.
+  SO reste observable, RE qualifie toujours la réception et la prise externe
+  ne double pas la livraison. Référence Motorola §2.10.1/§2.10.3/§7.3.2 et
+  MAME `rc_w/tc_w`. Commutation évaluée au stop abstrait selon le mode courant,
+  sans phase bit ni reconstruction des trames traversant une bascule H/L.
+  Aucun nouvel état ; TSR était déjà sérialisé.
+
+- ✅ **Overrun RX différé (2026-10-19)** : un octet non lu reste conservé ;
+  le suivant est perdu, mais OE et RXERR attendent la lecture UDR. Lire RSR
+  avant UDR n’acquitte pas cette erreur en attente. Une fois OE publié, les
+  nouvelles données sont ignorées jusqu’à lecture RSR. RE=0 et reset annulent
+  les deux étapes, sans effacer une IRQ MFP déjà pendante lors de RE=0.
+  Référence Motorola MC68HC901UM §7.2.2 p.7-5 et MAME `REGISTER_UDR` /
+  `rx_async_frame_complete`. Corrige le modèle du 2026-10-18 qui signalait
+  immédiatement RXERR au caractère perdu. L’étape en attente est sauvée v44.
 
 - ✅ **Durée et phase USART RX (2026-10-18)** : format asynchrone UCR,
   retenue rationnelle et échéance ancrée pour éviter la dérive. Configuration
   en vol conservée jusqu’au prochain caractère. Reste et phase sauvegardés.
   Références : Hatari `rs232.c:329-365` et MAME `mc68901.cpp`, format USART.
+  RXFULL est datée au stop du caractère, même si le callback est servi en
+  retard ; RXERR d’overrun est datée de la lecture UDR qui publie OE.
   UCR7 sélectionne /1 ou /16, sans arrondis tty ni plancher RX (2026-10-18).
   Référence : MC68901UM §7.1.3. Le rapport Timer D/UCR exact cadence TX/RX,
   même aux débits non entiers ; la fraction est conservée aux reconfigurations.
@@ -491,12 +622,69 @@ reset HW/canal, IRQ niveau 5 gatée par le SCU).
   remplaçant le plus récent, modes premier/tous/spécial, verrouillage sur erreur
   et Error Reset. Choix matériel qui dépasse le modèle mono-octet Hatari.
   Restent DPLL, FIFO SDLC et série hôte réelle ; TRxC garde la fréquence indicative Hatari.
-- **[SC1b — TRANCHÉ : choix délibéré, NE PAS corriger]** **`WR14` bit4 (Local Loopback) `|= 0x30`
-  au reset** (`Scc.cpp:61`) → tant que bit4=1, TX reboucle en interne (TxD→RxD) et n'atteint pas
-  `sink_`. NeoST **honore** ce bit (datasheet Zilog Z85C30 §WR14) ; Hatari NE le modélise pas
-  (`SCC_Process_TX` émet toujours). **Inoffensif** : tout pilote série/LAN réécrit `WR14` (réglage
-  du BRG, bit4=0) avant d'émettre. NeoST reste donc plus fidèle au chip — cf. § « NeoST améliore
-  Hatari » ci-dessous. (`Scc.cpp:serialWriteByte`)
+- ✅ **First et Error Reset (2026-10-19)** : retirer le premier caractère
+  en erreur efface aussi son IP ; suivant sans IRQ héritée. UM0109 p.47/p.142,
+  Enable Next explicite et lecture verrouillée sans retrait préservés.
+- ✅ **WR1 et verrou d’erreur (2026-10-19)** : changer entre
+  First/Special et Special Only conserve le verrou/IP spécial déjà acquis.
+  UM0109 p.146 et MAME ; Error Reset libère toujours le caractère, politiques
+  Disabled/All conservées. Aucun nouveau champ d’archive.
+- ✅ **RX All/Special et FIFO vide (2026-10-19)** : IP/IRQ effacées
+  au retrait du dernier caractère, même si RR1 conserve une erreur collante.
+  Prochain caractère qualifié spécial jusqu’à Error Reset ; modes First/Special
+  verrouillés conservés. UM0109 p.47–48/p.179 et MAME.
+- ✅ **Lectures étendues Z85C30 (2026-10-19)** : WR7’ D6 expose
+  WR3/4/5/7’/10 via RR9/4/5/14/11 sans consommer FIFO RX ni IRQ.
+  Gate D6 seul selon description spécifique UM0109 p.157–158 ; en-tête
+  de table générale Z85X30 ambigu sur WR15 D2, sans mesure matérielle ici.
+  WR15 D0 sélectionne les écritures WR7’ seulement ; autres fonctions
+  WR7’ et FIFO SDLC hors périmètre.
+- ✅ **WR14 BRG et reprise d’écho (2026-10-19)** : D1..0 ne touchent
+  que source/enable BRG ; leur modification conserve l’écho RX utilisant
+  RTxC/TRxC directs. Les autres changements WR14 et RX BRG/DPLL restent
+  invalidants. Après arrêt/reprise du BRG, une trame écho déjà invalidée
+  garde cet état jusqu’à son retrait ; le caractère suivant repart neuf.
+  Durée abstraite de reprise inchangée, sans reconstruction bit à bit ni
+  nouveau champ. Zilog UM0109 p.166/p.172.
+- ✅ **Réglage BRG et écho RX direct (2026-10-19)** : WR12/13 ne
+  corrompent plus l’écho engagé lorsque RX choisit RTxC/TRxC directs.
+  Invalidation gardée pour RX BRG/DPLL ; cadence BRG et Zero Count inchangées.
+  Zilog UM0109 p.166–168, sélection RX indépendante du compteur TC.
+- ✅ **Horloge TX et Auto Echo (2026-10-19)** : changer seulement la
+  source TX (WR11 D4..3) ne corrompt plus l’écho RX engagé. Source, délai
+  et phase RX restent indépendants ; les autres modifications WR11 gardent
+  leur invalidation. Zilog UM0109 p.166–167, multiplexeurs TX/RX séparés.
+  DPLL sélectionnable côté TX sans moteur ajouté ; archive v44 inchangée.
+- ✅ **Stop RX indépendant de TX (2026-10-19)** : WR4 D3..2 sélectionne
+  seulement les stops émis ; RX en vérifie toujours un (Zilog UM0109 p.93 et
+  p.151). Délais et IRQ RX corrigés, TX inchangé. Auto Echo huit bits sans
+  parité accepte les trois choix de stops TX et conserve un caractère engagé
+  si seuls ces bits changent entre modes asynchrones. Parité, mode synchrone
+  et changements d’horloge gardent leur invalidation. Aucun gap/stop source
+  physique reconstruit ; échéance engagée et archive v44 conservées.
+- ✅ **Priorité INTACK (2026-10-19)** : l’acquittement respecte la chaîne
+  des IUS, y compris par lecture RR2 Software INTACK. Une source moins
+  prioritaire déjà bloquée ne reçoit plus un IUS fantôme ; une source plus
+  prioritaire reste acquittable. Référence Zilog UM0109 p.41–42. Lecture
+  vectorielle de polling inchangée ; l’amont MAME softRR2 partage le raccourci
+  corrigé ; comportement défini ici par le manuel matériel.
+- ✅ **MIE et IUS (2026-10-19)** : désarmer WR9 D3 masque l’IRQ sans
+  effacer les interruptions en service. Un acquittement matériel ou logiciel
+  effectué pendant MIE=0 ne crée aucun nouvel IUS ; Reset Highest IUS garde
+  son effet. Référence Zilog UM0109 p.161 et MAME. Corrige le raccourci encore
+  présent dans Hatari ; aucune nouvelle donnée sérialisée.
+- ✅ **Reset canal IP/IUS (2026-10-19)** : WR9 efface uniquement les
+  interruptions pendantes et en service du canal ciblé. RR3A conserve les IP
+  de B lors d’un reset A ; les IUS du canal réinitialisé cessent de bloquer
+  les autres demandes. FIFO, vecteur partagé et IUS de l’autre canal conservés.
+  Référence Zilog UM0109 p.160, MAME `reset_interrupts`. Hatari possède aussi
+  l’ancien raccourci RR3/IUS ; correction fondée sur les sources matérielles.
+- **[SC1b — reset et multiplexage Local Loopback portés]** `WR14=$30`
+  au reset sélectionne le bouclage interne (Zilog), valeur conservée. TX est
+  livré à RX interne et au sink représentant TxD ; RxD externe est ignoré
+  (UM0109 p.69, MAME write_rx). Bascule en cours de réception : caractère
+  hôte interrompu invalidé, FIFO déjà complétée conservée. La prise externe
+  occupe le sink et ne double pas la réception. Priorité Auto Echo préservée.
 - ✅ **BRG / Zero Count (2026-10-18)** : `Scc::updateBrg/onBrgEvent` portent
   les sources PCLK/RTxC MegaSTE, TC WR12/13 et WR14. Zero Count précède
   le diviseur /2 et WR4 : (TC+2)/source, avec retenue rationnelle.
@@ -549,6 +737,29 @@ reset HW/canal, IRQ niveau 5 gatée par le SCU).
   masque maître WR1 D0 (Zilog p.56–57). Désactiver WR1 efface l’IP sans
   ouvrir les verrous ; le réactiver retrouve une condition mémorisée, y compris
   un Zero Count déjà expiré. WR0 conserve le protocole de réarmement.
+- ✅ **MFP BREAK selon le mode (2026-10-19)** : B agit seulement en
+  asynchrone (MC68901UM §7.3.2, MAME tx_clock). En repli synchrone 8N1,
+  il ne bloque plus TDR ni UE ; changement UCR libère le TDR retenu. Pas de
+  protocole synchrone complet. BREAK asynchrone désormais cadencé par caractère
+  selon MC68HC901 p.7-8, TSR préservé et BE antérieur conservé. TE coupé finit
+  à la frontière sans stop ; reprise modélisée avec un stop d’une période TX
+  (durée déduite), puis TDR ou UE. Pas de phase TC initiale ni d’onde physique.
+- ✅ **SCC priorité Auto Echo (2026-10-19)** : WR14 D3 déconnecte la sortie
+  TSR avant les bouclages et le sink, tout en laissant le pipeline/IRQ fonctionner
+  (Zilog p.69–70/p.172). D3+D4 conserve l’exception DCD documentée p.70.
+  L’écho hôte RX huit bits sans parité est livré après un stop RX abstrait,
+  indépendamment des stops TX et de RXEN/DCD. Reconfiguration RX en vol invalide le caractère ;
+  autres formats, parité et fragments physiques restent hors modèle. Trois
+  états de trame écho/RX sauvegardés v40, aucune boucle récursive externe.
+- ✅ **SCC Reset Tx Underrun/EOM (2026-10-19)** : WR0 D7–D6 indépendants
+  des commandes et pointeurs. Statut brut effacé aussi en asynchrone selon
+  l’exception RR0 détaillée p.176 ; image externe verrouillée conservée, sans
+  front IRQ descendant. Commandes combinées vérifiées, sans moteur CRC physique.
+- ✅ **SCC statuts selon le mode (2026-10-19)** : Sync/Hunt forcé à zéro
+  sans fermer les verrous quand /SYNC sert à l’oscillateur en asynchrone ou
+  External Sync ; BREAK nul en synchrone hors SDLC (Zilog p.58–59). Les
+  niveaux bruts restent disponibles après désactivation de l’option. Pas de
+  moteur Hunt, synchronisation ni détection d’abort physique ajoutés.
 - ✅ **SCC fronts BREAK sous verrou (2026-10-18)** : assertion et fin
   conservées même pendant une autre cause External/Status, selon Zilog p.58.
   WR0 sert les polarités mémorisées ; cycles répétés coalescés, sans compteur
@@ -648,7 +859,8 @@ par le présent document :
   formateurs ordinaires ; à arbitrer pour les protections format-and-verify.
 - **WRITE TRACK `.ST`** : NeoST écrit les secteurs d'une géométrie standard (Hatari renvoie
   LOST_DATA, TODO).
-- **SCC `WR14` bit4** : bouclage local conforme à la datasheet Zilog (absent d'Hatari).
+- **SCC `WR14` bit4** : bouclage interne et multiplexage TxD/RxD portés
+  selon Zilog, avec priorité Auto Echo et convention de prise externe (SC1b).
 
 - **Granularité du refill FIFO du son DMA STE** (2026-09-02, étalon `dmasnd_poll`) : sur un poll
   serré de $FF890B/0D, NeoST rend le découpage par HBL **IDÉAL implanté par le débit** — à
@@ -841,6 +1053,18 @@ divergences ne casse le boot. Trouvailles actionnables ci-dessous (terrain neuf 
 - ✅ **ACSI — INQUIRY `buf[4]` erroné** *(MOYENNE — CORRIGÉ)* : `buf[4]` (« Additional Length »)
   garde la valeur fixe **31** de `inquiry_bytes[4]`, simplement recopiée (`Acsi.cpp:204-211` vs
   `hdc.c:218-246`). *Avant :* écrasé par `count()-5` (variable) → pilote HD trompé.
+- ✅ **ACSI — taille au montage (2026-10-19)** : images dépassant
+  UINT32_MAX secteurs refusées avant conversion au lieu d’une taille tronquée.
+  Maximum NeoST : 2 Tio moins 512 octets ; limitation des compteurs actuels,
+  sans revendication de limite du matériel. Slot UltraSatan conservé sans carte.
+- ✅ **ACSI — borne signée grande capacité (2026-10-19)** : compte
+  READ/WRITE comparé aux secteurs restants sans conversion signée. Début
+  d’une image de plus de 1 Tio accessible ; fin stricte et compteurs inchangés.
+  Banc sparse POSIX, saut explicite sous Windows ou FS non sparse.
+- ✅ **ACSI — destination WRITE différé (2026-10-19)** : cible et secteur
+  figés avant ouverture DMA, comme le FILE engagé par Hatari. Nouvelle
+  sélection pendant le paquet suivant sans rediriger l’écriture vers une
+  autre image ; phase conservée en sauvegarde v45. Anciens v44 refusés.
 - ✅ **ACSI — délai d'IRQ post-DMA (2026-10-18)** : `acsiDmaTransfer` efface
   la source HDC puis programme `Scheduler::ACSI_IRQ` après 1 000 cycles CPU, comme
   `ACSI_TRANSFER_MIN_CYCLES` dans `hdc.c` : 1 000 cycles bus à 8 MHz, 500 sur MegaSTE
@@ -856,12 +1080,15 @@ divergences ne casse le boot. Trouvailles actionnables ci-dessous (terrain neuf 
   par défaut ». NeoST retire un dernier composant contenant `*`/`?` avant le test (Dsetpath ne
   définit qu'un RÉPERTOIRE ; vrai TOS ignore la partie fichier). Débloque entrer/écrire/exécuter
   dans les dossiers au bureau. Dossier inexistant reste -34. (`GemdosHd.cpp` gemChDir)
-- **GEMDOS — `Fsfirst`/`Fsnext` n'énumèrent JAMAIS `.`/`..`** *(DIVERGENCE VOLONTAIRE, 2026-07-08)* :
-  `subdir` forcé à `false` dans `gemSFirst` → les points Unix `.`/`..` n'apparaissent plus dans
-  aucun listing TOS (Hatari les expose en sous-répertoire, comme un vrai FAT). Choix produit :
-  bureau plus propre. Contrepartie : plus d'icône parent « +. » dans une fenêtre dossier ; la
-  navigation parent d'un CHEMIN (`..\FOO`) reste gérée par `createHostFileName`.
-  (`GemdosHd.cpp:1271` `gemSFirst` vs `gemdos.c:433-484`)
+- ✅ **GEMDOS — points en sous-dossier (2026-10-19)** : `Fsfirst`/`Fsnext`
+  exposent désormais `.` et `..` quand les attributs et le masque les incluent,
+  comme Hatari/FAT ; noms DTA exacts, sans transformer `..` en `+.`. À la
+  racine, aucune entrée point ; autres fichiers cachés `.nom` toujours filtrés.
+  L’ancienne divergence volontaire de présentation est remplacée par le contrat
+  de recherche attendu par les programmes GEMDOS.
+- ✅ **GEMDOS — erreur de recherche (2026-10-19)** : `ENOENT` reste une entrée
+  à sauter, mais les autres erreurs `stat` remontent en `EINTRN` ; elles ne sont
+  plus confondues avec une fin normale `ENMFIL`.
 - ✅ **GEMDOS — matching « caractères invalides » (`only_invalid`)** *(MOYENNE)* : `addPathComponent`
   fait désormais DEUX passes distinctes comme Hatari — troncature (`*`, `onlyInvalid=false`) puis
   caractères invalides (`+`→`?`, `onlyInvalid=true`) — et `fsfirst_match` ne fait matcher un `?`
@@ -914,7 +1141,13 @@ divergences ne casse le boot. Trouvailles actionnables ci-dessous (terrain neuf 
   cf. Hatari `get_features`).
 
 ### Choix intentionnels / NeoST plus correct que Hatari (NE PAS « corriger »)
+- **RTC TEST/RESET en écriture seule** — Ricoh EK-086-9908 p.7 réserve
+  Eh/Fh à l’écriture. NeoST ne relit plus les commandes mémorisées : zéro
+  selon MAME, sans affirmation sur les bits flottants du bus réel. Actions
+  RESET conservées ; anciens octets d’archive gardés pour le layout v44.
 - **RTC temps émulé** (cycles) vs `localtime()` hôte — déterminisme headless (assumé).
+  Le rattrapage conserve désormais les durées au-delà de 90 000 secondes,
+  sans boucle seconde par seconde ni changement de source temporelle.
 - **RTC Mega-only** — le RP5C15 n'existe **physiquement que sur Mega** (NeoST > simplification Hatari
   qui l'expose sur toute ST/STE).
 - **RTC banques et contrôles** — NeoST suit Ricoh EK-086-9908 p.6–7 :
@@ -928,9 +1161,13 @@ divergences ne casse le boot. Trouvailles actionnables ci-dessous (terrain neuf 
 - **MIDI reprise BREAK** — phase issue du dernier changement CR0..1,
   selon le timer TX ACIA générique d’Hatari ; prochain front conservé après
   snapshot v38. Le backend MIDI d’Hatari est simplifié. Ceci ne porte pas
-  toute la phase TX : chargement TDR au repos now+bit, sans synthèse de ligne
-  physique. Changer le diviseur recadence désormais les fronts TSR restants,
-  sans modifier le format ni les données mémorisés ; archive MIDI inchangée.
+  les bits physiques. Les départs TDR ordinaires suivent désormais cette même
+  phase CR ; changer le diviseur recadence les fronts TSR restants sans modifier
+  le format ni les données mémorisés. Archive MIDI inchangée.
+- **IKBD phase TX ordinaire (2026-10-19)** — même phase CR pour les départs
+  /64 8N1, les reprises BREAK et les TDR suivants. Un changement de diviseur
+  recale le TDR en attente ; un TSR engagé garde son stop mémorisé. Autres
+  formats/diviseurs et phase SCI exacte toujours hors du modèle. Champs v39 inchangés.
 - **SCU encodage bit IRQ1 logicielle** — NeoST utilise le bit 1 (correct) vs bit 0 chez Hatari.
 - **FPU transcendantes** en double hôte ; socket vide → « not found » — corrects/hors périmètre.
 
@@ -1114,7 +1351,9 @@ MFP, périphériques (FDC/son-statuts/bus/SCC/ACIA), son approfondi (cœur YM + 
 - **[basse] `lineSnap_` seulement sur trames à écritures freq/res** — une trame sans trick mais
   en course avec le faisceau est relue en fin de trame (Hatari copie TOUJOURS par-ligne).
 - **[basses]** $FF8260 lu sans `|0xFC` sur ST (video.c:5281-5298) ; quirks E605/Tekila
-  $FF8205/07/09 pendant DE (+6 movep / +2 wrap, video.c:5222-5241) ; VBlank et remise à ON au VSYNC
+  $FF8205/07/09 pendant DE : exceptions par opcodes FIXME/partielles d’Hatari,
+  pas un défaut matériel démontré dans NeoST (audit 2026-10-19), port différé
+  jusqu’à reproduction E605/Tekila. VBlank et remise à ON au VSYNC
   portés le 2026-10-18 (video.c:3443-3487) ; attribution replayGlue à longueur fixe hors
   `NEOST_LINELEN_ATTR` (depuis A16, 2026-08-27 : l'attribution Shifter a son verrou DÉDIÉ,
   OFF — l'ex-« canal hybride » est démêlé, et le chemin ATTR segfaute sous --glue-selftest,
@@ -1213,9 +1452,13 @@ TODO) :
 - **[moyenne-basse] ✅ corrigé (2026-08-14)** — conversion MFP→CPU et grille périodique
   conservées en unités ×256 comme `cycInt` : Timer C 200 Hz = 40106,238 cycles sans
   perdre la fraction à chaque recharge. Échéances `timerDueSub_` incluses au save-state v11.
-- **[basses]** AER bit3 écrit mid-ligne : tic Timer B déjà armé non repositionné (mfp.c:2772-2815,
-  cas Seven Gates of Jambala) ; `setBusyLine` GPIP0 Centronics sans détection de front (fix
-  trivial : `gpipSetLine(busyLine_, a)`) ; `setXsintLine` sans test DDR bit7 ; RS232 CTS/DCD/RI
+- ✅ **AER bit3 mid-ligne corrigé (2026-10-19)** : anciens fronts échus servis
+  avant mutation, puis recalage immédiat sur le prochain front strictement futur
+  de la ligne courante, sinon suivante (`Video_AddInterruptTimerB`). Grille Glue,
+  masquage vertical et dates IRQ conservés. Vérifié par banc synthétique 50/60/mono ;
+  cela ne vaut pas validation du jeu Seven Gates of Jambala.
+- **[basses]** GPIP0 BUSY est désormais corrigé via `gpipSetLine`
+  (2026-10-19) ; XSINT respecte déjà DDR7 dans le périmètre revérifié. RS232 CTS/DCD/RI
   `raise()` direct (volontaire, fixture) ; ◐ **élection chronologique par lot (`MFP_UpdateNeeded`) — PARTIELLEMENT portée le
   2026-09-02.** La règle d'Hatari : une ENTRÉE d'interruption ne déclenche pas l'élection,
   elle pose son bit et sa date et marque « à faire » ; l'élection a lieu plus tard, une
@@ -1431,7 +1674,7 @@ ci-dessous est un point **Ikbd** ; le `BL4` du tableau des priorités est le Bli
 | B1 | `Ikbd.cpp` flush $80,$01 | avale l'octet « en vol » (Hatari : l'octet tiré vers TDR/TSR survit). |
 | B2 | `Ikbd.cpp` bootRom | ne remet pas `mDeltaX_/Y_` (Hatari : Delta remis à 0). |
 | B4 | `Ikbd.cpp` master reset TIE | Hatari force SR=TDRE immédiatement ; NeoST à l'échéance TX. |
-| B6 | `Fdc.cpp` DMA ACSI hors plage | Hatari pose aussi `status=ERROR` en lecture ; accepte la ROM comme source en écriture. |
+| B6 ✅ | `Fdc.cpp` DMA ACSI hors plage | Statut READ ERROR et drapeau DMA corrigés sans modifier le sense disque. Clause ROM WRITE non applicable aux configurations supportées : RAM ≤4 Mo, masque DMA $3FFFFE. Sonde MMIO ST/STE/MegaSTE : 12 contrôles ASan/UBSan. |
 | B7 | `Acsi.cpp` `dmaWrite_` | remis à false à chaque commande ; Hatari le fait persister jusqu'au transfert (refus de sens contradictoire). |
 | B8 | `Fdc.cpp`/`Acsi.cpp` | sans image ACSI, Hatari ignore l'octet ($FF8604=0) ; NeoST pose status=2 (probe TOS identique). |
 | B9 ✅ | `MidiAcia.hpp:64-78` | **CORRIGÉ 2026-07-31 (`e499eba`)** — `MidiAcia::reset()` ajouté et appelé par les resets CHAUD et FROID de `Machine`, comme `reset.c:111` (`ACIA_Reset`) + `:124` (`Midi_Reset`). |
@@ -1623,6 +1866,13 @@ mid-trame toujours capturée (l'écrêtage sur ce signal synthétique extrême e
 - **[BASSE] $FFFA31-$FFFA3F (impairs)** : void chez Hatari (ioMemTabST.c:143-150) — NeoST
   en faisait 8 octets de RAM relisible AVEC wait-state 4 cyc. Lecture 0xFF, écriture
   absorbée, sans wait (le dernier registre câblé est l'UDR $FFFA2F).
+- ✅ **MMIO requalifié (2026-10-19)** : pairs MFP fautifs en byte, filler $FF
+  en mot/long partiel et impairs $31–$3F void déjà traités dans le Bus. Ombres
+  PSG impaires byte/movep déjà actives, impairs mot/long ignorés. Les anciens
+  candidats 23/26 reposaient sur une lecture de la puce sans son routage Bus.
+- ✅ **Snapshot scratch DMA son (2026-10-19)** : $FF8920 désormais sérialisé
+  en v42 ; un état non nul retrouve sa valeur dans la même instance ou une
+  instance neuve. Reset composant chaud/froid conserve l’octet, comme avant.
 - **[BASSE] $FF8900 octet pair lit 0x00** (registre MOT, ioMemTabSTE.c:142) et **$FF8920 =
   octet scratch relisible** (non intercepté chez Hatari) — l'ancien 0xFF figé faisait
   échouer un `move.w $FF8900,d0` de diagnostic.

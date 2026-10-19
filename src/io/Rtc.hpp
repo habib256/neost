@@ -48,7 +48,7 @@ public:
     // Instantané après rattrapage (émulation + persistance neost.cfg).
     DateTime getDateTime();
     void     setDateTime(const DateTime& dt);
-    void     advanceSeconds(int64_t n);      // pont horloge hôte entre deux sessions (borné)
+    void     advanceSeconds(int64_t n);      // pont horloge hôte entre deux sessions, sans perte
 
     // Save-state : phase du diviseur 1 Hz + chiffres BCD + registres de banque. La
     // closure now_ (horloge) est re-liée à la construction → non sérialisée.
@@ -65,6 +65,8 @@ private:
     void setHour24(int hour);
     void initFromHostTime(); // initialise la date comme Hatari (année GEMDOS depuis 1980)
     void catchUp();          // applique les secondes entières écoulées depuis baseCycle_
+    void advanceWholeSeconds(uint64_t seconds); // cascade arithmétique, n=1 reste scalaire
+    void advanceDays(uint64_t days);            // fins de mois, cycles de 100 ans
     void tickOneSecond();    // +1 s avec retenue calendaire BCD complète (jusqu'à l'année)
 
     // Longueur d'UNE SECONDE en cycles CPU. Valeur de repli = fréquence CPU PAL ;

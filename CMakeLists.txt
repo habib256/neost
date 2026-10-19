@@ -356,8 +356,40 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/scc_zero_count_logic.cpp tests/mfp_underrun_clear_logic.cpp tests/fdc_live_media_logic.cpp
     tests/scc_rx_parity_logic.cpp tests/rtc_bank_logic.cpp
     tests/rtc_timer_logic.cpp tests/scc_ext_status_logic.cpp
+    tests/rtc_long_elapsed_logic.cpp tests/rtc_elapsed_differential_logic.cpp tests/rtc_long_phase_logic.cpp
     tests/midi_tx_control_logic.cpp
     tests/midi_tx_reclock_logic.cpp tests/ikbd_tx_control_logic.cpp tests/scc_break_status_logic.cpp
+    tests/midi_tx_phase_logic.cpp tests/ikbd_tx_phase_logic.cpp tests/scc_status_modes_logic.cpp
+    tests/mfp_break_logic.cpp tests/scc_auto_echo_logic.cpp
+    tests/stx_written_track_logic.cpp
+    tests/mfp_async_break_logic.cpp tests/scc_echo_receive_logic.cpp tests/acsi_transfer_logic.cpp
+    tests/scc_local_loopback_logic.cpp tests/mfp_gpip_lines_logic.cpp
+    tests/fdc_media_change_logic.cpp tests/scc_eom_reset_logic.cpp tests/machine_timer_b_aer_logic.cpp
+    tests/scc_channel_reset_logic.cpp tests/scc_mie_ius_logic.cpp
+    tests/scc_ack_priority_logic.cpp tests/mfp_vector_register_logic.cpp
+    tests/scc_rx_stop_logic.cpp tests/scc_echo_tx_clock_logic.cpp tests/scc_echo_brg_config_logic.cpp tests/scc_echo_brg_control_logic.cpp
+    tests/bus_mmio_mirror_logic.cpp
+    tests/blitter_reset_retention_logic.cpp tests/scc_extended_read_logic.cpp
+    tests/acsi_write_destination_logic.cpp
+    tests/acsi_large_bounds_logic.cpp tests/scc_rx_error_irq_logic.cpp tests/mfp_gpip_composite_logic.cpp
+    tests/acsi_capacity_limit_logic.cpp tests/scc_rx_error_mode_logic.cpp
+    tests/stx_deleted_track_logic.cpp tests/scc_first_error_reset_logic.cpp tests/dmasound_microwire_byte_logic.cpp
+    tests/stx_sector_rewrite_logic.cpp
+    tests/stx_sector_dam_logic.cpp
+    tests/stx_raw_track_overlay_logic.cpp
+    tests/stx_raw_track_wrap_logic.cpp
+    tests/stx_read_address_crc_logic.cpp tests/ikbd_acia_init_logic.cpp
+    tests/ikbd_acia_reset_logic.cpp
+    tests/ikbd_sci_reset_logic.cpp
+    tests/dmasound_microwire_timing_logic.cpp
+    tests/rtc_write_only_logic.cpp tests/midi_irq_timing_logic.cpp
+    tests/fdc_track_id_location_logic.cpp
+    tests/mfp_internal_loopback_logic.cpp tests/fdc_sector_size_switch_logic.cpp
+    tests/mfp_rx_overrun_logic.cpp tests/mfp_rx_irq_timing_logic.cpp
+    tests/mfp_mmio_decode_logic.cpp tests/psg_odd_write_logic.cpp tests/dmasound_mmio_state_logic.cpp
+    tests/psg_reset_logic.cpp tests/blitter_rmw_logic.cpp tests/machine_fdc_media_vbl_logic.cpp
+    tests/gemdos_drive_mapping_logic.cpp tests/acsi_partitions_logic.cpp
+    tests/gemdos_directory_entries_logic.cpp tests/gemdos_dta_reuse_logic.cpp
     tests/fdc_acsi_logic.cpp tests/fdc_register_logic.cpp tests/machine_scc_logic.cpp
     tests/mmu_logic.cpp tests/fdc_selection_logic.cpp tests/mmio_fidelity_logic.cpp
     tests/ikbd_response_logic.cpp tests/fdc_timing_logic.cpp tests/ikbd_monitor_logic.cpp

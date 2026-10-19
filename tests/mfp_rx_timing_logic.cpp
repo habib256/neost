@@ -91,7 +91,7 @@ int testMfpRxTiming() {
         const int forgedBaud = INT32_MAX;
         // Débit, UCR, file, état TX puis état RX (ordre Mfp::serialize).
         const size_t baudOffset = bytes.size() - (2*sizeof(int)+2*sizeof(uint8_t)+sizeof(uint32_t)
-                                  +1+4*sizeof(bool)+2*sizeof(uint8_t)+4*sizeof(int64_t)+sizeof(int)
+                                  +1+4*sizeof(bool)+3*sizeof(uint8_t)+4*sizeof(int64_t)+sizeof(int)
                                   +sizeof(bool)+2*sizeof(int64_t)+sizeof(int));
         std::memcpy(bytes.data()+baudOffset, &forgedBaud, sizeof(forgedBaud));
         auto badBaud = StateArchive::loader(bytes.data(), bytes.size()); serial.serialize(badBaud);

@@ -36,8 +36,9 @@ bool testSccClock() {
         }
         Rig rx(c);rx.wr(4,(div?8:4)+64*div);rx.wr(11,source<<5);
         for(int n=0;n<128;++n)rx.s.receiveByte(c,0x67);
+        const int64_t rxNumerator=neost::pacing::kCpuHzInt*mults[div]*20;
         for(int n=1;n<=128;++n){
-            const int64_t due=(n*numerator+2*txFreq-1)/(2*txFreq);
+            const int64_t due=(n*rxNumerator+2*txFreq-1)/(2*txFreq);
             rx.sched.runTo(due-1);check(!(rx.rr()&1),"direct RX not early");
             rx.sched.runTo(due);check((rx.rr()&1)&&rx.pop()==0x67,"direct RX cumulative fraction");
         }

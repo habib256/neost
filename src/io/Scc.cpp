@@ -83,17 +83,23 @@ void Scc::resetChannel(int c, bool hw) {
     ch.rr0NoLatch = ch.RR[0]; ch.rr0Latched = false;
     ch.breakRaw = (ch.rr0NoLatch & RR0_BREAK_ABORT) != 0; ch.breakPending = 0;
     ch.RR[1] &= 0x01; ch.RR[1] |= 0x06;
-    ch.RR[3] = 0x00; ch.RR[10] &= 0x40;
+    ch.RR[10] &= 0x40;
     ch.serialFraction[0] = ch.serialFraction[1] = ch.serialDivisor[0] = ch.serialDivisor[1] = 0;
     ch.txRemaining = 0; ch.txInterrupted = false;
     ch.tsrBits = 8; ch.tsrParity = 2;
     ch.txWritten = false; ch.tsrFull = false; ch.txActive = false; ch.rtsAsserted = false;
+    ch.rxEchoStarted = ch.rxEchoEligible = ch.rxReceiveEligible = false;
     ch.rxHead = ch.rxCount = 0;
     ch.rxFifoHead = ch.rxFifoCount = 0;
     std::memset(ch.rxErrors, 0, sizeof(ch.rxErrors));
     ch.rxFirstArmed = true; ch.rxFirstPending = ch.rxLocked = false;
     ch.intSources = 0;
-    updateRR3Bit(false, c ? (RR3_RX_IP_B | RR3_TX_IP_B | RR3_EXT_IP_B) : (RR3_RX_IP_A | RR3_TX_IP_A | RR3_EXT_IP_A));
+    // UM0109 WR9 p.160 : seuls les IP/IUS du canal réinitialisé sont effacés.
+    // RR3A contient aussi les IP de B : ne pas remettre tout ce registre à zéro.
+    const uint8_t interruptMask = c ? (RR3_RX_IP_B | RR3_TX_IP_B | RR3_EXT_IP_B)
+                                    : (RR3_RX_IP_A | RR3_TX_IP_A | RR3_EXT_IP_A);
+    updateRR3Bit(false, interruptMask);
+    ius_ &= ~interruptMask;
     static constexpr uint8_t dataBits[] = {5,7,6,8};
     ch.txBits = dataBits[(ch.WR[5] >> 5) & 3];
     ch.rxBits = dataBits[ch.WR[3] >> 6];
@@ -196,9 +202,14 @@ void Scc::setLoopback(bool plugged) {
     updateIRQ();
 }
 
+bool Scc::breakStatusAllowed(int c) const {
+    const uint8_t mode = chn_[c].WR[4];
+    return (mode & 0x0c) || (mode & 0x30) == 0x20;
+}
+
 void Scc::updateRR0LatchOff(int c) {
     auto& ch = chn_[c];
-    if (ch.breakPending && (ch.WR[15] & WR15_BREAK_ABORT_IE)) {
+    if (ch.breakPending && breakStatusAllowed(c) && (ch.WR[15] & WR15_BREAK_ABORT_IE)) {
         // Servir d'abord l'état opposé à l'image verrouillée. Les transitions
         // alternent ; deux flags retiennent chaque polarité sans file illimitée.
         const uint8_t next = (ch.RR[0] & RR0_BREAK_ABORT) ? 2 : 1;
@@ -218,8 +229,15 @@ void Scc::updateRR0(int c) {
     // UM0109 p.58 : les deux fronts BREAK ferment les latches même si une
     // autre cause est déjà en service. Détecter les fronts bruts une seule fois,
     // pas à chaque lecture RR0. Les cycles répétés coalescent par polarité.
-    const bool rawBreak = (ch.rr0NoLatch & RR0_BREAK_ABORT) != 0;
-    if (rawBreak != ch.breakRaw && ch.rr0Latched && (ch.WR[15] & WR15_BREAK_ABORT_IE))
+    const bool breakAllowed = breakStatusAllowed(c);
+    const bool externalSync = (ch.WR[4] & 0x0c) || (ch.WR[4] & 0x30) == 0x30;
+    const bool syncSuppressed = externalSync && (ch.WR[11] & 0x80);
+    // UM0109 p.58–59 : BREAK vaut zéro hors asynchrone/SDLC ; la broche
+    // /SYNC est indisponible avec l'oscillateur cristal en async/external sync.
+    // Garder les niveaux bruts : enlever l'option restitue la broche courante.
+    if (!breakAllowed) ch.breakPending = 0;
+    const bool rawBreak = breakAllowed && (ch.rr0NoLatch & RR0_BREAK_ABORT) != 0;
+    if (breakAllowed && rawBreak != ch.breakRaw && ch.rr0Latched && (ch.WR[15] & WR15_BREAK_ABORT_IE))
         ch.breakPending |= rawBreak ? 1 : 2;
     ch.breakRaw = rawBreak;
     uint8_t rr0New;
@@ -246,6 +264,8 @@ void Scc::updateRR0(int c) {
     if (updCTS) { rr0New &= ~RR0_CTS; if (getCTS(c)) rr0New |= RR0_CTS; }
     if (updDCD) { rr0New &= ~RR0_DCD; if (getDCD(c)) rr0New |= RR0_DCD; }
 
+    if (syncSuppressed) rr0New &= ~RR0_SYNC_HUNT;
+    if (!breakAllowed) rr0New &= ~RR0_BREAK_ABORT;
     uint8_t rr0Old = ch.RR[0];
     ch.RR[0] = rr0New;
 
@@ -255,10 +275,10 @@ void Scc::updateRR0(int c) {
         bool set = false;
         if (!ch.rr0Latched && ((rr0Old & RR0_ZERO_COUNT) == 0) && (rr0New & RR0_ZERO_COUNT) && (ch.WR[15] & WR15_ZERO_COUNT_IE)) set = true;
         else if (((rr0Old & RR0_DCD) != (rr0New & RR0_DCD)) && (ch.WR[15] & WR15_DCD_IE)) set = true;
-        else if (((rr0Old & RR0_SYNC_HUNT) != (rr0New & RR0_SYNC_HUNT)) && (ch.WR[15] & WR15_SYNC_HUNT_IE)) set = true;
+        else if (!syncSuppressed && ((rr0Old & RR0_SYNC_HUNT) != (rr0New & RR0_SYNC_HUNT)) && (ch.WR[15] & WR15_SYNC_HUNT_IE)) set = true;
         else if (((rr0Old & RR0_CTS) != (rr0New & RR0_CTS)) && (ch.WR[15] & WR15_CTS_IE)) set = true;
         else if (((rr0Old & RR0_TX_UNDERRUN_EOM) == 0) && (rr0New & RR0_TX_UNDERRUN_EOM) && (ch.WR[15] & WR15_TX_UNDERRUN_IE)) set = true;
-        else if (((rr0Old & RR0_BREAK_ABORT) != (rr0New & RR0_BREAK_ABORT)) && (ch.WR[15] & WR15_BREAK_ABORT_IE)) set = true;
+        else if (breakAllowed && ((rr0Old & RR0_BREAK_ABORT) != (rr0New & RR0_BREAK_ABORT)) && (ch.WR[15] & WR15_BREAK_ABORT_IE)) set = true;
         if (set) {
             ch.rr0Latched = true;
             if (ch.WR[1] & WR1_EXT_INT_ENABLE)
@@ -311,10 +331,10 @@ void Scc::updateRR3(int c) {
     uint8_t rxMode = (ch.WR[1] >> 3) & 3;
     bool intRx = rxMode == WR1_RX_MODE_ALL_SPECIAL ||
         (rxMode == WR1_RX_MODE_FIRST_SPECIAL && ch.rxFirstPending);
-    bool special = (ch.RR[1] & (RR1_RX_OVERRUN | RR1_CRC_FRAMING | RR1_EOF_SDLC)) ||
-        ((ch.RR[1] & RR1_PARITY_ERROR) && (ch.WR[1] & WR1_PARITY_SPECIAL));
-    bool set = (intRx && ch.rxFifoCount) ||
-        (rxMode == WR1_RX_MODE_ALL_SPECIAL && special) || (rxMode && ch.rxLocked);
+    // UM0109 p.47–48 : en mode All, retirer le dernier caractère efface IP,
+    // même si RR1 conserve l'overrun/parité pour les prochains vecteurs.
+    // Les modes First/Special conservent leur IP tant que la FIFO est verrouillée.
+    bool set = (intRx && ch.rxFifoCount) || (rxMode && ch.rxLocked);
     updateRR3Bit(set, c ? RR3_RX_IP_B : RR3_RX_IP_A);
 
     set = (ch.RR[0] & RR0_TX_BUFFER_EMPTY) && (ch.WR[1] & WR1_TX_INT_ENABLE) && ch.txWritten;
@@ -345,8 +365,16 @@ void Scc::intSourcesChange(int c, uint32_t src, bool set) {
 
 int Scc::doIACK(bool /*soft*/) {
     setLineIRQ(SCC_IRQ_OFF);
-    for (int i = 5; i >= 0; --i)
-        if (chn_[0].RR[3] & (1 << i)) { ius_ |= (1 << i); break; }
+    // UM0109 WR9 D3 p.161 : aucun nouvel IUS lorsque MIE est désarmé,
+    // y compris lors d'un acquittement logiciel par lecture de RR2.
+    if (chn_[0].WR[9] & WR9_MIE) {
+        for (int i = 5; i >= 0; --i) {
+            // UM0109 p.41–42 : la chaîne des IUS masque aussi l'INTACK,
+            // sans empêcher une source plus prioritaire de se faire acquitter.
+            if (ius_ & (1 << i)) break;
+            if (chn_[0].RR[3] & (1 << i)) { ius_ |= (1 << i); break; }
+        }
+    }
     updateRR2();
     return (chn_[0].WR[9] & WR9_VIS) ? chn_[1].RR[2] : chn_[0].RR[2];
 }
@@ -388,22 +416,27 @@ void Scc::copyTdrTsr(int c, uint8_t tdr) {
 }
 
 void Scc::serialWriteByte(int c, uint8_t v) {
+    // UM0109 p.69/p.172 : Auto Echo prime sur Local Loopback et déconnecte
+    // complètement la sortie du TSR. Le pont RxD→TxD utilise seulement les
+    // octets hôtes async huit bits sans parité dans onSerialEvent, sans
+    // reconstruire les bits ni les intervalles du fil source.
+    if (chn_[c].WR[14] & 0x08) return;
     if (trace_) std::fprintf(stderr, "[scc] TX %c: $%02X\n", 'A' + c, v);
     // Bouclage local interne (WR14 bit4 = Local Loopback, Zilog Z85C30 §WR14) : TxD est
-    // relié à RxD à l'intérieur de la puce et la ligne externe reste au repos → on réinjecte
-    // l'octet en RX et on NE l'émet PAS sur le puits. CHOIX DÉLIBÉRÉ « plus correct qu'Hatari » :
-    // Hatari NE modélise PAS ce bit (SCC_Process_TX émet toujours), alors que le datasheet le
-    // définit. ⚠ Le reset matériel met WR14=$30 (bit4=1) : un programme qui transmet SANS
+    // relié à RxD à l'intérieur de la puce ; TxD reste aussi connecté au
+    // transmetteur (UM0109 p.69). La prise externe occupe le sink hôte, comme
+    // hors bouclage local, mais ne doit pas doubler la réception interne.
+    // Hatari ne modélise pas le bouclage local. ⚠ Le reset matériel met WR14=$30 (bit4=1) : un programme qui transmet SANS
     // reconfigurer WR14 boucle donc sur lui-même — inoffensif en pratique car tout pilote
     // série/LAN réécrit WR14 (réglage du BRG, bit4=0) avant d'émettre. NE PAS « corriger ».
     // Parité connue seulement pour une boucle avec mêmes largeurs de données.
     // Les formats discordants nécessiteraient un véritable récepteur de bits.
     const auto& ch = chn_[c];
     const int parity = ch.tsrBits == ch.rxBits && ch.tsrParity < 2 ? ch.tsrParity : -1;
-    if (ch.WR[14] & 0x10) { deliverByte(c, v, parity); return; }
+    if (ch.WR[14] & 0x10) deliverByte(c, v, parity);
     // Prise de bouclage externe (Field Service) : TxD revient sur RxD du même canal.
-    if (extLoopback_) { deliverByte(c, v, parity); return; }
-    if (sink_) sink_(c, v);
+    else if (extLoopback_) deliverByte(c, v, parity);
+    if (sink_ && !extLoopback_) sink_(c, v);
 }
 
 void Scc::processTX(int c) {
@@ -438,6 +471,9 @@ void Scc::refreshRx(int c) {
 void Scc::popRx(int c) {
     auto& ch = chn_[c];
     if (ch.rxFifoCount) {
+        // UM0109 p.47/p.142 : l'IP du premier caractère disparaît aussi
+        // quand Error Reset retire ce caractère avant sa lecture.
+        ch.rxFirstPending = false;
         ch.rxFifoHead = (ch.rxFifoHead + 1) % 3; --ch.rxFifoCount;
     }
 }
@@ -489,7 +525,11 @@ int64_t Scc::serialPeriod(int c, bool tx, bool advance) {
     const int mult = (ch.WR[4] & 12) ? mults[ch.WR[4] >> 6] : 1;
     const int source = (ch.WR[11] >> (tx ? 3 : 5)) & 3;
     const int bits = tx ? (ch.tsrFull ? ch.tsrBits : ch.txBits) : ch.rxBits;
-    const int halfBits = 2*(bits + 1 + ch.parityBits) + stops2[(ch.WR[4]>>2)&3];
+    const int selectedStops = (ch.WR[4] >> 2) & 3;
+    // UM0109 p.93/p.151 : WR4 ne sélectionne que les stops émis ;
+    // le récepteur vérifie un seul stop, quel que soit ce sélecteur TX.
+    const int halfBits = 2*(bits + 1 + ch.parityBits)
+        + ((!tx && selectedStops) ? 2 : stops2[selectedStops]);
     if (source == 3 || (source == 2 && !(ch.WR[14] & 1))) return 0;
     const int64_t freq = source == 2 ? ((ch.WR[14] & 2) ? neost::pacing::kCpuHzInt : 3'672'000)
                                      : (source == 0 ? 3'672'000 : 2'457'600);
@@ -515,6 +555,22 @@ bool Scc::receiveAllowed(int c) const {
     const auto& ch = chn_[c];
     return (ch.WR[3] & WR3_RX_ENABLE) && (!(ch.WR[3] & WR3_AUTO_ENABLES)
         || getDCD(c) || (ch.WR[14] & 0x10));
+}
+// Transport borné de caractères hôtes connus : pas de parité ni de bits
+// reconstruits. L'écho est daté au stop RX abstrait, jamais par l'horloge TX.
+bool Scc::localLoopbackOnly(int c) const {
+    return (chn_[c].WR[14] & 0x18) == 0x10;
+}
+bool Scc::echoByteAllowed(int c) const {
+    const auto& ch = chn_[c];
+    return (ch.WR[14] & 8) && ch.rxBits == 8 && !(ch.WR[4] & WR4_PARITY_ENABLE)
+        && (ch.WR[4] & 0x0c);
+}
+void Scc::startRxFrame(int c) {
+    auto& ch = chn_[c];
+    ch.rxEchoStarted = (ch.WR[14] & 8) != 0;
+    ch.rxEchoEligible = echoByteAllowed(c);
+    ch.rxReceiveEligible = receiveAllowed(c);
 }
 bool Scc::transmitAllowed(int c) const {
     const auto& ch = chn_[c];
@@ -548,7 +604,8 @@ void Scc::updateSerial(int c) {
     // UM0109 p.106 : /DCD inactif perd le caractère en cours, pas la FIFO.
     if (!receiveAllowed(c) && sched_ && ch.rxCount &&
         sched_->cyclesUntil(serialSource(c, false)) >= 0) {
-        ch.rxHead = (ch.rxHead + 1) & 255; --ch.rxCount;
+        if (ch.rxEchoStarted) ch.rxReceiveEligible = false;
+        else { ch.rxHead = (ch.rxHead + 1) & 255; --ch.rxCount; }
     }
     if (!ch.tsrFull && !(ch.rr0NoLatch & RR0_TX_BUFFER_EMPTY) && transmitAllowed(c) && !(ch.WR[5] & WR5_SEND_BREAK))
         copyTdrTsr(c, ch.WR[8]);
@@ -558,7 +615,7 @@ void Scc::updateSerial(int c) {
         // UM0109 WR5 p.153 : TX Enable bas termine la trame déjà partie.
         // Comme /CTS, il ne retient que le prochain caractère dans le TDR.
         const bool pending = tx ? ch.tsrFull && !(ch.WR[5] & WR5_SEND_BREAK) && (ch.txActive || transmitAllowed(c))
-                                : ch.rxCount && receiveAllowed(c);
+                                : ch.rxCount && (receiveAllowed(c) || (ch.WR[14] & 8) || ch.rxEchoStarted);
         const int64_t period = serialPeriod(c, tx);
         if (!pending || !period) sched_->cancel(source);
         else if (sched_->cyclesUntil(source) < 0) {
@@ -569,6 +626,10 @@ void Scc::updateSerial(int c) {
             sched_->schedule(source, sched_->liveNow() + nextPeriod);
             if (tx) ch.txRemaining = 0;
             if (tx) ch.txActive = true;
+            // Une reprise d'horloge n'est pas un nouveau caractère : conserver
+            // l'invalidation d'un écho interrompu. Le prochain pop/start dans
+            // onSerialEvent capturera une nouvelle éligibilité.
+            else if (!ch.rxEchoStarted) startRxFrame(c);
         }
     }
 }
@@ -581,23 +642,33 @@ void Scc::onSerialEvent(int c, bool tx) {
         if (ch.rxCount) {
             const uint8_t b = ch.rxQueue[ch.rxHead];
             ch.rxHead = (ch.rxHead + 1) & 255; --ch.rxCount;
-            deliverByte(c, b);
+            // RxD→TxD est indépendant des enables du récepteur et du TSR.
+            // Une reconfiguration en cours de trame supprime cet octet écho :
+            // le modèle n'invente pas un caractère intact à partir de fragments.
+            if (ch.rxEchoStarted && ch.rxEchoEligible && sink_ && !extLoopback_) sink_(c, b);
+            if (ch.rxReceiveEligible && !localLoopbackOnly(c)) deliverByte(c, b);
         }
+        ch.rxEchoStarted = ch.rxEchoEligible = ch.rxReceiveEligible = false;
     }
     const int64_t period = serialPeriod(c, tx);
     auto& ch = chn_[c];
     const bool pending = tx ? ch.tsrFull && !(ch.WR[5] & WR5_SEND_BREAK) && transmitAllowed(c)
-                            : ch.rxCount && receiveAllowed(c);
+                            : ch.rxCount && (receiveAllowed(c) || (ch.WR[14] & 8));
     if (pending && period) {
         const auto due = sched_->firingDue();
         sched_->schedule(serialSource(c, tx), (due >= 0 ? due : sched_->liveNow()) + serialPeriod(c, tx, true));
         if (tx) ch.txActive = true;
+        else startRxFrame(c);
     }
 }
 
 void Scc::receiveByte(int c, uint8_t b) {
-    if (c < 0 || c > 1 || !receiveAllowed(c)) return;
-    if (!sched_) { deliverByte(c, b); return; }
+    if (c < 0 || c > 1 || localLoopbackOnly(c)
+        || (!receiveAllowed(c) && !(chn_[c].WR[14] & 8))) return;
+    if (!sched_) {
+        if (echoByteAllowed(c) && sink_ && !extLoopback_) sink_(c, b);
+        deliverByte(c, b); return;
+    }
     auto& ch = chn_[c];
     if (ch.rxCount == 256) return;
     ch.rxQueue[(ch.rxHead + ch.rxCount) & 255] = b; ++ch.rxCount;
@@ -640,6 +711,19 @@ void Scc::writeDataReg(int c, uint8_t v) {
 uint8_t Scc::readControl(int c) {
     uint8_t value = 0;
     uint8_t reg = activeReg_;
+    // Z85C30, UM0109 p.157–158 : WR7' D6 active cinq images de WR.
+    // WR15 D0 ne sélectionne que la destination des écritures WR7 ; les
+    // fonctions WR7' restent actives jusqu'à désactivation ou reset.
+    if (chn_[c].WR7p & 0x40) {
+        switch (reg) {
+        case 4: return chn_[c].WR[4];
+        case 5: return chn_[c].WR[5];
+        case 9: return chn_[c].WR[3];
+        case 11: return chn_[c].WR[10];
+        case 14: return chn_[c].WR7p;
+        default: break;
+        }
+    }
     // Zilog UM0109, table Z85X30 : RR6B/RR7B sont les images RR2B/RR3B,
     // sélectionnées par WR15B (idem A). Hatari scc.c teste et lit ici A seul.
     // MAME scc_register_read remappe aussi avant do_sccreg_rr2 : réutiliser la
@@ -672,9 +756,16 @@ uint8_t Scc::readControl(int c) {
 void Scc::writeControl(int c, uint8_t value) {
     Chn& ch = chn_[c];
     if (activeReg_ == 0) {
-        if (value <= 15) { activeReg_ = value & 0x0f; }
-        else {
-            uint8_t command = (value >> 3) & 7;
+        // UM0109 WR0 p.139 : CRC reset, commande et sélection de registre
+        // sont trois champs indépendants. RR0 p.176 décrit explicitement le
+        // reset EOM même en asynchrone (commande erronée mais effective).
+        if ((value & 0xc0) == 0xc0) {
+            updateRR0Clear(c, RR0_TX_UNDERRUN_EOM);
+            updateRR0(c); updateIRQ();
+        }
+        const uint8_t command = (value >> 3) & 7;
+        {
+
             if (command == WR0_CMD_RESET_EXT_STATUS) {
                 updateRR3Bit(false, c ? RR3_EXT_IP_B : RR3_EXT_IP_A);
                 updateRR0LatchOff(c);
@@ -707,6 +798,7 @@ void Scc::writeControl(int c, uint8_t value) {
                 updateIRQ();
             }
         }
+        activeReg_ = (value & 7) | (command == 1 ? 8 : 0);
         return;
     }
 
@@ -728,7 +820,29 @@ void Scc::writeControl(int c, uint8_t value) {
             ch.txActive = true;
         }
     }
-    const uint8_t oldWr1 = ch.WR[1];
+    if (sched_ && sched_->cyclesUntil(serialSource(c, false)) >= 0
+        && value != ch.WR[activeReg_]) {
+        const bool rxFormat = activeReg_ == 3 && ((value ^ ch.WR[3]) & 0xc0);
+        const bool txStopsOnly = activeReg_ == 4 && (value & 0x0c) && (ch.WR[4] & 0x0c)
+            && !((value ^ ch.WR[4]) & ~0x0c);
+        // UM0109 p.166 : WR11 D4..3 agit sur le seul multiplexeur TX.
+        // Aucun bit du chemin RX ne change : conserver l'écho déjà engagé.
+        const bool txClockOnly = activeReg_ == 11 && !((value ^ ch.WR[11]) & ~0x18);
+        // WR12/13 règlent le BRG, pas les entrées RTxC/TRxC directes
+        // sélectionnées par le multiplexeur RX (UM0109 p.166–168).
+        const bool directRxClock = ((ch.WR[11] >> 5) & 3) < 2;
+        const bool brgTimeConstant = activeReg_ == 12 || activeReg_ == 13;
+        const bool brgControlOnly = activeReg_ == 14 && !((value ^ ch.WR[14]) & ~0x03);
+        const bool rxClockOrMode = (activeReg_ == 4 && !txStopsOnly)
+            || (activeReg_ == 11 && !txClockOnly)
+            || (brgTimeConstant && !directRxClock)
+            || (activeReg_ == 14 && !(brgControlOnly && directRxClock));
+        if (rxFormat || rxClockOrMode) ch.rxEchoEligible = false;
+        // Le multiplexeur Local Loopback coupe l'entrée RxD externe. Même si
+        // l'on revient avant le stop, ce fragment n'est plus un octet intact.
+        if (activeReg_ == 14 && (value & 0x18) == 0x10) ch.rxReceiveEligible = false;
+    }
+    const uint8_t oldWr1 = ch.WR[1], oldWr4 = ch.WR[4], oldWr11 = ch.WR[11];
     // WR7' : Active_Reg==7 et WR15 bit0=1
     if (activeReg_ == 7 && (ch.WR[15] & 1)) ch.WR7p = value;
     else ch.WR[activeReg_] = value;
@@ -740,7 +854,13 @@ void Scc::writeControl(int c, uint8_t value) {
         updateRR3Bit((value & WR1_EXT_INT_ENABLE) && ch.rr0Latched,
                      c ? RR3_EXT_IP_B : RR3_EXT_IP_A);
         if ((value & 0x18) != (oldWr1 & 0x18)) {
-            ch.rxFirstArmed = true; ch.rxFirstPending = false; ch.rxLocked = false;
+            const int oldMode = (oldWr1 >> 3) & 3, newMode = (value >> 3) & 3;
+            // UM0109 p.146 : changer entre First/Special et Special Only
+            // n'est ni un Error Reset ni une désactivation des interruptions.
+            // Conserver le verrou spécial déjà acquis dans ces deux modes.
+            if (!((oldMode == 1 || oldMode == 3) && (newMode == 1 || newMode == 3)))
+                ch.rxLocked = false;
+            ch.rxFirstArmed = true; ch.rxFirstPending = false;
             if ((value & 0x18) == 8 && ch.rxFifoCount) {
                 ch.rxFirstArmed = false; ch.rxFirstPending = true;
             }
@@ -755,6 +875,7 @@ void Scc::writeControl(int c, uint8_t value) {
         ch.parityBits = (value & WR4_PARITY_ENABLE) ? 1 : 0;
         if (((value >> 2) & 3) != WR4_STOP_SYNC) updateRR0Set(c, RR0_TX_UNDERRUN_EOM);
         updateBrg(c); updateRts(c); updateSerial(c);
+        if ((oldWr4 ^ value) & 0x3c) { updateRR0(c); updateIRQ(); }
         break;
     }
     case 5:                                               // RTS/DTR/break : lignes non câblées…
@@ -780,12 +901,17 @@ void Scc::writeControl(int c, uint8_t value) {
         }
         break;
     case 8: writeDataReg(c, value); break;
-    case 11: case 12: case 13: case 14:
+    case 11:
+        updateBrg(c); updateSerial(c);
+        if ((oldWr11 ^ value) & 0x80) { updateRR0(c); updateIRQ(); }
+        break;
+    case 12: case 13: case 14:
         updateBrg(c); updateSerial(c);
         break;
     case 9: {
         chn_[0].WR[9] = value;
-        if ((value & WR9_MIE) == 0) ius_ = 0;
+        // MIE masque la demande ; seuls les resets ou Reset Highest IUS
+        // effacent les IUS déjà acquis (UM0109 p.44/p.161).
         uint8_t command = (value >> 6) & 3;
         if (command == WR9_CMD_RESET_FORCE_HW) resetFull(false);
         else if (command == WR9_CMD_RESET_A) resetChannel(0, false);

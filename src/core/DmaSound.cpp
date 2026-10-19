@@ -295,14 +295,36 @@ uint16_t DmaSound::mwMaskRead() const {
 // décalages (port de Hatari DmaSnd_InterruptHandler_Microwire). À 0, on décode la
 // commande LMC1992. Le masque ($FF8924) tourne mais revient identique → decode OK.
 void DmaSound::onMicrowireShift() {
+    const int64_t now = sched_ ? sched_->liveNow() : 0;
+    const int64_t due = sched_ ? sched_->firingDue() : -1;
+    advanceMicrowire(due >= 0 ? due : now, now);
+}
+
+void DmaSound::catchUpMicrowire() {
+    if (!sched_ || mwSteps_ <= 0) return;
+    const int64_t remaining = sched_->rawCyclesUntil(Scheduler::MICROWIRE);
+    if (remaining == INT64_MIN || remaining > 0) return;
+    const int64_t now = sched_->liveNow();
+    sched_->cancel(Scheduler::MICROWIRE);
+    advanceMicrowire(now + remaining, now);
+}
+
+// Hatari DmaSnd_InterruptHandler_Microwire conserve PendingCyclesOver : un
+// callback tardif consomme tous les fronts à 8 cycles déjà passés, sans dériver.
+// La même cascade bornée (16 pas au maximum) sert les accès Data/Mask avant MMIO.
+void DmaSound::advanceMicrowire(int64_t nextEdge, int64_t now) {
     if (mwSteps_ <= 0) return;
-    --mwSteps_;
-    mwShift_ = uint16_t(uint32_t(mwData_) << (16 - mwSteps_));  // étapes=0 → <<16 = 0 (non signé : <<16 déborderait un int)
-    if (mwSteps_ > 0) {
-        if (sched_) sched_->schedule(Scheduler::MICROWIRE, sched_->now() + 8);
-    } else {
-        decodeMicrowire();                              // transfert fini → applique la commande
+    while (nextEdge <= now) {
+        --mwSteps_;
+        mwShift_ = uint16_t(uint32_t(mwData_) << (16 - mwSteps_));
+        if (!mwSteps_) {
+            if (sched_) sched_->cancel(Scheduler::MICROWIRE);
+            decodeMicrowire(); // une seule application au seizième front
+            return;
+        }
+        nextEdge += 8;
     }
+    if (sched_) sched_->schedule(Scheduler::MICROWIRE, nextEdge);
 }
 
 // Plateaux (shelving) 1er ORDRE du correcteur LMC1992 — port EXACT de Hatari
@@ -488,6 +510,7 @@ uint32_t DmaSound::liveCounter() {
 }
 
 uint8_t DmaSound::read8(uint32_t addr) {
+    if ((addr & 0xFF) >= 0x22 && (addr & 0xFF) <= 0x25) catchUpMicrowire();
     switch (addr & 0xFF) {
         // $FF8900 : registre MOT chez Hatari (ioMemTabSTE.c:142) — la lecture pose
         // nDmaSoundControl en 16 bits, l'octet PAIR relit donc 0x00 (pas 0xFF) :
@@ -495,8 +518,8 @@ uint8_t DmaSound::read8(uint32_t addr) {
         case 0x00: return 0x00;
         case 0x01: return ctrl_;
         // $FF8920 : octet lu/écrit SANS interception chez Hatari (ioMemTabSTE.c:162)
-        // — il conserve la valeur écrite (0 au boot). NON sérialisé (octet scratch
-        // sans effet d'émulation : un load repart à 0, valeur de boot fidèle).
+        // — il conserve la valeur écrite (0 au boot), sauvegardée avec les
+        // registres comme l'IoMem dans STMemory_MemorySnapShot_Capture d'Hatari.
         case 0x20: return pad20_;
         case 0x03: return uint8_t(startAddr_ >> 16);
         case 0x05: return uint8_t(startAddr_ >> 8);
@@ -523,6 +546,7 @@ uint8_t DmaSound::read8(uint32_t addr) {
 }
 
 void DmaSound::write8(uint32_t addr, uint8_t v) {
+    if ((addr & 0xFF) >= 0x22 && (addr & 0xFF) <= 0x25) catchUpMicrowire();
     switch (addr & 0xFF) {
         case 0x01: {                                  // contrôle : play / repeat
             updateDac();                               // date l'état AVANT le changement (≙ Sound_Update
@@ -573,7 +597,9 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         // Mask_WriteWord, dmaSnd.c:1195-1206 et 1238-1244).
         case 0x22:
             if (mwSteps_ == 0) {
-                mwData_ = uint16_t((mwData_ & 0x00FF) | (v << 8));
+                // L'autre octet vient du registre visible, déjà décalé à zéro
+                // après la commande précédente (Hatari : IoMem_ReadWord).
+                mwData_ = uint16_t((mwShift_ & 0x00FF) | (v << 8));
                 // Accès OCTET isolé (move.b $FF8922) : Hatari intercepte la donnée
                 // Microwire en SIZE_WORD (ioMemTabSTE.c:164) — TOUT accès écriture,
                 // même octet, déclenche le transfert avec (octet haut neuf | octet
@@ -581,7 +607,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
                 // ne démarre que sur l'octet BAS (case 0x23), mot complet posé.
                 if (bus_.ioAccessWidth() == 1) {
                     mwShift_ = mwData_;
-                    if (sched_) { mwSteps_ = 16; sched_->schedule(Scheduler::MICROWIRE, sched_->now() + 8); }
+                    if (sched_) { mwSteps_ = 16; sched_->schedule(Scheduler::MICROWIRE, sched_->liveNow() + 8); }
                     else        { mwShift_ = 0; decodeMicrowire(); }
                 }
             }
@@ -592,9 +618,12 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
             // DmaSnd_MicrowireData_WriteWord). $FF8922 lira la valeur décalée
             // jusqu'à 0, puis decodeMicrowire(). Sans scheduler → décodage immédiat.
             if (mwSteps_ == 0) {
-                mwData_ = uint16_t((mwData_ & 0xFF00) | v);
+                // En accès mot, le haut vient d'être posé sans déclenchement.
+                // En accès octet, reprendre le haut visible après les shifts.
+                const uint16_t previous = bus_.ioAccessWidth() == 1 ? mwShift_ : mwData_;
+                mwData_ = uint16_t((previous & 0xFF00) | v);
                 mwShift_ = mwData_;
-                if (sched_) { mwSteps_ = 16; sched_->schedule(Scheduler::MICROWIRE, sched_->now() + 8); }
+                if (sched_) { mwSteps_ = 16; sched_->schedule(Scheduler::MICROWIRE, sched_->liveNow() + 8); }
                 else        { mwShift_ = 0; decodeMicrowire(); }
             }
             break;

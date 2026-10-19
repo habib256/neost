@@ -213,7 +213,7 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
     }
     case kCfgHd:
         drawHardDiskPage(ui.hdDir, ui.gemdosDir,
-                         ui.curGemdos, ui.machine->gemdos.active(),
+                         ui.curGemdos, ui.machine->gemdos.active(), ui.machine->gemdos.driveMask(),
                          ui.curAcsi, ui.machine->fdc.acsiActive(),
                          ui.machine->fdc.acsiPartitionCount(),
                          ui.machine->ultraSatanEnabled(), ui.curSd2,

@@ -287,8 +287,8 @@ StxImage::Sector* StxImage::findSectorByPosition(int track, int side, uint16_t b
 //
 //  Les secteurs ainsi reconstruits remplacent ceux d'origine pour la LECTURE
 //  (Track::sectorsView). La position angulaire (BitPosition, en bits DD) vient de
-//  l'offset de l'octet ID dans le flux. Le statut FDC est neutre (CRC ré-générée) :
-//  on rend ce que le programme a écrit, pas une erreur de protection.
+//  l'offset de l'octet ID dans le flux. La CRC est ré-générée ; la marque de
+//  données FB/F8 reste représentée par le bit RECORD TYPE du secteur.
 // =============================================================================
 void StxImage::reinterpretSaveTrack(Track& t) {
     t.writeReinterpreted = false;
@@ -301,7 +301,7 @@ void StxImage::reinterpretSaveTrack(Track& t) {
     const int n = int(flux.size());
     t.writeMfmSize = uint16_t(n);
 
-    struct Parsed { uint8_t tr, hd, sr, sz; int fePos, dataPos, dataLen; };
+    struct Parsed { uint8_t tr, hd, sr, sz; int fePos, dataPos, dataLen; bool deleted; };
     std::vector<Parsed> found;
     for (int i = 0; i + 5 < n; ) {
         if (flux[i] != 0xFE) { ++i; continue; }              // IDAM : champ d'adresse
@@ -310,10 +310,14 @@ void StxImage::reinterpretSaveTrack(Track& t) {
         int k = i + 5;                                       // cherche la marque de données
         while (k < n && flux[k] != 0xFB && flux[k] != 0xF8) ++k;
         if (k >= n || k + 1 + dataLen > n) { ++i; continue; }// DAM/données incomplètes → on passe
-        found.push_back({ tr, hd, sr, sz, i, k + 1, dataLen });
+        found.push_back({ tr, hd, sr, sz, i, k + 1, dataLen, flux[k] == 0xF8 });
         i = k + 1 + dataLen;
     }
-    if (found.empty()) return;          // aucun secteur exploitable (piste non formatée)
+    // Un WRITE TRACK sans ID exploitable a effacé les anciens secteurs.
+    // La vue vide doit faire foi aussi au rechargement du bloc TRCK .wd1772,
+    // sinon les lectures ressuscitent silencieusement le contenu d'origine.
+    t.writeReinterpreted = true;
+    if (found.empty()) return;          // piste non formatée, vue active vide
 
     t.writeData.resize(found.size());
     t.writeSectors.resize(found.size());
@@ -323,7 +327,7 @@ void StxImage::reinterpretSaveTrack(Track& t) {
         Sector& sec   = t.writeSectors[s];
         sec.idTrack   = f.tr; sec.idHead = f.hd; sec.idSector = f.sr; sec.idSize = f.sz;
         sec.idCrc     = crc16({ 0xa1, 0xa1, 0xa1, 0xfe, f.tr, f.hd, f.sr, f.sz });
-        sec.fdcStatus = 0;
+        sec.fdcStatus = f.deleted ? FLAG_RECORD_TYPE : 0;
         sec.sectorSize  = uint16_t(f.dataLen);
         // « Juste après l'IDAM » (octet ID piste). Écrêté : un flux WRITE TRACK
         // HD/ED (~12,5/25 Ko) dépasse 65535 bits — le wrap uint16 cassait l'ordre
@@ -337,17 +341,18 @@ void StxImage::reinterpretSaveTrack(Track& t) {
     // 2e passe : pointeurs de données (writeData n'est plus redimensionné ensuite).
     for (std::size_t s = 0; s < found.size(); ++s)
         t.writeSectors[s].pData = t.writeData[s].data();
-
-    t.writeReinterpreted = true;
 }
 
 // =============================================================================
-//  Persistance .wd1772 — format byte-compatible Hatari (STX_WriteDisk /
-//  STX_LoadSaveFile) : un fichier compagnon peut être échangé entre émulateurs.
+//  Persistance .wd1772 — conteneur compatible Hatari (STX_WriteDisk /
+//  STX_LoadSaveFile). Extension NDAM optionnelle : les anciens lecteurs gardent
+//  les données mais ignorent la DAM, qui peut être perdue lors d'une réécriture.
 //
 //  En-tête (16 o) : "WD1772" + version(1) + révision(0) + u32BE nbSECT + u32BE nbTRCK.
 //  Bloc SECT (20 o + données) : "SECT", u32BE longueur (16+taille), piste, face,
 //    u16BE bitPosition, ID piste/face/secteur/taille, u16BE ID_CRC, u16BE taille, données.
+//    Extension après les données : "NDAM" + DAM (FB/F8), incluse dans longueur.
+//    Absente pour FB à l'écriture ; les anciens SECT sans trailer signifient FB.
 //  Bloc TRCK (12 o + données) : "TRCK", u32BE longueur (8+taille), piste, face,
 //    u16BE taille du flux écrit, données (flux WRITE TRACK brut).
 // =============================================================================
@@ -379,7 +384,8 @@ bool StxImage::saveWd1772(const std::string& path) const {
     for (const SaveSector& ss : saveSectors) {
         if (!ss.used) continue;                           // invalidé par un WRITE TRACK
         out.insert(out.end(), {'S','E','C','T'});
-        wr32be(out, uint32_t(16 + ss.data.size()));       // longueur (depuis ce champ inclus)
+        const bool deleted = ss.dataMark == 0xF8;
+        wr32be(out, uint32_t(16 + ss.data.size() + (deleted ? 5 : 0)));
         out.push_back(ss.track);
         out.push_back(ss.side);
         wr16be(out, ss.bitPos);
@@ -390,6 +396,10 @@ bool StxImage::saveWd1772(const std::string& path) const {
         wr16be(out, ss.idCrc);
         wr16be(out, uint16_t(ss.data.size()));
         out.insert(out.end(), ss.data.begin(), ss.data.end());
+        // Extension NeoST v1.0 : Hatari lit SectorSize octets puis saute à
+        // BlockLen, donc conserve les données et ignore ce trailer optionnel.
+        // Un ancien lecteur qui réécrit le fichier peut perdre cette DAM.
+        if (deleted) out.insert(out.end(), {'N','D','A','M', ss.dataMark});
     }
     for (const SaveTrack& st : saveTracks) {
         out.insert(out.end(), {'T','R','C','K'});
@@ -467,6 +477,14 @@ bool StxImage::loadWd1772(const std::string& path) {
             const uint16_t size = rd16be(q + 10);
             if (std::size_t(16) + size > blockLen) break; // données tronquées
             ss.data.assign(q + 12, q + 12 + size);
+            // Sans extension (anciens SECT), le WRITE SECTOR était normal.
+            // Ignorer tout trailer inconnu, incomplet ou non FB/F8, sans lire
+            // au-delà de BlockLen ni transformer un octet en flags arbitraires.
+            if (std::size_t(blockLen) - 16 - size >= 5) {
+                const uint8_t* extra = q + 12 + size;
+                if (std::memcmp(extra, "NDAM", 4) == 0 &&
+                    (extra[4] == 0xFB || extra[4] == 0xF8)) ss.dataMark = extra[4];
+            }
             Sector* sec = findSectorByPosition(ss.track, ss.side, ss.bitPos);
             if (sec && ss.data.size() != sec->sectorSize) {
                 // Overlay d'une autre taille que le secteur : les lecteurs bouclent

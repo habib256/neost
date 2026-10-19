@@ -62,9 +62,15 @@ namespace {
 }
 
 void Blitter::reset(bool cold) {
-    for (auto& b : reg_) b = 0;
-    if (cold) std::fill(std::begin(ioRaw_), std::end(ioRaw_), 0);
-    buffer_ = 0; busWord_ = 0; yLatch_ = 0;
+    // Blitter_Reset (Hatari blitter.c:271-307) ne touche ni la RAM halftone
+    // ni le registre source à décalage. Le reset chaud annule le transfert,
+    // sans perdre ces données ; une nouvelle session froide les initialise.
+    std::fill(std::begin(reg_) + (cold ? 0 : 0x20), std::end(reg_), 0);
+    if (cold) {
+        std::fill(std::begin(ioRaw_), std::end(ioRaw_), 0);
+        buffer_ = 0;
+    }
+    busWord_ = 0; yLatch_ = 0;
     midBlit_ = false; haveFxsr_ = false; nfsrInt_ = false;
     haveSrc_ = false; haveDst_ = false; fetchSrc_ = false; dstWord_ = 0;
     busCountError_ = false;

@@ -124,7 +124,7 @@ public:
     // sched_) et std::function (cycleClock_) NE sont PAS sérialisés (recâblés au load).
     void serialize(StateArchive& ar) {
         // Registres / adresses latchées.
-        ar(ctrl_); ar(mode_);
+        ar(ctrl_); ar(mode_); ar(pad20_);
         ar(startAddr_); ar(endAddr_); ar(curAddr_);
         ar(frameStartAddr_); ar(frameEndAddr_);
         // FIFO 8 octets + consommation DAC.
@@ -189,6 +189,9 @@ private:
     // identique après les 16 pas), valeur écrite hors transfert — port de Hatari
     // DmaSnd_InterruptHandler_Microwire (dmaSnd.c:1063-1064).
     uint16_t mwMaskRead() const;
+    void catchUpMicrowire(); // MMIO : consomme seulement les fronts Microwire échus
+    void advanceMicrowire(int64_t nextEdge, int64_t now); // au plus 16 fronts
+
     void    startNewFrame();                              // (re)démarre une trame (gère start==end)
     void    setXsint(bool level);                         // pilote la ligne XSINT (→ MFP GPIP7)
     // Compteur de trame $FF8909/0B/0D : synchronise la consommation DAC + le fetch
@@ -211,7 +214,7 @@ private:
     // Registres. Adresses sur 24 bits (octets haut/moyen/bas, paires forcées).
     uint8_t  ctrl_ = 0;              // $FF8901 : bit0 = play, bit1 = repeat (loop)
     uint8_t  mode_ = 0;              // $FF8921 : bits0-1 fréquence, bit7 = mono
-    uint8_t  pad20_ = 0;             // $FF8920 : octet scratch non intercepté (Hatari) — NON sérialisé
+    uint8_t  pad20_ = 0;             // $FF8920 : octet scratch non intercepté, état MMIO sauvegardé
     uint32_t startAddr_ = 0;         // $FF8903/05/07
     uint32_t endAddr_   = 0;         // $FF890F/11/13
     uint32_t curAddr_   = 0;         // adresse de FETCH du DMA (avance par MOTS, cf. fifoRefill)

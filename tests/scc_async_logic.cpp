@@ -9,6 +9,7 @@ bool testSccAsync() {
     };
     struct Rig {
         Scc s;
+        Rig() { wr(0,14,0); wr(1,14,0); } // Les données hôtes arrivent par RxD externe.
         void wr(int channel, uint8_t reg, uint8_t value) {
             const uint32_t addr = 0x81 + 4 * channel;
             s.write8(addr, reg); s.write8(addr, value);

@@ -63,7 +63,7 @@ int testMidiSerial() {
 
     // Horloge CPU en avance sur le dispatch : MMIO rattrape le matériel.
     live = 5300; write(0x71);
-    eq("write anchored live clock", sched.rawCyclesUntil(Scheduler::MIDI_TX), 256);
+    eq("write waits existing clock phase", sched.rawCyclesUntil(Scheduler::MIDI_TX), 76);
     live = 5600;
     eq("live read observes TDRE", status() & 2, 2);
     live = 5700; write(0x72);
@@ -83,8 +83,8 @@ int testMidiSerial() {
     }
     advance(11000);
     eq("late dispatch drains two registers", out.size(), 4);
-    eq("live first emission", out.at(2).second, 7860);
-    eq("live second emission", out.at(3).second, 10420);
+    eq("live first emission", out.at(2).second, 7680);
+    eq("live second emission", out.at(3).second, 10240);
     out.clear();
     { auto ar = StateArchive::loader(bytes.data(), bytes.size());
       midi.serialize(ar); sched.serialize(ar); eq("snapshot valid", ar.ok(), true); }
@@ -93,15 +93,15 @@ int testMidiSerial() {
     eq("snapshot emits two pending bytes", out.size(), 2);
     eq("snapshot TSR", out.at(0).first, 0x71);
     eq("snapshot TDR", out.at(1).first, 0x72);
-    eq("snapshot timestamp", out.at(1).second, 10420);
+    eq("snapshot timestamp", out.at(1).second, 10240);
 
     out.clear();
     midi.setMidiSinkTimed({});
     midi.setLoopback(true);
     live = 12000; write(0x55);
     eq("loopback deferred", status() & 1, 0);
-    advance(14559); eq("loopback before stop", status() & 1, 0);
-    advance(14560); eq("loopback at stop", status() & 1, 1);
+    advance(14335); eq("loopback before stop", status() & 1, 0);
+    advance(14336); eq("loopback at stop", status() & 1, 1);
     eq("loopback byte", midi.read8(0xFFFC06), 0x55);
     live = 15000; write(0x66);
     midi.write8(0xFFFC04, 3);

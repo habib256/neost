@@ -19,13 +19,20 @@ bool testSccBrgClock(){
     };
     for(int c=0;c<2;++c)for(int pclk=0;pclk<2;++pclk){
         Rig r(c);r.wr(4,0x48);r.wr(12,7);r.wr(14,pclk?3:1);r.tx(0x51);r.tx(0x52);
-        for(int n=0;n<128;++n)r.s.receiveByte(c,0x61);
+        Rig rx(c);rx.wr(4,0x48);rx.wr(12,7);rx.wr(14,pclk?3:1);
+        for(int n=0;n<128;++n)rx.s.receiveByte(c,0x61);
         const int64_t freq=pclk?neost::pacing::kCpuHzInt:3672000;
         const int64_t numerator=neost::pacing::kCpuHzInt*16*21*18,denominator=2*freq;
         for(int n=1;n<=128;++n){const int64_t due=(n*numerator+denominator-1)/denominator;
-            r.sched.runTo(due-1);check(int(r.out.size())==n-1 && !(r.rr()&1),"BRG TX/RX not early");
-            r.sched.runTo(due);check(int(r.out.size())==n && (r.rr()&1)&&r.pop()==0x61,"BRG TX/RX retain rational clock");
+            r.sched.runTo(due-1);check(int(r.out.size())==n-1,"BRG TX not early");
+            r.sched.runTo(due);check(int(r.out.size())==n,"BRG TX retains rational clock");
             if(n<127)r.tx(0x52);
+        }
+        const int64_t rxNumerator=neost::pacing::kCpuHzInt*16*20*18;
+        for(int n=1;n<=128;++n){
+            const int64_t due=(n*rxNumerator+denominator-1)/denominator;
+            rx.sched.runTo(due-1);check(!(rx.rr()&1),"BRG RX not early with one checked stop");
+            rx.sched.runTo(due);check((rx.rr()&1)&&rx.pop()==0x61,"BRG RX retains independent rational clock");
         }
         Rig slow(c);slow.wr(4,0xc4);slow.wr(12,255);slow.wr(13,255);slow.wr(14,pclk?3:1);slow.tx(0x71);
         const int64_t due=(neost::pacing::kCpuHzInt*64*20*131074+denominator-1)/denominator;

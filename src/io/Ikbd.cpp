@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <algorithm>
 
 // Bits du registre de statut ACIA 6850.
 enum : uint8_t {
@@ -183,13 +184,7 @@ int Ikbd::cmdLength(uint8_t opcode) {
 void Ikbd::write8(uint32_t addr, uint8_t v) {
     // Un accès CPU peut précéder le dispatch d'un front TX déjà passé sur le
     // fil. Transférer/terminer ces caractères avant de modifier CR ou TDR.
-    if (sched_) for (;;) {
-        const int64_t remaining = sched_->rawCyclesUntil(Scheduler::IKBD_TX);
-        if (remaining == INT64_MIN || remaining > 0) break;
-        const int64_t deadline = sched_->liveNow() + remaining;
-        sched_->cancel(Scheduler::IKBD_TX);
-        advanceTx(deadline);
-    }
+    if (sched_) catchUpCpuTx(sched_->liveNow());
     if ((addr & 2) == 0) {
         // $FFFC00 : registre de contrôle (diviseur, format, bit7 = RX int enable).
         // Bits 5-6 = contrôle émetteur : 01 arme l'IRQ d'émission (TIE), cf. ACIA
@@ -200,9 +195,14 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         const bool wasBreak = (control_ & 0x60) == 0x60;
         // Hatari acia.c ACIA_Write_CR/ACIA_Set_Timers_IKBD : seul un
         // changement de CR0..1 non reset redémarre le timer série. La tranche
-        // CPU→IKBD reste bornée à /64 8N1 ; mémoriser sa phase pour BREAK.
-        if ((v & 3) != 3 && (v & 3) != (control_ & 3))
+        // CPU→IKBD reste bornée à /64 8N1 ; mémoriser sa phase TX.
+        const bool dividerChanged = (v & 3) != 3 && (v & 3) != (control_ & 3);
+        if (dividerChanged) {
+            // Hatari ACIA_Write_CR : seul un changement du diviseur hors
+            // master reset initialise Clock_Divider. Le reset le conserve.
+            aciaClockInitialized_ = true;
             txClockPhase_ = sched_ ? sched_->liveNow() % kAciaTxBitCycles : 0;
+        }
         control_ = v;
         txEnableInt_ = ((v & 0x60) == 0x20);
         // ⚠ Changer les bits d'émission ne remet PAS l'émetteur au repos : seul le
@@ -216,21 +216,16 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
             rdrf_ = false;
             rxOverrun_ = ovrn_ = srRead_ = false;
             tdre_ = true;
-            txShifting_ = false;
-            if (sched_) sched_->cancel(Scheduler::IKBD_TX);
+            txShifting_ = false; txBitIndex_ = 0;
         }
         // acia.c ACIA_Clock_TX : break n'agit qu'au repos. Le TSR engagé finit
         // normalement ; le TDR reste plein tant que CR demande le break.
-        // La ligne physique basse et les erreurs SCI associées restent hors modèle.
-        if (sched_ && !txShifting_) {
-            if ((control_ & 0x60) == 0x60)
-                sched_->cancel(Scheduler::IKBD_TX);
-            else if (wasBreak && !tdre_) {
-                const int64_t now = sched_->liveNow();
-                const int64_t elapsed = (now % kAciaTxBitCycles - txClockPhase_
-                                         + kAciaTxBitCycles) % kAciaTxBitCycles;
-                sched_->schedule(Scheduler::IKBD_TX, now + kAciaTxBitCycles - elapsed);
-            }
+        // Le niveau bas est consommé par le SCI ; ses erreurs ne sont pas exposées
+        // comme un registre CPU (le 6301 reste un modèle de firmware).
+        if (sched_) {
+            if (!txShifting_ && (wasBreak || dividerChanged))
+                txNextBitCycle_ = nextTxClock(sched_->liveNow());
+            scheduleCpuTx();
         }
         raiseIfReady();
         return;
@@ -244,11 +239,8 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
     // remplace le TDR, sans toucher à l'octet déjà engagé sur la ligne.
     txData_ = v;
     tdre_ = false;
-    if (!txShifting_ && (control_ & 0x60) != 0x60) {
-        const int64_t now = sched_->liveNow();
-        sched_->schedule(Scheduler::IKBD_TX,
-                         (now / kAciaTxBitCycles + 1) * kAciaTxBitCycles);
-    }
+    if (txNextBitCycle_ == 0) txNextBitCycle_ = nextTxClock(sched_->liveNow());
+    scheduleCpuTx();
     raiseIfReady();
 }
 
@@ -481,7 +473,7 @@ void Ikbd::dispatchCommand() {
             joystickMonitorPeriod_ = int64_t(8021247) * (inBuf_[1] ? inBuf_[1] : 1) / 100;
             if (sched_) sched_->cancel(Scheduler::IKBD_AUTOSEND);
             if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR,
-                                         sched_->liveNow() + joystickMonitorPeriod_);
+                                         firmwareEventTime() + joystickMonitorPeriod_);
             break;
         case 0x18:
             // $18 = SET FIRE BUTTON MONITORING : non implémenté (comme Hatari).
@@ -605,6 +597,15 @@ void Ikbd::dispatchCommand() {
 }
 
 void Ikbd::resetHw() {
+    // Les fronts déjà échus précèdent le reset du récepteur SCI.
+    if (sched_) catchUpCpuTx(sched_->liveNow());
+    sciRxState_ = sciRxByte_ = sciRxBitsLeft_ = 0;
+    if (sched_ && aciaClockInitialized_) {
+        // ACIA_Reset → Set_Timers(offset0) : prochain front un bit après reset.
+        txClockPhase_ = sched_->liveNow() % kAciaTxBitCycles;
+        txNextBitCycle_ = sched_->liveNow() + kAciaTxBitCycles;
+        scheduleCpuTx();
+    }
     // « Reset the SCI » (ikbd.c:503-513) : SCI_TX_State = IDLE, TSR = 0,
     // SCI_TX_Size/Delay = 0, SCI_RX_State = IDLE, RSR = 0, SCI_RX_Size = 0.
     // Côté NeoST le shift register de sortie du 6301 est matérialisé par
@@ -614,19 +615,14 @@ void Ikbd::resetHw() {
     responseDelayBits_ = 0;
     rxWaitingDelay_ = false;
     if (sched_) sched_->cancel(Scheduler::IKBD_RX);
-    // ACIA CLAVIER : reset.c:111 ACIA_Reset remet LES DEUX ACIA — même référence
-    // que MidiAcia::reset(). Sans quoi un TIE armé ($FFFC00 = $b6) survivait au
-    // Ctrl-Alt-Del : l'échéance IKBD_TX en vol re-levait l'IRQ TX dans le boot
-    // suivant et $FFFC04 gardait un statut périmé jusqu'à la re-programmation TOS.
-    control_ = 0; txClockPhase_ = 0;
-    txEnableInt_ = false;
-    tdre_ = true;
-    txShifting_ = false;
-    txData_ = txShiftData_ = 0;
-    rdrf_ = false;
-    rxOverrun_ = ovrn_ = srRead_ = false;
-    if (sched_) sched_->cancel(Scheduler::IKBD_TX);
+    // ACIA_Reset (Hatari acia.c:334-347) ne remet aucun registre ACIA :
+    // CR/RDR/statut/erreurs, TDR/TSR et initialisation du diviseur persistent.
+    // Le Scheduler NeoST n'est pas effacé par Machine::reset : conserver
+    // l'échéance TX déjà armée, sans annuler ni recharger le TDR.
+    // Le transit /64 8N1 est assemblé bit par bit, y compris après reset SCI.
+    // Les autres formats/diviseurs gardent le repli historique 8N1/1024 cycles.
     bootRom();                       // IKBD_Boot_ROM(false) — reset à chaud
+    raiseIfReady();                   // republie les causes ACIA après reset MFP
 }
 
 void Ikbd::bootRom() {
@@ -689,7 +685,7 @@ void Ikbd::bootRom() {
     memLoadLeft_ = 0;
     // L'horloge ($1B/$1C) est CONSERVÉE (reset à chaud, cf. Hatari).
     constexpr int64_t kIkbdResetCycles = 502000;
-    if (sched_) sched_->schedule(Scheduler::IKBD, sched_->now() + kIkbdResetCycles);
+    if (sched_) sched_->schedule(Scheduler::IKBD, firmwareEventTime() + kIkbdResetCycles);
     else        onResetResponse();
 }
 
@@ -759,7 +755,7 @@ void Ikbd::startAutoSend() {
     // ne doivent pas repousser indéfiniment la scrutation (Hatari ikbd.c:620).
     if (sched_ && joystickMonitorPeriod_ == 0 &&
         sched_->cyclesUntil(Scheduler::IKBD_AUTOSEND) < 0)
-        sched_->schedule(Scheduler::IKBD_AUTOSEND, sched_->liveNow() + 150000);
+        sched_->schedule(Scheduler::IKBD_AUTOSEND, firmwareEventTime() + 150000);
 }
 
 void Ikbd::onAutoSend() {
@@ -1039,6 +1035,9 @@ bool Ikbd::rxFree(std::size_t n) const {
 }
 
 void Ikbd::pushRx(uint8_t b) {
+    // IKBD_Send_Byte_Delay : avant l'initialisation ACIA, jeter les octets
+    // firmware, sans les différer jusqu'à une future configuration.
+    if (!aciaClockInitialized_) return;
     if (duringResetCriticalTime_)
         return;
     // File firmware bornée à 1024 octets (SIZE_KEYBOARD_BUFFER de Hatari) :
@@ -1053,6 +1052,7 @@ void Ikbd::pushRx(uint8_t b) {
 }
 
 void Ikbd::pushRxDelayed(uint8_t b, int delayCycles) {
+    if (!aciaClockInitialized_) return;
     // Le délai est global, pas associé à l'octet : une nouvelle réponse remplace
     // SCI_TX_Delay, même si une ancienne réponse attend déjà dans la file.
     if (duringResetCriticalTime_) return;
@@ -1062,7 +1062,7 @@ void Ikbd::pushRxDelayed(uint8_t b, int delayCycles) {
             // Le SCI attend encore (pas de start bit) : remplacer le délai
             // restant, sans additionner l'attente de la commande précédente.
             sched_->schedule(Scheduler::IKBD_RX,
-                             sched_->liveNow() + int64_t(responseDelayBits_) * 1024);
+                             firmwareEventTime() + int64_t(responseDelayBits_) * 1024);
         }
     }
     pushRx(b);
@@ -1085,7 +1085,7 @@ void Ikbd::armRx(int64_t baseCycle) {
     // L'événement distinct préserve aussi l'octet déjà engagé sur la liaison.
     if (sched_ && responseDelayBits_ > 0) {
         rxPending_ = rxWaitingDelay_ = true;
-        const int64_t anchor = baseCycle >= 0 ? baseCycle : sched_->liveNow();
+        const int64_t anchor = baseCycle >= 0 ? baseCycle : firmwareEventTime();
         sched_->schedule(Scheduler::IKBD_RX, anchor + int64_t(responseDelayBits_) * 1024);
         return;
     }
@@ -1097,7 +1097,7 @@ void Ikbd::armRx(int64_t baseCycle) {
         rx_.pop_front();
         rxPending_ = true;
         sched_->schedule(Scheduler::IKBD_RX,
-                         (baseCycle >= 0 ? baseCycle : sched_->now()) + kAciaRxByteCycles);
+                         (baseCycle >= 0 ? baseCycle : firmwareEventTime()) + kAciaRxByteCycles);
     } else if (!rdrf_) {
         onRxDeliver();
     }
@@ -1152,6 +1152,16 @@ void Ikbd::raiseIfReady() {
     mfp_.setAciaLineKbd(irqActive());
 }
 
+int64_t Ikbd::nextTxClock(int64_t at) const {
+    // Hatari ACIA_Set_Timers_IKBD : la phase change avec le diviseur CR.
+    // Port borné au format ST /64 8N1 ; les autres modes conservent le repli
+    // historique, sans prétendre reconstruire la réception physique du 6301.
+    const int64_t phase = (control_ & 0x1F) == 0x16 ? txClockPhase_ : 0;
+    const int64_t elapsed = (at % kAciaTxBitCycles - phase + kAciaTxBitCycles)
+                            % kAciaTxBitCycles;
+    return at + kAciaTxBitCycles - elapsed;
+}
+
 void Ikbd::onTxEmpty() {
     if (!sched_) return;
     // Ancrage sur l'échéance servie, sans dérive liée au dépassement CPU.
@@ -1160,21 +1170,75 @@ void Ikbd::onTxEmpty() {
     advanceTx(at);
 }
 
-void Ikbd::advanceTx(int64_t at) {
-    if (txShifting_) {
-        const uint8_t byte = txShiftData_;
-        txShifting_ = false;
-        receiveSerialByte(byte);               // bit de stop reçu côté HD6301
-        if (!tdre_ && (control_ & 0x60) != 0x60)
-            sched_->schedule(Scheduler::IKBD_TX, at + kAciaTxBitCycles);
-    } else if (!tdre_ && (control_ & 0x60) != 0x60) {
-        txShiftData_ = txData_;
-        txShifting_ = true;
-        tdre_ = true;                       // TDR → TSR, IRQ indépendante du transit
-        sched_->schedule(Scheduler::IKBD_TX, at + 9 * kAciaTxBitCycles);
+// Récepteur 6301 : ikbd.c IKBD_SCI_Get_Line_RX. Tout zéro en IDLE est
+// un start, huit bits LSB suivent ; un stop nul abandonne la trame.
+void Ikbd::clockSciRx(bool bit) {
+    if (sciRxState_ == 0) {
+        if (!bit) { sciRxState_ = 1; sciRxByte_ = 0; sciRxBitsLeft_ = 8; }
+    } else if (sciRxState_ == 1) {
+        if (bit) sciRxByte_ |= 0x80;
+        if (--sciRxBitsLeft_) sciRxByte_ >>= 1;
+        else sciRxState_ = 2;
+    } else {
+        sciRxState_ = 0;
+        if (bit) receiveSerialByte(sciRxByte_);
     }
+}
+
+// Progresser aux fronts physiques sans installer un événement par bit. Au repos
+// MARK, IDLE ne change plus ; sous BREAK, dix zéros ramènent IDLE (framing).
+void Ikbd::catchUpCpuTx(int64_t at) {
+    if (!sched_ || txNextBitCycle_ == 0) return;
+    while (txNextBitCycle_ <= at) {
+        const bool breaking = (control_ & 0x60) == 0x60;
+        if (!txShifting_ && sciRxState_ == 0 && (tdre_ || breaking)) {
+            const int64_t clocks = (at - txNextBitCycle_) / kAciaTxBitCycles + 1;
+            const int64_t skip = breaking ? clocks / 10 * 10 : clocks;
+            if (skip) {
+                if (breaking) sciRxByte_ = 0; // un cycle complet de dix LOW abandonne RSR=0
+                txNextBitCycle_ += skip * kAciaTxBitCycles;
+                continue;
+            }
+        }
+        bool bit = true;
+        bool ended = false;
+        if (txShifting_) {
+            if (txBitIndex_ < 8) bit = (txShiftData_ >> txBitIndex_++) & 1;
+            else { txShifting_ = false; txBitIndex_ = 0; ended = true; }
+        } else if (breaking) bit = false;
+        else if (!tdre_) {
+            txShiftData_ = txData_; txShifting_ = true; txBitIndex_ = 0;
+            tdre_ = true; bit = false; // start au transfert TDR→TSR
+        }
+        const int64_t front = txNextBitCycle_;
+        txNextBitCycle_ = ended ? nextTxClock(txNextBitCycle_)
+                                : txNextBitCycle_ + kAciaTxBitCycles;
+        const int64_t previousContext = cpuSerialEventCycle_;
+        cpuSerialEventCycle_ = front;
+        clockSciRx(bit);
+        cpuSerialEventCycle_ = previousContext;
+        // Une commande reconstruite peut modifier les modes ou relancer le boot.
+        // Les événements sont servis au plus tard au stop SCI (scheduleCpuTx).
+    }
+    scheduleCpuTx();
     raiseIfReady();
 }
+
+void Ikbd::scheduleCpuTx() {
+    if (!sched_) return;
+    sched_->cancel(Scheduler::IKBD_TX);
+    if (!txNextBitCycle_) return;
+    int64_t due = INT64_MAX;
+    if (txShifting_) due = txNextBitCycle_ + (8 - txBitIndex_) * kAciaTxBitCycles;
+    else if (!tdre_ && (control_ & 0x60) != 0x60) due = txNextBitCycle_;
+    if (sciRxState_ && (txShifting_ || (control_ & 0x60) != 0x60)) {
+        const int64_t stop = txNextBitCycle_ + sciRxBitsLeft_ * kAciaTxBitCycles;
+        due = std::min(due, stop);
+    }
+    if (due != INT64_MAX) sched_->schedule(Scheduler::IKBD_TX, due);
+}
+
+void Ikbd::advanceTx(int64_t at) { catchUpCpuTx(at); }
 
 // ============================================================================
 //  Code 6301 custom ($20 LoadMemory / $22 Execute) — port de Hatari ikbd.c.

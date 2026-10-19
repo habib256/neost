@@ -84,11 +84,74 @@ bool testSccZeroCount(); // compteur BRG avant les diviseurs de sortie
 bool testSccRxParity(); // parité reçue visible en bouclage avec mots courts
 int testRtcBank(); // registres de banque indépendants du calendrier
 int testRtcTimer(); // retenue du diviseur pendant arrêt TIMER EN
+int testRtcLongElapsed(); // rattrapage calendaire sans limite de durée
+int testRtcElapsedDifferential(); // comparaison avec les pas unitaires
+int testRtcLongPhase(); // phase et retenue après arrêt prolongé
+bool testSccChannelReset(); // reset IP/IUS isolé au canal ciblé
+bool testSccMieIus(); // MIE masque sans effacer les interruptions en service
+bool testSccAckPriority(); // priorité des IUS aussi pendant INTACK
+bool testSccRxStop(); // RX un stop indépendamment du nombre de stops TX
+bool testSccEchoTxClock(); // horloge TX indépendante de l’écho RX
+bool testSccEchoBrgConfig(); // TC BRG sans effet sur écho RX à horloge directe
+bool testSccEchoBrgControl(); // contrôle BRG indépendant de RXdirect, reprise écho invalidé
+int testBusMmioMirror(); // écriture blitter atomique aussi aux miroirs24bits
+int testBlitterResetRetention(); // RAM halftone et pipeline source conservés au reset chaud
+bool testSccExtendedRead(); // images WR via WR7' D6 sur Z85C30
+int testAcsiWriteDestination(); // cible et secteur du WRITE différé conservés
+int testAcsiLargeBounds(); // borne READ/WRITE non signée sur image sparse de plus de 1 Tio
+bool testSccRxErrorIrq(); // pas d’IP RX sans donnée après vidage FIFO All/Special
+int testMfpGpipComposite(); // XSINT qualifié après composition complète du GPIP7
+int testAcsiCapacityLimit(); // refus des images hors capacité des compteurs ACSI
+bool testSccRxErrorMode(); // verrou erreur conservé entre First/Special et SpecialOnly
+int testStxDeletedTrack(); // marque F8 conservée dans les pistes STX réécrites
+int testStxSectorRewrite(); // WRITE SECTOR normal remplace la marque F8 par FB
+int testStxSectorDam(); // WRITE SECTOR A8/A9 et marque persistante FB/F8
+int testStxRawTrackOverlay(); // fusion locale des overlays dans une image de piste décodée
+int testStxRawTrackWrap(); // champs STX traversant l’index, fusion circulaire bornée
+int testStxReadAddressCrc(); // CRC ID signalé après les six octets READ ADDRESS
+int testIkbdAciaInit(); // sorties firmware rejetées avant initialisation du diviseur
+int testIkbdAciaReset(); // registres ACIA conservés au reset du SCI clavier
+int testIkbdSciReset(); // fragments CPU→SCI, réancrage et réception bit à bit
+bool testSccFirstErrorReset(); // IP du premier caractère retiré aussi par Error Reset
+int testDmaSoundMicrowireByte(); // fusion octet depuis DATA visible après décalage
+int testDmaSoundMicrowireTiming(); // grille série et accès MMIO après fronts échus
+int testRtcWriteOnly(); // TEST/RESET en écriture seule
+int testMidiIrqTiming(); // ligne IRQ MIDI datée au transfert série
+int testMfpVectorRegister(); // bits réservés VR nuls, S et base préservés
+int testFdcTrackIdLocation(); // IDs de piste ST compatibles avec tête et face réelles
+int testMfpInternalLoopback(); // TSR H/L sélectionne le bouclage matériel interne
+int testFdcSectorSizeSwitch(); // secteur STX long vers lecteur ST sélectionné en vol
+int testMfpRxOverrun(); // erreur différée UDR puis acquittement RSR
+int testMfpRxIrqTiming(); // RXFULL datée au stop même après service tardif
 bool testSccExtStatus(); // verrous RR0 indépendants du masque maître WR1
 int testMidiTxControl(); // phase du diviseur conservée à la sortie BREAK
 int testMidiTxReclock(); // diviseur modifié pendant le caractère MIDI
 int testIkbdTxControl(); // phase de reprise BREAK CPU vers IKBD
 bool testSccBreakStatus(); // fronts BREAK conservés pendant un verrou externe
+int testMidiTxPhase(); // départs MIDI sur les fronts du diviseur
+int testIkbdTxPhase(); // phase des départs CPU vers IKBD usuels
+bool testSccStatusModes(); // qualification Sync/Hunt et BREAK selon WR4/WR11
+int testMfpBreak(); // BREAK ne commande que le mode USART asynchrone
+bool testSccAutoEcho(); // sortie TSR déconnectée quand Auto Echo a priorité
+int testStxWrittenTrack(); // une piste STX effacée ne ressuscite pas ses anciens secteurs
+int testMfpAsyncBreak(); // cadence BREAK, fin TE et reprise asynchrones
+bool testSccEchoReceive(); // écho hôte des formats RX connus
+int testAcsiTransfer(); // statut SCSI d'une erreur de plage DMA
+bool testSccLocalLoopback(); // multiplexage RxD et sortie TxD en boucle locale
+int testMfpGpipLines(); // fronts BUSY/XSINT et qualification GPIO
+int testFdcMediaChange(); // première et dernière actions de changement de média
+bool testSccEomReset(); // commande WR0 de remise à zéro du latch EOM
+int testMachineTimerBAer(); // recalage immédiat Timer B après changement AER3
+int testMfpMmioDecode(); // pairs fautifs, mots partiels et impairs void MFP
+bool testPsgOddWrite(); // ombres impaires PSG selon largeur du Bus
+int testDmaSoundMmioState(); // octet FF8920 conservé dans les sauvegardes
+bool testPsgReset(); // image des registres et silence après reset PSG
+int testBlitterRmw(); // atomicité TAS devant une échéance blitter
+int testMachineFdcMediaVbl(); // Mediach suit les vrais VBL malgré la fréquence vidéo
+int testGemdosDriveMapping(); // GEMDOS après les partitions ACSI, routage des lecteurs
+int testAcsiPartitions(); // comptage des racines DOS/Atari et des cibles ACSI
+int testGemdosDirectoryEntries(); // points en sous-dossier selon masque et attributs
+int testGemdosDtaReuse(); // recherches DTA indépendantes, réutilisation et erreurs
 int testMfpUnderrunClear(); // délai matériel avant effacement UE
 int testFdcLiveMedia(); // sélection live et validation CHS du nouveau média
 int testMidiRxPhase(); // horloge MIDI RX continue
@@ -2682,11 +2745,74 @@ int main() {
     if (testSccRxParity()) ++g_ok; else ++g_fail;
     if (const int failures = testRtcBank()) g_fail += failures; else ++g_ok;
     if (const int failures = testRtcTimer()) g_fail += failures; else ++g_ok;
+    if (const int failures = testRtcLongElapsed()) g_fail += failures; else ++g_ok;
+    if (const int failures = testRtcElapsedDifferential()) g_fail += failures; else ++g_ok;
+    if (const int failures = testRtcLongPhase()) g_fail += failures; else ++g_ok;
+    if (testSccChannelReset()) ++g_ok; else ++g_fail;
+    if (testSccMieIus()) ++g_ok; else ++g_fail;
+    if (testSccAckPriority()) ++g_ok; else ++g_fail;
+    if (testSccRxStop()) ++g_ok; else ++g_fail;
+    if (testSccEchoTxClock()) ++g_ok; else ++g_fail;
+    if (testSccEchoBrgConfig()) ++g_ok; else ++g_fail;
+    if (testSccEchoBrgControl()) ++g_ok; else ++g_fail;
+    if (const int failures = testBusMmioMirror()) g_fail += failures; else ++g_ok;
+    if (const int failures = testBlitterResetRetention()) g_fail += failures; else ++g_ok;
+    if (testSccExtendedRead()) ++g_ok; else ++g_fail;
+    if (const int failures = testAcsiWriteDestination()) g_fail += failures; else ++g_ok;
+    if (const int failures = testAcsiLargeBounds()) g_fail += failures; else ++g_ok;
+    if (testSccRxErrorIrq()) ++g_ok; else ++g_fail;
+    if (const int failures = testMfpGpipComposite()) g_fail += failures; else ++g_ok;
+    if (const int failures = testAcsiCapacityLimit()) g_fail += failures; else ++g_ok;
+    if (testSccRxErrorMode()) ++g_ok; else ++g_fail;
+    if (const int failures = testStxDeletedTrack()) g_fail += failures; else ++g_ok;
+    if (const int failures = testStxSectorRewrite()) g_fail += failures; else ++g_ok;
+    if (const int failures = testStxSectorDam()) g_fail += failures; else ++g_ok;
+    if (const int failures = testStxRawTrackOverlay()) g_fail += failures; else ++g_ok;
+    if (const int failures = testStxRawTrackWrap()) g_fail += failures; else ++g_ok;
+    if (const int failures = testStxReadAddressCrc()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdAciaInit()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdAciaReset()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdSciReset()) g_fail += failures; else ++g_ok;
+    if (testSccFirstErrorReset()) ++g_ok; else ++g_fail;
+    if (const int failures = testDmaSoundMicrowireByte()) g_fail += failures; else ++g_ok;
+    if (const int failures = testDmaSoundMicrowireTiming()) g_fail += failures; else ++g_ok;
+    if (const int failures = testRtcWriteOnly()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMidiIrqTiming()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpVectorRegister()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcTrackIdLocation()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpInternalLoopback()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcSectorSizeSwitch()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpRxOverrun()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpRxIrqTiming()) g_fail += failures; else ++g_ok;
     if (testSccExtStatus()) ++g_ok; else ++g_fail;
     if (const int failures = testMidiTxControl()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiTxReclock()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdTxControl()) g_fail += failures; else ++g_ok;
     if (testSccBreakStatus()) ++g_ok; else ++g_fail;
+    if (const int failures = testMidiTxPhase()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdTxPhase()) g_fail += failures; else ++g_ok;
+    if (testSccStatusModes()) ++g_ok; else ++g_fail;
+    if (const int failures = testMfpBreak()) g_fail += failures; else ++g_ok;
+    if (testSccAutoEcho()) ++g_ok; else ++g_fail;
+    if (const int failures = testStxWrittenTrack()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpAsyncBreak()) g_fail += failures; else ++g_ok;
+    if (testSccEchoReceive()) ++g_ok; else ++g_fail;
+    if (const int failures = testAcsiTransfer()) g_fail += failures; else ++g_ok;
+    if (testSccLocalLoopback()) ++g_ok; else ++g_fail;
+    if (const int failures = testMfpGpipLines()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcMediaChange()) g_fail += failures; else ++g_ok;
+    if (testSccEomReset()) ++g_ok; else ++g_fail;
+    if (const int failures = testMachineTimerBAer()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpMmioDecode()) g_fail += failures; else ++g_ok;
+    if (testPsgOddWrite()) ++g_ok; else ++g_fail;
+    if (const int failures = testDmaSoundMmioState()) g_fail += failures; else ++g_ok;
+    if (testPsgReset()) ++g_ok; else ++g_fail;
+    if (const int failures = testBlitterRmw()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMachineFdcMediaVbl()) g_fail += failures; else ++g_ok;
+    if (const int failures = testGemdosDriveMapping()) g_fail += failures; else ++g_ok;
+    if (const int failures = testAcsiPartitions()) g_fail += failures; else ++g_ok;
+    if (const int failures = testGemdosDirectoryEntries()) g_fail += failures; else ++g_ok;
+    if (const int failures = testGemdosDtaReuse()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpUnderrunClear()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcLiveMedia()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiRxPhase()) g_fail += failures; else ++g_ok;
