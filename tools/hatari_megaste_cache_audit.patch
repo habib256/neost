@@ -1,0 +1,92 @@
+--- a/src/m68000.c
++++ b/src/m68000.c
+@@ -1298,8 +1298,11 @@
+  * on each individual entry
+  */
+ 
++static uint64_t MegaSTE_Cache_Generation;
++
+ void	MegaSTE_Cache_Flush ( void )
+ {
++	MegaSTE_Cache_Generation++;
+ //fprintf ( stderr , "MegaSTE_Cache_Flush\n" );
+ 	memset ( MegaSTE_Cache.Valid , 0 , MEGA_STE_CACHE_SIZE );
+ }
+@@ -1445,6 +1448,7 @@
+ {
+ 	uint16_t v;
+ 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );
++	const uint64_t cache_generation = MegaSTE_Cache_Generation;
+ 
+ 	switch (ce_banktype[addr >> 16])
+ 	{
+@@ -1462,7 +1466,7 @@
+ 			else
+ 			{
+ 				v = wait_cpu_cycle_read_megaste_16 (addr, 1);
+-				MegaSTE_Cache_Update ( addr , 2 , v , 0 );
++				if (cache_generation == MegaSTE_Cache_Generation) MegaSTE_Cache_Update ( addr , 2 , v , 0 );
+ 				CpuInstruction.D_Cache_miss++;
+ 			}
+ 		}
+@@ -1485,7 +1489,7 @@
+ 			{
+ 				v = get_word (addr);
+ 				x_do_cycles_post (4 * cpucycleunit, v);
+-				MegaSTE_Cache_Update ( addr , 2 , v , 0 );
++				if (cache_generation == MegaSTE_Cache_Generation) MegaSTE_Cache_Update ( addr , 2 , v , 0 );
+ 				CpuInstruction.D_Cache_miss++;
+ 			}
+ 		}
+@@ -1506,6 +1510,7 @@
+ {
+ 	uint16_t v;
+ 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );
++	const uint64_t cache_generation = MegaSTE_Cache_Generation;
+ 
+ 	switch (ce_banktype[addr >> 16])
+ 	{
+@@ -1523,7 +1528,7 @@
+ 			else
+ 			{
+ 				v = wait_cpu_cycle_read_megaste_16 (addr, 2);
+-				MegaSTE_Cache_Update ( addr , 2 , v , 0 );
++				if (cache_generation == MegaSTE_Cache_Generation) MegaSTE_Cache_Update ( addr , 2 , v , 0 );
+ 				CpuInstruction.I_Cache_miss++;
+ 			}
+ 		}
+@@ -1546,7 +1551,7 @@
+ 			{
+ 				v = get_wordi (addr);
+ 				x_do_cycles_post (4 * cpucycleunit, v);
+-				MegaSTE_Cache_Update ( addr , 2 , v , 0 );
++				if (cache_generation == MegaSTE_Cache_Generation) MegaSTE_Cache_Update ( addr , 2 , v , 0 );
+ 				CpuInstruction.I_Cache_miss++;
+ 			}
+ 		}
+@@ -1567,6 +1572,7 @@
+ {
+ 	uint16_t  v;
+ 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );
++	const uint64_t cache_generation = MegaSTE_Cache_Generation;
+ 
+ 	switch (ce_banktype[addr >> 16])
+ 	{
+@@ -1588,7 +1594,7 @@
+ 				/* Reading with get_word() could create a bus error, so we must first */
+ 				/* check if this address can be cached without bus error */
+ 				if ( MegaSTE_Cache_Addr_Cacheable ( addr & ~1 , 2 , 0 ) )
+-					MegaSTE_Cache_Update ( addr , 2 , get_word(addr & ~1) , 0 );
++					if (cache_generation == MegaSTE_Cache_Generation) MegaSTE_Cache_Update ( addr , 2 , get_word(addr & ~1) , 0 );
+ 
+ 				CpuInstruction.D_Cache_miss++;
+ 			}
+@@ -1612,7 +1618,7 @@
+ 			{
+ 				v = get_byte (addr);
+ 				x_do_cycles_post (4 * cpucycleunit, v);
+-				MegaSTE_Cache_Update ( addr , 1 , v , 0 );
++				if (cache_generation == MegaSTE_Cache_Generation) MegaSTE_Cache_Update ( addr , 1 , v , 0 );
+ 				CpuInstruction.D_Cache_miss++;
+ 			}
+ 		}

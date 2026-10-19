@@ -37,7 +37,15 @@ void onMouseButton(GLFWwindow* w, int button, int action, int /*mods*/) {
         if (action == GLFW_PRESS && !A.kiosk) A.mouseCaptureToggleReq = true;
         return;
     }
-    if (!A.ikbd || !A.mouseCaptured || !mouseReachesSt()) return;
+    if (!A.ikbd || !mouseReachesSt()) return;
+    if (A.desktopMouse && !A.mouseCaptured && !A.kiosk) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) {
+            double mx, my; glfwGetCursorPos(w, &mx, &my);
+            A.desktopPointer.button(button == GLFW_MOUSE_BUTTON_RIGHT, action == GLFW_PRESS, mx, my);
+        }
+        return;
+    }
+    if (!A.mouseCaptured) return;
     const bool l = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
     const bool r = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     if (A.dbgMouse) std::fprintf(stderr, "[mouse] button  L=%d R=%d\n", l, r);
@@ -57,7 +65,8 @@ void onKey(GLFWwindow*, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ENTER || key == GLFW_KEY_KP_ENTER) {
         if (action == GLFW_PRESS && (mods & GLFW_MOD_ALT)) {
             fullscreenChordHeld = true;
-            A.fullscreenToggleReq = !A.fullscreenToggleReq;
+            if (A.kiosk && A.kioskDiskMenu) A.resumeAtariReq = true;
+            else A.fullscreenToggleReq = !A.fullscreenToggleReq;
             return;
         }
         if (action == GLFW_RELEASE && fullscreenChordHeld) {
@@ -81,18 +90,11 @@ void onKey(GLFWwindow*, int key, int scancode, int action, int mods) {
             return;
         }
     }
-    // Touches réservées HÔTE : F5/F7 (save-state), F8 (bascule GUI ⇄ kiosk),
+    // Touches réservées HÔTE : F5/F7 (save-state),
     // F11 (bascule joystick clavier), + F9/F10 en kiosk (menu disques, zoom). Sans
     // cette exclusion, le ST recevait la touche F5/F7 EN MÊME TEMPS que l'état était
     // écrasé/rechargé sous ses pieds (beaucoup de jeux/GEM mappent les touches de fonction).
-    // F8 = bascule borne ⇄ bureau, traitée ICI (dans le callback) et non par scrutation :
-    // un appui bref peut être posé ET relâché entre deux tours de boucle — glfwGetKey ne
-    // verrait alors jamais l'état PRESS. La demande est appliquée en tête de boucle.
-    if (key == GLFW_KEY_F8) {
-        if (action == GLFW_PRESS) A.kioskSwitchReq = A.kiosk ? 2 : 1;
-        return;
-    }
-    // Ctrl+Alt+F : même bascule bureau ⇄ borne que F8, sous forme de chord hôte
+    // Ctrl+Alt+F : bascule bureau ⇄ borne, même depuis le menu, sous forme de chord hôte
     // (même discipline que Ctrl+Alt+G : F SEUL continue vers l'IKBD, le latch
     // absorbe le BREAK du chord si Ctrl/Alt sont relâchés avant F).
     static bool kioskChordHeld = false;
@@ -107,7 +109,7 @@ void onKey(GLFWwindow*, int key, int scancode, int action, int mods) {
             return;
         }
     }
-    // F5/F7 : latchés ICI comme F8 (même justification anti-scrutation — un appui
+    // F5/F7 : latchés ICI comme Alt+Entrée (même justification anti-scrutation — un appui
     // bref entre deux tours de boucle était perdu, l'utilisateur croyait l'état
     // sauvé sans qu'il le soit). Consommés à la frontière de trame.
     if (key == GLFW_KEY_F5) { if (action == GLFW_PRESS) A.saveStateReq = true; return; }

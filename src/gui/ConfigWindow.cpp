@@ -698,7 +698,14 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         // souris moderne à 1600, 3200 ou 8000 dpi envoie jusqu'à 40 fois plus de pas
         // pour le même geste, et le pointeur GEM traverse l'écran au moindre mouvement.
         // Ce curseur divise le delta hôte AVANT l'IKBD (cf. App::mouseSpeed).
-        ImGui::TextDisabled("Emulated mouse speed");
+        if (ImGui::Checkbox("Desktop mouse (GEM, no capture)", &A.desktopMouse)) {
+            A.desktopPointer.reset();
+            A.machine->ikbd.mouseEvent(0, 0, false, false);
+            ui.cfgDirty = true;
+        }
+        ImGui::TextDisabled("Point inside the ST image. Middle-click still toggles relative capture.");
+        ImGui::TextDisabled("Desktop mode needs an initialized GEM mouse driver; games use capture.");
+        ImGui::TextDisabled("Emulated mouse speed (relative capture)");
         ImGui::SetNextItemWidth(220.0f);
         ImGui::SliderFloat("##mousespeed", &A.mouseSpeed, 0.05f, 4.0f, "%.2f x",
                            ImGuiSliderFlags_AlwaysClamp);
@@ -736,6 +743,10 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         if (ImGui::Button(ICON_FA_FOLDER_OPEN " Load (F7)"))  ui.reqLoadState = true;
         ImGui::TextDisabled("A state carries a fingerprint of the config: one taken on");
         ImGui::TextDisabled("another machine/ROM is refused rather than applied.");
+        if (ui.machine && ui.machine->gemdos.active()) {
+            ImGui::TextDisabled("Open host files must stay unchanged until restore.");
+            ImGui::TextDisabled("Their contents are not rolled back by a state.");
+        }
         break;
     }
     case kCfgProfiles: {
@@ -812,9 +823,9 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
     case kCfgKiosk: {
         ImGui::TextWrapped("Kiosk mode goes full screen with no chrome, freezes the "
                            "configuration (nothing more is written to neost.cfg) and "
-                           "enables keyboard joystick emulation. Leave it with F8.");
+                           "enables keyboard joystick emulation. Leave it with Alt+Enter.");
         ImGui::Separator();
-        if (ImGui::Button(ICON_FA_DESKTOP " Switch to kiosk mode (F8)")) ui.reqKiosk = true;
+        if (ImGui::Button(ICON_FA_DESKTOP " Switch to kiosk mode (Ctrl+Alt+F)")) ui.reqKiosk = true;
         break;
     }
     default: break;

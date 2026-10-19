@@ -1,7 +1,7 @@
 # Cartographie Hatari ↔ NeoST — audit de correspondance
 
 **But** : inventaire maître de la correspondance code-à-code entre `extern/hatari/src`
-(source de vérité matérielle) et NeoST, pour **préparer les travaux de précision** :
+(référence comparative) et NeoST, pour **préparer les travaux de précision** :
 chaque mécanisme Hatari est classé porté / partiel / absent / divergent-volontaire, avec
 références `fichier:ligne` des deux côtés. Complète [`HATARI_DIVERGENCES.md`](HATARI_DIVERGENCES.md)
 (inventaire des écarts) par la vue « où vit quoi ».
@@ -65,7 +65,7 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | stMemory.c:532-592 (STAddrToPointer/CheckAreaType) | Bus.cpp:183-193 (hostRamPtr) | porté | Test de contiguïté plus strict, repli octet par octet. |
 | stMemory.c:250-252 (miroir vecteurs ROM $0/$4) | Bus.cpp:510-513 (seedResetVectors) | porté | Le reste de SetDefaultConfig = fastboot, volontairement non porté. |
 | cpu/debug get_iword_debug | Bus.cpp:495-506 (peek8/16) | porté | MMIO/trous → 0xFF sans dispatch ni wait state. |
-| m68000.c (MegaSTE_Cache_*) + ioMemTabSTE.c:39-52 | Bus.cpp:421-473, 648-651, 742-748 | porté | 8192 lignes tag+mot, cache seulement à 16 MHz, invalidations. |
+| m68000.c (MegaSTE_Cache_*) + ioMemTabSTE.c:39-52 | `Bus::megaSteCache*`, `NeostMoira::willAccessBus/readMste16Mhz` | porté | 8192 lignes tag+mot ; décision hit/miss avant les cycles, alignement RAM au début et donnée du hit conservée pendant DMA. Onze sondes CPU/cache strictes, global blitter/IRQ à 16 MHz encore ouvert. |
 | fdc.c:4688+ (M68000_WaitState(4) sur $FF8604/06) | Bus.cpp:579-580, 681-684 (sans wait) | **absent ⚠** | CONFIRMÉ (triple : bus, FDC, CPU) : seul wait-state MMIO manquant ; PSG/MFP/ACIA sont facturés (Bus.cpp:576/590/600). Asymétrie Hatari respectée : rien sur read $8606 ni $8609/0B/0D. |
 | ioMem.c:523-527, 590-594 (garde wrap $FFFFFE) | Bus.cpp:516-535 (wrap via ADDR_MASK) | volontaire | Cas dégénéré sans logiciel connu. |
 
@@ -74,10 +74,12 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | Hatari | NeoST | Statut | Note |
 |---|---|---|---|
 | video.c:810/904 (Video_Reset + Reset_Glue) | Shifter.cpp:148-204 (reset) | porté | Palette non touchée, différés annulés — conforme. |
-| video.c:4620/4459/4584 (ClearOnVBL/ResetShifterTimings/InitShifterLines) | Shifter.cpp:250-321 (beginFrame) | porté | Divergence assumée : res/freq verrouillées par trame (géométrie mid-trame = canal LINELEN opt-in). |
+| video.c (InterruptHandler_VBL → ClearOnVBL → ResetShifterTimings) | Machine::onVbl / scheduleFrameEvents + Shifter::frameTimingChanged | porté | Géométrie relue au signal VBL (X=64/68) si elle change depuis X=0 ; évite une fausse trame mono sur une impulsion de bordure Cuddly Fullscreen. Les événements futurs et frameEnd sont réarmés, sans doubler la VBL. Géométrie mid-trame = canal LINELEN opt-in. |
 | video.c:2197-2438, 2667-2991 (Update_Glue_State, branche STF) | Shifter.cpp:955-1135 (updateGlueState) | porté | Quasi ligne-à-ligne, glueSelfTest 19/19. Branche STE ABSENTE (V1, → candidat n°25). |
 | video.c:3523 (StartHBL) | Shifter.cpp:931-948 (startHBL) | porté | Défauts par res/freq, DisplayStartCycle pré-positionné respecté. |
 | video.c:3398/3882 (EndHBL + CopyScreenLineColor) | Shifter.cpp:464-593 + 1140-1479 (replayGlue/renderGlueFrame) | volontaire | Architecture différente : rendu live par-ligne + rejeu Glue fin de trame. Manquent : BORDERMASK STE, med-res par-ligne, bSteBorderFlag. |
+| video.c (`Video_CopyScreenLineColor`, masques NO_DE/BLANK/STOP_MIDDLE) | `Shifter::finishFrame` → `renderGlueFrame` | porté | Correction 2026-10-19 : le replay est aussi déclenché sans palette ni extension de bordure. Onze contrôles Glue et huit sondes ST/STE ; EMPTY_LINE/BLANK_LINE ne sont plus produits au pin. Palette 0 comparative, couleur physique du blanking non mesurée. |
+| video.c (`Video_Update_Glue_State`, NO_SYNC/SYNC_HIGH et annulations, `BlankLines`) | `Shifter::updateGlueState`, `startHBL`, `glueLineBytes`, `liveLineDisplayed`, `renderGlueFrame` | porté et gardé | Qualification comparative 2026-10-19 : huit sondes ST/STE et 52 contrôles Glue ; ligne NO_DE/NO_COUNT, pas d'avance vidéo ni de tic Timer B, extension basse et annulation. Aucune modification d'exécution ; signaux électriques non mesurés. |
 | video.c:3798 (CopyScreenLineMono) | Shifter.cpp (renderLine hi + early-return) | porté **✗** | Le « partiel : pas de Glue/bordure en mono » est **RÉFUTÉ** : CopyScreenLineMono d'Hatari n'a AUCUNE gestion de tricks non plus (« no overscan », video.c:3497-3501) ; NeoST porte tout ce qu'elle fait réellement (avance +2 mono, LineWidth/HSCROLL différés) — iso-comportement. |
 | video.c:3238-3387 (InterruptHandler_HBL) | Machine.cpp:362-392 (onHbl) + scheduleFrameEvents | porté | HBL/ligne, raise niveau 2, DmaSnd HBL, broche pré-armée. Position : **tranché WS3 dans l'arbre** (kHblOff défaut 0 → 512). |
 | video.c:2231-2232, 2849-2877, 3336 (HBL_Pos/nCyclesPerLine chaîné) | Shifter.cpp:990-995, 361-396 + Machine.cpp:127-139, 386-389, 444 | **partiel ⚠** | CONFIRMÉ : canal COMPLET porté, gated `NEOST_LINELEN`. Le verrou est en DEUX moitiés de défaut différent : Machine (reprogrammation HBL + cumul `lineCarry_`) est **ON par défaut**, les 3 sites Shifter (attribution des écritures + lecture du compteur sur la grille réelle) sont **OFF par défaut** — c'est cet hybride qui est validé au pixel. `NEOST_LINELEN=0` désactive les deux, `=1` les active les deux (les sites Shifter testaient la seule PRÉSENCE de la variable jusqu'au 2026-07-29 : `=0` en activait donc la moitié Shifter, et l'A/B mesurait un hybride inverse). L'ACTIVATION complète par défaut comme candidat est réfutée (voir ✗ ci-dessous). |
@@ -316,8 +318,8 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | blitter.c:777-857 (Step) | Blitter.cpp:388-465 | porté | Endmasks, nfsr latché, halftone_line ±1. |
 | blitter.c:463-481 (ContinueNonHog) | Blitter.cpp:367-368 + breaks | porté | 64 accès exacts (63 si busCountError_), état de mot persisté. |
 | blitter.c:871-946 (Blitter_Start) | Blitter.cpp:160-231, 240-258, 480-491 | porté | GPIP3 ré-armée, ctrl recomposé, fenêtre CPU armée. |
-| blitter.c:342-375 (AddCycles/FlushCycles → CycInt_Process PAR ACCÈS) | Blitter.cpp:81-84 (stall en bloc) | **partiel ⚠** | CONFIRMÉ : Hatari interfolie HBL/Timer B/vidéo au cycle exact PENDANT le blit ; NeoST exécute la tranche instantanément puis stalle — les écritures du blit tombent toutes du même côté d'une capture lineSnap_. Non listé dans HATARI_DIVERGENCES § Blitter. → candidat n°6. |
-| blitter.c:395-421 (BusArbitration + cache MegaSTE) | Blitter.cpp:206-213, 242-248, 321 | porté | 4/8 + 4 identique. |
+| blitter.c:342-375 (AddCycles/FlushCycles → CycInt_Process PAR ACCÈS) | `Blitter::billCycles`, `Cpu68k::rebaseQuantumAndSync` | porté | Facturation et dispatch par accès ; rebase du quantum quand la tranche tourne dans le CPU, crédit direct hors quantum. BL4 conservé avec la reprise sous-instruction (2026-10-19). |
+| blitter.c:395-421 (BusArbitration + cache MegaSTE) | `Blitter::onSlice` | porté | 4/8 + 4 ; cache invalidé AVANT arbitration, observé par un événement pendant ces huit cycles (2026-10-19). |
 | blitter.c:1393-1483 (Control_WriteByte) | Blitter.cpp:88-153, 160-231, 294-299 | porté | Restart TOS, pause/reprise ; écritures mot/long atomiques (Bus.cpp:543/555). |
 | blitter.c:1489-1495 (Skew + latches) | Blitter.cpp:327-334 | porté | Relecture en début de tranche = granularité identique. |
 | blitter.c:1338-1367 (WordsPerLine/Lines) | Blitter.cpp:116-127, 140-148 | porté | Y 0→65536 à l'écriture (B1). |
@@ -325,19 +327,35 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | blitter.c (masques matériels à l'écriture) | Blitter.cpp:41-46 (regWriteMask) | porté | Relecture fidèle. |
 | blitter.c:1574-1593 (bug « 63 accès ») | Blitter.cpp:278-289 + Cpu68k.cpp:294-297, 454-468 | porté | Fenêtre PRE_START datée à l'horloge bus absolue. |
 | blitter.c:1603-1626 (fenêtre CPU 64 accès réels) | Blitter.cpp:264-272 via Bus::blitterCountCpu | porté | Modèle CE (callbacks mémoire Moira). |
-| blitter.c:954-961, 1641-1659 (Check_Simultaneous_CPU) | — | **absent ⚠** | CONFIRMÉ : exécution CPU parallèle pendant la tranche absente (stall en bloc) ; étalon Hatari : Relapse. → candidat n°7. |
-| blitter.c:1672-1694 (do_cycles_after : PRE_START + cpu_bus_rmw) | `Cpu68k::run`, `Blitter::onSlice` | garde dédiée non nécessaire au modèle courant | Aucun dispatch Scheduler entre lecture et écriture TAS ; tranche échue servie après l’instruction. Banc avec vrai TAS mémoire : atomicité conservée sans nouveau hook. À préserver si dispatch CPU par accès ajouté. L’ancien écart start/restart « 4+4 vs 4 » reste réfuté. |
+| blitter.c:954-961, 1641-1659 (Check_Simultaneous_CPU) | `NeostMoira::sync`, `Cpu68k::serialize` | porté HOG/partagé 2026-10-19 | Crédit CPU interne jusqu’au prochain accès bus, conservé en v49 ; sondes tailles différentes, MULU, TAS et RAM ST. |
+| blitter.c:1672-1694 (do_cycles_after : PRE_START + cpu_bus_rmw) | `NeostMoira::sync`, `Scheduler::runBlitterTo`, `Moira::execTasEa` | porté 2026-10-19 | Reprise ciblée pendant l’instruction, avant/après chaque cycle bus ; verrou TAS explicite, libéré avant préfetch et sur exception. Aucun dispatch vidéo par le seul helper PRE_START ; dispatch DMA BL4 préservé par accès. |
 | blitter.c:943, 1467, 1502-1510 (forfait non-CE 256 cyc) | Blitter.cpp:240 (onSlice) | volontaire | Seul le modèle CE (celui de l'oracle) est gardé. |
 | blitter.c:895/916 (GPIP3/GPU_DONE) | Blitter.cpp:203, 306-309 + Mfp.hpp:132 | porté | Front AER. |
+| Manuel Atari BLiTTER, « Bus accesses / Busy » (lien BUSY / interruption) | `Blitter::runSlice`, `Blitter::finishTransfer` | corrigé 2026-10-19 | BUSY maintenu pendant restitution, puis effacé avec GPU_DONE ; événement témoin 8/16 MHz × HOG/partagé. |
 | blitter.c (Falcon/TT-RAM 32 bits, DSP) | — | volontaire | Sans objet. |
 | blitter.c:316-334, 1516-1565 (stats/snapshots) | — | volontaire | Plomberie ; NEOST_BLIT_TRACE en remplacement. |
 
 **✗ Réfuté (blitter)** : *MegaSTE 16 MHz — hits du cache comptés comme accès CPU* : Hatari compte
 LUI AUSSI les hits du cache dans la fenêtre des 64 accès (m68000.c:1444-1676 : mem_access_before/after
-appelés inconditionnellement, hit ou miss). NeoST reproduit exactement la source de vérité ; le
-commentaire Blitter.hpp:27-28 documente un écart vs le VRAI matériel, pas vs l'oracle.
+appelés inconditionnellement, hit ou miss). Cette concordance ne suffit pas
+à valider le matériel : la visibilité des hits pour le compteur du blitter
+MegaSTE reste à qualifier par documentation ou mesure matérielle. Le
+commentaire de `Blitter.hpp` signale cette approximation, pas une validation.
 
 ## 9. CPU / cycles / ordonnanceur (cycInt.c, cycles.c, clocks_timings.c, hatari-glue.c, newcpu.c)
+
+**Domaines IACK MegaSTE, 2026-10-19** : `NeostMoira::iackSyncAfter` sépare
+le bloc périphérique (cycles bus) des quatre cycles internes (cycles CPU),
+suivant la distinction CLK / attentes du manuel Motorola, section 8.
+Les multiplier ensemble doublait l'idle à 16 MHz. Vérifié sur les 72 IACK
+MFP par capture et sur les dix phases E-clock HBL/VBL à 8/16 MHz ; aucune
+égalité globale avec Hatari modifié déduite de cette correction.
+
+La [sonde IACK matérielle](MFP_IACK_MEASUREMENT.md) produit désormais un PRG
+relogeable et une disquette AUTO. Son protocole passe sous NeoST ; aucune
+mesure sur Atari réel n'est revendiquée. L'expérience de conversion du bloc
+MFP d'Hatari en cycles bus laisse +3/+4 cycles à 16 MHz : la constante reste
+à trancher sur la carte, indépendamment des corrections du blitter.
 
 | Hatari | NeoST | Statut | Note |
 |---|---|---|---|
@@ -375,6 +393,7 @@ plafond de dépense) — relecture directe des deux côtés, **sans vérificatio
 | Hatari | NeoST | Statut | Note |
 |---|---|---|---|
 | gemdos.c:4087 `GemDOS_Trap` (dispatch) | GemdosHd.cpp:1381-1406 | porté | Même jeu d'appels interceptés (0x00, 0x0E, 0x31, 0x36, 0x39-0x43, 0x46, 0x47, 0x4B, 0x4C, 0x4E, 0x4F, 0x56, 0x57). |
+| gemdos.c `GemDOS_MemorySnapShot_Capture`, `save_file_handle_info/restore_file_handle_info` | `GemdosHd::serialize`, `Machine::serializeState/loadState` | porté avec politique stricte, 2026-10-19 | v48 : handles, Fforce, DTA, chemins et Pexec. Aucun rejeu de wb+ ; fichier absent/changé refusé au lieu d'un handle perdu ou d'un simple avertissement. Préparation puis commit atomique ; configuration des racines vérifiée. |
 | gemdos.c `GemDOS_SFirst/SNext/PopulateDTA`, str.c `Str_Filename_Host2Atari` | `GemdosHd::gemSFirst/gemSNext/populateDTA` | porté, corrigé 2026-10-19 | Points seulement en sous-dossier selon masque/attributs, `..` préservé ; erreur `stat` différente d’ENOENT → EINTRN, entrée disparue sautée. |
 | gemdos.c:1600 `GemDOS_Cconws` + `GemDOS_Super` (0x09/0x20) | — | volontaire | Chemins « mode test sans TOS » (`bUseTos=false`) ; NeoST exécute toujours un TOS (GemdosHd.cpp:6-8). |
 | gemdos.c:350/1183 `Str_Filename_Atari2Host/Host2Atari`, configuration.c:654 | `GemdosHd` | défaut conforme, option non portée | Conversion charset désactivée par défaut dans les deux émulateurs. L’option activable d’Hatari reste absente ; ce n’est pas un écart de comportement par défaut. Recomposition NFD/NFC hôte déjà portée séparément. |

@@ -18,6 +18,16 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
 - **VBlank couleur** : comparateurs de fin de ligne 50/60 Hz et remise à ON au
   VSYNC ; masquage à la palette 0 et suppression de l’avancement de base vidéo.
   Les deux étalons générés `vblank_on/off` correspondent à l’oracle Hatari.
+- **Lignes masquées sans écriture palette** : le rendu final applique NO_DE,
+  BLANK et STOP_MIDDLE même sans extension de bordure. Compteur vidéo et
+  cadrage adaptatif conservent leurs décisions propres. Huit sondes générées
+  `blankline_*` couvrent ST/STE et la fenêtre de préchargement différente.
+  La couleur physique du blanking reste à mesurer (palette 0 comme Hatari).
+- **NO_SYNC/SYNC_HIGH** : ligne suivante sans DE ni avance RAM, Timer B inhibé
+  sur cette ligne, fin d'affichage décalée ; annulation précoce supprimant les
+  masques et l'extension. Huit sondes de boot ST/STE et 52 contrôles Glue
+  supplémentaires couvrent le modèle comparatif, sans changer l'exécution.
+  Les signaux physiques de synchronisation restent à mesurer sur Atari.
 - **Registres Blitter** : miroir MMIO brut pour les lectures octet des registres
   mot rejetées par les handlers Hatari. Les lectures mot/long rafraîchissent ce
   miroir ; reset chaud le conserve, reset froid l’efface. $FF860E/F est un registre
@@ -676,6 +686,14 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   **I7** son DMA XSINT (moniteur XOR XSINT).
 
 ## Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)
+- **Souris Desktop sans capture** (2026-10-19) : option Input persistée
+  (`desktop_mouse=1`). Coordonnées de l'image converties avec UV, bordures,
+  résolution, zoom et courbure CRT ; retour de position GEM pour réaligner
+  le curseur à la réentrée. Paquets IKBD normaux, un seul en attente ; clics
+  ordonnés à leur position, relâchement hors image et annulation à la perte
+  de focus. Repérage unique du tableau ABI Line-A en RAM, cache revalidé ;
+  aucune adresse spécifique à une ROM ni écriture directe de ses variables.
+  Mode destiné au pilote GEM standard ; capture relative toujours disponible.
 - ACIA clavier + file de scancodes ; mapping GLFW → scancodes ST. Ligne **GPIP4** câblée
   sur RDRF de l'ACIA. **Réponse de reset IKBD différée** (`$F1` ~502000 cyc après `$80,$01`).
 - **ACIA MIDI — réception 6850** : un seul RDR pour un caractère achevé.
@@ -1266,7 +1284,11 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   halftone, endmasks, comptes X/Y, incréments signés. Reset chaud : RAM
   halftone et pipeline source conservés comme Hatari ; remise à zéro froide
   déterministe conservée comme convention NeoST, sans mesure power-on. Présent Mega ST/STE/Mega STE,
-  absent STF. **IRQ de fin sur GPIP3**, BUSY+HOG effacés à `y_count==0`.
+  absent STF. **IRQ de fin sur GPIP3** : à `y_count==0`, BUSY+HOG restent
+  posés pendant la restitution du bus, puis sont effacés avec GPU_DONE.
+  Cohérence observée pendant l'arbitrage à 8/16 MHz et en HOG/partagé ;
+  155 contrôles CPU/blitter sous ASan/UBSan. La sonde MegaSTE v2 refuse
+  directement une IRQ reçue pendant BUSY (douze configurations NeoST passent).
 - **Blitter — partage de bus (hog ET non-hog)** (port du modèle non-CE d'Hatari,
   blitter.c:864-944) : le transfert n'est plus instantané. **HOG** (bit6) : le blitter
   garde le bus jusqu'à `y_count=0`, le CPU est arrêté toute la durée (4 cycles par
@@ -1499,7 +1521,8 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
     SR restauré après `--bus-selftest`.
   - Consigné sans correction (divergences volontaires / hors périmètre) : SCC RR9 (NeoST suit
     la datasheet, Hatari rend WR9), $FF8E07 (bug copier-coller Hatari), purge des pendings SCU
-    à l'accès des masques (modèle « sources vivantes »), handles GEMDOS HD hors snapshot.
+    à l'accès des masques (modèle « sources vivantes »). Les handles GEMDOS HD
+    sont inclus depuis v48 (2026-10-19).
 - **Blitter — partage de bus non-hog cycle-exact (2ᵉ passe, 2026-07-07 soir)** : les deux
   dernières divergences de timing portées depuis le modèle CE d'Hatari (celui de l'oracle).
   **Suspension MID-WORD** (`BLITTER_CONTINUE_LATER_IF_MAX_BUS_REACHED`) : la tranche rend le
@@ -1889,7 +1912,8 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   IO « FAST »** sans wait state (mesuré sur vrai STF par Hatari) → 2× plus rapides ;
   wait states PSG/MFP/ACIA et alignement shifter ×2 ; E-Clock recalée sur l'horloge
   bus. **Musashi** : débit ×2 uniforme, comme Hatari **non** cycle-exact. Validé par
-  ROMs de test synthétiques (boucle `nop`+`bra` comptée sur 10 trames, Moira) :
+  ROMs de test synthétiques (mesure historique avant correction des bornes RAM
+  du 2026-10-19, boucle `nop`+`bra` comptée sur 10 trames, Moira) :
   **ROM 16 MHz = 2.000×**, **RAM 16 MHz sans cache = 0,88×** (aucun bénéfice, le bus
   8 MHz domine — fidèle au matériel), **RAM 16 MHz + cache = 2.000×** ; Musashi = 2×
   partout (non-CE assumé). Reset/reconfigure → retour 8 MHz (`MegaSTE_CPU_Cache_Reset`).
@@ -1902,6 +1926,19 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   cartouche, ni accès fautifs (mot impair, `$0-$3` en écriture, `$0-$7FF` en user).
   **Invalidation** : bit0 → 0, reset, bus error, et BGACK (départ blitter, DMA
   FDC/ACSI) — les écritures DMA ne traversent pas le cache, comme sur le vrai matériel.
+- **Bornes bus/cache 16 MHz (2026-10-19)** : misses alignés avant SYNC(2),
+  quatre cycles CPU RAM supplémentaires servis par `sync`, hit/miss et donnée
+  choisie avant les cycles. Un hit déjà lu reste stable si le blitter change
+  ensuite la RAM. Cache invalidé avant les huit cycles d'arbitrage, comme Hatari.
+  Onze sondes CPU/cache (off, fill, hit ; byte/word/long et écritures) en égalité
+  exacte après conversion CPU 16 MHz → bus 8 MHz ; tests locaux de phases et DMA.
+  PRE_START blitter à 16 MHz corrigé : cinq cycles bus depuis le callback CPU.
+  Après IACK, les quatre cycles internes restent en horloge CPU : bloc MFP
+  de 36 cycles CPU à 16 MHz au lieu de 40, bloc périphérique conservé ; même
+  séparation pour HBL/VBL. 199 contrôles CPU/blitter sous ASan/UBSan.
+  Douze cas globaux passent données, IRQ et bornes physiques. La comparaison
+  temporelle exacte reste ouverte : deux défauts Hatari isolés et des écarts
+  résiduels après correctifs expérimentaux (`HATARI_MEGASTE_AUDIT.md`).
 - **Séparation user/supervisor** (`Bus::busFaultN(addr, n, write)`, port des banques
   `SysMem_*`/`ROMmem_*` de `cpu/memory.c` + `is_super_access` d'`ioMem.c`) — pour TOUS
   les modèles : en mode **utilisateur** (bit S=0, lu via `Cpu68k::supervisor()`), tout
@@ -2109,12 +2146,24 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   byte-identiques (divergence = 1ᵉʳ offset localisé) — PASSE sur boot ST, STE (son DMA +
   vidéo STE), Mega STE (SCC actif), démo No Cooper (overscan med-res). I/O fichier prouvée :
   save@60 → fichier 1,3 Mo → load + run → écran **diff_px=0** vs run direct (ST comme Mega
-  STE). Format `'NSTS'` versionné — **v17 actuel** ; toute autre version est rejetée
-  d'office (`Machine::loadState` teste `version != 17`). GUI : **F5** sauver / **F7** charger (slot
+  STE). Format `'NSTS'` versionné — **v49 actuel** ; toute autre version est rejetée
+  d'office par `Machine::loadState`. GUI : **F5** sauver / **F7** charger (slot
   `neost.state`, menu Machine, overlay). Headless : `--save-state`/`--load-state`, auto-test
   `--save-state-test`. Hors-snapshot **par conception** : le CONTENU des images disquette/
   disque dur vit dans les fichiers hôtes (`writeBack` les persiste au fil de l'eau, comme
   Hatari) — un load ne les *rembobine* donc pas.
+- **Recouvrement CPU/blitter** (v49, 2026-10-19) : crédit de cycles internes
+  conservé à la reprise ; test réel TAS D0 → snapshot → BRA, mutant sans
+  crédit détecté. Aucun pointeur ni verrou transitoire de cycle bus sauvegardé.
+- **A13 — Reprise GEMDOS HD** (2026-10-19) : handles (numéro, chemin, mode,
+  basepage, position), redirections Fforce, recherches Fsfirst/Fsnext,
+  répertoires courants et phase Pexec inclus en v48. Réouverture sans troncature
+  (Fcreate `wb+` rouvre en `rb+`), montage identique exigé. Taille et horodatage
+  hôte des fichiers ouverts vérifiés ; fichier absent/modifié/inaccessible
+  ou chemin hors montage → refus intégral et session courante conservée.
+  Préparation de tous les handles avant commit, après validation des puces.
+  Le contenu des fichiers hôtes reste extérieur à l'état. Échecs de sauvegarde
+  remontés au GUI et au serveur, ancien slot serveur conservé.
 - **Débogueur interactif — breakpoints, watchpoints, pas-à-pas, symboles (2026-07-11)** :
   réutilise le `Debugger` intégré de Moira (conteneur `Guards`). **Breakpoints PC**
   « break-before » (pré-check dans `Cpu68k::run`, coût nul si aucun ; skip-once à la

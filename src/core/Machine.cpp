@@ -393,7 +393,7 @@ void Machine::installSchedulerCallbacks() {
 // continue) = frameStart_ + position dans la trame. Les Timers A/C/D persistent
 // d'une trame à l'autre (datés par le MFP) et ne sont PAS réarmés ici.
 
-void Machine::scheduleFrameEvents() {
+void Machine::scheduleFrameEvents(bool scheduleVbl) {
     renderLine_ = 0;
     tbLine_     = 0;
     hblLine_    = 0;
@@ -440,8 +440,10 @@ void Machine::scheduleFrameEvents() {
     // VBL_VIDEO_CYCLE_OFFSET : STE = 68 ; STF = 64 en WS2/3/4 (tranché WS3), 60 en WS1.
     const int vblOffset = machineIsSte(machineType_) ? 68
                         : (Shifter::wakestate() == 1 ? 60 : 64);
-    sched.schedule(Scheduler::VBL, frameStart_ + vblOffset);
-    cpu.armVblPinAt(frameStart_ + vblOffset);          // broche niveau 4 au cycle exact (cf. armHblPinAt)
+    if (scheduleVbl) {
+        sched.schedule(Scheduler::VBL, frameStart_ + vblOffset);
+        cpu.armVblPinAt(frameStart_ + vblOffset);
+    }
     // RESTART du compteur vidéo en FIN de trame (port Video_RestartVideoCounter,
     // ULM DSOTS) : ligne 310 (50 Hz, 313 lignes) / 260 (60 Hz, 263), cycle 56
     // (STF) / 60 (STE). La base $FF8201/03 est relue À CET INSTANT — après le
@@ -449,6 +451,7 @@ void Machine::scheduleFrameEvents() {
     // beam-syncés (Enchanted Land en jeu). Le check de fréquence (registre sync
     // LIVE, comme Hatari qui relit $FF820A) se fait dans le callback. Pas de
     // restart en 71 Hz (Hatari : lignes définies pour 50/60 Hz seulement).
+    sched.cancel(Scheduler::VC_RESTART);
     if (lpf_ == 313 || lpf_ == 263) {
         const int restartLine = lpf_ - 3;
         const int restartPos  = machineIsSte(machineType_) ? 60 : 56;
@@ -600,6 +603,16 @@ void Machine::onHbl() {
 }
 
 void Machine::onVbl() {
+    // Les registres sont échantillonnés au signal VBL (X=64/68), pas à X=0.
+    // Une impulsion hi-res pour les bordures peut chevaucher X=0 puis finir
+    // avant VBL : la prendre pour une trame mono avançait l'IRQ suivante de
+    // 48032 cycles et détruisait les tables du fullscreen de Cuddly.
+    // Video_InterruptHandler_VBL → Video_ClearOnVBL → ResetShifterTimings.
+    if (shifter.frameTimingChanged()) {
+        scheduleFrameEvents(false); // l'événement VBL courant est déjà consommé
+        frameEnd_ = frameStart_ + static_cast<int64_t>(lpf_) * cpl_;
+        rtc.setSecondCycles(static_cast<int64_t>(lpf_) * cpl_ * shifter.refreshHz());
+    }
     fdc.onVbl();    // Mediach : compter les VBL réels, même si la fréquence change
     // DIAG beam-sync : dépassement (carry) du service VBL vs cycle théorique 64/68
     // = équivalent du pending_cyc d'Hatari (video_vbl). Compare la phase CPU↔faisceau.
@@ -648,7 +661,6 @@ void Machine::runFrame() {
     // breakpoint (frameInProgress_ resté vrai) on SAUTE l'amorce et on REPREND la même
     // trame — pas de ré-ancrage → aucune dérive d'horloge CPU↔vidéo.
     if (!frameInProgress_) beginFrame_();
-    const int64_t frameEnd = frameEnd_;
     // MODÈLE D'EXÉCUTION : BLOC. Le bloc CPU est borné au prochain événement,
     // dispatché à la frontière via runTo, avec préemption si un événement plus proche
     // est planifié en cours de bloc. sync() n'y avance QUE l'horloge.
@@ -664,9 +676,9 @@ void Machine::runFrame() {
     //
     // cpu.run() termine son instruction et peut dépasser frameEnd de quelques cycles
     // (carry, comme Hatari) ; la boucle reboucle si nécessaire.
-    while (sched.now() < frameEnd) {
+    while (sched.now() < frameEnd_) {
         int64_t next = sched.nextDue();
-        if (next < 0 || next > frameEnd) next = frameEnd;
+        if (next < 0 || next > frameEnd_) next = frameEnd_;
         const int64_t want = next - sched.now();
         sched.beginRun(next);
         const int ran = cpu.run(static_cast<int>(want > 0 ? want : 1));
@@ -752,11 +764,11 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 47; // progression TX ACIA et réception SCI bit à bit
+static constexpr uint16_t kStateVersion = 49; // crédit de recouvrement CPU/blitter
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
-void Machine::serializeState(StateArchive& ar) {
+void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v47 : progression TX ACIA et réception SCI bit à bit
+    uint16_t version = kStateVersion; // v49 : recouvrement CPU/blitter
                                       // v46 : initialisation du diviseur de l’ACIA clavier
                                       // v45 : cible et position d’une écriture ACSI différée
                                       // v44 : overrun USART MFP en attente de lecture UDR
@@ -813,11 +825,8 @@ void Machine::serializeState(StateArchive& ar) {
     ar(mt); ar(ramSz); ar(tosV);
     // Deux composantes d'empreinte ajoutées en v7, toutes deux nées d'un état ACCEPTÉ
     // à tort qui produisait une machine incohérente :
-    //  · bit0 = HD GEMDOS actif. GemdosHd n'a AUCUN serialize (handles de fichiers
-    //    hôte, DTA d'énumération en cours, lecteur courant, chemin courant) : recharger
-    //    entre une session avec et une session sans laissait _drvbits annoncer C: et le
-    //    vecteur trap #1 pointer dans le port cartouche vide → premier appel GEMDOS
-    //    dans le décor. Tant que ce composant n'est pas sérialisable, on REFUSE.
+    //  · bit0 = HD GEMDOS actif. L'état invité est sérialisé depuis v48, mais
+    //    le montage et la cartouche doivent toujours correspondre à la session.
     //  · empreinte de la cartouche : le port $FA0000 n'est peuplé que si une cartouche
     //    est montée, et la RAM restaurée peut y pointer.
     //  · bit1 = EtherNEC attaché (v13, ex-bit2). Le pointeur bus.ne2000 est réétabli
@@ -918,7 +927,7 @@ void Machine::serializeState(StateArchive& ar) {
     usatan.serialize(ar);   mapAt("isp1160", ar.saveSize());   // UltraSatan (v12)
     isp1160.serialize(ar);  mapAt("dongle",  ar.saveSize());   // ISP1160/NetUSBee (v12)
     dongle.serialize(ar);   mapAt("ports",   ar.saveSize());   // clé cartouche (v14/v15)
-    ports.serialize(ar);    mapAt("fin",     ar.saveSize());   // périphériques des ports (v16)
+    ports.serialize(ar);    mapAt("gemdos",  ar.saveSize());   // périphériques des ports (v16)
     if (ar.loading()) {
         // tbScheduledAt_ n'est pas dans le flux : chaque schedule(TIMER_B) lui est
         // apparié, donc il se re-dérive de l'échéance restaurée. Le laisser à la
@@ -930,6 +939,11 @@ void Machine::serializeState(StateArchive& ar) {
         bus.refreshUds();   // la clé noire a pu (dé)verrouiller son choix
         portsApply(/*fromLoad=*/true);   // re-câble hooks/DAC SANS toucher aux lignes GPIP restaurées
     }
+    // Toujours EN DERNIER : réouvertures préparées sans toucher aux handles
+    // courants, puis commit uniquement si tout le flux précédent est valide.
+    // Le rollback machine garde les handles vivants (aucun commit en échec).
+    if (hostFiles) gemdos.serialize(ar);
+    mapAt("fin", ar.saveSize());
 }
 
 // En-tête d'un .state v23 (inchangé depuis v19) : magic(4) version(2) machine(1) ram(4) tos(2) flags(1)
@@ -966,19 +980,71 @@ static uint32_t stateCrc32(const uint8_t* p, std::size_t n) {
     return ~c;
 }
 
-void Machine::saveState(std::vector<uint8_t>& out) {
+// Line-A ABI : DEV_TAB=-692, GCURX/Y=-602/-600, MOUSE_BT=-596.
+// Primaire : EmuTOS bios/lineavars.S et vdi/vdi_asm.S. Lecture seule : les
+// mouvements passent toujours par l'IKBD et le pilote souris du TOS.
+bool Machine::desktopMousePosition(int& x, int& y, int& width, int& height) const {
+    // Le bureau intégré peut ne jamais exécuter A000. Repérer le tableau ABI
+    // complet, sans adresse propre à un TOS ni injection d'instructions.
+    // Aucun résultat ambigu n'est accepté ; le cache est revalidé (reset/load).
+    width = shifter.activeWidth(); height = shifter.activeHeight();
+    const int planes = width == 320 ? 4 : height == 400 ? 1 : 2;
+    auto valid = [&](uint32_t base) {
+        return base >= 692 && base <= bus.ram.size() - 4 && !(base & 1)
+            && bus.peek16(base - 692) == width - 1 && bus.peek16(base - 690) == height - 1
+            && bus.peek16(base - 12) == width && bus.peek16(base - 4) == height
+            && bus.peek16(base) == planes && bus.peek16(base + 2) == width * planes / 8
+            && bus.peek16(base - 2) == width * planes / 8;
+    };
+    if (!valid(desktopLineA_)) {
+        desktopLineA_ = 0;
+        for (uint32_t base = 692; base + 4 <= bus.ram.size(); base += 2) {
+            if (!valid(base)) continue;
+            if (desktopLineA_) { desktopLineA_ = 0; return false; }
+            desktopLineA_ = base;
+        }
+    }
+    const uint32_t base = desktopLineA_;
+    if (!base) return false;
+    x = bus.peek16(base - 602); y = bus.peek16(base - 600);
+    width = int(bus.peek16(base - 692)) + 1;
+    height = int(bus.peek16(base - 690)) + 1;
+    return width == shifter.activeWidth() && height == shifter.activeHeight()
+        && x < width && y < height;
+}
+
+bool Machine::desktopMouseMove(int x, int y, bool left, bool right) {
+    int currentX, currentY, width, height;
+    if (!desktopMousePosition(currentX, currentY, width, height) || !ikbd.desktopMouseReady()) return false;
+    x = std::clamp(x, 0, width - 1); y = std::clamp(y, 0, height - 1);
+    const int buttons = bus.peek16(desktopLineA_ - 596) & 3;
+    if (x != currentX || y != currentY) {
+        // Un seul paquet à la fois, puis retour du pilote avant la correction
+        // suivante : ni dérive à la réentrée ni accumulation pendant une pause.
+        ikbd.mouseEvent(std::clamp(x - currentX, -127, 127),
+                        std::clamp(y - currentY, -127, 127), buttons & 1, buttons & 2);
+        return false; // les clics attendent que le curseur ait atteint leur position
+    }
+    if (buttons != ((left ? 1 : 0) | (right ? 2 : 0))) ikbd.mouseEvent(0, 0, left, right);
+    return true;
+}
+
+bool Machine::saveState(std::vector<uint8_t>& out) {
     out.clear();
     StateArchive ar = StateArchive::saver(out);
     serializeState(ar);
+    if (!ar.ok()) { out.clear(); return false; }
     // Patch du CRC32 du payload à son offset fixe (le flux symétrique a écrit 0).
     if (out.size() >= kStateHeaderSize) {
         const uint32_t crc = stateCrc32(out.data() + kStateHeaderSize,
                                         out.size() - kStateHeaderSize);
         std::memcpy(out.data() + kStateCrcOffset, &crc, 4);
     }
+    return true;
 }
 
 bool Machine::loadState(const uint8_t* data, std::size_t n) {
+    desktopLineA_ = 0;
     // Valide l'en-tête (magic + version + empreinte de config + CRC du payload)
     // AVANT de restaurer quoi que ce soit : un état d'une autre machine/RAM/TOS est
     // REFUSÉ (sinon machine hybride ST/STE ou RAM invitée incohérente avec la ROM
@@ -1054,7 +1120,8 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
     // repasser par l'en-tête : lui calculer un CRC ne protégeait rien et doublait
     // presque le coût d'une reprise d'état. On sérialise donc à nu.
     std::vector<uint8_t> backup;
-    { StateArchive bar = StateArchive::saver(backup); serializeState(bar); }
+    { StateArchive bar = StateArchive::saver(backup); serializeState(bar, false);
+      if (!bar.ok()) return false; }
     bool ok = false;
     try {
         StateArchive ar = StateArchive::loader(data, n);
@@ -1063,7 +1130,7 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
     } catch (...) { ok = false; }
     if (!ok) {
         StateArchive rb = StateArchive::loader(backup.data(), backup.size());
-        serializeState(rb);
+        serializeState(rb, false);
         std::fprintf(stderr, "[state] truncated/inconsistent file — session state restored\n");
         return false;
     }
@@ -1072,7 +1139,7 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
 
 bool Machine::saveStateFile(const std::string& path) {
     std::vector<uint8_t> buf;
-    saveState(buf);
+    if (!saveState(buf)) return false;
     // Écriture ATOMIQUE (tmp + rename) : le slot est unique — un crash/disque plein
     // en cours d'écriture ne doit pas détruire le seul état existant.
     const std::string tmp = path + ".tmp";

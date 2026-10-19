@@ -27,6 +27,12 @@ public:
     bool loading() const { return loading_; }
     bool ok()      const { return ok_; }
 
+    // Échec d'I/O hôte également possible pendant une sauvegarde.
+    void fail(const char* what) {
+        if (ok_) std::fprintf(stderr, "[save-state] %s\n", what);
+        ok_ = false;
+    }
+
     // Valide un invariant AU CHARGEMENT (no-op en save) : un champ restauré hors
     // bornes (fichier forgé/corrompu passé le CRC) met l'archive en échec →
     // Machine::loadState rejoue le backup au lieu de servir des index toxiques.

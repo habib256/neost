@@ -32,6 +32,7 @@
 
 class Bus;
 class Cpu68k;
+class StateArchive;
 
 class GemdosHd {
 public:
@@ -66,6 +67,10 @@ public:
     // Reset du système de fichiers GEMDOS (ferme les fichiers ouverts, ré-init des
     // chemins courants). Appelé au reset machine. Port de GemDOS_Reset.
     void reset();
+
+    // Fichiers hôtes hors snapshot : réouverture sans troncature, validation puis
+    // remplacement atomique des handles. Aucun pointeur FILE* n'est sérialisé.
+    void serialize(StateArchive& ar);
 
     // Appelé par Cpu68k::run quand un opcode magique (8/9/10) s'exécute DANS la
     // cartouche. Traite l'appel et renvoie true (l'appelant le consomme en NOP).

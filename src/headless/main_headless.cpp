@@ -1981,16 +1981,19 @@ int main(int argc, char** argv) {
         auto screenHash = [&]() -> uint64_t { return observe::screenHash(machine); };
         const int runLen = 200;
         for (int i = 0; i < frames; ++i) machine.runFrame();       // → point de sauvegarde
-        std::vector<uint8_t> A; machine.saveState(A);
+        std::vector<uint8_t> A;
+        if (!machine.saveState(A)) return 1;
         for (int i = 0; i < runLen; ++i) machine.runFrame();       // passe DIRECTE
-        std::vector<uint8_t> stD; machine.saveState(stD);
+        std::vector<uint8_t> stD;
+        if (!machine.saveState(stD)) return 1;
         const uint64_t hD = screenHash();
         if (!machine.loadState(A.data(), A.size())) {
             std::fprintf(stderr, "[save-state-det] FAIL: loadState failed\n");
             return 1;
         }
         for (int i = 0; i < runLen; ++i) machine.runFrame();       // RE-JOUE depuis A
-        std::vector<uint8_t> stR; machine.saveState(stR);
+        std::vector<uint8_t> stR;
+        if (!machine.saveState(stR)) return 1;
         const uint64_t hR = screenHash();
         const bool stateEq = (stD == stR), screenEq = (hD == hR);
         if (!stateEq) {

@@ -13,8 +13,10 @@ ACSI-SCSI, PAS un NCR5380, DD/HD) avec un timing assez fidèle pour jeux, démos
 diagnostic Field Service (12/12) à chaque palier `full`. Ce qui suit affine, il ne
 conditionne plus l'objectif.
 
-**Sources de vérité à croiser systématiquement** (cf. [`CLAUDE.md`](CLAUDE.md)) :
-- **Hatari** (`extern/hatari/src/*.c`) — comportement ST/STE/MegaSTE éprouvé. La référence.
+**Cible : le matériel réel**, documenté et mesuré. Les émulateurs servent de
+références comparatives, avec leurs limites (cf. [`CLAUDE.md`](CLAUDE.md)) :
+- **Hatari** (`extern/hatari/src/*.c`) — référence d’implémentation ST/STE/MegaSTE ;
+  ses erreurs confirmées ne doivent pas être reproduites.
 - **MAME** (`src/mame/atari/atarist.cpp`, `stmmu.cpp`, `stvideo.cpp`, devices `mc68901`,
   `wd_fdc`, `6850acia`, `z80scc`, `rp5c15`, `ay8910`, `lmc1992`) — composants séparés.
 
@@ -25,6 +27,20 @@ conditionne plus l'objectif.
 - Logiciels étalons par sous-système → [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md)
 
 ---
+
+## Latence IACK MegaSTE — capture matérielle à faire (2026-10-19)
+
+Le transfert blitter et les phases avant IACK concordent avec le Hatari
+diagnostique corrigé. Convertir expérimentalement l'attente MFP d'Hatari
+en cycles bus réduit le résidu IACK→handler à +3/+4 cycles à 16 MHz.
+Cette expérience ne valide ni sa constante 12 ni la calibration 16 de NeoST.
+Ne pas modifier les délais du blitter pour absorber ce résidu.
+
+Le PRG relogeable et la disquette AUTO sont prêts :
+`python3 tools/make_mfp_iack_probe.py`. Les contrôles cartouche, AUTO MegaSTE
+et refus ST/STE passent (`python3 tools/run_mfp_iack_probe.py`). Il reste à
+capturer CLK CPU/MFP, IACK et les DTACK de la puce et du CPU sur un MegaSTE,
+aux trois régimes CPU/cache. [Protocole](docs/MFP_IACK_MEASUREMENT.md).
 
 ## `--fastfdc` : mémoire altérée après une série de Flopfmt (bancs TOS File Cmd, 2026-09-23) — RÉSOLU le 2026-10-01
 
@@ -200,14 +216,16 @@ est continue, les trous sont du travail fait.
 - **A3 ◐ — Le corpus de régression n'est pas livrable — et depuis la purge du
   2026-08-30 il est LOCAL par construction** : jeux et ROM propriétaires ne sont plus
   suivis par git, chaque machine les restaure via `tools/private_assets.sh unpack`
-  (§ BLOQUANT). Recompté 2026-10-18 (cinq variantes STE 336 px et deux VBlank) : **22 étalons
-  pixel sur 26** survivent au retrait des TOS Atari (`etos_ste_boot`, `overscan_top`,
+  (§ BLOQUANT). Recompté 2026-10-19 (dont seize sondes de lignes masquées ST/STE) : **38 étalons
+  pixel sur 42** survivent au retrait des TOS Atari (`etos_ste_boot`, `overscan_top`,
   `trace_odd`, `scroll_8264`, `scroll_8265`, `blitter_timer`, `blitter_hog`, `mfp_poll`,
   plus `cuddly_demos`, `nocooper`, `nocooper_greetings` et `closure` migrés/posés sur
   EmuTOS, `spec512_bands` — l'étalon GÉNÉRÉ qui rend la couverture « palette en cours
   de ligne » —, `freq_switch`, l'exhibiteur généré de V3, et `dmasnd_poll`, celui de la
   quantification HBL du refill FIFO son ; enfin `scroll_336`, `scroll_336_word`,
-  `scroll_336_late`, `scroll_336_clear`, `scroll_336_split`, `vblank_on` et `vblank_off`) ; les 4 restants
+  `scroll_336_late`, `scroll_336_clear`, `scroll_336_split`, `vblank_on` et `vblank_off`,
+  puis les seize `blankline_*` : BLANK, NO_DE, impulsion tardive, STOP_MIDDLE,
+  NO_SYNC/SYNC_HIGH et leurs annulations sur ST/STE) ; les 4 restants
   sont le reliquat d'**A10**.
 - **A9 ◐ — `main.cpp` : 5 100 → 28 lignes ; reste LA BOUCLE.** Fait le 2026-08-30
   (détail au `CHANGELOG.md`). `main()` tient en **10 lignes** — `appInit` → `appLoop`
@@ -390,7 +408,6 @@ est continue, les trous sont du travail fait.
   case) ; **Raspberry Pi**, la cible qui motive le chantier, toujours sans budget mesuré ;
   **Linux** non consigné. Autrement dit : les pas 3, 4 et 5 pour quatre cibles sur cinq,
   et eux exigent du matériel.
-- **A13** = save-states × GEMDOS HD → § *Périphériques & profils machine*.
 - **A15** = DSL d'injection sans token « mouvement bouton tenu » (pas de DRAG GEM).
 
 ### Consolidation
@@ -547,8 +564,9 @@ est continue, les trous sont du travail fait.
   - la pile réseau (`src/net`, ~1 030 lignes) — pas d'audit de lecture, mais elle
     est la MOINS démunie des trois : `--slirp-selftest`, `enec_selftest`,
     `netusbee_selftest` et un job de CI dédié la couvrent déjà par le comportement ;
-  - dans `GemdosHd` : la table de handles et le suivi Pexec (c'est **A13**), les codes
-    d’erreur face à `gemdos.c` restent à compléter. `Fsfirst`/DTA sous réutilisation
+  - dans `GemdosHd` : les codes d’erreur face à `gemdos.c` restent à compléter.
+    Handles/Pexec et reprise GEMDOS désormais couverts (A13 clos, 2026-10-19).
+    `Fsfirst`/DTA sous réutilisation
     d’index dispose désormais d’un banc public (2026-10-19), distinct du bac à sable ;
   - **un test par COUCHE** du bac à sable. Le test posé garantit la PROPRIÉTÉ (rien ne
     sort) et pas les couches : mesuré par mutation, il faut retirer LES DEUX défenses
@@ -672,10 +690,11 @@ décroissant, par priorité d'impact :
    portés et comparés au moteur Hatari. FSGLMUL/FSGLDIV et FMOD étaient déjà portés.
    Limites restantes : transcendantes en double hôte, k dynamique remplacé par 17
    en mode périphérique ; détails et bancs reproductibles ci-dessous.
-5. **[BLITTER]** résidu BL5 : ~10 cyc par démarrage de blit + ~3,3 par reprise de tranche,
-   **paradoxe de signe non levé** — cf. Garde-fous (aucune correction sans 3ᵉ mesure).
-6. **[VIDÉO, P3]** wakeup-state WS3 sous-pixel, rendu
-   live du retrait bas, interfoliage blitter → `docs/CYCLE_ACCURACY.md` §4.
+5. **[BLITTER]** BL5 pixel clos le 2026-10-19 (`blitter_timer` à zéro pixel
+   contre Hatari). Reste la latence IACK MegaSTE à mesurer sur matériel ; sonde
+   et protocole prêts, voir le début de ce fichier. Aucune compensation blitter.
+6. **[VIDÉO, P3]** wakeup-state WS3 sous-pixel, mesures matérielles des tricks
+   NO_SYNC/SYNC_HIGH, interfoliage blitter → `docs/CYCLE_ACCURACY.md` §4.
    Le mode 336 px STE est porté le 2026-10-18, avec cinq étalons oracle dédiés.
 
 **Portages achevés** : décimal empaqueté FPU (2026-10-18, comparaison au vrai
@@ -714,16 +733,25 @@ sans décaler la phase sous-seconde (Ricoh p.7).
 
 ### Vidéo / Shifter
 - Raffinements cycle-exact → § Divergences ci-dessus.
+- Capture live du retrait bas déjà portée : régression ajoutée le 2026-10-19
+  (capture à la ligne 280 puis effacement RAM, pixels conservés ; mutation
+  limitant aux lignes actives rejetée avec les deux grilles). BLANK/NO_DE et
+  STOP_MIDDLE sans palette : défaut de déclenchement du rendu corrigé et
+  sondes ST/STE ajoutées. NO_SYNC/SYNC_HIGH et leurs annulations sont aussi
+  couverts par huit sondes de boot et 52 contrôles Glue supplémentaires.
+  La qualification matérielle reste ouverte, notamment les signaux de sync
+  et la couleur physique du blanking ; palette 0 conservée en attente de mesure.
+- **Fin STOP_MIDDLE** : trois pixels supplémentaires chez Hatari au dernier
+  groupe de plans, stables sur 61 captures ST et 61 STE (premier écart buffer
+  x=156, y=65). Les sondes `blankline_stop_st/ste` gardent le rendu NeoST par
+  snapshot ; le bord exact attend une mesure matérielle. Pas de compensation
+  pour obtenir l'égalité avec l'oracle.
 - **Résidu du latch couleur bordure gauche** : 16 px (cols 45-60) = la **position
   horizontale exacte** où l'écriture palette prend effet (Hatari bascule ~16 px après le
   début nominal de l'aire active = latence pipeline ; NeoST bascule pile à `activeX_`).
   Invisible aux étalons. _Valeur très basse._
 
 ### Interface — kiosk & effets CRT
-- ⭘ **Souris ABSOLUE pour GEM/bureau** — la souris ST n'est pilotée qu'en mode
-  capturé/relatif (`g_mouseCaptured`, `GLFW_RAW_MOUSE_MOTION`), pensé pour les jeux.
-  🎯 Un mode absolu (position curseur hôte → curseur ST, sans capture) pour l'usage
-  GEM/desktop/navigateur — confort, pas bug.
 - Cosmétique : membres `srcW_`/`srcH_` morts dans `CrtEffectStack` ; répétition de
   navigation kiosk (tenir gauche/droite bloque la répétition haut/bas). Limitations CRT v1
   assumées (baril/vignette sur le buffer entier en kiosk ; GL 2.1 → passthrough).
@@ -980,17 +1008,27 @@ grille Glue. Jeu Seven Gates of Jambala encore à valider sur ses données.
   Hatari ; ils ne constituent pas une mesure sur un 68881 physique.
 
 ### Périphériques & profils machine
-- **A13 — Save-states × GEMDOS HD** : les handles fichiers hôtes ouverts / suivi Pexec de
-  `GemdosHd` sont HORS snapshot (bug hunt 2026-07-12, F7) — un état sauvé pendant qu'un
-  programme a des fichiers ouverts sur C: donne des handles morts au load. Sérialiser la
-  table de handles (chemin + offset + mode) et rouvrir au load. (En attendant, le load est
-  refusé si le drapeau GEMDOS diffère — garde en place.)
 - **Cartridge port** `$FA0000-$FBFFFF` générique (au-delà du système GEMDOS) — réf. `cart.c`.
 
 ### Système de régression — restes
 (La pyramide, ses paliers et ses chiffres → `CLAUDE.md` et `DEV.md`.)
-- gate `trace_diff --periods` vs oracle Hatari (le cycle-bench actuel est une auto-régression
-  NeoST) ;
+- ✅ Comparaison temporelle Hatari livrée le 2026-10-19 : quatre timers MFP
+  (prescalers distincts), Timer B événement vidéo et son DMA STE ; 256 IRQ
+  comparées par sonde. Ajout DMA disquette (32 rafales + IRQ, travail CPU),
+  blitter HOG/partagé (64 transferts + IRQ et boucles CPU). Références Hatari
+  épinglées rejouées deux fois en CI oracle ; contrôle NeoST dans `full`.
+  Écart partagé +60/+42/+3 corrigé : dix-sept sondes passent sans KNOWN,
+  avec tailles 16/128/256 mots, MULU, TAS et exécution RAM ; fin observée à
+  +4 cycles, IRQ à +2 en ROM / +4 en RAM, compte CPU identique. BL5 pixel clos :
+  68 → 0 px, `blitter_timer` promu en oracle Hatari. HOG passe par le même
+  PRE_START, verrou et recouvrement. Onze sondes CPU/cache MegaSTE 16 MHz
+  ajoutées : égalité exacte contre Hatari, sans IRQ ni DMA ; phases RAM et
+  chevauchement hit/DMA couverts localement. Restent : écriture DMA disquette,
+  STX et comparaison exacte globale blitter/IRQ MegaSTE 16 MHz. Douze cas
+  NeoST respectent désormais les bornes physiques ; deux défauts Hatari sont
+  isolés, mais environ 12–24 cycles restent à expliquer avec ses correctifs
+  expérimentaux (voir `docs/HATARI_MEGASTE_AUDIT.md`). Le cycle-bench CPU
+  reste une auto-régression distincte.
 - self-tests P0 supplémentaires (autres Timers, ACIA) ;
 - si une vraie démo spec512 **overscan** (bordures ouvertes) libre est rapatriée un jour →
   l'ajouter en étalon oracle (l'auto_diapo est 100 % borderless).

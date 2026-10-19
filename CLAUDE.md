@@ -59,8 +59,15 @@ C++20, aucune génération. Le cœur Musashi a été retiré.
 
 ## ⭐ Méthode imposée (ordre strict)
 
-`extern/hatari/src` = **la source de vérité matérielle** (sources C complètes, lues et
-PAS compilées). Avec **MAME**, c'est la référence du comportement des puces. Hatari
+**L'objectif est le comportement d'un véritable Atari ST et des variantes prises
+en charge. Le matériel réel prime sur les émulateurs.** Une erreur confirmée
+d'Hatari ne doit pas être reproduite : corriger NeoST selon les preuves
+matérielles disponibles, documenter la divergence et conserver l'incertitude
+quand ces preuves manquent. L'égalité avec Hatari seule ne prouve pas la fidélité.
+
+`extern/hatari/src` est une **référence d'implémentation à confronter au matériel**
+(sources C complètes, lues et PAS compilées). Avec **MAME**, il aide à comprendre
+le comportement des puces. Hatari
 s'exécute aussi en **oracle headless** (`extern/hatari/build/src/hatari`).
 ⚠ `extern/hatari` est **gitignoré et n'est pas un sous-module** : rien ne le rapatrie, il
 peut être ABSENT — clone + build (options macOS obligatoires) et recettes →
@@ -68,7 +75,8 @@ peut être ABSENT — clone + build (options macOS obligatoires) et recettes →
 
 Quand un test/jeu plante, **NE PAS** désassembler ni chercher le point de divergence
 d'emblée. **D'ABORD** comparer `extern/hatari/src` au code NeoST, **porter ce qui
-manque, puis RETESTER**. Ce n'est QUE si l'on a la conviction d'avoir tout porté
+manque et qui correspond au matériel, puis RETESTER**. Ne jamais porter un défaut
+confirmé d'Hatari pour obtenir une égalité de traces. Ce n'est QUE si l'on a la conviction d'avoir tout porté
 correctement et que l'erreur persiste qu'on investigue en détail (trace → boucle →
 source EmuTOS [github.com/emutos/emutos](https://github.com/emutos/emutos)).
 

@@ -3854,8 +3854,16 @@ Moira::execMoveToSr(u16 opcode)
     SYNC(4);
     setSR((u16)data);
 
-    (void)read<C, AddrSpace::PROG, Word>(reg.pc + 2);
-    prefetch<C, POLL>();
+    if constexpr (C == Core::C68000) {
+        // Microcode 301 rstw1 → 321 stiw4 → 1e1 malw3 → 363 b :
+        // recharger les DEUX mots après le changement de SR (donc de FC).
+        // Une lecture fictive de pc+2 conservait l'ancien opcode et modifiait
+        // aussi les hits du cache externe MegaSTE.
+        fullPrefetch<C, POLL>();
+    } else {
+        (void)read<C, AddrSpace::PROG, Word>(reg.pc + 2);
+        prefetch<C, POLL>();
+    }
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
@@ -5438,16 +5446,24 @@ Moira::execTasEa(u16 opcode)
 
     if (C == Core::C68000) {
 
-        readOp<C, M, Byte>(dst, &ea, &data);
+        // NeoST : /RMC interdit une prise de bus entre lecture et écriture.
+        // Libérer aussi le verrou si readOp/writeOp provoque une exception.
+        setBusLock(true);
+        try {
 
-        reg.sr.n = NBIT<Byte>(data);
-        reg.sr.z = ZERO<Byte>(data);
-        reg.sr.v = 0;
-        reg.sr.c = 0;
-        data |= 0x80;
+            readOp<C, M, Byte>(dst, &ea, &data);
 
-        if (!isRegMode(M)) SYNC(2);
-        writeOp<C, M, S>(dst, ea, data);
+            reg.sr.n = NBIT<Byte>(data);
+            reg.sr.z = ZERO<Byte>(data);
+            reg.sr.v = 0;
+            reg.sr.c = 0;
+            data |= 0x80;
+
+            if (!isRegMode(M)) SYNC(2);
+            writeOp<C, M, S>(dst, ea, data);
+
+        } catch (...) { setBusLock(false); throw; }
+        setBusLock(false);
 
         prefetch<C, POLL>();
 

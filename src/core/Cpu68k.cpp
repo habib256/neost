@@ -47,7 +47,14 @@ struct CpuState {
     Scheduler*  sched        = nullptr;   // ordonnanceur piloté par sync() (cf. NeostMoira::sync)
     Cpu68k*     cpuSelf      = nullptr;   // instance courante (rebase de quantum depuis les hooks)
     NeostMoira* moira        = nullptr;   // cœur Moira actif
-    Tracer*     tracer       = nullptr;   // traceur optionnel (nullptr = aucun surcoût)
+    Tracer*     tracer       = nullptr;   // traceur optionnel (nullptr = désactivé)
+    bool        traceEmitted = false;
+    bool        megaSteAccessHit = false; // valeur choisie avant le cycle et la DMA
+    uint16_t    megaSteAccessValue = 0;
+    bool        blitterRmw   = false;     // verrou transitoire TAS mémoire
+    bool        blitterBusAccess = false;
+    bool        blitterStartedInAccess = false;
+    moira::i64  blitterOverlap = 0;       // cycles CPU internes recouverts par le blit
     bool        vblPending   = false;     // VBL (niveau 4) en attente d'acquittement
     bool        hblPending   = false;     // HBL (niveau 2) en attente d'acquittement
     bool        inBusError   = false;     // garde « double bus fault » (cf. son bandeau)
@@ -230,7 +237,8 @@ CpuState* g_cur = nullptr;
         return g_cur->cpuMul == 1 ? b - g_cur->cpuBias : (b << 1) - g_cur->cpuBias;
     }
     void    neostUpdateIpl(bool commit = false);   // recalcule l'IPL présenté au cœur
-    void    noteBlitterPreStart();   // accès CPU pendant la fenêtre PRE_START du blitter ?
+    void    noteBlitterPreStart();
+
 }
 
 // -----------------------------------------------------------------------------
@@ -265,6 +273,12 @@ public:
     // MoiraConfig.h, permet d'y brancher la broche /RESET des périphériques — ce que
     // fait customreset() chez Hatari (cpu/hatari-glue.c:54), appelé depuis cpureset().
     // On ne touche NI au CPU NI à l'ordonnanceur : seule la ligne /RESET est assertée.
+    void willExecute(const char*, moira::Instr, moira::Mode, moira::Size, moira::u16) override {
+        if (g_cur->tracer && !g_cur->traceEmitted) {
+            g_cur->traceEmitted = true;
+            g_cur->tracer->onInstruction(getPC0());
+        }
+    }
     void didExecute(const char* /*func*/, moira::Instr I, moira::Mode, moira::Size,
                     moira::u16) override {
         if (I != moira::Instr::RESET || !g_cur->bus) return;
@@ -299,6 +313,12 @@ public:
     }
 
     // ---- Traçage des exceptions de groupe 0 (bus error / address error) --------
+    void willProcessFault(const moira::StackFrame& frame) override {
+        g_cur->faultAddr = frame.addr;
+        g_cur->faultPc = getPC0();
+        g_cur->faultWrite = !(frame.code & 0x10);
+        g_cur->faultValid = true;
+    }
     // Moira notifie ces deux délégués À L'ENTRÉE (MoiraExceptions_cpp.h:268 et :305)
     // et À LA SORTIE (:296 et :333) de execAddressError/execBusError. On s'en sert
     // uniquement pour retenir le vecteur en cours de prise : c'est la seule donnée
@@ -413,7 +433,13 @@ public:
     // halt() — lequel restaure aussi reg.pc = reg.pc0 et notifie cpuDidHalt(), deux
     // choses que le drapeau posé à la main sautait.
     bool faultOrHalt(moira::u32 a, bool write) const {
-        if (g_cur->inBusError) throw moira::DoubleFault();
+        if (g_cur->inBusError) {
+            g_cur->faultAddr = a;
+            g_cur->faultPc = getPC0();
+            g_cur->faultWrite = write;
+            g_cur->faultValid = true;
+            throw moira::DoubleFault();
+        }
         g_cur->bus->megaSteCacheFlushIfEnabled();   // une bus error invalide le cache Mega STE (Hatari)
         g_cur->inBusError = true;
         raiseBusError(a, write);            // [[noreturn]] : lève moira::BusError
@@ -428,17 +454,13 @@ public:
     // + 4 cycles additionnels, sauf hit du cache 16 Ko (RAM rapide dédiée, 4 cycles
     // = rien à ajouter). ROM/cartouche/IO sont « FAST » (aucun wait state, mesuré
     // sur vrai matériel par Hatari) → plein débit 16 MHz.
-    void chipWait16() const {
-        auto* self = const_cast<NeostMoira*>(this);
-        const moira::i64 c = self->getClock();
-        const int slot = int((c + g_cur->cpuBias) & 7);       // position dans le créneau bus
-        self->setClock(c + ((8 - slot) & 7) + 4);
-    }
     bool superNow() const { return (getSR() & 0x2000) != 0; }
 
     moira::u16 readMste16Mhz(moira::u32 a, int size) const {
         a &= 0x00FFFFFF;
+        if (g_busDiagPage >= 0) busDiag(g_cur->megaSteAccessHit ? 'h' : 'R', a, getClock());
         uint16_t v;
+        if (g_cur->megaSteAccessHit) return g_cur->megaSteAccessValue;
         if (a >= 0x400000) {                 // ROM/cartouche/IO : « FAST », plein 16 MHz
             v = size == 2 ? g_cur->bus->read16(a) : g_cur->bus->read8(a);
             if (g_cur->bus->megaSteCacheEnabled())
@@ -446,9 +468,6 @@ public:
             return v;
         }
         const bool super = superNow();       // RAM ST, partagée avec le Shifter
-        if (g_cur->bus->megaSteCacheEnabled() && g_cur->bus->megaSteCacheRead(a, size, v, super))
-            return v;                        // hit : 4 cycles CPU (déjà facturés par Moira)
-        chipWait16();                        // miss / cache off : accès cadencé bus 8 MHz
         v = size == 2 ? g_cur->bus->read16(a) : g_cur->bus->read8(a);
         if (g_cur->bus->megaSteCacheEnabled()) {
             if (size == 2) g_cur->bus->megaSteCacheUpdate(a, 2, v, false, super);
@@ -457,15 +476,20 @@ public:
             else if (g_cur->bus->megaSteCacheable(a & ~1u, 2, false, super))
                 g_cur->bus->megaSteCacheUpdate(a & ~1u, 2, g_cur->bus->read16(a & ~1u), false, super);
         }
+        // Le cycle RAM dure huit cycles CPU, contre quatre pour un hit/FAST.
+        // Le préalignement a déjà eu lieu avant SYNC(2) ; ces quatre cycles
+        // supplémentaires passent par sync pour servir PRE_START à l'heure.
+        const_cast<NeostMoira*>(this)->sync(4);
         return v;
     }
 
     void writeMste16Mhz(moira::u32 a, int size, moira::u16 v) const {
         a &= 0x00FFFFFF;
-        if (a < 0x400000) chipWait16();      // écriture RAM ST : toujours cadencée bus
+        if (g_busDiagPage >= 0) busDiag('W', a, getClock());
         if (size == 2) g_cur->bus->write16(a, v); else g_cur->bus->write8(a, moira::u8(v));
         if (g_cur->bus->megaSteCacheEnabled())    // write-through : maj du mot déjà caché
             g_cur->bus->megaSteCacheUpdate(a, size, v, true, superNow());
+        if (a < 0x400000) const_cast<NeostMoira*>(this)->sync(4);
     }
 
     // Chaque accès CPU abouti latche le « dernier mot du bus de données » dans
@@ -474,23 +498,16 @@ public:
     void latchDb(moira::u16 v) const { g_cur->bus->cpuDb = v; }
     void latchDb8(moira::u8 v) const { g_cur->bus->cpuDb = moira::u16((moira::u16(v) << 8) | v); }
 
-    // Alignement créneau bus 4 cyc (8 MHz) sur la RAM ST avant un accès — cf. g_ramSlot.
-    // Port fidèle de wait_cpu_cycle_read (custom.c) : la GLUE partage la RAM en créneaux
-    // de 4 cyc bus, le CPU attend son tour. Pas de +4 (l'accès est déjà facturé par Moira).
-    // ⚠ PHASE (2026-07-02) : WinUAE aligne le DÉBUT de l'accès sur la grille — l'accès
-    // occupe [4k, 4k+4], fin ≡ 0 (mod 4). Ce callback est appelé au point-MILIEU de
-    // l'accès Moira (read<>/write<> : SYNC(2) · callback · SYNC(2)), soit début+2 → on
-    // aligne (c − 2). L'ancienne version alignait c lui-même (= le milieu) → fin d'accès
-    // ≡ 2 (mod 4), skew structurel de +2 vs Hatari sur TOUTE la datation MMIO (mesuré au
-    // banc respulse : line_cyc Hatari ≡ 0 mod 4 en fin d'accès, NeoST ≡ 2). Les offsets
-    // de datation Shifter (write +2, read −6) supposent CE repère. NEOST_RAM_SLOT_PHASE=2
-    // restaure l'ancien alignement (A/B).
-    void chipWait8(moira::u32 a) const {
-        if (!g_ramSlot || (a & 0x00FFFFFFu) >= 0x400000u) return;
-        auto* self = const_cast<NeostMoira*>(this);
-        const moira::i64 c = self->getClock();
-        const int slot = int((c + g_cur->cpuBias + g_ramSlotPhase - 2) & 3);
-        if (slot) self->setClock(c + (4 - slot));
+    // Aligner le DÉBUT du cycle RAM, avant SYNC(2), comme wait_cpu_cycle_read
+    // d'Hatari. Au milieu du cycle, une tranche blitter peut déjà avoir tourné :
+    // réaligner alors le callback ajoute une attente parasite après la restitution.
+    void alignRamBus(moira::u32 a) {
+        if (g_cur->cpuMul != 1 || !g_ramSlot || a >= 0x400000u) return;
+        const int slot = int((getClock() + g_cur->cpuBias + g_ramSlotPhase) & 3);
+        if (slot) {
+            if (g_cur->bus->blitterWinEnd >= 0) sync(4 - slot);
+            else setClock(getClock() + (4 - slot));
+        }
     }
 
     // DIAG (NEOST_BUS_DIAG=<pc-hex-préfixe-8bits>) : séquence bus (addr, horloge mod 4)
@@ -506,10 +523,10 @@ public:
     // C'est l'horloge de la clé Cubase 2 (PAL16R8), qui voit CHAQUE cycle du CPU —
     // fetchs compris. Un seul test de bool quand aucune clé noire n'est branchée.
     void udsDone(moira::u32 a, int size) const { if (g_cur->bus->udsObserved && (size == 2 || !(a & 1))) g_cur->bus->udsCycle(a); }
-    moira::u8  read8 (moira::u32 a) const override { if (g_cur->bus->blitterWinEnd >= 0 || g_cur->bus->blitterCountCpu) noteBlitterPreStart(); if (g_cur->bus->busFaultN(a, 1, false) && faultOrHalt(a, false)) return 0; moira::u8 v; if (g_cur->cpuMul == 2) v = moira::u8(readMste16Mhz(a, 1)); else { chipWait8(a); if (g_busDiagPage >= 0) busDiag('r', a, getClock()); v = g_cur->bus->read8(a); } latchDb8(v); udsDone(a, 1); return v; }
-    moira::u16 read16(moira::u32 a) const override { if (g_cur->bus->blitterWinEnd >= 0 || g_cur->bus->blitterCountCpu) noteBlitterPreStart(); if (g_cur->bus->busFaultN(a, 2, false) && faultOrHalt(a, false)) return 0; moira::u16 v; if (g_cur->cpuMul == 2) v = readMste16Mhz(a, 2); else { chipWait8(a); if (g_busDiagPage >= 0) busDiag('R', a, getClock()); v = g_cur->bus->read16(a); } latchDb(v); udsDone(a, 2); return v; }
-    void write8 (moira::u32 a, moira::u8  v) const override { if (g_cur->bus->blitterWinEnd >= 0 || g_cur->bus->blitterCountCpu) noteBlitterPreStart(); if (g_cur->bus->busFaultN(a, 1, true)) { if (faultOrHalt(a, true)) return; } latchDb8(v); if (g_cur->cpuMul == 2) { writeMste16Mhz(a, 1, v); udsDone(a, 1); return; } chipWait8(a); g_cur->bus->write8(a, v); udsDone(a, 1); }
-    void write16(moira::u32 a, moira::u16 v) const override { if (g_cur->bus->blitterWinEnd >= 0 || g_cur->bus->blitterCountCpu) noteBlitterPreStart(); if (g_cur->bus->busFaultN(a, 2, true)) { if (faultOrHalt(a, true)) return; } latchDb(v); if (g_cur->cpuMul == 2) { writeMste16Mhz(a, 2, v); udsDone(a, 2); return; } chipWait8(a); g_cur->bus->write16(a, v); udsDone(a, 2); }
+    moira::u8  read8 (moira::u32 a) const override { if (g_cur->bus->busFaultN(a, 1, false) && faultOrHalt(a, false)) return 0; moira::u8 v; if (g_cur->cpuMul == 2) v = moira::u8(readMste16Mhz(a, 1)); else { if (g_busDiagPage >= 0) busDiag('r', a, getClock()); v = g_cur->bus->read8(a); } latchDb8(v); udsDone(a, 1); return v; }
+    moira::u16 read16(moira::u32 a) const override { if (g_cur->bus->busFaultN(a, 2, false) && faultOrHalt(a, false)) return 0; moira::u16 v; if (g_cur->cpuMul == 2) v = readMste16Mhz(a, 2); else { if (g_busDiagPage >= 0) busDiag('R', a, getClock()); v = g_cur->bus->read16(a); } latchDb(v); udsDone(a, 2); return v; }
+    void write8 (moira::u32 a, moira::u8  v) const override { if (g_cur->bus->busFaultN(a, 1, true)) { if (faultOrHalt(a, true)) return; } latchDb8(v); if (g_cur->cpuMul == 2) { writeMste16Mhz(a, 1, v); udsDone(a, 1); return; } g_cur->bus->write8(a, v); udsDone(a, 1); }
+    void write16(moira::u32 a, moira::u16 v) const override { if (g_cur->bus->busFaultN(a, 2, true)) { if (faultOrHalt(a, true)) return; } latchDb(v); if (g_cur->cpuMul == 2) { writeMste16Mhz(a, 2, v); udsDone(a, 2); return; } g_cur->bus->write16(a, v); udsDone(a, 2); }
     // Débogueur : watchpoint mémoire atteint (appelé par la couche dataflow de Moira
     // PENDANT l'accès, si CHECK_WP). Sémantique « break-after-access » : on note le hit
     // (adresse DONNÉE) et on préempte → le run() rend la main APRÈS l'instruction fautive.
@@ -553,18 +570,64 @@ public:
     // de SAUTER l'attente au lieu de la simuler cycle par cycle (cf. run()).
     bool isStopped() const { return (flags & moira::State::STOPPED) != 0; }
 
-    // ---- Ordonnanceur PILOTÉ PAR L'HORLOGE (modèle `do_cycles` WinUAE/Hatari) ----
-    // Hook cycle de Moira. Moira l'appelle à chaque pas : en PRECISE_TIMING, AVANT
-    // chaque accès mémoire (sous-instruction) ; sinon, en fin d'instruction (cf.
-    // MoiraMacros SYNC/CYCLES). On avance l'horloge du cœur de `n`, PUIS on dispatche
-    // les événements échus de l'ordonnanceur — EN COURS d'instruction. L'IPL est donc
-    // posé au CYCLE EXACT de l'événement (Timer-B/VBL/HBL) et vu par le POLL_IPL de
-    // l'instruction COURANTE, au lieu d'être posé ~1 instruction plus tard à la
-    // frontière de bloc (cause racine du jitter beam-sync). syncTo est O(1) tant que
-    // rien n'est dû (cache nextDue_) — sync() est appelé très souvent. Pas de
-    // réentrance : les callbacks de l'ordonnanceur n'exécutent pas le CPU.
+    // Arbitrage blitter sous-instruction, port des hooks before/after et
+    // do_cycles d'Hatari. Les autres sources restent dispatchées par blocs.
+    // Le verrou TAS mémoire couvre readOp→writeOp ; le préfetch est libre.
+    void willAccessBus(moira::u32 addr, bool write, unsigned size) override {
+        g_cur->blitterOverlap = 0;        // le prochain accès exige réellement le bus
+        g_cur->blitterBusAccess = true;
+        g_cur->blitterStartedInAccess = false;
+        if (g_cur->bus->blitterWinEnd >= 0) noteBlitterPreStart();
+        g_cur->megaSteAccessHit = false;
+        if (g_cur->cpuMul == 2) {
+            // Hatari choisit hit/miss AVANT les cycles de l'accès. Une prise de
+            // bus blitter peut invalider le cache pendant ceux-ci : conserver la
+            // valeur déjà lue sur un hit, sans reconsulter le cache après la DMA.
+            if (!write && g_cur->bus->megaSteCacheEnabled())
+                g_cur->megaSteAccessHit = g_cur->bus->megaSteCacheRead(
+                    addr, int(size), g_cur->megaSteAccessValue, superNow());
+            if (addr < 0x400000u && !g_cur->megaSteAccessHit) {
+                const int slot = int((getClock() + g_cur->cpuBias) & 7);
+                if (slot) sync(8 - slot);
+            }
+        } else {
+            alignRamBus(addr);
+        }
+    }
+    void didAccessBus() override {
+        g_cur->blitterBusAccess = false;
+        if (g_cur->bus->blitterCountCpu && !g_cur->blitterStartedInAccess)
+            g_cur->bus->blitter->noteCpuBusAccess(g_cur->sched
+                ? g_cur->sched->liveNow() : busOfClock(getClock()));
+        g_cur->blitterStartedInAccess = false;
+    }
+    void setBusLock(bool locked) override { g_cur->blitterRmw = locked; }
+    void runBlitter() {
+        const moira::i64 before = getClock();
+        if (g_cur->sched->runBlitterTo(g_cur->sched->liveNow())) {
+            g_cur->blitterStartedInAccess = g_cur->blitterBusAccess;
+            g_cur->blitterOverlap = getClock() - before;
+        }
+    }
     void sync(int n) override {
-        setClock(getClock() + n);             // défaut Moira (avance l'horloge du cœur)
+        if (g_cur->bus->blitterWinEnd < 0 && g_cur->blitterOverlap == 0) {
+            setClock(getClock() + n); // chemin chaud sans arbitrage blitter
+        } else {
+            while (n > 0) {
+                // Port de Blitter_Check_Simultaneous_CPU : consommer aussi le
+                // crédit créé PENDANT ce SYNC (p.ex. les cycles internes MULU).
+                const int overlap = int(std::min<moira::i64>(n, g_cur->blitterOverlap));
+                g_cur->blitterOverlap -= overlap;
+                n -= overlap;
+                if (!n) break;
+                const bool pending = !g_cur->inReset && !g_cur->blitterRmw
+                                  && g_cur->sched && g_cur->bus->blitterWinEnd >= 0;
+                const int step = pending ? std::min(n, 2) : n;
+                setClock(getClock() + step);
+                n -= step;
+                if (pending) runBlitter();
+            }
+        }
         // Broches IRQ vidéo PRÉ-ARMÉES (HBL/VBL) : montée au cycle bus EXACT, en
         // cours d'instruction — l'instruction qui ENJAMBE l'événement la voit à son
         // POLL_IPL, comme WinUAE (pin posée dans do_cycles). Cf. Cpu68k::armHblPinAt.
@@ -619,6 +682,10 @@ public:
     // l'empilement de trame (MoiraExceptions_cpp.h:508) → latence d'entrée PURE,
     // le timing des instructions reste intact.
     void willInterrupt(moira::u8 level) override {
+        static const bool blitDiag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
+        if (blitDiag)
+            std::fprintf(stderr, "[BLIRQ] entry level=%u clock=%lld\n", unsigned(level),
+                         (long long)(g_cur->sched ? g_cur->sched->liveNow() : busOfClock(getClock())));
         if (g_iackOn) {                                          // IACK fidèle WinUAE (E-clock @ IACK + bloc occupé)
             if (g_iackAt) return;                                // ← nouveau modèle : tout se fait AU point d'IACK
                                                                  //   (iackSyncBefore/After), plus rien ici.
@@ -648,12 +715,12 @@ public:
     // Port FIDÈLE de Hatari `iack_cycle` (newcpu.c:2958-3019) AU point d'IACK du 68000
     // (execInterrupt<C68000> : entre le push PClo et les pushes SR/PChi — cf. hooks
     // Moira.h). Remplace les SYNC(4)+SYNC(4) stock (total 8) par :
-    //   HBL/VBL (niv 2/4) : E-clock wait (0..8, motif [0 8 6 4 2], calculé ICI — la
+    //   HBL/VBL (niv 2/4) : E-clock wait (0..8 bus, motif [0 8 6 4 2], calculé ICI — la
     //     phase d'horloge est déjà quantifiée par l'alignement bus du push PClo,
     //     comme chez Hatari où M68000_WaitEClock lit l'horloge APRÈS ce push) puis
-    //     CPU_IACK_CYCLES_VIDEO_CE(10) + idle(4) = g_iackVideo (14).
+    //     bloc périphérique 10 bus + idle 4 CPU = g_iackVideo (14 à 8 MHz).
     //   MFP (niv 6) : vecteur lu immédiatement (comme MFP_ProcessIACK), puis
-    //     CPU_IACK_CYCLES_MFP_CE(12) + idle(4) = g_iackMfp + 4.
+    //     bloc périphérique g_iackMfp bus (calibration 16) + idle 4 CPU.
     //   Autres (dont SCC niv 5) : stock Moira 4/4 (inchangé).
     // C'est CE placement qui fait émerger le motif mod-20 (E-clock mod-10 × créneau
     // bus mod-4) des positions d'entrée d'IRQ mesuré chez Hatari — l'ancien modèle
@@ -672,8 +739,15 @@ public:
     }
     int iackSyncAfter(moira::u8 level) override {
         if (!g_iackOn || !g_iackAt) return 4;                    // stock Moira
-        if (level == 2 || level == 4) return g_iackVideo * g_cur->cpuMul;   // 10 (IACK→DTACK) + 4 idle
-        if (level == 6) return (g_iackMfp + 4) * g_cur->cpuMul;             // 12 (IACK→DTACK) + 4 idle
+        // Le temps périphérique est exprimé en cycles bus 8 MHz ; les quatre
+        // cycles internes suivants restent des périodes CLK du 68000. Les
+        // multiplier aussi à 16 MHz ralentissait artificiellement le CPU.
+        // g_iackVideo inclut historiquement ces quatre cycles à 8 MHz.
+        if (level == 2 || level == 4) {
+            const int idle = std::min(g_iackVideo, 4); // permet aussi le diagnostic _VIDEO=0
+            return (g_iackVideo - idle) * g_cur->cpuMul + idle;
+        }
+        if (level == 6) return g_iackMfp * g_cur->cpuMul + 4;
         return 4;
     }
 
@@ -696,6 +770,10 @@ public:
         // Mesuré sur le banc SHO : sans rebase, tout le raster glisse de ~16 cycles
         // (écritures palette {104..128} → {120..156}, réveil STOP {68,72,76} → {80..96}).
         if (g_iackSync && g_cur->sched && !g_cur->inReset && g_cur->cpuSelf) g_cur->cpuSelf->rebaseQuantumAndSync();
+        static const bool blitDiag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
+        if (blitDiag)
+            std::fprintf(stderr, "[BLIRQ] iack level=%u clock=%lld\n", unsigned(level),
+                         (long long)(g_cur->sched ? g_cur->sched->liveNow() : busOfClock(getClock())));
         if (level == 6 && g_cur->bus->mfp) {                 // MFP : vecteur fourni par le 68901
             const int v = g_cur->bus->mfp->iack();
             if (g_cur->tracer) g_cur->tracer->onInterrupt(level, v);
@@ -722,8 +800,8 @@ namespace {
 //  - bug « 63 accès » (phase PRE_START) : si l'accès tombe dans la fenêtre de
 //    4 cycles précédant la prise de bus, le blitter le compte à tort comme un de
 //    SES accès (la tranche suivante n'en fera que 63) ;
-//  - fenêtre CPU (phase COUNT_CPU_BUS) : le blitter attend 64 accès bus CPU réels
-//    avant de reprendre le bus — le 64ᵉ date la tranche suivante (+4 cycles).
+// Le comptage APRÈS accès est séparé dans didAccessBus : le 64ᵉ cycle bus
+// achevé arme PRE_START (+4), sauf si ce cycle a lui-même déclenché la tranche.
 // Date de l'accès = horloge de l'ORDONNANCEUR (Scheduler::liveNow), et pas celle du
 // cœur : la fenêtre PRE_START est armée et la tranche reprogrammée avec liveNow()
 // (Blitter.cpp:233-234), or les deux horloges sont décalées d'environ 40 cycles — les
@@ -739,8 +817,6 @@ void noteBlitterPreStart() {
                               : busOfClock(static_cast<int64_t>(g_cur->moira->getClock()));
     if (t >= g_cur->bus->blitterWinStart && t < g_cur->bus->blitterWinEnd)
         g_cur->bus->blitter->notePreStartCpuAccess();
-    if (g_cur->bus->blitterCountCpu)
-        g_cur->bus->blitter->noteCpuBusAccess(t);
 }
 
 // Recalcule l'IPL présenté au CPU : MFP (6) > VBL (4) > HBL (2).
@@ -888,10 +964,20 @@ int64_t Cpu68k::busClockNow() const {
     return busOfClock(static_cast<int64_t>(state_->moira->getClock()));
 }
 
+int64_t Cpu68k::traceClockNow() const {
+    return state_->sched ? state_->sched->liveNow() : busClockNow();
+}
+
 void Cpu68k::reset() {
     activate();   // A33 : cf. run()
+    state_->faultValid = false;
+    state_->grp0Vector = 0;
+    state_->inBusError = false;
     state_->bus->bootOverlay = true;
     state_->inReset = true;                    // sync() n'avance pas l'ordonnanceur pendant le reset
+    state_->blitterOverlap = 0;
+    state_->megaSteAccessHit = false;
+    state_->blitterRmw = state_->blitterBusAccess = state_->blitterStartedInAccess = false;
     state_->moira->reset();                    // lit SSP/PC via read16OnReset (overlay ROM)
     state_->inReset = false;
     state_->bus->bootOverlay = false;
@@ -967,8 +1053,8 @@ int Cpu68k::run(int cycles) {
                 state_->bpHit = true; state_->bpAddr = pc; state_->endSlice = true; break;
             }
         }
-        state_->moira->execute();                          // une instruction (sync() dispatche les events échus)
-        if (state_->tracer) state_->tracer->onInstruction(state_->moira->getPC0());
+        if (state_->tracer) state_->traceEmitted = false;
+        state_->moira->execute();                          // instruction, IRQ ou attente STOP
         if (htEmit) {
             const int64_t now = busClockNow();
             std::fprintf(stderr, "HT %06X d=%-3lld %s\n", htPc, static_cast<long long>(now - state_->htPrev), htDis);
@@ -1161,6 +1247,9 @@ void Cpu68k::serialize(StateArchive& ar) {
     // même après retour à 8 MHz — sans lui, busOfClock() rendrait des valeurs d'un
     // autre domaine que sched.now_ après load (fenêtres blitter, dispatch faux).
     ar(state_->cpuBias);
+    ar(state_->blitterOverlap);
+    ar.check(state_->blitterOverlap >= 0 && state_->blitterOverlap <= (1LL << 40),
+             "Cpu68k::blitterOverlap hors plage");
     // Broches IRQ vidéo pendantes (niveau-sensibles jusqu'à IACK) : un HBL tombé au
     // dernier runTo avant la frontière de save avec SR masqué serait perdu au load.
     ar(state_->vblPending); ar(state_->hblPending);

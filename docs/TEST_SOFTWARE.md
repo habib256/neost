@@ -3,8 +3,9 @@
 > (c) 2026 VERHILLE Arnaud — catalogue des jeux/démos/suites qui poussent un émulateur ST
 > dans ses retranchements, classés par **sous-système** matériel.
 >
-> Complète la **méthode imposée** (`CLAUDE.md`) : on porte d'abord la source de vérité
-> (`extern/hatari/src`), PUIS on valide avec du logiciel réel. Chaque cible ci-dessous
+> Complète la **méthode imposée** (`CLAUDE.md`) : comparer les implémentations
+> (`extern/hatari/src`), vérifier leur accord avec le matériel, puis valider
+> avec du logiciel réel. Ne pas reproduire un défaut confirmé d’Hatari. Chaque cible ci-dessous
 > exerce un effet non documenté (affichage détourné, timing au cycle près, astuce de
 > synchro HW) qui ne sort que si l'émulation est fidèle. Les chantiers correspondants
 > sont dans [`TODO.md`](../TODO.md) ; le rendu attendu se valide à l'oracle Hatari
@@ -61,6 +62,40 @@ FAUTER (Hatari `IoMem_FixVoidAccessForST`/`ForMegaST`, ioMem.c:150-195 ; NeoST
 `{megast, st}` × `{tos104fr, etos192fr, tos102uk}` : halt sur les trois `megast`, aucun
 sur les trois `st`. Détail et recette d'injection clavier :
 [`CASE_STUDIES.md`](CASE_STUDIES.md).
+
+### Lignes masquées ST/STE (2026-10-19)
+
+`tools/make_blankline_test.py` génère huit secteurs de boot autonomes libres,
+sur EmuTOS PAL : `blankline_{blank,node,node_late,stop}_{st,ste}`.
+Le motif RAM contient des longs successifs : un compteur vidéo qui avance
+sur une ligne NO_DE ou se fige sur une ligne BLANK décale les pixels suivants.
+Le fond vert distingue la palette 0 du noir. Aucune écriture palette dans
+le handler : les sondes NO_DE et STOP_MIDDLE exercent le déclenchement du
+rendu final sans extension de bordure, absent avant correction.
+
+L'impulsion tardive atteint la fenêtre NO_DE du STF mais pas celle du STE
+(préchargement déjà commencé). STOP_MIDDLE raccourcit DE et consomme 54 octets.
+La VBL depuis STOP laisse plusieurs phases de quatre cycles : `oracle_scan`
+cherche uniquement une image identique, sans tolérance pixel, pour les six
+sondes BLANK/NO_DE. Elles sont des oracles Hatari. Les deux STOP_MIDDLE sont
+des snapshots NeoST : Hatari rend trois pixels de plus au dernier groupe
+de plans (même résultat sur 61 captures par machine). Aucune référence
+Hatari n'est admise avec une tolérance pour absorber ce résidu. Le masquage
+par palette 0 est une convention comparative ; sa couleur physique n'est
+pas validée par l'accord avec Hatari. NO_SYNC/SYNC_HIGH ne sont pas couverts
+par ces huit premières sondes.
+
+Complément : `blankline_{nosync,nosync_cancel,sync_high,sync_high_cancel}_{st,ste}`.
+Une impulsion hi-res avant HSYNC ou pendant celui-ci inhibe DE sur la ligne
+suivante ; le retour assez tôt annule l'effet. L'image contraint le masquage,
+l'adresse accumulée et la ligne ajoutée au bas de l'affichage. Les mêmes
+séquences dans `glueSelfTest` vérifient aussi la fenêtre de comptage Timer B,
+les 32 000 octets consommés au total et l'identité des décisions live/replay.
+Ce sont des comparaisons au modèle d'Hatari, pas des mesures électriques.
+Les témoins annulés réécrivent la même couleur après l'impulsion pour forcer
+le rendu final : une extension basse oubliée doit rester visible même si le
+masque de la ligne suivante a été correctement annulé. Cette réécriture ne
+change pas l'image correcte.
 
 ### ROM libres vs ROM propriétaires (depuis le 2026-08-19)
 

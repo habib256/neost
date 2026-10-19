@@ -570,11 +570,20 @@ void Shifter::finishFrame() {
     // pixel exact, même dans la bordure — l'ancien chemin « actif seul » laissait
     // les bordures au latch par-ligne de renderLine (banc poll : bascules à
     // x=45..47 dans la bordure gauche et pal[0] roulant haut/bas manquants).
-    // Trame sans AUCUNE écriture palette : rendu ligne-à-ligne conservé.
+    // Sans écriture palette, masque ni retrait : rendu ligne-à-ligne conservé.
     // Deux checks OFF manqués peuvent garder VBlank actif jusqu'à l'aire normale,
     // sans retrait de bordure ni écriture palette : le replay doit aussi l'effacer.
+    // NO_DE/BLANK/STOP_MIDDLE peuvent masquer une ligne SANS élargir de bordure.
+    // Le rendu live nominal ne connaît pas ces masques ; rejouer même si aucune
+    // palette n'a été écrite. Garder bordersTrick_ pour les véritables extensions
+    // de fenêtre : le cadrage adaptatif s'appuie sur ce signal.
+    const bool maskedLine = std::any_of(glueLines_.begin(), glueLines_.end(),
+        [](const GlueLine& line) {
+            return (line.borderMask & (glue::NO_DE | glue::BLANK | glue::STOP_MIDDLE)) != 0;
+        });
     const Geometry vg = geometry();
-    if (bordersTrick_ || spec512Active_ || vblankAtLine(vg.dispStartLine + vg.displayLines - 1))
+    if (bordersTrick_ || spec512Active_ || maskedLine
+        || vblankAtLine(vg.dispStartLine + vg.displayLines - 1))
         renderGlueFrame();
 
     // Snapshot Glue stable pour le zoom kiosk : capturé ICI, après replayGlue() /

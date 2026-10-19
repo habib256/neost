@@ -185,6 +185,16 @@ def gui_available() -> str | None:
         return "pas d'affichage (DISPLAY/WAYLAND_DISPLAY absents — xvfb-run pour forcer)"
     return None
 FULL = FAST + [
+    # Traces temporelles contre Hatari : références publiques, pas d'oracle local
+    # requis. La CI oracle vérifie séparément leur reproductibilité à l'épingle.
+    ("Comparateur temporel (IRQ absentes, perdues ou dérivantes)",
+     [sys.executable, str(TOOLS / "test_timing_oracle.py")]),
+    ("Timings MFP, DMA son/disquette et blitter (Hatari, comparaison stricte)",
+     [sys.executable, str(TOOLS / "run_timing_oracle.py")]),
+    ("MegaSTE 16 MHz : bus et cache (Hatari, égalité exacte)",
+     [sys.executable, str(TOOLS / "run_megaste_bus_oracle.py")]),
+    ("MegaSTE blitter/IRQ : données, répétabilité et conservation des cycles bus",
+     [sys.executable, str(TOOLS / "run_megaste_blitter_checks.py")]),
     # Barrière de DÉBIT (chantier A6). Dans le palier FULL et non FAST : il mesure du
     # temps mur, donc il coûte quelques secondes et il est le seul verdict du dépôt
     # sensible à la charge de la machine. Il garde des RATIOS entre charges mesurées

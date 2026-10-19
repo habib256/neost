@@ -1,6 +1,8 @@
 # Automatiser Hatari (oracle de référence)
 
-Hatari est la **source de vérité matérielle** de NeoST (cf. `CLAUDE.md`). Au-delà de la
+Hatari est une **référence comparative** de NeoST ; le vrai Atari reste la
+cible et ses preuves matérielles priment (cf. `CLAUDE.md`). Les défauts
+confirmés d’Hatari ne sont pas des comportements à reproduire. Au-delà de la
 lecture des sources (`extern/hatari/src`), on peut **exécuter** Hatari de façon
 déterministe et **sans affichage** pour comparer son comportement à NeoST (boot, écran,
 détection HW, IRQ). Ce doc note la recette vérifiée (Hatari v2.6.1, macOS Silicon, juin 2026).
@@ -233,6 +235,132 @@ ffmpeg -y -reinit_filter 0 -i /tmp/h.avi -vf "select=eq(n\,300)" -frames:v 1 -up
 - `--run-vbls N` : exécute N VBL (≈ N/50 s de temps ST en PAL) puis quitte proprement.
   `--fast-forward on` accélère (ne change pas le nombre de VBL émulées).
 
+## Comparaison temporelle des IRQ
+
+```sh
+python3 tools/run_timing_oracle.py                    # NeoST ↔ références commises
+python3 tools/run_timing_oracle.py --oracle-check     # + Hatari rejoué deux fois
+python3 tools/test_timing_oracle.py                   # mutations du comparateur
+```
+
+Ce banc complète le cycle-bench CPU (auto-régression NeoST) et les comparaisons
+pixel. Il réutilise le parseur de `trace_diff.py` et son principe de périodes,
+mais vérifie aussi la phase cumulée : une IRQ perdue ou une petite dérive répétée
+peuvent conserver la même période dominante.
+
+Dix-sept cartouches libres générées par `tools/make_timing_probe.py` et
+`tools/timing_extended.py` prennent la main avant TOS. Pile et tampons restent
+sous 128 Ko : la MMU n'a pas encore été programmée. Les dates sont relevées sur
+les PC du programme invité, sans interpréter les diagnostics propres à chaque
+émulateur.
+
+| Sonde | Configuration et mesure |
+|---|---|
+| Timer A | delay, division 4, donnée 192 ; 256 IRQ après 32 échauffements |
+| Timer B | delay, division 10, donnée 83 ; idem |
+| Timer C | delay, division 64, donnée 37 ; idem |
+| Timer D | delay, division 200, donnée 17 ; idem |
+| Son DMA STE | 256 octets, 50066 Hz stéréo, repeat, Timer A event-count 1 ; idem |
+| Timer B vidéo | event-count 1, DE descendant ; idem, après deux VBL PAL |
+| DMA disquette | lecture réelle du secteur 2 synthétique, 32 rafales de 16 octets + IRQ |
+| Blitter HOG | 64 copies de 16×8 mots, après huit échauffements, IRQ GPIP3 |
+| Blitter partagé | mêmes données, CPU scrutant BUSY pendant les transferts |
+| Partagé petit / grand | 16×1 et 16×16 mots ; 64 copies après huit échauffements |
+| Partagé / HOG MULU | 16×8 mots, multiplication entière dans la boucle de poll |
+| Partagé / HOG TAS | BUSY posé par TAS sous verrou read-modify-write |
+| Partagé / HOG RAM | même programme copié en RAM ST, créneaux GLUE actifs |
+
+Les deux machines utilisent STE, 1 Mo, 8 MHz, RGB/PAL et EmuTOS 256 Ko FR.
+Hatari tourne avec `--cpu-exact on --compatible on --timer-d off`, configuration
+et HOME temporaires, SDL dummy, graine fixe 1. Le FDC est physique (`--fastfdc off`),
+sa disquette est créée dans le dossier de sortie, jamais une image utilisateur.
+Les traces portent `NEOST_TRACE_CYC=1` et `cpu_disasm,cpu_video_cycles`.
+Les fichiers complets, dont les deux captures Hatari distinctes (`hatari-1` et
+`hatari-2`), restent dans `tests/out/timing/` pour le diagnostic.
+
+**Trace et horloge corrigées.** `willExecute` trace une seule fois avant chaque
+instruction réelle. L'ancien appel après `execute()` journalisait aussi les
+continuations d'IRQ/RTE et les attentes STOP : certains tours CPU étaient donc
+comptés deux fois. Le PC et les registres décrivent maintenant l'entrée réelle.
+L'horloge reste dans le domaine `Scheduler::liveNow`. Le compteur CPU brut
+incluait les 40 cycles de reset, hors Scheduler, absorbés au premier IACK : une
+mesure à cheval sur ce rebase donnait un faux écart de 38 cycles. Le changement
+d'horodatage l'a ramené à **2 cycles** sur les quatre timers, sans changer leur
+émulation. Le comparateur refuse une mutation réintroduisant ces 40 cycles.
+
+Chaque capture dure 40 trames. Pour les six sondes MFP/son, les 256 dates après
+32 échauffements sont normalisées sur la première ; aucun recalage ultérieur
+n'est permis. La période dominante doit être identique. Phase cumulée et
+première IRQ depuis l'armement sont bornées à **4 cycles sur les timers**, et
+**512 sur le son DMA** (une ligne PAL, résolution du refill HBL ; premier écart
+actuel 158 cycles). La sonde Timer B attend deux VBL avant l'armement pour ne pas
+confondre le régime PAL avec la trame transitoire 60→50 Hz du reset.
+
+**DMA disquette.** Le programme scrute le premier mot de chaque rafale, avance
+son pointeur de 16 octets, puis attend l'IRQ. Il vérifie tous les mots du secteur
+et le statut WD1772. Les 32 dates sont comparées depuis la première rafale
+(borne de 24 cycles, une itération du poll), ainsi que la date de l'IRQ depuis
+la dernière rafale (4 cycles). Les 31 comptes de tours CPU entre rafales doivent
+être **identiques** : cette mesure du travail effectué pendant la DMA complète
+la cadence des données et détecte un stall CPU supprimé sans changement des
+échéances. L'attente rotationnelle initiale est exclue, jamais ajustée pour
+masquer une dérive dans les rafales. Mesure actuelle : phases et travail CPU
+identiques, IRQ à −2 cycles. L'écriture, STX et les erreurs FDC restent à couvrir.
+
+**Blitter.** Chaque copie réinitialise la destination et les adresses, scrute
+BUSY et vérifie tous les mots copiés. Les durées armement→fin observée et
+armement→IRQ sont comparées individuellement ; le compte de tours CPU qualifie
+le partage de bus. Les dix sondes HOG/partagées rendent maintenant **fin à +4
+cycles, IRQ à +2 en ROM / +4 en RAM et compte CPU identique**. Aucune exception KNOWN n'est admise,
+les bornes restent ±4 cycles et zéro tour CPU. Les références restent des
+mesures pures de Hatari, vérifiées par deux captures identiques.
+
+Le correctif porte les reprises PRE_START sous-instruction, les bornes avant et
+après accès bus, l'exclusion de l'accès pendant lequel la tranche a commencé et
+le recouvrement CPU interne jusqu'au prochain accès bus. TAS mémoire reste
+verrouillé entre lecture et écriture, préfetch libre. Le dispatch DMA par accès
+est préservé par rebase du quantum ; les autres événements ne sont pas servis
+par le seul helper PRE_START. Le crédit CPU est sauvegardé en **v49** : v48 et
+antérieurs sont refusés. Le mutant omettant ce crédit fait échouer le test réel
+TAS D0 → snapshot → BRA (deux cycles perdus).
+
+```sh
+python3 tools/run_timing_oracle.py --strict          # même politique que le mode normal
+```
+
+L'étalon pixel historique `blitter_timer`, exécuté en RAM, passe de **68 à zéro
+pixel** contre Hatari : les 100 valeurs TADR et les données copiées concordent.
+L'alignement RAM se fait au début du cycle, avant SYNC(2) ; le calcul au callback
+médian ajoutait une attente après une tranche blitter. HOG suit désormais le même
+PRE_START et le même recouvrement que le partagé. La référence PNG provient de
+Hatari (`--oracle`), sans modification des sondes ni tolérance pixel ajoutée ;
+l'oracle a été reproduit deux fois. Les variantes MegaSTE 16 MHz/cache restent
+à qualifier dans `docs/HATARI_DIVERGENCES.md`.
+
+Les traces sans horloge, incomplètes ou non monotones, les sources absentes,
+les redémarrages, les erreurs de données, les IRQ manquantes et les exceptions
+mémoire font échouer le banc. Les tests du comparateur injectent aussi des
+mutations : IRQ perdue, dérive lente, ancien biais de reset, suppression des
+32 cycles par rafale, modification du travail CPU et retard de fin.
+
+Le palier `full` compare NeoST à la référence sans requérir Hatari. La CI
+hebdomadaire `oracle.yml` vérifie en plus que deux captures Hatari reproduisent
+exactement la référence commise, y compris les comptes CPU. La référence porte
+le pin et les SHA-256 des principaux sources temporels Hatari (dont FDC et
+blitter), de la ROM, des cartouches et de la disquette synthétique. Une variation
+du pin ou de ces sources bloque la redérivation. Pour reposer volontairement
+les références après examen des écarts :
+
+```sh
+python3 tools/run_timing_oracle.py --record-reference
+```
+
+Cette commande exige le pin de `tools/setup_hatari.sh`, deux captures Hatari
+identiques et la comparaison NeoST stricte réussie avant
+toute écriture. Les autres modes ne modifient jamais les références. Le banc
+reste limité aux configurations listées ; MegaSTE 16 MHz et cache ne sont pas
+couverts.
+
 ## Autres signaux (sans image)
 
 - `--conout 2` : redirige la **console EmuTOS/VT-52** vers stdout — utile pour suivre le
@@ -334,3 +462,39 @@ unzip -o /tmp/e.zip -d /tmp/e && cp /tmp/e/emutos-256k-1.4/etos256us.img roms/
 ```
 Le paquet `256k` contient toutes les langues (`etos256us.img`, `etos256fr.img`, …). Le
 paquet `192k` est pour ST/STE (TOS 1.x), le `256k` pour Mega ST/STE/TT/Falcon (TOS 2.x/3.x).
+
+
+## CPU et cache MegaSTE à 16 MHz
+
+```sh
+python3 tools/run_megaste_bus_oracle.py
+python3 tools/run_megaste_bus_oracle.py --oracle-check
+python3 tools/run_megaste_bus_oracle.py --record-reference
+```
+
+Onze cartouches libres, MegaSTE + EmuTOS 256 Ko FR, RAM sous 128 Ko. Les sondes
+basculent à 16 MHz via $FF8E21 : lectures byte/word/long avec cache off, miss
+avec remplissage ou hit amorcé, écritures word/long et contrôle des données.
+Elles masquent les interruptions et n'exécutent pas de DMA. Quatre trames,
+huit échauffements puis 64 durées mesurées sur les PC début/fin de l'instruction.
+Hatari exprime ces intervalles stables en cycles CPU 16 MHz, NeoST en cycles bus
+8 MHz : division exacte par deux côté Hatari, hors intervalle de bascule.
+Aucune tolérance de cycle : les 64 durées doivent coïncider.
+
+Référence `tests/reference/megaste_bus_hatari.json`, schéma/protocole, empreintes
+ROM/programmes et sources au pin vérifiés. Enregistrement seulement après deux
+captures Hatari identiques et comparaison NeoST réussie ; `--oracle-check`
+rejoue ces conditions sans modifier les références. Vérifié dans `full` et la
+CI oracle ; les tests des comparateurs refusent un cycle d'écart, un facteur
+deux, une sonde modifiée ou un échantillon manquant.
+
+Ces résultats qualifient les accès CPU/cache en régime établi, pas la chaîne
+globale blitter/IRQ à 16 MHz. Le banc
+`python3 tools/run_megaste_blitter_checks.py` vérifie douze configurations
+NeoST contre des bornes physiques. Ajouter `--oracle-audit` rejoue le pin :
+dix cas échouent, sans tolérance ni référence promue. Deux défauts Hatari
+sont isolés par des corrections expérimentales ; les écarts temporels
+résiduels restent à qualifier. Protocole, mesures et patch diagnostique :
+[`HATARI_MEGASTE_AUDIT.md`](HATARI_MEGASTE_AUDIT.md). Les tests
+locaux couvrent séparément les quatre phases RAM, l'invalidation avant
+arbitration et la conservation d'un hit déjà lu quand la DMA change la RAM.

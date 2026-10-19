@@ -1,0 +1,11 @@
+--- a/src/cpu/newcpu.c
++++ b/src/cpu/newcpu.c
+@@ -2947,7 +2947,7 @@
+ 
+ 			/* Add the cycles used by the IACK sequence (IACK to DTACK transition) */
+ 			if (cycle_exact)
+-				x_do_cycles ( CPU_IACK_CYCLES_MFP_CE * cpucycleunit );
++				x_do_cycles ( (CPU_IACK_CYCLES_MFP_CE << nCpuFreqShift) * cpucycleunit );
+ 			else
+ 				M68000_AddCycles ( CPU_IACK_CYCLES_MFP );
+ 			CPU_IACK = false;

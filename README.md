@@ -121,6 +121,9 @@ executable, so running from the repository root or from `build/` both work.
 Click the middle mouse button (usually the wheel), or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>G</kbd>,
 to capture or release the mouse. The keyboard shortcut also works with trackpads and
 two-button mice.
+For GEM desktop use, enable **Desktop mouse (GEM, no capture)** under
+**Configuration → Input**. Point and click inside the ST image; the cursor aligns
+automatically when you return to it. The setting is saved between sessions.
 When captured, you are driving the GEM cursor. The keyboard goes straight to the IKBD. Everything else —
 machine model, memory, ROM, floppies, hard disks, sound, MIDI, CRT look — lives in one
 **Configuration** window, and the status bar at the bottom always tells you what machine
@@ -129,8 +132,8 @@ you are actually running.
 | Key | Action |
 |-----|--------|
 | <kbd>F5</kbd> / <kbd>F7</kbd> | Save / load state |
-| <kbd>Alt</kbd>+<kbd>Enter</kbd> | Full screen with mouse capture / window with host cursor |
-| <kbd>F8</kbd> / <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> | Toggle kiosk (cabinet) mode |
+| <kbd>Alt</kbd>+<kbd>Enter</kbd> | Resume Atari from the kiosk menu; otherwise toggle full screen and mouse capture |
+| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> | Toggle kiosk (cabinet) mode |
 | *Windows → Keyboard* | On-screen ST keyboard (photo): click any key, sticky Shift/Control/Alternate |
 | *Machine → MIDI* | Real MIDI devices in and out, built-in GM synth, Roland MT-32/CM-32L (Munt, ROMs in `roms/mt32/`), or a virtual port (macOS/Linux; on Windows install loopMIDI) |
 | <kbd>F11</kbd> | Keyboard joystick (arrows + right Ctrl) |
@@ -146,7 +149,12 @@ the image.
 GEMDOS redirection (Hatari's trick: no controller emulation, your real files). Or mount a
 real ACSI disk image and let TOS read its partition table.
 
-**Cabinet mode** (`--kiosk`, or <kbd>F8</kbd>) — exclusive full screen, no window
+For floppy-only boot demos such as **Closure** or **No Cooper**, press **Alt**
+during the EmuTOS startup screen after **Machine → Hard Reset** to boot **A:**
+while keeping the hard disk mounted. These demo disks do not contain a normal
+GEMDOS directory; opening them from the desktop can show meaningless filenames.
+
+**Cabinet mode** (`--kiosk`, or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd>) — exclusive full screen, no window
 chrome, configuration frozen so the cabinet always restarts identical, and an in-game
 menu on **START** to swap games, remap pads or send keystrokes without ever leaving full
 screen. The whole thing is drivable from a gamepad. Details, including the Raspberry Pi

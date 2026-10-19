@@ -293,6 +293,7 @@ int appInit(App& A, int argc, char** argv) {
     A.dockOn   = cfg.dock;     // mode ancré mémorisé (cf. renderDockSpace)
     A.autoZoom = cfg.autoZoom; // zoom adaptatif de l'écran ST (bureau ET kiosk)
     A.mouseSpeed = cfg.mouseSpeed;   // sensibilité de la souris émulée (page Input)
+    A.desktopMouse = cfg.desktopMouse;
     A.crtOn    = cfg.crt;      A.crtParams = cfg.crtParams;   // effets CRT (figés en kiosk)
     A.kioskRomDirs = cfg.romDirs;   // dossiers ROM additionnels du menu kiosk (persistés)
     const std::string defRom = cfg.rom.empty() ? std::string("roms/etos192us.img") : cfg.rom;

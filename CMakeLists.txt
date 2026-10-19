@@ -245,6 +245,10 @@ if(EXISTS "${MOIRA_SRC_DIR}/Moira.cpp")
     # son handler et provoque des accès impairs). Hatari l'émule (exception3_*).
     string(REGEX REPLACE "#define[ \t]+MOIRA_EMULATE_ADDRESS_ERROR[ \t]+(true|false)"
         "#define MOIRA_EMULATE_ADDRESS_ERROR true" _moira_cfg_new "${_moira_cfg_new}")
+    # Tracer les instructions réellement exécutées, avant leur exécution :
+    # un execute() Moira peut ne traiter qu'une IRQ ou une attente STOP.
+    string(REGEX REPLACE "#define[ \t]+MOIRA_WILL_EXECUTE[^\r\n]*"
+        "#define MOIRA_WILL_EXECUTE true" _moira_cfg_new "${_moira_cfg_new}")
     if(NOT _moira_cfg_new STREQUAL _moira_cfg_txt)
         file(WRITE "${_moira_cfg}" "${_moira_cfg_new}")
         message(STATUS "Moira : MoiraConfig.h configuré dans ${MOIRA_BUILD_DIR}.")
@@ -384,6 +388,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/dmasound_microwire_timing_logic.cpp
     tests/rtc_write_only_logic.cpp tests/midi_irq_timing_logic.cpp
     tests/ikbd_irq_timing_logic.cpp
+    tests/gemdos_snapshot_logic.cpp tests/desktop_mouse_logic.cpp
     tests/fdc_track_id_location_logic.cpp
     tests/mfp_internal_loopback_logic.cpp tests/fdc_sector_size_switch_logic.cpp
     tests/mfp_rx_overrun_logic.cpp tests/mfp_rx_irq_timing_logic.cpp

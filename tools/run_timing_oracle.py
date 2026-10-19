@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""Compare les traces IRQ aux références Hatari (sans image ni ROM propriétaire).
+
+Sans option : NeoST contre les références commises. --oracle-check : rejoue aussi
+Hatari et exige sa reproductibilité. --record-reference : écrit une référence
+après DEUX captures Hatari identiques et la comparaison NeoST réussie.
+"""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+import trace_diff as td
+from make_timing_probe import CASES, build
+from timing_extended import disk_image
+
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "tests/out/timing"
+REFERENCE = ROOT / "tests/reference/timing_hatari.json"
+ROM = ROOT / "roms/etos256fr.img"
+NEOST = ROOT / "build" / ("neost-headless.exe" if sys.platform == "win32" else "neost-headless")
+HATARI = ROOT / "extern/hatari/build/src/hatari"
+FRAMES, WARMUP, SAMPLES = 40, 32, 256
+# Les timers ont une quantification CPU de 4 cycles. Le DMA son est observé
+# au refill HBL : une ligne PAL est la résolution de cette comparaison.
+# La première IRQ est datée dans le même domaine Scheduler que l'armement.
+LIMITS = {case: (512, 512) if case == "dma_sound" else (4, 4) for case in CASES}
+LIMITS.update(blitter_hog=(4, 4), blitter_shared=(4, 4), fdc_read=(24, 4))
+SOURCES = ("src/mfp.c", "src/dmaSnd.c", "src/cycInt.c", "src/video.c",
+           "src/cpu/newcpu.c", "src/m68000.c", "src/fdc.c", "src/blitter.c")
+
+
+def sample_count(case):
+    return 32 if case == "fdc_read" else 64 if case.startswith("blitter_") else SAMPLES
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def run(command, log, env=None):
+    with log.open("w") as stream:
+        subprocess.run(list(map(str, command)), cwd=ROOT, env=env,
+                       stdout=stream, stderr=stream, check=True, timeout=90)
+
+
+def identity():
+    pin = re.search(r"^PIN=(\w+)", (ROOT / "tools/setup_hatari.sh").read_text(), re.M)[1]
+    revision = subprocess.check_output(
+        ["git", "-C", str(ROOT / "extern/hatari"), "rev-parse", "HEAD"], text=True).strip()
+    if revision != pin:
+        raise ValueError(f"Hatari non épinglé : {revision}, attendu {pin}")
+    return {"commit": revision, "sources_sha256": {
+        source: sha(ROOT / "extern/hatari" / source) for source in SOURCES}}
+
+
+def capture(case, emulator, attempt=None, *, probe=None, machine="ste", out=None,
+            frames=FRAMES, extra_env=None):
+    output = OUT if out is None else out
+    data, pcs = (build if probe is None else probe)(case)
+    cart = output / (case + ".bin")
+    cart.write_bytes(data)
+    suffix = emulator if attempt is None else f"{emulator}-{attempt}"
+    trace = output / f"{case}.{suffix}.trace"
+    log = output / f"{case}.{suffix}.log"
+    env = {**os.environ, "NEOST_TRACE_CYC": "1", "HATARI_SEED": "1"}
+    if extra_env:
+        env.update(extra_env)
+    disk = output / "fdc_probe.st"
+    if case == "fdc_read":
+        disk.write_bytes(disk_image())
+    if emulator == "neost":
+        command = [NEOST, ROM, "--machine", machine, "--mem", "1m", "--cart", cart,
+                   "--frames", frames, "--trace", trace, "--irq"]
+        if case == "fdc_read":
+            command += ["--disk", disk]
+        run(command, log, env)
+    else:
+        # Configuration et HOME isolés : aucune dépendance aux préférences locales.
+        with tempfile.TemporaryDirectory(prefix="neost-timing-hatari-") as directory:
+            config = Path(directory) / "empty.cfg"
+            config.write_text("")
+            env.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HOME=directory)
+            command = [HATARI, "--configfile", config, "--tos", ROM, "--machine", machine,
+                       "--memsize", "1", "--cartridge", cart, "--cpu-exact", "on",
+                       "--compatible", "on", "--cpuclock", "8", "--monitor", "rgb",
+                       "--sound", "off", "--timer-d", "off", "--fast-forward", "on",
+                       "--confirm-quit", "off", "--alert-level", "fatal",
+                       "--run-vbls", frames, "--trace", "cpu_disasm,cpu_video_cycles",
+                       "--trace-file", trace]
+            if case == "fdc_read":
+                command += ["--disk-a", disk, "--fastfdc", "off", "--protect-floppy", "on"]
+            run(command, log, env)
+    text = log.read_text(errors="replace")
+    if "Address Error" in text or "Bus Error" in text:
+        raise ValueError(f"Exception pendant la sonde : {log}")
+    if case.startswith("blitter_") or case == "fdc_read":
+        return read_transfer_trace(trace, pcs, data, case)
+    return read_trace(trace, pcs, data)
+
+
+def read_transfer_trace(trace, pcs, data, case):
+    instructions, _ = td.parse(str(trace))
+    def times(name):
+        return [i.cyc for i in instructions if i.pc == pcs[name]]
+    if "irq_while_busy" in pcs and times("irq_while_busy"):
+        raise ValueError(f"{trace} : IRQ reçue pendant que le blitter est BUSY")
+    if times("failure") or len(times("success")) == 0:
+        raise ValueError(f"{trace} : transfert incorrect ou programme non terminé")
+    arms, done, irq = times("arm"), times("handler"), times("irq")
+    polls, count_poll = [], 0
+    for instruction in instructions:
+        if case.startswith("blitter_") and instruction.pc == pcs["arm"]:
+            count_poll = 0
+        if instruction.pc == pcs["poll"]:
+            count_poll += 1
+        if instruction.pc == pcs["handler"]:
+            polls.append(count_poll)
+            count_poll = 0
+    if any(t is None for t in arms + done + irq):
+        raise ValueError(f"{trace} : horodatage absent")
+    if any(b <= a for seq in (arms, done, irq) for a, b in zip(seq, seq[1:])):
+        raise ValueError(f"{trace} : horloge non strictement croissante")
+    count = sample_count(case)
+    if case == "fdc_read":
+        if len(arms) != 1 or len(done) != count or len(irq) != 1 or irq[0] <= done[-1]:
+            raise ValueError(f"{trace} : attendu 1 commande, 32 rafales et 1 IRQ, "
+                             f"reçu {len(arms)}, {len(done)}, {len(irq)}")
+        result = {"disk_sha256": hashlib.sha256(disk_image()).hexdigest(),
+                  "cycles": [t - done[0] for t in done],
+                  "polls": polls[1:],  # exclure l'attente rotationnelle initiale
+                  "completion": irq[0] - done[-1]}
+    else:
+        if len(arms) != 72 or len(done) != 72 or len(irq) != 72:
+            raise ValueError(f"{trace} : attendu 72 démarrages/fins/IRQ, "
+                             f"reçu {len(arms)}, {len(done)}, {len(irq)}")
+        if not all(a < i <= d for a, i, d in zip(arms, irq, done)):
+            raise ValueError(f"{trace} : ordre démarrage/IRQ/fin incorrect")
+        result = {"durations": [d-a for a, d in zip(arms, done)][8:],
+                  "polls": polls[8:],
+                  "irq_durations": [i-a for a, i in zip(arms, irq)][8:]}
+    if any(p <= 0 for p in result["polls"]):
+        raise ValueError(f"{trace} : boucle CPU absente pendant les transferts")
+    return {"probe_sha256": hashlib.sha256(data).hexdigest(), **result}
+
+
+def read_trace(trace, pcs, data):
+    instructions, _ = td.parse(str(trace))
+    timestamps = [i.cyc for i in instructions if i.pc == pcs["handler"]]
+    arms = [i.cyc for i in instructions if i.pc == pcs["arm"]]
+    if len(arms) != 1 or len(timestamps) < WARMUP + SAMPLES:
+        raise ValueError(f"{trace} : sonde incomplète ou redémarrée "
+                         f"({len(arms)} armements, {len(timestamps)} IRQ)")
+    if any(t is None for t in timestamps + arms):
+        raise ValueError(f"{trace} : horodatages absents")
+    if any(b <= a for a, b in zip(timestamps, timestamps[1:])):
+        raise ValueError(f"{trace} : horloge non strictement croissante")
+    times = timestamps[WARMUP:WARMUP + SAMPLES]
+    return {"probe_sha256": hashlib.sha256(data).hexdigest(),
+            "first_irq": timestamps[0] - arms[0],
+            "cycles": [t - times[0] for t in times]}
+
+
+def compare(case, actual, expected, strict=False):
+    if actual["probe_sha256"] != expected["probe_sha256"]:
+        raise ValueError(f"{case} : cartouche modifiée, référence à revoir")
+    if case.startswith("blitter_"):
+        ok = True
+        summaries = []
+        for field in ("durations", "irq_durations", "polls"):
+            a, b = actual[field], expected[field]
+            if len(a) != sample_count(case) or len(b) != sample_count(case):
+                raise ValueError(f"{case} : mesure incomplète")
+            delta = [x-y for x, y in zip(a, b)]
+            limit = 0 if field == "polls" else LIMITS[case][0]
+            ok = max(abs(d) for d in delta) <= limit and ok
+            summaries.append(f"{field} Δ={min(delta):+d}..{max(delta):+d} "
+                             f"(borne ±{limit})")
+        label = "OK" if ok else "FAIL"
+        print(f"  {label} {case}: {sample_count(case)} blits, " + "; ".join(summaries))
+        return ok
+    a, b = actual["cycles"], expected["cycles"]
+    if case == "fdc_read":
+        if actual["disk_sha256"] != expected["disk_sha256"]:
+            raise ValueError("Disquette synthétique différente de la référence")
+        if len(a) != 32 or len(b) != 32 or a[0] != 0 or b[0] != 0:
+            raise ValueError("FDC : 32 rafales requises")
+        phase = max(abs(x-y) for x, y in zip(a, b))
+        tail = abs(actual["completion"] - expected["completion"])
+        if len(actual["polls"]) != 31 or len(expected["polls"]) != 31:
+            raise ValueError("FDC : 31 intervalles de travail CPU requis")
+        work = actual["polls"] == expected["polls"]
+        ok = phase <= LIMITS[case][0] and tail <= LIMITS[case][1] and work
+        print(f"  {'OK' if ok else 'FAIL'} fdc_read: 32 rafales, "
+              f"phase max={phase}/24 cycles, IRQ après dernière rafale Δ={tail}/4, "
+              f"travail CPU {'identique' if work else 'DIFFÉRENT'}")
+        return ok
+    if len(a) != SAMPLES or len(b) != SAMPLES or a[0] != 0 or b[0] != 0:
+        raise ValueError(f"{case} : référence/mesure incomplète")
+    phase = max(abs(x - y) for x, y in zip(a, b))
+    first = abs(actual["first_irq"] - expected["first_irq"])
+    phase_limit, first_limit = LIMITS[case]
+    period = td.histo([y - x for x, y in zip(a, a[1:])])[0][0]
+    wanted = td.histo([y - x for x, y in zip(b, b[1:])])[0][0]
+    # Le mode seul masquerait une IRQ perdue ou une faible dérive répétée.
+    ok = phase <= phase_limit and first <= first_limit and period == wanted
+    print(f"  {'OK' if ok else 'FAIL'} {case:12} {SAMPLES} IRQ : "
+          f"phase max={phase}/{phase_limit}, "
+          f"première IRQ Δ={first}/{first_limit} cycles, période={period}/{wanted}, "
+          f"dérive finale={a[-1]-b[-1]:+d}")
+    return ok
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--oracle-check", action="store_true")
+    mode.add_argument("--record-reference", action="store_true")
+    parser.add_argument("--strict", action="store_true",
+                        help="comparaison stricte (désormais appliquée aussi sans ce drapeau)")
+    args = parser.parse_args()
+    OUT.mkdir(parents=True, exist_ok=True)
+    live = args.oracle_check or args.record_reference
+    oracle = identity() if live else None
+    if args.record_reference:
+        reference = {"schema": 2, "oracle": oracle, "rom_sha256": sha(ROM),
+                     "frames": FRAMES, "warmup": WARMUP, "samples": SAMPLES, "cases": {}}
+    else:
+        reference = json.loads(REFERENCE.read_text())
+        if (reference["schema"], reference["frames"], reference["warmup"], reference["samples"]) != (2, FRAMES, WARMUP, SAMPLES):
+            raise ValueError("Protocole de référence incompatible")
+        if reference["rom_sha256"] != sha(ROM) or set(reference["cases"]) != set(CASES):
+            raise ValueError("ROM ou liste des sondes différente de la référence")
+        if live and reference["oracle"] != oracle:
+            raise ValueError("Source Hatari différente de la référence (pin ou empreintes)")
+    print(f"TIMING : {len(CASES)} sondes, STE PAL 8 MHz, Hatari {reference['oracle']['commit'][:12]}", flush=True)
+    ok = True
+    for case in CASES:
+        if live:
+            first = capture(case, "hatari", 1)
+            second = capture(case, "hatari", 2)
+            if first != second:
+                raise ValueError(f"{case} : Hatari ne reproduit pas ses propres horodatages")
+            if args.record_reference:
+                reference["cases"][case] = first
+            elif first != reference["cases"][case]:
+                raise ValueError(f"{case} : trace Hatari différente de la référence commise")
+        ok = compare(case, capture(case, "neost"), reference["cases"][case], args.strict) and ok
+    if args.record_reference and ok:
+        REFERENCE.write_text(json.dumps(reference, indent=2) + "\n")
+        print(f"Référence Hatari écrite : {REFERENCE.relative_to(ROOT)}")
+    print("TIMING ORACLE OK" if ok else "TIMING ORACLE FAIL")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+        print(f"TIMING ERROR: {error} (diagnostic : {OUT})", file=sys.stderr)
+        sys.exit(2)

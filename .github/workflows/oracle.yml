@@ -33,22 +33,13 @@
 #  (Actions → Oracle Hatari → Run workflow) — le réflexe après un changement de
 #  pin ou une repose de références.
 #
-#  CE QUE CE JOB VÉRIFIE VRAIMENT, EN NOMBRE. Sur les 17 étalons machine :
-#    · 10 ont ref_kind=oracle ;
-#    ·  0 est déclaré NON RE-DÉRIVABLE. Le mécanisme existe (`oracle_check: false`
-#       + `oracle_check_note`, raison obligatoire) et a servi le premier jour à
-#       DEUX étalons, réglés depuis : `nocooper` (touche tenue → hatari_oracle.sh
-#       pilote le clavier à la VBL près, `oracle_keys`) et `spec512_bands` (Hatari
-#       ne se reproduisait pas lui-même → le programme s'ancre sur la VBL par
-#       `stop #$2300`, latence fixe ; deux runs Hatari rendent les mêmes phases).
-#       Les deux se re-dérivent, vérifié identique à leur référence ;
-#    ·  3 (`spectrum512_diapo*`) dépendent d'une ROM Atari, que le dépôt ne porte
-#       plus depuis la purge du 2026-08-30 : ils se SAUTENT ici (`rom_is_free()`).
-#  Il reste donc **7 étalons réellement confrontés en CI** : blitter_hog,
-#  cuddly_demos, nocooper, scroll_8264, scroll_8265, spec512_bands, trace_odd. Le
-#  décompte et les noms sont
-#  imprimés à chaque exécution — un « TOUS OK » sur deux étalons au lieu de cinq
-#  doit se voir dans le journal, jamais se fondre dans le vert.
+#  Le périmètre est calculé depuis tools/etalons.json : étalons machine oracle
+#  avec disque. `blitter_timer` en fait partie depuis la clôture BL5 (2026-10-19).
+#  Les ROM Atari absentes sont recensées comme non exécutées (`rom_is_free()`).
+#  Le mécanisme `oracle_check: false` exige une raison ; il a servi à nocooper
+#  et spec512_bands avant leur stabilisation, désormais redérivables.
+#  Le décompte et les noms sont imprimés à chaque exécution : une couverture
+#  réduite doit rester visible dans le journal.
 # =============================================================================
 name: Oracle Hatari
 
@@ -126,6 +117,14 @@ jobs:
       # captures dans tests/out/ et ne touche jamais à tests/reference/.
       - name: Oracle régénéré ↔ références commises ↔ NeoST
         run: python3 tools/run_etalons.py --oracle-check
+
+      - name: Vérifier le comparateur temporel (mutations et traces incomplètes)
+        run: python3 tools/test_timing_oracle.py
+
+      - name: Timings MFP, DMA et blitter ↔ Hatari (comparaison stricte)
+        run: python3 tools/run_timing_oracle.py --oracle-check
+      - name: Bus et cache MegaSTE 16 MHz ↔ Hatari
+        run: python3 tools/run_megaste_bus_oracle.py --oracle-check
 
       # Sans ça, un échec ne laisse qu'un décompte de pixels : les images des deux
       # côtés sont ce qu'on veut regarder en premier.

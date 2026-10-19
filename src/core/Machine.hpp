@@ -94,6 +94,7 @@ public:
     // en vol — sinon il continuerait de corrompre la RAM PENDANT le boot),
     // IKBD_Reset (→ $F1 différé) et recopie des vecteurs reset $0-$7 en RAM.
     void reset() {
+        desktopLineA_ = 0;
         psg.reset(); dmasnd.reset(/*cold=*/false); mfp.reset();
         shifter.reset();           // Video_Reset : scroll/linewidth/offset différé STE, glue
         fdc.reset(/*cold=*/false); // FDC_Reset : commande/DMA en vol annulés
@@ -114,6 +115,7 @@ public:
     // « memvalid » de TOS — il refait alors un boot COMPLET (re-détection mémoire,
     // re-init OS) au lieu du boot à chaud d'un simple reset. Puis reset matériel.
     void hardReset() {
+        desktopLineA_ = 0;
         bus.ram.assign(bus.ram.size(), 0);
         psg.reset(); dmasnd.reset(/*cold=*/true); mfp.reset();
         shifter.reset();           // cf. reset() : couverture Hatari reset.c
@@ -184,10 +186,12 @@ public:
     // suivant. S'appuie sur la trame RÉSUMABLE (cf. frameInProgress_).
     void stepInstruction();
 
-    // Save-states (increment 1 : CPU + RAM + ordonnanceur + état de trame). À prendre/
-    // restaurer à une FRONTIÈRE de trame (entre deux runFrame). loadState renvoie false
-    // si le buffer est tronqué ou l'en-tête invalide. Puces (Shifter/MFP/PSG…) à venir.
-    void saveState(std::vector<uint8_t>& out);
+    // Save-states CPU/RAM/puces et contexte GEMDOS. saveState échoue sans produire
+    // de buffer si un fichier hôte n'est plus accessible. loadState refuse les
+    // fichiers modifiés, sans toucher à la session courante.
+    bool saveState(std::vector<uint8_t>& out);
+    bool desktopMousePosition(int& x, int& y, int& width, int& height) const;
+    bool desktopMouseMove(int x, int y, bool left, bool right);
     bool loadState(const uint8_t* data, std::size_t n);
     // Variantes fichier (wrappers I/O). saveStateFile écrit le buffer ; loadStateFile lit
     // le fichier puis loadState. Renvoient false sur erreur d'I/O ou en-tête invalide.
@@ -315,10 +319,11 @@ private:
     // Câble les callbacks de l'ordonnanceur (appelé une fois, au constructeur).
     void installSchedulerCallbacks();
     // Arme le premier événement de chaque source pour la trame courante.
-    void scheduleFrameEvents();
+    void scheduleFrameEvents(bool scheduleVbl = true);
     void beginFrame_();     // amorce une trame (ancre + événements) — cf. runFrame/stepInstruction
     void finalizeFrame_();  // finalise une trame (rattrapage + décodage lignes + spec512)
-    void serializeState(StateArchive& ar);   // save-state : état trame + composants (symétrique)
+    void serializeState(StateArchive& ar, bool hostFiles = true);
+    mutable uint32_t desktopLineA_ = 0; // cache hôte dérivé, validé avant chaque utilisation
     // Handlers des événements datés vidéo (positions au cycle dans la ligne).
     // Les Timers A/C/D (mode délai) sont datés par le MFP lui-même.
     void onRender();        // décode la scanline (≈ fin Display-Enable, cycle 376)

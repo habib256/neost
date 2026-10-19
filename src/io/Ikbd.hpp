@@ -114,6 +114,11 @@ public:
     // seuil ($0B), du signe d'axe Y ($0F/$10), et émet aussi sur changement de
     // bouton SANS mouvement. En mode absolu, accumule la position (échelle $0C).
     void mouseEvent(int dx, int dy, bool left, bool right);
+    bool desktopMouseReady() const {
+        return mouseMode_ == REL && !exeMode_ && !pauseOutput_ && !duringResetCriticalTime_
+            && aciaClockInitialized_ && rx_.empty() && !rxPending_ && !rdrf_
+            && !rxOverrun_ && xThreshold_ == 1 && yThreshold_ == 1 && yAxis_ == 1 && !mouseAction_;
+    }
 
     // Tic VBL : horloge interne et garde des vingt premières trames.
     // Sans ordonnanceur seulement, sert aussi de repli pour la scrutation.

@@ -174,13 +174,14 @@ void drawStScreen(App& A, const GlScreen& s, bool captured, float topOffset,
                  ImGuiWindowFlags_NoBringToFrontOnFocus;
     // Souris capturée → tout le mouvement va au ST (curseur verrouillé) : on FIGE la
     // fenêtre (pas de glissé). Une fois libérée (molette/Ctrl+Alt+G), elle redevient déplaçable.
-    if (captured) flags |= ImGuiWindowFlags_NoMove;
+    if (captured || (A.desktopMouse && A.desktopPointer.hovered)) flags |= ImGuiWindowFlags_NoMove;
     ImGui::Begin("Atari ST Screen", nullptr, flags);
 #ifdef IMGUI_HAS_DOCK
     s_docked = ImGui::IsWindowDocked();   // pour la trame SUIVANTE (cf. plus haut)
 #endif
     ImGui::TextDisabled(captured ? "Mouse captured — middle-click or Ctrl+Alt+G to release"
-                                 : "Middle-click or Ctrl+Alt+G to capture the mouse");
+                       : A.desktopMouse ? "Desktop mouse — point and click inside the image"
+                                        : "Middle-click or Ctrl+Alt+G to capture the mouse");
     // Cadrage de l'image dans la zone dispo. Deux régimes :
     //  · Zoom auto (défaut) — RÈGLE DU KIOSK : l'échelle est pilotée par la HAUTEUR,
     //    la région de contenu cale dessus, et la largeur en excès (bordures latérales)
@@ -253,5 +254,14 @@ void drawStScreen(App& A, const GlScreen& s, bool captured, float topOffset,
     { const ImVec2 a = ImGui::GetItemRectMin(), b = ImGui::GetItemRectMax();
       A.stRectX0 = a.x; A.stRectY0 = a.y; A.stRectX1 = b.x; A.stRectY1 = b.y;
       A.stRectValid = (b.x > a.x && b.y > a.y); }
+    auto& pointer = A.desktopPointer;
+    pointer.x0 = A.stRectX0; pointer.y0 = A.stRectY0;
+    pointer.x1 = A.stRectX1; pointer.y1 = A.stRectY1;
+    pointer.u0 = u0; pointer.u1 = u1; pointer.v0 = v0; pointer.v1 = v1;
+    pointer.barrel = A.crtOn && A.crt.available() ? A.crtParams.barrel : 0;
+    pointer.bufferW = s.w; pointer.bufferH = s.h;
+    pointer.left = A.machine->shifter.activeLeft(); pointer.top = A.machine->shifter.activeTop();
+    pointer.width = A.machine->shifter.activeWidth(); pointer.height = A.machine->shifter.activeHeight();
+    pointer.hovered = ImGui::IsItemHovered();
     ImGui::End();
 }

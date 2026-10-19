@@ -244,6 +244,21 @@ public:
         if (any) nextDue_ = scanNextDue();
     }
 
+    // PRE_START du blitter : reprise du bus pendant une instruction CPU,
+    // comme Blitter_HOG_CPU_do_cycles_after. Ne sert pas les événements vidéo
+    // du modèle bloc et ne déplace pas now_ : le quantum CPU facture le stall.
+    bool runBlitterTo(int64_t cycle) {
+        if (due_[BLITTER] == kInactive || due_[BLITTER] > cycle) return false;
+        struct Guard {
+            int64_t& value; int64_t old;
+            ~Guard() { value = old; }
+        } guard{firingDue_, firingDue_};
+        firingDue_ = due_[BLITTER];
+        cancel(BLITTER);
+        if (cb_[BLITTER]) cb_[BLITTER]();
+        return true;
+    }
+
     // Cycles de bus VOLÉS au CPU par un AUTRE maître de bus (le blitter) — port de
     // `Blitter_AddCycles` (hatari/src/blitter.c:342-354, symbole `all_cycles`).
     //
