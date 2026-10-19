@@ -84,6 +84,9 @@ public:
     // --- Résultat de la dernière commande (lu par Fdc pour le transfert DMA) ----
     uint8_t  status() const { return uint8_t(status_); }
     bool     dmaError() const { return dmaError_; }
+    // Hatari Acsi_DmaTransfer : le DMA hors plage conserve le sense disque,
+    // mais met CHECK CONDITION pour une copie disque→RAM échouée seulement.
+    void markDmaRangeError() { dmaError_ = true; if (!dmaWrite_) status_ = 0x02; }
     int      dataLen() const { return dataLen_; }      // octets à transférer (0 = aucun)
     bool     isWrite() const { return dmaWrite_; }     // true = RAM→disque, false = disque→RAM
     const uint8_t* readBuffer() const { return buf_.data(); }   // données disque→RAM
@@ -91,7 +94,8 @@ public:
     // ne viendra plus, donc on désarme aussi. Sans cela le drapeau survivait à
     // l'abandon et détournait la prochaine écriture (cf. Acsi::emulateCommand).
     void     clearData() { dataLen_ = 0; dmaWrite_ = false; usatanPending_ = false; }
-    // Écrit `len` octets de `src` (RAM) vers l'image de la cible courante (DMA write).
+    // Écrit vers la cible/position engagées par la commande, indépendamment
+    // d'une nouvelle sélection ACSI pendant la phase DMA différée.
     void     writeToDisk(const uint8_t* src, int len);
 
     // Sérialisation save-state (SYMÉTRIQUE). On sérialise UNIQUEMENT l'état mutable
@@ -114,7 +118,21 @@ public:
             ar.vec(live);
         }
         ar(dataLen_); ar(dmaWrite_);
+        ar(dmaTarget_); ar(dmaBlockAddr_);
+        ar.check(dmaTarget_ >= 0 && dmaTarget_ < MAX_DEVS, "Acsi::dmaTarget_");
         ar(usatanPending_); // v12 : paquet UltraSatan 'Wr…' en attente de son secteur DMA
+        if (dmaTarget_ >= 0 && dmaTarget_ < MAX_DEVS && dmaWrite_ && dataLen_ > 0) {
+            const Dev& destination = devs_[dmaTarget_];
+            if (usatanPending_) {
+                ar.check(usatan_ && usatanSlot(dmaTarget_) >= 0,
+                         "Acsi::destination UltraSatan absente");
+            } else {
+                ar.check(destination.fp && dmaBlockAddr_ < destination.hdSize &&
+                         uint64_t(dmaBlockAddr_) * destination.blockSize + uint64_t(dataLen_) <=
+                             uint64_t(destination.hdSize) * destination.blockSize,
+                         "Acsi::destination WRITE hors image");
+            }
+        }
         // Invariants : byteCount_ indexe command_[16], dataLen_ borne la lecture de
         // buf_ par le DMA, target_ indexe devs_ — des valeurs restaurées hors bornes
         // (négatives comprises) liraient/écriraient hors du tas.
@@ -142,6 +160,8 @@ private:
 
     // État du contrôleur (≈ SCSI_CTRLR).
     int      target_   = 0;
+    int      dmaTarget_ = 0;             // destination de la phase WRITE engagée
+    uint32_t dmaBlockAddr_ = 0;          // position engagée, pas celle du prochain CDB
     int      byteCount_ = 0;
     uint8_t  command_[16] = {0};
     uint8_t  opcode_   = 0;

@@ -634,8 +634,8 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         dk.raw     = false;
         dk.path    = path;
         if (sched_) {                            // changement de média à chaud (cf. plus bas)
-            dk.transitionPhase    = wasPresent ? FloppyDisk::TRANS_EJECT : FloppyDisk::TRANS_INSERT;
-            dk.transitionDeadline = sched_->now() + transitionWindow();
+            if (wasPresent) transitionSetState(drive, FloppyDisk::TRANS_EJECT);
+            transitionSetState(drive, FloppyDisk::TRANS_INSERT);
         }
         dk.writeProtect = false;                 // écritures en overlay (persisté en .wd1772)
         updateFloppyDensity(drive & 1);
@@ -719,8 +719,8 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     //  - échange à chaud → phase d'ÉJECTION (force WPRT le temps de la fenêtre) ;
     //  - premier montage (boot) → simple INSERTION, qui ne force PAS WPRT.
     if (sched_) {
-        dk.transitionPhase    = wasPresent ? FloppyDisk::TRANS_EJECT : FloppyDisk::TRANS_INSERT;
-        dk.transitionDeadline = sched_->now() + transitionWindow();
+        if (wasPresent) transitionSetState(drive, FloppyDisk::TRANS_EJECT);
+        transitionSetState(drive, FloppyDisk::TRANS_INSERT);
     }
 
     // Write-protect auto-détecté d'après les permissions du fichier (cf. Hatari
@@ -772,8 +772,7 @@ void Fdc::eject(int drive) {
     // Éjection à chaud : on force WPRT pendant la fenêtre de transition (cf. Hatari
     // Floppy_DriveTransitionSetState, STATE_EJECT). Une éjection « à vide » n'arme rien.
     if (wasPresent && sched_) {
-        dk.transitionPhase    = FloppyDisk::TRANS_EJECT;
-        dk.transitionDeadline = sched_->now() + transitionWindow();
+        transitionSetState(drive, FloppyDisk::TRANS_EJECT);
     }
     std::fprintf(stderr, "[FDC] drive %c ejected\n", drive & 1 ? 'B' : 'A');
 }
@@ -1304,6 +1303,11 @@ uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size
     // calculé resterait dans l'image après un changement de lecteur en DMA.
     if (side >= dk.sides || sector == 0 || sector > dk.spt) return STR_RNF;
     const uint64_t off = lsnOffset(track, side, sector, dk.spt, dk.sides);
+    // Le transfert peut avoir engagé un ID STX de 1024 octets avant une
+    // sélection live de ce lecteur ST. FDC_WriteSector_ST/Floppy_WriteSectors
+    // écrivent alors un seul secteur logique (512 octets), pas le voisin.
+    // Conserver le comportement borné existant pour les transferts plus courts.
+    size = std::min(size, 512);
     if (size >= 0 && off + uint64_t(size) <= dk.image.size()) {
         for (int i = 0; i < size; ++i) dk.image[off + i] = bufferReadBytePos(i);
         // Hatari Floppy_Read/WriteSectors et FDC_Get* relisent le BPB à chaque
@@ -1382,6 +1386,7 @@ uint8_t Fdc::writeTrackBuffer() {
     // 1re passe : extraire tous les secteurs du flux, sans rien écrire.
     struct Found { int dataPos; uint64_t offset; };
     std::vector<Found> found;
+    std::vector<bool> seen(dk.spt + 1, false);
     for (int i = 0; i + 6 < n; ) {
         if (buf_[i] != 0xFE) { ++i; continue; }                // IDAM : champ d'adresse
         const uint8_t tr = buf_[i + 1], sd = buf_[i + 2], sec = buf_[i + 3], len = buf_[i + 4];
@@ -1391,6 +1396,12 @@ uint8_t Fdc::writeTrackBuffer() {
         if ((len & 3) != SECTOR_SIZE_512) return STR_LOST;     // seule la taille 512 o est standard
         if (sec < 1 || sec > dk.spt)      return STR_LOST;     // secteur hors géométrie
         if (sd >= dk.sides || tr >= tracksPerDisk(driveSel_)) return STR_LOST;
+        // Les IDs n'actionnent ni STEP ni la sélection de face : WRITE TRACK
+        // n'écrit que sous la tête actuelle. Des C/H étrangers ou des numéros
+        // dupliqués exigent une image à flux ; les accepter en ST écraserait
+        // une autre piste/face ou masquerait un secteur manquant.
+        if (tr != dk.headTrack || sd != side_ || seen[sec]) return STR_LOST;
+        seen[sec] = true;
         found.push_back({k + 1, lsnOffset(tr, sd, sec, dk.spt, dk.sides)});
         i = k + 1 + 512;
     }
@@ -1568,8 +1579,11 @@ uint8_t Fdc::readSectorStx(int* pSize) {
 
     // Secteur réécrit par un 'write sector' → données de l'overlay, timing standard.
     const uint8_t* writeData = nullptr;
+    uint8_t recordType = sec.fdcStatus & StxImage::FLAG_RECORD_TYPE;
     if (sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size())) {
-        writeData = dk.stx->saveSectors[sec.saveIndex].data.data();
+        const auto& save = dk.stx->saveSectors[sec.saveIndex];
+        writeData = save.data.data();
+        recordType = save.dataMark == 0xF8 ? StxImage::FLAG_RECORD_TYPE : 0;
         readTime = 0;
     }
     if (readTime == 0) readTime = 32u * sec.sectorSize;   // µs (valeur standard)
@@ -1604,8 +1618,7 @@ uint8_t Fdc::readSectorStx(int* pSize) {
         }
         bufferAddTiming(byte, timing);
     }
-    // On ne remonte que les bits CRC (3) et RECORD_TYPE (5) dans le statut.
-    return sec.fdcStatus & (StxImage::FLAG_CRC | StxImage::FLAG_RECORD_TYPE);
+    return (sec.fdcStatus & StxImage::FLAG_CRC) | recordType;
 }
 
 // 'write sector' sur STX : stocke les données dans un overlay (relues ensuite à la
@@ -1645,6 +1658,9 @@ uint8_t Fdc::writeSectorStx(int size) {
     const int need = int(sec.sectorSize);
     if (int(save.data.size()) != need) save.data.assign(need, 0);
     for (int i = 0; i < size && i < need; ++i) save.data[i] = bufferReadBytePos(i);
+    // MAME wd_fdc.cpp WRITE_BYTE_DONE : bit0 choisit F8, sinon FB. CR reste
+    // celui de la commande engagée (remplacements ignorés une fois le DMA parti).
+    save.dataMark = (cr_ & 1) ? 0xF8 : 0xFB;
     stxPersist(dk);
     return 0;
 }
@@ -1716,7 +1732,99 @@ uint8_t Fdc::readAddressStx() {
     return 0;
 }
 
-// READ TRACK sur STX : image MFM brute de la piste si présente, sinon piste standard
+// Le dump STX contient des octets décodés, pas les cellules MFM. Sans formule
+// démontrée pour SyncPos, ne fusionner que les enregistrements dont l'ancre ID
+// et les données originales concordent exactement, sur strictement moins d'un
+// tour. Les protections/gaps/CRC des autres enregistrements restent tels quels.
+static std::vector<uint8_t> stxTrackWithSectorWrites(
+        const StxImage::Track& track, const std::vector<StxImage::SaveSector>& writes) {
+    std::vector<uint8_t> bytes(track.pTrackImage, track.pTrackImage + track.trackImageSize);
+    const size_t length = bytes.size();
+    if (track.trackImageSyncPos != 0 || length <= 10) return bytes;
+    // Le parse peut écrêter un dump tronqué. Sa fin n'est alors pas l'index :
+    // conserver les fusions contiguës, sans boucler sur cette coupure artificielle.
+    const size_t declaredLength = size_t(track.pTrackImage[-2])
+        | (size_t(track.pTrackImage[-1]) << 8);
+    const bool completeDump = declaredLength == length;
+    struct Patch {
+        size_t mark;
+        const StxImage::SaveSector* write;
+        bool ambiguous = false;
+    };
+    std::vector<Patch> patches;
+    auto byte = [&](size_t pos) { return bytes[pos % length]; };
+    auto sync = [&](size_t pos, uint8_t mark) {
+        return byte(pos) == 0xA1 && byte(pos + 1) == 0xA1
+            && byte(pos + 2) == 0xA1 && byte(pos + 3) == mark;
+    };
+    for (const auto& sector : track.sectors) {
+        if (sector.saveIndex < 0 || size_t(sector.saveIndex) >= writes.size()
+                || sector.pFuzzy || !sector.pData || !sector.sectorSize
+                || (sector.bitPosition & 7)) continue;
+        const auto& write = writes[sector.saveIndex];
+        if (write.data.size() != sector.sectorSize
+                || (write.dataMark != 0xFB && write.dataMark != 0xF8)) continue;
+        // Ne jamais ramener une ancre hors dump dans le tampon par modulo.
+        const size_t id = sector.bitPosition / 8;
+        if (id >= length) continue;
+        const size_t start = id + length - 4;
+        if (!completeDump && start % length + 10 > length) continue;
+        if (!sync(start, 0xFE)) continue;
+        uint8_t header[8];
+        for (size_t i = 0; i < 8; ++i) header[i] = byte(start + i);
+        if (header[4] != sector.idTrack || header[5] != sector.idHead
+                || header[6] != sector.idSector || header[7] != sector.idSize
+                || byte(start + 8) != uint8_t(sector.idCrc >> 8)
+                || byte(start + 9) != uint8_t(sector.idCrc)
+                || crc16(header, 8) != sector.idCrc) continue;
+        size_t limit = completeDump ? start + length
+            : start + (length - start % length);
+        for (size_t pos = start + 10; pos < limit
+                && (completeDump || pos + 4 <= limit); ++pos) {
+            if (sync(pos, 0xFE)) { limit = pos; break; }
+        }
+        size_t dam = 0, matches = 0;
+        for (size_t pos = start + 10; pos + 4 <= limit; ++pos) {
+            if (sync(pos, 0xFB) || sync(pos, 0xF8)) { dam = pos; ++matches; }
+        }
+        const size_t size = sector.sectorSize;
+        const size_t end = dam + 4 + size + 2;
+        if (matches != 1 || end > limit || end - start >= length) continue;
+        if (!completeDump && start % length + (end - start) > length) continue;
+        std::vector<uint8_t> record(4 + size);
+        for (size_t i = 0; i < record.size(); ++i) record[i] = byte(dam + i);
+        if (!std::equal(record.begin() + 4, record.end(), sector.pData)) continue;
+        const uint16_t stored = (uint16_t(byte(end - 2)) << 8) | byte(end - 1);
+        if (crc16(record.data(), int(record.size())) != stored) continue;
+        patches.push_back({(dam + 3) % length, &write});
+    }
+    // Occuper aussi toutes les zones d'un candidat déjà ambigu : une collision
+    // en chaîne doit invalider chaque participant, même au-delà de l'index.
+    std::vector<int> owner(length, -1);
+    for (size_t i = 0; i < patches.size(); ++i) {
+        const size_t count = patches[i].write->data.size() + 3;
+        for (size_t n = 0; n < count; ++n) {
+            const size_t pos = (patches[i].mark + n) % length;
+            if (owner[pos] >= 0) {
+                patches[size_t(owner[pos])].ambiguous = true;
+                patches[i].ambiguous = true;
+            } else owner[pos] = int(i);
+        }
+    }
+    for (const auto& patch : patches) {
+        if (patch.ambiguous) continue;
+        std::vector<uint8_t> record = {0xA1, 0xA1, 0xA1, patch.write->dataMark};
+        record.insert(record.end(), patch.write->data.begin(), patch.write->data.end());
+        const uint16_t crc = crc16(record.data(), int(record.size()));
+        record.push_back(uint8_t(crc >> 8));
+        record.push_back(uint8_t(crc));
+        for (size_t n = 3; n < record.size(); ++n)
+            bytes[(patch.mark + n - 3) % length] = record[n];
+    }
+    return bytes;
+}
+
+// READ TRACK sur STX : dump décodé de la piste si présent, sinon piste standard
 // reconstruite à partir des secteurs. Cf. FDC_ReadTrack_STX.
 uint8_t Fdc::readTrackStx(int track, int side) {
     FloppyDisk& dk = drive_[driveSel_];
@@ -1725,7 +1833,8 @@ uint8_t Fdc::readTrackStx(int track, int side) {
         for (int i = 0; i < bytesPerTrackStx(track, side); ++i) bufferAdd(uint8_t(rngNext()));
         return 0;
     }
-    if (t->pTrackImage && !t->writeReinterpreted) {     // dump MFM complet de la piste d'origine
+    if (t->pTrackImage && !t->writeReinterpreted) {     // conserver la disposition originale
+        const auto bytes = stxTrackWithSectorWrites(*t, dk.stx->saveSectors);
         const double readTime = 8000000.0 / 5.0;        // 1 tour à 300 tr/min
         double totalPrev = 0;
         for (int i = 0; i < t->trackImageSize; ++i) {
@@ -1740,7 +1849,7 @@ uint8_t Fdc::readTrackStx(int track, int side) {
             const double raw = std::rint(totalCur - totalPrev);
             const uint16_t timing = uint16_t(std::min(raw, 65535.0));
             totalPrev += timing;
-            bufferAddTiming(t->pTrackImage[i], timing);
+            bufferAddTiming(bytes[i], timing);
         }
         return 0;
     }
@@ -1769,9 +1878,12 @@ uint8_t Fdc::readTrackStx(int track, int side) {
         for (int i = 0; i < GAP3b; ++i) bufferAdd(0x00);
         uint16_t crc = 0xFFFF;
         bufferAdd(0xa1); crcAdd(crc, 0xa1); bufferAdd(0xa1); crcAdd(crc, 0xa1); bufferAdd(0xa1); crcAdd(crc, 0xa1);
-        bufferAdd(0xfb); crcAdd(crc, 0xfb);
+        const bool hasWrite = sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size());
+        const uint8_t mark = hasWrite ? dk.stx->saveSectors[sec.saveIndex].dataMark
+            : ((sec.fdcStatus & StxImage::FLAG_RECORD_TYPE) ? 0xF8 : 0xFB);
+        bufferAdd(mark); crcAdd(crc, mark);
         const uint8_t* pData = sec.pData;
-        if (sec.saveIndex >= 0 && sec.saveIndex < int(dk.stx->saveSectors.size()))
+        if (hasWrite)
             pData = dk.stx->saveSectors[sec.saveIndex].data.data();
         for (int i = 0; i < ssz; ++i) { const uint8_t b = pData ? pData[i] : 0; bufferAdd(b); crcAdd(crc, b); }
         bufferAdd(uint8_t(crc >> 8)); bufferAdd(uint8_t(crc));
@@ -2315,7 +2427,14 @@ int Fdc::updateReadAddress() {
      case RUN_RA_TRANSFER_LOOP:
         fifoPush(bufferReadByte());
         if (bufPos_ < bufferSize()) fdcCycles = int(bufferReadTiming());
-        else { commandState_ = RUN_RA_COMPLETE; fdcCycles = CMD_COMPLETE; }
+        else {
+            // WD1772 / MAME READ_ID_BLOCK_TO_DMA_BYTE : les six octets restent
+            // transférés malgré un CRC ID invalide. Hatari collecte ce résultat
+            // dans Status_Temp mais omet de le rendre visible dans cette commande.
+            if (statusTemp_ & STR_CRC) updateStr(0, STR_CRC);
+            commandState_ = RUN_RA_COMPLETE;
+            fdcCycles = CMD_COMPLETE;
+        }
         break;
      case RUN_RA_RNF:
         updateStr(0, STR_RNF); fdcCycles = cmdComplete(true); break;
@@ -2606,24 +2725,37 @@ void Fdc::onFdcEvent() {
 // =============================================================================
 //  Transition de média (cf. Hatari Floppy_DriveTransitionUpdateState).
 // =============================================================================
-// Durée d'une phase de changement de média : FLOPPY_DRIVE_TRANSITION_DELAY_VBL = 18
-// VBL chez Hatari (floppy.h, « min of 16 VBLs »). Le TOS n'échantillonne WPRT qu'à
-// une VBL sur 8, en alternant les lecteurs quand il en a deux (EmuTOS flopvbl, comme
-// Atari TOS) : le lecteur A n'est lu que toutes les 16 VBL. L'ancienne fenêtre de
-// 4 trames passait le plus souvent entre deux lectures — la disquette changée à chaud
-// n'était pas vue (mesuré : TOSFC relistait l'ancien contenu après « insert A »).
-int64_t Fdc::transitionWindow() const {
-    return 18 * frameCycles_;
-}
-
+// Floppy_DriveTransitionUpdateState compare nVBLs : les changements PAL/NTSC
+// ou monochrome n'altèrent pas le nombre de VBL restant dans chaque action.
 bool Fdc::transitionForceWprt(int drive) {
     FloppyDisk& dk = drive_[drive & 1];
-    if (dk.transitionPhase == FloppyDisk::TRANS_NONE || !sched_) return false;
-    if (sched_->now() >= dk.transitionDeadline) {   // fenêtre écoulée → transition finie
+    if (!sched_) return false;
+    const int64_t now = vblCounter_;
+    if (dk.transitionPhase != FloppyDisk::TRANS_NONE && now >= dk.transitionEndVbl)
         dk.transitionPhase = FloppyDisk::TRANS_NONE;
-        return false;
+    if (dk.transitionPhase2 != FloppyDisk::TRANS_NONE && now >= dk.transitionEndVbl2)
+        dk.transitionPhase2 = FloppyDisk::TRANS_NONE;
+    // State2 commence à la fin de State1 ; les deux gardent leur identité
+    // même quand seule State2 reste active (Floppy_DriveTransitionUpdateState).
+    if (dk.transitionPhase2 != FloppyDisk::TRANS_NONE && now >= dk.transitionEndVbl)
+        return dk.transitionPhase2 == FloppyDisk::TRANS_EJECT;
+    return dk.transitionPhase == FloppyDisk::TRANS_EJECT;
+}
+
+void Fdc::transitionSetState(int drive, int phase) {
+    if (!sched_) return;
+    (void)transitionForceWprt(drive); // expirer les deux actions avant insertion
+    FloppyDisk& dk = drive_[drive & 1];
+    if (dk.transitionPhase == FloppyDisk::TRANS_NONE) {
+        dk.transitionPhase = phase;
+        dk.transitionEndVbl = vblCounter_ + kMediaChangeVbl;
+        dk.transitionPhase2 = FloppyDisk::TRANS_NONE;
+    } else if (dk.transitionPhase == phase) {
+        dk.transitionPhase2 = FloppyDisk::TRANS_NONE;
+    } else {
+        dk.transitionPhase2 = phase;
+        dk.transitionEndVbl2 = dk.transitionEndVbl + kMediaChangeVbl;
     }
-    return dk.transitionPhase == FloppyDisk::TRANS_EJECT;  // éjection → force WPRT
 }
 
 // =============================================================================
@@ -2879,6 +3011,7 @@ void Fdc::acsiDmaTransfer() {
     // STMemory_CheckAreaType/SafeCopy en échec → bDmaError = true).
     const bool rangeOk = uint64_t(dmaAddr_) + uint64_t(len) <= bus_.ram.size();
     if (!rangeOk) {
+        acsi_.markDmaRangeError();
         std::fprintf(stderr, "[ACSI] DMA outside RAM: $%06x+%d — transfer skipped\n", dmaAddr_, len);
     } else if (acsi_.isWrite()) {                                    // RAM → image
         std::vector<uint8_t> tmp(len);

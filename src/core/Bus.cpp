@@ -796,6 +796,8 @@ uint32_t Bus::read32(uint32_t addr) {
     return v;
 }
 void Bus::write16(uint32_t addr, uint16_t v) {
+    // Le décodage 24 bits précède aussi le raccourci atomique du blitter.
+    addr &= stmap::ADDR_MASK;
     const uint8_t saved = ioAccessWidth_;
     ioAccessWidth_ = 2;
     // Blitter ($FF8A00-$FF8A3F) : écriture MOT atomique — le registre contrôle
@@ -812,6 +814,7 @@ void Bus::write16(uint32_t addr, uint16_t v) {
     ioAccessWidth_ = saved;
 }
 void Bus::write32(uint32_t addr, uint32_t v) {
+    addr &= stmap::ADDR_MASK;
     const uint8_t saved = ioAccessWidth_;
     ioAccessWidth_ = 4;
     if (addr >= 0xFF8A00 && addr + 3 <= 0xFF8A3F && blitter && machineHasBlitter(machine)) {

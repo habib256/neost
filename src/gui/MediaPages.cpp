@@ -208,7 +208,8 @@ static bool pathEntryRow(const char* id, const char* hint, char* buf, std::size_
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("%s", wantDir
             ? "Absolute path to a host folder, e.g. /home/you/atari-stuff\n"
-              "It becomes drive C: (GEMDOS). Enter or Mount validates.\n"
+              "Simple folders use C:, or the drive after ACSI partitions.\n"
+              "Enter or Mount validates.\n"
               "Tip: a folder dropped in hd/ is listed above, no typing needed.\n"
               "Note: typing only reaches this field when the mouse is NOT captured\n"
               "(middle-click or Ctrl+Alt+G releases it)."
@@ -231,8 +232,26 @@ static bool pathEntryRow(const char* id, const char* hint, char* buf, std::size_
     return entered || clicked;
 }
 
+std::string hardDiskDriveLetters(uint32_t mask) {
+    std::string letters;
+    for (int drive = 2; drive < 26; ++drive) {
+        if (!(mask & (uint32_t(1) << drive))) continue;
+        const int first = drive;
+        while (drive + 1 < 26 && (mask & (uint32_t(1) << (drive + 1)))) ++drive;
+        if (!letters.empty()) letters += ", ";
+        letters += char('A' + first);
+        letters += ':';
+        if (drive != first) {
+            letters += "–";
+            letters += char('A' + drive);
+            letters += ':';
+        }
+    }
+    return letters;
+}
+
 void drawHardDiskPage(const std::string& hdDir, const std::string& gemdosDefault,
-                      const std::string& curGemdos, bool gemdosActive,
+                      const std::string& curGemdos, bool gemdosActive, uint32_t gemdosDrives,
                       const std::string& curAcsi, bool acsiActive, int acsiParts,
                       bool usatanOn, const std::string& curSd2,
                       std::string& reqMountGemdos, bool& reqEjectGemdos,
@@ -292,7 +311,7 @@ void drawHardDiskPage(const std::string& hdDir, const std::string& gemdosDefault
     };
 
     // ── GEMDOS ────────────────────────────────────────────────────────────
-    ImGui::TextDisabled(ICON_FA_FOLDER_OPEN " GEMDOS — host folder mounted as C:");
+    ImGui::TextDisabled(ICON_FA_FOLDER_OPEN " GEMDOS — host folder");
     if (gemdosActive) {
         // PushID OBLIGATOIRE : IconButton dérive son ID du seul texte de l'icône, et
         // cette page affiche jusqu'à TROIS ICON_FA_EJECT (GEMDOS, ACSI, slot 2). Deux
@@ -303,7 +322,12 @@ void drawHardDiskPage(const std::string& hdDir, const std::string& gemdosDefault
         if (IconButton(ICON_FA_EJECT, "Eject the GEMDOS drive")) reqEjectGemdos = true;
         ImGui::PopID();
         ImGui::SameLine();
-        ImGui::Text("mounted: %s", curGemdos.c_str());
+        const std::string letters = hardDiskDriveLetters(gemdosDrives);
+        if (!letters.empty()) ImGui::Text("%s %s", letters.c_str(), curGemdos.c_str());
+        else {
+            ImGui::TextUnformatted(curGemdos.c_str());
+            ImGui::TextDisabled("(No drive letters available for this folder.)");
+        }
         ImGui::TextDisabled("(occupies cartridge port $FA0000 — exclusive with a cartridge)");
     } else {
         ImGui::TextDisabled("(no GEMDOS drive mounted)");
@@ -390,11 +414,16 @@ void drawHardDiskPage(const std::string& hdDir, const std::string& gemdosDefault
         if (ImGui::Button("Mount##sd2Free") && g_sd2Buf[0]) reqMountSd2 = g_sd2Buf;
     }
 
-    // Les deux montés : NeoST ne décale pas le lecteur GEMDOS derrière les partitions
-    // ACSI (contrairement à Hatari) → les deux revendiquent C:.
-    if (gemdosActive && acsiActive)
+    uint32_t acsiDrives = 0;
+    if (acsiActive)
+        for (int drive = 2; drive < 26 && drive - 2 < acsiParts; ++drive)
+            acsiDrives |= uint32_t(1) << drive;
+    const uint32_t sharedDrives = gemdosActive ? gemdosDrives & acsiDrives : 0;
+    if (sharedDrives) {
+        const std::string letters = hardDiskDriveLetters(sharedDrives);
         ImGui::TextColored(ImVec4(1.f, .6f, .2f, 1.f),
-                           "GEMDOS and ACSI both claim C:!");
+                           "GEMDOS and ACSI both use %s", letters.c_str());
+    }
     ImGui::Separator();
     ImGui::TextDisabled("Folder = GEMDOS drive, file = ACSI image. Mounting restarts");
     ImGui::TextDisabled("the machine (TOS only probes disks at boot).");

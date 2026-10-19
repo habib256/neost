@@ -13,6 +13,7 @@ bool testSccSync() {
         auto rr=[&](int r) { s.write8(0x81+4*c,uint8_t(r)); return s.read8(0x81+4*c); };
         auto pending=[&] { s.write8(0x81,3); return s.read8(0x81); };
         auto pop=[&] { return s.read8(0x83+4*c); };
+        wr(14,0); // La source RxD externe est déconnectée en Local Loopback au reset.
         wr(3,0xc3); wr(6,0x16); wr(7,0x32);
         for (int mode : {0x00,0x10,0x30}) {
             wr(4,mode); s.receiveByte(c,0x16);

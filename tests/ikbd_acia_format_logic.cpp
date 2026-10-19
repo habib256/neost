@@ -34,7 +34,7 @@ int testIkbdAciaFormat() {
         r.k.write8(0,0xB6);
         eq("break release waits next clock",r.s.now()+r.s.rawCyclesUntil(Scheduler::IKBD_TX),20480);
         r.at(20480); eq("release empties TDR and raises IRQ",r.status()&0x82,0x82);
-        r.at(29696); eq("release delivers retained command",r.response(),7168);
+        r.at(29696); eq("BREAK fragment prevents intact retained command",r.response(),-1);
     }
     {
         Rig r; r.k.write8(2,0x1C); r.at(1024);
@@ -54,7 +54,7 @@ int testIkbdAciaFormat() {
         restored.live=restored.s.now(); eq("break state loads",load.ok(),1);
         restored.k.write8(0,0x96); restored.at(12288);
         eq("restored break releases TDR",restored.status()&2,2);
-        restored.at(21504); eq("restored byte reaches firmware",restored.response(),7168);
+        restored.at(21504); eq("restored BREAK fragment prevents intact command",restored.response(),-1);
     }
     {
         Rig r; r.k.write8(0,0xF6); r.k.write8(2,0x1C); r.k.write8(0,3);

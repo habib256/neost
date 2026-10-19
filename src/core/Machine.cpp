@@ -324,6 +324,8 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
 void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::RENDER,  [this] { onRender(); });
     sched.setCallback(Scheduler::TIMER_B, [this] { onTimerB(); });
+    gemdos.setPartitionCountProvider([this] { return fdc.acsiPartitionCount(); });
+    mfp.setTimerBEdgeSink([this](bool start) { retargetTimerB(start); });
     sched.setCallback(Scheduler::HBL,     [this] { onHbl(); });
     sched.setCallback(Scheduler::VBL,     [this] { onVbl(); });
     // Timers MFP en mode délai : datés par le MFP, déclenchés ici (IRQ + IPL).
@@ -469,6 +471,39 @@ void Machine::onRender() {
                        frameStart_ + static_cast<int64_t>(dispStart_ + renderLine_) * cpl_ + deEnd_ - lineCarry_);
 }
 
+void Machine::retargetTimerB(bool startOfLine) {
+    if (!frameInProgress_) return;
+    const int64_t now = sched.liveNow();
+    // Callback avant mutation de l'AER : les fronts déjà passés appartiennent
+    // encore à l'ancien choix, même si le CPU n'a pas dispatché TIMER_B.
+    for (;;) {
+        const int64_t remaining = sched.rawCyclesUntil(Scheduler::TIMER_B);
+        if (remaining == INT64_MIN || remaining > 0) break;
+        sched.cancel(Scheduler::TIMER_B);
+        onTimerB();
+    }
+    auto edgeAt = [&](int line, bool start) {
+        const int64_t real = shifter.timerBFrameCycleForLine(line, start);
+        return real >= 0 ? frameStart_ + real
+            : frameStart_ + int64_t(line)*cpl_ + shifter.timerBPosForLine(line, start) - lineCarry_;
+    };
+    auto lineStart = [&](int line) {
+        return edgeAt(line, true) - shifter.timerBPosForLine(line, true);
+    };
+    // tbLine_ désigne le prochain ancien front, parfois déjà la ligne suivante
+    // après un début DE compté. Retrouver la ligne physique sur la grille Glue.
+    int line = std::clamp(tbLine_, 0, lpf_-1);
+    while (line > 0 && lineStart(line) > now) --line;
+    while (line+1 < lpf_ && lineStart(line+1) <= now) ++line;
+    int64_t target = edgeAt(line, startOfLine);
+    // Hatari Video_AddInterruptTimerB : égalité = front passé, pas de tic
+    // rétroactif. Début puis fin de la même ligne restent deux fronts légitimes.
+    if (target <= now) { ++line; if (line < lpf_) target = edgeAt(line, startOfLine); }
+    tbLine_ = line;
+    if (line < lpf_) { tbScheduledAt_ = target; sched.schedule(Scheduler::TIMER_B, target); }
+    else sched.cancel(Scheduler::TIMER_B);
+}
+
 void Machine::onTimerB() {
     // DIAG (NEOST_TB_TRACE=1) : chaque tic Timer B avec sa ligne, sa position DANS
     // la ligne et s'il a réellement pulsé (ligne affichée) — à diff'er contre les
@@ -514,7 +549,7 @@ void Machine::onTimerB() {
                      tbLine_, (long long)pos, pl, shifter.liveLineDisplayed(tbLine_) ? 1 : 0);
     }
     if (shifter.liveLineDisplayed(tbLine_)) {
-        mfp.hblank();
+        mfp.hblankAt(tbScheduledAt_);
         cpu.updateIpl();                           // un underflow Timer B → IPL 6
     }
     ++tbLine_;
@@ -565,6 +600,7 @@ void Machine::onHbl() {
 }
 
 void Machine::onVbl() {
+    fdc.onVbl();    // Mediach : compter les VBL réels, même si la fréquence change
     // DIAG beam-sync : dépassement (carry) du service VBL vs cycle théorique 64/68
     // = équivalent du pending_cyc d'Hatari (video_vbl). Compare la phase CPU↔faisceau.
     static const bool vblTrace = std::getenv("NEOST_VBL_TRACE") != nullptr;
@@ -580,7 +616,6 @@ void Machine::onVbl() {
     // ≈ 20032 µs (50 Hz) / 16700 µs (60 Hz) / 14028 µs (71 Hz mono).
     const int64_t kVblMicro = static_cast<int64_t>(lpf_) * cpl_ / 8;
     ikbd.onVbl(kVblMicro);
-    fdc.setFrameCycles(static_cast<int64_t>(lpf_) * cpl_);   // fenêtre Mediach en VBL
     ports.onVbl(mfp);   // relâche le bouton Multiface/URC enfoncé pendant la trame
 }
 
@@ -717,11 +752,17 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 39; // fronts BREAK SCC et phase de reprise IKBD
+static constexpr uint16_t kStateVersion = 47; // progression TX ACIA et réception SCI bit à bit
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v39 : fronts BREAK SCC et phase de reprise IKBD
+    uint16_t version = kStateVersion; // v47 : progression TX ACIA et réception SCI bit à bit
+                                      // v46 : initialisation du diviseur de l’ACIA clavier
+                                      // v45 : cible et position d’une écriture ACSI différée
+                                      // v44 : overrun USART MFP en attente de lecture UDR
+                                      // v43 : compteur et échéances VBL du Mediach FDC
+                                      // v42 : octet MMIO FF8920 du son DMA
+                                      // v41 : phases de changement média FDC
                                       // v27 : RDR MIDI et réception USART MFP
                                       // v26 : pipeline émission MIDI TDR/TSR
                                       // v25 : transit CPU→IKBD et FIFO RX SCC
@@ -885,7 +926,7 @@ void Machine::serializeState(StateArchive& ar) {
         // d'onTimerB après chargement d'un état pris en cours de trame (tic Timer B
         // parti à la mauvaise position → une ligne raster décalée).
         const int64_t rem = sched.rawCyclesUntil(Scheduler::TIMER_B);
-        tbScheduledAt_ = (rem == INT64_MIN) ? 0 : sched.now() + rem;
+        tbScheduledAt_ = (rem == INT64_MIN) ? 0 : sched.liveNow() + rem;
         bus.refreshUds();   // la clé noire a pu (dé)verrouiller son choix
         portsApply(/*fromLoad=*/true);   // re-câble hooks/DAC SANS toucher aux lignes GPIP restaurées
     }

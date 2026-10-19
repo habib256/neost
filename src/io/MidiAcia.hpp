@@ -135,6 +135,7 @@ public:
 
 private:
     int64_t txBitCycles() const;
+    int64_t nextTxEdge(int64_t now) const;
     uint8_t txData(uint8_t data) const;
     void advanceTx(int64_t cycle);
     void armTx();
@@ -144,7 +145,7 @@ private:
     int64_t txLoadDue_ = -1, txCompleteDue_ = -1;
     // Phase du diviseur pour la reprise BREAK ; TSR actif est recadencé par CR0..1.
     int64_t txClockPhase_ = 0;
-    void raiseIfReady();                     // lève le canal 6 du MFP si cause RX ou TX
+    void raiseIfReady(int64_t when = -1);                     // lève le canal 6 du MFP si cause RX ou TX
 
     Mfp&    mfp_;
     Scheduler* sched_ = nullptr;
@@ -163,5 +164,5 @@ private:
     // Source hôte cadencée (cf. setRxSource). Non sérialisée (liaison frontend).
     std::function<bool(uint8_t&)> rxSource_;
     void armRxPace();                        // (ré)arme l'échéance MIDI_RX si source
-    void pushRx(uint8_t v);                  // livre un octet achevé dans RDR
+    void pushRx(uint8_t v, int64_t when = -1);                  // livre un octet achevé dans RDR
 };

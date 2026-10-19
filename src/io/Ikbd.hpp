@@ -145,10 +145,17 @@ public:
         ar(ovrn_);
         ar(srRead_);
         ar(control_);
+        ar(aciaClockInitialized_);
         ar(txEnableInt_);
         ar(tdre_);
         ar(txData_); ar(txShiftData_); ar(txShifting_);
         ar(txClockPhase_);
+        ar(txNextBitCycle_); ar(txBitIndex_);
+        ar(sciRxState_); ar(sciRxByte_); ar(sciRxBitsLeft_);
+        ar.check(txNextBitCycle_ >= 0 && txBitIndex_ <= 8, "Ikbd::TX bit state");
+        ar.check(sciRxState_ <= 2 && sciRxBitsLeft_ <= 8 &&
+                 (sciRxState_ == 1 ? sciRxBitsLeft_ > 0 : sciRxBitsLeft_ == 0),
+                 "Ikbd::SCI receive state");
         ar.check(txClockPhase_ >= 0 && txClockPhase_ < 1024, "Ikbd::txClockPhase_");
 
         // --- Tampon de commande multi-octets ---
@@ -384,12 +391,27 @@ private:
     bool    rxOverrun_ = false;              // octet(s) perdu(s) non encore signalé(s)
     bool    ovrn_ = false;                   // bit OVRN visible dans le SR
     bool    srRead_ = false;                 // SR lu depuis la dernière lecture RDR
+    bool aciaClockInitialized_ = false; // Clock_Divider != 0 : conserve aux resets ACIA
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
     bool    txEnableInt_ = false;            // IRQ d'émission armée : CR bits5-6 = 01 (ex. $b6, Hades Nebula)
     bool    tdre_ = true;                    // TDR libre, indépendant de TIE
     uint8_t txData_ = 0, txShiftData_ = 0;   // un octet en attente et un en vol
+    int64_t nextTxClock(int64_t at) const;
+    int64_t cpuSerialEventCycle_ = -1; // contexte transitoire du stop décodé, non sérialisé
+    int64_t firmwareEventTime() const {
+        if (cpuSerialEventCycle_ >= 0) return cpuSerialEventCycle_;
+        if (!sched_) return 0;
+        const int64_t due = sched_->firingDue();
+        return due >= 0 ? due : sched_->liveNow();
+    }
+    void clockSciRx(bool bit);
+    void catchUpCpuTx(int64_t at);
+    void scheduleCpuTx();
+    int64_t txNextBitCycle_ = 0;
+    uint8_t txBitIndex_ = 0; // prochain bit TSR : 0..7 données, 8 stop
+    uint8_t sciRxState_ = 0, sciRxByte_ = 0, sciRxBitsLeft_ = 0;
     void advanceTx(int64_t at); // front TX échéancé, indépendant du retard CPU
-    int64_t txClockPhase_ = 0; // reprise BREAK /64, origine du diviseur modulo1024
+    int64_t txClockPhase_ = 0; // phase TX /64 8N1, origine du diviseur modulo1024
     bool txShifting_ = false;               // IKBD_TX termine le TSR, sinon remplit le TSR
     std::array<uint8_t, 8> inBuf_{};         // accumulation des octets d'une commande multi-octets
     int inBufLen_ = 0;                       // octets déjà reçus pour la commande en cours

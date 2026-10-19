@@ -753,10 +753,19 @@ void appLoop(App& A) {
             seg(hzbuf, kCfgRom, "Scan rate (set by the ROM)", hz == 60);
             seg("A: " + shortName(machine.fdc.mountedPath(0)), -1, "Floppy drive A");
             seg("B: " + shortName(machine.fdc.mountedPath(1)), -1, "Floppy drive B");
-            const std::string c = machine.gemdos.active() ? shortName(cfg.gemdos) + "/"
-                                : machine.fdc.acsiActive() ? shortName(cfg.acsi)
-                                : std::string("—");
-            seg("C: " + c, kCfgHd, "Hard disk (GEMDOS or ACSI)");
+            // La barre ne relit pas les tables de partitions à chaque image.
+            // La page Disques durs vérifie les chevauchements lorsqu’elle est ouverte.
+            if (machine.fdc.acsiActive()) {
+                const std::string image = !cfg.acsi.empty() ? cfg.acsi : cfg.sd2;
+                seg("ACSI: " + shortName(image), kCfgHd, "ACSI hard disk");
+            }
+            if (machine.gemdos.active()) {
+                const std::string letters = hardDiskDriveLetters(machine.gemdos.driveMask());
+                seg((letters.empty() ? "GEMDOS (no free letters)" : letters) + " " + shortName(cfg.gemdos) + "/",
+                    kCfgHd, "GEMDOS host folder");
+            }
+            if (!machine.gemdos.active() && !machine.fdc.acsiActive())
+                seg("HD: —", kCfgHd, "Hard disks");
             char fps[32];
             std::snprintf(fps, sizeof fps, "%.1f fps", double(ImGui::GetIO().Framerate));
             seg(fps, kCfgEmul, "Host loop frame rate");

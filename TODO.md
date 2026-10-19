@@ -548,8 +548,8 @@ est continue, les trous sont du travail fait.
     est la MOINS démunie des trois : `--slirp-selftest`, `enec_selftest`,
     `netusbee_selftest` et un job de CI dédié la couvrent déjà par le comportement ;
   - dans `GemdosHd` : la table de handles et le suivi Pexec (c'est **A13**), les codes
-    d'erreur face à `gemdos.c`, et le comportement de `Fsfirst`/DTA sous réutilisation
-    d'index — non couverts par le test du bac à sable ;
+    d’erreur face à `gemdos.c` restent à compléter. `Fsfirst`/DTA sous réutilisation
+    d’index dispose désormais d’un banc public (2026-10-19), distinct du bac à sable ;
   - **un test par COUCHE** du bac à sable. Le test posé garantit la PROPRIÉTÉ (rien ne
     sort) et pas les couches : mesuré par mutation, il faut retirer LES DEUX défenses
     pour le faire rougir. Il ne signalera donc pas la perte silencieuse d'une seule.
@@ -693,6 +693,10 @@ la bordure haute est retirée (A41 — Hatari amorce avec des écritures postér
 densité HD/ED STX (NeoST plus cohérent) ; RTC en temps émulé (déterminisme headless).
 Banques RTC indépendantes et contrôles ADJ/12–24 h/bissextile portés selon Ricoh ;
 restent les sorties CLKOUT/ALARM et les modes d’inspection TEST.
+TEST/RESET RTC en écriture seule selon Ricoh p.7 ; lecture zéro selon MAME,
+sans mesure du bus flottant réel et sans émulation des modes d’inspection.
+Rattrapage RTC long corrigé : plus de perte au-delà de 90 000 secondes ;
+calendrier calculé par lots, source temporelle émulée conservée.
 TIMER EN conserve une retenue saturante à l’arrêt et la délivre à la reprise,
 sans décaler la phase sous-seconde (Ricoh p.7).
 
@@ -726,7 +730,26 @@ sans décaler la phase sous-seconde (Ricoh p.7).
   navigation kiosk (tenir gauche/droite bloque la répétition haut/bas). Limitations CRT v1
   assumées (baril/vignette sur le buffer entier en kiosk ; GL 2.1 → passthrough).
 
+Atomicité TAS/blitter déjà garantie par le dispatch CPU entre instructions,
+qualifiée le 2026-10-19 ; garde dédiée à reconsidérer si ce modèle évolue.
+Exceptions vidéo E605/Tekila : hacks par opcodes FIXME d’Hatari, port différé
+jusqu’à reproduction concrète des programmes, sans défaut matériel démontré.
+Reset PSG R7 ramené à zéro selon Hatari/MAME, silence et ports qualifiés.
+
+Timer B : recalage immédiat du front après écriture AER3 porté (2026-10-19),
+anciens fronts échus servis avant mutation puis front futur strict selon la
+grille Glue. Jeu Seven Gates of Jambala encore à valider sur ses données.
+
 ### Stockage & contrôleurs
+- Recherches GEMDOS : `.`/`..` restitués dans les sous-dossiers, selon masque et
+  attributs, avec noms DTA exacts (2026-10-19). `ENOENT` sauté ; autres erreurs
+  `stat` renvoyées en `EINTRN`. Racine et confinement au dossier hôte préservés.
+
+- GEMDOS + ACSI : dossier simple décalé après les partitions images (2026-10-19),
+  même si ACSI est monté après le dossier. Réévaluation au reset/boot, saturation
+  C..Z sans masquer un lecteur physique et retour après retrait ACSI qualifiés.
+  Sous-dossiers à lettres explicites conservés ; chevauchements signalés dans l’UI.
+
 - FDC : index synchronisé avant tous les accès WD1772 (2026-10-18). Le push PSG
   lecteur/face était déjà porté ; gardes de sélection tardive et changement de face
   ajoutées. Attentes des registres portées ; contention DMA et ancrage anti-dérive
@@ -734,12 +757,18 @@ sans décaler la phase sous-seconde (Ricoh p.7).
   l’éjection et réamorcée à l’insertion ; FORCE INTERRUPT déjà conforme à Hatari.
   Secteur revérifié sur le lecteur actif pendant transfert, sans alias vers la
   face/piste suivante si le nouveau média possède moins de secteurs.
+  Changement de média : première action puis dernière action opposée conservées,
+  remplacement direct par éjection/insertion, seconde phase persistée en v41.
+  Fenêtre de 18 vrais VBL par phase, indépendante des changements PAL/NTSC/mono ;
+  compteur et fins de phases VBL sauvegardés en v43. Contrat reset FDC conservé.
+  WRITE TRACK STX sans secteur exploitable impose une vue vide, persistée
+  dans le .wd1772, au lieu de réutiliser les anciens secteurs.
 - IKBD : délais de réponse firmware portés (valeurs centrales déterministes,
   quantifiées en bits). Le transit CPU→IKBD passe par TDR/TSR : le firmware ne reçoit
   l’octet qu’au bit de stop. Restent les formats/diviseurs ACIA hors liaison
   clavier usuelle /64 8N1 et la phase SCI sortante exacte. Reprise BREAK
   désormais ancrée au changement de diviseur, accès CR/TDR tardifs rattrapés ;
-  départ TX ordinaire encore sur la grille historique. Le break
+  départs TX ordinaires /64 8N1 désormais sur cette même phase. Le break
   bloque les nouveaux départs TX ; la ligne physique et les erreurs de trame
   qui en découlent restent hors modèle. L’autosend normal suit maintenant un timer de
   150 000 cycles ; $17 remplace cette cadence commune jusqu’au boot ROM,
@@ -753,6 +782,18 @@ sans décaler la phase sous-seconde (Ricoh p.7).
 - **SCSI / NCR5380** — TT/Falcon **uniquement** (le MegaSTE n'en a pas). Hors périmètre,
   non commencé. Réf. `ncr5380.c`.
 - SCC : BRG / Zero Count porté le 2026-10-18 (deux canaux, IRQ, phase sauvegardée).
+  Reset WR9 IP/IUS isolé au canal ciblé (2026-10-19, Zilog p.160).
+  WR14 D1..0 BRG conserve l’écho RX direct ; arrêt/reprise BRG garde
+  l’invalidation du caractère écho interrompu (2026-10-19).
+  Modifier WR12/13 conserve aussi l’écho RX horlogé directement RTxC/TRxC ;
+  RX BRG/DPLL garde son invalidation (2026-10-19, Zilog p.166–168).
+  Changer seulement la source d’horloge TX WR11 D4..3 conserve l’écho RX
+  engagé (2026-10-19, Zilog p.166–167) ; véritables changements RX invalidants.
+  RX asynchrone vérifie toujours un stop, indépendamment des 1/1,5/2 stops
+  TX ; écho RX conservé si seuls les stops TX changent en vol (2026-10-19).
+  MIE conserve les IUS existants et interdit les nouveaux à zéro (Zilog p.161).
+  INTACK respecte aussi la priorité IUS (Zilog p.41–42), sans IUS fantôme
+  pour une source bloquée après acquittement logiciel.
   Miroirs RR6/RR7 et câblage après changement de profil corrigés le même jour.
   Cadence TX/RX portée : caractères, registre de décalage et registre
   d’attente TX, réception hôte mise en file. FIFO RX matérielle de trois octets portée (Zilog/MAME),
@@ -777,11 +818,36 @@ sans décaler la phase sous-seconde (Ricoh p.7).
   masque l’IP sans effacer les statuts retenus.
   Deux transitions BREAK conservées pendant une autre cause externe ; répétitions
   coalescées par polarité, sans FIFO RX/framing physique inventé.
+  Sync/Hunt forcé à zéro sans IRQ en mode broche /SYNC avec oscillateur actif ;
+  BREAK masqué dans les modes synchrones hors SDLC, sans moteur de synchronisation.
+  WR0 Reset Tx Underrun/EOM décodé avec les commandes et pointeurs combinés,
+  y compris l’exception asynchrone du statut RR0 (Zilog p.176). Hunt reste
+  à intégrer avec un véritable synchroniseur, pas seulement un drapeau statique.
+  Auto Echo déconnecte la sortie TSR et prime sur Local Loopback ; les octets
+  hôtes RX huit bits sans parité sont renvoyés après un stop RX abstrait indépendamment
+  des stops TX et de RXEN/DCD. Reconfiguration RX en vol invalide l’écho courant ; autres formats
+  et flux de bits physiques restent hors modèle. Local Loopback livre TX au
+  sink et à RX interne, déconnecte RxD externe et invalide le caractère hôte
+  interrompu lors d’une bascule ; FIFO déjà complétée préservée.
+- GPIP7 : XSINT qualifié après composition complète du niveau, bouton
+  Multiface inclus ; pas de front parasite si la pin reste basse (2026-10-19).
+- SCC RX All/Special : vider le FIFO efface IP/IRQ même si RR1 conserve
+  une erreur collante ; modes verrouillés First/Special préservés (2026-10-19).
+- MFP VR : bits réservés 2..0 désormais lus zéro et ignorés à l’écriture
+  (2026-10-19, Motorola §4.1.3), sans modifier S ou la base vectorielle.
+- MIDI : les événements RX/TX et le stop de bouclage datent leur front IRQ
+  MFP à l’échéance série, même servis en retard ; AER/DDR et ligne partagée
+  clavier conservés (2026-10-19). CR/RDR restent datés de l’accès courant.
 - USART MFP : réception hôte selon le format UCR et phase fractionnaire
-  sauvegardée, sans dérive aux callbacks tardifs. RX hôte 5..8 bits alignés à
+  sauvegardée, sans dérive aux callbacks tardifs. RXFULL datée au stop,
+  overrun OE/RXERR différé jusqu’à lecture UDR puis blocage jusqu’à RSR,
+  selon Motorola §7.2.2 ; étape en attente sauvée v44. RX hôte 5..8 bits alignés à
   droite, bits inutilisés à zéro et largeur fixée au départ du caractère.
   RE=0 efface le statut RX sans perdre la donnée ; UDR vide conserve RX.
   Les droits d’écriture RSR sont portés (RE/SS, F/S seulement en synchrone).
+  Bouclage interne TSR H/L=11 porté au transport d’octets ; SI/RC hôte
+  ignorés, sans double livraison avec la prise externe. Commutation H/L
+  en pleine trame sans reconstruction des bits physiques.
   Restent le modèle synchrone, la réacquisition après réactivation au milieu
   d’un caractère et la phase du premier front TC. /1 et /16 suivent le rapport Timer D exact,
   y compris aux débits non entiers, sans arrondis tty ni plancher RX. Émission TDR/TSR
@@ -791,8 +857,71 @@ sans décaler la phase sous-seconde (Ricoh p.7).
   TXERR n’est pas redemandé tant que UE n’est pas effacé (lecture TSR ou TE=0).
   Le délai minimal d’une période TX avant cet effacement est porté, avec
   seuils distincts pour trame en cours et UE mémorisé.
+  BREAK ignoré en mode synchrone selon le manuel ; le transport reste le repli
+  8N1, sans protocole synchrone. BREAK asynchrone cadencé par intervalle de
+  caractère, TE coupé terminé à la frontière sans stop, TDR retenu ; reprise
+  par stop d’une période TX déduit du manuel puis TDR/UE. Restent l’onde
+  physique et la phase du premier front TC.
+- IKBD : sorties firmware avant initialisation du diviseur désormais rejetées,
+  sans délai résiduel ; état d’initialisation conservé et sauvegardé v46.
+  Reset matériel : registres CR/SR/RDR, erreurs et pipeline TX ACIA conservés ;
+  SCI sortant annulé séparément. Transit CPU→SCI au reset reconstruit par bits
+  en /64 8N1 : timer réancré, reprise sur fragment, stop et bits de repos,
+  y compris contamination du caractère suivant. Formats/diviseurs physiques
+  autres que /64 8N1 différés.
+- FDC READ ADDRESS : CRC ID désormais signalé après les six octets,
+  sans confondre CRC ID et CRC de données (2026-10-19).
+- Microwire : écritures octet DATA fusionnées avec le registre visible après
+  décalage, sans ressusciter l’autre octet de la commande précédente ;
+  écritures mot/long et rejet occupé conservés (2026-10-19).
+- SCC First : Error Reset efface aussi l’IP du caractère rejeté, sans
+  l’hériter au suivant ; réarmement explicite inchangé (2026-10-19).
+- STX WRITE SECTOR : bit0 choisit désormais FB normal (A8) ou F8 supprimé
+  (A9), statut RECTYPE et CRC du READ TRACK reconstruit cohérents (2026-10-19).
+  Extension SECT `NDAM` + marque pour F8 dans le .wd1772 ; anciens SECT sans
+  extension relus normaux. Données lisibles par Hatari, métadonnée ignorée et
+  susceptible d’être perdue après réécriture par Hatari/ancien NeoST.
+  READ TRACK fusionne localement les overlays dans l’image de piste décodée,
+  y compris les champs coupés par l’index, sur moins d’un tour complet.
+  Synchronisation zéro, ancrage ID aligné exact, CRC d’origine valides et
+  association non ambiguë requis ; sinon l’image est conservée. Traversée
+  d’une fin de dump écrêté refusée. Pas de moteur MFM général.
+  Images ST/MSA/DIM sans représentation persistante de la DAM.
+  États v45 inchangés : commande en vol sauvegardée, contenu média hors état.
+- STX WRITE TRACK : marque de secteur supprimé F8 conservée en READ SECTOR et dans
+  la reconstruction READ TRACK, y compris après snapshot/remontage (2026-10-19).
+- Microwire : rattrapage des fronts de huit cycles et des accès Data/Mask
+  avant dispatch porté (2026-10-19), départ liveNow et fin après seize fronts.
+  Shelves Savinkoff, signe LMC et HPF du mélange STE déjà portés, revérifiés.
+- API Bus : masque 24 bits avant écriture blitter atomique mot/long,
+  aussi aux miroirs ; cycles CPU déjà normalisés par Moira (2026-10-19).
+- MMIO : ombres PSG impaires et décodage MFP pair/void déjà portés dans le Bus,
+  requalifiés le 2026-10-19 ; anciens candidats 23/26 clos. Son DMA : compteur
+  sans refill à la lecture et masque haut déjà conformes dans le périmètre
+  revérifié ; octet scratch $FF8920 désormais conservé au snapshot v42.
+- Blitter : reset chaud conserve RAM halftone et pipeline source (2026-10-19),
+  selon Hatari ; initialisation froide déterministe NeoST conservée.
+- SCC Z85C30 : lectures étendues WR7’ D6 portées (2026-10-19) ;
+  autres fonctions WR7’ et FIFO SDLC restent à traiter.
+- ACSI : WRITE différé conserve cible et secteur engagés, aussi après
+  sauvegarde v45 (2026-10-19), même pendant une nouvelle sélection ACSI.
+- ACSI : montage limité à UINT32_MAX secteurs de 512 octets (2 Tio − 512),
+  capacité maximale représentable par les compteurs actuels. Images de 2 Tio
+  ou plus refusées avant conversion au lieu de tronquer leur taille (2026-10-19).
+- SCC : verrou d’erreur conservé entre First/Special et Special Only ;
+  Error Reset, reset et politiques des autres modes préservés (2026-10-19).
 - ACSI : délai de fin DMA porté le 2026-10-18, 1 000 cycles CPU comme Hatari ;
   acquittement des octets de commande conservé. Aucun essai Idris OS effectué.
+  READ DMA hors RAM renvoie CHECK CONDITION sans modifier le sense disque ;
+  source WRITE en ROM inaccessible dans les configurations supportées (RAM
+  256 Ko à 4 Mo, adresse DMA limitée à $3FFFFE), pas de port ROM nécessaire.
+  Borne READ/WRITE non signée corrigée (2026-10-19) : début d’image de
+  plus de 1 Tio accessible, sans relâcher la borne de fin. Banc sparse POSIX,
+  occupation physique de quelques Ko ; banc sauté sur Windows ou FS non sparse.
+- FDC : WRITE TRACK ST refuse avant toute copie les IDs d’une autre piste/face
+  et les secteurs dupliqués ; LOST_DATA pour un flux non représentable (2026-10-19).
+- FDC : WRITE SECTOR STX long puis sélection live d’un lecteur ST limité
+  à 512 octets dans l’image cible, voisin et fin d’image préservés (2026-10-19).
 - ⭘ **Test F (disquette) de la cartouche STE_Test v1.9 : « Cannot write drive A/B »,
   drives vus SS** (pré-existant au chantier MegaSTE ; le test F du diagnostic MegaSTE,
   lui, PASSE avec le même FDC émulé — la cartouche STE détecte les faces/l'écriture

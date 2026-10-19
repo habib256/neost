@@ -73,9 +73,8 @@ public:
     void setDriveEnabled(int drive, bool on) { driveEnabled_[drive & 1] = on; refreshDriveSide(); }
     bool driveEnabled(int drive) const { return driveEnabled_[drive & 1]; }
 
-    // Longueur de la trame COURANTE en cycles bus (posée à chaque VBL par Machine) :
-    // elle date la fenêtre de changement de média en VBL, comme Hatari.
-    void setFrameCycles(int64_t c) { if (c > 0) frameCycles_ = c; }
+    // Un appel par VBL réelle, indépendamment de la durée de la trame.
+    void onVbl() { if (vblCounter_ < INT64_MAX - 36) ++vblCounter_; }
 
     // A14 — écriture HÔTE des images disquette (write-through). ON par défaut :
     // NeoST persiste chaque secteur écrit au fil de l'eau, ce qui est le bon
@@ -144,6 +143,8 @@ public:
     // contrôleur ACSI (acsi_) et les liaisons (bus_/psg_/mfp_/sched_/soundSink_)
     // sont hors périmètre.
     void serialize(StateArchive& ar) {
+        ar(vblCounter_);
+        ar.check(vblCounter_ >= 0 && vblCounter_ <= INT64_MAX - 36, "Fdc::VBL counter");
         // --- Position physique / transition par lecteur (PAS le contenu image) ---
         for (int d = 0; d < 2; ++d) {
             ar(drive_[d].headTrack);        // position PHYSIQUE de la tête
@@ -154,7 +155,16 @@ public:
             ar.check(drive_[d].headTrack >= 0 && drive_[d].headTrack <= 90,
                      "Fdc::headTrack hors [0, 90]");
             ar(drive_[d].transitionPhase);  // phase Mediach (éjection/insertion)
-            ar(drive_[d].transitionDeadline);
+            ar(drive_[d].transitionEndVbl);
+            ar(drive_[d].transitionPhase2);
+            ar(drive_[d].transitionEndVbl2);
+            ar.check(drive_[d].transitionPhase >= 0 && drive_[d].transitionPhase <= 2 &&
+                     drive_[d].transitionPhase2 >= 0 && drive_[d].transitionPhase2 <= 2,
+                     "Fdc::media transition phase");
+            ar.check(drive_[d].transitionEndVbl >= 0 &&
+                     drive_[d].transitionEndVbl <= INT64_MAX - 18 &&
+                     drive_[d].transitionEndVbl2 >= 0,
+                     "Fdc::media transition deadline");
         }
 
         // --- Registres internes WD1772 ---
@@ -284,11 +294,13 @@ private:
         // Détection de changement de média (Mediach) à chaud (cf. Hatari
         // floppy.c:Floppy_DriveTransition*) : une éjection/insertion à chaud force
         // brièvement WPRT, ce que TOS surveille pour relire le répertoire. On modélise
-        // ce créneau par une phase datée (en cycles CPU de l'ordonnanceur, horloge
-        // continue). 0 = aucune ; 1 = éjection (force WPRT) ; 2 = insertion (ne force rien).
+        // ce créneau par deux actions datées : la première puis la dernière
+        // opposée. 0 = aucune ; 1 = éjection (force WPRT) ; 2 = insertion (ne force rien).
         enum TransitionPhase { TRANS_NONE = 0, TRANS_EJECT = 1, TRANS_INSERT = 2 };
         int     transitionPhase    = TRANS_NONE;
-        int64_t transitionDeadline = 0;         // cycle CPU de fin de la phase courante
+        int64_t transitionEndVbl = 0;         // indice VBL de fin de la première action
+        int     transitionPhase2 = TRANS_NONE; // dernière action opposée, après la première
+        int64_t transitionEndVbl2 = 0;
     };
 
     // --- Géométrie / capacités du média (cf. Hatari FDC_Get*PerTrack/Disk) -----
@@ -431,7 +443,8 @@ private:
     // est active ; expire la transition quand l'échéance est dépassée. Calqué sur
     // Hatari Floppy_DriveTransitionUpdateState (Force=1 pendant l'éjection).
     bool     transitionForceWprt(int drive);
-    int64_t  transitionWindow() const;          // durée d'une phase Mediach (18 VBL)
+    void     transitionSetState(int drive, int phase);
+    static constexpr int64_t kMediaChangeVbl = 18;
     void     emitSound(FdcSound e) { if (soundSink_) soundSink_(e); }
 
     // Horloge FDC = horloge CPU « live » (sous-instruction si dispo), absolue et
@@ -465,7 +478,7 @@ private:
     int      commandState_ = 0;       // sous-état (RUN_*)
     uint8_t  commandType_ = 1;        // 1/2/3/4
     bool     replaceCommandPossible_ = false; // remplaçable pendant prepare+spinup
-    int64_t  frameCycles_ = 160256;             // trame courante (cf. setFrameCycles), PAL au boot
+    int64_t  vblCounter_ = 0;                 // horloge Mediach, sauvegardée
     bool     driveEnabled_[2] = {true, true};   // cf. setDriveEnabled (config, pas d'état)
     bool     fastFloppy_ = false;     // « FDC rapide » (cf. setFastFdc) : délais /N
     bool     hostWriteBack_ = true;   // écrire les secteurs dans le FICHIER (cf. setHostWriteBack)

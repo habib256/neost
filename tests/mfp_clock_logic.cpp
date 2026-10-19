@@ -24,7 +24,7 @@ int testMfpClock() {
         eq("archive débit valide",load.ok(),1);
         if(r.ctrl==7 && r.data==0 && divide16 && tx) {
             const int forged=819201;
-            const size_t tail=sizeof(uint8_t)+sizeof(uint32_t)+4*sizeof(bool)+2*sizeof(uint8_t)
+            const size_t tail=sizeof(uint8_t)+sizeof(uint32_t)+4*sizeof(bool)+3*sizeof(uint8_t)
                 +4*sizeof(int64_t)+sizeof(int)+sizeof(bool)+2*sizeof(int64_t)+sizeof(int);
             std::memcpy(bytes.data()+bytes.size()-tail-sizeof(int),&forged,sizeof(forged));
             auto invalid=StateArchive::loader(bytes.data(),bytes.size()); m.serialize(invalid);

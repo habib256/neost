@@ -100,13 +100,15 @@ public:
     // Overlay d'écriture (cf. Hatari STX_SaveStruct) : une STX est en lecture seule ;
     // les 'write sector' et 'write track' vont dans ces structures, relues en
     // priorité, et PERSISTÉES dans un fichier compagnon « .wd1772 » (format
-    // identique à Hatari : en-tête WD1772 + blocs SECT/TRCK, multi-octets BE).
+    // compatible avec le conteneur Hatari : blocs SECT/TRCK, multi-octets BE,
+    // trailer NDAM optionnel pour la DAM (ignoré et perdu si réécrit par Hatari)).
     struct SaveSector {
         uint8_t  track = 0, side = 0;
         uint16_t bitPos = 0;
         uint8_t  idTrack = 0, idHead = 0, idSector = 0, idSize = 0;  // champ ID (bloc SECT)
         uint16_t idCrc = 0;
         bool     used = true;           // false = invalidé par un WRITE TRACK ultérieur
+        uint8_t  dataMark = 0xFB;       // DAM du WRITE SECTOR ; ancien SECT sans NDAM = FB
         std::vector<uint8_t> data;
     };
     // Piste réécrite par WRITE TRACK : flux BRUT écrit par le programme (timings

@@ -46,6 +46,9 @@ public:
     // Branche l'ordonnanceur : le MFP y date lui-même ses timers en mode délai
     // (Timer A/C/D) à partir de leurs registres prescaler/données.
     void setScheduler(Scheduler* s) { sched_ = s; }
+    // Liaison vidéo non persistée : appelée avant changement AER3, pour servir
+    // l'ancien front DE puis repositionner le prochain (Hatari mfp.c2742+).
+    void setTimerBEdgeSink(std::function<void(bool)> sink) { timerBEdgeSink_ = std::move(sink); }
 
     // RESET matériel du MFP (port de MFP_Reset, mfp.c:519-569). Remet à zéro les
     // registres d'interruption (GPIP/AER/DDR, IER/IPR/IMR/ISR, VR), les timers (mode,
@@ -99,6 +102,7 @@ public:
     // Événement HBLANK (une fois par ligne) : fait décompter Timer B en mode
     // event-count. TOS 1.x s'en sert pour se synchroniser à l'écran au boot.
     void hblank();
+    void hblankAt(int64_t when);
 
     // Front compté par Timer B en event-count (AER bit3 de $FFFA03) : 0 = FINS de
     // ligne (défaut, DE_end+24), 1 = DÉBUTS de ligne (DE_start+24) — cf. Hatari
@@ -194,6 +198,8 @@ public:
         ar(rxByte_);
         ar(rxFull_);
         ar(rxOverrun_);
+        ar(rxPendingOverrun_);
+        ar.check(!rxPendingOverrun_ || (rxFull_ && !rxOverrun_), "Mfp::pending RX overrun");
         ar(loopback_);
 
         // --- Timers B/C/D : mode, recharge et compteurs figés ------------------------
@@ -244,6 +250,9 @@ public:
             }
         }
         ar(serialTxBusy_); ar(serialTxFull_); ar(serialTxUnderrun_); ar(serialTxEnd_);
+        ar(serialTxKind_);
+        ar.check(serialTxKind_ <= 2, "Mfp::serialTxKind_");
+        ar.check(serialTxKind_ == 0 || serialTxBusy_, "Mfp::serialTxKind_ sans échéance");
         ar(serialTxByte_); ar(serialTxHolding_);
         ar(serialTxCycle_); ar(serialTxRemainder_); ar(serialTxDivisor_);
         ar(serialTxFrameClearCycle_);
@@ -286,6 +295,14 @@ public:
     // déjà basse — wire-OR ACIA, INTRQ maintenue — regénérerait des IRQ fantômes).
     void setAciaLineKbd (bool active) { gpipSetLine(aciaLineKbd_,  active); }
     void setAciaLineMidi(bool active) { gpipSetLine(aciaLineMidi_, active); }
+    // Front MIDI servi en retard : conserver son échéance sans court-circuiter
+    // le détecteur AER/DDR ni le wire-OR avec l'IRQ du clavier.
+    void setAciaLineMidiAt(bool active, int64_t when) {
+        if (aciaLineMidi_ == active) return;
+        const uint8_t before = gpipInput();
+        aciaLineMidi_ = active;
+        gpipUpdateInterruptAt(before, gpipInput(), aer, aer, when);
+    }
     // Alias de compatibilité (l'ancienne API ne pilotait qu'une seule ligne).
     void setAciaLine(bool active) { setAciaLineKbd(active); }
 
@@ -350,7 +367,9 @@ public:
     // au boot où cela parasiterait le canal ACIA du clavier.
     // Ligne BUSY Centronics (GPIP0, active BAS). Sous fixture de bouclage, recopie
     // (inversée) le bit7 du port parallèle (cf. Machine, test « Printer/Joystick »).
-    void setBusyLine(bool a) { busyLine_ = a; }
+    // Hatari psg.c : le strobe imprimante passe par le détecteur GPIP0,
+    // avec qualification AER/DDR comme les autres broches (MC68HC901 §5.1).
+    void setBusyLine(bool a) { gpipSetLine(busyLine_, a); }
     // gpipSetLine (et non raise() direct) : il n'y a de front actif QUE dans le sens
     // choisi par l'AER, et seulement si la ligne est en ENTRÉE. Lever le canal sur les
     // DEUX fronts, comme le faisait ce code, donnait une IRQ sur la mauvaise transition
@@ -417,14 +436,15 @@ public:
     std::function<void(uint8_t&)> gpipHook_;   // recouvrement lecture GPIP (PortDevices, hors snapshot)
 
     // USART (RS232) : tampon de réception 1 OCTET (le 68901 n'a PAS de FIFO ; un
-    // nouvel octet écrase le précédent = overrun). rxFull_ = RSR bit7 (Buffer Full).
+    // nouvel octet est perdu si le précédent attend encore = overrun). rxFull_ = RSR bit7 (Buffer Full).
     // loopback_ = connecteur de bouclage BRANCHÉ (cf. setLoopback). Par défaut NON
     // branché : sinon l'écho du rapport série du diagnostic (imprimé en console)
     // reviendrait en réception et serait lu comme entrée terminal → le test clavier
     // échoue. Le câble n'est « branché » que pour tester le port série.
     uint8_t rxByte_  = 0;
     bool    rxFull_   = false;
-    bool    rxOverrun_ = false;   // RSR bit6 : un octet est arrivé buffer déjà plein
+    bool    rxOverrun_ = false;   // OE visible après lecture UDR, acquitté par RSR
+    bool    rxPendingOverrun_ = false; // pertes retenues derrière un RDR encore plein
     // File RX côté hôte (cf. receiveByte) : bornée, livrée octet par octet au
     // débit série par l'événement SERIAL_RX. serialRxArmed_ = échéance en vol.
     static constexpr std::size_t kHostRxMax = 4096;
@@ -434,12 +454,17 @@ public:
     int64_t serialRxCycle_ = 0;       // partie entière de la prochaine fin de caractère
     int64_t serialRxRemainder_ = 0;   // fraction exacte / serialRxDivisor_
     int serialRxDivisor_ = 1;
+    bool internalSerialLoopback() const { return (timer_[0x2D] & 6) == 6; }
+    void receiveSerialByte(uint8_t byte, int64_t when); // livraison commune hôte/bouclages
     void scheduleSerialRx(bool continuation = false);
     void startSerialTx(bool continuation);
+    void scheduleSerialTxHalfBits(int halfBits, bool continuation);
+    void advanceSerialTx(int64_t when);
     void finishSerialTx(int64_t when);
     bool serialTxBusy_ = false, serialTxFull_ = false;
     bool serialTxUnderrun_ = false, serialTxEnd_ = false;
     uint8_t serialTxByte_ = 0, serialTxHolding_ = 0;
+    uint8_t serialTxKind_ = 0; // 0=donnée, 1=BREAK, 2=stop fin BREAK
     int64_t serialTxCycle_ = 0, serialTxRemainder_ = 0;
     int serialTxDivisor_ = 1;
     int64_t serialTxFrameClearCycle_ = 0; // seuil potentiel de la trame TSR courante
@@ -514,6 +539,7 @@ private:
     // Cas réel : une écriture AER (ex. bset/bclr #0,$FFFA03 des démos « M »/« Realtime »)
     // peut lever une IRQ alors même que la ligne d'entrée n'a pas bougé.
     void gpipUpdateInterrupt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew);
+    void gpipUpdateInterruptAt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew, int64_t when);
 
     // Pose une ligne d'entrée GPIP avec détection de front (port MFP_GPIP_Set_Line_Input,
     // mfp.c:1180) : capture du GPIP avant/après le changement, puis gpipUpdateInterrupt
@@ -539,4 +565,5 @@ private:
     int     serialClockFactor_ = 128; // prescaler × données × division UCR, défaut 9600
     int     serialBaud_ = 0;        // bauds informatifs tronqués (0 = USART jamais configurée)
     uint8_t serialUcr_  = 0;        // UCR au moment du dernier calcul (format du mot)
+    std::function<void(bool)> timerBEdgeSink_; // lien moteur, non sérialisé
 };

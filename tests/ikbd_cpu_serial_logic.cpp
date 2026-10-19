@@ -71,8 +71,8 @@ int testIkbdCpuSerial() {
     }
     {
         Rig r; r.send(0x1C); r.k.resetHw();
-        eq("hardware reset cancels TX",r.s.cyclesUntil(Scheduler::IKBD_TX),-1);
-        eq("hardware reset restores TDRE",r.status()&2,2);
+        eq("hardware reset preserves pending TDR deadline",r.s.cyclesUntil(Scheduler::IKBD_TX),1024);
+        eq("hardware reset preserves full TDR",r.status()&2,0);
     }
     std::printf("[ikbd-cpu-serial] %d checks, %d failures\n",checks,failures);
     return failures;

@@ -44,7 +44,8 @@ bool testSccSerial(){
     {
         Rig r;r.arm();r.wr(14,0x13);r.scc.write8(0xff8c83,0x65);
         r.sched.runTo(39);check(!(r.rr(0)&1),"loopback waits TX");
-        r.sched.runTo(40);check(r.scc.read8(0xff8c83)==0x65 && r.output.empty(),"local loopback at TX completion");
+        r.sched.runTo(40);check(r.scc.read8(0xff8c83)==0x65 && r.output.size()==1 && r.output[0]==0x65,
+                               "local loopback receives internally and drives TxD at completion");
     }
     {
         Rig r;r.arm();r.wr(4,9);r.wr(5,8); // 5 bits, parité, 1,5 stop = 8,5 bits.

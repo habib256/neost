@@ -34,6 +34,12 @@ uint8_t MidiAcia::txData(uint8_t data) const {
     return ((control_ >> 2) & 7) < 4 ? data & 0x7f : data;
 }
 
+int64_t MidiAcia::nextTxEdge(int64_t now) const {
+    const int64_t bit = txBitCycles();
+    const int64_t elapsed = (now % bit - txClockPhase_ + bit) % bit;
+    return now + bit - elapsed;
+}
+
 uint8_t MidiAcia::read8(uint32_t addr) {
     advanceTx(sched_ ? sched_->liveNow() : 0);
     if ((addr & 2) == 0) {
@@ -104,16 +110,14 @@ void MidiAcia::write8(uint32_t addr, uint8_t v) {
             if ((control_ & 0x60) == 0x60) txLoadDue_ = -1;
             else if (wasBreak && !tdre_) {
                 if (sched_) {
-                    const int64_t now = sched_->liveNow(), bit = txBitCycles();
-                    const int64_t elapsed = (now % bit - txClockPhase_ + bit) % bit;
-                    txLoadDue_ = now + bit - elapsed;
+                    txLoadDue_ = nextTxEdge(sched_->liveNow());
                 }
                 else { tdre_ = true; emitTx(txData(tdr_), 0); }
             }
         }
         if (sched_ && !tsrBusy_ && !tdre_ && !wasBreak
             && (control_ & 0x60) != 0x60 && oldBitCycles != txBitCycles())
-            txLoadDue_ = sched_->liveNow() + txBitCycles();
+            txLoadDue_ = nextTxEdge(sched_->liveNow());
         armTx();
         raiseIfReady();
         return;
@@ -132,7 +136,9 @@ void MidiAcia::write8(uint32_t addr, uint8_t v) {
     tdr_ = v;
     tdre_ = false;
     if (!tsrBusy_ && txLoadDue_ < 0 && (control_ & 0x60) != 0x60)
-        txLoadDue_ = now + txBitCycles();
+        // Clock_TX IDLE tourne même sans donnée : écrire TDR ne redémarre
+        // pas le diviseur. Le transfert attend son prochain front déjà phasé.
+        txLoadDue_ = nextTxEdge(now);
     armTx();
     raiseIfReady();
 }
@@ -143,7 +149,7 @@ void MidiAcia::emitTx(uint8_t v, int64_t cycle) {
                                static_cast<long long>(cycle), v);
     if (midiSinkTimed_) { midiSinkTimed_(v, cycle); return; }
     if (midiSink_) { midiSink_(v); return; }
-    if (loopback_) pushRx(v);
+    if (loopback_) pushRx(v, sched_ ? cycle : -1);
 }
 
 void MidiAcia::armTx() {
@@ -164,27 +170,28 @@ void MidiAcia::advanceTx(int64_t cycle) {
             const uint8_t byte = tsr_;
             tsrBusy_ = false;
             txCompleteDue_ = -1;
-            txLoadDue_ = (tdre_ || (control_ & 0x60) == 0x60) ? -1 : done + txBitCycles();
+            txLoadDue_ = (tdre_ || (control_ & 0x60) == 0x60) ? -1 : nextTxEdge(done);
             emitTx(byte, done);
         } else {
             if (txLoadDue_ < 0 || txLoadDue_ > cycle) break;
+            const int64_t load = txLoadDue_;
             tsr_ = txData(tdr_);
             tsrBusy_ = true;
             tdre_ = true;
             txCompleteDue_ = txLoadDue_ + (kTxFrameBits[(control_ >> 2) & 7] - 1) * txBitCycles();
             txLoadDue_ = -1;
-            raiseIfReady();
+            raiseIfReady(load);
         }
     }
     armTx();
 }
 
-void MidiAcia::pushRx(uint8_t v) {
+void MidiAcia::pushRx(uint8_t v, int64_t when) {
     // acia.c RX STOP_BIT : si RDR est encore plein, le nouvel octet est
     // perdu. Le registre à décalage ne stocke pas une seconde trame achevée.
     if (rdrf_) rxOverrun_ = true;
     else { rdr_ = v; rdrf_ = true; }
-    raiseIfReady();
+    raiseIfReady(when);
 }
 
 void MidiAcia::receiveExternal(uint8_t b) {
@@ -216,7 +223,8 @@ void MidiAcia::onRxPace() {
     // pushRx applique la règle du 6850 : récepteur plein → c'est le NOUVEL octet qui
     // tombe. C'est l'overrun du MATÉRIEL, et il est désormais au bon endroit — l'hôte
     // ne retient plus rien pour l'éviter, il livre au débit du câble.
-    if (rxSource_(b)) pushRx(b);
+    const int64_t due = sched_ ? sched_->firingDue() : -1;
+    if (rxSource_(b)) pushRx(b, due >= 0 ? due : (sched_ ? sched_->liveNow() : 0));
     // CycInt_AddRelativeInterrupt conserve PendingCyclesOver : le retard du
     // dispatch ne décale pas le débit du câble. Le Scheduler porte déjà la phase.
     if (rxSource_ && sched_) {
@@ -230,12 +238,13 @@ void MidiAcia::onTxEmpty() {
     advanceTx(sched_ ? sched_->now() : 0);
 }
 
-void MidiAcia::raiseIfReady() {
+void MidiAcia::raiseIfReady(int64_t when) {
     // L'ACIA active sa ligne d'IRQ dès qu'une cause RX (octet dispo + RIE) ou TX
     // (TDRE + TIE) est active → canal 6 du MFP via GPIP4 (cf. ACIA_UpdateIRQ).
     const bool active = ((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_);
     // Le canal 6 est levé par le détecteur de FRONT du setter (wire-OR avec le
     // clavier : si GPIP4 est déjà bas, pas de nouveau front → pas d'IRQ, comme
     // sur le vrai MFP). Pas de raise() manuel.
-    mfp_.setAciaLineMidi(active);
+    if (when >= 0) mfp_.setAciaLineMidiAt(active, when);
+    else mfp_.setAciaLineMidi(active);
 }

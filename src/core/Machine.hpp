@@ -322,6 +322,7 @@ private:
     // Handlers des événements datés vidéo (positions au cycle dans la ligne).
     // Les Timers A/C/D (mode délai) sont datés par le MFP lui-même.
     void onRender();        // décode la scanline (≈ fin Display-Enable, cycle 376)
+    void retargetTimerB(bool startOfLine); // AER3 : ancien front servi avant mutation
     void onTimerB();        // Timer B event-count sur DE (position DE-dépendante)
     void onHbl();           // HBL niveau 2 (cycle 508)
     void onVbl();

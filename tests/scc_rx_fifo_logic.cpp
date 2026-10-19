@@ -5,7 +5,7 @@
 bool testSccRxFifo() {
     int fails=0;
     auto check=[&](bool ok,const char* msg){if(!ok){++fails;std::fprintf(stderr,"SCC RX FIFO FAIL: %s\n",msg);}};
-    struct Rig {Scc s; void wr(int r,int v){s.write8(0x81,r);s.write8(0x81,v);} int rr(int r){s.write8(0x81,r);return s.read8(0x81);} int pop(){return s.read8(0x83);} Rig(){wr(3,0xc1);wr(9,8);} };
+    struct Rig {Scc s; void wr(int r,int v){s.write8(0x81,r);s.write8(0x81,v);} int rr(int r){s.write8(0x81,r);return s.read8(0x81);} int pop(){return s.read8(0x83);} Rig(){wr(14,0);s.write8(0x85,14);s.write8(0x85,0);wr(3,0xc1);wr(9,8);} /* RxD externe, sans bouclage local. */ };
     {Rig r; r.wr(1,0x10);for(int i=1;i<=3;++i)r.s.receiveByte(0,i);
      check(!(r.rr(1)&0x20),"three bytes fit without overrun");
      for(int i=1;i<=3;++i){check(r.pop()==i,"FIFO preserves arrival order");check(bool(r.rr(0)&1)==(i<3),"RR0 tracks remaining bytes");}

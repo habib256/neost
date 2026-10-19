@@ -26,6 +26,7 @@
 #pragma once
 #include <cstdint>
 #include <cstdio>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -38,7 +39,7 @@ public:
     ~GemdosHd();
 
     // Active l'émulation HD sur `hostDir` (dossier hôte). Selon le contenu :
-    //  - dossier « normal »  → un seul lecteur C: mappé sur ce dossier ;
+    //  - dossier « normal »  → un lecteur après les partitions ACSI, mappé sur ce dossier ;
     //  - dossier ne contenant QUE des sous-dossiers d'une lettre C..Z → multi-
     //    partitions (C: = sous-dossier C, D: = sous-dossier D…), comme Hatari.
     // Installe la cartouche système ($FA0000) et branche bus.gemdos. À appeler
@@ -50,8 +51,12 @@ public:
     // disparition des lecteurs qu'au prochain boot (hard reset conseillé).
     void unmount();
 
-    // Vrai si au moins un lecteur GEMDOS est mappé.
+    // Configuration/cartouche installée ; driveMask peut être nul si ACSI occupe C..Z.
     bool active() const { return active_; }
+    // Liaison moteur non persistée ; réévaluée au montage et au prochain boot/reset.
+    void setPartitionCountProvider(std::function<int()> provider) { partitionCountProvider_ = std::move(provider); }
+    uint32_t driveMask() const;
+    int firstMappedDrive() const;
     // PUBLIQUES : l'empreinte de cartouche des save-states (Machine.cpp) doit masquer
     // les octets que sysInit mute ici — la valeur ne doit pas être dupliquée en dur.
     static constexpr uint32_t CART_OLDGEMDOS = 0xFA0024u;
@@ -171,7 +176,7 @@ private:
     void pexecBpCreated();    // GemDOS_PexecBpCreated : charge+relocalise le PRG
 
     // ---- Init / gestion des lecteurs & handles --------------------------------
-    void initDrives(const std::string& hostDir);
+    bool initDrives(const std::string& hostDir);
     void initCurPaths();
     void clearAllFileHandles();
     void closeFileHandle(int i);
@@ -189,8 +194,8 @@ private:
     void createHostFileName(int drive, const std::string& gemName, std::string& out);
     // Rabat un chemin hôte sous la racine du lecteur (cf. .cpp) — garde-fou de sécurité.
     void clampToSandbox(const EmuDrive& d, const std::string& gemName, std::string& out);
-    // Test à BLANC : combien de lecteurs seraient mappés, sans aucun effet de bord.
-    int  countMappableDrives(const std::string& hostDir);
+    // Nombre de partitions images fourni par le moteur, zéro sans liaison.
+    int partitionCount() const;
     bool addPathComponent(std::string& path, const std::string& origname, bool isDir);
     void addRemainingPath(const std::string& src, std::string& dstpath);
     std::string matchHostDirEntry(const std::string& path, const std::string& name,
@@ -222,8 +227,11 @@ private:
     bool gemGSDToF(uint32_t p);
 
     // ---- DTA / dates / attributs ----------------------------------------------
-    bool populateDTA(InternalDta& iDTA, const std::string& fname, uint32_t dtaGemdos);
+    enum class DtaResult { Ok, Skip, Error };
+    DtaResult populateDTA(InternalDta& iDTA, const std::string& fname, uint32_t dtaGemdos);
     void terminateClose();
 
     int  loadAndReloc(const std::string& prgName, uint32_t baseaddr, bool fullBpSetup);
+    std::function<int()> partitionCountProvider_; // liaison moteur, non sérialisée
+    std::string mountedDirectory_;                // configuration hôte, pas un état invité
 };

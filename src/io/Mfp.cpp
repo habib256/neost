@@ -132,7 +132,7 @@ void Mfp::reset() {
     //    sortait aussitôt et la ligne restait assertée POUR TOUJOURS.
     riLine_ = true;              // repos ASSERTÉ, comme CTS/DCD
     monButton_ = false;                   // bouton Multiface relâché (PortDevices::reset l'oublie aussi)
-    rxByte_ = 0; rxFull_ = false; rxOverrun_ = false;   // USART : tampon vidé (pas de RXFULL fantôme)
+    rxByte_ = 0; rxFull_ = false; rxOverrun_ = rxPendingOverrun_ = false;   // USART : tampon vidé (pas de RXFULL fantôme)
     serialClockFactor_ = 128;
     serialBaud_ = 0; serialUcr_ = 0;      // suivi débit série remis (sinon serialBaud() rapporte l'avant-reset)
     if (sched_) {   // reset MACHINE : Hatari appelle CycInt_Reset() (reset.c:76) avant MFP_Reset_All
@@ -146,7 +146,7 @@ void Mfp::reset() {
         sched_->cancel(Scheduler::SERIAL_TX);
     }
     serialTxBusy_ = serialTxFull_ = serialTxUnderrun_ = serialTxEnd_ = false;
-    serialTxByte_ = serialTxHolding_ = 0;
+    serialTxByte_ = serialTxHolding_ = serialTxKind_ = 0;
     serialTxCycle_ = serialTxRemainder_ = 0; serialTxDivisor_ = 1;
     serialTxUnderrunClearCycle_ = serialTxFrameClearCycle_ = 0;
     hostRx_.clear();
@@ -203,37 +203,53 @@ void Mfp::onSerialRxEvent() {
     if (hostRx_.empty()) return;
     const uint8_t b = hostRx_.front() & serialRxMask_;
     hostRx_.pop_front();
-    // Récepteur coupé (RSR bit0 = Receiver Enable) : l'octet se perd, comme sur
-    // le fil — même porte que le bouclage (cf. write8 case 0x2F).
-    if (timer_[0x2B] & 0x01) {
-        // Comme le bouclage : le registre RX plein garde l'ancien octet.
-        // Hatari RS232_Update refuse aussi d'écraser un ByteReceived non lu.
-        // Seul RXERR est déclenché pour l'octet perdu, pas une nouvelle RXFULL.
-        if (rxFull_) { rxOverrun_ = true; raise(SRC_RXERR); }
-        else {
-            rxByte_ = b;
-            rxFull_ = true;
-            raise(SRC_RXFULL);
-        }
-    }
+    const int64_t due = sched_ ? sched_->firingDue() : -1;
+    // MC68HC901 §2.10.1/.3 et MAME rc_w : SI/RC externes sont déconnectés
+    // par H/L=11 ; les octets du fil hôte continuent à passer sans remplir RDR.
+    if (!internalSerialLoopback())
+        receiveSerialByte(b, due >= 0 ? due : (sched_ ? sched_->liveNow() : 0));
     scheduleSerialRx(true);
+}
+
+// MC68HC901 §7.2.2 OE et MAME rx_async_frame_complete / REGISTER_UDR :
+// la perte reste invisible tant que RDR n'est pas lu. OE visible bloque ensuite
+// l'assemblage jusqu'à la lecture RSR ; aucun framing physique n'est synthétisé.
+void Mfp::receiveSerialByte(uint8_t byte, int64_t when) {
+    if (!(timer_[0x2B] & 1) || rxOverrun_) return;
+    if (rxFull_) { rxPendingOverrun_ = true; return; }
+    rxByte_ = byte;
+    rxFull_ = true;
+    raiseAt(SRC_RXFULL, when);
 }
 
 // Transport TX asynchrone à deux registres : TDR écrasable, TSR en vol.
 // Le chargement initial est immédiat (phase du front TC non modélisée), puis les
 // fins de caractères gardent une phase rationnelle indépendante du dispatch CPU.
-// Le mode synchrone utilise le repli 8N1 /16 ; BREAK bloque le rechargement,
-// sans produire de forme d'onde.
+// Le mode synchrone utilise le repli 8N1 /16 ; BREAK cadence TXERR et bloque
+// le rechargement, sans produire de forme d'onde ni d'erreur RX synthétique.
 void Mfp::startSerialTx(bool continuation) {
-    if (!sched_ || serialTxBusy_ || !serialTxFull_ || !(timer_[0x2D] & 1) ||
-        (timer_[0x2D] & 8)) return;
-    serialTxByte_ = serialTxHolding_;
+    if (!sched_ || serialTxBusy_ || !(timer_[0x2D] & 1)) return;
     const uint8_t ucr = timer_[0x29];
     const int stops = (ucr >> 3) & 3;
     const int bits = 8 - ((ucr >> 5) & 3);
-    if (stops) serialTxByte_ &= uint8_t((1u << bits) - 1);
     const int halfBits = stops ? 2*(1+bits+((ucr & 4) ? 1 : 0)) +
         (stops == 1 ? 2 : stops == 2 ? ((ucr & 0x80) ? 3 : 2) : 4) : 20;
+    if ((timer_[0x2D] & 8) && stops) {
+        serialTxKind_ = 1; // intervalle BREAK, aucun transfert du TDR
+        scheduleSerialTxHalfBits(halfBits, continuation);
+        return;
+    }
+    if (!serialTxFull_) return;
+    serialTxKind_ = 0;
+    serialTxByte_ = serialTxHolding_;
+    if (stops) serialTxByte_ &= uint8_t((1u << bits) - 1);
+    const int64_t when = continuation ? serialTxCycle_ + (serialTxRemainder_ != 0) : writeEventTime();
+    serialTxFull_ = false;
+    scheduleSerialTxHalfBits(halfBits, continuation);
+    raiseAt(SRC_TXEMPTY, when);
+}
+
+void Mfp::scheduleSerialTxHalfBits(int halfBits, bool continuation) {
     const int divisor = 2457600;
     if (!continuation) { serialTxCycle_ = sched_->liveNow(); serialTxRemainder_ = 0; }
     if (serialTxDivisor_ != divisor) serialTxRemainder_ = 0;
@@ -241,16 +257,9 @@ void Mfp::startSerialTx(bool continuation) {
     const int64_t total = neost::pacing::kCpuHzInt * halfBits * serialClockFactor_ + serialTxRemainder_;
     serialTxCycle_ += total / divisor;
     serialTxRemainder_ = total % divisor;
-    // MC68901UM §7.3.2, MAME REGISTER_TSR/tx_clock : UE ne peut
-    // s'effacer qu'après une période bit. Figer le seuil avec la même phase
-    // exacte que la fin de trame, avant toute reconfiguration du Timer D.
-    {
-        const int64_t bit = neost::pacing::kCpuHzInt * 2 * serialClockFactor_;
-        serialTxFrameClearCycle_ = serialTxCycle_ +
-            (serialTxRemainder_ + bit + divisor - 1) / divisor;
-    }
-    serialTxFull_ = false; serialTxBusy_ = true;
-    raiseAt(SRC_TXEMPTY, continuation ? sched_->firingDue() : writeEventTime());
+    const int64_t bit = neost::pacing::kCpuHzInt * 2 * serialClockFactor_;
+    serialTxFrameClearCycle_ = serialTxCycle_ + (serialTxRemainder_ + bit + divisor - 1) / divisor;
+    serialTxBusy_ = true;
     sched_->schedule(Scheduler::SERIAL_TX, serialTxCycle_ + (serialTxRemainder_ != 0));
 }
 
@@ -269,16 +278,37 @@ void Mfp::finishSerialTx(int64_t when) {
 
 void Mfp::onSerialTxEvent() {
     if (!serialTxBusy_) return;
+    advanceSerialTx(sched_->firingDue());
+}
+
+void Mfp::advanceSerialTx(int64_t when) {
     serialTxBusy_ = false;
-    const int64_t when = sched_->firingDue();
-    if (serialSink_) serialSink_(serialTxByte_);
-    if (loopback_ && (timer_[0x2B] & 1)) {
-        if (rxFull_) { rxOverrun_ = true; raiseAt(SRC_RXERR, when); }
-        else { rxByte_ = serialTxByte_; rxFull_ = true; raiseAt(SRC_RXFULL, when); }
+    if (serialTxKind_ != 0) {
+        const uint8_t kind = serialTxKind_;
+        serialTxKind_ = 0;
+        if (!(timer_[0x2D] & 1)) { finishSerialTx(when); return; }
+        const bool sendBreak = (timer_[0x2D] & 8) && (timer_[0x29] & 0x18);
+        if (kind == 1 && sendBreak) {
+            // MC68HC901 p7-8 (famille68901), MAME mc68901 : TSR inchangé ;
+            // UE et IPR doivent être libres
+            // pour observer chaque frontière normale pendant le BREAK.
+            if (!serialTxUnderrun_ && !(ipra & (1u << (SRC_TXERR & 7)))) raiseAt(SRC_TXERR, when);
+            startSerialTx(true);
+        } else if (serialTxFull_ || sendBreak) startSerialTx(true);
+        else if (!serialTxUnderrun_) {
+            serialTxUnderrunClearCycle_ = serialTxFrameClearCycle_;
+            serialTxUnderrun_ = true; raiseAt(SRC_TXERR, when);
+        }
+        return;
     }
+    if (serialSink_) serialSink_(serialTxByte_);
+    // MAME tc_w sélectionne le mode H/L courant à chaque front, sans latch au
+    // départ. Ici il est évalué à la livraison de l'octet : une commutation au
+    // milieu d'une trame ne reconstruit pas les bits partiels ni leurs erreurs.
+    if (loopback_ || internalSerialLoopback()) receiveSerialByte(serialTxByte_, when);
     if (!(timer_[0x2D] & 1)) {
         finishSerialTx(when);
-    } else if (!serialTxFull_ && !serialTxUnderrun_ && !(timer_[0x2D] & 8)) {
+    } else if (!serialTxFull_ && !serialTxUnderrun_ && !((timer_[0x2D] & 8) && (timer_[0x29] & 0x18))) {
         // MAME tx_clock : UE est mémorisé jusqu'à lecture TSR ou TE=0.
         // Écrire/recharger TDR ne l'efface pas et ne crée pas un nouveau front.
         serialTxUnderrunClearCycle_ = serialTxFrameClearCycle_;
@@ -314,7 +344,9 @@ uint8_t Mfp::read8(uint32_t addr) {
         case 0x13: return imra;
         case 0x15: return imrb;
         // (diag lectures TBDR : cf. case 0x21 ci-dessous)
-        case 0x17: return vr;
+        // MC68HC901 §4.1.3 et MAME REGISTER_VR : bits2..0 inutilisés,
+        // toujours lus à zéro, y compris depuis un ancien état brut sauvegardé.
+        case 0x17: return uint8_t(vr & 0xF8);
         case 0x1B: return tbcr_;     // Timer B control
         case 0x1F: {                          // TADR : compteur VIVANT de Timer A
             const uint8_t r = readTimerData(0);
@@ -357,12 +389,31 @@ uint8_t Mfp::read8(uint32_t addr) {
             // MAME REGISTER_UDR retourne toujours le registre RX, même BF=0.
             // Une lecture vide ne révèle pas le registre TX distinct.
             rxFull_ = false;
+            if (rxPendingOverrun_) {
+                rxPendingOverrun_ = false;
+                rxOverrun_ = true;
+                // OE devient visible et RXERR naît à cette lecture, pas au
+                // caractère perdu : elle ouvre le buffer encore occupé jusque-là.
+                raiseAt(SRC_RXERR, sched_ ? sched_->liveNow() : 0);
+            }
             return rxByte_;
         default:   return timer_[addr & 0x3F];   // autres timers/USART : relisables
     }
 }
 
 void Mfp::write8(uint32_t addr, uint8_t v) {
+    // Les fins TX/BREAK déjà échues précèdent la modification MMIO.
+    bool caughtUpTx = false;
+    if (sched_) while (serialTxBusy_) {
+        const int64_t remaining = sched_->rawCyclesUntil(Scheduler::SERIAL_TX);
+        if (remaining == INT64_MIN || remaining > 0) break;
+        const int64_t when = sched_->liveNow() + remaining;
+        sched_->cancel(Scheduler::SERIAL_TX); advanceSerialTx(when);
+        caughtUpTx = true;
+    }
+    // Élire ces fronts à leur échéance, avant que updateTimers ne traite la
+    // frontière MMIO courante ; TXEMPTY reste daté même hors dispatch.
+    if (caughtUpTx) flushIrqUpdate();
     updateTimers();          // ≙ MFP_UpdateTimers en tête de MFP_*_WriteByte
     switch (addr & 0x3F) {
         case 0x01: gpip = v; break;   // latch des bits de SORTIE (les entrées sont calculées)
@@ -371,7 +422,9 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         // GPIP (0x01) et DDR (0x05) ne peuvent PAS lever de front ici : les bits d'entrée
         // sont calculés (gpipInput, inchangé par ces écritures) et les bits de sortie sont
         // exclus (DDR=1). On ne réévalue donc que sur AER.
-        case 0x03: { const uint8_t aerOld = aer; aer = v;
+        case 0x03: { const uint8_t aerOld = aer;
+                     if (((aerOld ^ v) & 8) && timerBEdgeSink_) timerBEdgeSink_((v & 8) != 0);
+                     aer = v;
                      gpipUpdateInterrupt(gpipInput(), gpipInput(), aerOld, aer); break; }
         case 0x05: ddr  = v; break;
         // Tout changement de IER/IPR/IMR/ISR/VR RÉ-ÉVALUE le signal IRQ (port Hatari :
@@ -395,7 +448,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
             // in-service resté posé bloque les IRQ de priorité inférieure pour
             // toujours.
             const uint8_t oldVr = vr;
-            vr = v;
+            vr = v & 0xF8;
             if ((oldVr & 0x08) && !(v & 0x08)) { isra = 0; isrb = 0; }
             updateIrq(writeEventTime());
             break;
@@ -426,13 +479,18 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                    if (timerCtrl(3) == 0) tdCounter_ = v;
                    updateSerialConfig(); break;   // nouveau diviseur → bauds USART (mfp.c:3311)
         case 0x29: timer_[0x29] = v;                                      // UCR
-                   updateSerialConfig(); break;   // format du mot / prescaler (rs232.c:623)
+                   updateSerialConfig();
+                   if (sched_ && serialTxKind_ == 1 && !(v & 0x18)) {
+                       sched_->cancel(Scheduler::SERIAL_TX);
+                       serialTxBusy_ = false; serialTxKind_ = 0;
+                   }
+                   startSerialTx(false); break;   // UCR synchrone rend B inopérant (MC68901UM §7.3.2)
         case 0x2B:
                    if (!(v & 1)) {
                        // MAME REGISTER_RSR : RE=0 remet le RSR entier à zéro,
                        // sans effacer les données RX ni les IRQ MFP déjà pendantes.
                        timer_[0x2B] = 0;
-                       rxFull_ = rxOverrun_ = false;
+                       rxFull_ = rxOverrun_ = rxPendingOverrun_ = false;
                    } else {
                        // MAME REGISTER_RSR : seuls RE/SS sont contrôlables ;
                        // F/S l'est aussi en synchrone. BF/OE/PE/FE/M/CIP et
@@ -449,7 +507,17 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                        serialTxUnderrun_ = false;
                        if (sched_ && !serialTxBusy_) finishSerialTx(writeEventTime());
                    }
-                   else { serialTxEnd_ = false; startSerialTx(false); }
+                   else {
+                       serialTxEnd_ = false;
+                       if (sched_ && serialTxKind_ == 1 && !((v & 8) && (timer_[0x29] & 0x18))) {
+                           sched_->cancel(Scheduler::SERIAL_TX);
+                           serialTxBusy_ = false; serialTxKind_ = 2;
+                           // Déduction du « end-of-break stop bit » (MC68HC901
+                           // p7-8) : un bit de mark avant TDR/UE. Ancrage MMIO,
+                           // phase TC initiale non modélisée, pas de mesure matérielle.
+                           scheduleSerialTxHalfBits(2, false);
+                       } else startSerialTx(false);
+                   }
                    break;
         case 0x2F:
                    if (sched_) {
@@ -472,21 +540,8 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                        raise(SRC_TXERR);               // canal 9  : underrun (TX idle après envoi)
                        raise(SRC_TXEMPTY);             // canal 10 : buffer d'émission vidé
                    }
-                   // Connecteur de bouclage TxD→RxD : l'octet émis revient en réception
-                   // (RSR Buffer Full + canal 12). Le récepteur ne capte que s'il est
-                   // ACTIVÉ (RSR bit0 = Receiver Enable) — les impressions série normales
-                   // (RE=0) ne génèrent pas de RXFULL parasite (sinon le test clavier au
-                   // boot échoue). Sur buffer PLEIN : overrun, l'octet fautif est PERDU —
-                   // l'ancien code l'écrasait dans le tampon et re-levait RXFULL, là où
-                   // le 68901 (et rs232.c:277 « if !ByteReceived ») garde l'ANCIEN octet.
-                   if (loopback_ && (timer_[0x2B] & 0x01)) {
-                       if (rxFull_) { rxOverrun_ = true; raise(SRC_RXERR); }  // canal 11 — octet perdu
-                       else {
-                           rxByte_ = v;
-                           rxFull_ = true;
-                           raise(SRC_RXFULL);          // canal 12 : octet reçu par le bouclage
-                       }
-                   }
+                   // Le repli instantané conserve les mêmes registres RX/OE.
+                   if (loopback_ || internalSerialLoopback()) receiveSerialByte(v, writeEventTime());
                    break;
         default: timer_[addr & 0x3F] = v; break;      // autres timers/USART : mémorisés
     }
@@ -771,6 +826,11 @@ void Mfp::onTimerExpire(int timer) {
 }
 
 void Mfp::hblank() {
+    const int64_t due = sched_ ? sched_->firingDue() : -1;
+    hblankAt(due >= 0 ? due : (sched_ ? sched_->liveNow() : 0));
+}
+
+void Mfp::hblankAt(int64_t when) {
     // En mode event-count (TBCR bits 0-3 == 0x08), Timer B décompte d'une unité
     // par ligne ; à 0 il recharge et lève l'IRQ Timer B (canal 8) si armée.
     // Pas de garde sur compteur==0 : comme pour le Timer A, data reg 0 vaut 256
@@ -783,9 +843,8 @@ void Mfp::hblank() {
         // TIMER_B servie (firingDue), pas à la frontière de bloc — le délai de
         // 4 cyc vers le CPU court depuis l'événement DE réel, comme les timers
         // délai (cf. onTimerExpire).
-        const int64_t due = (g_mfpExact & 1) && sched_ ? sched_->firingDue() : -1;
-        if (due >= 0) raiseAt(SRC_TIMERB, due);
-        else          raise(SRC_TIMERB);
+        if (g_mfpExact & 1) raiseAt(SRC_TIMERB, when);
+        else                raise(SRC_TIMERB);
     }
 }
 
@@ -815,18 +874,10 @@ void Mfp::timerA_setLineInput(bool bit) {
 // si le canal 15 est activé (IERA bit7). Sur une machine sans son DMA, hasDmaSound_ est
 // faux et ce setter n'est jamais appelé avec une ligne active.
 void Mfp::setXsintLine(bool a) {
-    if (a == xsint_) return;                       // pas de transition
-    if (hasDmaSound_) {
-        const bool pinOld = colorMonitor_ ^ xsint_;    // niveau GPIP7 avant
-        const bool pinNew = colorMonitor_ ^ a;         // niveau GPIP7 après
-        const bool aerBit = (aer & 0x80) != 0;
-        // (ddr & 0x80) == 0 : le front ne compte que si GPIP7 est en ENTRÉE — même
-        // règle que gpipUpdateInterrupt (MFP_GPIP_Set_Line_Input exige DDR=0,
-        // mfp.c:1201). Ce setter court-circuitait le test DDR.
-        if ((ddr & 0x80) == 0 && pinOld != pinNew && pinNew == aerBit)
-            raise(SRC_GPIP7);                          // canal 15 (IERA bit7) si armé
-    }
-    xsint_ = a;
+    // Recomposer la pin entière avant de détecter le front, comme
+    // MFP_GPIP_Set_Line_Input (Hatari mfp.c:1180-1219). Le bouton Multiface
+    // peut maintenir GPIP7 bas malgré une transition du XOR moniteur/XSINT.
+    gpipSetLine(xsint_, a);
 }
 
 // Octet des 8 lignes d'ENTRÉE du GPIP (actives BAS), tel que le voit le détecteur de
@@ -1018,6 +1069,10 @@ uint8_t Mfp::gpipInput() const {
 // GPIP (AER=0 → front 1→0, AER=1 → front 0→1). raise() ne pose l'IPR que si le canal
 // est activé (IER), comme MFP_InputOnChannel.
 void Mfp::gpipUpdateInterrupt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew) {
+    gpipUpdateInterruptAt(gpipOld, gpipNew, aerOld, aerNew, sched_ ? sched_->liveNow() : 0);
+}
+
+void Mfp::gpipUpdateInterruptAt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew, int64_t when) {
     static constexpr int kChan[8] = {0, 1, 2, 3, 6, 7, 14, 15};   // bit GPIP → canal MFP
     const uint8_t stateOld = gpipOld ^ aerOld;
     const uint8_t stateNew = gpipNew ^ aerNew;
@@ -1026,7 +1081,7 @@ void Mfp::gpipUpdateInterrupt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, 
         if ((ddr & m) == 0                          // ligne configurée en ENTRÉE
          && (stateOld & m) != (stateNew & m)        // l'état (GPIP^AER) a basculé
          && (gpipNew & m) == (aerNew & m))          // front ACTIF (AER == niveau GPIP)
-            raise(kChan[bit]);
+            raiseAt(kChan[bit], when);
     }
 }
 

@@ -27,8 +27,9 @@ int testMfpSerial() {
     equal("première IRQ RXFULL", mfp.read8(0xFFFA0B) & 0x18, 0x10);
     mfp.write8(0xFFFA0B, 0); // acquitte les demandes, sans consommer UDR
     deliver(0x72);
-    equal("débordement sans nouvelle IRQ RXFULL", mfp.read8(0xFFFA0B) & 0x18, 0x08);
+    equal("débordement retenu sans IRQ avant UDR", mfp.read8(0xFFFA0B) & 0x18, 0);
     equal("UDR conserve le premier octet", mfp.read8(0xFFFA2F), 0x31);
+    equal("UDR publie IRQ RXERR", mfp.read8(0xFFFA0B) & 0x18, 8);
     equal("UDR ne vide pas l'erreur", mfp.read8(0xFFFA2B), 0x41);
     equal("RSR vide l'erreur", mfp.read8(0xFFFA2B), 1);
     mfp.write8(0xFFFA0B, 0);
