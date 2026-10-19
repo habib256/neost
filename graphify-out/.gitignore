@@ -1,0 +1,6 @@
+# Caches et sauvegardes locales ; garder les vues et les exclusions reproductibles.
+/cache/
+/20??-??-??/
+/manifest.json
+/.graphify_*
+!/.graphify_build.json

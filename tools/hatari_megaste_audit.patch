@@ -1,0 +1,25 @@
+--- a/src/blitter.c
++++ b/src/blitter.c
+@@ -341,7 +341,7 @@
+  */
+ static void Blitter_AddCycles(int cycles)
+ {
+-	int all_cycles = cycles + WaitStateCycles;
++	int all_cycles = (cycles << nCpuFreqShift) + WaitStateCycles;
+ 
+ 	BlitterVars.op_cycles += all_cycles;
+ 	BlitterVars.total_cycles += all_cycles;
+--- a/src/m68000.c
++++ b/src/m68000.c
+@@ -749,9 +749,8 @@
+ 	else
+ 		M68000_ClearIRQ ( 5 );
+ 
+-	if ( pendingInterrupts )
+-		doint();
+-	else
++	doint();
++	if ( !pendingInterrupts )
+ 		M68000_UnsetSpecial ( SPCFLAG_INT | SPCFLAG_DOINT );
+ 
+ 	/* Temporary case for WinUAE CPU handling IPL in CE mode */

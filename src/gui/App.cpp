@@ -430,6 +430,7 @@ bool App::midiLearnUids() {
 // Le disque monté est conservé.
 void App::applyConfig() {
     App& A = *this;
+    A.desktopPointer.reset();
     Machine& machine = *A.machine;
     Config& cfg = A.cfg;
     const std::string& exeDir = A.exeDir;
@@ -472,7 +473,7 @@ void App::applyConfig() {
 }
 
 // ─── Bascule GUI ⇄ kiosk à chaud ────────────────────────────────────────
-// Le kiosk n'est plus seulement un drapeau de lancement : F8 (ou le menu
+// Le kiosk n'est plus seulement un drapeau de lancement : Ctrl+Alt+F (ou le menu
 // « Machine », ou l'action DESKTOP MODE du menu borne) fait l'aller-retour sans
 // relancer l'application. La MACHINE traverse la bascule intacte :
 // 1. instantané mémoire (Machine::saveState) AVANT de toucher à quoi que ce soit ;
@@ -520,6 +521,7 @@ void App::toggleFullscreen() {
         glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, fullscreen ? GLFW_TRUE : GLFW_FALSE);
     glfwSetInputMode(window, GLFW_CURSOR, fullscreen ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     if (ikbd) ikbd->mouseEvent(0, 0, false, false);
+    desktopPointer.reset();
     mouseAccX = mouseAccY = 0;
     glfwGetCursorPos(window, &lastMx, &lastMy);
     emuNext = std::chrono::steady_clock::now();
@@ -537,8 +539,10 @@ void App::switchKioskMode(bool on) {
     bool& kbdJoyDesk = A.kbdJoyDesk;
     keyboardWindowReleaseAll(machine.ikbd);   // rien ne reste enfoncé à travers la bascule
     if (on == A.kiosk) return;
+    A.desktopPointer.reset();
+    machine.ikbd.mouseEvent(0, 0, false, false);
     std::vector<uint8_t> snap;
-    machine.saveState(snap);                 // (1) instantané
+    if (!machine.saveState(snap)) return;    // (1) instantané, avant toute destruction GUI
 
     if (on) {
         // GUI → KIOSK. La config est GELÉE en kiosk : on persiste d'abord l'état
@@ -561,7 +565,7 @@ void App::switchKioskMode(bool on) {
         // saveConfig venait d'enregistrer, sont perdues sans le moindre message.
         // ⚠ MAIS seulement si le saveConfig ci-dessus a réellement écrit : lancé
         // en --kiosk (A.kioskLaunched), il est un no-op — remplacer quand même la
-        // référence pristine par la cfg salie pendant l'excursion bureau (F8)
+        // référence pristine par la cfg salie pendant l'excursion bureau (Ctrl+Alt+F)
         // ferait persister la machine du visiteur au premier save forcé
         // (auto-purge ROM, réaffectation manette) : l'exact contraire du gel.
         if (!A.kioskLaunched) A.cfgPristine = cfg;
@@ -634,8 +638,8 @@ void App::switchKioskMode(bool on) {
     // de trames + saut de souris d'un demi-écran à la reprise.
     emuNext = std::chrono::steady_clock::now();
     glfwGetCursorPos(window, &lastMx, &lastMy);
-    A.stateMsg = A.kiosk ? "\xef\x84\x88 Kiosk mode (F8 to go back)"
-                         : "\xef\x84\x88 Desktop mode (F8 for the kiosk)";
+    A.stateMsg = A.kiosk ? "\xef\x84\x88 Kiosk mode (Alt+Enter to go back)"
+                         : "\xef\x84\x88 Desktop mode (Alt+Enter for full screen)";
     A.stateMsgFrames = 120;
     std::fprintf(stderr, "[kiosk] switched → %s\n", A.kiosk ? "KIOSK" : "DESKTOP");
 }

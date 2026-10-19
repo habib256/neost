@@ -44,7 +44,7 @@ RE_SR  = re.compile(r'\bSR\s*[= ]\s*([0-9A-Fa-f]{1,4})\b')
 
 class Insn:
     """Une instruction : PC, texte brut (1re ligne), registres et cycle éventuels.
-    `cyc` = horloge ABSOLUE (NeoST busClockNow / Hatari CyclesGlobalClockCounter)
+    `cyc` = horloge ABSOLUE (NeoST Scheduler liveNow / Hatari CyclesGlobalClockCounter)
     si la trace la porte, sinon None."""
     __slots__ = ('pc', 'text', 'regs', 'cyc')
 
@@ -152,6 +152,7 @@ def report_periods(a, b, pcs, col):
         hstr = ' '.join(f"{d}×{n}" for d, n in hb[:3]) or '—'
         if nmode is None or hmode is None:
             verdict, c = 'ABSENT', '1;33'
+            rc = 1
         elif nmode == hmode:
             verdict, c = f'OK ({nmode})', '1;32'
         else:

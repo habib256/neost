@@ -6,6 +6,327 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## NO_SYNC/SYNC_HIGH : sondes ST/STE et gardes d'annulation (2026-10-19)
+
+- Confronter les branches NO_SYNC/SYNC_HIGH et leurs annulations au pin
+  Hatari : elles sont déjà portées, aucun changement du code d'exécution.
+- Étendre `make_blankline_test.py` avec huit sondes de boot : deux tricks et
+  leurs annulations, sur ST/STE. Le motif RAM distingue une ligne simplement
+  masquée d'une avance vidéo indue ; la ligne ajoutée en bas est visible.
+- Ajouter 52 contrôles Glue : masque NO_DE/NO_COUNT conservé après un retour
+  hi→lo sur la ligne suivante, stride nul puis normal, Timer B inhibé,
+  extension/annulation basse, total de 32 000 octets et accord live/replay.
+  Les deux grilles passent (156/157 contrôles), STE : 157.
+- Trois mutations rejetées : extension perdue (8 sondes), extension non
+  annulée (4), NO_COUNT ignoré lors du retour hi→lo (2). Les témoins annulés
+  réécrivent la même couleur pour exposer l'extension résiduelle au pixel,
+  sans changer les références correctes ni les huit anciennes disquettes.
+- Les huit oracles correspondent à zéro pixel et sont redérivés identiques
+  lors d'un second passage `--oracle-check`. Palier `full` réussi : 38 étalons
+  pixel disponibles, contrôles logiques/temporels et boot GUI de 400 trames.
+  Cubase Lite, diagnostic MegaSTE et quatre étalons propriétaires restent
+  non exécutés faute de médias. Graphify et wiki actualisés localement.
+- La concordance comparative ne tranche pas les signaux physiques HSYNC/VDE
+  ni la couleur du blanking ; mesure sur Atari toujours ouverte.
+
+## Lignes masquées : appliquer NO_DE et STOP_MIDDLE sans palette (2026-10-19)
+
+- Corriger le déclenchement du rendu final : une ligne masquée sans écriture
+  palette ni bordure élargie conservait ses pixels nominaux, malgré une avance
+  vidéo correcte. Les masques déclenchent maintenant le replay Glue ; le
+  signal d'extension utilisé par le cadrage adaptatif est conservé.
+- Ajouter onze contrôles Glue : stride BLANK/NO_DE/STOP_MIDDLE, pixels et
+  absence d'extension. Deux assertions échouent avant correction dans chacune
+  des deux grilles ; 104/105 contrôles passent après, et 105 sur STE.
+- Nouveau générateur libre `make_blankline_test.py` : BLANK, NO_DE, impulsion
+  tardive discriminant STF/STE et STOP_MIDDLE, soit huit sondes sur EmuTOS PAL.
+  Six correspondent à Hatari à zéro pixel ; STOP_MIDDLE reste en snapshot,
+  avec trois pixels de résidu au dernier groupe de plans sur ST comme STE.
+  Aucun réglage pour absorber cet écart sans preuve matérielle.
+  NO_SYNC/SYNC_HIGH et la couleur physique du blanking restent à qualifier.
+- Trois mutations rejetées : ancien déclenchement (4 sondes), BLANK figé
+  (2), NO_DE avançant (4). Les six références oracle sont redérivées sans
+  changement lors d'un second passage `--oracle-check`.
+- Le palier `full` valide les contrôles d'émulation, les 30 étalons pixel
+  disponibles et le boot GUI de 400 trames. Son unique échec était le compteur
+  du manifeste resté à 26 : corrigé à 34, contrôle des chiffres relancé et
+  réussi ; ancres documentaires valides. Cubase Lite, diagnostic MegaSTE et
+  quatre étalons propriétaires restent non exécutés faute de médias.
+
+## Bordure basse : garde du rendu après effacement RAM (2026-10-19)
+
+- Vérifier le prochain point vidéo de la feuille de route : la capture live
+  du retrait bas était déjà portée, via le commit HBL et le replay des captures.
+- Ajouter six contrôles Glue : capture à la ligne 280, conservation des pixels
+  après effacement RAM et idempotence du commit, avec/sans retrait bas.
+  Les deux grilles passent ; limiter les captures aux lignes actives fait
+  échouer les contrôles de capture et de pixels dans les deux variantes.
+- Corriger les entrées périmées de la feuille de route (capture basse et BL5).
+  Aucun changement du comportement d'exécution ni nouvelle preuve matérielle.
+- Validation : Glue ST avec les deux grilles (93/94 contrôles), STE (94),
+  contrôles headless et étalons disponibles du palier `full` réussis. Le boot
+  GUI bloqué par les services macOS sous sandbox a été interrompu puis rejoué
+  hors sandbox : 400 trames, capture non uniforme valide. Le rapport `full`
+  initial conserve cet échec de lancement. Cubase Lite, diagnostic MegaSTE
+  et quatre étalons pixel propriétaires non exécutés faute de médias.
+
+## IACK MegaSTE : expérience d'horloge et sonde matérielle (2026-10-19)
+
+- Isoler le domaine d'horloge de l'attente MFP dans une copie diagnostique
+  d'Hatari : le résidu IACK→handler passe de +11/+12 à +3/+4 cycles bus à
+  16 MHz. Douze configurations, deux captures par cible et 64 copies retenues.
+  Aucune constante ni code d'exécution NeoST modifié pour forcer l'égalité.
+- Ajouter `make_mfp_iack_probe.py` : PRG TOS relogeable, disquette AUTO et
+  cartouche de contrôle, trois phases 8 MHz / 16 MHz / 16 MHz avec cache.
+  Timer A et première écriture palette du handler servent de repères.
+  `run_mfp_iack_probe.py` vérifie les 72 IRQ par phase et la fin du programme
+  via cartouche et AUTO MegaSTE ; le refus explicite sur ST et STE passe.
+  Trois gardes supplémentaires refusent les faux succès des rapports.
+- Le [protocole de capture](docs/MFP_IACK_MEASUREMENT.md) sépare réponse
+  DTACK du MFP, synchronisation de carte et accès CPU. Mesure sur Atari réel
+  toujours en attente ; aucun nouveau fichier de référence temporelle.
+
+## Cuddly Fullscreen, diagnostic CPU et Alt+Entrée (2026-10-19)
+
+- Corriger la géométrie vidéo à la VBL : une impulsion hi-res de bordure
+  traversant X=0 faisait alterner trames PAL et mono dans Cuddly Fullscreen.
+  La VBL anticipée de 48 032 cycles interrompait le rendu utilisant A7 comme
+  table et provoquait une double faute. La partie autonome passe désormais
+  1 800 trames sans halt. Six contrôles de transition PAL/mono échouent avant
+  correction et passent après ; les véritables modes mono sont conservés.
+- Le diagnostic CPU conserve aussi les erreurs d'adresse et les fautes
+  imbriquées. L'ancienne bannière de Cuddly accusait une sonde blitter du boot,
+  sans rapport avec le plantage. Reset efface ce diagnostic.
+- Supprimer F8 des raccourcis hôte : la touche rejoint le clavier Atari.
+  Alt+Entrée reprend l'Atari depuis le menu borne et conserve ailleurs la
+  bascule plein écran. Appui, répétition, relâchement et Ctrl+Alt+F vérifiés.
+- Palier `full` réussi sur les médias disponibles, GUI incluse, Closure et
+  NoCooper à zéro pixel d'écart ; mêmes médias absents que ci-dessous.
+  Selftest : 613 OK, 0 FAIL ; 207 contrôles CPU/blitter et 399 contrôles
+  machine/FDC/VBL passent. L'écart IACK MegaSTE reste à mesurer sur matériel.
+
+## Préfetch après SR et retour F8 (2026-10-19, remplacé ci-dessus)
+
+- 68000 : recharger les deux mots de préfetch après MOVE vers SR, selon la
+  transcription du microcode matériel. L'ancien code relisait deux fois le
+  second mot et conservait un opcode périmé. Deux régressions reproduites
+  avant correction ; 203 contrôles CPU/blitter passent après correction.
+  Les fenêtres CPU partagées MegaSTE à 16 MHz concordent, cache inclus.
+  La latence IACK MFP reste à qualifier sur matériel.
+- F8 ferme le menu borne et reprend directement l'Atari. Hors menu, il garde
+  sa bascule bureau/borne ; Ctrl+Alt+F reste disponible pour cette bascule.
+- Palier `full` réussi sur les médias disponibles, GUI comprise ; Closure
+  et NoCooper : zéro pixel d'écart. Cubase Lite, diagnostic MegaSTE et quatre
+  étalons pixel propriétaires restent non exécutés. Les 21 tests des
+  comparateurs passent ; les callbacks F8 (menu, hors menu, relâchement,
+  répétition) et Ctrl+Alt+F ont été vérifiés dans un harnais local.
+
+## MegaSTE : cycles CPU internes après IACK (2026-10-19)
+
+- Corriger la conversion d'horloge des quatre cycles internes après IACK :
+  ils restent des cycles CPU à 16 MHz. Les attentes périphériques restent en
+  cycles bus. MFP : 36 cycles CPU au lieu de 40 pour le bloc courant ; même
+  séparation pour HBL/VBL, avec résultats à 8 MHz conservés.
+- Deux échecs vidéo reproduits avant correction, zéro après ; 199 contrôles
+  CPU/blitter sous ASan/UBSan. Le banc MegaSTE v3 contrôle aussi les 72 blocs
+  IACK de chaque capture NeoST : huit configurations à 16 MHz échouent avant
+  correction. Les 21 tests des comparateurs passent.
+- L'alignement RAM masque ce gain dans les dates des douze copies mesurées.
+  La qualification temporelle globale reste ouverte, sans compensation ajoutée
+  pour rejoindre Hatari modifié. Détails : `docs/HATARI_MEGASTE_AUDIT.md`.
+- Palier `full` réussi sur les médias disponibles, GUI 400 trames comprise.
+  Cubase Lite, diagnostic MegaSTE et quatre étalons pixel propriétaires restent
+  non exécutés faute de médias.
+
+## Blitter : cohérence BUSY/GPU_DONE et validation matérielle (2026-10-19)
+
+- Maintenir BUSY jusqu'à la restitution du bus et le changer avec GPU_DONE.
+  NeoST exposait pendant quatre cycles BUSY=0 et une ligne MFP encore active.
+  Quatre cas reproduisent le défaut avant correction (CPU 8/16 MHz, HOG/partagé).
+- La sonde MegaSTE v2 refuse une IRQ pendant BUSY directement dans le handler,
+  même si les comptes et les bornes semblent corrects. Les douze configurations
+  NeoST passent ; le pin Hatari conserve dix échecs, dont six pièges IRQ/BUSY.
+- Le vrai Atari prime dans les documents de référence ; la concordance Hatari
+  ne suffit pas à valider un comportement. La garde BUSY s'appuie sur le manuel
+  Atari du blitter. Les écarts temporels globaux restent à qualifier.
+
+## MegaSTE : PRE_START et audit global blitter/IRQ (2026-10-19)
+
+- Corriger le démarrage blitter à 16 MHz : cinq cycles bus depuis le callback
+  médian de l'écriture CPU, au lieu de sept ; six à 8 MHz. Quatre échecs avant
+  correction, zéro après, 127 contrôles CPU/blitter réussis sous ASan/UBSan.
+- Nouveau banc `run_megaste_blitter_checks.py`, intégré à `full` : douze
+  configurations HOG/partagé, ROM/RAM, 8/16 MHz et cache. Deux captures par
+  cible, données et IRQ vérifiées, 64 mesures soumises à des bornes physiques.
+  Les douze cas NeoST passent ; 18 tests des comparateurs réussissent.
+- Audit indépendant du pin Hatari : cycles DMA non convertis à 16 MHz et IPL
+  CPU périmé en mode partagé, confirmé aussi à 8 MHz. Dix cas canoniques
+  échouent ; aucune référence temporelle n'en est tirée. Deux corrections
+  diagnostiques isolées rétablissent les bornes, avec des écarts résiduels
+  d'environ 12–24 cycles. Détails : `docs/HATARI_MEGASTE_AUDIT.md`.
+- `full` passe sur les données disponibles, GUI 400 trames comprise ; Cubase
+  Lite, diagnostic MegaSTE et quatre étalons pixel propriétaires restent absents.
+
+## MegaSTE 16 MHz : bornes bus et cohérence cache/DMA (2026-10-19)
+
+- Aligner les misses RAM au **début** du cycle CPU 16 MHz, avant SYNC(2),
+  comme `wait_cpu_cycle_*_megaste_16` d'Hatari. Les quatre cycles CPU
+  supplémentaires du bus RAM passent par `sync`, sans saut direct de l'horloge.
+  Byte, word, long et write-through conservent leur largeur réelle dans le hook.
+- Choisir hit/miss avant les cycles et conserver la valeur d'un hit déjà lu :
+  une tranche blitter peut invalider le cache et remplacer la RAM pendant
+  l'accès. Invalider le cache **avant** les cycles d'arbitrage du blitter,
+  afin que les événements servis pendant ceux-ci ne voient pas un cache périmé.
+- Nouveau banc libre `run_megaste_bus_oracle.py` : **11 sondes**, 64 mesures
+  après huit échauffements, données vérifiées. Égalité exacte contre deux
+  captures Hatari identiques ; intervalles CPU 16 MHz divisés par deux pour
+  comparer aux cycles bus 8 MHz de NeoST. Références publiques, intégrées au
+  palier `full` et à la CI oracle, sans IRQ ni DMA dans ces sondes CPU/cache.
+- **95 contrôles** CPU/blitter réussis sous ASan/UBSan, dont les quatre phases
+  RAM, les voies byte/word/long, le write-through et le hit chevauchant la DMA.
+  Le mutant rétablissant l'ancien alignement/relecture échoue neuf fois ; celui
+  invalidant le cache après l'arbitrage échoue une fois. Quatorze tests des
+  comparateurs réussis, incluant refus d'un cycle d'écart et du facteur deux.
+- Palier `full` vert : 613 verdicts logiques, 17 sondes temporelles STE conservées,
+  11 sondes MegaSTE, étalons disponibles et GUI 400 trames. Cubase Lite,
+  diagnostic MegaSTE et quatre étalons pixel propriétaires non exécutés faute
+  de médias. La comparaison temporelle globale blitter/IRQ à 16 MHz reste
+  ouverte : les prototypes Hatari ont produit des IRQ supplémentaires et une
+  incompatibilité de domaine temporel DMA à examiner, aucune exception admise.
+
+## Blitter RAM et HOG : résidu pixel BL5 clos (2026-10-19)
+
+- **68 → 0 pixel** contre Hatari sur `blitter_timer` : les 100 valeurs TADR
+  et les données copiées concordent. Le hook avant accès reçoit l'adresse de
+  chaque mot et aligne le début du cycle RAM, avant SYNC(2). L'alignement au
+  callback médian ajoutait une attente après une tranche blitter ; les traces
+  isolaient quatre cycles supplémentaires par copie. Aucune compensation ajoutée.
+- HOG passe par PRE_START comme le partagé : reprise sous-instruction, verrou
+  TAS et recouvrement CPU communs. Le budget reste illimité jusqu'à la fin du
+  transfert. Le banc de puce nue avec Scheduler attend désormais cette échéance.
+- `blitter_timer` promu en **oracle** : PNG produit par Hatari au pin f0736b24,
+  ancien snapshot retiré, deux captures Hatari identiques et redérivation des
+  deux étalons blitter réussie à zéro pixel.
+- Banc temporel étendu de 12 à **17 sondes** : HOG MULU, démarrage TAS dans les
+  deux modes et mêmes programmes exécutés en RAM ST. Fin observée à +4 cycles,
+  IRQ à +2 en ROM / +4 en RAM, travail CPU identique ; bornes ±4 conservées.
+  Dix tests du comparateur et 66 contrôles TAS/reprise sous ASan/UBSan réussis.
+  Un mutant rétablissant l'alignement médian échoue sur la sonde RAM (+8 cycles,
+  borne ±4), ce qui vérifie le garde-fou contre cette régression.
+  Palier `full` réussi : 613 verdicts logiques, étalons disponibles et boot GUI
+  400 trames. Cubase Lite, diagnostic MegaSTE et quatre étalons pixel propriétaires
+  non exécutés faute de médias. MegaSTE 16 MHz/cache reste à qualifier.
+
+## Blitter partagé : reprise CPU, bornes bus et traces strictes (2026-10-19)
+
+- L'écart synthétique partagé **+60 cycles / IRQ +42 / trois tours CPU** est
+  corrigé. Cinq sondes blitter (HOG, partagé 16×1/8/16 mots et MULU), 64 copies
+  chacune : fin observée **+4 cycles**, IRQ **+2**, travail CPU identique à
+  Hatari. Douze sondes au total passent la même politique stricte par défaut,
+  sans exception KNOWN et sans décalage ajouté aux références Hatari.
+- PRE_START est servi pendant l'instruction, par un dispatch ciblé du blitter.
+  Hooks Moira avant/après chaque cycle bus, exclusion de l'accès pendant lequel
+  la tranche a commencé, recouvrement CPU interne jusqu'au prochain accès.
+  Traduction du callback d'écriture placé au milieu du cycle Moira (deux cycles
+  déjà consommés). GPU_DONE émis après restitution du bus. Le rebase préserve
+  le dispatch DMA par accès de BL4 sans double facturation du quantum.
+- Verrou TAS mémoire explicite, libéré avant préfetch et sur exception ; le
+  helper PRE_START ne sert pas les autres sources, la DMA les sert à son rythme
+  par accès comme auparavant. Le crédit CPU/blitter est sauvegardé en **v49**,
+  avec rejet explicite des v48 et antérieures. Test réel TAS D0 → snapshot →
+  BRA ; le mutant sans sauvegarde de crédit perd deux cycles et échoue.
+- Trace émise par `willExecute`, avant l'instruction réelle. L'ancien appel
+  après `execute()` créait de fausses entrées sur IRQ/STOP et comptait parfois
+  deux fois un PC au retour de RTE. Registres, dates et compteurs décrivent
+  désormais les instructions réellement exécutées.
+- Étalon pixel `blitter_timer` : comparaison contemporaine, ancienne référence
+  **259 px** contre Hatari, nouvelle capture **68 px** (33 lignes TADR, un tick,
+  données copiées identiques). Deux oracles successifs identiques à zéro pixel.
+  Snapshot NeoST reposé avec cette justification ; résidu BL5 pixel et
+  recouvrement du chemin HOG encore ouverts, aucune promotion en oracle.
+- Validation : douze sondes Hatari strictes, dix tests du comparateur et
+  33 contrôles blitter sous ASan/UBSan réussis. Palier `full` vert sur les
+  données disponibles ; Cubase Lite, diagnostic MegaSTE et quatre étalons
+  pixel propriétaires non exécutés faute de médias redistribuables.
+
+## Horodatage MFP clarifié, sondes vidéo/FDC/blitter ajoutées (2026-10-19)
+
+- **Les 38 cycles initiaux MFP étaient un artefact d'horodatage.** Le compteur
+  Moira inclut les 40 cycles de reset, hors Scheduler, puis le rebase IACK
+  absorbe cette différence. Une soustraction armement→première IRQ traversait
+  deux repères. `Tracer` utilise désormais `Cpu68k::traceClockNow`, dans le
+  domaine Scheduler. Aucun changement du timing matériel des timers : écart
+  réel mesuré de 2 cycles sur les quatre sondes, borne ramenée de 40 à 4.
+- **Timer B événement vidéo** : 256 IRQ sur les fronts DE, après deux VBL de
+  stabilisation PAL. Phase identique à Hatari, première IRQ à +2 cycles.
+- **DMA FDC** : lecture physique d'un secteur synthétique de 512 octets,
+  32 rafales de 16 octets, contrôle intégral des données/statut WD1772 et
+  IRQ de fin. Dates des rafales et travail CPU entre elles identiques à Hatari ;
+  dernière rafale→IRQ à −2 cycles. Borne de poll 24 cycles, IRQ 4 cycles,
+  compte des tours CPU exact pour détecter aussi une perte du stall.
+- **Blitter** : 64 copies 16×8 mots HOG et partagées, après huit échauffements,
+  vérification des données, durée, IRQ GPIP3 et tours de poll CPU. HOG à
+  +4 cycles (IRQ +2) ; partagé à **+60 cycles, IRQ +42, trois tours CPU de plus**.
+  Ce résidu BL5 est affiché **KNOWN**, avec une garde séparée précise ;
+  `--strict` le refuse. Sa cause reste ouverte, sans calage matériel.
+- Neuf sondes, références Hatari au pin vérifiées par deux captures identiques,
+  schéma de références v2, empreintes FDC/blitter/disquette synthétique ajoutées.
+- Validation : dix tests du comparateur, redérivation oracle et palier `full`
+  réussis selon la politique **KNOWN** documentée ; `--strict` échoue bien sur
+  le seul cas blitter partagé. 613 verdicts logiques verts, cycle-bench inchangé,
+  étalons pixel disponibles à 0 différence et boot GUI réussi. Cubase Lite et
+  diagnostic MegaSTE sautés faute de données propriétaires.
+
+## Références temporelles Hatari : timers et son DMA STE (2026-10-19)
+
+- Cinq cartouches synthétiques libres, pré-TOS : timers MFP A/B/C/D avec
+  prescalers différents et son DMA STE répétitif (fin de tampon → TAI).
+  Référence : Hatari `f0736b24`, CPU cycle-exact à 8 MHz, EmuTOS 256 Ko FR.
+- 256 entrées IRQ par sonde après 32 interruptions de stabilisation : période
+  dominante, phase cumulée et première IRQ depuis l'armement. Résolution
+  explicitement bornée à 4 cycles pour les timers et 512 pour le son DMA ;
+  démarrage MFP avec écart mesuré de 38 cycles, borne séparée de 40 cycles.
+- Références générées uniquement depuis deux captures Hatari identiques ;
+  empreintes des cartouches, de la ROM et des sources Hatari enregistrées.
+  Contrôle NeoST au palier `full`, redérivation non destructive en CI oracle.
+- Comparateur éprouvé par mutations (IRQ perdue, dérive lente, première IRQ
+  retardée) et traces incomplètes ; `trace_diff --periods` refuse un repère absent.
+  DMA disquette et contention blitter restent hors de ce banc.
+- Validation : cinq sondes (1 280 entrées IRQ) vertes en redérivation Hatari,
+  sept tests du comparateur réussis et palier `full` réussi, avec les étapes
+  Cubase Lite et diagnostic MegaSTE sautées faute de données propriétaires.
+
+## Reprise GEMDOS HD et souris Desktop (2026-10-19)
+
+- **A13** : handles GEMDOS restaurés avec leur numéro, mode, basepage,
+  position et Fforce ; chemins courants, caches de recherches DTA et suivi
+  Pexec également repris. Réouverture sans troncature, y compris Fcreate.
+  Fichiers ouverts vérifiés par taille/horodatage, montage identique exigé,
+  chemins confinés. Descripteurs préparés puis remplacés en une fois après
+  validation de tout l'état ; échec = RAM/puces/handles courants conservés.
+  Save échoué signalé au GUI et au serveur, ancien slot serveur conservé.
+- **Souris Desktop** : option Input `Desktop mouse (GEM, no capture)`,
+  persistée (`desktop_mouse=1`). Repérage unique du tableau ABI Line-A en
+  RAM, sans adresse propre à un TOS ni écriture directe de ses variables.
+  Coordonnées tenant compte du zoom, des UV, des bordures et de la courbure
+  CRT ; retour de position GEM et paquets IKBD pour l'alignement. Clics mis
+  en file à leur position, relâchement hors image, annulation à la perte de
+  focus et aux changements de mode. Capture relative toujours disponible.
+- **Format v48** : état GEMDOS ajouté en fin de flux ; v47 et antérieurs
+  refusés explicitement. Le contenu des fichiers hôtes reste hors snapshot :
+  une modification des fichiers ouverts empêche de reprendre l'ancien état.
+- **Validation ciblée** : reprise dans une instance neuve, handles réutilisés,
+  modes rb/rb+/wb+, Fforce, DTA, Pexec, fichier absent/modifié et rollback tardif ;
+  géométrie et clics, pilote EmuTOS réel couleur/mono. Probe GUI isolée réussie :
+  dessin/hover, callbacks GLFW, position GEM, curseur non capturé et relâchement
+  hors image. Source ABI : EmuTOS `bios/lineavars.S`, `vdi/vdi_asm.S`.
+- **Validation finale** : 81 contrôles GEMDOS et 64 souris, tous verts sous
+  ASan/UBSan avec Machine/GemdosHd instrumentés. Compilation et 613 verdicts
+  logiques réussis ; palier `full` vert, dont 22 références pixel inchangées
+  et démarrage GUI. Véritable état v47 antérieur refusé explicitement.
+  Quatre étalons propriétaires, Cubase Lite et diagnostic MegaSTE sautés
+  faute de données locales. Ancres, chiffres, inventaire des variables et diff verts.
+
 ## IRQ clavier : échéance série conservée jusqu’au MFP (2026-10-19)
 
 - **Datation** : GPIP4 suit désormais le cycle TDR→TSR et le stop RX,

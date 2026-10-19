@@ -52,6 +52,30 @@ int testMachineFdcMediaVbl() {
         ++failures;
         std::fprintf(stderr, "[machine-fdc-media-vbl] FAIL %s: %d != %d\n", label, got, wanted);
     };
+    // Impulsion RES chevauchant le début de trame mais terminée avant le
+    // signal VBL. Le fullscreen de Cuddly expose ce cas : une trame mono
+    // parasite avançait la VBL de 48032 cycles et écrasait sa pile de pixels.
+    for (bool towardMono : {false, true}) {
+        Rig rig;
+        rig.machine->runFrame(); // termine la trame déjà commencée par le Rig
+        rig.video(towardMono ? 0 : 2);
+        const int64_t start = rig.machine->sched.now();
+        rig.machine->sched.setCallback(Scheduler::SERIAL_RX, [&] {
+            rig.video(towardMono ? 2 : 0);
+        });
+        rig.machine->sched.schedule(Scheduler::SERIAL_RX, start + 20);
+        rig.machine->runFrame();
+        const auto g = rig.machine->shifter.geometry();
+        eq("géométrie échantillonnée au signal VBL",
+           g.cyclesPerLine == (towardMono ? 224 : 512)
+           && g.linesPerFrame == (towardMono ? 501 : 313), true);
+        const int64_t elapsed = rig.machine->sched.now() - start;
+        const int64_t expected = towardMono ? 112224 : 160256;
+        eq("fin de trame suit la nouvelle géométrie",
+           elapsed >= expected - 12 && elapsed <= expected + 12, true);
+        eq("fréquence affichée suit la trame verrouillée",
+           rig.machine->shifter.refreshHz() == (towardMono ? 71 : 50), true);
+    }
     std::filesystem::path work;
     bool made = false;
     for (int n = 0; n < 1000 && !made; ++n) {

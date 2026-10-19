@@ -1,7 +1,8 @@
 # Divergences NeoST ↔ Hatari — cartographie pour corrections futures
 
-**But.** Inventaire des écarts entre NeoST et la **source de vérité Hatari**, sous-système par
-sous-système, pour prioriser les corrections futures. Chaque écart est ancré `fichier:ligne`
+**But.** Inventaire des écarts entre NeoST et la **référence comparative Hatari**,
+sous-système par sous-système, pour prioriser les corrections futures. Le
+comportement du vrai Atari prime : un écart peut venir d’un défaut d’Hatari. Chaque écart est ancré `fichier:ligne`
 des deux côtés, classé par sévérité (**haute** = casse logiciels/boot · **moyenne** = fidélité
 visible · **basse** = cas-limite/cosmétique) avec son impact connu.
 
@@ -47,6 +48,63 @@ de contradiction avec les sections historiques.
 
 ---
 
+## Lignes NO_DE et STOP_MIDDLE sans palette — corrigé le 2026-10-19
+
+**Sévérité moyenne, défaut NeoST démontré.** `Shifter::finishFrame` ne lançait
+`renderGlueFrame` que pour une bordure élargie, une écriture palette ou un
+VBlank couvrant l'aire normale. Les masques NO_DE/STOP_MIDDLE calculés par la
+Glue restaient donc invisibles sur une trame sans ces déclencheurs, malgré
+une avance mémoire correcte. Le boot généré `blankline_node_st` différait
+de toutes les 61 captures Hatari de la fenêtre 350–410 (157 pixels sur la
+ligne masquée pour la capture 380). Le défaut est aussi reproduit par deux
+assertions de pixels dans chaque variante de grille Glue.
+
+Le rendu final est désormais déclenché par NO_DE/BLANK/STOP_MIDDLE aussi.
+`bordersTrick_` conserve son sens d'extension pour le cadrage adaptatif.
+La référence comparative est `Video_CopyScreenLineColor` dans `video.c` au
+pin `f0736b24` : NO_DE saute la lecture et l'avance RAM, BLANK efface après
+lecture, STOP_MIDDLE raccourcit la quantité lue. Onze contrôles Glue et les
+sondes `blankline_*` protègent ces différences. `BORDERMASK_EMPTY_LINE` et
+`BORDERMASK_BLANK_LINE` sont déclarés mais plus produits à ce pin : aucun
+port de leurs branches mortes. L'usage de palette 0 pour masquer reste une
+convention d'émulateur ; sa couleur physique attend une mesure sur Atari.
+
+**Résidu STOP_MIDDLE ouvert, sévérité basse.** Les deux captures ST/STE
+diffèrent de Hatari sur trois pixels au dernier groupe de plans, premier
+écart `(156,65)` du buffer 416×276. Chacune des 61 captures Hatari 350–410
+est identique. `Video_CopyScreenLineColor` recopie 54 octets puis efface la
+suite du buffer planaire, laissant décoder un dernier groupe partiel ;
+NeoST limite les pixels par la fin DE à 164 cycles (normalisée). Les autres
+lignes et l'adresse accumulée concordent. Les deux sondes STOP_MIDDLE sont
+donc gardées en **snapshot**, jamais comme références Hatari tolérées.
+La [capture comparative Hatari](../tests/reference/blankline_stop_oracle.png)
+est conservée à côté des snapshots pour examiner le résidu sans relancer
+l'oracle (ST et STE byte-identiques). Reproduction :
+`python3 tools/make_blankline_test.py /tmp/blankline_stop.st`, puis
+`bash tools/hatari_oracle.sh roms/etos192fr.img /tmp/blankline_stop.st 435 380 /tmp/blankline_stop.png st fastfdc 0`.
+L'[explication du shifter par Paulo Simoes](https://alive.atari.org/alive11/oscan2b.php)
+décrit les groupes de quatre plans et précise que le modèle est simplifié ;
+les [notes de Steven Tattersall et Troed](https://github.com/tattlemuss/atari_st_wiki/wiki/StevesVideoNotes)
+décrivent les décalages GLUE/MMU. Aucune ne tranche ces trois pixels dans
+notre séquence. Mesure du bord sur Atari requise avant changement.
+
+## NO_SYNC/SYNC_HIGH — gardes comparatives ajoutées le 2026-10-19
+
+Les branches `Shifter::updateGlueState` correspondaient déjà à
+`Video_Update_Glue_State` au pin `f0736b24` : impulsion hi-res avant HSYNC
+(NO_SYNC) ou pendant celui-ci (SYNC_HIGH), masque NO_DE/NO_COUNT sur la ligne
+suivante, et extension d'une ligne de la fenêtre basse. Le retour avant le
+comparateur concerné annule les masques et l'extension. Le retour SYNC_HIGH
+sur la ligne suivante doit conserver NO_DE grâce à la garde NO_COUNT.
+
+Le générateur `make_blankline_test.py` couvre les quatre séquences sur ST
+et STE ; les longs successifs rendent une avance mémoire fausse visible.
+52 contrôles Glue vérifient les masques live/replay, l'absence de tic Timer B
+sur la ligne vide, le stride nul, le retour au stride normal, l'extension
+basse et les 32 000 octets consommés au total. Ce travail protège le modèle
+existant ; il ne démontre pas la forme d'onde HSYNC/VDE réelle ni la couleur
+physique du blanking, et ne change aucune constante pour rejoindre Hatari.
+
 ## Bilan de fidélité par sous-système
 
 | Sous-système | NeoST | Hatari (vérité) | Fidélité | Écarts ouverts M / B (5ᵉ passe 2026-07-07) |
@@ -57,7 +115,7 @@ de contradiction avec les sections historiques.
 | Son (YM2149 + DMA STE) | `YM2149.cpp`, `DmaSound.cpp` | `psg.c`, `dmaSnd.c`, `sound.c` | très élevée (générateurs 1:1, FIFO DMA au faisceau) | 0 (S2/S3/S4 ✅ 2026-07-07) / ~6 |
 | ACIA 6850 / IKBD / MIDI | `Ikbd.cpp`, `MidiAcia.cpp` | `acia.c`, `ikbd.c` | très élevée | 0 / 7 (délais IKBD…) |
 | Bus / mémoire / bus-error | `Bus.cpp` | `ioMem*.c`, `memory.c`, `stMemory.c` | très élevée | 0 / 0 (densité STE corrigée, void blitter déjà conforme) |
-| Blitter | `Blitter.cpp` | `blitter.c` | très élevée sur les **données** (byte-identique à l'oracle, mesuré 2026-08-26) ; base de temps unifiée (BL3 ✅) et dispatch par accès (BL4 ✅) | 0 moyennes (BL3 ✅, BL4 ✅, BL5 ◐ corrigée aux 3/4) / 2 (résidu BL5 ~20 cyc/blit, CPU parallèle) |
+| Blitter | `Blitter.cpp` | `blitter.c` | très élevée sur les **données** (byte-identique à l'oracle, mesuré 2026-08-26) ; base de temps unifiée (BL3 ✅) et dispatch par accès (BL4 ✅) | BL3/BL4/BL5 clos ; MegaSTE 16 MHz/cache à qualifier |
 | SCC Z85C30 (MegaSTE) | `Scc.cpp` | `scc.c` | élevée (cœur registre) | 1 (SC1, tranché) / 2 |
 
 ---
@@ -79,7 +137,7 @@ citent les anciens identifiants.*
 | BL1 ✅ | Blitter | Compteur X/Y écrit à `0` non interprété comme **65536** (blit avorté au lieu de maximal) | **HAUTE** | `Blitter.cpp:132-140` | `Blitter_WordsPerLine/LinesPerBitblock_WriteWord` `blitter.c:1343-1366` |
 | BL3 ✅ | Blitter | ~~**Cycles de stall facturés HORS de l'horloge de l'ordonnanceur**~~ **corrigé (2026-08-25)**. `Blitter::onSlice` est le callback de l'échéance `Scheduler::BLITTER` : il tourne dans `Scheduler::runTo`, donc ENTRE deux `cpu.run()`. Ses cycles n'étaient ni dans `ran` (mesuré depuis un `quantumStartBus_` réancré à chaque entrée de `Cpu68k::run`) ni dans `sched.now()` — **perdus**, puis résorbés d'un coup par le `syncTo` de `Cpu68k::rebaseQuantumAndSync`. Mesuré (`NEOST_QDELTA_DIAG`) : escalier 136→**1088 cycles bus** sur *Lethal Xcess*, mangeant 2 tics de prescaler Timer A → `Mfp::readTimerData` rendait TADR `$3C` → garde `ILLEGAL` du jeu. Cassait `megast`, `ste` ET `megaste`. Porté par `Blitter::billCycles` → `Scheduler::addStolenCycles`, discriminé par `Cpu68k::inRun` (le mode HOG est déjà capté par `ran`). | **HAUTE** | `Blitter.cpp:billCycles`, `Scheduler.hpp:addStolenCycles`, `Cpu68k.hpp:inRun` | `Blitter_AddCycles` `blitter.c:342-354` (`nCyclesMainCounter`/`CyclesGlobalClockCounter`), `CycInt_Process` `cycInt.h` |
 | BL4 ✅ | Blitter | ~~Dispatch en FIN de tranche, pas après chaque accès~~ **CORRIGÉ (2026-08-25)** : la facturation est passée **par accès**. `Blitter::billCycles` (port de `Blitter_AddCycles` + `Blitter_FlushCycles`) est appelé par `readWord`/`writeWord` pour leurs 4 cycles et à **chaque arbitration**, à sa position réelle (prise du bus AVANT le transfert, restitution APRÈS) au lieu d'un lot en fin de tranche ; `Scheduler::addStolenCycles` DISPATCHE désormais (`syncTo`) au lieu d'avancer `now_` en silence. L'obstacle — `Scheduler::runTo` non ré-entrant — est levé : `fired`/`minAll` étaient déjà des locales, seul `firingDue_` manquait, il est sauvegardé/restauré par un garde RAII (`FiringGuard`). C'est le modèle d'Hatari, dont `CycInt_Process` (`cycInt.h:85-88`, `while (ActiveInt <= now) CallActiveHandler()`, **sans masque anti-relance**) est lui aussi ré-entré depuis le handler `INTERRUPT_BLITTER`. Le membre `inDispatch_` introduit par BL3 devient inutile et est retiré. **Mesuré** : `timer IRQ max lateness` **265 → 132** sur Lethal Xcess/`megast` (= la valeur ST, sans plus rien masquer), **170 → 132** sur `ste`/`megaste`, **265 → 161** au boot EmuTOS `megast` nu. Validé assertions ACTIVES (`-UNDEBUG`) : 26000 trames, ~1,6 M préemptions, aucune assertion de `runTo` déclenchée. `--tier full` OK ; `machine=st` capture **bit-identique** (le patch y est inerte, pas de blitter). | — | `Blitter.cpp:billCycles` / `readWord` / `writeWord` / `onSlice`, `Scheduler.hpp:addStolenCycles` / `runTo` | `Blitter_FlushCycles` `blitter.c:356-374` (appel `CycInt_Process` `blitter.c:366`), `CycInt_Process` `cycInt.h:85-88` |
-| BL5 ◐ | Blitter / MFP | **Dérive de la datation d'un blit, ~86 cyc/blit → CORRIGÉE AUX 3/4 le 2026-08-26 (résidu ~20 cyc/blit).** Découverte par l'étalon `blitter_timer` dès sa première exécution : chemin de **DONNÉES byte-identique** à Hatari (0 px), écart **entièrement de datation** (99 lignes TADR sur 100, dérive cumulative). **CAUSE TROUVÉE** : Hatari pose `Blitter_CyclesBeforeStart = 4 + 4` au **DÉMARRAGE** d'un blit — son commentaire : « 4 cycles to complete current bus write to ctrl reg + 4 cycles before blitter request the bus » — mais `= 4` seulement à la **REPRISE** d'une tranche non-hog (`Blitter_HOG_CPU_mem_access_after`). NeoST utilisait `kPreStartCycles = 4` dans les **deux** cas : chaque blit démarrait **4 cycles trop tôt**. Porté (`kStartDelayCycles`, fenêtre PRE_START paramétrée : 8 au démarrage, 4 à la reprise). **Mesuré** : dérive **86 → 20 cyc/blit**, écart oracle **397 → 299 px**. Le mode HOG reste à **0 px** (`blitter_hog`), tous les autres étalons pixel inchangés. ⚠ **TROIS hypothèses formulées puis RÉFUTÉES — ne pas les rouvrir.** (1) « NeoST facture l'arbitration par blit, Hatari par tranche » : FAUX, `Blitter_Start` (`blitter.c:871`) est ré-appelé à chaque tranche et arbitre en entrée/sortie, comme `Blitter::onSlice` depuis BL4. (2) « l'oracle tourne le chemin non-CE et son forfait de 256 cyc (`blitter.c:943`) » : FAUX, le défaut d'Hatari ici EST le cycle-exact — forcer `--cpu-exact off --compatible off` change l'image (397 → 328 px), donc `BLITTER_RUN_CE` est vrai. (3) « c'est l'overlap CPU non modélisé (`Blitter_Check_Simultaneous_CPU`), donc un effet PAR TRANCHE » : FAUX, mesuré — doubler la taille du blit (4 → 8 tranches) NE double PAS la dérive (86 → 82 cyc/blit), elle est **par BLIT**. C'est cette mesure qui a mené à la cause réelle. ⚠ Toute reprise doit ÉPINGLER `--cpu-exact` et `--compatible` : ils déplacent la comparaison de 69 px et `tools/hatari_oracle.sh` n'en passe aucune. **RÉSIDU — instruit le 2026-08-26, cause NON ÉTABLIE, aucune modification faite sur une supposition.** **Décomposition mesurée** en faisant varier le nombre de tranches par blit (`YCOUNT` 1 / 4 / 8, soit 1 / 2 / 4 tranches) : **10 cyc/blit à UNE tranche, 12 à deux, 20 à quatre** — soit ~10 cyc FIXES par blit plus ~2-3 cyc par tranche supplémentaire. Le résidu suit donc les **restitutions de bus**, pas le volume transféré. ⚠ **DEUX réfutations de plus** (s'ajoutant aux trois ci-dessus). (4) « c'est l'overlap CPU parallèle (`Blitter_Check_Simultaneous_CPU`) » : réfuté par le **SIGNE**. L'expérience du port 4+4 est causale : AJOUTER 4 cyc/blit à NeoST a RÉDUIT l'écart (86 → 20), donc **NeoST facture MOINS de temps par blit qu'Hatari**. Or l'overlap est un REMBOURSEMENT côté Hatari (il saute des cycles CPU après la restitution du bus) : il rendrait Hatari plus RAPIDE, pas plus lent. Mauvais sens. (5) « le délai de démarrage 4+4 manque aussi au chemin HOG » (il n'y est effectivement pas appliqué) : **réfuté par l'essai** — l'ajouter CASSE la conformité de `blitter_hog`, **0 → 122 px**. L'asymétrie est donc CORRECTE et il ne faut pas la « corriger » : en HOG, `start()` tourne DANS l'instruction d'écriture de `$FF8A3C`, dont les cycles restants sont déjà facturés par Moira et captés par `ran` ; en non-hog on planifie un ÉVÉNEMENT depuis ce même point, et le délai doit alors être explicite. **LOCALISÉ le 2026-08-26** en faisant varier la TAILLE du blit (2, 16, 32 et 256 accès bus) : x=1 y=1 → **10 cyc/blit**, x=1 y=8 → 8, x=16 y=1 → **10**, x=16 y=8 → 20. Un blit de **2 accès** coûte le même écart qu'un blit de **32** : le résidu est donc **INDÉPENDANT des données transférées**. Décomposition : ~**10 cyc par DÉMARRAGE de blit** + ~**3,3 par REPRISE de tranche**. Il suit les **PRISES DE BUS**, pas le transfert — et le transfert lui-même est donc exact, comme le chemin de données (0 px). Tout le résidu est dans le chemin PRE_START / planification. ⚠ **Réfutation (6)** : « Hatari décrémente `Blitter_CyclesBeforeStart` par paquets de cycles CPU et JETTE le dépassement, son délai est donc arrondi VERS LE HAUT là où NeoST le pose exact » — piste citable, **testée, SANS EFFET** : arrondir l'échéance au créneau bus de 4 cycles (au démarrage comme à la reprise) laisse la dérive à 20 cyc/blit. Reverté. **DÉCOMPOSITION CÔTE À CÔTE MESURÉE le 2026-08-26** — traces synchrones des prises/restitutions de bus (sonde `NEOST_BLIT_START_DIAG=1` côté NeoST ; côté oracle, les `fprintf` commentés « blitter bus start/end » de `Blitter_BusArbitration`, décommentés dans l'arbre LOCAL extern/hatari — gitignoré — puis restaurés au pin). 500 prises de bus des DEUX côtés sur `blitter_timer` (400 trames), motif PARFAITEMENT périodique par blit (période 5). Par blit : part BLITTER NeoST **1044** vs Hatari **1100** (**−56** : NeoST découpe en 62-63 accès/tranche, Hatari en 63-66 — le bug « 63 accès » n'est pas réparti à l'identique) ; fenêtres CPU inter-tranches NeoST **312 constant** vs Hatari 288-300 (**+19** chacune) ; tour de boucle programme NeoST **176** vs Hatari **124** (**+52**). Somme **+64 cyc/blit côté NeoST**. ⛔ **PARADOXE DE SIGNE, À RÉSOUDRE AVANT TOUT CORRECTIF** : ces sondes (horloge ordonnanceur, `liveNow()` au dispatch) disent NeoST plus LENT de 64/blit, alors que le TADR rendu à l'écran le dit plus RAPIDE de ~10-20 (et l'expérience causale du 4+4 l'a confirmé : RALENTIR NeoST a RÉDUIT l'écart TADR). Les deux mesures sont solides et contradictoires : l'une des deux horloges ne mesure pas ce qu'on croit à son point de sonde. Tant que ce paradoxe n'est pas levé (3ᵉ mesure indépendante à concevoir), toute « correction » serait du calage. **Aucun candidat Hatari identifié** pour les ~10 cyc restants : ni l'arbitration (4 des deux côtés sur STE), ni le PRE_START de reprise (4 des deux côtés), ni le comptage des accès CPU (NeoST accroche les callbacks mémoire de Moira, un par cycle bus, ≙ `bus_count`). Ajouter une constante sans ligne d'Hatari pour la justifier serait une **rustine** — le projet en a déjà retiré (`+16`, read `+4`). Le résidu reste donc OUVERT et **documenté**, pas masqué. | basse (résidu) | `Blitter.cpp:kStartDelayCycles` / `start` / `armPreStartWindow` | `Blitter_Control_WriteByte` (`Blitter_CyclesBeforeStart = 4 + 4`), `Blitter_HOG_CPU_mem_access_after` (`= 4`) |
+| BL5 ✅ | Blitter / MFP | **Clos le 2026-10-19** : reprises sous-instruction, recouvrement CPU, PRE_START commun HOG/partagé et alignement au début du cycle RAM. `blitter_timer` : **68 → 0 px**, promu en oracle Hatari reproductible. Dix-sept sondes temporelles strictes, dont dix blitter (ROM/RAM, TAS, MULU, tailles). Les anciennes estimations et réfutations du 2026-08-26 sont historiques ; voir la section Blitter pour la clôture. |
 | V1 ✅ | Vidéo | ~~Branche STE de la Glue absente~~ **portée (2026-07-08)** : table STE (preload MMU 36/40, pal 56, HSync −52/−12) + `LEFT_OFF_2_STE` (+20 o, −8 px) + latch res sans −1 ; Cuddly-STE casse comme le vrai STE (196/250 = oracle) | moyenne | `Shifter.cpp` (`glue::Timing`, phase 1 STE) | `Video_Update_Glue_State` (branche STE) `video.c:2442-2652` |
 | V2 ✅ | Vidéo | ~~Tricks par changement de résolution~~ **portés (2026-07-08)** : overscan med-res (No Cooper greetings **0 px vs oracle**), stab med, scrolls hard 13/9/5/1 px, rendu multi-rés par ligne. Résidus : hardscroll Paulo Simoes, alias $FF8261 | moyenne | `Shifter.cpp` (`updateGlueRes`) | `Video_WriteToGlueRes` `video.c:1618-1820` |
 | V3 ✅ | Vidéo | **CLOS le 2026-09-01** — l'attribution à la grille RÉELLE (longueur de ligne persistante, ≙ `Video_StartHBL`/`nCyclesPerLine`) est le défaut ; exhibiteur généré `freq_switch`, 18/18 écritures à la même ligne et au même cycle qu'Hatari (trace `video_sync`), palier pixel à 0 px, `=0` fait rougir l'étalon. Historique : Géométrie mid-trame : **restart compteur PORTÉ** (VC_RESTART, 2026-07-02). ⚠ **« CyclesPerVBL ±4 » RETIRÉ — FAUX POSITIF prouvé (2026-08-25)** : chez Hatari la seule affectation *pleine* de `CyclesPerVBL` est dans la branche **VDI** (`video.c:4937-4942`, avec le commentaire d'Hatari « *When using VDI, we setup the next VBL here ; else it will be setup at the start of the last HBL* ») ; en mode normal la VBL vient de la chaîne `ShifterLines[].StartCycle` (`video.c:3354, 3370-3374`), que NeoST reproduit par `lineCarry_`/`beginFrame_` **actifs par défaut** — mesuré sur No Cooper : distribution des longueurs de trame `{160256: 6788, 160252: 10, 133604: 3}`, et 160252 = 313×512−4. Le mécanisme fonctionne. **Reste** l'attribution de ligne : le canal `NEOST_LINELEN` est **HYBRIDE** — moitié Machine ON (`Machine.cpp`), 4 sites Shifter OFF (`Shifter.cpp`). **Aucun étalon ne l'exhibe** (11/11 à 0 px dans les 3 configurations : défaut, `=1`, `=0` ; deux recontrôlés en MD5 byte-identique). ~~Seul exhibiteur connu = Closure~~ — **RÉFUTÉ le 2026-08-30** : `closure` est désormais un étalon (écran 153 couleurs, trame 10500) et il rend une image **BIT-IDENTIQUE avec `NEOST_LINELEN_ATTR=1`** (même md5, 0 px). Cet écran n'exerce donc PAS V3 ; la phrase datait du chantier CLOSURE (écran noir au boot), pas d'une mesure du verrou. V3 reste **sans exhibiteur mesuré**. Ce que Closure a rapporté à la place : **A40** — décalage de 4 px de la fenêtre gauche, non pas sur `glue::LEFT_OFF` mais sur le **retrait gauche med** (`LEFT_OFF_MED`, « remove left + med stab ») ; **CORRIGÉ le 2026-08-30** (`shEff = 4 + scrollFinal` → −4, plus les 8 dernières colonnes laissées à l'index 0) : oracle 64,08 % → **0,02 %**, cf. `CHANGELOG.md` et `TODO.md` § A41 pour les 27 px restants. | basse | `Shifter.cpp` (`restartVideoCounter`), `Machine.cpp` | `Video_RestartVideoCounter` `video.c`, `video.c:3354,3370-3374,4937-4942` |
@@ -339,6 +397,17 @@ cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, 
   le secteur manque, sans alias vers la face/piste suivante. Références :
   Hatari `Floppy_ReadSectors/Floppy_WriteSectors`. STX conserve sa délégation.
 
+### GEMDOS HD — sauvegardes (2026-10-19)
+
+- **A13 clos** : contexte invité sérialisé en v48 (handles, position, mode,
+  basepage, Fforce, chemins, caches DTA et Pexec), selon la surface de
+  `GemDOS_MemorySnapShot_Capture`. Politique plus stricte qu'Hatari : fichier
+  ouvert absent/modifié (taille/horodatage) ou inaccessible → refus du load
+  complet, plutôt qu'avertissement ou handle perdu. Tous les descripteurs sont
+  préparés avant remplacement de la session ; `wb+` n'est jamais rejoué.
+  Racines identiques et confinement des chemins vérifiés au chargement.
+  Les données des fichiers hôtes ne sont pas rembobinées.
+
 ### ACIA 6850 / IKBD HD6301 / MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`
 
 - ✅ **Datation IRQ clavier (2026-10-19)** : front GPIP4 daté au transfert
@@ -464,6 +533,56 @@ règle word/long : **conformes**.
   (`regs.db`, `VoidMem`). Différence théorique, sans impact connu.
 
 ### Blitter — `Blitter.cpp` ↔ `blitter.c`
+
+**Passe temporelle du 2026-10-19 — état courant, prioritaire sur l'historique BL5.**
+L'écart synthétique partagé **+60 cycles / IRQ +42 / trois tours CPU** est corrigé :
+reprise PRE_START pendant l'instruction, callbacks de début/fin de cycle bus,
+exclusion de l'accès initiateur et recouvrement des cycles CPU internes jusqu'au
+prochain accès. GPU_DONE est émis après restitution du bus, comme Hatari.
+BUSY est désormais effacé au même instant que GPU_DONE, conformément au lien
+décrit par le manuel Atari. Avant correction, un événement pouvait observer
+BUSY=0 pendant les quatre cycles de restitution alors que GPIP3 restait haut.
+Quatre échecs reproduits avant correction ; 155 contrôles CPU/blitter passent
+après sous ASan/UBSan. La garde ISR MegaSTE v2 refuse une IRQ pendant BUSY.
+Le rebase préserve le dispatch DMA par accès sans double facturation du quantum.
+Le verrou TAS couvre le read-modify-write et se libère avant le préfetch.
+Les traces portent désormais les instructions réelles avant exécution ; les
+continuations d'IRQ/RTE ne sont plus comptées comme travail CPU supplémentaire.
+
+Dix sondes blitter au pin (ROM/RAM, HOG/partagé, tailles, MULU et TAS), 64
+copies chacune après huit échauffements : **fin observée +4 cycles, IRQ +2 en
+ROM / +4 en RAM, compte CPU identique**. Les dix-sept sondes du banc passent
+sans exception KNOWN ni décalage incorporé aux références Hatari. Crédit CPU
+sérialisé en v49, avec test de reprise TAS D0 → BRA pour les deux modes.
+
+**BL5 pixel clos le 2026-10-19** : les 68 pixels restants provenaient de
+l'alignement RAM calculé au callback médian, après une éventuelle tranche DMA.
+Hatari aligne avant les cycles du bus. Le hook Moira reçoit maintenant l'adresse
+réelle de chaque mot et aligne le début de l'accès avant SYNC(2), sans nouvelle
+constante. Les 100 relevés TADR et les données copiées sont identiques ; comparaison
+pixel **0/114816** contre Hatari. Deux oracles identiques ; `blitter_timer.png`
+produit par `--oracle`, ancien snapshot retiré, provenance promue en oracle.
+
+HOG utilise maintenant PRE_START et le recouvrement communs, au lieu de tourner
+dans l'écriture du registre. Les anciens essais ajoutant seulement un délai au
+chemin synchrone ne réfutent pas ce port complet. MegaSTE 16 MHz/cache reste à
+qualifier globalement ; CPU/cache vérifié séparément ci-dessous. Les paragraphes BL5 ci-dessous décrivent l'investigation historique.
+
+**MegaSTE 16 MHz, qualification CPU/cache du 2026-10-19** : alignement RAM au
+début du cycle, attente supplémentaire passant par `sync`, décision hit/miss
+avant les cycles et conservation de la valeur du hit pendant une DMA. Cache
+invalidé avant les huit cycles d'arbitrage, conformément à `blitter.c:395-421`.
+Onze sondes CPU/cache sans IRQ ni DMA donnent une égalité exacte contre deux
+captures Hatari identiques, après conversion des intervalles CPU 16 MHz en
+cycles bus 8 MHz. Tests locaux des quatre phases RAM et du cache pendant DMA.
+Les mutants de l'ancien alignement/relecture et de l'invalidation tardive sont
+rejetés (neuf et un échecs). La comparaison globale blitter/IRQ à 16 MHz reste
+ouverte. Le banc global vérifie désormais douze configurations NeoST et
+révèle deux défauts du pin : cycles DMA sans conversion à 16 MHz et IPL CPU
+périmé quand aucun interrupt n'est pending. Les deux corrections expérimentales
+rétablissent les bornes physiques, avec des écarts résiduels d'environ 12–24
+cycles. Aucune référence issue des échecs. Voir
+[`HATARI_MEGASTE_AUDIT.md`](HATARI_MEGASTE_AUDIT.md).
 
 - ✅ **Reset chaud (2026-10-19)** : conserve RAM halftone et pipeline
   source comme `Blitter_Reset` Hatari ; transfert annulé et registres de

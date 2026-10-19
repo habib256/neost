@@ -32,7 +32,7 @@ namespace {
     // `Blitter_CyclesBeforeStart = 4 + 4` (blitter.c, branche BLITTER_RUN_CE de
     // Blitter_Control_WriteByte), dont le commentaire d'Hatari dit : « 4 cycles to
     // complete current bus write to ctrl reg + 4 cycles before blitter request the bus ».
-    // ⚠ C'est 8 au DÉMARRAGE (écriture de $FF8A3C) mais 4 seulement à la REPRISE d'une
+    // ⚠ À 8 MHz, c'est 8 au DÉMARRAGE (début d'écriture de $FF8A3C), mais 4 à la REPRISE d'une
     // tranche non-hog (Blitter_HOG_CPU_mem_access_after pose 4). NeoST utilisait 4 dans
     // les DEUX cas : chaque blit démarrait donc 4 cycles trop tôt. Mesuré par l'étalon
     // `blitter_timer` (chantier BL5) : la dérive vs l'oracle est bien PAR BLIT et non par
@@ -113,19 +113,18 @@ void Blitter::billCycles(int n) {
     // Hatari les cycles du blitter incrémentent le MÊME compteur que ceux du CPU,
     // celui que CycInt lit pour ses échéances. Ici deux chemins de facturation
     // coexistent et il ne faut créditer l'ordonnanceur QUE sur l'un des deux :
-    //  · DANS le quantum (mode HOG : `start()` n'est atteint que depuis une écriture
-    //    $FF8A3C, donc depuis un callback mémoire de Moira) → l'avance de l'horloge
-    //    du cœur est DÉJÀ comptée par `ran` (retour de Cpu68k::run) puis reversée par
-    //    le `sched.runTo(now + ran)` de Machine::runFrame. Créditer ici la compterait
-    //    DEUX FOIS, et l'ordonnanceur prendrait de l'AVANCE sur l'horloge CPU — le
-    //    symétrique exact du bug corrigé.
-    //  · HORS quantum (tranche non-hog : `onSlice` est le callback de l'échéance
-    //    Scheduler::BLITTER, il tourne dans Scheduler::runTo, donc ENTRE deux
-    //    cpu.run()) → personne ne les compte. C'était le bug : sched.now() restait en
-    //    retard, puis sautait d'un coup au rebase d'IACK suivant.
+    //  · DANS le quantum (HOG ou callback PRE_START pendant une instruction) :
+    //    l'horloge Moira inclut l'attente ; rebaseQuantumAndSync reverse cette
+    //    avance et retire ces cycles du quantum restant avant le retour à Machine.
+    //  · HORS quantum (callback Scheduler entre deux cpu.run()) : avancer aussi
+    //    l'ordonnanceur, car aucun retour de Cpu68k::run ne facturera ces cycles.
     // L'invariant complet (discriminant Cpu68k::inRun) vit dans Bus::stealBusCycles
     // (A23) — le FDC (billDmaCycles) partage la même primitive.
     bus_.stealBusCycles(sched_, n);
+    // Une tranche peut maintenant tourner DANS le quantum CPU. Préserver le
+    // dispatch par accès de BL4 : reverser le temps, rebaser le quantum puis
+    // servir les échéances franchies, sans compter ces cycles deux fois.
+    if (sched_ && bus_.cpu && bus_.cpu->inRun()) bus_.cpu->rebaseQuantumAndSync();
 }
 
 uint8_t Blitter::read8(uint32_t addr) {
@@ -237,8 +236,8 @@ void Blitter::write32(uint32_t addr, uint32_t v) {
 
 // -----------------------------------------------------------------------------
 //  Démarrage / reprise (BUSY écrit à 1). Mode HOG : tout le transfert d'un coup,
-//  CPU arrêté pour la durée totale. Non-hog : 1re tranche de 64 accès tout de
-//  suite (le blitter prend le bus en premier), puis alternance via l'ordonnanceur.
+//  CPU arrêté pour la durée totale. Non-hog : PRE_START puis 1re tranche de
+//  64 accès, suivie de fenêtres CPU/blitter alternées via l'ordonnanceur.
 // -----------------------------------------------------------------------------
 void Blitter::start() {
     // Compteur X écrit à 0 = 65536 (cf. Hatari Blitter_WordsPerLine_WriteWord) via
@@ -286,38 +285,30 @@ void Blitter::start() {
         if (bus_.mfp) bus_.mfp->setBlitterLine(false);
     }
 
-    // Cycles d'arbitration de bus (port Blitter_BusArbitration) : prendre le bus
-    // coûte 4 cycles (8 sur Mega STE), le rendre au CPU 4 cycles.
-    const int arbIn = (bus_.machine == MachineType::MegaSte) ? 8 : 4;
-
-    if (reg_[0x3C] & 0x40) {               // mode HOG : bus gardé jusqu'à y_count=0
-        // Arbitration facturée à SA position (Blitter_BusArbitration, blitter.c:395-421) :
-        // prise du bus AVANT le transfert, restitution APRÈS — et non les deux en lot
-        // à la fin. Les 4 cycles de chaque accès sont facturés par readWord/writeWord.
-        billCycles(arbIn);
-        sliceBus_ = 0;
-        inSlice_ = true; runSlice(-1); inSlice_ = false;
-        billCycles(kArbOut);
-        return;
-    }
-    // Non-hog : sur le vrai matériel, le blitter ne prend pas le bus tout de
-    // suite — phase PRE_START de 4 cycles (le CPU tourne encore) puis arbitration.
-    // On date la 1re tranche à +4 et on ARME la fenêtre PRE_START : un accès bus
-    // CPU dans [maintenant, +4) sera compté à tort par le blitter (bug « 63 accès »,
-    // cf. notePreStartCpuAccess). Sans ordonnanceur : tranche immédiate.
+    // En HOG comme en partagé, PRE_START laisse encore tourner le CPU avant
+    // arbitration (Hatari Blitter_Control_WriteByte). Le verrou TAS et le crédit
+    // de recouvrement sont donc gérés par les mêmes hooks CPU dans les deux modes.
+    // Sans Scheduler, le banc de puce nue exécute immédiatement la tranche.
     if (sched_) {
         // Entrée en phase PRE_START : le compteur d'erreur repart de zéro (Hatari
         // Blitter_HOG_CPU_BusCountError = 0, blitter.c:1457) — un accès volé dans
         // une fenêtre PÉRIMÉE (avant un restart/reprise) ne compte pas.
         busCountError_ = false;
-        armPreStartWindow(sched_->liveNow(), kStartDelayCycles);
-        sched_->schedule(Scheduler::BLITTER, sched_->liveNow() + kStartDelayCycles);
+        // Le délai matériel de demande du bus vaut 4 cycles BUS après la fin
+        // de l'écriture. Le callback Moira est au milieu : il reste 2 cycles
+        // CPU, soit 2 cycles bus à 8 MHz ou 1 à 16 MHz. Ne pas laisser les
+        // quatre cycles d'écriture du CPU 8 MHz figés dans le domaine bus.
+        const int delay = bus_.cpu && bus_.cpu->inRun()
+                        ? kPreStartCycles + (bus_.cpu->megaSte16Mhz() ? 1 : 2)
+                        : kStartDelayCycles; // écriture directe du banc, sans cycle CPU
+        armPreStartWindow(sched_->liveNow(), delay);
+        sched_->schedule(Scheduler::BLITTER, sched_->liveNow() + delay);
     } else {
         onSlice();
     }
 }
 
-// Tranche non-hog (échéance Scheduler::BLITTER) : 64 accès bus exactement — 63 si
+// Échéance Scheduler::BLITTER : transfert entier HOG ou 64 accès partagés — 63 si
 // un accès CPU est tombé dans la fenêtre PRE_START (le blitter le compte à tort
 // comme sien, cf. blitter.c:69-79) — avec suspension MID-WORD si le budget tombe
 // entre deux accès d'un même mot. Ici on est à une frontière d'événement : avancer
@@ -333,18 +324,18 @@ void Blitter::onSlice() {
     if (inSlice_) return;
     if (!(reg_[0x3C] & 0x80)) { clearPreStartWindow(); return; }   // pause/reset
     const int arbIn  = (bus_.machine == MachineType::MegaSte) ? 8 : 4;
-    const int budget = kNonHogBusBlitter - (busCountError_ ? 1 : 0);
+    const int budget = (reg_[0x3C] & 0x40) ? -1
+                     : kNonHogBusBlitter - (busCountError_ ? 1 : 0);
     busCountError_ = false;
     clearPreStartWindow();
-    // SONDE (NEOST_BLIT_START_DIAG=1) : cycle absolu de chaque PRISE DE BUS non-hog.
-    // C'est la grandeur du résidu BL5 (~10 cyc/blit + ~3,3/reprise, de trop peu côté
-    // NeoST) : comparer les INTERVALLES entre prises consécutives à ceux d'Hatari
-    // (fprintf « blitter bus start » de Blitter_BusArbitration, à décommenter dans
-    // l'arbre local extern/hatari) — les intervalles s'affranchissent du référentiel
-    // absolu, que le RNG de boot d'Hatari rend incomparable.
+    // Diagnostic des prises de bus : comparer les intervalles entre tranches
+    // à Hatari, indépendamment de l'origine absolue liée au boot du TOS.
     static const bool startDiag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
     if (startDiag && sched_)
         std::fprintf(stderr, "[BLSTART] %lld\n", (long long)sched_->liveNow());
+    // Hatari invalide le cache AVANT les cycles d'arbitrage, même si un
+    // événement tombe pendant ceux-ci et observe le cache.
+    bus_.megaSteCacheFlushIfEnabled();
     billCycles(arbIn);                     // prise du bus, AVANT les accès (cf. start)
     sliceBus_ = 0;
     inSlice_ = true;
@@ -354,6 +345,7 @@ void Blitter::onSlice() {
     if (endDiag && sched_)
         std::fprintf(stderr, "[BLEND] %lld\n", (long long)sched_->liveNow());
     billCycles(kArbOut);                   // restitution au CPU
+    if (done) finishTransfer();            // Blitter_Start : IRQ après arbitration
     if (!done) {
         // Part CPU non-hog : armer le comptage des accès bus CPU (port
         // BLITTER_PHASE_COUNT_CPU_BUS + CountBusCpu = 0, blitter.c:937). Le CPU ne
@@ -413,6 +405,13 @@ void Blitter::pauseTransfer() {
 // câblé au bus que sur ces modèles → auto-gaté).
 void Blitter::finishTransfer() {
     midBlit_ = false;
+    // BUSY et GPU_DONE décrivent le même état matériel (manuel Atari,
+    // « Bus accesses / Busy »). Les publier ensemble après restitution du
+    // bus : runSlice a terminé les données, pas encore l'arbitrage.
+    reg_[0x3C] &= uint8_t(~0xC0);   // BUSY et HOG effacés
+    static const bool diag = std::getenv("NEOST_BLIT_START_DIAG") != nullptr;
+    if (diag && sched_)
+        std::fprintf(stderr, "[BLDONE] %lld\n", (long long)sched_->liveNow());
     if (bus_.mfp) bus_.mfp->setBlitterLine(true);
 }
 
@@ -424,9 +423,6 @@ void Blitter::finishTransfer() {
 //  transfert complet (HOG) ; la découpe se fait à la frontière de MOT.
 // -----------------------------------------------------------------------------
 bool Blitter::runSlice(int maxBusAccesses) {
-    // Le blitter prend le bus via BGACK → le cache 16 Ko du Mega STE est invalidé
-    // (Hatari MegaSTE_Cache_Flush) : ses écritures RAM ne passent pas par le cache.
-    bus_.megaSteCacheFlushIfEnabled();
     auto rd16 = [&](uint32_t o) -> uint16_t { return uint16_t((reg_[o] << 8) | reg_[o + 1]); };
     auto wr16 = [&](uint32_t o, uint16_t w) { reg_[o] = uint8_t(w >> 8); reg_[o + 1] = uint8_t(w); };
     auto rd32 = [&](uint32_t o) -> uint32_t { return (uint32_t(rd16(o)) << 16) | rd16(o + 2); };
@@ -585,16 +581,8 @@ bool Blitter::runSlice(int maxBusAccesses) {
     wr16(0x38, uint16_t(yCount));          // 65536 → 0 (16 bits) : readback fidèle au matériel
     yLatch_ = uint32_t(yCount);            // compteur vivant (résiduel SANS re-conversion)
 
-    // Réécriture de $FF8A3C en fin de tranche — équivaut au Hatari
-    // « ctrl = (ctrl & 0xF0) | halftone_line » (blitter.c:908) puis, blit fini,
-    // « ctrl &= ~(0x80|0x40) » (blitter.c:913) : le bit 4 est toujours 0 grâce au
-    // masque 0xEF appliqué à l'écriture (cf. regWriteMask), donc &0x70 / &0x30
-    // reproduisent exactement &0xF0 avec/sans BUSY+HOG.
-    if (yCount > 0) {                       // tranche finie, transfert pas terminé
-        reg_[0x3C] = uint8_t(0x80 | (ctrl & 0x70) | (htLine & 0x0F));   // BUSY maintenu
-        return false;
-    }
-    reg_[0x3C] = uint8_t((ctrl & 0x30) | (htLine & 0x0F));   // BUSY(7)+HOG(6) effacés
-    finishTransfer();
-    return true;
+    // Mettre à jour la ligne halftone, en maintenant BUSY/HOG pendant la
+    // restitution du bus. finishTransfer publiera la fin avec GPU_DONE.
+    reg_[0x3C] = uint8_t(0x80 | (ctrl & 0x70) | (htLine & 0x0F));
+    return yCount == 0;
 }

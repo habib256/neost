@@ -144,6 +144,10 @@ public:
     // lecture MMIO en plein milieu (p.ex. le RTC) verrait donc un cycle périmé. Ce
     // delta permet de reconstituer le cycle ABSOLU exact = sched.now() + ce delta.
     int64_t cyclesRunInQuantum() const;
+    // Horodatage de trace dans le domaine de l'ordonnanceur. Le compteur brut
+    // Moira inclut les 40 cycles de reset non facturés au Scheduler ; ce biais
+    // disparaît au premier rebase IACK et faussait les mesures à cheval dessus.
+    int64_t traceClockNow() const;
     // Vrai pendant un appel run(), faux à une frontière d'événement (donc dans un
     // callback de Scheduler::runTo). DISCRIMINANT DE FACTURATION : un stall facturé
     // DANS le quantum est capté par `ran` puis reversé à l'ordonnanceur par le

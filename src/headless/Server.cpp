@@ -287,7 +287,12 @@ int run(Machine& machine, const Options& opts) {
         if (cmd == "save") {
             std::size_t s = 0;
             if (!arity(a, 1, 1) || !slotIndex(a[0], s)) { if (!reply("err save expects a slot index")) return 1; continue; }
-            machine.saveState(slots[s].data);
+            std::vector<uint8_t> saved;
+            if (!machine.saveState(saved)) {
+                if (!reply("err cannot snapshot GEMDOS host files")) return 1;
+                continue;
+            }
+            slots[s].data = std::move(saved);
             slots[s].frame = frame;
             slots[s].joy0  = joy0;
             slots[s].joy1  = joy1;

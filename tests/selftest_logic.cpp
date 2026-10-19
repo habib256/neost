@@ -118,6 +118,8 @@ int testDmaSoundMicrowireTiming(); // grille série et accès MMIO après fronts
 int testRtcWriteOnly(); // TEST/RESET en écriture seule
 int testMidiIrqTiming(); // ligne IRQ MIDI datée au transfert série
 int testIkbdIrqTiming(); // ligne IRQ clavier datée aux fronts série
+int testGemdosSnapshot(); // reprise transactionnelle des fichiers hôtes GEMDOS
+int testDesktopMouse(); // pointeur absolu GEM, géométrie et pilote EmuTOS
 int testMfpVectorRegister(); // bits réservés VR nuls, S et base préservés
 int testFdcTrackIdLocation(); // IDs de piste ST compatibles avec tête et face réelles
 int testMfpInternalLoopback(); // TSR H/L sélectionne le bouclage matériel interne
@@ -728,11 +730,12 @@ static void testConfigParser() {
     // que NaN ne passe pas — `int(NaN)` est indéfini, et un delta NaN figerait la
     // souris ST définitivement (même leçon que mixGain, cf. AppConfig.cpp).
     {
-        Config c; c.mouseSpeed = 0.35f;
+        Config c; c.mouseSpeed = 0.35f; c.desktopMouse = true;
         std::ostringstream os; writeConfigKeys(os, c, true);
         Config relu; std::istringstream is(os.str()); std::string l;
         while (std::getline(is, l)) parseConfigLine(relu, l);
         checkBool("mousespeed : aller-retour", std::fabs(relu.mouseSpeed - 0.35f) < 1e-4f, true);
+        checkBool("desktop_mouse : aller-retour", relu.desktopMouse, true);
 
         Config d;
         parseConfigLine(d, "mousespeed=nan");
@@ -1514,6 +1517,7 @@ struct BlitRig {
         blit.write8 (BLT + 0x3A, uint8_t(hop));
         blit.write8 (BLT + 0x3B, uint8_t(lop));
         blit.write16(BLT + 0x3D - 1, uint16_t((0xC0 << 8) | skew));   // BUSY+HOG puis skew
+        sched.runTo(sched.nextDue());                 // PRE_START existe aussi en HOG
     }
 };
 
@@ -2780,6 +2784,8 @@ int main() {
     if (const int failures = testRtcWriteOnly()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiIrqTiming()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdIrqTiming()) g_fail += failures; else ++g_ok;
+    if (const int failures = testGemdosSnapshot()) g_fail += failures; else ++g_ok;
+    if (const int failures = testDesktopMouse()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpVectorRegister()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcTrackIdLocation()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpInternalLoopback()) g_fail += failures; else ++g_ok;

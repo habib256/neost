@@ -19,12 +19,13 @@
 #   • LIGNES 0-99, 8 premiers pixels — LA DATATION (BL3/BL4). Chaque ligne porte
 #     l'octet TADR (Timer A Data Register, $FFFFFA1F) RELU JUSTE APRÈS un blit
 #     non-hog. Le timer tourne en mode délai avec prescaler /200 : un tic vaut
-#     200 cycles CPU. La signature de BL3 était précisément une lecture de TADR
-#     faussée par des cycles de blitter non facturés à l'ordonnanceur — 1088
-#     cycles de dette, soit ~5 tics avalés d'un coup. Ici, tout écart d'UN SEUL
+#     200 cycles MFP, soit environ 653 cycles CPU à 8 MHz (ratio 31333/9600).
+#     La signature de BL3 était une lecture de TADR faussée par des cycles
+#     blitter non facturés à l'ordonnanceur — 1088 cycles de dette, soit environ
+#     1,7 tic. Ici, tout écart d'UN SEUL
 #     TIC change l'octet, donc les 8 pixels, donc l'image.
 #     ⚠ Choix délibéré : la quantification par le prescaler rend l'étalon
-#     INSENSIBLE au jitter sous-tic (< 200 cyc) et SENSIBLE à la classe de bug
+#     INSENSIBLE au jitter sous-tic (< 653 cycles CPU) et SENSIBLE à la classe de bug
 #     visée. Un étalon qui rendrait le compteur de cycles brut serait rouge à la
 #     moindre modification du cœur, donc inutilisable.
 #
@@ -35,16 +36,16 @@
 #
 #  DEUX MODES (arg 2, ou déduit du nom de fichier) : `nonhog` (défaut) et `hog`.
 #  Le mode HOG n'était exercé par AUCUN test NI AUCUN titre du dépôt — recensement
-#  sur Lethal Xcess : 5764 blits, TOUS ctrl=$80. Il emprunte un chemin DIFFÉRENT
-#  (`Blitter::start`, transfert d'un bloc sans rendre le bus) et mérite donc son
-#  propre étalon.
+#  sur Lethal Xcess : 5764 blits, TOUS ctrl=$80. Il transfère un bloc sans rendre
+#  le bus et mérite donc son propre étalon.
+#  Depuis le 2026-10-19, PRE_START et le recouvrement CPU sont communs aux deux modes.
 #
 #  MODE NON-HOG : le bit HOG ($40) de $FF8A3C est LAISSÉ À ZÉRO, donc le
 #  blitter rend le bus tous les 64 accès. Chaque blit fait 16×8 mots = 128
 #  lectures + 128 écritures = 256 accès bus, soit ~4 TRANCHES par blit et ~400
 #  tranches sur la boucle. C'est exactement le chemin `Blitter::onSlice`
 #  (callback de l'échéance `Scheduler::BLITTER`) que BL3 et BL4 ont corrigé.
-#  ⚠ Le chemin HOG, lui, reste NON exercé — recensé dans TODO.md.
+#  Le chemin HOG est exercé séparément par blitter_hog et les sondes temporelles.
 #
 #  Usage  : make_blitter_test.py <out.st>
 #  Oracle : run_etalons.py --oracle --only blitter_timer
@@ -187,8 +188,7 @@ w(0x21FC); l(DST); w(0x8A32)       # move.l #DST,$8a32.w    → destination réa
 w(0x31FC, YCOUNT, 0x8A38)          # move.w #8,$8a38.w    → Y count
 # Bit 6 (HOG) : à ZÉRO en mode `nonhog` (le blitter rend le bus tous les 64 accès →
 # Scheduler::BLITTER / Blitter::onSlice), à UN en mode `hog` (il garde le bus jusqu'au
-# bout → Blitter::start, chemin qu'AUCUN titre testé n'exerce : recensement sur Lethal
-# Xcess, 5764 blits, TOUS ctrl=$80).
+# bout → Blitter::onSlice avec budget illimité). Les deux modes suivent PRE_START.
 w(0x11FC, CTRL, 0x8A3C)            # move.b #CTRL,$8a3c.w
 
 label('wait')

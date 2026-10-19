@@ -121,6 +121,12 @@ public:
     };
     // Géométrie de la trame VERROUILLÉE (cf. frameMode_/frameSync_, posés par beginFrame).
     Geometry geometry() const { return geometryFor(frameMode_, frameSync_); }
+    bool frameTimingChanged() const {
+        const Geometry current = geometryFor(mode, sync);
+        const Geometry latched = geometry();
+        return current.cyclesPerLine != latched.cyclesPerLine
+            || current.linesPerFrame != latched.linesPerFrame;
+    }
 
     // Accès au buffer décodé (ARGB8888) pour le frontend ou un dump.
     const uint32_t* pixels() const { return frame_.data(); }
@@ -181,12 +187,11 @@ public:
     int  snapSideTrickLines() const { return snapSideTrickLines_; }
     bool snapVertBordersOpen() const { return snapGlueVOverscan_ != 0; }
 
-    // Fréquence de rafraîchissement COURANTE (mono = 71 Hz, sinon $FF820A bit1 :
-    // 50 Hz PAL / 60 Hz NTSC). Pour l'affichage / le débogage (la trame est cadencée
-    // par cette fréquence depuis les géométries vidéo, cf. geometry()).
+    // Fréquence verrouillée pour la trame. Une impulsion hi-res de bordure
+    // ne transforme pas l'affichage couleur en écran mono dans le frontend.
     int refreshHz() const {
-        if (mode == Mode::High) return 71;
-        return (sync & 0x02) ? 50 : 60;
+        if (frameMode_ == Mode::High) return 71;
+        return (frameSync_ & 0x02) ? 50 : 60;
     }
 
     // Interface MMIO ($FF8200-$FF8260) appelée par le Bus.

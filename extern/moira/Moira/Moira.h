@@ -294,11 +294,18 @@ public:
     //
     
 protected:
+
+    // NeoST : faute courante, y compris celle qui interrompt une exception.
+    virtual void willProcessFault(const StackFrame &frame) { }
     
 #if MOIRA_VIRTUAL_API == true
     
     // Advances the internal clock by the specified number of cycles
     virtual void sync(int cycles) { clock += cycles; }
+    // NeoST : bornes des cycles bus, pour l'arbitrage blitter avant/après accès.
+    virtual void willAccessBus(u32 /*addr*/, bool /*write*/, unsigned /*size*/) { }
+    virtual void didAccessBus() { }
+    virtual void setBusLock(bool /*locked*/) { }
     
     // Reads a value from memory
     virtual u8 read8(u32 addr) const = 0;
@@ -408,6 +415,9 @@ protected:
     
     // Advances the internal clock by the specified number of cycles
     void sync(int cycles);
+    void willAccessBus(u32 /*addr*/, bool /*write*/, unsigned /*size*/) { }
+    void didAccessBus() { }
+    void setBusLock(bool) { }
     
     // Reads a value from memory
     u8 read8(u32 addr) const;

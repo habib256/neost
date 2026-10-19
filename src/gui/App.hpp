@@ -22,6 +22,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
+#include "util/DesktopPointer.hpp"
 
 #include <chrono>
 #include <cstdint>
@@ -75,20 +76,21 @@ struct App {
     // chord. Activé par --kiosk. Consulté par saveConfig (gel de la config).
     bool kiosk = false;
     // Lancé en borne (--kiosk) — invariant de DÉPLOIEMENT, distinct de `kiosk` qui
-    // suit la bascule à chaud. Sans lui, un aller-retour F8 rendrait la main à tous
+    // suit la bascule à chaud. Sans lui, un aller-retour bureau/borne rendrait la main à tous
     // les saveConfig du GUI pour le reste du processus : la borne repartirait sur le
     // disque et les réglages du dernier visiteur au lieu de sa configuration d'expo.
     bool kioskLaunched = false;
     int  kioskMonitor = 0;                 // --kiosk-monitor N (0 = principal)
-    // Bascule GUI ⇄ kiosk À CHAUD (F8, menu Machine, action « DESKTOP MODE » du menu
+    // Bascule GUI ⇄ kiosk À CHAUD (Ctrl+Alt+F, menu Machine, action « DESKTOP MODE » du menu
     // borne). La demande est POSÉE ici puis appliquée en tête de boucle, à une
     // frontière de trame : la bascule prend un instantané de la machine et le
     // restaure derrière elle, et Machine::loadState n'accepte que l'entre-deux-trames.
     //   0 = rien à faire · 1 = passer en kiosk · 2 = revenir au GUI.
     int  kioskSwitchReq = 0;
+    bool resumeAtariReq = false;           // Alt+Entrée ferme d'abord le menu borne
 
     // ─── Save-state rapide (F5 / F7) ─────────────────────────────────────────
-    bool saveStateReq = false;             // F5 latché dans onKey (cf. F8)
+    bool saveStateReq = false;             // F5 latché dans onKey (cf. Alt+Entrée)
     bool loadStateReq = false;             // F7 latché dans onKey
     std::string stateMsg;                  // message transitoire affiché en overlay
     int         stateMsgFrames = 0;
@@ -207,6 +209,8 @@ struct App {
     // ─── Entrées : souris, clavier, manettes ─────────────────────────────────
     Ikbd* ikbd = nullptr;                  // cible des callbacks clavier/souris GLFW
     bool  mouseCaptured = false;           // souris capturée → entrées dirigées vers le ST
+    bool desktopMouse = false;            // position hôte absolue pour GEM, sans capture
+    neost::DesktopPointer desktopPointer;
     bool  mouseCaptureToggleReq = false;   // molette / Ctrl+Alt+G → bascule dans la boucle
     bool  dbgMouse = false;                // NEOST_DEBUG_MOUSE=1 → trace les paquets souris
     bool  dbgJoy   = false;                // NEOST_DEBUG_JOY=1 → trace l'état brut des manettes
@@ -378,7 +382,7 @@ void saveConfig(App& A, const std::string& exeDir, neost::appconfig::Config& c,
                 Machine* machine = nullptr, bool force = false);
 
 // ─── Le cycle de vie du frontend (chantier A9) ──────────────────────────────
-// appInit renvoie 0 pour « continuer », sinon le code de sortie du processus
+// appInit renvoie -1 pour « continuer », sinon le code de sortie du processus
 // (--help / --version / option inconnue / échec d'ouverture de fenêtre).
 int  appInit(App& A, int argc, char** argv);
 void appLoop(App& A);

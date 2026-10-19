@@ -308,6 +308,7 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("dock=", 0) == 0) c.dock = (line.substr(5) == "1");
     else if (line.rfind("autozoom=", 0) == 0) c.autoZoom = (line.substr(9) == "1");
     else if (line.rfind("mousespeed=", 0) == 0) c.mouseSpeed = mouseSpeedOf(line.substr(11));
+    else if (line.rfind("desktop_mouse=", 0) == 0) c.desktopMouse = line.substr(14) == "1";
     else if (line.rfind("rtc_saved=", 0) == 0) c.rtcSaved = std::strtoll(line.substr(10).c_str(), nullptr, 10);
     else if (line.rfind("rtc=", 0) == 0) c.rtc = line.substr(4);
     else if (line.rfind("kiosk_romdir=", 0) == 0) { const std::string d = line.substr(13); if (!d.empty()) c.romDirs.push_back(d); }
@@ -406,6 +407,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
           << "\nuiVersion=" << w.uiVersion
           << "\ndock=" << (w.dock ? 1 : 0) << "\n";
     f << "mousespeed=" << w.mouseSpeed << "\n";
+    f << "desktop_mouse=" << (w.desktopMouse ? 1 : 0) << "\n";
     f << "autozoom=" << (w.autoZoom ? 1 : 0)
       << "\ncrt=" << (w.crt ? 1 : 0)
       << "\ncrt_bright=" << w.crtParams.brightness

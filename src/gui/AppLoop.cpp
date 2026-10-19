@@ -132,6 +132,18 @@ void appLoop(App& A) {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();                      // les transitions de boutons → onMouseButton
 
+        if (A.resumeAtariReq) {
+            A.resumeAtariReq = false;
+            keyboardWindowReleaseAll(machine.ikbd);
+            A.kioskDiskMenu = false;
+            A.kioskPage = KIOSK_PAGE_LIST;
+            A.kioskZone = KIOSK_ZONE_LIST;
+            A.desktopPointer.reset();
+            machine.ikbd.mouseEvent(0, 0, false, false);
+            glfwGetCursorPos(window, &lastMx, &lastMy);
+            emuNext = clock::now();
+        }
+
         if (A.fullscreenToggleReq) {
             A.fullscreenToggleReq = false;
             A.mouseCaptureToggleReq = false;
@@ -143,6 +155,8 @@ void appLoop(App& A) {
         if (A.mouseCaptureToggleReq) {
             A.mouseCaptureToggleReq = false;
             A.mouseCaptured = !A.mouseCaptured;
+            A.desktopPointer.reset();
+            machine.ikbd.mouseEvent(0, 0, false, false);
             glfwSetInputMode(window, GLFW_CURSOR,
                              A.mouseCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
             if (A.mouseCaptured) {
@@ -150,9 +164,11 @@ void appLoop(App& A) {
                 if (glfwRawMouseMotionSupported())
                     glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
             }
+            else if (glfwRawMouseMotionSupported())
+                glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
         }
 
-        // Bascule GUI ⇄ kiosk demandée (F8 / menus) : appliquée ICI, en tête de tour,
+        // Bascule GUI ⇄ kiosk demandée (Ctrl+Alt+F / menus) : appliquée ICI, en tête de tour,
         // donc entre deux trames émulées — la seule fenêtre où l'instantané se recharge.
         if (A.kioskSwitchReq) {
             const bool on = (A.kioskSwitchReq == 1);
@@ -161,6 +177,24 @@ void appLoop(App& A) {
             A.switchKioskMode(on);
         }
 
+
+        if (A.desktopMouse && !A.mouseCaptured && !A.kiosk) {
+            auto& pointer = A.desktopPointer;
+            if (!mouseReachesSt() || !glfwGetWindowAttrib(window, GLFW_FOCUSED)) {
+                if (pointer.leftHeld || pointer.rightHeld || !pointer.clicks.empty())
+                    machine.ikbd.mouseEvent(0, 0, false, false);
+                pointer.reset();
+            } else if (!pointer.clicks.empty()) {
+                const auto action = pointer.clicks.front();
+                if (machine.desktopMouseMove(action.x, action.y, action.left, action.right))
+                    pointer.clicks.pop_front();
+            } else if (pointer.hovered || pointer.leftHeld || pointer.rightHeld) {
+                double mx, my; glfwGetCursorPos(window, &mx, &my);
+                int x, y;
+                if (pointer.point(mx, my, x, y, pointer.leftHeld || pointer.rightHeld))
+                    machine.desktopMouseMove(x, y, pointer.leftHeld, pointer.rightHeld);
+            }
+        }
 
         if (A.mouseCaptured) {                  // mouvement relatif → paquet IKBD (boutons inclus)
             double mx, my; glfwGetCursorPos(window, &mx, &my);
@@ -452,7 +486,7 @@ void appLoop(App& A) {
         // la frontière de trame. En kiosk la config est figée mais l'état de jeu, lui, se
         // sauve/charge (ce n'est pas la config). Fronts montants.
         {
-            // Demandes latchées dans onKey (cf. le commentaire F8 : la scrutation
+            // Demandes latchées dans onKey (cf. le commentaire Alt+Entrée : la scrutation
             // glfwGetKey ratait un appui bref posé/relâché entre deux tours).
             const std::string statePath = exeDir + "/../neost.state";
             if (A.saveStateReq) {
@@ -570,8 +604,8 @@ void appLoop(App& A) {
                 ImGui::Separator();
                 // Bascule borne : plein écran sans chrome, config figée, navigation à
                 // la manette. La machine traverse la bascule par instantané → le jeu
-                // en cours continue. F8 revient au bureau.
-                if (ImGui::MenuItem(ICON_FA_DESKTOP " Kiosk mode", "F8"))
+                // en cours continue. Alt+Entrée revient au bureau.
+                if (ImGui::MenuItem(ICON_FA_DESKTOP " Kiosk mode", "Ctrl+Alt+F"))
                     A.kioskSwitchReq = 1;
                 ImGui::Separator();
                 if (ImGui::MenuItem(ICON_FA_SIGN_OUT_ALT " Quit")) glfwSetWindowShouldClose(window, 1);
@@ -619,7 +653,7 @@ void appLoop(App& A) {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Help")) {
-                // Les raccourcis étaient jusqu'ici invisibles (F5/F7/F8/F11/F12 ne
+                // Les raccourcis étaient jusqu'ici invisibles (F5/F7/F11/F12 ne
                 // figuraient nulle part sauf dans le code).
                 ImGui::TextDisabled("Keyboard shortcuts");
                 ImGui::Separator();
@@ -627,7 +661,8 @@ void appLoop(App& A) {
                 static const Key keys[] = {
                     { "F5",  "save the machine state" },
                     { "F7",  "reload the state" },
-                    { "F8",  "kiosk mode (toggle) — also Ctrl+Alt+F" },
+                    { "Alt+Enter", "resume Atari from kiosk menu; otherwise toggle full screen" },
+                    { "Ctrl+Alt+F", "toggle kiosk mode" },
                     { "F11", "keyboard joystick emulation" },
                     // F12 n'a JAMAIS eu de handler bureau (historique vérifié) : il
                     // n'existe qu'en kiosque — documenter la réalité, pas l'intention.
@@ -663,9 +698,9 @@ void appLoop(App& A) {
         ImGui::SameLine();
         if (IconButton(ICON_FA_COG, "Configuration")) A.showCfg = !A.showCfg;
         ImGui::SameLine();
-        // Accès direct à la borne : le menu Machine et F8 restent disponibles, mais
+        // Accès direct à la borne : le menu Machine et Ctrl+Alt+F restent disponibles, mais
         // la bascule principale ne doit pas être enfouie dans un sous-menu.
-        if (IconButton(ICON_FA_DESKTOP, "Switch to kiosk mode (F8)"))
+        if (IconButton(ICON_FA_DESKTOP, "Switch to kiosk mode (Ctrl+Alt+F)"))
             A.kioskSwitchReq = 1;
         ImGui::SameLine();
         if (IconButton(ICON_FA_REDO, "Reset")) reqReset = true;
@@ -1032,6 +1067,7 @@ void appLoop(App& A) {
             if (cfgUi.cfgDirty) {
                 cfg.autoZoom = A.autoZoom;
                 cfg.mouseSpeed = A.mouseSpeed;
+                cfg.desktopMouse = A.desktopMouse;
                 cfg.crt = A.crtOn; cfg.crtParams = A.crtParams;
                 saveConfig(A, exeDir, cfg, &machine);
                 cfgUi.cfgDirty = false;
@@ -1053,6 +1089,7 @@ void appLoop(App& A) {
                 // fenêtre Joysticks), et le profil hériterait sinon de valeurs périmées.
                 cfg.autoZoom = A.autoZoom;
                 cfg.crt      = A.crtOn; cfg.crtParams = A.crtParams;
+                cfg.desktopMouse = A.desktopMouse; cfg.mouseSpeed = A.mouseSpeed;
                 cfg.volume   = audio.masterVolume();
                 cfg.joyport  = A.kbdJoyPort; cfg.joydeadzone = A.joyDeadzone;
                 cfg.joymap   = joymapSerialize(A); cfg.port0 = A.port0Auto ? "auto" : "mouse";
@@ -1077,6 +1114,9 @@ void appLoop(App& A) {
                     cfg = p;
                     // Réglages à effet immédiat (le matériel, lui, part au rebuild ci-dessous).
                     A.autoZoom = cfg.autoZoom;
+                    A.desktopMouse = cfg.desktopMouse; A.mouseSpeed = cfg.mouseSpeed;
+                    A.desktopPointer.reset();
+                    machine.ikbd.mouseEvent(0, 0, false, false);
                     A.crtOn    = cfg.crt; A.crtParams = cfg.crtParams;
                     A.kbdJoyPort  = cfg.joyport;
                     A.port0Auto   = (cfg.port0 == "auto");   // cf. init au démarrage

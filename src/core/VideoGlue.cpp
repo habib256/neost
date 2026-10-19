@@ -1241,6 +1241,97 @@ bool Shifter::glueSelfTest() {
     endVideoLine();
     chk("vblank no counter stride", vcLineBase_, oldBase);
     chk("vblank no RAM snapshot", lineSnapLen_[308], 0);
+    // Bordure basse : un moteur single-buffer efface la RAM APRÈS le HBL.
+    // Le replay doit garder les pixels balayés, y compris au-delà de curAH_.
+    // Contre-épreuve sans retrait : les mêmes lignes restent en couleur de bord.
+    for (bool openBottom : {false, true}) {
+        reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000;
+        palette.fill(0x0700); palette[0] = 0x0070;
+        beginFrame();
+        if (openBottom) {
+            syncWrites_.push_back({262 * geometry().cyclesPerLine + 420, 0, false});
+            syncWrites_.push_back({263 * geometry().cyclesPerLine + 40, 2, false});
+        }
+        // Tous les plans : rouge, indépendamment des mots sautés par le trick.
+        for (uint32_t a = 0x20000; a < 0x30000; a += 2) bus_.write16(a, 0xFFFF);
+        commitScanline(280);
+        chk("bottom live snapshot", lineSnapLen_[280] > 0, openBottom);
+        const uint32_t capturedBase = vcLineBase_;
+        commitScanline(280);
+        chk("bottom commit idempotent", vcLineBase_, capturedBase);
+        for (uint32_t a = 0x20000; a < 0x30000; a += 2) bus_.write16(a, 0);
+        finishFrame();
+        const int row = activeY_ + 280 - geometry().dispStartLine;
+        chk("bottom pixels survive erase", frame_[row * curW_ + activeX_ + 32],
+            stColorToArgb(openBottom ? 0x0700 : 0x0070));
+    }
+    // Sans écriture palette ni bordure élargie, les lignes NO_DE et STOP_MIDDLE
+    // doivent quand même être masquées par le rendu final. BLANK consomme la
+    // RAM, NO_DE ne la consomme pas ; STOP_MIDDLE n'en lit que 54 octets.
+    for (int trick = 0; trick < 3; ++trick) {
+        reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000;
+        palette.fill(0x0777); palette[0] = 0x0070;
+        beginFrame();
+        const int first = trick == 0 ? 28 : trick == 1 ? 20 : 100;
+        const int last = trick == 0 ? 76 : trick == 1 ? 52 : 200;
+        for (uint32_t a = 0x20000; a < 0x30000; a += 2) bus_.write16(a, 0xFFFF);
+        // Comme en exécution : les écritures de 100 n'existent pas au HBL 99.
+        commitScanline(99);
+        syncWrites_.push_back({100 * cpl + first, uint8_t(trick == 0 ? 0 : 2), trick != 0});
+        syncWrites_.push_back({100 * cpl + last, uint8_t(trick == 0 ? 2 : 0), trick != 0});
+        const uint32_t before = vcLineBase_;
+        commitScanline(100);
+        chk("masked line stride", vcLineBase_ - before, trick == 0 ? 162 : trick == 1 ? 0 : 54);
+        chk("masked no palette", spec512Active_, false);
+        for (int y = 0; y < curAH_; ++y) renderLine(y);
+        finishFrame();
+        const int row = activeY_ + 100 - geometry().dispStartLine;
+        chk("masked line pixels", frame_[row * curW_ + activeX_ + 250], stColorToArgb(0x0070));
+        if (trick != 0) chk("masked no expanded border", bordersTrick_, false);
+    }
+    // NO_SYNC/SYNC_HIGH : une ligne sans DE inhibe l'avance vidéo et Timer B,
+    // puis la fenêtre verticale gagne une ligne. Un retour AVANT le comparateur
+    // HSYNC concerné annule le masque de la ligne suivante et cette extension.
+    for (bool highSync : {false, true}) for (bool cancel : {false, true}) {
+        reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000;
+        palette.fill(0x0777); palette[0] = 0x0070;
+        beginFrame();
+        for (uint32_t a = 0x20000; a < 0x30000; a += 2) bus_.write16(a, 0xFFFF);
+        commitScanline(99);
+        const int first = highSync ? 480 : 420;
+        const int last = highSync ? (cancel ? 496 : 524) : (cancel ? 448 : 480);
+        syncWrites_.push_back({100 * cpl + first, 2, true});
+        liveGlueCatchUp(100);
+        chk("sync pending blank", glueBlankLines_, 1);
+        // Retour SYNC_HIGH non annulé sur la ligne suivante : servir le HBL
+        // avant d'injecter cette écriture, comme le ferait le CPU.
+        if (last >= cpl) commitScanline(100);
+        syncWrites_.push_back({100 * cpl + last, 0, true});
+        liveGlueCatchUp(last >= cpl ? 101 : 100);
+        if (last < cpl) commitScanline(100);
+        chk("sync blank count", glueBlankLines_, cancel ? 0 : 1);
+        const uint32_t mask = highSync ? glue::SYNC_HIGH : glue::NO_SYNC;
+        chk("sync current mask", (glueLines_[100].borderMask & mask) != 0, !cancel);
+        chk("sync next no count", (glueLines_[101].borderMask & glue::NO_COUNT) != 0, !cancel);
+        chk("sync next Timer B", liveLineDisplayed(101), cancel);
+        const uint32_t before = vcLineBase_;
+        commitScanline(101);
+        chk("sync next stride", vcLineBase_ - before, cancel ? 160 : 0);
+        chk("sync following stride", glueLineBytes(102), 160);
+        chk("sync bottom extended", liveLineDisplayed(263), !cancel);
+        chk("sync after bottom", liveLineDisplayed(264), false);
+        commitScanline(263);
+        chk("sync total bytes", vcLineBase_ - vcFrameBase_, 32000);
+        for (int y = 0; y < curAH_; ++y) renderLine(y);
+        finishFrame();
+        const int nextRow = activeY_ + 101 - geometry().dispStartLine;
+        const int bottomRow = activeY_ + 263 - geometry().dispStartLine;
+        chk("sync next pixels", frame_[nextRow * curW_ + activeX_ + 100],
+            stColorToArgb(cancel ? 0x0777 : 0x0070));
+        chk("sync bottom pixels", frame_[bottomRow * curW_ + activeX_ + 100],
+            stColorToArgb(cancel ? 0x0070 : 0x0777));
+        chk("sync replay blank count", glueBlankLines_, cancel ? 0 : 1);
+    }
     // Le signal est entièrement reconstructible avec les champs déjà sauvés.
     vb(50, {{307,500,0,0}, {308,0,0,2}});
     std::vector<uint8_t> state;

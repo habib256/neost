@@ -13,6 +13,52 @@ premier `git submodule update`** — ce qui s'est déjà produit une fois (fork 
 perdu, commits `e4da365`/`a1e52ec` introuvables). La vendorisation fige le code et
 le patch dans l'historique NeoST, à l'épreuve du clobber.
 
+## Bornes bus et trace d'instruction (2026-10-19)
+
+- `Moira.h` / `Moira.cpp` : hook protégé `willProcessFault(StackFrame)`
+  appelé pour les erreurs de bus et d'adresse, initiales ou imbriquées.
+  NeoST y relève la dernière adresse, le sens et le PC afin qu'un halt sur
+  adresse impaire ne conserve pas le diagnostic d'une ancienne sonde MMIO.
+  Le hook reste virtuel même hors `MOIRA_VIRTUAL_API`, comme les callbacks
+  de faute employés par le wrapper ; aucune modification du flux CPU.
+
+- `MoiraExec_cpp.h`, `execMoveToSr<C68000>` : recharger les deux mots de
+  préfetch après écriture de SR, via `fullPrefetch<POLL>`. La transcription
+  du [microcode du silicium](https://og.kervella.org/m68k/all.txt), entrées
+  `46c0` et `46fc`, décrit `301 rstw1` (recul de deux octets), `321 stiw4`,
+  `1e1 malw3` (lecture et mise à jour IRC), puis `363 b`/`34c mmrw3`
+  (lecture suivante et transfert IR/IRD). L'ancien code lisait deux fois
+  `pc+2` et gardait l'ancien opcode. Les autres modèles CPU sont conservés.
+  Un test modifie l'opcode déjà préfetché entre reset et MOVE D0,SR : le
+  nouvel opcode doit s'exécuter, à 8 comme à 16 MHz. Les deux cas échouent
+  aussi avec la variante expérimentale « lecture pc, résultat ignoré ».
+
+- `Moira.h` / `MoiraDataflow_cpp.h` : hooks `willAccessBus(u32 addr, bool write, unsigned size)` et `didAccessBus`
+  avant/après chaque cycle bus (deux pour un long). Le SYNC(4) entre les mots
+  est séparé en 2+2 sans ajouter de cycles. Les implémentations par défaut sont
+  vides ; NeoST s'en sert pour PRE_START et les 64 accès CPU non-hog d'Hatari.
+  Direction et largeur décrivent chaque cycle (long = deux mots, ordre inversé
+  conservé) : décision hit/miss MegaSTE et préalignement RAM avant SYNC(2).
+  Le hit est latché avant les cycles, afin qu'une DMA ne change pas la donnée
+  que le CPU avait déjà obtenue du cache.
+- `Moira.h` / `MoiraExec_cpp.h` : `setBusLock` protège le read-modify-write TAS
+  mémoire ; libération avant préfetch et sur exception. Le blitter peut ainsi
+  reprendre sous-instruction sans casser l'atomicité de TAS.
+- La copie de `MoiraConfig.h` générée par CMake active `MOIRA_WILL_EXECUTE` pour
+  le traçage. Le hook existant trace avant l'instruction réelle, une seule fois
+  par execute (garde NeoST), sans fausses instructions lors des IRQ/STOP.
+- Le crédit de recouvrement CPU/blitter est détenu et sérialisé par `Cpu68k`
+  (save-state v49), pas dans les structures du cœur Moira.
+
+Validation : dix-sept sondes temporelles strictes contre Hatari, dont dix blitter
+(tailles, ROM/RAM, HOG/partagé, MULU et TAS), tests TAS mémoire/D0 et reprise du
+crédit après snapshot dans les deux modes. Le hook avant accès reçoit l'adresse
+masquée de chaque mot (ordre inversé compris pour les écritures longues) :
+l'alignement RAM est calculé au début du cycle avant SYNC(2), comme Hatari,
+pas au callback médian après une éventuelle tranche blitter. BL5 pixel clos :
+les 100 valeurs TADR de `blitter_timer` concordent avec Hatari, zéro pixel.
+Le helper PRE_START ne sert que BLITTER ; la DMA conserve le dispatch BL4 par accès.
+
 ## Pin d'origine — retrouvé le 2026-08-28 (chantier A35)
 
 Ce fichier décrivait les six patches locaux mais **n'enregistrait ni commit ni tag

@@ -123,6 +123,7 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 bool dock = true;              // mode ancré (dockspace ImGui) — cf. renderDockSpace
                 bool autoZoom = true;          // zoom adaptatif de l'écran ST — cf. g_autoZoom
                 float mouseSpeed = 1.0f;       // sensibilité de la souris émulée — cf. App::mouseSpeed
+                bool desktopMouse = false;    // souris absolue GEM, sans capture
                 bool crt = false;              // effets CRT actifs (façade moniteur)
                 neost::CrtParams crtParams;    // réglages CRT (cf. gui/CrtParams.h)
                 std::vector<std::string> romDirs;   // kiosk : dossiers ROM/disques additionnels (en plus de disks/)

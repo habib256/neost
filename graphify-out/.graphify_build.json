@@ -1,0 +1,1 @@
+{"excludes": ["extern/imgui/", "extern/miniaudio/", "extern/mt32emu/", "extern/stb/", "extern/tsf/", "dev/", "disks/", "roms/", "pic/", "fonts/"]}

@@ -2,7 +2,10 @@
 
 > (c) 2026 VERHILLE Arnaud — **référence durable** de la précision cycle de NeoST.
 >
-> - **Le modèle visé** = Hatari : `extern/hatari/src` (source de vérité, lu pas compilé) — surtout
+> - **La cible** = le véritable Atari ST et les variantes prises en charge.
+>   La documentation et les mesures matérielles priment sur les émulateurs.
+> - **Référence comparative** = Hatari : `extern/hatari/src` (lu, pas compilé),
+>   sans reproduire ses défauts confirmés — surtout
 >   `cycInt.c`/`cycInt.h` (ordonnanceur), `cycles.c` (compteurs), `video.c` (raster), `mfp.c`
 >   (timers), `fdc.c` (disque).
 > - **Le cœur 68000** = Moira (cycle-exact, `MOIRA_PRECISE_TIMING=true`). Seul cœur ; cf.
@@ -108,11 +111,11 @@ sévérité + `fichier:ligne` des deux côtés dans
 | Priorité | Chantier | Effort | Étalon type |
 |----------|----------|--------|-------------|
 | ~~P1~~ ✅ | Géométrie mid-trame (V3) — **CLOS le 2026-09-01** : attribution de ligne à la grille réelle promue par défaut, prouvée à l'oracle sur l'étalon généré `freq_switch` (18/18 écritures freq à la même ligne/cycle qu'Hatari) ; le verrou ne faisait rien jusque-là (longueur de ligne non persistante) | — | overscan plein écran, ULM Dark Side |
-| **P1** | Rendu live du retrait BAS + lignes EMPTY/BLANK/NO_DE | moyen | scroller bordure basse Cuddly |
-| **P2** | Blitter : interfoliage `CycInt_Process` par accès bus + `cpu_bus_rmw` (le partage 64/64 est PORTÉ) | moyen | démos CPU+blitter simultanés |
+| ~~P1~~ ✅ | Déclenchement du rendu des lignes masquées sans palette corrigé ; retrait bas gardé. Bord final STOP_MIDDLE (3 pixels) et couleur physique du blanking restent ouverts | — | sondes libres `blankline_*` |
+| **P2** | Blitter : comparaison globale MegaSTE 16 MHz/IRQ (CPU/cache qualifié séparément ; HOG/partagé et BL5 clos) | moyen | démos CPU+blitter simultanés |
 | **P2** | Son DMA STE : quantification HBL du refill à confronter à l'oracle (compteur live et FIFO PORTÉS) | moyen | STE_Test, sync zik/raster |
 | **P2** | Restes vidéo : `VIDEO_ENDLINE`, VBL au cycle exact, phase Timer C | moyen | démos fullscreen |
-| **P3** | Wakeup states WS1-4, branche STE de la Glue, overscan med-res NO_SYNC | élevé | démos « extrêmes » (Closure…) |
+| **P3** | Wakeup states WS1-4, branche STE de la Glue, overscan med-res ; NO_SYNC/SYNC_HIGH comparés sur sondes générées, mesures matérielles ouvertes | élevé | démos « extrêmes » (Closure…) |
 | **P3** | Unité interne ×256, fréquences exactes centralisées | faible | dérive long terme |
 
 ### ✅ Beam-sync : CLOS (2026-07-09, complété 2026-08-06) — ex-P1 de tête
@@ -131,6 +134,23 @@ tient pas ») — c'était vrai ALORS, et trois passes l'ont clos depuis :
   écrit « beam-sync EL CONVERGÉ, transitoire d'entrée inclus — aucun résidu NeoST ».
 - **Super Hang-On** (10ᵉ passe, 2026-08-06) : IACK MFP vectorisé 12→16 cyc.
 
+**Horloges IACK MegaSTE (2026-10-19)** : les quatre cycles internes après
+acquittement restent des cycles CPU. Le bloc périphérique reste en cycles bus :
+MFP 20 cycles CPU à 8 MHz, 36 à 16 MHz (au lieu de 40) avec la calibration
+actuelle. HBL/VBL séparent aussi attente E-clock, bloc périphérique et idle CPU.
+199 contrôles CPU/blitter sous ASan/UBSan, dont les dix phases vidéo aux deux
+fréquences ; les douze sondes MegaSTE vérifient 72 blocs IACK par capture.
+Les créneaux RAM peuvent masquer ce gain dans la date d'entrée du handler :
+ce correctif ne clôt pas la qualification globale ni la mesure matérielle des
+latences périphériques. Détails :
+[`HATARI_MEGASTE_AUDIT.md`](HATARI_MEGASTE_AUDIT.md).
+
+**Mesure IACK préparée (2026-10-19)** : le diagnostic d'Hatari converti en
+cycles bus laisse +3/+4 cycles à 16 MHz, contre +11/+12 avant conversion.
+Aucune constante de NeoST n'est ajustée sur cette base. Le PRG relogeable
+et la disquette AUTO de la [sonde matérielle](MFP_IACK_MEASUREMENT.md) sont
+contrôlés sur NeoST (MegaSTE, refus ST/STE) ; la capture réelle reste à faire.
+
 Journal complet, mesures et pistes éliminées :
 [`MOIRA_WINUAE_CONVERGENCE.md`](MOIRA_WINUAE_CONVERGENCE.md). L'heuristique **V2**
 res-switch (line-shortening hi-res ≤56 cyc, opt-in `NEOST_V2`) est supplantée par le
@@ -138,6 +158,48 @@ canal longueurs de ligne (`NEOST_LINELEN`, ON par défaut depuis le tranchage WS
 elle reste un outil d'A/B, pas un chantier.
 
 ### P1 — Registres vidéo STE : 2 restes
+
+**Capture live de la bordure basse vérifiée (2026-10-19)** :
+`Machine::onHbl` appelle déjà `Shifter::commitScanline`, qui prolonge les captures
+jusqu'à la fin d'affichage Glue lorsque le bas est ouvert. Le replay utilise
+ces captures plutôt que la RAM de fin de trame. Une régression de
+`glueSelfTest` remplit l'écran, capture jusqu'à la ligne 280, efface la RAM
+puis vérifie les pixels conservés dans la bordure basse ; sans retrait, cette
+ligne garde la couleur de bordure. Un second commit de la même ligne n'avance
+pas le compteur. Les deux variantes de grille passent ; rétablir la limite
+aux lignes actives fait échouer capture et pixels. Ce contrôle protège la
+chronologie interne ; il ne constitue pas une nouvelle mesure matérielle.
+
+**Lignes masquées sans palette (2026-10-19)** : `finishFrame` ne déclenchait
+le rendu Glue que sur extension de bordure, écriture palette ou VBlank actif.
+Une impulsion hi-res laissant NO_DE ou STOP_MIDDLE sans élargissement était
+correctement détectée, mais l'image conservait les pixels du rendu nominal.
+Le rendu final traite désormais ces masques même sans écriture palette,
+sans transformer ce cas en extension de bordure pour le cadrage adaptatif.
+Onze contrôles Glue vérifient stride (BLANK 162, NO_DE 0, STOP_MIDDLE 54 octets
+pour les stimuli choisis), masquage et absence d'extension. Deux échouent
+avant correction dans chacune des deux grilles. Le générateur libre
+`make_blankline_test.py` exerce quatre séquences sur ST et STE, dont une
+contre-épreuve de la fenêtre de préchargement propre au STE.
+`EMPTY_LINE` et `BLANK_LINE` sont des drapeaux historiques d'Hatari, déclarés
+mais plus produits au pin courant : aucune branche morte n'est portée.
+Le masquage utilise encore la palette 0 comme Hatari ; sa couleur physique
+reste à mesurer, indépendamment de cette correction du chemin de rendu.
+Six sondes BLANK/NO_DE concordent à zéro pixel avec Hatari. Les deux
+STOP_MIDDLE sont des **snapshots**, pas des oracles : résidu de trois pixels
+au bout du dernier groupe de plans, stable sur 61 captures Hatari par machine.
+Le choix entre découpage des pixels au DE et recopie du groupe partiel reste
+ouvert faute de mesure matérielle ; aucune compensation ajoutée.
+
+**NO_SYNC/SYNC_HIGH, qualification comparative (2026-10-19)** : les branches
+étaient déjà portées. Huit sondes supplémentaires (deux tricks et leurs
+annulations, ST/STE) exercent la ligne suivante NO_DE/NO_COUNT, l'absence
+d'avance vidéo et de tic Timer B, et la ligne ajoutée en bas de l'affichage.
+Les longs successifs en RAM rendent un stride faux visible sur les lignes
+suivantes. 52 contrôles Glue vérifient aussi l'accord live/replay, l'avance
+totale de 32 000 octets et l'annulation complète des masques et de l'extension.
+Pas de changement d'exécution pour obtenir cet accord ; les signaux physiques
+HSYNC/VDE et la couleur du blanking restent à mesurer sur Atari.
 
 - ✅ **`bSteBorderFlag` / mode 336 px (2026-10-18)** : combo `$FF8265>0` puis
   `$FF8264=0` dans les 40 cycles de la même VBL → 16 px de plus à gauche et
@@ -158,8 +220,26 @@ et le bug matériel « +1 accès CPU compté blitter » (`busCountError_` → tr
 Cf. `src/core/Blitter.cpp:22-27` (constantes), `:257-258` (`busCountError_` → tranche de 63)
 et `:247-310` (tranche + comptage).
 
-**Restent** : pas d'interfoliage `CycInt_Process` par accès bus pendant une tranche (le CPU est
-stallé en bloc, ses cycles internes ne recouvrent pas le blit), et `cpu_bus_rmw`.
+**Port complémentaire du 2026-10-19** : reprise PRE_START pendant l'instruction,
+bornes des cycles bus avant/après accès, recouvrement des cycles CPU internes
+HOG/partagé, verrou TAS mémoire et IRQ après restitution du bus. Dispatch DMA
+par accès préservé via rebase du quantum. Dix-sept sondes temporelles Hatari
+passent sans KNOWN, dont dix blitter (tailles, MULU, TAS et exécution RAM) ; fin
+observée à +4 cycles, IRQ à +2 en ROM / +4 en RAM, compte CPU identique. Crédit
+sauvegardé en v49. Alignement RAM déplacé au début du cycle, avant SYNC(2) :
+BL5 pixel **clos**, `blitter_timer` à zéro pixel contre Hatari, promu en oracle.
+**MegaSTE 16 MHz, complément** : alignement des misses avant le cycle CPU,
+choix du hit avant les cycles, donnée déjà lue conservée pendant une DMA et
+invalidation cache avant arbitration. Onze sondes CPU/cache sans IRQ ni DMA
+passent en égalité exacte contre Hatari (`run_megaste_bus_oracle.py`). Les
+intervalles Hatari en cycles CPU sont divisés par deux, jamais les dates de
+bascule. Tests locaux des quatre phases RAM et du chevauchement cache/DMA.
+**Complément global** : douze configurations NeoST passent les contrôles de
+données, IRQ et bornes physiques. PRE_START corrigé à 16 MHz (cinq cycles bus
+depuis le callback CPU, au lieu de sept). **Reste** : comparaison temporelle
+exacte ; deux défauts Hatari isolés, et environ 12–24 cycles résiduels après
+corrections expérimentales. Aucun échec promu en référence. Voir
+[`HATARI_MEGASTE_AUDIT.md`](HATARI_MEGASTE_AUDIT.md).
 
 ### P2 — Son DMA STE (`dmaSnd.c:737`)
 
@@ -191,7 +271,8 @@ exacte du tic Timer C (au cycle de programmation) ; lecture compteur à cheval s
   **E-Clock** (`M68000_WaitEClock`), porté (`NEOST_IACK`).
 - **Branche STE de la Glue** (V1) : `Preload_Start_*`, `LEFT_OFF_2_STE` non gérés → overscan de
   démos STE (E605, DHS) mal placé.
-- **Overscan med-res** + **NO_SYNC/SYNC_HIGH** (lignes vides par manipulation du sync hi-res).
+- **Overscan med-res** ; NO_SYNC/SYNC_HIGH (lignes vides par manipulation du
+  sync hi-res) comparés sur sondes ST/STE, comportement électrique non mesuré.
 
 ### P3 — Horloges & divers
 

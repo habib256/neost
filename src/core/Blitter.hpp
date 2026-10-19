@@ -21,10 +21,10 @@
 //     par tranche) ; effacer BUSY pendant le transfert met le blitter en PAUSE
 //     (repris au prochain BUSY=1), comme sur le vrai matériel.
 //  Le stall CPU avance l'horloge cycle-exact de Moira, comme les autres wait
-//  states de bus. Limite restante vs Hatari CE : pas d'exécution CPU parallèle
-//  pendant la tranche blitter (Blitter_Check_Simultaneous_CPU) — le CPU est
-//  stallé en bloc, ses cycles internes ne recouvrent pas le blit (sauf les 4
-//  cycles PRE_START). MegaSTE 16 MHz : les hits du cache CPU sont comptés comme
+//  states de bus. HOG et partagé reprennent après PRE_START pendant l'instruction
+//  et conservent un crédit de cycles internes CPU recouverts par la tranche ;
+//  le prochain accès bus l'annule (Blitter_Check_Simultaneous_CPU).
+//  MegaSTE 16 MHz : les hits du cache CPU sont comptés comme
 //  accès bus (approximation, le vrai cache ne sort pas sur le bus).
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
@@ -41,7 +41,7 @@ class Blitter {
 public:
     explicit Blitter(Bus& bus) : bus_(bus) {}
 
-    // L'ordonnanceur date les tranches non-hog (cf. onSlice). Posé par Machine.
+    // L'ordonnanceur date PRE_START dans les deux modes (cf. onSlice).
     void setScheduler(Scheduler* s) { sched_ = s; }
 
     uint8_t read8(uint32_t addr);            // $FF8A00-$FF8A3F (relisible)
@@ -55,7 +55,7 @@ public:
 
     void reset(bool cold = false);
 
-    // Échéance Scheduler::BLITTER : tranche non-hog suivante (64 accès bus).
+    // Échéance Scheduler::BLITTER : 64 accès partagés ou transfert HOG entier.
     void onSlice();
 
     // Le blit est-il en cours ? (bit BUSY de $FF8A3C). En non-hog il reste à 1
@@ -90,7 +90,7 @@ private:
     void finishTransfer();                   // y_count = 0 : BUSY/HOG effacés + IRQ GPIP3
     void billCycles(int n);                  // facture + dispatche n cyc volés (par accès)
     void pauseTransfer();                    // BUSY effacé pendant un blit : tranche annulée
-    // Fenêtre PRE_START de 4 cycles avant chaque prise de bus non-hog (cf. .cpp) :
+    // Fenêtre PRE_START avant chaque prise de bus (cf. .cpp) :
     // armée dans Bus::blitterWinStart/End, consultée par les callbacks mémoire de
     // Moira (Cpu68k.cpp) qui signalent un accès CPU tombé dedans.
     void armPreStartWindow(int64_t now, int cycles = 4);   // fenêtre PRE_START (8 au démarrage, 4 à la reprise)

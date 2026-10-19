@@ -366,6 +366,7 @@ Moira::read(u32 addr)
 
     // Update function code pins
     setFC(AS == AddrSpace::DATA ? FC::USER_DATA : FC::USER_PROG);
+    willAccessBus(addr & addrMask<C>(), false, S == Byte ? 1 : 2);
     SYNC(2);
 
     // Check for address errors
@@ -386,6 +387,7 @@ Moira::read(u32 addr)
         if (F & POLL) POLL_IPL;
         result = read8(addr & addrMask<C>());
         SYNC(2);
+        didAccessBus();
     }
 
     if constexpr (S == Word) {
@@ -393,15 +395,17 @@ Moira::read(u32 addr)
         if (F & POLL) POLL_IPL;
         result = read16(addr & addrMask<C>());
         SYNC(2);
+        didAccessBus();
     }
 
     if constexpr (S == Long) {
 
         result = read16(addr & addrMask<C>()) << 16;
-        SYNC(4);
+        SYNC(2); didAccessBus(); willAccessBus((addr + 2) & addrMask<C>(), false, 2); SYNC(2);
         if (F & POLL) POLL_IPL;
         result |= read16((addr + 2) & addrMask<C>());
         SYNC(2);
+        didAccessBus();
     }
 
     return result;
@@ -422,6 +426,7 @@ Moira::write(u32 addr, u32 val)
 {
     // Update function code pins
     setFC(AS == AddrSpace::DATA ? FC::USER_DATA : FC::USER_PROG);
+    willAccessBus((addr + ((S == Long && (F & REVERSE)) ? 2 : 0)) & addrMask<C>(), true, S == Byte ? 1 : 2);
     SYNC(2);
 
     // Check for address errors
@@ -440,6 +445,7 @@ Moira::write(u32 addr, u32 val)
         if (F & POLL) POLL_IPL;
         write8(addr & addrMask<C>(), (u8)val);
         SYNC(2);
+        didAccessBus();
     }
 
     if constexpr (S == Word) {
@@ -447,6 +453,7 @@ Moira::write(u32 addr, u32 val)
         if (F & POLL) POLL_IPL;
         write16(addr & addrMask<C>(), (u16)val);
         SYNC(2);
+        didAccessBus();
     }
 
     if constexpr (S == Long) {
@@ -454,18 +461,20 @@ Moira::write(u32 addr, u32 val)
         if (F & REVERSE) {
 
             write16((addr + 2) & addrMask<C>(), u16(val & 0xFFFF));
-            SYNC(4);
+            SYNC(2); didAccessBus(); willAccessBus(addr & addrMask<C>(), true, 2); SYNC(2);
             if (F & POLL) POLL_IPL;
             write16(addr & addrMask<C>(), u16(val >> 16));
             SYNC(2);
+            didAccessBus();
 
         } else {
 
             write16(addr & addrMask<C>(), u16(val >> 16));
-            SYNC(4);
+            SYNC(2); didAccessBus(); willAccessBus((addr + 2) & addrMask<C>(), true, 2); SYNC(2);
             if (F & POLL) POLL_IPL;
             write16((addr + 2) & addrMask<C>(), u16(val & 0xFFFF));
             SYNC(2);
+            didAccessBus();
         }
     }
 }

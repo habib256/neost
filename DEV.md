@@ -319,7 +319,19 @@ boot** (il valait « neutre »), et les minuscules `u/d/l/r/f` valent la directi
 valaient « neutre ») — une recette archivée avec un caractère de remplissage doit être
 réécrite avec `.`,
 `--mouse-at N "SCRIPT"` (L/R/U/D = ±8 px, `1`/`2` = clic gauche/droit, `.` = idle — c'est
-ainsi qu'on pilote Vroom : clic droit au titre, clic droit en course). Debug entrées :
+ainsi qu'on pilote Vroom : clic droit au titre, clic droit en course).
+
+Le GUI propose aussi **Configuration → Input → Desktop mouse (GEM, no capture)**
+(`desktop_mouse=1` dans neost.cfg). La position hôte est convertie vers l'écran
+GEM selon le cadrage réel, puis le pilote GEM reçoit des paquets relatifs IKBD
+jusqu'à alignement. Aucun registre invité modifié directement. Les clics sont
+mis en file à leur position ; relâchements hors image transmis, boutons libérés
+à la perte de focus. Le mode relatif capturé reste accessible par molette/Ctrl+Alt+G.
+Le repérage du tableau suit l'ABI documentée par les sources EmuTOS
+[`lineavars.S`](https://github.com/emutos/emutos/blob/master/bios/lineavars.S)
+et [`vdi_asm.S`](https://github.com/emutos/emutos/blob/master/vdi/vdi_asm.S).
+
+Debug entrées :
 `NEOST_KBD_TRACE=1` écrit sur stderr une trace permanente de la chaîne clavier :
 scancodes ST reçus de l'hôte (appui/relâchement et mode), écritures CR/TDR,
 octets reconstruits au stop SCI, commandes complètes, file firmware (et rejets),
@@ -390,10 +402,38 @@ FC0030: bra     $fc004e
   SDL_VIDEODRIVER=dummy hatari --trace cpu_disasm,cpu_regs --log-file hatari.txt --tos ... --disk-a ...
   python3 tools/trace_diff.py neost.txt hatari.txt --align-pc FC0030 --regs
   ```
+- **Comparaisons temporelles IRQ** : `python3 tools/run_timing_oracle.py`
+  compare les timers MFP (délai + Timer B vidéo), le son DMA STE, les rafales
+  DMA disquette et le blitter HOG/partagé aux traces de référence Hatari,
+  sans oracle local (palier `full`). `--oracle-check` rejoue Hatari
+  deux fois et contrôle ses références sans les modifier (CI hebdomadaire).
+  Dix-sept sondes : trois tailles de blit, MULU, TAS et exécution en RAM ST ;
+  aucune exception KNOWN.
+  `--strict` est conservé, la même politique s'applique désormais par défaut.
+  Les traces portent les instructions réelles avant exécution ; IRQ et STOP
+  ne produisent plus de doublons de continuation dans le comptage CPU.
+  `blitter_timer` est maintenant un oracle Hatari : zéro pixel divergent,
+  après alignement RAM au début du cycle et unification PRE_START HOG/partagé.
+  Le CPU/cache MegaSTE 16 MHz est couvert séparément par onze sondes
+  `python3 tools/run_megaste_bus_oracle.py` (égalité exacte, deux captures Hatari
+  pour `--oracle-check`, cycles CPU Hatari /2 = cycles bus NeoST). Ces sondes
+  vérifient les données, désactivent les IRQ et n'exécutent pas de DMA.
+  Douze configurations globales passent les contrôles de données, IRQ et
+  bornes physiques (`python3 tools/run_megaste_blitter_checks.py`). Le mode
+  `--oracle-audit` révèle deux défauts du pin Hatari ; les mesures fautives
+  restent des échecs, sans référence promue. La comparaison temporelle exacte
+  globale reste ouverte : `docs/HATARI_MEGASTE_AUDIT.md`.
+  L'horodatage utilise le domaine Scheduler, sans les 40 cycles CPU du reset
+  absorbés au premier IACK (ancien faux écart initial MFP de 38 cycles).
+  `trace_diff --periods` échoue désormais si un PC-repère est absent.
+  Protocole, limites et génération → `docs/HATARI_AUTOMATION.md`, section
+  « Comparaison temporelle des IRQ ».
 
-## Vérité matérielle : composant NeoST ↔ Hatari
+## Référence d’implémentation : composant NeoST ↔ Hatari
 
-`extern/hatari/src` = la référence (lue, pas compilée). EmuTOS
+`extern/hatari/src` = une référence comparative (lue, pas compilée). Le
+comportement du vrai Atari prime ; un défaut confirmé d’Hatari ne doit pas
+être porté dans NeoST (cf. `CLAUDE.md`). EmuTOS
 ([github.com/emutos/emutos](https://github.com/emutos/emutos)) documente ce que le firmware
 attend du matériel.
 
@@ -471,7 +511,10 @@ ACSI/IDE (lecteurs dès C:), pas d'autostart INF ni de conversion de charset.
   concerné — blitter et DMA passent par `read8/write8` sans test (BusMode Hatari).
 - **MegaSTE 16 MHz** : l'ordonnanceur reste en cycles BUS 8 MHz ; seul `Cpu68k` convertit
   (×2 sous `$FF8E21` bit1). Une boucle en RAM SANS cache ne va PAS plus vite à 16 MHz
-  (accès cadencés bus) ; ROM et cache 16 Ko si (cf. `readMste16Mhz`/`chipWait16`).
+  (accès cadencés bus) ; ROM et cache 16 Ko si (cf. `willAccessBus`/`readMste16Mhz`). L'alignement est effectué au début
+  du cycle, le hit est choisi avant les cycles et sa valeur reste stable si une
+  DMA invalide le cache pendant l'accès. La prise du bus blitter invalide le
+  cache avant l'arbitrage, comme Hatari.
 - **VBL/HBL autovecteurs LATCHÉS** (comme Hatari, « cleared only when processed ») :
   `g_vblPending` reste armé tant que le CPU n'a pas servi l'IRQ (mask ≥ niveau). Si le SR
   ré-autorise le niveau 4 après une longue période masquée, la VBL en attente part AUSSITÔT

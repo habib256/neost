@@ -17,6 +17,7 @@
 #include "core/Bus.hpp"
 #include "util/HostPath.hpp"
 #include "core/Cpu68k.hpp"
+#include "core/StateArchive.hpp"
 
 #include <cctype>
 #include <cerrno>
@@ -34,6 +35,7 @@
 #include <utime.h>
 #include <filesystem>          // canonical() : il n'y a pas de realpath()
 #include <fstream>             // auto-test du bac à sable (fichier témoin)
+#include <memory>
 #if defined(_WIN32)
 #ifndef NOMINMAX
 #define NOMINMAX               // sinon windows.h définit min()/max() en MACROS et
@@ -1806,6 +1808,168 @@ bool GemdosHd::handleOpcode(uint16_t opcode) {
     }
     flushCache();
     return true;
+}
+
+// État invité du disque hôte. Le contenu des fichiers ne remonte pas dans le
+// temps : une modification depuis la sauvegarde interdit la reprise.
+void GemdosHd::serialize(StateArchive& ar) {
+    namespace fs = std::filesystem;
+    auto text = [&](std::string& value) {
+        uint32_t n = uint32_t(value.size());
+        ar(n);
+        if (n > 4096) { ar.fail("GEMDOS state: path/name too long"); return; }
+        if (!ar.ok()) return;
+        if (ar.loading()) value.resize(n);
+        ar.raw(value.data(), n);
+        if (value.find('\0') != std::string::npos) ar.fail("GEMDOS state: embedded NUL");
+    };
+    auto within = [&](const std::string& path, const std::string& root, bool mustExist = true) {
+        std::error_code ec;
+        const fs::path resolved = mustExist ? fs::canonical(path, ec) : fs::weakly_canonical(path, ec);
+        if (ec) return false;
+        const fs::path base = fs::canonical(root, ec);
+        if (ec) return false;
+        auto p = resolved.begin();
+        for (auto r = base.begin(); r != base.end(); ++r, ++p)
+            if (p == resolved.end() || *p != *r) return false;
+        return true;
+    };
+    auto allowed = [&](const std::string& path, bool mustExist = true) {
+        for (const auto& drive : emudrives_)
+            if (drive.used && within(path, drive.hdEmuDir, mustExist)) return true;
+        return false;
+    };
+    auto fileInfo = [&](FILE* fp, const std::string& path, int64_t& size, int64_t& stamp) {
+        struct stat opened{}, named{};
+        std::error_code ec;
+        const auto time = fs::last_write_time(path, ec);
+        if (ec || fstat(fileno(fp), &opened) || stat(path.c_str(), &named)
+            || !S_ISREG(opened.st_mode) || opened.st_dev != named.st_dev
+            || opened.st_ino != named.st_ino) return false;
+        size = opened.st_size;
+        stamp = int64_t(time.time_since_epoch().count());
+        return true;
+    };
+
+    bool enabled = active_;
+    ar(enabled);
+    if (enabled != active_) { ar.fail("GEMDOS state: mount configuration mismatch"); return; }
+    if (!enabled || !ar.ok()) return;
+    int drives = nDrives_;
+    ar(drives);
+    if (drives != nDrives_) { ar.fail("GEMDOS state: drive count mismatch"); return; }
+    EmuDrive paths[MAX_HARDDRIVES];
+    for (int i = 0; i < MAX_HARDDRIVES; ++i) {
+        paths[i] = emudrives_[i];
+        auto& d = paths[i];
+        ar(d.used);
+        if (d.used != emudrives_[i].used) { ar.fail("GEMDOS state: drive mapping mismatch"); return; }
+        if (!d.used) continue;
+        ar(d.driveNumber); text(d.hdEmuDir); text(d.fsCurrPath);
+        if (!ar.ok()) return;
+        if (d.driveNumber != emudrives_[i].driveNumber || d.hdEmuDir != emudrives_[i].hdEmuDir
+            || !within(d.fsCurrPath, d.hdEmuDir)) {
+            ar.fail("GEMDOS state: drive root/current directory unavailable or changed"); return;
+        }
+    }
+    uint16_t drive = currentDrive_;
+    uint32_t pd = actPd_, pc = callingPC_, pexec = savedPexecParams_, mask = connectedDriveMask_;
+    bool initialized = initGemdos_;
+    int boot = bootDrive_;
+    ar(drive); ar(pd); ar(pc); ar(pexec); ar(initialized); ar(mask); ar(boot);
+    ar.check(drive < 26 && boot >= 0 && boot < 26, "GEMDOS drive out of range");
+    ForcedHandle forced[FORCED_HANDLES];
+    for (int i = 0; i < FORCED_HANDLES; ++i) {
+        forced[i] = forced_[i];
+        ar(forced[i].handle); ar(forced[i].basepage);
+        ar.check(forced[i].handle >= -1 && forced[i].handle < MAX_FILE_HANDLES,
+                 "GEMDOS forced handle out of range");
+    }
+    FileHandle handles[MAX_FILE_HANDLES];
+    using File = std::unique_ptr<FILE, int(*)(FILE*)>;
+    std::vector<File> opened;
+    for (int i = 0; i < MAX_FILE_HANDLES; ++i) {
+        auto& h = handles[i];
+        if (!ar.loading()) h = fileHandles_[i];
+        ar(h.used);
+        if (!h.used) continue;
+        ar(h.readOnly); ar(h.basepage);
+        std::string mode = ar.loading() ? "" : h.mode;
+        text(mode); text(h.actualName);
+        int64_t position = 0, size = 0, stamp = 0;
+        if (!ar.loading()) {
+            if (!h.fp || fseeko(h.fp, 0, SEEK_CUR)
+                || (position = ftello(h.fp)) < 0 || !fileInfo(h.fp, h.actualName, size, stamp)) {
+                ar.fail("GEMDOS state: cannot inspect open file"); return;
+            }
+        }
+        ar(position); ar(size); ar(stamp);
+        if (!ar.ok()) return;
+        if ((mode != "rb" && mode != "rb+" && mode != "wb+") || position < 0 || size < 0) {
+            ar.fail("GEMDOS state: invalid file mode or position"); return;
+        }
+        if (!allowed(h.actualName)) {
+            std::fprintf(stderr, "[state] GEMDOS file unavailable or outside mounted roots: %s\n", h.actualName.c_str());
+            ar.fail("GEMDOS state: file path rejected"); return;
+        }
+        std::strcpy(h.mode, mode.c_str());
+        if (ar.loading()) {
+            // Fcreate utilise wb+ : rejouer ce mode détruirait le fichier !
+            File fp(fopen(h.actualName.c_str(), mode == "rb" ? "rb" : "rb+"), fclose);
+            int64_t actualSize = 0, actualStamp = 0;
+            if (!fp || !fileInfo(fp.get(), h.actualName, actualSize, actualStamp)
+                || actualSize != size || actualStamp != stamp
+                || int64_t(off_t(position)) != position || fseeko(fp.get(), off_t(position), SEEK_SET)) {
+                std::fprintf(stderr, "[state] GEMDOS file missing, changed or inaccessible: %s\n", h.actualName.c_str());
+                ar.fail("GEMDOS file restore refused; current session preserved"); return;
+            }
+            h.fp = fp.get();
+            opened.push_back(std::move(fp));
+        }
+    }
+    auto dtas = ar.loading() ? std::vector<InternalDta>() : dtas_;
+    uint32_t count = uint32_t(dtas.size());
+    ar(count);
+    if (!ar.ok() || count > DTA_CACHE_MAX) { ar.fail("GEMDOS DTA count out of range"); return; }
+    if (ar.loading()) dtas.resize(count);
+    for (auto& dta : dtas) {
+        ar(dta.used);
+        if (!dta.used) continue;
+        ar(dta.addr); ar(dta.centry); ar(dta.dta_attrib); text(dta.path);
+        uint32_t names = uint32_t(dta.found.size());
+        ar(names);
+        if (!ar.ok() || names > 1024 * 1024) { ar.fail("GEMDOS DTA entries out of range"); return; }
+        if (ar.loading()) dta.found.resize(names);
+        for (auto& name : dta.found) {
+            text(name);
+            if (!ar.ok()) return;
+            if (name.empty() || name.find_first_of("/\\") != std::string::npos) {
+                ar.fail("GEMDOS DTA invalid entry"); return;
+            }
+            if (name == ".." && !allowed(fs::path(dta.path).parent_path().string(), false)) {
+                ar.fail("GEMDOS DTA parent outside mounted roots"); return;
+            }
+        }
+        ar.check(dta.centry >= 0 && uint32_t(dta.centry) <= names && allowed(dta.path, false),
+                 "GEMDOS DTA cursor/path invalid");
+    }
+    uint16_t index = dtaIndex_;
+    ar(index);
+    ar.check(index < count || count == 0, "GEMDOS DTA index out of range");
+    for (const auto& f : forced)
+        ar.check(f.handle == -1 || (f.handle >= 0 && f.handle < MAX_FILE_HANDLES
+                 && handles[f.handle].used), "GEMDOS forced handle is closed");
+    if (!ar.loading() || !ar.ok()) return;
+    // Dernier composant du flux Machine : tout est validé avant fermeture de
+    // la session courante. Les échecs ci-dessus détruisent seulement les copies.
+    clearAllFileHandles();
+    for (int i = 0; i < MAX_FILE_HANDLES; ++i) fileHandles_[i] = std::move(handles[i]);
+    for (auto& fp : opened) fp.release();
+    for (int i = 0; i < MAX_HARDDRIVES; ++i) emudrives_[i] = std::move(paths[i]);
+    for (int i = 0; i < FORCED_HANDLES; ++i) forced_[i] = forced[i];
+    dtas_ = std::move(dtas); dtaIndex_ = index;
+    currentDrive_ = drive; actPd_ = pd; callingPC_ = pc; savedPexecParams_ = pexec;
+    initGemdos_ = initialized; connectedDriveMask_ = mask; bootDrive_ = boot;
 }
 
 // =============================================================================
