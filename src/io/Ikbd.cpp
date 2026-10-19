@@ -6,6 +6,7 @@
 #include "io/Ikbd.hpp"
 #include "io/Mfp.hpp"
 #include <cstdio>
+#include <cstdarg>
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
@@ -33,6 +34,11 @@ static constexpr int kJoystickDelayCycles = 8750;   // [7500,10000[
 // CRC32 (poly IEEE 802.3, MSB-first) — port exact de Hatari utils.c (crc32_*). On
 // reconnaît un programme 6301 custom à son CRC plutôt que d'émuler un vrai HD6301.
 namespace {
+bool kbdTraceEnabled() {
+    static const bool enabled = std::getenv("NEOST_KBD_TRACE") != nullptr;
+    return enabled;
+}
+
 void crc32Reset(uint32_t& crc) { crc = 0xFFFFFFFFu; }
 void crc32AddByte(uint32_t& crc, uint8_t c) {
     for (int b = 0; b < 8; ++b) {
@@ -51,6 +57,16 @@ const uint32_t kKnownLoadCrc[] = {
 
 Ikbd::Ikbd(Mfp& mfp) : mfp_(mfp) {
     initClockFromHostTime();
+}
+
+void Ikbd::trace(const char* format, ...) const {
+    if (!kbdTraceEnabled()) return;
+    std::fprintf(stderr, "[kbd] cycle=%lld ", (long long)firmwareEventTime());
+    va_list args;
+    va_start(args, format);
+    std::vfprintf(stderr, format, args);
+    va_end(args);
+    std::fputc('\n', stderr);
 }
 
 void Ikbd::onResetResponse() {
@@ -126,6 +142,7 @@ uint8_t Ikbd::read8(uint32_t addr) {
         ovrn_ = true;
         rxOverrun_ = false;
     }
+    trace("acia-read data=$%02X full=%d overrun=%d queued=%zu", b, had, ovrn_, rx_.size());
     if (dbgRdr)
         std::fprintf(stderr, "[acia] rd %s$%02X%s reste=%zu cyc=%lld\n",
                      had ? "" : "EMPTY (", b, had ? "" : ")",
@@ -186,6 +203,7 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
     // fil. Transférer/terminer ces caractères avant de modifier CR ou TDR.
     if (sched_) catchUpCpuTx(sched_->liveNow());
     if ((addr & 2) == 0) {
+        trace("acia-control old=$%02X new=$%02X", control_, v);
         // $FFFC00 : registre de contrôle (diviseur, format, bit7 = RX int enable).
         // Bits 5-6 = contrôle émetteur : 01 arme l'IRQ d'émission (TIE), cf. ACIA
         // 6850 et acia.c ACIA_Write_CR. TIE ne décide QUE de l'interruption : le
@@ -230,6 +248,7 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         raiseIfReady();
         return;
     }
+    trace("acia-write data=$%02X tdr-full=%d", v, !tdre_);
     if (!sched_) {
         // Repli synchrone pour les tests nus du protocole uniquement.
         receiveSerialByte(v);
@@ -245,6 +264,7 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
 }
 
 void Ikbd::receiveSerialByte(uint8_t v) {
+    trace("sci-receive data=$%02X", v);
     // Code 6301 custom : en mode Execute, l'octet va au handler du programme ;
     // pendant un LoadMemory ($20), il alimente le code téléversé. Sinon : parseur.
     if (exeMode_ && customWrite_ != CW_NONE) { customWriteDispatch(v); return; }
@@ -285,6 +305,14 @@ void Ikbd::receiveSerialByte(uint8_t v) {
 
 void Ikbd::dispatchCommand() {
     const uint8_t opcode = inBuf_[0];
+    // Une seule ligne par commande, paramètres inclus ; les anciens diagnostics
+    // gardent leur format pour les scripts qui les exploitent déjà.
+    if (kbdTraceEnabled()) {
+        char command[3 * 8 + 1] = {};
+        for (int i = 0; i < inBufLen_ && i < (int)inBuf_.size(); ++i)
+            std::snprintf(command + 3 * i, sizeof(command) - 3 * i, "%02X ", inBuf_[i]);
+        trace("command bytes=%s", command);
+    }
     // NEOST_DEBUG_IKBD=1 : trace des commandes reçues par l'IKBD (équivalent du
     // --trace ikbd_cmds d'Hatari) — indispensable pour comprendre quel protocole
     // un jeu utilise (souris relative/absolue, joystick auto/monitoring…).
@@ -599,6 +627,7 @@ void Ikbd::dispatchCommand() {
 void Ikbd::resetHw() {
     // Les fronts déjà échus précèdent le reset du récepteur SCI.
     if (sched_) catchUpCpuTx(sched_->liveNow());
+    trace("hardware-reset");
     sciRxState_ = sciRxByte_ = sciRxBitsLeft_ = 0;
     if (sched_ && aciaClockInitialized_) {
         // ACIA_Reset → Set_Timers(offset0) : prochain front un bit après reset.
@@ -626,6 +655,7 @@ void Ikbd::resetHw() {
 }
 
 void Ikbd::bootRom() {
+    trace("firmware-boot");
     // Warm-boot de la ROM IKBD ($F000) — port de Hatari IKBD_Boot_ROM(false),
     // commun au reset logiciel $80,$01 et à la sortie du mode Execute
     // (exitExeMode). Le reset à froid = état de construction (défauts du .hpp,
@@ -855,6 +885,8 @@ void Ikbd::updateInternalAbsPos(int dx, int dy) {
 }
 
 void Ikbd::keyEvent(uint8_t scancode, bool pressed) {
+    trace("host-key scan=$%02X pressed=%d mode=%s", scancode, pressed,
+          joyMode_ == JOY_MONITOR ? "joystick-monitor" : exeMode_ ? "custom" : "normal");
     if (joyMode_ == JOY_MONITOR)
         return;
     // Suivi d'état (lu par les handlers 6301 custom) puis make/break.
@@ -862,7 +894,10 @@ void Ikbd::keyEvent(uint8_t scancode, bool pressed) {
     // En ExeMode, le scan clavier normal est supprimé (cf. Hatari IKBD_Cmd_Return_Byte) :
     // seul le handler custom peut émettre, via customReadDispatch().
     if (exeMode_) { customReadDispatch(); return; }
-    if (!rxFree(1)) return;                   // scancode (1 octet) jeté si tampon plein
+    if (!rxFree(1)) {
+        trace("host-key-drop reason=queue-full");
+        return;
+    }
     pushRx(pressed ? scancode : uint8_t(scancode | 0x80));
 }
 
@@ -1037,17 +1072,25 @@ bool Ikbd::rxFree(std::size_t n) const {
 void Ikbd::pushRx(uint8_t b) {
     // IKBD_Send_Byte_Delay : avant l'initialisation ACIA, jeter les octets
     // firmware, sans les différer jusqu'à une future configuration.
-    if (!aciaClockInitialized_) return;
-    if (duringResetCriticalTime_)
+    if (!aciaClockInitialized_) {
+        trace("firmware-drop data=$%02X reason=clock-uninitialized", b);
         return;
+    }
+    if (duringResetCriticalTime_) {
+        trace("firmware-drop data=$%02X reason=reset", b);
+        return;
+    }
     // File firmware bornée à 1024 octets (SIZE_KEYBOARD_BUFFER de Hatari) :
     // plein → l'octet est jeté. TOUS les émetteurs de paquets (événements ET
     // réponses de commande) testent rxFree() avant le 1er octet (jamais de
     // demi-paquet, cf. IKBD_OutputBuffer_CheckFreeCount) ; ce garde ne fait que
     // borner les pushRx isolés ($F1, handlers custom) — robustesse mémoire absolue.
-    if (rx_.size() >= 1024)
+    if (rx_.size() >= 1024) {
+        trace("firmware-drop data=$%02X reason=queue-full", b);
         return;
+    }
     rx_.push_back(b);
+    trace("firmware-queue data=$%02X queued=%zu paused=%d", b, rx_.size(), pauseOutput_);
     armRx();
 }
 
@@ -1121,6 +1164,7 @@ void Ikbd::onRxDeliver() {
     // après un boot ROM qui vide cette dernière, le stop bit arrive à l'ACIA.
     const uint8_t b = shifting ? rxShiftData_ : rx_.front();
     if (!shifting) rx_.pop_front();
+    trace("acia-receive data=$%02X result=%s", b, rdrf_ ? "overrun-drop" : "rdr");
     if (rdrf_) {
         // RDR pas encore lu quand l'octet suivant finit d'arriver : OVERRUN. Le
         // nouvel octet est PERDU, RDR conserve l'ancien (cf. acia.c ACIA_Clock_RX,
@@ -1132,7 +1176,7 @@ void Ikbd::onRxDeliver() {
         rdrf_ = true;
     }
     armRx(responseDelayBits_ > 0 ? due : -1); // attente globale au prochain SCI idle
-    raiseIfReady();
+    raiseIfReady(due);
 }
 
 bool Ikbd::irqActive() const {
@@ -1143,13 +1187,14 @@ bool Ikbd::irqActive() const {
     return ((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_);
 }
 
-void Ikbd::raiseIfReady() {
+void Ikbd::raiseIfReady(int64_t when) {
     // L'ACIA active sa ligne d'IRQ dès qu'une cause (RX ou TX) est active. On la
     // publie sur GPIP4 (lue par _int_acia pour vider l'ACIA) ; le canal 6 du MFP
     // est levé par le détecteur de FRONT du setter (règle AER, wire-OR avec le
     // MIDI) — pas de raise() manuel, sinon IPR reposé sans front réel (octet
     // doublé côté handlers qui ne testent pas le SR).
-    mfp_.setAciaLineKbd(irqActive());
+    if (when >= 0) mfp_.setAciaLineKbdAt(irqActive(), when);
+    else mfp_.setAciaLineKbd(irqActive());
 }
 
 int64_t Ikbd::nextTxClock(int64_t at) const {
@@ -1182,6 +1227,7 @@ void Ikbd::clockSciRx(bool bit) {
     } else {
         sciRxState_ = 0;
         if (bit) receiveSerialByte(sciRxByte_);
+        else trace("sci-drop data=$%02X reason=invalid-stop", sciRxByte_);
     }
 }
 
@@ -1209,6 +1255,9 @@ void Ikbd::catchUpCpuTx(int64_t at) {
         else if (!tdre_) {
             txShiftData_ = txData_; txShifting_ = true; txBitIndex_ = 0;
             tdre_ = true; bit = false; // start au transfert TDR→TSR
+            // Publier dès le START, même si un accès CR/TDR rattrape ensuite
+            // plusieurs bits ou caractères avant le dispatch ordonnanceur.
+            raiseIfReady(txNextBitCycle_);
         }
         const int64_t front = txNextBitCycle_;
         txNextBitCycle_ = ended ? nextTxClock(txNextBitCycle_)
@@ -1221,7 +1270,6 @@ void Ikbd::catchUpCpuTx(int64_t at) {
         // Les événements sont servis au plus tard au stop SCI (scheduleCpuTx).
     }
     scheduleCpuTx();
-    raiseIfReady();
 }
 
 void Ikbd::scheduleCpuTx() {

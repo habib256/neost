@@ -295,8 +295,14 @@ public:
     // déjà basse — wire-OR ACIA, INTRQ maintenue — regénérerait des IRQ fantômes).
     void setAciaLineKbd (bool active) { gpipSetLine(aciaLineKbd_,  active); }
     void setAciaLineMidi(bool active) { gpipSetLine(aciaLineMidi_, active); }
-    // Front MIDI servi en retard : conserver son échéance sans court-circuiter
-    // le détecteur AER/DDR ni le wire-OR avec l'IRQ du clavier.
+    // Front série servi en retard : conserver son échéance sans court-circuiter
+    // le détecteur AER/DDR ni le wire-OR des deux ACIA.
+    void setAciaLineKbdAt(bool active, int64_t when) {
+        if (aciaLineKbd_ == active) return;
+        const uint8_t before = gpipInput();
+        aciaLineKbd_ = active;
+        gpipUpdateInterruptAt(before, gpipInput(), aer, aer, when);
+    }
     void setAciaLineMidiAt(bool active, int64_t when) {
         if (aciaLineMidi_ == active) return;
         const uint8_t before = gpipInput();

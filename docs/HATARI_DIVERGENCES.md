@@ -340,6 +340,15 @@ cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, 
   Hatari `Floppy_ReadSectors/Floppy_WriteSectors`. STX conserve sa délégation.
 
 ### ACIA 6850 / IKBD HD6301 / MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`
+
+- ✅ **Datation IRQ clavier (2026-10-19)** : front GPIP4 daté au transfert
+  TDR→TSR ou au stop RX, au lieu du dispatch tardif. Le rattrapage avant
+  écriture CR/TDR publie le front au START même s’il dépasse ensuite le stop.
+  Propagation MFP de quatre cycles depuis ce front ; AER/DDR et OU câblé
+  avec le MIDI préservés. Accès CR/RDR datés de l’accès courant. Banc dédié :
+  77 contrôles, dix échecs avant correction, zéro après sous ASan/UBSan.
+  Aucun nouveau format série ni changement de sauvegarde.
+
 **Très complet** : modèle TIE, master reset 6850, overrun/cadence série, fenêtre critique de
 reset, buffer borné 1024, pause `$13`, commandes usuelles et rapports `$07-$9A`, les 6 handlers 6301
 custom (Froggies, Transbeauce, Dragonnels, Chaos, Audio Sculpture), quirks reset, duplication

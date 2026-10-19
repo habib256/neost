@@ -684,6 +684,10 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   même à vide ou après master reset ; le reset efface RDRF et les erreurs.
   File hôte et registre à décalage ne créent pas de deuxième caractère lisible.
 
+- **IRQ clavier datée aux événements série** : transfert TDR→TSR et stop RX
+  conservent leur cycle au GPIP4, même servis en retard ou rattrapés avant un
+  accès CR/TDR. Délai MFP de quatre cycles, AER/DDR et OU câblé MIDI préservés.
+  Accès CR/RDR datés au cycle CPU courant ; format des sauvegardes inchangé.
 - **Analyseur de commandes multi-octets** (table de longueurs + buffer d'accumulation).
 - **Tampon de sortie IKBD borné à 1024 octets** (port `IKBD_OutputBuffer_CheckFreeCount`,
   SIZE_KEYBOARD_BUFFER) : chaque émetteur de paquet (souris/clavier/joystick) teste la place
@@ -781,7 +785,10 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   touche n'est plus « collée » quand ImGui prend le focus entre make et break) ; mapping
   clavier complété façon Hatari (`sdl/keymap.c`) : **pavé numérique**, Help (Impr. écran),
   Undo (Fin), `(`/`)` (PgUp/PgDn).
-- Debug : `NEOST_DEBUG_IKBD=1` trace les commandes reçues par l'IKBD ;
+- Debug : `NEOST_KBD_TRACE=1` suit sur stderr les scancodes hôtes, CR/TDR,
+  réception SCI, commandes et paramètres, file firmware/rejets, réception ACIA
+  (overrun compris), lectures RDR et reset matériel, datés en cycles bus.
+  `NEOST_DEBUG_IKBD=1` trace les commandes reçues par l'IKBD ;
   `NEOST_DEBUG_ACIA=1` trace chaque lecture du data register (valeur, file, cycle).
   Headless : `--mouse-at N "SCRIPT"` (script souris daté L/R/U/D/1/2/.) et
   `--joy-script N "SCRIPT"` / `--joy-script-file N FICHIER` (état joystick par trame) pour

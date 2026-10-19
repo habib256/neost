@@ -298,6 +298,7 @@ public:
     }
 
 private:
+    void trace(const char* format, ...) const; // NEOST_KBD_TRACE, stderr, aucun état émulé
     void pushRx(uint8_t b);                  // empile un octet IKBD → CPU (livraison cadencée)
     void pushRxDelayed(uint8_t b, int delayCycles); // attente firmware globale avant le SCI
     // Place pour `n` octets dans le tampon de sortie IKBD borné à 1024 (port de
@@ -305,7 +306,7 @@ private:
     // taille TOTALE avant son 1er pushRx → paquet entier ou rien (jamais coupé).
     bool rxFree(std::size_t n) const;
     void armRx(int64_t baseCycle = -1);       // date attente firmware ou prochain octet
-    void raiseIfReady();                     // tire GPIP4 si une cause d'IRQ ACIA est active
+    void raiseIfReady(int64_t when = -1);     // GPIP4 daté ; -1 = accès courant
     bool irqActive() const;                  // cause d'IRQ : RX (RDRF & RIE) OU TX (TIE & TDRE)
 
     // Renvoie le nombre total d'octets (commande incluse) attendu pour `opcode`,
