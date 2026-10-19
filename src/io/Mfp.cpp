@@ -133,6 +133,7 @@ void Mfp::reset() {
     riLine_ = true;              // repos ASSERTÉ, comme CTS/DCD
     monButton_ = false;                   // bouton Multiface relâché (PortDevices::reset l'oublie aussi)
     rxByte_ = 0; rxFull_ = false; rxOverrun_ = false;   // USART : tampon vidé (pas de RXFULL fantôme)
+    serialClockFactor_ = 128;
     serialBaud_ = 0; serialUcr_ = 0;      // suivi débit série remis (sinon serialBaud() rapporte l'avant-reset)
     if (sched_) {   // reset MACHINE : Hatari appelle CycInt_Reset() (reset.c:76) avant MFP_Reset_All
         sched_->cancel(Scheduler::TIMER_A);
@@ -142,14 +143,20 @@ void Mfp::reset() {
         sched_->cancel(Scheduler::TIMER_D);
         sched_->cancel(Scheduler::MFP_IRQ);
         sched_->cancel(Scheduler::SERIAL_RX);
+        sched_->cancel(Scheduler::SERIAL_TX);
     }
+    serialTxBusy_ = serialTxFull_ = serialTxUnderrun_ = serialTxEnd_ = false;
+    serialTxByte_ = serialTxHolding_ = 0;
+    serialTxCycle_ = serialTxRemainder_ = 0; serialTxDivisor_ = 1;
+    serialTxUnderrunClearCycle_ = serialTxFrameClearCycle_ = 0;
     hostRx_.clear();
-    serialRxArmed_ = false;
+    serialRxArmed_ = false; serialRxMask_ = 0xFF;
+    serialRxCycle_ = 0; serialRxRemainder_ = 0; serialRxDivisor_ = 1;
 }
 
 // -----------------------------------------------------------------------------
 //  Injection RX série côté hôte (modem Hayes). Les octets sont
-//  mis en file puis livrés UN PAR UN au débit série configuré (~10 bits/octet),
+//  mis en file puis livrés UN PAR UN au débit et au format série configurés,
 //  avec IRQ RxFull à chaque livraison — un pilote d'époque qui compte sur le
 //  rythme du fil (STiK/STinG en SLIP) ne perd ainsi aucun octet. La file est
 //  bornée : l'appelant re-pompe quand hostRxPending() redescend.
@@ -160,31 +167,124 @@ void Mfp::receiveByte(uint8_t b) {
     scheduleSerialRx();
 }
 
-void Mfp::scheduleSerialRx() {
+void Mfp::scheduleSerialRx(bool continuation) {
     if (!sched_ || serialRxArmed_ || hostRx_.empty()) return;
-    // 10 périodes bit (start + 8 données + stop) au débit courant. USART jamais
-    // configurée → 9600 bauds (défaut TOS). Plancher anti-débit absurde.
-    const int baud = serialBaud_ > 0 ? serialBaud_ : 9600;
-    int64_t cyc = neost::pacing::kCpuHzInt * 10 / baud;
-    if (cyc < 640) cyc = 640;
-    sched_->schedule(Scheduler::SERIAL_RX, sched_->liveNow() + cyc);
+    // Hatari rs232.c: RS232_HandleUCR ; MAME mc68901.cpp REGISTER_UCR :
+    // un start, 5..8 données, parité et stops 1/1,5/2.
+    // Mode synchrone non modélisé : conserver le transport hôte 8N1 historique.
+    const uint8_t ucr = timer_[0x29];
+    const int stops = (ucr >> 3) & 3;
+    // MAME rx_frame_start/rx_clock : compteur de longueur au start, données
+    // courtes alignées à droite et complétées par des zéros. Le transport par
+    // octets fige le format au caractère ; pas de reconstruction des fronts.
+    serialRxMask_ = stops ? uint8_t(0xFF >> ((ucr >> 5) & 3)) : 0xFF;
+    const int halfBits = stops ? 2 * (1 + 8 - ((ucr >> 5) & 3) + ((ucr & 4) ? 1 : 0))
+                                   + (stops == 1 ? 2 : stops == 2 ? ((ucr & 0x80) ? 3 : 2) : 4) : 20;
+    const int divisor = 2457600;
+    if (!continuation) {
+        serialRxCycle_ = sched_->liveNow();
+        serialRxRemainder_ = 0;
+    }
+    // Une reconfiguration prend effet au caractère suivant, sans déplacer celui
+    // déjà en vol. La base commune 2 457 600 conserve aussi la fraction lors
+    // des changements de débit, sans timestamp Q32 borné.
+    if (serialRxDivisor_ != divisor) serialRxRemainder_ = 0;
+    serialRxDivisor_ = divisor;
+    const int64_t numerator = neost::pacing::kCpuHzInt * halfBits * serialClockFactor_;
+    const int64_t total = numerator + serialRxRemainder_;
+    serialRxCycle_ += total / divisor;
+    serialRxRemainder_ = total % divisor;
+    sched_->schedule(Scheduler::SERIAL_RX, serialRxCycle_ + (serialRxRemainder_ != 0));
     serialRxArmed_ = true;
 }
 
 void Mfp::onSerialRxEvent() {
     serialRxArmed_ = false;
     if (hostRx_.empty()) return;
-    const uint8_t b = hostRx_.front();
+    const uint8_t b = hostRx_.front() & serialRxMask_;
     hostRx_.pop_front();
     // Récepteur coupé (RSR bit0 = Receiver Enable) : l'octet se perd, comme sur
     // le fil — même porte que le bouclage (cf. write8 case 0x2F).
     if (timer_[0x2B] & 0x01) {
+        // Comme le bouclage : le registre RX plein garde l'ancien octet.
+        // Hatari RS232_Update refuse aussi d'écraser un ByteReceived non lu.
+        // Seul RXERR est déclenché pour l'octet perdu, pas une nouvelle RXFULL.
         if (rxFull_) { rxOverrun_ = true; raise(SRC_RXERR); }
-        rxByte_ = b;
-        rxFull_ = true;
-        raise(SRC_RXFULL);
+        else {
+            rxByte_ = b;
+            rxFull_ = true;
+            raise(SRC_RXFULL);
+        }
     }
-    scheduleSerialRx();
+    scheduleSerialRx(true);
+}
+
+// Transport TX asynchrone à deux registres : TDR écrasable, TSR en vol.
+// Le chargement initial est immédiat (phase du front TC non modélisée), puis les
+// fins de caractères gardent une phase rationnelle indépendante du dispatch CPU.
+// Le mode synchrone utilise le repli 8N1 /16 ; BREAK bloque le rechargement,
+// sans produire de forme d'onde.
+void Mfp::startSerialTx(bool continuation) {
+    if (!sched_ || serialTxBusy_ || !serialTxFull_ || !(timer_[0x2D] & 1) ||
+        (timer_[0x2D] & 8)) return;
+    serialTxByte_ = serialTxHolding_;
+    const uint8_t ucr = timer_[0x29];
+    const int stops = (ucr >> 3) & 3;
+    const int bits = 8 - ((ucr >> 5) & 3);
+    if (stops) serialTxByte_ &= uint8_t((1u << bits) - 1);
+    const int halfBits = stops ? 2*(1+bits+((ucr & 4) ? 1 : 0)) +
+        (stops == 1 ? 2 : stops == 2 ? ((ucr & 0x80) ? 3 : 2) : 4) : 20;
+    const int divisor = 2457600;
+    if (!continuation) { serialTxCycle_ = sched_->liveNow(); serialTxRemainder_ = 0; }
+    if (serialTxDivisor_ != divisor) serialTxRemainder_ = 0;
+    serialTxDivisor_ = divisor;
+    const int64_t total = neost::pacing::kCpuHzInt * halfBits * serialClockFactor_ + serialTxRemainder_;
+    serialTxCycle_ += total / divisor;
+    serialTxRemainder_ = total % divisor;
+    // MC68901UM §7.3.2, MAME REGISTER_TSR/tx_clock : UE ne peut
+    // s'effacer qu'après une période bit. Figer le seuil avec la même phase
+    // exacte que la fin de trame, avant toute reconfiguration du Timer D.
+    {
+        const int64_t bit = neost::pacing::kCpuHzInt * 2 * serialClockFactor_;
+        serialTxFrameClearCycle_ = serialTxCycle_ +
+            (serialTxRemainder_ + bit + divisor - 1) / divisor;
+    }
+    serialTxFull_ = false; serialTxBusy_ = true;
+    raiseAt(SRC_TXEMPTY, continuation ? sched_->firingDue() : writeEventTime());
+    sched_->schedule(Scheduler::SERIAL_TX, serialTxCycle_ + (serialTxRemainder_ != 0));
+}
+
+// MC68901UM §7.3.2 : END immédiat si aucun caractère ne reste en vol.
+// MAME tx_clock : END déclenche TXERR, AT active RE puis se désarme.
+void Mfp::finishSerialTx(int64_t when) {
+    if (!serialTxEnd_) {
+        serialTxEnd_ = true;
+        raiseAt(SRC_TXERR, when);
+    }
+    if (timer_[0x2D] & 0x20) {
+        timer_[0x2B] |= 1;
+        timer_[0x2D] &= ~0x20;
+    }
+}
+
+void Mfp::onSerialTxEvent() {
+    if (!serialTxBusy_) return;
+    serialTxBusy_ = false;
+    const int64_t when = sched_->firingDue();
+    if (serialSink_) serialSink_(serialTxByte_);
+    if (loopback_ && (timer_[0x2B] & 1)) {
+        if (rxFull_) { rxOverrun_ = true; raiseAt(SRC_RXERR, when); }
+        else { rxByte_ = serialTxByte_; rxFull_ = true; raiseAt(SRC_RXFULL, when); }
+    }
+    if (!(timer_[0x2D] & 1)) {
+        finishSerialTx(when);
+    } else if (!serialTxFull_ && !serialTxUnderrun_ && !(timer_[0x2D] & 8)) {
+        // MAME tx_clock : UE est mémorisé jusqu'à lecture TSR ou TE=0.
+        // Écrire/recharger TDR ne l'efface pas et ne crée pas un nouveau front.
+        serialTxUnderrunClearCycle_ = serialTxFrameClearCycle_;
+        serialTxUnderrun_ = true; raiseAt(SRC_TXERR, when);
+    }
+    startSerialTx(true);
 }
 
 // Les registres MFP sont sur les adresses IMPAIRES à partir de $FFFA00.
@@ -238,15 +338,26 @@ uint8_t Mfp::read8(uint32_t addr) {
             rxOverrun_ = false;      // les bits d'erreur du RSR se vident à la LECTURE (pas l'UDR)
             return v;
         }
-        case 0x2D:                   // TSR : bit7 = Buffer Empty (TX instantané, cf. Hatari
+        case 0x2D:
+            if (sched_) {
+                const uint8_t status = uint8_t((timer_[0x2D] & 0x2F) |
+                    (!serialTxFull_ ? 0x80 : 0) | (serialTxUnderrun_ ? 0x40 : 0) |
+                    (serialTxEnd_ ? 0x10 : 0));
+                if (sched_->liveNow() >= serialTxUnderrunClearCycle_)
+                    serialTxUnderrun_ = false;
+                return status;
+            }
+                                    // TSR : bit7 = Buffer Empty (TX instantané, cf. Hatari
                                      // RS232_TSR_ReadByte) ; bit6 = Underrun Error. Notre
                                      // transmetteur « instantané » tourne à vide dès qu'il est
                                      // inactif → underrun (le test série attend cette erreur).
             return uint8_t(timer_[0x2D] | 0x80 | (loopback_ ? 0x40 : 0));
         case 0x2F:                   // UDR : lecture → consomme l'octet reçu (l'overrun, lui,
                                      // ne se vide qu'à la lecture du RSR → le handler RxErr le voit)
-            if (rxFull_) { rxFull_ = false; return rxByte_; }
-            return timer_[0x2F];
+            // MAME REGISTER_UDR retourne toujours le registre RX, même BF=0.
+            // Une lecture vide ne révèle pas le registre TX distinct.
+            rxFull_ = false;
+            return rxByte_;
         default:   return timer_[addr & 0x3F];   // autres timers/USART : relisables
     }
 }
@@ -316,7 +427,37 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                    updateSerialConfig(); break;   // nouveau diviseur → bauds USART (mfp.c:3311)
         case 0x29: timer_[0x29] = v;                                      // UCR
                    updateSerialConfig(); break;   // format du mot / prescaler (rs232.c:623)
-        case 0x2F: timer_[0x2F] = v;                  // UDR : octet émis sur le port série
+        case 0x2B:
+                   if (!(v & 1)) {
+                       // MAME REGISTER_RSR : RE=0 remet le RSR entier à zéro,
+                       // sans effacer les données RX ni les IRQ MFP déjà pendantes.
+                       timer_[0x2B] = 0;
+                       rxFull_ = rxOverrun_ = false;
+                   } else {
+                       // MAME REGISTER_RSR : seuls RE/SS sont contrôlables ;
+                       // F/S l'est aussi en synchrone. BF/OE/PE/FE/M/CIP et
+                       // le bit Break asynchrone appartiennent au récepteur.
+                       const uint8_t writable = (timer_[0x29] & 0x18) ? 0x03 : 0x0B;
+                       timer_[0x2B] = uint8_t((timer_[0x2B] & ~writable) | (v & writable));
+                   }
+                   // Le transport hôte garde sa cadence du fil ; réacquisition
+                   // après réactivation au milieu d'un caractère non modélisée.
+                   break;
+        case 0x2D:
+                   timer_[0x2D] = v & 0x2F;
+                   if (!(v & 1)) {
+                       serialTxUnderrun_ = false;
+                       if (sched_ && !serialTxBusy_) finishSerialTx(writeEventTime());
+                   }
+                   else { serialTxEnd_ = false; startSerialTx(false); }
+                   break;
+        case 0x2F:
+                   if (sched_) {
+                       serialTxHolding_ = v; serialTxFull_ = true;
+                       startSerialTx(false);
+                       break;
+                   }
+                   timer_[0x2F] = v;                  // UDR : octet émis sur le port série
                    if (serialSink_) serialSink_(v);   // (RS-232). On le transmet aussitôt
                    // TX : le buffer d'émission se vide dès l'octet parti (TX instantané) —
                    // canaux 10 (buffer vide) et 9 (underrun) si le TRANSMETTEUR est activé
@@ -352,25 +493,23 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
 }
 
 // -----------------------------------------------------------------------------
-//  Config effective de l'USART — port de Hatari rs232.c (RS232_SetBaudRateFromTimerD
-//  + RS232_HandleUCR). Le Timer D du MFP (2.4576 MHz) cadence l'USART ; chaque
-//  expiration BASCULE la ligne d'horloge (÷2) et l'USART asynchrone divise encore
-//  par 16 (UCR bit7 — seul mode supporté, comme Hatari). Quelques quotients « moches »
-//  produits par le TOS sont arrondis aux bauds standards (80→75…), comme Hatari le
-//  fait pour son tty hôte. Pure configuration : le débit émulé reste instantané.
+//  Timer D : 2,4576 MHz / prescaler / données ; sortie basculée à chaque
+//  expiration (/2). MC68901UM §7.1.3 et MAME mc68901.cpp : UCR bit7 choisit
+//  /16 ou /1. Mode synchrone non modélisé : repli de transport 8N1 /16.
+//  Aucun arrondi tty hôte : le débit effectif appartient au matériel émulé.
 // -----------------------------------------------------------------------------
 void Mfp::updateSerialConfig() {
     const int ctrl = timer_[0x1D] & 0x07;          // prescaler Timer D (mode délai)
     if (!ctrl) return;                             // Timer D arrêté → config inchangée
     static constexpr int kDiv[8] = {0, 4, 10, 16, 50, 64, 100, 200};
     const int data = timer_[0x25] ? timer_[0x25] : 256;   // données 0 = 256
-    int baud = 2457600 / data / 2 / 16 / kDiv[ctrl];
-    switch (baud) {                                // arrondis « TOS » → bauds standards
-        case 80:   baud = 75;   break;
-        case 109:  case 120:  baud = 110;  break;
-        case 1745: case 1920: baud = 1800; break;
-    }
     const uint8_t ucr = timer_[0x29];
+    const bool asynchronous = (ucr & 0x18) != 0;
+    const int clockDivisor = asynchronous && !(ucr & 0x80) ? 1 : 16;
+    // Le facteur est figé même si Timer D est arrêté ensuite. La division /2
+    // de sa sortie s'annule avec les demi-bits du format dans les durées RX/TX.
+    serialClockFactor_ = data * clockDivisor * kDiv[ctrl];
+    const int baud = 2457600 / (2 * serialClockFactor_);
     if (baud == serialBaud_ && ucr == serialUcr_) return;   // rien de neuf → silence
     serialBaud_ = baud;
     serialUcr_  = ucr;

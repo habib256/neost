@@ -38,12 +38,17 @@ VIDLO     = 0x00FF8209      # compteur d'adresse vidéo, octet bas (avance avec 
 FRAME_HBL_LO = 256
 FRAME_HBL_HI = 268
 
-# Position du compteur vidéo ($FF8209, octet bas) lue par le handler HBL de la LIGNE 100
-# après un court délai (→ lecture en plein Display-Enable). Elle encode la PHASE D'ENTRÉE
-# d'exception (latence IACK + prologue) au cycle près → sentinelle de la latence IPL.
-# Calibrée sur NeoST (déterministe). ⚠ Re-calibrer si le modèle d'exception/E-clock change.
-IPL_POS_LO = 220        # mesuré 224 (déterministe ST/STE/tous TOS, 2026-07-09) ; bande ±4
-IPL_POS_HI = 228
+# Colonne du compteur vidéo à la HBL 100, après délai (Display-Enable).
+# Le compteur avance de 160 octets par ligne : son octet bas seul mélange la
+# phase horizontale et le numéro de ligne (le débit série peut changer ce dernier).
+# Lire d'abord le bas au cycle étalon, puis le milieu, composer l'adresse et
+# prendre son reste modulo 160. Pré-TOS : base vidéo 0, compteur sous 64 Ko.
+# L'ancien DBRA #30 échantillonnait après Display-Enable : le compteur figé
+# confondait la ligne et la latence. DBRA #16 lit pendant DE (colonne 132).
+# Mutation vérifiée : deux NOP avant la lecture ajoutent 8 cycles → colonne 136,
+# hors bande. La sentinelle détecte donc une vraie variation de latence IPL.
+IPL_POS_LO = 130        # mesuré 132 ; bande ±2, colonne indépendante de la ligne
+IPL_POS_HI = 134
 
 
 def build(break_test: str | None) -> bytes:
@@ -143,8 +148,8 @@ def build(break_test: str | None) -> bytes:
     imm_addr(A3, 'frm_failstr'); br(0x6100, 'emit')
 
     # -- test ipl : phase d'entrée d'exception HBL (latence IPL) ------------------
-    # Le handler HBL de la ligne 100 a stocké $FF8209 (après délai → Display-Enable) en
-    # $100C. On vérifie que cette position tombe dans la bande calibrée.
+    # Le handler HBL de la ligne 100 a stocké la colonne vidéo en $100C.
+    # On vérifie que cette phase horizontale tombe dans la bande calibrée.
     IPLPOS = 0x0000100C
     lbl('ipl')
     raw(0x3039, IPLPOS >> 16, IPLPOS & 0xFFFF)   # move.w $100C,d0
@@ -165,15 +170,24 @@ def build(break_test: str | None) -> bytes:
 
     # -- handlers d'interruption -------------------------------------------------
     # HBL : incrémente hblCount ; à la 100ᵉ HBL, petit délai (→ Display-Enable) puis
-    # capture $FF8209 (position faisceau = phase d'entrée d'exception) en $100C.
+    # capture la colonne vidéo (adresse modulo 160) en $100C.
     lbl('hbl_handler')
     raw(0x52B9, HBLC >> 16, HBLC & 0xFFFF)  # addq.l #1,$1000
     raw(0x0CB9, 0x0000, 0x0064, HBLC >> 16, HBLC & 0xFFFF)  # cmpi.l #100,$1000
     br(0x6600, 'hbl_ret')                   # bne hbl_ret
-    raw(0x303C, 0x001E)                     # move.w #30,d0
-    lbl('hbl_dly'); br(0x51C8, 'hbl_dly')   # dbra d0,hbl_dly  (~254 cyc → plein DE)
+    raw(0x303C, 0x0010)                     # move.w #16,d0
+    lbl('hbl_dly'); br(0x51C8, 'hbl_dly')   # dbra d0,hbl_dly  (~174 cyc → plein DE)
     raw(0x1239, 0x00FF, 0x8209)             # move.b $FF8209,d1
-    raw(0x0241, 0x00FF)                     # andi.w #$00FF,d1
+    # Lire le milieu APRÈS le bas conserve le cycle de l'échantillon étalon.
+    # Les bas observés (36 ou 196) restent sous 256 pendant cette lecture :
+    # pas de retenue entre les deux accès (écart borné à moins de 20 octets).
+    raw(0x7400)                             # moveq #0,d2
+    raw(0x1439, 0x00FF, 0x8207)             # move.b $FF8207,d2
+    raw(0xE14A)                             # lsl.w #8,d2
+    raw(0x0281, 0x0000, 0x00FF)             # andi.l #$FF,d1
+    raw(0x8242)                             # or.w d2,d1
+    raw(0x82FC, 0x00A0)                     # divu #160,d1
+    raw(0x4841)                             # swap d1 (reste → mot bas)
     raw(0x33C1, IPLPOS >> 16, IPLPOS & 0xFFFF)  # move.w d1,$100C
     lbl('hbl_ret')
     raw(0x4E73)                             # rte
@@ -185,10 +199,17 @@ def build(break_test: str | None) -> bytes:
 
     # -- sous-routine emit : a3 = chaîne (0-terminée), écrit sur UDR (a4) --------
     lbl('emit')
+    # Initialiser seulement au verdict : conserver la phase des sondes raster.
+    raw(0x13FC, 0x0088, 0x00FF, 0xFA29)      # move.b #$88,UCR.l (/16 8N1)
+    raw(0x13FC, 0x0001, 0x00FF, 0xFA2D)      # move.b #1,TSR.l (TE)
+    lbl('emit_next')
     raw(0x121B)                             # move.b (a3)+,d1
     br(0x6700, 'emit_ret')                  # beq emit_ret
+    lbl('emit_wait')
+    raw(0x0839, 0x0007, 0x00FF, 0xFA2D)      # btst #7,TSR.l (buffer vide)
+    br(0x6700, 'emit_wait')                  # beq emit_wait
     raw(0x1881)                             # move.b d1,(a4)
-    br(0x6000, 'emit')                      # bra emit
+    br(0x6000, 'emit_next')                 # bra emit_next
     lbl('emit_ret')
     raw(0x4E75)                             # rts
 

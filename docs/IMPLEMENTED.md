@@ -25,12 +25,47 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
 - **Réponses IKBD** : attente firmware globale, puis transmission série ; valeurs
   centrales déterministes des plages Hatari, quantifiées à 1024 cycles par bit.
   Horloge, joysticks, position absolue, rapports et réponse Froggies sont couverts.
-  Phase sous-octet et transit CPU→IKBD restent approximatifs.
+  Phase SCI sortante sous-octet encore approximative. Le transit CPU→IKBD
+  utilise TDR/TSR, avec TDRE au chargement TSR et commande reçue au bit de stop
+  (/64 8N1 ; autres formats et diviseurs non simulés). Le break suspend
+  les départs en conservant le TDR ; le TSR engagé se termine normalement.
+  La reprise BREAK conserve la phase du dernier changement de diviseur CR.
+  Les échéances TX franchies sont traitées avant les écritures MMIO ; un
+  caractère engagé ne peut plus être annulé rétroactivement par BREAK.
+  La ligne break physique et ses erreurs de trame restent hors modèle.
+  PAUSE $13 retient les prochains départs SCI ; l’unique octet déjà engagé
+  finit normalement. Boot ROM conserve cet octet, reset matériel l’annule.
+  Le registre SCI et le RDR ACIA sont distincts des 1024 octets de la file
+  firmware ; ils ne réduisent pas sa capacité. Les archives au-delà de cette
+  capacité sont refusées avant le chargement de la file.
 - **Monitoring joystick $17** : période demandée en centièmes de seconde,
   indépendante du VBL et de la vitesse CPU, avec sauvegarde de la phase.
 - **FDC** : attentes des handlers de registres portées (4 cycles CPU, avec
   exclusions SCREG en lecture, statut DMA et adresses). Le registre de densité Mega STE a aussi son attente.
-- **Sauvegardes v23** : période/échéance du monitoring ajoutées au délai IKBD
+  Éjection et réinsertion du lecteur actif remettent la phase INDEX à zéro ;
+  un lecteur vide ne conserve plus l’impulsion du média précédent. Un changement
+  de lecteur pendant transfert valide le secteur sur le nouveau média ; un
+  secteur inexistant renvoie RNF, sans accéder à la face/piste suivante.
+- **Autosend IKBD** : scrutation toutes les 150000 cycles bus, indépendante du VBL ;
+  reset répété préserve l’échéance. $17 remplace la cadence commune jusqu’au
+  boot ROM ; MouseAction et position absolue précèdent le monitoring joystick.
+- **Sauvegardes v39** : fronts BREAK SCC en attente et phase de reprise IKBD
+  ajoutés à la retenue du diviseur RTC et à la phase de reprise BREAK MIDI v38,
+  à la parité du TSR SCC et à la banque RTC indépendante v37,
+  à la phase/pulse Zero Count SCC et aux délais UE MFP v36,
+  aux fractions SCC étendues au BRG v35 et aux bornes de longues
+  suspensions BREAK ; fractions TX/RX SCC v34 ajoutées à la
+  suspension TSR SCC pendant BREAK v33, à
+  l’indicateur TX engagé SCC et à l’octet SCI IKBD v32, à la
+  largeur RX MFP en vol et au format TSR SCC v31, au
+  diviseur matériel exact USART v30, à la
+  sortie physique RTS SCC v29, aux
+  TDR/TSR USART TX et SERIAL_TX v28, aux
+  RDR/OVRN MIDI et phase USART MFP v27, aux
+  TDR/TSR MIDI et échéances v26, aux
+  TDR/TSR clavier et FIFO RX SCC v25, aux
+  événements TX/RX SCC, file RX et autosend IKBD v24,
+  à la période/échéance du monitoring v23, au délai IKBD
   et miroir Blitter v22, aux échéances ACSI/SCC et période BRG v21. Les anciens formats sont refusés
   explicitement ; le VBlank est reconstruit sans champ ajouté.
 
@@ -623,12 +658,12 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
 ## Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)
 - ACIA clavier + file de scancodes ; mapping GLFW → scancodes ST. Ligne **GPIP4** câblée
   sur RDRF de l'ACIA. **Réponse de reset IKBD différée** (`$F1` ~502000 cyc après `$80,$01`).
-- **ACIA MIDI alignée sur le 6850** : le master reset ne **purge plus** la file de réception
-  (l'octet en transit est conservé, cf. note Hatari « don't clear bytes in transit ») et la lecture
-  du registre de données à vide renvoie le **dernier octet reçu** (RDR persistant) au lieu de `0x00`,
-  comme l'ACIA clavier. Cf. `docs/HATARI_DIVERGENCES.md` (MIDI). **Bit RDRF distinct de la file** :
-  le master reset efface RDRF (SR → TDRE seul, cf. `ACIA_MasterReset`) **sans purger** la file →
-  l'octet reste relisible et RDRF retombe correctement (cf. §2ᵉ passe, M-MIDI).
+- **ACIA MIDI — réception 6850** : un seul RDR pour un caractère achevé.
+  Le suivant est perdu si RDRF est encore armé ; l’overrun devient visible à la
+  lecture de RDR, puis SR→RDR l’acquitte. RDR conserve le dernier caractère reçu,
+  même à vide ou après master reset ; le reset efface RDRF et les erreurs.
+  File hôte et registre à décalage ne créent pas de deuxième caractère lisible.
+
 - **Analyseur de commandes multi-octets** (table de longueurs + buffer d'accumulation).
 - **Tampon de sortie IKBD borné à 1024 octets** (port `IKBD_OutputBuffer_CheckFreeCount`,
   SIZE_KEYBOARD_BUFFER) : chaque émetteur de paquet (souris/clavier/joystick) teste la place
@@ -647,12 +682,15 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   (72/80/75/77) ; **DisableMouse `$12`** (mode OFF).
 - **Horloge interne IKBD `$1B`/`$1C`** (`IKBD_UpdateClockOnVBL`) : 6 octets BCD avancés d'une
   seconde par trame cumulée, propagation/retenue + bissextile fidèles à la ROM HD6301.
-- **Joystick** : auto-report (`$14`), stop (`$15`), monitoring (`$17`), durée de feu (`$18`) ;
-  interrogation `$16` → `$FD,joy0,joy1` (les DEUX ports bruts, sans couper le port 0 — comme
+- **Joystick** : auto-report (`$14`), stop (`$15`), monitoring (`$17`) ;
+  `$18` (monitoring du feu) et `$19` (keycode) sont reconnus mais non émulés,
+  comme dans Hatari. `$19` consomme ses six paramètres ; `$99` reste un alias
+  du rapport `$94/$95`, sans activer de mode keycode.
+  Interrogation `$16` → `$FD,joy0,joy1` (les DEUX ports bruts, sans couper le port 0 — comme
   `IKBD_Cmd_ReturnJoystick`).
 - **Livraison série IKBD → ACIA cadencée** (`Scheduler::IKBD_RX`, ~10240 cyc/octet = 10 bits
   à 7812,5 bauds, la cadence du SCI d'Hatari) : un octet de la file ne lève RDRF/IRQ qu'à
-  son tour, le suivant ~1,28 ms après sa lecture. **Corrige les axes souris « tournés de
+  son tour, le suivant ~1,28 ms plus tard indépendamment de la lecture du RDR. **Corrige les axes souris « tournés de
   90° » de _Vroom_** (TODO historique) : le jeu identifie les octets du paquet `$F8,Δx,Δy`
   à leur cadence d'arrivée, pas à l'en-tête — la livraison instantanée des 3 octets lui
   faisait prendre Δy pour Δx (haut/bas braquait, gauche/droite accélérait). Diagnostiqué en
@@ -683,13 +721,22 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   mapping positionnel inchangé. **Autorepeat** : déjà conforme — `GLFW_REPEAT` ignoré,
   c'est le TOS qui répète (l'IKBD n'émet qu'un make par appui), comme Hatari. Pays
   vérifié sur les 40 ROMs du dépôt (FR/UK/DE/ES/IT/US/multilangue corrects).
-- **IRQ d'émission ACIA MIDI (TIE, CR bits 5-6 = 01) + TDRE cadencé** — l'ACIA MIDI
-  (`$FFFC04/06`) suit désormais le même modèle que l'ACIA clavier (port
-  `ACIA_Write_CR`/`ACIA_UpdateIRQ`) : écrire une donnée sous TIE vide TDRE, re-rempli
-  ~1 octet MIDI plus tard (10 bits à 31250 bauds = **2560 cycles**, `Scheduler::MIDI_TX`)
-  → IRQ « transmetteur prêt » qui cadence la sortie des séquenceurs MIDI. Hors TIE,
-  TDRE reste câblé à 1 (statut), comme côté clavier. L'ancien TODO « TDRE câblé à 1 +
-  CR bits 5/6 ignorés » de l'ACIA MIDI est levé.
+- **Émission ACIA MIDI cadencée** (`$FFFC04/06`) : un TDR et un TSR,
+  TDRE au chargement du TSR (256 cycles si libre), sortie du caractère au stop
+  (2560 cycles en /16 8N1). Un TDR occupé est écrasé par une écriture prématurée ;
+  le TSR reste intact. IRQ TX sous TIE, scrutation sans TIE. Puits hôte/réseau
+  datés à l’échéance série et bouclage différé. Phase et octets sauvegardés.
+  TX respecte les huit formats CR2..4 (7/8 données, parité, 1/2 stops) et les
+  diviseurs /1, /16, /64 (16/256/1024 cycles par bit). Données masquées et
+  durée mémorisées au chargement TSR ; configuration suivante appliquée au TDR.
+  BREAK retient le TDR, laisse finir le TSR et reprend au front sélectionné.
+  Ce front conserve l’ancrage du dernier changement de diviseur CR, même
+  après restauration. Changer le diviseur pendant le TSR recadence les fronts
+  restants ; données et format restent mémorisés. Le chargement TDR au repos
+  reste now+bit, sans modèle intégral des fronts TX.
+  Source RX hôte toujours à 31250 bauds 8N1 ; les erreurs physiques et la forme
+  d’onde BREAK ne sont pas simulées. RX suit un seul RDR
+  avec overrun différé et acquittement SR→RDR.
 - **Duplication feu joystick ↔ boutons souris** (`IKBD_DuplicateMouseFireButtons`) : sur le
   vrai IKBD ce sont les MÊMES lignes. Souris coupée → boutons souris émis comme feux
   joystick (`$FE`/`$FF` bit7) ; souris active → le feu du joystick 1 est RETIRÉ du paquet
@@ -1405,6 +1452,15 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   + « C1 clock increment error » : la batterie **Z de la cartouche Atari Field
   Service v4.4 passe INTÉGRALEMENT sur Mega ST** (RAM, ROM, couleur, clavier,
   audio, MFP/Glue/vidéo, horloge avec rollover de siècle, blitter).
+  **Banque 1 RP5C15** : alarmes indépendantes des compteurs, RESET bit0
+  limité aux alarmes, registres réservés isolés. Sélection 12/24 h avec API
+  DateTime en 24 h, compteur bissextile indépendant et ajustement des secondes
+  ADJ avec retenue et remise à zéro du diviseur. Registre CLKOUT mémorisé,
+  sans génération de signal ; aucune sortie d’alarme ajoutée.
+  **Arrêt TIMER EN** : phase sous-seconde continue ; une retenue saturante
+  est délivrée dès la reprise, sans rattraper toutes les secondes arrêtées.
+  RESET du diviseur et ADJ annulent cette retenue, déduction du reset des étages
+  secondes et inférieurs décrit par Ricoh, sans mesure matérielle revendiquée.
   ⚠ Non modélisé : la sortie CLKOUT du RP5C15 — aucun consommateur observé
   (Hatari ne la modélise pas non plus, elle n'apparaît que dans son brochage).
 - **Persistance RTC entre sessions** (`neost.cfg` : clés `rtc=` date/heure BCD,
@@ -1441,16 +1497,35 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   `audio/GmSynth`.
 - **Port série RS-232 / USART MFP** : RSR/UDR, IRQ RxFull (12)/TxEmpty (10)/RxErr (11)/
   TxErr (9), lignes RTS→CTS (GPIP2)/DTR→DCD (GPIP1)/RI (GPIP6) via PSG port A.
+- **USART RX cadencée selon UCR** : longueur de données, parité et stops
+  déterminent la durée du caractère. Le reste fractionnaire conserve la cadence
+  à long terme ; les callbacks tardifs ne réancrent pas le flux. Phase sauvegardée,
+  reconfiguration effective au caractère suivant. Les mots RX hôtes de 5..8 bits
+  sont alignés à droite, bits inutilisés à zéro ; largeur mémorisée au départ
+  du caractère et sauvegardée. RE=0 efface RSR/BF/overrun et conserve les
+  données ; UDR restitue le dernier octet RX même vide, indépendamment de TX.
+  Les écritures RSR ne changent que RE/SS, plus F/S en mode synchrone ;
+  les bits de statut matériel sont préservés.
+  Les IRQ MFP pendantes restent acquittées séparément. Réacquisition en milieu
+  de caractère encore approximative. Mode synchrone en repli 8N1,
+  diviseurs /1 et /16 selon UCR7, sans plancher RX artificiel.
+- **USART TX cadencée** : TDR/TSR distincts, attente écrasable, Buffer Empty
+  au chargement TSR, sortie/bouclage en fin de caractère. IRQ TXEMPTY et
+  underrun/EOT distincts ; TE coupé laisse finir le caractère actif. Format UCR,
+  phase fractionnaire et sauvegarde. END et auto-turnaround sont immédiats
+  lors d’un arrêt au repos, différés à la fin du caractère en vol ; RX et TDR
+  sont conservés. IRQ END seulement sur nouveau front. Restent premier front TC, synchro et
+  forme d’onde BREAK ; le callback hôte d’octet n’a pas de timestamp.
 - **Config effective de l'USART** (`Mfp::updateSerialConfig`, port de `rs232.c`
   `RS232_SetBaudRateFromTimerD` + `RS232_HandleUCR`) : bauds dérivés du Timer D
-  (2.4576 MHz, sortie ÷2, prescaler /16 de l'UCR — seul mode supporté, comme Hatari)
-  avec les arrondis « TOS » vers les bauds standards (80→75, 109/120→110,
-  1745/1920→1800), format du mot depuis l'UCR (taille bits 5-6, parité bits 1-2,
+  (2.4576 MHz, sortie ÷2, UCR /1 ou /16 ; maximum 307200 bauds),
+  sans arrondis tty hôte. TX/RX utilisent le rapport matériel exact, sans tronquer
+  les débits non entiers ; la fraction survit aux changements de débit. Le débit
+  exposé par `serialBaud()` reste entier et informatif. Format depuis l’UCR (taille bits 5-6, parité bits 1-2,
   stops bits 3-4). Recalculée à chaque écriture UCR/TDDR/TCDCR, exposée
   (`serialBaud()`/`serialUcr()`) et JOURNALISÉE au changement — au boot on voit
-  EmuTOS/TOS négocier `9600 bauds, 8N1`. Comme chez Hatari c'est de la pure
-  configuration (appliquée à son tty hôte) : le débit d'émission émulé reste
-  instantané (`RS232_TSR_ReadByte`), backing-store des registres inchangé.
+  EmuTOS/TOS négocier `9600 bauds, 8N1`. NeoST cadence les caractères
+  TX et RX sur cette base ; le transport synchrone garde un repli 8N1 /16.
 - **Disque dur ACSI complet** (`io/Acsi`, port de `hdc.c` ; routage DMA via `Fdc`,
   `$FF8604/06` bit `DMA_CSACSI`) : boot et lecture/écriture depuis une **vraie image
   de disque dur** (dump de secteurs brut, `--acsi`/`--hd` ou `NEOST_ACSI_IMG`),
@@ -1485,7 +1560,7 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   TTY), vecteur RR2A/RR2B (+ statut, Status High/Low, VIS/NV), IP RR3 + sources
   d'interruption, **IRQ niveau 5 vectorisée gatée par le SCU** (VmeIntState bit 5,
   IACK → vecteur, IUS, `Reset Highest IUS`). Décodage des accès façon Hatari (octets
-  IMPAIRS seulement ; `$..81/85` = ctrl A/B, `$..83/87` = data A/B). TX immédiat
+  IMPAIRS seulement ; `$..81/85` = ctrl A/B, `$..83/87` = data A/B). TX cadencé
   (puits série + **bouclage local** WR14 bit4) et RX par injection. Câblé via le SCU
   (`Scu::syncState` niveau 5) et `Cpu68k::neostUpdateIpl`/`readIrqUserVector`.
   Validé headless : **EmuTOS 256K et TOS 2.06 Mega STE initialisent les deux canaux**
@@ -1497,15 +1572,61 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   DTR→DSR (/SYNC) et **BREAK émis (WR5 bit4) → RR0 bit7 Break/Abort** au retour — le
   mécanisme de détection des prises du test « I SCC » du diagnostic MegaSTE, qui rend
   **Pass** (Port A, Port B et LAN détectés, async, modem control, IRQ ext-status).
-  **BRG / Zero Count (2026-10-18)** : PCLK/RTxC, WR4, constantes WR12/13 et
-  activation WR14 alimentent deux événements Scheduler. IRQ externes masquées,
+  **Parité RX courte** : en bouclage de même largeur, les mots 5/6/7 bits
+  exposent la parité émise dans le bit suivant les données (Zilog WR4 p.152).
+  Valeur mémorisée au chargement TSR, puis conservée dans la FIFO et les états.
+  L’injection hôte d’octets ne fournit pas de parité physique ; formats discordants
+  et erreurs de parité/framing ne sont pas synthétisés.
+  **Statuts externes** : les verrous RR0 sélectionnés par WR15 fonctionnent
+  même avec WR1 External/Status désactivé. WR1 ne contrôle que la demande
+  d’interruption ; sa réactivation retrouve un verrou déjà fermé. WR0 ouvre
+  les verrous et acquitte la demande, sans nouveau champ de sauvegarde.
+  **Fronts BREAK pendant verrou externe** : assertion et relâchement sont
+  mémorisés même si CTS/DCD a déjà fermé les verrous (Zilog p.58), puis
+  servis au fil des resets WR0. Répétitions coalescées par polarité ; aucune
+  file illimitée ni erreur RX synthétique. État des fronts sauvegardé en v39.
+  **BRG / Zero Count (2026-10-18)** : PCLK/RTxC, constantes WR12/13 et
+  activation WR14 alimentent deux événements Scheduler. ZC précède /2 et WR4 :
+  période (TC+2)/source, retenue rationnelle ; nouveau TC au prochain reload.
+  RR0 suit une pulse d’un cycle source, non latchée et masquée par WR15.
+  IRQ externes masquées,
   vecteurs, IUS, reset et restauration de phase sont gardés par le banc SCC.
+  **Auto Enables WR3** : les broches CTS/DCD qualifient les bits logiciels
+  d’émission/réception ; la FIFO reçue survit à une perte DCD, seul le caractère
+  en cours est perdu. Le TSR finit avant suspension CTS. Qualification brute
+  indépendante de RR0 verrouillé ; exceptions de bouclage selon le composant.
+  En asynchrone Auto Enables, RTS attend le dernier stop du TSR et du TDR ;
+  la prise CTS suit cette sortie physique, sauvegardée séparément de WR5.
+  **Horloges directes TX/RX** : RTxC/TRxC calculées avec rapport rationnel,
+  fractions indépendantes par canal/direction. Pas de troncature à chaque bit ;
+  configuration engagée conservée, reprise après silence sur l’horloge vive.
+  Changer de fréquence source remet la fraction à zéro au prochain caractère.
+  Les caractères issus du BRG utilisent aussi le rapport exact PCLK/RTxC,
+  WR12/13 et WR4, sans arrondi du baud ni seuil à 1 baud. Zero Count possède
+  sa phase rationnelle indépendante ; BREAK reste sans précision de phase bit.
+  **Désactivation TX** : le TSR réellement engagé finit à son échéance initiale
+  même si WR5 TX Enable tombe ; le TDR attend la réactivation, sans écraser le
+  TSR actif. CTS, RTS différé et All Sent conservent leurs rôles.
+  **SEND BREAK WR5** : TSR suspendu et TDR retenu ; relâcher BREAK reprend
+  le temps restant. Un caractère interrompu ne produit pas de faux octet intact.
+  Reste et interruption sauvegardés. Modèle au caractère, sans phase de bit ni
+  erreurs RX synthétiques ; indication BREAK bouclée immédiate et X21 hors modèle.
+  **TX caractères courts** : 6/7 bits masqués et encodage WR5 « cinq ou moins »
+  pour 1..5 bits. Données et longueur fixées au chargement du TSR, durée selon
+  cette longueur ; un TDR en attente prend le format courant à son transfert.
+  **WR3 Sync Character Load Inhibit** : filtrage WR6 avant FIFO et IRQ dans
+  les modes non SDLC, y compris asynchrone ; exception Bisync 12 bits. Aucun
+  synchroniseur de bits ajouté (Zilog UM0109 p.149).
   Le câblage BRG suit aussi les changements de profil ST → Mega STE.
   **Miroirs RR6/RR7** : sélection WR15 locale au canal et lecture RR2/RR3 locale,
   vecteur actualisé et soft IACK compris (Zilog/MAME, correction du défaut partagé
   avec Hatari). La FIFO SDLC reste non implémentée.
   Le reset matériel annule les événements dont WR14 a désactivé la source.
-  _Restent la cadence TX/RX des octets et la série hôte réelle._
+  **Caractères TX/RX cadencés** selon les horloges et formats SCC : TDR/TSR,
+  IRQ au transfert TDR→TSR, All Sent en fin TX, RX mis en file. Bouclage à la
+  fin TX. FIFO RX matérielle de trois octets : ordre, erreurs associées,
+  débordement du dernier emplacement, modes premier/tous/spécial et Error Reset.
+  Restent FIFO SDLC, DPLL et série hôte réelle.
 - **SCC No-Vector → vecteur spurious 24** (`Cpu68k::readIrqUserVector`) : sur IACK niveau 5 avec
   WR9 NV armé (`Scc::processIack()` = -1), le wrapper renvoie désormais le vecteur **spurious 24**
   ($60) — comme la branche MFP et `iack_cycle` d'Hatari (`vector<0 → 24`) — au lieu de
@@ -1723,7 +1844,7 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   + verdict série. ⚠ fenêtre LSB partagée avec le CR NE2000 (cf. `docs/EXTENSIONS.md`).
 - **Anneau MIDI réseau** (`net/MidiRing`, `--midi-net H:P[:L]`) : **MIDIMaze en ligne** —
   MIDI OUT → UDP → pair aval, datagrammes amont → MIDI IN (`MidiAcia::setMidiSink`/
-  `receiveExternal`, tampon de gigue respectant les 2 octets du 6850). Vérifié
+  `tryPop` via la source série, collecte UDP par trame et consommation à 2560 cycles). Vérifié
   `MIDITEST.TOS` (OUT 10/10 octets ordre exact ; round-trip complet OUT→réseau→IN→ACIA).
 
 ## Frontend & outillage

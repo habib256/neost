@@ -110,9 +110,17 @@ void MidiRing::poll(const std::function<bool(uint8_t)>& accept) {
         for (int i = 0; i < rc; ++i)
             if (jitter_.size() < 8192) jitter_.push_back(buf[i]);
     }
-    // 2) Livre au 6850 tant qu'il absorbe (2 octets de profondeur).
+    // 2) Livraison synchrone facultative ; la source série utilise tryPop.
     int delivered = 0;
     while (!jitter_.empty() && accept(jitter_.front())) { jitter_.pop_front(); ++delivered; }
     if (delivered || !jitter_.empty())
         rtrace("deliver", std::to_string(delivered) + " (queued " + std::to_string(jitter_.size()) + ")");
+}
+
+// La collecte UDP et la consommation série tournent sur le thread machine.
+bool MidiRing::tryPop(uint8_t& b) {
+    if (jitter_.empty()) return false;
+    b = jitter_.front();
+    jitter_.pop_front();
+    return true;
 }

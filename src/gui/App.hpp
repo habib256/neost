@@ -201,6 +201,8 @@ struct App {
     // (donc sur le mauvais moniteur en bi-écran, barre de titre hors champ sous X11).
     // D'où ce drapeau : tant qu'il est faux, la sortie de borne centre la fenêtre.
     bool winGeomValid = false;
+    bool fullscreen = false;               // plein écran avec souris capturée
+    bool fullscreenToggleReq = false;      // Alt+Entrée, appliqué entre deux trames
 
     // ─── Entrées : souris, clavier, manettes ─────────────────────────────────
     Ikbd* ikbd = nullptr;                  // cible des callbacks clavier/souris GLFW
@@ -349,6 +351,7 @@ struct App {
     bool midiLearnUids();
     void applyConfig();
     void switchKioskMode(bool on);
+    void toggleFullscreen();
 };
 
 // L'instance unique. Les callbacks GLFW (onKey, onMouseButton, glisser-déposer) et

@@ -1,5 +1,7 @@
-// Commande $17 : période propre au monitoring joystick, sans dépendance au VBL.
+// Commande $17 : cadence commune de scrutation, sans dépendance au VBL.
 // Référence : Hatari ikbd.c SetJoystickMonitoring / InterruptHandler_AutoSend.
+// Les commandes sont injectées à la sortie du récepteur série : ce banc
+// mesure le firmware ; le transport CPU est couvert par ikbd_cpu_serial_logic.
 #include "io/Ikbd.hpp"
 #include "io/Mfp.hpp"
 #include "core/Pacing.hpp"
@@ -34,7 +36,7 @@ struct Rig {
         ikbd.write8(0xFFFC00, 0x96);
     }
     void command(std::initializer_list<uint8_t> bytes) {
-        for (auto b : bytes) ikbd.write8(0xFFFC02, b);
+        for (auto b : bytes) ikbd.receiveSerialByte(b);
     }
     void warm() { for (int i = 0; i < 21; ++i) ikbd.onVbl(20000); }
     void advance(int64_t cycle) { live = cycle; sched.runTo(cycle); }
@@ -49,7 +51,7 @@ struct Rig {
         return rem == INT64_MIN ? -1 : live + rem;
     }
 };
-constexpr int64_t period(int rate) { return neost::pacing::kCpuHzInt * (rate ? rate : 1) / 100; }
+constexpr int64_t period(int rate) { return int64_t(8021247) * (rate ? rate : 1) / 100; }
 }
 
 int testIkbdMonitor() {
@@ -86,8 +88,8 @@ int testIkbdMonitor() {
     }
     for (uint8_t exit : {uint8_t(0x14), uint8_t(0x15), uint8_t(0x1A)}) {
         Rig r; r.warm(); r.command({0x17, 1}); r.command({exit});
-        c.equal("leaving monitoring cancels timer", r.monitorDue(), -1);
-        r.advance(period(1)); c.equal("cancelled timer emits no stale sample", r.rxDue(), -1);
+        c.equal("leaving monitoring retains common timer", r.monitorDue(), period(1));
+        r.advance(period(1)); c.equal("new mode emits no stale monitor sample", r.rxDue(), -1);
     }
     {
         Rig r; r.warm(); r.command({0x17, 1});

@@ -53,10 +53,12 @@ public:
     // engagé dans le registre à décalage arrivait quand même APRÈS le reset.
     void    resetHw();
 
-    // Échéance : le registre d'émission de l'ACIA s'est vidé (~1 octet série après
-    // une écriture $FFFC02 sous TIE) → TDRE repasse à 1 et ré-arme l'IRQ TX. Datée
-    // par write8 seulement quand l'IRQ d'émission est armée (cf. raiseIfReady).
+    // Échéance CPU→IKBD : transfert TDR→TSR ou réception du bit de stop.
     void    onTxEmpty();
+
+    // Entrée du firmware HD6301 : octet reçu après le bit de stop.
+    // Les tests du protocole peuvent injecter ici sans traverser l'ACIA.
+    void receiveSerialByte(uint8_t v);
 
     // Échéance : un octet série IKBD → ACIA est arrivé (~10240 cycles après son
     // départ de la file) → il devient le RDR courant (RDRF=1, IRQ ACIA). Cette
@@ -67,6 +69,10 @@ public:
 
     // Échantillon joystick $17 : timer indépendant du VBL, en cycles bus 8 MHz.
     void    onJoystickMonitor();
+
+    // Scrutation firmware indépendante du VBL : Hatari IKBD_AUTOSEND, 150000 cycles.
+    void    startAutoSend();
+    void    onAutoSend();
 
     // Sonde joystick : peut RÉ-ÉCRIRE (joy0, joy1) à l'interrogation `$16`/au
     // report auto. Les valeurs sont d'abord amorcées avec l'état hôte courant
@@ -109,10 +115,8 @@ public:
     // bouton SANS mouvement. En mode absolu, accumule la position (échelle $0C).
     void mouseEvent(int dx, int dy, bool left, bool right);
 
-    // Tic de trame (VBL), `vblMicro` = durée d'une trame en µs. Deux rôles :
-    //  - avance l'horloge interne IKBD ($1B/$1C, cf. IKBD_UpdateClockOnVBL) ;
-    //  - en mode joystick auto, émet spontanément un paquet $FE/$FF dès qu'un état
-    //    de manette change (cf. IKBD_SendAutoJoysticks ; no-op hors JOY_AUTO).
+    // Tic VBL : horloge interne et garde des vingt premières trames.
+    // Sans ordonnanceur seulement, sert aussi de repli pour la scrutation.
     void onVbl(int64_t vblMicro);
 
     // Sérialisation save-state SYMÉTRIQUE (save ET load) : transfère tout l'état
@@ -124,6 +128,7 @@ public:
         {
             uint32_t n = static_cast<uint32_t>(rx_.size());
             ar(n);
+            ar.check(n <= 1024, "Ikbd::firmware output queue exceeds capacity");
             if (ar.loading()) {
                 rx_.clear();
                 for (uint32_t i = 0; i < n && ar.ok(); ++i) { uint8_t b = 0; ar(b); rx_.push_back(b); }
@@ -135,12 +140,16 @@ public:
         ar(rdr_);
         ar(rdrf_);
         ar(rxPending_);
+        ar(rxShiftData_);
         ar(rxOverrun_);
         ar(ovrn_);
         ar(srRead_);
         ar(control_);
         ar(txEnableInt_);
         ar(tdre_);
+        ar(txData_); ar(txShiftData_); ar(txShifting_);
+        ar(txClockPhase_);
+        ar.check(txClockPhase_ >= 0 && txClockPhase_ < 1024, "Ikbd::txClockPhase_");
 
         // --- Tampon de commande multi-octets ---
         ar(inBuf_);        // std::array<uint8_t, 8>
@@ -270,8 +279,8 @@ public:
         ar(asReadCount_);
         ar(joystickMonitorPeriod_);
         ar.check(joystickMonitorPeriod_ == 0 ||
-                 (joystickMonitorPeriod_ >= neost::pacing::kCpuHzInt / 100 &&
-                  joystickMonitorPeriod_ <= neost::pacing::kCpuHzInt * 255 / 100),
+                 (joystickMonitorPeriod_ >= 8021247 / 100 &&
+                  joystickMonitorPeriod_ <= int64_t(8021247) * 255 / 100),
                  "Ikbd::joystick monitor period out of range");
         ar(responseDelayBits_);
         ar(rxWaitingDelay_);
@@ -300,6 +309,7 @@ private:
     // Exécute la commande IKBD complète accumulée dans inBuf_ (inBuf_[0] = opcode).
     void dispatchCommand();
 
+
     // --- Code 6301 custom ($20 LoadMemory / $22 Execute) -----------------------
     // Port du mécanisme d'Hatari (ikbd.c) : faute d'émuler un vrai HD6301, on
     // calcule le CRC32 du programme téléversé et, s'il correspond à un programme
@@ -324,10 +334,10 @@ private:
     // « souris + joystick » obtenu pendant la fenêtre de reset — cf. Hatari
     // IKBD_GetJoystickData/bBothMouseAndJoy) et émet $FE+joy0 / $FF+joy1 pour
     // celles dont l'état a changé (cf. Hatari IKBD_SendAutoJoysticks).
+    void sendAutoInput();
     void readJoystickState(uint8_t& joy0, uint8_t& joy1) const;
     void sendAutoJoysticks(uint8_t joy0, uint8_t joy1);
     void sendAutoJoysticksMonitoring(uint8_t joy0, uint8_t joy1);
-    void stopJoystickMonitoring();
 
     // Quirk matériel « disable souris ET joystick pendant le reset » (cf. Hatari
     // IKBD_CheckResetDisableBug) : $12 + $1A reçus pendant la fenêtre de reset →
@@ -363,6 +373,7 @@ private:
     uint8_t rdr_ = 0;                        // Receive Data Register : dernier octet LIVRÉ
                                              // (relire à vide le renvoie, cf. acia.c)
     bool    rdrf_ = false;                   // RDR plein (octet livré non encore lu)
+    uint8_t rxShiftData_ = 0;                // octet sorti de la file, engagé dans le SCI
     bool    rxPending_ = false;              // une livraison IKBD_RX est déjà datée
     int     responseDelayBits_ = 0;          // SCI_TX_Delay global, 1024 cycles/bit
     bool    rxWaitingDelay_ = false;         // IKBD_RX termine l'attente, pas un octet
@@ -375,7 +386,11 @@ private:
     bool    srRead_ = false;                 // SR lu depuis la dernière lecture RDR
     uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
     bool    txEnableInt_ = false;            // IRQ d'émission armée : CR bits5-6 = 01 (ex. $b6, Hades Nebula)
-    bool    tdre_ = true;                    // Transmit Data Register Empty : 1 au repos, 0 en émission sous TIE
+    bool    tdre_ = true;                    // TDR libre, indépendant de TIE
+    uint8_t txData_ = 0, txShiftData_ = 0;   // un octet en attente et un en vol
+    void advanceTx(int64_t at); // front TX échéancé, indépendant du retard CPU
+    int64_t txClockPhase_ = 0; // reprise BREAK /64, origine du diviseur modulo1024
+    bool txShifting_ = false;               // IKBD_TX termine le TSR, sinon remplit le TSR
     std::array<uint8_t, 8> inBuf_{};         // accumulation des octets d'une commande multi-octets
     int inBufLen_ = 0;                       // octets déjà reçus pour la commande en cours
     int cmdExpected_ = 0;                    // octets attendus au total (0 = aucune commande en cours)
@@ -439,7 +454,7 @@ private:
     JoystickMode joyMode_ = JOY_AUTO;
     uint8_t prevJoy0_ = 0, prevJoy1_ = 0;
     uint32_t vblCount_ = 0;                   // garde Hatari : pas d'auto-send avant 20 VBL
-    int64_t joystickMonitorPeriod_ = 0;       // commande $17, zéro = timer désarmé
+    int64_t joystickMonitorPeriod_ = 0;       // cadence commune posée par $17 ; zéro = défaut 150000
     bool duringResetCriticalTime_ = false;    // bloque les sorties jusqu'à la réponse $F1
 
     // --- Quirks « souris + joystick simultanés » (cf. Hatari bMouseDisabled etc.) ---
@@ -453,8 +468,8 @@ private:
     bool mouseEnabledDuringReset_ = false;    // $08 reçu pendant le reset (Barbarian)
     bool bothMouseAndJoy_ = false;            // souris + joystick reportés ensemble
 
-    // PAUSE OUTPUT ($13) : gèle la livraison IKBD → ACIA (RDRF/IRQ RX inhibés,
-    // les octets restent en file). Levée par $11 ou par toute commande valide
+    // PAUSE OUTPUT ($13) : bloque le chargement firmware → SCI ; l’octet
+    // engagé finit sa trame. Levée par $11 ou par toute commande valide
     // complète (cf. Hatari Keyboard.PauseOutput). Ignorée pendant le reset
     // (loader de « Just Bugging »).
     bool pauseOutput_ = false;

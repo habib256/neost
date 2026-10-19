@@ -746,6 +746,12 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     // Densité déduite de la géométrie (18 spt → HD 1,44 Mo, 36 spt → ED) — sur
     // Mega STE, TOS doit accorder $FF860E à cette densité pour lire le disque.
     updateFloppyDensity(drive & 1);
+    // Hatari FDC_InsertFloppy : chaque nouveau média reçoit sa propre phase,
+    // même lors d'un remplacement à chaud moteur déjà lancé.
+    if ((drive & 1) == driveSel_) {
+        indexTime_ = 0;
+        if (str_ & STR_MOTOR) indexInit();
+    }
     std::fprintf(stderr, "[FDC] drive %c: %s (%zu KB, %d sectors/track, %d sides%s%s)\n",
                  drive & 1 ? 'B' : 'A', path.c_str(), dk.image.size() / 1024, dk.spt, dk.sides,
                  dk.density == 4 ? ", ED" : dk.density == 2 ? ", HD" : "",
@@ -760,6 +766,9 @@ void Fdc::eject(int drive) {
     dk.stx.reset();
     dk.imgType = FloppyDisk::IMG_ST;
     dk.path.clear();
+    // FDC_EjectFloppy coupe immédiatement l'index du lecteur éjecté.
+    // Sans cela, STR expose encore le créneau de la dernière impulsion.
+    if ((drive & 1) == driveSel_) indexTime_ = 0;
     // Éjection à chaud : on force WPRT pendant la fenêtre de transition (cf. Hatari
     // Floppy_DriveTransitionSetState, STATE_EJECT). Une éjection « à vide » n'arme rien.
     if (wasPresent && sched_) {
@@ -1269,7 +1278,10 @@ uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSiz
     // Face au-delà de l'image (face 2 d'une image simple face) : les données
     // n'existent pas → RNF (port de Floppy_ReadSectors, floppy.c:907 Side >=
     // nSides). Sans cette garde, lsnOffset replierait sur la piste suivante.
-    if (side >= dk.sides) return STR_RNF;
+    // Le lecteur/SR peut changer entre l'identification et le transfert : un
+    // secteur absent ne doit pas devenir un offset dans la face/piste suivante
+    // (Hatari Floppy_ReadSectors, garde Sector).
+    if (side >= dk.sides || sector == 0 || sector > dk.spt) return STR_RNF;
     const uint64_t off = lsnOffset(track, side, sector, dk.spt, dk.sides);
     if (off + 512u <= dk.image.size()) {
         static const bool fdcDebug = getenv("NEOST_FDC_DEBUG") != nullptr;
@@ -1288,7 +1300,9 @@ uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return writeSectorStx(size);
     FloppyDisk& dk = drive_[driveSel_];
     // Face au-delà de l'image → RNF (même garde que readSectorST, Floppy_WriteSectors).
-    if (side >= dk.sides) return STR_RNF;
+    // Même validation CHS que Floppy_WriteSectors, même si l'offset linéaire
+    // calculé resterait dans l'image après un changement de lecteur en DMA.
+    if (side >= dk.sides || sector == 0 || sector > dk.spt) return STR_RNF;
     const uint64_t off = lsnOffset(track, side, sector, dk.spt, dk.sides);
     if (size >= 0 && off + uint64_t(size) <= dk.image.size()) {
         for (int i = 0; i < size; ++i) dk.image[off + i] = bufferReadBytePos(i);

@@ -1,0 +1,4 @@
+# Distributions Atari importées : conserver les octets d'origine, y compris
+# les textes en encodage ST et CRLF, sans normalisation ni diff textuel.
+disks/CHUCHU_L/** -text -diff
+gemdos/CHUCHU_L/** -text -diff

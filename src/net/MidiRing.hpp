@@ -9,7 +9,8 @@
 //
 //  Câblage (frontend) :
 //    midi.setMidiSink([ring](uint8_t b){ ring->sendByte(b); });
-//    // une fois par trame : ring->poll([&](uint8_t b){ midi.receiveExternal(b); });
+//    midi.setRxSource([ring](uint8_t& b){ return ring->tryPop(b); });
+//    // une fois par trame : ring->poll([](uint8_t){ return false; });
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -30,11 +31,11 @@ public:
     ~MidiRing();
 
     void sendByte(uint8_t b);                    // MIDI OUT → réseau (aval)
-    // Reçoit les datagrammes de l'amont dans un tampon de gigue interne, puis en
-    // livre autant que `accept` en absorbe (le 6850 ne tient que 2 octets → le
-    // reste attend le prochain appel). `accept(b)` renvoie true si l'octet a été
-    // pris. À appeler une fois par trame.
+    // Collecte les datagrammes dans le tampon de gigue une fois par trame.
+    // L'ancien consommateur synchrone reste possible ; pour la source cadencée,
+    // accept rend false et tryPop livre ensuite un octet par échéance MIDI_RX.
     void poll(const std::function<bool(uint8_t)>& accept);
+    bool tryPop(uint8_t& b);                    // sans appel socket, source série
 
     bool ok() const { return neonet::socketValid(fd_); }
 

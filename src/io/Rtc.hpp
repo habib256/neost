@@ -54,10 +54,15 @@ public:
     // closure now_ (horloge) est re-liée à la construction → non sérialisée.
     void serialize(StateArchive& ar) {
         ar(baseCycle_); ar(primed_);
-        ar(d_); ar(mode_); ar(test_); ar(reset_); ar(fakeAm_); ar(fakeAmz_);
+        ar(d_); ar(mode_); ar(test_); ar(reset_); ar(bank1_); ar(timerCarry_);
+        static constexpr uint8_t masks[13] = {7,1,15,7,15,3,7,15,3,0,1,3,0};
+        for (int i = 0; i < 13; ++i)
+            ar.check((bank1_[i] & ~masks[i]) == 0, "Rtc::bank1_");
     }
 
 private:
+    int hour24() const;
+    void setHour24(int hour);
     void initFromHostTime(); // initialise la date comme Hatari (année GEMDOS depuis 1980)
     void catchUp();          // applique les secondes entières écoulées depuis baseCycle_
     void tickOneSecond();    // +1 s avec retenue calendaire BCD complète (jusqu'à l'année)
@@ -73,6 +78,7 @@ private:
     // Cycles pour une seconde, recalé chaque trame par la Machine sur la géométrie
     // vidéo courante (trame × Hz). Config dérivée → hors save-state.
     int64_t secondCycles_ = CPU_HZ;
+    bool    timerCarry_ = false; // carry sous-seconde retenu pendant TIMER EN=0
     bool    primed_    = false;  // baseCycle_ calé sur le 1er accès (évite un rattrapage géant au boot)
 
     // 13 chiffres BCD : sec.u sec.t min.u min.t h.u h.t weekday j.u j.t mois.u mois.t an.u an.t
@@ -86,8 +92,8 @@ private:
     uint8_t test_   = 0;                     // $FFFC3D
     uint8_t reset_  = 0;                     // $FFFC3F
 
-    // Banque 1 RP5C15 : TOS 1.0x y écrit/relit les nibbles AM/PM aux alias
-    // $FFFC25/$FFFC27 pour valider la présence de l'horloge Mega (cf. Hatari).
-    uint8_t fakeAm_  = 0;
-    uint8_t fakeAmz_ = 0;
+    // Ricoh EK-086-9908 p6 : CLKOUT, ADJ, alarmes2..8, réservé9,
+    // sélection12/24, compteur bissextile, réservéC. Défaut24h pour l'API hôte.
+    // Pas de signal CLKOUT/ALARM synthétique ; ALARM n'est pas câblé sur Mega ST.
+    uint8_t bank1_[13] = {0,0,0,0,0,0,0,0,0,0,1,0,0};
 };

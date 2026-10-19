@@ -1,5 +1,7 @@
 // Délais firmware des réponses IKBD, sans modifier la cadence série des octets.
 // Référence : Hatari ikbd.c Send_Byte_Delay / SCI_Set_Line_TX et Cmd_Read/Report*.
+// Les commandes sont injectées à la sortie du récepteur série : ce banc
+// mesure le firmware ; le transport CPU est couvert par ikbd_cpu_serial_logic.
 #include "io/Ikbd.hpp"
 #include "io/Mfp.hpp"
 #include <cstdio>
@@ -33,7 +35,7 @@ struct Rig {
         ikbd.setClock(26, 10, 18, 12, 34, 56);
     }
     void command(std::initializer_list<uint8_t> bytes) {
-        for (uint8_t b : bytes) ikbd.write8(0xFFFC02, b);
+        for (uint8_t b : bytes) ikbd.receiveSerialByte(b);
     }
     void advance(int64_t cycle) { live = cycle; sched.runTo(cycle); }
     int ready() { return ikbd.read8(0xFFFC00) & 1; }

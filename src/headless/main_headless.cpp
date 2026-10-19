@@ -1837,11 +1837,29 @@ int main(int argc, char** argv) {
     }
 #ifdef NEOST_WITH_NET
     std::unique_ptr<MidiRing> midiRing;
+    // Détruit avant midiRing : aucun callback de la machine ne doit conserver
+    // l'adresse de l'anneau une fois son socket et son tampon libérés.
+    struct MidiRingWiring {
+        MidiAcia& acia;
+        const std::unique_ptr<MidiRing>& ring;
+        ~MidiRingWiring() {
+            if (!ring) return;
+            acia.setRxSource({});
+            acia.setMidiSink({});
+            acia.setMidiSinkTimed({});
+        }
+    } midiRingWiring{machine.midi, midiRing};
     if (!midiNetPeer.empty()) {
         midiRing = std::make_unique<MidiRing>();
         if (midiRing->open(midiNetPeer, midiNetListen)) {
             MidiRing* r = midiRing.get();
             machine.midi.setMidiSink([r](uint8_t b) { r->sendByte(b); });
+            // Un seul câble DIN IN : l'anneau remplace l'appareil hôte lorsqu'il
+            // est réellement ouvert. La collecte UDP reste à la trame ; MIDI_RX
+            // consomme le tampon au débit série, sans syscall par octet.
+            if (midiIn.isOpen())
+                std::fprintf(stderr, "[headless] MIDI ring overrides host MIDI IN device(s)\n");
+            machine.midi.setRxSource([r](uint8_t& b) { return r->tryPop(b); });
             std::fprintf(stderr, "[headless] MIDI ring: OUT->%s, IN<-udp:%d\n",
                          midiNetPeer.c_str(), midiNetListen);
         } else {
@@ -2134,11 +2152,7 @@ int main(int argc, char** argv) {
         if (machine.ne2000.enabled()) machine.ne2000.poll();   // trames RX → anneau
         if (machine.isp1160.enabled()) machine.isp1160.poll(); // trame USB (ATL → done)
 #ifdef NEOST_WITH_NET
-        if (midiRing) midiRing->poll([&](uint8_t b) {
-            if (!machine.midi.rxCanAccept()) return false;
-            machine.midi.receiveExternal(b);
-            return true;
-        });
+        if (midiRing) midiRing->poll([](uint8_t) { return false; });
 #endif
         // Injections datées (--keys-at / --joy-at) : pilotage d'un menu de démo en
         // PLEINE boucle (l'intro Cuddly attend espace ; le robot du menu, le stick),

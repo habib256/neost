@@ -34,10 +34,9 @@ public:
     // IKBD = réponse différée du clavier (ex. $F1 ~502000 cycles après le reset
     // $80,$01, comme Hatari) : l'IRQ ACIA doit arriver PENDANT que le code attend,
     // pas instantanément (sinon elle est levée avant l'armement et perdue).
-    // IKBD_TX = re-remplissage du registre d'émission de l'ACIA clavier (TDRE) ~1
-    // octet série après une écriture $FFFC02, UNIQUEMENT quand l'IRQ d'émission
-    // (TIE, CR bits5-6=01) est armée : re-lève l'IRQ « transmetteur prêt » qui
-    // cadence l'envoi des commandes IKBD piloté par interruption (cf. Hades Nebula).
+    // IKBD_TX = transfert TDR→TSR sur la grille bit de 1024 cycles (TDRE remonte),
+    // puis réception au bit de stop côté IKBD. Un TDR peut attendre pendant
+    // l'émission du TSR ; TIE ne conditionne que l'IRQ « transmetteur prêt ».
     // MICROWIRE = shift série du registre Microwire ($FF8922) du son STE : 16
     // décalages (8 cycles chacun, cf. Hatari) avant que la commande LMC1992 soit
     // décodée et que $FF8922 retombe à 0. Des diagnostics POLLENT $FF8922 jusqu'à 0.
@@ -54,10 +53,8 @@ public:
     // cycles), comme le SCI d'Hatari. Des jeux (Vroom) identifient les octets du
     // paquet souris à leur CADENCE d'arrivée : une livraison instantanée des 3
     // octets fait perdre la synchro de leur parseur (axes souris « tournés »).
-    // MIDI_TX = même rôle qu'IKBD_TX pour l'ACIA MIDI ($FFFC04/06) : TDRE se
-    // re-remplit ~1 octet MIDI (10 bits à 31250 bauds = 2560 cycles) après une
-    // écriture donnée sous TIE — cadence l'IRQ « transmetteur prêt » des
-    // séquenceurs qui streament la sortie MIDI par interruption (cf. midi.c).
+    // MIDI_TX = chargement TDR→TSR (TDRE) puis fin de transmission sur MIDI OUT.
+    // Un caractère /16 8N1 dure 2560 cycles ; l’IRQ TX suit le TDR, pas le câble.
     // MIDI_RX = livraison cadencée d'un octet du MONDE EXTÉRIEUR à l'ACIA MIDI :
     // l'horloge de réception tourne en permanence à 31250 bauds (10 bits = 2560
     // cycles) tant qu'une source hôte est branchée, et fait entrer AU PLUS un octet
@@ -76,8 +73,11 @@ public:
     // (500 cycles bus lorsque le Mega STE tourne à 16 MHz),
     // (Hatari HDC_ACSI_InterruptHandler_Update), distincte des acquittements octet.
     // SCC_BRG_A/B = passages à zéro des générateurs de débit SCC (Mega STE).
+    // SERIAL_TX : fin de caractère émis par l’USART MFP.
     // IKBD_MONITOR : échantillonnage joystick périodique demandé par $17.
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MIDI_RX, SERIAL_RX, MICROWIRE, BLITTER, VC_RESTART, HBL, VBL, ACSI_IRQ, SCC_BRG_A, SCC_BRG_B, IKBD_MONITOR, SRC_COUNT };
+    // SCC_TX/RX : fin d'un caractère série, distincte du pulse Zero Count du BRG.
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MIDI_RX, SERIAL_RX, MICROWIRE, BLITTER, VC_RESTART, HBL, VBL, ACSI_IRQ, SCC_BRG_A, SCC_BRG_B, IKBD_MONITOR, SCC_TX_A, SCC_TX_B, SCC_RX_A, SCC_RX_B, IKBD_AUTOSEND, SERIAL_TX, SRC_COUNT };
+    static_assert(SRC_COUNT <= 32, "Scheduler source mask is 32 bits");
 
     using Callback = std::function<void()>;
 

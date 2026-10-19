@@ -261,6 +261,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
                 [this] { mfp.setInDispatch(false); mfp.flushIrqUpdate(); cpu.updateIpl(); });
     }
     ikbd.setScheduler(&sched);  // l'IKBD diffère sa réponse de reset ($F1)
+    ikbd.startAutoSend();       // scrutation firmware, indépendante de la fréquence vidéo
     midi.setScheduler(&sched);  // l'ACIA MIDI date son TDRE sous TIE (cf. MIDI_TX)
     // Fixture de bouclage parallèle→joystick (test « Printer/Joystick », sous
     // --loopback) : le diagnostic écrit un motif sur le port parallèle (PSG port B,
@@ -345,6 +346,10 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::ACSI_IRQ, [this] { fdc.onAcsiIrq(); cpu.updateIpl(); });
     sched.setCallback(Scheduler::SCC_BRG_A, [this] { scc.onBrgEvent(0); cpu.updateIpl(); });
     sched.setCallback(Scheduler::SCC_BRG_B, [this] { scc.onBrgEvent(1); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::SCC_TX_A, [this] { scc.onSerialEvent(0, true); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::SCC_TX_B, [this] { scc.onSerialEvent(1, true); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::SCC_RX_A, [this] { scc.onSerialEvent(0, false); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::SCC_RX_B, [this] { scc.onSerialEvent(1, false); cpu.updateIpl(); });
     // (Scheduler::FDC_INDEX n'est plus utilisé : l'index est géré dans la machine
     // à états du FDC — comptage de tours pour spin-up / arrêt moteur, bit INDEX.)
     // (Scheduler::DMASND n'est plus armé : la fin de trame du son DMA STE est
@@ -355,11 +360,10 @@ void Machine::installSchedulerCallbacks() {
     // tête de file devient visible (RDRF) et lève l'IRQ ACIA (cf. onRxDeliver).
     sched.setCallback(Scheduler::IKBD_RX, [this] { ikbd.onRxDeliver(); cpu.updateIpl(); });
     sched.setCallback(Scheduler::IKBD_MONITOR, [this] { ikbd.onJoystickMonitor(); cpu.updateIpl(); });
-    // Re-remplissage du registre d'émission ACIA (TDRE→1) ~1 octet série après une
-    // écriture $FFFC02 sous TIE : ré-arme l'IRQ « transmetteur prêt » (cf. onTxEmpty).
+    sched.setCallback(Scheduler::IKBD_AUTOSEND, [this] { ikbd.onAutoSend(); cpu.updateIpl(); });
+    // Transit CPU→IKBD : TDR→TSR (TDRE/IRQ), puis réception de l'octet au stop.
     sched.setCallback(Scheduler::IKBD_TX, [this] { ikbd.onTxEmpty(); cpu.updateIpl(); });
-    // Idem pour l'ACIA MIDI (~1 octet à 31250 bauds = 2560 cycles) : cadence l'IRQ
-    // d'émission des séquenceurs MIDI (cf. MidiAcia::onTxEmpty).
+    // MIDI : chargement TDR→TSR (TDRE), puis émission après les bits du caractère.
     sched.setCallback(Scheduler::MIDI_TX, [this] { midi.onTxEmpty(); cpu.updateIpl(); });
     // MIDI_RX : horloge de réception d'un appareil hôte branché (cf. MidiAcia::
     // setRxSource). updateIpl car un octet entrant lève le canal 6 du MFP sous RIE.
@@ -367,6 +371,7 @@ void Machine::installSchedulerCallbacks() {
     // Livraison cadencée d'un octet RX à l'USART MFP (injection hôte : modem
     // Hayes) : RxFull (canal 12) par octet, au débit configuré.
     sched.setCallback(Scheduler::SERIAL_RX, [this] { mfp.onSerialRxEvent(); cpu.updateIpl(); });
+    sched.setCallback(Scheduler::SERIAL_TX, [this] { mfp.onSerialTxEvent(); cpu.updateIpl(); });
     // Étape de shift série Microwire ($FF8922 → 0) du son STE.
     sched.setCallback(Scheduler::MICROWIRE, [this] { dmasnd.onMicrowireShift(); });
     // Tranche non-hog du blitter (64 accès bus / 64 accès CPU) : la fin de blit
@@ -569,7 +574,7 @@ void Machine::onVbl() {
                      static_cast<long long>(sched.now() - evt), static_cast<long long>(sched.now()));
     }
     cpu.raiseVbl();   // interruption trame (niveau 4) — une fois par trame
-    // Tic VBL de l'IKBD (horloge interne $1B/$1C + report joystick auto). La durée
+    // Tic VBL de l'IKBD (horloge interne $1B/$1C et garde initiale). La durée
     // d'une trame en µs se déduit de la géométrie COURANTE : (lignes × cycles/ligne)
     // à 8 MHz (horloge bus du Shifter, indépendante du 8/16 MHz CPU MegaSTE).
     // ≈ 20032 µs (50 Hz) / 16700 µs (60 Hz) / 14028 µs (71 Hz mono).
@@ -712,11 +717,16 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 23; // période et échéance du monitoring joystick IKBD
+static constexpr uint16_t kStateVersion = 39; // fronts BREAK SCC et phase de reprise IKBD
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v23 : monitoring joystick IKBD
+    uint16_t version = kStateVersion; // v39 : fronts BREAK SCC et phase de reprise IKBD
+                                      // v27 : RDR MIDI et réception USART MFP
+                                      // v26 : pipeline émission MIDI TDR/TSR
+                                      // v25 : transit CPU→IKBD et FIFO RX SCC
+                                      // v24 : cadence série SCC et autosend IKBD
+                                      // v23 : monitoring joystick IKBD
                                       // v22 : réponse IKBD et lectures octet blitter ;
                                       // v21 : échéances ACSI/SCC et périodes BRG ;
                                       // v20 : latch STE 336 px, valeur différée et date
