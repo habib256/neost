@@ -125,13 +125,13 @@ void Mfp::reset() {
     // bouclage ou la capture imprimante restait donc coincé après reset.
     busyLine_ = false;
     // RI (GPIP6) : MÊME raison que CTS/DCD et BUSY ci-dessus — une entrée, jamais
-    // recalculée à la lecture (repos BAS, cf. gpipInput). Deux sources la tirent et
+    // recalculée à la lecture (repos HAUT, cf. gpipInput). Deux sources la tirent et
     // aucune ne la relâchait après un reset machine :
     //  · bouclage RS-232 (DTR→RI), comme la désassertion CTS/DCD décrite plus haut ;
     //  · bouton Ultimate Ripper, RELÂCHÉ à la VBL par PortDevices::onVbl — or
     //    Machine::reset appelle ports.reset(), qui remet pressed_ à faux : la VBL
     //    sortait aussitôt et la ligne restait assertée POUR TOUJOURS.
-    riLine_ = true;              // repos ASSERTÉ, comme CTS/DCD
+    riLine_ = false;             // repos DÉSASSERTÉ (bit6 = 1, MC1489 entrée ouverte)
     monButton_ = false;                   // bouton Multiface relâché (PortDevices::reset l'oublie aussi)
     rxByte_ = 0; rxFull_ = false; rxOverrun_ = rxPendingOverrun_ = false;   // USART : tampon vidé (pas de RXFULL fantôme)
     serialClockFactor_ = 128;
@@ -894,8 +894,9 @@ bool Mfp::mfpSelfTest() {
     hasDmaSound_ = false;                 // isole bit7 = colorMonitor_ (pas de XOR XSINT)
     ddr = 0;                              // toutes les lignes en ENTRÉE
     fdcLine_ = aciaLineKbd_ = aciaLineMidi_ = false;
-    riLine_ = true;              // RI : repos ASSERTÉ
+    riLine_ = false;             // RI : repos DÉSASSERTÉ (MC1489 entrée ouverte)
     gpuLine_ = busyLine_ = false;        // désassertées
+    hasBlitter_ = true;                  // bit3 piloté par le blitter (cf. (a') sans blitter)
     ctsLine_ = dcdLine_  = true;         // CTS/DCD actives au repos (cf. Mfp.hpp)
     colorMonitor_ = true;
     chk("bit7 couleur (gpipInput)", (gpipInput() & 0x80) ? 1 : 0, 1);
@@ -909,14 +910,17 @@ bool Mfp::mfpSelfTest() {
     aciaLineKbd_ = false; aciaLineMidi_ = true;
     chk("bit4 ACIA midi→0 (wire-OR)", (gpipInput() & 0x10) ? 1 : 0, 0);
     aciaLineMidi_ = false; chk("bit4 ACIA repos→1", (gpipInput() & 0x10) ? 1 : 0, 1);
-    // Bits 6 (RI) et 3 (blitter) : NIVEAU de registre, 0 au repos, 1 ligne haute —
+    // Bits 6 (RI) et 3 (blitter) : SUIVENT leur ligne —
     // figés à 0 ils courts-circuiteraient le détecteur de front (bug 2026-08-13 :
     // IRQ fin de blit et RI mortes, gpipInput invariant sous ces lignes).
     gpuLine_ = true;  chk("bit3 blit en cours→1", (gpipInput() & 0x08) ? 1 : 0, 1);
     gpuLine_ = false; chk("bit3 repos→0",         (gpipInput() & 0x08) ? 1 : 0, 0);
     riLine_ = true;   chk("bit6 RI assertée→0",    (gpipInput() & 0x40) ? 1 : 0, 0);
     riLine_ = false;  chk("bit6 RI désassertée→1", (gpipInput() & 0x40) ? 1 : 0, 1);
-    riLine_ = true;
+    // (a') ST SANS blitter : GPIP3 tirée haut par R4, insensible à gpuLine_.
+    hasBlitter_ = false;
+    chk("bit3 sans blitter : pull-up→1", (gpipInput() & 0x08) ? 1 : 0, 1);
+    hasBlitter_ = true;
     // Front de FIN DE BLIT (canal 3 = GPIP3, IERB bit3, AER=0 → front 1→0) : le
     // chemin complet setBlitterLine(start)→(done) doit lever IPRB bit3.
     ierb = 0xFF; aer = 0x00; iprb = 0; gpuLine_ = false;
@@ -1008,15 +1012,18 @@ bool Mfp::mfpSelfTest() {
     {
         Mfp probe;
         probe.ddr = 0; probe.hasDmaSound_ = false; probe.colorMonitor_ = true;
-        probe.riLine_ = false; probe.busyLine_ = true; probe.monButton_ = true;  // RI hors repos
+        probe.riLine_ = true; probe.busyLine_ = true; probe.monButton_ = true;  // RI hors repos (assertée)
+        probe.hasBlitter_ = true;
         probe.ctsLine_ = probe.dcdLine_ = false;   // désassertées (repos = ACTIVES)
         probe.reset();
-        chk("reset : RI (bit6) au repos",   (probe.gpipInput() & 0x40) ? 1 : 0, 0);
+        chk("reset : RI (bit6) au repos",   (probe.gpipInput() & 0x40) ? 1 : 0, 1);
         chk("reset : BUSY (bit0) relâchée", (probe.gpipInput() & 0x01) ? 1 : 0, 1);
         chk("reset : CTS (bit2) au repos",  (probe.gpipInput() & 0x04) ? 1 : 0, 0);
         chk("reset : DCD (bit1) au repos",  (probe.gpipInput() & 0x02) ? 1 : 0, 0);
         chk("reset : bouton Multiface (bit7) relâché", (probe.gpipInput() & 0x80) ? 1 : 0, 1);
-        chk("reset : GPIP d'entrée pristine", probe.gpipInput(), 0xB1);
+        chk("reset : GPIP pristine (blitter)", probe.gpipInput(), 0xF1);
+        probe.hasBlitter_ = false;
+        chk("reset : GPIP pristine (ST nu)", probe.gpipInput(), 0xF9);
     }
 
     // --- (f) ÉLECTION DE L'EXCEPTION : la PLUS ANCIENNE l'emporte ------------------
@@ -1060,33 +1067,42 @@ bool Mfp::mfpSelfTest() {
 }
 
 uint8_t Mfp::gpipInput() const {
-    // Repos des lignes : bits 6 (RS232 RI) et 3 (blitter GPU_DONE) au repos BAS —
-    // comme Hatari, dont MFP_GPIP_ReadByte_Main recalcule 7/4/2/1/0 mais ne pose
-    // JAMAIS 6 ni 3 : ils restent au registre, à 0 depuis le reset (mfp.c:523).
-    // L'ancien repos « haut » rendait $F9 là où l'oracle rend $B1 — l'inventaire
-    // matériel de CLOSURE (Sync) stocke cet octet dans sa table d'identité et
-    // toute sa génération de code divergeait ensuite (docs/CLOSURE_CHANTIER.md).
-    // ⚠ Mais les bits 6 et 3 SUIVENT leur ligne (riLine_/gpuLine_ = niveau de
-    // registre, 0 au reset) : les figer à 0 court-circuitait le détecteur de front
-    // de gpipSetLine (gpipInput avant == après) — l'IRQ de fin de blit (canal 3)
-    // et l'IRQ RI du bouclage (canal 14) ne partaient JAMAIS, et $FFFA01 restait
-    // insensible à un blit en cours (Hatari : bit3=1 pendant le blit).
-    uint8_t v = 0xFF & ~0x08;                    // bit3 (blitter) au repos BAS ; bit6 : cf. RI
+    // Repos des lignes, d'après le MATÉRIEL (et non plus d'après Hatari) :
+    //
+    //  · bit6 = RS-232 RI. Atari STe Field Service Manual (C302481-001, §2.12.5) :
+    //    CTS, DCD et RI entrent au MFP via des récepteurs 1489 (U207 « 1489A RS-232
+    //    receiver »). Le MC1489 INVERSE et, entrée ouverte, sort HAUT (fiche TI
+    //    SLLS095, VOH « Input open » ≥ 2,6 V) ; un RI désasserté (−12 V, marque) sort
+    //    haut aussi. Sans câble, ou avec tout câble dont RI ne sonne pas : bit6 = 1.
+    //    Concordants : MAME (rs232_port_device : RI = 1 sans appareil, relié à i6
+    //    sans inversion) et une lecture sur STFM réel (exxos, exxosforum t=3992
+    //    p.49, 2022 : $FFFA01 = 233 = $E9, bits 6 et 3 à 1). Hatari rend 0 par pur
+    //    artefact : MFP_Reset pose GPIP = 0 (mfp.c:523) et rien ne pilote jamais le
+    //    bit 6. RI reste ACTIVE BASSE (assertion → 0, front descendant sous AER=0) :
+    //    la cartouche Field Service teste « S9 RI-DTR » comme « SA DCD-DTR ».
+    //  · bit3 = GPU_DONE. SANS blitter (ST) : seule la résistance de rappel R4 tire
+    //    la ligne (4K7 sur ST, 1K sur STFM/Mega/STE — agranlund/STBlitter_RevA,
+    //    README) → 1, conforme à la lecture $E9 ci-dessus. AVEC blitter : l'INT
+    //    recopie BUSY (Atari Compendium) → 0 au repos, 1 pendant le blit — inchangé.
+    //    ⚠ Incertitude : aucune mesure publiée sur Mega ST/STE au repos trouvée.
+    //
+    // Conséquence (moniteur couleur, CTS/DCD au repos actif à la Hatari) : $FFFA01
+    // au repos vaut $F9 sur ST et $F1 sur Mega ST/STE/Mega STE, contre $B1 chez
+    // Hatari — un diff de trace sur ce registre est ATTENDU, pas une régression.
+    // L'inventaire de CLOSURE stocke cet octet (docs/CLOSURE_CHANTIER.md) mais la
+    // convergence vers $B1 n'avait PAS corrigé sa mort : ce n'en était pas la cause.
+    // ⚠ Les bits 6 et 3 SUIVENT leur ligne (riLine_/gpuLine_) : les figer court-
+    // circuiterait le détecteur de front de gpipSetLine (IRQ fin de blit, canal 3, et
+    // IRQ RI du bouclage, canal 14, mortes — bug du 2026-08-13).
+    uint8_t v = 0xFF;
+    if (hasBlitter_ && !gpuLine_) v &= ~0x08;   // bit3 : blitter au repos → BAS
     bool bit7 = colorMonitor_;                   // moniteur : couleur=1, mono=0
     if (hasDmaSound_) bit7 ^= xsint_;            // STE/Mega STE : XOR ligne XSINT son DMA
     if (!bit7)          v &= ~0x80;              // bit7 = moniteur^XSINT
     if (monButton_)     v &= ~0x80;              // bouton freeze Multiface (PortDevices)
-    // bit6 = RS232 RI : ACTIVE BASSE et au repos ASSERTÉE, comme CTS et DCD juste
-    // en dessous — c'est le trio d'entrées RS-232 du MFP. Le GPIP pristine vaut
-    // toujours $B1 (bit6 = 0), l'oracle est préservé ; ce qui change, c'est que
-    // l'assertion de RI produit un front DESCENDANT. Avec l'ancien front montant,
-    // le canal 14 ne se levait jamais sous AER=0 : la cartouche Atari Field Service
-    // enregistrait « S9 RS232 RI-DTR not connected » alors que son contrôle jumeau
-    // « SA ... DCD-DTR » passait. Elle teste les deux comme le MÊME signal DTR.
-    if (riLine_)        v &= uint8_t(~0x40);
+    if (riLine_)        v &= uint8_t(~0x40);     // bit6 = RS232 RI assertée → 0
     if (fdcLine_)       v &= ~0x20;              // bit5 = FDC
     if (aciaLineKbd_ || aciaLineMidi_) v &= ~0x10;  // bit4 = ACIA clavier OU MIDI (wire-OR)
-    if (gpuLine_)       v |= 0x08;               // bit3 = blitter (1 = blit EN COURS)
     if (ctsLine_)       v &= ~0x04;              // bit2 = RS232 CTS
     if (dcdLine_)       v &= ~0x02;              // bit1 = RS232 DCD
     if (busyLine_)      v &= ~0x01;              // bit0 = Centronics BUSY

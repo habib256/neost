@@ -351,6 +351,7 @@ int testBlitterRmw() {
         for (uint8_t ctrl : {uint8_t(0x80), uint8_t(0xC0)}) {
             MegaSteRig rig(0x4E71, false, sixteen);
             Mfp mfp;
+            mfp.setHasBlitter(true);       // Mega STE : GPIP3 pilotée par le blitter (sinon pull-up R4)
             rig.bus.mfp = &mfp;
             rig.copyToOperand(false);
             rig.blitter.write8(0xFF8A3C, ctrl);

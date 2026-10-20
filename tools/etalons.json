@@ -746,8 +746,8 @@
    "id": "blankline_blank_ste",
    "name": "BLANK : masquage avec lecture RAM",
    "subsystem": "shifter/glue",
-   "rom": "roms/etos192fr.img",
-   "rom_note": "ROM libre ; secteur de boot autonome généré.",
+   "rom": "roms/etos256fr.img",
+   "rom_note": "ROM libre STE (EmuTOS 256 Ko PAL, TOS 2.06) : etos192 s'annonce TOS 1.04 et rétrograderait la machine en ST. Secteur de boot autonome généré.",
    "disk": "disks/etalons/blankline_blank_ste.st",
    "disk_generate": "tools/make_blankline_test.py",
    "machine": "ste",
@@ -755,20 +755,20 @@
    "cpu": "moira",
    "fastfdc": true,
    "oracle_fastfdc": true,
-   "frames": 400,
+   "frames": 402,
    "frame": 380,
    "crop": "buffer",
    "max_diff_px": 0,
    "ref_kind": "oracle",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-19, sélection à zéro pixel dans 350-410. Impulsions sans écriture palette dans le handler ; motif RAM de longs successifs pour distinguer masquage et avance du compteur. BLANK consomme la ligne, NO_DE non ; impulsion tardive discriminant les fenêtres STF/STE. La couleur physique du blanking reste à mesurer : palette 0 comparative, aucune preuve matérielle déduite de cet accord."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-20, machine STE (etos256fr), sélection à zéro pixel dans 350-410. La VBL depuis STOP tourne sur 5 phases (écriture 60 Hz à 36,36,32,32,40 cycles de la ligne, mêmes phases dans Hatari). Sur STE, aucune ne donne le BLANK du STF : 32/36 → left+2 (ligne de 162 octets affichée), 40 → NO_DE sans avance du compteur. frames=402 capture la phase 40 (NO_DE), identique à Hatari. Les phases left+2 divergent de 204 px sur la ligne buffer 65 : artefact de recopie left+2 d'Hatari (A40, video.c:4041-4053), NeoST rend le décalage physique de 4 px ; non pris comme référence. La couleur physique du blanking reste à mesurer : aucune preuve matérielle déduite de cet accord."
   },
   {
    "id": "blankline_node_ste",
    "name": "NO_DE : masquage sans lecture RAM",
    "subsystem": "shifter/glue",
-   "rom": "roms/etos192fr.img",
-   "rom_note": "ROM libre ; secteur de boot autonome généré.",
+   "rom": "roms/etos256fr.img",
+   "rom_note": "ROM libre STE (EmuTOS 256 Ko PAL, TOS 2.06) : etos192 s'annonce TOS 1.04 et rétrograderait la machine en ST. Secteur de boot autonome généré.",
    "disk": "disks/etalons/blankline_node_ste.st",
    "disk_generate": "tools/make_blankline_test.py",
    "machine": "ste",
@@ -782,14 +782,14 @@
    "max_diff_px": 0,
    "ref_kind": "oracle",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-19, sélection à zéro pixel dans 350-410. Impulsions sans écriture palette dans le handler ; motif RAM de longs successifs pour distinguer masquage et avance du compteur. BLANK consomme la ligne, NO_DE non ; impulsion tardive discriminant les fenêtres STF/STE. La couleur physique du blanking reste à mesurer : palette 0 comparative, aucune preuve matérielle déduite de cet accord."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-20 en STE (etos256fr), sélection à zéro pixel dans 350-410. Impulsions sans écriture palette dans le handler ; motif RAM de longs successifs pour distinguer masquage et avance du compteur. BLANK consomme la ligne, NO_DE non ; impulsion tardive discriminant les fenêtres STF/STE. La couleur physique du blanking reste à mesurer : palette 0 comparative, aucune preuve matérielle déduite de cet accord."
   },
   {
    "id": "blankline_node_late_ste",
    "name": "Impulsion hi-res tardive : fenêtre STF/STE",
    "subsystem": "shifter/glue",
-   "rom": "roms/etos192fr.img",
-   "rom_note": "ROM libre ; secteur de boot autonome généré.",
+   "rom": "roms/etos256fr.img",
+   "rom_note": "ROM libre STE (EmuTOS 256 Ko PAL, TOS 2.06) : etos192 s'annonce TOS 1.04 et rétrograderait la machine en ST. Secteur de boot autonome généré.",
    "disk": "disks/etalons/blankline_node_late_ste.st",
    "disk_generate": "tools/make_blankline_test.py",
    "machine": "ste",
@@ -803,7 +803,7 @@
    "max_diff_px": 0,
    "ref_kind": "oracle",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-19, sélection à zéro pixel dans 350-410. Impulsions sans écriture palette dans le handler ; motif RAM de longs successifs pour distinguer masquage et avance du compteur. BLANK consomme la ligne, NO_DE non ; impulsion tardive discriminant les fenêtres STF/STE. La couleur physique du blanking reste à mesurer : palette 0 comparative, aucune preuve matérielle déduite de cet accord."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-20 en STE (etos256fr), sélection à zéro pixel dans 350-410. Impulsions sans écriture palette dans le handler ; motif RAM de longs successifs pour distinguer masquage et avance du compteur. BLANK consomme la ligne, NO_DE non ; impulsion tardive discriminant les fenêtres STF/STE. La couleur physique du blanking reste à mesurer : palette 0 comparative, aucune preuve matérielle déduite de cet accord."
   },
   {
    "id": "blankline_stop_st",
@@ -829,8 +829,8 @@
    "id": "blankline_stop_ste",
    "name": "STOP_MIDDLE : arrêt du DE sans écriture palette",
    "subsystem": "shifter/glue",
-   "rom": "roms/etos192fr.img",
-   "rom_note": "ROM libre ; secteur de boot autonome généré.",
+   "rom": "roms/etos256fr.img",
+   "rom_note": "ROM libre STE (EmuTOS 256 Ko PAL, TOS 2.06) : etos192 s'annonce TOS 1.04 et rétrograderait la machine en ST. Secteur de boot autonome généré.",
    "disk": "disks/etalons/blankline_stop_ste.st",
    "disk_generate": "tools/make_blankline_test.py",
    "machine": "ste",
@@ -843,7 +843,7 @@
    "crop": "buffer",
    "max_diff_px": 0,
    "ref_kind": "snapshot",
-   "ref_note": "Snapshot NeoST, 2026-10-19 : garde du masquage STOP_MIDDLE sans palette. PAS un oracle matériel. Hatari f0736b24 rend trois pixels supplémentaires au bord du dernier groupe (ligne buffer 65, premier écart x=156), identiques sur les 61 captures 350-410, en ST et STE. Le compteur concorde au modèle 54 octets ; Hatari copie un groupe partiel de plans, NeoST borne les pixels par DE. Aucun ajustement sans mesure matérielle. Voir docs/HATARI_DIVERGENCES.md, lignes masquées."
+   "ref_note": "Snapshot NeoST, 2026-10-19, reconfirmé le 2026-10-20 en STE (etos256fr, image identique au _st) : garde du masquage STOP_MIDDLE sans palette. PAS un oracle matériel. Hatari f0736b24 rend trois pixels supplémentaires au bord du dernier groupe (ligne buffer 65, premier écart x=156), identiques sur les 61 captures 350-410, en ST et STE. Le compteur concorde au modèle 54 octets ; Hatari copie un groupe partiel de plans, NeoST borne les pixels par DE. Aucun ajustement sans mesure matérielle. Voir docs/HATARI_DIVERGENCES.md, lignes masquées."
   },
   {
    "id": "blankline_nosync_st",
@@ -933,8 +933,8 @@
    "id": "blankline_nosync_ste",
    "name": "NO_SYNC : ligne sans DE et fin retardée",
    "subsystem": "shifter/glue",
-   "rom": "roms/etos192fr.img",
-   "rom_note": "ROM libre ; secteur de boot autonome généré.",
+   "rom": "roms/etos256fr.img",
+   "rom_note": "ROM libre STE (EmuTOS 256 Ko PAL, TOS 2.06) : etos192 s'annonce TOS 1.04 et rétrograderait la machine en ST. Secteur de boot autonome généré.",
    "disk": "disks/etalons/blankline_nosync_ste.st",
    "disk_generate": "tools/make_blankline_test.py",
    "machine": "ste",
@@ -948,14 +948,14 @@
    "max_diff_px": 0,
    "ref_kind": "oracle",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-19, image identique dans la fenêtre 350-410. NO_SYNC/SYNC_HIGH : ligne suivante NO_DE/NO_COUNT, pas de stride et affichage prolongé ; retour précoce annulant les deux. Motif RAM de longs successifs. Les témoins annulés réécrivent la même couleur de palette après l’impulsion pour révéler aussi une extension résiduelle sans masque. Aucun réglage d’exécution modifié ; signaux physiques HSYNC/VDE et couleur du blanking non mesurés."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-20 en STE (etos256fr), image identique dans la fenêtre 350-410. NO_SYNC/SYNC_HIGH : ligne suivante NO_DE/NO_COUNT, pas de stride et affichage prolongé ; retour précoce annulant les deux. Motif RAM de longs successifs. Les témoins annulés réécrivent la même couleur de palette après l’impulsion pour révéler aussi une extension résiduelle sans masque. Aucun réglage d’exécution modifié ; signaux physiques HSYNC/VDE et couleur du blanking non mesurés."
   },
   {
    "id": "blankline_nosync_cancel_ste",
    "name": "NO_SYNC : impulsion annulée avant HSYNC",
    "subsystem": "shifter/glue",
-   "rom": "roms/etos192fr.img",
-   "rom_note": "ROM libre ; secteur de boot autonome généré.",
+   "rom": "roms/etos256fr.img",
+   "rom_note": "ROM libre STE (EmuTOS 256 Ko PAL, TOS 2.06) : etos192 s'annonce TOS 1.04 et rétrograderait la machine en ST. Secteur de boot autonome généré.",
    "disk": "disks/etalons/blankline_nosync_cancel_ste.st",
    "disk_generate": "tools/make_blankline_test.py",
    "machine": "ste",
@@ -969,14 +969,14 @@
    "max_diff_px": 0,
    "ref_kind": "oracle",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-19, image identique dans la fenêtre 350-410. NO_SYNC/SYNC_HIGH : ligne suivante NO_DE/NO_COUNT, pas de stride et affichage prolongé ; retour précoce annulant les deux. Motif RAM de longs successifs. Les témoins annulés réécrivent la même couleur de palette après l’impulsion pour révéler aussi une extension résiduelle sans masque. Aucun réglage d’exécution modifié ; signaux physiques HSYNC/VDE et couleur du blanking non mesurés."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-20 en STE (etos256fr), image identique dans la fenêtre 350-410. NO_SYNC/SYNC_HIGH : ligne suivante NO_DE/NO_COUNT, pas de stride et affichage prolongé ; retour précoce annulant les deux. Motif RAM de longs successifs. Les témoins annulés réécrivent la même couleur de palette après l’impulsion pour révéler aussi une extension résiduelle sans masque. Aucun réglage d’exécution modifié ; signaux physiques HSYNC/VDE et couleur du blanking non mesurés."
   },
   {
    "id": "blankline_sync_high_ste",
    "name": "SYNC_HIGH : ligne sans DE et fin retardée",
    "subsystem": "shifter/glue",
-   "rom": "roms/etos192fr.img",
-   "rom_note": "ROM libre ; secteur de boot autonome généré.",
+   "rom": "roms/etos256fr.img",
+   "rom_note": "ROM libre STE (EmuTOS 256 Ko PAL, TOS 2.06) : etos192 s'annonce TOS 1.04 et rétrograderait la machine en ST. Secteur de boot autonome généré.",
    "disk": "disks/etalons/blankline_sync_high_ste.st",
    "disk_generate": "tools/make_blankline_test.py",
    "machine": "ste",
@@ -990,14 +990,14 @@
    "max_diff_px": 0,
    "ref_kind": "oracle",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-19, image identique dans la fenêtre 350-410. NO_SYNC/SYNC_HIGH : ligne suivante NO_DE/NO_COUNT, pas de stride et affichage prolongé ; retour précoce annulant les deux. Motif RAM de longs successifs. Les témoins annulés réécrivent la même couleur de palette après l’impulsion pour révéler aussi une extension résiduelle sans masque. Aucun réglage d’exécution modifié ; signaux physiques HSYNC/VDE et couleur du blanking non mesurés."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-20 en STE (etos256fr), image identique dans la fenêtre 350-410. NO_SYNC/SYNC_HIGH : ligne suivante NO_DE/NO_COUNT, pas de stride et affichage prolongé ; retour précoce annulant les deux. Motif RAM de longs successifs. Les témoins annulés réécrivent la même couleur de palette après l’impulsion pour révéler aussi une extension résiduelle sans masque. Aucun réglage d’exécution modifié ; signaux physiques HSYNC/VDE et couleur du blanking non mesurés."
   },
   {
    "id": "blankline_sync_high_cancel_ste",
    "name": "SYNC_HIGH : impulsion annulée avant la fin HSYNC",
    "subsystem": "shifter/glue",
-   "rom": "roms/etos192fr.img",
-   "rom_note": "ROM libre ; secteur de boot autonome généré.",
+   "rom": "roms/etos256fr.img",
+   "rom_note": "ROM libre STE (EmuTOS 256 Ko PAL, TOS 2.06) : etos192 s'annonce TOS 1.04 et rétrograderait la machine en ST. Secteur de boot autonome généré.",
    "disk": "disks/etalons/blankline_sync_high_cancel_ste.st",
    "disk_generate": "tools/make_blankline_test.py",
    "machine": "ste",
@@ -1011,7 +1011,7 @@
    "max_diff_px": 0,
    "ref_kind": "oracle",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-19, image identique dans la fenêtre 350-410. NO_SYNC/SYNC_HIGH : ligne suivante NO_DE/NO_COUNT, pas de stride et affichage prolongé ; retour précoce annulant les deux. Motif RAM de longs successifs. Les témoins annulés réécrivent la même couleur de palette après l’impulsion pour révéler aussi une extension résiduelle sans masque. Aucun réglage d’exécution modifié ; signaux physiques HSYNC/VDE et couleur du blanking non mesurés."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-20 en STE (etos256fr), image identique dans la fenêtre 350-410. NO_SYNC/SYNC_HIGH : ligne suivante NO_DE/NO_COUNT, pas de stride et affichage prolongé ; retour précoce annulant les deux. Motif RAM de longs successifs. Les témoins annulés réécrivent la même couleur de palette après l’impulsion pour révéler aussi une extension résiduelle sans masque. Aucun réglage d’exécution modifié ; signaux physiques HSYNC/VDE et couleur du blanking non mesurés."
   }
  ]
 }

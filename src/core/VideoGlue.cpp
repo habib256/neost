@@ -275,10 +275,13 @@ int Shifter::glueLineBytes(int scanline) const {
     return bytes;
 }
 
-void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
-    if (!liveFrameClock_) return;
+// Datation d'une écriture freq/res (Glue OU Shifter) : cycle trame, −1 si hors
+// trame. Port de Video_GetPosition_OnWriteAccess, commun à Video_WriteToGlueRes et
+// Video_WriteToShifterRes — même loi de datation pour $FF820A, $FF8260 et $FF8261.
+int64_t Shifter::datedResWriteCycle() const {
+    if (!liveFrameClock_) return -1;
     int64_t fc = liveFrameClock_();
-    if (fc < 0) return;
+    if (fc < 0) return -1;
     // Datation par PARITÉ de la position de l'accès dans l'instruction (défaut ;
     // NEOST_SYNC_MODE=0 restaure le « fcRaw + 2 » constant pour l'A/B). Loi Hatari
     // CE (Cycles_GetInternalCycleOnWriteAccess : « currcycle + 4 » = position
@@ -305,6 +308,12 @@ void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
     static const int syncOff = [] { const char* s = std::getenv("NEOST_SYNC_OFF"); return s ? std::atoi(s) : 0; }();
     fc += syncOff;
     if (fc < 0) fc = 0;
+    return fc;
+}
+
+void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
+    const int64_t fc = datedResWriteCycle();
+    if (fc < 0) return;
     // DEBUG (NEOST_SYNC_TRACE) : trace TOUTES les écritures freq/res (ligne/cycle) pour
     // diagnostiquer la détection des retraits de bordure (≠ NEOST_BORDER_TRACE qui n'émet
     // QUE si un trick est déjà armé). Cf. menu Cuddly : retrait bordure basse non détecté.
@@ -358,6 +367,52 @@ void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
     // Machine Glue LIVE : consomme l'écriture immédiatement (fenêtre DE de la ligne
     // courante à jour pour les lectures $FF8209 qui suivent).
     liveGlueCatchUp(static_cast<int>(fc / geometry().cyclesPerLine));
+}
+
+// Écriture de la résolution CÔTÉ SHIFTER ($FF8260 ou $FF8261) — port de
+// Video_WriteToShifterRes (video.c:1888-2006). La valeur 3 ARRÊTE le Shifter (il
+// n'absorbe plus les mots que le MMU continue de lui livrer). Trick Troed/Sync
+// « scroll hard 4 px sans retrait de bordure » (STF) : res=3 posé quand le DE est
+// actif (cycle-ligne ≥ 64), retour au cycle-ligne ≥ 72 et au plus 32 cycles après, en
+// basse/moyenne → le Shifter a perdu 0..3 mots : toutes les lignes SUIVANTES
+// sortent décalées de 0/4/8/12 px à gauche, et le compteur prend −0/−2/−4/−6
+// octets en fin de ligne courante. La ligne du stop elle-même n'est pas décalée.
+// Positions arrondies au créneau bus de 4 cycles, comme Hatari. ⚠ Hatari (et donc
+// NeoST) ne montre pas les pixels noirs pendant l'arrêt et ne garde le décalage que
+// pour la trame courante (TODO video.c:1914-1915) ; aucune distinction STF/STE n'y
+// est faite non plus — le comportement STE du trick n'est pas documenté.
+void Shifter::writeShifterRes(uint8_t res) {
+    res &= 0x03;
+    shifterRes_ = res;                                   // registre (relu par $FF8260/61)
+    if (static_cast<int>(res) == lastShifterRes_) return;   // même valeur → rien (video.c:1904)
+    const int64_t fc  = datedResWriteCycle();
+    const int     cpl = geometry().cyclesPerLine;
+    const int     line = (fc >= 0) ? static_cast<int>(fc / cpl) : -1;
+    const int     lineCyc = (fc >= 0) ? static_cast<int>(fc % cpl) : -1;
+    if (lastShifterRes_ == 3 && fc >= 0
+        && shifterResCyc_ >= 64                          // arrêt posé DE actif
+        && lineCyc >= 64 + 8                             // retour ≥ 72 (« au moins 8 cycles » depuis 64)
+        && lineCyc - shifterResCyc_ <= 32) {             // et au plus 32
+        const int posOld  = (shifterResCyc_ + 3) & ~3;
+        const int posNew  = (lineCyc + 3) & ~3;
+        const int stopped = posNew - posOld;
+        int shift = 0, inc = 0;
+        switch (((stopped % 16) + 16) % 16) {
+            case 4:  inc = -6; shift = -12; break;       // 88 + 16n
+            case 0:  inc =  0; shift =   0; break;       // 84 + 16n
+            case 12: inc = -2; shift =  -4; break;       // 80 + 16n
+            case 8:  inc = -4; shift =  -8; break;       // 76 + 16n
+            default: break;
+        }
+        if (inc != 0) vcStopInc_ = inc;                  // ≙ VideoRasterDelayedInc
+        shifterStopLine_  = line;                        // lignes > line décalées
+        shifterStopShift_ = shift;
+        if (std::getenv("NEOST_SYNC_TRACE"))
+            std::fprintf(stderr, "[SYNC] shifter stop line=%d cyc=%d..%d shift=%d inc=%d\n",
+                         line, shifterResCyc_, lineCyc, shift, inc);
+    }
+    lastShifterRes_ = res;
+    shifterResCyc_  = lineCyc;                           // ≙ ResPosStop_Shifter.LineCycles
 }
 
 // Met à jour le VDE_On LIVE du compteur vidéo sur une écriture freq — détection du
@@ -1184,6 +1239,151 @@ bool Shifter::glueSelfTest() {
         chk("336 metadata next line", lineScrollSnap_[101], 0x60);
         reset();
         chk("336 reset", steBorderFlag_, false);
+        beamClock_ = oldBeam; liveFrameClock_ = oldLive;
+    }
+
+    // B15 — compteur et fetch vidéo repliés sur 22 bits ; $FF8261 (Shifter seul) et
+    // res 3 (Shifter arrêté, scroll hard Troed/Sync). Horloges synthétiques.
+    {
+        const auto oldBeam = beamClock_;
+        const auto oldLive = liveFrameClock_;
+        int64_t fc = 0;
+        beamClock_      = [&] { return fc; };
+        liveFrameClock_ = [&] { return fc; };
+        // 1. Le compteur avance au-delà de $3FFFFF → reprend en $000000.
+        reset(); mode = Mode::Low; sync = 2; videoBase = 0x3FFF00; beginFrame();
+        chk("b15 frame base", vcFrameBase_, 0x3FFF00);
+        vcLineY_ = 0; commitAnchor_ = 63;
+        endVideoLine(); endVideoLine();                  // +160 +160 = $400040
+        chk("b15 counter wraps", vcLineBase_, 0x40);
+        // 2. Le fetch d'une ligne qui chevauche $3FFFFF relit le BAS de la RAM.
+        {
+            const uint32_t probe = 0x18;                 // groupe 19 de la ligne à $3FFF80
+            uint16_t saved[4];
+            for (int i = 0; i < 4; ++i) saved[i] = bus_.read16(probe + 2u * i);
+            bus_.write16(probe, 0x8000); bus_.write16(probe + 2, 0);
+            bus_.write16(probe + 4, 0);  bus_.write16(probe + 6, 0);
+            vcLineBase_ = 0x3FFF80; vcLineY_ = 0;
+            uint8_t ix[660];
+            decodeLineIndices(0, ix);
+            chk("b15 fetch wraps px", ix[19 * 16], 1);
+            chk("b15 fetch wraps px+1", ix[19 * 16 + 1], 0);
+            for (int i = 0; i < 4; ++i) bus_.write16(probe + 2u * i, saved[i]);
+        }
+        // 3. Écriture du compteur (STE) : octet haut limité à 6 bits.
+        if (machineIsSte(bus_.machine)) {
+            fc = 10;                                     // bordure haute → immédiat
+            write8(0xFF8205, 0xFF);
+            chk("b15 8205 masked", (vcLineBase_ >> 16) & 0xFF, 0x3F);
+        }
+
+        // 4. $FF8261 : Shifter seul — ni écriture Glue datée, ni mode Glue changé.
+        reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000; beginFrame();
+        fc = 100 * cpl + 200;
+        write8(0xFF8261, 1);
+        chk("8261 shifter res", shifterRes_, 1);
+        chk("8261 glue untouched", static_cast<int>(mode), 0);
+        chk("8261 no glue write", static_cast<long>(syncWrites_.size()), 0);
+        chk("8261 read back", read8(0xFF8261) & 3, 1);
+        // Mot vers $FF8260 : l'octet bas ($8261) est ignoré par le Shifter.
+        bus_.write16(0xFF8260, 0x0003);
+        chk("8260 word: glue gets high byte", static_cast<int>(mode), 0);
+        chk("8260 word: shifter ignores low", shifterRes_, 0);
+        write8(0xFF8260, 0);
+
+        // 5. Scroll hard « Shifter arrêté » : durée d'arrêt → décalage / AddressInc.
+        auto stop = [&](int from, int to) {
+            reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000; beginFrame();
+            fc = 100 * cpl + from; write8(0xFF8261, 3);
+            fc = 100 * cpl + to;   write8(0xFF8261, 0);
+        };
+        stop(68, 80);
+        chk("stop 12cyc line",  shifterStopLine_, 100);
+        chk("stop 12cyc shift", shifterStopShift_, -4);
+        chk("stop 12cyc inc",   vcStopInc_, -2);
+        stop(68, 84);  chk("stop 16cyc shift", shifterStopShift_, 0);
+                       chk("stop 16cyc inc",   vcStopInc_, 0);
+        stop(68, 88);  chk("stop 20cyc shift", shifterStopShift_, -12);
+                       chk("stop 20cyc inc",   vcStopInc_, -6);
+        stop(68, 92);  chk("stop 24cyc shift", shifterStopShift_, -8);
+        stop(68, 108); chk("stop too long",    shifterStopLine_, -1);
+        stop(40, 56);  chk("stop before DE",   shifterStopLine_, -1);
+        stop(64, 66);  chk("stop return < 72", shifterStopLine_, -1);   // retour avant 64+8
+        // AddressInc appliqué à la fin de la ligne du stop.
+        stop(68, 80);
+        vcLineY_ = 37; commitAnchor_ = 63;
+        {
+            const uint32_t b0 = vcLineBase_;
+            endVideoLine();
+            chk("stop line stride", vcLineBase_ - b0, 158);
+            const uint32_t b1 = vcLineBase_;
+            endVideoLine();
+            chk("stop next stride", vcLineBase_ - b1, 160);
+        }
+
+        // 6. Rendu : lignes après le stop décalées de 4 px à gauche (bordure gauche
+        // comprise), la ligne du stop intacte. RAM : p0=$0F00 (px 4-7), p1=$FFFF.
+        reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000;
+        palette.fill(0x0000); palette[0] = 0x0070;
+        palette[2] = palette[4] = 0x0007;                // fond (plans normaux / tournés)
+        palette[3] = palette[6] = 0x0700;                // px 4-7
+        beginFrame();
+        for (uint32_t a = 0x20000; a < 0x30000; a += 8) {
+            bus_.write16(a, 0x0F00); bus_.write16(a + 2, 0xFFFF);
+            bus_.write16(a + 4, 0);  bus_.write16(a + 6, 0);
+        }
+        commitScanline(99);
+        fc = 100 * cpl + 68; write8(0xFF8261, 3);
+        fc = 100 * cpl + 80; write8(0xFF8261, 0);
+        commitScanline(262);
+        for (int y = 0; y < curAH_; ++y) renderLine(y);
+        finishFrame();
+        {
+            const int ds0 = geometry().dispStartLine;
+            const uint32_t* r100 = frame_.data() + static_cast<std::size_t>(activeY_ + 100 - ds0) * curW_;
+            const uint32_t* r150 = frame_.data() + static_cast<std::size_t>(activeY_ + 150 - ds0) * curW_;
+            const uint32_t red = stColorToArgb(0x0700), blue = stColorToArgb(0x0007),
+                           green = stColorToArgb(0x0070);
+            chk("stop render line px4",   r100[activeX_ + 4], red);
+            chk("stop render line px0",   r100[activeX_ + 0], blue);
+            chk("stop render next px0",   r150[activeX_ + 0], red);
+            chk("stop render next px4",   r150[activeX_ + 4], blue);
+            chk("stop render next border", r150[activeX_ - 4], blue);
+            chk("stop render next tail",  r150[activeX_ + 318], green);
+        }
+
+        // 7. Shifter laissé arrêté pendant une ligne : aire active noire, bordures intactes.
+        reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000;
+        palette.fill(0x0777); palette[0] = 0x0070;
+        beginFrame();
+        for (uint32_t a = 0x20000; a < 0x30000; a += 2) bus_.write16(a, 0xFFFF);
+        commitScanline(99);
+        fc = 99 * cpl + 400; write8(0xFF8261, 3);
+        commitScanline(100);
+        fc = 100 * cpl + 400; write8(0xFF8261, 0);
+        commitScanline(262);
+        for (int y = 0; y < curAH_; ++y) renderLine(y);
+        finishFrame();
+        {
+            const int ds0 = geometry().dispStartLine;
+            const uint32_t* r100 = frame_.data() + static_cast<std::size_t>(activeY_ + 100 - ds0) * curW_;
+            const uint32_t* r101 = frame_.data() + static_cast<std::size_t>(activeY_ + 101 - ds0) * curW_;
+            chk("stopped line black",  r100[activeX_ + 100], 0xFF000000u);
+            chk("stopped line border", r100[activeX_ - 10], stColorToArgb(0x0070));
+            chk("running line pixels", r101[activeX_ + 100], stColorToArgb(0x0777));
+        }
+        // 8. Save-state : la résolution Shifter et le stop en attente survivent.
+        stop(68, 88);
+        {
+            std::vector<uint8_t> st;
+            auto sv = StateArchive::saver(st); serialize(sv);
+            reset();
+            auto ld = StateArchive::loader(st.data(), st.size()); serialize(ld);
+            chk("stop state valid", ld.ok(), true);
+            chk("stop state shift", shifterStopShift_, -12);
+            chk("stop state inc",   vcStopInc_, -6);
+        }
+        reset();
         beamClock_ = oldBeam; liveFrameClock_ = oldLive;
     }
 

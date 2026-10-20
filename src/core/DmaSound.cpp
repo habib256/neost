@@ -20,8 +20,8 @@ static const double kRate[4] = { 6258.0, 12517.0, 25033.0, 50066.0 };
 // Gain du canal numérique AVANT les gains LMC — port de la comptabilité Hatari
 // (dmaSnd.c:1146-1158) : « DMA sound is 3/4 level of YM sound », rapporté à
 // l'échelle DEMI du YM STE (outScale_ 0.5, marge anti-saturation) parce que les
-// gains LMC sont DOUBLÉS en compensation (cf. gainLeft/gainRight). Soit
-// 3/4 × 1/2 = 0.375 : à 0 dB le mix sort YM = 1.0 et DMA = 0.75, comme Hatari.
+// gains LMC sont DOUBLÉS en compensation (cf. gainLeft/gainRight). Objectif : un
+// rapport DMA/YM de ¾ après ces gains, comme Hatari (module exact ci-dessous).
 // NÉGATIF : le LMC1992 INVERSE le signal DMA (le YM ressort en +1 : −1 ampli-op ×
 // −1 LMC). Port du « Multiply DMA sound by -1 » d'Hatari (dmaSnd.c:520-535, formule
 // −((256×¾)/4)/4). Module 0.1875 = ¾ × ¼ : le ÷4 d'Hatari couvre À LA FOIS la table

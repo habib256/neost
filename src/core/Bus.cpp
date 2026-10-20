@@ -54,7 +54,8 @@ void Bus::serialize(StateArchive& ar) {
     // le même plafond ici — l'échec rejoue le backup (Machine::loadState).
     ar.check(cart.size() <= (stmap::CART_END - stmap::CART_BASE),
              "Bus::cart.size() dépasse la fenêtre cartouche 128 Ko");
-    // Taille RAM restreinte aux configs réelles : la ligne `default` de ramBanks
+    // Taille RAM restreinte aux configs réelles (celles que ramBanks découpe en deux
+    // banques 128K/512K/2M) : la ligne `default` de ramBanks
     // (b0 = taille brute) suppose une puissance de deux — un .state forgé portant
     // p.ex. 2,5 Mo rendrait tous les masques `r & (ramSz-1)` du remappage RAS/CAS
     // faux (aliasing corrompu), sans jamais réactiver le raccourci mmuFastLimit_.
@@ -62,7 +63,8 @@ void Bus::serialize(StateArchive& ar) {
         const std::size_t kb = ram.size() / 1024;
         ar.check((ram.size() % 1024) == 0
                  && (kb == 128 || kb == 256 || kb == 512 || kb == 640
-                     || kb == 1024 || kb == 2048 || kb == 4096),
+                     || kb == 1024 || kb == 2048 || kb == 2176 || kb == 2560
+                     || kb == 4096),
                  "Bus::ram.size() hors des configs ST supportées");
     }
 
@@ -225,6 +227,8 @@ namespace {
             case 640:  b0 = BANK_512; b1 = BANK_128; break;
             case 1024: b0 = BANK_512; b1 = BANK_512; break;
             case 2048: b0 = BANK_2M;  b1 = 0;        break;
+            case 2176: b0 = BANK_2M;  b1 = BANK_128; break;   // 2M + 128K
+            case 2560: b0 = BANK_2M;  b1 = BANK_512; break;   // 2M + 512K
             case 4096: b0 = BANK_2M;  b1 = BANK_2M;  break;
             default:   b0 = static_cast<uint32_t>(bytes); b1 = 0; break;
         }
@@ -266,6 +270,29 @@ int64_t Bus::mmuTranslate(uint32_t addr) const {
     // STMemory_MMU_ConfToBank (Hatari) : seuls le ST/Mega ST (Config_IsMachineST,
     // MMU non-IMP) utilisent les bits 0-1 pour la banque 1 ; STE/Mega STE (IMP)
     // ignorent ces bits et calquent la banque 1 sur la banque 0.
+    //
+    // Banques MIXTES sur STE (2176/2560 Ko = 2 Mo + 128/512 Ko), arbitré le 2026-10-20.
+    // Ce que le matériel réel dit :
+    //  · FAQ ST comp.sys.atari.st § 3.1.1 (atari.org/hosted/quickfaq/stfaq_3.htm) :
+    //    « Because of a bug in TOS, STEs will not recognize a 2.5Mb configuration
+    //    (2x256Kb + 2x1Mb) without a small bootup program like silkboot2e or simmfix ».
+    //  · Usenet 1991 (CFN 13/0243, « Re: STe simms ») : « STe's cannot normally have
+    //    1 bank of 512k and one bank of 2048k » — SIMMFIX2 (Hoggan/Lodge, 1991) existe
+    //    précisément pour ça.
+    // Ce que chaque modèle produit dans NeoST (phystop $42E, mesuré) :
+    //  · banque 1 calquée sur la banque 0 (Hatari, retenu) : TOS 1.62/2.06 → $400000,
+    //    donc la config N'EST PAS reconnue, comme sur le vrai STE ; EmuTOS (sondage
+    //    par banque, bios/memory.S) → $220000/$280000. Et un patch type SIMMFIX qui
+    //    ne ferait que corriger phystop marche : banque 1 déclarée 2 Mo + puce 512 Ko
+    //    se décode LINÉAIREMENT sur ses 512 premiers Ko (RAS/CAS entrelacés STE,
+    //    mmuXlatSTE) — la RAM $200000-$27FFFF est utilisable.
+    //  · banques indépendantes (bits 0-1 honorés, modèle MAME stmmu.cpp, qui ne gère
+    //    d'ailleurs pas 2176/2560) : TOS 1.62/2.06 reconnaîtraient 2,5 Mo d'emblée —
+    //    contredit les deux sources ci-dessus (aucun besoin de SIMMFIX).
+    // Le modèle Hatari est donc le seul cohérent avec les témoignages matériels. Reste
+    // non prouvé faute de mesure directe : la lecture de $FF8001 bits 0-1 sur STE et le
+    // décodage exact d'une banque 1 de 128 Ko (2176 Ko, config rare). À trancher sur
+    // vrai STE (écrire $09, motifs en $200000/$280000) si un jour disponible.
     const uint32_t mmuB1 = (machine == MachineType::St || machine == MachineType::MegaSt)
                                ? mmuConfSize(static_cast<uint8_t>(conf & 3))
                                : mmuB0;
