@@ -765,12 +765,14 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 51; // v51 : position/intervalles du Shifter arrêté (res 3)
+static constexpr uint16_t kStateVersion = 51; // Shifter arrêté (res 3) + IKBD + son DMA (capW)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
     uint16_t version = kStateVersion; // v51 : ligne du dernier changement de rés. Shifter
                                       //       + intervalles « Shifter arrêté » (rendu noir)
+                                      //       + IKBD lastMouseMode_/joysticksEnabled_ ;
+                                      //       Mfp::loopback_ retiré (propriété de banc)
                                       // v50 : résolution côté Shifter ($FF8261, res 3)
                                       //       + échantillon IPL différé Moira (CPU3)
                                       // v49 : recouvrement CPU/blitter

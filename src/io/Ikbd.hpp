@@ -250,6 +250,15 @@ public:
         ar(mouseEnabledDuringReset_);
         ar(bothMouseAndJoy_);
 
+        // --- Rapports d'état $88 / $9A (v51) ---
+        std::underlying_type_t<MouseMode> lm =
+            static_cast<std::underlying_type_t<MouseMode>>(lastMouseMode_);
+        ar(lm);
+        const bool lmOk = (lm == REL || lm == ABS || lm == CURSOR);
+        ar.check(lmOk, "Ikbd::lastMouseMode_ hors domaine");
+        if (ar.loading() && lmOk) lastMouseMode_ = static_cast<MouseMode>(lm);
+        ar(joysticksEnabled_);
+
         // --- Pause output ($13) ---
         ar(pauseOutput_);
 
@@ -438,6 +447,10 @@ private:
     // flèches clavier ($0A) ; OFF = souris désactivée ($12).
     enum MouseMode { REL, ABS, OFF, CURSOR };
     MouseMode mouseMode_ = REL;
+    // Dernier mode souris CHOISI ($08/$09/$0A ; REL au boot), jamais OFF : c'est
+    // lui que rapporte $88 quand la souris est coupée, la réponse devant rester
+    // un paquet complet de 8 octets (cf. traitement $88).
+    MouseMode lastMouseMode_ = REL;
     // Défauts = état après IKBD_Boot_ROM (Hatari), l'IKBD bootant sa ROM dès la
     // mise sous tension : bornes ABS_MAX_X/Y_ONRESET (320/200) et cache boutons
     // ABS_PREVBUTTONS (0x0A = rien à signaler à la 1re interrogation $0D).
@@ -502,6 +515,11 @@ private:
     bool joystickDisabled_ = false;           // $1A reçu (cf. bJoystickDisabled)
     bool mouseEnabledDuringReset_ = false;    // $08 reçu pendant le reset (Barbarian)
     bool bothMouseAndJoy_ = false;            // souris + joystick reportés ensemble
+    // Disponibilité rapportée par $9A : faux après $1A, vrai après toute commande
+    // de mode joystick ($14/$15/$17) ou un boot. Distinct de joystickDisabled_,
+    // drapeau du quirk de reset (Hatari bJoystickDisabled, jamais relâché avant
+    // le boot suivant) et de joyMode_ (JOY_OFF couvre aussi l'interrogation $15).
+    bool joysticksEnabled_ = true;
 
     // PAUSE OUTPUT ($13) : bloque le chargement firmware → SCI ; l’octet
     // engagé finit sa trame. Levée par $11 ou par toute commande valide

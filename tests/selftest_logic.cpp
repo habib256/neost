@@ -2559,6 +2559,71 @@ static void testIkbdProtocol() {
         checkInt("39 longueurs de commande == table Hatari", bad, 0);
         checkInt("opcode inconnu : longueur 0 (NOP)", r.ikbd.commandLengthForTest(0x55), 0);
     }
+
+    // --- 7. $09 remet à zéro la position interne (protocole Atari) ----------
+    // « Resets the ikbd maintained X and Y coordinates. » La position suit la
+    // souris dans tous les modes ; on la décale ici par $0E (LOAD MOUSE POSITION)
+    // pour simuler la dérive accumulée au bureau. Hatari omet cette RAZ.
+    {
+        IkbdRig r;
+        r.drain(200000);
+        r.send({0x0E, 0x00, 0x00, 0xFA, 0x00, 0x96});   // position (250,150)
+        r.send({0x09, 0x00, 0xFF, 0x00, 0xFF});          // mode absolu, bornes 255
+        r.send({0x0D});
+        const auto p = r.drain();
+        checkInt("$09 puis $0D : 6 octets", long(p.size()), 6);
+        if (p.size() == 6) {
+            checkHex("$09 : X remis à 0", (p[2] << 8) | p[3], 0);
+            checkHex("$09 : Y remis à 0", (p[4] << 8) | p[5], 0);
+        }
+    }
+
+    // --- 8. $88 souris coupée : réponse COMPLÈTE de 8 octets ----------------
+    // « Replies are padded to 8 bytes. » Hatari n'émet que $F6 quand la souris
+    // est coupée ($12/$14/$17) : le flux se désynchronise. On rapporte le dernier
+    // mode souris choisi.
+    {
+        IkbdRig r;
+        r.drain(200000);
+        r.send({0x14});                                  // joystick auto → souris coupée
+        r.send({0x88});
+        const auto p = r.drain();
+        checkInt("$14 puis $88 : 8 octets", long(p.size()), 8);
+        if (p.size() == 8) {
+            checkHex("$88 : en-tête $F6", p[0], 0xF6);
+            checkHex("$88 : dernier mode choisi (REL au boot)", p[1], 0x08);
+        }
+        r.send({0x09, 0x01, 0x3F, 0x00, 0xC7});          // ABS 319×199
+        r.send({0x12});                                  // DISABLE MOUSE
+        r.send({0x88});
+        const auto q = r.drain();
+        checkInt("ABS puis $12 puis $88 : 8 octets", long(q.size()), 8);
+        if (q.size() == 8) {
+            checkHex("$88 : mode ABS conservé", q[1], 0x09);
+            checkHex("$88 : MaxX conservé", (q[2] << 8) | q[3], 0x013F);
+        }
+    }
+
+    // --- 9. $9A : interrogation ($15) ≠ joysticks désactivés ($1A) ----------
+    {
+        IkbdRig r;
+        r.drain(200000);
+        r.send({0x15});
+        r.send({0x9A});
+        auto p = r.drain();
+        checkInt("$15 puis $9A : 8 octets", long(p.size()), 8);
+        if (p.size() == 8) checkHex("$15 : joysticks toujours disponibles", p[1], 0x00);
+        r.send({0x1A});
+        r.send({0x9A});
+        p = r.drain();
+        if (p.size() == 8) checkHex("$1A : joysticks désactivés", p[1], 0x1A);
+        else checkInt("$1A puis $9A : 8 octets", long(p.size()), 8);
+        r.send({0x15});
+        r.send({0x9A});
+        p = r.drain();
+        if (p.size() == 8) checkHex("$15 après $1A : rallumés", p[1], 0x00);
+        else checkInt("$15 puis $9A : 8 octets", long(p.size()), 8);
+    }
 }
 
 // -----------------------------------------------------------------------------
