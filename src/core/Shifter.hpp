@@ -296,6 +296,10 @@ private:
     // au replay : aucun état supplémentaire dans les save-states.
     bool vblankAtLine(int scanline) const;
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
+    // Géométrie du tampon imposée par une résolution verrouillée (seule source de
+    // vérité, partagée par resizeFor et la validation du save-state).
+    struct FrameGeometry { int w, h, ah, x, y; };
+    static FrameGeometry geometryFor(Mode m);
     void resizeFor(Mode m);                       // ajuste le buffer si la rés. change
     // A32 : NON const. Elle l'était, et se rattrapait avec quatre `const_cast`
     // pour appeler liveGlueCatchUp — une méthode qui AVANCE la machine Glue.
@@ -784,7 +788,18 @@ public:
         // resizeFor() ne rattrape rien, son court-circuit « même w/h » saute la
         // réallocation. On vérifie donc APRÈS relecture du vecteur.
         ar.check(static_cast<uint8_t>(frameMode_) <= 3);   // 3 possible, cf. `mode` plus haut
-        ar.check(curW_ > 0 && curH_ > 0 && curW_ <= 1024 && curH_ <= 512);
+        // La géométrie n'est PAS libre : le chemin live la dérive toujours de frameMode_
+        // (beginFrame → resizeFor). Des bornes lâches (≤ 1024×512) laissaient passer
+        // curW_ = 1024 avec frame_ assorti ; Machine::frameInProgress_ restauré saute
+        // le beginFrame qui l'aurait corrigée, et renderLine décodait alors 928 px
+        // dans son tampon de pile idx[660] (débordement, SIGABRT). On exige donc
+        // EXACTEMENT ce que resizeFor(frameMode_) produirait.
+        {
+            const FrameGeometry g = geometryFor(frameMode_);
+            ar.check(curW_ == g.w && curH_ == g.h && curAH_ == g.ah
+                     && activeX_ == g.x && activeY_ == g.y,
+                     "Shifter geometry does not match the locked resolution");
+        }
         ar.check(frame_.size() == static_cast<std::size_t>(curW_) * static_cast<std::size_t>(curH_));
         ar.check(curAH_ >= 0 && activeX_ >= 0 && activeY_ >= 0 &&
                  activeY_ + curAH_ <= curH_ && activeX_ + activeWidth() <= curW_);

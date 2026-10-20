@@ -240,7 +240,7 @@ uint32_t Shifter::stColorToArgb(uint16_t c) {
     return 0xFF000000u | (ex(r4) << 16) | (ex(g4) << 8) | ex(b4);
 }
 
-void Shifter::resizeFor(Mode m) {
+Shifter::FrameGeometry Shifter::geometryFor(Mode m) {
     // Lignes ACTIVES (display-enable) décodées et offset de l'écran actif dans le
     // buffer. En basse rés bordée, le buffer overscan ajoute des bordures autour
     // de l'écran 320×200 (cf. kBorder*). Sinon le buffer = l'écran actif (offset 0).
@@ -251,11 +251,22 @@ void Shifter::resizeFor(Mode m) {
         case Mode::High:   aw = 640; ah = 400; break;   // monochrome
     }
     const bool border = (m == Mode::Low) && kBordersEnabled;
-    activeX_ = border ? kBorderLeftPx   : 0;
-    activeY_ = border ? kBorderTopLines : 0;
-    const int w = border ? (kBorderLeftPx + aw + kBorderRightPx) : aw;
-    const int h = border ? (kBorderTopLines + ah + kBorderBotLines) : ah;
-    curAH_ = ah;
+    FrameGeometry g;
+    g.x  = border ? kBorderLeftPx   : 0;
+    g.y  = border ? kBorderTopLines : 0;
+    g.w  = border ? (kBorderLeftPx + aw + kBorderRightPx) : aw;
+    g.h  = border ? (kBorderTopLines + ah + kBorderBotLines) : ah;
+    g.ah = ah;
+    return g;
+}
+
+void Shifter::resizeFor(Mode m) {
+    const FrameGeometry g = geometryFor(m);
+    activeX_ = g.x;
+    activeY_ = g.y;
+    const int w = g.w;
+    const int h = g.h;
+    curAH_ = g.ah;
     // La taille du tampon fait partie du test : sans elle, une géométrie restaurée
     // d'un save-state qui coïncide avec celle du mode courant sauterait la
     // réallocation et laisserait frame_ sous-dimensionné (cf. l'invariant posé

@@ -151,8 +151,8 @@ public:
         ar(aPlaying_); ar(aMode_); ar(aPhase_); ar(aHaveCur_);
         // Événements de trame horodatés — DmaEvent a du padding interne → champ par
         // champ (objVec), cf. StateArchive.
-        ar.objVec(events_, 15, [](StateArchive& a, DmaEvent& e) {
-            a(e.cycle); a(e.kind); a(e.start); a(e.end); a(e.mode); a(e.repeat);
+        ar.objVec(events_, 23, [](StateArchive& a, DmaEvent& e) {
+            a(e.cycle); a(e.kind); a(e.start); a(e.end); a(e.mode); a(e.repeat); a(e.capW);
         });
         // Ligne XSINT.
         ar(xsint_);
@@ -174,6 +174,13 @@ private:
     // le chemin WASM lit depuis un autre thread), les plus vieux octets sont jetés si
     // personne ne consomme. Indices monotones (modulo à l'accès).
     size_t  capAvail() const { return capW_ - capR_; }
+    // Octets que le RENDU peut consommer : bornés au repère du prochain événement de
+    // la trame (capLimit_, posé par mixStereo segment par segment). capLimit_ ≥ capW_
+    // (valeur par défaut, hors rendu segmenté) = aucune borne.
+    size_t  capRenderAvail() const {
+        const uint64_t w = capLimit_ < capW_ ? capLimit_ : uint64_t(capW_);
+        return w > capR_ ? size_t(w - capR_) : 0;
+    }
     void    capPush(int8_t b);
     // Tire le prochain échantillon L/R du flux capturé (mono → L=R). false = flux vide.
     bool    capPullLR(bool stereo, int& l, int& r);
@@ -286,9 +293,17 @@ private:
     // Événement de trame DMA horodaté (cycle CPU frame-relatif). kind : 0 = PLAY start
     // (0→1 du bit PLAY, ≙ DmaInitSample), 1 = STOP (bit PLAY effacé par le CPU),
     // 2 = MODE (changement de $FF8921 : cadence/mono-stéréo du rendu).
-    struct DmaEvent { uint32_t cycle; uint8_t kind; uint32_t start, end; uint8_t mode; bool repeat; };
+    // `capW` = index d'écriture de l'anneau de capture AU MOMENT de l'événement : les
+    // octets du flux n'étant pas datés, c'est lui qui borne ce qu'un segment de rendu
+    // a le droit de consommer (cf. capLimit_) — sinon un PLAY en milieu de trame
+    // (DMA au repos) faisait rendre dès l'échantillon 0 de la trame les octets
+    // capturés APRÈS l'écriture PLAY, à l'ancienne cadence (bruitage avancé ≤ 20 ms).
+    struct DmaEvent { uint32_t cycle; uint8_t kind; uint32_t start, end; uint8_t mode; bool repeat; uint64_t capW; };
     std::vector<DmaEvent>    events_;            // transitions de la trame courante
     std::function<int64_t()> cycleClock_;        // cycle CPU frame-relatif (posé par le frontend push)
+    // Borne de consommation du flux capturé pour le segment de rendu en cours (index
+    // monotone comme capW_). Transitoire du rendu (mixStereo) — NON sérialisé.
+    uint64_t capLimit_ = UINT64_MAX;
 
     // Ligne XSINT (External Sound INTerrupt) du son DMA STE : HAUT pendant qu'une
     // trame joue, BAS à l'arrêt / fin de trame. Câblée à TAI (Timer A event-count,

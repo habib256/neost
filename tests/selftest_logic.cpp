@@ -180,6 +180,7 @@ int testFdcTiming(); // attentes des registres FDC et ancrage anti-dérive
 int testIkbdMonitor(); // taux d'échantillonnage joystick $17
 int testIkbdMonitorMachine(); // câblage du timer dans la machine complète
 int testDmaSoundMono(); // précision du repli mono et drainage après STOP
+int testShifterStateGeometry(); // géométrie du save-state liée à la résolution (idx[660])
 int testIkbdAutoSend(); // autosend indépendant de la fréquence vidéo
 
 static void checkStr(const char* what, const std::string& got, const std::string& want) {
@@ -2846,6 +2847,7 @@ int main() {
     if (const int failures = testIkbdMonitor()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdMonitorMachine()) g_fail += failures; else ++g_ok;
     if (const int failures = testDmaSoundMono()) g_fail += failures; else ++g_ok;
+    if (const int failures = testShifterStateGeometry()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdAutoSend()) g_fail += failures; else ++g_ok;
     testPacing();
     testMmioTable();
