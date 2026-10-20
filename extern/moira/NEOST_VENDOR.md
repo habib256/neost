@@ -280,3 +280,12 @@ au cycle les trois instants de la séquence d'exception : changement de la broch
 (`Moira.cpp`), entrée du cycle d'IACK (`MoiraExceptions_cpp.h`) et fin de `jumpToVector`
 (`MoiraDataflow_cpp.h`, ligne `[JTV] nr=… clk=…`). Sert au diff cycle-à-cycle contre
 l'oracle Hatari instrumenté (`[HPIN]`/`[HFETCH]`/`[HEXC]`). Aucun coût en marche normale.
+
+## DIVS : valeurs absolues sans comportement indéfini (2026-10-20)
+
+`cyclesDiv<C68000|C68010, DIVS>` et `setUndefinedDIVS` calculaient `abs(dividend)` sur un
+`i32` : pour `0x80000000`, `abs(INT32_MIN)` est indéfini. clang et GCC prenaient des branches
+différentes pour `0x80000000 / 0x8000` (banc `cpu_div_ram` : vert sous macOS, Δ = +136 cycles
+sous Linux). Les valeurs absolues sont désormais calculées en non signé ; |−2³¹| >> 16 =
+`0x8000` ≥ `0x8000` → débordement, comme `getDivs68kCycles` d'Hatari.
+
