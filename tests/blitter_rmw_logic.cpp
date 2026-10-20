@@ -205,6 +205,76 @@ int testBlitterRmw() {
         rig.step();
         check.equal("MOVE SR recharge l'opcode suivant", rig.cpu.reg(1), 7);
     }
+    // Même queue microcode pour MOVE Dn,CCR (44c0 : 301 rstw1 → 1e1 malw3 → 363 b).
+    for (bool sixteen : {false, true}) {
+        MegaSteRig rig(0x44C0, false, sixteen);
+        rig.cpu.setReg(0, 0x1F);
+        rig.cpu.setReg(1, 0);
+        rig.bus.rom[0x1002] = 0x72; // MOVEQ #7,D1, remplace le NOP préfetché
+        rig.bus.rom[0x1003] = 0x07;
+        check.equal("MOVE CCR durée ROM", rig.step(), sixteen ? 6 : 12);
+        check.equal("MOVE CCR écrit CCR", rig.cpu.sr() & 0x1F, 0x1F);
+        rig.step();
+        check.equal("MOVE CCR recharge l'opcode suivant", rig.cpu.reg(1), 7);
+    }
+    // ANDI/ORI/EORI #,CCR (003c/023c/0a3c) : queue identique, durée inchangée.
+    for (bool sixteen : {false, true}) {
+        MegaSteRig rig(0x003C, false, sixteen);
+        rig.bus.rom[0x1002] = 0x00; rig.bus.rom[0x1003] = 0x15;   // ORI #$15,CCR
+        rig.bus.rom[0x1004] = 0x72; rig.bus.rom[0x1005] = 0x07;   // MOVEQ #7,D1
+        rig.cpu.reset();                                          // re-préfetch de l'immédiat
+        rig.scheduler.runTo(rig.cpu.busClockNow());
+        rig.cpu.setReg(1, 0);
+        check.equal("ORI CCR durée ROM", rig.step(), sixteen ? 10 : 20);
+        check.equal("ORI CCR écrit CCR", rig.cpu.sr() & 0x1F, 0x15);
+        rig.step();
+        check.equal("ORI CCR enchaîne l'opcode suivant", rig.cpu.reg(1), 7);
+    }
+    // ANDI/EORI #,SR qui repassent en UTILISATEUR (027c/0a7c) : le microcode relit
+    // pc0+4 APRÈS l'écriture de SR, donc avec le FC utilisateur. Placé en $7FE, ce
+    // mot est protégé par le GLUE en mode utilisateur → bus error sur $7FE. L'ancien
+    // code exécutait le mot préfetché en superviseur (MOVEQ → D1 = 7).
+    for (bool sixteen : {false, true}) {
+        for (uint16_t op : {uint16_t(0x027C), uint16_t(0x0A7C)}) {
+            MegaSteRig rig(0x4E71, false, sixteen);
+            auto word = [&](unsigned off, uint16_t value) {
+                rig.bus.rom[off] = uint8_t(value >> 8);
+                rig.bus.rom[off + 1] = uint8_t(value);
+            };
+            word(4, 0); word(6, 0x07FA);                       // PC de reset = $7FA
+            word(0x1040, 0x4E71);
+            rig.bus.write32(8, 0xFC1040);                      // vecteur bus error
+            rig.bus.write16(0x7FA, op);
+            rig.bus.write16(0x7FC, op == 0x027C ? 0xDFFF : 0x2000);
+            rig.bus.write16(0x7FE, 0x7207);                    // MOVEQ #7,D1
+            rig.bus.write16(0x800, 0x4E71);
+            rig.cpu.reset();
+            rig.scheduler.runTo(rig.cpu.busClockNow());
+            rig.cpu.setReg(1, 0);
+            rig.step();
+            const Cpu68k::Fault f = rig.cpu.lastFault();
+            check.equal("#,SR → user : bus error prise", f.valid, true);
+            check.equal("#,SR → user : handler superviseur", (rig.cpu.sr() & 0x2000) != 0, true);
+            check.equal("#,SR → user : relecture pc0+4 en FC user", f.addr, 0x7FE);
+            rig.step();
+            check.equal("#,SR → user : ancien opcode non exécuté", rig.cpu.reg(1), 0);
+        }
+    }
+    // Lecture HÔTE d'un registre qui faute en accès octet ($FF9200 Mega STE) : hors
+    // exécution d'instruction, aucune exception ne doit traverser l'hôte ni polluer
+    // le diagnostic de faute du CPU émulé.
+    {
+        MegaSteRig rig(0x4E71, false, false);
+        bool threw = false;
+        uint8_t v = 0;
+        try { v = rig.bus.read8(0xFF9200); } catch (...) { threw = true; }
+        check.equal("lecture hôte $FF9200 sans exception", threw, false);
+        check.equal("lecture hôte $FF9200 valeur neutre", v, 0xFF);
+        check.equal("lecture hôte sans faute CPU", rig.cpu.lastFault().valid, false);
+        rig.step();
+        check.equal("CPU intact après lecture hôte", rig.cpu.halted(), false);
+        check.equal("pas de faute après lecture hôte", rig.cpu.lastFault().valid, false);
+    }
     {
         Scheduler scheduler;
         int blits = 0, renders = 0;
