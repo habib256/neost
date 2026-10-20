@@ -77,6 +77,12 @@ void Blitter::reset(bool cold) {
     cpuBusCnt_ = 0; bus_.blitterCountCpu = false;
     clearPreStartWindow();
     if (sched_) sched_->cancel(Scheduler::BLITTER);
+    // La sortie INT (GPU_DONE → GPIP3) recopie BUSY : le blit annulé la fait
+    // retomber avec lui. Sans ça, un reset chaud en plein blit laissait GPIP3 à 1
+    // (blit fantôme) jusqu'à la fin d'un blit ultérieur, dont le départ ne
+    // produisait plus de front. Machine::reset remet le MFP AVANT le blitter :
+    // IER est nul, ce front descendant ne laisse donc aucune requête pendante.
+    if (bus_.mfp) bus_.mfp->setBlitterLine(true);
 }
 
 // Accès bus du blitter — port de STMemory_DMA_ReadWord/WriteWord (stMemory.c:724) :

@@ -372,7 +372,7 @@ void Ikbd::dispatchCommand() {
             // IKBD_Cmd_RelMouseMode) : retour aux paquets relatifs $F8 (mode par
             // défaut). Sans ce case, un jeu repassant en relatif depuis ABS/CURSOR/
             // OFF gardait l'ancien mode → souris muette ou flèches parasites.
-            mouseMode_ = REL;
+            mouseMode_ = lastMouseMode_ = REL;
             // Reçu pendant la fenêtre de reset : mémorisé pour le quirk $08+$14
             // « souris ET joystick reportés ensemble » (Barbarian, cf. Hatari).
             if (duringResetCriticalTime_)
@@ -382,9 +382,16 @@ void Ikbd::dispatchCommand() {
             // $09 = SET ABSOLUTE MOUSE POSITION REPORTING (cf. Hatari
             // IKBD_Cmd_AbsMouseMode) : bascule en mode absolu ; les bornes MaxX/
             // MaxY sont inclusives (octets MSB/LSB). Plus de paquet $F8 émis.
-            mouseMode_ = ABS;
+            mouseMode_ = lastMouseMode_ = ABS;
             absMaxX_ = uint16_t((inBuf_[1] << 8) | inBuf_[2]);
             absMaxY_ = uint16_t((inBuf_[3] << 8) | inBuf_[4]);
+            // Protocole IKBD Atari (§ SET ABSOLUTE MOUSE POSITIONING) : « Resets
+            // the ikbd maintained X and Y coordinates. » La position interne suit
+            // la souris dans TOUS les modes (updateInternalAbsPos) : sans cette
+            // RAZ, un $0D lu juste après $09 rendait la dérive accumulée au bureau
+            // au lieu de l'origine. Hatari (IKBD_Cmd_AbsMouseMode) l'omet : défaut
+            // non reproduit.
+            absX_ = absY_ = 0;
             break;
         case 0x0D:
             // $0D = INTERROGATE MOUSE POSITION (cf. Hatari IKBD_Cmd_ReadAbsMousePos) :
@@ -409,7 +416,7 @@ void Ikbd::dispatchCommand() {
         case 0x0A:
             // $0A = SET MOUSE KEYCODE MODE (cf. Hatari IKBD_Cmd_MouseCursorKeycodes) :
             // les mouvements deviennent des flèches clavier ; octets 1/2 = pas X/Y.
-            mouseMode_     = CURSOR;
+            mouseMode_ = lastMouseMode_ = CURSOR;
             // Octet BRUT, 0 permis (Hatari ikbd.c:2000 stocke tel quel) : avec pas=0
             // la boucle sendCursorKeys émet ses 10 paires/trame sans consommer le Δ,
             // comme le vrai 6301 — l'ancien « ?: 1 » se comportait en pas=1.
@@ -490,6 +497,7 @@ void Ikbd::dispatchCommand() {
             // reset : $08+$14 (Barbarian) ou $12+$14 (Hammerfist) → souris ET
             // joystick reportés ensemble (bothMouseAndJoy_).
             joyMode_ = JOY_AUTO;
+            joysticksEnabled_ = true;         // toute commande de mode joystick les rallume
             mouseMode_ = OFF;
             if (duringResetCriticalTime_ && mouseEnabledDuringReset_) {
                 mouseMode_ = REL;
@@ -509,8 +517,10 @@ void Ikbd::dispatchCommand() {
         }
         case 0x15:
             // $15 = SET JOYSTICK INTERROGATION MODE (cf. Hatari IKBD_Cmd_StopJoystick) :
-            // retour au mode interrogation seule ($16). Plus de report spontané.
+            // retour au mode interrogation seule ($16). Plus de report spontané,
+            // mais les joysticks restent DISPONIBLES ($9A rapporte $00, pas $1A).
             joyMode_ = JOY_OFF;
+            joysticksEnabled_ = true;
             break;
         case 0x1A:
             // $1A = DISABLE JOYSTICKS (cf. Hatari IKBD_Cmd_DisableJoysticks) : coupe
@@ -519,6 +529,7 @@ void Ikbd::dispatchCommand() {
             // continuaient d'être émis.
             joyMode_ = JOY_OFF;
             joystickDisabled_ = true;
+            joysticksEnabled_ = false;
             checkResetDisableBug();
             break;
         case 0x17:
@@ -527,6 +538,7 @@ void Ikbd::dispatchCommand() {
             // 8021247 Hz que Hatari. Cette cadence reste commune à tous les
             // reports jusqu’au boot ROM, même après sortie du mode monitoring.
             joyMode_ = JOY_MONITOR;
+            joysticksEnabled_ = true;
             mouseMode_ = OFF;
             joystickMonitorPeriod_ = int64_t(8021247) * (inBuf_[1] ? inBuf_[1] : 1) / 100;
             if (sched_) sched_->cancel(Scheduler::IKBD_AUTOSEND);
@@ -591,7 +603,14 @@ void Ikbd::dispatchCommand() {
         case 0x88: case 0x89: case 0x8A: {    // REPORT MOUSE MODE
             if (!rxFree(8)) break;
             pushRxDelayed(0xF6, kResponseDelayCycles);
-            switch (mouseMode_) {
+            // Souris coupée ($12/$14/$17) : le protocole IKBD impose une réponse
+            // TOUJOURS complétée à 8 octets (« padded to 8 bytes »), pour que
+            // l'hôte puisse la rejouer en commande. Hatari (ikbd.c:2565) n'émet
+            // alors que l'en-tête $F6 → flux désynchronisé : défaut non reproduit.
+            // La disponibilité est rapportée à part ($92) ; on rapporte ici le
+            // dernier mode souris choisi (REL au boot). Octet exact émis par la
+            // ROM 6301 dans ce cas : NON vérifié sur matériel.
+            switch (mouseMode_ == OFF ? lastMouseMode_ : mouseMode_) {
                 case ABS:
                     pushRx(0x09);
                     pushRx(uint8_t(absMaxX_ >> 8)); pushRx(uint8_t(absMaxX_));
@@ -607,7 +626,9 @@ void Ikbd::dispatchCommand() {
                     pushRx(0x08);
                     for (int i = 0; i < 6; ++i) pushRx(0x00);
                     break;
-                default:                      // OFF : Hatari n'émet que l'en-tête $F6
+                default:                      // OFF : inatteignable (lastMouseMode_ ≠ OFF)
+                    pushRx(0x08);
+                    for (int i = 0; i < 6; ++i) pushRx(0x00);
                     break;
             }
             break;
@@ -640,8 +661,11 @@ void Ikbd::dispatchCommand() {
             for (int i = 0; i < 6; ++i) pushRx(0x00);
             break;
         case 0x9A:                            // REPORT JOYSTICK AVAILABILITY
+            // $00 = disponibles, $1A = désactivés par $1A (protocole IKBD). Hatari
+            // déduit « désactivés » du seul mode interrogation (AUTOMODE_OFF), donc
+            // répond $1A après un simple $15 : confusion non reproduite.
             if (!rxFree(8)) break;
-            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(joyMode_ == JOY_OFF ? 0x1A : 0x00);
+            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(joysticksEnabled_ ? 0x00 : 0x1A);
             for (int i = 0; i < 6; ++i) pushRx(0x00);
             break;
         default:
@@ -708,7 +732,9 @@ void Ikbd::bootRom() {
     joystickMonitorPeriod_ = 0;
     startAutoSend();
     mouseMode_     = REL;
+    lastMouseMode_ = REL;
     joyMode_       = JOY_AUTO;
+    joysticksEnabled_ = true;
     prevJoy0_      = prevJoy1_ = 0;
     xThreshold_    = yThreshold_ = 1;
     xScale_        = yScale_ = 0;
@@ -757,6 +783,7 @@ void Ikbd::checkResetDisableBug() {
     if (mouseDisabled_ && joystickDisabled_ && duringResetCriticalTime_) {
         mouseMode_ = REL;
         joyMode_   = JOY_AUTO;
+        joysticksEnabled_ = true;
         bothMouseAndJoy_ = true;
     }
 }
@@ -881,8 +908,14 @@ void Ikbd::sendAutoInput() {
     prevL_ = left; prevR_ = right;           // état bouton courant (interrogation $0D)
 
     // 6) Monitoring ($17) : seul report émis, le reste de la trame est coupé.
+    // Sous PAUSE OUTPUT ($13), le protocole IKBD suspend l'échantillonnage :
+    // « the PAUSE OUTPUT command also temporarily stops the monitoring process
+    // (i.e. the samples are not enqueued for transmission) ». La cadence continue,
+    // rien n'est mis en file ; à la reprise, l'échantillon suivant est l'état
+    // courant. Hatari empile au contraire les échantillons : défaut non reproduit.
     if (joyMode_ == JOY_MONITOR) {
-        sendAutoJoysticksMonitoring(joy0, joy1);
+        if (!pauseOutput_)
+            sendAutoJoysticksMonitoring(joy0, joy1);
         return;
     }
 

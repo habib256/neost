@@ -1,6 +1,7 @@
 // Hatari blitter.c:271-307 : Blitter_Reset conserve BlitterHalftone et buffer.
 #include "core/Bus.hpp"
 #include "core/Blitter.hpp"
+#include "io/Mfp.hpp"
 #include <cstdio>
 
 namespace {
@@ -63,6 +64,21 @@ int testBlitterResetRetention() {
         rig.blitter.reset(true);
         rig.transfer(2, 4);
         equal("nouvelle session initialise pipeline", rig.bus.read16(0x2000), 0x0ABC);
+    }
+    {
+        // GPU_DONE (GPIP3) recopie BUSY : un reset chaud en plein blit doit la
+        // relâcher, sinon $FFFA01 bit3 reste à 1 (blit fantôme) après le reset.
+        Rig rig;
+        Mfp mfp;
+        mfp.setHasBlitter(true);
+        rig.bus.mfp = &mfp;
+        equal("GPIP3 au repos", mfp.read8(0xFFFA01) & 0x08, 0);
+        mfp.setBlitterLine(false);               // départ d'un blit (Blitter::start)
+        equal("GPIP3 pendant le blit", mfp.read8(0xFFFA01) & 0x08, 0x08);
+        mfp.reset();                             // ordre de Machine::reset
+        rig.blitter.reset(false);
+        equal("GPIP3 relâché par le reset du blitter", mfp.read8(0xFFFA01) & 0x08, 0);
+        equal("reset : aucune requête GPIP3 pendante", mfp.iprb & 0x08, 0);
     }
     std::fprintf(stderr, "[blitter-reset-retention] %d checks, %d FAIL\n", checks, failures);
     return failures;

@@ -200,7 +200,8 @@ public:
         ar(rxOverrun_);
         ar(rxPendingOverrun_);
         ar.check(!rxPendingOverrun_ || (rxFull_ && !rxOverrun_), "Mfp::pending RX overrun");
-        ar(loopback_);
+        // loopback_ (bouchon RS-232) N'EST PLUS sérialisé depuis v51 : propriété de
+        // banc posée par le frontal, comme les bouchons MIDI (MidiAcia) et SCC.
 
         // --- Timers B/C/D : mode, recharge et compteurs figés ------------------------
         ar(tbcr_); ar(tbReload_); ar(tbCounter_);
