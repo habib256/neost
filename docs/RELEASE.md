@@ -54,7 +54,61 @@ le reste est ci-dessous.
    (`GPL-3.0.txt`, `GPL-2.0.txt`, `THIRD-PARTY.txt` — huit jobs le vérifient) et que
    `check_licenses.py` est vert : tout composant livré doit être nommé avec sa licence.
 
-## Le JOUR J — dossier prêt pour la prochaine release (préparé le 2026-09-01)
+## Le JOUR J 0.6.2 — dossier préparé le 2026-10-20
+
+⏳ **Préparé, pas encore tagué.** Les trois numéros sont bumpés ensemble
+(`CMakeLists.txt`, « Version courante », en-tête `## 0.6.2 — …`), `check_release.py` est
+vert. Reste à poser le tag annoté et à le pousser, ce qui déclenche la publication par la CI.
+
+**Le numéro.** La 0.6.2 emporte des fonctionnalités (pilotage externe, RAM 2176 Ko/2,5 Mo,
+`$FF8261`/res 3), ce qui selon le pas 1 appellerait une **MINOR** (0.7.0). Le mainteneur
+a choisi **0.6.2** le 2026-10-20.
+
+**Le tag** (message en anglais) :
+
+```sh
+git tag -a 0.6.2 -m "NeoST 0.6.2 — closer to the metal"
+git push origin main 0.6.2
+```
+
+### Notes de release, EN ANGLAIS, prêtes à coller
+
+À appliquer après le job `publish` : `gh release edit 0.6.2 --notes-file <fichier>`.
+
+```markdown
+## NeoST 0.6.2 — closer to the metal
+
+Seven weeks of hardware fidelity work since 0.6.1.
+
+**Deterministic external control.** A `--server` mode, joystick scripts, memory probes
+and state exploration: the same script replays the same game down to the cycle. Disks
+can be swapped while running and drive B unplugged from the server.
+
+**Serial and keyboard chips rebuilt to match the hardware.** The MFP USART, the Mega STE
+SCC, the MIDI and keyboard ACIAs, the IKBD protocol and the real-time clock. Custom 6301
+keyboard programs are now recognised: *Froggies over the Fence* runs on all three disks.
+
+**Floppies and hard disks.** More faithful STX copy protections, WD1772 write-protect
+timing, and ACSI transfers that honour the DMA sector count.
+
+**68881 FPU.** Transcendental functions are bit-exact.
+
+**Video and memory.** STE 336-pixel mode, the 22-bit video counter wrap, the
+"stopped Shifter" trick (resolution 3), and two new RAM sizes: 2176 KB and 2.5 MB.
+
+**Sound.** The PSG crackle in *Super Hang-On* is gone, and STE DMA sound starts on the
+exact sample of the PLAY write.
+
+**Comfort.** Alt+Enter toggles fullscreen with mouse capture, mouse sensitivity is
+adjustable, the GEMDOS host drive is reliable (accented file names on macOS, no call
+served twice), and the CRT curvature is subtler by default.
+
+**Save states** move to format v51: states from earlier versions are refused.
+
+macOS is still unsigned by Apple: right-click the app and choose Open on first launch.
+```
+
+## Le JOUR J 0.6.1 — dossier de la release précédente (préparé le 2026-09-01)
 
 ✅ **Exécuté** : le tag annoté `0.6.1` est posé le 2026-09-02 et la Release GitHub porte
 des notes en anglais (« NeoST 0.6.1 — your settings stay put », complétées depuis le texte

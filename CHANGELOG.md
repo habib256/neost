@@ -1,10 +1,37 @@
 # Changelog — NeoST
 
 (c) 2026 VERHILLE Arnaud. **La chronologie** : releases, puis les chantiers datés dans
-l'ordre inverse. Version courante : **0.6.1**.
+l'ordre inverse. Version courante : **0.6.2**.
 
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
+
+## 0.6.2 — plus près du silicium (2026-10-20)
+
+Sept semaines de fidélité matérielle depuis la 0.6.1. Ce que l'utilisateur y gagne :
+
+- **Pilotage externe déterministe** : mode `--server`, scripts joystick, sondes mémoire,
+  exploration d'états — un même script rejoue la même partie au cycle près
+  (`docs/OPENDST.md`). Disquette à chaud et lecteur B débranché depuis le serveur.
+- **Puces série et clavier refaites au plus près du matériel** : USART du MFP, SCC du
+  Mega STE, ACIA MIDI et clavier, protocole IKBD (dont `$09`, `$88`, `$9A`, monitoring
+  joystick sous PAUSE), horloge RTC. Les programmes 6301 custom sont reconnus :
+  *Froggies over the Fence* tourne sur ses trois disquettes.
+- **Disquettes et disques durs** : protections STX plus fidèles (écriture de secteurs,
+  READ TRACK, champs traversant l'index, pistes HD), WD1772 (protection en écriture testée
+  après la montée du moteur), ACSI qui respecte le compteur DMA.
+- **FPU 68881** : fonctions transcendantes bit-exactes, décimal empaqueté corrigé.
+- **Vidéo** : STE 336 px, compteur vidéo replié sur 22 bits, astuce « Shifter arrêté »
+  (`$FF8261`, résolution 3), valeurs de repos du GPIP mesurées sur matériel.
+- **Mémoire** : nouvelles configurations **2176 Ko** et **2,5 Mo**.
+- **Son** : le grésillement PSG de *Super Hang-On* est corrigé ; le son DMA STE démarre
+  à l'échantillon exact de l'écriture PLAY.
+- **Confort** : Alt+Entrée bascule le plein écran avec capture de la souris, sensibilité
+  de la souris réglable, disque hôte GEMDOS fiable (fichiers accentués sous macOS, plus
+  d'appel servi deux fois), courbure CRT par défaut plus discrète (0.025).
+- **Robustesse** : un `.state` forgé ne peut plus faire déborder le rendu ni planter le
+  disque GEMDOS. Le format passe en **v51** : **les états antérieurs sont refusés**.
+- Deux grandes chasses aux bugs multi-agents et un audit complet docs ↔ code.
 
 ## Bug hunt 11ᵉ passe : 24 correctifs sur six sous-systèmes, save-state v51 (2026-10-20)
 
