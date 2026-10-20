@@ -1036,8 +1036,16 @@ Moira::cyclesDiv(u32 op1, u16 op2) const
         i16 divisor  = (i16)op2;
         int mcycles  = (dividend < 0) ? 7 : 6;
 
+        // NeoST : valeurs absolues en NON SIGNÉ. abs(INT32_MIN) est un comportement
+        // indéfini : clang et GCC prenaient des branches différentes pour
+        // 0x80000000 / 0x8000 (banc cpu_div_ram rouge en CI Linux, vert sous macOS).
+        // |−2³¹| >> 16 = 0x8000 ≥ |−32768| = 0x8000 → débordement, comme Hatari
+        // (getDivs68kCycles : (uae_u32)abs(dividend) >> 16 >= (uae_u16)abs(divisor)).
+        const u32 adividend = dividend < 0 ? 0u - (u32)dividend : (u32)dividend;
+        const u32 adivisor  = divisor  < 0 ? 0u - (u32)(i32)divisor : (u32)divisor;
+
         // Check if quotient is larger than 16 bit
-        if ((abs(dividend) >> 16) >= abs(divisor)) {
+        if ((adividend >> 16) >= adivisor) {
 
             result = (mcycles + 2) * 2;
 
@@ -1049,7 +1057,7 @@ Moira::cyclesDiv(u32 op1, u16 op2) const
                 mcycles += (dividend < 0) ? 1 : -1;
             }
 
-            u32 aquot = abs(dividend) / abs(divisor);
+            u32 aquot = adividend / adivisor;
             for (int i = 0; i < 15; i++) {
                 if ( (i16)aquot >= 0) mcycles++;
                 aquot <<= 1;
@@ -1096,9 +1104,12 @@ Moira::cyclesDiv(u32 op1, u16 op2) const
         i32 dividend = (i32)op1;
         i16 divisor  = (i16)op2;
         int mcycles  = (dividend < 0) ? 120 : 118;
+        // NeoST : valeurs absolues en non signé (abs(INT32_MIN) indéfini, cf. 68000).
+        const u32 adividend = dividend < 0 ? 0u - (u32)dividend : (u32)dividend;
+        const u32 adivisor  = divisor  < 0 ? 0u - (u32)(i32)divisor : (u32)divisor;
 
         // Check if quotient is larger than 16 bit
-        if ((abs(dividend) >> 16) >= abs(divisor)) {
+        if ((adividend >> 16) >= adivisor) {
 
             result = 16;
 
@@ -1264,8 +1275,9 @@ Moira::setUndefinedDIVU(u32 dividend, u16 divisor)
 template <Core C, Size S> void
 Moira::setUndefinedDIVS(i32 dividend, i16 divisor)
 {
-    auto uDividend = u32(std::abs(dividend));
-    auto uDivisor = u16(std::abs(divisor));
+    // NeoST : std::abs(INT32_MIN) est indéfini ; négation en non signé.
+    auto uDividend = dividend < 0 ? 0u - u32(dividend) : u32(dividend);
+    auto uDivisor = u16(divisor < 0 ? 0u - u32(i32(divisor)) : u32(divisor));
 
     switch (C) {
 
