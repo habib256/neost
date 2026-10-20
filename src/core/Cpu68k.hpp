@@ -213,7 +213,9 @@ public:
     void armVblPinAt(int64_t busCycle);
 
     // Bus error déclenchée par un périphérique (ex. FDC $FF8604/06 en mode octet).
-    // Renvoie true si le CPU est halté (double faute) — l'appelant fournit alors 0.
+    // Renvoie true si l'accès doit être abandonné — CPU halté (double faute), ou accès
+    // HORS exécution d'instruction (hôte : aucune faute levée ni enregistrée) —
+    // l'appelant fournit alors une valeur neutre.
     bool triggerBusError(uint32_t addr, bool write);
 
     // État exposé en lecture directe pour le visualiseur de registres ImGui.
