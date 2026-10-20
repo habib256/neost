@@ -237,12 +237,13 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
 
-- **A9 — `appLoop` d'un seul tenant** · P2 ◐ — `main()` tient en 10 lignes, mais
-  `src/gui/AppLoop.cpp` reste `appLoop` — 1965 lignes d'un seul tenant, déplacées et pas
-  découpées. Prochain pas :
-  nommer la vingtaine de variables de trame dans une `struct Frame`, PUIS couper aux
-  frontières déjà commentées (entrées / trames dues / dessin / requêtes / présentation).
-  Déplacements mécaniques uniquement, comme pour `App`.
+- **A9 — `appLoop` découpée** · P2 ◐ — `main()` tient en 10 lignes, et `appLoop`
+  (`src/gui/AppLoop.cpp`) n'est plus qu'une suite d'appels : les variables de trame vivent
+  dans une `struct Frame`, et les 28 phases (entrées / trames dues / dessin / requêtes /
+  présentation) sont des fonctions statiques `(App&, Frame&)` déplacées mécaniquement.
+  Plus grosse pièce restante : `runKioskMenu` — 380 lignes d'un seul tenant (ses pages
+  partagent fronts, directions et lambdas de navigation). Prochain pas éventuel : sortir
+  ses pages, puis `consumeConfigRequests` (219 lignes). Déplacements mécaniques uniquement.
 - **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits ; les rôles restent
   des méthodes qui partagent l'état par ligne. Prochain pas : `VideoCounter` en objet membre
   (champs `vc*`), mesurer ce que ça casse, puis seulement regarder la Glue.
