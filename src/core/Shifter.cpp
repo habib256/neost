@@ -177,6 +177,10 @@ void Shifter::reset() {
     shifterRes_       = static_cast<uint8_t>(mode);
     lastShifterRes_   = -1;
     shifterResCyc_    = -1;
+    shifterResLine_   = -1;
+    stopFromFc_       = -1;
+    lastStopFromFc_   = -1;
+    lastStopToFc_     = -1;
     vcStopInc_        = 0;
     shifterStopLine_  = -1;
     shifterStopShift_ = 0;
@@ -316,6 +320,14 @@ void Shifter::beginFrame() {
     // matérielle, on garde le comportement de la référence.
     shifterStopLine_  = -1;
     shifterStopShift_ = 0;
+    // Les positions du dernier changement de résolution Shifter sont en cycles de
+    // la trame PRÉCÉDENTE : la ligne n'a plus de sens (un stop à la ligne 100 de la
+    // trame k ne se compare pas à la ligne 100 de la trame k+1), et un arrêt qui
+    // chevauche le VBL repart du cycle 0 de la nouvelle trame.
+    shifterResLine_  = -1;
+    if (stopFromFc_ >= 0) stopFromFc_ = 0;
+    lastStopFromFc_  = -1;
+    lastStopToFc_    = -1;
     vcRestartBase_ = -1;
     vcLineBase_  = vcFrameBase_;
     vcLineY_     = 0;
@@ -910,8 +922,8 @@ void Shifter::renderGlueFrame() {
         // video.c:3983). On rend donc pal[0] sur toute la ligne, sans décoder.
         const bool vblank = vblankAtLine(sl);
         const bool lineBlank = vblank || (lineHasDE && (bm & glue::BLANK) != 0);
-        // Shifter arrêté (res 3) au commit de CETTE ligne : aire active noire (cf.
-        // renderLine). La lecture RAM/compteur n'est pas affectée (le MMU continue).
+        // Shifter arrêté (res 3) sur toute la fenêtre DE de CETTE ligne (bit 7 posé
+        // au commit par lineStoppedOver) : aire active noire (cf. renderLine). La lecture RAM/compteur n'est pas affectée (le MMU continue).
         const bool lineStopped = scrollSnapped && (lineScrollSnap_[sl] & 0x80) != 0;
         // V2 — résolution PAR LIGNE (port Video_StoreResolution, video.c:3729-3733) :
         // une ligne marquée OVERSCAN_MED_RES / LEFT_OFF_2_STE_MED se décode en

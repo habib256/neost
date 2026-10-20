@@ -104,7 +104,7 @@ void Shifter::endVideoLine() {
     if (sl >= 0 && sl < static_cast<int>(lineScrollSnap_.size()))
         lineScrollSnap_[sl] = uint8_t(0x40 | hwScrollCount | (hwScrollPrefetch ? 0x10 : 0)
                                      | (steBorderFlag_ ? 0x20 : 0)
-                                     | (shifterRes_ == 3 ? 0x80 : 0));
+                                     | (lineStoppedOver(sl) ? 0x80 : 0));
     vcLineBase_ += static_cast<uint32_t>(bpl);
     // Prefetch et line-offset STE ne s'appliquent QUE sur une ligne réellement
     // affichée : chez Hatari les deux sont dans la branche « else » de la ligne
