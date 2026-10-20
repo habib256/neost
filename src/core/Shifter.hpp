@@ -439,6 +439,13 @@ private:
     uint8_t shifterRes_      = 0;    // ≙ registre res du Shifter (0..3)
     int     lastShifterRes_  = -1;   // ≙ ShifterFrame.Res_Shifter (−1 = aucun, filtre « même valeur »)
     int     shifterResCyc_   = -1;   // ≙ ResPosStop_Shifter.LineCycles (cycle-ligne du dernier changement)
+    int     shifterResLine_  = -1;   // ≙ ResPosStop_Shifter.HBL (ligne RÉELLE du dernier changement, −1 = trame précédente)
+    // Intervalles « Shifter arrêté » (res 3) en cycles TRAME, pour noircir une ligne
+    // d'après sa fenêtre DE et non d'après l'état au HBL (cf. lineStoppedOver) :
+    // l'arrêt en cours (−1 = Shifter en marche) et le dernier arrêt terminé.
+    int64_t stopFromFc_      = -1;
+    int64_t lastStopFromFc_  = -1;
+    int64_t lastStopToFc_    = -1;
     // Scroll hard STF « 4 px » par Shifter arrêté (Troed/Sync, port video.c:1906-1973) :
     // res=3 pendant 8..32 cycles alors que le DE est actif → toutes les lignes
     // SUIVANTES de la trame sont décalées de 0/−4/−8/−12 px et le compteur vidéo
@@ -448,6 +455,11 @@ private:
     int     shifterStopShift_ = 0;   // décalage px (≙ DisplayPixelShift) des lignes suivantes
     // Écriture de la résolution côté Shifter (port Video_WriteToShifterRes).
     void writeShifterRes(uint8_t res);
+    // Position (ligne, cycle-ligne) d'un cycle trame sur la grille RÉELLE des débuts
+    // de ligne (≙ Video_ConvertPosition d'Hatari) — repli fc/cpl hors NEOST_LINELEN_ATTR.
+    void realLinePos(int64_t fc, int& line, int& lineCyc);
+    // Le Shifter est-il resté arrêté sur TOUTE la fenêtre DE de la scanline sl ?
+    bool lineStoppedOver(int sl) const;
 
     // Wait state de bus 4 cycles (port LIVE de Hatari M68000_SyncCpuBus) : appelé AU
     // DÉBUT d'un accès CPU à un registre couleur ($FF8240-5F) / résolution ($FF8260) /
@@ -673,6 +685,11 @@ public:
         ar(lastShifterRes_);
         ar.check(lastShifterRes_ >= -1 && lastShifterRes_ <= 3, "Shifter::lastShifterRes_ hors bornes");
         ar(shifterResCyc_);
+        ar(shifterResLine_);                                  // format v51
+        ar.check(shifterResLine_ >= -1 && shifterResLine_ <= 4096, "Shifter::shifterResLine_ hors bornes");
+        ar(stopFromFc_);
+        ar(lastStopFromFc_);
+        ar(lastStopToFc_);
         ar(vcStopInc_);
         ar.check(vcStopInc_ >= -6 && vcStopInc_ <= 0, "Shifter::vcStopInc_ hors bornes");
         ar(shifterStopLine_);

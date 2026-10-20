@@ -386,18 +386,27 @@ void Shifter::writeShifterRes(uint8_t res) {
     shifterRes_ = res;                                   // registre (relu par $FF8260/61)
     if (static_cast<int>(res) == lastShifterRes_) return;   // même valeur → rien (video.c:1904)
     const int64_t fc  = datedResWriteCycle();
-    const int     cpl = geometry().cyclesPerLine;
-    const int     line = (fc >= 0) ? static_cast<int>(fc / cpl) : -1;
-    const int     lineCyc = (fc >= 0) ? static_cast<int>(fc % cpl) : -1;
+    int line = -1, lineCyc = -1;
+    if (fc >= 0) realLinePos(fc, line, lineCyc);
+    // Le « ≤ 32 » d'Hatari ne compare que des cycles-LIGNE (ResPosStop_Shifter.
+    // LineCycles) : un arrêt posé à la ligne N et levé à la ligne N+1 (des centaines
+    // de cycles) passe le test avec une durée négative ou faussement courte, et la
+    // normalisation modulo 16 en faisait un décalage −4/−8/−12 px. On exige la MÊME
+    // ligne : la durée réelle est alors ≤ 32 cycles, ce que décrit le trick
+    // Troed/Sync. ⚠ Divergence assumée : sur une durée négative Hatari réécrit
+    // DisplayPixelShift = 0 sur les lignes suivantes (aucun cas du « % 16 » signé ne
+    // tombe) ; sur une durée positive trans-ligne il arme un décalage. Le
+    // comportement matériel d'un arrêt aussi long n'est pas documenté : on n'arme rien.
     if (lastShifterRes_ == 3 && fc >= 0
+        && line == shifterResLine_                       // même ligne (durée réelle)
         && shifterResCyc_ >= 64                          // arrêt posé DE actif
         && lineCyc >= 64 + 8                             // retour ≥ 72 (« au moins 8 cycles » depuis 64)
         && lineCyc - shifterResCyc_ <= 32) {             // et au plus 32
         const int posOld  = (shifterResCyc_ + 3) & ~3;
         const int posNew  = (lineCyc + 3) & ~3;
-        const int stopped = posNew - posOld;
+        const int stopped = posNew - posOld;             // ≥ 0 : même ligne
         int shift = 0, inc = 0;
-        switch (((stopped % 16) + 16) % 16) {
+        switch (stopped % 16) {
             case 4:  inc = -6; shift = -12; break;       // 88 + 16n
             case 0:  inc =  0; shift =   0; break;       // 84 + 16n
             case 12: inc = -2; shift =  -4; break;       // 80 + 16n
@@ -411,8 +420,68 @@ void Shifter::writeShifterRes(uint8_t res) {
             std::fprintf(stderr, "[SYNC] shifter stop line=%d cyc=%d..%d shift=%d inc=%d\n",
                          line, shifterResCyc_, lineCyc, shift, inc);
     }
+    // Intervalle « Shifter arrêté » (rendu noir, cf. lineStoppedOver).
+    if (res == 3) {
+        stopFromFc_ = (fc >= 0) ? fc : 0;
+    } else if (lastShifterRes_ == 3 && stopFromFc_ >= 0) {
+        lastStopFromFc_ = stopFromFc_;
+        lastStopToFc_   = fc;                            // −1 hors trame : ne couvre rien
+        stopFromFc_     = -1;
+    }
     lastShifterRes_ = res;
     shifterResCyc_  = lineCyc;                           // ≙ ResPosStop_Shifter.LineCycles
+    shifterResLine_ = line;                              // ≙ ResPosStop_Shifter.HBL
+}
+
+// Datation sur la grille RÉELLE (port de Video_ConvertPosition, video.c:1224 :
+// LineCycles = FrameCycles − ShifterLines[nHBL].StartCycle) : la machine Glue
+// attribue les mêmes écritures freq/res sur l'échelle glueLineStart_ (lignes de 508
+// cycles d'un moteur sync-scroll dans une trame 50 Hz…). La grille nominale fc/cpl
+// dérivait de 4 cycles par ligne courte : seuils « DE actif » (64/72) évalués à la
+// mauvaise position, ligne du stop décalée d'une ligne entière à terme. Sans
+// écriture Glue dans la trame, les deux grilles coïncident.
+void Shifter::realLinePos(int64_t fc, int& line, int& lineCyc) {
+    const int cpl = geometry().cyclesPerLine;
+    line    = static_cast<int>(fc / cpl);
+    lineCyc = static_cast<int>(fc % cpl);
+    if (!lineLenAttrEnv() || frameMode_ == Mode::High || syncWrites_.empty()
+        || static_cast<std::size_t>(line) + 2 >= glueLineStart_.size())
+        return;
+    liveGlueCatchUp(line);                               // même rattrapage que recordSyncWrite
+    if (liveGlueLine_ < 0) return;
+    int wl = liveGlueLine_;
+    while (wl > 0 && fc < glueLineStart_[static_cast<std::size_t>(wl)]) --wl;
+    int64_t start = glueLineStart_[static_cast<std::size_t>(wl)];
+    // Au-delà de la fin de la ligne Glue courante (grille réelle en avance sur la
+    // nominale) : ligne suivante, sans l'initialiser (≙ test nCyclesPerLine de
+    // Video_ConvertPosition, HBL pas encore traité).
+    if (wl == liveGlueLine_ && fc >= start + liveGlueLen_) { ++wl; start += liveGlueLen_; }
+    line    = wl;
+    lineCyc = static_cast<int>(fc - start);
+}
+
+// Ligne « Shifter arrêté » d'après la fenêtre DE de CETTE scanline : noire si un
+// arrêt (en cours, ou le dernier terminé) couvre tout [début de ligne + ds, + de).
+// L'échantillon de shifterRes_ au commit (HBL, APRÈS le DE) attribuait l'arrêt à la
+// mauvaise ligne : posé après la fin du DE de N et levé après celle de N+1, il
+// noircissait N (intacte sur le matériel) et laissait N+1 visible. Un arrêt
+// partiel (trick Troed/Sync, 8..32 cycles) ne noircit pas la ligne — comme Hatari,
+// qui ne montre pas ces pixels (TODO video.c:1914).
+bool Shifter::lineStoppedOver(int sl) const {
+    if (stopFromFc_ < 0 && lastStopFromFc_ < 0) return false;
+    const Geometry g = geometry();
+    int64_t start = static_cast<int64_t>(sl) * g.cyclesPerLine;
+    int ds = g.lineStartCycle, de = g.lineEndCycle;
+    if (frameMode_ != Mode::High && !syncWrites_.empty() && sl >= 0 && sl <= liveGlueLine_
+        && static_cast<std::size_t>(sl) < glueLines_.size()) {
+        if (lineLenAttrEnv() && static_cast<std::size_t>(sl) < glueLineStart_.size())
+            start = glueLineStart_[static_cast<std::size_t>(sl)];
+        const GlueLine& L = glueLines_[static_cast<std::size_t>(sl)];
+        if (L.displayEndCycle > L.displayStartCycle) { ds = L.displayStartCycle; de = L.displayEndCycle; }
+    }
+    const int64_t w0 = start + ds, w1 = start + de;
+    if (stopFromFc_ >= 0 && stopFromFc_ <= w0) return true;          // arrêt toujours en cours
+    return lastStopFromFc_ >= 0 && lastStopFromFc_ <= w0 && lastStopToFc_ >= w1;
 }
 
 // Met à jour le VDE_On LIVE du compteur vidéo sur une écriture freq — détection du
@@ -1309,6 +1378,34 @@ bool Shifter::glueSelfTest() {
         stop(68, 108); chk("stop too long",    shifterStopLine_, -1);
         stop(40, 56);  chk("stop before DE",   shifterStopLine_, -1);
         stop(64, 66);  chk("stop return < 72", shifterStopLine_, -1);   // retour avant 64+8
+        // Arrêt qui chevauche le HBL : durée réelle de centaines de cycles, pas le
+        // trick. Hatari passerait le « ≤ 32 » (cycles-ligne 84 − 400 < 0) et la
+        // normalisation modulo 16 en faisait −12 px / −6 octets à chaque ligne.
+        auto stopX = [&](int from, int to) {
+            reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000; beginFrame();
+            fc = 100 * cpl + from; write8(0xFF8261, 3);
+            fc = 101 * cpl + to;   write8(0xFF8261, 0);
+        };
+        stopX(400, 84);  chk("stop across HBL line",  shifterStopLine_, -1);
+                         chk("stop across HBL inc",   vcStopInc_, 0);
+                         chk("stop across HBL shift", shifterStopShift_, 0);
+        stopX(100, 110); chk("stop next line +10",    shifterStopLine_, -1);   // ≤ 32 en cycles-ligne seulement
+        // Datation sur la grille RÉELLE : une bascule 60 Hz au début de la ligne 99
+        // (retour 50 Hz en cours de ligne) la raccourcit à 508 cycles → la ligne 100
+        // commence 4 cycles plus tôt que la grille nominale. Arrêt daté 60/72 en
+        // nominal (refusé : < 64), 64/76 en réel (trick 12 cycles → −4 px).
+        reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000; beginFrame();
+        fc = 98 * cpl + 500; write8(0xFF820A, 0);
+        fc = 99 * cpl + 200; write8(0xFF820A, 2);
+        fc = 100 * cpl + 60; write8(0xFF8261, 3);
+        fc = 100 * cpl + 72; write8(0xFF8261, 0);
+        if (lineLenAttrEnv()) {
+            chk("real grid line 100 start", static_cast<long>(glueLineStart_[100]), static_cast<long>(100 * cpl - 4));
+            chk("real grid stop line",  shifterStopLine_, 100);
+            chk("real grid stop shift", shifterStopShift_, -4);
+        } else {                                         // A/B NEOST_LINELEN_ATTR=0 : grille nominale
+            chk("nominal grid no stop", shifterStopLine_, -1);
+        }
         // AddressInc appliqué à la fin de la ligne du stop.
         stop(68, 80);
         vcLineY_ = 37; commitAnchor_ = 63;
@@ -1353,14 +1450,18 @@ bool Shifter::glueSelfTest() {
         }
 
         // 7. Shifter laissé arrêté pendant une ligne : aire active noire, bordures intactes.
+        // Ordre RÉEL des événements : écriture puis commit de la ligne au HBL (fin
+        // de ligne). Arrêt posé après le DE de 99, levé après le DE de 100 : c'est
+        // la ligne 100 qui n'a sorti aucun pixel, la 99 est intacte.
         reset(); mode = Mode::Low; sync = 2; videoBase = 0x20000;
         palette.fill(0x0777); palette[0] = 0x0070;
         beginFrame();
         for (uint32_t a = 0x20000; a < 0x30000; a += 2) bus_.write16(a, 0xFFFF);
-        commitScanline(99);
+        commitScanline(98);
         fc = 99 * cpl + 400; write8(0xFF8261, 3);
-        commitScanline(100);
+        commitScanline(99);
         fc = 100 * cpl + 400; write8(0xFF8261, 0);
+        commitScanline(100);
         commitScanline(262);
         for (int y = 0; y < curAH_; ++y) renderLine(y);
         finishFrame();
@@ -1368,6 +1469,8 @@ bool Shifter::glueSelfTest() {
             const int ds0 = geometry().dispStartLine;
             const uint32_t* r100 = frame_.data() + static_cast<std::size_t>(activeY_ + 100 - ds0) * curW_;
             const uint32_t* r101 = frame_.data() + static_cast<std::size_t>(activeY_ + 101 - ds0) * curW_;
+            const uint32_t* r99  = frame_.data() + static_cast<std::size_t>(activeY_ + 99 - ds0) * curW_;
+            chk("line before stop pixels", r99[activeX_ + 100], stColorToArgb(0x0777));
             chk("stopped line black",  r100[activeX_ + 100], 0xFF000000u);
             chk("stopped line border", r100[activeX_ - 10], stColorToArgb(0x0070));
             chk("running line pixels", r101[activeX_ + 100], stColorToArgb(0x0777));
