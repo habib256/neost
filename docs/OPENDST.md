@@ -58,6 +58,7 @@ une fois pour toutes, pour toute la durée d'une campagne :
 | `--machine`, `--mem`, la ROM TOS | `adjustMachineForTos` peut rétrograder la machine ; la ROM fixe aussi 50/60 Hz |
 | l'image disque, `--fastfdc` | le FDC rapide change les temps de chargement, donc les trames |
 | l'absence de tout accès hôte | voir ci-dessous |
+| les variables `NEOST_*` du processus, dont `NEOST_IPLFETCH` | `NEOST_IPLFETCH` reste propre au processus : un `load` (ou `--load-state`) ignore les seuils écrits dans l'état et applique ceux de l'environnement courant |
 
 **Interdit pendant une campagne** — ces options branchent le monde extérieur, donc
 l'horloge murale et le réseau, et détruisent la reproductibilité : `--slirp`,
@@ -179,7 +180,7 @@ ROM n'est chargée qu'une fois, et les états tiennent dans des **emplacements e
 | `hello` | identité : version, **commit et date de build**, machine, RAM, médias **montés à l'instant** (`insert`/`eject` les changent), lecteur B branché ou non |
 | `run N` | exécute N trames (≤ 10 M par commande), entrées inchangées |
 | `play SCRIPT` | script joystick (même grammaire qu'`--joy-script`) : un masque par trame |
-| `joy P1 [P0]` | état joystick **tenu** (masques hexa — `80` = feu, comme `--joy 80` et `--joy-at N 80` côté ligne de commande, désormais hexa aussi) |
+| `joy P1 [P0]` | état joystick **tenu** (masques hexa — `80` = feu, comme `--joy 80` et `--joy-at N 80` côté ligne de commande, désormais hexa aussi). Au démarrage du serveur, le tenu est celui que `--joy` ou `--load-state` a posé sur la machine, pas 0 |
 | `key make\|break SC` | touche, scancode ST en hexa (`39` = espace) |
 | `mouse DX DY BTN` | souris relative ; `BTN` bit 0 = gauche, bit 1 = droite |
 | `peek ADR LEN` | LEN octets (≤ 4096) en hexa, sans effet de bord — l'espace I/O `$FF8000+` se lit `$FF`, comme `--probe` |
@@ -276,7 +277,7 @@ Arité stricte : un argument de trop est une erreur.
 | `save N` | `ok bytes=<taille>` | emplacement 0 ≤ N < `--server-slots` (64 par défaut, max 4096) ; mémorise l'état, la trame **et le joystick tenu** |
 | `load N` | `ok <champs>` | restaure les trois ; `err` si vide ou refusé (raison sur stderr) — la machine reste intacte |
 | `export N FICHIER` | `ok bytes=<taille>` | le fichier est relisible par `--load-state` et par `import` |
-| `import N FICHIER` | `ok bytes=<taille>` | magie vérifiée à l'import ; la trame de l'emplacement devient **0** et le joystick tenu **0** (un fichier ne les porte pas) |
+| `import N FICHIER` | `ok bytes=<taille>` | magie vérifiée à l'import ; la trame de l'emplacement devient **0** (un fichier ne la porte pas). Le joystick tenu n'est pas remis à 0 : le `load` qui suit reprend celui que l'état porte, comme `--load-state FICHIER` (depuis le 2026-10-20) |
 | `probe NOM=ADR:LEN` | `ok` | ajoute une sonde (LEN 1, 2 ou 4) ; nom ≤ 64 caractères, unique |
 | `shot FICHIER.ppm` | `ok` | capture PPM (P6) |
 | `slots` | `ok used=<n>/<max> bytes=<total>` | |
@@ -357,10 +358,9 @@ atteint bien la machine.
 
 - `--shot-every N PRÉFIXE` prend **deux** arguments : intercaler une autre option entre les
   deux fait passer le préfixe pour l'option et la ROM pour autre chose.
-- `--dump-at` lit par `read8` (avec dispatch MMIO) : sur un registre whitelisté en accès
-  octet (pads STE `$FF9200`, FDC `$FF8604-07`), la bus error est levée **hors** du
-  `try/catch` de Moira et **termine le processus**. Les sondes `--probe`, elles, ne
-  peuvent pas tomber dans ce piège (cf. §4).
+- `--dump-at` lit par `bus.read8`, contrairement aux sondes `--probe` (`peek8`) : il relit
+  les puces (palette comprise), effets de bord MMIO inclus. Depuis le 2026-10-20, une faute
+  de bus hors instruction (`$FF8604` en octet, `$FF9200`) ne termine plus le processus.
 - La ROM fixe la fréquence de balayage : suffixe `us` → 60 Hz NTSC, `uk`/`fr`/`de`/`es` →
   50 Hz PAL. Ça change l'image ET le nombre de trames par seconde de jeu.
 - Un save-state ne se relit qu'avec **la même configuration machine** (type, RAM, ROM).

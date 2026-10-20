@@ -92,9 +92,10 @@ def main() -> int:
         check(f"--key-hold {bad} est REFUSÉ", "--key-hold must be" in out,
               "une durée < 1 trame laissait la touche enfoncée tout le run.", out)
 
-    # --- --dump-at lit sans effet de bord ------------------------------------
+    # --- --dump-at sur une fenêtre MMIO qui faute ------------------------------
     # Le bug : bus.read8 hors instruction ; $FF8604 en octet faute → moira::BusError
-    # lancée hors de execute() → std::terminate. Désormais peek8, comme les sondes.
+    # lancée hors de execute() → std::terminate. Cpu68k::triggerBusError abandonne
+    # désormais la faute hors de execute() ; --dump-at garde read8 (relit les puces).
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         dump = Path(td) / "mmio.bin"

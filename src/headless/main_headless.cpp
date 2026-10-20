@@ -2267,14 +2267,16 @@ int main(int argc, char** argv) {
                 // Écriture VÉRIFIÉE, comme writePpm : un disque plein n'échoue souvent
                 // qu'au flush final, et un dump tronqué porte le même nom qu'un dump
                 // complet — il se diffe ensuite comme si c'était la mémoire.
-                // Lecture par peek8, comme les sondes (Observe.hpp) et « peek » du
-                // serveur : bus.read8 HORS d'une instruction exécutait les effets de
-                // bord MMIO (états d'attente, lecture de registres FDC/ACIA…) et une
-                // faute de bus ($FF8604 en octet, pads STE $FF9200) lançait
-                // moira::BusError hors de execute() — std::terminate.
+                // Lecture par bus.read8, PAS peek8 : peek8 rend $FF sur toute la MMIO,
+                // or les recettes de diagnostic relisent les puces (palette $FF8240,
+                // cf. docs/CASE_STUDIES.md). Les effets de bord d'une lecture MMIO
+                // (registres FDC/ACIA/MFP…) s'appliquent donc, comme sur un vrai bus.
+                // Une faute de bus hors instruction ($FF8604 en octet, pads STE
+                // $FF9200) ne lance plus moira::BusError : Cpu68k::triggerBusError
+                // l'abandonne hors de execute() (bug hunt 11).
                 uint32_t written = 0;
                 for (uint32_t k = 0; k < dumpLen; ++k) {
-                    const uint8_t b = machine.bus.peek8((dumpAddr + k) & 0xFFFFFFu);
+                    const uint8_t b = machine.bus.read8((dumpAddr + k) & 0xFFFFFFu);
                     written += uint32_t(std::fwrite(&b, 1, 1, df));
                 }
                 const bool dumpOk = (written == dumpLen) && (std::fclose(df) == 0);

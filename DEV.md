@@ -355,7 +355,8 @@ cubase3|cubase2|auto|notator` (clé Steinberg sur /ROM3 ou C-Lab, cf. `docs/EXTE
 **Pilotage externe déterministe** (`docs/OPENDST.md`) : `--probe NOM=ADR:LEN` (répétable),
 `--probe-every N`, `--hash-ram ADR:LEN` émettent sur **stdout** une ligne
 `probe frame=… screen=<hash> ram=<hash> NOM=0x…` par échantillon — lecture `peek8`, **sans
-effet de bord** (l'espace I/O se lit `$FF` ; pour une puce, c'est `--dump-at`). `--server`
+effet de bord** (l'espace I/O se lit `$FF`). `--dump-at`, lui, lit par `bus.read8` : il relit
+les registres des puces (palette `$FF8240`…), effets de bord MMIO compris. `--server`
 remplace la boucle `--frames` par une **boucle de commandes** stdin/stdout (`run`, `play`,
 `joy`, `key`, `mouse`, `peek`, `probe`, `observe`, `save`/`load` sur des emplacements d'état EN
 MÉMOIRE, `slots`, `export`/`import`, `insert`/`eject` (disquette à chaud), `shot`) : `src/headless/Server.cpp`. L'équivalence serveur ↔

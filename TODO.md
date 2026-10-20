@@ -77,6 +77,10 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
   logiciel réel qui l'exerce. À mesurer : noir franc ou couleur 0 pendant l'arrêt, ce que
   relit un accès OCTET à `$FF8261`, comportement du trick sur STE, persistance du décalage
   aux trames suivantes. → `docs/HATARI_DIVERGENCES.md` § *Nouveaux — BASSES*
+- **IKBD `$88` souris coupée** · P3 ⏸ matériel — NeoST complète la réponse à 8 octets
+  (protocole) avec le dernier mode souris choisi (REL au boot). L'octet de mode qu'émet
+  réellement la ROM 6301 dans ce cas n'est pas confirmé. Envoyer `$12` puis `$88` à un vrai
+  IKBD et relever les 8 octets. → `docs/HATARI_DIVERGENCES.md` § *ACIA 6850 / IKBD*
 - **GPIP3 au repos avec blitter** · P3 ⏸ matériel — `$FFFA01` bit 3 supposé 0 au repos
   sur Mega ST/STE/Mega STE (INT = copie de BUSY) ; seule la lecture STFM sans blitter
   ($E9) est publiée. Lire `$FFFA01` au repos sur l'une de ces machines.

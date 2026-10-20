@@ -32,7 +32,7 @@ Le chemin est `Keymap_SimulateCharacter → Keymap_KeyDown → Joy_KeyDown`
 ⚠ **Égaliser la DURÉE d'appui.** `--cmd-fifo keydown/keyup` tient la touche ~600 ms, là où
 `--keys-at` du headless NeoST ne la tenait que **2 trames ≈ 40 ms** (câblées en dur jusqu'au
 2026-08-26). Comparer 40 ms à 600 ms n'est pas une A/B : un verdict « confirmé à l'oracle » a
-déjà été rendu **FAUX** par cet écart. Côté NeoST, utiliser `--key-hold N` pour égaliser.
+déjà été rendu **FAUX** par cet écart. Côté NeoST, utiliser `--key-hold N` (1 ≤ N ≤ 216000 trames ; hors bornes, refus et code de sortie 2) pour égaliser.
 
 Corrections au passage, mesurées : `--fast-forward on` **fonctionne** avec `--cmd-fifo` (1070
 à 1707 VBL/s), contrairement à ce qui était écrit ; et `hatari-debug screenshot <chemin>`
