@@ -89,10 +89,14 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
   (hardware.atari.org), puis ajuster `Bus::read8Slow`.
 - **`union_demo`** · P3 ⏸ média — disque absent (planetemu manuel) ; appliquer la recette
   de migration A10 à son retour.
-- **Lethal Xcess, *Seven Gates of Jambala*, démo Froggies** · P2 ⏸ média — absents de ce
-  poste (`disks/stx/` non restauré). Lethal Xcess : titre « buggé à ~8 % » en GUI, sans doute
-  la calibration `$8209` déjà réparée en jeu. Seven Gates : valider le recalage Timer B après
-  écriture AER3 (porté le 2026-10-19). Froggies : jamais validée de bout en bout (IKBD).
+- **Lethal Xcess, *Seven Gates of Jambala*** · P2 ⏸ média — absents de ce poste
+  (`disks/stx/` non restauré). Lethal Xcess : titre « buggé à ~8 % » en GUI, sans doute
+  la calibration `$8209` déjà réparée en jeu. Seven Gates : valider le recalage Timer B
+  après écriture AER3 (porté le 2026-10-19).
+- **Démo Froggies Over The Fence** · P2 ⏸ ROM — disquettes présentes depuis le 2026-10-20,
+  mais la démo exige un TOS Atari : sous EmuTOS, son premier `Rwabs` rend `E_CHNG` et le
+  chargeur part dans le vide, Hatari compris (cf. `docs/CASE_STUDIES.md`). Rejouer sous
+  TOS 1.02/1.04 pour valider de bout en bout le programme 6301 personnalisé (IKBD).
 - **EtherNEC sous TOS 1.04** · P2 ⏸ média — valider STinG + `ENEC.STX` (DHCP, ping, GET),
   consigner dans `docs/CASE_STUDIES.md`. TOS 1.04 absent de ce poste.
 - **GEMDOS : écarts communs à NeoST et Hatari face au vrai TOS** · P3 ⏸ mesure — Fdelete et
