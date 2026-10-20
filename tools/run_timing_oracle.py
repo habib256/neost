@@ -17,7 +17,7 @@ import tempfile
 
 import trace_diff as td
 from make_timing_probe import CASES, build
-from timing_extended import disk_image
+from timing_extended import DIV_PAIRS, disk_image
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "tests/out/timing"
@@ -30,13 +30,13 @@ FRAMES, WARMUP, SAMPLES = 40, 32, 256
 # au refill HBL : une ligne PAL est la résolution de cette comparaison.
 # La première IRQ est datée dans le même domaine Scheduler que l'armement.
 LIMITS = {case: (512, 512) if case == "dma_sound" else (4, 4) for case in CASES}
-LIMITS.update(blitter_hog=(4, 4), blitter_shared=(4, 4), fdc_read=(24, 4))
+LIMITS.update(blitter_hog=(4, 4), blitter_shared=(4, 4), fdc_read=(24, 4), fdc_write=(24, 4))
 SOURCES = ("src/mfp.c", "src/dmaSnd.c", "src/cycInt.c", "src/video.c",
            "src/cpu/newcpu.c", "src/m68000.c", "src/fdc.c", "src/blitter.c")
 
 
 def sample_count(case):
-    return 32 if case == "fdc_read" else 64 if case.startswith("blitter_") else SAMPLES
+    return 32 if case.startswith("fdc_") else 64 if case.startswith("blitter_") else SAMPLES
 
 
 def sha(path):
@@ -71,13 +71,14 @@ def capture(case, emulator, attempt=None, *, probe=None, machine="ste", out=None
     env = {**os.environ, "NEOST_TRACE_CYC": "1", "HATARI_SEED": "1"}
     if extra_env:
         env.update(extra_env)
-    disk = output / "fdc_probe.st"
-    if case == "fdc_read":
+    # Une image par sonde et par passage : fdc_write la modifie.
+    disk = output / f"{case}.{suffix}.st"
+    if case.startswith("fdc_"):
         disk.write_bytes(disk_image())
     if emulator == "neost":
         command = [NEOST, ROM, "--machine", machine, "--mem", "1m", "--cart", cart,
                    "--frames", frames, "--trace", trace, "--irq"]
-        if case == "fdc_read":
+        if case.startswith("fdc_"):
             command += ["--disk", disk]
         run(command, log, env)
     else:
@@ -93,14 +94,23 @@ def capture(case, emulator, attempt=None, *, probe=None, machine="ste", out=None
                        "--confirm-quit", "off", "--alert-level", "fatal",
                        "--run-vbls", frames, "--trace", "cpu_disasm,cpu_video_cycles",
                        "--trace-file", trace]
-            if case == "fdc_read":
-                command += ["--disk-a", disk, "--fastfdc", "off", "--protect-floppy", "on"]
+            if case.startswith("fdc_"):
+                protect = "off" if case == "fdc_write" else "on"
+                command += ["--disk-a", disk, "--fastfdc", "off", "--protect-floppy", protect]
             run(command, log, env)
     text = log.read_text(errors="replace")
     if "Address Error" in text or "Bus Error" in text:
         raise ValueError(f"Exception pendant la sonde : {log}")
-    if case.startswith("blitter_") or case == "fdc_read":
+    # Hatari ne réécrit pas l'image en quittant par --run-vbls : chez lui, seul le
+    # statut WD1772 contrôlé par le programme invité atteste l'écriture.
+    if case == "fdc_write" and emulator == "neost":
+        written = disk.read_bytes()[512:1024]  # piste 0, secteur 2
+        if written != b"\xa5\x5a" * 256:
+            raise ValueError(f"{disk} : secteur 2 non écrit par {emulator}")
+    if case.startswith("blitter_") or case.startswith("fdc_"):
         return read_transfer_trace(trace, pcs, data, case)
+    if case.startswith("cpu_"):
+        return read_cpu_trace(trace, pcs, data)
     return read_trace(trace, pcs, data)
 
 
@@ -127,7 +137,7 @@ def read_transfer_trace(trace, pcs, data, case):
     if any(b <= a for seq in (arms, done, irq) for a, b in zip(seq, seq[1:])):
         raise ValueError(f"{trace} : horloge non strictement croissante")
     count = sample_count(case)
-    if case == "fdc_read":
+    if case.startswith("fdc_"):
         if len(arms) != 1 or len(done) != count or len(irq) != 1 or irq[0] <= done[-1]:
             raise ValueError(f"{trace} : attendu 1 commande, 32 rafales et 1 IRQ, "
                              f"reçu {len(arms)}, {len(done)}, {len(irq)}")
@@ -147,6 +157,20 @@ def read_transfer_trace(trace, pcs, data, case):
     if any(p <= 0 for p in result["polls"]):
         raise ValueError(f"{trace} : boucle CPU absente pendant les transferts")
     return {"probe_sha256": hashlib.sha256(data).hexdigest(), **result}
+
+
+def read_cpu_trace(trace, pcs, data):
+    """Durée de chaque itération entre deux passages sur un même repère."""
+    instructions, _ = td.parse(str(trace))
+    if not any(i.pc == pcs["success"] for i in instructions):
+        raise ValueError(f"{trace} : programme non terminé")
+    result = {"probe_sha256": hashlib.sha256(data).hexdigest()}
+    for mark in sorted(name for name in pcs if name.startswith("mark_")):
+        times = [i.cyc for i in instructions if i.pc == pcs[mark]]
+        if len(times) != len(DIV_PAIRS) or any(t is None for t in times):
+            raise ValueError(f"{trace} : {mark} vu {len(times)} fois, attendu {len(DIV_PAIRS)}")
+        result[mark] = [b - a for a, b in zip(times, times[1:])]
+    return result
 
 
 def read_trace(trace, pcs, data):
@@ -184,8 +208,20 @@ def compare(case, actual, expected, strict=False):
         label = "OK" if ok else "FAIL"
         print(f"  {label} {case}: {sample_count(case)} blits, " + "; ".join(summaries))
         return ok
+    if case.startswith("cpu_"):
+        ok = True
+        summaries = []
+        for mark in sorted(name for name in expected if name.startswith("mark_")):
+            delta = [x - y for x, y in zip(actual[mark], expected[mark])]
+            if len(actual[mark]) != len(expected[mark]):
+                raise ValueError(f"{case} : mesure incomplète")
+            ok = not any(delta) and ok
+            summaries.append(f"{mark[5:]} Δ={min(delta):+d}..{max(delta):+d}")
+        print(f"  {'OK' if ok else 'FAIL'} {case}: {len(DIV_PAIRS) - 1} intervalles exacts, "
+              + "; ".join(summaries))
+        return ok
     a, b = actual["cycles"], expected["cycles"]
-    if case == "fdc_read":
+    if case.startswith("fdc_"):
         if actual["disk_sha256"] != expected["disk_sha256"]:
             raise ValueError("Disquette synthétique différente de la référence")
         if len(a) != 32 or len(b) != 32 or a[0] != 0 or b[0] != 0:
@@ -194,11 +230,17 @@ def compare(case, actual, expected, strict=False):
         tail = abs(actual["completion"] - expected["completion"])
         if len(actual["polls"]) != 31 or len(expected["polls"]) != 31:
             raise ValueError("FDC : 31 intervalles de travail CPU requis")
-        work = actual["polls"] == expected["polls"]
+        # La première rafale n'est pas au même angle de rotation chez les deux
+        # émulateurs (attente initiale exclue) : en écriture, la détection par
+        # scrutation de $FF860D s'arrondit alors à un tour de boucle près (22
+        # cycles, d'où la borne de phase). fdc_read reste exact sur le travail.
+        slack = 1 if case == "fdc_write" else 0
+        drift = max(abs(x - y) for x, y in zip(actual["polls"], expected["polls"]))
+        work = drift <= slack
         ok = phase <= LIMITS[case][0] and tail <= LIMITS[case][1] and work
-        print(f"  {'OK' if ok else 'FAIL'} fdc_read: 32 rafales, "
+        print(f"  {'OK' if ok else 'FAIL'} {case}: 32 rafales, "
               f"phase max={phase}/24 cycles, IRQ après dernière rafale Δ={tail}/4, "
-              f"travail CPU {'identique' if work else 'DIFFÉRENT'}")
+              f"travail CPU Δ={drift}/{slack} tour")
         return ok
     if len(a) != SAMPLES or len(b) != SAMPLES or a[0] != 0 or b[0] != 0:
         raise ValueError(f"{case} : référence/mesure incomplète")

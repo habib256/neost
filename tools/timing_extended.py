@@ -1,10 +1,21 @@
 """Sondes invitées supplémentaires : Timer B vidéo, DMA FDC et blitter."""
 import struct
 
-EXTENDED = ("timer_b_event", "fdc_read", "blitter_hog", "blitter_shared",
+EXTENDED = ("timer_b_event", "fdc_read", "fdc_write", "blitter_hog", "blitter_shared",
             "blitter_shared_small", "blitter_shared_large", "blitter_shared_mulu",
             "blitter_hog_mulu", "blitter_hog_tas", "blitter_shared_tas",
-            "blitter_shared_ram", "blitter_hog_ram")
+            "blitter_shared_ram", "blitter_hog_ram", "cpu_div_ram")
+
+# Couples (dividende, diviseur) de cpu_div_ram : durées DIVU/DIVS variées, donc
+# les deux phases du créneau RAM de 4 cycles avant le préfetch, débordements compris.
+DIV_PAIRS = [(0x00000000, 1), (0x0000ffff, 1), (0x00010000, 2), (0x7fffffff, 0x7fff),
+             (0x12345678, 0x1234), (0x00ff00ff, 0x00ff), (0xfffffffe, 0xffff),
+             (0x80000000, 0x8000), (0x00000005, 3), (0x0001ffff, 0x0003),
+             (0x55555555, 0x5555), (0x2aaaaaaa, 0xaaaa), (0x00123456, 0x0789),
+             (0xffff0000, 0x0001), (0x00007fff, 0xffff), (0x87654321, 0x4321),
+             (0x0000a5a5, 0x005a), (0x3c3c3c3c, 0x3c3c), (0x00000001, 0xfffe),
+             (0x0fedcba9, 0x7654), (0xc0000000, 0x0002), (0x00012345, 0x0013),
+             (0x7ffe0001, 0x7fff), (0x00f0f0f0, 0x0f0f)]
 
 
 class Assembler:
@@ -139,6 +150,49 @@ def build_extended(case):
         a.label("success"); a.w(0x4e72, 0x2700); a.branch(0x6000, "success")
         a.label("failure"); a.w(0x4e72, 0x2700); a.branch(0x6000, "failure")
         a.label("irq"); a.w(0x4e73)
+    elif case == "fdc_write":
+        # En écriture, le DMA LIT la RAM : la scruter ne montrerait rien. Le
+        # compteur d'adresse $FF860D, relisible, avance de 16 à chaque rafale.
+        a.vector(0x11c, "irq")  # GPIP5, fin de commande FDC
+        a.byte(0xfa09, 0x80); a.byte(0xfa15, 0x80)
+        a.byte(0x8800, 14); a.byte(0x8802, 5)  # A:, face 0
+        a.w(0x207c); a.long(0x18000); a.w(0x303c, 255)
+        a.label("fill"); a.w(0x30fc, 0xa55a); a.branch(0x51c8, "fill")
+        # Toggle du sens DMA vers l'ÉCRITURE (bit 8) : vide la FIFO ; le bit 8
+        # reste ensuite levé pour ne pas la réinitialiser une seconde fois.
+        a.word(0x8606, 0x90); a.word(0x8606, 0x190); a.word(0x8604, 1)
+        for address, value in ((0x8609, 1), (0x860b, 0x80), (0x860d, 0)):
+            a.byte(address, value)
+        a.word(0x8606, 0x182); a.word(0x8604, 0)  # piste 0
+        a.word(0x8606, 0x184); a.word(0x8604, 2)  # secteur 2
+        a.word(0x8606, 0x180)
+        a.w(0x7c00, 0x1038, 0x860d, 0x3e3c, 31)   # d6 drapeau IRQ, d0 adresse basse
+        a.label("arm"); a.word(0x8604, 0xa8)  # WRITE SECTOR, sans attente spin-up
+        a.label("poll"); a.w(0xb038, 0x860d); a.branch(0x6700, "poll")
+        a.label("handler"); a.w(0x4e71)  # rafale de 16 octets lue en RAM
+        a.w(0x1038, 0x860d); a.branch(0x51cf, "poll")
+        # Les 16 derniers octets et le CRC partent APRÈS la dernière rafale.
+        a.w(0x4e72, 0x2500)
+        a.label("wait"); a.w(0x4a46); a.branch(0x6700, "wait")
+        # Statut : ni protection, ni RNF, ni CRC, ni donnée perdue.
+        a.w(0x3038, 0x8604, 0x0240, 0x005c); a.branch(0x6600, "failure")
+        a.label("success"); a.w(0x4e72, 0x2700); a.branch(0x6000, "success")
+        a.label("failure"); a.w(0x4e72, 0x2700); a.branch(0x6000, "failure")
+        a.label("irq"); a.w(0x7c01, 0x4e73)
+    elif case == "cpu_div_ram":
+        # Ordre cycles internes / préfetch de DIVU et DIVS : la durée d'une
+        # itération dépend de la phase du créneau RAM au moment du préfetch.
+        for opcode, mark in ((0x82c2, "mark_divu"), (0x87c2, "mark_divs")):
+            a.w(0x41f9); a.fixups.append((len(a.code), "table", 4)); a.long(0)
+            a.w(0x3e3c, len(DIV_PAIRS) - 1)
+            a.label("loop_" + mark)
+            a.w(0x2218, 0x3418, 0x2601)     # move.l (a0)+,d1 ; move.w (a0)+,d2 ; d3=d1
+            a.label(mark); a.w(opcode)      # divu.w d2,d1 / divs.w d2,d3
+            a.branch(0x51cf, "loop_" + mark)
+        a.label("success"); a.w(0x4e72, 0x2700); a.branch(0x6000, "success")
+        a.label("table")
+        for dividend, divisor in DIV_PAIRS:
+            a.long(dividend); a.w(divisor)
     else:
         raise ValueError(case)
     data, pcs = a.finish()

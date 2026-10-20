@@ -174,7 +174,8 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
 - **Convergence cycle Moira↔WinUAE — beam-sync (DÉFAUT ON depuis 2026-06-17).** Harnais différentiel
   (`NEOST_TRACE_CYC` colonne cycle absolue dans le `Tracer` + `tools/trace_diff.py --periods`) :
   compare les cycles/boucle des deux cœurs. `NEOST_RAM_SLOT` (align créneau bus 4 cyc sur la RAM CHIP16,
-  port `wait_cpu_cycle`) + reorder DIV (`SYNC(idle)` avant prefetch, fork Moira) → **14/14 boucles
+  port `wait_cpu_cycle`) + reorder DIV (`SYNC(idle)` avant prefetch ; perdu à la vendorisation,
+  rétabli le 2026-10-20 et gardé par la sonde temporelle `cpu_div_ram`) → **14/14 boucles
   d'instructions = WinUAE** au différentiel (bancs `tools/make_cycle_bench.py`). **PERCÉE** : `NEOST_RAM_SLOT`
   + `NEOST_IACK` (E-clock @ IACK) ENSEMBLE font tomber la dérive du faisceau sur Hatari (+78/ligne) et
   DÉCLENCHENT l'overscan beam-sync d'Enchanted Land (banc `tools/make_respulse_test.py` vs oracle

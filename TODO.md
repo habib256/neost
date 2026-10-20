@@ -40,16 +40,16 @@ Premier tri proposé ; le détail est dans la section indiquée.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | Comparaison temporelle Hatari : écriture DMA disquette, STX, blitter/IRQ MegaSTE 16 MHz global | P1 | 8 |
-| 2 | Shadow Warriors : diff joystick contre l'oracle | P1 | 5 |
-| 3 | AppImage arm64 : outils tirés d'un tag mouvant sans somme | P1 | 3 |
-| 4 | A35 : vérifier le pin Moira chez l'amont (`git ls-remote`) | P1 | 7 |
-| 5 | GEMDOS : codes d'erreur face à `gemdos.c` | P2 | 4.9 |
-| 6 | A9 : `struct Frame` puis découpe d'`appLoop` | P2 | 7 |
-| 7 | A38 : trace du dernier déclenchement réel des contrôles `fast` | P2 | 7 |
-| 8 | Étalon spec512 généré (remplace les 3 `spectrum512_diapo*`) | P2 | 3 |
-| 9 | FPU : transcendantes encore en double hôte | P2 | 4.8 |
-| 10 | Lethal Xcess : re-vérifier en GUI | P2 | 5 |
+| 1 | GEMDOS : codes d'erreur face à `gemdos.c` | P2 | 4.9 |
+| 2 | A9 : `struct Frame` puis découpe d'`appLoop` | P2 | 7 |
+| 3 | A38 : trace du dernier déclenchement réel des contrôles `fast` | P2 | 7 |
+| 4 | Étalon spec512 généré (remplace les 3 `spectrum512_diapo*`) | P2 | 3 |
+| 5 | Comparaison temporelle Hatari : sonde STX | P2 | 8 |
+| 6 | FPU : transcendantes encore en double hôte | P2 | 4.8 |
+| 7 | Lethal Xcess : re-vérifier en GUI | P2 | 5 |
+| 8 | Cadrer l'écart d'angle de rotation disquette (~9 500 cycles) avec Hatari | P2 | 4.6 |
+
+Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 
 ---
 
@@ -63,6 +63,10 @@ Premier tri proposé ; le détail est dans la section indiquée.
   visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun budget
   temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et **Linux**.
   → [`docs/HW_VALIDATION.md`](docs/HW_VALIDATION.md)
+- **Shadow Warriors** · P1 ⏸ média — après SPACE, titre et musique OK, mais le bouton
+  joystick ne lance pas le jeu. Disque absent de ce poste (`disks/st/` non restauré, archives
+  privées introuvables le 2026-10-20). Recette : diff contre l'oracle piloté au joystick
+  (A5 → `docs/HATARI_AUTOMATION.md`), même durée d'appui (`--key-hold`).
 - **Passe d'usage interactif du GUI** · P2 ⏸ session humaine — le GUI n'est couvert que par
   une capture au boot et trois assertions d'arguments. Une passe réelle, consignée (même
   famille qu'A12).
@@ -102,10 +106,6 @@ Premier tri proposé ; le détail est dans la section indiquée.
 
 ## 3. Release & distribution
 
-- **AppImage arm64 : outils non épinglés** · P1 ⭘ — `packaging/linux/make_appimage.sh` tire
-  `linuxdeploy`/`appimagetool` du tag mouvant `continuous` sans somme. Leçon du
-  `Dockerfile.bionic` : épingler une somme contre une cible mouvante ne protège de rien ;
-  il faut un tag immuable + SHA256, or AppImageKit n'offre plus d'asset arm64 non `obsolete-*`.
 - **A10 — 3 étalons adossés à une ROM Atari** · P2 ◐ — depuis la purge, le corpus est local
   par construction : **38 étalons pixel sur 42** tournent sans TOS Atari (A3). Les quatre restants :
   - `spectrum512_diapo`, `_diapo2`, `_diapo_ste` : **migration EmuTOS réfutée, ne pas
@@ -160,6 +160,10 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 
 ### 4.6 FDC WD1772 / DMA / ACSI
 - Test F de STE_Test → § 2.
+- **Angle de rotation à l'armement** · P2 ⭘ — sur la sonde `fdc_write`, NeoST rencontre le
+  secteur ~9 500 cycles plus tard qu'Hatari (même image, même programme). Intervalles et
+  fin identiques ; l'attente initiale est exclue des deux sondes FDC. Confronter la phase
+  d'index au boot (`fdc.c`) avant d'en faire une divergence.
 - **ACSI : essai Idris OS** · P3 ⭘ — jamais tenté.
 
 ### 4.7 RTC RP5C15
@@ -190,7 +194,7 @@ TOS 1.02fr sauf mention ; chemins sous `disks/st/` ou `disks/stx/`.
 
 | Jeu | Prio | Symptôme | Piste |
 |-----|------|----------|-------|
-| **Shadow Warriors** (2Hot2Handle) | P1 | Après SPACE, titre + musique OK ; le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). | Diff contre l'oracle piloté au joystick (recette A5 → `docs/HATARI_AUTOMATION.md`), même durée d'appui (`--key-hold`). |
+| **Shadow Warriors** (2Hot2Handle) | P1 ⏸ | Le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). | Disque absent → § 2. |
 | **Lethal Xcess** | P2 | Titre « buggé à ~8 % » en GUI (2026-07-02). | Probablement la calibration `$8209` déjà réparée en jeu ; re-vérifier en GUI. |
 
 > ⚠ **Avant de déclarer un bug : vérifier la RAM, puis la ROM.** Les cas déjà tranchés
@@ -244,9 +248,9 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
 - **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits ; les rôles restent
   des méthodes qui partagent l'état par ligne. Prochain pas : `VideoCounter` en objet membre
   (champs `vc*`), mesurer ce que ça casse, puis seulement regarder la Glue.
-- **A35 — fork Moira** · P1 ◐ — pin `1efd6946` retrouvé (`extern/moira/NEOST_VENDOR.md`).
-  Restent : vérifier qu'il existe toujours chez l'amont, puis évaluer le `Cputester` en
-  clone hors arbre gitignoré (≈713 Mo, jamais dans le dépôt).
+- **Suivre l'amont Moira** · P3 ⭘ — 10 commits non portés depuis le pin (68020/68030,
+  vAmiga, empreinte mémoire) ; rien pour le 68000 hormis DIVU/DIVS, porté. Rejouer
+  `tools/run_moira_runner.sh` à chaque patch du cœur.
 - **A38 — les 17 outils du palier `fast`** · P2 ⭘ — tenir pour chacun la trace de son
   dernier déclenchement RÉEL, fixer une règle de retrait, re-mesurer le mur du palier
   à chaque ajout.
@@ -275,9 +279,10 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
 
 ## 8. Tests & outillage
 
-- **Comparaison temporelle Hatari : restes** · P1 ◐ — écriture DMA disquette, STX, et
-  comparaison exacte globale blitter/IRQ MegaSTE 16 MHz ; environ 12-24 cycles restent à
-  expliquer avec les correctifs expérimentaux d'Hatari. → [`docs/HATARI_MEGASTE_AUDIT.md`](docs/HATARI_MEGASTE_AUDIT.md)
+- **Comparaison temporelle Hatari : sonde STX** · P2 ⭘ — 19 sondes passent, dont l'écriture
+  DMA disquette et DIVU/DIVS en RAM ; manque une lecture depuis une image STX (générateur
+  Pasti à écrire). Le résidu global blitter/IRQ MegaSTE 16 MHz est réduit au seul segment
+  IACK→handler, qui attend la capture matérielle (§ 2). → [`docs/HATARI_MEGASTE_AUDIT.md`](docs/HATARI_MEGASTE_AUDIT.md)
 - **Self-tests puce nue supplémentaires** · P2 ⭘ — autres Timers MFP, ACIA.
 - **Étalons à calibrer** · P2 ⭘ — Troed, Hatari Test Suite (frames + références) ; Union → § 2.
 - **Étalon spec512 en overscan** · P3 ⭘ — si une démo libre à bordures ouvertes est

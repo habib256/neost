@@ -248,7 +248,7 @@ pixel. Il réutilise le parseur de `trace_diff.py` et son principe de périodes,
 mais vérifie aussi la phase cumulée : une IRQ perdue ou une petite dérive répétée
 peuvent conserver la même période dominante.
 
-Dix-sept cartouches libres générées par `tools/make_timing_probe.py` et
+Dix-neuf cartouches libres générées par `tools/make_timing_probe.py` et
 `tools/timing_extended.py` prennent la main avant TOS. Pile et tampons restent
 sous 128 Ko : la MMU n'a pas encore été programmée. Les dates sont relevées sur
 les PC du programme invité, sans interpréter les diagnostics propres à chaque
@@ -263,12 +263,14 @@ les PC du programme invité, sans interpréter les diagnostics propres à chaque
 | Son DMA STE | 256 octets, 50066 Hz stéréo, repeat, Timer A event-count 1 ; idem |
 | Timer B vidéo | event-count 1, DE descendant ; idem, après deux VBL PAL |
 | DMA disquette | lecture réelle du secteur 2 synthétique, 32 rafales de 16 octets + IRQ |
+| DMA disquette, écriture | WRITE SECTOR du secteur 2 ; rafales vues au compteur `$FF860D` (le DMA lit la RAM) ; statut contrôlé, secteur relu sur l'image NeoST |
 | Blitter HOG | 64 copies de 16×8 mots, après huit échauffements, IRQ GPIP3 |
 | Blitter partagé | mêmes données, CPU scrutant BUSY pendant les transferts |
 | Partagé petit / grand | 16×1 et 16×16 mots ; 64 copies après huit échauffements |
 | Partagé / HOG MULU | 16×8 mots, multiplication entière dans la boucle de poll |
 | Partagé / HOG TAS | BUSY posé par TAS sous verrou read-modify-write |
 | Partagé / HOG RAM | même programme copié en RAM ST, créneaux GLUE actifs |
+| DIVU / DIVS RAM | 24 couples (débordements compris) exécutés en RAM ST ; chaque itération comparée au cycle près |
 
 Les deux machines utilisent STE, 1 Mo, 8 MHz, RGB/PAL et EmuTOS 256 Ko FR.
 Hatari tourne avec `--cpu-exact on --compatible on --timer-d off`, configuration
@@ -337,11 +339,19 @@ Hatari (`--oracle`), sans modification des sondes ni tolérance pixel ajoutée ;
 l'oracle a été reproduit deux fois. Les variantes MegaSTE 16 MHz/cache restent
 à qualifier dans `docs/HATARI_DIVERGENCES.md`.
 
+**Résolution de l'écriture disquette.** La première rafale n'arrive pas au même
+angle de rotation chez les deux émulateurs (NeoST rencontre le secteur environ
+9 500 cycles plus tard ; cette attente initiale est exclue, comme en lecture).
+La scrutation de `$FF860D` coûte 22 cycles par tour : la phase est donc bornée à
+24 cycles et le travail CPU toléré à un tour près par intervalle. La lecture,
+elle, reste exacte sur le travail CPU.
+
 Les traces sans horloge, incomplètes ou non monotones, les sources absentes,
 les redémarrages, les erreurs de données, les IRQ manquantes et les exceptions
 mémoire font échouer le banc. Les tests du comparateur injectent aussi des
 mutations : IRQ perdue, dérive lente, ancien biais de reset, suppression des
-32 cycles par rafale, modification du travail CPU et retard de fin.
+32 cycles par rafale, modification du travail CPU et retard de fin, quatre
+cycles de moins sur une seule division, deux tours de scrutation de plus en écriture.
 
 Le palier `full` compare NeoST à la référence sans requérir Hatari. La CI
 hebdomadaire `oracle.yml` vérifie en plus que deux captures Hatari reproduisent

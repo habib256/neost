@@ -960,6 +960,11 @@ même** (primitives non-fautives + filet au site d'appel). Restent trois points 
   phase mi-accès `(c − 2)` appliquée à `chipWait8` le 2026-07-02 — skew structurel
   probable de l'alignement slot RAM en 16 MHz. À trancher par A/B contre l'oracle
   Hatari, pas à corriger à l'aveugle (mode peu validé).
+- ✅ **[CPU4 — DIVU/DIVS, 2026-10-20]** Le préfetch précédait les cycles internes de
+  division, alors que Hatari CE (`op_80c0_13_ff`) et le 68000 le placent après :
+  jusqu'à 4 cycles d'écart par DIV exécuté en RAM sous `NEOST_RAM_SLOT`. Le correctif
+  du fork (`e4da365`) avait été perdu à la vendorisation ; rétabli par le port de
+  l'amont `f90fc50`. Sonde `cpu_div_ram` : 0 cycle d'écart sur 46 intervalles.
 - **[CPU3 — basse]** L'échantillon IPL différé du mode `g_iplFetch` (NEOST_IPLFETCH=1,
   opt-in expérimental, `Cpu68k.cpp:117-125`) n'est pas
   sérialisé : un échantillon IPL différé armé au save est perdu au load (IRQ reconnue
