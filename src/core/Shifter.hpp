@@ -296,6 +296,10 @@ private:
     // au replay : aucun état supplémentaire dans les save-states.
     bool vblankAtLine(int scanline) const;
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
+    // Géométrie du tampon imposée par une résolution verrouillée (seule source de
+    // vérité, partagée par resizeFor et la validation du save-state).
+    struct FrameGeometry { int w, h, ah, x, y; };
+    static FrameGeometry geometryFor(Mode m);
     void resizeFor(Mode m);                       // ajuste le buffer si la rés. change
     // A32 : NON const. Elle l'était, et se rattrapait avec quatre `const_cast`
     // pour appeler liveGlueCatchUp — une méthode qui AVANCE la machine Glue.
@@ -439,6 +443,13 @@ private:
     uint8_t shifterRes_      = 0;    // ≙ registre res du Shifter (0..3)
     int     lastShifterRes_  = -1;   // ≙ ShifterFrame.Res_Shifter (−1 = aucun, filtre « même valeur »)
     int     shifterResCyc_   = -1;   // ≙ ResPosStop_Shifter.LineCycles (cycle-ligne du dernier changement)
+    int     shifterResLine_  = -1;   // ≙ ResPosStop_Shifter.HBL (ligne RÉELLE du dernier changement, −1 = trame précédente)
+    // Intervalles « Shifter arrêté » (res 3) en cycles TRAME, pour noircir une ligne
+    // d'après sa fenêtre DE et non d'après l'état au HBL (cf. lineStoppedOver) :
+    // l'arrêt en cours (−1 = Shifter en marche) et le dernier arrêt terminé.
+    int64_t stopFromFc_      = -1;
+    int64_t lastStopFromFc_  = -1;
+    int64_t lastStopToFc_    = -1;
     // Scroll hard STF « 4 px » par Shifter arrêté (Troed/Sync, port video.c:1906-1973) :
     // res=3 pendant 8..32 cycles alors que le DE est actif → toutes les lignes
     // SUIVANTES de la trame sont décalées de 0/−4/−8/−12 px et le compteur vidéo
@@ -448,6 +459,11 @@ private:
     int     shifterStopShift_ = 0;   // décalage px (≙ DisplayPixelShift) des lignes suivantes
     // Écriture de la résolution côté Shifter (port Video_WriteToShifterRes).
     void writeShifterRes(uint8_t res);
+    // Position (ligne, cycle-ligne) d'un cycle trame sur la grille RÉELLE des débuts
+    // de ligne (≙ Video_ConvertPosition d'Hatari) — repli fc/cpl hors NEOST_LINELEN_ATTR.
+    void realLinePos(int64_t fc, int& line, int& lineCyc);
+    // Le Shifter est-il resté arrêté sur TOUTE la fenêtre DE de la scanline sl ?
+    bool lineStoppedOver(int sl) const;
 
     // Wait state de bus 4 cycles (port LIVE de Hatari M68000_SyncCpuBus) : appelé AU
     // DÉBUT d'un accès CPU à un registre couleur ($FF8240-5F) / résolution ($FF8260) /
@@ -673,6 +689,11 @@ public:
         ar(lastShifterRes_);
         ar.check(lastShifterRes_ >= -1 && lastShifterRes_ <= 3, "Shifter::lastShifterRes_ hors bornes");
         ar(shifterResCyc_);
+        ar(shifterResLine_);                                  // format v51
+        ar.check(shifterResLine_ >= -1 && shifterResLine_ <= 4096, "Shifter::shifterResLine_ hors bornes");
+        ar(stopFromFc_);
+        ar(lastStopFromFc_);
+        ar(lastStopToFc_);
         ar(vcStopInc_);
         ar.check(vcStopInc_ >= -6 && vcStopInc_ <= 0, "Shifter::vcStopInc_ hors bornes");
         ar(shifterStopLine_);
@@ -784,7 +805,18 @@ public:
         // resizeFor() ne rattrape rien, son court-circuit « même w/h » saute la
         // réallocation. On vérifie donc APRÈS relecture du vecteur.
         ar.check(static_cast<uint8_t>(frameMode_) <= 3);   // 3 possible, cf. `mode` plus haut
-        ar.check(curW_ > 0 && curH_ > 0 && curW_ <= 1024 && curH_ <= 512);
+        // La géométrie n'est PAS libre : le chemin live la dérive toujours de frameMode_
+        // (beginFrame → resizeFor). Des bornes lâches (≤ 1024×512) laissaient passer
+        // curW_ = 1024 avec frame_ assorti ; Machine::frameInProgress_ restauré saute
+        // le beginFrame qui l'aurait corrigée, et renderLine décodait alors 928 px
+        // dans son tampon de pile idx[660] (débordement, SIGABRT). On exige donc
+        // EXACTEMENT ce que resizeFor(frameMode_) produirait.
+        {
+            const FrameGeometry g = geometryFor(frameMode_);
+            ar.check(curW_ == g.w && curH_ == g.h && curAH_ == g.ah
+                     && activeX_ == g.x && activeY_ == g.y,
+                     "Shifter geometry does not match the locked resolution");
+        }
         ar.check(frame_.size() == static_cast<std::size_t>(curW_) * static_cast<std::size_t>(curH_));
         ar.check(curAH_ >= 0 && activeX_ >= 0 && activeY_ >= 0 &&
                  activeY_ + curAH_ <= curH_ && activeX_ + activeWidth() <= curW_);

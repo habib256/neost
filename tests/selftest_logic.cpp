@@ -105,6 +105,7 @@ int testAcsiCapacityLimit(); // refus des images hors capacité des compteurs AC
 bool testSccRxErrorMode(); // verrou erreur conservé entre First/Special et SpecialOnly
 int testStxDeletedTrack(); // marque F8 conservée dans les pistes STX réécrites
 int testStxSectorRewrite(); // WRITE SECTOR normal remplace la marque F8 par FB
+int testStxDataCrcWrite(); // WRITE SECTOR STX sur CRC données + durée secteur HD
 int testStxSectorDam(); // WRITE SECTOR A8/A9 et marque persistante FB/F8
 int testStxRawTrackOverlay(); // fusion locale des overlays dans une image de piste décodée
 int testStxRawTrackWrap(); // champs STX traversant l’index, fusion circulaire bornée
@@ -180,6 +181,7 @@ int testFdcTiming(); // attentes des registres FDC et ancrage anti-dérive
 int testIkbdMonitor(); // taux d'échantillonnage joystick $17
 int testIkbdMonitorMachine(); // câblage du timer dans la machine complète
 int testDmaSoundMono(); // précision du repli mono et drainage après STOP
+int testShifterStateGeometry(); // géométrie du save-state liée à la résolution (idx[660])
 int testIkbdAutoSend(); // autosend indépendant de la fréquence vidéo
 
 static void checkStr(const char* what, const std::string& got, const std::string& want) {
@@ -758,6 +760,22 @@ static void testConfigParser() {
 //  de référence n'est publiée) : elles gardent la TRANSCRIPTION des équations à
 //  l'identique, elles ne prouvent pas la clé. Les propriétés, elles, sont connues.
 // -----------------------------------------------------------------------------
+// Libellé RAM de la barre d'état : calculé depuis les octets. La chaîne de
+// ternaires qu'il remplace affichait « 4 MB » pour 2176k/2560k (et pour toute
+// valeur qu'elle ne connaissait pas).
+static void testRamDisplay() {
+    std::printf("Libellé RAM de la barre d'état\n");
+    checkStr("256k",  ramDisplayName(parseRamBytes("256k")),  "256 KB");
+    checkStr("512k",  ramDisplayName(parseRamBytes("512k")),  "512 KB");
+    checkStr("1m",    ramDisplayName(parseRamBytes("1m")),    "1 MB");
+    checkStr("2m",    ramDisplayName(parseRamBytes("2m")),    "2 MB");
+    checkStr("2176k", ramDisplayName(parseRamBytes("2176k")), "2176 KB");
+    checkStr("2560k", ramDisplayName(parseRamBytes("2560k")), "2.5 MB");
+    checkStr("4m",    ramDisplayName(parseRamBytes("4m")),    "4 MB");
+    // Alias « 2.5m » ramené à l'identifiant du bouton radio de la page Memory.
+    checkStr("alias 2.5m canonique", ramLabel(parseRamBytes("2.5m")), "2560k");
+}
+
 static void testCartridgeKey() {
     std::printf("CartridgeKey (clés Steinberg /ROM3)\n");
     {   // Clé noire : registres à 0 au reset, le motif %11011000 sur A8..A1 ramène à 0.
@@ -2559,6 +2577,71 @@ static void testIkbdProtocol() {
         checkInt("39 longueurs de commande == table Hatari", bad, 0);
         checkInt("opcode inconnu : longueur 0 (NOP)", r.ikbd.commandLengthForTest(0x55), 0);
     }
+
+    // --- 7. $09 remet à zéro la position interne (protocole Atari) ----------
+    // « Resets the ikbd maintained X and Y coordinates. » La position suit la
+    // souris dans tous les modes ; on la décale ici par $0E (LOAD MOUSE POSITION)
+    // pour simuler la dérive accumulée au bureau. Hatari omet cette RAZ.
+    {
+        IkbdRig r;
+        r.drain(200000);
+        r.send({0x0E, 0x00, 0x00, 0xFA, 0x00, 0x96});   // position (250,150)
+        r.send({0x09, 0x00, 0xFF, 0x00, 0xFF});          // mode absolu, bornes 255
+        r.send({0x0D});
+        const auto p = r.drain();
+        checkInt("$09 puis $0D : 6 octets", long(p.size()), 6);
+        if (p.size() == 6) {
+            checkHex("$09 : X remis à 0", (p[2] << 8) | p[3], 0);
+            checkHex("$09 : Y remis à 0", (p[4] << 8) | p[5], 0);
+        }
+    }
+
+    // --- 8. $88 souris coupée : réponse COMPLÈTE de 8 octets ----------------
+    // « Replies are padded to 8 bytes. » Hatari n'émet que $F6 quand la souris
+    // est coupée ($12/$14/$17) : le flux se désynchronise. On rapporte le dernier
+    // mode souris choisi.
+    {
+        IkbdRig r;
+        r.drain(200000);
+        r.send({0x14});                                  // joystick auto → souris coupée
+        r.send({0x88});
+        const auto p = r.drain();
+        checkInt("$14 puis $88 : 8 octets", long(p.size()), 8);
+        if (p.size() == 8) {
+            checkHex("$88 : en-tête $F6", p[0], 0xF6);
+            checkHex("$88 : dernier mode choisi (REL au boot)", p[1], 0x08);
+        }
+        r.send({0x09, 0x01, 0x3F, 0x00, 0xC7});          // ABS 319×199
+        r.send({0x12});                                  // DISABLE MOUSE
+        r.send({0x88});
+        const auto q = r.drain();
+        checkInt("ABS puis $12 puis $88 : 8 octets", long(q.size()), 8);
+        if (q.size() == 8) {
+            checkHex("$88 : mode ABS conservé", q[1], 0x09);
+            checkHex("$88 : MaxX conservé", (q[2] << 8) | q[3], 0x013F);
+        }
+    }
+
+    // --- 9. $9A : interrogation ($15) ≠ joysticks désactivés ($1A) ----------
+    {
+        IkbdRig r;
+        r.drain(200000);
+        r.send({0x15});
+        r.send({0x9A});
+        auto p = r.drain();
+        checkInt("$15 puis $9A : 8 octets", long(p.size()), 8);
+        if (p.size() == 8) checkHex("$15 : joysticks toujours disponibles", p[1], 0x00);
+        r.send({0x1A});
+        r.send({0x9A});
+        p = r.drain();
+        if (p.size() == 8) checkHex("$1A : joysticks désactivés", p[1], 0x1A);
+        else checkInt("$1A puis $9A : 8 octets", long(p.size()), 8);
+        r.send({0x15});
+        r.send({0x9A});
+        p = r.drain();
+        if (p.size() == 8) checkHex("$15 après $1A : rallumés", p[1], 0x00);
+        else checkInt("$15 puis $9A : 8 octets", long(p.size()), 8);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -2771,6 +2854,7 @@ int main() {
     if (testSccRxErrorMode()) ++g_ok; else ++g_fail;
     if (const int failures = testStxDeletedTrack()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxSectorRewrite()) g_fail += failures; else ++g_ok;
+    if (const int failures = testStxDataCrcWrite()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxSectorDam()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxRawTrackOverlay()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxRawTrackWrap()) g_fail += failures; else ++g_ok;
@@ -2846,6 +2930,7 @@ int main() {
     if (const int failures = testIkbdMonitor()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdMonitorMachine()) g_fail += failures; else ++g_ok;
     if (const int failures = testDmaSoundMono()) g_fail += failures; else ++g_ok;
+    if (const int failures = testShifterStateGeometry()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdAutoSend()) g_fail += failures; else ++g_ok;
     testPacing();
     testMmioTable();
@@ -2858,6 +2943,7 @@ int main() {
     testMouseScale();
     testMissingHwHint();
     testConfigParser();
+    testRamDisplay();
     testConfigPath();
     testConfigWriteCreatesDir();
     testFixBools();

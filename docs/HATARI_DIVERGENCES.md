@@ -210,6 +210,24 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
   hacks Closure/DOLB (1791-1834). L'écriture `$FF8261` et le Shifter arrêté (res 3) sont
   portés depuis le 2026-10-20 (cf. § *Nouveaux — BASSES*, Vidéo). `NEOST_V2` ne gate
   plus que le raccourcissement HBL (`Machine.cpp:158-163`, opt-in).
+- **[assumée, 2026-10-20] Shifter arrêté (res 3) : stop et retour sur la MÊME ligne**
+  (`Shifter::writeShifterRes`, `VideoGlue.cpp`). Hatari ne compare que des cycles-LIGNE
+  (`ResPosStop_Shifter.LineCycles`) : un arrêt posé à la ligne N et levé à la ligne N+1 passe
+  son « ≤ 32 ». Sur une durée négative, il réécrit `DisplayPixelShift = 0` sur les lignes
+  suivantes ; sur une durée positive qui chevauche le HBL, il arme un décalage. NeoST
+  n'arme rien dans les deux cas. Avant le correctif, la normalisation modulo 16 en faisait
+  −4/−8/−12 px et −2/−4/−6 octets à chaque ligne. Le trick Troed/Sync décrit un arrêt de
+  8 à 32 cycles ; le comportement matériel d'un arrêt plus long n'est pas documenté.
+- **[2026-10-20] Datation res 3 sur la grille RÉELLE** : `realLinePos` date l'écriture sur
+  `glueLineStart_`, comme `Video_ConvertPosition` (video.c:1224) et comme la machine Glue
+  pour freq/res. Ce n'est pas une divergence : NeoST rejoint Hatari. L'ancienne grille
+  nominale `fc/cpl` dérivait de 4 cycles par ligne de 508 cycles. Avec
+  `NEOST_LINELEN_ATTR=0`, c'est la grille nominale qui s'applique.
+- **[EXTENSION NeoST, 2026-10-20] Ligne noire « Shifter arrêté »** : une ligne est noircie
+  (aire active seulement, bordures intactes) si un intervalle res 3, en cours ou le dernier
+  terminé, couvre toute sa fenêtre DE (`lineStoppedOver`). Hatari n'affiche pas de noir.
+  Un arrêt partiel (trick, 8 à 32 cycles) ne noircit rien, comme Hatari (TODO video.c:1914).
+  Noir franc ou couleur 0 : non mesuré (TODO.md § 2).
 - **[V3] ✅ CLOS le 2026-09-01** — attribution de ligne à la grille réelle **promue par défaut** (`NEOST_LINELEN_ATTR`, ON) après preuve à l'oracle sur l'exhibiteur `freq_switch` : la longueur de ligne ne persistait pas d'une ligne à l'autre (retombait à 512 sans écriture), donc le verrou ne pouvait pas produire la dérive qu'il vise — corrigé (`glueLineLenFor`), 18/18 écritures freq attribuées comme Hatari (ligne et cycle), `TODO.md` § restes. Historique : `RestartVideoCounter` **PORTÉ** (2026-07-02,
   `restartVideoCounter`, événement `VC_RESTART`, check freq live). ⚠ **« CyclesPerVBL ±4 »
   RETIRÉ le 2026-08-25 : FAUX POSITIF prouvé** (cf. la ligne V3 du tableau des priorités —
@@ -246,7 +264,7 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
   métadonnée = FB. Hatari lit les données mais ignore la métadonnée ; une
   réécriture par Hatari/ancien NeoST peut la perdre. Archive v45 inchangée,
   commande déjà sérialisée et contenu média hors snapshot (pas de rewind).
-  Refus WRITE sur CRC inchangé. READ TRACK : fusion locale des overlays
+  CRC données : voir l’entrée du 2026-10-20 ci-dessous. READ TRACK : fusion locale des overlays
   sur image décodée dans le périmètre qualifié ci-dessous ; ST/MSA/DIM sans
   DAM persistante, pas de moteur MFM général ajouté.
 - ✅ **READ TRACK et image décodée (2026-10-19)** : fusion locale des
@@ -337,6 +355,30 @@ extension DAM NeoST qualifiée ci-dessus.
   Garde publique MMIO : `tests/fdc_register_logic.cpp`.
 - **[basse]** Densité **HD/ED** STX : NeoST recadre `BitPosition` sur la densité (`Fdc.cpp:913-915` `densityFactor`, recadrage `:1538-1544`)
   → **plus cohérent que Hatari** (qui a une incohérence HD/ED) ; **identique en DD**.
+  Étendu le 2026-10-20 à la **durée de lecture** : la valeur standard d'un secteur
+  (`ReadTime` nul) vaut 32 µs/octet divisé par `densityFactor()` (16 µs en HD, 8 en ED),
+  cohérente avec `nextSectorIDStx`. Hatari (`floppies/stx.c`) garde la constante DD : un
+  secteur HD y dure deux secteurs et le suivant d'un multi-secteurs coûte un tour.
+- **[assumée, 2026-10-20] WPRT après la montée en régime** : WRITE SECTOR teste la protection
+  dans `RUN_WS_MOTORON`, après le spin-up (6 index si h=0) et le délai E, avant la recherche
+  d'ID, et la reteste à chaque secteur d'un multi-secteurs ; WRITE TRACK la teste dans
+  `RUN_WT_MOTORON`, avant l'attente de l'index. Preuve : organigrammes type II/III du WD177x,
+  MAME `wd_fdc.cpp` (`SETTLE_DONE` → `wpt_r`). Hatari (`fdc.c`) faute WRITE SECTOR dès le
+  premier événement, avant le moteur, et WRITE TRACK après l'index (jusqu'à un tour trop
+  tard). Test : `tests/fdc_media_change_logic.cpp`.
+- **[assumée, 2026-10-20] CRC données STX réinscriptible** : un WRITE SECTOR sur un secteur
+  à erreur CRC du champ DONNÉES (statut Pasti CRC sans RNF) écrit un champ données neuf au
+  CRC juste ; la relecture (secteur et dump READ TRACK) ne signale plus de CRC. Le WD1772 ne
+  contrôle que le CRC d'ID (MAME `wd_fdc.cpp` `write_sector`). Hatari refuse ce cas
+  (`stx.c:1735`, contre son propre commentaire « ID field CRC » de la ligne 1704) et sa
+  machine à états, qui ne teste que RNF, annonce un SUCCÈS sans rien écrire. Un CRC d'ID
+  faux (codé RNF+CRC par Pasti) reste refusé. Test : `tests/stx_data_crc_write_logic.cpp`.
+- **[assumée, 2026-10-20] Compteur de secteurs DMA appliqué à l'ACSI** : le transfert est
+  borné à count×512 octets, rien ne part à compte nul (les données restent en attente
+  jusqu'à un compte programmé et un retour en mode DMA), et le compteur décompte par bloc de
+  512 o (`$8606` bit 1 = 0 après un transfert complet ; une queue < 512 o le laisse). C'est
+  la même puce DMA que pour la disquette ; le diagnostic Field Service vérifie ce bit.
+  Hatari (`hdc.c`, `Acsi_DmaTransfer`) ignore le compteur. Test : `tests/fdc_acsi_logic.cpp`.
 - **[basse] ✅ vérifié SANS OOB (7ᵉ passe, 2026-08-06)** — Bornes parseur STX (`StxImage.cpp:73-242`, `parse`) :
   rejette une image tronquée que Hatari monterait ; l'**OOB « latent »** annoncé sur le chemin
   « simple » tronqué est FERMÉ. Une piste simple tronquée pose `sectorsCount=0`/`sectors` vide
@@ -542,6 +584,21 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
   SCI IDLE et le copie immédiatement dans TSR, sans précharger le suivant.
 - **[basse, assumée — NeoST plus robuste]** Monitoring `$17` : paquet « entier ou rien » ; Hatari est le SEUL émetteur sans `CheckFreeCount` et peut déchirer un paquet à 1 octet libre (désynchronise le flux, ikbd.c:1484). Observable seulement avec 1024 octets d'arriéré.
 - **[basse, assumée]** Horloge IKBD amorcée sur l'heure hôte à la construction (Hatari l'efface au cold boot, ikbd.c:539) — confort bureau ; `--keys`/`setClock` couvrent le déterminisme headless. Idem : état des handlers 6301 custom ré-initialisé à chaque reconnaissance (les `static` d'Hatari casseraient un 2ᵉ lancement).
+- **[assumée, 2026-10-20] IKBD — quatre défauts d'Hatari non repris** (`Ikbd.cpp`). Source :
+  protocole IKBD Atari. Aucun n'est vérifié sur la ROM 6301.
+  - `$09` (SET ABSOLUTE MOUSE POSITIONING) remet à zéro la position absolue interne :
+    « Resets the ikbd maintained X and Y coordinates ». `IKBD_Cmd_AbsMouseMode` ne le fait pas.
+  - `$88/$89/$8A` avec la souris coupée (`$12`, ou `$14`/`$17`) : la réponse est complétée à 8 octets
+    (« padded to 8 bytes ») et rapporte le dernier mode souris choisi (`lastMouseMode_`, REL
+    au boot). Hatari (ikbd.c:2565) n'émet que l'en-tête `$F6`, ce qui désynchronise le flux.
+    L'octet de mode réellement émis par la ROM n'est pas confirmé (TODO.md § 2).
+  - `$9A` rend `$1A` seulement après `$1A` (`joysticksEnabled_`). Hatari le déduit du mode
+    interrogation et répond donc `$1A` après un simple `$15`.
+  - `$17` sous PAUSE OUTPUT (`$13`) : aucun échantillon n'est mis en file (« the samples are
+    not enqueued for transmission »), la cadence continue. Hatari empile les échantillons.
+  Même lot : `Blitter::reset` relâche GPU_DONE (GPIP3), donc pas de blit fantôme après un
+  reset à chaud en plein blit. Le bouchon RS-232 (`Mfp::loopback_`) n'est plus dans l'état
+  depuis la v51 ; c'est un réglage du frontal, comme les bouchons MIDI et SCC.
 
 ### Bus / mémoire / bus-error — `Bus.cpp` ↔ `ioMem*.c`, `memory.c`, `stMemory.c`
 
@@ -1018,6 +1075,18 @@ même** (primitives non-fautives + filet au site d'appel). Restent trois points 
   jusqu'à 4 cycles d'écart par DIV exécuté en RAM sous `NEOST_RAM_SLOT`. Le correctif
   du fork (`e4da365`) avait été perdu à la vendorisation ; rétabli par le port de
   l'amont `f90fc50`. Sonde `cpu_div_ram` : 0 cycle d'écart sur 46 intervalles.
+- ✅ **[CPU5 — #,SR/#,CCR et MOVE to CCR, 2026-10-20]** ANDI/ORI/EORI #,SR, ANDI/ORI/EORI
+  #,CCR et MOVE to CCR rechargent les deux mots de préfetch après l'écriture de SR/CCR
+  (`fullPrefetch`, comme MOVE to SR le 2026-10-19), en 68000 seulement. Le préfetch suit le
+  microcode (`003c`/`023c`/`0a3c`, `007c`/`027c`/`0a7c`, `44c0..44fc`) et Hatari CE
+  (`op_027c_13_ff`). Accès pc0+4, pc0+4, pc0+6, la relecture se faisant en espace
+  PROGRAMME après le changement de SR. Un `ANDI #$DFFF,SR` en `$7FA` prend la bus error sur
+  `$7FE` en mode utilisateur. Durées inchangées. Détail : `extern/moira/NEOST_VENDOR.md`.
+- ✅ **[CPU — faute levée hors instruction, 2026-10-20]** `triggerBusError` appelé hors de
+  `moira->execute()` (accès hôte : `--dump-at`, débogueur) ne lève plus `moira::BusError`
+  (`std::terminate`) et ne pose ni `inBusError` ni `faultValid` : l'accès est abandonné avec
+  une valeur neutre. Les seuils `NEOST_IPLFETCH4/2` sont aussi relus et jetés au load, puis
+  recalculés d'après la configuration du processus.
 - ✅ **[CPU3 — basse, résolu le 2026-10-20]** L'échantillon IPL différé du mode
   `g_iplFetch` (NEOST_IPLFETCH=1, opt-in expérimental) n'était pas sérialisé : armé au
   save, il était perdu au load (IRQ reconnue une frontière trop tard). `iplDeferred` est
@@ -1177,14 +1246,15 @@ divergence HAUTE**, les 4 correctifs sont CORRECTS. La passe remonte surtout des
   lit que D8-D9) ; les lectures `$FF8260/61` rendent la valeur Shifter. **res 3** = Shifter arrêté :
   stop posé au cycle-ligne ≥ 64 (DE actif), retour ≥ 72 et ≤ 32 cycles après → lignes suivantes
   décalées de 0/4/8/12 px, compteur −0/−2/−4/−6 octets en fin de ligne (`vcStopInc_`) ; ligne
-  restée arrêtée au commit = aire active noire, bordures intactes. glue-selftest +36 vérifs ;
+  dont toute la fenêtre DE est couverte par un arrêt = aire active noire, bordures intactes
+  (extension NeoST, cf. § *Vidéo* ; avant le 2026-10-20 : ligne arrêtée au commit, ce qui
+  noircissait la ligne précédente). glue-selftest +36 vérifs ;
   aucun logiciel réel connu ne l'exerce. ⚠ Incertitudes (commentaires du code) : noir franc vs
   couleur 0, lecture OCTET de `$FF8261` (alias complet conservé), trick sur STE (modèle STF
   appliqué, comme Hatari), persistance du décalage aux trames suivantes (TODO video.c:1915 —
   NeoST garde la trame courante, comme Hatari). Non modélisés : pixels noirs pendant un stop
   bref, résolution Shifter ≠ Glue (0/1/2) au rendu, géométrie de trame à res 3 via `$FF8260` ;
-  attribution ligne à longueur FIXE (`fc/cpl`) vs
-  accumulée ; chemin `PrevSize` partiel ; quirks démos `$FF8205/07/09` (E605/Tekila).
+  chemin `PrevSize` partiel ; quirks démos `$FF8205/07/09` (E605/Tekila).
 - **FDC** : `dmaResetFifo` ne remet pas `bufPos_`/`dmaBytesToTransfer_` ; recalcul densité superflu
   à chaque lecture statut ; borne parseur STX (chemin secteurs complet) ; pas d'`indexCheckUpdate`
   avant la commande.

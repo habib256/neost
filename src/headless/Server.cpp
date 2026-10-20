@@ -62,6 +62,7 @@ struct Slot {
     long long            frame = 0;
     uint8_t              joy0  = 0;    // état joystick TENU par le client au moment du save :
     uint8_t              joy1  = 0;    // reprendre une cellule, c'est reprendre aussi ses entrées
+    bool                 joyKnown = false;  // false = état importé : le tenu est celui que l'état porte
     bool                 used  = false;
 };
 
@@ -147,7 +148,12 @@ int run(Machine& machine, const Options& opts) {
     observe::ProbeSet set = opts.probes;
     std::vector<Slot> slots(std::size_t(opts.slots > 0 ? opts.slots : 1));
     long long frame = 0;
+    // Copie du joystick TENU, amorcée sur la machine et non sur 0 : --joy (et l'état
+    // d'un --load-state) y ont déjà posé une entrée. Partir de 0 faisait qu'un
+    // « save N ; load N » relâchait le feu de « --server --joy 80 » (mesuré : deux
+    // hachages RAM différents pour une paire save/load censée ne rien changer).
     uint8_t   joy0 = 0, joy1 = 0;
+    machine.ikbd.hostJoystick(joy0, joy1);
 
     std::fprintf(stderr, "[server] ready — %zu slots, %zu probes. Commands on stdin.\n",
                  slots.size(), set.probes.size());
@@ -296,6 +302,7 @@ int run(Machine& machine, const Options& opts) {
             slots[s].frame = frame;
             slots[s].joy0  = joy0;
             slots[s].joy1  = joy1;
+            slots[s].joyKnown = true;
             slots[s].used  = true;
             if (!reply("ok bytes=" + std::to_string(slots[s].data.size()))) return 1;
             continue;
@@ -314,11 +321,18 @@ int run(Machine& machine, const Options& opts) {
             // Reprendre une cellule, c'est reprendre AUSSI l'entrée qui y était tenue.
             // Reposer le joystick tenu MAINTENANT (ancienne version) rendait le rejeu
             // dépendant de la branche explorée entre-temps : même cellule, deux
-            // hachages RAM différents (mesuré). Pour un état importé (fichier), on ne
-            // sait rien : on laisse ce que l'état porte et on remet le tenu à zéro.
-            joy0 = slots[s].joy0;
-            joy1 = slots[s].joy1;
-            applyJoy(machine, joy0, joy1);
+            // hachages RAM différents (mesuré). Pour un état importé (fichier), le
+            // tenu est celui que l'état porte (hostJoy_ et les pads STE sont
+            // sérialisés) : on le RELIT au lieu de l'écraser — sinon « import ; load »
+            // relâchait un feu tenu dans le fichier et le serveur ne valait plus
+            // « --load-state FICHIER » (contrat de déterminisme, run_server_equiv.py).
+            if (slots[s].joyKnown) {
+                joy0 = slots[s].joy0;
+                joy1 = slots[s].joy1;
+                applyJoy(machine, joy0, joy1);
+            } else {
+                machine.ikbd.hostJoystick(joy0, joy1);
+            }
             if (!reply("ok " + fields())) return 1;
             continue;
         }
@@ -380,8 +394,9 @@ int run(Machine& machine, const Options& opts) {
             }
             slots[s].data  = std::move(buf);
             slots[s].frame = 0;          // datation inconnue : un fichier ne la porte pas
-            slots[s].joy0  = 0;          // entrée tenue inconnue : l'état porte la sienne
-            slots[s].joy1  = 0;
+            slots[s].joy0  = 0;          // entrée tenue : celle que l'état porte,
+            slots[s].joy1  = 0;          // relue au « load » (joyKnown = false)
+            slots[s].joyKnown = false;
             slots[s].used  = true;
             if (!reply("ok bytes=" + std::to_string(slots[s].data.size()))) return 1;
             continue;

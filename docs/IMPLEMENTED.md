@@ -23,6 +23,27 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
 - **Vidéo** : motif d'un visualiseur Spectrum 512 (48 couleurs par ligne, rafales
   `movem.l`) à 0 px de l'oracle, étalon `spec512_view`.
 
+Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
+
+- **CPU** : ANDI/ORI/EORI #,SR/#,CCR et MOVE to CCR rechargent les deux mots de préfetch
+  après l'écriture de SR/CCR (microcode). Une bus error levée hors instruction (accès
+  hôte) abandonne l'accès sans exception.
+- **Vidéo, Shifter arrêté (res 3)** : stop et retour exigés sur la même ligne, datation sur
+  la grille réelle, ligne noire seulement si l'arrêt couvre toute la fenêtre DE.
+- **Son DMA STE** : les événements sont repérés par cycle ET par l'index d'écriture de
+  l'anneau de capture (`DmaEvent.capW`). Un PLAY ou un changement de MODE en milieu de
+  trame prend effet à son échantillon exact.
+- **IKBD** : `$09` remet à zéro la position absolue ; `$88` souris coupée rend 8 octets ;
+  `$9A` distingue `$15` de `$1A` ; `$17` sous `$13` ne met rien en file. GPIP3 relâché au
+  reset du blitter.
+- **Disquette / ACSI** : WPRT testé après la montée en régime (WRITE SECTOR) ou avant
+  l'index (WRITE TRACK) ; compteur de secteurs DMA appliqué à l'ACSI ; durée de secteur STX
+  standard divisée par la densité (HD/ED) ; secteur STX à CRC données faux réinscriptible.
+- **NE2000** : PROM d'adresse station (MAC doublée + signature `WW`, lecture seule), MAC
+  par défaut `02:4E:53:54:00:01` ; les PAR restent au pilote.
+- **Save-states v51** et deux durcissements : géométrie Shifter liée à `frameMode_`, cache
+  DTA GEMDOS vide refusé quand un lecteur est monté.
+
 ## Compléments de fidélité du 2026-10-18
 
 - **ACSI** : IRQ de fin de DMA différée de 1000 cycles CPU, soit 1000 cycles bus
@@ -82,7 +103,10 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   et sauvegardé. Formats série physiques hors /64 8N1 encore différés.
 - **READ ADDRESS STX** : erreur CRC ID publiée après les six octets transférés,
   avant IRQ ; CRC de données seul sans effet sur cette commande.
-- **Sauvegardes v50** (`kStateVersion`) : résolution côté Shifter (`$FF8261`, res 3) et
+- **Sauvegardes v51** (`kStateVersion`) : intervalles « Shifter arrêté » et ligne du dernier
+  changement de résolution Shifter, `lastMouseMode_`/`joysticksEnabled_` IKBD, repère
+  `capW` des événements son DMA, bouchon RS-232 retiré de l'état, v51 ;
+  résolution côté Shifter (`$FF8261`, res 3) et
   échantillon IPL différé Moira (`iplDeferred`, CPU3) v50 ; crédit de recouvrement CPU/blitter v49,
   handles GEMDOS HD v48 ; progression TX ACIA et réception SCI partielles v47 ;
   ajoutées à l’initialisation du diviseur ACIA clavier v46. États antérieurs
@@ -1432,6 +1456,11 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   passage mono→stéréo réaligné sur frontière paire (`fifoSetStereo`). Piège : la dette de
   rééchantillonnage du rendu hôte est PLAFONNÉE à 1 octet en sous-alimentation, sinon le
   rattrapage saute des octets en rafale (mesuré : 21 % d'octets B au lieu de 33 % sur l'étalon).
+  Depuis le 2026-10-20, chaque événement (PLAY, MODE…) porte aussi l'index d'écriture de
+  l'anneau de capture à son instant (`DmaEvent.capW`). `mixStereo` borne la consommation de
+  chaque segment au repère de l'événement suivant. Un PLAY en milieu de trame (DMA au repos)
+  ne fait plus rendre dès l'échantillon 0 les octets tirés après l'écriture, et les octets
+  capturés après un changement de MODE ne sont plus lus dans l'ancien format.
   **Validé contre l'oracle Hatari bâti dans le conteneur** (SDL2 présent — AVI audio + `--trace
   dmasound`) via un étalon dédié `tools/make_dmasnd_test.py` (secteur de boot STE : sample en
   boucle + handler VBL qui écrit un plateau B transitoire mid-trame, invisible à la frontière
@@ -1763,7 +1792,8 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   RECTYPE et READ TRACK reconstruit avec CRC régénérée sur la marque choisie.
   A9→A8 remplace aussi la métadonnée d’un overlay existant. F8 persiste via
   le supplément SECT `NDAM` + marque ; ancien SECT sans extension = FB.
-  Refus des écritures sur secteur CRC et statut CRC inchangés. Fusion locale
+  Un secteur à CRC données faux est réécrit avec un CRC juste et relu sans erreur
+  (2026-10-20, le WD1772 ne contrôle que le CRC d'ID) ; CRC d'ID faux toujours refusé. Fusion locale
   des overlays dans l’image de piste décodée décrite ci-dessous ; images
   ST/MSA/DIM sans DAM persistante.
   États v45 inchangés : commande en vol conservée avec le même média monté,
@@ -2138,6 +2168,9 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   NE2000/DP8390 (pages 0/1, anneau RX, Remote DMA, filtrage MAC) décodée dans la fenêtre
   cartouche — **lecture** `$FB0000+n*512`, **écriture** = fausse lecture
   `$FA0000+n*512+d*2`. Fait tourner les pilotes STinG/MiNTnet/MagiCNet **sans modif**.
+  **PROM d'adresse station** (2026-10-20) : 32 octets à RSAR=0, MAC doublée en 0-11,
+  `$57` (« WW ») en 28-31, lecture seule ; le pilote la relit et charge lui-même les PAR.
+  MAC par défaut `02:4E:53:54:00:01` (localement administrée, fixe pour le déterminisme).
   Backend `NetBackend` (boucle locale ; SLIRP/pcap = point d'extension). **Exclusif d'une
   cartouche** ($FA0000). Auto-test fil : `--enec-selftest` (palier `fast`).
 - **UltraSatan — interface SD sur le bus ACSI** (`io/UltraSatan`, `--ultrasatan`, 2026-08-21) :
@@ -2193,7 +2226,7 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   byte-identiques (divergence = 1ᵉʳ offset localisé) — PASSE sur boot ST, STE (son DMA +
   vidéo STE), Mega STE (SCC actif), démo No Cooper (overscan med-res). I/O fichier prouvée :
   save@60 → fichier 1,3 Mo → load + run → écran **diff_px=0** vs run direct (ST comme Mega
-  STE). Format `'NSTS'` versionné — **v50 actuel** ; toute autre version est rejetée
+  STE). Format `'NSTS'` versionné — **v51 actuel** ; toute autre version est rejetée
   d'office par `Machine::loadState`. GUI : **F5** sauver / **F7** charger (slot
   `neost.state`, menu Machine, overlay). Headless : `--save-state`/`--load-state`, auto-test
   `--save-state-test`. Hors-snapshot **par conception** : le CONTENU des images disquette/
@@ -2206,6 +2239,12 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   `NEOST_IPLFETCH`) sérialisé et refusé au load hors [-1,7] — l'IRQ n'est plus reconnue
   une frontière trop tard après load ; état res 3 du Shifter (`shifterRes_`, stop en
   attente) borné au load.
+- **Shifter arrêté, IKBD, son DMA** (v51, 2026-10-20) : intervalles d'arrêt res 3 et ligne
+  du dernier changement, `lastMouseMode_` (borné à REL/ABS/CURSOR) et `joysticksEnabled_`,
+  `DmaEvent.capW`. `Mfp::loopback_` n'est plus sérialisé (réglage du frontal). Seuils
+  `NEOST_IPLFETCH4/2` lus puis jetés au load, recalculés d'après le processus.
+  Durcissements : géométrie Shifter restaurée égale à `geometryFor(frameMode_)` (un `curW_`
+  forgé débordait `renderLine`) ; cache DTA GEMDOS vide refusé si un lecteur est monté.
 - **A13 — Reprise GEMDOS HD** (2026-10-19) : handles (numéro, chemin, mode,
   basepage, position), redirections Fforce, recherches Fsfirst/Fsnext,
   répertoires courants et phase Pexec inclus en v48. Réouverture sans troncature

@@ -97,12 +97,16 @@ int testIkbdMonitor() {
         r.advance(period(1)); r.advance(period(1) * 2);
         c.equal("paused monitoring keeps sampling timer", r.monitorDue(), period(1) * 3);
         c.equal("pause holds output queue", r.rxDue(), -1);
+        // Protocole IKBD Atari (PAUSE OUTPUT) : « the PAUSE OUTPUT command also
+        // temporarily stops the monitoring process (i.e. the samples are not
+        // enqueued for transmission) ». Hatari les empile : défaut non reproduit.
         r.command({0x11});
-        for (int i = 1; i <= 4; ++i) {
-            r.advance(period(1) * 2 + i * 10240);
-            c.equal("paused samples survive in queue", r.ready(), 1); r.data();
-        }
-        c.equal("exactly two queued samples", r.rxDue(), -1);
+        c.equal("paused samples are not queued", r.rxDue(), -1);
+        r.ikbd.setJoystick(0x00, 0x81);
+        r.advance(period(1) * 3);
+        c.equal("sampling resumes on its grid", r.rxDue(), period(1) * 3 + 10240);
+        r.advance(period(1) * 3 + 10240); c.equal("resumed sample is current fire", r.data(), 1);
+        r.advance(period(1) * 3 + 20480); c.equal("resumed sample is current direction", r.data(), 1);
     }
     {
         Rig r; r.warm(); r.command({0x17, 1});

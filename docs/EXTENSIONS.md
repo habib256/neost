@@ -107,7 +107,18 @@ anneau de réception avec en-tête 4 octets, Remote DMA, filtrage MAC/broadcast)
 physique = interface `NetBackend` (boucle locale, ou SLIRP avec `--slirp` quand libslirp
 est présente ; pcap = point d'extension). **Exclusif d'une cartouche montée** (conflit de
 fenêtre $FA0000 — le montage est refusé avec message). Auto-test : `--enec-selftest`
-(palier `fast`).
+(palier `fast`, qui vérifie aussi la PROM et sa lecture seule).
+
+**PROM d'adresse station** (depuis le 2026-10-20) : 32 octets visibles à RSAR=0 par Remote
+DMA. La MAC y est doublée (octets 0-11) et la signature `WW` ($57) occupe les octets
+28-31, celle que teste `ne.c`. Une PROM 8 bits câblée sur les deux moitiés du bus donne
+cette disposition, la même que QEMU. Elle est en lecture seule : une écriture Remote DMA
+n'y change rien. Comme sur une vraie NE2000, la puce ne charge pas les PAR depuis la PROM :
+c'est le pilote qui la lit et recopie la MAC. **MAC par défaut `02:4E:53:54:00:01`** :
+adresse localement administrée (bit 1 du premier octet, « NST » en ASCII), fixe pour que
+les runs restent déterministes. Aucun OUI de fabricant n'est documenté pour l'EtherNEC, qui
+accepte n'importe quelle carte ISA NE2000, ni pour le NetUSBee ; une adresse inventée ne
+doit pas usurper un OUI réel.
 
 ## Appareils MIDI de l'hôte — le câble DIN du ST vers du vrai matériel
 
@@ -345,7 +356,7 @@ cible qui n'est pas un slot UltraSatan reste **byte-identique** au port de `hdc.
 | Où | Comment |
 |----|---------|
 | Headless | `--ultrasatan` (IDs 0-1), `--ultrasatan-id N`, `--sd1 IMG`, `--sd2 IMG` (`--acsi IMG` = slot 1 quand l'ID est 0) |
-| GUI | Configuration → **Hard disks** : case UltraSatan, slot 1 = l'image ACSI, slot 2 à monter ; `neost.cfg` : `ultrasatan=`, `sd2=` |
+| GUI | Configuration → **Hard disks** : case UltraSatan, slot 1 = l'image ACSI, slot 2 à monter ; `neost.cfg` : `ultrasatan=`, `sd2=` (rejoués par `--from-cfg` depuis le 2026-10-20 : cibles 0-1, slot 2 lu seulement si la case est cochée) |
 | Code | `machine.enableUltraSatan(firstTarget); machine.fdc.mountAcsi(path, firstTarget + slot);` |
 
 Image de carte SD : n'importe quel dump brut partitionné (Atari ou DOS). `tools/make_usatan_hd.py`
@@ -498,7 +509,9 @@ tromper de port, comme avec l'objet : une clé joystick entre dans les deux DE-9
 n'en sonde qu'un (le GUI signale « wrong port for this game »). `--plug PORT=DEVICE`
 (répétable) ou `--adapter DEVICE` (port par défaut) en headless ; `joy0=`, `joy1=`,
 `rs232=`, `printer=`, `cartbutton=` dans `neost.cfg` (l'ancien `adapter=` est relu) ; page
-**Dongles**. **OFF par défaut**, sans effet sur les étalons. **Sérialisé** dans le
+**Dongles**. `--from-cfg` rejoue ces cinq clés ainsi que `dongle=` et `auto_dongle=` par
+les mêmes chemins que `--plug` et `--dongle` (depuis le 2026-10-20). Un identifiant inconnu
+est ignoré avec un avertissement, comme le GUI l'oublie. **OFF par défaut**, sans effet sur les étalons. **Sérialisé** dans le
 save-state (v16) : l'oscillateur de Cricket et la date de Music Master font partie du
 déterminisme, et les périphériques branchés sont restaurés avec l'état.
 

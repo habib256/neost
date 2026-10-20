@@ -372,6 +372,10 @@ int appInit(App& A, int argc, char** argv) {
 
     // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
     const MachineType machType0 = Machine::adjustMachineForTos(parseMachine(cfg.machine), tosPath);
+    // Forme CANONIQUE de mem= (alias « 2.5m » → « 2560k », valeur inconnue → celle
+    // retenue) : la page Memory compare ui.pendMem aux identifiants de ses boutons
+    // radio, et un alias n'en cochait aucun.
+    cfg.mem = ramLabel(parseRamBytes(cfg.mem));
     A.machine = std::make_unique<Machine>(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu),
                                           machType0);   // RAM + cœur + modèle (cfg, ajusté au TOS)
     Machine& machine = *A.machine;

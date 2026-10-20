@@ -103,9 +103,9 @@ def run_cli(frames, shot=None, script=True):
     return lines[-1][len("probe "):]
 
 
-def run_server(commands, shot=None):
+def run_server(commands, shot=None, extra=()):
     """Session serveur : rend la liste des réponses."""
-    cmd = [HEADLESS, ROM] + COMMON + OBSERVE + ["--server"]
+    cmd = [HEADLESS, ROM] + COMMON + OBSERVE + list(extra) + ["--server"]
     script = "\n".join(commands) + "\nquit\n"
     return run_bin(cmd, stdin=script).splitlines()
 
@@ -187,6 +187,24 @@ def main():
     srv_joy = run_server(["joy 80", "run 60"])
     srv_ram = [l[len("ok "):] for l in srv_joy if l.startswith("ok frame=")][-1].split(" ", 1)[1]
     check("--joy 80 (ligne de commande) == joy 80 (serveur)", srv_ram, cli_ram)
+
+    # 2 quater bis. Le joystick TENU au démarrage (--joy) et celui que porte un état
+    #    IMPORTÉ survivent à save/load. Le serveur amorçait sa copie du tenu à 0 et
+    #    « load » la reposait : « --server --joy 80 » + « save 0 ; load 0 » relâchait
+    #    le feu, et « import ; load » relâchait celui du fichier — le serveur ne
+    #    valait plus --load-state (mesuré : deux hachages RAM différents).
+    srv_plain = run_server(["run 30", "run 30"], extra=["--joy", "80"])
+    srv_sl = run_server(["run 30", "save 0", "load 0", "run 30"], extra=["--joy", "80"])
+    ram = lambda rsp: [l[len("ok "):] for l in rsp if l.startswith("ok frame=")][-1].split(" ", 1)[1]
+    check("--server --joy 80 : save/load ne relâche pas le feu", ram(srv_sl), ram(srv_plain))
+    joy_state = os.path.join(tmp, "joy.state")
+    run_bin([HEADLESS, ROM] + COMMON + ["--frames", "30", "--joy", "80", "--save-state", joy_state])
+    out = run_bin([HEADLESS, ROM] + COMMON + OBSERVE +
+                  ["--load-state", joy_state, "--frames", "30", "--probe-every", "30"])
+    cli_after = [l for l in out.splitlines() if l.startswith("probe ")][-1][len("probe "):]
+    srv_imp = run_server(["import 0 " + joy_state, "load 0", "run 30"])
+    check("import ; load (feu tenu dans le fichier) == --load-state",
+          ram(srv_imp), cli_after.split(" ", 1)[1])
 
     # 2 quinquies. La même session rejouée deux fois rend les mêmes octets.
     session = ["run 20", "play " + SCRIPT, "save 0", "key make 39", "run 5", "key break 39",

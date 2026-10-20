@@ -801,7 +801,10 @@ Moira::execAndiccr(u16 opcode)
         u8  dst = getCCR();
         setCCR(u8(logic<C, I, S>(src, dst)));
         SYNC(8);
-        (void)read<C, AddrSpace::DATA, Word>(reg.pc + 2);
+        // NeoST — microcode 003c/023c/0a3c : 1cc stiw1 (recul de deux octets)
+        // → 321 stiw4 → 1e1 malw3 → 363 b : relire pc0+4 PUIS pc0+6, IRD
+        // reçoit le mot relu après le changement de CCR (cf. execMoveToSr).
+        fullPrefetch<C, POLL>();
 
     } else {
 
@@ -809,9 +812,8 @@ Moira::execAndiccr(u16 opcode)
         u32 src = readI<C, S>();
         u8  dst = getCCR();
         setCCR(u8(logic<C, I, S>(src, dst)));
+        prefetch<C, POLL>();
     }
-
-    prefetch<C, POLL>();
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
@@ -836,8 +838,16 @@ Moira::execAndisr(u16 opcode)
     u32 result = logic<C, I, S>(src, dst);
     setSR((u16)result);
 
-    (void)read<C, AddrSpace::DATA, Word>(reg.pc + 2);
-    prefetch<C, POLL>();
+    if constexpr (C == Core::C68000) {
+        // NeoST — microcode 007c/027c/0a7c : même queue que MOVE to SR
+        // (1cc stiw1 → 321 stiw4 → 1e1 malw3 → 363 b). Les deux mots sont
+        // relus APRÈS l'écriture de SR, donc avec le nouveau FC : un
+        // ANDI #$DFFF,SR repasse en utilisateur et refait pc0+4 en FC user.
+        fullPrefetch<C, POLL>();
+    } else {
+        (void)read<C, AddrSpace::DATA, Word>(reg.pc + 2);
+        prefetch<C, POLL>();
+    }
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
@@ -3733,8 +3743,14 @@ Moira::execMoveToCcr(u16 opcode)
     SYNC(4);
     setCCR((u8)data);
 
-    (void)read<C, AddrSpace::PROG, Word>(reg.pc + 2);
-    prefetch<C, POLL>();
+    if constexpr (C == Core::C68000) {
+        // NeoST — microcode 44c0..44fc : 301 rstw1 / 159 mstw1 (recul de deux
+        // octets) → 321 stiw4 → 1e1 malw3 → 363 b, comme MOVE to SR.
+        fullPrefetch<C, POLL>();
+    } else {
+        (void)read<C, AddrSpace::PROG, Word>(reg.pc + 2);
+        prefetch<C, POLL>();
+    }
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l

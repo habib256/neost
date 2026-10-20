@@ -1960,6 +1960,11 @@ void GemdosHd::serialize(StateArchive& ar) {
     }
     uint16_t index = dtaIndex_;
     ar(index);
+    // Cache DTA vide : légitime SEULEMENT sans lecteur redirigé (dtas_ n'est
+    // dimensionné que par clearAllInternalDTAs, au montage). Avec un lecteur,
+    // Fsfirst indexe dtas_[dtaIndex_] AVANT toute croissance du cache : un
+    // fichier forgé à count == 0 y faisait écrire dans un vecteur vide.
+    ar.check(count > 0 || drives == 0, "GEMDOS DTA cache empty with mounted drives");
     ar.check(index < count || count == 0, "GEMDOS DTA index out of range");
     for (const auto& f : forced)
         ar.check(f.handle == -1 || (f.handle >= 0 && f.handle < MAX_FILE_HANDLES

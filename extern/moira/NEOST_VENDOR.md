@@ -13,6 +13,27 @@ premier `git submodule update`** — ce qui s'est déjà produit une fois (fork 
 perdu, commits `e4da365`/`a1e52ec` introuvables). La vendorisation fige le code et
 le patch dans l'historique NeoST, à l'épreuve du clobber.
 
+## ANDI/ORI/EORI #,SR/#,CCR et MOVE to CCR : double rechargement (2026-10-20)
+
+- `MoiraExec_cpp.h`, `execAndisr` (ANDI/ORI/EORI #,SR), `execAndiccr`
+  (ANDI/ORI/EORI #,CCR) et `execMoveToCcr`, branche `C68000` : même correctif que
+  `execMoveToSr` le 2026-10-19 — `fullPrefetch<POLL>` remplace la lecture fictive de
+  `pc+2` suivie de `prefetch`. La [transcription du
+  microcode](https://og.kervella.org/m68k/all.txt) donne pour `003c`/`023c`/`0a3c`,
+  `007c`/`027c`/`0a7c` la queue `1cc stiw1` (recul de deux octets) → `321 stiw4` →
+  `1e1 malw3` (lecture, IRC) → `363 b` → `34c mmrw3` (IRD ← IR ← IRC), et pour
+  `44c0`..`44fc` `301 rstw1`/`159 mstw1` puis la même queue. Accès : pc0+4, **pc0+4**,
+  pc0+6 (au lieu de pc0+4, pc0+6, pc0+6) ; IRD reçoit le mot relu APRÈS l'écriture de
+  SR/CCR, en espace PROGRAMME (l'ancienne lecture fictive des #,SR/#,CCR était en
+  DATA). Hatari CE fait de même (`op_027c_13_ff` : `get_word_ce000_prefetch(0)` après
+  `MakeFromSR`). Nombre de cycles inchangé ; les autres modèles CPU sont conservés.
+- Conséquence observable : `ANDI #$DFFF,SR` (retour en utilisateur) refait pc0+4 en
+  FC utilisateur. Placé en `$7FE`, ce mot est protégé par le GLUE → bus error, comme
+  sur le vrai 68000 ; l'ancien code exécutait le mot préfetché en superviseur.
+- Tests (`tests/blitter_rmw_logic.cpp`, 8 et 16 MHz) : MOVE D0,CCR exécute l'opcode
+  modifié après le reset ; ANDI #,SR et EORI #,SR vers l'utilisateur en `$7FA`
+  fautent sur `$7FE` ; ORI #,CCR garde sa durée (20/10 cycles).
+
 ## DIVU/DIVS : cycles internes avant le préfetch (2026-10-20)
 
 - `MoiraExec_cpp.h`, `execDivsMoira` / `execDivuMoira` : sur 68000, `SYNC(cycles)`

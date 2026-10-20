@@ -378,7 +378,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/acsi_large_bounds_logic.cpp tests/scc_rx_error_irq_logic.cpp tests/mfp_gpip_composite_logic.cpp
     tests/acsi_capacity_limit_logic.cpp tests/scc_rx_error_mode_logic.cpp
     tests/stx_deleted_track_logic.cpp tests/scc_first_error_reset_logic.cpp tests/dmasound_microwire_byte_logic.cpp
-    tests/stx_sector_rewrite_logic.cpp
+    tests/stx_sector_rewrite_logic.cpp tests/stx_data_crc_write_logic.cpp
     tests/stx_sector_dam_logic.cpp
     tests/stx_raw_track_overlay_logic.cpp
     tests/stx_raw_track_wrap_logic.cpp
@@ -399,7 +399,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/fdc_acsi_logic.cpp tests/fdc_register_logic.cpp tests/machine_scc_logic.cpp
     tests/mmu_logic.cpp tests/fdc_selection_logic.cpp tests/mmio_fidelity_logic.cpp
     tests/ikbd_response_logic.cpp tests/fdc_timing_logic.cpp tests/ikbd_monitor_logic.cpp
-    tests/ikbd_monitor_machine_logic.cpp tests/ikbd_autosend_logic.cpp tests/dmasound_mono_logic.cpp src/audio/MidiInHost.cpp
+    tests/ikbd_monitor_machine_logic.cpp tests/ikbd_autosend_logic.cpp tests/dmasound_mono_logic.cpp tests/shifter_state_geometry_logic.cpp src/audio/MidiInHost.cpp
     src/audio/GmSynth.cpp src/gui/AppConfig.cpp)
 target_link_libraries(neost-selftest PRIVATE neost_core)
 target_include_directories(neost-selftest PRIVATE "${CMAKE_SOURCE_DIR}/src"

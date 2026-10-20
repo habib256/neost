@@ -30,7 +30,7 @@ struct CrtParams
 
     // Post-effets purs.
     float scanlines   = 0.25f;  // 0 = off, 1 = noir entre chaque ligne
-    float barrel      = 0.05f;  // 0 = plat, 0.2 = vieux CRT bombé
+    float barrel      = 0.025f; // 0 = plat, 0.025 = défaut (légère courbure), 0.30 = max du slider
 
     enum class ShadowMask : int {
         Off      = 0,

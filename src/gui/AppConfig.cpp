@@ -322,7 +322,7 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("crt_sharp=", 0)   == 0) c.crtParams.sharpness   = crtF(line.substr(10), 0.0f, 1.0f, 0.5f);
     else if (line.rfind("crt_persist=", 0) == 0) c.crtParams.persistence = crtF(line.substr(12), 0.0f, 0.98f, 0.4f);
     else if (line.rfind("crt_scanlines=", 0) == 0) c.crtParams.scanlines = crtF(line.substr(14), 0.0f, 1.0f, 0.25f);
-    else if (line.rfind("crt_barrel=", 0)  == 0) c.crtParams.barrel      = crtF(line.substr(11), 0.0f, 0.2f, 0.05f);
+    else if (line.rfind("crt_barrel=", 0)  == 0) c.crtParams.barrel      = crtF(line.substr(11), 0.0f, 0.30f, 0.025f);
     else if (line.rfind("crt_mask=", 0)    == 0) c.crtParams.shadowMask  = static_cast<neost::CrtParams::ShadowMask>(
                               std::clamp(std::atoi(line.substr(9).c_str()), 0, 3));
     else if (line.rfind("crt_maskstr=", 0) == 0) c.crtParams.shadowMaskStrength = crtF(line.substr(12), 0.0f, 1.0f, 0.5f);

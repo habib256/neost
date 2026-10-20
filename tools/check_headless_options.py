@@ -85,6 +85,45 @@ def main() -> int:
           "l'option de durée d'appui doit exister : sans elle, aucune A/B honnête "
           "contre l'oracle n'est possible.", out)
 
+    # Le bug : --key-hold 0 (ou négatif) n'envoyait JAMAIS le relâchement (appui et
+    # relâche sur la même phase, « else if ») — touches collées jusqu'à la fin.
+    for bad in ("0", "-3"):
+        out = run(["--key-hold", bad, "--keys-at", "10", "a"], frames=30)
+        check(f"--key-hold {bad} est REFUSÉ", "--key-hold must be" in out,
+              "une durée < 1 trame laissait la touche enfoncée tout le run.", out)
+
+    # --- --dump-at sur une fenêtre MMIO qui faute ------------------------------
+    # Le bug : bus.read8 hors instruction ; $FF8604 en octet faute → moira::BusError
+    # lancée hors de execute() → std::terminate. Cpu68k::triggerBusError abandonne
+    # désormais la faute hors de execute() ; --dump-at garde read8 (relit les puces).
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        dump = Path(td) / "mmio.bin"
+        cp = subprocess.run([str(HEADLESS), str(ROM), "--frames", "3", "--dump-at", "2",
+                             "FF8600", "16", str(dump)],
+                            cwd=ROOT, capture_output=True, text=True, timeout=180)
+        check("--dump-at sur $FF8600 (FDC/DMA) ne fait pas planter",
+              cp.returncode == 0 and dump.exists() and dump.stat().st_size == 16,
+              "le dump d'une fenêtre MMIO qui faute en octet tuait le processus.",
+              f"code {cp.returncode} {cp.stderr[-300:]}")
+
+        # --- --from-cfg rejoue AUSSI les extensions du GUI --------------------
+        # Le bug : ultrasatan=/sd2=/dongle=/ports lus par le lecteur partagé puis
+        # JAMAIS recopiés — le « rejeu fidèle » tournait sur un autre matériel.
+        cfg = Path(td) / "neost.cfg"
+        cfg.write_text("rom=%s\nmachine=st\nultrasatan=1\ndongle=cubase2\n"
+                       "joy1=leaderboard\nprinter=prosound\nrs232=bogus\n" % ROM)
+        cp = subprocess.run([str(HEADLESS), "--from-cfg", str(cfg), "--frames", "2"],
+                            cwd=ROOT, capture_output=True, text=True, timeout=180)
+        out = cp.stdout + cp.stderr
+        for what, needle in (("ultrasatan=", "UltraSatan on ACSI targets 0-1"),
+                             ("dongle=", "cartridge key (cubase2)"),
+                             ("joy1=", "joy1: Leader Board"),
+                             ("printer=", "printer: Pro Sound"),
+                             ("identifiant inconnu ignoré", "unknown rs232=bogus ignored")):
+            check(f"--from-cfg rejoue {what}", needle in out,
+                  "la clé de neost.cfg doit atteindre l'option headless homologue.", out)
+
     # --- Scancodes bruts (A4) : le pavé numérique redevient atteignable -------
     out = run(["--scancode-at", "10", "70,6d,6e"], frames=60)
     check("--scancode-at est accepté", "unknown option" not in out.lower(),

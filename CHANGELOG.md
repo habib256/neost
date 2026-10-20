@@ -6,6 +6,65 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Bug hunt 11ᵉ passe : 24 correctifs sur six sous-systèmes, save-state v51 (2026-10-20)
+
+Six lots fusionnés (branche `fix/bug-hunt-11`). Chaque correctif a un test qui échoue sans lui,
+sauf les seuils `NEOST_IPLFETCH`, qui dépendent d'une variable lue au lancement. Paliers `fast`
+et `full` verts sur chaque lot. Les écarts assumés vis-à-vis d'Hatari sont consignés dans
+[`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md).
+
+- **CPU (Moira, vendorisé)** : ANDI/ORI/EORI #,SR, ANDI/ORI/EORI #,CCR et MOVE to CCR
+  rechargent les deux mots de préfetch après l'écriture de SR/CCR (`fullPrefetch`, comme
+  MOVE to SR la veille ; microcode et Hatari CE). Un `ANDI #$DFFF,SR` en `$7FA` refait pc0+4
+  en mode utilisateur et prend la bus error en `$7FE`, comme le 68000. `triggerBusError` levé
+  hors de `moira->execute()` (accès hôte) ne lance plus d'exception et n'enregistre aucune
+  faute : l'accès est abandonné avec une valeur neutre. Les seuils `NEOST_IPLFETCH4/2` restent
+  écrits dans l'état, mais le load les ignore et les recalcule d'après la configuration du
+  processus (format inchangé sur ce point).
+- **Vidéo, Shifter arrêté (res 3)** : le stop et le retour doivent tomber sur la même ligne.
+  Un arrêt à cheval sur le HBL décalait jusque-là chaque ligne de −4/−8/−12 px. La date
+  d'écriture suit la grille réelle `glueLineStart_` (≙ `Video_ConvertPosition`) : plus de
+  dérive de 4 cycles par ligne de 508 cycles. La ligne noire est posée si un intervalle res 3
+  couvre toute la fenêtre DE, et non plus au commit du HBL, qui noircissait la ligne précédente.
+- **IKBD** (protocole Atari, défauts d'Hatari non repris) : `$09` remet à zéro la position
+  absolue interne. `$88/$89/$8A` avec la souris coupée renvoient 8 octets, avec le dernier mode
+  souris choisi. `$9A` distingue l'interrogation (`$15`) des joysticks désactivés (`$1A`).
+  `$17` sous PAUSE OUTPUT (`$13`) ne met plus d'échantillon en file.
+  `Blitter::reset` relâche GPU_DONE (GPIP3) : plus de blit fantôme après un reset à chaud en
+  plein blit. Le bouchon RS-232 (`Mfp::loopback_`) n'est plus sérialisé, comme les bouchons
+  MIDI et SCC.
+- **Disquette / ACSI** : la protection en écriture est testée après la montée en régime et
+  le délai E pour WRITE SECTOR, avant l'attente de l'index pour WRITE TRACK (organigrammes
+  WD177x, MAME). Le compteur de secteurs DMA borne les transferts ACSI (count×512 octets,
+  rien à compte nul, décompte par bloc de 512 o). En STX HD, la durée standard d'un secteur
+  est divisée par la densité. Un WRITE SECTOR STX sur un secteur à CRC données faux écrit un
+  champ neuf ; Hatari refusait l'écriture tout en annonçant un succès.
+- **Son DMA STE et save-states** : chaque événement DMA porte l'index d'écriture de l'anneau
+  de capture (`capW`). Un PLAY ou un changement de MODE en milieu de trame prend effet à son
+  échantillon, et non plus dès le début de la trame (bruitage avancé jusqu'à 20 ms). Un
+  `.state` forgé est refusé dans deux cas où il plantait : géométrie Shifter différente de
+  `geometryFor(frameMode_)` (débordement de `renderLine`) et cache DTA GEMDOS vide avec un
+  lecteur monté.
+- **Hôte** : `--dump-at` ne termine plus le processus sur `$FF8604`/`$FF9200` (garde
+  CPU) et garde `bus.read8`, qui relit les puces (un passage à `peek8` aurait rendu `$FF`
+  sur toute la MMIO et cassé les recettes de diagnostic). La barre d'état du GUI affiche la RAM réelle (« 2176 KB »,
+  « 2.5 MB ») et `mem=` est ramené à sa forme canonique. En mode serveur, le joystick tenu
+  est amorcé depuis la machine (`--joy`, `--load-state`), et le `load` d'un état importé
+  reprend le joystick tenu que porte l'état. `--from-cfg` rejoue `ultrasatan=`/`sd2=`,
+  `dongle=`, `auto_dongle=` et les cinq ports. La NE2000 a sa PROM d'adresse station (MAC
+  doublée, signature `WW`, lecture seule) ; sa MAC par défaut est `02:4E:53:54:00:01`,
+  localement administrée. `--key-hold` refuse N < 1, valeur avec laquelle la touche n'était
+  jamais relâchée.
+- **Save-state v51** : ligne du dernier changement de résolution Shifter et intervalles
+  d'arrêt, `lastMouseMode_`/`joysticksEnabled_` IKBD, `DmaEvent.capW` ; `Mfp::loopback_`
+  retiré. Les états v50 sont refusés.
+
+## Effet CRT : courbure (barrel) par défaut à 0.025 (2026-10-20)
+
+- `CrtParams::barrel` passe de 0.05 à **0.025** ; le plafond du parseur `neost.cfg`
+  (`crt_barrel`) suit le slider (0.30 au lieu de 0.2 : une valeur réglée au-delà de 0.2
+  était ramenée à 0.2 au rechargement). Une valeur déjà enregistrée dans `neost.cfg` reste prioritaire.
+
 ## Audit doc↔code, compteur vidéo 22 bits, `$FF8261`/res 3, repos GPIP matériel, RAM 2,5 Mo (2026-10-20)
 
 - **Audit de la documentation contre le code** : une vingtaine de documents recalés

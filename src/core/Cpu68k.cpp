@@ -58,6 +58,10 @@ struct CpuState {
     bool        vblPending   = false;     // VBL (niveau 4) en attente d'acquittement
     bool        hblPending   = false;     // HBL (niveau 2) en attente d'acquittement
     bool        inBusError   = false;     // garde « double bus fault » (cf. son bandeau)
+    // Vrai UNIQUEMENT pendant moira->execute() : seul ce cadre attrape moira::BusError.
+    // Hors de lui (lecture d'observation, outil hôte, callback d'ordonnanceur), une
+    // faute levée par un périphérique (triggerBusError) traverserait l'hôte → terminate.
+    bool        inExecute    = false;
     int         grp0Vector   = 0;
     // ---- Dernière faute de GROUPE 0, pour NOMMER un halt (A42, 2026-08-30) -----
     // Équivalent des `last_*_for_exception_3` d'Hatari (newcpu.c:3086) : sans elles
@@ -530,6 +534,17 @@ public:
     // Débogueur : watchpoint mémoire atteint (appelé par la couche dataflow de Moira
     // PENDANT l'accès, si CHECK_WP). Sémantique « break-after-access » : on note le hit
     // (adresse DONNÉE) et on préempte → le run() rend la main APRÈS l'instruction fautive.
+    // Seuils IPL différés depuis la configuration de processus (NEOST_IPLFETCH*),
+    // à la vitesse CPU `mul`. Mode éteint : rien ne peut rester en attente.
+    void applyIplFetchConfig(int mul) {
+        if (g_iplFetch) {
+            setIplDelay(static_cast<int64_t>(g_iplFetch4) * mul, static_cast<int64_t>(g_iplFetch2) * mul);
+        } else {
+            setIplDelay(0, 0);
+            iplDeferred = -1;
+        }
+    }
+
     void didReachWatchpoint(moira::u32 addr) override {
         g_cur->bpHit = true; g_cur->bpAddr = addr & 0xFFFFFFu; g_cur->bpWatch = true; g_cur->endSlice = true;
     }
@@ -549,7 +564,14 @@ public:
         // de fixBools() dans StateArchive.hpp.
         ar.fixBools(reg.sr.t1, reg.sr.t0, reg.sr.s, reg.sr.m,
                     reg.sr.x, reg.sr.n, reg.sr.z, reg.sr.v, reg.sr.c);
-        ar(iplChangeClock); ar(iplChangeClockPrev); ar(iplDelay4); ar(iplDelay2);
+        ar(iplChangeClock); ar(iplChangeClockPrev);
+        // Seuils NEOST_IPLFETCH4/2 : CONFIGURATION DE PROCESSUS (variables d'env, cf.
+        // tools/env_locks.json), pas état machine. Le format v50 les contient toujours
+        // (écrits pour compatibilité) mais le load les JETTE : les restaurer allumait
+        // ou éteignait en silence la reconnaissance IPL expérimentale selon le
+        // processus qui avait sauvé (iplDelay4 != 0 est son seul interrupteur).
+        // Cpu68k::serialize les ré-dérive de g_iplFetch une fois cpuMul restauré.
+        { moira::i64 d4 = iplDelay4, d2 = iplDelay2; ar(d4); ar(d2); }
         // v50 (CPU3) : échantillon IPL DIFFÉRÉ du mode NEOST_IPLFETCH (≙ regs.ipl[1] de
         // WinUAE). pollIpl() l'arme pendant une instruction et execute() ne le consomme
         // qu'à la frontière SUIVANTE — il survit donc à la sortie de run() et peut être
@@ -1062,7 +1084,11 @@ int Cpu68k::run(int cycles) {
             }
         }
         if (state_->tracer) state_->traceEmitted = false;
-        state_->moira->execute();                          // instruction, IRQ ou attente STOP
+        {
+            state_->inExecute = true;
+            struct ExecGuard { bool& f; ~ExecGuard() { f = false; } } execGuard{state_->inExecute};
+            state_->moira->execute();                      // instruction, IRQ ou attente STOP
+        }
         if (htEmit) {
             const int64_t now = busClockNow();
             std::fprintf(stderr, "HT %06X d=%-3lld %s\n", htPc, static_cast<long long>(now - state_->htPrev), htDis);
@@ -1251,6 +1277,10 @@ void Cpu68k::serialize(StateArchive& ar) {
     // bond d'horloge Moira. On rejette toute autre valeur (rejoue le backup), comme
     // cpl_/lpf_/now_.
     ar.check(state_->cpuMul == 1 || state_->cpuMul == 2, "Cpu68k::state_->cpuMul hors {1,2}");
+    // Seuils NEOST_IPLFETCH : ré-dérivés de la configuration du processus courant (le
+    // fichier n'a pas autorité, cf. serializeState).
+    if (ar.loading() && (state_->cpuMul == 1 || state_->cpuMul == 2))
+        state_->moira->applyIplFetchConfig(state_->cpuMul);
     // state_->cpuBias accompagne state_->cpuMul : rebasé à CHAQUE bascule 8/16 MHz et non nul
     // même après retour à 8 MHz — sans lui, busOfClock() rendrait des valeurs d'un
     // autre domaine que sched.now_ après load (fenêtres blitter, dispatch faux).
@@ -1422,6 +1452,12 @@ uint32_t Cpu68k::usp() const {
 }
 
 bool Cpu68k::triggerBusError(uint32_t addr, bool write) {
+    // Hors exécution d'une instruction Moira, aucun 68000 n'est sur le bus : l'accès
+    // vient de l'hôte (débogueur, --dump-at, sonde). Ni throw (rien ne l'attraperait),
+    // ni inBusError/faultValid (le CPU émulé n'a pris aucune faute). On rend true :
+    // l'appelant abandonne l'accès avec une valeur neutre, comme le registre qui ne
+    // répond pas à un accès octet sur le vrai bus.
+    if (!state_->inExecute) return true;
     return state_->moira->faultOrHalt(addr, write);
 }
 

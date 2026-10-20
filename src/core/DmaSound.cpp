@@ -159,13 +159,14 @@ void DmaSound::capPush(int8_t b) {
 
 // Tire le prochain échantillon L/R du flux capturé (stéréo : 2 octets pair/impair,
 // mono : 1 octet dupliqué). false = flux épuisé (rien n'est consommé).
+// Lecture bornée par capRenderAvail (repère du prochain événement de trame).
 bool DmaSound::capPullLR(bool stereo, int& l, int& r) {
     if (stereo) {
-        if (capAvail() < 2) return false;
+        if (capRenderAvail() < 2) return false;
         l = cap_[capR_++ & (kCapSize - 1)];
         r = cap_[capR_++ & (kCapSize - 1)];
     } else {
-        if (capAvail() < 1) return false;
+        if (capRenderAvail() < 1) return false;
         l = r = cap_[capR_++ & (kCapSize - 1)];
     }
     return true;
@@ -480,7 +481,7 @@ void DmaSound::recordEvent(uint8_t kind) {
     if (!cycleClock_) return;
     int64_t c = cycleClock_();
     if (c < 0) c = 0;
-    events_.push_back({ uint32_t(c), kind, startAddr_, endAddr_, mode_, bool(ctrl_ & 0x02) });
+    events_.push_back({ uint32_t(c), kind, startAddr_, endAddr_, mode_, bool(ctrl_ & 0x02), uint64_t(capW_) });
 }
 
 // Repli SANS horloge push : aligne l'état audio sur l'état CPU live au début de trame.
@@ -695,7 +696,10 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
 // fetch par le cœur (FIFO au faisceau), l'audio ne relit plus la RAM. `ym` est aligné
 // sur le 1er échantillon du segment. DMA inactif ET flux drainé → YM recopié L=R.
 void DmaSound::mixSegment(float* st, const float* ym, uint32_t count, uint32_t sampleRate, float dmaGain) {
-    if ((!aPlaying_ && capAvail() == 0) || sampleRate == 0) { // DMA inactif → YM seul (L=R)
+    // DMA inactif ET plus rien à drainer AVANT le prochain événement → YM seul (L=R).
+    // C'est capRenderAvail (borné) et non capAvail : avant un PLAY de milieu de trame,
+    // l'anneau contient déjà les octets que le DAC tirera APRÈS l'écriture PLAY.
+    if ((!aPlaying_ && capRenderAvail() == 0) || sampleRate == 0) {
         for (uint32_t i = 0; i < count; ++i) { st[2 * i] = ym[i]; st[2 * i + 1] = ym[i]; }
         return;
     }
@@ -754,6 +758,11 @@ void DmaSound::mixStereo(float* st, const float* ym, uint32_t frames, uint32_t s
     for (const DmaEvent& e : events_) {
         uint32_t off = uint32_t(int64_t(e.cycle) * frames / frameCycles);
         if (off > frames) off = frames;
+        // Le segment qui PRÉCÈDE l'événement ne consomme que les octets capturés avant
+        // lui (e.capW) : pas d'octets post-PLAY rendus en avance, pas d'octets du
+        // nouveau MODE lus à l'ancien format. Un reliquat non consommé (rendu un peu
+        // plus lent que le DAC) reste dans l'anneau et passe au segment suivant.
+        capLimit_ = e.capW;
         if (off > pos) { mixSegment(st + 2 * pos, ym + pos, off - pos, sampleRate, dmaGain); pos = off; }
         if (e.kind == 0) {                                    // PLAY start (0→1) : recale la cadence
             aPlaying_ = true; aMode_ = e.mode;
@@ -764,6 +773,7 @@ void DmaSound::mixStereo(float* st, const float* ym, uint32_t frames, uint32_t s
             aMode_ = e.mode;
         }
     }
+    capLimit_ = UINT64_MAX;                                   // dernier segment : tout le flux
     if (pos < frames) mixSegment(st + 2 * pos, ym + pos, frames - pos, sampleRate, dmaGain);
     events_.clear();
 }

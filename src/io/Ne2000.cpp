@@ -35,7 +35,21 @@ void Ne2000::trace(const char* what, unsigned a, unsigned b) const {
 }
 
 void Ne2000::setMac(const uint8_t mac[6]) {
-    std::memcpy(par_, mac, 6);
+    std::memcpy(mac_, mac, 6);
+    loadProm();
+}
+
+// PROM d'adresse station (NE2000) : un octet de PROM 8 bits câblé sur les DEUX
+// moitiés du bus de données, d'où chaque octet lu DEUX fois en Remote DMA octet par
+// octet. Image de 16 octets : MAC en 0-5, 6-13 à zéro, « WW » ($57 $57) en 14-15
+// — la signature que ne.c teste (SA_prom[14] == SA_prom[15] == 0x57) après
+// dédoublement. Même disposition que ne2000_reset de QEMU (lu, non copié).
+void Ne2000::loadProm() {
+    uint8_t prom[kPromSize / 2] = {0};
+    std::memcpy(prom, mac_, 6);
+    prom[14] = prom[15] = 0x57;
+    for (int i = 0; i < kPromSize / 2; ++i)
+        mem_[std::size_t(2 * i)] = mem_[std::size_t(2 * i + 1)] = prom[i];
 }
 
 void Ne2000::reset() {
@@ -50,6 +64,7 @@ void Ne2000::reset() {
     irq_ = false;
     if (mem_.size() != std::size_t(kMemSize)) mem_.assign(kMemSize, 0);
     else std::fill(mem_.begin(), mem_.end(), 0);
+    loadProm();                      // la PROM survit au reset (elle est en ROM)
 }
 
 void Ne2000::setIsr(uint8_t bits) {
@@ -171,7 +186,9 @@ uint8_t Ne2000::remoteDmaReadByte() {
 
 void Ne2000::remoteDmaWriteByte(uint8_t v) {
     if (rbcr_ == 0) return;
-    if (rsar_ < mem_.size()) mem_[rsar_] = v;
+    // PROM d'adresse : en LECTURE SEULE sur la carte — une écriture Remote DMA y
+    // est sans effet (le compteur avance quand même).
+    if (rsar_ >= kPromSize && rsar_ < mem_.size()) mem_[rsar_] = v;
     rsar_++;
     if (--rbcr_ == 0) setIsr(ISR_RDC);
 }
