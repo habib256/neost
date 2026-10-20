@@ -26,7 +26,8 @@ le patch dans l'historique NeoST, à l'épreuve du clobber.
   code vendorisé le 2026-06-25 — perdu avec le fork écrasé — et l'audit du 2026-08-13
   ne l'a pas vu, faute d'exhibiteur : le cycle-bench tourne en cartouche (FAST), où
   l'ordre n'a aucun effet.
-- Exhibiteur : sonde `cpu_div_ram` de `tools/run_timing_oracle.py` (24 couples
+- Exhibiteur : sonde `cpu_div_ram` de `tools/run_timing_oracle.py` (définie dans
+  `tools/timing_extended.py`) (24 couples
   DIVU puis DIVS exécutés en RAM, durée de chaque itération comparée à Hatari au
   cycle près). Avant : 14 itérations DIVU et 9 DIVS courtes de 4 cycles ; après : 0.
 
@@ -109,8 +110,8 @@ cette date, dont `f90fc50` (DIVU/DIVS, porté ci-dessus) ; les autres concernent
 68020/68030, vAmiga et l'empreinte mémoire.
 
 **Rebaser, désormais** : cloner l'amont au pin, appliquer le diff `Moira/` du fork
-vendorisé, puis rejouer les six patches ci-dessous un par un (ils sont documentés
-séparément et chacun porte son étalon de validation).
+vendorisé, puis rejouer un par un les patches documentés dans ce fichier (chacun porte
+son étalon de validation).
 
 ## Re-valider les patches HORS étalons ST — la question du `Cputester`
 
@@ -118,7 +119,7 @@ L'arbre upstream contient un `Cputester/` que la vendorisation a élagué (**~71
 corpus ADF** : c'est la raison de l'élagage, et elle tient toujours — ce corpus n'a rien
 à faire dans l'historique d'un dépôt public de 100 Mo).
 
-Aujourd'hui, les six patches ne sont validés QUE par les étalons ST du projet : un
+Aujourd'hui, les patches locaux ne sont validés QUE par les étalons ST du projet : un
 patch qui casserait une instruction jamais exécutée par EmuTOS ni par nos démos
 passerait inaperçu. La bonne réponse n'est pas de commettre 713 Mo — c'est la même que
 pour l'oracle Hatari : **cloner hors de l'arbre, gitignoré**, et documenter la recette.
@@ -131,7 +132,7 @@ git -C /tmp/moira-upstream checkout 1efd69467ca13b27b2fb40febd5cb31dbecdea5f
 diff -ru /tmp/moira-upstream/Moira extern/moira/Moira
 ```
 
-Ce `diff` est le premier livrable utile : il transforme « six patches décrits en prose »
+Ce `diff` est le premier livrable utile : il transforme « des patches décrits en prose »
 en une liste de hunks vérifiable.
 
 **Évalué le 2026-10-20.** Le `Cputester/` amont est le cputester de Toni Wilen sur
@@ -180,7 +181,7 @@ CHANGEMENT de broche — une IRQ levée AVANT le `stop` (masquée par le SR d'al
 démasquée par l'opérande du stop) n'était jamais re-testée : le CPU dormait
 jusqu'au prochain changement de broche. Fix : dans la branche STOPPED
 d'`execute()` (Moira.cpp), après `POLL_IPL`, re-armer `CHECK_IRQ` si
-`reg.ipl > reg.sr.ipl`. Pendant : garde `!irqDeliverable()` sur le saut
+`reg.ipl > reg.sr.ipl || reg.ipl == 7` (NMI non masquable). Pendant : garde `!irqDeliverable()` sur le saut
 d'attente STOP de `Cpu68k::run` (NeoST) — sans elle l'horloge était téléportée
 au prochain événement et l'IRQ déjà prenable partait ~350 cyc trop tard. Cas
 mesuré : raster « Timer B + stop #$2100 + HBL » de Super Hang-On (bande blanche

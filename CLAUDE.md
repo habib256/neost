@@ -43,6 +43,7 @@ les puces) et **`neost_core` ne dépend pas du GUI**.
 ```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j        # cibles : neost (GUI), neost-headless, neost-selftest,
+                              #          neost-fuzz-disk, neost-stx-test,
                               #          neost_core / neost_net (libs)
 ./build/neost                 # auto : dernier ROM (neost.cfg) ou EmuTOS US
 ./build/neost <rom> <disk.st>
@@ -50,12 +51,15 @@ cmake --build build -j        # cibles : neost (GUI), neost-headless, neost-self
 
 Sous-modules : `extern/imgui`, `extern/miniaudio`. `extern/moira` est **vendorisé**
 (NeoST patche son code — cf. `extern/moira/NEOST_VENDOR.md`) ; il se compile tel quel en
-C++20, aucune génération. Le cœur Musashi a été retiré.
+C++20, sans générateur de code (CMake n'en recopie qu'une version sous
+`build/generated/moira`, avec `MoiraConfig.h` réglé en cycle-exact). Le cœur Musashi a été retiré.
 
 ⚠ Ne PAS faire `rm -rf build` (casse le shell si l'utilisateur y est `cd`) ;
 `cmake -B build` reconfigure. Sous macOS, pas de `timeout`.
-⚠ `NEOST_VERSION_STR` est une variable de **cache** : après un bump de version,
-`-DNEOST_VERSION_STR=<ver>` une fois, sinon `--version` ment.
+⚠ `NEOST_VERSION_STR` est une variable de **cache**, ré-ensemencée automatiquement
+après un bump de `project()` (`NEOST_VERSION_SEED`) — SAUF si une valeur a été forcée par
+`-DNEOST_VERSION_STR=<ver>` : elle est alors préservée et `--version` ment jusqu'au
+prochain `-D` (cf. `docs/RELEASE.md`).
 
 ## ⭐ Méthode imposée (ordre strict)
 

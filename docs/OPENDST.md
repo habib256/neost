@@ -104,7 +104,7 @@ un état de 1,35 Mo. La cause n'était ni le disque ni le processus : le CRC-32 
 (le filet de sécurité qui permet de rejouer l'état courant si la restauration échoue en
 cours de route). Table de CRC + sauvegarde de filet sérialisée sans CRC — mêmes valeurs,
 même format, les états déjà écrits restent lisibles — et la reprise tombe à 3,9 ms. Le
-mode GUI (F7/F8) en profite autant.
+mode GUI (F5/F7) en profite autant.
 
 ## 3. Injecter les entrées
 
@@ -270,7 +270,7 @@ Arité stricte : un argument de trop est une erreur.
 | `play SCRIPT` | `ok <champs>` | grammaire § 3 ; un masque **posé avant** chaque trame ; le dernier masque **reste posé** ; le port 0 est **mis à zéro** pendant le script ; total ≤ 10 M trames ; un script fautif ne joue **rien** |
 | `joy P1 [P0]` | `ok` | état tenu jusqu'au prochain `joy`/`play` ; bits haut 01 bas 02 gauche 04 droite 08 feu 80 |
 | `key make SC` / `key break SC` | `ok` | scancode ST hexa, 01..7F (`39` = espace) |
-| `mouse DX DY BTN` | `ok` | relatif, DX/DY ∈ ±32767, BTN 0..3 (bit 0 gauche, bit 1 droite) |
+| `mouse DX DY BTN` | `ok` | relatif, DX/DY ∈ [−32768, 32767], BTN 0..3 (bit 0 gauche, bit 1 droite) |
 | `peek ADR LEN` | `ok <2·LEN chiffres hexa>` | 1 ≤ LEN ≤ 4096 ; adresse 24 bits, reboucle ; **sans effet de bord**, l'espace I/O `$FF8000+` se lit `FF` |
 | `observe` | `ok <champs>` | sans avancer |
 | `save N` | `ok bytes=<taille>` | emplacement 0 ≤ N < `--server-slots` (64 par défaut, max 4096) ; mémorise l'état, la trame **et le joystick tenu** |
@@ -282,7 +282,7 @@ Arité stricte : un argument de trop est une erreur.
 | `slots` | `ok used=<n>/<max> bytes=<total>` | |
 | `insert A\|B FICHIER` | `ok drive=<A\|B> path=<FICHIER>` | aucune trame ne passe. Arme la fenêtre de changement de média d'Hatari (**WPRT forcé 18 VBL**), que le TOS lit pour remarquer l'échange (`Mediach`). `err` si l'image est illisible (le lecteur reste **tel quel**) ou si B est débranché (`--drive-b off`). ⚠ Laisser passer **≥ 40 trames** avant que le programme ne touche le lecteur : le TOS ne lit WPRT de A que toutes les 16 VBL, et un accès < 0,5 s après le précédent pendant que WPRT est haut lui fait conclure « pas de changement » (EmuTOS `flop_mediach`, comme Atari TOS). Les écritures suivent `--disk-ro` |
 | `eject A\|B` | `ok drive=<A\|B> path=-` | même fenêtre (WPRT forcé), puis lecteur vide (le TOS lit « Drive not ready ») |
-| `quit` | `ok bye` | puis le processus sort (code 0) ; une fin de stdin fait pareil |
+| `quit` | `ok bye` | alias `exit` ; puis le processus sort (code 0) ; une fin de stdin fait pareil |
 
 **Compteur de trames.** Il part de 0 au démarrage (ou après `--load-state`), avance de 1 par
 trame émulée, et **est restauré par `load`** : la trame publiée après un `load` est celle du

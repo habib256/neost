@@ -41,8 +41,9 @@ statuts ci-dessous ont bougé depuis : le commit `bc15a67` (2026-07-03, titre tr
 handling ») contient l'INTÉGRALITÉ du bug hunt 39-findings — **M1 (fronts GPIP), Timer B evt=0,
 $FF8264, VoidRead 0x00, read32 void, trou MMU STF, bruit ≥/250 kHz, `mode_ &0x8f` sont CORRIGÉS** ;
 **D4, BL-MST, cartouche 0xFF, bits SR MIDI sont des FAUX POSITIFS** (Hatari fait pareil) ; V3 est
-**partiellement résolu** (restart compteur porté). Nouvelles entrées : **S4 table DAC YM**
-(défaut Hatari = table mesurée, NeoST = modèle), **hybride WS1/WS3** et, à l'époque,
+**partiellement résolu** (restart compteur porté ; CLOS le 2026-09-01). Nouvelles entrées : **S4 table DAC YM**
+(défaut Hatari = table mesurée, NeoST = modèle — corrigé le 2026-07-07), **hybride WS1/WS3**
+(tranché WS3 le 2026-07-08, `VideoGlue.hpp:65-147`) et, à l'époque,
 troncature MFP→CPU sans reste (**portée depuis le 2026-08-14**). La 5ᵉ passe fait foi en cas
 de contradiction avec les sections historiques.
 
@@ -110,8 +111,8 @@ physique du blanking, et ne change aucune constante pour rejoindre Hatari.
 | Sous-système | NeoST | Hatari (vérité) | Fidélité | Écarts ouverts M / B (5ᵉ passe 2026-07-07) |
 |---|---|---|---|---|
 | MFP 68901 | `Mfp.cpp` | `mfp.c` | très élevée | 0 moyennes (UpdateTimers CLOS + compteur vivant ✅ 2026-09-02) / 5 |
-| Vidéo (Shifter/Glue) | `Shifter.cpp` | `video.c` | très élevée (STF WS3 + Glue STE + tricks res) | 0 moyennes (WS/V1/V2 ✅ 2026-07-08 ; résidus V2 : Paulo Simoes, $FF8261) / ~9 |
-| FDC + DMA + STX | `Fdc.cpp`, `StxImage.cpp` | `fdc.c`, `floppies/stx.c` | très élevée | 2 (D3, wait-state 4 cyc) / 4 (+2 assumés D1/D2) |
+| Vidéo (Shifter/Glue) | `Shifter.cpp` | `video.c` | très élevée (STF WS3 + Glue STE + tricks res) | 0 moyennes (WS/V1/V2 ✅ 2026-07-08 ; résidu V2 : Paulo Simoes — $FF8261/res 3 ✅ 2026-10-20) / ~9 |
+| FDC + DMA + STX | `Fdc.cpp`, `StxImage.cpp` | `fdc.c`, `floppies/stx.c` | très élevée | 0 (D3 ✅ 2026-08-26 ; wait-state 4 cyc des registres ✅ 2026-10-18, `Fdc::registerWait`) / 4 (+2 assumés D1/D2) |
 | Son (YM2149 + DMA STE) | `YM2149.cpp`, `DmaSound.cpp` | `psg.c`, `dmaSnd.c`, `sound.c` | très élevée (générateurs 1:1, FIFO DMA au faisceau) | 0 (S2/S3/S4 ✅ 2026-07-07) / ~6 |
 | ACIA 6850 / IKBD / MIDI | `Ikbd.cpp`, `MidiAcia.cpp` | `acia.c`, `ikbd.c` | très élevée | 0 / 7 (délais IKBD…) |
 | Bus / mémoire / bus-error | `Bus.cpp` | `ioMem*.c`, `memory.c`, `stMemory.c` | très élevée | 0 / 0 (densité STE corrigée, void blitter déjà conforme) |
@@ -134,27 +135,27 @@ citent les anciens identifiants.*
 
 | # | Sous-système | Divergence | Sévérité | NeoST | Hatari |
 |---|---|---|---|---|---|
-| BL1 ✅ | Blitter | Compteur X/Y écrit à `0` non interprété comme **65536** (blit avorté au lieu de maximal) | **HAUTE** | `Blitter.cpp:132-140` | `Blitter_WordsPerLine/LinesPerBitblock_WriteWord` `blitter.c:1343-1366` |
+| BL1 ✅ | Blitter | Compteur X/Y écrit à `0` non interprété comme **65536** (blit avorté au lieu de maximal) | **HAUTE** | `Blitter.cpp:201-211` | `Blitter_WordsPerLine/LinesPerBitblock_WriteWord` `blitter.c:1343-1366` |
 | BL3 ✅ | Blitter | ~~**Cycles de stall facturés HORS de l'horloge de l'ordonnanceur**~~ **corrigé (2026-08-25)**. `Blitter::onSlice` est le callback de l'échéance `Scheduler::BLITTER` : il tourne dans `Scheduler::runTo`, donc ENTRE deux `cpu.run()`. Ses cycles n'étaient ni dans `ran` (mesuré depuis un `quantumStartBus_` réancré à chaque entrée de `Cpu68k::run`) ni dans `sched.now()` — **perdus**, puis résorbés d'un coup par le `syncTo` de `Cpu68k::rebaseQuantumAndSync`. Mesuré (`NEOST_QDELTA_DIAG`) : escalier 136→**1088 cycles bus** sur *Lethal Xcess*, mangeant 2 tics de prescaler Timer A → `Mfp::readTimerData` rendait TADR `$3C` → garde `ILLEGAL` du jeu. Cassait `megast`, `ste` ET `megaste`. Porté par `Blitter::billCycles` → `Scheduler::addStolenCycles`, discriminé par `Cpu68k::inRun` (le mode HOG est déjà capté par `ran`). | **HAUTE** | `Blitter.cpp:billCycles`, `Scheduler.hpp:addStolenCycles`, `Cpu68k.hpp:inRun` | `Blitter_AddCycles` `blitter.c:342-354` (`nCyclesMainCounter`/`CyclesGlobalClockCounter`), `CycInt_Process` `cycInt.h` |
 | BL4 ✅ | Blitter | ~~Dispatch en FIN de tranche, pas après chaque accès~~ **CORRIGÉ (2026-08-25)** : la facturation est passée **par accès**. `Blitter::billCycles` (port de `Blitter_AddCycles` + `Blitter_FlushCycles`) est appelé par `readWord`/`writeWord` pour leurs 4 cycles et à **chaque arbitration**, à sa position réelle (prise du bus AVANT le transfert, restitution APRÈS) au lieu d'un lot en fin de tranche ; `Scheduler::addStolenCycles` DISPATCHE désormais (`syncTo`) au lieu d'avancer `now_` en silence. L'obstacle — `Scheduler::runTo` non ré-entrant — est levé : `fired`/`minAll` étaient déjà des locales, seul `firingDue_` manquait, il est sauvegardé/restauré par un garde RAII (`FiringGuard`). C'est le modèle d'Hatari, dont `CycInt_Process` (`cycInt.h:85-88`, `while (ActiveInt <= now) CallActiveHandler()`, **sans masque anti-relance**) est lui aussi ré-entré depuis le handler `INTERRUPT_BLITTER`. Le membre `inDispatch_` introduit par BL3 devient inutile et est retiré. **Mesuré** : `timer IRQ max lateness` **265 → 132** sur Lethal Xcess/`megast` (= la valeur ST, sans plus rien masquer), **170 → 132** sur `ste`/`megaste`, **265 → 161** au boot EmuTOS `megast` nu. Validé assertions ACTIVES (`-UNDEBUG`) : 26000 trames, ~1,6 M préemptions, aucune assertion de `runTo` déclenchée. `--tier full` OK ; `machine=st` capture **bit-identique** (le patch y est inerte, pas de blitter). | — | `Blitter.cpp:billCycles` / `readWord` / `writeWord` / `onSlice`, `Scheduler.hpp:addStolenCycles` / `runTo` | `Blitter_FlushCycles` `blitter.c:356-374` (appel `CycInt_Process` `blitter.c:366`), `CycInt_Process` `cycInt.h:85-88` |
 | BL5 ✅ | Blitter / MFP | **Clos le 2026-10-19** : reprises sous-instruction, recouvrement CPU, PRE_START commun HOG/partagé et alignement au début du cycle RAM. `blitter_timer` : **68 → 0 px**, promu en oracle Hatari reproductible. Dix-sept sondes temporelles strictes, dont dix blitter (ROM/RAM, TAS, MULU, tailles). Les anciennes estimations et réfutations du 2026-08-26 sont historiques ; voir la section Blitter pour la clôture. |
-| V1 ✅ | Vidéo | ~~Branche STE de la Glue absente~~ **portée (2026-07-08)** : table STE (preload MMU 36/40, pal 56, HSync −52/−12) + `LEFT_OFF_2_STE` (+20 o, −8 px) + latch res sans −1 ; Cuddly-STE casse comme le vrai STE (196/250 = oracle) | moyenne | `Shifter.cpp` (`glue::Timing`, phase 1 STE) | `Video_Update_Glue_State` (branche STE) `video.c:2442-2652` |
-| V2 ✅ | Vidéo | ~~Tricks par changement de résolution~~ **portés (2026-07-08)** : overscan med-res (No Cooper greetings **0 px vs oracle**), stab med, scrolls hard 13/9/5/1 px, rendu multi-rés par ligne. Résidus : hardscroll Paulo Simoes, alias $FF8261 | moyenne | `Shifter.cpp` (`updateGlueRes`) | `Video_WriteToGlueRes` `video.c:1618-1820` |
-| V3 ✅ | Vidéo | **CLOS le 2026-09-01** — l'attribution à la grille RÉELLE (longueur de ligne persistante, ≙ `Video_StartHBL`/`nCyclesPerLine`) est le défaut ; exhibiteur généré `freq_switch`, 18/18 écritures à la même ligne et au même cycle qu'Hatari (trace `video_sync`), palier pixel à 0 px, `=0` fait rougir l'étalon. Historique : Géométrie mid-trame : **restart compteur PORTÉ** (VC_RESTART, 2026-07-02). ⚠ **« CyclesPerVBL ±4 » RETIRÉ — FAUX POSITIF prouvé (2026-08-25)** : chez Hatari la seule affectation *pleine* de `CyclesPerVBL` est dans la branche **VDI** (`video.c:4937-4942`, avec le commentaire d'Hatari « *When using VDI, we setup the next VBL here ; else it will be setup at the start of the last HBL* ») ; en mode normal la VBL vient de la chaîne `ShifterLines[].StartCycle` (`video.c:3354, 3370-3374`), que NeoST reproduit par `lineCarry_`/`beginFrame_` **actifs par défaut** — mesuré sur No Cooper : distribution des longueurs de trame `{160256: 6788, 160252: 10, 133604: 3}`, et 160252 = 313×512−4. Le mécanisme fonctionne. **Reste** l'attribution de ligne : le canal `NEOST_LINELEN` est **HYBRIDE** — moitié Machine ON (`Machine.cpp`), 4 sites Shifter OFF (`Shifter.cpp`). **Aucun étalon ne l'exhibe** (11/11 à 0 px dans les 3 configurations : défaut, `=1`, `=0` ; deux recontrôlés en MD5 byte-identique). ~~Seul exhibiteur connu = Closure~~ — **RÉFUTÉ le 2026-08-30** : `closure` est désormais un étalon (écran 153 couleurs, trame 10500) et il rend une image **BIT-IDENTIQUE avec `NEOST_LINELEN_ATTR=1`** (même md5, 0 px). Cet écran n'exerce donc PAS V3 ; la phrase datait du chantier CLOSURE (écran noir au boot), pas d'une mesure du verrou. V3 reste **sans exhibiteur mesuré**. Ce que Closure a rapporté à la place : **A40** — décalage de 4 px de la fenêtre gauche, non pas sur `glue::LEFT_OFF` mais sur le **retrait gauche med** (`LEFT_OFF_MED`, « remove left + med stab ») ; **CORRIGÉ le 2026-08-30** (`shEff = 4 + scrollFinal` → −4, plus les 8 dernières colonnes laissées à l'index 0) : oracle 64,08 % → **0,02 %**, cf. `CHANGELOG.md` et § *Cas où NeoST améliore Hatari* (A41) pour les 27 px restants. | basse | `Shifter.cpp` (`restartVideoCounter`), `Machine.cpp` | `Video_RestartVideoCounter` `video.c`, `video.c:3354,3370-3374,4937-4942` |
-| WS ✅ | Vidéo | ~~Hybride WS1/WS3~~ **TRANCHÉ : WS3 complet (2026-07-08)** — positions Glue +1 (`glue::kWsInc`), IRQ HBL à cpl (512/508/224, `kHblOff` 0), VBL 64 ✓. Ancres rendu/compteur/spec512 **fixes** 56/376 (≙ `LINE_START/END_CYCLE_*` hors table WS chez Hatari) ; DE stockés re-normalisés −inc au rendu. `NEOST_WS=1..4` pour A/B. Datations read −6/write +2/spec512 −25 **inchangées** (fidèles-théoriques, WS-indépendantes). Validé : étalons TOUS OK, boot STF 50 Hz 0 px, Cuddly menu == HEAD au px près (190/250 vs oracle, identique baseline) | moyenne (systémique) | `Shifter.cpp` (glue::), `Machine.cpp` | `VIDEO_TIMING_DEFAULT=WS3` `video.c:624`, `video.c:976-1007` |
-| S1 ✅ | Son | **Filtre passe-bas STF (C10) jamais activé** → STF/Mega ST en PWM (code mort) | moyenne | `setStfLowPass` jamais appelé, `YM2149.hpp:168` | `Sound_Update_Filters` `sound.c:1946-1951` |
+| V1 ✅ | Vidéo | ~~Branche STE de la Glue absente~~ **portée (2026-07-08)** : table STE (preload MMU 36/40, pal 56, HSync −52/−12) + `LEFT_OFF_2_STE` (+20 o, −8 px) + latch res sans −1 ; Cuddly-STE casse comme le vrai STE (196/250 = oracle) | moyenne | `VideoGlue.hpp` (`glue::Timing`, phase 1 STE) | `Video_Update_Glue_State` (branche STE) `video.c:2442-2652` |
+| V2 ✅ | Vidéo | ~~Tricks par changement de résolution~~ **portés (2026-07-08)** : overscan med-res (No Cooper greetings **0 px vs oracle**), stab med, scrolls hard 13/9/5/1 px, rendu multi-rés par ligne. Résidu : hardscroll Paulo Simoes (alias $FF8261 et Shifter arrêté res 3 ✅ portés le 2026-10-20, `Shifter::writeShifterRes`) | moyenne | `VideoGlue.cpp` (`updateGlueRes`) | `Video_WriteToGlueRes` `video.c:1618-1820` |
+| V3 ✅ | Vidéo | **CLOS le 2026-09-01** — l'attribution à la grille RÉELLE (longueur de ligne persistante, ≙ `Video_StartHBL`/`nCyclesPerLine`) est le défaut ; exhibiteur généré `freq_switch`, 18/18 écritures à la même ligne et au même cycle qu'Hatari (trace `video_sync`), palier pixel à 0 px, `=0` fait rougir l'étalon. Historique : Géométrie mid-trame : **restart compteur PORTÉ** (VC_RESTART, 2026-07-02). ⚠ **« CyclesPerVBL ±4 » RETIRÉ — FAUX POSITIF prouvé (2026-08-25)** : chez Hatari la seule affectation *pleine* de `CyclesPerVBL` est dans la branche **VDI** (`video.c:4937-4942`, avec le commentaire d'Hatari « *When using VDI, we setup the next VBL here ; else it will be setup at the start of the last HBL* ») ; en mode normal la VBL vient de la chaîne `ShifterLines[].StartCycle` (`video.c:3354, 3370-3374`), que NeoST reproduit par `lineCarry_`/`beginFrame_` **actifs par défaut** — mesuré sur No Cooper : distribution des longueurs de trame `{160256: 6788, 160252: 10, 133604: 3}`, et 160252 = 313×512−4. Le mécanisme fonctionne. **Reste** l'attribution de ligne : le canal `NEOST_LINELEN` est **HYBRIDE** — moitié Machine ON (`Machine.cpp`), 4 sites Shifter OFF (`Shifter.cpp`). **Aucun étalon ne l'exhibe** (11/11 à 0 px dans les 3 configurations : défaut, `=1`, `=0` ; deux recontrôlés en MD5 byte-identique). ~~Seul exhibiteur connu = Closure~~ — **RÉFUTÉ le 2026-08-30** : `closure` est désormais un étalon (écran 153 couleurs, trame 10500) et il rend une image **BIT-IDENTIQUE avec `NEOST_LINELEN_ATTR=1`** (même md5, 0 px). Cet écran n'exerce donc PAS V3 ; la phrase datait du chantier CLOSURE (écran noir au boot), pas d'une mesure du verrou. V3 reste **sans exhibiteur mesuré**. Ce que Closure a rapporté à la place : **A40** — décalage de 4 px de la fenêtre gauche, non pas sur `glue::LEFT_OFF` mais sur le **retrait gauche med** (`LEFT_OFF_MED`, « remove left + med stab ») ; **CORRIGÉ le 2026-08-30** (`shEff = 4 + scrollFinal` → −4, plus les 8 dernières colonnes laissées à l'index 0) : oracle 64,08 % → **0,02 %**, cf. `CHANGELOG.md` et § *Cas où NeoST améliore Hatari* (A41) pour les 27 px restants. | basse | `VideoCounter.cpp` (`restartVideoCounter`), `Machine.cpp` | `Video_RestartVideoCounter` `video.c`, `video.c:3354,3370-3374,4937-4942` |
+| WS ✅ | Vidéo | ~~Hybride WS1/WS3~~ **TRANCHÉ : WS3 complet (2026-07-08)** — positions Glue +1 (`glue::kWsInc`), IRQ HBL à cpl (512/508/224, `kHblOff` 0), VBL 64 ✓. Ancres rendu/compteur/spec512 **fixes** 56/376 (≙ `LINE_START/END_CYCLE_*` hors table WS chez Hatari) ; DE stockés re-normalisés −inc au rendu. `NEOST_WS=1..4` pour A/B. Datations read −6/write +2/spec512 −25 **inchangées** (fidèles-théoriques, WS-indépendantes). Validé : étalons TOUS OK, boot STF 50 Hz 0 px, Cuddly menu == HEAD au px près (190/250 vs oracle, identique baseline) | moyenne (systémique) | `VideoGlue.hpp`/`VideoGlue.cpp` (glue::), `Machine.cpp` | `VIDEO_TIMING_DEFAULT=WS3` `video.c:624`, `video.c:976-1007` |
+| S1 ✅ | Son | **Filtre passe-bas STF (C10) jamais activé** → STF/Mega ST en PWM (code mort) | moyenne | `setStfLowPass` jamais appelé, `YM2149.hpp:186` | `Sound_Update_Filters` `sound.c:1946-1951` |
 | S2 ✅ | Son | ~~DMA STE sans FIFO 8 octets ni avance HBL~~ **corrigé (2026-07-07 soir)** : FIFO 8 octets fetchée par MOTS à chaque HBL (`DmaSound::onHbl` ← `Machine::onHbl`), fin de trame **au fetch** (XSINT/Timer A en avance, HBL-quantifié), octets **capturés au faisceau** pour le rendu (plus de relecture RAM en fin de trame — cas Mental Hangover), réalignement mono→stéréo, compteur $FF8909 = adresse de fetch. Étalon `tools/make_dmasnd_test.py` : 33,3 % d'octets B = oracle Hatari (33,2 %) | moyenne | `DmaSound.cpp` (`fifoRefill`/`updateDac`) | `DmaSnd_FIFO_*` / `DmaSnd_STE_HBL_Update` `dmaSnd.c:342-438,727-741` |
-| D1 | FDC/DMA | **WRITE TRACK STX réinterprété** en secteurs (CRC « nettoyé », statut neutralisé) | moyenne | `StxImage.cpp:293-360` (`reinterpretSaveTrack`), `Fdc.cpp:1486-1550` | `FDC_WriteTrack_STX` (TODO, pas de relecture) `stx.c:2027-2134` |
-| D2 | FDC/DMA | **READ TRACK STX** renvoie la piste réécrite (conséquence de D1) | moyenne | `Fdc.cpp:1553` | `FDC_ReadTrack_STX` `stx.c:1863` |
+| D1 | FDC/DMA | **WRITE TRACK STX réinterprété** en secteurs (CRC « nettoyé », statut neutralisé) | moyenne | `StxImage.cpp:293-344` (`reinterpretSaveTrack`), `Fdc.cpp:1674-1701` (`writeTrackStx`) | `FDC_WriteTrack_STX` (TODO, pas de relecture) `stx.c:2027-2134` |
+| D2 | FDC/DMA | **READ TRACK STX** renvoie la piste réécrite (conséquence de D1) | moyenne | `Fdc.cpp:1829` (`readTrackStx`) | `FDC_ReadTrack_STX` `stx.c:1863` |
 | D3 ✅ | FDC/DMA | ~~Flush FIFO↔RAM ne stalle pas le CPU~~ **CORRIGÉ (2026-08-26, 3ᵉ tentative — la bonne formulation est `due + stall + delay`).** Les quatre formulations MESURÉES (sonde `NEOST_FDC_FLUSH_DIAG=1`, régime de rafale, Blood Money) : `nowCyc()+delay` (l'ancien code) = **4203** cyc/flush (+76 vs Hatari) ; `due+delay` (ancrage pur) = 4096 (stall absorbé) ; `nowCyc()+stall+delay` = 4235 (ancrage neutralisé) ; **`due+stall+delay` = 4127,8** — cible Hatari **4127**. La clé est l'ORDRE chez Hatari : `PendingCyclesOver` est capturé EN TÊTE de handler (fdc.c:2332), PUIS `M68000_AddCycles_CE` avance le compteur global, PUIS le réarmement retranche l'overshoot (fdc.c:2388) — le stall échappe donc à l'ancrage et décale réellement la suite. Implémenté : stall 32 cyc aux deux flushs avec l'**invariant BL3** (`addBusWaitCycles` + `Scheduler::addStolenCycles`, hors quantum) ; ancrage sur `Scheduler::firingDue()` ; report du stall via `dmaStallPending_` (transitoire, remis à zéro par RAII à chaque événement, toujours nul à une frontière de trame → non sérialisé). **Validé** : mécanisme chiffré (`NEOST_FDC_LATE_DIAG=1` : dispatch en retard de 6,7 cyc en moyenne, ~107/cycle de 16 o = l'écart 4203→4096) ; **14/14 étalons pixel verts**, dont `nocooper` **0 px vs oracle** (réf re-posée, cf. sa note : la démo exige un ESPACE que `hatari_oracle.sh` n'injecte pas — `--cmd-fifo` + `hatari-event keydown 57`) ; canaris Lethal Xcess (aucun break) et Stardust STE OK. ✅ Suivi lateness 132→252 CLOS (instrumenté le jour même) : **deux pics isolés de Timer D** (161 et 252 cyc) sur ~300 000 échéances — un timer échu pendant une instruction allongée par le stall DMA intra-quantum attend la fin de l'instruction, comme pour tout wait-state. Fidèle ; le régime est inchangé. ⚠ Leçon consignée : DEUX faux verdicts successifs venaient d'artefacts d'outillage — sonde logée dans le correctif (inactive côté témoin), puis AVI oracle FIGÉ (7297 × la même frame) lu comme « diff constante ». Contrôle désormais obligatoire avant tout scan : **md5 de 2-3 frames éloignées de l'AVI**. | — | `Fdc.cpp` (`billDmaCycles`, `fifoPush`/`fifoPull`, `onFdcEvent`) | `FDC_DMA_FIFO_Push/Pull` `fdc.c:1355,1411`, `-PendingCyclesOver` `fdc.c:2332,2388` |
-| M1 ✅ | MFP | ~~Lignes GPIP on-chip sans machine de fronts AER/DDR~~ **corrigé (bc15a67)** : `gpipSetLine`/`gpipUpdateInterrupt` = port de `MFP_GPIP_Set_Line_Input`, tous les appelants convertis | moyenne | `Mfp.hpp:208-220`, `Mfp.cpp:600-610` | `MFP_GPIP_Set_Line_Input` `mfp.c:1143-1219` |
+| M1 ✅ | MFP | ~~Lignes GPIP on-chip sans machine de fronts AER/DDR~~ **corrigé (bc15a67)** : `gpipSetLine`/`gpipUpdateInterrupt` = port de `MFP_GPIP_Set_Line_Input`, tous les appelants convertis | moyenne | `Mfp.hpp:547-560`, `Mfp.cpp:1101-1116` | `MFP_GPIP_Set_Line_Input` `mfp.c:1143-1219` |
 | S4 ✅ | Son | ~~Table DAC « model » seul~~ **corrigé (2026-07-07 soir)** : table MESURÉE par défaut (`ym2149_fixed_vol.h` vendorisé + port de `interpolate_volumetable`), modèle conservé sous `NEOST_YM_MIXING=model` | moyenne | `YM2149.cpp` `dacTable()` | `YM_TABLE_MIXING` défaut `configuration.c:807`, `sound.c:505-543` |
 | S3 ✅ | Son | ~~Gain LMC ×2 manquant (YM STE −6 dB)~~ **corrigé (2026-07-07 soir)** : `kLmcMakeup=2.0` dans `gainLeft/Right/masterGain` + `kDmaGain` 0.7→0.375 (= ¾×½). Validé : cloche GEM ST vs STE ratio RMS **1.000** ; ratio DMA 0.75 exact | moyenne (audible) | `DmaSound.cpp` | ×2 `dmaSnd.c:1152-1153,1460-1461` + « 3/4 level » `dmaSnd.c:1146-1158` |
 | MC ✅ | MFP | ~~**Conversion MFP→CPU tronquée par période, sans reste accumulé**~~ **corrigée (2026-08-14)** : échéances absolues ×256, plafond vers le Scheduler, phase sérialisée v11 | moyenne-basse | `Mfp.cpp` (`timerPeriodSubCycles`, `scheduleTimerAt`) | unités internes ×256 `cycInt.c:26-45` |
-| BU1 ✅ | Bus | **Miroir matériel du PSG `$FF8804-$FF88FF`** non routé vers le YM2149 (lit `0xFF`, écritures ignorées) | moyenne | `Bus.cpp:501-502` | `IoMem_Init` shadow PSG `ioMem.c:386-393` |
-| BL2 ✅ | Blitter | Accès **OCTET** aux registres mot/long non rejetés | moyenne | `Blitter.cpp:99-105` | `Blitter_CheckAccess_Byte` `blitter.c:972-989` |
+| BU1 ✅ | Bus | **Miroir matériel du PSG `$FF8804-$FF88FF`** non routé vers le YM2149 (lit `0xFF`, écritures ignorées) | moyenne | `Bus.cpp:532-533,844-862` | `IoMem_Init` shadow PSG `ioMem.c:386-393` |
+| BL2 ✅ | Blitter | Accès **OCTET** aux registres mot/long non rejetés | moyenne | `Blitter.cpp:148-159` | `Blitter_CheckAccess_Byte` `blitter.c:972-989` |
 | SC1 ✅ | SCC | TX/RX cadencés, fractions directes/BRG et Zero Count avant /2/WR4 ; bouclage local et multiplexage RxD/TxD portés. Restent phase sous-bit, DPLL/SDLC et backend hôte. | limites documentées | `Scc::serialPeriod/updateBrg/onBrgEvent/serialWriteByte` | `SCC_WriteDataReg/SCC_Process_TX`, Zilog UM0109 et MAME |
-| D4 ✖ | FDC | ~~Piste 6268 vs 6250~~ **FAUX POSITIF (5ᵉ passe)** : le `#define FDC_TRACK_BYTES_STANDARD` actif d'Hatari vaut **6268** (la formule 6250 y est commentée) = NeoST | — | `Fdc.cpp:161` | `fdc.c:~410` |
+| D4 ✖ | FDC | ~~Piste 6268 vs 6250~~ **FAUX POSITIF (5ᵉ passe)** : le `#define FDC_TRACK_BYTES_STANDARD` actif d'Hatari vaut **6268** (la formule 6250 y est commentée) = NeoST | — | `Fdc.cpp:163` | `fdc.c:~410` |
 
 ---
 
@@ -176,7 +177,7 @@ Chaîne IRQ (IER/IPR/IMR/ISR/VR, élection priorité + chronologie, délai 4 cyc
 auto/software, antidatage), timers datés, compteur vivant, event-count Timer A/B : **conformes**.
 
 - **[M1 — moyenne] ✅ corrigé (bc15a67, 2026-07-03)** — machine de fronts centralisée :
-  `gpipSetLine`/`gpipUpdateInterrupt` (`Mfp.hpp:208-220`, `Mfp.cpp:600-610`) = port de
+  `gpipSetLine`/`gpipUpdateInterrupt` (`Mfp.hpp:547-560`, `Mfp.cpp:1101-1116`) = port de
   `MFP_GPIP_Set_Line_Input`/`_Update_Interrupt` (mfp.c:1143-1219), AER/DDR respectés, tous les
   appelants on-chip convertis (Ikbd/MidiAcia wire-OR/Fdc/Blitter). Cf. 5ᵉ passe.
 - **[basse] ✅ corrigé (2026-08-14)** — conversion cycles MFP↔CPU en échéances absolues
@@ -185,10 +186,10 @@ auto/software, antidatage), timers datés, compteur vivant, event-count Timer A/
   reste l'ancre du rechargement suivant ; phase sérialisée en save-state v11. *Hatari
   ajoute aussi un jitter aléatoire volontaire pour Lethal Xcess, non reproduit.*
 - **[basse] ✅ corrigé (bc15a67)** — Event-count Timer B : garde `tbCounter_==0` supprimée,
-  wrap uint8 0→255 (`Mfp.cpp:553-570` = `MFP_TimerB_EventCount` mfp.c:1297-1320).
-- **[basse]** Retombée d'IRQ immédiate (`Mfp.cpp:773-780`, `updateIrq`) vs TODO Hatari d'un délai mesuré (`mfp.c:789`) — identique aujourd'hui, suivi seulement.
+  wrap uint8 0→255 (`Mfp.cpp:834-850`, `hblankAt` = `MFP_TimerB_EventCount` mfp.c:1297-1320).
+- **[basse]** Retombée d'IRQ immédiate (`Mfp.cpp:1165-1193`, `updateIrq`) vs TODO Hatari d'un délai mesuré (`mfp.c:789`) — identique aujourd'hui, suivi seulement.
 - *Faux positif écarté :* les wait-states 4 cyc d'accès MFP **sont** appliqués, mais par le
-  `Bus` (`Bus.cpp:830`, `addMfpWaitCycles()`), pas par `Mfp.cpp` → **pas une divergence**.
+  `Bus` (`Bus.cpp:896`, `addMfpWaitCycles()`), pas par `Mfp.cpp` → **pas une divergence**.
 
 ### Vidéo (Shifter + Glue) — `Shifter.cpp` ↔ `video.c`
 Cœur Glue **STF** = transcription quasi ligne-à-ligne (`updateGlueState` ≙ `Video_Update_Glue_State`
@@ -200,19 +201,24 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
   `LEFT_OFF_2_STE` +20 o/−8 px). Cf. 5ᵉ passe (statut à jour). Le menu Cuddly sur NeoST-STE
   casse désormais comme le vrai STE (196/250 trames = oracle Hatari-STE) — un rapport GUI
   « menu cassé en STE » est FIDÈLE, vérifier la machine avant de conclure à un bug.
-- **[V2 — moyenne]** Tricks de bordure par **changement de résolution** non répliqués : pas
-  d'équivalent de `Video_WriteToGlueRes` (`video.c:1618-1820`) — overscan med-res, stab
-  hi/med/lo, scroll « hardware » 1/5/9/13 px. NeoST verrouille une résolution par trame
-  (`frameMode_`). *Impact : No Cooper, Delta Force/PYM, Closure, HighResMode.*
+- **[V2 — moyenne] ✅ PORTÉ (2026-07-08)** — ~~tricks de bordure par **changement de
+  résolution** non répliqués~~ : `Shifter::updateGlueRes` (`VideoGlue.cpp:731-805`, appliqué au
+  rejeu de fin de trame `VideoGlue.cpp:893`) = port des détections 1637-1753 de
+  `Video_WriteToGlueRes` — overscan med-res, `LEFT_OFF_MED`, variante STE, stab med, scrolls
+  « hardware » 13/9/5/1 px ; rendu multi-résolution par ligne (`Shifter.cpp:873-878`).
+  No Cooper greetings 0 px vs oracle. Restent hors port : hardscroll 4 px (video.c:1755-1789),
+  hacks Closure/DOLB (1791-1834). L'écriture `$FF8261` et le Shifter arrêté (res 3) sont
+  portés depuis le 2026-10-20 (cf. § *Nouveaux — BASSES*, Vidéo). `NEOST_V2` ne gate
+  plus que le raccourcissement HBL (`Machine.cpp:158-163`, opt-in).
 - **[V3] ✅ CLOS le 2026-09-01** — attribution de ligne à la grille réelle **promue par défaut** (`NEOST_LINELEN_ATTR`, ON) après preuve à l'oracle sur l'exhibiteur `freq_switch` : la longueur de ligne ne persistait pas d'une ligne à l'autre (retombait à 512 sans écriture), donc le verrou ne pouvait pas produire la dérive qu'il vise — corrigé (`glueLineLenFor`), 18/18 écritures freq attribuées comme Hatari (ligne et cycle), `TODO.md` § restes. Historique : `RestartVideoCounter` **PORTÉ** (2026-07-02,
   `restartVideoCounter`, événement `VC_RESTART`, check freq live). ⚠ **« CyclesPerVBL ±4 »
   RETIRÉ le 2026-08-25 : FAUX POSITIF prouvé** (cf. la ligne V3 du tableau des priorités —
   `CyclesPerVBL` n'est vivant qu'en mode VDI chez Hatari, la VBL normale vient de la chaîne
   `ShifterLines[].StartCycle`, portée par `lineCarry_`/`beginFrame_` actifs par défaut).
-  **Reste** : l'attribution de ligne à géométrie NOMINALE hors `NEOST_LINELEN` côté Shifter.
-  ⚠ **Correction de description** : le canal n'est PAS « ON par défaut depuis 2026-07-08 » — il
-  est **HYBRIDE**, moitié `Machine` ON et 4 sites `Shifter` OFF. Aucun étalon ne l'exhibe (11/11
-  à 0 px dans les trois configurations).
+  ~~**Reste** : l'attribution de ligne à géométrie NOMINALE hors `NEOST_LINELEN` côté Shifter.~~
+  ~~Canal **HYBRIDE**, moitié `Machine` ON et 4 sites `Shifter` OFF~~ — **périmé** : les deux
+  verrous sont ON par défaut, `NEOST_LINELEN` (Machine, `Shifter.cpp:92-95`) et
+  `NEOST_LINELEN_ATTR` (attribution Shifter, `ShifterInternal.hpp:31`, depuis le 2026-09-01).
   ⚠ **Réserve honnête** : le cas décisif — une trame où la **dernière** ligne (`lpf_-1`) change
   de fréquence — n'est établi que par **LECTURE** des gardes, jamais mesuré ; la ligne raccourcie
   effectivement observée est la 34. D'où une reformulation plutôt qu'une radiation.
@@ -230,7 +236,7 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
   Le compteur intra-ligne conserve le comportement du calcul d’adresse Hatari.
 - **[basse]** Datation des écritures couleur spec512 (offset calibré) ≠ datation freq/res (+16) —
   fonctionne par calibration séparée, fragile.
-- **[basse]** Bordures uniquement en basse résolution (overscan med-res non géré, `Shifter.hpp:334`).
+- ~~**[basse]** Bordures uniquement en basse résolution (overscan med-res non géré)~~ — **obsolète** : l'overscan med-res est porté depuis V2 (2026-07-08, `updateGlueRes`, `VideoGlue.cpp`).
 
 ### FDC WD1772 + DMA + STX — `Fdc.cpp`, `StxImage.cpp` ↔ `fdc.c`, `floppies/stx.c`
 
@@ -310,11 +316,11 @@ extension DAM NeoST qualifiée ci-dessus.
   ligne à ligne) » — c'était faux, et cela a masqué l'écart (audit du 2026-08-01).
 
 - **[D1 — moyenne]** WRITE TRACK STX : NeoST parse le flux MFM écrit (`$FE`→ID, `$FB/$F8`→data)
-  et le rend visible aux lectures, **régénère un CRC valide + `fdcStatus=0`** (`StxImage.cpp:293-360`, `reinterpretSaveTrack`).
+  et le rend visible aux lectures, **régénère un CRC valide + `fdcStatus=0`** (`StxImage.cpp:293-344`, `reinterpretSaveTrack`).
   Hatari laisse un TODO (`pDataRead=NULL`, `stx.c:2027`) → lecture inchangée. *Impact :
   protections « formate + relit une piste corrompue » (Copylock/Rob Northen) « nettoyées » par
   NeoST ; mais utilisabilité accrue pour les formateurs ordinaires.*
-- **[D2 — moyenne]** READ TRACK STX renvoie la piste réécrite (conséquence de D1, `Fdc.cpp:1553`).
+- **[D2 — moyenne]** READ TRACK STX renvoie la piste réécrite (conséquence de D1, `Fdc.cpp:1829`, `readTrackStx`).
 - ✅ **STX piste effacée (2026-10-19)** : un WRITE TRACK sans secteur
   exploitable remplace aussi la vue des secteurs par une vue vide. Les anciennes
   données ne réapparaissent plus, même après remontage du `.wd1772`. Choix
@@ -329,20 +335,20 @@ extension DAM NeoST qualifiée ci-dessus.
   Les écritures $FF860B/0D reproduisent la retenue des bits 7/15 sur ST et Mega ST,
   puis appliquent le masque d’adresse ; STE/Mega STE restent sans cette retenue.
   Garde publique MMIO : `tests/fdc_register_logic.cpp`.
-- **[basse]** Densité **HD/ED** STX : NeoST recadre `BitPosition` sur la densité (`Fdc.cpp:862-900` `densityFactor`)
+- **[basse]** Densité **HD/ED** STX : NeoST recadre `BitPosition` sur la densité (`Fdc.cpp:913-915` `densityFactor`, recadrage `:1538-1544`)
   → **plus cohérent que Hatari** (qui a une incohérence HD/ED) ; **identique en DD**.
-- **[basse] ✅ vérifié SANS OOB (7ᵉ passe, 2026-08-06)** — Bornes parseur STX (`StxImage.cpp:90-200`) :
+- **[basse] ✅ vérifié SANS OOB (7ᵉ passe, 2026-08-06)** — Bornes parseur STX (`StxImage.cpp:73-242`, `parse`) :
   rejette une image tronquée que Hatari monterait ; l'**OOB « latent »** annoncé sur le chemin
   « simple » tronqué est FERMÉ. Une piste simple tronquée pose `sectorsCount=0`/`sectors` vide
-  (`inBuf` échoue avant `buildSectorsSimple`) ; les 4 consommateurs bornent sur
+  (le contrôle de taille `dataBytes` échoue avant `buildSectorsSimple`) ; les 4 consommateurs bornent sur
   `sectorsCountView()` (RNF après 5 tours). Compléments : clamp `TrackImageSize` (commit `7fe14bb`)
   + borne save-state `stxNextSector_` 0..255. Aucune image forgée ne provoque de lecture hors bornes.
-- **[basse]** `pData==NULL` sans RNF → secteur lu 512×`0x00` + statut OK (image de bord, `Fdc.cpp:1416` : `sec.pData ? … : 0`).
+- **[basse]** `pData==NULL` sans RNF → secteur lu 512×`0x00` + statut OK (image de bord, `Fdc.cpp:1596` : `sec.pData ? … : 0`).
 - **[basse] ✅ vérifié SANS bug (2026-07-09)** — INTRQ : **pas de double déclenchement**. Le
   `raise(SRC_FDC)` doublé a été retiré à la refonte M1 (`bc15a67`) ; entrée périmée (les anciennes
   lignes 638-645 = aujourd'hui `applyFastFdc`). Chemin unique : `fdcSetIrq` (edge-gardé `if(!was)`)
   → `setIntrqLine` → `Mfp::setFdcLine` → `gpipSetLine` (`if(line==active) return` + front AER,
-  `Mfp.hpp:222`). Une INTRQ maintenue ne regénère aucune IRQ ; aucun `raise` manuel ni chemin
+  `Mfp.hpp:555-560`). Une INTRQ maintenue ne regénère aucune IRQ ; aucun `raise` manuel ni chemin
   contournant `gpipSetLine` (grep arbre entier).
 - **[basse]** Signal DC (Disk Change)→GPIP4 (TT-only chez Hatari) non émulé ; modèle WPRT distinct.
 - **[basse]** Hot-swap : 1 phase (eject) vs 2 (eject+insert) chez Hatari (`floppy.c:438-514`).
@@ -366,7 +372,7 @@ cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, 
 
 - **[S1 — moyenne] ✅ corrigé** — `setStfLowPass(!STE)` est désormais appelé (`Machine.cpp`/`Machine.hpp`)
   → ST/Mega ST utilisent `applyLpfStf250`. *Avant :* filtre câblé mais `setStfLowPass()` défini mais
-  **jamais appelé** (`YM2149.hpp:168`) → STF/Mega ST en PWM au lieu de `LPF_STF`
+  **jamais appelé** (`YM2149.hpp:186`) → STF/Mega ST en PWM au lieu de `LPF_STF`
   (`sound.c:1946-1951`). Code `applyLpfStf250` mort. *Impact : timbre YM plus dur sur ST.*
 - **[S2 — moyenne] ✅ corrigé (2026-07-07 soir)** — FIFO 8 octets + capture au faisceau portées
   (cf. tableau des priorités et 5ᵉ passe). *Avant :* lecture RAM directe à la cadence DMA en fin
@@ -550,6 +556,18 @@ bus-error par modèle (octet par octet, patches MegaST/MegaSTE, SCU octets impai
 ROM, accès DMA (retour 0/écriture ignorée en zone fautive), protection superviseur `<0x800`,
 règle word/long : **conformes**.
 
+- ✅ **RAM 2176/2560 Ko (banques mixtes, 2026-10-20)** — `ramBanks` (`Bus.cpp`) découpe
+  désormais 2048+128 et 2048+512 Ko comme `STMemory_RAM_SetBankSize` ; `memConfigForBytes`
+  pose `$FF8001` = $08/$09 comme Hatari ; tailles `2176k` et `2560k` (alias `2.5m`) acceptées
+  par `--mem`, `neost.cfg`, la fenêtre de config, le shell web et le contrôle de save-state.
+  phystop = Hatari : ST/Mega ST sous TOS 1.02/1.04/EmuTOS → $220000/$280000 ; STE/Mega STE
+  sous TOS 2.06 → $400000 (banque 1 calquée sur la banque 0, `ConfToBank`) ; EmuTOS 256 →
+  taille exacte (sondage par banque). Modèle Hatari **conservé** sur STE car seul cohérent
+  avec le matériel : FAQ comp.sys.atari.st §3.1.1 (« STEs will not recognize a 2.5Mb
+  configuration without silkboot2e or simmfix ») et l'existence de SIMMFIX2 ; MAME
+  (`stmmu.cpp`, banques indépendantes) contredit ces témoignages. ⚠ À confirmer sur vrai STE :
+  lecture `$FF8001` bits 0-1, décodage d'une banque 1 de 128 Ko (cf. `TODO.md`).
+
 - **[BU1 — moyenne] ✅ corrigé** — Miroir matériel du PSG `$FF8804-$FF88FF` désormais routé vers
   le YM2149 (`Bus.cpp` : plage étendue à `+0x100`, décodage `addr&3`, wait-states inclus), comme
   le shadow Hatari `ioMem.c:386-393`.
@@ -676,10 +694,12 @@ halftone, masques de bord, bug « 63 accès », IRQ GPIP3 fin de blit, arbitrati
   machine (`serialLoopbackSelfTest` fait `bus.read8(0xFFFA01)`), qu'une horloge émulée ne doit
   pas suivre. Le dispatch est **par accès** depuis le même jour (**BL4 ✅** ci-dessus) : plus de
   résidu de fin de tranche.
-- **[basse]** Pas d'exécution CPU parallèle pendant un blit (`Blitter_Check_Simultaneous_CPU`
-  `blitter.c:1641`) : le CPU est stallé en bloc pendant la tranche, ses cycles internes ne
-  recouvrent pas le blit (sauf les 4 cycles PRE_START). Nécessiterait des hooks par-cycle dans
-  Moira. Aussi : hits du cache MegaSTE 16 MHz comptés comme accès bus (approximation), et le
+- **[basse] ✅ porté le 2026-10-19** — ~~Pas d'exécution CPU parallèle pendant un blit~~
+  (`Blitter_Check_Simultaneous_CPU` `blitter.c:1641`) : hooks Moira par cycle bus, les cycles
+  CPU internes recouvrent désormais la tranche HOG/partagée jusqu'au prochain accès bus
+  (`Cpu68k.cpp:57, 577-621`, `blitterOverlap`), crédit sérialisé depuis v49 (`kStateVersion`, `Machine.cpp`).
+  Les hits du cache MegaSTE 16 MHz comptés comme accès bus sont un faux positif (Hatari les
+  compte aussi, cf. HATARI_MAPPING ✗). Le
   cycle RMW/TAS est en revanche déjà atomique dans le modèle courant : aucun
   dispatch Scheduler entre lecture et écriture CPU. Banc réel ajouté le 2026-10-19 ;
   propriété à conserver si le dispatch CPU devient interne à l’instruction.
@@ -863,7 +883,7 @@ reset HW/canal, IRQ niveau 5 gatée par le SCU).
   quand `CPU_Freq_Emul` vaut 8 MHz : il ralentit alors le BRG d'un facteur deux.
   NeoST garde la cadence PCLK/RTxC lors d'une bascule 8/16 MHz.
 - **[SC2 — basse, TRANCHÉ : NeoST suit la datasheet (2026-07-12)]** **Lecture RR9** : NeoST
-  renvoie `WR[13]` (`Scc.cpp:306`, RR9 = image de RR13 selon la datasheet Zilog) là où Hatari
+  renvoie `WR[13]` (`Scc.cpp:747`, RR9 = image de RR13 selon la datasheet Zilog) là où Hatari
   renvoie `WR[9]` (`scc.c:1606-1610` — son propre commentaire « also returns RR13 » contredit
   son code). Diff au byte près face à l'oracle si un programme lit RR9 — à garder en tête
   lors d'un diff SCC, ne PAS « corriger » sans le documenter.
@@ -998,11 +1018,11 @@ même** (primitives non-fautives + filet au site d'appel). Restent trois points 
   jusqu'à 4 cycles d'écart par DIV exécuté en RAM sous `NEOST_RAM_SLOT`. Le correctif
   du fork (`e4da365`) avait été perdu à la vendorisation ; rétabli par le port de
   l'amont `f90fc50`. Sonde `cpu_div_ram` : 0 cycle d'écart sur 46 intervalles.
-- **[CPU3 — basse]** L'échantillon IPL différé du mode `g_iplFetch` (NEOST_IPLFETCH=1,
-  opt-in expérimental, `Cpu68k.cpp:117-125`) n'est pas
-  sérialisé : un échantillon IPL différé armé au save est perdu au load (IRQ reconnue
-  une frontière trop tard). Sérialiser = bump de version .state — différé tant que le
-  mode reste expérimental.
+- ✅ **[CPU3 — basse, résolu le 2026-10-20]** L'échantillon IPL différé du mode
+  `g_iplFetch` (NEOST_IPLFETCH=1, opt-in expérimental) n'était pas sérialisé : armé au
+  save, il était perdu au load (IRQ reconnue une frontière trop tard). `iplDeferred` est
+  désormais dans l'état CPU (`Cpu68k.cpp`, après `iplDelay2`) et refusé au load hors
+  [-1,7] ; format **v50** (`kStateVersion`, partagé avec la résolution Shifter `$FF8261`).
 
 ---
 
@@ -1062,7 +1082,9 @@ par le présent document :
   `--trace video_border_h` : `detect left+2 / right-2 60Hz 53<->373`, identique au masque
   NeoST) : l'écart est purement dans la recopie. ⚠ **Conséquence** : `overscan_top` reste
   `ref_kind: snapshot` **définitivement** — le passer en `oracle` installerait l'artefact
-  d'Hatari comme référence.
+  d'Hatari comme référence. Aussi visible sur `blankline_blank_ste` (2026-10-20, STE
+  etos256fr) : les phases VBL 32/36 y donnent `left+2` et divergent de **204 px** sur la
+  ligne buffer 65 — c'est pourquoi l'étalon capture la phase 40 (NO_DE, 0 px).
 - **Première ligne affichée quand la bordure HAUTE est retirée** (A41, 2026-09-01) : Hatari
   amorce sa palette avec des écritures qui n'ont pas encore eu lieu. `Spec512_StartFrame`
   (`spec512.c:233`) fait `nScanLine += OVERSCAN_TOP` sous `V_OVERSCAN_NO_TOP` : les
@@ -1078,13 +1100,26 @@ par le présent document :
   nScanLine=29 skip=5`. ⚠ **Conséquence** : `closure` reste `ref_kind: snapshot`
   **définitivement** (27 px d'écart oracle irréductibles, minimum cherché sur 70 trames
   voisines : 27 ou 43, jamais 0).
-- **GPIP bits 3 (blitter) et 6 (RI)** : NeoST les recalcule depuis l'état vivant des lignes
-  (`Mfp.cpp:572-590`), Hatari les traite en VERROU que `MFP_Reset` met à 0 et que rien ne
-  relève ensuite (bit 6 n'a **aucun** appelant dans tout son arbre ; bit 3 attend le premier
-  `Blitter_Start`). Sur vrai matériel ces entrées sont tirées haut au repos → NeoST est plus
-  proche du matériel. ⚠ **Conséquence pour les chasses différentielles** : `$FFFA01` au repos
-  vaut **$F9** chez NeoST contre **$B1** chez Hatari — un diff de trace sur ce registre est
-  ATTENDU et n'est pas une régression.
+- ✅ **GPIP bits 6 (RI) et 3 (GPU_DONE) au repos — verdict MATÉRIEL (2026-10-20)** :
+  `$FFFA01` au repos (moniteur couleur, CTS/DCD actives comme chez Hatari) vaut **$F9** sur ST
+  sans blitter et **$F1** avec blitter (Mega ST/STE/Mega STE) ; Hatari rend **$B1**.
+  `Mfp::gpipInput` : bit 6 = 1 tant que RI n'est pas assertée (`riLine_ = false` au repos),
+  bit 3 = 1 sans blitter (`hasBlitter_`, posé par `Machine` via `machineHasBlitter`), 0 au repos
+  avec blitter et 1 pendant un blit. Les deux bits SUIVENT toujours leur ligne (détecteur de
+  front de `gpipSetLine` intact). **Sources** : *STe Field Service Manual* (C302481-001, §2.12.5)
+  — CTS/DCD/RI entrent au MFP via un récepteur 1489 (U207) ; fiche TI MC1489 (SLLS095D) —
+  entrée ouverte → sortie haute ; MAME `rs232.cpp` — RI = 1 sans appareil ; lecture sur STFM
+  réel `$E9` (exxosforum t=3992 p.49, 2022 — bits 6 et 3 à 1 ; ses bits 1/2 CTS/DCD à 0 sont
+  cohérents avec la convention actuelle) ; agranlund/STBlitter_RevA (README : pull-up R4 de
+  l'INT blitter). Le 0 d'Hatari est un **artefact** : `MFP_Reset` pose GPIP = 0 (mfp.c:523)
+  et rien ne relève jamais le bit 6 (le bit 3 attend le premier `Blitter_Start`).
+  ⚠ **Conséquences** : un diff de trace sur `$FFFA01` contre Hatari est ATTENDU ; la
+  convergence vers $B1 tentée auparavant n'avait pas sauvé Closure (`CLOSURE_CHANTIER.md`,
+  cycle 3). Le bouton Ultimate Ripper (`PortDevices::pressButton`) asserte désormais RI
+  (bit 6 → 0) — comportement attendu du logiciel non vérifié. Validé : selftest MFP
+  (pristine $F1/$F9), test S Field Service (ST_Diagnostic v4.4, `--machine st`, loopback)
+  Pass, MegaSTE suite Q 11/11. ⚠ Non mesuré : bit 3 au repos AVEC blitter (0 supposé, INT =
+  copie de BUSY) — cf. `TODO.md`.
 
 ---
 
@@ -1113,16 +1148,16 @@ divergence HAUTE**, les 4 correctifs sont CORRECTS. La passe remonte surtout des
   (`Blitter.cpp`), comme Hatari `Blitter_Start` (blitter.c:895) ; `finishTransfer` la rabaisse.
 
 ### 🟠 Nouveaux — MOYENNES (fidélité)
-- **MFP** — pas de dispatch des timers échus (`MFP_UpdateTimers`) avant lecture des registres
-  d'IRQ → un code qui *poll* IPR/ISR voit un bit pending en retard — **jusqu'à 157 cycles
-  mesurés** (2026-08-25), pas « ≤ 1 instruction » comme écrit jusque-là ; détail et
-  compensations → l'entrée MFP de l'inventaire ci-dessous.
-- **SON S3** — gain LMC ½-amplitude : table DAC pleine + `outScale_=0.5` **sans le ×2** que Hatari
+- **MFP ✅ porté (2026-09-02)** — ~~pas de dispatch des timers échus (`MFP_UpdateTimers`) avant
+  lecture des registres d'IRQ~~ : `Mfp::updateTimers` → `Scheduler::runMfpTimersTo` en tête de
+  `Mfp::read8`/`write8` (`Mfp.cpp:63-70, 324, 418`), `NEOST_MFP_UPDTIMERS` ON par défaut ;
+  détail → l'entrée MFP de l'inventaire ci-dessous.
+- **SON S3 ✅ corrigé (2026-07-07)** — gain LMC ½-amplitude : table DAC pleine + `outScale_=0.5` **sans le ×2** que Hatari
   met dans `left/right_gain` → le YM STE ressort **~6 dB trop bas** relativement quand le LMC est à
   plein volume ; ratio YM:DMA aussi décalé.
-- **FDC** — changement lecteur/face « **pull** » (`refreshDriveSide` au prochain accès registre)
-  au lieu de « push » (immédiat à l'écriture PSG, `FDC_SetDriveSide`) → index ré-ancré tard ; un
-  flip de face en plein transfert utilise l'ancienne face. Boot `.ST`/TOS non affectés.
+- **FDC ✅ porté (2026-08-25, `D-PSG`)** — ~~changement lecteur/face « **pull** » au lieu de
+  « push »~~ : `Machine::setPortASink` appelle `Fdc::refreshDriveSide()` à chaque écriture du
+  port A du PSG (`Machine.cpp:211-225` ≙ `psg.c:419-420` → `FDC_SetDriveSide`).
 - **MIDI M-MIDI ✅ corrigé** — l'ACIA MIDI a désormais un `rdrf_` **distinct** de `!rx_.empty()`
   (`MidiAcia.cpp/.hpp`) : le master reset l'efface (SR → TDRE seul, conforme `ACIA_MasterReset`)
   **sans purger la file** → l'octet reste relisible via RDR, et RDRF retombe correctement. Le
@@ -1135,23 +1170,37 @@ divergence HAUTE**, les 4 correctifs sont CORRECTS. La passe remonte surtout des
   ~~`$FF8260` bits 2-7 non forcés à 1 sur ST~~ ✅ **corrigé (2026-07-09)** + ~~alias shifter `$FF8261`
   non géré~~ ✅ **corrigé** (lecture) : `$FF8260`/`$FF8261` = port de `Video_Res_ReadByte`
   (video.c:5281) — STF/Mega ST forcent bits 2-7 à 1, STE à 0 ; `$8261` renvoyait 0xFF (void) → mode
-  (`Shifter.cpp` read8). L'écriture `$8261` (Shifter-res seul, sans GLUE) reste NON portée (touche le
-  chemin V2 res-switch byte-exact, sans étalon) ; attribution ligne à longueur FIXE (`fc/cpl`) vs
+  (`Shifter.cpp` read8). ✅ **Écriture `$8261` portée le 2026-10-20** (`Shifter::writeShifterRes`,
+  port de `Video_WriteToShifterRes` video.c:1888-2006) : un `move.b` vers `$FF8261` change la
+  résolution du SHIFTER seul (ni timings ni bordures Glue, ioMemTabST.c:71 / ioMemTabSTE.c:120) ;
+  un `move.w` vers `$FF8260` donne l'octet haut aux deux, l'octet bas est ignoré (le Shifter ne
+  lit que D8-D9) ; les lectures `$FF8260/61` rendent la valeur Shifter. **res 3** = Shifter arrêté :
+  stop posé au cycle-ligne ≥ 64 (DE actif), retour ≥ 72 et ≤ 32 cycles après → lignes suivantes
+  décalées de 0/4/8/12 px, compteur −0/−2/−4/−6 octets en fin de ligne (`vcStopInc_`) ; ligne
+  restée arrêtée au commit = aire active noire, bordures intactes. glue-selftest +36 vérifs ;
+  aucun logiciel réel connu ne l'exerce. ⚠ Incertitudes (commentaires du code) : noir franc vs
+  couleur 0, lecture OCTET de `$FF8261` (alias complet conservé), trick sur STE (modèle STF
+  appliqué, comme Hatari), persistance du décalage aux trames suivantes (TODO video.c:1915 —
+  NeoST garde la trame courante, comme Hatari). Non modélisés : pixels noirs pendant un stop
+  bref, résolution Shifter ≠ Glue (0/1/2) au rendu, géométrie de trame à res 3 via `$FF8260` ;
+  attribution ligne à longueur FIXE (`fc/cpl`) vs
   accumulée ; chemin `PrevSize` partiel ; quirks démos `$FF8205/07/09` (E605/Tekila).
 - **FDC** : `dmaResetFifo` ne remet pas `bufPos_`/`dmaBytesToTransfer_` ; recalcul densité superflu
   à chaque lecture statut ; borne parseur STX (chemin secteurs complet) ; pas d'`indexCheckUpdate`
   avant la commande.
-- **Son** : compteur bruit testé `>=` dans la garde 125 kHz (vs 250) ; pas de HPF sous-sonique sur
-  le canal DMA ; ~~`mode_` non masqué `&0x8f` (relecture)~~ **déjà fait** (masqué à l'écriture,
-  `DmaSound.cpp:495` → relecture masquée) ; masque adresse DMA `$3fffff` non appliqué (écriture octet
-  haut, dépendant de la RAM ≤4 Mo — `DMA_MaskAddressHigh`).
-- **Blitter** : **BL-R** read8 ne rejette pas l'accès octet aux registres mot (rend la valeur vive
-  vs IoMem rance) ; **BL-MST** `$FF8A3E/3F` dé-fauté à tort sur Mega ST (void seulement sur STE — carte
+- **Son** : ~~compteur bruit testé `>=` dans la garde 125 kHz (vs 250)~~ ✅ (5ᵉ passe, bc15a67) ;
+  ~~pas de HPF sous-sonique sur le canal DMA~~ ✅ 2026-08-07 (HPF sur le MIX STE,
+  `DmaSound::applyHpfStereo`, appelé `AudioMix.cpp:38`) ; ~~`mode_` non masqué `&0x8f` (relecture)~~ **déjà fait** (masqué à l'écriture,
+  `DmaSound.cpp:589` → relecture masquée) ; ~~masque adresse DMA `$3fffff` non appliqué~~ ✅ déjà
+  porté pour les profils RAM ≤4 Mo (`v & 0x3F` sur l'octet haut, `DmaSound.cpp:574, 577` ≙
+  `DMA_MaskAddressHigh`).
+- **Blitter** : ~~**BL-R**~~ ✅ (2026-10-18, miroir brut `ioRaw_`) read8 ne rejetait pas l'accès octet aux registres mot (rend la valeur vive
+  vs IoMem rance) ; **BL-MST** ✖ faux positif (5ᵉ passe) `$FF8A3E/3F` dé-fauté sur Mega ST (void seulement sur STE — carte
   de bus-faults, non touchée).
-- **Bus** : wait-state 4 cyc des registres FDC/DMA non facturé ; `$FF860E/0F` densité routé sur STE
-  simple ; ~~`$FF8A3E/3F`→0x00 au lieu de 0xFF~~ ✅ **corrigé (2026-07-09)** : `Blitter::read8`/`write8`
-  traitent `$3E/3F` en void (lit 0xFF, écritures ignorées ; ioMemTabSTE.c:199) ; trou MMU STF
-  bank0=128K/bank1=2048K non émulé.
+- **Bus** : ~~wait-state 4 cyc des registres FDC/DMA non facturé~~ ✅ 2026-10-18 (`Fdc::registerWait`) ; ~~`$FF860E/0F` densité routé sur STE
+  simple~~ ✅ 2026-10-18 (Mega STE seul) ; ~~`$FF8A3E/3F`→0x00 au lieu de 0xFF~~ ✅ **corrigé (2026-07-09)** : `Blitter::read8`/`write8`
+  traitent `$3E/3F` en void (lit 0xFF, écritures ignorées ; ioMemTabSTE.c:199) ; ~~trou MMU STF
+  bank0=128K/bank1=2048K non émulé~~ ✅ porté le 2026-08-13 (`mmuTranslate`).
 
 ### Conclusion
 La 1ʳᵉ passe avait capté l'essentiel ; les 4 correctifs sont validés. **Corrigés à la 2ᵉ passe
@@ -1164,11 +1213,12 @@ du PSG (port de `psg.c:419-420` → `FDC_SetDriveSide`). Sans lui, un programme 
 commande FDC AVANT de sélectionner le lecteur restait à `driveSel_ = -1` pour toujours (Stardust
 STE : gel noir, `drv=-1`, INTRQ jamais levé). Après : `drv=0`, 374 294 lignes FDC au lieu de
 4714, intro jouée, puis recherche de la disquette 2 dans le lecteur B — comme l'oracle.
-**MFP UpdateTimers** : ⚠ **le chantier est CLOS le 2026-09-02, et sa conclusion est NÉGATIVE** —
-le `runTo` ciblé sur les sources `TIMER_*` prescrit ici a été écrit, mesuré, puis RETIRÉ : il ne
-ferme rien (IPRA est déjà identique à l'oracle) et dégrade `mfp_poll` de 80 à 88 px. Le résidu réel
-était ailleurs — l'échéance ARRONDIE du compteur vivant, corrigée le même jour. Détail et garde de
-non-répétition dans l'entrée MFP de l'inventaire ci-dessus. Ce qui reste vrai de l'ancien texte :
+**MFP UpdateTimers** : ✅ **PORTÉ le 2026-09-02** — le `runTo` ciblé sur les sources `TIMER_*`
+prescrit ici est en place et actif par défaut (`Mfp::updateTimers` → `Scheduler::runMfpTimersTo`,
+`Mfp.cpp:63-70`, appelé `Mfp.cpp:324, 418` ; verrou `NEOST_MFP_UPDTIMERS=0`). La conclusion
+« NÉGATIVE / patch RETIRÉ » écrite le matin même était un artefact de mesure (prise avant la
+correction de l'échéance ARRONDIE du compteur vivant) : une fois cette base saine, le port est
+neutre sur `mfp_poll` (0 px) — cf. l'entrée MFP de l'inventaire ci-dessus. Ce qui reste vrai de l'ancien texte :
 le motif de report « risque de réentrance » était bien CADUC (`Scheduler::runTo` est ré-entrant
 depuis BL4, garde RAII `FiringGuard`), et un `syncTo` nu reste à proscrire — il réactiverait le
 modèle **sync-driven RÉFUTÉ** (deadlock Enchanted Land, `Cpu68k.cpp`, `IMPLEMENTED.md`), à
@@ -1206,7 +1256,7 @@ divergences ne casse le boot. Trouvailles actionnables ci-dessous (terrain neuf 
 
 - ✅ **SCU — jamais réinitialisé au reset** *(HAUTE — CORRIGÉ)* : `Scu::reset(bool cold)` existe
   (`Scu.hpp:87-92` : masques/états à 0, GPR1=0x01, GPR2 seulement à froid) et `Machine::reset()`
-  comme `hardReset()` l'appellent (`Machine.hpp:99` et `:118`). *Avant :* aucun reset du SCU, donc
+  comme `hardReset()` l'appellent (`Machine.hpp:103` et `:125`). *Avant :* aucun reset du SCU, donc
   `SysIntMask`/`VmeIntMask` **persistants** au reset doux (Hatari `SCU_Reset` les met à 0).
 - ✅ **FPU — propagation des NaN perd le payload** *(ÉLEVÉE — CORRIGÉ)* : `propagateNaN` /
   `propagateNaN1` renvoient l'opérande NaN RÉEL (signe + payload) quiété, port du chemin
@@ -1214,10 +1264,10 @@ divergences ne casse le boot. Trouvailles actionnables ci-dessous (terrain neuf 
   default-NaN `0x7FFF8000…` systématique.
 - ✅ **FPU — SNaN lève OPERR au lieu de SNAN** *(ÉLEVÉE — CORRIGÉ)* : softfloat lève désormais un
   `flag_signaling` distinct (`SoftFloatX80.hpp:83,89`) que `Fpu::sfFold` replie en
-  `EXC_SNAN`/vecteur 54 (`Fpu.cpp:122`), `flag_invalid` restant sur OPERR/vecteur 52
-  (`Fpu.cpp:123`, vs `fpp.c:88-89`).
+  `EXC_SNAN`/vecteur 54 (`Fpu.cpp:129`), `flag_invalid` restant sur OPERR/vecteur 52
+  (`Fpu.cpp:130`, vs `fpp.c:88-89`).
 - ✅ **ACSI — INQUIRY `buf[4]` erroné** *(MOYENNE — CORRIGÉ)* : `buf[4]` (« Additional Length »)
-  garde la valeur fixe **31** de `inquiry_bytes[4]`, simplement recopiée (`Acsi.cpp:204-211` vs
+  garde la valeur fixe **31** de `inquiry_bytes[4]`, simplement recopiée (`Acsi.cpp:252-260` vs
   `hdc.c:218-246`). *Avant :* écrasé par `count()-5` (variable) → pilote HD trompé.
 - ✅ **ACSI — taille au montage (2026-10-19)** : images dépassant
   UINT32_MAX secteurs refusées avant conversion au lieu d’une taille tronquée.
@@ -1303,7 +1353,7 @@ divergences ne casse le boot. Trouvailles actionnables ci-dessous (terrain neuf 
   `tools/test_fpu_next_oracle.py --check-mutation` : 1156 cas FINT/FINTRZ,
   zéro échec ; 354 avec le défaut rétabli. Mini-ROM : groupes 53 et 54 dédiés.
 - ✅ **FPU — masques FPCR/FPSR non appliqués** *(BASSE — CORRIGÉ)* : les bits réservés sont forcés
-  à 0 au chargement depuis `<ea>` — `fpcr_ & 0xFFF0`, `fpsr_ & 0x0FFFFFF8` (`Fpu.cpp:534-535`,
+  à 0 au chargement depuis `<ea>` — `fpcr_ & 0xFFF0`, `fpsr_ & 0x0FFFFFF8` (`Fpu.cpp:590-591`,
   cf. Hatari `get_features`).
 
 ### Choix intentionnels / NeoST plus correct que Hatari (NE PAS « corriger »)
@@ -1418,40 +1468,41 @@ MFP, périphériques (FDC/son-statuts/bus/SCC/ACIA), son approfondi (cœur YM + 
 ### Statuts corrigés par cette passe (le détail ↑ dans les sections historiques est PÉRIMÉ)
 
 **Passés à ✅ corrigé (tous dans `bc15a67` sauf mention) :**
-- **M1 fronts GPIP** — `gpipSetLine`/`gpipUpdateInterrupt` (`Mfp.hpp:208-220`, `Mfp.cpp:600-610`)
+- **M1 fronts GPIP** — `gpipSetLine`/`gpipUpdateInterrupt` (`Mfp.hpp:547-560`, `Mfp.cpp:1101-1116`)
   = port exact de `MFP_GPIP_Set_Line_Input`/`_Update_Interrupt` (mfp.c:1143-1219) : DDR=entrée,
-  GPIP^AER, front actif si `GPIP_new == AER`. Appelants convertis : Ikbd.cpp:1005, MidiAcia.cpp:104
-  (wire-OR ACIA ≙ `MFP_Main_Compute_GPIP_LINE_ACIA`), Fdc.cpp:1050, Blitter.cpp:217/324.
-  L'écriture AER re-déclenche les fronts (Mfp.cpp:201-205 ≙ mfp.c:2787-2790).
-- **Timer B event-count** — wrap uint8 0→255, garde `tbCounter_==0` supprimée (`Mfp.cpp:553-570`
+  GPIP^AER, front actif si `GPIP_new == AER`. Appelants convertis : Ikbd.cpp:1226-1227, MidiAcia.cpp:248-249
+  (wire-OR ACIA ≙ `MFP_Main_Compute_GPIP_LINE_ACIA`), Fdc.cpp:1100, Blitter.cpp:285/415.
+  L'écriture AER re-déclenche les fronts (Mfp.cpp:426-429 ≙ mfp.c:2787-2790).
+- **Timer B event-count** — wrap uint8 0→255, garde `tbCounter_==0` supprimée (`Mfp.cpp:834-850`
   = `MFP_TimerB_EventCount` mfp.c:1297-1320), antidatage `firingDue()`.
-- **FDC INTRQ** — plus de `raise(SRC_FDC)` doublé : `setFdcLine` seul (Fdc.cpp:1050).
-- **$FF8264 STE** — relit la valeur brute écrite (`Shifter.cpp:2481` en lecture, `:2818` à l'écriture ≙
+- **FDC INTRQ** — plus de `raise(SRC_FDC)` doublé : `setFdcLine` seul (Fdc.cpp:1100).
+- **$FF8264 STE** — relit la valeur brute écrite (`Shifter.cpp:1305` en lecture, `:1397-1399` à l'écriture ≙
   `Video_HorScroll_Read_8264`).
 - **VoidRead 0x00 vs 0xFF** — l'entrée était mal cadrée : Hatari n'utilise `VoidRead_00` QUE sur
   `$FF820B/$FF8262-63/$FF8266-7F` STE (ioMemTabSTE.c:98,121,124) ; NeoST rend 0x00 exactement là
-  (`Shifter.cpp:2488-2495`), 0xFF ailleurs — couverture exacte (commit 88ec84a).
-- **read32/zone RAM void** — mécanisme `cpuDb` (`Bus.cpp:256-258`) ≙ `VoidMem_wget/lget` (la zone
-  vide rend la dernière valeur du bus), latch `Cpu68k.cpp:308-311`.
+  (`Shifter.cpp:1317-1320`), 0xFF ailleurs — couverture exacte (commit 88ec84a).
+- **read32/zone RAM void** — mécanisme `cpuDb` (`Bus.cpp:385-387`) ≙ `VoidMem_wget/lget` (la zone
+  vide rend la dernière valeur du bus), latch `Cpu68k.cpp:496-499`.
 - **Trou MMU STF bank 128K/2048K** — ⚠ l'entrée précédente (« commit 6df9432 ») était
   FAUSSE : ce hash n'existe pas et aucune révision de `Bus.cpp` n'a jamais porté le trou —
   seuls `mmuXlatSTF/STE` + `ConfToBank` l'étaient. RÉELLEMENT porté le 2026-08-13 (3ᵉ
   passe de bug hunt) : `mmuTranslate` rend void `$40000-$7FFFF` quand bank0 = 128 Ko et
   bank1 = 2 Mo (≙ `memory_map_Standard_RAM`, cpu/memory.c — quirk mesuré sur STF).
 - **Son : bruit ≥/250 kHz** (incrément 125 kHz, comparaison 250 kHz, plancher per=1 retiré —
-  `YM2149.cpp:184-193` = sound.c:1050-1058) et **`mode_ &= 0x8F`** (`DmaSound.cpp:434`).
-- **Filtre « écriture redondante » freq/res** — PRÉSENT (`recordSyncWrite`, `Shifter.cpp:1115-1160`,
+  `YM2149.cpp:187-190,248-258` = sound.c:1050-1058) et **`mode_ &= 0x8F`** (`DmaSound.cpp:589`).
+- **Filtre « écriture redondante » freq/res** — PRÉSENT (`recordSyncWrite`, `VideoGlue.cpp:278-361`,
   persistant inter-trames ≙ `ShifterFrame.Freq/Res`) — l'entrée « absent » de la 2ᵉ passe est fausse.
 - **V3 partiel : restart du compteur vidéo PORTÉ** (2026-07-02) — `restartVideoCounter`
-  (`Shifter.cpp:927-935`, consommé au `beginFrame` `:387-389`) + événement `VC_RESTART`
-  (`Machine.cpp:319-323`, ligne 310/260 cycle 56 STF / 60 STE, check freq live) ≙
+  (`VideoCounter.cpp:177-180`, consommé au `beginFrame` `Shifter.cpp:302-304`) + événement `VC_RESTART`
+  (`Machine.cpp:385-389,454-461`, ligne 310/260 cycle 56 STF / 60 STE, check freq live) ≙
   `Video_RestartVideoCounter` + HBL intermédiaire video.c:3262-3286.
 
 **Reclassés FAUX POSITIFS (Hatari fait pareil — NE PAS « corriger ») :**
 - **D4 6268/6250** — le `FDC_TRACK_BYTES_STANDARD` actif d'Hatari vaut 6268 (formule 6250 commentée).
 - **BL-MST** — `IoMem_FixVoidAccessForMegaST` (ioMem.c:172-196) dé-faute `$FF8A3E/3F` sur Mega ST
-  AUSSI : la carte de fautes NeoST est identique. Ne reste que la VALEUR (0x00 vs 0xFF void) et le
-  latch d'écriture (`Blitter.cpp:95-96` vs `IoMem_VoidWrite` qui jette).
+  AUSSI : la carte de fautes NeoST est identique. Le résidu valeur/latch est **résolu** : `$3E/$3F`
+  lisent 0xFF (`Blitter.cpp:134`) et les écritures y sont ignorées (`Blitter.cpp:159`), comme
+  `IoMem_VoidRead`/`IoMem_VoidWrite`.
 - **Cartouche vide 0xFF** — Hatari `memset 0xFF` (cart.c:117) = NeoST.
 - **MIDI bits SR (OVRN/DCD/CTS/FE/PE)** — midi.c:39-41 ne les modélise pas non plus : parité exacte
   avec l'oracle.
@@ -1462,7 +1513,7 @@ MFP, périphériques (FDC/son-statuts/bus/SCC/ACIA), son approfondi (cœur YM + 
 −25 actives par défaut et validées Cuddly 250/250, EL 40/40, spec512 10/10) :
 - **[moyenne, systémique] Hybride WS1/WS3 ✅ TRANCHÉ : WS3 complet (2026-07-08)** — NeoST adopte
   le wakestate par défaut de l'oracle (`VIDEO_TIMING_DEFAULT = WS3`, video.c:624), qui partage
-  avec le STE l'IRQ HBL à cpl. Implémentation (cf. `glue::` en tête de Shifter.cpp) : positions
+  avec le STE l'IRQ HBL à cpl. Implémentation (cf. `glue::` dans `VideoGlue.hpp`) : positions
   horizontales Glue **+1** (`kWsInc`, fenêtres de tricks + DE stockés + Remove*_Pos 503 + HSync
   −49/−9 + canal Hbl_Pos 512/508/224), **IRQ HBL à cpl** (`kHblOff` défaut 0), VBL 64 (déjà bon).
   Séparation clef découverte dans le code Hatari : `Video_CalculateAddress` (compteur $FF8205+),
@@ -1495,7 +1546,7 @@ MFP, périphériques (FDC/son-statuts/bus/SCC/ACIA), son approfondi (cœur YM + 
   de la touche fifo — la « contrepartie » documentée du 2026-07-03 est résorbée : NeoST-STE
   n'est plus « trop propre »).
   **[moyenne] V2 tricks résolution ✅ PORTÉ (cœur, 2026-07-08)** — `updateGlueRes`
-  (Shifter.cpp) = port de `Video_WriteToGlueRes` (video.c:1637-1753) : **overscan MED-RES**
+  (`VideoGlue.cpp`) = port de `Video_WriteToGlueRes` (video.c:1637-1753) : **overscan MED-RES**
   (LEFT_OFF + med@20/28/36 → `OVERSCAN_MED_RES` + champ décalage source bits 20-23 ; hi→med ≤20
   → `LEFT_OFF_MED` +26 o ; variante STE `LEFT_OFF_2_STE_MED` +20 o/−16 px), **stab med**
   (hi/med/lo@16 → retrait gauche low propre) et **scrolls « hardware » droite 13/9/5/1 px**
@@ -1512,23 +1563,24 @@ MFP, périphériques (FDC/son-statuts/bus/SCC/ACIA), son approfondi (cœur YM + 
   trame à phase de touche près — l'« écart 891 px » d'hier était un artefact de phase (mesuré :
   0 px à sa phase). **Restent hors périmètre, documentés** : hardscroll 4 px plein écran de
   Paulo Simoes (med@84 → lo@92-104, ajuste le pointeur vidéo par ligne — étalon requis), hacks
-  « TEMP » Closure/DOLB (reniflage PC/opcode chez Hatari — non portables tels quels), alias
-  $FF8261, rendu med 640 natif en trame mixte (buffer 416 : réduction ×2 documentée).
+  « TEMP » Closure/DOLB (reniflage PC/opcode chez Hatari — non portables tels quels), ~~alias
+  $FF8261~~ (porté le 2026-10-20), rendu med 640 natif en trame mixte (buffer 416 : réduction ×2 documentée).
 - **[basse→moyenne] Rendu par-ligne daté à la frontière d'instruction** : `renderLine(y)` part
   APRÈS l'instruction qui enjambe DE_end (376) — une écriture palette dans `[376, 376+carry)` est
   vue par la ligne y (Hatari : y+1). Intermittent par nature (cf. candidats SHO).
-- **[basse] Seuil spec512 `kSpec512Threshold=512`** : bascule de CHEMIN de rendu par trame
-  (par-ligne ↔ palette roulante + relecture RAM) — cliff propre à NeoST, Hatari n'en a pas.
+- **[basse] ✅ corrigé le 2026-07-12** — ~~Seuil spec512 `kSpec512Threshold=512`~~ : seuil
+  ramené à 1 comme Hatari (`Shifter.cpp:108`, test `Shifter.cpp:662` ≙ spec512.c:140-143) ;
+  plus de bascule de CHEMIN de rendu trame à trame.
 - **[basse] `lineSnap_` seulement sur trames à écritures freq/res** — une trame sans trick mais
   en course avec le faisceau est relue en fin de trame (Hatari copie TOUJOURS par-ligne).
-- **[basses]** $FF8260 lu sans `|0xFC` sur ST (video.c:5281-5298) ; quirks E605/Tekila
+- **[basses]** ~~$FF8260 lu sans `|0xFC` sur ST (video.c:5281-5298)~~ ✅ 2026-07-09 (`Shifter::read8`) ; quirks E605/Tekila
   $FF8205/07/09 pendant DE : exceptions par opcodes FIXME/partielles d’Hatari,
   pas un défaut matériel démontré dans NeoST (audit 2026-10-19), port différé
   jusqu’à reproduction E605/Tekila. VBlank et remise à ON au VSYNC
-  portés le 2026-10-18 (video.c:3443-3487) ; attribution replayGlue à longueur fixe hors
-  `NEOST_LINELEN_ATTR` (depuis A16, 2026-08-27 : l'attribution Shifter a son verrou DÉDIÉ,
-  OFF — l'ex-« canal hybride » est démêlé, et le chemin ATTR segfaute sous --glue-selftest,
-  cf. TODO A16b — segfault CORRIGÉ le 2026-08-28, le verrou reste OFF) ;
+  portés le 2026-10-18 (video.c:3443-3487) ; ~~attribution replayGlue à longueur fixe hors
+  `NEOST_LINELEN_ATTR`~~ ✅ **verrou ON par défaut depuis le 2026-09-01** (V3 clos,
+  `ShifterInternal.hpp:31` ; historique : verrou dédié OFF depuis A16 le 2026-08-27, segfault
+  `--glue-selftest` corrigé le 2026-08-28) ;
   ~~CyclesPerVBL±4 si la dernière ligne change de freq~~ **RETIRÉ le 2026-08-25, faux positif
   prouvé** (cf. V3) ;
   STOP réveil granularité 2 cyc (Moira) vs quantum 4 (Hatari) → phase E-clock d'IACK mod 4.
@@ -1570,7 +1622,7 @@ TODO) :
     écoulé » (≙ `MFP_ProcessIRQ`, verrou `NEOST_MFP_EXACT` bit1).
   - ✅ **Bit pending posé DEUX FOIS avant l'IACK** (video.c:320, 2013/05/03, « correct fix
     for Super Monaco GP, Super Hang On […] ») — **DÉJÀ CORRECT PAR CONSTRUCTION** : NeoST
-    modélise HBL/VBL par des BOOLÉENS (`hblPending`/`vblPending`, `Cpu68k.cpp:51-52`,
+    modélise HBL/VBL par des BOOLÉENS (`hblPending`/`vblPending`, `Cpu68k.cpp:58-59`,
     commentés « ≙ pendingInterrupts = 0 »), effacés à l'acquittement et lus comme un
     NIVEAU pour l'IPL. Poser le bit deux fois s'y confond donc naturellement en une seule
     interruption — ce qu'Hatari obtient par un code dédié.
@@ -1596,7 +1648,9 @@ TODO) :
   bâti exprès pour l'exhiber : **IPRA est IDENTIQUE à Hatari sur les 100 lignes**. Le modèle BLOC
   préempte déjà le timeslice CPU à chaque échéance de timer (`Scheduler::schedule` → `endSlice_`),
   et BL4/D3 ont fermé le reste ; il ne restait plus rien à rattraper.
-  ⚠ **Ne pas re-tenter le port.** `MFP_UpdateTimers` (dispatch ciblé des sources `TIMER_*` en tête
+  ⚠ **Caduc — le port est EN PLACE** (cf. l'entrée ✅ ci-dessus, `Mfp.cpp:63-70, 324, 418`) ;
+  la consigne qui suit est conservée comme trace du verdict erroné du matin du 2026-09-02.
+  ~~**Ne pas re-tenter le port.**~~ `MFP_UpdateTimers` (dispatch ciblé des sources `TIMER_*` en tête
   de `Mfp::read8`/`write8`, à l'horloge live) a été ÉCRIT et MESURÉ le 2026-09-02 : il ne ferme
   rien et **dégrade l'étalon de 80 à 88 px** (il fait recharger le timer avant la lecture de TADR,
   ajoutant une ligne divergente). Balayage de l'instant de dispatch sur ±12 cycles : aucun offset
@@ -1630,8 +1684,8 @@ TODO) :
   cela ne vaut pas validation du jeu Seven Gates of Jambala.
 - **[basses]** GPIP0 BUSY est désormais corrigé via `gpipSetLine`
   (2026-10-19) ; XSINT respecte déjà DDR7 dans le périmètre revérifié. RS232 CTS/DCD/RI
-  `raise()` direct (volontaire, fixture) ; ◐ **élection chronologique par lot (`MFP_UpdateNeeded`) — PARTIELLEMENT portée le
-  2026-09-02.** La règle d'Hatari : une ENTRÉE d'interruption ne déclenche pas l'élection,
+  `raise()` direct (volontaire, fixture) ; ✅ **élection chronologique par lot (`MFP_UpdateNeeded`) — portée le 2026-09-02, lot
+  inter-callbacks fermé le 2026-09-03 (A42).** La règle d'Hatari : une ENTRÉE d'interruption ne déclenche pas l'élection,
   elle pose son bit et sa date et marque « à faire » ; l'élection a lieu plus tard, une
   fois toutes les entrées reçues, pour « choisir la date de la PLUS ANCIENNE »
   (mfp.c:1084-1087). C'est ce qui rend opérante la règle `Pending_Time <= Pending_Time_Min`
@@ -1644,7 +1698,11 @@ TODO) :
   (`neostUpdateIpl`) et en fin de `Mfp::updateTimers` (≙ mfp.c:689). Les paires d'entrées
   d'une MÊME fonction — `TXERR`→`TXEMPTY`, `RXERR`→`RXFULL` — sont désormais départagées
   correctement. Verrou d'A/B : `NEOST_MFP_BATCH=0`.
-  ⚠ **CE QUI RESTE, et c'est mesuré** : chez Hatari le flush est PAR INSTRUCTION (boucle
+  ✅ **Fermé le 2026-09-03 (A42)** : `Scheduler::setDispatchHooks` borne le lot ; `Machine`
+  suspend l'élection pendant le dispatch (`Mfp::setInDispatch`, garde `Mfp.cpp:1154`) et la
+  tranche une fois en fin de lot avant de relire l'IPL (`Machine.cpp:250-262`, verrou
+  `NEOST_IPL_BATCH=0`). Mesuré : 123 entrées groupées sur 1 000 123 (Super Hang-On).
+  *Historique :* ~~CE QUI RESTE~~ : chez Hatari le flush est PAR INSTRUCTION (boucle
   CPU, newcpu.c:3005/5509) ; chez NeoST il est par CALLBACK, parce que `Machine` fait
   suivre chaque callback d'ordonnanceur d'un `cpu.updateIpl()` (18 sites). Deux timers MFP
   échus dans le MÊME `runTo` sont donc encore élus SÉPARÉMENT. Mesuré sur Super Hang-On :
@@ -1659,14 +1717,14 @@ TODO) :
 **Son** — générateurs YM = port exact (tons/bruit LFSR 17 bits/enveloppes/mixeur/masques/
 read-latch/PWM/LPF C10/HPF/resampler 16.16 : tous vérifiés 1:1 contre sound.c/psg.c) :
 - **[moyenne, audible] S3 gain LMC ×2 manquant ✅ corrigé (2026-07-07 soir)** — `kLmcMakeup = 2.0`
-  appliqué aux gains LMC (`DmaSound.cpp:413-420`, ≙ ×2 de `left/right_gain` dmaSnd.c:1152-1153,
+  appliqué aux gains LMC (`DmaSound.cpp:442-464`, ≙ ×2 de `left/right_gain` dmaSnd.c:1152-1153,
   1460-1461) et `kDmaGain` passé de 0,7 à 0,375 (= ¾ × ½). *Avant :* `outScale_=0.5` STE ×
   gains plafonnés à 1,0 → **YM STE −6 dB** vs Hatari-STE et vs NeoST-ST, ratio YM:DMA décalé
   (candidat n°1 « Rick Dangerous »). Validé : cloche GEM ST vs STE, ratio RMS **1.000**.
 - **[moyenne] S4 table DAC ✅ corrigé (2026-07-07 soir)** — la table MESURÉE est le DÉFAUT, comme
   le `YM_TABLE_MIXING` d'Hatari (configuration.c:807) : mesures Paulo Simoes 16³ vendorisées
   (`ym2149_fixed_vol.h`) et interpolées en 32³ (port de `interpolate_volumetable`,
-  sound.c:505-543), cf. `YM2149.cpp:88-160` (`dacTable`, interpolation `:112`). *Avant :* seul le modèle circuit
+  sound.c:505-543), cf. `YM2149.cpp:89-159` (`dacTable`, interpolation `:113`). *Avant :* seul le modèle circuit
   (≙ `YM2149_BuildModelVolumeTable`, qu'Hatari ne prend qu'avec `--ym-mixing model`) → timbre et
   balance différents sur accords 2-3 voies, ST ET STE. Le modèle reste accessible par
   `NEOST_YM_MIXING=model` (A/B).
@@ -1713,7 +1771,7 @@ read-latch/PWM/LPF C10/HPF/resampler 16.16 : tous vérifiés 1:1 contre sound.c/
   signal mais l'ordre d'écriture du 68000 — et que le passe-bas C10 du STF efface. Ce n'est
   donc pas un reliquat à corriger ; ~~HPF appliqué au YM seul vs
   au MIX YM+DMA en STE~~ **✅ 10ᵉ passe : HPF déplacé sur le mix** (`applyHpfStereo/Mono`) ;
-  `mixing≠1`+DMA arrêté ne mute pas le YM (volontaire, `DmaSound.hpp:53-54`) ;
+  `mixing≠1`+DMA arrêté ne mute pas le YM (volontaire, `DmaSound.hpp:59-60`) ;
   ~~signe DMA non inversé~~ **✅ 10ᵉ passe : `kDmaGain=−0.375`** ; garde
   `nAudioFrequency≥40000` du LPF STF non portée (sans effet à 48 kHz).
 
@@ -1731,8 +1789,9 @@ uniquement ; les accès autorisés sur les autres profils lisent FF et ignorent 
 écritures. $FF8A3E/3F étaient déjà void FF ; régression ajoutée.
 
 **Blitter** — à jour au 2026-07-07 (audit + port mid-word + fenêtre CPU 64 accès réels, § dédié
-plus haut). Restent [basses] : exécution CPU parallèle pendant la tranche, cache MegaSTE 16 MHz compté comme accès bus, RMW sans
-rétention de prise de bus.
+plus haut). ~~Exécution CPU parallèle pendant la tranche~~ ✅ 2026-10-19 (`Cpu68k.cpp:577-621`) ;
+~~cache MegaSTE 16 MHz compté comme accès bus~~ faux positif (Hatari idem) ; RMW/TAS atomique
+dans le modèle courant (BL5).
 
 **ACIA/IKBD (actualisé le 2026-10-18)** — délais des interrogations horloge,
 joystick, souris absolue, rapports de configuration et réponse Froggies portés.
@@ -1742,8 +1801,8 @@ le déterminisme. Une réponse en attente remplace le délai ; l’octet déjà 
 termine sa transmission. Pause, tampon plein et état sauvegardé sont couverts.
 La phase sous-octet du SCI n’est pas simulée ; reset $F1, autosend VBL, taux $17
 et transit CPU→IKBD restent hors de ce lot.
-[NOUVEAU, basse] MIDI : TDRE ne tombe jamais sans TIE (`MidiAcia.cpp:65-68` vs midi.c:271,188 —
-un poll du SR MIDI voit un émetteur infiniment rapide).
+~~[NOUVEAU, basse] MIDI : TDRE ne tombe jamais sans TIE (vs midi.c:271,188 —
+un poll du SR MIDI voit un émetteur infiniment rapide)~~ ✅ corrigé le 2026-10-18 : TDR et TSR distincts, TDRE tombe à l'écriture TDR et remonte au chargement du TSR, indépendamment de TIE (`MidiAcia.cpp:134-143`).
 
 **SCC** — inchangé depuis 2026-06-15 (SC1/SC1b tranchés).
 
@@ -1764,7 +1823,7 @@ mauvaise ligne, soit un handler très en retard :
 2. **Écriture palette dans `[376, 376+carry)`** (handler retardé par préemption Timer C/IKBD) →
    ligne y chez NeoST, y+1 chez Hatari. *Test : `NEOST_PAL_TRACE`, chercher cyc ∈ [340..512],
    corréler avec la position de l'artefact ; oracle `--trace video_color`.*
-3. **HBL coalescé** (handler+préemption > 1 ligne → `g_hblPending` absorbe un HBL → le dégradé
+3. **HBL coalescé** (handler+préemption > 1 ligne → `hblPending` absorbe un HBL → le dégradé
    glisse d'une ligne jusqu'à la resynchro Timer B). Hatari a le même latch mais le LOGGE
    (video.c:3292-3305). *Test : compteur « pending déjà levé » dans raiseHbl vs log Hatari.*
 4. **Amplificateurs** : phase de réveil STOP mod 2 vs mod 4 (E-clock IACK mod 10) ; HBL à 508
@@ -1801,7 +1860,10 @@ iack_cycle), **`NEOST_IACK_SYNC`** (dispatch des événements échus AU point d'
 `NEOST_IPLDELAY` (crude), `NEOST_IPLFETCH` (fidèle ipl_fetch_next dans Moira — candidat de
 refonte non validé in-game), `NEOST_PIN_ARM` (réfuté), `NEOST_VC_WAIT` (redondant avec
 RAM_SLOT), `NEOST_LINELEN=0` (désactive le canal par-ligne, **ON par défaut** depuis 2026-07-08),
-`NEOST_V2` (squelette), `NEOST_SYNC_DISPATCH` (réfuté).
+`NEOST_V2` (ne gate plus que le raccourcissement HBL, `Machine.cpp:158-163`), `NEOST_SYNC_DISPATCH` (réfuté).
+*Ajout 2026-10-20 (hors Cpu68k, ON par défaut)* : `NEOST_LINELEN_ATTR` (`ShifterInternal.hpp:31`,
+depuis 2026-09-01), `NEOST_MFP_UPDTIMERS` (`Mfp.cpp:28`), `NEOST_MFP_BATCH` (`Mfp.cpp:60`),
+`NEOST_IPL_BATCH` (`Machine.cpp:256`).
 
 Sondes (pas des bascules — inertes si la variable n'est pas posée) : `NEOST_IACK_DISP=1`
 (fréquence des IACK où un événement était réellement échu) et **`NEOST_QDELTA_DIAG=<seuil>`**
@@ -1841,18 +1903,18 @@ ci-dessous est un point **Ikbd** ; le `BL4` du tableau des priorités est le Bli
 
 | # | Où | Divergence |
 |---|----|------------|
-| M3 ✅ | `SoftFloatX80.hpp:189-196` | **CORRIGÉ 2026-07-31 (`7a9e03b`)** — `normalizeSubnormal` passé en convention 68881 (`−sc`, bit entier EXPLICITE) : c'est la branche `#ifdef SOFTFLOAT_68K` de `softfloat.c:1061-1065` qu'il fallait porter, pas celle du x87. Supprime le ×2 systématique sur FADD/FSUB/FMUL/FDIV/FSQRT/FREM/FMOD/FGETEXP/FGETMAN/FSCALE. Vérifié par fuzz différentiel contre `softfloat.c` d'Hatari : **0 écart** (plusieurs milliers avant). |
+| M3 ✅ | `SoftFloatX80.hpp:189-197` | **CORRIGÉ 2026-07-31 (`7a9e03b`)** — `normalizeSubnormal` passé en convention 68881 (`−sc`, bit entier EXPLICITE) : c'est la branche `#ifdef SOFTFLOAT_68K` de `softfloat.c:1061-1065` qu'il fallait porter, pas celle du x87. Supprime le ×2 systématique sur FADD/FSUB/FMUL/FDIV/FSQRT/FREM/FMOD/FGETEXP/FGETMAN/FSCALE. Vérifié par fuzz différentiel contre `softfloat.c` d'Hatari : **0 écart** (plusieurs milliers avant). |
 | B1 | `Ikbd.cpp` flush $80,$01 | avale l'octet « en vol » (Hatari : l'octet tiré vers TDR/TSR survit). |
 | B2 | `Ikbd.cpp` bootRom | ne remet pas `mDeltaX_/Y_` (Hatari : Delta remis à 0). |
 | B4 | `Ikbd.cpp` master reset TIE | Hatari force SR=TDRE immédiatement ; NeoST à l'échéance TX. |
 | B6 ✅ | `Fdc.cpp` DMA ACSI hors plage | Statut READ ERROR et drapeau DMA corrigés sans modifier le sense disque. Clause ROM WRITE non applicable aux configurations supportées : RAM ≤4 Mo, masque DMA $3FFFFE. Sonde MMIO ST/STE/MegaSTE : 12 contrôles ASan/UBSan. |
 | B7 | `Acsi.cpp` `dmaWrite_` | remis à false à chaque commande ; Hatari le fait persister jusqu'au transfert (refus de sens contradictoire). |
 | B8 | `Fdc.cpp`/`Acsi.cpp` | sans image ACSI, Hatari ignore l'octet ($FF8604=0) ; NeoST pose status=2 (probe TOS identique). |
-| B9 ✅ | `MidiAcia.hpp:64-78` | **CORRIGÉ 2026-07-31 (`e499eba`)** — `MidiAcia::reset()` ajouté et appelé par les resets CHAUD et FROID de `Machine`, comme `reset.c:111` (`ACIA_Reset`) + `:124` (`Midi_Reset`). |
+| B9 ✅ | `MidiAcia.hpp:84-101` | **CORRIGÉ 2026-07-31 (`e499eba`)** — `MidiAcia::reset()` ajouté et appelé par les resets CHAUD et FROID de `Machine`, comme `reset.c:111` (`ACIA_Reset`) + `:124` (`Midi_Reset`). |
 | B10 | `DmaSound.cpp` $FF8922 | octet compagnon : Hatari lit 0 (réécrit à chaque shift) ; NeoST combine avec le dernier mot latché. |
 | B11 | `Fpu.cpp` SNaN double | NeoST livre SNAN (plus fidèle au 68881 réel) ; Hatari lève OPERR à la conversion — assumé façon SC2. |
 | B14 | `Shifter.cpp` | capture `lineSnap_`/comptage palette actifs en mono (Hatari : skip hi-res) — surcoût pur, rendu inchangé. |
-| B15 | `Shifter.cpp` | pas de wrap 22 bits (`Video_GetAddrMask` $3FFFFF) à l'usage du compteur vidéo — cas pathologique. |
+| B15 ✅ | `Shifter.hpp` (`kVideoAddrMask`), `VideoCounter.cpp`, `Shifter.cpp` | **CORRIGÉ 2026-10-20** — compteur vidéo replié sur 22 bits (`kVideoAddrMask` = $3FFFFF, ST/Mega ST/STE/Mega STE, = `Video_GetAddrMask`/`DMA_MaskAddressHigh` $3F d'Hatari) à l'avance de ligne (`endVideoLine`), au restart, en lecture/écriture `$FF8205/07/09`, à la capture par ligne et sur chaque mot fetché (`decodeLineIndices`/`decodeWindowIndices`). glue-selftest « b15 ». |
 
 Divergences **assumées** confirmées cette passe : symlinks suivis dans un montage GEMDOS
 (même modèle de confiance que Hatari) ; VME/FPU MegaSTE « not found » correct.
@@ -1911,7 +1973,7 @@ agent. 7 findings uniques, 5 CONFIRMÉS (2 faux positifs écartés : Bus/MMIO et
   confirmé existant) → toutes les comparaisons `host↔hdEmuDir` partagent l'espace canonique.
   Idempotent ; montage normal inchangé.
 - **[BASSE, save-state — trous résiduels de durcissement] `Shifter::glueLineStart_`** : restauré
-  sans check de taille, indexé sans garde de lecture dans `advanceGlueLive` (`Shifter.cpp:454`, `:461`, `:493`) → lecture hors-tas d'un `int64_t` (invariant `== glueLines_.size()` ajouté).
+  sans check de taille, indexé sans garde de lecture dans `liveGlueCatchUp` (ex-`advanceGlueLive`, `VideoGlue.cpp:116`, `:123`, `:160`) → lecture hors-tas d'un `int64_t` (invariant `== glueLines_.size()` ajouté).
   **`Machine::curLineLen_`** : consommé par `advanceLine` (`lineCarry_ += cpl_ - curLineLen_`) →
   forgé, désancre `lineCarry_` après son propre check (borné `]0,4096]`). **`CpuState::cpuMul`** (il s'appelait g_cpuMul avant le regroupement d'état d'A33) :
   multiplie l'horloge Moira (`addBusWaitCycles`) → forgé énorme = bond d'horloge (validé ∈ {1,2}).
@@ -1932,7 +1994,7 @@ positifs écartés. **Corrigés** :
   lisait l'enum déjà hors-domaine. Fix : transit par `std::underlying_type_t` + validation avant
   cast (Ikbd.hpp). Format de save-state inchangé.
 - **[BASSE] `Bus::cart` save-state** : `ar.vec(cart)` sans le plafond 128 Ko de `loadCart`.
-  `read8Slow` décode la cartouche avant le MMIO (`Bus.cpp:365`, cartouche `:405-406`) → un cart forgé > 128 Ko
+  `read8Slow` décode la cartouche avant le MMIO (`Bus.cpp:369`, cartouche `:435-436`) → un cart forgé > 128 Ko
   masque les registres `$FF8xxx`. Garde `ar.check(cart.size() <= CART_END-CART_BASE)` ajoutée.
 
 **Vérifiés FIDÈLES (adversarial, 4 faux positifs)** : Shifter tricks/spec512 (rendu multi-rés,

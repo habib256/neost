@@ -28,7 +28,7 @@ affichée par les démos :
 | suffixe **`us`** (`tos102us`, `tos162us`, `tos206us`, `etos192us`, `etos256us`) | **60 Hz — NTSC** |
 
 Vérification en une commande — `./build/neost-headless roms/<rom>.img --frames 120`
-affiche `[headless] vidéo : 416x276 @ NN Hz`.
+affiche `[headless] video: 416x276 @ NN Hz`.
 
 **Conséquence mesurée (2026-08-01)** : les images **Spectrum 512** de
 `spectrum_512_auto_diapo.st` sont calculées pour le 50 Hz. Sous une ROM NTSC, les
@@ -38,10 +38,10 @@ commutations de palette par ligne ne tombent plus au bon endroit : l'image sort
 le remède est une ROM européenne. Repères d'aire non-noire pour la diapo « coucher de
 soleil » : **0,555 = rendu correct (PAL)**, **0,475 = déchiré (NTSC)**.
 
-**Couverture de la suite** (recomptée 2026-08-28 : 15 étalons « machine », hors les
-9 auto-tests) : `st` ×9 et `ste` ×6 ; `tos102uk` ×3 (50 Hz) + `tos162us` ×1 (60 Hz)
-— **ROM Atari propriétaires** —, `etos192fr` ×6 (50 Hz) + `etos256us` ×5 (60 Hz)
-— **ROM libres** ; 512 Ko ×13 et 1 Mo ×2 ; `fastfdc` ×8. Donc **MegaST, TOS
+**Couverture de la suite** (recomptée 2026-10-20 : 43 étalons « machine », hors les
+11 auto-tests) : `st` ×23 et `ste` ×20 (dans le manifeste) ; `tos102uk` ×3 (50 Hz) + `tos162us` ×1 (60 Hz)
+— **ROM Atari propriétaires** —, `etos192fr` ×28 (50 Hz) + `etos256us` ×11 (60 Hz)
+— **ROM libres** ; 512 Ko ×39 et 1 Mo ×4 ; `fastfdc` ×35. Donc **MegaST, TOS
 1.00/1.04/1.06 ne sont couverts par AUCUN étalon** (le MegaSTE et TOS 2.06, eux, le sont
 depuis le 2026-08-27 par `tools/run_megaste_diag.py`, hors de ce manifeste). Une suite verte ne prouve rien hors de ces
 configurations : devant un rapport « ça plante dans le GUI », commencer par lire
@@ -57,8 +57,8 @@ vecteur 2) et la machine gèle. **Hatari HALTE PAREIL** sur la même configurati
 (`Bus Error reading at address $ffff820f, PC=$58` → `Detected double bus/address error
 => CPU halted!`) : c'est **FIDÈLE**, pas un bug NeoST. **La cause est matérielle** : l'adresse fautive `$FF820F` est l'une des deux que le
 chipset **Ricoh** du ST simple laisse « void » et que le chipset **IMP** du Mega ST fait
-FAUTER (Hatari `IoMem_FixVoidAccessForST`/`ForMegaST`, ioMem.c:150-195 ; NeoST
-`Bus.cpp:533-541`). Le profil machine seul est donc en cause, pas la ROM — matrice
+FAUTER (Hatari `IoMem_FixVoidAccessForST`/`ForMegaST`, ioMem.c:156-196 ; NeoST
+`Bus.cpp:535-542`). Le profil machine seul est donc en cause, pas la ROM — matrice
 `{megast, st}` × `{tos104fr, etos192fr, tos102uk}` : halt sur les trois `megast`, aucun
 sur les trois `st`. Détail et recette d'injection clavier :
 [`CASE_STUDIES.md`](CASE_STUDIES.md).
@@ -75,6 +75,16 @@ rendu final sans extension de bordure, absent avant correction.
 
 L'impulsion tardive atteint la fenêtre NO_DE du STF mais pas celle du STE
 (préchargement déjà commencé). STOP_MIDDLE raccourcit DE et consomme 54 octets.
+Les huit variantes `_ste` tournent sous `etos256fr` (EmuTOS 256 Ko PAL, TOS 2.06)
+depuis le 2026-10-20 : sous `etos192fr` (TOS 1.04), `Machine::adjustMachineForTos`
+les rétrogradait en ST et leurs références copiaient celles des `_st`. Revalidées
+contre Hatari (épingle f0736b24, `--machine ste`) : `node`, `nosync(_cancel)` et
+`sync_high(_cancel)` à 0 px et identiques aux `_st` (timings communs, attendu) ;
+`node_late` à 0 px et différent du `_st` (10 714 px : préchargement STE) ; `blank`
+capture la trame 402 (phase NO_DE, 0 px) — sur STE aucune phase ne donne le BLANK
+du STF, et les phases `left+2` (32/36 cycles) divergent de 204 px sur une ligne,
+artefact de recopie A40 d'Hatari ; `stop` reste un snapshot inchangé (Hatari STE :
+3 px documentés).
 La VBL depuis STOP laisse plusieurs phases de quatre cycles : `oracle_scan`
 cherche uniquement une image identique, sans tolérance pixel, pour les six
 sondes BLANK/NO_DE. Elles sont des oracles Hatari. Les deux STOP_MIDDLE sont
@@ -140,7 +150,7 @@ n'honore pas — il lit `EMUDESK.INF`. Mesuré le 2026-08-28 : sous `etos192fr`,
 monté mais Cubase ne démarre pas, **0 octet MIDI émis**, on reste sur le bureau. Et même
 s'il démarrait, Cubase Lite resterait un logiciel commercial : changer la ROM ne
 retirerait pas la dépendance non redistribuable.
-Sans les deux ROM Atari, il reste **10 auto-tests + 12 étalons machine** (ST ×7, STE ×5) — c'était **5** avant les deux passes d'A10 du 2026-08-28 : migration de trois démos sur EmuTOS, puis l'étalon spec512 GÉNÉRÉ.
+Sans les deux ROM Atari, il reste **11 auto-tests + 39 étalons machine** (ST ×20, STE ×19 au manifeste, recompté 2026-10-20) — c'était **5** avant les deux passes d'A10 du 2026-08-28 : migration de trois démos sur EmuTOS, puis l'étalon spec512 GÉNÉRÉ.
 
 Les **4 étalons à disque généré** (`overscan_top`, `trace_odd`, `scroll_8264`,
 `scroll_8265`) ont été migrés sur EmuTOS le 2026-08-19 : leur programme est un secteur de
@@ -228,9 +238,9 @@ Hatari : `video.c`, `spec512.c`.
 |--------|---------|-----------|------------------|------------|
 | **Spectrum 512** | Inshape | Réécrit la palette plusieurs fois par ligne → >512 couleurs affichées | Synchro cycle-près `MOVE.W` ↔ position du faisceau. Défaut : couleurs décalées verticalement, bandes/flicker | ✅ **RÉSOLU** — diaporama étalon **0 px vs Hatari** (4 images), flicker éliminé. Reste : scroll fin mi-ligne |
 | **Enchanted Land** | Thalion | Scrolling horizontal pixel-près SANS Blitter : bascule 50↔60 Hz en fin de ligne pour tromper le compteur d'adresse interne du Shifter et décaler l'adresse de base | 1 cycle d'erreur → écran qui saute/déchire ou plante. Exige la géométrie variable EN COURS de trame | « Suppression de bordures » (géométrie mi-trame) |
-| **No Cooper** | 1984, 1989 | Écran **greetings** : page med-res 4 bordures ouvertes (chaque ligne : hi@0/lo@12/**MED@20** + 60/50@376/384 + stab@444/456) ; écran principal : nappe raster bord à bord + scrolltext 2 px/trame | Cas d'école `Video_WriteToGlueRes` — **✅ V2 VALIDÉ 0 px vs oracle (2026-07-08)** | Étalons `nocooper` (écran principal, ~6800) et `nocooper_greetings` (**référencé sur l'oracle**, 5 espaces datés, ~29700) — fetch fujiology auto ; les deux sur **EmuTOS** depuis le 2026-08-28 (A10) |
+| **No Cooper** | 1984, 1989 | Écran **greetings** : page med-res 4 bordures ouvertes (chaque ligne : hi@0/lo@12/**MED@20** + 60/50@376/384 + stab@444/456) ; écran principal : nappe raster bord à bord + scrolltext 2 px/trame | Cas d'école `Video_WriteToGlueRes` — **✅ V2 VALIDÉ 0 px vs oracle (2026-07-08)** | Étalons `nocooper` (écran principal, ~6800) et `nocooper_greetings` (`ref_kind: snapshot`, oracle archivé `nocooper_greetings_oracle.png` à 0 px, 5 espaces datés, ~29700) — fetch fujiology auto ; les deux sur **EmuTOS** depuis le 2026-08-28 (A10) |
 | **The Cuddly Demos** | The Carebears (TCB), 1989 | 1ʳᵉ démo à ouvrir les **4 bordures** (haut/bas/gauche/droite) simultanément : boucles de NOP calibrées qui commutent la fréquence au moment où le canon atteint les limites de l'affichage standard. Le robot du menu est dessiné puis **effacé en course avec le faisceau** (un seul buffer) : seul un rendu échantillonné PAR LIGNE le voit (cf. `lineSnap_`, commit 08b58e1) | Précision des timings de génération HSYNC/VSYNC + tampons internes Shifter | « Suppression de bordures » (BORDERMASK_*) |
-| **Closure** | Sync | Démo moderne à **rasters fins** : la palette est réécrite en cours de ligne sur des écrans denses (64→129 couleurs, puis **153 couleurs** sur la « photo fée » vers la trame 10500). Se joue en **ST + 1 Mo** ; le chemin **STE n'est PAS porté** (Hatari lui-même : « FIXME: should be measured on real STE », `video.c:3966-3970`) — ne pas la lancer sous une ROM STE-only. | **A40 : SOLDÉ le 2026-08-30 — le retrait gauche MED (`LEFT_OFF_MED`, « remove left + med stab » qu'Hatari nomme d'après cette démo, `video.c:3974-3995`).** Posée en étalon le 2026-08-30, elle a immédiatement montré un écart oracle de 64 % dont la cause était GÉOMÉTRIQUE, pas chromatique : palettes identiques, et un décalage de +4 px ST ramenait l'écart à 3,2 %. Cause établie par le calcul puis mesurée : Hatari RECOPIE la ligne dans un tampon de 208 o à partir de `raster + 2 + VideoOffset` PUIS applique `STF_PixelScroll` — son ancrage est donc déjà 4 px à droite du faisceau, d'où `shEff = 4 + scrollFinal` = **−4** et non −8. Avec la règle qui va avec (les 8 dernières colonnes du buffer, « entrées » sans source par le décalage, restent à l'index 0), l'écart tombe à **0,02 % (27 px, tous sur la ligne 0)** — le reste est suivi en A41 | Étalon `closure` (écran 153 couleurs, `--frames 10500`, ST 1 Mo, `etos192fr`) — **`ref_kind: snapshot`** tant qu'A41 n'est pas fermé, mais l'oracle est désormais COMMIS à côté (`tests/reference/closure_oracle.png`) : la self-capture garde la non-régression au pixel, l'oracle permet de re-mesurer l'écart sans relancer Hatari. Le disque est dans le dépôt (`disks/etalons/closure.msa`), pas de fetch. ~20 s, 2ᵉ mur du palier pixel. Journal d'enquête : `docs/CLOSURE_CHANTIER.md` |
+| **Closure** | Sync | Démo moderne à **rasters fins** : la palette est réécrite en cours de ligne sur des écrans denses (64→129 couleurs, puis **153 couleurs** sur la « photo fée » vers la trame 10500). Se joue en **ST + 1 Mo** ; le chemin **STE n'est PAS porté** (Hatari lui-même : « FIXME: should be measured on real STE », `video.c:3976-3982`) — ne pas la lancer sous une ROM STE-only. | **A40 : SOLDÉ le 2026-08-30 — le retrait gauche MED (`LEFT_OFF_MED`, « remove left + med stab » qu'Hatari nomme d'après cette démo, `video.c:3974-3997`).** Posée en étalon le 2026-08-30, elle a immédiatement montré un écart oracle de 64 % dont la cause était GÉOMÉTRIQUE, pas chromatique : palettes identiques, et un décalage de +4 px ST ramenait l'écart à 3,2 %. Cause établie par le calcul puis mesurée : Hatari RECOPIE la ligne dans un tampon de 208 o à partir de `raster + 2 + VideoOffset` PUIS applique `STF_PixelScroll` — son ancrage est donc déjà 4 px à droite du faisceau, d'où `shEff = 4 + scrollFinal` = **−4** et non −8. Avec la règle qui va avec (les 8 dernières colonnes du buffer, « entrées » sans source par le décalage, restent à l'index 0), l'écart tombe à **0,02 % (27 px, tous sur la ligne 0)** — le reste est suivi en A41 | Étalon `closure` (écran 153 couleurs, `--frames 10501`, ST 1 Mo, `etos192fr`) — **`ref_kind: snapshot`** tant qu'A41 n'est pas fermé, mais l'oracle est désormais COMMIS à côté (`tests/reference/closure_oracle.png`) : la self-capture garde la non-régression au pixel, l'oracle permet de re-mesurer l'écart sans relancer Hatari. Le disque est dans le dépôt (`disks/etalons/closure.msa`), pas de fetch. ~20 s, 2ᵉ mur du palier pixel. Journal d'enquête : `docs/CLOSURE_CHANTIER.md` |
 
 ### Quirk connu — PAS un bug d'émulation
 
@@ -328,17 +338,20 @@ python3 tools/run_etalons.py --only spectrum512_diapo --oracle
 python3 tools/compare_screenshot.py tests/out/foo_neost.ppm tests/reference/foo.png --crop active
 ```
 
-Étalons intégrés aujourd'hui : **glue_selftest**, **spec512_selftest**, **bus_selftest**,
-**mfp_selftest**, **msa_selftest**, **enec_selftest** (P0, logique pure),
+Étalons intégrés aujourd'hui : **glue_selftest** (+ `glue_selftest_attr`), **spec512_selftest**, **bus_selftest**,
+**mfp_selftest**, **serloop_selftest**, **msa_selftest**, **enec_selftest**, **gemdos_selftest**,
+**usatan_selftest**, **netusbee_selftest** (P0, logique pure),
 **EmuTOS STE boot**, **spectrum512_diapo** + **spectrum512_diapo2** (ST) +
 **spectrum512_diapo_ste** (STE, scramble FIDÈLE == oracle Hatari STE), **overscan_top**,
 **trace_odd**, **scroll_8264** / **scroll_8265** (scroll fin STE), **nocooper** et
-**nocooper_greetings** (V2, réf. oracle archivée) ; fetch auto : **Cuddly Demos**
+**nocooper_greetings** (V2, réf. oracle archivée), **closure**, et les sondes générées
+(`spec512_bands`/`spec512_view`, `freq_switch`, `scroll_336*`, `blitter_timer`/`blitter_hog`,
+`mfp_poll`, `dmasnd_poll`, `vblank_on`/`off`, 16 `blankline_*`) ; fetch auto : **Cuddly Demos**
 (`disks/etalons/cuddly_demos.msa`), **No Cooper** (`disks/etalons/nocooper.msa`),
 **union_demo** (`optional` : SKIP tant que la disquette n'est pas rapatriée).
-Soit **26 entrées** dans `tools/etalons.json` — 10 auto-tests + **16 étalons machine**, dont
+Soit **54 entrées** dans `tools/etalons.json` (2026-10-20) — 11 auto-tests + **43 étalons machine**, dont
 le `_comment` du fichier rappelle la couverture réelle (ni MegaST, ni TOS 1.00/1.04/1.06).
-Le 10ᵉ auto-test est `glue_selftest_attr` (A16b, 2026-08-28) : le MÊME auto-test Glue
+L'auto-test `glue_selftest_attr` (A16b, 2026-08-28) : le MÊME auto-test Glue
 rejoué avec le verrou `NEOST_LINELEN_ATTR=0` (grille fixe, l'A/B depuis que V3 est le défaut, 2026-09-01). Un chemin que
 personne n'exécute pourrit — celui-là segfautait depuis des semaines sans qu'aucun palier
 ne puisse le voir. Un champ `env` du manifeste sert à ça : rejouer un auto-test sous un
@@ -392,8 +405,8 @@ python3 tools/run_selftests.py --list
 - **`ipl`** — latence d'exception : le handler HBL de la ligne 100 fait un délai puis lit `$FF8209`
   (position faisceau = phase d'entrée IACK+prologue, 224±4 déterministe).
 
-`--break cpu|timing|frame` force le FAIL correspondant (valide que le runner l'attrape). Le verdict
-**`fpu`** vient de `make_fpu_testrom.py` (Mega STE + `--fpu`, 9 tests MC68881), qui émet désormais
+`--break cpu|timing|frame|ipl` force le FAIL correspondant (valide que le runner l'attrape). Le verdict
+**`fpu`** vient de `make_fpu_testrom.py` (Mega STE + `--fpu`, 54 tests MC68881), qui émet désormais
 `NEOST-TEST: fpu PASS|FAIL` sur le série (en plus de `D7` pour la trace). Le runner
 `tools/run_selftests.py` (manifeste `tools/selftests.json`) lance le headless avec `--cart`/rom +
 `--serial-dump`, scanne les verdicts et sort 0/1.
@@ -416,7 +429,7 @@ python3 tools/run_selftests.py --list
 ### Orchestration par paliers + hook pre-push
 
 ```sh
-python3 tools/run_all.py --tier fast      # P0 (logique pure + 7 auto-tests) + P1 (verdicts série)
+python3 tools/run_all.py --tier fast      # P0 (logique pure + tous les *_selftest) + P1 (verdicts série)
                                           # + cycle-bench + round-trip save-state + disquette
                                           # livrée + boot GUI + 4 étalons pixel rapides
                                           # — ~12 s (mesuré 2026-08-27)
@@ -430,7 +443,7 @@ python3 tools/run_all.py --uninstall-hook
 Hatari sème son RNG sur `time(NULL)` et s'en sert pour la position angulaire initiale de
 la disquette : **la numérotation des trames de son AVI change d'un run à l'autre**. Un
 `frame:` figé ne peut donc pas servir de référence oracle pour un étalon qui boote un
-disque. Les 7 entrées concernées portent `oracle_scan: N` : `--oracle` extrait la fenêtre
+disque. Les entrées concernées (32 au 2026-10-20) portent `oracle_scan: N` : `--oracle` extrait la fenêtre
 `[frame−N, frame+N]` et retient la trame **identique** à la capture NeoST (jamais la moins
 pire ; aucune correspondance ⇒ échec bruyant = vraie divergence). Détail et mesures →
 `docs/HATARI_AUTOMATION.md`.

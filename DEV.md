@@ -10,15 +10,16 @@ read8/write8 vers les composants), et **le cœur ne dépend pas du GUI**.
 
 - **`neost_core`** (lib statique, aucune dépendance GUI) = la carte mère : `Bus`, `Cpu68k`
   (wrapper Moira), `Shifter`, `Mfp`, `Ikbd`, `MidiAcia`, `Fdc`/`StxImage`, `Acsi`, `Scc`,
-  `YM2149`, `DmaSound`/`AudioMix`, `Blitter`, `Rtc`, `Fpu`, `GemdosHd`, `Glue`, plus
-  `Machine`, `Scheduler`, `Tracer`/`Symbols`, `Framing`, `MediaScan`, `HostPath` et
+  `YM2149`, `DmaSound`/`AudioMix`, `Blitter`, `Rtc`, `Fpu`, `GemdosHd`, `VideoGlue`/`MmuGlue`, plus
+  `Machine`, `Scheduler`, `Tracer`/`Symbols`, `Framing`, `MediaScan`, `HostPath`/`ConfigPath` et
   `AppConfig` (le format `neost.cfg` est du parsing pur, donc côté cœur).
 - **`neost_net`** (lib statique, HORS cœur) = la couche réseau hôte : sockets et
   threads y vivent (`SlirpBackend` toujours ; `Socket`, `HayesModem`, `MidiRing`
   sous `NEOST_WITH_NET`).
 - **`Machine`** assemble les composants, les branche au `Bus`, encapsule `runFrame()`.
 - **`neost`** (GUI), **`neost-headless`**, **`neost-web`** et l'APK Android partagent
-  `Machine`. Le GUI ajoute GLFW/OpenGL/ImGui/miniaudio et bride à 50 fps réels.
+  `Machine`. Le GUI ajoute GLFW/OpenGL/ImGui/miniaudio et cale la cadence sur la durée
+  réelle de la trame émulée (50/60/71 Hz, `core/Pacing.hpp`).
 
 ```
 src/
@@ -93,9 +94,10 @@ src/
                             Mt32Synth (Munt), GmSynth (TinySoundFont).
   headless/                 Runner déterministe + traces.
   web/main_web.cpp          Frontend WebAssembly (Emscripten + WebGL).
-  android/                  Frontend Android (SDL2 + GLES2) — démarre, pas d'interface.
-tests/                      selftest_logic.cpp (cible neost-selftest, palier fast) +
-                            stx_writetrack_test.cpp (EXCLUDE_FROM_ALL).
+  android/                  Frontend Android (SDL2 + GLES2) + menu tactile (AndroidMenu).
+tests/                      selftest_logic.cpp + *_logic.cpp (cible neost-selftest),
+                            fuzz_diskimage.cpp (neost-fuzz-disk), stx_writetrack_test.cpp
+                            (neost-stx-test) — tous bâtis par défaut, palier fast.
 extern/  imgui/ miniaudio/ (sous-modules) · moira/ (VENDORISÉ, cf. NEOST_VENDOR.md) · hatari/ (clone gitignoré)
 extern/hatari/src           SOURCE DE VÉRITÉ matérielle (lue, pas compilée)
 ```
@@ -109,7 +111,7 @@ qu'il ne faut pas casser en touchant au code :
   donnent ROM (0) et disquette (1). Ne pas remettre d'accès `argv[1/2]` en dur.
 - **Config figée** : `saveConfig()` sort immédiatement si `App::kiosk` **ou**
   `App::kioskLaunched` (invariant de DÉPLOIEMENT : une session lancée en `--kiosk` reste
-  figée même après un retour au bureau par F8), **sauf** `force=true` — réservé aux deux
+  figée même après un retour au bureau par Ctrl+Alt+F), **sauf** `force=true` — réservé aux deux
   réglages que la borne doit mémoriser depuis son menu, `kiosk_romdir=` et `joymap=`.
   Un `force=true` repart de `App::cfgPristine` et n'y reporte QUE ces champs : la structure
   en mémoire est salie en séance, la réécrire entière ferait fuir les réglages du dernier
@@ -120,7 +122,7 @@ qu'il ne faut pas casser en touchant au code :
 - **Chrome masqué** : tout le bloc ImGui est sous `if (!A.kiosk)` ; la trame ImGui reste
   créée/rendue à vide. Le dockspace est gardé VIVANT (`KeepAliveOnly`) sinon l'aller-retour
   bureau→borne→bureau désancre toutes les fenêtres.
-- **Bascule à chaud (F8)** : instantané `saveState` → changement de moniteur GLFW →
+- **Bascule à chaud (Ctrl+Alt+F, `App::switchKioskMode`)** : instantané `saveState` → changement de moniteur GLFW →
   `loadState`. À faire ENTRE deux trames uniquement.
 - **Rendu** : `drawStKiosk()` cale la zone active (`Shifter::activeWidth/Height/Top`) sur
   la HAUTEUR, ratio gardé. La passe CRT est demandée à la taille du cadre entier À CE
@@ -143,8 +145,8 @@ PAL basse résolution : **313 lignes × 512 cycles CPU**. `runFrame` est désorm
 vidéo au cycle (rendu au cycle 376, HBL en fin de ligne, **Timer B à une position DÉRIVÉE**
 du Display-Enable et de l'AER bit3 — `Machine::timerBPos` → `Shifter::timerBLinePos`, et non
 un cycle fixe), timers MFP A/C/D en mode délai
-datés par le MFP, Timer C ≈200 Hz, VBL niveau 4 au début du VBlank. Le GUI bride à 50 fps
-réels pour que le temps émulé colle au réel. Le quantum **sous la ligne** est ACQUIS
+datés par le MFP, Timer C ≈200 Hz, VBL niveau 4 au début du VBlank. Le GUI cale sa cadence
+sur la durée réelle de la trame (`core/Pacing.hpp`) pour que le temps émulé colle au réel. Le quantum **sous la ligne** est ACQUIS
 (`Scheduler::liveNow` + préemption `Cpu68k::endTimeslice`) ; le chantier ouvert est le
 **beam-sync par-ligne** — cf. [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md).
 
@@ -169,13 +171,14 @@ rien face à Moira et doublait inutilement chaque chemin du wrapper. Moira est *
 bâtir (CMake faute si `extern/moira` est absent), et compilé en mode cycle-exact
 (`MOIRA_PRECISE_TIMING=true`, `MOIRA_MIMIC_MUSASHI=false`, cf. `CMakeLists.txt`).
 
-`Cpu68k` (`NeostMoira`, sous-classe de `moira::Moira`) route les accès mémoire vers `g_bus` :
+`Cpu68k` (`NeostMoira`, sous-classe de `moira::Moira`) route les accès mémoire vers le `Bus` (`g_cur->bus`) :
 - `read8/16` et `write8/16` consultent `busFaultN` (whitelist Hatari) → lèvent `moira::BusError`
   (trame de groupe 0 reconstruite dans `raiseBusError`) ou haltent le CPU en double faute.
 - `readIrqUserVector` (irqMode USER) reproduit le vectoring ST : vecteur MFP (niveau 6) via
   `mfp->iack()`, VBL/HBL (4/2) auto-vectorisés. `neostUpdateIpl` recalcule l'IPL (MFP 6 > VBL 4
   > HBL 2 ; gaté par le SCU sur MegaSTE).
-- Le `Tracer` reçoit `onInstruction(pc)` après chaque `execute()` et désassemble via
+- Le `Tracer` reçoit `onInstruction(pc)` AVANT l'exécution de chaque instruction (hook
+  `willExecute`, `MOIRA_WILL_EXECUTE` forcé par `CMakeLists.txt`) et désassemble via
   `Cpu68k::disassemble` → `moira::disassemble` (syntaxe `Syntax::MUSASHI`, format de trace
   inchangé pour le diff MAME).
 
@@ -306,7 +309,7 @@ python3 tools/run_etalons.py
 ```
 
 Options : `--cpu moira` (seul cœur, optionnel), `--machine st|megast|ste|megaste`,
-`--mem 256k|512k|1m|2m|4m`, `--cart FILE`, `--disk`, `--diskb`, `--mono`, `--until-pc HEX`,
+`--mem 256k|512k|1m|2m|2176k|2560k|4m` (`2.5m` = alias de `2560k`), `--cart FILE`, `--disk`, `--diskb`, `--mono`, `--until-pc HEX`,
 `--walk-mouse`, `--keys "STR"`, `--loopback`. Pilotage daté (menus de jeux/démos) :
 `--keys-at N "STR"` (scancodes étendus : flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`, `.` et
 `|` = point et Enter du **pavé numérique** — même caractère sur tout TOS ; `--azerty` pour
@@ -347,15 +350,15 @@ du data register $FFFC02 : valeur, file restante, cycle). MIDI : `--midi-dump FI
 (chaque octet MIDI OUT daté du cycle 68000 → `tools/midi_compare.py`), `--midi-list`
 (appareils MIDI de l'hôte) et `--midi-in-device NAME` (un clavier maître entre dans le
 MIDI IN du ST ; bilan « N bytes into the ACIA » en fin de run), `--dongle
-cubase3|cubase2|auto` (clé Steinberg sur /ROM3, cf. `docs/EXTENSIONS.md`).
+cubase3|cubase2|auto|notator` (clé Steinberg sur /ROM3 ou C-Lab, cf. `docs/EXTENSIONS.md`).
 
 **Pilotage externe déterministe** (`docs/OPENDST.md`) : `--probe NOM=ADR:LEN` (répétable),
 `--probe-every N`, `--hash-ram ADR:LEN` émettent sur **stdout** une ligne
 `probe frame=… screen=<hash> ram=<hash> NOM=0x…` par échantillon — lecture `peek8`, **sans
 effet de bord** (l'espace I/O se lit `$FF` ; pour une puce, c'est `--dump-at`). `--server`
 remplace la boucle `--frames` par une **boucle de commandes** stdin/stdout (`run`, `play`,
-`joy`, `key`, `mouse`, `peek`, `observe`, `save`/`load` sur des emplacements d'état EN
-MÉMOIRE, `export`/`import`, `shot`) : `src/headless/Server.cpp`. L'équivalence serveur ↔
+`joy`, `key`, `mouse`, `peek`, `probe`, `observe`, `save`/`load` sur des emplacements d'état EN
+MÉMOIRE, `slots`, `export`/`import`, `insert`/`eject` (disquette à chaud), `shot`) : `src/headless/Server.cpp`. L'équivalence serveur ↔
 boucle `--frames` est un verdict du palier `fast` (`tools/run_server_equiv.py`), et il est
 MUTATION-TESTÉ. Oracle DIFFÉRENTIEL NeoST↔Hatari : `tools/opendst_oracle.py`, qui exige
 `tools/hatari_neost_oracle.patch` appliqué à `extern/hatari`.
@@ -392,7 +395,7 @@ FC0030: bra     $fc004e
   toujours passer des copies sacrificielles `--disk`/`--diskb` (piège A14).
 - **Sensibilité à `--mem`** : un même diag peut échouer différemment selon la taille RAM →
   révèle un bug de décodage MMU (`mmuTranslate`).
-- **Garde double bus fault** (`Cpu68k.cpp`, `g_inBusError`) : un code en vrille fautait en
+- **Garde double bus fault** (`Cpu68k.cpp`, `CpuState::inBusError`) : un code en vrille fautait en
   boucle → segfault hôte. On halte désormais le CPU comme un vrai 68000 (Moira
   `flags|=HALTED`, cf. `faultOrHalt`). Si EXIT≠0 réapparaît, vérifier cette garde.
 - **`tools/trace_diff.py`** : aligne une trace NeoST et une trace Hatari du même ROM/disquette
@@ -418,7 +421,7 @@ FC0030: bra     $fc004e
   refuse une étape non inscrite, affiche le mur du palier et les contrôles
   muets depuis 180 jours. Consigner un vrai déclenchement dans le commit qui
   corrige le défaut.
-  `--strict` est conservé, la même politique s'applique désormais par défaut.
+- **Oracles temporels, précisions** : `run_timing_oracle.py --strict` est conservé, la même politique s'applique désormais par défaut.
   Les traces portent les instructions réelles avant exécution ; IRQ et STOP
   ne produisent plus de doublons de continuation dans le comptage CPU.
   `blitter_timer` est maintenant un oracle Hatari : zéro pixel divergent,
@@ -455,7 +458,7 @@ attend du matériel.
 | 8/16 MHz + cache MegaSTE | `m68000.c` (`MegaSTE_CPU_Cache_Update`, `MegaSTE_Cache_*`, `mem_access_delay_*_megaste_16`) |
 | `Fpu` (68881 optionnel)  | (Hatari n'émule pas le socket — réf. MC68881 UM §7 + AN-947, glue SFP004 MiNTLib ; émulation fonctionnelle, test : `tools/make_fpu_testrom.py`) |
 | `Mfp`                    | `mfp.c` (timers A-D, modes, GPIP)              |
-| `Ikbd` / `MidiAcia`      | `ikbd.c`, `acia.c`, `midi.c`, `keymap.c`       |
+| `Ikbd` / `MidiAcia`      | `ikbd.c`, `acia.c`, `midi.c`, `sdl/keymap.c`   |
 | `Shifter` / `Machine`    | `video.c` (HBL/VBL/Timer B, bordures), `spec512.c`, `conv_st.c` |
 | `Scheduler`              | `cycInt.c`, `cycles.c` |
 | `Cpu68k` (adaptateur)    | `cpu/hatari-glue.c` (`customreset`), `cpu/newcpu.c`, `cpu/memory.c` |
@@ -470,8 +473,8 @@ attend du matériel.
 ### Disque dur GEMDOS (`GemdosHd`)
 
 Redirection des appels GEMDOS d'un lecteur virtuel (C:…) vers un dossier hôte, au
-lieu d'émuler un contrôleur ACSI/IDE. Activé par `--gemdos DIR` (headless) ou
-`NEOST_GEMDOS_DIR` (GUI) ; **exclusif d'une cartouche externe** (`--cart`).
+lieu d'émuler un contrôleur ACSI/IDE. Activé par `--gemdos DIR` (headless) ou, côté
+GUI, par la clé `gemdos=` de `neost.cfg` (page Hard disks, dossier déposé) — `NEOST_GEMDOS_DIR` prime ; **exclusif d'une cartouche externe** (`--cart`).
 
 Mécanisme (port fidèle, adapté à Moira) :
 
@@ -481,11 +484,11 @@ Mécanisme (port fidèle, adapté à Moira) :
    init GEMDOS, avant boot disque).
 2. **Opcodes « illégaux » magiques** : le code cartouche déclenche les opcodes
    `$0008` (GEMDOS), `$0009` (PEXEC), `$000A` (SYSINIT). Hatari patche sa table
-   d'opcodes ; NeoST/Moira les capte dans `Cpu68k::run` **avant `execute()`** : si le
-   PC est dans la cartouche (`$FA0000-$FBFFFF`) et `bus.gemdos` actif, on appelle
-   `GemdosHd::handleOpcode`, puis on remplace l'IRD par un `NOP` (`$4E71`) que le
-   `execute()` suivant consomme (avance PC + prefetch + 4 cyc) — équivalent exact du
-   `CpuDoNOP()` d'Hatari.
+   d'opcodes ; NeoST les capte DANS le gestionnaire d'instruction illégale de Moira
+   (hook `illegalOpcodeHook`, `Cpu68k.cpp`) — pas avant `execute()`, sinon une IRQ
+   prise juste après rejouait l'appel au `rte`. Si le PC est dans la cartouche
+   (`$FA0000-$FBFFFF`) et `bus.gemdos` actif, on appelle `GemdosHd::handleOpcode`
+   et Moira consomme l'opcode comme un NOP — équivalent du `CpuDoNOP()` d'Hatari.
 3. **`SYSINIT`** installe le hook : sauve l'ancien vecteur GEMDOS dans la cartouche
    (`CART_OLDGEMDOS=$FA0024`, écrit DIRECTEMENT dans `bus.cart`), pose `$84` →
    `CART_GEMDOS=$FA002A`, calcule `act_pd` (osheader+`$28`) et ajoute C: au masque
@@ -525,7 +528,7 @@ ACSI/IDE (lecteurs dès C:), pas d'autostart INF ni de conversion de charset.
   DMA invalide le cache pendant l'accès. La prise du bus blitter invalide le
   cache avant l'arbitrage, comme Hatari.
 - **VBL/HBL autovecteurs LATCHÉS** (comme Hatari, « cleared only when processed ») :
-  `g_vblPending` reste armé tant que le CPU n'a pas servi l'IRQ (mask ≥ niveau). Si le SR
+  `CpuState::vblPending` reste armé tant que le CPU n'a pas servi l'IRQ (mask ≥ niveau). Si le SR
   ré-autorise le niveau 4 après une longue période masquée, la VBL en attente part AUSSITÔT
   vers `$70` → crash si le handler n'y est plus.
 - **Vecteurs MFP** : canal = n° de source (Timer A=13, B=8, C=5, D=4, ACIA=6, FDC=7) ;

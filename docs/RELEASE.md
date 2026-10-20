@@ -28,9 +28,12 @@ le reste est ci-dessous.
    `CMakeLists.txt` et « Version courante : **x.y.z** » en tête du `CHANGELOG.md`.
    `check_release.py` exige qu'ils soient égaux **et** égaux à la dernière en-tête
    `## x.y.z — …`.
-3. ⚠ **Reconfigurer une fois avec `-DNEOST_VERSION_STR=x.y.z`.** C'est une variable de
-   **cache** CMake : sans ce passage, le binaire continue d'annoncer l'ancienne version
-   et `--version` **ment**. (Déjà écrit dans `CLAUDE.md` ; répété ici parce que c'est
+3. ⚠ **Reconfigurer, puis contrôler `--version`.** `NEOST_VERSION_STR` est une variable de
+   **cache** CMake. Depuis le 2026-08-22, `CMakeLists.txt` la ré-ensemence tout seul quand
+   `project(VERSION)` change (`NEOST_VERSION_SEED`, message « version ré-ensemencée ») —
+   **sauf** si une valeur a été forcée par `-DNEOST_VERSION_STR=…` dans ce dossier de build :
+   elle est alors préservée et il faut repasser `-DNEOST_VERSION_STR=x.y.z`, sinon
+   `--version` **ment**. (Déjà écrit dans `CLAUDE.md` ; répété ici parce que c'est
    l'étape qu'on saute.) Le `(commit …, built …)` qui suit la version, lui, ne ment pas :
    il est regénéré à chaque build par `cmake/BuildInfo.cmake` — un `+xxxxxxxx` derrière le
    hash signale un arbre de travail modifié, donc un binaire qui n'est PAS celui du tag.
@@ -52,6 +55,10 @@ le reste est ci-dessous.
    `check_licenses.py` est vert : tout composant livré doit être nommé avec sa licence.
 
 ## Le JOUR J — dossier prêt pour la prochaine release (préparé le 2026-09-01)
+
+✅ **Exécuté** : le tag annoté `0.6.1` est posé le 2026-09-02 et la Release GitHub porte
+des notes en anglais (« NeoST 0.6.1 — your settings stay put », complétées depuis le texte
+ci-dessous). Le dossier est conservé comme modèle pour la suivante.
 
 Rien n'est tagué ici. Ce paragraphe existe pour que la pose du tag soit une
 **exécution**, pas une rédaction : c'est en rédigeant sous pression qu'on saute une
@@ -88,8 +95,9 @@ même jour s'impose malgré tout, la raison s'écrit — « 0.6 ne conserve aucu
    `CHANGELOG.md`, **plus** l'en-tête `## 0.6.1 — …`. `check_release.py` exige les trois
    égales — c'est pour ça qu'aucune n'est bougée d'avance : une version bumpée sans tag
    ferait mentir le dépôt aussi sûrement que l'inverse.
-2. ⚠ **Reconfigurer** : `cmake -B build -DNEOST_VERSION_STR=0.6.1` — variable de CACHE,
-   sans ce passage `--version` ment.
+2. ⚠ **Reconfigurer** : `cmake -B build -DNEOST_VERSION_STR=0.6.1` — variable de CACHE ;
+   le ré-ensemencement automatique ne joue pas si une valeur a déjà été forcée, et
+   `--version` ment alors.
 3. **`python3 tools/run_all.py --tier full`** sur un poste AU REPOS. (Vert le
    2026-09-01 sur le contenu actuel de `main`, charge 1,66 — à refaire, le palier garde
    le rendu.)
