@@ -850,8 +850,9 @@ static void drawStatusBar(App& A, Frame& F) {
         const std::string mdl = cfg.machine == "megaste" ? "Mega STE"
                               : cfg.machine == "ste"     ? "STE"
                               : cfg.machine == "megast"  ? "Mega ST" : "ST";
-        const std::string ram = cfg.mem == "256k" ? "256 KB" : cfg.mem == "512k" ? "512 KB"
-                              : cfg.mem == "1m" ? "1 MB" : cfg.mem == "2m" ? "2 MB" : "4 MB";
+        // RAM : la taille RÉELLEMENT installée (pas une liste de noms de cfg.mem,
+        // qui retombait sur « 4 MB » pour toute valeur inconnue — 2176k, 2560k).
+        const std::string ram = ramDisplayName(machine.bus.ram.size());
         seg(mdl, kCfgMachine, "Emulated machine model");
         seg(ram, kCfgMem,     "Installed ST-RAM");
         seg(fs::path(cfg.rom).stem().string(), kCfgRom, "TOS image in ROM");

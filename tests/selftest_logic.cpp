@@ -758,6 +758,22 @@ static void testConfigParser() {
 //  de référence n'est publiée) : elles gardent la TRANSCRIPTION des équations à
 //  l'identique, elles ne prouvent pas la clé. Les propriétés, elles, sont connues.
 // -----------------------------------------------------------------------------
+// Libellé RAM de la barre d'état : calculé depuis les octets. La chaîne de
+// ternaires qu'il remplace affichait « 4 MB » pour 2176k/2560k (et pour toute
+// valeur qu'elle ne connaissait pas).
+static void testRamDisplay() {
+    std::printf("Libellé RAM de la barre d'état\n");
+    checkStr("256k",  ramDisplayName(parseRamBytes("256k")),  "256 KB");
+    checkStr("512k",  ramDisplayName(parseRamBytes("512k")),  "512 KB");
+    checkStr("1m",    ramDisplayName(parseRamBytes("1m")),    "1 MB");
+    checkStr("2m",    ramDisplayName(parseRamBytes("2m")),    "2 MB");
+    checkStr("2176k", ramDisplayName(parseRamBytes("2176k")), "2176 KB");
+    checkStr("2560k", ramDisplayName(parseRamBytes("2560k")), "2.5 MB");
+    checkStr("4m",    ramDisplayName(parseRamBytes("4m")),    "4 MB");
+    // Alias « 2.5m » ramené à l'identifiant du bouton radio de la page Memory.
+    checkStr("alias 2.5m canonique", ramLabel(parseRamBytes("2.5m")), "2560k");
+}
+
 static void testCartridgeKey() {
     std::printf("CartridgeKey (clés Steinberg /ROM3)\n");
     {   // Clé noire : registres à 0 au reset, le motif %11011000 sur A8..A1 ramène à 0.
@@ -2858,6 +2874,7 @@ int main() {
     testMouseScale();
     testMissingHwHint();
     testConfigParser();
+    testRamDisplay();
     testConfigPath();
     testConfigWriteCreatesDir();
     testFixBools();

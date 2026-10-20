@@ -44,9 +44,22 @@ public:
     void setEnabled(bool on) { enabled_ = on; }
     bool enabled() const { return enabled_; }
 
-    // Adresse MAC de la carte (par défaut « NeoST » 02:4E:53:54:xx:xx, localement
-    // administrée). Posée par le frontend ; le pilote la relit dans les PAR.
+    Ne2000() { loadProm(); }
+
+    // Adresse station de la carte : celle que porte la PROM d'adresse (NIC $0000-
+    // $001F, lue par Remote DMA). Comme sur une vraie NE2000, le PILOTE la relit
+    // (ne.c : 32 octets à RSAR=0, signature « WW ») puis la recopie lui-même dans
+    // les PAR — la puce ne charge PAS les PAR depuis la PROM. Par défaut
+    // kDefaultMac ; setMac la change (prise en compte immédiatement par la PROM).
     void setMac(const uint8_t mac[6]);
+    const uint8_t* mac() const { return mac_; }
+    // Adresse par défaut : LOCALEMENT ADMINISTRÉE (bit 1 du 1er octet), « NST » en
+    // ASCII. Aucun OUI de fabricant n'est propre à l'EtherNEC (elle accueille
+    // n'importe quelle carte ISA NE2000, dont la PROM porte la MAC du fabricant
+    // de cette carte) ni documenté pour le NetUSBee : une adresse inventée ne doit
+    // pas usurper un OUI réel. Fixe, pour que les runs restent déterministes.
+    static constexpr uint8_t kDefaultMac[6] = {0x02, 0x4E, 0x53, 0x54, 0x00, 0x01};
+    static constexpr int     kPromSize = 32;   // octets de PROM visibles (doublés)
 
     // Décodage d'une lecture dans la fenêtre cartouche ($FA0000-$FBFFFF). Renvoie
     // true et pose `out` si l'adresse est un accès EtherNEC ; false sinon (la
@@ -84,7 +97,9 @@ private:
     uint8_t tpsr_ = 0;                  // page de départ TX
     uint16_t tbcr_ = 0;                 // compteur d'octets TX
     uint16_t rsar_ = 0, rbcr_ = 0;      // Remote DMA : adresse + compteur
-    uint8_t par_[6] = {0};              // adresse MAC (page 1)
+    uint8_t par_[6] = {0};              // adresse MAC (page 1) — posée par le pilote
+    uint8_t mac_[6] = {kDefaultMac[0], kDefaultMac[1], kDefaultMac[2],
+                       kDefaultMac[3], kDefaultMac[4], kDefaultMac[5]};   // PROM d'adresse
     uint8_t mar_[8] = {0};              // filtre multicast (page 1)
 
     // RAM tampon de la NIC (anneau RX + tampon TX). Allouée DÈS la construction :
@@ -93,6 +108,7 @@ private:
     // pris en config par défaut (sans EtherNEC) — F7/« load state » échouait toujours.
     std::vector<uint8_t> mem_ = std::vector<uint8_t>(std::size_t(kMemSize), 0);
 
+    void loadProm();                         // PROM d'adresse → mem_[0..31]
     void page0Write(uint8_t reg, uint8_t v);
     uint8_t page0Read(uint8_t reg);
     void page1Write(uint8_t reg, uint8_t v);
