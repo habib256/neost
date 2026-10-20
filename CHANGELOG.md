@@ -29,6 +29,11 @@ l'ordre inverse. Version courante : **0.6.1**.
   ou nom de fichier dans le port cartouche, refusé à tort. Consignés : défauts d'Hatari
   non reproduits (Fwrite de taille négative, Pexec tronqué), écarts communs face au TOS.
 - **MFP** : tables de vérité puce nue du mode délai pour les quatre timers.
+- **A9 : `appLoop` découpée.** Une `struct Frame` porte les variables de trame, et
+  28 fonctions statiques (entrées, trames dues, dessin, requêtes, présentation) sont
+  déplacées mécaniquement : `appLoop` passe à 51 lignes, la plus grosse pièce restante
+  est `runKioskMenu` (380). Captures `--shot-window` identiques à l'octet avant/après,
+  en bureau et en borne. `-DNEOST_WITH_IMGUI=OFF` était déjà cassé avant (consigné).
 - **A38** : registre `tools/fast_guards.json` des 21 étapes du palier `fast` (dernier
   déclenchement réel daté), étape non inscrite refusée, mur et contrôles muets depuis
   180 jours affichés par `run_all.py`.

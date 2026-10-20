@@ -40,11 +40,10 @@ Premier tri proposé ; le détail est dans la section indiquée.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | A9 : `struct Frame` puis découpe d'`appLoop` | P2 | 7 |
+| 1 | A32 : `VideoCounter` en objet membre (A9 livré, un chantier à la fois) | P2 | 7 |
 | 2 | Suite Hatari `screen` : NeoST = référence décalée de 4 px sur `flixfull` | P2 | 8 |
-| 3 | A32 : `VideoCounter` en objet membre (après A9, un chantier à la fois) | P2 | 7 |
-| 4 | Suite Hatari : programmes à verdict console (`cpu`, `gemdos`, `xbios`, `mem_end`) et `screen` | P2 | 8 |
-| 5 | EtherNEC : livrer les pilotes libres GPL dans les paquets | P2 | 3 |
+| 3 | Suite Hatari : programmes à verdict console (`cpu`, `gemdos`, `xbios`, `mem_end`) et `screen` | P2 | 8 |
+| 4 | EtherNEC : livrer les pilotes libres GPL dans les paquets | P2 | 3 |
 
 Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 
@@ -237,7 +236,11 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
 
-- **A9 — `appLoop` découpée** · P2 ◐ — `main()` tient en 10 lignes, et `appLoop`
+- **Build sans ImGui** · P3 ⭘ — `-DNEOST_WITH_IMGUI=OFF` ne compile plus (constaté
+  le 2026-10-20, antérieur à A9) : des fichiers GUI incluent `imgui.h` sans condition et
+  `AppLoop.cpp` manque de déclarations (`keyboardWindowReleaseAll`, `MidiInHost`…).
+  Réparer ou retirer l'option.
+- **A9 — `appLoop` découpée** · P3 ◐ — `main()` tient en 10 lignes, et `appLoop`
   (`src/gui/AppLoop.cpp`) n'est plus qu'une suite d'appels : les variables de trame vivent
   dans une `struct Frame`, et les 28 phases (entrées / trames dues / dessin / requêtes /
   présentation) sont des fonctions statiques `(App&, Frame&)` déplacées mécaniquement.
