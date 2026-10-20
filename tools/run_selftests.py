@@ -87,8 +87,24 @@ def load_manifest():
     return json.loads(MANIFEST.read_text(encoding="utf-8"))["selftests"]
 
 
+def is_untracked(path: str) -> bool:
+    """Vrai si git ne versionne PAS `path` (étalon gitignoré). Sans git (archive
+    source), on ne sait pas : False, l'ancienne règle « absent seulement » tient."""
+    try:
+        r = subprocess.run(["git", "ls-files", "--error-unmatch", path], cwd=ROOT,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError:
+        return False
+    return r.returncode == 1
+
+
 def ensure_rom_asset(entry) -> bool:
     # Génère la cartouche/disque de test si un générateur est fourni et le fichier absent.
+    # ⚠ Un étalon généré NON versionné (usatan_sd.img) est régénéré à CHAQUE passage :
+    # rien ne le met à jour quand son générateur change. Le 699e696 a corrigé la routine
+    # `emit` de USTEST.PRG (attendre BE au lieu d'écraser l'UDR) en même temps que le
+    # transport TX réel ; une image construite avant restait sur le disque et ne
+    # transmettait plus que « N-\n » (issue #42). Générateurs déterministes et rapides.
     for key, gen_key in (("cart", "cart_generate"), ("disk", "disk_generate"),
                          ("rom", "rom_generate"), ("sd1", "sd1_generate"),
                          ("sd2", "sd2_generate")):
@@ -97,7 +113,7 @@ def ensure_rom_asset(entry) -> bool:
         if not path:
             continue
         full = ROOT / path
-        if full.exists():
+        if full.exists() and not (gen and is_untracked(path)):
             continue
         if not gen:
             print(f"  asset manquant : {path}", file=sys.stderr)
