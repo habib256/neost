@@ -7,7 +7,7 @@ détectent aussi le Pi 5 et le Pi 3.
 
 > ⚠ Les scripts de ce dossier **n'ont pas encore été exécutés sur une machine
 > réelle** — ils sont écrits à partir des recettes standard Debian/Pi OS et de ce
-> que `main.cpp`/`Audio.cpp` attendent réellement. Prévoir un clavier et une
+> que `src/gui/`/`Audio.cpp` attendent réellement. Prévoir un clavier et une
 > carte SD de secours pour le premier essai (cf. § *Rattrapage*).
 
 ---
@@ -18,7 +18,7 @@ NeoST **dit déjà** pourquoi le son saute. `Audio::produceFrame` (`src/audio/Au
 imprime sur `stderr`, au plus une fois toutes les ~5 s :
 
 ```
-[Audio] underrun anneau (total N) — boucle émulation : XX.X trames/s réelles (attendu ~50/60), anneau NNN
+[Audio] ring underrun (total N) — emulation loop: XX.X real frames/s (nominal 50 PAL / 60 NTSC / 71 mono), ring NNN
 ```
 
 | Lecture                              | Diagnostic                                                              | Remède                                            |
@@ -170,15 +170,17 @@ sudo reboot
 
 ### Disposition installée
 
-Elle **n'est pas arbitraire** : elle découle de `resolveData()` et de `cfgPath()`
-dans `src/main.cpp`, qui cherchent les données relativement à `exeDir/..`.
+Elle **n'est pas arbitraire** : elle découle de `resolveData()` (`src/gui/App.cpp`) et de
+`cfgPath()` (`src/gui/AppConfig.cpp` → `src/util/ConfigPath.cpp`), qui cherchent les
+données et la config relativement à `exeDir/..`.
 
 ```
 /opt/neost/bin/neost              ← exeDir
 /opt/neost/bin/neost-kiosk.sh     ← ExecStart du service (lance X nu)
 /opt/neost/bin/neost-session.sh   ← lancé PAR startx, devient NeoST
 /opt/neost/roms/  disks/  fonts/  gemdos/  carts/
-/opt/neost/neost.cfg              ← cfgPath() = exeDir + "/../neost.cfg"
+/opt/neost/neost.cfg              ← cfgPath() : exeDir + "/../neost.cfg" s'il existe ou si
+                                    le dossier est inscriptible, sinon ~/.config/neost/
 /etc/neost-kiosk.conf             ← réglages de la borne (ROM, latence, CRT)
 ```
 
@@ -221,8 +223,8 @@ Ce n'est pas un remède à une boucle d'émulation trop lente — seulement à l
 **Le preset CRT est le premier poste à couper** si les trames/s ne tiennent pas :
 c'est un shader plein écran, et sur Pi 4 il se paie comptant.
 
-⚠ **`NEOST_BIN` vers une AppImage antérieure à `--audio-latency`** : `main.cpp`
-ignore les options `--` inconnues mais garde leurs valeurs comme arguments
+⚠ **`NEOST_BIN` vers une AppImage antérieure à `--audio-latency`** : ces anciens
+binaires ignoraient les options `--` inconnues mais gardaient leurs valeurs comme arguments (les actuels les refusent, code 2)
 **positionnels** — `--audio-latency 120` y deviendrait donc « ROM = 120 » et la
 borne ne démarrerait pas. Échappatoire : mettre `NEOST_AUDIO_LATENCY=""`
 (vide ⇒ `neost-session.sh` n'émet pas l'option du tout).
@@ -311,7 +313,8 @@ sudo systemctl mask getty@tty2 getty@tty3 getty@tty4 getty@tty5 getty@tty6
 
 `Alt+F4` ferme NeoST, mais `Restart=always` le relance : il n'y a pas de sortie
 vers un bureau. Voir aussi `DEV.md` § *Mode kiosk* : en `--kiosk`, la
-configuration est **figée** (`saveConfig` sort immédiatement), une session
+configuration est **figée** (`saveConfig`, `src/gui/App.cpp`, ne réécrit que les dossiers
+ROM et l'affectation des manettes, par-dessus l'image lue au démarrage), une session
 publique ne peut donc pas corrompre le réglage de la borne.
 
 ### Survivre aux coupures de courant

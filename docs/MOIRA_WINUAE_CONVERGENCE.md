@@ -14,11 +14,13 @@ Cuddly, Super Hang-On). Décision utilisateur (2026-06-16) : **garder le sync-dr
 > ⚠️ Ce doc CORRIGE plusieurs notes mémoire optimistes/contradictoires. Lire d'abord §3 « Vérités
 > mesurées » avant de rouvrir une piste.
 >
-> ⚠️ **Deux sondes citées ici n'existent plus dans l'arbre** (constaté le 2026-08-19) :
-> `NEOST_EXC_DIAG` (instrumentation NeoST du chemin d'exception → `[EXC]`/`[JTV]`/`[PIN]`) et
-> `NEOST_HAT_IPLDIAG` (gate d'un Hatari PATCHÉ, jamais dans `extern/hatari` tel quel). Les
-> mesures qu'elles ont produites restent valables ; les commandes, non — il faudrait les
-> réinstrumenter. Toutes les autres `NEOST_*` de ce doc sont vivantes dans `src/`.
+> ⚠️ **Sondes : état revérifié le 2026-10-20.** `NEOST_EXC_DIAG` (constatée absente le
+> 2026-08-19) est de nouveau dans le Moira vendorisé (`[PIN]` dans `Moira.cpp`, `[EXC]` dans
+> `MoiraExceptions_cpp.h`, `[JTV]` dans `MoiraDataflow_cpp.h`, cf. `extern/moira/NEOST_VENDOR.md`).
+> `NEOST_HAT_IPLDIAG` est le gate d'un Hatari PATCHÉ, jamais dans `extern/hatari` tel quel : le
+> patch est `tools/hatari_neost_oracle.patch`. `NEOST_SYNC_DISPATCH` a été **supprimée** (A34,
+> 2026-08-28, cf. `tools/env_locks.json`). Toutes les autres `NEOST_*` de ce doc sont vivantes
+> dans `src/`.
 
 ---
 
@@ -351,14 +353,15 @@ python3 tools/trace_diff.py /tmp/neost.txt /tmp/hatari.txt --periods 173C 1742
 | # | Mécanisme | Moira | WinUAE/Hatari | État |
 |---|---|---|---|---|
 | **A** | **Alignement créneau bus 4 cyc sur la RAM (CHIP16)** : avant un accès RAM, WinUAE attend `(4 - clock&3)` cyc (`wait_cpu_cycle_read`, custom.c:148-153). Moira NE l'a PAS. ROM/cart/**IO** = FAST (pas d'alignement, mesuré STF, memory.c:1798). | absent | custom.c:148-153 ; memory.c:1548/1798 | ✅ **PORTÉ** (`NEOST_RAM_SLOT`) |
-| **B** | **Délai de reconnaissance IPL** : Moira reconnaît l'IPL immédiatement (POLL_IPL≡`reg.ipl=ipl`, MoiraMacros.h:64). WinUAE diffère d'1 instr si le pin a changé <4 (ou prend l'ancien si <2) cyc avant l'échantillon (`ipl_fetch_next`, newcpu.c:4982-4997). | MoiraMacros.h:64 ; Moira.cpp:419 | newcpu.c:4982-4997, 5672-5673 | ✅ **PORTÉ FIDÈLE `NEOST_IPLFETCH`** (cf. note ↓) |
-| **C** | **E-clock + bloc occupé à l'IACK** : WinUAE applique l'attente E-clock (0..8, motif [0 8 6 4 2]) PUIS `CPU_IACK_CYCLES_VIDEO_CE(10)+idle(4)` au cycle d'IACK (`iack_cycle`, newcpu.c:2958-3019). Moira n'a ni l'un ni l'autre ; NeoST plaçait l'E-clock dans `willInterrupt` (≈14 cyc trop tôt). | MoiraExceptions_cpp.h:508/533-543 | newcpu.c:2958-3019 ; m68000.c:810 | ⏳ `NEOST_IACK` (E-clock @ IACK + bloc) |
+| **B** | **Délai de reconnaissance IPL** : Moira reconnaît l'IPL immédiatement (POLL_IPL≡`reg.ipl=ipl`, MoiraMacros.h:64). WinUAE diffère d'1 instr si le pin a changé <4 (ou prend l'ancien si <2) cyc avant l'échantillon (`ipl_fetch_next`, newcpu.c:4982-4997). | MoiraMacros.h:64-67 ; Moira.cpp:901-941 (`setIPL`/`pollIpl`) | newcpu.c:4982-4997, 5672-5673 | ✅ **PORTÉ FIDÈLE `NEOST_IPLFETCH`** (cf. note ↓) |
+| **C** | **E-clock + bloc occupé à l'IACK** : WinUAE applique l'attente E-clock (0..8, motif [0 8 6 4 2]) PUIS `CPU_IACK_CYCLES_VIDEO_CE(10)+idle(4)` au cycle d'IACK (`iack_cycle`, newcpu.c:2958-3019). Moira n'a ni l'un ni l'autre ; NeoST plaçait l'E-clock dans `willInterrupt` (≈14 cyc trop tôt). | MoiraExceptions_cpp.h:503/543-549 (`execInterrupt`) | newcpu.c:2958-3019 ; m68000.c:810 | ✅ **PORTÉ** : hooks `iackSyncBefore/After` au point d'IACK réel, `NEOST_IACK_AT` défaut ON (2026-07-02, cf. ÉTAT ci-dessus) |
 
 **Fait structurel clé (persistance du fork).** Le superprojet **COPIE** `extern/moira/Moira/*` dans
 `build/generated/moira/` et **réécrit `MoiraConfig.h`** (force `PRECISE_TIMING=true`,
-**`MIMIC_MUSASHI=false`**, `EMULATE_ADDRESS_ERROR=true`) — cf. CMakeLists.txt:76-118. Donc (a)
+**`MIMIC_MUSASHI=false`**, `EMULATE_ADDRESS_ERROR=true`) — cf. CMakeLists.txt:221-255. Donc (a)
 `MIMIC_MUSASHI` est **false** à la compilation (la note mémoire « true » est trompeuse), (b) éditer
-`extern/moira` directement est CLOBBERÉ au `submodule update`. **Surface de fork = la sous-classe
+`extern/moira` directement est CLOBBERÉ au `submodule update` (historique : Moira est
+vendorisé depuis le 2026-06-25, cf. `extern/moira/NEOST_VENDOR.md`). **Surface de fork = la sous-classe
 `NeostMoira` dans `Cpu68k.cpp`** (overrides `read*/write*/sync/willInterrupt/readIrqUserVector`).
 Si un edit Moira interne devient nécessaire → **vendoriser** (dé-submoduliser).
 
@@ -457,7 +460,8 @@ DATATION (instants des accès), pas par comptage d'instruction.
 - `NEOST_RAM_SLOT` (+`_PHASE`) → `chipWait8()` align-only sur RAM <$400000 dans read8/16/write8/16.
   **DÉFAUT ON** (`NEOST_RAM_SLOT=0` désactive).
 - `NEOST_IACK` (+`_VIDEO`/`_MFP`/`_LEAD`) → E-clock @ IACK (via `willInterrupt`+lead-in 14) + bloc
-  occupé. **DÉFAUT ON** (`NEOST_IACK=0` désactive). (Le bloc constant est ABSORBÉ par l'ordonnanceur
+  occupé (supplanté le 2026-07-02 par `NEOST_IACK_AT`, défaut ON : hooks au point d'IACK réel ;
+  le chemin `willInterrupt` ne sert plus qu'avec `NEOST_IACK_AT=0`). **DÉFAUT ON** (`NEOST_IACK=0` désactive). (Le bloc constant est ABSORBÉ par l'ordonnanceur
   beam-anchoré pour le beam-sync en boucle d'attente ; il compte pour le code de jeu non-spinnant.)
 - `NEOST_IPLDELAY` (préexistant) → retard pin 4 cyc (approx `ipl_fetch_next`). Reste défaut OFF.
 
@@ -603,12 +607,12 @@ Avec la fondation bloc+PT, plus de deadlock ; EL boote/intro propre. Reste, par 
 
    Synthèse des passes (plusieurs hypothèses falsifiées en chemin) :
 
-   **Ce qui est FIDÈLE (ne pas y toucher).** `updateGlueState` (Shifter.cpp:1279-1460) est un PORT FIDÈLE
+   **Ce qui est FIDÈLE (ne pas y toucher).** `updateGlueState` (aujourd'hui VideoGlue.cpp:442-719) est un PORT FIDÈLE
    de `Video_Update_Glue_State` (video.c:2244-2438) — constantes identiques, branches right-border
    freq=60 (video.c:2782-2800) et res hi-res fin-de-ligne (2683-2800) présentes ; glue-selftest 19/19.
    **AUCUNE branche Glue manquante** (hypothèse réfutée). **Les bordures G/D d'EL S'OUVRENT** (terrain
    rendu bord-à-bord) et les **écrans statiques (logo, crédits) sont PROPRES** ; la corruption est
-   spécifique au **SCROLL ACTIF**. `endVideoLine` (Shifter.cpp:383-409) avance déjà `vcLineBase_` du
+   spécifique au **SCROLL ACTIF**. `endVideoLine` (aujourd'hui VideoCounter.cpp:52-134) avance déjà `vcLineBase_` du
    stride réel via `glueLineBytes`.
 
    **Banc de repro + validation (la pièce qui débloque, `tools/make_respulse_test.py`).** Handler HBL
@@ -661,7 +665,7 @@ Avec la fondation bloc+PT, plus de deadlock ; EL boote/intro propre. Reste, par 
 1. **E-clock @ IACK ne compose pas encore avec RAM_SLOT** : poll-beat reste période-3 `{0,4,8}` vs
    Hatari période-5 `{0,4,8,12,16}` (= E-clock mod-10 × créneau mod-4 = mod-20). En NeoST, RAM_SLOT
    ABSORBE l'E-clock (appliqué dans willInterrupt, trop tôt). Le fix faisable maintenant (fork Moira
-   committable) = éditer `execInterrupt<C68000>` (MoiraExceptions_cpp.h:533-543) pour insérer le wait
+   committable) = éditer `execInterrupt<C68000>` (MoiraExceptions_cpp.h:543-549 aujourd'hui, fait depuis via `iackSyncBefore/After`) pour insérer le wait
    E-clock + bloc occupé `CPU_IACK_CYCLES_VIDEO_CE(10)+idle(4)` AU point d'IACK (entre write PClo et
    read vecteur), comme Hatari `iack_cycle` → les accès suivants (SR/PChi/vecteur/prefetch) s'alignent
    à la phase POST-E-clock → mod-20 émerge. (Même leçon que le fix DIV : l'ORDRE idle↔prefetch fait la

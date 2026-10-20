@@ -3,6 +3,11 @@
 **Symptôme** : `disks/etalons/closure.msa` — écran NOIR permanent chez NeoST
 (ST + tos102uk + 1 Mo + fastfdc), boote chez Hatari (même config exacte).
 
+> **Statut : RÉSOLU.** Closure boote depuis le Cycle 5 (2026-08-12) et atteint la
+> parité visuelle au Cycle 6 ; c'est aujourd'hui l'étalon `closure` de
+> `tools/etalons.json`. Ce document est le **journal d'enquête** : les `fichier:ligne`
+> et les questions « à trancher » des cycles 1-3 datent de l'époque.
+
 ## Chaîne déductive — ce qui est PROUVÉ (2026-08-11)
 
 1. **MSA/FDC/chargement : innocents.** Conversion MSA→ST à la main : Hatari boote
@@ -94,6 +99,9 @@ attribution des écritures, lecture $8209, timerBFrameCycleForLine). La mémoire
 du dépôt (« ON par défaut depuis 2026-07-08 ») ne vaut que pour Machine. À
 trancher : aligner les défauts (risque : re-tester Cuddly menu robot, dont le
 mapping grille réelle était « décisif »).
+*(Tranché depuis : les deux moitiés lisent `Shifter::lineLenEnv()`, défaut ON, et
+l'attribution des écritures a son propre verrou `NEOST_LINELEN_ATTR`, défaut ON —
+cf. `src/core/ShifterInternal.hpp`.)*
 
 Scripts de croisement (ligne sondée → tic TB) : parse `[WDIAG] freq val=00
 line=N cyc=37x` puis `[TB] line=N pos=P` côté NeoST ; côté Hatari

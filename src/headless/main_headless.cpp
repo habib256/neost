@@ -98,7 +98,7 @@ void usage() {
         "  --mono            monochrome monitor (high resolution)\n"
         "  --fpu             populate the Mega STE MC68881 socket ($FFFA40, functional\n"
         "                    emulation — absent by default: Hatari-faithful \"not found\")\n"
-        "  --mem SIZE        ST-RAM: 256k, 512k (default), 1m, 2m, 4m\n"
+        "  --mem SIZE        ST-RAM: 256k, 512k (default), 1m, 2m, 2176k, 2560k, 4m\n"
         "  --walk-mouse      after boot, inject a mouse move + click (diagnostic)\n"
         "  --keys STR        after boot, type STR on the keyboard (e.g. diag menus)\n"
         "  --azerty          type --keys* for a French TOS (AZERTY scancodes: A/Q, Z/W, M)\n"

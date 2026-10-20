@@ -67,6 +67,9 @@ inline MachineType parseMachine(const std::string& s) {
 }
 
 // --- Taille de ST-RAM (256 Ko .. 4 Mo) --------------------------------------
+// Les tailles exposées sont les combinaisons RÉELLES des deux banques MMU
+// (128K/512K/2M chacune, cf. Bus.cpp ramBanks / STMemory_RAM_SetBankSize) :
+// 2176k = 2M + 128K et 2560k = 2M + 512K (extensions courantes à barrettes mixtes).
 // Choisie avant le boot ; EmuTOS la détecte en sondant la mémoire (la RAM répond
 // jusqu'à sa taille, échoue au-delà → phystop correct, validé en headless).
 inline std::size_t parseRamBytes(const std::string& s) {
@@ -74,9 +77,11 @@ inline std::size_t parseRamBytes(const std::string& s) {
     if (s == "512k") return 512u * 1024;
     if (s == "1m")   return 1024u * 1024;
     if (s == "2m")   return 2048u * 1024;
+    if (s == "2176k") return 2176u * 1024;                    // 2M + 128K
+    if (s == "2560k" || s == "2.5m") return 2560u * 1024;     // 2M + 512K
     if (s == "4m")   return 4096u * 1024;
     if (!s.empty())                              // même politique que parseMachine : défaut ANNONCÉ
-        std::fprintf(stderr, "[config] unknown mem \"%s\" → 512k (valid: 256k, 512k, 1m, 2m, 4m)\n", s.c_str());
+        std::fprintf(stderr, "[config] unknown mem \"%s\" → 512k (valid: 256k, 512k, 1m, 2m, 2176k, 2560k, 4m)\n", s.c_str());
     return 512u * 1024;                          // défaut : 512 Ko
 }
 inline const char* ramLabel(std::size_t bytes) {
@@ -85,6 +90,8 @@ inline const char* ramLabel(std::size_t bytes) {
         case 512:  return "512k";
         case 1024: return "1m";
         case 2048: return "2m";
+        case 2176: return "2176k";
+        case 2560: return "2560k";
         case 4096: return "4m";
     }
     return "512k";
@@ -98,6 +105,8 @@ inline uint8_t memConfigForBytes(std::size_t bytes) {
         case 512:  return 0x04;   // 512 + (vide)
         case 1024: return 0x05;   // 512 + 512
         case 2048: return 0x08;   // 2M  + (vide)
+        case 2176: return 0x08;   // 2M  + 128K (bits 0-1 = 00 → banque 1 en 128K)
+        case 2560: return 0x09;   // 2M  + 512K
         case 4096: return 0x0A;   // 2M  + 2M
     }
     return 0x04;

@@ -126,14 +126,14 @@ void PortDevices::pressButton(Mfp& mfp) {
     if (d == Device::None) return;
     pressed_ = true;
     if (d == Device::Multiface) mfp.setMonitorButton(true);   // GPIP7 → 0
-    else                        mfp.setRs232Ri(false);        // GPIP6 : RI tirée HORS repos (elle y est assertée)
+    else                        mfp.setRs232Ri(true);         // GPIP6 : RI assertée (bit6 → 0, hors repos)
 }
 void PortDevices::onVbl(Mfp& mfp) {
     if (!pressed_) return;
     pressed_ = false;
     const Device d = at(Port::CartButton);
     if (d == Device::Multiface) mfp.setMonitorButton(false);
-    else if (d == Device::Urc)  mfp.setRs232Ri(true);          // retour au repos (asserté)
+    else if (d == Device::Urc)  mfp.setRs232Ri(false);         // retour au repos (désassertée, bit6 = 1)
 }
 
 void PortDevices::serialize(StateArchive& ar) {

@@ -115,8 +115,8 @@ sévérité + `fichier:ligne` des deux côtés dans
 | **P2** | Blitter : comparaison globale MegaSTE 16 MHz/IRQ (CPU/cache qualifié séparément ; HOG/partagé et BL5 clos) | moyen | démos CPU+blitter simultanés |
 | **P2** | Son DMA STE : quantification HBL du refill à confronter à l'oracle (compteur live et FIFO PORTÉS) | moyen | STE_Test, sync zik/raster |
 | **P2** | Restes vidéo : `VIDEO_ENDLINE`, VBL au cycle exact, phase Timer C | moyen | démos fullscreen |
-| **P3** | Wakeup states WS1-4, branche STE de la Glue, overscan med-res ; NO_SYNC/SYNC_HIGH comparés sur sondes générées, mesures matérielles ouvertes | élevé | démos « extrêmes » (Closure…) |
-| **P3** | Unité interne ×256, fréquences exactes centralisées | faible | dérive long terme |
+| **P3** | Qualification WS1-4 (table portée, WS3 par défaut), overscan med-res ; NO_SYNC/SYNC_HIGH comparés sur sondes générées, mesures matérielles ouvertes | élevé | démos « extrêmes » (Closure…) |
+| **P3** | Fréquences exactes centralisées (unité interne ×256 des timers MFP : faite) | faible | dérive long terme |
 
 ### ✅ Beam-sync : CLOS (2026-07-09, complété 2026-08-06) — ex-P1 de tête
 
@@ -208,17 +208,18 @@ HSYNC/VDE et la couleur du blanking restent à mesurer sur Atari.
   activation octet/mot, délai dépassé, annulation et activation mi-écran suivie d'une
   palette tardive. Obsession et Pacemaker n'ont pas été rejoués dans cette passe.
 - **`RestartVideoCounter` ligne 310/260** : ✅ **PORTÉ (2026-07-02)** — événement
-  `Scheduler::VC_RESTART` (`src/core/Machine.cpp:319-323` callback, `:386-390` planification).
-  Reste couplé à la géométrie par-ligne (V3) pour les bascules 50/60 Hz en cours de trame :
-  `beginFrame` verrouille encore la géométrie de la trame. Étalon : ULM Dark Side of the Spoon.
+  `Scheduler::VC_RESTART` (`src/core/Machine.cpp:385-389` callback, `:454-460` planification).
+  Le couplage à la géométrie par-ligne (V3) pour les bascules 50/60 Hz en cours de trame est
+  levé depuis la clôture de V3 (2026-09-01, attribution à la grille réelle par défaut).
+  Étalon : ULM Dark Side of the Spoon.
 
 ### P2 — Blitter non-hog (`blitter.c:251,395`)
 
 ✅ **PORTÉ le 2026-07-07** — le partage de bus non-hog est implémenté : tranches de 64 accès
 bus / 64 accès CPU **réels**, suspension MID-MOT (l'état du mot en cours survit à la coupure),
 et le bug matériel « +1 accès CPU compté blitter » (`busCountError_` → tranche de 63).
-Cf. `src/core/Blitter.cpp:22-27` (constantes), `:257-258` (`busCountError_` → tranche de 63)
-et `:247-310` (tranche + comptage).
+Cf. `src/core/Blitter.cpp:22-26` (constantes), `:326-329` (`busCountError_` → tranche de 63)
+et `:318-376` (`onSlice` + `noteCpuBusAccess` : tranche + comptage).
 
 **Port complémentaire du 2026-10-19** : reprise PRE_START pendant l'instruction,
 bornes des cycles bus avant/après accès, recouvrement des cycles CPU internes
@@ -243,11 +244,11 @@ corrections expérimentales. Aucun échec promu en référence. Voir
 
 ### P2 — Son DMA STE (`dmaSnd.c:737`)
 
-✅ **FIFO 8 octets PORTÉE** (`src/core/DmaSound.cpp:93` `fifoRefill`, `:130` `fifoPull`),
-ainsi que le gain LMC ×2 (S3, `:413-420`).
+✅ **FIFO 8 octets PORTÉE** (`src/core/DmaSound.cpp:94` `fifoRefill`, `:131` `fifoPull`),
+ainsi que le gain LMC ×2 (S3, `kLmcMakeup`, `:436-450`).
 
 ✅ **Compteur `$FF8909/0B/0D` au cycle PORTÉ (2026-08-06)** : `DmaSound::liveCounter`
-(`DmaSound.cpp:477-488`) est un port de `DmaSnd_GetFrameCount` — il appelle `updateDac`
+(`DmaSound.cpp:500-510`) est un port de `DmaSnd_GetFrameCount` — il appelle `updateDac`
 (≙ `Sound_Update`) à la lecture, et rend l'adresse de DÉBUT à l'arrêt. Il ne refill PAS la
 FIFO au passage : le refill reste quantifié au HBL (`onHbl`) ou déclenché à vide (`fifoPull`),
 ce qui est le comportement voulu — un poll serré dans une ligne doit voir l'adresse sauter par
@@ -264,26 +265,27 @@ exacte du tic Timer C (au cycle de programmation) ; lecture compteur à cheval s
 
 ### P3 — Précision « démos extrêmes »
 
-- **Wakeup states WS1-4** (`video.c:626`) : 4 jeux de timings ±1 cyc (NeoST = WS3 figé, choix
-  acté pour le mode cycle-exact). Structure : table de timings au lieu de constantes `glue::`.
+- **Wakeup states WS1-4** (`video.c:626`) : 4 jeux de timings ±1 cyc. La table est portée
+  (`glue::wakestate()`, `kWsInc` dans `VideoGlue.hpp`, A/B par `NEOST_WS=1..4`) ; WS3 reste le
+  défaut, choix acté pour le mode cycle-exact.
 - **Jitter HBL/VBL** : ⚠ `HblJitterArray/VblJitterArray` sont **morts** dans le Hatari courant
   (déclarés, jamais définis/référencés) — NE PAS porter. Le vrai jitter d'autovecteur = synchro
   **E-Clock** (`M68000_WaitEClock`), porté (`NEOST_IACK`).
-- **Branche STE de la Glue** (V1) : `Preload_Start_*`, `LEFT_OFF_2_STE` non gérés → overscan de
-  démos STE (E605, DHS) mal placé.
+- **Branche STE de la Glue** (V1) : `Preload_Start_*` (table `VideoGlue.hpp`, utilisée par
+  `VideoGlue.cpp`) et `LEFT_OFF_2_STE`/`_MED` sont désormais gérés ; l'overscan des démos STE
+  (E605, DHS) reste à rejouer contre l'oracle.
 - **Overscan med-res** ; NO_SYNC/SYNC_HIGH (lignes vides par manipulation du
   sync hi-res) comparés sur sondes ST/STE, comportement électrique non mesuré.
 
 ### P3 — Horloges & divers
 
-- **Unité interne ×256** (`CYCINT_SHIFT=8`) : NeoST tronque la conversion 31333/9600 à l'entier
-  par échéance ; l'unité interne supprime la dérive résiduelle long terme (négligeable
-  aujourd'hui car replanification ancrée).
+- ✅ **Unité interne ×256** (`CYCINT_SHIFT=8`) : faite le 2026-08-14 pour les timers MFP
+  A/B/C/D (`Mfp::timerDueSub_`, cf. § 2.3).
 - **Fréquences exactes centralisées** (`clocks_timings.c` : CPU 8021248 Hz PAL, VBL ≈ 50,05 Hz) :
   seul impact réel = synchro audio long terme.
 - **Offsets de datation Moira vs Hatari** : `kVideoCounterReadOffsetCyc = −6`
-  (`Shifter.cpp:89`), `kSyncWriteOffsetCyc = +2` (`Shifter.cpp:1113`) et
-  `kSpec512AlignCyc = −25` (`Shifter.cpp:34`) ne sont **pas** des constantes empiriques : ce
+  (`ShifterInternal.hpp:37`), `kSyncWriteOffsetCyc = +2` (`ShifterInternal.hpp:41`) et
+  `kSpec512AlignCyc = −25` (`Shifter.cpp:36`) ne sont **pas** des constantes empiriques : ce
   sont les valeurs fidèles dérivées de `Video_CalculateAddress` et
   `Cycles_GetInternalCycleOn{Read,Write}Access` (2026-07-03). ⚠ **read et write se déplacent
   PAR PAIRE** — bouger l'un seul casse Enchanted Land. Chaque nouveau mécanisme daté choisira

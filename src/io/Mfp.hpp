@@ -321,7 +321,8 @@ public:
     // que sur Mega ST/STE/Mega STE (le blitter n'est câblé au bus que sur ces modèles).
     // `done` est INVERSÉ vers le niveau de registre : gpuLine_ = 1 pendant le blit
     // (comme le bit 3 du GPIP d'Hatari), 0 au repos/fini — le front 1→0 de la fin
-    // lève le canal 3 sous AER=0. Reset : 0 tant qu'aucun blit n'a tourné (mfp.c:523).
+    // lève le canal 3 sous AER=0. Reset : 0 tant qu'aucun blit n'a tourné (INT du
+    // blitter = copie du bit BUSY, au repos bas). Sans blitter : cf. hasBlitter_.
     void setBlitterLine(bool done) { gpipSetLine(gpuLine_, !done); }
 
     // Type de moniteur lu sur GPIP bit7 : couleur (basse rés) ou mono (haute rés).
@@ -333,6 +334,9 @@ public:
     // Posé par DmaSound::setMfp ; sur un ST sans son DMA il reste faux → GPIP7 ne
     // dépend QUE du moniteur, exactement comme avant.
     void setHasDmaSound(bool h) { hasDmaSound_ = h; }
+    // Présence du blitter (dérivée du modèle, cf. machineHasBlitter) : sans blitter,
+    // GPIP3 n'est tirée que par la résistance de rappel R4 → lue à 1 (cf. gpipInput).
+    void setHasBlitter(bool h) { hasBlitter_ = h; }
     // Ligne XSINT du son DMA STE (cf. Hatari DmaSnd_Update_XSINT_Line) : HAUT pendant
     // la lecture d'une trame, BAS sinon. Sur STE elle est XORée avec la détection
     // moniteur pour former GPIP7. Toute transition peut lever le canal GPIP7 (I7) si
@@ -437,7 +441,10 @@ public:
     // logiciel qui attend CTS avant d'émettre aurait bouclé indéfiniment.
     bool    ctsLine_  = true;     // RS232 CTS (GPIP2, actif bas) — bouclage RTS
     bool    dcdLine_  = true;     // RS232 DCD (GPIP1, actif bas) — bouclage DTR
-    bool    riLine_   = true;     // RS232 RI (GPIP6) : ACTIF BAS, repos ASSERTÉ — cf. CTS/DCD
+    // RI : ACTIVE BASSE comme CTS/DCD, mais repos DÉSASSERTÉ (bit6 = 1) — récepteur
+    // MC1489 à entrée ouverte = sortie haute, cf. Mfp::gpipInput.
+    bool    riLine_   = false;    // RS232 RI (GPIP6) : ACTIF BAS, repos DÉSASSERTÉ
+    bool    hasBlitter_ = false;  // blitter câblé (Mega ST/STE/Mega STE) — sinon pull-up R4 sur GPIP3 (hors snapshot : dérivé du modèle)
     bool    monButton_ = false;   // Multiface : bouton freeze enfoncé → GPIP7 forcé à 0 (hors snapshot)
     std::function<void(uint8_t&)> gpipHook_;   // recouvrement lecture GPIP (PortDevices, hors snapshot)
 

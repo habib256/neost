@@ -66,9 +66,6 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 - **Passe d'usage interactif du GUI** · P2 ⏸ session humaine — le GUI n'est couvert que par
   une capture au boot et trois assertions d'arguments. Une passe réelle, consignée (même
   famille qu'A12).
-- **Test F de la cartouche STE_Test v1.9** · P2 ⏸ média — « Cannot write drive A/B », lecteurs
-  vus simple face, alors que le test F du diagnostic MegaSTE passe. Cartouche absente de
-  l'arbre : trace FDC + oracle Hatari sur la même cartouche dès son retour.
 - **Notarisation macOS** · P2 ⏸ décision (99 $/an) — le `.app` est scellé ad hoc depuis
   le 2026-09-01 ; manque Developer ID + notarisation. Recette → [`docs/RELEASE.md`](docs/RELEASE.md).
   Signature du `.zip` Windows écartée (token HSM obligatoire, SmartScreen = un clic).
@@ -76,6 +73,18 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
   blanking (palette 0 conservée en attendant), bord exact de la fin STOP_MIDDLE (Hatari
   rend trois pixels de plus ; sondes `blankline_stop_st/ste` en snapshot), tricks
   NO_SYNC/SYNC_HIGH. → `docs/CYCLE_ACCURACY.md` §4
+- **Shifter arrêté (res 3 / `$FF8261`)** · P3 ⏸ matériel — porté le 2026-10-20 sans
+  logiciel réel qui l'exerce. À mesurer : noir franc ou couleur 0 pendant l'arrêt, ce que
+  relit un accès OCTET à `$FF8261`, comportement du trick sur STE, persistance du décalage
+  aux trames suivantes. → `docs/HATARI_DIVERGENCES.md` § *Nouveaux — BASSES*
+- **GPIP3 au repos avec blitter** · P3 ⏸ matériel — `$FFFA01` bit 3 supposé 0 au repos
+  sur Mega ST/STE/Mega STE (INT = copie de BUSY) ; seule la lecture STFM sans blitter
+  ($E9) est publiée. Lire `$FFFA01` au repos sur l'une de ces machines.
+  → `docs/HATARI_DIVERGENCES.md` § *Cas où NeoST améliore Hatari*
+- **STE à banques mixtes (2176/2560 Ko)** · P3 ⏸ matériel — modèle Hatari conservé
+  (banque 1 calquée sur la banque 0). Sur vrai STE : relire `$FF8001` bits 0-1 après
+  écriture de $09, motifs en $200000/$280000, et décodage d'une banque 1 de 128 Ko.
+  → `docs/HATARI_DIVERGENCES.md` § *Bus / mémoire*
 - **Logiciels à clé / dongles** · P3 ⏸ média — `PortDevices` (Leader Board, 10th Frame,
   B.A.T. II, Music Master, « Pro Sound » de Wings of Death / Lethal Xcess) ; clé **Notator**
   (deux incertitudes : front de /ROM4 cadençant FEEDB1, ordre UDS↔/ROM4 à l'armement) ;
@@ -89,10 +98,9 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
   (hardware.atari.org), puis ajuster `Bus::read8Slow`.
 - **`union_demo`** · P3 ⏸ média — disque absent (planetemu manuel) ; appliquer la recette
   de migration A10 à son retour.
-- ***Seven Gates of Jambala*** · P2 ⏸ média — absent des médias privés restaurés le
-  2026-10-20 ; valider le recalage Timer B après écriture AER3 (porté le 2026-10-19).
 - **EtherNEC sous TOS 1.04** · P2 ⏸ média — valider STinG + `ENEC.STX` (DHCP, ping, GET),
-  consigner dans `docs/CASE_STUDIES.md`. TOS 1.04 absent de ce poste.
+  consigner dans `docs/CASE_STUDIES.md`. TOS 1.04 est présent (`roms/tos104*.img`) ; manquent
+  les archives STinG 1.26 + `ENEC.STX` (URLs en tête de `tools/make_sting_test.py`).
 - **GEMDOS : écarts communs à NeoST et Hatari face au vrai TOS** · P3 ⏸ mesure — Fdelete et
   Fopen sur un dossier (EACCDN/ERROR, TOS rend probablement EFILNF), Frename entre
   systèmes de fichiers hôtes (ERROR, TOS : ENSAME), Fwrite sur un fichier ouvert en
@@ -131,14 +139,16 @@ Ne figure ici que l'ouvert ; l'acquis de chaque puce est dans `docs/IMPLEMENTED.
 détaillé dans `docs/HATARI_DIVERGENCES.md`.
 
 ### 4.1 Vidéo / Shifter
-- **WS3 sous-pixel, interfoliage blitter** · P3 ⭘ → `docs/CYCLE_ACCURACY.md` §4.
 - **Latch couleur de la bordure gauche** · P3 ⭘ — 16 px (colonnes 45-60) : Hatari applique
   l'écriture palette ~16 px après le début nominal de l'aire active (latence pipeline),
   NeoST pile à `activeX_`. Invisible aux étalons.
 - Mesures matérielles → § 2.
 
 ### 4.2 MFP 68901 & interruptions
-- Latence IACK MegaSTE → § 2. Validation de Timer B sur *Seven Gates of Jambala* → § 2.
+- Latence IACK MegaSTE → § 2.
+- ***Seven Gates of Jambala*** · P2 ⭘ — valider le recalage Timer B après écriture AER3
+  (porté le 2026-10-19). Média désormais présent (`disks/seven_gates_of_jambala_{a,b}.stx`,
+  non versionné).
 
 ### 4.3 ACIA 6850 / IKBD HD6301
 - **Liaison série physique** · P3 ⭘ — formats et diviseurs autres que /64 8N1 (clavier),
@@ -158,7 +168,9 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
   parité/framing des formats TX/RX discordants. Phase initiale de l'oscillateur abstraite.
 
 ### 4.6 FDC WD1772 / DMA / ACSI
-- Test F de STE_Test → § 2.
+- **Test F de la cartouche STE_Test v1.9** · P2 ⭘ — « Cannot write drive A/B », lecteurs
+  vus simple face, alors que le test F du diagnostic MegaSTE passe. Cartouche présente
+  (`carts/STE_Test_v1.9.img`, non versionnée) : trace FDC + oracle Hatari sur la même cartouche.
 - **ACSI : essai Idris OS** · P3 ⭘ — jamais tenté.
 
 ### 4.7 RTC RP5C15
@@ -258,7 +270,8 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
   comportement seulement) ; un test par COUCHE du bac à sable GEMDOS (le test actuel ne
   rougit qu'en retirant les deux défenses), à décider car il couple test et implémentation.
 - **A33 — vrai parallélisme CPU** · P3 ◐ — l'état est par instance ; deux CPU dans deux
-  threads demanderaient de retirer les 94 accès à `g_cur`. Aucune fonctionnalité ne le
+  threads demanderaient de retirer les accès à `g_cur` (≈ 215 dans `src/core/Cpu68k.cpp`,
+  recomptés le 2026-10-20). Aucune fonctionnalité ne le
   réclame, sauf l'anneau MIDI en un seul processus.
 - **A15 — DSL d'injection** · P3 ⭘ — pas de token « bouton tenu pendant un mouvement »
   (pas de DRAG GEM).

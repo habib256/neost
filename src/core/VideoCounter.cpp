@@ -84,7 +84,7 @@ void Shifter::endVideoLine() {
     // retombe sur la relecture RAM de fin de trame. Discrimine « instant de capture
     // faux » vs « autre cause » quand un moteur redessine en course avec le faisceau.
     static const bool noSnap = envFlag("NEOST_NO_SNAP", false);
-    if (!noSnap && (!syncWrites_.empty() || spec512Active_) && bpl > 0 &&
+    if (!noSnap && (!syncWrites_.empty() || spec512Active_ || shifterStopLine_ >= 0) && bpl > 0 &&
         sl >= 0 && sl < static_cast<int>(lineSnapLen_.size())) {
         int n = bpl + scrollCounterAdvance(sl) + 8;
         if (n > kLineSnapBytes - kSnapLead) n = kLineSnapBytes - kSnapLead;
@@ -93,16 +93,18 @@ void Shifter::endVideoLine() {
         // négatifs du scroll hard, cf. déclaration kSnapLead) puis la ligne.
         for (int i = 0; i < n + kSnapLead; ++i)
             snap[i] = bus_.read8((vcLineBase_ - static_cast<uint32_t>(kSnapLead)
-                                  + static_cast<uint32_t>(i)) & 0xFFFFFFu);
+                                  + static_cast<uint32_t>(i)) & kVideoAddrMask);   // DMA vidéo 22 bits
         lineSnapLen_[sl] = static_cast<uint16_t>(n);
     }
     // Métadonnées TOUJOURS capturées, même sans copie RAM : une première écriture
     // palette tardive peut déclencher le replay de lignes déjà terminées. Leur
     // latch ne doit pas devenir celui de fin de trame (split 320/336, par ex.).
-    // Bit 6 = ligne committée, 5 = latch 336 px, 4 = prefetch, 0-3 = scroll.
+    // Bit 7 = Shifter arrêté (res 3), 6 = ligne committée, 5 = latch 336 px,
+    // 4 = prefetch, 0-3 = scroll.
     if (sl >= 0 && sl < static_cast<int>(lineScrollSnap_.size()))
         lineScrollSnap_[sl] = uint8_t(0x40 | hwScrollCount | (hwScrollPrefetch ? 0x10 : 0)
-                                     | (steBorderFlag_ ? 0x20 : 0));
+                                     | (steBorderFlag_ ? 0x20 : 0)
+                                     | (shifterRes_ == 3 ? 0x80 : 0));
     vcLineBase_ += static_cast<uint32_t>(bpl);
     // Prefetch et line-offset STE ne s'appliquent QUE sur une ligne réellement
     // affichée : chez Hatari les deux sont dans la branche « else » de la ligne
@@ -129,7 +131,16 @@ void Shifter::endVideoLine() {
         lineWidth = static_cast<uint8_t>(newLineWidth_);
         newLineWidth_ = -1;
     }
-    vcLineBase_ &= 0xFFFFFFu;
+    // Scroll hard « Shifter arrêté » : ajustement du compteur à la fin de la ligne
+    // du stop (port VideoRasterDelayedInc, video.c:4410-4416 — hors de la branche
+    // « ligne blanche », donc appliqué quelle que soit la ligne).
+    if (vcStopInc_ != 0) {
+        vcLineBase_ += static_cast<uint32_t>(vcStopInc_);
+        vcStopInc_ = 0;
+    }
+    // Repli du compteur sur 22 bits (port video.c:4423 « pVideoRaster & VideoMask ») :
+    // le compteur matériel n'a que A1..A21 — au-delà de $3FFFFF il reprend en $000000.
+    vcLineBase_ &= kVideoAddrMask;
     ++vcLineY_;
 }
 
@@ -175,7 +186,7 @@ void Shifter::commitScanline(int line) {
 // mesure le stabilisateur beam-sync d'Enchanted Land en jeu (poll $FF8209).
 // Les lectures des lignes ≥ restart renvoient cette base figée (videoCounter).
 void Shifter::restartVideoCounter(int line) {
-    vcRestartBase_ = static_cast<int64_t>(videoBase & 0xFFFFFFu);
+    vcRestartBase_ = static_cast<int64_t>(videoBase & kVideoAddrMask);
     vcRestartLine_ = line;
 }
 
@@ -200,7 +211,7 @@ bool Shifter::beamPos(int& line, int& lineCyc) const {
 // supposait 1 octet/cycle depuis le cycle 216 — faux en milieu de ligne, d'où l'échec
 // du test « T0 » des diagnostics qui relisent $FF8205/07/09 au cycle près.)
 uint32_t Shifter::videoCounter() {
-    if (!beamClock_) return videoBase & 0xFFFFFF;       // pas d'horloge → base brute
+    if (!beamClock_) return videoBase & kVideoAddrMask; // pas d'horloge → base brute
     int64_t fc = beamClock_();                          // cycles dans la trame
     fc += kVideoCounterReadOffsetCyc;                   // datation lecture fidèle Hatari (fin d'accès − 8)
     // (NEOST_VC_OFF est déjà intégré à kVideoCounterReadOffsetCyc — ne pas l'ajouter
@@ -264,7 +275,7 @@ uint32_t Shifter::videoCounter() {
     // jusqu'au DE de la trame suivante (chez Hatari, pVideoRaster vaut alors
     // &STRam[VideoBase] et plus rien ne l'avance avant la prochaine ligne affichée).
     if (vcRestartBase_ >= 0 && line >= vcRestartLine_)
-        return static_cast<uint32_t>(vcRestartBase_) & 0xFFFFFF;
+        return static_cast<uint32_t>(vcRestartBase_) & kVideoAddrMask;
     int dispStart = liveStartHBL_;
     int disp2     = disp;
     if (frameMode_ != Mode::High && !syncWrites_.empty()
@@ -400,7 +411,9 @@ uint32_t Shifter::videoCounter() {
                          syncWrites_[i].frameCycle);
         std::fprintf(stderr, "]\n");
     }
-    return addr & 0xFFFFFF;
+    // Compteur 22 bits : l'intra-ligne/l'extrapolation ne peuvent pas « déborder »
+    // au-delà de $3FFFFF (registre $FF8205 sur 6 bits utiles, cf. kVideoAddrMask).
+    return addr & kVideoAddrMask;
 }
 
 // Écriture du compteur vidéo $FF8205/07/09 (STE/TT) — port fidèle de
@@ -420,7 +433,7 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     // ≤ 4 Mo (port DMA_MaskAddressHigh — NeoST plafonne la ST-RAM à 4 Mo).
     if (addr == 0xFF8205) v &= 0x3F;
     const uint32_t cur = videoCounter();                       // adresse courante (brute)
-    uint32_t an = (cur + static_cast<uint32_t>(vcDelayedOffset_)) & 0xFFFFFFu;
+    uint32_t an = (cur + static_cast<uint32_t>(vcDelayedOffset_)) & kVideoAddrMask;
     if (addr == 0xFF8205)      an = (an & 0x00FFFFu) | (uint32_t(v) << 16);
     else if (addr == 0xFF8207) an = (an & 0xFF00FFu) | (uint32_t(v) << 8);
     else                       an = (an & 0xFFFF00u) | uint32_t(v);

@@ -6,6 +6,40 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Audit doc↔code, compteur vidéo 22 bits, `$FF8261`/res 3, repos GPIP matériel, RAM 2,5 Mo (2026-10-20)
+
+- **Audit de la documentation contre le code** : une vingtaine de documents recalés
+  (inventaires Hatari, IMPLEMENTED, CYCLE_ACCURACY, guides de paquets…), quelque
+  400 références `fichier:ligne` et symboles revérifiées ; `check_doc_anchors.py` et
+  `check_doc_claims.py` verts.
+- **B15 — compteur vidéo sur 22 bits** (`kVideoAddrMask` = $3FFFFF, ST/Mega ST/STE/
+  Mega STE, = `DMA_MaskAddressHigh` $3F d'Hatari) : repli à l'avance de ligne, au restart,
+  en lecture/écriture `$FF8205/07/09`, à la capture par ligne et sur chaque mot fetché.
+- **`$FF8261` et Shifter arrêté (res 3)** : port de `Video_WriteToShifterRes`. Écriture
+  octet `$FF8261` = résolution du Shifter seul ; `move.w` vers `$FF8260` : octet bas
+  ignoré ; lectures = valeur Shifter. res 3 posé au cycle ≥ 64 et retiré ≥ 72, au plus
+  32 cycles après → lignes suivantes décalées de 0/4/8/12 px, compteur −0/−2/−4/−6
+  octets ; ligne restée arrêtée = noire, bordures intactes. glue-selftest +36 vérifs.
+  Aucun logiciel réel ne l'exerce ; incertitudes consignées (noir vs couleur 0, lecture
+  octet `$FF8261`, STE, persistance inter-trame).
+- **Étalons `blankline_*_ste` sous `etos256fr`** (TOS 2.06 PAL) : sous `etos192fr` ils
+  étaient rétrogradés en ST. Revalidés contre Hatari f0736b24 en STE : 0 px partout ;
+  `node_late` diffère enfin du `_st` (préchargement STE) ; `blank` capture la phase NO_DE
+  (trame 402), les phases `left+2` divergeant de 204 px (artefact A40 d'Hatari) ; `stop`
+  reste un snapshot.
+- **GPIP bits 6 (RI) et 3 (GPU_DONE) au repos d'après le matériel** : `$FFFA01` = $F9
+  sur ST sans blitter, $F1 avec blitter (Hatari $B1, artefact de reset `mfp.c:523`).
+  Sources : STe Field Service Manual §2.12.5, fiche MC1489, MAME `rs232.cpp`, lecture
+  STFM réel $E9, README STBlitter (pull-up R4). Le bouton Ultimate Ripper asserte
+  désormais RI. Test S Field Service Pass, suite Q MegaSTE 11/11. Bit 3 au repos avec
+  blitter non mesuré.
+- **CPU3** : `iplDeferred` (mode `NEOST_IPLFETCH`) sérialisé, refusé hors [-1,7] ;
+  format de sauvegarde **v50**.
+- **RAM 2176 et 2560 Ko** (`2176k`, `2560k`/`2.5m`) : `ramBanks` et `$FF8001` ($08/$09)
+  comme Hatari, dans `--mem`, `neost.cfg`, le GUI, le shell web et le contrôle de
+  save-state. Sur STE sous TOS 2.06, phystop reste $400000 (banque 1 calquée sur la
+  banque 0), comme le rapportent les témoignages (SIMMFIX) ; à confirmer sur vrai STE.
+
 ## Étalon `usatan_netusbee` : image SD régénérée à chaque passage — issue #42 (2026-10-20)
 
 - **Pas une régression de l'USART** : 699e696 a modélisé le vrai transport TX du MFP

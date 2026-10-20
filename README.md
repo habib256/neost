@@ -168,7 +168,9 @@ slider live. If the shader can't compile, you simply get the raw screen.
 ## ROMs
 
 NeoST boots **[EmuTOS](https://emutos.sourceforge.io/)** (GPL) out of the box, and the
-packages carry nothing else: **no proprietary ROM ships with NeoST**. Point it at your own
+packages carry nothing else: **no proprietary ROM ships with NeoST** (the release
+packages are built with `NEOST_PACKAGE_NO_ATARI_TOS=ON`, the default; turning it off only
+bundles TOS copies you already have locally). Point it at your own
 TOS dump if you own one — TOS 1.02 through 2.06 are supported, and NeoST picks the right
 machine profile for the ROM you give it.
 
@@ -199,7 +201,7 @@ the Falcon, which NeoST does not. NeoST exists to be opened up.
 
 ## Where it stands
 
-**0.6.** EmuTOS and TOS 1.02/1.62/2.06 boot; all three Field Service diagnostic
+**0.6.1.** EmuTOS and TOS 1.02/1.62/2.06 boot; all three Field Service diagnostic
 cartridges pass their internal tests, the Mega STE's Q suite 12/12. Demanding games and
 demos run: Enchanted Land, Super Hang-On, Lethal Xcess, The Cuddly Demos, No Cooper,
 Closure. The whole thing is validated by a tiered regression suite ending in a

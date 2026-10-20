@@ -65,7 +65,8 @@ Total : **6 665 M** instructions.
 
 ### 3.1 Ordonnanceur — du balayage linéaire au minimum tenu à jour
 
-`Scheduler` garde une échéance par source (19 sources). Deux endroits balayaient
+`Scheduler` garde une échéance par source (19 sources à l'époque de cette campagne ;
+31 aujourd'hui, cf. `Scheduler::SRC_COUNT`). Deux endroits balayaient
 tout le tableau : la sélection du prochain événement dans `runTo`, et
 `scanNextDue()` qui rafraîchit le cache `nextDue_`.
 
@@ -233,6 +234,6 @@ Par ordre de poids dans le profil final, avec la raison de ne pas y avoir touch�
 | `Moira::read<>` | 8 % | code tiers vendorisé |
 
 Une piste mesurable sans risque sémantique : convertir l'échéance de broche IRQ
-(`g_pinNextDue`) en horloge cœur pour que `sync()` ne fasse plus qu'une
+(`pinNextDue`, champ de l'état CPU lu par `g_cur->pinNextDue` dans `Cpu68k.cpp`) en horloge cœur pour que `sync()` ne fasse plus qu'une
 comparaison — à valider contre le changement de vitesse Mega STE, qui déplace la
 conversion.

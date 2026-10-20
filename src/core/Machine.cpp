@@ -95,6 +95,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     : bus(ramBytes), cpu(bus, cpuCore) {
     machineType_ = machine;
     bus.machine  = machine;         // profil matériel (gating MMIO / bus errors)
+    mfp.setHasBlitter(machineHasBlitter(machine));   // GPIP3 : pull-up R4 sans blitter
     glue.memConfig_ = memConfigForBytes(ramBytes);   // $FF8001 cohérent (EmuTOS recalcule)
     // Branchement des puces sur le bus (le bus ne possède pas les composants).
     bus.shifter = &shifter;
@@ -764,11 +765,13 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 49; // crédit de recouvrement CPU/blitter
+static constexpr uint16_t kStateVersion = 50; // résolution Shifter ($FF8261, res 3) + IPL différé (CPU3)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v49 : recouvrement CPU/blitter
+    uint16_t version = kStateVersion; // v50 : résolution côté Shifter ($FF8261, res 3)
+                                      //       + échantillon IPL différé Moira (CPU3)
+                                      // v49 : recouvrement CPU/blitter
                                       // v46 : initialisation du diviseur de l’ACIA clavier
                                       // v45 : cible et position d’une écriture ACSI différée
                                       // v44 : overrun USART MFP en attente de lecture UDR

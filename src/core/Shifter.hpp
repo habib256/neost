@@ -67,6 +67,9 @@ public:
     void resetGlue(bool mono) {
         sync = 0;                                   // $FF820A = 0 → 60 Hz
         mode = mono ? Mode::High : Mode::Low;       // ST_HIGH_RES / ST_LOW_RES
+        // Video_Reset_Glue écrit IoMem[$FF8260] sans passer par le handler : la valeur
+        // est la même côté Shifter, sans toucher au filtre Res_Shifter.
+        shifterRes_ = static_cast<uint8_t>(mode);
     }
 
     // Auto-test DÉTERMINISTE de la machine Glue (chemin STF) : injecte des écritures
@@ -339,6 +342,16 @@ private:
     // voit. Remplie par endVideoLine (commit de la ligne) ; consommée par
     // renderGlueFrame à la place d'une relecture RAM. Indexée par SCANLINE absolue ;
     // len 0 = pas de capture (repli : relecture RAM, comportement historique).
+    // Largeur RÉELLE du compteur/de la base vidéo : 22 bits (A1..A21, 4 Mo) sur
+    // TOUTES les machines émulées — ST, Mega ST, STE, Mega STE plafonnent à 4 Mo et
+    // leur MMU n'a pas de lignes d'adresse au-delà ($FF8201/$FF8205 n'ont que 6 bits
+    // utiles). Hatari : Video_GetAddrMask() = DMA_MaskAddressHigh()<<16 | $FFFF =
+    // $3FFFFF pour ST/STE ≤ 4 Mo (m68000.c:958 « same as real HW ») ; les masques
+    // $7F/$FF n'existent que pour la RAM « fictive » > 4 Mo ou TT/Falcon (24 bits),
+    // non émulés ici. Le compteur se REPLIE donc modulo 4 Mo quand il avance, et
+    // chaque mot fetché par le DMA vidéo est adressé modulo 4 Mo (video_memcpy_mmu,
+    // video.c:3797) — jamais la MMIO $FFxxxx (lectures à effets de bord).
+    static constexpr uint32_t kVideoAddrMask = 0x3FFFFFu;
     static constexpr int kLineSnapBytes = 256;   // ≥ kSnapLead + 230 (LEFT+RIGHT_OFF) + marge décodage
     // Marge de TÊTE de chaque slot de capture : les octets [base−kSnapLead, base)
     // précèdent la base de ligne — nécessaires quand l'offset source d'une ligne
@@ -400,6 +413,7 @@ private:
     // live, pour la détection de RETRAIT de bordures (port machine Glue Hatari,
     // Video_Update_Glue_State). `isRes` = $FF8260, sinon $FF820A.
     void recordSyncWrite(bool isRes, uint8_t val);
+    int64_t datedResWriteCycle() const;           // datation commune des écritures freq/res (−1 hors trame)
     // Dernier Freq (bit1 de $FF820A) / dernière Res ($FF8260 & 3) VUS par la Glue —
     // port de ShifterFrame.Freq / ShifterFrame.Res : une réécriture de la MÊME
     // valeur est IGNORÉE par la machine Glue (Video_Sync_WriteByte video.c:3056,
@@ -408,6 +422,32 @@ private:
     // video.c:824-825), jamais à beginFrame. −1 = aucune écriture vue.
     int lastGlueFreq_ = -1;
     int lastGlueRes_  = -1;
+
+    // --- Résolution VUE PAR LE SHIFTER ($FF8260 ET son alias $FF8261) ----------
+    // Le registre de résolution existe en DOUBLE : dans la GLUE (timings, DE,
+    // bordures) et dans le SHIFTER (décodage des mots livrés par le MMU). $FF8260
+    // écrit les deux ; $FF8261 n'écrit QUE le Shifter (ioMemTabST.c:71,
+    // ioMemTabSTE.c:120 — « Resolution in Shifter only », mêmes sur STF et STE).
+    // Le Shifter n'a ni UDS ni LDS : il lit TOUJOURS les bits 8-9 du bus de données
+    // (Hatari Video_Res_WriteByte, video.c:5700-5770). D'où :
+    //   • move.b #x,$FF8261 → le 68000 duplique l'octet sur D0-D15 → Shifter = x ;
+    //   • move.w #xyab,$FF8260 → Shifter = Glue = xy (l'octet ab, adressé à $8261,
+    //     est ignoré par le Shifter) ;
+    //   • move.b #x,$FF8260 → les deux reçoivent x.
+    // Valeur 3 = Shifter ARRÊTÉ (n'absorbe plus les mots du MMU) ; côté GLUE, une
+    // valeur 3 se lit comme « haute rés » (bit 1, déjà géré par la machine Glue).
+    uint8_t shifterRes_      = 0;    // ≙ registre res du Shifter (0..3)
+    int     lastShifterRes_  = -1;   // ≙ ShifterFrame.Res_Shifter (−1 = aucun, filtre « même valeur »)
+    int     shifterResCyc_   = -1;   // ≙ ResPosStop_Shifter.LineCycles (cycle-ligne du dernier changement)
+    // Scroll hard STF « 4 px » par Shifter arrêté (Troed/Sync, port video.c:1906-1973) :
+    // res=3 pendant 8..32 cycles alors que le DE est actif → toutes les lignes
+    // SUIVANTES de la trame sont décalées de 0/−4/−8/−12 px et le compteur vidéo
+    // reçoit −0/−2/−4/−6 octets à la fin de la ligne courante (VideoRasterDelayedInc).
+    int     vcStopInc_       = 0;    // ≙ VideoRasterDelayedInc (appliqué par endVideoLine)
+    int     shifterStopLine_ = -1;   // ligne du stop (les lignes > celle-ci sont décalées), −1 = aucun
+    int     shifterStopShift_ = 0;   // décalage px (≙ DisplayPixelShift) des lignes suivantes
+    // Écriture de la résolution côté Shifter (port Video_WriteToShifterRes).
+    void writeShifterRes(uint8_t res);
 
     // Wait state de bus 4 cycles (port LIVE de Hatari M68000_SyncCpuBus) : appelé AU
     // DÉBUT d'un accès CPU à un registre couleur ($FF8240-5F) / résolution ($FF8260) /
@@ -627,11 +667,23 @@ public:
         ar(vcDelayedOffset_);
         ar(vcRestartBase_);
         ar(vcRestartLine_);
+        // Résolution côté Shifter + scroll hard « Shifter arrêté » (format v50).
+        ar(shifterRes_);
+        ar.check(shifterRes_ <= 3, "Shifter::shifterRes_ > 3");
+        ar(lastShifterRes_);
+        ar.check(lastShifterRes_ >= -1 && lastShifterRes_ <= 3, "Shifter::lastShifterRes_ hors bornes");
+        ar(shifterResCyc_);
+        ar(vcStopInc_);
+        ar.check(vcStopInc_ >= -6 && vcStopInc_ <= 0, "Shifter::vcStopInc_ hors bornes");
+        ar(shifterStopLine_);
+        ar.check(shifterStopLine_ >= -1 && shifterStopLine_ <= 4096, "Shifter::shifterStopLine_ hors bornes");
+        ar(shifterStopShift_);
+        ar.check(shifterStopShift_ >= -12 && shifterStopShift_ <= 0, "Shifter::shifterStopShift_ hors bornes");
 
         // --- Captures par-ligne (échantillon faisceau) ---
         ar.vec(lineSnap_);          // std::vector<uint8_t>
         ar.podVec(lineSnapLen_);    // std::vector<uint16_t>
-        ar.vec(lineScrollSnap_);    // bits 0-3 = scroll, 4 = prefetch, 5 = 336 px, 6 = valide
+        ar.vec(lineScrollSnap_);    // bits 0-3 = scroll, 4 = prefetch, 5 = 336 px, 6 = valide, 7 = Shifter arrêté
         // Invariant : les tableaux sont indexés ENSEMBLE (lineSnap_ par tranches
         // de kLineSnapBytes, borné par lineSnapLen_.size()) — un fichier forgé
         // désynchronisé ferait écrire endLine() hors du tas ; lineScrollSnap_ est
@@ -639,7 +691,8 @@ public:
         // mode prefetch, bit 5 du latch 336 px et bit 6 de validité (format v20).
         ar.check(lineSnap_.size() == lineSnapLen_.size() * kLineSnapBytes);
         ar.check(lineScrollSnap_.size() == lineSnapLen_.size());
-        for (uint8_t s : lineScrollSnap_) ar.check(s <= 0x7F);
+        // Bit 7 (format v50) = Shifter arrêté (res 3) au commit de la ligne : les
+        // 8 bits sont donc tous légitimes, plus de borne à revalider.
 
         // --- Filtre Glue « même valeur ignorée » (persistant inter-trames) ---
         ar(lastGlueFreq_);
@@ -680,9 +733,10 @@ public:
         // glue-selftest, qui l'appelle sans beginFrame, déréférençait un vecteur vide
         // (SIGSEGV), et une trame dont lpf change en cours de route lisait hors du tas
         // en silence. L'auto-test `glue_selftest_attr` (etalons.json) garde le cas.
-        // advanceGlueLive indexe glueLineStart_[wl]/[liveGlueLine_] (Shifter.cpp:454,
-        // 461,493) où wl ≤ liveGlueLine_ < glueLines_.size() — SANS garde de lecture
-        // (seule l'écriture ligne 496 en a une). Un .state forgé posant un glueLineStart_
+        // liveGlueCatchUp indexe glueLineStart_[wl]/[liveGlueLine_] (VideoGlue.cpp:116,
+        // 120,123,160) où wl ≤ liveGlueLine_ < glueLines_.size() — SANS garde de lecture
+        // (seule l'écriture, ligne 169, en a une : le test de taille ligne 168 ; numéros
+        // vérifiés le 2026-10-20). Un .state forgé posant un glueLineStart_
         // plus court → lecture hors-tas d'un int64_t. On revalide l'invariant au load.
         ar.check(glueLineStart_.size() == glueLines_.size(),
                  "Shifter::glueLineStart_ désynchronisé de glueLines_");

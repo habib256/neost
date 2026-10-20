@@ -149,6 +149,7 @@ public:
         bus.ram.assign(ramBytes, 0);
         bus.machine     = machine;
         machineType_    = machine;
+        mfp.setHasBlitter(machineHasBlitter(machine));   // GPIP3 : pull-up R4 sans blitter
         bus.scc         = (machine == MachineType::MegaSte) ? &scc : nullptr;  // SCC (Mega STE)
         glue.memConfig_ = memConfigForBytes(ramBytes);
         bus.megaSteReset();                // $FF8E21 → 0 (8 MHz, cache invalidé)

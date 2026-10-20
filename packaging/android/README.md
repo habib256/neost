@@ -5,7 +5,7 @@ APK **arm64-v8a**, Android 5.0 (API 21) minimum. `./build_apk.sh [debug|release]
 ## Ce que c'est (et ce que ce n'est pas)
 
 C'est un **troisième frontend**, calqué sur le **web** et non sur le GUI de bureau —
-et ce n'est pas un choix esthétique : `src/main.cpp` rend en OpenGL **mode immédiat**
+et ce n'est pas un choix esthétique : le GUI de bureau (`src/gui/`) rend en OpenGL **mode immédiat**
 (`glBegin`/`GL_QUADS`) et pilote son interface avec `imgui_impl_opengl2`, deux choses
 qui n'existent pas sur Android. Le frontend web, lui, rend déjà en **GLES 2** et
 produit son son au modèle « push ». `src/android/main_android.cpp` en est la
@@ -103,8 +103,8 @@ temps réel très confortable sur du silicium ARM réel. À re-mesurer sur appar
 
 ## Données embarquées, et la licence
 
-`stage_assets.sh` ne copie que **EmuTOS** (GPL) et `disks/diskA.st` — ~1 Mo, avec un
-garde-fou qui refuse tout autre fichier. **Aucun TOS Atari**, aucun jeu : la politique
+`stage_assets.sh` ne copie que **EmuTOS** (GPL), `disks/diskA.st` et les textes de
+licence — ~1 Mo, avec un garde-fou qui refuse tout autre fichier. **Aucun TOS Atari**, aucun jeu : la politique
 du Play Store est plus stricte que celle des paquets de bureau, qui redistribuent
 `tos102uk`/`tos162uk`. L'utilisateur importera ses propres images quand le sélecteur
 de fichiers existera.

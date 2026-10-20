@@ -550,6 +550,14 @@ public:
         ar.fixBools(reg.sr.t1, reg.sr.t0, reg.sr.s, reg.sr.m,
                     reg.sr.x, reg.sr.n, reg.sr.z, reg.sr.v, reg.sr.c);
         ar(iplChangeClock); ar(iplChangeClockPrev); ar(iplDelay4); ar(iplDelay2);
+        // v50 (CPU3) : échantillon IPL DIFFÉRÉ du mode NEOST_IPLFETCH (≙ regs.ipl[1] de
+        // WinUAE). pollIpl() l'arme pendant une instruction et execute() ne le consomme
+        // qu'à la frontière SUIVANTE — il survit donc à la sortie de run() et peut être
+        // pris par un save. Non sérialisé, l'IRQ était reconnue une frontière trop tard
+        // après load (divergence avec l'exécution continue). −1 = rien en attente ;
+        // sinon un niveau IPL 0..7 (forgé hors plage → reg.ipl invalide, refusé).
+        ar(iplDeferred);
+        ar.check(iplDeferred >= -1 && iplDeferred <= 7, "Moira::iplDeferred hors [-1,7]");
         ar(fcl); ar(readBuffer); ar(flags);
         // LOOPING (mode loop 68010) n'est JAMAIS posé sur un 68000 : forgé dans un
         // .state (CRC recalculé), il fait prendre à execute() la branche

@@ -620,7 +620,7 @@ int main(int argc, char** argv) {
     }, machBuf);
     const MachineType machType = parseMachine(machBuf);
 
-    // Taille de ST-RAM choisie par ?mem=256k|512k|1m|2m|4m (défaut 1 Mo).
+    // Taille de ST-RAM choisie par ?mem=256k|512k|1m|2m|2176k|2560k|4m (défaut 1 Mo).
     char memBuf[16] = "1m";
     EM_ASM({
         var m = new URLSearchParams(location.search).get('mem') || '1m';

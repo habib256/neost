@@ -72,8 +72,8 @@ utilisée et peut être un artefact d'ancre statique, cf. `docs/OPENDST.md` § 9
 ## Se procurer l'oracle (rien ne le fait à votre place)
 
 ⚠ `extern/hatari` est **gitignoré et n'est PAS un sous-module** : `git clone` du dépôt
-NeoST ne le ramène pas, `git submodule update` non plus, et **aucun script d'installation
-ne s'en occupe**. Sur une machine fraîche (ou après un ménage), il est simplement ABSENT —
+NeoST ne le ramène pas, `git submodule update` non plus, et **rien ne le rapatrie
+automatiquement** (ni la configuration CMake ni la suite de tests). Sur une machine fraîche (ou après un ménage), il est simplement ABSENT —
 c'était le cas ici le 2026-08-19, alors que `CLAUDE.md` et ce document le décrivaient
 comme « bâti dans le dépôt ». Le récupérer et le bâtir :
 

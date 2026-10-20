@@ -56,7 +56,7 @@ Le NetUSBee/EtherNEC **sort réellement sur Internet** : `--slirp` en headless, 
 « Real Internet for the NE2000 » de la page **Network** dans le GUI (clé `slirp=` de
 `neost.cfg`, rejouée par `--from-cfg` comme `netusbee=`). La bascule boucle locale ↔
 Internet est à chaud — la carte vue par le pilote ST ne change pas. En détail : `--slirp` branche
-`NetBackendSlirp` (libslirp, NAT mode utilisateur — ST en 10.0.2.15, passerelle 10.0.2.2,
+`SlirpBackend` (`src/net/SlirpBackend.cpp`, libslirp, NAT mode utilisateur — ST en 10.0.2.15, passerelle 10.0.2.2,
 DNS relayé 10.0.2.3), `--slirp-restricted` la variante bac à sable sans sortie. Build :
 option CMake `NEOST_WITH_SLIRP` (AUTO via pkg-config `slirp`). Validation :
 `--slirp-selftest` pilote la NE2000 au niveau fil et vérifie **4 points déterministes et
@@ -82,7 +82,7 @@ python3 tools/make_sting_test.py /tmp/sting.st <dossier sting126> <dossier ENEC.
     --frames 3500 --serial-dump /tmp/ser.txt     # attendu : DNS=a.b.c.d puis HTTP/1.x
 ```
 
-C'est ce banc qui a démasqué l'inversion des fenêtres ROM3/ROM4 (ci-dessus). Restent le
+C'est ce banc qui a démasqué l'inversion des fenêtres ROM3/ROM4 (cf. EtherNEC ci-dessous). Restent le
 navigateur (CAB) en GUI et la consignation dans `docs/CASE_STUDIES.md` — cf. `TODO.md`.
 
 ## EtherNEC — NE2000 sur le port cartouche (`--ethernec`, GUI Network)
@@ -104,8 +104,8 @@ ni lire ni écrire la carte — découvert à la première session STinG réelle
 
 Décodé dans `Bus::read8Slow` (`src/io/Ne2000.cpp`). Modèle DP8390 classique (pages 0/1,
 anneau de réception avec en-tête 4 octets, Remote DMA, filtrage MAC/broadcast). Backend
-physique = interface `NetBackend` (boucle locale fournie ; SLIRP/pcap = point
-d'extension quand la lib est présente). **Exclusif d'une cartouche montée** (conflit de
+physique = interface `NetBackend` (boucle locale, ou SLIRP avec `--slirp` quand libslirp
+est présente ; pcap = point d'extension). **Exclusif d'une cartouche montée** (conflit de
 fenêtre $FA0000 — le montage est refusé avec message). Auto-test : `--enec-selftest`
 (palier `fast`).
 
@@ -309,7 +309,7 @@ Le contrôle local `tests/midi_ring_logic.cpp` reçoit 20 octets dans l’ordre 
 `MIDITEST.TOS` (`dev/netdemo/`) avait aussi validé le round-trip OUT→UDP→IN→ACIA.
 Implémentation : `src/net/MidiRing.cpp`.
 
-## UltraSatan — interface SD/MMC sur le bus ACSI (`--ultrasatan`, GUI Hard Disks)
+## UltraSatan — interface SD/MMC sur le bus ACSI (`--ultrasatan`, GUI Hard disks)
 
 C'est **la** réponse historique de l'écosystème ST au stockage moderne (Jookie, 2009) :
 un boîtier ACSI à **deux slots SD/MMC** — chaque slot est une cible ACSI (IDs *n* et
@@ -345,11 +345,11 @@ cible qui n'est pas un slot UltraSatan reste **byte-identique** au port de `hdc.
 | Où | Comment |
 |----|---------|
 | Headless | `--ultrasatan` (IDs 0-1), `--ultrasatan-id N`, `--sd1 IMG`, `--sd2 IMG` (`--acsi IMG` = slot 1 quand l'ID est 0) |
-| GUI | Configuration → **Hard Disks** : case UltraSatan, slot 1 = l'image ACSI, slot 2 à monter ; `neost.cfg` : `ultrasatan=`, `sd2=` |
+| GUI | Configuration → **Hard disks** : case UltraSatan, slot 1 = l'image ACSI, slot 2 à monter ; `neost.cfg` : `ultrasatan=`, `sd2=` |
 | Code | `machine.enableUltraSatan(firstTarget); machine.fdc.mountAcsi(path, firstTarget + slot);` |
 
 Image de carte SD : n'importe quel dump brut partitionné (Atari ou DOS). `tools/make_usatan_hd.py`
-en génère une minimale (2 Mo, une partition GEM FAT16) qu'EmuTOS monte en **C:** sans pilote.
+en génère une minimale (16 Mo, une partition GEM FAT16) qu'EmuTOS monte en **C:** sans pilote.
 
 ## NetUSBee — NE2000 + hôte USB ISP1160 sur le port cartouche (`--netusbee`, GUI Network)
 
@@ -416,7 +416,7 @@ l'ATL/ITL et le hub racine sont là, il manque un « device » derrière `HcRhPo
   (`A:\AUTO`) pour tester SANS carte SD : `uscdrv` échoue alors, c'est attendu. **Contrôle
   négatif** : la même carte sous Hatari (`--acsi`, `--rs232-out`) donne `uscdrv PASS` et les six
   verdicts matériels **FAIL** — le test ne passe pas par construction.
-* Save-states : **v13** (UltraSatan + ISP1160 sérialisés ; drapeaux d'en-tête bit2 = UltraSatan,
+* Save-states : **v12** (UltraSatan + ISP1160 sérialisés) ; drapeaux d'en-tête (v13) bit2 = UltraSatan,
   bit3 = NetUSBee — les configs save/load doivent concorder).
 
 ## Clé Steinberg — dongle Cubase sur le port cartouche (`--dongle`, GUI Dongles)
@@ -518,7 +518,7 @@ ou `--no-auto-dongle` pour désactiver. Logique pure dans `io/DongleTable`, auto
 | `jeannedarc` | Jeanne d'Arc (Chip) | RS-232 | DCD assertée quand le mot (RTS\|DTR) **décroît sans s'annuler** : `DCD = !(new && new < old)` | Steem `iow.cpp` |
 | `prosound` | Wings of Death, Lethal Xcess (Thalion) | parallèle | **pas une clé** : DAC 8 bits R-2R Pro Sound Designer (Eidersoft) sur le port imprimante — samples sur STF sans son DMA. R15 horodaté et rejoué par le YM2149 avec son propre bloc DC (amorcé au branchement : pas de clic) et son **fader** page Sound (`mix_dac=`) | Steem `SSE_DONGLE_PROSOUND` |
 | `multiface` | Multiface ST (Romantic Robot) | cartouche + câble moniteur | bouton **freeze** : GPIP7 (détection moniteur) tiré à 0 le temps de l'appui → IRQ niveau 7 prise par la ROM (`--cart`) ; relâché à la VBL suivante. Bouton : page Dongles, `--button-at N` | Steem `run.cpp`/`options.cpp` |
-| `urc` | Ultimate Ripper (Gotcha) | cartouche + port série | même idée sur la ligne RI (GPIP6) | Steem |
+| `urc` | Ultimate Ripper (Gotcha) | cartouche + port série | même idée sur la ligne RI (GPIP6) : l'appui ASSERTE RI (bit 6 → 0, repos à 1 depuis le 2026-10-20), relâchée à la VBL suivante — réaction attendue du logiciel non vérifiée | Steem |
 
 Câblage NeoST : joystick → `Ikbd::setJoystickProbe` (par-dessus l'état hôte) ; série →
 abonné port A du PSG (`Machine`) + crochet de lecture `$FFFA01` (`Mfp::setGpipReadHook`,

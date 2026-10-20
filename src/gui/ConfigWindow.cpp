@@ -160,9 +160,11 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
     }
     case kCfgMem: {
         ImGui::TextDisabled("ST-RAM");
-        static const char* mlabels[] = { "256 KB", "512 KB", "1 MB", "2 MB", "4 MB" };
-        static const char* mids[]    = { "256k", "512k", "1m", "2m", "4m" };
-        for (int i = 0; i < 5; ++i)
+        // 2176/2560 KB : banque 0 de 2 Mo + banque 1 de 128/512 Ko (combinaisons MMU réelles).
+        static const char* mlabels[] = { "256 KB", "512 KB", "1 MB", "2 MB",
+                                         "2176 KB (2 MB + 128 KB)", "2.5 MB (2 MB + 512 KB)", "4 MB" };
+        static const char* mids[]    = { "256k", "512k", "1m", "2m", "2176k", "2560k", "4m" };
+        for (int i = 0; i < 7; ++i)
             if (ImGui::RadioButton(mlabels[i], ui.pendMem == mids[i])) ui.pendMem = mids[i];
         ImGui::Separator();
         ImGui::TextWrapped("512 KB = the 1985 machine. Many games from 1989 on, and most "
