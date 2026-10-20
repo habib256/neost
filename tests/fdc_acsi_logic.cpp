@@ -44,13 +44,14 @@ struct Rig {
     void data(uint8_t v) { fdc.write8(0xFF8604, 0); fdc.write8(0xFF8605, v); }
     bool irq() { return !(mfp.read8(0xFFFA01) & 0x20); }
     void ack() { mode(0x80); (void)fdc.read8(0xFF8605); }
-    void prepare(uint8_t opcode = 8, bool write = false, bool dmaEnabled = false) {
-        mode(write ? 0x190 : 0x90); data(1);
+    void prepare(uint8_t opcode = 8, bool write = false, bool dmaEnabled = false,
+                 uint8_t dmaCount = 1, uint8_t blocks = 1) {
+        mode(write ? 0x190 : 0x90); data(dmaCount);
         fdc.write8(0xFF8609, 0); fdc.write8(0xFF860B, 0x20); fdc.write8(0xFF860D, 0);
         const uint16_t commandMode = (write ? 0x108 : 8) | (dmaEnabled ? 0 : 0x80);
         mode(commandMode); data(opcode);
         mode(commandMode | 2);
-        for (uint8_t v : {uint8_t(0), uint8_t(0), uint8_t(1), uint8_t(1), uint8_t(0)}) data(v);
+        for (uint8_t v : {uint8_t(0), uint8_t(0), uint8_t(1), blocks, uint8_t(0)}) data(v);
     }
     void start(bool write = false) { mode(write ? 0x100 : 0); }
     uint32_t address() {
@@ -186,6 +187,30 @@ int testAcsiIrqTiming() {
     r.advance(1000); c.expect("sens DMA incorrect : aucune IRQ", r.irq(), false);
     r.reset(); r.prepare(0); r.ack(); r.start();
     c.expect("commande sans données : aucun timer", r.sched.nextDue(), -1);
+
+    // Compteur de secteurs DMA (même puce que la disquette) : décompté par bloc de
+    // 512 o jusqu'à zéro ($8606 bit1 = 0, cf. diagnostic Field Service), aucun
+    // octet acquitté à compte nul, transfert borné à count×512. Hatari l'ignore.
+    auto dmaStatus = [&] { r.mode(0x80); return int(r.fdc.read8(0xFF8607)); };
+    r.reset(); std::fill_n(r.bus.ram.begin() + 0x2000, 1536, uint8_t(0));
+    r.prepare(8, false, false, 2, 2); r.start();
+    c.expect("compte 2, 2 blocs : données", r.bus.ram[0x23FF], 0xA5);
+    c.expect("compte 2, 2 blocs : adresse", r.address(), 0x2400);
+    c.expect("compte 2, 2 blocs : bit1 compteur nul", dmaStatus() & 2, 0);
+    r.reset(); std::fill_n(r.bus.ram.begin() + 0x2000, 1536, uint8_t(0));
+    r.prepare(8, false, false, 1, 2); r.start();
+    c.expect("compte 1, 2 blocs : 1er bloc", r.bus.ram[0x21FF], 0x66);  // LBA1 réécrit plus haut
+    c.expect("compte 1, 2 blocs : 2e bloc non acquitté", r.bus.ram[0x2200], 0);
+    c.expect("compte 1, 2 blocs : adresse", r.address(), 0x2200);
+    r.reset(); std::fill_n(r.bus.ram.begin() + 0x2000, 1536, uint8_t(0));
+    r.prepare(8, false, false, 0, 1); r.start();
+    c.expect("compte nul : aucune donnée", r.bus.ram[0x2000], 0);
+    c.expect("compte nul : adresse inchangée", r.address(), 0x2000);
+    c.expect("compte nul : aucun timer", r.sched.nextDue(), -1);
+    // Compte programmé ensuite (pilote tardif) : le retour en mode DMA débloque.
+    r.mode(0x90); r.data(1); r.start();
+    c.expect("compte tardif : données livrées", r.bus.ram[0x2000], 0x66);
+    c.expect("compte tardif : bit1 compteur nul", dmaStatus() & 2, 0);
 
     for (bool cold : {false, true}) {
         r.reset(); r.prepare(); r.start(); r.advance(400); r.fdc.reset(cold);
