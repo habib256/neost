@@ -6,6 +6,17 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Étalon `usatan_netusbee` : image SD régénérée à chaque passage — issue #42 (2026-10-20)
+
+- **Pas une régression de l'USART** : 699e696 a modélisé le vrai transport TX du MFP
+  ET corrigé la routine `emit` de `USTEST.PRG` (attendre BE au lieu d'écraser l'UDR).
+  `disks/etalons/usatan_sd.img` est gitignoré et n'était généré que s'il manquait :
+  une image construite avant 699e696 écrasait le TDR et ne transmettait plus que
+  `N-\n` (reproduit à l'octet près avec le générateur de 86a9975).
+- `run_selftests.py` régénère désormais à chaque passage tout étalon généré **non
+  versionné** (30 ms, déterministe) ; les étalons versionnés gardent la règle
+  « absent seulement ».
+
 ## IKBD : programmes 6301 custom enfin reconnus — Froggies tourne sur ses 3 disquettes (2026-10-20)
 
 - **Défaut corrigé** : l'empreinte qui identifie un programme 6301 custom était un
