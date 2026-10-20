@@ -66,7 +66,8 @@ CLAIMS = [
     # cartouches, Cubase Lite) sont retirés AVEC leur tableau — le contenu n'est
     # plus suivi par git, il n'y a plus rien à recompter. À la place, un garde
     # NÉGATIF : si l'un de ces chemins redevient suivi, la purge a fuité.
-    ("TODO.md", r"pack \*\*165 → (\d+) Mio\*\*",
+    # La phrase vit au CHANGELOG depuis la réorganisation du TODO (2026-10-20).
+    ("CHANGELOG.md", r"pack \*\*165 → (\d+) Mio\*\*",
      lambda: 12 + git_count("roms/tos*", "roms/TOS*", "disks/st", "disks/stx",
                             "carts", "disks/midi/CUBLITE",
                             "dev/agt", "dev/reservoir-gods"), 0.0),
