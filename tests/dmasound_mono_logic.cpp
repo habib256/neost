@@ -107,6 +107,40 @@ int testDmaSoundMono() {
         split.snd.mix(replay.data(), 84, 0);
         check(split.save() == unchanged, "zero frames or sample rate do not advance state");
     }
+    // PLAY écrit en MILIEU de trame, DMA au repos : le rendu push ne doit pas
+    // consommer avant l'écriture les octets que le DAC tire APRÈS elle. Avant le
+    // repère capW des événements, l'attaque tombait à l'échantillon 0 quelle que
+    // soit la position du PLAY (bruitage avancé jusqu'à une trame, ancien mode).
+    for (int64_t playAt : {0, 40000, 80000, 120000}) {
+        constexpr int64_t kFrame = 160256;                    // trame PAL STE
+        constexpr uint32_t kOut = 960;                        // 48 kHz × 20 ms
+        Bus bus; Scheduler sched; DmaSound snd{bus};
+        bus.machine = MachineType::Ste; bus.dmasnd = &snd;
+        snd.setScheduler(&sched);
+        int64_t frameStart = 0;
+        snd.setCycleClock([&] { return sched.now() - frameStart; });
+        for (unsigned i = 0; i < 8192; ++i) bus.ram[0x20000 + i] = 100;
+        snd.write8(0xFF8903, 2); snd.write8(0xFF8905, 0); snd.write8(0xFF8907, 0);
+        snd.write8(0xFF890F, 2); snd.write8(0xFF8911, 0x20); snd.write8(0xFF8913, 0);
+        snd.write8(0xFF8921, 0x83);                           // mono 50 kHz (défaut reset : 6 kHz stéréo)
+        std::vector<float> ym(kOut, 0.0f), st(2 * kOut);
+        snd.mixStereo(st.data(), ym.data(), kOut, 48000, kFrame);   // purge l'événement MODE
+        frameStart = sched.now();
+        for (int64_t c = 512; c <= kFrame; c += 512) {
+            if (playAt >= c - 512 && playAt < c) {
+                sched.runTo(frameStart + playAt); snd.write8(0xFF8901, 1);
+            }
+            sched.runTo(frameStart + c); snd.onHbl();
+        }
+        snd.mixStereo(st.data(), ym.data(), kOut, 48000, kFrame);
+        uint32_t onset = kOut;
+        for (uint32_t i = 0; i < kOut; ++i) if (st[2 * i] != 0.0f) { onset = i; break; }
+        const int64_t expect = playAt * kOut / kFrame;
+        char label[96];
+        std::snprintf(label, sizeof label, "mid-frame PLAY at cycle %lld starts at its sample (got %u, want %lld)",
+                      static_cast<long long>(playAt), onset, static_cast<long long>(expect));
+        check(int64_t(onset) >= expect && int64_t(onset) <= expect + 2, label);
+    }
     std::printf("[dmasound-mono] %d checks, %d FAIL\n", checks, failures);
     return failures;
 }

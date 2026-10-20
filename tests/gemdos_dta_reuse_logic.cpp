@@ -4,6 +4,7 @@
 #include "core/Cpu68k.hpp"
 #include "io/GemdosHd.hpp"
 #include <cstdio>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -88,6 +89,24 @@ int testGemdosDtaReuse() {
     for(const char* name:{"A1.TXT","A2.TXT","A3.TXT","B1.TXT","B2.TXT","B3.TXT"})
         std::ofstream(work/name)<<name;
 
+    {
+        // .state forgé : cache DTA vidé (count = 0) avec un lecteur monté. Fsfirst
+        // indexe dtas_[dtaIndex_] avant toute croissance → refus au chargement.
+        Rig fresh(work.string());
+        std::vector<uint8_t> bytes;
+        auto save=StateArchive::saver(bytes); fresh.gemdos.serialize(save);
+        constexpr size_t tail=4+256+2;            // [u32 256][256 × used=0][u16 index]
+        bool shaped=bytes.size()>tail;
+        if(shaped) { uint32_t n=0; std::memcpy(&n,bytes.data()+bytes.size()-tail,4); shaped=(n==256); }
+        equal("queue DTA reconnue",shaped,true);
+        if(shaped) {
+            bytes.resize(bytes.size()-tail);
+            const uint8_t empty[6]={0,0,0,0,0,0};   // count = 0, index = 0
+            bytes.insert(bytes.end(),empty,empty+6);
+            auto load=StateArchive::loader(bytes.data(),bytes.size()); fresh.gemdos.serialize(load);
+            equal("cache DTA vide refusé avec lecteur monté",load.ok(),false);
+        }
+    }
     Rig rig(work.string());
     constexpr uint32_t a=0x4000,b=0x4100,c=0x4200;
     equal("Fsfirst A",rig.first(a,"C:\\A*.TXT"),0); named(rig,a,"A1.TXT");

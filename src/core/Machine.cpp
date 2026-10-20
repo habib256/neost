@@ -773,6 +773,7 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
                                       //       + intervalles « Shifter arrêté » (rendu noir)
                                       //       + IKBD lastMouseMode_/joysticksEnabled_ ;
                                       //       Mfp::loopback_ retiré (propriété de banc)
+                                      //       + DmaEvent.capW (repère du flux son DMA)
                                       // v50 : résolution côté Shifter ($FF8261, res 3)
                                       //       + échantillon IPL différé Moira (CPU3)
                                       // v49 : recouvrement CPU/blitter
