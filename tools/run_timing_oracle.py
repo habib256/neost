@@ -17,7 +17,7 @@ import tempfile
 
 import trace_diff as td
 from make_timing_probe import CASES, build
-from timing_extended import DIV_PAIRS, disk_image
+from timing_extended import DIV_PAIRS, disk_image, stx_image
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "tests/out/timing"
@@ -30,9 +30,13 @@ FRAMES, WARMUP, SAMPLES = 40, 32, 256
 # au refill HBL : une ligne PAL est la résolution de cette comparaison.
 # La première IRQ est datée dans le même domaine Scheduler que l'armement.
 LIMITS = {case: (512, 512) if case == "dma_sound" else (4, 4) for case in CASES}
-LIMITS.update(blitter_hog=(4, 4), blitter_shared=(4, 4), fdc_read=(24, 4), fdc_write=(24, 4))
+# fdc_read_stx : la fin se mesure depuis la dernière détection, arrondie elle aussi
+# à un tour de scrutation (24 cycles) faute de pouvoir aligner l'angle de départ.
+LIMITS.update(blitter_hog=(4, 4), blitter_shared=(4, 4), fdc_read=(24, 4), fdc_read_stx=(24, 24),
+              fdc_write=(24, 4))
 SOURCES = ("src/mfp.c", "src/dmaSnd.c", "src/cycInt.c", "src/video.c",
-           "src/cpu/newcpu.c", "src/m68000.c", "src/fdc.c", "src/blitter.c")
+           "src/cpu/newcpu.c", "src/m68000.c", "src/fdc.c", "src/floppies/stx.c",
+           "src/blitter.c")
 
 
 def sample_count(case):
@@ -71,10 +75,11 @@ def capture(case, emulator, attempt=None, *, probe=None, machine="ste", out=None
     env = {**os.environ, "NEOST_TRACE_CYC": "1", "HATARI_SEED": "1"}
     if extra_env:
         env.update(extra_env)
-    # Une image par sonde et par passage : fdc_write la modifie.
-    disk = output / f"{case}.{suffix}.st"
+    # Une image par sonde et par passage : fdc_write la modifie. Hatari reconnaît
+    # le format à l'extension, d'où .stx pour la piste Pasti.
+    disk = output / f"{case}.{suffix}.{'stx' if case.endswith('_stx') else 'st'}"
     if case.startswith("fdc_"):
-        disk.write_bytes(disk_image())
+        disk.write_bytes(media(case))
     if emulator == "neost":
         command = [NEOST, ROM, "--machine", machine, "--mem", "1m", "--cart", cart,
                    "--frames", frames, "--trace", trace, "--irq"]
@@ -114,6 +119,10 @@ def capture(case, emulator, attempt=None, *, probe=None, machine="ste", out=None
     return read_trace(trace, pcs, data)
 
 
+def media(case):
+    return stx_image() if case.endswith("_stx") else disk_image()
+
+
 def read_transfer_trace(trace, pcs, data, case):
     instructions, _ = td.parse(str(trace))
     def times(name):
@@ -141,7 +150,7 @@ def read_transfer_trace(trace, pcs, data, case):
         if len(arms) != 1 or len(done) != count or len(irq) != 1 or irq[0] <= done[-1]:
             raise ValueError(f"{trace} : attendu 1 commande, 32 rafales et 1 IRQ, "
                              f"reçu {len(arms)}, {len(done)}, {len(irq)}")
-        result = {"disk_sha256": hashlib.sha256(disk_image()).hexdigest(),
+        result = {"disk_sha256": hashlib.sha256(media(case)).hexdigest(),
                   "cycles": [t - done[0] for t in done],
                   "polls": polls[1:],  # exclure l'attente rotationnelle initiale
                   "completion": irq[0] - done[-1]}
@@ -234,12 +243,12 @@ def compare(case, actual, expected, strict=False):
         # émulateurs (attente initiale exclue) : en écriture, la détection par
         # scrutation de $FF860D s'arrondit alors à un tour de boucle près (22
         # cycles, d'où la borne de phase). fdc_read reste exact sur le travail.
-        slack = 1 if case == "fdc_write" else 0
+        slack = 0 if case == "fdc_read" else 1
         drift = max(abs(x - y) for x, y in zip(actual["polls"], expected["polls"]))
         work = drift <= slack
         ok = phase <= LIMITS[case][0] and tail <= LIMITS[case][1] and work
         print(f"  {'OK' if ok else 'FAIL'} {case}: 32 rafales, "
-              f"phase max={phase}/24 cycles, IRQ après dernière rafale Δ={tail}/4, "
+              f"phase max={phase}/24 cycles, IRQ après dernière rafale Δ={tail}/{LIMITS[case][1]}, "
               f"travail CPU Δ={drift}/{slack} tour")
         return ok
     if len(a) != SAMPLES or len(b) != SAMPLES or a[0] != 0 or b[0] != 0:

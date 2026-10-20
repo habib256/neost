@@ -51,18 +51,28 @@ struct Rig {
         ikbd.serialize(ar); sched.serialize(ar); live = sched.now(); return ar.ok();
     }
     void froggies() {
-        // Charges synthétiques aux CRC reconnus, pas de code propriétaire :
-        // bootstrap 4 octets CRC2efb11b1, puis 163 zéros + suffixe CRCe7110b6d.
-        command({0x20, 0, 0x80, 4, 0x02, 0x39, 0xFF, 0x95});
-        command({0x22, 0, 0x80});
-        for (int i = 0; i < 163; ++i) command({0});
-        command({0xAA, 0x0A, 0xF0, 0xB8});
+        // Handler installé directement : le vrai programme 6301 n'est pas versionné
+        // et l'empreinte d'Hatari, non linéaire, ne se forge pas (cf. Ikbd.cpp).
+        ikbd.armFroggiesForTest();
     }
 };
 }
 
 int testIkbdResponses() {
     Checks c;
+    {
+        // Empreinte des programmes 6301 custom : valeurs du vrai utils.c d'Hatari
+        // compilé (2026-10-20). Le OU exclusif d'un CRC32 standard rend 0xcbf43926
+        // sur « 123456789 » (complément) et ne reconnaissait aucun programme réel.
+        const uint8_t digits[] = {'1','2','3','4','5','6','7','8','9'};
+        uint8_t zeros[167] = {}, ones[16], ramp[64];
+        for (auto& b : ones) b = 0xFF;
+        for (int i = 0; i < 64; ++i) ramp[i] = uint8_t(i * 37 + 11);
+        c.equal("custom code crc digits", Ikbd::customCodeCrcForTest(digits, 9), 0xf489df43u);
+        c.equal("custom code crc zeros", Ikbd::customCodeCrcForTest(zeros, 167), 0x8b948443u);
+        c.equal("custom code crc ones", Ikbd::customCodeCrcForTest(ones, 16), 0x03bf0b6du);
+        c.equal("custom code crc ramp", Ikbd::customCodeCrcForTest(ramp, 64), 0x13016f2du);
+    }
     struct Case { uint8_t opcode, header; int delay, size; };
     const Case cases[] = {
         {0x0D, 0xF7, 10240, 6}, {0x16, 0xFD, 8192, 3}, {0x1C, 0xFC, 7168, 7},

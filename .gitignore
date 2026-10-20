@@ -108,3 +108,9 @@ wasm/
 /disks/etalons/spectrum_512_auto_diapo.st
 /dev/agt/
 /dev/reservoir-gods/
+
+# Worktrees des agents Claude Code (isolation) : jamais versionnés.
+/.claude/worktrees/
+
+# Froggies Over The Fence : disquettes locales, non versionnées (décision 2026-10-20).
+/disks/etalons/froggies_over_the_fence/

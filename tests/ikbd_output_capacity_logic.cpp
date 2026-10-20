@@ -23,7 +23,7 @@ struct Rig {
     void fullRdr(){ikbd.keyEvent(0x39,true);advance(10240);}
     int next(){auto d=due();if(d<0)return -1;advance(d);return data();}
     bool drainKeys(int n){bool good=true;for(int i=0;i<n;++i)good=(next()==0x3B)&&good;return good&&due()==-1;}
-    void froggies(){cmd({0x20,0,0x80,4,0x02,0x39,0xFF,0x95,0x22,0,0x80});for(int i=0;i<163;++i)cmd({0});cmd({0xAA,0x0A,0xF0,0xB8});}
+    void froggies(){ikbd.armFroggiesForTest();}  // vrai programme non versionné
 };
 }
 int testIkbdOutputCapacity(){

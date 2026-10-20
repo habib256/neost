@@ -17,11 +17,14 @@
 //  sont devenues le 2026-09-02 : FMOVE.L/W/B passent par sf::toInt et FMOVE.S/D par
 //  sf::toFloat32/64, au lieu de traverser un `double` hôte qui arrondissait une
 //  PREMIÈRE fois (64 → 53 bits) avant l'arrondi demandé — double arrondi, mode FPCR
-//  ignoré et INEX2 jamais levé. Reste sur `double` : les TRANSCENDANTES (cf. Fpu.hpp). Le décimal empaqueté (P) passe par SoftFloatDecimal.hpp. Constantes ROM FMOVECR
+//  ignoré et INEX2 jamais levé. Les TRANSCENDANTES ont quitté le `double` hôte à
+//  leur tour : algorithmes FPSP en étendu 80 bits (SoftFloatFpsp.hpp), égaux bit à bit
+//  à Hatari. Le décimal empaqueté (P) passe par SoftFloatDecimal.hpp. Constantes ROM FMOVECR
 //  bit-exactes (dumps silicium recoupés MAME/Previous/WinUAE).
 // =============================================================================
 #include "Fpu.hpp"
 #include "io/SoftFloatDecimal.hpp"
+#include "io/SoftFloatFpsp.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -787,7 +790,40 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
             if (sf::isSNaN(s)) st.exceptionFlags |= sf::flag_signaling;       // floatx80_tst
             setCC(src);
             break;
-        default: handled = false; break;                                      // → chemin transcendantes
+        // -------- Transcendantes : FPSP en étendu 80 bits (SoftFloatFpsp.hpp) ------
+        // Comme Hatari (fpp_softfloat.c fp_sinh…fp_sincos) : appel direct avec le
+        // mode et la précision du FPCR ; chaque fonction calcule ses intermédiaires
+        // en étendu au plus près et n'applique le FPCR qu'à sa dernière opération.
+        // Les drapeaux suivent le chemin commun (sfFold) : FPSR EXC + AEXC.
+        case 0x02: rf = sf::fpsp::floatx80_sinh(s, &st);   break;              // FSINH
+        case 0x06: rf = sf::fpsp::floatx80_lognp1(s, &st); break;              // FLOGNP1
+        case 0x08: rf = sf::fpsp::floatx80_etoxm1(s, &st); break;              // FETOXM1
+        case 0x09: rf = sf::fpsp::floatx80_tanh(s, &st);   break;              // FTANH
+        case 0x0A: rf = sf::fpsp::floatx80_atan(s, &st);   break;              // FATAN
+        case 0x0C: rf = sf::fpsp::floatx80_asin(s, &st);   break;              // FASIN
+        case 0x0D: rf = sf::fpsp::floatx80_atanh(s, &st);  break;              // FATANH
+        case 0x0E: rf = sf::fpsp::floatx80_sin(s, &st);    break;              // FSIN
+        case 0x0F: rf = sf::fpsp::floatx80_tan(s, &st);    break;              // FTAN
+        case 0x10: rf = sf::fpsp::floatx80_etox(s, &st);   break;              // FETOX
+        case 0x11: rf = sf::fpsp::floatx80_twotox(s, &st); break;              // FTWOTOX
+        case 0x12: rf = sf::fpsp::floatx80_tentox(s, &st); break;              // FTENTOX
+        case 0x14: rf = sf::fpsp::floatx80_logn(s, &st);   break;              // FLOGN
+        case 0x15: rf = sf::fpsp::floatx80_log10(s, &st);  break;              // FLOG10
+        case 0x16: rf = sf::fpsp::floatx80_log2(s, &st);   break;              // FLOG2
+        case 0x19: rf = sf::fpsp::floatx80_cosh(s, &st);   break;              // FCOSH
+        case 0x1C: rf = sf::fpsp::floatx80_acos(s, &st);   break;              // FACOS
+        case 0x1D: rf = sf::fpsp::floatx80_cos(s, &st);    break;              // FCOS
+        case 0x30: case 0x31: case 0x32: case 0x33:                            // FSINCOS
+        case 0x34: case 0x35: case 0x36: case 0x37: {
+            // cos → FPc (bits 2-0) PUIS sin → FPn : si c == n, le sinus l'emporte
+            // (Hatari écrit *c dans floatx80_sincos, puis la destination). Les CC
+            // dérivent du sinus (fpsr_set_result(dst)).
+            sf::f80 c{};
+            rf = sf::fpsp::floatx80_sincos(s, &c, &st);
+            fp_[op & 7] = toE(c);
+            break;
+        }
+        default: handled = false; break;                                      // opmode inexistant
     }
     if (handled) {
         sfFold(st.exceptionFlags);
@@ -796,44 +832,8 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
         return;
     }
 
-    // -------- Transcendantes (et opmodes restants) : via le FPU hôte --------
-    // Le 68881 les approxime lui-même (CORDIC/polynômes) ; la bit-exactitude est
-    // hors de portée — on calcule en `double` hôte puis on convertit (cf. Fpu.hpp,
-    // comme MAME/Previous). L'arithmétique algébrique, elle, est en 64 bits ci-dessus.
-    const double sd = extToD(src);
-    double r = 0.0;
-    bool store2 = true;
-    switch (op) {
-        case 0x02: r = std::sinh(sd);     break;  // FSINH
-        case 0x06: r = std::log1p(sd);    break;  // FLOGNP1
-        case 0x08: r = std::expm1(sd);    break;  // FETOXM1
-        case 0x09: r = std::tanh(sd);     break;  // FTANH
-        case 0x0A: r = std::atan(sd);     break;  // FATAN
-        case 0x0C: r = std::asin(sd);     break;  // FASIN
-        case 0x0D: r = std::atanh(sd);    break;  // FATANH
-        case 0x0E: r = std::sin(sd);      break;  // FSIN
-        case 0x0F: r = std::tan(sd);      break;  // FTAN
-        case 0x10: r = std::exp(sd);      break;  // FETOX
-        case 0x11: r = std::exp2(sd);     break;  // FTWOTOX
-        case 0x12: r = std::pow(10.0, sd); break; // FTENTOX
-        case 0x14: r = std::log(sd);      break;  // FLOGN
-        case 0x15: r = std::log10(sd);    break;  // FLOG10
-        case 0x16: r = std::log2(sd);     break;  // FLOG2
-        case 0x19: r = std::cosh(sd);     break;  // FCOSH
-        case 0x1C: r = std::acos(sd);     break;  // FACOS
-        case 0x1D: r = std::cos(sd);      break;  // FCOS
-        case 0x30: case 0x31: case 0x32: case 0x33:   // FSINCOS : cos → FPc, sin → FPn
-        case 0x34: case 0x35: case 0x36: case 0x37:
-            fp_[op & 7] = dToExt(std::cos(sd)); r = std::sin(sd); break;
-        default: trace("opmode non implémenté", cmd); store2 = false; break;
-    }
-    if (store2) {
-        if (std::isnan(r) && !std::isnan(sd))                  fpsr_ |= EXC_OPERR | AEXC_IOP;
-        if (std::isinf(r) && !std::isinf(sd))                  fpsr_ |= EXC_OVFL | AEXC_OVFL | EXC_INEX2 | AEXC_INEX;
-        if (((fpcr_ >> 6) & 3) == 1) r = double(float(r));     // précision simple
-        const Ext res = dToExt(r);
-        fp_[dn] = res; setCC(res);
-    }
+    // Opmode absent du 68881 : rien n'est écrit, le dialogue se termine.
+    trace("opmode non implémenté", cmd);
     setIdle();
     checkException();
 }

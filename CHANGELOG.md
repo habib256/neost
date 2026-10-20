@@ -6,6 +6,55 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## IKBD : programmes 6301 custom enfin reconnus — Froggies tourne sur ses 3 disquettes (2026-10-20)
+
+- **Défaut corrigé** : l'empreinte qui identifie un programme 6301 custom était un
+  vrai CRC32, alors que la table des valeurs connues vient d'Hatari, dont la fonction
+  (`utils.c:crc32_add_byte`) teste `(c & 0x80) ^ (crc & 0x80000000)`, en pratique un
+  OU. Aucun programme réel n'était reconnu (Froggies, Transbeauce 2, Dragonnels,
+  Chaos A.D., Audio Sculpture) ; les tests passaient sur des charges forgées pour la
+  mauvaise fonction. Fonction reprise à l'identique, vérifiée contre `utils.c`
+  compilé ; les tests installent désormais le handler directement.
+- **Froggies Over The Fence** : sous EmuTOS la démo plante (son `Rwabs` rend `E_CHNG`,
+  Hatari pareil) ; sous TOS 1.02 FR elle tourne, menu piloté comme chez Hatari (A/B
+  au pointeur près), trois disquettes validées avec changement à chaud.
+- **Médias privés restaurés** depuis le support de sauvegarde (TOS Atari, jeux,
+  cartouches) : le palier `full` exécute à nouveau les trois `spectrum512_diapo*` et
+  la suite Q du diagnostic MegaSTE (11/11, VME absent) ; seul Cubase Lite manque.
+- **Lethal Xcess** : le titre « buggé » n'est pas reproduit, 0 px contre l'oracle.
+
+## FPU transcendantes bit-exact, suite Hatari rejouée, nouveaux étalons et sondes (2026-10-20)
+
+- **FPU : les 19 transcendantes en étendu 80 bits.** Port de `softfloat_fpsp.c`
+  (algorithmes FPSP, A. Grabher / Previous) dans `src/io/SoftFloatFpsp.hpp` ; plus aucun
+  calcul en `double` hôte. 1 050 564 comparaisons CIR contre le vrai FPSP d'Hatari
+  compilé (16 combinaisons précision × arrondi, seuils de branche ±1 ulp), 0 écart ;
+  la mutation `std::sin` est détectée. Les six oracles FPU, jusque-là lancés par aucun
+  palier, tournent au `full` (`tools/run_fpu_oracles.py`).
+- **Suite de tests d'Hatari rejouée sous NeoST** (`tools/run_hatari_suite.py`, palier
+  `full`) : `cycles`, `blitter` et `buserror` sur ST, Mega ST, STE, MegaSTE, lancés depuis
+  `C:\AUTO` d'un disque hôte, résultats comparés aux attendus d'Hatari : 10/10.
+  `screen/flixfull.prg` : capture identique à la référence décalée de 4 px, à trancher.
+- **Étalon `spec512_view`** : visualiseur façon Spectrum 512 généré (48 couleurs par
+  ligne, rafales `movem.l`), oracle Hatari à 0 px re-dérivé deux fois ; remplace le
+  motif des trois `spectrum512_diapo*` adossés à une ROM Atari.
+- **Sonde `fdc_read_stx`** : piste Pasti à descripteurs (IDs à angles non standard,
+  `ReadTime` 20 000 µs) ; banc temporel à 20 sondes, `stx.c` épinglé dans la référence.
+  L'écart d'angle de rotation entre émulateurs n'est pas une divergence : l'angle
+  initial est tiré au hasard des deux côtés.
+- **GEMDOS** : audit des codes d'erreur face à `gemdos.c` (portage 1:1). Corrigé : tampon
+  ou nom de fichier dans le port cartouche, refusé à tort. Consignés : défauts d'Hatari
+  non reproduits (Fwrite de taille négative, Pexec tronqué), écarts communs face au TOS.
+- **MFP** : tables de vérité puce nue du mode délai pour les quatre timers.
+- **A9 : `appLoop` découpée.** Une `struct Frame` porte les variables de trame, et
+  28 fonctions statiques (entrées, trames dues, dessin, requêtes, présentation) sont
+  déplacées mécaniquement : `appLoop` passe à 51 lignes, la plus grosse pièce restante
+  est `runKioskMenu` (380). Captures `--shot-window` identiques à l'octet avant/après,
+  en bureau et en borne. `-DNEOST_WITH_IMGUI=OFF` était déjà cassé avant (consigné).
+- **A38** : registre `tools/fast_guards.json` des 21 étapes du palier `fast` (dernier
+  déclenchement réel daté), étape non inscrite refusée, mur et contrôles muets depuis
+  180 jours affichés par `run_all.py`.
+
 ## DIVU/DIVS rétabli, écriture DMA disquette comparée, outils AppImage épinglés (2026-10-20)
 
 - **DIVU/DIVS : cycles internes avant le préfetch (68000).** Le correctif du fork

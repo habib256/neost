@@ -248,7 +248,7 @@ pixel. Il réutilise le parseur de `trace_diff.py` et son principe de périodes,
 mais vérifie aussi la phase cumulée : une IRQ perdue ou une petite dérive répétée
 peuvent conserver la même période dominante.
 
-Dix-neuf cartouches libres générées par `tools/make_timing_probe.py` et
+Vingt cartouches libres générées par `tools/make_timing_probe.py` et
 `tools/timing_extended.py` prennent la main avant TOS. Pile et tampons restent
 sous 128 Ko : la MMU n'a pas encore été programmée. Les dates sont relevées sur
 les PC du programme invité, sans interpréter les diagnostics propres à chaque
@@ -263,6 +263,7 @@ les PC du programme invité, sans interpréter les diagnostics propres à chaque
 | Son DMA STE | 256 octets, 50066 Hz stéréo, repeat, Timer A event-count 1 ; idem |
 | Timer B vidéo | event-count 1, DE descendant ; idem, après deux VBL PAL |
 | DMA disquette | lecture réelle du secteur 2 synthétique, 32 rafales de 16 octets + IRQ |
+| DMA disquette, STX | même programme qu'en lecture, sur une piste Pasti à descripteurs : IDs à des angles non standard, `ReadTime` de 20 000 µs pour le secteur lu |
 | DMA disquette, écriture | WRITE SECTOR du secteur 2 ; rafales vues au compteur `$FF860D` (le DMA lit la RAM) ; statut contrôlé, secteur relu sur l'image NeoST |
 | Blitter HOG | 64 copies de 16×8 mots, après huit échauffements, IRQ GPIP3 |
 | Blitter partagé | mêmes données, CPU scrutant BUSY pendant les transferts |
@@ -344,7 +345,25 @@ angle de rotation chez les deux émulateurs (NeoST rencontre le secteur environ
 9 500 cycles plus tard ; cette attente initiale est exclue, comme en lecture).
 La scrutation de `$FF860D` coûte 22 cycles par tour : la phase est donc bornée à
 24 cycles et le travail CPU toléré à un tour près par intervalle. La lecture,
-elle, reste exacte sur le travail CPU.
+elle, reste exacte sur le travail CPU. La lecture STX a la même limite, et sa
+fin se mesure depuis une dernière détection elle aussi arrondie : fin bornée à
+24 cycles. Le cadencement `ReadTime` reste vérifié sans ambiguïté (une rafale
+toutes les ~5 000 cycles au lieu de 4 096).
+
+## Suite de tests d'Hatari rejouée sous NeoST
+
+```sh
+python3 tools/run_hatari_suite.py        # palier full ; SKIP sans extern/hatari
+```
+
+Les programmes de `extern/hatari/tests` qui écrivent leur verdict dans un fichier
+sont posés dans `C:\AUTO` d'un disque hôte (`--gemdos`) : EmuTOS les lance au boot,
+à défaut du mode `--tos none` d'Hatari. Le fichier produit est comparé ligne pour
+ligne au résultat attendu versionné par Hatari. Couverts : `cycles/cyccheck.prg`,
+`blitter/blitemu.ttp` (STE) et `buserror/buserr_b|w.prg` sur ST, Mega ST 4 Mo, STE et
+MegaSTE 4 Mo — 10/10 au 2026-10-20. `NEOST_RAM_SLOT=0` fait échouer `cycles` sur sept
+lignes. Restent hors banc : `cpu`, `gemdos`, `xbios`, `mem_end` (verdict sur la console
+de l'émulateur), `screen` (PNG au format de capture d'Hatari) et `serial`.
 
 Les traces sans horloge, incomplètes ou non monotones, les sources absentes,
 les redémarrages, les erreurs de données, les IRQ manquantes et les exceptions

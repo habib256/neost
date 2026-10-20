@@ -60,6 +60,19 @@ def line_count(rel: str) -> int:
     return len((ROOT / rel).read_text(errors="replace").splitlines())
 
 
+def func_line_count(rel: str, name: str) -> int:
+    # Lignes d'une fonction définie au niveau fichier : de sa signature (en
+    # colonne 0) à la première accolade fermante en colonne 0. 0 si introuvable.
+    lines = (ROOT / rel).read_text(errors="replace").splitlines()
+    sig = re.compile(r"^\S.*\b" + re.escape(name) + r"\(")
+    for i, l in enumerate(lines):
+        if sig.match(l) and not l.rstrip().endswith(";"):
+            for j in range(i, len(lines)):
+                if lines[j].startswith("}"):
+                    return j - i + 1
+    return 0
+
+
 # (document, regex à 1 groupe, calcul de la valeur vraie, tolérance relative)
 CLAIMS = [
     # Purge du 2026-08-30 : les six compteurs du tableau § BLOQUANT (TOS, jeux,
@@ -74,12 +87,13 @@ CLAIMS = [
     ("TODO.md", r"\*\*(\d+) étalons\s+pixel sur \d+\*\*", free_etalons, 0.0),
     ("TODO.md", r"\*\*\d+ étalons\s+pixel sur (\d+)\*\*",
      lambda: len(machine_etalons()), 0.0),
-    # A9 (2026-08-30) : main.cpp est retombé à un point d'entrée de 28 lignes. Le
-    # chiffre à garder est désormais celui du RESTE — la boucle, seule pièce du
-    # frontend encore d'un seul tenant. Marge 3 % : elle bouge à chaque édition
-    # légitime ; au-delà, la doc raconte un autre fichier que celui du dépôt.
-    ("TODO.md", r"`appLoop` — (\d+) lignes d'un seul tenant",
-     lambda: line_count("src/gui/AppLoop.cpp"), 0.03),
+    # A9 (2026-08-30) : main.cpp est retombé à un point d'entrée de 28 lignes.
+    # A9 (2026-10-20) : appLoop découpée en phases (struct Frame) ; le chiffre à
+    # garder est celui de la plus grosse pièce restée d'un seul tenant, le menu
+    # kiosk. Marge 3 % : elle bouge à chaque édition légitime ; au-delà, la doc
+    # raconte une autre fonction que celle du dépôt.
+    ("TODO.md", r"`runKioskMenu` — (\d+) lignes d'un seul tenant",
+     lambda: func_line_count("src/gui/AppLoop.cpp", "runKioskMenu"), 0.03),
     ("tools/etalons.json", r"COUVERTURE \((\d+) étalons machine",
      lambda: len(machine_etalons()), 0.0),
 ]

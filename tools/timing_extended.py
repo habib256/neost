@@ -1,7 +1,7 @@
 """Sondes invitées supplémentaires : Timer B vidéo, DMA FDC et blitter."""
 import struct
 
-EXTENDED = ("timer_b_event", "fdc_read", "fdc_write", "blitter_hog", "blitter_shared",
+EXTENDED = ("timer_b_event", "fdc_read", "fdc_read_stx", "fdc_write", "blitter_hog", "blitter_shared",
             "blitter_shared_small", "blitter_shared_large", "blitter_shared_mulu",
             "blitter_hog_mulu", "blitter_hog_tas", "blitter_shared_tas",
             "blitter_shared_ram", "blitter_hog_ram", "cpu_div_ram")
@@ -123,7 +123,7 @@ def build_extended(case):
         a.label("success"); a.w(0x4e72, 0x2700); a.branch(0x6000, "success")
         a.label("failure"); a.w(0x4e72, 0x2700); a.branch(0x6000, "failure")
         a.label("irq"); a.w(0x4e73)
-    elif case == "fdc_read":
+    elif case in ("fdc_read", "fdc_read_stx"):
         a.vector(0x11c, "irq")  # GPIP5, fin de commande FDC
         a.byte(0xfa09, 0x80); a.byte(0xfa15, 0x80)
         a.byte(0x8800, 14); a.byte(0x8802, 5)  # A:, face 0
@@ -206,6 +206,40 @@ def build_extended(case):
         assert len(stub) == 32
         data = stub + data
     return data, pcs
+
+
+# Piste STX de fdc_read_stx : IDs à des angles non standard, et un ReadTime
+# explicite pour le secteur lu (µs pour tout le secteur ; 0 = 32 µs par octet).
+STX_SECTOR_BYTE = [100 + s * 660 for s in range(9)]
+STX_READ_TIME = 20000
+
+
+def crc16_ccitt(data, crc=0xffff):
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x1021) if crc & 0x8000 else crc << 1
+            crc &= 0xffff
+    return crc
+
+
+def stx_image():
+    """Image Pasti d'une seule piste (0, face 0) à blocs secteur explicites."""
+    sectors = 9
+    data = bytearray()
+    for s in range(sectors):
+        data += (b"\x5a\xa5" if s == 1 else bytes([0xd0 + s, 0])) * 256
+    descriptors = bytearray()
+    for s in range(sectors):
+        number = s + 1
+        crc = crc16_ccitt(bytes([0xa1, 0xa1, 0xa1, 0xfe, 0, 0, number, 2]))
+        descriptors += struct.pack("<IHH", s * 512, STX_SECTOR_BYTE[s] * 8,
+                                   STX_READ_TIME if number == 2 else 0)
+        descriptors += bytes([0, 0, number, 2]) + struct.pack(">H", crc) + bytes([0, 0])
+    block = 16 + len(descriptors) + len(data)
+    track = struct.pack("<IIHHHBB", block, 0, sectors, 0x01, 6250, 0, 0)  # SECTOR_BLOCK
+    header = b"RSY\0" + struct.pack("<HHHBB", 3, 1, 0, 1, 2) + bytes(4)
+    return header + track + descriptors + bytes(data)
 
 
 def disk_image():

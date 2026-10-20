@@ -294,7 +294,7 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | ikbd.c:1484 + $14 immédiat (Utopos) | Ikbd.cpp:618-636, 391-397 | porté | PrevJoyData même si tampon plein. |
 | ikbd.c:1382-1422, 2050-2095 (paquets souris) | Ikbd.cpp:745-852, 706-718, 808-823 | porté | Seuil/échelle/axe Y/front sans mouvement (Vroom). |
 | ikbd.c:1118+ + 1065-1091 (horloge BCD 6301) | Ikbd.cpp:854-886, 59-69 | porté | Année 99→00 (Captain Blood). |
-| ikbd.c:386+, 3012+ (code 6301 custom, CRC) | Ikbd.cpp:982-1141, 30-45 | porté | 6 programmes au CRC ; seul le délai 7000 cyc du $83 Froggies manque (→ couvert par candidat n°16). |
+| ikbd.c:386+, 3012+ (code 6301 custom, CRC) | `Ikbd::commonBoot`, `crc32AddByte` | porté (empreinte d'Hatari reprise à l'identique le 2026-10-20 : le vrai CRC32 ne reconnaissait aucun programme réel) | 6 programmes au CRC ; seul le délai 7000 cyc du $83 Froggies manque (→ couvert par candidat n°16). |
 | ikbd.c:1736-1757 (PressSTKey) | Ikbd.cpp:720-730 | porté | ScanCodeState, filtrage monitoring. |
 | keymap.c | gui/InputCallbacks.cpp (onKey) + gui/StKeys | volontaire | Plomberie frontend (GLFW vs SDL). |
 | midi.c:143-184 (MIDI_UpdateIRQ + Control_Read) | MidiAcia.cpp:21-40, 81-89 | porté | Wire-OR GPIP4. |

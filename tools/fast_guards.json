@@ -1,0 +1,90 @@
+{
+  "_doc": "A38 : registre des contrôles du palier fast. Pour chaque étape (libellé EXACT de run_all.py) : date de pose et DERNIER DÉCLENCHEMENT RÉEL — un défaut véritable arrêté, jamais un fil-piège ni une mutation volontaire. Un déclenchement réel se consigne ici dans le commit qui corrige le défaut. Règle de retrait : sans déclenchement réel depuis plus de review_after_days jours, le contrôle se rejustifie (pourquoi le garder ?) ou s'en va ; run_all.py --tier fast les liste, sans échouer.",
+  "review_after_days": 180,
+  "guards": {
+    "P0 auto-test logique pure (hostpath — sémantiques POSIX ET Windows)": {
+      "since": "2026-08-17",
+      "last_real_catch": {"date": "2026-08-17", "what": "issue #37 : sémantique des chemins Windows invisible depuis macOS et la CI Linux", "source": "commentaire de run_all.py"}
+    },
+    "P0 auto-tests logique (tous les *_selftest du manifeste etalons.json)": {
+      "since": "2026-07-09",
+      "last_real_catch": null
+    },
+    "Fuzzing des parseurs d'images disquette (.msa / .dim / .stx)": {
+      "since": "2026-08-27",
+      "last_real_catch": null
+    },
+    "P0 STX WRITE TRACK (image forgée, ré-interprétation + round-trip .wd1772)": {
+      "since": "2026-08-27",
+      "last_real_catch": null
+    },
+    "Pixels rapides (overscan_top + trace_odd + scroll_8264 + blitter_timer)": {
+      "since": "2026-08-27",
+      "last_real_catch": null
+    },
+    "Ancres de documentation (les symboles cités existent-ils encore ?)": {
+      "since": "2026-08-26",
+      "last_real_catch": {"date": "2026-08-26", "what": "renommage Blitter::stallCpu → billCycles : l'inventaire pointait dans le vide", "source": "commentaire de run_all.py"}
+    },
+    "Pictogrammes de l'interface (présents dans la police, non masqués)": {
+      "since": "2026-08-30",
+      "last_real_catch": {"date": "2026-08-30", "what": "pictogramme de la note de la page MIDI masqué par DejaVu Sans", "source": "commentaire de run_all.py"}
+    },
+    "Affirmations chiffrées de la doc (les nombres cités disent-ils encore vrai ?)": {
+      "since": "2026-08-27",
+      "last_real_catch": {"date": "2026-10-20", "what": "réorganisation du TODO : quatre affirmations gardées retirées sans mise à jour de CLAIMS", "source": "CHANGELOG 2026-10-20"}
+    },
+    "Composants tiers livrés (chacun est-il nommé, avec sa licence ?)": {
+      "since": "2026-08-28",
+      "last_real_catch": {"date": "2026-08-28", "what": "GLFW, statique dans tous les paquets de bureau, nommé nulle part", "source": "commentaire de run_all.py"}
+    },
+    "Verrous NEOST_* du cœur (comportement d'émulation vs trace)": {
+      "since": "2026-08-28",
+      "last_real_catch": null
+    },
+    "Cohérence de version (CMakeLists ↔ CHANGELOG ↔ releases)": {
+      "since": "2026-08-28",
+      "last_real_catch": {"date": "2026-08-28", "what": "version 0.5.3 sautée sans trace", "source": "CHANGELOG § Numéros de version sautés"}
+    },
+    "Harnais headless (options de pilotage : répétabilité, durée d'appui, scancodes)": {
+      "since": "2026-08-26",
+      "last_real_catch": null
+    },
+    "P1 verdicts série (cartouche diagnostic)": {
+      "since": "2026-07-09",
+      "last_real_catch": null
+    },
+    "Cycle-bench (auto-régression du modèle de cycle 68000)": {
+      "since": "2026-07-09",
+      "last_real_catch": null
+    },
+    "Save-state round-trip (config par défaut)": {
+      "since": "2026-07-09",
+      "last_real_catch": null
+    },
+    "Serveur == boucle --frames (observation, entrées, écran, état exporté)": {
+      "since": "2026-09-04",
+      "last_real_catch": null
+    },
+    "Serveur : disquette à chaud vue par le TOS, lecteur B débranché (_nflops = 1)": {
+      "since": "2026-10-01",
+      "last_real_catch": null
+    },
+    "Disquette livrée (disks/diskA.st : FAT12 valide, conforme au générateur)": {
+      "since": "2026-08-16",
+      "last_real_catch": null
+    },
+    "Séquenceur MIDI (Cubase Lite joue un SMF → notes/tempo comparés)": {
+      "since": "2026-08-23",
+      "last_real_catch": null
+    },
+    "Boot GUI (400 trames EmuTOS, capture du framebuffer)": {
+      "since": "2026-08-17",
+      "last_real_catch": {"date": "2026-09-23", "what": "capture uniforme : le GUI montait le lecteur A du neost.cfg utilisateur", "source": "commentaire de run_all.py"}
+    },
+    "Boot GUI — la capture montre quelque chose": {
+      "since": "2026-08-17",
+      "last_real_catch": {"date": "2026-09-23", "what": "même cas : capture uniforme repérée", "source": "commentaire de run_all.py"}
+    }
+  }
+}
