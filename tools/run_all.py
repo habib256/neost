@@ -22,6 +22,8 @@ import os
 import re
 import subprocess
 import sys
+import time
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -195,6 +197,14 @@ FULL = FAST + [
      [sys.executable, str(TOOLS / "run_megaste_bus_oracle.py")]),
     ("MegaSTE blitter/IRQ : données, répétabilité et conservation des cycles bus",
      [sys.executable, str(TOOLS / "run_megaste_blitter_checks.py")]),
+    # Programmes de la suite de tests d'Hatari (cycles, blitter, bus errors par
+    # machine) avec leurs résultats attendus versionnés. Arbre Hatari absent → SKIP.
+    ("Suite de tests d'Hatari (cycles, blitter, bus errors ST/MegaST/STE/MegaSTE)",
+     [sys.executable, str(TOOLS / "run_hatari_suite.py")]),
+    # Oracles FPU : CIR NeoST contre le vrai SoftFloat d'Hatari compilé (orphelins
+    # jusqu'au 2026-10-20 : aucun palier ne les lançait).
+    ("Oracles FPU bit-exact (SoftFloat et FPSP d'Hatari compilés)",
+     [sys.executable, str(TOOLS / "run_fpu_oracles.py")]),
     # Barrière de DÉBIT (chantier A6). Dans le palier FULL et non FAST : il mesure du
     # temps mur, donc il coûte quelques secondes et il est le seul verdict du dépôt
     # sensible à la charge de la machine. Il garde des RATIOS entre charges mesurées
@@ -299,12 +309,54 @@ def fast_tier_proprietary(steps) -> list[str]:
     return hits
 
 
-def run_tier(steps, skipped=()) -> int:
+# A38 : chaque contrôle du palier fast est inscrit, avec son dernier déclenchement
+# RÉEL. Le registre vit à côté des étapes ; une étape non inscrite est refusée.
+GUARDS = TOOLS / "fast_guards.json"
+
+
+def check_guard_registry(labels) -> int:
+    reg = json.loads(GUARDS.read_text())["guards"]
+    missing = [label for label in labels if label not in reg]
+    stale = [label for label in reg if label not in labels]
+    for label in missing:
+        print(f"✗ étape fast absente de {GUARDS.name} : {label}", file=sys.stderr)
+    for label in stale:
+        print(f"✗ {GUARDS.name} inscrit une étape qui n'existe plus : {label}", file=sys.stderr)
+    return 2 if missing or stale else 0
+
+
+def report_guards(durations) -> None:
+    """Mur du palier, puis les contrôles à rejustifier (information, jamais un échec)."""
+    data = json.loads(GUARDS.read_text())
+    limit = data["review_after_days"]
+    total = sum(durations.values())
+    print(f"\nMur du palier fast : {total:.1f} s, {len(durations)} étapes ; les plus lentes :")
+    for label, seconds in sorted(durations.items(), key=lambda kv: -kv[1])[:5]:
+        print(f"    {seconds:6.1f} s  {label}")
+    review = []
+    for label in durations:
+        entry = data["guards"][label]
+        catch = entry["last_real_catch"]
+        ref = date.fromisoformat(catch["date"] if catch else entry["since"])
+        age = (date.today() - ref).days
+        if age > limit:
+            review.append((age, label, "dernier déclenchement" if catch else "posé"))
+    if review:
+        print(f"Contrôles sans déclenchement réel depuis plus de {limit} jours "
+              f"(à rejustifier ou retirer, cf. {GUARDS.name}) :")
+        for age, label, what in sorted(review, reverse=True):
+            print(f"    {label} — {what} il y a {age} jours")
+
+
+def run_tier(steps, skipped=(), fast=False) -> int:
     ok = True
     skipped = list(skipped)
+    durations = {}
     for label, cmd in steps:
         print(f"\n########## {label} ##########")
+        start = time.monotonic()
         rc = subprocess.run(cmd, cwd=ROOT).returncode
+        durations[label] = time.monotonic() - start
         if rc == EXIT_SKIPPED:
             skipped.append(label)
             print(f"  → SAUTÉE, recensée ({label})")
@@ -312,6 +364,8 @@ def run_tier(steps, skipped=()) -> int:
             ok = False
             print(f"  → ÉCHEC ({label})")
     print("\n" + ("=" * 60))
+    if fast:
+        report_guards(durations)
     if skipped:
         print(f"⚠ {len(skipped)} étape(s) NON EXÉCUTÉE(S) — données non redistribuables "
               "absentes (restauration : tools/private_assets.sh unpack) :")
@@ -360,6 +414,10 @@ def main() -> int:
         for h in hits:
             print(f"    {h}", file=sys.stderr)
         return 2
+    if args.tier == "fast":
+        rc = check_guard_registry([label for label, _ in FAST + GUI_STEPS])
+        if rc:
+            return rc
     skipped = []
     skip = gui_available()
     if skip is None:
@@ -367,7 +425,7 @@ def main() -> int:
     else:
         print(f"⚠ Boot GUI SAUTÉ (recensé) : {skip}")
         skipped.append(f"Boot GUI ({skip})")
-    return run_tier(steps, skipped)
+    return run_tier(steps, skipped, fast=args.tier == "fast")
 
 
 if __name__ == "__main__":

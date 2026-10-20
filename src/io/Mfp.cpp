@@ -7,6 +7,7 @@
 #include "core/Pacing.hpp"   // kCpuHzInt — UNE horloge CPU pour tout l'arbre
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 // NEOST_MFP_EXACT : broche IRQ MFP au cycle exact (port fidèle du couple
 // MFP_TimerB_EventCount + MFP_ProcessIRQ de Hatari). bit0 = ANTI-DATATION du tic
@@ -969,6 +970,35 @@ bool Mfp::mfpSelfTest() {
     for (int i = 1; i < 25; ++i)
         timerProbe.scheduleTimerAt(2, 0, /*fromCounter=*/false);
     chk("TimerC reste accumulé x25", timerSched.rawCyclesUntil(Scheduler::TIMER_C), 1002656);
+
+    // Les trois autres timers, chacun sur un prescaler distinct, et la donnée 0 qui
+    // vaut 256. Attendus calculés hors du code : floor(p×d×256×31333/9600), puis
+    // plafond à l'échéance (CycInt d'Hatari).
+    struct DelayCase { const char* name; int timer; int ctrl; int data; int64_t sub, first, x25; };
+    static constexpr DelayCase kDelay[] = {
+        {"TimerA /4 d192",   0, 1, 192,  641699,  2507,  62666},
+        {"TimerB /16 d83",   1, 3,  83, 1109605,  4335, 108360},
+        {"TimerD /200 d17",  3, 7,  17, 2840858, 11098, 277428},
+        {"TimerA /4 d0=256", 0, 1,   0,  855599,  3343,  83555},
+    };
+    for (const DelayCase& c : kDelay) {
+        Scheduler s;
+        Mfp m;
+        m.setScheduler(&s);
+        const uint8_t d = uint8_t(c.data);
+        switch (c.timer) {
+            case 0:  m.timer_[0x19] = uint8_t(c.ctrl); m.timer_[0x1F] = d; m.taCounter_ = d; break;
+            case 1:  m.tbcr_ = uint8_t(c.ctrl); m.tbReload_ = d; m.tbCounter_ = d; break;
+            default: m.timer_[0x1D] = uint8_t(c.ctrl); m.timer_[0x25] = d; m.tdCounter_ = d; break;
+        }
+        const Scheduler::Source src = kTimerSrc[c.timer];
+        m.scheduleTimerAt(c.timer, 0, /*fromCounter=*/true);
+        const std::string n = c.name;
+        chk((n + " 1re échéance").c_str(), s.rawCyclesUntil(src), c.first);
+        chk((n + " période sub-cycle").c_str(), m.timerDueSub_[c.timer], c.sub);
+        for (int i = 1; i < 25; ++i) m.scheduleTimerAt(c.timer, 0, /*fromCounter=*/false);
+        chk((n + " reste accumulé x25").c_str(), s.rawCyclesUntil(src), c.x25);
+    }
 
     // --- (e) reset() RELÂCHE toutes les lignes d'ENTRÉE ------------------------------
     // Ce sont des entrées, jamais recalculées à la lecture : celle qu'un reset oublie

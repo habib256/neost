@@ -40,14 +40,11 @@ Premier tri proposé ; le détail est dans la section indiquée.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | GEMDOS : codes d'erreur face à `gemdos.c` | P2 | 4.9 |
-| 2 | A9 : `struct Frame` puis découpe d'`appLoop` | P2 | 7 |
-| 3 | A38 : trace du dernier déclenchement réel des contrôles `fast` | P2 | 7 |
-| 4 | Étalon spec512 généré (remplace les 3 `spectrum512_diapo*`) | P2 | 3 |
-| 5 | Comparaison temporelle Hatari : sonde STX | P2 | 8 |
-| 6 | FPU : transcendantes encore en double hôte | P2 | 4.8 |
-| 7 | Lethal Xcess : re-vérifier en GUI | P2 | 5 |
-| 8 | Cadrer l'écart d'angle de rotation disquette (~9 500 cycles) avec Hatari | P2 | 4.6 |
+| 1 | A9 : `struct Frame` puis découpe d'`appLoop` | P2 | 7 |
+| 2 | Suite Hatari `screen` : NeoST = référence décalée de 4 px sur `flixfull` | P2 | 8 |
+| 3 | A32 : `VideoCounter` en objet membre (après A9, un chantier à la fois) | P2 | 7 |
+| 4 | Suite Hatari : programmes à verdict console (`cpu`, `gemdos`, `xbios`, `mem_end`) et `screen` | P2 | 8 |
+| 5 | EtherNEC : livrer les pilotes libres GPL dans les paquets | P2 | 3 |
 
 Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 
@@ -93,6 +90,17 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
   (hardware.atari.org), puis ajuster `Bus::read8Slow`.
 - **`union_demo`** · P3 ⏸ média — disque absent (planetemu manuel) ; appliquer la recette
   de migration A10 à son retour.
+- **Lethal Xcess, *Seven Gates of Jambala*, démo Froggies** · P2 ⏸ média — absents de ce
+  poste (`disks/stx/` non restauré). Lethal Xcess : titre « buggé à ~8 % » en GUI, sans doute
+  la calibration `$8209` déjà réparée en jeu. Seven Gates : valider le recalage Timer B après
+  écriture AER3 (porté le 2026-10-19). Froggies : jamais validée de bout en bout (IKBD).
+- **EtherNEC sous TOS 1.04** · P2 ⏸ média — valider STinG + `ENEC.STX` (DHCP, ping, GET),
+  consigner dans `docs/CASE_STUDIES.md`. TOS 1.04 absent de ce poste.
+- **GEMDOS : écarts communs à NeoST et Hatari face au vrai TOS** · P3 ⏸ mesure — Fdelete et
+  Fopen sur un dossier (EACCDN/ERROR, TOS rend probablement EFILNF), Frename entre
+  systèmes de fichiers hôtes (ERROR, TOS : ENSAME), Fwrite sur un fichier ouvert en
+  lecture (ERROR à l'écriture, TOS refuse à l'ouverture), Dsetpath sur un chemin terminé
+  par un masque. À relever sur TOS réel avant de diverger d'Hatari.
 - **Stardust STE** · P3 ⏸ média — l'oracle affiche « INSERT DISK 2 IN ANY DRIVE » là où
   NeoST fond au noir puis scrute le lecteur B ; disquettes 2/3 absentes.
 - **Exceptions vidéo E605 / Tekila** · P3 ⏸ programme — hacks par opcodes (FIXME) chez
@@ -106,20 +114,17 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 
 ## 3. Release & distribution
 
-- **A10 — 3 étalons adossés à une ROM Atari** · P2 ◐ — depuis la purge, le corpus est local
-  par construction : **38 étalons pixel sur 42** tournent sans TOS Atari (A3). Les quatre restants :
-  - `spectrum512_diapo`, `_diapo2`, `_diapo_ste` : **migration EmuTOS réfutée, ne pas
-    retenter** (lancement par `AUTO`, l'oracle Hatari+EmuTOS échoue pareil). Seule voie :
-    un **étalon généré** dans l'esprit de `tools/make_overscan_test.py`. La couverture
-    « palette en cours de ligne » est déjà rendue par `spec512_bands`.
-  - `union_demo` → § 2.
-  - Recette de migration : balayer les trames **au pas de 1** et retenir celle à 0 px,
-    jamais la moins mauvaise (détail dans le `rom_note` d'`etalons.json`).
+- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **39 étalons pixel sur 43** tournent
+  sans TOS Atari (A3). Les trois `spectrum512_diapo*` restent des SKIP recensés
+  (**migration EmuTOS réfutée, ne pas retenter**) ; leur motif est désormais rendu par
+  `spec512_view`, étalon généré (oracle Hatari à 0 px). `union_demo` → § 2. Recette de
+  migration : balayer les trames **au pas de 1** et retenir celle à 0 px, jamais la moins
+  mauvaise (`rom_note` d'`etalons.json`).
 - **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne à lui seul le mur du palier pixel
   (~45 s). Trois calendriers d'espaces essayés en vain : il faut d'abord savoir QUAND la
   démo relit le clavier.
-- **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — avec la validation
-  TOS 1.04 du § 6.
+- **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — STinG + `ENEC.STX` ;
+  la validation sous TOS 1.04 attend son média (§ 2).
 
 ---
 
@@ -136,16 +141,13 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 - Mesures matérielles → § 2.
 
 ### 4.2 MFP 68901 & interruptions
-- Latence IACK MegaSTE → § 2.
-- **Timer B après écriture AER3** · P2 ⭘ — recalage porté le 2026-10-19 ; valider sur les
-  données de *Seven Gates of Jambala*.
+- Latence IACK MegaSTE → § 2. Validation de Timer B sur *Seven Gates of Jambala* → § 2.
 
 ### 4.3 ACIA 6850 / IKBD HD6301
 - **Liaison série physique** · P3 ⭘ — formats et diviseurs autres que /64 8N1 (clavier),
   phase SCI sortante exacte ; ligne BREAK et erreurs de trame qui en découlent hors modèle.
 - **Firmware IKBD** · P3 ⭘ — modes souris absolus sous mise à l'échelle, horloge, code
   6301 custom (`Execute`) ; modes `$18`/`$19` reconnus mais non émulés (comme Hatari).
-- **Démo Froggies complète** · P2 ⭘ — jamais validée de bout en bout.
 - **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; forme d'onde
   BREAK non simulée.
 
@@ -160,10 +162,6 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 
 ### 4.6 FDC WD1772 / DMA / ACSI
 - Test F de STE_Test → § 2.
-- **Angle de rotation à l'armement** · P2 ⭘ — sur la sonde `fdc_write`, NeoST rencontre le
-  secteur ~9 500 cycles plus tard qu'Hatari (même image, même programme). Intervalles et
-  fin identiques ; l'attente initiale est exclue des deux sondes FDC. Confronter la phase
-  d'index au boot (`fdc.c`) avant d'en faire une divergence.
 - **ACSI : essai Idris OS** · P3 ⭘ — jamais tenté.
 
 ### 4.7 RTC RP5C15
@@ -171,13 +169,14 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
   à zéro selon MAME, sans mesure du bus flottant réel.
 
 ### 4.8 FPU MC68881
-- **Transcendantes en double hôte** · P2 ⭘ — seul calcul encore non bit-exact.
 - **k dynamique** · P3 ⭘ — fixé à 17 : le dialogue périphérique ne transmet pas Dn.
-- Les bancs comparent au moteur Hatari, pas à un 68881 physique.
+- **Silicium** · P3 ⏸ matériel — tout est bit à bit avec Hatari, transcendantes FPSP
+  comprises, mais le 68881 réel calcule par microcode CORDIC : dernier bit non garanti,
+  et « zéro » non normalisé après underflow simple/double à vérifier (probable vrai ±0).
 
 ### 4.9 GEMDOS (disque hôte)
-- **Codes d'erreur face à `gemdos.c`** · P2 ◐ — handles, Pexec, reprise et Fsfirst/DTA
-  couverts ; le reste des chemins d'erreur à confronter.
+- Codes d'erreur confrontés à `gemdos.c` le 2026-10-20 (portage 1:1, écarts consignés dans
+  `docs/HATARI_DIVERGENCES.md`) ; écarts communs avec le vrai TOS → § 2.
 
 ### 4.10 Cartouche & profils machine
 - **Port cartouche générique** `$FA0000-$FBFFFF` · P3 ⭘ — au-delà du système GEMDOS ;
@@ -195,7 +194,7 @@ TOS 1.02fr sauf mention ; chemins sous `disks/st/` ou `disks/stx/`.
 | Jeu | Prio | Symptôme | Piste |
 |-----|------|----------|-------|
 | **Shadow Warriors** (2Hot2Handle) | P1 ⏸ | Le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). | Disque absent → § 2. |
-| **Lethal Xcess** | P2 | Titre « buggé à ~8 % » en GUI (2026-07-02). | Probablement la calibration `$8209` déjà réparée en jeu ; re-vérifier en GUI. |
+| **Lethal Xcess** | P2 ⏸ | Titre « buggé à ~8 % » en GUI (2026-07-02). | Disque absent → § 2. |
 
 > ⚠ **Avant de déclarer un bug : vérifier la RAM, puis la ROM.** Les cas déjà tranchés
 > (Captain Blood, Enchanted Land, Cuddly, Rick Dangerous II, Stardust, Spectrum 512 STE,
@@ -220,8 +219,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 - **Appareils homonymes sous ALSA** · P3 ⭘ — indiscernables quand un seul est branché.
 
 ### Réseau, stockage, ports
-- **EtherNEC sous TOS 1.04** · P2 ⭘ — valider STinG + `ENEC.STX` (DHCP, ping, GET),
-  consigner dans `docs/CASE_STUDIES.md`.
+- **EtherNEC** : validation sous TOS 1.04 → § 2 ; pilotes GPL dans les paquets → § 3.
 - **UltraSatan : `US_CONF.TOS` réel** · P3 ⭘ — compiler l'outil de Jookie (Pure C) et le
   passer sur NeoST ; idem HDDRIVER / ICD PRO sur une image à deux slots.
 - **NetUSBee : périphériques USB** · P3 ⭘ — l'ISP1160 est un hub racine vide ; brancher HID
@@ -251,9 +249,10 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
 - **Suivre l'amont Moira** · P3 ⭘ — 10 commits non portés depuis le pin (68020/68030,
   vAmiga, empreinte mémoire) ; rien pour le 68000 hormis DIVU/DIVS, porté. Rejouer
   `tools/run_moira_runner.sh` à chaque patch du cœur.
-- **A38 — les 17 outils du palier `fast`** · P2 ⭘ — tenir pour chacun la trace de son
-  dernier déclenchement RÉEL, fixer une règle de retrait, re-mesurer le mur du palier
-  à chaque ajout.
+- **A38 — tenue du registre** · P3 ⭘ — `tools/fast_guards.json` inscrit les 21 étapes du
+  palier `fast` (refus d'une étape non inscrite) et `run_all.py` affiche le mur et les
+  contrôles sans déclenchement réel depuis 180 jours. Reste à y consigner chaque vrai
+  déclenchement, dans le commit qui corrige le défaut.
 - **A39 — modules jamais audités** · P3 ◐ — pile réseau `src/net` (couverte par le
   comportement seulement) ; un test par COUCHE du bac à sable GEMDOS (le test actuel ne
   rougit qu'en retirant les deux défenses), à décider car il couple test et implémentation.
@@ -279,12 +278,18 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
 
 ## 8. Tests & outillage
 
-- **Comparaison temporelle Hatari : sonde STX** · P2 ⭘ — 19 sondes passent, dont l'écriture
-  DMA disquette et DIVU/DIVS en RAM ; manque une lecture depuis une image STX (générateur
-  Pasti à écrire). Le résidu global blitter/IRQ MegaSTE 16 MHz est réduit au seul segment
-  IACK→handler, qui attend la capture matérielle (§ 2). → [`docs/HATARI_MEGASTE_AUDIT.md`](docs/HATARI_MEGASTE_AUDIT.md)
-- **Self-tests puce nue supplémentaires** · P2 ⭘ — autres Timers MFP, ACIA.
-- **Étalons à calibrer** · P2 ⭘ — Troed, Hatari Test Suite (frames + références) ; Union → § 2.
+- **Suite de tests d'Hatari : restes** · P2 ◐ — `tools/run_hatari_suite.py` (palier `full`)
+  rejoue cycles, blitter et bus errors (ST, Mega ST, STE, MegaSTE) : 10/10. Restent les
+  programmes à verdict console (`cpu`, `gemdos`, `xbios`, `mem_end` : capturer Cconws ou
+  la sortie `--bios-intercept`), `screen` (référence PNG au format Hatari) et `serial`.
+- **`screen/flixfull.prg` (plein écran)** · P2 ⭘ — la capture NeoST est identique à la
+  référence d'Hatari (reproduite par l'Hatari épinglé) décalée de 4 px horizontalement.
+  Trancher entre cadrage de capture (`--screenshot-dir` en `--tos none`) et fenêtre gauche
+  en overscan (cf. A40) en repassant le programme par `hatari_oracle.sh`.
+- **Étalon Troed** · P3 ⭘ — à rapatrier et calibrer ; Union → § 2.
+- Banc temporel Hatari : 20 sondes, dont écriture DMA disquette, lecture STX et DIVU/DIVS ;
+  le résidu blitter/IRQ MegaSTE 16 MHz attend la capture IACK (§ 2).
+  → [`docs/HATARI_MEGASTE_AUDIT.md`](docs/HATARI_MEGASTE_AUDIT.md)
 - **Étalon spec512 en overscan** · P3 ⭘ — si une démo libre à bordures ouvertes est
   rapatriée (l'auto_diapo est sans bordure).
 - **Comparaison MAME ↔ NeoST** · P3 ⭘ — memory map, bus errors, FIFO FDC/MMU, blitter, SCC.

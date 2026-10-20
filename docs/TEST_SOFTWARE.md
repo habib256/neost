@@ -174,7 +174,11 @@ autonome, écran entièrement à l'index 1, `palette[1]` martelée trois fois pa
 cycles. La position horizontale de chaque bascule dépend du cycle exact de l'écriture —
 **0 px contre l'oracle Hatari**, sur ROM libre. ⚠ Son image n'est pas statique (période
 de 4 trames : la boucle et la trame ne sont pas commensurables) ; c'est sans conséquence,
-NeoST est déterministe et l'oracle a sa fenêtre de scan.
+NeoST est déterministe et l'oracle a sa fenêtre de scan. Depuis le 2026-10-20,
+`spec512_view` (`tools/make_spec512_view.py`) rend aussi le motif d'un VRAI
+visualiseur : 48 couleurs par ligne, les 16 registres rechargés trois fois par ligne
+par rafales `movem.l`, `palette[0]` compris. **0 px contre l'oracle**, re-dérivé deux
+fois ; `NEOST_RAM_SLOT=0` le fait rougir de 82 152 px.
 
 ### Les images disquette ne sont plus modifiées par les runs (A14, 2026-08-28)
 

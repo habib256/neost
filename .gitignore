@@ -108,3 +108,6 @@ wasm/
 /disks/etalons/spectrum_512_auto_diapo.st
 /dev/agt/
 /dev/reservoir-gods/
+
+# Worktrees des agents Claude Code (isolation) : jamais versionnés.
+/.claude/worktrees/

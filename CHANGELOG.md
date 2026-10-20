@@ -6,6 +6,33 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## FPU transcendantes bit-exact, suite Hatari rejouée, nouveaux étalons et sondes (2026-10-20)
+
+- **FPU : les 19 transcendantes en étendu 80 bits.** Port de `softfloat_fpsp.c`
+  (algorithmes FPSP, A. Grabher / Previous) dans `src/io/SoftFloatFpsp.hpp` ; plus aucun
+  calcul en `double` hôte. 1 050 564 comparaisons CIR contre le vrai FPSP d'Hatari
+  compilé (16 combinaisons précision × arrondi, seuils de branche ±1 ulp), 0 écart ;
+  la mutation `std::sin` est détectée. Les six oracles FPU, jusque-là lancés par aucun
+  palier, tournent au `full` (`tools/run_fpu_oracles.py`).
+- **Suite de tests d'Hatari rejouée sous NeoST** (`tools/run_hatari_suite.py`, palier
+  `full`) : `cycles`, `blitter` et `buserror` sur ST, Mega ST, STE, MegaSTE, lancés depuis
+  `C:\AUTO` d'un disque hôte, résultats comparés aux attendus d'Hatari : 10/10.
+  `screen/flixfull.prg` : capture identique à la référence décalée de 4 px, à trancher.
+- **Étalon `spec512_view`** : visualiseur façon Spectrum 512 généré (48 couleurs par
+  ligne, rafales `movem.l`), oracle Hatari à 0 px re-dérivé deux fois ; remplace le
+  motif des trois `spectrum512_diapo*` adossés à une ROM Atari.
+- **Sonde `fdc_read_stx`** : piste Pasti à descripteurs (IDs à angles non standard,
+  `ReadTime` 20 000 µs) ; banc temporel à 20 sondes, `stx.c` épinglé dans la référence.
+  L'écart d'angle de rotation entre émulateurs n'est pas une divergence : l'angle
+  initial est tiré au hasard des deux côtés.
+- **GEMDOS** : audit des codes d'erreur face à `gemdos.c` (portage 1:1). Corrigé : tampon
+  ou nom de fichier dans le port cartouche, refusé à tort. Consignés : défauts d'Hatari
+  non reproduits (Fwrite de taille négative, Pexec tronqué), écarts communs face au TOS.
+- **MFP** : tables de vérité puce nue du mode délai pour les quatre timers.
+- **A38** : registre `tools/fast_guards.json` des 21 étapes du palier `fast` (dernier
+  déclenchement réel daté), étape non inscrite refusée, mur et contrôles muets depuis
+  180 jours affichés par `run_all.py`.
+
 ## DIVU/DIVS rétabli, écriture DMA disquette comparée, outils AppImage épinglés (2026-10-20)
 
 - **DIVU/DIVS : cycles internes avant le préfetch (68000).** Le correctif du fork

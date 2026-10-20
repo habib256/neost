@@ -408,6 +408,30 @@ cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, 
   Racines identiques et confinement des chemins vérifiés au chargement.
   Les données des fichiers hôtes ne sont pas rembobinées.
 
+### GEMDOS HD — codes d'erreur (audit 2026-10-20)
+
+Confrontation appel par appel avec `gemdos.c` : valeurs des codes, table
+errno → GEMDOS et replis sur le TOS sont un portage 1:1. Écarts :
+
+- ✅ **Corrigé** : un tampon Fwrite ou un nom de fichier dans le port cartouche
+  (`$FA0000-$FBFFFF`) était refusé (ERANGE, ou repli TOS). Hatari l'accepte
+  (banque ABFLAG_ROM) et le TOS lit la mémoire sans contrôle. `GemdosHd::checkArea`
+  l'admet en lecture, jamais en écriture ; quatre contrôles dans `--gemdos-selftest`.
+- **NeoST plus sûr qu'Hatari, à conserver** : Fwrite de taille négative → ERANGE
+  (Hatari : `STmem_check` déborde en uint32, `fwrite` d'environ 4 Go, cpu/memory.c:604) ;
+  Pexec d'un PRG plus court que son en-tête annonce, ou d'une table de relocation à
+  3 octets de la fin → EPLFMT (Hatari lit hors tampon, gemdos.c:4422 et :4479) ;
+  effacement du tas avec `p_hitpa` < fin du BSS borné (Hatari boucle ~4 Go,
+  :4466) ; somme text+data+BSS en 64 bits (Hatari : 32 bits, :4410).
+- **Dsetpath sur un chemin terminé par un masque** (`C:\DIR\*.*`) : NeoST retire le
+  masque et rend EOK, Hatari rend EPTHNF. Comportement du bureau TOS 1.62 selon le
+  commentaire de NeoST, jamais relevé sur matériel.
+- **Écarts communs aux deux émulateurs face au TOS** (non corrigés, à mesurer) :
+  Fdelete/Fopen sur un dossier (EACCDN ou ERROR selon l'hôte, TOS probablement
+  EFILNF), Frename entre systèmes de fichiers hôtes (EXDEV → ERROR, TOS : ENSAME −48),
+  Fwrite sur un fichier ouvert en lecture (refus à l'écriture, TOS : à l'ouverture),
+  contrôles ERANGE/EINTRN des tampons propres aux émulateurs.
+
 ### ACIA 6850 / IKBD HD6301 / MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`
 
 - ✅ **Datation IRQ clavier (2026-10-19)** : front GPIP4 daté au transfert
@@ -1302,7 +1326,12 @@ divergences ne casse le boot. Trouvailles actionnables ci-dessous (terrain neuf 
   recale le TDR en attente ; un TSR engagé garde son stop mémorisé. Autres
   formats/diviseurs et phase SCI exacte toujours hors du modèle. Champs v39 inchangés.
 - **SCU encodage bit IRQ1 logicielle** — NeoST utilise le bit 1 (correct) vs bit 0 chez Hatari.
-- **FPU transcendantes** en double hôte ; socket vide → « not found » — corrects/hors périmètre.
+- **FPU transcendantes** : ✅ calculées depuis le 2026-10-20 par le port de `softfloat_fpsp.c`
+  (`src/io/SoftFloatFpsp.hpp`), bit à bit comme Hatari (1 050 564 comparaisons, 0 écart). Limites
+  connues, communes aux deux : algorithmes FPSP du 68040 et non microcode CORDIC du 68881 (dernier
+  bit non garanti sur silicium) ; « zéro » non normalisé après underflow en précision simple ou
+  double (`3F81:0…0`, traité Z), probablement un vrai ±0 sur 68881. Socket vide → « not found » —
+  correct/hors périmètre.
 
 ### Confirmé FIDÈLE 1:1 (scruté cette passe)
 ACSI : réception paquet (A1/ICD/LUN), **toutes** les commandes SCSI (TUR/REQ SENSE/RD-WR 6-10/

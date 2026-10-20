@@ -7,6 +7,22 @@ vient répondre à « NeoST gère-t-il X ? ».
 Pour *quand* une chose est arrivée → [`../CHANGELOG.md`](../CHANGELOG.md).
 Pour ce qui reste → [`../TODO.md`](../TODO.md).
 
+## Compléments du 2026-10-20
+
+- **CPU** : DIVU/DIVS font leurs cycles internes avant le préfetch (68000), comme Hatari
+  CE ; sonde temporelle `cpu_div_ram` exacte au cycle.
+- **GEMDOS** : tampons et noms de fichiers lus aussi dans le port cartouche
+  (`$FA0000-$FBFFFF`), comme le TOS ; codes d'erreur confrontés à `gemdos.c`.
+- **MFP** : tables de vérité puce nue du mode délai pour les quatre timers (prescalers
+  /4, /16, /64, /200, donnée 0 = 256), conversion MFP→CPU au 1/256ᵉ de cycle.
+- **Disquette** : écriture DMA et lecture STX (`ReadTime`, positions d'ID non standard)
+  comparées à Hatari par le banc temporel.
+- **FPU** : les 19 opérations transcendantes (FSIN… FSINCOS) en étendu 80 bits par le port
+  de `softfloat_fpsp.c`, bit à bit comme Hatari ; plus aucun calcul en `double` hôte.
+  Six oracles FPU désormais lancés au palier `full` (`tools/run_fpu_oracles.py`).
+- **Vidéo** : motif d'un visualiseur Spectrum 512 (48 couleurs par ligne, rafales
+  `movem.l`) à 0 px de l'oracle, étalon `spec512_view`.
+
 ## Compléments de fidélité du 2026-10-18
 
 - **ACSI** : IRQ de fin de DMA différée de 1000 cycles CPU, soit 1000 cycles bus

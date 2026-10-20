@@ -455,6 +455,11 @@ bool GemdosHd::checkArea(uint32_t addr, uint32_t size, bool allowRom) {
         uint32_t a = addr & 0x00FFFFFF;
         if (a >= bus_.romBase && a + size <= bus_.romBase + bus_.romWindowSize())
             return true;
+        // Port cartouche, lu par le TOS comme n'importe quelle mémoire (Hatari :
+        // banque ABFLAG_ROM, cpu/memory.c). Un tampon Fwrite ou un nom de fichier
+        // posé là était refusé (ERANGE, ou repli sur le TOS).
+        if (a >= stmap::CART_BASE && a + size <= stmap::CART_END)
+            return true;
     }
     return false;
 }
@@ -2076,6 +2081,18 @@ bool GemdosHd::sandboxSelfTest() {
                "  FAIL %-34s '%s' introuvable (rendu '%s')\n",
                "nom accentue NFD -> NFC", nfc.c_str(), got.c_str()); }
     }
+
+    // --- Zones lisibles par un appel GEMDOS : RAM, ROM TOS et port cartouche -------
+    // Le TOS lit un tampon Fwrite ou un nom de fichier n'importe où ; le port
+    // cartouche était refusé (audit codes d'erreur face à gemdos.c, 2026-10-20).
+    auto area = [&](const char* what, uint32_t a, uint32_t n, bool rom, bool want) {
+        if (checkArea(a, n, rom) == want) ++pass;
+        else { ++fail; std::fprintf(stderr, "  FAIL %-34s $%06X+%u\n", what, a, n); }
+    };
+    area("cartouche en lecture",      stmap::CART_BASE, 16, true, true);
+    area("fin de cartouche",          stmap::CART_END - 16, 16, true, true);
+    area("cartouche jamais en ecriture", stmap::CART_BASE, 16, false, false);
+    area("debordement apres cartouche", stmap::CART_END - 8, 16, true, false);
 
     unmount();
     stdfs::remove_all(root, ec);

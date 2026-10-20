@@ -407,9 +407,17 @@ FC0030: bra     $fc004e
   DMA disquette et le blitter HOG/partagé aux traces de référence Hatari,
   sans oracle local (palier `full`). `--oracle-check` rejoue Hatari
   deux fois et contrôle ses références sans les modifier (CI hebdomadaire).
-  Dix-neuf sondes : trois tailles de blit, MULU, TAS et exécution en RAM ST,
-  écriture DMA disquette et ordre des cycles de DIVU/DIVS en RAM ;
+  Vingt sondes : trois tailles de blit, MULU, TAS et exécution en RAM ST,
+  écriture DMA disquette, lecture STX et ordre des cycles de DIVU/DIVS en RAM ;
   aucune exception KNOWN.
+- **Suite de tests d'Hatari** : `python3 tools/run_hatari_suite.py` rejoue
+  `cycles`, `blitter` et `buserror` (ST, Mega ST, STE, MegaSTE) depuis
+  `C:\AUTO`, résultats comparés aux attendus d'Hatari (palier `full`).
+- **Registre des contrôles du palier `fast`** (A38) : `tools/fast_guards.json`
+  inscrit chaque étape avec son dernier déclenchement RÉEL ; `run_all.py`
+  refuse une étape non inscrite, affiche le mur du palier et les contrôles
+  muets depuis 180 jours. Consigner un vrai déclenchement dans le commit qui
+  corrige le défaut.
   `--strict` est conservé, la même politique s'applique désormais par défaut.
   Les traces portent les instructions réelles avant exécution ; IRQ et STOP
   ne produisent plus de doublons de continuation dans le comptage CPU.

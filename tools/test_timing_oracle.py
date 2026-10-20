@@ -112,7 +112,8 @@ class TimingComparison(unittest.TestCase):
                         mutant[field][12] += 8
                     self.assertFalse(timing.compare(case, mutant, reference))
                 if case.startswith("fdc_"):
-                    mutant = copy.deepcopy(baseline); mutant["completion"] += 8
+                    mutant = copy.deepcopy(baseline)
+                    mutant["completion"] += timing.LIMITS[case][1] + 1
                     self.assertFalse(timing.compare(case, mutant, reference))
 
     def test_div_order_is_exact(self):
@@ -125,6 +126,15 @@ class TimingComparison(unittest.TestCase):
                 mutant = copy.deepcopy(reference)
                 mutant[mark][3] -= 4
                 self.assertFalse(timing.compare("cpu_div_ram", mutant, reference))
+
+    def test_stx_read_time_is_honoured(self):
+        # ReadTime ignoré : le secteur repasse à 32 µs par octet (4 096 cycles par
+        # rafale au lieu de ~5 000) ; l'écart cumulé dépasse vite un tour de scrutation.
+        reference = self.all_reference["fdc_read_stx"]
+        mutant = copy.deepcopy(reference)
+        mutant["cycles"] = [t * 4096 // 5000 for t in mutant["cycles"]]
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertFalse(timing.compare("fdc_read_stx", mutant, reference))
 
     def test_fdc_write_tolerates_one_poll_only(self):
         reference = self.all_reference["fdc_write"]
