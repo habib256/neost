@@ -22,8 +22,9 @@
 //    FSCALE/FGETEXP/FGETMAN/FSGLxxx) en SOFTFLOAT 80 bits → MANTISSE 64 BITS
 //    RÉELLE (et non 53), arrondis FPCR + précision étendu/double/simple +
 //    drapeaux d'exception IEEE exacts (cf. SoftFloatX80.hpp).
-//  • Transcendantes (sin/cos/exp/log…) : via le FPU hôte (double) — le 68881 les
-//    approxime lui-même, la bit-exactitude est hors de portée (comme MAME/Previous).
+//  • Transcendantes (sin/cos/exp/log…) : algorithmes FPSP Motorola en étendu
+//    80 bits (SoftFloatFpsp.hpp), égaux bit à bit à Hatari/Previous ; le microcode
+//    CORDIC du 68881 réel peut différer d'un ulp (non documenté par Motorola).
 //  • Exceptions FP : positionnent le FPSR ET, si ACTIVÉES dans le FPCR, sont
 //    LIVRÉES via le Response CIR (primitive « Take Pre-Instruction Exception »,
 //    vecteur en octet bas) — seule voie en mode périphérique (pas de fil d'IRQ).
