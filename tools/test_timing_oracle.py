@@ -91,7 +91,7 @@ class TimingComparison(unittest.TestCase):
         self.assertFalse(self.check("timer_a", mutant))
 
     def test_transfer_mutations_and_strict_blitter(self):
-        for case in (c for c in self.all_reference if c == "fdc_read" or c.startswith("blitter_")):
+        for case in (c for c in self.all_reference if c.startswith(("fdc_", "blitter_"))):
             reference = self.all_reference[case]
             baseline = copy.deepcopy(reference)
             with contextlib.redirect_stdout(io.StringIO()):
@@ -103,7 +103,7 @@ class TimingComparison(unittest.TestCase):
                         legacy[field] = [t + delta for t in legacy[field]]
                     self.assertFalse(timing.compare(case, legacy, reference))
                     self.assertFalse(timing.compare(case, legacy, reference, strict=True))
-                for field in (("cycles", "polls") if case == "fdc_read" else ("durations", "irq_durations", "polls")):
+                for field in (("cycles", "polls") if case.startswith("fdc_") else ("durations", "irq_durations", "polls")):
                     mutant = copy.deepcopy(baseline)
                     if field == "cycles":
                         # DMA sans stall de 32 cycles : chaque rafale avance trop tôt.
@@ -111,9 +111,28 @@ class TimingComparison(unittest.TestCase):
                     else:
                         mutant[field][12] += 8
                     self.assertFalse(timing.compare(case, mutant, reference))
-                if case == "fdc_read":
+                if case.startswith("fdc_"):
                     mutant = copy.deepcopy(baseline); mutant["completion"] += 8
                     self.assertFalse(timing.compare(case, mutant, reference))
+
+    def test_div_order_is_exact(self):
+        # Préfetch de DIVU/DIVS avant les cycles internes : quatre cycles de moins
+        # sur une seule itération doivent suffire à faire échouer la sonde.
+        reference = self.all_reference["cpu_div_ram"]
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertTrue(timing.compare("cpu_div_ram", copy.deepcopy(reference), reference))
+            for mark in ("mark_divu", "mark_divs"):
+                mutant = copy.deepcopy(reference)
+                mutant[mark][3] -= 4
+                self.assertFalse(timing.compare("cpu_div_ram", mutant, reference))
+
+    def test_fdc_write_tolerates_one_poll_only(self):
+        reference = self.all_reference["fdc_write"]
+        with contextlib.redirect_stdout(io.StringIO()):
+            mutant = copy.deepcopy(reference); mutant["polls"][5] += 1
+            self.assertTrue(timing.compare("fdc_write", mutant, reference))
+            mutant["polls"][5] += 1
+            self.assertFalse(timing.compare("fdc_write", mutant, reference))
 
     def test_transfer_trace_integrity(self):
         for case in ("fdc_read", "blitter_shared"):

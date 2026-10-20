@@ -4,1168 +4,301 @@
 
 - Ce qui est fait, par puce → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md)
 - Titres déjà diagnostiqués (corrigés **ou** jugés fidèles) → [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md)
-- Chronologie (le clos détaillé vit là-bas, y compris tout ce qui a été retiré d'ici) → [`CHANGELOG.md`](CHANGELOG.md)
-
-**Objectif** : émuler proprement un **MegaSTE** (68000 8/16 MHz, 1/2/4 Mo, TOS 2.05/2.06, STE
-vidéo/son/joypads, blitter, RTC, SCC, SCU, ACSI — le disque interne d'époque est un pont
-ACSI-SCSI, PAS un NCR5380, DD/HD) avec un timing assez fidèle pour jeux, démos et utilitaires.
-**Atteint et GARDÉ** (2026-08-27) : `tools/run_megaste_diag.py` rejoue la suite Q du
-diagnostic Field Service (12/12) à chaque palier `full`. Ce qui suit affine, il ne
-conditionne plus l'objectif.
-
-**Cible : le matériel réel**, documenté et mesuré. Les émulateurs servent de
-références comparatives, avec leurs limites (cf. [`CLAUDE.md`](CLAUDE.md)) :
-- **Hatari** (`extern/hatari/src/*.c`) — référence d’implémentation ST/STE/MegaSTE ;
-  ses erreurs confirmées ne doivent pas être reproduites.
-- **MAME** (`src/mame/atari/atarist.cpp`, `stmmu.cpp`, `stvideo.cpp`, devices `mc68901`,
-  `wd_fdc`, `6850acia`, `z80scc`, `rp5c15`, `ay8910`, `lmc1992`) — composants séparés.
-
-**Documentation connexe** :
+- Chronologie (tout ce qui a été retiré d'ici) → [`CHANGELOG.md`](CHANGELOG.md)
+- Écarts NeoST↔Hatari, `fichier:ligne` des deux côtés → [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md)
 - Précision cycle (modèle, acquis, restant) → [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md)
-- Beam-sync (chantier CLOS — journal, « ÉTAT COURANT » en tête) → [`docs/MOIRA_WINUAE_CONVERGENCE.md`](docs/MOIRA_WINUAE_CONVERGENCE.md)
-- Divergences NeoST↔Hatari (inventaire maître) → [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md)
 - Logiciels étalons par sous-système → [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md)
 
----
+**Objectif** : émuler proprement un **MegaSTE** (68000 8/16 MHz, 1/2/4 Mo, TOS 2.05/2.06, STE
+vidéo/son/joypads, blitter, RTC, SCC, SCU, ACSI, DD/HD) avec un timing assez fidèle pour jeux,
+démos et utilitaires. **Atteint et GARDÉ** depuis le 2026-08-27 : `tools/run_megaste_diag.py`
+rejoue la suite Q du diagnostic Field Service (12/12) à chaque palier `full`. Ce qui suit
+affine ; rien ne conditionne plus l'objectif.
 
-## Latence IACK MegaSTE — capture matérielle à faire (2026-10-19)
+**Cible : le matériel réel.** Hatari (`extern/hatari/src`) et MAME sont des références
+comparatives ; une erreur confirmée de l'un d'eux ne se reproduit pas (cf. [`CLAUDE.md`](CLAUDE.md)).
+Aucune divergence de sévérité haute n'est ouverte.
 
-Le transfert blitter et les phases avant IACK concordent avec le Hatari
-diagnostique corrigé. Convertir expérimentalement l'attente MFP d'Hatari
-en cycles bus réduit le résidu IACK→handler à +3/+4 cycles à 16 MHz.
-Cette expérience ne valide ni sa constante 12 ni la calibration 16 de NeoST.
-Ne pas modifier les délais du blitter pour absorber ce résidu.
+### Règles de tenue de ce fichier
 
-Le PRG relogeable et la disquette AUTO sont prêts :
-`python3 tools/make_mfp_iack_probe.py`. Les contrôles cartouche, AUTO MegaSTE
-et refus ST/STE passent (`python3 tools/run_mfp_iack_probe.py`). Il reste à
-capturer CLK CPU/MFP, IACK et les DTACK de la puce et du CPU sur un MegaSTE,
-aux trois régimes CPU/cache. [Protocole](docs/MFP_IACK_MEASUREMENT.md).
-
-## `--fastfdc` : mémoire altérée après une série de Flopfmt (bancs TOS File Cmd, 2026-09-23) — RÉSOLU le 2026-10-01
-
-**Résolution** : ce n'était ni le DMA ni EmuTOS. Un appel GEMDOS du disque hôte était
-**servi deux fois** quand une IRQ était prenable à la frontière de l'opcode magique $0008 :
-le Fread de 2 octets était rejoué au `rte`. Corrigé en traitant l'opcode dans le gestionnaire
-d'instruction, comme Hatari (CHANGELOG 2026-10-01). Le repro échoue sur l'ancien code et passe
-avec le correctif (4 cas sur 4). Le `--fastfdc` ne faisait que déplacer le minutage.
-Garde : auto-test série `gemdos_irq`. Les deux souhaits en fin de section sont livrés eux
-aussi.
-
-**Reproduction** (TOS File Cmd commit `f477b3c`, EmuTOS 192 Ko US de l'arbre, `--machine st --mem 1m`) :
-
-    cd ../tosfilecmd && make disk && python3 bench/repro/fastfdc_format.py
-
-| mode | formatage 720 Ko de B: puis écriture d'un .MSA sur B: | écriture seule |
-|---|---|---|
-| `--fastfdc` | **« Floppy not written / Track 73 / Unknown floppy format »** | OK |
-| FDC réel (sans `--fastfdc`) | OK | OK |
-
-Reproduit à chaque passage (5 sur 5, dans trois scripts différents). Le formatage fait 160 `Flopfmt` (XBIOS 10,
-entrelacement 1, `$E5E5`), puis 18 `Flopwr`/`Floprd` d'un secteur ; l'écriture relit
-`C:\SAMPLE.MSA` (lecteur hôte) piste par piste et fait `Flopfmt`+`Flopwr`+`Floprd` par piste.
-
-**Ce qu'on voit** : `NEOST_GEMDOS_TRACE` montre, pour la piste fautive, `Fseek` correct puis
-`Fread` de 2 octets (l'en-tête de piste, qui vaut 4 dans le fichier) puis un `Fread` de
-**2** octets au lieu de 4 : la longueur lue juste avant a changé en mémoire (variable locale
-sur la pile de TOSFC) entre les deux appels. Selon la disposition mémoire du programme, le
-symptôme se déplace (piste 73, ou dès l'index du .MSA) ou disparaît (ajouter ~150 octets de
-code à TOSFC suffit).
-
-**Ce qui est exclu côté TOSFC** : le même code passe sur l'hôte (faux GEMDOS/XBIOS,
-AddressSanitizer) ; aucun de ses gestionnaires d'interruption (souris IKBD, `etv_critic`) n'écrit
-ailleurs que dans ses propres variables ; le changement de disquette forcé (`hdv_mediach`) seul,
-sans formatage, ne déclenche rien ; seul le mode `--fastfdc` change l'issue. **Hypothèse** :
-un transfert DMA (ou l'état DMA laissé par WRITE TRACK en mode rapide) qui écrit en mémoire
-hors de la fenêtre du dernier appel XBIOS — à confirmer contre Hatari ; EmuTOS n'est pas exclu.
-Côté TOSFC, `bench/disktools.py` tourne donc sans `--fastfdc` en attendant.
-
-À titre d'information (pas un bug) : formater 10 ou 11 secteurs sur une image .ST de 9 est
-refusé (`Flopfmt` → −16 ou −2 selon les passages), comme Hatari ; TOSFC le
-signale proprement.
-
-**Deux souhaits pour les bancs**, liés : une commande serveur pour **changer la disquette** d'un
-lecteur (`insert A <image>` / `eject A`) — la copie de disquette à un seul lecteur de TOSFC
-demande des échanges et n'est vérifiée que sur l'hôte faute de mieux — et une option
-**`_nflops = 1`** (un seul lecteur déclaré), pour vérifier les dialogues « Insert disk B: ».
-
-→ **Livrés le 2026-10-01** (CHANGELOG) : commandes serveur `insert A|B FICHIER` / `eject A|B`
-et option `--drive-b off` (`_nflops` = 1). Limite : EmuTOS ne crée pas de B: logique sur un ST
-à un lecteur, donc les dialogues « Insert disk B: » ne se vérifient qu'avec un TOS Atari.
-
-## Retours d'un client du protocole `--server` (bancs TOS File Cmd, 2026-09-23) — RÉSOLU le 2026-09-23
-
-Constaté en écrivant `bench/archives.py` de TOS File Cmd (lecteur GEMDOS hôte C: + disquette A:).
-
-- **Binaire `build/neost-headless` périmé, rien ne le signale.** Un banc échouait à chaque
-  lancement (au moins 5 fois de suite, même scénario) : `Fclose` d'un handle du lecteur hôte
-  (64, rendu par `Fcreate` juste avant, `Fwrite` et `Fdatime` passés) répondait **EIHNDL**.
-  Après un simple `make neost-headless` sur HEAD `8ee8de0`, plus aucun échec (10 passages,
-  5 dispositions mémoire différentes du programme). L'ancien binaire est écrasé : impossible
-  de dire si c'était un bug de GemdosHd corrigé depuis ou autre chose — **non reproduit, à ne
-  pas classer comme bug** sans nouvelle occurrence. Ce qui manque : un moyen pour le client de
-  savoir quel NeoST il pilote. Proposition : `--version` (hash git + date de build) et la même
-  information dans la première réponse du serveur, pour qu'un banc refuse un binaire plus vieux
-  que les sources.
-- **La trace `NEOST_GEMDOS_TRACE` ne donne pas les résultats.** Elle journalise
-  `call 0x3E at PC …` mais ni le handle, ni D0 au retour, ni **qui a traité l'appel**
-  (lecteur hôte ou TOS, quand `getValidFileHandle` renvoie -1 et que l'appel retombe dans
-  TOS). C'est justement ce qu'il fallait pour le cas ci-dessus : j'ai dû ajouter ponctuellement
-  (puis retirer) une ligne en fin de `GemdosHd` dispatch :
-  `"[gemdos]   -> %s d0=%d (arg w=%d)", finished ? "host" : "TOS", reg(0), readWord(params)`.
-  À intégrer pour de bon (seulement si la trace est active), avec le code d'erreur en clair.
-
-**Fait le 2026-09-23.** `cmake/BuildInfo.cmake` grave à chaque build le commit (hash court,
-`+xxxxxxxx` = empreinte des modifications non commitées, `nogit` hors dépôt) et l'horodatage
-ISO : `--version` des deux binaires les affichent, `hello` répond `commit=… built=…`
-(`docs/OPENDST.md` § 5). Le fichier n'est réécrit que si l'identité change — un rebuild sans
-modification ne relie rien. La trace GEMDOS nomme l'appel, montre le handle (Fclose, Fread,
-Fwrite, Fseek, Fforce, Fdatime) et termine par `-> host d0=… (ENOM)` ou `-> TOS`. Le
-Fclose→EIHNDL d'origine reste non reproduit (binaire écrasé) ; s'il revient, la trace dira
-désormais qui a répondu.
-
-## Save-states : octets non initialisés — RÉSOLU le 2026-09-05
-
-Trouvé par un agent de fuzz (valgrind sur un `export` : 67 erreurs, `writev` d'octets non
-initialisés, CRC de `saveState` dépendant de mémoire indéfinie) : `Fpu` (61 octets) et
-`StePads` (5) étaient sérialisées d'un bloc avec leur **bourrage implicite**. Cartographié à
-l'octet par une sonde à `0xAA` sur un objet construit en place, puis comblé par des champs de
-bourrage EXPLICITES et initialisés aux emplacements exacts — offsets et `sizeof` inchangés
-(verrouillés par `static_assert` : `Ext` 16, `Fpu` 304, `StePads` 28), donc **format de
-save-state inchangé** et états existants relus (vérifié). Piège rencontré : une dizaine de
-`Ext{se, man}` positionnels dans `Fpu.cpp` rangeaient la mantisse dans le bourrage une fois
-celui-ci inséré — réglé par un constructeur `Ext(se, man)`, la classe restant trivialement
-copiable. Après : sonde 0 octet, valgrind 0 erreur, `--save-state-test` OK, verdict FPU PASS.
-Leçon : toute classe passée à `ar(obj)` d'un bloc doit être sondée à `0xAA` (`Scu` : 0 octet).
-
-## 🚨 BLOQUANT RELEASE — l'historique est PURGÉ (2026-08-30) ; restent les paquets et les vieilles releases
-
-**Pas 3 FAIT le 2026-08-30** : l'historique public est réécrit (`git filter-repo`,
-69 motifs, pack **165 → 12 Mio**). Sont sortis du dépôt ET de tout son historique :
-les TOS Atari (`roms/tos*`, l'ancien `rom/`), les jeux commerciaux (`disks/st`,
-`disks/stx` et leurs emplacements d'avant déménagement), les cartouches Field
-Service (`carts/`), Cubase Lite (`disks/midi/CUBLITE`), Spectrum 512, les devkits
-vendorisés sans licence (`dev/agt`, `dev/reservoir-gods`, `gemdos/etalon`), plus
-deux poids morts que seul l'historique portait : `wasm/index.data` (73 Mo, TOS +
-disquettes embarqués dans l'image Emscripten) et `build/` commité par erreur en
-juin. Récit complet, preuves et décisions → `CHANGELOG.md` (2026-08-30).
-
-**Rien n'est perdu pour le développement** : les chemins purgés sont gitignorés,
-chaque machine les garde LOCALEMENT, et les tests qui en dépendent se ré-arment
-tout seuls quand les fichiers sont présents (vérifié : clone purgé + fichiers
-restaurés = palier `fast` entièrement vert, séquenceur MIDI compris ; sans eux,
-SKIP recensés). Outils : `tools/private_assets.sh` (pack/unpack du tarball privé)
-et `tools/setup_devkits.sh` (re-clone GODLIB + AGT aux pins d'avant purge).
-Étalons demoscene (Cuddly, No Cooper, Closure, CURLY) : GARDÉS — décision assumée,
-diffusion libre par usage de la scène.
-
-**Le séquencement en 5 pas est SOLDÉ** (1, 2, 5 le 2026-08-28 ; 3 et 4 le
-2026-08-30). Pas 4 : le paquet est **100 % libre par défaut** — la purge rendait
-la bascule obligatoire (la CI n'a plus les TOS), le défaut est inversé dans
-`stage_free_data.sh` ET dans les 8 gardes de `release.yml`/`pi-borne.yml` ;
-`NEOST_PACKAGE_NO_ATARI_TOS=0` ré-embarque des copies locales pour un paquet
-personnel, jamais pour une release. Testé dans les deux sens.
-
-✅ **GitHub Pages était un TROISIÈME canal, il est fermé** (2026-08-30) : le bundle web
-servi par `habib256.github.io/neost` embarquait les deux TOS Atari depuis le
-2026-08-03, et la purge ne l'avait pas fermé — elle avait seulement fait échouer le
-job `wasm`, le site continuant de servir le dernier bundle réussi. Premier déploiement
-réellement libre : celui de 10:03 ce jour-là, vérifié sur le site (cf. `CHANGELOG.md`).
-
-✅ **SOLDÉ le 2026-09-02 — le § BLOQUANT n'a plus d'objet.** Les releases **0.5.2 et
-0.5.4 sont SUPPRIMÉES** (`gh release delete`), leurs 17 assets avec elles. Les **tags git
-restent** : la traçabilité des versions est conservée, seule la diffusion des paquets
-cesse. Plus aucun canal public ne distribue de ROM Atari — historique, Pages, paquets et
-releases sont tous propres. Ce qui suit est le récit de ce qui a mené là.
-
-~~Seul reste, calé sur la 0.6~~ — ⚠ **assets des releases GitHub 0.5.2 / 0.5.4** :
-leurs paquets bureau publiés contiennent `tos102uk.img` + `tos162uk.img` (vérifié
-le 2026-08-30 en ouvrant le zip Windows 0.5.4) — la purge git n'y touche pas.
-**Décision du mainteneur (2026-08-30) : assumé tel quel, les deux releases seront
-SUPPRIMÉES quand la 0.6 sortira.** Le zip web-wasm 0.5.4 est propre (EmuTOS seul,
-vérifié). ⏳ **Le tag `0.6` est posé le 2026-09-01** : la suppression est DUE dès que
-les paquets 0.6 sont publiés — c'est la dernière action de ce blocage.
-
-Conformité annexe (non bloquante) :
-- `packaging/linux/make_appimage.sh` tire `linuxdeploy`/`appimagetool` depuis le tag mouvant
-  `continuous` sans somme de contrôle pour arm64. Le `Dockerfile.bionic`, lui, est passé au
-  tag **immuable** + SHA256 le 2026-08-30, après que son pin SHA-sur-`continuous` eut cassé
-  le build tout seul (l'amont a republié le tag ; cf. `CHANGELOG.md`) — **la leçon vaut
-  ici** : épingler une somme contre une cible mouvante ne protège de rien, et n'en épingler
-  aucune protège encore moins. Reste à trancher pour arm64, où AppImageKit ne propose plus
-  d'asset non `obsolete-*`.
-- ◐ **Signature : palier 0 fait le 2026-09-01, notarisation ouverte.** Le `.app` macOS
-  est désormais SCELLÉ par une signature ad-hoc (`package_macos.sh`, gardes
-  `--verify --deep --strict` + « Sealed Resources ») : le `.dmg` 0.6 publié répondait
-  « code object is not signed at all », d'où « NeoST est endommagé » — un cul-de-sac.
-  Gatekeeper refuse toujours (pas de Developer ID), mais le refus a une sortie (clic
-  droit → Ouvrir). **Reste** : Developer ID + notarisation (99 $/an), recette écrite dans
-  [`docs/RELEASE.md`](docs/RELEASE.md) ; et le `.zip` Windows, non signé — mauvais rapport
-  (token FIPS/HSM obligatoire depuis 2023, et SmartScreen n'est qu'un clic).
+- Une entrée = **titre · priorité · statut**, puis 1 à 3 lignes et un lien. Le récit
+  (mesures, pièges, preuves) va au `CHANGELOG.md` ou dans la doc du sous-système.
+- **Priorité** : **P1** prochain chantier · **P2** utile, à planifier · **P3** à rendement
+  faible ou « si un jour ».
+- **Statut** : ⭘ ouvert · ◐ entamé · ⏸ attend une ressource externe (matériel, média,
+  décision) — ceux-là vivent au § 2.
+- Un item clos est **supprimé dans le commit qui l'ajoute au `CHANGELOG.md`**, jamais coché
+  ni barré sur place.
+- Les identifiants `A`*n* (dette d'architecture) sont stables ; un trou de numérotation
+  est du travail fait.
 
 ---
 
-## 🏛 Dette d'architecture — items ouverts
+## 1. 🎯 Prochaines actions
 
-Issus de l'audit quatre dimensions du 2026-08-27 et des revues antérieures. Le soldé
-(A1-A8, A16-A27, les leçons de méthode) vit au `CHANGELOG.md` — la numérotation A*n*
-est continue, les trous sont du travail fait.
+Premier tri proposé ; le détail est dans la section indiquée.
 
-### Reproductibilité & maturité produit (hérités)
+| # | Action | Prio | § |
+|---|--------|------|---|
+| 1 | GEMDOS : codes d'erreur face à `gemdos.c` | P2 | 4.9 |
+| 2 | A9 : `struct Frame` puis découpe d'`appLoop` | P2 | 7 |
+| 3 | A38 : trace du dernier déclenchement réel des contrôles `fast` | P2 | 7 |
+| 4 | Étalon spec512 généré (remplace les 3 `spectrum512_diapo*`) | P2 | 3 |
+| 5 | Comparaison temporelle Hatari : sonde STX | P2 | 8 |
+| 6 | FPU : transcendantes encore en double hôte | P2 | 4.8 |
+| 7 | Lethal Xcess : re-vérifier en GUI | P2 | 5 |
+| 8 | Cadrer l'écart d'angle de rotation disquette (~9 500 cycles) avec Hatari | P2 | 4.6 |
 
-- **A3 ◐ — Le corpus de régression n'est pas livrable — et depuis la purge du
-  2026-08-30 il est LOCAL par construction** : jeux et ROM propriétaires ne sont plus
-  suivis par git, chaque machine les restaure via `tools/private_assets.sh unpack`
-  (§ BLOQUANT). Recompté 2026-10-19 (dont seize sondes de lignes masquées ST/STE) : **38 étalons
-  pixel sur 42** survivent au retrait des TOS Atari (`etos_ste_boot`, `overscan_top`,
-  `trace_odd`, `scroll_8264`, `scroll_8265`, `blitter_timer`, `blitter_hog`, `mfp_poll`,
-  plus `cuddly_demos`, `nocooper`, `nocooper_greetings` et `closure` migrés/posés sur
-  EmuTOS, `spec512_bands` — l'étalon GÉNÉRÉ qui rend la couverture « palette en cours
-  de ligne » —, `freq_switch`, l'exhibiteur généré de V3, et `dmasnd_poll`, celui de la
-  quantification HBL du refill FIFO son ; enfin `scroll_336`, `scroll_336_word`,
-  `scroll_336_late`, `scroll_336_clear`, `scroll_336_split`, `vblank_on` et `vblank_off`,
-  puis les seize `blankline_*` : BLANK, NO_DE, impulsion tardive, STOP_MIDDLE,
-  NO_SYNC/SYNC_HIGH et leurs annulations sur ST/STE) ; les 4 restants
-  sont le reliquat d'**A10**.
-- **A9 ◐ — `main.cpp` : 5 100 → 28 lignes ; reste LA BOUCLE.** Fait le 2026-08-30
-  (détail au `CHANGELOG.md`). `main()` tient en **10 lignes** — `appInit` → `appLoop`
-  → `appShutdown` — et les **84 globaux `g_*` n'existent plus** : ils sont les membres
-  d'une `struct App` (`src/gui/App.hpp`) qui possède aussi la SESSION (Machine, Audio,
-  MIDI, réseau, écran) et les treize services que les menus déclenchent (ex-lambdas de
-  `main()` : `applyConfig`, `midiOutApply`, `switchKioskMode`…). Le frontend vit
-  désormais en **onze modules** de `src/gui/` (Configuration, menu borne, fenêtres de
-  debug, écran ST, callbacks GLFW, ancrage, CRT, manettes), chacun recevant `App&` en
-  paramètre : la discipline de requêtes de `MediaPages` est généralisée, une page ne
-  fait rien, elle pose une requête que la boucle consomme.
-  **Reste : `appLoop` — 1909 lignes d'un seul tenant** (`src/gui/AppLoop.cpp` ; 1813
-  au 2026-08-30, +96 le 2026-09-02 pour les deux instruments d'affichage —
-  `--shot-window` et `NEOST_WBAND_DIAG`, cf. CHANGELOG). Elle a
-  été DÉPLACÉE, pas découpée, et c'est délibéré : le garde-fou du plan interdit de
-  combiner deux refontes, et celle-ci a deux verrous propres — une vingtaine de
-  variables de trame partagées entre les phases (`fbw/fbh`, `cTop/cH/cW`, `menuH`,
-  `reqMount*`, `cfgUi`…) et un corps qui traverse des blocs `#if defined(NEOST_WITH_IMGUI)`
-  de plusieurs centaines de lignes, `#else` compris. Prochain pas concret : nommer ces
-  variables de trame dans une `struct Frame` (le même geste qu'`App`, à l'échelle du
-  tour), PUIS couper aux frontières déjà commentées (entrées / trames dues / dessin /
-  requêtes / présentation).
-  ⚠ Ce qui a rendu le chantier faisable sans filet de test neuf : chaque déplacement
-  était MÉCANIQUE (aucun corps réécrit — les fonctions extraites reçoivent un paramètre
-  nommé `A`, et chacune ouvre sur des alias `Machine& machine = *A.machine;` qui rendent
-  le corps déplacé identique au caractère près). Le compilateur a donc attrapé ce qu'un
-  test n'aurait pas vu, et les paliers `fast` puis `full` ont gardé le reste.
+Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 
-- **A10 ◐ — Étalons adossés à des ROM propriétaires : 3 migrés, 4 restants.**
-  Migrés sur `etos192fr` le 2026-08-28, référence commise INCHANGÉE (0 px / 114816,
-  crop `buffer_noled`) : `cuddly_demos` (--frames 3500 → 3655), `nocooper` (6802 → 6932),
-  `nocooper_greetings` (29500 → 29700). Ces démos bootent depuis le disque : le TOS ne
-  fait que les charger, SEULE la durée du boot change. Recette (à réutiliser) — balayer
-  les trames à **pas 1** autour de la cible et retenir CELLE qui est à 0 px, jamais la
-  moins pire ; sur `cuddly_demos` la trame voisine est déjà à 7 548 px, sur `nocooper` à
-  19 069 px. Détail et preuves dans le `rom_note` de chaque entrée d'`etalons.json`.
-  Restent :
-  - ✅ **La couverture spec512 est RENDUE, sans ROM Atari** (2026-08-28) :
-    `spec512_bands`, étalon **généré** (`tools/make_spec512_test.py`) — secteur de boot
-    autonome qui martèle `palette[1]` trois fois par ~100 cycles sur un écran entièrement
-    à l'index 1. La position horizontale de chaque bascule dépend du cycle exact de
-    l'écriture : c'est le seul endroit du rendu où un cycle de CPU se voit à l'œil.
-    **0 px contre l'oracle Hatari** sur ROM libre. Les trois étalons ci-dessous restent
-    donc des SKIP recensés le jour de la purge, mais plus rien d'essentiel ne part avec eux.
-  - **`spectrum512_diapo`, `spectrum512_diapo2`, `spectrum512_diapo_ste` — migration
-    EmuTOS RÉFUTÉE, ne pas retenter.** Ce disque n'a pas de secteur de boot exécutable
-    (somme $FB35) : la diapo est lancée par le dossier `AUTO`, et sous EmuTOS le
-    programme démarre puis abandonne (bureau figé dès la trame 600). Ce n'est pas un bug
-    NeoST — **l'oracle Hatari + EmuTOS rend le même bureau** (écart entièrement dans la
-    bande de la LED disquette d'Hatari) ; `etos256fr` échoue pareil. Seule voie restante :
-    l'**étalon généré** (esprit `tools/make_overscan_test.py`) — un secteur de boot
-    autonome qui écrit la palette en cours de ligne, calé à l'oracle.
-  - **`union_demo`** : disque absent du dépôt (fetch planetemu manuel), donc non testable
-    — appliquer la recette ci-dessus le jour où il revient.
-  - **Prix de la migration, mesuré au repos** : le palier pixel passe de **46 s à 50 s**
-    (`run_etalons.py` complet, 2 runs de chaque côté en alternance). Le mur reste
-    `nocooper_greetings` : **41,3 → 45,1 s**, dont 0,7 % de trames ajoutées et ~8 % de
-    cœur — NeoST émule cette démo un peu plus lentement sous EmuTOS, à image identique.
-    ⚠ Mesuré d'abord SOUS CHARGE, ces mêmes écarts sortaient à 46→90 s et 43→63 s : une
-    durée sans description de la charge n'est pas une mesure (leçon du 2026-08-25,
-    re-jouée).
-  - Bonus NON acquis : raccourcir `nocooper_greetings` (il borne à lui seul le mur du
-    palier pixel). Trois tentatives mesurées le 2026-08-28 — espaces resserrés à 2 000
-    puis à 600 trames d'intervalle, puis AUCUN espace : l'écran greetings n'est jamais
-    atteint (au mieux 24 508 px). Et décaler les 5 espaces de +141 trames ne change rien
-    à l'arrivée (greetings toujours à 29 610) : la durée de la dernière partie ne dépend
-    pas d'eux. La démo joue ses parties à son rythme (la trame change sans touche à
-    2 000, 2 800, 3 700…) — un espace anticipé n'est pas pris. Trancher demande de savoir
-    QUAND la démo relit le clavier, pas de re-tirer au hasard un calendrier.
-- ✅ **A11 — SOLDÉ le 2026-09-01 : l'oracle tourne en CI, et le triangle est fermé.**
-  `.github/workflows/oracle.yml` — **hebdomadaire** (lundi 04:00 UTC) + `workflow_dispatch`,
-  jamais au push : il clone et bâtit Hatari **au pin** (`tools/setup_hatari.sh`, cache CI
-  dont la clé PORTE le pin, donc un changement de pin invalide le cache tout seul),
-  puis lance le mode ajouté pour ce chantier :
-  ```sh
-  python3 tools/run_etalons.py --oracle-check      # régénère et CONFRONTE, sans écraser
-  ```
-  `--oracle` **écrase** les références : il sert à en POSER une, jamais à en contrôler une
-  — il efface la preuve qu'il devrait comparer. `--oracle-check` rejoue Hatari, retient
-  (via `oracle_scan`) l'image identique à la capture NeoST du jour, puis la compare à la
-  référence COMMISE sans jamais écrire dans `tests/reference/`. Trois choses sont donc
-  vraies quand il passe : **NeoST == référence commise == Hatari (aujourd'hui, au pin)**.
-  Ce qu'il attrape et qu'aucun autre palier ne voit : une référence régénérée contre un
-  oracle non épinglé, un pin déplacé sans repose des références, un ffmpeg dont le décodage
-  bouge. Garde vérifiée par mutation : **1 pixel** modifié dans une référence commise
-  → échec. Mesuré au repos : **5 min 31** pour les 8 étalons re-dérivables.
-  **Ce que la première exécution a trouvé, et qui n'était écrit nulle part** — deux
-  références oracle n'étaient pas RE-DÉRIVABLES, chacune pour une raison propre. Le manifeste
-  le déclare (`oracle_check: false` + `oracle_check_note`, la raison est OBLIGATOIRE — sans
-  elle le script refuse de tourner) et le journal les NOMME :
-  - ✅ **`nocooper` — RÉGLÉ le même jour.** Son oracle exige une touche **TENUE** (espace,
-    vbl ~900), et `hatari_oracle.sh` sait désormais la tenir **à la VBL près** :
-    `oracle_keys: [[900, 960, 57]]` → point d'arrêt `VBL = N` du débogueur (Hatari se gèle
-    sur stdin) + `hatari-event keydown/keyup` par la fifo de contrôle + `c`. Sans attente
-    horloge, et **le fast-forward survit** (562,9 VBL/s avec fifo, 565,0 sans — la doc
-    disait l'inverse). `oracle_fastfdc` ajouté (il manquait, timelines désalignées).
-    Re-dérivé et confronté : trame 6929 retenue (décalage +139), **identique à la capture
-    NeoST et à la référence commise**. Deux pièges d'outillage réglés en chemin, qui
-    menaçaient TOUS les oracles : la LED disquette incrustée (`--drive-led off`, zone noire
-    vérifiée) et le compteur `n` de `select` que ffmpeg **remet à zéro** à chaque changement
-    de format `pal8↔rgb24` de l'AVI (`-reinit_filter 0` sur les deux extractions).
-  - ✅ **`spec512_bands` — RÉGLÉ le même jour aussi.** Hatari ne se reproduisait pas
-    lui-même dessus (deux runs → deux jeux de phases disjoints, 2 460 px au mieux) : le RNG
-    de boot décale le démarrage du programme, et la resynchro par scrutation de `$FF8207` ne
-    se recale qu'à ~20 cycles près — `oracle_scan` n'y peut rien, le décalage est sous-trame.
-    Remède dans le GÉNÉRATEUR : séquence dans le handler de VBL, attente en **`stop #$2300`**
-    (latence d'exception FIXE — une boucle `bra.s` prendrait l'interruption à une frontière
-    d'instruction, jusqu'à 10 cycles de jitter). Mesuré : 2 runs Hatari → mêmes 3 phases ;
-    NeoST rend ces mêmes 3 images (matrice 3×3, zéro sur la diagonale). L'image cycle sur
-    5 trames (+4 cyc/trame au démarrage du handler), identiquement chez Hatari : c'est le
-    programme, et `oracle_scan` retient la trame identique. Référence régénérée (trame
-    nominale, décalage 0), run frais identique.
-  **Périmètre réel en CI : 8 étalons** (blitter_hog, cuddly_demos, **mfp_poll**, nocooper,
-  scroll_8264, scroll_8265, spec512_bands, trace_odd) — les 3 `spectrum512_diapo*` dépendent d'une
-  ROM Atari que le dépôt ne porte plus. Le décompte et les noms sont imprimés à chaque exécution.
-  `mfp_poll` a rejoint le corpus le 2026-09-02 (promu snapshot → oracle, cf. § Divergences n°3) ;
-  il est le plus ROBUSTE des huit : son programme finit sur `bra.s *`, donc l'image est figée et
-  ne dépend pas de la durée de boot — il n'a pas besoin d'`oracle_scan`.
-- ✅ **A41 — SOLDÉ le 2026-09-01 : les 27 px de `closure` sont à HATARI, NeoST est fidèle.**
-  L'écart tenait sur la seule ligne 0 (première ligne affichée, `sl=34`, celle qu'ouvre le
-  retrait de bordure haute), chaque pixel fautif portant une couleur voisine d'un cran.
-  **Mesuré** en instrumentant `Spec512_StartFrame` dans l'arbre gitignoré (sonde révoquée,
-  binaire rebâti au pin ensuite) : l'amorce de palette d'Hatari pour cette ligne est
-  `000 100 200 210 310 310 320 420 430 531 442 541 552 652 652 763` — **exactement, sur les
-  16 registres**, le bloc que la démo écrit aux **cycles 438-508 de cette même ligne 34**,
-  donc 380 cycles APRÈS les pixels qu'il colore. Un faisceau au cycle 56 ne peut pas afficher
-  une couleur écrite au cycle 446 : la palette causale de NeoST est la bonne. Cause :
-  `nScanLine += OVERSCAN_TOP` sous `V_OVERSCAN_NO_TOP` (`spec512.c:233`) saute les
-  `CyclePalettes` des scanlines 0 à 28 — où vit le bloc d'init de la démo — et l'amorce
-  retombe sur `pHBLPalettes[]`. Verdicts : `docs/CASE_STUDIES.md`,
-  `docs/HATARI_DIVERGENCES.md` § *Cas où NeoST améliore Hatari*.
-  ⚠ **`closure` reste `ref_kind: snapshot` DÉFINITIVEMENT** — le passer en `oracle`
-  installerait l'anticipation d'Hatari comme référence. Le minimum a été CHERCHÉ avant de
-  conclure : 70 trames NeoST voisines comparées à l'oracle commis, toutes à 27 ou 43 px,
-  jamais 0 — ce n'était donc pas un défaut d'alignement de capture.
-  📌 Leçon d'outillage : la palette d'init de cette démo **change à chaque trame**, donc une
-  trace `--trace video_color` d'Hatari doit être armée sur LA MÊME trame que la capture
-  NeoST (`--parse` + `b VBL = N :once :file …` ; l'égalité s'écrit `=`, pas `==` — le parseur
-  de breakcond scinde `==` et échoue). Comparer deux trames différentes envoie droit sur une
-  fausse piste, ce qui est arrivé ici avant de recouper.
-- **A12 ◐ — Le registre existe et macOS est passé ; 4 cibles sur 5 restent.**
-  Ouvert le 2026-09-01 : [`docs/HW_VALIDATION.md`](docs/HW_VALIDATION.md) tient une
-  ligne PAR CIBLE avec la config de la machine, et un protocole en cinq pas (intégrité,
-  contenu, chaîne de confiance, exécution, débit) pour que chaque passe soit une recette
-  et non une improvisation. L'outil manquant est posé : `run_perfbench.py --budget` rend
-  le **facteur temps réel absolu** (trames/s ÷ balayage annoncé par la machine émulée)
-  là où les ratios, machine-indépendants par construction, ne pouvaient pas répondre ;
-  `NEOST_HEADLESS=…` le pointe sur le binaire LIVRÉ. ⚠ Il ne doit JAMAIS entrer dans un
-  palier de test — un seuil absolu sur un runner de CI est le piège que l'en-tête de
-  l'outil décrit.
-  **macOS arm64 : passé le 2026-09-01** sur le `.dmg` 0.6 publié (M1, 8 Gio) — somme
-  conforme, contenu 100 % libre VÉRIFIÉ sur le paquet servi, scellement du palier 0
-  confirmé (`syspolicy_check` ne relève plus que *Notary Ticket Missing*), binaire livré
-  à **×26,9 temps réel** au pire, soit rien de mesurable face au build natif (×26,4).
-  **Ce que la passe a trouvé** : le paquet ne pouvait JAMAIS enregistrer sa configuration
-  chez un premier utilisateur — bundle en lecture seule → règle A36 sur
-  `~/.config/neost/`, dossier que rien ne créait. Corrigé et revérifié dans les
-  conditions du défaut (détail au `CHANGELOG.md`).
-  **Les pas 1 et 2 sont soldés sur les HUIT paquets** (ils ne demandent aucun matériel) :
-  sommes 8/8, et **aucune ROM Atari nulle part** — la promesse « 100 % libre » passe du
-  script qui fabrique aux artefacts réellement servis. `tools/appimage_ls.py` rend les
-  quatre AppImage inspectables sans `unsquashfs`. Ce passage a trouvé une
-  **non-conformité GPL vivante** : le paquet web ne portait aucune licence, alors qu'il
-  est distribué deux fois (zip de release + GitHub Pages) — corrigé, huit jobs gardent
-  désormais les licences (ils étaient sept, là où la doc en annonçait huit).
-  **Ce qui se tranche sans la cible est tranché** : Windows n'a **aucune DLL manquante**
-  (table d'importation PE = DLL système seulement, build MinGW statique), et le plancher
-  glibc du Pi était **déjà gardé** en CI. Constat associé : **six jobs** lancent
-  `smoke_package.sh` sur le paquet — ce qui manque n'est pas « ça ne démarre jamais »
-  mais l'INTERFACE, le MATÉRIEL et le CHEMIN D'INSTALLATION.
-  ⚠ **Trou structurel mis au jour** : les six smoke-tests tournent sur un dossier
-  EXTRAIT donc inscriptible ; le support de livraison réel (monté en lecture seule) n'est
-  jamais exercé — c'est ce qui a laissé passer le défaut de configuration, lequel touche
-  en réalité **5 paquets sur 8** (le `.dmg` mesuré, les 4 AppImage déduits). Garde posée
-  dans `neost-selftest` et vérifiée par mutation (2 FAIL sans le correctif).
-  **Restent** : le pas visuel de macOS (ouvrir le `.app` dans une vraie session
-  graphique — l'automatisation n'obtient pas de fenêtre, et le build de dev se comporte
-  à l'identique, donc rien n'incrimine le paquet) ; **Windows** jamais lancé hors CI ;
-  **APK** jamais posé sur un appareil (QEMU seul — un émulateur ne solderait pas la
-  case) ; **Raspberry Pi**, la cible qui motive le chantier, toujours sans budget mesuré ;
-  **Linux** non consigné. Autrement dit : les pas 3, 4 et 5 pour quatre cibles sur cinq,
-  et eux exigent du matériel.
-- **A15** = DSL d'injection sans token « mouvement bouton tenu » (pas de DRAG GEM).
+---
 
-### Consolidation
+## 2. ⏸ En attente d'une ressource externe
 
-*(vide — A16b, A28, A29 et A30 sont soldés le 2026-08-28 ; détail au `CHANGELOG.md`.)*
+- **Latence IACK MegaSTE** · P1 ⏸ matériel — capturer CLK CPU/MFP, IACK et les DTACK
+  puce/CPU sur un vrai MegaSTE, aux trois régimes CPU/cache. Sonde prête
+  (`tools/make_mfp_iack_probe.py`, contrôles `tools/run_mfp_iack_probe.py` verts) ;
+  résidu IACK→handler de +3/+4 cycles à 16 MHz à expliquer. → [protocole](docs/MFP_IACK_MEASUREMENT.md)
+- **A12 — validation sur matériel réel** · P1 ⏸ matériel — macOS arm64 passé (sauf le pas
+  visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun budget
+  temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et **Linux**.
+  → [`docs/HW_VALIDATION.md`](docs/HW_VALIDATION.md)
+- **Shadow Warriors** · P1 ⏸ média — après SPACE, titre et musique OK, mais le bouton
+  joystick ne lance pas le jeu. Disque absent de ce poste (`disks/st/` non restauré, archives
+  privées introuvables le 2026-10-20). Recette : diff contre l'oracle piloté au joystick
+  (A5 → `docs/HATARI_AUTOMATION.md`), même durée d'appui (`--key-hold`).
+- **Passe d'usage interactif du GUI** · P2 ⏸ session humaine — le GUI n'est couvert que par
+  une capture au boot et trois assertions d'arguments. Une passe réelle, consignée (même
+  famille qu'A12).
+- **Test F de la cartouche STE_Test v1.9** · P2 ⏸ média — « Cannot write drive A/B », lecteurs
+  vus simple face, alors que le test F du diagnostic MegaSTE passe. Cartouche absente de
+  l'arbre : trace FDC + oracle Hatari sur la même cartouche dès son retour.
+- **Notarisation macOS** · P2 ⏸ décision (99 $/an) — le `.app` est scellé ad hoc depuis
+  le 2026-09-01 ; manque Developer ID + notarisation. Recette → [`docs/RELEASE.md`](docs/RELEASE.md).
+  Signature du `.zip` Windows écartée (token HSM obligatoire, SmartScreen = un clic).
+- **Vidéo — mesures sur Atari** · P2 ⏸ matériel — signaux HSYNC/VDE et couleur physique du
+  blanking (palette 0 conservée en attendant), bord exact de la fin STOP_MIDDLE (Hatari
+  rend trois pixels de plus ; sondes `blankline_stop_st/ste` en snapshot), tricks
+  NO_SYNC/SYNC_HIGH. → `docs/CYCLE_ACCURACY.md` §4
+- **Logiciels à clé / dongles** · P3 ⏸ média — `PortDevices` (Leader Board, 10th Frame,
+  B.A.T. II, Music Master, « Pro Sound » de Wings of Death / Lethal Xcess) ; clé **Notator**
+  (deux incertitudes : front de /ROM4 cadençant FEEDB1, ordre UDS↔/ROM4 à l'armement) ;
+  clé **Steinberg** (Cubase 3.10 / Score / 2.01 originaux). Sans relevé public : Log 3,
+  Pro-24, Avalon / Synthworks, Zodiac, DynaBlaster. Outil : capture `R3`/`R4`/`U` +
+  `--key-replay`. → [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md)
+- **Notator n'a jamais tourné** · P2 ⏸ média — cité comme séquenceur cible au même titre
+  que Cubase, sans étalon ni démarrage constaté.
+- **NetUSBee — fenêtre LSB partagée** · P3 ⏸ schéma — `$FA0000-$FA01FF` = latch ISP1160 ET
+  registre CR NE2000 ; les deux puces voient l'accès. Trancher sur le schéma
+  (hardware.atari.org), puis ajuster `Bus::read8Slow`.
+- **`union_demo`** · P3 ⏸ média — disque absent (planetemu manuel) ; appliquer la recette
+  de migration A10 à son retour.
+- **Stardust STE** · P3 ⏸ média — l'oracle affiche « INSERT DISK 2 IN ANY DRIVE » là où
+  NeoST fond au noir puis scrute le lecteur B ; disquettes 2/3 absentes.
+- **Exceptions vidéo E605 / Tekila** · P3 ⏸ programme — hacks par opcodes (FIXME) chez
+  Hatari ; port différé jusqu'à reproduction sur les programmes, aucun défaut matériel
+  démontré.
+- **Hygiène FujiNet** · P3 ⏸ décision — code retiré le 2026-08-22 ; restent deux mentions
+  historiques (commentaire de version save-state dans `src/core/Machine.cpp`, entrées
+  `CHANGELOG.md`). Reformuler ou assumer.
 
-### Chantiers structurels (UN à la fois, jamais combinés)
+---
 
-- ✅ **A42 — SOLDÉ le 2026-09-03 : le flush d'IPL passe du CALLBACK au LOT DE DISPATCH.**
-  Ouvert le 2026-09-02, suite directe du port partiel de `MFP_UpdateNeeded`
-  (cf. `CHANGELOG.md` et `docs/HATARI_DIVERGENCES.md` § MFP).
-  **Le problème, en une phrase** : Hatari élit l'interruption MFP **une fois par
-  instruction CPU** (`if (MFP_UpdateNeeded) MFP_UpdateIRQ_All(0)`, newcpu.c:3005 et 5509),
-  NeoST l'élit **une fois par callback d'ordonnanceur**, parce que `Machine` fait suivre
-  chacun d'eux d'un `cpu.updateIpl()` — **18 sites**. Deux timers MFP échus dans le même
-  `runTo` sont donc élus séparément, et la règle « seules les plus anciennes concourent »
-  (`pendingTime_ <= pendingTimeMin_`) ne peut pas les départager.
-  **Ce qui est DÉJÀ fait** : `raiseAt` n'élit plus, il arme `irqUpdateNeeded_` ;
-  `flushIrqUpdate()` élit au calcul d'IPL et en fin de `Mfp::updateTimers`. Les entrées
-  multiples d'une MÊME fonction (`TXERR`→`TXEMPTY`, `RXERR`→`RXFULL`) sont correctes.
-  Verrou d'A/B : `NEOST_MFP_BATCH=0`.
-  **Ce qui a été fait** : `Scheduler::setDispatchHooks` borne le LOT (garde RAII,
-  compteur de profondeur — `runTo` est ré-entrant via `addStolenCycles`) ; `Machine` y
-  suspend l'élection MFP pendant le lot et la tranche UNE FOIS à la fin, avant de relire
-  l'IPL. Les `cpu.updateIpl()` des callbacks sont LAISSÉS EN PLACE : le CPU est arrêté
-  pendant le lot, Moira ne relit sa broche qu'à une frontière d'instruction, donc les
-  recalculs intermédiaires n'ont aucun effet observable — les retirer aurait été une
-  seconde refonte pour rien. Verrou d'A/B : `NEOST_IPL_BATCH=0`.
-  **Ce que ça change, mesuré** : le groupement passe de **0** à **123** entrées groupées
-  sur Super Hang-On (1 000 123 entrées) et **1 240** sur le bureau EmuTOS (17,6 M), soit
-  ≈ 1 entrée sur 10 000 — « rarissime », mais non nul, et désormais servi dans le bon
-  ordre. Exhibiteur posé comme prescrit : 4 cas de table de vérité dans `mfp-selftest`
-  (« la plus ancienne gagne », ordre des entrées indifférent, à date égale la plus
-  prioritaire, plus ancienne ET prioritaire) — vérifiés par mutation, `NEOST_MFP_BATCH=0`
-  fait échouer le premier (`got=13` Timer A au lieu de `want=4` Timer D).
-  **Effet de bord assumé** : `dmasnd_poll` (snapshot, VBL armée) se décale de 288 px —
-  structurellement NUL (mêmes valeurs distinctes, même histogramme de deltas, une position
-  à 2 octets près). Référence re-posée, raison écrite dans son `ref_note`.
-  📌 **Les deux pièges annoncés, et ce qu'ils ont donné.**
-  1. **Aucun exhibiteur connu.** Mesuré sur Super Hang-On : **0 groupement sur 1 000 000
-     d'entrées**, et l'A/B rend 0 px sur Super Hang-On, `mfp_poll`, `blitter_timer` et
-     `trace_odd`. Hatari cite « Fuzion CD Menus 77, 78, 84 » — disques absents du dépôt.
-     Exhibiteur posé — mais en TABLE DE VÉRITÉ (`mfp-selftest`) plutôt qu'en étalon pixel :
-     la règle se teste sur la puce nue en quatre lignes, là où un programme ST aurait
-     demandé deux handlers, un journal et un rendu, pour une observation moins directe.
-  2. **`mfp_poll` NE PEUT PAS arbitrer ce chantier** : son programme masque les IRQ
-     (`SR=$2700`), il est aveugle à toute la datation et à la livraison des interruptions —
-     vérifié, `NEOST_MFP_WRITE_END=40` le laisse à 0 px. C'est précisément cet étalon qui a
-     fait rejeter `MFP_UpdateTimers` à tort le matin du 2026-09-02.
-  **Filet minimum** : la cartouche diagnostic (verdicts série `cpu`/`timing`/`frame`/`ipl`),
-  la suite Q MegaSTE et les 25 étalons pixel — tous verts aujourd'hui avec le port partiel.
+## 3. Release & distribution
 
-- **A32 ◐ — Découper `Shifter` : le fichier et les NOMS sont faits, les CLASSES
-  restent.** Fait le 2026-08-28 (détail au `CHANGELOG.md`) : `Shifter.cpp` passe de
-  **2 917 à 1 331 lignes**, la machine à états des bordures vit dans `VideoGlue.cpp`
-  (1 032 l.) et le compteur vidéo dans `VideoCounter.cpp` (441 l.) ; le vrai GLUE
-  vidéo a son en-tête (`VideoGlue.hpp`) et le stub MMU son vrai nom (`MmuGlue.hpp`) ;
-  les **4 `const_cast`** de `videoCounter()` ont disparu (la méthode n'est plus
-  `const` — elle avançait la machine Glue).
-  **Ce qui reste, et pourquoi ça n'a pas été fait d'un bloc** : les trois rôles sont
-  toujours des MÉTHODES DE `Shifter`, parce qu'ils partagent son état par-ligne
-  (`glueLines_`, `glueLineStart_`, `liveGlue*`, `vc*`). En faire trois classes
-  demande d'abord de trancher **qui possède cet état** — et une réponse bâclée y
-  ajouterait des accesseurs croisés, c'est-à-dire le même couplage avec plus de
-  cérémonie. Prochain pas concret : extraire `VideoCounter` en objet membre (ses
-  champs `vc*` sont les moins partagés — `vcFrameBase_`, `vcLineBase_`, `vcLineY_`,
-  `vcRestart*`), mesurer ce que ça casse, et seulement ensuite regarder la Glue.
-- **A33 ◐ — Mono-instance CPU LEVÉ ; l'état est par instance, le parallélisme reste.**
-  Fait le 2026-08-28 (détail au `CHANGELOG.md`) : le
-  `throw std::logic_error("Cpu68k supports only one live instance")` a disparu, les
-  **25 globaux d'état** sont devenus une `struct CpuState` possédée par `Cpu68k`, et
-  ses **135 accès internes** passent par `state_` (son propre état) et non plus par le
-  pointeur d'instance active. Prouvé, pas supposé : `selftest_logic.cpp` construit
-  DEUX `Cpu68k` sur deux `Bus`, vérifie que chacun prend le vecteur de reset de SON
-  bus, et qu'en faire tourner un ne bouge ni l'horloge ni le PC de l'autre. Les
-  **23 verrous de configuration de processus** restent globaux — les rendre
-  par-instance serait faux (cf. `tools/env_locks.json`).
-  **Reste** : le vrai PARALLÉLISME. Le modèle est « à tour de rôle » — les callbacks
-  Moira et les fonctions libres du fichier n'ont pas de `this` et passent par `g_cur`,
-  posé à l'entrée de `run()`/`reset()`. Deux CPU dans DEUX THREADS demanderaient de
-  supprimer ces 94 accès restants (passer le contexte aux callbacks, ou un
-  `thread_local`) — ce n'est pas ce qu'A33 promettait, et aucune fonctionnalité ne le
-  réclame aujourd'hui.
-- **A35 ◐ — Le fork Moira : le pin est RETROUVÉ, le `Cputester` reste à évaluer.**
-  Fait le 2026-08-28 : `extern/moira/NEOST_VENDOR.md` porte désormais le **pin de
-  départ** — `1efd69467ca13b27b2fb40febd5cb31dbecdea5f`, l'amont
-  `dirkwhoffmann/Moira` au premier commit d'intégration (2026-06-01) — retrouvé dans
-  l'historique NeoST lui-même : le gitlink du sous-module y est encore, et la commande
-  qui le déterre est écrite dans le fichier. Le tableau donne aussi les trois commits
-  du fork local disparu, dont le tip (`a1e52ec`) dont le CONTENU est le code vendorisé.
-  La recette de rebase et la commande de `diff` contre l'amont sont écrites.
-  **Reste** : (1) vérifier d'un `git ls-remote` que `1efd6946` existe toujours chez
-  l'amont — non fait, aucun accès réseau utilisé pour établir ce qui précède ; (2) le
-  `Cputester`. Sa réintégration DANS le dépôt est écartée (≈713 Mo de corpus ADF, dans
-  un dépôt public qu'on cherche justement à alléger) : la voie est la même que pour
-  l'oracle Hatari — clone hors arbre, gitignoré, recette documentée. Ses dépendances
-  propres n'ont pas été évaluées.
-- **A37 ◐ — Discipline de release : la procédure est écrite et gardée, le TAG est
-  une décision de mainteneur.** Fait le 2026-08-28 : [`docs/RELEASE.md`](docs/RELEASE.md)
-  écrit la procédure en sept pas (dont le piège du cache `NEOST_VERSION_STR`, celui
-  qu'on saute) ; `tools/check_release.py` (palier `fast`) exige que les TROIS numéros
-  disent la même chose — `CMakeLists`, « Version courante » du CHANGELOG, dernière
-  en-tête de release — et refuse un numéro sauté en silence ; le saut de **0.5.3** est
-  désormais consigné au `CHANGELOG.md` (§ *Numéros de version sautés*) avec ce qu'on
-  sait : elle n'a jamais existé, le bump `dec5929` est passé de 0.5.2 à 0.5.4, et la
-  raison n'est pas reconstituable.
-  ✅ **Le tag est POSÉ : `0.6`, le 2026-09-01** — 192 commits depuis la 0.5.4 du
-  2026-08-23 (MegaSTE 12/12, station MIDI sur les trois plateformes, CAB/theoldnet,
-  l'audit et le plan A16-A42, la purge complète). Procédure suivie en sept pas, palier
-  `full` vert sans une seule étape sautée, `--version` vérifié à 0.6 après
-  reconfiguration avec `-DNEOST_VERSION_STR=0.6`.
-  **Reste, décisions du mainteneur** : (1) **notariser** le `.dmg` (99 $/an) — le palier
-  gratuit est fait le même jour, cf. § *Conformité annexe* ci-dessus ; (2) **supprimer les
-  releases GitHub 0.5.2 et 0.5.4** dès que les paquets 0.6 sont publiés (§ BLOQUANT
-  ci-dessus — leurs assets contiennent des ROM Atari).
-  ⚠ Précédent posé le 2026-09-01 : l'asset macOS de la 0.6 a été **remplacé après
-  publication** (paquet signé ad-hoc, `SHA256SUMS.txt` refait, note d'addendum dans la
-  Release). Remplacer un asset publié se dit, sans quoi une somme qui change passe pour
-  une compromission.
+- **A10 — 3 étalons adossés à une ROM Atari** · P2 ◐ — depuis la purge, le corpus est local
+  par construction : **38 étalons pixel sur 42** tournent sans TOS Atari (A3). Les quatre restants :
+  - `spectrum512_diapo`, `_diapo2`, `_diapo_ste` : **migration EmuTOS réfutée, ne pas
+    retenter** (lancement par `AUTO`, l'oracle Hatari+EmuTOS échoue pareil). Seule voie :
+    un **étalon généré** dans l'esprit de `tools/make_overscan_test.py`. La couverture
+    « palette en cours de ligne » est déjà rendue par `spec512_bands`.
+  - `union_demo` → § 2.
+  - Recette de migration : balayer les trames **au pas de 1** et retenir celle à 0 px,
+    jamais la moins mauvaise (détail dans le `rom_note` d'`etalons.json`).
+- **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne à lui seul le mur du palier pixel
+  (~45 s). Trois calendriers d'espaces essayés en vain : il faut d'abord savoir QUAND la
+  démo relit le clavier.
+- **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — avec la validation
+  TOS 1.04 du § 6.
 
-### Issus de l'évaluation d'architecture du 2026-08-28
+---
 
-- **A38 ⭘ — Le palier `fast` lance 17 outils : un garde-fou qui ne mord jamais devient
-  du bruit.** Quatre ont été ajoutés le 2026-08-28 seul (`check_licenses`,
-  `check_env_locks`, `check_release`, le fuzz des parseurs). Chacun se justifie et
-  chacun a attrapé quelque chose de réel *le jour de sa pose* — mais rien ne le
-  vérifiera plus jamais. Le risque n'est pas le coût (~12 s) : c'est qu'un contrôle
-  cesse d'attraper quoi que ce soit, que personne ne le sache, et qu'on finisse par
-  désarmer le lot en bloc.
-  À faire : (1) tenir, pour chaque contrôle, la **trace de son dernier
-  déclenchement RÉEL** — un fil-piège volontaire ne compte pas ; (2) décider d'une
-  règle de retrait (un contrôle qui n'a rien attrapé en N mois se justifie à nouveau ou
-  s'en va) ; (3) re-mesurer le mur du palier `fast` à chaque ajout, et le dire.
-  ⚠ Ne PAS traiter en ajoutant un 18ᵉ outil qui surveille les 17 autres.
+## 4. Fidélité matérielle — restes par puce
 
-- **A39 ◐ — Trois modules importants n'ont JAMAIS été audités ; `GemdosHd` l'a été.**
-  Premier passage fait le 2026-08-28 sur `io/GemdosHd.cpp` (détail au `CHANGELOG.md`) :
-  chaque opération sur le système de fichiers hôte a été remontée jusqu'à la
-  provenance de son chemin (**toutes** passent par `createHostFileName` →
-  `clampToSandbox`), les contrôles mémoire à taille variable ont été vérifiés contre
-  le débordement, et le bac à sable a reçu **son premier test** (13 assertions,
-  `--gemdos-selftest`, palier `fast`). Verdict : le module est **plus solide que sa
-  réputation** — durci à plusieurs reprises, chaque durcissement portant le récit de
-  l'évasion qu'il ferme. Ce qui manquait n'était pas la robustesse mais la GARDE.
-  **Restent** :
-  - ✅ `io/Ikbd.cpp` (1 189 l.) **audité et pincé le 2026-08-29** : sa table de
-    longueurs de commande est comparée ligne à ligne à Hatari `KeyboardCommands[]`
-    (39 opcodes), et le protocole a sa table de vérité — accumulation multi-octets,
-    opcode inconnu = NOP, PAUSE OUTPUT levée par TOUTE commande valide, forme des
-    paquets `$FD`/`$F7`. Une seule anomalie trouvée, d'étiquette : `$19` était
-    commenté « SetJoystickFireDuration » (le nom que Hatari donne à `$18`) alors que
-    c'est le mode keycode manette. **Restent** dans ce module : les modes souris
-    absolus sous mise à l'échelle, l'horloge, et le code 6301 custom (`Execute`) ;
-  - la pile réseau (`src/net`, ~1 030 lignes) — pas d'audit de lecture, mais elle
-    est la MOINS démunie des trois : `--slirp-selftest`, `enec_selftest`,
-    `netusbee_selftest` et un job de CI dédié la couvrent déjà par le comportement ;
-  - dans `GemdosHd` : les codes d’erreur face à `gemdos.c` restent à compléter.
-    Handles/Pexec et reprise GEMDOS désormais couverts (A13 clos, 2026-10-19).
-    `Fsfirst`/DTA sous réutilisation
-    d’index dispose désormais d’un banc public (2026-10-19), distinct du bac à sable ;
-  - **un test par COUCHE** du bac à sable. Le test posé garantit la PROPRIÉTÉ (rien ne
-    sort) et pas les couches : mesuré par mutation, il faut retirer LES DEUX défenses
-    pour le faire rougir. Il ne signalera donc pas la perte silencieuse d'une seule.
-    Le corriger demande de tester des états intermédiaires, donc de coupler le test à
-    l'implémentation : à décider, pas à bâcler.
+Ne figure ici que l'ouvert ; l'acquis de chaque puce est dans `docs/IMPLEMENTED.md`, l'écart
+détaillé dans `docs/HATARI_DIVERGENCES.md`.
 
-- ⚠ **Et le GUI n'a jamais été exercé INTERACTIVEMENT dans une passe de validation.**
-  Il est jugé sur sa forme (A9 : 4 814 lignes, `main()` 2 430, 82 globaux) et couvert
-  par une capture au boot plus trois assertions d'arguments — jamais par un usage.
-  C'est la même famille qu'**A12** (aucune cible de livraison validée à la main) et ça
-  se traite avec : une passe d'usage réel, consignée.
+### 4.1 Vidéo / Shifter
+- **WS3 sous-pixel, interfoliage blitter** · P3 ⭘ → `docs/CYCLE_ACCURACY.md` §4.
+- **Latch couleur de la bordure gauche** · P3 ⭘ — 16 px (colonnes 45-60) : Hatari applique
+  l'écriture palette ~16 px après le début nominal de l'aire active (latence pipeline),
+  NeoST pile à `activeX_`. Invisible aux étalons.
+- Mesures matérielles → § 2.
 
-### Garde-fous du plan (à NE PAS faire)
+### 4.2 MFP 68901 & interruptions
+- Latence IACK MegaSTE → § 2.
+- **Timer B après écriture AER3** · P2 ⭘ — recalage porté le 2026-10-19 ; valider sur les
+  données de *Seven Gates of Jambala*.
 
-- **Croire que le plan se vide** : l'audit du 2026-08-27 a produit 22 items ; la journée
-  du 2026-08-28 en a soldé 4 entièrement et avancé 5 — et en a ajouté 2 (A38, A39). La
-  méthode **VOIT mieux qu'elle ne RÉPARE**, et c'est structurel : auditer coûte une
-  journée, réparer coûte des semaines. Ce n'est pas un défaut tant qu'on le sait ;
-  ça le devient si l'on planifie comme si la liste allait se refermer toute seule.
+### 4.3 ACIA 6850 / IKBD HD6301
+- **Liaison série physique** · P3 ⭘ — formats et diviseurs autres que /64 8N1 (clavier),
+  phase SCI sortante exacte ; ligne BREAK et erreurs de trame qui en découlent hors modèle.
+- **Firmware IKBD** · P3 ⭘ — modes souris absolus sous mise à l'échelle, horloge, code
+  6301 custom (`Execute`) ; modes `$18`/`$19` reconnus mais non émulés (comme Hatari).
+- **Démo Froggies complète** · P2 ⭘ — jamais validée de bout en bout.
+- **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; forme d'onde
+  BREAK non simulée.
+
+### 4.4 USART du MFP
+- **Restes** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
+  caractère, phase du premier front TC, forme d'onde BREAK physique.
+
+### 4.5 SCC Z85C30 (MegaSTE)
+- **Restes** · P3 ⭘ — autres fonctions de WR7', FIFO SDLC, DPLL, série hôte ; phase de bit,
+  erreurs RX de BREAK, X21 ; Hunt avec un vrai synchroniseur bit à bit ; décodage
+  parité/framing des formats TX/RX discordants. Phase initiale de l'oscillateur abstraite.
+
+### 4.6 FDC WD1772 / DMA / ACSI
+- Test F de STE_Test → § 2.
+- **Angle de rotation à l'armement** · P2 ⭘ — sur la sonde `fdc_write`, NeoST rencontre le
+  secteur ~9 500 cycles plus tard qu'Hatari (même image, même programme). Intervalles et
+  fin identiques ; l'attente initiale est exclue des deux sondes FDC. Confronter la phase
+  d'index au boot (`fdc.c`) avant d'en faire une divergence.
+- **ACSI : essai Idris OS** · P3 ⭘ — jamais tenté.
+
+### 4.7 RTC RP5C15
+- **Restes** · P3 ⭘ — sorties CLKOUT/ALARM, modes d'inspection TEST ; lecture TEST/RESET
+  à zéro selon MAME, sans mesure du bus flottant réel.
+
+### 4.8 FPU MC68881
+- **Transcendantes en double hôte** · P2 ⭘ — seul calcul encore non bit-exact.
+- **k dynamique** · P3 ⭘ — fixé à 17 : le dialogue périphérique ne transmet pas Dn.
+- Les bancs comparent au moteur Hatari, pas à un 68881 physique.
+
+### 4.9 GEMDOS (disque hôte)
+- **Codes d'erreur face à `gemdos.c`** · P2 ◐ — handles, Pexec, reprise et Fsfirst/DTA
+  couverts ; le reste des chemins d'erreur à confronter.
+
+### 4.10 Cartouche & profils machine
+- **Port cartouche générique** `$FA0000-$FBFFFF` · P3 ⭘ — au-delà du système GEMDOS ;
+  réf. `cart.c`.
+
+### Hors périmètre
+- **SCSI / NCR5380** — TT/Falcon uniquement, le MegaSTE n'en a pas. Réf. `ncr5380.c`.
+
+---
+
+## 5. Catalogue logiciels — bugs ouverts
+
+TOS 1.02fr sauf mention ; chemins sous `disks/st/` ou `disks/stx/`.
+
+| Jeu | Prio | Symptôme | Piste |
+|-----|------|----------|-------|
+| **Shadow Warriors** (2Hot2Handle) | P1 ⏸ | Le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). | Disque absent → § 2. |
+| **Lethal Xcess** | P2 | Titre « buggé à ~8 % » en GUI (2026-07-02). | Probablement la calibration `$8209` déjà réparée en jeu ; re-vérifier en GUI. |
+
+> ⚠ **Avant de déclarer un bug : vérifier la RAM, puis la ROM.** Les cas déjà tranchés
+> (Captain Blood, Enchanted Land, Cuddly, Rick Dangerous II, Stardust, Spectrum 512 STE,
+> Blood Money, Arkanoid, Wings of Death…) sont dans
+> [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md) — ne pas les rouvrir.
+
+---
+
+## 6. Extensions NeoST
+
+Matériel ayant réellement existé sur ST, OFF par défaut → [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md).
+
+### Station MIDI
+Cas visé : le ST mène la séance (Cubase, Notator), un Mac porte les AU/VST. La sortie est au
+niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
+- **Interfaces multi-ports** · P3 ⭘ — C-Lab Unitor, Steinberg Midex (32/64 canaux, SMPTE) ;
+  la clé de l'Unitor-N est déjà émulée, pas le boîtier.
+- **Splitter clavier** · P3 ⭘ — une source = un canal ; pas de zones.
+- **Synchro SMPTE/MTC** · P3 ⭘ — l'horloge MIDI traverse, le code temporel de l'Unitor non.
+- **Port virtuel sous Windows** · P3 ⭘ — aucune API winmm/WinRT 1.0 ; loopMIDI comme
+  contournement, Windows MIDI Services incompatible avec le zip autonome.
+- **Appareils homonymes sous ALSA** · P3 ⭘ — indiscernables quand un seul est branché.
+
+### Réseau, stockage, ports
+- **EtherNEC sous TOS 1.04** · P2 ⭘ — valider STinG + `ENEC.STX` (DHCP, ping, GET),
+  consigner dans `docs/CASE_STUDIES.md`.
+- **UltraSatan : `US_CONF.TOS` réel** · P3 ⭘ — compiler l'outil de Jookie (Pure C) et le
+  passer sur NeoST ; idem HDDRIVER / ICD PRO sur une image à deux slots.
+- **NetUSBee : périphériques USB** · P3 ⭘ — l'ISP1160 est un hub racine vide ; brancher HID
+  puis stockage de masse derrière `HcRhPortStatus` (banc : FreeMiNT `netusbee.ucd` + `usb.km`).
+- **Modem / STinG** · P3 ⭘ — documenter l'installation (noyau + `sting.inf` dans `AUTO`,
+  modules dans `C:\STING`) dans `docs/TEST_SOFTWARE.md` ; banc SLIP de bout en bout.
+- **Anneau MIDI** · P3 ◐ — réception headless cadencée livrée ; restent la saisie du pair
+  dans le GUI et un test à deux nœuds (en un seul processus, bloqué par A33).
+- **Dongles dans les frontends WASM/Android** · P3 ⭘ — pas de page Dongles.
+- **Liste blanche de domaines** · P3 ⭘ — optionnelle, pour les backends sortants.
+
+---
+
+## 7. Dette d'architecture
+
+Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
+
+- **A9 — `appLoop` d'un seul tenant** · P2 ◐ — `main()` tient en 10 lignes, mais
+  `src/gui/AppLoop.cpp` reste `appLoop` — 1965 lignes d'un seul tenant, déplacées et pas
+  découpées. Prochain pas :
+  nommer la vingtaine de variables de trame dans une `struct Frame`, PUIS couper aux
+  frontières déjà commentées (entrées / trames dues / dessin / requêtes / présentation).
+  Déplacements mécaniques uniquement, comme pour `App`.
+- **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits ; les rôles restent
+  des méthodes qui partagent l'état par ligne. Prochain pas : `VideoCounter` en objet membre
+  (champs `vc*`), mesurer ce que ça casse, puis seulement regarder la Glue.
+- **Suivre l'amont Moira** · P3 ⭘ — 10 commits non portés depuis le pin (68020/68030,
+  vAmiga, empreinte mémoire) ; rien pour le 68000 hormis DIVU/DIVS, porté. Rejouer
+  `tools/run_moira_runner.sh` à chaque patch du cœur.
+- **A38 — les 17 outils du palier `fast`** · P2 ⭘ — tenir pour chacun la trace de son
+  dernier déclenchement RÉEL, fixer une règle de retrait, re-mesurer le mur du palier
+  à chaque ajout.
+- **A39 — modules jamais audités** · P3 ◐ — pile réseau `src/net` (couverte par le
+  comportement seulement) ; un test par COUCHE du bac à sable GEMDOS (le test actuel ne
+  rougit qu'en retirant les deux défenses), à décider car il couple test et implémentation.
+- **A33 — vrai parallélisme CPU** · P3 ◐ — l'état est par instance ; deux CPU dans deux
+  threads demanderaient de retirer les 94 accès à `g_cur`. Aucune fonctionnalité ne le
+  réclame, sauf l'anneau MIDI en un seul processus.
+- **A15 — DSL d'injection** · P3 ⭘ — pas de token « bouton tenu pendant un mouvement »
+  (pas de DRAG GEM).
+
+### Garde-fous (à NE PAS faire)
+- **Croire que la liste se vide** : auditer coûte une journée, réparer des semaines.
   Arbitrer explicitement entre « ouvrir » et « fermer » à chaque session.
-
-- **Rouvrir BL5 sans concevoir une 3ᵉ mesure indépendante** : le paradoxe de signe entre
-  les deux instrumentations existantes est documenté (`docs/HATARI_DIVERGENCES.md` § BL5,
-  6 hypothèses réfutées) — re-mesurer avec les mêmes sondes ne tranchera rien.
-- **Combiner A9 + A31 + A32 en un « grand refactor »** : chaque chantier structurel
-  séparément, filet de test posé AVANT (le boot GUI l'est ; A29 pour le cœur).
-- ~~Supprimer un des deux modèles d'exécution sans la mesure d'A34.~~ **La mesure a
-  été prise le 2026-08-28 et le perdant est supprimé** (cf. `CHANGELOG.md`) : il n'y
-  a plus qu'un modèle, le BLOC. Le garde-fou reste utile comme précédent — on ne
-  supprime pas une branche d'exécution sur une intuition.
+- **Combiner A9 + A32 (ou tout autre chantier structurel) en un « grand refactor »** :
+  un à la fois, filet de test posé AVANT.
+- **Supprimer une branche d'exécution sur une intuition** : précédent A34, tranché par
+  la mesure.
+- **Compenser pour égaler l'oracle** : ni les délais du blitter pour absorber le résidu
+  IACK, ni les bords STOP_MIDDLE, ni `closure` passé en `oracle` (il reste `snapshot`
+  définitivement, cf. A41 au `CHANGELOG.md`).
+- **Garder un contrôle par un autre contrôle** : A38 ne se traite pas avec un 18ᵉ outil.
 
 ---
 
-## Catalogue logiciels — bugs OUVERTS
+## 8. Tests & outillage
 
-Rapports terrain non expliqués. TOS 1.02fr sauf mention. Chemins sous `disks/st/` (`.st`)
-ou `disks/stx/` (`.stx`). Pilotage headless : `--keys`/`--joy-at`, trace `--irq`, diff
-Hatari.
+- **Comparaison temporelle Hatari : sonde STX** · P2 ⭘ — 19 sondes passent, dont l'écriture
+  DMA disquette et DIVU/DIVS en RAM ; manque une lecture depuis une image STX (générateur
+  Pasti à écrire). Le résidu global blitter/IRQ MegaSTE 16 MHz est réduit au seul segment
+  IACK→handler, qui attend la capture matérielle (§ 2). → [`docs/HATARI_MEGASTE_AUDIT.md`](docs/HATARI_MEGASTE_AUDIT.md)
+- **Self-tests puce nue supplémentaires** · P2 ⭘ — autres Timers MFP, ACIA.
+- **Étalons à calibrer** · P2 ⭘ — Troed, Hatari Test Suite (frames + références) ; Union → § 2.
+- **Étalon spec512 en overscan** · P3 ⭘ — si une démo libre à bordures ouvertes est
+  rapatriée (l'auto_diapo est sans bordure).
+- **Comparaison MAME ↔ NeoST** · P3 ⭘ — memory map, bus errors, FIFO FDC/MMU, blitter, SCC.
+- **Traces Hatari de référence pour `trace_diff`** · P3 ⭘ — Arkanoid et autres.
+- **Matrice MegaSTE DD/HD × cache** · P3 ⭘ — balayage systématique si un titre l'exige.
 
-| Jeu | Symptôme | Piste / renvoi |
-|-----|----------|----------------|
-| **Shadow Warriors** (2Hot2Handle) | Après SPACE : titre + musique OK ; le bouton joystick ne lance pas le jeu. (Castle Warrior, lui, fonctionne.) | À diff'er Hatari — le pilotage **joystick** de l'oracle est possible (recette A5 → `docs/HATARI_AUTOMATION.md`) ; égaliser la durée d'appui (`--key-hold`). |
-
-Suivis mineurs laissés ouverts sur des cas par ailleurs tranchés :
-- **Lethal Xcess** — titre « buggé à ~8 % » constaté en GUI (2026-07-02), probablement la
-  même calibration `$8209` que l'in-game déjà réparé ; à re-vérifier en GUI.
-- **Stardust STE** — résidu non élucidé du dossier D-PSG (clos) : l'oracle affichait « INSERT
-  DISK 2 IN ANY DRIVE » là où NeoST fond au noir puis poll le lecteur B ; à revoir si les
-  disquettes 2/3 (absentes du dépôt) réapparaissent.
-
-> ⚠ **Avant de déclarer un bug : vérifier la RAM, puis la ROM.** Le réflexe et les cas
-> qu'il a tranchés → [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md). Les « déjà
-> expliqués » (Captain Blood, Enchanted Land, Cuddly, Rick Dangerous II, Stardust,
-> Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death…) y sont — ne pas rouvrir.
+> **L'oracle se bâtit** : `extern/hatari` est gitignoré, absent d'une machine fraîche.
+> `tools/setup_hatari.sh` clone au pin et bâtit → [`docs/HATARI_AUTOMATION.md`](docs/HATARI_AUTOMATION.md).
 
 ---
 
-## 🔬 Divergences Hatari & précision cycle — restes
+## 9. Interface
 
-**Inventaire maître** (sévérité + impact + `fichier:ligne` des deux côtés) :
-[`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md). **Aucune divergence de
-sévérité haute n'est ouverte** (vérifié entrée par entrée le 2026-08-27) ; la
-convergence instruction Moira↔WinUAE est complète et le beam-sync joueur est **clos**
-(→ « ÉTAT COURANT » de `docs/MOIRA_WINUAE_CONVERGENCE.md`). Le restant, à rendement
-décroissant, par priorité d'impact :
-
-1. ✅ **[VIDÉO] V3 — CLOS le 2026-09-01 : l'attribution de ligne à la grille RÉELLE est le
-   défaut, prouvée à l'oracle.** Le « vert avec le verrou armé » ne prouvait rien, et pour une
-   raison qu'on ne soupçonnait pas : **le verrou ne faisait rien** — sous `NEOST_LINELEN_ATTR`
-   la longueur de ligne retombait à 512 à chaque ligne et n'était corrigée que par un
-   `Freq_match` tombant SUR la ligne ; 140 lignes de 60 Hz sans écriture restaient à 512, la
-   grille réelle ne dérivait jamais. Exhibiteur construit exprès (`tools/make_freqswitch_test.py`
-   → étalon **`freq_switch`**, généré, ROM libre, ancré sur la VBL) : plage de 140 lignes 60 Hz
-   (dérive 560 cyc) puis 8 bascules alternées. Correctif : longueur de base posée par l'état
-   freq/res au début de ligne (`glueLineLenFor`, ≙ `Video_StartHBL` → `nCyclesPerLine`), les
-   `Freq_match` la raffinent. **Mesure décisive au niveau de la Glue** — trace `video_sync`
-   d'Hatari contre `[attr]` (`NEOST_VARLINE_TRACE`) : les **18 écritures** de la trame
-   attribuées à la même ligne ET au même cycle (`169/336 174/268 … 242/508 247/468`), là où
-   la grille fixe en manque 17 sur 18, d'une à deux lignes. Palier pixel entier à **0 px** avec
-   le canal armé (rien d'existant ne bouge — seul l'exhibiteur le voit, c'est ce qu'il fallait) ;
-   `NEOST_LINELEN_ATTR=0` fait rougir `freq_switch` à 16 408 px (garde vérifiée par mutation) ;
-   `glue_selftest_attr` garde désormais la position DÉSARMÉE pour que l'A/B reste exécutable.
-   ⚠ Le pixel n'était PAS juge ici : les lignes 60 Hz d'une trame 50 Hz sortent chez Hatari
-   avec l'artefact « left+2 » tranché en A40 (toute la ligne à l'index 8) — 56 % d'écart image
-   qui ne dit rien de l'attribution ; d'où `ref_kind: snapshot`, preuve consignée au `ref_note`.
-2. ✅ **[SON] CLOS le 2026-09-02 — confronté, et l'oracle est le PERDANT.** L'exhibiteur manquait :
-   `tools/make_dmasnd_poll_test.py` → étalon **`dmasnd_poll`** (généré, ROM libre, STE), 100 tours
-   d'un poll de `$FF890B/0D` pendant que le DMA joue à 50066 Hz stéréo. Il contraint ce qu'aucun
-   test ne touchait : le compteur ne doit **avancer qu'au HBL** (39 deltas nuls sur 99, puis des
-   sauts de 6 et de 8) — le WAV, lui, mesure ce que le DAC CONSOMME, pas la date du FETCH.
-   **Verdict : NeoST rend le découpage IDÉAL implanté par le débit** (6,398 o/ligne ⇒ 19,9 % de
-   sauts de 8 ; mesuré 20,3 %), là où Hatari jitte sur 4/6/8/12 — sa consommation DAC passant par
-   le rééchantillonnage vers le taux hôte. Le débit MOYEN est identique des deux côtés
-   (**382 octets exactement** sur la fenêtre) : c'est bien la granularité, pas le débit.
-   ⚠ **Hatari ne se reproduit pas lui-même dessus** — 664 à 1432 px entre deux runs identiques,
-   `--sound off` comme `--sound 50066`, l'ancrage VBL de `spec512_bands` n'y changeant rien (il
-   fixe la phase du programme, pas celle du resampler, dont l'accumulateur court depuis le
-   démarrage de l'émulateur). **Aucun oracle n'est dérivable sur ce chemin** : `ref_kind: snapshot`,
-   premier étalon du corpus refusé à l'oracle pour non-reproductibilité d'HATARI. Garde vérifiée
-   par mutation : réintroduire le `fifoRefill()` de `DmaSound::liveCounter` rend 1592 px et une
-   RAMPE CONTINUE au lieu du palier-saut. Détail → `docs/HATARI_DIVERGENCES.md` § *Cas où NeoST
-   améliore Hatari*.
-3. ✅ **[MFP] CLOS le 2026-09-02 — mais PAS par le correctif prescrit, qui est réfuté.**
-   L'écart « pas d'`UpdateTimers` avant lecture IPR/ISR » **n'existait plus** : confronté à
-   l'oracle sur `mfp_poll` (l'étalon bâti exprès), IPRA est identique à Hatari sur les
-   100 lignes — le modèle BLOC préempte déjà à chaque échéance de timer. Le port du `runTo`
-   ciblé `TIMER_*` a quand même été écrit pour le vérifier : il ne ferme rien et **dégrade
-   l'étalon de 80 à 88 px** (balayage de l'instant sur ±12 cyc, aucun offset à 0 px) — retiré.
-   Le résidu de 80 px était AILLEURS et n'était écrit nulle part : `readTimerData` lisait le
-   compteur vivant sur l'échéance **arrondie au plafond entier** du Scheduler au lieu de
-   l'échéance sous-cyclique que NeoST tenait déjà (`timerDueSub_`), d'où un `ceil` un cran
-   trop haut sur 6 lignes / 100. Corrigé → **0 px contre l'oracle** (les 100 octets IPRA et
-   les 100 octets TADR), et `mfp_poll` promu snapshot → **oracle** : le corpus oracle de la
-   CI passe de 7 à 8 étalons. Récit → `docs/HATARI_DIVERGENCES.md` § MFP.
-   📌 Leçon : la borne « 157 cycles » qui justifiait ce chantier était une métrique
-   (`Scheduler::timerMaxLate`, maximum sur toute la trace, boot compris), pas un écart de
-   rendu — et l'inventaire l'a portée un an sans qu'on la confronte à une image.
-4. ✅ **[FPU]** Arrondis de conversion sortante (2026-09-02), précision FPCR de
-   FMOVE/FABS/FNEG et FMOVECR, constantes indéfinies et décimal empaqueté (2026-10-18)
-   portés et comparés au moteur Hatari. FSGLMUL/FSGLDIV et FMOD étaient déjà portés.
-   Limites restantes : transcendantes en double hôte, k dynamique remplacé par 17
-   en mode périphérique ; détails et bancs reproductibles ci-dessous.
-5. **[BLITTER]** BL5 pixel clos le 2026-10-19 (`blitter_timer` à zéro pixel
-   contre Hatari). Reste la latence IACK MegaSTE à mesurer sur matériel ; sonde
-   et protocole prêts, voir le début de ce fichier. Aucune compensation blitter.
-6. **[VIDÉO, P3]** wakeup-state WS3 sous-pixel, mesures matérielles des tricks
-   NO_SYNC/SYNC_HIGH, interfoliage blitter → `docs/CYCLE_ACCURACY.md` §4.
-   Le mode 336 px STE est porté le 2026-10-18, avec cinq étalons oracle dédiés.
-
-**Portages achevés** : décimal empaqueté FPU (2026-10-18, comparaison au vrai
-`softfloat_decimal.c`), y compris INEX1 et k ≤ 0. La **recomposition Unicode NFD→NFC
-(cible macOS)** est faite le
-2026-09-02 : `neost::hostpath::precomposeUtf8`, branchée sur `matchHostDirEntry` et le listing
-Fsfirst. Le bug était réel et mesuré — sans elle, un fichier accentué écrit en NFD (ce que macOS
-rend à `readdir`) est INTROUVABLE depuis le TOS (vérifié par mutation sur APFS). Gardé à deux
-niveaux : `selftest_logic` pour la fonction pure (13 cas, exerçables depuis n'importe quelle
-plateforme) et `gemdos-selftest` pour le câblage, avec un vrai fichier sur disque.
-
-**Décisions actées (NE PAS « corriger » vers Hatari)** : palette de la PREMIÈRE LIGNE quand
-la bordure haute est retirée (A41 — Hatari amorce avec des écritures postérieures de
-380 cycles) ; SCC `WR14` bit4 loopback (datasheet Zilog, NeoST plus fidèle) ; WRITE/READ TRACK STX réinterprétés (NeoST rend la piste lisible) ;
-densité HD/ED STX (NeoST plus cohérent) ; RTC en temps émulé (déterminisme headless).
-Banques RTC indépendantes et contrôles ADJ/12–24 h/bissextile portés selon Ricoh ;
-restent les sorties CLKOUT/ALARM et les modes d’inspection TEST.
-TEST/RESET RTC en écriture seule selon Ricoh p.7 ; lecture zéro selon MAME,
-sans mesure du bus flottant réel et sans émulation des modes d’inspection.
-Rattrapage RTC long corrigé : plus de perte au-delà de 90 000 secondes ;
-calendrier calculé par lots, source temporelle émulée conservée.
-TIMER EN conserve une retenue saturante à l’arrêt et la délivre à la reprise,
-sans décaler la phase sous-seconde (Ricoh p.7).
-
-> **L'oracle se bâtit, il n'arrive pas tout seul** : `extern/hatari` est GITIGNORÉ et n'est
-> PAS un sous-module — sur une machine fraîche il est ABSENT. `tools/setup_hatari.sh` clone au
-> pin (`f0736b2`) et bâtit avec les options macOS obligatoires ; recettes →
-> [`docs/HATARI_AUTOMATION.md`](docs/HATARI_AUTOMATION.md).
-
----
-
-## Roadmap par sous-système — items ouverts
-
-> Le reste (Bus/MMU, FDC, YM2149, GEMDOS, ACSI, SCC, FPU, imprimante, MegaSTE 8/16 MHz + cache…)
-> est **fait et validé** — voir `CHANGELOG.md`. Ci-dessous, uniquement ce qui reste ouvert.
-
-### Vidéo / Shifter
-- Raffinements cycle-exact → § Divergences ci-dessus.
-- Capture live du retrait bas déjà portée : régression ajoutée le 2026-10-19
-  (capture à la ligne 280 puis effacement RAM, pixels conservés ; mutation
-  limitant aux lignes actives rejetée avec les deux grilles). BLANK/NO_DE et
-  STOP_MIDDLE sans palette : défaut de déclenchement du rendu corrigé et
-  sondes ST/STE ajoutées. NO_SYNC/SYNC_HIGH et leurs annulations sont aussi
-  couverts par huit sondes de boot et 52 contrôles Glue supplémentaires.
-  La qualification matérielle reste ouverte, notamment les signaux de sync
-  et la couleur physique du blanking ; palette 0 conservée en attente de mesure.
-- **Fin STOP_MIDDLE** : trois pixels supplémentaires chez Hatari au dernier
-  groupe de plans, stables sur 61 captures ST et 61 STE (premier écart buffer
-  x=156, y=65). Les sondes `blankline_stop_st/ste` gardent le rendu NeoST par
-  snapshot ; le bord exact attend une mesure matérielle. Pas de compensation
-  pour obtenir l'égalité avec l'oracle.
-- **Résidu du latch couleur bordure gauche** : 16 px (cols 45-60) = la **position
-  horizontale exacte** où l'écriture palette prend effet (Hatari bascule ~16 px après le
-  début nominal de l'aire active = latence pipeline ; NeoST bascule pile à `activeX_`).
-  Invisible aux étalons. _Valeur très basse._
-
-### Interface — kiosk & effets CRT
-- Cosmétique : membres `srcW_`/`srcH_` morts dans `CrtEffectStack` ; répétition de
-  navigation kiosk (tenir gauche/droite bloque la répétition haut/bas). Limitations CRT v1
-  assumées (baril/vignette sur le buffer entier en kiosk ; GL 2.1 → passthrough).
-
-Atomicité TAS/blitter déjà garantie par le dispatch CPU entre instructions,
-qualifiée le 2026-10-19 ; garde dédiée à reconsidérer si ce modèle évolue.
-Exceptions vidéo E605/Tekila : hacks par opcodes FIXME d’Hatari, port différé
-jusqu’à reproduction concrète des programmes, sans défaut matériel démontré.
-Reset PSG R7 ramené à zéro selon Hatari/MAME, silence et ports qualifiés.
-
-Timer B : recalage immédiat du front après écriture AER3 porté (2026-10-19),
-anciens fronts échus servis avant mutation puis front futur strict selon la
-grille Glue. Jeu Seven Gates of Jambala encore à valider sur ses données.
-
-### Stockage & contrôleurs
-- Recherches GEMDOS : `.`/`..` restitués dans les sous-dossiers, selon masque et
-  attributs, avec noms DTA exacts (2026-10-19). `ENOENT` sauté ; autres erreurs
-  `stat` renvoyées en `EINTRN`. Racine et confinement au dossier hôte préservés.
-
-- GEMDOS + ACSI : dossier simple décalé après les partitions images (2026-10-19),
-  même si ACSI est monté après le dossier. Réévaluation au reset/boot, saturation
-  C..Z sans masquer un lecteur physique et retour après retrait ACSI qualifiés.
-  Sous-dossiers à lettres explicites conservés ; chevauchements signalés dans l’UI.
-
-- FDC : index synchronisé avant tous les accès WD1772 (2026-10-18). Le push PSG
-  lecteur/face était déjà porté ; gardes de sélection tardive et changement de face
-  ajoutées. Attentes des registres portées ; contention DMA et ancrage anti-dérive
-  étaient déjà présents (entrées périmées corrigées). Phase INDEX effacée à
-  l’éjection et réamorcée à l’insertion ; FORCE INTERRUPT déjà conforme à Hatari.
-  Secteur revérifié sur le lecteur actif pendant transfert, sans alias vers la
-  face/piste suivante si le nouveau média possède moins de secteurs.
-  Changement de média : première action puis dernière action opposée conservées,
-  remplacement direct par éjection/insertion, seconde phase persistée en v41.
-  Fenêtre de 18 vrais VBL par phase, indépendante des changements PAL/NTSC/mono ;
-  compteur et fins de phases VBL sauvegardés en v43. Contrat reset FDC conservé.
-  WRITE TRACK STX sans secteur exploitable impose une vue vide, persistée
-  dans le .wd1772, au lieu de réutiliser les anciens secteurs.
-- IKBD : délais de réponse firmware portés (valeurs centrales déterministes,
-  quantifiées en bits). Le transit CPU→IKBD passe par TDR/TSR : le firmware ne reçoit
-  l’octet qu’au bit de stop. Restent les formats/diviseurs ACIA hors liaison
-  clavier usuelle /64 8N1 et la phase SCI sortante exacte. Reprise BREAK
-  désormais ancrée au changement de diviseur, accès CR/TDR tardifs rattrapés ;
-  départs TX ordinaires /64 8N1 désormais sur cette même phase. Le break
-  bloque les nouveaux départs TX ; la ligne physique et les erreurs de trame
-  qui en découlent restent hors modèle. L’autosend normal suit maintenant un timer de
-  150 000 cycles ; $17 remplace cette cadence commune jusqu’au boot ROM,
-  même après sortie du monitoring. MouseAction et position absolue sont traités
-  avant les paquets joystick. Cadence et échéance sauvegardées. Aucune validation
-  de la démo Froggies complète ici. PAUSE $13 laisse finir l’unique octet SCI
-  engagé ; la file firmware attend la reprise. Ses 1024 places sont indépendantes
-  du SCI et du RDR ACIA, et bornées au chargement des sauvegardes. Les modes
-  `$18` (monitoring du feu) et `$19` (keycode joystick) restent non émulés,
-  comme dans Hatari ; leurs commandes sont reconnues et consommées.
-- **SCSI / NCR5380** — TT/Falcon **uniquement** (le MegaSTE n'en a pas). Hors périmètre,
-  non commencé. Réf. `ncr5380.c`.
-- SCC : BRG / Zero Count porté le 2026-10-18 (deux canaux, IRQ, phase sauvegardée).
-  Reset WR9 IP/IUS isolé au canal ciblé (2026-10-19, Zilog p.160).
-  WR14 D1..0 BRG conserve l’écho RX direct ; arrêt/reprise BRG garde
-  l’invalidation du caractère écho interrompu (2026-10-19).
-  Modifier WR12/13 conserve aussi l’écho RX horlogé directement RTxC/TRxC ;
-  RX BRG/DPLL garde son invalidation (2026-10-19, Zilog p.166–168).
-  Changer seulement la source d’horloge TX WR11 D4..3 conserve l’écho RX
-  engagé (2026-10-19, Zilog p.166–167) ; véritables changements RX invalidants.
-  RX asynchrone vérifie toujours un stop, indépendamment des 1/1,5/2 stops
-  TX ; écho RX conservé si seuls les stops TX changent en vol (2026-10-19).
-  MIE conserve les IUS existants et interdit les nouveaux à zéro (Zilog p.161).
-  INTACK respecte aussi la priorité IUS (Zilog p.41–42), sans IUS fantôme
-  pour une source bloquée après acquittement logiciel.
-  Miroirs RR6/RR7 et câblage après changement de profil corrigés le même jour.
-  Cadence TX/RX portée : caractères, registre de décalage et registre
-  d’attente TX, réception hôte mise en file. FIFO RX matérielle de trois octets portée (Zilog/MAME),
-  avec erreurs associées, débordement et modes d’interruption. Restent la
-  FIFO SDLC, la DPLL et la série hôte. En asynchrone, les bits inutilisés
-  de RR8 sont maintenant forcés à un selon WR3. Auto Enables qualifie TX/RX
-  par CTS/DCD ; RTS se désactive après vidage TX en asynchrone Auto Enables.
-  WR3 Sync Character Load Inhibit filtre WR6 avant FIFO, aussi en asynchrone,
-  selon Zilog. TX 1..8 bits : encodage WR5 cinq bits ou moins, masquage et
-  durée du TSR mémorisés. TX Enable bas laisse finir la trame engagée, TDR
-  retenu jusqu’à reprise. BREAK suspend le TSR, conserve le TDR et reprend
-  le temps restant sans livrer comme intact un caractère coupé. Restent phase
-  de bit, erreurs RX de BREAK, X21 et synchronisation bit à bit. RTxC/TRxC
-  directs et BRG utilisent désormais une cadence rationnelle TX/RX indépendante.
-  Zero Count est aussi rationnel, avant /2 et WR4 ; RR0 suit une pulse d’un
-  cycle source. La phase initiale lors d’un changement source/enable reste une
-  abstraction sans phase analogique de l’oscillateur.
-  Parité reçue visible pour les mots courts en bouclage de même largeur ;
-  l’API d’octets hôtes et les formats TX/RX discordants restent sans décodage
-  des bits physiques ni détection des erreurs de parité/framing.
-  Verrous External/Status WR15 indépendants du masque maître WR1 ; ce dernier
-  masque l’IP sans effacer les statuts retenus.
-  Deux transitions BREAK conservées pendant une autre cause externe ; répétitions
-  coalescées par polarité, sans FIFO RX/framing physique inventé.
-  Sync/Hunt forcé à zéro sans IRQ en mode broche /SYNC avec oscillateur actif ;
-  BREAK masqué dans les modes synchrones hors SDLC, sans moteur de synchronisation.
-  WR0 Reset Tx Underrun/EOM décodé avec les commandes et pointeurs combinés,
-  y compris l’exception asynchrone du statut RR0 (Zilog p.176). Hunt reste
-  à intégrer avec un véritable synchroniseur, pas seulement un drapeau statique.
-  Auto Echo déconnecte la sortie TSR et prime sur Local Loopback ; les octets
-  hôtes RX huit bits sans parité sont renvoyés après un stop RX abstrait indépendamment
-  des stops TX et de RXEN/DCD. Reconfiguration RX en vol invalide l’écho courant ; autres formats
-  et flux de bits physiques restent hors modèle. Local Loopback livre TX au
-  sink et à RX interne, déconnecte RxD externe et invalide le caractère hôte
-  interrompu lors d’une bascule ; FIFO déjà complétée préservée.
-- GPIP7 : XSINT qualifié après composition complète du niveau, bouton
-  Multiface inclus ; pas de front parasite si la pin reste basse (2026-10-19).
-- SCC RX All/Special : vider le FIFO efface IP/IRQ même si RR1 conserve
-  une erreur collante ; modes verrouillés First/Special préservés (2026-10-19).
-- MFP VR : bits réservés 2..0 désormais lus zéro et ignorés à l’écriture
-  (2026-10-19, Motorola §4.1.3), sans modifier S ou la base vectorielle.
-- MIDI : les événements RX/TX et le stop de bouclage datent leur front IRQ
-  MFP à l’échéance série, même servis en retard ; AER/DDR et ligne partagée
-  clavier conservés (2026-10-19). CR/RDR restent datés de l’accès courant.
-- Clavier : fronts IRQ TDR→TSR et stop RX datés au cycle série, même en
-  dispatch tardif ou rattrapage avant écriture CR/TDR (2026-10-19).
-  Propagation MFP, AER/DDR et OU câblé MIDI conservés ; CR/RDR au cycle CPU.
-- USART MFP : réception hôte selon le format UCR et phase fractionnaire
-  sauvegardée, sans dérive aux callbacks tardifs. RXFULL datée au stop,
-  overrun OE/RXERR différé jusqu’à lecture UDR puis blocage jusqu’à RSR,
-  selon Motorola §7.2.2 ; étape en attente sauvée v44. RX hôte 5..8 bits alignés à
-  droite, bits inutilisés à zéro et largeur fixée au départ du caractère.
-  RE=0 efface le statut RX sans perdre la donnée ; UDR vide conserve RX.
-  Les droits d’écriture RSR sont portés (RE/SS, F/S seulement en synchrone).
-  Bouclage interne TSR H/L=11 porté au transport d’octets ; SI/RC hôte
-  ignorés, sans double livraison avec la prise externe. Commutation H/L
-  en pleine trame sans reconstruction des bits physiques.
-  Restent le modèle synchrone, la réacquisition après réactivation au milieu
-  d’un caractère et la phase du premier front TC. /1 et /16 suivent le rapport Timer D exact,
-  y compris aux débits non entiers, sans arrondis tty ni plancher RX. Émission TDR/TSR
-  cadencée selon UCR, avec Buffer Empty, underrun et EOT ; la forme d’onde
-  BREAK n’est pas simulée. END et auto-turnaround sont immédiats au repos,
-  différés en vol ; IRQ END uniquement sur nouveau front. Underrun mémorisé :
-  TXERR n’est pas redemandé tant que UE n’est pas effacé (lecture TSR ou TE=0).
-  Le délai minimal d’une période TX avant cet effacement est porté, avec
-  seuils distincts pour trame en cours et UE mémorisé.
-  BREAK ignoré en mode synchrone selon le manuel ; le transport reste le repli
-  8N1, sans protocole synchrone. BREAK asynchrone cadencé par intervalle de
-  caractère, TE coupé terminé à la frontière sans stop, TDR retenu ; reprise
-  par stop d’une période TX déduit du manuel puis TDR/UE. Restent l’onde
-  physique et la phase du premier front TC.
-- IKBD : sorties firmware avant initialisation du diviseur désormais rejetées,
-  sans délai résiduel ; état d’initialisation conservé et sauvegardé v46.
-  Reset matériel : registres CR/SR/RDR, erreurs et pipeline TX ACIA conservés ;
-  SCI sortant annulé séparément. Transit CPU→SCI au reset reconstruit par bits
-  en /64 8N1 : timer réancré, reprise sur fragment, stop et bits de repos,
-  y compris contamination du caractère suivant. Formats/diviseurs physiques
-  autres que /64 8N1 différés.
-- FDC READ ADDRESS : CRC ID désormais signalé après les six octets,
-  sans confondre CRC ID et CRC de données (2026-10-19).
-- Microwire : écritures octet DATA fusionnées avec le registre visible après
-  décalage, sans ressusciter l’autre octet de la commande précédente ;
-  écritures mot/long et rejet occupé conservés (2026-10-19).
-- SCC First : Error Reset efface aussi l’IP du caractère rejeté, sans
-  l’hériter au suivant ; réarmement explicite inchangé (2026-10-19).
-- STX WRITE SECTOR : bit0 choisit désormais FB normal (A8) ou F8 supprimé
-  (A9), statut RECTYPE et CRC du READ TRACK reconstruit cohérents (2026-10-19).
-  Extension SECT `NDAM` + marque pour F8 dans le .wd1772 ; anciens SECT sans
-  extension relus normaux. Données lisibles par Hatari, métadonnée ignorée et
-  susceptible d’être perdue après réécriture par Hatari/ancien NeoST.
-  READ TRACK fusionne localement les overlays dans l’image de piste décodée,
-  y compris les champs coupés par l’index, sur moins d’un tour complet.
-  Synchronisation zéro, ancrage ID aligné exact, CRC d’origine valides et
-  association non ambiguë requis ; sinon l’image est conservée. Traversée
-  d’une fin de dump écrêté refusée. Pas de moteur MFM général.
-  Images ST/MSA/DIM sans représentation persistante de la DAM.
-  États v45 inchangés : commande en vol sauvegardée, contenu média hors état.
-- STX WRITE TRACK : marque de secteur supprimé F8 conservée en READ SECTOR et dans
-  la reconstruction READ TRACK, y compris après snapshot/remontage (2026-10-19).
-- Microwire : rattrapage des fronts de huit cycles et des accès Data/Mask
-  avant dispatch porté (2026-10-19), départ liveNow et fin après seize fronts.
-  Shelves Savinkoff, signe LMC et HPF du mélange STE déjà portés, revérifiés.
-- API Bus : masque 24 bits avant écriture blitter atomique mot/long,
-  aussi aux miroirs ; cycles CPU déjà normalisés par Moira (2026-10-19).
-- MMIO : ombres PSG impaires et décodage MFP pair/void déjà portés dans le Bus,
-  requalifiés le 2026-10-19 ; anciens candidats 23/26 clos. Son DMA : compteur
-  sans refill à la lecture et masque haut déjà conformes dans le périmètre
-  revérifié ; octet scratch $FF8920 désormais conservé au snapshot v42.
-- Blitter : reset chaud conserve RAM halftone et pipeline source (2026-10-19),
-  selon Hatari ; initialisation froide déterministe NeoST conservée.
-- SCC Z85C30 : lectures étendues WR7’ D6 portées (2026-10-19) ;
-  autres fonctions WR7’ et FIFO SDLC restent à traiter.
-- ACSI : WRITE différé conserve cible et secteur engagés, aussi après
-  sauvegarde v45 (2026-10-19), même pendant une nouvelle sélection ACSI.
-- ACSI : montage limité à UINT32_MAX secteurs de 512 octets (2 Tio − 512),
-  capacité maximale représentable par les compteurs actuels. Images de 2 Tio
-  ou plus refusées avant conversion au lieu de tronquer leur taille (2026-10-19).
-- SCC : verrou d’erreur conservé entre First/Special et Special Only ;
-  Error Reset, reset et politiques des autres modes préservés (2026-10-19).
-- ACSI : délai de fin DMA porté le 2026-10-18, 1 000 cycles CPU comme Hatari ;
-  acquittement des octets de commande conservé. Aucun essai Idris OS effectué.
-  READ DMA hors RAM renvoie CHECK CONDITION sans modifier le sense disque ;
-  source WRITE en ROM inaccessible dans les configurations supportées (RAM
-  256 Ko à 4 Mo, adresse DMA limitée à $3FFFFE), pas de port ROM nécessaire.
-  Borne READ/WRITE non signée corrigée (2026-10-19) : début d’image de
-  plus de 1 Tio accessible, sans relâcher la borne de fin. Banc sparse POSIX,
-  occupation physique de quelques Ko ; banc sauté sur Windows ou FS non sparse.
-- FDC : WRITE TRACK ST refuse avant toute copie les IDs d’une autre piste/face
-  et les secteurs dupliqués ; LOST_DATA pour un flux non représentable (2026-10-19).
-- FDC : WRITE SECTOR STX long puis sélection live d’un lecteur ST limité
-  à 512 octets dans l’image cible, voisin et fin d’image préservés (2026-10-19).
-- ⭘ **Test F (disquette) de la cartouche STE_Test v1.9 : « Cannot write drive A/B »,
-  drives vus SS** (pré-existant au chantier MegaSTE ; le test F du diagnostic MegaSTE,
-  lui, PASSE avec le même FDC émulé — la cartouche STE détecte les faces/l'écriture
-  autrement). Trace façon FDC + Hatari en oracle sur la même cartouche. _Valeur moyenne._
-  Passe du 2026-10-18 : cartouche absente, donc diagnostic toujours ouvert. Un
-  défaut distinct est corrigé : la géométrie BPB était figée au montage, même
-  après réécriture du boot. Régression DMA et persistance MSA gardées ; aucun
-  lien causal établi avec le test F.
-
-### FPU MC68881 (audit 2026-07-12 — actualisé le 2026-10-18)
-- ✅ **Arrondis de conversion SORTANTE bit-exacts — FAIT le 2026-09-02.**
-  `floatx80_to_int32/16/8` et `floatx80_to_float32/64` (+ leurs `roundAndPack*`) sont portés
-  dans `src/io/SoftFloatX80.hpp` (`sf::toInt`, `sf::toFloat32/64`) et `Fpu::encodeFmt` ne
-  traverse plus de `double` hôte pour L/W/B/S/D. Sont réglés du même coup : le **double
-  arrondi** (64 → 53 bits AVANT l'arrondi demandé), **INEX2 jamais levé**, le **mode FPCR
-  ignoré** en sortie, l'**UNFL** absent et l'**OVFL silencieux en D**, et un NaN rend enfin
-  son **payload** au lieu de 0.
-  Exhibé et gardé par trois cas ajoutés au banc (`tools/make_fpu_testrom.py`, 9 → 12 tests,
-  palier `fast` via l'auto-test série `fpu_cir`) : **test 10** l'étendu juste au-dessus de 0,5
-  ($3FFE 80000000_00000001) doit rendre 1 en FMOVE.L — il rendait **0**, le `double` le
-  ramenant à 0,5 exact puis la règle du pair l'envoyant à zéro ; **test 11** INEX2 armé par
-  FMOVE.L de 1,5 ; **test 12** FPCR en RZ → FMOVE.S de 1/3 TRONQUE ($3EAAAAAA) au lieu
-  d'arrondir au plus près ($3EAAAAAB) comme le faisait l'hôte. Les trois vérifiés par
-  mutation (chacun échoue si l'on rétablit le chemin `double`).
-  ⚠ **Piège d'outillage débusqué au passage** : `disks/etalons/fpu_testrom.img` est COMMISE et
-  `ensure_rom_asset` ne la régénère que si elle est ABSENTE — les tests ajoutés sont restés
-  invisibles du palier tant qu'on ne l'avait pas re-commise. Et une ROM `rom_generate`
-  manquante était classée « TOS Atari absent » donc SKIP (vert sans rien exécuter) : garde
-  corrigée dans `tools/run_selftests.py`.
-  **FSGLMUL/FSGLDIV : déjà portés, revalidés le 2026-10-18.** `roundSigAndPack`
-  conserve la plage d'exposant ÉTENDUE avec une mantisse 24 bits. Les nouveaux tests
-  CIR gardent les grands exposants, l'arrondi, les NaN et les dénormalisés ; la mention
-  « reste à porter » était périmée.
-- ✅ **Décimal empaqueté — port bit-exact (2026-10-18).**
-  `src/io/SoftFloatDecimal.hpp` reprend `softfloat_decimal.c` et les wrappers
-  `fp_to_pack/from_pack` d'Hatari : 17 chiffres, quatre arrondis, exposants étendus,
-  k positif ou ≤ 0, NaN/SNaN, INEX1 entrant et INEX2 sortant. Les exceptions de
-  conversion survivent à l'opération et sont livrables par le Response CIR.
-  Les zéros sont protégés avant normalisation. Les étendus non canoniques en
-  sortie P produisent OPERR+NaN : garde volontaire là où l'oracle peut faire un
-  décalage indéfini. Le k dynamique reste fixé à 17 (registre CPU Dn inaccessible).
-- ✅ **FMOVECR — précision FPCR et offsets indéfinis (2026-10-18).** Table silicium
-  `fpp_cr_undef`, ajustements de mantisse et codes de condition portés ; 2 048
-  combinaisons CIR comparées au véritable `fpu_get_constant` d'Hatari.
-  FMOD à précision réduite était déjà porté et reçoit un test CIR dédié.
-- ✅ **FMOVE/FABS/FNEG — précision FPCR (2026-10-18).** Port de
-  `floatx80_move/abs/neg`, avec limites d'exposant simple/double, NaN/SNaN et
-  exceptions ; 1 443 cas comparés au véritable SoftFloat d'Hatari. Le mutant
-  qui rétablit le comportement précédent provoque 507 échecs.
-
-- **FINTRZ (2026-10-18)** : INEX2 et SNAN propagés à FPSR et au Response CIR ;
-  1 156 comparaisons FINT/FINTRZ avec SoftFloat Hatari, 54 groupes mini-ROM.
-- **Limites restantes** : transcendantes en double hôte ; k dynamique non transmis
-  par le dialogue périphérique actuel. Les bancs comparent les opérations au moteur
-  Hatari ; ils ne constituent pas une mesure sur un 68881 physique.
-
-### Périphériques & profils machine
-- **Cartridge port** `$FA0000-$FBFFFF` générique (au-delà du système GEMDOS) — réf. `cart.c`.
-
-### Système de régression — restes
-(La pyramide, ses paliers et ses chiffres → `CLAUDE.md` et `DEV.md`.)
-- ✅ Comparaison temporelle Hatari livrée le 2026-10-19 : quatre timers MFP
-  (prescalers distincts), Timer B événement vidéo et son DMA STE ; 256 IRQ
-  comparées par sonde. Ajout DMA disquette (32 rafales + IRQ, travail CPU),
-  blitter HOG/partagé (64 transferts + IRQ et boucles CPU). Références Hatari
-  épinglées rejouées deux fois en CI oracle ; contrôle NeoST dans `full`.
-  Écart partagé +60/+42/+3 corrigé : dix-sept sondes passent sans KNOWN,
-  avec tailles 16/128/256 mots, MULU, TAS et exécution RAM ; fin observée à
-  +4 cycles, IRQ à +2 en ROM / +4 en RAM, compte CPU identique. BL5 pixel clos :
-  68 → 0 px, `blitter_timer` promu en oracle Hatari. HOG passe par le même
-  PRE_START, verrou et recouvrement. Onze sondes CPU/cache MegaSTE 16 MHz
-  ajoutées : égalité exacte contre Hatari, sans IRQ ni DMA ; phases RAM et
-  chevauchement hit/DMA couverts localement. Restent : écriture DMA disquette,
-  STX et comparaison exacte globale blitter/IRQ MegaSTE 16 MHz. Douze cas
-  NeoST respectent désormais les bornes physiques ; deux défauts Hatari sont
-  isolés, mais environ 12–24 cycles restent à expliquer avec ses correctifs
-  expérimentaux (voir `docs/HATARI_MEGASTE_AUDIT.md`). Le cycle-bench CPU
-  reste une auto-régression distincte.
-- self-tests P0 supplémentaires (autres Timers, ACIA) ;
-- si une vraie démo spec512 **overscan** (bordures ouvertes) libre est rapatriée un jour →
-  l'ajouter en étalon oracle (l'auto_diapo est 100 % borderless).
-
-### Outillage / qualité
-- **Étalons headless** : calibrer frames + références Cuddly / Union / Troed / Hatari Test
-  Suite ; rapatrier Union (planetemu manuel). Infra en place (`tools/run_etalons.py`).
-- **Comparaison MAME ↔ NeoST** (memory map, bus errors, FDC/MMU FIFO, blitter, SCC).
-- **Matrice MegaSTE — restes** : combinaisons DD/HD × cache par balayage systématique si un
-  jour un titre l'exige.
-- Capturer des **traces Hatari de référence** pour `trace_diff` (Arkanoid & co).
-- ⭘ **Hygiène FujiNet — décision de mainteneur** : le code est retiré (2026-08-22), restent
-  deux mentions historiques (commentaire de version save-state dans `src/core/Machine.cpp`,
-  entrées `CHANGELOG.md`). Reformuler ou assumer — un changelog garde normalement la trace
-  de ce qu'il a supprimé.
-
-### Station MIDI — le ST comme séquenceur d'un studio moderne (relevé 2026-08-29)
-
-- **Émission ACIA (2026-10-18)** : TDR/TSR, TDRE au chargement du TSR et
-  sortie réelle au bit de stop, y compris bouclage et horodatages hôtes.
-  RX : un seul RDR, overrun et acquittement SR→RDR ; phase continue aux
-  callbacks tardifs et aux resets/remplacements de source. TX respecte les huit
-  formats ACIA et les diviseurs /1, /16, /64 ; source RX hôte encore limitée au
-  câble MIDI 31250 bauds 8N1. BREAK retient le TDR et laisse finir le TSR ;
-  sa forme d’onde et les erreurs de format physiques ne sont pas simulées.
-
-> Cas d'usage visé : un Mac porte les AU/VST et les claviers USB, le ST porte Cubase ou
-> Notator et mène la séance. La **sortie** est déjà au niveau : gigue σ 0,4-1,7 ms et
-> pente de tempo 1,001 mesurées sur 200 notes (`run_midi_sequencer.py`). Ce qui suit est
-> ce qui manque pour y brancher un vrai studio plutôt qu'un seul appareil.
-
-- ~~**Débit d'entrée — plafond à 4,5 % d'un câble MIDI.**~~ **LIVRÉ le 2026-08-29.**
-  L'injection hôte→ACIA se faisait une fois par trame et le 6850 n'accepte que 2 octets :
-  plafond 2 octets/trame, ~143 o/s en mono contre 3 125 o/s sur un vrai câble. C'est
-  désormais l'ACIA qui TIRE, sur `Scheduler::MIDI_RX` (2 560 cycles/octet), comme
-  `IKBD_RX` le fait pour l'ACIA clavier. **Mesuré en temps réel : 40,4 octets/trame,
-  soit ~2 885 o/s — 92 % d'un câble, ×20.** Le débordement redevient celui du matériel
-  (le 6850 perd l'octet neuf) au lieu d'être masqué par une rétention côté hôte.
-- ~~**Un seul appareil de chaque côté.**~~ **LIVRÉ le 2026-08-29.** Entrée : boîtier de
-  **fusion** (N sources → l'unique ACIA, entrelacement aux frontières de MESSAGES, un
-  décodeur par source) avec **canalisation** par source, sans quoi deux claviers émettant
-  tous deux sur le canal 1 seraient inséparables pour le séquenceur. Sortie : **aiguillage
-  par canal** (chaque destination reçoit le masque de canaux qu'on lui donne ; les
-  messages système vont à toutes). Reste ouvert ci-dessous : le multi-PORTS, qui est un
-  autre sujet — l'aiguillage répartit 16 canaux, il n'en crée pas 32.
-- ~~**Latence de jeu.**~~ **RÉGLABLE depuis le 2026-08-29** (`midi_lead_ms=`, curseur
-  0-100 ms sur la page MIDI ; mesuré : 190 ms d'écart de livraison pour 200 ms commandés).
-  La part « entrée » était déjà tombée avec le point précédent. ⚠ L'avance ne protège PAS
-  du cas courant — l'émulation d'une trame prend moins de temps réel qu'une trame, donc à
-  0 ms d'avance aucun octet n'est en retard sur un run sain (mesuré) ; elle protège du
-  RATTRAPAGE quand la boucle décroche. D'où le témoin `lateBytes` : le réglage se baisse
-  jusqu'à ce qu'il se déclenche, plutôt qu'à l'aveugle. Ce qui reste ouvert : ~30 ms
-  (`MidiOutHost::kLeadMs`, le prix payé pour tuer la gigue). Un pianiste le sent. Rendre
-  cette avance **réglable** : c'est un arbitrage gigue/latence qui appartient à
-  l'utilisateur. Le premier point ci-dessus supprime la part « entrée ».
-- **16 canaux — pas d'interface multi-ports.** (L'aiguillage livré répartit les 16 canaux
-  du ST entre plusieurs appareils ; il n'en ajoute pas.) Le ST n'a qu'un MIDI OUT ; les **C-Lab
-  Unitor** et **Steinberg Midex** en ajoutaient (32/64 canaux, SMPTE). Curiosité : la
-  *clé* de l'Unitor-N est **déjà émulée** (c'est la même que celle de Notator), mais pas
-  le boîtier. `CartDevice.hpp` sait déjà que MIDEX et Combiner empilaient des clés.
-- **Notator n'a jamais tourné.** Il est cité comme séquenceur voulu au même titre que
-  Cubase, mais aucun étalon ne l'exerce et sa clé garde **deux incertitudes** non
-  tranchées faute de Notator SL original (cf. le point « Clé Notator » plus bas). Tant
-  que le logiciel n'a pas démarré une fois, c'est une promesse, pas une capacité.
-- ~~**Profils d'appareil.**~~ **LIVRÉ le 2026-08-29** (`src/audio/MidiDeviceProfiles.hpp`).
-  Une entrée pour l'instant : **Novation Circuit Tracks**, d'après son *Programmer's
-  Reference Guide* v3 — Synth 1 canal 1, Synth 2 canal 2, pistes MIDI 1-2 canaux 3-4,
-  **Drums 1-4 tous sur le canal 10** (ils se distinguent par la NOTE : 60, 62, 64, 65),
-  canal 16 réservé au Project Control. Le bouton pose le masque `$020F`, l'infobulle
-  donne le plan. ⚠ Ce sont des défauts d'usine, réassignables en Setup View : la table
-  n'accepte qu'une source constructeur **citée**, jamais une supposition.
-- ~~**Appareils HOMONYMES non distinguables.**~~ **LIVRÉ le 2026-08-29**
-  (`src/audio/MidiEndpoint.hpp`). La config mémorise désormais l'identifiant unique de
-  l'hôte (`kMIDIPropertyUniqueID` sous CoreMIDI) À CÔTÉ du nom, et l'appariement fait
-  deux passes — identifiant d'abord, nom ensuite — en n'attribuant **jamais deux fois le
-  même point de terminaison**. Deux claviers du même modèle s'ouvrent donc chacun sur le
-  sien, y compris sous **ALSA** qui n'a pas d'identifiant stable (la règle de
-  non-réattribution suffit tant qu'ils sont branchés ensemble). L'identifiant est
-  **appris** à la première ouverture d'un appareil désigné par son seul nom, si bien
-  qu'une config d'avant devient sûre toute seule. Étiquettes suffixées « #1 / #2 » dans
-  l'interface, sans quoi deux lignes seraient rigoureusement identiques.
-  ⚠ Ce qui reste hors de portée : deux appareils homonymes dont un seul est branché,
-  sous ALSA — rien ne permet alors de savoir lequel.
-- **Canal forcé par source : pas de « splitter » clavier.** Un vrai boîtier de fusion sait
-  aussi couper un clavier en zones (grave → canal 1, aigu → canal 2). Ici une source = un
-  canal.
-- **Pas de synchro SMPTE/MTC.** L'horloge MIDI traverse (ce ne sont que des octets), donc
-  le ST peut mener un DAW. Le code de temps SMPTE de l'Unitor, non.
-- ~~**Windows : le synthé GM intégré marche, le reste non.**~~ **LIVRÉ le 2026-08-31**
-  (backend winmm, `src/audio/MidiWinmm.hpp`) : destinations matérielles et sources
-  hôtes marchent sous Windows comme sous macOS/Linux, identifiant unique compris
-  (chemin d'interface USB — mieux qu'ALSA, qui n'en a aucun). Vérifié sur matériel
-  réel (Novation Circuit Tracks). **Reste hors de portée : le port virtuel**
-  « NeoST MIDI OUT » — Windows n'a aucune API pour créer un port que les autres
-  applications voient (ni winmm, ni WinRT MIDI 1.0). Le contournement est un pilote
-  tiers (loopMIDI), dont le port apparaît ensuite comme un appareil ordinaire ; la
-  page MIDI le dit. Windows MIDI Services (MIDI 2.0, Win11) le ferait nativement mais
-  s'installe à part et exigerait une pile WinRT/COM incompatible avec le zip autonome.
-
-### Réseau (extensions NeoST — base livrée 2026-08-12, cf. `docs/EXTENSIONS.md`)
-
-> Les chantiers **clos** de ce front (Slirp 5/5, fenêtres EtherNEC ROM3/ROM4, CAB affiche
-> theoldnet.com) → `CHANGELOG.md` (2026-08-27), recettes incluses.
-
-- ~~**MIDI OUT Windows**~~ : **LIVRÉ le 2026-08-31** — `MidiOutHost` et `MidiInHost`
-  couvrent désormais CoreMIDI (macOS), ALSA (Linux) et **winmm** (Windows). Cf. la
-  section *Station MIDI* ci-dessus pour la seule case qui reste vide (port virtuel).
-- **Périphériques des ports — validation** : `PortDevices` transcrit Steem/WinUAE sans
-  logiciel à clé sous la main. À exercer : Leader Board / 10th Frame (dump ST), B.A.T. II,
-  Music Master, et l'option « Pro Sound » de Wings of Death / Lethal Xcess (présents en
-  STX) pour entendre le DAC. **Clé Notator** (`--dongle notator`) : à confronter à un
-  Notator SL original — deux incertitudes à trancher sur le vrai matériel (front de /ROM4
-  cadençant FEEDB1 ; ordre UDS↔/ROM4 à l'armement). Restent sans relevé public : Log 3
-  (EP330), Pro-24 (GAL16V8), Avalon / Synthworks, Zodiac, DynaBlaster. L'outil pour
-  trancher existe : capture matérielle `R3`/`R4`/`U` + `--key-replay`
-  (recette → `docs/EXTENSIONS.md`).
-- **Dongles — frontends WASM/Android** : `PortDevices`/`CartridgeKey` ne sont exposés que
-  par le GUI et le headless ; le menu Android et la démo web n'ont pas de page Dongles.
-- **Clé Steinberg — validation** : `CartridgeKey` (rouge/noire, équations MiSTery) n'a
-  jamais vu un Cubase 3.10 / Score / 2.01 réel — il faut une disquette originale (non
-  crackée). (La « destination CoreMIDI au lieu de la seule source virtuelle » qui figurait
-  ici est **livrée** le 2026-08-29, dans les deux sens — cf. `docs/EXTENSIONS.md`.)
-- **NetUSBee — périphériques USB hôte** : l'ISP1160 (`io/Isp1160`) est un hub racine
-  VIDE ; brancher un clavier/souris HID puis un stockage de masse derrière
-  `HcRhPortStatus`. Banc d'essai : pilotes FreeMiNT `netusbee.ucd` + `usb.km`.
-- **NetUSBee — fenêtre LSB partagée** : `$FA0000-$FA01FF` = latch ISP1160 ET lecture du
-  registre CR NE2000 ; NeoST laisse les deux puces voir l'accès faute de schéma. À
-  trancher sur le schéma du NetUSBee (hardware.atari.org), puis ajuster `Bus::read8Slow`.
-- **UltraSatan — `US_CONF.TOS` réel** : l'outil de Jookie (ce-atari) compile avec Pure C ;
-  le passer sur NeoST pour valider au-delà du programme de test maison. Idem HDDRIVER/ICD
-  PRO sur une image 2 slots.
-- **EtherNEC — validation TOS 1.04** : le backend réel existe (`SlirpNat`, 5/5) ; reste à
-  valider STinG + `ENEC.STX` sous TOS 1.04 (DHCP + ping/GET), consigner dans
-  `docs/CASE_STUDIES.md`, et **livrer les pilotes libres GPL** dans les paquets.
-- **Modem/STinG** : documenter l'installation STinG (noyau + `sting.inf` dans `AUTO`,
-  modules dans `C:\STING`) dans `docs/TEST_SOFTWARE.md` ; banc SLIP bout-en-bout.
-- **MIDI ring** : réception headless cadencée sur l’horloge série (tampon UDP par
-  trame, un octet par 2560 cycles). Restent l’option GUI (saisie du pair) ; test en anneau à 2 nœuds (deux instances
-  NeoST — ⚠ bloqué par le mono-instance A33 si c'est en un seul processus).
-- **Sécurité** : liste blanche de domaines optionnelle pour les backends sortants.
+- **Kiosk & CRT, cosmétique** · P3 ⭘ — membres `srcW_`/`srcH_` morts dans
+  `CrtEffectStack` ; tenir gauche/droite bloque la répétition haut/bas en kiosk.
+  Limitations CRT v1 assumées (baril/vignette sur le buffer entier en kiosk ;
+  GL 2.1 → passthrough).

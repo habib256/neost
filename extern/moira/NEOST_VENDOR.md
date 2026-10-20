@@ -13,6 +13,23 @@ premier `git submodule update`** — ce qui s'est déjà produit une fois (fork 
 perdu, commits `e4da365`/`a1e52ec` introuvables). La vendorisation fige le code et
 le patch dans l'historique NeoST, à l'épreuve du clobber.
 
+## DIVU/DIVS : cycles internes avant le préfetch (2026-10-20)
+
+- `MoiraExec_cpp.h`, `execDivsMoira` / `execDivuMoira` : sur 68000, `SYNC(cycles)`
+  précède désormais `writeD` et le préfetch. Port de l'amont
+  [`f90fc50`](https://github.com/dirkwhoffmann/Moira/commit/f90fc501f8aa1025072ce96def343eaf14f1a185)
+  (« Fixed DIVU/DIVS prefetch timing », 2026-09-23), restreint au 68000 comme chez
+  lui. Hatari CE fait de même (`op_80c0_13_ff` : `do_cycles_ce000_internal` puis
+  `get_word_ce000_prefetch`).
+- **Ce correctif avait déjà existé** : commit de fork `e4da365` (2026-06-17, « DIV idle
+  avant prefetch », cf. `docs/MOIRA_WINUAE_CONVERGENCE.md`). Il n'était **pas** dans le
+  code vendorisé le 2026-06-25 — perdu avec le fork écrasé — et l'audit du 2026-08-13
+  ne l'a pas vu, faute d'exhibiteur : le cycle-bench tourne en cartouche (FAST), où
+  l'ordre n'a aucun effet.
+- Exhibiteur : sonde `cpu_div_ram` de `tools/run_timing_oracle.py` (24 couples
+  DIVU puis DIVS exécutés en RAM, durée de chaque itération comparée à Hatari au
+  cycle près). Avant : 14 itérations DIVU et 9 DIVS courtes de 4 cycles ; après : 0.
+
 ## Bornes bus et trace d'instruction (2026-10-19)
 
 - `Moira.h` / `Moira.cpp` : hook protégé `willProcessFault(StackFrame)`
@@ -86,10 +103,10 @@ code vendorisé correspond au contenu du fork local à `a1e52ec` (dépôt dispar
 l'impossibilité de rejouer son historique — mais son CONTENU est ici, dans
 l'historique NeoST).
 
-⚠ Ce que ce tableau NE dit PAS : que `1efd6946` existe encore chez l'amont. Il n'a pas
-été vérifié contre GitHub (aucun accès réseau utilisé pour l'établir) — c'est ce que le
-dépôt NeoST a enregistré, ce qui est déjà infiniment mieux que rien. Le vérifier est un
-`git ls-remote` à faire au premier rebase.
+✅ **Vérifié le 2026-10-20** : `1efd6946` existe toujours chez l'amont et il est atteignable
+depuis `master` (« Added .nojekyll », 2025-09-11). L'amont compte 11 commits de plus à
+cette date, dont `f90fc50` (DIVU/DIVS, porté ci-dessus) ; les autres concernent
+68020/68030, vAmiga et l'empreinte mémoire.
 
 **Rebaser, désormais** : cloner l'amont au pin, appliquer le diff `Moira/` du fork
 vendorisé, puis rejouer les six patches ci-dessous un par un (ils sont documentés
@@ -115,9 +132,18 @@ diff -ru /tmp/moira-upstream/Moira extern/moira/Moira
 ```
 
 Ce `diff` est le premier livrable utile : il transforme « six patches décrits en prose »
-en une liste de hunks vérifiable. Le faire tourner le `Cputester` ensuite dépend de ses
-dépendances propres (corpus ADF, cœur de référence) — **non évalué ici**, faute de
-réseau ; ce qui précède, lui, l'a été.
+en une liste de hunks vérifiable.
+
+**Évalué le 2026-10-20.** Le `Cputester/` amont est le cputester de Toni Wilen sur
+disquettes Amiga (ADF/HDF), à exécuter dans vAmiga : inutilisable sur un ST, écarté.
+L'outil retenu est `Runner/` : Moira contre Musashi sur opcodes et données aléatoires
+(désassemblage, total de cycles hors TAS, SR, registres, écritures mémoire), tous
+modèles CPU. `tools/run_moira_runner.sh` le bâtit contre la copie vendorisée
+(clone sans extraction dans `extern/moira-upstream/`, gitignoré) ; `--upstream` ajoute
+le témoin au pin. Résultat : tous les modèles PASSED, patches NeoST compris. Une
+mutation de l'ALU (`EOR`) est rejetée (« DATA REGISTER MISMATCH »). Limite : les
+cycles comparés sont des totaux de table, pas la position des cycles bus — ce banc
+n'aurait pas vu la perte du correctif DIV ci-dessus.
 
 ## Contenu conservé
 

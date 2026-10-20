@@ -483,6 +483,9 @@ banc `tools/make_cycle_bench.py` par classe). Verdict **avec NEOST_RAM_SLOT=1** 
   à la phase PRÉ-idle au lieu de POST-idle (DIFF ssi idle%4==2). **Fix** : reorder dans
   `execDivsMoira`/`execDivuMoira` (MoiraExec_cpp.h, fork Moira committé e4da365). Neutre sans
   RAM_SLOT (étalons inchangés), converge avec.
+  ⚠ **Perdu à la vendorisation du 2026-06-25, rétabli le 2026-10-20** par le port du
+  correctif amont équivalent `f90fc50`, désormais gardé par la sonde `cpu_div_ram`
+  (cf. `extern/moira/NEOST_VENDOR.md`).
 
 ⇒ **La datation cycle d'instruction de NeoST = WinUAE, cycle pour cycle, sur tout le jeu courant.**
 C'est le « full WinUAE timing convergence » au niveau INSTRUCTION. (Garder NEOST_RAM_SLOT opt-in tant

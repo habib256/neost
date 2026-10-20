@@ -314,7 +314,7 @@ def run_tier(steps, skipped=()) -> int:
     print("\n" + ("=" * 60))
     if skipped:
         print(f"⚠ {len(skipped)} étape(s) NON EXÉCUTÉE(S) — données non redistribuables "
-              "absentes (cf. TODO § BLOQUANT RELEASE) :")
+              "absentes (restauration : tools/private_assets.sh unpack) :")
         for label in skipped:
             print(f"    · {label}")
     if not ok:

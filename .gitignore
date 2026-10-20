@@ -60,6 +60,9 @@ venv/
 
 # Hatari (référence, non committé)
 extern/hatari/
+# Moira amont (tools/run_moira_runner.sh, A35) : clone et build hors historique.
+extern/moira-upstream/
+build-moira-runner/
 extern/spsdeclib_*/
 
 # capsimg (licence SPS non-commerciale — non redistribuable, non compilé)

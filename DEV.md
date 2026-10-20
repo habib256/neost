@@ -407,7 +407,8 @@ FC0030: bra     $fc004e
   DMA disquette et le blitter HOG/partagé aux traces de référence Hatari,
   sans oracle local (palier `full`). `--oracle-check` rejoue Hatari
   deux fois et contrôle ses références sans les modifier (CI hebdomadaire).
-  Dix-sept sondes : trois tailles de blit, MULU, TAS et exécution en RAM ST ;
+  Dix-neuf sondes : trois tailles de blit, MULU, TAS et exécution en RAM ST,
+  écriture DMA disquette et ordre des cycles de DIVU/DIVS en RAM ;
   aucune exception KNOWN.
   `--strict` est conservé, la même politique s'applique désormais par défaut.
   Les traces portent les instructions réelles avant exécution ; IRQ et STOP

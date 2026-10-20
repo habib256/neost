@@ -6,6 +6,33 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## DIVU/DIVS rétabli, écriture DMA disquette comparée, outils AppImage épinglés (2026-10-20)
+
+- **DIVU/DIVS : cycles internes avant le préfetch (68000).** Le correctif du fork
+  Moira `e4da365` (2026-06-17) avait été perdu à la vendorisation du 2026-06-25 :
+  sous `NEOST_RAM_SLOT` (défaut), un DIV exécuté en RAM sortait jusqu'à 4 cycles
+  trop tôt. Port de l'amont `f90fc50`, conforme à Hatari CE (`op_80c0_13_ff`).
+  Nouvelle sonde `cpu_div_ram` : 14 itérations DIVU et 9 DIVS fausses avant,
+  0 cycle d'écart sur 46 après. Palier `full` vert, étalons pixel à 0 px.
+- **Sonde `fdc_write`** (WRITE SECTOR DMA) : rafales vues au compteur `$FF860D`,
+  statut contrôlé, secteur relu sur l'image NeoST. Intervalles et fin identiques
+  à Hatari à la résolution du banc (un tour de scrutation, 22 cycles). Écart
+  relevé, non tranché : la première rafale arrive ~9 500 cycles plus tard chez
+  NeoST (angle de rotation à l'armement). Banc temporel : 19 sondes, les 17
+  références existantes inchangées.
+- **A35 soldé.** Pin Moira `1efd6946` vérifié chez l'amont. `Cputester` écarté
+  (disquettes Amiga pour vAmiga) ; `tools/run_moira_runner.sh` bâtit le `Runner/`
+  amont (Moira contre Musashi) sur la copie vendorisée : tous modèles PASSED,
+  mutation ALU rejetée.
+- **AppImage : outils épinglés et vérifiés.** `make_appimage.sh` prend linuxdeploy
+  au tag immuable `1-alpha-20251107-1` (comme `Dockerfile.bionic`) et vérifie le
+  SHA256 de linuxdeploy, appimagetool et du runtime aarch64, par architecture ;
+  le cache local n'est réutilisé que s'il vient du même binaire. Le `continuous`
+  de linuxdeploy republié le 2026-08-01 n'est plus utilisé sur arm64.
+- **TODO réorganisé** : uniquement l'ouvert, priorisé (P1-P3), une section par
+  puce, attentes externes à part (1 171 → ~300 lignes). Shadow Warriors passe en
+  attente de média (disque absent de ce poste).
+
 ## NO_SYNC/SYNC_HIGH : sondes ST/STE et gardes d'annulation (2026-10-19)
 
 - Confronter les branches NO_SYNC/SYNC_HIGH et leurs annulations au pin

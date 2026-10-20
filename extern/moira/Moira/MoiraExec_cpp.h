@@ -4281,12 +4281,25 @@ Moira::execDivsMoira(u16 opcode, bool *divByZero)
         return;
     }
 
-    result = divsMoira<C>(dividend, divisor);
-    writeD(dst, result);
-    prefetch<C, POLL>();
-
     [[maybe_unused]] auto cycles = cyclesDiv<C, I>(dividend, (u16)divisor) - 4;
-    SYNC(cycles);
+
+    // NeoST : port de l'amont f90fc50 (« Fixed DIVU/DIVS prefetch timing »). Sur
+    // 68000, les cycles internes précèdent le préfetch (Hatari CE, op_80c0_13 :
+    // do_cycles_ce000_internal puis get_word_ce000_prefetch).
+    if constexpr (C == Core::C68000) {
+
+        SYNC(cycles);
+        result = divsMoira<C>(dividend, divisor);
+        writeD(dst, result);
+        prefetch<C, POLL>();
+
+    } else {
+
+        result = divsMoira<C>(dividend, divisor);
+        writeD(dst, result);
+        prefetch<C, POLL>();
+        SYNC(cycles);
+    }
 }
 
 template <Core C, Instr I, Mode M, Size S> void
@@ -4409,12 +4422,25 @@ Moira::execDivuMoira(u16 opcode, bool *divByZero)
         return;
     }
 
-    result = divuMoira<C>(dividend, divisor);
-    writeD(dst, result);
-    prefetch<C, POLL>();
-
     [[maybe_unused]] auto cycles = cyclesDiv<C, I>(dividend, (u16)divisor) - 4;
-    SYNC(cycles);
+
+    // NeoST : port de l'amont f90fc50 (« Fixed DIVU/DIVS prefetch timing »). Sur
+    // 68000, les cycles internes précèdent le préfetch (Hatari CE, op_80c0_13 :
+    // do_cycles_ce000_internal puis get_word_ce000_prefetch).
+    if constexpr (C == Core::C68000) {
+
+        SYNC(cycles);
+        result = divuMoira<C>(dividend, divisor);
+        writeD(dst, result);
+        prefetch<C, POLL>();
+
+    } else {
+
+        result = divuMoira<C>(dividend, divisor);
+        writeD(dst, result);
+        prefetch<C, POLL>();
+        SYNC(cycles);
+    }
 }
 
 template <Core C, Instr I, Mode M, Size S> void

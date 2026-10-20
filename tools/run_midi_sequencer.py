@@ -76,7 +76,7 @@ def main() -> int:
     if proprietary:
         for q in proprietary:
             print(f"  SKIP recensé : {q.relative_to(ROOT)} absent (non redistribuable "
-                  "— cf. TODO § BLOQUANT RELEASE)")
+                  "— restauration : tools/private_assets.sh unpack)")
         print("  ⚠ le séquenceur MIDI n'a PAS tourné — couverture amputée, pas verte.")
         return EXIT_SKIPPED
     for q in (DESKTOP_INF, a.song):

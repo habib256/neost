@@ -21,7 +21,7 @@ les puces) et **`neost_core` ne dépend pas du GUI**.
 | [`DEV.md`](DEV.md) | **Détails techniques** : architecture, horloge, bus, débogage headless, mapping Hatari, pièges matériels. |
 | [`CHANGELOG.md`](CHANGELOG.md) | **Chronologie** : releases puis chantiers datés. |
 | [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) | **Ce qui est fait, par puce** — répond à « NeoST gère-t-il X ? ». |
-| [`TODO.md`](TODO.md) | **Ce qui reste** — catalogue jeux + roadmap par sous-système. |
+| [`TODO.md`](TODO.md) | **Ce qui reste**, priorisé (P1-P3) : prochaines actions, attentes externes (matériel, médias), restes par puce, bugs jeux, extensions, dette. Un item clos en sort. |
 | [`README.md`](README.md) | Présentation et usage (en anglais, public). |
 | [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md) | **Précision cycle** : modèle Hatari, acquis, inventaire priorisé du restant. |
 | [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md) | **Inventaire maître** des écarts NeoST↔Hatari (sévérité + `fichier:ligne`). |

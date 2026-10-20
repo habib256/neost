@@ -218,7 +218,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         // lecteur, indexTime_ restait à 0, et INTRQ/GPIP5 n'était jamais levé. Symptôme :
         // Stardust sur STE gelait en noir après son menu (le CPU tournait dans
         // « tst.b D5 / bne $261e » en attente d'une IRQ FDC qui ne venait plus), là où
-        // Hatari atteint « INSERT DISK 2 IN ANY DRIVE ». Cf. TODO.md § D-PSG.
+        // Hatari atteint « INSERT DISK 2 IN ANY DRIVE ». Cf. TODO.md § 2 (Stardust STE).
         // refreshDriveSide() est idempotent (il ne ré-ancre l'index QUE si le lecteur change,
         // Fdc.cpp) — l'appeler à chaque écriture du port A est donc sûr, et c'est
         // exactement ce que fait Hatari.
