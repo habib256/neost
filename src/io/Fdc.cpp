@@ -1586,7 +1586,11 @@ uint8_t Fdc::readSectorStx(int* pSize) {
         recordType = save.dataMark == 0xF8 ? StxImage::FLAG_RECORD_TYPE : 0;
         readTime = 0;
     }
-    if (readTime == 0) readTime = 32u * sec.sectorSize;   // µs (valeur standard)
+    // Valeur standard : 32 µs/octet en DD, divisée par la densité du média (16 µs
+    // en HD, 8 en ED) — même correction que nextSectorIDStx, sans quoi un secteur
+    // HD durait deux secteurs et le suivant d'un multi-secteurs coûtait un tour.
+    // Hatari (floppies/stx.c) garde la constante DD.
+    if (readTime == 0) readTime = 32u * sec.sectorSize / uint32_t(densityFactor());
     readTime *= 8;                                        // µs → cycles FDC à 8 MHz
 
     double totalPrev = 0;
@@ -1618,6 +1622,9 @@ uint8_t Fdc::readSectorStx(int* pSize) {
         }
         bufferAddTiming(byte, timing);
     }
+    // Un secteur réécrit porte un champ données neuf au CRC juste : l'erreur CRC
+    // d'origine (champ données) ne survit pas à l'écriture.
+    if (writeData) return recordType;
     return (sec.fdcStatus & StxImage::FLAG_CRC) | recordType;
 }
 
@@ -1630,7 +1637,13 @@ uint8_t Fdc::writeSectorStx(int size) {
     if (!t || stxNextSector_ < 0 || stxNextSector_ >= t->sectorsCountView()) return STR_RNF;
     StxImage::Sector& sec = t->sectorsView()[stxNextSector_];
     if (sec.fdcStatus & StxImage::FLAG_RNF) return STR_RNF;
-    if (sec.fdcStatus & StxImage::FLAG_CRC) return STR_CRC;
+    // CRC seul (sans RNF) = erreur CRC du champ DONNÉES. Le WD1772 ne contrôle que
+    // le CRC du champ ID (MAME wd_fdc.cpp write_sector) puis écrit un champ données
+    // NEUF avec un CRC juste : l'écriture réussit et la relecture est saine. Hatari
+    // (stx.c FDC_WriteSector_STX) refuse ce cas en renvoyant CRC — contre son propre
+    // commentaire (« ID field CRC ») — et sa machine à états, qui ne teste que RNF,
+    // annonçait alors un SUCCÈS sans rien écrire : écriture perdue en silence.
+    // Un CRC d'ID erroné est codé RNF+CRC par Pasti, déjà refusé ci-dessus.
 
     if (sec.saveIndex < 0) {
         StxImage::SaveSector ss;
@@ -1795,7 +1808,11 @@ static std::vector<uint8_t> stxTrackWithSectorWrites(
         for (size_t i = 0; i < record.size(); ++i) record[i] = byte(dam + i);
         if (!std::equal(record.begin() + 4, record.end(), sector.pData)) continue;
         const uint16_t stored = (uint16_t(byte(end - 2)) << 8) | byte(end - 1);
-        if (crc16(record.data(), int(record.size())) != stored) continue;
+        // Secteur à erreur CRC données (CRC sans RNF) : le CRC du dump est faux par
+        // construction ; l'égalité des données suffit à valider l'ancre.
+        const bool dataCrcError = (sector.fdcStatus & StxImage::FLAG_CRC)
+            && !(sector.fdcStatus & StxImage::FLAG_RNF);
+        if (!dataCrcError && crc16(record.data(), int(record.size())) != stored) continue;
         patches.push_back({(dam + 3) % length, &write});
     }
     // Occuper aussi toutes les zones d'un candidat déjà ambigu : une collision
@@ -2295,13 +2312,6 @@ int Fdc::updateReadSectors() {
 
 int Fdc::updateWriteSectors() {
     int fdcCycles = 0;
-    // Disquette protégée → on s'arrête tout de suite (cf. Hatari, contrôle en tête).
-    if (driveSel_ >= 0 && drive_[driveSel_].present() && drive_[driveSel_].writeProtect) {
-        updateStr(0, STR_WPRT);
-        fdcCycles = cmdComplete(true);
-    } else {
-        updateStr(STR_WPRT, 0);
-    }
     switch (commandState_) {
      case RUN_WS_WRITEDATA:
         if (setMotorOn(cr_)) { commandState_ = RUN_WS_SPINUP; fdcCycles = REFRESH_INDEX; }
@@ -2314,6 +2324,17 @@ int Fdc::updateWriteSectors() {
         if (cr_ & CMD_BIT_HEADLOAD) { commandState_ = RUN_WS_MOTORON; fdcCycles = int(HEAD_LOAD); break; }
         [[fallthrough]];
      case RUN_WS_MOTORON:
+        // Protection en écriture testée APRÈS la montée en régime (6 index si h=0) et
+        // le délai E de 15 ms, avant la recherche d'ID : organigramme type II du
+        // WD177x et MAME wd_fdc.cpp (SETTLE_DONE → wpt_r). Hatari la teste dès le
+        // premier événement, avant le moteur : l'erreur tombait sans démarrage.
+        // Re-testée à chaque secteur d'un multi-secteurs (retour par MOTORON).
+        if (driveSel_ >= 0 && drive_[driveSel_].present() && drive_[driveSel_].writeProtect) {
+            updateStr(0, STR_WPRT);
+            fdcCycles = cmdComplete(true);
+            break;
+        }
+        updateStr(STR_WPRT, 0);
         replaceCommandPossible_ = false;
         indexCounter_ = 0;
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
@@ -2509,6 +2530,15 @@ int Fdc::updateWriteTrack() {
         if (cr_ & CMD_BIT_HEADLOAD) { commandState_ = RUN_WT_MOTORON; fdcCycles = int(HEAD_LOAD); break; }
         [[fallthrough]];
      case RUN_WT_MOTORON:
+        // Protection en écriture : après le délai E, AVANT l'attente de l'index
+        // (organigramme type III du WD177x, MAME SETTLE_DONE). Hatari la teste
+        // après l'index : l'erreur arrivait jusqu'à un tour trop tard.
+        if (driveSel_ >= 0 && drive_[driveSel_].present() && drive_[driveSel_].writeProtect) {
+            updateStr(0, STR_WPRT);
+            fdcCycles = cmdComplete(true);
+            break;
+        }
+        updateStr(STR_WPRT, 0);
         {
             const int64_t ni = nextIndexCycles();
             if (ni < 0) { fdcCycles = WAIT_NO_DRIVE; }
@@ -2522,12 +2552,6 @@ int Fdc::updateWriteTrack() {
             fdcCycles = cmdComplete(true);
             break;
         }
-        if (drive_[driveSel_].writeProtect) {
-            updateStr(0, STR_WPRT);
-            fdcCycles = cmdComplete(true);
-            break;
-        }
-        updateStr(STR_WPRT, 0);
         bufferReset();
         // Longueur de piste : réelle pour une STX, standard × densité pour une .ST
         // (cf. Hatari FDC_GetBytesPerTrack qui dispatche selon le type d'image).
@@ -3004,8 +3028,16 @@ void Fdc::acsiDmaTransfer() {
     if ((dmaMode_ & 0xC0) != 0x00 || acsi_.dataLen() == 0) return;   // pas un DMA ACSI / rien à faire
     const bool modeWrite = (dmaMode_ & DMA_WRBIT) != 0;
     if (acsi_.isWrite() != modeWrite) return;                        // sens DMA ≠ commande
+    // Compteur de secteurs DMA : la même puce que pour la disquette (fifoPush/
+    // fifoPull) n'acquitte plus aucun octet à compte nul, et décompte par bloc de
+    // 512 o. Compte nul → rien ne part : les données restent en attente côté
+    // cible (un compte programmé ensuite puis le retour en mode DMA les débloque).
+    // Hatari (hdc.c Acsi_DmaTransfer) ignore ce compteur ; le diagnostic Field
+    // Service vérifie $8606 bit1 = 0 après transfert (cf. dmaFixtureTransfer).
+    if (dmaSectorCount_ == 0) { dmaError_ = true; return; }
     bus_.megaSteCacheFlushIfEnabled();   // DMA disque dur via BGACK → cache Mega STE invalidé
-    const int len = acsi_.dataLen();
+    // Au plus count×512 octets : au-delà, le DMA cesse d'acquitter.
+    const int len = std::min(acsi_.dataLen(), int(dmaSectorCount_) * 512);
     // Plage RAM invalide → erreur DMA, transfert sauté ; l'adresse avance quand
     // même et l'IRQ part (port Acsi_DmaTransfer, hdc.c:1125-1160 :
     // STMemory_CheckAreaType/SafeCopy en échec → bDmaError = true).
@@ -3022,6 +3054,15 @@ void Fdc::acsiDmaTransfer() {
         for (int i = 0; i < len; ++i) bus_.dmaWrite8(dmaAddr_ + uint32_t(i), src[i]);
     }
     dmaAddr_ = (dmaAddr_ + uint32_t(len)) & dmaAddressMask(bus_.ram.size());
+    // Décompte par bloc de 512 o, comme fifoPush : un transfert complet ramène le
+    // compteur à zéro ($8606 bit1 = 0) ; une queue < 512 o (INQUIRY…) le laisse.
+    for (int left = len; left > 0 && dmaSectorCount_ > 0; ) {
+        if (dmaBytesInSector_ <= 0) dmaBytesInSector_ = 512;
+        const int chunk = std::min(left, int(dmaBytesInSector_));
+        left -= chunk;
+        dmaBytesInSector_ = int16_t(dmaBytesInSector_ - chunk);
+        if (dmaBytesInSector_ <= 0) { dmaSectorCount_--; dmaBytesInSector_ = 512; }
+    }
     acsi_.clearData();
     // FDC_SetDMAStatus(bDmaError) : bit0 de $8606 = 1 quand PAS d'erreur —
     // dmaError_ (« erreur ») = l'erreur ACSI telle quelle. L'ancien `!` inversé

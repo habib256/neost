@@ -141,6 +141,28 @@ int testFdcMediaChange() {
         r.read(2);c.equal("relecture écriture",r.finish(),true);
         c.equal("donnée écrite",r.bus.ram[0x2000],0xCC);
     }
+    {
+        // WD177x type II : WPRT testé APRÈS la montée en régime (6 index, h=0) et le
+        // délai E, pas avant le moteur (MAME wd_fdc.cpp SETTLE_DONE ; Hatari faute
+        // dès le premier événement). Type III : avant l'attente de l'index.
+        Rig r;r.fdc.loadImage(ro.string(),0);r.select(5);
+        std::fill(r.bus.ram.begin()+0x2000,r.bus.ram.begin()+0x2200,0xCC);
+        r.reg(4,1);r.mode(0x190);r.data(1);
+        r.fdc.write8(0xFF860D,0);r.fdc.write8(0xFF860B,0x20);r.fdc.write8(0xFF8609,0);
+        r.mode(0x180);r.data(0xA4);                       // WRITE SECTOR, h=0, E=1
+        r.advance(r.live+100000);
+        c.equal("WRITE SECTOR protégé : pas de faute immédiate",r.irq(),false);
+        c.equal("WRITE SECTOR protégé : moteur lancé",r.reg(0)&0xC1,0x81);
+        c.equal("WRITE SECTOR protégé termine",r.finish(),true);
+        c.equal("WRITE SECTOR protégé après montée en régime",r.live>=5*1600000,true);
+        c.equal("WRITE SECTOR protégé : WPRT seul",r.reg(0)&0x5D,0x40);
+        const int64_t t0=r.live;                          // moteur encore lancé
+        r.mode(0x180);r.data(0xF4);                       // WRITE TRACK, E=1 (15 ms)
+        c.equal("WRITE TRACK protégé termine",r.finish(),true);
+        c.equal("WRITE TRACK protégé : délai E sans attente d'index",
+                r.live-t0>=100000&&r.live-t0<=140000,true);
+        c.equal("WRITE TRACK protégé : WPRT",r.reg(0)&0x44,0x40);
+    }
     std::fprintf(stderr,"[fdc-media-change] %d checks, %d FAIL\n",c.count,c.failures);return c.failures;
 }
 #ifdef NEOST_FDC_MEDIA_CHANGE_TEST_MAIN

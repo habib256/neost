@@ -378,7 +378,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/acsi_large_bounds_logic.cpp tests/scc_rx_error_irq_logic.cpp tests/mfp_gpip_composite_logic.cpp
     tests/acsi_capacity_limit_logic.cpp tests/scc_rx_error_mode_logic.cpp
     tests/stx_deleted_track_logic.cpp tests/scc_first_error_reset_logic.cpp tests/dmasound_microwire_byte_logic.cpp
-    tests/stx_sector_rewrite_logic.cpp
+    tests/stx_sector_rewrite_logic.cpp tests/stx_data_crc_write_logic.cpp
     tests/stx_sector_dam_logic.cpp
     tests/stx_raw_track_overlay_logic.cpp
     tests/stx_raw_track_wrap_logic.cpp

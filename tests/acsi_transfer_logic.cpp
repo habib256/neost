@@ -87,6 +87,9 @@ int testAcsiTransfer() {
         // invalide du DMA côté hôte : comme Acsi_DmaTransfer d'Hatari.
         r.mode(0x88);r.data(3);r.mode(0x8A);
         for(uint8_t v:{0,0,0,4,0})r.data(v);
+        // Le transfert précédent a décompté le compteur DMA à zéro : comme un vrai
+        // pilote, reprogrammer un bloc avant d'ouvrir le DMA du REQUEST SENSE.
+        r.mode(0x90);r.data(1);
         r.fdc.write8(0xFF860D,0);r.fdc.write8(0xFF860B,0x20);r.fdc.write8(0xFF8609,0);
         r.start();r.advance(2000);
         c.expect("REQUEST SENSE sans erreur disque",r.bus.ram[0x2000]&0x7F,0);

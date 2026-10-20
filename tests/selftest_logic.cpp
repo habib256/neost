@@ -105,6 +105,7 @@ int testAcsiCapacityLimit(); // refus des images hors capacité des compteurs AC
 bool testSccRxErrorMode(); // verrou erreur conservé entre First/Special et SpecialOnly
 int testStxDeletedTrack(); // marque F8 conservée dans les pistes STX réécrites
 int testStxSectorRewrite(); // WRITE SECTOR normal remplace la marque F8 par FB
+int testStxDataCrcWrite(); // WRITE SECTOR STX sur CRC données + durée secteur HD
 int testStxSectorDam(); // WRITE SECTOR A8/A9 et marque persistante FB/F8
 int testStxRawTrackOverlay(); // fusion locale des overlays dans une image de piste décodée
 int testStxRawTrackWrap(); // champs STX traversant l’index, fusion circulaire bornée
@@ -2771,6 +2772,7 @@ int main() {
     if (testSccRxErrorMode()) ++g_ok; else ++g_fail;
     if (const int failures = testStxDeletedTrack()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxSectorRewrite()) g_fail += failures; else ++g_ok;
+    if (const int failures = testStxDataCrcWrite()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxSectorDam()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxRawTrackOverlay()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxRawTrackWrap()) g_fail += failures; else ++g_ok;
