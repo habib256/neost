@@ -56,9 +56,14 @@ le reste est ci-dessous.
 
 ## Le JOUR J 0.6.2 — dossier préparé le 2026-10-20
 
-⏳ **Préparé, pas encore tagué.** Les trois numéros sont bumpés ensemble
-(`CMakeLists.txt`, « Version courante », en-tête `## 0.6.2 — …`), `check_release.py` est
-vert. Reste à poser le tag annoté et à le pousser, ce qui déclenche la publication par la CI.
+✅ **Exécuté le 2026-10-20.** Tag annoté `0.6.2` posé sur `6dbac89`, Release GitHub publiée
+(8 paquets + `SHA256SUMS.txt`), notes remplacées par le texte anglais ci-dessous.
+⚠ Un premier tag avait été poussé sur `994e1f2` alors que la CI Linux était rouge
+(`cpu_div_ram` : `abs(INT32_MIN)` indéfini dans le calcul de cycles DIVS de Moira, vert sous
+clang/macOS, rouge sous GCC/Linux). Les runs ont été annulés AVANT toute publication, le
+correctif validé par la PR #43 (CI complète verte), puis le tag reposé. Leçon : **vérifier
+que la CI de `main` est verte AVANT de taguer** — un `--tier full` local sous macOS ne
+couvre pas GCC.
 
 **Le numéro.** La 0.6.2 emporte des fonctionnalités (pilotage externe, RAM 2176 Ko/2,5 Mo,
 `$FF8261`/res 3), ce qui selon le pas 1 appellerait une **MINOR** (0.7.0). Le mainteneur
