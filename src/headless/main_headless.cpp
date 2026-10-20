@@ -106,7 +106,7 @@ void usage() {
         "  --key-up N C      release key C at frame N (break code only)\n"
         "  --keys-at N STR   type STR from frame N on (repeatable): 4 frames per char,\n"
         "                    extended scancodes arrows <>[], Esc =, F1-F5 !@#$%%\n"
-        "  --key-hold N      frames a key stays down for --keys-at / --scancode-at\n"
+        "  --key-hold N      frames a key stays down for --keys-at / --scancode-at (N >= 1)\n"
         "                    (default 2 = ~40 ms; raise it to match Hatari --cmd-fifo,\n"
         "                     which holds ~600 ms - otherwise the A/B is invalid)\n"
         "  --scancode-at N H raw ST scancodes (hex, comma-separated) at frame N\n"
@@ -321,6 +321,30 @@ int enecSelfTest(Machine& machine) {
 
     // --- 1. Décodage registre : BNRY est lisible (round-trip) -----------------
     check(rd(0x03) == kRxStart, "register decode (BNRY round-trip)");
+
+    // --- 1 bis. PROM d'adresse station : 32 octets à RSAR=0 (sonde ne.c) -----
+    // MAC doublée en 0-11, « WW » ($57) en 28-31. Elle n'était pas modélisée : un
+    // pilote qui y prend sa MAC lisait 32 zéros (MAC nulle, signature absente).
+    // Une écriture Remote DMA dans la PROM doit rester sans effet (ROM).
+    auto promRead = [&](uint8_t* out) {
+        wr(0x08, 0); wr(0x09, 0);                     // RSAR = 0
+        wr(0x0A, Ne2000::kPromSize); wr(0x0B, 0);     // RBCR = 32
+        wr(0x00, 0x0A);                               // Remote Read + STA
+        for (int i = 0; i < Ne2000::kPromSize; ++i) out[i] = rd(0x10);
+    };
+    uint8_t prom[Ne2000::kPromSize];
+    promRead(prom);
+    bool promOk = prom[28] == 0x57 && prom[29] == 0x57 && prom[30] == 0x57 && prom[31] == 0x57;
+    for (int i = 0; i < 6; ++i)
+        promOk = promOk && prom[2 * i] == Ne2000::kDefaultMac[i] && prom[2 * i + 1] == Ne2000::kDefaultMac[i];
+    check(promOk, "station-address PROM (doubled MAC + WW)");
+    wr(0x08, 0); wr(0x09, 0); wr(0x0A, 2); wr(0x0B, 0);
+    wr(0x00, 0x12);                                   // Remote Write
+    wr(0x10, 0xAA); wr(0x10, 0xAA);
+    promRead(prom);
+    check(prom[0] == Ne2000::kDefaultMac[0] && prom[1] == Ne2000::kDefaultMac[0],
+          "station-address PROM is read-only");
+    wr(0x00, 0x21);                                   // CR : page 0, stop
 
     // --- 2. MAC + CURR en page 1 ----------------------------------------------
     const uint8_t mac[6] = {0x02, 0x4E, 0x53, 0x54, 0x12, 0x34};
@@ -1365,7 +1389,17 @@ int main(int argc, char** argv) {
         // ⚠ --joy-at prend DEUX arguments : les temporaires sont OBLIGATOIRES. Un
         // emplace_back(next(a), next(a)) aurait un ordre d'évaluation NON SPÉCIFIÉ, et
         // inverserait la trame et la valeur au gré du compilateur.
-        else if (!std::strcmp(a, "--key-hold"))    keyHold = std::atoi(next(a));
+        else if (!std::strcmp(a, "--key-hold"))    {
+            // ≥ 1 : à 0, appui et relâche tombaient sur la même phase (ph == 0) et le
+            // « else if » ne relâchait JAMAIS ; < 0, ph ne l'atteignait pas — touches
+            // collées jusqu'à la fin du run (auto-répétition TOS). Borne haute : une
+            // heure à 60 Hz, pour que keyHold + 2 ne déborde pas.
+            keyHold = std::atoi(next(a));
+            if (keyHold < 1 || keyHold > 216000) {
+                std::fprintf(stderr, "--key-hold must be between 1 and 216000 frames\n");
+                return 2;
+            }
+        }
         else if (!std::strcmp(a, "--scancode-at"))  { const int f = std::atoi(next(a));
                                                      std::vector<uint8_t> sc;
                                                      for (const char* t = next(a); *t; ) {
@@ -1512,8 +1546,12 @@ int main(int argc, char** argv) {
             // — le rognage '\r' seul, puis netusbee=/slirp= oubliées. Désormais chaque
             // ligne passe par appconfig::parseConfigLine — LE lecteur du GUI — et seul
             // le mappage vers les variables locales (+ la résolution de chemins
-            // relative au cfg, spécifique au headless) reste ici. Une clé ajoutée au
-            // GUI est relue d'office ; il n'y a plus de liste à tenir à jour.
+            // relative au cfg, spécifique au headless) reste ici. ⚠ Le LECTEUR est
+            // partagé, pas le MAPPAGE : une clé ajoutée au GUI est lue d'office mais
+            // reste ignorée tant qu'elle n'est pas recopiée ci-dessous vers l'option
+            // headless homologue — ultrasatan=/sd2=/dongle=/ports l'avaient été
+            // (audit 2026-10). Toute nouvelle clé de Config doit y trouver sa place
+            // ou y être déclarée sciemment ignorée (réglages d'interface, MIDI hôte…).
             neost::appconfig::Config fc;
             // Sentinelles : les clés CHAÎNE à défaut non vide (machine=st, mem=512k,
             // cpu=moira) sont vidées avant lecture — « restée vide » = « clé absente
@@ -1541,6 +1579,33 @@ int main(int argc, char** argv) {
             machineMono  = fc.mono;
             fastFdc      = fc.fastfdc;
             fpuPresent   = fc.fpu;
+            // UltraSatan comme App::usatanApply : cibles 0-1, slot 1 = l'image acsi=
+            // (déjà montée sur la cible 0 ci-dessus, laissée en place par
+            // l'activation), slot 2 = sd2=, lu seulement quand l'interface est cochée.
+            if (fc.ultrasatan) {
+                ultrasatan = true;
+                ultrasatanId = 0;
+                if (!fc.sd2.empty()) sd2Img = resolve(fc.sd2);
+            }
+            // Clé Steinberg et périphériques des ports : passés aux MÊMES chemins
+            // que --dongle / --plug PORT=DEV (application plus bas). Le GUI oublie un
+            // identifiant inconnu (AppInit) ; ici aussi — avec un avertissement, pour
+            // qu'un cfg abîmé ne fasse pas échouer le rejeu.
+            if (!fc.dongle.empty()) {
+                if (fc.dongle == "cubase2" || fc.dongle == "cubase3" || fc.dongle == "auto"
+                    || fc.dongle == "notator") dongleModel = fc.dongle;
+                else std::fprintf(stderr, "[headless] %s: unknown dongle=%s ignored\n", p, fc.dongle.c_str());
+            }
+            if (!fc.autoDongle) noAutoDongle = true;
+            const std::pair<const char*, const std::string*> cfgPorts[] = {
+                { "joy0", &fc.joy0 }, { "joy1", &fc.joy1 }, { "rs232", &fc.rs232 },
+                { "printer", &fc.printer }, { "cartbutton", &fc.cartbutton } };
+            for (const auto& [port, dev] : cfgPorts) {
+                if (dev->empty()) continue;
+                if (PortDevices::fromId(dev->c_str()) == PortDevices::Device::None)
+                    std::fprintf(stderr, "[headless] %s: unknown %s=%s ignored\n", p, port, dev->c_str());
+                else plugs.emplace_back(port, *dev);
+            }
             std::fprintf(stderr, "[headless] config taken from %s\n", p);
         }
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
@@ -2202,9 +2267,14 @@ int main(int argc, char** argv) {
                 // Écriture VÉRIFIÉE, comme writePpm : un disque plein n'échoue souvent
                 // qu'au flush final, et un dump tronqué porte le même nom qu'un dump
                 // complet — il se diffe ensuite comme si c'était la mémoire.
+                // Lecture par peek8, comme les sondes (Observe.hpp) et « peek » du
+                // serveur : bus.read8 HORS d'une instruction exécutait les effets de
+                // bord MMIO (états d'attente, lecture de registres FDC/ACIA…) et une
+                // faute de bus ($FF8604 en octet, pads STE $FF9200) lançait
+                // moira::BusError hors de execute() — std::terminate.
                 uint32_t written = 0;
                 for (uint32_t k = 0; k < dumpLen; ++k) {
-                    const uint8_t b = machine.bus.read8((dumpAddr + k) & 0xFFFFFFu);
+                    const uint8_t b = machine.bus.peek8((dumpAddr + k) & 0xFFFFFFu);
                     written += uint32_t(std::fwrite(&b, 1, 1, df));
                 }
                 const bool dumpOk = (written == dumpLen) && (std::fclose(df) == 0);

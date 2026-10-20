@@ -88,6 +88,10 @@ public:
     // (cf. Hatari ATARIJOY_BITMASK_*, joy.h). Lu à chaque interrogation $16 et,
     // en mode auto ($14), à chaque trame via sendAutoJoysticks.
     void    setJoystick(uint8_t joy0, uint8_t joy1) { hostJoy_[0] = joy0; hostJoy_[1] = joy1; }
+    // Relit l'état hôte TENU (brut, sans la sonde ni le masquage souris de
+    // readJoystickState) : le mode serveur s'en sert pour reprendre l'entrée qu'un
+    // --joy ou un état restauré a posée, au lieu de supposer 0.
+    void    hostJoystick(uint8_t& joy0, uint8_t& joy1) const { joy0 = hostJoy_[0]; joy1 = hostJoy_[1]; }
 
     // Force l'horloge IKBD (YY MM DD hh mm ss, décimal). Utilisé par le headless
     // pour un boot DÉTERMINISTE : EmuTOS/TOS lit la date/heure du bureau via la

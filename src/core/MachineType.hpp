@@ -96,6 +96,16 @@ inline const char* ramLabel(std::size_t bytes) {
     }
     return "512k";
 }
+// Libellé LISIBLE d'une taille de RAM (barre d'état du GUI) : « 512 KB », « 1 MB »,
+// « 2.5 MB », « 2176 KB ». Calculé depuis les OCTETS et non recopié d'une liste de
+// noms : la chaîne de ternaires d'AppLoop affichait « 4 MB » pour 2176k/2560k,
+// ajoutées ailleurs sans elle.
+inline std::string ramDisplayName(std::size_t bytes) {
+    const std::size_t kb = bytes / 1024;
+    if (kb >= 1024 && kb % 1024 == 0) return std::to_string(kb / 1024) + " MB";
+    if (kb >= 1024 && kb % 512 == 0)  return std::to_string(kb / 1024) + ".5 MB";
+    return std::to_string(kb) + " KB";
+}
 // Config MMU ($FF8001) approchée pour une taille (2 bits/banque : 00=128K,
 // 01=512K, 10=2M). EmuTOS la RECALCULE via sa détection ; ce n'est qu'un défaut
 // cohérent pour un logiciel qui lirait $FF8001 sans détection préalable.
