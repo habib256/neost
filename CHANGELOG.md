@@ -6,6 +6,12 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Effet CRT : courbure (barrel) par défaut à 0.025 (2026-10-20)
+
+- `CrtParams::barrel` passe de 0.05 à **0.025** ; le plafond du parseur `neost.cfg`
+  (`crt_barrel`) suit le slider (0.30 au lieu de 0.2 : une valeur réglée au-delà de 0.2
+  était ramenée à 0.2 au rechargement). Une valeur déjà enregistrée dans `neost.cfg` reste prioritaire.
+
 ## Audit doc↔code, compteur vidéo 22 bits, `$FF8261`/res 3, repos GPIP matériel, RAM 2,5 Mo (2026-10-20)
 
 - **Audit de la documentation contre le code** : une vingtaine de documents recalés
