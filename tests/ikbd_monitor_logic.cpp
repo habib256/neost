@@ -145,8 +145,8 @@ int testIkbdMonitor() {
     }
     {
         Rig r; r.warm(); r.command({0x17, 1});
-        // Bootstrap synthétique reconnu (CRC2efb11b1), puis ExeMode CW_BOOT.
-        r.command({0x20, 0, 0x80, 4, 0x02, 0x39, 0xFF, 0x95, 0x22, 0, 0x80});
+        // Boot-stub reconnu puis $22 : ExeMode CW_BOOT (cf. Ikbd::armCommonBootForTest).
+        r.ikbd.armCommonBootForTest();
         r.advance(period(1));
         c.equal("custom execution suppresses monitoring output", r.rxDue(), -1);
         c.equal("custom execution preserves timer grid", r.monitorDue(), period(1) * 2);

@@ -31,8 +31,13 @@ static constexpr int64_t kAciaTxBitCycles = 1024;
 static constexpr int kResponseDelayCycles = 7250;   // [7000,7500[
 static constexpr int kJoystickDelayCycles = 8750;   // [7500,10000[
 
-// CRC32 (poly IEEE 802.3, MSB-first) — port exact de Hatari utils.c (crc32_*). On
-// reconnaît un programme 6301 custom à son CRC plutôt que d'émuler un vrai HD6301.
+// Empreinte « CRC32 » d'Hatari (utils.c, crc32_*). On reconnaît un programme 6301
+// custom à cette empreinte plutôt que d'émuler un vrai HD6301 ; les valeurs connues
+// viennent de la table d'Hatari, il faut donc SA fonction, défaut compris.
+// ⚠ Ce n'est PAS un CRC32 : Hatari teste `(c & 0x80) ^ (crc & 0x80000000)`, deux bits
+// de positions différentes, donc vrai dès que L'UN OU L'AUTRE est levé. Le vrai OU
+// exclusif, en place jusqu'au 2026-10-20, ne reconnaissait aucun programme réel
+// (Froggies : 0xed260822 au lieu de 0x2efb11b1) ; seul le test synthétique passait.
 namespace {
 bool kbdTraceEnabled() {
     static const bool enabled = std::getenv("NEOST_KBD_TRACE") != nullptr;
@@ -44,10 +49,35 @@ void crc32AddByte(uint32_t& crc, uint8_t c) {
     for (int b = 0; b < 8; ++b) {
         const bool topC   = (c   & 0x80u)       != 0;
         const bool topCrc = (crc & 0x80000000u) != 0;
-        crc = (topC ^ topCrc) ? ((crc << 1) ^ 0x04C11DB7u) : (crc << 1);
+        crc = (topC || topCrc) ? ((crc << 1) ^ 0x04C11DB7u) : (crc << 1);
         c = uint8_t(c << 1);
     }
 }
+} // namespace
+
+uint32_t Ikbd::customCodeCrcForTest(const uint8_t* data, std::size_t len) {
+    uint32_t crc;
+    crc32Reset(crc);
+    for (std::size_t i = 0; i < len; ++i) crc32AddByte(crc, data[i]);
+    return crc;
+}
+
+void Ikbd::armFroggiesForTest() {
+    customRead_ = CR_NONE;
+    customWrite_ = CW_FROGGIES;
+    exeMode_ = true;
+}
+
+void Ikbd::armCommonBootForTest() {
+    // État après un boot-stub reconnu ($20) puis $22 : CommonBoot accumule.
+    crc32Reset(memLoadCrc_);
+    memExeNbBytes_ = 0;
+    customRead_ = CR_NONE;
+    customWrite_ = CW_BOOT;
+    exeMode_ = true;
+}
+
+namespace {
 // CRC des boot-stubs ($20) connus (tous gérés par CommonBoot). 0xbc0c206d sert aux
 // deux variantes d'Audio Sculpture (départagées au CRC du prog principal en ExeMode).
 const uint32_t kKnownLoadCrc[] = {

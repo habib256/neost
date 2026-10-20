@@ -60,8 +60,8 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
   temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et **Linux**.
   → [`docs/HW_VALIDATION.md`](docs/HW_VALIDATION.md)
 - **Shadow Warriors** · P1 ⏸ média — après SPACE, titre et musique OK, mais le bouton
-  joystick ne lance pas le jeu. Disque absent de ce poste (`disks/st/` non restauré, archives
-  privées introuvables le 2026-10-20). Recette : diff contre l'oracle piloté au joystick
+  joystick ne lance pas le jeu. Disque absent, y compris des médias privés restaurés le
+  2026-10-20. Recette : diff contre l'oracle piloté au joystick
   (A5 → `docs/HATARI_AUTOMATION.md`), même durée d'appui (`--key-hold`).
 - **Passe d'usage interactif du GUI** · P2 ⏸ session humaine — le GUI n'est couvert que par
   une capture au boot et trois assertions d'arguments. Une passe réelle, consignée (même
@@ -89,14 +89,8 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
   (hardware.atari.org), puis ajuster `Bus::read8Slow`.
 - **`union_demo`** · P3 ⏸ média — disque absent (planetemu manuel) ; appliquer la recette
   de migration A10 à son retour.
-- **Lethal Xcess, *Seven Gates of Jambala*** · P2 ⏸ média — absents de ce poste
-  (`disks/stx/` non restauré). Lethal Xcess : titre « buggé à ~8 % » en GUI, sans doute
-  la calibration `$8209` déjà réparée en jeu. Seven Gates : valider le recalage Timer B
-  après écriture AER3 (porté le 2026-10-19).
-- **Démo Froggies Over The Fence** · P2 ⏸ ROM — disquettes présentes depuis le 2026-10-20,
-  mais la démo exige un TOS Atari : sous EmuTOS, son premier `Rwabs` rend `E_CHNG` et le
-  chargeur part dans le vide, Hatari compris (cf. `docs/CASE_STUDIES.md`). Rejouer sous
-  TOS 1.02/1.04 pour valider de bout en bout le programme 6301 personnalisé (IKBD).
+- ***Seven Gates of Jambala*** · P2 ⏸ média — absent des médias privés restaurés le
+  2026-10-20 ; valider le recalage Timer B après écriture AER3 (porté le 2026-10-19).
 - **EtherNEC sous TOS 1.04** · P2 ⏸ média — valider STinG + `ENEC.STX` (DHCP, ping, GET),
   consigner dans `docs/CASE_STUDIES.md`. TOS 1.04 absent de ce poste.
 - **GEMDOS : écarts communs à NeoST et Hatari face au vrai TOS** · P3 ⏸ mesure — Fdelete et
@@ -197,7 +191,6 @@ TOS 1.02fr sauf mention ; chemins sous `disks/st/` ou `disks/stx/`.
 | Jeu | Prio | Symptôme | Piste |
 |-----|------|----------|-------|
 | **Shadow Warriors** (2Hot2Handle) | P1 ⏸ | Le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). | Disque absent → § 2. |
-| **Lethal Xcess** | P2 ⏸ | Titre « buggé à ~8 % » en GUI (2026-07-02). | Disque absent → § 2. |
 
 > ⚠ **Avant de déclarer un bug : vérifier la RAM, puis la ROM.** Les cas déjà tranchés
 > (Captain Blood, Enchanted Land, Cuddly, Rick Dangerous II, Stardust, Spectrum 512 STE,

@@ -434,6 +434,15 @@ errno → GEMDOS et replis sur le TOS sont un portage 1:1. Écarts :
 
 ### ACIA 6850 / IKBD HD6301 / MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`
 
+- ✅ **Empreinte des programmes 6301 custom (corrigé le 2026-10-20)** : NeoST calculait
+  un vrai CRC32 ; la fonction d'Hatari (`utils.c:crc32_add_byte`) teste
+  `(c & 0x80) ^ (crc & 0x80000000)`, vrai dès que l'un des deux bits est levé. Les
+  valeurs de la table venant d'Hatari, AUCUN programme réel n'était reconnu (Froggies,
+  Transbeauce 2, Dragonnels, Chaos A.D., Audio Sculpture) ; seuls les tests à charge
+  synthétique forgée passaient. Ce n'est pas du matériel émulé mais une clé
+  d'identification : la fonction d'Hatari est reprise à l'identique, vérifiée contre
+  son `utils.c` compilé.
+
 - ✅ **Datation IRQ clavier (2026-10-19)** : front GPIP4 daté au transfert
   TDR→TSR ou au stop RX, au lieu du dispatch tardif. Le rattrapage avant
   écriture CR/TDR publie le front au START même s’il dépasse ensuite le stop.

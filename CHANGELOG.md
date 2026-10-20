@@ -6,6 +6,23 @@ l'ordre inverse. Version courante : **0.6.1**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## IKBD : programmes 6301 custom enfin reconnus — Froggies tourne sur ses 3 disquettes (2026-10-20)
+
+- **Défaut corrigé** : l'empreinte qui identifie un programme 6301 custom était un
+  vrai CRC32, alors que la table des valeurs connues vient d'Hatari, dont la fonction
+  (`utils.c:crc32_add_byte`) teste `(c & 0x80) ^ (crc & 0x80000000)`, en pratique un
+  OU. Aucun programme réel n'était reconnu (Froggies, Transbeauce 2, Dragonnels,
+  Chaos A.D., Audio Sculpture) ; les tests passaient sur des charges forgées pour la
+  mauvaise fonction. Fonction reprise à l'identique, vérifiée contre `utils.c`
+  compilé ; les tests installent désormais le handler directement.
+- **Froggies Over The Fence** : sous EmuTOS la démo plante (son `Rwabs` rend `E_CHNG`,
+  Hatari pareil) ; sous TOS 1.02 FR elle tourne, menu piloté comme chez Hatari (A/B
+  au pointeur près), trois disquettes validées avec changement à chaud.
+- **Médias privés restaurés** depuis le support de sauvegarde (TOS Atari, jeux,
+  cartouches) : le palier `full` exécute à nouveau les trois `spectrum512_diapo*` et
+  la suite Q du diagnostic MegaSTE (11/11, VME absent) ; seul Cubase Lite manque.
+- **Lethal Xcess** : le titre « buggé » n'est pas reproduit, 0 px contre l'oracle.
+
 ## FPU transcendantes bit-exact, suite Hatari rejouée, nouveaux étalons et sondes (2026-10-20)
 
 - **FPU : les 19 transcendantes en étendu 80 bits.** Port de `softfloat_fpsp.c`

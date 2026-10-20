@@ -109,6 +109,13 @@ public:
     // moyen de la garder.
     int commandLengthForTest(uint8_t opcode) { return cmdLength(opcode); }
 
+    // Empreinte de reconnaissance des programmes 6301 custom (fonction d'Hatari,
+    // défaut compris), et installation directe du handler Froggies : les vrais
+    // programmes ne sont pas versionnés, et l'empreinte n'est pas inversible.
+    static uint32_t customCodeCrcForTest(const uint8_t* data, std::size_t len);
+    void armFroggiesForTest();
+    void armCommonBootForTest();
+
     // Mouvement/boutons souris (cf. signe frontend : dx>0 = droite, dy>0 = bas).
     // En mode relatif, draine le Δ en paquets $F8 de 3 octets sous contrôle du
     // seuil ($0B), du signe d'axe Y ($0F/$10), et émet aussi sur changement de
