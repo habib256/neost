@@ -141,9 +141,10 @@ you are actually running.
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>G</kbd> | Capture / release the mouse |
 | Middle mouse button | Capture / release the mouse |
 
-**Floppies** — drop a `.st`, `.msa`, `.dim` or `.stx` (Pasti, for copy-protected games)
-onto the window, or mount it from the Configuration window. Writes are persisted back to
-the image.
+**Floppies** — drop a `.st`, `.msa`, `.dim`, `.stx` (Pasti) or `.ipf` (SPS/CAPS) — the
+last two for copy-protected games — onto the window, or mount it from the Configuration
+window. Writes are persisted back to the image (to a `.wd1772` side file for `.stx` and
+`.ipf`, which are never modified). IPF support uses NeoST's own decoder, no libcapsimage.
 
 **Hard disks** — two ways. Drop a *folder* on the window and it becomes drive **C:** via
 GEMDOS redirection (Hatari's trick: no controller emulation, your real files). Or mount a
@@ -248,6 +249,7 @@ Bundled third-party components, with thanks:
 | TimGM6mb (`roms/gm/TimGM6mb.sf2`, by Tim Brechbill) | General MIDI SoundFont for the built-in synth | GPLv2 (data, aggregated) |
 | [SDL2](https://libsdl.org/) 2.30.9 (**Android package only**) | window, GLES, audio, life cycle | zlib |
 | [EmuTOS](https://emutos.sourceforge.io/) (`roms/etos*`) | free TOS, the default | GPLv2 |
+| IPF decoder adapted from [MAME](https://github.com/mamedev/mame) `ipf_dsk.cpp` (`src/io/IpfImage.cpp`) | reads SPS/CAPS floppy images | BSD-3-Clause — © Olivier Galibert |
 | DejaVu / Font Awesome | UI fonts | respective free licences |
 
 The bundled demos — *The Cuddly Demos*, *No Cooper* and *Closure* — are demoscene

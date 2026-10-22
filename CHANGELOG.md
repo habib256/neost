@@ -6,6 +6,38 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Images IPF (SPS/CAPS) dans les lecteurs A et B, sans libcapsimage (2026-10-22)
+
+Les disquettes `.ipf` se montent comme les `.st`/`.msa`/`.dim`/`.stx` (détection par
+contenu, glisser-déposer, ludothèque, `--disk`, `insert` du serveur). *Hammerfist*
+(Vivid Image, 1990) démarre sous TOS 1.02 et va jusqu'au jeu.
+
+- **Voie choisie** : décoder l'IPF en **flux de cellules MFM** puis le **lire une fois
+  comme le WD1772** et monter le résultat sur le chemin STX existant, plutôt qu'écrire
+  un moteur `_MFM`/DPLL complet (Hatari, via libcapsimage). Le chemin STX porte déjà
+  tout ce qu'un programme observe (IDs réels, CRC, record type, fuzzy, timing par bloc,
+  rotation par piste, overlay `.wd1772`) et il est éprouvé par les étalons.
+- `src/io/IpfImage.{hpp,cpp}` : étage 1 adapté de MAME `ipf_dsk.cpp` (BSD-3, O. Galibert ;
+  bornes ajoutées partout, modulo signé des gaps « à rebours ») ; étage 2 propre à NeoST,
+  règles de synchro de MAME `wd_fdc.cpp` (3×`$A1`, fenêtre DAM 28-43 octets, pas de
+  resynchro dans les données, dump READ TRACK avec resynchro `$4489`/`$5224`).
+- `StxImage::Track::revolutionBytes` : durée réelle du tour (somme des cellules), lue en
+  priorité par `bytesPerTrackStx` et `computeFloppyDensity`.
+- `Fdc::loadImage` : branche IPF ; compagnon `.wd1772` aussi pour `.ipf` (extension
+  insensible à la casse). Journal de montage : pistes, IDs, CRC d'ID/données, champs
+  absents, marques F8, secteurs faibles et minutés.
+- Filtres d'extension (`MediaScan`, glisser-déposer, ludothèque GUI, menu Android).
+- Tests : `tests/ipf_image_logic.cpp` dans `neost-selftest` (IPF forgée : CRC32 des blocs
+  et de DATA, troncature, rotation sur l'index, IDs/positions/données, CRC d'ID et de
+  données, F8, DAM absente, weak bits → fuzzy, densité variable → table de timing, dump
+  READ TRACK, montage + READ SECTOR par le DMA) ; `neost-fuzz-disk` fuzze aussi l'IPF
+  (graine valide + variante « CRC réparés », contrat : IPF acceptée ⇒ STX accepté).
+  Mutations de l'image *Hammerfist* sous ASan/UBSan : aucun défaut.
+- **Limites** (docs/IMPLEMENTED.md § Disquette) : pas de DPLL vivant, weak bits limités
+  aux octets de données, SCP/KryoFlux absents. Oracle Hatari local sans capsimage : pas
+  de comparaison possible.
+- Licences : README et `packaging/licenses/THIRD-PARTY.txt` (texte BSD-3 de MAME).
+
 ## 0.6.2 — plus près du silicium (2026-10-20)
 
 Sept semaines de fidélité matérielle depuis la 0.6.1. Ce que l'utilisateur y gagne :

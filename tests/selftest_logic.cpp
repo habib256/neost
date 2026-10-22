@@ -110,6 +110,7 @@ int testStxSectorDam(); // WRITE SECTOR A8/A9 et marque persistante FB/F8
 int testStxRawTrackOverlay(); // fusion locale des overlays dans une image de piste décodée
 int testStxRawTrackWrap(); // champs STX traversant l’index, fusion circulaire bornée
 int testStxReadAddressCrc(); // CRC ID signalé après les six octets READ ADDRESS
+int testIpfImage();         // IPF forgée : blocs, CRC32, flux de cellules, lecture WD1772 → STX, montage
 int testIkbdAciaInit(); // sorties firmware rejetées avant initialisation du diviseur
 int testIkbdAciaReset(); // registres ACIA conservés au reset du SCI clavier
 int testIkbdSciReset(); // fragments CPU→SCI, réancrage et réception bit à bit
@@ -2859,6 +2860,7 @@ int main() {
     if (const int failures = testStxRawTrackOverlay()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxRawTrackWrap()) g_fail += failures; else ++g_ok;
     if (const int failures = testStxReadAddressCrc()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIpfImage()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdAciaInit()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdAciaReset()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdSciReset()) g_fail += failures; else ++g_ok;

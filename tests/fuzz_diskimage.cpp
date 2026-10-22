@@ -1,7 +1,8 @@
 // =============================================================================
 //  fuzz_diskimage.cpp — harnais de FUZZING des parseurs d'images disquette (A30).
 //
-//  POURQUOI. `decodeMsa`, `decodeDim` et `StxImage::parse` sont les seules
+//  POURQUOI. `decodeMsa`, `decodeDim`, `StxImage::parse` (et, depuis 2026-10-22,
+//  `ipf::decode` + `ipf::toStx`) sont les seules
 //  fonctions du projet qui digèrent un fichier venu de l'EXTÉRIEUR — une image
 //  téléchargée, tronquée, corrompue, ou forgée. Ce sont des fonctions pures
 //  `octets → bool`. Leur bornage manuel est déjà excellent (il corrige même une
@@ -33,6 +34,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/DiskImageCodec.hpp"
+#include "io/IpfImage.hpp"
 #include "io/StxImage.hpp"
 
 #include <cstdint>
@@ -75,6 +77,48 @@ void fail(const char* what, uint64_t seed, std::size_t iter, const std::vector<u
 // (les bornes que decodeMsa applique lui-même).
 constexpr std::size_t kMaxPlausible = 86u * 2u * 56u * 512u;
 
+// --- IPF : réparation des CRC32 et contrat de conversion ----------------------
+inline uint32_t rdBe32(const uint8_t* p) {
+    return (uint32_t(p[0]) << 24) | (uint32_t(p[1]) << 16) | (uint32_t(p[2]) << 8) | p[3];
+}
+inline void wrBe32(uint8_t* p, uint32_t v) {
+    p[0] = uint8_t(v >> 24); p[1] = uint8_t(v >> 16); p[2] = uint8_t(v >> 8); p[3] = uint8_t(v);
+}
+// Recalcule le CRC de chaque bloc (et de la zone DATA) là où la structure le permet.
+void repairIpfCrcs(std::vector<uint8_t>& v) {
+    std::size_t pos = 0;
+    while (v.size() - pos >= 12) {
+        const uint32_t tsize = rdBe32(&v[pos + 4]);
+        if (tsize < 12 || tsize > v.size() - pos) return;
+        const bool data = tsize == 28 && rdBe32(&v[pos]) == 0x44415441u;
+        if (data) {
+            const uint32_t dsz = rdBe32(&v[pos + 12]);
+            if (dsz <= v.size() - pos - 28) wrBe32(&v[pos + 20], ipf::crc32(&v[pos + 28], dsz));
+        }
+        wrBe32(&v[pos + 8], 0);
+        wrBe32(&v[pos + 8], ipf::crc32(&v[pos], tsize));
+        pos += tsize;
+        if (data) {
+            const uint32_t dsz = rdBe32(&v[pos - 28 + 12]);
+            if (dsz > v.size() - pos) return;
+            pos += dsz;
+        }
+    }
+}
+// CONTRAT : une IPF acceptée doit donner un STX que StxImage::parse accepte
+// (le FDC n'a pas d'autre chemin pour la monter).
+const char* fuzzIpf(const std::vector<uint8_t>& raw) {
+    std::vector<ipf::CellTrack> tracks;
+    if (!ipf::decode(raw, tracks)) return nullptr;
+    for (const auto& t : tracks)
+        if (t.cells.size() != t.timeNs.size()) return "IPF : flux de cellules et durées désaccordés";
+    std::vector<uint8_t> blob;
+    if (!ipf::toStx(tracks, blob)) return nullptr;      // aucune piste exploitable : refus propre
+    StxImage stx;
+    if (!stx.parse(std::move(blob)))                     return "IPF convertie en STX que parse() refuse";
+    return nullptr;
+}
+
 const char* fuzzOne(const uint8_t* data, std::size_t len) {
     const std::vector<uint8_t> raw(data, data + len);
 
@@ -106,6 +150,17 @@ const char* fuzzOne(const uint8_t* data, std::size_t len) {
     if (stx.parse(raw)) {
         // Un « oui » sur moins qu'un en-tête STX serait une acceptation à tort.
         if (raw.size() < 16u)            return "STX accepté sur moins de 16 octets";
+    }
+
+    // --- conteneur .ipf (SPS/CAPS) ------------------------------------------
+    // Les blocs IPF portent un CRC32 : une mutation brute est presque toujours
+    // refusée dès le premier bloc. On teste donc AUSSI la variante « CRC
+    // réparés », qui atteint les descriptions de blocs et de gaps.
+    if (const char* why = fuzzIpf(raw)) return why;
+    if (raw.size() >= 12 && raw[0] == 'C' && raw[1] == 'A' && raw[2] == 'P' && raw[3] == 'S') {
+        std::vector<uint8_t> fixed = raw;
+        repairIpfCrcs(fixed);
+        if (const char* why = fuzzIpf(fixed)) return why;
     }
     return nullptr;
 }
@@ -159,6 +214,54 @@ std::vector<std::vector<uint8_t>> seedCorpus() {
                                   0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         x.resize(512, 0);
         corpus.push_back(std::move(x));
+    }
+
+    // IPF minimale VALIDE (un secteur de 512 o sur la piste 0) : CAPS, INFO,
+    // IMGE, DATA + flux (synchro brute, octets MFM, gap de type 0). CRC posés
+    // par repairIpfCrcs.
+    {
+        std::vector<uint8_t> ipfImg;
+        auto rec = [&ipfImg](const char* id, const std::vector<uint32_t>& words) {
+            const std::size_t at = ipfImg.size();
+            ipfImg.insert(ipfImg.end(), id, id + 4);
+            ipfImg.resize(at + 12 + 4 * words.size(), 0);
+            wrBe32(&ipfImg[at + 4], uint32_t(12 + 4 * words.size()));
+            for (std::size_t i = 0; i < words.size(); ++i) wrBe32(&ipfImg[at + 12 + 4 * i], words[i]);
+        };
+        std::vector<uint8_t> area(32, 0);
+        auto elem = [&area](uint8_t code, uint32_t n) {
+            area.push_back(uint8_t((4u << 5) | code));
+            for (int k = 3; k >= 0; --k) area.push_back(uint8_t(n >> (8 * k)));
+        };
+        elem(3, 12); area.insert(area.end(), 12, 0x00);
+        elem(1, 6);  for (int i = 0; i < 3; ++i) { area.push_back(0x44); area.push_back(0x89); }
+        elem(2, 7);  area.insert(area.end(), {0xFE, 0, 0, 1, 2, 0xCA, 0x6F});
+        elem(3, 34); area.insert(area.end(), 34, 0x4E);
+        elem(1, 6);  for (int i = 0; i < 3; ++i) { area.push_back(0x44); area.push_back(0x89); }
+        elem(2, 515); area.push_back(0xFB); area.insert(area.end(), 514, 0xE5);
+        elem(5, 4);
+        area.push_back(0);
+        const uint32_t dataCells = (12 + 7 + 34 + 515 + 4) * 16 + 2 * 48;
+        const uint32_t gapCells = 40 * 16;
+        const uint32_t desc[8] = {dataCells, gapCells, 0, 1, 1, 0, 0x4E, 32};
+        for (int i = 0; i < 8; ++i) wrBe32(&area[std::size_t(4 * i)], desc[i]);
+        rec("CAPS", {});
+        rec("INFO", {1, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0});
+        rec("IMGE", {0, 0, 2, 1, 0, 60, 960, 0, 0, dataCells + gapCells, 1, 0, 0, 1, 0, 0, 0});
+        rec("DATA", {uint32_t(area.size()), uint32_t(area.size() * 8), 0, 1});
+        ipfImg.insert(ipfImg.end(), area.begin(), area.end());
+        repairIpfCrcs(ipfImg);
+        // La graine DOIT être acceptée de bout en bout, sinon les mutations ne
+        // testeraient que le chemin de refus du premier bloc.
+        std::vector<ipf::CellTrack> seedTracks;
+        std::vector<uint8_t> seedStx;
+        ipf::StxStats seedStats;
+        if (!ipf::decode(ipfImg, seedTracks) || !ipf::toStx(seedTracks, seedStx, nullptr, &seedStats)
+            || seedStats.sectors != 1) {
+            std::fprintf(stderr, "[fuzz-disk] IPF seed rejected — fix the corpus\n");
+            ++g_fail;
+        }
+        corpus.push_back(std::move(ipfImg));
     }
 
     // Les cas dégénérés que tout parseur doit encaisser sans broncher.

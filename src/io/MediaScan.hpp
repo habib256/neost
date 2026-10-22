@@ -31,7 +31,7 @@ std::size_t commonPrefixLenCI(const std::string& a, const std::string& b);
 // `a` et `b` sont supposés déjà en MINUSCULES.
 bool areSiblingImages(const std::string& a, const std::string& b);
 
-// Images montables (.st/.msa/.dim/.stx) trouvées récursivement dans `dirs`
+// Images montables (.st/.msa/.dim/.stx/.ipf) trouvées récursivement dans `dirs`
 // (dédupliquées), triées par proximité au chemin `mounted` (vide = alphabétique).
 std::vector<std::string> scanDiskImages(const std::vector<std::string>& dirs,
                                         const std::string& mounted);

@@ -54,6 +54,7 @@ src/
     MidiAcia.{hpp,cpp}      2e ACIA 6850 (MIDI).
     Fdc.{hpp,cpp}           WD1772 + DMA disquette + routage ACSI.
     StxImage.{hpp,cpp}      Images Pasti .stx (jeux protégés).
+    IpfImage.{hpp,cpp}      Images IPF SPS/CAPS → flux de cellules → modèle STX (décodeur libre, MAME BSD-3).
     Acsi.{hpp,cpp}          Disque dur ACSI (hdc.c) + rattachement de l'UltraSatan.
     GemdosHd.{hpp,cpp}      Disque dur GEMDOS (dossier hôte → C:), cf. § dédié.
     Scc.{hpp,cpp}           Z85C30 (Mega STE) ; Scu.hpp : gating d'IRQ Mega STE.
@@ -263,7 +264,7 @@ s'arrête au 32ᵉ mot au lieu du 33ᵉ ». Chaque table a été **vérifiée pa
 polarité des entrées du WD1772 — les trois font rougir la ligne exacte.
 
 À côté, `./build/neost-fuzz-disk` (A30, 2026-08-28) martèle les **parseurs d'images
-disquette** — `decodeMsa`, `decodeDim`, `StxImage::parse`, les seules fonctions du projet
+disquette** — `decodeMsa`, `decodeDim`, `StxImage::parse`, `ipf::decode`/`ipf::toStx`, les seules fonctions du projet
 qui digèrent un fichier venu de l'extérieur. Driver **déterministe** (PRNG xorshift semé),
 pas libFuzzer : le clang d'Apple ne livre pas `libclang_rt.fuzzer`, `-fsanitize=fuzzer` ne
 lie pas sur macOS. `--iters N` / `--seed N` ; un cas trouvé se rejoue à l'identique.
@@ -464,6 +465,7 @@ attend du matériel.
 | `Scheduler`              | `cycInt.c`, `cycles.c` |
 | `Cpu68k` (adaptateur)    | `cpu/hatari-glue.c` (`customreset`), `cpu/newcpu.c`, `cpu/memory.c` |
 | `StxImage`               | `floppies/stx.c` ; `.msa`/`.dim` → `floppies/msa.c`, `floppies/dim.c` |
+| `IpfImage`               | `floppies/ipf.c` (libcapsimage, NON utilisée) ; décodeur adapté de MAME `ipf_dsk.cpp` |
 | `Fdc`                    | `fdc.c`, `floppy.c`                            |
 | `Acsi` (disque dur ACSI) | `hdc.c` (routage DMA via `Fdc`)                |
 | `Scc` (série Z85C30 Mega STE) | `scc.c` (IRQ niv5 via `Scu`)              |

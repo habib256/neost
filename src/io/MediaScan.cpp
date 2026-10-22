@@ -67,7 +67,7 @@ std::vector<std::string> scanDiskImages(const std::vector<std::string>& dirs,
             std::error_code e3;
             if (e.is_regular_file(e3)) {
                 const std::string ext = lowerOf(e.path().extension().string());
-                if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx") {
+                if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx" || ext == ".ipf") {
                     const std::string p = e.path().string();
                     if (std::find(out.begin(), out.end(), p) == out.end()) out.push_back(p);
                 }

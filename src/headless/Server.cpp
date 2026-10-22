@@ -30,7 +30,7 @@
 //    import N FICHIER         charge un fichier d'état dans un emplacement
 //    probe SPEC               ajoute une sonde à chaud (NOM=ADR:LEN)
 //    shot FICHIER.ppm         capture d'écran
-//    insert A|B FICHIER       change la disquette À CHAUD (.st/.msa/.dim/.stx)
+//    insert A|B FICHIER       change la disquette À CHAUD (.st/.msa/.dim/.stx/.ipf)
 //    eject A|B                retire la disquette (lecteur vide)
 //    slots                    occupation des emplacements
 //    quit                     fin de session

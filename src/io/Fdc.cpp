@@ -11,6 +11,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Fdc.hpp"
+#include "io/IpfImage.hpp"
 #include "io/DiskImageCodec.hpp"
 #include "core/Cpu68k.hpp"
 #include "core/Bus.hpp"
@@ -18,6 +19,7 @@
 #include "io/Mfp.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -616,16 +618,55 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         return false;
     }
 
+    // Format IPF (SPS/CAPS, bloc « CAPS » en tête) : disquette décrite au niveau du
+    // FLUX DE CELLULES MFM (protections : pistes longues, densité variable, weak
+    // bits). On régénère ce flux (ipf::decode), on le LIT comme le ferait le
+    // WD1772 (ipf::toStx : IDs, champs données, CRC, fuzzy, timing, dump READ
+    // TRACK) et on monte le résultat sur le chemin _STX. Cf. io/IpfImage.hpp.
+    const char* fmt = nullptr;
+    std::vector<ipf::TrackRev> ipfRevs;
+    if (ipf::isIpf(raw.data(), raw.size())) {
+        std::vector<ipf::CellTrack> cells;
+        ipf::Info info;
+        std::string err;
+        if (!ipf::decode(raw, cells, &info, &err)) {
+            std::fprintf(stderr, "[FDC] unreadable IPF image (%s): %s — not mounted.\n",
+                         err.c_str(), path.c_str());
+            return false;
+        }
+        std::vector<uint8_t> blob;
+        ipf::StxStats st;
+        if (!ipf::toStx(cells, blob, &ipfRevs, &st)) {
+            std::fprintf(stderr, "[FDC] IPF image has no usable track: %s — not mounted.\n",
+                         path.c_str());
+            return false;
+        }
+        std::fprintf(stderr, "[FDC] IPF (%s rel. %u rev. %u): %d tracks, %d sector IDs"
+                             " (%d bad ID CRC, %d no data, %d bad data CRC, %d deleted,"
+                             " %d weak, %d timed)\n",
+                     info.encoder == 1 ? "CAPS" : "SPS", unsigned(info.release),
+                     unsigned(info.revision), st.tracks, st.sectors, st.idCrcErrors,
+                     st.noData, st.dataCrcErrors, st.deleted, st.fuzzySectors, st.timedSectors);
+        raw = std::move(blob);
+        fmt = "IPF";
+    } else if (raw.size() > 4 && raw[0] == 'R' && raw[1] == 'S' && raw[2] == 'Y' && raw[3] == 0) {
+        fmt = "STX";
+    }
+
     // Format STX (Pasti, en-tête « RSY\0 ») : image disque BAS NIVEAU (pistes/secteurs
     // bruts, IDs réels, CRC, bits fuzzy, timing) qui préserve les PROTECTIONS. On la
     // PARSE (StxImage) et le FDC dispatche vers le chemin _STX (champ ID véritable,
     // statut par secteur, fuzzy/timing) au lieu du modèle .ST « secteur = offset ».
-    if (raw.size() > 4 && raw[0] == 'R' && raw[1] == 'S' && raw[2] == 'Y' && raw[3] == 0) {
+    // Une IPF arrive ici déjà convertie en STX.
+    if (fmt) {
         auto stx = std::make_unique<StxImage>();
         if (!stx->parse(std::move(raw))) {
-            std::fprintf(stderr, "[FDC] unreadable STX image: %s — not mounted.\n", path.c_str());
+            std::fprintf(stderr, "[FDC] unreadable %s image: %s — not mounted.\n", fmt, path.c_str());
             return false;
         }
+        for (const ipf::TrackRev& r : ipfRevs)      // IPF : durée réelle de chaque tour
+            if (StxImage::Track* t = stx->findTrack(r.cylinder, r.head))
+                t->revolutionBytes = uint16_t(r.bytes);
         dk.image.clear();
         dk.imgType = FloppyDisk::IMG_STX;
         dk.sides   = stx->sides();
@@ -640,20 +681,22 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         dk.writeProtect = false;                 // écritures en overlay (persisté en .wd1772)
         updateFloppyDensity(drive & 1);
         // Fichier compagnon des écritures (cf. Hatari STX_FileNameToSave) : on
-        // remplace l'extension .stx par .wd1772 et on recharge les overlays
-        // d'une session précédente s'il existe.
+        // remplace l'extension .stx (ou .ipf) par .wd1772 et on recharge les
+        // overlays d'une session précédente s'il existe. L'IPF elle-même n'est
+        // JAMAIS réécrite.
         dk.wd1772Path = path;
         if (dk.wd1772Path.size() >= 4) {
-            const std::string ext = dk.wd1772Path.substr(dk.wd1772Path.size() - 4);
-            if (ext == ".stx" || ext == ".STX" || ext == ".Stx")
+            std::string ext = dk.wd1772Path.substr(dk.wd1772Path.size() - 4);
+            for (char& c : ext) c = char(std::tolower(static_cast<unsigned char>(c)));
+            if (ext == ".stx" || ext == ".ipf")
                 dk.wd1772Path.resize(dk.wd1772Path.size() - 4);
         }
         dk.wd1772Path += ".wd1772";
         if (dk.stx->loadWd1772(dk.wd1772Path))
             std::fprintf(stderr, "[FDC] writes restored: %s (%zu sector(s), %zu track(s))\n",
                          dk.wd1772Path.c_str(), dk.stx->saveSectors.size(), dk.stx->saveTracks.size());
-        std::fprintf(stderr, "[FDC] drive %c: %s (STX, %d tracks, %d side(s))\n",
-                     drive & 1 ? 'B' : 'A', path.c_str(), tps, dk.sides);
+        std::fprintf(stderr, "[FDC] drive %c: %s (%s, %d tracks, %d side(s))\n",
+                     drive & 1 ? 'B' : 'A', path.c_str(), fmt, tps, dk.sides);
         return true;
     }
 
@@ -889,6 +932,7 @@ int Fdc::computeFloppyDensity(const FloppyDisk& dk, int track, int side) const {
         StxImage::Track* t = dk.stx->findTrack(track, side);
         if (!t)                       trackSize = BYTES_PER_TRACK;
         else if (t->writeReinterpreted) trackSize = t->writeMfmSize;   // piste réécrite (WRITE TRACK)
+        else if (t->revolutionBytes)  trackSize = t->revolutionBytes;  // IPF : durée réelle du tour
         else if (t->pTrackImage)      trackSize = t->trackImageSize;
         else if ((t->flags & StxImage::TRACK_FLAG_SECTOR_BLOCK) == 0) trackSize = t->mfmSize / 8;
         else                          trackSize = t->mfmSize;
@@ -946,6 +990,7 @@ int Fdc::bytesPerTrackStx(int track, int side) const {
     if (!t) return BYTES_PER_TRACK;
     int sz;
     if (t->writeReinterpreted) sz = t->writeMfmSize;            // piste réécrite (WRITE TRACK)
+    else if (t->revolutionBytes) sz = t->revolutionBytes;       // IPF : durée réelle du tour
     else if (t->pTrackImage) sz = t->trackImageSize;
     else if ((t->flags & StxImage::TRACK_FLAG_SECTOR_BLOCK) == 0) sz = t->mfmSize / 8;  // MFMSize en bits
     else sz = t->mfmSize;
