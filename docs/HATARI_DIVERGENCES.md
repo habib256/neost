@@ -301,12 +301,15 @@ Machines à états type I-IV, bits de statut par type, timings (spin-up, head-lo
 `.wd1772` : **conformes dans le périmètre décrit** ; conteneur lisible par Hatari,
 extension DAM NeoST qualifiée ci-dessus.
 
-- ✅ **WRITE TRACK ST, emplacement des IDs (2026-10-19)** : les champs
-  C/H doivent correspondre à la tête physique et à la face sélectionnée ;
-  chaque numéro de secteur doit être unique. Un flux non représentable en ST
-  retourne LOST_DATA avant toute copie, sans modifier les pistes/secteurs
-  voisins. Extension de réinterprétation NeoST conservée ; Hatari refuse
-  tout WRITE TRACK ST. Les IDs WD1772 n’actionnent ni STEP ni SIDE.
+- ✅ **WRITE TRACK ST, emplacement des IDs (2026-10-19, révisé le 2026-10-22)** : un flux
+  qui colle à la géométrie de l'image (C/H = tête physique et face, numéros 1..spt uniques,
+  512 o) est écrit dans le .st. Un flux NON représentable n'est plus rejeté par LOST DATA :
+  un WD1772 formate sans erreur (LOST DATA = DRQ non servie, `fdc1772.v:885`) et relit les
+  IDs écrits. NeoST garde la piste EN MÉMOIRE (`FloppyDisk::stOverride`, volatile, ni dans
+  le .st ni dans le save-state) et la relit selon ses IDs (READ SECTOR/ADDRESS/TRACK, WRITE
+  SECTOR, recherche d'ID) ; un WRITE TRACK standard la rend au .st. Hatari refuse tout
+  WRITE TRACK ST (LOST DATA, défaut). Corrige le test F de STE_Test v1.9 (secteurs 10-18
+  sur la piste 79 : « Disk A: DS / Disk B: DS », Pass). Les IDs n'actionnent ni STEP ni SIDE.
 - ✅ **Secteur long et sélection STX→ST (2026-10-19)** : WRITE SECTOR
   engagé sur un ID STX de 1 024 octets puis terminé sur un lecteur ST est
   limité à 512 octets dans l’image cible. Corrige l’écrasement du voisin ou
@@ -671,6 +674,10 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
     pilotent rien.
   - pads `$FF9200-01`, `$FF9210-17`, `$FF9220-23` : acquittés en LECTURE seule
     (BUTR/PADR/PENR contiennent IRWZ) → toute écriture fait bus error (`Bus::wrStePads`) ;
+  - sélection des pads : bascule JOYWE (gstmcu.v:352-360) mise à 1 au reset et par toute
+    LECTURE de l'octet bas `$FF9203`, remise à 0 par son ÉCRITURE ; inactive, aucune
+    rangée n'est sélectionnée et tout se lit au repos (`StePads::sel`). Hatari garde la
+    sélection écrite indéfiniment ;
   - chien de garde `/BERR` (4081P11, compteur 7 bits à 8 MHz remis à zéro hors /AS) : une
     bus error arrive ~64 cycles après /AS, soit 60 cycles d'attente en plus d'un accès
     normal (`kBerrTimeoutWait`, Cpu68k.cpp). Hatari n'en compte aucun ;

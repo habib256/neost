@@ -264,10 +264,10 @@ public:
         irqMode = moira::IrqMode::USER;
         // Syntaxe Musashi : conserve le format de trace historique (comparaison MAME).
         setDasmSyntax(moira::Syntax::MUSASHI);
-        // Délai de reconnaissance IPL fidèle WinUAE (opt-in). Seuils en clock-units =
-        // cyc × g_cur->cpuMul (1 au boot = 8 MHz ST). Réappliqué si la vitesse change.
-        if (g_iplFetch) setIplDelay(static_cast<int64_t>(g_iplFetch4) * g_cur->cpuMul,
-                                    static_cast<int64_t>(g_iplFetch2) * g_cur->cpuMul);
+        // Délai de reconnaissance IPL fidèle WinUAE (opt-in). Seuils en cycles CPU : le
+        // 68000 échantillonne IPL sur SA propre horloge (fx68k : deux échantillons
+        // enPhi2 égaux, fx68k.sv:222-226), pas sur celle du bus — même valeur à 16 MHz.
+        if (g_iplFetch) setIplDelay(g_iplFetch4, g_iplFetch2);
     }
 
     // Une adresse non décodée déclenche une bus error : on lève l'exception
@@ -545,11 +545,12 @@ public:
     // Débogueur : watchpoint mémoire atteint (appelé par la couche dataflow de Moira
     // PENDANT l'accès, si CHECK_WP). Sémantique « break-after-access » : on note le hit
     // (adresse DONNÉE) et on préempte → le run() rend la main APRÈS l'instruction fautive.
-    // Seuils IPL différés depuis la configuration de processus (NEOST_IPLFETCH*),
-    // à la vitesse CPU `mul`. Mode éteint : rien ne peut rester en attente.
-    void applyIplFetchConfig(int mul) {
+    // Seuils IPL différés depuis la configuration de processus (NEOST_IPLFETCH*), en
+    // cycles CPU quelle que soit la vitesse (cf. constructeur). Mode éteint : rien ne
+    // peut rester en attente.
+    void applyIplFetchConfig(int /*mul*/) {
         if (g_iplFetch) {
-            setIplDelay(static_cast<int64_t>(g_iplFetch4) * mul, static_cast<int64_t>(g_iplFetch2) * mul);
+            setIplDelay(g_iplFetch4, g_iplFetch2);
         } else {
             setIplDelay(0, 0);
             iplDeferred = -1;
@@ -683,7 +684,7 @@ public:
         // reconnaissance (4 cyc) écoulé depuis son changement → POLL_IPL le voit alors, comme
         // WinUAE ipl_fetch_next. Gated NEOST_IPLDELAY ; sinon setIPL est immédiat (cf. neostUpdateIpl).
         if (g_iplDelay && g_cur->desiredIpl != g_cur->appliedIpl
-            && getClock() - g_cur->iplChgClock >= static_cast<int64_t>(g_iplDelayCyc) * g_cur->cpuMul) {
+            && getClock() - g_cur->iplChgClock >= static_cast<int64_t>(g_iplDelayCyc)) {   // cycles CPU (fx68k)
             setIPL(static_cast<moira::u8>(g_cur->desiredIpl));
             g_cur->appliedIpl = g_cur->desiredIpl;
         }
@@ -1016,6 +1017,7 @@ void Cpu68k::reset() {
     state_->inBusError = false;
     state_->bus->bootOverlay = true;
     state_->bus->gameCart = false;             // RESB/PORB (netlist 4081P10)
+    state_->bus->stePads.resetSelect();        // JOYWE (gstmcu.v:352)
     state_->inReset = true;                    // sync() n'avance pas l'ordonnanceur pendant le reset
     state_->blitterOverlap = 0;
     state_->megaSteAccessHit = false;

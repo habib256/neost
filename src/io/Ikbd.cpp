@@ -99,9 +99,29 @@ void Ikbd::trace(const char* format, ...) const {
     std::fputc('\n', stderr);
 }
 
+// Ordre de balayage de la matrice au reset (ROM $F086-$F0C5), extrait de la ROM :
+// colonnes 1 à 15 ; colonnes 1-4 : rangée 0 ($F311[col], F1-F3) avant le
+// modificateur de la colonne ($F206 : Ctrl, Shift G, Alt, Shift D, rangées 4-7) ;
+// colonnes 5-15 : rangée la plus basse, $F311[(col-4)*8 + rangée].
+static constexpr uint8_t kResetScanOrder[] = {
+    0x1D, 0x3B, 0x2A, 0x3C, 0x38, 0x3D, 0x36, 0x3E, 0x01, 0x02, 0x0F, 0x10, 0x1E, 0x60,
+    0x2C, 0x3F, 0x03, 0x04, 0x11, 0x12, 0x1F, 0x20, 0x2D, 0x40, 0x05, 0x06, 0x13, 0x14,
+    0x21, 0x2E, 0x2F, 0x41, 0x07, 0x08, 0x15, 0x22, 0x23, 0x30, 0x31, 0x42, 0x09, 0x0A,
+    0x16, 0x17, 0x24, 0x25, 0x32, 0x43, 0x0B, 0x0C, 0x18, 0x19, 0x26, 0x33, 0x39, 0x44,
+    0x0D, 0x29, 0x1A, 0x1B, 0x27, 0x34, 0x3A, 0x62, 0x0E, 0x53, 0x52, 0x2B, 0x1C, 0x28,
+    0x35, 0x61, 0x48, 0x47, 0x4B, 0x50, 0x4D, 0x6D, 0x70, 0x63, 0x64, 0x67, 0x68, 0x6A,
+    0x6B, 0x6E, 0x71, 0x65, 0x66, 0x69, 0x4A, 0x6C, 0x4E, 0x6F, 0x72,
+};
+
 void Ikbd::onResetResponse() {
     duringResetCriticalTime_ = false;
+    // ROM $F0A3-$F0CD : une touche tenue pendant l'auto-test → UN seul code de
+    // relâchement (scancode | $80), celui de la première touche du balayage, envoyé
+    // juste avant $F1.
+    for (uint8_t sc : kResetScanOrder)
+        if (hostKeys_[sc]) { pushRx(uint8_t(sc | 0x80)); break; }
     pushRx(0xF1);
+    ocfOrigin_ = firmwareEventTime();         // le premier OCR est posé juste avant le cli
     // ROM $F139 (cli) : l'octet resté dans le RDR pendant l'init est traité ; s'il y
     // en a eu deux, la routine d'overrun $FF40 a tout jeté.
     const int held = heldOverrun_ ? -1 : heldByte_;
@@ -468,6 +488,7 @@ void Ikbd::dispatchCommand() {
             for (int i = 1; i <= 6; ++i)
                 if (bcdCheck(inBuf_[i])) clock_[i - 1] = inBuf_[i];
             clockMicro_ = 0;                  // ROM $FA88 : compteur de ms rechargé
+            clockSet_ = true;                 // $83 ≠ 0 : l'interruption 1 ms tient l'horloge
             break;
         case 0x1C:
             // $1C = INTERROGATE CLOCK (cf. Hatari IKBD_Cmd_ReadClock) : paquet
@@ -924,11 +945,11 @@ void Ikbd::onJoystickMonitor() {
         auto us = [](int64_t v) { return (v * 8021248 + 500000) / 1000000; };
         const int64_t base = due >= 0 ? due : sched_->liveNow();
         if (pauseOutput_ || duringResetCriticalTime_) {
-            sched_->schedule(Scheduler::IKBD_MONITOR, base + us(34));
+            sched_->schedule(Scheduler::IKBD_MONITOR, addOcfDelay(base, us(34)));
             return;
         }
         if (!rx_.empty() || rxPending_) {
-            sched_->schedule(Scheduler::IKBD_MONITOR, base + us(57));
+            sched_->schedule(Scheduler::IKBD_MONITOR, addOcfDelay(base, us(57)));
             return;
         }
         uint8_t joy0 = 0, joy1 = 0;
@@ -941,7 +962,7 @@ void Ikbd::onJoystickMonitor() {
             next += 15;
             pushRx(fireShift_);
         }
-        sched_->schedule(Scheduler::IKBD_MONITOR, base + us(next));
+        sched_->schedule(Scheduler::IKBD_MONITOR, addOcfDelay(base, us(next)));
         return;
     }
     if (joyMode_ == JOY_KEYCODE) {
@@ -953,6 +974,22 @@ void Ikbd::onJoystickMonitor() {
     // $17 utilise le même traitement que l'auto-send : MouseAction et position
     // interne précèdent le report monitoring, même quand MouseMode vaut OFF.
     sendAutoInput();
+}
+
+int64_t Ikbd::addOcfDelay(int64_t start, int64_t cycles) const {
+    // Étend [start, start + cycles] de la durée de chaque interruption 1 ms qui y tombe
+    // (une interruption allonge la fenêtre et peut en faire tomber une autre dedans).
+    constexpr int64_t kMs = 8021;             // 1 ms en cycles CPU (8 021 248 Hz)
+    auto us = [](int64_t v) { return (v * 8021248 + 500000) / 1000000; };
+    int64_t end = start + cycles;
+    int64_t k = (start >= ocfOrigin_) ? (start - ocfOrigin_) / kMs + 1 : 0;
+    for (int guard = 0; guard < 64; ++guard, ++k) {
+        const int64_t tick = ocfOrigin_ + k * kMs;
+        if (tick > end) break;
+        if (tick <= start) continue;
+        end += us(((k & 1) ? 215 : 128) + (clockSet_ ? 12 : 0));
+    }
+    return end;
 }
 
 void Ikbd::onVbl(int64_t vblMicro) {
@@ -1136,6 +1173,7 @@ void Ikbd::keyEvent(uint8_t scancode, bool pressed) {
     // $17 et $18 : la boucle principale de la ROM ne scrute plus le clavier
     // ($F171 → $F8A2 pour $18).
     // Suivi d'état (lu par les handlers 6301 custom) puis make/break.
+    hostKeys_[scancode & 0x7F] = pressed ? 1 : 0;
     scanState_[scancode & 0x7F] = pressed ? 1 : 0;
     if ((joyMode_ == JOY_MONITOR || joyMode_ == JOY_FIRE) && !exeMode_)
         return;

@@ -132,9 +132,24 @@ int testFdcTrackIdLocation() {
         r.fdc.write8(0xFF8609, 0);
         r.mode(0x180); r.data(0xF8);
         c.equal("WRITE TRACK termine", r.finish(), true);
-        c.equal("IDs étrangers rejetés LOST", r.reg(0) & 0x5D, scenario ? 4 : 0);
+        // Un WD1772 formate sans erreur quels que soient les IDs : LOST DATA ne
+        // signale qu'une DRQ non servie. Une piste que le .st ne sait pas représenter
+        // est gardée en mémoire et relue selon SES IDs (le WD1772 ne compare pas la
+        // face ; un ID de piste ≠ TR ou un numéro absent → RNF).
+        c.equal("WRITE TRACK sans erreur", r.reg(0) & 0x5D, 0);
         auto expected = image;
         if (!scenario) { expected[100] = 0xCC; expected[612] = 0xCC; }
+        // Piste 0 face 0 reformatée hors géométrie : secteur lisible (données écrites)
+        // ou RNF, selon les IDs du flux.
+        auto overrideReadable = [&](uint8_t sector) {
+            switch (scenario) {
+                case 1: return false;                 // IDs « piste 1 » sur la piste 0
+                case 2: return true;                  // face d'ID ignorée par le WD1772
+                case 3: return sector == 1;           // deux IDs « secteur 1 »
+                case 4: return sector == 1;           // secteur 2 annoncé piste 1
+                default: return true;
+            }
+        };
         // Relire toutes les pistes/faces via SEEK et READ SECTOR : aucune inspection
         // de l'image interne ni dépendance aux offsets privés du formateur.
         for (uint8_t cylinder = 0; cylinder < 2; ++cylinder) {
@@ -146,8 +161,21 @@ int testFdcTrackIdLocation() {
                 for (uint8_t sector = 1; sector <= 2; ++sector) {
                     r.read(sector);
                     c.equal("relecture sentinelle", r.finish(), true);
-                    c.equal("statut relecture", r.reg(0) & 0x5D, 0);
                     const unsigned offset = ((cylinder * 2 + side) * 2 + sector - 1) * 512;
+                    if (scenario && cylinder == 0 && side == 0) {
+                        if (!overrideReadable(sector)) {
+                            c.equal("ID absent de la piste reformatée : RNF", r.reg(0) & 0x10, 0x10);
+                            continue;
+                        }
+                        c.equal("statut relecture piste reformatée", r.reg(0) & 0x5D, 0);
+                        auto written = std::vector<uint8_t>(image.begin() + (sector - 1) * 512,
+                                                            image.begin() + sector * 512);
+                        written[100] = 0xCC;          // secteur du flux (marqueur posé à +100)
+                        c.equal("données de la piste reformatée", std::equal(r.bus.ram.begin() + 0x2000,
+                                r.bus.ram.begin() + 0x2200, written.begin()), true);
+                        continue;
+                    }
+                    c.equal("statut relecture", r.reg(0) & 0x5D, 0);
                     c.equal("secteur entier attendu", std::equal(r.bus.ram.begin() + 0x2000,
                             r.bus.ram.begin() + 0x2200, expected.begin() + offset), true);
                 }

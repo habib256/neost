@@ -53,8 +53,11 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 
 - **Latence IACK MegaSTE** · P1 ⏸ matériel — capturer CLK CPU/MFP, IACK et les DTACK
   puce/CPU sur un vrai MegaSTE, aux trois régimes CPU/cache. Sonde prête
-  (`tools/make_mfp_iack_probe.py`, contrôles `tools/run_mfp_iack_probe.py` verts) ;
-  résidu IACK→handler de +3/+4 cycles à 16 MHz à expliquer. → [protocole](docs/MFP_IACK_MEASUREMENT.md)
+  (`tools/make_mfp_iack_probe.py`, contrôles `tools/run_mfp_iack_probe.py` verts). Le
+  résidu IACK→handler de +3/+4 cycles est EXPLIQUÉ (2026-10-22) : fx68k et Moira font la même
+  séquence d'exception au cycle près ; l'écart est celui de la durée du cycle IACK, 16
+  cycles bus chez NeoST contre 12 chez Hatari (+4 en RAM, +3 en ROM, aussi à 8 MHz). Reste
+  à MESURER la bonne valeur. → [protocole](docs/MFP_IACK_MEASUREMENT.md)
 - **A12 — validation sur matériel réel** · P1 ⏸ matériel — macOS arm64 passé (sauf le pas
   visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun budget
   temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et **Linux**.
@@ -151,11 +154,10 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 - **Liaison série physique** · P3 ⭘ — formats et diviseurs autres que /64 8N1 (clavier),
   phase SCI sortante exacte ; ligne BREAK et erreurs de trame qui en découlent hors modèle.
 - **Firmware IKBD, restes face à la ROM** · P3 ⭘ — le firmware est calé sur la ROM 6301
-  désassemblée depuis le 2026-10-22. Restent approximés : les interruptions du timer du 6301
-  ne sont pas comptées dans les délais de `$18` ; `$19` est scruté toutes les 1 ms (la ROM le
-  fait à chaque tour de boucle) ; l'état hôte (souris, manettes) ne change qu'aux
-  événements de l'hôte ; touche tenue au reset (`scancode|$80` avant `$F1`) ; code 6301
-  custom (`Execute`). Délais de `$18` comptés sur la ROM, pas encore mesurés sur un IKBD.
+  désassemblée depuis le 2026-10-22. Restent approximés : `$19` est scruté toutes les 1 ms
+  (la ROM le fait à chaque tour de boucle) ; l'état hôte (souris, manettes) ne change qu'aux
+  événements de l'hôte ; code 6301 custom (`Execute`). Les délais de `$18` (tours de boucle
+  et interruptions 1 ms 128/215 µs) sont comptés sur la ROM, pas encore mesurés sur un IKBD.
 - **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; forme d'onde
   BREAK non simulée.
 
@@ -169,9 +171,6 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
   parité/framing des formats TX/RX discordants. Phase initiale de l'oscillateur abstraite.
 
 ### 4.6 FDC WD1772 / DMA / ACSI
-- **Test F de la cartouche STE_Test v1.9** · P2 ⭘ — « Cannot write drive A/B », lecteurs
-  vus simple face, alors que le test F du diagnostic MegaSTE passe. Cartouche présente
-  (`carts/STE_Test_v1.9.img`, non versionnée) : trace FDC + oracle Hatari sur la même cartouche.
 - **ACSI : essai Idris OS** · P3 ⭘ — jamais tenté.
 
 ### 4.7 RTC RP5C15

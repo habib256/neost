@@ -173,7 +173,8 @@ int testIkbdResponses() {
             r.command({0x18}); r.ikbd.setJoystick(0, 0x80);
             // Une source ne tire qu'une fois par runTo : avancer par petits pas,
             // comme la machine (synchronisation à chaque accès CPU).
-            for (int64_t t = 200; t <= 11600; t += 200) r.advance(t);
+            // 8 tours de ~177 µs + les interruptions 1 ms du 6301 (128/215 µs).
+            for (int64_t t = 200; t <= 20000; t += 200) r.advance(t);
             const auto b = collect(r, 1);
             c.equal("$18 fire sample byte", b.size() > 0 ? b[0] : -1, 0xFF);
         }

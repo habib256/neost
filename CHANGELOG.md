@@ -6,6 +6,23 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Troisième passe MiSTer : STE_Test test F, touche tenue au reset, pads, IKBD (2026-10-22)
+
+- **FDC** : un WRITE TRACK que le .st ne sait pas représenter (IDs hors géométrie,
+  tailles, IDs étrangers) n'est plus rejeté par LOST DATA ; la piste est gardée en mémoire
+  et relue selon ses IDs, comme sur un WD1772. Le test F de STE_Test v1.9 passe (« Disk
+  A: DS / Disk B: DS »).
+- **IKBD** : touche tenue pendant le reset → le relâchement de la première touche du
+  balayage de la ROM part avant `$F1` ($F086-$F0DC) ; les interruptions 1 ms du 6301
+  (128/215 µs, +12 µs horloge réglée) allongent l'échantillonnage de `$18`.
+- **Pads STE** : sélection validée par l'écriture de `$FF9203`, coupée au reset et par sa
+  lecture (netlist du GST MCU).
+- **CPU** : délais IPL opt-in (`NEOST_IPLDELAY`, `NEOST_IPLFETCH`) comptés en cycles CPU,
+  comme l'échantillonnage IPL du 68000 (fx68k).
+- **IACK Mega STE** : le résidu +3/+4 est expliqué (durée du cycle IACK 16 contre 12
+  cycles bus), la mesure matérielle reste à faire.
+- `.state` v54.
+
 ## Chasse aux bugs sur les changements du jour (2026-10-22)
 
 Trois relectures indépendantes (IKBD ; Bus/CPU/STE ; blitter, `.state` et tests) :

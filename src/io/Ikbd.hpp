@@ -251,6 +251,9 @@ public:
         // --- Fenêtre de reset : octet retenu dans le RDR du 6301 (ROM $F010-$F139) ---
         ar(heldByte_);
         ar(heldOverrun_);
+        ar.arr(hostKeys_);                    // v54 : touches tenues (balayage du reset)
+        ar(ocfOrigin_);                       // v54 : phase de l'interruption 1 ms du 6301
+        ar(clockSet_);
         ar.check(heldByte_ >= -1 && heldByte_ <= 0xFF, "Ikbd::heldByte_ hors domaine");
 
         // --- Rapports d'état $88 / $9A (v51) ---
@@ -572,6 +575,18 @@ private:
     // (Barbarian $08+$14, Hammerfist $12+$14, Just Buggin' $11+$13 perdus : il ne
     // reste que les défauts, souris relative + joystick 1 en événement).
     int16_t heldByte_ = -1;                   // octet retenu, -1 = aucun
+    // Touches réellement tenues (hôte), indépendantes de scanState_ que le boot efface :
+    // la ROM balaie la matrice au reset ($F086) et envoie le relâchement de la PREMIÈRE
+    // touche trouvée avant $F1.
+    uint8_t hostKeys_[128] = {};
+    // Interruption OCF du HD6301 (ROM $FD9D, OCR += $3E8 : une par ms, phase posée à
+    // l'init $F132 ≈ réponse $F1). En mode $18 son gestionnaire alterne un tic court
+    // (128 µs) et un tic long (215 µs, balayage d'une colonne via $F1B7), +12 µs si
+    // l'horloge tourne ($83 ≠ 0, posé par $1B). Cycles HD6301 comptés sur la ROM, non
+    // mesurés. Ces tics retardent la boucle d'échantillonnage de $18.
+    int64_t ocfOrigin_ = 0;
+    bool    clockSet_ = false;
+    int64_t addOcfDelay(int64_t start, int64_t cycles) const;
     bool    heldOverrun_ = false;             // second octet reçu : tout est perdu
     // Bit 5 de $CA : joysticks activés ; seul $1A l'efface, sans changer le mode
     // (après $14 puis $1A, $94 répond toujours $14). Rapporté par $9A.
