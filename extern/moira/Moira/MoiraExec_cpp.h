@@ -5416,7 +5416,14 @@ Moira::execStop(u16 opcode)
 
     SUPERVISOR_MODE_ONLY
 
-    u16 src = (u16)readI<C, Word>();
+    // NEOST : STOP vaut 4(0/0) — aucun cycle bus. L'opérande est déjà dans IRC ;
+    // le silicium ne préfetche pas pendant STOP (fx68k : nanomots 0x3A2/0x327 sans
+    // accès ; Hatari : « STOP does not prefetch anything », m68k_incpci(4) au réveil).
+    // readI<Word> aurait lu IRC puis préfetché le mot suivant sur le bus. Les
+    // sorties de STOP (exception, puis RTE) rechargent la file : IRC périmé sans effet.
+    u16 src;
+    if constexpr (C == Core::C68000) { src = queue.irc; reg.pc += 2; }
+    else                              { src = (u16)readI<C, Word>(); }
 
     setSR(src);
     flags |= State::STOPPED;

@@ -201,6 +201,15 @@ auto/software, antidatage), timers datés, compteur vivant, event-count Timer A/
   tardive ; invisible pour une ligne 508). Étalon `blankline_node_late_st` : écriture
   `$8260` alternant 44 et 268 d'une trame à l'autre, 10 714 px → 0 px. Hatari pose la VBL
   depuis le dernier HBL réel (`video.c:3370`).
+- ⚠ **STE : impulsion hi-res tardive (40,56] = « no DE » + ligne 224 (2026-10-22, netlist
+  GST MCU) — écart assumé avec Hatari, aligné sur le matériel.** Hatari (`video.c:2503`)
+  borne la détection no-DE à `Preload_Start_Low_50` = 40 sur STE et rend STOP_MIDDLE +
+  ligne 512 entre 40 et 56 ; la netlist SYNC.PIN (4081P26 SYM 18-31 : longueur de ligne =
+  f(MDE1) au rechargement du compteur HSC, bord au cycle ~56 ; 4081P29 SYM 38-40 : HDE
+  jamais posé si MDE1=1 à ~44 puis MDE1B=0 à ~56) donne no DE + 224 jusqu'à 56, comme le
+  STF. `VideoGlue.cpp` branche 71 Hz : `<= HDE_On_Low_50`. Étalon `blankline_node_late_ste`
+  en snapshot. Réserves : cycle 56 à ±4 ; fenêtre (40,44] (DE précoce prédit à ~48) non
+  portée ; aucune mesure STE.
 - **[assumée, 2026-10-22] Placement des pixels d'une ligne LEFT_PLUS_2 — Hatari décale de
   4 px.** Même état Glue des deux côtés (`H_DE 53<->377 border=2`, DE 52→376) pour une
   impulsion 60 Hz aux cycles 32-36 ; `Video_CopyScreenLineColor` (`video.c:4047-4056`)

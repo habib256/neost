@@ -6,7 +6,16 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
-## STOP+8 : les quatre cycles manquants, IACK MFP ramené à 12 (2026-10-22)
+## STOP 4(0/0), réveil quantifié, STE « no DE » tardive d'après la netlist (2026-10-22)
+
+- **STOP** : plus de cycle bus de préfetch pendant `STOP` (4(0/0) sur le silicium) et
+  prise d'interruption quantifiée sur l'itération de 4 cycles (fx68k, ré-exécution de
+  l'opcode chez Hatari). Conséquence : une IRQ pendante au `stop` part à STOP+8 — Hatari
+  met 12 ; les deux émulateurs ne concordent plus sur ce segment, le silicium prime.
+- **STE** : une impulsion hi-res retirée entre les cycles 40 et 56 donne « no DE » + ligne
+  224 (netlist du GST MCU), là où Hatari et NeoST rendaient STOP_MIDDLE + 512 ; étalon
+  `blankline_node_late_ste` en référence NeoST.
+
 
 Le résidu de +4 cycles entre NeoST et Hatari sur les chaînes d'interruption venait de
 Moira, pas de l'IACK : une IRQ déjà pendante et démasquée par `stop #$2100` partait à

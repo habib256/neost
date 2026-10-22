@@ -800,9 +800,8 @@
    "frame": 380,
    "crop": "buffer",
    "max_diff_px": 0,
-   "ref_kind": "oracle",
-   "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-20 en STE (etos256fr), sélection à zéro pixel dans 350-410. Impulsions sans écriture palette dans le handler ; motif RAM de longs successifs pour distinguer masquage et avance du compteur. BLANK consomme la ligne, NO_DE non ; impulsion tardive discriminant les fenêtres STF/STE. La couleur physique du blanking reste à mesurer : palette 0 comparative, aucune preuve matérielle déduite de cet accord."
+   "ref_kind": "snapshot",
+   "ref_note": "PASSEE EN SNAPSHOT le 2026-10-22 (netlist du GST MCU) : pour une impulsion hi-res aux cycles 48/52/56 retiree a +48, Hatari (video.c:2503) arrete la detection no-DE a Preload_Start_Low_50 = 40 et rend STOP_MIDDLE + ligne 512 (trace : detect stop middle 56<->164, hbl_pos=-1) ; la netlist SYNC.PIN (4081P26 SYM 18-31 : longueur de ligne fixee par MDE1 au rechargement du compteur HSC, bord au cycle ~56 = Line_Set_Pal ; 4081P29 SYM 38-40 : HDE jamais pose si MDE1=1 a ~44 puis MDE1B=0 a ~56) donne no DE + ligne 224 jusqu'a 56 inclus, comme le STF. NeoST STE suit la netlist (VideoGlue.cpp, branche freq 71 <= HDE_On_Low_50) : ligne 99 masquee, trame raccourcie de 288 cycles, alternance de phases comme en ST. Reserve : le cycle 56 lui-meme est a +-4 (phase du strobe d'ecriture non mesuree) ; aucune mesure materielle STE connue. Ancienne note (oracle) : Oracle Hatari épinglé f0736b24, 2026-10-20 en STE (etos256fr), sélection à zéro pixel dans 350-410. Impulsions sans écriture palette dans le handler ; motif RAM de longs successifs pour distinguer masquage et avance du compteur. BLANK consomme la ligne, NO_DE non ; impulsion tardive discriminant les fenêtres STF/STE. La couleur physique du blanking reste à mesurer : palette 0 comparative, aucune preuve matérielle déduite de cet accord."
   },
   {
    "id": "blankline_stop_st",

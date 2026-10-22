@@ -308,9 +308,19 @@ Moira::execute()
         }
 
         // Process pending interrupt (if any)
-        // NEOST : retenue de 4 cycles après un STOP (cf. stopGraceUntil, Moira.h).
+        // NEOST : pendant un STOP, l'interruption n'est prise qu'en fin d'ITÉRATION de
+        // STOP, toutes les 4 cycles depuis son début (fx68k ré-exécute 0x3A2/0x327 ;
+        // Hatari ré-exécute l'opcode avec do_cycles_stop(4)) — la première itération
+        // ayant testé avec l'ancien masque (cf. stopGraceUntil, Moira.h). La scrutation
+        // de la broche reste à chaque cycle ; seul l'instant de prise est quantifié : on
+        // AVANCE jusqu'à la frontière (l'horloge peut sauter par créneaux bus, attendre
+        // de la croiser exactement bloquait le CPU en STOP).
         if ((flags & CHECK_IRQ) && !((flags & STOPPED) && clock < stopGraceUntil)) {
 
+            if (flags & STOPPED) {
+                const i64 mis = (clock - stopGraceUntil) & 3;
+                if (mis) sync(int(4 - mis));
+            }
             try {
                 if (checkForIrq()) goto done;
             } catch (const std::exception &exc) {

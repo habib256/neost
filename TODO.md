@@ -140,12 +140,10 @@ Ne figure ici que l'ouvert ; l'acquis de chaque puce est dans `docs/IMPLEMENTED.
 détaillé dans `docs/HATARI_DIVERGENCES.md`.
 
 ### 4.0 CPU 68000 (Moira)
-- **STOP : réveil et préfetch** · P2 ⭘ — relevés sur fx68k le 2026-10-22, non portés :
-  (a) une IRQ qui arrive APRÈS l'entrée en STOP n'est prise qu'en fin d'itération de
-  4 cycles (synchronisation IPL à deux étages), Moira scrute à chaque cycle ; (b) Moira
-  fait un cycle bus de préfetch pendant STOP (`readI`), le silicium aucun (4(0/0)) — peut
-  décaler l'alignement des créneaux RAM. Sonde : `scratchpad/iackprobe` (chaîne Super
-  Hang-On, à verser dans `tools/`).
+- **STOP : synchronisation IPL à deux étages** · P3 ⭘ — fx68k échantillonne la broche IPL
+  deux fois (enPhi2) avant de poser `intPend` : ~2 cycles de latence de reconnaissance,
+  aussi hors STOP. Moira voit la broche aussitôt. Du ressort de l'option `NEOST_IPLFETCH`
+  (désactivée) ; à qualifier sur les bancs poll avant de l'activer.
 - **Timer B event-count : périodes de 508 et HBL non pendante au `stop`** · P2 ⭘ — sur la
   sonde de la chaîne Super Hang-On (3 997 chaînes), NeoST montre ~60 chaînes où la HBL
   n'est pas encore pendante à l'entrée du `stop` (segment stop→HBL de 76 à 180 cycles)
@@ -158,11 +156,10 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
   NeoST pile à `activeX_`. Invisible aux étalons.
 - Mesures matérielles → § 2.
 
-- **Ligne « no DE » hi-res tardive sur STE : 512 ou 224/508 ?** · P3 ⏸ matériel — la netlist
-  du GST MCU n'a aucun verrou « Line_Set_Pal » (`hsyncgen.v` recharge le compteur avec
-  `ntsc & mde1b` vifs en fin de ligne ; HSYNC hi-res à hsc=121 inatteignable par une
-  impulsion précoce) → ligne de 512 cycles, là où Hatari (et NeoST, qui le suit) rendent
-  224/508. Sans effet sur les étalons `blankline_*` (STF). À mesurer sur STE.
+- **STE, impulsion hi-res : bords à ±4** · P3 ⏸ matériel — la netlist place le bord de
+  rechargement HSC (longueur de ligne) et le décodage HDE au cycle ~56 ±4 ; une impulsion
+  retirée dans (40,44] donnerait un DE précoce à ~48 (prédiction basse, non portée). À
+  mesurer sur STE réel avant d'affiner `VideoGlue.cpp` (branche 71 Hz).
 
 ### 4.2 MFP 68901 & interruptions
 - Latence IACK MegaSTE → § 2.

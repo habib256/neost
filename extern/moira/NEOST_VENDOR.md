@@ -225,9 +225,13 @@ fait `setSR` puis `checkForIrq` immédiat → exception à STOP+4.
   pendante, sonde cartouche, 3 997 chaînes) : segment stop→exception 4 → 8, chaîne
   136 → 140 = Hatari. C'est ce +4 que la constante `g_iackMfp = 16` (au lieu de 12)
   compensait depuis le 2026-08-06.
-- Reste non vérifié : la latence de réveil quand l'IRQ arrive APRÈS l'entrée en STOP
-  (fx68k ne sort qu'en fin d'itération de 4 cycles, Moira scrute à chaque cycle), et
-  le préfetch bus que `readI` fait pendant un STOP (4(0/0) sur le silicium : aucun).
+- Complété le même jour : (a) réveil quantifié — une IRQ arrivant APRÈS l'entrée en
+  STOP n'est prise qu'à la fin de l'itération de 4 cycles en cours (`(clock −
+  stopGraceUntil) & 3 == 0`), comme fx68k et la ré-exécution de l'opcode chez Hatari ;
+  la broche reste scrutée à chaque cycle. (b) Plus de cycle bus pendant STOP : l'opérande
+  est pris dans IRC sans préfetch (`reg.pc += 2`), STOP = 4(0/0) ; les sorties de STOP
+  (exception puis RTE) rechargent la file. Non porté : la synchronisation IPL à deux
+  étages de fx68k (~2 cycles), du ressort de l'option `NEOST_IPLFETCH`.
 
 ## Patch local : reset gardé (2026-07-08)
 
