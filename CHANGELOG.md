@@ -6,6 +6,26 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## HBL sur la longueur de ligne live, événement échu servi à la frontière (2026-10-22)
+
+Dernier résidu de la sonde Super Hang-On : 53 chaînes où la HBL n'était pas encore
+pendante au `stop`, toutes dans la première trame après reset. Le HBL suivant était
+replanifié sur la longueur de ligne verrouillée en début de trame (508 pour une trame
+démarrée à 60 Hz) alors que le Timer B suivait la grille réelle (512) : dérive de
+4 cycles par ligne. Le HBL suit désormais les registres live, comme le compteur `hsc` du
+GST MCU (fréquence seule : la résolution lue à l'instant du HBL de NeoST piégeait les
+impulsions hi-res de retrait gauche). Second défaut : un événement déjà échu à une frontière
+d'instruction était servi une instruction trop tard (élection MFP différée en fin de lot).
+Troisième : la fin de trame n'intégrait l'écart d'une ligne qu'à son HBL de fin — pour la
+DERNIÈRE ligne, celui-ci tombe à la frontière et l'écart était perdu (trame de reset 60 Hz
+passée à 50 Hz : 4 cycles trop courte, HBL de la ligne 262 perdu, tout le reste décalé de
+−4 vs Hatari — sonde `timer_b_event` à Δ=6). `frameEnd_` suit désormais la longueur de la
+ligne en cours dès qu'elle est connue.
+Sonde : 0 chaîne anormale, première VBL au même cycle qu'Hatari — ce qui tourne la phase
+E-clock des étalons ancrés VBL+STOP et déplace les boots : six étalons recalés sur une trame
+bit-identique. Mis au jour au passage : sur STE, une écriture 60 Hz aux cycles 32-36 donne
+une image qu'Hatari ne produit jamais (ouvert, TODO 4.1).
+
 ## STOP 4(0/0), réveil quantifié, STE « no DE » tardive d'après la netlist (2026-10-22)
 
 - **STOP** : plus de cycle bus de préfetch pendant `STOP` (4(0/0) sur le silicium) et

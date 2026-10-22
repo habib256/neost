@@ -194,6 +194,40 @@ auto/software, antidatage), timers datés, compteur vivant, event-count Timer A/
 
 ### Vidéo (Shifter + Glue) — `Shifter.cpp` ↔ `video.c`
 
+- ✅ **Longueur de la ligne qui commence = registres LIVE (2026-10-22, bug NeoST)** —
+  `Machine::onHbl` replanifiait le HBL suivant sur la longueur de ligne verrouillée à
+  `beginFrame` (`cpl_`), alors que le Timer B suivait la grille Glue réelle : trame
+  verrouillée 60 Hz (`$FF820A` = 0 au reset) passée en 50 Hz après `Line_Set_Pal` →
+  HBL à 508 contre lignes de 512, dérive −4 cycles/ligne (sonde Super Hang-On : 53 chaînes
+  avec HBL non pendante au `stop`, première VBL 1 048 cycles trop tôt = 262 × 4). Désormais
+  `Shifter::liveLineLength()` (224 / 512 / 508 d'après `$FF8260` et `$FF820A`) à chaque
+  HBL, comme `Video_StartHBL` + `Video_HBL_GetDefaultPos` (`video.c:3541/3134`) et le mux
+  de rechargement du compteur `hsc` du GST MCU (`gstmcu.v:779-801`) — FRÉQUENCE seule
+  (512/508) : l'événement HBL de NeoST tombe quelques cycles après le début de ligne, où une
+  démo plein écran est encore dans son impulsion hi-res de retrait gauche (504→8) ; lire la
+  résolution à cet instant donnait 224 à tort (Cuddly : lignes raccourcies, 11 trames
+  d'avance). Les lignes 224 restent décidées par le verrou de trame et les Freq_match 71 Hz.
+  Le restart du compteur vidéo (ligne 310/260) est re-posé sur la grille réelle quand des
+  lignes ont été raccourcies (sinon `overscan_top` voyait `$FF8207` repartir 148 cycles trop
+  tard). Effet de bord : la première VBL arrive 1 048 cycles plus tard (= Hatari), ce qui
+  tourne d'un cran la phase E-clock (1048 ≡ −2 mod 10) des étalons ancrés VBL+STOP et
+  déplace les trajectoires de boot (Cuddly : une rotation de disquette) — `spec512_*`,
+  `cuddly_demos`, `nocooper`, `dmasnd_poll`, `blankline_blank_st/ste` recalés sur une trame
+  bit-identique (balayages consignés dans `etalons.json`).
+- ✅ **Événement échu à la frontière d'instruction (2026-10-22, bug NeoST)** — l'élection
+  MFP différée en fin de lot de dispatch posait `MFP_IRQ` « à now » après la boucle de
+  `runTo` ; `Machine::runFrame` exécutait alors une instruction de plus avant de le servir
+  (tic Timer B tombé dans un `bra.s` : exception 4 cycles après Hatari, périodes 508
+  par paires). Désormais un événement déjà échu à la frontière est servi avant toute
+  instruction (une passe, anti-livelock), comme la boucle CPU d'Hatari.
+- ✅ **Fin de trame et dernière ligne (2026-10-22, bug NeoST)** — `frameEnd_` n'intégrait
+  l'écart d'une ligne (live ≠ verrouillée) qu'à son HBL de FIN ; pour la dernière ligne ce
+  HBL tombe à la frontière de trame, donc APRÈS `frameEnd_` quand la ligne est plus longue :
+  trame de reset (60 Hz verrouillée, 263 lignes) passée à 50 Hz par le programme → 4 cycles
+  trop courte, HBL de la ligne 262 jamais servi, toute la suite à −4 cycles d'Hatari (sonde
+  `timer_b_event` : première IRQ Δ=6 au lieu de 2). `Machine::syncFrameEnd_` recalcule la
+  fin de trame dès que la longueur de la ligne en cours est connue (HBL de début, Freq_match)
+  — équivalent d'Hatari qui pose la VBL depuis le dernier HBL réel (`video.c:3370`).
 - ✅ **Fin de trame sur ligne raccourcie (2026-10-22, bug NeoST hors Glue)** — `Machine::onHbl`
   cumulait `lineCarry_` sans raccourcir `frameEnd_` : la trame durait sa longueur nominale,
   puis `beginFrame_` posait `frameStart_` (−carry) et la VBL dans le passé → gestionnaire
@@ -201,6 +235,12 @@ auto/software, antidatage), timers datés, compteur vivant, event-count Timer A/
   tardive ; invisible pour une ligne 508). Étalon `blankline_node_late_st` : écriture
   `$8260` alternant 44 et 268 d'une trame à l'autre, 10 714 px → 0 px. Hatari pose la VBL
   depuis le dernier HBL réel (`video.c:3370`).
+- ❗ **STE : écriture 60 Hz aux cycles 32-36 — divergence réelle, OUVERTE (2026-10-22).**
+  `blankline_blank_ste` : 0 px à la phase 28, mais aux phases 32/36 du cycle de 5 trames
+  NeoST rend une image (10 714 px, signature d'un décalage d'une ligne) qu'aucune des 61
+  trames de l'oracle ne produit (`--oracle-check`). Pré-existante, masquée par la phase ;
+  l'étalon est recalé sur la phase 28. À analyser : branche 60 Hz `<= Preload_Start_Low_60`
+  (36) / fenêtre NO_DE (36,40] de `VideoGlue.cpp` contre `video.c` et la netlist (cf. TODO 4.1).
 - ⚠ **STE : impulsion hi-res tardive (40,56] = « no DE » + ligne 224 (2026-10-22, netlist
   GST MCU) — écart assumé avec Hatari, aligné sur le matériel.** Hatari (`video.c:2503`)
   borne la détection no-DE à `Preload_Start_Low_50` = 40 sur STE et rend STOP_MIDDLE +

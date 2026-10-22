@@ -144,13 +144,23 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
   deux fois (enPhi2) avant de poser `intPend` : ~2 cycles de latence de reconnaissance,
   aussi hors STOP. Moira voit la broche aussitôt. Du ressort de l'option `NEOST_IPLFETCH`
   (désactivée) ; à qualifier sur les bancs poll avant de l'activer.
-- **Timer B event-count : périodes de 508 et HBL non pendante au `stop`** · P2 ⭘ — sur la
-  sonde de la chaîne Super Hang-On (3 997 chaînes), NeoST montre ~60 chaînes où la HBL
-  n'est pas encore pendante à l'entrée du `stop` (segment stop→HBL de 76 à 180 cycles)
-  et des périodes Timer B de 508 ; Hatari n'a ni l'un ni l'autre (toutes à {64,68,72}).
-  Chercher dans la datation du front DE compté par Timer B (`Mfp.cpp`, `VideoGlue.cpp`).
+- **Jitter des périodes Timer B face à Hatari** · P3 ⭘ — sonde Super Hang-On : NeoST rend
+  {512, 516, 508, 520}, Hatari {512, 520, 504} (quantification de la prise d'IRQ dans la
+  boucle `nop`/`bra.s` de la sonde, déplacée de 4 cycles par le STOP+8). Les deux sont des
+  modèles ; trancher avec la synchronisation IPL à deux étages (item précédent) ou sur
+  machine.
 
 ### 4.1 Vidéo / Shifter
+- **STE : écriture 60 Hz à 32-36 cycles, image à une ligne de décalage** · P2 ⭘ —
+  `blankline_blank_ste` aux phases 32/36 : 10 714 px qu'aucune trame Hatari ne produit
+  (`run_etalons.py --oracle-check --only blankline_blank_ste` après avoir mis `frames` sur
+  une phase 32/36). Comparer `VideoGlue.cpp` (branches 60 Hz `<= Preload_Start_Low_60`,
+  NO_DE (36,40]) à `video.c` et à la netlist 4081P29 ; trancher pour le matériel.
+  → `docs/HATARI_DIVERGENCES.md` § Vidéo.
+- **Étalons sensibles à la phase E-clock** · P3 ⭘ — `blankline_*`, `spec512_*` capturent
+  une trame dont la phase (cycle de 5 trames du réveil VBL) tourne à chaque changement de
+  timing du boot ; les ancrer dans leur programme (compter les VBL depuis le démarrage, ou
+  phase fixée par `stop` + attente) rendrait les références stables.
 - **Latch couleur de la bordure gauche** · P3 ⭘ — 16 px (colonnes 45-60) : Hatari applique
   l'écriture palette ~16 px après le début nominal de l'aire active (latence pipeline),
   NeoST pile à `activeX_`. Invisible aux étalons.
