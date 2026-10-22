@@ -163,6 +163,7 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
     // écritures mot/long, elles, passent par write16/write32 (Bus). $FF8A3E/3F = void
     // (IoMem_VoidWrite) → ignorées aussi.
     if (off < 0x3A || off >= 0x3E) return;
+    const bool wasBusy = reg_[0x3C] & 0x80;
     reg_[off] = v & regWriteMask(off);   // bits non câblés masqués À L'ÉCRITURE (cf. regWriteMask)
     if (off == 0x3C && !inSlice_) {
         // Écriture du registre contrôle ($FF8A3C) : BUSY (bit7) à 1 → démarre ou
@@ -172,8 +173,7 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
         // !inSlice_ : une écriture VENANT DU BLITTER lui-même (blit dont la
         // destination est sa propre zone registre) pose les octets et rien de plus,
         // comme chez Hatari où le contrôle ne relance jamais le transfert en direct.
-        if (v & 0x80) start();
-        else if (midBlit_) pauseTransfer();
+        controlWritten(wasBusy);
     }
 }
 
@@ -203,6 +203,7 @@ void Blitter::writeRegisters(uint32_t off, uint32_t value, unsigned bytes) {
 // → plan 0 décalé par rapport aux plans 1-3 (franges de couleur).
 void Blitter::write16(uint32_t addr, uint16_t v) {
     const uint32_t off = addr & 0x3F;
+    const bool wasBusy = reg_[0x3C] & 0x80;
     writeRegisters(off, v, 2);
     // X count ($FF8A36) : recharge x_count_reset latchée À CHAQUE écriture du
     // registre (Hatari Blitter_WordsPerLine_WriteWord, blitter.c:1338-1350) — pas
@@ -216,14 +217,13 @@ void Blitter::write16(uint32_t addr, uint16_t v) {
         const uint16_t y = uint16_t((reg_[0x38] << 8) | reg_[0x39]);
         yLatch_ = y ? y : 65536u;
     }
-    if (off <= 0x3C && off + 1 >= 0x3C && !inSlice_) {   // cf. write8 : pas de relance ré-entrante
-        if (reg_[0x3C] & 0x80) start();
-        else if (midBlit_) pauseTransfer();
-    }
+    if (off <= 0x3C && off + 1 >= 0x3C && !inSlice_)     // cf. write8 : pas de relance ré-entrante
+        controlWritten(wasBusy);
 }
 
 void Blitter::write32(uint32_t addr, uint32_t v) {
     const uint32_t off = addr & 0x3F;
+    const bool wasBusy = reg_[0x3C] & 0x80;
     writeRegisters(off, v, 4);
     // X count ($FF8A36) couvert par l'écriture longue → latch de x_count_reset
     // (cf. write16 / Hatari Blitter_WordsPerLine_WriteWord).
@@ -234,10 +234,18 @@ void Blitter::write32(uint32_t addr, uint32_t v) {
         const uint16_t y = uint16_t((reg_[0x38] << 8) | reg_[0x39]);
         yLatch_ = y ? y : 65536u;
     }
-    if (off <= 0x3C && off + 3 >= 0x3C && !inSlice_) {   // cf. write8 : pas de relance ré-entrante
-        if (reg_[0x3C] & 0x80) start();
-        else if (midBlit_) pauseTransfer();
-    }
+    if (off <= 0x3C && off + 3 >= 0x3C && !inSlice_)     // cf. write8 : pas de relance ré-entrante
+        controlWritten(wasBusy);
+}
+
+// Écriture CPU de l'octet de contrôle ($FF8A3C). Ligne INT (GPIP3) d'après le RTL
+// de J. Cwik (MiSTery stBlitter.sv:185-190, « INTn = rBusy & !ctrlWr ») : elle suit
+// BUSY, et BUSY est vu à 0 PENDANT l'écriture — une écriture en plein blit (relance
+// « bset #7 » du non-hog) fait donc 1→0→1 et peut lever le canal 3. Non mesuré.
+void Blitter::controlWritten(bool wasBusy) {
+    if (wasBusy && bus_.mfp) bus_.mfp->setBlitterLine(true);
+    if (reg_[0x3C] & 0x80) start();
+    else if (midBlit_) pauseTransfer();
 }
 
 // -----------------------------------------------------------------------------
@@ -261,6 +269,8 @@ void Blitter::start() {
         reg_[0x3C] &= ~(0x80 | 0x40);
         return;
     }
+    // Ligne INT = BUSY (RTL Cwik) : haute pour un départ COMME pour une reprise.
+    if (bus_.mfp) bus_.mfp->setBlitterLine(false);
 
     // Un (re)démarrage supplante la fenêtre CPU en cours (Hatari : l'écriture du
     // contrôle repasse en PRE_START sans attendre les accès CPU restants).
@@ -284,11 +294,6 @@ void Blitter::start() {
                          r16(0x36), unsigned(yLatch_), reg_[0x3A] & 3u, reg_[0x3B] & 0xFu,
                          reg_[0x3C], reg_[0x3D]);
         }
-        // Ré-arme la ligne GPU_DONE (GPIP3) à l'état HAUT « pas fini » au démarrage de
-        // CHAQUE blit (cf. Hatari Blitter_Start blitter.c:895) ; finishTransfer la
-        // rabaissera à l'achèvement. Sans ça, GPIP3 resterait « fini » dès le 1ᵉʳ blit
-        // → un programme qui scrute la fin de blit verrait un faux positif au 2ᵉ blit.
-        if (bus_.mfp) bus_.mfp->setBlitterLine(false);
     }
 
     // En HOG comme en partagé, PRE_START laisse encore tourner le CPU avant
@@ -398,6 +403,9 @@ void Blitter::notePreStartCpuAccess() {
 // reste en place (reprise au prochain BUSY=1), la tranche datée est annulée et
 // la fenêtre de comptage CPU désarmée (Hatari : phase COUNT_CPU_BUS → PAUSE).
 void Blitter::pauseTransfer() {
+    // BUSY à 0 → ligne INT basse (RTL Cwik) ; la reprise la relève dans start().
+    // Hatari la laisse haute pendant la pause.
+    if (bus_.mfp) bus_.mfp->setBlitterLine(true);
     clearPreStartWindow();
     busCountError_ = false;
     bus_.blitterCountCpu = false;

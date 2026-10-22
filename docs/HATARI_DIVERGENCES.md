@@ -591,7 +591,20 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
   - `$88/$89/$8A` avec la souris coupée (`$12`, ou `$14`/`$17`) : la réponse est complétée à 8 octets
     (« padded to 8 bytes ») et rapporte le dernier mode souris choisi (`lastMouseMode_`, REL
     au boot). Hatari (ikbd.c:2565) n'émet que l'en-tête `$F6`, ce qui désynchronise le flux.
-    L'octet de mode réellement émis par la ROM n'est pas confirmé (TODO.md § 2).
+    ✅ Confirmé par la ROM 6301 désassemblée (MiSTery `ikbd/rom/IKBD.ASM`, `$FC62`) : seuls les
+    bits 6 (keycode) et 5 (absolu) de l'octet de mode `$C9` sont testés, `$12` n'efface que le
+    bit 7, `$C9 = $98` (relatif) à la mise sous tension.
+  - ✅ **Port 0 partagé, d'après la même ROM — corrigé le 2026-10-22 (`port0ToJoystick`,
+    `selectMouseMode`, `mouseOn_`).** `$14`, `$15` et `$17`
+    passent tous par `$FA47`, qui pose le bit 1 de `$C9` (port 0 = joystick 0) : les rapports
+    souris cessent, y compris après `$15`, mais le bit 7 (souris active) reste posé, donc `$92`
+    répond `$00`. Toute commande de mode souris (`$08`, `$09`, `$0A`) repasse par `$FBAF`, qui
+    efface ce bit 1 et ramène le joystick en mode événement (`$CA = $28`) s'il était en
+    surveillance, tir ou keycode. NeoST et Hatari coupent la souris sur `$14`/`$17`
+    seulement, et `$92` y répond `$12` (comportement d'Hatari, abandonné). Les exceptions de la
+    fenêtre de reset (Barbarian, Hammerfist) sont gardées pour `$14` et `$15`. Réserve : le
+    README du dépôt `ikbd` signale une révision TARDIVE du clavier (sélection souris/joystick
+    par 74LS244) ; la logique des commandes n'en dépend pas a priori.
   - `$9A` rend `$1A` seulement après `$1A` (`joysticksEnabled_`). Hatari le déduit du mode
     interrogation et répond donc `$1A` après un simple `$15`.
   - `$17` sous PAUSE OUTPUT (`$13`) : aucun échantillon n'est mis en file (« the samples are
@@ -601,6 +614,32 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
   depuis la v51 ; c'est un réglage du frontal, comme les bouchons MIDI et SCC.
 
 ### Bus / mémoire / bus-error — `Bus.cpp` ↔ `ioMem*.c`, `memory.c`, `stMemory.c`
+
+- ⚠ **Décodage du STE d'après la netlist du GST MCU (2026-10-22) — écarts assumés avec Hatari,
+  alignés sur le matériel.** Ne pas réaligner sur Hatari : la netlist est le câblage du circuit.
+  Sources : netlist texte Atari du 4081 (archive ASIC de Christian Zietz,
+  chzsoft.de/asic-web, `ASIC/4081_COMBO/4081/PIN/4081.PIN` et `REGISTER.PIN`), sa
+  transcription `gstmcu.v` (cœurs MiSTer/MiSTery). Le MCU ne donne DTACK, en **lecture**
+  seulement, qu'à $E00000-$EBFFFF (/ROM2-/ROM0), $D00000-$D7FFFF (/ROM6, /ROM5),
+  $FE0000-$FE1FFF (/ROMP) et au port cartouche (4081P2, porte AF8 `ROMXB`) ; le reste
+  time-oute (`berr_cnt`, 64 cycles 8 MHz). NeoST, **STE seulement** (`Bus::romWindowSize`,
+  `steRomSelectVoid`, `steCartWindow`, `mmuBank0Size`, `mmioRead8`) :
+  - $EC0000-$EFFFFF faute (Hatari : fenêtre ROM de 1 Mo, lit 0) ;
+  - /ROM5, /ROM6 et /ROMP lisent le bus ouvert (Hatari : `BusErrMem_bank`) ; le
+    « `irom6 | irom6` » de `gstmcu.v` (sans /ROM5) est une coquille de transcription,
+    présente depuis son premier commit ;
+  - registre « gamecart » `$FF9000` (4081P10 : bascule `GAMECART`, D = ID8, effacée par
+    RESB/PORB) : bit 0 de l'octet pair relu (bit 1 à 0, bits 2-7 flottants rendus à 1) ; à 1,
+    /ROM4 et /ROM3 passent en $D80000-$DBFFFF et $DC0000-$DFFFFF (fenêtres de 64 Ko répétées)
+    et $FA0000-$FBFFFF faute. Les extensions NeoST du port cartouche (NE2000, ISP1160, clés)
+    ne suivent pas le déménagement ;
+  - `$FF8001` relu sur 4 bits (`REGISTER.PIN` : latches ID0-3, IDB4-7 à VSS) ; banque 0
+    configurée « 11 » = 2 Mo (4081P18 : RS3 = 1 prend le chemin 2 Mo quel que soit RS2).
+    Confirme aussi le modèle Hatari « banque 1 calquée sur la banque 0 » : RS0/RS1 ne
+    pilotent rien.
+  **Confirmé fidèle** : $FC0000-$FEFFFF faute avec un TOS en $E00000 (`memory.c:1784`), cf.
+  cas IK+ dans `CASE_STUDIES.md`. **Non touché** : Mega STE (aucune netlist de son
+  décodage). Garde : `--bus-selftest` sur STE (24 contrôles).
 
 - ✅ **API Bus, miroir blitter atomique (2026-10-19)** : adresse masquée
   sur 24 bits avant les raccourcis write16/write32, comme pour les octets.
@@ -641,6 +680,15 @@ règle word/long : **conformes**.
   (`regs.db`, `VoidMem`). Différence théorique, sans impact connu.
 
 ### Blitter — `Blitter.cpp` ↔ `blitter.c`
+
+- ⚠ **Ligne INT (GPIP3) = BUSY, d'après le RTL de J. Cwik (2026-10-22) — écart assumé avec
+  Hatari, aligné sur le RTL (reconstitution du silicium, pas une mesure).**
+  MiSTery `stBlitter.sv:185-190` : `INTn = rBusy & !ctrlWr`, câblée sans inversion sur GPIP3
+  (`atarist_sdram.sv:623`). NeoST (`Blitter::controlWritten`, `start`, `pauseTransfer`) : la
+  ligne retombe à la pause (BUSY écrit à 0) et remonte à la reprise ; toute écriture CPU de
+  l'octet `$FF8A3C` pendant un blit la fait passer 1→0→1 (relance « `bset #7` » du non-hog),
+  ce qui peut lever le canal 3 s'il est armé. Hatari la laisse haute pendant la pause et
+  n'a pas d'impulsion. Non mesuré sur matériel.
 
 **Passe temporelle du 2026-10-19 — état courant, prioritaire sur l'historique BL5.**
 L'écart synthétique partagé **+60 cycles / IRQ +42 / trois tours CPU** est corrigé :

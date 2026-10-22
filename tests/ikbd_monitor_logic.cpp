@@ -115,11 +115,11 @@ int testIkbdMonitor() {
         c.equal("mouse buttons duplicate into joystick fires", r.data(), 3);
     }
     {
+        // ROM 6301 $FBAF : une commande de mode souris, joystick en surveillance
+        // ($CA = $22), ramène le joystick en mode événement ($CA = $28) — la
+        // surveillance s'arrête (MiSTery ikbd/rom/IKBD.ASM).
         Rig r; r.warm(); r.command({0x17, 1}); r.command({0x08});
-        r.ikbd.setJoystick(0x89, 0x86);
-        r.advance(period(1)); r.advance(period(1) + 10240);
-        c.equal("active mouse masks port zero and consumes port one fire", r.data(), 0);
-        r.advance(period(1) + 20480); c.equal("active mouse preserves port one directions", r.data(), 6);
+        c.equal("mouse mode command ends joystick monitoring", r.monitorDue(), -1);
     }
     {
         Rig r; r.warm(); r.command({0x17, 1}); r.advance(1000);

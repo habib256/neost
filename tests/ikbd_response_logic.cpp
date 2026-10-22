@@ -107,6 +107,31 @@ int testIkbdResponses() {
         c.equal("response ends without extra byte", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
     }
     {
+        // $92 rapporte le seul bit 7 de l'octet de mode $C9 (ROM 6301 $FCA2) :
+        // $14/$15 rendent le port 0 au joystick (bit 1) sans « désactiver » la
+        // souris ; seul $12 la désactive, un mode souris la réactive.
+        struct Avail { std::initializer_list<uint8_t> pre; int want; const char* label; };
+        const Avail cases[] = {
+            {{0x14}, 0x00, "$92 after $14 reports mouse enabled"},
+            {{0x15}, 0x00, "$92 after $15 reports mouse enabled"},
+            {{0x12}, 0x12, "$92 after $12 reports mouse disabled"},
+            {{0x12, 0x14}, 0x12, "$14 does not re-enable a disabled mouse"},
+            {{0x12, 0x08}, 0x00, "mouse mode re-enables mouse"},
+        };
+        for (const auto& tc : cases) {
+            Rig r;
+            r.command(tc.pre); r.advance(200000); r.command({0x92});
+            int header = -1;
+            for (int k = 0; k < 4 && header != 0xF6; ++k) {
+                if (r.due() < r.live) break;
+                r.advance(r.due());
+                if (r.ready()) header = r.data();
+            }
+            c.equal("$92 header", header, 0xF6);
+            r.advance(r.due()); c.equal(tc.label, r.data(), tc.want);
+        }
+    }
+    {
         Rig r;
         r.command({0x1C}); r.advance(1000); r.command({0x16});
         c.equal("new response replaces pending wait", r.due(), 1000 + 8192);

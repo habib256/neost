@@ -1004,6 +1004,7 @@ void Cpu68k::reset() {
     state_->grp0Vector = 0;
     state_->inBusError = false;
     state_->bus->bootOverlay = true;
+    state_->bus->gameCart = false;             // RESB/PORB (netlist 4081P10)
     state_->inReset = true;                    // sync() n'avance pas l'ordonnanceur pendant le reset
     state_->blitterOverlap = 0;
     state_->megaSteAccessHit = false;

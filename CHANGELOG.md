@@ -6,6 +6,29 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## STE d'après la netlist du GST MCU, IKBD d'après sa ROM, blitter d'après Cwik (2026-10-22)
+
+Point de départ : revue de l'émulateur ASE (thebitculture/ase), puis fouille du cœur FPGA
+MiSTery, de sa ROM 6301 désassemblée et des netlists Atari du GST MCU (archive ASIC de
+Christian Zietz). Ce qui change, **sur preuve matérielle** :
+
+- **Décodage STE (netlist 4081)** : fenêtre ROM limitée à $E00000-$EBFFFF ; /ROM5, /ROM6
+  ($D00000-$D7FFFF) et /ROMP ($FE0000-$FE1FFF) lisent le bus ouvert au lieu de fauter ;
+  registre « gamecart » `$FF9000` (déplace le port cartouche en $D80000-$DFFFFF) ; `$FF8001`
+  relu sur 4 bits, configuration « 11 » = 2 Mo. Mega STE inchangé.
+- **IKBD (ROM 6301)** : `$15` rend aussi le port 0 au joystick (souris muette) ; `$92` ne
+  rapporte que la désactivation par `$12` ; une commande de mode souris arrête la
+  surveillance `$17`. Le comportement de `$88` souris coupée est confirmé.
+- **Blitter (RTL Cwik)** : la ligne GPIP3 suit BUSY (pause et reprise) et marque une
+  impulsion à chaque écriture de `$FF8A3C` en plein blit.
+- `.state` v52 (champs `Ikbd::mouseOn_`, `Bus::gameCart`) : les sauvegardes v51 sont refusées.
+
+Vérifications : IK+ (`disks/ik_plus.STX`) plante sur STE/TOS 2.06 en lisant `$FC000C`,
+comme l'oracle Hatari et comme le prévoit le schéma — cas classé FIDÈLE ; la rafale blitter
+« 63 accès » d'Hatari correspond au compteur `tmoCntr` du RTL. Pistes de preuve moyenne non
+portées → `TODO.md` § 8. Idées de fonctions d'ASE (empreinte machine, relecture d'entrées,
+retour arrière, explorateur de bitmaps) → `TODO.md`.
+
 ## 0.6.2 — plus près du silicium (2026-10-20)
 
 Sept semaines de fidélité matérielle depuis la 0.6.1. Ce que l'utilisateur y gagne :

@@ -89,6 +89,7 @@ private:
     bool runSlice(int maxBusAccesses);       // ≤ N accès bus (-1 = tout) ; true = terminé
     void finishTransfer();                   // y_count = 0 : BUSY/HOG effacés + IRQ GPIP3
     void billCycles(int n);                  // facture + dispatche n cyc volés (par accès)
+    void controlWritten(bool wasBusy);       // écriture CPU de $FF8A3C : ligne INT + départ/pause
     void pauseTransfer();                    // BUSY effacé pendant un blit : tranche annulée
     // Fenêtre PRE_START avant chaque prise de bus (cf. .cpp) :
     // armée dans Bus::blitterWinStart/End, consultée par les callbacks mémoire de

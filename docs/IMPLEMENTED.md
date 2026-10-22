@@ -7,6 +7,17 @@ vient répondre à « NeoST gère-t-il X ? ».
 Pour *quand* une chose est arrivée → [`../CHANGELOG.md`](../CHANGELOG.md).
 Pour ce qui reste → [`../TODO.md`](../TODO.md).
 
+## Compléments du 2026-10-22
+
+- **Décodage STE d'après la netlist Atari du GST MCU (4081)** : ROM $E00000-$EBFFFF,
+  /ROM5-/ROM6 ($D00000-$D7FFFF) et /ROMP ($FE0000-$FE1FFF) en bus ouvert, registre
+  « gamecart » `$FF9000` (port cartouche déplacé en $D80000-$DFFFFF), `$FF8001` sur 4 bits,
+  banque « 11 » = 2 Mo. Détail → `docs/HATARI_DIVERGENCES.md` § Bus.
+- **IKBD d'après la ROM 6301** : port 0 partagé souris/joystick (`$14`, `$15`, `$17`, `$18`,
+  `$19`), disponibilité `$92` = bit 7 de l'octet de mode, fin de surveillance `$17` sur
+  commande souris.
+- **Blitter** : ligne GPIP3 = BUSY (pause, reprise, impulsion à l'écriture de `$FF8A3C`).
+
 ## Compléments du 2026-10-20
 
 - **CPU** : DIVU/DIVS font leurs cycles internes avant le préfetch (68000), comme Hatari

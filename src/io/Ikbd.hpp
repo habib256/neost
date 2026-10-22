@@ -262,6 +262,7 @@ public:
         ar.check(lmOk, "Ikbd::lastMouseMode_ hors domaine");
         if (ar.loading() && lmOk) lastMouseMode_ = static_cast<MouseMode>(lm);
         ar(joysticksEnabled_);
+        ar(mouseOn_);                         // v52 : bit 7 de $C9 (rapport $92)
 
         // --- Pause output ($13) ---
         ar(pauseOutput_);
@@ -455,6 +456,16 @@ private:
     // lui que rapporte $88 quand la souris est coupée, la réponse devant rester
     // un paquet complet de 8 octets (cf. traitement $88).
     MouseMode lastMouseMode_ = REL;
+    // Bit 7 de l'octet de mode $C9 de la ROM 6301 : souris ACTIVÉE. Distinct de
+    // mouseMode_ == OFF, qui couvre aussi le port 0 rendu au joystick (bit 1 posé
+    // par $14/$15/$17/$18/$19, ROM $FA47). Seul $12 l'efface, un mode souris le
+    // repose ; c'est lui que rapporte $92 (ROM $FCA2). Cf. MiSTery ikbd/rom/IKBD.ASM.
+    bool mouseOn_ = true;
+    // Commande de mode souris ($08/$09/$0A) : ROM $FBAF — souris activée, port 0
+    // rendu à la souris, joystick ramené au mode événement s'il surveillait.
+    void selectMouseMode(MouseMode m);
+    // $14/$15 : port 0 rendu au joystick (ROM $FA47), quirks de reset compris.
+    void port0ToJoystick();
     // Défauts = état après IKBD_Boot_ROM (Hatari), l'IKBD bootant sa ROM dès la
     // mise sous tension : bornes ABS_MAX_X/Y_ONRESET (320/200) et cache boutons
     // ABS_PREVBUTTONS (0x0A = rien à signaler à la 1re interrogation $0D).

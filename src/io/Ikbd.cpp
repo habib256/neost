@@ -372,7 +372,7 @@ void Ikbd::dispatchCommand() {
             // IKBD_Cmd_RelMouseMode) : retour aux paquets relatifs $F8 (mode par
             // défaut). Sans ce case, un jeu repassant en relatif depuis ABS/CURSOR/
             // OFF gardait l'ancien mode → souris muette ou flèches parasites.
-            mouseMode_ = lastMouseMode_ = REL;
+            selectMouseMode(REL);
             // Reçu pendant la fenêtre de reset : mémorisé pour le quirk $08+$14
             // « souris ET joystick reportés ensemble » (Barbarian, cf. Hatari).
             if (duringResetCriticalTime_)
@@ -382,7 +382,7 @@ void Ikbd::dispatchCommand() {
             // $09 = SET ABSOLUTE MOUSE POSITION REPORTING (cf. Hatari
             // IKBD_Cmd_AbsMouseMode) : bascule en mode absolu ; les bornes MaxX/
             // MaxY sont inclusives (octets MSB/LSB). Plus de paquet $F8 émis.
-            mouseMode_ = lastMouseMode_ = ABS;
+            selectMouseMode(ABS);
             absMaxX_ = uint16_t((inBuf_[1] << 8) | inBuf_[2]);
             absMaxY_ = uint16_t((inBuf_[3] << 8) | inBuf_[4]);
             // Protocole IKBD Atari (§ SET ABSOLUTE MOUSE POSITIONING) : « Resets
@@ -416,7 +416,7 @@ void Ikbd::dispatchCommand() {
         case 0x0A:
             // $0A = SET MOUSE KEYCODE MODE (cf. Hatari IKBD_Cmd_MouseCursorKeycodes) :
             // les mouvements deviennent des flèches clavier ; octets 1/2 = pas X/Y.
-            mouseMode_ = lastMouseMode_ = CURSOR;
+            selectMouseMode(CURSOR);
             // Octet BRUT, 0 permis (Hatari ikbd.c:2000 stocke tel quel) : avec pas=0
             // la boucle sendCursorKeys émet ses 10 paires/trame sans consommer le Δ,
             // comme le vrai 6301 — l'ancien « ?: 1 » se comportait en pas=1.
@@ -429,6 +429,7 @@ void Ikbd::dispatchCommand() {
             // les boutons souris se rejoignent alors sur les mêmes lignes (cf.
             // duplication des boutons dans onVbl).
             mouseMode_ = OFF;
+            mouseOn_ = false;                 // ROM $FB88 : efface le bit 7 de $C9
             mouseDisabled_ = true;
             checkResetDisableBug();
             break;
@@ -498,14 +499,7 @@ void Ikbd::dispatchCommand() {
             // joystick reportés ensemble (bothMouseAndJoy_).
             joyMode_ = JOY_AUTO;
             joysticksEnabled_ = true;         // toute commande de mode joystick les rallume
-            mouseMode_ = OFF;
-            if (duringResetCriticalTime_ && mouseEnabledDuringReset_) {
-                mouseMode_ = REL;
-                bothMouseAndJoy_ = true;
-            } else if (duringResetCriticalTime_ && mouseDisabled_) {
-                mouseMode_ = REL;
-                bothMouseAndJoy_ = true;
-            }
+            port0ToJoystick();
             // RAZ l'état joystick mémorisé, puis — hack des jeux Utopos/Double
             // Bubble — émet AUSSITÔT un paquet $FE/$FF si l'état courant diffère
             // (sans attendre la prochaine trame ni vérifier l'ACIA).
@@ -519,8 +513,11 @@ void Ikbd::dispatchCommand() {
             // $15 = SET JOYSTICK INTERROGATION MODE (cf. Hatari IKBD_Cmd_StopJoystick) :
             // retour au mode interrogation seule ($16). Plus de report spontané,
             // mais les joysticks restent DISPONIBLES ($9A rapporte $00, pas $1A).
+            // ROM 6301 : $15 passe par le même $FA47 que $14 et rend donc aussi
+            // le port 0 au joystick — la souris se tait (Hatari la laisse active).
             joyMode_ = JOY_OFF;
             joysticksEnabled_ = true;
+            port0ToJoystick();
             break;
         case 0x1A:
             // $1A = DISABLE JOYSTICKS (cf. Hatari IKBD_Cmd_DisableJoysticks) : coupe
@@ -546,7 +543,11 @@ void Ikbd::dispatchCommand() {
                                          firmwareEventTime() + joystickMonitorPeriod_);
             break;
         case 0x18:
-            // $18 = SET FIRE BUTTON MONITORING : non implémenté (comme Hatari).
+            // $18 = SET FIRE BUTTON MONITORING : flux non implémenté (comme Hatari),
+            // mais la ROM ($FA12) pose le bit 1 de $C9 : port 0 au joystick, souris
+            // muette — comme $19 ($FA21 → $FA47).
+        case 0x19:
+            mouseMode_ = OFF;
             break;
         case 0x16: {
             // $16 = « interroger les joysticks » : l'IKBD répond après traitement par
@@ -608,8 +609,10 @@ void Ikbd::dispatchCommand() {
             // l'hôte puisse la rejouer en commande. Hatari (ikbd.c:2565) n'émet
             // alors que l'en-tête $F6 → flux désynchronisé : défaut non reproduit.
             // La disponibilité est rapportée à part ($92) ; on rapporte ici le
-            // dernier mode souris choisi (REL au boot). Octet exact émis par la
-            // ROM 6301 dans ce cas : NON vérifié sur matériel.
+            // dernier mode souris choisi (REL au boot). Confirmé par la ROM 6301
+            // désassemblée (MiSTery ikbd/rom/IKBD.ASM, $FC62) : seuls les bits 6
+            // (keycode) et 5 (absolu) de l'octet de mode $C9 sont testés ; $12
+            // n'efface que le bit 7 ; $C9 = $98 (relatif) à la mise sous tension.
             switch (mouseMode_ == OFF ? lastMouseMode_ : mouseMode_) {
                 case ABS:
                     pushRx(0x09);
@@ -652,7 +655,7 @@ void Ikbd::dispatchCommand() {
             break;
         case 0x92:                            // REPORT MOUSE AVAILABILITY
             if (!rxFree(8)) break;
-            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(mouseMode_ == OFF ? 0x12 : 0x00);
+            pushRxDelayed(0xF6, kResponseDelayCycles); pushRx(mouseOn_ ? 0x00 : 0x12);   // bit 7 de $C9 seul (ROM $FCA2)
             for (int i = 0; i < 6; ++i) pushRx(0x00);
             break;
         case 0x94: case 0x95: case 0x99:      // REPORT JOYSTICK MODE
@@ -733,6 +736,7 @@ void Ikbd::bootRom() {
     startAutoSend();
     mouseMode_     = REL;
     lastMouseMode_ = REL;
+    mouseOn_       = true;                    // ROM $F10F : $C9 = $98
     joyMode_       = JOY_AUTO;
     joysticksEnabled_ = true;
     prevJoy0_      = prevJoy1_ = 0;
@@ -782,9 +786,42 @@ void Ikbd::checkResetDisableBug() {
     // recevoir souris et joystick en même temps).
     if (mouseDisabled_ && joystickDisabled_ && duringResetCriticalTime_) {
         mouseMode_ = REL;
+        mouseOn_   = true;
         joyMode_   = JOY_AUTO;
         joysticksEnabled_ = true;
         bothMouseAndJoy_ = true;
+    }
+}
+
+void Ikbd::port0ToJoystick() {
+    // ROM 6301 $FA47 (commun à $14/$15/$17) : bit 1 de $C9 posé, le port 0 sert le
+    // joystick 0 et la souris se tait ; le bit 7 (souris activée) reste. Exceptions
+    // de la fenêtre de reset (Hatari, Barbarian $08+$14, Hammerfist $12+$14) :
+    // souris ET joystick reportés ensemble.
+    mouseMode_ = OFF;
+    if (duringResetCriticalTime_ && (mouseEnabledDuringReset_ || mouseDisabled_)) {
+        mouseMode_ = REL;
+        mouseOn_ = true;
+        bothMouseAndJoy_ = true;
+    }
+}
+
+void Ikbd::selectMouseMode(MouseMode m) {
+    // ROM 6301 $FBAF : bit 7 posé, bit 1 effacé (port 0 rendu à la souris) ; si le
+    // joystick était en surveillance, tir ou keycode ($CA bits 0-2), retour au mode
+    // événement ($CA = $28). NeoST n'a que la surveillance ($17) à défaire.
+    mouseMode_ = lastMouseMode_ = m;
+    mouseOn_ = true;
+    if (joyMode_ == JOY_MONITOR) {
+        if (sched_ && joystickMonitorPeriod_ > 0) {
+            const auto remain = sched_->rawCyclesUntil(Scheduler::IKBD_MONITOR);
+            if (remain != INT64_MIN)
+                sched_->schedule(Scheduler::IKBD_AUTOSEND, sched_->liveNow() + remain);
+            sched_->cancel(Scheduler::IKBD_MONITOR);
+        }
+        joystickMonitorPeriod_ = 0;
+        startAutoSend();
+        joyMode_ = JOY_AUTO;
     }
 }
 

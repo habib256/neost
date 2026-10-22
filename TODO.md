@@ -77,18 +77,11 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
   logiciel réel qui l'exerce. À mesurer : noir franc ou couleur 0 pendant l'arrêt, ce que
   relit un accès OCTET à `$FF8261`, comportement du trick sur STE, persistance du décalage
   aux trames suivantes. → `docs/HATARI_DIVERGENCES.md` § *Nouveaux — BASSES*
-- **IKBD `$88` souris coupée** · P3 ⏸ matériel — NeoST complète la réponse à 8 octets
-  (protocole) avec le dernier mode souris choisi (REL au boot). L'octet de mode qu'émet
-  réellement la ROM 6301 dans ce cas n'est pas confirmé. Envoyer `$12` puis `$88` à un vrai
-  IKBD et relever les 8 octets. → `docs/HATARI_DIVERGENCES.md` § *ACIA 6850 / IKBD*
-- **GPIP3 au repos avec blitter** · P3 ⏸ matériel — `$FFFA01` bit 3 supposé 0 au repos
+- **GPIP3 au repos avec blitter** · P3 ⏸ matériel — étayé par le RTL de Cwik
+  (`stBlitter.sv:190`, INT = BUSY) mais pas mesuré — `$FFFA01` bit 3 supposé 0 au repos
   sur Mega ST/STE/Mega STE (INT = copie de BUSY) ; seule la lecture STFM sans blitter
   ($E9) est publiée. Lire `$FFFA01` au repos sur l'une de ces machines.
   → `docs/HATARI_DIVERGENCES.md` § *Cas où NeoST améliore Hatari*
-- **STE à banques mixtes (2176/2560 Ko)** · P3 ⏸ matériel — modèle Hatari conservé
-  (banque 1 calquée sur la banque 0). Sur vrai STE : relire `$FF8001` bits 0-1 après
-  écriture de $09, motifs en $200000/$280000, et décodage d'une banque 1 de 128 Ko.
-  → `docs/HATARI_DIVERGENCES.md` § *Bus / mémoire*
 - **Logiciels à clé / dongles** · P3 ⏸ média — `PortDevices` (Leader Board, 10th Frame,
   B.A.T. II, Music Master, « Pro Sound » de Wings of Death / Lethal Xcess) ; clé **Notator**
   (deux incertitudes : front de /ROM4 cadençant FEEDB1, ordre UDS↔/ROM4 à l'armement) ;
@@ -162,6 +155,10 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 - **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; forme d'onde
   BREAK non simulée.
 
+- **IKBD `$18` / `$19` (surveillance du tir, joystick en keycode)** · P3 ⭘ — acceptés mais
+  sans effet (comme Hatari). Et `$94`/`$95`/`$99` en mode keycode devraient répondre `$19` +
+  les 6 paramètres stockés (ROM `$FCAE`). Référence : ROM 6301 désassemblée, MiSTery
+  `ikbd/rom/IKBD.ASM` (`$FA12`, `$FA21`).
 ### 4.4 USART du MFP
 - **Restes** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
@@ -194,6 +191,9 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 ### 4.10 Cartouche & profils machine
 - **Port cartouche générique** `$FA0000-$FBFFFF` · P3 ⭘ — au-delà du système GEMDOS ;
   réf. `cart.c`.
+
+- **Décodage Mega STE** · P3 ⏸ schéma — le décodage STE suit la netlist du 4081 depuis
+  le 2026-10-22 ; le Mega STE reste au modèle Hatari faute de netlist.
 
 ### Hors périmètre
 - **SCSI / NCR5380** — TT/Falcon uniquement, le MegaSTE n'en a pas. Réf. `ncr5380.c`.
@@ -310,6 +310,21 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
   → [`docs/HATARI_MEGASTE_AUDIT.md`](docs/HATARI_MEGASTE_AUDIT.md)
 - **Étalon spec512 en overscan** · P3 ⭘ — si une démo libre à bordures ouvertes est
   rapatriée (l'auto_diapo est sans bordure).
+- **Empreinte machine + relecture d'entrées** · P2 ⭘ — hacher l'état complet (CPU, RAM,
+  puces, via `StateArchive`) toutes les N trames et rejouer un `.state` + entrées par trame :
+  la première empreinte divergente date une perte de déterminisme. Socle du retour arrière
+  et d'un jeu en ligne en lockstep. Modèle : ASE `Netplay/MachineHash.cs`, `InputRecording.cs`.
+- **RTL MiSTer comme référence matérielle** · P3 ⭘ — `gstmcu.v` (schéma ST4081S),
+  `stBlitter.sv` (Cwik) : plus proches du silicium qu'Hatari pour arbitrer ; à citer dans
+  `docs/HATARI_MAPPING.md`.
+- **Pistes MiSTery/netlist non portées** · P2 ⭘ — relevées le 2026-10-22, preuve moyenne :
+  couleur pendant BLANK forcée au noir (`gstshifter.v:264`, schéma 4118) au lieu de la
+  palette 0 ; délai de bus error d'environ 64 cycles 8 MHz (`berr_cnt`), non compté par
+  Moira ; adresse de fin du son DMA relue figée pendant la lecture (`gstmcu.v:447`) ;
+  `$FF8901` relu sur 4 bits (`REGISTER.PIN`, polarité Q/XQ à vérifier) ; octet `$FF8261`
+  relu $00 (`gstshifter.v:121`) ; mode pulse des timers A/B du MFP (comptage conditionné
+  par TAI/TBI + IRQ GPIP4/3 sur le front opposé, fiche Motorola) ; préchargement DMA en
+  écriture (`dma.v:277`) ; remise à zéro de la période d'enveloppe YM à l'écriture de R13.
 - **Comparaison MAME ↔ NeoST** · P3 ⭘ — memory map, bus errors, FIFO FDC/MMU, blitter, SCC.
 - **Traces Hatari de référence pour `trace_diff`** · P3 ⭘ — Arkanoid et autres.
 - **Matrice MegaSTE DD/HD × cache** · P3 ⭘ — balayage systématique si un titre l'exige.
@@ -320,6 +335,14 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
 ---
 
 ## 9. Interface
+
+- **Retour arrière (rewind)** · P2 ⭘ — un `.state` par seconde en anneau, disquettes copiées
+  seulement si modifiées ; jamais pendant une commande STX minutée ; désactivé avec un
+  disque dur. Modèle : ASE `TimeWarp.cs`. Dépend de l'empreinte machine (§ 8).
+- **Explorateur de bitmaps** · P3 ⭘ — afficher la RAM en plans ST avec la palette courante
+  (largeur, plans, adresse réglables) dans le débogueur. Modèle : ASE `DebugWindow`.
+- **Identification des disquettes de menus** · P3 ⭘ — nom de fichier → jeu (Automation,
+  D-Bug…) pour la ludothèque kiosk ; catalogue ASE `GameMenus.json` (licence à vérifier).
 
 - **Kiosk & CRT, cosmétique** · P3 ⭘ — membres `srcW_`/`srcH_` morts dans
   `CrtEffectStack` ; tenir gauche/droite bloque la répétition haut/bas en kiosk.
