@@ -153,13 +153,16 @@ CpuState* g_cur = nullptr;
     // du faisceau +78/ligne = Hatari, cf. [[ramslot-iack-enable-overscan]]). NEOST_IACK=0 désactive.
     bool    g_iackOn      = []{ const char* s = std::getenv("NEOST_IACK"); return s ? std::atoi(s) != 0 : true; }();
     int     g_iackVideo   = []{ const char* s = std::getenv("NEOST_IACK_VIDEO"); return s ? std::atoi(s) : 14; }();
-    // 16 et non 12 : CPU_IACK_CYCLES_MFP_CE (12, « not measured » chez Hatari) ne
-    // couvre pas le cycle bus d'IACK lui-même. MESURÉ à l'oracle instrumenté
-    // (2026-08-06, Super Hang-On in-game, [HEXC] hbl/lc) : chaîne FIXE « exception
-    // Timer B → handler → stop → HBL pendante » = 144 cyc chez Hatari, 140 chez NeoST
-    // avec 12 → +4 sur l'IACK verrouille les histogrammes d'écritures palette
-    // (1re écriture de paire {104..128} à ±1 pt partout, réveil STOP 40/40/20 intact).
-    int     g_iackMfp     = []{ const char* s = std::getenv("NEOST_IACK_MFP");   return s ? std::atoi(s) : 16; }();
+    // 12 = CPU_IACK_CYCLES_MFP_CE d'Hatari (« not measured »), bloc IACK complet (le
+    // cœur d'Hatari ne fait pas de cycle bus d'IACK séparé) ; les 4 cycles internes
+    // qui suivent sont ajoutés par iackSyncAfter. Du 2026-08-06 au 2026-10-22 la valeur
+    // était 16 : calée sur la chaîne « Timer B → handler → stop → HBL » de Super Hang-On
+    // (NeoST 140 contre Hatari 144), elle COMPENSAIT en réalité un défaut de Moira sur
+    // le STOP (IRQ pendante prise à STOP+4 au lieu de STOP+8, cf. Moira::stopGraceUntil).
+    // STOP corrigé, 12 reproduit Hatari sur chaque segment de la chaîne (sonde cartouche,
+    // 3 997 chaînes : exception 60/60, stop→HBL {64,68,72}/{64,68,72}). La valeur
+    // MATÉRIELLE (4 + attente DTACK du 68901) reste à mesurer (docs/MFP_IACK_MEASUREMENT.md).
+    int     g_iackMfp     = []{ const char* s = std::getenv("NEOST_IACK_MFP");   return s ? std::atoi(s) : 12; }();
     // NEOST_IACK_SYNC (défaut ON) : dispatch des événements échus AU point d'IACK,
     // port du « CycInt_Process() + MFP_UpdateIRQ_All juste avant la séquence d'IACK »
     // d'Hatari (newcpu.c:2938-2946 MFP, :2998-3003 vidéo). Mesuré : un événement est
@@ -592,6 +595,10 @@ public:
         // sinon un niveau IPL 0..7 (forgé hors plage → reg.ipl invalide, refusé).
         ar(iplDeferred);
         ar.check(iplDeferred >= -1 && iplDeferred <= 7, "Moira::iplDeferred hors [-1,7]");
+        // v55 : retenue d'IRQ après STOP (fenêtre de 4 cycles, cf. Moira.h).
+        { moira::i64 g = stopGraceUntil; ar(g); stopGraceUntil = g; }
+        ar.check(stopGraceUntil == -1 || (stopGraceUntil >= 0 && stopGraceUntil <= getClock() + 4),
+                 "Moira::stopGraceUntil hors domaine");
         ar(fcl); ar(readBuffer); ar(flags);
         // LOOPING (mode loop 68010) n'est JAMAIS posé sur un 68000 : forgé dans un
         // .state (CRC recalculé), il fait prendre à execute() la branche

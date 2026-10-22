@@ -193,6 +193,23 @@ auto/software, antidatage), timers datés, compteur vivant, event-count Timer A/
   `Bus` (`Bus.cpp:896`, `addMfpWaitCycles()`), pas par `Mfp.cpp` → **pas une divergence**.
 
 ### Vidéo (Shifter + Glue) — `Shifter.cpp` ↔ `video.c`
+
+- ✅ **Fin de trame sur ligne raccourcie (2026-10-22, bug NeoST hors Glue)** — `Machine::onHbl`
+  cumulait `lineCarry_` sans raccourcir `frameEnd_` : la trame durait sa longueur nominale,
+  puis `beginFrame_` posait `frameStart_` (−carry) et la VBL dans le passé → gestionnaire
+  VBL servi avec le retard du raccourcissement (224 cycles sur une ligne « no DE » hi-res
+  tardive ; invisible pour une ligne 508). Étalon `blankline_node_late_st` : écriture
+  `$8260` alternant 44 et 268 d'une trame à l'autre, 10 714 px → 0 px. Hatari pose la VBL
+  depuis le dernier HBL réel (`video.c:3370`).
+- **[assumée, 2026-10-22] Placement des pixels d'une ligne LEFT_PLUS_2 — Hatari décale de
+  4 px.** Même état Glue des deux côtés (`H_DE 53<->377 border=2`, DE 52→376) pour une
+  impulsion 60 Hz aux cycles 32-36 ; `Video_CopyScreenLineColor` (`video.c:4047-4056`)
+  copie 160 octets à un offset fixe et range les 2 octets left+2 dans le plan 3 du groupe
+  x=32-47, NeoST émet depuis DE=52 plans alignés — compteur de pixels du Shifter réarmé au
+  premier LOAD après DE (decap Cwik, `shifter_video.v`), principe qu'Hatari applique
+  lui-même à LEFT_OFF (`DisplayPixelShift=-4`, `video.c:256`). Même famille qu'`overscan_top`.
+  Étalon `blankline_blank_st` passé en `ref_kind: snapshot` (phase 32 ; à phase 28 l'image
+  est bit-identique à l'oracle).
 Cœur Glue **STF** = transcription quasi ligne-à-ligne (`updateGlueState` ≙ `Video_Update_Glue_State`
 branche STF), constantes = `VIDEO_TIMING_STF_WS1`, compteur vidéo, bordures H/B/G/D 50/60 Hz,
 spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
@@ -1155,6 +1172,19 @@ reset HW/canal, IRQ niveau 5 gatée par le SCU).
 ---
 
 ### CPU (Moira + intégration) — suivi (audit vendor 2026-08-13)
+
+- ✅ **STOP avec IRQ pendante : exception à STOP+8 (2026-10-22)** — Moira prenait l'IRQ
+  démasquée par l'opérande du `stop` dès la fin de l'instruction (+4) ; le 68000 teste
+  l'interruption AVANT d'écrire le masque et ré-itère STOP 4 cycles plus tard (fx68k
+  `rInterrupt`/`pswI` au même T3, nanomots 0x3A2/0x327 ; Hatari gencpu `checkint()` avant
+  `regs.sr = sr`). Patch vendor `Moira::stopGraceUntil`. Conséquence : la constante IACK
+  MFP repasse de 16 à 12 (`g_iackMfp`) — le 16 compensait ce défaut depuis le 2026-08-06.
+  Sonde cartouche (chaîne Timer B → handler → stop → HBL, 3 997 chaînes) : NeoST = Hatari
+  segment par segment. Les étalons `blankline_blank_st`, `blankline_node_late_st`,
+  `nocooper` et les sondes `fdc_read/write` de l'oracle temporel, verts avec 16, NE
+  mesuraient PAS l'IACK : ils glissaient de phase avec le boot et masquaient deux écarts
+  réels (fenêtre de blank GLUE pour une écriture `$820A` aux cycles 32-36 ; fin de commande
+  WD1772 −6 cycles), traités à part.
 
 Audit complet des patches vendorisés (`extern/moira/NEOST_VENDOR.md`) : diff intégral
 contre l'upstream — 5 fichiers modifiés, tous les hunks documentés, aucun écart

@@ -6,6 +6,24 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## STOP+8 : les quatre cycles manquants, IACK MFP ramené à 12 (2026-10-22)
+
+Le résidu de +4 cycles entre NeoST et Hatari sur les chaînes d'interruption venait de
+Moira, pas de l'IACK : une IRQ déjà pendante et démasquée par `stop #$2100` partait à
+STOP+4 au lieu de STOP+8 (le 68000 teste l'interruption avant d'écrire le masque, puis
+ré-itère STOP ; fx68k et le cœur d'Hatari concordent). Corrigé dans la copie vendorisée
+(`Moira::stopGraceUntil`, `.state` v55). La constante IACK MFP, montée à 16 le 2026-08-06
+pour égaler Hatari sur Super Hang-On, compensait ce défaut : elle revient à 12. Sonde
+cartouche sur la chaîne de Super Hang-On : NeoST = Hatari sur chaque segment.
+
+Ce que le 16 masquait, et qui est traité : la fin de trame n'était pas raccourcie quand une
+ligne l'était (VBL servie 224 cycles en retard après une ligne « no DE » hi-res tardive,
+`blankline_node_late_st` 10 714 px → 0) ; les sondes FDC de l'oracle temporel comptent
+deux artefacts d'Hatari (CRC à 513 par `rint` sur SCLK STE, GPIP5 daté au dispatch) →
+tolérance 8, rien à porter ; `blankline_blank_st` passe en référence NeoST (Hatari décale de
+4 px les pixels d'une ligne left+2, cf. `overscan_top`) ; `dmasnd_poll` et `nocooper`
+re-posés (phase de boot), invariant de `dmasnd_poll` revérifié ; bancs Mega STE à 12+4.
+
 ## Troisième passe MiSTer : STE_Test test F, touche tenue au reset, pads, IKBD (2026-10-22)
 
 - **FDC** : un WRITE TRACK que le .st ne sait pas représenter (IDs hors géométrie,

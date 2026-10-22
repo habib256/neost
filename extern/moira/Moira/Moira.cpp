@@ -308,7 +308,8 @@ Moira::execute()
         }
 
         // Process pending interrupt (if any)
-        if (flags & CHECK_IRQ) {
+        // NEOST : retenue de 4 cycles après un STOP (cf. stopGraceUntil, Moira.h).
+        if ((flags & CHECK_IRQ) && !((flags & STOPPED) && clock < stopGraceUntil)) {
 
             try {
                 if (checkForIrq()) goto done;

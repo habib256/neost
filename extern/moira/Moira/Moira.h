@@ -85,6 +85,12 @@ protected:
     // la valeur POLLÉE à la frontière SUIVANTE (rotation ipl[0]=ipl[1] de la run
     // loop, newcpu.c:5693). −1 = rien en attente.
     int iplDeferred {-1};
+    // NEOST : STOP avec une IRQ déjà pendante. Le 68000 teste l'interruption AVANT
+    // d'écrire le nouveau masque du SR (fx68k : rInterrupt verrouillé au même T3 que
+    // pswI ; Hatari gencpu : checkint() avant regs.sr = sr), et STOP se ré-exécute
+    // toutes les 4 cycles : l'exception part à STOP+8, pas STOP+4. Horloge jusqu'à
+    // laquelle checkForIrq est retenu après un STOP ; −1 = aucune retenue.
+    i64 stopGraceUntil {-1};
 
     // Value on the lower two function code pins (FC1|FC0)
     u8 fcl {2};

@@ -589,6 +589,14 @@ void Machine::onHbl() {
     // comme la chaîne StartCycle+nCyclesPerLine de Hatari.
     if (lineLenOn_ && curLineLen_ != cpl_) {
         lineCarry_ += cpl_ - curLineLen_;
+        // La trame en cours raccourcit d'autant : sans cela, frameEnd_ (figé par
+        // beginFrame_) laissait la trame durer la longueur nominale, puis le
+        // beginFrame_ suivant posait frameStart_ (−carry) et sa VBL DANS LE PASSÉ —
+        // gestionnaire VBL servi avec un retard égal au raccourcissement (224 cycles
+        // sur une ligne « no DE » hi-res tardive, étalon blankline_node_late_st :
+        // écriture $8260 alternant 44 et 268). Hatari pose la VBL depuis le dernier
+        // HBL réel (video.c:3370).
+        frameEnd_ -= cpl_ - curLineLen_;
         curLineLen_ = cpl_;
     }
     ++hblLine_;
@@ -765,11 +773,12 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 54; // IKBD : touches tenues (reset) ; pads STE (OE)
+static constexpr uint16_t kStateVersion = 55; // STOP : retenue d'IRQ de 4 cycles (Moira::stopGraceUntil)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v54 : Ikbd::hostKeys_, StePads::oe_
+    uint16_t version = kStateVersion; // v55 : Moira::stopGraceUntil (STOP+8, fx68k/Hatari)
+                                      // v54 : Ikbd::hostKeys_, StePads::oe_
                                       // v53 : IKBD calé sur la ROM 6301 ($C9/$CA, fenêtre de reset,
                                       //       $18/$19, pause) + Bus::gameCart ($FF9000)
                                       // v52 : Ikbd::mouseOn_ (bit 7 de $C9, rapport $92)

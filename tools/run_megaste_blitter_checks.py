@@ -107,10 +107,11 @@ def validate(case, measurement, emulator):
 
 
 def read_iack_cycles(log, cfg):
-    # Le bloc périphérique reste en cycles bus, mais les quatre cycles internes
-    # après IACK appartiennent au CPU. À 16 MHz : 16*2 + 4, pas (16+4)*2.
+    # Le bloc périphérique (12 cycles bus depuis le 2026-10-22, cf. g_iackMfp — 16
+    # auparavant compensait le défaut STOP+4 de Moira) reste en cycles bus, mais les
+    # quatre cycles internes après IACK appartiennent au CPU. À 16 MHz : 12*2 + 4.
     cycles = [int(n) for n in re.findall(r"\[EXC\] lvl=6 .*? iack=(\d+) ", log.read_text())]
-    expected = 16 * (cfg["mhz"] // 8) + 4
+    expected = 12 * (cfg["mhz"] // 8) + 4
     if len(cycles) != 72 or any(n != expected for n in cycles):
         raise ValueError(f"{log} : attendu 72 IACK de {expected} cycles CPU, "
                          f"reçu {len(cycles)} ({sorted(set(cycles))})")

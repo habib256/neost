@@ -5426,6 +5426,11 @@ Moira::execStop(u16 opcode)
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
     CYCLES_IP   ( 0,  0,  0,        4,  4,  8,        0,  0,  0)
 
+    // NEOST : la première itération de STOP a testé l'IRQ avec l'ANCIEN masque (cf.
+    // stopGraceUntil) — une IRQ démasquée par l'opérande n'est prise qu'à l'itération
+    // suivante, 4 cycles plus tard (fx68k 0x3A2/0x327, Hatari do_cycles_stop(4)).
+    if constexpr (C == Core::C68000) stopGraceUntil = clock + 4;
+
     FINALIZE
 }
 

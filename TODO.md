@@ -51,15 +51,14 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 
 ## 2. ⏸ En attente d'une ressource externe
 
-- **Latence IACK MegaSTE** · P1 ⏸ matériel — capturer CLK CPU/MFP, IACK et les DTACK
-  puce/CPU sur un vrai MegaSTE, aux trois régimes CPU/cache. Sonde prête
-  (`tools/make_mfp_iack_probe.py`, contrôles `tools/run_mfp_iack_probe.py` verts). Le
-  résidu IACK→handler du banc Mega STE (+2/+4 à 8 MHz, +3/+4 à 16 MHz face à Hatari) reste
-  À EXPLIQUER. Écarté le 2026-10-22 : la séquence d'exception (fx68k et Moira identiques au
-  cycle près) et la constante IACK MFP — NeoST compte 16 cycles bus là où Hatari compte 12
-  PLUS le cycle bus d'IACK (4) dans son cœur ; repasser à 12 (`NEOST_IACK_MFP=12`) casse
-  quatre étalons oracle (No Cooper, blankline_blank_st/ste, blankline_node_late_st) et le
-  délai d'IRQ FDC de l'oracle temporel. → [protocole](docs/MFP_IACK_MEASUREMENT.md)
+- **Latence IACK MFP** · P1 ⏸ matériel — capturer CLK CPU/MFP, IACK et les DTACK
+  puce/CPU sur un vrai ST et un vrai MegaSTE, aux trois régimes CPU/cache. Sonde prête
+  (`tools/make_mfp_iack_probe.py`, contrôles `tools/run_mfp_iack_probe.py` verts). État au
+  2026-10-22 : séquence d'exception identique à fx68k ; bloc IACK = 12 cycles bus (valeur
+  d'Hatari, « not measured ») — le 16 posé le 2026-08-06 compensait le défaut STOP+4 de
+  Moira, corrigé. La valeur matérielle (4 + attente DTACK du 68901, phase du 4 MHz) n'est
+  connue d'aucune source ; le banc Mega STE (`docs/HATARI_MEGASTE_AUDIT.md`) est à refaire
+  avec 12. → [protocole](docs/MFP_IACK_MEASUREMENT.md)
 - **A12 — validation sur matériel réel** · P1 ⏸ matériel — macOS arm64 passé (sauf le pas
   visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun budget
   temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et **Linux**.
@@ -140,11 +139,30 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 Ne figure ici que l'ouvert ; l'acquis de chaque puce est dans `docs/IMPLEMENTED.md`, l'écart
 détaillé dans `docs/HATARI_DIVERGENCES.md`.
 
+### 4.0 CPU 68000 (Moira)
+- **STOP : réveil et préfetch** · P2 ⭘ — relevés sur fx68k le 2026-10-22, non portés :
+  (a) une IRQ qui arrive APRÈS l'entrée en STOP n'est prise qu'en fin d'itération de
+  4 cycles (synchronisation IPL à deux étages), Moira scrute à chaque cycle ; (b) Moira
+  fait un cycle bus de préfetch pendant STOP (`readI`), le silicium aucun (4(0/0)) — peut
+  décaler l'alignement des créneaux RAM. Sonde : `scratchpad/iackprobe` (chaîne Super
+  Hang-On, à verser dans `tools/`).
+- **Timer B event-count : périodes de 508 et HBL non pendante au `stop`** · P2 ⭘ — sur la
+  sonde de la chaîne Super Hang-On (3 997 chaînes), NeoST montre ~60 chaînes où la HBL
+  n'est pas encore pendante à l'entrée du `stop` (segment stop→HBL de 76 à 180 cycles)
+  et des périodes Timer B de 508 ; Hatari n'a ni l'un ni l'autre (toutes à {64,68,72}).
+  Chercher dans la datation du front DE compté par Timer B (`Mfp.cpp`, `VideoGlue.cpp`).
+
 ### 4.1 Vidéo / Shifter
 - **Latch couleur de la bordure gauche** · P3 ⭘ — 16 px (colonnes 45-60) : Hatari applique
   l'écriture palette ~16 px après le début nominal de l'aire active (latence pipeline),
   NeoST pile à `activeX_`. Invisible aux étalons.
 - Mesures matérielles → § 2.
+
+- **Ligne « no DE » hi-res tardive sur STE : 512 ou 224/508 ?** · P3 ⏸ matériel — la netlist
+  du GST MCU n'a aucun verrou « Line_Set_Pal » (`hsyncgen.v` recharge le compteur avec
+  `ntsc & mde1b` vifs en fin de ligne ; HSYNC hi-res à hsc=121 inatteignable par une
+  impulsion précoce) → ligne de 512 cycles, là où Hatari (et NeoST, qui le suit) rendent
+  224/508. Sans effet sur les étalons `blankline_*` (STF). À mesurer sur STE.
 
 ### 4.2 MFP 68901 & interruptions
 - Latence IACK MegaSTE → § 2.
@@ -174,6 +192,12 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 
 ### 4.6 FDC WD1772 / DMA / ACSI
 - **ACSI : essai Idris OS** · P3 ⭘ — jamais tenté.
+
+- **Horloge du WD1772 sur STE = SCLK 8,010613 MHz** · P3 ⭘ — NeoST cadence le FDC sur
+  l'horloge CPU (exact sur STF, −0,13 % sur STE : `Fdc.cpp` MFM_BYTE=256, `transferDelay`).
+  Un accumulateur fractionnaire décalerait les rafales de ~5 cycles chacune ; Hatari
+  tronque par octet (`rint`, incohérent, TODO chez lui). À valider sur matériel réel avant
+  de diverger. Source : `clocks_timings.c` (OSC U303), schéma STE.
 
 ### 4.7 RTC RP5C15
 - **Restes** · P3 ⭘ — sorties CLKOUT/ALARM, modes d'inspection TEST ; lecture TEST/RESET
