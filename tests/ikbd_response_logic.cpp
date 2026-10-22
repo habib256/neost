@@ -171,15 +171,75 @@ int testIkbdResponses() {
             Rig r;
             r.sched.setCallback(Scheduler::IKBD_MONITOR, [&r] { r.ikbd.onJoystickMonitor(); });
             r.command({0x18}); r.ikbd.setJoystick(0, 0x80);
-            r.advance(11550);
+            // Une source ne tire qu'une fois par runTo : avancer par petits pas,
+            // comme la machine (synchronisation à chaque accès CPU).
+            for (int64_t t = 200; t <= 11600; t += 200) r.advance(t);
             const auto b = collect(r, 1);
             c.equal("$18 fire sample byte", b.size() > 0 ? b[0] : -1, 0xFF);
         }
-        {   // $19 : flèche à l'appui sur le joystick 0, feu = $74 puis $F4.
+        {   // $18 : échantillons aux instants de la ROM (177 µs enfoncé, 180 µs
+            // relâché, ≈ 1420/1444 cycles CPU). 4 enfoncés puis 4 relâchés → $F0.
+            Rig r;
+            r.sched.setCallback(Scheduler::IKBD_MONITOR, [&r] { r.ikbd.onJoystickMonitor(); });
+            r.ikbd.setJoystick(0, 0x80);
+            r.command({0x18});
+            for (int64_t t = 100; t <= 5000; t += 100) r.advance(t);   // 4 échantillons : 0, 1420, 2840, 4259
+            r.ikbd.setJoystick(0, 0x00);
+            for (int64_t t = 5100; t <= 12000; t += 100) r.advance(t);
+            const auto b = collect(r, 1);
+            c.equal("$18 byte mixes pressed and released samples", b.size() > 0 ? b[0] : -1, 0xF0);
+        }
+        {   // Seuil 0 ($F4E5) : flux continu de $F8 0 0, un paquet par ligne libre.
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x0B, 0, 0});
+            const auto b = collect(r, 6);
+            c.equal("threshold 0 header", b.size() > 0 ? b[0] : -1, 0xF8);
+            c.equal("threshold 0 dx", b.size() > 1 ? b[1] : -1, 0);
+            c.equal("threshold 0 stream continues", b.size() > 3 ? b[3] : -1, 0xF8);
+        }
+        {   // Pas $0A à 0 ($F5D2) : flèches « droite » et « haut » en continu.
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x0A, 0, 0});
+            const auto b = collect(r, 4);
+            c.equal("keycode step 0 right make", b.size() > 0 ? b[0] : -1, 77);
+            c.equal("keycode step 0 up make", b.size() > 2 ? b[2] : -1, 72);
+        }
+        {   // Chasse aux bugs : $07 $04 + clic avec mouvement — le $F8 part ET la
+            // touche $74 suit dans le même passage (ROM $F59D-$F5A2).
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x07, 0x04});
+            r.ikbd.mouseEvent(5, 0, true, false);
+            const auto b = collect(r, 4);
+            c.equal("bit 2 packet dx", b.size() > 1 ? b[1] : -1, 5);
+            c.equal("bit 2 button key follows packet", b.size() > 3 ? b[3] : -1, 0x74);
+        }
+        {   // Chasse aux bugs : en $19, le port 0 ne compte pas d'impulsions souris ;
+            // rien ne doit jaillir au retour en mode souris.
             Rig r;
             for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
             r.command({0x19, 0, 0, 0, 0, 0, 0});
-            r.ikbd.setJoystick(0x08 | 0x80, 0); r.ikbd.onAutoSend();
+            r.ikbd.mouseEvent(10000, 0, false, false);
+            r.command({0x08});
+            c.equal("no burst after keycode joystick", r.sched.rawCyclesUntil(Scheduler::IKBD_RX) == INT64_MIN, 1);
+        }
+        {   // Chasse aux bugs : mode flèches + $07 $04 — une seule touche $74.
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x0A, 5, 5}); r.command({0x07, 0x04});
+            r.ikbd.mouseEvent(0, 0, true, false); r.ikbd.onAutoSend();
+            const auto b = collect(r, 3);
+            int keys = 0; for (int v : b) keys += (v == 0x74);
+            c.equal("single button key in cursor mode", keys, 1);
+        }
+        {   // $19 : flèche à l'appui sur le joystick 0, feu = $74 puis $F4.
+            Rig r;
+            r.sched.setCallback(Scheduler::IKBD_MONITOR, [&r] { r.ikbd.onJoystickMonitor(); });
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x19, 0, 0, 0, 0, 0, 0});
+            r.ikbd.setJoystick(0x08 | 0x80, 0); r.advance(8100);
             const auto b = collect(r, 3);
             c.equal("$19 right make", b.size() > 0 ? b[0] : -1, 0x4D);
             c.equal("$19 right break", b.size() > 1 ? b[1] : -1, 0xCD);

@@ -71,7 +71,6 @@ void Blitter::reset(bool cold) {
     // Le reset chaud n'efface donc que BUSY/HOG (le blit en cours est abandonné).
     if (cold) {
         std::fill(std::begin(reg_), std::end(reg_), 0);
-        std::fill(std::begin(ioRaw_), std::end(ioRaw_), 0);
         buffer_ = 0;
         yLatch_ = 0;
     } else {
@@ -182,7 +181,7 @@ void Blitter::writeRegisters(uint32_t off, uint32_t value, unsigned bytes) {
     // chaque mot indépendamment (les adresses source/destination comptent deux mots).
     // Les registres octet ($FF8A3A-$FF8A3D) se chargent sur leur seul strobe. Le
     // tampon IoMem d'Hatari (octets rejetés réutilisés à l'écriture suivante) n'a pas
-    // d'équivalent dans le circuit ; ioRaw_ ne fait que refléter les registres.
+    // d'équivalent dans le circuit (champ ioRaw_ retiré du format en v53).
     const uint32_t end = off + bytes;
     for (uint32_t pos = off; pos < end && pos < 0x3E; ++pos) {
         const uint8_t v = uint8_t(value >> (8 * (end - 1 - pos)));
@@ -192,7 +191,6 @@ void Blitter::writeRegisters(uint32_t off, uint32_t value, unsigned bytes) {
             const uint8_t lo = uint8_t(value >> (8 * (end - 2 - pos)));
             reg_[pos]     = v  & regWriteMask(pos);
             reg_[pos + 1] = lo & regWriteMask(pos + 1);
-            ioRaw_[pos] = reg_[pos]; ioRaw_[pos + 1] = reg_[pos + 1];
             ++pos;
         }
     }

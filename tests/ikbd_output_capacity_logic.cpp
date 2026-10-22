@@ -67,8 +67,17 @@ int testIkbdOutputCapacity(){
         r.data();
         r.cmd({0x13});const uint32_t before=r.queued();r.cmd({0x87});
         eq("status report ignored while paused",r.queued(),before);
-        r.cmd({0x11});r.cmd({0x87});
-        eq("status reply truncated to free room",r.queued() <= 21,1);
+        // Remplir jusqu'à 3 places libres, puis $87 : $F6 (1) + « $07 $act » (2)
+        // entrent, le bourrage est perdu.
+        r.cmd({0x11});
+        while(r.queued()>0){auto d=r.due();if(d<0)break;r.advance(d);r.data();}
+        // $11 libère la file : un octet part dans le SCI, on en rajoute un pour
+        // laisser exactement 3 places (sans pause, sinon $87 serait ignoré).
+        r.cmd({0x13});r.keys(17);r.cmd({0x11});
+        while(r.queued()<18)r.keys(1);
+        eq("free room before status reply",21-r.queued(),3);
+        r.cmd({0x87});
+        eq("status reply truncated to free room",r.queued(),21);
     }
     {
         Rig r;r.froggies();r.cmd({1});r.advance(10240);

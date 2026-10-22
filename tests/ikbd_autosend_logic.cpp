@@ -35,14 +35,20 @@ int testIkbdAutoSend() {
         std::fprintf(stderr,"[ikbd-autosend] FAIL %s: got %lld expected %lld\n", label,(long long)got,(long long)want);
     };
     {
+        // ROM 6301 ($F54A) : le paquet $F8 part dès que la ligne est libre, sans
+        // attendre une scrutation ; le mouvement arrivé pendant l'émission s'accumule
+        // et part à la libération suivante.
         Rig r; r.warm(); r.ikbd.mouseEvent(3,4,false,false);
-        r.ikbd.onVbl(10000); eq("VBL cannot deliver normal packet",r.due(Scheduler::IKBD_RX),-1);
-        r.advance(149999); eq("no packet one cycle early",r.due(Scheduler::IKBD_RX),-1);
-        r.advance(150000); eq("normal scan begins serial delivery",r.due(Scheduler::IKBD_RX),160240);
-        r.advance(160240); eq("mouse header",r.ikbd.read8(0xFFFC02),0xF8);
-        r.advance(170480); eq("mouse dx",r.ikbd.read8(0xFFFC02),3);
-        r.advance(180720); eq("mouse dy",r.ikbd.read8(0xFFFC02),4);
-        r.advance(300009); eq("late callback preserves timer grid",r.due(Scheduler::IKBD_AUTOSEND),450000);
+        eq("packet starts as soon as the line is free",r.due(Scheduler::IKBD_RX),10240);
+        r.advance(10240); eq("mouse header",r.ikbd.read8(0xFFFC02),0xF8);
+        r.advance(15000); r.ikbd.mouseEvent(1,2,false,false);
+        r.advance(20480); eq("mouse dx",r.ikbd.read8(0xFFFC02),3);
+        r.advance(30720); eq("mouse dy",r.ikbd.read8(0xFFFC02),4);
+        eq("motion during transfer leaves at next free line",r.due(Scheduler::IKBD_RX),40960);
+        r.advance(40960); eq("second header",r.ikbd.read8(0xFFFC02),0xF8);
+        r.advance(51200); eq("accumulated dx",r.ikbd.read8(0xFFFC02),1);
+        r.advance(61440); eq("accumulated dy",r.ikbd.read8(0xFFFC02),2);
+        r.advance(150000); r.advance(300009); eq("late callback preserves timer grid",r.due(Scheduler::IKBD_AUTOSEND),450000);
     }
     {
         Rig r; r.warm(); r.ikbd.receiveSerialByte(0x12);
@@ -79,12 +85,18 @@ int testIkbdAutoSend() {
         eq("monitor timer unchanged",r.due(Scheduler::IKBD_MONITOR),neost::pacing::kCpuHzInt/10);
     }
     {
-        Rig r; r.warm(); r.advance(12345); r.ikbd.mouseEvent(7,0,false,false);
+        // Sous le seuil ($0B), la ROM garde le cumul (Hatari l'abandonne).
+        Rig r; r.warm(); r.ikbd.receiveSerialByte(0x0B); r.ikbd.receiveSerialByte(10); r.ikbd.receiveSerialByte(10);
+        r.advance(12345); r.ikbd.mouseEvent(7,0,false,false);
+        eq("motion under threshold is not sent",r.due(Scheduler::IKBD_RX),-1);
         std::vector<uint8_t> bytes; auto save=StateArchive::saver(bytes); r.ikbd.serialize(save); r.sched.serialize(save);
         Rig restored; auto load=StateArchive::loader(bytes.data(),bytes.size()); restored.ikbd.serialize(load); restored.sched.serialize(load); restored.live=restored.sched.now();
         eq("snapshot accepted",load.ok(),1);
         eq("snapshot keeps pending deadline",restored.due(Scheduler::IKBD_AUTOSEND),150000);
-        restored.advance(150000); eq("snapshot retains unsent input",restored.due(Scheduler::IKBD_RX),160240);
+        restored.ikbd.mouseEvent(4,0,false,false);
+        eq("snapshot retains accumulated motion",restored.due(Scheduler::IKBD_RX),12345+10240);
+        restored.advance(12345+10240); restored.ikbd.read8(0xFFFC02);
+        restored.advance(12345+20480); eq("accumulated dx crosses threshold",restored.ikbd.read8(0xFFFC02),11);
     }
     std::printf("[ikbd-autosend] %d checks, %d failures\n",count,failed);
     return failed;

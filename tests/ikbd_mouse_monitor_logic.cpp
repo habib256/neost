@@ -33,15 +33,14 @@ int testIkbdMouseMonitor() {
     {
         Rig r; r.ikbd.startAutoSend(); r.command({0x07,4,0x17,1});
         eq("$17 replaces normal timer",r.due(Scheduler::IKBD_AUTOSEND),-1);
+        // ROM : en $17 la boucle ($F171 → $F16B → $F681) ne passe pas par le
+        // traitement souris ($F371) — pas de touche $74 ; le bouton gauche n'est vu
+        // que comme feu du joystick 0.
         r.ikbd.mouseEvent(7,9,true,false); r.advance(period);
-        eq("MouseAction first serial deadline",r.due(Scheduler::IKBD_RX),period+10240);
-        r.advance(period+10240); eq("MouseAction precedes monitor",r.data(),0x74);
-        r.advance(period+20480); eq("monitor fire",r.data(),2);
-        r.advance(period+30720); eq("monitor directions",r.data(),0);
-        r.advance(period*2); r.advance(period*2+10240);
-        // Le monitoring Hatari retourne avant de mémoriser les boutons :
-        // MouseAction est donc réémis au tick suivant tant que le bouton reste tenu.
-        eq("monitor preserves old button latch",r.data(),0x74);
+        eq("monitor sample first serial deadline",r.due(Scheduler::IKBD_RX),period+10240);
+        r.advance(period+10240); eq("monitor fire",r.data(),2);
+        r.advance(period+20480); eq("monitor directions",r.data(),0);
+        eq("no MouseAction key while monitoring",r.due(Scheduler::IKBD_RX),-1);
     }
     {
         Rig r; r.command({0x17,1}); r.ikbd.mouseEvent(7,9,false,false);

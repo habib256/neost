@@ -24,6 +24,11 @@ int testMmioFidelity() {
         for (uint32_t off = 0; off < 0x3A; off += 2) {
             bus.write16(base + off, 0xA5FF);
             const uint16_t live = bus.read16(base + off);
+            // Le mot écrit est bien chargé (aux bits non câblés près).
+            const uint16_t mask = uint16_t((off == 0x20 || off == 0x22 || off == 0x2E || off == 0x30
+                                            || off == 0x26 || off == 0x34) ? 0xFFFE
+                                           : (off == 0x24 || off == 0x32) ? 0x00FF : 0xFFFF);
+            check(live == (0xA5FF & mask), "word write loads the word register");
             check(bus.read8(base + off) == uint8_t(live >> 8)
                   && bus.read8(base + off + 1) == uint8_t(live),
                   "byte read returns the live word register");

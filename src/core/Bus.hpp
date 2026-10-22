@@ -220,7 +220,9 @@ public:
     // 4081P10 : bascule GAMECART, D = ID8, effacée au reset RESB/PORB). À 1, le
     // port cartouche quitte $FA0000-$FBFFFF (bus error) pour $D80000-$DFFFFF.
     bool gameCart = false;
-    bool steCartRelocated() const { return machine == MachineType::Ste && gameCart; }
+    // La cartouche SYSTÈME du HD GEMDOS (invention de NeoST, absente d'un vrai STE)
+    // ne déménage pas : son trap #1 vit en $FA002A et doit rester joignable.
+    bool steCartRelocated() const { return machine == MachineType::Ste && gameCart && !gemdos; }
     bool steCartWindow(uint32_t addr) const {
         return steCartRelocated() && addr >= 0xD80000u && addr < 0xE00000u;
     }

@@ -151,10 +151,11 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 - **Liaison série physique** · P3 ⭘ — formats et diviseurs autres que /64 8N1 (clavier),
   phase SCI sortante exacte ; ligne BREAK et erreurs de trame qui en découlent hors modèle.
 - **Firmware IKBD, restes face à la ROM** · P3 ⭘ — le firmware est calé sur la ROM 6301
-  désassemblée depuis le 2026-10-22. Restent approximés : cadence des paquets `$F8` (la ROM
-  émet dès que la ligne est libre, NeoST par scrutation de 150 000 cycles) et flux continus
-  (seuil 0, pas 0) émis un par scrutation ; 8 échantillons identiques par octet `$18` ;
-  touche tenue au reset (`scancode|$80` avant `$F1`) ; code 6301 custom (`Execute`).
+  désassemblée depuis le 2026-10-22. Restent approximés : les interruptions du timer du 6301
+  ne sont pas comptées dans les délais de `$18` ; `$19` est scruté toutes les 1 ms (la ROM le
+  fait à chaque tour de boucle) ; l'état hôte (souris, manettes) ne change qu'aux
+  événements de l'hôte ; touche tenue au reset (`scancode|$80` avant `$F1`) ; code 6301
+  custom (`Execute`). Délais de `$18` comptés sur la ROM, pas encore mesurés sur un IKBD.
 - **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; forme d'onde
   BREAK non simulée.
 

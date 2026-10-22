@@ -57,7 +57,18 @@ constexpr int64_t period(int rate) { return rate ? int64_t(8021247) * rate / 100
 
 int testIkbdMonitor() {
     Checks c;
-    for (int rate : {0, 1, 2, 10, 255}) {
+    {
+        // Taux 0 (ROM $F778) : pas de minuterie, un échantillon chaque fois que la
+        // ligne se libère.
+        Rig r; r.warm(); r.ikbd.setJoystick(0x89, 0x86);
+        r.command({0x17, 0});
+        c.equal("rate 0 uses no timer", r.monitorDue(), -1);
+        c.equal("rate 0 samples at once on a free line", r.rxDue(), 10240);
+        r.advance(10240); c.equal("rate 0 fire bits", r.data(), 3);
+        r.advance(20480); c.equal("rate 0 directions", r.data(), 0x96);
+        c.equal("rate 0 next sample when the line frees", r.rxDue(), 30720);
+    }
+    for (int rate : {1, 2, 10, 255}) {
         Rig r; r.warm(); r.live = 123;
         r.command({0x17, uint8_t(rate)});
         const int64_t due = 123 + period(rate);

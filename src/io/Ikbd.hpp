@@ -267,13 +267,21 @@ public:
         ar.arr(kjKey_);
         ar.arr(kjStart_);
         ar.arr(kjLast_);
+        ar.check(kjStart_[0] >= 0 && kjStart_[1] >= 0 && kjLast_[0] >= kjStart_[0]
+                 && kjLast_[1] >= kjStart_[1], "Ikbd::keycode joystick times hors domaine");
         ar(kjFire_);
+        ar(fireShift_);                       // v52 : surveillance du tir ($18)
+        ar(fireCount_);
+        ar(monitorContinuous_);
+        ar.check(fireCount_ >= 1 && fireCount_ <= 8, "Ikbd::fireCount_ hors domaine");
 
         // --- Pause output ($13) ---
         ar(pauseOutput_);
         ar(pauseKeep_);
         ar(monitorFrozen_);
-        ar.check(pauseKeep_ <= 1024, "Ikbd::pauseKeep_ hors domaine");
+        ar.check(pauseKeep_ <= rx_.size(), "Ikbd::pauseKeep_ hors domaine");
+        ar.check(monitorFrozen_ >= -1 && monitorFrozen_ <= int64_t(8021247) * 255 / 100,
+                 "Ikbd::monitorFrozen_ hors domaine");
 
         // --- État code 6301 custom ($20/$22) ---
         // Deux enums transités par le type sous-jacent (cf. mouseMode_) : sans ça, un
@@ -320,7 +328,7 @@ public:
         ar(asReadCount_);
         ar(joystickMonitorPeriod_);
         ar.check(joystickMonitorPeriod_ == 0 ||
-                 (joystickMonitorPeriod_ >= kFireByteCycles &&
+                 (joystickMonitorPeriod_ >= kKeycodePollCycles &&
                   joystickMonitorPeriod_ <= int64_t(8021247) * 255 / 100),
                  "Ikbd::joystick monitor period out of range");
         ar(responseDelayBits_);
@@ -393,7 +401,10 @@ private:
     // Mise à jour de la position absolue à partir du Δ de la trame, en mode absolu
     // seulement (ROM $F3D4 → $F439 ; Hatari la tient à jour dans tous les modes).
     void updateInternalAbsPos(int dx, int dy);
-    void sendRelMousePacket(int dx, int dy, bool left, bool right);
+    // Paquet relatif $F8 d'après la ROM ($F54A-$F556) : émis dès que la ligne est
+    // libre et que le mouvement accumulé atteint le seuil, ou sur changement de
+    // bouton, ou quand le cumul dépasse ±127 ; le reste du cumul est gardé.
+    void sendRelMousePacket(bool left, bool right);
 
     // Reporting lié à MouseAction ($07, cf. IKBD_SendOnMouseAction) : boutons
     // remontés comme scancodes (bit2), ou position absolue à l'appui/relâchement
@@ -406,7 +417,15 @@ private:
 
     // Émet le Δ souris comme pressions de flèches (cf. IKBD_SendCursorMousePacket,
     // mode $0A) : 72 haut / 80 bas / 75 gauche / 77 droite par pas de keyCodeDelta.
-    void sendCursorKeys(int dx, int dy, bool left, bool right);
+    void sendCursorKeys(bool left, bool right);
+    // Ligne IKBD→ACIA libre (tampon vide, émetteur au repos, pas de pause) : la ROM
+    // y émet ses flux « dès que la ligne est libre » (souris relative, flèches, taux 0).
+    bool lineFree() const;
+    void onLineIdle();
+    void effectiveButtons(bool& left, bool& right) const;
+    bool inLineIdle_ = false;               // garde de réentrance (transitoire, non sérialisé)
+    bool inMouseEmit_ = false;              // idem pour les émetteurs souris (tests sans ordonnanceur)
+    void emitButtonKeys(bool left, bool right);
 
     // Avance l'horloge interne BCD d'une seconde par 1e6 µs cumulés (cf.
     // IKBD_UpdateClockOnVBL) avec la propagation/retenue de la ROM HD6301.
@@ -482,7 +501,11 @@ private:
     // rendu à la souris, joystick ramené au mode événement s'il surveillait.
     void selectMouseMode(MouseMode m);
     // $14/$15/$17/$18/$19 : port 0 rendu au joystick (ROM $FA47).
-    void port0ToJoystick() { port0Joy_ = true; syncMouseMode(); }
+    void port0ToJoystick() {
+        port0Joy_ = true;
+        syncMouseMode();
+        mouseDeltaX_ = mouseDeltaY_ = 0;      // le port ne compte plus d'impulsions souris
+    }
     // Défauts = état après IKBD_Boot_ROM (Hatari), l'IKBD bootant sa ROM dès la
     // mise sous tension : bornes ABS_MAX_X/Y_ONRESET (320/200) et cache boutons
     // ABS_PREVBUTTONS (0x0A = rien à signaler à la 1re interrogation $0D).
@@ -560,9 +583,19 @@ private:
     int64_t kjStart_[2] = {};
     int64_t kjLast_[2] = {};
     bool    kjFire_ = false;
-    // Surveillance du tir ($18) : un octet de 8 échantillons environ toutes les
-    // 1,44 ms (8 × ~180 µs, décompte de cycles de la ROM $F8A2, non mesuré).
-    static constexpr int64_t kFireByteCycles = 11550;
+    // Surveillance du tir ($18) : registre $A4 (échantillons entrant par la droite)
+    // et compteur $A5 (8 → 0). Délais comptés sur la ROM, cycles HD6301 à 1 MHz :
+    // boucle $F13A → $F171 → $F8A2 → $F13A = 177 µs bouton enfoncé (SEC), 180 µs
+    // relâché (TST) ; +15 µs au 8ᵉ échantillon (écriture du TDR) ; 57 µs si la
+    // ligne est occupée, 34 µs sous pause. Hors interruptions du timer du 6301.
+    uint8_t fireShift_ = 0;
+    uint8_t fireCount_ = 8;
+    static constexpr int64_t kFireByteCycles = 11550;  // ordre de grandeur (bornes d'état)
+    // Taux $17 = 0 : un échantillon chaque fois que la ligne se libère (ROM $F778).
+    bool monitorContinuous_ = false;
+    // $19 : la ROM scrute le joystick à chaque tour de sa boucle principale ; NeoST
+    // le fait toutes les millisecondes (une unité de ses délais vaut 100 ms).
+    static constexpr int64_t kKeycodePollCycles = 8021;
 
     // PAUSE OUTPUT ($13) : bloque le chargement firmware → SCI au-delà des octets
     // déjà en file ; l’octet engagé finit sa trame. Levée par $11 et par les

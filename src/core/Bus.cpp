@@ -841,7 +841,12 @@ uint8_t Bus::peek8(uint32_t addr) const {
     }
     if (addr >= romBase && addr < romBase + romWindowSize())
         return addr < romBase + rom.size() ? rom[addr - romBase] : 0x00;
-    if (!cart.empty() && addr >= stmap::CART_BASE && addr < stmap::CART_BASE + cart.size())
+    if (steCartWindow(addr)) {               // même règle que read8Slow (gamecart)
+        const uint32_t off = ((addr >= 0xDC0000u) ? 0x10000u : 0u) | (addr & 0xFFFFu);
+        return off < cart.size() ? cart[off] : 0xFF;
+    }
+    if (!steCartRelocated() && !cart.empty()
+        && addr >= stmap::CART_BASE && addr < stmap::CART_BASE + cart.size())
         return cart[addr - stmap::CART_BASE];
     return 0xFF;                             // MMIO / trous : neutre, sans dispatch
 }
@@ -953,8 +958,9 @@ void    Bus::wrFdc(uint32_t a, uint8_t v) {
     if (cpu) cpu->updateIpl();            // l'INTRQ FDC (GPIP5) a pu changer
 }
 
-uint8_t Bus::rdDmaSnd(uint32_t a) { return dmasnd->read8(a); }          // STE/Mega STE
-void    Bus::wrDmaSnd(uint32_t a, uint8_t v) { dmasnd->write8(a, v); }
+// Les relectures tirées de la netlist du GST MCU ne valent que pour le STE.
+uint8_t Bus::rdDmaSnd(uint32_t a) { dmasnd->steNetlist = machine == MachineType::Ste; return dmasnd->read8(a); }
+void    Bus::wrDmaSnd(uint32_t a, uint8_t v) { dmasnd->steNetlist = machine == MachineType::Ste; dmasnd->write8(a, v); }
 
 uint8_t Bus::rdBlitter(uint32_t a) { return blitter->read8(a); }        // Mega ST/STE
 void    Bus::wrBlitter(uint32_t a, uint8_t v) { blitter->write8(a, v); }

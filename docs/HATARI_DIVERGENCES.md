@@ -614,12 +614,18 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
   - **`$07` bit 2** en relatif : un changement de bouton seul ne produit plus de `$F8`.
   - **`$16`** refusé si joysticks désactivés ou hors modes événement/interrogation ; joystick 0
     lu à 0 si le port 0 sert la souris.
-  - **`$18`** (tir, octets de 8 échantillons sans en-tête, ~1,44 ms) et **`$19`** (joystick 0
-    en flèches, délais RX/TX/VX en dixièmes de seconde, feu `$74/$F4`) émulés ; `$94`
-    rapporte `$19` + paramètres.
-  - **Valeurs extrêmes** : taux `$17` à 0 = continu, seuil `$0B` ou pas `$0A` à 0 = flux
-    continu (un par scrutation dans NeoST), mois 0 = horloge figée, `$1B` recharge le
-    compteur de ms.
+  - **Émission « dès que la ligne est libre »** ($F54A) : paquets `$F8` envoyés quand la
+    ligne se libère et que le cumul atteint le seuil, ou sur changement de bouton, ou au-delà
+    de ±127 ; le cumul sous le seuil est gardé (Hatari scrute toutes les 150 000 cycles et
+    abandonne le reliquat). Même règle pour les flèches `$0A` (une paire par axe, cumul
+    effacé) et pour `$17` à taux 0.
+  - **`$18`** ($F8A2) : un échantillon du feu joystick 1 par tour de boucle, 177 µs enfoncé
+    / 180 µs relâché, +15 µs au 8ᵉ (octet écrit dans le TDR), attente 57 µs ligne occupée et
+    34 µs sous pause — cycles HD6301 comptés sur la ROM, hors interruptions du timer ;
+    clavier non scruté. **`$19`** (joystick 0 en flèches, RX/TX/VX en dixièmes de seconde,
+    feu `$74/$F4`) scruté toutes les 1 ms ; `$94` rapporte `$19` + paramètres.
+  - **Valeurs extrêmes** : taux `$17` à 0, seuil `$0B` à 0 et pas `$0A` à 0 = flux continus
+    au débit de la ligne ; mois 0 = horloge figée ; `$1B` recharge le compteur de ms.
   Conservés (la ROM les confirme) : `$88` complété à 8 octets avec le dernier mode choisi,
   `$9A` piloté par `$1A` seul.
   Même lot : `Blitter::reset` relâche GPU_DONE (GPIP3), donc pas de blit fantôme après un
@@ -645,7 +651,8 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
     RESB/PORB) : bit 0 de l'octet pair relu (bit 1 à 0, bits 2-7 flottants rendus à 1) ; à 1,
     /ROM4 et /ROM3 passent en $D80000-$DBFFFF et $DC0000-$DFFFFF (fenêtres de 64 Ko répétées)
     et $FA0000-$FBFFFF faute. Les extensions NeoST du port cartouche (NE2000, ISP1160, clés)
-    ne suivent pas le déménagement ;
+    ne suivent pas le déménagement, et la cartouche système du HD GEMDOS (absente d'un vrai
+    STE) ne déménage pas du tout : son trap #1 reste en $FA002A (`steCartRelocated`) ;
   - `$FF8001` relu sur 4 bits (`REGISTER.PIN` : latches ID0-3, IDB4-7 à VSS) ; banque 0
     configurée « 11 » = 2 Mo (4081P18 : RS3 = 1 prend le chemin 2 Mo quel que soit RS2).
     Confirme aussi le modèle Hatari « banque 1 calquée sur la banque 0 » : RS0/RS1 ne
@@ -656,7 +663,8 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
     bus error arrive ~64 cycles après /AS, soit 60 cycles d'attente en plus d'un accès
     normal (`kBerrTimeoutWait`, Cpu68k.cpp). Hatari n'en compte aucun ;
   - son DMA : `$FF8901` relu sur 4 bits (REGISTER.PIN) ; fin `$FF890F-13` relue via l'étage
-    SFT, figé à chaque début de trame pendant la lecture (4081P14, `DmaSound::read8`).
+    SFT, figé à chaque début de trame pendant la lecture (4081P14, `DmaSound::read8`). Mega
+    STE inchangé (`DmaSound::steNetlist`, posé par le Bus).
   **Confirmé fidèle** : $FC0000-$FEFFFF faute avec un TOS en $E00000 (`memory.c:1784`), cf.
   cas IK+ dans `CASE_STUDIES.md`. **Non touché** : Mega STE (aucune netlist de son
   décodage). Garde : `--bus-selftest` sur STE (24 contrôles).

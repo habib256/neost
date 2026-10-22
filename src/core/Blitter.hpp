@@ -80,7 +80,6 @@ public:
         ar(sliceBus_);          // accès bus consommés par la tranche en cours
         ar(cpuBusCnt_);         // accès bus CPU consommés (fenêtre COUNT_CPU_BUS)
         ar(busCountError_);     // accès CPU volé en PRE_START → tranche de 63
-        ar.arr(ioRaw_);         // v22 : tampon IoMem brut, visible en lecture octet
     }
 
 private:
@@ -118,7 +117,6 @@ private:
     // Blitter_CheckAccess_Byte n'actualise pas IoMem sur un registre mot : les
     // octets lus sont ceux du dernier accès CPU, pas les compteurs vivants.
     // Initialisé à l'allocation / reset froid, préservé par le reset matériel.
-    uint8_t ioRaw_[0x3A] = {};
     uint32_t buffer_  = 0;
     uint16_t busWord_ = 0;
     // État de REPRISE entre tranches (équivalents BlitterVars d'Hatari) : le X

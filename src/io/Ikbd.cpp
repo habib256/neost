@@ -426,9 +426,8 @@ void Ikbd::dispatchCommand() {
             // $0A = SET MOUSE KEYCODE MODE (cf. Hatari IKBD_Cmd_MouseCursorKeycodes) :
             // les mouvements deviennent des flèches clavier ; octets 1/2 = pas X/Y.
             selectMouseMode(CURSOR);
-            // Octet BRUT, 0 permis (Hatari ikbd.c:2000 stocke tel quel) : avec pas=0
-            // la boucle sendCursorKeys émet ses 10 paires/trame sans consommer le Δ,
-            // comme le vrai 6301 — l'ancien « ?: 1 » se comportait en pas=1.
+            // Octet BRUT, 0 permis : avec un pas de 0, la ROM émet des flèches en
+            // continu ($F5D2, cf. sendCursorKeys).
             keyCodeDeltaX_ = inBuf_[1];
             keyCodeDeltaY_ = inBuf_[2];
             break;
@@ -560,24 +559,33 @@ void Ikbd::dispatchCommand() {
             joysticksEnabled_ = true;
             port0ToJoystick();
             monitorFrozen_ = -1;
-            joystickMonitorPeriod_ = inBuf_[1] ? int64_t(8021247) * inBuf_[1] / 100 : 2 * 10240;
             if (sched_) sched_->cancel(Scheduler::IKBD_AUTOSEND);
-            if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR,
-                                         firmwareEventTime() + joystickMonitorPeriod_);
+            if (inBuf_[1]) {
+                monitorContinuous_ = false;
+                joystickMonitorPeriod_ = int64_t(8021247) * inBuf_[1] / 100;
+                if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR,
+                                             firmwareEventTime() + joystickMonitorPeriod_);
+            } else {
+                // Taux 0 : un échantillon à chaque ligne libre (cf. onLineIdle).
+                monitorContinuous_ = true;
+                joystickMonitorPeriod_ = 0;
+                if (sched_) sched_->cancel(Scheduler::IKBD_MONITOR);
+            }
             break;
         case 0x18:
             // $18 = SET FIRE BUTTON MONITORING (ROM $FA12, $CA = $21) : le feu du
             // joystick 1 est échantillonné en continu, 8 échantillons par octet
             // (le plus ancien en bit 7, 1 = enfoncé), écrits directement dans le
             // TDR quand la ligne est libre. Port 0 au joystick, souris muette.
+            stopJoystickSampling();
             joyMode_ = JOY_FIRE;
             joysticksEnabled_ = true;
             port0ToJoystick();
-            monitorFrozen_ = -1;
-            joystickMonitorPeriod_ = kFireByteCycles;
+            fireShift_ = 0;                   // ROM $FA19 : $A4 = 0, $A5 = 8
+            fireCount_ = 8;
+            joystickMonitorPeriod_ = kFireByteCycles;   // drapeau « échantillonnage propre »
             if (sched_) sched_->cancel(Scheduler::IKBD_AUTOSEND);
-            if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR,
-                                         firmwareEventTime() + joystickMonitorPeriod_);
+            if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR, firmwareEventTime());
             break;
         case 0x19:
             // $19 = SET JOYSTICK KEYCODE MODE (ROM $FA21, $CA = $24) : le joystick 0
@@ -591,6 +599,10 @@ void Ikbd::dispatchCommand() {
             joyMode_ = JOY_KEYCODE;
             joysticksEnabled_ = true;
             port0ToJoystick();
+            joystickMonitorPeriod_ = kKeycodePollCycles;
+            if (sched_) sched_->cancel(Scheduler::IKBD_AUTOSEND);
+            if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR,
+                                         firmwareEventTime() + kKeycodePollCycles);
             break;
         case 0x16: {
             // $16 = « interroger les joysticks » : l'IKBD répond après traitement par
@@ -702,6 +714,7 @@ void Ikbd::dispatchCommand() {
     // Le délai d'une nouvelle réponse doit être installé avant de relancer une
     // ancienne file gelée ; Hatari ne recharge le TDR qu'au prochain bit SCI.
     if (resumes && pauseOutput_) liftPause();
+    onLineIdle();
 }
 
 void Ikbd::liftPause() {
@@ -711,6 +724,7 @@ void Ikbd::liftPause() {
         sched_->schedule(Scheduler::IKBD_MONITOR, firmwareEventTime() + monitorFrozen_);
     monitorFrozen_ = -1;
     armRx();
+    onLineIdle();
 }
 
 void Ikbd::statusReply(uint8_t first, const uint8_t* data, int n) {
@@ -786,6 +800,9 @@ void Ikbd::bootRom() {
     joyMode_       = JOY_AUTO;                // ROM $F113 : $CA = $28
     kjKey_[0] = kjKey_[1] = 0;
     kjFire_        = false;
+    fireShift_     = 0;
+    fireCount_     = 8;
+    monitorContinuous_ = false;
     joysticksEnabled_ = true;
     prevJoy0_      = prevJoy1_ = 0;
     xThreshold_    = yThreshold_ = 1;
@@ -855,6 +872,7 @@ void Ikbd::stopJoystickSampling() {
         sched_->cancel(Scheduler::IKBD_MONITOR);
     }
     joystickMonitorPeriod_ = 0;
+    monitorContinuous_ = false;
     monitorFrozen_ = -1;
     startAutoSend();
 }
@@ -895,15 +913,41 @@ void Ikbd::onJoystickMonitor() {
     const int64_t due = sched_->firingDue();
     sched_->schedule(Scheduler::IKBD_MONITOR,
                      (due >= 0 ? due : sched_->liveNow()) + joystickMonitorPeriod_);
+    if (exeMode_) {                           // code 6301 custom : il remplace la ROM
+        sendAutoInput();
+        return;
+    }
     if (joyMode_ == JOY_FIRE) {
-        // ROM $F8A2 : rien sous pause, ni tant que l'émetteur est occupé ; sinon
-        // l'octet des 8 derniers échantillons du feu joystick 1 (P22) part tel quel.
-        // NeoST n'a qu'un état hôte par octet : les 8 échantillons sont égaux.
-        if (pauseOutput_ || !rx_.empty() || rxPending_ || duringResetCriticalTime_) return;
+        // ROM $F8A2 : un échantillon par tour de boucle. Sous pause ($F17B) ou ligne
+        // occupée ($D7 bit 7), le tour se fait sans échantillon. P22 (feu du joystick
+        // 1, actif bas) entre par la droite de $A4 ; au 8ᵉ, $A4 part dans le TDR.
+        auto us = [](int64_t v) { return (v * 8021248 + 500000) / 1000000; };
+        const int64_t base = due >= 0 ? due : sched_->liveNow();
+        if (pauseOutput_ || duringResetCriticalTime_) {
+            sched_->schedule(Scheduler::IKBD_MONITOR, base + us(34));
+            return;
+        }
+        if (!rx_.empty() || rxPending_) {
+            sched_->schedule(Scheduler::IKBD_MONITOR, base + us(57));
+            return;
+        }
         uint8_t joy0 = 0, joy1 = 0;
         readJoystickState(joy0, joy1);
         const bool fire = (joy1 & 0x80) || mouseRight_;
-        pushRx(fire ? 0xFF : 0x00);
+        fireShift_ = uint8_t((fireShift_ << 1) | (fire ? 1 : 0));
+        int64_t next = fire ? 177 : 180;
+        if (--fireCount_ == 0) {
+            fireCount_ = 8;
+            next += 15;
+            pushRx(fireShift_);
+        }
+        sched_->schedule(Scheduler::IKBD_MONITOR, base + us(next));
+        return;
+    }
+    if (joyMode_ == JOY_KEYCODE) {
+        uint8_t joy0 = 0, joy1 = 0;
+        readJoystickState(joy0, joy1);
+        if (joysticksEnabled_ && !duringResetCriticalTime_) sendKeycodeJoystick(joy0);
         return;
     }
     // $17 utilise le même traitement que l'auto-send : MouseAction et position
@@ -927,7 +971,7 @@ void Ikbd::startAutoSend() {
 }
 
 void Ikbd::onAutoSend() {
-    if (joystickMonitorPeriod_ > 0) return;
+    if (joystickMonitorPeriod_ > 0 || monitorContinuous_) return;
     // Réarmement sur l'échéance dispatchée, pas sur l'horloge CPU live : une
     // instruction dépassant la frontière ne décale pas les scrutations suivantes.
     if (sched_) {
@@ -988,13 +1032,18 @@ void Ikbd::sendAutoInput() {
 
     // 5) Reporting lié à MouseAction ($07), AVANT le paquet de mode (l'état
     //    bOldL_/bOldR_ n'est mis à jour qu'en fin de trame).
-    sendOnMouseAction(left, right, events);
+    //    Ces actions vivent dans le traitement souris de la ROM ($F371) : sans
+    //    souris active (port 0 au joystick, $17…), elles ne s'exécutent pas.
+    if (mouseMode_ != OFF) sendOnMouseAction(left, right, events);
 
     // 6) Position absolue : ROM $F3D4 → $F439, seulement en mode absolu.
-    const int dx = mouseDeltaX_;
-    const int dy = mouseDeltaY_;
-    mouseDeltaX_ = mouseDeltaY_ = 0;
-    if (mouseMode_ == ABS) updateInternalAbsPos(dx, dy);
+    //    En relatif et en flèches, le cumul reste : les paquets le consomment.
+    if (mouseMode_ == ABS || mouseMode_ == OFF) {
+        const int dx = mouseDeltaX_;
+        const int dy = mouseDeltaY_;
+        mouseDeltaX_ = mouseDeltaY_ = 0;
+        if (mouseMode_ == ABS) updateInternalAbsPos(dx, dy);
+    }
     prevL_ = left; prevR_ = right;
 
     // 6) Monitoring ($17) : seul report émis, le reste de la trame est coupé.
@@ -1016,12 +1065,12 @@ void Ikbd::sendAutoInput() {
     //    $1A (bit 5 de $CA) coupe tout report joystick.
     if (joyMode_ == JOY_AUTO && joysticksEnabled_)
         sendAutoJoysticks(joy0, joy1);
-    else if (joyMode_ == JOY_KEYCODE && joysticksEnabled_)
-        sendKeycodeJoystick(joy0);
+    // Souris relative et flèches : la ROM émet dès que la ligne est libre (cf.
+    // onLineIdle) ; la scrutation ne sert ici qu'aux changements de bouton.
     if (mouseMode_ == REL)
-        sendRelMousePacket(dx, dy, left, right);
+        sendRelMousePacket(left, right);
     else if (mouseMode_ == CURSOR)
-        sendCursorKeys(dx, dy, left, right);
+        sendCursorKeys(left, right);
 
     // 8) Mémorise l'état bouton EFFECTIF (feu joystick inclus) pour la détection
     //    de front de la prochaine trame.
@@ -1036,7 +1085,7 @@ void Ikbd::sendKeycodeJoystick(uint8_t joy0) {
     // $F4 au relâchement. Unités : dixièmes de seconde (prédiviseur 100 ms, $FE7D).
     if (!sched_) return;
     constexpr int64_t kTenth = 8021248 / 10;
-    const int64_t now = sched_->liveNow();
+    const int64_t now = firmwareEventTime();
     struct Axis { uint8_t neg, pos, keyNeg, keyPos; };
     static constexpr Axis kAxes[2] = { {0x04, 0x08, 0x4B, 0x4D},    // X : gauche/droite
                                        {0x01, 0x02, 0x48, 0x50} };  // Y : haut/bas
@@ -1084,10 +1133,12 @@ void Ikbd::updateInternalAbsPos(int dx, int dy) {
 void Ikbd::keyEvent(uint8_t scancode, bool pressed) {
     trace("host-key scan=$%02X pressed=%d mode=%s", scancode, pressed,
           joyMode_ == JOY_MONITOR ? "joystick-monitor" : exeMode_ ? "custom" : "normal");
-    if (joyMode_ == JOY_MONITOR)
-        return;
+    // $17 et $18 : la boucle principale de la ROM ne scrute plus le clavier
+    // ($F171 → $F8A2 pour $18).
     // Suivi d'état (lu par les handlers 6301 custom) puis make/break.
     scanState_[scancode & 0x7F] = pressed ? 1 : 0;
+    if ((joyMode_ == JOY_MONITOR || joyMode_ == JOY_FIRE) && !exeMode_)
+        return;
     // En ExeMode, le scan clavier normal est supprimé (cf. Hatari IKBD_Cmd_Return_Byte) :
     // seul le handler custom peut émettre, via customReadDispatch().
     if (exeMode_) { customReadDispatch(); return; }
@@ -1105,68 +1156,107 @@ void Ikbd::mouseEvent(int dx, int dy, bool left, bool right) {
         mDeltaX_ += dx; mDeltaY_ += dy; lmb_ = left;
         return;
     }
-    mouseDeltaX_ += dx;
-    mouseDeltaY_ += dy;
     mouseLeft_ = left;
     mouseRight_ = right;
+    // Le port 0 ne compte des impulsions souris que s'il sert la souris : souris
+    // coupée ou port au joystick ($14/$15/$17/$18/$19), rien ne s'accumule. Cumul
+    // borné (une ligne bloquée sous pause ne doit pas le faire déborder).
+    if (mouseMode_ != OFF) {
+        constexpr int kMax = 1 << 20;
+        mouseDeltaX_ = std::clamp(mouseDeltaX_ + dx, -kMax, kMax);
+        mouseDeltaY_ = std::clamp(mouseDeltaY_ + dy, -kMax, kMax);
+    }
+    // Le 6301 compte les impulsions en continu et émet sans attendre la scrutation.
+    if (mouseMode_ == REL && !duringResetCriticalTime_ && vblCount_ > 20) {
+        bool l, r; effectiveButtons(l, r);
+        sendRelMousePacket(l, r);
+    } else {
+        onLineIdle();
+    }
 }
 
-void Ikbd::sendRelMousePacket(int dx, int dy, bool left, bool right) {
-    // Mode relatif (port fidèle de Hatari IKBD_SendRelMousePacket, l.1382-1422) :
-    // on draine le Δ de cette trame en paquets $F8 de 3 octets. Un paquet n'est
-    // émis QUE si le Δ borné à [-128,127] atteint le seuil EN VALEUR ABSOLUE, OU
-    // si un bouton a changé depuis le dernier paquet — cette seconde condition est
-    // ce qui fait remonter un appui/relâchement SANS mouvement (boutons de Vroom).
-    // Les gros Δ sortent en plusieurs paquets ; le signe de Δy suit yAxis_ ($0F/$10)
-    // mais la soustraction de drain utilise le Δy non signé (comme Hatari). Le
-    // reliquat sous le seuil est abandonné (Hatari écrase Δ à la trame suivante).
-    int dX = dx, dY = dy;
-    // Garde 256 (Hatari boucle sans borne, l.1382) : 16 tronquait silencieusement un
-    // Δ hôte > 2048/trame ; 256 couvre tout Δ 15 bits sans risque d'emballement.
+bool Ikbd::lineFree() const {
+    return aciaClockInitialized_ && rx_.empty() && !rxPending_ && !outputBlocked()
+        && !duringResetCriticalTime_;
+}
+
+void Ikbd::effectiveButtons(bool& left, bool& right) const {
+    // Feu du joystick 1 = bouton droit tant que la souris est active (même ligne).
+    left = mouseLeft_;
+    right = mouseRight_ || (mouseMode_ != OFF && (hostJoy_[1] & 0x80));
+}
+
+void Ikbd::onLineIdle() {
+    if (inLineIdle_ || exeMode_ || duringResetCriticalTime_ || vblCount_ <= 20) return;
+    if (!lineFree()) return;
+    inLineIdle_ = true;
+    if (joyMode_ == JOY_MONITOR && monitorContinuous_) {
+        sendAutoInput();                     // un échantillon $17 par ligne libre
+    } else if (mouseMode_ == REL) {
+        bool l, r; effectiveButtons(l, r);
+        sendRelMousePacket(l, r);
+    } else if (mouseMode_ == CURSOR) {
+        bool l, r; effectiveButtons(l, r);
+        sendCursorKeys(l, r);
+    }
+    inLineIdle_ = false;
+}
+
+void Ikbd::sendRelMousePacket(bool left, bool right) {
+    // Mode relatif d'après la ROM ($F4E5, $F54A-$F556) : le 6301 cumule les
+    // impulsions et n'émet un paquet $F8 que si (a) la ligne est libre et le cumul
+    // atteint le seuil ($0B, 0 = toujours : flux continu de $F8 0 0), ou (b) un
+    // bouton a changé, ou (c) le cumul dépasse ±127. Le reliquat sous le seuil reste
+    // cumulé (Hatari l'abandonne). Le signe de Δy suit $0F/$10.
+    if (inMouseEmit_) return;                 // sans ordonnanceur, pushRx livre en direct
+    inMouseEmit_ = true;
+    struct Release { bool& f; ~Release() { f = false; } } release{inMouseEmit_};
     for (int guard = 0; guard < 256; ++guard) {
+        const int dX = mouseDeltaX_, dY = mouseDeltaY_;
         int bx = dX; if (bx > 127) bx = 127; else if (bx < -128) bx = -128;
         int by = dY; if (by > 127) by = 127; else if (by < -128) by = -128;
-        const bool overThr =
-            (bx < 0 && bx <= -xThreshold_) || (bx > 0 && bx >= xThreshold_) ||
-            (by < 0 && by <= -yThreshold_) || (by > 0 && by >= yThreshold_);
+        auto reaches = [](int v, int thr) { return thr == 0 || (v < 0 && v <= -thr) || (v > 0 && v >= thr); };
+        const bool overThr = reaches(bx, xThreshold_) || reaches(by, yThreshold_);
+        const bool overflow = dX != bx || dY != by;
         // $07 bit 2 : les boutons partent en touches $74/$75 (ROM $F560 → $F62B),
-        // un changement de bouton seul ne produit plus de paquet $F8.
+        // un changement de bouton seul ne produit pas de paquet $F8.
         const bool btnChanged = !(mouseAction_ & 0x4) && ((bOldL_ != left) || (bOldR_ != right));
-        if (!overThr && !btnChanged) {
-            // Seuil 0 : la ROM ($F4E5) émet $F8 0 0 en continu dès que la ligne est
-            // libre. NeoST en émet un par scrutation, ligne libre.
-            if (guard == 0 && (xThreshold_ == 0 || yThreshold_ == 0)
-                && rx_.empty() && !rxPending_ && rxFree(3)) {
-                pushRx(uint8_t(0xF8 | (right ? 0x01 : 0) | (left ? 0x02 : 0)));
-                pushRx(0); pushRx(0);
-            }
-            break;
-        }
-        // paquet $F8 (3 octets) entier ou rien ; tampon plein → ce paquet
-        // est jeté mais le Δ reste décrémenté (comme Hatari).
+        if (!btnChanged && !overflow && !(overThr && lineFree())) return;
         if (rxFree(3)) {
             pushRx(uint8_t(0xF8 | (right ? 0x01 : 0) | (left ? 0x02 : 0)));
             pushRx(static_cast<uint8_t>(static_cast<int8_t>(bx)));
             pushRx(static_cast<uint8_t>(static_cast<int8_t>(by * yAxis_)));
         }
-        dX -= bx;
-        dY -= by;
-        bOldL_ = left;
-        bOldR_ = right;
+        mouseDeltaX_ -= bx;
+        mouseDeltaY_ -= by;
+        // $07 bit 2 : après le $F8, la ROM saute en $F62B et émet les touches
+        // boutons dans le même passage ($F59D-$F5A2).
+        if (mouseAction_ & 0x4) emitButtonKeys(left, right);
+        else { bOldL_ = left; bOldR_ = right; }
+        if (xThreshold_ == 0 || yThreshold_ == 0) return;   // flux continu : un paquet par ligne libre
     }
+}
+
+void Ikbd::emitButtonKeys(bool left, bool right) {
+    // Boutons en touches ($07 bit 2, et mode flèches) : $74 gauche / $75 droit,
+    // |$80 au relâchement — ROM $F62B. Un seul émetteur, qui consomme le front
+    // (bOld*), pour qu'aucun chemin ne le réémette ni ne le perde.
+    if (left == bOldL_ && right == bOldR_) return;
+    if (rxFree(2)) {
+        if (left && !bOldL_)       pushRx(0x74);
+        else if (!left && bOldL_)  pushRx(0x74 | 0x80);
+        if (right && !bOldR_)      pushRx(0x75);
+        else if (!right && bOldR_) pushRx(0x75 | 0x80);
+    }
+    bOldL_ = left;
+    bOldR_ = right;
 }
 
 void Ikbd::sendOnMouseAction(bool left, bool right, uint8_t events) {
     // Port de Hatari IKBD_SendOnMouseAction. Émis quel que soit le mode souris.
     if (mouseAction_ & 0x4) {
-        // Boutons remontés comme scancodes touche (0x74 gauche / 0x75 droit ;
-        // |0x80 au relâchement). Les bits 0/1 sont ignorés quand le bit2 est mis.
-        // place pour les DEUX scancodes possibles, sinon on jette le tout.
-        if (!rxFree(2)) return;
-        if (left && !bOldL_)       pushRx(0x74);
-        else if (!left && bOldL_)  pushRx(0x74 | 0x80);
-        if (right && !bOldR_)      pushRx(0x75);
-        else if (!right && bOldR_) pushRx(0x75 | 0x80);
+        // Boutons remontés comme scancodes touche ; les bits 0/1 sont ignorés.
+        emitButtonKeys(left, right);
         return;
     }
     if (mouseAction_ & 0x3) {
@@ -1192,38 +1282,27 @@ void Ikbd::sendAbsMousePos(uint8_t buttons, int delayCycles) {
     pushRx(uint8_t(absY_ & 0xFF));
 }
 
-void Ikbd::sendCursorKeys(int dx, int dy, bool left, bool right) {
-    // Port de Hatari IKBD_SendCursorMousePacket : convertit le Δ en pressions de
-    // flèches (make immédiatement suivi de break) par pas de keyCodeDelta, plus les
-    // boutons comme touches (0x74/0x75). Borné à 10 itérations (le Δ hôte peut être
-    // bien plus grossier qu'un déplacement ST ; le reliquat est abandonné).
-    int dX = dx, dY = dy;
-    // Pas 0 : la ROM ($F5D2) envoie en continu des paires « droite » et « haut »,
-    // même sans mouvement. NeoST en émet une de chaque par scrutation, ligne libre.
-    if ((keyCodeDeltaX_ == 0 || keyCodeDeltaY_ == 0) && rx_.empty() && !rxPending_) {
-        if (keyCodeDeltaX_ == 0 && rxFree(2)) { pushRx(77); pushRx(77 | 0x80); }
-        if (keyCodeDeltaY_ == 0 && rxFree(2)) { pushRx(72); pushRx(72 | 0x80); }
+void Ikbd::sendCursorKeys(bool left, bool right) {
+    // Mode flèches ($0A) d'après la ROM ($F5D2, $F62B) : boutons en touches $74/$75
+    // au changement ; sur chaque axe, dès que la ligne est libre et que le cumul
+    // atteint le pas, UNE paire make+break part et le cumul est EFFACÉ. Pas 0 : la
+    // condition est toujours vraie — flux continu de « droite » et « haut ». L'axe Y
+    // n'est pas inversé par $0F ici.
+    if (inMouseEmit_) return;
+    inMouseEmit_ = true;
+    struct Release { bool& f; ~Release() { f = false; } } release{inMouseEmit_};
+    emitButtonKeys(left, right);
+    if (!lineFree()) return;
+    const int dX = mouseDeltaX_, dY = mouseDeltaY_;
+    if (std::abs(dX) >= keyCodeDeltaX_) {
+        const uint8_t k = dX < 0 ? 75 : 77;
+        if (rxFree(2)) { pushRx(k); pushRx(uint8_t(k | 0x80)); }
+        mouseDeltaX_ = 0;
     }
-    for (int i = 0; i < 10 &&
-                    (dX != 0 || dY != 0 || bOldL_ != left || bOldR_ != right); ++i) {
-        // chaque paire de flèches (2 octets) est gardée séparément ; tampon
-        // plein → la paire est jetée mais le Δ est quand même décrémenté (Hatari).
-        if (dX != 0) {
-            if (dX <= -keyCodeDeltaX_) { if (rxFree(2)) { pushRx(75); pushRx(75 | 0x80); } dX += keyCodeDeltaX_; }  // gauche
-            if (dX >=  keyCodeDeltaX_) { if (rxFree(2)) { pushRx(77); pushRx(77 | 0x80); } dX -= keyCodeDeltaX_; }  // droite
-        }
-        if (dY != 0) {
-            if (dY <= -keyCodeDeltaY_) { if (rxFree(2)) { pushRx(72); pushRx(72 | 0x80); } dY += keyCodeDeltaY_; }  // haut
-            if (dY >=  keyCodeDeltaY_) { if (rxFree(2)) { pushRx(80); pushRx(80 | 0x80); } dY -= keyCodeDeltaY_; }  // bas
-        }
-        if (rxFree(2)) {                      // paire de boutons gardée à part
-            if (left && !bOldL_)       pushRx(0x74);
-            else if (!left && bOldL_)  pushRx(0x74 | 0x80);
-            if (right && !bOldR_)      pushRx(0x75);
-            else if (!right && bOldR_) pushRx(0x75 | 0x80);
-        }
-        bOldL_ = left;
-        bOldR_ = right;
+    if (std::abs(dY) >= keyCodeDeltaY_) {
+        const uint8_t k = dY > 0 ? 80 : 72;
+        if (rxFree(2)) { pushRx(k); pushRx(uint8_t(k | 0x80)); }
+        mouseDeltaY_ = 0;
     }
 }
 
@@ -1384,6 +1463,7 @@ void Ikbd::onRxDeliver() {
     }
     armRx(responseDelayBits_ > 0 ? due : -1); // attente globale au prochain SCI idle
     raiseIfReady(due);
+    if (sched_) onLineIdle();                 // ligne libérée : flux « dès que possible »
 }
 
 bool Ikbd::irqActive() const {
