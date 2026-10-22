@@ -597,7 +597,9 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
     les quatre quirks d'Hatari (Barbarian `$08+$14`, Hammerfist `$12+$14`, `$12+$1A`,
     `$13` ignoré pour Just Buggin') : il ne reste que les défauts (souris relative +
     joystick 1 en événement ; jamais le joystick 0). Vérifié : Just Buggin' envoie
-    `$80 $01 $11 $13` d'un trait, `$11` est retenu puis perdu avec `$13`.
+    `$80 $01 $11 $13` d'un trait, `$11` est retenu puis perdu avec `$13` ; Barbarian
+    (Psygnosis) envoie `$80 $01 $08 $0B 03 03 $14`, tout est perdu, souris et joystick 1
+    répondent ensemble (cf. `CASE_STUDIES.md`).
   - **Tampon de sortie de 21 octets** ($D9-$ED ; Hatari 1024) ; les réponses d'état sont
     admises appel par appel ($FCD7) et peuvent être tronquées.
   - **PAUSE `$13`** ($F9AF) : les octets déjà en file sortent encore ; seules les commandes
