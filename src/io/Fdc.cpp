@@ -703,6 +703,7 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     // Image .ST/.msa/.dim → on (re)bascule en modèle logique (annule un éventuel STX).
     dk.imgType = FloppyDisk::IMG_ST;
     dk.stx.reset();
+    dk.stOverride.clear();
     // Remise à l'état « conteneur .ST inscriptible » : `dk` est RÉUTILISÉ d'un montage
     // à l'autre, et sans ça un précédent STX (raw=false) ou .dim (imgFormat=FMT_DIM)
     // laissait son format à l'image suivante — écriture décalée de 32 o, ou disquette
@@ -807,6 +808,7 @@ void Fdc::eject(int drive) {
     const bool wasPresent = dk.present();
     dk.image.clear();
     dk.stx.reset();
+    dk.stOverride.clear();
     dk.imgType = FloppyDisk::IMG_ST;
     dk.path.clear();
     // FDC_EjectFloppy coupe immédiatement l'index du lecteur éjecté.
@@ -1318,6 +1320,15 @@ void Fdc::registerWait() {
 // =============================================================================
 uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSize) {
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return readSectorStx(pSize);
+    if (auto* ov = stOverrideHere()) {
+        for (const auto& s : ov->secs)
+            if (s.sr == sector && s.tr == tr_) {
+                for (uint8_t b : s.data) bufferAdd(b);
+                *pSize = int(s.data.size());
+                return s.deleted ? STR_RECTYPE : 0;
+            }
+        return STR_RNF;
+    }
     FloppyDisk& dk = drive_[driveSel_];
     // Face au-delà de l'image (face 2 d'une image simple face) : les données
     // n'existent pas → RNF (port de Floppy_ReadSectors, floppy.c:907 Side >=
@@ -1342,6 +1353,15 @@ uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSiz
 
 uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size) {
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return writeSectorStx(size);
+    if (auto* ov = stOverrideHere()) {
+        for (auto& s : ov->secs)
+            if (s.sr == sector && s.tr == tr_) {
+                for (int i = 0; i < size && i < int(s.data.size()); ++i) s.data[i] = bufferReadBytePos(i);
+                s.deleted = cr_ & 1;          // bit 0 : marque $F8
+                return 0;
+            }
+        return STR_RNF;
+    }
     FloppyDisk& dk = drive_[driveSel_];
     // Face au-delà de l'image → RNF (même garde que readSectorST, Floppy_WriteSectors).
     // Même validation CHS que Floppy_WriteSectors, même si l'offset linéaire
@@ -1370,6 +1390,17 @@ uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size
 // On ajoute au tampon les 6 octets utiles [TR..CRC2] (cf. FDC_ReadAddress_ST).
 uint8_t Fdc::readAddressST(uint8_t track, uint8_t sector, uint8_t side) {
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return readAddressStx();
+    if (auto* ov = stOverrideHere()) {
+        for (const auto& s : ov->secs)
+            if (s.sr == sector && s.tr == nextID_TR_ && s.sz == nextID_LEN_) {
+                uint8_t id[10] = { 0xa1, 0xa1, 0xa1, 0xfe, s.tr, s.hd, s.sr, s.sz, 0, 0 };
+                const uint16_t crc = crc16(id, 8);
+                id[8] = uint8_t(crc >> 8); id[9] = uint8_t(crc);
+                for (int i = 4; i < 10; ++i) bufferAdd(id[i]);
+                return 0;
+            }
+        return STR_RNF;
+    }
     if (track >= tracksPerDisk(driveSel_)) return STR_RNF;
     uint8_t id[10] = { 0xa1, 0xa1, 0xa1, 0xfe, track, side, sector, SECTOR_SIZE_512, 0, 0 };
     const uint16_t crc = crc16(id, 8);
@@ -1381,6 +1412,27 @@ uint8_t Fdc::readAddressST(uint8_t track, uint8_t sector, uint8_t side) {
 // Piste complète synthétisée (gaps, sync, IDAM, données, CRC) — cf. FDC_ReadTrack_ST.
 uint8_t Fdc::readTrackST(uint8_t track, uint8_t side) {
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return readTrackStx(track, side);
+    if (auto* ov = stOverrideHere()) {
+        // Relecture du flux écrit, comme le WD1772 l'a enregistré : $F5 → $A1 (CRC
+        // préchargé au premier), $F6 → $C2, $F7 → les deux octets de CRC calculés.
+        uint16_t crc = 0xFFFF;
+        bool prevF5 = false;
+        auto upd = [&](uint8_t b) {
+            crc ^= uint16_t(b) << 8;
+            for (int k = 0; k < 8; ++k)
+                crc = (crc & 0x8000) ? uint16_t((crc << 1) ^ 0x1021) : uint16_t(crc << 1);
+        };
+        for (uint8_t b : ov->raw) {
+            if (bufferSize() >= bytesPerTrack()) break;
+            if (b == 0xF5) { if (!prevF5) crc = 0xFFFF; upd(0xA1); bufferAdd(0xA1); prevF5 = true; continue; }
+            prevF5 = false;
+            if (b == 0xF7) { bufferAdd(uint8_t(crc >> 8)); bufferAdd(uint8_t(crc)); continue; }
+            const uint8_t v = (b == 0xF6) ? 0xC2 : b;
+            upd(v); bufferAdd(v);
+        }
+        while (bufferSize() < bytesPerTrack()) bufferAdd(0x4e);
+        return 0;
+    }
     FloppyDisk& dk = drive_[driveSel_];
     if (track >= tracksPerDisk(driveSel_)) {            // piste inexistante → bruit
         for (int i = 0; i < bytesPerTrack(); ++i) bufferAdd(uint8_t(rngNext()));
@@ -1417,16 +1469,20 @@ uint8_t Fdc::readTrackST(uint8_t track, uint8_t side) {
 // PARCOURT pour extraire les secteurs (IDAM $FE → piste/face/secteur/taille, puis DAM
 // $FB/$F8 → données) et on les écrit dans l'image .ST — c'est l'approche que le TODO
 // de Hatari décrit (fdc.c FDC_WriteTrack_ST, qui renvoie toujours « lost data »).
-// LIMITE assumée (philosophie Hatari) : une .ST ne sait représenter qu'une géométrie
-// STANDARD ; un format qui ne colle pas à celle de l'image montée (taille ≠ 512 o,
-// secteurs hors 1..spt, piste/face hors image, nombre de secteurs ≠ spt) est REJETÉ
-// en bloc avec LOST_DATA — rien n'est écrit. Le vrai reformatage non standard
-// demande une image à flux (STX/SCP).
+// Une .ST ne sait représenter qu'une géométrie STANDARD. Un format qui ne colle pas à
+// celle de l'image montée (taille ≠ 512 o, secteurs hors 1..spt, IDs étrangers, nombre
+// de secteurs ≠ spt) n'est PAS une erreur pour le WD1772 : LOST DATA ne signale qu'une
+// DRQ non servie. NeoST garde alors la piste en mémoire (stOverride) et la relit
+// comme le matériel ; Hatari renvoie LOST DATA pour tout WRITE TRACK .ST (défaut).
 uint8_t Fdc::writeTrackBuffer() {
     if (driveSel_ < 0 || !drive_[driveSel_].present()) return STR_LOST;
     FloppyDisk& dk = drive_[driveSel_];
     if (dk.imgType == FloppyDisk::IMG_STX) return writeTrackStx();
     const int n = bufferSize();
+    // Piste non représentable dans le .st → piste volatile en mémoire.
+    auto nonStandard = [&]() -> uint8_t {
+        return stOverrideFromBuffer(dk) ? uint8_t(0) : uint8_t(STR_LOST);
+    };
 
     // 1re passe : extraire tous les secteurs du flux, sans rien écrire.
     struct Found { int dataPos; uint64_t offset; };
@@ -1437,20 +1493,20 @@ uint8_t Fdc::writeTrackBuffer() {
         const uint8_t tr = buf_[i + 1], sd = buf_[i + 2], sec = buf_[i + 3], len = buf_[i + 4];
         int k = i + 5;                                         // cherche la marque de données
         while (k < n && buf_[k] != 0xFB && buf_[k] != 0xF8) ++k;
-        if (k >= n || k + 1 + 512 > n) return STR_LOST;        // données incomplètes
-        if ((len & 3) != SECTOR_SIZE_512) return STR_LOST;     // seule la taille 512 o est standard
-        if (sec < 1 || sec > dk.spt)      return STR_LOST;     // secteur hors géométrie
-        if (sd >= dk.sides || tr >= tracksPerDisk(driveSel_)) return STR_LOST;
+        if (k >= n || k + 1 + 512 > n) return nonStandard();   // données incomplètes
+        if ((len & 3) != SECTOR_SIZE_512) return nonStandard();// seule la taille 512 o est standard
+        if (sec < 1 || sec > dk.spt)      return nonStandard();// secteur hors géométrie
+        if (sd >= dk.sides || tr >= tracksPerDisk(driveSel_)) return nonStandard();
         // Les IDs n'actionnent ni STEP ni la sélection de face : WRITE TRACK
         // n'écrit que sous la tête actuelle. Des C/H étrangers ou des numéros
         // dupliqués exigent une image à flux ; les accepter en ST écraserait
         // une autre piste/face ou masquerait un secteur manquant.
-        if (tr != dk.headTrack || sd != side_ || seen[sec]) return STR_LOST;
+        if (tr != dk.headTrack || sd != side_ || seen[sec]) return nonStandard();
         seen[sec] = true;
         found.push_back({k + 1, lsnOffset(tr, sd, sec, dk.spt, dk.sides)});
         i = k + 1 + 512;
     }
-    if (int(found.size()) != dk.spt) return STR_LOST;          // piste incomplète / surnuméraire
+    if (int(found.size()) != dk.spt) return nonStandard();     // piste incomplète / surnuméraire
 
     // 2de passe : géométrie standard confirmée → écriture des secteurs.
     for (const Found& f : found) {
@@ -1463,7 +1519,47 @@ uint8_t Fdc::writeTrackBuffer() {
     for (const Found& f : found)
         if (f.offset == 0) { refreshImageGeometry(dk); break; }
     for (const Found& f : found) writeBack(dk, f.offset, 512u);
+    dk.stOverride.erase((dk.headTrack << 1) | side_);   // la piste redevient celle du .st
     return 0;
+}
+
+// Analyse le flux WRITE TRACK comme le relira le WD1772 (IDAM $FE → champ ID, marque
+// $FB/$F8 → données de la taille annoncée), même règle que StxImage::reinterpretSaveTrack.
+bool Fdc::stOverrideFromBuffer(FloppyDisk& dk) {
+    if (dk.headTrack < 0 || dk.headTrack > 255) return false;
+    FloppyDisk::StOverrideTrack t;
+    const int n = bufferSize();
+    t.raw.assign(buf_.begin(), buf_.begin() + n);
+    for (int i = 0; i + 5 < n; ) {
+        if (t.raw[i] != 0xFE) { ++i; continue; }
+        FloppyDisk::StOverrideSector s;
+        s.tr = t.raw[i + 1]; s.hd = t.raw[i + 2]; s.sr = t.raw[i + 3]; s.sz = t.raw[i + 4];
+        s.idPos = i;
+        const int len = 128 << (s.sz & 3);
+        int k = i + 5;
+        while (k < n && t.raw[k] != 0xFB && t.raw[k] != 0xF8) ++k;
+        if (k >= n || k + 1 + len > n) { ++i; continue; }
+        s.deleted = t.raw[k] == 0xF8;
+        s.data.assign(t.raw.begin() + k + 1, t.raw.begin() + k + 1 + len);
+        t.secs.push_back(std::move(s));
+        i = k + 1 + len;
+    }
+    static bool warned = false;
+    if (!warned) {
+        warned = true;
+        std::fprintf(stderr, "[FDC] WRITE TRACK: non-standard track %d side %d kept in memory "
+                     "(a .st image cannot store it)\n", dk.headTrack, side_);
+    }
+    dk.stOverride[(dk.headTrack << 1) | side_] = std::move(t);
+    return true;
+}
+
+Fdc::FloppyDisk::StOverrideTrack* Fdc::stOverrideHere() {
+    if (driveSel_ < 0) return nullptr;
+    FloppyDisk& dk = drive_[driveSel_];
+    if (dk.imgType != FloppyDisk::IMG_ST || dk.stOverride.empty()) return nullptr;
+    auto it = dk.stOverride.find((dk.headTrack << 1) | side_);
+    return it == dk.stOverride.end() ? nullptr : &it->second;
 }
 
 // Recopie une zone modifiée de l'image en mémoire vers le fichier monté, selon son
@@ -1966,6 +2062,19 @@ int Fdc::nextSectorID(int* pFdcCycles) {
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return nextSectorIDStx(pFdcCycles);
     const int curPos = indexCurrentPosBytes();
     if (curPos < 0) return RET_NO_DRIVE;                         // pas de lecteur/disque
+    if (auto* ov = stOverrideHere()) {
+        // Prochain champ ID de la piste reformatée, dans l'ordre angulaire du flux.
+        if (ov->secs.empty()) return RET_NO_DRIVE;              // piste sans ID : RNF après 5 tours
+        const FloppyDisk::StOverrideSector* next = nullptr;
+        for (const auto& s : ov->secs) if (s.idPos + 1 > curPos) { next = &s; break; }
+        int nbBytes;
+        if (next) nbBytes = next->idPos + 1 - curPos;
+        else { next = &ov->secs.front(); nbBytes = bytesPerTrack() - curPos + next->idPos + 1; }
+        nextID_TR_ = next->tr; nextID_SR_ = next->sr; nextID_LEN_ = uint8_t(next->sz & 3);
+        nextID_CRCOK_ = 1;
+        *pFdcCycles = transferDelay(std::max(nbBytes, 1));
+        return RET_OK;
+    }
     FloppyDisk& dk = drive_[driveSel_];
     // PAS de test des faces de l'IMAGE ici : Hatari teste NumberOfHeads du LECTEUR
     // (fdc.c:5140, = 2 par défaut — les lecteurs NeoST sont double face). Les champs

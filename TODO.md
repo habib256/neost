@@ -51,10 +51,14 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 
 ## 2. ⏸ En attente d'une ressource externe
 
-- **Latence IACK MegaSTE** · P1 ⏸ matériel — capturer CLK CPU/MFP, IACK et les DTACK
-  puce/CPU sur un vrai MegaSTE, aux trois régimes CPU/cache. Sonde prête
-  (`tools/make_mfp_iack_probe.py`, contrôles `tools/run_mfp_iack_probe.py` verts) ;
-  résidu IACK→handler de +3/+4 cycles à 16 MHz à expliquer. → [protocole](docs/MFP_IACK_MEASUREMENT.md)
+- **Latence IACK MFP** · P1 ⏸ matériel — capturer CLK CPU/MFP, IACK et les DTACK
+  puce/CPU sur un vrai ST et un vrai MegaSTE, aux trois régimes CPU/cache. Sonde prête
+  (`tools/make_mfp_iack_probe.py`, contrôles `tools/run_mfp_iack_probe.py` verts). État au
+  2026-10-22 : séquence d'exception identique à fx68k ; bloc IACK = 12 cycles bus (valeur
+  d'Hatari, « not measured ») — le 16 posé le 2026-08-06 compensait le défaut STOP+4 de
+  Moira, corrigé. La valeur matérielle (4 + attente DTACK du 68901, phase du 4 MHz) n'est
+  connue d'aucune source ; le banc Mega STE (`docs/HATARI_MEGASTE_AUDIT.md`) est à refaire
+  avec 12. → [protocole](docs/MFP_IACK_MEASUREMENT.md)
 - **A12 — validation sur matériel réel** · P1 ⏸ matériel — macOS arm64 passé (sauf le pas
   visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun budget
   temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et **Linux**.
@@ -135,11 +139,37 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 Ne figure ici que l'ouvert ; l'acquis de chaque puce est dans `docs/IMPLEMENTED.md`, l'écart
 détaillé dans `docs/HATARI_DIVERGENCES.md`.
 
+### 4.0 CPU 68000 (Moira)
+- **STOP : synchronisation IPL à deux étages** · P3 ⭘ — fx68k échantillonne la broche IPL
+  deux fois (enPhi2) avant de poser `intPend` : ~2 cycles de latence de reconnaissance,
+  aussi hors STOP. Moira voit la broche aussitôt. Du ressort de l'option `NEOST_IPLFETCH`
+  (désactivée) ; à qualifier sur les bancs poll avant de l'activer.
+- **Jitter des périodes Timer B face à Hatari** · P3 ⭘ — sonde Super Hang-On : NeoST rend
+  {512, 516, 508, 520}, Hatari {512, 520, 504} (quantification de la prise d'IRQ dans la
+  boucle `nop`/`bra.s` de la sonde, déplacée de 4 cycles par le STOP+8). Les deux sont des
+  modèles ; trancher avec la synchronisation IPL à deux étages (item précédent) ou sur
+  machine.
+
 ### 4.1 Vidéo / Shifter
+- **STE : écriture 60 Hz à 32-36 cycles, image à une ligne de décalage** · P2 ⭘ —
+  `blankline_blank_ste` aux phases 32/36 : 10 714 px qu'aucune trame Hatari ne produit
+  (`run_etalons.py --oracle-check --only blankline_blank_ste` après avoir mis `frames` sur
+  une phase 32/36). Comparer `VideoGlue.cpp` (branches 60 Hz `<= Preload_Start_Low_60`,
+  NO_DE (36,40]) à `video.c` et à la netlist 4081P29 ; trancher pour le matériel.
+  → `docs/HATARI_DIVERGENCES.md` § Vidéo.
+- **Étalons sensibles à la phase E-clock** · P3 ⭘ — `blankline_*`, `spec512_*` capturent
+  une trame dont la phase (cycle de 5 trames du réveil VBL) tourne à chaque changement de
+  timing du boot ; les ancrer dans leur programme (compter les VBL depuis le démarrage, ou
+  phase fixée par `stop` + attente) rendrait les références stables.
 - **Latch couleur de la bordure gauche** · P3 ⭘ — 16 px (colonnes 45-60) : Hatari applique
   l'écriture palette ~16 px après le début nominal de l'aire active (latence pipeline),
   NeoST pile à `activeX_`. Invisible aux étalons.
 - Mesures matérielles → § 2.
+
+- **STE, impulsion hi-res : bords à ±4** · P3 ⏸ matériel — la netlist place le bord de
+  rechargement HSC (longueur de ligne) et le décodage HDE au cycle ~56 ±4 ; une impulsion
+  retirée dans (40,44] donnerait un DE précoce à ~48 (prédiction basse, non portée). À
+  mesurer sur STE réel avant d'affiner `VideoGlue.cpp` (branche 71 Hz).
 
 ### 4.2 MFP 68901 & interruptions
 - Latence IACK MegaSTE → § 2.
@@ -151,11 +181,10 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 - **Liaison série physique** · P3 ⭘ — formats et diviseurs autres que /64 8N1 (clavier),
   phase SCI sortante exacte ; ligne BREAK et erreurs de trame qui en découlent hors modèle.
 - **Firmware IKBD, restes face à la ROM** · P3 ⭘ — le firmware est calé sur la ROM 6301
-  désassemblée depuis le 2026-10-22. Restent approximés : les interruptions du timer du 6301
-  ne sont pas comptées dans les délais de `$18` ; `$19` est scruté toutes les 1 ms (la ROM le
-  fait à chaque tour de boucle) ; l'état hôte (souris, manettes) ne change qu'aux
-  événements de l'hôte ; touche tenue au reset (`scancode|$80` avant `$F1`) ; code 6301
-  custom (`Execute`). Délais de `$18` comptés sur la ROM, pas encore mesurés sur un IKBD.
+  désassemblée depuis le 2026-10-22. Restent approximés : `$19` est scruté toutes les 1 ms
+  (la ROM le fait à chaque tour de boucle) ; l'état hôte (souris, manettes) ne change qu'aux
+  événements de l'hôte ; code 6301 custom (`Execute`). Les délais de `$18` (tours de boucle
+  et interruptions 1 ms 128/215 µs) sont comptés sur la ROM, pas encore mesurés sur un IKBD.
 - **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; forme d'onde
   BREAK non simulée.
 
@@ -169,10 +198,13 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
   parité/framing des formats TX/RX discordants. Phase initiale de l'oscillateur abstraite.
 
 ### 4.6 FDC WD1772 / DMA / ACSI
-- **Test F de la cartouche STE_Test v1.9** · P2 ⭘ — « Cannot write drive A/B », lecteurs
-  vus simple face, alors que le test F du diagnostic MegaSTE passe. Cartouche présente
-  (`carts/STE_Test_v1.9.img`, non versionnée) : trace FDC + oracle Hatari sur la même cartouche.
 - **ACSI : essai Idris OS** · P3 ⭘ — jamais tenté.
+
+- **Horloge du WD1772 sur STE = SCLK 8,010613 MHz** · P3 ⭘ — NeoST cadence le FDC sur
+  l'horloge CPU (exact sur STF, −0,13 % sur STE : `Fdc.cpp` MFM_BYTE=256, `transferDelay`).
+  Un accumulateur fractionnaire décalerait les rafales de ~5 cycles chacune ; Hatari
+  tronque par octet (`rint`, incohérent, TODO chez lui). À valider sur matériel réel avant
+  de diverger. Source : `clocks_timings.c` (OSC U303), schéma STE.
 
 ### 4.7 RTC RP5C15
 - **Restes** · P3 ⭘ — sorties CLKOUT/ALARM, modes d'inspection TEST ; lecture TEST/RESET

@@ -9,6 +9,9 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
 
 ## Compléments du 2026-10-22
 
+- **FDC** : WRITE TRACK hors géométrie sur .st gardé en mémoire et relu (STE_Test test F).
+- **IKBD** : touche tenue au reset ; interruptions 1 ms dans l'échantillonnage `$18`.
+- **Pads STE** : validation de la sélection (JOYWE) d'après la netlist.
 - **Décodage STE d'après la netlist Atari du GST MCU (4081)** : ROM $E00000-$EBFFFF,
   /ROM5-/ROM6 ($D00000-$D7FFFF) et /ROMP ($FE0000-$FE1FFF) en bus ouvert, registre
   « gamecart » `$FF9000` (port cartouche déplacé en $D80000-$DFFFFF), `$FF8001` sur 4 bits,

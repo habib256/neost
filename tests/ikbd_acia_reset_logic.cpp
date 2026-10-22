@@ -34,6 +34,7 @@ int testIkbdAciaReset() {
         Rig rig;
         rig.ikbd.keyEvent(0x39, true); rig.advance(10240);
         equal("RDR plein avant reset", rig.status(), 0x83);
+        rig.ikbd.keyEvent(0x39, false);   // relâchée : pas de code de reset (cf. plus bas)
         rig.mfp.reset(); rig.ikbd.resetHw();
         equal("RDR et RIE conservés", rig.status(), 0x83);
         equal("IRQ clavier republiée après reset MFP", rig.mfp.read8(0xFFFA01) & 0x10, 0);
@@ -98,8 +99,20 @@ int testIkbdAciaReset() {
         equal("libération BREAK reprend TDR", rig.scheduler.cyclesUntil(Scheduler::IKBD_TX), 1024);
     }
     {
+        // ROM $F086-$F0DC : touches tenues pendant l'auto-test → le relâchement de la
+        // PREMIÈRE du balayage (Ctrl avant Espace) part juste avant $F1.
         Rig rig;
-        rig.ikbd.keyEvent(0x39, true); rig.advance(1000); rig.ikbd.resetHw();
+        rig.ikbd.keyEvent(0x39, true); rig.ikbd.keyEvent(0x1D, true);
+        rig.advance(30000); rig.data(); rig.advance(30000 + 10240); rig.data();
+        rig.ikbd.resetHw();
+        const int64_t t = rig.scheduler.now();
+        rig.advance(t + 502000 + 10240); equal("touche tenue : relâchement avant $F1", rig.data(), 0x9D);
+        rig.advance(t + 502000 + 20480); equal("puis $F1", rig.data(), 0xF1);
+    }
+    {
+        Rig rig;
+        rig.ikbd.keyEvent(0x39, true); rig.advance(1000); rig.ikbd.keyEvent(0x39, false);
+        rig.ikbd.resetHw();
         equal("SCI sortant annulé", rig.scheduler.cyclesUntil(Scheduler::IKBD_RX), -1);
         rig.advance(10240);
         equal("pas de caractère SCI obsolète", rig.status() & 1, 0);

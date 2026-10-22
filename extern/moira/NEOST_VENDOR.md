@@ -209,6 +209,30 @@ mesuré : raster « Timer B + stop #$2100 + HBL » de Super Hang-On (bande blanc
 à l'horizon, 3 écritures palette par activation au lieu de 2, dérive +1 ligne
 par segment). Étalons 19/19 + EL + Cuddly re-validés après fix.
 
+## Patch local : STOP+8 — retenue d'IRQ de 4 cycles après STOP (2026-10-22)
+
+Quand une IRQ est déjà pendante et que l'opérande du `stop` la démasque, le 68000
+ne la prend pas à la fin du `stop` (+4) mais à l'itération suivante (+8) : le
+microcode teste l'interruption AVANT d'écrire le nouveau masque (fx68k.sv :
+`rInterrupt <= intPend` verrouillé au même T3 que `pswI`, nanomots 0x3A2/0x327,
+et STOP se ré-exécute toutes les 4 cycles car `Ir2Ird` bloque IR←IRC ; Hatari
+gencpu.c : `checkint()` avant `regs.sr = sr`, puis `do_cycles_stop(4)`). L'upstream
+fait `setSR` puis `checkForIrq` immédiat → exception à STOP+4.
+- `Moira.h` : membre `i64 stopGraceUntil {-1}` ; `MoiraExec_cpp.h`, `execStop<C68000>` :
+  `stopGraceUntil = clock + 4` après `CYCLES_IP` ; `Moira.cpp`, `execute()` : `checkForIrq`
+  retenu tant que `STOPPED && clock < stopGraceUntil`. Sérialisé par `Cpu68k` (v55).
+- Mesuré sur la chaîne de Super Hang-On (Timer B → handler → `stop #$2100` → HBL
+  pendante, sonde cartouche, 3 997 chaînes) : segment stop→exception 4 → 8, chaîne
+  136 → 140 = Hatari. C'est ce +4 que la constante `g_iackMfp = 16` (au lieu de 12)
+  compensait depuis le 2026-08-06.
+- Complété le même jour : (a) réveil quantifié — une IRQ arrivant APRÈS l'entrée en
+  STOP n'est prise qu'à la fin de l'itération de 4 cycles en cours (`(clock −
+  stopGraceUntil) & 3 == 0`), comme fx68k et la ré-exécution de l'opcode chez Hatari ;
+  la broche reste scrutée à chaque cycle. (b) Plus de cycle bus pendant STOP : l'opérande
+  est pris dans IRC sans préfetch (`reg.pc += 2`), STOP = 4(0/0) ; les sorties de STOP
+  (exception puis RTE) rechargent la file. Non porté : la synchronisation IPL à deux
+  étages de fx68k (~2 cycles), du ressort de l'option `NEOST_IPLFETCH`.
+
 ## Patch local : reset gardé (2026-07-08)
 
 Une bus/address error pendant le fetch des vecteurs de reset (SSP/PC à $0-$7,

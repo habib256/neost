@@ -184,6 +184,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         sched.schedule(Scheduler::HBL, lineStart + hblPos);
         cpu.armHblPinAt(lineStart + hblPos);
         curLineLen_ = cyclesLine;
+        syncFrameEnd_();                      // la fin de trame suit la ligne en cours
         if (std::getenv("NEOST_LINELEN_TRACE")) std::fprintf(stderr,
             "[LLEN] line=%d hblPos=%d len=%d carry=%lld\n", line, hblPos, cyclesLine,
             (long long)lineCarry_);
@@ -589,6 +590,18 @@ void Machine::onHbl() {
     // comme la chaîne StartCycle+nCyclesPerLine de Hatari.
     if (lineLenOn_ && curLineLen_ != cpl_) {
         lineCarry_ += cpl_ - curLineLen_;
+        // frameEnd_ a DÉJÀ intégré cet écart (syncFrameEnd_ au moment où la longueur
+        // de la ligne a été connue) : sans cela, frameEnd_ (figé par beginFrame_)
+        // laissait la trame durer la longueur nominale, puis le beginFrame_ suivant
+        // posait frameStart_ (−carry) et sa VBL DANS LE PASSÉ — gestionnaire VBL servi
+        // avec un retard égal au raccourcissement (224 cycles sur une ligne « no DE »
+        // hi-res tardive, étalon blankline_node_late_st : écriture $8260 alternant 44
+        // et 268). Et l'intégrer seulement ICI (fin de ligne) perdait l'écart de la
+        // DERNIÈRE ligne, dont le HBL tombe à la frontière : trame de reset verrouillée
+        // 60 Hz (263 lignes) passée à 50 Hz par le programme → 262 lignes à 512 mais
+        // frameEnd_ 4 cycles trop tôt, HBL de la ligne 262 perdu, et toute la suite
+        // décalée de −4 vs Hatari (sonde timer_b_event). Hatari pose la VBL depuis le
+        // dernier HBL réel (video.c:3370).
         curLineLen_ = cpl_;
     }
     ++hblLine_;
@@ -596,10 +609,32 @@ void Machine::onHbl() {
     // sur le vrai matériel — y compris dans les bordures haut/bas (ancre Video_EndHBL).
     // V2 : −lineCarry_ décale la ligne suivante du cumul des raccourcissements (=0 hors V2).
     if (hblLine_ < lpf_) {
+        // Longueur de la ligne qui COMMENCE = état LIVE de $FF8260/$FF820A (port de
+        // Video_StartHBL + Video_HBL_GetDefaultPos, video.c:3541/3134), et non la
+        // géométrie verrouillée à beginFrame. Matériel : le compteur hsc du GST MCU se
+        // recharge à (ntsc ? 1 : 0) par un mux combinatoire sur le registre pal
+        // (gstmcu.v:779-801) → 508/512 dès la ligne suivante. Sans cela, une trame
+        // verrouillée 60 Hz dont le programme passe en 50 Hz (1ʳᵉ trame après reset :
+        // $FF820A = 0 au reset) gardait ses HBL à 508 cyc pendant que le Timer B suivait
+        // la grille Glue réelle à 512 : dérive −4 cyc/ligne, HBL non pendante au `stop`
+        // de la chaîne Super Hang-On (sonde cartouche : 53 chaînes, stop→HBL 76..180).
+        // Un « Freq_match » de la ligne (setLineGeom) reste prioritaire et re-pose les deux.
+        if (lineLenOn_) { curLineLen_ = shifter.liveLineLength(); syncFrameEnd_(); }
         const int64_t next = frameStart_ + static_cast<int64_t>(hblLine_) * cpl_
-                           + (cpl_ + kHblOff(machineIsSte(machineType_))) - lineCarry_;
+                           + (curLineLen_ + kHblOff(machineIsSte(machineType_))) - lineCarry_;
         sched.schedule(Scheduler::HBL, next);
         cpu.armHblPinAt(next);                 // broche au cycle exact (cf. armHblPinAt)
+        // Restart du compteur vidéo (ligne 310/260, cycle 56/60) : Hatari le fait depuis
+        // le HBL réel de cette ligne (Video_InterruptHandler_HBL, RestartVideoCounter) ;
+        // ici il était figé par scheduleFrameEvents sur la grille NOMINALE. Dès que des
+        // lignes ont été raccourcies (lineCarry_ ≠ 0), on le re-pose sur la grille réelle
+        // — sinon un programme calé sur $FF8207 (overscan_top) voit le compteur repartir
+        // jusqu'à 148 cyc trop tard et toutes ses écritures glissent d'autant.
+        if (lineCarry_ != 0 && hblLine_ == lpf_ - 3 && (lpf_ == 313 || lpf_ == 263)) {
+            const int restartPos = machineIsSte(machineType_) ? 60 : 56;
+            sched.schedule(Scheduler::VC_RESTART,
+                           frameStart_ + static_cast<int64_t>(hblLine_) * cpl_ - lineCarry_ + restartPos);
+        }
     }
 }
 
@@ -679,6 +714,20 @@ void Machine::runFrame() {
     // (carry, comme Hatari) ; la boucle reboucle si nécessaire.
     while (sched.now() < frameEnd_) {
         int64_t next = sched.nextDue();
+        // Événement DÉJÀ échu à cette frontière : le servir AVANT l'instruction suivante,
+        // comme la boucle CPU d'Hatari (MFP_UpdateIRQ_All + test d'IRQ à la même
+        // frontière). Cas concret : l'élection MFP est différée à la fin du lot de
+        // dispatch (Mfp::flushIrqUpdate gardé par inDispatch_, hook dispatchEnd) — le
+        // MFP_IRQ qu'elle pose « à now » sort APRÈS la boucle de runTo ; ici want valait 0
+        // et cpu.run(1) exécutait une instruction de plus avant de le servir. Mesuré sur la
+        // chaîne Timer B de Super Hang-On : tic dans un bra.s → exception 4 cyc plus tard
+        // qu'Hatari (périodes 508/508 toutes les ~35 lignes). Une seule passe : si un
+        // callback reposait un événement à now, on retombe sur une instruction (anti-livelock).
+        if (next >= 0 && next <= sched.now()) {
+            sched.runTo(sched.now());
+            next = sched.nextDue();
+            if (next < 0 || next > sched.now()) continue;
+        }
         if (next < 0 || next > frameEnd_) next = frameEnd_;
         const int64_t want = next - sched.now();
         sched.beginRun(next);
@@ -736,6 +785,7 @@ void Machine::stepInstruction() {
     // (aucune IRQ) et tout se déverse d'un coup à la finalisation de trame —
     // comportement divergent de l'exécution continue.
     int64_t next = sched.nextDue();
+    if (next >= 0 && next <= sched.now()) { sched.runTo(sched.now()); next = sched.nextDue(); }   // échu à la frontière (cf. runFrame)
     if (next < 0 || next > frameEnd_) next = frameEnd_;
     sched.beginRun(next);
     const int ran = cpu.run(1);   // run(1) = une instruction (toute instr ≥ 4 cyc > 1)
@@ -765,11 +815,13 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 53; // IKBD (modes ROM, $18/$19) + Bus::gameCart
+static constexpr uint16_t kStateVersion = 55; // STOP : retenue d'IRQ de 4 cycles (Moira::stopGraceUntil)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v53 : IKBD calé sur la ROM 6301 ($C9/$CA, fenêtre de reset,
+    uint16_t version = kStateVersion; // v55 : Moira::stopGraceUntil (STOP+8, fx68k/Hatari)
+                                      // v54 : Ikbd::hostKeys_, StePads::oe_
+                                      // v53 : IKBD calé sur la ROM 6301 ($C9/$CA, fenêtre de reset,
                                       //       $18/$19, pause) + Bus::gameCart ($FF9000)
                                       // v52 : Ikbd::mouseOn_ (bit 7 de $C9, rapport $92)
                                       // v51 : ligne du dernier changement de rés. Shifter

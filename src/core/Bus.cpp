@@ -115,6 +115,7 @@ void Bus::serialize(StateArchive& ar) {
 // fréquence/résolution précédente.
 void Bus::peripheralReset() {
     gameCart = false;                      // GAMECART effacé par RESB (netlist 4081P10)
+    stePads.resetSelect();                 // JOYWE remis à 1 par le reset (gstmcu.v:352)
     if (ikbd)    ikbd->resetHw();          // IKBD_Reset(false) : SCI + boot ROM
     // Fréquence + résolution posées EN DIRECT, sans repasser par le bus. C'est bien ce
     // que fait Hatari : Video_Reset_Glue appelle IoMem_WriteByte, documenté « write 8-bit
@@ -1049,7 +1050,11 @@ uint8_t Bus::rdStePads(uint32_t a) {
         case 0xFF9201: return uint8_t(stePads.readButtonsDip() & 0xFF); // boutons
         // $FF9202.w : directions + boutons (info utile dans l'octet HAUT $FF9202).
         case 0xFF9202: return uint8_t(stePads.readDirections() >> 8);
-        case 0xFF9203: return uint8_t(stePads.readDirections() & 0xFF);
+        case 0xFF9203: {                     // lire l'octet bas invalide la sélection (JOYWE)
+            const uint8_t v = uint8_t(stePads.readDirections() & 0xFF);
+            if (machine == MachineType::Ste) stePads.noteLowByteRead();
+            return v;
+        }
         // Paddle/analogique X/Y ($FF9211/13/15/17) : axes hôte ou repli numérique,
         // plage $04-$43 (cf. StePads::readAnalog).
         case 0xFF9211: case 0xFF9213:

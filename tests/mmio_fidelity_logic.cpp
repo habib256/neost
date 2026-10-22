@@ -95,6 +95,18 @@ int testMmioFidelity() {
         check(bus.read16(base + 0x20) == 0, "cold reset clears registers");
     }
     {
+        // Pads STE (netlist du GST MCU, gstmcu.v:352-360) : la sélection n'est valide
+        // qu'après une ÉCRITURE de $FF9203 ; le reset ou une LECTURE de cet octet la
+        // coupe — tout se relit alors au repos.
+        Bus bus;
+        bus.machine = MachineType::Ste;
+        bus.stePads.setJoystick(0, 0x01);              // pad A : haut
+        check(bus.read16(0xFF9202) == 0xFFFF, "pads: no row selected after reset");
+        bus.write8(0xFF9203, 0xFE);                    // ligne « directions » du pad A
+        check(bus.read16(0xFF9202) != 0xFFFF, "pads: selected row reads the pad");
+        check(bus.read16(0xFF9202) == 0xFFFF, "pads: reading $FF9203 deselects");
+    }
+    {
         Bus bus;
         YM2149 psg;
         Mfp mfp;

@@ -153,13 +153,16 @@ CpuState* g_cur = nullptr;
     // du faisceau +78/ligne = Hatari, cf. [[ramslot-iack-enable-overscan]]). NEOST_IACK=0 désactive.
     bool    g_iackOn      = []{ const char* s = std::getenv("NEOST_IACK"); return s ? std::atoi(s) != 0 : true; }();
     int     g_iackVideo   = []{ const char* s = std::getenv("NEOST_IACK_VIDEO"); return s ? std::atoi(s) : 14; }();
-    // 16 et non 12 : CPU_IACK_CYCLES_MFP_CE (12, « not measured » chez Hatari) ne
-    // couvre pas le cycle bus d'IACK lui-même. MESURÉ à l'oracle instrumenté
-    // (2026-08-06, Super Hang-On in-game, [HEXC] hbl/lc) : chaîne FIXE « exception
-    // Timer B → handler → stop → HBL pendante » = 144 cyc chez Hatari, 140 chez NeoST
-    // avec 12 → +4 sur l'IACK verrouille les histogrammes d'écritures palette
-    // (1re écriture de paire {104..128} à ±1 pt partout, réveil STOP 40/40/20 intact).
-    int     g_iackMfp     = []{ const char* s = std::getenv("NEOST_IACK_MFP");   return s ? std::atoi(s) : 16; }();
+    // 12 = CPU_IACK_CYCLES_MFP_CE d'Hatari (« not measured »), bloc IACK complet (le
+    // cœur d'Hatari ne fait pas de cycle bus d'IACK séparé) ; les 4 cycles internes
+    // qui suivent sont ajoutés par iackSyncAfter. Du 2026-08-06 au 2026-10-22 la valeur
+    // était 16 : calée sur la chaîne « Timer B → handler → stop → HBL » de Super Hang-On
+    // (NeoST 140 contre Hatari 144), elle COMPENSAIT en réalité un défaut de Moira sur
+    // le STOP (IRQ pendante prise à STOP+4 au lieu de STOP+8, cf. Moira::stopGraceUntil).
+    // STOP corrigé, 12 reproduit Hatari sur chaque segment de la chaîne (sonde cartouche,
+    // 3 997 chaînes : exception 60/60, stop→HBL {64,68,72}/{64,68,72}). La valeur
+    // MATÉRIELLE (4 + attente DTACK du 68901) reste à mesurer (docs/MFP_IACK_MEASUREMENT.md).
+    int     g_iackMfp     = []{ const char* s = std::getenv("NEOST_IACK_MFP");   return s ? std::atoi(s) : 12; }();
     // NEOST_IACK_SYNC (défaut ON) : dispatch des événements échus AU point d'IACK,
     // port du « CycInt_Process() + MFP_UpdateIRQ_All juste avant la séquence d'IACK »
     // d'Hatari (newcpu.c:2938-2946 MFP, :2998-3003 vidéo). Mesuré : un événement est
@@ -264,10 +267,10 @@ public:
         irqMode = moira::IrqMode::USER;
         // Syntaxe Musashi : conserve le format de trace historique (comparaison MAME).
         setDasmSyntax(moira::Syntax::MUSASHI);
-        // Délai de reconnaissance IPL fidèle WinUAE (opt-in). Seuils en clock-units =
-        // cyc × g_cur->cpuMul (1 au boot = 8 MHz ST). Réappliqué si la vitesse change.
-        if (g_iplFetch) setIplDelay(static_cast<int64_t>(g_iplFetch4) * g_cur->cpuMul,
-                                    static_cast<int64_t>(g_iplFetch2) * g_cur->cpuMul);
+        // Délai de reconnaissance IPL fidèle WinUAE (opt-in). Seuils en cycles CPU : le
+        // 68000 échantillonne IPL sur SA propre horloge (fx68k : deux échantillons
+        // enPhi2 égaux, fx68k.sv:222-226), pas sur celle du bus — même valeur à 16 MHz.
+        if (g_iplFetch) setIplDelay(g_iplFetch4, g_iplFetch2);
     }
 
     // Une adresse non décodée déclenche une bus error : on lève l'exception
@@ -545,11 +548,12 @@ public:
     // Débogueur : watchpoint mémoire atteint (appelé par la couche dataflow de Moira
     // PENDANT l'accès, si CHECK_WP). Sémantique « break-after-access » : on note le hit
     // (adresse DONNÉE) et on préempte → le run() rend la main APRÈS l'instruction fautive.
-    // Seuils IPL différés depuis la configuration de processus (NEOST_IPLFETCH*),
-    // à la vitesse CPU `mul`. Mode éteint : rien ne peut rester en attente.
-    void applyIplFetchConfig(int mul) {
+    // Seuils IPL différés depuis la configuration de processus (NEOST_IPLFETCH*), en
+    // cycles CPU quelle que soit la vitesse (cf. constructeur). Mode éteint : rien ne
+    // peut rester en attente.
+    void applyIplFetchConfig(int /*mul*/) {
         if (g_iplFetch) {
-            setIplDelay(static_cast<int64_t>(g_iplFetch4) * mul, static_cast<int64_t>(g_iplFetch2) * mul);
+            setIplDelay(g_iplFetch4, g_iplFetch2);
         } else {
             setIplDelay(0, 0);
             iplDeferred = -1;
@@ -591,6 +595,10 @@ public:
         // sinon un niveau IPL 0..7 (forgé hors plage → reg.ipl invalide, refusé).
         ar(iplDeferred);
         ar.check(iplDeferred >= -1 && iplDeferred <= 7, "Moira::iplDeferred hors [-1,7]");
+        // v55 : retenue d'IRQ après STOP (fenêtre de 4 cycles, cf. Moira.h).
+        { moira::i64 g = stopGraceUntil; ar(g); stopGraceUntil = g; }
+        ar.check(stopGraceUntil == -1 || (stopGraceUntil >= 0 && stopGraceUntil <= getClock() + 4),
+                 "Moira::stopGraceUntil hors domaine");
         ar(fcl); ar(readBuffer); ar(flags);
         // LOOPING (mode loop 68010) n'est JAMAIS posé sur un 68000 : forgé dans un
         // .state (CRC recalculé), il fait prendre à execute() la branche
@@ -683,7 +691,7 @@ public:
         // reconnaissance (4 cyc) écoulé depuis son changement → POLL_IPL le voit alors, comme
         // WinUAE ipl_fetch_next. Gated NEOST_IPLDELAY ; sinon setIPL est immédiat (cf. neostUpdateIpl).
         if (g_iplDelay && g_cur->desiredIpl != g_cur->appliedIpl
-            && getClock() - g_cur->iplChgClock >= static_cast<int64_t>(g_iplDelayCyc) * g_cur->cpuMul) {
+            && getClock() - g_cur->iplChgClock >= static_cast<int64_t>(g_iplDelayCyc)) {   // cycles CPU (fx68k)
             setIPL(static_cast<moira::u8>(g_cur->desiredIpl));
             g_cur->appliedIpl = g_cur->desiredIpl;
         }
@@ -1016,6 +1024,7 @@ void Cpu68k::reset() {
     state_->inBusError = false;
     state_->bus->bootOverlay = true;
     state_->bus->gameCart = false;             // RESB/PORB (netlist 4081P10)
+    state_->bus->stePads.resetSelect();        // JOYWE (gstmcu.v:352)
     state_->inReset = true;                    // sync() n'avance pas l'ordonnanceur pendant le reset
     state_->blitterOverlap = 0;
     state_->megaSteAccessHit = false;

@@ -681,7 +681,14 @@ void Shifter::updateGlueState(int line, int lineCycles, bool writeToRes, int fre
         glueHblPos_ = Hbl_Pos_Hi; glueCyclesLine_ = CyclesLine_Hi;
         if (!(BorderMask & NO_DE)) { DE_end = HDE_Off_Hi; BorderMask |= (BLANK | NO_DE); }
         BorderMask &= ~LEFT_PLUS_2;
-    } else if (freqHz == 71 && lineCycles <= T.Preload_Start_Low_50) {       // 40 (≠ STF : 56)
+    } else if (freqHz == 71 && lineCycles <= T.HDE_On_Low_50) {              // 56, comme le STF
+        // Netlist du GST MCU (SYNC.PIN, 4081P26 SYM 18-31 et 4081P29 SYM 38-40) : la
+        // longueur de ligne est fixée par MDE1 au rechargement du compteur HSC, dont le
+        // bord tombe au cycle ~56 (= Line_Set_Pal), et HDE n'est jamais posé si MDE1
+        // vaut 1 à ~44 puis MDE1B 0 à ~56 → « no DE » + ligne 224 jusqu'à 56 inclus.
+        // Hatari (video.c:2503) arrête cette détection à Preload_Start_Low_50 = 40 et
+        // rend STOP_MIDDLE + 512 entre 40 et 56 : rien dans la netlist ne le soutient.
+        // Le cycle 56 lui-même reste à ±4 (phase du strobe d'écriture non mesurée).
         Freq_match_found = true;
         glueHblPos_ = Hbl_Pos_Hi; glueCyclesLine_ = CyclesLine_Hi;
         if (!(BorderMask & NO_DE)) { DE_end = HDE_Off_Hi; BorderMask |= NO_DE; }

@@ -324,18 +324,18 @@ class MegaSteTransferChecks(unittest.TestCase):
     def test_iack_idle_keeps_cpu_clock_domain(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "irq.log"
-            for mhz, cycles in ((8, 20), (16, 36)):
+            for mhz, cycles in ((8, 16), (16, 28)):
                 log.write_text(f"[EXC] lvl=6 t0=0 idle+PClo=18 iack={cycles} SR/PChi=16 pc=fa0000\n" * 72)
                 self.assertEqual(self.checks.read_iack_cycles(log, {"mhz": mhz}), [cycles]*72)
 
     def test_iack_missing_or_wrong_domain_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "irq.log"
-            good = "[EXC] lvl=6 t0=0 idle+PClo=18 iack=36 SR/PChi=16 pc=fa0000\n"
-            for bad in (good*71, good*73, good*71+good.replace("iack=36", "iack=40"),
-                        good.replace("iack=36", "iack=20")*72):
+            good = "[EXC] lvl=6 t0=0 idle+PClo=18 iack=28 SR/PChi=16 pc=fa0000\n"
+            for bad in (good*71, good*73, good*71+good.replace("iack=28", "iack=32"),
+                        good.replace("iack=28", "iack=16")*72):
                 log.write_text(bad)
-                with self.assertRaisesRegex(ValueError, "72 IACK de 36 cycles CPU"):
+                with self.assertRaisesRegex(ValueError, "72 IACK de 28 cycles CPU"):
                     self.checks.read_iack_cycles(log, {"mhz": 16})
 
 

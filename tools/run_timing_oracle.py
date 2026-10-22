@@ -32,8 +32,13 @@ FRAMES, WARMUP, SAMPLES = 40, 32, 256
 LIMITS = {case: (512, 512) if case == "dma_sound" else (4, 4) for case in CASES}
 # fdc_read_stx : la fin se mesure depuis la dernière détection, arrondie elle aussi
 # à un tour de scrutation (24 cycles) faute de pouvoir aligner l'angle de départ.
-LIMITS.update(blitter_hog=(4, 4), blitter_shared=(4, 4), fdc_read=(24, 4), fdc_read_stx=(24, 24),
-              fdc_write=(24, 4))
+# Fin de commande FDC (fdc_read/fdc_write, 2026-10-22) : NeoST et Hatari ont la même chaîne
+# dernier octet → CRC (512) → INTRQ (+8) ; l'écart Δ=6 est fait de deux artefacts d'Hatari
+# (CRC arrondi à 513 par rint sur SCLK STE, fdc.c FDC_FdcCyclesToCpuCycles — son propre TODO ;
+# GPIP5 daté à l'heure de dispatch dans STOP, +1..3) et de la phase rotationnelle (±2). Ils
+# étaient masqués par les 4 cycles d'IACK en trop (g_iackMfp 16→12). Tolérance 8, pas de port.
+LIMITS.update(blitter_hog=(4, 4), blitter_shared=(4, 4), fdc_read=(24, 8), fdc_read_stx=(24, 24),
+              fdc_write=(24, 8))
 SOURCES = ("src/mfp.c", "src/dmaSnd.c", "src/cycInt.c", "src/video.c",
            "src/cpu/newcpu.c", "src/m68000.c", "src/fdc.c", "src/floppies/stx.c",
            "src/blitter.c")

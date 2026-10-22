@@ -124,6 +124,19 @@ public:
     };
     // Géométrie de la trame VERROUILLÉE (cf. frameMode_/frameSync_, posés par beginFrame).
     Geometry geometry() const { return geometryFor(frameMode_, frameSync_); }
+    // Longueur par défaut de la ligne qui COMMENCE d'après la FRÉQUENCE live ($FF820A
+    // bit 1 : 512 / 508), lue par Machine::onHbl à chaque HBL indépendamment du verrou de
+    // trame (≙ Hatari Video_StartHBL pour la fréquence ; mux de rechargement du compteur
+    // hsc du GST MCU). La RÉSOLUTION n'entre pas ici : l'événement HBL de NeoST tombe
+    // quelques cycles après le début de la ligne, quand une démo plein écran est encore
+    // dans son impulsion hi-res de retrait de bordure gauche (504→8) — lire 224 à cet
+    // instant raccourcissait des lignes que le GLUE (décision au rechargement, ~56)
+    // garde pleines (Cuddly : 11 trames d'avance). La résolution vient donc du VERROU de
+    // trame (frameMode_ : trame mono = 224) ; les lignes 224 isolées restent décidées par
+    // les Freq_match 71 Hz du Glue (re-pose du HBL) et setHblShorten.
+    int liveLineLength() const {
+        return ((static_cast<int>(frameMode_) & 3) == 2) ? 224 : (sync & 0x02) ? 512 : 508;
+    }
     bool frameTimingChanged() const {
         const Geometry current = geometryFor(mode, sync);
         const Geometry latched = geometry();

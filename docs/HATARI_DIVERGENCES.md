@@ -193,6 +193,72 @@ auto/software, antidatage), timers datés, compteur vivant, event-count Timer A/
   `Bus` (`Bus.cpp:896`, `addMfpWaitCycles()`), pas par `Mfp.cpp` → **pas une divergence**.
 
 ### Vidéo (Shifter + Glue) — `Shifter.cpp` ↔ `video.c`
+
+- ✅ **Longueur de la ligne qui commence = registres LIVE (2026-10-22, bug NeoST)** —
+  `Machine::onHbl` replanifiait le HBL suivant sur la longueur de ligne verrouillée à
+  `beginFrame` (`cpl_`), alors que le Timer B suivait la grille Glue réelle : trame
+  verrouillée 60 Hz (`$FF820A` = 0 au reset) passée en 50 Hz après `Line_Set_Pal` →
+  HBL à 508 contre lignes de 512, dérive −4 cycles/ligne (sonde Super Hang-On : 53 chaînes
+  avec HBL non pendante au `stop`, première VBL 1 048 cycles trop tôt = 262 × 4). Désormais
+  `Shifter::liveLineLength()` (224 / 512 / 508 d'après `$FF8260` et `$FF820A`) à chaque
+  HBL, comme `Video_StartHBL` + `Video_HBL_GetDefaultPos` (`video.c:3541/3134`) et le mux
+  de rechargement du compteur `hsc` du GST MCU (`gstmcu.v:779-801`) — FRÉQUENCE seule
+  (512/508) : l'événement HBL de NeoST tombe quelques cycles après le début de ligne, où une
+  démo plein écran est encore dans son impulsion hi-res de retrait gauche (504→8) ; lire la
+  résolution à cet instant donnait 224 à tort (Cuddly : lignes raccourcies, 11 trames
+  d'avance). Les lignes 224 restent décidées par le verrou de trame et les Freq_match 71 Hz.
+  Le restart du compteur vidéo (ligne 310/260) est re-posé sur la grille réelle quand des
+  lignes ont été raccourcies (sinon `overscan_top` voyait `$FF8207` repartir 148 cycles trop
+  tard). Effet de bord : la première VBL arrive 1 048 cycles plus tard (= Hatari), ce qui
+  tourne d'un cran la phase E-clock (1048 ≡ −2 mod 10) des étalons ancrés VBL+STOP et
+  déplace les trajectoires de boot (Cuddly : une rotation de disquette) — `spec512_*`,
+  `cuddly_demos`, `nocooper`, `dmasnd_poll`, `blankline_blank_st/ste` recalés sur une trame
+  bit-identique (balayages consignés dans `etalons.json`).
+- ✅ **Événement échu à la frontière d'instruction (2026-10-22, bug NeoST)** — l'élection
+  MFP différée en fin de lot de dispatch posait `MFP_IRQ` « à now » après la boucle de
+  `runTo` ; `Machine::runFrame` exécutait alors une instruction de plus avant de le servir
+  (tic Timer B tombé dans un `bra.s` : exception 4 cycles après Hatari, périodes 508
+  par paires). Désormais un événement déjà échu à la frontière est servi avant toute
+  instruction (une passe, anti-livelock), comme la boucle CPU d'Hatari.
+- ✅ **Fin de trame et dernière ligne (2026-10-22, bug NeoST)** — `frameEnd_` n'intégrait
+  l'écart d'une ligne (live ≠ verrouillée) qu'à son HBL de FIN ; pour la dernière ligne ce
+  HBL tombe à la frontière de trame, donc APRÈS `frameEnd_` quand la ligne est plus longue :
+  trame de reset (60 Hz verrouillée, 263 lignes) passée à 50 Hz par le programme → 4 cycles
+  trop courte, HBL de la ligne 262 jamais servi, toute la suite à −4 cycles d'Hatari (sonde
+  `timer_b_event` : première IRQ Δ=6 au lieu de 2). `Machine::syncFrameEnd_` recalcule la
+  fin de trame dès que la longueur de la ligne en cours est connue (HBL de début, Freq_match)
+  — équivalent d'Hatari qui pose la VBL depuis le dernier HBL réel (`video.c:3370`).
+- ✅ **Fin de trame sur ligne raccourcie (2026-10-22, bug NeoST hors Glue)** — `Machine::onHbl`
+  cumulait `lineCarry_` sans raccourcir `frameEnd_` : la trame durait sa longueur nominale,
+  puis `beginFrame_` posait `frameStart_` (−carry) et la VBL dans le passé → gestionnaire
+  VBL servi avec le retard du raccourcissement (224 cycles sur une ligne « no DE » hi-res
+  tardive ; invisible pour une ligne 508). Étalon `blankline_node_late_st` : écriture
+  `$8260` alternant 44 et 268 d'une trame à l'autre, 10 714 px → 0 px. Hatari pose la VBL
+  depuis le dernier HBL réel (`video.c:3370`).
+- ❗ **STE : écriture 60 Hz aux cycles 32-36 — divergence réelle, OUVERTE (2026-10-22).**
+  `blankline_blank_ste` : 0 px à la phase 28, mais aux phases 32/36 du cycle de 5 trames
+  NeoST rend une image (10 714 px, signature d'un décalage d'une ligne) qu'aucune des 61
+  trames de l'oracle ne produit (`--oracle-check`). Pré-existante, masquée par la phase ;
+  l'étalon est recalé sur la phase 28. À analyser : branche 60 Hz `<= Preload_Start_Low_60`
+  (36) / fenêtre NO_DE (36,40] de `VideoGlue.cpp` contre `video.c` et la netlist (cf. TODO 4.1).
+- ⚠ **STE : impulsion hi-res tardive (40,56] = « no DE » + ligne 224 (2026-10-22, netlist
+  GST MCU) — écart assumé avec Hatari, aligné sur le matériel.** Hatari (`video.c:2503`)
+  borne la détection no-DE à `Preload_Start_Low_50` = 40 sur STE et rend STOP_MIDDLE +
+  ligne 512 entre 40 et 56 ; la netlist SYNC.PIN (4081P26 SYM 18-31 : longueur de ligne =
+  f(MDE1) au rechargement du compteur HSC, bord au cycle ~56 ; 4081P29 SYM 38-40 : HDE
+  jamais posé si MDE1=1 à ~44 puis MDE1B=0 à ~56) donne no DE + 224 jusqu'à 56, comme le
+  STF. `VideoGlue.cpp` branche 71 Hz : `<= HDE_On_Low_50`. Étalon `blankline_node_late_ste`
+  en snapshot. Réserves : cycle 56 à ±4 ; fenêtre (40,44] (DE précoce prédit à ~48) non
+  portée ; aucune mesure STE.
+- **[assumée, 2026-10-22] Placement des pixels d'une ligne LEFT_PLUS_2 — Hatari décale de
+  4 px.** Même état Glue des deux côtés (`H_DE 53<->377 border=2`, DE 52→376) pour une
+  impulsion 60 Hz aux cycles 32-36 ; `Video_CopyScreenLineColor` (`video.c:4047-4056`)
+  copie 160 octets à un offset fixe et range les 2 octets left+2 dans le plan 3 du groupe
+  x=32-47, NeoST émet depuis DE=52 plans alignés — compteur de pixels du Shifter réarmé au
+  premier LOAD après DE (decap Cwik, `shifter_video.v`), principe qu'Hatari applique
+  lui-même à LEFT_OFF (`DisplayPixelShift=-4`, `video.c:256`). Même famille qu'`overscan_top`.
+  Étalon `blankline_blank_st` passé en `ref_kind: snapshot` (phase 32 ; à phase 28 l'image
+  est bit-identique à l'oracle).
 Cœur Glue **STF** = transcription quasi ligne-à-ligne (`updateGlueState` ≙ `Video_Update_Glue_State`
 branche STF), constantes = `VIDEO_TIMING_STF_WS1`, compteur vidéo, bordures H/B/G/D 50/60 Hz,
 spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
@@ -301,12 +367,15 @@ Machines à états type I-IV, bits de statut par type, timings (spin-up, head-lo
 `.wd1772` : **conformes dans le périmètre décrit** ; conteneur lisible par Hatari,
 extension DAM NeoST qualifiée ci-dessus.
 
-- ✅ **WRITE TRACK ST, emplacement des IDs (2026-10-19)** : les champs
-  C/H doivent correspondre à la tête physique et à la face sélectionnée ;
-  chaque numéro de secteur doit être unique. Un flux non représentable en ST
-  retourne LOST_DATA avant toute copie, sans modifier les pistes/secteurs
-  voisins. Extension de réinterprétation NeoST conservée ; Hatari refuse
-  tout WRITE TRACK ST. Les IDs WD1772 n’actionnent ni STEP ni SIDE.
+- ✅ **WRITE TRACK ST, emplacement des IDs (2026-10-19, révisé le 2026-10-22)** : un flux
+  qui colle à la géométrie de l'image (C/H = tête physique et face, numéros 1..spt uniques,
+  512 o) est écrit dans le .st. Un flux NON représentable n'est plus rejeté par LOST DATA :
+  un WD1772 formate sans erreur (LOST DATA = DRQ non servie, `fdc1772.v:885`) et relit les
+  IDs écrits. NeoST garde la piste EN MÉMOIRE (`FloppyDisk::stOverride`, volatile, ni dans
+  le .st ni dans le save-state) et la relit selon ses IDs (READ SECTOR/ADDRESS/TRACK, WRITE
+  SECTOR, recherche d'ID) ; un WRITE TRACK standard la rend au .st. Hatari refuse tout
+  WRITE TRACK ST (LOST DATA, défaut). Corrige le test F de STE_Test v1.9 (secteurs 10-18
+  sur la piste 79 : « Disk A: DS / Disk B: DS », Pass). Les IDs n'actionnent ni STEP ni SIDE.
 - ✅ **Secteur long et sélection STX→ST (2026-10-19)** : WRITE SECTOR
   engagé sur un ID STX de 1 024 octets puis terminé sur un lecteur ST est
   limité à 512 octets dans l’image cible. Corrige l’écrasement du voisin ou
@@ -671,6 +740,10 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
     pilotent rien.
   - pads `$FF9200-01`, `$FF9210-17`, `$FF9220-23` : acquittés en LECTURE seule
     (BUTR/PADR/PENR contiennent IRWZ) → toute écriture fait bus error (`Bus::wrStePads`) ;
+  - sélection des pads : bascule JOYWE (gstmcu.v:352-360) mise à 1 au reset et par toute
+    LECTURE de l'octet bas `$FF9203`, remise à 0 par son ÉCRITURE ; inactive, aucune
+    rangée n'est sélectionnée et tout se lit au repos (`StePads::sel`). Hatari garde la
+    sélection écrite indéfiniment ;
   - chien de garde `/BERR` (4081P11, compteur 7 bits à 8 MHz remis à zéro hors /AS) : une
     bus error arrive ~64 cycles après /AS, soit 60 cycles d'attente en plus d'un accès
     normal (`kBerrTimeoutWait`, Cpu68k.cpp). Hatari n'en compte aucun ;
@@ -1148,6 +1221,19 @@ reset HW/canal, IRQ niveau 5 gatée par le SCU).
 ---
 
 ### CPU (Moira + intégration) — suivi (audit vendor 2026-08-13)
+
+- ✅ **STOP avec IRQ pendante : exception à STOP+8 (2026-10-22)** — Moira prenait l'IRQ
+  démasquée par l'opérande du `stop` dès la fin de l'instruction (+4) ; le 68000 teste
+  l'interruption AVANT d'écrire le masque et ré-itère STOP 4 cycles plus tard (fx68k
+  `rInterrupt`/`pswI` au même T3, nanomots 0x3A2/0x327 ; Hatari gencpu `checkint()` avant
+  `regs.sr = sr`). Patch vendor `Moira::stopGraceUntil`. Conséquence : la constante IACK
+  MFP repasse de 16 à 12 (`g_iackMfp`) — le 16 compensait ce défaut depuis le 2026-08-06.
+  Sonde cartouche (chaîne Timer B → handler → stop → HBL, 3 997 chaînes) : NeoST = Hatari
+  segment par segment. Les étalons `blankline_blank_st`, `blankline_node_late_st`,
+  `nocooper` et les sondes `fdc_read/write` de l'oracle temporel, verts avec 16, NE
+  mesuraient PAS l'IACK : ils glissaient de phase avec le boot et masquaient deux écarts
+  réels (fenêtre de blank GLUE pour une écriture `$820A` aux cycles 32-36 ; fin de commande
+  WD1772 −6 cycles), traités à part.
 
 Audit complet des patches vendorisés (`extern/moira/NEOST_VENDOR.md`) : diff intégral
 contre l'upstream — 5 fichiers modifiés, tous les hunks documentés, aucun écart

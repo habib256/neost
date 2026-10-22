@@ -366,6 +366,12 @@ private:
     // HBL_Pos/nCyclesPerLine — cf. setLineGeom dans le ctor + doc maître).
     bool    lineLenOn_  = false;
     int     curLineLen_ = CYCLES_PER_LINE;   // longueur retenue pour la ligne HBL courante
+    // frameEnd_ sur la grille RÉELLE : lignes terminées (lineCarry_) + écart de la ligne
+    // EN COURS (cpl_ − curLineLen_). À rappeler dès que curLineLen_ change (cf. onHbl).
+    void syncFrameEnd_() {
+        frameEnd_ = frameStart_ + static_cast<int64_t>(lpf_) * cpl_ - lineCarry_
+                  - (cpl_ - curLineLen_);
+    }
     // (Le RTC avance en paresseux à la lecture, cf. Rtc::catchUp — plus de compteur ici.)
 
     // Géométrie de la trame COURANTE (50/60/71 Hz), verrouillée par scheduleFrameEvents

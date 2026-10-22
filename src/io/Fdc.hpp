@@ -21,6 +21,7 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -288,6 +289,24 @@ private:
         std::unique_ptr<StxImage> stx;          // non nul ⇔ imgType == IMG_STX
         std::string wd1772Path;                 // fichier compagnon des écritures STX ("" = aucun)
 
+        // Pistes .ST reformatées par WRITE TRACK dans une géométrie que le conteneur
+        // ne sait pas représenter (IDs hors 1..spt, tailles ≠ 512, IDs étrangers…) :
+        // un vrai WD1772 les écrit sans erreur et les relit. NeoST les garde EN
+        // MÉMOIRE (volatiles : ni le fichier .st ni le save-state ne les portent) ;
+        // un WRITE TRACK standard ultérieur de la même piste les efface. Clé :
+        // (piste physique << 1) | face. Cf. STE_Test v1.9, test F (secteurs 10-18).
+        struct StOverrideSector {
+            uint8_t tr = 0, hd = 0, sr = 0, sz = 2;
+            int     idPos = 0;                  // position de l'IDAM ($FE) dans le flux
+            bool    deleted = false;            // marque $F8
+            std::vector<uint8_t> data;
+        };
+        struct StOverrideTrack {
+            std::vector<uint8_t> raw;           // flux WRITE TRACK tel qu'écrit par le programme
+            std::vector<StOverrideSector> secs; // dans l'ordre angulaire
+        };
+        std::map<int, StOverrideTrack> stOverride;
+
         // Un disque est présent si on a des octets .ST OU une image STX montée.
         bool present() const { return !image.empty() || stx != nullptr; }
 
@@ -463,6 +482,9 @@ private:
 
     // --- Registres internes WD1772 (cf. FDC_STRUCT) ---------------------------
     uint8_t  cr_ = 0;        // Command Register
+    // Piste .ST reformatée hors géométrie sous la tête (cf. FloppyDisk::stOverride).
+    FloppyDisk::StOverrideTrack* stOverrideHere();
+    bool stOverrideFromBuffer(FloppyDisk& dk);
     uint8_t  tr_ = 0;        // Track Register
     uint8_t  sr_ = 1;        // Sector Register
     uint8_t  dr_ = 0;        // Data Register (destination des SEEK)

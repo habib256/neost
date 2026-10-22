@@ -48,7 +48,14 @@ public:
     // normalisation de StateArchive::operator() ne les voit pas — elle ne s'applique
     // qu'aux `bool` passés seuls (cf. sa note de portée). Un octet valant autre chose
     // que 0 ou 1 dans un bool est un COMPORTEMENT INDÉFINI, pas une valeur vraie.
-    void fixSerializedBools(StateArchive& ar) { ar.fixBools(megaSte_, hasAnalog_[0], hasAnalog_[1]); }
+    void fixSerializedBools(StateArchive& ar) { ar.fixBools(megaSte_, hasAnalog_[0], hasAnalog_[1], oe_); }
+
+    // Validation des sorties de sélection (netlist du GST MCU via gstmcu.v:352-360) :
+    // bascule JOYWE_N mise à 1 au RESET et par toute LECTURE de l'octet bas $FF9203,
+    // remise à 0 seulement par une ÉCRITURE de cet octet. Inactive, aucune rangée
+    // n'est sélectionnée : tout se lit au repos. STE seulement (pas de netlist Mega STE).
+    void resetSelect() { oe_ = false; }
+    void noteLowByteRead() { oe_ = false; }
     // Bits d'un octet joystick ST (cf. Hatari joy.h, ATARIJOY_BITMASK_*).
     enum : uint8_t { UP = 0x01, DOWN = 0x02, LEFT = 0x04, RIGHT = 0x08, FIRE = 0x80 };
 
@@ -69,10 +76,12 @@ public:
     // utiles sont dans l'octet BAS ($FF9203) : `& 0x0f` (pad A), `& 0xf0` (pad B).
     void writeSelectWord(uint16_t v) { select_ = v; }
     void writeSelectByte(uint32_t addr, uint8_t v) {
-        if (addr & 1) select_ = uint16_t((select_ & 0xFF00) | v);          // $FF9203 (octet bas)
+        if (addr & 1) { select_ = uint16_t((select_ & 0xFF00) | v); oe_ = true; }   // $FF9203 (octet bas)
         else          select_ = uint16_t((select_ & 0x00FF) | (v << 8));   // $FF9202 (octet haut)
     }
     uint16_t select() const { return select_; }
+    // Sélection vue par le multiplexeur : sorties invalides → aucune rangée ($FF).
+    uint16_t sel() const { return (oe_ || megaSte_) ? select_ : uint16_t(select_ | 0x00FF); }
 
     // --- Lectures (renvoient le MOT entier, comme Hatari IoMem_WriteWord) -------
     // L'appelant (Bus) extrait l'octet voulu selon l'adresse (big-endian).
@@ -82,9 +91,9 @@ public:
         uint16_t nData = 0xFF;                       // boutons relâchés (actif bas)
 
         // Pad A (port 1). Une ligne est active quand son bit de sélection = 0.
-        if ((select_ & 0x0F) != 0x0F) {
+        if ((sel() & 0x0F) != 0x0F) {
             const int b = fireButtons(padA_);        // bit0 = bouton A (= FEU ST)
-            if (!(select_ & 0x1)) {                  // ligne « directions/A »
+            if (!(sel() & 0x1)) {                  // ligne « directions/A »
                 if (b & 0x01) nData &= ~2;           // bouton A pressé → bit1 bas
                 // PAUSE (b&0x10) : pas alimenté par un joystick simple.
             }
@@ -92,9 +101,9 @@ public:
         }
 
         // Pad B (port 0). Bits de sélection dans le nibble haut.
-        if ((select_ & 0xF0) != 0xF0) {
+        if ((sel() & 0xF0) != 0xF0) {
             const int b = fireButtons(padB_);
-            if (!(select_ & 0x10)) {                 // ligne « directions/A »
+            if (!(sel() & 0x10)) {                 // ligne « directions/A »
                 if (b & 0x01) nData &= ~8;           // bouton A pad B → bit3 bas
             }
         }
@@ -111,9 +120,9 @@ public:
         uint16_t nData = 0xFF;
 
         // Pad A → nibble bas de nData (lignes sélectionnées par bits 0-3).
-        if ((select_ & 0x0F) != 0x0F) {
+        if ((sel() & 0x0F) != 0x0F) {
             nData &= 0xF0;
-            if (!(select_ & 0x1))                    // ligne « directions »
+            if (!(sel() & 0x1))                    // ligne « directions »
                 nData |= uint16_t(~stickData(padA_) & 0x0F);
             // Lignes B/C/OPTION (pavé numérique) : non alimentées → nibble reste 0
             // (équivaut à ~0 & 0x0F = 0x0F « relâché » seulement si bouton ; ici 0).
@@ -123,9 +132,9 @@ public:
         }
 
         // Pad B → nibble haut de nData.
-        if ((select_ & 0xF0) != 0xF0) {
+        if ((sel() & 0xF0) != 0xF0) {
             nData &= 0x0F;
-            if (!(select_ & 0x10))                   // ligne « directions »
+            if (!(sel() & 0x10))                   // ligne « directions »
                 nData |= uint16_t((~unsigned(stickData(padB_)) << 4) & 0xF0);   // unsigned : décaler un négatif est UB
             else nData |= 0xF0;
         }
@@ -188,7 +197,8 @@ private:
     // Bourrage EXPLICITE et initialisé : StePads est sérialisée d'un bloc (ar(stePads)),
     // et 5 octets de bourrage implicite partaient non initialisés dans chaque save-state
     // (même raison et même méthode que Fpu::pad0_). Offsets et sizeof inchangés.
-    [[maybe_unused]] uint8_t pad0_[3] = {};   // 5..7 : bool → float aligné sur 4
+    bool     oe_ = false;        // v54 : JOYWE (validation de la sélection), cf. resetSelect
+    [[maybe_unused]] uint8_t pad0_[2] = {};   // 6..7 : bool → float aligné sur 4
     float    analog_[2][2] = {{0.f, 0.f}, {0.f, 0.f}};   // axes hôte X/Y par pad (−1..+1)
     bool     hasAnalog_[2] = {false, false};             // setAnalog appelé → mode réel
     [[maybe_unused]] uint8_t pad1_[2] = {};                        // 26..27 : queue, alignement 4 (cf. pad0_)

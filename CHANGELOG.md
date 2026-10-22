@@ -6,6 +6,71 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## HBL sur la longueur de ligne live, événement échu servi à la frontière (2026-10-22)
+
+Dernier résidu de la sonde Super Hang-On : 53 chaînes où la HBL n'était pas encore
+pendante au `stop`, toutes dans la première trame après reset. Le HBL suivant était
+replanifié sur la longueur de ligne verrouillée en début de trame (508 pour une trame
+démarrée à 60 Hz) alors que le Timer B suivait la grille réelle (512) : dérive de
+4 cycles par ligne. Le HBL suit désormais les registres live, comme le compteur `hsc` du
+GST MCU (fréquence seule : la résolution lue à l'instant du HBL de NeoST piégeait les
+impulsions hi-res de retrait gauche). Second défaut : un événement déjà échu à une frontière
+d'instruction était servi une instruction trop tard (élection MFP différée en fin de lot).
+Troisième : la fin de trame n'intégrait l'écart d'une ligne qu'à son HBL de fin — pour la
+DERNIÈRE ligne, celui-ci tombe à la frontière et l'écart était perdu (trame de reset 60 Hz
+passée à 50 Hz : 4 cycles trop courte, HBL de la ligne 262 perdu, tout le reste décalé de
+−4 vs Hatari — sonde `timer_b_event` à Δ=6). `frameEnd_` suit désormais la longueur de la
+ligne en cours dès qu'elle est connue.
+Sonde : 0 chaîne anormale, première VBL au même cycle qu'Hatari — ce qui tourne la phase
+E-clock des étalons ancrés VBL+STOP et déplace les boots : six étalons recalés sur une trame
+bit-identique. Mis au jour au passage : sur STE, une écriture 60 Hz aux cycles 32-36 donne
+une image qu'Hatari ne produit jamais (ouvert, TODO 4.1).
+
+## STOP 4(0/0), réveil quantifié, STE « no DE » tardive d'après la netlist (2026-10-22)
+
+- **STOP** : plus de cycle bus de préfetch pendant `STOP` (4(0/0) sur le silicium) et
+  prise d'interruption quantifiée sur l'itération de 4 cycles (fx68k, ré-exécution de
+  l'opcode chez Hatari). Conséquence : une IRQ pendante au `stop` part à STOP+8 — Hatari
+  met 12 ; les deux émulateurs ne concordent plus sur ce segment, le silicium prime.
+- **STE** : une impulsion hi-res retirée entre les cycles 40 et 56 donne « no DE » + ligne
+  224 (netlist du GST MCU), là où Hatari et NeoST rendaient STOP_MIDDLE + 512 ; étalon
+  `blankline_node_late_ste` en référence NeoST.
+
+
+Le résidu de +4 cycles entre NeoST et Hatari sur les chaînes d'interruption venait de
+Moira, pas de l'IACK : une IRQ déjà pendante et démasquée par `stop #$2100` partait à
+STOP+4 au lieu de STOP+8 (le 68000 teste l'interruption avant d'écrire le masque, puis
+ré-itère STOP ; fx68k et le cœur d'Hatari concordent). Corrigé dans la copie vendorisée
+(`Moira::stopGraceUntil`, `.state` v55). La constante IACK MFP, montée à 16 le 2026-08-06
+pour égaler Hatari sur Super Hang-On, compensait ce défaut : elle revient à 12. Sonde
+cartouche sur la chaîne de Super Hang-On : NeoST = Hatari sur chaque segment.
+
+Ce que le 16 masquait, et qui est traité : la fin de trame n'était pas raccourcie quand une
+ligne l'était (VBL servie 224 cycles en retard après une ligne « no DE » hi-res tardive,
+`blankline_node_late_st` 10 714 px → 0) ; les sondes FDC de l'oracle temporel comptent
+deux artefacts d'Hatari (CRC à 513 par `rint` sur SCLK STE, GPIP5 daté au dispatch) →
+tolérance 8, rien à porter ; `blankline_blank_st` passe en référence NeoST (Hatari décale de
+4 px les pixels d'une ligne left+2, cf. `overscan_top`) ; `dmasnd_poll` et `nocooper`
+re-posés (phase de boot), invariant de `dmasnd_poll` revérifié ; bancs Mega STE à 12+4.
+
+## Troisième passe MiSTer : STE_Test test F, touche tenue au reset, pads, IKBD (2026-10-22)
+
+- **FDC** : un WRITE TRACK que le .st ne sait pas représenter (IDs hors géométrie,
+  tailles, IDs étrangers) n'est plus rejeté par LOST DATA ; la piste est gardée en mémoire
+  et relue selon ses IDs, comme sur un WD1772. Le test F de STE_Test v1.9 passe (« Disk
+  A: DS / Disk B: DS »).
+- **IKBD** : touche tenue pendant le reset → le relâchement de la première touche du
+  balayage de la ROM part avant `$F1` ($F086-$F0DC) ; les interruptions 1 ms du 6301
+  (128/215 µs, +12 µs horloge réglée) allongent l'échantillonnage de `$18`.
+- **Pads STE** : sélection validée par l'écriture de `$FF9203`, coupée au reset et par sa
+  lecture (netlist du GST MCU).
+- **CPU** : délais IPL opt-in (`NEOST_IPLDELAY`, `NEOST_IPLFETCH`) comptés en cycles CPU,
+  comme l'échantillonnage IPL du 68000 (fx68k).
+- **IACK Mega STE** : séquence d'exception confirmée par fx68k (identique à Moira) et
+  constante IACK MFP de 16 confirmée (12 casse quatre étalons oracle) ; le résidu du banc
+  Mega STE reste à expliquer.
+- `.state` v54.
+
 ## Chasse aux bugs sur les changements du jour (2026-10-22)
 
 Trois relectures indépendantes (IKBD ; Bus/CPU/STE ; blitter, `.state` et tests) :
