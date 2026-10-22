@@ -24,6 +24,10 @@
 
 #include "Moira.h"
 
+// Attente supplémentaire d'un cycle bus qui finit en bus error sur STE : /BERR au
+// 64ᵉ front 8 MHz après /AS (netlist 4081P11), moins les 4 cycles d'un accès normal.
+static constexpr int kBerrTimeoutWait = 60;
+
 class NeostMoira;   // défini plus bas (le cœur Moira dérivé, avec nos hooks)
 
 // =============================================================================
@@ -446,6 +450,13 @@ public:
         }
         g_cur->bus->megaSteCacheFlushIfEnabled();   // une bus error invalide le cache Mega STE (Hatari)
         g_cur->inBusError = true;
+        // Chien de garde /BERR du GST MCU (netlist 4081P11) : compteur 7 bits à 8 MHz,
+        // tenu à zéro tant que /AS est inactif ; /BERR tombe au 64ᵉ front après /AS.
+        // Le cycle bus attend donc ~60 cycles de plus qu'un accès normal de 4 (±4
+        // selon la phase). STE seulement : seule machine dont on a la netlist ; Hatari
+        // ne compte aucune attente.
+        if (g_cur->bus->machine == MachineType::Ste)
+            const_cast<NeostMoira*>(this)->sync(kBerrTimeoutWait);
         raiseBusError(a, write);            // [[noreturn]] : lève moira::BusError
         return true;                        // inatteignable
     }
@@ -1004,6 +1015,7 @@ void Cpu68k::reset() {
     state_->grp0Vector = 0;
     state_->inBusError = false;
     state_->bus->bootOverlay = true;
+    state_->bus->gameCart = false;             // RESB/PORB (netlist 4081P10)
     state_->inReset = true;                    // sync() n'avance pas l'ordonnanceur pendant le reset
     state_->blitterOverlap = 0;
     state_->megaSteAccessHit = false;

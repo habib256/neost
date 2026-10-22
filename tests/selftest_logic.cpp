@@ -1699,9 +1699,10 @@ static void testDmaSoundTruthTable() {
     // état de lecture qui n'existe pas.
     checkHex("$FF8900 (octet pair) relit 0", r.snd.read8(SND + 0x00), 0x00);
 
-    // --- 3. Contrôle : bits play/repeat seuls, le reste est ignoré -----------
+    // --- 3. Contrôle : quatre verrous ID0-3 relus, bits 4-7 à VSS ------------
+    // Netlist 4081 (REGISTER.PIN) ; seuls play/repeat pilotent quelque chose.
     r.snd.write8(SND + 0x01, 0xFF);
-    checkHex("contrôle : seuls les bits 0-1 tiennent", r.snd.read8(SND + 0x01), 0x03);
+    checkHex("contrôle : bits 0-3 tiennent", r.snd.read8(SND + 0x01), 0x0F);
     r.snd.write8(SND + 0x01, 0x00);
     checkHex("contrôle : arrêt", r.snd.read8(SND + 0x01), 0x00);
 
@@ -2578,21 +2579,21 @@ static void testIkbdProtocol() {
         checkInt("opcode inconnu : longueur 0 (NOP)", r.ikbd.commandLengthForTest(0x55), 0);
     }
 
-    // --- 7. $09 remet à zéro la position interne (protocole Atari) ----------
-    // « Resets the ikbd maintained X and Y coordinates. » La position suit la
-    // souris dans tous les modes ; on la décale ici par $0E (LOAD MOUSE POSITION)
-    // pour simuler la dérive accumulée au bureau. Hatari omet cette RAZ.
+    // --- 7. $09 GARDE la position interne (ROM 6301 $FACB) -------------------
+    // La doc du protocole annonce une remise à zéro (« Resets the ikbd maintained
+    // X and Y coordinates »), mais la ROM ne copie que les bornes ($AA-$AD) ; Hatari
+    // a raison. $0E pose la position et passe en mode absolu ($FB5F).
     {
         IkbdRig r;
         r.drain(200000);
-        r.send({0x0E, 0x00, 0x00, 0xFA, 0x00, 0x96});   // position (250,150)
-        r.send({0x09, 0x00, 0xFF, 0x00, 0xFF});          // mode absolu, bornes 255
+        r.send({0x0E, 0x00, 0x00, 0xFA, 0x00, 0x96});   // position (250,150), mode absolu
+        r.send({0x09, 0x00, 0xFF, 0x00, 0xFF});          // bornes 255 seulement
         r.send({0x0D});
         const auto p = r.drain();
         checkInt("$09 puis $0D : 6 octets", long(p.size()), 6);
         if (p.size() == 6) {
-            checkHex("$09 : X remis à 0", (p[2] << 8) | p[3], 0);
-            checkHex("$09 : Y remis à 0", (p[4] << 8) | p[5], 0);
+            checkHex("$09 : X conservé", (p[2] << 8) | p[3], 0xFA);
+            checkHex("$09 : Y conservé", (p[4] << 8) | p[5], 0x96);
         }
     }
 

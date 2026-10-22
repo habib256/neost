@@ -80,7 +80,6 @@ public:
         ar(sliceBus_);          // accès bus consommés par la tranche en cours
         ar(cpuBusCnt_);         // accès bus CPU consommés (fenêtre COUNT_CPU_BUS)
         ar(busCountError_);     // accès CPU volé en PRE_START → tranche de 63
-        ar.arr(ioRaw_);         // v22 : tampon IoMem brut, visible en lecture octet
     }
 
 private:
@@ -89,6 +88,7 @@ private:
     bool runSlice(int maxBusAccesses);       // ≤ N accès bus (-1 = tout) ; true = terminé
     void finishTransfer();                   // y_count = 0 : BUSY/HOG effacés + IRQ GPIP3
     void billCycles(int n);                  // facture + dispatche n cyc volés (par accès)
+    void controlWritten(bool wasBusy);       // écriture CPU de $FF8A3C : ligne INT + départ/pause
     void pauseTransfer();                    // BUSY effacé pendant un blit : tranche annulée
     // Fenêtre PRE_START avant chaque prise de bus (cf. .cpp) :
     // armée dans Bus::blitterWinStart/End, consultée par les callbacks mémoire de
@@ -117,7 +117,6 @@ private:
     // Blitter_CheckAccess_Byte n'actualise pas IoMem sur un registre mot : les
     // octets lus sont ceux du dernier accès CPU, pas les compteurs vivants.
     // Initialisé à l'allocation / reset froid, préservé par le reset matériel.
-    uint8_t ioRaw_[0x3A] = {};
     uint32_t buffer_  = 0;
     uint16_t busWord_ = 0;
     // État de REPRISE entre tranches (équivalents BlitterVars d'Hatari) : le X

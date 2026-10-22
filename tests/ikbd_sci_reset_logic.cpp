@@ -73,7 +73,9 @@ void compareSci(Checks& checks, Rig& rig, const Oracle& oracle) {
 }
 int testIkbdSciReset() {
     Checks checks;
-    // 00 tronqué devient 80, puis 01 doit réellement déclencher un nouveau boot.
+    // 00 tronqué devient 80 au SCI. Reçu SEUL pendant l'init de la ROM (sei $F010 …
+    // cli $F139), il attend dans le RDR et s'exécute après : le 01 envoyé après la
+    // fenêtre complète la commande et relance réellement le boot.
     for (int phase : {0, 37}) for (int offset : {0, 173}) for (bool late : {false, true}) {
         Rig rig(phase);
         rig.ikbd.write8(2, 0);
@@ -82,13 +84,23 @@ int testIkbdSciReset() {
         const int64_t reset = rig.live;
         const int64_t assembled = reset + 10*1024;
         rig.at(assembled); // le SCI reçoit 80 au stop MARK après le TSR
+        const int64_t after = assembled + 50*10240;   // au-delà de la fenêtre, sur la grille TX
+        rig.at(reset + 502000); rig.at(after);
         rig.ikbd.write8(2, 1);
-        const int64_t commandStop = assembled + 10*1024;
+        const int64_t commandStop = after + 10*1024;
         if (late) {
             rig.live = commandStop + 3197;
             rig.ikbd.write8(0, 0x96); // rattrapage MMIO, Scheduler encore au passé
         } else rig.at(commandStop);
-        checks.equal("fragment80 puis01 relance réellement boot", rig.bootDue(), commandStop + 502000);
+        checks.equal("80 retenu pendant l'init puis 01 relance le boot", rig.bootDue(), commandStop + 502000);
+    }
+    {
+        // Contre-épreuve : 80 puis 01 tous deux pendant l'init — le second déborde, la
+        // routine $FF40 jette tout, pas de reboot.
+        Rig rig; rig.ikbd.write8(2, 0); rig.at(1024); rig.ikbd.resetHw();
+        const int64_t reset = rig.live;
+        rig.at(reset + 10*1024); rig.ikbd.write8(2, 1); rig.at(reset + 20*1024);
+        checks.equal("80 puis 01 pendant l'init : perdus, boot inchangé", rig.bootDue(), reset + 502000);
     }
     {
         Rig rig; rig.ikbd.write8(2, 0xFF); rig.at(1123); rig.ikbd.resetHw();
@@ -125,9 +137,11 @@ int testIkbdSciReset() {
         auto load = StateArchive::loader(bytes.data(), bytes.size());
         restored.ikbd.serialize(load); restored.scheduler.serialize(load);
         checks.equal("archive SCI DATA ou STOP valide", load.ok(), true);
-        restored.at(reset + 10*1024); restored.ikbd.write8(2, 1);
-        restored.at(reset + 20*1024);
-        checks.equal("archive conserve assemblage80 et parsing01", restored.bootDue(), reset + 20*1024 + 502000);
+        restored.at(reset + 10*1024);                 // 80 assemblé, retenu pendant l'init
+        const int64_t after = reset + 10*1024 + 50*10240;
+        restored.at(reset + 502000); restored.at(after);
+        restored.ikbd.write8(2, 1); restored.at(after + 10*1024);
+        checks.equal("archive conserve assemblage80 et parsing01", restored.bootDue(), after + 10*1024 + 502000);
     }
     // Deux resets successifs abandonnent aussi le premier assemblage incomplet.
     {

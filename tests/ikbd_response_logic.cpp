@@ -85,6 +85,8 @@ int testIkbdResponses() {
     for (const auto& tc : cases) {
         Rig r;
         r.live = 100; // MMIO au milieu d'un quantum, sched.now() reste à zéro.
+        // $0D ne répond qu'en mode absolu (ROM $FB39) : $09 d'abord (sans réponse).
+        if (tc.opcode == 0x0D) r.command({0x09, 0x01, 0x40, 0x00, 0xC8});
         if (tc.opcode == 0x21) r.command({tc.opcode, 0, 0});
         else r.command({tc.opcode});
         c.equal("firmware wait uses live clock", r.due(), 100 + tc.delay);
@@ -107,6 +109,169 @@ int testIkbdResponses() {
         c.equal("response ends without extra byte", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
     }
     {
+        // Comportements tirés de la ROM 6301 désassemblée (MiSTery ikbd/rom/IKBD.ASM).
+        auto collect = [](Rig& r, int n) {
+            std::vector<int> out;
+            for (int k = 0; k < 40 && int(out.size()) < n; ++k) {
+                const int64_t d = r.sched.rawCyclesUntil(Scheduler::IKBD_RX);
+                if (d == INT64_MIN) break;
+                r.advance(r.live + d);
+                if (r.ready()) out.push_back(r.data());
+            }
+            return out;
+        };
+        {   // $8C après boot : échelle 1/1 ($F106).
+            Rig r; r.command({0x8C});
+            const auto b = collect(r, 4);
+            c.equal("$8C default scale X", b.size() > 2 ? b[2] : -1, 1);
+            c.equal("$8C default scale Y", b.size() > 3 ? b[3] : -1, 1);
+        }
+        {   // $0E pose la position ET le mode absolu ($FB5F) : $0D répond.
+            Rig r; r.command({0x0E, 0, 0x00, 0x12, 0x00, 0x34}); r.command({0x0D});
+            const auto b = collect(r, 6);
+            c.equal("$0E then $0D header", b.size() > 0 ? b[0] : -1, 0xF7);
+            c.equal("$0E then $0D X", b.size() > 3 ? b[3] : -1, 0x12);
+        }
+        {   // $0D hors mode absolu : ignoré.
+            Rig r; r.command({0x0D});
+            c.equal("$0D in relative mode is ignored", r.sched.rawCyclesUntil(Scheduler::IKBD_RX) == INT64_MIN, 1);
+        }
+        {   // $1A puis $16 : refusé ; $1A puis $94 : le mode événement reste ($14).
+            Rig r; r.command({0x1A}); r.command({0x16});
+            c.equal("$16 refused when joysticks disabled", r.sched.rawCyclesUntil(Scheduler::IKBD_RX) == INT64_MIN, 1);
+            r.command({0x94});
+            const auto b = collect(r, 2);
+            c.equal("$1A keeps event mode in $94", b.size() > 1 ? b[1] : -1, 0x14);
+        }
+        {   // $19 : $94 rapporte $19 + les 6 paramètres ($FCAE).
+            Rig r; r.command({0x19, 1, 2, 3, 4, 5, 6}); r.command({0x94});
+            const auto b = collect(r, 8);
+            c.equal("$94 in keycode mode", b.size() > 1 ? b[1] : -1, 0x19);
+            c.equal("$94 keycode last parameter", b.size() > 7 ? b[7] : -1, 6);
+        }
+        {   // Fenêtre de reset : un octet reçu pendant l'init s'exécute après $F1.
+            Rig r; r.ikbd.bootRom(); r.command({0x12});
+            r.advance(502000); const auto b = collect(r, 1);
+            c.equal("$F1 after boot", b.size() > 0 ? b[0] : -1, 0xF1);
+            r.command({0x92});
+            const auto st = collect(r, 2);
+            c.equal("single byte during init executed", st.size() > 1 ? st[1] : -1, 0x12);
+        }
+        {   // Deux octets pendant l'init : overrun, tout est perdu ($FF40).
+            Rig r; r.ikbd.bootRom(); r.command({0x12, 0x1A});
+            r.advance(502000); collect(r, 1);
+            r.command({0x92});
+            const auto st = collect(r, 2);
+            c.equal("two bytes during init are lost", st.size() > 1 ? st[1] : -1, 0x00);
+            r.command({0x9A});
+            const auto sj = collect(r, 2);
+            c.equal("lost $1A leaves joysticks enabled", sj.size() > 1 ? sj[1] : -1, 0x00);
+        }
+        {   // $18 : octets de 8 échantillons du feu joystick 1, sans en-tête.
+            Rig r;
+            r.sched.setCallback(Scheduler::IKBD_MONITOR, [&r] { r.ikbd.onJoystickMonitor(); });
+            r.command({0x18}); r.ikbd.setJoystick(0, 0x80);
+            // Une source ne tire qu'une fois par runTo : avancer par petits pas,
+            // comme la machine (synchronisation à chaque accès CPU).
+            for (int64_t t = 200; t <= 11600; t += 200) r.advance(t);
+            const auto b = collect(r, 1);
+            c.equal("$18 fire sample byte", b.size() > 0 ? b[0] : -1, 0xFF);
+        }
+        {   // $18 : échantillons aux instants de la ROM (177 µs enfoncé, 180 µs
+            // relâché, ≈ 1420/1444 cycles CPU). 4 enfoncés puis 4 relâchés → $F0.
+            Rig r;
+            r.sched.setCallback(Scheduler::IKBD_MONITOR, [&r] { r.ikbd.onJoystickMonitor(); });
+            r.ikbd.setJoystick(0, 0x80);
+            r.command({0x18});
+            for (int64_t t = 100; t <= 5000; t += 100) r.advance(t);   // 4 échantillons : 0, 1420, 2840, 4259
+            r.ikbd.setJoystick(0, 0x00);
+            for (int64_t t = 5100; t <= 12000; t += 100) r.advance(t);
+            const auto b = collect(r, 1);
+            c.equal("$18 byte mixes pressed and released samples", b.size() > 0 ? b[0] : -1, 0xF0);
+        }
+        {   // Seuil 0 ($F4E5) : flux continu de $F8 0 0, un paquet par ligne libre.
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x0B, 0, 0});
+            const auto b = collect(r, 6);
+            c.equal("threshold 0 header", b.size() > 0 ? b[0] : -1, 0xF8);
+            c.equal("threshold 0 dx", b.size() > 1 ? b[1] : -1, 0);
+            c.equal("threshold 0 stream continues", b.size() > 3 ? b[3] : -1, 0xF8);
+        }
+        {   // Pas $0A à 0 ($F5D2) : flèches « droite » et « haut » en continu.
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x0A, 0, 0});
+            const auto b = collect(r, 4);
+            c.equal("keycode step 0 right make", b.size() > 0 ? b[0] : -1, 77);
+            c.equal("keycode step 0 up make", b.size() > 2 ? b[2] : -1, 72);
+        }
+        {   // Chasse aux bugs : $07 $04 + clic avec mouvement — le $F8 part ET la
+            // touche $74 suit dans le même passage (ROM $F59D-$F5A2).
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x07, 0x04});
+            r.ikbd.mouseEvent(5, 0, true, false);
+            const auto b = collect(r, 4);
+            c.equal("bit 2 packet dx", b.size() > 1 ? b[1] : -1, 5);
+            c.equal("bit 2 button key follows packet", b.size() > 3 ? b[3] : -1, 0x74);
+        }
+        {   // Chasse aux bugs : en $19, le port 0 ne compte pas d'impulsions souris ;
+            // rien ne doit jaillir au retour en mode souris.
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x19, 0, 0, 0, 0, 0, 0});
+            r.ikbd.mouseEvent(10000, 0, false, false);
+            r.command({0x08});
+            c.equal("no burst after keycode joystick", r.sched.rawCyclesUntil(Scheduler::IKBD_RX) == INT64_MIN, 1);
+        }
+        {   // Chasse aux bugs : mode flèches + $07 $04 — une seule touche $74.
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x0A, 5, 5}); r.command({0x07, 0x04});
+            r.ikbd.mouseEvent(0, 0, true, false); r.ikbd.onAutoSend();
+            const auto b = collect(r, 3);
+            int keys = 0; for (int v : b) keys += (v == 0x74);
+            c.equal("single button key in cursor mode", keys, 1);
+        }
+        {   // $19 : flèche à l'appui sur le joystick 0, feu = $74 puis $F4.
+            Rig r;
+            r.sched.setCallback(Scheduler::IKBD_MONITOR, [&r] { r.ikbd.onJoystickMonitor(); });
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x19, 0, 0, 0, 0, 0, 0});
+            r.ikbd.setJoystick(0x08 | 0x80, 0); r.advance(8100);
+            const auto b = collect(r, 3);
+            c.equal("$19 right make", b.size() > 0 ? b[0] : -1, 0x4D);
+            c.equal("$19 right break", b.size() > 1 ? b[1] : -1, 0xCD);
+            c.equal("$19 fire make", b.size() > 2 ? b[2] : -1, 0x74);
+        }
+    }
+    {
+        // $92 rapporte le seul bit 7 de l'octet de mode $C9 (ROM 6301 $FCA2) :
+        // $14/$15 rendent le port 0 au joystick (bit 1) sans « désactiver » la
+        // souris ; seul $12 la désactive, un mode souris la réactive.
+        struct Avail { std::initializer_list<uint8_t> pre; int want; const char* label; };
+        const Avail cases[] = {
+            {{0x14}, 0x00, "$92 after $14 reports mouse enabled"},
+            {{0x15}, 0x00, "$92 after $15 reports mouse enabled"},
+            {{0x12}, 0x12, "$92 after $12 reports mouse disabled"},
+            {{0x12, 0x14}, 0x12, "$14 does not re-enable a disabled mouse"},
+            {{0x12, 0x08}, 0x00, "mouse mode re-enables mouse"},
+        };
+        for (const auto& tc : cases) {
+            Rig r;
+            r.command(tc.pre); r.advance(200000); r.command({0x92});
+            int header = -1;
+            for (int k = 0; k < 4 && header != 0xF6; ++k) {
+                if (r.due() < r.live) break;
+                r.advance(r.due());
+                if (r.ready()) header = r.data();
+            }
+            c.equal("$92 header", header, 0xF6);
+            r.advance(r.due()); c.equal(tc.label, r.data(), tc.want);
+        }
+    }
+    {
         Rig r;
         r.command({0x1C}); r.advance(1000); r.command({0x16});
         c.equal("new response replaces pending wait", r.due(), 1000 + 8192);
@@ -125,12 +290,18 @@ int testIkbdResponses() {
     }
     {
         Rig r;
+        // ROM $F9AF : $13 mémorise l'index d'écriture ; la réponse déjà en file
+        // AVANT la pause sort quand même, un octet arrivé après attend $11.
         r.command({0x1C}); r.advance(1000); r.command({0x13});
         r.advance(7168);
-        c.equal("pause does not freeze firmware wait", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
-        r.advance(20000); r.command({0x11});
-        c.equal("resume after elapsed wait only shifts byte", r.due(), 30240);
-        r.advance(30240); c.equal("resume keeps queued header", r.data(), 0xFC);
+        c.equal("bytes queued before pause still leave", r.due(), 7168 + 10240);
+        r.advance(17408); c.equal("pre-pause header delivered", r.data(), 0xFC);
+        for (int i = 1; i <= 6; ++i) { r.advance(17408 + i * 10240); r.data(); }
+        r.ikbd.keyEvent(0x39, true);
+        c.equal("byte queued during pause waits", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
+        r.advance(100000); r.command({0x11});
+        c.equal("resume releases held byte", r.due(), 100000 + 10240);
+        r.advance(110240); c.equal("held byte after resume", r.data(), 0x39);
     }
     {
         Rig r;

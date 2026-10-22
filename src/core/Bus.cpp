@@ -75,6 +75,7 @@ void Bus::serialize(StateArchive& ar) {
 
     // Overlay de boot (route $0-$7 vers la ROM tant qu'actif).
     ar(bootOverlay);
+    ar(gameCart);                          // v52 : registre « gamecart » STE ($FF9000)
 
     // Latch du bus de données (relu par la zone RAM « void » — cf. cpuDb).
     ar(cpuDb);
@@ -113,6 +114,7 @@ void Bus::serialize(StateArchive& ar) {
 // parasites dans son propre code), le moteur disquette en rotation et la Glue sur la
 // fréquence/résolution précédente.
 void Bus::peripheralReset() {
+    gameCart = false;                      // GAMECART effacé par RESB (netlist 4081P10)
     if (ikbd)    ikbd->resetHw();          // IKBD_Reset(false) : SCI + boot ROM
     // Fréquence + résolution posées EN DIRECT, sans repasser par le bus. C'est bien ce
     // que fait Hatari : Video_Reset_Glue appelle IoMem_WriteByte, documenté « write 8-bit
@@ -218,6 +220,14 @@ namespace {
         switch (c & 3) { case 0: return BANK_128; case 1: return BANK_512; case 2: return BANK_2M; }
         return 0;
     }
+    // Taille de la banque 0 (bits 2-3 de $FF8001). STE : la sélection RAM du GST
+    // MCU ne regarde que RS3 puis RS2 (netlist 4081P18, multiplexeurs SAB sur RS3B) —
+    // RS3 = 1 prend le chemin 2 Mo quel que soit RS2, donc « 11 » vaut 2 Mo ; sur
+    // ST, « 11 » reste invalide (banque vide, modèle Hatari).
+    uint32_t mmuBank0Size(uint8_t conf, MachineType m) {
+        const uint8_t c = (conf >> 2) & 3;
+        return (m == MachineType::Ste && c == 3) ? BANK_2M : mmuConfSize(c);
+    }
     // RAM physiquement posée → taille des 2 banques (cf. STMemory_RAM_SetBankSize).
     void ramBanks(std::size_t bytes, uint32_t& b0, uint32_t& b1) {
         switch (bytes / 1024) {
@@ -266,7 +276,7 @@ namespace {
 // bus de données [cpuDb], l'écriture est perdue — cf. Hatari VoidMem_*).
 int64_t Bus::mmuTranslate(uint32_t addr) const {
     const uint8_t conf = glue ? glue->memConfig_ : memConfigForBytes(ram.size());
-    const uint32_t mmuB0 = mmuConfSize(static_cast<uint8_t>((conf >> 2) & 3));
+    const uint32_t mmuB0 = mmuBank0Size(conf, machine);
     // STMemory_MMU_ConfToBank (Hatari) : seuls le ST/Mega ST (Config_IsMachineST,
     // MMU non-IMP) utilisent les bits 0-1 pour la banque 1 ; STE/Mega STE (IMP)
     // ignorent ces bits et calquent la banque 1 sur la banque 0.
@@ -342,7 +352,7 @@ void Bus::rebuildMmuCache(uint8_t conf) const {
     mmuCacheMachine_ = machine;         // cf. clé de revalidation (Bus.hpp)
     mmuFastLimit_ = 0;
 
-    const uint32_t mmuB0 = mmuConfSize(static_cast<uint8_t>((conf >> 2) & 3));
+    const uint32_t mmuB0 = mmuBank0Size(conf, machine);
     // Même règle que mmuTranslate : seuls ST / Mega ST utilisent les bits 0-1 pour
     // la banque 1 ; les STE (MMU « IMP ») calquent la banque 1 sur la banque 0.
     const uint32_t mmuB1 = (machine == MachineType::St || machine == MachineType::MegaSt)
@@ -465,6 +475,20 @@ uint8_t Bus::read8Slow(uint32_t addr) {
     // Espace matériel.
     if (addr >= stmap::MMIO_BASE)
         return mmioRead8(addr);
+
+    // STE « gamecart » : /ROM4 en $D80000-$DBFFFF, /ROM3 en $DC0000-$DFFFFF (256 Ko
+    // chacun). La cartouche n'a que A1-A15 : chaque fenêtre de 64 Ko y est répétée.
+    if (steCartWindow(addr)) {
+        const uint32_t off = ((addr >= 0xDC0000u) ? 0x10000u : 0u) | (addr & 0xFFFFu);
+        return off < cart.size() ? cart[off] : 0xFF;
+    }
+
+    // STE /ROM5, /ROM6 et /ROMP : sélection décodée, DTACK, mais aucune puce ne pilote
+    // le bus de données → bus ouvert, comme une banque RAM vide ci-dessus.
+    if (steRomSelectVoid(addr)) {
+        if (ioAccessWidth_ >= 2) return uint8_t((addr & 1) ? cpuDb : cpuDb >> 8);
+        return uint8_t(cpuDb);
+    }
 
     // Trou au-dessus de $400000 (sous la ROM/cartouche) → bus error sur vrai ST ;
     // ici on renvoie $FF.
@@ -596,13 +620,19 @@ bool Bus::busFault(uint32_t addr) const {
 
     // Port cartouche ($FA0000-$FBFFFF) : banque ROM sur le vrai matériel ; lit $FF
     // si rien n'est branché → jamais de bus error (le TOS y lit le magic au reset).
-    if (addr >= stmap::CART_BASE && addr < stmap::CART_END) return false;
+    // STE avec « gamecart » : la fenêtre a déménagé en $D80000, ici rien ne répond.
+    if (addr >= stmap::CART_BASE && addr < stmap::CART_END) return steCartRelocated();
+    if (steCartWindow(addr)) return false;
 
     // Espace IO ($FF8000-$FFFFFF) : carte octet par octet (cf. buildIoFault).
     if (addr >= stmap::MMIO_BASE) {
         if (!ioFaultBuilt_ || ioFaultMachine_ != machine) buildIoFault();
         return ioFault_[addr - stmap::MMIO_BASE] != 0;
     }
+
+    // STE : /ROM6 et /ROMP décodés sans puce (cf. steRomSelectVoid) → DTACK, pas
+    // de bus error en lecture ; l'écriture faute à l'étage 1 de busFaultNSlow.
+    if (steRomSelectVoid(addr)) return false;
 
     // Tout le reste — trous $400000-$F9FFFF (RAM absente, ROM cartouche basse,
     // IDE, VME...) et $FF0000-$FF7FFF (sous l'espace IO) — n'est décodé par aucun
@@ -647,8 +677,29 @@ bool Bus::busSelfTest() {
     // 6) Écritures TOUJOURS fautives : $0-$7 (miroir vecteurs) et port cartouche (ROM).
     chk("write $0 protégé", busFaultN(0, 2, true) ? 1 : 0, 1);
     chk("write cartouche protégé", busFaultN(stmap::CART_BASE, 2, true) ? 1 : 0, 1);
+    // 7) STE, décodage ROM du GST MCU (ST4081S) : $FC0000 faute avec un TOS en
+    //    $E00000 (cas IK+, fidèle), $EC0000 aussi ; /ROM6 et /ROMP répondent en
+    //    lecture et fautent en écriture, /ROM5 aussi (netlist) ; gamecart déplace
+    //    la cartouche.
+    if (machine == MachineType::Ste && romBase == stmap::ROM_E00000) {
+        chk("STE $FC000C faute", busFaultN(0xFC000C, 2, false) ? 1 : 0, 1);
+        chk("STE $EC0000 faute", busFaultN(0xEC0000, 2, false) ? 1 : 0, 1);
+        chk("STE $EBFFFE décodé", busFaultN(0xEBFFFE, 2, false) ? 1 : 0, 0);
+        chk("STE /ROM6 lecture", busFaultN(0xD00000, 2, false) ? 1 : 0, 0);
+        chk("STE /ROM6 écriture", busFaultN(0xD00000, 2, true) ? 1 : 0, 1);
+        chk("STE /ROMP lecture", busFaultN(0xFE1FFE, 2, false) ? 1 : 0, 0);
+        chk("STE fin /ROMP", busFaultN(0xFE2000, 2, false) ? 1 : 0, 1);
+        chk("STE /ROM5 lecture", busFaultN(0xD7FFFE, 2, false) ? 1 : 0, 0);
+        chk("STE fin /ROM5", busFaultN(0xD80000, 2, false) ? 1 : 0, 1);
+        const bool savedGc = gameCart;
+        gameCart = true;
+        chk("gamecart : $FA0000 faute", busFaultN(0xFA0000, 2, false) ? 1 : 0, 1);
+        chk("gamecart : /ROM4 en $D80000", busFaultN(0xD80000, 2, false) ? 1 : 0, 0);
+        chk("gamecart : /ROM3 écriture", busFaultN(0xDC0000, 2, true) ? 1 : 0, 1);
+        gameCart = savedGc;
+    }
 
-    if (cpu) cpu->setSr(savedSr);                // restaure le SR d'entrée
+    if (cpu) cpu->setSr(savedSr);               // restaure le SR d'entrée
     std::fprintf(stderr, "[bus-selftest] %d OK, %d FAIL\n", pass, fail);
     return fail == 0;
 }
@@ -665,6 +716,7 @@ bool Bus::busFaultNSlow(uint32_t addr, unsigned n, bool write) const {
         if (addr < 0x8) return true;
         if (addr >= romBase && addr < romBase + romWindowSize()) return true;
         if (addr >= stmap::CART_BASE && addr < stmap::CART_END) return true;
+        if (steRomSelectVoid(addr) || steCartWindow(addr)) return true;
     }
 
     // 2) Protection superviseur (GLUE/MMU) : en mode utilisateur, $0-$7FF et tout
@@ -789,7 +841,12 @@ uint8_t Bus::peek8(uint32_t addr) const {
     }
     if (addr >= romBase && addr < romBase + romWindowSize())
         return addr < romBase + rom.size() ? rom[addr - romBase] : 0x00;
-    if (!cart.empty() && addr >= stmap::CART_BASE && addr < stmap::CART_BASE + cart.size())
+    if (steCartWindow(addr)) {               // même règle que read8Slow (gamecart)
+        const uint32_t off = ((addr >= 0xDC0000u) ? 0x10000u : 0u) | (addr & 0xFFFFu);
+        return off < cart.size() ? cart[off] : 0xFF;
+    }
+    if (!steCartRelocated() && !cart.empty()
+        && addr >= stmap::CART_BASE && addr < stmap::CART_BASE + cart.size())
         return cart[addr - stmap::CART_BASE];
     return 0xFF;                             // MMIO / trous : neutre, sans dispatch
 }
@@ -901,8 +958,9 @@ void    Bus::wrFdc(uint32_t a, uint8_t v) {
     if (cpu) cpu->updateIpl();            // l'INTRQ FDC (GPIP5) a pu changer
 }
 
-uint8_t Bus::rdDmaSnd(uint32_t a) { return dmasnd->read8(a); }          // STE/Mega STE
-void    Bus::wrDmaSnd(uint32_t a, uint8_t v) { dmasnd->write8(a, v); }
+// Les relectures tirées de la netlist du GST MCU ne valent que pour le STE.
+uint8_t Bus::rdDmaSnd(uint32_t a) { dmasnd->steNetlist = machine == MachineType::Ste; return dmasnd->read8(a); }
+void    Bus::wrDmaSnd(uint32_t a, uint8_t v) { dmasnd->steNetlist = machine == MachineType::Ste; dmasnd->write8(a, v); }
 
 uint8_t Bus::rdBlitter(uint32_t a) { return blitter->read8(a); }        // Mega ST/STE
 void    Bus::wrBlitter(uint32_t a, uint8_t v) { blitter->write8(a, v); }
@@ -1009,6 +1067,10 @@ void Bus::wrStePads(uint32_t a, uint8_t v) {
     // seule / sans effet (joy.c : Joy_StePadButtons_DIPSwitches_WriteWord ne fait rien).
     // On latche les deux octets du mot $FF9202/$FF9203.
     if (a == 0xFF9202 || a == 0xFF9203) { stePads.writeSelectByte(a, v); return; }
+    // STE : le GST MCU n'acquitte $FF9200-01, $FF9210-17 et $FF9220-23 qu'en
+    // LECTURE (netlist 4081 : BUTR/PADR/PENR contiennent IRWZ) → toute écriture
+    // fait bus error. Mega STE non touché ($FF9200 y porte les DIP, pas de netlist).
+    if (machine == MachineType::Ste && cpu) { cpu->triggerBusError(a, true); return; }
     // Écriture OCTET sur $FF9200 (adresse paire) → bus error, comme en lecture
     // (Joy_StePadButtons_DIPSwitches_WriteWord). Les autres écritures de la plage
     // (lightpen incluse : IoMem_WriteWithoutInterception) sont ignorées sans faute.
@@ -1112,12 +1174,21 @@ const Bus::MmioSlot* Bus::mmioSlotFor(uint32_t addr) const {
 
 uint8_t Bus::mmioRead8(uint32_t addr) {
     if (const MmioSlot* s = mmioSlotFor(addr)) return (this->*(s->read))(addr);
+    if (machine == MachineType::Ste) {
+        // $FF8001 : quatre bascules ID0-3 relues sur IDB0-3, IDB4-7 à VSS (netlist
+        // REGISTER.PIN du 4081) — le haut de l'octet relit 0.
+        if (addr == 0xFF8001 && glue) return uint8_t(glue->read8(addr) & 0x0F);
+        // $FF9000 : IDB8 = GAMECART, IDB9 = VSS ; IDB10-15 non pilotés (bus flottant,
+        // rendu $FF comme le reste du vide MMIO).
+        if (addr == 0xFF9000) return uint8_t(0xFC | (gameCart ? 1 : 0));
+    }
     if (glue) return glue->read8(addr);   // MMU et reste du MMIO
     return 0xFF;
 }
 
 void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     if (const MmioSlot* s = mmioSlotFor(addr)) { (this->*(s->write))(addr, v); return; }
+    if (addr == 0xFF9000 && machine == MachineType::Ste) { gameCart = v & 1; return; }
     if (glue) glue->write8(addr, v);
 }
 

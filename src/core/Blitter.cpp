@@ -57,7 +57,8 @@ namespace {
         return (off == 0x21 || off == 0x23 || off == 0x2F || off == 0x31
                 || off == 0x27 || off == 0x35)          ? 0xFE
              : (off == 0x24 || off == 0x32)             ? 0x00
-             : off == 0x3A ? 0x03 : off == 0x3B ? 0x0F : off == 0x3C ? 0xEF : 0xFF;
+             : off == 0x3A ? 0x03 : off == 0x3B ? 0x0F : off == 0x3C ? 0xEF
+             : off == 0x3D ? 0xCF : 0xFF;   // skew : bits 4-5 sans verrou (netlist 4082 f.10)
     }
 }
 
@@ -65,12 +66,17 @@ void Blitter::reset(bool cold) {
     // Blitter_Reset (Hatari blitter.c:271-307) ne touche ni la RAM halftone
     // ni le registre source à décalage. Le reset chaud annule le transfert,
     // sans perdre ces données ; une nouvelle session froide les initialise.
-    std::fill(std::begin(reg_) + (cold ? 0 : 0x20), std::end(reg_), 0);
+    // Netlist 4051/4082 : /RESET n'atteint que les verrous BUSY et HOG ; skew, HOP,
+    // OP, ligne, smudge, NFSR/FXSR, compteurs et adresses n'ont pas de remise à zéro.
+    // Le reset chaud n'efface donc que BUSY/HOG (le blit en cours est abandonné).
     if (cold) {
-        std::fill(std::begin(ioRaw_), std::end(ioRaw_), 0);
+        std::fill(std::begin(reg_), std::end(reg_), 0);
         buffer_ = 0;
+        yLatch_ = 0;
+    } else {
+        reg_[0x3C] &= uint8_t(~0xC0);
     }
-    busWord_ = 0; yLatch_ = 0;
+    busWord_ = 0;
     midBlit_ = false; haveFxsr_ = false; nfsrInt_ = false;
     haveSrc_ = false; haveDst_ = false; fetchSrc_ = false; dstWord_ = 0;
     busCountError_ = false;
@@ -138,16 +144,8 @@ uint8_t Blitter::read8(uint32_t addr) {
     // $FF8A3E/$FF8A3F : zone void du blitter (Hatari ioMemTabSTE.c:199 = IoMem_VoidRead,
     // « No bus error here ») → lit 0xFF, pas la case reg_ (qui valait 0x00).
     if (off >= 0x3E) return 0xFF;
-    if (off < 0x3A) {
-        // Le handler mot ne touche pas IoMem pour une lecture octet. En lecture
-        // mot/long, il rafraîchit TOUT son registre (4 octets pour src/dst_addr),
-        // même si le bus ne demande que la moitié de l'adresse.
-        if (bus_.ioAccessWidth() == 1) return ioRaw_[off];
-        const uint32_t first = (off >= 0x24 && off < 0x28) ? 0x24
-                             : (off >= 0x32 && off < 0x36) ? 0x32 : off & ~1u;
-        const uint32_t size = (first == 0x24 || first == 0x32) ? 4 : 2;
-        std::copy(reg_ + first, reg_ + first + size, ioRaw_ + first);
-    }
+    // Netlist 4082 : la validation de lecture ne dépend pas de UDS/LDS — un accès
+    // octet relit le registre vivant (Hatari rend son tampon IoMem brut).
     return reg_[off];
 }
 
@@ -155,7 +153,7 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
     const uint32_t off = addr & 0x3F;
     // IoMem_bput stocke l'octet AVANT Blitter_CheckAccess_Byte : l'écriture
     // rejetée reste donc relisible sans modifier le registre matériel.
-    if (off < 0x3A) { ioRaw_[off] = v; return; }
+    if (off < 0x3A) return;                // registre mot : strobe WW absent (netlist 4082 f.13)
     // Accès OCTET valides UNIQUEMENT pour les registres 8 bits HOP/LOP/contrôle/
     // skew ($FF8A3A-$FF8A3D) ; un accès octet à un registre MOT (halftone RAM,
     // adresses, incréments, endmasks, compteurs : $FF8A00-$FF8A39) est IGNORÉ,
@@ -163,6 +161,7 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
     // écritures mot/long, elles, passent par write16/write32 (Bus). $FF8A3E/3F = void
     // (IoMem_VoidWrite) → ignorées aussi.
     if (off < 0x3A || off >= 0x3E) return;
+    const bool wasBusy = reg_[0x3C] & 0x80;
     reg_[off] = v & regWriteMask(off);   // bits non câblés masqués À L'ÉCRITURE (cf. regWriteMask)
     if (off == 0x3C && !inSlice_) {
         // Écriture du registre contrôle ($FF8A3C) : BUSY (bit7) à 1 → démarre ou
@@ -172,27 +171,28 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
         // !inSlice_ : une écriture VENANT DU BLITTER lui-même (blit dont la
         // destination est sa propre zone registre) pose les octets et rien de plus,
         // comme chez Hatari où le contrôle ne relance jamais le transfert en direct.
-        if (v & 0x80) start();
-        else if (midBlit_) pauseTransfer();
+        controlWritten(wasBusy);
     }
 }
 
 void Blitter::writeRegisters(uint32_t off, uint32_t value, unsigned bytes) {
-    // IoMem_wput/lput posent d'abord tous les octets bruts, puis chaque handler
-    // reconstruit son registre entier. Une écriture mot sur src/dst_addr doit
-    // donc reprendre l'autre moitié dans IoMem, y compris ses octets rejetés.
-    for (unsigned i = 0; i < bytes && off + i < 0x3E; ++i) {
-        const uint8_t v = uint8_t(value >> (8 * (bytes - 1 - i)));
-        if (off + i < 0x3A) ioRaw_[off + i] = v;
-        else reg_[off + i] = v & regWriteMask(off + i);
-    }
-    for (uint32_t pos = off; pos < off + bytes && pos < 0x3A; ) {
-        const uint32_t first = (pos >= 0x24 && pos < 0x28) ? 0x24
-                             : (pos >= 0x32 && pos < 0x36) ? 0x32 : pos & ~1u;
-        const uint32_t size = (first == 0x24 || first == 0x32) ? 4 : 2;
-        for (uint32_t i = first; i < first + size; ++i)
-            reg_[i] = ioRaw_[i] & regWriteMask(i);
-        pos = first + size;
+    // Netlist Atari du blitter (4082 f.13, `WW` = écriture & UDS & LDS) : un
+    // registre MOT ($FF8A00-$FF8A39) ne se charge que sur une écriture mot complète,
+    // chaque mot indépendamment (les adresses source/destination comptent deux mots).
+    // Les registres octet ($FF8A3A-$FF8A3D) se chargent sur leur seul strobe. Le
+    // tampon IoMem d'Hatari (octets rejetés réutilisés à l'écriture suivante) n'a pas
+    // d'équivalent dans le circuit (champ ioRaw_ retiré du format en v53).
+    const uint32_t end = off + bytes;
+    for (uint32_t pos = off; pos < end && pos < 0x3E; ++pos) {
+        const uint8_t v = uint8_t(value >> (8 * (end - 1 - pos)));
+        if (pos >= 0x3A) {
+            reg_[pos] = v & regWriteMask(pos);
+        } else if ((pos & 1) == 0 && pos + 1 < end) {
+            const uint8_t lo = uint8_t(value >> (8 * (end - 2 - pos)));
+            reg_[pos]     = v  & regWriteMask(pos);
+            reg_[pos + 1] = lo & regWriteMask(pos + 1);
+            ++pos;
+        }
     }
 }
 
@@ -203,6 +203,7 @@ void Blitter::writeRegisters(uint32_t off, uint32_t value, unsigned bytes) {
 // → plan 0 décalé par rapport aux plans 1-3 (franges de couleur).
 void Blitter::write16(uint32_t addr, uint16_t v) {
     const uint32_t off = addr & 0x3F;
+    const bool wasBusy = reg_[0x3C] & 0x80;
     writeRegisters(off, v, 2);
     // X count ($FF8A36) : recharge x_count_reset latchée À CHAQUE écriture du
     // registre (Hatari Blitter_WordsPerLine_WriteWord, blitter.c:1338-1350) — pas
@@ -216,14 +217,13 @@ void Blitter::write16(uint32_t addr, uint16_t v) {
         const uint16_t y = uint16_t((reg_[0x38] << 8) | reg_[0x39]);
         yLatch_ = y ? y : 65536u;
     }
-    if (off <= 0x3C && off + 1 >= 0x3C && !inSlice_) {   // cf. write8 : pas de relance ré-entrante
-        if (reg_[0x3C] & 0x80) start();
-        else if (midBlit_) pauseTransfer();
-    }
+    if (off <= 0x3C && off + 1 >= 0x3C && !inSlice_)     // cf. write8 : pas de relance ré-entrante
+        controlWritten(wasBusy);
 }
 
 void Blitter::write32(uint32_t addr, uint32_t v) {
     const uint32_t off = addr & 0x3F;
+    const bool wasBusy = reg_[0x3C] & 0x80;
     writeRegisters(off, v, 4);
     // X count ($FF8A36) couvert par l'écriture longue → latch de x_count_reset
     // (cf. write16 / Hatari Blitter_WordsPerLine_WriteWord).
@@ -234,10 +234,18 @@ void Blitter::write32(uint32_t addr, uint32_t v) {
         const uint16_t y = uint16_t((reg_[0x38] << 8) | reg_[0x39]);
         yLatch_ = y ? y : 65536u;
     }
-    if (off <= 0x3C && off + 3 >= 0x3C && !inSlice_) {   // cf. write8 : pas de relance ré-entrante
-        if (reg_[0x3C] & 0x80) start();
-        else if (midBlit_) pauseTransfer();
-    }
+    if (off <= 0x3C && off + 3 >= 0x3C && !inSlice_)     // cf. write8 : pas de relance ré-entrante
+        controlWritten(wasBusy);
+}
+
+// Écriture CPU de l'octet de contrôle ($FF8A3C). Ligne INT (GPIP3) d'après le RTL
+// de J. Cwik (MiSTery stBlitter.sv:185-190, « INTn = rBusy & !ctrlWr ») : elle suit
+// BUSY, et BUSY est vu à 0 PENDANT l'écriture — une écriture en plein blit (relance
+// « bset #7 » du non-hog) fait donc 1→0→1 et peut lever le canal 3. Non mesuré.
+void Blitter::controlWritten(bool wasBusy) {
+    if (wasBusy && bus_.mfp) bus_.mfp->setBlitterLine(true);
+    if (reg_[0x3C] & 0x80) start();
+    else if (midBlit_) pauseTransfer();
 }
 
 // -----------------------------------------------------------------------------
@@ -261,6 +269,8 @@ void Blitter::start() {
         reg_[0x3C] &= ~(0x80 | 0x40);
         return;
     }
+    // Ligne INT = BUSY (RTL Cwik) : haute pour un départ COMME pour une reprise.
+    if (bus_.mfp) bus_.mfp->setBlitterLine(false);
 
     // Un (re)démarrage supplante la fenêtre CPU en cours (Hatari : l'écriture du
     // contrôle repasse en PRE_START sans attendre les accès CPU restants).
@@ -284,11 +294,6 @@ void Blitter::start() {
                          r16(0x36), unsigned(yLatch_), reg_[0x3A] & 3u, reg_[0x3B] & 0xFu,
                          reg_[0x3C], reg_[0x3D]);
         }
-        // Ré-arme la ligne GPU_DONE (GPIP3) à l'état HAUT « pas fini » au démarrage de
-        // CHAQUE blit (cf. Hatari Blitter_Start blitter.c:895) ; finishTransfer la
-        // rabaissera à l'achèvement. Sans ça, GPIP3 resterait « fini » dès le 1ᵉʳ blit
-        // → un programme qui scrute la fin de blit verrait un faux positif au 2ᵉ blit.
-        if (bus_.mfp) bus_.mfp->setBlitterLine(false);
     }
 
     // En HOG comme en partagé, PRE_START laisse encore tourner le CPU avant
@@ -398,6 +403,9 @@ void Blitter::notePreStartCpuAccess() {
 // reste en place (reprise au prochain BUSY=1), la tranche datée est annulée et
 // la fenêtre de comptage CPU désarmée (Hatari : phase COUNT_CPU_BUS → PAUSE).
 void Blitter::pauseTransfer() {
+    // BUSY à 0 → ligne INT basse (RTL Cwik) ; la reprise la relève dans start().
+    // Hatari la laisse haute pendant la pause.
+    if (bus_.mfp) bus_.mfp->setBlitterLine(true);
     clearPreStartWindow();
     busCountError_ = false;
     bus_.blitterCountCpu = false;

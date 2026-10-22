@@ -194,8 +194,37 @@ public:
     // Hatari à zéro), jamais de bus error en LECTURE ; les ÉCRITURES fautent sur
     // toute la fenêtre. Une ROM historique à $FC0000 occupe 3 banques (192 Ko =
     // exactement le fichier).
+    // STE : le GST MCU (netlist Atari du 4081, archive de C. Zietz) ne décode que
+    // /ROM2-/ROM1-/ROM0 = $E00000-$EBFFFF (768 Ko) ; $EC0000-$EFFFFF n'a pas de
+    // DTACK → bus error. Écart assumé avec Hatari (1 Mo), aligné sur le matériel —
+    // cf. docs/HATARI_DIVERGENCES.md. Mega STE inchangé (pas de netlist).
     uint32_t romWindowSize() const {
-        return romBase == stmap::ROM_E00000 ? 0x100000u : 0x30000u;
+        if (romBase != stmap::ROM_E00000) return 0x30000u;
+        return machine == MachineType::Ste ? 0xC0000u : 0x100000u;
+    }
+
+    // STE : sélections ROM du GST MCU décodées (DTACK) sans puce derrière, hors
+    // fenêtre TOS — /ROM6 $D00000-$D3FFFF, /ROM5 $D40000-$D7FFFF et /ROMP
+    // $FE0000-$FE1FFF. Source : netlist Atari du 4081 (archive ASIC de C. Zietz,
+    // 4081P2, porte AF8 « ROMXB » = DTACK ROM : IROM0-4, /ROM5, /ROM6, /ROMP) ; le
+    // « irom6 | irom6 » de gstmcu.v (MiSTer) est une coquille. En LECTURE, pas de
+    // bus error : bus ouvert. Les écritures fautent toujours (lecture seule).
+    // Bit « gamecart » posé ($FF9000) : /ROM4 et /ROM3 passent en $D80000-$DBFFFF
+    // et $DC0000-$DFFFFF (cf. steCartRelocated).
+    bool steRomSelectVoid(uint32_t addr) const {
+        return machine == MachineType::Ste &&
+               ((addr >= 0xD00000u && addr < 0xD80000u) ||
+                (addr >= 0xFE0000u && addr < 0xFE2000u));
+    }
+    // Registre « gamecart » du GST MCU ($FF9000, bit 0 de l'octet pair ; netlist
+    // 4081P10 : bascule GAMECART, D = ID8, effacée au reset RESB/PORB). À 1, le
+    // port cartouche quitte $FA0000-$FBFFFF (bus error) pour $D80000-$DFFFFF.
+    bool gameCart = false;
+    // La cartouche SYSTÈME du HD GEMDOS (invention de NeoST, absente d'un vrai STE)
+    // ne déménage pas : son trap #1 vit en $FA002A et doit rester joignable.
+    bool steCartRelocated() const { return machine == MachineType::Ste && gameCart && !gemdos; }
+    bool steCartWindow(uint32_t addr) const {
+        return steCartRelocated() && addr >= 0xD80000u && addr < 0xE00000u;
     }
 
     // Vrai si un accès OCTET à `addr` provoque une bus error sur le 68000 (aucun

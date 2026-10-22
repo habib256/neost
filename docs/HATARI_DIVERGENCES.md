@@ -582,25 +582,92 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
   `IKBD_SCI_Set_Line_TX` (ikbd.c:835-866), `IKBD_Check_New_TDR` (:917-929).
   L’ancienne mention « deux octets » était fausse : Hatari ne charge TDR qu’en
   SCI IDLE et le copie immédiatement dans TSR, sans précharger le suivant.
-- **[basse, assumée — NeoST plus robuste]** Monitoring `$17` : paquet « entier ou rien » ; Hatari est le SEUL émetteur sans `CheckFreeCount` et peut déchirer un paquet à 1 octet libre (désynchronise le flux, ikbd.c:1484). Observable seulement avec 1024 octets d'arriéré.
+- **[basse, assumée — NeoST plus robuste]** Monitoring `$17` : paquet « entier ou rien » ; Hatari est le SEUL émetteur sans `CheckFreeCount` et peut déchirer un paquet à 1 octet libre (désynchronise le flux, ikbd.c:1484). Observable seulement avec un tampon plein (21 octets, ROM).
 - **[basse, assumée]** Horloge IKBD amorcée sur l'heure hôte à la construction (Hatari l'efface au cold boot, ikbd.c:539) — confort bureau ; `--keys`/`setClock` couvrent le déterminisme headless. Idem : état des handlers 6301 custom ré-initialisé à chaque reconnaissance (les `static` d'Hatari casseraient un 2ᵉ lancement).
-- **[assumée, 2026-10-20] IKBD — quatre défauts d'Hatari non repris** (`Ikbd.cpp`). Source :
-  protocole IKBD Atari. Aucun n'est vérifié sur la ROM 6301.
-  - `$09` (SET ABSOLUTE MOUSE POSITIONING) remet à zéro la position absolue interne :
-    « Resets the ikbd maintained X and Y coordinates ». `IKBD_Cmd_AbsMouseMode` ne le fait pas.
-  - `$88/$89/$8A` avec la souris coupée (`$12`, ou `$14`/`$17`) : la réponse est complétée à 8 octets
-    (« padded to 8 bytes ») et rapporte le dernier mode souris choisi (`lastMouseMode_`, REL
-    au boot). Hatari (ikbd.c:2565) n'émet que l'en-tête `$F6`, ce qui désynchronise le flux.
-    L'octet de mode réellement émis par la ROM n'est pas confirmé (TODO.md § 2).
-  - `$9A` rend `$1A` seulement après `$1A` (`joysticksEnabled_`). Hatari le déduit du mode
-    interrogation et répond donc `$1A` après un simple `$15`.
-  - `$17` sous PAUSE OUTPUT (`$13`) : aucun échantillon n'est mis en file (« the samples are
-    not enqueued for transmission »), la cadence continue. Hatari empile les échantillons.
+- ⚠ **IKBD calé sur la ROM 6301 désassemblée (2026-10-22) — écarts assumés avec Hatari,
+  alignés sur le firmware réel** (MiSTery `ikbd/rom/IKBD.ASM` ; révision tardive du clavier,
+  dont la logique des commandes ne dépend pas a priori). `Ikbd.cpp` :
+  - **Octets de mode** : `$C9` = souris activée (bit 7, `mouseOn_`), port 0 attribué au
+    joystick (bit 1, `port0Joy_`, posé par `$14/$15/$17/$18/$19` via `$FA47`, effacé par
+    toute commande souris `$FBAF`), mode souris (bits 6-5) ; `$CA` = mode joystick et
+    activation (bit 5, `joysticksEnabled_`). `$92` rapporte le seul bit 7 ; `$1A` n'efface
+    que le bit 5 (`$94` répond toujours `$14`) ; une commande souris arrête `$17/$18/$19`.
+  - **Fenêtre de reset** ($F010 sei … $F139 cli) : un seul octet reçu pendant l'init attend
+    dans le RDR et s'exécute après ; un second déborde et tout est perdu ($FF40). Remplace
+    les quatre quirks d'Hatari (Barbarian `$08+$14`, Hammerfist `$12+$14`, `$12+$1A`,
+    `$13` ignoré pour Just Buggin') : il ne reste que les défauts (souris relative +
+    joystick 1 en événement ; jamais le joystick 0). Vérifié : Just Buggin' envoie
+    `$80 $01 $11 $13` d'un trait, `$11` est retenu puis perdu avec `$13` ; Barbarian
+    (Psygnosis) envoie `$80 $01 $08 $0B 03 03 $14`, tout est perdu, souris et joystick 1
+    répondent ensemble (cf. `CASE_STUDIES.md`).
+  - **Tampon de sortie de 21 octets** ($D9-$ED ; Hatari 1024) ; les réponses d'état sont
+    admises appel par appel ($FCD7) et peuvent être tronquées.
+  - **PAUSE `$13`** ($F9AF) : les octets déjà en file sortent encore ; seules les commandes
+    qui sortent par $F91B lèvent la pause (pas les rapports d'état, ni `$0D` hors mode
+    absolu, `$16` refusé, `$80 xx`) ; rapports d'état ignorés pendant la pause et pendant
+    `$17/$18` ; décompte de `$17` gelé ($FEAC).
+  - **Souris absolue** : `$09` ne remet PAS la position à zéro ($FACB — Hatari avait raison,
+    la doc du protocole a tort) ; position mise à jour en mode absolu seulement ; `$0D`
+    ($FB39) ne répond qu'en mode absolu, avec les événements boutons CUMULÉS ($C2) qu'il
+    efface ; `$07` bits 0-1 envoient les événements du passage ; `$0E` ($FB5F) passe en mode
+    absolu ; échelle par défaut 1, 0 fige l'axe ; bornes 0/0 après boot (RAM effacée).
+  - **`$07` bit 2** en relatif : un changement de bouton seul ne produit plus de `$F8`.
+  - **`$16`** refusé si joysticks désactivés ou hors modes événement/interrogation ; joystick 0
+    lu à 0 si le port 0 sert la souris.
+  - **Émission « dès que la ligne est libre »** ($F54A) : paquets `$F8` envoyés quand la
+    ligne se libère et que le cumul atteint le seuil, ou sur changement de bouton, ou au-delà
+    de ±127 ; le cumul sous le seuil est gardé (Hatari scrute toutes les 150 000 cycles et
+    abandonne le reliquat). Même règle pour les flèches `$0A` (une paire par axe, cumul
+    effacé) et pour `$17` à taux 0.
+  - **`$18`** ($F8A2) : un échantillon du feu joystick 1 par tour de boucle, 177 µs enfoncé
+    / 180 µs relâché, +15 µs au 8ᵉ (octet écrit dans le TDR), attente 57 µs ligne occupée et
+    34 µs sous pause — cycles HD6301 comptés sur la ROM, hors interruptions du timer ;
+    clavier non scruté. **`$19`** (joystick 0 en flèches, RX/TX/VX en dixièmes de seconde,
+    feu `$74/$F4`) scruté toutes les 1 ms ; `$94` rapporte `$19` + paramètres.
+  - **Valeurs extrêmes** : taux `$17` à 0, seuil `$0B` à 0 et pas `$0A` à 0 = flux continus
+    au débit de la ligne ; mois 0 = horloge figée ; `$1B` recharge le compteur de ms.
+  Conservés (la ROM les confirme) : `$88` complété à 8 octets avec le dernier mode choisi,
+  `$9A` piloté par `$1A` seul.
   Même lot : `Blitter::reset` relâche GPU_DONE (GPIP3), donc pas de blit fantôme après un
   reset à chaud en plein blit. Le bouchon RS-232 (`Mfp::loopback_`) n'est plus dans l'état
   depuis la v51 ; c'est un réglage du frontal, comme les bouchons MIDI et SCC.
 
 ### Bus / mémoire / bus-error — `Bus.cpp` ↔ `ioMem*.c`, `memory.c`, `stMemory.c`
+
+- ⚠ **Décodage du STE d'après la netlist du GST MCU (2026-10-22) — écarts assumés avec Hatari,
+  alignés sur le matériel.** Ne pas réaligner sur Hatari : la netlist est le câblage du circuit.
+  Sources : netlist texte Atari du 4081 (archive ASIC de Christian Zietz,
+  chzsoft.de/asic-web, `ASIC/4081_COMBO/4081/PIN/4081.PIN` et `REGISTER.PIN`), sa
+  transcription `gstmcu.v` (cœurs MiSTer/MiSTery). Le MCU ne donne DTACK, en **lecture**
+  seulement, qu'à $E00000-$EBFFFF (/ROM2-/ROM0), $D00000-$D7FFFF (/ROM6, /ROM5),
+  $FE0000-$FE1FFF (/ROMP) et au port cartouche (4081P2, porte AF8 `ROMXB`) ; le reste
+  time-oute (`berr_cnt`, 64 cycles 8 MHz). NeoST, **STE seulement** (`Bus::romWindowSize`,
+  `steRomSelectVoid`, `steCartWindow`, `mmuBank0Size`, `mmioRead8`) :
+  - $EC0000-$EFFFFF faute (Hatari : fenêtre ROM de 1 Mo, lit 0) ;
+  - /ROM5, /ROM6 et /ROMP lisent le bus ouvert (Hatari : `BusErrMem_bank`) ; le
+    « `irom6 | irom6` » de `gstmcu.v` (sans /ROM5) est une coquille de transcription,
+    présente depuis son premier commit ;
+  - registre « gamecart » `$FF9000` (4081P10 : bascule `GAMECART`, D = ID8, effacée par
+    RESB/PORB) : bit 0 de l'octet pair relu (bit 1 à 0, bits 2-7 flottants rendus à 1) ; à 1,
+    /ROM4 et /ROM3 passent en $D80000-$DBFFFF et $DC0000-$DFFFFF (fenêtres de 64 Ko répétées)
+    et $FA0000-$FBFFFF faute. Les extensions NeoST du port cartouche (NE2000, ISP1160, clés)
+    ne suivent pas le déménagement, et la cartouche système du HD GEMDOS (absente d'un vrai
+    STE) ne déménage pas du tout : son trap #1 reste en $FA002A (`steCartRelocated`) ;
+  - `$FF8001` relu sur 4 bits (`REGISTER.PIN` : latches ID0-3, IDB4-7 à VSS) ; banque 0
+    configurée « 11 » = 2 Mo (4081P18 : RS3 = 1 prend le chemin 2 Mo quel que soit RS2).
+    Confirme aussi le modèle Hatari « banque 1 calquée sur la banque 0 » : RS0/RS1 ne
+    pilotent rien.
+  - pads `$FF9200-01`, `$FF9210-17`, `$FF9220-23` : acquittés en LECTURE seule
+    (BUTR/PADR/PENR contiennent IRWZ) → toute écriture fait bus error (`Bus::wrStePads`) ;
+  - chien de garde `/BERR` (4081P11, compteur 7 bits à 8 MHz remis à zéro hors /AS) : une
+    bus error arrive ~64 cycles après /AS, soit 60 cycles d'attente en plus d'un accès
+    normal (`kBerrTimeoutWait`, Cpu68k.cpp). Hatari n'en compte aucun ;
+  - son DMA : `$FF8901` relu sur 4 bits (REGISTER.PIN) ; fin `$FF890F-13` relue via l'étage
+    SFT, figé à chaque début de trame pendant la lecture (4081P14, `DmaSound::read8`). Mega
+    STE inchangé (`DmaSound::steNetlist`, posé par le Bus).
+  **Confirmé fidèle** : $FC0000-$FEFFFF faute avec un TOS en $E00000 (`memory.c:1784`), cf.
+  cas IK+ dans `CASE_STUDIES.md`. **Non touché** : Mega STE (aucune netlist de son
+  décodage). Garde : `--bus-selftest` sur STE (24 contrôles).
 
 - ✅ **API Bus, miroir blitter atomique (2026-10-19)** : adresse masquée
   sur 24 bits avant les raccourcis write16/write32, comme pour les octets.
@@ -641,6 +708,21 @@ règle word/long : **conformes**.
   (`regs.db`, `VoidMem`). Différence théorique, sans impact connu.
 
 ### Blitter — `Blitter.cpp` ↔ `blitter.c`
+
+- ⚠ **Registres du blitter d'après la netlist Atari 4051/4082 (2026-10-22) — écarts assumés
+  avec Hatari.** Registre mot chargé sur écriture mot seule (strobe WW = UDS & LDS), chaque
+  mot indépendamment (adresses : deux mots) ; lecture octet du registre VIVANT — le tampon
+  IoMem d'Hatari (octets rejetés relus ou recombinés) n'existe pas dans le circuit
+  (`Blitter::writeRegisters`, `read8`). `$FF8A3D` : bits 4-5 sans verrou, relus 0 (masque
+  `0xCF`). Reset à chaud : seuls BUSY et HOG ont une remise à zéro (`Blitter::reset`).
+- ⚠ **Ligne INT (GPIP3) = BUSY, d'après le RTL de J. Cwik (2026-10-22), confirmé par la
+  netlist 4051/4082 — écart assumé avec Hatari, aligné sur le matériel.**
+  MiSTery `stBlitter.sv:185-190` : `INTn = rBusy & !ctrlWr`, câblée sans inversion sur GPIP3
+  (`atarist_sdram.sv:623`). NeoST (`Blitter::controlWritten`, `start`, `pauseTransfer`) : la
+  ligne retombe à la pause (BUSY écrit à 0) et remonte à la reprise ; toute écriture CPU de
+  l'octet `$FF8A3C` pendant un blit la fait passer 1→0→1 (relance « `bset #7` » du non-hog),
+  ce qui peut lever le canal 3 s'il est armé. Hatari la laisse haute pendant la pause et
+  n'a pas d'impulsion. Non mesuré sur matériel.
 
 **Passe temporelle du 2026-10-19 — état courant, prioritaire sur l'historique BL5.**
 L'écart synthétique partagé **+60 cycles / IRQ +42 / trois tours CPU** est corrigé :

@@ -62,14 +62,13 @@ int testIkbdMonitorMachine() {
         normal->ikbd.mouseEvent(3, 0, false, false);
         check(normal->sched.cyclesUntil(Scheduler::IKBD_AUTOSEND) == 150000,
               "constructor arms normal autosend");
-        normal->sched.runTo(149999);
-        check((normal->bus.read8(0xFFFC00) & 1) == 0, "normal input waits firmware scan");
-        normal->sched.runTo(150000);
+        // ROM 6301 : le paquet $F8 part dès que la ligne est libre, sans attendre
+        // la scrutation.
         check(normal->sched.cyclesUntil(Scheduler::IKBD_RX) == 10240,
-              "Machine autosend callback enqueues serial packet");
-        normal->sched.runTo(160240);
+              "mouse packet starts on a free line");
+        normal->sched.runTo(10240);
         check(normal->bus.read8(0xFFFC02) == 0xF8, "normal packet header through Bus");
-        normal->sched.runTo(170480);
+        normal->sched.runTo(20480);
         check(normal->bus.read8(0xFFFC02) == 3, "normal mouse movement through Bus");
     }
     std::printf("[ikbd-monitor-machine] %d checks, %d FAIL\n", checks, failures);

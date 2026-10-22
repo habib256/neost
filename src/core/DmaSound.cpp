@@ -532,9 +532,14 @@ uint8_t DmaSound::read8(uint32_t addr) {
         case 0x09: return uint8_t(liveCounter() >> 16);
         case 0x0B: return uint8_t(liveCounter() >> 8);
         case 0x0D: return uint8_t(liveCounter());
-        case 0x0F: return uint8_t(endAddr_ >> 16);
-        case 0x11: return uint8_t(endAddr_ >> 8);
-        case 0x13: return uint8_t(endAddr_);
+        // Fin : la relecture passe par le second étage SFT (netlist 4081P14), verrou
+        // transparent tant que SFRAME est bas (son arrêté) et figé à chaque début de
+        // trame — pendant la lecture, une nouvelle fin écrite n'est visible qu'à la
+        // trame suivante.
+        // STE seulement (netlist) ; Mega STE : valeur écrite, comme Hatari.
+        case 0x0F: return uint8_t((playing_ && steNetlist ? frameEndAddr_ : endAddr_) >> 16);
+        case 0x11: return uint8_t((playing_ && steNetlist ? frameEndAddr_ : endAddr_) >> 8);
+        case 0x13: return uint8_t(playing_ && steNetlist ? frameEndAddr_ : endAddr_);
         case 0x21: return mode_;
         case 0x22: return uint8_t(mwShift_ >> 8);     // microwire data : valeur EN COURS de shift
         case 0x23: return uint8_t(mwShift_);          // (→ 0 quand le transfert est fini)
@@ -553,7 +558,8 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
             updateDac();                               // date l'état AVANT le changement (≙ Sound_Update
                                                        // en tête de DmaSnd_SoundControl_WriteWord)
             const bool wasPlaying = ctrl_ & 0x01;
-            ctrl_ = v & 0x03;
+            ctrl_ = v & (steNetlist ? 0x0F : 0x03);    // STE : 4 verrous ID0-3 relus (REGISTER.PIN) ;
+                                                       // seuls play/repeat pilotent quelque chose
             if ((ctrl_ & 0x01) && !wasPlaying) {       // 0→1 : (re)démarre la trame
                 dacLast_ = sched_ ? sched_->liveNow() : 0;
                 dacRem_  = 0;                          // ≙ frameCounter_float = 0 au start

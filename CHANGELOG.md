@@ -6,6 +6,74 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Chasse aux bugs sur les changements du jour (2026-10-22)
+
+Trois relectures indépendantes (IKBD ; Bus/CPU/STE ; blitter, `.state` et tests) :
+- IKBD : touche `$74/$75` perdue avec `$07 $04` quand le paquet `$F8` partait d'abord ;
+  `$74` doublé en mode flèches ; mouvement cumulé pendant `$18`/`$19` (le port 0 n'y compte
+  plus d'impulsions) ; réentrance des émetteurs souris sans ordonnanceur ; code 6301 custom
+  servi pendant `$18`/`$19` ; actions boutons `$07` réservées à une souris active (la
+  ROM ne passe pas par $F371 en `$17`).
+- Bus : la cartouche système du HD GEMDOS ne déménage plus avec gamecart (un programme
+  qui posait `$FF9000` tuait GEMDOS) ; `peek8` (désassembleur, `--trace`) suit gamecart ;
+  relectures du son DMA tirées de la netlist réservées au STE.
+- `.state` v53 (le format v52 avait changé sous le même numéro) ; contrôles de chargement de
+  `monitorFrozen_`, `kjStart_/kjLast_`, `pauseKeep_` ; `Blitter::ioRaw_` retiré.
+- Tests rendus discriminants (capacité exacte d'une réponse tronquée, assemblage SCI après
+  la fenêtre de reset, chargement mot du blitter) ; non-régressions ajoutées.
+
+## IKBD : émission « dès que la ligne est libre » et `$18` aux cycles de la ROM (2026-10-22)
+
+- Paquets souris `$F8`, flèches `$0A` et surveillance `$17` à taux 0 partent dès que la
+  ligne IKBD→ACIA se libère, comme la ROM ($F54A), au lieu d'attendre la scrutation de
+  150 000 cycles ; le mouvement sous le seuil reste cumulé.
+- `$18` échantillonne le feu à chaque tour de la boucle de la ROM (177/180 µs, cycles
+  HD6301 comptés sur $F13A-$F8D1), registre à décalage réel ; clavier non scruté.
+- `$19` scruté toutes les 1 ms.
+- Bancs puce nue réalignés ; nouveaux contrôles (octet `$18` mixte, flux continus).
+
+## IKBD sur la ROM 6301, blitter et STE sur les netlists Atari, délai de bus error (2026-10-22)
+
+Seconde passe sur les sources matérielles (ROM 6301 désassemblée, netlists Atari du GST MCU
+et des blitters 4051/4082, archive de Christian Zietz) :
+
+- **IKBD** : octets de mode `$C9/$CA` de la ROM ; fenêtre de reset (un octet retenu, deux
+  perdus) à la place des quatre quirks d'Hatari — Just Buggin' vérifié ; tampon de sortie de
+  21 octets ; PAUSE qui laisse partir les octets déjà en file ; `$09` garde la position,
+  `$0D` en mode absolu seulement avec événements cumulés, `$0E` passe en absolu ; `$16`,
+  `$1A`, `$94` ; modes `$18` (surveillance du tir) et `$19` (joystick en flèches) émulés ;
+  valeurs extrêmes (taux, seuil, pas, échelle, mois 0).
+- **Blitter** : registres mot chargés sur écriture mot seule et relus vivants ; `$FF8A3D`
+  bits 4-5 à 0 ; reset à chaud limité à BUSY/HOG.
+- **STE** : bus error après le chien de garde `/BERR` (~64 cycles) ; écritures des pads
+  `$FF92xx` en bus error ; `$FF8901` sur 4 bits ; fin du son DMA relue figée par trame.
+- Bancs puce nue réalignés sur la ROM et les netlists, nouveaux contrôles (`$0D`, `$0E`,
+  `$16`, `$18`, `$19`, `$94`, fenêtre de reset, échelle par défaut). Barbarian et Vroom :
+  images identiques à la version précédente sur les scénarios rejoués.
+
+## STE d'après la netlist du GST MCU, IKBD d'après sa ROM, blitter d'après Cwik (2026-10-22)
+
+Point de départ : revue de l'émulateur ASE (thebitculture/ase), puis fouille du cœur FPGA
+MiSTery, de sa ROM 6301 désassemblée et des netlists Atari du GST MCU (archive ASIC de
+Christian Zietz). Ce qui change, **sur preuve matérielle** :
+
+- **Décodage STE (netlist 4081)** : fenêtre ROM limitée à $E00000-$EBFFFF ; /ROM5, /ROM6
+  ($D00000-$D7FFFF) et /ROMP ($FE0000-$FE1FFF) lisent le bus ouvert au lieu de fauter ;
+  registre « gamecart » `$FF9000` (déplace le port cartouche en $D80000-$DFFFFF) ; `$FF8001`
+  relu sur 4 bits, configuration « 11 » = 2 Mo. Mega STE inchangé.
+- **IKBD (ROM 6301)** : `$15` rend aussi le port 0 au joystick (souris muette) ; `$92` ne
+  rapporte que la désactivation par `$12` ; une commande de mode souris arrête la
+  surveillance `$17`. Le comportement de `$88` souris coupée est confirmé.
+- **Blitter (RTL Cwik)** : la ligne GPIP3 suit BUSY (pause et reprise) et marque une
+  impulsion à chaque écriture de `$FF8A3C` en plein blit.
+- `.state` v52 (champs `Ikbd::mouseOn_`, `Bus::gameCart`) : les sauvegardes v51 sont refusées.
+
+Vérifications : IK+ (`disks/ik_plus.STX`) plante sur STE/TOS 2.06 en lisant `$FC000C`,
+comme l'oracle Hatari et comme le prévoit le schéma — cas classé FIDÈLE ; la rafale blitter
+« 63 accès » d'Hatari correspond au compteur `tmoCntr` du RTL. Pistes de preuve moyenne non
+portées → `TODO.md` § 8. Idées de fonctions d'ASE (empreinte machine, relecture d'entrées,
+retour arrière, explorateur de bitmaps) → `TODO.md`.
+
 ## 0.6.2 — plus près du silicium (2026-10-20)
 
 Sept semaines de fidélité matérielle depuis la 0.6.1. Ce que l'utilisateur y gagne :

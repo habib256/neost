@@ -51,12 +51,24 @@ struct Rig {
         return rem == INT64_MIN ? -1 : live + rem;
     }
 };
-constexpr int64_t period(int rate) { return int64_t(8021247) * (rate ? rate : 1) / 100; }
+// Taux 0 : envoi continu (ROM $F778), au débit de la ligne — 2 octets par échantillon.
+constexpr int64_t period(int rate) { return rate ? int64_t(8021247) * rate / 100 : 2 * 10240; }
 }
 
 int testIkbdMonitor() {
     Checks c;
-    for (int rate : {0, 1, 2, 10, 255}) {
+    {
+        // Taux 0 (ROM $F778) : pas de minuterie, un échantillon chaque fois que la
+        // ligne se libère.
+        Rig r; r.warm(); r.ikbd.setJoystick(0x89, 0x86);
+        r.command({0x17, 0});
+        c.equal("rate 0 uses no timer", r.monitorDue(), -1);
+        c.equal("rate 0 samples at once on a free line", r.rxDue(), 10240);
+        r.advance(10240); c.equal("rate 0 fire bits", r.data(), 3);
+        r.advance(20480); c.equal("rate 0 directions", r.data(), 0x96);
+        c.equal("rate 0 next sample when the line frees", r.rxDue(), 30720);
+    }
+    for (int rate : {1, 2, 10, 255}) {
         Rig r; r.warm(); r.live = 123;
         r.command({0x17, uint8_t(rate)});
         const int64_t due = 123 + period(rate);
@@ -86,16 +98,25 @@ int testIkbdMonitor() {
         r.ikbd.onVbl(20000); r.advance(period(1) * 2);
         c.equal("sampling starts after twenty VBL", r.rxDue(), period(1) * 2 + 10240);
     }
-    for (uint8_t exit : {uint8_t(0x14), uint8_t(0x15), uint8_t(0x1A)}) {
+    for (uint8_t exit : {uint8_t(0x14), uint8_t(0x15)}) {
+        // $14/$15 quittent la surveillance : retour à la scrutation normale.
         Rig r; r.warm(); r.command({0x17, 1}); r.command({exit});
-        c.equal("leaving monitoring retains common timer", r.monitorDue(), period(1));
+        c.equal("leaving monitoring stops its timer", r.monitorDue(), -1);
         r.advance(period(1)); c.equal("new mode emits no stale monitor sample", r.rxDue(), -1);
+    }
+    {
+        // $1A n'efface que le bit 5 de $CA : la cadence continue, sans échantillon.
+        Rig r; r.warm(); r.command({0x17, 1}); r.command({0x1A});
+        c.equal("disabled joysticks keep monitor cadence", r.monitorDue(), period(1));
+        r.ikbd.setJoystick(0x81, 0x81);
+        r.advance(period(1)); c.equal("disabled joysticks emit no sample", r.rxDue(), -1);
     }
     {
         Rig r; r.warm(); r.command({0x17, 1});
         r.command({0x13});
         r.advance(period(1)); r.advance(period(1) * 2);
-        c.equal("paused monitoring keeps sampling timer", r.monitorDue(), period(1) * 3);
+        // ROM $FEAC : sous PAUSE, le décompte de surveillance est GELÉ.
+        c.equal("paused monitoring freezes its countdown", r.monitorDue(), -1);
         c.equal("pause holds output queue", r.rxDue(), -1);
         // Protocole IKBD Atari (PAUSE OUTPUT) : « the PAUSE OUTPUT command also
         // temporarily stops the monitoring process (i.e. the samples are not
@@ -115,11 +136,11 @@ int testIkbdMonitor() {
         c.equal("mouse buttons duplicate into joystick fires", r.data(), 3);
     }
     {
+        // ROM 6301 $FBAF : une commande de mode souris, joystick en surveillance
+        // ($CA = $22), ramène le joystick en mode événement ($CA = $28) — la
+        // surveillance s'arrête (MiSTery ikbd/rom/IKBD.ASM).
         Rig r; r.warm(); r.command({0x17, 1}); r.command({0x08});
-        r.ikbd.setJoystick(0x89, 0x86);
-        r.advance(period(1)); r.advance(period(1) + 10240);
-        c.equal("active mouse masks port zero and consumes port one fire", r.data(), 0);
-        r.advance(period(1) + 20480); c.equal("active mouse preserves port one directions", r.data(), 6);
+        c.equal("mouse mode command ends joystick monitoring", r.monitorDue(), -1);
     }
     {
         Rig r; r.warm(); r.command({0x17, 1}); r.advance(1000);
@@ -138,9 +159,10 @@ int testIkbdMonitor() {
         Rig r; r.warm(); r.command({0x17, 2}); r.advance(1000);
         if (hardware) r.ikbd.resetHw(); else r.ikbd.bootRom();
         c.equal("reset cancels monitoring", r.monitorDue(), -1);
+        // $17 $01 pendant l'init de la ROM : le second octet déborde, tout est perdu.
         r.command({0x17, 1}); r.advance(1000 + period(1));
         c.equal("reset critical window suppresses sample", r.rxDue(), -1);
-        c.equal("monitor commanded during reset remains armed", r.monitorDue(), 1000 + period(1) * 2);
+        c.equal("monitor commanded during init is lost", r.monitorDue(), -1);
     }
     {
         Rig r; r.warm(); r.command({0x17, 1});
