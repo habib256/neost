@@ -54,10 +54,12 @@ Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
 - **Latence IACK MegaSTE** · P1 ⏸ matériel — capturer CLK CPU/MFP, IACK et les DTACK
   puce/CPU sur un vrai MegaSTE, aux trois régimes CPU/cache. Sonde prête
   (`tools/make_mfp_iack_probe.py`, contrôles `tools/run_mfp_iack_probe.py` verts). Le
-  résidu IACK→handler de +3/+4 cycles est EXPLIQUÉ (2026-10-22) : fx68k et Moira font la même
-  séquence d'exception au cycle près ; l'écart est celui de la durée du cycle IACK, 16
-  cycles bus chez NeoST contre 12 chez Hatari (+4 en RAM, +3 en ROM, aussi à 8 MHz). Reste
-  à MESURER la bonne valeur. → [protocole](docs/MFP_IACK_MEASUREMENT.md)
+  résidu IACK→handler du banc Mega STE (+2/+4 à 8 MHz, +3/+4 à 16 MHz face à Hatari) reste
+  À EXPLIQUER. Écarté le 2026-10-22 : la séquence d'exception (fx68k et Moira identiques au
+  cycle près) et la constante IACK MFP — NeoST compte 16 cycles bus là où Hatari compte 12
+  PLUS le cycle bus d'IACK (4) dans son cœur ; repasser à 12 (`NEOST_IACK_MFP=12`) casse
+  quatre étalons oracle (No Cooper, blankline_blank_st/ste, blankline_node_late_st) et le
+  délai d'IRQ FDC de l'oracle temporel. → [protocole](docs/MFP_IACK_MEASUREMENT.md)
 - **A12 — validation sur matériel réel** · P1 ⏸ matériel — macOS arm64 passé (sauf le pas
   visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun budget
   temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et **Linux**.

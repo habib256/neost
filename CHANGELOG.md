@@ -19,8 +19,9 @@ l'ordre inverse. Version courante : **0.6.2**.
   lecture (netlist du GST MCU).
 - **CPU** : délais IPL opt-in (`NEOST_IPLDELAY`, `NEOST_IPLFETCH`) comptés en cycles CPU,
   comme l'échantillonnage IPL du 68000 (fx68k).
-- **IACK Mega STE** : le résidu +3/+4 est expliqué (durée du cycle IACK 16 contre 12
-  cycles bus), la mesure matérielle reste à faire.
+- **IACK Mega STE** : séquence d'exception confirmée par fx68k (identique à Moira) et
+  constante IACK MFP de 16 confirmée (12 casse quatre étalons oracle) ; le résidu du banc
+  Mega STE reste à expliquer.
 - `.state` v54.
 
 ## Chasse aux bugs sur les changements du jour (2026-10-22)
