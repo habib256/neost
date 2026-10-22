@@ -150,15 +150,14 @@ détaillé dans `docs/HATARI_DIVERGENCES.md`.
 ### 4.3 ACIA 6850 / IKBD HD6301
 - **Liaison série physique** · P3 ⭘ — formats et diviseurs autres que /64 8N1 (clavier),
   phase SCI sortante exacte ; ligne BREAK et erreurs de trame qui en découlent hors modèle.
-- **Firmware IKBD** · P3 ⭘ — modes souris absolus sous mise à l'échelle, horloge, code
-  6301 custom (`Execute`) ; modes `$18`/`$19` reconnus mais non émulés (comme Hatari).
+- **Firmware IKBD, restes face à la ROM** · P3 ⭘ — le firmware est calé sur la ROM 6301
+  désassemblée depuis le 2026-10-22. Restent approximés : cadence des paquets `$F8` (la ROM
+  émet dès que la ligne est libre, NeoST par scrutation de 150 000 cycles) et flux continus
+  (seuil 0, pas 0) émis un par scrutation ; 8 échantillons identiques par octet `$18` ;
+  touche tenue au reset (`scancode|$80` avant `$F1`) ; code 6301 custom (`Execute`).
 - **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; forme d'onde
   BREAK non simulée.
 
-- **IKBD `$18` / `$19` (surveillance du tir, joystick en keycode)** · P3 ⭘ — acceptés mais
-  sans effet (comme Hatari). Et `$94`/`$95`/`$99` en mode keycode devraient répondre `$19` +
-  les 6 paramètres stockés (ROM `$FCAE`). Référence : ROM 6301 désassemblée, MiSTery
-  `ikbd/rom/IKBD.ASM` (`$FA12`, `$FA21`).
 ### 4.4 USART du MFP
 - **Restes** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
@@ -317,14 +316,15 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
 - **RTL MiSTer comme référence matérielle** · P3 ⭘ — `gstmcu.v` (schéma ST4081S),
   `stBlitter.sv` (Cwik) : plus proches du silicium qu'Hatari pour arbitrer ; à citer dans
   `docs/HATARI_MAPPING.md`.
-- **Pistes MiSTery/netlist non portées** · P2 ⭘ — relevées le 2026-10-22, preuve moyenne :
-  couleur pendant BLANK forcée au noir (`gstshifter.v:264`, schéma 4118) au lieu de la
-  palette 0 ; délai de bus error d'environ 64 cycles 8 MHz (`berr_cnt`), non compté par
-  Moira ; adresse de fin du son DMA relue figée pendant la lecture (`gstmcu.v:447`) ;
-  `$FF8901` relu sur 4 bits (`REGISTER.PIN`, polarité Q/XQ à vérifier) ; octet `$FF8261`
-  relu $00 (`gstshifter.v:121`) ; mode pulse des timers A/B du MFP (comptage conditionné
-  par TAI/TBI + IRQ GPIP4/3 sur le front opposé, fiche Motorola) ; préchargement DMA en
-  écriture (`dma.v:277`) ; remise à zéro de la période d'enveloppe YM à l'écriture de R13.
+- **Pistes MiSTery/netlist non portées** · P2 ⭘ — preuve moyenne ou travail risqué
+  (2026-10-22) : couleur pendant BLANK forcée au noir (`gstshifter.v:264`, schéma 4118) au
+  lieu de la palette 0 ; octet `$FF8261` relu $00 (`gstshifter.v:121`) ; mode pulse des
+  timers A/B du MFP (comptage conditionné par TAI/TBI + IRQ GPIP4/3 sur le front opposé,
+  fiche Motorola) ; préchargement DMA en écriture (`dma.v:277`) ; période d'enveloppe YM à
+  l'écriture de R13 ; reset STE : `$FF8901` gardé (PORB seul) et base vidéo effacée par
+  /RESET (netlist 4081, lecture d'agent) ; DMA externe prioritaire sur le blitter en HOG
+  (netlist 4082, DMARQ, confiance basse) ; délai de bus error sur ST, Mega ST et Mega STE
+  (porté sur STE seulement, faute de netlist du GLUE).
 - **Comparaison MAME ↔ NeoST** · P3 ⭘ — memory map, bus errors, FIFO FDC/MMU, blitter, SCC.
 - **Traces Hatari de référence pour `trace_diff`** · P3 ⭘ — Arkanoid et autres.
 - **Matrice MegaSTE DD/HD × cache** · P3 ⭘ — balayage systématique si un titre l'exige.

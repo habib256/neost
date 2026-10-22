@@ -1,5 +1,5 @@
-// Les 1024 octets d'ikbd.h sont ceux EN ATTENTE dans Keyboard.Buffer.
-// SCI engagé et RDR ACIA plein n'en occupent aucune place (ikbd.c:918-958).
+// Le tampon de sortie de la ROM 6301 compte 21 octets EN ATTENTE ($D9-$ED ; Hatari
+// en prévoit 1024). SCI engagé et RDR ACIA plein n'y occupent aucune place.
 #include "io/Ikbd.hpp"
 #include "io/Mfp.hpp"
 #include <cstdio>
@@ -29,34 +29,46 @@ struct Rig {
 int testIkbdOutputCapacity(){
     int checks=0,failures=0;
     auto eq=[&](const char* label,int64_t got,int64_t want){++checks;if(got==want)return;++failures;std::fprintf(stderr,"[ikbd-output-capacity] %s: %lld != %lld\n",label,(long long)got,(long long)want);};
+    // Tampon de sortie de la ROM 6301 : 21 octets ($D9-$ED, $F11B).
     {
-        Rig r;r.fullRdr();r.cmd({0x13});r.keys(1025);
-        eq("RDR full leaves all 1024 firmware slots",r.queued(),1024);
+        Rig r;r.fullRdr();r.cmd({0x13});r.keys(22);
+        eq("RDR full leaves all 21 firmware slots",r.queued(),21);
         eq("paused full queue has no active SCI",r.due(),-1);
         eq("queued writes preserve unread RDR",r.data(),0x39);r.cmd({0x11});
-        eq("firmware full drops only excess byte",r.drainKeys(1024),1);
+        eq("firmware full drops only excess byte",r.drainKeys(21),1);
     }
     {
-        Rig r;r.fullRdr();r.ikbd.keyEvent(0x3A,true);r.cmd({0x13});r.keys(1025);
-        eq("RDR and active SCI leave 1024 firmware slots",r.queued(),1024);
+        Rig r;r.fullRdr();r.ikbd.keyEvent(0x3A,true);r.cmd({0x13});r.keys(22);
+        eq("RDR and active SCI leave 21 firmware slots",r.queued(),21);
         r.advance(20480);eq("SCI overrun preserves unread RDR",r.data(),0x39);
         eq("SCI overrun becomes visible downstream",r.ikbd.read8(0xFFFC00)&0x20,0x20);
-        eq("SCI completion leaves firmware untouched under pause",r.queued(),1024);
-        r.cmd({0x11});eq("overrun does not consume queued bytes",r.drainKeys(1024),1);
+        eq("SCI completion leaves firmware untouched under pause",r.queued(),21);
+        r.cmd({0x11});eq("overrun does not consume queued bytes",r.drainKeys(21),1);
     }
     {
-        Rig r;r.fullRdr();r.cmd({0x13});r.keys(1017);r.cmd({0x1C});
-        eq("seven byte reply fits exactly despite full RDR",r.queued(),1024);
+        Rig r;r.fullRdr();r.cmd({0x13});r.keys(14);r.cmd({0x1C});
+        eq("seven byte reply fits exactly despite full RDR",r.queued(),21);
         r.data();r.advance(17408);
-        bool good=true;for(int i=0;i<1017;++i)good=(r.next()==0x3B)&&good;
+        bool good=true;for(int i=0;i<14;++i)good=(r.next()==0x3B)&&good;
         eq("accepted packet follows all earlier keys",good,1);
         const uint8_t expected[]={0xFC,0x26,0x10,0x18,0x12,0x34,0x56};
         for(auto b:expected)eq("entire clock packet retained",r.next(),b);
         eq("exactly one packet",r.due(),-1);
     }
     {
-        Rig r;r.fullRdr();r.cmd({0x13});r.keys(1018);r.cmd({0x1C});r.data();
-        eq("insufficient room rejects whole response",r.drainKeys(1018),1);
+        Rig r;r.fullRdr();r.cmd({0x13});r.keys(15);r.cmd({0x1C});r.data();
+        eq("insufficient room rejects whole response",r.drainKeys(15),1);
+    }
+    {
+        // Réponse d'état : chaque appel de $FD34 admis séparément ($FCD7) — avec
+        // 3 places, l'en-tête passe, le bloc « $07 + paramètre » aussi, le reste
+        // du bourrage est perdu.
+        Rig r;r.fullRdr();r.cmd({0x13});r.keys(18);r.ikbd.receiveSerialByte(0x11);
+        r.data();
+        r.cmd({0x13});const uint32_t before=r.queued();r.cmd({0x87});
+        eq("status report ignored while paused",r.queued(),before);
+        r.cmd({0x11});r.cmd({0x87});
+        eq("status reply truncated to free room",r.queued() <= 21,1);
     }
     {
         Rig r;r.froggies();r.cmd({1});r.advance(10240);

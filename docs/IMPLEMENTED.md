@@ -17,6 +17,11 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   `$19`), disponibilité `$92` = bit 7 de l'octet de mode, fin de surveillance `$17` sur
   commande souris.
 - **Blitter** : ligne GPIP3 = BUSY (pause, reprise, impulsion à l'écriture de `$FF8A3C`).
+- **IKBD, seconde passe sur la ROM** : fenêtre de reset, tampon de 21 octets, PAUSE,
+  souris absolue (`$09`, `$0D`, `$0E`), `$16`/`$1A`/`$94`, modes `$18` et `$19`.
+- **Blitter (netlists 4051/4082)** : registres mot, `$FF8A3D`, reset à chaud.
+- **STE (netlist 4081)** : délai de bus error, pads en lecture seule, `$FF8901`, fin du son
+  DMA figée par trame.
 
 ## Compléments du 2026-10-20
 

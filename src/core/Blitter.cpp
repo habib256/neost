@@ -57,7 +57,8 @@ namespace {
         return (off == 0x21 || off == 0x23 || off == 0x2F || off == 0x31
                 || off == 0x27 || off == 0x35)          ? 0xFE
              : (off == 0x24 || off == 0x32)             ? 0x00
-             : off == 0x3A ? 0x03 : off == 0x3B ? 0x0F : off == 0x3C ? 0xEF : 0xFF;
+             : off == 0x3A ? 0x03 : off == 0x3B ? 0x0F : off == 0x3C ? 0xEF
+             : off == 0x3D ? 0xCF : 0xFF;   // skew : bits 4-5 sans verrou (netlist 4082 f.10)
     }
 }
 
@@ -65,12 +66,18 @@ void Blitter::reset(bool cold) {
     // Blitter_Reset (Hatari blitter.c:271-307) ne touche ni la RAM halftone
     // ni le registre source à décalage. Le reset chaud annule le transfert,
     // sans perdre ces données ; une nouvelle session froide les initialise.
-    std::fill(std::begin(reg_) + (cold ? 0 : 0x20), std::end(reg_), 0);
+    // Netlist 4051/4082 : /RESET n'atteint que les verrous BUSY et HOG ; skew, HOP,
+    // OP, ligne, smudge, NFSR/FXSR, compteurs et adresses n'ont pas de remise à zéro.
+    // Le reset chaud n'efface donc que BUSY/HOG (le blit en cours est abandonné).
     if (cold) {
+        std::fill(std::begin(reg_), std::end(reg_), 0);
         std::fill(std::begin(ioRaw_), std::end(ioRaw_), 0);
         buffer_ = 0;
+        yLatch_ = 0;
+    } else {
+        reg_[0x3C] &= uint8_t(~0xC0);
     }
-    busWord_ = 0; yLatch_ = 0;
+    busWord_ = 0;
     midBlit_ = false; haveFxsr_ = false; nfsrInt_ = false;
     haveSrc_ = false; haveDst_ = false; fetchSrc_ = false; dstWord_ = 0;
     busCountError_ = false;
@@ -138,16 +145,8 @@ uint8_t Blitter::read8(uint32_t addr) {
     // $FF8A3E/$FF8A3F : zone void du blitter (Hatari ioMemTabSTE.c:199 = IoMem_VoidRead,
     // « No bus error here ») → lit 0xFF, pas la case reg_ (qui valait 0x00).
     if (off >= 0x3E) return 0xFF;
-    if (off < 0x3A) {
-        // Le handler mot ne touche pas IoMem pour une lecture octet. En lecture
-        // mot/long, il rafraîchit TOUT son registre (4 octets pour src/dst_addr),
-        // même si le bus ne demande que la moitié de l'adresse.
-        if (bus_.ioAccessWidth() == 1) return ioRaw_[off];
-        const uint32_t first = (off >= 0x24 && off < 0x28) ? 0x24
-                             : (off >= 0x32 && off < 0x36) ? 0x32 : off & ~1u;
-        const uint32_t size = (first == 0x24 || first == 0x32) ? 4 : 2;
-        std::copy(reg_ + first, reg_ + first + size, ioRaw_ + first);
-    }
+    // Netlist 4082 : la validation de lecture ne dépend pas de UDS/LDS — un accès
+    // octet relit le registre vivant (Hatari rend son tampon IoMem brut).
     return reg_[off];
 }
 
@@ -155,7 +154,7 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
     const uint32_t off = addr & 0x3F;
     // IoMem_bput stocke l'octet AVANT Blitter_CheckAccess_Byte : l'écriture
     // rejetée reste donc relisible sans modifier le registre matériel.
-    if (off < 0x3A) { ioRaw_[off] = v; return; }
+    if (off < 0x3A) return;                // registre mot : strobe WW absent (netlist 4082 f.13)
     // Accès OCTET valides UNIQUEMENT pour les registres 8 bits HOP/LOP/contrôle/
     // skew ($FF8A3A-$FF8A3D) ; un accès octet à un registre MOT (halftone RAM,
     // adresses, incréments, endmasks, compteurs : $FF8A00-$FF8A39) est IGNORÉ,
@@ -178,21 +177,24 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
 }
 
 void Blitter::writeRegisters(uint32_t off, uint32_t value, unsigned bytes) {
-    // IoMem_wput/lput posent d'abord tous les octets bruts, puis chaque handler
-    // reconstruit son registre entier. Une écriture mot sur src/dst_addr doit
-    // donc reprendre l'autre moitié dans IoMem, y compris ses octets rejetés.
-    for (unsigned i = 0; i < bytes && off + i < 0x3E; ++i) {
-        const uint8_t v = uint8_t(value >> (8 * (bytes - 1 - i)));
-        if (off + i < 0x3A) ioRaw_[off + i] = v;
-        else reg_[off + i] = v & regWriteMask(off + i);
-    }
-    for (uint32_t pos = off; pos < off + bytes && pos < 0x3A; ) {
-        const uint32_t first = (pos >= 0x24 && pos < 0x28) ? 0x24
-                             : (pos >= 0x32 && pos < 0x36) ? 0x32 : pos & ~1u;
-        const uint32_t size = (first == 0x24 || first == 0x32) ? 4 : 2;
-        for (uint32_t i = first; i < first + size; ++i)
-            reg_[i] = ioRaw_[i] & regWriteMask(i);
-        pos = first + size;
+    // Netlist Atari du blitter (4082 f.13, `WW` = écriture & UDS & LDS) : un
+    // registre MOT ($FF8A00-$FF8A39) ne se charge que sur une écriture mot complète,
+    // chaque mot indépendamment (les adresses source/destination comptent deux mots).
+    // Les registres octet ($FF8A3A-$FF8A3D) se chargent sur leur seul strobe. Le
+    // tampon IoMem d'Hatari (octets rejetés réutilisés à l'écriture suivante) n'a pas
+    // d'équivalent dans le circuit ; ioRaw_ ne fait que refléter les registres.
+    const uint32_t end = off + bytes;
+    for (uint32_t pos = off; pos < end && pos < 0x3E; ++pos) {
+        const uint8_t v = uint8_t(value >> (8 * (end - 1 - pos)));
+        if (pos >= 0x3A) {
+            reg_[pos] = v & regWriteMask(pos);
+        } else if ((pos & 1) == 0 && pos + 1 < end) {
+            const uint8_t lo = uint8_t(value >> (8 * (end - 2 - pos)));
+            reg_[pos]     = v  & regWriteMask(pos);
+            reg_[pos + 1] = lo & regWriteMask(pos + 1);
+            ioRaw_[pos] = reg_[pos]; ioRaw_[pos + 1] = reg_[pos + 1];
+            ++pos;
+        }
     }
 }
 

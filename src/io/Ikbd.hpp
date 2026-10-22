@@ -240,7 +240,7 @@ public:
         std::underlying_type_t<JoystickMode> jm =
             static_cast<std::underlying_type_t<JoystickMode>>(joyMode_);
         ar(jm);
-        const bool jmOk = (jm >= JOY_OFF && jm <= JOY_MONITOR);
+        const bool jmOk = (jm >= JOY_OFF && jm <= JOY_KEYCODE);
         ar.check(jmOk, "Ikbd::joyMode_ hors domaine");
         if (ar.loading() && jmOk) joyMode_ = static_cast<JoystickMode>(jm);
         ar(prevJoy0_);
@@ -248,11 +248,10 @@ public:
         ar(vblCount_);
         ar(duringResetCriticalTime_);
 
-        // --- Quirks souris + joystick simultanés ---
-        ar(mouseDisabled_);
-        ar(joystickDisabled_);
-        ar(mouseEnabledDuringReset_);
-        ar(bothMouseAndJoy_);
+        // --- Fenêtre de reset : octet retenu dans le RDR du 6301 (ROM $F010-$F139) ---
+        ar(heldByte_);
+        ar(heldOverrun_);
+        ar.check(heldByte_ >= -1 && heldByte_ <= 0xFF, "Ikbd::heldByte_ hors domaine");
 
         // --- Rapports d'état $88 / $9A (v51) ---
         std::underlying_type_t<MouseMode> lm =
@@ -263,9 +262,18 @@ public:
         if (ar.loading() && lmOk) lastMouseMode_ = static_cast<MouseMode>(lm);
         ar(joysticksEnabled_);
         ar(mouseOn_);                         // v52 : bit 7 de $C9 (rapport $92)
+        ar(port0Joy_);                        // v52 : bit 1 de $C9 (port 0 au joystick)
+        ar.arr(kjParam_);                     // v52 : joystick en keycode ($19)
+        ar.arr(kjKey_);
+        ar.arr(kjStart_);
+        ar.arr(kjLast_);
+        ar(kjFire_);
 
         // --- Pause output ($13) ---
         ar(pauseOutput_);
+        ar(pauseKeep_);
+        ar(monitorFrozen_);
+        ar.check(pauseKeep_ <= 1024, "Ikbd::pauseKeep_ hors domaine");
 
         // --- État code 6301 custom ($20/$22) ---
         // Deux enums transités par le type sous-jacent (cf. mouseMode_) : sans ça, un
@@ -312,7 +320,7 @@ public:
         ar(asReadCount_);
         ar(joystickMonitorPeriod_);
         ar.check(joystickMonitorPeriod_ == 0 ||
-                 (joystickMonitorPeriod_ >= 8021247 / 100 &&
+                 (joystickMonitorPeriod_ >= kFireByteCycles &&
                   joystickMonitorPeriod_ <= int64_t(8021247) * 255 / 100),
                  "Ikbd::joystick monitor period out of range");
         ar(responseDelayBits_);
@@ -364,33 +372,37 @@ private:
     void audioSculptureRead(bool colorMode);
     void audioSculptureWrite(uint8_t v);
 
-    // Sonde les manettes (joy0 coupé si la souris occupe le port 0, sauf mode
-    // « souris + joystick » obtenu pendant la fenêtre de reset — cf. Hatari
-    // IKBD_GetJoystickData/bBothMouseAndJoy) et émet $FE+joy0 / $FF+joy1 pour
-    // celles dont l'état a changé (cf. Hatari IKBD_SendAutoJoysticks).
+    // Sonde les manettes (joy0 lu seulement si le port 0 est attribué au joystick,
+    // bit 1 de $C9) et émet $FE+joy0 / $FF+joy1 pour celles dont l'état a changé
+    // (cf. Hatari IKBD_SendAutoJoysticks).
     void sendAutoInput();
     void readJoystickState(uint8_t& joy0, uint8_t& joy1) const;
     void sendAutoJoysticks(uint8_t joy0, uint8_t joy1);
     void sendAutoJoysticksMonitoring(uint8_t joy0, uint8_t joy1);
 
-    // Quirk matériel « disable souris ET joystick pendant le reset » (cf. Hatari
-    // IKBD_CheckResetDisableBug) : $12 + $1A reçus pendant la fenêtre de reset →
-    // les DEUX reports sont en fait ré-activés (souris REL + joystick auto).
-    void checkResetDisableBug();
+    // Réponse d'état $F6 (ROM $FCD7) : en-tête, puis le premier octet et ses
+    // paramètres, puis le bourrage à zéro jusqu'à 8 octets — chaque appel admis
+    // séparément dans le tampon de 21 octets, la réponse peut donc être tronquée.
+    void statusReply(uint8_t first, const uint8_t* data = nullptr, int n = 0);
+    // Joystick 0 en keycode ($19, ROM $FA21) et surveillance du tir ($18, $FA12).
+    void sendKeycodeJoystick(uint8_t joy0);
+    void stopJoystickSampling();             // quitte $17/$18 : retour à la scrutation normale
+    bool outputBlocked() const { return pauseOutput_ && pauseKeep_ == 0; }
+    void liftPause();
 
-    // Mise à jour de la position absolue interne à partir du Δ de la trame —
-    // dans TOUS les modes souris, comme Hatari IKBD_UpdateInternalMousePosition.
+    // Mise à jour de la position absolue à partir du Δ de la trame, en mode absolu
+    // seulement (ROM $F3D4 → $F439 ; Hatari la tient à jour dans tous les modes).
     void updateInternalAbsPos(int dx, int dy);
     void sendRelMousePacket(int dx, int dy, bool left, bool right);
 
     // Reporting lié à MouseAction ($07, cf. IKBD_SendOnMouseAction) : boutons
     // remontés comme scancodes (bit2), ou position absolue à l'appui/relâchement
     // (bits 0/1, en mode ABS seulement). Comparé à l'ancien état (bOldL_/bOldR_).
-    void sendOnMouseAction(bool left, bool right);
+    void sendOnMouseAction(bool left, bool right, uint8_t events);
 
     // Émet le paquet $F7 « position absolue » (cf. IKBD_Cmd_ReadAbsMousePos) :
     // boutons (changements depuis la dernière interrogation) + X/Y sur 16 bits.
-    void sendAbsMousePos(bool curL, bool curR, int delayCycles = 0);
+    void sendAbsMousePos(uint8_t buttons, int delayCycles = 0);
 
     // Émet le Δ souris comme pressions de flèches (cf. IKBD_SendCursorMousePacket,
     // mode $0A) : 72 haut / 80 bas / 75 gauche / 77 droite par pas de keyCodeDelta.
@@ -461,17 +473,26 @@ private:
     // par $14/$15/$17/$18/$19, ROM $FA47). Seul $12 l'efface, un mode souris le
     // repose ; c'est lui que rapporte $92 (ROM $FCA2). Cf. MiSTery ikbd/rom/IKBD.ASM.
     bool mouseOn_ = true;
+    // Bit 1 de $C9 : port 0 attribué au joystick 0 ($14/$15/$17/$18/$19, ROM $FA47) ;
+    // effacé par toute commande de mode souris ($FBAF). La souris ne rapporte que si
+    // mouseOn_ && !port0Joy_ (cf. syncMouseMode) ; le joystick 0 n'est lu qu'ici.
+    bool port0Joy_ = false;
+    void syncMouseMode() { mouseMode_ = (mouseOn_ && !port0Joy_) ? lastMouseMode_ : OFF; }
     // Commande de mode souris ($08/$09/$0A) : ROM $FBAF — souris activée, port 0
     // rendu à la souris, joystick ramené au mode événement s'il surveillait.
     void selectMouseMode(MouseMode m);
-    // $14/$15 : port 0 rendu au joystick (ROM $FA47), quirks de reset compris.
-    void port0ToJoystick();
+    // $14/$15/$17/$18/$19 : port 0 rendu au joystick (ROM $FA47).
+    void port0ToJoystick() { port0Joy_ = true; syncMouseMode(); }
     // Défauts = état après IKBD_Boot_ROM (Hatari), l'IKBD bootant sa ROM dès la
     // mise sous tension : bornes ABS_MAX_X/Y_ONRESET (320/200) et cache boutons
     // ABS_PREVBUTTONS (0x0A = rien à signaler à la 1re interrogation $0D).
+    // ROM : la RAM $89-$FF est effacée au boot → position ET bornes à 0.
     uint16_t absX_ = 0, absY_ = 0;           // position absolue courante (mode ABS)
-    uint16_t absMaxX_ = 320, absMaxY_ = 200; // bornes inclusives (commande $09)
-    uint8_t  prevAbsButtons_ = 0x0A;         // boutons signalés à la dernière interrogation $0D
+    uint16_t absMaxX_ = 0, absMaxY_ = 0;     // bornes inclusives (commande $09)
+    // Registre d'événements boutons cumulés ($C2 de la ROM) : bit0 droit enfoncé,
+    // bit1 droit relâché, bit2 gauche enfoncé, bit3 gauche relâché ; rendu et
+    // effacé par $0D, effacé par $0E. (Champ nommé prevAbsButtons_ jusqu'en v51.)
+    uint8_t  prevAbsButtons_ = 0;
     bool     prevL_ = false, prevR_ = false; // état persistant des boutons (mode ABS)
 
     // --- Paramètres du paquet souris relatif (cf. Hatari KeyboardProcessor.Mouse) ---
@@ -484,7 +505,7 @@ private:
     // de bouton émis : sert à remonter un clic/relâchement SANS mouvement
     // (détection de front — boutons de passage de vitesse de Vroom).
     int  xThreshold_ = 1, yThreshold_ = 1;
-    int  xScale_ = 0, yScale_ = 0;
+    int  xScale_ = 1, yScale_ = 1;           // ROM $F106 : 1 par défaut ; pas par impulsion
     int  yAxis_ = 1;
     bool bOldL_ = false, bOldR_ = false;
     int  mouseDeltaX_ = 0, mouseDeltaY_ = 0;  // Δ souris hôte accumulé jusqu'au VBL
@@ -513,34 +534,45 @@ private:
     //   KeyboardProcessor.JoystickMode = AUTOMODE_JOYSTICK). Sans entrée hôte la
     //   file reste vide (sendAutoJoysticks n'émet que sur changement) → aucun
     //   impact sur le boot EmuTOS ni les diagnostics qui interrogent via $16.
-    enum JoystickMode { JOY_OFF, JOY_AUTO, JOY_MONITOR };
+    // JOY_FIRE = surveillance du tir ($18), JOY_KEYCODE = joystick 0 en touches ($19).
+    enum JoystickMode { JOY_OFF, JOY_AUTO, JOY_MONITOR, JOY_FIRE, JOY_KEYCODE };
     JoystickMode joyMode_ = JOY_AUTO;
     uint8_t prevJoy0_ = 0, prevJoy1_ = 0;
     uint32_t vblCount_ = 0;                   // garde Hatari : pas d'auto-send avant 20 VBL
     int64_t joystickMonitorPeriod_ = 0;       // cadence commune posée par $17 ; zéro = défaut 150000
     bool duringResetCriticalTime_ = false;    // bloque les sorties jusqu'à la réponse $F1
 
-    // --- Quirks « souris + joystick simultanés » (cf. Hatari bMouseDisabled etc.) ---
-    // Sur le vrai IKBD, certaines combinaisons de commandes reçues PENDANT la
-    // fenêtre de reset (~502000 cycles avant le $F1) laissent souris ET joystick
-    // actifs en même temps : $08+$14 (Barbarian), $12+$14 (Hammerfist), $12+$1A
-    // (annulés tous les deux). bothMouseAndJoy_ garde alors le port 0 branché en
-    // mode souris relative (cf. readJoystickState).
-    bool mouseDisabled_ = false;              // $12 reçu (cf. bMouseDisabled)
-    bool joystickDisabled_ = false;           // $1A reçu (cf. bJoystickDisabled)
-    bool mouseEnabledDuringReset_ = false;    // $08 reçu pendant le reset (Barbarian)
-    bool bothMouseAndJoy_ = false;            // souris + joystick reportés ensemble
-    // Disponibilité rapportée par $9A : faux après $1A, vrai après toute commande
-    // de mode joystick ($14/$15/$17) ou un boot. Distinct de joystickDisabled_,
-    // drapeau du quirk de reset (Hatari bJoystickDisabled, jamais relâché avant
-    // le boot suivant) et de joyMode_ (JOY_OFF couvre aussi l'interrogation $15).
+    // --- Fenêtre de reset (ROM $F010 sei … $F139 cli) ---
+    // Le 6301 ne lit pas la liaison pendant son initialisation : UN octet reçu reste
+    // dans son RDR et s'exécute après l'init ; un second déborde (overrun), et la
+    // routine $FF40 jette alors tout. C'est ce qui explique les « quirks » d'Hatari
+    // (Barbarian $08+$14, Hammerfist $12+$14, Just Buggin' $11+$13 perdus : il ne
+    // reste que les défauts, souris relative + joystick 1 en événement).
+    int16_t heldByte_ = -1;                   // octet retenu, -1 = aucun
+    bool    heldOverrun_ = false;             // second octet reçu : tout est perdu
+    // Bit 5 de $CA : joysticks activés ; seul $1A l'efface, sans changer le mode
+    // (après $14 puis $1A, $94 répond toujours $14). Rapporté par $9A.
     bool joysticksEnabled_ = true;
+    // Joystick en keycode ($19) : RX RY TX TY VX VY (dixièmes de seconde), touche
+    // tenue par axe (0 = aucune), instant de l'appui et de la dernière émission.
+    uint8_t kjParam_[6] = {};
+    uint8_t kjKey_[2] = {};
+    int64_t kjStart_[2] = {};
+    int64_t kjLast_[2] = {};
+    bool    kjFire_ = false;
+    // Surveillance du tir ($18) : un octet de 8 échantillons environ toutes les
+    // 1,44 ms (8 × ~180 µs, décompte de cycles de la ROM $F8A2, non mesuré).
+    static constexpr int64_t kFireByteCycles = 11550;
 
-    // PAUSE OUTPUT ($13) : bloque le chargement firmware → SCI ; l’octet
-    // engagé finit sa trame. Levée par $11 ou par toute commande valide
-    // complète (cf. Hatari Keyboard.PauseOutput). Ignorée pendant le reset
-    // (loader de « Just Bugging »).
+    // PAUSE OUTPUT ($13) : bloque le chargement firmware → SCI au-delà des octets
+    // déjà en file ; l’octet engagé finit sa trame. Levée par $11 et par les
+    // commandes qui sortent par $F91B de la ROM (pas les rapports d'état).
     bool pauseOutput_ = false;
+    // ROM $F9AF : $13 mémorise l'index d'écriture du tampon ; les octets déjà en
+    // file avant la pause sortent quand même. pauseKeep_ = combien il en reste.
+    uint32_t pauseKeep_ = 0;
+    // $13 pendant $17 : décompte de la surveillance GELÉ (ROM $FEAC), reste en cycles.
+    int64_t monitorFrozen_ = -1;
 
     // --- État du code 6301 custom ($20/$22, cf. Hatari ikbd.c) ------------------
     // Identifie le handler actif (NeoST utilise des id plutôt que des pointeurs de

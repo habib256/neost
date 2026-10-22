@@ -6,6 +6,25 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## IKBD sur la ROM 6301, blitter et STE sur les netlists Atari, délai de bus error (2026-10-22)
+
+Seconde passe sur les sources matérielles (ROM 6301 désassemblée, netlists Atari du GST MCU
+et des blitters 4051/4082, archive de Christian Zietz) :
+
+- **IKBD** : octets de mode `$C9/$CA` de la ROM ; fenêtre de reset (un octet retenu, deux
+  perdus) à la place des quatre quirks d'Hatari — Just Buggin' vérifié ; tampon de sortie de
+  21 octets ; PAUSE qui laisse partir les octets déjà en file ; `$09` garde la position,
+  `$0D` en mode absolu seulement avec événements cumulés, `$0E` passe en absolu ; `$16`,
+  `$1A`, `$94` ; modes `$18` (surveillance du tir) et `$19` (joystick en flèches) émulés ;
+  valeurs extrêmes (taux, seuil, pas, échelle, mois 0).
+- **Blitter** : registres mot chargés sur écriture mot seule et relus vivants ; `$FF8A3D`
+  bits 4-5 à 0 ; reset à chaud limité à BUSY/HOG.
+- **STE** : bus error après le chien de garde `/BERR` (~64 cycles) ; écritures des pads
+  `$FF92xx` en bus error ; `$FF8901` sur 4 bits ; fin du son DMA relue figée par trame.
+- Bancs puce nue réalignés sur la ROM et les netlists, nouveaux contrôles (`$0D`, `$0E`,
+  `$16`, `$18`, `$19`, `$94`, fenêtre de reset, échelle par défaut). Barbarian et Vroom :
+  images identiques à la version précédente sur les scénarios rejoués.
+
 ## STE d'après la netlist du GST MCU, IKBD d'après sa ROM, blitter d'après Cwik (2026-10-22)
 
 Point de départ : revue de l'émulateur ASE (thebitculture/ase), puis fouille du cœur FPGA

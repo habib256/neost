@@ -51,7 +51,8 @@ struct Rig {
         return rem == INT64_MIN ? -1 : live + rem;
     }
 };
-constexpr int64_t period(int rate) { return int64_t(8021247) * (rate ? rate : 1) / 100; }
+// Taux 0 : envoi continu (ROM $F778), au débit de la ligne — 2 octets par échantillon.
+constexpr int64_t period(int rate) { return rate ? int64_t(8021247) * rate / 100 : 2 * 10240; }
 }
 
 int testIkbdMonitor() {
@@ -86,16 +87,25 @@ int testIkbdMonitor() {
         r.ikbd.onVbl(20000); r.advance(period(1) * 2);
         c.equal("sampling starts after twenty VBL", r.rxDue(), period(1) * 2 + 10240);
     }
-    for (uint8_t exit : {uint8_t(0x14), uint8_t(0x15), uint8_t(0x1A)}) {
+    for (uint8_t exit : {uint8_t(0x14), uint8_t(0x15)}) {
+        // $14/$15 quittent la surveillance : retour à la scrutation normale.
         Rig r; r.warm(); r.command({0x17, 1}); r.command({exit});
-        c.equal("leaving monitoring retains common timer", r.monitorDue(), period(1));
+        c.equal("leaving monitoring stops its timer", r.monitorDue(), -1);
         r.advance(period(1)); c.equal("new mode emits no stale monitor sample", r.rxDue(), -1);
+    }
+    {
+        // $1A n'efface que le bit 5 de $CA : la cadence continue, sans échantillon.
+        Rig r; r.warm(); r.command({0x17, 1}); r.command({0x1A});
+        c.equal("disabled joysticks keep monitor cadence", r.monitorDue(), period(1));
+        r.ikbd.setJoystick(0x81, 0x81);
+        r.advance(period(1)); c.equal("disabled joysticks emit no sample", r.rxDue(), -1);
     }
     {
         Rig r; r.warm(); r.command({0x17, 1});
         r.command({0x13});
         r.advance(period(1)); r.advance(period(1) * 2);
-        c.equal("paused monitoring keeps sampling timer", r.monitorDue(), period(1) * 3);
+        // ROM $FEAC : sous PAUSE, le décompte de surveillance est GELÉ.
+        c.equal("paused monitoring freezes its countdown", r.monitorDue(), -1);
         c.equal("pause holds output queue", r.rxDue(), -1);
         // Protocole IKBD Atari (PAUSE OUTPUT) : « the PAUSE OUTPUT command also
         // temporarily stops the monitoring process (i.e. the samples are not
@@ -138,9 +148,10 @@ int testIkbdMonitor() {
         Rig r; r.warm(); r.command({0x17, 2}); r.advance(1000);
         if (hardware) r.ikbd.resetHw(); else r.ikbd.bootRom();
         c.equal("reset cancels monitoring", r.monitorDue(), -1);
+        // $17 $01 pendant l'init de la ROM : le second octet déborde, tout est perdu.
         r.command({0x17, 1}); r.advance(1000 + period(1));
         c.equal("reset critical window suppresses sample", r.rxDue(), -1);
-        c.equal("monitor commanded during reset remains armed", r.monitorDue(), 1000 + period(1) * 2);
+        c.equal("monitor commanded during init is lost", r.monitorDue(), -1);
     }
     {
         Rig r; r.warm(); r.command({0x17, 1});

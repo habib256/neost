@@ -219,7 +219,7 @@ private:
     Scheduler*  sched_ = nullptr;
 
     // Registres. Adresses sur 24 bits (octets haut/moyen/bas, paires forcées).
-    uint8_t  ctrl_ = 0;              // $FF8901 : bit0 = play, bit1 = repeat (loop)
+    uint8_t  ctrl_ = 0;              // $FF8901 : bit0 = play, bit1 = repeat (loop), bits 2-3 relus seulement
     uint8_t  mode_ = 0;              // $FF8921 : bits0-1 fréquence, bit7 = mono
     uint8_t  pad20_ = 0;             // $FF8920 : octet scratch non intercepté, état MMIO sauvegardé
     uint32_t startAddr_ = 0;         // $FF8903/05/07

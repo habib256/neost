@@ -73,7 +73,8 @@ void compareSci(Checks& checks, Rig& rig, const Oracle& oracle) {
 }
 int testIkbdSciReset() {
     Checks checks;
-    // 00 tronqué devient 80, puis 01 doit réellement déclencher un nouveau boot.
+    // 00 tronqué devient 80 au SCI ; reçu avec 01 pendant l'init de la ROM, il est
+    // perdu (overrun) : le boot du reset matériel reste le seul.
     for (int phase : {0, 37}) for (int offset : {0, 173}) for (bool late : {false, true}) {
         Rig rig(phase);
         rig.ikbd.write8(2, 0);
@@ -88,7 +89,10 @@ int testIkbdSciReset() {
             rig.live = commandStop + 3197;
             rig.ikbd.write8(0, 0x96); // rattrapage MMIO, Scheduler encore au passé
         } else rig.at(commandStop);
-        checks.equal("fragment80 puis01 relance réellement boot", rig.bootDue(), commandStop + 502000);
+        // 80 puis 01 arrivent pendant l'initialisation de la ROM (sei $F010 … cli
+        // $F139) : le second déborde, la routine $FF40 jette tout — pas de reboot.
+        (void)commandStop;
+        checks.equal("80 puis 01 pendant l'init : perdus, boot inchangé", rig.bootDue(), reset + 502000);
     }
     {
         Rig rig; rig.ikbd.write8(2, 0xFF); rig.at(1123); rig.ikbd.resetHw();
@@ -127,7 +131,7 @@ int testIkbdSciReset() {
         checks.equal("archive SCI DATA ou STOP valide", load.ok(), true);
         restored.at(reset + 10*1024); restored.ikbd.write8(2, 1);
         restored.at(reset + 20*1024);
-        checks.equal("archive conserve assemblage80 et parsing01", restored.bootDue(), reset + 20*1024 + 502000);
+        checks.equal("archive : 80 01 pendant l'init perdus", restored.bootDue(), reset + 502000);
     }
     // Deux resets successifs abandonnent aussi le premier assemblage incomplet.
     {

@@ -46,25 +46,22 @@ int testIkbdMouseMonitor() {
     {
         Rig r; r.command({0x17,1}); r.ikbd.mouseEvent(7,9,false,false);
         r.advance(period); r.advance(period+10240); r.data(); r.advance(period+20480); r.data();
-        r.command({0x0D}); r.advance(period+20480+10240); r.advance(period+20480+20480);
-        eq("absolute header after monitoring update",r.data(),0xF7);
-        r.advance(period+20480+30720); r.data();
-        r.advance(period+20480+40960); eq("absolute x high",r.data(),0);
-        r.advance(period+20480+51200); eq("absolute x",r.data(),7);
-        r.advance(period+20480+61440); r.data();
-        r.advance(period+20480+71680); eq("absolute y",r.data(),9);
+        // ROM $FB39 : $0D ne répond qu'en mode absolu (ici $17 tient le port 0).
+        r.command({0x0D});
+        eq("$0D outside absolute mode is ignored",r.due(Scheduler::IKBD_RX),-1);
     }
     {
+        // $14 quitte la surveillance : la scrutation normale reprend sur son tick.
         Rig r; r.command({0x17,1,0x14}); r.ikbd.setJoystick(1,0);
-        r.advance(period); eq("exit retains common period",r.due(Scheduler::IKBD_MONITOR),period*2);
-        r.advance(period+10240); eq("exit reports auto joystick at retained tick",r.data(),0xFE);
+        eq("exit stops monitor timer",r.due(Scheduler::IKBD_MONITOR),-1);
+        eq("exit hands its tick to the scan",r.due(Scheduler::IKBD_AUTOSEND),period);
+        r.advance(period); r.advance(period+10240); eq("exit reports auto joystick at retained tick",r.data(),0xFE);
         std::vector<uint8_t> bytes; auto save=StateArchive::saver(bytes); r.ikbd.serialize(save); r.sched.serialize(save);
         Rig copy; auto load=StateArchive::loader(bytes.data(),bytes.size()); copy.ikbd.serialize(load); copy.sched.serialize(load); copy.live=copy.sched.now();
-        eq("common cadence state loads",load.ok(),1);
-        eq("common cadence deadline restored",copy.due(Scheduler::IKBD_MONITOR),period*2);
-        copy.ikbd.bootRom(); eq("boot cancels monitor source",copy.due(Scheduler::IKBD_MONITOR),-1);
-        eq("boot preserves active deadline",copy.due(Scheduler::IKBD_AUTOSEND),period*2);
-        copy.advance(period*2); eq("boot restores default period",copy.due(Scheduler::IKBD_AUTOSEND),period*2+150000);
+        eq("scan state loads",load.ok(),1);
+        eq("scan deadline restored",copy.due(Scheduler::IKBD_AUTOSEND),period+150000);
+        copy.ikbd.bootRom(); eq("boot keeps monitor source idle",copy.due(Scheduler::IKBD_MONITOR),-1);
+        eq("boot preserves active deadline",copy.due(Scheduler::IKBD_AUTOSEND),period+150000);
     }
     std::printf("[ikbd-mouse-monitor] %d checks, %d FAIL\n",count,fails); return fails;
 }

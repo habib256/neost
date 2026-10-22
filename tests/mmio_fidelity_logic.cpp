@@ -19,31 +19,31 @@ int testMmioFidelity() {
         Blitter blit(bus);
         bus.machine = profile;
         bus.blitter = &blit;
+        // Netlist Atari du blitter (4082) : un registre mot ne se charge que sur une
+        // écriture mot (strobe WW = UDS & LDS) et se relit VIVANT, y compris en octet.
         for (uint32_t off = 0; off < 0x3A; off += 2) {
             bus.write16(base + off, 0xA5FF);
-            check(bus.read8(base + off) == 0xA5 && bus.read8(base + off + 1) == 0xFF,
-                  "byte read retains raw word write before hardware mask");
             const uint16_t live = bus.read16(base + off);
+            check(bus.read8(base + off) == uint8_t(live >> 8)
+                  && bus.read8(base + off + 1) == uint8_t(live),
+                  "byte read returns the live word register");
             bus.write8(base + off, 0x12);
             bus.write8(base + off + 1, 0x35);
-            check(bus.read8(base + off) == 0x12 && bus.read8(base + off + 1) == 0x35,
-                  "rejected byte writes remain visible in IO backing store");
             check(bus.read16(base + off) == live, "byte writes do not modify word register");
             check(bus.read8(base + off) == uint8_t(live >> 8)
                   && bus.read8(base + off + 1) == uint8_t(live),
-                  "word read refreshes both bytes of backing store");
+                  "rejected byte writes leave no trace");
         }
-        // Le handler d'adresse traite QUATRE octets, même sur un accès mot.
+        // Adresses source/destination : deux mots chargés indépendamment.
         for (uint32_t off : {0x24u, 0x32u}) {
             bus.write32(base + off, 0xFF123457);
-            check(bus.read8(base + off) == 0xFF && bus.read8(base + off + 3) == 0x57,
-                  "long write leaves raw address bytes visible");
-            check(bus.read16(base + off) == 0x12, "word read masks upper address word");
-            check(bus.read8(base + off + 3) == 0x56, "word read also refreshes sibling address word");
+            check(bus.read32(base + off) == 0x123456, "long write masks to 24-bit even address");
+            check(bus.read8(base + off) == 0x00 && bus.read8(base + off + 3) == 0x56,
+                  "byte reads return live address bytes");
             bus.write8(base + off + 3, 0xA7);
             bus.write16(base + off, 0x0023);
-            check(bus.read32(base + off) == 0x2334A6,
-                  "partial address write consumes full raw long register");
+            check(bus.read32(base + off) == 0x233456,
+                  "high word write keeps live low word");
         }
         for (uint32_t off : {0x3Eu, 0x3Fu}) {
             check(!bus.busFault(base + off), "blitter tail is void without bus error");
@@ -56,7 +56,7 @@ int testMmioFidelity() {
         check(bus.read32(base + 0x3C) == 0x0000FFFF, "long access mixes control and void tail");
         bus.write8(base + 0x3A, 0xFF); bus.write8(base + 0x3B, 0xFF);
         bus.write8(base + 0x3C, 0x30); bus.write8(base + 0x3D, 0xAB);
-        check(bus.read32(base + 0x3A) == 0x030F20AB,
+        check(bus.read32(base + 0x3A) == 0x030F208B,
               "byte registers remain live with hardware write masks");
     }
     {
@@ -72,22 +72,22 @@ int testMmioFidelity() {
         bus.write16(base + 0x36, 1); bus.write16(base + 0x38, 1);
         bus.write8(base + 0x3A, 2); bus.write8(base + 0x3B, 3);
         bus.write16(base + 0x3C, 0xC000); // HOG synchrone sans ordonnanceur
-        check(bus.read8(base + 0x39) == 1, "byte count remains stale after completed blit");
+        check(bus.read8(base + 0x39) == 0, "byte read sees live count after completed blit");
         check(bus.read16(base + 0x38) == 0, "word count reports completed blit");
-        check(bus.read8(base + 0x39) == 0, "word count read refreshes stale byte");
-        bus.write8(base + 0x21, 0x57);
+        bus.write16(base + 0x20, 0x0058);
         std::vector<uint8_t> state;
         auto save = StateArchive::saver(state); blit.serialize(save);
-        bus.write8(base + 0x21, 0x99);
+        bus.write16(base + 0x20, 0x0098);
         auto load = StateArchive::loader(state.data(), state.size()); blit.serialize(load);
-        check(load.ok() && bus.read8(base + 0x21) == 0x57, "save/load preserves raw byte backing store");
+        check(load.ok() && bus.read8(base + 0x21) == 0x58, "save/load preserves word register");
+        // Netlist 4051/4082 : /RESET n'atteint que BUSY et HOG.
         blit.reset();
-        check(bus.read8(base + 0x21) == 0x57, "hardware reset preserves IO backing store");
-        check(bus.read16(base + 0x20) == 0, "hardware reset clears live word register");
-        check(bus.read8(base + 0x21) == 0, "word read refreshes backing after reset");
-        bus.write8(base + 0x21, 0x57);
+        check(bus.read16(base + 0x20) == 0x0058, "warm reset keeps word registers");
+        check(bus.read8(base + 0x3A) == 2 && bus.read8(base + 0x3B) == 3,
+              "warm reset keeps HOP and OP");
+        check((bus.read8(base + 0x3C) & 0xC0) == 0, "warm reset clears BUSY and HOG");
         blit.reset(true);
-        check(bus.read8(base + 0x21) == 0, "cold reset clears IO backing store");
+        check(bus.read16(base + 0x20) == 0, "cold reset clears registers");
     }
     {
         Bus bus;

@@ -85,6 +85,8 @@ int testIkbdResponses() {
     for (const auto& tc : cases) {
         Rig r;
         r.live = 100; // MMIO au milieu d'un quantum, sched.now() reste à zéro.
+        // $0D ne répond qu'en mode absolu (ROM $FB39) : $09 d'abord (sans réponse).
+        if (tc.opcode == 0x0D) r.command({0x09, 0x01, 0x40, 0x00, 0xC8});
         if (tc.opcode == 0x21) r.command({tc.opcode, 0, 0});
         else r.command({tc.opcode});
         c.equal("firmware wait uses live clock", r.due(), 100 + tc.delay);
@@ -105,6 +107,84 @@ int testIkbdResponses() {
             }
         }
         c.equal("response ends without extra byte", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
+    }
+    {
+        // Comportements tirés de la ROM 6301 désassemblée (MiSTery ikbd/rom/IKBD.ASM).
+        auto collect = [](Rig& r, int n) {
+            std::vector<int> out;
+            for (int k = 0; k < 40 && int(out.size()) < n; ++k) {
+                const int64_t d = r.sched.rawCyclesUntil(Scheduler::IKBD_RX);
+                if (d == INT64_MIN) break;
+                r.advance(r.live + d);
+                if (r.ready()) out.push_back(r.data());
+            }
+            return out;
+        };
+        {   // $8C après boot : échelle 1/1 ($F106).
+            Rig r; r.command({0x8C});
+            const auto b = collect(r, 4);
+            c.equal("$8C default scale X", b.size() > 2 ? b[2] : -1, 1);
+            c.equal("$8C default scale Y", b.size() > 3 ? b[3] : -1, 1);
+        }
+        {   // $0E pose la position ET le mode absolu ($FB5F) : $0D répond.
+            Rig r; r.command({0x0E, 0, 0x00, 0x12, 0x00, 0x34}); r.command({0x0D});
+            const auto b = collect(r, 6);
+            c.equal("$0E then $0D header", b.size() > 0 ? b[0] : -1, 0xF7);
+            c.equal("$0E then $0D X", b.size() > 3 ? b[3] : -1, 0x12);
+        }
+        {   // $0D hors mode absolu : ignoré.
+            Rig r; r.command({0x0D});
+            c.equal("$0D in relative mode is ignored", r.sched.rawCyclesUntil(Scheduler::IKBD_RX) == INT64_MIN, 1);
+        }
+        {   // $1A puis $16 : refusé ; $1A puis $94 : le mode événement reste ($14).
+            Rig r; r.command({0x1A}); r.command({0x16});
+            c.equal("$16 refused when joysticks disabled", r.sched.rawCyclesUntil(Scheduler::IKBD_RX) == INT64_MIN, 1);
+            r.command({0x94});
+            const auto b = collect(r, 2);
+            c.equal("$1A keeps event mode in $94", b.size() > 1 ? b[1] : -1, 0x14);
+        }
+        {   // $19 : $94 rapporte $19 + les 6 paramètres ($FCAE).
+            Rig r; r.command({0x19, 1, 2, 3, 4, 5, 6}); r.command({0x94});
+            const auto b = collect(r, 8);
+            c.equal("$94 in keycode mode", b.size() > 1 ? b[1] : -1, 0x19);
+            c.equal("$94 keycode last parameter", b.size() > 7 ? b[7] : -1, 6);
+        }
+        {   // Fenêtre de reset : un octet reçu pendant l'init s'exécute après $F1.
+            Rig r; r.ikbd.bootRom(); r.command({0x12});
+            r.advance(502000); const auto b = collect(r, 1);
+            c.equal("$F1 after boot", b.size() > 0 ? b[0] : -1, 0xF1);
+            r.command({0x92});
+            const auto st = collect(r, 2);
+            c.equal("single byte during init executed", st.size() > 1 ? st[1] : -1, 0x12);
+        }
+        {   // Deux octets pendant l'init : overrun, tout est perdu ($FF40).
+            Rig r; r.ikbd.bootRom(); r.command({0x12, 0x1A});
+            r.advance(502000); collect(r, 1);
+            r.command({0x92});
+            const auto st = collect(r, 2);
+            c.equal("two bytes during init are lost", st.size() > 1 ? st[1] : -1, 0x00);
+            r.command({0x9A});
+            const auto sj = collect(r, 2);
+            c.equal("lost $1A leaves joysticks enabled", sj.size() > 1 ? sj[1] : -1, 0x00);
+        }
+        {   // $18 : octets de 8 échantillons du feu joystick 1, sans en-tête.
+            Rig r;
+            r.sched.setCallback(Scheduler::IKBD_MONITOR, [&r] { r.ikbd.onJoystickMonitor(); });
+            r.command({0x18}); r.ikbd.setJoystick(0, 0x80);
+            r.advance(11550);
+            const auto b = collect(r, 1);
+            c.equal("$18 fire sample byte", b.size() > 0 ? b[0] : -1, 0xFF);
+        }
+        {   // $19 : flèche à l'appui sur le joystick 0, feu = $74 puis $F4.
+            Rig r;
+            for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
+            r.command({0x19, 0, 0, 0, 0, 0, 0});
+            r.ikbd.setJoystick(0x08 | 0x80, 0); r.ikbd.onAutoSend();
+            const auto b = collect(r, 3);
+            c.equal("$19 right make", b.size() > 0 ? b[0] : -1, 0x4D);
+            c.equal("$19 right break", b.size() > 1 ? b[1] : -1, 0xCD);
+            c.equal("$19 fire make", b.size() > 2 ? b[2] : -1, 0x74);
+        }
     }
     {
         // $92 rapporte le seul bit 7 de l'octet de mode $C9 (ROM 6301 $FCA2) :
@@ -150,12 +230,18 @@ int testIkbdResponses() {
     }
     {
         Rig r;
+        // ROM $F9AF : $13 mémorise l'index d'écriture ; la réponse déjà en file
+        // AVANT la pause sort quand même, un octet arrivé après attend $11.
         r.command({0x1C}); r.advance(1000); r.command({0x13});
         r.advance(7168);
-        c.equal("pause does not freeze firmware wait", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
-        r.advance(20000); r.command({0x11});
-        c.equal("resume after elapsed wait only shifts byte", r.due(), 30240);
-        r.advance(30240); c.equal("resume keeps queued header", r.data(), 0xFC);
+        c.equal("bytes queued before pause still leave", r.due(), 7168 + 10240);
+        r.advance(17408); c.equal("pre-pause header delivered", r.data(), 0xFC);
+        for (int i = 1; i <= 6; ++i) { r.advance(17408 + i * 10240); r.data(); }
+        r.ikbd.keyEvent(0x39, true);
+        c.equal("byte queued during pause waits", r.sched.cyclesUntil(Scheduler::IKBD_RX), -1);
+        r.advance(100000); r.command({0x11});
+        c.equal("resume releases held byte", r.due(), 100000 + 10240);
+        r.advance(110240); c.equal("held byte after resume", r.data(), 0x39);
     }
     {
         Rig r;

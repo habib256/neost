@@ -1061,6 +1061,10 @@ void Bus::wrStePads(uint32_t a, uint8_t v) {
     // seule / sans effet (joy.c : Joy_StePadButtons_DIPSwitches_WriteWord ne fait rien).
     // On latche les deux octets du mot $FF9202/$FF9203.
     if (a == 0xFF9202 || a == 0xFF9203) { stePads.writeSelectByte(a, v); return; }
+    // STE : le GST MCU n'acquitte $FF9200-01, $FF9210-17 et $FF9220-23 qu'en
+    // LECTURE (netlist 4081 : BUTR/PADR/PENR contiennent IRWZ) → toute écriture
+    // fait bus error. Mega STE non touché ($FF9200 y porte les DIP, pas de netlist).
+    if (machine == MachineType::Ste && cpu) { cpu->triggerBusError(a, true); return; }
     // Écriture OCTET sur $FF9200 (adresse paire) → bus error, comme en lecture
     // (Joy_StePadButtons_DIPSwitches_WriteWord). Les autres écritures de la plage
     // (lightpen incluse : IoMem_WriteWithoutInterception) sont ignorées sans faute.
