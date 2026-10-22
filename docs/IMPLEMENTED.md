@@ -22,6 +22,8 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
 - **Blitter (netlists 4051/4082)** : registres mot, `$FF8A3D`, reset à chaud.
 - **STE (netlist 4081)** : délai de bus error, pads en lecture seule, `$FF8901`, fin du son
   DMA figée par trame.
+- **Disquette** : images **IPF** (SPS/CAPS) montées dans les lecteurs A et B, détectées
+  par contenu, sans libcapsimage — détail au § Disquette (« Images IPF »).
 
 ## Compléments du 2026-10-20
 
@@ -1036,8 +1038,40 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
 - **Write-protect auto-détecté** depuis les droits du fichier ; **changement de média**
   (Mediach via bascule WPRT à l'éjection/insertion à chaud).
 - Formats : `.st` (brut), `.msa` (décompression RLE), `.dim` (en-tête 32 o retiré, port
-  `floppies/dim.c` : ID 'BB', non compressé). Détection par CONTENU (indépendante de
-  l'extension). Écritures recopiées dans le `.st` ; `.msa`/`.dim` protégées en écriture.
+  `floppies/dim.c` : ID 'BB', non compressé), `.stx` (Pasti) et `.ipf` (SPS/CAPS).
+  Détection par CONTENU (indépendante de l'extension). Écritures recopiées dans le `.st` ;
+  `.msa`/`.dim` protégées en écriture ; `.stx`/`.ipf` en overlay `.wd1772`.
+- **Images IPF (SPS / CAPS)** (2026-10-22, `io/IpfImage.*`, test `tests/ipf_image_logic.cpp`).
+  Décodeur LIBRE, adapté de MAME `src/lib/formats/ipf_dsk.cpp` (BSD-3, O. Galibert) — PAS
+  de libcapsimage (licence SPS non libre ; c'est elle qu'Hatari charge, et l'oracle local
+  est bâti sans : il ne lit pas les IPF). Deux étages :
+  1. **conteneur → flux de cellules MFM** : blocs CAPS/INFO/IMGE/DATA (CRC32 de chaque
+     bloc et de la zone DATA vérifiés), descriptions de blocs (synchro brute, octets
+     MFM, octets de gap, **weak bits**), gaps de types 0 à 3, encodeurs CAPS et SPS,
+     pistes à **densité variable** (types 3 à 9 : Copylock, Speedlock… durée de chaque
+     cellule en ns), rotation sur l'index (`index_cells`) ;
+  2. **lecture « WD1772 » du flux → modèle STX** (règles de MAME `wd_fdc.cpp`) : IDAM =
+     3×`$4489` puis `$FE`/`$FF`, recherche continue (IDs cachés dans un champ de données
+     trouvés, piste à cheval sur l'index lue en boucle), CRC d'ID faux → RNF+CRC, DAM
+     cherchée **28 à 43 octets** après le CRC de l'ID (sinon RNF), `$F8`/`$F9` → record
+     type, données lues SANS resynchro (un secteur qui chevauche le suivant ou l'index
+     rend le CRC faux, comme sur le disque), CRC données faux → CRC. Positions
+     angulaires (`BitPosition`) et durée des blocs de 16 o tirées du **temps réel** des
+     cellules ; cellule faible → bit **fuzzy** (aléatoire à chaque lecture) ; durée du
+     tour = somme des cellules (`Track::revolutionBytes`, prioritaire sur la taille du
+     dump) ; dump READ TRACK = séparateur MAME (octet toutes les 16 cellules, resynchro
+     sur `$4489`/`$5224` — d'où le 1er `$A1` mangé, comme sur le WD1772). Le tout est
+     sérialisé en STX rév. 2 en mémoire et monté sur le chemin `_STX` (écritures en
+     overlay `.wd1772`, l'IPF n'est jamais modifiée).
+  **Approximé** : pas de DPLL cellule par cellule PENDANT l'émulation. Le flux est lu UNE
+  fois au montage, avec un séparateur idéal : ce qu'un DPLL rend instable d'un tour à
+  l'autre (cellules hors tolérance, IDs trouvés ou perdus selon la phase, bit faible qui
+  détruit une SYNCHRO plutôt qu'un octet) est figé ; les weak bits ne jouent que sur la
+  valeur des octets de données. La table de timing STX quantifie la durée par bloc de
+  16 o (32 cycles), le dump READ TRACK est étalé sur un tour fixe de 200 ms (chemin STX).
+  Formats SCP/KryoFlux (flux brut) toujours absents. Validé : *Hammerfist* (Vivid
+  Image, IPF SPS, pistes 0-4 à 12 IDs dont deux secteurs qui se chevauchent → CRC
+  données faux volontaires) démarre sous TOS 1.02 et atteint l'écran titre puis le jeu.
 - **Images STX (Pasti)** — port d'`extern/hatari/src/floppies/stx.c` (`StxImage` +
   chemin `_STX` du FDC). Parse le conteneur Pasti (en-tête RSY, blocs piste/secteur) en
   structures bas niveau avec **champs ID RÉELS** (piste/face/secteur/taille/CRC,

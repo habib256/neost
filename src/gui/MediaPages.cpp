@@ -51,7 +51,7 @@ void drawFloppyPage(const std::string& disksDir,
         return;
     }
     const fs::path base(disksDir);
-    // Récolte RÉCURSIVE des images .st/.msa/.dim/.stx, triées par ordre alphabétique de
+    // Récolte RÉCURSIVE des images .st/.msa/.dim/.stx/.ipf, triées par ordre alphabétique de
     // DOSSIER puis de FICHIER (insensible à la casse) sur le chemin relatif à disks/.
     //
     // ⚠ MISE EN CACHE OBLIGATOIRE. Ce scan tournait à CHAQUE trame, et sa clé de tri
@@ -83,7 +83,7 @@ void drawFloppyPage(const std::string& disksDir,
             if (e.is_regular_file(ec2)) {
                 std::string ext = e.path().extension().string();
                 for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
-                if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx") {
+                if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx" || ext == ".ipf") {
                     Entry en;
                     en.path = e.path().string();
                     en.rel  = e.path().lexically_relative(base).generic_string();

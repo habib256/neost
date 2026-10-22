@@ -1873,7 +1873,7 @@ static void handleDrops(App& A, Frame& F) {
             if (fs::is_directory(d, ec)) { reqMountGemdos = d; continue; }
             std::string ext = fs::path(d).extension().string();
             for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
-            if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx") {
+            if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx" || ext == ".ipf") {
                 reqMount = d;
             } else if (ext == ".hd" || ext == ".acsi" || ext == ".vhd" || ext == ".raw") {
                 reqMountAcsi = d;

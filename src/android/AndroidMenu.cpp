@@ -164,7 +164,7 @@ void AndroidMenu::draw(float uiScale) {
     ImGui::BeginChild("##list", ImVec2(0, ImGui::GetContentRegionAvail().y - footer), true);
     if (disks.empty()) {
         ImGui::TextDisabled("(no image in %s)", dataDir.c_str());
-        ImGui::TextDisabled("Import .st/.msa/.dim/.stx files there.");
+        ImGui::TextDisabled("Import .st/.msa/.dim/.stx/.ipf files there.");
     }
     const std::string mrefL = lowerOf(fs::path(mounted).filename().string());
     for (int i = 0; i < int(disks.size()); ++i) {

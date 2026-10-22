@@ -105,6 +105,7 @@ add_library(neost_core STATIC
     src/io/Ikbd.cpp
     src/io/Fdc.cpp
     src/io/StxImage.cpp
+    src/io/IpfImage.cpp
     src/io/Rtc.cpp
     src/io/MidiAcia.cpp
     src/io/Fpu.cpp
@@ -130,7 +131,7 @@ set_source_files_properties(
     src/core/Bus.cpp src/core/Shifter.cpp src/core/VideoGlue.cpp
     src/core/VideoCounter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Blitter.cpp
-    src/core/Machine.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/util/HostPath.cpp src/util/ConfigPath.cpp src/gui/AppConfig.cpp
+    src/core/Machine.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/util/HostPath.cpp src/util/ConfigPath.cpp src/gui/AppConfig.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # =============================================================================
@@ -382,7 +383,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/stx_sector_dam_logic.cpp
     tests/stx_raw_track_overlay_logic.cpp
     tests/stx_raw_track_wrap_logic.cpp
-    tests/stx_read_address_crc_logic.cpp tests/ikbd_acia_init_logic.cpp
+    tests/stx_read_address_crc_logic.cpp tests/ipf_image_logic.cpp tests/ikbd_acia_init_logic.cpp
     tests/ikbd_acia_reset_logic.cpp
     tests/ikbd_sci_reset_logic.cpp
     tests/dmasound_microwire_timing_logic.cpp

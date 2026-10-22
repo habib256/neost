@@ -63,6 +63,11 @@ public:
         uint16_t timingFlags = 0, timingSize = 0;
         const uint8_t* pTimingData   = nullptr;
         int saveTrackIndex = -1;        // index dans saveTracks (WRITE TRACK) ou -1
+        // Durée RÉELLE d'un tour en octets MFM DD (32 µs), quand elle est connue
+        // indépendamment du dump READ TRACK : pistes issues d'une IPF, dont le flux
+        // de cellules donne le temps exact (densité variable comprise). 0 = déduite
+        // du dump / de MFMSize comme pour une STX Pasti.
+        uint16_t revolutionBytes = 0;
 
         // Réinterprétation d'une piste réécrite par WRITE TRACK : le flux brut
         // (saveTracks[saveTrackIndex].data) est PARSÉ en secteurs (IDAM $FE → champ

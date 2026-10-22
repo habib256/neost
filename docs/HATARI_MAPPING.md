@@ -208,7 +208,8 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | hdc.c:1109/1253 (Acsi_DmaTransfer) | `Fdc::acsiDmaTransfer/onAcsiIrq`, `Acsi::markDmaRangeError` | porté avec limite | IRQ différée 1000 cycles CPU ; hors RAM, drapeau DMA et statut ERROR en READ, sense disque conservé. WRITE conserve son statut ; source ROM inaccessible avec RAM supportée ≤4 Mo (masque DMA $3FFFFE). |
 | hdc.c:627, 188-620 (HDC_Cmd_*) | Acsi.cpp:467-503, 222-465 | porté | Jeu SCSI complet, INQUIRY corrigé 3ᵉ passe. |
 | hdc.c:742 (PartitionCount) | Acsi.cpp:550-574 | partiel | Manque la détection byte-swap (cosmétique). |
-| fdc.c:6360-7500 + ipf.c (flux MFM/DPLL, IPF) | — | volontaire | Hors périmètre (exclusion assumée). |
+| fdc.c:6360-7500 (flux MFM/DPLL) | — | volontaire | Hors périmètre (exclusion assumée : SCP/KFS). |
+| ipf.c (IPF via libcapsimage) | `IpfImage.cpp` (`ipf::decode`/`ipf::toStx`) → chemin STX | réécrit (2026-10-22) | Décodeur libre adapté de MAME `ipf_dsk.cpp` ; lecture WD1772 figée au montage, pas de DPLL. Cf. HATARI_DIVERGENCES § FDC. |
 | fdc.c:1569, 4724/4799 (FDC_UpdateAll avant chaque accès) | Fdc.cpp:2644, 2788, 2863 | porté (2026-10-18) | indexCheckUpdate en tête de onFdcEvent et avant tout accès WD1772, en lecture comme en écriture (cf. ligne DiskControllerStatus). |
 
 ## 5. PSG / YM2149 (psg.c, sound.c)

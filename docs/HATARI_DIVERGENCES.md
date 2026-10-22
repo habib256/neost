@@ -17,7 +17,8 @@ Shifter, DmaSound, YM2149, Fpu, SoftFloatX80, Acsi, GemdosHd, MidiAcia, Machine)
 avoir glissé. Lu comme
 référence, cf. CLAUDE.md). Produit par un workflow de 7 sous-agents, un par sous-système.
 Cible NeoST : ST / Mega ST / STE / Mega STE, 68000 (Moira cycle-exact). Hors périmètre
-volontaire (NON comptés comme divergences) : moteur FDC `_MFM`/DPLL (IPF/SCP/KFS), TT/Falcon,
+volontaire (NON comptés comme divergences) : moteur FDC `_MFM`/DPLL (SCP/KFS ; l'IPF est lue
+depuis 2026-10-22 par un décodeur libre → modèle STX, cf. § FDC « IPF »), TT/Falcon,
 VME, FPU « not found », USART relayée vers un tty hôte, son en mode headless.
 
 **Bilan global.** La fidélité est **élevée à très élevée** sur tous les sous-systèmes. Aucune
@@ -257,6 +258,17 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
 - ~~**[basse]** Bordures uniquement en basse résolution (overscan med-res non géré)~~ — **obsolète** : l'overscan med-res est porté depuis V2 (2026-07-08, `updateGlueRes`, `VideoGlue.cpp`).
 
 ### FDC WD1772 + DMA + STX — `Fdc.cpp`, `StxImage.cpp` ↔ `fdc.c`, `floppies/stx.c`
+
+- **[assumée, 2026-10-22] IPF sans libcapsimage** (`IpfImage.cpp` ↔ `floppies/ipf.c`) :
+  Hatari délègue l'IPF à libcapsimage (licence SPS non libre, chargée dynamiquement) et
+  la lit par son moteur `_MFM`/DPLL. NeoST décode le conteneur lui-même (adaptation de
+  MAME `ipf_dsk.cpp`, BSD-3), lit le flux de cellules UNE fois au montage avec un
+  séparateur idéal (règles MAME `wd_fdc.cpp`) et monte le résultat sur le chemin STX.
+  *Impact* : identique pour les protections « secteurs » (IDs non standard, CRC
+  volontaires, chevauchements, pistes longues, densité variable, weak bits sur les
+  données) ; divergent pour ce qui exige un DPLL vivant (perte de synchro aléatoire,
+  IDs instables d'un tour à l'autre). Non comparable à l'oracle local (bâti sans
+  capsimage).
 
 - ✅ **STX WRITE SECTOR A8/A9 (2026-10-19)** : bit0 choisit FB normal
   ou F8 supprimé, statut RECTYPE et CRC du READ TRACK reconstruit cohérents.
