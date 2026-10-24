@@ -148,6 +148,9 @@ void usage() {
         "  --cart FILE       mount a cartridge ($FA0000): diagnostic Test Kit, etc.\n"
         "  --gemdos DIR      GEMDOS hard disk: map DIR onto C: (GEMDOS calls redirected\n"
         "                    to the host, Hatari-style; exclusive with --cart)\n"
+        "  --console-log FILE  with --gemdos: copy the text a program writes to the console\n"
+        "                    (Cconout, Cconws, Fwrite to handle 1, Bconout to CON) into\n"
+        "                    FILE, like Hatari's --tos none console; calls from ROM ignored\n"
         "  --printer FILE    Centronics printer: capture the printed bytes into FILE\n"
         "  --acsi IMG        ACSI hard disk image (target 0): TOS reads the partition\n"
         "                    table and mounts C:/D:… (alias --hd; port of hdc.c)\n"
@@ -1123,6 +1126,7 @@ int main(int argc, char** argv) {
     bool        diskRo     = false;   // A14 (--disk-ro) : les écritures ne touchent PAS le fichier hôte
     std::string romPath    = "roms/etos192us.img";
     std::string cartPath;
+    std::string consoleLogPath;                  // --console-log FILE : texte console (GEMDOS)
     std::string printerPath;                     // --printer FILE : capture Centronics (port parallèle)
     std::string gemdosDir;                       // --gemdos DIR : disque dur GEMDOS (dossier hôte)
     std::string acsiImg;                         // --acsi IMG : image disque dur ACSI (cible 0)
@@ -1297,6 +1301,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--gemdos"))     gemdosDir = next(a);
         else if (!std::strcmp(a, "--printer"))    printerPath = next(a);
+        else if (!std::strcmp(a, "--console-log")) consoleLogPath = next(a);
         else if (!std::strcmp(a, "--acsi") || !std::strcmp(a, "--hd")) acsiImg = next(a);
         else if (!std::strcmp(a, "--modem"))           modemFlag = true;
         else if (!std::strcmp(a, "--ethernec"))        ethernecFlag = true;
@@ -1738,6 +1743,20 @@ int main(int argc, char** argv) {
         machine.gemdos.setDirectory(gemdosDir);
     } else if (!cartPath.empty()) {
         machine.loadCart(cartPath);   // cartouche $FA0000 (optionnelle)
+    }
+    // Console GEMDOS (--console-log FILE) : le relevé passe par le trap #1 de la
+    // cartouche système, donc n'existe qu'avec --gemdos.
+    static FILE* consoleLog = nullptr;
+    if (!consoleLogPath.empty()) {
+        if (gemdosDir.empty())
+            std::fprintf(stderr, "[headless] --console-log ignored: requires --gemdos\n");
+        else if (!(consoleLog = std::fopen(consoleLogPath.c_str(), "wb")))
+            std::fprintf(stderr, "[headless] cannot open %s for the console\n", consoleLogPath.c_str());
+        else
+            machine.gemdos.setConsoleSink([](const std::string& t) {
+                std::fwrite(t.data(), 1, t.size(), consoleLog);
+                std::fflush(consoleLog);
+            });
     }
     // Imprimante Centronics (--printer FILE) : capture les octets imprimés dans FILE.
     if (!printerPath.empty()) {

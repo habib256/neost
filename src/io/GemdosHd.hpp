@@ -56,6 +56,14 @@ public:
     bool active() const { return active_; }
     // Liaison moteur non persistée ; réévaluée au montage et au prochain boot/reset.
     void setPartitionCountProvider(std::function<int()> provider) { partitionCountProvider_ = std::move(provider); }
+    // Copie du texte qu'un PROGRAMME écrit sur la console — Cconout, Cconws, Fwrite
+    // sur le handle 1 non redirigé (trap #1), Bconout sur CON ou l'écran brut
+    // (trap #13) —, relevée SANS rien intercepter : TOS l'affiche toujours. Les appels
+    // venus de la ROM sont écartés (le GEMDOS du TOS passe lui-même par le BIOS, et
+    // le desktop n'est pas le programme testé). Équivalent de la console de --tos none
+    // d'Hatari, d'où les programmes de sa suite (cpu/, gemdos/) tirent leur verdict.
+    // Non sérialisée.
+    void setConsoleSink(std::function<void(const std::string&)> sink);
     uint32_t driveMask() const;
     int firstMappedDrive() const;
     // PUBLIQUES : l'empreinte de cartouche des save-states (Machine.cpp) doit masquer
@@ -238,5 +246,9 @@ private:
 
     int  loadAndReloc(const std::string& prgName, uint32_t baseaddr, bool fullBpSetup);
     std::function<int()> partitionCountProvider_; // liaison moteur, non sérialisée
+    std::function<void(const std::string&)> consoleSink_; // idem
+    void captureConsole(uint16_t call, uint32_t params);
+    void captureBios();
+    bool inRom(uint32_t pc) const;
     std::string mountedDirectory_;                // configuration hôte, pas un état invité
 };

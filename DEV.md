@@ -417,7 +417,9 @@ FC0030: bra     $fc004e
   aucune exception KNOWN.
 - **Suite de tests d'Hatari** : `python3 tools/run_hatari_suite.py` rejoue
   `cycles`, `blitter` et `buserror` (ST, Mega ST, STE, MegaSTE) depuis
-  `C:\AUTO`, résultats comparés aux attendus d'Hatari (palier `full`).
+  `C:\AUTO`, résultats comparés aux attendus d'Hatari (palier `full`), plus
+  `cpu` et `gemdos`, dont le verdict est lu sur la console GEMDOS
+  (`neost-headless --gemdos DIR --console-log FILE`).
 - **Registre des contrôles du palier `fast`** (A38) : `tools/fast_guards.json`
   inscrit chaque étape avec son dernier déclenchement RÉEL ; `run_all.py`
   refuse une étape non inscrite, affiche le mur du palier et les contrôles
