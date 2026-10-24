@@ -25,6 +25,13 @@ Chasse aux bugs sur les chantiers du 2026-10-22 :
 - **Délai IPL opt-in (`NEOST_IPLFETCH`, `NEOST_IPLDELAY`) à 16 MHz** : deux restes du
   `× cpuMul` retiré le 2026-10-22 (`neostUpdateIpl`, `setMegaSteSpeed`). Le seuil
   doublait en exécution continue mais pas après rechargement d'un save-state.
+- **IKBD `$18` (souris joystick)** : la milliseconde du 6301 était arrondie à 8 021
+  cycles ; la phase des tics dérivait de 0,248 cycle/ms et perdait une période entière
+  en ~4 s. Tic k calculé exactement depuis l'origine (test : +1 020 cycles à 60 s avant).
+- **`--mouse-at`** : un script terminé sur un appui relâche le bouton à la trame
+  suivante (un double-clic de bureau ouvrait plusieurs fenêtres).
+- **Save-state pendant la lecture de l'INF virtuel** : refus explicite au lieu de
+  « cannot inspect open file ».
 
 ## Suite Hatari : `cpu` et `gemdos` lus sur la console (2026-10-24)
 

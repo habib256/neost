@@ -2232,6 +2232,10 @@ void GemdosHd::serialize(StateArchive& ar) {
         text(mode); text(h.actualName);
         int64_t position = 0, size = 0, stamp = 0;
         if (!ar.loading()) {
+            if (h.fp && h.fp == infFile_) {
+                ar.fail("GEMDOS state: the desktop is reading the virtual autostart INF; save again after boot");
+                return;
+            }
             if (!h.fp || fseeko(h.fp, 0, SEEK_CUR)
                 || (position = ftello(h.fp)) < 0 || !fileInfo(h.fp, h.actualName, size, stamp)) {
                 ar.fail("GEMDOS state: cannot inspect open file"); return;

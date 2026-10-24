@@ -2335,14 +2335,23 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "[headless] joystick applied at frame %d: port1=$%02X\n", frame, ja.second);
         }
         // Script souris daté (--mouse-at) : 1 token = 1 trame. Pilote un menu souris.
+        // Statiques : l'état des BOUTONS est global à la souris, pas au script —
+        // deux scripts successifs ne doivent pas perdre un appui en cours.
+        static bool mClickL = false, mClickR = false;
         for (const auto& ms : mouseAtList) {
             const std::string& mouseAt = ms.second;
             if (frame < ms.first) continue;
             const int idx = frame - ms.first;
+            // Script terminé sur un appui (« ...1 ») : relâché à la trame suivante,
+            // sinon le bouton restait tenu indéfiniment (un double-clic de bureau
+            // ouvrait alors plusieurs fenêtres).
+            if (idx == (int)mouseAt.size() && (mClickL || mClickR)) {
+                mClickL = mClickR = false;
+                machine.ikbd.mouseEvent(0, 0, false, false);
+                machine.cpu.updateIpl();
+                continue;
+            }
             if (idx < (int)mouseAt.size()) {
-                // Statiques : l'état des BOUTONS est global à la souris, pas au script —
-                // deux scripts successifs ne doivent pas perdre un appui en cours.
-                static bool mClickL = false, mClickR = false;
                 const char t = mouseAt[idx];
                 int dx = 0, dy = 0; bool l = false, r = false;
                 switch (t) {
