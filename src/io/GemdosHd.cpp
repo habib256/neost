@@ -1679,6 +1679,55 @@ void GemdosHd::pexecBpCreated() {
     setSR(sr);
 }
 
+void GemdosHd::setConsoleSink(std::function<void(const std::string&)> sink) {
+    consoleSink_ = std::move(sink);
+    if (consoleSink_) cpu_.setTrapObserver([this](uint16_t vector) { if (vector == 32 + 13) captureBios(); });
+    else cpu_.setTrapObserver(nullptr);
+}
+
+bool GemdosHd::inRom(uint32_t pc) const {
+    uint32_t a = pc & 0x00FFFFFF;
+    return a >= bus_.romBase && a < bus_.romBase + bus_.romWindowSize();
+}
+
+// Bconout(dev, c) : 2 = CON, 5 = écran brut. À l'entrée du trap, A7 pointe sur
+// l'opcode empilé par l'appelant (pile user ou super, celle qui est active).
+void GemdosHd::captureBios() {
+    if (inRom(cpu_.pc())) return;
+    uint32_t sp = reg(15);
+    uint16_t dev = readWord(sp + 2);
+    if (readWord(sp) == 3 && (dev == 2 || dev == 5))
+        consoleSink_(std::string(1, (char)(readWord(sp + 4) & 0xff)));
+}
+
+void GemdosHd::captureConsole(uint16_t call, uint32_t params) {
+    if (inRom(callingPC_)) return;
+    // Sortie standard redirigée par le TOS (Fforce vers un fichier qu'IL gère) : la
+    // table p_devx de la basepage ($30, un octet par handle standard) passe de $FF
+    // (CON) au numéro du fichier — relevé sous EmuTOS, TOS 1.04 et 2.06. Cconout et
+    // Cconws suivent alors Fwrite(1) dans le fichier. Limite : un Fforce(1, h) avec h
+    // issu de Fdup(1) ramène l'écran mais garde h ≥ 0 — texte perdu, donc échec visible.
+    const uint32_t bp = readLong(actPd_);
+    if (checkArea(bp + 0x31, 1, false) && (int8_t)readByte(bp + 0x31) >= 0) return;
+    // Redirigée vers un fichier HÔTE : le TOS n'en sait rien (p_devx inchangé) et
+    // affiche toujours Cconout/Cconws, seul Fwrite(1) part dans le fichier. Même test
+    // que getValidFileHandle, sans son effet de bord (dé-redirection).
+    const ForcedHandle& out = forced_[1];
+    const bool hostRedirected = out.handle >= 0 && out.handle < MAX_FILE_HANDLES &&
+                                fileHandles_[out.handle].used && basepageMatches(out.basepage);
+    std::string text;
+    if (call == 0x02) {                                      // Cconout(c)
+        text.push_back((char)(readWord(params) & 0xff));
+    } else if (call == 0x09) {                               // Cconws(str)
+        getString(readLong(params), text);
+    } else if (call == 0x40 && readWord(params) == 1 && !hostRedirected) {  // Fwrite(1, n, buf)
+        uint32_t n = readLong(params + 2), buf = readLong(params + 6);
+        for (uint32_t i = 0; i < n && i < 0x10000 && checkArea(buf + i, 1, true); i++)
+            text.push_back((char)readByte(buf + i));
+    }
+    if (!text.empty()) consoleSink_(text);
+}
+
 // -----------------------------------------------------------------------------
 //  Dispatch GEMDOS (GemDOS_Trap) + interception d'opcode (OpCode_*)
 // -----------------------------------------------------------------------------
@@ -1692,6 +1741,7 @@ int GemdosHd::trap() {
 
     uint16_t call = readWord(params);
     params += 2;
+    if (consoleSink_) captureConsole(call, params);
 
     // Trace (NEOST_GEMDOS_TRACE) des appels « fichier » (≥ Dfree) : nom de l'appel, handle
     // quand l'appel en prend un, puis QUI l'a traité et D0 — c'est ce qui manquait à un

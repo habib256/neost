@@ -6,6 +6,26 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Suite Hatari : `cpu` et `gemdos` lus sur la console (2026-10-24)
+
+`neost-headless --console-log FILE` (avec `--gemdos`) copie le texte qu'un programme écrit
+sur la console — `Cconout`, `Cconws`, `Fwrite` sur le handle 1 non redirigé (trap #1),
+`Bconout` sur CON (trap #13, via un nouvel observateur de TRAP de `Cpu68k`) — sans rien
+intercepter : l'équivalent de la console de `--tos none` d'Hatari. Les appels venus de
+la ROM sont écartés (pas de double compte GEMDOS→BIOS, pas de bruit du desktop), et
+une sortie redirigée par `Fforce` n'est pas relevée (`p_devx[1]` de la basepage pour un
+fichier du TOS, table des handles forcés de `GemdosHd` pour un fichier hôte). Contrôlé par
+un PRG ad hoc sous EmuTOS, TOS 1.04 et TOS 2.06.
+`tools/run_hatari_suite.py` y lit le verdict de `cpu/int_test.tos` (30 tests d'instructions
+entières) et de `gemdos/gmdostst.tos` (3 groupes sur le disque hôte) : 12/12, sans écart.
+`xbios` et `mem_end` restent hors banc : ils testent des extensions d'Hatari (`Dbmsg`,
+`Scrdmp` intercepté), pas du matériel ST.
+
+Passe headless sur treize disquettes nouvelles (Bruce Lee, Barbarian Palace et Psygnosis,
+Hammerfist IPF, IK+, Jambala, Just Buggin', six menus Techno Force) : toutes démarrent et
+atteignent jeu, démo ou menu. Jambala (« Grandslam presents ») et le menu Techno Force 11
+(défilant sur fond blanc) attendent une action, à l'identique de l'oracle Hatari.
+
 ## HBL sur la longueur de ligne live, événement échu servi à la frontière (2026-10-22)
 
 Dernier résidu de la sonde Super Hang-On : 53 chaînes où la HBL n'était pas encore

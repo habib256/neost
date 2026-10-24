@@ -67,6 +67,7 @@ struct CpuState {
     // faute levée par un périphérique (triggerBusError) traverserait l'hôte → terminate.
     bool        inExecute    = false;
     int         grp0Vector   = 0;
+    std::function<void(uint16_t)> trapObserver;   // cf. Cpu68k::setTrapObserver
     // ---- Dernière faute de GROUPE 0, pour NOMMER un halt (A42, 2026-08-30) -----
     // Équivalent des `last_*_for_exception_3` d'Hatari (newcpu.c:3086) : sans elles
     // un halt ne disait QUE son vecteur, et « la machine est gelée » sans dire OÙ
@@ -336,6 +337,7 @@ public:
     // FIABLE dont dispose cpuDidHalt() (cf. plus bas — reg.pc0 a déjà été avancé par
     // le prefetch de l'instruction fautive, il ne désigne PAS la faute).
     void willExecute(moira::M68kException exc, moira::u16 vector) override {
+        if (exc == moira::M68kException::TRAP && g_cur->trapObserver) g_cur->trapObserver(vector);
         if (exc == moira::M68kException::BUS_ERROR ||
             exc == moira::M68kException::ADDRESS_ERROR) g_cur->grp0Vector = int(vector);
     }
@@ -1470,6 +1472,10 @@ void Cpu68k::setSr(uint16_t v) {
 
 uint32_t Cpu68k::usp() const {
     return state_->moira->getUSP();
+}
+
+void Cpu68k::setTrapObserver(std::function<void(uint16_t vector)> observer) {
+    state_->trapObserver = std::move(observer);
 }
 
 bool Cpu68k::triggerBusError(uint32_t addr, bool write) {

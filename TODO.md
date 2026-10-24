@@ -42,7 +42,7 @@ Premier tri proposé ; le détail est dans la section indiquée.
 |---|--------|------|---|
 | 1 | A32 : `VideoCounter` en objet membre (A9 livré, un chantier à la fois) | P2 | 7 |
 | 2 | Suite Hatari `screen` : NeoST = référence décalée de 4 px sur `flixfull` | P2 | 8 |
-| 3 | Suite Hatari : programmes à verdict console (`cpu`, `gemdos`, `xbios`, `mem_end`) et `screen` | P2 | 8 |
+| 3 | Suite Hatari : `screen` (référence PNG au format Hatari) et `serial` | P2 | 8 |
 | 4 | EtherNEC : livrer les pilotes libres GPL dans les paquets | P2 | 3 |
 
 Aucun P1 faisable sans ressource externe : les P1 restants sont au § 2.
@@ -329,9 +329,9 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
 ## 8. Tests & outillage
 
 - **Suite de tests d'Hatari : restes** · P2 ◐ — `tools/run_hatari_suite.py` (palier `full`)
-  rejoue cycles, blitter et bus errors (ST, Mega ST, STE, MegaSTE) : 10/10. Restent les
-  programmes à verdict console (`cpu`, `gemdos`, `xbios`, `mem_end` : capturer Cconws ou
-  la sortie `--bios-intercept`), `screen` (référence PNG au format Hatari) et `serial`.
+  rejoue cycles, blitter, bus errors, `cpu` et `gemdos` : 12/12. Restent `screen`
+  (référence PNG au format Hatari) et `serial` ; `xbios`/`mem_end` sont hors périmètre
+  (extensions propres à Hatari, cf. `docs/HATARI_AUTOMATION.md`).
 - **`screen/flixfull.prg` (plein écran)** · P2 ⭘ — la capture NeoST est identique à la
   référence d'Hatari (reproduite par l'Hatari épinglé) décalée de 4 px horizontalement.
   Trancher entre cadrage de capture (`--screenshot-dir` en `--tos none`) et fenêtre gauche

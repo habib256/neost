@@ -362,8 +362,27 @@ sont posés dans `C:\AUTO` d'un disque hôte (`--gemdos`) : EmuTOS les lance au 
 ligne au résultat attendu versionné par Hatari. Couverts : `cycles/cyccheck.prg`,
 `blitter/blitemu.ttp` (STE) et `buserror/buserr_b|w.prg` sur ST, Mega ST 4 Mo, STE et
 MegaSTE 4 Mo — 10/10 au 2026-10-20. `NEOST_RAM_SLOT=0` fait échouer `cycles` sur sept
-lignes. Restent hors banc : `cpu`, `gemdos`, `xbios`, `mem_end` (verdict sur la console
-de l'émulateur), `screen` (PNG au format de capture d'Hatari) et `serial`.
+lignes.
+
+`cpu/int_test.tos` (30 tests d'instructions entières, 68000) et `gemdos/gmdostst.tos`
+(chemins, fichiers, appels système sur le disque hôte) écrivent leur verdict sur la
+console : Hatari le lit sur sa sortie en `--tos none`, NeoST le relève avec
+`--console-log FILE` (copie de `Cconout`/`Cconws`/`Fwrite(1)` au passage du trap #1 de
+la cartouche système, donc seulement avec `--gemdos`, et de `Bconout` sur CON ou l'écran
+brut au trap #13). Seuls comptent les appels émis hors ROM : le GEMDOS du TOS repasse
+par le BIOS (texte compté deux fois sinon) et le desktop n'est pas le programme testé.
+La redirection `Fforce` est suivie comme à l'écran : vers un fichier géré par le TOS
+(octet `p_devx[1]` de la basepage ≥ 0, relevé sous EmuTOS, TOS 1.04 et 2.06),
+`Cconout`/`Cconws`/`Fwrite(1)` partent dans le fichier et ne sont pas relevés ; vers un
+fichier hôte (le TOS n'en sait rien), seul `Fwrite(1)` l'est. Limite assumée : un
+`Fforce(1, h)` de restauration avec `h` issu de `Fdup(1)` laisse `p_devx[1]` ≥ 0 et le
+texte suivant est perdu — échec visible, jamais un faux succès. Verdict : celui de leur
+`run_test.sh` (ni « fail » ni « error »), plus un compte exact des lignes `Test '…' OK`
+contre la table `tests[]` du source. 12/12 au 2026-10-24.
+
+Restent hors banc : `xbios` et `mem_end`, qui appellent des extensions propres à Hatari
+(`Dbmsg` en XBIOS 11, `Scrdmp` intercepté en capture) et non du matériel ST, `screen`
+(PNG au format de capture d'Hatari) et `serial`.
 
 Les traces sans horloge, incomplètes ou non monotones, les sources absentes,
 les redémarrages, les erreurs de données, les IRQ manquantes et les exceptions

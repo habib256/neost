@@ -15,9 +15,18 @@
 #  comparé à l'attendu, ligne pour ligne (les lignes « ( … ) » des résultats
 #  bus error sont des commentaires, retirés comme dans leur run_test.sh).
 #
-#  Restent hors banc : cpu/, gemdos/, xbios/, mem_end/ (verdict sur la console
-#  de l'émulateur, `--bios-intercept`), serial/ (pas de capture série brute) et
-#  screen/ (référence PNG au format de capture d'Hatari).
+#  cpu/ et gemdos/ écrivent leur verdict sur la CONSOLE (Cconws) : Hatari le lit
+#  sur sa sortie en `--tos none`, NeoST le relève avec `--console-log` (copie de
+#  Cconout/Cconws/Fwrite(1)/Bconout(CON) émis HORS ROM : ni le GEMDOS du TOS
+#  repassant par le BIOS, ni le desktop n'y entrent). Verdict de leur run_test.sh
+#  (ni « fail » ni « error »), durci : autant de lignes « Test '…' OK » que
+#  d'entrées dans la table tests[] du source — un programme qui s'arrête en route
+#  ne passe pas.
+#
+#  Restent hors banc : xbios/ et mem_end/ (ils appellent des extensions propres
+#  à Hatari — Dbmsg en XBIOS 11, Scrdmp intercepté en capture —, pas du matériel
+#  ST), serial/ (pas de capture série brute) et screen/ (référence PNG au format
+#  de capture d'Hatari).
 #
 #  extern/hatari est gitignoré : absent → étape SAUTÉE et recensée (code 77).
 #
@@ -25,6 +34,7 @@
 # =============================================================================
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -50,21 +60,46 @@ for machine, mem, rom, ref in (("st", "1m", ROM_ST, "st"), ("megast", "4m", ROM_
                       f"BUSERR_{width.upper()}.TXT", f"buserror/results/{ref}_{width}.txt",
                       machine, mem, rom))
 
+# (nom, programme, source C portant la table tests[], machine, mémoire, ROM)
+CONSOLE_CASES = [("cpu-68000", "cpu/int_test.tos", "cpu/int_test.c", "st", "1m", ROM_ST),
+                 ("gemdos", "gemdos/gmdostst.tos", "gemdos/gmdostst.c", "st", "1m", ROM_ST)]
+
 
 def expected_lines(path: Path) -> list[str]:
     return [line for line in path.read_text(errors="replace").splitlines()
             if not line.startswith("(")]
 
 
+def run_auto(drive: Path, prg, machine, mem, rom, extra=()) -> subprocess.CompletedProcess:
+    (drive / "AUTO").mkdir()
+    # Seuls les *.PRG du dossier AUTO sont lancés : un .TTP/.TOS est renommé.
+    shutil.copy(SUITE / prg, drive / "AUTO" / (Path(prg).stem.upper() + ".PRG"))
+    cmd = [str(HEADLESS), str(ROOT / rom), "--machine", machine, "--mem", mem,
+           "--gemdos", str(drive), "--frames", "1500", *extra]
+    return subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=300)
+
+
+def run_console_case(name, prg, source, machine, mem, rom) -> bool:
+    with tempfile.TemporaryDirectory(prefix="neost-hatari-suite-") as tmp:
+        drive, console = Path(tmp) / "C", Path(tmp) / "console.txt"
+        drive.mkdir()
+        log = run_auto(drive, prg, machine, mem, rom, ("--console-log", str(console)))
+        text = console.read_text(errors="replace") if console.exists() else ""
+        tests = [l.strip() for l in text.splitlines() if l.startswith("Test '")]
+        want = len(re.findall(r'^\t\{ "', (SUITE / source).read_text(), re.M))
+        bad = [l for l in tests if not l.endswith(" OK")]
+        if re.search("fail|error", text, re.I) or bad or len(tests) != want:
+            print(f"  FAIL {name}: {len(tests) - len(bad)}/{want} tests OK (code {log.returncode})")
+            print("\n".join("    " + l for l in (bad or text.splitlines()[-5:])))
+            return False
+        print(f"  OK   {name} ({want} tests)")
+        return True
+
+
 def run_case(name, prg, produced, reference, machine, mem, rom) -> bool:
     with tempfile.TemporaryDirectory(prefix="neost-hatari-suite-") as tmp:
         drive = Path(tmp)
-        (drive / "AUTO").mkdir()
-        # Seuls les *.PRG du dossier AUTO sont lancés : un .TTP est renommé.
-        shutil.copy(SUITE / prg, drive / "AUTO" / (Path(prg).stem.upper() + ".PRG"))
-        cmd = [str(HEADLESS), str(ROOT / rom), "--machine", machine, "--mem", mem,
-               "--gemdos", str(drive), "--frames", "1500"]
-        log = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=300)
+        log = run_auto(drive, prg, machine, mem, rom)
         out = drive / produced
         if not out.exists():
             print(f"  FAIL {name}: {produced} absent (code {log.returncode})")
@@ -93,8 +128,9 @@ def main() -> int:
         return 2
     only = set(sys.argv[1:])
     selected = [c for c in CASES if not only or c[0] in only]
-    print(f"SUITE HATARI : {len(selected)} programmes rejoués sous NeoST")
-    ok = all([run_case(*c) for c in selected])
+    console = [c for c in CONSOLE_CASES if not only or c[0] in only]
+    print(f"SUITE HATARI : {len(selected) + len(console)} programmes rejoués sous NeoST")
+    ok = all([run_case(*c) for c in selected] + [run_console_case(*c) for c in console])
     print("SUITE HATARI OK" if ok else "SUITE HATARI FAIL")
     return 0 if ok else 1
 

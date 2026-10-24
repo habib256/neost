@@ -8,6 +8,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
+#include <functional>
 #include <memory>
 #include <cstdint>
 #include <string>
@@ -230,6 +231,11 @@ public:
     void     setReg(int idx, uint32_t v);
     void     setSr(uint16_t v);
     uint32_t usp() const;          // pointeur de pile UTILISATEUR (regs.usp)
+
+    // Observateur des TRAP #n, appelé À L'ENTRÉE de l'exception avec le vecteur
+    // (32 + n) : SR et pile de l'appelant encore en place, A7 pointe donc sur ses
+    // arguments. Lecture seule (relevé de console de --console-log) ; non sérialisé.
+    void setTrapObserver(std::function<void(uint16_t vector)> observer);
 
     // Désassemble l'instruction à `addr` (lecture sans effet de bord via le bus) :
     // écrit le texte dans `str` (≥256 octets recommandés) et renvoie sa longueur en
