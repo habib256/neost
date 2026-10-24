@@ -902,7 +902,7 @@ void neostUpdateIpl(bool commit) {
             // cpuipldelay : enregistre le niveau désiré + l'horloge de changement ; ne propage à la
             // broche (POLL_IPL) que si le délai de 4 cyc est écoulé, sinon sync() le fera plus tard.
             if (lvl != g_cur->desiredIpl) { g_cur->desiredIpl = lvl; g_cur->iplChgClock = g_cur->moira->getClock(); }
-            if (g_cur->moira->getClock() - g_cur->iplChgClock >= static_cast<int64_t>(g_iplDelayCyc) * g_cur->cpuMul) {
+            if (g_cur->moira->getClock() - g_cur->iplChgClock >= static_cast<int64_t>(g_iplDelayCyc)) {   // cycles CPU (fx68k)
                 g_cur->moira->setIPL(static_cast<moira::u8>(lvl)); g_cur->appliedIpl = lvl;
             }
         }
@@ -1337,9 +1337,9 @@ void Cpu68k::setMegaSteSpeed(bool sixteenMhz) {
     const int64_t b = busOfClock(c);
     state_->cpuMul  = mul;
     state_->cpuBias = (mul == 2) ? (2 * b - c) : (b - c);
-    // Réajuste les seuils du délai IPL (en clock-units) à la nouvelle vitesse CPU.
-    if (g_iplFetch) state_->moira->setIplDelay(static_cast<int64_t>(g_iplFetch4) * state_->cpuMul,
-                                         static_cast<int64_t>(g_iplFetch2) * state_->cpuMul);
+    // Seuils du délai IPL : en cycles CPU, inchangés par la vitesse (cf. constructeur) —
+    // même chemin qu'au chargement d'un save-state.
+    state_->moira->applyIplFetchConfig(mul);
     std::fprintf(stderr, "[cpu] Mega STE: 68000 at %d MHz\n", sixteenMhz ? 16 : 8);
 }
 

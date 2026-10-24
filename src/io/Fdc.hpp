@@ -484,6 +484,9 @@ private:
     uint8_t  cr_ = 0;        // Command Register
     // Piste .ST reformatée hors géométrie sous la tête (cf. FloppyDisk::stOverride).
     FloppyDisk::StOverrideTrack* stOverrideHere();
+    // Champ ID retenu par le dernier nextSectorID sur cette piste (nullptr = aucun).
+    FloppyDisk::StOverrideSector* stOverrideFound(FloppyDisk::StOverrideTrack* ov);
+    int ovSecIdx_ = -1;      // indice dans StOverrideTrack::secs (volatile, comme stOverride)
     bool stOverrideFromBuffer(FloppyDisk& dk);
     uint8_t  tr_ = 0;        // Track Register
     uint8_t  sr_ = 1;        // Sector Register

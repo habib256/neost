@@ -6,6 +6,26 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Autostart `--auto`, EMail 1.56, chasse aux bugs (2026-10-24)
+
+`neost-headless --auto PRG` lance un programme après le boot, comme `hatari --auto` :
+port d'`inffile.c` (INF virtuel servi au Fopen du desktop, cartouche système posée même
+sans `--gemdos`). Vérifié avec **EMail 1.56** (GPL v2, `disks/EMAIL156.ST`) sur un ST
+1 Mo monochrome sous TOS 1.04, TOS 2.06 et EmuTOS : le programme démarre, l'assistant de
+compte s'ouvre à la souris et accepte la saisie (en basse résolution, EMail refuse
+lui-même : « needs a screen 640 pixels wide »). Défaut d'Hatari non reproduit : son INF
+virtuel est tronqué de la longueur de la ligne de fenêtre ajoutée
+(`docs/HATARI_DIVERGENCES.md`).
+
+Chasse aux bugs sur les chantiers du 2026-10-22 :
+- **FDC, pistes .ST reformatées hors géométrie** (`stOverride`) : READ SECTOR,
+  WRITE SECTOR et READ ADDRESS servaient le premier ID de même numéro, et non celui
+  trouvé sous la tête (IDs dupliqués). READ ADDRESS rendait aussi RNF pour une taille
+  `$06`. Positions des IDs corrigées des `$F7`. Tests ajoutés (4 échecs avant correction).
+- **Délai IPL opt-in (`NEOST_IPLFETCH`, `NEOST_IPLDELAY`) à 16 MHz** : deux restes du
+  `× cpuMul` retiré le 2026-10-22 (`neostUpdateIpl`, `setMegaSteSpeed`). Le seuil
+  doublait en exécution continue mais pas après rechargement d'un save-state.
+
 ## Suite Hatari : `cpu` et `gemdos` lus sur la console (2026-10-24)
 
 `neost-headless --console-log FILE` (avec `--gemdos`) copie le texte qu'un programme écrit

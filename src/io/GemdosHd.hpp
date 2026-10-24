@@ -64,6 +64,18 @@ public:
     // d'Hatari, d'où les programmes de sa suite (cpu/, gemdos/) tirent leur verdict.
     // Non sérialisée.
     void setConsoleSink(std::function<void(const std::string&)> sink);
+    // Démarrage automatique d'un programme après le boot (port de Hatari inffile.c,
+    // option --auto) : au C-INIT de la cartouche, un DESKTOP.INF / NEWDESK.INF /
+    // EMUDESK.INF VIRTUEL portant la ligne « #Z » est préparé, puis servi au Fopen
+    // du desktop — même depuis A:, rien n'est écrit sur la disquette. Sans dossier
+    // --gemdos, la cartouche système est installée sans lecteur (comme Hatari
+    // AUTOSTART_INTERCEPT). TOS ≥ 1.04 / EmuTOS. Chemin sans lecteur → « C:\ ».
+    // Renvoie false pour un chemin refusé (INF_SetAutoStart). Non sérialisé.
+    bool setAutoStart(const std::string& name);
+    const std::string& autoStartProgram() const { return autoPrg_; }
+    // Liaison moteur (comme setPartitionCountProvider) : disquette dans A: ? Sert à
+    // ouvrir la fenêtre du lecteur de boot dans l'INF par défaut (get_builtin_inf).
+    void setFloppyProvider(std::function<bool()> provider) { floppyProvider_ = std::move(provider); }
     uint32_t driveMask() const;
     int firstMappedDrive() const;
     // PUBLIQUES : l'empreinte de cartouche des save-states (Machine.cpp) doit masquer
@@ -247,6 +259,16 @@ private:
     int  loadAndReloc(const std::string& prgName, uint32_t baseaddr, bool fullBpSetup);
     std::function<int()> partitionCountProvider_; // liaison moteur, non sérialisée
     std::function<void(const std::string&)> consoleSink_; // idem
+    std::function<bool()> floppyProvider_;               // idem
+    // INF virtuel d'autostart (TosOverride d'inffile.c).
+    std::string autoPrg_;                                 // « A:\EMAIL.PRG » ; vide = inactif
+    FILE*       infFile_   = nullptr;                     // contenu virtuel (fichier temporaire)
+    std::string infName_;                                 // nom que le TOS ouvre (sans lecteur)
+    int         infCloses_ = 0;
+    void installSystemCart();
+    void createInfOverride();
+    bool closeInfOverride(FILE* fp);
+    bool infNameMatches(const std::string& name) const;
     void captureConsole(uint16_t call, uint32_t params);
     void captureBios();
     bool inRom(uint32_t pc) const;

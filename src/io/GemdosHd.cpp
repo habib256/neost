@@ -7,7 +7,8 @@
 //     chemins « mode test sans TOS » sont omis ;
 //   - partitions ACSI prises en compte pour décaler un dossier simple ;
 //     contrôleurs SCSI/IDE hors des machines supportées ;
-//   - pas d'autostart INF (INF_* traités comme inactifs) ni de symboles debug ;
+//   - autostart INF porté sans la surcharge de résolution (#E recopiée telle
+//     quelle) ; pas de symboles debug ;
 //   - conversion de jeu de caractères et write-protect désactivées par défaut.
 //  La LOGIQUE de redirection (chemins, handles, DTA, Pexec) est portée 1:1.
 //
@@ -338,7 +339,7 @@ static std::string physicalCanon(const std::string& path);
 // -----------------------------------------------------------------------------
 GemdosHd::GemdosHd(Bus& bus, Cpu68k& cpu) : bus_(bus), cpu_(cpu) {}
 
-GemdosHd::~GemdosHd() { clearAllFileHandles(); }
+GemdosHd::~GemdosHd() { clearAllFileHandles(); closeInfOverride(infFile_); }
 
 bool GemdosHd::setDirectory(const std::string& hostDir) {
     if (!dirExists(hostDir)) {
@@ -364,20 +365,25 @@ bool GemdosHd::setDirectory(const std::string& hostDir) {
         return false;
     }
     mountedDirectory_ = absDir;
-    // Installe la cartouche système ($FA0000) : le TOS exécutera son C-INIT au boot.
-    // ⚠ Écrase une éventuelle cartouche utilisateur (même stockage) : on efface donc
-    // AUSSI son chemin, sans quoi unmount() croirait plus tard qu'une cartouche
-    // fichier est branchée et laisserait la cartouche système en place.
-    bus_.cart.assign(Cart_data, Cart_data + sizeof(Cart_data));
-    bus_.clearCartPath();
-    bus_.gemdos = this;
-    active_ = true;
+    installSystemCart();
     currentDrive_ = (uint16_t)bootDrive_;
     for (auto& d : emudrives_)
         if (d.used)
             std::fprintf(stderr, "[gemdos] HDD GEMDOS : %c: <-> %s\n",
                          'A' + d.driveNumber, d.hdEmuDir.c_str());
     return true;
+}
+
+// Installe la cartouche système ($FA0000) : le TOS exécutera son C-INIT au boot.
+// ⚠ Écrase une éventuelle cartouche utilisateur (même stockage) : on efface donc
+// AUSSI son chemin, sans quoi unmount() croirait plus tard qu'une cartouche
+// fichier est branchée et laisserait la cartouche système en place.
+void GemdosHd::installSystemCart() {
+    trace_ = getenv("NEOST_GEMDOS_TRACE") != nullptr;
+    bus_.cart.assign(Cart_data, Cart_data + sizeof(Cart_data));
+    bus_.clearCartPath();
+    bus_.gemdos = this;
+    active_ = true;
 }
 
 void GemdosHd::unmount() {
@@ -612,7 +618,9 @@ void GemdosHd::initCurPaths() {
 //  Gestion des handles de fichiers
 // -----------------------------------------------------------------------------
 void GemdosHd::closeFileHandle(int i) {
-    if (fileHandles_[i].used && fileHandles_[i].fp) fclose(fileHandles_[i].fp);
+    // L'INF virtuel appartient à l'override (fermé par closeInfOverride).
+    if (fileHandles_[i].used && fileHandles_[i].fp && fileHandles_[i].fp != infFile_)
+        fclose(fileHandles_[i].fp);
     fileHandles_[i].fp = nullptr;
     fileHandles_[i].basepage = 0;
     fileHandles_[i].used = false;
@@ -1083,10 +1091,28 @@ bool GemdosHd::gemOpen(uint32_t p) {
     int mode = readWord(p + 4) & 3;
     if (!getString(readLong(p), name) || name.empty()) return false;
     int drive = fileName2HardDriveID(name);
-    if (drive == -1) return false;
+    // INF virtuel : intercepté sur TOUT lecteur, A: compris (GemDOS_Open, bToTos).
+    const bool toTos = drive == -1;
+    if (toTos && !infFile_) return false;
 
     int idx = findFreeFileHandle();
-    if (idx == -1) { setD0(cpu_, GEMDOS_ENHNDL); return true; }
+    if (idx == -1) {
+        if (toTos) return false;
+        setD0(cpu_, GEMDOS_ENHNDL); return true;
+    }
+    if (infFile_ && infNameMatches(name)) {
+        std::fprintf(stderr, "[gemdos] autostart: virtual %s served for %s\n",
+                     name.c_str(), autoPrg_.c_str());
+        fileHandles_[idx].fp = infFile_;
+        fileHandles_[idx].readOnly = true;
+        fileHandles_[idx].used = true;
+        std::strcpy(fileHandles_[idx].mode, "rb");
+        fileHandles_[idx].basepage = readLong(actPd_);
+        fileHandles_[idx].actualName.clear();
+        setD0(cpu_, idx + BASE_FILEHANDLE);
+        return true;
+    }
+    if (toTos) return false;
 
     std::string host; createHostFileName(drive, name, host);
     const char* modeStr;
@@ -1120,6 +1146,8 @@ bool GemdosHd::gemOpen(uint32_t p) {
 bool GemdosHd::gemClose(uint32_t p) {
     int handle = readWord(p);
     if ((handle = getValidFileHandle(handle)) < 0) return false;
+    if (fileHandles_[handle].fp && fileHandles_[handle].fp == infFile_)
+        closeInfOverride(infFile_);       // INF_CloseOverride : rembobiné ou supprimé
     closeFileHandle(handle);
     for (int i = 0; i < FORCED_HANDLES; i++)
         if (forced_[i].handle == handle) unforceFileHandle(i);
@@ -1679,6 +1707,256 @@ void GemdosHd::pexecBpCreated() {
     setSR(sr);
 }
 
+// -----------------------------------------------------------------------------
+//  Autostart : INF virtuel (port de Hatari inffile.c, sans la surcharge #E)
+// -----------------------------------------------------------------------------
+// INF par défaut de chaque famille de TOS, recopiés d'inffile.c (les espaces de
+// fin de ligne comptent pour l'analyseur du TOS). TOS 1.04 ne marche qu'avec SON
+// format (plantage au retour du programme lancé avec un INF plus récent).
+static const char kEmudeskInf[] =
+"#R 01\r\n"
+"#E 1A E0 FF 00 60\r\n"
+"#W 00 00 02 08 26 0C 00 @\r\n"
+"#W 00 00 02 0A 26 0C 00 @\r\n"
+"#W 00 00 02 0D 26 0C 00 @\r\n"
+"#W 00 00 00 00 28 17 00 @\r\n"
+"#W 00 00 00 00 28 17 00 @\r\n"
+"#W 00 00 00 00 28 17 00 @\r\n"
+"#M 00 00 01 FF A DISK A@ @\r\n"
+"#M 01 00 01 FF B DISK B@ @\r\n"
+"#M 02 00 00 FF C DISK C@ @\r\n"
+"#F FF 07 @ *.*@ 000 @\r\n"
+"#N FF 07 @ *.*@ 000 @\r\n"
+"#D FF 02 @ *.*@\r\n"
+"#Y 06 FF *.GTP@ @ 000 @\r\n"
+"#G 06 FF *.APP@ @ 000 @\r\n"
+"#G 06 FF *.PRG@ @ 000 @\r\n"
+"#P 06 FF *.TTP@ @ 000 @\r\n"
+"#F 06 FF *.TOS@ @ 000 @\r\n"
+"#T 00 03 03 FF   TRASH@ @\r\n"
+"#O 03 03 04 FF   PRINTER@ @\r\n";
+
+static const char kDesktopInf[] =
+"#a000000\r\n"
+"#b000000\r\n"
+"#c7770007000600070055200505552220770557075055507703111103\r\n"
+"#d                                             \r\n"
+"#E 18 11 \r\n"
+"#W 00 00 02 0B 26 09 00 @\r\n"
+"#W 00 00 0A 0F 1A 09 00 @\r\n"
+"#W 00 00 0E 01 1A 09 00 @\r\n"
+"#M 00 00 00 FF A FLOPPY DISK@ @ \r\n"
+"#M 01 00 00 FF B FLOPPY DISK@ @ \r\n"
+"#M 02 00 00 FF C HARD DISK@ @ \r\n"
+"#T 00 03 02 FF   TRASH@ @ \r\n"
+"#F FF 04   @ *.*@ \r\n"
+"#D FF 01   @ *.*@ \r\n"
+"#G 03 FF   *.APP@ @ \r\n"
+"#G 03 FF   *.PRG@ @ \r\n"
+"#P 03 FF   *.TTP@ @ \r\n"
+"#F 03 04   *.TOS@ @ \r\n"
+"\032";
+
+static const char kNewdeskInf[] =
+"#a000000\r\n"
+"#b000000\r\n"
+"#c7770007000600070055200505552220770557075055507703111103\r\n"
+"#d                                             \r\n"
+"#K 4F 53 4C 00 46 42 43 57 45 58 00 00 00 00 00 00 00 00 00 00 00 00 00 52 00 00 4D 56 50 00 @\r\n"
+"#E 18 01 00 06 \r\n"
+"#Q 41 40 43 40 43 40 \r\n"
+"#W 00 00 02 0B 26 09 00 @\r\n"
+"#W 00 00 0A 0F 1A 09 00 @\r\n"
+"#W 00 00 0E 01 1A 09 00 @\r\n"
+"#W 00 00 04 07 26 0C 00 @\r\n"
+"#W 00 00 0C 0B 26 09 00 @\r\n"
+"#W 00 00 08 0F 1A 09 00 @\r\n"
+"#W 00 00 06 01 1A 09 00 @\r\n"
+"#N FF 04 000 @ *.*@ @ \r\n"
+"#D FF 01 000 @ *.*@ @ \r\n"
+"#G 03 FF 000 *.APP@ @ @ \r\n"
+"#G 03 FF 000 *.PRG@ @ @ \r\n"
+"#Y 03 FF 000 *.GTP@ @ @ \r\n"
+"#P 03 FF 000 *.TTP@ @ @ \r\n"
+"#F 03 04 000 *.TOS@ @ @ \r\n"
+"#M 00 00 00 FF A FLOPPY DISK@ @ \r\n"
+"#M 01 00 00 FF B FLOPPY DISK@ @ \r\n"
+"#M 02 00 00 FF C HARD DISK@ @ \r\n"
+"#T 00 03 02 FF   TRASH@ @ \r\n";
+
+static const char kTos4deskInf[] =
+"#a000000\r\n"
+"#b000000\r\n"
+"#c7770007000600070055200505552220770557075055507703111103\r\n"
+"#d                                             \r\n"
+"#K 4F 53 4C 00 46 42 43 57 45 58 00 00 00 00 00 00 00 00 00 00 00 00 00 52 00 00 4D 56 00 00 00 @\r\n"
+"#E 18 01 00 06 00 82 00 00 00 00 \r\n"
+"#Q 41 70 73 70 7D 70 \r\n"
+"#W 00 00 00 07 26 0C 00 @\r\n"
+"#W 00 00 02 0B 26 09 00 @\r\n"
+"#W 00 00 0A 0F 1A 09 00 @\r\n"
+"#W 00 00 0E 01 1A 09 00 @\r\n"
+"#W 00 00 04 07 26 0C 00 @\r\n"
+"#W 00 00 0C 0B 26 09 00 @\r\n"
+"#W 00 00 08 0F 1A 09 00 @\r\n"
+"#W 00 00 06 01 1A 09 00 @\r\n"
+"#N FF 04 000 @ *.*@ @ \r\n"
+"#D FF 01 000 @ *.*@ @ \r\n"
+"#G 03 FF 000 *.APP@ @ @ \r\n"
+"#G 03 FF 000 *.PRG@ @ @ \r\n"
+"#Y 03 FF 000 *.GTP@ @ @ \r\n"
+"#P 03 FF 000 *.TTP@ @ @ \r\n"
+"#F 03 04 000 *.TOS@ @ @ \r\n"
+"#M 00 00 00 FF A FLOPPY DISK@ @ \r\n"
+"#M 01 00 00 FF B FLOPPY DISK@ @ \r\n"
+"#M 02 00 00 FF C HARD DISK@ @ \r\n"
+"#C 00 01 00 FF c CARTRIDGE@ @ \r\n"
+"#T 00 03 02 FF   TRASH@ @ \r\n";
+
+// Nom de programme Atari en majuscules (Str_Filename_Host2Atari, sans le
+// raccourcissement 8+3 : le nom donné est déjà un nom Atari).
+static std::string upperAtari(const std::string& s) {
+    std::string out = s;
+    for (char& c : out) c = (char)std::toupper((unsigned char)c);
+    return out;
+}
+
+bool GemdosHd::setAutoStart(const std::string& name) {
+    if (name.empty()) return false;
+    std::string prg;
+    const char drive = (char)std::toupper((unsigned char)name[0]);
+    if (drive >= 'A' && drive <= 'Z' && name.size() > 1 && name[1] == ':') {
+        const auto slash = name.rfind('\\');
+        if (name.size() < 3 || name[2] != '\\') {
+            if (slash != std::string::npos) {          // A:DIR\NAME.PRG refusé
+                std::fprintf(stderr, "[gemdos] autostart path rejected (no '\\' after the drive): %s\n", name.c_str());
+                return false;
+            }
+            prg = upperAtari(name.substr(0, 2)) + "\\" + upperAtari(name.substr(2));
+        } else {
+            prg = upperAtari(name);
+        }
+    } else if (name.find('\\') != std::string::npos) {
+        std::fprintf(stderr, "[gemdos] autostart path rejected (path without a drive): %s\n", name.c_str());
+        return false;
+    } else {
+        prg = "C:\\" + upperAtari(name);
+    }
+    autoPrg_ = prg;
+    if (!active_) installSystemCart();   // interception GEMDOS sans lecteur (AUTOSTART_INTERCEPT)
+    return true;
+}
+
+bool GemdosHd::infNameMatches(const std::string& name) const {
+    // Hatari compare la chaîne exacte ; EmuTOS la préfixe du lecteur de BOOT, que
+    // NeoST ne force pas (_bootdev du TOS) : on compare sans lecteur ni '\' initial.
+    auto strip = [](std::string n) {
+        if (n.size() >= 2 && n[1] == ':') n.erase(0, 2);
+        if (!n.empty() && n[0] == '\\') n.erase(0, 1);
+        return upperAtari(n);
+    };
+    return strip(name) == strip(infName_);
+}
+
+bool GemdosHd::closeInfOverride(FILE* fp) {
+    if (!(fp && fp == infFile_)) return false;
+    // EmuTOS lit l'INF deux fois au démarrage, le TOS d'Atari une fois : au premier
+    // Fclose d'EmuTOS on rembobine seulement. Ensuite il disparaît, pour qu'une
+    // sauvegarde du bureau par l'utilisateur ne soit pas perdue.
+    ++infCloses_;
+    const bool emuTos = readLong(bus_.romBase + 0x2C) == 0x45544F53u;   // "ETOS"
+    if (emuTos && infCloses_ < 2) { std::fseek(infFile_, 0, SEEK_SET); return true; }
+    std::fclose(infFile_);
+    infFile_ = nullptr;
+    infCloses_ = 0;
+    return true;
+}
+
+void GemdosHd::createInfOverride() {
+    closeInfOverride(infFile_);          // pas refermé par le TOS au boot précédent
+    infFile_ = nullptr;
+    infCloses_ = 0;
+    if (autoPrg_.empty()) return;
+    const uint16_t tos = bus_.tosVersion;
+    const bool emuTos = readLong(bus_.romBase + 0x2C) == 0x45544F53u;   // "ETOS"
+    if (!emuTos && tos < 0x0104) {
+        std::fprintf(stderr, "[gemdos] autostart needs TOS 1.04 or later (TOS %X.%02X)\n", tos >> 8, tos & 0xFF);
+        return;
+    }
+    const bool bootC = bootDrive_ == 2 && isDriveEmulated(2);
+    const char* contents;
+    if (emuTos)                             { infName_ = "EMUDESK.INF"; contents = kEmudeskInf; }
+    else if (tos >= 0x400)                  { infName_ = "NEWDESK.INF"; contents = kTos4deskInf; }
+    else if (tos >= 0x200 && tos != 0x300)  { infName_ = "NEWDESK.INF"; contents = kNewdeskInf; }
+    else                                    { infName_ = "DESKTOP.INF"; contents = kDesktopInf; }
+
+    // INF existant modifiable seulement sur un C: GEMDOS de boot (get_inf_file).
+    std::string inf;
+    if (bootC) {
+        std::string host; createHostFileName(2, "C:\\" + infName_, host);
+        if (FILE* f = std::fopen(host.c_str(), "rb")) {
+            char buf[4096]; size_t n;
+            while ((n = std::fread(buf, 1, sizeof buf, f)) > 0) inf.append(buf, n);
+            std::fclose(f);
+        }
+    }
+    if (inf.empty()) {
+        // get_builtin_inf : fenêtre du lecteur de boot avant la première ligne #W.
+        inf = contents;
+        const bool newFmt = tos >= 0x200 && tos != 0x300;
+        std::string win = newFmt ? "#W 00 00 00 07 28 10 00 X:\\*.*@\r\n"
+                                 : "#W 00 00 00 07 28 10 09 X:\\*.*@\r\n";
+        char letter = 0;
+        if (bootC) letter = 'C';
+        else if (floppyProvider_ && floppyProvider_()) letter = 'A';
+        if (letter) {
+            win[win.find('X')] = letter;
+            inf.insert(inf.find("#W"), win);
+        }
+    }
+
+    // write_inf_file : première ligne #Z remplacée (les suivantes sautées), ou
+    // insérée juste avant #E ; #E recopiée telle quelle (pas de surcharge de rés.).
+    const std::string ext = autoPrg_.size() > 4 ? autoPrg_.substr(autoPrg_.size() - 4) : autoPrg_;
+    const std::string zline = std::string(ext == ".TTP" || ext == ".TOS" ? "#Z 00 " : "#Z 01 ")
+                            + autoPrg_ + "@ \r\n";
+    std::string out;
+    bool wroteZ = false, sawE = false;
+    size_t pos = 0;
+    while (pos < inf.size()) {
+        size_t eol = inf.find_first_of("\r\n", pos);
+        size_t next = eol == std::string::npos ? inf.size() : eol + 1;
+        if (eol != std::string::npos && next < inf.size() && (inf[next] == '\r' || inf[next] == '\n')) ++next;
+        const bool tag = inf[pos] == '#' && pos + 1 < inf.size();
+        if (!sawE && tag && inf[pos + 1] == 'Z') {
+            if (!wroteZ) { out += zline; wroteZ = true; }
+        } else {
+            if (!sawE && tag && inf[pos + 1] == 'E') {
+                if (!wroteZ) { out += zline; wroteZ = true; }
+                sawE = true;
+            }
+            out.append(inf, pos, next - pos);
+        }
+        pos = next;
+    }
+    if (!sawE) {
+        std::fprintf(stderr, "[gemdos] %s is not a valid INF file (no #E line): autostart impossible\n", infName_.c_str());
+        return;
+    }
+    // Contenu ENTIER. Hatari garde size = sizeof(INF intégré) après que
+    // get_builtin_inf y a inséré la ligne de fenêtre : write_inf_file (size-offset-1)
+    // en tronque alors la fin d'autant (défaut d'Hatari, non reproduit).
+    infFile_ = std::tmpfile();
+    if (!infFile_ || std::fwrite(out.data(), 1, out.size(), infFile_) != out.size()
+        || std::fseek(infFile_, 0, SEEK_SET) != 0) {
+        if (infFile_) std::fclose(infFile_);
+        infFile_ = nullptr;
+        std::fprintf(stderr, "[gemdos] cannot create the virtual %s\n", infName_.c_str());
+        return;
+    }
+    std::fprintf(stderr, "[gemdos] autostart: virtual %s prepared for %s\n", infName_.c_str(), autoPrg_.c_str());
+}
+
 void GemdosHd::setConsoleSink(std::function<void(const std::string&)> sink) {
     consoleSink_ = std::move(sink);
     if (consoleSink_) cpu_.setTrapObserver([this](uint16_t vector) { if (vector == 32 + 13) captureBios(); });
@@ -1851,6 +2129,7 @@ void GemdosHd::sysInit() {
     connectedDriveMask_ |= readLong(0x4c2);
     writeLong(0x4c2, connectedDriveMask_);
     boot();
+    createInfOverride();   // GemDOS_Reset → INF_CreateOverride (après le lecteur de boot)
     if (trace_) std::fprintf(stderr, "[gemdos] sysInit : _drvbits=$%08X\n", connectedDriveMask_);
 }
 
