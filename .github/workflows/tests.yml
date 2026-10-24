@@ -57,7 +57,9 @@ jobs:
 
       - name: Dépendances
         run: |
-          sudo apt-get update
+          # Dépôt Microsoft de l'image runner : inutile ici, et ses 403 font échouer l'update.
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
+          sudo apt-get update -o Acquire::Retries=3
           # ubuntu-24.04 fournit libslirp 4.7.0 : c'est EXACTEMENT la version qui
           # ne compilait pas, donc c'est la bonne à tester.
           # libglib2.0-dev n'est PAS un caprice : slirp.pc déclare « Requires: glib-2.0 »,
@@ -93,7 +95,9 @@ jobs:
 
       - name: Dépendances
         run: |
-          sudo apt-get update
+          # Dépôt Microsoft de l'image runner : inutile ici, et ses 403 font échouer l'update.
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
+          sudo apt-get update -o Acquire::Retries=3
           sudo apt-get install -y --no-install-recommends \
             cmake g++ libglfw3-dev libgl1-mesa-dev python3-pil ffmpeg
           # ⚠ ffmpeg est REQUIS, pas optionnel : compare_screenshot.py s'en sert pour
@@ -149,7 +153,9 @@ jobs:
 
       - name: Dépendances
         run: |
-          sudo apt-get update
+          # Dépôt Microsoft de l'image runner : inutile ici, et ses 403 font échouer l'update.
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
+          sudo apt-get update -o Acquire::Retries=3
           sudo apt-get install -y --no-install-recommends \
             cmake g++ libglfw3-dev libgl1-mesa-dev libgl1-mesa-dri xvfb
 
@@ -223,7 +229,9 @@ jobs:
 
       - name: Dépendances
         run: |
-          sudo apt-get update
+          # Dépôt Microsoft de l'image runner : inutile ici, et ses 403 font échouer l'update.
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
+          sudo apt-get update -o Acquire::Retries=3
           # ffmpeg : requis depuis que trace_odd est une référence ORACLE (PNG, 2026-08-29)
           # — compare_screenshot.py s'en sert pour lire les PNG ; sans lui le palier fast
           # de CE job échouait pendant que le job pixel, qui l'installe, restait vert.
