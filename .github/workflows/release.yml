@@ -148,7 +148,9 @@ jobs:
           # C'était le SEUL `apt-get install` du dépôt sans update — les six autres
           # (tests.yml ×4, oracle.yml, et le job linux-arm64 juste en dessous) l'ont
           # toujours eu.
-          sudo apt-get update -qq
+          # Dépôt Microsoft de l'image runner : inutile ici, et ses 403 font échouer l'update.
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
+          sudo apt-get update -qq -o Acquire::Retries=3
           # ffmpeg : cf. le job arm64 — compare_screenshot.py décode les références
           # .png via ffmpeg, sans quoi les 5 étalons à référence PNG échouent.
           sudo apt-get install -y --no-install-recommends ffmpeg
@@ -259,7 +261,9 @@ jobs:
 
       - name: Installer les dépendances (GLFW dynamique, embarqué ensuite par linuxdeploy)
         run: |
-          sudo apt-get update -qq
+          # Dépôt Microsoft de l'image runner : inutile ici, et ses 403 font échouer l'update.
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
+          sudo apt-get update -qq -o Acquire::Retries=3
           # ffmpeg : dépendance NON ÉVIDENTE du palier « full » — compare_screenshot.py
           # décode les références .png en passant par ffmpeg. Sans lui, les 5 étalons à
           # référence PNG (nocooper, nocooper_greetings, spec512 ×3) lèvent une

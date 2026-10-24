@@ -67,7 +67,9 @@ jobs:
 
       - name: Dépendances (NeoST + Hatari + extraction des trames)
         run: |
-          sudo apt-get update
+          # Dépôt Microsoft de l'image runner : inutile ici, et ses 403 font échouer l'update.
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
+          sudo apt-get update -o Acquire::Retries=3
           # Deux familles à ne pas confondre :
           #  · NeoST headless      : cmake g++ (pas de GLFW, aucun GUI ici) ;
           #  · Hatari              : libsdl2-dev est OBLIGATOIRE (son unique
