@@ -190,6 +190,27 @@ int testIkbdResponses() {
             const auto b = collect(r, 1);
             c.equal("$18 byte mixes pressed and released samples", b.size() > 0 ? b[0] : -1, 0xF0);
         }
+        {   // $18 lancé tard : les tics 1 ms du 6301 gardent leur phase. Une seconde
+            // vaut 8 021 248 cycles, soit 1 000 tics (parité incluse) : le premier
+            // octet doit arriver au même délai à t0, t0 + 2 s et t0 + 60 s. Avec une
+            // milliseconde arrondie à 8 021 cycles, la phase dérivait de 0,248 cycle/ms.
+            auto firstByte = [](int64_t t0) -> int64_t {
+                Rig r;
+                r.sched.setCallback(Scheduler::IKBD_MONITOR, [&r] { r.ikbd.onJoystickMonitor(); });
+                r.advance(t0);
+                r.ikbd.setJoystick(0, 0x80);
+                r.command({0x18});
+                for (int64_t t = t0 + 20; t <= t0 + 40000; t += 20) {
+                    r.advance(t);
+                    if (r.ready()) return t - t0;
+                }
+                return -1;
+            };
+            const int64_t ref = firstByte(1000);
+            c.equal("$18 first byte arrives", ref > 0, 1);
+            c.equal("$18 phase kept after 2 s", firstByte(1000 + 2 * 8021248), ref);
+            c.equal("$18 phase kept after 60 s", firstByte(1000 + 60 * 8021248), ref);
+        }
         {   // Seuil 0 ($F4E5) : flux continu de $F8 0 0, un paquet par ligne libre.
             Rig r;
             for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);

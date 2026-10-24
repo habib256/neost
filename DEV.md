@@ -420,6 +420,9 @@ FC0030: bra     $fc004e
   `C:\AUTO`, résultats comparés aux attendus d'Hatari (palier `full`), plus
   `cpu` et `gemdos`, dont le verdict est lu sur la console GEMDOS
   (`neost-headless --gemdos DIR --console-log FILE`).
+- **Lancer un programme sans souris** : `neost-headless <rom> --disk X.st --auto 'A:\PRG.PRG'`
+  (INF virtuel façon Hatari `--auto`, TOS ≥ 1.04/EmuTOS ; chemin sans lecteur → `C:\`).
+  Un programme qui écrit sur sa disquette la modifie : ajouter `--disk-ro`.
 - **Registre des contrôles du palier `fast`** (A38) : `tools/fast_guards.json`
   inscrit chaque étape avec son dernier déclenchement RÉEL ; `run_all.py`
   refuse une étape non inscrite, affiche le mur du palier et les contrôles

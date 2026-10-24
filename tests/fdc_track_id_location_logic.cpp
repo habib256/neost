@@ -168,11 +168,17 @@ int testFdcTrackIdLocation() {
                             continue;
                         }
                         c.equal("statut relecture piste reformatée", r.reg(0) & 0x5D, 0);
-                        auto written = std::vector<uint8_t>(image.begin() + (sector - 1) * 512,
-                                                            image.begin() + sector * 512);
-                        written[100] = 0xCC;          // secteur du flux (marqueur posé à +100)
-                        c.equal("données de la piste reformatée", std::equal(r.bus.ram.begin() + 0x2000,
-                                r.bus.ram.begin() + 0x2200, written.begin()), true);
+                        // Deux IDs « secteur 1 » (scénario 3) : celui qui passe le premier
+                        // sous la tête, donc l'une OU l'autre des deux données du flux.
+                        auto matches = [&](unsigned payload) {
+                            auto written = std::vector<uint8_t>(image.begin() + payload * 512,
+                                                                image.begin() + (payload + 1) * 512);
+                            written[100] = 0xCC;      // secteur du flux (marqueur posé à +100)
+                            return std::equal(r.bus.ram.begin() + 0x2000, r.bus.ram.begin() + 0x2200,
+                                              written.begin());
+                        };
+                        c.equal("données de la piste reformatée",
+                                matches(sector - 1) || (scenario == 3 && matches(1)), true);
                         continue;
                     }
                     c.equal("statut relecture", r.reg(0) & 0x5D, 0);
@@ -181,6 +187,55 @@ int testFdcTrackIdLocation() {
                 }
             }
         }
+        if (scenario == 3) {
+            // IDs dupliqués : deux lectures enchaînées rencontrent les deux champs ID tour
+            // à tour — la seconde ne doit pas resservir les données du premier.
+            r.reg(6, 0); r.reg(0, 0x18);
+            c.equal("SEEK piste 0", r.finish(), true);
+            r.select(5);
+            uint8_t got[2];
+            for (int k = 0; k < 2; ++k) {
+                r.read(1);
+                c.equal("lecture ID dupliqué", r.finish(), true);
+                c.equal("statut ID dupliqué", r.reg(0) & 0x5D, 0);
+                got[k] = r.bus.ram[0x2000];
+            }
+            c.equal("IDs dupliqués : données du champ sous la tête", got[0] != got[1], true);
+        }
+    }
+    {
+        // READ ADDRESS sur une piste reformatée : l'octet de taille est rendu BRUT
+        // ($06 : longueur 512 d'après ses bits 0-1, mais pas un ID standard).
+        FILE* file = std::fopen(path.string().c_str(), "wb");
+        if (!file) return 1;
+        const bool saved = std::fwrite(image.data(), 1, image.size(), file) == image.size();
+        std::fclose(file);
+        if (!saved) return 1;
+        Rig r;
+        c.equal("montage image ST (RA)", r.fdc.loadImage(path.string()), true);
+        r.select(5);
+        std::vector<uint8_t> track(60, 0x4E);
+        track.insert(track.end(), 12, 0);
+        track.insert(track.end(), {0xF5, 0xF5, 0xF5, 0xFE, 0, 0, 0x42, 0x06, 0xF7});
+        track.insert(track.end(), 22, 0x4E);
+        track.insert(track.end(), 12, 0);
+        track.insert(track.end(), {0xF5, 0xF5, 0xF5, 0xFB});
+        track.insert(track.end(), 512, 0x5A);
+        track.push_back(0xF7);
+        track.resize(6268, 0x4E);
+        std::copy(track.begin(), track.end(), r.bus.ram.begin() + 0x2000);
+        r.mode(0x190); r.data(13);
+        r.fdc.write8(0xFF860D, 0); r.fdc.write8(0xFF860B, 0x20); r.fdc.write8(0xFF8609, 0);
+        r.mode(0x180); r.data(0xF8);
+        c.equal("WRITE TRACK (RA) termine", r.finish(), true);
+        std::fill_n(r.bus.ram.begin() + 0x2000, 16, 0xEE);
+        // Le FIFO DMA ne vide qu'à 16 octets : trois READ ADDRESS (3 × 6) sans reset DMA.
+        r.read(1, 0xC0);
+        c.equal("READ ADDRESS termine", r.finish(), true);
+        c.equal("READ ADDRESS sans RNF", r.reg(0) & 0x10, 0);
+        for (int k = 0; k < 2; ++k) { r.reg(0, 0xC0); c.equal("READ ADDRESS suivant", r.finish(), true); }
+        c.equal("READ ADDRESS : secteur", r.bus.ram[0x2002], 0x42);
+        c.equal("READ ADDRESS : taille brute", r.bus.ram[0x2003], 0x06);
     }
     std::fprintf(stderr, "[fdc-track-id-location] %d checks, %d FAIL\n", c.count, c.failures);
     return c.failures;

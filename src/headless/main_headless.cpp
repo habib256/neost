@@ -148,6 +148,10 @@ void usage() {
         "  --cart FILE       mount a cartridge ($FA0000): diagnostic Test Kit, etc.\n"
         "  --gemdos DIR      GEMDOS hard disk: map DIR onto C: (GEMDOS calls redirected\n"
         "                    to the host, Hatari-style; exclusive with --cart)\n"
+        "  --auto PRG        autostart PRG after boot (e.g. A:\\EMAIL.PRG; no drive = C:\\),\n"
+        "                    through a virtual DESKTOP/NEWDESK/EMUDESK.INF, like Hatari --auto;\n"
+        "                    TOS 1.04+ or EmuTOS; installs the GEMDOS system cartridge\n"
+        "                    (exclusive with --cart)\n"
         "  --console-log FILE  with --gemdos: copy the text a program writes to the console\n"
         "                    (Cconout, Cconws, Fwrite to handle 1, Bconout to CON) into\n"
         "                    FILE, like Hatari's --tos none console; calls from ROM ignored\n"
@@ -1127,6 +1131,7 @@ int main(int argc, char** argv) {
     std::string romPath    = "roms/etos192us.img";
     std::string cartPath;
     std::string consoleLogPath;                  // --console-log FILE : texte console (GEMDOS)
+    std::string autoStart;                       // --auto PRG : démarrage automatique (INF virtuel)
     std::string printerPath;                     // --printer FILE : capture Centronics (port parallèle)
     std::string gemdosDir;                       // --gemdos DIR : disque dur GEMDOS (dossier hôte)
     std::string acsiImg;                         // --acsi IMG : image disque dur ACSI (cible 0)
@@ -1302,6 +1307,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--gemdos"))     gemdosDir = next(a);
         else if (!std::strcmp(a, "--printer"))    printerPath = next(a);
         else if (!std::strcmp(a, "--console-log")) consoleLogPath = next(a);
+        else if (!std::strcmp(a, "--auto"))       autoStart = next(a);
         else if (!std::strcmp(a, "--acsi") || !std::strcmp(a, "--hd")) acsiImg = next(a);
         else if (!std::strcmp(a, "--modem"))           modemFlag = true;
         else if (!std::strcmp(a, "--ethernec"))        ethernecFlag = true;
@@ -1741,8 +1747,14 @@ int main(int argc, char** argv) {
         if (!cartPath.empty())
             std::fprintf(stderr, "[headless] --cart ignored: incompatible with --gemdos\n");
         machine.gemdos.setDirectory(gemdosDir);
-    } else if (!cartPath.empty()) {
+    } else if (!cartPath.empty() && autoStart.empty()) {
         machine.loadCart(cartPath);   // cartouche $FA0000 (optionnelle)
+    }
+    // Démarrage automatique (--auto) : INF virtuel servi par la cartouche système.
+    if (!autoStart.empty()) {
+        if (!cartPath.empty() && gemdosDir.empty())
+            std::fprintf(stderr, "[headless] --cart ignored: incompatible with --auto\n");
+        if (!machine.gemdos.setAutoStart(autoStart)) return 2;
     }
     // Console GEMDOS (--console-log FILE) : le relevé passe par le trap #1 de la
     // cartouche système, donc n'existe qu'avec --gemdos.
@@ -2323,14 +2335,23 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "[headless] joystick applied at frame %d: port1=$%02X\n", frame, ja.second);
         }
         // Script souris daté (--mouse-at) : 1 token = 1 trame. Pilote un menu souris.
+        // Statiques : l'état des BOUTONS est global à la souris, pas au script —
+        // deux scripts successifs ne doivent pas perdre un appui en cours.
+        static bool mClickL = false, mClickR = false;
         for (const auto& ms : mouseAtList) {
             const std::string& mouseAt = ms.second;
             if (frame < ms.first) continue;
             const int idx = frame - ms.first;
+            // Script terminé sur un appui (« ...1 ») : relâché à la trame suivante,
+            // sinon le bouton restait tenu indéfiniment (un double-clic de bureau
+            // ouvrait alors plusieurs fenêtres).
+            if (idx == (int)mouseAt.size() && (mClickL || mClickR)) {
+                mClickL = mClickR = false;
+                machine.ikbd.mouseEvent(0, 0, false, false);
+                machine.cpu.updateIpl();
+                continue;
+            }
             if (idx < (int)mouseAt.size()) {
-                // Statiques : l'état des BOUTONS est global à la souris, pas au script —
-                // deux scripts successifs ne doivent pas perdre un appui en cours.
-                static bool mClickL = false, mClickR = false;
                 const char t = mouseAt[idx];
                 int dx = 0, dy = 0; bool l = false, r = false;
                 switch (t) {

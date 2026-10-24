@@ -1146,6 +1146,12 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   10 = SYSINIT) captés par le cœur Moira **avant `execute()`** (`Cpu68k::run`) : le
   handler C traite l'appel, pose les codes condition N/Z/V du SR, puis l'opcode est
   remplacé par un NOP consommé par `execute()` (port de `OpCode_*` + `CpuDoNOP`).
+- **Démarrage automatique** (`neost-headless --auto A:\PRG.PRG`, port d'`inffile.c`
+  d'Hatari) : au C-INIT de la cartouche, un DESKTOP.INF / NEWDESK.INF / EMUDESK.INF
+  virtuel portant la ligne `#Z` est préparé, puis servi au Fopen du desktop, depuis
+  n'importe quel lecteur (A: compris, rien n'est écrit sur la disquette). Sans
+  `--gemdos`, la cartouche système est posée sans lecteur. TOS ≥ 1.04 et EmuTOS ;
+  vérifié sous TOS 1.04, 2.06 et EmuTOS 192 (EMail 1.56 lancé depuis A:).
 - **Coexistence ACSI/GEMDOS** : résolution commune dans Machine au montage,
   reset et boot, même si l’image ACSI est montée après le dossier. Aucun
   changement de lettre pendant les appels ordinaires ; handles fermés au reset.

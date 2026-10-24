@@ -979,12 +979,17 @@ void Ikbd::onJoystickMonitor() {
 int64_t Ikbd::addOcfDelay(int64_t start, int64_t cycles) const {
     // Étend [start, start + cycles] de la durée de chaque interruption 1 ms qui y tombe
     // (une interruption allonge la fenêtre et peut en faire tomber une autre dedans).
-    constexpr int64_t kMs = 8021;             // 1 ms en cycles CPU (8 021 248 Hz)
-    auto us = [](int64_t v) { return (v * 8021248 + 500000) / 1000000; };
+    // 1 ms = 8 021,248 cycles CPU (8 021 248 Hz) : le k-ième tic est calculé EXACTEMENT
+    // depuis l'origine. Arrondi à 8 021, la phase dérivait de 0,248 cycle par ms et
+    // perdait une période entière en ~4 s de jeu.
+    constexpr int64_t kHz = 8021248;
+    auto us = [](int64_t v) { return (v * kHz + 500000) / 1000000; };
+    auto tickAt = [this](int64_t k) { return ocfOrigin_ + (k * kHz + 500) / 1000; };
     int64_t end = start + cycles;
-    int64_t k = (start >= ocfOrigin_) ? (start - ocfOrigin_) / kMs + 1 : 0;
+    int64_t k = (start >= ocfOrigin_) ? (start - ocfOrigin_) * 1000 / kHz : 0;
+    while (k > 0 && tickAt(k) > start) --k;   // premier tic strictement après start
     for (int guard = 0; guard < 64; ++guard, ++k) {
-        const int64_t tick = ocfOrigin_ + k * kMs;
+        const int64_t tick = tickAt(k);
         if (tick > end) break;
         if (tick <= start) continue;
         end += us(((k & 1) ? 215 : 128) + (clockSet_ ? 12 : 0));

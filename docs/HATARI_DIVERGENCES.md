@@ -323,6 +323,18 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
   fonctionne par calibration séparée, fragile.
 - ~~**[basse]** Bordures uniquement en basse résolution (overscan med-res non géré)~~ — **obsolète** : l'overscan med-res est porté depuis V2 (2026-07-08, `updateGlueRes`, `VideoGlue.cpp`).
 
+### GEMDOS HD — autostart `--auto` (2026-10-24)
+
+- Port d'`inffile.c` (`GemdosHd::setAutoStart/createInfOverride`) : INF virtuel servi au
+  Fopen du desktop, cartouche système installée même sans dossier (`AUTOSTART_INTERCEPT`).
+- **Défaut d'Hatari non reproduit** : `get_inf_file` garde `size = sizeof(INF intégré)`
+  alors que `get_builtin_inf` vient d'y insérer la ligne `#W` du lecteur de boot ;
+  `write_inf_file` (`size-offset-1`, inffile.c:998) tronque alors la fin de l'INF virtuel
+  de la longueur de cette ligne. NeoST l'écrit en entier.
+- **Écarts assumés** : nom de l'INF comparé sans lettre de lecteur (Hatari compare la
+  chaîne exacte, alors qu'EmuTOS la préfixe du lecteur de boot, que NeoST ne force pas) ;
+  pas de surcharge de résolution (`--tos-res`), la ligne `#E` est recopiée telle quelle.
+
 ### FDC WD1772 + DMA + STX — `Fdc.cpp`, `StxImage.cpp` ↔ `fdc.c`, `floppies/stx.c`
 
 - **[assumée, 2026-10-22] IPF sans libcapsimage** (`IpfImage.cpp` ↔ `floppies/ipf.c`) :
@@ -376,6 +388,14 @@ extension DAM NeoST qualifiée ci-dessus.
   SECTOR, recherche d'ID) ; un WRITE TRACK standard la rend au .st. Hatari refuse tout
   WRITE TRACK ST (LOST DATA, défaut). Corrige le test F de STE_Test v1.9 (secteurs 10-18
   sur la piste 79 : « Disk A: DS / Disk B: DS », Pass). Les IDs n'actionnent ni STEP ni SIDE.
+  ✅ *Corrigé le 2026-10-24* : READ SECTOR, WRITE SECTOR et READ ADDRESS servaient le
+  PREMIER champ ID de la liste portant le même numéro, et non celui que la recherche
+  d'ID venait de trouver sous la tête. Sur une piste à IDs dupliqués (protection
+  classique), deux lectures enchaînées rendaient donc deux fois les mêmes données. READ
+  ADDRESS comparait aussi l'octet de taille brut à ses bits 0-1 : un ID de taille `$06`
+  finissait en RNF. L'indice du champ trouvé est désormais retenu (`Fdc::ovSecIdx_`), et
+  les positions angulaires comptent les `$F7` comme deux octets de CRC
+  (`fdc_track_id_location_logic.cpp`).
 - ✅ **Secteur long et sélection STX→ST (2026-10-19)** : WRITE SECTOR
   engagé sur un ID STX de 1 024 octets puis terminé sur un lecteur ST est
   limité à 512 octets dans l’image cible. Corrige l’écrasement du voisin ou

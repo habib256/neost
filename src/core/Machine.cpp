@@ -327,6 +327,7 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::RENDER,  [this] { onRender(); });
     sched.setCallback(Scheduler::TIMER_B, [this] { onTimerB(); });
     gemdos.setPartitionCountProvider([this] { return fdc.acsiPartitionCount(); });
+    gemdos.setFloppyProvider([this] { return fdc.inserted(0); });
     mfp.setTimerBEdgeSink([this](bool start) { retargetTimerB(start); });
     sched.setCallback(Scheduler::HBL,     [this] { onHbl(); });
     sched.setCallback(Scheduler::VBL,     [this] { onVbl(); });
