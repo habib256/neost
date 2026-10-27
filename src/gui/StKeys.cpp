@@ -203,8 +203,20 @@ uint8_t symbolicForCountry(uint32_t cp) {
 // Scancode ST d'une touche GLFW : d'abord le SYMBOLIQUE (touches imprimables,
 // caractère donné par la disposition hôte via glfwGetKeyName), sinon repli
 // POSITIONNEL (fonctions, flèches, pavé, modificateurs — et touches sans nom,
-// dont les hôtes où glfwGetKeyName ne répond pas : certains navigateurs).
+// dont les hôtes où glfwGetKeyName ne répond pas).
+// ⚠ Emscripten : glfwGetKeyName n'y renvoie PAS nullptr, c'est un stub
+// abort("glfwGetKeyName not implemented.") — la 1re lettre tapée tuait le runtime
+// (écran figé sur le démarrage EmuTOS). Le port GLFW web dérive la touche de
+// KeyboardEvent.keyCode, qui pour les LETTRES suit déjà la disposition hôte
+// (A d'un AZERTY = 65) : on en tire le caractère ; le reste passe en positionnel.
 uint8_t scancodeFor(int key, int scancode) {
+#ifdef __EMSCRIPTEN__
+    (void)scancode;
+    if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z) {
+        const uint8_t sc = symbolicForCountry(uint32_t(key - GLFW_KEY_A + 'a'));
+        if (sc != 0xFF) return sc;
+    }
+#else
     if (key >= GLFW_KEY_SPACE && key < GLFW_KEY_ESCAPE) {        // plage « imprimable »
         const char* name = glfwGetKeyName(key, scancode);
         if (name && name[0]) {
@@ -212,6 +224,7 @@ uint8_t scancodeFor(int key, int scancode) {
             if (sc != 0xFF) return sc;
         }
     }
+#endif
     return positionalScancode(key);
 }
 

@@ -548,6 +548,14 @@ if(EMSCRIPTEN)
         "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,FS,HEAPF32"
         "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_hard_reset,_neost_set_mono,_neost_mount_disk,_neost_mount_disk_b,_neost_load_tos,_neost_set_kbd_joystick,_neost_set_joy_deadzone,_neost_set_fullscreen,_neost_set_auto_zoom,_neost_audio_open,_neost_audio_close,_neost_audio_set_queued,_neost_set_volume,_neost_get_volume,_malloc,_free"
         "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/web/shell.html")
+    # Garde au lien : les ports Emscripten (GLFW…) livrent des fonctions non
+    # implémentées sous forme de stubs abort("X not implemented.") qui se lient
+    # SANS erreur. glfwGetKeyName en était un : la 1re lettre tapée tuait la page.
+    # Tout stub de ce genre présent dans index.js fait échouer la construction.
+    add_custom_command(TARGET neost-web POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -DJS=${CMAKE_SOURCE_DIR}/wasm/index.js
+                -P ${CMAKE_SOURCE_DIR}/cmake/CheckWasmStubs.cmake
+        VERBATIM)
 
     # Choix des données embarquées dans le FS virtuel (--preload-file). Pour un
     # déploiement PUBLIC (GitHub Pages / artefact web-wasm), on n'embarque que la
