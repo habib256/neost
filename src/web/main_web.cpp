@@ -365,7 +365,9 @@ void produceAudioFrame() {
 
     // Estimation locale entre deux rapports de la page : sans elle, l'asservissement
     // verrait une file figée pendant plusieurs trames et sur-corrigerait.
-    g_queuedFrames += n;
+    // Bornée à 1 s : contexte audio suspendu (page jamais cliquée), la page jette les
+    // blocs sans rappeler neost_audio_set_queued — le cumul débordait l'int (UB, ~13 h).
+    g_queuedFrames = std::min(g_queuedFrames + n, int(g_audioRate));
     EM_ASM({ if (window.neostAudioPush) window.neostAudioPush($0, $1); }, st, n);
 }
 

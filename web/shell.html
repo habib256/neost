@@ -222,7 +222,7 @@
     <summary>Help &amp; shortcuts</summary>
     <ul>
       <li><b>Mouse</b>: click the middle button (usually the wheel), or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>G</kbd>, to <b>capture or release</b> it (GEM cursor). <kbd>Esc</kbd> and <kbd>Del</kbd> are sent to the ST.</li>
-      <li><b>Keyboard</b>: routed to the IKBD (US layout). <b>Keyboard joystick</b>: arrows + <kbd>right Ctrl</kbd> = fire, on the port picked in the Joystick box (port 1 by default).</li>
+      <li><b>Keyboard</b>: routed to the IKBD; letters follow your keyboard layout and the TOS language (AZERTY under a French TOS), other keys are positional (US layout). <b>Keyboard joystick</b>: arrows + <kbd>right Ctrl</kbd> = fire, on the port picked in the Joystick box (port 1 by default).</li>
       <li><b>USB pads</b>: detected automatically — first pad on port 1, second on port 0. The <b>dead zone</b> slider only affects analog sticks, not the D-pad.</li>
       <li><b>Reset</b>: a <b>cold</b> reset (power-cycle) — ST-RAM is wiped and TOS boots from scratch, which is also what mounting a floppy in A: does.</li>
       <li><b>Game floppies</b>: "Mount A: + Reset" switches to a <b>real TOS</b> when one is available (EmuTOS boots system floppies only) — TOS 2.06 on STE/Mega STE, TOS 1.0x on ST. <b>This build bundles EmuTOS alone</b>, which is free software; original Atari TOS ROMs are not ours to ship. Most commercial games therefore need you to add one to <code>/roms</code> and pick it above. The bundled <b>demos</b> boot fine on EmuTOS.</li>
@@ -270,6 +270,15 @@
         // effaceraient notre message "Prêt".
         if (ready && !text) return;
         if (statusEl) { statusEl.textContent = text || ''; statusEl.className = ''; }
+      },
+      // Un abort() du runtime figeait l'image en laissant « Ready » en vert : la
+      // page semblait vivante. On le dit, avec la cause (copiable dans un rapport).
+      onAbort: function (what) {
+        ready = false;
+        if (statusEl) {
+          statusEl.textContent = 'Emulator crashed (' + what + ') — reload the page.';
+          statusEl.className = '';
+        }
       }
     };
     Module.setStatus('Loading the WebAssembly module…');
@@ -286,7 +295,7 @@
       // Peuple les menus depuis le FS virtuel : montre exactement ce qui a été
       // embarqué (tout en local, EmuTOS+diskA pour le déploiement libre). La ROM
       // présélectionnée suit la machine : EmuTOS 256 Ko (STE/Mega STE) ou 192 Ko.
-      populateSelect('diskSel', '/disks', /\.(st|msa|dim|stx)$/i, '/disks/diskA.st');
+      populateSelect('diskSel', '/disks', /\.(st|msa|dim|stx|ipf)$/i, '/disks/diskA.st');
       populateSelect('romSel', '/roms', /\.(img|rom|tos|bin)$/i,
                      isSteFamily ? '/roms/etos256us.img' : '/roms/etos192us.img');
       driveLoad();       // crée l'AudioContext + précharge les WAV de bruits de lecteur
@@ -713,8 +722,8 @@
     // Charge une image disquette locale (File) → FS virtuel → montage en A:.
     function mountLocalFile(file) {
       if (!file || !ready) return;
-      var m = /\.(st|msa|dim|stx)$/i.exec(file.name);
-      if (!m) { Module.setStatus('Unrecognized format: ' + file.name + ' (.st/.msa/.dim/.stx)'); return; }
+      var m = /\.(st|msa|dim|stx|ipf)$/i.exec(file.name);
+      if (!m) { Module.setStatus('Unrecognized format: ' + file.name + ' (.st/.msa/.dim/.stx/.ipf)'); return; }
       // Garde de taille : la plus grosse image ST légitime (.stx ED) reste < 4 Mo —
       // au-delà, c'est un mauvais fichier, et MEMFS échouerait de toute façon.
       if (file.size > 8 * 1024 * 1024) {

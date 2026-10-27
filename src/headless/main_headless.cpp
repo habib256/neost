@@ -51,9 +51,9 @@
 #include "gui/AppConfig.hpp"   // neost.cfg : UNE définition du rognage de ligne
 #include "net/NetBackend.hpp"
 #include "net/SlirpBackend.hpp"
+#include "audio/MidiInHost.hpp"   // hors NEOST_WITH_NET : utilisé sans condition (--midi-in-device)
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
-#include "audio/MidiInHost.hpp"
 #include "net/MidiRing.hpp"
 #endif
 #include "core/Tracer.hpp"

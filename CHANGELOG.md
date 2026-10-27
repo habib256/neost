@@ -6,6 +6,25 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Web : la première touche tuait l'émulateur (2026-10-27)
+
+**Toute lettre, chiffre ou Espace tapé dans la page figeait la démo WASM** (image arrêtée
+sur le démarrage EmuTOS, statut resté « Ready »). `scancodeFor` (`gui/StKeys`, partagé
+avec le web depuis `2902e2c`) appelait `glfwGetKeyName`, qui dans le port GLFW
+d'Emscripten n'est pas un `nullptr` mais un stub `abort("glfwGetKeyName not
+implemented.")`. Sous Emscripten, les lettres tirent leur caractère du `keyCode` (qui
+suit la disposition hôte : AZERTY sous TOS FR conservé), le reste est positionnel.
+Reproduit et vérifié en Chrome headless (CDP `Input.dispatchKeyEvent`).
+- **Garde au lien** `cmake/CheckWasmStubs.cmake` : la construction `neost-web` échoue si
+  `index.js` lie un stub « (is) not implemented » (mutation-testée sur 4 variantes).
+- `shell.html` : `Module.onAbort` affiche le plantage au lieu de laisser « Ready » ;
+  images `.ipf` acceptées (dépôt et menu).
+- `neost-headless` recompile sans `NEOST_WITH_NET` (WASM, Android cœur seul) : include
+  `MidiInHost` sorti du `#ifdef` (régression `949c718`).
+- File audio web estimée bornée à 1 s (débordement d'`int` page jamais cliquée).
+- Le cœur WASM a été comparé au natif (4 machines, 3 démos, SAFE_HEAP + contrôle de
+  pile) : image et son identiques à l'octet, aucun défaut propre à wasm32.
+
 ## Autostart `--auto`, EMail 1.56, chasse aux bugs (2026-10-24)
 
 `neost-headless --auto PRG` lance un programme après le boot, comme `hatari --auto` :
