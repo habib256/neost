@@ -14,6 +14,7 @@
       "src/cpu/newcpu.c": "a2048f53299470244bc776368b19e19adee1b98ca51ca802198fb8914e291dfb",
       "src/m68000.c": "45f576ce687fffa9ca4246a6f42f7b880804bf9721050a03b1412544312497c7",
       "src/fdc.c": "ecfce86410ed5ff6e89f95b999d56bfd93f9b51028f07e75654f952ddfcc56d2",
+      "src/floppies/stx.c": "15d6a1c5a46c8ab1ce06d02d0bdd2f9d79f684f874e107b58d05e983b97e93d6",
       "src/blitter.c": "f5b7354b4a10c48b66c8f26a81241067191d8ebab0e720427aeb2fc16d779117"
     }
   },

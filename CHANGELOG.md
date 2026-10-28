@@ -19,6 +19,10 @@ sonde STX (ajoutée le 2026-10-20) l'a révélé, sur un cache Hatari expiré.
   Park et Miller de la libc macOS (vérifié identique sur 40 M tirages, graines limites
   comprises). Références macOS inchangées (`run_timing_oracle.py --oracle-check` 20/20) ;
   la clé de cache CI suit le hash du patch, l'oracle est rebâti.
+- Étape suivante, jamais atteinte jusque-là : `tests/reference/megaste_bus_hatari.json`
+  (posée le 2026-10-19) ne portait pas l'empreinte de `src/floppies/stx.c`, ajoutée le
+  2026-10-20 à la liste commune des sources Hatari → « sources Hatari incompatibles ».
+  Re-posée : une ligne ajoutée, mesures inchangées (égalité exacte, 8 sondes).
 - Le job ASan du 2026-10-27, lui, n'avait pas échoué : miroir apt à 43 ko/s (30 min) →
   plafond de 45 min atteint. Relancé.
 
