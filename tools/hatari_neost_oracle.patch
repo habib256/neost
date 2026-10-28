@@ -21,6 +21,11 @@
 #                     MÊME ligne de commande ne rendent pas la même image au même
 #                     numéro de trame. Un oracle différentiel ne peut pas vivre
 #                     avec ça. Sans la variable, comportement amont intact.
+#    src/utils.c      Hatari_rand portable : la graine seule ne suffisait pas,
+#                     rand() de glibc ≠ rand() de macOS. Park-Miller recopié bit
+#                     à bit de la libc macOS (références posées sous macOS) ; sans
+#                     cela fdc_read_stx décalait d'un tour de scrutation sous Linux
+#                     (oracle CI du 2026-10-26).
 #    src/video.c      HATARI_LINE_ADDR=1 : adresse d'entrée de ligne du raster
 #    src/cpu/newcpu.c NEOST_HAT_IPLDIAG=1 : positions vidéo des exceptions,
 #                     fetch d'IPL et changements de broche IPL
@@ -38,7 +43,7 @@
 #  re-vérifier l'application AVANT d'être commis.
 # =============================================================================
 diff --git a/src/control.c b/src/control.c
-index 0eb5e80..1d54c65 100644
+index 0eb5e800..1d54c65b 100644
 --- a/src/control.c
 +++ b/src/control.c
 @@ -155,6 +155,15 @@ static bool Control_InsertEvent(const char *event)
@@ -58,7 +63,7 @@ index 0eb5e80..1d54c65 100644
  		Keyboard.bRButtonDown |= BUTTON_MOUSE;
  		return true;
 diff --git a/src/cpu/newcpu.c b/src/cpu/newcpu.c
-index 1912005..c97465b 100644
+index 19120057..c97465b0 100644
 --- a/src/cpu/newcpu.c
 +++ b/src/cpu/newcpu.c
 @@ -113,6 +113,7 @@ int m68k_pc_indirect;
@@ -110,7 +115,7 @@ index 1912005..c97465b 100644
  	regs.ipl_pin_p = regs.ipl_pin;
  	regs.ipl_pin_change_evt = c;
 diff --git a/src/joy.c b/src/joy.c
-index 6a97a80..0bab093 100644
+index 6a97a80d..0bab0931 100644
 --- a/src/joy.c
 +++ b/src/joy.c
 @@ -81,10 +81,86 @@ static uint8_t Joy_ButtonSpaceJump(int press, bool jump)
@@ -201,7 +206,7 @@ index 6a97a80..0bab093 100644
  	/* Are we emulating the joystick via the keyboard? */
  	if (ConfigureParams.Joysticks.Joy[nStJoyId].nJoystickMode == JOYSTICK_KEYBOARD)
 diff --git a/src/sdl/main_sdl.c b/src/sdl/main_sdl.c
-index 22c73be..bdb7e02 100644
+index 22c73bed..bdb7e023 100644
 --- a/src/sdl/main_sdl.c
 +++ b/src/sdl/main_sdl.c
 @@ -116,8 +116,19 @@ void Main_ErrorExit(const char *msg1, const char *msg2, int errval)
@@ -226,8 +231,48 @@ index 22c73be..bdb7e02 100644
  
  	Main_Init(argc, argv);
  
+diff --git a/src/utils.c b/src/utils.c
+index 2674cbff..82a9e538 100644
+--- a/src/utils.c
++++ b/src/utils.c
+@@ -108,15 +108,33 @@ void	crc16_add_byte ( uint16_t *crc , uint8_t c )
+ /* routines.								*/
+ /************************************************************************/
+ 
++/* NeoST : rand() de la libc n'est PAS portable — glibc et la libc BSD de macOS
++ * tirent deux suites différentes pour la même graine, donc HATARI_SEED=1 donnait
++ * deux positions angulaires initiales de disquette (fdc.c, IndexPulse) selon l'OS.
++ * On reproduit ici, bit à bit, le générateur « minimal standard » de Park et Miller
++ * de la libc macOS : les références oracle posées sous macOS restent valides et
++ * Linux/Windows les retrouvent. */
++static unsigned long Hatari_rand_ctx = 1;
++
+ void	Hatari_srand ( unsigned int seed )
+ {
+-	srand(seed);
++	Hatari_rand_ctx = seed;
+ }
+ 
+ 
+ int	Hatari_rand ( void )
+ {
+-	return rand();
++	long hi, lo, x;
++
++	if ( Hatari_rand_ctx == 0 )
++		Hatari_rand_ctx = 123459876;
++	hi = Hatari_rand_ctx / 127773;
++	lo = Hatari_rand_ctx % 127773;
++	x = 16807 * lo - 2836 * hi;
++	if ( x < 0 )
++		x += 0x7fffffff;
++	Hatari_rand_ctx = x;
++	return (int)( x & 0x7fffffff );
+ }
+ 
+ 
 diff --git a/src/video.c b/src/video.c
-index 7e87713..886fecf 100644
+index 7e87713f..886fecfe 100644
 --- a/src/video.c
 +++ b/src/video.c
 @@ -3907,6 +3907,13 @@ static void Video_CopyScreenLineColor(void)
