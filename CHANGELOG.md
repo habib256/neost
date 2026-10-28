@@ -6,6 +6,22 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Oracle Hatari : RNG portable, CI Linux verte (2026-10-28)
+
+**L'oracle hebdomadaire échouait sur `fdc_read_stx`** (« trace Hatari différente de la
+référence commise ») : Hatari régénéré sous Linux décalait les rafales d'un tour de
+scrutation (24 cycles) par rapport à la référence posée sous macOS. Rien côté NeoST :
+`HATARI_SEED=1` fige la graine, mais `Hatari_rand()` n'est que `rand()` de la libc, et
+glibc et macOS en tirent deux suites différentes — donc deux positions angulaires
+initiales de la disquette (`fdc.c`, `IndexPulse_Time`). Le premier passage CI de la
+sonde STX (ajoutée le 2026-10-20) l'a révélé, sur un cache Hatari expiré.
+- `tools/hatari_neost_oracle.patch` : `src/utils.c` recopie bit à bit le générateur de
+  Park et Miller de la libc macOS (vérifié identique sur 40 M tirages, graines limites
+  comprises). Références macOS inchangées (`run_timing_oracle.py --oracle-check` 20/20) ;
+  la clé de cache CI suit le hash du patch, l'oracle est rebâti.
+- Le job ASan du 2026-10-27, lui, n'avait pas échoué : miroir apt à 43 ko/s (30 min) →
+  plafond de 45 min atteint. Relancé.
+
 ## Web : la première touche tuait l'émulateur (2026-10-27)
 
 **Toute lettre, chiffre ou Espace tapé dans la page figeait la démo WASM** (image arrêtée
