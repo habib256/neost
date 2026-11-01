@@ -69,6 +69,41 @@ d'Hatari ne doit pas être reproduite : corriger NeoST selon les preuves
 matérielles disponibles, documenter la divergence et conserver l'incertitude
 quand ces preuves manquent. L'égalité avec Hatari seule ne prouve pas la fidélité.
 
+### Les grades de preuve — à écrire dans le code
+
+Toute affirmation sur le matériel porte **son grade et sa source**, dans un
+crochet en tête de commentaire, pour qu'un lecteur et un `grep` s'accordent sur
+ce qui soutient le code :
+
+| Grade | Preuve |
+|---|---|
+| **A** | Mesure sur **machine réelle** — oscilloscope, capture, exécution sur le fer. |
+| **B** | **Document primaire** — fiche technique de la puce, documentation Atari, spécification, brevet. |
+| **C** | **Désassemblage de ROM** — TOS/EmuTOS, ROM de cartouche. Preuve du *contrat* attendu par le logiciel, pas du silicium. |
+| **D** | **Un autre émulateur** — Hatari, MAME, STeem, à égalité. Utile, faillible. |
+| **E** | **Affirmé sans source.** |
+| **F** | **Inconnu assumé** — deviné, ajusté, approximatif, non vérifié. |
+
+```
+// [B] MC68901 datasheet (Motorola) § 3.4 — le timer recharge sur le front.
+// [D] Hatari mfp.c:412-430 @ v2.6.0 — idem, tel qu'Hatari le lit.
+// [C] ROM TOS 1.04 $FC0A12 — le système attend l'ordre inverse.
+// [A] Mesuré sur un 520STF : 160 cycles par ligne (DEV.md § timings).
+// [F] Inconnu : ajusté jusqu'à ce que la démo passe. Tranché par : une
+//     capture du signal sur un vrai ST.
+```
+
+Trois règles en découlent. **Une citation de grade D nomme sa révision** (tag ou
+commit) : les numéros de ligne amont bougent à chaque commit, et une plage sans
+révision ne désigne rien. **Un grade inférieur ne l'emporte jamais sur un grade
+supérieur** : là où NeoST s'écarte d'Hatari parce qu'une fiche technique, une ROM
+ou une mesure dit autre chose, c'est correct, et le commentaire le dit — cela
+protège le code d'un futur « alignement sur Hatari » qui serait une régression.
+**Un F se garde, il ne se cache pas** : écris ce qui le trancherait.
+
+Cette hiérarchie est commune à tous les émulateurs du même auteur (POM2 porte la
+même, adaptée à MAME et AppleWin).
+
 `extern/hatari/src` est une **référence d'implémentation à confronter au matériel**
 (sources C complètes, lues et PAS compilées). Avec **MAME**, il aide à comprendre
 le comportement des puces. Hatari
