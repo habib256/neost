@@ -251,9 +251,9 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   `fichier.c:ligne` sans révision. ⚠ **Pas de passe mécanique** : chacune se vérifie à
   l'épingle. MFP puis Blitter, dont la fiche ou le schéma est disponible ; recompter ensuite
   par grade dans `check_doc_claims.py`.
-- **Banc fx68k, étendre** · P2 ◐ — BERR et double faute, autovecteur par VPA et E-clock
-  (HBL/VBL du ST passent par là), RESET, Bcc en séries, CHK/DIVS en trap, RTR, ligne A en
-  utilisateur. → `docs/FX68K_BENCH.md` § *Ce qui manque*
+- **Banc fx68k, étendre** · P2 ◐ — BERR et double faute, RESET, Bcc en séries, CHK/DIVS en trap,
+  RTR, ligne A en utilisateur. Autovecteur par VPA relevé, cohérent avec NeoST, à verser au verdict.
+  → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
   78 programmes en accord ; `blitter_timer` et deux sondes s'écartent d'Hatari, consigné. → `docs/STBLITTER_BENCH.md`
 - **Étendre les étalons `rtl`** · P2 ◐ — `rtl_low_pal`/`rtl_low_ntsc` posés. Restent la moyenne

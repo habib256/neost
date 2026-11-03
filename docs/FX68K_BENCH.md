@@ -108,11 +108,23 @@ contredisent sur les instructions longues : sur MULU, fx68k échantillonne près
 
 `iack_skew` vaut 0 partout : la place du cycle IACK dans le bloc de Moira correspond à fx68k.
 
+## Autovecteur par VPA et E-clock (2026-11-04)
+
+Relevé sur fx68k seul, `Vfx68k_bench --vpa --irq T:5` sur `irq_nop`, RAM sans créneaux : c'est ainsi que HBL et VBL passent sur
+ST. De l'écriture du PC bas à celle du SR, AS à AS, selon la phase du compteur d'E-clock :
+
+| Date du PC bas, modulo 10 | 1 | 3 | 5 | 7 | 9 |
+|---|---|---|---|---|---|
+| Intervalle, cycles | 23 | 21 | 19 | 17 | 25 |
+
+Une attente de 0 à 8 cycles par pas de 2, période 10. NeoST modélise `4 + attente + 14` (`iackSyncBefore`, `iackSyncAfter`), soit 18 à 26. Le cycle
+d'écart est une parité : le compteur de fx68k démarre ici en phase impaire avec le bus, ce qu'aucune source ne fixe sur une machine réelle. Avec les
+créneaux de 4 cycles d'un ST, les deux séries donnent les mêmes dates (20, 20, 24, 24, 28), par calcul : **ce banc ne les a pas exécutées avec créneaux**.
+
 ## Ce qui manque au banc
 
 - **Bus error** (BERR, et la relance par HALT, non implémentée dans fx68k).
-- **Autovecteur par VPA** et synchronisation E-clock : ici l'IACK est vectorisé par le
-  périphérique ; sur ST, HBL et VBL passent par VPA.
+- **Autovecteur par VPA, dans le verdict** : relevé à part, ci-dessous, pas comparé accès par accès.
 - **RESET** (l'instruction), Bcc.w/BSR.s pris et non pris en séries,
   `CHK` et `DIVS` en trap, `RTR`, `TRAPV` pris, `LINE A` en mode utilisateur.
 - Le GSTMCU (`run_gstmcu_bench.py`) n'exécute pas de code. `stBlitter.sv` a son propre banc,
