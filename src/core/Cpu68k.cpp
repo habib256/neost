@@ -62,6 +62,8 @@ struct CpuState {
     moira::i64  blitterOverlap = 0;       // cycles CPU internes recouverts par le blit
     bool        vblPending   = false;     // VBL (niveau 4) en attente d'acquittement
     bool        hblPending   = false;     // HBL (niveau 2) en attente d'acquittement
+    bool        vblPinFired  = false;     // la broche a déjà monté en cours d'instruction : le dispatch ne relève rien
+    bool        hblPinFired  = false;
     bool        inBusError   = false;     // garde « double bus fault » (cf. son bandeau)
     // Vrai UNIQUEMENT pendant moira->execute() : seul ce cadre attrape moira::BusError.
     // Hors de lui (lecture d'observation, outil hôte, callback d'ordonnanceur), une
@@ -699,8 +701,8 @@ public:
         // POLL_IPL, comme WinUAE (pin posée dans do_cycles). Cf. Cpu68k::armHblPinAt.
         if (g_cur->pinNextDue >= 0 && busOfClock(static_cast<int64_t>(getClock())) >= g_cur->pinNextDue) {
             const int64_t busNow = busOfClock(static_cast<int64_t>(getClock()));
-            if (g_cur->hblPinDue >= 0 && busNow >= g_cur->hblPinDue) { g_cur->hblPinDue = -1; g_cur->hblPending = true; }
-            if (g_cur->vblPinDue >= 0 && busNow >= g_cur->vblPinDue) { g_cur->vblPinDue = -1; g_cur->vblPending = true; }
+            if (g_cur->hblPinDue >= 0 && busNow >= g_cur->hblPinDue) { g_cur->hblPinDue = -1; g_cur->hblPinFired = true; g_cur->hblPending = true; }
+            if (g_cur->vblPinDue >= 0 && busNow >= g_cur->vblPinDue) { g_cur->vblPinDue = -1; g_cur->vblPinFired = true; g_cur->vblPending = true; }
             recomputePinNextDue();
             neostUpdateIpl();
         }
@@ -1335,6 +1337,7 @@ void Cpu68k::serialize(StateArchive& ar) {
     // Modes opt-in NEOST_IPLDELAY / NEOST_PIN_ARM : latence IPL et broches armées.
     ar(state_->desiredIpl); ar(state_->appliedIpl); ar(state_->iplChgClock);
     ar(state_->hblPinDue); ar(state_->vblPinDue); ar(state_->pinNextDue);
+    ar(state_->hblPinFired); ar(state_->vblPinFired);
     ar(quantumStartClock_); ar(quantumStartBus_);
     ar(instrStartClock_); ar(psgPrevInstrClock_); ar(aciaPrevInstrClock_);
 }
@@ -1386,6 +1389,17 @@ void Cpu68k::updateIpl() {
 }
 
 namespace { bool raiseWindowDefers(); }   // définie plus bas (fenêtre d'échantillonnage IPL)
+namespace {
+// Broches vidéo au cycle exact, échantillonnées par POLL_IPL : STE à 8 MHz seulement.
+// [D] fx68k @ 0602ee46 + gstmcu @ 4a6db7cc, tools/run_stcpu_bench.py : le compteur lu en HBL et en VBL
+// concorde sur quatre boucles, MULU et STOP compris, où le commit au dispatch d'Hatari s'écarte
+// (une instruction d'écart une ligne sur cinq). La HBL réveille STOP à son dispatch ; la VBL non.
+// [F] ST et Mega STE : aucun modèle, ils gardent le commit au dispatch, à 0 px d'Hatari. Tranché
+// par : un GLUE modélisé, ou une capture IPL/AS sur un ST.
+int g_pinArmMask = []{ const char* s = std::getenv("NEOST_PIN_ARM");
+                       return s ? std::atoi(s) : 3; }();
+bool pinsAtCycle() { return g_cur->cpuMul == 1 && g_cur->bus && g_cur->bus->machine == MachineType::Ste; }
+}
 
 void Cpu68k::updateIplNow() {
     // Même fenêtre d'échantillonnage que raiseHbl/raiseVbl : un événement MFP dû
@@ -1434,6 +1448,10 @@ bool raiseWindowDefers() {
     return defer;
 } }
 void Cpu68k::raiseVbl() {
+    // Broche déjà montée au cycle exact : l'IACK a pu l'acquitter avant ce dispatch, ne pas relever.
+    if (state_->vblPinFired) { state_->vblPinFired = false; neostUpdateIpl(false); return; }
+    // Saut de STOP : la broche n'a pas monté, ce dispatch la remplace.
+    if (state_->vblPinDue >= 0) { state_->vblPinDue = -1; recomputePinNextDue(); }
     state_->vblPending = true;
     // COMMIT IMMÉDIAT (2026-07-02, mesuré à l'oracle instrumenté [HPIN]/[HEXC] :
     // chez Hatari CE, les événements vidéo sont traités À LA FRONTIÈRE d'instruction
@@ -1442,13 +1460,17 @@ void Cpu68k::raiseVbl() {
     // 12709/12711 échantillons du banc poll-entry). L'ancien chemin broche-POLLée
     // (neostUpdateIpl sans commit) faisait reconnaître UNE instruction plus tard.
     // Le callback d'événement EST une frontière d'instruction (modèle bloc) → commit sûr.
-    neostUpdateIpl(/*commit=*/(g_raiseCommit & 2) != 0 && !raiseWindowDefers());
+    neostUpdateIpl(/*commit=*/(g_raiseCommit & 2) != 0 && !raiseWindowDefers()
+                              && (!(g_pinArmMask & 2) || !pinsAtCycle()));
 }
 
 void Cpu68k::raiseHbl() {
+    if (state_->hblPinFired) { state_->hblPinFired = false; neostUpdateIpl(false); return; }
+    if (state_->hblPinDue >= 0) { state_->hblPinDue = -1; recomputePinNextDue(); }
     state_->hblPending = true;
     // même modèle que raiseVbl + fenêtre d'échantillonnage (cf. g_raiseWindow)
-    neostUpdateIpl(/*commit=*/(g_raiseCommit & 1) != 0 && !raiseWindowDefers());
+    neostUpdateIpl(/*commit=*/(g_raiseCommit & 1) != 0 && !raiseWindowDefers()
+                              && (!(g_pinArmMask & 1) || !pinsAtCycle() || state_->moira->stoppedState()));
 }
 
 // Pré-armement des broches IRQ vidéo — cf. .hpp. Appelées par Machine au moment
@@ -1463,10 +1485,8 @@ void Cpu68k::raiseHbl() {
 // prise (l'exception part dans le bloc, l'IACK efface le pending, puis le
 // callback du dispatch re-lève → 2ᵉ HBL, période libre ~427 cyc mesurée au banc
 // poll-entry). Gardé en opt-in pour expériences uniquement.
-namespace { int g_pinArmMask = []{ const char* s = std::getenv("NEOST_PIN_ARM");
-                                   return s ? std::atoi(s) : 0; }(); }
-void Cpu68k::armHblPinAt(int64_t busCycle) { if (g_pinArmMask & 1) { state_->hblPinDue = busCycle; recomputePinNextDue(); } }
-void Cpu68k::armVblPinAt(int64_t busCycle) { if (g_pinArmMask & 2) { state_->vblPinDue = busCycle; recomputePinNextDue(); } }
+void Cpu68k::armHblPinAt(int64_t busCycle) { if ((g_pinArmMask & 1) && pinsAtCycle()) { state_->hblPinDue = busCycle; recomputePinNextDue(); } }
+void Cpu68k::armVblPinAt(int64_t busCycle) { if ((g_pinArmMask & 2) && pinsAtCycle()) { state_->vblPinDue = busCycle; recomputePinNextDue(); } }
 
 uint32_t Cpu68k::pc() const {
     return state_->moira->getPC0();

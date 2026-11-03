@@ -30,7 +30,7 @@ fichier est rangé dans cet ordre :
 
 **État au 2026-11-03** : contrat logiciel Mega STE tenu et gardé (suite Q du diagnostic Field
 Service 12/12, grade C) ; aucune divergence haute face à Hatari ; 2 étalons `rtl` ;
-**banc fx68k : 26 variantes sur 35 en accord** cycle à cycle (§ 2.1).
+**banc fx68k : 26 variantes sur 35 en accord** cycle à cycle (§ 2.1) ; blitter, GLUE et lecture du faisceau confrontés aux RTL sur STE (§ 4).
 **Pas d'accès à un vrai ST** : les ⏸ matériel passent par les relevés de tiers, les
 documents primaires, les ROM et le RTL épinglé.
 
@@ -78,10 +78,8 @@ ici ne figure que ce qui demande une décision ou une source.
 témoins : tous grade D, Moira non modifié. La chaîne MFP→IPL de NeoST ajoute ses propres délais :
 requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md).
 
-- **Date limite de la broche IPL** · P2 ⏸ source · [D] — mesuré, non tranché. Moira nu voit la broche 3 cycles après fx68k.
-  Un retard de 2 l'en rapproche, mais aucun étalon n'y est sensible, et fx68k et le modèle WinUAE se contredisent d'une
-  instruction sur MULU. Tranche : sonde sur machine réelle, ou relevé de tiers. → `docs/FX68K_BENCH.md`
-- **Réveil du STOP** · P2 ⭘ — 1 cycle après fx68k, dans la marge du banc. À revoir avec l'item précédent.
+- **Prise d'IPL sur ST et Mega STE** · P2 ⏸ source · [F] — le STE suit fx68k + GSTMCU depuis le 2026-11-04 (`docs/STCPU_BENCH.md`) ; ST et Mega STE gardent le commit
+  d'Hatari, faute de modèle du GLUE. Le 68000 est le même : à trancher par un modèle du GLUE ST, ou un relevé de tiers.
 - **Erreur d'adresse : cycle amorcé** · P3 ⭘ · [D] — seul fx68k pose AS sans strobe à l'adresse fautive.
   Un seul témoin, sans effet connu sur un ST.
 - **Latence IACK MFP** · P1 ⏸ matériel · [D] 12 cycles — capturer CLK CPU/MFP, IACK et les
@@ -109,7 +107,7 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   `$FF8260`, comme Hatari. Bloc « moyen » : le RTL ne l'emporte pas. Tranche : relevé sur STE.
 - **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — « choix acté », sans source
   matérielle. Tranche : relevés de tiers (§ 4), netlist STE pour la branche STE.
-- **Offsets de datation dérivés d'Hatari** · P2 ⭘ · aligné Hatari — `kVideoCounterReadOffsetCyc`,
+- **Offsets de datation dérivés d'Hatari** · P2 ◐ — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
   `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
   Mesure : date GLUE = chute d'AS + 5 sur le modèle (`$FF820A`), + 3 dans le chemin CPU de NeoST ; l'écart de 2 reste à
   expliquer (origine de ligne ou écriture). Tranche : banc 68000 + GSTMCU. ⚠ read et write bougent par paire.

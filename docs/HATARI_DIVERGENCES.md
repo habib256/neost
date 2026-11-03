@@ -1317,6 +1317,8 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
+- **Prise des HBL et VBL sur STE** (2026-11-04) : broche levée au cycle exact et vue par `POLL_IPL`, au lieu du commit au dispatch (`intlev_load → ipl_fetch_now`). [D] fx68k @ `0602ee46` + gstmcu @ `4a6db7cc`,
+  `tools/run_stcpu_bench.py` : MULU 256/256 contre 63/256, boucle courte 256/256 contre 216/256. Sonde `timer_b_event` à 14 cycles de première IRQ, consigné. ST inchangé, faute de modèle. Ne pas réaligner.
 - **GLUE du STE, trois seuils** (2026-11-04) : `Line_Set_Pal` à 58, haute résolution à 4 sans retrait gauche, haute résolution dans (40, 48] retirée à 56 sans `NO_DE`.
   [D] gstmcu @ `4a6db7cc`, bloc « fort », `tools/run_glue_sweep.py` : 1654 impulsions sur 1664 en accord. Hatari `video.c` @ `f0736b24` garde 56, ≤ 4 et `NO_DE`. Ne pas réaligner. → `docs/GLUE_SWEEP.md`
 - **`$FF8920-3F` au créneau de la RAM, sur STE** (2026-11-04) : [B] ST-4081 feuilles 19 et 21, CMAP par SMAPB. Hatari n'aligne que couleurs,

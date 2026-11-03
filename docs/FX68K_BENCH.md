@@ -121,6 +121,10 @@ Une attente de 0 à 8 cycles par pas de 2, période 10. NeoST modélise `4 + att
 d'écart est une parité : le compteur de fx68k démarre ici en phase impaire avec le bus, ce qu'aucune source ne fixe sur une machine réelle. Avec les
 créneaux de 4 cycles d'un ST, les deux séries donnent les mêmes dates (20, 20, 24, 24, 28), par calcul : **ce banc ne les a pas exécutées avec créneaux**.
 
+## La date limite d'IPL, confrontée dans NeoST (2026-11-04)
+
+Le n° 1 du tableau a trouvé son banc : `tools/run_stcpu_bench.py`, où aucun retard n'a été nécessaire. Le « +3 » est celui de Moira **nu** dans sa propre convention de broche ; dans NeoST sur STE, la broche et `POLL_IPL` donnent 256/256 sur quatre boucles, à 4 cycles de résolution. → [`STCPU_BENCH.md`](STCPU_BENCH.md)
+
 ## Ce qui manque au banc
 
 - **Bus error** (BERR, et la relance par HALT, non implémentée dans fx68k).

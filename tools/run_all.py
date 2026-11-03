@@ -228,6 +228,9 @@ FULL = FAST + [
     # GSTMCU (STE) simulé : écrans connus, dates des signaux, latence de DTACK par zone.
     ("Banc GSTMCU (écrans calculés, latence de DTACK par zone)",
      [sys.executable, str(TOOLS / "run_gstmcu_bench.py")]),
+    # 68000 + GSTMCU (STE) : compteur vidéo relevé par le CPU, en boucle, en HBL et en VBL.
+    ("Banc CPU + GSTMCU (ce que le CPU voit du faisceau, contre les RTL)",
+     [sys.executable, str(TOOLS / "run_stcpu_bench.py")]),
     # Machine GLUE du STE contre le modèle : une impulsion à chaque phase de la ligne.
     ("Balayage GLUE STE contre le modèle GSTMCU (DE et octets par écriture)",
      [sys.executable, str(TOOLS / "run_glue_sweep.py")]),

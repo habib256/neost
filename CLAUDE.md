@@ -33,6 +33,7 @@ les puces) et **`neost_core` ne dépend pas du GUI**.
 | [`docs/MOIRA_WINUAE_CONVERGENCE.md`](docs/MOIRA_WINUAE_CONVERGENCE.md) | **Beam-sync** : convergence Moira↔WinUAE, mesures, pistes éliminées. |
 | [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md) | **Banc Moira↔fx68k** : le 68000 nu contre le RTL cycle-exact, conventions de datation, écarts trouvés et ce qui les tranche. |
 | [`docs/STBLITTER_BENCH.md`](docs/STBLITTER_BENCH.md) | **Banc du blitter** : NeoST contre `stBlitter.sv` et fx68k, accès, données et dates ; ce que la netlist ST-4082 a tranché. |
+| [`docs/STCPU_BENCH.md`](docs/STCPU_BENCH.md) | **Banc CPU + GSTMCU** : ce que le 68000 voit du faisceau, compteur et interruptions, contre les RTL, à l'octet. |
 | [`docs/GLUE_SWEEP.md`](docs/GLUE_SWEEP.md) | **Balayage GLUE du STE** : impulsions 60 Hz et haute résolution à chaque phase, NeoST contre le modèle GSTMCU. |
 | [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) | Recette callgrind, points chauds, build PGO+LTO et son piège. |
 | [`docs/RELEASE.md`](docs/RELEASE.md) | **Poser une version** : procédure, le piège du cache `NEOST_VERSION_STR`, ce qui bloque encore une release publique. |

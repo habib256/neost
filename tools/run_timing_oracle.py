@@ -213,6 +213,11 @@ ACCEPTED_BLITTER = {
 }
 
 
+# Première IRQ après une VBL sur STE : la broche est échantillonnée, comme le RTL, là où Hatari commit au
+# dispatch (docs/STCPU_BENCH.md). Décalage signé, la borne s'applique autour de lui.
+ACCEPTED_FIRST_IRQ = {"timer_b_event": -14}
+
+
 def compare(case, actual, expected, strict=False):
     if actual["probe_sha256"] != expected["probe_sha256"]:
         raise ValueError(f"{case} : cartouche modifiée, référence à revoir")
@@ -269,7 +274,7 @@ def compare(case, actual, expected, strict=False):
     if len(a) != SAMPLES or len(b) != SAMPLES or a[0] != 0 or b[0] != 0:
         raise ValueError(f"{case} : référence/mesure incomplète")
     phase = max(abs(x - y) for x, y in zip(a, b))
-    first = abs(actual["first_irq"] - expected["first_irq"])
+    first = abs(actual["first_irq"] - expected["first_irq"] - ACCEPTED_FIRST_IRQ.get(case, 0))
     phase_limit, first_limit = LIMITS[case]
     period = td.histo([y - x for x, y in zip(a, a[1:])])[0][0]
     wanted = td.histo([y - x for x, y in zip(b, b[1:])])[0][0]

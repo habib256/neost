@@ -48,7 +48,9 @@ class TimingComparison(unittest.TestCase):
     def test_references_match_themselves(self):
         for case, reference in self.reference.items():
             with self.subTest(case=case):
-                self.assertTrue(self.check(case, reference))
+                # Un écart accepté face à Hatari fait partie de l'attendu.
+                measured = dict(reference, first_irq=reference["first_irq"] + timing.ACCEPTED_FIRST_IRQ.get(case, 0))
+                self.assertTrue(self.check(case, measured))
 
     def test_missing_interrupt_with_unchanged_dominant_period(self):
         for case, reference in self.reference.items():

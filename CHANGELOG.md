@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Le 68000 et le faisceau sur STE : les RTL réunis, et la prise d'interruption (2026-11-04)
+
+Nouveau banc : le même programme sur fx68k + GSTMCU et dans NeoST, qui relève le compteur vidéo en RAM. 48 544 lectures comparées à l'octet.
+- **Compteur vidéo et phase de l'E-clock** : 47 999 lectures sur 48 000 identiques dès le premier passage. La relation CPU-faisceau, calée sur Hatari, est confirmée par un modèle du circuit.
+- **Prise d'interruption sur STE, corrigée** : la broche HBL ou VBL monte au cycle exact et `POLL_IPL` la voit, au lieu d'un commit au dispatch d'événement. MULU passe de 63 à 256 lectures exactes sur 256, la boucle courte de 216 à 256.
+  Le mécanisme existait en essai (`NEOST_PIN_ARM`), écarté en juillet parce qu'il s'écartait d'Hatari.
+- **Portée** : STE à 8 MHz. ST et Mega STE gardent le commit d'Hatari, faute de modèle. Écart accepté face à Hatari : première IRQ de `timer_b_event`, 14 cycles. Aucun étalon ne bouge.
+- **Save-state** : version 58.
+
 ## La GLUE du STE confrontée au modèle, impulsion par impulsion (2026-11-04)
 
 Nouveau banc : une impulsion 60 Hz ou haute résolution à chaque phase de la ligne, sur le modèle GSTMCU et dans la machine GLUE de NeoST, sans CPU. 1654 sur 1664 concordent,
