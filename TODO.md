@@ -46,7 +46,7 @@ actions passent par les relevés de tiers, les documents primaires, les ROM et l
 |---|--------|------|---|
 | 1 | Porter les modes pulse du MFP (fiche contre code), puis retrancher le reste | P1 | 2 |
 | 2 | Lire au RTL épinglé les questions déjà citées : `$FF8261`, blanking, GPIP3 | P1 | 3.1 |
-| 3 | Comparer le banc GSTMCU à NeoST, premier étalon `rtl` | P1 | 4 |
+| 3 | Trancher le noir sous BLANK : modèle contre NeoST et Hatari | P1 | 3.1 |
 | 4 | Différentiel Moira↔fx68k | P1 | 4 |
 | 5 | A32 : `VideoCounter` en objet membre (A9 livré, un chantier à la fois) | P2 | 10 |
 | 6 | Suite Hatari `screen` : NeoST = référence décalée de 4 px sur `flixfull` | P2 | 11 |
@@ -85,9 +85,10 @@ avant le RTL, et un `rtl` ne tranche qu'à titre provisoire (règles → [`docs/
 ### 3.1 Tranchable sans machine
 
 - **Couleur pendant BLANK** · P1 ◐ · [F] palette 0 conservée — `gstshifter.v:263-265 @ 4a6db7cc`
-  force le noir hors mono, et le banc le confirme à l'exécution : couleur 0 dans la bordure, 000
-  pendant BLANK, à un retard de pipeline près. Code NeoST inchangé tant qu'une source plus haute
-  manque. Rétro-ingénierie, poids moyen. ⚠ Le schéma 4118 invoqué jusqu'ici
+  force le noir hors mono, et le banc le confirme à l'exécution. Seul écart face à NeoST : 832 px
+  en PAL (2 lignes) et 13 lignes en NTSC, en couleur 0 chez NeoST et Hatari. Hatari l'admet lui-même :
+  `video.c:4008-4009 @ f0736b24` (« should be improved to really display a black line »). Code inchangé tant qu'une source
+  plus haute manque ; passer au noir déplacerait les références `hatari` à bordure visible. Rétro-ingénierie, poids moyen. ⚠ Le schéma 4118 invoqué jusqu'ici
   est le shifter de la Panther, pas celui du ST ; aucun schéma du Shifter ST n'est disponible.
 - **Octet `$FF8261` relu** · P1 ⭘ · [F] — `gstshifter.v:121 @ 4a6db7cc` rend $00 en octet bas.
 - **GPIP3 au repos avec blitter** · P1 ⭘ · [F] `$FFFA01` bit 3 supposé 0 sur Mega ST/STE/Mega STE
@@ -166,13 +167,13 @@ Ni action personnelle possible, ni oubli : un relevé de tiers suffirait à sort
 
 ## 4. 🪜 Échelle des références
 
-Le harnais ne compare encore aucun pixel à mieux qu'Hatari : 32 étalons `hatari`, 11 `snapshot`.
-Seuls les 8 verdicts `buserror-*` touchent le matériel, par des relevés de tiers.
+32 étalons `hatari`, 11 `snapshot`, 2 `rtl`. Seuls les 8 verdicts `buserror-*` touchent le
+matériel, par des relevés de tiers.
 → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
-- **Comparer le banc GSTMCU à NeoST, premier étalon `rtl`** · P1 ◐ — `tools/run_gstmcu_bench.py`
-  simule le modèle sur un écran connu : 0 pixel faux, en basse PAL/NTSC et moyenne PAL. Il valide
-  le banc, pas NeoST : reste à confronter ses dates (HSYNC, BLANK, DE) à NeoST et à `ST4081S.PDF`.
+- **Étendre les étalons `rtl`** · P2 ◐ — `rtl_low_pal` et `rtl_low_ntsc` posés, écran connu, 0 pixel
+  actif faux. Restent la moyenne résolution, puis ce qui bouge en cours de ligne (palette, écritures
+  de fréquence), là où NeoST et le modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`.
 - **Basse résolution PAL issue du reset** · P2 ⭘ · [F] — le modèle garde une phase de plans décalée,
   sur toutes les trames observées, jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ?
   Chercher un relevé de tiers ; aucun schéma du Shifter ST n'est disponible.
@@ -241,7 +242,7 @@ Seuls les 8 verdicts `buserror-*` touchent le matériel, par des relevés de tie
 
 ## 6. Release & distribution
 
-- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **39 étalons pixel sur 43** tournent
+- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **41 étalons pixel sur 45** tournent
   sans TOS Atari (A3). Les trois `spectrum512_diapo*` restent des SKIP recensés
   (**migration EmuTOS réfutée, ne pas retenter**) ; leur motif est désormais rendu par
   `spec512_view`, étalon généré (Hatari à 0 px). `union_demo` → § 5. Recette de
