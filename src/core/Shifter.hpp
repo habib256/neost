@@ -337,6 +337,7 @@ private:
     bool     newHwScrollPrefetch_ = false;
     int      newLineWidth_       = -1;
     int      vcDelayedOffset_    = 0;   // écart compteur (écriture $FF8205/07/09 pendant le DE)
+    int32_t  vcDelayedAddr_      = -1;  // adresse absolue (même écriture en bordure droite) ; −1 = rien
     // RESTART du compteur en fin de trame (port Video_RestartVideoCounter : ligne
     // 310/260, cycle 56 [+4 STE], AVANT le VBL) : base RE-LATCHÉE depuis $FF8201/03
     // à cet instant. −1 = pas (encore) redémarré cette trame. Les lectures
@@ -639,6 +640,7 @@ private:
     int           curAH_ = 0;               // lignes actives à décoder (200/400)
     int           activeX_ = 0, activeY_ = 0;  // offset de l'écran actif dans le buffer
     Mode          frameMode_ = Mode::Low;   // résolution verrouillée pour la trame
+    int           frameStartRes_ = 0;       // $FF8260 au début de la trame (peut différer de frameMode_)
     uint8_t       frameSync_ = 0x02;        // fréquence ($FF820A) verrouillée pour la trame
     std::vector<uint32_t> frame_;           // curW_*curH_ pixels ARGB
     std::function<int64_t()> beamClock_;    // cycles dans la trame (cf. setBeamClock)
@@ -693,7 +695,9 @@ public:
         ar.check(newHwScrollCount_ >= -1 && newHwScrollCount_ < 16);
         ar(newHwScrollPrefetch_);
         ar(newLineWidth_);
-        ar(vcDelayedOffset_);
+        ar(vcDelayedOffset_); ar(vcDelayedAddr_);
+        ar(frameStartRes_);
+        ar.check(frameStartRes_ >= 0 && frameStartRes_ <= 3);
         ar(vcRestartBase_);
         ar(vcRestartLine_);
         // Résolution côté Shifter + scroll hard « Shifter arrêté » (format v50).

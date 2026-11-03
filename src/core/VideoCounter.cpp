@@ -121,6 +121,10 @@ void Shifter::endVideoLine() {
         vcLineBase_ += static_cast<uint32_t>(vcDelayedOffset_ & ~1);
         vcDelayedOffset_ = 0;
     }
+    if (vcDelayedAddr_ >= 0) {                             // écriture en bordure droite
+        vcLineBase_ = static_cast<uint32_t>(vcDelayedAddr_);
+        vcDelayedAddr_ = -1;
+    }
     if (newHwScrollCount_ >= 0) {                          // HSCROLL différé (NewHWScrollCount)
         hwScrollCount    = static_cast<uint8_t>(newHwScrollCount_);
         hwScrollPrefetch = newHwScrollPrefetch_;
@@ -420,10 +424,13 @@ uint32_t Shifter::videoCounter() {
 // Video_ScreenCounter_WriteByte (video.c:5145-5250). On reconstruit la nouvelle
 // adresse en remplaçant UN octet de la valeur courante (corrigée d'une éventuelle
 // modification déjà différée), puis :
-//   • affichage pas commencé sur la ligne (cycle ≤ MMUStart = HDE_On − 16 si scroll),
-//     ligne déjà rendue (bordure droite — notre rendu à DE_end est déjà passé, ce qui
-//     équivaut au pVideoRasterDelayed d'Hatari appliqué en fin de ligne), ou faisceau
-//     hors zone affichée → application IMMÉDIATE au compteur matérialisé ;
+//   • affichage pas commencé sur la ligne (cycle ≤ MMUStart = HDE_On − 16 si scroll), ligne
+//     déjà terminée, ou faisceau hors zone affichée → application IMMÉDIATE au compteur ;
+//   • bordure droite, ou écriture qui déborde sur la ligne suivante avant la fin de ligne →
+//     adresse ABSOLUE gardée pour la fin de ligne (pVideoRasterDelayed). [D] Hatari
+//     Video_ScreenCounter_WriteByte @ f0736b24. Un écart relatif serait faux : le compteur
+//     avance encore jusqu'à la fin de ligne. Étalon : DHS Double Rez Trouble (écrit le compteur
+//     à chaque ligne, cycles 484-496, bordure droite ouverte) ;
 //   • écriture PENDANT le DE → on mémorise l'ÉCART (vcDelayedOffset_), appliqué à la
 //     fin de la ligne (endVideoLine) — sur un vrai STE cela produit des artefacts,
 //     l'adresse de fin de ligne est en revanche exacte. Étalons : Stardust Tunnel STE,
@@ -433,7 +440,8 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     // ≤ 4 Mo (port DMA_MaskAddressHigh — NeoST plafonne la ST-RAM à 4 Mo).
     if (addr == 0xFF8205) v &= 0x3F;
     const uint32_t cur = videoCounter();                       // adresse courante (brute)
-    uint32_t an = (cur + static_cast<uint32_t>(vcDelayedOffset_)) & kVideoAddrMask;
+    uint32_t an = vcDelayedAddr_ >= 0 ? static_cast<uint32_t>(vcDelayedAddr_)
+                                      : (cur + static_cast<uint32_t>(vcDelayedOffset_)) & kVideoAddrMask;
     if (addr == 0xFF8205)      an = (an & 0x00FFFFu) | (uint32_t(v) << 16);
     else if (addr == 0xFF8207) an = (an & 0xFF00FFu) | (uint32_t(v) << 8);
     else                       an = (an & 0xFFFF00u) | uint32_t(v);
@@ -447,11 +455,19 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     // Le MMU commence à lire 16 cycles AVANT le HDE_On quand le scroll fin est armé
     // AVEC PREFETCH ($FF8265 ; rien via $FF8264) — port Video_GetMMUStartCycle.
     const int mmuStart = g.lineStartCycle - ((steBorderFlag_ || (hwScrollCount && hwScrollPrefetch)) ? 16 : 0);
-    if (!havePos || !active || cyc <= mmuStart || la < vcLineY_) {
+    const bool overlapsNext = active && la > vcLineY_;   // fin de ligne pas encore servie
+    const bool rightBorder  = active && line < static_cast<int>(glueLines_.size())
+                           && cyc > glueLines_[line].displayEndCycle;
+    if (!havePos || !active || (cyc <= mmuStart && !overlapsNext) || la < vcLineY_) {
         vcLineBase_ = an;                                      // application immédiate
         vcDelayedOffset_ = 0;
+        vcDelayedAddr_ = -1;
+    } else if (rightBorder || overlapsNext) {
+        vcDelayedOffset_ = 0;
+        vcDelayedAddr_ = static_cast<int32_t>(an);
     } else {
         vcDelayedOffset_ = static_cast<int>(an) - static_cast<int>(cur);  // pendant le DE → fin de ligne
+        vcDelayedAddr_ = -1;
     }
 }
 

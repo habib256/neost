@@ -210,7 +210,7 @@ bool Shifter::vblankAtLine(int scanline) const {
             if (glueLineStart_[check.line + 1] > start) end = glueLineStart_[check.line + 1];
             else end = start + cpl;
         }
-        int res = static_cast<int>(frameMode_) & 3;
+        int res = frameStartRes_;
         int freq50 = (frameSync_ & 2) != 0;
         // ResetShifterTimings initialise les latches par la fréquence de trame
         // (res3 est couleur ici). Après une écriture, Update_Glue_State décode
@@ -975,7 +975,7 @@ void Shifter::replayGlue() {
 
     // État res/freq COURANT (début de trame = valeurs verrouillées). res : 0=low,
     // 1=med, 2=hi ; freq : bit1 de $FF820A (1=50 Hz).
-    int curRes  = (frameMode_ == Mode::Medium) ? 1 : (frameMode_ == Mode::High ? 2 : 0);
+    int curRes  = frameStartRes_ == 3 ? 0 : frameStartRes_;
     int curFreq50 = (frameSync_ & 0x02) ? 1 : 0;
 
     // V2 res-switch (opt-in NEOST_V2) : attribution à LONGUEUR DE LIGNE VARIABLE —

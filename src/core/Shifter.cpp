@@ -172,6 +172,7 @@ void Shifter::reset() {
     newHwScrollCount_    = -1;
     newHwScrollPrefetch_ = false;
     vcDelayedOffset_     = 0;
+    vcDelayedAddr_       = -1;
     // Résolution côté Shifter (ShifterFrame.Res_Shifter = −1, ResPosStop_Shifter
     // effacé, VideoRasterDelayedInc et DisplayPixelShift par ligne remis à 0).
     shifterRes_       = static_cast<uint8_t>(mode);
@@ -205,6 +206,7 @@ void Shifter::reset() {
     spec512Active_   = false;
     bordersTrick_    = false;
     frameMode_ = mode;
+    frameStartRes_ = static_cast<int>(mode) & 3;
     frameSync_ = sync;
     resizeFor(frameMode_);
     const Geometry g = geometry();
@@ -289,6 +291,14 @@ void Shifter::resizeFor(Mode m) {
 void Shifter::beginFrame() {
     lastScroll8265Cycle_ = -1;   // la paire d'écritures doit appartenir à la même VBL
     frameMode_ = mode;
+    frameStartRes_ = static_cast<int>(mode) & 3;
+    // Une trame qui démarre en moyenne résolution peut mêler des lignes basses : DHS Double Rez
+    // Trouble termine chaque trame en res=1 après des impulsions hi/low. Le chemin moyenne
+    // décode toute la trame en 2 plans, sans bordures : on garde le chemin bas, qui décide
+    // ligne par ligne (cf. renderGlueFrame). [D] Hatari video.c, Video_StoreResolution @ f0736b24.
+    if (mode == Mode::Medium)
+        for (const auto& w : syncWrites_)
+            if (w.isRes && (w.val & 3) != 1) { frameMode_ = Mode::Low; break; }
     frameSync_ = sync;
     resizeFor(frameMode_);
     // Réinitialise l'enregistrement spec512 de la trame qui commence. La palette
@@ -375,7 +385,7 @@ void Shifter::beginFrame() {
     }
     liveGlueLine_   = -1;
     liveGlueWi_     = 0;
-    liveGlueRes_    = (frameMode_ == Mode::Medium) ? 1 : (frameMode_ == Mode::High ? 2 : 0);
+    liveGlueRes_    = frameStartRes_ == 3 ? 0 : frameStartRes_;
     liveGlueFreq50_ = (frameSync_ & 0x02) ? 1 : 0;
     // LINELEN : échelle des débuts de ligne réels (remplie au fil des avances).
     glueLineStart_.assign(glueLines_.size(), 0);
@@ -883,6 +893,9 @@ void Shifter::renderGlueFrame() {
     // pile sur ce cas pathologique (nPix clampé ci-dessous par ceinture ET bretelles).
     uint8_t idx[1072];
     const int wsInc = glue::timing(bus_.machine).inc;              // re-normalisation des DE stockés (cf. plus bas)
+    // Résolution au début de la ligne, relue au fil des écritures datées (lignes croissantes).
+    std::size_t resWrite = 0;
+    int lineStartRes = frameStartRes_ == 3 ? 0 : frameStartRes_;
     for (int row = 0; row < curH_; ++row) {
         const int sl = baseStart + (row - activeY_);       // scanline de cette ligne buffer
         // Fenêtre verticale = [nStartHBL, nEndHBL + BlankLines) comme Hatari
@@ -946,8 +959,16 @@ void Shifter::renderGlueFrame() {
         // MOYENNE résolution (2 plans, 2 px/cycle) au sein d'une trame basse rés.
         // Le buffer reste à 1 px/cycle → on émet le pixel med PAIR (convention
         // alignée sur la comparaison oracle : Hatari 832 px sous-échantillonné 2×).
+        // [D] Hatari video.c, Video_StoreResolution @ f0736b24 : sans masque, la ligne garde la
+        // résolution lue à son début ; un masque autre que moyenne force la basse.
+        while (resWrite < syncWrites_.size()
+               && syncWrites_[resWrite].frameCycle <= static_cast<int64_t>(sl) * cpl) {
+            if (syncWrites_[resWrite].isRes) lineStartRes = syncWrites_[resWrite].val & 3;
+            ++resWrite;
+        }
         const bool lineMed = (frameMode_ == Mode::Low)
-                           && (bm & (glue::OVERSCAN_MED_RES | glue::LEFT_OFF_2_STE_MED)) != 0;
+                           && ((bm & (glue::OVERSCAN_MED_RES | glue::LEFT_OFF_2_STE_MED)) != 0
+                               || (bm == 0 && lineStartRes == 1));
         static const bool medDiag = std::getenv("NEOST_MED_DIAG") != nullptr;
         if (medDiag && displayed && sl == 120) {
             static long n = 0;
