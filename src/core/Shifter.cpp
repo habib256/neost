@@ -1415,7 +1415,7 @@ uint8_t Shifter::read8(uint32_t addr) {
     if (addr == 0xFF820F) return machineIsSte(bus_.machine) ? lineWidth : 0xFF;
     // $FF8260 (résolution GLUE+Shifter) et son alias Shifter-seul $FF8261 partagent la
     // même lecture (Video_ResGlueShifter/ResShifter_ReadByte → Video_Res_ReadByte,
-    // video.c:5281,5300-5308) : STF/Mega ST forcent les bits inutilisés 2-7 à 1, STE/Mega
+    // [D] video.c:5314 @ f0736b24) : STF/Mega ST forcent les bits inutilisés 2-7 à 1, STE/Mega
     // STE les laissent à 0. (Le moniteur mono impose déjà mode = High = 2 en amont, comme
     // le `if (bUseHighRes) IoMem=2` de Hatari.) Avant : $8260 rendait bits 2-7=0 sur ST
     // (faux) et $8261 tombait en zone void → 0xFF (non géré).
@@ -1431,7 +1431,7 @@ uint8_t Shifter::read8(uint32_t addr) {
         return machineIsSte(bus_.machine) ? r : static_cast<uint8_t>(r | 0xFC);
     }
     // Scroll fin (STE seulement — sur ST/MegaST $FF8262-7F est une zone void → 0xFF,
-    // ioMemTabST.c:72). $FF8264 : Hatari n'intercepte PAS la lecture (video.c:5813,
+    // ioMemTabST.c:72). $FF8264 : Hatari n'intercepte PAS la lecture ([D] video.c:5846 @ f0736b24,
     // Video_HorScroll_Read_8264 = wait state seul) → on renvoie la dernière valeur
     // BRUTE écrite, comme IoMem. $FF8265 : valeur de scroll courante.
     if (addr == 0xFF8264 && machineIsSte(bus_.machine)) { syncCpuBus(); return hwScrollReg8264_; }
@@ -1459,7 +1459,7 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
     const bool ste = machineIsSte(bus_.machine);
     switch (addr) {
         case 0xFF8201:
-            // Octet haut masqué comme le compteur $FF8205 (port Hatari video.c:5084
+            // Octet haut masqué comme le compteur $FF8205 (port Hatari [D] video.c:5117 @ f0736b24
             // DMA_MaskAddressHigh) : sans lui, une base $FFxxxx ferait fetcher la
             // MMIO par le rendu (lectures à effets de bord — UDR MFP, STR FDC… —
             // voire bus error déclenchée HORS exécution CPU).

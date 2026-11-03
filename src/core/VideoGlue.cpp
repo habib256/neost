@@ -562,7 +562,7 @@ void Shifter::startHBL(int line, int curRes, int freqHz) {
     }
 }
 
-// Port FIDÈLE de Video_Update_Glue_State (chemins STF ET STE — video.c:2244-2652) :
+// Port FIDÈLE de Video_Update_Glue_State (chemins STF ET STE — [D] video.c:2214 @ f0736b24) :
 // applique une écriture freq/res au cycle `lineCycles` de la scanline `line`. Met à
 // jour la GlueLine (DE start/end, BorderMask, PixelShift), les lignes voisines
 // (right-off full), et les bordures haut/bas (glueStartHBL_/glueEndHBL_ +
@@ -870,7 +870,7 @@ void Shifter::updateGlueState(int line, int lineCycles, bool writeToRes, int fre
 // Rejoue la machine Glue sur les écritures freq/res datées de la trame, ligne par
 // ligne (StartHBL defaults → écritures via updateGlueState). Remplit glueLines_,
 // glueStartHBL_/glueEndHBL_ et arme bordersTrick_ si une bordure est retirée.
-// V2 — port de Video_WriteToGlueRes (video.c:1637-1753), post-traitement d'une
+// V2 — port de Video_WriteToGlueRes ([D] video.c:1622 @ f0736b24), post-traitement d'une
 // écriture $FF8260 APRÈS la machine d'état commune. Les fenêtres LINE_* sont des
 // constantes FIXES (hors table wakestate). Non portés, documentés : les hacks
 // « TEMP » Closure/DOLB (reniflage du PC/opcode chez Hatari, video.c:1791-1834)

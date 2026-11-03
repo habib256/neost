@@ -197,7 +197,7 @@ private:
     void    decodeMicrowire();                            // décode la commande LMC1992
     // Valeur LUE en $FF8924 : masque en ROTATION pendant le shift (revient
     // identique après les 16 pas), valeur écrite hors transfert — port de Hatari
-    // DmaSnd_InterruptHandler_Microwire (dmaSnd.c:1063-1064).
+    // DmaSnd_InterruptHandler_Microwire ([D] dmaSnd.c:1037 @ f0736b24).
     uint16_t mwMaskRead() const;
     void catchUpMicrowire(); // MMIO : consomme seulement les fronts Microwire échus
     void advanceMicrowire(int64_t nextEdge, int64_t now); // au plus 16 fronts

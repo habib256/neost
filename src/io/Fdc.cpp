@@ -823,7 +823,7 @@ void Fdc::eject(int drive) {
 }
 
 // =============================================================================
-//  Reset matériel — port de Hatari FDC_Reset (fdc.c:1172) : registres WD1772,
+//  Reset matériel — port de Hatari FDC_Reset ([D] fdc.c:1189 @ f0736b24) : registres WD1772,
 //  machine à états, IRQ et DMA/FIFO remis au repos. Les images montées et la
 //  position PHYSIQUE des têtes (headTrack) survivent, comme sur le vrai matériel.
 // =============================================================================
@@ -1047,7 +1047,7 @@ void Fdc::indexCheckUpdate() {
     const int64_t rev = cyclesPerRev();
     if (rev <= 0) return;
     // Rattrapage BORNÉ. Hatari fait un simple `if` ici (FDC_IndexPulse_CheckUpdate,
-    // fdc.c:2016) — la fonction est appelée toutes les 200-500 cycles FDC, donc au plus
+    // [D] fdc.c:2033 @ f0736b24) — la fonction est appelée toutes les 200-500 cycles FDC, donc au plus
     // une impulsion par appel, et la boucle y est structurellement impossible. NeoST
     // boucle, et chaque tour émet un son et peut lever une IRQ : un indexTime_ très en
     // retard sur l'horloge (save-state forgé, ou horloge recalée) demandait des milliers
@@ -2083,9 +2083,9 @@ int Fdc::nextSectorID(int* pFdcCycles) {
     }
     FloppyDisk& dk = drive_[driveSel_];
     // PAS de test des faces de l'IMAGE ici : Hatari teste NumberOfHeads du LECTEUR
-    // (fdc.c:5140, = 2 par défaut — les lecteurs NeoST sont double face). Les champs
+    // ([D] fdc.c:5193 @ f0736b24, = 2 par défaut — les lecteurs NeoST sont double face). Les champs
     // ID sont synthétisés depuis le BPB quelle que soit la face (FDC_GetSectorsPerTrack
-    // ignore Side, fdc.c:1778) ; c'est la lecture des DONNÉES qui échoue sur la face
+    // ignore Side, [D] fdc.c:1795 @ f0736b24) ; c'est la lecture des DONNÉES qui échoue sur la face
     // absente ([D] floppy.c:907 @ f0736b24 Side >= nSides → RNF en < 1 tour, cf. readSectorST). Les
     // jeux qui sondent la face 2 (Drakkhen, Bolo) obtiennent le RNF rapide, pas le
     // timeout 5 tours de l'ancien RET_NO_DRIVE (~1 s par sonde).
@@ -3001,7 +3001,7 @@ uint8_t Fdc::read8(uint32_t addr) {
                 default:     noteFf8604(dr_); return dr_;               // FDC_DR
             }
         // Statut DMA : les bits 8-15 rejouent le dernier accès $8604 (vérifié STF
-        // réel — Hatari FDC_DmaStatus_ReadWord renvoie le MOT complet, fdc.c:4996).
+        // réel — Hatari FDC_DmaStatus_ReadWord renvoie le MOT complet, [D] fdc.c:5022 @ f0736b24).
         case 0x6: return uint8_t(dmaStatusWord() >> 8);   // status, octet haut
         case 0x7: return uint8_t(dmaStatusWord());        // status, octet bas
         // Adresse DMA ($FF8609/0B/0D) : RELISIBLE — le compteur incrémente pendant le

@@ -382,7 +382,7 @@ public:
         // DERNIER accès fauté — celui qui a provoqué la double faute. Hatari, lui,
         // journalise la PREMIÈRE (celle dont l'exception a pu être prise) et se tait
         // sur la seconde, puisque son `cpu_halt` sort avant le Log_Printf
-        // (newcpu.c:3076-3090). Les deux adresses peuvent donc différer : pour voir
+        // ([D] newcpu.c:3097 @ f0736b24). Les deux adresses peuvent donc différer : pour voir
         // toute la chaîne, armer NEOST_FAULT_TRACE.
         if (g_cur->faultValid)
             std::fprintf(stderr,

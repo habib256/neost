@@ -226,7 +226,7 @@ void DmaSound::reset(bool cold) {
     aPlaying_ = false; aMode_ = 0;                 // état audio « push »
     aPhase_ = 0.0; aHaveCur_ = false;
     events_.clear();
-    fifoPos_ = fifoNb_ = 0;                        // FIFO vidée (≙ DmaSnd_Reset, dmaSnd.c:253-254)
+    fifoPos_ = fifoNb_ = 0;                        // FIFO vidée (≙ DmaSnd_Reset, [D] dmaSnd.c:240 @ f0736b24)
     dacLast_ = sched_ ? sched_->liveNow() : 0;
     dacRem_  = 0;
     capR_ = capW_;                                 // flux capturé drainé
@@ -283,7 +283,7 @@ void DmaSound::decodeMicrowire() {
 
 // Valeur relue en $FF8924 : pendant le transfert le masque TOURNE au rythme du
 // shift — `(mask << (16 - étapes_restantes)) | (mask >> étapes_restantes)`, port
-// exact de Hatari DmaSnd_InterruptHandler_Microwire (dmaSnd.c:1063-1064). Après
+// exact de Hatari DmaSnd_InterruptHandler_Microwire ([D] dmaSnd.c:1037 @ f0736b24). Après
 // les 16 pas la rotation est complète → le masque relu redevient la valeur écrite
 // (c'est aussi pourquoi decodeMicrowire peut décoder sur mwMask_ intact).
 uint16_t DmaSound::mwMaskRead() const {
@@ -591,7 +591,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         case 0x20: pad20_ = v; break;
         // Mode : seuls les bits existant sur un vrai STE sont câblés — masque 0x8F
         // (bit7 mono + bits0-1 fréquence), la relecture montre la valeur masquée
-        // (Hatari DmaSnd_SoundModeCtrl_WriteByte, dmaSnd.c:1013-1027). La
+        // (Hatari DmaSnd_SoundModeCtrl_WriteByte, [D] dmaSnd.c:1001 @ f0736b24). La
         // consommation due est datée à l'ANCIENNE cadence avant le changement, et
         // le passage mono → stéréo réaligne la FIFO sur frontière paire.
         case 0x21: {
@@ -665,7 +665,7 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
 
     // Registre de mixage du LMC1992 (commande 0) : seul mixing==1 mélange YM2149 + DMA ;
     // 0/2/3 routent le DMA SEUL → il écrase le YM (cf. Hatari DmaSnd_GenerateSamples,
-    // dmaSnd.c:555-568). N'a d'effet qu'ici, trame en cours : DMA à l'arrêt → `mix` sort
+    // [D] dmaSnd.c:538 @ f0736b24). N'a d'effet qu'ici, trame en cours : DMA à l'arrêt → `mix` sort
     // plus haut et le YM passe intact (pas de mute du YM hors lecture DMA).
     const bool addYm = (mwMixing_ == 1);
     for (uint32_t i = 0; i < frames; ++i) {

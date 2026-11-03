@@ -931,7 +931,7 @@ bool GemdosHd::gemDFree(uint32_t p) {
 
     uint64_t total = 32 * 1024, freeC = 16 * 1024;   // défaut : 32 Mo / 16 Mo libres
 #if defined(__unix__) || defined(__APPLE__)
-    // Espace RÉEL du disque hôte (port GemDOS_DFree, gemdos.c:1692-1746) : les
+    // Espace RÉEL du disque hôte (port GemDOS_DFree, [D] gemdos.c:1658 @ f0736b24) : les
     // valeurs factices trompaient « Informations disque » et tout installeur qui
     // vérifie Dfree avant d'extraire. Clusters de 1 Ko (secteurs 512 × 2, cf. bas).
     {

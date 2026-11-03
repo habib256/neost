@@ -193,7 +193,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         if (!v2_ || hblLine_ == v2ShortLine_ || hblLine_ >= lpf_) return;   // déjà raccourcie / hors trame
         // Cycle DANS la ligne courante (grille décalée par lineCarry_). Seule une
         // impulsion hi-res PRÉCOCE (≤ HDE_On_Low_50=56) raccourcit la ligne — comme
-        // les branches Hatari video.c:2246/2268/2288 (pas la branche right-off tardive).
+        // les branches Hatari [D] video.c:2305 @ f0736b24 (pas la branche right-off tardive).
         const int64_t lineStart = static_cast<int64_t>(hblLine_) * cpl_ - lineCarry_;
         const int64_t lineCyc   = (sched.liveNow() - frameStart_) - lineStart;
         if (lineCyc < 0 || lineCyc > 56) return;
@@ -570,7 +570,7 @@ void Machine::onTimerB() {
     // Position CIBLE au moment du callback : le DE de la ligne a pu être élargi par
     // une écriture POSTÉRIEURE à la planification (retrait de bordure droite : 60 Hz
     // à ~cyc 374 → DE_end 462 → tic à ~488). Hatari REPROGRAMME l'IRQ TB à chaque
-    // écriture qui change le DE (Video_AddInterruptTimerB, video.c:2880-2891) ; ici
+    // écriture qui change le DE (Video_AddInterruptTimerB, [D] video.c:2906 @ f0736b24) ; ici
     // on re-vérifie à l'arrivée : cible plus loin → on se replanifie SANS tirer.
     // (Un DE raccourci après coup laisse le tic à l'ancienne position — même
     // approximation que la reprogrammation tardive d'Hatari quand le tic est passé.)
@@ -628,10 +628,10 @@ void Machine::onHbl() {
     cpu.raiseHbl();                                // HBL niveau 2 (gaté par le SR)
     // Son DMA STE : la FIFO 8 octets est entretenue à CHAQUE HBL (fetch au faisceau
     // + consommation DAC datée) — port de l'appel DmaSnd_STE_HBL_Update du handler
-    // HBL d'Hatari (video.c:3322). Peut pulser Timer A (fin de trame) → IPL.
+    // HBL d'Hatari ([D] video.c:3340 @ f0736b24). Peut pulser Timer A (fin de trame) → IPL.
     if (machineHasDmaSound(machineType_)) { dmasnd.onHbl(); cpu.updateIpl(); }
     // Commit (compteur vidéo + capture lineSnap_) de la scanline qui SE TERMINE —
-    // même ancre que le Video_EndHBL du handler HBL d'Hatari (video.c:3319).
+    // même ancre que le Video_EndHBL du handler HBL d'Hatari ([D] video.c:3337 @ f0736b24).
     shifter.commitScanline(hblLine_);
     // Longueur RÉELLE de la ligne qui se termine (NEOST_LINELEN) : le cumul
     // lineCarry_ décale toutes les planifications des lignes suivantes (−carry),

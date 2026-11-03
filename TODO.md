@@ -232,9 +232,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). 176 citations d'Hatari portent grade et révision, vérifiées à l'épingle.
-  Restent 139 à relire à la main, listées par `tools/audit_citations.py list` : le symbole n'a pas été retrouvé près de la ligne, soit que la ligne ait glissé, soit que le commentaire ne nomme aucun symbole d'Hatari.
-  Recompter ensuite par grade dans `check_doc_claims.py`.
+- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). 203 citations d'Hatari portent grade et révision, vérifiées à l'épingle.
+  Restent 109 à relire à la main, listées par `tools/audit_citations.py list` : surtout des lignes `video.c` et `dmaSnd.c` antérieures à l'épingle, ou sans symbole d'Hatari dans le commentaire. Recompter ensuite par grade dans `check_doc_claims.py`.
 - **Banc fx68k, étendre** · P2 ◐ — BERR et double faute, RESET, Bcc en séries, CHK/DIVS en trap,
   RTR, ligne A en utilisateur. Autovecteur par VPA relevé, cohérent avec NeoST, à verser au verdict.
   → `docs/FX68K_BENCH.md` § *Ce qui manque*

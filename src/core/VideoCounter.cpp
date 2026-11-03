@@ -149,7 +149,7 @@ void Shifter::endVideoLine() {
 }
 
 // Commit des scanlines TERMINÉES au HBL de chaque ligne (port de l'appel
-// Video_EndHBL du handler HBL d'Hatari, video.c:3319) : la capture lineSnap_
+// Video_EndHBL du handler HBL d'Hatari, [D] video.c:3337 @ f0736b24) : la capture lineSnap_
 // d'une ligne se fait à SA fin de ligne (~cycle 512). Avant, le commit paresseux
 // n'était tiré que par renderLine(y+1) au cycle 376 de la ligne active SUIVANTE
 // (~380 cycles plus tard) — et en overscan HAUT (Enchanted Land en jeu), la grille
@@ -324,7 +324,7 @@ uint32_t Shifter::videoCounter() {
         // Offset intra-ligne UNIQUEMENT si la ligne courante n'a pas déjà été rendue
         // (la < vcLineY_ = bordure droite : le stride de la ligne est déjà accumulé).
         if (la < disp2 && laEff >= vcLineY_) {
-            // Port FIDÈLE de Video_CalculateAddress (video.c:1508-1565, 2026-07-02) :
+            // Port FIDÈLE de Video_CalculateAddress ([D] video.c:1600 @ f0736b24, 2026-07-02) :
             // pour l'intra-ligne, Hatari NE lit PAS DisplayStart/EndCycle de la Glue —
             // il RECONSTRUIT le départ (ds) et la TAILLE (CurSize) depuis le
             // borderMask :  LEFT_OFF → ds = LINE_START_CYCLE_71 = **0** (pas le
@@ -421,7 +421,7 @@ uint32_t Shifter::videoCounter() {
 }
 
 // Écriture du compteur vidéo $FF8205/07/09 (STE/TT) — port fidèle de
-// Video_ScreenCounter_WriteByte (video.c:5145-5250). On reconstruit la nouvelle
+// Video_ScreenCounter_WriteByte ([D] video.c:5177 @ f0736b24). On reconstruit la nouvelle
 // adresse en remplaçant UN octet de la valeur courante (corrigée d'une éventuelle
 // modification déjà différée), puis :
 //   • affichage pas commencé sur la ligne (cycle ≤ MMUStart = HDE_On − 16 si scroll), ligne

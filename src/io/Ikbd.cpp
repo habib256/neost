@@ -27,7 +27,7 @@ enum : uint8_t {
 // au protocole clavier ST usuel (CR=$96/$B6) ; break inhibe les départs.
 static constexpr int64_t kAciaTxBitCycles = 1024;
 // Milieux déterministes des fourchettes IKBD_Delay_Random d'Hatari. Le SCI
-// quantifie ensuite par division entière en bits de 1024 cycles (ikbd.c:1035).
+// quantifie ensuite par division entière en bits de 1024 cycles ([D] ikbd.c:971 @ f0736b24).
 static constexpr int kResponseDelayCycles = 7250;   // [7000,7500[
 static constexpr int kJoystickDelayCycles = 8750;   // [7500,10000[
 
@@ -855,7 +855,7 @@ void Ikbd::bootRom() {
     rx_.clear();                   // BufferHead=Tail=0 dans IKBD_Boot_ROM
     // ⚠ On ne purge QUE le côté 6301 : le RDR de l'ACIA (rdrf_), l'overrun et la
     // livraison en vol SURVIVENT au reset logiciel $80,$01 — Hatari (IKBD_Boot_ROM,
-    // ikbd.c:578-581) ne touche que Keyboard.Buffer ; le SCI n'est resetté qu'au
+    // [D] ikbd.c:532 @ f0736b24) ne touche que Keyboard.Buffer ; le SCI n'est resetté qu'au
     // reset MACHINE (IKBD_Reset). Le CPU peut encore lire le dernier octet reçu.
     duringResetCriticalTime_ = true;
     // Le boot annule tout code 6301 custom en cours (cf. Hatari

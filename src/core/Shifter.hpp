@@ -47,7 +47,7 @@ public:
     // strictement inchangé (zéro régression hors spec512).
     void finishFrame();
     // Commit des scanlines TERMINÉES, appelé au HBL de chaque ligne (port de
-    // l'appel Video_EndHBL du handler HBL d'Hatari, video.c:3319) : la capture
+    // l'appel Video_EndHBL du handler HBL d'Hatari, [D] video.c:3337 @ f0736b24) : la capture
     // lineSnap_ d'une ligne se fait à SA fin de ligne (~cycle 512). Cf. Shifter.cpp.
     void commitScanline(int line);
     bool spec512Active() const { return spec512Active_; }
@@ -302,7 +302,7 @@ public:
     // du Display-Enable de la ligne courante est DIFFÉRÉE (port NewLineWidth).
     uint8_t lineWidth = 0;
     // Dernière valeur BRUTE écrite dans $FF8264 (STE) : Hatari n'intercepte PAS la
-    // relecture de ce registre (ioMemTabSTE → Video_HorScroll_Read_8264, video.c:5813
+    // relecture de ce registre (ioMemTabSTE → Video_HorScroll_Read_8264, [D] video.c:5846 @ f0736b24
     // — IoMem conserve l'octet écrit, y compris les bits hauts non masqués).
     uint8_t hwScrollReg8264_ = 0;
 
@@ -455,7 +455,7 @@ private:
     // écrit les deux ; $FF8261 n'écrit QUE le Shifter (ioMemTabST.c:71,
     // ioMemTabSTE.c:120 — « Resolution in Shifter only », mêmes sur STF et STE).
     // Le Shifter n'a ni UDS ni LDS : il lit TOUJOURS les bits 8-9 du bus de données
-    // (Hatari Video_Res_WriteByte, video.c:5700-5770). D'où :
+    // (Hatari Video_Res_WriteByte, [D] video.c:5736 @ f0736b24). D'où :
     //   • move.b #x,$FF8261 → le 68000 duplique l'octet sur D0-D15 → Shifter = x ;
     //   • move.w #xyab,$FF8260 → Shifter = Glue = xy (l'octet ab, adressé à $8261,
     //     est ignoré par le Shifter) ;

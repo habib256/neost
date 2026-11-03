@@ -182,7 +182,7 @@ public:
     uint16_t peek16(uint32_t addr) const { return uint16_t((peek8(addr) << 8) | peek8(addr + 1)); }
 
     // Recopie des vecteurs reset SSP/PC ($0-$7) depuis la ROM en RAM — port de
-    // STMemory_SetDefaultConfig (stMemory.c:251) : sur le vrai ST le GLUE mappe
+    // STMemory_SetDefaultConfig ([D] stMemory.c:230 @ f0736b24) : sur le vrai ST le GLUE mappe
     // ces 8 octets sur la ROM en permanence ; sans cette copie, l'idiome de
     // reboot à chaud « move.l $4.w,a0 ; jmp (a0) » lirait 0. À appeler à chaque
     // reset machine et après chargement d'une ROM.
