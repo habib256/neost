@@ -24,6 +24,9 @@ se comparaient à un « oracle » Hatari, 11 à une self-capture, aucun à une m
 - `tools/run_gstmcu_bench.py` simule le GSTMCU + Shifter STE de MiSTery sous Verilator 5.054 sur un
   écran connu : 0 pixel faux, et la couleur réelle pendant BLANK enfin lisible (noir dans ce modèle).
   Le banc amont remontait R/W avec AS et perdait toute écriture de `$FF8260` (M68000UM § 4.1.2).
+- **Premiers étalons `rtl`** : `rtl_low_pal`, `rtl_low_ntsc` (`tools/make_rtl_screen.py`), 0 pixel actif
+  faux contre le modèle GSTMCU. Dates de HSync, BLANK, DE et VBLANK égales à `kSte`. Seul écart :
+  les lignes sous BLANK, noires dans le modèle, couleur 0 chez NeoST et Hatari.
 - Règle de citation dans les commentaires (`CLAUDE.md`), posée sur deux sites pilotes (A43).
 - `docs/CYCLE_ACCURACY.md` § 5-6 : les décisions justifiées par « ferait diverger de l'oracle »
   sont rouvertes (contention vidéo, vol de cycles DMA, modes pulse), sans changement de code.

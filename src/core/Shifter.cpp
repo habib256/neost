@@ -928,9 +928,14 @@ void Shifter::renderGlueFrame() {
         const bool lineHasDE = displayed && !(bm & glue::NO_DE) && de > ds;
         // Ligne BLANK (bascule 60/50 près du blanking) : le shifter LIT ses octets
         // (le compteur avance, cf. glueLineBytes) mais le signal vidéo est coupé —
-        // Hatari efface la ligne à l'index couleur 0 APRÈS l'avoir copiée
-        // (video.c:4081 memset → couleur 0 ; le « vrai noir » est un TODO Hatari,
-        // video.c:3983). On rend donc pal[0] sur toute la ligne, sans décoder.
+        // Hatari efface la ligne à l'index couleur 0 APRÈS l'avoir copiée. On rend donc
+        // pal[0] sur toute la ligne, sans décoder.
+        // [D] Hatari video.c:4113-4114 @ f0736b24 — effacement à la couleur 0 ;
+        //     video.c:4008-4009 @ f0736b24 — le « really display a black line » reste à faire.
+        // [D] gstshifter.v:263-265 @ 4a6db7cc force le noir pendant BLANK, ce que le banc
+        //     tools/run_gstmcu_bench.py confirme à l'exécution.
+        // [F] Noir ou pal[0] sur le fer ? Tranché par : un relevé sur STE réel, aucun
+        //     schéma du Shifter ST n'étant disponible.
         const bool vblank = vblankAtLine(sl);
         const bool lineBlank = vblank || (lineHasDE && (bm & glue::BLANK) != 0);
         // Shifter arrêté (res 3) sur toute la fenêtre DE de CETTE ligne (bit 7 posé

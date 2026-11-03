@@ -134,6 +134,9 @@ inline const Timing kStf = {
     502 + kWsInc, 502 + kWsInc,
     224 + kWsHblAdj, 508 + kWsHblAdj, 512 + kWsHblAdj,
 };
+// [D] Valeurs STE recoupées par simulation de gstmcu @ 4a6db7cc (tools/run_gstmcu_bench.py) :
+//     HSync, fin de HBlank, HDE On/Off et longueurs de ligne, à 50 et 60 Hz.
+//     Détail : docs/REFERENCE_LADDER.md.
 inline const Timing kSte = {
     0,
     0,                    // Preload_Start_Hi

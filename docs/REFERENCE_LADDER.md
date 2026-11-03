@@ -17,7 +17,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `hardware` | A | Relevé sur machine réelle, propre ou publié par un tiers nommé | 0 étalons |
 | `primary` | B | Attendu calculé depuis une fiche, un schéma, une netlist Atari | 0 étalons |
 | `rom` | C | Verdict d'un programme ou d'une ROM Atari | 0 étalons |
-| `rtl` | D | Simulation d'un RTL dérivé du silicium ou d'un schéma | 0 étalons |
+| `rtl` | D | Simulation d'un RTL dérivé du silicium ou d'un schéma | 2 étalons |
 | `hatari` | D | Capture de l'Hatari épinglé | 32 étalons |
 | `snapshot` | aucun | Self-capture NeoST : non-régression, aucune preuve | 11 étalons |
 
@@ -29,7 +29,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `run_hatari_suite.py`, `cycles`, `blitter`, `cpu`, `gemdos` (4) | `hatari` | Aucun readme ne donne la provenance de l'attendu. |
 | `run_megaste_diag.py` (suite Q, 12/12) | `rom` | Le diagnostic Field Service prouve le contrat attendu par le logiciel, pas le silicium. |
 | `run_timing_oracle.py`, `run_megaste_bus_oracle.py` | `hatari` | |
-| `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé. Ne compare pas encore NeoST au modèle. |
+| `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé et pose les références de `rtl_low_*`. |
 | `run_mfp_iack_probe.py` | aucun | Contrôle la sonde, sans verdict matériel. |
 | `neost-selftest`, `--*-selftest` | à classer | Dépend de la source de chaque table de vérité → `TODO.md` § 4. |
 
@@ -77,6 +77,29 @@ du Shifter ST.
 ⚠ **`4118_GAME_SHIFTER` n'est pas le Shifter du ST** : le README de Zietz le donne pour le
 « 68K Game Shifter », probablement celui de la console Panther. Il ne prouve rien sur le ST
 sans autre source.
+
+## Ce que le modèle confirme déjà
+
+Modèle GSTMCU (STE, 2026-11-03) contre `kSte` et `vblankAtLine`. Cycle = tick de 32 MHz ÷ 4 − 52 :
+l'origine est imposée par HSync, qui commence à −52, et toutes les autres valeurs en découlent.
+Lignes = ligne depuis VSYNC − 2.
+
+| Valeur | Modèle 50 / 60 Hz | NeoST 50 / 60 Hz |
+|---|---|---|
+| Cycles par ligne | 512 / 508 | 512 / 508 |
+| Lignes par trame | 313 / 263 | 313 / 263 |
+| HSync, relatif à la fin de ligne | −52 → −12 | −52 → −12 |
+| Fin de BLANK horizontal | 28 / 24 | 28 / 24 |
+| DE | 56 → 376 / 52 → 372 | 56 → 376 / 52 → 372 |
+| Lignes actives | 63 → 262 / 34 → 233 | 63 → 262 / 34 → 233 |
+| Lignes hors VBLANK | 25 → 307 / 16 → 257 | 25 → 307 / 16 → 257 |
+
+Le pixel (`rtl_low_*`) : 0 pixel actif faux, au même emplacement du buffer. Bordures égales en
+PAL, sauf les lignes sous BLANK : noires dans le modèle, couleur 0 chez NeoST et Hatari. NeoST et
+Hatari sont identiques entre eux sur ces écrans, à 0 pixel sur tout le buffer.
+
+⚠ Écran statique : ces étalons ne disent rien des écritures en cours de ligne. Ces lignes
+comparent des modèles entre eux, pas au silicium, et NeoST a pris ces valeurs chez Hatari.
 
 ## Les règles d'arbitrage
 

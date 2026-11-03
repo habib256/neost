@@ -6,11 +6,14 @@
 #  couleur réelle pendant BLANK, que le banc amont masque. Ce n'est pas une mesure de
 #  silicium : le grade reste D, et ces chiffres ne valent que pour le modèle épinglé.
 #
-#  COMMENT. L'écran est pseudo-aléatoire : un seul alignement peut coïncider, et un
-#  décalage ne passe pas inaperçu. Le pixel attendu est calculé ici depuis la VRAM et la
+#  COMMENT. L'écran est celui de tools/make_rtl_screen.py, pseudo-aléatoire : un seul
+#  alignement peut coïncider, et un décalage ne passe pas inaperçu. Le pixel attendu est calculé ici depuis la VRAM et la
 #  palette, indépendamment du modèle. Un seul pixel faux fait échouer le banc.
 #
-#  Usage : run_gstmcu_bench.py [--rebuild]
+#  Usage : run_gstmcu_bench.py [--rebuild] [--write-refs]
+#    --write-refs : pose tests/reference/rtl_low_{pal,ntsc}.png, dans le cadre du buffer
+#    NeoST 416×276 (1er pixel actif en 48,29). Hors de la trame NTSC, aucune donnée : noir,
+#    et l'étalon NTSC se compare donc en crop « active ».
 #  Sorties : tests/out/gstmcu_bench/summary.json. Code 77 si l'outillage est absent.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test.
@@ -18,12 +21,14 @@
 from __future__ import annotations
 
 import json
-import random
 import shutil
 import struct
 import subprocess
 import sys
+import zlib
 from pathlib import Path
+
+from make_rtl_screen import PALETTE, screen_words
 
 ROOT = Path(__file__).resolve().parent.parent
 HDL = ROOT / "extern" / "mistery" / "gstmcu" / "hdl"
@@ -35,11 +40,6 @@ EXIT_SKIPPED = 77
 SOURCES = ("gstmcu clockgen mcucontrol hsyncgen hdegen vsyncgen vdegen vidcnt sndcnt latch "
            "register modules gstshifter shifter_video shifter_video_async").split()
 
-# Couleur 0 volontairement non noire : c'est elle qui distingue « noir forcé » de
-# « palette 0 » pendant BLANK. Quatre bits distincts par composante, y compris le bit
-# de poids faible propre au STE.
-PALETTE = [0x0A5, 0xF00, 0x0F0, 0x00F, 0xFF0, 0xF0F, 0x0FF, 0x123,
-           0x456, 0x789, 0xABC, 0xDEF, 0x314, 0x159, 0x265, 0x358]
 
 
 def physical(color: int) -> int:
@@ -58,19 +58,19 @@ OBSERVED = ("low_pal_reset", 0, 0, 320, 4, 4, 313, 0)
 HEIGHT = 200
 
 
-def make_screen(width: int, planes: int, seed: int):
-    rng = random.Random(seed)
-    pixels = [[rng.randrange(1 << planes) for _ in range(width)] for _ in range(HEIGHT)]
-    vram = bytearray()
-    for row in pixels:
-        for x0 in range(0, width, 16):
-            for p in range(planes):
-                word = 0
-                for i in range(16):
-                    word |= ((row[x0 + i] >> p) & 1) << (15 - i)
-                vram += struct.pack(">H", word)
-    assert len(vram) == 32000
-    return pixels, bytes(vram)
+def make_screen(width: int, planes: int):
+    """Décode la VRAM en index de couleur, sans passer par le modèle."""
+    words = screen_words()
+    per_line = width // 16 * planes
+    pixels = []
+    for y in range(HEIGHT):
+        row = []
+        for g in range(width // 16):
+            group = words[y * per_line + g * planes:y * per_line + (g + 1) * planes]
+            row += [sum(((group[p] >> (15 - i)) & 1) << p for p in range(planes))
+                    for i in range(16)]
+        pixels.append(row)
+    return pixels, b"".join(struct.pack(">H", x) for x in words)
 
 
 def build() -> None:
@@ -146,6 +146,26 @@ def analyse(case, words: list[int], pixels) -> dict:
     }
 
 
+def write_ref(name: str, words: list[int], offset: int, first_line: int, path: Path) -> None:
+    starts = falling(words, 13)
+    lines = [words[a:b] for a, b in zip(starts, starts[1:])]
+    rows = []
+    for y in range(276):
+        li = first_line + y - 29
+        row = bytearray(b"\0")               # octet de filtre PNG
+        for x in range(416):
+            # Tick central du pixel : R, G, B sont en retard d'un tick sur leurs signaux.
+            t = offset + (x - 48) * 4 + 1
+            w = lines[li][t] if 0 <= li < len(lines) and t < len(lines[li]) else 0
+            row += bytes(((w >> s) & 15) * 17 for s in (8, 4, 0))
+        rows.append(bytes(row))
+    chunk = lambda tag, data: (struct.pack(">I", len(data)) + tag + data
+                               + struct.pack(">I", zlib.crc32(tag + data)))
+    path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 416, 276, 8, 2, 0, 0, 0))
+                     + chunk(b"IDAT", zlib.compress(b"".join(rows), 9)) + chunk(b"IEND", b""))
+    print(f"référence → {path.relative_to(ROOT)}")
+
+
 def main() -> int:
     if not shutil.which("verilator"):
         print("SAUTÉ : verilator absent (brew install verilator)")
@@ -157,9 +177,9 @@ def main() -> int:
         build()
     OUT.mkdir(parents=True, exist_ok=True)
     results, ok = [], True
-    for seed, case in enumerate((*CASES, OBSERVED), 1):
+    for case in (*CASES, OBSERVED):
         name, mde, ntsc, width, planes, *_, via_ntsc = case
-        pixels, vram = make_screen(width, planes, seed)
+        pixels, vram = make_screen(width, planes)
         (OUT / f"{name}.vram").write_bytes(vram)
         out = OUT / f"{name}.bin"
         subprocess.run([str(BINARY), str(OUT / f"{name}.vram"), str(out), str(mde), str(ntsc), str(via_ntsc),
@@ -174,6 +194,9 @@ def main() -> int:
             and result["lines"] == result["lines_expected"]
         ok &= passed
         print(f"{'OK  ' if passed else 'FAIL'} {name}: {json.dumps(result, ensure_ascii=False)}")
+        if passed and "--write-refs" in sys.argv and width == 320:
+            write_ref(name, list(struct.unpack(f"<{len(raw) // 2}H", raw)), result["pipeline_offset"],
+                      result["first_active_line"], ROOT / "tests" / "reference" / f"rtl_{name}.png")
     (OUT / "summary.json").write_text(json.dumps(results, indent=2, ensure_ascii=False) + "\n")
     print("BANC GSTMCU OK" if ok else "BANC GSTMCU FAIL")
     return 0 if ok else 1
