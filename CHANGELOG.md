@@ -6,6 +6,17 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## MFP : modes pulse des timers A/B, d'après la fiche (2026-11-03)
+
+Hatari et NeoST traitaient les contrôles 9-15 comme le mode délai, ce que la fiche contredit.
+- [B] MC68901 § 5.1.2 : TAI/TBI autorisent le comptage au niveau de leur bit d'AER. Hors impulsion le
+  compteur est figé et TxDR le charge ; les canaux de I4/I3 répondent au front opposé, I3/I4 perdent leur
+  interruption mais restent lisibles. Entrer dans le mode ou en sortir peut lever le canal.
+- TBI suit le DE réel (source d'ordonnanceur `TBI_EDGE`, armée en mode pulse seulement). `.state` v56.
+- 33 contrôles puce nue et des contrôles machine entière pour les trois fréquences. Palier `full` vert. Aucun
+  logiciel réel connu ne l'exerce : ce n'est prouvé que contre la fiche.
+- Le même paragraphe de la fiche vise aussi l'event-count : non porté, ouvert au `TODO.md` § 2.3.
+
 ## Banc Moira↔fx68k : le 68000 nu contre le RTL, et le TODO rangé sur le cap (2026-11-03)
 
 **Le cœur 68000 n'avait jamais été confronté à autre chose qu'Hatari et aux totaux de

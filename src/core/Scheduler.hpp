@@ -76,7 +76,7 @@ public:
     // SERIAL_TX : fin de caractère émis par l’USART MFP.
     // IKBD_MONITOR : échantillonnage joystick périodique demandé par $17.
     // SCC_TX/RX : fin d'un caractère série, distincte du pulse Zero Count du BRG.
-    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MIDI_RX, SERIAL_RX, MICROWIRE, BLITTER, VC_RESTART, HBL, VBL, ACSI_IRQ, SCC_BRG_A, SCC_BRG_B, IKBD_MONITOR, SCC_TX_A, SCC_TX_B, SCC_RX_A, SCC_RX_B, IKBD_AUTOSEND, SERIAL_TX, SRC_COUNT };
+    enum Source { RENDER, TIMER_A, TIMER_B, TIMER_B_DELAY, TIMER_C, TIMER_D, MFP_IRQ, FDC, FDC_INDEX, DMASND, IKBD, IKBD_RX, IKBD_TX, MIDI_TX, MIDI_RX, SERIAL_RX, MICROWIRE, BLITTER, VC_RESTART, HBL, VBL, ACSI_IRQ, SCC_BRG_A, SCC_BRG_B, IKBD_MONITOR, SCC_TX_A, SCC_TX_B, SCC_RX_A, SCC_RX_B, IKBD_AUTOSEND, SERIAL_TX, TBI_EDGE, SRC_COUNT };
     static_assert(SRC_COUNT <= 32, "Scheduler source mask is 32 bits");
 
     using Callback = std::function<void()>;

@@ -7,6 +7,14 @@ vient répondre à « NeoST gère-t-il X ? ».
 Pour *quand* une chose est arrivée → [`../CHANGELOG.md`](../CHANGELOG.md).
 Pour ce qui reste → [`../TODO.md`](../TODO.md).
 
+## Compléments du 2026-11-03
+
+- **MFP, modes pulse des timers A/B** (TxCR 9-15), d'après la fiche MC68901 § 5.1.2 : TAI ou TBI
+  autorise le comptage au niveau du bit d'AER, le compteur est figé hors impulsion, TxDR le charge
+  à ce moment-là, et les canaux de I4/I3 répondent à TAI/TBI sur le front opposé. TBI suit le DE
+  réel de chaque ligne affichée. Table de vérité `tests/mfp_pulse_logic.cpp`, et test machine entière
+  dans `tests/machine_timer_b_aer_logic.cpp`. Aucun logiciel réel connu ne l'exerce.
+
 ## Compléments du 2026-10-22
 
 - **FDC** : WRITE TRACK hors géométrie sur .st gardé en mémoire et relu (STE_Test test F).

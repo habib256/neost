@@ -1,6 +1,7 @@
 // Hatari mfp.c ActiveEdge_WriteByte + video.c Video_AddInterruptTimerB (strict >).
 #include "core/Machine.hpp"
 #include <algorithm>
+#include <cstdlib>
 #include <cstdio>
 #include <memory>
 
@@ -93,6 +94,40 @@ int testMachineTimerBAer() {
         check.equal("début vers fin même ligne", rig.deadline(), rig.cycle(line, end));
         rig.advance(rig.cycle(line, end));
         check.equal("second front physique", rig.count(), previous - (eventMode && displayed));
+    }
+
+    // [B] MC68901 § 5.1.2, p. 5-2 : en mode pulse, TBI (= DE) autorise le comptage, et le
+    // canal de I3 répond au front opposé à l'AER.
+    for (int videoMode = 0; videoMode < 3; ++videoMode) {
+        Rig rig(videoMode);
+        const int line = rig.geometry.dispStartLine;
+        const int start = rig.edge(line, true);
+        const int end = rig.edge(line, false);
+        rig.machine->bus.write8(0xFFFA09, 0x08);       // canal I3
+        rig.advance(rig.cycle(line - 2, end + 8));     // hors DE
+        rig.machine->bus.write8(0xFFFA03, 8);          // actif pendant DE
+        rig.arm(200, 9);                               // pulse, /4
+        // Fiche : entrer dans le mode change la source du canal et peut lever l'IRQ.
+        rig.machine->bus.write8(0xFFFA0D, 0x00);
+        check.equal("pulse: hors DE, pas de décompte", rig.count(), 200);
+        rig.advance(rig.cycle(line, start));
+        check.equal("pulse: ligne non affichée sans DE", rig.count(), 200);
+        rig.advance(rig.cycle(line, (start + end) / 2));
+        const int mid = rig.count();
+        check.equal("pulse: décompte pendant DE", mid < 200, 1);
+        check.equal("pulse: pas d'IRQ I3 au début de DE", rig.machine->bus.read8(0xFFFA0D) & 8, 0);
+        rig.advance(rig.cycle(line, end));
+        const int first = rig.count();
+        check.equal("pulse: IRQ I3 à la fin de DE", rig.machine->bus.read8(0xFFFA0D) & 8, 8);
+        // DE sur la durée de la ligne : (fin − début) × 9600 / 31333 cycles MFP, ÷ 4.
+        const int width = int(int64_t(end - start) * 9600 / 31333 / 4);
+        check.equal("pulse: largeur de DE mesurée", std::abs((200 - first) - width) <= 1, 1);
+        rig.advance(rig.cycle(line + 1, start - 4));
+        check.equal("pulse: figé entre deux lignes", rig.count(), first);
+        rig.advance(rig.cycle(line + 1, end));
+        check.equal("pulse: seconde ligne cumulée", std::abs((first - rig.count()) - width) <= 1, 1);
+        rig.machine->bus.write8(0xFFFA1B, 0);
+        check.equal("pulse: TBI_EDGE annulé en sortant", rig.deadline(Scheduler::TBI_EDGE), -1);
     }
 
     for (int videoMode = 0; videoMode < 3; ++videoMode) {

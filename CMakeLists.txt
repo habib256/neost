@@ -346,7 +346,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/machine_midi_logic.cpp tests/mfp_serial_logic.cpp
     tests/midi_rx_logic.cpp tests/mfp_rx_timing_logic.cpp tests/scc_async_logic.cpp
     tests/mfp_tx_logic.cpp tests/midi_rx_phase_logic.cpp tests/scc_auto_enables_logic.cpp
-    tests/machine_mfp_tx_logic.cpp
+    tests/machine_mfp_tx_logic.cpp tests/mfp_pulse_logic.cpp
     tests/mfp_clock_logic.cpp tests/midi_break_logic.cpp tests/scc_rts_logic.cpp
     tests/scc_sync_logic.cpp
     tests/ikbd_mouse_monitor_logic.cpp

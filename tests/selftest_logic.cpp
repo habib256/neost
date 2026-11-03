@@ -162,6 +162,7 @@ int testFdcLiveMedia(); // sélection live et validation CHS du nouveau média
 int testMidiRxPhase(); // horloge MIDI RX continue
 bool testSccAutoEnables(); // qualification CTS/DCD des canaux SCC
 int testMachineMfpTx(); // émission via Bus/Machine
+int testMfpPulse();     // modes pulse des timers A/B, d'après la fiche
 int testMidiRx(); // RDR MIDI et acquittement de l’overrun
 int testMfpRxTiming(); // format et phase des caractères USART
 bool testSccAsync(); // lecture RR8 dans les formats courts SCC
@@ -2913,6 +2914,7 @@ int main() {
     if (const int failures = testMidiRxPhase()) g_fail += failures; else ++g_ok;
     if (testSccAutoEnables()) ++g_ok; else ++g_fail;
     if (const int failures = testMachineMfpTx()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpPulse()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiRx()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpRxTiming()) g_fail += failures; else ++g_ok;
     if (testSccAsync()) ++g_ok; else ++g_fail;

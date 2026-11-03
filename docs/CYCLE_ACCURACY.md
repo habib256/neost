@@ -303,9 +303,8 @@ et le code ne change pas tant qu'une source de rang supérieur n'a pas tranché.
   `ramcyc`/`DTACK_N_O` dans `gstmcu.v`.
 - **Vol de cycles DMA son / FDC sur le bus** : `[F]` Absent d'Hatari, jamais confronté au
   schéma. Tranché par : `sndcnt.v`, `mcucontrol.v`, puis une sonde.
-- **Modes pulse du MFP (9-15)** : `[B]` MC68901 Advance Information (janv. 1984) § 5.1.2 : ils
-  existent et diffèrent du mode délai. Hatari les approxime en mode délai, et NeoST aussi : la
-  décision est donc contredite par la fiche. Reste à porter, avec une sonde.
+- **Modes pulse du MFP (9-15)** : portés le 2026-11-03 d'après `[B]` MC68901 § 5.1.2. Hatari
+  les approxime en mode délai : l'écart est voulu.
 
 Suivi → `TODO.md` § 2.
 

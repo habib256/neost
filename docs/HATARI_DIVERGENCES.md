@@ -1308,6 +1308,9 @@ par le présent document :
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
+- **Modes pulse du MFP** (2026-11-03) : Hatari les traite en mode délai (`MFP_StartTimer_AB`, `mfp.c:1358-1371 @ f0736b24`,
+  qui le dit lui-même incomplet) ; NeoST suit [B] MC68901 § 5.1.2. Ne pas réaligner.
+
 - **STX densité HD/ED** (D, F3) : NeoST recadre `BitPosition` sur la densité → cohérent là où
   Hatari a une incohérence interne (sans effet en DD).
 - **WRITE TRACK STX** (D1) : NeoST rend la piste réécrite lisible (Hatari = TODO) → utile aux

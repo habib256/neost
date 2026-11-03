@@ -329,6 +329,8 @@ void Machine::installSchedulerCallbacks() {
     gemdos.setPartitionCountProvider([this] { return fdc.acsiPartitionCount(); });
     gemdos.setFloppyProvider([this] { return fdc.inserted(0); });
     mfp.setTimerBEdgeSink([this](bool start) { retargetTimerB(start); });
+    mfp.setTbiPulseSink([this](bool on) { onTbiPulseMode(on); });
+    sched.setCallback(Scheduler::TBI_EDGE, [this] { onTbiEdge(); });
     sched.setCallback(Scheduler::HBL,     [this] { onHbl(); });
     sched.setCallback(Scheduler::VBL,     [this] { onVbl(); });
     // Timers MFP en mode délai : datés par le MFP, déclenchés ici (IRQ + IPL).
@@ -424,6 +426,7 @@ void Machine::scheduleFrameEvents(bool scheduleVbl) {
     // un retrait de bordure haut/bas en cours de trame déplace les tics, comme Hatari.
     tbScheduledAt_ = frameStart_ + timerBPos();
     sched.schedule(Scheduler::TIMER_B, tbScheduledAt_);
+    if (mfp.timerPulseMode(1)) armTbiEdge(frameStart_ - 1);
     // Position de l'IRQ HBL dans la ligne : Hatari HBL_VIDEO_CYCLE_OFFSET = 0 →
     // l'interruption tombe à la FRONTIÈRE de ligne (cycle 512 = 0 de la suivante).
     // L'ancien −4 était une calibration d'avant la refonte IACK (2026-07-02) ;
@@ -477,6 +480,53 @@ void Machine::onRender() {
                        frameStart_ + static_cast<int64_t>(dispStart_ + renderLine_) * cpl_ + deEnd_ - lineCarry_);
 }
 
+int64_t Machine::timerBEdgeCycle(int line, bool startOfLine) {
+    const int64_t real = shifter.timerBFrameCycleForLine(line, startOfLine);
+    return real >= 0 ? frameStart_ + real
+        : frameStart_ + int64_t(line)*cpl_ + shifter.timerBPosForLine(line, startOfLine) - lineCarry_;
+}
+
+// [B] MC68901 § 5.1.2 : en mode pulse, TBI autorise le comptage du Timer B. Sur ST, TBI est
+// le DE de la vidéo. [D] Hatari mfp.c:207 @ f0736b24 pour ce câblage. Les fronts reprennent
+// la datation du mode event-count (timerBEdgeCycle), elle-même [D].
+void Machine::armTbiEdge(int64_t after) {
+    for (int line = 0; line < lpf_; ++line) {
+        const int64_t start = timerBEdgeCycle(line, true);
+        const int64_t end   = timerBEdgeCycle(line, false);
+        if (end <= after) continue;
+        tbiLine_ = line;
+        tbiNextHigh_ = start > after;
+        sched.schedule(Scheduler::TBI_EDGE, tbiNextHigh_ ? start : end);
+        return;
+    }
+    sched.cancel(Scheduler::TBI_EDGE);
+}
+
+void Machine::onTbiEdge() {
+    const int64_t due = sched.firingDue();
+    const int64_t when = due >= 0 ? due : sched.liveNow();
+    // Pas de DE sur une ligne que la Glue n'affiche pas : TBI reste au repos.
+    if (!tbiNextHigh_ || shifter.liveLineDisplayed(tbiLine_)) {
+        mfp.setTbiLine(tbiNextHigh_, when);
+        cpu.updateIpl();
+    }
+    armTbiEdge(when);
+}
+
+void Machine::onTbiPulseMode(bool on) {
+    if (!on) { sched.cancel(Scheduler::TBI_EDGE); return; }
+    const int64_t now = sched.liveNow();
+    bool high = false;
+    if (frameInProgress_)
+        for (int line = 0; line < lpf_; ++line)
+            if (timerBEdgeCycle(line, true) <= now && now < timerBEdgeCycle(line, false)) {
+                high = shifter.liveLineDisplayed(line);
+                break;
+            }
+    mfp.setTbiLevelQuiet(high);
+    if (frameInProgress_) armTbiEdge(now);
+}
+
 void Machine::retargetTimerB(bool startOfLine) {
     if (!frameInProgress_) return;
     const int64_t now = sched.liveNow();
@@ -488,11 +538,7 @@ void Machine::retargetTimerB(bool startOfLine) {
         sched.cancel(Scheduler::TIMER_B);
         onTimerB();
     }
-    auto edgeAt = [&](int line, bool start) {
-        const int64_t real = shifter.timerBFrameCycleForLine(line, start);
-        return real >= 0 ? frameStart_ + real
-            : frameStart_ + int64_t(line)*cpl_ + shifter.timerBPosForLine(line, start) - lineCarry_;
-    };
+    auto edgeAt = [&](int line, bool start) { return timerBEdgeCycle(line, start); };
     auto lineStart = [&](int line) {
         return edgeAt(line, true) - shifter.timerBPosForLine(line, true);
     };
@@ -816,11 +862,11 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 55; // STOP : retenue d'IRQ de 4 cycles (Moira::stopGraceUntil)
+static constexpr uint16_t kStateVersion = 56; // TBI_EDGE au Scheduler, niveau TBI du MFP (mode pulse)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v55 : Moira::stopGraceUntil (STOP+8, fx68k/Hatari)
+    uint16_t version = kStateVersion; // v56 : TBI du mode pulse ; v55 : Moira::stopGraceUntil
                                       // v54 : Ikbd::hostKeys_, StePads::oe_
                                       // v53 : IKBD calé sur la ROM 6301 ($C9/$CA, fenêtre de reset,
                                       //       $18/$19, pause) + Bus::gameCart ($FF9000)
@@ -925,6 +971,7 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     ar(lineCarry_); ar(v2ShortLine_); ar(v2_);
     ar(lineLenOn_); ar(curLineLen_);
     ar(cpl_); ar(lpf_); ar(disp_); ar(deEnd_); ar(dispStart_);
+    ar(tbiLine_); ar(tbiNextHigh_);
     // ⚠ INVARIANTS DE GÉOMÉTRIE ET D'HORLOGE. runFrame boucle sur
     // `while (cpu.busClockNow() < frameEnd)` et finalizeFrame_ fait `sched.syncTo(frameEnd_)` :
     // une horloge maître incohérente rend ces boucles NON BORNÉES — gel définitif à 100 %

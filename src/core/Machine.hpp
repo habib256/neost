@@ -329,6 +329,13 @@ private:
     // Les Timers A/C/D (mode délai) sont datés par le MFP lui-même.
     void onRender();        // décode la scanline (≈ fin Display-Enable, cycle 376)
     void retargetTimerB(bool startOfLine); // AER3 : ancien front servi avant mutation
+    // TBI (= DE) pendant le mode pulse du Timer B : un événement à chaque front de DE.
+    int64_t timerBEdgeCycle(int line, bool startOfLine);
+    void armTbiEdge(int64_t after);
+    void onTbiEdge();
+    void onTbiPulseMode(bool on);
+    int  tbiLine_ = 0;          // ligne du prochain front de TBI
+    bool tbiNextHigh_ = false;  // vrai : le prochain front est le début de DE
     void onTimerB();        // Timer B event-count sur DE (position DE-dépendante)
     void onHbl();           // HBL niveau 2 (cycle 508)
     void onVbl();

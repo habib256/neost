@@ -57,7 +57,7 @@ documents primaires, les ROM et le RTL épinglé.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | Porter les modes pulse du MFP (fiche contre code), puis retrancher le reste | P1 | 2.3 |
+| 1 | Event-count : les canaux I3/I4 répondent-ils à TAI/TBI ? Mesurer les titres touchés, puis trancher | P1 | 2.3 |
 | 2 | STOP avec IRQ pendante : Moira part 4 cycles avant fx68k et Hatari, rouvrir la décision du 2026-10-22 | P1 | 2.1 |
 | 3 | Date limite de la broche IPL : modèle à deux étages d'après `fx68k.sv`, qualifié par `--ipl-sweep` puis dans NeoST | P1 | 2.1 |
 | 4 | Ordre des accès dans Moira (MOVEM.L, ADDQ.L, JSR, DBcc) : porter, trois témoins concordent | P1 | 2.1 |
@@ -162,9 +162,10 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
 
 ### 2.3 MFP 68901
 
-- **Modes pulse (9-15)** · P1 ⭘ — **tranché contre le code** : [B] MC68901 (janv. 1984)
-  § 5.1.2, PDF p. 27 : TAI/TBI pilotent le comptage et les IRQ de I4/I3 ; NeoST reproduit le
-  mode délai d'Hatari (`src/io/Mfp.cpp`). À porter, avec une sonde.
+- **Event-count : canaux I3/I4** · P1 ⭘ · [F] — [B] MC68901 § 2.1.6.2 et § 5.1.3 : en event-count aussi, ces
+  canaux répondent à TAI/TBI, et I3/I4 perdent leur interruption. [D] Hatari et `mfp.v @ a00deb5b` gardent I3/I4.
+  NeoST aussi pour l'instant : le changement priverait d'IRQ clavier un programme en Timer A event-count sur STE.
+  Mesurer quels titres y sont exposés, puis porter.
 - **GPIP3 au repos avec blitter** · P1 ⭘ · [F] `$FFFA01` bit 3 supposé 0 sur Mega ST/STE/Mega
   STE — `stBlitter.sv:190 @ a00deb5b` : INT = BUSY. Seule la lecture STFM sans blitter ($E9)
   est publiée. → `docs/HATARI_DIVERGENCES.md` § *Cas où NeoST améliore Hatari*
@@ -268,8 +269,6 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 ### Attendent un média
 
-- **Cubase Lite (`disks/midi/CUBLITE`)** · P2 ⏸ — absent du disque privé : le banc du séquenceur
-  MIDI reste sauté sur ce poste.
 - **Notator n'a jamais tourné** · P2 ⏸ — cité comme séquenceur cible au même titre que Cubase.
 - **EtherNEC sous TOS 1.04** · P2 ⏸ — STinG + `ENEC.STX` (DHCP, ping, GET) ; manquent les
   archives STinG 1.26 + `ENEC.STX` (URLs dans `tools/make_sting_test.py`).

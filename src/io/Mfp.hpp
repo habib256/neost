@@ -49,6 +49,11 @@ public:
     // Liaison vidéo non persistée : appelée avant changement AER3, pour servir
     // l'ancien front DE puis repositionner le prochain (Hatari mfp.c2742+).
     void setTimerBEdgeSink(std::function<void(bool)> sink) { timerBEdgeSink_ = std::move(sink); }
+    // Mode pulse des timers A/B (TxCR 9-15). Machine pilote TBI (= DE) tant que le sink est à vrai.
+    void setTbiPulseSink(std::function<void(bool)> sink) { tbiPulseSink_ = std::move(sink); }
+    bool timerPulseMode(int timer) const;
+    void setTbiLine(bool level, int64_t when);
+    void setTbiLevelQuiet(bool level) { tbi_ = level; }   // niveau courant, sans front
 
     // RESET matériel du MFP (port de MFP_Reset, mfp.c:519-569). Remet à zéro les
     // registres d'interruption (GPIP/AER/DDR, IER/IPR/IMR/ISR, VR), les timers (mode,
@@ -86,7 +91,7 @@ public:
     // démarrage → échéance calculée depuis le COMPTEUR (pas la recharge).
     void    writeTimerCtrl(int timer, uint8_t newCtrl);
     // Fige le compteur vivant d'un délai qu'on arrête (port MFP_ReadTimerX(stopping)).
-    void    storeStoppedCounter(int timer);
+    void    storeStoppedCounter(int timer, int64_t when);
     // Référence du compteur (backing store) d'un timer.
     uint8_t& timerCounterRef(int timer);
 
@@ -217,7 +222,7 @@ public:
 
         // --- Timer A event-count (ligne TAI = XSINT son DMA STE) ---------------------
         ar(taReload_); ar(taCounter_);
-        ar(tai_);
+        ar(tai_); ar(tbi_);
 
         // --- Backing store des registres timer/USART ($FF..) -------------------------
         ar(timer_);   // C-array uint8_t[0x40]
@@ -501,6 +506,11 @@ private:
     // niveau de la ligne TAI (pour détecter les fronts, cf. timerA_setLineInput).
     uint8_t taReload_ = 0, taCounter_ = 0;
     bool    tai_ = false;
+    bool    tbi_ = false;   // TBI : DE de la vidéo, tenu à jour pendant le mode pulse seulement
+    bool    pulseGateActive(int timer) const;
+    uint8_t gpipIrqView(uint8_t gpip) const;
+    void    updatePulseGate(int timer, int64_t when);
+    void    gpipEdges(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew, int64_t when);
 
     // Grille absolue des timers délai A/B/C/D en unités de 1/256 cycle CPU.
     // 0 = pas de délai actif. Le Scheduler ne voit que ceil(timerDueSub_/256),
@@ -580,4 +590,5 @@ private:
     int     serialBaud_ = 0;        // bauds informatifs tronqués (0 = USART jamais configurée)
     uint8_t serialUcr_  = 0;        // UCR au moment du dernier calcul (format du mot)
     std::function<void(bool)> timerBEdgeSink_; // lien moteur, non sérialisé
+    std::function<void(bool)> tbiPulseSink_;   // lien moteur, non sérialisé
 };

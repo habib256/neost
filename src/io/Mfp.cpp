@@ -97,7 +97,7 @@ void Mfp::resetChip() {
     taReload_ = taCounter_ = 0;
     tcCounter_ = tdCounter_ = 0;
     for (int64_t& t : timerDueSub_) t = 0;
-    tai_ = false;                         // TAI/TBI = 0 (entrées event-count)
+    tai_ = tbi_ = false;                  // TAI/TBI = 0 (entrées event-count et pulse)
     timer_[0x19] = timer_[0x1B] = timer_[0x1D] = 0;                 // TACR / TBCR / TCDCR
     timer_[0x1F] = timer_[0x21] = timer_[0x23] = timer_[0x25] = 0;  // TADR / TBDR / TCDR / TDDR
     // Signal IRQ daté : tout retombe (Current_Interrupt/IRQ/IRQ_Time/Pending_Time).
@@ -426,7 +426,11 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x03: { const uint8_t aerOld = aer;
                      if (((aerOld ^ v) & 8) && timerBEdgeSink_) timerBEdgeSink_((v & 8) != 0);
                      aer = v;
-                     gpipUpdateInterrupt(gpipInput(), gpipInput(), aerOld, aer); break; }
+                     gpipUpdateInterrupt(gpipInput(), gpipInput(), aerOld, aer);
+                     // [B] MC68901 § 5.1.2 : l'AER définit aussi le niveau actif de TAI/TBI.
+                     { const int64_t when = sched_ ? sched_->liveNow() : 0;
+                       updatePulseGate(0, when); updatePulseGate(1, when); }
+                     break; }
         case 0x05: ddr  = v; break;
         // Tout changement de IER/IPR/IMR/ISR/VR RÉ-ÉVALUE le signal IRQ (port Hatari :
         // MFP_UpdateIRQ_All après chaque écriture de ces registres) — daté du cycle
@@ -468,10 +472,12 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         // VIVANT qui continue de décompter ; un timer ARRÊTÉ (ctrl=0) charge aussi le
         // compteur. Le nouveau délai s'applique au prochain rechargement.
         case 0x1F: timer_[0x1F] = v; taReload_ = v;                       // TADR
-                   if (timerCtrl(0) == 0) taCounter_ = v;
+                   // [B] MC68901 § 5.1.2 : mesurer des impulsions successives exige de réécrire le
+                   // compteur entre deux ; une écriture pendant l'impulsion attend le rechargement.
+                   if (timerCtrl(0) == 0 || (timerPulseMode(0) && !pulseGateActive(0))) taCounter_ = v;
                    break;
         case 0x21: tbReload_ = v;                                         // TBDR
-                   if (timerCtrl(1) == 0) tbCounter_ = v;
+                   if (timerCtrl(1) == 0 || (timerPulseMode(1) && !pulseGateActive(1))) tbCounter_ = v;
                    break;
         case 0x23: timer_[0x23] = v;                                      // TCDR
                    if (timerCtrl(2) == 0) tcCounter_ = v;
@@ -604,13 +610,59 @@ void Mfp::updateSerialConfig() {
 // [B] MC68901 Advance Information (Motorola, janv. 1984) § 5.1.2, PDF p. 27 : TAI/TBI
 //     pilotent le comptage et les canaux d'IRQ de I4/I3 répondent à leurs transitions.
 //     extern/datasheets/MC68901_Jan84.pdf (sha256 5441a092)
-// [D] Hatari mfp.c @ f0736b24, MFP_StartTimer_AB : « pulse width mode -> delay mode ».
-// [F] NeoST traite ces modes en mode délai, donc en écart avec la fiche. Tranché par :
-//     un portage du § 5.1.2 et une sonde exerçant TAI/TBI.
+//     Le comptage suit l'entrée (actif = niveau égal au bit d'AER), et l'IRQ du canal I4/I3
+//     part sur le front OPPOSÉ à celui que l'AER définit normalement.
+// [D] Hatari mfp.c @ f0736b24, MFP_StartTimer_AB : « pulse width mode -> delay mode ». NeoST
+//     s'en écarte volontairement : la fiche prime. Ne pas réaligner.
 static constexpr int kMfpDiv[8] = {0, 4, 10, 16, 50, 64, 100, 200};
 static inline int delayCtrl(int ctrl) { return (ctrl > 8) ? (ctrl & 0x07) : ctrl; }
+static inline bool isPulseCtrl(int ctrl) { return ctrl > 8; }
 static constexpr Scheduler::Source kTimerSrc[4] = {
     Scheduler::TIMER_A, Scheduler::TIMER_B_DELAY, Scheduler::TIMER_C, Scheduler::TIMER_D };
+
+bool Mfp::timerPulseMode(int timer) const {
+    return timer < 2 && isPulseCtrl(timerCtrl(timer));
+}
+
+// [B] MC68901 § 5.1.2, p. 5-2 : l'entrée auxiliaire est active au niveau de son bit d'AER
+// (GPIP4 pour TAI, GPIP3 pour TBI) ; le prescaler et le compteur ne tournent que pendant ce niveau.
+bool Mfp::pulseGateActive(int timer) const {
+    return timer == 0 ? tai_ == bool(aer & 0x10) : tbi_ == bool(aer & 0x08);
+}
+
+// [B] MC68901 § 2.1.6.2 et § 5.1.2 : en mode pulse, les canaux de I4/I3 répondent à TAI/TBI,
+// sur la transition opposée à celle que définit le bit d'AER. D'où l'entrée inversée vue
+// par le détecteur de front. Les lectures du GPIP gardent les vraies lignes I3/I4.
+// [F] Le mode event-count garde ici les lignes I3/I4, contrairement à § 2.1.6.2 et § 5.1.3 :
+//     cf. TODO.md § 2.3. Tranché par : un titre ou un relevé qui exerce ce cas.
+uint8_t Mfp::gpipIrqView(uint8_t gpip) const {
+    if (timerPulseMode(0)) gpip = uint8_t((gpip & ~0x10) | (tai_ ? 0 : 0x10));
+    if (timerPulseMode(1)) gpip = uint8_t((gpip & ~0x08) | (tbi_ ? 0 : 0x08));
+    return gpip;
+}
+
+// Arrêt ou reprise d'un timer en mode pulse après un changement de l'entrée ou de l'AER.
+// [B] MK68901 (SGS-Thomson) p. 9 : un timer arrêté garde son compteur, le reste du prescaler est perdu.
+void Mfp::updatePulseGate(int timer, int64_t when) {
+    if (!sched_ || !timerPulseMode(timer)) return;
+    const bool armed = sched_->rawCyclesUntil(kTimerSrc[timer]) != INT64_MIN;
+    if (pulseGateActive(timer)) {
+        if (!armed) scheduleTimerAt(timer, when, /*fromCounter=*/true);
+    } else if (armed) {
+        storeStoppedCounter(timer, when);
+        timerDueSub_[timer] = 0;
+        sched_->cancel(kTimerSrc[timer]);
+    }
+}
+
+// TBI = signal DE de la vidéo. Machine ne le pilote que pendant le mode pulse du Timer B.
+void Mfp::setTbiLine(bool level, int64_t when) {
+    if (tbi_ == level) return;
+    const uint8_t before = gpipIrqView(gpipInput());
+    tbi_ = level;
+    updatePulseGate(1, when);
+    gpipEdges(before, gpipIrqView(gpipInput()), aer, aer, when);
+}
 
 int Mfp::timerCtrl(int timer) const {
     switch (timer) {
@@ -663,8 +715,16 @@ void Mfp::writeTimerCtrl(int timer, uint8_t newCtrl) {
     const int old = timerCtrl(timer);
     if (old == newCtrl) return;                       // valeur inchangée → aucun effet
     const int oldDelay = delayCtrl(old);
-    if (newCtrl == 0 && oldDelay >= 1 && oldDelay <= 7)
-        storeStoppedCounter(timer);                   // arrêt : fige le compteur courant
+    // [B] MC68901 § 5.1.2 : entrer dans le mode pulse ou en sortir peut lever une IRQ, parce
+    // que l'entrée du canal change de source. Vue relevée AVANT le nouveau contrôle.
+    const uint8_t viewBefore = gpipIrqView(gpipInput());
+    const bool entersPulse = timer < 2 && isPulseCtrl(newCtrl) && !isPulseCtrl(old);
+    if (timer == 1 && entersPulse && tbiPulseSink_) tbiPulseSink_(true);  // niveau DE courant
+    // Un timer en mode pulse déjà arrêté par son entrée a son compteur à jour.
+    const bool gatedOff = timer < 2 && isPulseCtrl(old) && !pulseGateActive(timer);
+    const bool nowStopped = newCtrl == 0 || (timer < 2 && isPulseCtrl(newCtrl) && !pulseGateActive(timer));
+    if (nowStopped && !gatedOff && oldDelay >= 1 && oldDelay <= 7)
+        storeStoppedCounter(timer, sched_ ? sched_->liveNow() : 0);   // arrêt : fige le compteur
     switch (timer) {                                  // mémorise le nouveau contrôle
         case 0: timer_[0x19] = newCtrl; break;
         case 1: tbcr_ = newCtrl; break;
@@ -674,13 +734,16 @@ void Mfp::writeTimerCtrl(int timer, uint8_t newCtrl) {
     // Délai (1-7 ou pulse) → échéance fraîche depuis le compteur ; 0/8 → annule
     // l'échéance délai (scheduleTimerAt cancel via période nulle).
     scheduleTimer(timer);
+    if (timer == 1 && isPulseCtrl(old) && !isPulseCtrl(newCtrl) && tbiPulseSink_) tbiPulseSink_(false);
+    if (timer < 2 && (isPulseCtrl(old) || isPulseCtrl(newCtrl)))
+        gpipEdges(viewBefore, gpipIrqView(gpipInput()), aer, aer, sched_ ? sched_->liveNow() : 0);
 }
 
 // Port de MFP_ReadTimerX(…, TimerIsStopping=true) : à l'arrêt d'un délai, le
 // compteur vivant est figé dans le backing store. Cas limite Hatari : s'il
 // reste moins d'une unité de prescaler (compteur interne < 1), le data reg
 // vaudra la RECHARGE au prochain redémarrage.
-void Mfp::storeStoppedCounter(int timer) {
+void Mfp::storeStoppedCounter(int timer, int64_t when) {
     const int ctrl = delayCtrl(timerCtrl(timer));     // contrôle AVANT l'arrêt
     uint8_t reload;
     switch (timer) {
@@ -697,7 +760,7 @@ void Mfp::storeStoppedCounter(int timer) {
         // avec TimerIsStopping — il n'y a donc pas deux arrondis à faire diverger.
         const int64_t dueSub = timerDueSub_[timer];
         if (dueSub > 0 && sched_->rawCyclesUntil(kTimerSrc[timer]) != INT64_MIN) {
-            const int64_t remSub = dueSub - sched_->liveNow() * 256;
+            const int64_t remSub = dueSub - when * 256;
             const int64_t remMfp = remSub > 0 ? (remSub * 9600 / 31333) >> 8 : 0;
             const int     div    = kMfpDiv[ctrl];
             if (remMfp >= div)                                     // sinon : règle « < 1 » → recharge
@@ -777,7 +840,7 @@ void Mfp::scheduleTimerAt(int timer, int64_t anchor, bool fromCounter) {
     // alors piloté par Machine via mfp.hblank()).
     const Scheduler::Source src = kTimerSrc[timer];
     const int64_t periodSub = timerPeriodSubCycles(timer, fromCounter);
-    if (periodSub <= 0) {
+    if (periodSub <= 0 || (timerPulseMode(timer) && !pulseGateActive(timer))) {
         timerDueSub_[timer] = 0;
         sched_->cancel(src);
         return;
@@ -859,7 +922,14 @@ void Mfp::timerA_setLineInput(bool bit) {
     // niveau égal au bit4 de l'AER (par défaut AER bit4=0, partagé avec l'ACIA active
     // bas → on compte les passages à 0 = fins de trame son DMA).
     if (tai_ == bit) return;                       // pas de transition
+    const uint8_t viewBefore = gpipIrqView(gpipInput());
     tai_ = bit;
+    if (timerPulseMode(0)) {
+        const int64_t when = sched_ ? sched_->liveNow() : 0;
+        updatePulseGate(0, when);
+        gpipEdges(viewBefore, gpipIrqView(gpipInput()), aer, aer, when);
+        return;
+    }
     if ((timer_[0x19] & 0x0F) != 0x08) return;     // pas en event-count → rien
     if (bit != ((aer >> 4) & 1)) return;           // front non sélectionné par l'AER GPIP4
     // À 1, le compteur expire : recharge depuis TADR puis IRQ. Sinon décrément ; comme
@@ -1123,12 +1193,18 @@ void Mfp::gpipUpdateInterrupt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, 
 }
 
 void Mfp::gpipUpdateInterruptAt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew, int64_t when) {
+    gpipEdges(gpipIrqView(gpipOld), gpipIrqView(gpipNew), aerOld, aerNew, when);
+}
+
+void Mfp::gpipEdges(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew, int64_t when) {
     static constexpr int kChan[8] = {0, 1, 2, 3, 6, 7, 14, 15};   // bit GPIP → canal MFP
+    // TAI et TBI sont des broches distinctes : le DDR de I4/I3 ne les concerne pas.
+    const uint8_t inputs = uint8_t(~ddr | (timerPulseMode(0) ? 0x10 : 0) | (timerPulseMode(1) ? 0x08 : 0));
     const uint8_t stateOld = gpipOld ^ aerOld;
     const uint8_t stateNew = gpipNew ^ aerNew;
     for (int bit = 0; bit < 8; ++bit) {
         const uint8_t m = uint8_t(1u << bit);
-        if ((ddr & m) == 0                          // ligne configurée en ENTRÉE
+        if ((inputs & m) != 0                       // ligne configurée en ENTRÉE
          && (stateOld & m) != (stateNew & m)        // l'état (GPIP^AER) a basculé
          && (gpipNew & m) == (aerNew & m))          // front ACTIF (AER == niveau GPIP)
             raiseAt(kChan[bit], when);
