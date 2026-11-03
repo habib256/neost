@@ -59,7 +59,7 @@ documents primaires, les ROM et le RTL épinglé.
 |---|--------|------|---|
 | 1 | Event-count : les canaux I3/I4 répondent-ils à TAI/TBI ? Mesurer les titres touchés, puis trancher | P1 | 2.3 |
 | 2 | Date limite de la broche IPL : modèle à deux étages d'après `fx68k.sv`, qualifié par `--ipl-sweep` puis dans NeoST | P1 | 2.1 |
-| 3 | Rejouer Obsession, Pacemaker, E605 et les démos DHS contre l'oracle (`disks/st/demos`, livré par Cursor) | P1 | 3 |
+| 3 | Continuer la logithèque STE avec `compare_titles.py` : Pacemaker, Cernit Trandafir, parties suivantes | P1 | 3 |
 | 5 | Lire au RTL épinglé : `$FF8261`, blanking, GPIP3 ; trancher le noir sous BLANK | P1 | 2.2 |
 | 4 | Couvrir Mega ST et TOS 1.00/1.04/1.06 par des étalons : ROM présentes sur le disque privé | P1 | 3 |
 | 7 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
@@ -249,8 +249,10 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 - **Couverture ROM des étalons** · P1 ⭘ — Mega ST, TOS 1.00, 1.04 et 1.06 ne sont couverts par
   AUCUN étalon pixel (manifeste `etalons.json`) ; un étalon par ROM propriétaire présente,
   recensé comme SKIP quand elle manque.
-- **Logithèque STE de référence** · P1 ⭘ — Obsession et Pacemaker n'ont pas été rejoués depuis le port du
-  mode 336 px (2026-10-18) ; l'overscan STE (E605, DHS) reste à rejouer contre l'oracle. Disques dans `disks/st/demos`.
+- **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
+  Obsession, Just Musix 2, More or Less Zero et Double Rez Trouble concordent aux écrans vus. Restent les démos à lancer
+  (Pacemaker demande plus de RAM, Cernit Trandafir attend sur le bureau), les parties suivantes de chacune, et Drone et
+  Sea of Colour (arbres GEMDOS). Le pilotage clavier n'est pas encore dans l'outil.
 - ***Seven Gates of Jambala*** · P2 ⭘ — valider le recalage Timer B après écriture AER3 (porté le
   2026-10-19). Média présent (`disks/seven_gates_of_jambala_{a,b}.stx`, non versionné).
 - **Exceptions vidéo E605 / Tekila** · P3 ⏸ programme — hacks par opcodes chez Hatari ; port
@@ -275,7 +277,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 ## 4. 🪜 Harnais et preuve
 
-32 étalons `hatari`, 11 `snapshot`, 2 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
+33 étalons `hatari`, 11 `snapshot`, 2 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
 contact du matériel, par des relevés de tiers. Le banc fx68k ajoute 34 variantes `rtl` pour
 le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
@@ -319,7 +321,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   perte de déterminisme. Socle du retour arrière et d'un jeu en ligne en lockstep. Modèle : ASE.
 - **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne le mur du palier pixel (~45 s) ; savoir
   QUAND la démo relit le clavier avant de raccourcir.
-- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **41 étalons pixel sur 45** tournent
+- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **42 étalons pixel sur 46** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → § 3.
 - **Banc temporel Hatari** · P2 ◐ — 20 sondes, dont écriture DMA disquette, lecture STX et

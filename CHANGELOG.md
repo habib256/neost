@@ -6,6 +6,19 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## STE : démos à résolution mêlée, et une passe sur les titres (2026-11-03)
+
+La campagne sur les démos STE livrées par Cursor (`disks/st/demos`) a trouvé de vrais défauts. DHS Double Rez Trouble (STE,
+Sommarhack 2025) sortait illisible, et More or Less Zero décalé de 8 px.
+- **Compteur vidéo écrit en bordure droite** : gardé en adresse absolue, comme `pVideoRasterDelayed` d'Hatari. L'écart
+  relatif ajoutait 8 octets par ligne, car le compteur avance encore jusqu'à la fin de ligne.
+- **Trame démarrée en moyenne résolution avec des lignes basses** : décodée entière en 2 plans, sans bordures. Elle passe
+  maintenant par le chemin bas, qui décide ligne par ligne comme `Video_StoreResolution`.
+- **Lignes left+2 STE** : le décalage de 8 px était compté deux fois, et les lignes moyennes recevaient la calibration
+  d'un autre cas (plans mal appariés, texte dédoublé).
+- `tools/compare_titles.py` : NeoST contre Hatari sur de vrais disques, captures par le débogueur car l'AVI d'Hatari s'arrête
+  au premier changement de résolution. Étalon libre `doublerez_ste` : 0 px d'Hatari, vérifié rouge sur l'ancien code.
+
 ## 68000 : STOP et ordre des accès alignés sur fx68k (2026-11-03)
 
 Le banc différentiel a localisé des écarts de Moira que la durée totale des instructions masquait.

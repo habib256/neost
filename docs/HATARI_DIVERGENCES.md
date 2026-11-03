@@ -1307,6 +1307,13 @@ par le présent document :
 - ~~`docs/SOUND_HATARI_DIFF.md`~~ : table DAC, ET ton/bruit, filtres, FIFO/anti-repliement,
   start==end, cold/warm reset, reset port A, `Mfp::reset()` — tous implémentés.
 
+## STE : écarts refermés par les démos DHS (2026-11-03)
+
+Trois écarts de NeoST, chacun exhibé par Double Rez Trouble et gardé par l'étalon `doublerez_ste` :
+`pVideoRasterDelayed` manquant (compteur écrit en bordure droite), trame démarrée en moyenne résolution décodée entière
+en moyenne, placement des lignes `LEFT_OFF_2_STE` et `LEFT_OFF_2_STE_MED`. Hatari fait foi ici au grade D seulement : la démo
+vise le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
+
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
 - **Modes pulse du MFP** (2026-11-03) : Hatari les traite en mode délai (`MFP_StartTimer_AB`, `mfp.c:1358-1371 @ f0736b24`,

@@ -479,6 +479,19 @@ python3 tools/compare_screenshot.py s.ppm tests/reference/<oracle>.png --crop ac
 
 ---
 
+## 4 ter. Passe sur de vrais titres (`tools/compare_titles.py`)
+
+Compare NeoST à l'Hatari épinglé sur une liste de disques, à plusieurs trames. Pour chaque trame NeoST, l'outil cherche
+l'image Hatari la plus proche dans une fenêtre, car Hatari tire la position angulaire de la disquette au hasard. Il
+produit `summary.json` et une planche à regarder. Il capture par le débogueur d'Hatari : son AVI s'arrête au premier
+changement de résolution. C'est un outil de repérage, qui ne prouve aucune fidélité. Un écart d'une unité sur les
+lignes en moyenne résolution est un arrondi de la moyenne des deux pixels. Il exige Pillow et ffmpeg.
+
+```sh
+python3 tools/compare_titles.py /tmp/passe disks/st/demos/*.msa --machine ste --rom roms/tos162uk.img \\
+        --frames 1500,3000,4500,6000 --window 30
+```
+
 ## 5. Suites de test automatisées
 
 - **Banc Moira↔fx68k** (`tools/run_fx68k_bench.py`, palier `full`, SKIP sans Verilator) : le
