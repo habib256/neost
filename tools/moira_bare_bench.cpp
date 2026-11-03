@@ -24,7 +24,8 @@
 //  Usage : neost-moira-bare <image.bin> <trace.txt> [--limit N] [--irq T:L]... [--ipl-fetch]
 //  Mêmes arguments et même sortie que Vfx68k_bench. --ipl-fetch active le port de
 //  WinUAE ipl_fetch_next (seuils 4/2, ce que NeoST fait sous NEOST_IPLFETCH=1) : le
-//  banc dit alors si cette option rapproche Moira du RTL sur la prise d'IPL.
+//  banc dit alors si cette option rapproche Moira du RTL sur la prise d'IPL. --ipl-lag N
+//  retarde l'échantillonnage de N cycles : un essai du banc, que NeoST n'active pas.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test.
 // =============================================================================
@@ -122,6 +123,7 @@ int main(int argc, char** argv) {
             if (!c) { std::fprintf(stderr, "--irq attend T:L\n"); return 2; }
             cpu.irqs.push_back({std::atoll(s), std::atoi(c + 1)});
         } else if (!std::strcmp(argv[i], "--ipl-fetch")) cpu.setIplDelay(4, 2);
+        else if (!std::strcmp(argv[i], "--ipl-lag") && i + 1 < argc) cpu.setIplLag(std::atoll(argv[++i]));
         else { std::fprintf(stderr, "argument inconnu : %s\n", argv[i]); return 2; }
     }
     if (FILE* f = std::fopen(argv[1], "rb")) {

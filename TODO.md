@@ -57,10 +57,9 @@ documents primaires, les ROM et le RTL épinglé.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | Event-count : les canaux I3/I4 répondent-ils à TAI/TBI ? Mesurer les titres touchés, puis trancher | P1 | 2.3 |
-| 2 | Date limite de la broche IPL : modèle à deux étages d'après `fx68k.sv`, qualifié par `--ipl-sweep` puis dans NeoST | P1 | 2.1 |
+| 1 | Lire au RTL épinglé : `$FF8261`, blanking, GPIP3 ; trancher le noir sous BLANK | P1 | 2.2 |
+| 2 | Event-count : mesurer les titres exposés à la remise des canaux I3/I4, puis trancher | P1 | 2.3 |
 | 3 | Continuer la logithèque STE avec `compare_titles.py` : Pacemaker, Cernit Trandafir, parties suivantes | P1 | 3 |
-| 5 | Lire au RTL épinglé : `$FF8261`, blanking, GPIP3 ; trancher le noir sous BLANK | P1 | 2.2 |
 | 4 | Couvrir Mega ST et TOS 1.00/1.04/1.06 par des étalons : ROM présentes sur le disque privé | P1 | 3 |
 | 7 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
 | 8 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
@@ -83,10 +82,9 @@ ici ne figure que ce qui demande une décision ou une source.
 témoins : tous grade D, Moira non modifié. La chaîne MFP→IPL de NeoST ajoute ses propres délais :
 requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md).
 
-- **Date limite de la broche IPL** · P1 ⭘ — Moira accepte l'IRQ 3 cycles après fx68k aux frontières
-  d'instructions, donc une instruction trop tôt dans cette fenêtre. `NEOST_IPLFETCH` n'est pas la
-  solution : une instruction de retard sur MULU. Modèle à écrire d'après `fx68k.sv:222-223`, à qualifier
-  par `--ipl-sweep`, puis dans NeoST (étalons Timer B). Absorbe « STOP : synchronisation IPL à deux étages ».
+- **Date limite de la broche IPL** · P2 ⏸ source · [D] — mesuré, non tranché. Moira nu voit la broche 3 cycles après fx68k.
+  Un retard de 2 l'en rapproche, mais aucun étalon n'y est sensible, et fx68k et le modèle WinUAE se contredisent d'une
+  instruction sur MULU. Tranche : sonde sur machine réelle, ou relevé de tiers. → `docs/FX68K_BENCH.md`
 - **Réveil du STOP** · P2 ⭘ — 1 cycle après fx68k, dans la marge du banc. À revoir avec l'item précédent.
 - **Erreur d'adresse : cycle amorcé** · P3 ⭘ · [D] — seul fx68k pose AS sans strobe à l'adresse fautive.
   Un seul témoin, sans effet connu sur un ST.

@@ -78,6 +78,7 @@ protected:
     u8  iplPrev {};            // valeur précédente de la broche (≙ regs.ipl_pin_p)
     i64 iplChangeClock {};     // horloge (cycles) du dernier changement (≙ ipl_pin_change_evt)
     i64 iplChangeClockPrev {-1000};  // horloge du changement PRÉCÉDENT (≙ ipl_pin_change_evt_p)
+    i64 iplLag {0};            // retard d'échantillonnage de la broche (cyc) ; 0 ⇒ OFF
     i64 iplDelay4 {0};         // seuil « broche stabilisée » (cyc) ; 0 ⇒ OFF
     i64 iplDelay2 {0};         // seuil « ancienne valeur » (cyc)
     // Report « différé » de WinUAE (regs.ipl[1]) : un changement de broche vu <2 cyc
@@ -747,6 +748,7 @@ public:
     // NEOST_IPLFETCH : règle les seuils (cyc) de reconnaissance IPL différée.
     // d4 == 0 désactive la feature (POLL_IPL ≡ reg.ipl = ipl, défaut).
     void setIplDelay(i64 d4, i64 d2) { iplDelay4 = d4; iplDelay2 = d2; }
+    void setIplLag(i64 cycles) { iplLag = cycles; }
 
     // NEOST_IPLFETCH : applique la règle d'échantillonnage de l'IPL (≡ POLL_IPL).
     void pollIpl();

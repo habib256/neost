@@ -94,11 +94,17 @@ Hatari : le banc ne dit pas à lui seul ce que NeoST fait sur une IRQ réelle.
 Mesure, résolution ±1 cycle (`--ipl-sweep`). Date la plus tardive de la broche pour qu'une frontière
 donnée prenne encore l'IRQ, relativement à fx68k :
 
-| Programme | Moira | `NEOST_IPLFETCH` |
-|---|---|---|
-| `irq_nop` | +3 | −1 |
-| `irq_mulu` | +3 | une instruction de retard (−65) |
-| `stop_irq` | +1 | −3 |
+| Programme | Moira | `NEOST_IPLFETCH` | `--ipl-lag 2` |
+|---|---|---|---|
+| `irq_nop` | +3 | −1 | +1 |
+| `irq_mulu` | +3 | une instruction de retard (−65) | +1 |
+| `stop_irq` | +1 | −3 | −1 |
+
+**Pourquoi rien n'est porté dans NeoST.** Un retard de 2 cycles ramène le cœur nu à ±1 de fx68k, mais aucun étalon ne
+discrimine la question : `NEOST_IPLLAG=40`, essayé le 2026-11-04, laissait tous les étalons et oracles verts, car
+`neostUpdateIpl(commit)` pose la broche et l'échantillon ensemble. Un vert n'y prouverait rien. Et les témoins se
+contredisent sur les instructions longues : sur MULU, fx68k échantillonne près de la fin, le modèle de WinUAE que porte
+`NEOST_IPLFETCH` une instruction plus tôt. Pour trancher : une sonde sur machine réelle, IRQ datée autour d'un MULU.
 
 `iack_skew` vaut 0 partout : la place du cycle IACK dans le bloc de Moira correspond à fx68k.
 

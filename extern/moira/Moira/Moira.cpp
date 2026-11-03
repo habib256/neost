@@ -936,6 +936,9 @@ Moira::setIPL(u8 val)
 void
 Moira::pollIpl()
 {
+    // Retard d'échantillonnage simple : la broche n'est vue que `iplLag` cycles après son
+    // changement. [D] fx68k.sv:222-223 @ 0602ee46, deux étages avant intPend.
+    if (iplLag) { reg.ipl = (clock - iplChangeClock >= iplLag) ? ipl : iplPrev; return; }
     // Feature OFF (défaut) : comportement Moira d'origine, byte-identique
     // (étalons 19/0 vérifiés). POLL_IPL ≡ reg.ipl = ipl.
     if (iplDelay4 == 0) { reg.ipl = ipl; return; }
