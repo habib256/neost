@@ -101,12 +101,10 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
     return shots
 
 
-def even_pixels(img: Image.Image, size: tuple[int, int]) -> Image.Image:
-    """Réduit l'image 2× d'Hatari en gardant les pixels pairs, comme le buffer de NeoST : sur
-    une ligne en moyenne résolution, il n'émet que le pixel pair de chaque cycle. Un
-    NEAREST ordinaire prendrait l'impair, et ferait croire à un écart de couleur."""
-    ax, ay = img.width / size[0], img.height / size[1]
-    return img.transform(size, Image.AFFINE, (ax, 0, -0.5, 0, ay, -0.5), Image.NEAREST)
+def reduce_2x(img: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """Réduit l'image 2× d'Hatari en moyennant les pixels, comme le buffer de NeoST : sur une
+    ligne en moyenne résolution, il émet la moyenne des deux pixels de chaque cycle."""
+    return img.reduce((img.width // size[0], img.height // size[1]))
 
 
 def best_match(shots: Path, frame: int, window: int, ref: Image.Image):
@@ -115,7 +113,7 @@ def best_match(shots: Path, frame: int, window: int, ref: Image.Image):
         path = shots / f"{vbl:06d}.png"
         if not path.exists():
             continue
-        small = even_pixels(Image.open(path).convert("RGB"), ref.size)
+        small = reduce_2x(Image.open(path).convert("RGB"), ref.size)
         hist = ImageChops.difference(ref, small).convert("L").histogram()
         pct = 100.0 * (sum(hist) - hist[0]) / sum(hist)
         if pct < best:

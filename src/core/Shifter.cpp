@@ -1021,7 +1021,14 @@ void Shifter::renderGlueFrame() {
         }();
         int medSrcBytes = lineMed
             ? 2 - static_cast<int>((bm & glue::MED_OFFSET_MASK) >> 20) : 0;
-        const int medSrcPx = lineMed ? kMedCal : 0;
+        int medSrcPx = lineMed ? kMedCal : 0;
+        // Retrait gauche court du STE en moyenne résolution. [D] Hatari video.c,
+        // Video_CopyScreenLineColor @ f0736b24 : l'octet b tombe à l'octet 8+b du tampon, puis le
+        // tampon glisse de 16 px med. Colonne 8+2b, soit le début de la fenêtre DE (cycle 16) :
+        // ni le décalage de source ni la calibration des autres lignes med ne s'y appliquent.
+        // Une ligne moyenne sans retrait (bm nul) démarre aussi à sa fenêtre DE.
+        // Exhibiteur : DHS Double Rez Trouble (bandes de couleur fausse, texte dédoublé).
+        if ((bm & glue::LEFT_OFF_2_STE_MED) || bm == 0) medSrcBytes = medSrcPx = 0;
         // Scroll hardware STF 4 px / stab med (port video.c:3946-3990, « ST Cnx »
         // et « 'Closure' demo Troed/Sync ») : le retrait gauche par bascule
         // hi→med→lo déplace CHAQUE ligne selon le cycle de sa bascule retour
@@ -1082,6 +1089,12 @@ void Shifter::renderGlueFrame() {
                 default: break;                    // −4 : left-off standard, non mesuré
             }
         }
+        // Retrait gauche court du STE (left+2) en basse résolution, sans le mode 336 px.
+        // [D] Hatari video.c, Video_CopyScreenLineColor @ f0736b24 : l'octet b de la ligne tombe
+        // à l'octet 8+b du tampon, puis tout le tampon glisse de 8 px : colonne 8+2b. La fenêtre
+        // DE commence ici au cycle 16, donc à cette colonne : le −8 est déjà compté, et le
+        // réappliquer décalait l'image de 8 px. Exhibiteurs : DHS More or Less Zero, Double Rez Trouble.
+        if (!lineMed && (bm & glue::LEFT_OFF_2_STE) && !lineBorder) shEff = 0;
         // Source des pixels : la CAPTURE datée au faisceau de cette scanline si elle
         // existe (cf. lineSnap_ — seul l'échantillon voit un sprite dessiné puis
         // effacé EN COURSE avec le faisceau, ex. robot du menu Cuddly), sinon repli
