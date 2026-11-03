@@ -599,10 +599,14 @@ void Mfp::updateSerialConfig() {
 //  Le MFP tourne à 2457600 Hz, le CPU à 8021248 Hz : ratio EXACT 31333/9600
 //  (même conversion entière qu'Hatari cycInt.c, sans flottant).
 // -----------------------------------------------------------------------------
-// Prescalers MFP et utilitaires communs aux timers. Les modes « pulse » des
-// timers A/B (bit3 + bits 0-2 ≠ 0, soit ctrl 9-15) se comportent comme le mode
-// délai correspondant (cf. Hatari MFP_StartTimer_AB : « clear bit 3, pulse
-// width mode -> delay mode ») ; 8 = event-count, géré par hblank()/TAI.
+// Prescalers MFP et utilitaires communs aux timers. Ctrl 8 = event-count, géré par
+// hblank()/TAI ; ctrl 9-15 = modes « pulse » des timers A/B (bit3 + bits 0-2 ≠ 0).
+// [B] MC68901 Advance Information (Motorola, janv. 1984) § 5.1.2, PDF p. 27 : TAI/TBI
+//     pilotent le comptage et les canaux d'IRQ de I4/I3 répondent à leurs transitions.
+//     extern/datasheets/MC68901_Jan84.pdf (sha256 5441a092)
+// [D] Hatari mfp.c @ f0736b24, MFP_StartTimer_AB : « pulse width mode -> delay mode ».
+// [F] NeoST traite ces modes en mode délai, donc en écart avec la fiche. Tranché par :
+//     un portage du § 5.1.2 et une sonde exerçant TAI/TBI.
 static constexpr int kMfpDiv[8] = {0, 4, 10, 16, 50, 64, 100, 200};
 static inline int delayCtrl(int ctrl) { return (ctrl > 8) ? (ctrl & 0x07) : ctrl; }
 static constexpr Scheduler::Source kTimerSrc[4] = {

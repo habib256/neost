@@ -291,19 +291,31 @@ exacte du tic Timer C (au cycle de programmation) ; lecture compteur à cheval s
   PAR PAIRE** — bouger l'un seul casse Enchanted Land. Chaque nouveau mécanisme daté choisira
   son offset par la même méthode (dérivation, puis contrôle au sweep vs oracle).
 
-## 5. Ce qu'on ne fera PAS (décisions actées)
+## 5. Décisions rouvertes (2026-11-03)
 
-- **Contention DMA vidéo générale sur la RAM** (le shifter vole des cycles au CPU pendant le DE) :
-  modèle **MAME** (`stmmu.cpp::bus_contention`), **pas Hatari** → l'ajouter ferait diverger NeoST
-  de l'oracle qui valide nos étalons au pixel.
-- **Vol de cycles DMA son / FDC sur le bus** : Hatari ne le modélise pas non plus.
-- **Pulse-width MFP (modes 9-15)** : Hatari l'approxime déjà en mode délai → même approximation.
+Cette section s'intitulait « Ce qu'on ne fera PAS ». Ses trois décisions reposaient sur
+l'égalité avec Hatari, qui ne prouve pas la fidélité (`CLAUDE.md`, grades de preuve). Rien
+ne dit pour autant que ces effets soient mal modélisés : c'est la justification qui tombe,
+et le code ne change pas tant qu'une source de rang supérieur n'a pas tranché.
+
+- **Contention DMA vidéo sur la RAM** : `[D]` modélisée par MAME (`stmmu.cpp`), absente
+  d'Hatari. `[F]` Inconnu : le créneau mémoire du CPU suffit-il à l'expliquer ? Tranché par :
+  `ramcyc`/`DTACK_N_O` dans `gstmcu.v`.
+- **Vol de cycles DMA son / FDC sur le bus** : `[F]` Absent d'Hatari, jamais confronté au
+  schéma. Tranché par : `sndcnt.v`, `mcucontrol.v`, puis une sonde.
+- **Modes pulse du MFP (9-15)** : `[B]` MC68901 Advance Information (janv. 1984) § 5.1.2 : ils
+  existent et diffèrent du mode délai. Hatari les approxime en mode délai, et NeoST aussi : la
+  décision est donc contredite par la fiche. Reste à porter, avec une sonde.
+
+Suivi → `TODO.md` § 2.
 
 ## 6. Méthode de validation
 
-Chaque chantier : **(1)** porter depuis `extern/hatari/src` → **(2)** re-tester les étalons
-(`tools/run_etalons.py`, glue-selftest 19/19, Spec512/overscan_top byte-identiques) → **(3)**
-diff à l'oracle Hatari.
+Chaque chantier : **(1)** comparer `extern/hatari/src` et porter ce qui correspond au
+matériel → **(2)** re-tester les étalons (`tools/run_etalons.py`, glue-selftest 19/19,
+Spec512/overscan_top byte-identiques) → **(3)** diff à Hatari, qui LOCALISE un écart sans le
+juger → **(4)** arbitrer tout écart à la source la plus haute de l'échelle
+([`REFERENCE_LADDER.md`](REFERENCE_LADDER.md)), et consigner son grade dans le code.
 
 ```sh
 # Hatari (référence) headless — cf. docs/HATARI_AUTOMATION.md
@@ -316,7 +328,7 @@ python3 tools/trace_diff.py neost.txt hatari.txt --align-pc FC0030 --regs
 python3 tools/trace_diff.py neost.txt hatari.txt --periods 173C 1742   # convergence cycle
 ```
 
-**Indicateur de progrès** : à chaque phase, le point de première divergence recule, et les
+**Indicateur de progrès face à Hatari (pas face au matériel)** : à chaque phase, le point de première divergence recule, et les
 points d'insertion d'IRQ coïncident avec Hatari (le diff cesse d'être « bruité » par le décalage
 des interruptions). Pour le harnais différentiel de cycles (Moira↔WinUAE) et les bancs dédiés
 (`make_cycle_bench.py`, `make_respulse_test.py`), voir

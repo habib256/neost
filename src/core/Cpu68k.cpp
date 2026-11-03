@@ -269,8 +269,9 @@ public:
         // Syntaxe Musashi : conserve le format de trace historique (comparaison MAME).
         setDasmSyntax(moira::Syntax::MUSASHI);
         // Délai de reconnaissance IPL fidèle WinUAE (opt-in). Seuils en cycles CPU : le
-        // 68000 échantillonne IPL sur SA propre horloge (fx68k : deux échantillons
-        // enPhi2 égaux, fx68k.sv:222-226), pas sur celle du bus — même valeur à 16 MHz.
+        // 68000 échantillonne IPL sur SA propre horloge, pas sur celle du bus — même
+        // valeur à 16 MHz.
+        // [D] fx68k.sv:222-223 @ 0602ee46 — rIpl puis iIpl sur enPhi2, deux étages.
         if (g_iplFetch) setIplDelay(g_iplFetch4, g_iplFetch2);
     }
 

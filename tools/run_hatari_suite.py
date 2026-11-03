@@ -30,6 +30,13 @@
 #
 #  extern/hatari est gitignoré : absent → étape SAUTÉE et recensée (code 77).
 #
+#  ÉCHELONS (docs/REFERENCE_LADDER.md). Seul buserror/results/ est documenté comme
+#  relevé sur de vraies machines : ces verdicts sont `hardware`, de grade [A] par un
+#  tiers, machine et révision de puces non consignées. Pour les autres, aucun readme
+#  ne donne la provenance de l'attendu : ils restent `hatari`.
+#  [A] extern/hatari/tests/buserror/readme.txt @ f0736b24 — « sample files that have
+#      been taken on real machines ».
+#
 #  (c) 2026 VERHILLE Arnaud — projet NeoST.
 # =============================================================================
 from __future__ import annotations
@@ -131,6 +138,9 @@ def main() -> int:
     console = [c for c in CONSOLE_CASES if not only or c[0] in only]
     print(f"SUITE HATARI : {len(selected) + len(console)} programmes rejoués sous NeoST")
     ok = all([run_case(*c) for c in selected] + [run_console_case(*c) for c in console])
+    hardware = sum(c[0].startswith("buserror-") for c in selected)
+    print(f"ÉCHELLE : hardware {hardware} (relevés tiers) · "
+          f"hatari {len(selected) + len(console) - hardware}")
     print("SUITE HATARI OK" if ok else "SUITE HATARI FAIL")
     return 0 if ok else 1
 

@@ -62,6 +62,11 @@ venv/
 extern/hatari/
 # Moira amont (tools/run_moira_runner.sh, A35) : clone et build hors historique.
 extern/moira-upstream/
+# Références RTL (tools/setup_silicon_refs.sh) : lues, jamais liées au binaire.
+extern/fx68k/
+extern/mistery/
+# Fiches et schémas ASIC, sous copyright : manifeste dans setup_silicon_refs.sh.
+extern/datasheets/
 build-moira-runner/
 extern/spsdeclib_*/
 
