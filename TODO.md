@@ -250,9 +250,10 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
   AUCUN étalon pixel (manifeste `etalons.json`) ; un étalon par ROM propriétaire présente,
   recensé comme SKIP quand elle manque.
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
-  Obsession, Just Musix 2, More or Less Zero et Double Rez Trouble concordent aux écrans vus. Restent les démos à lancer
-  (Pacemaker demande plus de RAM, Cernit Trandafir attend sur le bureau), les parties suivantes de chacune, et Drone et
-  Sea of Colour (arbres GEMDOS). Le pilotage clavier n'est pas encore dans l'outil.
+  Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour et Drone s'affichent correctement aux
+  écrans vus. Restent Cernit Trandafir (attend sur le bureau), les parties suivantes, et le pilotage clavier dans l'outil.
+- **Chronologie de Sea of Colour et Drone** · P2 ⭘ — NeoST et Hatari y atteignent les mêmes écrans à des trames différentes,
+  d'environ 100 à 1000 trames, sans que `--sound` change rien. Comparer les durées de chargement GEMDOS, puis trancher.
 - ***Seven Gates of Jambala*** · P2 ⭘ — valider le recalage Timer B après écriture AER3 (porté le
   2026-10-19). Média présent (`disks/seven_gates_of_jambala_{a,b}.stx`, non versionné).
 - **Exceptions vidéo E605 / Tekila** · P3 ⏸ programme — hacks par opcodes chez Hatari ; port
@@ -277,7 +278,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 ## 4. 🪜 Harnais et preuve
 
-33 étalons `hatari`, 11 `snapshot`, 2 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
+34 étalons `hatari`, 11 `snapshot`, 2 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
 contact du matériel, par des relevés de tiers. Le banc fx68k ajoute 34 variantes `rtl` pour
 le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
@@ -321,7 +322,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   perte de déterminisme. Socle du retour arrière et d'un jeu en ligne en lockstep. Modèle : ASE.
 - **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne le mur du palier pixel (~45 s) ; savoir
   QUAND la démo relit le clavier avant de raccourcir.
-- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **42 étalons pixel sur 46** tournent
+- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **43 étalons pixel sur 47** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → § 3.
 - **Banc temporel Hatari** · P2 ◐ — 20 sondes, dont écriture DMA disquette, lecture STX et

@@ -16,8 +16,14 @@ Sommarhack 2025) sortait illisible, et More or Less Zero décalé de 8 px.
   maintenant par le chemin bas, qui décide ligne par ligne comme `Video_StoreResolution`.
 - **Lignes left+2 STE** : le décalage de 8 px était compté deux fois, et les lignes moyennes recevaient la calibration
   d'un autre cas (plans mal appariés, texte dédoublé).
+- **Fenêtre verticale réelle** pour les écritures de compteur, `$FF820F` et scroll : le test portait sur les 200 lignes
+  nominales. DHS Sea of Colour, à 276 lignes, cassait le bas de ses écrans.
+- **Blitter vers les registres vidéo** : ses accès ajoutaient l'état d'attente du CPU, soit 688 cycles de retard sur 192 lignes.
+  La bordure basse de Sea of Colour était manquée ; ligne 262 cycle 496 maintenant, comme Hatari.
+- **Moyenne des lignes en moyenne résolution** : exacte par composante, elle perdait un bit.
 - `tools/compare_titles.py` : NeoST contre Hatari sur de vrais disques, captures par le débogueur car l'AVI d'Hatari s'arrête
-  au premier changement de résolution. Étalon libre `doublerez_ste` : 0 px d'Hatari, vérifié rouge sur l'ancien code.
+  au premier changement de résolution. Étalons libres `doublerez_ste` et `doublerez_tall_ste` : 0 px d'Hatari. Le second
+  mesure 52 % d'écart sans ces corrections.
 
 ## 68000 : STOP et ordre des accès alignés sur fx68k (2026-11-03)
 

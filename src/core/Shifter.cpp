@@ -1167,7 +1167,9 @@ void Shifter::renderGlueFrame() {
                     const int s2 = (s + 1 < nDec) ? s + 1 : s;
                     const uint32_t a = stColorToArgb(pal[idx[s]]);
                     const uint32_t b = stColorToArgb(pal[idx[s2]]);
-                    dst[x] = 0xFF000000u | ((((a & 0x00FEFEFE) + (b & 0x00FEFEFE)) >> 1) & 0x00FFFFFF);
+                    // Moyenne exacte par composante, arrondie vers le bas comme la réduction 2×
+                    // de compare_screenshot.py (_downscale2).
+                    dst[x] = 0xFF000000u | (((a & b) + (((a ^ b) & 0x00FEFEFE) >> 1)) & 0x00FFFFFF);
                 } else {
                     dst[x] = stColorToArgb(pal[idx[s]]);   // dans la fenêtre → contenu
                 }

@@ -11,7 +11,9 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
 
 - **STE, résolutions mêlées** : une trame qui démarre en moyenne résolution mais mêle des lignes basses est décodée ligne
   par ligne ; compteur vidéo écrit en bordure droite gardé en adresse absolue ; placement des lignes left+2, basses et
-  moyennes. DHS Double Rez Trouble et More or Less Zero concordent avec Hatari. Étalon généré `doublerez_ste`.
+  moyennes. Fenêtre verticale réelle pour le compteur, `$FF820F` et le scroll ; accès du blitter aux registres vidéo sans
+  l'attente du CPU. DHS Double Rez Trouble et More or Less Zero concordent avec Hatari, Sea of Colour et Drone s'affichent
+  correctement. Étalons générés `doublerez_ste` et `doublerez_tall_ste`.
 - **68000** : ordre des accès et durée de STOP alignés sur fx68k, Hatari et le microcode (MOVEM.L, ADD/SUB.L,
   ADDX/SUBX.L, DBcc, JSR, trame de groupe 0, reset). Tableau → `docs/FX68K_BENCH.md`.
 - **MFP, modes pulse des timers A/B** (TxCR 9-15), d'après la fiche MC68901 § 5.1.2 : TAI ou TBI

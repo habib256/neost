@@ -1309,10 +1309,11 @@ par le présent document :
 
 ## STE : écarts refermés par les démos DHS (2026-11-03)
 
-Trois écarts de NeoST, chacun exhibé par Double Rez Trouble et gardé par l'étalon `doublerez_ste` :
+Écarts de NeoST exhibés par Double Rez Trouble et Sea of Colour, gardés par `doublerez_ste` et `doublerez_tall_ste` :
 `pVideoRasterDelayed` manquant (compteur écrit en bordure droite), trame démarrée en moyenne résolution décodée entière
-en moyenne, placement des lignes `LEFT_OFF_2_STE` et `LEFT_OFF_2_STE_MED`. Hatari fait foi ici au grade D seulement : la démo
-vise le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
+en moyenne, placement des lignes `LEFT_OFF_2_STE` et `LEFT_OFF_2_STE_MED`, fenêtre verticale nominale au lieu de
+`nStartHBL`/`nEndHBL`, attente du CPU facturée aux accès du blitter. Hatari fait foi ici au grade D seulement : ces démos
+visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
