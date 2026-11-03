@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Le bus du STE lu sur la netlist ST-4081 (2026-11-04)
+
+Deux questions P1 restaient alignées sur Hatari, sans source. La netlist et une sonde du modèle GSTMCU les tranchent.
+- **Contention vidéo et son sur la RAM** : il n'y en a pas au-delà du créneau de 4 cycles sur STE. `RAMCYC` ne dépend que de `RAMSEL` et `CYCSEL`.
+  Mesuré aussi : même latence de DTACK, DE actif ou non, son DMA à 50 kHz ou non. MAME modélise une contention : non retenue.
+- **`$FF8920-3F`** attend maintenant le créneau de la RAM sur STE ; **`$FF820A`** ne l'attend plus. Aucun étalon ne bouge.
+- **Banc GSTMCU** : branché au palier `full`, avec un contrôle de latence par zone.
+- **Non tranché** : l'arbitrage du DMA disque, et le ST et le Mega STE, qui n'ont pas de netlist disponible.
+
 ## Banc du blitter contre `stBlitter.sv`, et la netlist ST-4082 (2026-11-04)
 
 Nouveau banc : le blitter de NeoST contre fx68k et `stBlitter.sv` câblés sur un même bus, accès par accès, sur 78 programmes.

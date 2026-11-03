@@ -153,6 +153,7 @@ int testDmaSoundMmioState(); // octet FF8920 conservé dans les sauvegardes
 bool testPsgReset(); // image des registres et silence après reset PSG
 int testBlitterRmw(); // atomicité TAS devant une échéance blitter
 int testBlitterShareGap(); // tranches du blitter selon l'instruction du CPU (banc stBlitter)
+int testSteCmapSlot(); // $FF8920-3F attend le créneau de la RAM sur STE (netlist ST-4081)
 int testMachineFdcMediaVbl(); // Mediach suit les vrais VBL malgré la fréquence vidéo
 int testGemdosDriveMapping(); // GEMDOS après les partitions ACSI, routage des lecteurs
 int testAcsiPartitions(); // comptage des racines DOS/Atari et des cibles ACSI
@@ -2906,6 +2907,7 @@ int main() {
     if (testPsgReset()) ++g_ok; else ++g_fail;
     if (const int failures = testBlitterRmw()) g_fail += failures; else ++g_ok;
     if (const int failures = testBlitterShareGap()) g_fail += failures; else ++g_ok;
+    if (const int failures = testSteCmapSlot()) g_fail += failures; else ++g_ok;
     if (const int failures = testMachineFdcMediaVbl()) g_fail += failures; else ++g_ok;
     if (const int failures = testGemdosDriveMapping()) g_fail += failures; else ++g_ok;
     if (const int failures = testAcsiPartitions()) g_fail += failures; else ++g_ok;

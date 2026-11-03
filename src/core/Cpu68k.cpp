@@ -524,7 +524,13 @@ public:
     // d'Hatari. Au milieu du cycle, une tranche blitter peut déjà avoir tourné :
     // réaligner alors le callback ajoute une attente parasite après la restitution.
     void alignRamBus(moira::u32 a) {
-        if (g_cur->cpuMul != 1 || !g_ramSlot || a >= 0x400000u) return;
+        if (g_cur->cpuMul != 1 || !g_ramSlot) return;
+        // Hors RAM, seuls $FF8920-$FF893F du STE passent par le même créneau (SMAPB). $FF8240-7F
+        // aussi (VMAPB), mais Shifter::syncCpuBus l'aligne lui-même, à la date qu'il observe.
+        // [B] ST-4081 feuilles 19 et 21 (ST4081S.PDF, sha256 935c4dd9) : CMAP cadencé par CYCSEL, comme RAMSEL.
+        // [D] gstmcu.v:282 @ 4a6db7cc, smapb ; latence relevée par Vste_tb --dtack. [D] Hatari @ f0736b24 ne
+        // l'aligne pas. [F] Mega STE sans netlist : suit le STE.
+        if (a >= 0x400000u && ((a & 0xFFFFE0u) != 0xFF8920u || !machineIsSte(g_cur->bus->machine))) return;
         const int slot = int((getClock() + g_cur->cpuBias + g_ramSlotPhase) & 3);
         if (slot) {
             if (g_cur->bus->blitterWinEnd >= 0) sync(4 - slot);

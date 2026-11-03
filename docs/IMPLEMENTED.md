@@ -11,6 +11,8 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
 
 - **Blitter** : accord au cycle avec fx68k + `stBlitter.sv` sur 78 programmes, ST à 8 MHz, accès, données et dates. Partage du bus
   corrigé d'après la netlist ST-4082 et le RTL ; SMUDGE en HOP 0 lit la source ; adresse source relisible en plein mot. → `docs/STBLITTER_BENCH.md`
+- **Bus STE** : latence de DTACK par zone mesurée sur le GSTMCU et lue sur la netlist ST-4081. `$FF8920-3F` passe par le créneau de la RAM, `$FF820A`
+  n'y passe plus. Ni la vidéo, ni le son, ni le rafraîchissement n'ajoutent d'attente au CPU. → `docs/CYCLE_ACCURACY.md` § 5
 - **Couverture** : étalons `boot_tos*`, chaque TOS présent jusqu'au bureau, Mega ST compris. `--disk-at` change la disquette en cours.
 
 ## Compléments du 2026-11-03

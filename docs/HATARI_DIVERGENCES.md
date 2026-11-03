@@ -1317,6 +1317,8 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
+- **`$FF8920-3F` au créneau de la RAM, sur STE** (2026-11-04) : [B] ST-4081 feuilles 19 et 21, CMAP par SMAPB. Hatari n'aligne que couleurs,
+  résolution et `$FF8264/65`. Écart de 2 cycles au plus, seulement à une lecture ou écriture en phase 4n + 2. Ne pas réaligner.
 - **Blitter en partagé** (2026-11-04) : fenêtre de comptage de 2 cycles au lieu de 4, accès CPU retenu compté parmi les 64 du CPU.
   [B] ST-4082 feuille 1 (compteur cadencé par AS) et [D] `stBlitter.sv:238-250 @ a00deb5b` avec fx68k @ `0602ee46` ; Hatari
   `blitter.c:69-79 @ f0736b24` annonce 4 cycles, « my guess ». Une boucle d'EXG donne 64 accès par tranche chez NeoST et le RTL, 63 chez Hatari.

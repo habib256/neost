@@ -298,11 +298,16 @@ l'égalité avec Hatari, qui ne prouve pas la fidélité (`CLAUDE.md`, grades de
 ne dit pour autant que ces effets soient mal modélisés : c'est la justification qui tombe,
 et le code ne change pas tant qu'une source de rang supérieur n'a pas tranché.
 
-- **Contention DMA vidéo sur la RAM** : `[D]` modélisée par MAME (`stmmu.cpp`), absente
-  d'Hatari. `[F]` Inconnu : le créneau mémoire du CPU suffit-il à l'expliquer ? Tranché par :
-  `ramcyc`/`DTACK_N_O` dans `gstmcu.v`.
-- **Vol de cycles DMA son / FDC sur le bus** : `[F]` Absent d'Hatari, jamais confronté au
-  schéma. Tranché par : `sndcnt.v`, `mcucontrol.v`, puis une sonde.
+- **Contention DMA vidéo et son sur la RAM** : **tranché sur STE, il n'y en a pas au-delà du créneau.** `[B]` ST-4081,
+  `ST4081S.PDF` (sha256 `935c4dd9…`) : feuille 21, `RAMCYC` n'a pour entrées que `RAMSEL` et `CYCSEL` ; feuille 19, `RAMSEL`
+  ne voit qu'AS, les strobes, la zone et le DMA ; feuille 8, `DTACK` en découle. Ni `VIDEN`, ni `SNDEN`, ni `REFB`. `[D]`
+  `gstmcu.v:133-139 @ 4a6db7cc` : `addrselb` donne à la vidéo, au son et au rafraîchissement la phase que le CPU n'a pas.
+  Mesuré sur ce modèle (`Vste_tb --dtack`, palier `full`) : même latence, DE actif ou non, son à 50 kHz ou non.
+  MAME (`stmmu.cpp`) modélise une contention : non retenue. `[F]` ST et Mega STE sans netlist.
+- **Vol de cycles du DMA disque** : `[B]` il prend le bus par BR/BG et cadence ASO/DSO sur 4 cycles par mot (feuille 8). Les
+  32 cycles de NeoST pour 8 mots concordent par lecture ; l'arbitrage autour de la rafale reste à relever. → `TODO.md` § 2.2
+- **Créneau hors RAM** : `$FF8240-7F` et, sur STE, `$FF8920-3F` passent par `CYCSEL` (feuilles 19 et 21). ROM, cartouche,
+  `$FF8001`, `$FF8200-0D`, `$FF820A`, `$FF8900-0F` répondent sans attendre. NeoST aligne maintenant `$FF8920-3F`, et n'aligne plus `$FF820A`.
 - **Modes pulse du MFP (9-15)** : portés le 2026-11-03 d'après `[B]` MC68901 § 5.1.2. Hatari
   les approxime en mode délai : l'écart est voulu.
 

@@ -1483,7 +1483,11 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
                              (long long)(fc>=0?fc/cpl:-1), (long long)(fc>=0?fc%cpl:-1));
             }
             return;
-        case 0xFF820A: syncCpuBus(); recordSyncWrite(false, v); sync = v; return;   // synchro 50/60 Hz (+ bordures + wait-state bus, FIX2 : aligne l'accès sur 4 cyc comme $FF8260/palette, port wait_cpu_cycle_write)
+        // $FF820A répond sans créneau : SYNCSEL pose DTACK directement.
+        // [B] ST-4081 feuille 8 (ST4081S.PDF, sha256 935c4dd9), porte P8019 ; feuille 19, CMAP = VMAPB/SMAPB
+        // seulement. [D] gstmcu.v @ 4a6db7cc, latence 0 mesurée (Vste_tb --dtack). [D] Hatari
+        // Video_Sync_WriteByte @ f0736b24 n'aligne pas non plus. STE ; le GLUE du ST reste sans netlist.
+        case 0xFF820A: recordSyncWrite(false, v); sync = v; return;   // synchro 50/60 Hz (+ bordures + wait-state bus, FIX2 : aligne l'accès sur 4 cyc comme $FF8260/palette, port wait_cpu_cycle_write)
         // Compteur vidéo $FF8205/07/09 : INSCRIPTIBLE sur STE/TT seulement (port
         // Video_ScreenCounter_WriteByte) — immédiat hors affichage, différé sinon.
         case 0xFF8205: case 0xFF8207: case 0xFF8209:

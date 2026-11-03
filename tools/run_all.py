@@ -225,6 +225,9 @@ FULL = FAST + [
     # deux sens. Verilator ou extern/fx68k absents → SKIP recensé (77).
     ("Banc Moira↔fx68k (cycles bus du 68000 nu contre le RTL)",
      [sys.executable, str(TOOLS / "run_fx68k_bench.py")]),
+    # GSTMCU (STE) simulé : écrans connus, dates des signaux, latence de DTACK par zone.
+    ("Banc GSTMCU (écrans calculés, latence de DTACK par zone)",
+     [sys.executable, str(TOOLS / "run_gstmcu_bench.py")]),
     # Blitter de NeoST contre fx68k + stBlitter.sv : accès, données et dates. Sans Verilator ou
     # sans les RTL épinglés → SKIP recensé (77).
     ("Banc blitter ↔ stBlitter.sv (accès et dates, contre le RTL)",

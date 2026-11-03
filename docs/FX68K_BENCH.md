@@ -129,5 +129,4 @@ créneaux de 4 cycles d'un ST, les deux séries donnent les mêmes dates (20, 20
   `CHK` et `DIVS` en trap, `RTR`, `TRAPV` pris, `LINE A` en mode utilisateur.
 - Le GSTMCU (`run_gstmcu_bench.py`) n'exécute pas de code. `stBlitter.sv` a son propre banc,
   [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md).
-- Verilator **en CI** : le banc est SKIP sur les runners. `run_gstmcu_bench.py` n'est, lui,
-  branché sur aucun palier.
+- Verilator **en CI** : les bancs RTL sont SKIP sur les runners.

@@ -97,11 +97,9 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
 
 ### 2.2 GLUE, MMU, Shifter — vidéo et bus
 
-- **Contention DMA vidéo sur la RAM** · P1 ⭘ · aligné Hatari — MAME la modélise, Hatari non.
-  Le créneau mémoire du CPU suffit-il ? Tranche : [B] `ST4081S.PDF`, puis `ramcyc`/`DTACK_N_O`,
-  `gstmcu.v` @ `4a6db7cc`. → `docs/CYCLE_ACCURACY.md` § 5
-- **Vol de cycles DMA son / FDC sur le bus** · P1 ⭘ · aligné Hatari — écarté faute de modèle
-  chez Hatari. Tranche : `sndcnt.v`, `mcucontrol.v`, puis une sonde.
+- **DMA disque sur le bus** · P2 ⭘ — il passe par BR/BG et ASO/DSO, un mot par 4 cycles ([B] ST-4081 feuille 8) ; les
+  32 cycles de NeoST pour 8 mots concordent, par lecture. L'arbitrage autour de la rafale n'est ni simulé ni relevé.
+  ST et Mega STE : aucune netlist, le STE fait référence. → `docs/CYCLE_ACCURACY.md` § 5
 - **Couleur pendant BLANK** · P2 ⏸ source · [F] palette 0 — `gstshifter.v:263-265 @ 4a6db7cc` force le
   noir hors mono, et le banc le confirme (étalons `rtl_low_*` : seul écart, 2 lignes en PAL,
   13 en NTSC). Hatari l'admet (`video.c:4008-4009 @ f0736b24`). Code inchangé tant qu'une source
@@ -266,8 +264,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   schéma du Shifter ST.
 - **Classer les auto-tests** · P2 ⭘ — `neost-selftest` et `--*-selftest` : une table issue
   d'une fiche est `primary`, une table recopiée d'Hatari est `hatari`.
-- **Verilator en CI, banc GSTMCU au palier `full`** · P2 ⭘ — le banc fx68k est SKIP sur les runners,
-  et `run_gstmcu_bench.py` n'est branché sur aucun palier. Installer Verilator (5.054), brancher le second.
+- **Verilator en CI** · P2 ⭘ — les bancs RTL sont SKIP sur les runners.
+  Installer Verilator (5.054) pour les faire tourner là aussi.
 - **Monter les 11 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl` ; `closure` et
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
 
