@@ -57,13 +57,11 @@ documents primaires, les ROM et le RTL épinglé.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | Lire au RTL épinglé : `$FF8261`, blanking, GPIP3 ; trancher le noir sous BLANK | P1 | 2.2 |
-| 3 | Continuer la logithèque STE avec `compare_titles.py` : Pacemaker, Cernit Trandafir, parties suivantes | P1 | 3 |
-| 4 | Couvrir Mega ST et TOS 1.00/1.04/1.06 par des étalons : ROM présentes sur le disque privé | P1 | 3 |
-| 7 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
-| 8 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
-| 9 | Banc `stBlitter.sv` sur le modèle du banc fx68k | P2 | 4 |
-| 10 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
+| 1 | Continuer la logithèque avec `compare_titles.py` : parties suivantes, pilotage clavier, jeux | P1 | 3 |
+| 2 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
+| 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
+| 4 | Banc `stBlitter.sv` sur le modèle du banc fx68k | P2 | 4 |
+| 5 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
 
 ---
 
@@ -105,12 +103,13 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   `gstmcu.v` @ `4a6db7cc`. → `docs/CYCLE_ACCURACY.md` § 5
 - **Vol de cycles DMA son / FDC sur le bus** · P1 ⭘ · aligné Hatari — écarté faute de modèle
   chez Hatari. Tranche : `sndcnt.v`, `mcucontrol.v`, puis une sonde.
-- **Couleur pendant BLANK** · P1 ◐ · [F] palette 0 — `gstshifter.v:263-265 @ 4a6db7cc` force le
+- **Couleur pendant BLANK** · P2 ⏸ source · [F] palette 0 — `gstshifter.v:263-265 @ 4a6db7cc` force le
   noir hors mono, et le banc le confirme (étalons `rtl_low_*` : seul écart, 2 lignes en PAL,
   13 en NTSC). Hatari l'admet (`video.c:4008-4009 @ f0736b24`). Code inchangé tant qu'une source
   plus haute manque ; passer au noir déplacerait les références `hatari` à bordure visible.
   ⚠ Le schéma 4118 est le shifter de la Panther ; aucun schéma du Shifter ST n'est disponible.
-- **Octet `$FF8261` relu** · P1 ⭘ · [F] — `gstshifter.v:121 @ 4a6db7cc` rend $00 en octet bas.
+- **Octet `$FF8261` relu** · P3 ⏸ source · [F] — `gstshifter.v:121 @ 4a6db7cc` rend $00 en octet bas ; NeoST garde l'alias de
+  `$FF8260`, comme Hatari. Bloc « moyen » : le RTL ne l'emporte pas. Tranche : relevé sur STE.
 - **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — « choix acté », sans source
   matérielle. Tranche : relevés de tiers (§ 4), netlist STE pour la branche STE.
 - **Offsets de datation dérivés d'Hatari** · P2 ⭘ · aligné Hatari — `kVideoCounterReadOffsetCyc`,
@@ -149,9 +148,6 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
 
 ### 2.3 MFP 68901
 
-- **GPIP3 au repos avec blitter** · P1 ⭘ · [F] `$FFFA01` bit 3 supposé 0 sur Mega ST/STE/Mega
-  STE — `stBlitter.sv:190 @ a00deb5b` : INT = BUSY. Seule la lecture STFM sans blitter ($E9)
-  est publiée. → `docs/HATARI_DIVERGENCES.md` § *Cas où NeoST améliore Hatari*
 - **Jitter des périodes Timer B** · P2 ⭘ · [F] — sonde Super Hang-On : NeoST {512, 516, 508,
   520}, Hatari {512, 520, 504}. Dépend de la prise d'IPL (§ 2.1).
 - **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
@@ -239,39 +235,13 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
   plantage propre à NeoST ; écrans d'intro ou titres seulement, sans partie jouée. À étendre :
   disquettes STX à lancer, parties pilotées (`docs/OPENDST.md`), musique et son, disques STE.
 
-- **Couverture ROM des étalons** · P1 ⭘ — Mega ST, TOS 1.00, 1.04 et 1.06 ne sont couverts par
-  AUCUN étalon pixel (manifeste `etalons.json`) ; un étalon par ROM propriétaire présente,
-  recensé comme SKIP quand elle manque.
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
-  Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour et Drone s'affichent correctement aux
-  écrans vus. Restent Cernit Trandafir (attend sur le bureau), les parties suivantes, et le pilotage clavier dans l'outil.
-- **Chronologie de Sea of Colour et Drone** · P2 ⭘ — NeoST et Hatari y atteignent les mêmes écrans à des trames différentes,
-  d'environ 100 à 1000 trames, sans que `--sound` change rien. Comparer les durées de chargement GEMDOS, puis trancher.
-- ***Seven Gates of Jambala*** · P2 ⭘ — valider le recalage Timer B après écriture AER3 (porté le
-  2026-10-19). Média présent (`disks/seven_gates_of_jambala_{a,b}.stx`, non versionné).
-- **Exceptions vidéo E605 / Tekila** · P3 ⏸ programme — hacks par opcodes chez Hatari ; port
-  différé jusqu'à reproduction, aucun défaut matériel démontré.
-
-### Attendent un média
-
-- **Notator n'a jamais tourné** · P2 ⏸ — cité comme séquenceur cible au même titre que Cubase.
-- **EtherNEC sous TOS 1.04** · P2 ⏸ — STinG + `ENEC.STX` (DHCP, ping, GET) ; manquent les
-  archives STinG 1.26 + `ENEC.STX` (URLs dans `tools/make_sting_test.py`).
-- **Logiciels à clé / dongles** · P3 ⏸ — `PortDevices` (Leader Board, 10th Frame, B.A.T. II,
-  Music Master, « Pro Sound ») ; clé **Notator** (front de /ROM4, ordre UDS↔/ROM4) ; clé
-  **Steinberg** (Cubase 3.10 / Score / 2.01). Sans relevé public : Log 3, Pro-24, Avalon,
-  Zodiac, DynaBlaster. Outil : capture `R3`/`R4`/`U` + `--key-replay`. → `docs/EXTENSIONS.md`
-- **Stardust STE** · P3 ⏸ — l'oracle affiche « INSERT DISK 2 » là où NeoST fond au noir puis
-  scrute B ; disquettes 2/3 absentes.
-- **`union_demo`** · P3 ⏸ — disque absent (planetemu manuel) ; recette de migration A10 à son retour.
-- **UltraSatan : `US_CONF.TOS` réel** · P3 ⭘ — compiler l'outil de Jookie (Pure C) ; idem
-  HDDRIVER / ICD PRO sur une image à deux slots.
-
----
+  Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
+  s'affichent correctement aux écrans vus. Restent les parties suivantes et le pilotage clavier dans l'outil.
 
 ## 4. 🪜 Harnais et preuve
 
-34 étalons `hatari`, 11 `snapshot`, 2 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
+42 étalons `hatari`, 11 `snapshot`, 2 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
 contact du matériel, par des relevés de tiers. Le banc fx68k ajoute 34 variantes `rtl` pour
 le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
@@ -315,7 +285,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   perte de déterminisme. Socle du retour arrière et d'un jeu en ligne en lockstep. Modèle : ASE.
 - **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne le mur du palier pixel (~45 s) ; savoir
   QUAND la démo relit le clavier avant de raccourcir.
-- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **43 étalons pixel sur 47** tournent
+- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **43 étalons pixel sur 55** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → § 3.
 - **Banc temporel Hatari** · P2 ◐ — 20 sondes, dont écriture DMA disquette, lecture STX et

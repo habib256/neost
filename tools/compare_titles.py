@@ -14,7 +14,7 @@
 #
 #  Usage : compare_titles.py SORTIE DISQUE... [--machine ste] [--rom roms/tos162uk.img]
 #            [--mem 1] [--frames 1000,2000,4000] [--window 60] [--offset 0] [--step 1]
-#            [--auto A:\\PROG.PRG] [--gemdos DOSSIER] [--jobs 4]
+#            [--auto A:\\PROG.PRG] [--gemdos DOSSIER] [--swap TRAME:DISQUE]... [--jobs 4]
 #  Sorties : SORTIE/summary.json, SORTIE/sheet.png. Exige Pillow et ffmpeg ; code 77 sinon.
 #  Les disques sont copiés avant chaque exécution : un programme peut y écrire.
 #
@@ -46,6 +46,17 @@ HEADLESS = ROOT / "build" / "neost-headless"
 HATARI = ROOT / "extern" / "hatari" / "build" / "src" / "hatari"
 
 
+def swap_copy(disk: Path, work: Path, tag: str) -> Path:
+    copy = work / (tag + disk.suffix)
+    shutil.copy(disk, copy)
+    return copy
+
+
+def parse_swap(text: str) -> tuple[int, Path]:
+    at, _, path = text.partition(":")
+    return int(at), Path(path)
+
+
 def neost_frames(disk: Path, args, work: Path) -> dict[int, Image.Image]:
     copy = work / ("n" + disk.suffix)
     shutil.copy(disk, copy)
@@ -58,6 +69,8 @@ def neost_frames(disk: Path, args, work: Path) -> dict[int, Image.Image]:
            "--shot-from", str(min(args.frames)), "--shot-every", str(step), str(prefix)]
     if args.auto:
         cmd += ["--auto", args.auto]
+    for i, (at, other) in enumerate(args.swap):
+        cmd += ["--disk-at", str(at), str(swap_copy(other, work, f"ns{i}"))]
     subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=1200, check=True)
     shots = sorted(work.glob("n_*"))
     if not shots:
@@ -83,8 +96,18 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
     wanted = sorted({v for f in args.frames
                      for v in range(max(1, f + args.offset - args.window),
                                     f + args.offset + args.window + 1, args.step)})
+    # Un changement de disquette est un arrêt de plus, en ordre de VBL avec les captures.
+    swaps = {at: swap_copy(other, work, f"hs{i}") for i, (at, other) in enumerate(args.swap)}
+    wanted = sorted(set(wanted) | set(swaps))
+    shoot = {v for f in args.frames
+             for v in range(max(1, f + args.offset - args.window),
+                            f + args.offset + args.window + 1, args.step)}
     for i, vbl in enumerate(wanted):
-        lines = [f"screenshot {shots / f'{vbl:06d}.png'}"]
+        lines = []
+        if vbl in swaps:
+            lines.append(f"setopt --disk-a {swaps[vbl]}")
+        if vbl in shoot:
+            lines.append(f"screenshot {shots / f'{vbl:06d}.png'}")
         if i + 1 < len(wanted):
             lines.append(f"b VBL = {wanted[i + 1]} :once :trace :file {work / f's{wanted[i + 1]}.ini'}")
         (work / f"s{vbl}.ini").write_text("\n".join(lines) + "\n")
@@ -177,6 +200,8 @@ def main() -> int:
     ap.add_argument("--step", type=int, default=1, help="pas de capture dans la fenêtre")
     ap.add_argument("--auto")
     ap.add_argument("--gemdos", type=Path, help="dossier monté en C: à la place de la disquette")
+    ap.add_argument("--swap", type=parse_swap, action="append", default=[],
+                    help="TRAME:DISQUE, change la disquette du lecteur A à cette trame (répétable)")
     ap.add_argument("--jobs", type=int, default=4)
     args = ap.parse_args()
     args.frames = sorted(int(x) for x in args.frames.split(","))

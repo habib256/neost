@@ -129,6 +129,7 @@ void usage() {
         "                    (repeatable)\n"
         "  --joy P1[,P0]     hold a joystick state (bits up$01 down$02 l$04 r$08 fire$80)\n"
         "  --disk FILE       mount an image in drive A (default disks/diskA.st)\n"
+        "  --disk-at N FILE  swap the disk in drive A at frame N (repeatable)\n"
         "  --diskb FILE      mount an image in drive B (second drive)\n"
         "  --drive-b on|off  connect drive B (default on). off = single-drive ST:\n"
         "                    TOS finds one drive (_nflops = 1) and asks to swap\n"
@@ -1198,6 +1199,9 @@ int main(int argc, char** argv) {
     // occurrences = plusieurs frappes datées (menus en cascade — cracktro D-BUG
     // « Y/N » PUIS « press any key », etc.).
     std::vector<std::pair<int, std::string>> keysAtList;
+    // --disk-at N FILE : change la disquette du lecteur A à la trame N, comme le menu de la
+    // GUI (Machine::loadDisk). Pour les titres sur plusieurs disquettes.
+    std::vector<std::pair<int, std::string>> diskAtList;
     // --key-down N C / --key-up N C : make SEUL à la trame N (resp. break seul) —
     // reproduit une touche TENUE comme en GUI (≠ --keys-at qui pulse make/break
     // toutes les 4 trames). C = caractère de la table stScancode ('[' ']' '<' '>'…).
@@ -1395,6 +1399,7 @@ int main(int argc, char** argv) {
         }
         else if (!std::strcmp(a, "--shot-from"))   shotFrom = std::atoi(next(a));
         else if (!std::strcmp(a, "--keys-at"))     { const int f = std::atoi(next(a)); keysAtList.emplace_back(f, next(a)); }
+        else if (!std::strcmp(a, "--disk-at"))     { const int f = std::atoi(next(a)); diskAtList.emplace_back(f, next(a)); }
         else if (!std::strcmp(a, "--key-down"))    { const int f = std::atoi(next(a)); keyDownList.emplace_back(f, next(a)[0]); }
         else if (!std::strcmp(a, "--key-up"))      { const int f = std::atoi(next(a)); keyUpList.emplace_back(f, next(a)[0]); }
         // ⚠ --joy-at prend DEUX arguments : les temporaires sont OBLIGATOIRES. Un
@@ -2253,6 +2258,9 @@ int main(int argc, char** argv) {
 #ifdef NEOST_WITH_NET
         if (midiRing) midiRing->poll([](uint8_t) { return false; });
 #endif
+        for (const auto& [df, dp] : diskAtList)
+            if (frame == df && !machine.loadDisk(dp))
+                std::fprintf(stderr, "[headless] --disk-at: cannot load %s\n", dp.c_str());
         // Injections datées (--keys-at / --joy-at) : pilotage d'un menu de démo en
         // PLEINE boucle (l'intro Cuddly attend espace ; le robot du menu, le stick),
         // sans perdre --shot-every. Une touche = make à +0, break à +2, 4 trames/char.

@@ -38,12 +38,11 @@ commutations de palette par ligne ne tombent plus au bon endroit : l'image sort
 le remède est une ROM européenne. Repères d'aire non-noire pour la diapo « coucher de
 soleil » : **0,555 = rendu correct (PAL)**, **0,475 = déchiré (NTSC)**.
 
-**Couverture de la suite** (recomptée 2026-10-20 : 43 étalons « machine », hors les
-11 auto-tests) : `st` ×23 et `ste` ×20 (dans le manifeste) ; `tos102uk` ×3 (50 Hz) + `tos162us` ×1 (60 Hz)
-— **ROM Atari propriétaires** —, `etos192fr` ×28 (50 Hz) + `etos256us` ×11 (60 Hz)
-— **ROM libres** ; 512 Ko ×39 et 1 Mo ×4 ; `fastfdc` ×35. Donc **MegaST, TOS
-1.00/1.04/1.06 ne sont couverts par AUCUN étalon** (le MegaSTE et TOS 2.06, eux, le sont
-depuis le 2026-08-27 par `tools/run_megaste_diag.py`, hors de ce manifeste). Une suite verte ne prouve rien hors de ces
+**Couverture de la suite** (recomptée 2026-11-04 : 55 étalons « machine », hors les
+11 auto-tests) : `ste` ×28, `st` ×25 et `megast` ×2 ; ROM libres `etos192fr` ×20, `etos256fr` ×12 et `etos256us` ×11 ;
+ROM Atari propriétaires `tos102uk` ×4, `tos104uk` ×2, `tos100uk`, `tos106uk`, `tos162uk`, `tos162us`, `tos205fr` et `tos206uk` ×1 ;
+512 Ko ×44, 1 Mo ×8 et 4 Mo ×3 ; `fastfdc` ×37. Les étalons `boot_tos*` (2026-11-04) couvrent chaque TOS présent, Mega ST
+compris, jusqu'au bureau, et pas au-delà. Le MegaSTE reste gardé par `tools/run_megaste_diag.py`, hors de ce manifeste. Une suite verte ne prouve rien hors de ces
 configurations : devant un rapport « ça plante dans le GUI », commencer par lire
 `neost.cfg` et rejouer la scène avec `--from-cfg neost.cfg --disk <image>`
 (+ `--shot-every N PRÉFIXE` pour voir *où* ça casse) avant de soupçonner une
@@ -349,8 +348,8 @@ python3 tools/compare_screenshot.py tests/out/foo_neost.ppm tests/reference/foo.
 `mfp_poll`, `dmasnd_poll`, `vblank_on`/`off`, 16 `blankline_*`) ; fetch auto : **Cuddly Demos**
 (`disks/etalons/cuddly_demos.msa`), **No Cooper** (`disks/etalons/nocooper.msa`),
 **union_demo** (`optional` : SKIP tant que la disquette n'est pas rapatriée).
-Soit **54 entrées** dans `tools/etalons.json` (2026-10-20) — 11 auto-tests + **43 étalons machine**, dont
-le `_comment` du fichier rappelle la couverture réelle (ni MegaST, ni TOS 1.00/1.04/1.06).
+Soit **66 entrées** dans `tools/etalons.json` (2026-11-04) : 11 auto-tests et **55 étalons machine**, dont
+le `_comment` du fichier rappelle la couverture réelle.
 L'auto-test `glue_selftest_attr` (A16b, 2026-08-28) : le MÊME auto-test Glue
 rejoué avec le verrou `NEOST_LINELEN_ATTR=0` (grille fixe, l'A/B depuis que V3 est le défaut, 2026-09-01). Un chemin que
 personne n'exécute pourrit — celui-là segfautait depuis des semaines sans qu'aucun palier

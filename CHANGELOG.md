@@ -6,6 +6,23 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Cernit Trandafir, et le changement de disquette daté (2026-11-04)
+
+DHS Cernit Trandafir n'attendait pas sur le bureau par défaut d'émulation : il exige 2 Mo, et demande son disque 2 vers la trame 3000.
+- **`--disk-at N FILE`** (headless) change la disquette du lecteur A à la trame N, comme le menu de la GUI.
+- **`--swap TRAME:DISQUE`** (`tools/compare_titles.py`) fait le même geste des deux côtés, par `setopt --disk-a` côté Hatari.
+- **Résultat** : disque 2 inséré à la trame 3200, les huit écrans vus jusqu'à la trame 20000 sont à 0,0 % d'écart avec Hatari.
+
+## Étalons de boot : chaque TOS présent, Mega ST compris (2026-11-04)
+
+Huit étalons `boot_tos*` comparent le bureau à l'Hatari épinglé : TOS 1.00, 1.04 et 1.06, Mega ST sous TOS 1.02 et 1.04, TOS 1.62,
+2.05 et 2.06. Les huit sont à 0 px. Le manifeste passe à 55 étalons machine, dont 42 `hatari`.
+- **TOS 2.06 arrive plus tard au bureau que sous Hatari**, d'environ 170 trames. Ce n'est pas un défaut : Hatari saute le contrôle
+  de somme de la ROM par un patch, et les boucles du test mémoire ont les mêmes périodes des deux côtés (`docs/HATARI_DIVERGENCES.md`).
+- **TOS 2.05 attend environ 100 s sur un écran blanc** des deux côtés. La première capture, à la trame 780, était uniforme :
+  son 0 px ne validait rien, et `--verify-refs` l'a refusée. L'étalon regarde maintenant le bureau, à la trame 5180.
+- **Portée** : ces étalons disent que chaque TOS démarre au bureau. Ils ne disent rien des programmes lancés ensuite sur ces machines.
+
 ## STE : démos à résolution mêlée, et une passe sur les titres (2026-11-03)
 
 La campagne sur les démos STE livrées par Cursor (`disks/st/demos`) a trouvé de vrais défauts. DHS Double Rez Trouble (STE,

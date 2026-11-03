@@ -1317,6 +1317,10 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
+- **Contrôle de somme de la ROM TOS 2.06** (2026-11-04) : Hatari écrit un BRA en `$E007FA` (`tos.c:483 @ f0736b24`, patch
+  `TP_ALWAYS`), car ses autres patchs fausseraient la somme. NeoST exécute la ROM intacte ([C] TOS 2.06 UK, boucle `$E015CC`-`$E015E2`),
+  ce qui coûte environ 170 trames au démarrage en 4 Mo. Les boucles du test mémoire ont les mêmes périodes des deux côtés.
+  Une comparaison datée de ce boot doit donc viser la fin du test (`boot_tos206uk`). Ne pas patcher la ROM pour égaler.
 - **Canaux I3/I4 en event-count** (2026-11-04) : ils répondent à TAI/TBI, [B] MC68901 § 2.1.6.2 et § 5.1.3 ; Hatari et
   `mfp.v:387 @ a00deb5b` gardent I3/I4. Aucun des 83 disques du catalogue n'active ce canal avec un timer en event-count.
   Un programme en Timer A event-count perd donc l'IRQ clavier, comme la fiche l'annonce. Ne pas réaligner.
