@@ -11,8 +11,8 @@
 //
 //  CONVENTION DE DATATION. Moira encadre chaque cycle bus de deux SYNC(2) :
 //  willAccessBus (S0), SYNC(2), lecture/écriture, SYNC(2) — MoiraDataflow_cpp.h, read()
-//  et write(). Le rappel tombe donc à S0 + 2 cycles. [B] M68000UM Rev 8 § 5.1 : AS tombe
-//  au début de S2, un cycle après S0. Chaque accès est daté `clock − 1`, soit le front
+//  et write(). Le rappel tombe donc à S0 + 2 cycles. [B] M68000UM Rev 8 § 5.1.1 p. 5-4 :
+//  AS tombe au front montant de S2, un cycle après S0. Chaque accès est daté `clock − 1`, soit le front
 //  descendant d'AS, comme côté fx68k. Les lectures des vecteurs de reset
 //  (read16OnReset) et l'IACK (readIrqUserVector) n'ont pas de willAccessBus : même
 //  convention, appliquée à leur rappel. L'IACK est daté `clock − 3` : Moira l'encadre de
@@ -51,7 +51,8 @@ public:
     struct IrqEv { i64 t; int level; };
     std::vector<IrqEv> irqs;
     size_t irqIdx = 0;
-    mutable i64 tFirst = -1;
+    mutable int nEmit = 0;
+    mutable i64 tOrigin = -1;      // date du 7e accès bus (origine des --irq, cf. fx68k_bench.cpp)
     mutable bool done = false;
 
     BareMoira() : ram(1u << 24) {
@@ -63,7 +64,7 @@ public:
 
     void emit(int fcode, bool write, int size, u32 addr, u16 data, int lead = 1) const {
         const i64 t = clock - lead;
-        if (tFirst < 0) tFirst = t;
+        if (++nEmit == 7) tOrigin = t;
         std::fprintf(out, "%lld %d %c %d %06X %0*X\n", (long long)t, fcode, write ? 'W' : 'R',
                      size, addr & 0xFFFFFF, size == 2 ? 4 : 2, data);
         if (write && (addr & 0xFF0000) == 0xF00000) done = true;
@@ -91,7 +92,9 @@ public:
         emit(fc(), true, 2, a, v);
     }
     u16 readIrqUserVector(u8 level) const override {
-        // [B] M68000UM § 6.3.2 : A1-A3 = niveau, A4-A23 à 1, FC = 7, LDS seul.
+        // [B] M68000UM § 5.1.4 p. 5-10 : niveau sur A3-A1, autres lignes à 1, FC = 7.
+        // Normalisé en octet à adresse impaire des deux côtés du banc : fx68k pose UDS et
+        // LDS (observé), le vecteur n'est lu que sur D0-D7.
         emit(7, false, 1, 0xFFFFF1 | (u32(level) << 1), u16(0x40 + level), 3);
         const_cast<BareMoira*>(this)->setIPL(0);     // le périphérique est acquitté
         return u16(0x40 + level);
@@ -100,8 +103,8 @@ public:
     // la broche depuis son ordonnanceur (Cpu68k.cpp, hook sync).
     void sync(int cycles) override {
         clock += cycles;
-        if (tFirst < 0) return;
-        while (irqIdx < irqs.size() && (clock - 1) - tFirst >= irqs[irqIdx].t)
+        if (tOrigin < 0) return;
+        while (irqIdx < irqs.size() && (clock - 1) - tOrigin >= irqs[irqIdx].t)
             setIPL(u8(irqs[irqIdx++].level));
     }
 };

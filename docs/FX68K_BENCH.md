@@ -30,14 +30,14 @@ séquences d'exception, sur le même programme que Moira.
 | `tools/run_fx68k_bench.py` | Bâtit, exécute, compare, et garde les verdicts dans `tests/reference/fx68k_bench.json`. Palier `full` de `run_all.py` ; SKIP (77) sans Verilator ou sans `extern/fx68k` (`tools/setup_silicon_refs.sh`). |
 
 **Datation.** Chaque accès est daté au **front descendant d'AS**, en cycles CPU.
-[B] M68000UM Rev 8 § 5.1 : AS tombe au début de S2, un cycle après S0. Côté fx68k c'est
-observé sur la broche ; côté Moira c'est `clock − 1` au rappel `read16`/`write16`, parce que
-Moira encadre chaque cycle bus de `willAccessBus` (S0), `SYNC(2)`, accès, `SYNC(2)`
+[B] M68000UM Rev 8 § 5.1.1 p. 5-4 : AS tombe au front montant de S2, un cycle après S0. Côté
+fx68k c'est observé sur la broche ; côté Moira c'est `clock − 1` au rappel `read16`/`write16`,
+parce que Moira encadre chaque cycle bus de `willAccessBus` (S0), `SYNC(2)`, accès, `SYNC(2)`
 (`MoiraDataflow_cpp.h`). Le second transfert d'un cycle lecture-modification-écriture (TAS,
-AS reste bas) est daté à la retombée de DS moins un cycle (fig. 5-5 : à l'écriture, DS
-tombe à S4). L'IACK est daté `clock − 3` côté Moira : les quatre cycles qui précèdent la
-lecture du vecteur (`SYNC(iackSyncBefore = 4)`) sont le cycle bus d'IACK, et fx68k
-l'enchaîne aussitôt après l'écriture du PC bas. Son écart est de toute façon rapporté à part
+AS reste bas) est daté à la retombée de DS moins un cycle : [B] § 5.1.2 p. 5-6, une écriture
+pose DS à S4, un cycle après AS ; § 5.1.3 p. 5-9, le RMW le pose à S16. L'IACK est daté
+`clock − 3` côté Moira : les quatre cycles qui précèdent la lecture du vecteur
+(`SYNC(iackSyncBefore = 4)`) sont le cycle bus d'IACK. Son écart est rapporté à part
 (`iack_skew`).
 
 **Comparaison.** Les deux traces sont alignées sur leur premier accès (lecture du vecteur de
@@ -47,7 +47,10 @@ absolues : un écart ne masque pas les suivants, et le rapport compte. Deux mots
 long écrits dans l'ordre inverse comptent comme un `swap` ; un accès présent d'un seul côté
 est un `extra` et la comparaison se resynchronise dessus. La séquence de reset n'est datée
 que dans `reset_nop`. Les programmes à IRQ sont balayés sur huit phases (`+k` = la broche
-monte k cycles plus tard), et rejoués avec `--ipl-fetch`.
+monte k cycles plus tard), et rejoués avec `--ipl-fetch`. **L'instant de la broche se compte
+depuis le premier accès après le reset**, jamais depuis le début de la trace : les deux cœurs
+diffèrent de 2 cycles dans le reset, et la broche tomberait à une autre phase du programme.
+`--ipl-sweep` balaie cet instant et affiche la frontière prise par chaque cœur.
 
 **Référence.** Sans `tests/reference/fx68k_bench.json`, un écart fait échouer. Avec lui,
 c'est un **changement** de verdict qui fait échouer, dans les deux sens : un écart qui se
@@ -60,37 +63,52 @@ python3 tools/run_fx68k_bench.py --only stop_pending --verbose
 paste -d'|' tests/out/fx68k_bench/stop_pending+0.fx.txt tests/out/fx68k_bench/stop_pending+0.moira.txt
 ```
 
-## Ce que la première passe a trouvé (2026-11-03)
+## Ce que le banc a trouvé (2026-11-03)
 
-22 variantes sur 34 en accord cycle à cycle. **Tout ce que le banc exerce des instructions
-ordinaires concorde** : les 14 corps du cycle-bench, MULU/MULS/DIVU/DIVS, décalages,
-LINK/UNLK, PEA/LEA, BCD, bits, Scc, MOVEP, MOVE SR/CCR, TAS (cycle RMW de 10 cycles),
-l'exception trace, TRAP/TRAPV/CHK/division par zéro/ILLEGAL/ligne A et F (trames et durées),
-et la prise d'IRQ sur 6 phases sur 8. Les écarts, tous **[D] fx68k @ 0602ee46 contre Moira
-@ pin vendorisé**, par ordre d'intérêt pour un ST :
+18 variantes sur 34 concordent cycle à cycle. **Les durées concordent partout où le banc
+regarde, hors prise d'IRQ, STOP et reset** : les 14 corps du cycle-bench hors sortie du DBcc,
+MULU/MULS/DIVU/DIVS, décalages, LINK/UNLK, PEA/LEA, BCD, bits, Scc, MOVEP, MOVE SR/CCR, TAS,
+trace, et les exceptions TRAP/TRAPV/CHK/division par zéro/ILLEGAL/ligne A et F.
 
-| # | Écart | fx68k | Moira | Ce qui tranche |
+Ces écarts sont ceux du **cœur Moira nu**. Dans NeoST, la chaîne MFP→IPL ajoute ses propres délais,
+calés sur Hatari : le banc ne dit pas à lui seul ce que NeoST fait sur une IRQ réelle.
+
+**Témoins.** fx68k @ `0602ee46` ; Hatari @ `f0736b24` (`cpuemu_13.c`, généré à la construction,
+et `newcpu.c`) ; microcode = `extern/datasheets/m68k_microcode_all.txt`. Tous de grade D. Le
+microcode et fx68k ne sont pas indépendants ; Hatari l'est d'eux. Aucune source de grade
+supérieur ne tranche ces points, Moira n'a pas été modifié.
+
+| # | Écart | fx68k | Moira | Autres témoins |
 |---|---|---|---|---|
-| 1 | **STOP avec IRQ déjà pendante et masquée** (`stop_pending`) : du mot d'extension du STOP à la première écriture de trame | **18 cycles** (reconnaissance à STOP+12) | 14 (STOP+8) | La décision du 2026-10-22 (« STOP+8, fx68k et Hatari divergent, le silicium prime ») reposait sur une lecture du RTL ; sa **simulation** donne +12, comme Hatari. Rouvrir. Tranche au-dessus : microcode (og.kervella.org, entrée `4e72`), relevé sur machine. |
-| 2 | **Prise d'IPL à l'instant d'une frontière** (`irq_nop`) | Synchroniseur à deux étages (`fx68k.sv:222-223`) : aux phases 0 et 4, l'IRQ part une instruction plus tard | Voit la broche aussitôt : une instruction (4 cycles) plus tôt à 2 phases sur 8 | Avec `--ipl-fetch` (port WinUAE, `NEOST_IPLFETCH`), les phases 0 et 4 concordent et les six autres divergent (IRQ une instruction plus tard) : ni l'un ni l'autre n'est le modèle du RTL. Modèle à écrire d'après `fx68k.sv`, puis qualifier aux étalons (Timer B rasters). |
-| 3 | **Réveil du STOP** (`stop_irq`) | Phases 3 et 7 : réveil 4 cycles plus tôt que Moira | Quantification sur l'itération de 4 cycles, portée le 2026-10-22, décalée d'un cycle à 2 phases sur 8 | Même mécanisme que le n° 2, à qualifier ensemble. `--ipl-fetch` n'y change rien (1 écart à toutes les phases). |
-| 4 | **Ordre des deux mots d'une écriture longue** | Mot **bas d'abord** pour `MOVEM.L -(An)` (15 swaps) et `ADDQ.L #,<mem>` (6 swaps) | Mot haut d'abord | Comportement connu du 68000 pour `MOVE.L Dn,-(An)` (Moira l'a, drapeau `REVERSE`) ; à confirmer pour MOVEM et les RMW longs : yacht.txt, WinUAE CE (`cpuemu_11`), microcode. Visible sur un ST si la cible est un registre matériel ou une zone à bus error. |
-| 5 | **Lecture fantôme du DBcc expiré** (`alu_loops`, 14 cas) | Préfetch à l'**adresse de branchement**, puis la suite | Relit deux fois le mot de la suite | Yacht : DBcc « cc false, compteur expiré » 14(3/0). Adresse du 3ᵉ accès à confirmer au microcode (`51c8`). Visible si la cible est en zone à bus error. |
-| 6 | **Lecture en plus de MOVEM mémoire → registres** (`mixed`) | Lit le mot **après le dernier** transféré ($8000 ici) | Relit le **premier** mot | Comportement connu du 68000 (lecture au-delà) ; à confirmer : yacht.txt, M68000UM. Visible si le mot suivant est un registre matériel ou une zone à bus error (fin de RAM, $FF8xxx). |
-| 7 | **JSR/BSR : ordre lecture-cible / empilement** | Lit le premier mot de la cible **avant** d'empiler l'adresse de retour | Empile puis lit | Yacht JSR : « n nS ns np ». Durées égales. Visible si la cible est en zone à bus error (ordre bus error / pile). |
-| 8 | **Erreur d'adresse** (`exceptions`) | Cycle bus **amorcé** (AS sans strobe) à l'adresse fautive, puis trame : PC bas, SR, PC haut, IR, adresse basse, **mot d'état, adresse haute** | Pas de cycle amorcé ; trame PC bas, PC haut, SR, IR, adresse basse, adresse haute, mot d'état ; même total (44 cycles) | [B] M68000UM § 6.2.5 fig. 6-6 donne le format, pas l'ordre d'écriture. Microcode. Visible par la trame en RAM à l'instant d'une seconde faute (double faute → halt). |
-| 9 | **Reset** (`reset_nop`) | 6 cycles entre les deux premiers préfetchs | 4 | Table 8-? « RESET 40(6/0) » ne fixe pas la place des cycles internes. Déplace de 2 cycles la phase du faisceau au boot (étalons à phase E-clock). Microcode. |
+| 1 | **Date limite de la broche IPL** : frontière d'instruction (`irq_nop`, `irq_mulu`) | référence du balayage | accepte encore l'IRQ **3 cycles plus tard** : une instruction trop tôt si la broche monte dans cette fenêtre | `NEOST_IPLFETCH` : 1 cycle plus tôt que fx68k sur NOP (dans la marge), mais **une instruction entière de retard** sur MULU. `fx68k.sv:222-223` montre deux étages d'échantillonnage. |
+| 2 | **Réveil du STOP** (`stop_irq`) | référence | 1 cycle plus tard (dans la marge de ±1) | `NEOST_IPLFETCH` : 3 cycles plus tôt. |
+| 3 | **STOP avec IRQ déjà pendante** (`stop_pending`) | 18 cycles du mot d'extension à la première écriture de trame | 14 | Hatari : `op_4e72_13_ff` teste l'interruption avant d'écrire le masque, et `CHANGELOG.md` (2026-10-22) le mesure 4 cycles après NeoST. Trois témoins contre Moira, dont la décision du 2026-10-22 venait d'une lecture du RTL. |
+| 4 | **Mot bas écrit d'abord** : `MOVEM.L -(An)`, `ADDQ.L #,<mem>` (21 inversions) | bas puis haut | haut puis bas | Hatari `op_48e0_13_ff`, `op_5090_13_ff` : comme fx68k. Durées égales. |
+| 5 | **DBcc expiré** (14 cas) : adresse du premier préfetch | adresse de branchement | adresse suivante | Microcode `dbcc2` ; Hatari `op_51c8_13_ff` : comme fx68k. Durées égales au total ; deux intervalles se répartissent autrement. |
+| 6 | **MOVEM.L mémoire→registres** : lecture en plus | **après** le dernier mot | **avant** le premier (`execMovemEaRg`, S == Long) | Hatari `op_4cd8_13_ff` : comme fx68k. `MOVEM.W` concorde : le défaut est propre au long. |
+| 7 | **JSR** : ordre préfetch de la cible / empilement | cible d'abord | empile d'abord | Microcode `jsra1` ; Hatari `op_4e90_13_ff` : comme fx68k. BSR concorde. |
+| 8 | **Erreur d'adresse** (`exceptions`) | Ordre PC bas, SR, PC haut, IR, adresse basse, mot d'état, adresse haute ; AS posé sans strobe à l'adresse fautive | PC bas, PC haut, SR, IR, adresse basse, adresse haute, mot d'état ; pas de cycle amorcé ; même total | Hatari `Exception_ce000` : même ordre que fx68k, sans cycle amorcé. [B] M68000UM fig. 6-7 ne donne que le format. |
+| 9 | **Reset** (`reset_nop`) : entre les deux premiers préfetchs | 6 cycles | 4 | Microcode : `trap8` (lecture), `trap9` (sans bus), `b` (lecture). Moira saute `trap9` au reset, pas aux exceptions. [B] M68000UM § 8.12 donne 40(6/0) : le total, pas la place de ces cycles. |
 
-Les `iack_skew` sont nuls : la place du cycle IACK dans le bloc de Moira correspond à
-fx68k pour `iackSyncBefore = 4`.
+Mesure du n° 1 et du n° 2, résolution ±1 cycle (`--ipl-sweep`). Date la plus tardive de la broche
+pour qu'une frontière donnée prenne encore l'IRQ, relativement à fx68k :
+
+| Programme | Moira | `NEOST_IPLFETCH` |
+|---|---|---|
+| `irq_nop` | +3 | −1 |
+| `irq_mulu` | +3 | une instruction de retard (−65) |
+| `stop_irq` | +1 | −3 |
+
+`iack_skew` vaut 0 partout : la place du cycle IACK dans le bloc de Moira correspond à fx68k.
 
 ## Ce qui manque au banc
 
 - **Bus error** (BERR, et la relance par HALT, non implémentée dans fx68k).
 - **Autovecteur par VPA** et synchronisation E-clock : ici l'IACK est vectorisé par le
   périphérique ; sur ST, HBL et VBL passent par VPA.
-- **RESET** (l'instruction), MOVE16 non (68000), Bcc.w/BSR.s pris et non pris en séries,
+- **RESET** (l'instruction), Bcc.w/BSR.s pris et non pris en séries,
   `CHK` et `DIVS` en trap, `RTR`, `TRAPV` pris, `LINE A` en mode utilisateur.
 - Un **second RTL** pour les mêmes programmes : `stBlitter.sv` n'a pas de banc, et le GSTMCU
   (`run_gstmcu_bench.py`) n'exécute pas de code.
-- Verilator **en CI** : le banc est SKIP sur les runners, comme `run_gstmcu_bench.py`.
+- Verilator **en CI** : le banc est SKIP sur les runners. `run_gstmcu_bench.py` n'est, lui,
+  branché sur aucun palier.

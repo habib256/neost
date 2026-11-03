@@ -17,20 +17,24 @@ Musashi.** fx68k était épinglé et cité, jamais simulé.
   resynchronisés. Dix programmes, 34 variantes (IRQ et STOP balayés sur huit phases, rejoués
   avec le port WinUAE `ipl_fetch`). Verdicts posés dans `tests/reference/fx68k_bench.json`,
   palier `full`, SKIP sans Verilator. → `docs/FX68K_BENCH.md`
-- **22 variantes sur 34 concordent** : instructions ordinaires, MUL/DIV, TAS, trace, trames
-  d'exception, prise d'IRQ sur 6 phases sur 8. Neuf écarts localisés, tous [D] contre [D],
-  aucun ajustement de Moira :
-  1. **STOP avec IRQ déjà pendante** : fx68k simulé reconnaît à STOP+12, comme Hatari ; le
-     STOP+8 posé le 2026-10-22 reposait sur une lecture du RTL, pas sur sa simulation. Rouvert.
-  2. **Prise d'IPL à une frontière** : Moira une instruction plus tôt à 2 phases sur 8 ;
-     `NEOST_IPLFETCH` corrige ces deux phases et casse les six autres.
-  3. **Réveil du STOP** : Moira 4 cycles plus tard à 2 phases sur 8.
-  4. **Mot bas écrit d'abord** par fx68k pour `MOVEM.L -(An)` et `ADDQ.L <mem>`, mot haut chez Moira.
-  5. **DBcc expiré** préfetche l'adresse de branchement chez fx68k.
-  6. **MOVEM mémoire→registres** lit le mot après le dernier chez fx68k, relit le premier chez Moira.
-  7. **JSR/BSR** lisent la cible avant d'empiler chez fx68k.
-  8. **Erreur d'adresse** : cycle bus amorcé et trame écrite dans un autre ordre, même total.
-  9. **Reset** : 2 cycles de plus entre les deux premiers préfetchs chez fx68k.
+- **18 variantes sur 34 concordent** : durées des instructions ordinaires, MUL/DIV, TAS, trace,
+  trames d'exception. Neuf écarts de Moira nu localisés, sans ajustement :
+  date limite de la broche IPL (+3 cycles), réveil du STOP (+1), STOP avec IRQ pendante (4 cycles
+  plus tôt, la décision du 2026-10-22 est rouverte), mot bas écrit d'abord chez fx68k et Hatari,
+  préfetch du DBcc expiré, lecture en plus de MOVEM.L, ordre de JSR, trame de l'erreur d'adresse,
+  2 cycles manquants au reset. → tableau et témoins dans `docs/FX68K_BENCH.md`.
+- **Corrigé le jour même, après un premier push** : une variable locale masquait `skip()` et
+  faisait planter le SKIP sans Verilator, donc le palier `full` de la CI ; les `--irq` partaient du
+  début du reset, où les cœurs diffèrent de 2 cycles, ce qui inversait la conclusion sur la prise
+  d'IPL (annoncé « 22/34, Moira trop tôt à 2 phases sur 8, `NEOST_IPLFETCH` casse le reste »,
+  faux) ; plusieurs citations de figures et un renvoi au § 8 du manuel étaient faux, et des
+  renvois à yacht.txt jamais vérifiés sont remplacés par le microcode et Hatari. `--ipl-sweep` ajouté,
+  microcode épinglé par `setup_silicon_refs.sh`.
+- **Passe sur les jeux et démos du disque privé**, NeoST contre l'Hatari épinglé : 70 disques au boot
+  (trame 3000), puis 44 titres lancés ou franchis au clavier (trame 5500), images comparées à l'œil.
+  Aucun plantage ni écran différent de nature, sauf l'intro de Pirates [cr Delight] (`TODO.md` § 3). Portée :
+  intros et titres ; aucune partie jouée, le son non comparé. Moira n'étant pas modifié, cette passe
+  fixe l'état de référence, sans juger les écarts du banc.
 - Conventions de datation écrites dans les deux pilotes ([B] M68000UM § 5.1 : AS à S2) ;
   `fx68kAlu.sv:313` bute sur un `unique case` avant reset (`--no-assert-case`).
 - `check_doc_claims.py` recompte les deux chiffres du banc depuis la référence.
@@ -40,8 +44,8 @@ Musashi.** fx68k était épinglé et cité, jamais simulé.
 égaler Hatari marquées **aligné Hatari** sous leur puce, les restes de `CYCLE_ACCURACY.md` § 4
 qui n'y figuraient pas (restes vidéo au cycle, `dmasnd_poll` resté snapshot, fréquences
 exactes), la divergence D1/D2 assumée, la couverture ROM des étalons et la campagne STE
-(Obsession, Pacemaker, E605, DHS) inscrites. Rien de l'ancien fichier n'est perdu ; les
-§ 2 et 3.1 anciens sont dissous sous les puces, le § 3.2 ⏸ aussi.
+(Obsession, Pacemaker, E605, DHS) inscrites. Les titres de l'ancien fichier ont été comparés
+au nouveau ; les § 2 et 3.1 anciens sont dissous sous les puces, le § 3.2 ⏸ aussi.
 
 ## Harnais : une échelle des références, et le TODO réorganisé vers le silicium (2026-11-03)
 
