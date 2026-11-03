@@ -35,6 +35,8 @@ quatre formes de boucle interrompue : NOP et Bcc, longue suite de NOP, STOP, MUL
 | HBL, MULU | 256 sur 256 |
 | VBL | 32 sur 32 |
 
+À 60 Hz, le même résultat : une lecture différente sur 49 000 et HBL à 256 sur 256, avec `NEOST_ECLOCK_PHASE` à 8. La phase à la sortie du reset est une constante libre entre les deux, comme le tirage sur une machine réelle : une seule valeur donne ces tables, et le banc l'impose. Le tableau ci-dessus est à 50 Hz.
+
 **Le compteur vidéo et la phase de l'E-clock concordaient déjà** : 47 999 sur 48 000 dès le premier passage, et `NEOST_ECLOCK_PHASE` à toute autre valeur que 0 en casse plus de 12 000. L'unique écart est la première lecture après un réveil, au tout début de la deuxième table : 166 contre 168, soit 4 cycles, non expliqué.
 
 **La prise d'interruption ne concordait pas.** Avant correction : boucle courte 216 sur 256, MULU 63 sur 256. NeoST, comme Hatari, levait l'IPL au dispatch d'événement, à la frontière d'instruction, et la commitait aussitôt. Le RTL échantillonne la broche à un point précis de l'instruction, avant le long calcul de MULU : une IRQ qui monte après ce point attend l'instruction suivante.

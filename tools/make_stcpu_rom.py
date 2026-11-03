@@ -73,7 +73,7 @@ def lea_a0(p, addr):                # lea addr.l,a0
     p.w(0x41F9).l(addr)
 
 
-def build() -> bytes:
+def build(hz50: bool = True) -> bytes:
     p = P()
     p.w(0x46FC, 0x2700)                                # move #$2700,sr
     p.w(0x4FF9).l(0x8000)                              # lea $8000,sp
@@ -82,7 +82,7 @@ def build() -> bytes:
     movebi(p, (SCREEN >> 8) & 0xFF, 0xFF8203)
     movebi(p, SCREEN & 0xFF, 0xFF820D)
     movebi(p, 0, 0xFF8260)
-    movebi(p, 2, 0xFF820A)
+    movebi(p, 2 if hz50 else 0, 0xFF820A)
     p.w(0x21FC).addr("hbl"); p.w(0x0068)               # move.l #hbl,$68.w
     p.w(0x21FC).addr("vbl"); p.w(0x0070)               # move.l #vbl,$70.w
     p.w(0x45F9).l(VBLTAB)                              # lea VBLTAB,a2 (table de la VBL)

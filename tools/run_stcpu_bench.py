@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -87,25 +88,30 @@ def main() -> int:
     if a.rebuild or not builder.BINARY.exists():
         builder.build()
     OUT.mkdir(parents=True, exist_ok=True)
-    image = OUT / "rom.img"
-    image.write_bytes(rom.build())
-    ra, nb = OUT / "rtl.bin", OUT / "neost.bin"
-    subprocess.run([str(builder.BINARY), str(image), str(FRAMES), f"{rom.POLL0:x}", str(rom.TOTAL), str(ra)],
-                   check=True, capture_output=True, timeout=600, cwd=builder.BUILD)
-    subprocess.run([str(HEADLESS), str(image), "--machine", "ste", "--mem", "4m", "--frames", str(FRAMES + 1),
-                    "--disk", "disks/diskA.st", "--dump-at", str(FRAMES - 1), f"{rom.POLL0:x}", str(rom.TOTAL), str(nb)],
-                   check=True, capture_output=True, timeout=600, cwd=ROOT)
-    A, B = ra.read_bytes(), nb.read_bytes()
-    if len(A) != rom.TOTAL or len(B) != rom.TOTAL:
-        print("FAIL banc CPU + GSTMCU : table incomplète")
-        return 1
-    res = tables(A, B)
+    res = {}
+    # (nom, 50 Hz ?, trames, NEOST_ECLOCK_PHASE). La phase de l'E-clock à la sortie du reset est une constante
+    # libre entre le modèle et NeoST, comme le tirage au reset d'une machine réelle. Sa valeur se cherche une
+    # fois, en balayant : une seule donne ces tables, et les autres en cassent des milliers de lectures.
+    for tag, hz50, frames, phase in (("50hz", True, FRAMES, 0), ("60hz", False, 24, 8)):
+        image = OUT / f"rom_{tag}.img"
+        image.write_bytes(rom.build(hz50))
+        ra, nb = OUT / f"rtl_{tag}.bin", OUT / f"neost_{tag}.bin"
+        subprocess.run([str(builder.BINARY), str(image), str(frames), f"{rom.POLL0:x}", str(rom.TOTAL), str(ra)],
+                       check=True, capture_output=True, timeout=600, cwd=builder.BUILD)
+        subprocess.run([str(HEADLESS), str(image), "--machine", "ste", "--mem", "4m", "--frames", str(frames + 1),
+                        "--disk", "disks/diskA.st", "--dump-at", str(frames - 1), f"{rom.POLL0:x}", str(rom.TOTAL), str(nb)],
+                       check=True, capture_output=True, timeout=600, cwd=ROOT, env=dict(os.environ, NEOST_ECLOCK_PHASE=str(phase)))
+        A, B = ra.read_bytes(), nb.read_bytes()
+        if len(A) != rom.TOTAL or len(B) != rom.TOTAL:
+            print("FAIL banc CPU + GSTMCU : table incomplète")
+            return 1
+        for name, bad in tables(A, B).items():
+            res[f"{tag}_{name}"] = bad
+            total = rom.POLL_LEN if name.startswith("poll") else (32 if name == "vbl" else 256)
+            print(f"  {tag} {name:10s} {total - len(bad):6d}/{total} lectures identiques")
     if not check_dma_sound():
         print("FAIL banc CPU + GSTMCU : le compteur du son DMA bouge pendant DE")
         return 1
-    for name, bad in res.items():
-        total = rom.POLL_LEN if name.startswith("poll") else (32 if name == "vbl" else 256)
-        print(f"  {name:10s} {total - len(bad):6d}/{total} lectures identiques")
     if a.write_refs:
         REF.write_text(json.dumps(res, indent=0, sort_keys=True) + "\n")
         print(f"référence écrite : {REF}")
