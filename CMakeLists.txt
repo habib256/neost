@@ -454,6 +454,19 @@ target_include_directories(neost-stx-test PRIVATE "${CMAKE_SOURCE_DIR}/src")
 target_compile_options(neost-stx-test PRIVATE -UNDEBUG)
 
 # =============================================================================
+#  neost-moira-bare — Moira NU sur une RAM plate : trace de ses cycles bus.
+#  Pendant du pilote Verilator de fx68k (tools/fx68k_bench.cpp, bâti par
+#  tools/run_fx68k_bench.py) : même programme, même modèle mémoire, même format de
+#  trace, pour comparer le cœur de NeoST au RTL cycle-exact accès par accès (échelon
+#  `rtl`, docs/REFERENCE_LADDER.md). Lie neost_core pour obtenir la copie de Moira
+#  EXACTEMENT comme NeoST la compile (MoiraConfig.h de build/generated) ; n'utilise
+#  ni Bus ni Machine. Inclut Moira.h → C++20, comme Cpu68k.cpp.
+# =============================================================================
+add_executable(neost-moira-bare tools/moira_bare_bench.cpp)
+target_link_libraries(neost-moira-bare PRIVATE neost_core)
+set_source_files_properties(tools/moira_bare_bench.cpp PROPERTIES COMPILE_OPTIONS "-std=c++20")
+
+# =============================================================================
 #  neost (Android) — bibliothèque native chargée par SDL2 (libneost.so).
 #
 #  Même logique que la branche EMSCRIPTEN ci-dessous : on réutilise neost_core

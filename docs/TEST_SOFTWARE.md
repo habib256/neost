@@ -481,6 +481,10 @@ python3 tools/compare_screenshot.py s.ppm tests/reference/<oracle>.png --crop ac
 
 ## 5. Suites de test automatisées
 
+- **Banc Moira↔fx68k** (`tools/run_fx68k_bench.py`, palier `full`, SKIP sans Verilator) : le
+  cœur 68000 nu contre le RTL cycle-exact, accès bus par accès bus, prise d'IPL et STOP sur
+  huit phases. Verdicts posés dans `tests/reference/fx68k_bench.json`. → `docs/FX68K_BENCH.md`.
+
 Micro-tests formalisés par la communauté (Hatari, Steem), à exécuter au headless plutôt
 que jeu par jeu.
 

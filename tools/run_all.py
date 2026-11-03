@@ -219,6 +219,12 @@ FULL = FAST + [
     # FULL et jamais dans fast (qui doit rester prêt-à-purge, § BLOQUANT RELEASE).
     ("Diagnostic MegaSTE Field Service (suite Q rejouée, verdicts série)",
      [sys.executable, str(TOOLS / "run_megaste_diag.py")]),
+    # Banc différentiel Moira↔fx68k (échelon rtl) : le cœur 68000 nu contre le RTL
+    # cycle-exact, accès bus par accès bus, prise d'IPL et STOP compris. Verdicts posés
+    # dans tests/reference/fx68k_bench.json : un verdict qui CHANGE fait échouer, dans les
+    # deux sens. Verilator ou extern/fx68k absents → SKIP recensé (77).
+    ("Banc Moira↔fx68k (cycles bus du 68000 nu contre le RTL)",
+     [sys.executable, str(TOOLS / "run_fx68k_bench.py")]),
     ("P2 provenance des références",
      [sys.executable, str(TOOLS / "run_etalons.py"), "--verify-refs"]),
     ("P2 étalons pixel (oracle + snapshots)",
