@@ -50,6 +50,10 @@ def machine_etalons() -> list[dict]:
     return [e for e in ents if not str(e.get("type", "")).endswith("_selftest")]
 
 
+def rung_count(kind: str) -> int:
+    return sum(e.get("ref_kind") == kind for e in machine_etalons())
+
+
 def free_etalons() -> int:
     # Même critère que rom_is_free() de run_etalons.py : EmuTOS = libre.
     return sum(1 for e in machine_etalons()
@@ -94,6 +98,20 @@ CLAIMS = [
     # raconte une autre fonction que celle du dépôt.
     ("TODO.md", r"`runKioskMenu` — (\d+) lignes d'un seul tenant",
      lambda: func_line_count("src/gui/AppLoop.cpp", "runKioskMenu"), 0.03),
+    # L'échelle des références : son tableau ne doit pas raconter un vert plus fort
+    # que le manifeste.
+    ("docs/REFERENCE_LADDER.md", r"`hardware` \| [^|]+ \| [^|]+ \| (\d+) étalons",
+     lambda: rung_count("hardware"), 0.0),
+    ("docs/REFERENCE_LADDER.md", r"`primary` \| [^|]+ \| [^|]+ \| (\d+) étalons",
+     lambda: rung_count("primary"), 0.0),
+    ("docs/REFERENCE_LADDER.md", r"`rom` \| [^|]+ \| [^|]+ \| (\d+) étalons",
+     lambda: rung_count("rom"), 0.0),
+    ("docs/REFERENCE_LADDER.md", r"`rtl` \| [^|]+ \| [^|]+ \| (\d+) étalons",
+     lambda: rung_count("rtl"), 0.0),
+    ("docs/REFERENCE_LADDER.md", r"`hatari` \| [^|]+ \| [^|]+ \| (\d+) étalons",
+     lambda: rung_count("hatari"), 0.0),
+    ("docs/REFERENCE_LADDER.md", r"`snapshot` \| [^|]+ \| [^|]+ \| (\d+) étalons",
+     lambda: rung_count("snapshot"), 0.0),
     ("tools/etalons.json", r"COUVERTURE \((\d+) étalons machine",
      lambda: len(machine_etalons()), 0.0),
 ]

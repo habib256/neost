@@ -294,7 +294,7 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
   (aire active seulement, bordures intactes) si un intervalle res 3, en cours ou le dernier
   terminé, couvre toute sa fenêtre DE (`lineStoppedOver`). Hatari n'affiche pas de noir.
   Un arrêt partiel (trick, 8 à 32 cycles) ne noircit rien, comme Hatari (TODO video.c:1914).
-  Noir franc ou couleur 0 : non mesuré (TODO.md § 2).
+  Noir franc ou couleur 0 : non mesuré (TODO.md § 3).
 - **[V3] ✅ CLOS le 2026-09-01** — attribution de ligne à la grille réelle **promue par défaut** (`NEOST_LINELEN_ATTR`, ON) après preuve à l'oracle sur l'exhibiteur `freq_switch` : la longueur de ligne ne persistait pas d'une ligne à l'autre (retombait à 512 sans écriture), donc le verrou ne pouvait pas produire la dérive qu'il vise — corrigé (`glueLineLenFor`), 18/18 écritures freq attribuées comme Hatari (ligne et cycle), `TODO.md` § restes. Historique : `RestartVideoCounter` **PORTÉ** (2026-07-02,
   `restartVideoCounter`, événement `VC_RESTART`, check freq live). ⚠ **« CyclesPerVBL ±4 »
   RETIRÉ le 2026-08-25 : FAUX POSITIF prouvé** (cf. la ligne V3 du tableau des priorités —
@@ -1350,7 +1350,7 @@ par le présent document :
   l'intégralité de l'écart. Les DEUX émulateurs sont d'accord sur l'ÉTAT Glue (trace Hatari
   `--trace video_border_h` : `detect left+2 / right-2 60Hz 53<->373`, identique au masque
   NeoST) : l'écart est purement dans la recopie. ⚠ **Conséquence** : `overscan_top` reste
-  `ref_kind: snapshot` **définitivement** — le passer en `oracle` installerait l'artefact
+  `ref_kind: snapshot` **définitivement** — le passer en `hatari` installerait l'artefact
   d'Hatari comme référence. Aussi visible sur `blankline_blank_ste` (2026-10-20, STE
   etos256fr) : les phases VBL 32/36 y donnent `left+2` et divergent de **204 px** sur la
   ligne buffer 65 — c'est pourquoi l'étalon capture la phase 40 (NO_DE, 0 px).
@@ -1939,7 +1939,7 @@ TODO) :
   **Correctif** : partir de l'échéance SOUS-CYCLIQUE que NeoST tenait déjà (`Mfp::timerDueSub_`,
   8 bits de fraction, au save-state depuis v11) et ne lâcher la fraction qu'à la conversion
   CPU→MFP. Résultat : **0 px contre l'oracle**, les 100 octets IPRA ET les 100 octets TADR
-  identiques ; `mfp_poll` promu `ref_kind: snapshot` → **`oracle`** (le corpus oracle de la CI
+  identiques ; `mfp_poll` promu `ref_kind: snapshot` → **`hatari`** (le corpus oracle de la CI
   passe de 7 à 8). Garde vérifiée par mutation : revenir au plafond entier rend 80 px.
   ⚠ `storeStoppedCounter` a reçu le MÊME changement par cohérence (chez Hatari les deux chemins
   sont le seul `MFP_ReadTimer_AB/CD`, avec `TimerIsStopping`) — mais **aucun test ne le couvre** :
@@ -2417,7 +2417,7 @@ faite (Hatari v2.6.1-devel bâti le jour même, même disque, même ROM, même t
 
 | Étalon | Écart annoncé (2026-08-19) | Verdict (2026-08-29) |
 |--------|-----------------------------|----------------------|
-| `trace_odd` | 22 px / 114816 | **ARTEFACT DE MESURE — soldé à 0 px**, promu `ref_kind: oracle` |
+| `trace_odd` | 22 px / 114816 | **ARTEFACT DE MESURE — soldé à 0 px**, promu `ref_kind: hatari` |
 | `overscan_top` | 194 px / 114816 | **ÉCART DE RENDU RÉEL de 144 px** (les 50 autres étaient la LED de Hatari), localisé et nommé — reste `snapshot` |
 
 ### `trace_odd` : ce n'était pas du rendu (soldé)
@@ -2473,7 +2473,7 @@ ne prouve pas la conformité sur ces 5 lignes.
 
 **Contre-épreuve utile** : `scroll_8264` et `scroll_8265`, capturés dans les mêmes conditions
 (STE, disque généré), sont à **0 px** de l'oracle — leurs références ont été promues en
-`ref_kind: oracle` dès le 2026-08-19. Le rendu STE fin n'est pas en cause.
+`ref_kind: hatari` dès le 2026-08-19. Le rendu STE fin n'est pas en cause.
 
 **Ce que le contrôle croisé de 2026-08-19 établissait déjà, et qui tient toujours** :
 l'écart d'`overscan_top` est **indépendant de la ROM** (identique sous `etos192fr` et

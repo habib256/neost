@@ -450,8 +450,10 @@ pire ; aucune correspondance ⇒ échec bruyant = vraie divergence). Détail et 
 
 ### Provenance des références & diff par ligne (P2)
 
-Chaque étalon pixel déclare `ref_kind` dans `etalons.json` :
-- **`oracle`** → comparé à l'**oracle Hatari** `tests/reference/<id>.png` (jamais une self-capture).
+Chaque étalon pixel déclare son échelon `ref_kind` dans `etalons.json`, parmi les six de
+[`REFERENCE_LADDER.md`](REFERENCE_LADDER.md) ; une valeur absente ou inconnue est refusée.
+- **`hatari`** → comparé à la capture de l'**Hatari épinglé** `tests/reference/<id>.png`
+  (jamais une self-capture). Vert = « d'accord avec Hatari », pas « fidèle ».
 - **`snapshot`** → comparé à la self-capture NeoST `<id>.ppm` (non-régression ; repli `.png`).
 
 ```sh

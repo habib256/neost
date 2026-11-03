@@ -237,27 +237,41 @@ def compare_shots(neost: Path, ref: Path, entry: dict, quiet: bool = False) -> i
     return run_timed(cmd, 300, cwd=ROOT).returncode
 
 
+# L'ÉCHELLE DES RÉFÉRENCES, du plus fort au plus faible → docs/REFERENCE_LADDER.md.
+# Un vert se lit selon l'échelon : « hatari » veut dire « d'accord avec Hatari », pas
+# « fidèle », et « snapshot » veut seulement dire « n'a pas bougé ».
+#   hardware  [A] relevé sur machine réelle, propre ou publié par un tiers nommé
+#   primary   [B] rendu calculé depuis une fiche, un schéma, une netlist Atari
+#   rom       [C] verdict d'un programme ou d'une ROM Atari
+#   rtl       [D] simulation d'un RTL dérivé du silicium ou d'un schéma
+#   hatari    [D] capture de l'Hatari épinglé
+#   snapshot  ─   self-capture NeoST : non-régression, aucune preuve
+LADDER = ("hardware", "primary", "rom", "rtl", "hatari", "snapshot")
+EXTERNAL_RUNGS = tuple(k for k in LADDER if k != "snapshot")
+
+
+def ladder_errors(entries: list[dict]) -> list[str]:
+    """Un étalon pixel sans échelon valide ne se lit pas : refus, pas de défaut."""
+    return [f"{e['id']}: ref_kind={e.get('ref_kind')!r} (attendu : {'|'.join(LADDER)})"
+            for e in entries if not e.get("type") and e.get("ref_kind") not in LADDER]
+
+
+def ladder_summary(entries: list[dict]) -> str:
+    kinds = [e.get("ref_kind") for e in entries if not e.get("type")]
+    return "ÉCHELLE : " + " · ".join(f"{k} {kinds.count(k)}" for k in LADDER)
+
+
 def resolve_ref(entry: dict, ref_ppm: Path, ref_png: Path):
-    # Provenance EXPLICITE de la référence (P2) :
-    #   ref_kind: "oracle"   → compare à l'oracle Hatari .png (jamais la self-capture).
-    #   ref_kind: "snapshot" → compare à la self-capture NeoST .ppm (non-régression).
-    # Défaut historique (absent) : .ppm sinon .png (toléré, mais un WARN invite à trancher).
-    kind = entry.get("ref_kind")
-    if kind == "oracle":
-        # JAMAIS la self-capture : un oracle se compare au .png Hatari, point.
-        return (ref_png, "oracle") if ref_png.exists() else (None, "oracle")
-    if kind == "snapshot":
-        # Self-capture NeoST : .ppm de préférence, sinon .png (certaines réfs V2 archivées).
-        if ref_ppm.exists():
-            return ref_ppm, "snapshot"
-        return (ref_png, "snapshot") if ref_png.exists() else (None, "snapshot")
+    # Provenance EXPLICITE de la référence, validée au chargement (ladder_errors) :
+    #   échelon externe → le .png venu de cette source, JAMAIS la self-capture ;
+    #   snapshot        → la self-capture NeoST .ppm (non-régression).
+    kind = entry["ref_kind"]
+    if kind in EXTERNAL_RUNGS:
+        return (ref_png, kind) if ref_png.exists() else (None, kind)
+    # Self-capture NeoST : .ppm de préférence, sinon .png (certaines réfs V2 archivées).
     if ref_ppm.exists():
-        print(f"  ⚠ ref_kind absent — utilise la self-capture {ref_ppm.name} "
-              f"(ajouter ref_kind: oracle|snapshot dans etalons.json)")
-        return ref_ppm, "?"
-    if ref_png.exists():
-        return ref_png, "?"
-    return None, kind or "?"
+        return ref_ppm, kind
+    return (ref_png, kind) if ref_png.exists() else (None, kind)
 
 
 # Étalons dont la comparaison n'a PAS eu lieu (référence absente) : recensés pour
@@ -350,6 +364,13 @@ def run_one(entry: dict, args) -> bool:
         return False
     print(f"  capture → {neost_ppm.relative_to(ROOT)}")
 
+    # --oracle écrase le .png : jamais sur un échelon au-dessus d'Hatari, sinon une
+    # capture d'émulateur remplacerait en silence une preuve plus forte.
+    if args.oracle and entry.get("ref_kind") in ("hardware", "primary", "rom", "rtl"):
+        print(f"  ✗ {eid}: ref_kind={entry['ref_kind']} — --oracle refusé "
+              f"(Hatari n'écrase pas un échelon supérieur)", file=sys.stderr)
+        return False
+
     if (args.oracle or args.oracle_check) and entry.get("disk"):
         REF_DIR.mkdir(parents=True, exist_ok=True)
         tmp_png = OUT_DIR / f"{eid}_oracle.png"
@@ -373,7 +394,7 @@ def run_one(entry: dict, args) -> bool:
             #      différent) sans que rien ne le signale.
             # Ensemble : NeoST == référence == Hatari. C'est la boucle qu'A11 ferme.
             if not ref_png.exists():
-                print(f"  ✗ {eid}: ref_kind=oracle mais {ref_png.name} absent — "
+                print(f"  ✗ {eid}: ref_kind=hatari mais {ref_png.name} absent — "
                       f"rien à confronter", file=sys.stderr)
                 return False
             if compare_shots(tmp_png, ref_png, entry) != 0:
@@ -387,13 +408,13 @@ def run_one(entry: dict, args) -> bool:
             print(f"  référence oracle → {ref_png.relative_to(ROOT)}")
 
     if args.update_ref:
-        # Un étalon « oracle » ne compare JAMAIS la self-capture : y copier un .ppm
-        # était un no-op trompeur (« référence → … » affiché, baseline inchangée,
-        # fichier orphelin dans tests/reference/). La référence oracle se régénère
+        # Seul un snapshot compare la self-capture : sur un échelon externe, y copier un
+        # .ppm était un no-op trompeur (« référence → … » affiché, baseline inchangée,
+        # fichier orphelin dans tests/reference/). Une référence Hatari se régénère
         # avec --oracle, pas --update-ref.
-        if entry.get("ref_kind") == "oracle":
-            print(f"  ✗ {eid}: ref_kind=oracle — --update-ref sans effet "
-                  f"(utiliser --oracle pour régénérer la référence Hatari)")
+        if entry.get("ref_kind") != "snapshot":
+            print(f"  ✗ {eid}: ref_kind={entry.get('ref_kind')} — --update-ref sans effet "
+                  f"(réservé aux snapshot ; --oracle régénère une référence Hatari)")
             return False
         REF_DIR.mkdir(parents=True, exist_ok=True)
         shutil.copy2(neost_ppm, ref_ppm)
@@ -405,9 +426,11 @@ def run_one(entry: dict, args) -> bool:
 
     ref, kind = resolve_ref(entry, ref_ppm, ref_png)
     if not ref:
-        want = ".png (oracle)" if kind == "oracle" else ref_ppm.name
+        want = ref_ppm.name if kind == "snapshot" else f"{ref_png.name} ({kind})"
         print(f"  SKIP diff : pas de référence {want} (ref_kind={kind}) — "
-              f"lancer {'--oracle' if kind == 'oracle' else '--update-ref'}")
+              + ("lancer --update-ref" if kind == "snapshot"
+                 else "lancer --oracle" if kind == "hatari"
+                 else f"poser la référence de l'échelon {kind}"))
         # La capture a EU LIEU mais il n'y a rien à quoi la comparer : ce n'est pas
         # la même chose qu'une donnée d'entrée absente, et le compter comme une
         # réussite transformait l'étalon en no-op parfaitement vert. On le RECENSE.
@@ -462,7 +485,7 @@ def _ref_content(path: Path) -> tuple[int, float] | None:
 
 
 def verify_refs(entries: list[dict]) -> int:
-    # Contrôle de provenance (P2) : chaque entrée ref_kind=oracle doit avoir un .png
+    # Contrôle de provenance (P2) : chaque entrée ref_kind=hatari doit avoir un .png
     # aux dimensions d'un oracle Hatari (2× le buffer NeoST, ex. 832×552) — sinon c'est
     # une self-capture renommée (piège : figerait un bug). Les snapshot doivent avoir un .ppm.
     bad = 0
@@ -471,12 +494,20 @@ def verify_refs(entries: list[dict]) -> int:
             continue
         eid = e["id"]; kind = e.get("ref_kind"); opt = e.get("optional")
         png = REF_DIR / f"{eid}.png"; ppm = REF_DIR / f"{eid}.ppm"
-        if kind == "oracle":
+        if kind in EXTERNAL_RUNGS and kind != "hatari":
+            # Aucun format imposé : un relevé matériel n'a pas la géométrie d'Hatari.
+            if png.exists():
+                print(f"  ✓ {eid}: {kind} {png.name}")
+            elif opt:
+                print(f"  · {eid}: {kind} .png absent (optionnel)")
+            else:
+                print(f"  ✗ {eid}: ref_kind={kind} mais {png.name} absent"); bad += 1
+        elif kind == "hatari":
             if not png.exists():
                 if opt:
                     print(f"  · {eid}: oracle .png absent (optionnel — fetch/oracle à la demande)")
                 else:
-                    print(f"  ✗ {eid}: ref_kind=oracle mais {png.name} absent"); bad += 1
+                    print(f"  ✗ {eid}: ref_kind=hatari mais {png.name} absent"); bad += 1
                 continue
             dims = _png_dims(png)
             if not dims or dims[0] < 2 * BUFFER_W:
@@ -491,8 +522,6 @@ def verify_refs(entries: list[dict]) -> int:
                 print(f"  · {eid}: snapshot absent (optionnel — fetch à la demande)")
             else:
                 print(f"  ✗ {eid}: ref_kind=snapshot mais aucune réf ({ppm.name}/{png.name})"); bad += 1
-        else:
-            print(f"  ⚠ {eid}: ref_kind absent (ajouter oracle|snapshot)")
 
         # GARDE-FOU DE VACUITÉ. Une référence UNIFORME (écran noir) valide zéro pixel
         # tout en affichant « OK » : c'est arrivé deux fois sur cet étalon spec512, et
@@ -537,7 +566,7 @@ def main() -> int:
     ap.add_argument("--oracle-check", action="store_true",
                     help="A11 : régénère l'oracle Hatari et le CONFRONTE à la référence "
                          "commise sans l'écraser (mode CI). Ne retient que les étalons "
-                         "ref_kind=oracle qui bootent un disque.")
+                         "ref_kind=hatari qui bootent un disque.")
     ap.add_argument("--verify-refs", action="store_true",
                     help="contrôle la provenance des références (oracle vs snapshot)")
     ap.add_argument("--no-compare", action="store_true")
@@ -551,6 +580,11 @@ def main() -> int:
         return 2
 
     entries = load_manifest()
+    bad_rungs = ladder_errors(entries)
+    if bad_rungs:
+        print("Échelon de référence invalide dans etalons.json :", file=sys.stderr)
+        print("\n".join("  ✗ " + m for m in bad_rungs), file=sys.stderr)
+        return 2
     if args.verify_refs:
         # Même discipline --only que le chemin d'exécution (strip + IDs inconnus
         # refusés) : « --verify-refs --only bogus » sortait « RÉFS OK », code 0,
@@ -567,6 +601,7 @@ def main() -> int:
         if not sel:
             print("aucun étalon sélectionné — rien vérifié")
             return 2
+        print(ladder_summary(sel))
         return verify_refs(sel)
     if args.list:
         for e in entries:
@@ -611,7 +646,7 @@ def main() -> int:
     if args.oracle_check:
         keep, blocked = [], []
         for e in runnable:
-            if e.get("ref_kind") != "oracle" or not e.get("disk"):
+            if e.get("ref_kind") != "hatari" or not e.get("disk"):
                 continue                       # rien à re-dériver : hors sujet, pas un manque
             # `oracle_check: false` = référence NON RE-DÉRIVABLE par le script, pour une
             # raison écrite et obligatoire. Deux cas le 2026-09-01 (A11), tous deux réglés
@@ -686,6 +721,7 @@ def main() -> int:
               + ", ".join(SKIPPED_ROM)
               + "\n  (ces étalons ne valident RIEN dans cette installation ; les ROM Atari"
                 "\n   ne sont pas redistribuables — les déposer dans roms/ pour les activer)")
+    print("\n" + ladder_summary(runnable))
     print("\n" + ("TOUS OK" if ok else "ÉCHECS — voir ci-dessus"))
     return 0 if ok else 1
 

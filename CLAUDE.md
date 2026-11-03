@@ -24,6 +24,7 @@ les puces) et **`neost_core` ne dépend pas du GUI**.
 | [`TODO.md`](TODO.md) | **Ce qui reste**, priorisé (P1-P3) : prochaines actions, attentes externes (matériel, médias), restes par puce, bugs jeux, extensions, dette. Un item clos en sort. |
 | [`README.md`](README.md) | Présentation et usage (en anglais, public). |
 | [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md) | **Précision cycle** : modèle Hatari, acquis, inventaire priorisé du restant. |
+| [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md) | **Échelle des références** : contre quoi chaque verdict du harnais est vrai (`hardware` > `primary` > `rom` > `rtl` > `hatari` > `snapshot`), règles d'arbitrage. **À lire avant de conclure « fidèle » sur un vert.** |
 | [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md) | **Inventaire maître** des écarts NeoST↔Hatari (sévérité + `fichier:ligne`). |
 | [`docs/HATARI_MAPPING.md`](docs/HATARI_MAPPING.md) | Correspondances Hatari↔NeoST↔docs. **À consulter AVANT tout audit.** |
 | [`docs/HATARI_AUTOMATION.md`](docs/HATARI_AUTOMATION.md) | Exécuter Hatari en **oracle headless** (boot → PNG, traces, `--cmd-fifo`). |
@@ -101,8 +102,22 @@ ou une mesure dit autre chose, c'est correct, et le commentaire le dit — cela
 protège le code d'un futur « alignement sur Hatari » qui serait une régression.
 **Un F se garde, il ne se cache pas** : écris ce qui le trancherait.
 
+**Citer la référence dans le commentaire, pour qu'on puisse la rouvrir** : un document
+se cite par titre, édition et section ou page, plus son empreinte s'il est dans
+`extern/datasheets` ; un émulateur ou un RTL par `fichier:ligne @ révision` ; une ROM par
+version et adresse. Une citation se vérifie à la révision qu'elle nomme avant d'être
+écrite : une ligne ancienne d'Hatari peut dater d'un autre commit que l'épingle. Les
+fiches et schémas ASIC se rapatrient par `tools/setup_silicon_refs.sh` : les consulter
+d'abord, avant tout émulateur.
+
 Cette hiérarchie est commune à tous les émulateurs du même auteur (POM2 porte la
 même, adaptée à MAME et AppleWin).
+
+**Le harnais suit la même hiérarchie** : chaque étalon déclare son échelon
+(`ref_kind`, [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)). Un vert `hatari`
+veut dire « d'accord avec Hatari », un vert `snapshot` « n'a pas bougé ». Le RTL épinglé
+(fx68k, MiSTery : `tools/setup_silicon_refs.sh`) reste de grade D, mais il arbitre avant
+Hatari sur un signal ou un cycle de ses blocs dérivés d'un schéma, à titre provisoire.
 
 `extern/hatari/src` est une **référence d'implémentation à confronter au matériel**
 (sources C complètes, lues et PAS compilées). Avec **MAME**, il aide à comprendre

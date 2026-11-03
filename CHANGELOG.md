@@ -6,6 +6,31 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Harnais : une échelle des références, et le TODO réorganisé vers le silicium (2026-11-03)
+
+**Le harnais présentait l'accord avec Hatari comme un verdict de vérité.** 32 étalons sur 43
+se comparaient à un « oracle » Hatari, 11 à une self-capture, aucun à une mesure.
+- `ref_kind` a six échelons (`hardware`, `primary`, `rom`, `rtl`, `hatari`, `snapshot`) ;
+  `oracle` devient `hatari`. Une valeur absente ou inconnue est refusée au chargement,
+  `--oracle` n'écrase pas un échelon supérieur, et le décompte s'affiche à chaque exécution.
+  → `docs/REFERENCE_LADDER.md`
+- **Les 8 verdicts `buserror-*` étaient déjà au sommet** : `tests/buserror/results` d'Hatari
+  est relevé sur de vraies machines. C'est le seul contact avec le matériel, par un tiers.
+- `tools/setup_silicon_refs.sh` épingle fx68k et MiSTery, cités jusque-là sans révision. Les
+  citations du TODO ont été vérifiées à l'épingle (`gstshifter.v:264` était en fait `:263-265`).
+- **Fiches et schémas ASIC de Christian Zietz rapatriés** dans `extern/datasheets` (gitignoré,
+  vérifiés par empreinte). Première lecture : la fiche MC68901 contredit le repli en mode délai
+  des modes pulse ; le schéma 4118 invoqué pour le blanking est celui de la Panther.
+- `tools/run_gstmcu_bench.py` simule le GSTMCU + Shifter STE de MiSTery sous Verilator 5.054 sur un
+  écran connu : 0 pixel faux, et la couleur réelle pendant BLANK enfin lisible (noir dans ce modèle).
+  Le banc amont remontait R/W avec AS et perdait toute écriture de `$FF8260` (M68000UM § 4.1.2).
+- Règle de citation dans les commentaires (`CLAUDE.md`), posée sur deux sites pilotes (A43).
+- `docs/CYCLE_ACCURACY.md` § 5-6 : les décisions justifiées par « ferait diverger de l'oracle »
+  sont rouvertes (contention vidéo, vol de cycles DMA, modes pulse), sans changement de code.
+- `TODO.md` : registre des questions sur le silicium, séparé de ce qui exige une machine ;
+  A12 sort du « matériel », car il valide les machines hôtes. Entrée soldée en se dissolvant
+  dans ce registre : « Pistes MiSTery/netlist », « RTL MiSTer comme référence ».
+
 ## Oracle Hatari : RNG portable, CI Linux verte (2026-10-28)
 
 **L'oracle hebdomadaire échouait sur `fdc_read_stx`** (« trace Hatari différente de la

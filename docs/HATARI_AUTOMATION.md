@@ -52,7 +52,7 @@ cmake --build extern/hatari/build -j
 ```
 
 **L'épingle est la référence, le patch la suit.** Tranché le 2026-09-05 : l'épingle
-`f0736b24` (2026-08-18) protège les 11 références `ref_kind: oracle` du dépôt ; le clone local
+`f0736b24` (2026-08-18) protège les 11 références `ref_kind: hatari` du dépôt ; le clone local
 était sur `981f291` (2026-07-01), un **ancêtre** en retard de 26 commits dont `fdc.c` (+176),
 `video.c`, `cpu/newcpu.c`. Remonter l'épingle aurait fait *reculer* la référence de sept
 semaines et invalidé onze images pour rien. Le patch s'applique tel quel sur l'épingle
@@ -85,7 +85,7 @@ tools/setup_hatari.sh        # clone À LA VERSION ÉPINGLÉE + build (options m
 La recette précédente faisait un `git clone --depth 1`, c'est-à-dire « le HEAD du jour » —
 deux oracles bâtis à deux semaines d'écart pouvaient donc produire des références **pixel**
 différentes sans qu'aucune ligne du dépôt n'ait bougé, alors que toutes les entrées
-`ref_kind: oracle` du dépôt ont été posées avec CETTE version. `tools/hatari_oracle.sh`
+`ref_kind: hatari` du dépôt ont été posées avec CETTE version. `tools/hatari_oracle.sh`
 **avertit** (sans bloquer) quand l'arbre présent ne correspond pas au pin. Pour changer
 d'oracle en connaissance de cause : `tools/setup_hatari.sh --update-pin`, puis régénérer les
 références et regarder ce qui bouge.
@@ -180,7 +180,7 @@ le compteur vidéo.
 
 ## Contrôler les références SANS les écraser (`--oracle-check`, A11)
 
-`run_etalons.py --oracle` **régénère et écrase** les références `ref_kind: oracle`. C'est
+`run_etalons.py --oracle` **régénère et écrase** les références `ref_kind: hatari`. C'est
 l'outil pour en POSER une, pas pour en contrôler une : il efface la preuve qu'il devrait
 comparer. D'où le mode ajouté pour A11 :
 
@@ -200,7 +200,7 @@ NeoST  ==  référence commise  ==  Hatari (aujourd'hui, au pin)
 Ce que ça attrape et qu'aucun autre palier ne voit : une référence régénérée à la main
 contre un oracle **non épinglé**, un pin déplacé sans repose des références, un ffmpeg
 dont le décodage bouge. Le périmètre est imprimé à chaque exécution (`--oracle-check sur
-N étalon(s)`), et ce qui en sort — `ref_kind ≠ oracle`, ou ROM propriétaire absente — est
+N étalon(s)`), et ce qui en sort — `ref_kind ≠ hatari`, ou ROM propriétaire absente — est
 recensé nommément : un vert sur deux étalons au lieu de sept doit se voir.
 
 Il tourne en CI **hebdomadairement** (`.github/workflows/oracle.yml`, plus

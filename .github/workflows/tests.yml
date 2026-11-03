@@ -101,7 +101,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             cmake g++ libglfw3-dev libgl1-mesa-dev python3-pil ffmpeg
           # ⚠ ffmpeg est REQUIS, pas optionnel : compare_screenshot.py s'en sert pour
-          # décoder les références PNG (tous les étalons ref_kind=oracle). Sans lui le
+          # décoder les références PNG (tous les étalons ref_kind=hatari). Sans lui le
           # job échoue en « vacuité NON VÉRIFIABLE … illisible » sur 9 étalons, alors
           # que les références .ppm passent — panne asymétrique et trompeuse.
           ffmpeg -version | head -1

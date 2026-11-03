@@ -544,7 +544,7 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
     remplissage contigu — rend visibles décalage ET pas du compteur) → disques générés
     `scroll_8265.st`/`scroll_8264.st`, références verrouillées à **0 px d'écart**
     (`etalons.json`), conformes à l'oracle Hatari ligne par ligne. Depuis le 2026-08-19 la
-    référence EST l'oracle (`ref_kind: oracle`, PNG Hatari 832×552 commis, ROM EmuTOS) :
+    référence EST l'oracle (`ref_kind: hatari`, PNG Hatari 832×552 commis, ROM EmuTOS) :
     NeoST y était déjà à 0 px, la self-capture n'ajoutait rien.
 - **Spectrum 512 — palette intra-ligne PIXEL-PERFECT vs Hatari** (port `spec512.c` + alignement
   bus `m68000.c`). Chaque écriture palette `$FF824x` est **datée au cycle live de Moira**
@@ -1642,7 +1642,7 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
     dispatcher la MMIO : consommation UDR MFP/INTRQ FDC, bus error déclenchée HORS CPU) ;
     **capture par-ligne au faisceau étendue aux trames « palette seule »** (`spec512Active_`,
     cf. seuil 1) → **ferme le résidu V2 assumé de No Cooper écran principal : 891 px → 0 px
-    vs oracle** (référence de l'étalon promue `ref_kind: oracle`) ; touches hôte F5/F7 (+F9/F10
+    vs oracle** (référence de l'étalon promue `ref_kind: hatari`) ; touches hôte F5/F7 (+F9/F10
     kiosk) ne fuient plus vers l'IKBD (le jeu recevait F5 pendant que l'état était écrasé) ;
     `stepInstruction` dispatche les événements en mode bloc (le pas-à-pas ne servait JAMAIS
     HBL/VBL/timers) ; `Scheduler::runTo` déclenche en ordre **chronologique** (l'énum ne sert

@@ -25,7 +25,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIR="$ROOT/extern/hatari"
 
 # ⚠ Doit rester IDENTIQUE au HATARI_PIN de tools/hatari_oracle.sh, qui avertit
-# quand l'arbre présent ne correspond pas. Les références `ref_kind: oracle` du
+# quand l'arbre présent ne correspond pas. Les références `ref_kind: hatari` du
 # dépôt ont été posées avec CETTE version.
 PIN=f0736b24b32b0439300b52107ba6ab434469ec3c        # v2.6.1-devel, 2026-08-18
 URL=https://framagit.org/hatari/hatari.git
