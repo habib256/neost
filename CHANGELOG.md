@@ -6,6 +6,19 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Banc du blitter contre `stBlitter.sv`, et la netlist ST-4082 (2026-11-04)
+
+Nouveau banc : le blitter de NeoST contre fx68k et `stBlitter.sv` câblés sur un même bus, accès par accès, sur 78 programmes.
+Les données écrites concordaient déjà, et le mode HOG au cycle près. Le mode partagé cachait des défauts qu'aucun étalon `hatari` ne pouvait voir.
+- **Partage du bus** : fenêtre de comptage de 2 cycles au lieu de 4 ; un accès CPU retenu compte parmi les 64 du CPU ; le crédit de
+  cycles recouverts n'absorbe plus cet accès, qui durait 0 cycle. Une boucle d'EXG donne 64 accès par tranche, et non 63.
+- **SMUDGE en HOP 0** lit la source, **l'adresse source** avance avec la lecture et se relit juste en plein mot.
+- **Sources** : la netlist ST-4082 lue d'abord (compteur cadencé par AS, HOP<1> OU SMUDGE), puis le RTL. La largeur de la fenêtre reste
+  sans relevé sur machine.
+- **Écart accepté avec Hatari** : 122 px sur `blitter_timer`, et les sondes `blitter_shared_large` et `blitter_shared_ram`.
+- **Save-state** : version 57, le champ `fetchSrc_` disparaît.
+- **Garde sans Verilator** : `tests/blitter_share_gap_logic.cpp` dans le selftest. Le banc tourne au palier `full`.
+
 ## Cernit Trandafir, et le changement de disquette daté (2026-11-04)
 
 DHS Cernit Trandafir n'attendait pas sur le bureau par défaut d'émulation : il exige 2 Mo, et demande son disque 2 vers la trame 3000.

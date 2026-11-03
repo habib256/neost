@@ -58,6 +58,7 @@ struct CpuState {
     bool        blitterRmw   = false;     // verrou transitoire TAS mémoire
     bool        blitterBusAccess = false;
     bool        blitterStartedInAccess = false;
+    bool        blitterAccessCounted = false;     // l'accès en cours est entré dans la fenêtre de comptage
     moira::i64  blitterOverlap = 0;       // cycles CPU internes recouverts par le blit
     bool        vblPending   = false;     // VBL (niveau 4) en attente d'acquittement
     bool        hblPending   = false;     // HBL (niveau 2) en attente d'acquittement
@@ -629,6 +630,7 @@ public:
         g_cur->blitterOverlap = 0;        // le prochain accès exige réellement le bus
         g_cur->blitterBusAccess = true;
         g_cur->blitterStartedInAccess = false;
+        g_cur->blitterAccessCounted = false;
         if (g_cur->bus->blitterWinEnd >= 0) noteBlitterPreStart();
         g_cur->megaSteAccessHit = false;
         if (g_cur->cpuMul == 2) {
@@ -657,8 +659,14 @@ public:
     void runBlitter() {
         const moira::i64 before = getClock();
         if (g_cur->sched->runBlitterTo(g_cur->sched->liveNow())) {
-            g_cur->blitterStartedInAccess = g_cur->blitterBusAccess;
-            g_cur->blitterOverlap = getClock() - before;
+            // Un accès que la tranche a retenu avant AS se fera après elle : il compte parmi les
+            // 64 du CPU. Seul celui entré dans la fenêtre de comptage est déjà au compte du blitter.
+            // [D] stBlitter.sv:241-250 @ a00deb5b, tout front d'AS compte ; banc gap*.
+            g_cur->blitterStartedInAccess = g_cur->blitterBusAccess && g_cur->blitterAccessCounted;
+            // Le crédit couvre des cycles internes recouverts par la tranche, jamais l'accès retenu,
+            // qui reste à faire en entier.
+            g_cur->blitterOverlap = g_cur->blitterBusAccess && !g_cur->blitterAccessCounted
+                                  ? 0 : getClock() - before;
         }
     }
     void sync(int n) override {
@@ -867,8 +875,10 @@ void noteBlitterPreStart() {
     if (!g_cur->moira || !g_cur->bus->blitter) return;
     const int64_t t = g_cur->sched ? g_cur->sched->liveNow()
                               : busOfClock(static_cast<int64_t>(g_cur->moira->getClock()));
-    if (t >= g_cur->bus->blitterWinStart && t < g_cur->bus->blitterWinEnd)
+    if (t >= g_cur->bus->blitterWinStart && t < g_cur->bus->blitterWinEnd) {
+        g_cur->blitterAccessCounted = true;
         g_cur->bus->blitter->notePreStartCpuAccess();
+    }
 }
 
 // Recalcule l'IPL présenté au CPU : MFP (6) > VBL (4) > HBL (2).
@@ -1031,7 +1041,8 @@ void Cpu68k::reset() {
     state_->inReset = true;                    // sync() n'avance pas l'ordonnanceur pendant le reset
     state_->blitterOverlap = 0;
     state_->megaSteAccessHit = false;
-    state_->blitterRmw = state_->blitterBusAccess = state_->blitterStartedInAccess = false;
+    state_->blitterRmw = state_->blitterBusAccess = state_->blitterStartedInAccess
+                       = state_->blitterAccessCounted = false;
     state_->moira->reset();                    // lit SSP/PC via read16OnReset (overlay ROM)
     state_->inReset = false;
     state_->bus->bootOverlay = false;

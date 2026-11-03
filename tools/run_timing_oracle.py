@@ -204,6 +204,15 @@ def read_trace(trace, pcs, data):
             "cycles": [t - times[0] for t in times]}
 
 
+# Écarts acceptés face à Hatari : le partage du bus de NeoST suit la netlist ST-4082 et
+# stBlitter.sv, Hatari annonce 4 cycles en précisant « my guess » (docs/STBLITTER_BENCH.md).
+# Décalages signés, la borne s'applique autour d'eux : un autre écart reste à juger.
+ACCEPTED_BLITTER = {
+    "blitter_shared_large": {"durations": -20, "irq_durations": -6, "polls": -1},
+    "blitter_shared_ram": {"durations": 8, "irq_durations": 8},
+}
+
+
 def compare(case, actual, expected, strict=False):
     if actual["probe_sha256"] != expected["probe_sha256"]:
         raise ValueError(f"{case} : cartouche modifiée, référence à revoir")
@@ -216,7 +225,8 @@ def compare(case, actual, expected, strict=False):
                 raise ValueError(f"{case} : mesure incomplète")
             delta = [x-y for x, y in zip(a, b)]
             limit = 0 if field == "polls" else LIMITS[case][0]
-            ok = max(abs(d) for d in delta) <= limit and ok
+            offset = ACCEPTED_BLITTER.get(case, {}).get(field, 0)
+            ok = max(abs(d - offset) for d in delta) <= limit and ok
             summaries.append(f"{field} Δ={min(delta):+d}..{max(delta):+d} "
                              f"(borne ±{limit})")
         label = "OK" if ok else "FAIL"

@@ -31,6 +31,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `run_timing_oracle.py`, `run_megaste_bus_oracle.py` | `hatari` | |
 | `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé et pose les références de `rtl_low_*`. |
 | `run_fx68k_bench.py` (35 variantes, 26 en accord) | `rtl` | Moira nu contre fx68k, cycle bus par cycle bus. Verdicts posés dans `tests/reference/fx68k_bench.json` ; un écart localise, ne tranche pas. → [`FX68K_BENCH.md`](FX68K_BENCH.md) |
+| `run_stblitter_bench.py` (78 programmes, tous en accord) | `rtl` | Blitter de NeoST contre fx68k + `stBlitter.sv`, accès, données et dates. → [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md) |
 | `run_mfp_iack_probe.py` | aucun | Contrôle la sonde, sans verdict matériel. |
 | `neost-selftest`, `--*-selftest` | à classer | Dépend de la source de chaque table de vérité → `TODO.md` § 4. |
 
@@ -126,7 +127,7 @@ Le projet n'a pas d'accès à un vrai ST. Le sommet atteignable passe donc, dans
 2. **Les documents primaires** — ci-dessus, à lire avant le RTL.
 3. **Les ROM** — TOS et diagnostics exécutés sous NeoST.
 4. **Le RTL simulé** — `gstmcu/tb` fournit un banc Verilator ; fx68k a le sien depuis le
-   2026-11-03 (`tools/run_fx68k_bench.py`, [`FX68K_BENCH.md`](FX68K_BENCH.md)) ; `stBlitter.sv`
-   n'en a pas encore.
+   2026-11-03 (`tools/run_fx68k_bench.py`, [`FX68K_BENCH.md`](FX68K_BENCH.md)) ; `stBlitter.sv` depuis le
+   2026-11-04 (`tools/run_stblitter_bench.py`, [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md)).
 
 Ce qui exige vraiment une machine reste inscrit comme tel au `TODO.md` § 3.2.

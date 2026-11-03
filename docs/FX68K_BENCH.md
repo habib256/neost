@@ -115,7 +115,7 @@ contredisent sur les instructions longues : sur MULU, fx68k échantillonne près
   périphérique ; sur ST, HBL et VBL passent par VPA.
 - **RESET** (l'instruction), Bcc.w/BSR.s pris et non pris en séries,
   `CHK` et `DIVS` en trap, `RTR`, `TRAPV` pris, `LINE A` en mode utilisateur.
-- Un **second RTL** pour les mêmes programmes : `stBlitter.sv` n'a pas de banc, et le GSTMCU
-  (`run_gstmcu_bench.py`) n'exécute pas de code.
+- Le GSTMCU (`run_gstmcu_bench.py`) n'exécute pas de code. `stBlitter.sv` a son propre banc,
+  [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md).
 - Verilator **en CI** : le banc est SKIP sur les runners. `run_gstmcu_bench.py` n'est, lui,
   branché sur aucun palier.

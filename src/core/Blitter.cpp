@@ -27,6 +27,18 @@ namespace {
     // Latence avant la prise de bus (phase PRE_START, blitter.c « t+0..t+4 ») et
     // arbitration de restitution blitter → CPU (Blitter_BusArbitration).
     constexpr int kPreStartCycles   = 4;
+    // Fenêtre où un accès CPU coûte un accès à la tranche qui reprend : 2 cycles après la fin
+    // du 64ᵉ accès CPU, pas les 4 de la latence de reprise. Seul l'accès qui suit SANS cycle
+    // interne compte.
+    // [B] ST-4082 « BLT CELL », 15 sept. 1988, feuille 1 (4082.pdf, sha256 bfb30f91) : compteur
+    // de 7 cellules (P1047 à P1017) cadencé par AS, remis à zéro par BUSY, TMOUT au dernier étage.
+    // Tout front d'AS y compte, ceux du CPU comme ceux du blitter. Révision du ST non repérée.
+    // [D] stBlitter.sv:238-250 @ a00deb5b, avec fx68k @ 0602ee46 : un CPU à 2 cycles internes (EXG)
+    // est arrêté avant de poser AS. tools/run_stblitter_bench.py, programmes gap* : 63 accès à
+    // +0, 64 à +2, +4, +6, +8. [B] M68000UM Rev 8 § 5.2.2 p. 5-15 donne le mécanisme, sans chiffre.
+    // [D] Hatari blitter.c:69-79 @ f0736b24 dit 4 cycles, et précise « my guess » : non retenu.
+    // [F] La largeur reste sans relevé. Tranché par : compter les accès d'une tranche sur un STE.
+    constexpr int kResumeCountWindow = 2;
     constexpr int kArbOut           = 4;
     // Délai avant la prise de bus au DÉMARRAGE d'un blit — port de
     // `Blitter_CyclesBeforeStart = 4 + 4` (blitter.c, branche BLITTER_RUN_CE de
@@ -78,7 +90,7 @@ void Blitter::reset(bool cold) {
     }
     busWord_ = 0;
     midBlit_ = false; haveFxsr_ = false; nfsrInt_ = false;
-    haveSrc_ = false; haveDst_ = false; fetchSrc_ = false; dstWord_ = 0;
+    haveSrc_ = false; haveDst_ = false; dstWord_ = 0;
     busCountError_ = false;
     cpuBusCnt_ = 0; bus_.blitterCountCpu = false;
     clearPreStartWindow();
@@ -102,6 +114,7 @@ uint16_t Blitter::readWord(uint32_t addr) {
     bus_.blitterMasterAccess = true;
     const uint16_t v = bus_.busFault(addr) ? 0x0000 : bus_.read16(addr);
     bus_.blitterMasterAccess = false;
+    if (accessObserver) accessObserver(false, addr, v);
     // Port de Blitter_ReadWord (blitter.c:428-441) : l'accès est effectué D'ABORD,
     // PUIS ses 4 cycles sont facturés ET dispatchés (Blitter_AddCycles suivi de
     // Blitter_FlushCycles). La facturation est inconditionnelle — une zone fautive
@@ -112,6 +125,7 @@ uint16_t Blitter::readWord(uint32_t addr) {
 void Blitter::writeWord(uint32_t addr, uint16_t v) {
     ++sliceBus_;
     addr &= 0xFFFFFE;
+    if (accessObserver) accessObserver(true, addr, v);
     bus_.blitterMasterAccess = true;
     if (!bus_.busFault(addr) && addr >= 0x8) bus_.write16(addr, v);
     bus_.blitterMasterAccess = false;
@@ -285,7 +299,6 @@ void Blitter::start() {
         nfsrInt_  = false;
         haveSrc_  = false;                 // Blitter_FlushWordState(true) — état de mot vierge
         haveDst_  = false;
-        fetchSrc_ = false;
         midBlit_  = true;
         // Diag : NEOST_BLIT_TRACE=1 → un état des lieux par blit sur stderr (pendant
         // du « --trace blitter » d'Hatari ; cf. NEOST_PAL_TRACE pour la palette).
@@ -316,7 +329,11 @@ void Blitter::start() {
         const int delay = bus_.cpu && bus_.cpu->inRun()
                         ? kPreStartCycles + (bus_.cpu->megaSte16Mhz() ? 1 : 2)
                         : kStartDelayCycles; // écriture directe du banc, sans cycle CPU
-        armPreStartWindow(sched_->liveNow(), delay);
+        // Fenêtre de comptage plus courte que la latence : kResumeCountWindow après la fin de
+        // l'écriture, soit le reste du cycle d'écriture plus 2 cycles (cf. kResumeCountWindow).
+        const int window = bus_.cpu && bus_.cpu->inRun() && !bus_.cpu->megaSte16Mhz()
+                         ? 2 + kResumeCountWindow : delay;
+        armPreStartWindow(sched_->liveNow(), window);
         sched_->schedule(Scheduler::BLITTER, sched_->liveNow() + delay);
     } else {
         onSlice();
@@ -381,7 +398,8 @@ void Blitter::noteCpuBusAccess(int64_t now) {
     bus_.blitterCountCpu = false;
     cpuBusCnt_ = 0;
     busCountError_ = false;
-    armPreStartWindow(now);
+    // Mega STE à 16 MHz : ni le RTL ni un relevé ne couvrent ce régime, Hatari reste le seul témoin.
+    armPreStartWindow(now, bus_.cpu && bus_.cpu->megaSte16Mhz() ? kPreStartCycles : kResumeCountWindow);
     if (sched_) sched_->schedule(Scheduler::BLITTER, now + kPreStartCycles);
     else onSlice();
 }
@@ -484,7 +502,6 @@ bool Blitter::runSlice(int maxBusAccesses) {
     // l'écriture d'un même mot (BLITTER_CONTINUE_LATER_IF_MAX_BUS_REACHED).
     bool     haveSrc  = haveSrc_;
     bool     haveDst  = haveDst_;
-    bool     fetchSrc = fetchSrc_;
     uint16_t dstWord  = dstWord_;
     // Budget atteint ? (testé APRÈS chaque accès bus, comme Blitter_ContinueNonHog)
     auto budgetHit = [&]() { return maxBusAccesses >= 0 && sliceBus_ >= maxBusAccesses; };
@@ -513,7 +530,11 @@ bool Blitter::runSlice(int maxBusAccesses) {
                                : (xCount == 1)              ? em3 : em2;
         if (firstWord) nfsrInt = false;
 
-        const bool needSrc = LOP_USES_HOP[lop] && ((hop & 2) || (hop == 1 && smudge));
+        // En SMUDGE la source indexe le demi-ton : elle se lit quel que soit le HOP, même 0.
+        // [B] ST-4082, feuille 1 (4082.pdf, sha256 bfb30f91) : portes P1012/P1008, HOP<1> OU SMUDGE,
+        // avec OP pour autre entrée. [D] stBlitter.sv bltControl @ a00deb5b, noHopSrc : idem.
+        // [D] Hatari blitter.c @ f0736b24 ne lit pas la source en HOP 0 : écart consigné.
+        const bool needSrc = LOP_USES_HOP[lop] && ((hop & 2) || smudge);
         const bool needDst = LOP_USES_DST[lop] || (endMask != 0xFFFF);
 
         // --- ProcessWord --- (chaque accès bus est suivi du test de budget : la
@@ -524,7 +545,10 @@ bool Blitter::runSlice(int maxBusAccesses) {
             if (budgetHit()) break;
         }
         if (needSrc && !haveSrc && !nfsrInt) {                  // lecture source normale
-            srcShift(); srcFetch(false); haveSrc = true; fetchSrc = true;
+            // L'adresse avance avec la lecture, relisible même si la tranche coupe le mot ici.
+            // [D] stBlitter.sv bltCounters @ a00deb5b : updSrc au cycle de lecture ; banc read_live.
+            srcShift(); srcFetch(false); haveSrc = true;
+            srcAddr += (xCount == 1 || (xCount == 2 && nfsr)) ? srcYinc : srcXinc;
             if (budgetHit()) break;
         }
         // Lecture destination : met aussi à jour busWord (Blitter_ReadWord). Quand
@@ -571,7 +595,6 @@ bool Blitter::runSlice(int maxBusAccesses) {
 
         // --- mise à jour compteurs/adresses ---
         if (xCount == 2 && nfsr) nfsrInt = true;
-        if (fetchSrc) srcAddr += (xCount == 1 || nfsrInt) ? srcYinc : srcXinc;
         if (xCount == 1) {                                 // fin de ligne
             haveFxsr = false;
             --yCount;
@@ -582,7 +605,7 @@ bool Blitter::runSlice(int maxBusAccesses) {
             --xCount;
             dstAddr += dstXinc;
         }
-        haveSrc = haveDst = fetchSrc = false;   // mot achevé (Blitter_FlushWordState)
+        haveSrc = haveDst = false;   // mot achevé (Blitter_FlushWordState)
         if (budgetHit()) break;                 // 64ᵉ accès = l'écriture : tranche pleine
     }
 
@@ -592,7 +615,7 @@ bool Blitter::runSlice(int maxBusAccesses) {
     // État du mot en cours (suspension mid-word) : sans cette sauvegarde, la reprise
     // REFERAIT la lecture source (double srcShift → pipeline skew corrompu, mots
     // perdus au bord des icônes GEM — bug débusqué à la fenêtre [BW] du walk-mouse).
-    haveSrc_ = haveSrc; haveDst_ = haveDst; fetchSrc_ = fetchSrc; dstWord_ = dstWord;
+    haveSrc_ = haveSrc; haveDst_ = haveDst; dstWord_ = dstWord;
     wr16(0x24, uint16_t(srcAddr >> 16)); wr16(0x26, uint16_t(srcAddr));
     wr16(0x32, uint16_t(dstAddr >> 16)); wr16(0x34, uint16_t(dstAddr));
     wr16(0x36, xCount);

@@ -60,8 +60,7 @@ documents primaires, les ROM et le RTL épinglé.
 | 1 | Continuer la logithèque avec `compare_titles.py` : parties suivantes, pilotage clavier, jeux | P1 | 3 |
 | 2 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
 | 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
-| 4 | Banc `stBlitter.sv` sur le modèle du banc fx68k | P2 | 4 |
-| 5 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
+| 4 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
 
 ---
 
@@ -155,13 +154,13 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
 
 ### 2.4 Blitter
 
+Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → `docs/STBLITTER_BENCH.md`.
+
 - **Résidu blitter/IRQ Mega STE 16 MHz** · P2 ⏸ IACK — comparaison temporelle exacte ; deux
   défauts Hatari isolés, 12-24 cycles résiduels après corrections expérimentales. Attend la
   latence IACK (§ 2.1). → `docs/HATARI_MEGASTE_AUDIT.md`
 - **DMA externe prioritaire sur le blitter en HOG** · P3 ⭘ · [F] — netlist 4082, DMARQ,
   confiance basse.
-- **Banc `stBlitter.sv`** · P2 ⭘ — bloc « fort » de l'échelon `rtl` sans banc : mêmes
-  programmes que le banc fx68k, blitter de NeoST contre le RTL, HOG et partagé. → § 4
 
 ### 2.5 Son — YM2149, DMA STE, Microwire
 
@@ -255,8 +254,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **Banc fx68k, étendre** · P2 ◐ — BERR et double faute, autovecteur par VPA et E-clock
   (HBL/VBL du ST passent par là), RESET, Bcc en séries, CHK/DIVS en trap, RTR, ligne A en
   utilisateur. → `docs/FX68K_BENCH.md` § *Ce qui manque*
-- **Banc `stBlitter.sv`** · P2 ⭘ — second RTL « fort » sans banc ; HOG et partagé, données et
-  cycles. Réutiliser le pilote et le comparateur du banc fx68k.
+- **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
+  78 programmes en accord ; `blitter_timer` et deux sondes s'écartent d'Hatari, consigné. → `docs/STBLITTER_BENCH.md`
 - **Étendre les étalons `rtl`** · P2 ◐ — `rtl_low_pal`/`rtl_low_ntsc` posés. Restent la moyenne
   résolution, puis ce qui bouge en cours de ligne (palette, fréquence), là où NeoST et le
   modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`.

@@ -394,7 +394,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/mfp_internal_loopback_logic.cpp tests/fdc_sector_size_switch_logic.cpp
     tests/mfp_rx_overrun_logic.cpp tests/mfp_rx_irq_timing_logic.cpp
     tests/mfp_mmio_decode_logic.cpp tests/psg_odd_write_logic.cpp tests/dmasound_mmio_state_logic.cpp
-    tests/psg_reset_logic.cpp tests/blitter_rmw_logic.cpp tests/machine_fdc_media_vbl_logic.cpp
+    tests/psg_reset_logic.cpp tests/blitter_rmw_logic.cpp tests/blitter_share_gap_logic.cpp tests/machine_fdc_media_vbl_logic.cpp
     tests/gemdos_drive_mapping_logic.cpp tests/acsi_partitions_logic.cpp
     tests/gemdos_directory_entries_logic.cpp tests/gemdos_dta_reuse_logic.cpp
     tests/fdc_acsi_logic.cpp tests/fdc_register_logic.cpp tests/machine_scc_logic.cpp
@@ -465,6 +465,13 @@ target_compile_options(neost-stx-test PRIVATE -UNDEBUG)
 add_executable(neost-moira-bare tools/moira_bare_bench.cpp)
 target_link_libraries(neost-moira-bare PRIVATE neost_core)
 set_source_files_properties(tools/moira_bare_bench.cpp PROPERTIES COMPILE_OPTIONS "-std=c++20")
+
+# =============================================================================
+#  neost-blitter-bare — Cpu68k + Blitter de NeoST, sans Machine, sur une RAM plate.
+#  Pendant du pilote Verilator de fx68k + stBlitter (tools/stblitter_bench.cpp).
+# =============================================================================
+add_executable(neost-blitter-bare tools/blitter_bare_bench.cpp)
+target_link_libraries(neost-blitter-bare PRIVATE neost_core)
 
 # =============================================================================
 #  neost (Android) — bibliothèque native chargée par SDL2 (libneost.so).

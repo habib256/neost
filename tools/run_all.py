@@ -225,6 +225,10 @@ FULL = FAST + [
     # deux sens. Verilator ou extern/fx68k absents → SKIP recensé (77).
     ("Banc Moira↔fx68k (cycles bus du 68000 nu contre le RTL)",
      [sys.executable, str(TOOLS / "run_fx68k_bench.py")]),
+    # Blitter de NeoST contre fx68k + stBlitter.sv : accès, données et dates. Sans Verilator ou
+    # sans les RTL épinglés → SKIP recensé (77).
+    ("Banc blitter ↔ stBlitter.sv (accès et dates, contre le RTL)",
+     [sys.executable, str(TOOLS / "run_stblitter_bench.py")]),
     ("P2 provenance des références",
      [sys.executable, str(TOOLS / "run_etalons.py"), "--verify-refs"]),
     ("P2 étalons pixel (oracle + snapshots)",

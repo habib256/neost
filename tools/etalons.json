@@ -471,8 +471,8 @@
    "frames": 400,
    "frame": 380,
    "crop": "buffer_noled",
-   "max_diff_px": 0,
-   "ref_note": "Oracle Hatari epingle f0736b24, 2026-10-19. Blitter non-hog 16x8 mots, 100 copies en RAM : donnees $3B27 et 100 releves TADR identiques a Hatari, zero pixel divergent. Ancien snapshot a 68 px, corrige en alignant le debut du cycle RAM avant SYNC(2), pas son callback median apres une tranche DMA. Deux captures Hatari successives identiques ; reference PNG produite par Hatari avec --oracle, sans decalage ni tolerances ajoutees. Les 17 sondes temporelles passent aussi en strict (ROM, RAM, HOG, TAS et MULU). Historique : docs/HATARI_DIVERGENCES.md, BL5.",
+   "max_diff_px": 122,
+   "ref_note": "Écart de 122 px accepté le 2026-11-04 : le partage du bus suit la netlist ST-4082 et stBlitter.sv (compteur cadencé par AS, tout front compte), plus Hatari qui annonce 4 cycles en précisant my guess. Détail : docs/STBLITTER_BENCH.md. Oracle Hatari epingle f0736b24, 2026-10-19. Blitter non-hog 16x8 mots, 100 copies en RAM : donnees $3B27 et 100 releves TADR identiques a Hatari, zero pixel divergent. Ancien snapshot a 68 px, corrige en alignant le debut du cycle RAM avant SYNC(2), pas son callback median apres une tranche DMA. Deux captures Hatari successives identiques ; reference PNG produite par Hatari avec --oracle, sans decalage ni tolerances ajoutees. Les 17 sondes temporelles passent aussi en strict (ROM, RAM, HOG, TAS et MULU). Historique : docs/HATARI_DIVERGENCES.md, BL5.",
    "ref_kind": "hatari"
   },
   {

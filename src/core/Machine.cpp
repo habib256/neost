@@ -862,11 +862,11 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 56; // TBI_EDGE au Scheduler, niveau TBI du MFP (mode pulse)
+static constexpr uint16_t kStateVersion = 57; // TBI_EDGE au Scheduler, niveau TBI du MFP (mode pulse)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v56 : TBI du mode pulse ; v55 : Moira::stopGraceUntil
+    uint16_t version = kStateVersion; // v57 : Blitter sans fetchSrc_ ; v56 : TBI du mode pulse ; v55 : Moira::stopGraceUntil
                                       // v54 : Ikbd::hostKeys_, StePads::oe_
                                       // v53 : IKBD calé sur la ROM 6301 ($C9/$CA, fenêtre de reset,
                                       //       $18/$19, pause) + Bus::gameCart ($FF9000)

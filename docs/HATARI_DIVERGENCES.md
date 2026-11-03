@@ -1317,6 +1317,12 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
+- **Blitter en partagé** (2026-11-04) : fenêtre de comptage de 2 cycles au lieu de 4, accès CPU retenu compté parmi les 64 du CPU.
+  [B] ST-4082 feuille 1 (compteur cadencé par AS) et [D] `stBlitter.sv:238-250 @ a00deb5b` avec fx68k @ `0602ee46` ; Hatari
+  `blitter.c:69-79 @ f0736b24` annonce 4 cycles, « my guess ». Une boucle d'EXG donne 64 accès par tranche chez NeoST et le RTL, 63 chez Hatari.
+  Écarts mesurés : `blitter_timer` à 122 px, sondes `blitter_shared_large` et `blitter_shared_ram`. → `docs/STBLITTER_BENCH.md`. Ne pas réaligner.
+- **Blitter, SMUDGE en HOP 0** (2026-11-04) : la source se lit, [B] ST-4082 feuille 1 (HOP<1> OU SMUDGE). Hatari ne la lit pas ; même résultat, deux accès de plus par mot.
+- **Blitter, adresse source relue en plein mot** (2026-11-04) : elle avance avec la lecture, [D] `stBlitter.sv` `bltCounters` @ `a00deb5b`. Hatari l'avance en fin de mot.
 - **Contrôle de somme de la ROM TOS 2.06** (2026-11-04) : Hatari écrit un BRA en `$E007FA` (`tos.c:483 @ f0736b24`, patch
   `TP_ALWAYS`), car ses autres patchs fausseraient la somme. NeoST exécute la ROM intacte ([C] TOS 2.06 UK, boucle `$E015CC`-`$E015E2`),
   ce qui coûte environ 170 trames au démarrage en 4 Mo. Les boucles du test mémoire ont les mêmes périodes des deux côtés.

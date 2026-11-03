@@ -31,6 +31,7 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
+#include <functional>
 
 #include "core/Scheduler.hpp"
 #include "core/StateArchive.hpp"
@@ -58,6 +59,10 @@ public:
     // Échéance Scheduler::BLITTER : 64 accès partagés ou transfert HOG entier.
     void onSlice();
 
+    // Observateur des accès bus du blitter (écriture ?, adresse, mot), posé par les bancs.
+    // Non sérialisé. Désarmé, il coûte un test par accès.
+    std::function<void(bool, uint32_t, uint16_t)> accessObserver;
+
     // Le blit est-il en cours ? (bit BUSY de $FF8A3C). En non-hog il reste à 1
     // entre les tranches, jusqu'à la fin réelle du transfert.
     bool busy() const { return (reg_[0x3C] & 0x80) != 0; }
@@ -75,7 +80,6 @@ public:
         ar(nfsrInt_);           // dernière lecture source de la ligne sautée
         ar(haveSrc_);           // lecture source du mot courant faite
         ar(haveDst_);           // lecture destination du mot courant faite
-        ar(fetchSrc_);          // une source a été lue (màj src_addr en fin de mot)
         ar(dstWord_);           // mot destination lu (survit à la suspension)
         ar(sliceBus_);          // accès bus consommés par la tranche en cours
         ar(cpuBusCnt_);         // accès bus CPU consommés (fenêtre COUNT_CPU_BUS)
@@ -149,7 +153,6 @@ private:
     // permettent de reprendre exactement à l'accès suivant.
     bool     haveSrc_  = false;              // lecture source du mot courant déjà faite
     bool     haveDst_  = false;              // lecture destination du mot courant déjà faite
-    bool     fetchSrc_ = false;              // une source a été lue (màj src_addr en fin de mot)
     uint16_t dstWord_  = 0;                  // mot destination lu (survit à la suspension)
     // int64 : un blit HOG x_count=y_count=0 vaut 65536×65536 → ~8,6e9 accès bus, soit
     // un débordement signé (UB) sur int, et « busAccesses * 4 » débordait dès 5,4e8 —
