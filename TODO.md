@@ -111,14 +111,10 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
   `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu
   (`docs/STCPU_BENCH.md`). Tranche : capture AS / HSYNC sur un STE. ⚠ read et write bougent par paire.
-- **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P2 ⭘ · [F] — Hatari rend trois pixels de
-  plus ; sondes `blankline_stop_st/ste` en snapshot. Tranche : traces du banc `gstmcu/tb`, STE
-  seulement. → `docs/CYCLE_ACCURACY.md` § 4
+- **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P3 ⭘ · [F] — la fin de DE à 164 et les 54 octets concordent avec le modèle (`docs/GLUE_SWEEP.md`) ; Hatari rend trois pixels de plus, et le HSYNC parasite vers le cycle 28 n'est pas modélisé. Sondes `blankline_stop_st/ste` en snapshot.
 - **Restes vidéo au cycle** · P2 ⭘ — `VIDEO_ENDLINE` distinct du HBL, VBL au cycle exact
   (vraie fin de trame + offset 64/68), phase exacte du tic Timer C, lecture du compteur à
   cheval sur deux lignes. Étalons : démos plein écran. → `docs/CYCLE_ACCURACY.md` § 4
-- **Reset STE** · P2 ⭘ · [F] — `$FF8901` gardé (PORB seul) et base vidéo effacée par /RESET
-  (netlist 4081, lecture d'agent à revérifier).
 - **Délai de bus error sur ST, Mega ST et Mega STE** · P2 ⭘ · [F] — porté sur STE seulement,
   faute de netlist du GLUE. Chercher le schéma du GLUE sur chzsoft.de.
 - **Basse résolution PAL issue du reset** · P2 ⭘ · [F] — le modèle GSTMCU garde une phase de

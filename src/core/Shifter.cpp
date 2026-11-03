@@ -1509,7 +1509,10 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
                 // [D] Hatari Video_LineWidth_WriteByte @ f0736b24 : fin de DE de CETTE ligne.
                 const int deEnd = !syncWrites_.empty() && line < static_cast<int>(glueLines_.size())
                                 ? glueLines_[line].displayEndCycle : g.lineEndCycle;
-                if (!active || cyc <= deEnd) { lineWidth = v; newLineWidth_ = -1; }
+                // Le modèle prend l'écriture jusqu'à 8 cycles avant cette limite. [D] gstmcu @ 4a6db7cc + fx68k @ 0602ee46,
+                // tools/run_stcpu_raster.py --kind offset : 64 dates sur 64 identiques au pixel, 62 sans ce retrait ;
+                // Pacemaker, More or Less Zero et Double Rez Trouble inchangées.
+                if (!active || cyc - 8 <= deEnd) { lineWidth = v; newLineWidth_ = -1; }
                 else                                  { newLineWidth_ = v; }
             }
             return;
