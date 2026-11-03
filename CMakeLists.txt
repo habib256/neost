@@ -474,6 +474,13 @@ add_executable(neost-blitter-bare tools/blitter_bare_bench.cpp)
 target_link_libraries(neost-blitter-bare PRIVATE neost_core)
 
 # =============================================================================
+#  neost-glue-bare — machine GLUE de NeoST seule, sur des écritures datées.
+#  Pendant de « Vste_tb --glue » (tools/gstmcu_bench.cpp), comparés par tools/run_glue_sweep.py.
+# =============================================================================
+add_executable(neost-glue-bare tools/glue_bare_bench.cpp)
+target_link_libraries(neost-glue-bare PRIVATE neost_core)
+
+# =============================================================================
 #  neost (Android) — bibliothèque native chargée par SDL2 (libneost.so).
 #
 #  Même logique que la branche EMSCRIPTEN ci-dessous : on réutilise neost_core

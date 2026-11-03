@@ -668,7 +668,10 @@ void Shifter::updateGlueState(int line, int lineCycles, bool writeToRes, int fre
     // du MMU (le shifter commence à charger 16 cyc avant DE : 36/40 au lieu des
     // fenêtres 52/56 du STF) et offre le retrait gauche COURT (LEFT_OFF_2_STE :
     // hi→lo repassé PILE au cycle 4 → +20 octets, écran décalé de 8 px). -----
-    if (freqHz == 71 && lineCycles <= HDE_On_Hi) {
+    // Haute résolution posée à 4 : trop tard pour retirer la bordure gauche, contrairement à ce
+    // que permet le STF. [D] gstmcu @ 4a6db7cc, tools/run_glue_sweep.py : ligne normale.
+    // [D] Hatari video.c @ f0736b24 écrit ≤ : non retenu, bloc « fort » en face.
+    if (freqHz == 71 && lineCycles < HDE_On_Hi) {
         Freq_match_found = true;
         glueHblPos_ = Hbl_Pos_Hi; glueCyclesLine_ = CyclesLine_Hi;
         if (!(BorderMask & NO_DE)) {
@@ -693,7 +696,17 @@ void Shifter::updateGlueState(int line, int lineCycles, bool writeToRes, int fre
         glueHblPos_ = Hbl_Pos_Hi; glueCyclesLine_ = CyclesLine_Hi;
         if (!(BorderMask & NO_DE)) { DE_end = HDE_Off_Hi; BorderMask |= NO_DE; }
         BorderMask &= ~LEFT_PLUS_2;
+        glueLateHiOn_ = lineCycles > T.Preload_Start_Low_50;
     } else if (freqHz != 71) {
+        // Haute résolution posée après 40 et retirée à 56 au plus tard : la ligne reste normale.
+        // [D] gstmcu @ 4a6db7cc, tools/run_glue_sweep.py. [B] netlist ST-4081 : MDE1 lu au rechargement de HSC,
+        // vers 56 (cf. ci-dessus). Inexact à 44 : le modèle y pose DE dès 44, 6 octets de plus, non porté.
+        if (glueLateHiOn_ && lineCycles <= T.HDE_On_Low_50 && (BorderMask & NO_DE)
+            && !(BorderMask & BLANK) && !(BorderMask & NO_COUNT)) {
+            BorderMask &= ~NO_DE;
+            if (DE_start == HDE_On_Low_50) DE_end = HDE_Off_Low_50;
+        }
+        glueLateHiOn_ = false;
         if (lineCycles < HDE_On_Hi && (BorderMask & LEFT_OFF)) {             // STRICT < (≠ STF : ≤)
             if (freqHz == 50) DE_start = HDE_On_Low_50;
             else { DE_start = HDE_On_Low_60; BorderMask |= LEFT_PLUS_2; }
@@ -712,7 +725,7 @@ void Shifter::updateGlueState(int line, int lineCycles, bool writeToRes, int fre
     }
 
     // Ligne 50 Hz qui continue en 60 Hz (et réciproque) — video.c 2547-2634
-    if (freqHz == 60 && lineCycles < Line_Set_Pal) {                         // Line_Set_Pal STE = 56
+    if (freqHz == 60 && lineCycles < Line_Set_Pal) {                         // Line_Set_Pal STE = 58
         Freq_match_found = true;
         glueHblPos_ = Hbl_Pos_Low_60; glueCyclesLine_ = CyclesLine_60;
         if (!(BorderMask & NO_DE)) {
@@ -996,6 +1009,8 @@ void Shifter::replayGlue() {
     for (int line = 0; line < lpf; ++line) {
         // cf. le feeder live : décode Video_StartHBL, hi si (res & 3) == 2 seulement.
         int freqHz = ((curRes & 0x03) == 0x02) ? 71 : (curFreq50 ? 50 : 60);
+        if (benchLineStarts_ && static_cast<std::size_t>(line) < benchLineStarts_->size())
+            (*benchLineStarts_)[static_cast<std::size_t>(line)] = lineCyc;
         startHBL(line, curRes, freqHz);
         int len = lineLen ? glueLineLenFor(freqHz) : cpl;
         if (v2 && !lineLen) {                            // ligne raccourcie ? (heuristique V2)
@@ -1139,6 +1154,27 @@ void Shifter::replayGlue() {
 // Auto-test déterministe de la machine Glue (cf. déclaration). Chaque scénario
 // injecte des écritures freq/res à des cycles exacts puis vérifie l'état calculé
 // contre les valeurs Hatari. Affiche un récap sur stderr ; renvoie true si tout OK.
+void Shifter::glueBenchReplay(const std::vector<std::array<int, 4>>& writes) {
+    frameMode_ = Mode::Low;
+    frameSync_ = 0x02;
+    resizeFor(frameMode_);
+    const int cpl = geometry().cyclesPerLine;
+    syncWrites_.clear();
+    for (const auto& v : writes)
+        syncWrites_.push_back({ v[0] * cpl + v[1], static_cast<uint8_t>(v[3]), v[2] != 0 });
+    std::vector<int64_t> starts(1024, 0);                  // plus que toute trame
+    benchLineStarts_ = &starts;
+    replayGlue();
+    benchLineStarts_ = nullptr;
+    glueBenchStarts_ = std::move(starts);
+}
+
+Shifter::GlueProbe Shifter::glueBenchLine(int line) const {
+    const auto i = static_cast<std::size_t>(line);
+    const GlueLine& L = glueLines_[i];
+    return { L.displayStartCycle, L.displayEndCycle, glueLineBytes(line), L.borderMask, glueBenchStarts_[i] };
+}
+
 bool Shifter::glueSelfTest() {
     frameMode_ = Mode::Low;                       // STF 50 Hz basse rés
     frameSync_ = 0x02;

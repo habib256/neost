@@ -111,10 +111,8 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   matérielle. Tranche : relevés de tiers (§ 4), netlist STE pour la branche STE.
 - **Offsets de datation dérivés d'Hatari** · P2 ⭘ · aligné Hatari — `kVideoCounterReadOffsetCyc`,
   `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
-  Tranche : cycles de `gstmcu.v`. ⚠ read et write bougent par paire.
-- **STE : écriture 60 Hz à 32-36 cycles** · P2 ⭘ · [F] — `blankline_blank_ste` aux phases 32/36 :
-  10 714 px qu'aucune trame Hatari ne produit. Comparer `VideoGlue.cpp` (branches 60 Hz,
-  NO_DE (36,40]) à `video.c` et à la netlist 4081P29. → `docs/HATARI_DIVERGENCES.md` § Vidéo
+  Mesure : date GLUE = chute d'AS + 5 sur le modèle (`$FF820A`), + 3 dans le chemin CPU de NeoST ; l'écart de 2 reste à
+  expliquer (origine de ligne ou écriture). Tranche : banc 68000 + GSTMCU. ⚠ read et write bougent par paire.
 - **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P2 ⭘ · [F] — Hatari rend trois pixels de
   plus ; sondes `blankline_stop_st/ste` en snapshot. Tranche : traces du banc `gstmcu/tb`, STE
   seulement. → `docs/CYCLE_ACCURACY.md` § 4
@@ -127,9 +125,8 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   faute de netlist du GLUE. Chercher le schéma du GLUE sur chzsoft.de.
 - **Basse résolution PAL issue du reset** · P2 ⭘ · [F] — le modèle GSTMCU garde une phase de
   plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
-- **STE, impulsion hi-res : bords à ±4** · P3 ⭘ · [F] — la netlist place le bord HSC et le
-  décodage HDE au cycle ~56 ±4 ; une impulsion retirée dans (40,44] donnerait un DE précoce à
-  ~48. Tranche : simulation de `hdegen.v`, avant d'affiner `VideoGlue.cpp` (71 Hz).
+- **STE, impulsions restantes face au modèle** · P3 ⭘ · [D] — DE précoce à 44, 10 impulsions sur 1664 en écart, et les
+  largeurs au-delà de 32 qui enjambent HSYNC. Hors logiciel connu. → `docs/GLUE_SWEEP.md`
 - **Latch couleur de la bordure gauche** · P3 ⭘ · [D] — 16 px (colonnes 45-60) : Hatari applique
   l'écriture palette ~16 px après le début nominal, NeoST pile à `activeX_`. Invisible aux
   étalons. Tranche : `gstshifter.v`.
@@ -266,7 +263,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   d'une fiche est `primary`, une table recopiée d'Hatari est `hatari`.
 - **Verilator en CI** · P2 ⭘ — les bancs RTL sont SKIP sur les runners.
   Installer Verilator (5.054) pour les faire tourner là aussi.
-- **Monter les 11 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl` ; `closure` et
+- **Monter les 11 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
+  confrontée au modèle (`docs/GLUE_SWEEP.md`), pas leurs pixels ; `closure` et
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
 
 ### Instruments

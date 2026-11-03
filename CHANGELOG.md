@@ -6,6 +6,14 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## La GLUE du STE confrontée au modèle, impulsion par impulsion (2026-11-04)
+
+Nouveau banc : une impulsion 60 Hz ou haute résolution à chaque phase de la ligne, sur le modèle GSTMCU et dans la machine GLUE de NeoST, sans CPU. 1654 sur 1664 concordent,
+DE et octets, dont tous les retraits usuels. Les fenêtres de cette machine, port d'Hatari, n'avaient jamais été confrontées à un modèle du circuit.
+- **Trois seuils corrigés sur STE** : `Line_Set_Pal` à 58 ; haute résolution posée à 4 sans retrait gauche ; posée dans (40, 48] et retirée à 56 sans `NO_DE`.
+- **Écart accepté avec Hatari**, consigné. Aucun étalon ne bouge, démos STE repassées sans changement.
+- **Non traité** : 10 impulsions inscrites en référence, dont le DE précoce à 44. Largeurs au-delà de 32 hors verdict. Le ST garde la table d'Hatari, faute de modèle.
+
 ## Le bus du STE lu sur la netlist ST-4081 (2026-11-04)
 
 Deux questions P1 restaient alignées sur Hatari, sans source. La netlist et une sonde du modèle GSTMCU les tranchent.

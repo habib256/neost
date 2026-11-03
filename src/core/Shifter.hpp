@@ -79,6 +79,11 @@ public:
     // haut/bas sans dépendre du timing CPU (≠ test 68k cycle-exact). Renvoie true si OK ;
     // détaille les échecs sur stderr. Appelé par neost-headless --glue-selftest.
     bool glueSelfTest();
+    // Banc de la machine GLUE (tools/glue_bare_bench.cpp) : rejoue des écritures {ligne, cycle,
+    // résolution ?, valeur} sur une trame basse résolution 50 Hz, puis lit une ligne.
+    struct GlueProbe { int start, end, bytes; uint32_t mask; int64_t lineStart; };
+    void glueBenchReplay(const std::vector<std::array<int, 4>>& writes);
+    GlueProbe glueBenchLine(int line) const;
 
     // NEOST_LINELEN : l'UNIQUE lecteur du verrou « longueurs de ligne par-ligne »
     // côté Machine (défaut ON, =0 pour l'A/B). L'attribution expérimentale côté
@@ -525,6 +530,9 @@ private:
         uint32_t borderMask;          // BORDERMASK_* (cf. Shifter.cpp)
     };
     std::vector<GlueLine> glueLines_;               // état par scanline (taille lpf+2)
+    bool glueLateHiOn_ = false;                     // rejeu STE : haute résolution posée dans (40, 56]
+    std::vector<int64_t>* benchLineStarts_ = nullptr;    // banc seul : débuts de ligne vus par le rejeu
+    std::vector<int64_t> glueBenchStarts_;
     int  glueStartHBL_   = 63;                       // nStartHBL : 1ʳᵉ ligne affichée (peut baisser → top retiré)
     int  glueEndHBL_     = 263;                      // nEndHBL : dernière ligne+1 (peut monter → bottom retiré)
     uint32_t glueVOverscan_ = 0;                     // V_OVERSCAN_* (NO_TOP/NO_BOTTOM/NO_DE…)

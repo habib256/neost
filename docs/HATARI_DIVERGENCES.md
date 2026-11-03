@@ -1317,6 +1317,8 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
+- **GLUE du STE, trois seuils** (2026-11-04) : `Line_Set_Pal` à 58, haute résolution à 4 sans retrait gauche, haute résolution dans (40, 48] retirée à 56 sans `NO_DE`.
+  [D] gstmcu @ `4a6db7cc`, bloc « fort », `tools/run_glue_sweep.py` : 1654 impulsions sur 1664 en accord. Hatari `video.c` @ `f0736b24` garde 56, ≤ 4 et `NO_DE`. Ne pas réaligner. → `docs/GLUE_SWEEP.md`
 - **`$FF8920-3F` au créneau de la RAM, sur STE** (2026-11-04) : [B] ST-4081 feuilles 19 et 21, CMAP par SMAPB. Hatari n'aligne que couleurs,
   résolution et `$FF8264/65`. Écart de 2 cycles au plus, seulement à une lecture ou écriture en phase 4n + 2. Ne pas réaligner.
 - **Blitter en partagé** (2026-11-04) : fenêtre de comptage de 2 cycles au lieu de 4, accès CPU retenu compté parmi les 64 du CPU.

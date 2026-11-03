@@ -96,7 +96,7 @@ constexpr int LINE_END_FULL      = 512;        // FIXE (LINE_END_CYCLE_FULL, hor
 // Table de timings de la Glue PAR MACHINE — port de VideoTimings[] (video.c:927-1057).
 // STF : base WS1 + kWsInc (wakestate tranché WS3) ; STE : le GST MCU (MMU+GLUE
 // fusionnés) n'a PAS de wakestate — valeurs PROPRES : preload MMU (le shifter
-// commence à charger 16 cyc avant DE, positions Preload_Start_*), Line_Set_Pal 56,
+// commence à charger 16 cyc avant DE, positions Preload_Start_*), Line_Set_Pal 58,
 // HSync −52/−12, RemoveBorder 500. `inc` = décalage des positions STOCKÉES vs les
 // ancres FIXES du rendu (re-normalisation, cf. renderGlueFrame) : kWsInc en STF,
 // 0 en STE. Hbl_Pos_* : canal HBL_Pos/nCyclesPerLine (video.c 977-979) — chaque
@@ -109,7 +109,7 @@ struct Timing {
     int HBlank_Off_Low_60, HBlank_Off_Low_50;  //  24 / 28
     int Preload_Start_Low_60;                  //  36 (STE)
     int HDE_On_Low_60;                         //  52
-    int Line_Set_Pal;                          //  54 STF / 56 STE
+    int Line_Set_Pal;                          //  54 STF / 58 STE
     int Preload_Start_Low_50;                  //  40 (STE)
     int HDE_On_Low_50;                         //  56
     int HDE_Off_Hi;                            // 164
@@ -144,7 +144,8 @@ inline const Timing kSte = {
     24, 28,
     36,                   // Preload_Start_Low_60
     52,
-    56,                   // Line_Set_Pal (≠ STF 54)
+    58,                   // Line_Set_Pal (≠ STF 54). [D] gstmcu @ 4a6db7cc, tools/run_glue_sweep.py : toute
+                          // la table 60 Hz concorde à 58, pas à 56 (Hatari video.c @ f0736b24).
     40,                   // Preload_Start_Low_50
     56,
     164,
