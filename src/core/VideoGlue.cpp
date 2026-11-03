@@ -312,6 +312,11 @@ int64_t Shifter::datedResWriteCycle() const {
 }
 
 void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
+    // $FF820A sur STE : le modèle réagit 3 cycles plus tôt que cette date, à la chute d'AS + 5.
+    // [D] gstmcu @ 4a6db7cc + fx68k @ 0602ee46, tools/run_glue_sweep.py, tools/run_stcpu_raster.py.
+    // NON retenu : avancer de 4 casse des démos écrites sur de vrais STE (DHS More or Less Zero, 77 % de
+    // pixels faux à la trame 4000 ; Double Rez Trouble, 10 %). Le logiciel réel prime sur le modèle.
+    // [F] Modèle ou table d'Hatari, l'écart reste à expliquer. Tranché par : une capture AS / HSYNC.
     const int64_t fc = datedResWriteCycle();
     if (fc < 0) return;
     // DEBUG (NEOST_SYNC_TRACE) : trace TOUTES les écritures freq/res (ligne/cycle) pour

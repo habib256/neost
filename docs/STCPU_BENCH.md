@@ -19,6 +19,7 @@ fx68k (« date limite de la broche IPL ») ne pouvait pas se trancher : aucun é
 | `tools/stcpu_bench_top.v`, `tools/stcpu_bench.cpp` | fx68k + `ste_tb` (GSTMCU + Shifter), câblés comme `atarist_sdram.sv` @ `a00deb5b`. RAM pilotée par RAS/CAS, ROM de 256 Ko. |
 | `tools/make_stcpu_rom.py` | La ROM : pose l'écran, attend la VBL par STOP, remplit les tables. |
 | `tools/run_stcpu_bench.py` | Exécute des deux côtés, compare à l'octet, garde les écarts dans `tests/reference/stcpu_bench.json`. Palier `full`. |
+| `tools/make_stcpu_raster.py`, `tools/run_stcpu_raster.py` | Le pixel, voir plus bas. Écarts dans `tests/reference/stcpu_raster.json`. Palier `full`. |
 
 Les tables : trois balayages de 16 000 lectures de `$FF8209`, décalés de 4 et 8 cycles (`move.b (a1),(a0)+` et DBRA, 24 cycles par lecture), soit 2,4 trames chacun. Puis une lecture par HBL en plein DE, sur
 quatre formes de boucle interrompue : NOP et Bcc, longue suite de NOP, STOP, MULU. Enfin une lecture par VBL.
@@ -44,6 +45,14 @@ quatre formes de boucle interrompue : NOP et Bcc, longue suite de NOP, STOP, MUL
 | Commit | HBL et VBL commitées au dispatch | Aucun, sauf HBL pendant un STOP |
 
 Le mécanisme existait, en essai (`NEOST_PIN_ARM`), écarté le 2026-07-02 parce qu'il s'écartait d'Hatari. Ce banc le départage. `POLL_IPL` de Moira est donc confirmé sur ces cas : le « +3 » de `FX68K_BENCH.md` n'apparaît pas dans NeoST à cette résolution de 4 cycles.
+
+## Le pixel : une écriture du CPU, la trame qui sort
+
+`tools/run_stcpu_raster.py` : le programme affiche un écran pseudo-aléatoire, se cale sur le compteur sans gigue, et pose une impulsion 60 Hz à une date de la ligne, une date par exécution. Chaque pixel hors BLANK est comparé. **60 dates sur 64 donnent une trame identique au pixel**, sur 113 568 pixels.
+
+**Les 4 autres posent une question sans réponse.** Le modèle réagit à `$FF820A` plus tôt que NeoST : à la chute d'AS + 5 (`tools/run_glue_sweep.py`), alors que NeoST, comme Hatari, date cette écriture à AS + 8. Avancer de 4 donne 62 dates sur 64, **et casse des démos écrites sur de vrais STE** : DHS More or Less Zero à 77 % de pixels faux à la trame 4000, Double Rez Trouble à 10 %, contre 0 % et 4,52 % d'arrondis. Le logiciel réel prime : la date reste celle d'Hatari, et l'écart reste à expliquer. Tranche : une capture AS et HSYNC sur un STE. → `TODO.md` § 2.2
+
+**Haute résolution hors verdict.** Après une impulsion, le Shifter du modèle (bloc « moyen ») garde une phase de 8 pixels. Le GLUE et le compteur n'y sont pour rien, et `GLUE_SWEEP.md` les compare sans passer par le pixel.
 
 ## Ce que ça ne dit pas
 

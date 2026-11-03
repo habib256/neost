@@ -109,8 +109,8 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   matérielle. Tranche : relevés de tiers (§ 4), netlist STE pour la branche STE.
 - **Offsets de datation dérivés d'Hatari** · P2 ◐ — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
   `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
-  Mesure : date GLUE = chute d'AS + 5 sur le modèle (`$FF820A`), + 3 dans le chemin CPU de NeoST ; l'écart de 2 reste à
-  expliquer (origine de ligne ou écriture). Tranche : banc 68000 + GSTMCU. ⚠ read et write bougent par paire.
+  `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu
+  (`docs/STCPU_BENCH.md`). Tranche : capture AS / HSYNC sur un STE. ⚠ read et write bougent par paire.
 - **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P2 ⭘ · [F] — Hatari rend trois pixels de
   plus ; sondes `blankline_stop_st/ste` en snapshot. Tranche : traces du banc `gstmcu/tb`, STE
   seulement. → `docs/CYCLE_ACCURACY.md` § 4
@@ -239,11 +239,9 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`).
-  2 sites pilotes posés (`src/io/Mfp.cpp`, `src/core/Cpu68k.cpp`) ; restent ~230 citations
-  `fichier.c:ligne` sans révision. ⚠ **Pas de passe mécanique** : chacune se vérifie à
-  l'épingle. MFP puis Blitter, dont la fiche ou le schéma est disponible ; recompter ensuite
-  par grade dans `check_doc_claims.py`.
+- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). MFP et Blitter sont faits (56 citations vérifiées à l'épingle, 3 corrigées).
+  Restent ~220 citations `fichier.c:ligne` sans révision, dans `Shifter`, `DmaSound`, `VideoGlue`, `Fdc`, `Cpu68k`, `Machine`. ⚠ **Pas de passe mécanique** : chacune se vérifie à l'épingle.
+  Recompter ensuite par grade dans `check_doc_claims.py`.
 - **Banc fx68k, étendre** · P2 ◐ — BERR et double faute, RESET, Bcc en séries, CHK/DIVS en trap,
   RTR, ligne A en utilisateur. Autovecteur par VPA relevé, cohérent avec NeoST, à verser au verdict.
   → `docs/FX68K_BENCH.md` § *Ce qui manque*

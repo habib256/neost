@@ -231,6 +231,9 @@ FULL = FAST + [
     # 68000 + GSTMCU (STE) : compteur vidéo relevé par le CPU, en boucle, en HBL et en VBL.
     ("Banc CPU + GSTMCU (ce que le CPU voit du faisceau, contre les RTL)",
      [sys.executable, str(TOOLS / "run_stcpu_bench.py")]),
+    # Une écriture du CPU, la trame qui sort : NeoST contre les RTL, pixel par pixel.
+    ("Banc au pixel (fx68k + GSTMCU, une impulsion 60 Hz à chaque date)",
+     [sys.executable, str(TOOLS / "run_stcpu_raster.py")]),
     # Machine GLUE du STE contre le modèle : une impulsion à chaque phase de la ligne.
     ("Balayage GLUE STE contre le modèle GSTMCU (DE et octets par écriture)",
      [sys.executable, str(TOOLS / "run_glue_sweep.py")]),

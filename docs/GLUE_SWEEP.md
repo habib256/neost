@@ -15,9 +15,8 @@ Posé le 2026-11-04. Instrument : `tools/run_glue_sweep.py`.
 | `neost-glue-bare` (`tools/glue_bare_bench.cpp`) | Le même plan rejoué dans `Shifter::replayGlue`, sans CPU. |
 | `tools/run_glue_sweep.py` | Compare, et garde les écarts dans `tests/reference/glue_sweep.json`. Palier `full` ; SKIP sans Verilator. |
 
-**Le décalage.** Une écriture du banc est datée à la chute d'AS. Sa date dans la machine GLUE vaut AS + 5 pour `$FF820A`, AS + 8 pour `$FF8260`, qui attend aussi le
-créneau de 4 cycles : `--offsets` les a mesurés, en cherchant le minimum d'écarts par phase. Ces deux nombres sont des constantes du banc, et non des dates de CPU.
-Le chemin CPU de NeoST date une écriture à AS + 3 : l'écart de 2 reste une question d'origine de la ligne, sans effet sur les fenêtres entre elles. → `TODO.md` § 2.2
+**Le décalage.** Une écriture du banc est datée à la chute d'AS. Sa date dans la machine GLUE vaut AS + 5 pour `$FF820A`, AS + 8 pour `$FF8260`, qui attend aussi le créneau de 4 cycles : `--offsets` les a mesurés, en cherchant le minimum d'écarts par phase.
+Le chemin CPU de NeoST date les deux à AS + 8. Pour `$FF8260`, c'est donc la même date. Pour `$FF820A`, le modèle réagit 3 cycles avant NeoST : une question ouverte, que de vraies démos empêchent de trancher en faveur du modèle. → [`STCPU_BENCH.md`](STCPU_BENCH.md)
 
 **HSYNC parasite.** Une impulsion haute résolution vers le cycle 28 fait retomber HSYNC une fois de plus, sans commencer de ligne : DE reste en place, et le banc l'ignore
 dans son comptage. NeoST ne modélise pas ce front, qu'un programme ne peut pas lire. Effet sur un moniteur réel inconnu.
@@ -31,7 +30,7 @@ Trois corrections en sont sorties, toutes sur STE :
 
 | Écart | Avant | Modèle, et NeoST maintenant | Hatari @ `f0736b24` |
 |---|---|---|---|
-| Fin de la fenêtre 60 Hz, `Line_Set_Pal` | 56 | 58 | 56 |
+| Fin de la fenêtre 60 Hz, `Line_Set_Pal`, relativement aux autres fenêtres 60 Hz | 56 | 58 | 56 |
 | Haute résolution posée à 4 | `LEFT_OFF` | Ligne normale | `LEFT_OFF` |
 | Haute résolution posée dans (40, 48], retirée à 56 au plus tard | `NO_DE` | Ligne affichée | `NO_DE` |
 

@@ -7,6 +7,8 @@
 //  Avec NEOST_STCPU_TRACE=fichier, chaque chute d'AS des trames NEOST_STCPU_FROM à _TO (défaut :
 //  l'avant-dernière) : trame, ticks de 32 MHz depuis VSYNC, adresse, sens, donnée écrite. De quoi lire un
 //  point précis, pas un verdict.
+//  Avec NEOST_STCPU_VIDEO=fichier, la dernière trame, un mot 16 bits natif par période de 32 MHz :
+//  bits 11-0 R,G,B · bit 12 BLANK_N · bit 13 HSYNC_N · bit 14 VSYNC_N, comme tools/gstmcu_bench.cpp.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test. Les RTL ne sont jamais liés à NeoST.
 // =============================================================================
@@ -32,7 +34,7 @@ static void tick(int c) {
     }
     if (c && !t->rom_n) {
         const uint32_t a = (uint32_t(t->cpu_a) << 1) & 0x3FFFE;
-        t->mdin = uint16_t(rom[a] << 8 | rom[a + 1]);
+        t->rom_data = uint16_t(rom[a] << 8 | rom[a + 1]);
     }
     t->eval();
 }
@@ -58,9 +60,14 @@ int main(int argc, char** argv) {
     const int traceTo = std::getenv("NEOST_STCPU_TO") ? std::atoi(std::getenv("NEOST_STCPU_TO")) : traceFrom;
     FILE* trace = nullptr;
     if (const char* tp = std::getenv("NEOST_STCPU_TRACE")) trace = std::fopen(tp, "w");
+    std::vector<uint16_t> video;
+    const char* videoPath = std::getenv("NEOST_STCPU_VIDEO");
     while (seen < frames && ++guard < 800000000L) {
         tick(1); tick(0);
         ++ticks;
+        if (videoPath && seen == frames - 1)
+            video.push_back(uint16_t((t->R << 8) | (t->G << 4) | t->B | (t->BLANK_N ? 1u << 12 : 0)
+                                     | (t->HSYNC_N ? 1u << 13 : 0) | (t->vsync_n ? 1u << 14 : 0)));
         if (trace && seen >= traceFrom && seen <= traceTo && prevAs && !t->as_n) pendingAs = ticks;
         if (trace && pendingAs >= 0 && !t->as_n && (!t->rw ? (ticks - pendingAs >= 4) : true)) {
             std::fprintf(trace, "%d %ld %06X %c %04X\n", seen, pendingAs, unsigned(t->cpu_a) << 1, t->rw ? 'R' : 'W', t->cpu_dout);
@@ -70,6 +77,12 @@ int main(int argc, char** argv) {
         if (prev && !t->vsync_n) { ++seen; ticks = 0; }
         prev = t->vsync_n;
         if (!t->halted_n) { std::fprintf(stderr, "CPU arrêté\n"); break; }
+    }
+    if (videoPath) {
+        FILE* v = std::fopen(videoPath, "wb");
+        if (!v) { std::perror(videoPath); return 2; }
+        std::fwrite(video.data(), sizeof(uint16_t), video.size(), v);
+        std::fclose(v);
     }
     FILE* o = std::fopen(argv[5], "wb");
     if (!o) { std::perror(argv[5]); return 2; }
