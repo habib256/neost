@@ -28,8 +28,13 @@ NOP = 0x4E71
 LINE = 512
 
 
+# forme : (registre, valeur active, valeur de retour, inutilisé).
+KINDS = {"hi": (0xFF8260, 2, 0, 0), "f60": (0xFF820A, 0, 2, 0),
+         "scroll": (0xFF8265, 5, 0, 0), "offset": (0xFF820F, 8, 0, 0)}
+
+
 def build(kind: str, width: int, date: int) -> bytes:
-    """kind : hi ou f60. width : cycles entre le début des deux écritures, 8 au moins. date : cycles
+    """kind : forme de KINDS, counter ou palette. width : cycles entre le début des deux écritures, 8 au moins. date : cycles
     après une date fixe de la ligne."""
     assert width >= 8 and width % 4 == 0
     p = P()
@@ -57,12 +62,13 @@ def build(kind: str, width: int, date: int) -> bytes:
     movebi(p, 2, 0xFF820A)                     # 50 Hz
     for _ in range(2):
         p.w(0x4E72, 0x2300)
-    # Registres des écritures. a3 = cible ; d4 = activer ; d5 = rétablir.
-    target, on, off = (0xFF8260, 2, 0) if kind == "hi" else (0xFF820A, 0, 2)
-    p.w(0x47F9).l(target)                      # lea cible,a3
-    p.w(0x7800 | on)                           # moveq #on,d4
-    p.w(0x7A00 | off)                          # moveq #off,d5
     p.w(0x45F9).l(0xFF8209)                    # lea $FF8209,a2
+    # Registres des écritures. a3 = cible ; d4 = activer ; d5 = rétablir.
+    if kind in KINDS:
+        target, on, off, lo = KINDS[kind]
+        p.w(0x47F9).l(target)                  # lea cible,a3
+        p.w(0x7800 | (on & 0xFF))              # moveq #on,d4
+        p.w(0x7A00 | (off & 0xFF))             # moveq #off,d5
     p.label("frame")
     p.w(0x4E72, 0x2300)                        # stop : VBL
     p.w(0x46FC, 0x2700)
@@ -74,12 +80,18 @@ def build(kind: str, width: int, date: int) -> bytes:
     p.w(0x7420)                                # moveq #32,d2
     p.w(0x9400)                                # sub.b d0,d2
     p.w(0xE56E)                                # lsl.w d2,d6
-    # La ligne reprend à une date fixe, sans gigue, sur les deux modèles.
     p.w(*([NOP] * (10 * LINE // 4)))           # dix lignes plus bas
     p.w(*([NOP] * (date // 4)))
-    p.w(0x1684)                                # move.b d4,(a3)
-    p.w(*([NOP] * ((width - 8) // 4)))
-    p.w(0x1685)                                # move.b d5,(a3)
+    if kind in KINDS:
+        p.w(0x1684)                            # move.b d4,(a3)
+        p.w(*([NOP] * ((width - 8) // 4)))
+        p.w(0x1685)                            # move.b d5,(a3)
+    elif kind == "counter":                    # compteur vidéo $FF8207, écrit au vol (STE)
+        p.w(0x13FC, 0x00C0).l(0xFF8207)        # move.b #$C0,$FF8207.l
+    elif kind == "palette":                    # couleur 0, date par date
+        p.w(0x33FC, 0x0F00).l(0xFF8240)        # move.w #$F00,$FF8240.l
+        p.w(*([NOP] * ((width - 8) // 4)))
+        p.w(0x33FC, PALETTE[0]).l(0xFF8240)    # puis la couleur d'origine
     p.w(0x4EF9).addr("frame")                  # jmp frame.l
     p.label("vbl")
     p.w(0x4E73)

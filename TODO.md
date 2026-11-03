@@ -125,9 +125,9 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
 - **STE, impulsions restantes face au modèle** · P3 ⭘ · [D] — DE précoce à 44, 10 impulsions sur 1664 en écart, et les
   largeurs au-delà de 32 qui enjambent HSYNC. Hors logiciel connu. → `docs/GLUE_SWEEP.md`
-- **Latch couleur de la bordure gauche** · P3 ⭘ · [D] — 16 px (colonnes 45-60) : Hatari applique
-  l'écriture palette ~16 px après le début nominal, NeoST pile à `activeX_`. Invisible aux
-  étalons. Tranche : `gstshifter.v`.
+- **Palette : 4 pixels, face au modèle** · P3 ⏸ source · [D] — le modèle change la couleur 4 pixels avant NeoST, en bordure comme dans l'image (`docs/STCPU_BENCH.md`). Shifter, bloc
+  « moyen » : le RTL n'y prévaut pas. Inclut l'ancien écart de 16 px en bordure gauche. Tranche : relevé d'une transition sur un STE.
+- **Écritures en plein DE sur STE** · P3 ⭘ · [D] — `$FF8207` et `$FF8265` agissent aussitôt sur le modèle, à la ligne suivante chez NeoST et Hatari. Aucun logiciel connu n'en dépend. Porter `$FF8207` demande un rendu en deux segments par ligne.
 - **Étalons sensibles à la phase E-clock** · P3 ⭘ — `blankline_*`, `spec512_*` capturent une
   trame dont la phase tourne à chaque changement de timing du boot ; les ancrer dans leur
   programme (compter les VBL, ou phase fixée par `stop` + attente).

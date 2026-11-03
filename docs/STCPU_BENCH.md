@@ -54,6 +54,15 @@ Le mécanisme existait, en essai (`NEOST_PIN_ARM`), écarté le 2026-07-02 parce
 
 **Haute résolution hors verdict.** Après une impulsion, le Shifter du modèle (bloc « moyen ») garde une phase de 8 pixels. Le GLUE et le compteur n'y sont pour rien, et `GLUE_SWEEP.md` les compare sans passer par le pixel.
 
+**D'autres écritures, hors verdict** (`--kind`, 64 dates chacune) :
+
+| Écriture | Dates identiques | Ce que fait le modèle, et pas NeoST |
+|---|---|---|
+| `$FF820F` (`offset`) | 62 sur 64 | Deux dates, 16 cycles d'écart sur la fin de fenêtre |
+| Couleur 0 (`palette`) | 37 sur 64 | La couleur change 4 pixels plus tôt, en bordure comme dans l'image. Le Shifter est un bloc « moyen » : le RTL n'y prévaut pas, et aucune image réelle ne tranche à 4 pixels. |
+| `$FF8265` en plein DE (`scroll`) | 21 sur 64 | Les pixels se décalent aussitôt, le temps de l'impulsion ; NeoST attend la ligne suivante |
+| `$FF8207` en plein DE (`counter`) | 23 sur 64 | Le reste de la ligne vient de la nouvelle adresse ; NeoST attend la ligne suivante, comme Hatari. Hors DE : identique. |
+
 ## Ce que ça ne dit pas
 
 - **ST et Mega STE** gardent le commit au dispatch, à 0 px d'Hatari : aucun modèle ne les couvre. `[F]` Le 68000 est le même, le GLUE non : rien ne dit qu'ils s'écartent, rien ne le réfute.
