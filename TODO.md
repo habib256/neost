@@ -57,7 +57,7 @@ documents primaires, les ROM et le RTL épinglé.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | Continuer la logithèque avec `compare_titles.py` : parties suivantes, pilotage clavier, jeux | P1 | 3 |
+| 1 | Continuer la logithèque avec `compare_titles.py` : parties suivantes, titres au joystick | P1 | 3 |
 | 2 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
 | 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
 | 4 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
@@ -220,7 +220,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
   Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
-  s'affichent correctement aux écrans vus. Restent les parties suivantes et le pilotage clavier dans l'outil.
+  s'affichent correctement aux écrans vus. `--key` et `--swap` permettent d'entrer dans les titres ; restent les parties suivantes et les titres au joystick.
 
 ## 4. 🪜 Harnais et preuve
 
@@ -258,9 +258,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **Suite de tests d'Hatari : restes** · P2 ◐ — `run_hatari_suite.py` rejoue cycles, blitter,
   bus errors, `cpu`, `gemdos` : 12/12. Restent `screen` (référence PNG au format Hatari) et
   `serial` ; `xbios`/`mem_end` hors périmètre.
-- **`screen/flixfull.prg`** · P2 ⭘ — NeoST = référence d'Hatari décalée de 4 px : cadrage de
-  capture (`--screenshot-dir`, `--tos none`) ou fenêtre gauche en overscan (A40) ? Repasser par
-  `hatari_oracle.sh`.
+- **`screen/flixfull.prg`** · P3 ⭘ · [F] — NeoST est 4 px à gauche d'Hatari sur toute la ligne, ST comme STE. Écritures et décisions du GLUE identiques (LEFT_OFF + RIGHT_OFF, DE 5 à 463, 230 octets) :
+  l'écart est dans la recopie de la ligne. Aucun témoin réel ne dit qui a raison, et le Shifter du modèle n'est pas fiable à ce grain. Tranche : une capture sur machine.
 - **Empreinte machine + relecture d'entrées** · P2 ⭘ — hacher l'état complet (`StateArchive`)
   toutes les N trames et rejouer `.state` + entrées : la première empreinte divergente date une
   perte de déterminisme. Socle du retour arrière et d'un jeu en ligne en lockstep. Modèle : ASE.

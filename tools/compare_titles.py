@@ -14,7 +14,10 @@
 #
 #  Usage : compare_titles.py SORTIE DISQUE... [--machine ste] [--rom roms/tos162uk.img]
 #            [--mem 1] [--frames 1000,2000,4000] [--window 60] [--offset 0] [--step 1]
-#            [--auto A:\\PROG.PRG] [--gemdos DOSSIER] [--swap TRAME:DISQUE]... [--jobs 4]
+#            [--auto A:\\PROG.PRG] [--gemdos DOSSIER] [--swap TRAME:DISQUE]... [--key TRAME:SCANCODE]...
+#            [--jobs 4]
+#  --key : touche ST tenue KEY_HOLD trames (scancode décimal, 57 = espace). Côté Hatari, par sa
+#  fifo de commande à un arrêt du débogueur, comme tools/hatari_oracle.sh.
 #  Sorties : SORTIE/summary.json, SORTIE/sheet.png. Exige Pillow et ffmpeg ; code 77 sinon.
 #  Les disques sont copiés avant chaque exécution : un programme peut y écrire.
 #
@@ -26,10 +29,12 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from math import gcd
@@ -44,6 +49,51 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent.parent
 HEADLESS = ROOT / "build" / "neost-headless"
 HATARI = ROOT / "extern" / "hatari" / "build" / "src" / "hatari"
+
+
+KEY_HOLD = 8                    # trames d'appui, les mêmes des deux côtés
+
+
+def parse_key(text: str) -> tuple[int, int]:
+    at, _, code = text.partition(":")
+    return int(at), int(code)
+
+
+def run_hatari_keys(cmd: list[str], keys, work: Path, env: dict) -> None:
+    """Hatari avec des touches datées : un arrêt du débogueur par événement, puis l'événement dans la
+    fifo et « c » sur stdin. Mesuré sur le build épinglé, cf. le bandeau de tools/hatari_oracle.sh."""
+    events = sorted([(at, "keydown", code) for at, code in keys] + [(at + KEY_HOLD, "keyup", code) for at, code in keys])
+    parse = work / "start.ini"
+    with parse.open("a") as f:
+        for vbl, _, _ in events:
+            f.write(f"b VBL = {vbl} :once\n")
+    fifo = work / "cmd.fifo"
+    log = work / "hatari.log"
+    with log.open("w") as out:
+        proc = subprocess.Popen(cmd + ["--cmd-fifo", str(fifo)], stdin=subprocess.PIPE, stdout=out, stderr=subprocess.STDOUT,
+                                text=True, env=env, cwd=work)
+    assert proc.stdin
+    deadline, seen, sent = time.time() + 1800, 0, 0
+    while proc.poll() is None and time.time() < deadline:
+        text = log.read_text(errors="replace")
+        prompts = re.findall(r"VBL=(\d+)", text)
+        if len(prompts) > seen:
+            seen = len(prompts)
+            vbl = int(prompts[-1])
+            while sent < len(events) and events[sent][0] <= vbl:
+                _, kind, code = events[sent]
+                with fifo.open("w") as f:
+                    f.write(f"hatari-event {kind} {code}\n")
+                sent += 1
+            try:
+                proc.stdin.write("c\n")
+                proc.stdin.flush()
+            except BrokenPipeError:
+                break
+        time.sleep(0.02)
+    if proc.poll() is None:
+        proc.kill()
+    proc.wait()
 
 
 def swap_copy(disk: Path, work: Path, tag: str) -> Path:
@@ -71,6 +121,10 @@ def neost_frames(disk: Path, args, work: Path) -> dict[int, Image.Image]:
         cmd += ["--auto", args.auto]
     for i, (at, other) in enumerate(args.swap):
         cmd += ["--disk-at", str(at), str(swap_copy(other, work, f"ns{i}"))]
+    if args.key:
+        cmd += ["--key-hold", str(KEY_HOLD)]
+        for at, code in args.key:
+            cmd += ["--scancode-at", str(at), f"{code:x}"]
     subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=1200, check=True)
     shots = sorted(work.glob("n_*"))
     if not shots:
@@ -122,8 +176,11 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
     if args.auto:
         cmd += ["--auto", args.auto]
     env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HATARI_SEED="1")
-    subprocess.run(cmd, capture_output=True, text=True, timeout=1800, env=env, cwd=work,
-                   stdin=subprocess.DEVNULL)
+    if args.key:
+        run_hatari_keys(cmd, args.key, work, env)
+    else:
+        subprocess.run(cmd, capture_output=True, text=True, timeout=1800, env=env, cwd=work,
+                       stdin=subprocess.DEVNULL)
     return shots
 
 
@@ -202,6 +259,8 @@ def main() -> int:
     ap.add_argument("--gemdos", type=Path, help="dossier monté en C: à la place de la disquette")
     ap.add_argument("--swap", type=parse_swap, action="append", default=[],
                     help="TRAME:DISQUE, change la disquette du lecteur A à cette trame (répétable)")
+    ap.add_argument("--key", type=parse_key, action="append", default=[],
+                    help="TRAME:SCANCODE, touche tenue à cette trame (répétable)")
     ap.add_argument("--jobs", type=int, default=4)
     args = ap.parse_args()
     args.frames = sorted(int(x) for x in args.frames.split(","))
