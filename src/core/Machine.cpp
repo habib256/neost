@@ -306,6 +306,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     blitter.setScheduler(&sched);  // tranches non-hog du blitter (cf. Scheduler::BLITTER)
     dmasnd.setScheduler(&sched);   // le son DMA date sa consommation DAC (FIFO → Timer A)
     dmasnd.setMfp(&mfp);
+    if (machine == MachineType::Ste) dmasnd.fetchWindowOpen = [this] { return shifter.outsideHorizontalDe(); };
     // STE/Mega STE : le YM2149 est mixé à DEMI-amplitude (marge pour le son DMA, évite la
     // saturation) ; ST/Mega ST : pleine amplitude. Cf. YM2149::setOutputScale.
     psg.setOutputScale(machineIsSte(machineType_) ? 0.5f : 1.0f);

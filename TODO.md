@@ -157,11 +157,8 @@ Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → 
 
 ### 2.5 Son — YM2149, DMA STE, Microwire
 
-- **Période d'enveloppe YM à l'écriture de R13** · P2 ⭘ · [F] — tranche : `YM2149_199209.pdf`,
-  §§ 5-6 de la description des registres.
-- **Quantification HBL du refill DMA** · P2 ⭘ — l'étalon `dmasnd_poll` (poll serré de
-  `$FF890B/0D`) est resté `snapshot` : le monter en `hatari` (référence Hatari) ou dire
-  pourquoi il ne peut pas l'être. → `docs/CYCLE_ACCURACY.md` § 4
+- **Période d'enveloppe YM à l'écriture de R13** · P3 ⏸ matériel · [F] — `YM2149_199209.pdf` §§ 5-6 lus le 2026-11-04 : ils définissent la période et les formes, et ne disent rien de la phase du compteur à l'écriture. Tranche : une capture sur un YM réel.
+- **IRQ de fin de trame du son DMA, datée au HBL** · P3 ⭘ · [D] — le fetch suit désormais la fin de DE à la lecture du compteur (`docs/STCPU_BENCH.md`), mais la fin de trame n'a pas son événement propre : au plus 136 cycles de retard. Profondeur réelle de la FIFO : 8 octets d'Hatari contre 7 mots du modèle, choix d'auteur. Tranche : relevé sur STE.
 - **Fréquences exactes centralisées** · P3 ⭘ — CPU 8 021 248 Hz PAL, VBL ≈ 50,05 Hz
   (`clocks_timings.c`) : seul impact réel, la synchro audio long terme.
 

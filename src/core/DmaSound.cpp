@@ -499,13 +499,16 @@ void DmaSound::syncAudioFromCpu() {
 // matériel montre où le DMA LIT, en avance de la FIFO — ≤ 8 octets — sur le
 // DAC). À l'ARRÊT, le vrai HW renvoie l'adresse de DÉBUT (dmaSnd.c:756-759).
 uint32_t DmaSound::liveCounter() {
-    // Port EXACT de DmaSnd_GetFrameCount (dmaSnd.c:748-761) : il appelle SEULEMENT
-    // Sound_Update (≙ updateDac), PAS de refill FIFO. Le refill ne se fait qu'au HBL
-    // (onHbl) ou à la volée quand la FIFO se vide (fifoPull). Un `fifoRefill()` ajouté
-    // ici re-topait curAddr_ à CHAQUE lecture du compteur → un poll serré de
-    // $FF8909-0D à l'intérieur d'une ligne voyait l'adresse de fetch avancer en
-    // continu (+2, +2…) au lieu de sauter par paquets au HBL comme sur le vrai STE.
-    if (playing_ && sched_) updateDac();
+    // Le compteur montre le fetch, et le fetch n'attend pas le HBL : il suit la FIFO dès que DE est fini.
+    // [B] ST-4081 feuille 20 (ST4081S.PDF, sha256 935c4dd9) : SNDEN = HDE1 latché bas et SREQ, sur les
+    // créneaux que le CPU n'a pas. [D] mcucontrol.v et sndcnt.v @ 4a6db7cc : tools/make_stcpu_snd.py, marches
+    // de $FF890D dès le cycle 380, plus aucune entre DE-start et DE-end.
+    // [D] Hatari DmaSnd_GetFrameCount @ f0736b24 ne refait le plein qu'au HBL : non retenu sur STE.
+    // Profondeur de la FIFO non tranchée : le modèle a 7 mots par choix d'auteur (gstshifter.v:414-419).
+    if (playing_ && sched_) {
+        updateDac();
+        if (fetchWindowOpen && fetchWindowOpen()) fifoRefill();
+    }
     if (!playing_) return startAddr_;                  // à l'arrêt : adresse de DÉBUT
     return curAddr_;
 }

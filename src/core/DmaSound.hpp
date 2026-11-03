@@ -26,6 +26,9 @@ class Scheduler;
 
 class DmaSound {
 public:
+    // Le DMA peut-il chercher un mot maintenant ? Posé par Machine : hors DE sur STE, jamais ailleurs.
+    std::function<bool()> fetchWindowOpen;
+
     explicit DmaSound(Bus& bus) : bus_(bus) {}
 
     // L'ordonnanceur fournit l'horloge émulée (liveNow) qui date la consommation

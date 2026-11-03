@@ -15,6 +15,7 @@ Nouveau banc : le même programme sur fx68k + GSTMCU et dans NeoST, qui relève 
 - **Portée** : STE à 8 MHz. ST et Mega STE gardent le commit d'Hatari, faute de modèle. Écart accepté face à Hatari : première IRQ de `timer_b_event`, 14 cycles. Aucun étalon ne bouge.
 - **Le pixel** : une vraie écriture du CPU à chaque date de la ligne, 60 sur 64 identiques à la trame entière. Sur les 4 autres, le modèle réagit à `$FF820A` 3 cycles avant NeoST.
   Avancer de 4 cycles donne 62 sur 64, et casse DHS More or Less Zero et Double Rez Trouble, écrites sur de vrais STE : le logiciel réel prime, la date reste celle d'Hatari. Question ouverte.
+- **Compteur du son DMA sur STE** : il suit la FIFO dès la fin de DE, au lieu de bondir au HBL. `dmasnd_poll`, qui figeait l'ancien comportement, est reposé. L'IRQ de fin de trame reste datée au HBL.
 - **Save-state** : version 58.
 
 ## La GLUE du STE confrontée au modèle, impulsion par impulsion (2026-11-04)

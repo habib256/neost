@@ -1648,7 +1648,7 @@ static void testBlitterTruthTable() {
 //  A29 — « puce nue + Scheduler » étendu au SON DMA (STE).
 //
 //  Les registres $FF8909/0B/0D (compteur d'adresse VIVANT) sont au cœur de la
-//  divergence Hatari encore ouverte sur la quantification HBL du refill FIFO ; ils
+//  refill du FIFO hors de cette puce nue (Machine pose la fenêtre) ; ils
 //  n'étaient couverts par AUCUN test — un étalon pixel ne voit pas le son, et le
 //  dump WAV ne dit pas OÙ le pointeur en était. Ni machine ni ROM : un Bus, un
 //  Scheduler, un DmaSound.

@@ -63,6 +63,14 @@ Le mécanisme existait, en essai (`NEOST_PIN_ARM`), écarté le 2026-07-02 parce
 | `$FF8265` en plein DE (`scroll`) | 21 sur 64 | Les pixels se décalent aussitôt, le temps de l'impulsion ; NeoST attend la ligne suivante |
 | `$FF8207` en plein DE (`counter`) | 23 sur 64 | Le reste de la ligne vient de la nouvelle adresse ; NeoST attend la ligne suivante, comme Hatari. Hors DE : identique. |
 
+## Le compteur du son DMA
+
+`tools/make_stcpu_snd.py` lit `$FF890D` en boucle, son en lecture. Sur le modèle, le compteur avance **mot par mot dès la fin de DE**, et plus du tout pendant DE. NeoST et Hatari le faisaient bondir d'un coup au HBL. [B] ST-4081 feuille 20 : `SNDEN` = `HDE1` latché bas et `SREQ`.
+
+Sur STE, `DmaSound::liveCounter` refait maintenant le plein à la lecture quand le faisceau est hors de DE. Marches par ligne, 50 kHz stéréo : 1538 contre 1650 sur le modèle, 750 avant. La valeur n'est pas comparée : le modèle a une FIFO de 7 mots par choix d'auteur (`gstshifter.v:414-419`), et NeoST garde les 8 octets d'Hatari. Le banc vérifie la forme : aucune marche pendant 288 cycles au moins, des deux côtés.
+
+**Limite** : la fin de trame et son IRQ restent datées au HBL, sauf si le programme lit le compteur. Le plein hors de DE n'a pas son propre événement. Écart d'au plus 136 cycles, non mesuré sur un logiciel.
+
 ## Ce que ça ne dit pas
 
 - **ST et Mega STE** gardent le commit au dispatch, à 0 px d'Hatari : aucun modèle ne les couvre. `[F]` Le 68000 est le même, le GLUE non : rien ne dit qu'ils s'écartent, rien ne le réfute.

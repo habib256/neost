@@ -1159,6 +1159,18 @@ void Shifter::replayGlue() {
 // Auto-test déterministe de la machine Glue (cf. déclaration). Chaque scénario
 // injecte des écritures freq/res à des cycles exacts puis vérifie l'état calculé
 // contre les valeurs Hatari. Affiche un récap sur stderr ; renvoie true si tout OK.
+bool Shifter::outsideHorizontalDe() {
+    if (!liveFrameClock_) return true;
+    const int64_t fc = liveFrameClock_();
+    if (fc < 0) return true;
+    int line = 0, cyc = 0;
+    realLinePos(fc, line, cyc);
+    const glue::Timing& T = glue::timing(bus_.machine);
+    const bool ntsc = (sync & 0x02) == 0;
+    const int on = ntsc ? T.HDE_On_Low_60 : T.HDE_On_Low_50, off = ntsc ? T.HDE_Off_Low_60 : T.HDE_Off_Low_50;
+    return cyc < on || cyc >= off;
+}
+
 void Shifter::glueBenchReplay(const std::vector<std::array<int, 4>>& writes) {
     frameMode_ = Mode::Low;
     frameSync_ = 0x02;

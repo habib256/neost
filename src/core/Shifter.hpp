@@ -82,6 +82,9 @@ public:
     // Banc de la machine GLUE (tools/glue_bare_bench.cpp) : rejoue des écritures {ligne, cycle,
     // résolution ?, valeur} sur une trame basse résolution 50 Hz, puis lit une ligne.
     struct GlueProbe { int start, end, bytes; uint32_t mask; int64_t lineStart; };
+    // Le faisceau est-il hors de la fenêtre DE horizontale de la ligne courante ? Fréquence courante, y compris
+    // sur les lignes de bordure : c'est HDE1, pas DE. [D] gstmcu @ 4a6db7cc, hdegen.v, cf. DmaSound::liveCounter.
+    bool outsideHorizontalDe();
     void glueBenchReplay(const std::vector<std::array<int, 4>>& writes);
     GlueProbe glueBenchLine(int line) const;
 

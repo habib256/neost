@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import build_stcpu_bench as builder  # noqa: E402
 import make_stcpu_rom as rom  # noqa: E402
+import make_stcpu_snd as snd  # noqa: E402
 
 HEADLESS = ROOT / "build" / "neost-headless"
 OUT = ROOT / "tests" / "out" / "stcpu_bench"
@@ -45,6 +46,31 @@ def tables(a: bytes, b: bytes) -> dict:
     base = rom.VBLTAB - rom.POLL0
     res["vbl"] = [i - base for i in range(base, base + 32) if a[i] != b[i]]
     return res
+
+
+def dma_steps(table: bytes) -> list[int]:
+    """Phases dans la ligne où $FF890D change : 24 cycles par lecture, 512 par ligne."""
+    return sorted({(i * 24) % 512 // 24 * 24 for i in range(1, len(table)) if table[i] != table[i - 1]})
+
+
+def check_dma_sound() -> bool:
+    """Le son DMA cherche ses mots hors de DE : aucune marche du compteur pendant 300 cycles de suite. La valeur
+    elle-même n'est pas comparée : le modèle a une FIFO de 7 mots par choix d'auteur (gstshifter.v:414-419)."""
+    image = OUT / "snd.img"
+    image.write_bytes(snd.build(3, 0))
+    a, b = OUT / "snd_rtl.bin", OUT / "snd_neost.bin"
+    subprocess.run([str(builder.BINARY), str(image), "12", f"{snd.TABLE:x}", str(snd.POLL_LEN), str(a)],
+                   check=True, capture_output=True, timeout=600, cwd=builder.BUILD)
+    subprocess.run([str(HEADLESS), str(image), "--machine", "ste", "--mem", "4m", "--frames", "13", "--disk",
+                    "disks/diskA.st", "--dump-at", "11", f"{snd.TABLE:x}", str(snd.POLL_LEN), str(b)],
+                   check=True, capture_output=True, timeout=600, cwd=ROOT)
+    ok = True
+    for name, path in (("RTL", a), ("NeoST", b)):
+        steps = dma_steps(path.read_bytes())
+        gaps = [(y - x) for x, y in zip(steps, steps[1:])] + [steps[0] + 512 - steps[-1]]
+        print(f"  son DMA    {name:5s} : marches sur {len(steps)} phases, plus grand trou {max(gaps)} cycles")
+        ok = ok and max(gaps) >= 288
+    return ok
 
 
 def main() -> int:
@@ -74,6 +100,9 @@ def main() -> int:
         print("FAIL banc CPU + GSTMCU : table incomplète")
         return 1
     res = tables(A, B)
+    if not check_dma_sound():
+        print("FAIL banc CPU + GSTMCU : le compteur du son DMA bouge pendant DE")
+        return 1
     for name, bad in res.items():
         total = rom.POLL_LEN if name.startswith("poll") else (32 if name == "vbl" else 256)
         print(f"  {name:10s} {total - len(bad):6d}/{total} lectures identiques")
