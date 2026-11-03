@@ -6,7 +6,7 @@ panique sous EmuTOS — incompatibilité connue, pas un bug NeoST ; cf.
 `docs/CASE_STUDIES.md`).
 
 ```
-C:\CUBLITE\        Cubase Lite (Steinberg, 1996, gratuit) + MROS — pas de clé
+C:\CUBLITE\        Cubase Lite (Steinberg, 1996, freeware) + MROS — pas de clé
 C:\DESKTOP.INF     bureau TOS 1.04 ; la ligne #Z auto-lance CB_LITE.PRG au boot
 C:\BACH\           78   inventions, sinfonies, Clavier bien tempéré I (préludes + fugues)
 C:\MOZART\         49   17 sonates (K.279 → K.576), K.545 « facile », K.331 Alla turca…
@@ -53,6 +53,11 @@ Cubase jette la piste de notes). Tout cela a été **mesuré** avec l'étalon ci
    Le port virtuel est une *source* PASSIVE : c'est au logiciel de s'y abonner.
 3. Cubase se lance seul. *File → Import…* → OK → `C:\CHOPIN\RAINDROP.MID` →
    **Enter du pavé numérique** = Play (`0` = Stop).
+
+La même copie est sur la disquette `disks/cubase_lite.st` (fichiers à la racine,
+`DESKTOP.INF` lance `A:\CB_LITE.PRG`). Elle part avec les paquets. Sous TOS 1.04,
+booter sur cette disquette ouvre Cubase ; MROS doit rester à côté du `.PRG`.
+EmuTOS ne lance pas la ligne `#Z` et MROS n'y démarre pas.
 
 ## Jouer dans un appareil MATÉRIEL (expandeur, groovebox, clavier)
 

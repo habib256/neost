@@ -616,7 +616,9 @@ if(EMSCRIPTEN)
         set(NEOST_WEB_DEMOS
             disks/etalons/cuddly_demos.msa
             disks/etalons/nocooper.msa
-            disks/etalons/closure.msa)
+            disks/etalons/closure.msa
+            # Freeware Steinberg (26.04.1999), même fichier que stage_free_data.sh.
+            disks/cubase_lite.st)
 
         # Manquer une donnée doit se dire AU CONFIGURE, en nommant le fichier :
         # laissée au file_packager, l'absence sort au LIEN, noyée dans la ligne de
