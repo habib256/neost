@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  private_assets.sh — Emballe / restaure les données NON REDISTRIBUABLES
-#  (TOS Atari, jeux, cartouches, Cubase Lite, Spectrum 512) d'une machine à
-#  l'autre, SANS passer par git.
+#  (TOS Atari, jeux, cartouches, Spectrum 512) d'une machine à l'autre, SANS
+#  passer par git. Cubase Lite est un freeware (disks/cubase_lite.st, dans les
+#  paquets) ; l'arbre GEMDOS disks/midi/CUBLITE reste local, c'est lui que
+#  l'étalon séquenceur monte.
 #
 #  POURQUOI (purge copyright 2026-08-30). Ces fichiers sont purgés de
 #  l'historique public et gitignorés : chaque machine les garde LOCALEMENT.

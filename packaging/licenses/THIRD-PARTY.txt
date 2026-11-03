@@ -78,6 +78,16 @@ https://github.com/habib256/neost and they will be removed from the next release
 They double as pixel-exact test material: these three are among the references that
 pin NeoST's Shifter (all four borders open, med-res overscan, fine rasters).
 
+Cubase Lite (`disks/cubase_lite.st`)
+-------------------------------------
+Steinberg released Atari Cubase Lite as freeware on 26 April 1999 (Steinberg Service
+Team statement, Keyboards magazine cover CD: "first time free released versions of
+the Styletrax-module and Cubase light"). It is **not** covered by the GPL and it is
+**not** the dongle-protected Cubase 2 / 3 / Score / Audio. NeoST redistributes this
+freeware build unmodified: `CB_LITE.PRG` at the root of a 720K floppy, with MROS
+beside it, and a `DESKTOP.INF` that auto-starts it under TOS 1.04. Rights remain
+with Steinberg.
+
 Reference emulators
 -------------------
 Hatari (GPLv2+, https://framagit.org/hatari/hatari) and MAME are used as behavioural
