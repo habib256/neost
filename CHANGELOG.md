@@ -9,7 +9,7 @@ l'ordre inverse. Version courante : **0.6.2**.
 ## Spectrum 512 : le logiciel réel juge le pixel, et contredit le RTL (2026-11-04)
 
 Le format Spectrum 512 documente à quel pixel chaque couleur de la ligne s'applique. Le vrai visualiseur tourne dans NeoST, et chaque pixel est comparé au décodage de l'image, sans émulateur ni RTL en jeu.
-- **13 images exactes à 0 pixel** sur 63 680 chacune : 7 sur ST, 6 sur STE. Un décalage de palette de 4 pixels en donnerait 812 à 1 344 de faux.
+- **13 images exactes à 0 pixel** sur 63 680 chacune : 7 sur ST, 6 sur STE. Quatre pixels d'avance sur la palette, comme le modèle, en donneraient de 10 à 1 118 de faux selon l'image.
 - **Le modèle a tort sur la palette** : son Shifter change la couleur 4 pixels trop tôt. Question close, code inchangé.
 - **Règle ajoutée** à `docs/REFERENCE_LADDER.md` : un écart de date d'écriture contre le RTL ne se porte pas sans démos ou images réelles.
 

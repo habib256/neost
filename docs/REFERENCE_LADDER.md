@@ -124,7 +124,7 @@ comparent des modèles entre eux, pas au silicium, et NeoST a pris ces valeurs c
 
 Trois bancs ont confronté le modèle GSTMCU au logiciel réel, et deux fois le logiciel a contredit le RTL, pourtant bloc « fort » pour le GLUE :
 
-- **Palette** : le Shifter du modèle change la couleur 4 pixels avant ce que 13 images Spectrum 512 exigent (`run_spec512_truth.py`, 0 pixel faux pour NeoST, 812 à 1 344 avec ce décalage).
+- **Palette** : le Shifter du modèle change la couleur 4 pixels avant ce que 13 images Spectrum 512 exigent (`run_spec512_truth.py`, 0 pixel faux pour NeoST, de 10 à 1 118 selon l'image avec ce décalage).
 - **`$FF820A`** : le modèle réagit 3 cycles avant la date d'Hatari. Le suivre casse DHS More or Less Zero et Double Rez Trouble.
 
 Une explication commune reste à établir : le modèle prendrait les écritures quelques cycles trop tôt, par ses verrous transparents. **Règle** : un écart de date d'écriture contre le RTL ne se porte pas sans passer par des démos ou des images réelles. La lecture du compteur, les interruptions et la logique des fenêtres, elles, concordent et ont été portées.
