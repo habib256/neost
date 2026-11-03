@@ -109,8 +109,8 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   matérielle. Tranche : relevés de tiers (§ 4), netlist STE pour la branche STE.
 - **Offsets de datation dérivés d'Hatari** · P2 ◐ — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
   `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
-  `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu
-  (`docs/STCPU_BENCH.md`). Tranche : capture AS / HSYNC sur un STE. ⚠ read et write bougent par paire.
+  `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu,
+  et la palette, contredite de même par 13 images réelles, va dans ce sens : le modèle prend les écritures trop tôt (`docs/REFERENCE_LADDER.md`). ⚠ read et write bougent par paire.
 - **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P3 ⭘ · [F] — la fin de DE à 164 et les 54 octets concordent avec le modèle (`docs/GLUE_SWEEP.md`) ; Hatari rend trois pixels de plus, et le HSYNC parasite vers le cycle 28 n'est pas modélisé. Sondes `blankline_stop_st/ste` en snapshot.
 - **Restes vidéo au cycle** · P2 ⭘ — `VIDEO_ENDLINE` distinct du HBL, VBL au cycle exact
   (vraie fin de trame + offset 64/68), phase exacte du tic Timer C, lecture du compteur à
@@ -121,8 +121,6 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
 - **STE, impulsions restantes face au modèle** · P3 ⭘ · [D] — DE précoce à 44, 10 impulsions sur 1664 en écart, et les
   largeurs au-delà de 32 qui enjambent HSYNC. Hors logiciel connu. → `docs/GLUE_SWEEP.md`
-- **Palette : 4 pixels, face au modèle** · P3 ⏸ source · [D] — le modèle change la couleur 4 pixels avant NeoST, en bordure comme dans l'image (`docs/STCPU_BENCH.md`). Shifter, bloc
-  « moyen » : le RTL n'y prévaut pas. Inclut l'ancien écart de 16 px en bordure gauche. Tranche : relevé d'une transition sur un STE.
 - **Écritures en plein DE sur STE** · P3 ⭘ · [D] — `$FF8207` et `$FF8265` agissent aussitôt sur le modèle, à la ligne suivante chez NeoST et Hatari. Aucun logiciel connu n'en dépend. Porter `$FF8207` demande un rendu en deux segments par ligne.
 - **Étalons sensibles à la phase E-clock** · P3 ⭘ — `blankline_*`, `spec512_*` capturent une
   trame dont la phase tourne à chaque changement de timing du boot ; les ancrer dans leur

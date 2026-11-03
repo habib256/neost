@@ -27,6 +27,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 |---|---|---|
 | `run_hatari_suite.py`, `buserror-*` (8) | `hardware` | [A] tiers : relevés de `tests/buserror/results` @ `f0736b24`. Machine et révision des puces non consignées. |
 | `run_hatari_suite.py`, `cycles`, `blitter`, `cpu`, `gemdos` (4) | `hatari` | Aucun readme ne donne la provenance de l'attendu. |
+| `run_spec512_truth.py` (13 images, ST et STE) | `rom` | De vraies images Spectrum 512 par le vrai visualiseur, contre la formule du format, sans aucun émulateur : 0 pixel faux. Juge la date des écritures palette, à 4 pixels près. |
 | `run_megaste_diag.py` (suite Q, 12/12) | `rom` | Le diagnostic Field Service prouve le contrat attendu par le logiciel, pas le silicium. |
 | `run_timing_oracle.py`, `run_megaste_bus_oracle.py` | `hatari` | |
 | `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé, pose les références de `rtl_low_*`, contrôle la latence de DTACK par zone. |
@@ -118,6 +119,15 @@ comparent des modèles entre eux, pas au silicium, et NeoST a pris ces valeurs c
    si tout le monde la croit juste, et un relevé tiers nomme sa source.
 4. **Promouvoir un étalon** (`hatari` → `rtl`) n'efface pas l'ancienne référence : elle reste
    à côté, et l'écart est consigné dans `HATARI_DIVERGENCES.md`.
+
+## Quand le RTL se trompe (2026-11-04)
+
+Trois bancs ont confronté le modèle GSTMCU au logiciel réel, et deux fois le logiciel a contredit le RTL, pourtant bloc « fort » pour le GLUE :
+
+- **Palette** : le Shifter du modèle change la couleur 4 pixels avant ce que 13 images Spectrum 512 exigent (`run_spec512_truth.py`, 0 pixel faux pour NeoST, 812 à 1 344 avec ce décalage).
+- **`$FF820A`** : le modèle réagit 3 cycles avant la date d'Hatari. Le suivre casse DHS More or Less Zero et Double Rez Trouble.
+
+Une explication commune reste à établir : le modèle prendrait les écritures quelques cycles trop tôt, par ses verrous transparents. **Règle** : un écart de date d'écriture contre le RTL ne se porte pas sans passer par des démos ou des images réelles. La lecture du compteur, les interruptions et la logique des fenêtres, elles, concordent et ont été portées.
 
 ## Sans machine réelle
 

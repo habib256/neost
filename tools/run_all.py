@@ -231,6 +231,9 @@ FULL = FAST + [
     # 68000 + GSTMCU (STE) : compteur vidéo relevé par le CPU, en boucle, en HBL et en VBL.
     ("Banc CPU + GSTMCU (ce que le CPU voit du faisceau, contre les RTL)",
      [sys.executable, str(TOOLS / "run_stcpu_bench.py")]),
+    # Images Spectrum 512 réelles contre la formule du format : aucun autre émulateur ni RTL en jeu.
+    ("Images Spectrum 512 contre leur décodage (logiciel réel, 0 pixel faux)",
+     [sys.executable, str(TOOLS / "run_spec512_truth.py")]),
     # Une écriture du CPU, la trame qui sort : NeoST contre les RTL, pixel par pixel.
     ("Banc au pixel (fx68k + GSTMCU, une impulsion 60 Hz à chaque date)",
      [sys.executable, str(TOOLS / "run_stcpu_raster.py")]),

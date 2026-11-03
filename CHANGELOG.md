@@ -6,6 +6,13 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Spectrum 512 : le logiciel réel juge le pixel, et contredit le RTL (2026-11-04)
+
+Le format Spectrum 512 documente à quel pixel chaque couleur de la ligne s'applique. Le vrai visualiseur tourne dans NeoST, et chaque pixel est comparé au décodage de l'image, sans émulateur ni RTL en jeu.
+- **13 images exactes à 0 pixel** sur 63 680 chacune : 7 sur ST, 6 sur STE. Un décalage de palette de 4 pixels en donnerait 812 à 1 344 de faux.
+- **Le modèle a tort sur la palette** : son Shifter change la couleur 4 pixels trop tôt. Question close, code inchangé.
+- **Règle ajoutée** à `docs/REFERENCE_LADDER.md` : un écart de date d'écriture contre le RTL ne se porte pas sans démos ou images réelles.
+
 ## Le 68000 et le faisceau sur STE : les RTL réunis, et la prise d'interruption (2026-11-04)
 
 Nouveau banc : le même programme sur fx68k + GSTMCU et dans NeoST, qui relève le compteur vidéo en RAM. 48 544 lectures comparées à l'octet.
