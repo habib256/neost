@@ -136,13 +136,13 @@ void Shifter::endVideoLine() {
         newLineWidth_ = -1;
     }
     // Scroll hard « Shifter arrêté » : ajustement du compteur à la fin de la ligne
-    // du stop (port VideoRasterDelayedInc, video.c:4410-4416 — hors de la branche
+    // du stop (port VideoRasterDelayedInc, [D] video.c:4410-4416 @ f0736b24 — hors de la branche
     // « ligne blanche », donc appliqué quelle que soit la ligne).
     if (vcStopInc_ != 0) {
         vcLineBase_ += static_cast<uint32_t>(vcStopInc_);
         vcStopInc_ = 0;
     }
-    // Repli du compteur sur 22 bits (port video.c:4423 « pVideoRaster & VideoMask ») :
+    // Repli du compteur sur 22 bits (port [D] video.c:4423 @ f0736b24 « pVideoRaster & VideoMask ») :
     // le compteur matériel n'a que A1..A21 — au-delà de $3FFFFF il reprend en $000000.
     vcLineBase_ &= kVideoAddrMask;
     ++vcLineY_;
@@ -288,7 +288,7 @@ uint32_t Shifter::videoCounter() {
         dispStart = glueStartHBL_;
         // Bordure basse retirée → plus long ; + BlankLines (lignes blanches no-sync
         // insérées) comme le `nEndHBL + BlankLines` de Video_CalculateAddress
-        // (video.c:1568) — ces lignes sont NO_DE (glueLineBytes = 0), elles ne font
+        // ([D] video.c:1568 @ f0736b24) — ces lignes sont NO_DE (glueLineBytes = 0), elles ne font
         // pas avancer le compteur mais restent dans la fenêtre active.
         disp2     = glueEndHBL_ + glueBlankLines_ - glueStartHBL_;
     }
@@ -351,7 +351,7 @@ uint32_t Shifter::videoCounter() {
                     int curSize = 160;                                // BORDERBYTES_NORMAL
                     if (leftOff)                       curSize += 26; // BORDERBYTES_LEFT
                     // Retrait gauche COURT du STE : +20 o comme les autres masques
-                    // (video.c:1514-1517, BORDERBYTES_LEFT_2_STE). Il manquait ici
+                    // ([D] video.c:1514-1517 @ f0736b24, BORDERBYTES_LEFT_2_STE). Il manquait ici
                     // alors que glueLineBytes() le crédite déjà — la ligne faisait
                     // donc 180 o pour l'accumulation inter-lignes mais 160 pour
                     // l'offset intra-ligne, et la borne de gel LineEndCycle tombait
@@ -459,7 +459,7 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     if (addr == 0xFF8205)      an = (an & 0x00FFFFu) | (uint32_t(v) << 16);
     else if (addr == 0xFF8207) an = (an & 0xFF00FFu) | (uint32_t(v) << 8);
     else                       an = (an & 0xFFFF00u) | uint32_t(v);
-    an &= ~1u;      // bit 0 forcé à 0 (compteur aligné mot — Hatari video.c:5179 addr_new &= ~1)
+    an &= ~1u;      // bit 0 forcé à 0 (compteur aligné mot — Hatari [D] video.c:5179 @ f0736b24 addr_new &= ~1)
 
     int line = 0, cyc = 0;
     const Geometry g  = geometry();

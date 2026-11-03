@@ -45,7 +45,7 @@ public:
     // MFP. Les deux modes de Timer B sont exclusifs (TBCR = 8 → event-count, 1-7 → délai),
     // d'où deux sources distinctes sans conflit.
     // MFP_IRQ = instant où le signal IRQ du MFP devient VISIBLE du CPU : le 68901 met
-    // 4 cycles à propager IRQ vers le 68000 (port MFP_IRQ_DELAY_TO_CPU, mfp.c:374).
+    // 4 cycles à propager IRQ vers le 68000 (port MFP_IRQ_DELAY_TO_CPU, [D] mfp.c:374 @ f0736b24).
     // Le MFP l'arme à irqTime+4 quand son IRQ monte ; le callback recalcule l'IPL.
     // Placé APRÈS les timers (à cycle égal, l'IPL est recalculé une fois les IRQ levées).
     // IKBD_RX = livraison cadencée IKBD → ACIA : un octet de la file ne devient
@@ -263,8 +263,8 @@ public:
     // `Blitter_AddCycles` (hatari/src/blitter.c:342-354, symbole `all_cycles`).
     //
     // Chez Hatari il n'y a qu'UNE base de temps : le blitter fait
-    //     nCyclesMainCounter       += all_cycles;      // blitter.c:351
-    //     CyclesGlobalClockCounter += all_cycles;      // blitter.c:352
+    //     nCyclesMainCounter       += all_cycles;      // [D] blitter.c:351 @ f0736b24
+    //     CyclesGlobalClockCounter += all_cycles;      // [D] blitter.c:352 @ f0736b24
     // c'est-à-dire EXACTEMENT les deux compteurs que le CPU incrémente lui aussi
     // (m68000.h, M68000_AddCycles*) et que CycInt lit pour dater ET servir ses
     // échéances (cycInt.h, `CycInt_Process` boucle sur CyclesGlobalClockCounter). Un
@@ -280,12 +280,12 @@ public:
     // Ce saut mangeait des tics de prescaler MFP — cf. `Mfp::readTimerData`, qui
     // reconstruit TADR depuis `due_ - liveNow()`.
     //
-    // DISPATCH IMMÉDIAT (port de `Blitter_FlushCycles`, blitter.c:356-375) — chantier
+    // DISPATCH IMMÉDIAT (port de `Blitter_FlushCycles`, [D] blitter.c:356-375 @ f0736b24) — chantier
     // BL4. Hatari ne se contente pas d'avancer ses compteurs : il appelle
     // `CycInt_Process()` après CHAQUE accès de 4 cycles, depuis le handler CycInt du
     // blitter lui-même (`INTERRUPT_BLITTER`). Sa boucle de dispatch est donc
     // RÉ-ENTRANTE par construction — `while (ActiveInt <= now) CycInt_CallActiveHandler()`
-    // (cycInt.h:85-88), sans masque anti-relance. On porte ce comportement tel quel :
+    // ([D] cycInt.h:85-88 @ f0736b24), sans masque anti-relance. On porte ce comportement tel quel :
     // `syncTo` sert ICI MÊME les échéances franchies par les cycles volés, au cycle où
     // elles tombent, au lieu d'attendre la fin de la tranche.
     //
@@ -345,7 +345,7 @@ public:
         // RÉ-ENTRANCE (chantier BL4) — `runTo` peut être appelé DEPUIS un callback, via
         // Scheduler::addStolenCycles (accès bus du blitter) ou via un syncTo. C'est le
         // modèle d'Hatari, dont `CycInt_Process` est ré-entré depuis le handler du
-        // blitter (cycInt.h:85-88 + blitter.c:366). `fired` et `minAll` sont des
+        // blitter ([D] cycInt.h:85-88 @ f0736b24 + [D] blitter.c:366 @ f0736b24). `fired` et `minAll` sont des
         // LOCALES, donc propres à chaque trame ; `nextDue_` est recalculé par un
         // balayage complet à la sortie de chaque trame. Restait `firingDue_`, ancre
         // anti-dérive de l'événement EN COURS (cf. firingDue()) : une trame imbriquée

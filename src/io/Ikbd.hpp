@@ -46,7 +46,7 @@ public:
     // MACHINE (Machine::reset — Hatari reset.c appelle IKBD_Reset).
     void    bootRom();
 
-    // RESET MATÉRIEL de l'IKBD (port d'IKBD_Reset, ikbd.c:499-522) : remet d'abord
+    // RESET MATÉRIEL de l'IKBD (port d'IKBD_Reset, [D] ikbd.c:499-522 @ f0736b24) : remet d'abord
     // le SCI (la liaison série 6301 → ACIA) — l'octet EN VOL sur la ligne est perdu,
     // son échéance de livraison annulée — PUIS boote la ROM. bootRom() seul (≙
     // IKBD_Boot_ROM) ne vide que le tampon de sortie du firmware : un octet déjà

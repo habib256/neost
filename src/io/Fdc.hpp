@@ -246,7 +246,7 @@ public:
     // Relit lecteur/face depuis le port A du PSG ; au CHANGEMENT de lecteur, réinitialise
     // la référence d'index du modèle rotationnel (port de FDC_SetDriveSide, fdc.c).
     // PUBLIC (et non plus privé) parce que le PSG doit POUSSER : Hatari appelle
-    // FDC_SetDriveSide depuis l'écriture du port A (psg.c:419-420), et NeoST fait de même
+    // FDC_SetDriveSide depuis l'écriture du port A ([D] psg.c:419-420 @ f0736b24), et NeoST fait de même
     // via Machine (setPortASink). Sans cette poussée, un programme qui écrit sa commande
     // FDC AVANT de sélectionner le lecteur reste bloqué avec driveSel_ = -1 — cf. D-PSG.
     // Idempotent : ne ré-ancre l'index que si le lecteur a effectivement changé.

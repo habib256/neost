@@ -78,7 +78,7 @@ public:
     void    write8(uint32_t addr, uint8_t v);
 
     // Reset matériel — appelé par les resets CHAUD et FROID, comme chez Hatari
-    // (reset.c:111 ACIA_Reset + :124 Midi_Reset, tous deux dans Reset_ST()). Sans
+    // ([D] reset.c:111 @ f0736b24 ACIA_Reset + :124 Midi_Reset, tous deux dans Reset_ST()). Sans
     // lui, un séquenceur qui avait armé RIE/TIE laissait après un Ctrl-Alt-Del un
     // statut périmé sur $FFFC04 et un octet fantôme livrable sur $FFFC06.
     void reset() {

@@ -103,7 +103,7 @@ public:
         bus.megaSteReset(); cpu.setMegaSteSpeed(false); bus.fpu.reset(); bus.scu.reset(/*cold=*/false);
         gemdos.reset();    // ferme les fichiers HD GEMDOS ouverts (no-op si inactif)
         scc.reset();       // SCC série (Mega STE) au repos
-        midi.reset();      // ACIA MIDI (reset.c:111 ACIA_Reset + :124 Midi_Reset)
+        midi.reset();      // ACIA MIDI ([D] reset.c:111 @ f0736b24 ACIA_Reset + :124 Midi_Reset)
         dongle.reset(); bus.refreshUds();   // clé cartouche : registres à 0
         ports.reset();
         bus.seedResetVectors();    // vecteurs SSP/PC $0-$7 : miroir ROM en RAM (stMemory.c)
@@ -125,10 +125,10 @@ public:
         bus.megaSteReset(); cpu.setMegaSteSpeed(false); bus.fpu.reset(); bus.scu.reset(/*cold=*/true);
         gemdos.reset();    // ferme les fichiers HD GEMDOS ouverts (no-op si inactif)
         scc.reset();       // SCC série (Mega STE) au repos
-        midi.reset();      // ACIA MIDI (reset.c:111 ACIA_Reset + :124 Midi_Reset)
+        midi.reset();      // ACIA MIDI ([D] reset.c:111 @ f0736b24 ACIA_Reset + :124 Midi_Reset)
         dongle.reset(); bus.refreshUds();   // clé cartouche : registres à 0
         ports.reset();
-        // $FF8001 remis à 0 au FROID (stMemory.c:93, bCold). ⚠ DIVERGENCE ASSUMÉE : à la
+        // $FF8001 remis à 0 au FROID ([D] stMemory.c:93 @ f0736b24, bCold). ⚠ DIVERGENCE ASSUMÉE : à la
         // CONFIGURATION (constructeur / reconfigure), NeoST le pré-remplit au contraire
         // avec memConfigForBytes() alors qu'Hatari laisse 0 et compte sur le test mémoire
         // du TOS pour le programmer. Visible uniquement pour du code exécuté AVANT le TOS
@@ -364,7 +364,7 @@ private:
     int hblLine_     = 0;     // prochaine ligne pour le HBL niveau 2
     // V2 res-switch (opt-in NEOST_V2) : longueur de ligne VARIABLE. Une impulsion hi-res
     // PRÉCOCE (cyc ≤ 56) raccourcit la ligne à 224 cyc (port Hatari HBL_Pos/nCyclesPerLine,
-    // video.c:2249) : le HBL est reprogrammé tôt et les lignes SUIVANTES sont décalées de
+    // [D] video.c:2249 @ f0736b24) : le HBL est reprogrammé tôt et les lignes SUIVANTES sont décalées de
     // (cpl-224) = lineCarry_. Le HW dérive ainsi la phase du gestionnaire fullscreen.
     int64_t lineCarry_ = 0;   // décalage cumulé (cyc) dû aux lignes raccourcies cette trame
     int     v2ShortLine_ = -1; // dernière ligne déjà raccourcie (évite double-comptage)

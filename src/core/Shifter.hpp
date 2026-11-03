@@ -52,7 +52,7 @@ public:
     void commitScanline(int line);
     bool spec512Active() const { return spec512Active_; }
 
-    // Remise à zéro au RESET machine — port de Video_Reset (video.c:810) : base
+    // Remise à zéro au RESET machine — port de Video_Reset ([D] video.c:810 @ f0736b24) : base
     // vidéo, registres STE (line-offset/scroll + modifications différées), compteur
     // vidéo matérialisé, dernier Freq/Res vus par la Glue (ShifterFrame.Freq/Res =
     // −1 → le filtre « même valeur ignorée » repart neutre) et état glue par-trame.
@@ -61,7 +61,7 @@ public:
     // Machine::reset() (branché par l'orchestrateur).
     void reset();
     // Broche /RESET du 68000 (instruction RESET) : port de Video_Reset_Glue
-    // (video.c:904) — SEULEMENT la fréquence et la résolution, PAS l'adresse écran ni
+    // ([D] video.c:904 @ f0736b24) — SEULEMENT la fréquence et la résolution, PAS l'adresse écran ni
     // la palette (Video_Reset, lui, remet videoBase à 0 ; customreset() n'appelle que
     // Video_Reset_Glue). `mono` vient du bit 7 du GPIP (moniteur branché).
     void resetGlue(bool mono) {
@@ -230,7 +230,7 @@ public:
 
     // V2 — post-traitement d'une écriture RES ($FF8260) APRÈS updateGlueState :
     // détections spécifiques aux bascules de résolution (Video_WriteToGlueRes,
-    // video.c:1637-1753) — overscan MED-RES (No Cooper/PYM), retrait gauche med
+    // [D] video.c:1637-1753 @ f0736b24) — overscan MED-RES (No Cooper/PYM), retrait gauche med
     // (LEFT_OFF_MED), variante courte STE, stab med et scrolls « hardware »
     // 13/9/5/1 px. `prevRes`/`newRes` = valeur $FF8260&3 avant/après l'écriture.
     void updateGlueRes(int line, int lineCycles, int prevRes, int newRes);
@@ -372,11 +372,11 @@ private:
     // TOUTES les machines émulées — ST, Mega ST, STE, Mega STE plafonnent à 4 Mo et
     // leur MMU n'a pas de lignes d'adresse au-delà ($FF8201/$FF8205 n'ont que 6 bits
     // utiles). Hatari : Video_GetAddrMask() = DMA_MaskAddressHigh()<<16 | $FFFF =
-    // $3FFFFF pour ST/STE ≤ 4 Mo (m68000.c:958 « same as real HW ») ; les masques
+    // $3FFFFF pour ST/STE ≤ 4 Mo ([D] m68000.c:958 @ f0736b24 « same as real HW ») ; les masques
     // $7F/$FF n'existent que pour la RAM « fictive » > 4 Mo ou TT/Falcon (24 bits),
     // non émulés ici. Le compteur se REPLIE donc modulo 4 Mo quand il avance, et
     // chaque mot fetché par le DMA vidéo est adressé modulo 4 Mo (video_memcpy_mmu,
-    // video.c:3797) — jamais la MMIO $FFxxxx (lectures à effets de bord).
+    // [D] video.c:3797 @ f0736b24) — jamais la MMIO $FFxxxx (lectures à effets de bord).
     static constexpr uint32_t kVideoAddrMask = 0x3FFFFFu;
     static constexpr int kLineSnapBytes = 256;   // ≥ kSnapLead + 230 (LEFT+RIGHT_OFF) + marge décodage
     // Marge de TÊTE de chaque slot de capture : les octets [base−kSnapLead, base)
@@ -442,10 +442,10 @@ private:
     int64_t datedResWriteCycle() const;           // datation commune des écritures freq/res (−1 hors trame)
     // Dernier Freq (bit1 de $FF820A) / dernière Res ($FF8260 & 3) VUS par la Glue —
     // port de ShifterFrame.Freq / ShifterFrame.Res : une réécriture de la MÊME
-    // valeur est IGNORÉE par la machine Glue (Video_Sync_WriteByte video.c:3056,
-    // Video_WriteToGlueRes video.c:1630 — `if (Freq == ShifterFrame.Freq) return;`).
+    // valeur est IGNORÉE par la machine Glue (Video_Sync_WriteByte [D] video.c:3056 @ f0736b24,
+    // Video_WriteToGlueRes [D] video.c:1630 @ f0736b24 — `if (Freq == ShifterFrame.Freq) return;`).
     // Persistants À TRAVERS les trames ; remis à −1 SEULEMENT au reset (Video_Reset
-    // video.c:824-825), jamais à beginFrame. −1 = aucune écriture vue.
+    // [D] video.c:824-825 @ f0736b24), jamais à beginFrame. −1 = aucune écriture vue.
     int lastGlueFreq_ = -1;
     int lastGlueRes_  = -1;
 

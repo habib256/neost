@@ -169,7 +169,7 @@ CpuState* g_cur = nullptr;
     int     g_iackMfp     = []{ const char* s = std::getenv("NEOST_IACK_MFP");   return s ? std::atoi(s) : 12; }();
     // NEOST_IACK_SYNC (défaut ON) : dispatch des événements échus AU point d'IACK,
     // port du « CycInt_Process() + MFP_UpdateIRQ_All juste avant la séquence d'IACK »
-    // d'Hatari (newcpu.c:2938-2946 MFP, :2998-3003 vidéo). Mesuré : un événement est
+    // d'Hatari ([D] newcpu.c:2938-2946 @ f0736b24 MFP, :2998-3003 vidéo). Mesuré : un événement est
     // réellement échu à 5,7-7 % des IACK (banc SHO in-game). =0 restaure l'ancien
     // modèle (élection du vecteur sur les seuls IPR posés à la frontière).
     bool    g_iackSync    = []{ const char* s = std::getenv("NEOST_IACK_SYNC"); return s ? std::atoi(s) != 0 : true; }();
@@ -182,7 +182,7 @@ CpuState* g_cur = nullptr;
     // SYNC(4)+SYNC(4) stock — fidèle Hatari iack_cycle. =0 → ancien modèle willInterrupt
     // (lead constant, sur-compte +8, phase E-clock détruite par l'alignement du push).
     bool    g_iackAt      = []{ const char* s = std::getenv("NEOST_IACK_AT"); return s ? std::atoi(s) != 0 : true; }();
-    // DEEP (opt-in NEOST_IPLDELAY) : règle cpuipldelay de WinUAE (ipl_fetch_next, newcpu.c:4982).
+    // DEEP (opt-in NEOST_IPLDELAY) : règle cpuipldelay de WinUAE (ipl_fetch_next, [D] newcpu.c:4982 @ f0736b24).
     // Moira reconnaît l'IPL IMMÉDIATEMENT (POLL_IPL = reg.ipl = ipl) ; WinUAE DIFFÈRE la
     // reconnaissance d'une instruction si le pin IPL a changé < 4 cyc avant le point
     // d'échantillonnage de l'instruction. On le reproduit en RETARDANT la propagation du niveau
@@ -406,7 +406,7 @@ public:
         // A42 : on RETIENT la faute (adresse, PC, sens) — c'est tout ce qui manquait
         // pour nommer un halt. Port de l'esprit d'Hatari, qui garde ses
         // `last_fault_for_exception_3` / `last_writeaccess_for_exception_3` et les
-        // affiche à la prise de l'exception (newcpu.c:3086).
+        // affiche à la prise de l'exception ([D] newcpu.c:3086 @ f0736b24).
         g_cur->faultAddr  = addr;
         g_cur->faultPc    = getPC0();
         g_cur->faultWrite = write;
@@ -821,7 +821,7 @@ public:
 
     moira::u16 readIrqUserVector(moira::u8 level) const override {
         // Port de « CycInt_Process() + MFP_UpdateIRQ_All au point d'IACK » d'Hatari
-        // (newcpu.c:2938-2946 branche MFP, :2998-3003 branche vidéo — dans les DEUX
+        // ([D] newcpu.c:2938-2946 @ f0736b24 branche MFP, :2998-3003 branche vidéo — dans les DEUX
         // cas juste avant l'élection/l'acquittement). En mode bloc, les SYNC de
         // l'entrée d'exception ne dispatchent rien : un timer MFP dont l'échéance
         // tombe dans la fenêtre « frontière d'instruction → IACK » (~10-26 cyc)
@@ -896,7 +896,7 @@ void noteBlitterPreStart() {
 void neostUpdateIpl(bool commit) {
     // Élection GROUPÉE du MFP, juste avant de lire son signal : c'est l'équivalent NeoST
     // de la boucle CPU d'Hatari (« if (MFP_UpdateNeeded) MFP_UpdateIRQ_All(0) »,
-    // newcpu.c:3005 et 5509). Toutes les entrées d'interruption d'une même instruction
+    // [D] newcpu.c:3005 @ f0736b24 et 5509). Toutes les entrées d'interruption d'une même instruction
     // ont posé leur bit et leur date sans élire ; l'élection a donc ici la vue complète
     // et peut appliquer la règle « seules les plus anciennes concourent »
     // (`pendingTime_ <= pendingTimeMin_`). Ce site est le bon parce que TOUT callback
@@ -976,7 +976,7 @@ void Cpu68k::activate() const { g_cur = state_.get(); }
 
 // Transfère à l'ordonnanceur le temps couru depuis le début du quantum, PUIS
 // dispatche les événements échus — appelé au point d'IACK réel (≙ le
-// « CycInt_Process() juste avant la séquence d'IACK » de Hatari, newcpu.c:2938).
+// « CycInt_Process() juste avant la séquence d'IACK » de Hatari, [D] newcpu.c:2938 @ f0736b24).
 // Le rebase est indispensable et doit précéder le dispatch : sans lui, `ran` (le
 // retour de run(), mesuré depuis quantumStartBus_) serait facturé une SECONDE fois
 // par le runTo(now+ran) de Machine, et les callbacks liraient un liveNow() gonflé.

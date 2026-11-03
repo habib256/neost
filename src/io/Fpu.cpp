@@ -664,7 +664,7 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
     fpsr_ &= ~0x0000FF00u;                       // EXC effacé en début d'instruction
 
     // -------- FMOVE / FABS / FNEG : arrondi à la précision du FPCR ---------
-    // Port de floatx80_move/abs/neg (Hatari softfloat.c:3279-3417). Contrairement
+    // Port de floatx80_move/abs/neg (Hatari [D] softfloat.c:3279-3417 @ f0736b24). Contrairement
     // à FMOVECR, roundAndPack réduit AUSSI la plage d'exposant en simple/double.
     if (op == 0x00 || op == 0x18 || op == 0x1A) {
         sf::Status st = sfStatus();

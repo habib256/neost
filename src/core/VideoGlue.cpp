@@ -171,7 +171,7 @@ void Shifter::liveGlueCatchUp(int targetLine) {
                                          : (liveGlueFreq50_ ? 50 : 60));
         }
         // ⚠ Décode de Video_StartHBL : hi SEULEMENT si (res & 3) == 2 — res 3 suit
-        // le bit freq de $FF820A (video.c:3541-3581). Le décode « bit 1 = 71 Hz »
+        // le bit freq de $FF820A ([D] video.c:3541-3581 @ f0736b24). Le décode « bit 1 = 71 Hz »
         // (res & 2, utilisé par updateGlueState) enverrait une ligne res 3 d'un
         // écran 50 Hz dans la branche 60 Hz (DE 52-372 + left+2/right-2).
         const int freqHz = ((liveGlueRes_ & 0x03) == 0x02) ? 71 : (liveGlueFreq50_ ? 50 : 60);
@@ -348,9 +348,9 @@ void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
             bus_.cpu->pc());
     }
     // Filtre Hatari « écriture de la même valeur ignorée » : Video_Sync_WriteByte
-    // compare Freq = $FF820A & 2 à ShifterFrame.Freq (video.c:3055-3057) et
+    // compare Freq = $FF820A & 2 à ShifterFrame.Freq ([D] video.c:3055-3057 @ f0736b24) et
     // Video_WriteToGlueRes compare Res = $FF8260 & 3 à ShifterFrame.Res
-    // (video.c:1629-1631) AVANT Video_Update_Glue_State — une réécriture
+    // ([D] video.c:1629-1631 @ f0736b24) AVANT Video_Update_Glue_State — une réécriture
     // redondante n'atteint jamais la machine Glue. Sans ce filtre, réécrire #0
     // dans $FF820A en 60 Hz déclenchait un RIGHT_MINUS_2 parasite (ligne 158
     // octets). Le dernier Freq/Res vu PERSISTE à travers les trames (remis à −1
@@ -375,7 +375,7 @@ void Shifter::recordSyncWrite(bool isRes, uint8_t val) {
 }
 
 // Écriture de la résolution CÔTÉ SHIFTER ($FF8260 ou $FF8261) — port de
-// Video_WriteToShifterRes (video.c:1888-2006). La valeur 3 ARRÊTE le Shifter (il
+// Video_WriteToShifterRes ([D] video.c:1888-2006 @ f0736b24). La valeur 3 ARRÊTE le Shifter (il
 // n'absorbe plus les mots que le MMU continue de lui livrer). Trick Troed/Sync
 // « scroll hard 4 px sans retrait de bordure » (STF) : res=3 posé quand le DE est
 // actif (cycle-ligne ≥ 64), retour au cycle-ligne ≥ 72 et au plus 32 cycles après, en
@@ -438,7 +438,7 @@ void Shifter::writeShifterRes(uint8_t res) {
     shifterResLine_ = line;                              // ≙ ResPosStop_Shifter.HBL
 }
 
-// Datation sur la grille RÉELLE (port de Video_ConvertPosition, video.c:1224 :
+// Datation sur la grille RÉELLE (port de Video_ConvertPosition, [D] video.c:1224 @ f0736b24 :
 // LineCycles = FrameCycles − ShifterLines[nHBL].StartCycle) : la machine Glue
 // attribue les mêmes écritures freq/res sur l'échelle glueLineStart_ (lignes de 508
 // cycles d'un moteur sync-scroll dans une trame 50 Hz…). La grille nominale fc/cpl
@@ -694,7 +694,7 @@ void Shifter::updateGlueState(int line, int lineCycles, bool writeToRes, int fre
         // longueur de ligne est fixée par MDE1 au rechargement du compteur HSC, dont le
         // bord tombe au cycle ~56 (= Line_Set_Pal), et HDE n'est jamais posé si MDE1
         // vaut 1 à ~44 puis MDE1B 0 à ~56 → « no DE » + ligne 224 jusqu'à 56 inclus.
-        // Hatari (video.c:2503) arrête cette détection à Preload_Start_Low_50 = 40 et
+        // Hatari ([D] video.c:2503 @ f0736b24) arrête cette détection à Preload_Start_Low_50 = 40 et
         // rend STOP_MIDDLE + 512 entre 40 et 56 : rien dans la netlist ne le soutient.
         // Le cycle 56 lui-même reste à ±4 (phase du strobe d'écriture non mesurée).
         Freq_match_found = true;
@@ -891,7 +891,7 @@ void Shifter::updateGlueRes(int line, int lineCycles, int prevRes, int newRes) {
 
     // hi → med tôt dans la ligne avec retrait gauche déjà posé : le retrait
     // devient LEFT_OFF_MED et la ligne passe en med res overscan, source +2 o
-    // (un scroll hardware peut encore être détecté plus bas). (video.c:1637)
+    // (un scroll hardware peut encore être détecté plus bas). ([D] video.c:1637 @ f0736b24)
     if (prevRes == 2 && newRes == 1 && lineCycles <= 0 + 20        // LINE_START_CYCLE_71 + 20
         && (GL.borderMask & LEFT_OFF)) {
         GL.borderMask &= ~LEFT_OFF;
@@ -902,7 +902,7 @@ void Shifter::updateGlueRes(int line, int lineCycles, int prevRes, int newRes) {
 
     // Retrait gauche hi/lo suivi d'une bascule MED aux cycles No Cooper / PYM :
     // la ligne overscan est en MOYENNE résolution (décalage source 0 ou 2 octets).
-    // (video.c:1655 — « No Cooper greetings », « Best Part Of The Creation / PYM »)
+    // ([D] video.c:1655 @ f0736b24 — « No Cooper greetings », « Best Part Of The Creation / PYM »)
     if ((GL.borderMask & LEFT_OFF) && newRes == 1) {
         if (lineCycles == LINE_LEFT_MED_CYCLE_1 || lineCycles == LINE_LEFT_MED_CYCLE_1 + 16)
             GL.borderMask = (GL.borderMask & ~MED_OFFSET_MASK) | OVERSCAN_MED_RES | (0u << 20);
@@ -911,7 +911,7 @@ void Shifter::updateGlueRes(int line, int lineCycles, int prevRes, int newRes) {
     }
 
     // Variante STE : retrait gauche COURT (LEFT_OFF_2_STE) re-basculé med pile au
-    // cycle 4 → LEFT_OFF_2_STE_MED, écran décalé de 16 px. (video.c:1671)
+    // cycle 4 → LEFT_OFF_2_STE_MED, écran décalé de 16 px. ([D] video.c:1671 @ f0736b24)
     if ((GL.borderMask & LEFT_OFF_2_STE) && newRes == 1 && lineCycles == T.HDE_On_Hi) {
         GL.borderMask &= ~LEFT_OFF_2_STE;
         GL.borderMask |= LEFT_OFF_2_STE_MED;
@@ -1040,7 +1040,7 @@ void Shifter::replayGlue() {
             // V2 : détections spécifiques aux bascules de résolution (med res
             // overscan, stab/scrolls hardware) — APRÈS la machine commune, comme
             // Video_WriteToGlueRes. Le cycle passé est BRUT (les fenêtres LINE_*
-            // d'Hatari se comparent avant le latch res −1, video.c:1622-1634).
+            // d'Hatari se comparent avant le latch res −1, [D] video.c:1622-1634 @ f0736b24).
             if (w.isRes) updateGlueRes(line, lc, prevRes, curRes);
             if (lineLen && glueCyclesLine_ > 0) len = glueCyclesLine_;
             // Chantier V3 : dire à quelle ligne l'écriture a RÉELLEMENT été
@@ -1246,7 +1246,7 @@ bool Shifter::glueSelfTest() {
     run({ {261,100,0,0x00} });
     chk("bottom nEndHBL", glueEndHBL_, 310);                         // VDE_Off_NoBottom_50
 
-    // 4bis. DE vertical JAMAIS activé (video.c:2920-2923) : écran 50 Hz dont la
+    // 4bis. DE vertical JAMAIS activé ([D] video.c:2920-2923 @ f0736b24) : écran 50 Hz dont la
     // fréquence passe à 60 Hz APRÈS Top_Pos (34) et avant nStartHBL (63) sans
     // revenir à 50 Hz à temps. Le drapeau étant STICKY et noircissant toute la
     // trame, la détection est verrouillée ici AVANT ses trois consommateurs
@@ -1284,7 +1284,7 @@ bool Shifter::glueSelfTest() {
     chk("medov DE_end", glueLines_[100].displayEndCycle, T.HDE_Off_Low_50);
 
     // 9. V2 — hi→MED tôt (≤20) : le retrait gauche devient LEFT_OFF_MED, ligne
-    // med overscan avec décalage source 2 octets (video.c:1637).
+    // med overscan avec décalage source 2 octets ([D] video.c:1637 @ f0736b24).
     run({ {100,2,1,0x02}, {100,8,1,0x01} });
     chk("himed mask",  (glueLines_[100].borderMask & glue::LEFT_OFF_MED) ? 1 : 0, 1);
     chk("himed med",   (glueLines_[100].borderMask & glue::OVERSCAN_MED_RES) ? 1 : 0, 1);

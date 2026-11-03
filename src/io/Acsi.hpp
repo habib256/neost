@@ -55,7 +55,7 @@ public:
     // Reset complet (statut + paquet) — hors toggle DMA, cf. resetCommand.
     void reset();
     // Toggle du bit 8 de $FF8606 (reset DMA) : Hatari HDC_ResetCommandStatus purge
-    // le STATUT seul (hdc.c:1023-1027) — le paquet de commande en vol CONTINUE
+    // le STATUT seul ([D] hdc.c:1023-1027 @ f0736b24) — le paquet de commande en vol CONTINUE
     // (byteCount intact). L'ancien code faisait l'inverse exact.
     void resetCommand() { status_ = 0; }
 

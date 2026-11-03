@@ -22,7 +22,7 @@ const std::array<uint8_t, 16> YM2149::kVolume4to5 = {
 };
 
 // Coefficient du passe-haut sous-sonique (DC blocker 1er ordre). Mêmes valeurs que
-// Hatari (Subsonic_IIR_HPF, sound.c:382-394) : pôle = 1 - 64/32768 ≈ 0.99805, soit
+// Hatari (Subsonic_IIR_HPF, [D] sound.c:382-394 @ f0736b24) : pôle = 1 - 64/32768 ≈ 0.99805, soit
 // fc ≈ 15 Hz à 48 kHz. Recentre le signal DAC unipolaire (couplage AC du vrai HW).
 static constexpr double kHpfPole = 1.0 - 64.0 / 32768.0;
 
@@ -73,7 +73,7 @@ float fixedToSample(int64_t v) {
 // -----------------------------------------------------------------------------
 //  Table de conversion DAC 32×32×32 → échantillon. DÉFAUT = table MESURÉE sur un
 //  vrai ST (Paulo Simoes, 16³ interpolée en 32³ par moyennes géométriques) — le
-//  YM_TABLE_MIXING par défaut d'Hatari (configuration.c:807) : l'interaction
+//  YM_TABLE_MIXING par défaut d'Hatari ([D] configuration.c:807 @ f0736b24) : l'interaction
 //  NON-LINÉAIRE des 3 voies mesurée, pas modélisée. NEOST_YM_MIXING=model rebranche
 //  l'ancien modèle de circuit (YM2149_BuildModelVolumeTable) pour A/B à l'oreille.
 //  Indexation identique des deux côtés : idx = A | B<<5 | C<<10 (≙ ymout5[Tone3Voices]),
@@ -92,7 +92,7 @@ const std::array<float, 32768>& YM2149::dacTable() {
         std::array<float, 32768> t{};
 
         if (mixEnv && !std::strcmp(mixEnv, "model")) {
-            // Modèle de circuit (Hatari YM2149_BuildModelVolumeTable, sound.c:617-680).
+            // Modèle de circuit (Hatari YM2149_BuildModelVolumeTable, [D] sound.c:617-680 @ f0736b24).
             constexpr double MaxVol = 65535.0, FOURTH2 = 1.19, WARP = 1.6666666666666667;
             double cond = 2.0 / 3.0 / (1.0 - 1.0 / WARP) - 2.0 / 3.0;
             double c[32];
@@ -110,7 +110,7 @@ const std::array<float, 32768>& YM2149::dacTable() {
             return t;
         }
 
-        // Table mesurée : port EXACT de interpolate_volumetable (sound.c:505-543).
+        // Table mesurée : port EXACT de interpolate_volumetable ([D] sound.c:505-543 @ f0736b24).
         // vt(i,j,k) plat = i*1024 + j*32 + k, i=C (panel), j=B (row), k=A (element).
         std::vector<uint16_t> v(32768, 0);
         auto vt = [&](int i, int j, int k) -> uint16_t& { return v[(i << 10) | (j << 5) | k]; };
@@ -223,7 +223,7 @@ float YM2149::applyPwm250(float x0) {
     return y;
 }
 
-// Passe-bas du condensateur C10 du STF (port fidèle de LowPassFilter, sound.c:453-466) :
+// Passe-bas du condensateur C10 du STF (port fidèle de LowPassFilter, [D] sound.c:453-466 @ f0736b24) :
 // contrairement au PWMaliasFilter (front montant passe-tout), il lisse LES DEUX fronts
 //  • montant  (x0 ≥ y0) : y = (3·(x0+x1) + 2·y0) / 8   (fc ≈ 7,6 kHz)
 //  • descendant         : y = (   (x0+x1) + 6·y0) / 8   (fc ≈ 2,0 kHz)
@@ -350,7 +350,7 @@ void YM2149::renderHost(float* out, uint32_t frames, uint32_t sampleRate) {
         }
 
         // STE (hpfBypass_) : YM BRUT — le HPF sous-sonique s'applique en aval au MIX
-        // YM+DMA (DmaSound::applyHpfStereo ≙ dmaSnd.c:699,706), comme sound.c:1730-1735
+        // YM+DMA (DmaSound::applyHpfStereo ≙ [D] dmaSnd.c:699,706 @ f0736b24), comme sound.c:1730-1735
         // qui n'appelle PAS Subsonic_IIR_HPF sur le chemin STE/TT.
         if (hpfBypass_) { out[i] = s * outScale_; continue; }
         const double hp = double(s) - hpfX1_ + kHpfPole * hpfY0_;
@@ -382,7 +382,7 @@ void YM2149::synthesizeFrame(float* out, uint32_t frames, uint32_t sampleRate, i
     // grésillement rapporté. Sur la grille 250 kHz il y a ~5,6 pas internes par écriture,
     // le rééchantillonneur pondéré (nextResampleWeightedN) fait ensuite sa moyenne, et le
     // flux est FILTRÉ au lieu d'être décimé. C'est aussi ce que fait Hatari, qui applique
-    // les écritures à la frontière 250 kHz (Sound_Update avant Sound_WriteReg, psg.c:346).
+    // les écritures à la frontière 250 kHz (Sound_Update avant Sound_WriteReg, [D] psg.c:346 @ f0736b24).
     const uint32_t n250 = sampleRate ? uint32_t(uint64_t(frames) * YM_250_HZ / sampleRate) : 0;
     applyRegs(audioRegs_.data());
     uint32_t gen = 0;

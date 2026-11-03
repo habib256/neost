@@ -189,7 +189,7 @@ inline uint32_t estimateSqrt32(int aExp, uint32_t a) {
 inline void normalizeSubnormal(uint64_t aSig, int32_t& zExp, uint64_t& zSig) {
     // « -sc » et NON « 1 - sc » : le format étendu du 68881 a un bit entier EXPLICITE,
     // là où le x87/IEEE l'a implicite. softfloat.c porte les deux formes derrière un
-    // #ifdef SOFTFLOAT_68K (softfloat.c:1061-1065) — défini en tête de softfloat.h, donc
+    // #ifdef SOFTFLOAT_68K ([D] softfloat.c:1061-1065 @ f0736b24) — défini en tête de softfloat.h, donc
     // TOUJOURS actif chez Hatari — et c'est la branche x87 qui avait été portée ici.
     // Effet : TOUT opérande dénormal ressortait exactement ×2 (et FGETEXP décalé de 1),
     // sur FADD/FSUB/FMUL/FDIV/FSQRT/FREM/FMOD/FGETEXP/FGETMAN/FSCALE.
@@ -350,7 +350,7 @@ inline f80 sub(f80 a, f80 b, Status& st) {
 }
 
 // --- Arrondi à la précision SANS réduction de plage d'exposant -------------------
-// Port de roundSigAndPackFloatx80 (softfloat.c:1503), utilisé par FSGLMUL / FSGLDIV
+// Port de roundSigAndPackFloatx80 ([D] softfloat.c:1503 @ f0736b24), utilisé par FSGLMUL / FSGLDIV
 // et FMOVECR (fpp_round32/64). Différence avec roundAndPack : la mantisse est arrondie à 24 ou
 // 53 bits, mais l'exposant garde la plage ÉTENDUE (seuils 0x7FFE / 0), là où roundAndPack
 // applique en plus un expOffset qui rabat la plage sur celle du simple/double précision.
@@ -571,9 +571,9 @@ inline f80 rem(f80 a, f80 b, uint64_t& q, int& s, bool mod, Status& st) {
     if (aExp == 0) { if (aSig0 == 0) { s = (aSign != bSign); return a; } normalizeSubnormal(aSig0, aExp, aSig0); }
     bSig |= INF_LOW; zSign = aSign; expDiff = aExp - bExp; s = (aSign != bSign); aSig1 = 0;
     if (expDiff < 0) {
-        // floatx80_mod (softfloat.c:3048) passe TOUT expDiff négatif par roundAndPack
+        // floatx80_mod ([D] softfloat.c:3048 @ f0736b24) passe TOUT expDiff négatif par roundAndPack
         // — d'où l'arrondi à la précision du FPCR et UNFL sur un dénormal ; seul
-        // floatx80_rem (softfloat.c:2941) court-circuite par « return a ».
+        // floatx80_rem ([D] softfloat.c:2941 @ f0736b24) court-circuite par « return a ».
         if (mod) return roundAndPack(st.roundingPrecision, aSign, aExp, aSig0, 0, st);
         if (expDiff < -1) return a;
         shift128Right(aSig0, 0, 1, aSig0, aSig1); expDiff = 0;

@@ -772,7 +772,7 @@ void Ikbd::resetHw() {
         txNextBitCycle_ = sched_->liveNow() + kAciaTxBitCycles;
         scheduleCpuTx();
     }
-    // « Reset the SCI » (ikbd.c:503-513) : SCI_TX_State = IDLE, TSR = 0,
+    // « Reset the SCI » ([D] ikbd.c:503-513 @ f0736b24) : SCI_TX_State = IDLE, TSR = 0,
     // SCI_TX_Size/Delay = 0, SCI_RX_State = IDLE, RSR = 0, SCI_RX_Size = 0.
     // Côté NeoST le shift register de sortie du 6301 est matérialisé par
     // l'échéance IKBD_RX (octet en cours d'acheminement vers l'ACIA).
@@ -781,7 +781,7 @@ void Ikbd::resetHw() {
     responseDelayBits_ = 0;
     rxWaitingDelay_ = false;
     if (sched_) sched_->cancel(Scheduler::IKBD_RX);
-    // ACIA_Reset (Hatari acia.c:334-347) ne remet aucun registre ACIA :
+    // ACIA_Reset (Hatari [D] acia.c:334-347 @ f0736b24) ne remet aucun registre ACIA :
     // CR/RDR/statut/erreurs, TDR/TSR et initialisation du diviseur persistent.
     // Le Scheduler NeoST n'est pas effacé par Machine::reset : conserver
     // l'échéance TX déjà armée, sans annuler ni recharger le TDR.
@@ -1006,7 +1006,7 @@ void Ikbd::onVbl(int64_t vblMicro) {
 
 void Ikbd::startAutoSend() {
     // IKBD_Boot_ROM n'écrase pas une échéance active : les RESET rapprochés
-    // ne doivent pas repousser indéfiniment la scrutation (Hatari ikbd.c:620).
+    // ne doivent pas repousser indéfiniment la scrutation (Hatari [D] ikbd.c:620 @ f0736b24).
     if (sched_ && joystickMonitorPeriod_ == 0 &&
         sched_->cyclesUntil(Scheduler::IKBD_AUTOSEND) < 0)
         sched_->schedule(Scheduler::IKBD_AUTOSEND, firmwareEventTime() + 150000);

@@ -136,7 +136,7 @@ static constexpr int64_t CYCLES_PER_REV   = 1604249;       // 300 tr/min @ 8,021
 static constexpr int64_t INDEX_PULSE_LEN  = 29680;         // 3,71 ms : durée du signal d'index —
                                                            // à l'horloge STANDARD 8 MHz du datasheet
                                                            // WD1772 (Hatari FDC_CLOCK_STANDARD,
-                                                           // fdc.c:405/423 : 3710 µs × 8 = 29680),
+                                                           // [D] fdc.c:405/423 @ f0736b24 : 3710 µs × 8 = 29680),
                                                            // PAS au 8,021 MHz machine
 static constexpr int     IP_SPIN_UP       = 6;             // tours pour atteindre la vitesse
 static constexpr int     IP_MOTOR_OFF     = 9;             // tours d'inactivité → moteur off
@@ -209,7 +209,7 @@ static inline uint64_t lsnOffset(int track, int side, int sector, int spt, int s
 //  les mauvais octets (bombes / retry infini).
 // -----------------------------------------------------------------------------
 
-// Cf. Hatari Floppy_DoubleCheckFormat (floppy.c:765) : devine faces et spt
+// Cf. Hatari Floppy_DoubleCheckFormat ([D] floppy.c:765 @ f0736b24) : devine faces et spt
 // depuis la taille de l'image quand le BPB ne colle pas.
 static void doubleCheckFormat(long diskSize, int& sides, int& spt) {
     const int sidesFixed = (diskSize < 500 * 1024) ? 1 : 2;   // >500 Ko → 2 faces
@@ -229,7 +229,7 @@ static void doubleCheckFormat(long diskSize, int& sides, int& spt) {
     spt   = sptFixed;
 }
 
-// Cf. Hatari Floppy_FindDiskDetails (floppy.c:839) : lit le BPB et ne lui fait
+// Cf. Hatari Floppy_FindDiskDetails ([D] floppy.c:839 @ f0736b24) : lit le BPB et ne lui fait
 // confiance que s'il est cohérent avec la taille de l'image.
 static void findDiskDetails(const std::vector<uint8_t>& image, int& spt, int& sides) {
     if (image.size() < 0x1C) return;
@@ -1331,7 +1331,7 @@ uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSiz
     }
     FloppyDisk& dk = drive_[driveSel_];
     // Face au-delà de l'image (face 2 d'une image simple face) : les données
-    // n'existent pas → RNF (port de Floppy_ReadSectors, floppy.c:907 Side >=
+    // n'existent pas → RNF (port de Floppy_ReadSectors, [D] floppy.c:907 @ f0736b24 Side >=
     // nSides). Sans cette garde, lsnOffset replierait sur la piste suivante.
     // Le lecteur/SR peut changer entre l'identification et le transfert : un
     // secteur absent ne doit pas devenir un offset dans la face/piste suivante
@@ -2086,7 +2086,7 @@ int Fdc::nextSectorID(int* pFdcCycles) {
     // (fdc.c:5140, = 2 par défaut — les lecteurs NeoST sont double face). Les champs
     // ID sont synthétisés depuis le BPB quelle que soit la face (FDC_GetSectorsPerTrack
     // ignore Side, fdc.c:1778) ; c'est la lecture des DONNÉES qui échoue sur la face
-    // absente (floppy.c:907 Side >= nSides → RNF en < 1 tour, cf. readSectorST). Les
+    // absente ([D] floppy.c:907 @ f0736b24 Side >= nSides → RNF en < 1 tour, cf. readSectorST). Les
     // jeux qui sondent la face 2 (Drakkhen, Bolo) obtiennent le RNF rapide, pas le
     // timeout 5 tours de l'ancien RET_NO_DRIVE (~1 s par sonde).
     if (dk.headTrack >= tracksPerDisk(driveSel_)) return RET_NO_DRIVE;  // piste inexistante
@@ -2890,7 +2890,7 @@ void Fdc::onFdcEvent() {
         // FORMULATION COMPLÈTE du couple D3 (la seule jamais mesurée jusqu'ici) :
         //   échéance suivante = due + stall + delay
         // C'est exactement l'arithmétique d'Hatari, où l'ORDRE fait tout :
-        // PendingCyclesOver est capturé EN TÊTE de handler (fdc.c:2332), PUIS le stall
+        // PendingCyclesOver est capturé EN TÊTE de handler ([D] fdc.c:2332 @ f0736b24), PUIS le stall
         // M68000_AddCycles_CE avance le compteur global, PUIS le réarmement se fait
         // « maintenant − overshoot + delay » (fdc.c:2388) = due + stall + delay.
         // → l'ancrage retire le retard de DISPATCH (mesuré : 6,7 cyc/échéance, ~107
@@ -3199,7 +3199,7 @@ void Fdc::acsiDmaTransfer() {
     // Au plus count×512 octets : au-delà, le DMA cesse d'acquitter.
     const int len = std::min(acsi_.dataLen(), int(dmaSectorCount_) * 512);
     // Plage RAM invalide → erreur DMA, transfert sauté ; l'adresse avance quand
-    // même et l'IRQ part (port Acsi_DmaTransfer, hdc.c:1125-1160 :
+    // même et l'IRQ part (port Acsi_DmaTransfer, [D] hdc.c:1125-1160 @ f0736b24 :
     // STMemory_CheckAreaType/SafeCopy en échec → bDmaError = true).
     const bool rangeOk = uint64_t(dmaAddr_) + uint64_t(len) <= bus_.ram.size();
     if (!rangeOk) {

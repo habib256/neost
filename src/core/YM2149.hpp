@@ -78,7 +78,7 @@ public:
                 // et les sorties RS232 RTS (bit3)/DTR (bit4). Notifie l'abonné éventuel.
                 if (selected_ == 14) {
                     // Strobe Centronics (bit5) : un FRONT DESCENDANT envoie l'octet du port B
-                    // (R15) à l'imprimante (port de psg.c:382-397 : test LastStrobe → 0). Sans
+                    // (R15) à l'imprimante (port de [D] psg.c:382-397 @ f0736b24 : test LastStrobe → 0). Sans
                     // imprimante câblée (printerSink_ nul) : simple suivi du front, no-op.
                     const bool strobe = v & 0x20;
                     if (lastStrobe_ && !strobe && printerSink_) printerSink_(regs_[15]);
@@ -159,7 +159,7 @@ public:
 
     // Échelle de sortie selon la machine : 0.5 sur STE/Mega STE (le mixeur STE met le
     // YM à DEMI-amplitude pour laisser de la marge au son DMA et éviter la saturation
-    // quand les deux jouent fort — port de Hatari `YM_OUTPUT_LEVEL>>1`, sound.c:780-784),
+    // quand les deux jouent fort — port de Hatari `YM_OUTPUT_LEVEL>>1`, [D] sound.c:780-784 @ f0736b24),
     // 1.0 sur ST/Mega ST (pas de son DMA). Posée par `Machine` selon le type machine ;
     // NON remise à zéro par reset() (c'est une propriété figée du matériel, pas de l'état).
     void setOutputScale(float s) { outScale_ = s; }
@@ -265,7 +265,7 @@ private:
     float nextResampleWeightedN(uint32_t sampleRate);
     // Passe-bas PWM appliqué à 250 kHz (PWMaliasFilter, sound.c).
     float applyPwm250(float x0);
-    // Passe-bas C10 du STF (LowPassFilter, sound.c:453) : filtre les DEUX fronts.
+    // Passe-bas C10 du STF (LowPassFilter, [D] sound.c:453 @ f0736b24) : filtre les DEUX fronts.
     float applyLpfStf250(float x0);
     // Table des 16 formes d'enveloppe (YmEnvWaves, construite une fois).
     static const std::array<std::array<uint16_t, 96>, 16>& envWaves();

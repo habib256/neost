@@ -76,7 +76,7 @@ MachineType Machine::adjustMachineForTos(MachineType requested, const std::strin
 }
 
 namespace { // Décalage de la position d'IRQ HBL dans la ligne, relatif à cpl.
-// Hatari Hbl_Int_Pos = cpl−4 en WS1, cpl en WS2/3/4 ET sur STE (video.c:977-979,
+// Hatari Hbl_Int_Pos = cpl−4 en WS1, cpl en WS2/3/4 ET sur STE ([D] video.c:977-979 @ f0736b24,
 // 1055-1057) — tranché WS3 (2026-07-08, cf. glue:: dans Shifter.cpp) → défaut 0
 // (HBL à 508/512 selon la fréquence, à la FRONTIÈRE de ligne comme l'oracle).
 // Le STE n'a PAS de wakestate : toujours 0, même en A/B NEOST_WS=1.
@@ -159,7 +159,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // V2 res-switch (opt-in NEOST_V2) : la Glue signale une impulsion hi-res PRÉCOCE
     // (cyc ≤ 56) sur la ligne courante → on raccourcit la ligne (HBL reprogrammé à la
     // position hi-res 220 au lieu de cpl-4) et on décale les lignes SUIVANTES de
-    // (cpl-224) via lineCarry_. Port de Hatari HBL_Pos/nCyclesPerLine (video.c:2249,
+    // (cpl-224) via lineCarry_. Port de Hatari HBL_Pos/nCyclesPerLine ([D] video.c:2249 @ f0736b24,
     // Video_AddInterruptHBL 2849) : laisse dériver la phase du gestionnaire fullscreen.
     v2_ = std::getenv("NEOST_V2") != nullptr;
     // Longueurs de ligne PAR-LIGNE (port HBL_Pos/nCyclesPerLine de
@@ -211,7 +211,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // ET DTR→RI (GPIP6) — comme le câble de test du diagnostic « S RS232 ». Le port A
     // est actif BAS (bit=0 → ligne assertée). On rafraîchit l'IPL (un canal a pu lever).
     psg.setPortASink([this](uint8_t a) {
-        // SÉLECTION LECTEUR/FACE — port de psg.c:419-420, qui appelle FDC_SetDriveSide à
+        // SÉLECTION LECTEUR/FACE — port de [D] psg.c:419-420 @ f0736b24, qui appelle FDC_SetDriveSide à
         // CHAQUE écriture du port A. C'est une POUSSÉE, et elle est indispensable : le FDC
         // de NeoST se contentait de RELIRE le PSG depuis ses propres accès registre
         // (Fdc::refreshDriveSide n'était appelé que par executeCommand et les accès MMIO),
@@ -246,7 +246,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // tranchée UNE FOIS à la fin, avant que l'IPL ne soit relu. C'est l'ordre d'Hatari :
     // CycInt_Process sert tous les événements échus, PUIS la boucle CPU fait
     // `if (MFP_UpdateNeeded) MFP_UpdateIRQ_All(0)`, PUIS l'IPL est évalué
-    // (newcpu.c:3005, 5509). Sans ça, chaque callback élisait pour son compte — les 18
+    // ([D] newcpu.c:3005 @ f0736b24, 5509). Sans ça, chaque callback élisait pour son compte — les 18
     // `cpu.updateIpl()` de ce fichier — et la règle « seules les plus anciennes
     // concourent » (`pendingTime_ <= pendingTimeMin_`) ne voyait jamais plus d'un
     // candidat : deux timers échus dans le MÊME lot étaient élus séparément, et le plus
@@ -277,7 +277,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     });
     // Imprimante Centronics : sur chaque FRONT de strobe (R14 bit5), l'octet du port B
     // est capturé dans le fichier imprimante (si activé via setPrinterFile) et la ligne
-    // BUSY (GPIP0) est assertée bas — port fidèle de psg.c:388-390 (Printer_TransferByteTo
+    // BUSY (GPIP0) est assertée bas — port fidèle de [D] psg.c:388-390 @ f0736b24 (Printer_TransferByteTo
     // + MFP_GPIP_Set_Line_Input LINE0 LOW). Sans fichier imprimante : no-op (le défaut, donc
     // comportement inchangé tant que l'imprimante n'est pas explicitement activée).
     psg.setPrinterSink([this](uint8_t b) {
@@ -658,7 +658,7 @@ void Machine::onHbl() {
     // V2 : −lineCarry_ décale la ligne suivante du cumul des raccourcissements (=0 hors V2).
     if (hblLine_ < lpf_) {
         // Longueur de la ligne qui COMMENCE = état LIVE de $FF8260/$FF820A (port de
-        // Video_StartHBL + Video_HBL_GetDefaultPos, video.c:3541/3134), et non la
+        // Video_StartHBL + Video_HBL_GetDefaultPos, [D] video.c:3541/3134 @ f0736b24), et non la
         // géométrie verrouillée à beginFrame. Matériel : le compteur hsc du GST MCU se
         // recharge à (ntsc ? 1 : 0) par un mux combinatoire sur le registre pal
         // (gstmcu.v:779-801) → 508/512 dès la ligne suivante. Sans cela, une trame
@@ -722,7 +722,7 @@ void Machine::onVbl() {
 // -----------------------------------------------------------------------------
 void Machine::runFrame() {
     // FIX1 (beam-sync) — ANCRE DE TRAME FIXE = VBL THÉORIQUE. Port de Hatari
-    // VBL_ClockCounter = CyclesGlobalClockCounter − PendingCyclesOver (video.c:4964) qui
+    // VBL_ClockCounter = CyclesGlobalClockCounter − PendingCyclesOver ([D] video.c:4964 @ f0736b24) qui
     // RETRANCHE le carry δ du dépassement de la dernière instruction enjambant frameEnd.
     // Au lieu de frameStart_ = sched.now() (qui CAPTE δ et le fait varier trame à trame),
     // on AVANCE frameStart_ de la longueur THÉORIQUE de la trame qui se termine (lpf_*cpl_

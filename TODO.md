@@ -236,8 +236,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). MFP et Blitter sont faits (56 citations vérifiées à l'épingle, 3 corrigées).
-  Restent ~220 citations `fichier.c:ligne` sans révision, dans `Shifter`, `DmaSound`, `VideoGlue`, `Fdc`, `Cpu68k`, `Machine`. ⚠ **Pas de passe mécanique** : chacune se vérifie à l'épingle.
+- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). 176 citations d'Hatari portent grade et révision, vérifiées à l'épingle.
+  Restent 139 à relire à la main, listées par `tools/audit_citations.py list` : le symbole n'a pas été retrouvé près de la ligne, soit que la ligne ait glissé, soit que le commentaire ne nomme aucun symbole d'Hatari.
   Recompter ensuite par grade dans `check_doc_claims.py`.
 - **Banc fx68k, étendre** · P2 ◐ — BERR et double faute, RESET, Bcc en séries, CHK/DIVS en trap,
   RTR, ligne A en utilisateur. Autovecteur par VPA relevé, cohérent avec NeoST, à verser au verdict.

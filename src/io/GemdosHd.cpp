@@ -715,7 +715,7 @@ std::string GemdosHd::matchHostDirEntry(const std::string& path, const std::stri
     struct dirent* e;
     while ((e = readdir(dir))) {
         // macOS rend les noms en forme DÉCOMPOSÉE (NFD) : on recompose AVANT de
-        // comparer, et on retient le nom RECOMPOSÉ (≙ gemdos.c:1201 et 1214, qui
+        // comparer, et on retient le nom RECOMPOSÉ (≙ [D] gemdos.c:1201 @ f0736b24 et 1214, qui
         // convertit d_name sur place puis le strdup). Sans ça, un fichier accentué
         // du lecteur GEMDOS est introuvable depuis le TOS. Nul sur Linux.
         const std::string dnBuf = neost::hostpath::precomposeUtf8(e->d_name);
@@ -1409,7 +1409,7 @@ bool GemdosHd::gemSFirst(uint32_t p) {
 
     // Dossier + masque : sépare le dossier hôte du masque de fichiers — SANS jamais
     // remonter au-dessus de la racine du lecteur (port de fsfirst_dirname,
-    // gemdos.c:493-524). Fsfirst("C:\") donne host == hdEmuDir sans composant final :
+    // [D] gemdos.c:493-524 @ f0736b24). Fsfirst("C:\") donne host == hdEmuDir sans composant final :
     // l'ancien rfind() scannait le dossier hôte PARENT du montage (sortie du bac à
     // sable + entrée DTA fantôme au nom du dossier partagé) au lieu de scanner la
     // racine avec un masque immatchable → EFILNF, comme Hatari/TOS.

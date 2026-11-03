@@ -88,7 +88,7 @@ inline floatx80 floatx80_mul(floatx80 a, floatx80 b, float_status* s) { return m
 inline floatx80 floatx80_div(floatx80 a, floatx80 b, float_status* s) { return div(a, b, *s); }
 inline floatx80 floatx80_sqrt(floatx80 a, float_status* s)            { return sqrt_(a, *s); }
 
-// floatx80_to_int32 (softfloat.c:1764, branche SOFTFLOAT_68K) : sf::toInt en est
+// floatx80_to_int32 ([D] softfloat.c:1764 @ f0736b24, branche SOFTFLOAT_68K) : sf::toInt en est
 // le portage commun aux largeurs 32/16/8.
 inline int32_t floatx80_to_int32(floatx80 a, float_status* status) {
     return int32_t(toInt(a, 32, *status));
@@ -130,7 +130,7 @@ inline floatx80 float32_to_floatx80(float32 a, float_status* status) {
     aSig |= 0x00800000;
     return packFloatx80(aSign, aExp + 0x3F80, uint64_t(aSig) << 40);
 }
-// float64_to_floatx80 (softfloat.c:1707).
+// float64_to_floatx80 ([D] softfloat.c:1707 @ f0736b24).
 inline floatx80 float64_to_floatx80(float64 a, float_status* status) {
     uint64_t aSig = a & 0x000FFFFFFFFFFFFFull;
     int aExp = int((a >> 52) & 0x7FF);
@@ -150,7 +150,7 @@ inline floatx80 float64_to_floatx80(float64 a, float_status* status) {
     }
     return packFloatx80(aSign, aExp + 0x3C00, (aSig | 0x0010000000000000ull) << 11);
 }
-// floatx80_move (softfloat.c:3399) et floatx80_abs (softfloat.c:3279), modèle
+// floatx80_move ([D] softfloat.c:3399 @ f0736b24) et floatx80_abs ([D] softfloat.c:3279 @ f0736b24), modèle
 // 6888x : inf_clear_intbit est faux, un infini garde son bit entier.
 inline floatx80 floatx80_move(floatx80 a, float_status* status) {
     const uint64_t aSig = extractFloatx80Frac(a);

@@ -40,7 +40,7 @@ public:
     // MFP_Main_Compute_GPIP7 : XOR réservé à Config_IsMachineSTE()/TT()).
     void setMfp(Mfp* m);
 
-    // Tic HBL (thread émulation) — port de DmaSnd_STE_HBL_Update (dmaSnd.c:727-741) :
+    // Tic HBL (thread émulation) — port de DmaSnd_STE_HBL_Update ([D] dmaSnd.c:727-741 @ f0736b24) :
     // remplit la FIFO 8 octets (fetch DMA au faisceau), consomme au rythme DAC (les
     // octets tirés sont CAPTURÉS pour le rendu audio), re-remplit. C'est ICI que la
     // fin de trame est détectée (au FETCH, en avance sur la lecture DAC, comme le
