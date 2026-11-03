@@ -162,6 +162,38 @@ int testMfpPulse() {
         r.mfp.setBlitterLine(true);
         check(!(r.mfp.read8(kIprb) & kI3Iprb), "blitter line has no interrupt capability");
     }
+    {   // [B] § 5.1.3 : en event-count, le canal de I4 répond à TAI, sur le front de l'AER.
+        Rig r;
+        r.mfp.write8(kAer, 0x10);
+        r.mfp.write8(kTadr, 10);
+        r.mfp.write8(kTacr, 0x08);
+        r.mfp.write8(kIprb, 0x00);
+        r.mfp.timerA_setLineInput(true);
+        check(r.mfp.read8(kIprb) & kI4Iprb, "event count: I4 interrupt on the active TAI edge");
+        check(r.mfp.read8(kTadr) == 9, "event count: the active edge still counts");
+        r.mfp.write8(kIprb, 0x00);
+        r.mfp.timerA_setLineInput(false);
+        check(!(r.mfp.read8(kIprb) & kI4Iprb), "event count: no interrupt on the other edge");
+        r.mfp.setAciaLineKbd(true);
+        check(!(r.mfp.read8(kIprb) & kI4Iprb), "event count: real I4 line has no interrupt capability");
+        r.mfp.setAciaLineKbd(false);
+        r.mfp.write8(kTacr, 0x00);
+        r.mfp.write8(kIprb, 0x00);
+        r.mfp.setAciaLineKbd(true);
+        r.mfp.setAciaLineKbd(false);
+    }
+    {   // Timer B en event-count : TBI n'est suivi que si le canal I3 est activé.
+        Rig r;
+        r.mfp.write8(kIerb, 0x00);
+        r.mfp.write8(kTbcr, 0x08);
+        check(!r.mfp.tbiTracked(), "event count without I3: TBI is not tracked");
+        r.mfp.write8(kIerb, 0x08);
+        check(r.mfp.tbiTracked(), "event count with I3: TBI is tracked");
+        r.mfp.write8(kTbcr, 0x00);
+        check(!r.mfp.tbiTracked(), "stopped: TBI is not tracked");
+        r.mfp.write8(kTbcr, 0x09);
+        check(r.mfp.tbiTracked(), "pulse: TBI is tracked");
+    }
     {   // Les modes délai et event-count ne changent pas.
         Rig r;
         r.mfp.write8(kTadr, 100);

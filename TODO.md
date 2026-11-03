@@ -58,7 +58,6 @@ documents primaires, les ROM et le RTL épinglé.
 | # | Action | Prio | § |
 |---|--------|------|---|
 | 1 | Lire au RTL épinglé : `$FF8261`, blanking, GPIP3 ; trancher le noir sous BLANK | P1 | 2.2 |
-| 2 | Event-count : mesurer les titres exposés à la remise des canaux I3/I4, puis trancher | P1 | 2.3 |
 | 3 | Continuer la logithèque STE avec `compare_titles.py` : Pacemaker, Cernit Trandafir, parties suivantes | P1 | 3 |
 | 4 | Couvrir Mega ST et TOS 1.00/1.04/1.06 par des étalons : ROM présentes sur le disque privé | P1 | 3 |
 | 7 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
@@ -150,10 +149,6 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
 
 ### 2.3 MFP 68901
 
-- **Event-count : canaux I3/I4** · P1 ⭘ · [F] — [B] MC68901 § 2.1.6.2 et § 5.1.3 : en event-count aussi, ces
-  canaux répondent à TAI/TBI, et I3/I4 perdent leur interruption. [D] Hatari et `mfp.v @ a00deb5b` gardent I3/I4.
-  NeoST aussi pour l'instant : le changement priverait d'IRQ clavier un programme en Timer A event-count sur STE.
-  Mesurer quels titres y sont exposés, puis porter.
 - **GPIP3 au repos avec blitter** · P1 ⭘ · [F] `$FFFA01` bit 3 supposé 0 sur Mega ST/STE/Mega
   STE — `stBlitter.sv:190 @ a00deb5b` : INT = BUSY. Seule la lecture STFM sans blitter ($E9)
   est publiée. → `docs/HATARI_DIVERGENCES.md` § *Cas où NeoST améliore Hatari*

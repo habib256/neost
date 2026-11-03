@@ -16,6 +16,7 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   correctement. Étalons générés `doublerez_ste` et `doublerez_tall_ste`.
 - **68000** : ordre des accès et durée de STOP alignés sur fx68k, Hatari et le microcode (MOVEM.L, ADD/SUB.L,
   ADDX/SUBX.L, DBcc, JSR, trame de groupe 0, reset). Tableau → `docs/FX68K_BENCH.md`.
+- **MFP, event-count** : d'après la fiche MC68901 § 5.1.3, les canaux de I4/I3 répondent à TAI/TBI sur le front de l'AER.
 - **MFP, modes pulse des timers A/B** (TxCR 9-15), d'après la fiche MC68901 § 5.1.2 : TAI ou TBI
   autorise le comptage au niveau du bit d'AER, le compteur est figé hors impulsion, TxDR le charge
   à ce moment-là, et les canaux de I4/I3 répondent à TAI/TBI sur le front opposé. TBI suit le DE

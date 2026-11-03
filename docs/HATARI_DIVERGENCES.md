@@ -1317,6 +1317,9 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
+- **Canaux I3/I4 en event-count** (2026-11-04) : ils répondent à TAI/TBI, [B] MC68901 § 2.1.6.2 et § 5.1.3 ; Hatari et
+  `mfp.v:387 @ a00deb5b` gardent I3/I4. Aucun des 83 disques du catalogue n'active ce canal avec un timer en event-count.
+  Un programme en Timer A event-count perd donc l'IRQ clavier, comme la fiche l'annonce. Ne pas réaligner.
 - **Modes pulse du MFP** (2026-11-03) : Hatari les traite en mode délai (`MFP_StartTimer_AB`, `mfp.c:1358-1371 @ f0736b24`,
   qui le dit lui-même incomplet) ; NeoST suit [B] MC68901 § 5.1.2. Ne pas réaligner.
 

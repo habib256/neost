@@ -46,7 +46,8 @@ Hatari et NeoST traitaient les contrôles 9-15 comme le mode délai, ce que la f
 - TBI suit le DE réel (source d'ordonnanceur `TBI_EDGE`, armée en mode pulse seulement). `.state` v56.
 - 33 contrôles puce nue et des contrôles machine entière pour les trois fréquences. Palier `full` vert. Aucun
   logiciel réel connu ne l'exerce : ce n'est prouvé que contre la fiche.
-- Le même paragraphe de la fiche vise aussi l'event-count : non porté, ouvert au `TODO.md` § 2.3.
+- Event-count (2026-11-04) : les canaux de I4/I3 répondent aussi à TAI/TBI, [B] § 5.1.3. Aucun des 83 disques du catalogue n'y
+  est exposé. TBI n'est suivi que si le canal I3 est activé : les jeux à rasters ne paient rien.
 
 ## Banc Moira↔fx68k : le 68000 nu contre le RTL, et le TODO rangé sur le cap (2026-11-03)
 

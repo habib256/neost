@@ -426,7 +426,7 @@ void Machine::scheduleFrameEvents(bool scheduleVbl) {
     // un retrait de bordure haut/bas en cours de trame déplace les tics, comme Hatari.
     tbScheduledAt_ = frameStart_ + timerBPos();
     sched.schedule(Scheduler::TIMER_B, tbScheduledAt_);
-    if (mfp.timerPulseMode(1)) armTbiEdge(frameStart_ - 1);
+    if (mfp.tbiTracked()) armTbiEdge(frameStart_ - 1);
     // Position de l'IRQ HBL dans la ligne : Hatari HBL_VIDEO_CYCLE_OFFSET = 0 →
     // l'interruption tombe à la FRONTIÈRE de ligne (cycle 512 = 0 de la suivante).
     // L'ancien −4 était une calibration d'avant la refonte IACK (2026-07-02) ;

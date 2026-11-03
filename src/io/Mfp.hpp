@@ -52,6 +52,7 @@ public:
     // Mode pulse des timers A/B (TxCR 9-15). Machine pilote TBI (= DE) tant que le sink est à vrai.
     void setTbiPulseSink(std::function<void(bool)> sink) { tbiPulseSink_ = std::move(sink); }
     bool timerPulseMode(int timer) const;
+    bool tbiTracked() const { return tbiTracked_; }
     void setTbiLine(bool level, int64_t when);
     void setTbiLevelQuiet(bool level) { tbi_ = level; }   // niveau courant, sans front
 
@@ -222,7 +223,7 @@ public:
 
         // --- Timer A event-count (ligne TAI = XSINT son DMA STE) ---------------------
         ar(taReload_); ar(taCounter_);
-        ar(tai_); ar(tbi_);
+        ar(tai_); ar(tbi_); ar(tbiTracked_);
 
         // --- Backing store des registres timer/USART ($FF..) -------------------------
         ar(timer_);   // C-array uint8_t[0x40]
@@ -506,7 +507,9 @@ private:
     // niveau de la ligne TAI (pour détecter les fronts, cf. timerA_setLineInput).
     uint8_t taReload_ = 0, taCounter_ = 0;
     bool    tai_ = false;
-    bool    tbi_ = false;   // TBI : DE de la vidéo, tenu à jour pendant le mode pulse seulement
+    bool    tbi_ = false;   // TBI : DE de la vidéo, tenu à jour seulement quand il sert
+    bool    tbiTracked_ = false;   // Machine suit les fronts de DE (cf. updateTbiTracking)
+    void    updateTbiTracking();
     bool    pulseGateActive(int timer) const;
     uint8_t gpipIrqView(uint8_t gpip) const;
     void    updatePulseGate(int timer, int64_t when);

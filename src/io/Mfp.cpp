@@ -97,7 +97,7 @@ void Mfp::resetChip() {
     taReload_ = taCounter_ = 0;
     tcCounter_ = tdCounter_ = 0;
     for (int64_t& t : timerDueSub_) t = 0;
-    tai_ = tbi_ = false;                  // TAI/TBI = 0 (entrées event-count et pulse)
+    tai_ = tbi_ = tbiTracked_ = false;    // TAI/TBI = 0 (entrées event-count et pulse)
     timer_[0x19] = timer_[0x1B] = timer_[0x1D] = 0;                 // TACR / TBCR / TCDCR
     timer_[0x1F] = timer_[0x21] = timer_[0x23] = timer_[0x25] = 0;  // TADR / TBDR / TCDR / TDDR
     // Signal IRQ daté : tout retombe (Current_Interrupt/IRQ/IRQ_Time/Pending_Time).
@@ -438,7 +438,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         // (visible du CPU 4 cycles plus tard), pas à la date d'arrivée de la requête.
         // Désactiver un canal (IER=0) efface aussi son interruption pendante.
         case 0x07: iera = v; ipra &= iera; updateIrq(writeEventTime()); break;
-        case 0x09: ierb = v; iprb &= ierb; updateIrq(writeEventTime()); break;
+        case 0x09: ierb = v; iprb &= ierb; updateTbiTracking(); updateIrq(writeEventTime()); break;
         // IPR/ISR : on n'EFFACE que les bits écrits à 0 (les 1 laissent inchangé).
         case 0x0B: ipra &= v; updateIrq(writeEventTime()); break;
         case 0x0D: iprb &= v; updateIrq(writeEventTime()); break;
@@ -630,15 +630,27 @@ bool Mfp::pulseGateActive(int timer) const {
     return timer == 0 ? tai_ == bool(aer & 0x10) : tbi_ == bool(aer & 0x08);
 }
 
-// [B] MC68901 § 2.1.6.2 et § 5.1.2 : en mode pulse, les canaux de I4/I3 répondent à TAI/TBI,
-// sur la transition opposée à celle que définit le bit d'AER. D'où l'entrée inversée vue
-// par le détecteur de front. Les lectures du GPIP gardent les vraies lignes I3/I4.
-// [F] Le mode event-count garde ici les lignes I3/I4, contrairement à § 2.1.6.2 et § 5.1.3 :
-//     cf. TODO.md § 2.3. Tranché par : un titre ou un relevé qui exerce ce cas.
+// [B] MC68901 § 2.1.6.2, § 5.1.2 et § 5.1.3 : en mode pulse comme en event-count, les canaux de
+// I4/I3 répondent à TAI/TBI ; en pulse, sur la transition opposée à celle que définit le bit
+// d'AER, d'où l'entrée inversée. Les lectures du GPIP gardent les vraies lignes I3/I4.
+// [D] Hatari mfp.c et mfp.v:387 @ a00deb5b gardent I3/I4 en event-count. La fiche prime. Sur 83
+//     disques du catalogue, aucun titre n'active ce canal avec un timer en event-count
+//     (mesuré le 2026-11-04) ; un programme en Timer A event-count perd l'IRQ clavier.
 uint8_t Mfp::gpipIrqView(uint8_t gpip) const {
-    if (timerPulseMode(0)) gpip = uint8_t((gpip & ~0x10) | (tai_ ? 0 : 0x10));
-    if (timerPulseMode(1)) gpip = uint8_t((gpip & ~0x08) | (tbi_ ? 0 : 0x08));
+    const int a = timerCtrl(0), b = timerCtrl(1);
+    if (a >= 8) gpip = uint8_t((gpip & ~0x10) | ((a == 8 ? tai_ : !tai_) ? 0x10 : 0));
+    if (b >= 8) gpip = uint8_t((gpip & ~0x08) | ((b == 8 ? tbi_ : !tbi_) ? 0x08 : 0));
     return gpip;
+}
+
+// TBI n'a besoin d'être suivi qu'en mode pulse, ou en event-count avec le canal I3 activé : les
+// jeux à rasters utilisent l'event-count sans ce canal, et ne paient pas deux événements par ligne.
+void Mfp::updateTbiTracking() {
+    const bool wanted = timerPulseMode(1) || ((tbcr_ & 0x0F) == 8 && (ierb & 0x08));
+    if (wanted != tbiTracked_) {
+        tbiTracked_ = wanted;
+        if (tbiPulseSink_) tbiPulseSink_(wanted);
+    }
 }
 
 // Arrêt ou reprise d'un timer en mode pulse après un changement de l'entrée ou de l'AER.
@@ -718,8 +730,11 @@ void Mfp::writeTimerCtrl(int timer, uint8_t newCtrl) {
     // [B] MC68901 § 5.1.2 : entrer dans le mode pulse ou en sortir peut lever une IRQ, parce
     // que l'entrée du canal change de source. Vue relevée AVANT le nouveau contrôle.
     const uint8_t viewBefore = gpipIrqView(gpipInput());
-    const bool entersPulse = timer < 2 && isPulseCtrl(newCtrl) && !isPulseCtrl(old);
-    if (timer == 1 && entersPulse && tbiPulseSink_) tbiPulseSink_(true);  // niveau DE courant
+    // Niveau DE courant avant que la vue du canal change, pour les deux modes qui le lisent.
+    if (timer == 1 && newCtrl >= 8 && (isPulseCtrl(newCtrl) || (ierb & 0x08)) && !tbiTracked_ && tbiPulseSink_) {
+        tbiTracked_ = true;
+        tbiPulseSink_(true);
+    }
     // Un timer en mode pulse déjà arrêté par son entrée a son compteur à jour.
     const bool gatedOff = timer < 2 && isPulseCtrl(old) && !pulseGateActive(timer);
     const bool nowStopped = newCtrl == 0 || (timer < 2 && isPulseCtrl(newCtrl) && !pulseGateActive(timer));
@@ -734,8 +749,8 @@ void Mfp::writeTimerCtrl(int timer, uint8_t newCtrl) {
     // Délai (1-7 ou pulse) → échéance fraîche depuis le compteur ; 0/8 → annule
     // l'échéance délai (scheduleTimerAt cancel via période nulle).
     scheduleTimer(timer);
-    if (timer == 1 && isPulseCtrl(old) && !isPulseCtrl(newCtrl) && tbiPulseSink_) tbiPulseSink_(false);
-    if (timer < 2 && (isPulseCtrl(old) || isPulseCtrl(newCtrl)))
+    if (timer == 1) updateTbiTracking();
+    if (timer < 2 && (old >= 8 || newCtrl >= 8))
         gpipEdges(viewBefore, gpipIrqView(gpipInput()), aer, aer, sched_ ? sched_->liveNow() : 0);
 }
 
@@ -931,6 +946,8 @@ void Mfp::timerA_setLineInput(bool bit) {
         return;
     }
     if ((timer_[0x19] & 0x0F) != 0x08) return;     // pas en event-count → rien
+    // [B] MC68901 § 5.1.3, p. 5-4 : le front actif produit aussi l'IRQ du canal I4.
+    gpipEdges(viewBefore, gpipIrqView(gpipInput()), aer, aer, sched_ ? sched_->liveNow() : 0);
     if (bit != ((aer >> 4) & 1)) return;           // front non sélectionné par l'AER GPIP4
     // À 1, le compteur expire : recharge depuis TADR puis IRQ. Sinon décrément ; comme
     // taCounter_ est un uint8_t, 0 décrémente vers 255 → data reg 0 vaut bien 256.
@@ -1199,7 +1216,7 @@ void Mfp::gpipUpdateInterruptAt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld
 void Mfp::gpipEdges(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew, int64_t when) {
     static constexpr int kChan[8] = {0, 1, 2, 3, 6, 7, 14, 15};   // bit GPIP → canal MFP
     // TAI et TBI sont des broches distinctes : le DDR de I4/I3 ne les concerne pas.
-    const uint8_t inputs = uint8_t(~ddr | (timerPulseMode(0) ? 0x10 : 0) | (timerPulseMode(1) ? 0x08 : 0));
+    const uint8_t inputs = uint8_t(~ddr | (timerCtrl(0) >= 8 ? 0x10 : 0) | (timerCtrl(1) >= 8 ? 0x08 : 0));
     const uint8_t stateOld = gpipOld ^ aerOld;
     const uint8_t stateNew = gpipNew ^ aerNew;
     for (int bit = 0; bit < 8; ++bit) {
