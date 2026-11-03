@@ -56,7 +56,7 @@ public:
     void setTbiLine(bool level, int64_t when);
     void setTbiLevelQuiet(bool level) { tbi_ = level; }   // niveau courant, sans front
 
-    // RESET matériel du MFP (port de MFP_Reset, mfp.c:519-569). Remet à zéro les
+    // RESET matériel du MFP (port de MFP_Reset, [D] mfp.c:519-569 @ f0736b24). Remet à zéro les
     // registres d'interruption (GPIP/AER/DDR, IER/IPR/IMR/ISR, VR), les timers (mode,
     // recharge, compteurs, backing store) et annule les échéances en attente → plus
     // d'IRQ Timer A / GPIP7 « fantôme » survivant à un reset à chaud. NE TOUCHE PAS aux
@@ -64,7 +64,7 @@ public:
     // pilotées par les autres puces (reforcées à la lecture, puces resynchronisées).
     void reset();
 
-    // RESET *partiel* du MFP — port STRICT de MFP_Reset (mfp.c:519-569), celui que
+    // RESET *partiel* du MFP — port STRICT de MFP_Reset ([D] mfp.c:519-569 @ f0736b24), celui que
     // la broche /RESET du 68000 déclenche (customreset → MFP_Reset_All). Ne touche
     // QUE les registres MFP + les échéances de timers ; l'USART (RSR/UDR/UCR/débit),
     // la ligne XSINT et les lignes RS232 en entrée ne sont PAS remises (Hatari ne les
@@ -128,12 +128,12 @@ public:
     void    write8(uint32_t addr, uint8_t v);
 
     // Sert les timers délai ÉCHUS avant l'accès registre en cours (≙ MFP_UpdateTimers,
-    // mfp.c:681). Sans lui, un acquittement d'ISR peut travailler sur un ISR périmé —
+    // [D] mfp.c:681 @ f0736b24). Sans lui, un acquittement d'ISR peut travailler sur un ISR périmé —
     // le cas « Super Hang On » nommé par Hatari, cf. Scheduler::runMfpTimersTo.
     void updateTimers();
 
-    // Élection GROUPÉE de l'IRQ (≙ MFP_UpdateNeeded / MFP_UpdateIRQ, mfp.c:1125 et
-    // newcpu.c:3005,5509…). Une ENTRÉE d'interruption ne déclenche PAS l'élection : elle
+    // Élection GROUPÉE de l'IRQ (≙ MFP_UpdateNeeded / MFP_UpdateIRQ, [D] mfp.c:1125 @ f0736b24 et
+    // [D] newcpu.c:3005,5509 @ f0736b24…). Une ENTRÉE d'interruption ne déclenche PAS l'élection : elle
     // pose seulement son bit pending et sa date, puis marque l'élection « à faire ».
     // C'est ce qui permet à la règle chronologique (`pendingTime_ <= pendingTimeMin_`)
     // de départager PLUSIEURS entrées d'une même instruction — Hatari :
@@ -412,13 +412,13 @@ public:
 
     // Une interruption MFP doit-elle être présentée au CPU (IPL 6) ? Tient compte du
     // DÉLAI DE PROPAGATION de 4 cycles du 68901 (port MFP_IRQ_DELAY_TO_CPU / MFP_GetIRQ_CPU,
-    // mfp.c:374,783) : le signal IRQ levé au cycle T n'est visible du CPU qu'à T+4.
+    // [D] mfp.c:374,783 @ f0736b24) : le signal IRQ levé au cycle T n'est visible du CPU qu'à T+4.
     // Quand le délai court encore, updateIrq a armé Scheduler::MFP_IRQ à T+4 pour que
     // l'IPL soit recalculé pile à l'instant où l'IRQ devient visible.
     bool irqPending() const;
 
     // Acquittement (cycle IACK) : RÉ-ÉVALUE d'abord le signal IRQ (port MFP_ProcessIACK,
-    // mfp.c:812-854 — une IRQ plus prioritaire survenue entre le début de l'exception et
+    // [D] mfp.c:812-854 @ f0736b24 — une IRQ plus prioritaire survenue entre le début de l'exception et
     // la lecture du vecteur PEUT remplacer le vecteur ; sous Moira, cycle-exact, l'appel
     // arrive bien ~12 cycles après le début de l'exception), puis renvoie le vecteur de
     // currentInt_, met à jour IPR/ISR. -1 si plus rien en attente (spurious).
@@ -443,7 +443,7 @@ public:
     bool    busyLine_ = false;    // Centronics BUSY (GPIP0, actif bas) — bouclage port parallèle
     // CTS et DCD sont ASSERTÉES au repos, donc GPIP bits 2 et 1 lus à 0 (« signal
     // actif ») : c'est la valeur par défaut d'Hatari quand aucun vrai port série n'est
-    // branché (rs232.c:516-518 pose dcd = cts = 1, que mfp.c:1984-1993 traduit en bits
+    // branché ([D] rs232.c:516-518 @ f0736b24 pose dcd = cts = 1, que [D] mfp.c:1984-1993 @ f0736b24 traduit en bits
     // EFFACÉS). Les laisser désassertées faisait lire $FFFA01 = FF au lieu de A1, et un
     // logiciel qui attend CTS avant d'émettre aurait bouclé indéfiniment.
     bool    ctsLine_  = true;     // RS232 CTS (GPIP2, actif bas) — bouclage RTS
@@ -534,10 +534,10 @@ private:
     // interne, recalculé sur chaque changement de registre/entrée, avec :
     //   • CHRONOLOGIE : à priorités égales devant le câblage, les requêtes pendantes
     //     arrivées dans la même fenêtre sont servies dans l'ordre d'ARRIVÉE
-    //     (pendingTime_/pendingTimeMin_, port Pending_Time[] mfp.c:963-1120) ;
+    //     (pendingTime_/pendingTimeMin_, port Pending_Time[] [D] mfp.c:963-1120 @ f0736b24) ;
     //   • DÉLAI : un front montant d'IRQ n'est visible du CPU que 4 cycles plus tard
     //     (irqTime_ + kIrqDelayToCpu ; la retombée, elle, est immédiate, comme Hatari).
-    static constexpr int64_t kIrqDelayToCpu = 4;     // MFP_IRQ_DELAY_TO_CPU (mfp.c:374)
+    static constexpr int64_t kIrqDelayToCpu = 4;     // MFP_IRQ_DELAY_TO_CPU ([D] mfp.c:374 @ f0736b24)
     static constexpr int64_t kNever = INT64_MAX;
     // Recalcule le signal IRQ (port MFP_UpdateIRQ). `eventTime` = cycle de l'événement
     // déclencheur (écriture registre, IACK) ; 0 = « venant d'un timer/entrée » → on
@@ -569,7 +569,7 @@ private:
     void gpipUpdateInterruptAt(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t aerNew, int64_t when);
 
     // Pose une ligne d'entrée GPIP avec détection de front (port MFP_GPIP_Set_Line_Input,
-    // mfp.c:1180) : capture du GPIP avant/après le changement, puis gpipUpdateInterrupt
+    // [D] mfp.c:1180 @ f0736b24) : capture du GPIP avant/après le changement, puis gpipUpdateInterrupt
     // lève le canal seulement si la ligne est en ENTRÉE (DDR), a réellement basculé au
     // niveau du pin (le wire-OR ACIA absorbe une 2ᵉ ligne qui tombe) et que le front
     // correspond à l'AER. Sans transition : aucun effet.

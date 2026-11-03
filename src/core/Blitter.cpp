@@ -36,7 +36,7 @@ namespace {
     // [D] stBlitter.sv:238-250 @ a00deb5b, avec fx68k @ 0602ee46 : un CPU à 2 cycles internes (EXG)
     // est arrêté avant de poser AS. tools/run_stblitter_bench.py, programmes gap* : 63 accès à
     // +0, 64 à +2, +4, +6, +8. [B] M68000UM Rev 8 § 5.2.2 p. 5-15 donne le mécanisme, sans chiffre.
-    // [D] Hatari blitter.c:69-79 @ f0736b24 dit 4 cycles, et précise « my guess » : non retenu.
+    // [D] Hatari [D] blitter.c:69 @ f0736b24-79 @ f0736b24 dit 4 cycles, et précise « my guess » : non retenu.
     // [F] La largeur reste sans relevé. Tranché par : compter les accès d'une tranche sur un STE.
     constexpr int kResumeCountWindow = 2;
     constexpr int kArbOut           = 4;
@@ -58,13 +58,13 @@ namespace {
     // Masques matériels appliqués À L'ÉCRITURE des registres (la relecture montre
     // la valeur masquée, comme Hatari) : HOP & 3 (Blitter_HalftoneOp_WriteByte,
     // « h/ware reg masks out the top 6 bits »), LOP & 0xF (Blitter_LogOp_WriteByte,
-    // blitter.c:1386), contrôle $FF8A3C & 0xEF (bit 4 non câblé,
-    // Blitter_Control_WriteByte blitter.c:1421). Le skew ($FF8A3D) garde ses 8 bits :
+    // [D] blitter.c:1386 @ f0736b24), contrôle $FF8A3C & 0xEF (bit 4 non câblé,
+    // Blitter_Control_WriteByte [D] blitter.c:1421 @ f0736b24). Le skew ($FF8A3D) garde ses 8 bits :
     // Hatari stocke l'octet ENTIER (Blitter_Skew_WriteByte, pas de masque).
     // Bit 0 des incréments non câblé (& 0xFFFE, Blitter_SourceXInc_WriteWord
-    // blitter.c:1229) → octets faibles $FF8A21/23/2F/31 masqués 0xFE. Adresses
+    // [D] blitter.c:1229 @ f0736b24) → octets faibles $FF8A21/23/2F/31 masqués 0xFE. Adresses
     // src/dst : 24 bits pairs (& 0x00FFFFFE, Blitter_SourceAddr_WriteLong
-    // blitter.c:1254) → octet fort $FF8A24/32 masqué 0x00, faible $FF8A27/35 0xFE.
+    // [D] blitter.c:1254 @ f0736b24) → octet fort $FF8A24/32 masqué 0x00, faible $FF8A27/35 0xFE.
     constexpr uint8_t regWriteMask(uint32_t off) {
         return (off == 0x21 || off == 0x23 || off == 0x2F || off == 0x31
                 || off == 0x27 || off == 0x35)          ? 0xFE
@@ -75,7 +75,7 @@ namespace {
 }
 
 void Blitter::reset(bool cold) {
-    // Blitter_Reset (Hatari blitter.c:271-307) ne touche ni la RAM halftone
+    // Blitter_Reset (Hatari [D] blitter.c:271-307 @ f0736b24) ne touche ni la RAM halftone
     // ni le registre source à décalage. Le reset chaud annule le transfert,
     // sans perdre ces données ; une nouvelle session froide les initialise.
     // Netlist 4051/4082 : /RESET n'atteint que les verrous BUSY et HOG ; skew, HOP,
@@ -103,7 +103,7 @@ void Blitter::reset(bool cold) {
     if (bus_.mfp) bus_.mfp->setBlitterLine(true);
 }
 
-// Accès bus du blitter — port de STMemory_DMA_ReadWord/WriteWord (stMemory.c:724) :
+// Accès bus du blitter — port de STMemory_DMA_ReadWord/WriteWord ([D] stMemory.c:724 @ f0736b24) :
 // même plan mémoire que le CPU, mais une zone fautive lit 0x0000 (DMA_READ_WORD_BUS_ERR)
 // / absorbe l'écriture au lieu de déclencher une bus error (le blitter est un maître
 // de bus, pas de cycle d'exception). Les vecteurs reset $0-$7 (miroir ROM) sont
@@ -115,7 +115,7 @@ uint16_t Blitter::readWord(uint32_t addr) {
     const uint16_t v = bus_.busFault(addr) ? 0x0000 : bus_.read16(addr);
     bus_.blitterMasterAccess = false;
     if (accessObserver) accessObserver(false, addr, v);
-    // Port de Blitter_ReadWord (blitter.c:428-441) : l'accès est effectué D'ABORD,
+    // Port de Blitter_ReadWord ([D] blitter.c:428-441 @ f0736b24) : l'accès est effectué D'ABORD,
     // PUIS ses 4 cycles sont facturés ET dispatchés (Blitter_AddCycles suivi de
     // Blitter_FlushCycles). La facturation est inconditionnelle — une zone fautive
     // coûte le même temps de bus qu'une lecture normale.
@@ -129,17 +129,17 @@ void Blitter::writeWord(uint32_t addr, uint16_t v) {
     bus_.blitterMasterAccess = true;
     if (!bus_.busFault(addr) && addr >= 0x8) bus_.write16(addr, v);
     bus_.blitterMasterAccess = false;
-    billCycles(kCyclesPerBusAccess);   // cf. readWord (Blitter_WriteWord, blitter.c:444-453)
+    billCycles(kCyclesPerBusAccess);   // cf. readWord (Blitter_WriteWord, [D] blitter.c:444-453 @ f0736b24)
 }
 
 // Facture le temps de bus volé par le blitter — port de Blitter_AddCycles suivi de
-// Blitter_FlushCycles (blitter.c:342-375). Appelé pour CHAQUE accès bus (4 cycles) et
+// Blitter_FlushCycles ([D] blitter.c:342-375 @ f0736b24). Appelé pour CHAQUE accès bus (4 cycles) et
 // pour chaque arbitration (prise 4/8, restitution 4), JAMAIS en lot : c'est la
 // granularité d'Hatari, et c'est elle qui permet à une échéance tombant au milieu
 // d'une tranche d'être servie à l'heure (chantier BL4). Moira avance son horloge — le
 // CPU « attend » que le blitter rende le bus, cf. addBusWaitCycles.
 void Blitter::billCycles(int n) {
-    // UNE SEULE BASE DE TEMPS (port de Blitter_AddCycles, blitter.c:351-352) : chez
+    // UNE SEULE BASE DE TEMPS (port de Blitter_AddCycles, [D] blitter.c:351-352 @ f0736b24) : chez
     // Hatari les cycles du blitter incrémentent le MÊME compteur que ceux du CPU,
     // celui que CycInt lit pour ses échéances. Ici deux chemins de facturation
     // coexistent et il ne faut créditer l'ordonnanceur QUE sur l'un des deux :
@@ -159,7 +159,7 @@ void Blitter::billCycles(int n) {
 
 uint8_t Blitter::read8(uint32_t addr) {
     const uint32_t off = addr & 0x3F;
-    // $FF8A3E/$FF8A3F : zone void du blitter (Hatari ioMemTabSTE.c:199 = IoMem_VoidRead,
+    // $FF8A3E/$FF8A3F : zone void du blitter (Hatari [D] ioMemTabSTE.c:199 @ f0736b24 = IoMem_VoidRead,
     // « No bus error here ») → lit 0xFF, pas la case reg_ (qui valait 0x00).
     if (off >= 0x3E) return 0xFF;
     // Netlist 4082 : la validation de lecture ne dépend pas de UDS/LDS — un accès
@@ -184,7 +184,7 @@ void Blitter::write8(uint32_t addr, uint8_t v) {
     if (off == 0x3C && !inSlice_) {
         // Écriture du registre contrôle ($FF8A3C) : BUSY (bit7) à 1 → démarre ou
         // REPREND ; à 0 pendant un transfert → PAUSE (le CPU peut arrêter le
-        // blitter en non-hog, cf. blitter.c:88 — état conservé, reprise au
+        // blitter en non-hog, cf. [D] blitter.c:88 @ f0736b24 — état conservé, reprise au
         // prochain BUSY=1).
         // !inSlice_ : une écriture VENANT DU BLITTER lui-même (blit dont la
         // destination est sa propre zone registre) pose les octets et rien de plus,
@@ -224,7 +224,7 @@ void Blitter::write16(uint32_t addr, uint16_t v) {
     const bool wasBusy = reg_[0x3C] & 0x80;
     writeRegisters(off, v, 2);
     // X count ($FF8A36) : recharge x_count_reset latchée À CHAQUE écriture du
-    // registre (Hatari Blitter_WordsPerLine_WriteWord, blitter.c:1338-1350) — pas
+    // registre (Hatari Blitter_WordsPerLine_WriteWord, [D] blitter.c:1338-1350 @ f0736b24) — pas
     // seulement au départ du blit. La règle 0→65536 est portée par la
     // représentation 16 bits (0 ≡ 65536 via le bouclage, cf. start()).
     if (off <= 0x36 && off + 1 >= 0x37)
@@ -279,7 +279,7 @@ void Blitter::start() {
     // converti À L'ÉCRITURE du registre).
 
     // Transfert DÉJÀ terminé (y_count résiduel 0) : poser BUSY ne relance RIEN —
-    // BUSY et HOG sont effacés (port fidèle blitter.c:1433-1437). C'est le
+    // BUSY et HOG sont effacés (port fidèle [D] blitter.c:1433-1437 @ f0736b24). C'est le
     // protocole restart du driver blitter du TOS (re-set BUSY après chaque blit) :
     // l'ancien code relisait 0→65536 et relançait un blit de 65536 lignes qui
     // labourait toute la RAM (bureau TOS 1.06 STE scramblé au moindre redraw).
@@ -319,7 +319,7 @@ void Blitter::start() {
     // Sans Scheduler, le banc de puce nue exécute immédiatement la tranche.
     if (sched_) {
         // Entrée en phase PRE_START : le compteur d'erreur repart de zéro (Hatari
-        // Blitter_HOG_CPU_BusCountError = 0, blitter.c:1457) — un accès volé dans
+        // Blitter_HOG_CPU_BusCountError = 0, [D] blitter.c:1457 @ f0736b24) — un accès volé dans
         // une fenêtre PÉRIMÉE (avant un restart/reprise) ne compte pas.
         busCountError_ = false;
         // Le délai matériel de demande du bus vaut 4 cycles BUS après la fin
@@ -342,7 +342,7 @@ void Blitter::start() {
 
 // Échéance Scheduler::BLITTER : transfert entier HOG ou 64 accès partagés — 63 si
 // un accès CPU est tombé dans la fenêtre PRE_START (le blitter le compte à tort
-// comme sien, cf. blitter.c:69-79) — avec suspension MID-WORD si le budget tombe
+// comme sien, cf. [D] blitter.c:69-79 @ f0736b24) — avec suspension MID-WORD si le budget tombe
 // entre deux accès d'un même mot. Ici on est à une frontière d'événement : avancer
 // l'horloge CPU (billCycles) retarde d'autant le prochain bloc d'exécution — le CPU
 // « perd » arbitration + part du blitter, puis garde le bus pour 64 accès bus CPU
@@ -380,7 +380,7 @@ void Blitter::onSlice() {
     if (done) finishTransfer();            // Blitter_Start : IRQ après arbitration
     if (!done) {
         // Part CPU non-hog : armer le comptage des accès bus CPU (port
-        // BLITTER_PHASE_COUNT_CPU_BUS + CountBusCpu = 0, blitter.c:937). Le CPU ne
+        // BLITTER_PHASE_COUNT_CPU_BUS + CountBusCpu = 0, [D] blitter.c:937 @ f0736b24). Le CPU ne
         // reprend qu'après le stall facturé ci-dessus ; son 64ᵉ accès déclenchera
         // PRE_START (+4 cycles) via noteCpuBusAccess. (Ancien modèle : forfait de
         // 256 cycles, non-CE — le CPU « payait » sa part même sans toucher le bus.)
@@ -392,7 +392,7 @@ void Blitter::onSlice() {
 // 64ᵉ accès bus CPU de la fenêtre non-hog (appelé par les callbacks mémoire de
 // Moira, cf. Cpu68k.cpp) : le blitter redemande le bus — phase PRE_START de 4
 // cycles (fenêtre « 63 accès » armée), tranche suivante datée à now+4 (port
-// Blitter_HOG_CPU_mem_access_after, blitter.c:1616-1621).
+// Blitter_HOG_CPU_mem_access_after, [D] blitter.c:1616-1621 @ f0736b24).
 void Blitter::noteCpuBusAccess(int64_t now) {
     if (++cpuBusCnt_ < kNonHogBusCpu) return;
     bus_.blitterCountCpu = false;

@@ -22,7 +22,7 @@ namespace { const int g_mfpExact = []{ const char* s = std::getenv("NEOST_MFP_EX
                                        return s ? std::atoi(s) : 3; }(); }
 
 // NEOST_MFP_UPDTIMERS : dispatch des timers MFP échus AVANT tout accès registre du MFP
-// — port de `MFP_UpdateTimers` (mfp.c:681). Défaut ON ; =0 restaure le comportement
+// — port de `MFP_UpdateTimers` ([D] mfp.c:681 @ f0736b24). Défaut ON ; =0 restaure le comportement
 // « frontière de bloc » pour que l'A/B reste exécutable. Récit et cas Super Hang-On
 // dans `Scheduler::runMfpTimersTo`.
 namespace { const bool g_mfpUpdTimers = []{ const char* s = std::getenv("NEOST_MFP_UPDTIMERS");
@@ -41,7 +41,7 @@ namespace { const bool g_mfpUpdTimers = []{ const char* s = std::getenv("NEOST_M
 // antidatées de 2 cycles, et comme la visibilité CPU court depuis cet instant
 // (irqTime_ + 4), l'exception partait 2 cycles trop tôt.
 //
-// Hatari nomme le titre que ça corrige (mfp.c:113, entrée du 2013/03/14) : « When
+// Hatari nomme le titre que ça corrige ([D] mfp.c:113 @ f0736b24, entrée du 2013/03/14) : « When
 // writing to the MFP's registers, take the write cycles into account when updating
 // MFP_IRQ_Time (properly fix Super Hang On) ».
 int64_t Mfp::mmioWriteEnd() {
@@ -63,22 +63,22 @@ namespace { const bool g_mfpBatch = []{ const char* s = std::getenv("NEOST_MFP_B
 void Mfp::updateTimers() {
     if (!(g_mfpUpdTimers && sched_)) return;
     sched_->runMfpTimersTo(sched_->liveNow());
-    // ≙ mfp.c:689-690 : après avoir servi les timers, si des entrées ont eu lieu, on
+    // ≙ [D] mfp.c:689-690 @ f0736b24 : après avoir servi les timers, si des entrées ont eu lieu, on
     // élit MAINTENANT — et avec l'horloge courante comme date de front, comme Hatari
     // (`MFP_UpdateIRQ(pMFP, Clock)`) et non avec pendingTime_.
     if (irqUpdateNeeded_) { irqUpdateNeeded_ = false; updateIrq(sched_->liveNow()); }
 }
 
-// RESET matériel du MC68901 (port de MFP_Reset, mfp.c:519-569). Le vrai MFP n'a PAS
+// RESET matériel du MC68901 (port de MFP_Reset, [D] mfp.c:519-569 @ f0736b24). Le vrai MFP n'a PAS
 // de signal de reset dédié pour le GPIP/USART, mais sur l'ST la broche /RESET du 68000
-// le réinitialise (cf. reset.c:74, AVANT M68000_Reset). NeoST l'omettait → des IRQ
+// le réinitialise (cf. [D] reset.c:77 @ f0736b24, AVANT M68000_Reset). NeoST l'omettait → des IRQ
 // Timer A / GPIP7 pouvaient survivre à un reset à chaud (musique chip qui s'emballe ou
 // notes parasites après Ctrl+reset). On remet ici tout l'état d'interruption et les
 // timers à zéro. PRÉSERVÉ : colorMonitor_/hasDmaSound_/loopback_ (propriétés posées
 // AVANT le reset) et les lignes d'ENTRÉE des autres puces (FDC/ACIA/RS232), reforcées
 // à la lecture du GPIP et resynchronisées par leurs puces respectives.
 void Mfp::resetChip() {
-    // GPIP au reset : **0x00, comme Hatari** (mfp.c:523 `pMFP->GPIP = 0`) — les
+    // GPIP au reset : **0x00, comme Hatari** ([D] mfp.c:523 @ f0736b24 `pMFP->GPIP = 0`) — les
     // lignes démarrent BASSES et ce sont les périphériques qui les assertent
     // (moniteur bit7, FDC bit5, ACIA bit4 : forcés en lecture par readGpip).
     // L'ancien 0xFF (« entrées non assertées = 1 ») rendait bits 6 (RI) et 3 à 1 :
@@ -105,7 +105,7 @@ void Mfp::resetChip() {
     for (int64_t& t : pendingTime_) t = kNever;
     pendingTimeMin_ = kNever;
     // ⚠ AUCUNE annulation d'échéance ici : customreset() n'appelle PAS CycInt_Reset
-    // (hatari-glue.c:54). Une échéance de timer déjà datée SURVIT au /RESET et se
+    // ([D] hatari-glue.c:54 @ f0736b24). Une échéance de timer déjà datée SURVIT au /RESET et se
     // périme d'elle-même quand elle arrive (onTimerExpire voit ctrl=0 → ni IRQ ni
     // replanification, ≙ MFP_InterruptHandler_TimerA + MFP_StartTimer_AB(ctrl=0)).
     // Les annuler décale l'étalon nocooper d'une trame entière (mesuré).
@@ -136,7 +136,7 @@ void Mfp::reset() {
     rxByte_ = 0; rxFull_ = false; rxOverrun_ = rxPendingOverrun_ = false;   // USART : tampon vidé (pas de RXFULL fantôme)
     serialClockFactor_ = 128;
     serialBaud_ = 0; serialUcr_ = 0;      // suivi débit série remis (sinon serialBaud() rapporte l'avant-reset)
-    if (sched_) {   // reset MACHINE : Hatari appelle CycInt_Reset() (reset.c:76) avant MFP_Reset_All
+    if (sched_) {   // reset MACHINE : Hatari appelle CycInt_Reset() ([D] reset.c:76 @ f0736b24) avant MFP_Reset_All
         sched_->cancel(Scheduler::TIMER_A);
         sched_->cancel(Scheduler::TIMER_B);
         sched_->cancel(Scheduler::TIMER_B_DELAY);
@@ -465,7 +465,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x1B: writeTimerCtrl(1, uint8_t(v & 0x0F)); break;           // TBCR (0x08 = event-count ; 1-7 = délai)
         case 0x1D: writeTimerCtrl(2, uint8_t((v >> 4) & 0x07));           // TCDCR : C bits 4-6, D bits 0-2
                    writeTimerCtrl(3, uint8_t(v & 0x07));
-                   updateSerialConfig(); break;   // Timer D = horloge USART (cf. mfp.c:3474)
+                   updateSerialConfig(); break;   // Timer D = horloge USART (cf. [D] mfp.c:3474 @ f0736b24)
         // TxDR : SEULE la valeur de recharge change. Un timer en délai qui court n'est
         // NI rechargé NI redaté (cf. MFP_TimerAData_WriteByte : « if timer is running
         // do not set ») — Captain Blood réécrit TADR en boucle et compare au compteur
@@ -484,7 +484,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                    break;
         case 0x25: timer_[0x25] = v;                                      // TDDR
                    if (timerCtrl(3) == 0) tdCounter_ = v;
-                   updateSerialConfig(); break;   // nouveau diviseur → bauds USART (mfp.c:3311)
+                   updateSerialConfig(); break;   // nouveau diviseur → bauds USART ([D] mfp.c:3311 @ f0736b24)
         case 0x29: timer_[0x29] = v;                                      // UCR
                    updateSerialConfig();
                    if (sched_ && serialTxKind_ == 1 && !(v & 0x18)) {
@@ -537,7 +537,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                    // TX : le buffer d'émission se vide dès l'octet parti (TX instantané) —
                    // canaux 10 (buffer vide) et 9 (underrun) si le TRANSMETTEUR est activé
                    // (TSR bit0 TE), branché ou non : Hatari lève TRN_BUF_EMPTY à CHAQUE
-                   // émission (rs232.c:569), sans condition de bouclage ni de récepteur.
+                   // émission ([D] rs232.c:569 @ f0736b24), sans condition de bouclage ni de récepteur.
                    // L'ancien gating « loopback ET RE » tuait la TX pilotée par IRQ : un
                    // terminal qui arme IERA bit2 et attend le canal 10 pour envoyer
                    // l'octet suivant (STiK, streaming modem) émettait UN octet puis
@@ -884,13 +884,13 @@ void Mfp::scheduleTimerAt(int timer, int64_t anchor, bool fromCounter) {
 
 void Mfp::onTimerExpire(int timer) {
     static constexpr int kSrc[4] = {SRC_TIMERA, SRC_TIMERB, SRC_TIMERC, SRC_TIMERD};
-    // Garde « timer arrêté » (Hatari MFP_InterruptHandler_TimerA mfp.c:1741 :
+    // Garde « timer arrêté » (Hatari MFP_InterruptHandler_TimerA [D] mfp.c:1741 @ f0736b24 :
     // « if ( ( pMFP->TACR & 0xf ) != 0 ) » avant MFP_InputOnChannel, puis
     // MFP_StartTimer_* avec ctrl=0 → TimerClockCycles=0 → pas de replanification).
     if ((timerCtrl(timer) & 0x0F) == 0) return;
     // L'IRQ est ANTIDATÉE de l'échéance réelle du timer (et non de l'horloge live,
     // en retard de la latence de dispatch) — port d'Interrupt_Delayed_Cycles
-    // (mfp.c:1741+) : le délai de visibilité de 4 cycles court depuis l'expiration
+    // ([D] mfp.c:1741 @ f0736b24+) : le délai de visibilité de 4 cycles court depuis l'expiration
     // matérielle du timer, pas depuis le moment où l'émulateur a servi l'événement.
     const int64_t due = sched_ ? sched_->firingDue() : -1;
     const int64_t when = due >= 0 ? due : (sched_ ? sched_->liveNow() : 0);
@@ -967,7 +967,7 @@ void Mfp::timerA_setLineInput(bool bit) {
 // faux et ce setter n'est jamais appelé avec une ligne active.
 void Mfp::setXsintLine(bool a) {
     // Recomposer la pin entière avant de détecter le front, comme
-    // MFP_GPIP_Set_Line_Input (Hatari mfp.c:1180-1219). Le bouton Multiface
+    // MFP_GPIP_Set_Line_Input (Hatari [D] mfp.c:1180-1219 @ f0736b24). Le bouton Multiface
     // peut maintenir GPIP7 bas malgré une transition du XOR moniteur/XSINT.
     gpipSetLine(xsint_, a);
 }
@@ -1119,7 +1119,7 @@ bool Mfp::mfpSelfTest() {
 
     // --- (f) ÉLECTION DE L'EXCEPTION : la PLUS ANCIENNE l'emporte ------------------
     // Table de vérité du chantier A42. La règle du 68901, portée d'Hatari
-    // (MFP_InterruptRequest, mfp.c:1005 : `Pending_Time[Int] <= Pending_Time_Min`), est
+    // (MFP_InterruptRequest, [D] mfp.c:998 @ f0736b24 : `Pending_Time[Int] <= Pending_Time_Min`), est
     // que seules les requêtes les PLUS ANCIENNES concourent — la priorité ne départage
     // qu'entre elles. Elle n'a de sens que si l'élection voit PLUSIEURS entrées à la
     // fois, d'où l'élection groupée (flushIrqUpdate).
@@ -1168,7 +1168,7 @@ uint8_t Mfp::gpipInput() const {
     //    Concordants : MAME (rs232_port_device : RI = 1 sans appareil, relié à i6
     //    sans inversion) et une lecture sur STFM réel (exxos, exxosforum t=3992
     //    p.49, 2022 : $FFFA01 = 233 = $E9, bits 6 et 3 à 1). Hatari rend 0 par pur
-    //    artefact : MFP_Reset pose GPIP = 0 (mfp.c:523) et rien ne pilote jamais le
+    //    artefact : MFP_Reset pose GPIP = 0 ([D] mfp.c:523 @ f0736b24) et rien ne pilote jamais le
     //    bit 6. RI reste ACTIVE BASSE (assertion → 0, front descendant sous AER=0) :
     //    la cartouche Field Service teste « S9 RI-DTR » comme « SA DCD-DTR ».
     //  · bit3 = GPU_DONE. SANS blitter (ST) : seule la résistance de rappel R4 tire
@@ -1228,7 +1228,7 @@ void Mfp::gpipEdges(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t ae
     }
 }
 
-// Port de MFP_InputOnChannel (mfp.c:1088-1131) : une requête sur un canal ACTIVÉ
+// Port de MFP_InputOnChannel ([D] mfp.c:1088-1131 @ f0736b24) : une requête sur un canal ACTIVÉ
 // (IER=1) pose le bit pendant et DATE son arrivée (pendingTime_) ; sur un canal
 // désactivé elle l'EFFACE. La plus ancienne requête non masquée de la fenêtre est
 // suivie (pendingTimeMin_) pour servir les requêtes simultanées dans l'ordre
@@ -1249,7 +1249,7 @@ void Mfp::raiseAt(int source, int64_t when) {
     } else {
         ipr &= ~bit;                      // canal désactivé : la requête est perdue
     }
-    // ⚠ PAS D'ÉLECTION ICI (port de MFP_InputOnChannel, mfp.c:1125 : « MFP_UpdateNeeded
+    // ⚠ PAS D'ÉLECTION ICI (port de MFP_InputOnChannel, [D] mfp.c:1125 @ f0736b24 : « MFP_UpdateNeeded
     // = true ; Tell main CPU loop to call MFP_UpdateIRQ() »). Élire tout de suite
     // consommerait `pendingTimeMin_` avant l'arrivée des autres entrées de la MÊME
     // instruction, et la règle chronologique ne pourrait jamais les départager : une
@@ -1269,7 +1269,7 @@ void Mfp::flushIrqUpdate() {
     updateIrq(0);
 }
 
-// Port de MFP_UpdateIRQ (mfp.c:946-985) : recalcule le signal IRQ du 68901. Sur un
+// Port de MFP_UpdateIRQ ([D] mfp.c:946-985 @ f0736b24) : recalcule le signal IRQ du 68901. Sur un
 // front MONTANT, l'instant du front (irqTime_) = eventTime (écriture registre/IACK)
 // ou, à 0, la date d'arrivée de la requête élue — c'est ce qui antidate correctement
 // un timer servi avec quelques cycles de latence. La visibilité CPU est différée de
@@ -1305,7 +1305,7 @@ void Mfp::updateIrq(int64_t eventTime) {
     }
 }
 
-// Port de MFP_CheckPendingInterrupts + MFP_InterruptRequest (mfp.c:993-1071) :
+// Port de MFP_CheckPendingInterrupts + MFP_InterruptRequest ([D] mfp.c:993-1071 @ f0736b24) :
 // balayage par priorité décroissante (sources 15..8 puis 7..0) ; une source n'est
 // éligible que si (1) pendante et non masquée, (2) la plus ANCIENNE de la fenêtre
 // courante (pendingTime_ ≤ pendingTimeMin_ : deux requêtes dans la même instruction
@@ -1341,7 +1341,7 @@ int Mfp::highestInService() const {
     return -1;
 }
 
-// Signal IRQ tel que VU DU CPU (port MFP_GetIRQ_CPU + MFP_ProcessIRQ, mfp.c:737/899) :
+// Signal IRQ tel que VU DU CPU (port MFP_GetIRQ_CPU + MFP_ProcessIRQ, [D] mfp.c:736 et 899 @ f0736b24) :
 // le front montant n'est visible qu'après kIrqDelayToCpu cycles. Pendant la fenêtre,
 // Scheduler::MFP_IRQ garantit qu'un updateIpl() sera rejoué à irqTime_+4.
 bool Mfp::irqPending() const {
@@ -1350,7 +1350,7 @@ bool Mfp::irqPending() const {
     return sched_->liveNow() - irqTime_ >= kIrqDelayToCpu;
 }
 
-// Port de MFP_ProcessIACK (mfp.c:812-854). Appelé par le cœur CPU au cycle de lecture
+// Port de MFP_ProcessIACK ([D] mfp.c:812-854 @ f0736b24). Appelé par le cœur CPU au cycle de lecture
 // du vecteur (sous Moira, cycle-exact, ~12 cycles après le début de l'exception) : on
 // RÉ-ÉVALUE d'abord le signal (une IRQ plus prioritaire — ou un pending reposé —
 // survenu entre-temps peut changer le vecteur), puis on sert currentInt_.

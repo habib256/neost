@@ -103,11 +103,11 @@ private:
     void     writeWord(uint32_t addr, uint16_t v);
 
 public:
-    // Bug matériel « 63 accès au lieu de 64 » (blitter.c:69-79) : un accès bus CPU
+    // Bug matériel « 63 accès au lieu de 64 » ([D] blitter.c:69-79 @ f0736b24) : un accès bus CPU
     // pendant la fenêtre PRE_START est compté à tort par le blitter — la prochaine
     // tranche non-hog ne fera que 63 accès. Appelé par Cpu68k.cpp (Moira seul).
     void notePreStartCpuAccess();
-    // Fenêtre CPU non-hog (port Blitter_HOG_CPU_mem_access_after, blitter.c:1603) :
+    // Fenêtre CPU non-hog (port Blitter_HOG_CPU_mem_access_after, [D] blitter.c:1603 @ f0736b24) :
     // chaque accès bus CPU pendant que bus_.blitterCountCpu est armé incrémente le
     // compteur ; le 64ᵉ relance le blitter (PRE_START à now+4). Appelé par Cpu68k.cpp.
     void noteCpuBusAccess(int64_t now);
@@ -133,7 +133,7 @@ private:
     // se fait À L'ÉCRITURE du registre $FF8A38 (Blitter_LinesPerBitblock_WriteWord),
     // PAS à la relecture du résiduel. Indispensable pour distinguer « le programme
     // a écrit 0 = 65536 lignes » d'un « transfert DÉJÀ terminé (résiduel 0) » :
-    // dans ce second cas, re-poser BUSY ne relance RIEN (blitter.c:1433-1437 — le
+    // dans ce second cas, re-poser BUSY ne relance RIEN ([D] blitter.c:1433-1437 @ f0736b24 — le
     // protocole restart du driver blitter du TOS re-set BUSY après chaque blit).
     uint32_t yLatch_   = 0;
     // Garde de RÉ-ENTRANCE : vrai pendant runSlice(). Les accès bus du blitter passent
@@ -142,7 +142,7 @@ private:
     // lui-même en plein transfert, avec des compteurs non encore réécrits : récursion
     // infinie et SIGSEGV de l'émulateur, déclenchables par un simple programme émulé.
     // Hatari ne peut pas connaître ce cas : Blitter_Control_WriteByte n'appelle jamais
-    // Blitter_Start(), il passe par une phase/interruption différée (blitter.c:1421).
+    // Blitter_Start(), il passe par une phase/interruption différée ([D] blitter.c:1421 @ f0736b24).
     // Transitoire (toujours faux hors runSlice) → non sérialisé en save-state.
     bool     inSlice_  = false;
     bool     midBlit_  = false;              // un transfert est engagé (même en pause)
