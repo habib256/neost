@@ -734,6 +734,11 @@ void Shifter::recordColorWrite(int index) {
 // début d'accès, et avec les offsets de datation write +2 / read −6).
 void Shifter::syncCpuBus() {
     if (!liveFrameClock_ || !bus_.cpu) return;
+    // Le blitter est maître du bus : ses accès coûtent ses 4 cycles (Blitter::billCycles), pas
+    // l'attente d'un cycle CPU. [D] Hatari Blitter_WriteWord @ f0736b24, STMemory_DMA_WriteWord
+    // sans état d'attente. Exhibiteur : DHS Sea of Colour, blitter vers la palette à chaque
+    // ligne, 688 cycles de retard sur 192 lignes et bordure basse manquée.
+    if (bus_.blitterMasterAccess) return;
     const int64_t fc = liveFrameClock_();
     if (fc < 0) return;                                  // hors trame courante
     const int wait = static_cast<int>((4 - ((fc + 2) & 3)) & 3);   // fin d'accès → frontière
@@ -1494,9 +1499,11 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
             if (ste) {
                 int line = 0, cyc = 0;
                 const Geometry g = geometry();
-                const int la = beamPos(line, cyc) ? line - liveStartHBL_ : -1;
-                const bool active = la >= 0 && la < g.displayLines;
-                if (!active || cyc <= g.lineEndCycle) { lineWidth = v; newLineWidth_ = -1; }
+                const bool active = beamPos(line, cyc) && beamLineActive(line);
+                // [D] Hatari Video_LineWidth_WriteByte @ f0736b24 : fin de DE de CETTE ligne.
+                const int deEnd = !syncWrites_.empty() && line < static_cast<int>(glueLines_.size())
+                                ? glueLines_[line].displayEndCycle : g.lineEndCycle;
+                if (!active || cyc <= deEnd) { lineWidth = v; newLineWidth_ = -1; }
                 else                                  { newLineWidth_ = v; }
             }
             return;
@@ -1535,8 +1542,7 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
                 if (!prefetch) hwScrollReg8264_ = v;
                 int line = 0, cyc = 0;
                 const Geometry g = geometry();
-                const int la = beamPos(line, cyc) ? line - liveStartHBL_ : -1;
-                const bool active = la >= 0 && la < g.displayLines;
+                const bool active = beamPos(line, cyc) && beamLineActive(line);
                 if (!active || cyc <= g.lineStartCycle) {
                     hwScrollCount = sc; hwScrollPrefetch = prefetch; newHwScrollCount_ = -1;
                     steBorderFlag_ = add16;

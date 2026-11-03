@@ -99,7 +99,9 @@ void Blitter::reset(bool cold) {
 uint16_t Blitter::readWord(uint32_t addr) {
     ++sliceBus_;
     addr &= 0xFFFFFE;
+    bus_.blitterMasterAccess = true;
     const uint16_t v = bus_.busFault(addr) ? 0x0000 : bus_.read16(addr);
+    bus_.blitterMasterAccess = false;
     // Port de Blitter_ReadWord (blitter.c:428-441) : l'accès est effectué D'ABORD,
     // PUIS ses 4 cycles sont facturés ET dispatchés (Blitter_AddCycles suivi de
     // Blitter_FlushCycles). La facturation est inconditionnelle — une zone fautive
@@ -110,7 +112,9 @@ uint16_t Blitter::readWord(uint32_t addr) {
 void Blitter::writeWord(uint32_t addr, uint16_t v) {
     ++sliceBus_;
     addr &= 0xFFFFFE;
+    bus_.blitterMasterAccess = true;
     if (!bus_.busFault(addr) && addr >= 0x8) bus_.write16(addr, v);
+    bus_.blitterMasterAccess = false;
     billCycles(kCyclesPerBusAccess);   // cf. readWord (Blitter_WriteWord, blitter.c:444-453)
 }
 

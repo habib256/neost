@@ -298,6 +298,7 @@ public:
     // Champs ICI pour que le test du chemin chaud CPU soit un simple load (Cpu68k.cpp).
     int64_t blitterWinStart = -1;
     int64_t blitterWinEnd   = -1;
+    bool    blitterMasterAccess = false;   // accès en cours fait par le blitter, jamais à cheval sur un état
     // Fenêtre CPU du blitter non-hog (port BLITTER_PHASE_COUNT_CPU_BUS, modèle CE
     // d'Hatari) : true = le blitter attend que le CPU consomme ses 64 accès bus ;
     // chaque accès CPU est signalé (Blitter::noteCpuBusAccess), le 64ᵉ relance le

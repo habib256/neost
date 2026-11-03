@@ -564,6 +564,7 @@ private:
     // ligne courante (bascules 60/50 mi-ligne : right-2, stop, retraits) — c'est ce que
     // mesurent les routines de calibration fullscreen (Enchanted Land) sur $FF8209.
     void liveGlueCatchUp(int targetLine);
+    bool beamLineActive(int line);
     int         liveGlueLine_   = -1;   // dernière ligne initialisée (startHBL) par le live
     std::size_t liveGlueWi_     = 0;    // prochaine écriture syncWrites_ à consommer
     int         liveGlueRes_    = 0;    // res courante du curseur live (0/1/2)

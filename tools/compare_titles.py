@@ -13,8 +13,8 @@
 #  l'expliquer. La planche montre NeoST à gauche et sa meilleure image Hatari à droite.
 #
 #  Usage : compare_titles.py SORTIE DISQUE... [--machine ste] [--rom roms/tos162uk.img]
-#            [--mem 1] [--frames 1000,2000,4000] [--window 60]
-#            [--auto A:\\PROG.PRG] [--jobs 4]
+#            [--mem 1] [--frames 1000,2000,4000] [--window 60] [--offset 0] [--step 1]
+#            [--auto A:\\PROG.PRG] [--gemdos DOSSIER] [--jobs 4]
 #  Sorties : SORTIE/summary.json, SORTIE/sheet.png. Exige Pillow et ffmpeg ; code 77 sinon.
 #  Les disques sont copiés avant chaque exécution : un programme peut y écrire.
 #
@@ -53,7 +53,8 @@ def neost_frames(disk: Path, args, work: Path) -> dict[int, Image.Image]:
     # Une capture tous les `step` trames : le plus grand pas commun aux trames demandées.
     step = reduce(gcd, (f - args.frames[0] for f in args.frames[1:]), 0) or 1
     cmd = [str(HEADLESS), args.rom, "--machine", args.machine, "--mem", f"{args.mem}m",
-           "--disk", str(copy), "--frames", str(max(args.frames) + 1),
+           *(["--disk", str(copy)] if not args.gemdos else ["--gemdos", str(args.gemdos.resolve())]),
+           "--frames", str(max(args.frames) + 1),
            "--shot-from", str(min(args.frames)), "--shot-every", str(step), str(prefix)]
     if args.auto:
         cmd += ["--auto", args.auto]
@@ -80,7 +81,8 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
     shots = work / "hatari"
     shots.mkdir()
     wanted = sorted({v for f in args.frames
-                     for v in range(max(1, f - args.window), f + args.window + 1)})
+                     for v in range(max(1, f + args.offset - args.window),
+                                    f + args.offset + args.window + 1, args.step)})
     for i, vbl in enumerate(wanted):
         lines = [f"screenshot {shots / f'{vbl:06d}.png'}"]
         if i + 1 < len(wanted):
@@ -89,10 +91,11 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
     parse = work / "start.ini"
     parse.write_text(f"b VBL = {wanted[0]} :once :trace :file {work / f's{wanted[0]}.ini'}\n")
     cmd = [str(HATARI), "--machine", args.machine, "--tos", str(ROOT / args.rom), "--monitor", "rgb",
-           "--memsize", str(args.mem), "--cpu-exact", "on", "--compatible", "on", "--disk-a", str(copy),
-           "--sound", "off", "--fast-forward", "on", "--confirm-quit", "off", "--statusbar", "off",
+           "--memsize", str(args.mem), "--cpu-exact", "on", "--compatible", "on",
+           *(["--disk-a", str(copy)] if not args.gemdos else ["--harddrive", str(args.gemdos.resolve())]),
+           "--sound", "25033", "--fast-forward", "on", "--confirm-quit", "off", "--statusbar", "off",
            "--drive-led", "off", "--frameskips", "0", "--alert-level", "fatal",
-           "--run-vbls", str(max(args.frames) + args.window + 2), "--parse", str(parse)]
+           "--run-vbls", str(max(args.frames) + args.offset + args.window + 2), "--parse", str(parse)]
     if args.auto:
         cmd += ["--auto", args.auto]
     env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HATARI_SEED="1")
@@ -107,9 +110,10 @@ def reduce_2x(img: Image.Image, size: tuple[int, int]) -> Image.Image:
     return img.reduce((img.width // size[0], img.height // size[1]))
 
 
-def best_match(shots: Path, frame: int, window: int, ref: Image.Image):
-    best, best_img = 100.0, None
-    for vbl in range(max(1, frame - window), frame + window + 1):
+def best_match(shots: Path, frame: int, args, ref: Image.Image):
+    best, best_img, best_vbl = 100.0, None, None
+    for vbl in range(max(1, frame + args.offset - args.window),
+                     frame + args.offset + args.window + 1, args.step):
         path = shots / f"{vbl:06d}.png"
         if not path.exists():
             continue
@@ -117,8 +121,8 @@ def best_match(shots: Path, frame: int, window: int, ref: Image.Image):
         hist = ImageChops.difference(ref, small).convert("L").histogram()
         pct = 100.0 * (sum(hist) - hist[0]) / sum(hist)
         if pct < best:
-            best, best_img = pct, small.copy()
-    return round(best, 2), best_img
+            best, best_img, best_vbl = pct, small.copy(), vbl
+    return round(best, 2), best_img, best_vbl
 
 
 def one(disk: Path, args, out: Path) -> dict:
@@ -132,11 +136,12 @@ def one(disk: Path, args, out: Path) -> dict:
                 raise RuntimeError("Hatari n'a produit aucune capture")
             key = hashlib.md5(disk.name.encode()).hexdigest()[:8]
             for f, img in shots.items():
-                pct, match = best_match(shots_h, f, args.window, img)
+                pct, match, vbl = best_match(shots_h, f, args, img)
                 img.save(out / f"{key}_{f}_n.png")
                 if match:
                     match.save(out / f"{key}_{f}_h.png")
-                res["frames"][str(f)] = {"diff": pct, "colors": len(img.getcolors(1 << 20) or []),
+                res["frames"][str(f)] = {"diff": pct, "hatari_vbl": vbl,
+                                         "colors": len(img.getcolors(1 << 20) or []),
                                          "key": f"{key}_{f}"}
         except Exception as exc:
             res["error"] = str(exc)[:300]
@@ -168,7 +173,10 @@ def main() -> int:
     ap.add_argument("--mem", type=int, default=1)
     ap.add_argument("--frames", default="1000,2000,4000")
     ap.add_argument("--window", type=int, default=60)
+    ap.add_argument("--offset", type=int, default=0, help="centre de la fenêtre Hatari : trame + OFFSET")
+    ap.add_argument("--step", type=int, default=1, help="pas de capture dans la fenêtre")
     ap.add_argument("--auto")
+    ap.add_argument("--gemdos", type=Path, help="dossier monté en C: à la place de la disquette")
     ap.add_argument("--jobs", type=int, default=4)
     args = ap.parse_args()
     args.frames = sorted(int(x) for x in args.frames.split(","))
@@ -180,7 +188,7 @@ def main() -> int:
         rows = list(ex.map(lambda d: one(d, args, args.out), args.disks))
     (args.out / "summary.json").write_text(json.dumps(rows, indent=1, ensure_ascii=False))
     for r in rows:
-        cols = "  ".join(f"{f}:{v['diff']:>6}%" for f, v in r["frames"].items())
+        cols = "  ".join(f"{f}:{v['diff']:>6}%@{v['hatari_vbl']}" for f, v in r["frames"].items())
         print(f"{r['disk'][:42]:42} {cols} {r.get('error', '')}")
     sheet(rows, args.out)
     return 0

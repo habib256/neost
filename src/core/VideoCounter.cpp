@@ -435,6 +435,20 @@ uint32_t Shifter::videoCounter() {
 //     fin de la ligne (endVideoLine) — sur un vrai STE cela produit des artefacts,
 //     l'adresse de fin de ligne est en revanche exacte. Étalons : Stardust Tunnel STE,
 //     Braindamage End Part.
+// Le faisceau est-il dans la fenêtre verticale réelle ? [D] Hatari video.c @ f0736b24 :
+// nHBL >= nStartHBL && nHBL < nEndHBL + BlankLines. Pas les 200 lignes nominales : un écran à
+// bordures haute et basse ouvertes en affiche 276. Exhibiteur : DHS Sea of Colour (compteur
+// écrit à chaque ligne, bas de l'écran cassé au-delà de la 200e ligne).
+bool Shifter::beamLineActive(int line) {
+    if (line < 0) return false;
+    if (frameMode_ == Mode::High || syncWrites_.empty()) {
+        const int la = line - liveStartHBL_;
+        return la >= 0 && la < geometry().displayLines;
+    }
+    liveGlueCatchUp(line);
+    return line >= liveStartHBL_ && line < glueEndHBL_ + glueBlankLines_;
+}
+
 void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     // Octet haut limité comme la base/DMA : adresses vidéo ≤ $3FFFFF sur les machines
     // ≤ 4 Mo (port DMA_MaskAddressHigh — NeoST plafonne la ST-RAM à 4 Mo).
@@ -451,7 +465,7 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     const Geometry g  = geometry();
     const bool havePos = beamPos(line, cyc);
     const int  la      = havePos ? line - liveStartHBL_ : -1;
-    const bool active  = havePos && la >= 0 && la < g.displayLines;
+    const bool active  = havePos && beamLineActive(line);
     // Le MMU commence à lire 16 cycles AVANT le HDE_On quand le scroll fin est armé
     // AVEC PREFETCH ($FF8265 ; rien via $FF8264) — port Video_GetMMUStartCycle.
     const int mmuStart = g.lineStartCycle - ((steBorderFlag_ || (hwScrollCount && hwScrollPrefetch)) ? 16 : 0);
