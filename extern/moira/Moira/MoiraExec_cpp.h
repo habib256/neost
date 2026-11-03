@@ -355,7 +355,7 @@ Moira::execAddRgEa(u16 opcode)
     looping<I>() ? noPrefetch<C>(2) : prefetch<C, POLL>();
 
     // ADD/SUB Dn,<ea> : [D] fx68k @ 0602ee46 : mot bas d'abord.
-    writeM<C, M, S, REVERSE>(ea, result);
+    writeM<C, M, S, MOIRA_MIMIC_MUSASHI ? 0 : REVERSE>(ea, result);
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
@@ -477,7 +477,7 @@ Moira::execAddiEa(u16 opcode)
     prefetch<C>();
 
     // ADDI/SUBI : [D] Hatari op_0690_13_ff @ f0736b24, fx68k @ 0602ee46 : mot bas d'abord.
-    writeOp<C, M, S, POLL | REVERSE>(dst, ea, result);
+    writeOp<C, M, S, POLL | (MOIRA_MIMIC_MUSASHI ? 0 : REVERSE)>(dst, ea, result);
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
@@ -553,7 +553,7 @@ Moira::execAddqEa(u16 opcode)
     prefetch<C, POLL>();
 
     // ADDQ/SUBQ : [D] Hatari op_5090_13_ff @ f0736b24, fx68k @ 0602ee46 : mot bas d'abord.
-    writeOp<C, M, S, REVERSE>(dst, ea, result);
+    writeOp<C, M, S, MOIRA_MIMIC_MUSASHI ? 0 : REVERSE>(dst, ea, result);
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
