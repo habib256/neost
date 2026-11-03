@@ -6,6 +6,43 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Banc Moira↔fx68k : le 68000 nu contre le RTL, et le TODO rangé sur le cap (2026-11-03)
+
+**Le cœur 68000 n'avait jamais été confronté à autre chose qu'Hatari et aux totaux de
+Musashi.** fx68k était épinglé et cité, jamais simulé.
+- `tools/run_fx68k_bench.py` : le même programme sur fx68k (Verilator 5.054, pilote
+  `tools/fx68k_bench.cpp`) et sur Moira nu (cible `neost-moira-bare`, Moira tel que NeoST le
+  compile), RAM plate et interruptions vectorisées par le banc ; comparaison accès bus par
+  accès bus (nature, puis intervalle), IACK daté à part, swaps et accès unilatéraux
+  resynchronisés. Dix programmes, 34 variantes (IRQ et STOP balayés sur huit phases, rejoués
+  avec le port WinUAE `ipl_fetch`). Verdicts posés dans `tests/reference/fx68k_bench.json`,
+  palier `full`, SKIP sans Verilator. → `docs/FX68K_BENCH.md`
+- **22 variantes sur 34 concordent** : instructions ordinaires, MUL/DIV, TAS, trace, trames
+  d'exception, prise d'IRQ sur 6 phases sur 8. Neuf écarts localisés, tous [D] contre [D],
+  aucun ajustement de Moira :
+  1. **STOP avec IRQ déjà pendante** : fx68k simulé reconnaît à STOP+12, comme Hatari ; le
+     STOP+8 posé le 2026-10-22 reposait sur une lecture du RTL, pas sur sa simulation. Rouvert.
+  2. **Prise d'IPL à une frontière** : Moira une instruction plus tôt à 2 phases sur 8 ;
+     `NEOST_IPLFETCH` corrige ces deux phases et casse les six autres.
+  3. **Réveil du STOP** : Moira 4 cycles plus tard à 2 phases sur 8.
+  4. **Mot bas écrit d'abord** par fx68k pour `MOVEM.L -(An)` et `ADDQ.L <mem>`, mot haut chez Moira.
+  5. **DBcc expiré** préfetche l'adresse de branchement chez fx68k.
+  6. **MOVEM mémoire→registres** lit le mot après le dernier chez fx68k, relit le premier chez Moira.
+  7. **JSR/BSR** lisent la cible avant d'empiler chez fx68k.
+  8. **Erreur d'adresse** : cycle bus amorcé et trame écrite dans un autre ordre, même total.
+  9. **Reset** : 2 cycles de plus entre les deux premiers préfetchs chez fx68k.
+- Conventions de datation écrites dans les deux pilotes ([B] M68000UM § 5.1 : AS à S2) ;
+  `fx68kAlu.sv:313` bute sur un `unique case` avant reset (`--no-assert-case`).
+- `check_doc_claims.py` recompte les deux chiffres du banc depuis la référence.
+
+**`TODO.md` réorganisé sur le cap « meilleur émulateur ST/STE/Mega STE »** : quatre axes
+(silicium par puce · logithèque · harnais et échelle · livraison), les décisions prises pour
+égaler Hatari marquées **aligné Hatari** sous leur puce, les restes de `CYCLE_ACCURACY.md` § 4
+qui n'y figuraient pas (restes vidéo au cycle, `dmasnd_poll` resté snapshot, fréquences
+exactes), la divergence D1/D2 assumée, la couverture ROM des étalons et la campagne STE
+(Obsession, Pacemaker, E605, DHS) inscrites. Rien de l'ancien fichier n'est perdu ; les
+§ 2 et 3.1 anciens sont dissous sous les puces, le § 3.2 ⏸ aussi.
+
 ## Harnais : une échelle des références, et le TODO réorganisé vers le silicium (2026-11-03)
 
 **Le harnais présentait l'accord avec Hatari comme un verdict de vérité.** 32 étalons sur 43

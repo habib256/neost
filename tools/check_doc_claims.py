@@ -54,6 +54,10 @@ def rung_count(kind: str) -> int:
     return sum(e.get("ref_kind") == kind for e in machine_etalons())
 
 
+def fx68k_ref() -> dict:
+    return json.loads((ROOT / "tests" / "reference" / "fx68k_bench.json").read_text())
+
+
 def free_etalons() -> int:
     # Même critère que rom_is_free() de run_etalons.py : EmuTOS = libre.
     return sum(1 for e in machine_etalons()
@@ -114,6 +118,16 @@ CLAIMS = [
      lambda: rung_count("snapshot"), 0.0),
     ("tools/etalons.json", r"COUVERTURE \((\d+) étalons machine",
      lambda: len(machine_etalons()), 0.0),
+    # Banc Moira↔fx68k : le nombre de variantes et d'accords se lit dans la référence
+    # posée, jamais dans la prose seule (docs/FX68K_BENCH.md, REFERENCE_LADDER.md, TODO.md).
+    ("docs/REFERENCE_LADDER.md", r"`run_fx68k_bench.py` \((\d+) variantes, \d+ en accord\)",
+     lambda: len(fx68k_ref()), 0.0),
+    ("docs/REFERENCE_LADDER.md", r"`run_fx68k_bench.py` \(\d+ variantes, (\d+) en accord\)",
+     lambda: sum(v["status"] == "agree" for v in fx68k_ref().values()), 0.0),
+    ("TODO.md", r"banc fx68k : (\d+) variantes sur \d+ en accord",
+     lambda: sum(v["status"] == "agree" for v in fx68k_ref().values()), 0.0),
+    ("TODO.md", r"banc fx68k : \d+ variantes sur (\d+) en accord",
+     lambda: len(fx68k_ref()), 0.0),
 ]
 
 

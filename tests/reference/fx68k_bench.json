@@ -1,0 +1,1030 @@
+{
+ "reset_nop": {
+  "status": "diverge",
+  "first": {
+   "index": 5,
+   "kind": "time",
+   "after": "fc6 R2 001012=46FC",
+   "access": "fc6 R2 001014=2700",
+   "delta": [
+    6,
+    4
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   102,
+   100
+  ]
+ },
+ "alu_loops": {
+  "status": "diverge",
+  "first": {
+   "index": 29,
+   "kind": "extra_fx",
+   "fx": "fc6 R2 00102A=4E71",
+   "moira": "fc6 R2 001030=7E03"
+  },
+  "mismatches": 14,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   14,
+   14
+  ],
+  "total": [
+   1190,
+   1188
+  ]
+ },
+ "mixed": {
+  "status": "diverge",
+  "first": {
+   "index": 25,
+   "kind": "swap",
+   "fx": "fc5 W2 007FFE=1116",
+   "moira": "fc5 W2 007FFC=0000"
+  },
+  "mismatches": 0,
+  "swaps": 15,
+  "access_mismatches": 0,
+  "extra": [
+   3,
+   3
+  ],
+  "total": [
+   1494,
+   1492
+  ]
+ },
+ "exceptions": {
+  "status": "diverge",
+  "first": {
+   "index": 87,
+   "kind": "swap",
+   "fx": "fc5 W2 007FFE=1042",
+   "moira": "fc5 W2 007FFC=0000"
+  },
+  "mismatches": 2,
+  "swaps": 6,
+  "access_mismatches": 0,
+  "extra": [
+   1,
+   0
+  ],
+  "total": [
+   842,
+   840
+  ]
+ },
+ "trace": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   412,
+   410
+  ]
+ },
+ "tas": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   122,
+   120
+  ]
+ },
+ "irq_nop+0": {
+  "status": "diverge",
+  "first": {
+   "index": 29,
+   "kind": "access",
+   "fx": "fc6 R2 001040=4E71",
+   "moira": "fc5 W2 007FFE=103C"
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 2,
+  "extra": [
+   1,
+   1
+  ],
+  "total": [
+   370,
+   368
+  ],
+  "iplfetch": {
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
+   "total": [
+    370,
+    368
+   ]
+  }
+ },
+ "irq_nop+1": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   370,
+   368
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 30,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103E",
+    "moira": "fc6 R2 001042=4E71"
+   },
+   "total": [
+    370,
+    368
+   ]
+  }
+ },
+ "irq_nop+2": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   370,
+   368
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 30,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103E",
+    "moira": "fc6 R2 001042=4E71"
+   },
+   "total": [
+    370,
+    368
+   ]
+  }
+ },
+ "irq_nop+3": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   370,
+   368
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 30,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103E",
+    "moira": "fc6 R2 001042=4E71"
+   },
+   "total": [
+    370,
+    368
+   ]
+  }
+ },
+ "irq_nop+4": {
+  "status": "diverge",
+  "first": {
+   "index": 30,
+   "kind": "access",
+   "fx": "fc6 R2 001042=4E71",
+   "moira": "fc5 W2 007FFE=103E"
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 2,
+  "extra": [
+   1,
+   1
+  ],
+  "total": [
+   370,
+   368
+  ],
+  "iplfetch": {
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
+   "total": [
+    370,
+    368
+   ]
+  }
+ },
+ "irq_nop+5": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   370,
+   368
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 31,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=1040",
+    "moira": "fc6 R2 001044=4E71"
+   },
+   "total": [
+    370,
+    368
+   ]
+  }
+ },
+ "irq_nop+6": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   370,
+   368
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 31,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=1040",
+    "moira": "fc6 R2 001044=4E71"
+   },
+   "total": [
+    370,
+    368
+   ]
+  }
+ },
+ "irq_nop+7": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   370,
+   368
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 31,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=1040",
+    "moira": "fc6 R2 001044=4E71"
+   },
+   "total": [
+    370,
+    368
+   ]
+  }
+ },
+ "irq_mulu+0": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   606,
+   604
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 2,
+   "first": {
+    "index": 28,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103A",
+    "moira": "fc6 R2 00103E=C4C1"
+   },
+   "total": [
+    606,
+    604
+   ]
+  }
+ },
+ "irq_mulu+1": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   606,
+   604
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 2,
+   "first": {
+    "index": 28,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103A",
+    "moira": "fc6 R2 00103E=C4C1"
+   },
+   "total": [
+    606,
+    604
+   ]
+  }
+ },
+ "irq_mulu+2": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   606,
+   604
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 2,
+   "first": {
+    "index": 28,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103A",
+    "moira": "fc6 R2 00103E=C4C1"
+   },
+   "total": [
+    606,
+    604
+   ]
+  }
+ },
+ "irq_mulu+3": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   606,
+   604
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 2,
+   "first": {
+    "index": 28,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103A",
+    "moira": "fc6 R2 00103E=C4C1"
+   },
+   "total": [
+    606,
+    604
+   ]
+  }
+ },
+ "irq_mulu+4": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   606,
+   604
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 2,
+   "first": {
+    "index": 28,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103A",
+    "moira": "fc6 R2 00103E=C4C1"
+   },
+   "total": [
+    606,
+    604
+   ]
+  }
+ },
+ "irq_mulu+5": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   606,
+   604
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 2,
+   "first": {
+    "index": 28,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103A",
+    "moira": "fc6 R2 00103E=C4C1"
+   },
+   "total": [
+    606,
+    604
+   ]
+  }
+ },
+ "irq_mulu+6": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   606,
+   604
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 2,
+   "first": {
+    "index": 28,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103A",
+    "moira": "fc6 R2 00103E=C4C1"
+   },
+   "total": [
+    606,
+    604
+   ]
+  }
+ },
+ "irq_mulu+7": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   606,
+   604
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 2,
+   "first": {
+    "index": 28,
+    "kind": "access",
+    "fx": "fc5 W2 007FFE=103A",
+    "moira": "fc6 R2 00103E=C4C1"
+   },
+   "total": [
+    606,
+    604
+   ]
+  }
+ },
+ "stop_irq+0": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   250,
+   248
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     90,
+     94
+    ]
+   },
+   "total": [
+    250,
+    252
+   ]
+  }
+ },
+ "stop_irq+1": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   250,
+   248
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     90,
+     94
+    ]
+   },
+   "total": [
+    250,
+    252
+   ]
+  }
+ },
+ "stop_irq+2": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   250,
+   248
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     90,
+     94
+    ]
+   },
+   "total": [
+    250,
+    252
+   ]
+  }
+ },
+ "stop_irq+3": {
+  "status": "diverge",
+  "first": {
+   "index": 21,
+   "kind": "time",
+   "after": "fc6 R2 001030=2300",
+   "access": "fc5 W2 007FFE=1032",
+   "delta": [
+    90,
+    94
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   250,
+   252
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     90,
+     98
+    ]
+   },
+   "total": [
+    250,
+    256
+   ]
+  }
+ },
+ "stop_irq+4": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   254,
+   252
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     94,
+     98
+    ]
+   },
+   "total": [
+    254,
+    256
+   ]
+  }
+ },
+ "stop_irq+5": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   254,
+   252
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     94,
+     98
+    ]
+   },
+   "total": [
+    254,
+    256
+   ]
+  }
+ },
+ "stop_irq+6": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   254,
+   252
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     94,
+     98
+    ]
+   },
+   "total": [
+    254,
+    256
+   ]
+  }
+ },
+ "stop_irq+7": {
+  "status": "diverge",
+  "first": {
+   "index": 21,
+   "kind": "time",
+   "after": "fc6 R2 001030=2300",
+   "access": "fc5 W2 007FFE=1032",
+   "delta": [
+    94,
+    98
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   254,
+   256
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     94,
+     102
+    ]
+   },
+   "total": [
+    254,
+    260
+   ]
+  }
+ },
+ "stop_pending+0": {
+  "status": "diverge",
+  "first": {
+   "index": 29,
+   "kind": "time",
+   "after": "fc6 R2 001040=2300",
+   "access": "fc5 W2 007FFE=1042",
+   "delta": [
+    18,
+    14
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   210,
+   204
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 29,
+    "kind": "time",
+    "after": "fc6 R2 001040=2300",
+    "access": "fc5 W2 007FFE=1042",
+    "delta": [
+     18,
+     14
+    ]
+   },
+   "total": [
+    210,
+    204
+   ]
+  }
+ },
+ "stop_pending+1": {
+  "status": "diverge",
+  "first": {
+   "index": 29,
+   "kind": "time",
+   "after": "fc6 R2 001040=2300",
+   "access": "fc5 W2 007FFE=1042",
+   "delta": [
+    18,
+    14
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   210,
+   204
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 29,
+    "kind": "time",
+    "after": "fc6 R2 001040=2300",
+    "access": "fc5 W2 007FFE=1042",
+    "delta": [
+     18,
+     14
+    ]
+   },
+   "total": [
+    210,
+    204
+   ]
+  }
+ },
+ "stop_pending+2": {
+  "status": "diverge",
+  "first": {
+   "index": 29,
+   "kind": "time",
+   "after": "fc6 R2 001040=2300",
+   "access": "fc5 W2 007FFE=1042",
+   "delta": [
+    18,
+    14
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   210,
+   204
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 29,
+    "kind": "time",
+    "after": "fc6 R2 001040=2300",
+    "access": "fc5 W2 007FFE=1042",
+    "delta": [
+     18,
+     14
+    ]
+   },
+   "total": [
+    210,
+    204
+   ]
+  }
+ },
+ "stop_pending+3": {
+  "status": "diverge",
+  "first": {
+   "index": 29,
+   "kind": "time",
+   "after": "fc6 R2 001040=2300",
+   "access": "fc5 W2 007FFE=1042",
+   "delta": [
+    18,
+    14
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   210,
+   204
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 29,
+    "kind": "time",
+    "after": "fc6 R2 001040=2300",
+    "access": "fc5 W2 007FFE=1042",
+    "delta": [
+     18,
+     14
+    ]
+   },
+   "total": [
+    210,
+    204
+   ]
+  }
+ }
+}
