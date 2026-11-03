@@ -58,6 +58,10 @@ doc Zilog_SCC_ESCC_UM.pdf 2a13683ee0e423ee3cdf2781a4ce6b4df65c1e069a269e4234fa69
     https://www.zilog.com/docs/serial/scc_escc_um.pdf
 doc Zilog_PS0117.pdf feb4b46341bf20cab3ce5e555b02b7c13e1c2422cb12a9ba2dbfa121d0a34faa \
     https://www.zilog.com/docs/serial/ps0117.pdf
+# Transcription tierce du microcode du 68000 : même origine que fx68k, donc pas un témoin
+# indépendant de lui. Chaque mot y dit quels accès bus la séquence fait, et dans quel ordre.
+doc m68k_microcode_all.txt f678abb9ec4f32ac19a0b67cf7a9e5d1ab8c581e38588d2cdc5d17577e88eb8b \
+    https://og.kervella.org/m68k/all.txt
 doc ASICs-new.zip 89512ee7d588b60d1ea964e048152a66c04672560c216862ff7e9f797ca06097 \
     https://www.chzsoft.de/asic-web/ASICs-new.zip
 # Noms d'entrée à antislashs : unzip les normalise, pas zipfile de Python.

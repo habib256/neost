@@ -30,7 +30,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `run_megaste_diag.py` (suite Q, 12/12) | `rom` | Le diagnostic Field Service prouve le contrat attendu par le logiciel, pas le silicium. |
 | `run_timing_oracle.py`, `run_megaste_bus_oracle.py` | `hatari` | |
 | `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé et pose les références de `rtl_low_*`. |
-| `run_fx68k_bench.py` (34 variantes, 22 en accord) | `rtl` | Moira nu contre fx68k, cycle bus par cycle bus. Verdicts posés dans `tests/reference/fx68k_bench.json` ; un écart localise, ne tranche pas. → [`FX68K_BENCH.md`](FX68K_BENCH.md) |
+| `run_fx68k_bench.py` (34 variantes, 18 en accord) | `rtl` | Moira nu contre fx68k, cycle bus par cycle bus. Verdicts posés dans `tests/reference/fx68k_bench.json` ; un écart localise, ne tranche pas. → [`FX68K_BENCH.md`](FX68K_BENCH.md) |
 | `run_mfp_iack_probe.py` | aucun | Contrôle la sonde, sans verdict matériel. |
 | `neost-selftest`, `--*-selftest` | à classer | Dépend de la source de chaque table de vérité → `TODO.md` § 4. |
 
@@ -66,6 +66,7 @@ gitignoré car sous copyright.
 | Blitter | `asic/…/4051/DWG/pdf/4051.pdf`, `4082.pdf` | Plusieurs révisions, sans repère de celle du ST |
 | MFP 68901 | `MC68901_Jan84.pdf`, `MK68901.pdf` | Motorola en « Advance Information » ; Mostek est une seconde source |
 | 68000 | `M68000UM_Rev8_1993.pdf` | |
+| 68000, microcode | `m68k_microcode_all.txt` | Transcription tierce, pas un document Motorola. Grade D : elle donne l'ordre des accès, et fx68k en dérive, donc elle ne le confirme pas de façon indépendante |
 | 68881 | `MC68881_MC68882_UM_1987.pdf` | |
 | YM2149 | `YM2149_199209.pdf` | |
 | WD1772 | `WD177X-00.pdf` | Scan médiocre, OCR à revérifier sur l'image |

@@ -116,10 +116,10 @@
  "irq_nop+0": {
   "status": "diverge",
   "first": {
-   "index": 29,
+   "index": 30,
    "kind": "access",
-   "fx": "fc6 R2 001040=4E71",
-   "moira": "fc5 W2 007FFE=103C"
+   "fx": "fc6 R2 001042=4E71",
+   "moira": "fc5 W2 007FFE=103E"
   },
   "mismatches": 1,
   "swaps": 0,
@@ -160,10 +160,10 @@
    "status": "diverge",
    "mismatches": 1,
    "first": {
-    "index": 30,
+    "index": 31,
     "kind": "access",
-    "fx": "fc5 W2 007FFE=103E",
-    "moira": "fc6 R2 001042=4E71"
+    "fx": "fc5 W2 007FFE=1040",
+    "moira": "fc6 R2 001044=4E71"
    },
    "total": [
     370,
@@ -172,28 +172,28 @@
   }
  },
  "irq_nop+2": {
-  "status": "agree",
-  "first": null,
-  "mismatches": 0,
+  "status": "diverge",
+  "first": {
+   "index": 31,
+   "kind": "access",
+   "fx": "fc6 R2 001044=4E71",
+   "moira": "fc5 W2 007FFE=1040"
+  },
+  "mismatches": 1,
   "swaps": 0,
-  "access_mismatches": 0,
+  "access_mismatches": 2,
   "extra": [
-   0,
-   0
+   1,
+   1
   ],
   "total": [
    370,
    368
   ],
   "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 30,
-    "kind": "access",
-    "fx": "fc5 W2 007FFE=103E",
-    "moira": "fc6 R2 001042=4E71"
-   },
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
    "total": [
     370,
     368
@@ -201,28 +201,28 @@
   }
  },
  "irq_nop+3": {
-  "status": "agree",
-  "first": null,
-  "mismatches": 0,
+  "status": "diverge",
+  "first": {
+   "index": 31,
+   "kind": "access",
+   "fx": "fc6 R2 001044=4E71",
+   "moira": "fc5 W2 007FFE=1040"
+  },
+  "mismatches": 1,
   "swaps": 0,
-  "access_mismatches": 0,
+  "access_mismatches": 2,
   "extra": [
-   0,
-   0
+   1,
+   1
   ],
   "total": [
    370,
    368
   ],
   "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 30,
-    "kind": "access",
-    "fx": "fc5 W2 007FFE=103E",
-    "moira": "fc6 R2 001042=4E71"
-   },
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
    "total": [
     370,
     368
@@ -232,10 +232,10 @@
  "irq_nop+4": {
   "status": "diverge",
   "first": {
-   "index": 30,
+   "index": 31,
    "kind": "access",
-   "fx": "fc6 R2 001042=4E71",
-   "moira": "fc5 W2 007FFE=103E"
+   "fx": "fc6 R2 001044=4E71",
+   "moira": "fc5 W2 007FFE=1040"
   },
   "mismatches": 1,
   "swaps": 0,
@@ -276,10 +276,10 @@
    "status": "diverge",
    "mismatches": 1,
    "first": {
-    "index": 31,
+    "index": 32,
     "kind": "access",
-    "fx": "fc5 W2 007FFE=1040",
-    "moira": "fc6 R2 001044=4E71"
+    "fx": "fc5 W2 007FFE=1042",
+    "moira": "fc6 R2 001046=4E71"
    },
    "total": [
     370,
@@ -288,28 +288,28 @@
   }
  },
  "irq_nop+6": {
-  "status": "agree",
-  "first": null,
-  "mismatches": 0,
+  "status": "diverge",
+  "first": {
+   "index": 32,
+   "kind": "access",
+   "fx": "fc6 R2 001046=4E71",
+   "moira": "fc5 W2 007FFE=1042"
+  },
+  "mismatches": 1,
   "swaps": 0,
-  "access_mismatches": 0,
+  "access_mismatches": 2,
   "extra": [
-   0,
-   0
+   1,
+   1
   ],
   "total": [
    370,
    368
   ],
   "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 31,
-    "kind": "access",
-    "fx": "fc5 W2 007FFE=1040",
-    "moira": "fc6 R2 001044=4E71"
-   },
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
    "total": [
     370,
     368
@@ -317,28 +317,28 @@
   }
  },
  "irq_nop+7": {
-  "status": "agree",
-  "first": null,
-  "mismatches": 0,
+  "status": "diverge",
+  "first": {
+   "index": 32,
+   "kind": "access",
+   "fx": "fc6 R2 001046=4E71",
+   "moira": "fc5 W2 007FFE=1042"
+  },
+  "mismatches": 1,
   "swaps": 0,
-  "access_mismatches": 0,
+  "access_mismatches": 2,
   "extra": [
-   0,
-   0
+   1,
+   1
   ],
   "total": [
    370,
    368
   ],
   "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 31,
-    "kind": "access",
-    "fx": "fc5 W2 007FFE=1040",
-    "moira": "fc6 R2 001044=4E71"
-   },
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
    "total": [
     370,
     368
@@ -588,8 +588,8 @@
    0
   ],
   "total": [
-   250,
-   248
+   254,
+   252
   ],
   "iplfetch": {
    "status": "diverge",
@@ -600,13 +600,13 @@
     "after": "fc6 R2 001030=2300",
     "access": "fc5 W2 007FFE=1032",
     "delta": [
-     90,
-     94
+     94,
+     98
     ]
    },
    "total": [
-    250,
-    252
+    254,
+    256
    ]
   }
  },
@@ -621,82 +621,7 @@
    0
   ],
   "total": [
-   250,
-   248
-  ],
-  "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 21,
-    "kind": "time",
-    "after": "fc6 R2 001030=2300",
-    "access": "fc5 W2 007FFE=1032",
-    "delta": [
-     90,
-     94
-    ]
-   },
-   "total": [
-    250,
-    252
-   ]
-  }
- },
- "stop_irq+2": {
-  "status": "agree",
-  "first": null,
-  "mismatches": 0,
-  "swaps": 0,
-  "access_mismatches": 0,
-  "extra": [
-   0,
-   0
-  ],
-  "total": [
-   250,
-   248
-  ],
-  "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 21,
-    "kind": "time",
-    "after": "fc6 R2 001030=2300",
-    "access": "fc5 W2 007FFE=1032",
-    "delta": [
-     90,
-     94
-    ]
-   },
-   "total": [
-    250,
-    252
-   ]
-  }
- },
- "stop_irq+3": {
-  "status": "diverge",
-  "first": {
-   "index": 21,
-   "kind": "time",
-   "after": "fc6 R2 001030=2300",
-   "access": "fc5 W2 007FFE=1032",
-   "delta": [
-    90,
-    94
-   ]
-  },
-  "mismatches": 1,
-  "swaps": 0,
-  "access_mismatches": 0,
-  "extra": [
-   0,
-   0
-  ],
-  "total": [
-   250,
+   254,
    252
   ],
   "iplfetch": {
@@ -708,13 +633,79 @@
     "after": "fc6 R2 001030=2300",
     "access": "fc5 W2 007FFE=1032",
     "delta": [
-     90,
+     94,
      98
     ]
    },
    "total": [
-    250,
+    254,
     256
+   ]
+  }
+ },
+ "stop_irq+2": {
+  "status": "diverge",
+  "first": {
+   "index": 21,
+   "kind": "time",
+   "after": "fc6 R2 001030=2300",
+   "access": "fc5 W2 007FFE=1032",
+   "delta": [
+    98,
+    94
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   258,
+   252
+  ],
+  "iplfetch": {
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
+   "total": [
+    258,
+    256
+   ]
+  }
+ },
+ "stop_irq+3": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   258,
+   256
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     98,
+     102
+    ]
+   },
+   "total": [
+    258,
+    260
    ]
   }
  },
@@ -729,8 +720,8 @@
    0
   ],
   "total": [
-   254,
-   252
+   258,
+   256
   ],
   "iplfetch": {
    "status": "diverge",
@@ -741,13 +732,13 @@
     "after": "fc6 R2 001030=2300",
     "access": "fc5 W2 007FFE=1032",
     "delta": [
-     94,
-     98
+     98,
+     102
     ]
    },
    "total": [
-    254,
-    256
+    258,
+    260
    ]
   }
  },
@@ -762,82 +753,7 @@
    0
   ],
   "total": [
-   254,
-   252
-  ],
-  "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 21,
-    "kind": "time",
-    "after": "fc6 R2 001030=2300",
-    "access": "fc5 W2 007FFE=1032",
-    "delta": [
-     94,
-     98
-    ]
-   },
-   "total": [
-    254,
-    256
-   ]
-  }
- },
- "stop_irq+6": {
-  "status": "agree",
-  "first": null,
-  "mismatches": 0,
-  "swaps": 0,
-  "access_mismatches": 0,
-  "extra": [
-   0,
-   0
-  ],
-  "total": [
-   254,
-   252
-  ],
-  "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 21,
-    "kind": "time",
-    "after": "fc6 R2 001030=2300",
-    "access": "fc5 W2 007FFE=1032",
-    "delta": [
-     94,
-     98
-    ]
-   },
-   "total": [
-    254,
-    256
-   ]
-  }
- },
- "stop_irq+7": {
-  "status": "diverge",
-  "first": {
-   "index": 21,
-   "kind": "time",
-   "after": "fc6 R2 001030=2300",
-   "access": "fc5 W2 007FFE=1032",
-   "delta": [
-    94,
-    98
-   ]
-  },
-  "mismatches": 1,
-  "swaps": 0,
-  "access_mismatches": 0,
-  "extra": [
-   0,
-   0
-  ],
-  "total": [
-   254,
+   258,
    256
   ],
   "iplfetch": {
@@ -849,13 +765,79 @@
     "after": "fc6 R2 001030=2300",
     "access": "fc5 W2 007FFE=1032",
     "delta": [
-     94,
+     98,
      102
     ]
    },
    "total": [
-    254,
+    258,
     260
+   ]
+  }
+ },
+ "stop_irq+6": {
+  "status": "diverge",
+  "first": {
+   "index": 21,
+   "kind": "time",
+   "after": "fc6 R2 001030=2300",
+   "access": "fc5 W2 007FFE=1032",
+   "delta": [
+    102,
+    98
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   262,
+   256
+  ],
+  "iplfetch": {
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
+   "total": [
+    262,
+    260
+   ]
+  }
+ },
+ "stop_irq+7": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   262,
+   260
+  ],
+  "iplfetch": {
+   "status": "diverge",
+   "mismatches": 1,
+   "first": {
+    "index": 21,
+    "kind": "time",
+    "after": "fc6 R2 001030=2300",
+    "access": "fc5 W2 007FFE=1032",
+    "delta": [
+     102,
+     106
+    ]
+   },
+   "total": [
+    262,
+    264
    ]
   }
  },

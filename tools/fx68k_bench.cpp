@@ -14,16 +14,19 @@
 //  l'acquittement). Horloge : une période de `clk` par phase, enPhi1 puis enPhi2 (fx68k.txt
 //  § Developer Notes), soit un cycle CPU pour deux périodes.
 //
-//  CONVENTION DE DATATION. [B] M68000UM Rev 8 § 5.1 (lecture : fig. 5-2, PDF p. 85) :
-//  AS tombe au début de S2, un cycle d'horloge après S0. Chaque accès est daté au front
+//  CONVENTION DE DATATION. [B] M68000UM Rev 8 § 5.1.1 p. 5-4 : AS tombe au front montant
+//  de S2, un cycle d'horloge après S0. Chaque accès est daté au front
 //  descendant d'AS, en cycles CPU depuis la fin du reset. Le second transfert d'un cycle
 //  lecture-modification-écriture (TAS, AS reste bas) est daté à la retombée de son strobe
-//  UDS/LDS moins un cycle : à l'écriture, DS tombe à S4, un cycle après AS (fig. 5-5).
+//  UDS/LDS moins un cycle : [B] § 5.1.2 p. 5-6, une écriture pose DS à S4, un cycle après
+//  AS ; § 5.1.3 p. 5-9, la phase d'écriture du RMW pose DS à S16.
 //
 //  Usage : Vfx68k_bench <image.bin> <trace.txt> [--limit N] [--irq T:L]...
 //    image.bin : contenu de la mémoire à partir de $000000 (le reste est à zéro).
-//    --irq T:L : poser le niveau L sur IPL au cycle T, compté depuis le PREMIER accès
-//                bus (lecture du vecteur de reset) — même origine que côté Moira.
+//    --irq T:L : poser le niveau L sur IPL au cycle T, compté depuis le 7e accès bus, le
+//                premier après la séquence de reset (SSP, PC, deux préfetchs), comme côté
+//                Moira. Pas depuis le 1er : les deux cœurs diffèrent de 2 cycles dans cette
+//                séquence, et la broche tomberait à une autre phase du programme.
 //  Trace : une ligne par cycle bus « t fc R|W taille adresse donnée » (hexadécimal
 //  sauf t, fc et taille), puis « END t=<cycles> reason=<sentinel|halt|limit> ».
 //  Le programme se termine par une écriture dans $F00000-$F0FFFF (sentinelle).
@@ -45,7 +48,8 @@ namespace {
 Vfx68k* cpu = nullptr;
 std::vector<uint8_t> ram(1u << 24);
 int64_t cyc = 0;                 // cycles CPU depuis la fin du reset
-int64_t tFirst = -1;             // date du premier accès bus (origine des --irq)
+int nAs = 0;                     // fronts descendants d'AS vus
+int64_t tOrigin = -1;            // date du 7e accès bus (origine des --irq)
 FILE* out = nullptr;
 
 struct IrqEv { int64_t t; int level; };
@@ -90,7 +94,7 @@ void observe() {
         asLow = true;
         cur = Access{};
         cur.t = cyc; cur.fc = fc; cur.read = cpu->eRWn; cur.addr = wordAddr;
-        if (tFirst < 0) tFirst = cyc;
+        if (++nAs == 7) tOrigin = cyc;
     }
     if (as) {
         if (strobe && !strobeLow) {                  // début d'un transfert
@@ -145,8 +149,8 @@ void halfCycle(bool phi1) {
 }
 
 void cpuCycle() {
-    if (tFirst >= 0)
-        while (irqIdx < irqs.size() && cyc - tFirst >= irqs[irqIdx].t) setIpl(irqs[irqIdx++].level);
+    if (tOrigin >= 0)
+        while (irqIdx < irqs.size() && cyc - tOrigin >= irqs[irqIdx].t) setIpl(irqs[irqIdx++].level);
     halfCycle(true);
     halfCycle(false);
     ++cyc;

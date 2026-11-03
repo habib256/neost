@@ -10,8 +10,9 @@
 #  $40+L, broche relâchée à l'IACK.
 #
 #  Assemblage à la main (pas d'assembleur 68000 dans la chaîne de build), comme
-#  tools/make_cycle_bench.py. [B] Encodages : M68000UM Rev 8 § 8 (Instruction Format
-#  Summary) ; un encodage faux se voit dans la trace (vecteur 4 lu par les deux cœurs).
+#  tools/make_cycle_bench.py. [F] Encodages relus à la main, sans outil : un opcode faux
+#  mais légal ferait tester une autre instruction aux deux cœurs, sans écart visible.
+#  Tranché par : le désassembleur de Moira sur ces images.
 #
 #  Usage : make_fx68k_programs.py <dossier>   → <dossier>/<nom>.bin + manifest.json
 #          ou importé par run_fx68k_bench.py (PROGRAMS, build()).
@@ -119,7 +120,7 @@ def handlers(a: Asm) -> None:
     trap/chk/trapv/div0/trace/IRQ → l'instruction suivante (rte simple)."""
     a.label("h_rte").w(RTE)
     a.label("h_skip2").w(0x54AF, 0x0002).w(RTE)          # addq.l #2,2(sp) ; rte
-    # Groupe 0 (bus/adresse) : trame de 7 mots ; [B] M68000UM § 6.2.5 fig. 6-6.
+    # Groupe 0 (bus/adresse) : trame de 7 mots ; [B] M68000UM § 6.3.9 fig. 6-7.
     a.label("h_group0").w(0x508F)                        # addq.l #8,sp
     a.w(0x2F78, DATA, 0x0002).w(RTE)                     # move.l $2000.w,2(sp) ; rte
 
@@ -334,7 +335,7 @@ def prog_stop_pending(a: Asm) -> None:
 
 
 # (nom, générateur, options) — options : irq = [(T, L)], sweep = (nb, pas) pour répéter
-# avec T + k·pas, k ∈ [0, nb). T compté depuis le premier accès bus. reset = True : les
+# avec T + k·pas, k ∈ [0, nb). T compté depuis le premier accès après le reset. reset = True : les
 # intervalles de la séquence de reset comptent (sinon ils sont ignorés, cf. le comparateur).
 PROGRAMS = [
     ("reset_nop", prog_reset_nop, {"reset": True}),     # seul à dater la séquence de reset
@@ -343,10 +344,10 @@ PROGRAMS = [
     ("exceptions", prog_exceptions, {}),
     ("trace", prog_trace, {}),
     ("tas", prog_tas, {}),
-    ("irq_nop", prog_irq_nop, {"irq": [(120, 5)], "sweep": (8, 1)}),
-    ("irq_mulu", prog_irq_mulu, {"irq": [(140, 5)], "sweep": (8, 1)}),
-    ("stop_irq", prog_stop_irq, {"irq": [(160, 5)], "sweep": (8, 1)}),
-    ("stop_pending", prog_stop_pending, {"irq": [(100, 5)], "sweep": (4, 1)}),
+    ("irq_nop", prog_irq_nop, {"irq": [(100, 5)], "sweep": (8, 1)}),
+    ("irq_mulu", prog_irq_mulu, {"irq": [(120, 5)], "sweep": (8, 1)}),
+    ("stop_irq", prog_stop_irq, {"irq": [(140, 5)], "sweep": (8, 1)}),
+    ("stop_pending", prog_stop_pending, {"irq": [(70, 5)], "sweep": (4, 1)}),
 ]
 
 

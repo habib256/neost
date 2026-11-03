@@ -26,7 +26,7 @@
 #  avec lui, c'est un CHANGEMENT de verdict qui fait échouer, dans les deux sens — un
 #  écart qui se referme se re-pose aussi (--write-refs), après avoir été jugé.
 #
-#  Usage : run_fx68k_bench.py [--rebuild] [--write-refs] [--only NOM[,NOM]] [--verbose]
+#  Usage : run_fx68k_bench.py [--rebuild] [--write-refs] [--only NOM[,NOM]] [--ipl-sweep]
 #  Sorties : tests/out/fx68k_bench/<variante>.{fx,moira}.txt, summary.json.
 #  Code 77 (SKIP recensé) si Verilator, extern/fx68k (tools/setup_silicon_refs.sh) ou
 #  build/neost-moira-bare (cmake --build build) manquent.
@@ -114,14 +114,14 @@ def fmt(a: dict) -> str:
 RESET_ACCESSES = 6   # SSP, PC (4 mots) puis les deux préfetchs : la séquence de reset
 
 
-def compare(fx: list[dict], mo: list[dict], efx: dict, emo: dict, skip: int = RESET_ACCESSES) -> dict:
+def compare(fx: list[dict], mo: list[dict], efx: dict, emo: dict, undated: int = RESET_ACCESSES) -> dict:
     """Même suite d'accès, puis mêmes INTERVALLES entre accès consécutifs. Comparer des
     intervalles plutôt que des dates absolues : un écart ne masque pas les suivants, et le
     rapport dit combien d'intervalles diffèrent, pas seulement le premier. L'intervalle qui
     entre dans un IACK est rapporté à part ; celui qui en sort est pris depuis l'accès qui
     précède l'IACK, pour que la place du cycle IACK dans le bloc de Moira ne compte pas.
-    Les `skip` premiers accès (séquence de reset) ne sont pas datés : le programme
-    reset_nop (skip = 0) est seul à porter cet écart, au lieu de tous les programmes."""
+    Les `undated` premiers accès (séquence de reset) ne sont pas datés : le programme
+    reset_nop (undated = 0) est seul à porter cet écart, au lieu de tous les programmes."""
     fx, mo = cut(fx), cut(mo)
     res: dict = {"accesses": [len(fx), len(mo)], "end": [efx["reason"], emo["reason"]],
                  "iack_skew": [], "first": None, "mismatches": 0, "samples": [],
@@ -134,7 +134,7 @@ def compare(fx: list[dict], mo: list[dict], efx: dict, emo: dict, skip: int = RE
     prev_f, prev_m = fx[0], mo[0]
     key = lambda a: (a["fc"], a["rw"], a["size"], a["addr"], a["data"])  # noqa: E731
     i = j = 0
-    n = 0                                   # rang de la paire comparée (pour skip)
+    n = 0                                   # rang de la paire comparée (pour undated)
     swapped = (-1, -1)
     res["extra"] = [0, 0]                   # accès présents d'un seul côté (fx, moira)
     while i < len(fx) and j < len(mo):
@@ -166,7 +166,7 @@ def compare(fx: list[dict], mo: list[dict], efx: dict, emo: dict, skip: int = RE
                 prev_f = a; i += 1; continue
             if kind == "extra_moira":
                 prev_m = b; j += 1; continue
-        if n == 0 or n < skip:
+        if n == 0 or n < undated:
             prev_f, prev_m = a, b
             i += 1; j += 1; n += 1
             continue
@@ -209,6 +209,46 @@ def run_one(binary: Path, image: Path, trace: Path, irq: list, cwd: Path, extra:
     subprocess.run(cmd, check=True, cwd=cwd, timeout=300, capture_output=True, text=True)
 
 
+# (programme, premier T, nombre de T, période de l'instruction exercée)
+SWEEPS = [("irq_nop", 96, 16), ("irq_mulu", 116, 90), ("stop_irq", 136, 16)]
+
+
+def first_frame_write(trace: list[dict]) -> tuple[int, int]:
+    """(PC empilé, date de la 1re écriture de trame), la date étant relative au 1er accès
+    après le reset : les deux cœurs s'alignent dessus."""
+    t0 = trace[RESET_ACCESSES]["t"]
+    for a in trace:
+        if a["rw"] == "W" and a["fc"] == 5 and a["addr"] == 0x007FFE:
+            return a["data"], a["t"] - t0
+    return -1, -1
+
+
+def ipl_sweep() -> int:
+    """Pour chaque instant T de montée de la broche : quelle frontière prend l'IRQ, sur
+    chaque cœur ? Le décalage entre deux cœurs est l'écart entre leurs dates limites
+    d'échantillonnage. Résolution ±1 cycle : le pilote fx68k pose la broche au début d'un
+    cycle, Moira la voit au SYNC qui précède sa lecture de IPL."""
+    progs = BUILD / "programs"
+    progs.mkdir(parents=True, exist_ok=True)
+    cores = [("fx68k", FXBIN, BUILD, ()), ("moira", MOIRA, ROOT, ()),
+             ("iplfetch", MOIRA, ROOT, ("--ipl-fetch",))]
+    for name, start, count in SWEEPS:
+        image = progs / f"{name}.bin"
+        image.write_bytes(build_program(name))
+        print(f"{name} — T : " + "  ".join(c[0] for c in cores))
+        prev = None
+        for t in range(start, start + count):
+            row = []
+            for label, binary, cwd, extra in cores:
+                path = OUT / f"sweep.{label}.txt"
+                run_one(binary, image, path, [(t, 5)], cwd, extra)
+                row.append(first_frame_write(parse(path)[0]))
+            if row != prev:
+                print(f"  {t:4} : " + "  ".join(f"PC={pc:04X}@{d}" for pc, d in row))
+            prev = row
+    return 0
+
+
 def signature(r: dict) -> dict:
     sig = {"status": r["status"], "first": r["first"], "mismatches": r.get("mismatches", 0),
            "swaps": r.get("swaps", 0), "access_mismatches": r.get("access_mismatches", 0),
@@ -223,7 +263,8 @@ def main() -> int:
     ap.add_argument("--rebuild", action="store_true", help="rebâtir le modèle Verilator")
     ap.add_argument("--write-refs", action="store_true", help="poser tests/reference/fx68k_bench.json")
     ap.add_argument("--only", help="programmes à exécuter, séparés par des virgules")
-    ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--ipl-sweep", action="store_true",
+                    help="balayer l'instant de la broche IPL et afficher la frontière prise")
     args = ap.parse_args()
 
     if not shutil.which("verilator"):
@@ -242,6 +283,8 @@ def main() -> int:
         return 1
 
     OUT.mkdir(parents=True, exist_ok=True)
+    if args.ipl_sweep:
+        return ipl_sweep()
     progs = BUILD / "programs"
     progs.mkdir(parents=True, exist_ok=True)
     only = set(args.only.split(",")) if args.only else None
@@ -257,8 +300,8 @@ def main() -> int:
             run_one(MOIRA, image, tm, irq, ROOT)
             fx, efx = parse(tf)
             mo, emo = parse(tm)
-            skip = 0 if opts.get("reset") else RESET_ACCESSES
-            r = compare(fx, mo, efx, emo, skip)
+            undated = 0 if opts.get("reset") else RESET_ACCESSES
+            r = compare(fx, mo, efx, emo, undated)
             r["irq"] = irq
             if irq:
                 # Même programme, Moira avec le port de WinUAE ipl_fetch_next (NEOST_IPLFETCH) :
@@ -266,7 +309,7 @@ def main() -> int:
                 ti = OUT / f"{label}.moira-iplfetch.txt"
                 run_one(MOIRA, image, ti, irq, ROOT, ("--ipl-fetch",))
                 mi, emi = parse(ti)
-                ri = compare(fx, mi, efx, emi, skip)
+                ri = compare(fx, mi, efx, emi, undated)
                 r["iplfetch"] = {"status": ri["status"], "mismatches": ri["mismatches"],
                                  "first": ri["first"], "total": ri.get("total")}
             results[label] = r
