@@ -230,7 +230,10 @@ Moira::reset()
         // Fill the prefetch queue
         SYNC(4);
         queue.irc = read16OnReset(reg.pc & addrMask<C>());
-        SYNC(2);
+        // [D] Microcode trap8 (lecture), trap9 (sans bus), b (lecture) ; fx68k @ 0602ee46 : 6 cycles
+        // entre ces deux lectures, comme à l'entrée d'une exception. [B] M68000UM § 8.12 : 40(6/0)
+        // donne le total, pas cette place. Reste du cycle bus = 2, trap9 = 2.
+        SYNC(C == Core::C68000 ? 4 : 2);
         prefetch<C>();
 
     } catch (const std::exception &) {

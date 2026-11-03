@@ -1242,6 +1242,7 @@ reset HW/canal, IRQ niveau 5 gatée par le SCU).
 
 ### CPU (Moira + intégration) — suivi (audit vendor 2026-08-13)
 
+- ✅ **STOP dure 4 cycles (2026-11-03)** : le retrait du préfetch (2026-10-22) les avait perdus ; rétabli, IRQ pendante au même cycle qu'Hatari et fx68k. La mention « STOP+8 » ci-dessous se lit donc dans le repère d'alors.
 - ✅ **STOP avec IRQ pendante : exception à STOP+8 (2026-10-22)** — Moira prenait l'IRQ
   démasquée par l'opérande du `stop` dès la fin de l'instruction (+4) ; le 68000 teste
   l'interruption AVANT d'écrire le masque et ré-itère STOP 4 cycles plus tard (fx68k

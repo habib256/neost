@@ -63,35 +63,36 @@ python3 tools/run_fx68k_bench.py --only stop_pending --verbose
 paste -d'|' tests/out/fx68k_bench/stop_pending+0.fx.txt tests/out/fx68k_bench/stop_pending+0.moira.txt
 ```
 
-## Ce que le banc a trouvé (2026-11-03)
+## État (2026-11-03)
 
-18 variantes sur 34 concordent cycle à cycle. **Les durées concordent partout où le banc
-regarde, hors prise d'IRQ, STOP et reset** : les 14 corps du cycle-bench hors sortie du DBcc,
-MULU/MULS/DIVU/DIVS, décalages, LINK/UNLK, PEA/LEA, BCD, bits, Scc, MOVEP, MOVE SR/CCR, TAS,
-trace, et les exceptions TRAP/TRAPV/CHK/division par zéro/ILLEGAL/ligne A et F.
+26 variantes sur 35 concordent cycle à cycle. Instructions ordinaires, exceptions, trace, écritures
+longues sur tous les modes (`rmw_long`), reset et STOP avec IRQ pendante sont alignés.
 
-Ces écarts sont ceux du **cœur Moira nu**. Dans NeoST, la chaîne MFP→IPL ajoute ses propres délais,
-calés sur Hatari : le banc ne dit pas à lui seul ce que NeoST fait sur une IRQ réelle.
+**Corrigé dans Moira le 2026-11-03**, avec fx68k @ `0602ee46` et un autre témoin à chaque fois,
+Hatari @ `f0736b24` (`cpuemu_13.c`, généré) ou le microcode (`extern/datasheets/m68k_microcode_all.txt`).
+Tous de grade D ; le microcode et fx68k ne sont pas indépendants. Étalons pixel inchangés.
 
-**Témoins.** fx68k @ `0602ee46` ; Hatari @ `f0736b24` (`cpuemu_13.c`, généré à la construction,
-et `newcpu.c`) ; microcode = `extern/datasheets/m68k_microcode_all.txt`. Tous de grade D. Le
-microcode et fx68k ne sont pas indépendants ; Hatari l'est d'eux. Aucune source de grade
-supérieur ne tranche ces points, Moira n'a pas été modifié.
+| Correction | Autre témoin |
+|---|---|
+| STOP dure 4 cycles : ils avaient disparu avec le préfetch retiré le 2026-10-22 | [B] M68000UM § 8.11 ; microcode `stop1`/`aaa01` ; Hatari `op_4e72_13_ff` |
+| Mot bas écrit d'abord : `MOVEM.L -(An)`, ADD/SUB/ADDI/SUBI/ADDQ/SUBQ.L en mémoire | Hatari `op_48e0_13_ff`, `op_5090_13_ff`, `op_0690_13_ff` |
+| Mot bas lu d'abord : ADDX/SUBX.L `-(Ay),-(Ax)` | Hatari `op_d188_13_ff` |
+| DBcc expiré : premier préfetch à l'adresse de branchement | Microcode `dbcc2` ; Hatari `op_51c8_13_ff` |
+| MOVEM.L mémoire→registres : lecture en plus après le dernier mot | Hatari `op_4cd8_13_ff` |
+| JSR : préfetch de la cible avant l'empilement | Microcode `jsra1` ; Hatari `op_4e90_13_ff` |
+| Trame des erreurs de bus et d'adresse : ordre d'écriture | Hatari `Exception_ce000` |
+| Reset : 2 cycles entre les deux premiers préfetchs | Microcode `trap8`/`trap9`/`b` ; [B] M68000UM § 8.12 pour le total |
 
-| # | Écart | fx68k | Moira | Autres témoins |
-|---|---|---|---|---|
-| 1 | **Date limite de la broche IPL** : frontière d'instruction (`irq_nop`, `irq_mulu`) | référence du balayage | accepte encore l'IRQ **3 cycles plus tard** : une instruction trop tôt si la broche monte dans cette fenêtre | `NEOST_IPLFETCH` : 1 cycle plus tôt que fx68k sur NOP (dans la marge), mais **une instruction entière de retard** sur MULU. `fx68k.sv:222-223` montre deux étages d'échantillonnage. |
-| 2 | **Réveil du STOP** (`stop_irq`) | référence | 1 cycle plus tard (dans la marge de ±1) | `NEOST_IPLFETCH` : 3 cycles plus tôt. |
-| 3 | **STOP avec IRQ déjà pendante** (`stop_pending`) | 18 cycles du mot d'extension à la première écriture de trame | 14 | Hatari : `op_4e72_13_ff` teste l'interruption avant d'écrire le masque, et `CHANGELOG.md` (2026-10-22) le mesure 4 cycles après NeoST. Trois témoins contre Moira, dont la décision du 2026-10-22 venait d'une lecture du RTL. |
-| 4 | **Mot bas écrit d'abord** : `MOVEM.L -(An)`, `ADDQ.L #,<mem>` (21 inversions) | bas puis haut | haut puis bas | Hatari `op_48e0_13_ff`, `op_5090_13_ff` : comme fx68k. Durées égales. |
-| 5 | **DBcc expiré** (14 cas) : adresse du premier préfetch | adresse de branchement | adresse suivante | Microcode `dbcc2` ; Hatari `op_51c8_13_ff` : comme fx68k. Durées égales au total ; deux intervalles se répartissent autrement. |
-| 6 | **MOVEM.L mémoire→registres** : lecture en plus | **après** le dernier mot | **avant** le premier (`execMovemEaRg`, S == Long) | Hatari `op_4cd8_13_ff` : comme fx68k. `MOVEM.W` concorde : le défaut est propre au long. |
-| 7 | **JSR** : ordre préfetch de la cible / empilement | cible d'abord | empile d'abord | Microcode `jsra1` ; Hatari `op_4e90_13_ff` : comme fx68k. BSR concorde. |
-| 8 | **Erreur d'adresse** (`exceptions`) | Ordre PC bas, SR, PC haut, IR, adresse basse, mot d'état, adresse haute ; AS posé sans strobe à l'adresse fautive | PC bas, PC haut, SR, IR, adresse basse, adresse haute, mot d'état ; pas de cycle amorcé ; même total | Hatari `Exception_ce000` : même ordre que fx68k, sans cycle amorcé. [B] M68000UM fig. 6-7 ne donne que le format. |
-| 9 | **Reset** (`reset_nop`) : entre les deux premiers préfetchs | 6 cycles | 4 | Microcode : `trap8` (lecture), `trap9` (sans bus), `b` (lecture). Moira saute `trap9` au reset, pas aux exceptions. [B] M68000UM § 8.12 donne 40(6/0) : le total, pas la place de ces cycles. |
+**Restent ouverts**, sur le cœur nu. Dans NeoST, la chaîne MFP→IPL ajoute ses propres délais, calés sur
+Hatari : le banc ne dit pas à lui seul ce que NeoST fait sur une IRQ réelle.
 
-Mesure du n° 1 et du n° 2, résolution ±1 cycle (`--ipl-sweep`). Date la plus tardive de la broche
-pour qu'une frontière donnée prenne encore l'IRQ, relativement à fx68k :
+| Écart | Détail |
+|---|---|
+| Date limite de la broche IPL (`irq_nop`, `irq_mulu`, `stop_irq`) | Voir ci-dessous. `fx68k.sv:222-223` montre deux étages d'échantillonnage. |
+| Erreur d'adresse : cycle amorcé | fx68k pose AS sans strobe à l'adresse fautive, pas Moira ni Hatari. Sans effet connu sur un ST. Un seul témoin. Seule cause du `diverge` d'`exceptions`. |
+
+Mesure, résolution ±1 cycle (`--ipl-sweep`). Date la plus tardive de la broche pour qu'une frontière
+donnée prenne encore l'IRQ, relativement à fx68k :
 
 | Programme | Moira | `NEOST_IPLFETCH` |
 |---|---|---|

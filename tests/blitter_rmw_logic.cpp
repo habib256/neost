@@ -145,6 +145,9 @@ struct MegaSteRig {
         cpu.reset(); cpu.setReg(8, 0x1000);
         bus.write16(0x1000, 0x1234); bus.write16(0x1002, 0x5678);
         bus.write8(0xFF8E21, sixteen ? (cache ? 3 : 2) : 0);
+        // Part d'un créneau mémoire : les attendus ci-dessous ne doivent pas dépendre de la
+        // durée du reset, qui décide sinon de la phase initiale.
+        cpu.addBusWaitCycles((4 - (cpu.busClockNow() & 3)) & 3);
         scheduler.runTo(cpu.busClockNow());
     }
     int64_t step() {

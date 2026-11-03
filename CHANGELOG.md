@@ -6,6 +6,18 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## 68000 : STOP et ordre des accès alignés sur fx68k (2026-11-03)
+
+Le banc différentiel a localisé des écarts de Moira que la durée totale des instructions masquait.
+- **STOP durait 0 cycle** depuis le 2026-10-22 : retirer le préfetch a retiré ses 4 cycles, et `CYCLES_IP` ne
+  compte rien en mode précis. [B] M68000UM § 8.11 : 4(0/0). Une IRQ déjà pendante part maintenant au même cycle que
+  fx68k et Hatari : l'écart « Hatari met 12 » du 2026-10-22 était ce défaut.
+- Mot bas d'abord sur MOVEM.L -(An), ADD/SUB/ADDI/SUBI/ADDQ/SUBQ.L en mémoire et ADDX/SUBX.L ; préfetch du DBcc expiré
+  à l'adresse de branchement ; lecture en plus de MOVEM.L après le dernier mot ; JSR préfetche avant d'empiler ; ordre
+  de la trame de groupe 0 ; 2 cycles au reset.
+- Nouveau programme `rmw_long` : toutes les écritures longues sur six modes. Banc : 26 variantes sur 35. Palier `full` :
+  étalons pixel inchangés, à 0 px de leurs références. Reste la date limite de la broche IPL.
+
 ## MFP : modes pulse des timers A/B, d'après la fiche (2026-11-03)
 
 Hatari et NeoST traitaient les contrôles 9-15 comme le mode délai, ce que la fiche contredit.

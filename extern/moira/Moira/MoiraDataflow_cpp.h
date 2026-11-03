@@ -366,7 +366,7 @@ Moira::read(u32 addr)
 
     // Update function code pins
     setFC(AS == AddrSpace::DATA ? FC::USER_DATA : FC::USER_PROG);
-    willAccessBus(addr & addrMask<C>(), false, S == Byte ? 1 : 2);
+    willAccessBus((addr + ((S == Long && (F & REVERSE)) ? 2 : 0)) & addrMask<C>(), false, S == Byte ? 1 : 2);
     SYNC(2);
 
     // Check for address errors
@@ -400,12 +400,24 @@ Moira::read(u32 addr)
 
     if constexpr (S == Long) {
 
-        result = read16(addr & addrMask<C>()) << 16;
-        SYNC(2); didAccessBus(); willAccessBus((addr + 2) & addrMask<C>(), false, 2); SYNC(2);
-        if (F & POLL) POLL_IPL;
-        result |= read16((addr + 2) & addrMask<C>());
-        SYNC(2);
-        didAccessBus();
+        if (F & REVERSE) {   // Mot bas d'abord, cf. execAddxEa
+
+            result = read16((addr + 2) & addrMask<C>());
+            SYNC(2); didAccessBus(); willAccessBus(addr & addrMask<C>(), false, 2); SYNC(2);
+            if (F & POLL) POLL_IPL;
+            result |= read16(addr & addrMask<C>()) << 16;
+            SYNC(2);
+            didAccessBus();
+
+        } else {
+
+            result = read16(addr & addrMask<C>()) << 16;
+            SYNC(2); didAccessBus(); willAccessBus((addr + 2) & addrMask<C>(), false, 2); SYNC(2);
+            if (F & POLL) POLL_IPL;
+            result |= read16((addr + 2) & addrMask<C>());
+            SYNC(2);
+            didAccessBus();
+        }
     }
 
     return result;

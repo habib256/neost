@@ -30,7 +30,7 @@ fichier est rangé dans cet ordre :
 
 **État au 2026-11-03** : contrat logiciel Mega STE tenu et gardé (suite Q du diagnostic Field
 Service 12/12, grade C) ; aucune divergence haute face à Hatari ; 2 étalons `rtl` ;
-**banc fx68k : 18 variantes sur 34 en accord** cycle à cycle, 9 écarts de cœur localisés (§ 2.1).
+**banc fx68k : 26 variantes sur 35 en accord** cycle à cycle (§ 2.1).
 **Pas d'accès à un vrai ST** : les ⏸ matériel passent par les relevés de tiers, les
 documents primaires, les ROM et le RTL épinglé.
 
@@ -58,11 +58,10 @@ documents primaires, les ROM et le RTL épinglé.
 | # | Action | Prio | § |
 |---|--------|------|---|
 | 1 | Event-count : les canaux I3/I4 répondent-ils à TAI/TBI ? Mesurer les titres touchés, puis trancher | P1 | 2.3 |
-| 2 | STOP avec IRQ pendante : Moira part 4 cycles avant fx68k et Hatari, rouvrir la décision du 2026-10-22 | P1 | 2.1 |
-| 3 | Date limite de la broche IPL : modèle à deux étages d'après `fx68k.sv`, qualifié par `--ipl-sweep` puis dans NeoST | P1 | 2.1 |
-| 4 | Ordre des accès dans Moira (MOVEM.L, ADDQ.L, JSR, DBcc) : porter, trois témoins concordent | P1 | 2.1 |
+| 2 | Date limite de la broche IPL : modèle à deux étages d'après `fx68k.sv`, qualifié par `--ipl-sweep` puis dans NeoST | P1 | 2.1 |
+| 3 | Rejouer Obsession, Pacemaker, E605 et les démos DHS contre l'oracle (`disks/st/demos`, livré par Cursor) | P1 | 3 |
 | 5 | Lire au RTL épinglé : `$FF8261`, blanking, GPIP3 ; trancher le noir sous BLANK | P1 | 2.2 |
-| 6 | Couvrir Mega ST et TOS 1.00/1.04/1.06 par des étalons : ROM présentes sur le disque privé | P1 | 3 |
+| 4 | Couvrir Mega ST et TOS 1.00/1.04/1.06 par des étalons : ROM présentes sur le disque privé | P1 | 3 |
 | 7 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
 | 8 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
 | 9 | Banc `stBlitter.sv` sur le modèle du banc fx68k | P2 | 4 |
@@ -84,22 +83,13 @@ ici ne figure que ce qui demande une décision ou une source.
 témoins : tous grade D, Moira non modifié. La chaîne MFP→IPL de NeoST ajoute ses propres délais :
 requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md).
 
-- **STOP avec IRQ déjà pendante** · P1 ⭘ — Moira part 4 cycles avant fx68k ; Hatari donne le même
-  écart. La décision du 2026-10-22 venait d'une lecture du RTL, sa simulation la contredit. Rouvrir,
-  puis remesurer la chaîne Super Hang-On.
 - **Date limite de la broche IPL** · P1 ⭘ — Moira accepte l'IRQ 3 cycles après fx68k aux frontières
   d'instructions, donc une instruction trop tôt dans cette fenêtre. `NEOST_IPLFETCH` n'est pas la
   solution : une instruction de retard sur MULU. Modèle à écrire d'après `fx68k.sv:222-223`, à qualifier
   par `--ipl-sweep`, puis dans NeoST (étalons Timer B). Absorbe « STOP : synchronisation IPL à deux étages ».
 - **Réveil du STOP** · P2 ⭘ — 1 cycle après fx68k, dans la marge du banc. À revoir avec l'item précédent.
-- **Ordre des accès, trois témoins contre Moira** · P1 ⭘ — mot bas d'abord pour `MOVEM.L -(An)` et
-  `ADDQ.L #,<mem>` ; lecture en plus de `MOVEM.L` après le dernier mot, pas avant le premier ; JSR
-  préfetche la cible avant d'empiler ; le DBcc expiré préfetche l'adresse de branchement. Durées
-  égales. Visible quand l'accès touche un registre à effet de bord ou une zone à bus error.
-- **Trame de l'erreur d'adresse** · P2 ⭘ — fx68k et Hatari l'écrivent dans le même ordre, Moira non.
-  Seul fx68k pose AS sans strobe à l'adresse fautive : ce point reste [D] à un seul témoin.
-- **Reset** · P2 ⭘ — 2 cycles manquent à Moira entre les deux premiers préfetchs (microcode `trap9`).
-  Déplace la phase du faisceau au boot : les étalons à phase E-clock bougeront.
+- **Erreur d'adresse : cycle amorcé** · P3 ⭘ · [D] — seul fx68k pose AS sans strobe à l'adresse fautive.
+  Un seul témoin, sans effet connu sur un ST.
 - **Latence IACK MFP** · P1 ⏸ matériel · [D] 12 cycles — capturer CLK CPU/MFP, IACK et les
   DTACK puce/CPU sur un vrai ST et un vrai Mega STE, aux trois régimes CPU/cache. Sonde prête
   (`tools/make_mfp_iack_probe.py`, contrôles verts). Le bloc IACK = 12 cycles bus (valeur
@@ -259,9 +249,8 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 - **Couverture ROM des étalons** · P1 ⭘ — Mega ST, TOS 1.00, 1.04 et 1.06 ne sont couverts par
   AUCUN étalon pixel (manifeste `etalons.json`) ; un étalon par ROM propriétaire présente,
   recensé comme SKIP quand elle manque.
-- **Logithèque STE de référence** · P2 ⏸ média — Obsession et Pacemaker n'ont pas été rejoués
-  depuis le port du mode 336 px (2026-10-18) ; l'overscan STE (E605, DHS) reste à rejouer contre
-  l'oracle. Aucun de ces disques n'est sur le disque privé (constaté le 2026-11-03).
+- **Logithèque STE de référence** · P1 ⭘ — Obsession et Pacemaker n'ont pas été rejoués depuis le port du
+  mode 336 px (2026-10-18) ; l'overscan STE (E605, DHS) reste à rejouer contre l'oracle. Disques dans `disks/st/demos`.
 - ***Seven Gates of Jambala*** · P2 ⭘ — valider le recalage Timer B après écriture AER3 (porté le
   2026-10-19). Média présent (`disks/seven_gates_of_jambala_{a,b}.stx`, non versionné).
 - **Exceptions vidéo E605 / Tekila** · P3 ⏸ programme — hacks par opcodes chez Hatari ; port

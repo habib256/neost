@@ -274,6 +274,41 @@ def prog_exceptions(a: Asm) -> None:
     sentinel(a)
 
 
+def prog_rmw_long(a: Asm) -> None:
+    """Toutes les écritures longues en mémoire, sur six modes d'adressage : l'ordre des deux
+    mots y est propre à chaque famille d'instructions."""
+    prologue(a)
+    a.w(0x2E7C).l(STACK)
+    a.w(0x263C).l(0x01234567)                            # move.l #$01234567,d3
+    # (mode, registre, mots d'extension) : (a0), (a0)+, -(a0), 4(a0), $2000.w, $2000.l
+    modes = [(2, 0, ()), (3, 0, ()), (4, 0, ()), (5, 0, (4,)), (7, 0, (DATA,)), (7, 1, (0, DATA))]
+    for m, r, ext in modes:
+        ea = (m << 3) | r
+        a.w(0x207C).l(DATA + 0x40)                       # movea.l #$2040,a0
+        a.w(0x5080 | ea, *ext)                           # addq.l #8,<ea>
+        a.w(0x5180 | ea, *ext)                           # subq.l #8,<ea>
+        a.w(0x0680 | ea, 0x1234, 0x5678, *ext)           # addi.l
+        a.w(0x0480 | ea, 0x1234, 0x5678, *ext)           # subi.l
+        a.w(0x0080 | ea, 0x1234, 0x5678, *ext)           # ori.l
+        a.w(0x0280 | ea, 0xFFFF, 0xFFFF, *ext)           # andi.l
+        a.w(0x0A80 | ea, 0x1234, 0x5678, *ext)           # eori.l
+        a.w(0x4480 | ea, *ext)                           # neg.l
+        a.w(0x4080 | ea, *ext)                           # negx.l
+        a.w(0x4680 | ea, *ext)                           # not.l
+        a.w(0x4280 | ea, *ext)                           # clr.l
+        a.w(0xD780 | ea, *ext)                           # add.l d3,<ea>
+        a.w(0x9780 | ea, *ext)                           # sub.l d3,<ea>
+        a.w(0xC780 | ea, *ext)                           # and.l d3,<ea>
+        a.w(0x8780 | ea, *ext)                           # or.l d3,<ea>
+        a.w(0xB780 | ea, *ext)                           # eor.l d3,<ea>
+        a.w(0x2003 | (ea & 0x38) << 3 | (ea & 7) << 9, *ext)  # move.l d3,<ea> (champs inversés)
+    a.w(0x207C).l(DATA + 0x80)
+    a.w(0x267C).l(DATA + 0xC0)                           # movea.l #$20C0,a3
+    a.w(0xD788)                                          # addx.l -(a0),-(a3)
+    a.w(0x9788)                                          # subx.l -(a0),-(a3)
+    sentinel(a)
+
+
 def prog_trace(a: Asm) -> None:
     prologue(a)
     a.w(0x2E7C).l(STACK)                                 # movea.l #$8000,sp
@@ -342,6 +377,7 @@ PROGRAMS = [
     ("alu_loops", prog_alu_loops, {}),
     ("mixed", prog_mixed, {}),
     ("exceptions", prog_exceptions, {}),
+    ("rmw_long", prog_rmw_long, {}),
     ("trace", prog_trace, {}),
     ("tas", prog_tas, {}),
     ("irq_nop", prog_irq_nop, {"irq": [(100, 5)], "sweep": (8, 1)}),

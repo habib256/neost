@@ -30,7 +30,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `run_megaste_diag.py` (suite Q, 12/12) | `rom` | Le diagnostic Field Service prouve le contrat attendu par le logiciel, pas le silicium. |
 | `run_timing_oracle.py`, `run_megaste_bus_oracle.py` | `hatari` | |
 | `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé et pose les références de `rtl_low_*`. |
-| `run_fx68k_bench.py` (34 variantes, 18 en accord) | `rtl` | Moira nu contre fx68k, cycle bus par cycle bus. Verdicts posés dans `tests/reference/fx68k_bench.json` ; un écart localise, ne tranche pas. → [`FX68K_BENCH.md`](FX68K_BENCH.md) |
+| `run_fx68k_bench.py` (35 variantes, 26 en accord) | `rtl` | Moira nu contre fx68k, cycle bus par cycle bus. Verdicts posés dans `tests/reference/fx68k_bench.json` ; un écart localise, ne tranche pas. → [`FX68K_BENCH.md`](FX68K_BENCH.md) |
 | `run_mfp_iack_probe.py` | aucun | Contrôle la sonde, sans verdict matériel. |
 | `neost-selftest`, `--*-selftest` | à classer | Dépend de la source de chaque table de vérité → `TODO.md` § 4. |
 
