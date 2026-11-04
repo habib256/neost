@@ -14,6 +14,8 @@ La fiche Ricoh RP/RF/RJ5C15 entre dans `setup_silicon_refs.sh`, à son empreinte
 
 Le disque réel n'a pas d'angle défini au démarrage, et NeoST n'en tirait qu'un seul. Xenon 2 charge son niveau en 332 à 684 trames selon cette graine, contre 348 à 692 sous Hatari selon la sienne : l'écart relevé venait de deux tirages → `docs/CASE_STUDIES.md`. Sans cette option, rien ne change.
 
+Balayage sur 89 disques, 5 graines, en ST : aucun titre ne bloque selon l'angle. STinG et `ENEC.STX` chargent aussi sous TOS 1.02, 1.04, 1.62 et 2.06.
+
 Vroom sur Mega STE sort aussi des bugs ouverts : selon la graine, NeoST et Hatari produisent la même image de bruit, à 0,0 % d'écart.
 
 ## Pirates : l'écart d'intro est un tirage au hasard (2026-11-04)

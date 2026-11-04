@@ -222,7 +222,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
   Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
-  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde onze parties, changements de disquette compris. Passe STX du 2026-11-04 : 11 disques, 10 à 0,0 % aux écrans vus sur ST, disques B compris pour 5 titres. Sur STE, 8 à 0,0 % ; Golden Axe et Lethal Xcess s'écartent à un seul écran de transition, Magic Pockets en pleine partie ; Super Off Road reste à sa demande de disque de données chez les deux émulateurs, Bubble Ghost et Chessmaster restent au bureau, faute de lancement du programme. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
+  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde onze parties, changements de disquette compris. Passe STX du 2026-11-04 : 11 disques, 10 à 0,0 % aux écrans vus sur ST, disques B compris pour 5 titres. Sur STE, 8 à 0,0 % ; Golden Axe et Lethal Xcess s'écartent à un seul écran de transition, Magic Pockets en pleine partie ; Super Off Road reste à sa demande de disque de données chez les deux émulateurs, Bubble Ghost et Chessmaster restent au bureau, faute de lancement du programme. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu. Passe d'angle du 2026-11-04, 89 disques sur ST, 5 valeurs de `--fdc-seed` et SPACE répété, jusqu'à la trame 4000 : aucun titre ne bloque selon la graine. Les six arrêts CPU touchent cinq disques STE lancés sur ST et Epic disque 2, à toutes les graines, et l'arrêt d'Epic existe aussi sous Hatari.
 
 ## 4. 🪜 Harnais et preuve
 
@@ -290,8 +290,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   le GUI et un test à deux nœuds (un seul processus, bloqué par A33).
 
 ### Réseau, stockage, ports
-- **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — STinG + `ENEC.STX` ; la
-  validation sous TOS 1.04 attend son média (§ 3).
+- **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — STinG + `ENEC.STX`.
 - **NetUSBee — fenêtre LSB partagée** · P3 ⏸ schéma — `$FA0000-$FA01FF` = latch ISP1160 ET
   registre CR NE2000 ; trancher sur le schéma (hardware.atari.org), puis `Bus::read8Slow`.
 - **NetUSBee : périphériques USB** · P3 ⭘ — l'ISP1160 est un hub racine vide ; HID puis stockage
