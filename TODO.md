@@ -138,7 +138,7 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   520}, Hatari {512, 520, 504}. Dépend de la prise d'IPL (§ 2.1).
 - **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
-- **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp`. Élection datée par requête, venue du seul Hatari (`mfp.c:998 @ f0736b24`), contre la priorité fixe de § 3.1 ; TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; effacement de UE en un bit au lieu d'un cycle de TC ; prescaler changé en marche (§ 5.1.1) ; impulsion de comptage quand AER change en event-count (§ 5.1.3). Compteur arrêté en dessous d'un prescaler : Hatari se dit corrigé sur ce point en 2025, à relever.
+- **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp`. Élection datée par requête, venue du seul Hatari (`mfp.c:998 @ f0736b24`, posée pour Fuzion CD Menus 77, 78, 84), contre la priorité fixe de § 3.1 : ne pas retirer sans ces disques ; TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; effacement de UE en un bit au lieu d'un cycle de TC ; prescaler changé en marche (§ 5.1.1) ; impulsion de comptage quand AER change en event-count (§ 5.1.3). Compteur arrêté en dessous d'un prescaler : Hatari se dit corrigé sur ce point en 2025, à relever.
 - **Citations MAME sans révision** · P3 ⭘ · [D] — 14 dans le MFP. Aucune copie de MAME dans `extern` : à épingler ou à retirer.
 
 ### 2.4 Blitter

@@ -14,7 +14,7 @@ l'ordre inverse. Version courante : **0.6.2**.
   - Une erreur de réception part sur Buffer Full quand son canal est désactivé.
   - Le bit 0 d'UCR se lit à zéro, et SCR masque ses bits inutilisés.
   Le reste est dans le TODO. Aucun étalon ne bouge : aucun logiciel du catalogue n'exerce ces cas, ce sont des preuves de fiche.
-- **`compare_titles --joy`** : la même suite de masques joystick des deux côtés. 49 disques sur ST, clavier et joystick jusqu'à la trame 8000, sans plantage propre à NeoST. 36 restent sous 3 % à tous les écrans vus. Les écarts lus sont du jeu qui diverge (Buggy Boy, Xenon 2, circuits de Super Sprint, cartes de Teenage Queen), du cadrage de l'outil (Killing Game Show), ou la lecture du tir sur Flood.
+- **`compare_titles --joy`** : la même suite de masques joystick des deux côtés. 49 disques sur ST, clavier et joystick jusqu'à la trame 8000, sans plantage propre à NeoST. 40 restent sous 3 % à tous les écrans vus. Les écarts lus sont du jeu qui diverge (Buggy Boy, Xenon 2, Captain Blood, circuits de Super Sprint, cartes de Teenage Queen, messages de Super Hang-On et de Gods), du cadrage de l'outil (Killing Game Show), ou la lecture du tir sur Flood.
 - **Étalon `rtl_med_pal`** : moyenne résolution contre le modèle GSTMCU, 0 pixel d'écart sur 640×200.
 
 ## GLUE du STE sur écran entier à 60 Hz (2026-11-04)
