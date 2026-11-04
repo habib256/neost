@@ -146,9 +146,9 @@ passe tel quel sous EmuTOS avec sa tolérance de **0 cycle** (il n'a pas été r
 Pourquoi le séquenceur MIDI, lui, ne peut PAS migrer : son scénario repose sur
 l'auto-lancement `#Z` de `DESKTOP.INF` (« Install Application » du TOS 1.04), qu'EmuTOS
 n'honore pas — il lit `EMUDESK.INF`. Mesuré le 2026-08-28 : sous `etos192fr`, C: est bien
-monté mais Cubase ne démarre pas, **0 octet MIDI émis**, on reste sur le bureau. Et même
-s'il démarrait, Cubase Lite resterait un logiciel commercial : changer la ROM ne
-retirerait pas la dépendance non redistribuable.
+monté mais Cubase ne démarre pas, **0 octet MIDI émis**, on reste sur le bureau.
+Cubase Lite lui-même est le freeware Steinberg du 26.04.1999 (`disks/cubase_lite.st`) ;
+ce qui reste non redistribuable, c'est le TOS 1.04 dont le scénario dépend.
 Sans les deux ROM Atari, il reste **11 auto-tests + 39 étalons machine** (ST ×20, STE ×19 au manifeste, recompté 2026-10-20) — c'était **5** avant les deux passes d'A10 du 2026-08-28 : migration de trois démos sur EmuTOS, puis l'étalon spec512 GÉNÉRÉ.
 
 Les **4 étalons à disque généré** (`overscan_top`, `trace_odd`, `scroll_8264`,

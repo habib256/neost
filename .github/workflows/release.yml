@@ -215,12 +215,14 @@ jobs:
           STRAY=$(find squashfs-root/usr/roms -maxdepth 1 -name '*.img' \
                   ! -name 'etos*' ! -name 'tos102uk.img' ! -name 'tos162uk.img')
           test -z "$STRAY" || { echo "ERREUR : ROM non autorisée embarquée : $STRAY"; exit 1; }
-          # …et rien d'autre que diskA.st et les TROIS démos de démonstration côté
-          # disquettes : le dépôt contient des jeux sous copyright, la garde ROM
-          # seule ne les aurait jamais vus. La liste est EXPLICITE — elle doit
-          # rester d'accord avec packaging/stage_free_data.sh et le CMakeLists.
+          # …et rien d'autre que diskA.st, les trois démos et cubase_lite.st
+          # (freeware Steinberg) côté disquettes : le dépôt contient des jeux sous
+          # copyright, la garde ROM seule ne les aurait jamais vus. La liste est
+          # EXPLICITE — elle doit rester d'accord avec packaging/stage_free_data.sh
+          # et le CMakeLists.
           STRAYD=$(find squashfs-root/usr/disks -type f ! -name 'diskA.st' \
-                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa')
+                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa' \
+                  ! -name 'cubase_lite.st')
           test -z "$STRAYD" || { echo "ERREUR : disquette non libre embarquée : $STRAYD"; exit 1; }
           # Polices : sans elles le GUI se replie en silence sur la police bitmap
           # d'ImGui et tous les pictogrammes deviennent des carrés vides (invisible
@@ -340,12 +342,14 @@ jobs:
           STRAY=$(find squashfs-root/usr/roms -maxdepth 1 -name '*.img' \
                   ! -name 'etos*' ! -name 'tos102uk.img' ! -name 'tos162uk.img')
           test -z "$STRAY" || { echo "ERREUR : ROM non autorisée embarquée : $STRAY"; exit 1; }
-          # …et rien d'autre que diskA.st et les TROIS démos de démonstration côté
-          # disquettes : le dépôt contient des jeux sous copyright, la garde ROM
-          # seule ne les aurait jamais vus. La liste est EXPLICITE — elle doit
-          # rester d'accord avec packaging/stage_free_data.sh et le CMakeLists.
+          # …et rien d'autre que diskA.st, les trois démos et cubase_lite.st
+          # (freeware Steinberg) côté disquettes : le dépôt contient des jeux sous
+          # copyright, la garde ROM seule ne les aurait jamais vus. La liste est
+          # EXPLICITE — elle doit rester d'accord avec packaging/stage_free_data.sh
+          # et le CMakeLists.
           STRAYD=$(find squashfs-root/usr/disks -type f ! -name 'diskA.st' \
-                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa')
+                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa' \
+                  ! -name 'cubase_lite.st')
           test -z "$STRAYD" || { echo "ERREUR : disquette non libre embarquée : $STRAYD"; exit 1; }
           # Polices : sans elles le GUI se replie en silence sur la police bitmap
           # d'ImGui et tous les pictogrammes deviennent des carrés vides (invisible
@@ -444,12 +448,14 @@ jobs:
           STRAY=$(find squashfs-root/usr/roms -maxdepth 1 -name '*.img' \
                   ! -name 'etos*' ! -name 'tos102uk.img' ! -name 'tos162uk.img')
           test -z "$STRAY" || { echo "ERREUR : ROM non autorisée embarquée : $STRAY"; exit 1; }
-          # …et rien d'autre que diskA.st et les TROIS démos de démonstration côté
-          # disquettes : le dépôt contient des jeux sous copyright, la garde ROM
-          # seule ne les aurait jamais vus. La liste est EXPLICITE — elle doit
-          # rester d'accord avec packaging/stage_free_data.sh et le CMakeLists.
+          # …et rien d'autre que diskA.st, les trois démos et cubase_lite.st
+          # (freeware Steinberg) côté disquettes : le dépôt contient des jeux sous
+          # copyright, la garde ROM seule ne les aurait jamais vus. La liste est
+          # EXPLICITE — elle doit rester d'accord avec packaging/stage_free_data.sh
+          # et le CMakeLists.
           STRAYD=$(find squashfs-root/usr/disks -type f ! -name 'diskA.st' \
-                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa')
+                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa' \
+                  ! -name 'cubase_lite.st')
           test -z "$STRAYD" || { echo "ERREUR : disquette non libre embarquée : $STRAYD"; exit 1; }
           # Polices : sans elles le GUI se replie en silence sur la police bitmap
           # d'ImGui et tous les pictogrammes deviennent des carrés vides (invisible
@@ -551,7 +557,8 @@ jobs:
                   ! -name 'etos*' ! -name 'tos102uk.img' ! -name 'tos162uk.img')
           test -z "$STRAY" || { echo "ERREUR : ROM non autorisée embarquée : $STRAY"; exit 1; }
           STRAYD=$(find squashfs-root/usr/disks -type f ! -name 'diskA.st' \
-                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa')
+                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa' \
+                  ! -name 'cubase_lite.st')
           test -z "$STRAYD" || { echo "ERREUR : disquette non libre embarquée : $STRAYD"; exit 1; }
           for f in DejaVuSans.ttf fa-solid-900.ttf; do
             test -s "squashfs-root/usr/fonts/$f" || { echo "ERREUR : police absente du paquet : $f"; exit 1; }
@@ -629,7 +636,8 @@ jobs:
                   ! -name 'etos*' ! -name 'tos102uk.img' ! -name 'tos162uk.img')
           test -z "$STRAY" || { echo "ERREUR : ROM non autorisée embarquée : $STRAY"; exit 1; }
           STRAYD=$(find dist/NeoST.app/Contents/disks -type f ! -name 'diskA.st' \
-                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa')
+                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa' \
+                  ! -name 'cubase_lite.st')
           test -z "$STRAYD" || { echo "ERREUR : disquette non libre embarquée : $STRAYD"; exit 1; }
           for f in DejaVuSans.ttf fa-solid-900.ttf; do
             test -s "dist/NeoST.app/Contents/fonts/$f" || { echo "ERREUR : police absente du paquet : $f"; exit 1; }
@@ -829,7 +837,8 @@ jobs:
                   ! -name 'etos*' ! -name 'tos102uk.img' ! -name 'tos162uk.img')
           test -z "$STRAY" || { echo "ERREUR : ROM non autorisée embarquée : $STRAY"; exit 1; }
           STRAYD=$(find "${ROOT}disks" -type f ! -name 'diskA.st' \
-                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa')
+                  ! -name 'cuddly_demos.msa' ! -name 'nocooper.msa' ! -name 'closure.msa' \
+                  ! -name 'cubase_lite.st')
           test -z "$STRAYD" || { echo "ERREUR : disquette non libre embarquée : $STRAYD"; exit 1; }
           for f in DejaVuSans.ttf fa-solid-900.ttf; do
             test -s "${ROOT}fonts/$f" || { echo "ERREUR : police absente du paquet : $f"; exit 1; }

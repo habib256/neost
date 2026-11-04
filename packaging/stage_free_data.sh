@@ -45,6 +45,10 @@ DEMO_DISKS=(cuddly_demos.msa nocooper.msa closure.msa)
 for d in "${DEMO_DISKS[@]}"; do
     cp "$SRC/disks/etalons/$d" "$DEST/disks/"
 done
+# Cubase Lite (Steinberg, freeware — déclaration du Steinberg Service Team du
+# 26.04.1999, CD Keyboards). Disquette 720 Ko : CB_LITE.PRG à la racine, MROS à
+# côté, DESKTOP.INF #Z qui le lance sous TOS 1.04. Pas couvert par la GPL.
+cp "$SRC/disks/cubase_lite.st" "$DEST/disks/"
 
 # Polices de l'interface (resolveData cherche exeDir/../fonts) : DejaVu Sans et
 # Font Awesome Free, toutes deux librement redistribuables. SANS elles, le GUI
@@ -89,7 +93,7 @@ for lic in GPL-3.0.txt GPL-2.0.txt THIRD-PARTY.txt; do
 done
 DEMOS_TXT="${DEMO_DISKS[*]}"
 if [ "$NO_ATARI" = "1" ]; then
-    echo "OK : données paquet copiées dans $DEST (EmuTOS SEUL + drivesound + banque GM + diskA.st + démos [$DEMOS_TXT] + licences)"
+    echo "OK : données paquet copiées dans $DEST (EmuTOS SEUL + drivesound + banque GM + diskA.st + démos [$DEMOS_TXT] + cubase_lite.st + licences)"
 else
-    echo "OK : données paquet copiées dans $DEST (EmuTOS + tos102uk + tos162uk + drivesound + banque GM + diskA.st + démos [$DEMOS_TXT] + licences)"
+    echo "OK : données paquet copiées dans $DEST (EmuTOS + tos102uk + tos162uk + drivesound + banque GM + diskA.st + démos [$DEMOS_TXT] + cubase_lite.st + licences)"
 fi
