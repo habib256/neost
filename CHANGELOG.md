@@ -6,6 +6,10 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## `--fdc-seed` : l'angle de la disquette se choisit (2026-11-04)
+
+Le disque réel n'a pas d'angle défini au démarrage, et NeoST n'en tirait qu'un seul. Xenon 2 charge son niveau en 332 à 684 trames selon cette graine, contre 348 à 692 sous Hatari selon la sienne : l'écart relevé venait de deux tirages → `docs/CASE_STUDIES.md`. Sans cette option, rien ne change.
+
 ## Pirates : l'écart d'intro est un tirage au hasard (2026-11-04)
 
 Le bruit noté côté Hatari ne se reproduit plus, et le reste de l'écart vient de XBIOS `Random`, semé sur `_hz200`. Le titre sort des bugs ouverts → `docs/CASE_STUDIES.md`. Les bits 3, 7 et 11 de la palette relue sur ST entrent au TODO.
