@@ -25,6 +25,7 @@ Elle ne compilait plus depuis longtemps, et toute la GUI dépend d'ImGui. Sans I
 ## Restes de fiches, sur les disques d'abord (2026-11-04)
 
 - **MFP** : UE s'efface après un cycle de TC, [B] MK68901 p. 17, MC68HC901 § 7.3.2, et non après un bit entier.
+- **SCC, No Vector** : le vecteur reste figé sur l'IUS jusqu'à Reset IUS, [B] UM010902-0609 p. 44.
 - **SCC** : Reset Underrun est sans effet transmetteur coupé, et Send Abort vide le tampon TX et lève Underrun/EOM, [B] UM010902-0609 p. 141-142.
 - **WD1772, `$D8`** : la fiche dit que seul `$D0` rend son interruption effaçable. Appliqué à la lettre, Super Hang-On s'écarte de 99 % à la trame 500. Essayé puis retiré, écart marqué `⚠ [B]`.
 - **ACIA, octet en vol au master reset** : essayé puis retiré, le SCI du 6301 continue d'émettre et un modèle juste demande un champ d'état de plus. Écart marqué, aucun titre touché.
