@@ -2911,9 +2911,7 @@ void Fdc::executeCommand(uint8_t cmd) {
         break;
      }
      // [B] WD177X-00 p. 1-6, p. 1-9 (BUSY ; RAZ DRQ, Lost Data, RNF, bits 5 et 6, INTRQ) ; CRC : p. 1-16.
-     // ⚠ [B] p. 1-9 : le bit 6 est aussi remis à zéro en Write Sector. Ici il reste jusqu'à RUN_WS_MOTORON :
-     // écart non corrigé, comme Hatari ([D] fdc.c:4268-4269 @ f0736b24). Visible d'un seul
-     // sondage du statut pendant le spin-up ou le délai E, après un WPRT resté levé.
+     // [B] p. 1-9 : le bit 6 est aussi remis à zéro en Write Sector. [D] fdc.c:4268-4269 @ f0736b24 le garde : la fiche prime.
      case 2: {                                                // READ / WRITE SECTOR
         commandType_ = 2; statusTypeI_ = false;
         if ((cr_ & 0xf0) <= 0x90) {                           // 0x80/0x90 : read sector(s)
@@ -2921,7 +2919,7 @@ void Fdc::executeCommand(uint8_t cmd) {
             updateStr(STR_DRQ | STR_LOST | STR_CRC | STR_RNF | STR_RECTYPE | STR_WPRT, STR_BUSY);
         } else {                                              // 0xA0/0xB0 : write sector(s)
             command_ = CMD_WRITESECTORS; commandState_ = RUN_WS_WRITEDATA;
-            updateStr(STR_DRQ | STR_LOST | STR_CRC | STR_RNF | STR_RECTYPE, STR_BUSY);
+            updateStr(STR_DRQ | STR_LOST | STR_CRC | STR_RNF | STR_RECTYPE | STR_WPRT, STR_BUSY);
         }
         fdcCycles = PREPARE_TYPE_II;
         break;
