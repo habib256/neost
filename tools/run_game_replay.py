@@ -5,7 +5,8 @@
 #  POURQUOI. Les étalons voient des écrans fixes et des démos. Une partie fait passer entrées, IRQ, FDC et
 #  vidéo ensemble, sur des milliers de trames : une dérive d'un cycle finit par changer le jeu.
 #
-#  COMMENT. tests/replays/replays.json donne le disque, les touches et un script joystick. Hatari et NeoST
+#  COMMENT. tests/replays/replays.json donne le disque, les touches, les changements de disquette et un
+#  script joystick. Hatari et NeoST
 #  jouent les mêmes masques (tools/compare_titles.py --joy), et chaque trame demandée doit rester sous
 #  max_diff %. Échelon `hatari` : un vert dit « d'accord avec Hatari », pas « comme le fer ».
 #
@@ -35,6 +36,10 @@ def play(r: dict, work: Path) -> tuple[int, list[str]]:
            "--joy", f'{r["joy_at"]}:{joy}', "--jobs", "1"]
     for at in r.get("keys", []):
         cmd += ["--key", f"{at}:57"]
+    for at, code in r.get("scancodes", []):            # autre touche que l'espace : [trame, scancode décimal]
+        cmd += ["--key", f"{at}:{code}"]
+    for at, disk in r.get("swaps", []):                # changement de disquette : [trame, chemin]
+        cmd += ["--swap", f"{at}:{disk}"]
     done = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=1800)
     if done.returncode == 77:
         return 77, [done.stdout.strip()]

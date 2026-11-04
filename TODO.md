@@ -213,7 +213,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 | Titre | Prio | Symptôme | Piste |
 |-------|------|----------|-------|
 | **Pirates** ([cr Delight], écran d'intro) | P2 ⭘ | NeoST : 73 couleurs par trame, stables, rasters nets. Hatari : ~184, bruit qui change à chaque trame, au pixel près, marge gauche comprise. Mêmes écrans par ailleurs. Lancé en TOS 1.04 avec `--auto A:\PIRATES.PRG`. | Qui a raison ? Tracer les écritures de palette des deux côtés. Aucune source plus haute à ce jour. |
-| **Shadow Warriors** (2Hot2Handle) | P1 ⏸ média | Après SPACE, titre et musique OK, le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). | Disque absent, y compris des médias privés. Diff contre l'oracle piloté au joystick, même durée d'appui (`--key-hold`). |
+| **Shadow Warriors** (2Hot2Handle) | P3 ⏸ média | Après SPACE, titre et musique OK, le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). Sur la version Ocean, ce n'est pas un défaut : le titre attend la touche 1 (« PUSH 1P OR 2P BUTTON »), et le tir ne lance rien non plus sous Hatari. Partie jouée, disques 1 et 2, sans écart avant le combat (`shadow_warrior_st`). | Le disque 2Hot2Handle reste absent. S'il revient, essayer d'abord la touche 1. |
 
 ### Campagnes à mener
 
@@ -223,7 +223,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
   Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
-  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde sept parties. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
+  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde neuf parties, changements de disquette compris. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
 
 ## 4. 🪜 Harnais et preuve
 
