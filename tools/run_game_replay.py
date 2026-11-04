@@ -32,7 +32,7 @@ def play(r: dict, work: Path) -> tuple[int, list[str]]:
     joy.write_text(" ".join([r["joy"]] * r.get("joy_repeat", 1)) + "\n")
     cmd = [sys.executable, str(ROOT / "tools" / "compare_titles.py"), str(work / "out"), r["disk"],
            "--machine", r["machine"], "--rom", r["rom"], "--mem", str(r["mem"]),
-           "--frames", ",".join(map(str, r["frames"])), "--window", str(r.get("window", 6)), "--step", "2",
+           "--frames", ",".join(map(str, r["frames"])), "--window", str(r.get("window", 6)), "--step", str(r.get("step", 2)),
            "--joy", f'{r["joy_at"]}:{joy}', "--jobs", "1"]
     for at in r.get("keys", []):
         cmd += ["--key", f"{at}:57"]

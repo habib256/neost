@@ -60,7 +60,7 @@ documents primaires, les ROM et le RTL épinglé.
 | 1 | Logithèque : relire les écarts de `compare_titles.py --joy`, étendre `tests/replays/replays.json` | P1 | 3 |
 | 2 | A43 : relire les écarts `⚠ [B]` restants du MFP, du WD1772, de l'ACIA et du SCC | P1 | 4 |
 | 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
-| 4 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
+| 4 | A32 : méthodes du compteur vidéo dans leur objet (un chantier à la fois) | P2 | 7 |
 
 ---
 
@@ -222,7 +222,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
   Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
-  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde neuf parties, changements de disquette compris. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
+  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde onze parties, changements de disquette compris. Passe STX du 2026-11-04 : 11 disques, 10 à 0,0 % aux écrans vus, disques B compris pour 5 titres ; Super Off Road reste à sa demande de disque de données chez les deux émulateurs, Bubble Ghost et Chessmaster restent au bureau, faute de lancement du programme. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
 
 ## 4. 🪜 Harnais et preuve
 
@@ -336,9 +336,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
 
-- **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits ; les rôles restent des
-  méthodes qui partagent l'état par ligne. Prochain pas : `VideoCounter` en objet membre
-  (champs `vc*`), mesurer ce que ça casse, puis seulement la Glue.
+- **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits. L'état du compteur vidéo est un membre, `VideoCounterState vc_`, sans changement de l'empreinte d'état. Prochain pas : y déplacer les méthodes, ce qui demande une interface vers la Glue et le faisceau, puis seulement la Glue.
 - **Build sans ImGui** · P3 ⭘ — `-DNEOST_WITH_IMGUI=OFF` ne compile plus (constaté le
   2026-10-20) : des fichiers GUI incluent `imgui.h` sans condition et `AppLoop.cpp` manque de
   déclarations. Réparer ou retirer l'option.

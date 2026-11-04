@@ -250,7 +250,7 @@ int Shifter::glueLineBytes(int scanline) const {
     // « total blank line » d'Hatari, qui n'avance pas non plus pVideoRaster
     // ([D] video.c:4007 @ f0736b24). Le garde-fou de commitScanline ne couvrait QUE le cas d'une
     // fenêtre plus LONGUE que curAH_ (bordure basse retirée) car il est imbriqué
-    // dans `vcLineY_ >= curAH_` ; une fenêtre plus COURTE — VO_BOTTOM_SHORT_50, un
+    // dans `vc_.lineY >= curAH_` ; une fenêtre plus COURTE — VO_BOTTOM_SHORT_50, un
     // écran 50 Hz qui se termine à la position 60 Hz, soit 29 lignes de moins —
     // laissait le compteur avancer sur des lignes non affichées. On borne ici
     // plutôt que dans la boucle de commit : la CADENCE de capture lineSnap_ reste
@@ -433,7 +433,7 @@ void Shifter::writeShifterRes(uint8_t res) {
             case 8:  inc = -4; shift =  -8; break;       // 76 + 16n
             default: break;
         }
-        if (inc != 0) vcStopInc_ = inc;                  // ≙ VideoRasterDelayedInc
+        if (inc != 0) vc_.stopInc = inc;                  // ≙ VideoRasterDelayedInc
         shifterStopLine_  = line;                        // lignes > line décalées
         shifterStopShift_ = shift;
         if (std::getenv("NEOST_SYNC_TRACE"))
@@ -1375,13 +1375,13 @@ bool Shifter::glueSelfTest() {
         chk("336 pending", newSteBorderFlag_, true);
         const auto pending = save();
         reset(); load(pending);
-        vcLineY_ = 37; commitAnchor_ = 63; endVideoLine();
+        vc_.lineY = 37; commitAnchor_ = 63; endVideoLine();
         chk("336 restore pending", steBorderFlag_, true);
         chk("336 metadata without RAM", lineScrollSnap_[100], 0x40);
         chk("336 no RAM snapshot", lineSnapLen_[100], 0);
-        const uint32_t base = vcLineBase_;
+        const uint32_t base = vc_.lineBase;
         endVideoLine();
-        chk("336 committed stride", vcLineBase_ - base, 168);
+        chk("336 committed stride", vc_.lineBase - base, 168);
         chk("336 metadata next line", lineScrollSnap_[101], 0x60);
         reset();
         chk("336 reset", steBorderFlag_, false);
@@ -1398,10 +1398,10 @@ bool Shifter::glueSelfTest() {
         liveFrameClock_ = [&] { return fc; };
         // 1. Le compteur avance au-delà de $3FFFFF → reprend en $000000.
         reset(); mode = Mode::Low; sync = 2; videoBase = 0x3FFF00; beginFrame();
-        chk("b15 frame base", vcFrameBase_, 0x3FFF00);
-        vcLineY_ = 0; commitAnchor_ = 63;
+        chk("b15 frame base", vc_.frameBase, 0x3FFF00);
+        vc_.lineY = 0; commitAnchor_ = 63;
         endVideoLine(); endVideoLine();                  // +160 +160 = $400040
-        chk("b15 counter wraps", vcLineBase_, 0x40);
+        chk("b15 counter wraps", vc_.lineBase, 0x40);
         // 2. Le fetch d'une ligne qui chevauche $3FFFFF relit le BAS de la RAM.
         {
             const uint32_t probe = 0x18;                 // groupe 19 de la ligne à $3FFF80
@@ -1409,7 +1409,7 @@ bool Shifter::glueSelfTest() {
             for (int i = 0; i < 4; ++i) saved[i] = bus_.read16(probe + 2u * i);
             bus_.write16(probe, 0x8000); bus_.write16(probe + 2, 0);
             bus_.write16(probe + 4, 0);  bus_.write16(probe + 6, 0);
-            vcLineBase_ = 0x3FFF80; vcLineY_ = 0;
+            vc_.lineBase = 0x3FFF80; vc_.lineY = 0;
             uint8_t ix[660];
             decodeLineIndices(0, ix);
             chk("b15 fetch wraps px", ix[19 * 16], 1);
@@ -1420,7 +1420,7 @@ bool Shifter::glueSelfTest() {
         if (machineIsSte(bus_.machine)) {
             fc = 10;                                     // bordure haute → immédiat
             write8(0xFF8205, 0xFF);
-            chk("b15 8205 masked", (vcLineBase_ >> 16) & 0xFF, 0x3F);
+            chk("b15 8205 masked", (vc_.lineBase >> 16) & 0xFF, 0x3F);
         }
 
         // 4. $FF8261 : Shifter seul — ni écriture Glue datée, ni mode Glue changé.
@@ -1446,11 +1446,11 @@ bool Shifter::glueSelfTest() {
         stop(68, 80);
         chk("stop 12cyc line",  shifterStopLine_, 100);
         chk("stop 12cyc shift", shifterStopShift_, -4);
-        chk("stop 12cyc inc",   vcStopInc_, -2);
+        chk("stop 12cyc inc",   vc_.stopInc, -2);
         stop(68, 84);  chk("stop 16cyc shift", shifterStopShift_, 0);
-                       chk("stop 16cyc inc",   vcStopInc_, 0);
+                       chk("stop 16cyc inc",   vc_.stopInc, 0);
         stop(68, 88);  chk("stop 20cyc shift", shifterStopShift_, -12);
-                       chk("stop 20cyc inc",   vcStopInc_, -6);
+                       chk("stop 20cyc inc",   vc_.stopInc, -6);
         stop(68, 92);  chk("stop 24cyc shift", shifterStopShift_, -8);
         stop(68, 108); chk("stop too long",    shifterStopLine_, -1);
         stop(40, 56);  chk("stop before DE",   shifterStopLine_, -1);
@@ -1464,7 +1464,7 @@ bool Shifter::glueSelfTest() {
             fc = 101 * cpl + to;   write8(0xFF8261, 0);
         };
         stopX(400, 84);  chk("stop across HBL line",  shifterStopLine_, -1);
-                         chk("stop across HBL inc",   vcStopInc_, 0);
+                         chk("stop across HBL inc",   vc_.stopInc, 0);
                          chk("stop across HBL shift", shifterStopShift_, 0);
         stopX(100, 110); chk("stop next line +10",    shifterStopLine_, -1);   // ≤ 32 en cycles-ligne seulement
         // Datation sur la grille RÉELLE : une bascule 60 Hz au début de la ligne 99
@@ -1485,14 +1485,14 @@ bool Shifter::glueSelfTest() {
         }
         // AddressInc appliqué à la fin de la ligne du stop.
         stop(68, 80);
-        vcLineY_ = 37; commitAnchor_ = 63;
+        vc_.lineY = 37; commitAnchor_ = 63;
         {
-            const uint32_t b0 = vcLineBase_;
+            const uint32_t b0 = vc_.lineBase;
             endVideoLine();
-            chk("stop line stride", vcLineBase_ - b0, 158);
-            const uint32_t b1 = vcLineBase_;
+            chk("stop line stride", vc_.lineBase - b0, 158);
+            const uint32_t b1 = vc_.lineBase;
             endVideoLine();
-            chk("stop next stride", vcLineBase_ - b1, 160);
+            chk("stop next stride", vc_.lineBase - b1, 160);
         }
 
         // 6. Rendu : lignes après le stop décalées de 4 px à gauche (bordure gauche
@@ -1561,7 +1561,7 @@ bool Shifter::glueSelfTest() {
             auto ld = StateArchive::loader(st.data(), st.size()); serialize(ld);
             chk("stop state valid", ld.ok(), true);
             chk("stop state shift", shifterStopShift_, -12);
-            chk("stop state inc",   vcStopInc_, -6);
+            chk("stop state inc",   vc_.stopInc, -6);
         }
         reset();
         beamClock_ = oldBeam; liveFrameClock_ = oldLive;
@@ -1615,11 +1615,11 @@ bool Shifter::glueSelfTest() {
     }
     // La copie de ligne VBlank ne crédite ni octets, ni prefetch/line-offset.
     vb(50, {});
-    vcLineY_ = 245; commitAnchor_ = 63; lineWidth = 7;
+    vc_.lineY = 245; commitAnchor_ = 63; lineWidth = 7;
     hwScrollCount = 4; hwScrollPrefetch = true;
-    const uint32_t oldBase = vcLineBase_;
+    const uint32_t oldBase = vc_.lineBase;
     endVideoLine();
-    chk("vblank no counter stride", vcLineBase_, oldBase);
+    chk("vblank no counter stride", vc_.lineBase, oldBase);
     chk("vblank no RAM snapshot", lineSnapLen_[308], 0);
     // Bordure basse : un moteur single-buffer efface la RAM APRÈS le HBL.
     // Le replay doit garder les pixels balayés, y compris au-delà de curAH_.
@@ -1636,9 +1636,9 @@ bool Shifter::glueSelfTest() {
         for (uint32_t a = 0x20000; a < 0x30000; a += 2) bus_.write16(a, 0xFFFF);
         commitScanline(280);
         chk("bottom live snapshot", lineSnapLen_[280] > 0, openBottom);
-        const uint32_t capturedBase = vcLineBase_;
+        const uint32_t capturedBase = vc_.lineBase;
         commitScanline(280);
-        chk("bottom commit idempotent", vcLineBase_, capturedBase);
+        chk("bottom commit idempotent", vc_.lineBase, capturedBase);
         for (uint32_t a = 0x20000; a < 0x30000; a += 2) bus_.write16(a, 0);
         finishFrame();
         const int row = activeY_ + 280 - geometry().dispStartLine;
@@ -1659,9 +1659,9 @@ bool Shifter::glueSelfTest() {
         commitScanline(99);
         syncWrites_.push_back({100 * cpl + first, uint8_t(trick == 0 ? 0 : 2), trick != 0});
         syncWrites_.push_back({100 * cpl + last, uint8_t(trick == 0 ? 2 : 0), trick != 0});
-        const uint32_t before = vcLineBase_;
+        const uint32_t before = vc_.lineBase;
         commitScanline(100);
-        chk("masked line stride", vcLineBase_ - before, trick == 0 ? 162 : trick == 1 ? 0 : 54);
+        chk("masked line stride", vc_.lineBase - before, trick == 0 ? 162 : trick == 1 ? 0 : 54);
         chk("masked no palette", spec512Active_, false);
         for (int y = 0; y < curAH_; ++y) renderLine(y);
         finishFrame();
@@ -1694,14 +1694,14 @@ bool Shifter::glueSelfTest() {
         chk("sync current mask", (glueLines_[100].borderMask & mask) != 0, !cancel);
         chk("sync next no count", (glueLines_[101].borderMask & glue::NO_COUNT) != 0, !cancel);
         chk("sync next Timer B", liveLineDisplayed(101), cancel);
-        const uint32_t before = vcLineBase_;
+        const uint32_t before = vc_.lineBase;
         commitScanline(101);
-        chk("sync next stride", vcLineBase_ - before, cancel ? 160 : 0);
+        chk("sync next stride", vc_.lineBase - before, cancel ? 160 : 0);
         chk("sync following stride", glueLineBytes(102), 160);
         chk("sync bottom extended", liveLineDisplayed(263), !cancel);
         chk("sync after bottom", liveLineDisplayed(264), false);
         commitScanline(263);
-        chk("sync total bytes", vcLineBase_ - vcFrameBase_, 32000);
+        chk("sync total bytes", vc_.lineBase - vc_.frameBase, 32000);
         for (int y = 0; y < curAH_; ++y) renderLine(y);
         finishFrame();
         const int nextRow = activeY_ + 101 - geometry().dispStartLine;

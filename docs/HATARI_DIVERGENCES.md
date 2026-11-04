@@ -1481,7 +1481,7 @@ divergence HAUTE**, les 4 correctifs sont CORRECTS. La passe remonte surtout des
   un `move.w` vers `$FF8260` donne l'octet haut aux deux, l'octet bas est ignoré (le Shifter ne
   lit que D8-D9) ; les lectures `$FF8260/61` rendent la valeur Shifter. **res 3** = Shifter arrêté :
   stop posé au cycle-ligne ≥ 64 (DE actif), retour ≥ 72 et ≤ 32 cycles après → lignes suivantes
-  décalées de 0/4/8/12 px, compteur −0/−2/−4/−6 octets en fin de ligne (`vcStopInc_`) ; ligne
+  décalées de 0/4/8/12 px, compteur −0/−2/−4/−6 octets en fin de ligne (`vc_.stopInc`) ; ligne
   dont toute la fenêtre DE est couverte par un arrêt = aire active noire, bordures intactes
   (extension NeoST, cf. § *Vidéo* ; avant le 2026-10-20 : ligne arrêtée au commit, ce qui
   noircissait la ligne précédente). glue-selftest +36 vérifs ;

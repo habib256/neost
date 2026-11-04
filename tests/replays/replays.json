@@ -274,6 +274,87 @@
       ],
       "window": 30,
       "max_diff": 0.5
+    },
+    {
+      "id": "golden_axe_st",
+      "note": "Image STX, disque B inséré, début du niveau 1. La mêlée n'est pas jugée : 1 à 4 % ensuite.",
+      "disk": "disks/stx/GoldenAxe[2Hot2Handle]-D1.stx",
+      "machine": "st",
+      "rom": "roms/tos102uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500,
+        6800,
+        7300,
+        8000,
+        9000
+      ],
+      "swaps": [
+        [
+          6500,
+          "disks/stx/GoldenAxe[2Hot2Handle]-D2.stx"
+        ]
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 40,
+      "frames": [
+        7000,
+        8000,
+        9000
+      ],
+      "window": 24,
+      "step": 1,
+      "max_diff": 0.5
+    },
+    {
+      "id": "wings_of_death_st",
+      "note": "Image STX, disque B inséré, jusqu'au menu.",
+      "disk": "disks/stx/Wings_Of_Death_Disk_1.stx",
+      "machine": "st",
+      "rom": "roms/tos102uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500,
+        6800,
+        7300,
+        8000,
+        9000
+      ],
+      "swaps": [
+        [
+          6500,
+          "disks/stx/Wings_Of_Death_Disk_2.stx"
+        ]
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 40,
+      "frames": [
+        7000,
+        8000,
+        9000,
+        10000,
+        12000,
+        14000
+      ],
+      "window": 24,
+      "step": 1,
+      "max_diff": 0.5
     }
   ]
 }

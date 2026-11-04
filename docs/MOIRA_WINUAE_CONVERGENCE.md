@@ -75,11 +75,11 @@ plus normatif nulle part où ce bloc dit autre chose.
   - **+ 2 bugs structurels débusqués par l'oracle** : (a) le **commit du compteur à DE_end** —
     une écriture 60 Hz datée 376 (scan de calibration du loader EL, ouverture bordure droite)
     arrivait APRÈS le commit → $8209 figé → **loader bloqué à $ee78 pour toujours** ; fix =
-    commit PARESSEUX (`while (vcLineY_ < y) endVideoLine()` en tête de renderLine, ≙
+    commit PARESSEUX (`while (vc_.lineY < y) endVideoLine()` en tête de renderLine, ≙
     `Video_EndHBL`). (b) **`Video_RestartVideoCounter` NON porté** (ligne 310/260, cycle 56) :
     la base était latchée à la ligne 0, AVANT le handler VBL du jeu → le stabilisateur d'EL
     lisait l'ANCIEN buffer toute la trame (aveugle) ; fix = event `VC_RESTART` (Scheduler) +
-    latch figé (`vcRestartBase_`). L'étalon `overscan_top` re-baseliné : les 24 px de diff
+    latch figé (`vc_.restartBase`). L'étalon `overscan_top` re-baseliné : les 24 px de diff
     étaient FAUX dans l'ancienne référence (vérifié pixel-à-pixel contre Hatari).
   - **RÉSULTATS** : poll-bench **180/180 byte-identique** Hatari (2 variantes) ; loader EL
     **répare** ; flicker EL **38-40/40** (base 34/40) ; **LX titre 0,00 % de churn** (était
@@ -612,7 +612,7 @@ Avec la fondation bloc+PT, plus de deadlock ; EL boote/intro propre. Reste, par 
    freq=60 (video.c:2782-2800) et res hi-res fin-de-ligne (2683-2800) présentes ; glue-selftest 19/19.
    **AUCUNE branche Glue manquante** (hypothèse réfutée). **Les bordures G/D d'EL S'OUVRENT** (terrain
    rendu bord-à-bord) et les **écrans statiques (logo, crédits) sont PROPRES** ; la corruption est
-   spécifique au **SCROLL ACTIF**. `endVideoLine` (aujourd'hui VideoCounter.cpp:52-134) avance déjà `vcLineBase_` du
+   spécifique au **SCROLL ACTIF**. `endVideoLine` (aujourd'hui VideoCounter.cpp:52-134) avance déjà `vc_.lineBase` du
    stride réel via `glueLineBytes`.
 
    **Banc de repro + validation (la pièce qui débloque, `tools/make_respulse_test.py`).** Handler HBL

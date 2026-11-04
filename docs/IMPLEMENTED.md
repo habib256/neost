@@ -364,7 +364,7 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   décalées, palettes croisées) puis chargements en échec. Fix : `commitAnchor()` =
   `max(liveStartHBL_, glueStartHBL_)` sur trame à écritures freq/res (la machine Glue
   LIVE, port fidèle de `nStartHBL`, fait foi), **latché au 1ᵉʳ commit** de la trame
-  (une re-fermeture tardive ne ré-indexe pas `lineSnap_`/`vcLineY_` en cours de trame
+  (une re-fermeture tardive ne ré-indexe pas `lineSnap_`/`vc_.lineY` en cours de trame
   — verrou Cuddly conservé) ; reset à `beginFrame` ; sérialisé (save-states → **v6**).
   Un vrai retrait haut (EL) donne 34 des deux côtés → chemin EL inchangé. Validation :
   in-game LX pixel-identique au commit pré-régression sur toutes les trames sondées

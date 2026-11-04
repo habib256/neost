@@ -6,6 +6,11 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Passe STX, et A32 : l'état du compteur vidéo en membre (2026-11-04)
+
+- **Passe STX au joystick** : 11 disques contre Hatari, 10 à 0,0 % aux écrans vus. Avec le disque B, Golden Axe, Lethal Xcess, Wings of Death et Rainbow Islands se jouent des deux côtés. Les écarts qui restent sont des parties qui divergent. Golden Axe et Wings of Death rejoignent `run_game_replay.py`.
+- **A32** : `VideoCounterState vc_` regroupe les 8 champs du compteur vidéo. Empreintes d'état identiques au binaire d'avant sur 6 cas, démos à bordures et moteur plein écran compris.
+
 ## STinG : le GET HTTP réel passe (2026-11-04)
 
 - STinG 1.26 et le vrai `ENEC.STX` résolvent theoldnet.com et reçoivent `HTTP/1.1 200 OK` par `--slirp`, 4 runs sur les 5 du jour. Le premier a échoué en DNS, cause inconnue.
