@@ -232,7 +232,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. MFP, YM2149, WD1772, ACIA et SCC sont confrontés à leurs fiches, et leurs écarts marqués `⚠ [B]` sur place. `audit_citations.py list` signale encore 2 citations, justes, dont la révision suit sur la même phrase. Restent les GLUE/MMU sans schéma, et le RTC dont la fiche manque. Le SCC n'a pas été relu pour le synchrone, le SDLC et le DMA.
+- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. MFP, YM2149, WD1772, ACIA et SCC sont confrontés à leurs fiches, et leurs écarts marqués `⚠ [B]` sur place. `audit_citations.py list` signale encore 2 citations, justes, dont la révision suit sur la même phrase. Restent les GLUE/MMU sans schéma. Le SCC n'a pas été relu pour le synchrone, le SDLC et le DMA.
 - **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, à regarder.
 - **Banc fx68k, étendre** · P3 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur concordent. Restent BERR et double faute, et l'autovecteur dans le verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
@@ -242,7 +242,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **Relevés de tiers** · P2 ⭘ — ST-STE Hardware Test (Troed), notes de Steven Tattersall,
   résultats de la suite Hatari. Un relevé entre en `hardware` s'il nomme machine et protocole.
 - **Étalon Troed** · P2 ◐ — WSDETECT est en place (`tools/run_wsdetect.py`). Reste ST-STE Hardware Test, à rapatrier et calibrer.
-- **Documents primaires manquants** · P2 ⭘ — RP5C15, HD6301, schémas GLUE/MMU ST et Mega STE,
+- **Documents primaires manquants** · P2 ⭘ — HD6301, schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST.
 - **Auto-tests sans source** · P3 ◐ — `tools/classify_selftests.py` lit l'échelon que chaque test de logique déclare : hardware 0 · primary 70 · rom 6 · rtl 1 · hatari 44 · aucun 14 (total 135). Ce qui ne cite rien reste à sourcer. C'est une déclaration, pas une relecture des attendus.
 - **Verilator en CI** · P2 ◐ — le job `rtl` de `tests.yml` compile Verilator 5.054 et lance les six bancs. Il n'a pas encore tourné : `continue-on-error` est à retirer au premier vert sur GCC et Linux.

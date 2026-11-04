@@ -6,6 +6,10 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## RTC : la fiche RP5C15 est rapatriée, le code la suit (2026-11-04)
+
+La fiche Ricoh RP/RF/RJ5C15 entre dans `setup_silicon_refs.sh`, à son empreinte. Relue contre `Rtc.cpp` : registres, masques, ADJ, Timer EN, année bissextile et RESET concordent, sans changement de code. Quatre points qu'elle ne dit pas sont marqués [F].
+
 ## `--fdc-seed` : l'angle de la disquette se choisit (2026-11-04)
 
 Le disque réel n'a pas d'angle défini au démarrage, et NeoST n'en tirait qu'un seul. Xenon 2 charge son niveau en 332 à 684 trames selon cette graine, contre 348 à 692 sous Hatari selon la sienne : l'écart relevé venait de deux tirages → `docs/CASE_STUDIES.md`. Sans cette option, rien ne change.

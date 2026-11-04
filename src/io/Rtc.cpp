@@ -1,6 +1,8 @@
 // =============================================================================
 //  Rtc.cpp — RP5C15 (Mega ST / Mega STE). Port de Hatari rtc.c, modèle paresseux
-//  déterministe (cf. Rtc.hpp).
+//  déterministe (cf. Rtc.hpp). Confronté le 2026-11-04 à la fiche RP/RF/RJ5C15 (Ricoh, EK-086-9908,
+//  extern/datasheets/RP5C15_Ricoh.pdf, sha256 b929eeb4) : aucun écart. Elle ne dit rien de quatre
+//  points, marqués [F] : ADJ relu, ADJ Timer EN à 0, retour à 0 du jour de semaine, minuit en 12 h.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -74,7 +76,7 @@ void Rtc::catchUp() {
     const uint64_t secs = elapsed / uint64_t(secondCycles_);
     if (!secs) return;
     baseCycle_ = t - int64_t(elapsed % uint64_t(secondCycles_));
-    // Ricoh EK-086-9908 p7 : les étages sous-seconde continuent ; leur
+    // [B] Ricoh EK-086-9908 p7 : les étages sous-seconde continuent ; leur
     // retenue est mémorisée tant que TIMER EN=0, puis délivrée au redémarrage.
     // Un seul carry est retenu, sans accumuler toutes les secondes arrêtées.
     if (!(mode_ & 0x08)) { timerCarry_ = true; return; }
@@ -87,15 +89,15 @@ uint8_t Rtc::read8(uint32_t addr) {
     catchUp();
     const int i = static_cast<int>((addr - 0xFFFC21) >> 1) & 0x0F;
     if (mode_ & 1) {
-        // Ricoh EK-086-9908 p6, MAME rp5c15 : 2..8 sont les alarmes,
+        // [B] Ricoh EK-086-9908 p6 ; MAME rp5c15 [D], sans révision : 2..8 sont les alarmes,
         // jamais des alias des compteurs. Hauts F conservés pour la sonde TOS.
         if (i >= 2 && i <= 8) return uint8_t(bank1_[i] | (i <= 3 ? 0xF0 : 0));
         if (i < 13) return bank1_[i];
     }
     if (i < 13) return uint8_t(d_[i] & 0x0F);           // chiffre BCD (4 bits utiles)
     if (i == 13) return uint8_t((mode_ & 0x0F) | 0xF0); // mode : bits hauts à 1 (cf. Hatari)
-    // Ricoh EK-086-9908 p7 : Eh/Fh sont uniquement accessibles en écriture.
-    // Comme MAME rp5c15_device::read, ne pas exposer les commandes mémorisées.
+    // [B] Ricoh EK-086-9908 p7 : Eh/Fh sont uniquement accessibles en écriture.
+    // [F] La valeur relue n'est pas définie. 0 comme MAME rp5c15_device::read, sans révision : ne pas exposer les commandes mémorisées.
     return 0;
 }
 
@@ -106,12 +108,13 @@ void Rtc::write8(uint32_t addr, uint8_t v) {
         static constexpr uint8_t masks[7] = {15,7,15,3,7,15,3};
         bank1_[i] = v & masks[i-2];
     } else if ((mode_ & 1) && i < 13) {
-        // Ricoh EK-086-9908 p6-7 : la banque de contrôle n'écrit jamais
+        // [B] Ricoh EK-086-9908 p6-7 : la banque de contrôle n'écrit jamais
         // les chiffres du calendrier. CLKOUT mémorisé, sans sortie synthétique.
         static constexpr uint8_t masks[13] = {7,1,15,7,15,3,7,15,3,0,1,3,0};
         bank1_[i] = v & masks[i];
         if (i == 1 && (v & 1)) {
-            // ADJ arrondit à la minute la plus proche et remet le diviseur à zéro.
+            // [B] Ricoh EK-086-9908 p7 : ADJ arrondit à la minute la plus proche et remet le diviseur à zéro.
+            // [F] La fiche ne dit ni si ADJ se relit à 1, ni s'il agit Timer EN à 0. Ici : il reste relu et il agit.
             // Déduction du reset des étages inférieurs : leur carry retenu est
             // aussi annulé (pas une mesure sur matériel).
             timerCarry_ = false;
@@ -158,6 +161,7 @@ int Rtc::hour24() const {
 
 void Rtc::setHour24(int hour) {
     if (hour < 0) hour = 0;
+    // [F] En 12 h, la fiche p7 ne donne que le bit p.m. : minuit s'écrit ici 00, pas 12. Tranche : un relevé sur RP5C15.
     const int value = (bank1_[10] & 1) ? hour : hour % 12;
     d_[4] = uint8_t(value % 10);
     d_[5] = uint8_t(value / 10 + (!(bank1_[10] & 1) && hour >= 12 ? 2 : 0));
@@ -179,7 +183,8 @@ void Rtc::tickOneSecond() {
     int h = hour24() + 1;
     if (h < 24) { setHour24(h); return; }
     setHour24(0);
-    d_[6] = uint8_t((d_[6] + 1) % 7);                   // jour de la semaine 0-6 (Hatari/tm_wday)
+    // [F] La fiche ne dit que 3 bits : le retour à 0 après 6 suit Hatari et tm_wday. Tranche : un relevé sur RP5C15.
+    d_[6] = uint8_t((d_[6] + 1) % 7);
 
     static const int mlen[13] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     const int yr  = get(11, 12);

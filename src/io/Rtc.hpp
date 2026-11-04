@@ -94,7 +94,7 @@ private:
     uint8_t test_   = 0;                     // $FFFC3D
     uint8_t reset_  = 0;                     // $FFFC3F
 
-    // Ricoh EK-086-9908 p6 : CLKOUT, ADJ, alarmes2..8, réservé9,
+    // [B] Ricoh EK-086-9908 p6 : CLKOUT, ADJ, alarmes2..8, réservé9,
     // sélection12/24, compteur bissextile, réservéC. Défaut24h pour l'API hôte.
     // Pas de signal CLKOUT/ALARM synthétique ; ALARM n'est pas câblé sur Mega ST.
     uint8_t bank1_[13] = {0,0,0,0,0,0,0,0,0,0,1,0,0};

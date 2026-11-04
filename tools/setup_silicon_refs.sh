@@ -63,6 +63,8 @@ doc Zilog_SCC_ESCC_UM.pdf 2a13683ee0e423ee3cdf2781a4ce6b4df65c1e069a269e4234fa69
     https://www.zilog.com/docs/serial/scc_escc_um.pdf
 doc Zilog_PS0117.pdf feb4b46341bf20cab3ce5e555b02b7c13e1c2422cb12a9ba2dbfa121d0a34faa \
     https://www.zilog.com/docs/serial/ps0117.pdf
+doc RP5C15_Ricoh.pdf b929eeb470dfc0df7b2673cd3810debe17d08e8e1f155126e6c274dc0fadcf3e \
+    https://static.datasheets.com/doc/21798444-ricoh-rj5c15-ds.pdf
 # Transcription tierce du microcode du 68000 : même origine que fx68k, donc pas un témoin
 # indépendant de lui. Chaque mot y dit quels accès bus la séquence fait, et dans quel ordre.
 doc m68k_microcode_all.txt f678abb9ec4f32ac19a0b67cf7a9e5d1ab8c581e38588d2cdc5d17577e88eb8b \
