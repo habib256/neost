@@ -24,6 +24,8 @@ Vroom reste ouvert : NeoST et Hatari le font planter selon la graine, un vrai ST
 
 `tools/make_reloc_probe.py` fabrique une disquette qui mesure ce point sur machine réelle, sans le jeu.
 
+`tools/fix_short_reloc.py` répare une copie en portant la taille du fichier à 2444 octets. Sur cette copie, 24 graines sur 24 passent sous TOS 1.04, 1.06 et 1.62 chez NeoST, contre 7 à 10 avant : la cause de ces échecs est démontrée dans les émulateurs. Le bruit sous TOS 2.06 survit et reste ouvert.
+
 ## Pirates : l'écart d'intro est un tirage au hasard (2026-11-04)
 
 Le bruit noté côté Hatari ne se reproduit plus, et le reste de l'écart vient de XBIOS `Random`, semé sur `_hz200`. Le titre sort des bugs ouverts → `docs/CASE_STUDIES.md`. Les bits 3, 7 et 11 de la palette relue sur ST entrent au TODO.
