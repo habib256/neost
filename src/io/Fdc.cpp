@@ -2643,15 +2643,14 @@ int Fdc::updateWriteSectors() {
             commandState_ = RUN_WS_CRC; fdcCycles = transferDelay(2);
         }
         break;
-     // ⚠ [B] WD177X-00 p. 1-12, 1-13 : 2 octets de CRC, 1 octet $FF, puis INTRQ 24 µs (MFM) après le dernier
-     // CRC. Ici la fin arrive après les 2 octets de CRC et CMD_COMPLETE (1 µs), soit ~23 µs trop
-     // tôt ([D] fdc.c:3549, 433 @ f0736b24, idem). Écart non corrigé, visible des seuls chronométrages au cycle.
+     // [B] WD177X-00 p. 1-12, 1-13 : 2 octets de CRC, 1 octet $FF, puis INTRQ 24 µs (MFM) après le dernier CRC.
+     // [D] fdc.c:3549, 433 @ f0736b24 finit ~1 µs après le CRC : la fiche prime.
      case RUN_WS_CRC:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }  // pas de lecteur → on attend (même état)
         {
             const uint8_t st = writeSectorST(uint8_t(drive_[driveSel_].headTrack), sr_, side_, bufferSize());
             if (st & STR_RNF) { commandState_ = RUN_WS_RNF; fdcCycles = CMD_IMMEDIATE; }
-            else              { commandState_ = RUN_WS_MULTI; fdcCycles = CMD_IMMEDIATE; }
+            else              { commandState_ = RUN_WS_MULTI; fdcCycles = 24 * 8 - CMD_COMPLETE; }
         }
         break;
      case RUN_WS_MULTI:
@@ -2844,13 +2843,14 @@ int Fdc::updateWriteTrack() {
         break;
      // [B] WD177X-00 p. 1-13, 1-15 : d'un index au suivant, une DRQ par octet chargé. Mais $F7 écrit DEUX
      // octets de CRC pour une seule DRQ.
-     // ⚠ [B] p. 1-15 : ici chaque $F7 ne compte que pour un octet, et on tire bytesPerTrack() octets. Écart non
-     // corrigé, comme Hatari ([D] fdc.c:3996-4005 @ f0736b24) : sur un format 9 secteurs (18 $F7), l'adresse
-     // DMA finale dépasse d'environ 18 octets, au bloc FIFO de 16 près, ce que donnerait la fiche.
+     // [B] p. 1-15 : $F7 écrit deux octets de CRC pour une seule DRQ. [D] fdc.c:3996-4005 @ f0736b24 le compte
+     // pour un octet, et l'adresse DMA finale d'un format 9 secteurs y dépasse d'environ 18 octets : la fiche prime.
      case RUN_WT_TRANSFER_LOOP:
         if (dmaBytesToTransfer_-- > 0) {
-            bufferAdd(fifoPull());
+            const uint8_t b = fifoPull();
+            bufferAdd(b);
             fdcCycles = transferDelay(1);
+            if (b == 0xF7 && dmaBytesToTransfer_ > 0) { --dmaBytesToTransfer_; fdcCycles = transferDelay(2); }
         } else {
             commandState_ = RUN_WT_COMPLETE; fdcCycles = CMD_IMMEDIATE;
         }
@@ -2883,10 +2883,10 @@ void Fdc::executeCommand(uint8_t cmd) {
 
     // Nouvelle commande : on efface l'IRQ du FDC (sauf « force interrupt immediate »).
     // [B] WD177X-00 p. 1-5, p. 1-16 ; [D] fdc.c:4538-4548 @ f0736b24.
-    // ⚠ [B] p. 1-16 : « The Hex D0 is the only command » qui rend effaçable l'interruption de $D8. Ici
-    // N'IMPORTE QUELLE commande remet interruptCond_ à 0, et la lecture d'état suivante efface INTRQ :
-    // écart non corrigé, comme Hatari ([D] fdc.c:4550-4555 @ f0736b24, « not just when the new command is
-    // D0 », sans source). Effet : après $D8 puis une commande autre que $D0, INTRQ retombe plus tôt.
+    // ⚠ [B] p. 1-16 : « The Hex D0 is the only command » qui rend effaçable l'interruption de $D8.
+    // [D] fdc.c:4550-4555 @ f0736b24 efface la condition à toute commande, « not just when the new command is D0 ».
+    // Essai du 2026-11-04 : la fiche à la lettre fait diverger Super Hang-On (99 % d'écart à la trame 500,
+    // 0,0 % sinon). Écart gardé. Tranché par : un relevé d'INTRQ après $D8 puis une autre commande.
     if ((irqSignal_ & IRQ_FORCED) && !(interruptCond_ & INT_COND_IMMEDIATE))
         irqSignal_ &= ~IRQ_FORCED;
     if (type != 4) fdcClearIrq();
@@ -2911,9 +2911,7 @@ void Fdc::executeCommand(uint8_t cmd) {
         break;
      }
      // [B] WD177X-00 p. 1-6, p. 1-9 (BUSY ; RAZ DRQ, Lost Data, RNF, bits 5 et 6, INTRQ) ; CRC : p. 1-16.
-     // ⚠ [B] p. 1-9 : le bit 6 est aussi remis à zéro en Write Sector. Ici il reste jusqu'à RUN_WS_MOTORON :
-     // écart non corrigé, comme Hatari ([D] fdc.c:4268-4269 @ f0736b24). Visible d'un seul
-     // sondage du statut pendant le spin-up ou le délai E, après un WPRT resté levé.
+     // [B] p. 1-9 : le bit 6 est aussi remis à zéro en Write Sector. [D] fdc.c:4268-4269 @ f0736b24 le garde : la fiche prime.
      case 2: {                                                // READ / WRITE SECTOR
         commandType_ = 2; statusTypeI_ = false;
         if ((cr_ & 0xf0) <= 0x90) {                           // 0x80/0x90 : read sector(s)
@@ -2921,7 +2919,7 @@ void Fdc::executeCommand(uint8_t cmd) {
             updateStr(STR_DRQ | STR_LOST | STR_CRC | STR_RNF | STR_RECTYPE | STR_WPRT, STR_BUSY);
         } else {                                              // 0xA0/0xB0 : write sector(s)
             command_ = CMD_WRITESECTORS; commandState_ = RUN_WS_WRITEDATA;
-            updateStr(STR_DRQ | STR_LOST | STR_CRC | STR_RNF | STR_RECTYPE, STR_BUSY);
+            updateStr(STR_DRQ | STR_LOST | STR_CRC | STR_RNF | STR_RECTYPE | STR_WPRT, STR_BUSY);
         }
         fdcCycles = PREPARE_TYPE_II;
         break;

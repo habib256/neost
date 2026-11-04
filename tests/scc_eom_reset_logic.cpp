@@ -1,4 +1,4 @@
-// UM0109 WR0 p.139 et RR0 p.176 : reset EOM indépendant de la commande/pointeur.
+// UM0109 WR0 p.139-141 et RR0 p.176 : reset EOM indépendant de la commande/pointeur, sans effet transmetteur coupé.
 #include "io/Scc.hpp"
 #include <cstdio>
 #include <vector>
@@ -10,6 +10,8 @@ bool testSccEomReset(){
         auto wr=[&](int r,int v){control(r);control(v);};
         auto rr=[&](int r=0){control(r);return s.read8(0x81+4*c);};
         wr(15,0);wr(1,1);wr(9,8);
+        wr(4,4);control(0xc0);check(rr()&0x40,"transmitter disabled: EOM reset leaves the latch");
+        wr(5,8);
         for(int mode:{0,0x10,0x20,0x30,4}){
             wr(4,4);wr(4,mode);wr(15,0x40);control(0x10);control(0x10);
             check(rr()&0x40,"reset or async setup provides EOM baseline");
@@ -19,7 +21,7 @@ bool testSccEomReset(){
         }
         control(0xcc);control(0x2a);check(rr(12)==0x2a,"high CRC command combines with Point High register selection");
         control(0xc4);control(4);check(rr()&0x40,"high CRC command combines with low register selection");
-        wr(15,0);s.setLoopback(true);wr(5,0x82);wr(15,0x60);wr(5,0x80);
+        wr(15,0);s.setLoopback(true);wr(5,0x8a);wr(15,0x60);wr(5,0x88);
         check(s.irqActive()&&(rr()&0x40),"CTS closes external image while EOM high");
         control(0xc0);check(s.irqActive()&&(rr()&0x40),"reset EOM preserves preexisting external latch image");
         std::vector<uint8_t> state;auto save=StateArchive::saver(state);s.serialize(save);

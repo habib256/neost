@@ -1337,6 +1337,7 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 - **WD1772, six points de fiche** (2026-11-04), [B] WD177X-00 : Restore pose DR à 0 et le sens vers la piste 0 (p. 1-7). Seek Error après 255 pas seulement si V=1 (p. 1-8). STEP sortant en piste 0 : TR passe à 0 (p. 1-7). Au repos, $Dx efface RNF et CRC (p. 1-16). CRC d'ID faux : bit CRC posé, RNF+CRC au final (p. 1-10, p. 1-18), et il survit à la lecture du statut en type I (p. 1-8). Hatari fait autrement sur tous ces points. 80 disques joués au clavier et au joystick, images identiques avant et après. Ne pas réaligner.
 - **ACIA, master reset** (2026-11-04) : IRQ tenue haute, [B] MC6850 § Master Reset p. 5, [D] `gen_uart.v:347-348 @ a00deb5b`. Hatari (`acia.c:727-730 @ f0736b24`) la lève sous `CR=%x01xxx11`. Ne pas réaligner.
 - **SCC, pointeur de registre** (2026-11-04) : seule une lecture du port de contrôle le remet à zéro, [B] UM010902-0609 p. 28 et 30. Hatari (`scc.c:1644 @ f0736b24`) le remet à toute lecture. Ne pas réaligner.
+- **WD1772, écriture** (2026-11-04) : INTRQ 24 µs après le dernier CRC d'un Write Sector, et $F7 compté pour deux octets avec une seule DRQ en Write Track, [B] WD177X-00 p. 1-12, 1-13, 1-15. Hatari finit ~1 µs après le CRC (`fdc_write`, écart accepté de 184 cycles dans `run_timing_oracle.py`) et compte $F7 pour un octet. Ne pas réaligner.
 - **Filtre C10 du STF** (2026-11-04) : NeoST coupe à 7,7 et 2,1 kHz, les valeurs du circuit que cite Hatari lui-même (`sound.c:439-440 @ f0736b24`). Hatari garde des coefficients calculés pour 44,1 kHz et les applique à 250 kHz, soit 43 et 11 kHz. Ne pas réaligner.
 - **Bruit du YM à R6 = 0** (2026-11-04) : NeoST rend R6 = 0 égal à R6 = 1, comme Hatari dit l'avoir mesuré (`sound.c:1046 @ f0736b24`). Son code tire le LFSR 2× trop vite. Ne pas réaligner.
 - **Reset du MFP** (2026-11-04) : TADR..TDDR et les compteurs restent, SCR, UCR, RSR s'effacent et l'USART s'arrête, [B] MC68901 § 2.2.3 p. 2-8, MK68901 p. 13,
@@ -1481,7 +1482,7 @@ divergence HAUTE**, les 4 correctifs sont CORRECTS. La passe remonte surtout des
   un `move.w` vers `$FF8260` donne l'octet haut aux deux, l'octet bas est ignoré (le Shifter ne
   lit que D8-D9) ; les lectures `$FF8260/61` rendent la valeur Shifter. **res 3** = Shifter arrêté :
   stop posé au cycle-ligne ≥ 64 (DE actif), retour ≥ 72 et ≤ 32 cycles après → lignes suivantes
-  décalées de 0/4/8/12 px, compteur −0/−2/−4/−6 octets en fin de ligne (`vcStopInc_`) ; ligne
+  décalées de 0/4/8/12 px, compteur −0/−2/−4/−6 octets en fin de ligne (`vc_.stopInc`) ; ligne
   dont toute la fenêtre DE est couverte par un arrêt = aire active noire, bordures intactes
   (extension NeoST, cf. § *Vidéo* ; avant le 2026-10-20 : ligne arrêtée au commit, ce qui
   noircissait la ligne précédente). glue-selftest +36 vérifs ;

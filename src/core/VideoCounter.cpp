@@ -35,7 +35,7 @@
 // haut donne 34 des deux côtés ; le sticky bogus (34 vs Glue 63) suit la Glue.
 // LATCHÉE au 1er commit de la trame (reset à beginFrame) : si la Glue re-ferme le
 // haut APRÈS le début des commits, l'ancre ne bouge plus — sl reste monotone et
-// lineSnap_/vcLineY_ gardent une indexation stable (verrou Cuddly conservé).
+// lineSnap_/vc_.lineY gardent une indexation stable (verrou Cuddly conservé).
 int Shifter::commitAnchor() {
     if (commitAnchor_ >= 0) return commitAnchor_;
     int a = liveStartHBL_;
@@ -55,7 +55,7 @@ void Shifter::endVideoLine() {
     // calibration fullscreen d'Enchanted Land mesure $FF8209 à travers des lignes
     // élargies/raccourcies). Sans trick, glueLineBytes == bpl (chemin historique).
     if (!syncWrites_.empty())
-        liveGlueCatchUp(commitAnchor() + vcLineY_);
+        liveGlueCatchUp(commitAnchor() + vc_.lineY);
     // Ancre verticale du commit : commitAnchor() = max(liveStartHBL_, glueStartHBL_)
     // sur une trame à tricks, LATCHÉE au 1er commit de la trame (cf. déclaration).
     // liveStartHBL_ (sticky) passe à 34 sur TOUTE bascule 60 Hz avant la ligne 63 —
@@ -68,7 +68,7 @@ void Shifter::endVideoLine() {
     // croyait son overscan ouvert → écran en jeu déchiré puis chargements en échec
     // (2026-07-12, oracle Hatari byte-exact sur ce poll).
     if (commitAnchor_ < 0) commitAnchor_ = commitAnchor();   // latch au 1er commit
-    const int sl  = commitAnchor_ + vcLineY_;
+    const int sl  = commitAnchor_ + vc_.lineY;
     const int bpl = glueLineBytes(sl);
     // Capture les octets que le shifter vient de lire sur CETTE ligne (échantillon
     // daté au faisceau, cf. lineSnap_) : bpl + marge d'arrondi au groupe de 16 px
@@ -92,7 +92,7 @@ void Shifter::endVideoLine() {
         // kSnapLead octets de garde AVANT la base de ligne (offsets sources
         // négatifs du scroll hard, cf. déclaration kSnapLead) puis la ligne.
         for (int i = 0; i < n + kSnapLead; ++i)
-            snap[i] = bus_.read8((vcLineBase_ - static_cast<uint32_t>(kSnapLead)
+            snap[i] = bus_.read8((vc_.lineBase - static_cast<uint32_t>(kSnapLead)
                                   + static_cast<uint32_t>(i)) & kVideoAddrMask);   // DMA vidéo 22 bits
         lineSnapLen_[sl] = static_cast<uint16_t>(n);
     }
@@ -105,7 +105,7 @@ void Shifter::endVideoLine() {
         lineScrollSnap_[sl] = uint8_t(0x40 | hwScrollCount | (hwScrollPrefetch ? 0x10 : 0)
                                      | (steBorderFlag_ ? 0x20 : 0)
                                      | (lineStoppedOver(sl) ? 0x80 : 0));
-    vcLineBase_ += static_cast<uint32_t>(bpl);
+    vc_.lineBase += static_cast<uint32_t>(bpl);
     // Prefetch et line-offset STE ne s'appliquent QUE sur une ligne réellement
     // affichée : chez Hatari les deux sont dans la branche « else » de la ligne
     // totalement blanche ([D] video.c:4007 @ f0736b24 → :4246 « pVideoRaster += LineWidth*2 »),
@@ -114,16 +114,16 @@ void Shifter::endVideoLine() {
     // le compteur vidéo d'autant d'octets par ligne non affichée — visible sur STE
     // à scrolling matériel dès qu'une trame se termine avant sa fin nominale.
     if (bpl > 0) {
-        vcLineBase_ += static_cast<uint32_t>(scrollCounterAdvance(sl));
-        vcLineBase_ += static_cast<uint32_t>(lineWidth) * 2u;  // line-offset STE (mots sautés)
+        vc_.lineBase += static_cast<uint32_t>(scrollCounterAdvance(sl));
+        vc_.lineBase += static_cast<uint32_t>(lineWidth) * 2u;  // line-offset STE (mots sautés)
     }
-    if (vcDelayedOffset_ != 0) {                           // écriture compteur pendant le DE
-        vcLineBase_ += static_cast<uint32_t>(vcDelayedOffset_ & ~1);
-        vcDelayedOffset_ = 0;
+    if (vc_.delayedOffset != 0) {                           // écriture compteur pendant le DE
+        vc_.lineBase += static_cast<uint32_t>(vc_.delayedOffset & ~1);
+        vc_.delayedOffset = 0;
     }
-    if (vcDelayedAddr_ >= 0) {                             // écriture en bordure droite
-        vcLineBase_ = static_cast<uint32_t>(vcDelayedAddr_);
-        vcDelayedAddr_ = -1;
+    if (vc_.delayedAddr >= 0) {                             // écriture en bordure droite
+        vc_.lineBase = static_cast<uint32_t>(vc_.delayedAddr);
+        vc_.delayedAddr = -1;
     }
     if (newHwScrollCount_ >= 0) {                          // HSCROLL différé (NewHWScrollCount)
         hwScrollCount    = static_cast<uint8_t>(newHwScrollCount_);
@@ -138,14 +138,14 @@ void Shifter::endVideoLine() {
     // Scroll hard « Shifter arrêté » : ajustement du compteur à la fin de la ligne
     // du stop (port VideoRasterDelayedInc, [D] video.c:4410-4416 @ f0736b24 — hors de la branche
     // « ligne blanche », donc appliqué quelle que soit la ligne).
-    if (vcStopInc_ != 0) {
-        vcLineBase_ += static_cast<uint32_t>(vcStopInc_);
-        vcStopInc_ = 0;
+    if (vc_.stopInc != 0) {
+        vc_.lineBase += static_cast<uint32_t>(vc_.stopInc);
+        vc_.stopInc = 0;
     }
     // Repli du compteur sur 22 bits (port [D] video.c:4423 @ f0736b24 « pVideoRaster & VideoMask ») :
     // le compteur matériel n'a que A1..A21 — au-delà de $3FFFFF il reprend en $000000.
-    vcLineBase_ &= kVideoAddrMask;
-    ++vcLineY_;
+    vc_.lineBase &= kVideoAddrMask;
+    ++vc_.lineY;
 }
 
 // Commit des scanlines TERMINÉES au HBL de chaque ligne (port de l'appel
@@ -170,9 +170,9 @@ void Shifter::commitScanline(int line) {
     if (frameMode_ != Mode::High && !syncWrites_.empty())
         liveGlueCatchUp(line);
     while (true) {
-        const int sl = commitAnchor() + vcLineY_;
+        const int sl = commitAnchor() + vc_.lineY;
         if (sl > line) break;
-        if (vcLineY_ >= curAH_) {
+        if (vc_.lineY >= curAH_) {
             if (frameMode_ == Mode::High || syncWrites_.empty()) break;
             if (sl + 1 >= static_cast<int>(glueLines_.size())) break;
             liveGlueCatchUp(sl);
@@ -190,8 +190,8 @@ void Shifter::commitScanline(int line) {
 // mesure le stabilisateur beam-sync d'Enchanted Land en jeu (poll $FF8209).
 // Les lectures des lignes ≥ restart renvoient cette base figée (videoCounter).
 void Shifter::restartVideoCounter(int line) {
-    vcRestartBase_ = static_cast<int64_t>(videoBase & kVideoAddrMask);
-    vcRestartLine_ = line;
+    vc_.restartBase = static_cast<int64_t>(videoBase & kVideoAddrMask);
+    vc_.restartLine = line;
 }
 
 // Position du faisceau (ligne absolue + cycle dans la ligne) depuis l'horloge de
@@ -233,8 +233,8 @@ uint32_t Shifter::videoCounter() {
     // + 1 mot PAR PLAN si scroll fin avec prefetch (cf. scrollCounterAdvance).
     // lineWidth=0 et scroll=0 sur ST/STF → bpl.
     const int  stride = bpl + static_cast<int>(lineWidth) * 2 + scrollCounterAdvance();
-    // Compteur MATÉRIALISÉ (≙ pVideoRaster) : vcLineBase_ = début de la ligne active
-    // vcLineY_ (les lignes déjà rendues ont déjà accumulé leur stride réel — lineWidth
+    // Compteur MATÉRIALISÉ (≙ pVideoRaster) : vc_.lineBase = début de la ligne active
+    // vc_.lineY (les lignes déjà rendues ont déjà accumulé leur stride réel — lineWidth
     // variable, écritures du compteur, scroll). L'affichage couvre les lignes
     // [dispStart, dispStart+disp) (VDE_On..VDE_Off) ; avant (bordure HAUTE) le
     // compteur reste à la base latchée ; pendant, il vaut base de ligne + offset
@@ -278,8 +278,8 @@ uint32_t Shifter::videoCounter() {
     // 310/260 cycle 56) : les lectures au-delà renvoient la base rechargée, FIGÉE
     // jusqu'au DE de la trame suivante (chez Hatari, pVideoRaster vaut alors
     // &STRam[VideoBase] et plus rien ne l'avance avant la prochaine ligne affichée).
-    if (vcRestartBase_ >= 0 && line >= vcRestartLine_)
-        return static_cast<uint32_t>(vcRestartBase_) & kVideoAddrMask;
+    if (vc_.restartBase >= 0 && line >= vc_.restartLine)
+        return static_cast<uint32_t>(vc_.restartBase) & kVideoAddrMask;
     int dispStart = liveStartHBL_;
     int disp2     = disp;
     if (frameMode_ != Mode::High && !syncWrites_.empty()
@@ -293,12 +293,12 @@ uint32_t Shifter::videoCounter() {
         disp2     = glueEndHBL_ + glueBlankLines_ - glueStartHBL_;
     }
     const int  la   = line - dispStart;                 // index de ligne active du faisceau
-    uint32_t addr = vcLineBase_;
+    uint32_t addr = vc_.lineBase;
     if (la >= 0) {
         // Ligne au-delà de celle du compteur matérialisé (rendu pas encore passé) :
         // extrapole au stride courant. Bordure basse : figé à l'écran entièrement lu.
         const int laEff = la < disp2 ? la : disp2;
-        if (laEff > vcLineY_) {
+        if (laEff > vc_.lineY) {
             if (!syncWrites_.empty() && frameMode_ != Mode::High) {
                 // Trame à tricks : somme des octets RÉELS par ligne (machine Glue
                 // live) — une ligne élargie (left/right off) ou raccourcie (-2)
@@ -312,18 +312,18 @@ uint32_t Shifter::videoCounter() {
                 // raccourcie) ne fait avancer NI line-offset NI prefetch — l'ajouter
                 // ici faisait diverger l'extrapolation du commit, et le compteur
                 // reculait entre deux lectures $FF8205/07/09 encadrant un HBL.
-                for (int y = vcLineY_; y < laEff; ++y) {
+                for (int y = vc_.lineY; y < laEff; ++y) {
                     const int lb = glueLineBytes(dispStart + y);
                     const int extra = static_cast<int>(lineWidth) * 2 + scrollCounterAdvance(dispStart + y);
                     addr += static_cast<uint32_t>(lb + (lb > 0 ? extra : 0));
                 }
             } else {
-                addr += static_cast<uint32_t>(laEff - vcLineY_) * static_cast<uint32_t>(stride);
+                addr += static_cast<uint32_t>(laEff - vc_.lineY) * static_cast<uint32_t>(stride);
             }
         }
         // Offset intra-ligne UNIQUEMENT si la ligne courante n'a pas déjà été rendue
-        // (la < vcLineY_ = bordure droite : le stride de la ligne est déjà accumulé).
-        if (la < disp2 && laEff >= vcLineY_) {
+        // (la < vc_.lineY = bordure droite : le stride de la ligne est déjà accumulé).
+        if (la < disp2 && laEff >= vc_.lineY) {
             // Port FIDÈLE de Video_CalculateAddress ([D] video.c:1600 @ f0736b24, 2026-07-02) :
             // pour l'intra-ligne, Hatari NE lit PAS DisplayStart/EndCycle de la Glue —
             // il RECONSTRUIT le départ (ds) et la TAILLE (CurSize) depuis le
@@ -394,7 +394,7 @@ uint32_t Shifter::videoCounter() {
         }
     }
     // RESTART du compteur en fin de trame (Video_RestartVideoCounter, HBL 310/260
-    // cycle 56, ULM DSOTS) : PORTÉ (2026-07-02) — cf. le early-return vcRestartBase_
+    // cycle 56, ULM DSOTS) : PORTÉ (2026-07-02) — cf. le early-return vc_.restartBase
     // en tête. Indispensable aux moteurs double-buffer beam-syncés (Enchanted Land
     // en jeu) : la base du handler VBL est posée APRÈS la ligne 0 → le latch
     // begin-frame seul renvoyait l'ANCIEN buffer toute la trame et le stabilisateur
@@ -407,7 +407,7 @@ uint32_t Shifter::videoCounter() {
     if (vcTrace) {
         std::fprintf(stderr, "[VC] fc=%lld line=%d X=%d addr=%06X vcY=%d vcB=%06X"
                      " dispStart=%d disp2=%d la=%d sw=%zu startHBL=%d [",
-                     (long long)fc, line, X, addr & 0xFFFFFF, vcLineY_, vcLineBase_,
+                     (long long)fc, line, X, addr & 0xFFFFFF, vc_.lineY, vc_.lineBase,
                      dispStart, disp2, la, syncWrites_.size(), glueStartHBL_);
         for (std::size_t i = 0; i < syncWrites_.size() && i < 8; ++i)
             std::fprintf(stderr, "%s%c%02x@%d", i ? " " : "",
@@ -431,7 +431,7 @@ uint32_t Shifter::videoCounter() {
 //     Video_ScreenCounter_WriteByte @ f0736b24. Un écart relatif serait faux : le compteur
 //     avance encore jusqu'à la fin de ligne. Étalon : DHS Double Rez Trouble (écrit le compteur
 //     à chaque ligne, cycles 484-496, bordure droite ouverte) ;
-//   • écriture PENDANT le DE → on mémorise l'ÉCART (vcDelayedOffset_), appliqué à la
+//   • écriture PENDANT le DE → on mémorise l'ÉCART (vc_.delayedOffset), appliqué à la
 //     fin de la ligne (endVideoLine) — sur un vrai STE cela produit des artefacts,
 //     l'adresse de fin de ligne est en revanche exacte. Étalons : Stardust Tunnel STE,
 //     Braindamage End Part.
@@ -454,8 +454,8 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     // ≤ 4 Mo (port DMA_MaskAddressHigh — NeoST plafonne la ST-RAM à 4 Mo).
     if (addr == 0xFF8205) v &= 0x3F;
     const uint32_t cur = videoCounter();                       // adresse courante (brute)
-    uint32_t an = vcDelayedAddr_ >= 0 ? static_cast<uint32_t>(vcDelayedAddr_)
-                                      : (cur + static_cast<uint32_t>(vcDelayedOffset_)) & kVideoAddrMask;
+    uint32_t an = vc_.delayedAddr >= 0 ? static_cast<uint32_t>(vc_.delayedAddr)
+                                      : (cur + static_cast<uint32_t>(vc_.delayedOffset)) & kVideoAddrMask;
     if (addr == 0xFF8205)      an = (an & 0x00FFFFu) | (uint32_t(v) << 16);
     else if (addr == 0xFF8207) an = (an & 0xFF00FFu) | (uint32_t(v) << 8);
     else                       an = (an & 0xFFFF00u) | uint32_t(v);
@@ -469,19 +469,19 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     // Le MMU commence à lire 16 cycles AVANT le HDE_On quand le scroll fin est armé
     // AVEC PREFETCH ($FF8265 ; rien via $FF8264) — port Video_GetMMUStartCycle.
     const int mmuStart = g.lineStartCycle - ((steBorderFlag_ || (hwScrollCount && hwScrollPrefetch)) ? 16 : 0);
-    const bool overlapsNext = active && la > vcLineY_;   // fin de ligne pas encore servie
+    const bool overlapsNext = active && la > vc_.lineY;   // fin de ligne pas encore servie
     const bool rightBorder  = active && line < static_cast<int>(glueLines_.size())
                            && cyc > glueLines_[line].displayEndCycle;
-    if (!havePos || !active || (cyc <= mmuStart && !overlapsNext) || la < vcLineY_) {
-        vcLineBase_ = an;                                      // application immédiate
-        vcDelayedOffset_ = 0;
-        vcDelayedAddr_ = -1;
+    if (!havePos || !active || (cyc <= mmuStart && !overlapsNext) || la < vc_.lineY) {
+        vc_.lineBase = an;                                      // application immédiate
+        vc_.delayedOffset = 0;
+        vc_.delayedAddr = -1;
     } else if (rightBorder || overlapsNext) {
-        vcDelayedOffset_ = 0;
-        vcDelayedAddr_ = static_cast<int32_t>(an);
+        vc_.delayedOffset = 0;
+        vc_.delayedAddr = static_cast<int32_t>(an);
     } else {
-        vcDelayedOffset_ = static_cast<int>(an) - static_cast<int>(cur);  // pendant le DE → fin de ligne
-        vcDelayedAddr_ = -1;
+        vc_.delayedOffset = static_cast<int>(an) - static_cast<int>(cur);  // pendant le DE → fin de ligne
+        vc_.delayedAddr = -1;
     }
 }
 

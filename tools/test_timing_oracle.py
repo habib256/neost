@@ -99,6 +99,8 @@ class TimingComparison(unittest.TestCase):
             # Un écart accepté face à Hatari fait partie de l'attendu ; une mutation s'y ajoute.
             for field, offset in timing.ACCEPTED_BLITTER.get(case, {}).items():
                 baseline[field] = [t + offset for t in baseline[field]]
+            if case in timing.ACCEPTED_COMPLETION:
+                baseline["completion"] += timing.ACCEPTED_COMPLETION[case]
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertTrue(timing.compare(case, baseline, reference))
                 self.assertTrue(timing.compare(case, baseline, reference, strict=True))
@@ -145,6 +147,7 @@ class TimingComparison(unittest.TestCase):
         reference = self.all_reference["fdc_write"]
         with contextlib.redirect_stdout(io.StringIO()):
             mutant = copy.deepcopy(reference); mutant["polls"][5] += 1
+            mutant["completion"] += timing.ACCEPTED_COMPLETION["fdc_write"]
             self.assertTrue(timing.compare("fdc_write", mutant, reference))
             mutant["polls"][5] += 1
             self.assertFalse(timing.compare("fdc_write", mutant, reference))

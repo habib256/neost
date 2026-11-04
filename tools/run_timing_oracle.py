@@ -216,6 +216,7 @@ ACCEPTED_BLITTER = {
 # Première IRQ après une VBL sur STE : la broche est échantillonnée, comme le RTL, là où Hatari commit au
 # dispatch (docs/STCPU_BENCH.md). Décalage signé, la borne s'applique autour de lui.
 ACCEPTED_FIRST_IRQ = {"timer_b_event": -14}
+ACCEPTED_COMPLETION = {"fdc_write": 184}
 
 
 def compare(case, actual, expected, strict=False):
@@ -256,7 +257,8 @@ def compare(case, actual, expected, strict=False):
         if len(a) != 32 or len(b) != 32 or a[0] != 0 or b[0] != 0:
             raise ValueError("FDC : 32 rafales requises")
         phase = max(abs(x-y) for x, y in zip(a, b))
-        tail = abs(actual["completion"] - expected["completion"])
+        # [B] WD177X-00 p. 1-12, 1-13 : INTRQ 24 µs après le dernier CRC d'un Write Sector. Hatari finit ~1 µs après.
+        tail = abs(actual["completion"] - expected["completion"] - ACCEPTED_COMPLETION.get(case, 0))
         if len(actual["polls"]) != 31 or len(expected["polls"]) != 31:
             raise ValueError("FDC : 31 intervalles de travail CPU requis")
         # La première rafale n'est pas au même angle de rotation chez les deux

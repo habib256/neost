@@ -17,6 +17,19 @@
 #include "core/StateArchive.hpp"
 #include "core/Bus.hpp"
 
+// État du compteur vidéo ($FF8205/07/09), lu et avancé par VideoCounter.cpp (A32). Premier pas vers un objet
+// à part entière : les méthodes restent sur Shifter, car elles lisent la machine Glue et le faisceau.
+struct VideoCounterState {
+    uint32_t frameBase = 0;       // base latchée au début de trame (lecture bordure haute)
+    uint32_t lineBase  = 0;       // adresse de début de la PROCHAINE ligne active à rendre
+    int      lineY     = 0;       // index (0..disp-1) de cette ligne active
+    int      delayedOffset = 0;   // écart compteur (écriture $FF8205/07/09 pendant le DE)
+    int32_t  delayedAddr   = -1;  // adresse absolue (même écriture en bordure droite) ; −1 = rien
+    int64_t  restartBase   = -1;  // base relatchée au restart de fin de trame ; −1 = pas encore, cf. restartVideoCounter
+    int      restartLine   = 0;   // ligne absolue du restart effectué
+    int      stopInc       = 0;   // ≙ VideoRasterDelayedInc (appliqué par endVideoLine)
+};
+
 class Shifter {
 public:
     // Résolutions ST, sélectionnées par le registre $FF8260 :
@@ -336,27 +349,21 @@ private:
     // BASE en cours de trame ne s'applique qu'à la trame suivante ; les écritures du
     // COMPTEUR $FF8205/07/09 (STE) et les changements LINEWIDTH/HSCROLL différés
     // s'accumulent ligne à ligne au lieu de rétro-s'appliquer.
-    uint32_t vcFrameBase_ = 0;     // base latchée au début de trame (lecture bordure haute)
-    uint32_t vcLineBase_  = 0;     // adresse de début de la PROCHAINE ligne active à rendre
-    int      vcLineY_     = 0;     // index (0..disp-1) de cette ligne active
+    VideoCounterState vc_;
     // Écritures STE différées, appliquées en fin de ligne (port video.c : NewHWScrollCount,
     // NewLineWidth, VideoCounterDelayedOffset). -1 = rien en attente.
     int      newHwScrollCount_   = -1;
     bool     newHwScrollPrefetch_ = false;
     int      newLineWidth_       = -1;
-    int      vcDelayedOffset_    = 0;   // écart compteur (écriture $FF8205/07/09 pendant le DE)
-    int32_t  vcDelayedAddr_      = -1;  // adresse absolue (même écriture en bordure droite) ; −1 = rien
     // RESTART du compteur en fin de trame (port Video_RestartVideoCounter : ligne
     // 310/260, cycle 56 [+4 STE], AVANT le VBL) : base RE-LATCHÉE depuis $FF8201/03
     // à cet instant. −1 = pas (encore) redémarré cette trame. Les lectures
     // $FF8205/07/09 des lignes ≥ ligne de restart renvoient CETTE base (compteur
     // rechargé, figé jusqu'au DE de la trame suivante) ; beginFrame la reprend comme
-    // vcFrameBase_. C'est CE relatch (pas le début de trame) que sondent les moteurs
+    // vc_.frameBase. C'est CE relatch (pas le début de trame) que sondent les moteurs
     // double-buffer beam-syncés (Enchanted Land en jeu : le stabilisateur lit $8209
     // et doit voir la base posée par le handler VBL, écrite APRÈS la ligne 0 NeoST).
-    int64_t  vcRestartBase_      = -1;
-    int      vcRestartLine_      = 0;   // ligne absolue du restart effectué
-    // Fin de ligne active (≙ fin de Video_CopyScreenLine) : avance vcLineBase_ du
+    // Fin de ligne active (≙ fin de Video_CopyScreenLine) : avance vc_.lineBase du
     // stride (+2 si scroll fin = prefetch d'un mot), applique l'offset compteur
     // différé puis les valeurs HSCROLL/LINEWIDTH en attente. Appelée par renderLine.
     void endVideoLine();
@@ -407,7 +414,7 @@ public:
     bool liveLineDisplayed(int line);
 
     // RESTART du compteur vidéo en fin de trame (port Video_RestartVideoCounter,
-    // cf. vcRestartBase_). Appelé par Machine à la ligne 310 (50 Hz) / 260 (60 Hz),
+    // cf. vc_.restartBase). Appelé par Machine à la ligne 310 (50 Hz) / 260 (60 Hz),
     // cycle 56 (STF) / 60 (STE), si la fréquence du registre sync correspond
     // (check LIVE, comme Hatari qui relit $FF820A à cet instant).
     void restartVideoCounter(int line);
@@ -476,7 +483,6 @@ private:
     // res=3 pendant 8..32 cycles alors que le DE est actif → toutes les lignes
     // SUIVANTES de la trame sont décalées de 0/−4/−8/−12 px et le compteur vidéo
     // reçoit −0/−2/−4/−6 octets à la fin de la ligne courante (VideoRasterDelayedInc).
-    int     vcStopInc_       = 0;    // ≙ VideoRasterDelayedInc (appliqué par endVideoLine)
     int     shifterStopLine_ = -1;   // ligne du stop (les lignes > celle-ci sont décalées), −1 = aucun
     int     shifterStopShift_ = 0;   // décalage px (≙ DisplayPixelShift) des lignes suivantes
     // Écriture de la résolution côté Shifter (port Video_WriteToShifterRes).
@@ -697,9 +703,9 @@ public:
                  "Shifter::lastScroll8265Cycle_ hors bornes");
 
         // --- Compteur d'adresse vidéo matérialisé + écritures STE différées ---
-        ar(vcFrameBase_);
-        ar(vcLineBase_);
-        ar(vcLineY_);
+        ar(vc_.frameBase);
+        ar(vc_.lineBase);
+        ar(vc_.lineY);
         ar(newHwScrollCount_);
         // Écriture STE différée du même compteur 4 bits : sentinelle -1 (« aucune »)
         // sinon 0..15. Appliqué à hwScrollCount en fin de ligne (Shifter.cpp) → même
@@ -707,11 +713,11 @@ public:
         ar.check(newHwScrollCount_ >= -1 && newHwScrollCount_ < 16);
         ar(newHwScrollPrefetch_);
         ar(newLineWidth_);
-        ar(vcDelayedOffset_); ar(vcDelayedAddr_);
+        ar(vc_.delayedOffset); ar(vc_.delayedAddr);
         ar(frameStartRes_);
         ar.check(frameStartRes_ >= 0 && frameStartRes_ <= 3);
-        ar(vcRestartBase_);
-        ar(vcRestartLine_);
+        ar(vc_.restartBase);
+        ar(vc_.restartLine);
         // Résolution côté Shifter + scroll hard « Shifter arrêté » (format v50).
         ar(shifterRes_);
         ar.check(shifterRes_ <= 3, "Shifter::shifterRes_ > 3");
@@ -723,8 +729,8 @@ public:
         ar(stopFromFc_);
         ar(lastStopFromFc_);
         ar(lastStopToFc_);
-        ar(vcStopInc_);
-        ar.check(vcStopInc_ >= -6 && vcStopInc_ <= 0, "Shifter::vcStopInc_ hors bornes");
+        ar(vc_.stopInc);
+        ar.check(vc_.stopInc >= -6 && vc_.stopInc <= 0, "Shifter::vc_.stopInc hors bornes");
         ar(shifterStopLine_);
         ar.check(shifterStopLine_ >= -1 && shifterStopLine_ <= 4096, "Shifter::shifterStopLine_ hors bornes");
         ar(shifterStopShift_);
@@ -762,7 +768,7 @@ public:
             a(g.displayStartCycle); a(g.displayEndCycle);
             a(g.displayPixelShift); a(g.borderMask);
         });
-        // commitAnchor_ nourrit « sl = commitAnchor_ + vcLineY_ » : borne LARGE
+        // commitAnchor_ nourrit « sl = commitAnchor_ + vc_.lineY » : borne LARGE
         // (convention cpl_/lpf_ ≤ 4096 de Machine) — un INT_MAX forgé rendait
         // l'addition UB, même si les indexeurs aval re-bornent sl. Pas de borne
         // sur glueLines_.size() : replayGlue() peut légitimement redimensionner
@@ -851,20 +857,20 @@ public:
                  activeY_ + curAH_ <= curH_ && activeX_ + activeWidth() <= curW_);
         ar.check(!bordered() || !(steBorderFlag_ || newSteBorderFlag_) || activeX_ >= 16,
                  "Shifter::bordure gauche trop courte pour 336 px");
-        // vcLineY_ est le curseur de ligne active, rattrapé par des boucles
-        // « while (vcLineY_ < cible) endVideoLine(); » (videoCounter, endFrame).
+        // vc_.lineY est le curseur de ligne active, rattrapé par des boucles
+        // « while (vc_.lineY < cible) endVideoLine(); » (videoCounter, endFrame).
         // Une valeur très négative forgée les rend praticables mais interminables
         // (~2³¹ tours à ~200 accès bus chacun) : gel à 100 % de CPU, SIGKILL seul
         // recours — même classe que les gels refermés sur frameStart_/lineCarry_.
         // C'est la borne BASSE qui ferme le gel ; l'indexation de lineSnap_ par
-        // commitAnchor_ + vcLineY_ est déjà gardée sur place (endVideoLine).
+        // commitAnchor_ + vc_.lineY est déjà gardée sur place (endVideoLine).
         // ⚠ La borne haute n'est PAS curAH_ : bordure BASSE retirée, commitScanline
-        // pousse volontairement vcLineY_ au-delà de curAH_ jusqu'à glueEndHBL_
+        // pousse volontairement vc_.lineY au-delà de curAH_ jusqu'à glueEndHBL_
         // (overscan_top.st le fait) — un plafond curAH_ refusait cet état LÉGITIME.
         // On plafonne donc au nombre de lignes de la trame, seule absurdité visée.
-        ar.check(vcLineY_ >= 0
-                 && vcLineY_ <= static_cast<int>(glueLines_.size()) + curAH_,
-                 "Shifter::vcLineY_ hors bornes");
+        ar.check(vc_.lineY >= 0
+                 && vc_.lineY <= static_cast<int>(glueLines_.size()) + curAH_,
+                 "Shifter::vc_.lineY hors bornes");
     }
 };
 

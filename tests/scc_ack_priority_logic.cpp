@@ -92,6 +92,20 @@ bool testSccAckPriority() {
         rig.command(0, 0x38);
         check(rig.scc.irqActive(), "second reset releases remaining B IUS");
     }
+    {   // [B] UM0109 p.44 : en No Vector, le vecteur ne change plus avant Reset IUS.
+        PriorityRig r;
+        r.write(1, 1, 0x02);                           // IRQ d'émission, canal B
+        r.write(0, 9, 0x0a);                           // MIE et No Vector
+        r.write(1, 5, 0x08);
+        r.scc.write8(0x87, 0x51);                      // la donnée part : TX empty suit
+        r.scc.processIack();
+        const uint8_t held = r.read(1, 2) & 0x0e;
+        check(held == 0x00, "No Vector: IUS d'émission du canal B visible dans RR2B");
+        r.command(1, 0x28);                            // Reset Tx IP
+        check((r.read(1, 2) & 0x0e) == held, "No Vector: vecteur figé jusqu'à Reset IUS");
+        r.command(1, 0x38);                            // Reset Highest IUS
+        check((r.read(1, 2) & 0x0e) == 0x06, "No Vector: vecteur libéré par Reset IUS");
+    }
     std::fprintf(stderr, "[scc-ack-priority] %d checks, %d FAIL\n", checks, failures);
     return failures == 0;
 }

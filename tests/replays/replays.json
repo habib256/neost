@@ -197,6 +197,164 @@
       ],
       "window": 30,
       "max_diff": 0.5
+    },
+    {
+      "id": "stardust_partie_ste",
+      "note": "Partie jouée, disque 2 inséré à la demande du disque 1. Le menu animé de la trame 7000 n'est pas jugé.",
+      "disk": "disks/stx/Stardust (1994)(Daze Marketing Ltd.)(Disk 1 of 3)[cr Hardcore][t].st",
+      "machine": "ste",
+      "rom": "roms/tos162uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500
+      ],
+      "swaps": [
+        [
+          6200,
+          "disks/stx/Stardust (1994)(Daze Marketing Ltd.)(Disk 2 of 3)[cr Hardcore][t].st"
+        ]
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 40,
+      "frames": [
+        7500,
+        8000,
+        9000,
+        10000,
+        12000,
+        14000
+      ],
+      "window": 30,
+      "max_diff": 0.5
+    },
+    {
+      "id": "shadow_warrior_st",
+      "note": "Touche 1 sur le titre (le bouton 1P), puis disque 1, intro, disque 2. Le combat n'est pas jugé : ennemis et coups y divergent à partir de la trame 5800, de 2 à 36 %.",
+      "disk": "disks/stx/Shadow Warrior (1990)(Ocean)(Disk 1 of 3).stx",
+      "machine": "st",
+      "rom": "roms/tos102uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        3800,
+        5300
+      ],
+      "scancodes": [
+        [
+          2500,
+          2
+        ]
+      ],
+      "swaps": [
+        [
+          5100,
+          "disks/stx/Shadow Warrior (1990)(Ocean)(Disk 2 of 3).stx"
+        ]
+      ],
+      "joy_at": 6000,
+      "joy": "R*90 [RF]*20 .*20 L*30 [UF]*20 .*20 R*60 F*20 .*20 U*40 D*40",
+      "joy_repeat": 30,
+      "frames": [
+        3900,
+        4200,
+        4600,
+        5000,
+        5400
+      ],
+      "window": 30,
+      "max_diff": 0.5
+    },
+    {
+      "id": "golden_axe_st",
+      "note": "Image STX, disque B inséré, début du niveau 1. La mêlée n'est pas jugée : 1 à 4 % ensuite.",
+      "disk": "disks/stx/GoldenAxe[2Hot2Handle]-D1.stx",
+      "machine": "st",
+      "rom": "roms/tos102uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500,
+        6800,
+        7300,
+        8000,
+        9000
+      ],
+      "swaps": [
+        [
+          6500,
+          "disks/stx/GoldenAxe[2Hot2Handle]-D2.stx"
+        ]
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 40,
+      "frames": [
+        7000,
+        8000,
+        9000
+      ],
+      "window": 24,
+      "step": 1,
+      "max_diff": 0.5
+    },
+    {
+      "id": "wings_of_death_st",
+      "note": "Image STX, disque B inséré, jusqu'au menu.",
+      "disk": "disks/stx/Wings_Of_Death_Disk_1.stx",
+      "machine": "st",
+      "rom": "roms/tos102uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500,
+        6800,
+        7300,
+        8000,
+        9000
+      ],
+      "swaps": [
+        [
+          6500,
+          "disks/stx/Wings_Of_Death_Disk_2.stx"
+        ]
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 40,
+      "frames": [
+        7000,
+        8000,
+        9000,
+        10000,
+        12000,
+        14000
+      ],
+      "window": 24,
+      "step": 1,
+      "max_diff": 0.5
     }
   ]
 }

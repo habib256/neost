@@ -1,4 +1,4 @@
-// MC68901UM §7.3.2 : une période TX complète avant effacement UE.
+// [B] MC68HC901 § 7.3.2 p. 7-8, MK68901 p. 17 : un cycle complet de l'horloge d'émission TC avant effacement UE.
 #include "io/Mfp.hpp"
 #include "core/Pacing.hpp"
 #include <cstdio>
@@ -9,10 +9,9 @@ int testMfpUnderrunClear() {
         Scheduler s;Mfp m;m.setScheduler(&s);s.setCallback(Scheduler::SERIAL_TX,[&]{m.onSerialTxEvent();});
         m.write8(0xFFFA29,divide==16?0x88:8);m.write8(0xFFFA25,data);m.write8(0xFFFA1D,1);s.cancel(Scheduler::TIMER_D);
         m.write8(0xFFFA07,2);m.write8(0xFFFA2D,1);m.write8(0xFFFA2F,0x55);
-        // Référence : 11 bits (trame8N1 + période d'inhibition), Timer D /4 /2.
-        const int64_t numerator=neost::pacing::kCpuHzInt*11*data*divide;
-        const int64_t clear=(numerator+307199)/307200;
+        // Référence : un cycle de TC, Timer D /4 puis bascule, soit 2 × 4 × données à 2,4576 MHz.
         const auto end=s.nextDue();s.runTo(end);
+        const int64_t clear=end+(neost::pacing::kCpuHzInt*2*4*data+2457599)/2457600;
         eq("UE au front",m.read8(0xFFFA2D)&0x40,0x40);
         eq("UE lecture précoce conserve",m.read8(0xFFFA2D)&0x40,0x40);
         // Changement de débit puis UDR ne modifient pas l'inhibition engagée.
@@ -36,7 +35,6 @@ int testMfpUnderrunClear() {
     {
         Scheduler s;Mfp m;m.setScheduler(&s);s.setCallback(Scheduler::SERIAL_TX,[&]{m.onSerialTxEvent();});
         m.write8(0xFFFA2D,1);m.write8(0xFFFA2F,1);s.runTo(s.nextDue());
-        const auto nextClear=s.now()+(neost::pacing::kCpuHzInt*11+9599)/9600;
         // Le TSR suivant commence avec UE ancien encore posé.
         m.write8(0xFFFA2F,2);
         s.runTo((neost::pacing::kCpuHzInt*11+9599)/9600);
@@ -46,6 +44,7 @@ int testMfpUnderrunClear() {
         m.write8(0xFFFA2D,0);auto in=StateArchive::loader(bytes.data(),bytes.size());s.serialize(in);m.serialize(in);
         eq("archive nouveaux seuils indépendants",in.ok(),1);
         s.runTo(s.nextDue());
+        const auto nextClear=s.now()+(neost::pacing::kCpuHzInt*2*8+2457599)/2457600;
         eq("nouvel UE retourné",m.read8(0xFFFA2D)&0x40,0x40);
         eq("nouvel UE inhibition propre",m.read8(0xFFFA2D)&0x40,0x40);
         s.runTo(nextClear-1);eq("nouveau seuil moins un",m.read8(0xFFFA2D)&0x40,0x40);

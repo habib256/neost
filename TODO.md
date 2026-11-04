@@ -60,7 +60,7 @@ documents primaires, les ROM et le RTL épinglé.
 | 1 | Logithèque : relire les écarts de `compare_titles.py --joy`, étendre `tests/replays/replays.json` | P1 | 3 |
 | 2 | A43 : relire les écarts `⚠ [B]` restants du MFP, du WD1772, de l'ACIA et du SCC | P1 | 4 |
 | 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
-| 4 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
+| 4 | A32 : méthodes du compteur vidéo dans leur objet (un chantier à la fois) | P2 | 7 |
 
 ---
 
@@ -105,8 +105,7 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   ⚠ Le schéma 4118 est le shifter de la Panther ; aucun schéma du Shifter ST n'est disponible.
 - **Octet `$FF8261` relu** · P3 ⏸ source · [F] — `gstshifter.v:121 @ 4a6db7cc` rend $00 en octet bas ; NeoST garde l'alias de
   `$FF8260`, comme Hatari. Bloc « moyen » : le RTL ne l'emporte pas. Tranche : relevé sur STE.
-- **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — « choix acté », sans source
-  matérielle. Tranche : relevés de tiers (§ 4), netlist STE pour la branche STE.
+- **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut reste sans source : sur le fer, l'état se tire à la mise sous tension. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option.
 - **Offsets de datation dérivés d'Hatari** · P2 ◐ — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
   `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
   `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu,
@@ -171,7 +170,7 @@ Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → 
   reconstruction : seule divergence de sévérité moyenne assumée, sans promesse de flux brut.
   Tranche : relecture sur un vrai lecteur d'une piste écrite par un jeu (sauvegarde), ou IPF.
 - **ACSI : essai Idris OS** · P3 ⭘ — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté.
-- **WD1772, restes de l'audit** · P3 ⭘ · [B] contre [D] — marqués `⚠ [B]` dans `src/io/Fdc.cpp` : INTRQ 24 µs après le dernier CRC ; $F7 compté pour un octet ($F7 écrit deux octets pour une DRQ) ; INTRQ de $D8 effaçable par toute commande ; $Dx annulé si une commande suit à moins de 16 µs ; face sans ID. Deux écarts voulus protègent de vrais programmes : TR/SR écrits pendant BUSY (Delirious Demo IV) et commande remplacée pendant BUSY (Overdrive Demos).
+- **WD1772, restes de l'audit** · P3 ⭘ · [B] contre [D] — marqués `⚠ [B]` dans `src/io/Fdc.cpp` : INTRQ de $D8 effaçable par toute commande, gardé car la fiche à la lettre fait diverger Super Hang-On ; $Dx annulé si une commande suit à moins de 16 µs ; face sans ID. Deux écarts voulus protègent de vrais programmes : TR/SR écrits pendant BUSY (Delirious Demo IV) et commande remplacée pendant BUSY (Overdrive Demos).
 
 ### 2.7 Clavier — IKBD HD6301, ACIA 6850, MIDI
 
@@ -213,7 +212,8 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 | Titre | Prio | Symptôme | Piste |
 |-------|------|----------|-------|
 | **Pirates** ([cr Delight], écran d'intro) | P2 ⭘ | NeoST : 73 couleurs par trame, stables, rasters nets. Hatari : ~184, bruit qui change à chaque trame, au pixel près, marge gauche comprise. Mêmes écrans par ailleurs. Lancé en TOS 1.04 avec `--auto A:\PIRATES.PRG`. | Qui a raison ? Tracer les écritures de palette des deux côtés. Aucune source plus haute à ce jour. |
-| **Shadow Warriors** (2Hot2Handle) | P1 ⏸ média | Après SPACE, titre et musique OK, le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). | Disque absent, y compris des médias privés. Diff contre l'oracle piloté au joystick, même durée d'appui (`--key-hold`). |
+| **Vroom** (Lankhor), Mega STE, TOS 2.06 | P3 ⭘ | Image de bruit après le titre, avec certaines dates de frappes : en 4 Mo sur la plupart des décalages essayés, écran noir en 2 Mo sur d'autres. En plein Seek, le lecteur se désélectionne (`drv=-1`, puis lecteur B) alors que la musique écrit sur le PSG en interruption. Course probable sur le registre de sélection du PSG. | Hatari ne produit aucune capture avec ces entrées : rien ne tranche. Relever les écritures de R14 autour de la désélection, ou tester sur le fer. |
+| **Shadow Warriors** (2Hot2Handle) | P3 ⏸ média | Après SPACE, titre et musique OK, le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). Sur la version Ocean, ce n'est pas un défaut : le titre attend la touche 1 (« PUSH 1P OR 2P BUTTON »), et le tir ne lance rien non plus sous Hatari. Partie jouée, disques 1 et 2, sans écart avant le combat (`shadow_warrior_st`). | Le disque 2Hot2Handle reste absent. S'il revient, essayer d'abord la touche 1. |
 
 ### Campagnes à mener
 
@@ -223,7 +223,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
   Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
-  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde sept parties. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
+  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde onze parties, changements de disquette compris. Passe STX du 2026-11-04 : 11 disques, 10 à 0,0 % aux écrans vus sur ST, disques B compris pour 5 titres. Sur STE, 8 à 0,0 % ; Golden Axe et Lethal Xcess s'écartent à un seul écran de transition, Magic Pockets en pleine partie ; Super Off Road reste à sa demande de disque de données chez les deux émulateurs, Bubble Ghost et Chessmaster restent au bureau, faute de lancement du programme. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
 
 ## 4. 🪜 Harnais et preuve
 
@@ -234,7 +234,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 ### Monter l'échelle
 
 - **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. MFP, YM2149, WD1772, ACIA et SCC sont confrontés à leurs fiches, et leurs écarts marqués `⚠ [B]` sur place. `audit_citations.py list` signale encore 2 citations, justes, dont la révision suit sur la même phrase. Restent les GLUE/MMU sans schéma, et le RTC dont la fiche manque. Le SCC n'a pas été relu pour le synchrone, le SDLC et le DMA.
-- **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot` posée le 2026-11-04 ; le disque est récupéré et concorde avec Hatari, de 0,0 à 0,04 % à 3000, 3900 et 6000 sans `--fastfdc`. Avec le `--fastfdc` de l'étalon, une capture Hatari donne 12,7 % d'écart à la trame 3900, même après un balayage de 40 trames : retirer `fastfdc` de l'entrée avant de reposer l'oracle.
+- **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, à regarder.
 - **Banc fx68k, étendre** · P3 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur concordent. Restent BERR et double faute, et l'autovecteur dans le verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
   78 programmes en accord ; `blitter_timer` et deux sondes s'écartent d'Hatari, consigné. → `docs/STBLITTER_BENCH.md`
@@ -242,12 +242,11 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`.
 - **Relevés de tiers** · P2 ⭘ — ST-STE Hardware Test (Troed), notes de Steven Tattersall,
   résultats de la suite Hatari. Un relevé entre en `hardware` s'il nomme machine et protocole.
-- **Étalon Troed** · P2 ⭘ — à rapatrier et calibrer.
+- **Étalon Troed** · P2 ◐ — WSDETECT est en place (`tools/run_wsdetect.py`). Reste ST-STE Hardware Test, à rapatrier et calibrer.
 - **Documents primaires manquants** · P2 ⭘ — RP5C15, HD6301, schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST.
 - **Auto-tests sans source** · P3 ◐ — `tools/classify_selftests.py` lit l'échelon que chaque test de logique déclare : hardware 0 · primary 70 · rom 6 · rtl 1 · hatari 44 · aucun 14 (total 135). Ce qui ne cite rien reste à sourcer. C'est une déclaration, pas une relecture des attendus.
-- **Verilator en CI** · P2 ⭘ — les bancs RTL sont SKIP sur les runners.
-  Installer Verilator (5.054) pour les faire tourner là aussi.
+- **Verilator en CI** · P2 ◐ — le job `rtl` de `tests.yml` compile Verilator 5.054 et lance les six bancs. Il n'a pas encore tourné : `continue-on-error` est à retirer au premier vert sur GCC et Linux.
 - **Monter les 11 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
   confrontée au modèle (`docs/GLUE_SWEEP.md`), pas leurs pixels ; `closure` et
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
@@ -255,8 +254,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 ### Instruments
 
 - **Suite de tests d'Hatari : restes** · P2 ◐ — `run_hatari_suite.py` rejoue cycles, blitter,
-  bus errors, `cpu`, `gemdos` : 12/12. Restent `screen` (référence PNG au format Hatari) et
-  `serial` ; `xbios`/`mem_end` hors périmètre.
+  bus errors, `cpu`, `gemdos` et `serial`. Reste `screen` (référence PNG au format Hatari) ; `xbios`/`mem_end` hors périmètre.
 - **`screen/flixfull.prg`** · P3 ⭘ · [F] — NeoST est 4 px à gauche d'Hatari sur toute la ligne, ST comme STE. Écritures et décisions du GLUE identiques (LEFT_OFF + RIGHT_OFF, DE 5 à 463, 230 octets) :
   l'écart est dans la recopie de la ligne. Aucun témoin réel ne dit qui a raison, et le Shifter du modèle n'est pas fiable à ce grain. Tranche : une capture sur machine.
 - **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne le mur du palier pixel (~45 s) ; savoir
@@ -300,6 +298,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   registre CR NE2000 ; trancher sur le schéma (hardware.atari.org), puis `Bus::read8Slow`.
 - **NetUSBee : périphériques USB** · P3 ⭘ — l'ISP1160 est un hub racine vide ; HID puis stockage
   de masse derrière `HcRhPortStatus` (banc : FreeMiNT `netusbee.ucd` + `usb.km`).
+- **STinG, premier run en échec DNS** · P3 ⭘ · [F] — `err -17` au tout premier `--slirp` du 2026-11-04, puis 4 succès d'affilée, alors que le `--slirp-selftest` en ligne passait juste après. Le filtre de l'hôte reste la piste la plus simple, sans preuve. À regarder si l'échec revient, avec `NEOST_SLIRP_TRACE=1`.
 - **Modem / STinG** · P3 ⭘ — documenter l'installation dans `docs/TEST_SOFTWARE.md` ; banc SLIP
   de bout en bout.
 - **Dongles dans les frontends WASM/Android** · P3 ⭘ — pas de page Dongles.
@@ -336,12 +335,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
 
-- **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits ; les rôles restent des
-  méthodes qui partagent l'état par ligne. Prochain pas : `VideoCounter` en objet membre
-  (champs `vc*`), mesurer ce que ça casse, puis seulement la Glue.
-- **Build sans ImGui** · P3 ⭘ — `-DNEOST_WITH_IMGUI=OFF` ne compile plus (constaté le
-  2026-10-20) : des fichiers GUI incluent `imgui.h` sans condition et `AppLoop.cpp` manque de
-  déclarations. Réparer ou retirer l'option.
+- **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits. L'état du compteur vidéo est un membre, `VideoCounterState vc_`, sans changement de l'empreinte d'état. Prochain pas : y déplacer les méthodes, ce qui demande une interface vers la Glue et le faisceau, puis seulement la Glue.
 - **A9 — `appLoop` découpée** · P3 ◐ — `main()` tient en 10 lignes ; les 28 phases sont des
   fonctions statiques `(App&, Frame&)`. Plus grosse pièce restante :
   `runKioskMenu` — 380 lignes d'un seul tenant. Prochain pas éventuel : sortir ses pages,

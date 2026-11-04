@@ -5,7 +5,8 @@
 #  POURQUOI. Les étalons voient des écrans fixes et des démos. Une partie fait passer entrées, IRQ, FDC et
 #  vidéo ensemble, sur des milliers de trames : une dérive d'un cycle finit par changer le jeu.
 #
-#  COMMENT. tests/replays/replays.json donne le disque, les touches et un script joystick. Hatari et NeoST
+#  COMMENT. tests/replays/replays.json donne le disque, les touches, les changements de disquette et un
+#  script joystick. Hatari et NeoST
 #  jouent les mêmes masques (tools/compare_titles.py --joy), et chaque trame demandée doit rester sous
 #  max_diff %. Échelon `hatari` : un vert dit « d'accord avec Hatari », pas « comme le fer ».
 #
@@ -31,10 +32,14 @@ def play(r: dict, work: Path) -> tuple[int, list[str]]:
     joy.write_text(" ".join([r["joy"]] * r.get("joy_repeat", 1)) + "\n")
     cmd = [sys.executable, str(ROOT / "tools" / "compare_titles.py"), str(work / "out"), r["disk"],
            "--machine", r["machine"], "--rom", r["rom"], "--mem", str(r["mem"]),
-           "--frames", ",".join(map(str, r["frames"])), "--window", str(r.get("window", 6)), "--step", "2",
+           "--frames", ",".join(map(str, r["frames"])), "--window", str(r.get("window", 6)), "--step", str(r.get("step", 2)),
            "--joy", f'{r["joy_at"]}:{joy}', "--jobs", "1"]
     for at in r.get("keys", []):
         cmd += ["--key", f"{at}:57"]
+    for at, code in r.get("scancodes", []):            # autre touche que l'espace : [trame, scancode décimal]
+        cmd += ["--key", f"{at}:{code}"]
+    for at, disk in r.get("swaps", []):                # changement de disquette : [trame, chemin]
+        cmd += ["--swap", f"{at}:{disk}"]
     done = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=1800)
     if done.returncode == 77:
         return 77, [done.stdout.strip()]

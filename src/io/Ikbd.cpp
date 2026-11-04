@@ -314,11 +314,11 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         // [B] MC6850 § Master Reset p. 5 : IRQ tenue haute, cf. irqActive. [D] Hatari acia.c:727-730 @ f0736b24 la lève sous CR=%x01xxx11.
         // La file IKBD et la livraison
         // en vol sont CONSERVÉES (elles vivent côté 6301, pas côté ACIA).
-        // ⚠ [B] MC6850 § Counter Divide Select Bits p. 8 : le récepteur est initialisé, et [D] Hatari
-        // acia.c:688-691 @ f0736b24 abandonne le caractère en cours de réception. Ici l'octet en vol arrive entier : écart non
-        // corrigé.
         // srRead_ : [D] Hatari acia.c:669-705 @ f0736b24 n'y touche pas, MidiAcia.cpp non plus. Sans effet observable :
         // ovrn_ ne se pose qu'en lecture de RDR, qui vient de consommer srRead_.
+        // ⚠ [B] MC6850 § Counter Divide Select Bits p. 8 : le récepteur est initialisé, et [D] Hatari acia.c:688-691
+        // @ f0736b24 abandonne le caractère en cours. Ici l'octet en vol arrive entier : le SCI du 6301 continue d'émettre,
+        // et ne pas décaler l'octet suivant demande un champ d'état de plus. Aucun titre de la logithèque n'est touché.
         if ((v & 0x03) == 0x03) {
             rdrf_ = false;
             rxOverrun_ = ovrn_ = srRead_ = false;

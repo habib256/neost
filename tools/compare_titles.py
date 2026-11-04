@@ -129,7 +129,7 @@ def neost_frames(disk: Path, args, work: Path) -> dict[int, Image.Image]:
         cmd += ["--key-hold", str(KEY_HOLD)]
         for at, code in args.key:
             cmd += ["--scancode-at", str(at), f"{code:x}"]
-    subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=1200, check=True)
+    subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, errors="replace", timeout=1200, check=True)
     shots = sorted(work.glob("n_*"))
     if not shots:
         raise RuntimeError("NeoST n'a produit aucune capture")
@@ -185,7 +185,7 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
     if args.key:
         run_hatari_keys(cmd, args.key, work, env)
     else:
-        subprocess.run(cmd, capture_output=True, text=True, timeout=1800, env=env, cwd=work,
+        subprocess.run(cmd, capture_output=True, text=True, errors="replace", timeout=1800, env=env, cwd=work,
                        stdin=subprocess.DEVNULL)
     return shots
 
@@ -193,6 +193,10 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
 def reduce_2x(img: Image.Image, size: tuple[int, int]) -> Image.Image:
     """Réduit l'image 2× d'Hatari en moyennant les pixels, comme le buffer de NeoST : sur une
     ligne en moyenne résolution, il émet la moyenne des deux pixels de chaque cycle."""
+    # Écran pur en moyenne résolution : NeoST sort 640×200 sans bordure, Hatari 832×552 avec. Sa zone active
+    # commence en (96, 58), mesuré à 0,0 % sur Notator ; il double les lignes, sans les moyenner.
+    if size == (640, 200) and img.size == (832, 552):
+        return img.crop((96, 58, 736, 458)).resize(size, Image.NEAREST)
     return img.reduce((img.width // size[0], img.height // size[1]))
 
 

@@ -545,6 +545,7 @@ public:
     int64_t serialTxCycle_ = 0, serialTxRemainder_ = 0;
     int serialTxDivisor_ = 1;
     int64_t serialTxFrameClearCycle_ = 0; // seuil potentiel de la trame TSR courante
+    int64_t serialTcCycles() const;
     int64_t serialTxUnderrunClearCycle_ = 0; // premier cycle autorisant clear UE ([B] MK68901 p. 17, cf. read8 $2D)
 public:
     void setLoopback(bool plugged) { loopback_ = plugged; }

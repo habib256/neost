@@ -314,12 +314,12 @@ void Scc::updateRR0(int c) {
 
 uint8_t Scc::getVectorStatus() {
     // [B] UM0109 WR9 p.161 : codes de statut 0-7 ; p.41 : priorité A avant B, puis Rx, Tx, Ext.
-    // ⚠ [B] UM0109 p.44 : en mode No Vector, le vecteur ne change plus avant Reset IUS. Ici le
-    //    statut suit l'IP la plus prioritaire : effacer l'IP servie change RR2B. Écart non corrigé.
+    // [B] UM0109 p.44 : en mode No Vector, le vecteur ne change plus avant Reset IUS : le statut suit l'IUS.
     // ⚠ [B] UM0109 WR1 p.145 : RX désarmé, une condition spéciale donne encore son vecteur dans
     //    RR2. Ici sans IP RX, RR2B ne la montre pas. Écart non corrigé.
     uint8_t status, mask;
-    uint8_t rr3 = chn_[0].RR[3];
+    // ius_ a l'ordre des bits de RR3 (cf. Scc.hpp).
+    const uint8_t rr3 = ((chn_[0].WR[9] & WR9_NV) && ius_) ? ius_ : chn_[0].RR[3];
     if (rr3 & RR3_RX_IP_A) {
         mask = RR1_RX_OVERRUN | RR1_CRC_FRAMING | RR1_EOF_SDLC;
         if (chn_[0].WR[1] & WR1_PARITY_SPECIAL) mask |= RR1_PARITY_ERROR;
@@ -836,15 +836,17 @@ void Scc::writeControl(int c, uint8_t value) {
         // [B] UM0109 WR0 p.139-142 : CRC reset, commande et sélection de registre
         // sont trois champs indépendants. RR0 D6 p.175 décrit explicitement le
         // reset EOM même en asynchrone (commande erronée mais effective).
-        // ⚠ [B] UM0109 WR0 p.141 : transmetteur coupé, cette commande ne remet pas le latch à
-        //    zéro. Ici elle le fait toujours. Écart non corrigé.
-        if ((value & 0xc0) == 0xc0) {
+        // [B] UM0109 WR0 p.141 : transmetteur coupé, cette commande ne remet pas le latch à zéro.
+        if ((value & 0xc0) == 0xc0 && (chn_[c].WR[5] & WR5_TX_ENABLE)) {
             updateRR0Clear(c, RR0_TX_UNDERRUN_EOM);
             updateRR0(c); updateIRQ();
         }
-        // ⚠ [B] UM0109 WR0 p.142, RR0 D6 p.175 : Send Abort (011) vide le tampon TX et remet
-        //    Underrun/EOM à 1. Ici la commande est sans effet. Écart non corrigé.
         const uint8_t command = (value >> 3) & 7;
+        // [B] UM0109 WR0 p.142, RR0 D6 p.175 : Send Abort (011) vide le tampon TX et remet Underrun/EOM à 1.
+        if (command == 3) {
+            updateRR0Set(c, RR0_TX_BUFFER_EMPTY | RR0_TX_UNDERRUN_EOM);
+            updateRR0(c); updateIRQ();
+        }
         {
 
             // [B] UM0109 WR0 p.141-142 : Reset Ext/Status, Reset Tx IP, Next Rx, Error Reset,

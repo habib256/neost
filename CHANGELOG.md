@@ -6,6 +6,51 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## WD1772 : écriture selon la fiche (2026-11-04)
+
+Le bit 6 retombe au départ d'un Write Sector, [B] p. 1-9. INTRQ 24 µs après le dernier CRC d'un Write Sector, et $F7 pour deux octets avec une seule DRQ en Write Track, [B] WD177X-00 p. 1-12, 1-13, 1-15. Images identiques sur 89 disques joués, sans savoir combien écrivent réellement sur disquette. La sonde `fdc_write` de l'oracle et `neost-stx-test` passent par ces lignes.
+
+## Bancs RTL en CI (2026-11-04)
+
+Nouveau job `rtl` dans `tests.yml` : Verilator 5.054 compilé puis gardé en cache, RTL aux épingles, six bancs. Écrit sans pouvoir l'exécuter ici : il n'est pas bloquant tant qu'il n'a pas prouvé qu'il tourne.
+
+## Suite d'Hatari : le port série aussi (2026-11-04)
+
+`run_hatari_suite.py` rejoue `serial/` sur MFP, MIDI et SCC : les 44 octets sortent justes. `--scc-dump` capture le canal B du SCC.
+
+## L'option `NEOST_WITH_IMGUI` est retirée (2026-11-04)
+
+Elle ne compilait plus depuis longtemps, et toute la GUI dépend d'ImGui. Sans ImGui, il reste `neost-headless`.
+
+## Restes de fiches, sur les disques d'abord (2026-11-04)
+
+- **MFP** : UE s'efface après un cycle de TC, [B] MK68901 p. 17, MC68HC901 § 7.3.2, et non après un bit entier.
+- **SCC, No Vector** : le vecteur reste figé sur l'IUS jusqu'à Reset IUS, [B] UM010902-0609 p. 44.
+- **SCC** : Reset Underrun est sans effet transmetteur coupé, et Send Abort vide le tampon TX et lève Underrun/EOM, [B] UM010902-0609 p. 141-142.
+- **WD1772, `$D8`** : la fiche dit que seul `$D0` rend son interruption effaçable. Appliqué à la lettre, Super Hang-On s'écarte de 99 % à la trame 500. Essayé puis retiré, écart marqué `⚠ [B]`.
+- **ACIA, octet en vol au master reset** : essayé puis retiré, le SCI du 6301 continue d'émettre et un modèle juste demande un champ d'état de plus. Écart marqué, aucun titre touché.
+- A/B sur 89 disques joués : images identiques avec les corrections gardées.
+
+## Passe STX, et A32 : l'état du compteur vidéo en membre (2026-11-04)
+
+- **Passe STX au joystick** : 11 disques contre Hatari, 10 à 0,0 % aux écrans vus. Avec le disque B, Golden Axe, Lethal Xcess, Wings of Death et Rainbow Islands se jouent des deux côtés. Les écarts qui restent sont des parties qui divergent. Golden Axe et Wings of Death rejoignent `run_game_replay.py`.
+- **A32** : `VideoCounterState vc_` regroupe les 8 champs du compteur vidéo. Empreintes d'état identiques au binaire d'avant sur 6 cas, démos à bordures et moteur plein écran compris.
+
+## STinG : le GET HTTP réel passe (2026-11-04)
+
+- STinG 1.26 et le vrai `ENEC.STX` résolvent theoldnet.com et reçoivent `HTTP/1.1 200 OK` par `--slirp`, 4 runs sur les 5 du jour. Le premier a échoué en DNS, cause inconnue.
+
+## WSDETECT : un juge de la GLUE qui ne doit rien à Hatari (2026-11-04)
+
+- **`tools/run_wsdetect.py`**, palier `fast` : le détecteur de wakestate de Troed/SYNC, disque CC0, sous EmuTOS. NeoST rend les longueurs que son source annonce : 162, 54, 206, 204 octets en WS1 à WS4, 180 sur STE et Mega STE, 206 sur Mega ST. Aucun relevé de ce disque sur machine réelle n'est au dépôt.
+- **`tools/run_sting_boot.py`**, palier `fast` : STinG 1.26 et le vrai `ENEC.STX` chargent et activent le port sur la NE2000, sans réseau. En `--slirp-restricted`, 279 paquets sortent sans perte et la résolution échoue faute de réseau, comme prévu. Le GET HTTP réel n'a pas été rejoué.
+
+## `compare_titles` : deux fausses alarmes en moins (2026-11-04)
+
+- **Eliminator-Nebulus** : ses 69 % venaient du pas de 2 trames de la passe, sur un dégradé qui bouge à chaque trame. Avec un pas de 1, il est à 0,2 % au plus.
+- **Moyenne résolution pure** : NeoST sort 640×200, Hatari 832×552 avec bordures. L'outil ne cadrait pas, d'où les 49 % de Killing Game Show et les 14 % de Gods. Notator et Killing Game Show tombent à 0,0 %. Une passe ST complète ne signale plus que des parties qui divergent, Eliminator-Nebulus et Xenon 2.
+- **Notator 3.0** atteint son interface, avec et sans clé : cette copie crackée n'en a pas besoin.
+
 ## MFP confronté à ses fiches, et parties jouées au joystick (2026-11-04)
 
 - **Le MFP est audité contre MC68901, MC68HC901 et MK68901** : 189 commentaires gradés, 11 désaccords relevés. Quatre sont corrigés :
@@ -20,7 +65,7 @@ l'ordre inverse. Version courante : **0.6.2**.
 ## Audit des fiches : YM2149, WD1772, ACIA, et empreinte d'état (2026-11-04)
 
 - **Passes tenues au joystick** : 49 disques sur ST, 63 sur STE, 61 sur Mega STE, sans plantage propre à NeoST aux écrans vus. Sur Mega STE, la comparaison est plus bruitée : le TOS 2.06 démarre ~170 trames plus tard que sous Hatari, qui patche sa somme de contrôle.
-- **`tools/run_game_replay.py`** : sept parties jouées contre Hatari, sous 0,5 % à toutes les trames relevées. Sur ST : Buggy Boy, Lemmings, Chase HQ, Flying Shark. Sur STE : Stardust, Just Musix 2, Super Sprint. Sur Buggy Boy, la course entière est identique à 0,0 %, accident compris. Hors paliers, à lancer à la main avec un Python qui a Pillow : il faut les disques privés.
+- **`tools/run_game_replay.py`** : neuf parties jouées contre Hatari, sous 0,5 % à toutes les trames relevées, changements de disquette compris. Sur ST : Buggy Boy, Lemmings, Chase HQ, Flying Shark, Shadow Warrior jusqu'au combat. Sur STE : Stardust en partie, Just Musix 2, Super Sprint. Sur Buggy Boy, la course entière est identique à 0,0 %, accident compris. Hors paliers, à lancer à la main avec un Python qui a Pillow : il faut les disques privés.
 - **Quatre puces de plus confrontées à leur fiche** : YM2149, WD1772, MC6850, Z85C30. Leurs écarts sont marqués `⚠ [B]` sur place.
 - **SCC** : une lecture du port donnée ne remet plus le pointeur de registre à zéro, [B] UM010902-0609 p. 28 et 30. Hatari le remet. Diagnostic Mega STE et étalons inchangés.
 - **WD1772, six points de fiche corrigés** : Restore (DR et sens), Seek Error selon V, STEP sortant en piste 0, $Dx au repos, bit CRC d'un ID faux. Le test : 80 disques joués, images identiques avant et après. Aucun logiciel du catalogue n'en dépend, donc ce sont des preuves de fiche.

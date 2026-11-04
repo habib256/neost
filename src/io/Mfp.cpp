@@ -268,6 +268,15 @@ void Mfp::startSerialTx(bool continuation) {
     raiseAt(SRC_TXEMPTY, when);
 }
 
+// Un cycle de TC en cycles CPU, arrondi au-dessus : TC = 2,4576 MHz / (2 × données × prédiviseur). serialClockFactor_
+// y ajoute le mode d'horloge /16, que UCR bit 7 retire ici. [B] MC68901 § 6.1 ; synchrone : /1, cf. updateSerialConfig.
+int64_t Mfp::serialTcCycles() const {
+    const uint8_t ucr = timer_[0x29];
+    const bool asynchronous = (ucr & 0x18) != 0;
+    const int clockDivisor = asynchronous && !(ucr & 0x80) ? 1 : 16;
+    return (neost::pacing::kCpuHzInt * 2 * serialClockFactor_ / clockDivisor + 2457599) / 2457600;
+}
+
 void Mfp::scheduleSerialTxHalfBits(int halfBits, bool continuation) {
     const int divisor = 2457600;
     if (!continuation) { serialTxCycle_ = sched_->liveNow(); serialTxRemainder_ = 0; }
@@ -316,7 +325,7 @@ void Mfp::advanceSerialTx(int64_t when) {
             startSerialTx(true);
         } else if (serialTxFull_ || sendBreak) startSerialTx(true);
         else if (!serialTxUnderrun_) {
-            serialTxUnderrunClearCycle_ = serialTxFrameClearCycle_;
+            serialTxUnderrunClearCycle_ = when + serialTcCycles();
             serialTxUnderrun_ = true; raiseAt(SRC_TXERR, when);
         }
         return;
@@ -332,7 +341,7 @@ void Mfp::advanceSerialTx(int64_t when) {
         // [B] MC68901 Fig. 6-4 p. 6-7 ; MK68901 p. 17 ; [D] MAME tx_clock, sans révision épinglée :
         // UE est mémorisé jusqu'à lecture TSR ou TE=0.
         // Écrire/recharger TDR ne l'efface pas et ne crée pas un nouveau front.
-        serialTxUnderrunClearCycle_ = serialTxFrameClearCycle_;
+        serialTxUnderrunClearCycle_ = when + serialTcCycles();
         serialTxUnderrun_ = true; raiseAt(SRC_TXERR, when);
     }
     startSerialTx(true);
@@ -397,9 +406,7 @@ uint8_t Mfp::read8(uint32_t addr) {
         }
         case 0x2D:
             // [B] MC68901 Fig. 6-4 p. 6-7 : BE, UE et END en lecture seule ; la lecture du TSR efface UE.
-            // ⚠ [B] MK68901 p. 17, MC68HC901 § 7.3.2 p. 7-8 : il faut un cycle complet de TC entre la pose de UE
-            // et son effacement. serialTxUnderrunClearCycle_ attend un bit entier, soit 16 cycles de TC
-            // en /16 : écart non corrigé.
+            // [B] MK68901 p. 17, MC68HC901 § 7.3.2 p. 7-8 : il faut un cycle complet de TC entre la pose de UE et son effacement.
             if (sched_) {
                 const uint8_t status = uint8_t((timer_[0x2D] & 0x2F) |
                     (!serialTxFull_ ? 0x80 : 0) | (serialTxUnderrun_ ? 0x40 : 0) |

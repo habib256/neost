@@ -140,6 +140,62 @@ jobs:
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------- gui --
+  # Bancs RTL (fx68k, stBlitter, GSTMCU) : SKIP sur tous les autres jobs, faute de Verilator.
+  # La version est figée et compilée une fois, puis gardée en cache : celle d'Ubuntu 24.04 est trop ancienne.
+  # continue-on-error tant que ce job n'a pas prouvé qu'il tourne sur GCC et Linux : à retirer au premier vert.
+  rtl:
+    name: Bancs RTL (Verilator)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    continue-on-error: true
+    env:
+      VERILATOR_VERSION: v5.054
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Dépendances
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y --no-install-recommends \
+            cmake g++ make autoconf flex bison help2man perl libfl-dev zlib1g-dev libglfw3-dev libgl1-mesa-dev
+
+      - name: Cache Verilator
+        id: verilator-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/verilator
+          key: verilator-${{ env.VERILATOR_VERSION }}-ubuntu-24.04
+
+      - name: Compiler Verilator
+        if: steps.verilator-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$VERILATOR_VERSION" https://github.com/verilator/verilator.git /tmp/verilator
+          cd /tmp/verilator
+          autoconf
+          ./configure --prefix="$HOME/verilator"
+          make -j"$(nproc)"
+          make install
+
+      - name: RTL aux épingles
+        run: |
+          echo "$HOME/verilator/bin" >> "$GITHUB_PATH"
+          bash tools/setup_silicon_refs.sh --rtl-only
+
+      - name: Compiler NeoST
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)" --target neost-headless neost-moira-bare neost-blitter-bare neost-glue-bare
+
+      - name: Bancs
+        run: |
+          python3 tools/run_gstmcu_bench.py
+          python3 tools/run_fx68k_bench.py
+          python3 tools/run_stcpu_bench.py
+          python3 tools/run_stcpu_raster.py
+          python3 tools/run_glue_sweep.py
+          python3 tools/run_stblitter_bench.py
+
   gui:
     name: GUI sous xvfb (boot réel + capture)
     runs-on: ubuntu-24.04

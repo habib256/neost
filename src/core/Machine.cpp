@@ -981,7 +981,7 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     // Bornes larges à dessein : elles ne visent que l'absurde, pas la validation fine.
     ar.check(cpl_ > 0 && cpl_ <= 4096 && lpf_ > 0 && lpf_ <= 4096);
     // Bornées EN HAUT aussi : ces trois compteurs de ligne servent de cible aux
-    // boucles de rattrapage du Shifter (« while (vcLineY_ < y) endVideoLine(); »
+    // boucles de rattrapage du Shifter (« while (vc_.lineY < y) endVideoLine(); »
     // dans commitScanline/videoCounter). Un hblLine_ forgé à ~2³¹ les rend
     // interminables — gel à 100 % de CPU, comme frameStart_/lineCarry_ ci-dessus.
     ar.check(renderLine_ >= 0 && tbLine_ >= 0 && hblLine_ >= 0
