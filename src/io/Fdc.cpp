@@ -2210,7 +2210,11 @@ int Fdc::cmdComplete(bool doInt) {
 // d'Hatari ([D] fdc.c:2499-2558 @ f0736b24) ; sur 1772 seule l'absence d'ID le justifierait (p. 1-6).
 bool Fdc::verifyTrack() {
     if (driveSel_ < 0 || !drive_[driveSel_].present()) return false;
-    if (nextID_TR_ != tr_ || nextID_CRCOK_ == 0) return false;
+    if (nextID_TR_ != tr_) return false;
+    // [B] WD177X-00 p. 1-6/7, p. 1-8 : piste juste mais CRC d'ID faux → le bit CRC est posé et l'ID suivant lu ;
+    // un bon ID l'efface. Touche les seules images STX.
+    if (nextID_CRCOK_ == 0) { updateStr(0, STR_CRC); return false; }
+    updateStr(STR_CRC, 0);
     if (side_ == 1 && drive_[driveSel_].sides != 2) return false;
     return true;
 }
@@ -2258,22 +2262,19 @@ int Fdc::updateRestore() {
         replaceCommandPossible_ = false;
         // [B] WD177X-00 p. 1-7 (organigramme, branche Restore) : $FF → TR, 0 → DR ; p. 1-8 : 255 pas au plus.
         // [D] fdc.c:2658 @ f0736b24 : TR à 255 une fois le spin-up passé, quand le remplacement n'est plus possible.
-        // ⚠ [B] p. 1-7 : 0 → DR n'est pas fait ici. Écart non corrigé, sans effet sur le mouvement : seul
-        // un programme qui relit DR après un Restore le voit. (La flèche SEEK du même organigramme
-        // aboutit aussi à « 0 TO DR » : coquille, la p. 1-8 dit que DR porte la piste visée.)
-        // ⚠ [B] p. 1-7 : DSR (0) < TR ($FF) → RESET DIRECTION, donc un Restore oriente vers la piste 0.
-        // Ici stepDir_ n'est pas touché, ni chez Hatari ([D] fdc.c:1209, 2828-2830, 4185, 4209).
-        // Écart non corrigé : un STEP ($20-$3F) après un Restore repart dans le sens d'avant.
+        // (La flèche SEEK du même organigramme aboutit aussi à « 0 TO DR » : coquille, la p. 1-8 dit que DR porte la piste visée.)
+        // [B] p. 1-7 : DSR (0) < TR ($FF) → RESET DIRECTION : un STEP ($20-$3F) après un Restore repart vers la
+        // piste 0. [D] fdc.c:1209, 2828-2830, 4185, 4209 @ f0736b24 ne touche ni DR ni le sens : la fiche prime.
+        dr_ = 0;
+        stepDir_ = -1;
         tr_ = 0xff;                                            // 255 tentatives max vers la piste 0
         commandState_ = RUN_RE_SEEK0_LOOP;
         [[fallthrough]];
      case RUN_RE_SEEK0_LOOP:
-        // ⚠ [B] WD177X-00 p. 1-8 : après 255 pas sans TR00, Seek Error n'est posé que « providing the V
-        // flag is set » ; l'organigramme p. 1-7 passe alors à la vérification (D, p. 1-8), et V=0 finit
-        // sans erreur. Ici RNF est posé quel que soit V, verify sauté : écart non corrigé.
-        // [D] fdc.c:2662-2667 @ f0736b24 : Hatari fait ainsi. Effet : Restore avec V=0 sur lecteur absent.
+        // [B] WD177X-00 p. 1-8 : après 255 pas sans TR00, Seek Error n'est posé que « providing the V flag is
+        // set ». [D] fdc.c:2662-2667 @ f0736b24 le pose quel que soit V : la fiche prime.
         if (tr_ == 0) {                                        // piste 0 non atteinte après 255 essais
-            updateStr(0, STR_RNF);
+            if (cr_ & CMD_BIT_VERIFY) updateStr(0, STR_RNF);
             updateStr(STR_TR00, 0);
             fdcCycles = cmdComplete(true);
             break;
@@ -2321,9 +2322,6 @@ int Fdc::updateRestore() {
             commandState_ = RUN_RE_VERIFY_NEXT;
         }
         break;
-     // ⚠ [B] WD177X-00 p. 1-6/7, p. 1-8 : piste juste mais CRC d'ID faux → le bit CRC est POSÉ et l'ID suivant
-     // lu. verifyTrack rejette sans poser CRC, dans RE, SE et ST : écart non corrigé, comme Hatari
-     // ([D] fdc.c:2499-2558 @ f0736b24). Touche les seules images STX. Voir aussi la lecture du statut.
      case RUN_RE_VERIFY_CHECK:
         if (verifyTrack()) { updateStr(STR_RNF, 0); commandState_ = RUN_RE_COMPLETE; fdcCycles = CMD_COMPLETE; }
         else               { commandState_ = RUN_RE_VERIFY_NEXT; fdcCycles = CMD_IMMEDIATE; }
@@ -2426,14 +2424,12 @@ int Fdc::updateStep() {
         // Tête déplacée dès qu'un lecteur activé est sélectionné, disque ou
         // pas (Hatari [D] fdc.c:3004-3021 @ f0736b24 — cf. commentaire RESTORE).
         // [D] fdc.c:3006-3007 : butée de piste max, sans délai (fiche muette, c'est le lecteur).
-        // ⚠ [B] WD177X-00 p. 1-7 : tête en piste 0 et sens sortant → 0 → TR, quel que soit u, sans pas ni
-        // délai. Ici pas de pas ni de délai, mais TR garde sa valeur, voire passe à $FF si u=1 : écart non
-        // corrigé, comme Hatari ([D] fdc.c:2998, 3009-3010). Effet : TR relu faux, et un verify ou
-        // une lecture type II qui suit compare TR à la piste 0 et finit en RNF.
+        // [B] WD177X-00 p. 1-7 : tête en piste 0 et sens sortant → 0 → TR, quel que soit u, sans pas ni délai.
+        // [D] fdc.c:2998, 3009-3010 @ f0736b24 garde TR, voire le passe à $FF si u=1 : la fiche prime.
         if (driveSel_ >= 0) {
             int& ht = drive_[driveSel_].headTrack;
             if (ht == MAX_TRACK && stepDir_ == 1)       fdcCycles = CMD_IMMEDIATE;
-            else if (ht == 0 && stepDir_ == -1)         fdcCycles = CMD_IMMEDIATE;
+            else if (ht == 0 && stepDir_ == -1)         { tr_ = 0; fdcCycles = CMD_IMMEDIATE; }
             else { ht += stepDir_; updateFloppyDensity(driveSel_); }  // densité de la nouvelle piste (STX)
             if (ht == 0) updateStr(0, STR_TR00);
         }
@@ -2509,12 +2505,12 @@ int Fdc::updateReadSectors() {
         }
         break;
      // [B] WD177X-00 p. 1-10 : TR, SR, puis CRC de l'ID. Pas de comparaison de face sur 1772 (p. 1-6).
-     // ⚠ [B] p. 1-10, p. 1-18 (S3) : TR et SR justes mais CRC d'ID faux → le bit CRC est posé, et s'il n'y
-     // a pas de bon ID le statut final vaut RNF+CRC. Ici, RNF seul : écart non corrigé, comme Hatari
-     // ([D] fdc.c:3249-3258 @ f0736b24). Idem WS_CHECK. Touche les seules images STX : une protection
-     // qui teste le bit 3 voit 0 au lieu de 1.
+     // [B] p. 1-10, p. 1-18 (S3) : TR et SR justes mais CRC d'ID faux → le bit CRC est posé, et s'il n'y a pas
+     // de bon ID le statut final vaut RNF+CRC. [D] fdc.c:3249-3258 @ f0736b24 rend RNF seul : la fiche prime.
+     // Idem WS_CHECK. Touche les seules images STX.
      case RUN_RS_CHECK:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
+        if (nextID_TR_ == tr_ && nextID_SR_ == sr_) updateStr(nextID_CRCOK_ ? STR_CRC : 0, nextID_CRCOK_ ? 0 : STR_CRC);
         if (nextID_TR_ == tr_ && nextID_SR_ == sr_ && nextID_CRCOK_) {
             commandState_ = RUN_RS_TRANSFER_START;
             fdcCycles = transferDelay(GAP3a + GAP3b + 3 + 1);  // jusqu'aux données ([B] WD177X-00 p. 1-9 : marque sous 43 octets en MFM)
@@ -2618,6 +2614,7 @@ int Fdc::updateWriteSectors() {
         break;
      case RUN_WS_CHECK:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
+        if (nextID_TR_ == tr_ && nextID_SR_ == sr_) updateStr(nextID_CRCOK_ ? STR_CRC : 0, nextID_CRCOK_ ? 0 : STR_CRC);
         if (nextID_TR_ == tr_ && nextID_SR_ == sr_ && nextID_CRCOK_) {
             commandState_ = RUN_WS_TRANSFER_START;
             fdcCycles = transferDelay(GAP3a + GAP3b + 3 + 1);
@@ -2950,12 +2947,11 @@ void Fdc::executeCommand(uint8_t cmd) {
         // [B] WD177X-00 p. 1-16 : au repos, l'état reflète un type I. Moteur ON et spin-up à 0 : fiche
         // muette (p. 1-7 exclut seulement Force Interrupt du flag h) ; [D] fdc.c:4381-4382 @ f0736b24,
         // « verified on STF », relevé d'un tiers.
-        // ⚠ [B] p. 1-16 : au repos, « the rest of the status bits are updated or cleared ». Ici RNF garde sa
-        // valeur (CRC, TR00, Index, WPRT se rafraîchissent à la lecture) : écart non corrigé, comme
-        // Hatari. Effet : après un RNF, $D0 puis lecture d'état montre encore le bit 4.
+        // [B] p. 1-16 : au repos, « the rest of the status bits are updated or cleared ». TR00, Index et WPRT se
+        // rafraîchissent à la lecture ; RNF et CRC tombent ici. [D] Hatari garde RNF : la fiche prime.
         if (!(str_ & STR_BUSY)) {                             // FDC inactif → statut type I, moteur ON
             statusTypeI_ = true;
-            updateStr(STR_SPINUP, STR_MOTOR);
+            updateStr(STR_SPINUP | STR_RNF | STR_CRC, STR_MOTOR);
         }
         interruptCond_ = cr_ & 0x0f;
         // [B] WD177X-00 p. 1-16 : I3 → INTRQ immédiate ; I3-I0 à zéro → aucune interruption. L'effacement par
@@ -3144,10 +3140,8 @@ uint8_t Fdc::read8(uint32_t addr) {
                             const FloppyDisk& dk = drive_[driveSel_];
                             if (dk.headTrack == 0) updateStr(0, STR_TR00); else updateStr(STR_TR00, 0);
                             if (indexState())      updateStr(0, STR_INDEX); else updateStr(STR_INDEX, 0);
-                            // ⚠ [B] WD177X-00 p. 1-8 : le verify type I pose CRC sur un ID invalide, puis
-                            // l'efface sur un bon. Ici le bit est effacé à chaque lecture : écart non
-                            // corrigé. [D] fdc.c:4872 @ f0736b24 fait de même, sans source.
-                            updateStr(STR_CRC, 0);
+                            // [B] WD177X-00 p. 1-8 : CRC garde le verdict du verify type I, cf. verifyTrack.
+                            // [D] fdc.c:4872 @ f0736b24 l'efface à chaque lecture, sans source : la fiche prime.
                             // [D] fdc.c:4875-4880 @ f0736b24 : sans disque, le lecteur se lit protégé.
                             if (!dk.present() || dk.writeProtect) updateStr(0, STR_WPRT);
                             else                                     updateStr(STR_WPRT, 0);
