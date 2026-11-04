@@ -311,9 +311,7 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         // [D] Hatari acia.c:669-705 @ f0736b24 ACIA_MasterReset : SR repart à TDRE seul → RDRF/OVRN effacés.
         // ⚠ [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé « being maintained in the Reset condition ».
         // Ici TDRE se lit à 1 sous CR0-1=11 : écart non corrigé.
-        // ⚠ [B] MC6850 § Master Reset p. 5 : IRQ tenue haute en master reset, comme [D] MiSTery
-        // gen_uart.v:347-348 @ a00deb5. Sous CR=%x01xxx11, TIE lève ici l'IRQ, comme [D] Hatari acia.c:727-730 @ f0736b24 : écart
-        // non corrigé.
+        // [B] MC6850 § Master Reset p. 5 : IRQ tenue haute, cf. irqActive. [D] Hatari acia.c:727-730 @ f0736b24 la lève sous CR=%x01xxx11.
         // La file IKBD et la livraison
         // en vol sont CONSERVÉES (elles vivent côté 6301, pas côté ACIA).
         // ⚠ [B] MC6850 § Counter Divide Select Bits p. 8 : le récepteur est initialisé, et [D] Hatari
@@ -1558,6 +1556,8 @@ bool Ikbd::irqActive() const {
     // (RDRF) OU overrun pendant, et RX int activé (RIE, bit7) ; TX = registre
     // d'émission vide et IRQ d'émission armée (TIE). CTS et DCD bas sur le ST (cf. tête de fichier) →
     // omis.
+    // [B] MC6850 § Master Reset p. 5 : IRQ tenue haute en master reset ; [D] gen_uart.v:347-348 @ a00deb5b aussi.
+    if ((control_ & 0x03) == 0x03) return false;
     return ((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_);
 }
 

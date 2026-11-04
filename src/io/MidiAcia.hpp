@@ -197,9 +197,8 @@ private:
     // ⚠ [B] MC6850 § Receiver Overrun p. 8-9 : « The RDRF bit remains set until the Overrun is reset ».
     //   read8 efface RDRF dès la lecture du caractère valide, comme [D] Hatari acia.c:858 @ f0736b24 ;
     //   l'IRQ d'overrun retombe avec lui, comme [D] acia.c:721-724,869-873 @ f0736b24 : écart non corrigé.
-    // ⚠ [B] MC6850 § Master Reset p. 5 : IRQ tenue haute en master reset ; § Interrupt Request p. 6 : TDRE
-    //   inhibé « being maintained in the Reset condition ». write8 pose tdre_ et, sous CR=%x01xxx11,
-    //   laisse TIE lever l'IRQ, comme [D] acia.c:681,727-730 @ f0736b24 : écart non corrigé.
+    // ⚠ [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé « being maintained in the Reset condition ». write8 pose
+    //   tdre_, comme [D] acia.c:681 @ f0736b24 et gen_uart.v:273,301 @ a00deb5b : écart non corrigé.
     // ⚠ [B] MC6850 § Counter Divide Select Bits p. 8 : le master reset initialise le récepteur.
     //   onRxPace livre l'octet déjà en vol, y compris sous CR0-1=11 : écart non corrigé.
     // ⚠ [B] MC6850 § Receive p. 6, § Word Select Bits p. 8, Table 1 p. 7 : en 7 bits + parité, D7 reçu

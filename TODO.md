@@ -57,8 +57,8 @@ documents primaires, les ROM et le RTL épinglé.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | Continuer la logithèque avec `compare_titles.py` : parties suivantes, titres au joystick | P1 | 3 |
-| 2 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
+| 1 | Logithèque : relire les écarts de `compare_titles.py --joy`, étendre `tests/replays/replays.json` | P1 | 3 |
+| 2 | A43 : relire les écarts `⚠ [B]` restants du MFP, du WD1772 et de l'ACIA ; auditer SCC et RTC | P1 | 4 |
 | 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
 | 4 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
 
