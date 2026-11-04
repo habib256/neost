@@ -205,7 +205,7 @@ void YM2149::updateFromRegs(const uint8_t* r) {
     tonePer_[0] = tonePeriod(r[1], r[0]);
     tonePer_[1] = tonePeriod(r[3], r[2]);
     tonePer_[2] = tonePeriod(r[5], r[4]);
-    // [D] sound.c:994-1000 @ f0736b24 garde 0 tel quel, sans l'effet mesuré que dit sound.c:1046.
+    // [D] sound.c:994-1000 @ f0736b24 garde 0 tel quel, sans l'effet mesuré que dit sound.c:1046 @ f0736b24.
     noisePer_   = std::max<uint16_t>(1, uint16_t(r[6] & 0x1f));   // NP=0 vaut NP=1, cf. doSamples250
     // [B] YM2149 § (5) p. 7 : EP sur 16 bits, fE = fMaster / (256·EP) ; EP = 0 n'y est pas défini.
     // Le plancher à 1 revient à [D] sound.c:1045-1048 @ f0736b24 : per=0 donné pour mesuré égal à per=1.
@@ -251,7 +251,7 @@ float YM2149::applyPwm250(float x0) {
 // Passe-bas du condensateur C10 du STF. Il lisse les deux fronts, avec une coupure pour chacun : le YM tire
 // vers le haut à travers 207 ohms, R8 vers le bas à travers 759 ohms.
 // [D] sound.c:439-440 @ f0736b24 : C10 = 0,1 µF, 7693,7 Hz et 2096,6 Hz, calculés sur le schéma STF de déc. 1986.
-// [D] sound.c:458,461 @ f0736b24 écrit ces coupures en coefficients pour Fs = 44,1 kHz, et sound.c:1117 les
+// [D] sound.c:458,461 @ f0736b24 écrit ces coupures en coefficients pour Fs = 44,1 kHz, et sound.c:1117 @ f0736b24 les
 // applique à 250 kHz : ils y coupent vers 43 et 11 kHz. Ne pas réaligner : on garde le circuit, pas ses coefficients.
 // Ici, transposition bilinéaire à 250 kHz : K = tan(π·fc/Fs), b = K/(1+K), a = (1-K)/(1+K).
 // [F] Schéma lu de seconde main, et Hatari juge « a slightly lower frequency » plausible. Tranché par : le

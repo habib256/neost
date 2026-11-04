@@ -2778,7 +2778,7 @@ int Fdc::updateReadTrack() {
         fdcCycles = int(bufferReadTiming());
         break;
      // [D] fdc.c:150-152 @ f0736b24 : relevé d'un tiers sur STF, un Read Track réussi POSE Lost Data, « maybe
-     // it depends on the size of the track ». Ni Hatari (fdc.c:3880-3895) ni NeoST ne le posent.
+     // it depends on the size of the track ». Ni Hatari (fdc.c:3880-3895 @ f0736b24) ni NeoST ne le posent.
      // [B] WD177X-00 p. 1-13, 1-19 : bit prévu, sans ce cas. [F] Tranché par un Read Track sur un vrai ST.
      case RUN_RT_TRANSFER_LOOP:
         fifoPush(bufferReadByte());

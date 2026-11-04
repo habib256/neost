@@ -21,7 +21,8 @@ l'ordre inverse. Version courante : **0.6.2**.
 
 - **Passes tenues au joystick** : 49 disques sur ST, 63 sur STE, 61 sur Mega STE, sans plantage propre à NeoST aux écrans vus. Sur Mega STE, la comparaison est plus bruitée : le TOS 2.06 démarre ~170 trames plus tard que sous Hatari, qui patche sa somme de contrôle.
 - **`tools/run_game_replay.py`** : sept parties jouées contre Hatari, sous 0,5 % à toutes les trames relevées. Sur ST : Buggy Boy, Lemmings, Chase HQ, Flying Shark. Sur STE : Stardust, Just Musix 2, Super Sprint. Sur Buggy Boy, la course entière est identique à 0,0 %, accident compris. Hors paliers, à lancer à la main avec un Python qui a Pillow : il faut les disques privés.
-- **Trois puces de plus confrontées à leur fiche**, commentaires seuls : YM2149, WD1772, MC6850. Leurs écarts sont marqués `⚠ [B]` sur place.
+- **Quatre puces de plus confrontées à leur fiche** : YM2149, WD1772, MC6850, Z85C30. Leurs écarts sont marqués `⚠ [B]` sur place.
+- **SCC** : une lecture du port donnée ne remet plus le pointeur de registre à zéro, [B] UM010902-0609 p. 28 et 30. Hatari le remet. Diagnostic Mega STE et étalons inchangés.
 - **WD1772, six points de fiche corrigés** : Restore (DR et sens), Seek Error selon V, STEP sortant en piste 0, $Dx au repos, bit CRC d'un ID faux. Le test : 80 disques joués, images identiques avant et après. Aucun logiciel du catalogue n'en dépend, donc ce sont des preuves de fiche.
 - **ACIA, IRQ tenue haute pendant le master reset** : fiche et RTL d'accord, Hatari la laisse lever sous `CR=%x01xxx11`. 80 disques joués, images identiques.
 - **ACIA, RDRF après overrun** : la lecture à la lettre de la fiche bloque cinq jeux. Essayée puis retirée, consignée dans `docs/REFERENCE_LADDER.md`.
