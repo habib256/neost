@@ -199,7 +199,9 @@ uint8_t Ikbd::read8(uint32_t addr) {
     // perte ([B] MC6850 § Receiver Overrun p. 8-9). À vide, le RDR conserve le dernier octet reçu
     // ([B] MC6850 § Receive Data Register p. 7).
     // ⚠ [B] MC6850 § Receiver Overrun p. 8-9 : « The RDRF bit remains set until the Overrun is reset ».
-    // Effacer RDRF ici dès le caractère valide suit [D] Hatari acia.c:858 @ f0736b24 : écart non corrigé.
+    // Effacer RDRF ici dès le caractère valide suit [D] Hatari acia.c:858 @ f0736b24. Essai du 2026-11-04 : RDRF
+    // tenu jusqu'à SR puis RDR, Enchanted Land, Lemmings, Dynamite Dux, Lethal Xcess et Magic Pockets restent
+    // bloqués sur leurs premiers écrans, l'IRQ clavier ne retombant plus. Ne pas appliquer sans relevé sur un 6850.
     // [F] § Receiver Overrun p. 9 ne cite que la lecture de RDR pour remettre OVRN, § Interrupt Request
     // p. 6 exige SR puis RDR. Tranché par : deux lectures de RDR sans SR après un overrun sur un vrai 6850.
     // NEOST_DEBUG_ACIA=1 : trace chaque lecture du data register.
@@ -221,8 +223,7 @@ uint8_t Ikbd::read8(uint32_t addr) {
                      had ? "" : "EMPTY (", b, had ? "" : ")",
                      rx_.size(), sched_ ? (long long)sched_->now() : 0LL);
     armRx();                         // octet suivant éventuel → livraison datée
-    // ⚠ [B] MC6850 § Interrupt Request p. 6, § Receiver Overrun p. 8-9 : après un overrun, RDRF reste levé et
-    // l'IRQ ne tombe qu'à SR puis RDR. Ici elle tombe dès cette lecture : écart non corrigé.
+    // ⚠ [B] MC6850 § Interrupt Request p. 6, § Receiver Overrun p. 8-9 : l'IRQ ne tomberait qu'à SR puis RDR. Écart gardé, cf. ci-dessus.
     raiseIfReady();                  // RDRF/overrun retombés → l'IRQ RX peut retomber
     return b;
 }

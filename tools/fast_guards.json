@@ -70,6 +70,10 @@
       "since": "2026-10-01",
       "last_real_catch": null
     },
+    "Déterminisme de l'état complet (empreintes, reprise de save-state)": {
+      "since": "2026-11-04",
+      "last_real_catch": {"date": "2026-11-04", "what": "l'horloge de l'UltraSatan, éteinte mais sérialisée, portait la date de l'hôte dans l'état", "source": "CHANGELOG.md"}
+    },
     "Disquette livrée (disks/diskA.st : FAT12 valide, conforme au générateur)": {
       "since": "2026-08-16",
       "last_real_catch": null
