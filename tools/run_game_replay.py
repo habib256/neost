@@ -28,12 +28,18 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def play(r: dict, work: Path) -> tuple[int, list[str]]:
-    joy = work / "joy.txt"
-    joy.write_text(" ".join([r["joy"]] * r.get("joy_repeat", 1)) + "\n")
     cmd = [sys.executable, str(ROOT / "tools" / "compare_titles.py"), str(work / "out"), r["disk"],
            "--machine", r["machine"], "--rom", r["rom"], "--mem", str(r["mem"]),
            "--frames", ",".join(map(str, r["frames"])), "--window", str(r.get("window", 6)), "--step", str(r.get("step", 2)),
-           "--joy", f'{r["joy_at"]}:{joy}', "--jobs", "1"]
+           "--jobs", "1"]
+    if "joy" in r:                                     # sans joystick : un titre qui se joue à la souris
+        joy = work / "joy.txt"
+        joy.write_text(" ".join([r["joy"]] * r.get("joy_repeat", 1)) + "\n")
+        cmd += ["--joy", f'{r["joy_at"]}:{joy}']
+    if "auto" in r:                                    # programme lancé sans passer par le bureau : TOS 1.04 ou plus
+        cmd += ["--auto", r["auto"]]
+    if "disk_b" in r:
+        cmd += ["--disk-b", r["disk_b"]]
     for at in r.get("keys", []):
         cmd += ["--key", f"{at}:57"]
     for at, code in r.get("scancodes", []):            # autre touche que l'espace : [trame, scancode décimal]

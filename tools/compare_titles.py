@@ -14,7 +14,7 @@
 #
 #  Usage : compare_titles.py SORTIE DISQUE... [--machine ste] [--rom roms/tos162uk.img]
 #            [--mem 1] [--frames 1000,2000,4000] [--window 60] [--offset 0] [--step 1]
-#            [--auto A:\\PROG.PRG] [--gemdos DOSSIER] [--swap TRAME:DISQUE]... [--key TRAME:SCANCODE]...
+#            [--auto A:\\PROG.PRG] [--gemdos DOSSIER] [--disk-b DISQUE] [--swap TRAME:DISQUE]... [--key TRAME:SCANCODE]...
 #            [--joy TRAME:FICHIER] [--jobs 4]
 #  --joy : script joystick daté, port 1, grammaire de neost-headless --joy-script-file. La même suite de masques
 #  des deux côtés : compilée par NeoST, jouée par Hatari via son patch NEOST_JOY_SCRIPT (docs/HATARI_AUTOMATION.md).
@@ -119,6 +119,8 @@ def neost_frames(disk: Path, args, work: Path) -> dict[int, Image.Image]:
            *(["--disk", str(copy)] if not args.gemdos else ["--gemdos", str(args.gemdos.resolve())]),
            "--frames", str(max(args.frames) + 1),
            "--shot-from", str(min(args.frames)), "--shot-every", str(step), str(prefix)]
+    if args.disk_b:
+        cmd += ["--diskb", str(swap_copy(args.disk_b, work, "nb"))]
     if args.auto:
         cmd += ["--auto", args.auto]
     if args.joy:
@@ -177,6 +179,8 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
            "--sound", "25033", "--fast-forward", "on", "--confirm-quit", "off", "--statusbar", "off",
            "--drive-led", "off", "--frameskips", "0", "--alert-level", "fatal",
            "--run-vbls", str(max(args.frames) + args.offset + args.window + 2), "--parse", str(parse)]
+    if args.disk_b:
+        cmd += ["--disk-b", str(swap_copy(args.disk_b, work, "hb"))]
     if args.auto:
         cmd += ["--auto", args.auto]
     env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HATARI_SEED="1")
@@ -267,6 +271,7 @@ def main() -> int:
     ap.add_argument("--step", type=int, default=1, help="pas de capture dans la fenêtre")
     ap.add_argument("--auto")
     ap.add_argument("--gemdos", type=Path, help="dossier monté en C: à la place de la disquette")
+    ap.add_argument("--disk-b", type=Path, help="disquette du lecteur B, pour un titre qui la demande")
     ap.add_argument("--swap", type=parse_swap, action="append", default=[],
                     help="TRAME:DISQUE, change la disquette du lecteur A à cette trame (répétable)")
     ap.add_argument("--key", type=parse_key, action="append", default=[],

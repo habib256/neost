@@ -6,6 +6,10 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Bubble Ghost et Chessmaster, lancés sans passer par le bureau (2026-11-04)
+
+`--auto` les démarre sous TOS 1.04 ou plus, sans modifier les images, et `compare_titles` accepte `--disk-b`. Les deux entrent aux parties rejouées, sans joystick, et concordent à 0,0 % sur ST jusqu'aux écrans vus. Chessmaster plante sous TOS 1.62 chez NeoST comme chez Hatari, à la même instruction.
+
 ## RTC : la fiche RP5C15 est rapatriée, le code la suit (2026-11-04)
 
 La fiche Ricoh RP/RF/RJ5C15 entre dans `setup_silicon_refs.sh`, à son empreinte. Relue contre `Rtc.cpp` : registres, masques, ADJ, Timer EN, année bissextile et RESET concordent, sans changement de code. Quatre points qu'elle ne dit pas sont marqués [F].
