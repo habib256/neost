@@ -142,12 +142,10 @@ jobs:
   # ---------------------------------------------------------------------- gui --
   # Bancs RTL (fx68k, stBlitter, GSTMCU) : SKIP sur tous les autres jobs, faute de Verilator.
   # La version est figée et compilée une fois, puis gardée en cache : celle d'Ubuntu 24.04 est trop ancienne.
-  # continue-on-error tant que ce job n'a pas prouvé qu'il tourne sur GCC et Linux : à retirer au premier vert.
   rtl:
     name: Bancs RTL (Verilator)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    continue-on-error: true
     env:
       VERILATOR_VERSION: v5.054
     steps:

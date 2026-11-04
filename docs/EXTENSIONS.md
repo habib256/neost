@@ -82,6 +82,8 @@ python3 tools/make_sting_test.py /tmp/sting.st <dossier sting126> <dossier ENEC.
     --frames 3500 --serial-dump /tmp/ser.txt     # attendu : DNS=a.b.c.d puis HTTP/1.x
 ```
 
+Sans réseau, le 2026-11-04, le pilote charge et le port s'active sous TOS 1.02 et 1.04 sur ST, TOS 1.62 sur STE, TOS 2.06 sur Mega STE et EmuTOS. TOS 2.06 attend au démarrage, sur plus de 4000 trames : SPACE passe cette attente, et les étapes sortent en moins de 2500 trames.
+
 Rejoué le 2026-11-04 avec `disks/sting_ethernec.st` : `DNS=138.197.157.224`, puis `HTTP/1.1 200 OK` depuis theoldnet.com, sur 4 runs de suite. Le premier run du jour avait échoué en DNS (`err -17`), sans que la cause soit identifiée ni l'échec reproduit. C'est ce banc qui a démasqué l'inversion des fenêtres ROM3/ROM4 (cf. EtherNEC ci-dessous). Restent le
 navigateur (CAB) en GUI et la consignation dans `docs/CASE_STUDIES.md` — cf. `TODO.md`.
 

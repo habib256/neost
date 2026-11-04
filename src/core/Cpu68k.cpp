@@ -702,7 +702,10 @@ public:
         if (g_cur->pinNextDue >= 0 && busOfClock(static_cast<int64_t>(getClock())) >= g_cur->pinNextDue) {
             const int64_t busNow = busOfClock(static_cast<int64_t>(getClock()));
             if (g_cur->hblPinDue >= 0 && busNow >= g_cur->hblPinDue) { g_cur->hblPinDue = -1; g_cur->hblPinFired = true; g_cur->hblPending = true; }
-            if (g_cur->vblPinDue >= 0 && busNow >= g_cur->vblPinDue) { g_cur->vblPinDue = -1; g_cur->vblPinFired = true; g_cur->vblPending = true; }
+            if (g_cur->vblPinDue >= 0 && busNow >= g_cur->vblPinDue) {
+                g_cur->vblPinDue = -1;
+                if (stoppedState()) { g_cur->vblPinFired = true; g_cur->vblPending = true; }
+            }
             recomputePinNextDue();
             neostUpdateIpl();
         }
@@ -1235,7 +1238,10 @@ void Cpu68k::addAciaWaitCycles() {
         aciaPrevInstrClock_ = instrStartClock_;
         // E-Clock = horloge BUS / 10 (1 MHz), indépendante du 8/16 MHz CPU MegaSTE
         // (Hatari M68000_WaitEClock travaille sur CyclesGlobalClockCounter).
-        int toNextE = 10 - static_cast<int>(busOfClock(state_->moira->getClock()) % 10);
+        // [D] Hatari m68000.c:810-822 @ f0736b24 lit l'horloge au début du cycle bus. Ici, ce rappel tombe 2 cycles
+        // plus tard, après le SYNC(2) de Moira : sans ce retrait, l'attente sort décalée de 2 cycles face à celle de l'IACK,
+        // et la VBL de l'intro de Vroom [cr Elite] entre trop tard sur STE, ce qui fige ce jeu.
+        int toNextE = 10 - static_cast<int>((busOfClock(state_->moira->getClock()) - 2 + 10) % 10);
         if (toNextE == 10) toNextE = 0;                   // déjà aligné sur l'E-Clock
         cycles += toNextE;
     }
@@ -1396,6 +1402,8 @@ namespace {
 // (une instruction d'écart une ligne sur cinq). La HBL réveille STOP à son dispatch ; la VBL non.
 // [F] ST et Mega STE : aucun modèle, ils gardent le commit au dispatch, à 0 px d'Hatari. Tranché
 // par : un GLUE modélisé, ou une capture IPL/AS sur un ST.
+// [D] Hors STOP, la VBL du STE se prend au dispatch, contre fx68k + GSTMCU : l'intro de Vroom [cr Elite] se fige avec la
+// broche au cycle, elle passe sous Hatari. Le logiciel réel l'emporte sur le modèle tant qu'aucun relevé ne dit le contraire.
 int g_pinArmMask = []{ const char* s = std::getenv("NEOST_PIN_ARM");
                        return s ? std::atoi(s) : 3; }();
 bool pinsAtCycle() { return g_cur->cpuMul == 1 && g_cur->bus && g_cur->bus->machine == MachineType::Ste; }
@@ -1461,7 +1469,7 @@ void Cpu68k::raiseVbl() {
     // (neostUpdateIpl sans commit) faisait reconnaître UNE instruction plus tard.
     // Le callback d'événement EST une frontière d'instruction (modèle bloc) → commit sûr.
     neostUpdateIpl(/*commit=*/(g_raiseCommit & 2) != 0 && !raiseWindowDefers()
-                              && (!(g_pinArmMask & 2) || !pinsAtCycle()));
+                              && (!(g_pinArmMask & 2) || !pinsAtCycle() || !state_->moira->stoppedState()));
 }
 
 void Cpu68k::raiseHbl() {

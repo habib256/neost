@@ -355,6 +355,9 @@
       "window": 24,
       "step": 1,
       "max_diff": 0.5
-    }
-  ]
+    },
+  {"id": "bubble_ghost_st", "note": "Image STX, lancée par --auto, jusqu'aux scores. La démo qui suit tire ses salles : non jugée.", "disk": "disks/stx/Bubble Ghost - Ère Informatique.stx", "machine": "st", "rom": "roms/tos104uk.img", "mem": 1, "auto": "A:\\GHOST.PRG", "frames": [2500, 3000], "window": 70, "step": 1, "max_diff": 0.5},
+  {"id": "chessmaster_st", "note": "Image STX, lancée par --auto, disque 2 en B, jusqu'à l'échiquier. La partie se joue à la souris : non jouée.", "disk": "disks/stx/Chessmaster 2000 (The) - Electronic Arts (France) (Disk 1 of 2).stx", "disk_b": "disks/stx/Chessmaster 2000 (The) - Electronic Arts (France) (Disk 2 of 2).stx", "machine": "st", "rom": "roms/tos104uk.img", "mem": 1, "auto": "A:\\CMASTER.PRG", "frames": [1500, 4000, 7000], "window": 70, "step": 1, "max_diff": 0.5},
+  {"id": "vroom_elite_ste", "note": "Intro plein écran : SPACE doit mener au titre. La VBL prise à la broche ou l'attente ACIA mal datée la figent.", "disk": "disks/st/Vroom (1991)(Lankhor)[cr Elite].st", "machine": "ste", "rom": "roms/tos162uk.img", "mem": 1, "keys": [2000], "frames": [2300, 3000, 4000], "window": 40, "step": 1, "max_diff": 0.5}
+]
 }

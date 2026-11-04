@@ -6,13 +6,39 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Bubble Ghost et Chessmaster, lancés sans passer par le bureau (2026-11-04)
+
+`--auto` les démarre sous TOS 1.04 ou plus, sans modifier les images, et `compare_titles` accepte `--disk-b`. Les deux entrent aux parties rejouées, sans joystick, et concordent à 0,0 % sur ST jusqu'aux écrans vus. Chessmaster plante sous TOS 1.62 chez NeoST comme chez Hatari, à la même instruction.
+
+## RTC : la fiche RP5C15 est rapatriée, le code la suit (2026-11-04)
+
+La fiche Ricoh RP/RF/RJ5C15 entre dans `setup_silicon_refs.sh`, à son empreinte. Relue contre `Rtc.cpp` : registres, masques, ADJ, Timer EN, année bissextile et RESET concordent, sans changement de code. Quatre points qu'elle ne dit pas sont marqués [F].
+
+## `--fdc-seed` : l'angle de la disquette se choisit (2026-11-04)
+
+Le disque réel n'a pas d'angle défini au démarrage, et NeoST n'en tirait qu'un seul. Xenon 2 charge son niveau en 332 à 684 trames selon cette graine, contre 348 à 692 sous Hatari selon la sienne : l'écart relevé venait de deux tirages → `docs/CASE_STUDIES.md`. Sans cette option, rien ne change.
+
+Balayage sur 89 disques, 5 graines, en ST et en STE : seul Vroom change de sort selon la graine. STinG et `ENEC.STX` chargent aussi sous TOS 1.02, 1.04, 1.62 et 2.06.
+
+Vroom reste ouvert : NeoST et Hatari le font planter selon la graine, un vrai STE non, d'après le mainteneur. Le mécanisme lu sous TOS 1.62 est une relocation de 2 octets lue comme 4 → `docs/CASE_STUDIES.md`.
+
+`tools/make_reloc_probe.py` fabrique une disquette qui mesure ce point sur machine réelle, sans le jeu.
+
+L'image `[cr Elite]` révélait un écart propre à NeoST sur STE : son intro plein écran ne rendait plus la main au programme principal. Corrigé : attente E-clock de l'ACIA datée au début du cycle bus, et VBL prise au dispatch hors STOP. SPACE mène au titre, à 0,0 % d'Hatari. Bancs RTL et sondes de timing restent verts → `docs/CASE_STUDIES.md`.
+
+`tools/fix_short_reloc.py` répare une copie en portant la taille du fichier à 2444 octets. Sur cette copie, 24 graines sur 24 passent sous TOS 1.04, 1.06 et 1.62 chez NeoST, contre 7 à 10 avant : la cause de ces échecs est démontrée dans les émulateurs. Le bruit sous TOS 2.06 survit et reste ouvert.
+
+## Pirates : l'écart d'intro est un tirage au hasard (2026-11-04)
+
+Le bruit noté côté Hatari ne se reproduit plus, et le reste de l'écart vient de XBIOS `Random`, semé sur `_hz200`. Le titre sort des bugs ouverts → `docs/CASE_STUDIES.md`. Les bits 3, 7 et 11 de la palette relue sur ST entrent au TODO.
+
 ## WD1772 : écriture selon la fiche (2026-11-04)
 
 Le bit 6 retombe au départ d'un Write Sector, [B] p. 1-9. INTRQ 24 µs après le dernier CRC d'un Write Sector, et $F7 pour deux octets avec une seule DRQ en Write Track, [B] WD177X-00 p. 1-12, 1-13, 1-15. Images identiques sur 89 disques joués, sans savoir combien écrivent réellement sur disquette. La sonde `fdc_write` de l'oracle et `neost-stx-test` passent par ces lignes.
 
 ## Bancs RTL en CI (2026-11-04)
 
-Nouveau job `rtl` dans `tests.yml` : Verilator 5.054 compilé puis gardé en cache, RTL aux épingles, six bancs. Écrit sans pouvoir l'exécuter ici : il n'est pas bloquant tant qu'il n'a pas prouvé qu'il tourne.
+Nouveau job `rtl` dans `tests.yml` : Verilator 5.054 compilé puis gardé en cache, RTL aux épingles, six bancs. Premier passage vert sur `72ded68`, GCC et Linux, 27 minutes avec la compilation de Verilator : mêmes verdicts que sur macOS, et le job devient bloquant.
 
 ## Suite d'Hatari : le port série aussi (2026-11-04)
 

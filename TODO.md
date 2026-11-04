@@ -78,7 +78,7 @@ ici ne figure que ce qui demande une décision ou une source.
 témoins : tous grade D, Moira non modifié. La chaîne MFP→IPL de NeoST ajoute ses propres délais :
 requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md).
 
-- **Prise d'IPL sur ST et Mega STE** · P2 ⏸ source · [F] — le STE suit fx68k + GSTMCU depuis le 2026-11-04 (`docs/STCPU_BENCH.md`) ; ST et Mega STE gardent le commit
+- **Prise d'IPL sur ST et Mega STE** · P2 ⏸ source · [F] — le STE suit fx68k + GSTMCU pour la HBL et pour la VBL pendant un STOP, depuis le 2026-11-04 (`docs/STCPU_BENCH.md`). Hors STOP, sa VBL se prend au dispatch, car l'intro de Vroom `[cr Elite]` se fige sinon ; ST et Mega STE gardent le commit
   d'Hatari, faute de modèle du GLUE. Le 68000 est le même : à trancher par un modèle du GLUE ST, ou un relevé de tiers.
 - **Erreur d'adresse : cycle amorcé** · P3 ⭘ · [D] — seul fx68k pose AS sans strobe à l'adresse fautive.
   Un seul témoin, sans effet connu sur un ST.
@@ -103,6 +103,7 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   13 en NTSC). Hatari l'admet (`video.c:4008-4009 @ f0736b24`). Code inchangé tant qu'une source
   plus haute manque ; passer au noir déplacerait les références `hatari` à bordure visible.
   ⚠ Le schéma 4118 est le shifter de la Panther ; aucun schéma du Shifter ST n'est disponible.
+- **Bits 3, 7 et 11 de la palette relue sur ST** · P3 ⏸ matériel · [F] — NeoST les rend à 0. Hatari les tire au hasard (`video.c:5507 @ f0736b24`, « not defined », selon la dernière activité du bus), sauf si le PC est hors RAM. Pirates [cr Delight] relit ainsi sa palette, sans effet à l'image. Tranche : relire ces bits sur le fer, ou modéliser le dernier mot du bus.
 - **Octet `$FF8261` relu** · P3 ⏸ source · [F] — `gstshifter.v:121 @ 4a6db7cc` rend $00 en octet bas ; NeoST garde l'alias de
   `$FF8260`, comme Hatari. Bloc « moyen » : le RTL ne l'emporte pas. Tranche : relevé sur STE.
 - **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut reste sans source : sur le fer, l'état se tire à la mise sous tension. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option.
@@ -211,8 +212,9 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 | Titre | Prio | Symptôme | Piste |
 |-------|------|----------|-------|
-| **Pirates** ([cr Delight], écran d'intro) | P2 ⭘ | NeoST : 73 couleurs par trame, stables, rasters nets. Hatari : ~184, bruit qui change à chaque trame, au pixel près, marge gauche comprise. Mêmes écrans par ailleurs. Lancé en TOS 1.04 avec `--auto A:\PIRATES.PRG`. | Qui a raison ? Tracer les écritures de palette des deux côtés. Aucune source plus haute à ce jour. |
-| **Vroom** (Lankhor), Mega STE, TOS 2.06 | P3 ⭘ | Image de bruit après le titre, avec certaines dates de frappes : en 4 Mo sur la plupart des décalages essayés, écran noir en 2 Mo sur d'autres. En plein Seek, le lecteur se désélectionne (`drv=-1`, puis lecteur B) alors que la musique écrit sur le PSG en interruption. Course probable sur le registre de sélection du PSG. | Hatari ne produit aucune capture avec ces entrées : rien ne tranche. Relever les écritures de R14 autour de la désélection, ou tester sur le fer. |
+| **Vroom** (Lankhor), image `disks/st/Vroom (1991)(Lankhor).st` | P3 ⏸ relevé de tiers | Cause trouvée pour le plantage sous TOS 1.62 et le retour au bureau sous 1.04 et 1.06 : `AUTO\VROOM.PRG` a 2 octets de relocation au lieu de 4. Portée à 2444 octets par `tools/fix_short_reloc.py`, la taille seule, l'image passe à 24 graines sur 24 chez NeoST sous ces trois TOS, 8 sur 8 chez Hatari sous TOS 1.62. Le mainteneur se souvient d'un STE de 1 Mo où Vroom ne plantait pas ; il n'a plus cette machine, et le TOS comme le disque sont inconnus (`docs/CASE_STUDIES.md`). | `tools/make_reloc_probe.py` attend le relevé d'un tiers sur un vrai STE. |
+| **Vroom**, image de bruit sous TOS 2.06 | P3 ⭘ | Autre cause, car elle survit à la réparation : 4 graines sur 12 sur Mega STE en 4 Mo, 6 sur 12 sur STE en 1 Mo, avec joystick et SPACE. Avant réparation, Hatari sort la même image, à 0,0 %, à 2 graines sur 8. Aucun bruit à 12 graines sous TOS 1.06 et 1.62. | Tracer l'écriture de l'écran ou du chargement entre une graine nette et une graine à bruit. |
+| **Switchblade** `[cr Replicants][t +2]`, écran noir rare | P3 ⭘ | ST et STE, TOS 1.04, 1.06, 1.62 : titre à 0,0 % d'Hatari aux écrans vus, sauf `--fdc-seed 8`, 1 graine sur 64 sous TOS 1.04, qui reste noire. Le programme boucle sur `btst #5,$FFFFFA01` : l'INTRQ de la fin d'un READ TRACK retombe dans la même milliseconde. Hatari : 0 sur 16, trop peu pour trancher. | Trouver qui relit le statut du FDC à cet instant, et si le même tirage existe chez Hatari. |
 | **Shadow Warriors** (2Hot2Handle) | P3 ⏸ média | Après SPACE, titre et musique OK, le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). Sur la version Ocean, ce n'est pas un défaut : le titre attend la touche 1 (« PUSH 1P OR 2P BUTTON »), et le tir ne lance rien non plus sous Hatari. Partie jouée, disques 1 et 2, sans écart avant le combat (`shadow_warrior_st`). | Le disque 2Hot2Handle reste absent. S'il revient, essayer d'abord la touche 1. |
 
 ### Campagnes à mener
@@ -223,7 +225,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
   Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
-  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde onze parties, changements de disquette compris. Passe STX du 2026-11-04 : 11 disques, 10 à 0,0 % aux écrans vus sur ST, disques B compris pour 5 titres. Sur STE, 8 à 0,0 % ; Golden Axe et Lethal Xcess s'écartent à un seul écran de transition, Magic Pockets en pleine partie ; Super Off Road reste à sa demande de disque de données chez les deux émulateurs, Bubble Ghost et Chessmaster restent au bureau, faute de lancement du programme. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
+  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde quatorze parties, changements de disquette compris. Passe STX du 2026-11-04 : 11 disques, 10 à 0,0 % aux écrans vus sur ST, disques B compris pour 5 titres. Sur STE, 8 à 0,0 % ; Golden Axe et Lethal Xcess s'écartent à un seul écran de transition, Magic Pockets en pleine partie ; Super Off Road reste à sa demande de disque de données chez les deux émulateurs, Bubble Ghost et Chessmaster se lancent par `--auto A:\GHOST.PRG` et `--auto A:\CMASTER.PRG`, sous TOS 1.04 ou plus, sans toucher à l'image, à 0,0 % sur ST jusqu'aux écrans vus. Ils se jouent à la souris, que `compare_titles` ne sait pas encore rejouer, et Chessmaster plante sous TOS 1.62 chez les deux émulateurs (`docs/CASE_STUDIES.md`). Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu. Passe d'angle du 2026-11-04, 89 disques sur ST et sur STE, 5 valeurs de `--fdc-seed` et SPACE répété, jusqu'à la trame 4000 : un seul titre change de sort selon la graine, Vroom, ouvert ci-dessus. Les six arrêts CPU touchent cinq disques STE lancés sur ST et Epic disque 2, à toutes les graines, et l'arrêt d'Epic existe aussi sous Hatari.
 
 ## 4. 🪜 Harnais et preuve
 
@@ -233,8 +235,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. MFP, YM2149, WD1772, ACIA et SCC sont confrontés à leurs fiches, et leurs écarts marqués `⚠ [B]` sur place. `audit_citations.py list` signale encore 2 citations, justes, dont la révision suit sur la même phrase. Restent les GLUE/MMU sans schéma, et le RTC dont la fiche manque. Le SCC n'a pas été relu pour le synchrone, le SDLC et le DMA.
-- **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, à regarder.
+- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. MFP, YM2149, WD1772, ACIA et SCC sont confrontés à leurs fiches, et leurs écarts marqués `⚠ [B]` sur place. `audit_citations.py list` signale encore 2 citations, justes, dont la révision suit sur la même phrase. Restent les GLUE/MMU sans schéma. Le SCC n'a pas été relu pour le synchrone, le SDLC et le DMA.
+- **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée.
 - **Banc fx68k, étendre** · P3 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur concordent. Restent BERR et double faute, et l'autovecteur dans le verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
   78 programmes en accord ; `blitter_timer` et deux sondes s'écartent d'Hatari, consigné. → `docs/STBLITTER_BENCH.md`
@@ -243,10 +245,9 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **Relevés de tiers** · P2 ⭘ — ST-STE Hardware Test (Troed), notes de Steven Tattersall,
   résultats de la suite Hatari. Un relevé entre en `hardware` s'il nomme machine et protocole.
 - **Étalon Troed** · P2 ◐ — WSDETECT est en place (`tools/run_wsdetect.py`). Reste ST-STE Hardware Test, à rapatrier et calibrer.
-- **Documents primaires manquants** · P2 ⭘ — RP5C15, HD6301, schémas GLUE/MMU ST et Mega STE,
+- **Documents primaires manquants** · P2 ⭘ — HD6301, schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST.
 - **Auto-tests sans source** · P3 ◐ — `tools/classify_selftests.py` lit l'échelon que chaque test de logique déclare : hardware 0 · primary 70 · rom 6 · rtl 1 · hatari 44 · aucun 14 (total 135). Ce qui ne cite rien reste à sourcer. C'est une déclaration, pas une relecture des attendus.
-- **Verilator en CI** · P2 ◐ — le job `rtl` de `tests.yml` compile Verilator 5.054 et lance les six bancs. Il n'a pas encore tourné : `continue-on-error` est à retirer au premier vert sur GCC et Linux.
 - **Monter les 11 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
   confrontée au modèle (`docs/GLUE_SWEEP.md`), pas leurs pixels ; `closure` et
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
@@ -292,8 +293,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   le GUI et un test à deux nœuds (un seul processus, bloqué par A33).
 
 ### Réseau, stockage, ports
-- **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — STinG + `ENEC.STX` ; la
-  validation sous TOS 1.04 attend son média (§ 3).
+- **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — STinG + `ENEC.STX`.
 - **NetUSBee — fenêtre LSB partagée** · P3 ⏸ schéma — `$FA0000-$FA01FF` = latch ISP1160 ET
   registre CR NE2000 ; trancher sur le schéma (hardware.atari.org), puis `Bus::read8Slow`.
 - **NetUSBee : périphériques USB** · P3 ⭘ — l'ISP1160 est un hub racine vide ; HID puis stockage

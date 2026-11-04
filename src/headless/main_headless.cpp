@@ -135,6 +135,7 @@ void usage() {
         "                    TOS finds one drive (_nflops = 1) and asks to swap\n"
         "                    disks in A for B: (as hatari --drive-b off)\n"
         "  --fastfdc         fast FDC (delays /10) — speeds up disk access\n"
+        "  --fdc-seed N      seed of the disk angle drawn at first spin-up (default: fixed)\n"
         "  --disk-ro         floppy writes stay in RAM: the host .st/.msa/.dim file\n"
         "                    (and the .wd1772 STX overlay) is never modified. The\n"
         "                    guest still reads back what it wrote — this protects the\n"
@@ -1131,6 +1132,8 @@ int main(int argc, char** argv) {
     std::string diskBPath;                       // lecteur B (optionnel, --diskb)
     bool        driveB     = true;    // --drive-b off : lecteur B débranché (_nflops = 1)
     bool        fastFdc    = false;   // FDC rapide (--fastfdc) : délais commande/transfert ÷10
+    uint32_t    fdcSeed    = 0;       // --fdc-seed : angle de la disquette au premier tour moteur
+    bool        haveFdcSeed = false;
     bool        diskRo     = false;   // A14 (--disk-ro) : les écritures ne touchent PAS le fichier hôte
     std::string romPath    = "roms/etos192us.img";
     std::string cartPath;
@@ -1312,6 +1315,7 @@ int main(int argc, char** argv) {
             else { std::fprintf(stderr, "--drive-b expects 'on' or 'off'\n"); return 2; }
         }
         else if (!std::strcmp(a, "--fastfdc"))    fastFdc   = true;
+        else if (!std::strcmp(a, "--fdc-seed"))   { fdcSeed = (uint32_t)std::strtoul(next(a), nullptr, 0); haveFdcSeed = true; }
         else if (!std::strcmp(a, "--disk-ro"))    diskRo    = true;
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--gemdos"))     gemdosDir = next(a);
@@ -1742,6 +1746,7 @@ int main(int argc, char** argv) {
     const bool diskBOk = diskBPath.empty() || machine.loadDiskB(diskBPath);
     if (serverMode && ((diskRequested && !diskAOk) || !diskBOk)) outFail = true;
     machine.fdc.setFastFdc(fastFdc);   // FDC rapide (--fastfdc) : accès disque ÷10
+    if (haveFdcSeed) machine.fdc.setIndexSeed(fdcSeed);
     // A14 : --disk-ro protège le FICHIER, pas la disquette. Les écritures continuent
     // d'aller dans l'image en RAM (le programme invité relit ce qu'il a écrit, rien
     // ne change pour lui) ; seul le write-through vers le fichier hôte est coupé.

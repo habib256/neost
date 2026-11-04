@@ -46,6 +46,8 @@ quatre formes de boucle interrompue : NOP et Bcc, longue suite de NOP, STOP, MUL
 | Broche | Levée au dispatch d'événement, frontière d'instruction | Levée au cycle exact, en cours d'instruction (`armHblPinAt`), vue par `POLL_IPL` |
 | Commit | HBL et VBL commitées au dispatch | Aucun, sauf HBL pendant un STOP |
 
+Exception depuis le 2026-11-04 : hors STOP, la VBL du STE se prend au dispatch, car l'intro de Vroom `[cr Elite]` se fige à la broche. Les verdicts du banc n'ont pas bougé.
+
 Le mécanisme existait, en essai (`NEOST_PIN_ARM`), écarté le 2026-07-02 parce qu'il s'écartait d'Hatari. Ce banc le départage. `POLL_IPL` de Moira est donc confirmé sur ces cas : le « +3 » de `FX68K_BENCH.md` n'apparaît pas dans NeoST à cette résolution de 4 cycles.
 
 ## Le pixel : une écriture du CPU, la trame qui sort

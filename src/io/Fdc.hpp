@@ -70,6 +70,9 @@ public:
     // spin-up, arrêt moteur) reste au rythme réel, comme Hatari. ⚠ Peut casser les
     // programmes au track-loader maison qui dépendent du débit physique du WD1772.
     void setFastFdc(bool on) { fastFloppy_ = on; }
+    // Graine de la position angulaire tirée au premier tour moteur : le vrai disque n'a pas d'angle
+    // défini à la mise sous tension, et un chargement peut en dépendre. Outil de mesure, jamais d'un étalon.
+    void setIndexSeed(uint32_t seed) { rng_ = seed ? seed : 1; }
 
     // Lecteur BRANCHÉ ou non (port de Hatari FDC_Drive_Set_Enable, option
     // `--drive-b off`). Un lecteur débranché se comporte comme « aucun lecteur
