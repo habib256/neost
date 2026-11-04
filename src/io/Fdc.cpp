@@ -2883,10 +2883,10 @@ void Fdc::executeCommand(uint8_t cmd) {
 
     // Nouvelle commande : on efface l'IRQ du FDC (sauf « force interrupt immediate »).
     // [B] WD177X-00 p. 1-5, p. 1-16 ; [D] fdc.c:4538-4548 @ f0736b24.
-    // ⚠ [B] p. 1-16 : « The Hex D0 is the only command » qui rend effaçable l'interruption de $D8. Ici
-    // N'IMPORTE QUELLE commande remet interruptCond_ à 0, et la lecture d'état suivante efface INTRQ :
-    // écart non corrigé, comme Hatari ([D] fdc.c:4550-4555 @ f0736b24, « not just when the new command is
-    // D0 », sans source). Effet : après $D8 puis une commande autre que $D0, INTRQ retombe plus tôt.
+    // ⚠ [B] p. 1-16 : « The Hex D0 is the only command » qui rend effaçable l'interruption de $D8.
+    // [D] fdc.c:4550-4555 @ f0736b24 efface la condition à toute commande, « not just when the new command is D0 ».
+    // Essai du 2026-11-04 : la fiche à la lettre fait diverger Super Hang-On (99 % d'écart à la trame 500,
+    // 0,0 % sinon). Écart gardé. Tranché par : un relevé d'INTRQ après $D8 puis une autre commande.
     if ((irqSignal_ & IRQ_FORCED) && !(interruptCond_ & INT_COND_IMMEDIATE))
         irqSignal_ &= ~IRQ_FORCED;
     if (type != 4) fdcClearIrq();

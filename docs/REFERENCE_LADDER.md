@@ -134,7 +134,7 @@ Une explication commune reste à établir : le modèle prendrait les écritures 
 
 ## Quand une fiche lue à la lettre bloque le logiciel réel (2026-11-04)
 
-MC6850 § Receiver Overrun p. 8-9 : « The RDRF bit remains set until the Overrun is reset ». Appliqué à la lettre, Enchanted Land, Lemmings, Dynamite Dux, Lethal Xcess et Magic Pockets restent bloqués sur leurs premiers écrans. Ces programmes tournent sur la machine réelle : ou la phrase ne dit pas ce qu'elle semble dire, ou leur overrun n'y arrive pas à ce moment. NeoST garde donc le comportement d'Hatari, marqué `⚠ [B]` dans le code, et le relevé d'un vrai 6850 tranchera. **Règle** : une correction de fiche se joue sur les disques (A/B au pixel) avant d'être gardée. Si elle ne change aucune image, la fiche prime. Si elle en change, on regarde lesquelles.
+MC6850 § Receiver Overrun p. 8-9 : « The RDRF bit remains set until the Overrun is reset ». Appliqué à la lettre, Enchanted Land, Lemmings, Dynamite Dux, Lethal Xcess et Magic Pockets restent bloqués sur leurs premiers écrans. Ces programmes tournent sur la machine réelle : ou la phrase ne dit pas ce qu'elle semble dire, ou leur overrun n'y arrive pas à ce moment. NeoST garde donc le comportement d'Hatari, marqué `⚠ [B]` dans le code, et le relevé d'un vrai 6850 tranchera. Même cas sur le WD1772, `$D8` et Super Hang-On (`src/io/Fdc.cpp`). **Règle** : une correction de fiche se joue sur les disques (A/B au pixel) avant d'être gardée. Si elle ne change aucune image, la fiche prime. Si elle en change, on regarde lesquelles.
 
 ## Sans machine réelle
 

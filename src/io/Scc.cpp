@@ -836,15 +836,17 @@ void Scc::writeControl(int c, uint8_t value) {
         // [B] UM0109 WR0 p.139-142 : CRC reset, commande et sélection de registre
         // sont trois champs indépendants. RR0 D6 p.175 décrit explicitement le
         // reset EOM même en asynchrone (commande erronée mais effective).
-        // ⚠ [B] UM0109 WR0 p.141 : transmetteur coupé, cette commande ne remet pas le latch à
-        //    zéro. Ici elle le fait toujours. Écart non corrigé.
-        if ((value & 0xc0) == 0xc0) {
+        // [B] UM0109 WR0 p.141 : transmetteur coupé, cette commande ne remet pas le latch à zéro.
+        if ((value & 0xc0) == 0xc0 && (chn_[c].WR[5] & WR5_TX_ENABLE)) {
             updateRR0Clear(c, RR0_TX_UNDERRUN_EOM);
             updateRR0(c); updateIRQ();
         }
-        // ⚠ [B] UM0109 WR0 p.142, RR0 D6 p.175 : Send Abort (011) vide le tampon TX et remet
-        //    Underrun/EOM à 1. Ici la commande est sans effet. Écart non corrigé.
         const uint8_t command = (value >> 3) & 7;
+        // [B] UM0109 WR0 p.142, RR0 D6 p.175 : Send Abort (011) vide le tampon TX et remet Underrun/EOM à 1.
+        if (command == 3) {
+            updateRR0Set(c, RR0_TX_BUFFER_EMPTY | RR0_TX_UNDERRUN_EOM);
+            updateRR0(c); updateIRQ();
+        }
         {
 
             // [B] UM0109 WR0 p.141-142 : Reset Ext/Status, Reset Tx IP, Next Rx, Error Reset,

@@ -170,7 +170,7 @@ Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → 
   reconstruction : seule divergence de sévérité moyenne assumée, sans promesse de flux brut.
   Tranche : relecture sur un vrai lecteur d'une piste écrite par un jeu (sauvegarde), ou IPF.
 - **ACSI : essai Idris OS** · P3 ⭘ — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté.
-- **WD1772, restes de l'audit** · P3 ⭘ · [B] contre [D] — marqués `⚠ [B]` dans `src/io/Fdc.cpp` : INTRQ 24 µs après le dernier CRC ; $F7 compté pour un octet ($F7 écrit deux octets pour une DRQ) ; INTRQ de $D8 effaçable par toute commande ; $Dx annulé si une commande suit à moins de 16 µs ; face sans ID. Deux écarts voulus protègent de vrais programmes : TR/SR écrits pendant BUSY (Delirious Demo IV) et commande remplacée pendant BUSY (Overdrive Demos).
+- **WD1772, restes de l'audit** · P3 ⭘ · [B] contre [D] — marqués `⚠ [B]` dans `src/io/Fdc.cpp` : INTRQ 24 µs après le dernier CRC ; $F7 compté pour un octet ($F7 écrit deux octets pour une DRQ) ; INTRQ de $D8 effaçable par toute commande, gardé car la fiche à la lettre fait diverger Super Hang-On ; $Dx annulé si une commande suit à moins de 16 µs ; face sans ID. Deux écarts voulus protègent de vrais programmes : TR/SR écrits pendant BUSY (Delirious Demo IV) et commande remplacée pendant BUSY (Overdrive Demos).
 
 ### 2.7 Clavier — IKBD HD6301, ACIA 6850, MIDI
 

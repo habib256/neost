@@ -6,6 +6,14 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Restes de fiches, sur les disques d'abord (2026-11-04)
+
+- **MFP** : UE s'efface après un cycle de TC, [B] MK68901 p. 17, MC68HC901 § 7.3.2, et non après un bit entier.
+- **SCC** : Reset Underrun est sans effet transmetteur coupé, et Send Abort vide le tampon TX et lève Underrun/EOM, [B] UM010902-0609 p. 141-142.
+- **WD1772, `$D8`** : la fiche dit que seul `$D0` rend son interruption effaçable. Appliqué à la lettre, Super Hang-On s'écarte de 99 % à la trame 500. Essayé puis retiré, écart marqué `⚠ [B]`.
+- **ACIA, octet en vol au master reset** : essayé puis retiré, le SCI du 6301 continue d'émettre et un modèle juste demande un champ d'état de plus. Écart marqué, aucun titre touché.
+- A/B sur 89 disques joués : images identiques avec les corrections gardées.
+
 ## Passe STX, et A32 : l'état du compteur vidéo en membre (2026-11-04)
 
 - **Passe STX au joystick** : 11 disques contre Hatari, 10 à 0,0 % aux écrans vus. Avec le disque B, Golden Axe, Lethal Xcess, Wings of Death et Rainbow Islands se jouent des deux côtés. Les écarts qui restent sont des parties qui divergent. Golden Axe et Wings of Death rejoignent `run_game_replay.py`.
