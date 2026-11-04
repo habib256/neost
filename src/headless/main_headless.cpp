@@ -222,6 +222,7 @@ void usage() {
         "                    outbound traffic needed (NEOST_SLIRP_ONLINE=1 adds a real DNS\n"
         "                    query; NEOST_SLIRP_DNS=a.b.c.d[:port] picks the resolver), then exit\n"
         "  --serial-dump F   write the raw RS-232 serial bytes into F (NEOST-TEST verdicts)\n"
+        "  --scc-dump F      write the raw bytes sent on SCC channel B into F (Mega STE)\n"
         "  --from-cfg F      replay the GUI config (neost.cfg); later options override it\n"
         "  --dump-at N A L F raw dump of L bytes of RAM from $A (hex) after frame N → F\n"
         "  --probe NAME=A:L  sample L bytes (1/2/4) at hex address A, repeatable.\n"
@@ -1158,6 +1159,7 @@ int main(int argc, char** argv) {
     bool        midiList = false;                // --midi-list : énumère puis sort
     std::string soundDumpPath;                   // --sound-dump F : WAV 48 kHz de la boucle --frames
     std::string serialDumpPath;                  // --serial-dump F : octets série RS-232 bruts (verdicts)
+    std::string sccDumpPath;                     // --scc-dump F : octets émis sur le canal B du SCC
     bool        outFail    = false;   // une SORTIE fichier a échoué → exit ≠ 0 (jamais silencieux)
     bool        regs       = false;
     bool        irq        = false;
@@ -1295,6 +1297,7 @@ int main(int argc, char** argv) {
         if      (!std::strcmp(a, "--frames"))     frames    = std::max(0, std::atoi(next(a)));
         else if (!std::strcmp(a, "--sound-dump")) soundDumpPath = next(a);
         else if (!std::strcmp(a, "--serial-dump")) serialDumpPath = next(a);
+        else if (!std::strcmp(a, "--scc-dump")) sccDumpPath = next(a);
         else if (!std::strcmp(a, "--trace"))      tracePath = next(a);
         else if (!std::strcmp(a, "--trace-from")) traceFrom = std::atoi(next(a));
         else if (!std::strcmp(a, "--regs"))       regs      = true;
@@ -1981,6 +1984,9 @@ int main(int argc, char** argv) {
     // que Cubase a réellement envoyé et QUAND — à comparer au morceau qu'on lui a donné.
     // Journal texte volontairement brut (un outil Python en fait un SMF) pour rester
     // lisible au `diff` et indépendant de tout parseur MIDI côté C++.
+    std::string sccDump;
+    if (!sccDumpPath.empty())
+        machine.scc.setSerialSink([&sccDump](int ch, uint8_t b) { if (ch == 1) sccDump.push_back(char(b)); });
     std::vector<std::pair<int64_t, uint8_t>> midiDump;
     if (!midiDumpPath.empty()) {
         // Le puits daté a priorité sur le puits simple (MidiAcia::write) : on relaie
@@ -2645,6 +2651,12 @@ int main(int argc, char** argv) {
     if (!serialOut.empty())
         std::fprintf(stderr, "[headless] RS-232 serial port (%zu bytes):\n%s\n",
                      serialOut.size(), serialOut.c_str());
+    if (!sccDumpPath.empty()) {
+        if (FILE* sf = std::fopen(sccDumpPath.c_str(), "wb")) {
+            std::fwrite(sccDump.data(), 1, sccDump.size(), sf);
+            std::fclose(sf);
+        }
+    }
     if (!midiDumpPath.empty()) {
         if (FILE* mf = std::fopen(midiDumpPath.c_str(), "w")) {
             // L'horloge vient de Pacing (A28) : cet en-tête est LU par

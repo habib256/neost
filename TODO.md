@@ -254,8 +254,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 ### Instruments
 
 - **Suite de tests d'Hatari : restes** · P2 ◐ — `run_hatari_suite.py` rejoue cycles, blitter,
-  bus errors, `cpu`, `gemdos` : 12/12. Restent `screen` (référence PNG au format Hatari) et
-  `serial` ; `xbios`/`mem_end` hors périmètre.
+  bus errors, `cpu`, `gemdos` et `serial`. Reste `screen` (référence PNG au format Hatari) ; `xbios`/`mem_end` hors périmètre.
 - **`screen/flixfull.prg`** · P3 ⭘ · [F] — NeoST est 4 px à gauche d'Hatari sur toute la ligne, ST comme STE. Écritures et décisions du GLUE identiques (LEFT_OFF + RIGHT_OFF, DE 5 à 463, 230 octets) :
   l'écart est dans la recopie de la ligne. Aucun témoin réel ne dit qui a raison, et le Shifter du modèle n'est pas fiable à ce grain. Tranche : une capture sur machine.
 - **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne le mur du palier pixel (~45 s) ; savoir

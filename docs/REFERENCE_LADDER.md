@@ -26,7 +26,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | Verdict | Échelon | Note |
 |---|---|---|
 | `run_hatari_suite.py`, `buserror-*` (8) | `hardware` | [A] tiers : relevés de `tests/buserror/results` @ `f0736b24`. Machine et révision des puces non consignées. |
-| `run_hatari_suite.py`, `cycles`, `blitter`, `cpu`, `gemdos` (4) | `hatari` | Aucun readme ne donne la provenance de l'attendu. |
+| `run_hatari_suite.py`, `cycles`, `blitter`, `cpu`, `gemdos`, `serial` (MFP, MIDI, SCC) (7) | `hatari` | Aucun readme ne donne la provenance de l'attendu. |
 | `run_spec512_truth.py` (13 images, ST et STE) | `rom` | De vraies images Spectrum 512 par le vrai visualiseur, contre la formule du format, sans aucun émulateur : 0 pixel faux. Juge la date des écritures palette, à 4 pixels près. |
 | `run_wsdetect.py` (7 cas, ST WS1 à WS4, Mega ST, STE, Mega STE) | `rom` | Le détecteur de Troed/SYNC compose une ligne de 4 bascules et lit ce qu'elle consomme : 162, 54, 206, 204 et 180 octets, sans aucun émulateur. Juge la grille de la GLUE, les dates d'écriture et le compteur. Pas de relevé de ce disque sur machine réelle au dépôt. |
 | `run_sting_boot.py` | `rom` | Le vrai pilote `ENEC.STX` charge et active le port sur la NE2000 de NeoST, sans réseau. |

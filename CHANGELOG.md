@@ -6,6 +6,10 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Suite d'Hatari : le port série aussi (2026-11-04)
+
+`run_hatari_suite.py` rejoue `serial/` sur MFP, MIDI et SCC : les 44 octets sortent justes. `--scc-dump` capture le canal B du SCC.
+
 ## L'option `NEOST_WITH_IMGUI` est retirée (2026-11-04)
 
 Elle ne compilait plus depuis longtemps, et toute la GUI dépend d'ImGui. Sans ImGui, il reste `neost-headless`.

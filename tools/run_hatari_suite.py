@@ -25,8 +25,8 @@
 #
 #  Restent hors banc : xbios/ et mem_end/ (ils appellent des extensions propres
 #  à Hatari — Dbmsg en XBIOS 11, Scrdmp intercepté en capture —, pas du matériel
-#  ST), serial/ (pas de capture série brute) et screen/ (référence PNG au format
-#  de capture d'Hatari).
+#  ST) et screen/ (référence PNG au format de capture d'Hatari). serial/ est relevé
+#  par --serial-dump, --midi-dump et --scc-dump.
 #
 #  extern/hatari est gitignoré : absent → étape SAUTÉE et recensée (code 77).
 #
@@ -72,6 +72,14 @@ CONSOLE_CASES = [("cpu-68000", "cpu/int_test.tos", "cpu/int_test.c", "st", "1m",
                  ("gemdos", "gemdos/gmdostst.tos", "gemdos/gmdostst.c", "st", "1m", ROM_ST)]
 
 
+# (nom, programme, option de capture, machine, RAM, ROM)
+SERIAL_CASES = [
+    ("serial-mfp", "serial/mfp_ser.tos", "--serial-dump", "st", "1m", "roms/etos192fr.img"),
+    ("serial-midi", "serial/midi_ser.tos", "--midi-dump", "st", "1m", "roms/etos192fr.img"),
+    ("serial-scc", "serial/scc_ser.tos", "--scc-dump", "megaste", "1m", "roms/etos256fr.img"),
+]
+
+
 def expected_lines(path: Path) -> list[str]:
     return [line for line in path.read_text(errors="replace").splitlines()
             if not line.startswith("(")]
@@ -101,6 +109,23 @@ def run_console_case(name, prg, source, machine, mem, rom) -> bool:
             return False
         print(f"  OK   {name} ({want} tests)")
         return True
+
+
+def run_serial_case(name, prg, flag, machine, mem, rom) -> bool:
+    """serial/ : le programme émet sur son port, l'octet qui sort doit égaler expected.txt."""
+    with tempfile.TemporaryDirectory(prefix="neost-hatari-suite-") as tmp:
+        drive, dump = Path(tmp) / "C", Path(tmp) / "out.txt"
+        drive.mkdir()
+        log = run_auto(drive, prg, machine, mem, rom, (flag, str(dump)))
+        raw = dump.read_bytes() if dump.exists() else b""
+        if flag == "--midi-dump":               # une ligne « <cycle> <hex> » par octet
+            raw = bytes(int(l.split()[1], 16) for l in raw.decode().splitlines() if len(l.split()) == 2)
+        want = (SUITE / "serial" / "expected.txt").read_bytes()
+        if raw == want:
+            print(f"  OK   {name} ({len(want)} octets)")
+            return True
+        print(f"  FAIL {name}: {raw[:60]!r} au lieu de {want[:60]!r} (code {log.returncode})")
+        return False
 
 
 def run_case(name, prg, produced, reference, machine, mem, rom) -> bool:
@@ -136,11 +161,13 @@ def main() -> int:
     only = set(sys.argv[1:])
     selected = [c for c in CASES if not only or c[0] in only]
     console = [c for c in CONSOLE_CASES if not only or c[0] in only]
-    print(f"SUITE HATARI : {len(selected) + len(console)} programmes rejoués sous NeoST")
-    ok = all([run_case(*c) for c in selected] + [run_console_case(*c) for c in console])
+    serial = [c for c in SERIAL_CASES if not only or c[0] in only]
+    print(f"SUITE HATARI : {len(selected) + len(console) + len(serial)} programmes rejoués sous NeoST")
+    ok = all([run_case(*c) for c in selected] + [run_console_case(*c) for c in console]
+             + [run_serial_case(*c) for c in serial])
     hardware = sum(c[0].startswith("buserror-") for c in selected)
     print(f"ÉCHELLE : hardware {hardware} (relevés tiers) · "
-          f"hatari {len(selected) + len(console) - hardware}")
+          f"hatari {len(selected) + len(console) + len(serial) - hardware}")
     print("SUITE HATARI OK" if ok else "SUITE HATARI FAIL")
     return 0 if ok else 1
 
