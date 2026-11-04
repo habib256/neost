@@ -337,9 +337,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
 
 - **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits. L'état du compteur vidéo est un membre, `VideoCounterState vc_`, sans changement de l'empreinte d'état. Prochain pas : y déplacer les méthodes, ce qui demande une interface vers la Glue et le faisceau, puis seulement la Glue.
-- **Build sans ImGui** · P3 ⭘ — `-DNEOST_WITH_IMGUI=OFF` ne compile plus (constaté le
-  2026-10-20) : des fichiers GUI incluent `imgui.h` sans condition et `AppLoop.cpp` manque de
-  déclarations. Réparer ou retirer l'option.
 - **A9 — `appLoop` découpée** · P3 ◐ — `main()` tient en 10 lignes ; les 28 phases sont des
   fonctions statiques `(App&, Frame&)`. Plus grosse pièce restante :
   `runKioskMenu` — 380 lignes d'un seul tenant. Prochain pas éventuel : sortir ses pages,

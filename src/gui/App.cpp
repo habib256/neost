@@ -34,9 +34,7 @@
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
 #endif
-#if defined(NEOST_WITH_IMGUI)
 #include "imgui.h"
-#endif
 
 namespace fs = std::filesystem;
 using namespace neost::appconfig;
@@ -569,12 +567,10 @@ void App::switchKioskMode(bool on) {
         // ferait persister la machine du visiteur au premier save forcé
         // (auto-purge ROM, réaffectation manette) : l'exact contraire du gel.
         if (!A.kioskLaunched) A.cfgPristine = cfg;
-#if defined(NEOST_WITH_IMGUI)
         // Disposition des fenêtres écrite MAINTENANT : en kiosk plus aucune n'est
         // soumise, une sauvegarde automatique plus tard n'aurait rien à dire d'elles.
         if (ImGui::GetIO().IniFilename)
             ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
-#endif
         glfwGetWindowPos(window, &A.winX, &A.winY);
         glfwGetWindowSize(window, &A.winW, &A.winH);
         A.winGeomValid = true;

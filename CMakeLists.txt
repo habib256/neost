@@ -67,7 +67,6 @@ add_library(neost_build_info STATIC "${NEOST_BUILD_INFO_CPP}")
 target_include_directories(neost_build_info PUBLIC "${CMAKE_SOURCE_DIR}/src")
 add_dependencies(neost_build_info neost_build_info_gen)
 
-option(NEOST_WITH_IMGUI  "Greffe Dear ImGui (visualiseur hexa + registres)" ON)
 option(NEOST_WARN_STRICT "Compilation stricte (-Wall -Wextra -Wpedantic)"   ON)
 # Réseau hôte : sockets réelles (modem Hayes, anneau MIDI). OFF → aucune socket
 # n'est compilée — c'est le cas forcé des cibles WASM et Android, qui n'ont ni
@@ -785,23 +784,20 @@ if(APPLE)
         "-framework AudioToolbox"   "-framework AudioUnit"   "-framework CoreMIDI")
 endif()
 
-# --- Dear ImGui (activé par défaut, GUI uniquement) ------------------------
-# git submodule add https://github.com/ocornut/imgui extern/imgui
-if(NEOST_WITH_IMGUI)
-    set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/extern/imgui")
-    if(EXISTS "${IMGUI_DIR}/imgui.cpp")
-        target_sources(neost PRIVATE
-            "${IMGUI_DIR}/imgui.cpp"
-            "${IMGUI_DIR}/imgui_draw.cpp"
-            "${IMGUI_DIR}/imgui_tables.cpp"
-            "${IMGUI_DIR}/imgui_widgets.cpp"
-            "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
-            "${IMGUI_DIR}/backends/imgui_impl_opengl2.cpp")
-        target_include_directories(neost PRIVATE "${IMGUI_DIR}" "${IMGUI_DIR}/backends")
-        target_compile_definitions(neost PRIVATE NEOST_WITH_IMGUI=1)
-    else()
-        message(WARNING "Dear ImGui introuvable dans extern/imgui — UI de debug désactivée.")
-    endif()
+# --- Dear ImGui (GUI uniquement, obligatoire pour la cible neost) ------------
+# Les menus et les fenêtres en dépendent : sans ImGui, il reste neost-headless.
+set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/extern/imgui")
+if(EXISTS "${IMGUI_DIR}/imgui.cpp")
+    target_sources(neost PRIVATE
+        "${IMGUI_DIR}/imgui.cpp"
+        "${IMGUI_DIR}/imgui_draw.cpp"
+        "${IMGUI_DIR}/imgui_tables.cpp"
+        "${IMGUI_DIR}/imgui_widgets.cpp"
+        "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
+        "${IMGUI_DIR}/backends/imgui_impl_opengl2.cpp")
+    target_include_directories(neost PRIVATE "${IMGUI_DIR}" "${IMGUI_DIR}/backends")
+else()
+    message(WARNING "extern/imgui absent : la cible neost ne compilera pas. git submodule update --init")
 endif()
 
 # =============================================================================
@@ -813,7 +809,7 @@ endif()
 #      cmake --build build --target neost-menu-preview
 #      ./build/neost-menu-preview disks/st 2.0
 # =============================================================================
-if(NEOST_WITH_IMGUI AND EXISTS "${IMGUI_DIR}/imgui.cpp")
+if(EXISTS "${IMGUI_DIR}/imgui.cpp")
     add_executable(neost-menu-preview EXCLUDE_FROM_ALL
         tests/android_menu_preview.cpp
         src/android/AndroidMenu.cpp

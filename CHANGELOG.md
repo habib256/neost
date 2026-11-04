@@ -6,6 +6,10 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## L'option `NEOST_WITH_IMGUI` est retirée (2026-11-04)
+
+Elle ne compilait plus depuis longtemps, et toute la GUI dépend d'ImGui. Sans ImGui, il reste `neost-headless`.
+
 ## Restes de fiches, sur les disques d'abord (2026-11-04)
 
 - **MFP** : UE s'efface après un cycle de TC, [B] MK68901 p. 17, MC68HC901 § 7.3.2, et non après un bit entier.

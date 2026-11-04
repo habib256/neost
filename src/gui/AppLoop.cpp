@@ -75,7 +75,6 @@ namespace fs = std::filesystem;
 // Importée sans qualifier pour que les sites d'appel restent inchangés.
 using namespace neost::appconfig;
 
-#if defined(NEOST_WITH_IMGUI)
 #include "imgui.h"
 #include "imgui_internal.h"   // gestionnaire de réglages personnalisé (ImGuiSettingsHandler)
 #include "imgui_impl_glfw.h"
@@ -89,7 +88,6 @@ using namespace neost::appconfig;
 #include "imgui_impl_opengl2.h"
 #include "gui/UiCommon.hpp"    // pictogrammes Font Awesome + IconButton
 #include "gui/MediaPages.hpp"  // pages Disquettes / Cartouche / Disque dur / Réseau
-#endif
 
 // =============================================================================
 //  Frame — l'état d'UN tour de boucle.
@@ -111,7 +109,6 @@ struct Frame {
     // Requêtes appliquées en fin de tour, hors rendu ImGui.
     bool reqReset = false, reqHardReset = false, reqRebuild = false;
     int  reqMonitor = -1;
-#if defined(NEOST_WITH_IMGUI)
     ConfigUi* cfgUi = nullptr;   // le `static ConfigUi` de prepareConfigUi (vit HORS de la trame)
     std::string reqMount, reqMountB; bool reqEject = false, reqEjectB = false;
     std::string reqMountCart; bool reqEjectCart = false;
@@ -119,7 +116,6 @@ struct Frame {
     // Chrome du bureau : posés par une barre, lus par la suivante.
     bool  color = false;
     float menuH = 0.0f, toolPadY = 0.0f, toolH = 0.0f;
-#endif
 };
 
 // Entrées (1/5) : bascules demandées par les callbacks (reprise, plein écran,
@@ -285,9 +281,7 @@ static void feedJoysticks(App& A) {
     // auto $14. L'émulation clavier est inhibée si une saisie ImGui a le focus.
     {
         bool kbd = A.kbdJoy;
-#if defined(NEOST_WITH_IMGUI)
         if (!A.mouseCaptured && ImGui::GetIO().WantCaptureKeyboard) kbd = false;
-#endif
         uint8_t joy0 = 0, joy1 = 0;
         int8_t joyRoles[GLFW_JOYSTICK_LAST + 1];
         joyResolveRoles(A, joyRoles);   // affectation par GUID (menu kiosk « Joysticks »)
@@ -572,7 +566,6 @@ static void beginDraw(App& A, Frame& F) {
     if (A.autoZoom) { kTop = cTop; kH = cH; kW = cW; }
 }
 
-#if defined(NEOST_WITH_IMGUI)
 // Dessin : dossiers et profils dans le `static ConfigUi` (un seul pour la vie
 // du programme ; Frame n'en porte que l'adresse).
 static void prepareConfigUi(App& A, Frame& F) {
@@ -2050,20 +2043,6 @@ static void consumeMediaRequests(App& A, Frame& F) {
     }
 }
 
-#else
-// Dessin sans ImGui : l'écran seul.
-static void renderNoImGui(App& A, Frame& F) {
-    GlScreen& screen = *A.screen;
-    int& fbw = F.fbw;
-    int& fbh = F.fbh;
-    int& kTop = F.kTop;
-    int& kH = F.kH;
-    int& kW = F.kW;
-    if (A.kiosk || A.fullscreen) drawStKiosk(A, screen, fbw, fbh, kTop, kH, kW);
-    else GlScreen::blitTexFullscreen(crtApply(A, screen, fbw, fbh));  // repli sans ImGui + CRT
-}
-
-#endif
 
 // Requêtes : moniteur, rebuild, resets (en fin de tour, hors rendu ImGui).
 static void applyRequests(App& A, Frame& F) {
@@ -2196,7 +2175,6 @@ void appLoop(App& A) {
         handleQuickState(A);
 
         beginDraw(A, F);
-#if defined(NEOST_WITH_IMGUI)
         prepareConfigUi(A, F);
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -2220,9 +2198,6 @@ void appLoop(App& A) {
 
         handleDrops(A, F);
         consumeMediaRequests(A, F);
-#else
-        renderNoImGui(A, F);
-#endif
         applyRequests(A, F);
         diagWideBands(A);
         captureWindow(A);
@@ -2249,7 +2224,6 @@ void appShutdown(App& A) {
     cfg.showKbd = A.showKbd;
     saveConfig(A, exeDir, cfg, &machine);
 
-#if defined(NEOST_WITH_IMGUI)
     // Écrit imgui.ini avant l'arrêt → garantit la sauvegarde de la taille de fenêtre
     // (et des positions de sous-fenêtres) même si rien d'autre n'a marqué les réglages.
     // Pas en harnais : même règle que saveConfig, un run de test ne laisse rien.
@@ -2258,7 +2232,6 @@ void appShutdown(App& A) {
     ImGui_ImplOpenGL2_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-#endif
     // Arrêt : plus aucun octet MIDI vers des objets en cours de destruction (sink → midiOut/mt32/gm).
     machine.midi.setMidiSinkTimed({});
     audio.setMt32(nullptr);

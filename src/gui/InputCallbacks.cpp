@@ -8,9 +8,7 @@
 
 #include <cstdio>
 
-#if defined(NEOST_WITH_IMGUI)
 #include "imgui.h"
-#endif
 
 #include "core/Machine.hpp"
 #include "gui/App.hpp"
@@ -132,13 +130,11 @@ void onKey(GLFWwindow*, int key, int scancode, int action, int mods) {
         }
         return;
     }
-#if defined(NEOST_WITH_IMGUI)
     // On ne cède le clavier à ImGui (saisie d'un champ) QUE hors capture souris :
     // souris capturée = l'utilisateur « est dans » le ST, les touches (espace
     // inclus) doivent toujours l'atteindre, jamais être avalées par un widget
     // resté focalisé (sinon le clavier ST « se déconnecte »).
     if (!A.mouseCaptured && ImGui::GetIO().WantCaptureKeyboard) return;
-#endif
     // F9/F10 sont des raccourcis HÔTE du kiosk : ils ne partent pas au ST. K a été
     // ABANDONNÉ comme raccourci — c'est une lettre, donc du jeu (taper ses initiales dans
     // une table des scores ouvrait le bandeau clavier) ; l'intercepter privait en plus le

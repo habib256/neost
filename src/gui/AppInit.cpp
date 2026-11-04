@@ -73,7 +73,6 @@ namespace fs = std::filesystem;
 // Importée sans qualifier pour que les sites d'appel restent inchangés.
 using namespace neost::appconfig;
 
-#if defined(NEOST_WITH_IMGUI)
 #include "imgui.h"
 #include "imgui_internal.h"   // gestionnaire de réglages personnalisé (ImGuiSettingsHandler)
 #include "imgui_impl_glfw.h"
@@ -87,7 +86,6 @@ using namespace neost::appconfig;
 #include "imgui_impl_opengl2.h"
 #include "gui/UiCommon.hpp"    // pictogrammes Font Awesome + IconButton
 #include "gui/MediaPages.hpp"  // pages Disquettes / Cartouche / Disque dur / Réseau
-#endif
 
 
 
@@ -577,16 +575,13 @@ int appInit(App& A, int argc, char** argv) {
     // du dépôt, faute de sélecteur de fichiers natif (aucune dépendance à ajouter pour
     // ça). Posé AVANT ImGui_ImplGlfw_InitForOpenGL(.., true) : le backend ImGui chaîne
     // vers le callback déjà installé, alors qu'installer après l'écraserait.
-#if defined(NEOST_WITH_IMGUI)
     // Callback GLFW : signature imposée, donc SANS capture (elle doit se convertir
     // en pointeur de fonction) — d'où app() plutôt que le paramètre `A`.
     glfwSetDropCallback(window, [](GLFWwindow*, int count, const char** paths) {
         for (int i = 0; i < count; ++i)
             if (paths[i]) app().dropped.emplace_back(paths[i]);
     });
-#endif
 
-#if defined(NEOST_WITH_IMGUI)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     // Harnais (--run-frames) : ni lire ni écrire imgui.ini — le run ne dépend pas de
@@ -657,7 +652,6 @@ int appInit(App& A, int argc, char** argv) {
     // Disposition d'une version antérieure → on la resème une fois (cf. kUiVersion).
     if (uiLayoutOutdated) A.dockReset = true;
     ImGui_ImplOpenGL2_Init();
-#endif
 
     std::printf("[main] Middle mouse button or Ctrl+Alt+G: capture/release mouse | "
                 "Reset button in the CPU window | close the window: quit\n");
