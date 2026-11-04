@@ -109,6 +109,10 @@ wasm/
 /disks/stx/
 /carts/
 /disks/midi/CUBLITE/
+# Notator / Creator (C-Lab) : copie locale du disque dur, commerciale, clé
+# --dongle notator. Pas dans les paquets.
+/disks/midi/NOTATOR/
+/disks/notator.st
 /disks/tools/spectrum_512_st_format.msa
 /disks/etalons/spectrum_512_auto_diapo.st
 /dev/agt/

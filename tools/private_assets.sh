@@ -4,7 +4,8 @@
 #  (TOS Atari, jeux, cartouches, Spectrum 512) d'une machine à l'autre, SANS
 #  passer par git. Cubase Lite est un freeware (disks/cubase_lite.st, dans les
 #  paquets) ; l'arbre GEMDOS disks/midi/CUBLITE reste local, c'est lui que
-#  l'étalon séquenceur monte.
+#  l'étalon séquenceur monte. Notator (disks/midi/NOTATOR, disks/notator.st)
+#  est la copie locale du disque dur : commercial, hors paquets.
 #
 #  POURQUOI (purge copyright 2026-08-30). Ces fichiers sont purgés de
 #  l'historique public et gitignorés : chaque machine les garde LOCALEMENT.
@@ -37,6 +38,8 @@ PATTERNS=(
   disks/stx
   carts
   disks/midi/CUBLITE
+  disks/midi/NOTATOR
+  disks/notator.st
   disks/tools/spectrum_512_st_format.msa
   disks/etalons/spectrum_512_auto_diapo.st
 )
