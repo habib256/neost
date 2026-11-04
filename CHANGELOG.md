@@ -6,6 +6,10 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## STinG : le GET HTTP réel passe (2026-11-04)
+
+- STinG 1.26 et le vrai `ENEC.STX` résolvent theoldnet.com et reçoivent `HTTP/1.1 200 OK` par `--slirp`, 4 runs sur les 5 du jour. Le premier a échoué en DNS, cause inconnue.
+
 ## WSDETECT : un juge de la GLUE qui ne doit rien à Hatari (2026-11-04)
 
 - **`tools/run_wsdetect.py`**, palier `fast` : le détecteur de wakestate de Troed/SYNC, disque CC0, sous EmuTOS. NeoST rend les longueurs que son source annonce : 162, 54, 206, 204 octets en WS1 à WS4, 180 sur STE et Mega STE, 206 sur Mega ST. Aucun relevé de ce disque sur machine réelle n'est au dépôt.
@@ -13,6 +17,7 @@ l'ordre inverse. Version courante : **0.6.2**.
 
 ## `compare_titles` : deux fausses alarmes en moins (2026-11-04)
 
+- **Eliminator-Nebulus** : ses 69 % venaient du pas de 2 trames de la passe, sur un dégradé qui bouge à chaque trame. Avec un pas de 1, il est à 0,2 % au plus.
 - **Moyenne résolution pure** : NeoST sort 640×200, Hatari 832×552 avec bordures. L'outil ne cadrait pas, d'où les 49 % de Killing Game Show et les 14 % de Gods. Notator et Killing Game Show tombent à 0,0 %. Une passe ST complète ne signale plus que des parties qui divergent, Eliminator-Nebulus et Xenon 2.
 - **Notator 3.0** atteint son interface, avec et sans clé : cette copie crackée n'en a pas besoin.
 
