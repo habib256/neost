@@ -223,7 +223,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
   Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
-  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde onze parties, changements de disquette compris. Passe STX du 2026-11-04 : 11 disques, 10 à 0,0 % aux écrans vus, disques B compris pour 5 titres ; Super Off Road reste à sa demande de disque de données chez les deux émulateurs, Bubble Ghost et Chessmaster restent au bureau, faute de lancement du programme. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
+  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde onze parties, changements de disquette compris. Passe STX du 2026-11-04 : 11 disques, 10 à 0,0 % aux écrans vus sur ST, disques B compris pour 5 titres. Sur STE, 8 à 0,0 % ; Golden Axe et Lethal Xcess s'écartent à un seul écran de transition, Magic Pockets en pleine partie ; Super Off Road reste à sa demande de disque de données chez les deux émulateurs, Bubble Ghost et Chessmaster restent au bureau, faute de lancement du programme. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
 
 ## 4. 🪜 Harnais et preuve
 
