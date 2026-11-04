@@ -33,6 +33,11 @@ KINDS = {"hi": (0xFF8260, 2, 0, 0), "f60": (0xFF820A, 0, 2, 0),
          "scroll": (0xFF8265, 5, 0, 0), "offset": (0xFF820F, 8, 0, 0)}
 
 
+# forme maintenue : (registre, valeur), jamais rétablie. C'est l'usage des jeux STE.
+HOLD = {f"hscroll{v}": (0xFF8265, v) for v in (1, 4, 7, 8, 15)}
+HOLD.update({f"lineoff{v}": (0xFF820F, v) for v in (4, 40, 80, 255)})
+
+
 def build(kind: str, width: int, date: int) -> bytes:
     """kind : forme de KINDS, counter ou palette. width : cycles entre le début des deux écritures, 8 au moins. date : cycles
     après une date fixe de la ligne."""
@@ -82,7 +87,10 @@ def build(kind: str, width: int, date: int) -> bytes:
     p.w(0xE56E)                                # lsl.w d2,d6
     p.w(*([NOP] * (10 * LINE // 4)))           # dix lignes plus bas
     p.w(*([NOP] * (date // 4)))
-    if kind in KINDS:
+    if kind in HOLD:                           # écrit une fois par trame et laissé en place
+        target, value = HOLD[kind]
+        p.w(0x13FC, value & 0xFF).l(target)    # move.b #value,target.l
+    elif kind in KINDS:
         p.w(0x1684)                            # move.b d4,(a3)
         p.w(*([NOP] * ((width - 8) // 4)))
         p.w(0x1685)                            # move.b d5,(a3)

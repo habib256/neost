@@ -259,11 +259,26 @@ int Shifter::glueLineBytes(int scanline) const {
     if (scanline < glueStartHBL_ || scanline >= glueEndHBL_ + glueBlankLines_) return 0;
     int bytes = 160;                                     // BORDERBYTES_NORMAL
     const uint32_t bm = L.borderMask;
-    if (bm & (glue::LEFT_OFF | glue::LEFT_OFF_MED)) bytes += 26;   // BORDERBYTES_LEFT (hi/lo OU hi/med)
-    else if (bm & (glue::LEFT_OFF_2_STE | glue::LEFT_OFF_2_STE_MED)) bytes += 20;   // BORDERBYTES_LEFT_2_STE
-    else if (bm & glue::LEFT_PLUS_2)   bytes += 2;
-    if (bm & glue::STOP_MIDDLE)        bytes -= 106;
-    else if (bm & glue::RIGHT_MINUS_2) bytes -= 2;
+    const bool leftOff = bm & (glue::LEFT_OFF | glue::LEFT_OFF_MED);
+    const bool leftOff2 = bm & (glue::LEFT_OFF_2_STE | glue::LEFT_OFF_2_STE_MED);
+    if (leftOff) bytes += 26;                            // BORDERBYTES_LEFT (hi/lo OU hi/med)
+    else if (leftOff2) bytes += 20;                      // BORDERBYTES_LEFT_2_STE
+    // Écran entier à 60 Hz sur STE : la ligne nominale va de 52 à 372, et les constantes d'Hatari supposent 56 à
+    // 376. Les masques de position n'y disent plus l'écart à 160 : un début à 56, une fin à 376 ou une gauche
+    // retirée se comptent depuis les fenêtres. [D] gstmcu @ 4a6db7cc, tools/run_glue_sweep.py, passe à 60 Hz :
+    // 1024 impulsions de retour à 50 Hz sans écart. [D] Hatari video.c @ f0736b24 garde les constantes 50 Hz et
+    // pose RIGHT_MINUS_2 à chaque écriture, si bien que son compteur y dérive de 2 octets par ligne.
+    const bool whole60 = nScreenRefreshRate_ == 60
+                      && (bus_.machine == MachineType::Ste || bus_.machine == MachineType::MegaSte);
+    const auto& T60 = glue::timing(bus_.machine);
+    if (whole60) {
+        if (!leftOff && !leftOff2 && L.displayStartCycle == T60.HDE_On_Low_50) bytes -= 2;
+    } else if (bm & glue::LEFT_PLUS_2) bytes += 2;
+    if (bm & glue::STOP_MIDDLE)        bytes -= whole60 ? 104 : 106;
+    else if (whole60 && !(bm & glue::RIGHT_OFF)) {
+        if (L.displayEndCycle == T60.HDE_Off_Low_50) { if (!leftOff && !leftOff2) bytes += 2; }
+        else if (leftOff || leftOff2) bytes -= 2;
+    } else if (!whole60 && (bm & glue::RIGHT_MINUS_2)) bytes -= 2;
     else if (bm & glue::RIGHT_OFF)     bytes += 44;      // BORDERBYTES_RIGHT
     if (bm & glue::RIGHT_OFF_FULL)     bytes += 22;      // BORDERBYTES_RIGHT_FULL
     // DIAG (NEOST_GLUE_DIAG) : décision Glue par ligne à tricks — à diff'er contre
@@ -734,6 +749,8 @@ void Shifter::updateGlueState(int line, int lineCycles, bool writeToRes, int fre
         Freq_match_found = true;
         glueHblPos_ = Hbl_Pos_Low_60; glueCyclesLine_ = CyclesLine_60;
         if (!(BorderMask & NO_DE)) {
+            // [D] Hatari video.c @ f0736b24 pose RIGHT_MINUS_2 à chaque écriture, même sur un écran entier à
+            // 60 Hz, où le compteur dériverait de 2 octets par ligne : cf. glueLineBytes.
             if (DE_start > 0) { DE_end = HDE_Off_Low_60; BorderMask |= RIGHT_MINUS_2; }
             if (lineCycles > HBlank_Off_Low_60 && lineCycles <= HBlank_Off_Low_50) BorderMask |= BLANK;
             if (lineCycles <= T.Preload_Start_Low_60) {                      // fenêtre PRELOAD 36 (≠ STF)
@@ -1171,9 +1188,10 @@ bool Shifter::outsideHorizontalDe() {
     return cyc < on || cyc >= off;
 }
 
-void Shifter::glueBenchReplay(const std::vector<std::array<int, 4>>& writes) {
+void Shifter::glueBenchReplay(const std::vector<std::array<int, 4>>& writes, uint8_t sync) {
     frameMode_ = Mode::Low;
-    frameSync_ = 0x02;
+    frameSync_ = sync;
+    nScreenRefreshRate_ = (sync & 0x02) ? 50 : 60;
     resizeFor(frameMode_);
     const int cpl = geometry().cyclesPerLine;
     syncWrites_.clear();

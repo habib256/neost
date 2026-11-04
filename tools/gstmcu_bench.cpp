@@ -254,6 +254,11 @@ static int glueMain(const char* planPath, const char* outPath) {
     std::fclose(in);
     tb = new Vste_tb;
     setupProbe();
+    if (std::getenv("NEOST_GLUE_60")) {             // trame de base à 60 Hz
+        writeReg(0xff820a, 0);
+        waitVsyncFall();
+        waitVsyncFall();
+    }
     g_onTick = onTick;
     out = std::fopen(outPath, "w");
     if (!out) { std::perror(outPath); return 2; }

@@ -85,7 +85,7 @@ public:
     // Le faisceau est-il hors de la fenêtre DE horizontale de la ligne courante ? Fréquence courante, y compris
     // sur les lignes de bordure : c'est HDE1, pas DE. [D] gstmcu @ 4a6db7cc, hdegen.v, cf. DmaSound::liveCounter.
     bool outsideHorizontalDe();
-    void glueBenchReplay(const std::vector<std::array<int, 4>>& writes);
+    void glueBenchReplay(const std::vector<std::array<int, 4>>& writes, uint8_t sync = 0x02);
     GlueProbe glueBenchLine(int line) const;
 
     // NEOST_LINELEN : l'UNIQUE lecteur du verrou « longueurs de ligne par-ligne »

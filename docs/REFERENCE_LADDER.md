@@ -33,7 +33,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé, pose les références de `rtl_low_*`, contrôle la latence de DTACK par zone. |
 | `run_fx68k_bench.py` (43 variantes, 34 en accord) | `rtl` | Moira nu contre fx68k, cycle bus par cycle bus. Verdicts posés dans `tests/reference/fx68k_bench.json` ; un écart localise, ne tranche pas. → [`FX68K_BENCH.md`](FX68K_BENCH.md) |
 | `run_stcpu_bench.py` (48 000 lectures, 1 écart) | `rtl` | Le CPU lit le compteur vidéo, en boucle, en HBL et en VBL, sur fx68k + GSTMCU et dans NeoST. → [`STCPU_BENCH.md`](STCPU_BENCH.md) |
-| `run_glue_sweep.py` (1664 impulsions, 10 écarts inscrits) | `rtl` | Machine GLUE du STE contre le modèle GSTMCU : DE et octets, écriture par écriture. → [`GLUE_SWEEP.md`](GLUE_SWEEP.md) |
+| `run_glue_sweep.py` (2560 impulsions à 50 Hz et autant à 60 Hz, 14 et 42 écarts inscrits) | `rtl` | Machine GLUE du STE contre le modèle GSTMCU : DE et octets, écriture par écriture. → [`GLUE_SWEEP.md`](GLUE_SWEEP.md) |
 | `run_stblitter_bench.py` (78 programmes, tous en accord) | `rtl` | Blitter de NeoST contre fx68k + `stBlitter.sv`, accès, données et dates. → [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md) |
 | `run_mfp_iack_probe.py` | aucun | Contrôle la sonde, sans verdict matériel. |
 | `neost-selftest`, `--*-selftest` | à classer | Dépend de la source de chaque table de vérité → `TODO.md` § 4. |

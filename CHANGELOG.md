@@ -6,6 +6,12 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## GLUE du STE sur écran entier à 60 Hz (2026-11-04)
+
+- **Le balayage GLUE repasse sur une trame à 60 Hz**, dans une seconde référence. Il trouve un défaut hérité d'Hatari : ses constantes d'octets supposent une ligne de 56 à 376, alors qu'à 60 Hz elle va de 52 à 372. Une écriture de la fréquence y faisait dériver le compteur de 2 octets par ligne.
+- **Le décompte part maintenant des fenêtres sur écran entier à 60 Hz, STE et Mega STE** : 664 écarts de bascule sur 1024 avant, 0 après. 42 écarts restent sur 2560, tous en haute résolution, inscrits. Le Mega STE reprend la correction par analogie, sans modèle propre.
+- **Aucun effet sur le logiciel réel** : 40 titres, jeux STE et démos, ROM américaine, 3000 trames, images identiques avant et après. Aucun programme connu n'exerce donc ce chemin, et le banc reste sa seule preuve.
+
 ## Banc fx68k : tous les modes d'adressage, et --key dans la passe de jeux (2026-11-04)
 
 - **Banc fx68k** : huit programmes de plus, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur, sur tous les modes d'adressage. Plus de 6 700 accès, tous en accord une fois corrigé un seul défaut : la lecture en plus de MOVEM en relatif PC annonçait FC données au lieu de programme.

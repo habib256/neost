@@ -11,6 +11,7 @@
 // =============================================================================
 #include <array>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
@@ -26,7 +27,7 @@ int main(int argc, char** argv) {
         std::vector<std::array<int, 4>> writes(static_cast<std::size_t>(n));
         for (auto& w : writes)
             if (std::scanf("%d %d %d %d", &w[0], &w[1], &w[2], &w[3]) != 4) return 2;
-        shifter.glueBenchReplay(writes);
+        shifter.glueBenchReplay(writes, std::getenv("NEOST_GLUE_60") ? 0x00 : 0x02);
         for (int l = line; l <= line + 2; ++l) {
             const Shifter::GlueProbe p = shifter.glueBenchLine(l);
             std::printf("%d %d %d %d %d %x %lld\n", id, l, p.start, p.end, p.bytes, p.mask, (long long)p.lineStart);

@@ -13,7 +13,7 @@ Pour ce qui reste → [`../TODO.md`](../TODO.md).
   corrigé d'après la netlist ST-4082 et le RTL ; SMUDGE en HOP 0 lit la source ; adresse source relisible en plein mot. → `docs/STBLITTER_BENCH.md`
 - **Spectrum 512** : 7 images sur ST et 6 sur STE, exactes à 0 pixel contre la formule du format, par le vrai visualiseur. → `tools/run_spec512_truth.py`
 - **CPU et faisceau sur STE** : compteur vidéo lu en boucle, en HBL et en VBL, à l'octet près contre fx68k + GSTMCU, sauf une lecture sur 48 544. HBL et VBL échantillonnées par la broche. → `docs/STCPU_BENCH.md`
-- **GLUE du STE** : confrontée au modèle GSTMCU, impulsion par impulsion, à chaque phase de la ligne : 1654 sur 1664 en accord. → `docs/GLUE_SWEEP.md`
+- **GLUE du STE** : confrontée au modèle GSTMCU, impulsion par impulsion, à chaque phase de la ligne : 2546 sur 2560 en accord à 50 Hz, 2518 sur 2560 sur un écran entier à 60 Hz. → `docs/GLUE_SWEEP.md`
 - **Bus STE** : latence de DTACK par zone mesurée sur le GSTMCU et lue sur la netlist ST-4081. `$FF8920-3F` passe par le créneau de la RAM, `$FF820A`
   n'y passe plus. Ni la vidéo, ni le son, ni le rafraîchissement n'ajoutent d'attente au CPU. → `docs/CYCLE_ACCURACY.md` § 5
 - **Couverture** : étalons `boot_tos*`, chaque TOS présent jusqu'au bureau, Mega ST compris. `--disk-at` change la disquette en cours.

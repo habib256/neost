@@ -23,7 +23,7 @@ dans son comptage. NeoST ne modélise pas ce front, qu'un programme ne peut pas 
 
 ## Résultat (2026-11-04)
 
-**1654 impulsions sur 1664 concordent**, largeurs 8 à 32 pour la haute résolution, 8 à 44 pour le 60 Hz. Cela couvre les retraits usuels : gauche (`LEFT_OFF`, 186 octets),
+**2546 impulsions sur 2560 concordent**, largeurs 8 à 32 pour la haute résolution, 8 à 44 pour le 60 Hz, 8 à 32 pour la moyenne résolution, 8 à 44 pour le va-et-vient haute puis moyenne. Cela couvre les retraits usuels : gauche (`LEFT_OFF`, 186 octets),
 gauche court (`LEFT_OFF_2_STE`, 180 octets), droite (204 octets), `STOP_MIDDLE`, `LEFT_PLUS_2`, `RIGHT_MINUS_2`, `NO_DE`, `BLANK`, ligne de 224 et de 508 cycles.
 
 Trois corrections en sont sorties, toutes sur STE :
@@ -35,6 +35,24 @@ Trois corrections en sont sorties, toutes sur STE :
 | Haute résolution posée dans (40, 48], retirée à 56 au plus tard | `NO_DE` | Ligne affichée | `NO_DE` |
 
 Aucun étalon ne bouge, ce qui dit aussi qu'aucun étalon n'exerçait ces phases.
+
+## Sur un écran entier à 60 Hz
+
+Une seconde passe rejoue tout sur une trame de base à 60 Hz (`NEOST_GLUE_60`, référence `tests/reference/glue_sweep_60.json`). L'impulsion de fréquence y devient un retour à 50 Hz. Les lignes
+d'expérience s'arrêtent plus tôt, parce que la fenêtre verticale aussi.
+
+**2518 impulsions sur 2560 concordent.** La bascule de fréquence et la moyenne résolution n'ont plus aucun écart. Le balayage avait trouvé un défaut hérité : les constantes d'octets d'Hatari
+supposent une ligne de 56 à 376, alors qu'elle va de 52 à 372 à 60 Hz.
+
+| Sur un écran entier à 60 Hz | Modèle, et NeoST maintenant | Hatari @ `f0736b24` |
+|---|---|---|
+| Écriture de la fréquence, sans effet sur la ligne | 160 octets | `RIGHT_MINUS_2`, 158 octets : le compteur dérive |
+| Départ à 56, fin à 372 | 158 octets | 160 |
+| Départ à 52, fin à 376 | 162 octets | 160 |
+| `STOP_MIDDLE` de 52 à 164 | 56 octets | 54 |
+| Gauche retirée, fin à 372 | 184 octets | 186 |
+
+Les 42 écarts restants sont tous en haute résolution, les fenêtres du modèle y sont décalées de quelques cycles. Aucun programme connu n'y retire une bordure à 60 Hz. Ils restent inscrits.
 
 ## Les écarts restants, inscrits en référence
 

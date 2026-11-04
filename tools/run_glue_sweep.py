@@ -12,6 +12,8 @@
 #  $FF8260, qui attend en plus le créneau de 4 cycles. Hors du retrait droit, où le modèle finit DE à
 #  464 et NeoST à 460 pour les mêmes 44 octets, hors du cadre visible : tolérance écrite.
 #
+#  Une seconde passe rejoue le balayage sur un écran entier à 60 Hz (NEOST_GLUE_60, référence glue_sweep_60.json).
+#
 #  Usage : run_glue_sweep.py [--write-refs] [--kinds hi,f60] [--widths 8,12] [--step 4] [--offsets N,N]
 #  Sorties : tests/out/glue_sweep/report.json. Verdicts : tests/reference/glue_sweep.json, un écart
 #  qui change fait échouer. Code 77 sans Verilator. Détail : docs/GLUE_SWEEP.md.
@@ -22,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -32,15 +35,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RTL = ROOT / "build-rtl" / "gstmcu" / "Vste_tb"
 BARE = ROOT / "build" / "neost-glue-bare"
-OUT = ROOT / "tests" / "out" / "glue_sweep"
-REF = ROOT / "tests" / "reference" / "glue_sweep.json"
-OFFSETS = {"hi": 8, "f60": 5}       # cf. COMMENT
+BASE60 = bool(os.environ.get("NEOST_GLUE_60"))     # trame de base à 60 Hz : seconde passe, cf. l'en-tête
+OUT = ROOT / "tests" / "out" / ("glue_sweep_60" if BASE60 else "glue_sweep")
+REF = ROOT / "tests" / "reference" / ("glue_sweep_60.json" if BASE60 else "glue_sweep.json")
+OFFSETS = {"hi": 8, "f60": 5, "f50": 5, "med": 8, "himed": 8}       # cf. COMMENT
 # (forme, largeurs, pas) : les retraits de bordure réels tiennent dans ces largeurs ; au-delà, une
 # impulsion enjambe HSYNC et le rechargement de HSC, et aucun logiciel connu ne l'emploie.
-PLAN = (("hi", (8, 12, 16, 24, 32), 4), ("f60", (8, 12, 24, 44), 2))
-LINES = list(range(70, 245, 3))     # ligne de chaque expérience dans la trame ; 3 d'écart
+PLAN = (("hi", (8, 12, 16, 24, 32), 4), ("f60", (8, 12, 24, 44), 2), ("med", (8, 16, 32), 4), ("himed", (8, 16, 24, 44), 4))
+# Ligne de chaque expérience dans la trame, 3 d'écart. À 60 Hz la fenêtre verticale finit plus tôt : au-delà, le
+# modèle n'affiche plus rien et l'exécutable nu, qui n'a pas de bords verticaux, continue.
+LINES = list(range(70, 225 if os.environ.get("NEOST_GLUE_60") else 245, 3))
 HS = 2                              # ligne de la GLUE = numéro de HSYNC depuis VSYNC − 2
-WINDOW = 2 * 512                    # cycles observés depuis le début de la ligne de l'impulsion
+if BASE60:                          # une impulsion à 60 Hz n'y change rien : c'est le retour à 50 Hz qui s'y mesure
+    PLAN = tuple(("f50", w, st) if k == "f60" else (k, w, st) for k, w, st in PLAN)
+CPL = 508 if BASE60 else 512
+WINDOW = 2 * CPL                    # cycles observés depuis le début de la ligne de l'impulsion
 FIRST_FRAME = 2                     # la trame 2 : après la pose du mode
 
 
@@ -59,15 +68,25 @@ def experiments(plan):
 
 def writes_of(e):
     """Écritures en coordonnées de la GLUE : ligne, cycle, résolution ?, valeur."""
-    res = e["kind"] == "hi"
-    on_v, off_v = (2, 0) if res else (0, 2)
-    return [(e["line"], e["c0"], res, on_v), (e["line"], e["c0"] + e["w"], res, off_v)]
+    k = e["kind"]
+    ln, c0, w = e["line"], e["c0"], e["w"]
+    if k == "hi":
+        return [(ln, c0, True, 2), (ln, c0 + w, True, 0)]
+    if k == "f60":
+        return [(ln, c0, False, 0), (ln, c0 + w, False, 2)]
+    if k == "f50":                  # impulsion 50 Hz sur une trame de base à 60 Hz
+        return [(ln, c0, False, 2), (ln, c0 + w, False, 0)]
+    if k == "med":                  # moyenne résolution, seule
+        return [(ln, c0, True, 1), (ln, c0 + w, True, 0)]
+    if k == "himed":                # haute, puis moyenne, puis basse : les tricks de scroll et No Cooper
+        return [(ln, c0, True, 2), (ln, c0 + 8, True, 1), (ln, c0 + 8 + w, True, 0)]
+    raise ValueError(k)
 
 
 def rtl_plan_line(frame, line, cycle, res, val):
-    # Cycle 460 et au-delà : avant le HSYNC suivant, donc déjà dans la ligne RTL suivante.
-    while cycle >= 460:
-        line, cycle = line + 1, cycle - 512
+    # À partir de 52 cycles avant la fin : après le HSYNC suivant, donc déjà dans la ligne RTL suivante.
+    while cycle >= CPL - 52:
+        line, cycle = line + 1, cycle - CPL
     addr = 0xFF8260 if res else 0xFF820A
     return f"{frame} {line + HS} {cycle} {addr:06X} {val << 8:04X}"
 
@@ -79,7 +98,7 @@ def line_pieces(edges, hsyncs, frame, line):
     t_prev = hsyncs.get((frame, line + HS - 1))
     if t_prev is None:
         return None
-    t0 = t_prev + 2048
+    t0 = t_prev + CPL * 4
     pieces, start = [], None
     for tick, level, vid in edges:
         if level and t0 <= tick < t0 + WINDOW * 4:
@@ -161,7 +180,7 @@ def compare(ex, rtl, neo):
     for e in ex:
         r, (n, m0, m1) = rtl[e["id"]], neo[e["id"]]
         # Fin de DE du retrait droit : 464 contre 460, mêmes octets, cf. COMMENT.
-        r = None if r is None else [(a, 460 if b == 464 else b, c) for a, b, c in r if a < WINDOW - 52]
+        r = None if r is None else [(a, CPL - 52 if b == CPL - 48 else b, c) for a, b, c in r if a < WINDOW - 52]
         if r != n:
             diffs[f"{e['kind']} c0={e['c0']} w={e['w']}"] = {"rtl": r, "neost": n, "mask": f"{m0}/{m1}"}
     return diffs
@@ -222,4 +241,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    rc = main()
+    essai = any(x in " ".join(sys.argv[1:]) for x in ("--kinds", "--widths", "--step", "--offsets"))
+    if rc != 77 and not BASE60 and not essai:
+        rc = subprocess.call([sys.executable, __file__, *sys.argv[1:]], env={**os.environ, "NEOST_GLUE_60": "1"}) or rc
+    sys.exit(rc)
