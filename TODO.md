@@ -103,6 +103,7 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   13 en NTSC). Hatari l'admet (`video.c:4008-4009 @ f0736b24`). Code inchangé tant qu'une source
   plus haute manque ; passer au noir déplacerait les références `hatari` à bordure visible.
   ⚠ Le schéma 4118 est le shifter de la Panther ; aucun schéma du Shifter ST n'est disponible.
+- **Bits 3, 7 et 11 de la palette relue sur ST** · P3 ⏸ matériel · [F] — NeoST les rend à 0. Hatari les tire au hasard (`video.c:5507 @ f0736b24`, « not defined », selon la dernière activité du bus), sauf si le PC est hors RAM. Pirates [cr Delight] relit ainsi sa palette, sans effet à l'image. Tranche : relire ces bits sur le fer, ou modéliser le dernier mot du bus.
 - **Octet `$FF8261` relu** · P3 ⏸ source · [F] — `gstshifter.v:121 @ 4a6db7cc` rend $00 en octet bas ; NeoST garde l'alias de
   `$FF8260`, comme Hatari. Bloc « moyen » : le RTL ne l'emporte pas. Tranche : relevé sur STE.
 - **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut reste sans source : sur le fer, l'état se tire à la mise sous tension. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option.
@@ -211,7 +212,6 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 | Titre | Prio | Symptôme | Piste |
 |-------|------|----------|-------|
-| **Pirates** ([cr Delight], écran d'intro) | P2 ⭘ | NeoST : 73 couleurs par trame, stables, rasters nets. Hatari : ~184, bruit qui change à chaque trame, au pixel près, marge gauche comprise. Mêmes écrans par ailleurs. Lancé en TOS 1.04 avec `--auto A:\PIRATES.PRG`. | Qui a raison ? Tracer les écritures de palette des deux côtés. Aucune source plus haute à ce jour. |
 | **Vroom** (Lankhor), Mega STE, TOS 2.06 | P3 ⭘ | Image de bruit après le titre, avec certaines dates de frappes : en 4 Mo sur la plupart des décalages essayés, écran noir en 2 Mo sur d'autres. En plein Seek, le lecteur se désélectionne (`drv=-1`, puis lecteur B) alors que la musique écrit sur le PSG en interruption. Course probable sur le registre de sélection du PSG. | Hatari ne produit aucune capture avec ces entrées : rien ne tranche. Relever les écritures de R14 autour de la désélection, ou tester sur le fer. |
 | **Shadow Warriors** (2Hot2Handle) | P3 ⏸ média | Après SPACE, titre et musique OK, le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). Sur la version Ocean, ce n'est pas un défaut : le titre attend la touche 1 (« PUSH 1P OR 2P BUTTON »), et le tir ne lance rien non plus sous Hatari. Partie jouée, disques 1 et 2, sans écart avant le combat (`shadow_warrior_st`). | Le disque 2Hot2Handle reste absent. S'il revient, essayer d'abord la touche 1. |
 

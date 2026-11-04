@@ -6,6 +6,10 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Pirates : l'écart d'intro est un tirage au hasard (2026-11-04)
+
+Le bruit noté côté Hatari ne se reproduit plus, et le reste de l'écart vient de XBIOS `Random`, semé sur `_hz200`. Le titre sort des bugs ouverts → `docs/CASE_STUDIES.md`. Les bits 3, 7 et 11 de la palette relue sur ST entrent au TODO.
+
 ## WD1772 : écriture selon la fiche (2026-11-04)
 
 Le bit 6 retombe au départ d'un Write Sector, [B] p. 1-9. INTRQ 24 µs après le dernier CRC d'un Write Sector, et $F7 pour deux octets avec une seule DRQ en Write Track, [B] WD177X-00 p. 1-12, 1-13, 1-15. Images identiques sur 89 disques joués, sans savoir combien écrivent réellement sur disquette. La sonde `fdc_write` de l'oracle et `neost-stx-test` passent par ces lignes.
