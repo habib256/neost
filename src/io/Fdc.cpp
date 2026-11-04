@@ -303,7 +303,7 @@ static bool decodeMsa(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out
                     if (b == 0xE5 && p + 3 <= end) {                   // run-length
                         const uint8_t val = raw[p];
                         std::size_t cnt = static_cast<std::size_t>((raw[p + 1] << 8) | raw[p + 2]); p += 3;
-                        // Plafond sur ce qui reste de la piste (msa.c:205-210 : « Limit
+                        // Plafond sur ce qui reste de la piste ([D] msa.c:205-210 @ f0736b24 : « Limit
                         // length to size of track, incorrect images may overflow »).
                         // Sans lui, out dépasse target et TOUTE l'image est rejetée →
                         // repli en .st brut INSCRIPTIBLE, qui écrase le fichier source.
@@ -442,7 +442,7 @@ static bool encodeMsa(const std::vector<uint8_t>& image, int spt, int sides,
                 toGo -= run;
             }
             // Comprimée plus grosse que l'originale ? On stocke la piste TELLE QUELLE
-            // (msa.c:388-402) — c'est la longueur == trackBytes qui le signale au lecteur.
+            // ([D] msa.c:388-402 @ f0736b24) — c'est la longueur == trackBytes qui le signale au lecteur.
             if (out.size() - dataAt >= trackBytes) {
                 out.resize(dataAt);
                 out.insert(out.end(), src, src + trackBytes);
@@ -738,7 +738,7 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         // garde, une telle image repartait en « .st brut INSCRIPTIBLE » et writeBack
         // recopiait les secteurs invités par-dessus le fichier .dim source, DÉCALÉS de
         // 32 octets : destruction silencieuse du fichier de l'utilisateur.
-        // Les QUATRE octets d'identité d'Hatari (dim.c:75), pas seulement « BB » : $4242
+        // Les QUATRE octets d'identité d'Hatari ([D] dim.c:75 @ f0736b24), pas seulement « BB » : $4242
         // est aussi l'encodage de « clr.w d2 », début plausible d'un secteur de boot —
         // sniffer 2 octets mettait des .ST parfaitement valides en LECTURE SEULE, et les
         // sauvegardes en jeu cessaient de persister sans le moindre message.
@@ -1097,7 +1097,7 @@ int64_t Fdc::nextIndexCycles() const {
 // COMMANDE/TRANSFERT par FDC_FAST_FACTOR (sauf les délais < ce facteur, pour ne pas
 // les annuler). ÉCART ASSUMÉ avec Hatari : les délais cadencés sur la rotation
 // (spin-up, arrêt moteur, attente d'index — delayIndexPaced_) gardent leur durée
-// réelle, alors qu'Hatari divise TOUT (fdc.c:459 « Divide ALL delays »). Son
+// réelle, alors qu'Hatari divise TOUT ([D] fdc.c:459 @ f0736b24 « Divide ALL delays »). Son
 // --fastfdc « can break some programs » (ex. l'écran-titre d'Arkanoid gèle) ; le
 // nôtre reste inoffensif au prix de chargements moins accélérés (ex. Dragon Ninja
 // met ~16 s de plus que Hatari fastfdc à atteindre son titre, 200 ms réels/piste).
@@ -1634,7 +1634,7 @@ void Fdc::writeBack(FloppyDisk& dk, uint64_t off, uint64_t len) {
     // .ST brut, et .DIM dont seul l'en-tête de 32 o décale les données : écriture
     // partielle in situ. L'en-tête .dim déjà présent dans le fichier est PRÉSERVÉ tel
     // quel — c'est aussi ce que fait Hatari, qui relit l'ancien en-tête pour ne pas
-    // perdre ses champs non documentés (dim.c:134-149). Cet en-tête du conteneur
+    // perdre ses champs non documentés ([D] dim.c:134-149 @ f0736b24). Cet en-tête du conteneur
     // reste distinct du BPB invité modifiable dans le secteur de boot.
     const uint64_t fileOff = off + (dk.imgFormat == FloppyDisk::FMT_DIM ? 32u : 0u);
     std::fstream f(dk.path, std::ios::binary | std::ios::in | std::ios::out);
@@ -2203,7 +2203,7 @@ int Fdc::updateRestore() {
             break;
         }
         // La tête bouge dès qu'un lecteur ACTIVÉ est sélectionné — disque monté ou
-        // pas (Hatari fdc.c:2616-2625 teste `Enabled`, jamais l'insertion ; les
+        // pas (Hatari [D] fdc.c:2616-2625 @ f0736b24 teste `Enabled`, jamais l'insertion ; les
         // lecteurs NeoST sont toujours activés). RESTORE lecteur vide atteint donc
         // la piste 0 avec TR00=1 (l'ancien gate present() décomptait 255 essais
         // sans bouger → RNF + TR00=0, ~1,5 s de délai fantôme).
@@ -2275,7 +2275,7 @@ int Fdc::updateSeek() {
             fdcCycles = STEP_RATE_MS[cr_ & 3] * 1000 * 8;
             updateStr(STR_TR00, 0);
             // Tête déplacée dès qu'un lecteur activé est sélectionné, disque ou
-            // pas (Hatari fdc.c:2785-2808 — cf. commentaire RESTORE).
+            // pas (Hatari [D] fdc.c:2785-2808 @ f0736b24 — cf. commentaire RESTORE).
             if (driveSel_ >= 0) {
                 int& ht = drive_[driveSel_].headTrack;
                 if (ht == MAX_TRACK && stepDir_ == 1) {       // au-delà de la piste max
@@ -2340,7 +2340,7 @@ int Fdc::updateStep() {
         fdcCycles = STEP_RATE_MS[cr_ & 3] * 1000 * 8;
         updateStr(STR_TR00, 0);
         // Tête déplacée dès qu'un lecteur activé est sélectionné, disque ou
-        // pas (Hatari fdc.c:2950-2966 — cf. commentaire RESTORE).
+        // pas (Hatari [D] fdc.c:2950-2966 @ f0736b24 — cf. commentaire RESTORE).
         if (driveSel_ >= 0) {
             int& ht = drive_[driveSel_].headTrack;
             if (ht == MAX_TRACK && stepDir_ == 1)       fdcCycles = CMD_IMMEDIATE;
@@ -2892,7 +2892,7 @@ void Fdc::onFdcEvent() {
         // C'est exactement l'arithmétique d'Hatari, où l'ORDRE fait tout :
         // PendingCyclesOver est capturé EN TÊTE de handler ([D] fdc.c:2332 @ f0736b24), PUIS le stall
         // M68000_AddCycles_CE avance le compteur global, PUIS le réarmement se fait
-        // « maintenant − overshoot + delay » (fdc.c:2388) = due + stall + delay.
+        // « maintenant − overshoot + delay » ([D] fdc.c:2388 @ f0736b24) = due + stall + delay.
         // → l'ancrage retire le retard de DISPATCH (mesuré : 6,7 cyc/échéance, ~107
         //   par cycle de 16 octets — l'écart 4203→4096), mais PAS le stall, qui décale
         //   réellement la suite. Cadence attendue : 16×256 + 32 = 4128 ≈ 4127 (Hatari).
@@ -3034,7 +3034,7 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
         case 0x5:                                    // data, octet bas → action
             registerWait(); // écriture $8604 : SCREG, FDC et HDC attendent tous
             // SCREG AVANT le stockage de ff8604recent_ : Hatari retourne sans le
-            // mettre à jour (fdc.c:4695-4703, store à :4702 seulement après) — le
+            // mettre à jour ([D] fdc.c:4698-4706 @ f0736b24, store à :4706 seulement après) — le
             // compteur de secteurs reste NON relisible via les bits rémanents.
             if (dmaMode_ & DMA_SCREG)  { dmaSectorCount_ = uint16_t(((dataHi_ << 8) | v) & 0xff); return; }
             ff8604recent_ = uint16_t((ff8604recent_ & 0xff00) | v);

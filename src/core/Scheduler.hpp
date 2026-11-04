@@ -186,11 +186,11 @@ public:
     }
 
     // Dispatch CIBLÉ des timers MFP DATÉS (TIMER_A/B_DELAY/C/D) échus à `cycle` — port
-    // RESTREINT de `MFP_UpdateTimers` (hatari/src/mfp.c:681), qu'Hatari appelle avant
+    // RESTREINT de `MFP_UpdateTimers` ([D] mfp.c:681 @ f0736b24), qu'Hatari appelle avant
     // CHAQUE accès registre du MFP « to ensure MFP timers are updated in chronological
     // order ».
     //
-    // POURQUOI C'EST NÉCESSAIRE, et le cas est nommé par Hatari lui-même (mfp.c:135,
+    // POURQUOI C'EST NÉCESSAIRE, et le cas est nommé par Hatari lui-même ([D] mfp.c:135 @ f0736b24,
     // entrée du 2022/01/27) : « fix the game Super Hang On, where 'bclr #0,$fffffa0f'
     // to clear Timer B ISR sometimes happens at the same time that Timer C expires,
     // which used the wrong ISR value and gave FLICKERING RASTER COLORS ». Sans ce
@@ -260,7 +260,7 @@ public:
     }
 
     // Cycles de bus VOLÉS au CPU par un AUTRE maître de bus (le blitter) — port de
-    // `Blitter_AddCycles` (hatari/src/blitter.c:342-354, symbole `all_cycles`).
+    // `Blitter_AddCycles` ([D] blitter.c:342-354 @ f0736b24, symbole `all_cycles`).
     //
     // Chez Hatari il n'y a qu'UNE base de temps : le blitter fait
     //     nCyclesMainCounter       += all_cycles;      // [D] blitter.c:351 @ f0736b24

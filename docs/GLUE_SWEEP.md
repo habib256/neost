@@ -41,14 +41,15 @@ Aucun étalon ne bouge, ce qui dit aussi qu'aucun étalon n'exerçait ces phases
 Une seconde passe rejoue tout sur une trame de base à 60 Hz (`NEOST_GLUE_60`, référence `tests/reference/glue_sweep_60.json`). L'impulsion de fréquence y devient un retour à 50 Hz. Les lignes
 d'expérience s'arrêtent plus tôt, parce que la fenêtre verticale aussi.
 
-**2518 impulsions sur 2560 concordent.** La bascule de fréquence et la moyenne résolution n'ont plus aucun écart. Le balayage avait trouvé un défaut hérité : les constantes d'octets d'Hatari
-supposent une ligne de 56 à 376, alors qu'elle va de 52 à 372 à 60 Hz.
+**2518 impulsions sur 2560 concordent.** La bascule de fréquence et la moyenne résolution n'ont plus aucun écart. Le décompte d'octets suppose une ligne de 56 à 376, alors qu'elle va de 52 à
+372 à 60 Hz. Hatari annule `LEFT_PLUS_2` et `RIGHT_MINUS_2` posés ensemble (`video.c:3932-3941 @ f0736b24`), mais un aller-retour par 50 Hz en cours de ligne laisse un masque seul. NeoST
+compte maintenant ces lignes depuis leurs fenêtres. La colonne Hatari est lue dans son source, elle n'a pas été exécutée sur ces phases.
 
 | Sur un écran entier à 60 Hz | Modèle, et NeoST maintenant | Hatari @ `f0736b24` |
 |---|---|---|
-| Écriture de la fréquence, sans effet sur la ligne | 160 octets | `RIGHT_MINUS_2`, 158 octets : le compteur dérive |
-| Départ à 56, fin à 372 | 158 octets | 160 |
-| Départ à 52, fin à 376 | 162 octets | 160 |
+| Aller-retour par 50 Hz fini avant le début de ligne : `LEFT_PLUS_2` seul, de 52 à 372 | 160 octets | 162 |
+| Aller-retour après le début : `RIGHT_MINUS_2` seul, de 52 à 372 | 160 octets | 158 |
+| Passage à 50 Hz jusqu'en fin de ligne : de 52 à 376, sans masque | 162 octets | 160 |
 | `STOP_MIDDLE` de 52 à 164 | 56 octets | 54 |
 | Gauche retirée, fin à 372 | 184 octets | 186 |
 

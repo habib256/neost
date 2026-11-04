@@ -28,10 +28,10 @@ def src(f):
     return cache[f]
 sym=re.compile(r'\b([A-Za-z]+_[A-Za-z0-9_]+|[a-z]+[A-Z][A-Za-z0-9]+|[A-Z][a-z]+[A-Z][A-Za-z0-9]+)\b')
 pat=re.compile(r'(?<![\w/])([A-Za-z0-9_-]+\.(?:c|h)):(\d+)((?:[-–,/]\d+)*)')
-apply_=sys.argv[1]=='apply'
+apply_=len(sys.argv)>1 and sys.argv[1]=='apply'
 done=rest=0; out=[]
 import subprocess
-files=sys.argv[2:] or subprocess.run(['git','grep','-l','-E',r'[a-zA-Z0-9_]+\.(c|h):[0-9]+','--','src/core/*','src/io/*'],cwd=ROOT,capture_output=True,text=True).stdout.split()
+files=[a for a in sys.argv[2:]] or subprocess.run(['git','grep','-l','-E',r'[a-zA-Z0-9_]+\.(c|h):[0-9]+','--','src/core/*','src/io/*'],cwd=ROOT,capture_output=True,text=True).stdout.split()
 for path in files:
     path=str(ROOT/path) if not os.path.isabs(path) else path
     lines=open(path).read().split('\n')

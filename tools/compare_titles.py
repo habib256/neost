@@ -15,7 +15,9 @@
 #  Usage : compare_titles.py SORTIE DISQUE... [--machine ste] [--rom roms/tos162uk.img]
 #            [--mem 1] [--frames 1000,2000,4000] [--window 60] [--offset 0] [--step 1]
 #            [--auto A:\\PROG.PRG] [--gemdos DOSSIER] [--swap TRAME:DISQUE]... [--key TRAME:SCANCODE]...
-#            [--jobs 4]
+#            [--joy TRAME:FICHIER] [--jobs 4]
+#  --joy : script joystick daté, port 1, grammaire de neost-headless --joy-script-file. La même suite de masques
+#  des deux côtés : compilée par NeoST, jouée par Hatari via son patch NEOST_JOY_SCRIPT (docs/HATARI_AUTOMATION.md).
 #  --key : touche ST tenue KEY_HOLD trames (scancode décimal, 57 = espace). Côté Hatari, par sa
 #  fifo de commande à un arrêt du débogueur, comme tools/hatari_oracle.sh.
 #  Sorties : SORTIE/summary.json, SORTIE/sheet.png. Exige Pillow et ffmpeg ; code 77 sinon.
@@ -119,6 +121,8 @@ def neost_frames(disk: Path, args, work: Path) -> dict[int, Image.Image]:
            "--shot-from", str(min(args.frames)), "--shot-every", str(step), str(prefix)]
     if args.auto:
         cmd += ["--auto", args.auto]
+    if args.joy:
+        cmd += ["--joy-script-file", str(args.joy[0]), str(args.joy[1])]
     for i, (at, other) in enumerate(args.swap):
         cmd += ["--disk-at", str(at), str(swap_copy(other, work, f"ns{i}"))]
     if args.key:
@@ -176,6 +180,8 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
     if args.auto:
         cmd += ["--auto", args.auto]
     env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HATARI_SEED="1")
+    if args.joy:
+        env.update(NEOST_JOY_SCRIPT=str(args.joy[2]), NEOST_JOY_START=str(args.joy[0]))
     if args.key:
         run_hatari_keys(cmd, args.key, work, env)
     else:
@@ -261,6 +267,7 @@ def main() -> int:
                     help="TRAME:DISQUE, change la disquette du lecteur A à cette trame (répétable)")
     ap.add_argument("--key", type=parse_key, action="append", default=[],
                     help="TRAME:SCANCODE, touche tenue à cette trame (répétable)")
+    ap.add_argument("--joy", help="TRAME:FICHIER, script joystick du port 1 à partir de cette trame")
     ap.add_argument("--jobs", type=int, default=4)
     args = ap.parse_args()
     args.frames = sorted(int(x) for x in args.frames.split(","))
@@ -268,6 +275,12 @@ def main() -> int:
         print("SKIP — compare_titles : ffmpeg, Hatari ou neost-headless absent")
         return 77
     args.out.mkdir(parents=True, exist_ok=True)
+    if args.joy:
+        at, _, path = args.joy.partition(":")
+        compiled = args.out.resolve() / "joy.bin"
+        subprocess.run([str(HEADLESS), args.rom, "--joy-script-compile", str(compiled), "--joy-script-file", at, path],
+                       cwd=ROOT, capture_output=True, text=True, check=True)
+        args.joy = (int(at), Path(path).resolve(), compiled)
     with ThreadPoolExecutor(args.jobs) as ex:
         rows = list(ex.map(lambda d: one(d, args, args.out), args.disks))
     (args.out / "summary.json").write_text(json.dumps(rows, indent=1, ensure_ascii=False))

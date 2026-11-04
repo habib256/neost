@@ -1197,7 +1197,7 @@ bool GemdosHd::gemWrite(uint32_t p) {
     if (writeProtect_) { setD0(cpu_, GEMDOS_EWRPRO); return true; }
     FILE* fp = fileHandles_[fh].fp;
     // Taille NÉGATIVE → ERANGE comme Hatari (le Size int32 négatif y échoue au
-    // contrôle mémoire non-signé, gemdos.c:2477) ; l'ancien « size = 0 » rendait
+    // contrôle mémoire non-signé, [D] gemdos.c:2477 @ f0736b24) ; l'ancien « size = 0 » rendait
     // D0=0 (« 0 octet écrit ») pour une longueur qui a débordé en négatif.
     if (size < 0) { setD0(cpu_, GEMDOS_ERANGE); return true; }
     if (!checkArea(addr, size, /*allowRom=*/true)) { setD0(cpu_, GEMDOS_ERANGE); return true; }
@@ -1431,7 +1431,7 @@ bool GemdosHd::gemSFirst(uint32_t p) {
     std::string mask = baseName(host.c_str());
     std::vector<std::string> all;
     struct dirent* e;
-    // Recomposition NFD → NFC comme ci-dessus (≙ gemdos.c:3182) : le listing Fsfirst
+    // Recomposition NFD → NFC comme ci-dessus (≙ [D] gemdos.c:3182 @ f0736b24) : le listing Fsfirst
     // doit rendre le même nom que celui que matchHostDirEntry saura retrouver.
     while ((e = readdir(dir))) all.push_back(neost::hostpath::precomposeUtf8(e->d_name));
     closedir(dir);

@@ -12,9 +12,9 @@
 //     le CPU est arrêté pendant toute la durée (4 cycles par accès bus, comptés
 //     pendant le transfert et facturés via Cpu68k::addBusWaitCycles) ;
 //   - mode NON-HOG : le blitter transfère par TRANCHES de 64 accès bus exactement
-//     (suspension MID-WORD comme BLITTER_CONTINUE_LATER_IF_MAX_BUS_REACHED — l'état
+//     (suspension MID-WORD comme BLITTER_CONTINUE_LATER_IF_MAX_BUS_REACHED [D] blitter.c:476 @ f0736b24 — l'état
 //     du mot en cours survit à la coupure), puis rend le bus au CPU pour 64 accès
-//     bus CPU RÉELS (port BLITTER_PHASE_COUNT_CPU_BUS : comptés par les callbacks
+//     bus CPU RÉELS (port BLITTER_PHASE_COUNT_CPU_BUS [D] blitter.c:234 @ f0736b24 : comptés par les callbacks
 //     mémoire de Moira, cf. noteCpuBusAccess ; le 64ᵉ arme la fenêtre PRE_START et
 //     date la tranche suivante à +4 cycles) — l'alternance 64/64 du vrai matériel.
 //     BUSY et les compteurs/adresses sont lisibles EN COURS de blit (progression
@@ -23,7 +23,7 @@
 //  Le stall CPU avance l'horloge cycle-exact de Moira, comme les autres wait
 //  states de bus. HOG et partagé reprennent après PRE_START pendant l'instruction
 //  et conservent un crédit de cycles internes CPU recouverts par la tranche ;
-//  le prochain accès bus l'annule (Blitter_Check_Simultaneous_CPU).
+//  le prochain accès bus l'annule (Blitter_Check_Simultaneous_CPU [D] blitter.c:1641 @ f0736b24).
 //  MegaSTE 16 MHz : les hits du cache CPU sont comptés comme
 //  accès bus (approximation, le vrai cache ne sort pas sur le bus).
 //
@@ -118,7 +118,7 @@ private:
     uint8_t reg_[0x40] = {};                 // backing store big-endian ($FF8A00 base)
     // Hatari : le registre à décalage source (buffer) et le dernier mot du bus
     // (bus_word) PERSISTENT entre blits (remis à 0 seulement au reset matériel).
-    // Blitter_CheckAccess_Byte n'actualise pas IoMem sur un registre mot : les
+    // Blitter_CheckAccess_Byte [D] blitter.c:972 @ f0736b24 n'actualise pas IoMem sur un registre mot : les
     // octets lus sont ceux du dernier accès CPU, pas les compteurs vivants.
     // Initialisé à l'allocation / reset froid, préservé par le reset matériel.
     uint32_t buffer_  = 0;
@@ -130,7 +130,7 @@ private:
     uint16_t xReset_   = 0;                  // recharge du X count (x_count_reset, latché
                                              // à CHAQUE écriture de $FF8A36, cf. write16)
     // Compteur Y VIVANT (port Hatari BlitterRegs.y_count) : la conversion 0→65536
-    // se fait À L'ÉCRITURE du registre $FF8A38 (Blitter_LinesPerBitblock_WriteWord),
+    // se fait À L'ÉCRITURE du registre $FF8A38 (Blitter_LinesPerBitblock_WriteWord [D] blitter.c:1356 @ f0736b24),
     // PAS à la relecture du résiduel. Indispensable pour distinguer « le programme
     // a écrit 0 = 65536 lignes » d'un « transfert DÉJÀ terminé (résiduel 0) » :
     // dans ce second cas, re-poser BUSY ne relance RIEN ([D] blitter.c:1433-1437 @ f0736b24 — le
@@ -141,7 +141,7 @@ private:
     // dont la DESTINATION est son propre registre de contrôle se relançait donc
     // lui-même en plein transfert, avec des compteurs non encore réécrits : récursion
     // infinie et SIGSEGV de l'émulateur, déclenchables par un simple programme émulé.
-    // Hatari ne peut pas connaître ce cas : Blitter_Control_WriteByte n'appelle jamais
+    // Hatari ne peut pas connaître ce cas : Blitter_Control_WriteByte [D] blitter.c:1393 @ f0736b24 n'appelle jamais
     // Blitter_Start(), il passe par une phase/interruption différée ([D] blitter.c:1421 @ f0736b24).
     // Transitoire (toujours faux hors runSlice) → non sérialisé en save-state.
     bool     inSlice_  = false;

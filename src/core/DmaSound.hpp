@@ -237,13 +237,13 @@ private:
     // fige début/fin à l'ouverture de la trame ; réécrire $FF8903+ pendant la
     // lecture ne vaut que pour la trame SUIVANTE). frameEndAddr_ = comparateur
     // d'ÉGALITÉ du fetch (début == fin, repeat ON → trame 2^24 octets, le fetch
-    // traverse tout l'espace d'adressage — Hatari dmaSnd.c:336-341, démo « A
+    // traverse tout l'espace d'adressage — Hatari [D] dmaSnd.c:336-341 @ f0736b24, démo « A
     // Little Bit Insane » de Lazer).
     uint32_t frameStartAddr_  = 0;   // adresse de début latchée
     uint32_t frameEndAddr_    = 0;   // adresse de fin latchée
 
     // ---- FIFO matérielle 8 octets + consommation DAC (thread émulation) -----------
-    // Port du modèle Hatari (dmaSnd.c:117-147) : le DMA fetche des MOTS en RAM dans
+    // Port du modèle Hatari ([D] dmaSnd.c:117-147 @ f0736b24) : le DMA fetche des MOTS en RAM dans
     // une FIFO anneau de 8 octets remplie à chaque HBL ; le DAC la vide à la cadence
     // programmée. Conséquences fidèles : les octets sont figés AU FETCH (un programme
     // qui modifie le tampon pendant la lecture — Mental Hangover, Power Up Plus —
@@ -292,7 +292,7 @@ private:
     // viennent du flux capturé (cap_) — l'audio ne relit plus la RAM ; les événements
     // rejoués posent la cadence (aMode_) et l'activité (aPlaying_). Après un STOP, le
     // flux résiduel est DRAINÉ avant de rendre la main au YM (≙ Hatari : la FIFO finit
-    // de se vider après l'effacement du bit PLAY, dmaSnd.c:548).
+    // de se vider après l'effacement du bit PLAY, [D] dmaSnd.c:548 @ f0736b24).
     bool     aPlaying_ = false;
     uint8_t  aMode_ = 0;
     double   aPhase_ = 0.0;

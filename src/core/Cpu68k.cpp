@@ -72,7 +72,7 @@ struct CpuState {
     int         grp0Vector   = 0;
     std::function<void(uint16_t)> trapObserver;   // cf. Cpu68k::setTrapObserver
     // ---- Dernière faute de GROUPE 0, pour NOMMER un halt (A42, 2026-08-30) -----
-    // Équivalent des `last_*_for_exception_3` d'Hatari (newcpu.c:3086) : sans elles
+    // Équivalent des `last_*_for_exception_3` d'Hatari ([D] newcpu.c:86-88 @ f0736b24) : sans elles
     // un halt ne disait QUE son vecteur, et « la machine est gelée » sans dire OÙ
     // n'aide personne — c'est ce qui transformait un diagnostic d'une minute en
     // rapport « ça plante ».
@@ -145,7 +145,7 @@ CpuState* g_cur = nullptr;
     bool    g_eclockOn    = []{ const char* s = std::getenv("NEOST_ECLOCK_ON"); return s && std::atoi(s) != 0; }();
     int     g_eclockPhase = []{ const char* s = std::getenv("NEOST_ECLOCK_PHASE"); return s ? std::atoi(s) : 0; }();
     // DEEP convergence WinUAE (opt-in NEOST_IACK) : timing d'IACK FIDÈLE. Hatari applique
-    // l'attente E-clock + un bloc « occupé » au CYCLE D'IACK (iack_cycle, newcpu.c:2958-3019),
+    // l'attente E-clock + un bloc « occupé » au CYCLE D'IACK (iack_cycle, [D] newcpu.c:2958-3019 @ f0736b24),
     // PAS avant l'empilement de trame. Moira appelle readIrqUserVector EXACTEMENT à l'IACK
     // (MoiraExceptions_cpp.h:538, après SYNC(6)+write PClo+SYNC(4)) → on y déplace l'E-clock
     // (phase correcte, inclut la latence d'amorce) ET on ajoute le bloc occupé absent de Moira :
@@ -208,7 +208,7 @@ CpuState* g_cur = nullptr;
     int      g_htN      = []{ const char* s = std::getenv("NEOST_HTRACE_N");    return s ? std::atoi(s) : 400; }();
     // DEEP convergence WinUAE (opt-in NEOST_RAM_SLOT) : alignement créneau bus 4 cyc à
     // 8 MHz pour la RAM ST (CHIP16 < $400000), port FIDÈLE de wait_cpu_cycle_read/write
-    // (custom.c:148-153). Avant un accès RAM, si l'horloge bus n'est pas sur la grille
+    // ([D] custom.c:148-153 @ f0736b24). Avant un accès RAM, si l'horloge bus n'est pas sur la grille
     // de 4, attendre (4 - slot) cycles. ⚠ CONTRAIREMENT au chipWait16 (16 MHz), AUCUN +4
     // additionnel : à 8 MHz Moira facture DÉJÀ les 4 cyc de l'accès. L'ancienne tentative
     // « chipWait8 » (mémoire beamsync-busalign-falsified) ajoutait ce +4 parasite (miroir
@@ -363,7 +363,7 @@ public:
     // Cas concret : Stardust (jeu STE) lancé sur ST lit $FFFF8900 (son DMA STE,
     // absent du ST) → bus error ; le handler du TOS recharge ensuite un A7 IMPAIR
     // depuis une pile utilisateur corrompue et le push suivant prend une erreur
-    // d'adresse avec SSP impair = double faute (porte Hatari newcpu.c:3076-3079,
+    // d'adresse avec SSP impair = double faute (porte Hatari [D] newcpu.c:3087-3091 @ f0736b24,
     // porte Moira MoiraExceptions_cpp.h:281-282). Le halt lui-même est FIDÈLE
     // (mesuré : même instruction que Hatari) — seule l'observabilité manquait.
     //
@@ -413,7 +413,7 @@ public:
         g_cur->faultValid = true;
         // ⚠ Journal OPT-IN (`NEOST_FAULT_TRACE`), pas par défaut. Hatari, lui, affiche
         // chaque bus error en WARN et doit filtrer les SONDAGES matériels du TOS par une
-        // liste blanche d'adresses (M68000_IsVerboseBusError, m68000.c:572-621) — la
+        // liste blanche d'adresses (M68000_IsVerboseBusError, [D] m68000.c:572-621 @ f0736b24) — la
         // détection de machine en produit des dizaines par boot. On choisit le silence
         // par défaut plutôt qu'une liste blanche à maintenir : la faute est de toute
         // façon nommée là où elle compte, dans le message de halt.
@@ -740,7 +740,7 @@ public:
     bool stoppedState() const { return (flags & moira::State::STOPPED) != 0; }
 
     // Synchro E-clock à l'ENTRÉE d'exception (port de Hatari M68000_WaitEClock,
-    // m68000.c:810 + iack_cycle newcpu.c:2971-2990) : les IRQ AUTO-VECTORISÉES HBL
+    // [D] m68000.c:810 @ f0736b24 + iack_cycle [D] newcpu.c:2971-2990 @ f0736b24) : les IRQ AUTO-VECTORISÉES HBL
     // (niv 2) et VBL (niv 4) attendent le prochain front de l'E-clock (bus/10 =
     // 0,8 MHz) avant de lire leur vecteur → 0..8 cyc selon la phase de l'horloge
     // BUS au moment de l'IACK (motif déterministe {0,8,6,4,2}). Les IRQ VECTORISÉES
@@ -780,7 +780,7 @@ public:
         if (wait) setClock(getClock() + static_cast<int64_t>(wait) * g_cur->cpuMul);
     }
 
-    // Port FIDÈLE de Hatari `iack_cycle` (newcpu.c:2958-3019) AU point d'IACK du 68000
+    // Port FIDÈLE de Hatari `iack_cycle` ([D] newcpu.c:2958-3019 @ f0736b24) AU point d'IACK du 68000
     // (execInterrupt<C68000> : entre le push PClo et les pushes SR/PChi — cf. hooks
     // Moira.h). Remplace les SYNC(4)+SYNC(4) stock (total 8) par :
     //   HBL/VBL (niv 2/4) : E-clock wait (0..8 bus, motif [0 8 6 4 2], calculé ICI — la

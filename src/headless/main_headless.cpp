@@ -251,9 +251,9 @@ void usage() {
 // =============================================================================
 // =============================================================================
 //  Connecteur de bouclage RS-232 : les lignes de contrôle doivent RECOPIER les
-//  sorties RTS/DTR du PSG, qui sont ACTIVES BAS (Hatari psg.c:223 — port A à $ff
+//  sorties RTS/DTR du PSG, qui sont ACTIVES BAS ([D] Hatari psg.c:223 @ f0736b24 — port A à $ff
 //  au reset, « no drive selected » ; sélection lecteur testée par
-//  « (PORTA & (1<<1)) == 0 », psg.c:400). Le câblage vit dans une lambda de
+//  « (PORTA & (1<<1)) == 0 », [D] psg.c:400 @ f0736b24). Le câblage vit dans une lambda de
 //  Machine, donc il faut une Machine : pas testable depuis neost-selftest.
 // =============================================================================
 int serialLoopbackSelfTest(Machine& machine) {

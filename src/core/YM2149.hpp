@@ -32,7 +32,7 @@ public:
         // « void » → 0xFF (psg.c:PSG_ff880x_ReadByte). $FF8800/02 renvoient le
         // registre sélectionné ; $FF8802 reste relisible pour les RMW diagnostics
         // (bclr/bset port A R14) — choix délibéré NeoST, cf. CHANGELOG. Sélecteur ≥16
-        // → 0xFF (psg.c:283).
+        // → 0xFF ([D] psg.c:283 @ f0736b24).
         switch (addr & 3) {
             case 1: case 3: return 0xFF;
             case 0:        // $FF8800 : registre de DONNÉE relu via le READ-LATCH (psg.c:PSG_Get_DataRegister)
@@ -46,16 +46,16 @@ public:
     }
     void write8(uint32_t addr, uint8_t v) {
         switch (addr & 3) {
-            case 0:                                       // $FF8800 : choix du registre (8 bits NON masqués, psg.c:258)
+            case 0:                                       // $FF8800 : choix du registre (8 bits NON masqués, [D] psg.c:258 @ f0736b24)
                 selected_ = v;
                 // Au changement de sélecteur, $FF8800 relira la valeur (masquée) du registre choisi,
                 // ou 0xFF si sélecteur invalide (psg.c:PSG_Set_SelectRegister).
                 regReadData_ = (selected_ < 16) ? regs_[selected_] : uint8_t(0xFF);
                 break;
             case 2: {                                     // $FF8802 : écriture donnée
-                if (selected_ >= 16) break;               // registre invalide (≥16) → écriture ignorée (psg.c:335)
-                regReadData_ = v;                         // read-latch : valeur NON masquée (psg.c:346)
-                // Masque les bits inutilisés À L'ÉCRITURE (psg.c:351-358) → la relecture
+                if (selected_ >= 16) break;               // registre invalide (≥16) → écriture ignorée ([D] psg.c:337-339 @ f0736b24)
+                regReadData_ = v;                         // read-latch : valeur NON masquée ([D] psg.c:346 @ f0736b24)
+                // Masque les bits inutilisés À L'ÉCRITURE ([D] psg.c:351-358 @ f0736b24) → la relecture
                 // renvoie la valeur masquée, comme le YM2149 : tons grossiers A/B/C (R1/3/5)
                 // et forme d'enveloppe (R13) sur 4 bits ; ampli A/B/C (R8/9/10) et bruit (R6)
                 // sur 5 bits. Ports A/B (R14/15, I/O) et autres registres : 8 bits intacts.
@@ -113,7 +113,7 @@ public:
         // PSG_Reset Hatari et MAME ay8910_reset_ym : R7 vaut zéro comme
         // les autres registres sonores. Les volumes R8–R10 à zéro assurent le
         // silence sans altérer le registre mixeur visible par le processeur.
-        regs_[14]   = 0xFF;     // port A au repos : lignes I/O (actives bas) toutes inactives — cf. psg.c:223
+        regs_[14]   = 0xFF;     // port A au repos : lignes I/O (actives bas) toutes inactives — cf. [D] psg.c:223 @ f0736b24
         selected_   = 0;
         tonePer_.fill(0); toneCnt_.fill(0); toneVal_.fill(0);
         noisePer_ = noiseCnt_ = 0; noiseVal_ = 0;
@@ -124,8 +124,8 @@ public:
         buf250_.fill(0.0f); buf250Wr_ = buf250Rd_ = 0;
         resampleFracN_ = 0;
         envReload_  = false;
-        regReadData_ = 0;        // read-latch remis à 0 (psg.c:221)
-        lastStrobe_  = false;    // strobe Centronics au repos (psg.c:229) — pas de transfert parasite au boot
+        regReadData_ = 0;        // read-latch remis à 0 ([D] psg.c:221 @ f0736b24)
+        lastStrobe_  = false;    // strobe Centronics au repos ([D] psg.c:229 @ f0736b24) — pas de transfert parasite au boot
         lpf250X1_ = lpf250Y0_ = 0.0f;
         hpfX1_ = hpfY0_ = 0.0;
         updateFromRegs(regs_.data());
@@ -177,7 +177,7 @@ public:
     bool portBDac() const { return portBDac_; }
     void setPortBDacGain(float g) { dacGain_ = g; }   // fader page Sound (1 = neutre)
 
-    // Choix du filtre de sortie selon la machine (port Hatari sound.c:1945-1952) :
+    // Choix du filtre de sortie selon la machine (port Hatari [D] sound.c:1945-1952 @ f0736b24) :
     //  • STF/Mega ST  → LowPassFilter (condensateur C10 réel : filtre LES DEUX fronts),
     //  • STE/Mega STE/TT → PWMaliasFilter (front montant passe-tout, défaut historique).
     // Le STF doit utiliser le passe-bas C10, sinon le contenu HF des carrés se replie

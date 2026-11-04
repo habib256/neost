@@ -47,7 +47,7 @@ MachineType Machine::adjustMachineForTos(MachineType requested, const std::strin
             tosVer >> 8, tosVer & 0xFF, machineName(requested));
         return MachineType::St;
     }
-    // Symétrique (port de tos.c:844-855) : TOS 1.06 et 1.62 sont des ROM **STE
+    // Symétrique (port de [D] tos.c:844-855 @ f0736b24) : TOS 1.06 et 1.62 sont des ROM **STE
     // exclusivement**. Sur un ST/Mega ST, la routine de nettoyage RAM du TOS
     // ($E001AA-$E001B2) monte jusqu'à $00400000, prend une bus error, double-faute et
     // HALTE le CPU : NeoST restait sur un écran uniforme, définitivement, SANS le
@@ -228,9 +228,9 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         if (ports.hasSerial()) { ports.onPortA(a, sched.now(), mfp); cpu.updateIpl(); }
         if (!mfp.loopback()) return;        // connecteur non branché → lignes inertes
         // ⚠ Le port A du PSG est ACTIF BAS : bit=0 → ligne ASSERTÉE. Convention établie
-        // sur CE registre chez Hatari — psg.c:223 le met à $FF au reset (« no drive
+        // sur CE registre chez Hatari — [D] psg.c:223 @ f0736b24 le met à $FF au reset (« no drive
         // selected »), et la sélection lecteur s'y teste par « (PORTA & (1<<1)) == 0 »
-        // (psg.c:400). Le code testait « != 0 » : au repos ($FF) le bouclage assertait
+        // ([D] psg.c:400 @ f0736b24). Le code testait « != 0 » : au repos ($FF) le bouclage assertait
         // donc CTS/DCD/RI, et toute bascule les faisait bouger À L'ENVERS. Les deux
         // cartouches Field Service (test S) concluaient « No loopback connector ».
         const bool rts = (a & 0x08) == 0;   // bit3 = 0 → RTS assertée
@@ -313,9 +313,9 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // Filtre de sortie YM (cf. Hatari Sound_Update_Filters) : ST/Mega ST utilisent le
     // passe-bas analogique (C10, LPF_STF) ; STE/Mega STE le PWM (front montant passe-tout).
     psg.setStfLowPass(!machineIsSte(machineType_));
-    // HPF sous-sonique : sur ST il est DANS la chaîne YM (sound.c:1744) ; sur STE le YM
+    // HPF sous-sonique : sur ST il est DANS la chaîne YM ([D] sound.c:1744 @ f0736b24) ; sur STE le YM
     // entre BRUT dans le mix et c'est le MÉLANGE YM+DMA qui est filtré par la chaîne
-    // LMC (dmaSnd.c:699,706 → DmaSound::applyHpfStereo, appelé par le rendu audio).
+    // LMC ([D] dmaSnd.c:699,706 @ f0736b24 → DmaSound::applyHpfStereo, appelé par le rendu audio).
     psg.setHpfBypass(machineIsSte(machineType_));
 
     installSchedulerCallbacks();
@@ -649,7 +649,7 @@ void Machine::onHbl() {
         // 60 Hz (263 lignes) passée à 50 Hz par le programme → 262 lignes à 512 mais
         // frameEnd_ 4 cycles trop tôt, HBL de la ligne 262 perdu, et toute la suite
         // décalée de −4 vs Hatari (sonde timer_b_event). Hatari pose la VBL depuis le
-        // dernier HBL réel (video.c:3370).
+        // dernier HBL réel ([D] video.c:3370 @ f0736b24).
         curLineLen_ = cpl_;
     }
     ++hblLine_;

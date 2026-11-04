@@ -230,8 +230,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). 203 citations d'Hatari portent grade et révision, vérifiées à l'épingle.
-  Restent 109 à relire à la main, listées par `tools/audit_citations.py list` : surtout des lignes `video.c` et `dmaSnd.c` antérieures à l'épingle, ou sans symbole d'Hatari dans le commentaire. Recompter ensuite par grade dans `check_doc_claims.py`.
+- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. Restent les affirmations sans source, à confronter fiche en main : YM2149, FDC, ACIA, et les GLUE/MMU sans schéma.
 - **Banc fx68k, étendre** · P3 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur concordent. Restent BERR et double faute, et l'autovecteur dans le verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
   78 programmes en accord ; `blitter_timer` et deux sondes s'écartent d'Hatari, consigné. → `docs/STBLITTER_BENCH.md`

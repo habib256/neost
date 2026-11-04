@@ -51,7 +51,7 @@ uint16_t tonePeriod(uint8_t hi, uint8_t lo) {
     return uint16_t(((hi & 0x0f) << 8) | lo);
 }
 
-// Bruit blanc : LFSR 17 étages, 2 taps (17,14) — YM2149_RndCompute, sound.c:969.
+// Bruit blanc : LFSR 17 étages, 2 taps (17,14) — YM2149_RndCompute, [D] sound.c:969 @ f0736b24.
 uint32_t rndCompute(uint32_t& rack) {
     if (rack & 1u) {
         rack = (rack >> 1) ^ 0x12000u;
@@ -147,7 +147,7 @@ const std::array<float, 32768>& YM2149::dacTable() {
                 for (int k = 0; k < 32; ++k)
                     vt(i, j, k) = geo(vt(i - 1, j, k), vt(i + 1, j, k));
 
-        // Normalisation ≙ YM2149_Normalise_5bit_Table (sound.c:700-724) : [0,max] →
+        // Normalisation ≙ YM2149_Normalise_5bit_Table ([D] sound.c:700-724 @ f0736b24) : [0,max] →
         // [0,1] flottant, max = entrée « 3 voies à fond » (0x7fff). Le niveau (Level /
         // Level>>1 STE d'Hatari) est porté par outScale_ ; pas de centrage
         // (YM_OUTPUT_CENTERED=false), le HPF sous-sonique recentre comme chez Hatari.
@@ -186,7 +186,7 @@ void YM2149::updateFromRegs(const uint8_t* r) {
     tonePer_[2] = tonePeriod(r[5], r[4]);
     // Période de bruit BRUTE, sans plancher à 1 : Hatari (YM2149_NoisePer) garde 0
     // tel quel — le « per=0 ⇒ per=1 » est réalisé par la structure incrémente-puis-
-    // compare de doSamples250 (comparaison à 250 kHz, cf. sound.c:1050-1058).
+    // compare de doSamples250 (comparaison à 250 kHz, cf. [D] sound.c:1050-1058 @ f0736b24).
     noisePer_   = uint16_t(r[6] & 0x1f);
     uint32_t ep = (r[12] << 8) | r[11];
     envPer_     = uint16_t(std::max(1u, ep));
@@ -247,7 +247,7 @@ void YM2149::doSamples250(int n) {
     for (int i = 0; i < n; ++i) {
         // Bruit : compteur incrémenté à 125 kHz (moitié de la cadence interne) mais
         // COMPARAISON à 250 kHz, HORS du bloc 125 kHz — port exact de Hatari
-        // (sound.c:1050-1058). Pour per=0 le LFSR est ainsi retiré à CHAQUE cycle
+        // ([D] sound.c:1050-1058 @ f0736b24). Pour per=0 le LFSR est ainsi retiré à CHAQUE cycle
         // 250 kHz (2× plus vite que per=1), comme mesuré sur le vrai YM2149.
         freqDiv2_ ^= 1;
         if (freqDiv2_ == 0)
@@ -350,7 +350,7 @@ void YM2149::renderHost(float* out, uint32_t frames, uint32_t sampleRate) {
         }
 
         // STE (hpfBypass_) : YM BRUT — le HPF sous-sonique s'applique en aval au MIX
-        // YM+DMA (DmaSound::applyHpfStereo ≙ [D] dmaSnd.c:699,706 @ f0736b24), comme sound.c:1730-1735
+        // YM+DMA (DmaSound::applyHpfStereo ≙ [D] dmaSnd.c:699,706 @ f0736b24), comme [D] sound.c:1730-1735 @ f0736b24
         // qui n'appelle PAS Subsonic_IIR_HPF sur le chemin STE/TT.
         if (hpfBypass_) { out[i] = s * outScale_; continue; }
         const double hp = double(s) - hpfX1_ + kHpfPole * hpfY0_;

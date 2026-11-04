@@ -66,7 +66,7 @@ enum : uint8_t {
     float_flag_signaling = flag_signaling,
 };
 enum { float_round_nearest_even = round_nearest_even };
-constexpr uint64_t floatx80_default_infinity_low = INF_SIG;   // softfloat.h:348
+constexpr uint64_t floatx80_default_infinity_low = INF_SIG;   // [D] softfloat.h:348 @ f0736b24
 
 inline uint64_t extractFloatx80Frac(floatx80 a) { return fracOf(a); }
 inline int32_t  extractFloatx80Exp (floatx80 a) { return expOf(a); }
@@ -95,7 +95,7 @@ inline int32_t floatx80_to_int32(floatx80 a, float_status* status) {
 }
 
 // --- Primitives manquantes, portées de softfloat.c / softfloat-specialize.h ------
-// int32_to_floatx80 (softfloat.c:1632) : conversion exacte, sans drapeau.
+// int32_to_floatx80 ([D] softfloat.c:1632 @ f0736b24) : conversion exacte, sans drapeau.
 inline floatx80 int32_to_floatx80(int32_t a) {
     if (a == 0) return packFloatx80(0, 0, 0);
     const flag zSign = (a < 0);
@@ -108,7 +108,7 @@ inline floatx80 int32_to_floatx80(int32_t a) {
 inline floatx80 commonNaNToFloatx80(flag sign, uint64_t high) {
     return floatx80{ uint16_t((uint16_t(sign) << 15) | 0x7FFF), 0x4000000000000000ull | (high >> 1) };
 }
-// float32_to_floatx80 (softfloat.c:1655). Les constantes du FPSP ne sont jamais
+// float32_to_floatx80 ([D] softfloat.c:1655 @ f0736b24). Les constantes du FPSP ne sont jamais
 // des NaN ; la branche est portée pour que la primitive reste complète.
 inline floatx80 float32_to_floatx80(float32 a, float_status* status) {
     uint32_t aSig = a & 0x007FFFFF;

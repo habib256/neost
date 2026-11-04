@@ -255,7 +255,7 @@ public:
     // port de `Video_TimerB_GetPosFromDE` appliqué à `ShifterLines[n]` : sur une
     // trame à tricks, le DE de la ligne vient de la machine Glue (retrait droit →
     // DE_end 462 → tic à ~488, etc.). Hatari REPROGRAMME l'interruption TB à chaque
-    // écriture qui change le DE (video.c:2880-2891) ; côté NeoST, Machine::onTimerB
+    // écriture qui change le DE ([D] video.c:2906 @ f0736b24) ; côté NeoST, Machine::onTimerB
     // re-vérifie cette position au callback et se replanifie si elle a reculé.
     // Chantier Closure (docs/CLOSURE_CHANTIER.md) : la démo CHRONOMÈTRE les tics TB
     // de lignes sondées une à une — position globale seule = mesure hors barème.
@@ -452,8 +452,8 @@ private:
     // --- Résolution VUE PAR LE SHIFTER ($FF8260 ET son alias $FF8261) ----------
     // Le registre de résolution existe en DOUBLE : dans la GLUE (timings, DE,
     // bordures) et dans le SHIFTER (décodage des mots livrés par le MMU). $FF8260
-    // écrit les deux ; $FF8261 n'écrit QUE le Shifter (ioMemTabST.c:71,
-    // ioMemTabSTE.c:120 — « Resolution in Shifter only », mêmes sur STF et STE).
+    // écrit les deux ; $FF8261 n'écrit QUE le Shifter ([D] ioMemTabST.c:71 @ f0736b24,
+    // [D] ioMemTabSTE.c:120 @ f0736b24 — « Resolution in Shifter only », mêmes sur STF et STE).
     // Le Shifter n'a ni UDS ni LDS : il lit TOUJOURS les bits 8-9 du bus de données
     // (Hatari Video_Res_WriteByte, [D] video.c:5736 @ f0736b24). D'où :
     //   • move.b #x,$FF8261 → le 68000 duplique l'octet sur D0-D15 → Shifter = x ;
@@ -472,7 +472,7 @@ private:
     int64_t stopFromFc_      = -1;
     int64_t lastStopFromFc_  = -1;
     int64_t lastStopToFc_    = -1;
-    // Scroll hard STF « 4 px » par Shifter arrêté (Troed/Sync, port video.c:1906-1973) :
+    // Scroll hard STF « 4 px » par Shifter arrêté (Troed/Sync, port [D] video.c:1906-1973 @ f0736b24) :
     // res=3 pendant 8..32 cycles alors que le DE est actif → toutes les lignes
     // SUIVANTES de la trame sont décalées de 0/−4/−8/−12 px et le compteur vidéo
     // reçoit −0/−2/−4/−6 octets à la fin de la ligne courante (VideoRasterDelayedInc).

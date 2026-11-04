@@ -18,15 +18,15 @@
 static const double kRate[4] = { 6258.0, 12517.0, 25033.0, 50066.0 };
 
 // Gain du canal numérique AVANT les gains LMC — port de la comptabilité Hatari
-// (dmaSnd.c:1146-1158) : « DMA sound is 3/4 level of YM sound », rapporté à
+// ([D] dmaSnd.c:524-530 @ f0736b24) : « DMA sound is 3/4 level of YM sound », rapporté à
 // l'échelle DEMI du YM STE (outScale_ 0.5, marge anti-saturation) parce que les
 // gains LMC sont DOUBLÉS en compensation (cf. gainLeft/gainRight). Objectif : un
 // rapport DMA/YM de ¾ après ces gains, comme Hatari (module exact ci-dessous).
 // NÉGATIF : le LMC1992 INVERSE le signal DMA (le YM ressort en +1 : −1 ampli-op ×
-// −1 LMC). Port du « Multiply DMA sound by -1 » d'Hatari (dmaSnd.c:520-535, formule
+// −1 LMC). Port du « Multiply DMA sound by -1 » d'Hatari ([D] dmaSnd.c:520-535 @ f0736b24, formule
 // −((256×¾)/4)/4). Module 0.1875 = ¾ × ¼ : le ÷4 d'Hatari couvre À LA FOIS la table
 // YM demi-amplitude STE (≙ outScale_ 0.5) ET la pré-compensation du ×2 kLmcMakeup
-// des gains — gains appliqués ensuite au MIX ENTIER, DMA compris (dmaSnd.c:699/706).
+// des gains — gains appliqués ensuite au MIX ENTIER, DMA compris ([D] dmaSnd.c:699/706 @ f0736b24).
 // L'ancien −0.375 (= ¾ × ½) ne retranchait que la demi-table : le ×2 des gains
 // s'appliquait une DEUXIÈME fois au canal DMA → +6 dB vs Hatari (à 0 dB LMC,
 // s=127 : Hatari 0.372 fs, NeoST sortait 0.744 fs — bug hunt 10ᵉ passe).
@@ -108,7 +108,7 @@ void DmaSound::fifoRefill() {
         curAddr_ = (curAddr_ + 2) & 0xFFFFFF;
         if (curAddr_ == frameEndAddr_) {               // fin de trame atteinte AU FETCH
             // Cas « début == fin, repeat ON » (trame 2^24 octets) : sur STE réel
-            // AUCUNE interruption de fin de trame n'est générée (dmaSnd.c:336-341)
+            // AUCUNE interruption de fin de trame n'est générée ([D] dmaSnd.c:336-341 @ f0736b24)
             // — le fetch vient de wrapper sur début, on continue SANS pulser XSINT.
             if ((ctrl_ & 0x02) && frameEndAddr_ == frameStartAddr_) continue;
             setXsint(false);                           // XSINT → BAS (compte Timer A si AER bit4=0)
@@ -356,7 +356,7 @@ static void shelf1(bool lowShelf, double dB, double f0, double fs,
 void DmaSound::applyTone(float* out, uint32_t frames, uint32_t sampleRate) {
     if ((mwBass_ == 6 && mwTreble_ == 6) || sampleRate == 0) return;   // 0/0 dB → bypass
     // Codes 0-12 → -12..+12 dB (pas de 2 dB) ; codes 13-15 SATURENT à +12 dB, comme la
-    // table LMC1992_Bass_Treble_Table de Hatari (dmaSnd.c:211-214) — sans ça les codes
+    // table LMC1992_Bass_Treble_Table de Hatari ([D] dmaSnd.c:211-214 @ f0736b24) — sans ça les codes
     // 13-15 donnaient +14/+16/+18 dB.
     const int bassCode = mwBass_   < 12 ? mwBass_   : 12;
     const int trebCode = mwTreble_ < 12 ? mwTreble_ : 12;
@@ -410,7 +410,7 @@ void DmaSound::applyToneStereo(float* st, uint32_t frames, uint32_t sampleRate) 
 // HPF sous-sonique appliqué au MIX YM+DMA (STE) — port de Subsonic_IIR_HPF_Left/Right
 // ([D] sound.c:382-399 @ f0736b24, pôle 1 − 64/32768) tel qu'appelé par DmaSnd_Apply_LMC AVANT
 // gains + tonalité ([D] dmaSnd.c:699,706 @ f0736b24). Sur ST le HPF reste DANS la chaîne YM
-// (sound.c:1744) ; sur STE le YM entre BRUT dans le mix (YM2149::setHpfBypass) et
+// ([D] sound.c:1744 @ f0736b24) ; sur STE le YM entre BRUT dans le mix (YM2149::setHpfBypass) et
 // c'est le MÉLANGE — composante continue du DMA comprise — qui est filtré ici.
 // États NON sérialisés : transitoire de rendu (<0,1 s), format save-state inchangé.
 void DmaSound::applyHpfStereo(float* st, uint32_t frames) {
@@ -516,12 +516,12 @@ uint32_t DmaSound::liveCounter() {
 uint8_t DmaSound::read8(uint32_t addr) {
     if ((addr & 0xFF) >= 0x22 && (addr & 0xFF) <= 0x25) catchUpMicrowire();
     switch (addr & 0xFF) {
-        // $FF8900 : registre MOT chez Hatari (ioMemTabSTE.c:142) — la lecture pose
+        // $FF8900 : registre MOT chez Hatari ([D] ioMemTabSTE.c:142 @ f0736b24) — la lecture pose
         // nDmaSoundControl en 16 bits, l'octet PAIR relit donc 0x00 (pas 0xFF) :
         // « move.w $FF8900,d0 » doit rendre $000x, pas $FF0x.
         case 0x00: return 0x00;
         case 0x01: return ctrl_;
-        // $FF8920 : octet lu/écrit SANS interception chez Hatari (ioMemTabSTE.c:162)
+        // $FF8920 : octet lu/écrit SANS interception chez Hatari ([D] ioMemTabSTE.c:162 @ f0736b24)
         // — il conserve la valeur écrite (0 au boot), sauvegardée avec les
         // registres comme l'IoMem dans STMemory_MemorySnapShot_Capture d'Hatari.
         case 0x20: return pad20_;
@@ -613,7 +613,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
                 // Accès OCTET isolé (move.b $FF8922) : Hatari intercepte la donnée
                 // Microwire en SIZE_WORD ([D] ioMemTabSTE.c:164 @ f0736b24) — TOUT accès écriture,
                 // même octet, déclenche le transfert avec (octet haut neuf | octet
-                // bas ancien) (dmaSnd.c:1195-1204). L'accès MOT (write16 → 2 write8)
+                // bas ancien) ([D] dmaSnd.c:1195-1204 @ f0736b24). L'accès MOT (write16 → 2 write8)
                 // ne démarre que sur l'octet BAS (case 0x23), mot complet posé.
                 if (bus_.ioAccessWidth() == 1) {
                     mwShift_ = mwData_;

@@ -1665,7 +1665,7 @@ void Ikbd::commonBoot(uint8_t v) {
             if (d.w == CW_AS)      { asMagic_ = false; asReadCount_ = 0; }
             rx_.clear();                     // flush des octets en file (BufferHead=Tail=0)
             // Comme bootRom : le flush ne touche QUE le côté 6301 (Hatari
-            // ikbd.c:2980-2981 ne vide que Keyboard.Buffer) — RDR/RDRF/overrun de
+            // [D] ikbd.c:2980-2981 @ f0736b24 ne vide que Keyboard.Buffer) — RDR/RDRF/overrun de
             // l'ACIA survivent, la livraison en vol se no-op sur file vide.
             return;
         }

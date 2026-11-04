@@ -44,7 +44,7 @@ int Shifter::commitAnchor() {
     return a;
 }
 
-// Fin de Video_CopyScreenLine (video.c:3833-3872), adaptée au modèle NeoST : la
+// Fin de Video_CopyScreenLine ([D] video.c:3853-3873 @ f0736b24), adaptée au modèle NeoST : la
 // ligne active vient d'être décodée → le compteur vidéo avance de son stride réel,
 // puis les modifications STE différées pendant la ligne s'appliquent, dans l'ordre
 // d'Hatari : scroll-prefetch (+1 mot), line-offset, offset compteur ($FF8205/07/09
@@ -108,9 +108,9 @@ void Shifter::endVideoLine() {
     vcLineBase_ += static_cast<uint32_t>(bpl);
     // Prefetch et line-offset STE ne s'appliquent QUE sur une ligne réellement
     // affichée : chez Hatari les deux sont dans la branche « else » de la ligne
-    // totalement blanche (video.c:3993 → :4213 « pVideoRaster += LineWidth*2 »),
+    // totalement blanche ([D] video.c:4007 @ f0736b24 → :4246 « pVideoRaster += LineWidth*2 »),
     // seuls l'offset différé et les latches HSCROLL/LINEWIDTH ci-dessous en sont
-    // dehors (video.c:4329-4375). Les appliquer sur une ligne NO_DE faisait dériver
+    // dehors ([D] video.c:3857-3873 @ f0736b24). Les appliquer sur une ligne NO_DE faisait dériver
     // le compteur vidéo d'autant d'octets par ligne non affichée — visible sur STE
     // à scrolling matériel dès qu'une trame se termine avant sa fin nominale.
     if (bpl > 0) {
@@ -307,7 +307,7 @@ uint32_t Shifter::videoCounter() {
                 liveGlueCatchUp(line);
                 // `extra` (prefetch scroll + line-offset STE) ne s'applique qu'aux
                 // lignes RÉELLEMENT affichées, exactement comme le chemin de commit
-                // endVideoLine (`if (bpl > 0)`, Shifter.cpp:785 ≙ video.c:4213). Une
+                // endVideoLine (`if (bpl > 0)`, Shifter.cpp:785 ≙ [D] video.c:4007 @ f0736b24). Une
                 // ligne NO_DE (glueLineBytes == 0 : trick freq, fenêtre verticale
                 // raccourcie) ne fait avancer NI line-offset NI prefetch — l'ajouter
                 // ici faisait diverger l'extrapolation du commit, et le compteur

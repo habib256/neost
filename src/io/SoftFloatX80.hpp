@@ -57,7 +57,7 @@ inline bool isSNaN(f80 a){ return isNaN(a) && !(a.low & 0x4000000000000000ull); 
 inline f80  defaultNaN() { return f80{ 0x7FFF, 0xFFFFFFFFFFFFFFFFull }; }     // QNaN 68881
 // Encodage INVALIDE (« unnormal ») : exposant ni 0 ni $7FFF alors que le bit entier
 // explicite du significande est à 0. Le 68881 refuse ces motifs — Hatari les garde en
-// tête de CHAQUE opération (floatx80_invalid_encoding, softfloat.c:1862, 1912, 2475,
+// tête de CHAQUE opération (floatx80_invalid_encoding, [D] softfloat.c:1862 @ f0736b24, 1912, 2475,
 // 2500, 2527, 2645, 2806, 3097) et rend un NaN par défaut avec OPERR.
 // ⚠ Sans cette garde, sqrt_ GELAIT l'émulateur : estimateSqrt32 recevait une mantisse
 // dont le bit 63 est nul, l'estimation initiale partait à côté, et la boucle de
@@ -70,7 +70,7 @@ inline bool invalidEncoding(f80 a) {
 }
 constexpr uint64_t INF_LOW = 0x8000000000000000ull;   // MSB du SIGNIFICANDE
 // Significande canonique d'un infini GÉNÉRÉ par l'arithmétique 68881 : bit entier
-// explicite j = 0, fraction = 0 (≙ floatx80_default_infinity_low, softfloat.h:348).
+// explicite j = 0, fraction = 0 (≙ floatx80_default_infinity_low, [D] softfloat.h:348 @ f0736b24).
 // À ne pas confondre avec INF_LOW ci-dessus : Fpu::decodeFmt rend déjà cette forme
 // pour un ±∞ chargé depuis la mémoire ; empaqueter INF_LOW ici produirait DEUX
 // motifs binaires différents pour +∞ selon son origine, et FMOVE.X ≠ oracle.
@@ -159,7 +159,7 @@ inline void add192(uint64_t a0,uint64_t a1,uint64_t a2,uint64_t b0,uint64_t b1,u
     // a0+b0 tout court. Seul appelant : sqrt_, où b0 == 0, si bien que le reste ne
     // bougeait plus et que la boucle de raffinement tournait à l'infini — FSQRT gelait
     // l'émulateur sur toute racine exactement représentable (1.0, 9.0, 100.0, 0.25…).
-    // Hatari propage en trois temps (softfloat-macros.h:433-440).
+    // Hatari propage en trois temps ([D] softfloat-macros.h:433-440 @ f0736b24).
     uint64_t c1=0; add128(a1,a2,b1,b2,z1,z2); if(lt128(z1,z2,b1,b2)) c1=1;
     z0 = a0 + b0 + c1;
 }

@@ -83,7 +83,7 @@ public:
     // statut périmé sur $FFFC04 et un octet fantôme livrable sur $FFFC06.
     void reset() {
         rxOverrun_ = ovrn_ = srRead_ = false;
-        rdr_ = 1;                            // amorçage 1 (midi.c:110)
+        rdr_ = 1;                            // amorçage 1 ([D] midi.c:110 @ f0736b24)
         rdrf_ = false;
         control_ = 0;
         txEnableInt_ = false;
