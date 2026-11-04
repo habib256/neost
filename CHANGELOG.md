@@ -10,6 +10,8 @@ l'ordre inverse. Version courante : **0.6.2**.
 
 Le disque réel n'a pas d'angle défini au démarrage, et NeoST n'en tirait qu'un seul. Xenon 2 charge son niveau en 332 à 684 trames selon cette graine, contre 348 à 692 sous Hatari selon la sienne : l'écart relevé venait de deux tirages → `docs/CASE_STUDIES.md`. Sans cette option, rien ne change.
 
+Vroom sur Mega STE sort aussi des bugs ouverts : selon la graine, NeoST et Hatari produisent la même image de bruit, à 0,0 % d'écart.
+
 ## Pirates : l'écart d'intro est un tirage au hasard (2026-11-04)
 
 Le bruit noté côté Hatari ne se reproduit plus, et le reste de l'écart vient de XBIOS `Random`, semé sur `_hz200`. Le titre sort des bugs ouverts → `docs/CASE_STUDIES.md`. Les bits 3, 7 et 11 de la palette relue sur ST entrent au TODO.

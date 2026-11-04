@@ -212,7 +212,6 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 | Titre | Prio | Symptôme | Piste |
 |-------|------|----------|-------|
-| **Vroom** (Lankhor), Mega STE, TOS 2.06 | P3 ⭘ | Image de bruit après le titre, avec certaines dates de frappes : en 4 Mo sur la plupart des décalages essayés, écran noir en 2 Mo sur d'autres. En plein Seek, le lecteur se désélectionne (`drv=-1`, puis lecteur B) alors que la musique écrit sur le PSG en interruption. Course probable sur le registre de sélection du PSG. | Hatari ne produit aucune capture avec ces entrées : rien ne tranche. Relever les écritures de R14 autour de la désélection, ou tester sur le fer. |
 | **Shadow Warriors** (2Hot2Handle) | P3 ⏸ média | Après SPACE, titre et musique OK, le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). Sur la version Ocean, ce n'est pas un défaut : le titre attend la touche 1 (« PUSH 1P OR 2P BUTTON »), et le tir ne lance rien non plus sous Hatari. Partie jouée, disques 1 et 2, sans écart avant le combat (`shadow_warrior_st`). | Le disque 2Hot2Handle reste absent. S'il revient, essayer d'abord la touche 1. |
 
 ### Campagnes à mener
