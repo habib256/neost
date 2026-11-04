@@ -22,6 +22,8 @@ Balayage sur 89 disques, 5 graines, en ST et en STE : seul Vroom change de sort 
 
 Vroom reste ouvert : NeoST et Hatari le font planter selon la graine, un vrai STE non, d'après le mainteneur. Le mécanisme lu sous TOS 1.62 est une relocation de 2 octets lue comme 4 → `docs/CASE_STUDIES.md`.
 
+`tools/make_reloc_probe.py` fabrique une disquette qui mesure ce point sur machine réelle, sans le jeu.
+
 ## Pirates : l'écart d'intro est un tirage au hasard (2026-11-04)
 
 Le bruit noté côté Hatari ne se reproduit plus, et le reste de l'écart vient de XBIOS `Random`, semé sur `_hz200`. Le titre sort des bugs ouverts → `docs/CASE_STUDIES.md`. Les bits 3, 7 et 11 de la palette relue sur ST entrent au TODO.
