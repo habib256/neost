@@ -11,6 +11,11 @@ l'ordre inverse. Version courante : **0.6.2**.
 - **`tools/run_wsdetect.py`**, palier `fast` : le détecteur de wakestate de Troed/SYNC, disque CC0, sous EmuTOS. NeoST rend les longueurs que son source annonce : 162, 54, 206, 204 octets en WS1 à WS4, 180 sur STE et Mega STE, 206 sur Mega ST. Aucun relevé de ce disque sur machine réelle n'est au dépôt.
 - **`tools/run_sting_boot.py`**, palier `fast` : STinG 1.26 et le vrai `ENEC.STX` chargent et activent le port sur la NE2000, sans réseau. En `--slirp-restricted`, 279 paquets sortent sans perte et la résolution échoue faute de réseau, comme prévu. Le GET HTTP réel n'a pas été rejoué.
 
+## `compare_titles` : deux fausses alarmes en moins (2026-11-04)
+
+- **Moyenne résolution pure** : NeoST sort 640×200, Hatari 832×552 avec bordures. L'outil ne cadrait pas, d'où les 49 % de Killing Game Show et les 14 % de Gods. Notator et Killing Game Show tombent à 0,0 %. Une passe ST complète ne signale plus que des parties qui divergent, Eliminator-Nebulus et Xenon 2.
+- **Notator 3.0** atteint son interface, avec et sans clé : cette copie crackée n'en a pas besoin.
+
 ## MFP confronté à ses fiches, et parties jouées au joystick (2026-11-04)
 
 - **Le MFP est audité contre MC68901, MC68HC901 et MK68901** : 189 commentaires gradés, 11 désaccords relevés. Quatre sont corrigés :
