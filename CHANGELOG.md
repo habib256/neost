@@ -6,9 +6,9 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
-## Switchblade : écran noir rare expliqué (2026-11-04)
+## Switchblade : écran noir rare, bug du chargeur démontré (2026-11-04)
 
-Deux graines sur 192 : la VBL de TOS lit le statut du FDC juste quand la commande du chargeur finit, et efface l'INTRQ qu'il attend. Rien à corriger à ce jour → `docs/CASE_STUDIES.md`.
+Le chargeur scrute GPIP5 sans poser `flock` ; la VBL de TOS lit le statut du FDC et efface l'INTRQ, 55 instructions après sa montée à la graine 8. Prouvé par la trace, qui porte désormais le `pc` de chaque front d'INTRQ, et par une copie du disque avec `flock` posé : 96 graines sur 96. Hatari y reste aussi, 1 graine sur 96. Rien à corriger dans NeoST → `docs/CASE_STUDIES.md`.
 
 ## Bubble Ghost et Chessmaster, lancés sans passer par le bureau (2026-11-04)
 
