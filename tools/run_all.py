@@ -149,6 +149,9 @@ FAST = [
     # palier ne relise jamais cette image.
     ("Disquette livrée (disks/diskA.st : FAT12 valide, conforme au générateur)",
      [sys.executable, str(TOOLS / "check_disk_assets.py")]),
+    # Empreinte de l'état complet : deux passes et une reprise de save-state, mêmes empreintes.
+    ("Déterminisme de l'état complet (empreintes, reprise de save-state)",
+     [sys.executable, str(TOOLS / "run_determinism.py")]),
     # Séquenceur MIDI de bout en bout : Cubase Lite (TOS 1.04, MROS) importe un SMF et
     # le joue ; ce qui sort de l'ACIA est comparé note à note au fichier (tempo, gigue,
     # vélocités, pédale). Couvre ACIA 6850 + Timer A + GEMDOS HD + midi_simplify.py.

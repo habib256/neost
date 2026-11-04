@@ -1334,6 +1334,8 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
   `TP_ALWAYS`), car ses autres patchs fausseraient la somme. NeoST exécute la ROM intacte ([C] TOS 2.06 UK, boucle `$E015CC`-`$E015E2`),
   ce qui coûte environ 170 trames au démarrage en 4 Mo. Les boucles du test mémoire ont les mêmes périodes des deux côtés.
   Une comparaison datée de ce boot doit donc viser la fin du test (`boot_tos206uk`). Ne pas patcher la ROM pour égaler.
+- **Filtre C10 du STF** (2026-11-04) : NeoST coupe à 7,7 et 2,1 kHz, les valeurs du circuit que cite Hatari lui-même (`sound.c:439-440 @ f0736b24`). Hatari garde des coefficients calculés pour 44,1 kHz et les applique à 250 kHz, soit 43 et 11 kHz. Ne pas réaligner.
+- **Bruit du YM à R6 = 0** (2026-11-04) : NeoST rend R6 = 0 égal à R6 = 1, comme Hatari dit l'avoir mesuré (`sound.c:1046 @ f0736b24`). Son code tire le LFSR 2× trop vite. Ne pas réaligner.
 - **Reset du MFP** (2026-11-04) : TADR..TDDR et les compteurs restent, SCR, UCR, RSR s'effacent et l'USART s'arrête, [B] MC68901 § 2.2.3 p. 2-8, MK68901 p. 13,
   MC68HC901 § 3.3 p. 3-3. Hatari (`mfp.c:538-546 @ f0736b24`) fait l'inverse sur les deux points. Ne pas réaligner.
 - **Modes pulse du MFP** (2026-11-03) : Hatari les traite en mode délai (`MFP_StartTimer_AB`, `mfp.c:1358-1371 @ f0736b24`,

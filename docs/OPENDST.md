@@ -66,6 +66,8 @@ l'horloge murale et le réseau, et détruisent la reproductibilité : `--slirp`,
 backend, et l'horloge de l'UltraSatan (`--ultrasatan`). Elles sont toutes **OFF par
 défaut** : il suffit de ne pas les demander.
 
+`neost-headless` fige les horloges IKBD, RTC et UltraSatan au 1er janvier 2026, 12 h. `--state-hash-every N` hache l'état complet, et la première ligne qui diffère date une perte de déterminisme. `tools/run_determinism.py` le contrôle au palier `fast`, reprise de save-state comprise.
+
 Vérification en une commande, à refaire après tout changement de configuration :
 
 ```sh

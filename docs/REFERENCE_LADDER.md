@@ -36,7 +36,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `run_glue_sweep.py` (2560 impulsions à 50 Hz et autant à 60 Hz, 14 et 42 écarts inscrits) | `rtl` | Machine GLUE du STE contre le modèle GSTMCU : DE et octets, écriture par écriture. → [`GLUE_SWEEP.md`](GLUE_SWEEP.md) |
 | `run_stblitter_bench.py` (78 programmes, tous en accord) | `rtl` | Blitter de NeoST contre fx68k + `stBlitter.sv`, accès, données et dates. → [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md) |
 | `run_mfp_iack_probe.py` | aucun | Contrôle la sonde, sans verdict matériel. |
-| `neost-selftest`, `--*-selftest` | à classer | Dépend de la source de chaque table de vérité → `TODO.md` § 4. |
+| `neost-selftest`, `--*-selftest` | par test | `tools/classify_selftests.py` donne l'échelon que chaque test déclare dans ses commentaires, sans relire ses attendus → `TODO.md` § 4. |
 
 ## L'échelon `rtl`
 

@@ -4,9 +4,25 @@
 //  Machine à états par commande (cf. extern/hatari/src/fdc.c, chemin « _ST »).
 //  Chaque phase renvoie un nombre de cycles FDC (≈ cycles CPU à ~8 MHz sur ST) ;
 //  l'ordonnanceur (Scheduler::FDC) rappelle onFdcEvent() à l'échéance pour avancer
-//  la commande. On modélise : impulsions d'index (300 tr/min), spin-up (6 tours),
-//  chargement de tête (15 ms), latence rotationnelle jusqu'au champ ID du secteur,
-//  transfert DMA octet par octet (FIFO 16 o), arrêt moteur (9 tours), INTRQ datée.
+//  la commande. On modélise : impulsions d'index (300 tr/min, [B] p. 1-7), spin-up
+//  (6 tours, [B] p. 1-7), chargement de tête (15 ms, [B] p. 1-6), latence rotationnelle
+//  jusqu'au champ ID du secteur, transfert DMA octet par octet (FIFO 16 o), arrêt moteur
+//  (9 tours, [B] p. 1-7), INTRQ datée.
+//
+//  RÉFÉRENCES DE CE FICHIER :
+//  [B] « WD177X-00 Floppy Disk Formatter/Controller » (Western Digital),
+//      extern/datasheets/WD177X-00.pdf,
+//      sha256 a2b267094ec9af10c0f4d68fbc5c6ea94ec873897ad9b129a2ff607ad7fe8388.
+//      Pagination imprimée : « p. 1-7 » = page 7 du PDF. Elle couvre les 1770/1772/1773 :
+//      l'état du 1772 est p. 1-18, le tableau p. 1-19 ne vaut que pour le 1773.
+//  [D] Hatari = extern/hatari @ f0736b24, chemins relatifs à src/ (floppy.h dans src/includes/).
+//      Ses notes « [NP] tested on STF » sont des relevés d'un tiers, rapportés sans
+//      protocole : ils restent [D] ici. La fiche prime sur Hatari.
+//  [F] La fiche se contredit elle-même sur quatre points, tranchés seulement par une mesure
+//      sur WD1772 : pas 2/3/8/12 ms (p. 1-1) contre 6/12/2/3 ms (p. 1-6) ; recherche d'ID sur
+//      4 tours (p. 1-9), 5 (p. 1-7, 1-9, 1-10) ou 6 (organigramme p. 1-8) ; polarité de h,
+//      h=0 → spin-up (p. 1-6) contre h=1 (organigrammes p. 1-9, 1-14) ; date du type
+//      d'enregistrement, fin de lecture (p. 1-9) contre marque de données (p. 1-11).
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -53,7 +69,10 @@ uint32_t dmaAddressMask(std::size_t ramBytes) {
 }
 } // namespace
 
-// --- Bits du registre de statut WD1772 (cf. Hatari fdc.h) -------------------
+// --- Bits du registre de statut WD1772 ---------------------------------------
+// [B] WD177X-00 p. 1-18 (état 1770/1772) : S7 Motor On, S6 Write Protect, S5 Record Type/
+// Spin-Up, S4 RNF, S3 CRC, S2 Lost Data/TR00, S1 DRQ/Index, S0 Busy.
+// [D] Hatari fdc.c:250-260 @ f0736b24 : mêmes valeurs.
 //   type I  : INDEX(2) TR00(4) CRC(8) SEEKERR/RNF(10) SPINUP(20) WPRT(40) MOTOR(80)
 //   type II/III : DRQ(2) LOSTDATA(4) CRC(8) RNF(10) RECTYPE(20) WPRT(40) MOTOR(80)
 enum : uint8_t {
@@ -71,6 +90,8 @@ enum : uint8_t {
 };
 
 // --- Bits optionnels du registre de commande --------------------------------
+// [B] WD177X-00 p. 1-6 (Flag Summary) : V, E, h, u, m. Le test du bit 3 suit le tableau
+// (h=0 active le spin-up), pas les organigrammes p. 1-9 et 1-14 qui impriment h=1.
 enum : uint8_t {
     CMD_BIT_VERIFY      = 0x04,   // type I : vérif piste après seek
     CMD_BIT_HEADLOAD    = 0x04,   // type II/III : délai de chargement de tête
@@ -80,6 +101,8 @@ enum : uint8_t {
 };
 
 // --- Condition d'un Force Interrupt (type IV) -------------------------------
+// [B] WD177X-00 p. 1-6, p. 1-16 : I2 = à chaque impulsion d'index, I3 = immédiate ; I0 et I1
+// sont sans usage sur 1770/1772.
 enum : uint8_t { INT_COND_IP = 0x04, INT_COND_IMMEDIATE = 0x08 };
 
 // --- Sources d'IRQ (cf. Hatari FDC_IRQ_SOURCE_*) ----------------------------
@@ -131,41 +154,55 @@ enum {
 };
 
 // --- Constantes de temps (cycles FDC = cycles CPU ≈ 8,021 MHz sur ST) -------
-static constexpr int64_t MFM_BYTE         = 4 * 8 * 8;     // 256 cyc : 4µs/bit × 8 bits × 8 MHz
-static constexpr int64_t CYCLES_PER_REV   = 1604249;       // 300 tr/min @ 8,021247 MHz → ~200 ms
-static constexpr int64_t INDEX_PULSE_LEN  = 29680;         // 3,71 ms : durée du signal d'index —
-                                                           // à l'horloge STANDARD 8 MHz du datasheet
-                                                           // WD1772 (Hatari FDC_CLOCK_STANDARD,
-                                                           // [D] fdc.c:405/423 @ f0736b24 : 3710 µs × 8 = 29680),
-                                                           // PAS au 8,021 MHz machine
-static constexpr int     IP_SPIN_UP       = 6;             // tours pour atteindre la vitesse
-static constexpr int     IP_MOTOR_OFF     = 9;             // tours d'inactivité → moteur off
+// [B] WD177X-00 p. 1-5 : horloge de 8 MHz, base des délais de la fiche. [D] fdc.c:385 @ f0736b24 :
+// 8,021247 MHz sur ST, hors de la tolérance de 0,1 % de la p. 1-2.
+static constexpr int64_t MFM_BYTE         = 4 * 8 * 8;     // 256 cyc : 4µs/bit × 8 bits × 8 MHz ([B] p. 1-1 : 250 kbit/s en MFM)
+static constexpr int64_t CYCLES_PER_REV   = 1604249;       // 300 tr/min ([B] p. 1-7) @ 8,021247 MHz ([D] fdc.c:385) → ~200 ms
+// [D] fdc.c:405, 422-423 @ f0736b24 : 3710 µs × 8 = 29680, à l'horloge STANDARD 8 MHz d'Hatari, PAS
+// au 8,021 MHz machine. Relevé d'un tiers sur STF rapporté par Hatari, 1,5 à 4 ms selon le lecteur.
+// [B] p. 1-23 n'exige que tIP ≥ 20 µs : la durée vient du lecteur, la fiche ne la fixe pas.
+static constexpr int64_t INDEX_PULSE_LEN  = 29680;         // 3,71 ms : durée du signal d'index
+static constexpr int     IP_SPIN_UP       = 6;             // tours pour atteindre la vitesse ([B] p. 1-7)
+static constexpr int     IP_MOTOR_OFF     = 9;             // tours d'inactivité → moteur off ([B] p. 1-7)
+// [B] p. 1-7 (type I), p. 1-9 (exemple) et p. 1-10 (organigramme type II) disent 5 tours ; mais p. 1-9
+// dit aussi « four revolutions » et l'organigramme type I p. 1-8 « 6 index holes ». [D] fdc.c:416 : 5.
+// [F] Contradiction de la fiche, tranchée par la durée d'un RNF ou d'un verify raté sur un vrai 1772.
 static constexpr int     IP_ADDRESS_ID    = 5;             // tours max pour trouver un champ ID
-static constexpr int     MAX_TRACK        = 90;            // butée physique de la tête
+static constexpr int     MAX_TRACK        = 90;            // butée physique de la tête ([D] fdc.c:449 ; fiche muette, c'est le lecteur)
+// [B] p. 1-6 : « 1772 Add 15ms Delay » pour E=1. Le settling du verify type I y est écrit « *30 msec »,
+// astérisque sans note dans ce scan. [D] fdc.c:420, 2694 : 15 ms aussi pour le verify.
 static constexpr int64_t HEAD_LOAD        = 8 * 15000;     // 15 ms (réf. 8 MHz : 8 cyc/µs)
+// [B] p. 1-6 (colonne WD1772-00, r1 r0 = 00, 01, 10, 11). La p. 1-1 écrit « 2, 3, 8 et 12 msec »,
+// contredite par ce tableau qui prime ici. [D] fdc.c:454 : mêmes valeurs.
 static constexpr int     STEP_RATE_MS[4]  = {6, 12, 2, 3};
-static constexpr int     PREPARE_TYPE_I   = 90 * 8;        // ≥ 0,09 ms
-static constexpr int     PREPARE_TYPE_II  = 1 * 8;
-static constexpr int     PREPARE_TYPE_III = 1 * 8;
+// Délais de préparation : la fiche ne les donne pas.
+static constexpr int     PREPARE_TYPE_I   = 90 * 8;        // ≥ 0,09 ms ([D] fdc.c:427-428 : relevé d'un tiers sur 520 STF rapporté par Hatari)
+static constexpr int     PREPARE_TYPE_II  = 1 * 8;         // [D] fdc.c:430
+static constexpr int     PREPARE_TYPE_III = 1 * 8;         // [D] fdc.c:431
+// [F] Inconnu, Hatari aussi ([D] fdc.c:432 @ f0736b24 : « FIXME [NP] : this was not measured »).
+// Tranché par une mesure de BUSY/INTRQ après $D0 sur un vrai ST.
 static constexpr int     PREPARE_TYPE_IV  = 100 * 8;
-static constexpr int     CMD_COMPLETE     = 1 * 8;
+static constexpr int     CMD_COMPLETE     = 1 * 8;         // [D] fdc.c:433
 static constexpr int     CMD_IMMEDIATE    = 0;
 static constexpr int     WAIT_NO_DRIVE    = 50000;         // attente d'un lecteur/disque valide
 static constexpr int     REFRESH_INDEX    = 500;           // pas de mise à jour de l'index
 static constexpr int     FDC_FAST_FACTOR  = 10;            // « FDC rapide » : délais ÷ ce facteur (cf. Hatari)
 
 // --- Disposition standard d'une piste (gaps), cf. Hatari fdc.h --------------
+// [B] WD177X-00 p. 1-17 (Double Density Format) : 60×$4E, 12×$00, 3×$A1, $FE ; après l'ID, 22×$4E,
+// 12×$00, 3×$A1, marque. [D] fdc.h:26-30 @ f0736b24 : mêmes valeurs, et GAP4.
 static constexpr int GAP1  = 60;   // pré-gap piste (0x4e)
 static constexpr int GAP2  = 12;   // pré-gap ID secteur (0x00)
 static constexpr int GAP3a = 22;   // post-gap ID (0x4e)
 static constexpr int GAP3b = 12;   // pré-gap données (0x00)
-static constexpr int GAP4  = 40;   // post-gap données (0x4e)
+static constexpr int GAP4  = 40;   // post-gap données (0x4e) ; [D] fdc.h:30, [B] p. 1-18 : 24 au format 256 o, minimum 16
 // Secteur brut 512 o (ID + données + gaps) : 614 octets.
 static constexpr int RAW_SECTOR_512 = GAP2 + 3 + 1 + 6 + GAP3a + GAP3b + 3 + 1 + 512 + 2 + GAP4;
-static constexpr int BYTES_PER_TRACK = 6268;  // piste DD standard
-static constexpr uint8_t SECTOR_SIZE_512 = 2; // code « taille » 512 o dans le champ ID
+static constexpr int BYTES_PER_TRACK = 6268;  // piste DD standard ([D] fdc.c:394, 409-410 ; 6250 d'après [B] p. 1-1 et 1-7 à 8 MHz)
+static constexpr uint8_t SECTOR_SIZE_512 = 2; // code « taille » 512 o dans le champ ID ([B] p. 1-5)
 
 // CRC16 CCITT (poly 0x1021, init 0xFFFF) du WD1772.
+// [B] WD177X-00 p. 1-3 : G(x) = x^16 + x^12 + x^5 + 1, préchargé à un, depuis la marque d'adresse.
 static uint16_t crc16(const uint8_t* buf, int n) {
     uint16_t crc = 0xFFFF;
     for (int i = 0; i < n; ++i) {
@@ -176,7 +213,7 @@ static uint16_t crc16(const uint8_t* buf, int n) {
     return crc;
 }
 
-// Type de commande d'après les bits hauts du registre CR.
+// Type de commande d'après les bits hauts du registre CR ([B] WD177X-00 p. 1-6, Command Summary).
 static uint8_t cmdType(uint8_t cr) {
     if (!(cr & 0x80)) return 1;             // type I  : restore/seek/step
     if (!(cr & 0x40)) return 2;             // type II : read/write sector
@@ -209,7 +246,7 @@ static inline uint64_t lsnOffset(int track, int side, int sector, int spt, int s
 //  les mauvais octets (bombes / retry infini).
 // -----------------------------------------------------------------------------
 
-// Cf. Hatari Floppy_DoubleCheckFormat ([D] floppy.c:765 @ f0736b24) : devine faces et spt
+// Cf. Hatari Floppy_DoubleCheckFormat ([D] floppy.c:766 @ f0736b24) : devine faces et spt
 // depuis la taille de l'image quand le BPB ne colle pas.
 static void doubleCheckFormat(long diskSize, int& sides, int& spt) {
     const int sidesFixed = (diskSize < 500 * 1024) ? 1 : 2;   // >500 Ko → 2 faces
@@ -229,7 +266,7 @@ static void doubleCheckFormat(long diskSize, int& sides, int& spt) {
     spt   = sptFixed;
 }
 
-// Cf. Hatari Floppy_FindDiskDetails ([D] floppy.c:839 @ f0736b24) : lit le BPB et ne lui fait
+// Cf. Hatari Floppy_FindDiskDetails ([D] floppy.c:840 @ f0736b24) : lit le BPB et ne lui fait
 // confiance que s'il est cohérent avec la taille de l'image.
 static void findDiskDetails(const std::vector<uint8_t>& image, int& spt, int& sides) {
     if (image.size() < 0x1C) return;
@@ -826,6 +863,8 @@ void Fdc::eject(int drive) {
 //  Reset matériel — port de Hatari FDC_Reset ([D] fdc.c:1189 @ f0736b24) : registres WD1772,
 //  machine à états, IRQ et DMA/FIFO remis au repos. Les images montées et la
 //  position PHYSIQUE des têtes (headTrack) survivent, comme sur le vrai matériel.
+//  [B] WD177X-00 p. 1-2 : MR réinitialise la puce et le registre d'état, rien de plus précis ;
+//  CR=0, SR=1 et TR/DR gardés à chaud viennent d'Hatari. Tête : mécanique, fiche muette.
 // =============================================================================
 void Fdc::reset(bool cold) {
     // Un reset machine annule aussi le paquet et la phase de données ACSI en
@@ -836,7 +875,7 @@ void Fdc::reset(bool cold) {
     str_ = 0;
     sr_  = 1;
     statusTypeI_ = false;
-    if (cold) {                    // à froid seulement : TR/DR + mot $FF8604 rémanent
+    if (cold) {                    // à froid seulement : TR/DR + mot $FF8604 rémanent ([D] fdc.c:1201-1207 @ f0736b24)
         tr_ = 0;
         dr_ = 0;
         ff8604recent_ = 0;
@@ -854,6 +893,7 @@ void Fdc::reset(bool cold) {
 
     // Rotation : les positions d'index sont perdues (moteur coupé) et le compteur
     // de tours repart de zéro (spin-up complet à la prochaine commande).
+    // [D] fdc.c:1218-1222 @ f0736b24.
     indexCounter_ = 0;
     indexTime_    = 0;
 
@@ -876,10 +916,10 @@ void Fdc::reset(bool cold) {
 //  Sélection lecteur/face (port A du PSG) et géométrie.
 // =============================================================================
 int Fdc::currentSide() const {
-    // Port A du PSG (registre 14), bit0 actif bas : 0 = face 1, 1 = face 0.
+    // Port A du PSG (registre 14), bit0 actif bas : 0 = face 1, 1 = face 0 ([D] fdc.c:1745 @ f0736b24).
     return (psg_.regs_[14] & 0x01) ? 0 : 1;
 }
-// Sélection lecteur : port A du PSG bit1 = A (actif bas), bit2 = B (actif bas).
+// Sélection lecteur : port A du PSG bit1 = A (actif bas), bit2 = B (actif bas) ([D] fdc.c:1750-1755 @ f0736b24).
 // Un lecteur débranché vaut « aucun » : Hatari teste `DriveSelSignal < 0 ||
 // !Enabled` à chaque endroit où le lecteur compte (fdc.c, index, TR00, statut type I).
 int Fdc::selectedDrive() const {
@@ -908,7 +948,7 @@ int Fdc::tracksPerDisk(int drive) const {
     if (dk.image.empty() || dk.spt < 1 || dk.sides < 1) return 0;
     return int((dk.image.size() / 512u) / unsigned(dk.spt) / unsigned(dk.sides));
 }
-// Octets bruts d'une piste .ST : 6268 × facteur de densité déduit du nombre de
+// Octets bruts d'une piste .ST ([D] fdc.c:410 @ f0736b24) : 6268 × facteur de densité déduit du nombre de
 // secteurs/piste (cf. Hatari FDC_GetBytesPerTrack : ≥36 spt → ED ×4, ≥18 → HD ×2).
 int Fdc::bytesPerTrack() const {
     const FloppyDisk& dk = drive_[driveSel_ < 0 ? 0 : driveSel_];
@@ -925,8 +965,11 @@ int Fdc::bytesPerTrack() const {
 
 // =============================================================================
 //  Densité du média (cf. Hatari FDC_ComputeFloppyDensity / FDC_UpdateFloppyDensity).
-//  Le WD1772 reste à 8 MHz : une piste HD porte 2× plus d'octets et le débit MFM
-//  est 2× plus rapide (128 cyc/octet), la rotation (300 tr/min) ne change pas.
+//  Modèle : l'horloge reste comptée à 8 MHz, une piste HD porte 2× plus d'octets et le
+//  débit MFM est 2× plus rapide (128 cyc/octet), la rotation (300 tr/min) ne change pas.
+//  [D] fdc.c:133 @ f0736b24 : sur Mega STE c'est l'horloge FDC qui passe à 16 MHz ; ce facteur
+//  en est l'équivalent, pas le WD1772 « resté à 8 MHz ». [B] WD177X-00 p. 1-1, 1-2 : muette
+//  sur le HD (8 MHz, 250 kbit/s au plus).
 // =============================================================================
 int Fdc::computeFloppyDensity(const FloppyDisk& dk, int track, int side) const {
     int trackSize;
@@ -1033,7 +1076,7 @@ void Fdc::refreshDriveSide() {
 void Fdc::indexInit() {
     // Position initiale « dans le passé » (< 1 tour) déterministe mais variable
     // d'un démarrage à l'autre : reproductible pour le headless byte-exact, comme
-    // Hatari_rand() côté Hatari (FDC_IndexPulse_Init).
+    // Hatari_rand() côté Hatari (FDC_IndexPulse_Init, [D] fdc.c:2077 @ f0736b24).
     const int64_t off = int64_t(rngNext() % uint32_t(cyclesPerRev()));
     int64_t t = nowCyc() - off;
     if (t <= 0) t = 1;
@@ -1064,7 +1107,7 @@ void Fdc::indexIncrease(int64_t ipTime) {
     indexCounter_++;
     indexTime_ = ipTime;
     emitSound(FdcSound::Index);
-    if (interruptCond_ & INT_COND_IP) fdcSetIrq(IRQ_INDEX);  // Force int on Index Pulse
+    if (interruptCond_ & INT_COND_IP) fdcSetIrq(IRQ_INDEX);  // Force int on Index Pulse ([B] WD177X-00 p. 1-16, I2)
 }
 
 int Fdc::indexCurrentPosBytes() const {
@@ -1097,7 +1140,7 @@ int64_t Fdc::nextIndexCycles() const {
 // COMMANDE/TRANSFERT par FDC_FAST_FACTOR (sauf les délais < ce facteur, pour ne pas
 // les annuler). ÉCART ASSUMÉ avec Hatari : les délais cadencés sur la rotation
 // (spin-up, arrêt moteur, attente d'index — delayIndexPaced_) gardent leur durée
-// réelle, alors qu'Hatari divise TOUT ([D] fdc.c:459 @ f0736b24 « Divide ALL delays »). Son
+// réelle, alors qu'Hatari divise TOUT ([D] fdc.c:459 @ f0736b24 « Divide all delays »). Son
 // --fastfdc « can break some programs » (ex. l'écran-titre d'Arkanoid gèle) ; le
 // nôtre reste inoffensif au prix de chargements moins accélérés (ex. Dragon Ninja
 // met ~16 s de plus que Hatari fastfdc à atteindre son titre, 200 ms réels/piste).
@@ -1123,6 +1166,8 @@ int Fdc::applyFastFdc(int fdcCycles) const {
     return fdcCycles;
 }
 
+// [B] WD177X-00 p. 1-7 : le spin-up et l'arrêt du moteur se comptent en impulsions d'index, donc sans
+// disque aucun décompte n'avance. [D] fdc.c:156-159 @ f0736b24 : attente sans fin, relevé d'un tiers.
 // Attente de la prochaine impulsion d'index (spin-up, arrêt moteur). Si un média est
 // présent, on saute directement à l'impulsion (délai cadencé sur la rotation, NON
 // accéléré par le FDC rapide) ; sinon on sonde périodiquement (l'index n'arrivera que
@@ -1134,7 +1179,7 @@ int Fdc::spinWaitDelay() {
 }
 
 // =============================================================================
-//  IRQ / INTRQ (câblée sur GPIP5 + canal 7 du MFP).
+//  IRQ / INTRQ (câblée sur GPIP5 + canal 7 du MFP, [D] fdc.c:2240-2242 @ f0736b24).
 // =============================================================================
 void Fdc::setIntrqLine(bool on) {
     static const bool fdcDebug = getenv("NEOST_FDC_DEBUG") != nullptr;
@@ -1155,6 +1200,8 @@ void Fdc::fdcSetIrq(uint8_t source) {
     if (!was) setIntrqLine(true);
 }
 
+// [B] WD177X-00 p. 1-16 : une interruption immédiate ($D8) n'est effacée ni par une lecture d'état,
+// ni par une écriture de commande, tant qu'un $D0 ne l'a pas permis. [D] fdc.c:2276-2299 @ f0736b24.
 void Fdc::fdcClearIrq() {
     if (!(irqSignal_ & IRQ_FORCED)) {     // pas d'IRQ forcée → on efface
         irqSignal_ = 0;
@@ -1322,7 +1369,8 @@ uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSiz
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return readSectorStx(pSize);
     if (auto* ov = stOverrideHere()) {
         // Le champ ID trouvé sous la tête par nextSectorID — pas le premier de même
-        // numéro : sur une piste à IDs dupliqués, le WD1772 lit celui qui passe.
+        // numéro : sur une piste à IDs dupliqués, le WD1772 lit celui qui passe
+        // ([B] WD177X-00 p. 1-8, 1-10 : comparaison au prochain ID rencontré).
         const auto* s = stOverrideFound(ov);
         if (!s) return STR_RNF;
         for (uint8_t b : s->data) bufferAdd(b);
@@ -1331,7 +1379,7 @@ uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSiz
     }
     FloppyDisk& dk = drive_[driveSel_];
     // Face au-delà de l'image (face 2 d'une image simple face) : les données
-    // n'existent pas → RNF (port de Floppy_ReadSectors, [D] floppy.c:907 @ f0736b24 Side >=
+    // n'existent pas → RNF (port de Floppy_ReadSectors, [D] floppy.c:908 @ f0736b24 Side >=
     // nSides). Sans cette garde, lsnOffset replierait sur la piste suivante.
     // Le lecteur/SR peut changer entre l'identification et le transfert : un
     // secteur absent ne doit pas devenir un offset dans la face/piste suivante
@@ -1357,7 +1405,7 @@ uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size
         auto* s = stOverrideFound(ov);
         if (!s) return STR_RNF;
         for (int i = 0; i < size && i < int(s->data.size()); ++i) s->data[i] = bufferReadBytePos(i);
-        s->deleted = cr_ & 1;                 // bit 0 : marque $F8
+        s->deleted = cr_ & 1;                 // bit 0 : marque $F8 ([B] WD177X-00 p. 1-10, a0)
         return 0;
     }
     FloppyDisk& dk = drive_[driveSel_];
@@ -1386,6 +1434,7 @@ uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size
 
 // Champ ID synthétisé (les .ST n'en ont pas) : 3×A1, FE, TR, SIDE, SR, SIZE, CRC.
 // On ajoute au tampon les 6 octets utiles [TR..CRC2] (cf. FDC_ReadAddress_ST).
+// [B] WD177X-00 p. 1-13 (Read Address : six octets, CRC compris), p. 1-17 (format double densité).
 uint8_t Fdc::readAddressST(uint8_t track, uint8_t sector, uint8_t side) {
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return readAddressStx();
     if (auto* ov = stOverrideHere()) {
@@ -1412,6 +1461,10 @@ uint8_t Fdc::readTrackST(uint8_t track, uint8_t side) {
     if (auto* ov = stOverrideHere()) {
         // Relecture du flux écrit, comme le WD1772 l'a enregistré : $F5 → $A1 (CRC
         // préchargé au premier), $F6 → $C2, $F7 → les deux octets de CRC calculés.
+        // [B] WD177X-00 p. 1-13 (table), p. 1-15 (qui imprime FF pour F7, coquille face à la table).
+        // ⚠ [B] p. 1-13, 1-15 : CHAQUE $F5 initialise le CRC, pas le seul premier d'une suite. Écart
+        // non corrigé, sans effet sur les 3 $F5 exacts qu'exige la p. 1-18. Hors de ce format, ce que
+        // vaut le CRC est [F] : tranché par un format à 1 ou 2 $F5 relu sur un vrai 1772.
         uint16_t crc = 0xFFFF;
         bool prevF5 = false;
         auto upd = [&](uint8_t b) {
@@ -1465,11 +1518,11 @@ uint8_t Fdc::readTrackST(uint8_t track, uint8_t side) {
 // WRITE TRACK : la DMA a rempli le tampon avec l'image MFM brute d'une piste. On la
 // PARCOURT pour extraire les secteurs (IDAM $FE → piste/face/secteur/taille, puis DAM
 // $FB/$F8 → données) et on les écrit dans l'image .ST — c'est l'approche que le TODO
-// de Hatari décrit (fdc.c FDC_WriteTrack_ST, qui renvoie toujours « lost data »).
+// de Hatari décrit ([D] fdc.c:5521-5539 @ f0736b24, FDC_WriteTrack_ST, qui renvoie toujours « lost data »).
 // Une .ST ne sait représenter qu'une géométrie STANDARD. Un format qui ne colle pas à
 // celle de l'image montée (taille ≠ 512 o, secteurs hors 1..spt, IDs étrangers, nombre
 // de secteurs ≠ spt) n'est PAS une erreur pour le WD1772 : LOST DATA ne signale qu'une
-// DRQ non servie. NeoST garde alors la piste en mémoire (stOverride) et la relit
+// DRQ non servie ([B] WD177X-00 p. 1-18, S2 ; p. 1-14, 1-15). NeoST garde alors la piste en mémoire (stOverride) et la relit
 // comme le matériel ; Hatari renvoie LOST DATA pour tout WRITE TRACK .ST (défaut).
 uint8_t Fdc::writeTrackBuffer() {
     if (driveSel_ < 0 || !drive_[driveSel_].present()) return STR_LOST;
@@ -1495,7 +1548,7 @@ uint8_t Fdc::writeTrackBuffer() {
         if (sec < 1 || sec > dk.spt)      return nonStandard();// secteur hors géométrie
         if (sd >= dk.sides || tr >= tracksPerDisk(driveSel_)) return nonStandard();
         // Les IDs n'actionnent ni STEP ni la sélection de face : WRITE TRACK
-        // n'écrit que sous la tête actuelle. Des C/H étrangers ou des numéros
+        // n'écrit que sous la tête actuelle ([B] WD177X-00 p. 1-13). Des C/H étrangers ou des numéros
         // dupliqués exigent une image à flux ; les accepter en ST écraserait
         // une autre piste/face ou masquerait un secteur manquant.
         if (tr != dk.headTrack || sd != side_ || seen[sec]) return nonStandard();
@@ -1521,13 +1574,13 @@ uint8_t Fdc::writeTrackBuffer() {
 }
 
 // Analyse le flux WRITE TRACK comme le relira le WD1772 (IDAM $FE → champ ID, marque
-// $FB/$F8 → données de la taille annoncée), même règle que StxImage::reinterpretSaveTrack.
+// $FB/$F8 → données de la taille annoncée, [B] WD177X-00 p. 1-5, 1-13), même règle que StxImage::reinterpretSaveTrack.
 bool Fdc::stOverrideFromBuffer(FloppyDisk& dk) {
     if (dk.headTrack < 0 || dk.headTrack > 255) return false;
     FloppyDisk::StOverrideTrack t;
     const int n = bufferSize();
     t.raw.assign(buf_.begin(), buf_.begin() + n);
-    // Position sur la piste RELUE : chaque $F7 y devient deux octets de CRC.
+    // Position sur la piste RELUE : chaque $F7 y devient deux octets de CRC ([B] WD177X-00 p. 1-13).
     std::vector<int> pos(n + 1, 0);
     for (int i = 0; i < n; ++i) pos[i + 1] = pos[i] + (t.raw[i] == 0xF7 ? 2 : 1);
     for (int i = 0; i + 5 < n; ) {
@@ -1660,7 +1713,7 @@ void Fdc::writeBack(FloppyDisk& dk, uint64_t off, uint64_t len) {
 //  Champs ID RÉELS, statut FDC par secteur, bits fuzzy, timing variable. La
 //  position angulaire vient de BitPosition (en BITS, 1 bit = 32 cycles FDC).
 // =============================================================================
-static constexpr int MFM_BIT = 32;   // 4 µs/bit × 8 MHz = 32 cycles FDC (FDC_DELAY_CYCLE_MFM_BIT), en DD
+static constexpr int MFM_BIT = 32;   // 4 µs/bit × 8 MHz = 32 cycles FDC (FDC_DELAY_CYCLE_MFM_BIT), en DD ([B] WD177X-00 p. 1-1)
 
 // Latence jusqu'au prochain champ ID + champs ID du secteur trouvé (stxNextSector_).
 // Cf. FDC_NextSectorID_FdcCycles_STX.
@@ -1703,7 +1756,7 @@ int Fdc::nextSectorIDStx(int* pFdcCycles) {
     nextID_TR_  = sec.idTrack;
     nextID_SR_  = sec.idSector;
     nextID_LEN_ = sec.idSize;
-    // RNF + CRC tous deux posés ⇒ champ ID à CRC erroné.
+    // RNF + CRC tous deux posés ⇒ champ ID à CRC erroné ([B] WD177X-00 p. 1-18, S3).
     nextID_CRCOK_ = ((sec.fdcStatus & StxImage::FLAG_RNF) && (sec.fdcStatus & StxImage::FLAG_CRC)) ? 0 : 1;
 
     delay -= 4 * mfmByte;                        // BitPosition pointe après l'IDAM → reculer aux 3×$A1
@@ -1783,9 +1836,10 @@ uint8_t Fdc::writeSectorStx(int size) {
     if (!t || stxNextSector_ < 0 || stxNextSector_ >= t->sectorsCountView()) return STR_RNF;
     StxImage::Sector& sec = t->sectorsView()[stxNextSector_];
     if (sec.fdcStatus & StxImage::FLAG_RNF) return STR_RNF;
-    // CRC seul (sans RNF) = erreur CRC du champ DONNÉES. Le WD1772 ne contrôle que
-    // le CRC du champ ID (MAME wd_fdc.cpp write_sector) puis écrit un champ données
-    // NEUF avec un CRC juste : l'écriture réussit et la relecture est saine. Hatari
+    // CRC seul (sans RNF) = erreur CRC du champ DONNÉES ([B] WD177X-00 p. 1-18, S3). Le WD1772 ne
+    // contrôle que le CRC du champ ID ([B] p. 1-9, 1-10 ; la mention de MAME wd_fdc.cpp write_sector,
+    // sans révision et non relue ici, ne pèse pas) puis écrit un champ données NEUF avec un CRC
+    // juste ([B] p. 1-12, « Write CRC ») : l'écriture réussit et la relecture est saine. Hatari
     // (stx.c FDC_WriteSector_STX) refuse ce cas en renvoyant CRC — contre son propre
     // commentaire (« ID field CRC ») — et sa machine à états, qui ne teste que RNF,
     // annonçait alors un SUCCÈS sans rien écrire : écriture perdue en silence.
@@ -1817,7 +1871,7 @@ uint8_t Fdc::writeSectorStx(int size) {
     const int need = int(sec.sectorSize);
     if (int(save.data.size()) != need) save.data.assign(need, 0);
     for (int i = 0; i < size && i < need; ++i) save.data[i] = bufferReadBytePos(i);
-    // MAME wd_fdc.cpp WRITE_BYTE_DONE : bit0 choisit F8, sinon FB. CR reste
+    // [B] WD177X-00 p. 1-10 : a0=1 marque effacée ($F8, p. 1-13), a0=0 marque normale ($FB). CR reste
     // celui de la commande engagée (remplacements ignorés une fois le DMA parti).
     save.dataMark = (cr_ & 1) ? 0xF8 : 0xFB;
     stxPersist(dk);
@@ -2061,15 +2115,15 @@ uint8_t Fdc::readTrackStx(int track, int side) {
 // =============================================================================
 int Fdc::nextSectorID(int* pFdcCycles) {
     // Densité du média ≠ mode $FF860E (Mega STE) → aucun champ ID lisible : la
-    // commande tourne à vide et finit en RNF après 5 tours (cf. Hatari
-    // FDC_NextSectorID_FdcCycles_ST, retour NO_DRIVE_FLOPPY).
+    // commande tourne à vide et finit en RNF après 5 tours ([B] WD177X-00 p. 1-10 ; cf. Hatari
+    // FDC_NextSectorID_FdcCycles_ST, retour NO_DRIVE_FLOPPY, [D] fdc.c:5190-5191 @ f0736b24).
     if (!canHandleDensity()) return RET_NO_DRIVE;
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return nextSectorIDStx(pFdcCycles);
     const int curPos = indexCurrentPosBytes();
     if (curPos < 0) return RET_NO_DRIVE;                         // pas de lecteur/disque
     if (auto* ov = stOverrideHere()) {
         // Prochain champ ID de la piste reformatée, dans l'ordre angulaire du flux.
-        if (ov->secs.empty()) return RET_NO_DRIVE;              // piste sans ID : RNF après 5 tours
+        if (ov->secs.empty()) return RET_NO_DRIVE;              // piste sans ID : RNF après 5 tours ([B] WD177X-00 p. 1-10)
         const FloppyDisk::StOverrideSector* next = nullptr;
         for (const auto& s : ov->secs) if (s.idPos + 1 > curPos) { next = &s; break; }
         int nbBytes;
@@ -2083,12 +2137,16 @@ int Fdc::nextSectorID(int* pFdcCycles) {
     }
     FloppyDisk& dk = drive_[driveSel_];
     // PAS de test des faces de l'IMAGE ici : Hatari teste NumberOfHeads du LECTEUR
-    // ([D] fdc.c:5193 @ f0736b24, = 2 par défaut — les lecteurs NeoST sont double face). Les champs
+    // ([D] fdc.c:5184, 1165 @ f0736b24, = 2 par défaut — les lecteurs NeoST sont double face). Les champs
     // ID sont synthétisés depuis le BPB quelle que soit la face (FDC_GetSectorsPerTrack
     // ignore Side, [D] fdc.c:1795 @ f0736b24) ; c'est la lecture des DONNÉES qui échoue sur la face
-    // absente ([D] floppy.c:907 @ f0736b24 Side >= nSides → RNF en < 1 tour, cf. readSectorST). Les
+    // absente ([D] floppy.c:908 @ f0736b24 Side >= nSides → RNF en < 1 tour, cf. readSectorST). Les
     // jeux qui sondent la face 2 (Drakkhen, Bolo) obtiennent le RNF rapide, pas le
     // timeout 5 tours de l'ancien RET_NO_DRIVE (~1 s par sonde).
+    // [B] WD177X-00 p. 1-6 : le 1772 n'a pas de comparaison de face (C/S : 1773 seul).
+    // ⚠ [B] p. 1-10 : une face sans aucun ID mène au RNF après 5 impulsions d'index, pas avant un
+    // tour. Écart non corrigé, hérité d'Hatari : l'image ne dit pas si la face 2 du disque d'origine
+    // était vierge ou formatée, et ce RNF arrive ~0,8 s trop tôt si elle était vierge.
     if (dk.headTrack >= tracksPerDisk(driveSel_)) return RET_NO_DRIVE;  // piste inexistante
 
     const int maxSector = dk.spt;
@@ -2119,6 +2177,10 @@ int Fdc::nextSectorID(int* pFdcCycles) {
 // =============================================================================
 bool Fdc::setMotorOn(uint8_t cr) {
     bool spinUp;
+    // [B] WD177X-00 p. 1-7, 1-8 : h=0 et MO bas → MO monte et 6 tours d'attente ; MO haut → aucune
+    // attente, quel que soit h. La p. 1-14 (Write Track) monte MO avant de tester h ; les organigrammes
+    // p. 1-7 et 1-9 ne le montent que dans la branche spin-up, muets donc pour h=1 moteur arrêté.
+    // [D] fdc.c:4052-4070 @ f0736b24 : le moteur démarre dans tous les cas, comme ici.
     if (!(cr & CMD_BIT_SPINUP) && !(str_ & STR_MOTOR)) {        // spin-up demandé, moteur arrêté
         updateStr(STR_SPINUP, 0);                              // efface le bit spin-up
         indexCounter_ = 0;                                     // compteur de la séquence de spin-up
@@ -2130,13 +2192,13 @@ bool Fdc::setMotorOn(uint8_t cr) {
     updateStr(0, STR_MOTOR);                                    // démarre le moteur
     if (wasOff) emitSound(FdcSound::MotorOn);
     if (driveSel_ >= 0 && drive_[driveSel_].present()) {
-        if (indexTime_ == 0) indexInit();                      // position d'index aléatoire au démarrage
+        if (indexTime_ == 0) indexInit();                      // position d'index aléatoire au démarrage ([D] fdc.c:4083 @ f0736b24)
     }
     return spinUp;
 }
 
 int Fdc::cmdComplete(bool doInt) {
-    updateStr(STR_BUSY, 0);                                     // BUSY tombe
+    updateStr(STR_BUSY, 0);                                     // BUSY tombe ([B] WD177X-00 p. 1-5)
     if (doInt) fdcSetIrq(IRQ_COMPLETE);
     command_ = CMD_MOTOR_STOP;                                  // fausse commande : arrêt du moteur
     commandState_ = RUN_MOTOR_STOP;
@@ -2144,6 +2206,8 @@ int Fdc::cmdComplete(bool doInt) {
 }
 
 // Vérif piste type I : pour .ST la piste est toujours correcte, sauf face absente.
+// [B] WD177X-00 p. 1-8 : TR comparé à la piste de l'ID, CRC vérifié. Le test de face vient
+// d'Hatari ([D] fdc.c:2499-2558 @ f0736b24) ; sur 1772 seule l'absence d'ID le justifierait (p. 1-6).
 bool Fdc::verifyTrack() {
     if (driveSel_ < 0 || !drive_[driveSel_].present()) return false;
     if (nextID_TR_ != tr_ || nextID_CRCOK_ == 0) return false;
@@ -2159,7 +2223,7 @@ int Fdc::updateMotorStop() {
         commandState_ = RUN_MOTOR_STOP_WAIT;
         [[fallthrough]];
      case RUN_MOTOR_STOP_WAIT:
-        if (indexCounter_ < IP_MOTOR_OFF) {                    // attend 9 tours d'inactivité
+        if (indexCounter_ < IP_MOTOR_OFF) {                    // attend 9 tours d'inactivité ([B] WD177X-00 p. 1-7)
             fdcCycles = spinWaitDelay();
             break;
         }
@@ -2167,7 +2231,7 @@ int Fdc::updateMotorStop() {
      case RUN_MOTOR_STOP_COMPLETE:
         indexCounter_ = 0;
         indexTime_ = 0;                                        // arrête le comptage d'index
-        updateStr(STR_MOTOR, 0);                               // coupe le moteur (garde le bit spin-up)
+        updateStr(STR_MOTOR, 0);                               // coupe le moteur (garde le bit spin-up, [D] fdc.c:2604 @ f0736b24)
         emitSound(FdcSound::MotorOff);
         command_ = CMD_NULL;                                   // dernier état : FDC inactif
         fdcCycles = 0;
@@ -2192,10 +2256,22 @@ int Fdc::updateRestore() {
      case RUN_RE_SEEK0_MOTORON:
         updateStr(0, STR_SPINUP);
         replaceCommandPossible_ = false;
+        // [B] WD177X-00 p. 1-7 (organigramme, branche Restore) : $FF → TR, 0 → DR ; p. 1-8 : 255 pas au plus.
+        // [D] fdc.c:2658 @ f0736b24 : TR à 255 une fois le spin-up passé, quand le remplacement n'est plus possible.
+        // ⚠ [B] p. 1-7 : 0 → DR n'est pas fait ici. Écart non corrigé, sans effet sur le mouvement : seul
+        // un programme qui relit DR après un Restore le voit. (La flèche SEEK du même organigramme
+        // aboutit aussi à « 0 TO DR » : coquille, la p. 1-8 dit que DR porte la piste visée.)
+        // ⚠ [B] p. 1-7 : DSR (0) < TR ($FF) → RESET DIRECTION, donc un Restore oriente vers la piste 0.
+        // Ici stepDir_ n'est pas touché, ni chez Hatari ([D] fdc.c:1209, 2828-2830, 4185, 4209).
+        // Écart non corrigé : un STEP ($20-$3F) après un Restore repart dans le sens d'avant.
         tr_ = 0xff;                                            // 255 tentatives max vers la piste 0
         commandState_ = RUN_RE_SEEK0_LOOP;
         [[fallthrough]];
      case RUN_RE_SEEK0_LOOP:
+        // ⚠ [B] WD177X-00 p. 1-8 : après 255 pas sans TR00, Seek Error n'est posé que « providing the V
+        // flag is set » ; l'organigramme p. 1-7 passe alors à la vérification (D, p. 1-8), et V=0 finit
+        // sans erreur. Ici RNF est posé quel que soit V, verify sauté : écart non corrigé.
+        // [D] fdc.c:2662-2667 @ f0736b24 : Hatari fait ainsi. Effet : Restore avec V=0 sur lecteur absent.
         if (tr_ == 0) {                                        // piste 0 non atteinte après 255 essais
             updateStr(0, STR_RNF);
             updateStr(STR_TR00, 0);
@@ -2203,7 +2279,7 @@ int Fdc::updateRestore() {
             break;
         }
         // La tête bouge dès qu'un lecteur ACTIVÉ est sélectionné — disque monté ou
-        // pas (Hatari [D] fdc.c:2616-2625 @ f0736b24 teste `Enabled`, jamais l'insertion ; les
+        // pas (Hatari [D] fdc.c:2670-2678 @ f0736b24 teste `Enabled`, jamais l'insertion ; les
         // lecteurs NeoST sont toujours activés). RESTORE lecteur vide atteint donc
         // la piste 0 avec TR00=1 (l'ancien gate present() décomptait 255 essais
         // sans bouger → RNF + TR00=0, ~1,5 s de délai fantôme).
@@ -2215,7 +2291,7 @@ int Fdc::updateRestore() {
                 updateFloppyDensity(driveSel_);               // densité de la nouvelle piste (STX)
             }
             fdcCycles = STEP_RATE_MS[cr_ & 3] * 1000 * 8;
-        } else {                                              // tête sur la piste 0
+        } else {                                              // tête sur la piste 0 ([B] WD177X-00 p. 1-8 : TR ← 0)
             updateStr(0, STR_TR00);
             tr_ = 0;
             commandState_ = RUN_RE_VERIFY;
@@ -2226,11 +2302,12 @@ int Fdc::updateRestore() {
         if (cr_ & CMD_BIT_VERIFY) { commandState_ = RUN_RE_VERIFY_HEAD; fdcCycles = int(HEAD_LOAD); }
         else                      { commandState_ = RUN_RE_COMPLETE;   fdcCycles = CMD_COMPLETE; }
         break;
+     // [B] WD177X-00 p. 1-6, 1-8 : verify après le settling ; bon ID → RAZ de CRC, puis INTRQ.
      case RUN_RE_VERIFY_HEAD:
         indexCounter_ = 0;
         [[fallthrough]];
      case RUN_RE_VERIFY_NEXT:
-        if (indexCounter_ >= IP_ADDRESS_ID) {                 // pas de bon champ ID après 5 tours
+        if (indexCounter_ >= IP_ADDRESS_ID) {                 // pas de bon champ ID après 5 tours ([B] WD177X-00 p. 1-7 ; cf. IP_ADDRESS_ID)
             updateStr(0, STR_RNF);
             commandState_ = RUN_RE_COMPLETE;
             fdcCycles = CMD_COMPLETE;
@@ -2244,6 +2321,9 @@ int Fdc::updateRestore() {
             commandState_ = RUN_RE_VERIFY_NEXT;
         }
         break;
+     // ⚠ [B] WD177X-00 p. 1-6/7, p. 1-8 : piste juste mais CRC d'ID faux → le bit CRC est POSÉ et l'ID suivant
+     // lu. verifyTrack rejette sans poser CRC, dans RE, SE et ST : écart non corrigé, comme Hatari
+     // ([D] fdc.c:2499-2558 @ f0736b24). Touche les seules images STX. Voir aussi la lecture du statut.
      case RUN_RE_VERIFY_CHECK:
         if (verifyTrack()) { updateStr(STR_RNF, 0); commandState_ = RUN_RE_COMPLETE; fdcCycles = CMD_COMPLETE; }
         else               { commandState_ = RUN_RE_VERIFY_NEXT; fdcCycles = CMD_IMMEDIATE; }
@@ -2268,6 +2348,8 @@ int Fdc::updateSeek() {
      case RUN_SE_TOTRACK_MOTORON:
         updateStr(0, STR_SPINUP);
         replaceCommandPossible_ = false;
+        // [B] WD177X-00 p. 1-7, p. 1-8 : TR comparé à DR, sens selon DSR > TR, un pas par tour de boucle
+        // puis délai r1 r0 ; à l'égalité on passe au verify.
         if (tr_ == dr_) { commandState_ = RUN_SE_VERIFY; fdcCycles = CMD_IMMEDIATE; }
         else {
             stepDir_ = (dr_ < tr_) ? -1 : 1;
@@ -2275,12 +2357,12 @@ int Fdc::updateSeek() {
             fdcCycles = STEP_RATE_MS[cr_ & 3] * 1000 * 8;
             updateStr(STR_TR00, 0);
             // Tête déplacée dès qu'un lecteur activé est sélectionné, disque ou
-            // pas (Hatari [D] fdc.c:2785-2808 @ f0736b24 — cf. commentaire RESTORE).
+            // pas (Hatari [D] fdc.c:2838-2862 @ f0736b24 — cf. commentaire RESTORE).
             if (driveSel_ >= 0) {
                 int& ht = drive_[driveSel_].headTrack;
-                if (ht == MAX_TRACK && stepDir_ == 1) {       // au-delà de la piste max
+                if (ht == MAX_TRACK && stepDir_ == 1) {       // au-delà de la piste max ([D] fdc.c:2841-2845 @ f0736b24)
                     commandState_ = RUN_SE_VERIFY; fdcCycles = CMD_IMMEDIATE;
-                } else if (ht == 0 && stepDir_ == -1) {       // butée piste 0
+                } else if (ht == 0 && stepDir_ == -1) {       // butée piste 0 ([B] WD177X-00 p. 1-7 : 0 → TR, sans pas ni délai)
                     tr_ = 0; commandState_ = RUN_SE_VERIFY; fdcCycles = CMD_IMMEDIATE;
                 } else {
                     ht += stepDir_;                           // déplace la tête physique
@@ -2336,11 +2418,18 @@ int Fdc::updateStep() {
      case RUN_ST_ONCE_MOTORON:
         updateStr(0, STR_SPINUP);
         replaceCommandPossible_ = false;
+        // [B] WD177X-00 p. 1-6 (u), p. 1-8 : TR mis à jour si u=1, sens du dernier pas ; p. 1-7 : TR ajusté
+        // avant le test de la piste 0.
         if (cr_ & CMD_BIT_UPDATETRACK) tr_ = uint8_t(tr_ + stepDir_);
         fdcCycles = STEP_RATE_MS[cr_ & 3] * 1000 * 8;
         updateStr(STR_TR00, 0);
         // Tête déplacée dès qu'un lecteur activé est sélectionné, disque ou
-        // pas (Hatari [D] fdc.c:2950-2966 @ f0736b24 — cf. commentaire RESTORE).
+        // pas (Hatari [D] fdc.c:3004-3021 @ f0736b24 — cf. commentaire RESTORE).
+        // [D] fdc.c:3006-3007 : butée de piste max, sans délai (fiche muette, c'est le lecteur).
+        // ⚠ [B] WD177X-00 p. 1-7 : tête en piste 0 et sens sortant → 0 → TR, quel que soit u, sans pas ni
+        // délai. Ici pas de pas ni de délai, mais TR garde sa valeur, voire passe à $FF si u=1 : écart non
+        // corrigé, comme Hatari ([D] fdc.c:2998, 3009-3010). Effet : TR relu faux, et un verify ou
+        // une lecture type II qui suit compare TR à la piste 0 et finit en RNF.
         if (driveSel_ >= 0) {
             int& ht = drive_[driveSel_].headTrack;
             if (ht == MAX_TRACK && stepDir_ == 1)       fdcCycles = CMD_IMMEDIATE;
@@ -2396,6 +2485,8 @@ int Fdc::updateReadSectors() {
      case RUN_RS_SPINUP:
         if (indexCounter_ < IP_SPIN_UP) { fdcCycles = spinWaitDelay(); break; }
         [[fallthrough]];
+     // [B] WD177X-00 p. 1-6, p. 1-8, p. 1-9 : E=1, délai avant la recherche d'ID (15 ms sur 1772). Vaut pour
+     // RS, WS, RA, RT, WT.
      case RUN_RS_HEADLOAD:
         if (cr_ & CMD_BIT_HEADLOAD) { commandState_ = RUN_RS_MOTORON; fdcCycles = int(HEAD_LOAD); break; }
         [[fallthrough]];
@@ -2406,6 +2497,8 @@ int Fdc::updateReadSectors() {
         commandState_ = RUN_RS_NEXT;
         fdcCycles = CMD_IMMEDIATE;
         break;
+     // [B] WD177X-00 p. 1-10 : RNF après 5 impulsions d'index ; cf. IP_ADDRESS_ID.
+     // [B] p. 1-8, 1-10 et [D] fdc.c:156-159 @ f0736b24 : sans index, pas de RNF, attente sans fin.
      case RUN_RS_NEXT:
         if (indexCounter_ >= IP_ADDRESS_ID) { commandState_ = RUN_RS_RNF; fdcCycles = CMD_IMMEDIATE; break; }
         {
@@ -2415,11 +2508,16 @@ int Fdc::updateReadSectors() {
             if (res == RET_NO_DRIVE) fdcCycles = WAIT_NO_DRIVE;
         }
         break;
+     // [B] WD177X-00 p. 1-10 : TR, SR, puis CRC de l'ID. Pas de comparaison de face sur 1772 (p. 1-6).
+     // ⚠ [B] p. 1-10, p. 1-18 (S3) : TR et SR justes mais CRC d'ID faux → le bit CRC est posé, et s'il n'y
+     // a pas de bon ID le statut final vaut RNF+CRC. Ici, RNF seul : écart non corrigé, comme Hatari
+     // ([D] fdc.c:3249-3258 @ f0736b24). Idem WS_CHECK. Touche les seules images STX : une protection
+     // qui teste le bit 3 voit 0 au lieu de 1.
      case RUN_RS_CHECK:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
         if (nextID_TR_ == tr_ && nextID_SR_ == sr_ && nextID_CRCOK_) {
             commandState_ = RUN_RS_TRANSFER_START;
-            fdcCycles = transferDelay(GAP3a + GAP3b + 3 + 1);  // jusqu'aux données
+            fdcCycles = transferDelay(GAP3a + GAP3b + 3 + 1);  // jusqu'aux données ([B] WD177X-00 p. 1-9 : marque sous 43 octets en MFM)
         } else {
             commandState_ = RUN_RS_NEXT; fdcCycles = CMD_IMMEDIATE;
         }
@@ -2436,6 +2534,8 @@ int Fdc::updateReadSectors() {
             else {
                 // Type d'enregistrement (« deleted data ») depuis le statut du secteur
                 // (toujours 0 pour .ST, possiblement posé pour STX).
+                // [B] WD177X-00 p. 1-11 : posé à la marque, avant le 1er octet, comme ici ; la p. 1-9
+                // écrit « at the end of the Read operation ». Cf. en-tête.
                 if (statusTemp_ & STR_RECTYPE) updateStr(0, STR_RECTYPE);
                 else                            updateStr(STR_RECTYPE, 0);
                 commandState_ = RUN_RS_TRANSFER_LOOP;
@@ -2443,6 +2543,8 @@ int Fdc::updateReadSectors() {
             }
         }
         break;
+     // [D] fdc.c:145-152 @ f0736b24 : le DMA sert toujours DRQ, donc LOST DATA ne monte jamais sur ST.
+     // [B] WD177X-00 p. 1-11 décrit le bit sans parler du DMA : fiche muette sur ce câblage.
      case RUN_RS_TRANSFER_LOOP:
         fifoPush(bufferReadByte());                           // 1 octet → FIFO DMA
         if (bufPos_ < bufferSize()) fdcCycles = int(bufferReadTiming());
@@ -2450,12 +2552,13 @@ int Fdc::updateReadSectors() {
         break;
      case RUN_RS_CRC:
         // CRC toujours bon pour .ST ; pour STX, une ERREUR CRC volontaire (protection)
-        // est remontée dans le statut et termine la commande (cf. Hatari READSECTORS_CRC).
+        // est remontée dans le statut et termine la commande, même en multi-secteurs
+        // ([B] WD177X-00 p. 1-9, 1-11 ; cf. Hatari READSECTORS_CRC, [D] fdc.c:3313-3319 @ f0736b24).
         if (statusTemp_ & STR_CRC) { updateStr(0, STR_CRC); fdcCycles = cmdComplete(true); }
         else                       { commandState_ = RUN_RS_MULTI; fdcCycles = CMD_IMMEDIATE; }
         break;
      case RUN_RS_MULTI:
-        if (cr_ & CMD_BIT_MULTI) {                            // multi-secteurs : secteur suivant
+        if (cr_ & CMD_BIT_MULTI) {                            // multi-secteurs : secteur suivant ([B] WD177X-00 p. 1-9, 1-11)
             sr_++; indexCounter_ = 0;
             commandState_ = RUN_RS_NEXT; fdcCycles = CMD_IMMEDIATE;
         } else {
@@ -2485,10 +2588,13 @@ int Fdc::updateWriteSectors() {
         [[fallthrough]];
      case RUN_WS_MOTORON:
         // Protection en écriture testée APRÈS la montée en régime (6 index si h=0) et
-        // le délai E de 15 ms, avant la recherche d'ID : organigramme type II du
-        // WD177x et MAME wd_fdc.cpp (SETTLE_DONE → wpt_r). Hatari la teste dès le
-        // premier événement, avant le moteur : l'erreur tombait sans démarrage.
-        // Re-testée à chaque secteur d'un multi-secteurs (retour par MOTORON).
+        // le délai E de 15 ms, avant la recherche d'ID : [B] WD177X-00 p. 1-9, organigramme
+        // type II (la p. 1-2 dit WPRT échantillonné à la réception, l'organigramme est plus
+        // précis ; la mention de MAME wd_fdc.cpp, sans révision et non relue ici, ne pèse pas).
+        // Hatari la teste dès le premier événement, avant le moteur ([D] fdc.c:3381-3382
+        // @ f0736b24) : l'erreur tombait sans démarrage.
+        // Re-testée à chaque secteur d'un multi-secteurs (retour par MOTORON ; [B] p. 1-11,
+        // connecteur 4 de la p. 1-9).
         if (driveSel_ >= 0 && drive_[driveSel_].present() && drive_[driveSel_].writeProtect) {
             updateStr(0, STR_WPRT);
             fdcCycles = cmdComplete(true);
@@ -2519,6 +2625,12 @@ int Fdc::updateWriteSectors() {
             commandState_ = RUN_WS_NEXT; fdcCycles = CMD_IMMEDIATE;
         }
         break;
+     // [B] WD177X-00 p. 1-9, 1-10, 1-12 : après le CRC de l'ID, 22 octets, 12 zéros, puis la marque : le
+     // délai de RUN_WS_CHECK couvre ces 38 octets. p. 1-5 : taille d'après le champ longueur.
+     // ⚠ [B] p. 1-10, 1-12 : DRQ non servi à temps → Lost Data, fin de commande avant écriture. Ici jamais : écart non corrigé.
+     // Fiche muette sur le DMA du ST : [D] fdc.c:145-149, 5316 @ f0736b24 le dit toujours servi, des
+     // zéros partant sur le disque si le compteur DMA vaut 0.
+     // [F] Tranché par un Write Sector à compteur DMA nul sur un vrai ST, statut relu.
      case RUN_WS_TRANSFER_START:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
         bufferReset();
@@ -2534,6 +2646,9 @@ int Fdc::updateWriteSectors() {
             commandState_ = RUN_WS_CRC; fdcCycles = transferDelay(2);
         }
         break;
+     // ⚠ [B] WD177X-00 p. 1-12, 1-13 : 2 octets de CRC, 1 octet $FF, puis INTRQ 24 µs (MFM) après le dernier
+     // CRC. Ici la fin arrive après les 2 octets de CRC et CMD_COMPLETE (1 µs), soit ~23 µs trop
+     // tôt ([D] fdc.c:3549, 433 @ f0736b24, idem). Écart non corrigé, visible des seuls chronométrages au cycle.
      case RUN_WS_CRC:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }  // pas de lecteur → on attend (même état)
         {
@@ -2601,7 +2716,7 @@ int Fdc::updateReadAddress() {
         if ((statusTemp_ & STR_RNF) || bufferSize() == 0) {
             commandState_ = RUN_RA_RNF; fdcCycles = CMD_IMMEDIATE; break;
         }
-        sr_ = bufferReadBytePos(0);                           // 1er octet du champ ID → registre secteur
+        sr_ = bufferReadBytePos(0);                           // 1er octet du champ ID → registre secteur ([B] WD177X-00 p. 1-13)
         commandState_ = RUN_RA_TRANSFER_LOOP;
         fdcCycles = int(bufferReadTiming());
         break;
@@ -2609,9 +2724,10 @@ int Fdc::updateReadAddress() {
         fifoPush(bufferReadByte());
         if (bufPos_ < bufferSize()) fdcCycles = int(bufferReadTiming());
         else {
-            // WD1772 / MAME READ_ID_BLOCK_TO_DMA_BYTE : les six octets restent
-            // transférés malgré un CRC ID invalide. Hatari collecte ce résultat
-            // dans Status_Temp mais omet de le rendre visible dans cette commande.
+            // [B] WD177X-00 p. 1-13 : les six octets restent transférés malgré un CRC ID
+            // invalide, et le bit CRC est posé (la mention de MAME wd_fdc.cpp, sans révision et non
+            // relue ici, ne pèse pas). Hatari collecte ce résultat dans Status_Temp mais omet de
+            // le rendre visible dans cette commande ([D] fdc.c:3724-3733, 3738-3750 @ f0736b24).
             if (statusTemp_ & STR_CRC) updateStr(0, STR_CRC);
             commandState_ = RUN_RA_COMPLETE;
             fdcCycles = CMD_COMPLETE;
@@ -2641,7 +2757,7 @@ int Fdc::updateReadTrack() {
         [[fallthrough]];
      case RUN_RT_MOTORON:
         {
-            const int64_t ni = nextIndexCycles();             // attend la prochaine impulsion d'index
+            const int64_t ni = nextIndexCycles();             // attend la prochaine impulsion d'index ([B] WD177X-00 p. 1-13)
             if (ni < 0) { fdcCycles = WAIT_NO_DRIVE; }
             else {
                 if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
@@ -2652,7 +2768,7 @@ int Fdc::updateReadTrack() {
      case RUN_RT_INDEX:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
         bufferReset();
-        // Face inexistante OU densité non lisible ($FF860E, Mega STE) → bruit.
+        // Face inexistante OU densité non lisible ($FF860E, Mega STE) → bruit ([D] fdc.c:3855-3863 @ f0736b24).
         if ((side_ == 1 && drive_[driveSel_].sides != 2) || !canHandleDensity()) {
             for (int i = 0; i < bytesPerTrack(); ++i) bufferAdd(uint8_t(rngNext()));
         } else {
@@ -2664,6 +2780,9 @@ int Fdc::updateReadTrack() {
         commandState_ = RUN_RT_TRANSFER_LOOP;
         fdcCycles = int(bufferReadTiming());
         break;
+     // [D] fdc.c:150-152 @ f0736b24 : relevé d'un tiers sur STF, un Read Track réussi POSE Lost Data, « maybe
+     // it depends on the size of the track ». Ni Hatari (fdc.c:3880-3895) ni NeoST ne le posent.
+     // [B] WD177X-00 p. 1-13, 1-19 : bit prévu, sans ce cas. [F] Tranché par un Read Track sur un vrai ST.
      case RUN_RT_TRANSFER_LOOP:
         fifoPush(bufferReadByte());
         if (bufPos_ < bufferSize()) fdcCycles = int(bufferReadTiming());
@@ -2691,8 +2810,13 @@ int Fdc::updateWriteTrack() {
         [[fallthrough]];
      case RUN_WT_MOTORON:
         // Protection en écriture : après le délai E, AVANT l'attente de l'index
-        // (organigramme type III du WD177x, MAME SETTLE_DONE). Hatari la teste
-        // après l'index : l'erreur arrivait jusqu'à un tour trop tard.
+        // ([B] WD177X-00 p. 1-14, organigramme type III ; la mention de MAME, sans révision et non
+        // relue ici, ne pèse pas). Hatari la teste après l'index ([D] fdc.c:3977 @ f0736b24) :
+        // l'erreur arrivait jusqu'à un tour trop tard.
+        // ⚠ [B] p. 1-13, 1-14 : ensuite DRQ monte, 3 octets d'attente, et sans service la commande finit
+        // en Lost Data, AVANT d'attendre l'index. Ici rien de tout cela : écart non corrigé. Sur ST,
+        // [D] fdc.c:145-149, 5515 @ f0736b24 dit DRQ toujours servi ; seule la date du départ change, d'au
+        // plus un tour si l'index tombe dans ces 3 octets. Compteur DMA nul : [F], cf. WS.
         if (driveSel_ >= 0 && drive_[driveSel_].present() && drive_[driveSel_].writeProtect) {
             updateStr(0, STR_WPRT);
             fdcCycles = cmdComplete(true);
@@ -2707,7 +2831,7 @@ int Fdc::updateWriteTrack() {
         break;
      case RUN_WT_INDEX:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
-        if (!canHandleDensity()) {            // densité ≠ mode $FF860E (Mega STE)
+        if (!canHandleDensity()) {            // densité ≠ mode $FF860E (Mega STE) ; [D] fdc.c:3966-3974 @ f0736b24
             updateStr(0, STR_LOST);
             fdcCycles = cmdComplete(true);
             break;
@@ -2721,6 +2845,11 @@ int Fdc::updateWriteTrack() {
         commandState_ = RUN_WT_TRANSFER_LOOP;
         fdcCycles = CMD_IMMEDIATE;
         break;
+     // [B] WD177X-00 p. 1-13, 1-15 : d'un index au suivant, une DRQ par octet chargé. Mais $F7 écrit DEUX
+     // octets de CRC pour une seule DRQ.
+     // ⚠ [B] p. 1-15 : ici chaque $F7 ne compte que pour un octet, et on tire bytesPerTrack() octets. Écart non
+     // corrigé, comme Hatari ([D] fdc.c:3996-4005 @ f0736b24) : sur un format 9 secteurs (18 $F7), l'adresse
+     // DMA finale dépasse d'environ 18 octets, au bloc FIFO de 16 près, ce que donnerait la fiche.
      case RUN_WT_TRANSFER_LOOP:
         if (dmaBytesToTransfer_-- > 0) {
             bufferAdd(fifoPull());
@@ -2731,7 +2860,9 @@ int Fdc::updateWriteTrack() {
         break;
      case RUN_WT_COMPLETE:
         // Extrait les secteurs du flux écrit ; un format non standard (géométrie
-        // différente de l'image) est REJETÉ avec LOST_DATA, comme Hatari.
+        // différente de l'image) reste en mémoire (stOverride) et ne pose rien, à la
+        // différence d'Hatari qui pose LOST_DATA partout ([D] fdc.c:5521-5539 @ f0736b24).
+        // LOST_DATA ne sort ici que d'un garde-fou de NeoST, pas du WD1772 ([B] p. 1-18, S2).
         if (writeTrackBuffer() & STR_LOST) updateStr(0, STR_LOST);
         fdcCycles = cmdComplete(true);
         break;
@@ -2754,6 +2885,11 @@ void Fdc::executeCommand(uint8_t cmd) {
             driveSel_ >= 0 ? drive_[driveSel_].headTrack : -1, dmaSectorCount_, (str_ & STR_MOTOR) ? 1 : 0);
 
     // Nouvelle commande : on efface l'IRQ du FDC (sauf « force interrupt immediate »).
+    // [B] WD177X-00 p. 1-5, p. 1-16 ; [D] fdc.c:4538-4548 @ f0736b24.
+    // ⚠ [B] p. 1-16 : « The Hex D0 is the only command » qui rend effaçable l'interruption de $D8. Ici
+    // N'IMPORTE QUELLE commande remet interruptCond_ à 0, et la lecture d'état suivante efface INTRQ :
+    // écart non corrigé, comme Hatari ([D] fdc.c:4550-4555 @ f0736b24, « not just when the new command is
+    // D0 », sans source). Effet : après $D8 puis une commande autre que $D0, INTRQ retombe plus tôt.
     if ((irqSignal_ & IRQ_FORCED) && !(interruptCond_ & INT_COND_IMMEDIATE))
         irqSignal_ &= ~IRQ_FORCED;
     if (type != 4) fdcClearIrq();
@@ -2761,6 +2897,8 @@ void Fdc::executeCommand(uint8_t cmd) {
 
     int fdcCycles = 0;
     switch (type) {
+     // [B] WD177X-00 p. 1-6 (codes et sens), p. 1-7 (organigramme : BUSY ; RAZ CRC, Seek Error, DRQ, INTRQ).
+     // [D] fdc.c:427-428 @ f0736b24 pour PREPARE_TYPE_I.
      case 1: {                                                // RESTORE / SEEK / STEP[-IN/-OUT]
         commandType_ = 1; statusTypeI_ = true;
         switch (cr_ & 0xf0) {
@@ -2775,6 +2913,10 @@ void Fdc::executeCommand(uint8_t cmd) {
         fdcCycles = PREPARE_TYPE_I;
         break;
      }
+     // [B] WD177X-00 p. 1-6, p. 1-9 (BUSY ; RAZ DRQ, Lost Data, RNF, bits 5 et 6, INTRQ) ; CRC : p. 1-16.
+     // ⚠ [B] p. 1-9 : le bit 6 est aussi remis à zéro en Write Sector. Ici il reste jusqu'à RUN_WS_MOTORON :
+     // écart non corrigé, comme Hatari ([D] fdc.c:4268-4269 @ f0736b24). Visible d'un seul
+     // sondage du statut pendant le spin-up ou le délai E, après un WPRT resté levé.
      case 2: {                                                // READ / WRITE SECTOR
         commandType_ = 2; statusTypeI_ = false;
         if ((cr_ & 0xf0) <= 0x90) {                           // 0x80/0x90 : read sector(s)
@@ -2787,6 +2929,7 @@ void Fdc::executeCommand(uint8_t cmd) {
         fdcCycles = PREPARE_TYPE_II;
         break;
      }
+     // [B] WD177X-00 p. 1-6, p. 1-14 (Write Track), p. 1-16, p. 1-19 (bit 6 nul en lecture).
      case 3: {                                                // READ ADDRESS / READ TRACK / WRITE TRACK
         commandType_ = 3; statusTypeI_ = false;
         switch (cr_ & 0xf0) {
@@ -2798,21 +2941,33 @@ void Fdc::executeCommand(uint8_t cmd) {
         fdcCycles = PREPARE_TYPE_III;
         break;
      }
+     // [B] WD177X-00 p. 1-16 : commande en cours → BUSY tombe, le reste de l'état ne bouge pas.
+     // ⚠ [B] p. 1-16 : $Dx moins de 16 µs (MFM) avant une nouvelle commande est annulé ; arrêt à la fin
+     // d'une micro-instruction. Rien de cela ici, ni chez Hatari : écart non corrigé, visible des seuls
+     // chargeurs enchaînant $D0 et commande en quelques instructions.
      default: {                                               // FORCE INTERRUPT (type IV)
         commandType_ = 4;
+        // [B] WD177X-00 p. 1-16 : au repos, l'état reflète un type I. Moteur ON et spin-up à 0 : fiche
+        // muette (p. 1-7 exclut seulement Force Interrupt du flag h) ; [D] fdc.c:4381-4382 @ f0736b24,
+        // « verified on STF », relevé d'un tiers.
+        // ⚠ [B] p. 1-16 : au repos, « the rest of the status bits are updated or cleared ». Ici RNF garde sa
+        // valeur (CRC, TR00, Index, WPRT se rafraîchissent à la lecture) : écart non corrigé, comme
+        // Hatari. Effet : après un RNF, $D0 puis lecture d'état montre encore le bit 4.
         if (!(str_ & STR_BUSY)) {                             // FDC inactif → statut type I, moteur ON
             statusTypeI_ = true;
             updateStr(STR_SPINUP, STR_MOTOR);
         }
         interruptCond_ = cr_ & 0x0f;
+        // [B] WD177X-00 p. 1-16 : I3 → INTRQ immédiate ; I3-I0 à zéro → aucune interruption. L'effacement par
+        // $D0 d'une INTRQ en attente : p. 1-5 (toute écriture de commande) ; [D] fdc.c:4389-4392 @ f0736b24.
         if (interruptCond_ & INT_COND_IMMEDIATE) fdcSetIrq(IRQ_FORCED);
         else                                     fdcClearIrq();
-        fdcCycles = PREPARE_TYPE_IV + cmdComplete(false);    // BUSY tombe, moteur s'arrêtera
+        fdcCycles = PREPARE_TYPE_IV + cmdComplete(false);    // BUSY tombe, moteur s'arrêtera ([B] WD177X-00 p. 1-16, p. 1-7)
         break;
      }
     }
 
-    replaceCommandPossible_ = true;     // remplaçable pendant prepare+spinup
+    replaceCommandPossible_ = true;     // remplaçable pendant prepare+spinup ([D] fdc.c:4567 @ f0736b24 ; ⚠ cf. write8)
     // Le délai de préparation (type I/II/III/IV) est une commande, donc accéléré en
     // mode « FDC rapide » (jamais cadencé sur la rotation).
     if (sched_) sched_->schedule(Scheduler::FDC, nowCyc() + applyFastFdc(fdcCycles));
@@ -2909,6 +3064,7 @@ void Fdc::onFdcEvent() {
 // =============================================================================
 //  Transition de média (cf. Hatari Floppy_DriveTransitionUpdateState).
 // =============================================================================
+// [D] floppy.c:475-501 et floppy.h:20 @ f0736b24 (18 VBL). Fiche WD177X-00 muette : WPRT vient du lecteur.
 // Floppy_DriveTransitionUpdateState compare nVBLs : les changements PAL/NTSC
 // ou monochrome n'altèrent pas le nombre de VBL restant dans chaque action.
 bool Fdc::transitionForceWprt(int drive) {
@@ -2974,6 +3130,13 @@ uint8_t Fdc::read8(uint32_t addr) {
                 case 0: {             // FDC_CS : registre de statut
                     // Pour un statut type I, certains bits sont mis à jour en temps réel
                     // d'après les signaux (TR00, INDEX, WPRT). Sinon, on renvoie STR tel quel.
+                    // [B] WD177X-00 p. 1-18 : S2 reflète TR00 et S1 le signal IP sur type I.
+                    // [D] fdc.c:4851-4853 @ f0736b24 : WPRT aussi, « contrary to the doc » selon
+                    // Hatari, qui nomme Procopy ; la p. 1-18 n'en parle pas pour le 1772, la p. 1-19
+                    // le dit pour le 1773. Sans lecteur, ces entrées sont au repos : [D] fdc.c:4856-4857.
+                    // [B] p. 1-5, p. 1-16 : la lecture du même registre doit attendre 16 µs après
+                    // une écriture, celle de BUSY 24 µs et des bits 1-7 32 µs après une commande
+                    // (MFM). La fiche ne dit pas ce qu'on lit avant : ici, l'état est immédiat.
                     if (statusTypeI_) {
                         if (driveSel_ < 0) {
                             updateStr(STR_TR00 | STR_INDEX | STR_WPRT, 0);
@@ -2981,15 +3144,21 @@ uint8_t Fdc::read8(uint32_t addr) {
                             const FloppyDisk& dk = drive_[driveSel_];
                             if (dk.headTrack == 0) updateStr(0, STR_TR00); else updateStr(STR_TR00, 0);
                             if (indexState())      updateStr(0, STR_INDEX); else updateStr(STR_INDEX, 0);
+                            // ⚠ [B] WD177X-00 p. 1-8 : le verify type I pose CRC sur un ID invalide, puis
+                            // l'efface sur un bon. Ici le bit est effacé à chaque lecture : écart non
+                            // corrigé. [D] fdc.c:4872 @ f0736b24 fait de même, sans source.
                             updateStr(STR_CRC, 0);
+                            // [D] fdc.c:4875-4880 @ f0736b24 : sans disque, le lecteur se lit protégé.
                             if (!dk.present() || dk.writeProtect) updateStr(0, STR_WPRT);
                             else                                     updateStr(STR_WPRT, 0);
                             // Créneau de transition média (éjection) → force WPRT, ce que TOS
-                            // lit après un Restore pour détecter le changement de disquette.
+                            // lit après un Restore pour détecter le changement de disquette
+                            // ([D] fdc.c:217-225 @ f0736b24, d'après un TOS 1.02 non relu ici).
                             if (transitionForceWprt(driveSel_)) updateStr(0, STR_WPRT);
                         }
                     }
                     // La lecture du statut efface l'IRQ (sauf « force interrupt immediate »).
+                    // [B] WD177X-00 p. 1-5, p. 1-16 ; [D] fdc.c:4900-4909 @ f0736b24.
                     if ((irqSignal_ & IRQ_FORCED) && !(interruptCond_ & INT_COND_IMMEDIATE))
                         irqSignal_ &= ~IRQ_FORCED;
                     fdcClearIrq();
@@ -3001,7 +3170,7 @@ uint8_t Fdc::read8(uint32_t addr) {
                 default:     noteFf8604(dr_); return dr_;               // FDC_DR
             }
         // Statut DMA : les bits 8-15 rejouent le dernier accès $8604 (vérifié STF
-        // réel — Hatari FDC_DmaStatus_ReadWord renvoie le MOT complet, [D] fdc.c:5022 @ f0736b24).
+        // réel — Hatari FDC_DmaStatus_ReadWord renvoie le MOT complet, [D] fdc.c:5040 @ f0736b24).
         case 0x6: return uint8_t(dmaStatusWord() >> 8);   // status, octet haut
         case 0x7: return uint8_t(dmaStatusWord());        // status, octet bas
         // Adresse DMA ($FF8609/0B/0D) : RELISIBLE — le compteur incrémente pendant le
@@ -3034,7 +3203,7 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
         case 0x5:                                    // data, octet bas → action
             registerWait(); // écriture $8604 : SCREG, FDC et HDC attendent tous
             // SCREG AVANT le stockage de ff8604recent_ : Hatari retourne sans le
-            // mettre à jour ([D] fdc.c:4698-4706 @ f0736b24, store à :4706 seulement après) — le
+            // mettre à jour ([D] fdc.c:4741-4748 @ f0736b24, store à :4748 seulement après) — le
             // compteur de secteurs reste NON relisible via les bits rémanents.
             if (dmaMode_ & DMA_SCREG)  { dmaSectorCount_ = uint16_t(((dataHi_ << 8) | v) & 0xff); return; }
             ff8604recent_ = uint16_t((ff8604recent_ & 0xff00) | v);
@@ -3047,6 +3216,10 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
             indexCheckUpdate();
             switch (dmaMode_ & (DMA_A1 | DMA_A0)) {
                 case 0: {                            // FDC_CS : commande
+                    // [B] WD177X-00 p. 1-5 : BUSY levé, seul un Force Interrupt est chargé.
+                    // ⚠ [B] p. 1-3, p. 1-5 : aucun remplacement prévu. [D] fdc.c:161-168, 4608-4632
+                    // @ f0736b24 : Hatari l'admet pendant prepare+spinup d'après un logiciel réel
+                    // (Overdrive Demos), type II non testé selon lui. Écart non corrigé, voulu.
                     if (str_ & STR_BUSY) {           // FDC occupé : seuls force-int / remplacement
                         const uint8_t tn = cmdType(v);
                         const bool ok = (tn == 4)
@@ -3057,6 +3230,10 @@ void Fdc::write8(uint32_t addr, uint8_t v) {
                     executeCommand(v);
                     return;
                 }
+                // ⚠ [B] WD177X-00 p. 1-3 : TR et SR ne se chargent pas quand la puce est occupée. Ici
+                // ils se chargent toujours : écart non corrigé, voulu. [D] fdc.c:4654-4656, 4681-4683
+                // @ f0736b24 : « contrary to the doc », et le chargeur de Delirious Demo IV écrit SR
+                // après sa commande. Tranché par une relecture de TR/SR pendant BUSY sur un vrai ST.
                 case DMA_A0: tr_ = v; return;        // FDC_TR
                 case DMA_A1: sr_ = v; return;        // FDC_SR
                 default:     dr_ = v; return;        // FDC_DR

@@ -17,6 +17,14 @@ l'ordre inverse. Version courante : **0.6.2**.
 - **`compare_titles --joy`** : la même suite de masques joystick des deux côtés. 49 disques sur ST, clavier et joystick jusqu'à la trame 8000, sans plantage propre à NeoST. 40 restent sous 3 % à tous les écrans vus. Les écarts lus sont du jeu qui diverge (Buggy Boy, Xenon 2, Captain Blood, circuits de Super Sprint, cartes de Teenage Queen, messages de Super Hang-On et de Gods), du cadrage de l'outil (Killing Game Show), ou la lecture du tir sur Flood.
 - **Étalon `rtl_med_pal`** : moyenne résolution contre le modèle GSTMCU, 0 pixel d'écart sur 640×200.
 
+## Audit des fiches : YM2149, WD1772, ACIA, et empreinte d'état (2026-11-04)
+
+- **Trois puces de plus confrontées à leur fiche**, commentaires seuls : YM2149, WD1772, MC6850. Leurs écarts sont marqués `⚠ [B]` sur place.
+- **Filtre C10 du STF** : il coupe maintenant à 7,7 et 2,1 kHz, les valeurs du circuit. Les coefficients d'Hatari sont calculés pour 44,1 kHz et appliqués à 250 kHz, soit 43 et 11 kHz. Le STF sonne donc moins clair. Non écouté sur machine réelle.
+- **Bruit du YM à R6 = 0** : égal à R6 = 1, comme Hatari dit l'avoir mesuré. Son code tirait le LFSR 2× trop vite.
+- **`--state-hash-every N`** hache l'état complet. `tools/run_determinism.py` vérifie deux passes et une reprise de save-state, au palier `fast`. Il a fait figer l'horloge de l'UltraSatan, seule date hôte restée dans l'état.
+- **`tools/classify_selftests.py`** lit l'échelon que chaque test de logique déclare.
+
 ## GLUE du STE sur écran entier à 60 Hz (2026-11-04)
 
 - **Le balayage GLUE repasse sur une trame à 60 Hz**, dans une seconde référence. Il trouve un décompte hérité d'Hatari : ses constantes d'octets supposent une ligne de 56 à 376, alors qu'à 60 Hz elle va de 52 à 372. Hatari n'annule que les deux masques posés ensemble ; un aller-retour par 50 Hz en cours de ligne en laisse un seul, et 2 octets d'écart avec le modèle.

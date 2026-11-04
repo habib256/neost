@@ -226,6 +226,8 @@ void usage() {
         "  --dump-at N A L F raw dump of L bytes of RAM from $A (hex) after frame N → F\n"
         "  --probe NAME=A:L  sample L bytes (1/2/4) at hex address A, repeatable.\n"
         "                    Side-effect free (debugger read): I/O registers read $FF\n"
+        "  --state-hash-every N  print a hash of the full machine state every N frames:\n"
+        "                    the first differing line dates a loss of determinism\n"
         "  --probe-every N   emit one sample line on STDOUT every N frames:\n"
         "                    'probe frame=.. screen=<hash> [ram=<hash>] NAME=0x..'\n"
         "  --hash-ram A:L    add ram=<hash> over L bytes at $A (both hex): a cheap\n"
@@ -1253,6 +1255,7 @@ int main(int argc, char** argv) {
     // marché pour un pilote externe. Cf. headless/Observe.hpp.
     observe::ProbeSet probeSet;
     int         probeEvery  = 0;      // 0 = pas d'échantillonnage
+    int         stateHashEvery = 0;   // --state-hash-every : empreinte de l'état complet (StateArchive)
     // --server : la même machine, conduite au tuyau au lieu d'être rejouée en entier
     // à chaque itération. Cf. headless/Server.cpp et docs/OPENDST.md.
     bool        serverMode  = false;
@@ -1476,6 +1479,7 @@ int main(int argc, char** argv) {
             }
             if (!observe::addProbe(probeSet, p, e)) { std::fprintf(stderr, "--probe: %s\n", e.c_str()); return 2; }
         }
+        else if (!std::strcmp(a, "--state-hash-every")) stateHashEvery = std::atoi(next(a));
         else if (!std::strcmp(a, "--probe-every")) {
             // Strict : « abc » et « 0 » devenaient 1 en silence, à rebours de la rigueur
             // affichée pour --probe et --server-slots.
@@ -2011,6 +2015,8 @@ int main(int argc, char** argv) {
     // Même chose pour l'horloge IKBD (commande $1C) : EmuTOS STE/ST affiche la
     // date/heure du bureau depuis l'IKBD, pas la RTC — figée pour le déterminisme.
     machine.ikbd.setClock(26, 1, 1, 12, 0, 0);
+    // L'horloge de l'UltraSatan aussi : éteinte, elle reste sérialisée, et --state-hash-every la verrait.
+    machine.usatan.setDateTime(UltraSatan::DateTime{2026, 1, 1, 12, 0, 0});
 
     machine.reset();
 
@@ -2394,6 +2400,15 @@ int main(int argc, char** argv) {
             }
         }
         machine.runFrame();
+        if (stateHashEvery > 0 && (frame + 1) % stateHashEvery == 0) {
+            // Empreinte de l'état complet : FNV-1a 64 bits de l'archive du save-state.
+            std::vector<uint8_t> st;
+            if (machine.saveState(st)) {
+                uint64_t h = 14695981039346656037ull;
+                for (uint8_t b : st) { h ^= b; h *= 1099511628211ull; }
+                std::printf("state-hash frame=%d %016llx\n", frame + 1, static_cast<unsigned long long>(h));
+            }
+        }
         framesRun = frame + 1;
         // NEOST_BAND_DIAG=1 : signale l'APPARITION d'une bande pleine largeur d'une
         // seule couleur dans l'aire active — le symptôme rapporté sur Super Hang-On
