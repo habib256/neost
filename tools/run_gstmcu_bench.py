@@ -11,9 +11,9 @@
 #  palette, indépendamment du modèle. Un seul pixel faux fait échouer le banc.
 #
 #  Usage : run_gstmcu_bench.py [--rebuild] [--write-refs]
-#    --write-refs : pose tests/reference/rtl_low_{pal,ntsc}.png, dans le cadre du buffer
-#    NeoST 416×276 (1er pixel actif en 48,29). Hors de la trame NTSC, aucune donnée : noir,
-#    et l'étalon NTSC se compare donc en crop « active ».
+#    --write-refs : pose tests/reference/rtl_{low_pal,low_ntsc,med_pal}.png, dans le cadre du
+#    buffer NeoST 416×276 (1er pixel actif en 48,29). Hors de la trame NTSC, aucune donnée : noir,
+#    et l'étalon NTSC se compare donc en crop « active ». En moyenne résolution pure, le cadre est 640×200.
 #  Contrôle aussi la latence de DTACK par zone (Vste_tb --dtack) : qui passe par le créneau de la
 #  RAM, et que ni DE ni le son DMA n'y changent rien. [B] ST-4081 feuilles 8, 19 et 21.
 #  Sorties : tests/out/gstmcu_bench/summary.json. Code 77 si l'outillage est absent.
@@ -148,11 +148,19 @@ def analyse(case, words: list[int], pixels) -> dict:
     }
 
 
-def write_ref(name: str, words: list[int], offset: int, first_line: int, path: Path) -> None:
+def write_ref(name: str, words: list[int], offset: int, first_line: int, path: Path, per_px: int = 4) -> None:
     starts = falling(words, 13)
     lines = [words[a:b] for a, b in zip(starts, starts[1:])]
     rows = []
-    for y in range(276):
+    if per_px == 2:
+        # Écran pur en moyenne résolution : NeoST sort 640×200, sans bordure.
+        for y in range(HEIGHT):
+            row = bytearray(b"\0")
+            for x in range(640):
+                w = lines[first_line + y][offset + x * 2]
+                row += bytes(((w >> s) & 15) * 17 for s in (8, 4, 0))
+            rows.append(bytes(row))
+    for y in range(0 if per_px == 2 else 276):
         li = first_line + y - 29
         row = bytearray(b"\0")               # octet de filtre PNG
         for x in range(416):
@@ -163,7 +171,7 @@ def write_ref(name: str, words: list[int], offset: int, first_line: int, path: P
         rows.append(bytes(row))
     chunk = lambda tag, data: (struct.pack(">I", len(data)) + tag + data
                                + struct.pack(">I", zlib.crc32(tag + data)))
-    path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 416, 276, 8, 2, 0, 0, 0))
+    path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 640 if per_px == 2 else 416, HEIGHT if per_px == 2 else 276, 8, 2, 0, 0, 0))
                      + chunk(b"IDAT", zlib.compress(b"".join(rows), 9)) + chunk(b"IEND", b""))
     print(f"référence → {path.relative_to(ROOT)}")
 
@@ -230,9 +238,9 @@ def main() -> int:
             and result["lines"] == result["lines_expected"]
         ok &= passed
         print(f"{'OK  ' if passed else 'FAIL'} {name}: {json.dumps(result, ensure_ascii=False)}")
-        if passed and "--write-refs" in sys.argv and width == 320:
+        if passed and "--write-refs" in sys.argv:
             write_ref(name, list(struct.unpack(f"<{len(raw) // 2}H", raw)), result["pipeline_offset"],
-                      result["first_active_line"], ROOT / "tests" / "reference" / f"rtl_{name}.png")
+                      result["first_active_line"], ROOT / "tests" / "reference" / f"rtl_{name}.png", case[5])
     ok &= check_dtack()
     (OUT / "summary.json").write_text(json.dumps(results, indent=2, ensure_ascii=False) + "\n")
     print("BANC GSTMCU OK" if ok else "BANC GSTMCU FAIL")

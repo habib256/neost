@@ -6,6 +6,17 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## MFP confronté à ses fiches, et parties jouées au joystick (2026-11-04)
+
+- **Le MFP est audité contre MC68901, MC68HC901 et MK68901** : 189 commentaires gradés, 11 désaccords relevés. Quatre sont corrigés :
+  - En event-count, I3 et I4 gardent leur interruption. Seule la fiche de 1984 disait le contraire, contre les deux autres, le RTL et Hatari.
+  - Le reset garde TADR à TDDR et les compteurs. Il efface SCR, UCR, RSR et arrête l'USART.
+  - Une erreur de réception part sur Buffer Full quand son canal est désactivé.
+  - Le bit 0 d'UCR se lit à zéro, et SCR masque ses bits inutilisés.
+  Le reste est dans le TODO. Aucun étalon ne bouge : aucun logiciel du catalogue n'exerce ces cas, ce sont des preuves de fiche.
+- **`compare_titles --joy`** : la même suite de masques joystick des deux côtés. 49 disques sur ST, clavier et joystick jusqu'à la trame 8000, sans plantage propre à NeoST. 36 restent sous 3 % à tous les écrans vus. Les écarts lus sont du jeu qui diverge (Buggy Boy, Xenon 2, circuits de Super Sprint, cartes de Teenage Queen), du cadrage de l'outil (Killing Game Show), ou la lecture du tir sur Flood.
+- **Étalon `rtl_med_pal`** : moyenne résolution contre le modèle GSTMCU, 0 pixel d'écart sur 640×200.
+
 ## GLUE du STE sur écran entier à 60 Hz (2026-11-04)
 
 - **Le balayage GLUE repasse sur une trame à 60 Hz**, dans une seconde référence. Il trouve un décompte hérité d'Hatari : ses constantes d'octets supposent une ligne de 56 à 376, alors qu'à 60 Hz elle va de 52 à 372. Hatari n'annule que les deux masques posés ensemble ; un aller-retour par 50 Hz en cours de ligne en laisse un seul, et 2 octets d'écart avec le modèle.

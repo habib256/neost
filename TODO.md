@@ -138,6 +138,8 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   520}, Hatari {512, 520, 504}. Dépend de la prise d'IPL (§ 2.1).
 - **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
+- **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp`. Élection datée par requête, venue du seul Hatari (`mfp.c:998 @ f0736b24`), contre la priorité fixe de § 3.1 ; TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; effacement de UE en un bit au lieu d'un cycle de TC ; prescaler changé en marche (§ 5.1.1) ; impulsion de comptage quand AER change en event-count (§ 5.1.3). Compteur arrêté en dessous d'un prescaler : Hatari se dit corrigé sur ce point en 2025, à relever.
+- **Citations MAME sans révision** · P3 ⭘ · [D] — 14 dans le MFP. Aucune copie de MAME dans `extern` : à épingler ou à retirer.
 
 ### 2.4 Blitter
 
@@ -230,12 +232,11 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. Restent les affirmations sans source, à confronter fiche en main : YM2149, FDC, ACIA, et les GLUE/MMU sans schéma.
+- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. Le MFP est confronté à ses trois fiches, 189 commentaires gradés. Restent les affirmations sans source, à confronter fiche en main : YM2149, FDC, ACIA, et les GLUE/MMU sans schéma.
 - **Banc fx68k, étendre** · P3 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur concordent. Restent BERR et double faute, et l'autovecteur dans le verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
   78 programmes en accord ; `blitter_timer` et deux sondes s'écartent d'Hatari, consigné. → `docs/STBLITTER_BENCH.md`
-- **Étendre les étalons `rtl`** · P2 ◐ — `rtl_low_pal`/`rtl_low_ntsc` posés. Restent la moyenne
-  résolution, puis ce qui bouge en cours de ligne (palette, fréquence), là où NeoST et le
+- **Étendre les étalons `rtl`** · P2 ◐ — `rtl_low_pal`, `rtl_low_ntsc` et `rtl_med_pal` posés, ce dernier à 0 pixel. Reste ce qui bouge en cours de ligne (palette, fréquence), là où NeoST et le
   modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`.
 - **Relevés de tiers** · P2 ⭘ — ST-STE Hardware Test (Troed), notes de Steven Tattersall,
   résultats de la suite Hatari. Un relevé entre en `hardware` s'il nomme machine et protocole.
@@ -262,7 +263,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   perte de déterminisme. Socle du retour arrière et d'un jeu en ligne en lockstep. Modèle : ASE.
 - **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne le mur du palier pixel (~45 s) ; savoir
   QUAND la démo relit le clavier avant de raccourcir.
-- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **43 étalons pixel sur 55** tournent
+- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **44 étalons pixel sur 56** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → § 3.
 - **Banc temporel Hatari** · P2 ◐ — 20 sondes, dont écriture DMA disquette, lecture STX et

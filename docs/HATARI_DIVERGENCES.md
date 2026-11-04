@@ -1334,9 +1334,8 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
   `TP_ALWAYS`), car ses autres patchs fausseraient la somme. NeoST exécute la ROM intacte ([C] TOS 2.06 UK, boucle `$E015CC`-`$E015E2`),
   ce qui coûte environ 170 trames au démarrage en 4 Mo. Les boucles du test mémoire ont les mêmes périodes des deux côtés.
   Une comparaison datée de ce boot doit donc viser la fin du test (`boot_tos206uk`). Ne pas patcher la ROM pour égaler.
-- **Canaux I3/I4 en event-count** (2026-11-04) : ils répondent à TAI/TBI, [B] MC68901 § 2.1.6.2 et § 5.1.3 ; Hatari et
-  `mfp.v:387 @ a00deb5b` gardent I3/I4. Aucun des 83 disques du catalogue n'active ce canal avec un timer en event-count.
-  Un programme en Timer A event-count perd donc l'IRQ clavier, comme la fiche l'annonce. Ne pas réaligner.
+- **Reset du MFP** (2026-11-04) : TADR..TDDR et les compteurs restent, SCR, UCR, RSR s'effacent et l'USART s'arrête, [B] MC68901 § 2.2.3 p. 2-8, MK68901 p. 13,
+  MC68HC901 § 3.3 p. 3-3. Hatari (`mfp.c:538-546 @ f0736b24`) fait l'inverse sur les deux points. Ne pas réaligner.
 - **Modes pulse du MFP** (2026-11-03) : Hatari les traite en mode délai (`MFP_StartTimer_AB`, `mfp.c:1358-1371 @ f0736b24`,
   qui le dit lui-même incomplet) ; NeoST suit [B] MC68901 § 5.1.2. Ne pas réaligner.
 

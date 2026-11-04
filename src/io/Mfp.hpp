@@ -1,6 +1,7 @@
 // =============================================================================
 //  Mfp.hpp — MC68901 (Multi-Function Peripheral) de l'Atari ST.
 //
+//  [B] MC68901 § 1 p. 1-2 : 4 timers, GPIP, USART. [D] IPL 6 sur ST : Hatari mfp.c:904 @ f0736b24.
 //  Le MFP est le contrôleur d'interruptions vectorisées du ST (4 timers, GPIP,
 //  USART). Toutes les IRQ "intelligentes" passent par lui et ressortent en
 //  IPL 6 vers le 68000. Le modèle est quasi 1:1 avec `mfp.c` d'Hatari :
@@ -12,8 +13,19 @@
 //    - la logique d'interruption complète : IER/IPR/IMR/ISR + registre vecteur
 //      (VR), modes auto / "software end-of-interrupt", et le cycle IACK.
 //
+//  [B] MC68901 Table 3-1 p. 3-1, Fig. 3-1 p. 3-2, Fig. 3-4 p. 3-4 :
 //  Numéro de canal = numéro de source MFP (0..15). Vecteur = (VR & 0xF0) | canal.
 //  Registre A = sources 8..15 (bits 0..7), registre B = sources 0..7 (bits 0..7).
+//
+//  Références de grade B de ce fichier et de Mfp.cpp, en pages imprimées :
+//    « MC68901 § x p. n-m » : MC68901 Advance Information (Motorola, janv. 1984),
+//      extern/datasheets/MC68901_Jan84.pdf (sha256 5441a092).
+//      Page du PDF : 1-1 = 8, 2-1 = 10, 3-1 = 18, 4-1 = 24, 5-1 = 26, 6-1 = 32, 7-1 = 40.
+//    « MK68901 p. n » : MK68901 (SGS-Thomson), extern/datasheets/MK68901.pdf (sha256 8a032fa1).
+//    « MC68HC901 § x » : MC68HC901 User's Manual (Motorola, version CMOS),
+//      extern/mistery/doc/MC68901UM.pdf (sha256 b24db5d2).
+//  Ces documents se contredisent sur trois points, signalés sur place : VR au reset,
+//  canaux I3/I4 en event-count, premier délai après un changement de prescaler.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -27,6 +39,8 @@
 
 class Mfp {
 public:
+    // [B] MC68901 Table 3-1 p. 3-1 : numéro et priorité de chaque canal.
+    // [D] Câblage ST des lignes GPIP : Hatari mfp.c:327-339 @ f0736b24.
     static constexpr int SRC_DCD    = 1;   // RS232 DCD (GPIP1)
     static constexpr int SRC_CTS    = 2;   // RS232 CTS (GPIP2)
     static constexpr int SRC_GPU    = 3;   // Blitter GPU_DONE (GPIP3) — Mega ST/STE/Mega STE
@@ -47,9 +61,10 @@ public:
     // (Timer A/C/D) à partir de leurs registres prescaler/données.
     void setScheduler(Scheduler* s) { sched_ = s; }
     // Liaison vidéo non persistée : appelée avant changement AER3, pour servir
-    // l'ancien front DE puis repositionner le prochain (Hatari mfp.c2742+).
+    // l'ancien front DE puis repositionner le prochain ([D] mfp.c:2742-2813 @ f0736b24).
     void setTimerBEdgeSink(std::function<void(bool)> sink) { timerBEdgeSink_ = std::move(sink); }
-    // Mode pulse des timers A/B (TxCR 9-15). Machine pilote TBI (= DE) tant que le sink est à vrai.
+    // [B] MC68901 Fig. 5-3 p. 5-6 : mode pulse des timers A/B (TxCR 9-15).
+    // [D] TBI = DE : Hatari mfp.c:207 @ f0736b24. Machine pilote TBI tant que le sink est à vrai.
     void setTbiPulseSink(std::function<void(bool)> sink) { tbiPulseSink_ = std::move(sink); }
     bool timerPulseMode(int timer) const;
     bool tbiTracked() const { return tbiTracked_; }
@@ -62,6 +77,7 @@ public:
     // d'IRQ Timer A / GPIP7 « fantôme » survivant à un reset à chaud. NE TOUCHE PAS aux
     // propriétés machine/fixture (moniteur, son DMA, bouclage) ni aux lignes d'ENTRÉE
     // pilotées par les autres puces (reforcées à la lecture, puces resynchronisées).
+    // ⚠ [B] MC68901 § 2.2.3 p. 2-8 : ce reset s'écarte du document, cf. Mfp::resetChip.
     void reset();
 
     // RESET *partiel* du MFP — port STRICT de MFP_Reset ([D] mfp.c:519-569 @ f0736b24), celui que
@@ -69,6 +85,7 @@ public:
     // QUE les registres MFP + les échéances de timers ; l'USART (RSR/UDR/UCR/débit),
     // la ligne XSINT et les lignes RS232 en entrée ne sont PAS remises (Hatari ne les
     // touche pas dans MFP_Reset). reset() (reset MACHINE) l'appelle puis élargit.
+    // ⚠ [B] MC68901 § 2.2.3 p. 2-8 : la broche efface aussi UCR, RSR et SCR, et arrête l'USART.
     void resetChip();
 
     // Partie entière de la période en CYCLES CPU d'un timer (0..3 = A/B/C/D) en
@@ -86,12 +103,15 @@ public:
 
     // Contrôle BRUT d'un timer (TACR/TBCR 0-15, moitiés de TCDCR 0-7).
     int     timerCtrl(int timer) const;
-    // Écriture d'un registre de contrôle (port des MFP_TimerXCtrl_WriteByte) :
+    // [B] MC68901 Fig. 5-3 p. 5-6 : l'arrêt garde le compteur et perd le reste du prescaler.
+    // Écriture d'un registre de contrôle (port des MFP_TimerXCtrl_WriteByte,
+    // [D] mfp.c:3176-3187 @ f0736b24) :
     // valeur inchangée → aucun effet (ne redate PAS un timer qui court) ; arrêt
     // d'un délai → fige le compteur courant (relisible, continuation possible) ;
     // démarrage → échéance calculée depuis le COMPTEUR (pas la recharge).
     void    writeTimerCtrl(int timer, uint8_t newCtrl);
-    // Fige le compteur vivant d'un délai qu'on arrête (port MFP_ReadTimerX(stopping)).
+    // Fige le compteur vivant d'un délai qu'on arrête (port MFP_ReadTimerX(stopping),
+    // [D] mfp.c:1563-1577 @ f0736b24).
     void    storeStoppedCounter(int timer, int64_t when);
     // Référence du compteur (backing store) d'un timer.
     uint8_t& timerCounterRef(int timer);
@@ -101,21 +121,31 @@ public:
     // d'après les cycles restants avant l'IRQ) et non la valeur de recharge — port
     // de MFP_ReadTimer_AB/CD (Hatari). En event-count (A/B) ou à l'arrêt, le
     // compteur suivi (taCounter_/tbCounter_) ou la recharge convient déjà.
+    // [D] Hatari mfp.c:1552-1561 @ f0736b24.
+    // ⚠ [B] MC68901 § 5.2.1 p. 5-5 et MK68901 p. 10 : la lecture rend le compteur capturé au dernier
+    // front montant de DS, pas à l'accès en cours ; [D] mfp_timer.v:88-92 @ a00deb5b suit la fiche.
+    // Ce code rend le compteur à l'accès en cours : écart non corrigé.
     uint8_t readTimerData(int timer) const;
     // Échéance atteinte : lève l'IRQ du timer et le replanifie (mode délai).
     void    onTimerExpire(int timer);
 
     // Événement HBLANK (une fois par ligne) : fait décompter Timer B en mode
     // event-count. TOS 1.x s'en sert pour se synchroniser à l'écran au boot.
+    // [D] Le signal compté est DE (TBI) : Hatari mfp.c:207,1302 @ f0736b24.
+    // [F] Usage par TOS 1.x non revérifié : tranché par le désassemblage de la ROM.
     void hblank();
     void hblankAt(int64_t when);
 
+    // [B] MC68901 § 5.1.3 p. 5-4 : le bit 3 d'AER choisit le front actif de TBI.
+    // [D] Position DE+24 : Hatari mfp.c:2737-2740 @ f0736b24 et [D] video.c:3179-3188 @ f0736b24.
     // Front compté par Timer B en event-count (AER bit3 de $FFFA03) : 0 = FINS de
     // ligne (défaut, DE_end+24), 1 = DÉBUTS de ligne (DE_start+24) — cf. Hatari
     // Video_TimerB_GetPosFromDE (« Seven Gates of Jambala »). Le compte (1/ligne
     // visible) est inchangé ; seule la POSITION du tic dans la ligne change.
     bool timerBStartOfLine() const { return (aer & 0x08) != 0; }
 
+    // [B] MC68901 § 5.1.3 p. 5-3 et p. 5-4 : front selon AER GPIP4, recharge au passage par 01 ;
+    // § 5.1.1 p. 5-2 : 00 vaut 256. [D] Hatari mfp.c:1228-1262 @ f0736b24, TAI : [D] mfp.c:206 @ f0736b24 et [D] dmaSnd.c:294-303 @ f0736b24.
     // Ligne d'entrée TAI du Timer A (sur STE = ligne XSINT du son DMA, niveau HAUT
     // pendant une trame). Port de MFP_TimerA_Set_Line_Input : en event-count (TACR
     // bits0-3 == 0x08), on compte sur le FRONT sélectionné par l'AER GPIP4 (bit4) —
@@ -174,9 +204,11 @@ public:
     // timers (compteurs vivants + recharges), USART/série, latches d'interruption
     // (IPR/ISR + chronologie pendingTime_), lignes d'ENTRÉE GPIP et champs dérivés
     // persistants. NE TOUCHE PAS aux liaisons moteur (sched_, serialSink_) ni aux
-    // static/constexpr. Note : le MFP n'a PAS de FIFO série (deque) — buffer 1 octet.
+    // static/constexpr. Note : le MFP n'a PAS de FIFO série (deque) — buffer 1 octet
+    // ([B] MC68901 § 6.2 p. 6-2).
     // Fin de caractère TX : sortie hôte et bouclage, puis transfert TDR→TSR.
-    // Deux registres au plus, sans FIFO ; le TDR plein est écrasé par UDR.
+    // Deux registres au plus, sans FIFO ([B] MC68901 § 6.3 p. 6-6) ; le TDR plein est écrasé par UDR.
+    // [F] Écrasement : fiche muette, tranché par une écriture UDR à BE=0 sur vrai MFP.
     // Le transport sans Scheduler conserve le raccourci instantané des fixtures.
     void onSerialTxEvent();
     void serialize(StateArchive& ar) {
@@ -289,13 +321,15 @@ public:
     }
 
     // Lignes d'interruption des DEUX ACIA (clavier ET MIDI), câblées en WIRE-OR
-    // sur la MÊME entrée GPIP4 (active BAS). Cf. Hatari MFP_Main_Compute_GPIP_LINE_ACIA
-    // (acia.c : « the 2 ACIA's IRQ pins are connected to the same MFP input »).
+    // sur la MÊME entrée GPIP4 (active BAS). [D] Hatari mfp.c:1921 @ f0736b24 et [D] acia.c:369 @ f0736b24
+    // (« the 2 ACIA's IRQ pins are connected to the same MFP input »).
     // Chaque ACIA a sa propre ligne : GPIP4 reste asserté (bit4=0) tant que l'UNE
     // OU l'AUTRE a un octet en attente — sinon un MIDI inactif effaçait une IRQ
-    // clavier pendante (clobber). Le handler _int_acia d'EmuTOS lit GPIP bit4 pour
+    // clavier pendante (clobber).
+    // [F] Non revérifié, tranché par la source d'EmuTOS : son handler _int_acia lit GPIP bit4 pour
     // savoir quand cesser de vider l'ACIA, AVANT d'effacer son bit in-service.
-    // Chaque setter applique la règle de FRONT d'Hatari (MFP_GPIP_Set_Line_Input) :
+    // [B] MC68901 § 2.1.5 p. 2-3, § 4.2.2 p. 4-1 ; MK68901 p. 18 : canaux déclenchés par front.
+    // Chaque setter applique la règle de FRONT d'Hatari ([D] MFP_GPIP_Set_Line_Input, mfp.c:1180 @ f0736b24) :
     // le canal GPIP correspondant n'est levé QUE sur une transition du pin dont le
     // nouveau niveau égale le bit AER (DDR=entrée exigé) — les appelants ne doivent
     // PAS appeler raise() eux-mêmes (sinon IPR reposé sans front réel : une ligne
@@ -319,35 +353,41 @@ public:
     // Alias de compatibilité (l'ancienne API ne pilotait qu'une seule ligne).
     void setAciaLine(bool active) { setAciaLineKbd(active); }
 
-    // Ligne d'interruption du FDC sur GPIP5 (active BAS). EmuTOS attend la fin
+    // [D] Ligne d'interruption du FDC sur GPIP5 (active BAS) : Hatari mfp.c:333 @ f0736b24.
+    // [F] Non revérifié, tranché par la source d'EmuTOS : il attend la fin
     // d'une commande disque en pollant GPIP bit5 (timeout_gpip).
     void setFdcLine(bool active) { gpipSetLine(fdcLine_, active); }
 
     // Ligne GPU_DONE du blitter sur GPIP3 (active BAS). Le blitter la met HAUT au
-    // démarrage puis BAS à la fin du transfert (cf. Hatari Blitter_Start). N'existe
+    // démarrage puis BAS à la fin du transfert ([D] blitter.c:895,916 @ f0736b24). N'existe
     // que sur Mega ST/STE/Mega STE (le blitter n'est câblé au bus que sur ces modèles).
+    // [F] Liste des modèles et copie de BUSY sur INT au repos : non revérifiées, tranchées par le
+    // schéma des cartes (extern/datasheets/asic) ou une mesure.
     // `done` est INVERSÉ vers le niveau de registre : gpuLine_ = 1 pendant le blit
     // (comme le bit 3 du GPIP d'Hatari), 0 au repos/fini — le front 1→0 de la fin
     // lève le canal 3 sous AER=0. Reset : 0 tant qu'aucun blit n'a tourné (INT du
     // blitter = copie du bit BUSY, au repos bas). Sans blitter : cf. hasBlitter_.
     void setBlitterLine(bool done) { gpipSetLine(gpuLine_, !done); }
 
+    // [D] Hatari mfp.c:1901-1904 @ f0736b24 :
     // Type de moniteur lu sur GPIP bit7 : couleur (basse rés) ou mono (haute rés).
     // À changer AVANT un reset pour que TOS détecte la bonne résolution au boot.
     void setColorMonitor(bool c) { colorMonitor_ = c; }
 
     // Présence du son DMA (STE / Mega STE) : seul ce drapeau autorise le XOR de la
-    // ligne XSINT dans GPIP7 (cf. Hatari MFP_Main_Compute_GPIP7, réservé aux STE/TT).
+    // ligne XSINT dans GPIP7 ([D] MFP_Main_Compute_GPIP7, mfp.c:1906-1908 @ f0736b24, réservé aux STE/TT).
     // Posé par DmaSound::setMfp ; sur un ST sans son DMA il reste faux → GPIP7 ne
     // dépend QUE du moniteur, exactement comme avant.
     void setHasDmaSound(bool h) { hasDmaSound_ = h; }
     // Présence du blitter (dérivée du modèle, cf. machineHasBlitter) : sans blitter,
     // GPIP3 n'est tirée que par la résistance de rappel R4 → lue à 1 (cf. gpipInput).
+    // [F] R4 : README tiers seulement, tranché par le schéma de la carte ST.
     void setHasBlitter(bool h) { hasBlitter_ = h; }
-    // Ligne XSINT du son DMA STE (cf. Hatari DmaSnd_Update_XSINT_Line) : HAUT pendant
+    // [D] Ligne XSINT du son DMA STE (DmaSnd_Update_XSINT_Line, dmaSnd.c:294-309 @ f0736b24) : HAUT pendant
     // la lecture d'une trame, BAS sinon. Sur STE elle est XORée avec la détection
     // moniteur pour former GPIP7. Toute transition peut lever le canal GPIP7 (I7) si
-    // armé (IERA bit7) et que le front correspond à l'AER — comme une entrée GPIP.
+    // armé (IERA bit7) et que le front correspond à l'AER — comme une entrée GPIP
+    // ([B] MC68901 § 4.2.2 p. 4-1).
     void setXsintLine(bool a);
 
     // Récepteur du port série (RS-232) : chaque octet écrit dans l'UDR ($FFFA2F)
@@ -363,14 +403,16 @@ public:
     bool colorMonitor() const { return colorMonitor_; }
 
     // Config EFFECTIVE de l'USART (port de rs232.c RS232_SetBaudRateFromTimerD +
-    // RS232_HandleUCR) : bauds dérivés du Timer D (horloge de l'USART, prescaler
-    // /16 de l'UCR) et format du mot depuis l'UCR. Comme chez Hatari c'est de la
-    // pure CONFIGURATION (appliquée au tty hôte chez lui, état + journal ici) : le
-    // débit d'émission émulé reste instantané (cf. RS232_TSR_ReadByte). Recalculée
+    // RS232_HandleUCR, [D] rs232.c:345-353,468-490 @ f0736b24) : bauds dérivés du Timer D
+    // ([D] TDO relié à TC et RC : mfp.c:203 @ f0736b24 ; prescaler /16 ou /1 de l'UCR :
+    // [B] MC68901 Fig. 6-2 p. 6-3) et format du mot depuis l'UCR. Chez Hatari c'est de la
+    // pure CONFIGURATION du tty hôte ; ici le facteur cadence aussi TX et RX sous
+    // Scheduler, le TX instantané ne restant que sans lui. Recalculée
     // à chaque écriture UCR ($FFFA29), TDDR ($FFFA25) ou TCDCR ($FFFA1D).
     int     serialBaud() const { return serialBaud_; }   // 0 = jamais configurée
     uint8_t serialUcr()  const { return serialUcr_; }
 
+    // [D] Hatari mfp.c:1984-1994 @ f0736b24 :
     // Lignes de contrôle RS232 en ENTRÉE (vues sur le GPIP, actives BAS) :
     //   CTS = GPIP2, DCD = GPIP1, RI = GPIP6.
     // Sur l'ST elles sont pilotées par un périphérique externe ; avec un connecteur
@@ -378,15 +420,19 @@ public:
     // aussi le canal MFP correspondant si la ligne s'active (le test série peut
     // utiliser l'IRQ). true = ligne assertée (→ bit GPIP à 0).
     // Le test série « lignes de contrôle » ENABLE le canal GPIP (RI/DCD/CTS) puis
-    // toggle la sortie (DTR/RTS) : l'EDGE sur l'entrée doit lever l'IRQ. On lève donc
-    // le canal sur tout changement d'état. C'est sûr : ces setters ne sont appelés que
+    // toggle la sortie (DTR/RTS) : l'EDGE sur l'entrée doit lever l'IRQ, sur le seul
+    // front choisi par l'AER (cf. gpipSetLine plus bas). Ces setters ne sont appelés que
     // quand le connecteur est branché (cf. Machine, gardé par loopback()), donc jamais
     // au boot où cela parasiterait le canal ACIA du clavier.
     // Ligne BUSY Centronics (GPIP0, active BAS). Sous fixture de bouclage, recopie
     // (inversée) le bit7 du port parallèle (cf. Machine, test « Printer/Joystick »).
-    // Hatari psg.c : le strobe imprimante passe par le détecteur GPIP0,
-    // avec qualification AER/DDR comme les autres broches (MC68HC901 §5.1).
+    // [F] Polarité : [D] Hatari mfp.c:327 @ f0736b24 dit 0 = libre, 1 = occupé, soit l'inverse de
+    // ce commentaire. Tranché par le schéma du port parallèle ST ou une mesure.
+    // [D] Hatari psg.c:390 @ f0736b24 : le strobe imprimante passe par le détecteur GPIP0,
+    // avec qualification AER/DDR comme les autres broches
+    // ([B] MC68901 § 2.1.5 p. 2-3, § 4.2.2 p. 4-1 ; MC68HC901 § 5.1.2 p. 5-1).
     void setBusyLine(bool a) { gpipSetLine(busyLine_, a); }
+    // [B] MC68901 § 2.1.5 p. 2-3, § 4.2.2 p. 4-1 :
     // gpipSetLine (et non raise() direct) : il n'y a de front actif QUE dans le sens
     // choisi par l'AER, et seulement si la ligne est en ENTRÉE. Lever le canal sur les
     // DEUX fronts, comme le faisait ce code, donnait une IRQ sur la mauvaise transition
@@ -394,15 +440,18 @@ public:
     void setRs232Cts(bool a) { gpipSetLine(ctsLine_, a); }
     void setRs232Dcd(bool a) { gpipSetLine(dcdLine_, a); }
     void setRs232Ri (bool a) { gpipSetLine(riLine_, a); }   // cf. CTS/DCD : front selon l'AER
+    // [F] Non revérifié ici, tranché par le câble Multiface réel :
     // Bouton « freeze » du Multiface ST : tire la ligne moniteur (GPIP7) à 0 le temps
     // de l'appui, QUEL que soit le moniteur — c'est le câble qui intercepte la prise
     // moniteur (cf. io/PortDevices.hpp). Front selon l'AER, comme toute entrée GPIP.
     void setMonitorButton(bool pressed) { gpipSetLine(monButton_, pressed); }
+    // [F] Comportement des clés non revérifié ici, cf. PortDevices et docs/EXTENSIONS.md :
     // Recouvrement à la LECTURE de $FFFA01 (bits d'entrée, après DDR) par un
     // adaptateur (B.A.T. II force CTS, Music Master retarde DCD — cf. PortDevices).
     // Pas d'effet sur la détection de fronts : ces clés sont sondées, pas armées.
     void setGpipReadHook(std::function<void(uint8_t&)> h) { gpipHook_ = std::move(h); }
 
+    // [B] MC68901 § 3.3.1 p. 3-3, Fig. 3-4(b) p. 3-4 : un canal désactivé ignore ses interruptions.
     // Déclenche une source : positionne le bit IPR si le canal est activé (IER), sinon
     // l'EFFACE (port MFP_InputOnChannel). Date l'événement à l'horloge live ; raiseAt
     // permet d'ANTIDATER (timer servi en retard → l'IRQ est datée de l'échéance réelle,
@@ -415,8 +464,13 @@ public:
     // [D] mfp.c:374,783 @ f0736b24) : le signal IRQ levé au cycle T n'est visible du CPU qu'à T+4.
     // Quand le délai court encore, updateIrq a armé Scheduler::MFP_IRQ à T+4 pour que
     // l'IPL soit recalculé pile à l'instant où l'IRQ devient visible.
+    // ⚠ [B] MC68901 § 7.7 ligne 36 p. 7-4 : 380 ns au plus d'une entrée externe à IRQ, soit
+    // 3,05 cycles CPU. Cette constante vaut 499 ns, pour toutes les sources. Elle n'a qu'Hatari pour source.
+    // [F] Part due à la synchronisation d'IPL du 68000 inconnue : tranché par une capture IRQ/IPL.
     bool irqPending() const;
 
+    // [B] MC68901 § 3.1 p. 3-1 : le vecteur est celui du canal pendant le plus prioritaire à l'IACK ;
+    // MK68901 p. 9 : à l'IACK, les puces « freeze and prioritize interrupts ».
     // Acquittement (cycle IACK) : RÉ-ÉVALUE d'abord le signal IRQ (port MFP_ProcessIACK,
     // [D] mfp.c:812-854 @ f0736b24 — une IRQ plus prioritaire survenue entre le début de l'exception et
     // la lecture du vecteur PEUT remplacer le vecteur ; sous Moira, cycle-exact, l'appel
@@ -425,27 +479,29 @@ public:
     int iack();
 
     // Registres exposés au débogueur.
-    // GPIP : bit7 = détection moniteur (cf. EmuTOS shifter_get_monitor_type) :
+    // GPIP : bit7 = détection moniteur ([D] mfp.c:337-338 @ f0736b24 ; cf. EmuTOS shifter_get_monitor_type) :
     // bit7=1 → moniteur COULEUR (basse résolution, bureau couleur), bit7=0 → mono.
     uint8_t gpip = 0xFF, aer = 0, ddr = 0;
     uint8_t iera = 0, ierb = 0;   // enable
     uint8_t ipra = 0, iprb = 0;   // pending
     uint8_t imra = 0, imrb = 0;   // mask
     uint8_t isra = 0, isrb = 0;   // in-service
-    uint8_t vr   = 0;             // vector register (bit3 = software EOI)
+    uint8_t vr   = 0;             // vector register (bit3 = software EOI, [B] MC68901 Fig. 3-2 p. 3-2)
     bool    aciaLineKbd_  = false; // ligne ACIA clavier (true = octet dispo → GPIP4 bas)
     bool    aciaLineMidi_ = false; // ligne ACIA MIDI    (true = octet dispo → GPIP4 bas)
     bool    fdcLine_  = false;    // ligne FDC  (true = commande finie → GPIP5 bas)
-    bool    gpuLine_  = false;    // ligne blitter GPU_DONE (true = blit fini → GPIP3 bas)
+    bool    gpuLine_  = false;    // ligne blitter GPU_DONE (true = blit en cours → GPIP3 haut, cf. setBlitterLine)
     bool    colorMonitor_ = true; // GPIP bit7 : true = couleur (basse rés)
     bool    hasDmaSound_  = false;// machine avec son DMA (STE/Mega STE) → XOR XSINT sur GPIP7
     bool    xsint_        = false;// ligne XSINT du son DMA STE (HAUT = trame en cours)
     bool    busyLine_ = false;    // Centronics BUSY (GPIP0, actif bas) — bouclage port parallèle
     // CTS et DCD sont ASSERTÉES au repos, donc GPIP bits 2 et 1 lus à 0 (« signal
     // actif ») : c'est la valeur par défaut d'Hatari quand aucun vrai port série n'est
-    // branché ([D] rs232.c:516-518 @ f0736b24 pose dcd = cts = 1, que [D] mfp.c:1984-1993 @ f0736b24 traduit en bits
+    // branché ([D] rs232.c:516-520 @ f0736b24 pose dcd = cts = 1, que [D] mfp.c:1984-1994 @ f0736b24 traduit en bits
     // EFFACÉS). Les laisser désassertées faisait lire $FFFA01 = FF au lieu de A1, et un
     // logiciel qui attend CTS avant d'émettre aurait bouclé indéfiniment.
+    // [F] Le raisonnement MC1489 de gpipInput donnerait 1 sur CTS/DCD à entrée ouverte, or le
+    // relevé $E9 qu'il cite les lit à 0. Tranché par une lecture de $FFFA01 sur ST sans câble.
     bool    ctsLine_  = true;     // RS232 CTS (GPIP2, actif bas) — bouclage RTS
     bool    dcdLine_  = true;     // RS232 DCD (GPIP1, actif bas) — bouclage DTR
     // RI : ACTIVE BASSE comme CTS/DCD, mais repos DÉSASSERTÉ (bit6 = 1) — récepteur
@@ -455,6 +511,7 @@ public:
     bool    monButton_ = false;   // Multiface : bouton freeze enfoncé → GPIP7 forcé à 0 (hors snapshot)
     std::function<void(uint8_t&)> gpipHook_;   // recouvrement lecture GPIP (PortDevices, hors snapshot)
 
+    // [B] MC68901 § 6.2 p. 6-2, Fig. 6-3 p. 6-4 :
     // USART (RS232) : tampon de réception 1 OCTET (le 68901 n'a PAS de FIFO ; un
     // nouvel octet est perdu si le précédent attend encore = overrun). rxFull_ = RSR bit7 (Buffer Full).
     // loopback_ = connecteur de bouclage BRANCHÉ (cf. setLoopback). Par défaut NON
@@ -463,7 +520,7 @@ public:
     // échoue. Le câble n'est « branché » que pour tester le port série.
     uint8_t rxByte_  = 0;
     bool    rxFull_   = false;
-    bool    rxOverrun_ = false;   // OE visible après lecture UDR, acquitté par RSR
+    bool    rxOverrun_ = false;   // [B] MC68901 Fig. 6-3 p. 6-4 : OE visible après lecture UDR, acquitté par RSR
     bool    rxPendingOverrun_ = false; // pertes retenues derrière un RDR encore plein
     // File RX côté hôte (cf. receiveByte) : bornée, livrée octet par octet au
     // débit série par l'événement SERIAL_RX. serialRxArmed_ = échéance en vol.
@@ -488,7 +545,7 @@ public:
     int64_t serialTxCycle_ = 0, serialTxRemainder_ = 0;
     int serialTxDivisor_ = 1;
     int64_t serialTxFrameClearCycle_ = 0; // seuil potentiel de la trame TSR courante
-    int64_t serialTxUnderrunClearCycle_ = 0; // premier cycle autorisant clear UE
+    int64_t serialTxUnderrunClearCycle_ = 0; // premier cycle autorisant clear UE ([B] MK68901 p. 17, cf. read8 $2D)
 public:
     void setLoopback(bool plugged) { loopback_ = plugged; }
     bool loopback() const { return loopback_; }
@@ -499,9 +556,11 @@ private:
     // $FFFA21), tbReload_ = valeur rechargée à 0, tbcr_ = mode ($FFFA1B).
     uint8_t tbcr_ = 0, tbReload_ = 0, tbCounter_ = 0;
     // Compteurs C/D figés (timer arrêté en plein décompte → relisible, et le
-    // délai REPREND de là au prochain démarrage, cf. Hatari TC/TD_MAINCOUNTER).
+    // délai REPREND de là au prochain démarrage). [B] MC68901 Fig. 5-3 p. 5-6 : compteur intact à l'arrêt.
+    // [D] Reprise : commentaire de mfp.c:3178-3181 @ f0736b24, TC/TD_MAINCOUNTER.
     uint8_t tcCounter_ = 0, tdCounter_ = 0;
 
+    // [D] TAI = ligne XSINT : Hatari dmaSnd.c:294 @ f0736b24.
     // Timer A en event-count (TAI = ligne XSINT son DMA sur STE). Compteur courant
     // + valeur de recharge, chargés à l'écriture de TADR ($FFFA1F). tai_ = dernier
     // niveau de la ligne TAI (pour détecter les fronts, cf. timerA_setLineInput).
@@ -523,6 +582,7 @@ private:
 
     // Backing store des autres registres timer/USART : TOS les écrit puis relit
     // pour vérifier la présence du MFP, donc ils doivent renvoyer ce qu'on y a mis.
+    // [F] Usage par TOS non revérifié : tranché par le désassemblage de la ROM.
     uint8_t timer_[0x40] = {};
 
 private:
@@ -530,11 +590,13 @@ private:
     int highestInService() const;   // n° de source en cours de service, -1 sinon
 
     // --- Signal IRQ daté (port mfp.c : MFP_UpdateIRQ / MFP_InputOnChannel) ---------
+    // [D] Modèle d'Hatari ; la fiche ne décrit que la broche IRQ (MC68901 § 2.1.4.1 p. 2-3).
     // Le 68901 ne présente pas « IPR & IMR » directement au CPU : il a un signal IRQ
     // interne, recalculé sur chaque changement de registre/entrée, avec :
     //   • CHRONOLOGIE : à priorités égales devant le câblage, les requêtes pendantes
     //     arrivées dans la même fenêtre sont servies dans l'ordre d'ARRIVÉE
     //     (pendingTime_/pendingTimeMin_, port Pending_Time[] [D] mfp.c:963-1120 @ f0736b24) ;
+    //     ⚠ [B] MC68901 § 3.1 p. 3-1 ne connaît que la priorité fixe : cf. checkPendingInterrupts ;
     //   • DÉLAI : un front montant d'IRQ n'est visible du CPU que 4 cycles plus tard
     //     (irqTime_ + kIrqDelayToCpu ; la retombée, elle, est immédiate, comme Hatari).
     static constexpr int64_t kIrqDelayToCpu = 4;     // MFP_IRQ_DELAY_TO_CPU ([D] mfp.c:374 @ f0736b24)
@@ -560,6 +622,8 @@ private:
     // AVANT application du DDR. Centralisé ici pour servir aussi gpipUpdateInterrupt.
     uint8_t gpipInput() const;
 
+    // [B] MC68901 § 4.2.2 p. 4-1 et sa note p. 4-2 : XOR du bit de front et du tampon d'entrée ;
+    // [D] Hatari mfp.c:1137-1170 @ f0736b24, dont le sens du front et le cas des démos.
     // Réévalue les IRQ GPIP front-déclenchées après un changement de GPIP/AER/DDR
     // (port MFP_GPIP_Update_Interrupt). État = GPIP ^ AER : sur une ligne en ENTRÉE
     // dont l'état bascule, on lève le canal si le front est ACTIF (AER == niveau GPIP).
