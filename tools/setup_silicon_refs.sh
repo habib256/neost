@@ -29,6 +29,11 @@ fetch https://github.com/gyurco/MiSTery.git "$ROOT/extern/mistery" "$MISTERY_PIN
 # TG68K.C reste hors champ : autre cœur, sans rapport avec le 68000 de référence.
 git -C "$ROOT/extern/mistery" submodule update -q --init gstmcu fdc1772 ikbd fx68k
 
+# RTL seul (job CI des bancs) : les documents ne servent qu'à relire, et leurs sites tombent parfois.
+if [[ "${1:-}" == "--rtl-only" ]]; then
+  exit 0
+fi
+
 # Documents primaires (grade B), sous copyright : jamais versionnés, seules leur URL et
 # leur empreinte le sont. Une empreinte qui change arrête le script : un autre scan change
 # les numéros de page cités dans le code.
