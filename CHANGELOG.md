@@ -24,7 +24,7 @@ Vroom reste ouvert : NeoST et Hatari le font planter selon la graine, un vrai ST
 
 `tools/make_reloc_probe.py` fabrique une disquette qui mesure ce point sur machine réelle, sans le jeu.
 
-L'image `[cr Elite]` révèle un écart propre à NeoST sur STE : son intro plein écran ne rend plus la main au programme principal → `docs/CASE_STUDIES.md`. Rien n'est corrigé.
+L'image `[cr Elite]` révélait un écart propre à NeoST sur STE : son intro plein écran ne rendait plus la main au programme principal. Corrigé : attente E-clock de l'ACIA datée au début du cycle bus, et VBL prise au dispatch hors STOP. SPACE mène au titre, à 0,0 % d'Hatari. Bancs RTL et sondes de timing restent verts → `docs/CASE_STUDIES.md`.
 
 `tools/fix_short_reloc.py` répare une copie en portant la taille du fichier à 2444 octets. Sur cette copie, 24 graines sur 24 passent sous TOS 1.04, 1.06 et 1.62 chez NeoST, contre 7 à 10 avant : la cause de ces échecs est démontrée dans les émulateurs. Le bruit sous TOS 2.06 survit et reste ouvert.
 
