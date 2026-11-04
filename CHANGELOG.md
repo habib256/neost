@@ -6,6 +6,10 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## WD1772 : écriture selon la fiche (2026-11-04)
+
+INTRQ 24 µs après le dernier CRC d'un Write Sector, et $F7 pour deux octets avec une seule DRQ en Write Track, [B] WD177X-00 p. 1-12, 1-13, 1-15. Images identiques sur 89 disques joués, mais aucun n'écrit vraiment sur disquette : ces lignes sont gardées par le test du timing et une relecture de la fiche.
+
 ## Bancs RTL en CI (2026-11-04)
 
 Nouveau job `rtl` dans `tests.yml` : Verilator 5.054 compilé puis gardé en cache, RTL aux épingles, six bancs. Écrit sans pouvoir l'exécuter ici : il n'est pas bloquant tant qu'il n'a pas prouvé qu'il tourne.

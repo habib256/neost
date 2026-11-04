@@ -2643,15 +2643,14 @@ int Fdc::updateWriteSectors() {
             commandState_ = RUN_WS_CRC; fdcCycles = transferDelay(2);
         }
         break;
-     // ⚠ [B] WD177X-00 p. 1-12, 1-13 : 2 octets de CRC, 1 octet $FF, puis INTRQ 24 µs (MFM) après le dernier
-     // CRC. Ici la fin arrive après les 2 octets de CRC et CMD_COMPLETE (1 µs), soit ~23 µs trop
-     // tôt ([D] fdc.c:3549, 433 @ f0736b24, idem). Écart non corrigé, visible des seuls chronométrages au cycle.
+     // [B] WD177X-00 p. 1-12, 1-13 : 2 octets de CRC, 1 octet $FF, puis INTRQ 24 µs (MFM) après le dernier CRC.
+     // [D] fdc.c:3549, 433 @ f0736b24 finit ~1 µs après le CRC : la fiche prime.
      case RUN_WS_CRC:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }  // pas de lecteur → on attend (même état)
         {
             const uint8_t st = writeSectorST(uint8_t(drive_[driveSel_].headTrack), sr_, side_, bufferSize());
             if (st & STR_RNF) { commandState_ = RUN_WS_RNF; fdcCycles = CMD_IMMEDIATE; }
-            else              { commandState_ = RUN_WS_MULTI; fdcCycles = CMD_IMMEDIATE; }
+            else              { commandState_ = RUN_WS_MULTI; fdcCycles = 24 * 8 - CMD_COMPLETE; }
         }
         break;
      case RUN_WS_MULTI:
@@ -2844,13 +2843,14 @@ int Fdc::updateWriteTrack() {
         break;
      // [B] WD177X-00 p. 1-13, 1-15 : d'un index au suivant, une DRQ par octet chargé. Mais $F7 écrit DEUX
      // octets de CRC pour une seule DRQ.
-     // ⚠ [B] p. 1-15 : ici chaque $F7 ne compte que pour un octet, et on tire bytesPerTrack() octets. Écart non
-     // corrigé, comme Hatari ([D] fdc.c:3996-4005 @ f0736b24) : sur un format 9 secteurs (18 $F7), l'adresse
-     // DMA finale dépasse d'environ 18 octets, au bloc FIFO de 16 près, ce que donnerait la fiche.
+     // [B] p. 1-15 : $F7 écrit deux octets de CRC pour une seule DRQ. [D] fdc.c:3996-4005 @ f0736b24 le compte
+     // pour un octet, et l'adresse DMA finale d'un format 9 secteurs y dépasse d'environ 18 octets : la fiche prime.
      case RUN_WT_TRANSFER_LOOP:
         if (dmaBytesToTransfer_-- > 0) {
-            bufferAdd(fifoPull());
+            const uint8_t b = fifoPull();
+            bufferAdd(b);
             fdcCycles = transferDelay(1);
+            if (b == 0xF7 && dmaBytesToTransfer_ > 0) { --dmaBytesToTransfer_; fdcCycles = transferDelay(2); }
         } else {
             commandState_ = RUN_WT_COMPLETE; fdcCycles = CMD_IMMEDIATE;
         }
