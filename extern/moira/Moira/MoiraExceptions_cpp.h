@@ -8,20 +8,17 @@
 template <Core C> void
 Moira::writeStackFrameAEBE(StackFrame &frame)
 {
-    // Push PC
-    push<C, Word>((u16)frame.pc);
-    push<C, Word>(frame.pc >> 16);
-
-    // Push SR and IRD
-    push<C, Word>(frame.sr);
-    push<C, Word>(frame.ird);
-
-    // Push address
-    push<C, Word>((u16)frame.addr);
-    push<C, Word>(frame.addr >> 16);
-
-    // Push memory access type and function code
-    push<C, Word>(frame.code);
+    // [D] Ordre d'écriture : fx68k @ 0602ee46, Hatari newcpu.c Exception_ce000 @ f0736b24. Il se
+    // voit quand une seconde faute interrompt la trame. [B] M68000UM § 6.3.9 fig. 6-7 : le
+    // format, pas l'ordre. Les autres cœurs gardent leur chemin : cette trame est propre au 68000.
+    U32_DEC(reg.sp, 14);
+    write<C, AddrSpace::DATA, Word>(U32_ADD(reg.sp, 12), (u16)frame.pc);
+    write<C, AddrSpace::DATA, Word>(U32_ADD(reg.sp, 8), frame.sr);
+    write<C, AddrSpace::DATA, Word>(U32_ADD(reg.sp, 10), frame.pc >> 16);
+    write<C, AddrSpace::DATA, Word>(U32_ADD(reg.sp, 6), frame.ird);
+    write<C, AddrSpace::DATA, Word>(U32_ADD(reg.sp, 4), (u16)frame.addr);
+    write<C, AddrSpace::DATA, Word>(U32_ADD(reg.sp, 0), frame.code);
+    write<C, AddrSpace::DATA, Word>(U32_ADD(reg.sp, 2), frame.addr >> 16);
 }
 
 template <Core C> void

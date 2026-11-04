@@ -7,14 +7,19 @@
 //  le FDC et la RAM à l'adresse $FF8609/0B/0D. La face/lecteur vient du port A
 //  du YM2149 (actif bas). La fin de commande est signalée par l'INTRQ du FDC,
 //  câblé sur GPIP5 du MFP (actif bas), qu'EmuTOS poll via timeout_gpip.
+//  [B] WD177X-00 p. 1-3 (broche 28) : INTRQ est actif HAUT en sortie de puce.
+//  [D] Hatari fdc.c:2240-2242 @ f0736b24 : le signal est inversé avant GPIP5.
 //
-//  Modèle ROTATIONNEL fidèle Hatari (fdc.c, chemin « _ST ») : machine à états
+//  Modèle ROTATIONNEL dérivé d'Hatari (fdc.c, chemin « _ST ») : machine à états
 //  par commande, datée au cycle FDC (≈ cycle CPU à ~8 MHz). On modélise la
 //  rotation du disque (impulsions d'index, position tête / secteur), le spin-up
-//  (6 tours), le chargement de tête (15 ms), la latence rotationnelle par
-//  secteur, le transfert DMA octet par octet (FIFO 16 o) et l'INTRQ datée. Le
-//  débit MFM réel (256 cyc/octet) et le spin-up débloquent les jeux à
-//  track-loader maison (Arkanoid…). Vérité matérielle : extern/hatari/src/fdc.c.
+//  ([B] WD177X-00 p. 1-7 : 6 tours), le chargement de tête ([B] p. 1-6 : 15 ms
+//  sur 1772), la latence rotationnelle par secteur, le transfert DMA octet par
+//  octet (FIFO 16 o) et l'INTRQ datée. Le débit MFM réel ([B] p. 1-1 : 250 kbit/s,
+//  soit 256 cyc/octet à 8 MHz) et le spin-up débloquent les jeux à track-loader
+//  maison (Arkanoid…). Référence d'implémentation, PAS vérité matérielle :
+//  [D] Hatari fdc.c @ f0736b24 ; la fiche prime (références et empreinte en tête de
+//  Fdc.cpp, écarts connus marqués « ⚠ [B] » sur place).
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -69,8 +74,10 @@ public:
     // Lecteur BRANCHÉ ou non (port de Hatari FDC_Drive_Set_Enable, option
     // `--drive-b off`). Un lecteur débranché se comporte comme « aucun lecteur
     // sélectionné » : pas d'index, TR00/INDEX/WPRT éteints, Restore qui n'atteint
-    // jamais la piste 0. C'est ce que sonde le TOS au boot pour compter ses lecteurs :
-    // B débranché → _nflops ($4A6) = 1, et GEMDOS demande « Insert disk B: » dans A.
+    // jamais la piste 0 ([D] fdc.c:1597, 2670-2679, 4856-4857 @ f0736b24). C'est ce que
+    // sonde le TOS au boot pour compter ses lecteurs : B débranché → _nflops ($4A6) = 1,
+    // et GEMDOS demande « Insert disk B: » dans A.
+    // [F] Sonde TOS non relue dans une ROM ici : tranché par son désassemblage.
     void setDriveEnabled(int drive, bool on) { driveEnabled_[drive & 1] = on; refreshDriveSide(); }
     bool driveEnabled(int drive) const { return driveEnabled_[drive & 1]; }
 
@@ -128,10 +135,12 @@ public:
     // Le délai ACSI est compté en cycles CPU, à convertir dans l'horloge bus.
     void    onCpuSpeedChange(bool was16Mhz, bool is16Mhz);
 
-    // Reset matériel (bouton reset / power-cycle) — port de Hatari FDC_Reset :
-    // registres WD1772, machine à états, DMA/FIFO et INTRQ au repos ; à froid,
-    // TR/DR et le mot $FF8604 rémanent sont aussi effacés. Les images montées
-    // et la position physique des têtes survivent.
+    // Reset matériel (bouton reset / power-cycle) — port de Hatari FDC_Reset
+    // ([D] fdc.c:1189-1232 @ f0736b24) : registres WD1772, machine à états, DMA/FIFO et
+    // INTRQ au repos ; à froid, TR/DR et le mot $FF8604 rémanent sont aussi effacés.
+    // Les images montées et la position physique des têtes survivent.
+    // [B] WD177X-00 p. 1-2 (broche MR), p. 1-23 (tMR ≥ 50 µs) : l'impulsion réinitialise
+    // la puce et son registre d'état, sans détailler TR, SR ni DR.
     void    reset(bool cold);
 
     // Sauvegarde/restauration de l'état RUNTIME du contrôleur (WD1772 + DMA).
@@ -246,7 +255,7 @@ public:
     // Relit lecteur/face depuis le port A du PSG ; au CHANGEMENT de lecteur, réinitialise
     // la référence d'index du modèle rotationnel (port de FDC_SetDriveSide, fdc.c).
     // PUBLIC (et non plus privé) parce que le PSG doit POUSSER : Hatari appelle
-    // FDC_SetDriveSide depuis l'écriture du port A (psg.c:419-420), et NeoST fait de même
+    // FDC_SetDriveSide depuis l'écriture du port A ([D] psg.c:419-420 @ f0736b24), et NeoST fait de même
     // via Machine (setPortASink). Sans cette poussée, un programme qui écrit sa commande
     // FDC AVANT de sélectionner le lecteur reste bloqué avec driveSel_ = -1 — cf. D-PSG.
     // Idempotent : ne ré-ancre l'index que si le lecteur a effectivement changé.
@@ -291,7 +300,9 @@ private:
 
         // Pistes .ST reformatées par WRITE TRACK dans une géométrie que le conteneur
         // ne sait pas représenter (IDs hors 1..spt, tailles ≠ 512, IDs étrangers…) :
-        // un vrai WD1772 les écrit sans erreur et les relit. NeoST les garde EN
+        // un vrai WD1772 les écrit sans erreur et les relit ([B] WD177X-00 p. 1-13 : tout
+        // motif hors $F5-$FE s'écrit tel quel ; p. 1-5 : 128 à 1024 o ; p. 1-18 : variations
+        // de format admises sous conditions ; relecture : p. 1-10). NeoST les garde EN
         // MÉMOIRE (volatiles : ni le fichier .st ni le save-state ne les portent) ;
         // un WRITE TRACK standard ultérieur de la même piste les efface. Clé :
         // (piste physique << 1) | face. Cf. STE_Test v1.9, test F (secteurs 10-18).
@@ -310,9 +321,10 @@ private:
         // Un disque est présent si on a des octets .ST OU une image STX montée.
         bool present() const { return !image.empty() || stx != nullptr; }
 
-        // Détection de changement de média (Mediach) à chaud (cf. Hatari
-        // floppy.c:Floppy_DriveTransition*) : une éjection/insertion à chaud force
-        // brièvement WPRT, ce que TOS surveille pour relire le répertoire. On modélise
+        // Détection de changement de média (Mediach) à chaud ([D] Hatari floppy.c:435-501,
+        // fdc.c:198-225 @ f0736b24, relevé WPT d'un tiers sur 520 STF rapporté par Hatari) :
+        // une éjection/insertion à chaud force brièvement WPRT, ce que TOS surveille pour
+        // relire le répertoire. La fiche WD177X-00 est muette : c'est le lecteur. On modélise
         // ce créneau par deux actions datées : la première puis la dernière
         // opposée. 0 = aucune ; 1 = éjection (force WPRT) ; 2 = insertion (ne force rien).
         enum TransitionPhase { TRANS_NONE = 0, TRANS_EJECT = 1, TRANS_INSERT = 2 };
@@ -337,6 +349,8 @@ private:
     // est multiplié d'autant (256 cyc/octet en DD, 128 en HD) ; la rotation
     // (300 tr/min) ne change pas. Sur Mega STE, $FF860E (bits 0-1) doit être
     // accordé à la densité du média, sinon RNF/LOST_DATA (CanMachineHandleDensity).
+    // [D] fdc.c:131-134, 1898-1920 @ f0736b24. [B] WD177X-00 p. 1-1 ne connaît que 125 et
+    // 250 kbit/s, à 8 MHz (p. 1-2) : la fiche est muette sur HD et ED.
     int      computeFloppyDensity(const FloppyDisk& dk, int track, int side) const;
     void     updateFloppyDensity(int drive);    // rafraîchit FloppyDisk::density (sélection, seek/step)
     int      densityFactor() const;             // facteur du lecteur sélectionné (1 si aucun)
@@ -349,14 +363,14 @@ private:
     void     indexIncrease(int64_t ipTime);     // valide une impulsion (compteur + son + force-int)
     int      indexCurrentPosBytes() const;      // position tête depuis l'index, en octets (−1 si pas de média)
     int      indexCurrentPosCycles() const;     // position tête depuis l'index, en cycles FDC (STX)
-    bool     indexState() const;                // signal d'index actif (≈ 3,71 ms/tour)
+    bool     indexState() const;                // signal d'index actif ([D] fdc.c:422-423 @ f0736b24 : ≈ 3,71 ms/tour)
     int64_t  nextIndexCycles() const;           // cycles FDC avant la prochaine impulsion (−1 si pas de média)
 
     // --- Machine à états des commandes (cf. Hatari FDC_Update*Cmd) -------------
     void     executeCommand(uint8_t cmd);       // décode CR, lance la commande, programme le 1er événement
     void     updateStr(uint8_t dis, uint8_t en) { str_ = uint8_t((str_ & ~dis) | en); }
     bool     setMotorOn(uint8_t cr);            // démarre le moteur ; renvoie true si spin-up nécessaire
-    int      cmdComplete(bool doInt);           // fin de commande : BUSY tombe, INTRQ, puis MOTOR_STOP
+    int      cmdComplete(bool doInt);           // fin de commande : BUSY tombe, INTRQ, puis MOTOR_STOP ([B] WD177X-00 p. 1-5, p. 1-7)
     bool     verifyTrack();                     // vérif piste type I (toujours OK pour .ST sauf bord)
     int      updateMotorStop();
     int      updateRestore();
@@ -469,6 +483,8 @@ private:
     // Horloge FDC = horloge CPU « live » (sous-instruction si dispo), absolue et
     // continue. La conversion cycles-FDC ↔ cycles-CPU est l'identité sur ST (le
     // WD1772 tourne à ~8,021 MHz, comme le CPU).
+    // [D] fdc.c:385, 394 @ f0736b24 : 8,021247 MHz sur ST. [B] WD177X-00 p. 1-2 (broche 18)
+    // veut 8 MHz à 0,1 % près : le ST est à +0,27 %, et les délais de la fiche valent à 8 MHz.
     int64_t  nowCyc() const { return sched_ ? sched_->liveNow() : 0; }
 
     std::function<void(FdcSound)> soundSink_;    // bruits mécaniques (cosmétique)
@@ -490,18 +506,20 @@ private:
     bool stOverrideFromBuffer(FloppyDisk& dk);
     uint8_t  tr_ = 0;        // Track Register
     uint8_t  sr_ = 1;        // Sector Register
-    uint8_t  dr_ = 0;        // Data Register (destination des SEEK)
+    uint8_t  dr_ = 0;        // Data Register (destination des SEEK, [B] WD177X-00 p. 1-3)
     uint8_t  str_ = 0;       // Status Register
-    int      stepDir_ = 1;   // sens du dernier pas (+1 / −1)
+    int      stepDir_ = 1;   // sens du dernier pas (+1 / −1) ([B] WD177X-00 p. 1-6, p. 1-8)
     uint8_t  side_ = 0;      // face sélectionnée (0/1)
     int      driveSel_ = -1; // lecteur sélectionné (0/1) ou −1
     uint8_t  irqSignal_ = 0; // sources d'IRQ actives (cf. IRQ_SOURCE_*)
-    uint16_t densityMode_ = 0; // $FF860E : bits 0-1 = mode FDC (0x00 DD, 0x03 HD) — porte Mega STE
+    uint16_t densityMode_ = 0; // $FF860E : bits 0-1 = mode FDC (0x00 DD, 0x03 HD) — porte Mega STE ([D] fdc.c:131-134 @ f0736b24)
 
     // État de la machine à états.
     int      command_ = 0;            // commande en cours (CMD_*) ; 0 = inactif
     int      commandState_ = 0;       // sous-état (RUN_*)
     uint8_t  commandType_ = 1;        // 1/2/3/4
+    // ⚠ [B] WD177X-00 p. 1-5 : hors Force Interrupt, aucune commande n'est chargée tant que BUSY
+    // est levé. [D] fdc.c:161-168, 4567 @ f0736b24 : remplaçable pendant prepare+spinup. Écart non corrigé, cf. write8.
     bool     replaceCommandPossible_ = false; // remplaçable pendant prepare+spinup
     int64_t  vblCounter_ = 0;                 // horloge Mediach, sauvegardée
     bool     driveEnabled_[2] = {true, true};   // cf. setDriveEnabled (config, pas d'état)
@@ -519,7 +537,8 @@ private:
 
     // Position rotationnelle : cycle CPU de la dernière impulsion d'index (0 =
     // inconnue) et PRNG déterministe pour la phase initiale (reproductible →
-    // headless byte-exact, mais variable d'un démarrage moteur à l'autre).
+    // headless byte-exact, mais variable d'un démarrage moteur à l'autre ;
+    // [D] fdc.c:2077, 4083 @ f0736b24 : position aléatoire au démarrage du moteur).
     int64_t  indexTime_ = 0;
     uint32_t rng_ = 0x2545F491u;
     uint32_t rngNext() { rng_ ^= rng_ << 13; rng_ ^= rng_ >> 17; rng_ ^= rng_ << 5; return rng_; }

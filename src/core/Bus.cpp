@@ -967,7 +967,7 @@ uint8_t Bus::rdBlitter(uint32_t a) { return blitter->read8(a); }        // Mega 
 void    Bus::wrBlitter(uint32_t a, uint8_t v) { blitter->write8(a, v); }
 
 uint8_t Bus::rdMfp(uint32_t a) {
-    // $FFFA31-$FFFA3F (impairs) : VOID chez Hatari (ioMemTabST.c:143-150,
+    // $FFFA31-$FFFA3F (impairs) : VOID chez Hatari ([D] ioMemTabST.c:143-150 @ f0736b24,
     // IoMem_VoidRead) — lecture 0xFF, AUCUN wait-state (pas de handler). Le dernier
     // registre câblé est l'UDR USART à $FFFA2F.
     // Octets PAIRS : non décodés par le 68901 (registres sur adresses impaires).

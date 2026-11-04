@@ -103,7 +103,7 @@ public:
     // (double faute de bus, FIDÈLE — cf. docs/CASE_STUDIES.md) pour un « ça plante »
     // pendant des semaines. `valid` est faux tant qu'aucune faute de groupe 0 n'a été
     // prise ; `addr`/`pc` portent alors la DERNIÈRE (celle qui a doublé la faute).
-    // Équivalent des `last_*_for_exception_3` d'Hatari (newcpu.c:3086).
+    // Équivalent des `last_*_for_exception_3` d'Hatari ([D] newcpu.c:86-88 @ f0736b24).
     struct Fault {
         bool     valid = false;
         uint32_t addr  = 0;      // adresse fautive

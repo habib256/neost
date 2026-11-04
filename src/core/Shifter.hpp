@@ -47,12 +47,12 @@ public:
     // strictement inchangé (zéro régression hors spec512).
     void finishFrame();
     // Commit des scanlines TERMINÉES, appelé au HBL de chaque ligne (port de
-    // l'appel Video_EndHBL du handler HBL d'Hatari, video.c:3319) : la capture
+    // l'appel Video_EndHBL du handler HBL d'Hatari, [D] video.c:3337 @ f0736b24) : la capture
     // lineSnap_ d'une ligne se fait à SA fin de ligne (~cycle 512). Cf. Shifter.cpp.
     void commitScanline(int line);
     bool spec512Active() const { return spec512Active_; }
 
-    // Remise à zéro au RESET machine — port de Video_Reset (video.c:810) : base
+    // Remise à zéro au RESET machine — port de Video_Reset ([D] video.c:810 @ f0736b24) : base
     // vidéo, registres STE (line-offset/scroll + modifications différées), compteur
     // vidéo matérialisé, dernier Freq/Res vus par la Glue (ShifterFrame.Freq/Res =
     // −1 → le filtre « même valeur ignorée » repart neutre) et état glue par-trame.
@@ -61,7 +61,7 @@ public:
     // Machine::reset() (branché par l'orchestrateur).
     void reset();
     // Broche /RESET du 68000 (instruction RESET) : port de Video_Reset_Glue
-    // (video.c:904) — SEULEMENT la fréquence et la résolution, PAS l'adresse écran ni
+    // ([D] video.c:904 @ f0736b24) — SEULEMENT la fréquence et la résolution, PAS l'adresse écran ni
     // la palette (Video_Reset, lui, remet videoBase à 0 ; customreset() n'appelle que
     // Video_Reset_Glue). `mono` vient du bit 7 du GPIP (moniteur branché).
     void resetGlue(bool mono) {
@@ -79,6 +79,14 @@ public:
     // haut/bas sans dépendre du timing CPU (≠ test 68k cycle-exact). Renvoie true si OK ;
     // détaille les échecs sur stderr. Appelé par neost-headless --glue-selftest.
     bool glueSelfTest();
+    // Banc de la machine GLUE (tools/glue_bare_bench.cpp) : rejoue des écritures {ligne, cycle,
+    // résolution ?, valeur} sur une trame basse résolution 50 Hz, puis lit une ligne.
+    struct GlueProbe { int start, end, bytes; uint32_t mask; int64_t lineStart; };
+    // Le faisceau est-il hors de la fenêtre DE horizontale de la ligne courante ? Fréquence courante, y compris
+    // sur les lignes de bordure : c'est HDE1, pas DE. [D] gstmcu @ 4a6db7cc, hdegen.v, cf. DmaSound::liveCounter.
+    bool outsideHorizontalDe();
+    void glueBenchReplay(const std::vector<std::array<int, 4>>& writes, uint8_t sync = 0x02);
+    GlueProbe glueBenchLine(int line) const;
 
     // NEOST_LINELEN : l'UNIQUE lecteur du verrou « longueurs de ligne par-ligne »
     // côté Machine (défaut ON, =0 pour l'A/B). L'attribution expérimentale côté
@@ -222,7 +230,7 @@ public:
 
     // V2 — post-traitement d'une écriture RES ($FF8260) APRÈS updateGlueState :
     // détections spécifiques aux bascules de résolution (Video_WriteToGlueRes,
-    // video.c:1637-1753) — overscan MED-RES (No Cooper/PYM), retrait gauche med
+    // [D] video.c:1637-1753 @ f0736b24) — overscan MED-RES (No Cooper/PYM), retrait gauche med
     // (LEFT_OFF_MED), variante courte STE, stab med et scrolls « hardware »
     // 13/9/5/1 px. `prevRes`/`newRes` = valeur $FF8260&3 avant/après l'écriture.
     void updateGlueRes(int line, int lineCycles, int prevRes, int newRes);
@@ -247,7 +255,7 @@ public:
     // port de `Video_TimerB_GetPosFromDE` appliqué à `ShifterLines[n]` : sur une
     // trame à tricks, le DE de la ligne vient de la machine Glue (retrait droit →
     // DE_end 462 → tic à ~488, etc.). Hatari REPROGRAMME l'interruption TB à chaque
-    // écriture qui change le DE (video.c:2880-2891) ; côté NeoST, Machine::onTimerB
+    // écriture qui change le DE ([D] video.c:2906 @ f0736b24) ; côté NeoST, Machine::onTimerB
     // re-vérifie cette position au callback et se replanifie si elle a reculé.
     // Chantier Closure (docs/CLOSURE_CHANTIER.md) : la démo CHRONOMÈTRE les tics TB
     // de lignes sondées une à une — position globale seule = mesure hors barème.
@@ -294,7 +302,7 @@ public:
     // du Display-Enable de la ligne courante est DIFFÉRÉE (port NewLineWidth).
     uint8_t lineWidth = 0;
     // Dernière valeur BRUTE écrite dans $FF8264 (STE) : Hatari n'intercepte PAS la
-    // relecture de ce registre (ioMemTabSTE → Video_HorScroll_Read_8264, video.c:5813
+    // relecture de ce registre (ioMemTabSTE → Video_HorScroll_Read_8264, [D] video.c:5846 @ f0736b24
     // — IoMem conserve l'octet écrit, y compris les bits hauts non masqués).
     uint8_t hwScrollReg8264_ = 0;
 
@@ -337,6 +345,7 @@ private:
     bool     newHwScrollPrefetch_ = false;
     int      newLineWidth_       = -1;
     int      vcDelayedOffset_    = 0;   // écart compteur (écriture $FF8205/07/09 pendant le DE)
+    int32_t  vcDelayedAddr_      = -1;  // adresse absolue (même écriture en bordure droite) ; −1 = rien
     // RESTART du compteur en fin de trame (port Video_RestartVideoCounter : ligne
     // 310/260, cycle 56 [+4 STE], AVANT le VBL) : base RE-LATCHÉE depuis $FF8201/03
     // à cet instant. −1 = pas (encore) redémarré cette trame. Les lectures
@@ -363,11 +372,11 @@ private:
     // TOUTES les machines émulées — ST, Mega ST, STE, Mega STE plafonnent à 4 Mo et
     // leur MMU n'a pas de lignes d'adresse au-delà ($FF8201/$FF8205 n'ont que 6 bits
     // utiles). Hatari : Video_GetAddrMask() = DMA_MaskAddressHigh()<<16 | $FFFF =
-    // $3FFFFF pour ST/STE ≤ 4 Mo (m68000.c:958 « same as real HW ») ; les masques
+    // $3FFFFF pour ST/STE ≤ 4 Mo ([D] m68000.c:958 @ f0736b24 « same as real HW ») ; les masques
     // $7F/$FF n'existent que pour la RAM « fictive » > 4 Mo ou TT/Falcon (24 bits),
     // non émulés ici. Le compteur se REPLIE donc modulo 4 Mo quand il avance, et
     // chaque mot fetché par le DMA vidéo est adressé modulo 4 Mo (video_memcpy_mmu,
-    // video.c:3797) — jamais la MMIO $FFxxxx (lectures à effets de bord).
+    // [D] video.c:3797 @ f0736b24) — jamais la MMIO $FFxxxx (lectures à effets de bord).
     static constexpr uint32_t kVideoAddrMask = 0x3FFFFFu;
     static constexpr int kLineSnapBytes = 256;   // ≥ kSnapLead + 230 (LEFT+RIGHT_OFF) + marge décodage
     // Marge de TÊTE de chaque slot de capture : les octets [base−kSnapLead, base)
@@ -433,20 +442,20 @@ private:
     int64_t datedResWriteCycle() const;           // datation commune des écritures freq/res (−1 hors trame)
     // Dernier Freq (bit1 de $FF820A) / dernière Res ($FF8260 & 3) VUS par la Glue —
     // port de ShifterFrame.Freq / ShifterFrame.Res : une réécriture de la MÊME
-    // valeur est IGNORÉE par la machine Glue (Video_Sync_WriteByte video.c:3056,
-    // Video_WriteToGlueRes video.c:1630 — `if (Freq == ShifterFrame.Freq) return;`).
+    // valeur est IGNORÉE par la machine Glue (Video_Sync_WriteByte [D] video.c:3056 @ f0736b24,
+    // Video_WriteToGlueRes [D] video.c:1630 @ f0736b24 — `if (Freq == ShifterFrame.Freq) return;`).
     // Persistants À TRAVERS les trames ; remis à −1 SEULEMENT au reset (Video_Reset
-    // video.c:824-825), jamais à beginFrame. −1 = aucune écriture vue.
+    // [D] video.c:824-825 @ f0736b24), jamais à beginFrame. −1 = aucune écriture vue.
     int lastGlueFreq_ = -1;
     int lastGlueRes_  = -1;
 
     // --- Résolution VUE PAR LE SHIFTER ($FF8260 ET son alias $FF8261) ----------
     // Le registre de résolution existe en DOUBLE : dans la GLUE (timings, DE,
     // bordures) et dans le SHIFTER (décodage des mots livrés par le MMU). $FF8260
-    // écrit les deux ; $FF8261 n'écrit QUE le Shifter (ioMemTabST.c:71,
-    // ioMemTabSTE.c:120 — « Resolution in Shifter only », mêmes sur STF et STE).
+    // écrit les deux ; $FF8261 n'écrit QUE le Shifter ([D] ioMemTabST.c:71 @ f0736b24,
+    // [D] ioMemTabSTE.c:120 @ f0736b24 — « Resolution in Shifter only », mêmes sur STF et STE).
     // Le Shifter n'a ni UDS ni LDS : il lit TOUJOURS les bits 8-9 du bus de données
-    // (Hatari Video_Res_WriteByte, video.c:5700-5770). D'où :
+    // (Hatari Video_Res_WriteByte, [D] video.c:5736 @ f0736b24). D'où :
     //   • move.b #x,$FF8261 → le 68000 duplique l'octet sur D0-D15 → Shifter = x ;
     //   • move.w #xyab,$FF8260 → Shifter = Glue = xy (l'octet ab, adressé à $8261,
     //     est ignoré par le Shifter) ;
@@ -463,7 +472,7 @@ private:
     int64_t stopFromFc_      = -1;
     int64_t lastStopFromFc_  = -1;
     int64_t lastStopToFc_    = -1;
-    // Scroll hard STF « 4 px » par Shifter arrêté (Troed/Sync, port video.c:1906-1973) :
+    // Scroll hard STF « 4 px » par Shifter arrêté (Troed/Sync, port [D] video.c:1906-1973 @ f0736b24) :
     // res=3 pendant 8..32 cycles alors que le DE est actif → toutes les lignes
     // SUIVANTES de la trame sont décalées de 0/−4/−8/−12 px et le compteur vidéo
     // reçoit −0/−2/−4/−6 octets à la fin de la ligne courante (VideoRasterDelayedInc).
@@ -524,6 +533,9 @@ private:
         uint32_t borderMask;          // BORDERMASK_* (cf. Shifter.cpp)
     };
     std::vector<GlueLine> glueLines_;               // état par scanline (taille lpf+2)
+    bool glueLateHiOn_ = false;                     // rejeu STE : haute résolution posée dans (40, 56]
+    std::vector<int64_t>* benchLineStarts_ = nullptr;    // banc seul : débuts de ligne vus par le rejeu
+    std::vector<int64_t> glueBenchStarts_;
     int  glueStartHBL_   = 63;                       // nStartHBL : 1ʳᵉ ligne affichée (peut baisser → top retiré)
     int  glueEndHBL_     = 263;                      // nEndHBL : dernière ligne+1 (peut monter → bottom retiré)
     uint32_t glueVOverscan_ = 0;                     // V_OVERSCAN_* (NO_TOP/NO_BOTTOM/NO_DE…)
@@ -563,6 +575,7 @@ private:
     // ligne courante (bascules 60/50 mi-ligne : right-2, stop, retraits) — c'est ce que
     // mesurent les routines de calibration fullscreen (Enchanted Land) sur $FF8209.
     void liveGlueCatchUp(int targetLine);
+    bool beamLineActive(int line);
     int         liveGlueLine_   = -1;   // dernière ligne initialisée (startHBL) par le live
     std::size_t liveGlueWi_     = 0;    // prochaine écriture syncWrites_ à consommer
     int         liveGlueRes_    = 0;    // res courante du curseur live (0/1/2)
@@ -639,6 +652,7 @@ private:
     int           curAH_ = 0;               // lignes actives à décoder (200/400)
     int           activeX_ = 0, activeY_ = 0;  // offset de l'écran actif dans le buffer
     Mode          frameMode_ = Mode::Low;   // résolution verrouillée pour la trame
+    int           frameStartRes_ = 0;       // $FF8260 au début de la trame (peut différer de frameMode_)
     uint8_t       frameSync_ = 0x02;        // fréquence ($FF820A) verrouillée pour la trame
     std::vector<uint32_t> frame_;           // curW_*curH_ pixels ARGB
     std::function<int64_t()> beamClock_;    // cycles dans la trame (cf. setBeamClock)
@@ -693,7 +707,9 @@ public:
         ar.check(newHwScrollCount_ >= -1 && newHwScrollCount_ < 16);
         ar(newHwScrollPrefetch_);
         ar(newLineWidth_);
-        ar(vcDelayedOffset_);
+        ar(vcDelayedOffset_); ar(vcDelayedAddr_);
+        ar(frameStartRes_);
+        ar.check(frameStartRes_ >= 0 && frameStartRes_ <= 3);
         ar(vcRestartBase_);
         ar(vcRestartLine_);
         // Résolution côté Shifter + scroll hard « Shifter arrêté » (format v50).

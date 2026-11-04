@@ -142,9 +142,9 @@ bool StxImage::parse(std::vector<uint8_t> raw) {
             // TrackImageSize vient du FICHIER (0..65535) : le plafonner sur ce qui
             // reste réellement du tampon. Sans ça, une .stx tronquée fait lire
             // Fdc::readTrackStx jusqu'à 64 Ko au-delà du tas (la boucle n'est bornée
-            // que par trackImageSize). Hatari ne borne pas non plus (stx.c:1095) mais
+            // que par trackImageSize). Hatari ne borne pas non plus ([D] stx.c:1095 @ f0736b24) mais
             // NeoST borne tous les autres champs — c'était le dernier trou. On
-            // TRONQUE plutôt qu'on ne rejette (esprit du clamp de msa.c:205) : une
+            // TRONQUE plutôt qu'on ne rejette (esprit du clamp de [D] msa.c:205 @ f0736b24) : une
             // image partiellement valide reste exploitable.
             } else if ((trk.flags & TRACK_FLAG_IMAGE_SYNC) == 0) {
                 if (2u <= std::size_t(next - trk.pTrackData)) {

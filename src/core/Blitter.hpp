@@ -12,9 +12,9 @@
 //     le CPU est arrêté pendant toute la durée (4 cycles par accès bus, comptés
 //     pendant le transfert et facturés via Cpu68k::addBusWaitCycles) ;
 //   - mode NON-HOG : le blitter transfère par TRANCHES de 64 accès bus exactement
-//     (suspension MID-WORD comme BLITTER_CONTINUE_LATER_IF_MAX_BUS_REACHED — l'état
+//     (suspension MID-WORD comme BLITTER_CONTINUE_LATER_IF_MAX_BUS_REACHED [D] blitter.c:476 @ f0736b24 — l'état
 //     du mot en cours survit à la coupure), puis rend le bus au CPU pour 64 accès
-//     bus CPU RÉELS (port BLITTER_PHASE_COUNT_CPU_BUS : comptés par les callbacks
+//     bus CPU RÉELS (port BLITTER_PHASE_COUNT_CPU_BUS [D] blitter.c:234 @ f0736b24 : comptés par les callbacks
 //     mémoire de Moira, cf. noteCpuBusAccess ; le 64ᵉ arme la fenêtre PRE_START et
 //     date la tranche suivante à +4 cycles) — l'alternance 64/64 du vrai matériel.
 //     BUSY et les compteurs/adresses sont lisibles EN COURS de blit (progression
@@ -23,7 +23,7 @@
 //  Le stall CPU avance l'horloge cycle-exact de Moira, comme les autres wait
 //  states de bus. HOG et partagé reprennent après PRE_START pendant l'instruction
 //  et conservent un crédit de cycles internes CPU recouverts par la tranche ;
-//  le prochain accès bus l'annule (Blitter_Check_Simultaneous_CPU).
+//  le prochain accès bus l'annule (Blitter_Check_Simultaneous_CPU [D] blitter.c:1641 @ f0736b24).
 //  MegaSTE 16 MHz : les hits du cache CPU sont comptés comme
 //  accès bus (approximation, le vrai cache ne sort pas sur le bus).
 //
@@ -31,6 +31,7 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
+#include <functional>
 
 #include "core/Scheduler.hpp"
 #include "core/StateArchive.hpp"
@@ -58,6 +59,10 @@ public:
     // Échéance Scheduler::BLITTER : 64 accès partagés ou transfert HOG entier.
     void onSlice();
 
+    // Observateur des accès bus du blitter (écriture ?, adresse, mot), posé par les bancs.
+    // Non sérialisé. Désarmé, il coûte un test par accès.
+    std::function<void(bool, uint32_t, uint16_t)> accessObserver;
+
     // Le blit est-il en cours ? (bit BUSY de $FF8A3C). En non-hog il reste à 1
     // entre les tranches, jusqu'à la fin réelle du transfert.
     bool busy() const { return (reg_[0x3C] & 0x80) != 0; }
@@ -75,7 +80,6 @@ public:
         ar(nfsrInt_);           // dernière lecture source de la ligne sautée
         ar(haveSrc_);           // lecture source du mot courant faite
         ar(haveDst_);           // lecture destination du mot courant faite
-        ar(fetchSrc_);          // une source a été lue (màj src_addr en fin de mot)
         ar(dstWord_);           // mot destination lu (survit à la suspension)
         ar(sliceBus_);          // accès bus consommés par la tranche en cours
         ar(cpuBusCnt_);         // accès bus CPU consommés (fenêtre COUNT_CPU_BUS)
@@ -99,11 +103,11 @@ private:
     void     writeWord(uint32_t addr, uint16_t v);
 
 public:
-    // Bug matériel « 63 accès au lieu de 64 » (blitter.c:69-79) : un accès bus CPU
+    // Bug matériel « 63 accès au lieu de 64 » ([D] blitter.c:69-79 @ f0736b24) : un accès bus CPU
     // pendant la fenêtre PRE_START est compté à tort par le blitter — la prochaine
     // tranche non-hog ne fera que 63 accès. Appelé par Cpu68k.cpp (Moira seul).
     void notePreStartCpuAccess();
-    // Fenêtre CPU non-hog (port Blitter_HOG_CPU_mem_access_after, blitter.c:1603) :
+    // Fenêtre CPU non-hog (port Blitter_HOG_CPU_mem_access_after, [D] blitter.c:1603 @ f0736b24) :
     // chaque accès bus CPU pendant que bus_.blitterCountCpu est armé incrémente le
     // compteur ; le 64ᵉ relance le blitter (PRE_START à now+4). Appelé par Cpu68k.cpp.
     void noteCpuBusAccess(int64_t now);
@@ -114,7 +118,7 @@ private:
     uint8_t reg_[0x40] = {};                 // backing store big-endian ($FF8A00 base)
     // Hatari : le registre à décalage source (buffer) et le dernier mot du bus
     // (bus_word) PERSISTENT entre blits (remis à 0 seulement au reset matériel).
-    // Blitter_CheckAccess_Byte n'actualise pas IoMem sur un registre mot : les
+    // Blitter_CheckAccess_Byte [D] blitter.c:972 @ f0736b24 n'actualise pas IoMem sur un registre mot : les
     // octets lus sont ceux du dernier accès CPU, pas les compteurs vivants.
     // Initialisé à l'allocation / reset froid, préservé par le reset matériel.
     uint32_t buffer_  = 0;
@@ -126,10 +130,10 @@ private:
     uint16_t xReset_   = 0;                  // recharge du X count (x_count_reset, latché
                                              // à CHAQUE écriture de $FF8A36, cf. write16)
     // Compteur Y VIVANT (port Hatari BlitterRegs.y_count) : la conversion 0→65536
-    // se fait À L'ÉCRITURE du registre $FF8A38 (Blitter_LinesPerBitblock_WriteWord),
+    // se fait À L'ÉCRITURE du registre $FF8A38 (Blitter_LinesPerBitblock_WriteWord [D] blitter.c:1356 @ f0736b24),
     // PAS à la relecture du résiduel. Indispensable pour distinguer « le programme
     // a écrit 0 = 65536 lignes » d'un « transfert DÉJÀ terminé (résiduel 0) » :
-    // dans ce second cas, re-poser BUSY ne relance RIEN (blitter.c:1433-1437 — le
+    // dans ce second cas, re-poser BUSY ne relance RIEN ([D] blitter.c:1433-1437 @ f0736b24 — le
     // protocole restart du driver blitter du TOS re-set BUSY après chaque blit).
     uint32_t yLatch_   = 0;
     // Garde de RÉ-ENTRANCE : vrai pendant runSlice(). Les accès bus du blitter passent
@@ -137,8 +141,8 @@ private:
     // dont la DESTINATION est son propre registre de contrôle se relançait donc
     // lui-même en plein transfert, avec des compteurs non encore réécrits : récursion
     // infinie et SIGSEGV de l'émulateur, déclenchables par un simple programme émulé.
-    // Hatari ne peut pas connaître ce cas : Blitter_Control_WriteByte n'appelle jamais
-    // Blitter_Start(), il passe par une phase/interruption différée (blitter.c:1421).
+    // Hatari ne peut pas connaître ce cas : Blitter_Control_WriteByte [D] blitter.c:1393 @ f0736b24 n'appelle jamais
+    // Blitter_Start(), il passe par une phase/interruption différée ([D] blitter.c:1421 @ f0736b24).
     // Transitoire (toujours faux hors runSlice) → non sérialisé en save-state.
     bool     inSlice_  = false;
     bool     midBlit_  = false;              // un transfert est engagé (même en pause)
@@ -149,7 +153,6 @@ private:
     // permettent de reprendre exactement à l'accès suivant.
     bool     haveSrc_  = false;              // lecture source du mot courant déjà faite
     bool     haveDst_  = false;              // lecture destination du mot courant déjà faite
-    bool     fetchSrc_ = false;              // une source a été lue (màj src_addr en fin de mot)
     uint16_t dstWord_  = 0;                  // mot destination lu (survit à la suspension)
     // int64 : un blit HOG x_count=y_count=0 vaut 65536×65536 → ~8,6e9 accès bus, soit
     // un débordement signé (UB) sur int, et « busAccesses * 4 » débordait dès 5,4e8 —

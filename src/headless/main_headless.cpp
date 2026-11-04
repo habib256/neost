@@ -129,6 +129,7 @@ void usage() {
         "                    (repeatable)\n"
         "  --joy P1[,P0]     hold a joystick state (bits up$01 down$02 l$04 r$08 fire$80)\n"
         "  --disk FILE       mount an image in drive A (default disks/diskA.st)\n"
+        "  --disk-at N FILE  swap the disk in drive A at frame N (repeatable)\n"
         "  --diskb FILE      mount an image in drive B (second drive)\n"
         "  --drive-b on|off  connect drive B (default on). off = single-drive ST:\n"
         "                    TOS finds one drive (_nflops = 1) and asks to swap\n"
@@ -225,6 +226,8 @@ void usage() {
         "  --dump-at N A L F raw dump of L bytes of RAM from $A (hex) after frame N → F\n"
         "  --probe NAME=A:L  sample L bytes (1/2/4) at hex address A, repeatable.\n"
         "                    Side-effect free (debugger read): I/O registers read $FF\n"
+        "  --state-hash-every N  print a hash of the full machine state every N frames:\n"
+        "                    the first differing line dates a loss of determinism\n"
         "  --probe-every N   emit one sample line on STDOUT every N frames:\n"
         "                    'probe frame=.. screen=<hash> [ram=<hash>] NAME=0x..'\n"
         "  --hash-ram A:L    add ram=<hash> over L bytes at $A (both hex): a cheap\n"
@@ -250,9 +253,9 @@ void usage() {
 // =============================================================================
 // =============================================================================
 //  Connecteur de bouclage RS-232 : les lignes de contrôle doivent RECOPIER les
-//  sorties RTS/DTR du PSG, qui sont ACTIVES BAS (Hatari psg.c:223 — port A à $ff
+//  sorties RTS/DTR du PSG, qui sont ACTIVES BAS ([D] Hatari psg.c:223 @ f0736b24 — port A à $ff
 //  au reset, « no drive selected » ; sélection lecteur testée par
-//  « (PORTA & (1<<1)) == 0 », psg.c:400). Le câblage vit dans une lambda de
+//  « (PORTA & (1<<1)) == 0 », [D] psg.c:400 @ f0736b24). Le câblage vit dans une lambda de
 //  Machine, donc il faut une Machine : pas testable depuis neost-selftest.
 // =============================================================================
 int serialLoopbackSelfTest(Machine& machine) {
@@ -1198,6 +1201,9 @@ int main(int argc, char** argv) {
     // occurrences = plusieurs frappes datées (menus en cascade — cracktro D-BUG
     // « Y/N » PUIS « press any key », etc.).
     std::vector<std::pair<int, std::string>> keysAtList;
+    // --disk-at N FILE : change la disquette du lecteur A à la trame N, comme le menu de la
+    // GUI (Machine::loadDisk). Pour les titres sur plusieurs disquettes.
+    std::vector<std::pair<int, std::string>> diskAtList;
     // --key-down N C / --key-up N C : make SEUL à la trame N (resp. break seul) —
     // reproduit une touche TENUE comme en GUI (≠ --keys-at qui pulse make/break
     // toutes les 4 trames). C = caractère de la table stScancode ('[' ']' '<' '>'…).
@@ -1249,6 +1255,7 @@ int main(int argc, char** argv) {
     // marché pour un pilote externe. Cf. headless/Observe.hpp.
     observe::ProbeSet probeSet;
     int         probeEvery  = 0;      // 0 = pas d'échantillonnage
+    int         stateHashEvery = 0;   // --state-hash-every : empreinte de l'état complet (StateArchive)
     // --server : la même machine, conduite au tuyau au lieu d'être rejouée en entier
     // à chaque itération. Cf. headless/Server.cpp et docs/OPENDST.md.
     bool        serverMode  = false;
@@ -1395,6 +1402,7 @@ int main(int argc, char** argv) {
         }
         else if (!std::strcmp(a, "--shot-from"))   shotFrom = std::atoi(next(a));
         else if (!std::strcmp(a, "--keys-at"))     { const int f = std::atoi(next(a)); keysAtList.emplace_back(f, next(a)); }
+        else if (!std::strcmp(a, "--disk-at"))     { const int f = std::atoi(next(a)); diskAtList.emplace_back(f, next(a)); }
         else if (!std::strcmp(a, "--key-down"))    { const int f = std::atoi(next(a)); keyDownList.emplace_back(f, next(a)[0]); }
         else if (!std::strcmp(a, "--key-up"))      { const int f = std::atoi(next(a)); keyUpList.emplace_back(f, next(a)[0]); }
         // ⚠ --joy-at prend DEUX arguments : les temporaires sont OBLIGATOIRES. Un
@@ -1471,6 +1479,7 @@ int main(int argc, char** argv) {
             }
             if (!observe::addProbe(probeSet, p, e)) { std::fprintf(stderr, "--probe: %s\n", e.c_str()); return 2; }
         }
+        else if (!std::strcmp(a, "--state-hash-every")) stateHashEvery = std::atoi(next(a));
         else if (!std::strcmp(a, "--probe-every")) {
             // Strict : « abc » et « 0 » devenaient 1 en silence, à rebours de la rigueur
             // affichée pour --probe et --server-slots.
@@ -2006,6 +2015,8 @@ int main(int argc, char** argv) {
     // Même chose pour l'horloge IKBD (commande $1C) : EmuTOS STE/ST affiche la
     // date/heure du bureau depuis l'IKBD, pas la RTC — figée pour le déterminisme.
     machine.ikbd.setClock(26, 1, 1, 12, 0, 0);
+    // L'horloge de l'UltraSatan aussi : éteinte, elle reste sérialisée, et --state-hash-every la verrait.
+    machine.usatan.setDateTime(UltraSatan::DateTime{2026, 1, 1, 12, 0, 0});
 
     machine.reset();
 
@@ -2253,6 +2264,9 @@ int main(int argc, char** argv) {
 #ifdef NEOST_WITH_NET
         if (midiRing) midiRing->poll([](uint8_t) { return false; });
 #endif
+        for (const auto& [df, dp] : diskAtList)
+            if (frame == df && !machine.loadDisk(dp))
+                std::fprintf(stderr, "[headless] --disk-at: cannot load %s\n", dp.c_str());
         // Injections datées (--keys-at / --joy-at) : pilotage d'un menu de démo en
         // PLEINE boucle (l'intro Cuddly attend espace ; le robot du menu, le stick),
         // sans perdre --shot-every. Une touche = make à +0, break à +2, 4 trames/char.
@@ -2386,6 +2400,15 @@ int main(int argc, char** argv) {
             }
         }
         machine.runFrame();
+        if (stateHashEvery > 0 && (frame + 1) % stateHashEvery == 0) {
+            // Empreinte de l'état complet : FNV-1a 64 bits de l'archive du save-state.
+            std::vector<uint8_t> st;
+            if (machine.saveState(st)) {
+                uint64_t h = 14695981039346656037ull;
+                for (uint8_t b : st) { h ^= b; h *= 1099511628211ull; }
+                std::printf("state-hash frame=%d %016llx\n", frame + 1, static_cast<unsigned long long>(h));
+            }
+        }
         framesRun = frame + 1;
         // NEOST_BAND_DIAG=1 : signale l'APPARITION d'une bande pleine largeur d'une
         // seule couleur dans l'aire active — le symptôme rapporté sur Super Hang-On

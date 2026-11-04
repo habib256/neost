@@ -232,6 +232,7 @@ def ipl_sweep() -> int:
     progs.mkdir(parents=True, exist_ok=True)
     cores = [("fx68k", FXBIN, BUILD, ()), ("moira", MOIRA, ROOT, ()),
              ("iplfetch", MOIRA, ROOT, ("--ipl-fetch",))]
+    cores += [(f"lag{n}", MOIRA, ROOT, ("--ipl-lag", str(n))) for n in (2, 3)]
     for name, start, count in SWEEPS:
         image = progs / f"{name}.bin"
         image.write_bytes(build_program(name))

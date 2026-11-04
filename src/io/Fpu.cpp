@@ -116,7 +116,7 @@ sf::Status Fpu::sfStatus() const {
         case 0:  s.roundingPrecision = sf::prec_extended; break; // étendu
         case 1:  s.roundingPrecision = sf::prec_single;   break; // simple
         // Le motif RÉSERVÉ (11) tombe sur DOUBLE, pas sur étendu : c'est là qu'Hatari
-        // place son `default:` (fpp_softfloat.c:56-66), et le silicium 6888x se comporte
+        // place son `default:` ([D] fpp_softfloat.c:56-66 @ f0736b24), et le silicium 6888x se comporte
         // ainsi. NeoST rendait 80 bits là où la référence en rend 64.
         default: s.roundingPrecision = sf::prec_double;   break; // double (10) / réservé (11)
     }
@@ -511,7 +511,7 @@ void Fpu::command(uint16_t cmd) {
             startMoveOut(cmd);
             break;
         case 4: {                                // opclass 100 : <ea> → FPCR/FPSR/FPIAR
-            // Masque VIDE = FPIAR (quirk 68881, cf. Hatari fpp.c:3317 « No control
+            // Masque VIDE = FPIAR (quirk 68881, cf. Hatari [D] fpp.c:3317 @ f0736b24 « No control
             // register bits set: FPIAR ») — l'ancien no-op laissait l'instruction
             // sans transfert.
             if (!(cmd & 0x1C00)) cmd_ = cmd = uint16_t(cmd | 0x0400);
@@ -520,7 +520,7 @@ void Fpu::command(uint16_t cmd) {
             break;
         }
         case 5: {                                // opclass 101 : FPCR/FPSR/FPIAR → <ea>
-            if (!(cmd & 0x1C00)) cmd = uint16_t(cmd | 0x0400);   // masque vide = FPIAR (fpp.c:3366)
+            if (!(cmd & 0x1C00)) cmd = uint16_t(cmd | 0x0400);   // masque vide = FPIAR ([D] fpp.c:3366 @ f0736b24)
             int p = 0;
             if (cmd & 0x1000) { put32(buf_ + p, fpcr_);  p += 4; }
             if (cmd & 0x0800) { put32(buf_ + p, fpsr_);  p += 4; }
@@ -664,7 +664,7 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
     fpsr_ &= ~0x0000FF00u;                       // EXC effacé en début d'instruction
 
     // -------- FMOVE / FABS / FNEG : arrondi à la précision du FPCR ---------
-    // Port de floatx80_move/abs/neg (Hatari softfloat.c:3279-3417). Contrairement
+    // Port de floatx80_move/abs/neg (Hatari [D] softfloat.c:3279-3417 @ f0736b24). Contrairement
     // à FMOVECR, roundAndPack réduit AUSSI la plage d'exposant en simple/double.
     if (op == 0x00 || op == 0x18 || op == 0x1A) {
         sf::Status st = sfStatus();
@@ -710,7 +710,7 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
         }
         case 0x1F: rf = sf::getMan(s, st);              break;                 // FGETMAN
         case 0x1E: {                                                           // FGETEXP
-            // Ordre d'Hatari (softfloat.c:3201) : le NaN passe par propagateNaN1, qui
+            // Ordre d'Hatari ([D] softfloat.c:3201 @ f0736b24) : le NaN passe par propagateNaN1, qui
             // QUIÈTE un SNaN et lève flag_signaling → FPSR.SNAN + AEXC.IOP (vecteur 54
             // si armé). L'ancien code rendait l'opérande BRUT : le SNaN restait
             // signalant et aucun drapeau n'était posé — cf. le même correctif déjà
@@ -725,7 +725,7 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
         }
         case 0x26: {                                                          // FSCALE : d × 2^trunc(s)
             // NaN → propagation ; exposant ±∞ → OPERR + NaN par défaut ; d = ±∞/±0
-            // inchangé (port floatx80_scale, softfloat.c:3258).
+            // inchangé (port floatx80_scale, [D] softfloat.c:3258 @ f0736b24).
             if (sf::isNaN(s) || sf::isNaN(d)) { rf = sf::propagateNaN(st, d, s); break; }
             if (sf::expOf(s) == 0x7FFF) { rf = sf::defaultNaN(); st.exceptionFlags |= sf::flag_invalid; break; }
             if (sf::expOf(d) == 0x7FFF ||
@@ -758,7 +758,7 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
         case 0x24: rf = sf::sgldiv(d, s, st); break;   // FSGLDIV (cf. SoftFloatX80.hpp)
         case 0x27: rf = sf::sglmul(d, s, st); break;   // FSGLMUL (cf. SoftFloatX80.hpp)
         case 0x38: case 0x39: {                                               // FCMP (0x39 alias)
-            // Port de floatx80_cmp (softfloat.c:3345) : les CC dérivent du RÉSULTAT
+            // Port de floatx80_cmp ([D] softfloat.c:3345 @ f0736b24) : les CC dérivent du RÉSULTAT
             // symbolique pack(sign,…) — en particulier Z **et** N pour −0 vs ±0 et
             // −∞ vs −∞ (l'ancien compare() ne posait que Z), et une entrée SNaN
             // lève le drapeau signalant (→ FPSR.SNAN).

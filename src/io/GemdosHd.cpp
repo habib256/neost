@@ -715,7 +715,7 @@ std::string GemdosHd::matchHostDirEntry(const std::string& path, const std::stri
     struct dirent* e;
     while ((e = readdir(dir))) {
         // macOS rend les noms en forme DÉCOMPOSÉE (NFD) : on recompose AVANT de
-        // comparer, et on retient le nom RECOMPOSÉ (≙ gemdos.c:1201 et 1214, qui
+        // comparer, et on retient le nom RECOMPOSÉ (≙ [D] gemdos.c:1201 @ f0736b24 et 1214, qui
         // convertit d_name sur place puis le strdup). Sans ça, un fichier accentué
         // du lecteur GEMDOS est introuvable depuis le TOS. Nul sur Linux.
         const std::string dnBuf = neost::hostpath::precomposeUtf8(e->d_name);
@@ -931,7 +931,7 @@ bool GemdosHd::gemDFree(uint32_t p) {
 
     uint64_t total = 32 * 1024, freeC = 16 * 1024;   // défaut : 32 Mo / 16 Mo libres
 #if defined(__unix__) || defined(__APPLE__)
-    // Espace RÉEL du disque hôte (port GemDOS_DFree, gemdos.c:1692-1746) : les
+    // Espace RÉEL du disque hôte (port GemDOS_DFree, [D] gemdos.c:1658 @ f0736b24) : les
     // valeurs factices trompaient « Informations disque » et tout installeur qui
     // vérifie Dfree avant d'extraire. Clusters de 1 Ko (secteurs 512 × 2, cf. bas).
     {
@@ -1197,7 +1197,7 @@ bool GemdosHd::gemWrite(uint32_t p) {
     if (writeProtect_) { setD0(cpu_, GEMDOS_EWRPRO); return true; }
     FILE* fp = fileHandles_[fh].fp;
     // Taille NÉGATIVE → ERANGE comme Hatari (le Size int32 négatif y échoue au
-    // contrôle mémoire non-signé, gemdos.c:2477) ; l'ancien « size = 0 » rendait
+    // contrôle mémoire non-signé, [D] gemdos.c:2477 @ f0736b24) ; l'ancien « size = 0 » rendait
     // D0=0 (« 0 octet écrit ») pour une longueur qui a débordé en négatif.
     if (size < 0) { setD0(cpu_, GEMDOS_ERANGE); return true; }
     if (!checkArea(addr, size, /*allowRom=*/true)) { setD0(cpu_, GEMDOS_ERANGE); return true; }
@@ -1409,7 +1409,7 @@ bool GemdosHd::gemSFirst(uint32_t p) {
 
     // Dossier + masque : sépare le dossier hôte du masque de fichiers — SANS jamais
     // remonter au-dessus de la racine du lecteur (port de fsfirst_dirname,
-    // gemdos.c:493-524). Fsfirst("C:\") donne host == hdEmuDir sans composant final :
+    // [D] gemdos.c:493-524 @ f0736b24). Fsfirst("C:\") donne host == hdEmuDir sans composant final :
     // l'ancien rfind() scannait le dossier hôte PARENT du montage (sortie du bac à
     // sable + entrée DTA fantôme au nom du dossier partagé) au lieu de scanner la
     // racine avec un masque immatchable → EFILNF, comme Hatari/TOS.
@@ -1431,7 +1431,7 @@ bool GemdosHd::gemSFirst(uint32_t p) {
     std::string mask = baseName(host.c_str());
     std::vector<std::string> all;
     struct dirent* e;
-    // Recomposition NFD → NFC comme ci-dessus (≙ gemdos.c:3182) : le listing Fsfirst
+    // Recomposition NFD → NFC comme ci-dessus (≙ [D] gemdos.c:3182 @ f0736b24) : le listing Fsfirst
     // doit rendre le même nom que celui que matchHostDirEntry saura retrouver.
     while ((e = readdir(dir))) all.push_back(neost::hostpath::precomposeUtf8(e->d_name));
     closedir(dir);

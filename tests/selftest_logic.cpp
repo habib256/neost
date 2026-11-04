@@ -151,7 +151,10 @@ int testMfpMmioDecode(); // pairs fautifs, mots partiels et impairs void MFP
 bool testPsgOddWrite(); // ombres impaires PSG selon largeur du Bus
 int testDmaSoundMmioState(); // octet FF8920 conservé dans les sauvegardes
 bool testPsgReset(); // image des registres et silence après reset PSG
+bool testYmC10Noise(); // filtre C10 aux coupures du circuit, bruit R6=0 égal à R6=1
 int testBlitterRmw(); // atomicité TAS devant une échéance blitter
+int testBlitterShareGap(); // tranches du blitter selon l'instruction du CPU (banc stBlitter)
+int testSteCmapSlot(); // $FF8920-3F attend le créneau de la RAM sur STE (netlist ST-4081)
 int testMachineFdcMediaVbl(); // Mediach suit les vrais VBL malgré la fréquence vidéo
 int testGemdosDriveMapping(); // GEMDOS après les partitions ACSI, routage des lecteurs
 int testAcsiPartitions(); // comptage des racines DOS/Atari et des cibles ACSI
@@ -162,6 +165,7 @@ int testFdcLiveMedia(); // sélection live et validation CHS du nouveau média
 int testMidiRxPhase(); // horloge MIDI RX continue
 bool testSccAutoEnables(); // qualification CTS/DCD des canaux SCC
 int testMachineMfpTx(); // émission via Bus/Machine
+int testMfpPulse();     // modes pulse des timers A/B, d'après la fiche
 int testMidiRx(); // RDR MIDI et acquittement de l’overrun
 int testMfpRxTiming(); // format et phase des caractères USART
 bool testSccAsync(); // lecture RR8 dans les formats courts SCC
@@ -1645,7 +1649,7 @@ static void testBlitterTruthTable() {
 //  A29 — « puce nue + Scheduler » étendu au SON DMA (STE).
 //
 //  Les registres $FF8909/0B/0D (compteur d'adresse VIVANT) sont au cœur de la
-//  divergence Hatari encore ouverte sur la quantification HBL du refill FIFO ; ils
+//  refill du FIFO hors de cette puce nue (Machine pose la fenêtre) ; ils
 //  n'étaient couverts par AUCUN test — un étalon pixel ne voit pas le son, et le
 //  dump WAV ne dit pas OÙ le pointeur en était. Ni machine ni ROM : un Bus, un
 //  Scheduler, un DmaSound.
@@ -2902,7 +2906,10 @@ int main() {
     if (testPsgOddWrite()) ++g_ok; else ++g_fail;
     if (const int failures = testDmaSoundMmioState()) g_fail += failures; else ++g_ok;
     if (testPsgReset()) ++g_ok; else ++g_fail;
+    if (testYmC10Noise()) ++g_ok; else ++g_fail;
     if (const int failures = testBlitterRmw()) g_fail += failures; else ++g_ok;
+    if (const int failures = testBlitterShareGap()) g_fail += failures; else ++g_ok;
+    if (const int failures = testSteCmapSlot()) g_fail += failures; else ++g_ok;
     if (const int failures = testMachineFdcMediaVbl()) g_fail += failures; else ++g_ok;
     if (const int failures = testGemdosDriveMapping()) g_fail += failures; else ++g_ok;
     if (const int failures = testAcsiPartitions()) g_fail += failures; else ++g_ok;
@@ -2913,6 +2920,7 @@ int main() {
     if (const int failures = testMidiRxPhase()) g_fail += failures; else ++g_ok;
     if (testSccAutoEnables()) ++g_ok; else ++g_fail;
     if (const int failures = testMachineMfpTx()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpPulse()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiRx()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpRxTiming()) g_fail += failures; else ++g_ok;
     if (testSccAsync()) ++g_ok; else ++g_fail;

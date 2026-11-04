@@ -1,17 +1,8 @@
 {
  "reset_nop": {
-  "status": "diverge",
-  "first": {
-   "index": 5,
-   "kind": "time",
-   "after": "fc6 R2 001012=46FC",
-   "access": "fc6 R2 001014=2700",
-   "delta": [
-    6,
-    4
-   ]
-  },
-  "mismatches": 1,
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
   "swaps": 0,
   "access_mismatches": 0,
   "extra": [
@@ -20,59 +11,49 @@
   ],
   "total": [
    102,
-   100
+   102
   ]
  },
  "alu_loops": {
-  "status": "diverge",
-  "first": {
-   "index": 29,
-   "kind": "extra_fx",
-   "fx": "fc6 R2 00102A=4E71",
-   "moira": "fc6 R2 001030=7E03"
-  },
-  "mismatches": 14,
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
   "swaps": 0,
   "access_mismatches": 0,
   "extra": [
-   14,
-   14
+   0,
+   0
   ],
   "total": [
    1190,
-   1188
+   1190
   ]
  },
  "mixed": {
-  "status": "diverge",
-  "first": {
-   "index": 25,
-   "kind": "swap",
-   "fx": "fc5 W2 007FFE=1116",
-   "moira": "fc5 W2 007FFC=0000"
-  },
+  "status": "agree",
+  "first": null,
   "mismatches": 0,
-  "swaps": 15,
+  "swaps": 0,
   "access_mismatches": 0,
   "extra": [
-   3,
-   3
+   0,
+   0
   ],
   "total": [
    1494,
-   1492
+   1494
   ]
  },
  "exceptions": {
   "status": "diverge",
   "first": {
-   "index": 87,
-   "kind": "swap",
-   "fx": "fc5 W2 007FFE=1042",
-   "moira": "fc5 W2 007FFC=0000"
+   "index": 137,
+   "kind": "extra_fx",
+   "fx": "fc5 R0 002000=00",
+   "moira": "fc5 W2 007FFE=1052"
   },
   "mismatches": 2,
-  "swaps": 6,
+  "swaps": 0,
   "access_mismatches": 0,
   "extra": [
    1,
@@ -80,7 +61,142 @@
   ],
   "total": [
    842,
-   840
+   842
+  ]
+ },
+ "rmw_long": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   2802,
+   2802
+  ]
+ },
+ "ea_move_w": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   2410,
+   2410
+  ]
+ },
+ "ea_move_l": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   2998,
+   2998
+  ]
+ },
+ "ea_alu": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   3700,
+   3700
+  ]
+ },
+ "ea_alu_mem": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   3986,
+   3986
+  ]
+ },
+ "ea_unary": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   5964,
+   5964
+  ]
+ },
+ "flow": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   1032,
+   1032
+  ]
+ },
+ "movem": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   7406,
+   7406
+  ]
+ },
+ "misc_extra": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   1364,
+   1364
   ]
  },
  "trace": {
@@ -95,7 +211,7 @@
   ],
   "total": [
    412,
-   410
+   412
   ]
  },
  "tas": {
@@ -110,7 +226,7 @@
   ],
   "total": [
    122,
-   120
+   122
   ]
  },
  "irq_nop+0": {
@@ -130,7 +246,7 @@
   ],
   "total": [
    370,
-   368
+   370
   ],
   "iplfetch": {
    "status": "agree",
@@ -138,7 +254,7 @@
    "first": null,
    "total": [
     370,
-    368
+    370
    ]
   }
  },
@@ -154,7 +270,7 @@
   ],
   "total": [
    370,
-   368
+   370
   ],
   "iplfetch": {
    "status": "diverge",
@@ -167,7 +283,7 @@
    },
    "total": [
     370,
-    368
+    370
    ]
   }
  },
@@ -188,7 +304,7 @@
   ],
   "total": [
    370,
-   368
+   370
   ],
   "iplfetch": {
    "status": "agree",
@@ -196,7 +312,7 @@
    "first": null,
    "total": [
     370,
-    368
+    370
    ]
   }
  },
@@ -217,7 +333,7 @@
   ],
   "total": [
    370,
-   368
+   370
   ],
   "iplfetch": {
    "status": "agree",
@@ -225,7 +341,7 @@
    "first": null,
    "total": [
     370,
-    368
+    370
    ]
   }
  },
@@ -246,7 +362,7 @@
   ],
   "total": [
    370,
-   368
+   370
   ],
   "iplfetch": {
    "status": "agree",
@@ -254,7 +370,7 @@
    "first": null,
    "total": [
     370,
-    368
+    370
    ]
   }
  },
@@ -270,7 +386,7 @@
   ],
   "total": [
    370,
-   368
+   370
   ],
   "iplfetch": {
    "status": "diverge",
@@ -283,7 +399,7 @@
    },
    "total": [
     370,
-    368
+    370
    ]
   }
  },
@@ -304,7 +420,7 @@
   ],
   "total": [
    370,
-   368
+   370
   ],
   "iplfetch": {
    "status": "agree",
@@ -312,7 +428,7 @@
    "first": null,
    "total": [
     370,
-    368
+    370
    ]
   }
  },
@@ -333,7 +449,7 @@
   ],
   "total": [
    370,
-   368
+   370
   ],
   "iplfetch": {
    "status": "agree",
@@ -341,7 +457,7 @@
    "first": null,
    "total": [
     370,
-    368
+    370
    ]
   }
  },
@@ -357,7 +473,7 @@
   ],
   "total": [
    606,
-   604
+   606
   ],
   "iplfetch": {
    "status": "diverge",
@@ -370,7 +486,7 @@
    },
    "total": [
     606,
-    604
+    606
    ]
   }
  },
@@ -386,7 +502,7 @@
   ],
   "total": [
    606,
-   604
+   606
   ],
   "iplfetch": {
    "status": "diverge",
@@ -399,7 +515,7 @@
    },
    "total": [
     606,
-    604
+    606
    ]
   }
  },
@@ -415,7 +531,7 @@
   ],
   "total": [
    606,
-   604
+   606
   ],
   "iplfetch": {
    "status": "diverge",
@@ -428,7 +544,7 @@
    },
    "total": [
     606,
-    604
+    606
    ]
   }
  },
@@ -444,7 +560,7 @@
   ],
   "total": [
    606,
-   604
+   606
   ],
   "iplfetch": {
    "status": "diverge",
@@ -457,7 +573,7 @@
    },
    "total": [
     606,
-    604
+    606
    ]
   }
  },
@@ -473,7 +589,7 @@
   ],
   "total": [
    606,
-   604
+   606
   ],
   "iplfetch": {
    "status": "diverge",
@@ -486,7 +602,7 @@
    },
    "total": [
     606,
-    604
+    606
    ]
   }
  },
@@ -502,7 +618,7 @@
   ],
   "total": [
    606,
-   604
+   606
   ],
   "iplfetch": {
    "status": "diverge",
@@ -515,7 +631,7 @@
    },
    "total": [
     606,
-    604
+    606
    ]
   }
  },
@@ -531,7 +647,7 @@
   ],
   "total": [
    606,
-   604
+   606
   ],
   "iplfetch": {
    "status": "diverge",
@@ -544,7 +660,7 @@
    },
    "total": [
     606,
-    604
+    606
    ]
   }
  },
@@ -560,7 +676,7 @@
   ],
   "total": [
    606,
-   604
+   606
   ],
   "iplfetch": {
    "status": "diverge",
@@ -573,7 +689,7 @@
    },
    "total": [
     606,
-    604
+    606
    ]
   }
  },
@@ -589,7 +705,7 @@
   ],
   "total": [
    254,
-   252
+   254
   ],
   "iplfetch": {
    "status": "diverge",
@@ -606,7 +722,7 @@
    },
    "total": [
     254,
-    256
+    258
    ]
   }
  },
@@ -622,7 +738,7 @@
   ],
   "total": [
    254,
-   252
+   254
   ],
   "iplfetch": {
    "status": "diverge",
@@ -639,7 +755,7 @@
    },
    "total": [
     254,
-    256
+    258
    ]
   }
  },
@@ -664,7 +780,7 @@
   ],
   "total": [
    258,
-   252
+   254
   ],
   "iplfetch": {
    "status": "agree",
@@ -672,7 +788,7 @@
    "first": null,
    "total": [
     258,
-    256
+    258
    ]
   }
  },
@@ -688,7 +804,7 @@
   ],
   "total": [
    258,
-   256
+   258
   ],
   "iplfetch": {
    "status": "diverge",
@@ -705,7 +821,7 @@
    },
    "total": [
     258,
-    260
+    262
    ]
   }
  },
@@ -721,7 +837,7 @@
   ],
   "total": [
    258,
-   256
+   258
   ],
   "iplfetch": {
    "status": "diverge",
@@ -738,7 +854,7 @@
    },
    "total": [
     258,
-    260
+    262
    ]
   }
  },
@@ -754,7 +870,7 @@
   ],
   "total": [
    258,
-   256
+   258
   ],
   "iplfetch": {
    "status": "diverge",
@@ -771,7 +887,7 @@
    },
    "total": [
     258,
-    260
+    262
    ]
   }
  },
@@ -796,7 +912,7 @@
   ],
   "total": [
    262,
-   256
+   258
   ],
   "iplfetch": {
    "status": "agree",
@@ -804,7 +920,7 @@
    "first": null,
    "total": [
     262,
-    260
+    262
    ]
   }
  },
@@ -820,7 +936,7 @@
   ],
   "total": [
    262,
-   260
+   262
   ],
   "iplfetch": {
    "status": "diverge",
@@ -837,23 +953,14 @@
    },
    "total": [
     262,
-    264
+    266
    ]
   }
  },
  "stop_pending+0": {
-  "status": "diverge",
-  "first": {
-   "index": 29,
-   "kind": "time",
-   "after": "fc6 R2 001040=2300",
-   "access": "fc5 W2 007FFE=1042",
-   "delta": [
-    18,
-    14
-   ]
-  },
-  "mismatches": 1,
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
   "swaps": 0,
   "access_mismatches": 0,
   "extra": [
@@ -862,40 +969,22 @@
   ],
   "total": [
    210,
-   204
+   210
   ],
   "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 29,
-    "kind": "time",
-    "after": "fc6 R2 001040=2300",
-    "access": "fc5 W2 007FFE=1042",
-    "delta": [
-     18,
-     14
-    ]
-   },
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
    "total": [
     210,
-    204
+    210
    ]
   }
  },
  "stop_pending+1": {
-  "status": "diverge",
-  "first": {
-   "index": 29,
-   "kind": "time",
-   "after": "fc6 R2 001040=2300",
-   "access": "fc5 W2 007FFE=1042",
-   "delta": [
-    18,
-    14
-   ]
-  },
-  "mismatches": 1,
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
   "swaps": 0,
   "access_mismatches": 0,
   "extra": [
@@ -904,40 +993,22 @@
   ],
   "total": [
    210,
-   204
+   210
   ],
   "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 29,
-    "kind": "time",
-    "after": "fc6 R2 001040=2300",
-    "access": "fc5 W2 007FFE=1042",
-    "delta": [
-     18,
-     14
-    ]
-   },
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
    "total": [
     210,
-    204
+    210
    ]
   }
  },
  "stop_pending+2": {
-  "status": "diverge",
-  "first": {
-   "index": 29,
-   "kind": "time",
-   "after": "fc6 R2 001040=2300",
-   "access": "fc5 W2 007FFE=1042",
-   "delta": [
-    18,
-    14
-   ]
-  },
-  "mismatches": 1,
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
   "swaps": 0,
   "access_mismatches": 0,
   "extra": [
@@ -946,40 +1017,22 @@
   ],
   "total": [
    210,
-   204
+   210
   ],
   "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 29,
-    "kind": "time",
-    "after": "fc6 R2 001040=2300",
-    "access": "fc5 W2 007FFE=1042",
-    "delta": [
-     18,
-     14
-    ]
-   },
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
    "total": [
     210,
-    204
+    210
    ]
   }
  },
  "stop_pending+3": {
-  "status": "diverge",
-  "first": {
-   "index": 29,
-   "kind": "time",
-   "after": "fc6 R2 001040=2300",
-   "access": "fc5 W2 007FFE=1042",
-   "delta": [
-    18,
-    14
-   ]
-  },
-  "mismatches": 1,
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
   "swaps": 0,
   "access_mismatches": 0,
   "extra": [
@@ -988,24 +1041,15 @@
   ],
   "total": [
    210,
-   204
+   210
   ],
   "iplfetch": {
-   "status": "diverge",
-   "mismatches": 1,
-   "first": {
-    "index": 29,
-    "kind": "time",
-    "after": "fc6 R2 001040=2300",
-    "access": "fc5 W2 007FFE=1042",
-    "delta": [
-     18,
-     14
-    ]
-   },
+   "status": "agree",
+   "mismatches": 0,
+   "first": null,
    "total": [
     210,
-    204
+    210
    ]
   }
  }

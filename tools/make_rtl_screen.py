@@ -7,7 +7,7 @@
 #  chaotique pour qu'un seul alignement coïncide, et assez courte pour tenir dans le
 #  secteur de boot. Couleur 0 non noire : elle distingue bordure et noir de BLANK.
 #
-#  Usage : make_rtl_screen.py <sortie.st>   (« ntsc » dans le nom → 60 Hz)
+#  Usage : make_rtl_screen.py <sortie.st>   (« ntsc » dans le nom → 60 Hz, « med » → moyenne résolution)
 #
 #  Le 68000 est BIG-ENDIAN : mots assemblés octet par octet. Secteur de boot
 #  exécutable = somme des 256 mots (mod 65536) == 0x1234.
@@ -34,7 +34,7 @@ def screen_words(seed: int = SEED) -> list[int]:
     return out
 
 
-def boot_disk(ntsc: bool) -> bytes:
+def boot_disk(ntsc: bool, med: bool = False) -> bytes:
     code = bytearray()
 
     def w(*words):
@@ -45,7 +45,10 @@ def boot_disk(ntsc: bool) -> bytes:
     while len(code) < 0x1E:
         code.append(0)
     w(0x46FC, 0x2700)                  # move.w #$2700,sr
-    w(0x4238, 0x8260)                  # clr.b $8260.w      → basse résolution
+    if med:
+        w(0x11FC, 0x0001, 0x8260)      # move.b #1,$8260.w  → moyenne résolution
+    else:
+        w(0x4238, 0x8260)              # clr.b $8260.w      → basse résolution
     if ntsc:
         w(0x4238, 0x820A)              # clr.b $820a.w      → 60 Hz
     else:
@@ -91,5 +94,5 @@ def boot_disk(ntsc: bool) -> bytes:
 if __name__ == "__main__":
     path = sys.argv[1]
     with open(path, 'wb') as f:
-        f.write(boot_disk('ntsc' in path))
+        f.write(boot_disk('ntsc' in path, 'med' in path))
     print(f"écrit {path}")

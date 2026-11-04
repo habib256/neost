@@ -21,7 +21,8 @@
 //  UDS/LDS moins un cycle : [B] § 5.1.2 p. 5-6, une écriture pose DS à S4, un cycle après
 //  AS ; § 5.1.3 p. 5-9, la phase d'écriture du RMW pose DS à S16.
 //
-//  Usage : Vfx68k_bench <image.bin> <trace.txt> [--limit N] [--irq T:L]...
+//  Usage : Vfx68k_bench <image.bin> <trace.txt> [--limit N] [--irq T:L]... [--vpa]
+//    --vpa : l'IACK répond par VPA, sans DTACK, comme HBL et VBL sur ST (autovecteur $18+niveau).
 //    image.bin : contenu de la mémoire à partir de $000000 (le reste est à zéro).
 //    --irq T:L : poser le niveau L sur IPL au cycle T, compté depuis le 7e accès bus, le
 //                premier après la séquence de reset (SSP, PC, deux préfetchs), comme côté
@@ -63,6 +64,7 @@ struct Access {
 Access cur;
 bool asLow = false, strobeLow = false, done = false;
 bool armed = false;   // vrai dès qu'AS a été vu haut : les sorties valent 0 avant le reset
+bool useVpa = false;  // l'IACK répond par VPA (autovecteur)
 std::string reason = "limit";
 
 void setIpl(int level) {
@@ -126,13 +128,15 @@ void observe() {
             if (lds) ram[wordAddr + 1] = uint8_t(w);
             cur.data = cur.size == 2 ? w : (uds ? w >> 8 : w & 0xFF);
         }
-        cpu->DTACKn = 0;
+        cpu->DTACKn = (useVpa && fc == 7) ? 1 : 0;
+        cpu->VPAn = (useVpa && fc == 7) ? 0 : 1;
         if (!strobe && strobeLow) {                  // fin du transfert
             strobeLow = false;
             if (!cur.emitted) { emit(cur); cur.emitted = true; }
         }
     } else {
         cpu->DTACKn = 1;
+        cpu->VPAn = 1;
         if (asLow) {
             asLow = false; strobeLow = false;
             if (!cur.emitted) { emit(cur); cur.emitted = true; }
@@ -159,7 +163,7 @@ void cpuCycle() {
 }  // namespace
 
 int main(int argc, char** argv) {
-    if (argc < 3) { std::fprintf(stderr, "usage: %s image.bin trace.txt [--limit N] [--irq T:L]...\n", argv[0]); return 2; }
+    if (argc < 3) { std::fprintf(stderr, "usage: %s image.bin trace.txt [--limit N] [--irq T:L]... [--vpa]\n", argv[0]); return 2; }
     int64_t limit = 400000;
     for (int i = 3; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--limit") && i + 1 < argc) limit = std::atoll(argv[++i]);
@@ -167,7 +171,8 @@ int main(int argc, char** argv) {
             const char* s = argv[++i]; const char* c = std::strchr(s, ':');
             if (!c) { std::fprintf(stderr, "--irq attend T:L\n"); return 2; }
             irqs.push_back({std::atoll(s), std::atoi(c + 1)});
-        } else { std::fprintf(stderr, "argument inconnu : %s\n", argv[i]); return 2; }
+        } else if (!std::strcmp(argv[i], "--vpa")) useVpa = true;
+        else { std::fprintf(stderr, "argument inconnu : %s\n", argv[i]); return 2; }
     }
     if (FILE* f = std::fopen(argv[1], "rb")) {
         const size_t n = std::fread(ram.data(), 1, ram.size(), f);

@@ -30,7 +30,7 @@ fichier est rangé dans cet ordre :
 
 **État au 2026-11-03** : contrat logiciel Mega STE tenu et gardé (suite Q du diagnostic Field
 Service 12/12, grade C) ; aucune divergence haute face à Hatari ; 2 étalons `rtl` ;
-**banc fx68k : 18 variantes sur 34 en accord** cycle à cycle, 9 écarts de cœur localisés (§ 2.1).
+**banc fx68k : 34 variantes sur 43 en accord** cycle à cycle (§ 2.1) ; blitter, GLUE et lecture du faisceau confrontés aux RTL sur STE (§ 4).
 **Pas d'accès à un vrai ST** : les ⏸ matériel passent par les relevés de tiers, les
 documents primaires, les ROM et le RTL épinglé.
 
@@ -57,16 +57,10 @@ documents primaires, les ROM et le RTL épinglé.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | Porter les modes pulse du MFP (fiche contre code), puis retrancher le reste | P1 | 2.3 |
-| 2 | STOP avec IRQ pendante : Moira part 4 cycles avant fx68k et Hatari, rouvrir la décision du 2026-10-22 | P1 | 2.1 |
-| 3 | Date limite de la broche IPL : modèle à deux étages d'après `fx68k.sv`, qualifié par `--ipl-sweep` puis dans NeoST | P1 | 2.1 |
-| 4 | Ordre des accès dans Moira (MOVEM.L, ADDQ.L, JSR, DBcc) : porter, trois témoins concordent | P1 | 2.1 |
-| 5 | Lire au RTL épinglé : `$FF8261`, blanking, GPIP3 ; trancher le noir sous BLANK | P1 | 2.2 |
-| 6 | Couvrir Mega ST et TOS 1.00/1.04/1.06 par des étalons : ROM présentes sur le disque privé | P1 | 3 |
-| 7 | A43 : dette de preuve, MFP puis Blitter | P1 | 4 |
-| 8 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
-| 9 | Banc `stBlitter.sv` sur le modèle du banc fx68k | P2 | 4 |
-| 10 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
+| 1 | Logithèque : relire les écarts de `compare_titles.py --joy`, étendre `tests/replays/replays.json` | P1 | 3 |
+| 2 | A43 : relire les écarts `⚠ [B]` restants du MFP, du WD1772, de l'ACIA et du SCC | P1 | 4 |
+| 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
+| 4 | A32 : `VideoCounter` en objet membre (un chantier à la fois) | P2 | 7 |
 
 ---
 
@@ -84,22 +78,10 @@ ici ne figure que ce qui demande une décision ou une source.
 témoins : tous grade D, Moira non modifié. La chaîne MFP→IPL de NeoST ajoute ses propres délais :
 requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md).
 
-- **STOP avec IRQ déjà pendante** · P1 ⭘ — Moira part 4 cycles avant fx68k ; Hatari donne le même
-  écart. La décision du 2026-10-22 venait d'une lecture du RTL, sa simulation la contredit. Rouvrir,
-  puis remesurer la chaîne Super Hang-On.
-- **Date limite de la broche IPL** · P1 ⭘ — Moira accepte l'IRQ 3 cycles après fx68k aux frontières
-  d'instructions, donc une instruction trop tôt dans cette fenêtre. `NEOST_IPLFETCH` n'est pas la
-  solution : une instruction de retard sur MULU. Modèle à écrire d'après `fx68k.sv:222-223`, à qualifier
-  par `--ipl-sweep`, puis dans NeoST (étalons Timer B). Absorbe « STOP : synchronisation IPL à deux étages ».
-- **Réveil du STOP** · P2 ⭘ — 1 cycle après fx68k, dans la marge du banc. À revoir avec l'item précédent.
-- **Ordre des accès, trois témoins contre Moira** · P1 ⭘ — mot bas d'abord pour `MOVEM.L -(An)` et
-  `ADDQ.L #,<mem>` ; lecture en plus de `MOVEM.L` après le dernier mot, pas avant le premier ; JSR
-  préfetche la cible avant d'empiler ; le DBcc expiré préfetche l'adresse de branchement. Durées
-  égales. Visible quand l'accès touche un registre à effet de bord ou une zone à bus error.
-- **Trame de l'erreur d'adresse** · P2 ⭘ — fx68k et Hatari l'écrivent dans le même ordre, Moira non.
-  Seul fx68k pose AS sans strobe à l'adresse fautive : ce point reste [D] à un seul témoin.
-- **Reset** · P2 ⭘ — 2 cycles manquent à Moira entre les deux premiers préfetchs (microcode `trap9`).
-  Déplace la phase du faisceau au boot : les étalons à phase E-clock bougeront.
+- **Prise d'IPL sur ST et Mega STE** · P2 ⏸ source · [F] — le STE suit fx68k + GSTMCU depuis le 2026-11-04 (`docs/STCPU_BENCH.md`) ; ST et Mega STE gardent le commit
+  d'Hatari, faute de modèle du GLUE. Le 68000 est le même : à trancher par un modèle du GLUE ST, ou un relevé de tiers.
+- **Erreur d'adresse : cycle amorcé** · P3 ⭘ · [D] — seul fx68k pose AS sans strobe à l'adresse fautive.
+  Un seul témoin, sans effet connu sur un ST.
 - **Latence IACK MFP** · P1 ⏸ matériel · [D] 12 cycles — capturer CLK CPU/MFP, IACK et les
   DTACK puce/CPU sur un vrai ST et un vrai Mega STE, aux trois régimes CPU/cache. Sonde prête
   (`tools/make_mfp_iack_probe.py`, contrôles verts). Le bloc IACK = 12 cycles bus (valeur
@@ -113,43 +95,33 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
 
 ### 2.2 GLUE, MMU, Shifter — vidéo et bus
 
-- **Contention DMA vidéo sur la RAM** · P1 ⭘ · aligné Hatari — MAME la modélise, Hatari non.
-  Le créneau mémoire du CPU suffit-il ? Tranche : [B] `ST4081S.PDF`, puis `ramcyc`/`DTACK_N_O`,
-  `gstmcu.v` @ `4a6db7cc`. → `docs/CYCLE_ACCURACY.md` § 5
-- **Vol de cycles DMA son / FDC sur le bus** · P1 ⭘ · aligné Hatari — écarté faute de modèle
-  chez Hatari. Tranche : `sndcnt.v`, `mcucontrol.v`, puis une sonde.
-- **Couleur pendant BLANK** · P1 ◐ · [F] palette 0 — `gstshifter.v:263-265 @ 4a6db7cc` force le
+- **DMA disque sur le bus** · P2 ⭘ — il passe par BR/BG et ASO/DSO, un mot par 4 cycles ([B] ST-4081 feuille 8) ; les
+  32 cycles de NeoST pour 8 mots concordent, par lecture. L'arbitrage autour de la rafale n'est ni simulé ni relevé.
+  ST et Mega STE : aucune netlist, le STE fait référence. → `docs/CYCLE_ACCURACY.md` § 5
+- **Couleur pendant BLANK** · P2 ⏸ source · [F] palette 0 — `gstshifter.v:263-265 @ 4a6db7cc` force le
   noir hors mono, et le banc le confirme (étalons `rtl_low_*` : seul écart, 2 lignes en PAL,
   13 en NTSC). Hatari l'admet (`video.c:4008-4009 @ f0736b24`). Code inchangé tant qu'une source
   plus haute manque ; passer au noir déplacerait les références `hatari` à bordure visible.
   ⚠ Le schéma 4118 est le shifter de la Panther ; aucun schéma du Shifter ST n'est disponible.
-- **Octet `$FF8261` relu** · P1 ⭘ · [F] — `gstshifter.v:121 @ 4a6db7cc` rend $00 en octet bas.
+- **Octet `$FF8261` relu** · P3 ⏸ source · [F] — `gstshifter.v:121 @ 4a6db7cc` rend $00 en octet bas ; NeoST garde l'alias de
+  `$FF8260`, comme Hatari. Bloc « moyen » : le RTL ne l'emporte pas. Tranche : relevé sur STE.
 - **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — « choix acté », sans source
   matérielle. Tranche : relevés de tiers (§ 4), netlist STE pour la branche STE.
-- **Offsets de datation dérivés d'Hatari** · P2 ⭘ · aligné Hatari — `kVideoCounterReadOffsetCyc`,
+- **Offsets de datation dérivés d'Hatari** · P2 ◐ — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
   `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
-  Tranche : cycles de `gstmcu.v`. ⚠ read et write bougent par paire.
-- **STE : écriture 60 Hz à 32-36 cycles** · P2 ⭘ · [F] — `blankline_blank_ste` aux phases 32/36 :
-  10 714 px qu'aucune trame Hatari ne produit. Comparer `VideoGlue.cpp` (branches 60 Hz,
-  NO_DE (36,40]) à `video.c` et à la netlist 4081P29. → `docs/HATARI_DIVERGENCES.md` § Vidéo
-- **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P2 ⭘ · [F] — Hatari rend trois pixels de
-  plus ; sondes `blankline_stop_st/ste` en snapshot. Tranche : traces du banc `gstmcu/tb`, STE
-  seulement. → `docs/CYCLE_ACCURACY.md` § 4
+  `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu,
+  et la palette, contredite de même par 13 images réelles, va dans ce sens : le modèle prend les écritures trop tôt (`docs/REFERENCE_LADDER.md`). ⚠ read et write bougent par paire.
+- **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P3 ⭘ · [F] — la fin de DE à 164 et les 54 octets concordent avec le modèle (`docs/GLUE_SWEEP.md`) ; Hatari rend trois pixels de plus, et le HSYNC parasite vers le cycle 28 n'est pas modélisé. Sondes `blankline_stop_st/ste` en snapshot.
 - **Restes vidéo au cycle** · P2 ⭘ — `VIDEO_ENDLINE` distinct du HBL, VBL au cycle exact
   (vraie fin de trame + offset 64/68), phase exacte du tic Timer C, lecture du compteur à
   cheval sur deux lignes. Étalons : démos plein écran. → `docs/CYCLE_ACCURACY.md` § 4
-- **Reset STE** · P2 ⭘ · [F] — `$FF8901` gardé (PORB seul) et base vidéo effacée par /RESET
-  (netlist 4081, lecture d'agent à revérifier).
 - **Délai de bus error sur ST, Mega ST et Mega STE** · P2 ⭘ · [F] — porté sur STE seulement,
   faute de netlist du GLUE. Chercher le schéma du GLUE sur chzsoft.de.
 - **Basse résolution PAL issue du reset** · P2 ⭘ · [F] — le modèle GSTMCU garde une phase de
   plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
-- **STE, impulsion hi-res : bords à ±4** · P3 ⭘ · [F] — la netlist place le bord HSC et le
-  décodage HDE au cycle ~56 ±4 ; une impulsion retirée dans (40,44] donnerait un DE précoce à
-  ~48. Tranche : simulation de `hdegen.v`, avant d'affiner `VideoGlue.cpp` (71 Hz).
-- **Latch couleur de la bordure gauche** · P3 ⭘ · [D] — 16 px (colonnes 45-60) : Hatari applique
-  l'écriture palette ~16 px après le début nominal, NeoST pile à `activeX_`. Invisible aux
-  étalons. Tranche : `gstshifter.v`.
+- **STE, impulsions restantes face au modèle** · P3 ⭘ · [D] — DE précoce à 44, 14 impulsions sur 2560 en écart à 50 Hz, 42 sur 2560 à 60 Hz, toutes en haute résolution, et les
+  largeurs au-delà de 32 qui enjambent HSYNC. Hors logiciel connu. → `docs/GLUE_SWEEP.md`
+- **Écritures en plein DE sur STE** · P3 ⭘ · [D] — `$FF8207` et `$FF8265` agissent aussitôt sur le modèle, à la ligne suivante chez NeoST et Hatari. Aucun logiciel connu n'en dépend. Porter `$FF8207` demande un rendu en deux segments par ligne.
 - **Étalons sensibles à la phase E-clock** · P3 ⭘ — `blankline_*`, `spec512_*` capturent une
   trame dont la phase tourne à chaque changement de timing du boot ; les ancrer dans leur
   programme (compter les VBL, ou phase fixée par `stop` + attente).
@@ -162,34 +134,27 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
 
 ### 2.3 MFP 68901
 
-- **Modes pulse (9-15)** · P1 ⭘ — **tranché contre le code** : [B] MC68901 (janv. 1984)
-  § 5.1.2, PDF p. 27 : TAI/TBI pilotent le comptage et les IRQ de I4/I3 ; NeoST reproduit le
-  mode délai d'Hatari (`src/io/Mfp.cpp`). À porter, avec une sonde.
-- **GPIP3 au repos avec blitter** · P1 ⭘ · [F] `$FFFA01` bit 3 supposé 0 sur Mega ST/STE/Mega
-  STE — `stBlitter.sv:190 @ a00deb5b` : INT = BUSY. Seule la lecture STFM sans blitter ($E9)
-  est publiée. → `docs/HATARI_DIVERGENCES.md` § *Cas où NeoST améliore Hatari*
 - **Jitter des périodes Timer B** · P2 ⭘ · [F] — sonde Super Hang-On : NeoST {512, 516, 508,
   520}, Hatari {512, 520, 504}. Dépend de la prise d'IPL (§ 2.1).
 - **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
+- **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp`. Élection datée par requête, venue du seul Hatari (`mfp.c:998 @ f0736b24`, posée pour Fuzion CD Menus 77, 78, 84), contre la priorité fixe de § 3.1 : ne pas retirer sans ces disques ; TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; effacement de UE en un bit au lieu d'un cycle de TC ; prescaler changé en marche (§ 5.1.1) ; impulsion de comptage quand AER change en event-count (§ 5.1.3). Compteur arrêté en dessous d'un prescaler : Hatari se dit corrigé sur ce point en 2025, à relever.
+- **Citations MAME sans révision** · P3 ⭘ · [D] — dans le MFP, l'ACIA, le YM et le FDC. Aucune copie de MAME dans `extern` : à épingler ou à retirer.
 
 ### 2.4 Blitter
+
+Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → `docs/STBLITTER_BENCH.md`.
 
 - **Résidu blitter/IRQ Mega STE 16 MHz** · P2 ⏸ IACK — comparaison temporelle exacte ; deux
   défauts Hatari isolés, 12-24 cycles résiduels après corrections expérimentales. Attend la
   latence IACK (§ 2.1). → `docs/HATARI_MEGASTE_AUDIT.md`
 - **DMA externe prioritaire sur le blitter en HOG** · P3 ⭘ · [F] — netlist 4082, DMARQ,
   confiance basse.
-- **Banc `stBlitter.sv`** · P2 ⭘ — bloc « fort » de l'échelon `rtl` sans banc : mêmes
-  programmes que le banc fx68k, blitter de NeoST contre le RTL, HOG et partagé. → § 4
 
 ### 2.5 Son — YM2149, DMA STE, Microwire
 
-- **Période d'enveloppe YM à l'écriture de R13** · P2 ⭘ · [F] — tranche : `YM2149_199209.pdf`,
-  §§ 5-6 de la description des registres.
-- **Quantification HBL du refill DMA** · P2 ⭘ — l'étalon `dmasnd_poll` (poll serré de
-  `$FF890B/0D`) est resté `snapshot` : le monter en `hatari` (référence Hatari) ou dire
-  pourquoi il ne peut pas l'être. → `docs/CYCLE_ACCURACY.md` § 4
+- **Période d'enveloppe YM à l'écriture de R13** · P3 ⏸ matériel · [F] — `YM2149_199209.pdf` §§ 5-6 lus le 2026-11-04 : ils définissent la période et les formes, et ne disent rien de la phase du compteur à l'écriture. Tranche : une capture sur un YM réel.
+- **IRQ de fin de trame du son DMA, datée au HBL** · P3 ⭘ · [D] — le fetch suit désormais la fin de DE à la lecture du compteur (`docs/STCPU_BENCH.md`), mais la fin de trame n'a pas son événement propre : au plus 136 cycles de retard. Profondeur réelle de la FIFO : 8 octets d'Hatari contre 7 mots du modèle, choix d'auteur. Tranche : relevé sur STE.
 - **Fréquences exactes centralisées** · P3 ⭘ — CPU 8 021 248 Hz PAL, VBL ≈ 50,05 Hz
   (`clocks_timings.c`) : seul impact réel, la synchro audio long terme.
 
@@ -206,6 +171,7 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   reconstruction : seule divergence de sévérité moyenne assumée, sans promesse de flux brut.
   Tranche : relecture sur un vrai lecteur d'une piste écrite par un jeu (sauvegarde), ou IPF.
 - **ACSI : essai Idris OS** · P3 ⭘ — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté.
+- **WD1772, restes de l'audit** · P3 ⭘ · [B] contre [D] — marqués `⚠ [B]` dans `src/io/Fdc.cpp` : INTRQ 24 µs après le dernier CRC ; $F7 compté pour un octet ($F7 écrit deux octets pour une DRQ) ; INTRQ de $D8 effaçable par toute commande ; $Dx annulé si une commande suit à moins de 16 µs ; face sans ID. Deux écarts voulus protègent de vrais programmes : TR/SR écrits pendant BUSY (Delirious Demo IV) et commande remplacée pendant BUSY (Overdrive Demos).
 
 ### 2.7 Clavier — IKBD HD6301, ACIA 6850, MIDI
 
@@ -255,67 +221,35 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
   plantage propre à NeoST ; écrans d'intro ou titres seulement, sans partie jouée. À étendre :
   disquettes STX à lancer, parties pilotées (`docs/OPENDST.md`), musique et son, disques STE.
 
-- **Couverture ROM des étalons** · P1 ⭘ — Mega ST, TOS 1.00, 1.04 et 1.06 ne sont couverts par
-  AUCUN étalon pixel (manifeste `etalons.json`) ; un étalon par ROM propriétaire présente,
-  recensé comme SKIP quand elle manque.
-- **Logithèque STE de référence** · P2 ⏸ média — Obsession et Pacemaker n'ont pas été rejoués
-  depuis le port du mode 336 px (2026-10-18) ; l'overscan STE (E605, DHS) reste à rejouer contre
-  l'oracle. Aucun de ces disques n'est sur le disque privé (constaté le 2026-11-03).
-- ***Seven Gates of Jambala*** · P2 ⭘ — valider le recalage Timer B après écriture AER3 (porté le
-  2026-10-19). Média présent (`disks/seven_gates_of_jambala_{a,b}.stx`, non versionné).
-- **Exceptions vidéo E605 / Tekila** · P3 ⏸ programme — hacks par opcodes chez Hatari ; port
-  différé jusqu'à reproduction, aucun défaut matériel démontré.
-
-### Attendent un média
-
-- **Cubase Lite (`disks/midi/CUBLITE`)** · P2 ⏸ — absent du disque privé : le banc du séquenceur
-  MIDI reste sauté sur ce poste.
-- **Notator n'a jamais tourné** · P2 ⏸ — cité comme séquenceur cible au même titre que Cubase.
-- **EtherNEC sous TOS 1.04** · P2 ⏸ — STinG + `ENEC.STX` (DHCP, ping, GET) ; manquent les
-  archives STinG 1.26 + `ENEC.STX` (URLs dans `tools/make_sting_test.py`).
-- **Logiciels à clé / dongles** · P3 ⏸ — `PortDevices` (Leader Board, 10th Frame, B.A.T. II,
-  Music Master, « Pro Sound ») ; clé **Notator** (front de /ROM4, ordre UDS↔/ROM4) ; clé
-  **Steinberg** (Cubase 3.10 / Score / 2.01). Sans relevé public : Log 3, Pro-24, Avalon,
-  Zodiac, DynaBlaster. Outil : capture `R3`/`R4`/`U` + `--key-replay`. → `docs/EXTENSIONS.md`
-- **Stardust STE** · P3 ⏸ — l'oracle affiche « INSERT DISK 2 » là où NeoST fond au noir puis
-  scrute B ; disquettes 2/3 absentes.
-- **`union_demo`** · P3 ⏸ — disque absent (planetemu manuel) ; recette de migration A10 à son retour.
-- **UltraSatan : `US_CONF.TOS` réel** · P3 ⭘ — compiler l'outil de Jookie (Pure C) ; idem
-  HDDRIVER / ICD PRO sur une image à deux slots.
-
----
+- **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
+  Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
+  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde sept parties. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
 
 ## 4. 🪜 Harnais et preuve
 
-32 étalons `hatari`, 11 `snapshot`, 2 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
-contact du matériel, par des relevés de tiers. Le banc fx68k ajoute 34 variantes `rtl` pour
+42 étalons `hatari`, 11 `snapshot`, 2 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
+contact du matériel, par des relevés de tiers. Le banc fx68k ajoute 43 variantes `rtl` pour
 le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`).
-  2 sites pilotes posés (`src/io/Mfp.cpp`, `src/core/Cpu68k.cpp`) ; restent ~230 citations
-  `fichier.c:ligne` sans révision. ⚠ **Pas de passe mécanique** : chacune se vérifie à
-  l'épingle. MFP puis Blitter, dont la fiche ou le schéma est disponible ; recompter ensuite
-  par grade dans `check_doc_claims.py`.
-- **Banc fx68k, étendre** · P2 ◐ — BERR et double faute, autovecteur par VPA et E-clock
-  (HBL/VBL du ST passent par là), RESET, Bcc en séries, CHK/DIVS en trap, RTR, ligne A en
-  utilisateur. → `docs/FX68K_BENCH.md` § *Ce qui manque*
-- **Banc `stBlitter.sv`** · P2 ⭘ — second RTL « fort » sans banc ; HOG et partagé, données et
-  cycles. Réutiliser le pilote et le comparateur du banc fx68k.
-- **Étendre les étalons `rtl`** · P2 ◐ — `rtl_low_pal`/`rtl_low_ntsc` posés. Restent la moyenne
-  résolution, puis ce qui bouge en cours de ligne (palette, fréquence), là où NeoST et le
+- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. MFP, YM2149, WD1772, ACIA et SCC sont confrontés à leurs fiches, et leurs écarts marqués `⚠ [B]` sur place. `audit_citations.py list` signale encore 2 citations, justes, dont la révision suit sur la même phrase. Restent les GLUE/MMU sans schéma, et le RTC dont la fiche manque. Le SCC n'a pas été relu pour le synchrone, le SDLC et le DMA.
+- **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot` posée le 2026-11-04 ; le disque est récupéré et concorde avec Hatari, de 0,0 à 0,04 % à 3000, 3900 et 6000 sans `--fastfdc`. Avec le `--fastfdc` de l'étalon, une capture Hatari donne 12,7 % d'écart à la trame 3900, même après un balayage de 40 trames : retirer `fastfdc` de l'entrée avant de reposer l'oracle.
+- **Banc fx68k, étendre** · P3 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur concordent. Restent BERR et double faute, et l'autovecteur dans le verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
+- **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
+  78 programmes en accord ; `blitter_timer` et deux sondes s'écartent d'Hatari, consigné. → `docs/STBLITTER_BENCH.md`
+- **Étendre les étalons `rtl`** · P2 ◐ — `rtl_low_pal`, `rtl_low_ntsc` et `rtl_med_pal` posés, ce dernier à 0 pixel. Reste ce qui bouge en cours de ligne (palette, fréquence), là où NeoST et le
   modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`.
 - **Relevés de tiers** · P2 ⭘ — ST-STE Hardware Test (Troed), notes de Steven Tattersall,
   résultats de la suite Hatari. Un relevé entre en `hardware` s'il nomme machine et protocole.
 - **Étalon Troed** · P2 ⭘ — à rapatrier et calibrer.
 - **Documents primaires manquants** · P2 ⭘ — RP5C15, HD6301, schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST.
-- **Classer les auto-tests** · P2 ⭘ — `neost-selftest` et `--*-selftest` : une table issue
-  d'une fiche est `primary`, une table recopiée d'Hatari est `hatari`.
-- **Verilator en CI, banc GSTMCU au palier `full`** · P2 ⭘ — le banc fx68k est SKIP sur les runners,
-  et `run_gstmcu_bench.py` n'est branché sur aucun palier. Installer Verilator (5.054), brancher le second.
-- **Monter les 11 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl` ; `closure` et
+- **Auto-tests sans source** · P3 ◐ — `tools/classify_selftests.py` lit l'échelon que chaque test de logique déclare : hardware 0 · primary 70 · rom 6 · rtl 1 · hatari 44 · aucun 14 (total 135). Ce qui ne cite rien reste à sourcer. C'est une déclaration, pas une relecture des attendus.
+- **Verilator en CI** · P2 ⭘ — les bancs RTL sont SKIP sur les runners.
+  Installer Verilator (5.054) pour les faire tourner là aussi.
+- **Monter les 11 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
+  confrontée au modèle (`docs/GLUE_SWEEP.md`), pas leurs pixels ; `closure` et
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
 
 ### Instruments
@@ -323,15 +257,11 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **Suite de tests d'Hatari : restes** · P2 ◐ — `run_hatari_suite.py` rejoue cycles, blitter,
   bus errors, `cpu`, `gemdos` : 12/12. Restent `screen` (référence PNG au format Hatari) et
   `serial` ; `xbios`/`mem_end` hors périmètre.
-- **`screen/flixfull.prg`** · P2 ⭘ — NeoST = référence d'Hatari décalée de 4 px : cadrage de
-  capture (`--screenshot-dir`, `--tos none`) ou fenêtre gauche en overscan (A40) ? Repasser par
-  `hatari_oracle.sh`.
-- **Empreinte machine + relecture d'entrées** · P2 ⭘ — hacher l'état complet (`StateArchive`)
-  toutes les N trames et rejouer `.state` + entrées : la première empreinte divergente date une
-  perte de déterminisme. Socle du retour arrière et d'un jeu en ligne en lockstep. Modèle : ASE.
+- **`screen/flixfull.prg`** · P3 ⭘ · [F] — NeoST est 4 px à gauche d'Hatari sur toute la ligne, ST comme STE. Écritures et décisions du GLUE identiques (LEFT_OFF + RIGHT_OFF, DE 5 à 463, 230 octets) :
+  l'écart est dans la recopie de la ligne. Aucun témoin réel ne dit qui a raison, et le Shifter du modèle n'est pas fiable à ce grain. Tranche : une capture sur machine.
 - **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne le mur du palier pixel (~45 s) ; savoir
   QUAND la démo relit le clavier avant de raccourcir.
-- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **41 étalons pixel sur 45** tournent
+- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **44 étalons pixel sur 56** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → § 3.
 - **Banc temporel Hatari** · P2 ◐ — 20 sondes, dont écriture DMA disquette, lecture STX et

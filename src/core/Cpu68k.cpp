@@ -58,9 +58,12 @@ struct CpuState {
     bool        blitterRmw   = false;     // verrou transitoire TAS mémoire
     bool        blitterBusAccess = false;
     bool        blitterStartedInAccess = false;
+    bool        blitterAccessCounted = false;     // l'accès en cours est entré dans la fenêtre de comptage
     moira::i64  blitterOverlap = 0;       // cycles CPU internes recouverts par le blit
     bool        vblPending   = false;     // VBL (niveau 4) en attente d'acquittement
     bool        hblPending   = false;     // HBL (niveau 2) en attente d'acquittement
+    bool        vblPinFired  = false;     // la broche a déjà monté en cours d'instruction : le dispatch ne relève rien
+    bool        hblPinFired  = false;
     bool        inBusError   = false;     // garde « double bus fault » (cf. son bandeau)
     // Vrai UNIQUEMENT pendant moira->execute() : seul ce cadre attrape moira::BusError.
     // Hors de lui (lecture d'observation, outil hôte, callback d'ordonnanceur), une
@@ -69,7 +72,7 @@ struct CpuState {
     int         grp0Vector   = 0;
     std::function<void(uint16_t)> trapObserver;   // cf. Cpu68k::setTrapObserver
     // ---- Dernière faute de GROUPE 0, pour NOMMER un halt (A42, 2026-08-30) -----
-    // Équivalent des `last_*_for_exception_3` d'Hatari (newcpu.c:3086) : sans elles
+    // Équivalent des `last_*_for_exception_3` d'Hatari ([D] newcpu.c:86-88 @ f0736b24) : sans elles
     // un halt ne disait QUE son vecteur, et « la machine est gelée » sans dire OÙ
     // n'aide personne — c'est ce qui transformait un diagnostic d'une minute en
     // rapport « ça plante ».
@@ -142,7 +145,7 @@ CpuState* g_cur = nullptr;
     bool    g_eclockOn    = []{ const char* s = std::getenv("NEOST_ECLOCK_ON"); return s && std::atoi(s) != 0; }();
     int     g_eclockPhase = []{ const char* s = std::getenv("NEOST_ECLOCK_PHASE"); return s ? std::atoi(s) : 0; }();
     // DEEP convergence WinUAE (opt-in NEOST_IACK) : timing d'IACK FIDÈLE. Hatari applique
-    // l'attente E-clock + un bloc « occupé » au CYCLE D'IACK (iack_cycle, newcpu.c:2958-3019),
+    // l'attente E-clock + un bloc « occupé » au CYCLE D'IACK (iack_cycle, [D] newcpu.c:2958-3019 @ f0736b24),
     // PAS avant l'empilement de trame. Moira appelle readIrqUserVector EXACTEMENT à l'IACK
     // (MoiraExceptions_cpp.h:538, après SYNC(6)+write PClo+SYNC(4)) → on y déplace l'E-clock
     // (phase correcte, inclut la latence d'amorce) ET on ajoute le bloc occupé absent de Moira :
@@ -166,7 +169,7 @@ CpuState* g_cur = nullptr;
     int     g_iackMfp     = []{ const char* s = std::getenv("NEOST_IACK_MFP");   return s ? std::atoi(s) : 12; }();
     // NEOST_IACK_SYNC (défaut ON) : dispatch des événements échus AU point d'IACK,
     // port du « CycInt_Process() + MFP_UpdateIRQ_All juste avant la séquence d'IACK »
-    // d'Hatari (newcpu.c:2938-2946 MFP, :2998-3003 vidéo). Mesuré : un événement est
+    // d'Hatari ([D] newcpu.c:2938-2946 @ f0736b24 MFP, :2998-3003 vidéo). Mesuré : un événement est
     // réellement échu à 5,7-7 % des IACK (banc SHO in-game). =0 restaure l'ancien
     // modèle (élection du vecteur sur les seuls IPR posés à la frontière).
     bool    g_iackSync    = []{ const char* s = std::getenv("NEOST_IACK_SYNC"); return s ? std::atoi(s) != 0 : true; }();
@@ -179,7 +182,7 @@ CpuState* g_cur = nullptr;
     // SYNC(4)+SYNC(4) stock — fidèle Hatari iack_cycle. =0 → ancien modèle willInterrupt
     // (lead constant, sur-compte +8, phase E-clock détruite par l'alignement du push).
     bool    g_iackAt      = []{ const char* s = std::getenv("NEOST_IACK_AT"); return s ? std::atoi(s) != 0 : true; }();
-    // DEEP (opt-in NEOST_IPLDELAY) : règle cpuipldelay de WinUAE (ipl_fetch_next, newcpu.c:4982).
+    // DEEP (opt-in NEOST_IPLDELAY) : règle cpuipldelay de WinUAE (ipl_fetch_next, [D] newcpu.c:4982 @ f0736b24).
     // Moira reconnaît l'IPL IMMÉDIATEMENT (POLL_IPL = reg.ipl = ipl) ; WinUAE DIFFÈRE la
     // reconnaissance d'une instruction si le pin IPL a changé < 4 cyc avant le point
     // d'échantillonnage de l'instruction. On le reproduit en RETARDANT la propagation du niveau
@@ -205,7 +208,7 @@ CpuState* g_cur = nullptr;
     int      g_htN      = []{ const char* s = std::getenv("NEOST_HTRACE_N");    return s ? std::atoi(s) : 400; }();
     // DEEP convergence WinUAE (opt-in NEOST_RAM_SLOT) : alignement créneau bus 4 cyc à
     // 8 MHz pour la RAM ST (CHIP16 < $400000), port FIDÈLE de wait_cpu_cycle_read/write
-    // (custom.c:148-153). Avant un accès RAM, si l'horloge bus n'est pas sur la grille
+    // ([D] custom.c:148-153 @ f0736b24). Avant un accès RAM, si l'horloge bus n'est pas sur la grille
     // de 4, attendre (4 - slot) cycles. ⚠ CONTRAIREMENT au chipWait16 (16 MHz), AUCUN +4
     // additionnel : à 8 MHz Moira facture DÉJÀ les 4 cyc de l'accès. L'ancienne tentative
     // « chipWait8 » (mémoire beamsync-busalign-falsified) ajoutait ce +4 parasite (miroir
@@ -360,7 +363,7 @@ public:
     // Cas concret : Stardust (jeu STE) lancé sur ST lit $FFFF8900 (son DMA STE,
     // absent du ST) → bus error ; le handler du TOS recharge ensuite un A7 IMPAIR
     // depuis une pile utilisateur corrompue et le push suivant prend une erreur
-    // d'adresse avec SSP impair = double faute (porte Hatari newcpu.c:3076-3079,
+    // d'adresse avec SSP impair = double faute (porte Hatari [D] newcpu.c:3087-3091 @ f0736b24,
     // porte Moira MoiraExceptions_cpp.h:281-282). Le halt lui-même est FIDÈLE
     // (mesuré : même instruction que Hatari) — seule l'observabilité manquait.
     //
@@ -379,7 +382,7 @@ public:
         // DERNIER accès fauté — celui qui a provoqué la double faute. Hatari, lui,
         // journalise la PREMIÈRE (celle dont l'exception a pu être prise) et se tait
         // sur la seconde, puisque son `cpu_halt` sort avant le Log_Printf
-        // (newcpu.c:3076-3090). Les deux adresses peuvent donc différer : pour voir
+        // ([D] newcpu.c:3097 @ f0736b24). Les deux adresses peuvent donc différer : pour voir
         // toute la chaîne, armer NEOST_FAULT_TRACE.
         if (g_cur->faultValid)
             std::fprintf(stderr,
@@ -403,14 +406,14 @@ public:
         // A42 : on RETIENT la faute (adresse, PC, sens) — c'est tout ce qui manquait
         // pour nommer un halt. Port de l'esprit d'Hatari, qui garde ses
         // `last_fault_for_exception_3` / `last_writeaccess_for_exception_3` et les
-        // affiche à la prise de l'exception (newcpu.c:3086).
+        // affiche à la prise de l'exception ([D] newcpu.c:3086 @ f0736b24).
         g_cur->faultAddr  = addr;
         g_cur->faultPc    = getPC0();
         g_cur->faultWrite = write;
         g_cur->faultValid = true;
         // ⚠ Journal OPT-IN (`NEOST_FAULT_TRACE`), pas par défaut. Hatari, lui, affiche
         // chaque bus error en WARN et doit filtrer les SONDAGES matériels du TOS par une
-        // liste blanche d'adresses (M68000_IsVerboseBusError, m68000.c:572-621) — la
+        // liste blanche d'adresses (M68000_IsVerboseBusError, [D] m68000.c:572-621 @ f0736b24) — la
         // détection de machine en produit des dizaines par boot. On choisit le silence
         // par défaut plutôt qu'une liste blanche à maintenir : la faute est de toute
         // façon nommée là où elle compte, dans le message de halt.
@@ -523,7 +526,13 @@ public:
     // d'Hatari. Au milieu du cycle, une tranche blitter peut déjà avoir tourné :
     // réaligner alors le callback ajoute une attente parasite après la restitution.
     void alignRamBus(moira::u32 a) {
-        if (g_cur->cpuMul != 1 || !g_ramSlot || a >= 0x400000u) return;
+        if (g_cur->cpuMul != 1 || !g_ramSlot) return;
+        // Hors RAM, seuls $FF8920-$FF893F du STE passent par le même créneau (SMAPB). $FF8240-7F
+        // aussi (VMAPB), mais Shifter::syncCpuBus l'aligne lui-même, à la date qu'il observe.
+        // [B] ST-4081 feuilles 19 et 21 (ST4081S.PDF, sha256 935c4dd9) : CMAP cadencé par CYCSEL, comme RAMSEL.
+        // [D] gstmcu.v:282 @ 4a6db7cc, smapb ; latence relevée par Vste_tb --dtack. [D] Hatari @ f0736b24 ne
+        // l'aligne pas. [F] Mega STE sans netlist : suit le STE.
+        if (a >= 0x400000u && ((a & 0xFFFFE0u) != 0xFF8920u || !machineIsSte(g_cur->bus->machine))) return;
         const int slot = int((getClock() + g_cur->cpuBias + g_ramSlotPhase) & 3);
         if (slot) {
             if (g_cur->bus->blitterWinEnd >= 0) sync(4 - slot);
@@ -629,6 +638,7 @@ public:
         g_cur->blitterOverlap = 0;        // le prochain accès exige réellement le bus
         g_cur->blitterBusAccess = true;
         g_cur->blitterStartedInAccess = false;
+        g_cur->blitterAccessCounted = false;
         if (g_cur->bus->blitterWinEnd >= 0) noteBlitterPreStart();
         g_cur->megaSteAccessHit = false;
         if (g_cur->cpuMul == 2) {
@@ -657,8 +667,14 @@ public:
     void runBlitter() {
         const moira::i64 before = getClock();
         if (g_cur->sched->runBlitterTo(g_cur->sched->liveNow())) {
-            g_cur->blitterStartedInAccess = g_cur->blitterBusAccess;
-            g_cur->blitterOverlap = getClock() - before;
+            // Un accès que la tranche a retenu avant AS se fera après elle : il compte parmi les
+            // 64 du CPU. Seul celui entré dans la fenêtre de comptage est déjà au compte du blitter.
+            // [D] stBlitter.sv:241-250 @ a00deb5b, tout front d'AS compte ; banc gap*.
+            g_cur->blitterStartedInAccess = g_cur->blitterBusAccess && g_cur->blitterAccessCounted;
+            // Le crédit couvre des cycles internes recouverts par la tranche, jamais l'accès retenu,
+            // qui reste à faire en entier.
+            g_cur->blitterOverlap = g_cur->blitterBusAccess && !g_cur->blitterAccessCounted
+                                  ? 0 : getClock() - before;
         }
     }
     void sync(int n) override {
@@ -685,8 +701,8 @@ public:
         // POLL_IPL, comme WinUAE (pin posée dans do_cycles). Cf. Cpu68k::armHblPinAt.
         if (g_cur->pinNextDue >= 0 && busOfClock(static_cast<int64_t>(getClock())) >= g_cur->pinNextDue) {
             const int64_t busNow = busOfClock(static_cast<int64_t>(getClock()));
-            if (g_cur->hblPinDue >= 0 && busNow >= g_cur->hblPinDue) { g_cur->hblPinDue = -1; g_cur->hblPending = true; }
-            if (g_cur->vblPinDue >= 0 && busNow >= g_cur->vblPinDue) { g_cur->vblPinDue = -1; g_cur->vblPending = true; }
+            if (g_cur->hblPinDue >= 0 && busNow >= g_cur->hblPinDue) { g_cur->hblPinDue = -1; g_cur->hblPinFired = true; g_cur->hblPending = true; }
+            if (g_cur->vblPinDue >= 0 && busNow >= g_cur->vblPinDue) { g_cur->vblPinDue = -1; g_cur->vblPinFired = true; g_cur->vblPending = true; }
             recomputePinNextDue();
             neostUpdateIpl();
         }
@@ -724,7 +740,7 @@ public:
     bool stoppedState() const { return (flags & moira::State::STOPPED) != 0; }
 
     // Synchro E-clock à l'ENTRÉE d'exception (port de Hatari M68000_WaitEClock,
-    // m68000.c:810 + iack_cycle newcpu.c:2971-2990) : les IRQ AUTO-VECTORISÉES HBL
+    // [D] m68000.c:810 @ f0736b24 + iack_cycle [D] newcpu.c:2971-2990 @ f0736b24) : les IRQ AUTO-VECTORISÉES HBL
     // (niv 2) et VBL (niv 4) attendent le prochain front de l'E-clock (bus/10 =
     // 0,8 MHz) avant de lire leur vecteur → 0..8 cyc selon la phase de l'horloge
     // BUS au moment de l'IACK (motif déterministe {0,8,6,4,2}). Les IRQ VECTORISÉES
@@ -764,7 +780,7 @@ public:
         if (wait) setClock(getClock() + static_cast<int64_t>(wait) * g_cur->cpuMul);
     }
 
-    // Port FIDÈLE de Hatari `iack_cycle` (newcpu.c:2958-3019) AU point d'IACK du 68000
+    // Port FIDÈLE de Hatari `iack_cycle` ([D] newcpu.c:2958-3019 @ f0736b24) AU point d'IACK du 68000
     // (execInterrupt<C68000> : entre le push PClo et les pushes SR/PChi — cf. hooks
     // Moira.h). Remplace les SYNC(4)+SYNC(4) stock (total 8) par :
     //   HBL/VBL (niv 2/4) : E-clock wait (0..8 bus, motif [0 8 6 4 2], calculé ICI — la
@@ -805,7 +821,7 @@ public:
 
     moira::u16 readIrqUserVector(moira::u8 level) const override {
         // Port de « CycInt_Process() + MFP_UpdateIRQ_All au point d'IACK » d'Hatari
-        // (newcpu.c:2938-2946 branche MFP, :2998-3003 branche vidéo — dans les DEUX
+        // ([D] newcpu.c:2938-2946 @ f0736b24 branche MFP, :2998-3003 branche vidéo — dans les DEUX
         // cas juste avant l'élection/l'acquittement). En mode bloc, les SYNC de
         // l'entrée d'exception ne dispatchent rien : un timer MFP dont l'échéance
         // tombe dans la fenêtre « frontière d'instruction → IACK » (~10-26 cyc)
@@ -867,8 +883,10 @@ void noteBlitterPreStart() {
     if (!g_cur->moira || !g_cur->bus->blitter) return;
     const int64_t t = g_cur->sched ? g_cur->sched->liveNow()
                               : busOfClock(static_cast<int64_t>(g_cur->moira->getClock()));
-    if (t >= g_cur->bus->blitterWinStart && t < g_cur->bus->blitterWinEnd)
+    if (t >= g_cur->bus->blitterWinStart && t < g_cur->bus->blitterWinEnd) {
+        g_cur->blitterAccessCounted = true;
         g_cur->bus->blitter->notePreStartCpuAccess();
+    }
 }
 
 // Recalcule l'IPL présenté au CPU : MFP (6) > VBL (4) > HBL (2).
@@ -878,7 +896,7 @@ void noteBlitterPreStart() {
 void neostUpdateIpl(bool commit) {
     // Élection GROUPÉE du MFP, juste avant de lire son signal : c'est l'équivalent NeoST
     // de la boucle CPU d'Hatari (« if (MFP_UpdateNeeded) MFP_UpdateIRQ_All(0) »,
-    // newcpu.c:3005 et 5509). Toutes les entrées d'interruption d'une même instruction
+    // [D] newcpu.c:3005 @ f0736b24 et 5509). Toutes les entrées d'interruption d'une même instruction
     // ont posé leur bit et leur date sans élire ; l'élection a donc ici la vue complète
     // et peut appliquer la règle « seules les plus anciennes concourent »
     // (`pendingTime_ <= pendingTimeMin_`). Ce site est le bon parce que TOUT callback
@@ -958,7 +976,7 @@ void Cpu68k::activate() const { g_cur = state_.get(); }
 
 // Transfère à l'ordonnanceur le temps couru depuis le début du quantum, PUIS
 // dispatche les événements échus — appelé au point d'IACK réel (≙ le
-// « CycInt_Process() juste avant la séquence d'IACK » de Hatari, newcpu.c:2938).
+// « CycInt_Process() juste avant la séquence d'IACK » de Hatari, [D] newcpu.c:2938 @ f0736b24).
 // Le rebase est indispensable et doit précéder le dispatch : sans lui, `ran` (le
 // retour de run(), mesuré depuis quantumStartBus_) serait facturé une SECONDE fois
 // par le runTo(now+ran) de Machine, et les callbacks liraient un liveNow() gonflé.
@@ -1031,7 +1049,8 @@ void Cpu68k::reset() {
     state_->inReset = true;                    // sync() n'avance pas l'ordonnanceur pendant le reset
     state_->blitterOverlap = 0;
     state_->megaSteAccessHit = false;
-    state_->blitterRmw = state_->blitterBusAccess = state_->blitterStartedInAccess = false;
+    state_->blitterRmw = state_->blitterBusAccess = state_->blitterStartedInAccess
+                       = state_->blitterAccessCounted = false;
     state_->moira->reset();                    // lit SSP/PC via read16OnReset (overlay ROM)
     state_->inReset = false;
     state_->bus->bootOverlay = false;
@@ -1318,6 +1337,7 @@ void Cpu68k::serialize(StateArchive& ar) {
     // Modes opt-in NEOST_IPLDELAY / NEOST_PIN_ARM : latence IPL et broches armées.
     ar(state_->desiredIpl); ar(state_->appliedIpl); ar(state_->iplChgClock);
     ar(state_->hblPinDue); ar(state_->vblPinDue); ar(state_->pinNextDue);
+    ar(state_->hblPinFired); ar(state_->vblPinFired);
     ar(quantumStartClock_); ar(quantumStartBus_);
     ar(instrStartClock_); ar(psgPrevInstrClock_); ar(aciaPrevInstrClock_);
 }
@@ -1369,6 +1389,17 @@ void Cpu68k::updateIpl() {
 }
 
 namespace { bool raiseWindowDefers(); }   // définie plus bas (fenêtre d'échantillonnage IPL)
+namespace {
+// Broches vidéo au cycle exact, échantillonnées par POLL_IPL : STE à 8 MHz seulement.
+// [D] fx68k @ 0602ee46 + gstmcu @ 4a6db7cc, tools/run_stcpu_bench.py : le compteur lu en HBL et en VBL
+// concorde sur quatre boucles, MULU et STOP compris, où le commit au dispatch d'Hatari s'écarte
+// (une instruction d'écart une ligne sur cinq). La HBL réveille STOP à son dispatch ; la VBL non.
+// [F] ST et Mega STE : aucun modèle, ils gardent le commit au dispatch, à 0 px d'Hatari. Tranché
+// par : un GLUE modélisé, ou une capture IPL/AS sur un ST.
+int g_pinArmMask = []{ const char* s = std::getenv("NEOST_PIN_ARM");
+                       return s ? std::atoi(s) : 3; }();
+bool pinsAtCycle() { return g_cur->cpuMul == 1 && g_cur->bus && g_cur->bus->machine == MachineType::Ste; }
+}
 
 void Cpu68k::updateIplNow() {
     // Même fenêtre d'échantillonnage que raiseHbl/raiseVbl : un événement MFP dû
@@ -1417,6 +1448,10 @@ bool raiseWindowDefers() {
     return defer;
 } }
 void Cpu68k::raiseVbl() {
+    // Broche déjà montée au cycle exact : l'IACK a pu l'acquitter avant ce dispatch, ne pas relever.
+    if (state_->vblPinFired) { state_->vblPinFired = false; neostUpdateIpl(false); return; }
+    // Saut de STOP : la broche n'a pas monté, ce dispatch la remplace.
+    if (state_->vblPinDue >= 0) { state_->vblPinDue = -1; recomputePinNextDue(); }
     state_->vblPending = true;
     // COMMIT IMMÉDIAT (2026-07-02, mesuré à l'oracle instrumenté [HPIN]/[HEXC] :
     // chez Hatari CE, les événements vidéo sont traités À LA FRONTIÈRE d'instruction
@@ -1425,13 +1460,17 @@ void Cpu68k::raiseVbl() {
     // 12709/12711 échantillons du banc poll-entry). L'ancien chemin broche-POLLée
     // (neostUpdateIpl sans commit) faisait reconnaître UNE instruction plus tard.
     // Le callback d'événement EST une frontière d'instruction (modèle bloc) → commit sûr.
-    neostUpdateIpl(/*commit=*/(g_raiseCommit & 2) != 0 && !raiseWindowDefers());
+    neostUpdateIpl(/*commit=*/(g_raiseCommit & 2) != 0 && !raiseWindowDefers()
+                              && (!(g_pinArmMask & 2) || !pinsAtCycle()));
 }
 
 void Cpu68k::raiseHbl() {
+    if (state_->hblPinFired) { state_->hblPinFired = false; neostUpdateIpl(false); return; }
+    if (state_->hblPinDue >= 0) { state_->hblPinDue = -1; recomputePinNextDue(); }
     state_->hblPending = true;
     // même modèle que raiseVbl + fenêtre d'échantillonnage (cf. g_raiseWindow)
-    neostUpdateIpl(/*commit=*/(g_raiseCommit & 1) != 0 && !raiseWindowDefers());
+    neostUpdateIpl(/*commit=*/(g_raiseCommit & 1) != 0 && !raiseWindowDefers()
+                              && (!(g_pinArmMask & 1) || !pinsAtCycle() || state_->moira->stoppedState()));
 }
 
 // Pré-armement des broches IRQ vidéo — cf. .hpp. Appelées par Machine au moment
@@ -1446,10 +1485,8 @@ void Cpu68k::raiseHbl() {
 // prise (l'exception part dans le bloc, l'IACK efface le pending, puis le
 // callback du dispatch re-lève → 2ᵉ HBL, période libre ~427 cyc mesurée au banc
 // poll-entry). Gardé en opt-in pour expériences uniquement.
-namespace { int g_pinArmMask = []{ const char* s = std::getenv("NEOST_PIN_ARM");
-                                   return s ? std::atoi(s) : 0; }(); }
-void Cpu68k::armHblPinAt(int64_t busCycle) { if (g_pinArmMask & 1) { state_->hblPinDue = busCycle; recomputePinNextDue(); } }
-void Cpu68k::armVblPinAt(int64_t busCycle) { if (g_pinArmMask & 2) { state_->vblPinDue = busCycle; recomputePinNextDue(); } }
+void Cpu68k::armHblPinAt(int64_t busCycle) { if ((g_pinArmMask & 1) && pinsAtCycle()) { state_->hblPinDue = busCycle; recomputePinNextDue(); } }
+void Cpu68k::armVblPinAt(int64_t busCycle) { if ((g_pinArmMask & 2) && pinsAtCycle()) { state_->vblPinDue = busCycle; recomputePinNextDue(); } }
 
 uint32_t Cpu68k::pc() const {
     return state_->moira->getPC0();

@@ -149,6 +149,9 @@ FAST = [
     # palier ne relise jamais cette image.
     ("Disquette livrée (disks/diskA.st : FAT12 valide, conforme au générateur)",
      [sys.executable, str(TOOLS / "check_disk_assets.py")]),
+    # Empreinte de l'état complet : deux passes et une reprise de save-state, mêmes empreintes.
+    ("Déterminisme de l'état complet (empreintes, reprise de save-state)",
+     [sys.executable, str(TOOLS / "run_determinism.py")]),
     # Séquenceur MIDI de bout en bout : Cubase Lite (TOS 1.04, MROS) importe un SMF et
     # le joue ; ce qui sort de l'ACIA est comparé note à note au fichier (tempo, gigue,
     # vélocités, pédale). Couvre ACIA 6850 + Timer A + GEMDOS HD + midi_simplify.py.
@@ -225,6 +228,25 @@ FULL = FAST + [
     # deux sens. Verilator ou extern/fx68k absents → SKIP recensé (77).
     ("Banc Moira↔fx68k (cycles bus du 68000 nu contre le RTL)",
      [sys.executable, str(TOOLS / "run_fx68k_bench.py")]),
+    # GSTMCU (STE) simulé : écrans connus, dates des signaux, latence de DTACK par zone.
+    ("Banc GSTMCU (écrans calculés, latence de DTACK par zone)",
+     [sys.executable, str(TOOLS / "run_gstmcu_bench.py")]),
+    # 68000 + GSTMCU (STE) : compteur vidéo relevé par le CPU, en boucle, en HBL et en VBL.
+    ("Banc CPU + GSTMCU (ce que le CPU voit du faisceau, contre les RTL)",
+     [sys.executable, str(TOOLS / "run_stcpu_bench.py")]),
+    # Images Spectrum 512 réelles contre la formule du format : aucun autre émulateur ni RTL en jeu.
+    ("Images Spectrum 512 contre leur décodage (logiciel réel, 0 pixel faux)",
+     [sys.executable, str(TOOLS / "run_spec512_truth.py")]),
+    # Une écriture du CPU, la trame qui sort : NeoST contre les RTL, pixel par pixel.
+    ("Banc au pixel (fx68k + GSTMCU, une impulsion 60 Hz à chaque date)",
+     [sys.executable, str(TOOLS / "run_stcpu_raster.py")]),
+    # Machine GLUE du STE contre le modèle : une impulsion à chaque phase de la ligne.
+    ("Balayage GLUE STE contre le modèle GSTMCU (DE et octets par écriture)",
+     [sys.executable, str(TOOLS / "run_glue_sweep.py")]),
+    # Blitter de NeoST contre fx68k + stBlitter.sv : accès, données et dates. Sans Verilator ou
+    # sans les RTL épinglés → SKIP recensé (77).
+    ("Banc blitter ↔ stBlitter.sv (accès et dates, contre le RTL)",
+     [sys.executable, str(TOOLS / "run_stblitter_bench.py")]),
     ("P2 provenance des références",
      [sys.executable, str(TOOLS / "run_etalons.py"), "--verify-refs"]),
     ("P2 étalons pixel (oracle + snapshots)",

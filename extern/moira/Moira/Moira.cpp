@@ -230,7 +230,10 @@ Moira::reset()
         // Fill the prefetch queue
         SYNC(4);
         queue.irc = read16OnReset(reg.pc & addrMask<C>());
-        SYNC(2);
+        // [D] Microcode trap8 (lecture), trap9 (sans bus), b (lecture) ; fx68k @ 0602ee46 : 6 cycles
+        // entre ces deux lectures, comme à l'entrée d'une exception. [B] M68000UM § 8.12 : 40(6/0)
+        // donne le total, pas cette place. Reste du cycle bus = 2, trap9 = 2.
+        SYNC(C == Core::C68000 ? 4 : 2);
         prefetch<C>();
 
     } catch (const std::exception &) {
@@ -933,6 +936,9 @@ Moira::setIPL(u8 val)
 void
 Moira::pollIpl()
 {
+    // Retard d'échantillonnage simple : la broche n'est vue que `iplLag` cycles après son
+    // changement. [D] fx68k.sv:222-223 @ 0602ee46, deux étages avant intPend.
+    if (iplLag) { reg.ipl = (clock - iplChangeClock >= iplLag) ? ipl : iplPrev; return; }
     // Feature OFF (défaut) : comportement Moira d'origine, byte-identique
     // (étalons 19/0 vérifiés). POLL_IPL ≡ reg.ipl = ipl.
     if (iplDelay4 == 0) { reg.ipl = ipl; return; }

@@ -11,9 +11,11 @@
 #  palette, indépendamment du modèle. Un seul pixel faux fait échouer le banc.
 #
 #  Usage : run_gstmcu_bench.py [--rebuild] [--write-refs]
-#    --write-refs : pose tests/reference/rtl_low_{pal,ntsc}.png, dans le cadre du buffer
-#    NeoST 416×276 (1er pixel actif en 48,29). Hors de la trame NTSC, aucune donnée : noir,
-#    et l'étalon NTSC se compare donc en crop « active ».
+#    --write-refs : pose tests/reference/rtl_{low_pal,low_ntsc,med_pal}.png, dans le cadre du
+#    buffer NeoST 416×276 (1er pixel actif en 48,29). Hors de la trame NTSC, aucune donnée : noir,
+#    et l'étalon NTSC se compare donc en crop « active ». En moyenne résolution pure, le cadre est 640×200.
+#  Contrôle aussi la latence de DTACK par zone (Vste_tb --dtack) : qui passe par le créneau de la
+#  RAM, et que ni DE ni le son DMA n'y changent rien. [B] ST-4081 feuilles 8, 19 et 21.
 #  Sorties : tests/out/gstmcu_bench/summary.json. Code 77 si l'outillage est absent.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test.
@@ -146,11 +148,19 @@ def analyse(case, words: list[int], pixels) -> dict:
     }
 
 
-def write_ref(name: str, words: list[int], offset: int, first_line: int, path: Path) -> None:
+def write_ref(name: str, words: list[int], offset: int, first_line: int, path: Path, per_px: int = 4) -> None:
     starts = falling(words, 13)
     lines = [words[a:b] for a, b in zip(starts, starts[1:])]
     rows = []
-    for y in range(276):
+    if per_px == 2:
+        # Écran pur en moyenne résolution : NeoST sort 640×200, sans bordure.
+        for y in range(HEIGHT):
+            row = bytearray(b"\0")
+            for x in range(640):
+                w = lines[first_line + y][offset + x * 2]
+                row += bytes(((w >> s) & 15) * 17 for s in (8, 4, 0))
+            rows.append(bytes(row))
+    for y in range(0 if per_px == 2 else 276):
         li = first_line + y - 29
         row = bytearray(b"\0")               # octet de filtre PNG
         for x in range(416):
@@ -161,9 +171,43 @@ def write_ref(name: str, words: list[int], offset: int, first_line: int, path: P
         rows.append(bytes(row))
     chunk = lambda tag, data: (struct.pack(">I", len(data)) + tag + data
                                + struct.pack(">I", zlib.crc32(tag + data)))
-    path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 416, 276, 8, 2, 0, 0, 0))
+    path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 640 if per_px == 2 else 416, HEIGHT if per_px == 2 else 276, 8, 2, 0, 0, 0))
                      + chunk(b"IDAT", zlib.compress(b"".join(rows), 9)) + chunk(b"IEND", b""))
     print(f"référence → {path.relative_to(ROOT)}")
+
+
+# Latence, en cycles de 8 MHz, de la chute d'AS à celle de DTACK. Attendu par zone : 0 sans créneau ;
+# 1 ou 2 selon la phase, par CYCSEL. Une latence plus longue et rare suit une écriture du pilote.
+DTACK_SLOT = ("RAM", "palette_ff8240", "res_ff8260", "scroll_ff8264", "scroll_ff827e",
+              "microwire_ff8922", "microwire_ff8924", "son_ff8930", "son_ff8938")
+DTACK_FREE = ("ROM", "cartouche", "MMU_ff8001", "video_ff8200", "sync_ff820a", "son_ff8900")
+DTACK_RARE = 0.002
+
+
+def check_dtack() -> bool:
+    done = subprocess.run([str(BINARY), "--dtack"], check=True, timeout=300, capture_output=True, text=True)
+    tally: dict = {}
+    for line in done.stdout.splitlines():
+        zone, way, de, son, lat, n = line.split()
+        tally.setdefault((zone, way, de, son), {})[int(lat[4:])] = int(n[2:])
+    ok = True
+    for zone in DTACK_SLOT + DTACK_FREE:
+        cases = {k: v for k, v in tally.items() if k[0] == zone}
+        seen_de = {k[2] for k in cases}
+        seen_son = {k[3] for k in cases}
+        want = {1, 2} if zone in DTACK_SLOT else {0}
+        for key, hist in cases.items():
+            total = sum(hist.values())
+            core = sum(n for lat, n in hist.items() if lat in want)
+            if total - core > DTACK_RARE * total or not set(hist) & want:
+                print(f"FAIL DTACK {' '.join(key)} : {hist}, attendu {sorted(want)}")
+                ok = False
+        if seen_de != {"de=0", "de=1"} or seen_son != {"son=0", "son=1"}:
+            print(f"FAIL DTACK {zone} : combinaisons vues {sorted(seen_de)} {sorted(seen_son)}")
+            ok = False
+    print(f"{'OK  ' if ok else 'FAIL'} latence de DTACK : {len(DTACK_SLOT)} zones au créneau, {len(DTACK_FREE)} sans, "
+          "indépendantes de DE et du son DMA")
+    return ok
 
 
 def main() -> int:
@@ -194,9 +238,10 @@ def main() -> int:
             and result["lines"] == result["lines_expected"]
         ok &= passed
         print(f"{'OK  ' if passed else 'FAIL'} {name}: {json.dumps(result, ensure_ascii=False)}")
-        if passed and "--write-refs" in sys.argv and width == 320:
+        if passed and "--write-refs" in sys.argv:
             write_ref(name, list(struct.unpack(f"<{len(raw) // 2}H", raw)), result["pipeline_offset"],
-                      result["first_active_line"], ROOT / "tests" / "reference" / f"rtl_{name}.png")
+                      result["first_active_line"], ROOT / "tests" / "reference" / f"rtl_{name}.png", case[5])
+    ok &= check_dtack()
     (OUT / "summary.json").write_text(json.dumps(results, indent=2, ensure_ascii=False) + "\n")
     print("BANC GSTMCU OK" if ok else "BANC GSTMCU FAIL")
     return 0 if ok else 1

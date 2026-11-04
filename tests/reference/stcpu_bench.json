@@ -1,0 +1,22 @@
+{
+"50hz_hbl_mulu": [],
+"50hz_hbl_nop": [],
+"50hz_hbl_nops": [],
+"50hz_hbl_stop": [],
+"50hz_poll0": [],
+"50hz_poll1": [
+16000
+],
+"50hz_poll2": [],
+"50hz_vbl": [],
+"60hz_hbl_mulu": [],
+"60hz_hbl_nop": [],
+"60hz_hbl_nops": [],
+"60hz_hbl_stop": [],
+"60hz_poll0": [],
+"60hz_poll1": [
+16000
+],
+"60hz_poll2": [],
+"60hz_vbl": []
+}

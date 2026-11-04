@@ -17,8 +17,8 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `hardware` | A | Relevé sur machine réelle, propre ou publié par un tiers nommé | 0 étalons |
 | `primary` | B | Attendu calculé depuis une fiche, un schéma, une netlist Atari | 0 étalons |
 | `rom` | C | Verdict d'un programme ou d'une ROM Atari | 0 étalons |
-| `rtl` | D | Simulation d'un RTL dérivé du silicium ou d'un schéma | 2 étalons |
-| `hatari` | D | Capture de l'Hatari épinglé | 32 étalons |
+| `rtl` | D | Simulation d'un RTL dérivé du silicium ou d'un schéma | 3 étalons |
+| `hatari` | D | Capture de l'Hatari épinglé | 42 étalons |
 | `snapshot` | aucun | Self-capture NeoST : non-régression, aucune preuve | 11 étalons |
 
 ## Les verdicts hors étalons pixel
@@ -27,12 +27,17 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 |---|---|---|
 | `run_hatari_suite.py`, `buserror-*` (8) | `hardware` | [A] tiers : relevés de `tests/buserror/results` @ `f0736b24`. Machine et révision des puces non consignées. |
 | `run_hatari_suite.py`, `cycles`, `blitter`, `cpu`, `gemdos` (4) | `hatari` | Aucun readme ne donne la provenance de l'attendu. |
+| `run_spec512_truth.py` (13 images, ST et STE) | `rom` | De vraies images Spectrum 512 par le vrai visualiseur, contre la formule du format, sans aucun émulateur : 0 pixel faux. Juge la date des écritures palette, à 4 pixels près. |
 | `run_megaste_diag.py` (suite Q, 12/12) | `rom` | Le diagnostic Field Service prouve le contrat attendu par le logiciel, pas le silicium. |
 | `run_timing_oracle.py`, `run_megaste_bus_oracle.py` | `hatari` | |
-| `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé et pose les références de `rtl_low_*`. |
-| `run_fx68k_bench.py` (34 variantes, 18 en accord) | `rtl` | Moira nu contre fx68k, cycle bus par cycle bus. Verdicts posés dans `tests/reference/fx68k_bench.json` ; un écart localise, ne tranche pas. → [`FX68K_BENCH.md`](FX68K_BENCH.md) |
+| `run_game_replay.py` | `hatari` | Des parties jouées au joystick, mêmes masques des deux côtés, à l'image près. Hors paliers : Pillow et disques privés requis, à lancer à la main. |
+| `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé, pose les références de `rtl_low_*`, contrôle la latence de DTACK par zone. |
+| `run_fx68k_bench.py` (43 variantes, 34 en accord) | `rtl` | Moira nu contre fx68k, cycle bus par cycle bus. Verdicts posés dans `tests/reference/fx68k_bench.json` ; un écart localise, ne tranche pas. → [`FX68K_BENCH.md`](FX68K_BENCH.md) |
+| `run_stcpu_bench.py` (48 000 lectures, 1 écart) | `rtl` | Le CPU lit le compteur vidéo, en boucle, en HBL et en VBL, sur fx68k + GSTMCU et dans NeoST. → [`STCPU_BENCH.md`](STCPU_BENCH.md) |
+| `run_glue_sweep.py` (2560 impulsions à 50 Hz et autant à 60 Hz, 14 et 42 écarts inscrits) | `rtl` | Machine GLUE du STE contre le modèle GSTMCU : DE et octets, écriture par écriture. → [`GLUE_SWEEP.md`](GLUE_SWEEP.md) |
+| `run_stblitter_bench.py` (78 programmes, tous en accord) | `rtl` | Blitter de NeoST contre fx68k + `stBlitter.sv`, accès, données et dates. → [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md) |
 | `run_mfp_iack_probe.py` | aucun | Contrôle la sonde, sans verdict matériel. |
-| `neost-selftest`, `--*-selftest` | à classer | Dépend de la source de chaque table de vérité → `TODO.md` § 4. |
+| `neost-selftest`, `--*-selftest` | par test | `tools/classify_selftests.py` donne l'échelon que chaque test déclare dans ses commentaires, sans relire ses attendus → `TODO.md` § 4. |
 
 ## L'échelon `rtl`
 
@@ -116,6 +121,19 @@ comparent des modèles entre eux, pas au silicium, et NeoST a pris ces valeurs c
 4. **Promouvoir un étalon** (`hatari` → `rtl`) n'efface pas l'ancienne référence : elle reste
    à côté, et l'écart est consigné dans `HATARI_DIVERGENCES.md`.
 
+## Quand le RTL se trompe (2026-11-04)
+
+Trois bancs ont confronté le modèle GSTMCU au logiciel réel, et deux fois le logiciel a contredit le RTL, pourtant bloc « fort » pour le GLUE :
+
+- **Palette** : le Shifter du modèle change la couleur 4 pixels avant ce que 13 images Spectrum 512 exigent (`run_spec512_truth.py`, 0 pixel faux pour NeoST, de 10 à 1 118 selon l'image avec ce décalage).
+- **`$FF820A`** : le modèle réagit 3 cycles avant la date d'Hatari. Le suivre casse DHS More or Less Zero et Double Rez Trouble.
+
+Une explication commune reste à établir : le modèle prendrait les écritures quelques cycles trop tôt, par ses verrous transparents. **Règle** : un écart de date d'écriture contre le RTL ne se porte pas sans passer par des démos ou des images réelles. La lecture du compteur, les interruptions et la logique des fenêtres, elles, concordent et ont été portées.
+
+## Quand une fiche lue à la lettre bloque le logiciel réel (2026-11-04)
+
+MC6850 § Receiver Overrun p. 8-9 : « The RDRF bit remains set until the Overrun is reset ». Appliqué à la lettre, Enchanted Land, Lemmings, Dynamite Dux, Lethal Xcess et Magic Pockets restent bloqués sur leurs premiers écrans. Ces programmes tournent sur la machine réelle : ou la phrase ne dit pas ce qu'elle semble dire, ou leur overrun n'y arrive pas à ce moment. NeoST garde donc le comportement d'Hatari, marqué `⚠ [B]` dans le code, et le relevé d'un vrai 6850 tranchera. **Règle** : une correction de fiche se joue sur les disques (A/B au pixel) avant d'être gardée. Si elle ne change aucune image, la fiche prime. Si elle en change, on regarde lesquelles.
+
 ## Sans machine réelle
 
 Le projet n'a pas d'accès à un vrai ST. Le sommet atteignable passe donc, dans l'ordre, par :
@@ -126,7 +144,7 @@ Le projet n'a pas d'accès à un vrai ST. Le sommet atteignable passe donc, dans
 2. **Les documents primaires** — ci-dessus, à lire avant le RTL.
 3. **Les ROM** — TOS et diagnostics exécutés sous NeoST.
 4. **Le RTL simulé** — `gstmcu/tb` fournit un banc Verilator ; fx68k a le sien depuis le
-   2026-11-03 (`tools/run_fx68k_bench.py`, [`FX68K_BENCH.md`](FX68K_BENCH.md)) ; `stBlitter.sv`
-   n'en a pas encore.
+   2026-11-03 (`tools/run_fx68k_bench.py`, [`FX68K_BENCH.md`](FX68K_BENCH.md)) ; `stBlitter.sv` depuis le
+   2026-11-04 (`tools/run_stblitter_bench.py`, [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md)).
 
 Ce qui exige vraiment une machine reste inscrit comme tel au `TODO.md` § 3.2.

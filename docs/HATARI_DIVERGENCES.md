@@ -1242,6 +1242,7 @@ reset HW/canal, IRQ niveau 5 gatée par le SCU).
 
 ### CPU (Moira + intégration) — suivi (audit vendor 2026-08-13)
 
+- ✅ **STOP dure 4 cycles (2026-11-03)** : le retrait du préfetch (2026-10-22) les avait perdus ; rétabli, IRQ pendante au même cycle qu'Hatari et fx68k. La mention « STOP+8 » ci-dessous se lit donc dans le repère d'alors.
 - ✅ **STOP avec IRQ pendante : exception à STOP+8 (2026-10-22)** — Moira prenait l'IRQ
   démasquée par l'opérande du `stop` dès la fin de l'instruction (+4) ; le 68000 teste
   l'interruption AVANT d'écrire le masque et ré-itère STOP 4 cycles plus tard (fx68k
@@ -1306,7 +1307,42 @@ par le présent document :
 - ~~`docs/SOUND_HATARI_DIFF.md`~~ : table DAC, ET ton/bruit, filtres, FIFO/anti-repliement,
   start==end, cold/warm reset, reset port A, `Mfp::reset()` — tous implémentés.
 
+## STE : écarts refermés par les démos DHS (2026-11-03)
+
+Écarts de NeoST exhibés par Double Rez Trouble et Sea of Colour, gardés par `doublerez_ste` et `doublerez_tall_ste` :
+`pVideoRasterDelayed` manquant (compteur écrit en bordure droite), trame démarrée en moyenne résolution décodée entière
+en moyenne, placement des lignes `LEFT_OFF_2_STE` et `LEFT_OFF_2_STE_MED`, fenêtre verticale nominale au lieu de
+`nStartHBL`/`nEndHBL`, attente du CPU facturée aux accès du blitter. Hatari fait foi ici au grade D seulement : ces démos
+visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
+
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
+
+- **Compteur du son DMA sur STE** (2026-11-04) : il avance hors de DE, mot par mot, pas seulement au HBL (`DmaSnd_STE_HBL_Update`). [B] ST-4081 feuille 20, [D] `mcucontrol.v` @ `4a6db7cc`, `tools/make_stcpu_snd.py`. `dmasnd_poll` reposé. Ne pas réaligner.
+- **Prise des HBL et VBL sur STE** (2026-11-04) : broche levée au cycle exact et vue par `POLL_IPL`, au lieu du commit au dispatch (`intlev_load → ipl_fetch_now`). [D] fx68k @ `0602ee46` + gstmcu @ `4a6db7cc`,
+  `tools/run_stcpu_bench.py` : MULU 256/256 contre 63/256, boucle courte 256/256 contre 216/256. Sonde `timer_b_event` à 14 cycles de première IRQ, consigné. ST inchangé, faute de modèle. Ne pas réaligner.
+- **GLUE du STE, trois seuils** (2026-11-04) : `Line_Set_Pal` à 58, haute résolution à 4 sans retrait gauche, haute résolution dans (40, 48] retirée à 56 sans `NO_DE`.
+  [D] gstmcu @ `4a6db7cc`, bloc « fort », `tools/run_glue_sweep.py` : 1654 impulsions sur 1664 en accord. Hatari `video.c` @ `f0736b24` garde 56, ≤ 4 et `NO_DE`. Ne pas réaligner. → `docs/GLUE_SWEEP.md`
+- **`$FF8920-3F` au créneau de la RAM, sur STE** (2026-11-04) : [B] ST-4081 feuilles 19 et 21, CMAP par SMAPB. Hatari n'aligne que couleurs,
+  résolution et `$FF8264/65`. Écart de 2 cycles au plus, seulement à une lecture ou écriture en phase 4n + 2. Ne pas réaligner.
+- **Blitter en partagé** (2026-11-04) : fenêtre de comptage de 2 cycles au lieu de 4, accès CPU retenu compté parmi les 64 du CPU.
+  [B] ST-4082 feuille 1 (compteur cadencé par AS) et [D] `stBlitter.sv:238-250 @ a00deb5b` avec fx68k @ `0602ee46` ; Hatari
+  `blitter.c:69-79 @ f0736b24` annonce 4 cycles, « my guess ». Une boucle d'EXG donne 64 accès par tranche chez NeoST et le RTL, 63 chez Hatari.
+  Écarts mesurés : `blitter_timer` à 122 px, sondes `blitter_shared_large` et `blitter_shared_ram`. → `docs/STBLITTER_BENCH.md`. Ne pas réaligner.
+- **Blitter, SMUDGE en HOP 0** (2026-11-04) : la source se lit, [B] ST-4082 feuille 1 (HOP<1> OU SMUDGE). Hatari ne la lit pas ; même résultat, deux accès de plus par mot.
+- **Blitter, adresse source relue en plein mot** (2026-11-04) : elle avance avec la lecture, [D] `stBlitter.sv` `bltCounters` @ `a00deb5b`. Hatari l'avance en fin de mot.
+- **Contrôle de somme de la ROM TOS 2.06** (2026-11-04) : Hatari écrit un BRA en `$E007FA` (`tos.c:483 @ f0736b24`, patch
+  `TP_ALWAYS`), car ses autres patchs fausseraient la somme. NeoST exécute la ROM intacte ([C] TOS 2.06 UK, boucle `$E015CC`-`$E015E2`),
+  ce qui coûte environ 170 trames au démarrage en 4 Mo. Les boucles du test mémoire ont les mêmes périodes des deux côtés.
+  Une comparaison datée de ce boot doit donc viser la fin du test (`boot_tos206uk`). Ne pas patcher la ROM pour égaler.
+- **WD1772, six points de fiche** (2026-11-04), [B] WD177X-00 : Restore pose DR à 0 et le sens vers la piste 0 (p. 1-7). Seek Error après 255 pas seulement si V=1 (p. 1-8). STEP sortant en piste 0 : TR passe à 0 (p. 1-7). Au repos, $Dx efface RNF et CRC (p. 1-16). CRC d'ID faux : bit CRC posé, RNF+CRC au final (p. 1-10, p. 1-18), et il survit à la lecture du statut en type I (p. 1-8). Hatari fait autrement sur tous ces points. 80 disques joués au clavier et au joystick, images identiques avant et après. Ne pas réaligner.
+- **ACIA, master reset** (2026-11-04) : IRQ tenue haute, [B] MC6850 § Master Reset p. 5, [D] `gen_uart.v:347-348 @ a00deb5b`. Hatari (`acia.c:727-730 @ f0736b24`) la lève sous `CR=%x01xxx11`. Ne pas réaligner.
+- **SCC, pointeur de registre** (2026-11-04) : seule une lecture du port de contrôle le remet à zéro, [B] UM010902-0609 p. 28 et 30. Hatari (`scc.c:1644 @ f0736b24`) le remet à toute lecture. Ne pas réaligner.
+- **Filtre C10 du STF** (2026-11-04) : NeoST coupe à 7,7 et 2,1 kHz, les valeurs du circuit que cite Hatari lui-même (`sound.c:439-440 @ f0736b24`). Hatari garde des coefficients calculés pour 44,1 kHz et les applique à 250 kHz, soit 43 et 11 kHz. Ne pas réaligner.
+- **Bruit du YM à R6 = 0** (2026-11-04) : NeoST rend R6 = 0 égal à R6 = 1, comme Hatari dit l'avoir mesuré (`sound.c:1046 @ f0736b24`). Son code tire le LFSR 2× trop vite. Ne pas réaligner.
+- **Reset du MFP** (2026-11-04) : TADR..TDDR et les compteurs restent, SCR, UCR, RSR s'effacent et l'USART s'arrête, [B] MC68901 § 2.2.3 p. 2-8, MK68901 p. 13,
+  MC68HC901 § 3.3 p. 3-3. Hatari (`mfp.c:538-546 @ f0736b24`) fait l'inverse sur les deux points. Ne pas réaligner.
+- **Modes pulse du MFP** (2026-11-03) : Hatari les traite en mode délai (`MFP_StartTimer_AB`, `mfp.c:1358-1371 @ f0736b24`,
+  qui le dit lui-même incomplet) ; NeoST suit [B] MC68901 § 5.1.2. Ne pas réaligner.
 
 - **STX densité HD/ED** (D, F3) : NeoST recadre `BitPosition` sur la densité → cohérent là où
   Hatari a une incohérence interne (sans effet en DD).

@@ -57,7 +57,7 @@ inline bool isSNaN(f80 a){ return isNaN(a) && !(a.low & 0x4000000000000000ull); 
 inline f80  defaultNaN() { return f80{ 0x7FFF, 0xFFFFFFFFFFFFFFFFull }; }     // QNaN 68881
 // Encodage INVALIDE (« unnormal ») : exposant ni 0 ni $7FFF alors que le bit entier
 // explicite du significande est à 0. Le 68881 refuse ces motifs — Hatari les garde en
-// tête de CHAQUE opération (floatx80_invalid_encoding, softfloat.c:1862, 1912, 2475,
+// tête de CHAQUE opération (floatx80_invalid_encoding, [D] softfloat.c:1862 @ f0736b24, 1912, 2475,
 // 2500, 2527, 2645, 2806, 3097) et rend un NaN par défaut avec OPERR.
 // ⚠ Sans cette garde, sqrt_ GELAIT l'émulateur : estimateSqrt32 recevait une mantisse
 // dont le bit 63 est nul, l'estimation initiale partait à côté, et la boucle de
@@ -70,7 +70,7 @@ inline bool invalidEncoding(f80 a) {
 }
 constexpr uint64_t INF_LOW = 0x8000000000000000ull;   // MSB du SIGNIFICANDE
 // Significande canonique d'un infini GÉNÉRÉ par l'arithmétique 68881 : bit entier
-// explicite j = 0, fraction = 0 (≙ floatx80_default_infinity_low, softfloat.h:348).
+// explicite j = 0, fraction = 0 (≙ floatx80_default_infinity_low, [D] softfloat.h:348 @ f0736b24).
 // À ne pas confondre avec INF_LOW ci-dessus : Fpu::decodeFmt rend déjà cette forme
 // pour un ±∞ chargé depuis la mémoire ; empaqueter INF_LOW ici produirait DEUX
 // motifs binaires différents pour +∞ selon son origine, et FMOVE.X ≠ oracle.
@@ -159,7 +159,7 @@ inline void add192(uint64_t a0,uint64_t a1,uint64_t a2,uint64_t b0,uint64_t b1,u
     // a0+b0 tout court. Seul appelant : sqrt_, où b0 == 0, si bien que le reste ne
     // bougeait plus et que la boucle de raffinement tournait à l'infini — FSQRT gelait
     // l'émulateur sur toute racine exactement représentable (1.0, 9.0, 100.0, 0.25…).
-    // Hatari propage en trois temps (softfloat-macros.h:433-440).
+    // Hatari propage en trois temps ([D] softfloat-macros.h:433-440 @ f0736b24).
     uint64_t c1=0; add128(a1,a2,b1,b2,z1,z2); if(lt128(z1,z2,b1,b2)) c1=1;
     z0 = a0 + b0 + c1;
 }
@@ -189,7 +189,7 @@ inline uint32_t estimateSqrt32(int aExp, uint32_t a) {
 inline void normalizeSubnormal(uint64_t aSig, int32_t& zExp, uint64_t& zSig) {
     // « -sc » et NON « 1 - sc » : le format étendu du 68881 a un bit entier EXPLICITE,
     // là où le x87/IEEE l'a implicite. softfloat.c porte les deux formes derrière un
-    // #ifdef SOFTFLOAT_68K (softfloat.c:1061-1065) — défini en tête de softfloat.h, donc
+    // #ifdef SOFTFLOAT_68K ([D] softfloat.c:1061-1065 @ f0736b24) — défini en tête de softfloat.h, donc
     // TOUJOURS actif chez Hatari — et c'est la branche x87 qui avait été portée ici.
     // Effet : TOUT opérande dénormal ressortait exactement ×2 (et FGETEXP décalé de 1),
     // sur FADD/FSUB/FMUL/FDIV/FSQRT/FREM/FMOD/FGETEXP/FGETMAN/FSCALE.
@@ -350,7 +350,7 @@ inline f80 sub(f80 a, f80 b, Status& st) {
 }
 
 // --- Arrondi à la précision SANS réduction de plage d'exposant -------------------
-// Port de roundSigAndPackFloatx80 (softfloat.c:1503), utilisé par FSGLMUL / FSGLDIV
+// Port de roundSigAndPackFloatx80 ([D] softfloat.c:1503 @ f0736b24), utilisé par FSGLMUL / FSGLDIV
 // et FMOVECR (fpp_round32/64). Différence avec roundAndPack : la mantisse est arrondie à 24 ou
 // 53 bits, mais l'exposant garde la plage ÉTENDUE (seuils 0x7FFE / 0), là où roundAndPack
 // applique en plus un expOffset qui rabat la plage sur celle du simple/double précision.
@@ -571,9 +571,9 @@ inline f80 rem(f80 a, f80 b, uint64_t& q, int& s, bool mod, Status& st) {
     if (aExp == 0) { if (aSig0 == 0) { s = (aSign != bSign); return a; } normalizeSubnormal(aSig0, aExp, aSig0); }
     bSig |= INF_LOW; zSign = aSign; expDiff = aExp - bExp; s = (aSign != bSign); aSig1 = 0;
     if (expDiff < 0) {
-        // floatx80_mod (softfloat.c:3048) passe TOUT expDiff négatif par roundAndPack
+        // floatx80_mod ([D] softfloat.c:3048 @ f0736b24) passe TOUT expDiff négatif par roundAndPack
         // — d'où l'arrondi à la précision du FPCR et UNFL sur un dénormal ; seul
-        // floatx80_rem (softfloat.c:2941) court-circuite par « return a ».
+        // floatx80_rem ([D] softfloat.c:2941 @ f0736b24) court-circuite par « return a ».
         if (mod) return roundAndPack(st.roundingPrecision, aSign, aExp, aSig0, 0, st);
         if (expDiff < -1) return a;
         shift128Right(aSig0, 0, 1, aSig0, aSig1); expDiff = 0;

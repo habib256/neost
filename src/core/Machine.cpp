@@ -47,7 +47,7 @@ MachineType Machine::adjustMachineForTos(MachineType requested, const std::strin
             tosVer >> 8, tosVer & 0xFF, machineName(requested));
         return MachineType::St;
     }
-    // Symétrique (port de tos.c:844-855) : TOS 1.06 et 1.62 sont des ROM **STE
+    // Symétrique (port de [D] tos.c:844-855 @ f0736b24) : TOS 1.06 et 1.62 sont des ROM **STE
     // exclusivement**. Sur un ST/Mega ST, la routine de nettoyage RAM du TOS
     // ($E001AA-$E001B2) monte jusqu'à $00400000, prend une bus error, double-faute et
     // HALTE le CPU : NeoST restait sur un écran uniforme, définitivement, SANS le
@@ -76,7 +76,7 @@ MachineType Machine::adjustMachineForTos(MachineType requested, const std::strin
 }
 
 namespace { // Décalage de la position d'IRQ HBL dans la ligne, relatif à cpl.
-// Hatari Hbl_Int_Pos = cpl−4 en WS1, cpl en WS2/3/4 ET sur STE (video.c:977-979,
+// Hatari Hbl_Int_Pos = cpl−4 en WS1, cpl en WS2/3/4 ET sur STE ([D] video.c:977-979 @ f0736b24,
 // 1055-1057) — tranché WS3 (2026-07-08, cf. glue:: dans Shifter.cpp) → défaut 0
 // (HBL à 508/512 selon la fréquence, à la FRONTIÈRE de ligne comme l'oracle).
 // Le STE n'a PAS de wakestate : toujours 0, même en A/B NEOST_WS=1.
@@ -159,7 +159,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // V2 res-switch (opt-in NEOST_V2) : la Glue signale une impulsion hi-res PRÉCOCE
     // (cyc ≤ 56) sur la ligne courante → on raccourcit la ligne (HBL reprogrammé à la
     // position hi-res 220 au lieu de cpl-4) et on décale les lignes SUIVANTES de
-    // (cpl-224) via lineCarry_. Port de Hatari HBL_Pos/nCyclesPerLine (video.c:2249,
+    // (cpl-224) via lineCarry_. Port de Hatari HBL_Pos/nCyclesPerLine ([D] video.c:2249 @ f0736b24,
     // Video_AddInterruptHBL 2849) : laisse dériver la phase du gestionnaire fullscreen.
     v2_ = std::getenv("NEOST_V2") != nullptr;
     // Longueurs de ligne PAR-LIGNE (port HBL_Pos/nCyclesPerLine de
@@ -193,7 +193,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         if (!v2_ || hblLine_ == v2ShortLine_ || hblLine_ >= lpf_) return;   // déjà raccourcie / hors trame
         // Cycle DANS la ligne courante (grille décalée par lineCarry_). Seule une
         // impulsion hi-res PRÉCOCE (≤ HDE_On_Low_50=56) raccourcit la ligne — comme
-        // les branches Hatari video.c:2246/2268/2288 (pas la branche right-off tardive).
+        // les branches Hatari [D] video.c:2305 @ f0736b24 (pas la branche right-off tardive).
         const int64_t lineStart = static_cast<int64_t>(hblLine_) * cpl_ - lineCarry_;
         const int64_t lineCyc   = (sched.liveNow() - frameStart_) - lineStart;
         if (lineCyc < 0 || lineCyc > 56) return;
@@ -211,7 +211,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // ET DTR→RI (GPIP6) — comme le câble de test du diagnostic « S RS232 ». Le port A
     // est actif BAS (bit=0 → ligne assertée). On rafraîchit l'IPL (un canal a pu lever).
     psg.setPortASink([this](uint8_t a) {
-        // SÉLECTION LECTEUR/FACE — port de psg.c:419-420, qui appelle FDC_SetDriveSide à
+        // SÉLECTION LECTEUR/FACE — port de [D] psg.c:419-420 @ f0736b24, qui appelle FDC_SetDriveSide à
         // CHAQUE écriture du port A. C'est une POUSSÉE, et elle est indispensable : le FDC
         // de NeoST se contentait de RELIRE le PSG depuis ses propres accès registre
         // (Fdc::refreshDriveSide n'était appelé que par executeCommand et les accès MMIO),
@@ -228,9 +228,9 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         if (ports.hasSerial()) { ports.onPortA(a, sched.now(), mfp); cpu.updateIpl(); }
         if (!mfp.loopback()) return;        // connecteur non branché → lignes inertes
         // ⚠ Le port A du PSG est ACTIF BAS : bit=0 → ligne ASSERTÉE. Convention établie
-        // sur CE registre chez Hatari — psg.c:223 le met à $FF au reset (« no drive
+        // sur CE registre chez Hatari — [D] psg.c:223 @ f0736b24 le met à $FF au reset (« no drive
         // selected »), et la sélection lecteur s'y teste par « (PORTA & (1<<1)) == 0 »
-        // (psg.c:400). Le code testait « != 0 » : au repos ($FF) le bouclage assertait
+        // ([D] psg.c:400 @ f0736b24). Le code testait « != 0 » : au repos ($FF) le bouclage assertait
         // donc CTS/DCD/RI, et toute bascule les faisait bouger À L'ENVERS. Les deux
         // cartouches Field Service (test S) concluaient « No loopback connector ».
         const bool rts = (a & 0x08) == 0;   // bit3 = 0 → RTS assertée
@@ -246,7 +246,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // tranchée UNE FOIS à la fin, avant que l'IPL ne soit relu. C'est l'ordre d'Hatari :
     // CycInt_Process sert tous les événements échus, PUIS la boucle CPU fait
     // `if (MFP_UpdateNeeded) MFP_UpdateIRQ_All(0)`, PUIS l'IPL est évalué
-    // (newcpu.c:3005, 5509). Sans ça, chaque callback élisait pour son compte — les 18
+    // ([D] newcpu.c:3005 @ f0736b24, 5509). Sans ça, chaque callback élisait pour son compte — les 18
     // `cpu.updateIpl()` de ce fichier — et la règle « seules les plus anciennes
     // concourent » (`pendingTime_ <= pendingTimeMin_`) ne voyait jamais plus d'un
     // candidat : deux timers échus dans le MÊME lot étaient élus séparément, et le plus
@@ -277,7 +277,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     });
     // Imprimante Centronics : sur chaque FRONT de strobe (R14 bit5), l'octet du port B
     // est capturé dans le fichier imprimante (si activé via setPrinterFile) et la ligne
-    // BUSY (GPIP0) est assertée bas — port fidèle de psg.c:388-390 (Printer_TransferByteTo
+    // BUSY (GPIP0) est assertée bas — port fidèle de [D] psg.c:388-390 @ f0736b24 (Printer_TransferByteTo
     // + MFP_GPIP_Set_Line_Input LINE0 LOW). Sans fichier imprimante : no-op (le défaut, donc
     // comportement inchangé tant que l'imprimante n'est pas explicitement activée).
     psg.setPrinterSink([this](uint8_t b) {
@@ -306,15 +306,16 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     blitter.setScheduler(&sched);  // tranches non-hog du blitter (cf. Scheduler::BLITTER)
     dmasnd.setScheduler(&sched);   // le son DMA date sa consommation DAC (FIFO → Timer A)
     dmasnd.setMfp(&mfp);
+    if (machine == MachineType::Ste) dmasnd.fetchWindowOpen = [this] { return shifter.outsideHorizontalDe(); };
     // STE/Mega STE : le YM2149 est mixé à DEMI-amplitude (marge pour le son DMA, évite la
     // saturation) ; ST/Mega ST : pleine amplitude. Cf. YM2149::setOutputScale.
     psg.setOutputScale(machineIsSte(machineType_) ? 0.5f : 1.0f);
     // Filtre de sortie YM (cf. Hatari Sound_Update_Filters) : ST/Mega ST utilisent le
     // passe-bas analogique (C10, LPF_STF) ; STE/Mega STE le PWM (front montant passe-tout).
     psg.setStfLowPass(!machineIsSte(machineType_));
-    // HPF sous-sonique : sur ST il est DANS la chaîne YM (sound.c:1744) ; sur STE le YM
+    // HPF sous-sonique : sur ST il est DANS la chaîne YM ([D] sound.c:1744 @ f0736b24) ; sur STE le YM
     // entre BRUT dans le mix et c'est le MÉLANGE YM+DMA qui est filtré par la chaîne
-    // LMC (dmaSnd.c:699,706 → DmaSound::applyHpfStereo, appelé par le rendu audio).
+    // LMC ([D] dmaSnd.c:699,706 @ f0736b24 → DmaSound::applyHpfStereo, appelé par le rendu audio).
     psg.setHpfBypass(machineIsSte(machineType_));
 
     installSchedulerCallbacks();
@@ -329,6 +330,8 @@ void Machine::installSchedulerCallbacks() {
     gemdos.setPartitionCountProvider([this] { return fdc.acsiPartitionCount(); });
     gemdos.setFloppyProvider([this] { return fdc.inserted(0); });
     mfp.setTimerBEdgeSink([this](bool start) { retargetTimerB(start); });
+    mfp.setTbiPulseSink([this](bool on) { onTbiPulseMode(on); });
+    sched.setCallback(Scheduler::TBI_EDGE, [this] { onTbiEdge(); });
     sched.setCallback(Scheduler::HBL,     [this] { onHbl(); });
     sched.setCallback(Scheduler::VBL,     [this] { onVbl(); });
     // Timers MFP en mode délai : datés par le MFP, déclenchés ici (IRQ + IPL).
@@ -424,6 +427,7 @@ void Machine::scheduleFrameEvents(bool scheduleVbl) {
     // un retrait de bordure haut/bas en cours de trame déplace les tics, comme Hatari.
     tbScheduledAt_ = frameStart_ + timerBPos();
     sched.schedule(Scheduler::TIMER_B, tbScheduledAt_);
+    if (mfp.tbiTracked()) armTbiEdge(frameStart_ - 1);
     // Position de l'IRQ HBL dans la ligne : Hatari HBL_VIDEO_CYCLE_OFFSET = 0 →
     // l'interruption tombe à la FRONTIÈRE de ligne (cycle 512 = 0 de la suivante).
     // L'ancien −4 était une calibration d'avant la refonte IACK (2026-07-02) ;
@@ -477,6 +481,53 @@ void Machine::onRender() {
                        frameStart_ + static_cast<int64_t>(dispStart_ + renderLine_) * cpl_ + deEnd_ - lineCarry_);
 }
 
+int64_t Machine::timerBEdgeCycle(int line, bool startOfLine) {
+    const int64_t real = shifter.timerBFrameCycleForLine(line, startOfLine);
+    return real >= 0 ? frameStart_ + real
+        : frameStart_ + int64_t(line)*cpl_ + shifter.timerBPosForLine(line, startOfLine) - lineCarry_;
+}
+
+// [B] MC68901 § 5.1.2 : en mode pulse, TBI autorise le comptage du Timer B. Sur ST, TBI est
+// le DE de la vidéo. [D] Hatari mfp.c:207 @ f0736b24 pour ce câblage. Les fronts reprennent
+// la datation du mode event-count (timerBEdgeCycle), elle-même [D].
+void Machine::armTbiEdge(int64_t after) {
+    for (int line = 0; line < lpf_; ++line) {
+        const int64_t start = timerBEdgeCycle(line, true);
+        const int64_t end   = timerBEdgeCycle(line, false);
+        if (end <= after) continue;
+        tbiLine_ = line;
+        tbiNextHigh_ = start > after;
+        sched.schedule(Scheduler::TBI_EDGE, tbiNextHigh_ ? start : end);
+        return;
+    }
+    sched.cancel(Scheduler::TBI_EDGE);
+}
+
+void Machine::onTbiEdge() {
+    const int64_t due = sched.firingDue();
+    const int64_t when = due >= 0 ? due : sched.liveNow();
+    // Pas de DE sur une ligne que la Glue n'affiche pas : TBI reste au repos.
+    if (!tbiNextHigh_ || shifter.liveLineDisplayed(tbiLine_)) {
+        mfp.setTbiLine(tbiNextHigh_, when);
+        cpu.updateIpl();
+    }
+    armTbiEdge(when);
+}
+
+void Machine::onTbiPulseMode(bool on) {
+    if (!on) { sched.cancel(Scheduler::TBI_EDGE); return; }
+    const int64_t now = sched.liveNow();
+    bool high = false;
+    if (frameInProgress_)
+        for (int line = 0; line < lpf_; ++line)
+            if (timerBEdgeCycle(line, true) <= now && now < timerBEdgeCycle(line, false)) {
+                high = shifter.liveLineDisplayed(line);
+                break;
+            }
+    mfp.setTbiLevelQuiet(high);
+    if (frameInProgress_) armTbiEdge(now);
+}
+
 void Machine::retargetTimerB(bool startOfLine) {
     if (!frameInProgress_) return;
     const int64_t now = sched.liveNow();
@@ -488,11 +539,7 @@ void Machine::retargetTimerB(bool startOfLine) {
         sched.cancel(Scheduler::TIMER_B);
         onTimerB();
     }
-    auto edgeAt = [&](int line, bool start) {
-        const int64_t real = shifter.timerBFrameCycleForLine(line, start);
-        return real >= 0 ? frameStart_ + real
-            : frameStart_ + int64_t(line)*cpl_ + shifter.timerBPosForLine(line, start) - lineCarry_;
-    };
+    auto edgeAt = [&](int line, bool start) { return timerBEdgeCycle(line, start); };
     auto lineStart = [&](int line) {
         return edgeAt(line, true) - shifter.timerBPosForLine(line, true);
     };
@@ -523,7 +570,7 @@ void Machine::onTimerB() {
     // Position CIBLE au moment du callback : le DE de la ligne a pu être élargi par
     // une écriture POSTÉRIEURE à la planification (retrait de bordure droite : 60 Hz
     // à ~cyc 374 → DE_end 462 → tic à ~488). Hatari REPROGRAMME l'IRQ TB à chaque
-    // écriture qui change le DE (Video_AddInterruptTimerB, video.c:2880-2891) ; ici
+    // écriture qui change le DE (Video_AddInterruptTimerB, [D] video.c:2906 @ f0736b24) ; ici
     // on re-vérifie à l'arrivée : cible plus loin → on se replanifie SANS tirer.
     // (Un DE raccourci après coup laisse le tic à l'ancienne position — même
     // approximation que la reprogrammation tardive d'Hatari quand le tic est passé.)
@@ -581,10 +628,10 @@ void Machine::onHbl() {
     cpu.raiseHbl();                                // HBL niveau 2 (gaté par le SR)
     // Son DMA STE : la FIFO 8 octets est entretenue à CHAQUE HBL (fetch au faisceau
     // + consommation DAC datée) — port de l'appel DmaSnd_STE_HBL_Update du handler
-    // HBL d'Hatari (video.c:3322). Peut pulser Timer A (fin de trame) → IPL.
+    // HBL d'Hatari ([D] video.c:3340 @ f0736b24). Peut pulser Timer A (fin de trame) → IPL.
     if (machineHasDmaSound(machineType_)) { dmasnd.onHbl(); cpu.updateIpl(); }
     // Commit (compteur vidéo + capture lineSnap_) de la scanline qui SE TERMINE —
-    // même ancre que le Video_EndHBL du handler HBL d'Hatari (video.c:3319).
+    // même ancre que le Video_EndHBL du handler HBL d'Hatari ([D] video.c:3337 @ f0736b24).
     shifter.commitScanline(hblLine_);
     // Longueur RÉELLE de la ligne qui se termine (NEOST_LINELEN) : le cumul
     // lineCarry_ décale toutes les planifications des lignes suivantes (−carry),
@@ -602,7 +649,7 @@ void Machine::onHbl() {
         // 60 Hz (263 lignes) passée à 50 Hz par le programme → 262 lignes à 512 mais
         // frameEnd_ 4 cycles trop tôt, HBL de la ligne 262 perdu, et toute la suite
         // décalée de −4 vs Hatari (sonde timer_b_event). Hatari pose la VBL depuis le
-        // dernier HBL réel (video.c:3370).
+        // dernier HBL réel ([D] video.c:3370 @ f0736b24).
         curLineLen_ = cpl_;
     }
     ++hblLine_;
@@ -611,7 +658,7 @@ void Machine::onHbl() {
     // V2 : −lineCarry_ décale la ligne suivante du cumul des raccourcissements (=0 hors V2).
     if (hblLine_ < lpf_) {
         // Longueur de la ligne qui COMMENCE = état LIVE de $FF8260/$FF820A (port de
-        // Video_StartHBL + Video_HBL_GetDefaultPos, video.c:3541/3134), et non la
+        // Video_StartHBL + Video_HBL_GetDefaultPos, [D] video.c:3541/3134 @ f0736b24), et non la
         // géométrie verrouillée à beginFrame. Matériel : le compteur hsc du GST MCU se
         // recharge à (ntsc ? 1 : 0) par un mux combinatoire sur le registre pal
         // (gstmcu.v:779-801) → 508/512 dès la ligne suivante. Sans cela, une trame
@@ -675,7 +722,7 @@ void Machine::onVbl() {
 // -----------------------------------------------------------------------------
 void Machine::runFrame() {
     // FIX1 (beam-sync) — ANCRE DE TRAME FIXE = VBL THÉORIQUE. Port de Hatari
-    // VBL_ClockCounter = CyclesGlobalClockCounter − PendingCyclesOver (video.c:4964) qui
+    // VBL_ClockCounter = CyclesGlobalClockCounter − PendingCyclesOver ([D] video.c:4964 @ f0736b24) qui
     // RETRANCHE le carry δ du dépassement de la dernière instruction enjambant frameEnd.
     // Au lieu de frameStart_ = sched.now() (qui CAPTE δ et le fait varier trame à trame),
     // on AVANCE frameStart_ de la longueur THÉORIQUE de la trame qui se termine (lpf_*cpl_
@@ -816,11 +863,11 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 55; // STOP : retenue d'IRQ de 4 cycles (Moira::stopGraceUntil)
+static constexpr uint16_t kStateVersion = 58; // TBI_EDGE au Scheduler, niveau TBI du MFP (mode pulse)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
-    uint16_t version = kStateVersion; // v55 : Moira::stopGraceUntil (STOP+8, fx68k/Hatari)
+    uint16_t version = kStateVersion; // v58 : broches vidéo déjà montées ; v57 : Blitter sans fetchSrc_ ; v56 : TBI du mode pulse ; v55 : Moira::stopGraceUntil
                                       // v54 : Ikbd::hostKeys_, StePads::oe_
                                       // v53 : IKBD calé sur la ROM 6301 ($C9/$CA, fenêtre de reset,
                                       //       $18/$19, pause) + Bus::gameCart ($FF9000)
@@ -925,6 +972,7 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     ar(lineCarry_); ar(v2ShortLine_); ar(v2_);
     ar(lineLenOn_); ar(curLineLen_);
     ar(cpl_); ar(lpf_); ar(disp_); ar(deEnd_); ar(dispStart_);
+    ar(tbiLine_); ar(tbiNextHigh_);
     // ⚠ INVARIANTS DE GÉOMÉTRIE ET D'HORLOGE. runFrame boucle sur
     // `while (cpu.busClockNow() < frameEnd)` et finalizeFrame_ fait `sched.syncTo(frameEnd_)` :
     // une horloge maître incohérente rend ces boucles NON BORNÉES — gel définitif à 100 %

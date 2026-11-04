@@ -1,19 +1,37 @@
 // =============================================================================
 //  Scc.hpp — Contrôleur série SCC Z85C30 du Mega STE (port de Hatari scc.c).
 //
-//  Le Mega STE (comme le TT) ajoute un Zilog 85C30 SCC à deux canaux série au
-//  $FF8C80-$FF8C87. Sur Mega STE : canal A = port « LAN », canal B = « Serial 2 »
-//  (Modem 2, RS-232). L'IRQ du SCC est de NIVEAU 5, VECTORISÉE, gatée par le SCU
-//  (VmeIntMask). Décodage des accès (octets impairs uniquement, port des décodes
-//  d'Hatari) :  $..81 = ctrl A, $..83 = data A, $..85 = ctrl B, $..87 = data B.
+//  Références citées ici et dans Scc.cpp (grades : CLAUDE.md, « Les grades de preuve ») :
+//   UM0109 = Zilog, SCC/ESCC User Manual, édition UM010902-0609 ; pages IMPRIMÉES
+//            (page du PDF = imprimée + 7). extern/datasheets/Zilog_SCC_ESCC_UM.pdf,
+//            sha256 2a13683ee0e423ee3cdf2781a4ce6b4df65c1e069a269e4234fa6964b4a3bea0.
+//   PS0117 = Zilog, Z80C30/Z85C30 CMOS SCC Product Specification, PS011708-0115.
+//            extern/datasheets/Zilog_PS0117.pdf,
+//            sha256 feb4b46341bf20cab3ce5e555b02b7c13e1c2422cb12a9ba2dbfa121d0a34faa.
+//   Hatari = src/scc.c (sauf mention) @ f0736b24 ; lignes vérifiées à cette révision.
+//   MAME   = d'anciens commentaires le citent sans révision et il n'est pas dans
+//            extern/ : ces points sont gradés F, jamais D.
 //
-//  Modèle fonctionnel fidèle : jeu complet WR0-15 / RR0-15 par canal (pointeur de
+//  [D] Hatari scc.c:31 @ f0736b24 — le Mega STE porte ce Zilog 85C30 à deux canaux.
+//  [D] Hatari ioMem.c:225 @ f0736b24 — plage $FF8C80-$FF8C87.
+//  [D] Hatari scc.c:36-39 @ f0736b24 — canal A = port « LAN » (ou « Serial 2 » par câble
+//      interne vers le slot VME) ; canal B = « Modem 2 » (RS-232).
+//  [D] Hatari scc.c:2278, scu_vme.c:58,156-161 @ f0736b24 — IRQ de NIVEAU 5, gatée par
+//      le SCU (VmeIntMask). [D] Hatari scc.c:2444-2453 @ f0736b24 — IACK vectorisé.
+//  [D] Hatari scc.c:1635,1639,2465-2468,2479-2480 @ f0736b24 — décodage, octets impairs
+//      seulement : $..81 = ctrl A, $..83 = data A, $..85 = ctrl B, $..87 = data B.
+//  [F] Inconnu : aucune de ces affectations de carte n'a de source primaire ici.
+//      Tranché par : le schéma du Mega STE ou un relevé sur la machine.
+//
+//  Modèle fonctionnel (périmètre, pas preuve de fidélité) : jeu complet WR0-15 / RR0-15 par canal (pointeur de
 //  registre via WR0), commandes WR0/WR9, reset matériel/canal, RR0 (statut TX/RX +
 //  lignes), RR2 (vecteur + statut), RR3 (IP), sources d'interruption, IRQ niv5 +
 //  IACK vectorisé. TX cadencé (puits série, ou bouclage local interne si WR14 bit4=1,
 //  cf. note dans serialWriteByte) ; RX par injection externe mise en file et cadencée.
 //  BRG cadencé et interruption Zero Count portés de Hatari. FIFO RX matérielle
-//  de trois octets distincte de la file hôte. Restent : série hôte réelle et DPLL.
+//  de trois octets distincte de la file hôte ([B] UM0109 p.97 : trois octets sur
+//  NMOS/CMOS). Restent : série hôte réelle, DPLL, modes synchrones et SDLC (chasse,
+//  CRC, drapeaux, FIFO de statut), détection de parité et framing au récepteur.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -30,6 +48,11 @@ public:
     Scc() { reset(); }
 
     // Reset matériel complet (SCC_Reset). Appelé au reset machine.
+    // [B] UM0109 p.34 : le reset matériel de la puce est /WR et /RD bas ensemble.
+    // [D] Hatari scc.c:638-639 @ f0736b24 — non câblé sur Mega STE/TT/Falcon ; le reset
+    //     machine qui équivaut à un reset matériel est une convention d'émulation.
+    // [F] Inconnu : état réel du SCC après un reset machine. Tranché par : lecture des
+    //     registres sur un Mega STE après RESET, avant que le TOS force WR9=$C0.
     void reset();
 
     // Horloge bus du Mega STE : callbacks SCC_BRG_A/B branchés par Machine.
@@ -39,13 +62,17 @@ public:
 
     // Accès MMIO $FF8C80-$FF8C87 (le 68000 y fait des mots ; seuls les octets
     // IMPAIRS portent un registre, les pairs lisent $FF / ignorent l'écriture).
+    // [D] Hatari scc.c:2465-2468,2479-2480 @ f0736b24 — idem. Tranché par : lecture
+    //     d'un octet pair sur un Mega STE ; le manuel Zilog ignore ce câblage de bus.
     uint8_t read8(uint32_t addr);
     void    write8(uint32_t addr, uint8_t v);
 
     // IRQ niveau 5 : actif quand la ligne /INT est tirée bas (IRQ_Line == 0).
+    // [B] UM0109 p.40 : le SCC demande en tirant /INT bas depuis son état drain ouvert.
     // Consulté par Cpu68k::neostUpdateIpl (via le SCU) sur Mega STE.
     bool irqActive() const { return irqLine_ == 0; }
     // Cycle IACK niveau 5 : pose l'IUS, renvoie le vecteur (ou -1 si NV/No Vector).
+    // [B] UM0109 p.44 (IUS, puis vecteur) ; WR9 D1 p.161 (NV : bus en haute impédance).
     int  processIack();
 
     // Puits série en sortie (TX) — optionnel ; ch = 0 (A) / 1 (B). Comme le MFP.
@@ -53,9 +80,12 @@ public:
     // Injection d'un octet hôte de données (RX), sans bit de parité physique.
     // Seuls les bouclages du TSR possèdent les métadonnées de parité émises.
     void receiveByte(int ch, uint8_t b);
-    // Connecteurs de bouclage EXTERNES du kit Field Service (test « I SCC » : prises
+    // [F] Connecteurs de bouclage EXTERNES du kit Field Service (test « I SCC » : prises
     // Port A / Port B / LAN) : TxD→RxD, RTS→CTS, DTR→DCD et DTR→DSR (/SYNC) sur
-    // CHAQUE canal. Débranché par défaut, comme le MFP (--loopback en headless).
+    // CHAQUE canal. Câblage déduit de ce que le diagnostic Mega STE attend pour rendre
+    // Pass, sans adresse de ROM citée. Tranché par : le schéma des prises du kit, ou un
+    // désassemblage daté de la ROM du diagnostic (grade C).
+    // Débranché par défaut, comme le MFP (--loopback en headless).
     // Propriété de banc (pas de l'état machine) : non sérialisée, comme Mfp::loopback_.
     void setLoopback(bool plugged);
 
@@ -100,7 +130,8 @@ public:
         ar(irqLine_); ar(ius_); ar(activeReg_);
         for (int64_t& period : brgPeriod_) {
             ar(period);
-            // Intervalle ZC (TC+2) : au moins deux cycles, au plus une seconde.
+            // [B] UM0109 p.72-73 : un chargement de plus, d'où l'intervalle ZC de TC+2.
+            // La borne « au moins deux cycles, au plus une seconde » est une garde de NeoST.
             ar.check((period == 0 || period >= 2) && period <= neost::pacing::kCpuHzInt,
                      "Scc::BRG period out of range");
         }
@@ -123,10 +154,10 @@ private:
         uint8_t  tsrParity  = 2; // 0/1 = bit émis connu ; 2 = parité absente.
         uint8_t  tsrBits    = 8; // Format du caractère chargé, distinct du WR5 courant.
         bool     tsrFull    = false;
-        bool     txActive   = false; // Trame partie, à terminer même si WR5 TX Enable tombe.
+        bool     txActive   = false; // [B] UM0109 WR5 D3 p.153 : trame partie, à terminer même si TX Enable tombe.
         bool     txInterrupted = false; // Un BREAK a coupé ce caractère : aucun octet intact à livrer.
         int64_t  txRemaining = 0; // Cycles TSR suspendus par BREAK (approximation au caractère).
-        bool     rtsAsserted = false; // État réel /RTS, distinct du bit WR5.
+        bool     rtsAsserted = false; // [B] UM0109 WR5 D1 p.154 : état réel /RTS, distinct du bit WR5.
         uint32_t intSources = 0;
         uint32_t brgFraction = 0, brgSource = 0;
         int64_t brgPulseStart = -1, brgPulseEnd = -1;
@@ -142,7 +173,7 @@ private:
     };
     Chn     chn_[2];
     uint8_t irqLine_  = 1;     // 1 = OFF (haut), 0 = ON (bas)
-    uint8_t ius_      = 0;     // Interrupt Under Service (mêmes bits que RR3 0-5)
+    uint8_t ius_      = 0;     // [B] UM0109 p.40 : IUS invisibles du CPU. Ici, mêmes bits que RR3 0-5.
     int     activeReg_ = 0;
     int64_t brgPeriod_[2] = {0, 0};
     Scheduler* sched_ = nullptr;  // câblage hôte, non sérialisé

@@ -48,7 +48,9 @@ class TimingComparison(unittest.TestCase):
     def test_references_match_themselves(self):
         for case, reference in self.reference.items():
             with self.subTest(case=case):
-                self.assertTrue(self.check(case, reference))
+                # Un écart accepté face à Hatari fait partie de l'attendu.
+                measured = dict(reference, first_irq=reference["first_irq"] + timing.ACCEPTED_FIRST_IRQ.get(case, 0))
+                self.assertTrue(self.check(case, measured))
 
     def test_missing_interrupt_with_unchanged_dominant_period(self):
         for case, reference in self.reference.items():
@@ -94,9 +96,12 @@ class TimingComparison(unittest.TestCase):
         for case in (c for c in self.all_reference if c.startswith(("fdc_", "blitter_"))):
             reference = self.all_reference[case]
             baseline = copy.deepcopy(reference)
+            # Un écart accepté face à Hatari fait partie de l'attendu ; une mutation s'y ajoute.
+            for field, offset in timing.ACCEPTED_BLITTER.get(case, {}).items():
+                baseline[field] = [t + offset for t in baseline[field]]
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertTrue(timing.compare(case, baseline, reference))
-                self.assertTrue(timing.compare(case, reference, reference, strict=True))
+                self.assertTrue(timing.compare(case, baseline, reference, strict=True))
                 if case == "blitter_shared":
                     legacy = copy.deepcopy(reference)
                     for field, delta in {"durations": 60, "irq_durations": 42, "polls": 3}.items():

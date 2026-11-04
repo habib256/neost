@@ -49,7 +49,7 @@ uint8_t MidiAcia::read8(uint32_t addr) {
         uint8_t s = tdre_ ? ACIA_TDRE : 0;
         if (rdrf_) s |= ACIA_RDRF;
         if (ovrn_) s |= ACIA_OVRN;
-        if (((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_))
+        if ((control_ & 0x03) != 0x03 && (((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_)))
             s |= ACIA_IRQ;
         srRead_ = true;
         return s;
@@ -241,7 +241,9 @@ void MidiAcia::onTxEmpty() {
 void MidiAcia::raiseIfReady(int64_t when) {
     // L'ACIA active sa ligne d'IRQ dès qu'une cause RX (octet dispo + RIE) ou TX
     // (TDRE + TIE) est active → canal 6 du MFP via GPIP4 (cf. ACIA_UpdateIRQ).
-    const bool active = ((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_);
+    // [B] MC6850 § Master Reset p. 5 : IRQ tenue haute en master reset ; [D] gen_uart.v:347-348 @ a00deb5b aussi.
+    const bool active = (control_ & 0x03) != 0x03
+                     && (((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_));
     // Le canal 6 est levé par le détecteur de FRONT du setter (wire-OR avec le
     // clavier : si GPIP4 est déjà bas, pas de nouveau front → pas d'IRQ, comme
     // sur le vrai MFP). Pas de raise() manuel.

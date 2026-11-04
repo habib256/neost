@@ -1,11 +1,17 @@
 // =============================================================================
 //  Ikbd.hpp — ACIA 6850 clavier + contrôleur IKBD (HD6301) de l'Atari ST.
 //
+//  Références de l'ACIA, ici et dans Ikbd.cpp :
+//    « MC6850 § x p. n » : MC6850 ACIA (Motorola, DS9493R4, 1985), extern/datasheets/MC6850.pdf
+//      (sha256 294a8b9f557d03a2a7f4d736d060244f39216dad2d5479d2e47954feb4f34655).
+//      Page du PDF = page imprimée.
+//
 //  Le clavier ST est un micro-contrôleur intelligent (IKBD) relié au 68000 par
-//  une liaison série à travers une ACIA 6850 ($FFFC00 contrôle/statut,
-//  $FFFC02 données). L'IKBD envoie des scancodes : "make" à l'appui, make|0x80
-//  au relâchement. Quand un octet est reçu, l'ACIA tire la ligne GPIP4 du MFP
-//  (canal 6) → interruption niveau 6.
+//  une liaison série à travers une ACIA 6850 ([D] Hatari acia.c:70-71 @ f0736b24 : $FFFC00
+//  contrôle/statut, $FFFC02 données). L'IKBD envoie des scancodes : "make" à l'appui, make|0x80
+//  au relâchement. [B] MC6850 § Interrupt Request p. 6 : quand un octet est reçu et que RIE est armé,
+//  l'ACIA tire sa ligne d'IRQ. [D] Elle aboutit à GPIP4 du MFP : Hatari acia.c:369-370 @ f0736b24.
+//  [B] GPIP4 = canal 6 : MC68901 Table 3-1 p. 3-1 → interruption niveau 6.
 //
 //  NeoST modélise : la file de réception, les bits de statut ACIA, et juste ce
 //  qu'il faut de l'IKBD (réponse 0xF1 au reset) pour qu'EmuTOS soit content.
@@ -46,7 +52,7 @@ public:
     // MACHINE (Machine::reset — Hatari reset.c appelle IKBD_Reset).
     void    bootRom();
 
-    // RESET MATÉRIEL de l'IKBD (port d'IKBD_Reset, ikbd.c:499-522) : remet d'abord
+    // RESET MATÉRIEL de l'IKBD (port d'IKBD_Reset, [D] ikbd.c:499-522 @ f0736b24) : remet d'abord
     // le SCI (la liaison série 6301 → ACIA) — l'octet EN VOL sur la ligne est perdu,
     // son échéance de livraison annulée — PUIS boote la ROM. bootRom() seul (≙
     // IKBD_Boot_ROM) ne vide que le tampon de sortie du firmware : un octet déjà
@@ -61,10 +67,14 @@ public:
     void receiveSerialByte(uint8_t v);
 
     // Échéance : un octet série IKBD → ACIA est arrivé (~10240 cycles après son
-    // départ de la file) → il devient le RDR courant (RDRF=1, IRQ ACIA). Cette
-    // CADENCE est celle du SCI d'Hatari (1024 cycles/bit à 7812,5 bauds) ; des
+    // départ de la file) → il devient le RDR courant ([B] MC6850 § Receive Data Register p. 7 :
+    // RDRF=1 au caractère complet, IRQ ACIA). Cette
+    // CADENCE est celle du SCI d'Hatari ([D] ikbd.c:1035 @ f0736b24 : 1024 cycles/bit à 7812,5 bauds) ; des
     // jeux (Vroom) synchronisent leur parseur de paquets souris dessus — une
     // livraison instantanée des 3 octets leur fait confondre dx et dy.
+    // [F] La fiche ne date pas RDRF : le suréchantillonnage /64 (§ Receive p. 6) et § Receiver Overrun p. 8
+    // suggèrent le milieu du stop, ~512 cycles avant cette échéance. Tranché par : Rx Data et IRQ
+    // relevés ensemble à l'oscilloscope sur un vrai ST.
     void    onRxDeliver();
 
     // Échantillon joystick $17 : timer indépendant du VBL, en cycles bus 8 MHz.
@@ -352,7 +362,8 @@ private:
     bool rxFree(std::size_t n) const;
     void armRx(int64_t baseCycle = -1);       // date attente firmware ou prochain octet
     void raiseIfReady(int64_t when = -1);     // GPIP4 daté ; -1 = accès courant
-    bool irqActive() const;                  // cause d'IRQ : RX (RDRF & RIE) OU TX (TIE & TDRE)
+    // [B] MC6850 § Interrupt Request p. 6 : cause d'IRQ : RX (RDRF & RIE) OU TX (TIE & TDRE).
+    bool irqActive() const;
 
     // Renvoie le nombre total d'octets (commande incluse) attendu pour `opcode`,
     // d'après la table KeyboardCommands[] de Hatari (ikbd.c). 0 = opcode inconnu
@@ -439,24 +450,34 @@ private:
     Scheduler* sched_ = nullptr;             // pour différer la réponse de reset
     std::deque<uint8_t> rx_;                 // file IKBD → CPU (octets pas encore livrés)
     uint8_t rdr_ = 0;                        // Receive Data Register : dernier octet LIVRÉ
-                                             // (relire à vide le renvoie, cf. acia.c)
-    bool    rdrf_ = false;                   // RDR plein (octet livré non encore lu)
+                                             // ([B] MC6850 § Receive Data Register p. 7 : lecture
+                                             // non destructive, relire à vide le renvoie)
+    bool    rdrf_ = false;                   // [B] MC6850 § Status Register p. 8 : octet livré non encore lu
     uint8_t rxShiftData_ = 0;                // octet sorti de la file, engagé dans le SCI
     bool    rxPending_ = false;              // une livraison IKBD_RX est déjà datée
     int     responseDelayBits_ = 0;          // SCI_TX_Delay global, 1024 cycles/bit
     bool    rxWaitingDelay_ = false;         // IKBD_RX termine l'attente, pas un octet
     // Overrun récepteur (port acia.c) : le SCI livre EN CONTINU ; un octet qui
-    // arrive RDR plein est PERDU (rxOverrun_ pendant, maintient l'IRQ RX). Le bit
-    // OVRN du SR (ovrn_) n'est posé qu'à la lecture de RDR, et acquitté par la
-    // séquence « lire SR (srRead_) puis RDR » — cf. ACIA_Read_RDR/SR_Read.
+    // arrive RDR plein est PERDU ([B] MC6850 § Receive Data Register p. 7 ; rxOverrun_ pendant, maintient
+    // l'IRQ RX, [D] Hatari acia.c:721-724 @ f0736b24). Le bit
+    // OVRN du SR (ovrn_) n'est posé qu'à la lecture de RDR ([B] MC6850 § Receiver Overrun p. 8-9), et
+    // acquitté par la séquence « lire SR (srRead_) puis RDR » ([B] MC6850 § Interrupt Request p. 6 ;
+    // [D] ACIA_Read_RDR, Hatari acia.c:856-881 @ f0736b24).
+    // [F] La date de la perte : § Receiver Overrun p. 8 dit « midpoint of the last bit » du second
+    // caractère ; Hatari lit le stop (acia.c:1071-1075 @ f0736b24), NeoST date la fin de trame. Tranché
+    // par : un overrun provoqué sur un vrai 6850, IRQ à l'oscilloscope.
     bool    rxOverrun_ = false;              // octet(s) perdu(s) non encore signalé(s)
-    bool    ovrn_ = false;                   // bit OVRN visible dans le SR
-    bool    srRead_ = false;                 // SR lu depuis la dernière lecture RDR
-    bool aciaClockInitialized_ = false; // Clock_Divider != 0 : conserve aux resets ACIA
-    uint8_t control_ = 0;                    // registre contrôle ACIA (bit7 = RX int enable)
-    bool    txEnableInt_ = false;            // IRQ d'émission armée : CR bits5-6 = 01 (ex. $b6, Hades Nebula)
-    bool    tdre_ = true;                    // TDR libre, indépendant de TIE
-    uint8_t txData_ = 0, txShiftData_ = 0;   // un octet en attente et un en vol
+    bool    ovrn_ = false;                   // [B] MC6850 Table 1 p. 7 : bit 5 du SR
+    bool    srRead_ = false;                 // [D] Hatari acia.c:768 @ f0736b24 : SR lu depuis la dernière lecture RDR
+    // [D] Hatari acia.c:285,343,801-804 @ f0736b24 : Clock_Divider != 0, conservé aux resets ACIA.
+    // [F] Ce verrou n'existe pas dans la fiche, et Hatari note que l'émission fonctionne sur le fer avant
+    // toute programmation ([D] acia.c:266-270 @ f0736b24). Tranché par : un octet IKBD envoyé avant la première
+    // écriture de CR sur un vrai ST, juste après la mise sous tension.
+    bool aciaClockInitialized_ = false;
+    uint8_t control_ = 0;                    // [B] MC6850 Table 1 p. 7 : bit7 = RX int enable
+    bool    txEnableInt_ = false;            // [B] MC6850 § Transmitter Control Bits p. 8 : CR6=0, CR5=1 (ex. $b6, Hades Nebula)
+    bool    tdre_ = true;                    // [B] MC6850 § Status Register p. 8 : TDR libre, indépendant de TIE
+    uint8_t txData_ = 0, txShiftData_ = 0;   // [B] MC6850 § Transmit p. 5-6 : un octet en attente et un en vol
     int64_t nextTxClock(int64_t at) const;
     int64_t cpuSerialEventCycle_ = -1; // contexte transitoire du stop décodé, non sérialisé
     int64_t firmwareEventTime() const {
@@ -469,10 +490,13 @@ private:
     void catchUpCpuTx(int64_t at);
     void scheduleCpuTx();
     int64_t txNextBitCycle_ = 0;
-    uint8_t txBitIndex_ = 0; // prochain bit TSR : 0..7 données, 8 stop
+    uint8_t txBitIndex_ = 0; // prochain bit TSR : 0..7 données (LSB d'abord, [B] MC6850 Table 1 p. 7), 8 stop
     uint8_t sciRxState_ = 0, sciRxByte_ = 0, sciRxBitsLeft_ = 0;
     void advanceTx(int64_t at); // front TX échéancé, indépendant du retard CPU
-    int64_t txClockPhase_ = 0; // phase TX /64 8N1, origine du diviseur modulo1024
+    // Phase TX /64 8N1, origine du diviseur modulo 1024. [D] Hatari acia.c:801-805 @ f0736b24 la pose au
+    // changement de CR0-1. [F] Fiche muette sur son compteur : il pourrait tourner librement. Tranché
+    // par : une capture de Tx Data autour d'une écriture de CR sur un vrai 6850.
+    int64_t txClockPhase_ = 0;
     bool txShifting_ = false;               // IKBD_TX termine le TSR, sinon remplit le TSR
     std::array<uint8_t, 8> inBuf_{};         // accumulation des octets d'une commande multi-octets
     int inBufLen_ = 0;                       // octets déjà reçus pour la commande en cours

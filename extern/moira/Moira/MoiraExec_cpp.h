@@ -354,7 +354,8 @@ Moira::execAddRgEa(u16 opcode)
 
     looping<I>() ? noPrefetch<C>(2) : prefetch<C, POLL>();
 
-    writeM<C, M, S>(ea, result);
+    // ADD/SUB Dn,<ea> : [D] fx68k @ 0602ee46 : mot bas d'abord.
+    writeM<C, M, S, MOIRA_MIMIC_MUSASHI ? 0 : REVERSE>(ea, result);
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
@@ -475,7 +476,8 @@ Moira::execAddiEa(u16 opcode)
     result = addsub<C, I, S>(src, data);
     prefetch<C>();
 
-    writeOp<C, M, S, POLL>(dst, ea, result);
+    // ADDI/SUBI : [D] Hatari op_0690_13_ff @ f0736b24, fx68k @ 0602ee46 : mot bas d'abord.
+    writeOp<C, M, S, POLL | (MOIRA_MIMIC_MUSASHI ? 0 : REVERSE)>(dst, ea, result);
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
@@ -550,7 +552,8 @@ Moira::execAddqEa(u16 opcode)
     result = addsub<C, I, S>(src, data);
     prefetch<C, POLL>();
 
-    writeOp<C, M, S>(dst, ea, result);
+    // ADDQ/SUBQ : [D] Hatari op_5090_13_ff @ f0736b24, fx68k @ 0602ee46 : mot bas d'abord.
+    writeOp<C, M, S, MOIRA_MIMIC_MUSASHI ? 0 : REVERSE>(dst, ea, result);
 
     //           00  10  20        00  10  20        00  10  20
     //           .b  .b  .b        .w  .w  .w        .l  .l  .l
@@ -603,6 +606,9 @@ Moira::execAddxEa(u16 opcode)
 
     const u64 flags =
     (S == Word) ? AE_INC_PC : (S == Long) ? AE_INC_PC | AE_INC_A : 0;
+    // [D] fx68k @ 0602ee46, Hatari op_d188_13_ff @ f0736b24 : ADDX/SUBX.L -(Ay),-(Ax) lit le mot
+    // bas d'abord, pour la source comme pour la destination.
+    const u64 lowFirst = (S == Long && C == Core::C68000 && !MOIRA_MIMIC_MUSASHI) ? REVERSE : 0;
 
     int src = _____________xxx(opcode);
     int dst = ____xxx_________(opcode);
@@ -610,7 +616,7 @@ Moira::execAddxEa(u16 opcode)
     u32 ea1, ea2, data1, data2;
 
     try {
-        readOp<C, M, S, flags>(src, &ea1, &data1);
+        readOp<C, M, S, flags|lowFirst>(src, &ea1, &data1);
 
     } catch (const AddressError &exc) {
 
@@ -621,7 +627,7 @@ Moira::execAddxEa(u16 opcode)
     if constexpr (S != Long) POLL_IPL;
 
     try {
-        readOp<C, M, S, flags|IMPL_DEC> (dst, &ea2, &data2);
+        readOp<C, M, S, flags|IMPL_DEC|lowFirst> (dst, &ea2, &data2);
 
     } catch (const AddressError &exc) {
 
@@ -2187,7 +2193,11 @@ Moira::execDbcc(u16 opcode)
 
             } else {
 
-                (void)read<C, AddrSpace::PROG, Word>(reg.pc + 2);
+                // [D] microcode dbcc2 (lecture à l'adresse de branchement), fx68k @ 0602ee46,
+                // Hatari op_51c8_13_ff @ f0736b24. Lecture sans effet, sauf sur un registre à
+                // effet de lecture ou en zone à bus error.
+                if constexpr (C == Core::C68000) (void)read<C, AddrSpace::PROG, Word>(newpc);
+                else (void)read<C, AddrSpace::PROG, Word>(reg.pc + 2);
                 CYCLES_68000(14);
                 CYCLES_68020(10);
 
@@ -2496,13 +2506,17 @@ Moira::execJsr(u16 opcode)
                 throw AddressError(makeFrame(ea));
             }
 
+            // [D] Microcode jsra1 puis jsaw2/jsaw3 (préfetch de la cible, puis empilement),
+            // fx68k @ 0602ee46, Hatari op_4e90_13_ff @ f0736b24. reg.pc reste l'ancien PC pendant
+            // ces accès : une faute y garde le PC de l'instruction, comme chez Hatari.
+            queue.irc = (u16)read<C, AddrSpace::PROG, Word>(ea);
+
             // Save return address on stack
             push<C, Long>(reg.pc);
 
             // Jump to new address
             reg.pc = ea;
 
-            queue.irc = (u16)read<C, AddrSpace::PROG, Word>(ea);
             prefetch<C, POLL>();
             break;
 
@@ -3323,8 +3337,6 @@ Moira::execMovemEaRg(u16 opcode)
         }
     }
 
-    if constexpr (S == Long) (void)read<C, AddrSpace::DATA, Word>(ea);
-
     if constexpr (M == Mode(3)) {     // (An)+
 
         for (int i = 0; i <= 15; i++) {
@@ -3351,7 +3363,10 @@ Moira::execMovemEaRg(u16 opcode)
             cnt++;
         }
     }
-    if constexpr (S == Word) (void)read<C, AddrSpace::DATA, Word>(ea);
+    // [D] fx68k @ 0602ee46, Hatari op_4cd8_13_ff @ f0736b24 : la lecture en plus suit le dernier
+    // mot, en .L comme en .W. L'amont la plaçait avant le premier en .L. Même espace que les autres
+    // mots : FC programme en relatif PC.
+    (void)readM<C, M, Word>(ea);
 
     prefetch<C, POLL>();
 
@@ -3402,7 +3417,8 @@ Moira::execMovemRgEa(u16 opcode)
             // Write register contents into memory
             ea -= S;
             if constexpr (C == Core::C68020 && !MOIRA_MIMIC_MUSASHI) writeA(dst, ea);
-            writeM<C, M, S, MOIRA_MIMIC_MUSASHI ? REVERSE : 0>(ea, reg.r[i]);
+            // [D] fx68k @ 0602ee46, Hatari op_48e0_13_ff @ f0736b24 : mot bas d'abord.
+            writeM<C, M, S, REVERSE>(ea, reg.r[i]);
             cnt++;
         }
         if constexpr (C != Core::C68020 || MOIRA_MIMIC_MUSASHI) writeA(dst, ea);
@@ -5422,7 +5438,11 @@ Moira::execStop(u16 opcode)
     // readI<Word> aurait lu IRC puis préfetché le mot suivant sur le bus. Les
     // sorties de STOP (exception, puis RTE) rechargent la file : IRC périmé sans effet.
     u16 src;
-    if constexpr (C == Core::C68000) { src = queue.irc; reg.pc += 2; }
+    // [B] M68000UM Rev 8 § 8.11 : STOP vaut 4(0/0). Sans préfetch, ces 4 cycles sont à compter
+    //     ici : CYCLES_IP ne compte rien en PRECISE_TIMING. [D] microcode stop1/aaa01, deux mots
+    //     sans bus (m68k_microcode_all.txt) ; Hatari op_4e72_13_ff, do_cycles_stop(4) @ f0736b24.
+    //     Le retrait du préfetch (2026-10-22) les avait perdus.
+    if constexpr (C == Core::C68000) { src = queue.irc; reg.pc += 2; SYNC(4); }
     else                              { src = (u16)readI<C, Word>(); }
 
     setSR(src);

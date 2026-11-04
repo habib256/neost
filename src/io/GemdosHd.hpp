@@ -142,7 +142,7 @@ private:
     static constexpr int FORCED_HANDLES   = 5;
     static constexpr uint32_t DTA_MAGIC_NUMBER = 0x12983476u;
     static constexpr int DTA_CACHE_INC = 256;
-    static constexpr int DTA_CACHE_MAX = 16 * 1024;   // == DTA_CACHE_MAX_SIZE d'Hatari (gemdos.c:118)
+    static constexpr int DTA_CACHE_MAX = 16 * 1024;   // == DTA_CACHE_MAX_SIZE d'Hatari ([D] gemdos.c:118 @ f0736b24)
 
     struct EmuDrive {
         std::string hdEmuDir;     // racine hôte du lecteur

@@ -39,12 +39,12 @@ constexpr uint32_t RIGHT_MINUS_2   = 0x0008;   // ligne 60 Hz finit 2 o plus tô
 constexpr uint32_t RIGHT_OFF       = 0x0010;   // retrait bordure droite → +44 o
 constexpr uint32_t RIGHT_OFF_FULL  = 0x0020;   // retrait droite + gauche ligne suivante
 constexpr uint32_t LEFT_OFF_2_STE  = 0x0200;   // retrait gauche COURT STE (hi→lo pile à cyc 4) → +20 o, shift −8
-// V2 — tricks par changement de RÉSOLUTION (Video_WriteToGlueRes, video.c:1618-1789) :
+// V2 — tricks par changement de RÉSOLUTION (Video_WriteToGlueRes, [D] video.c:1618-1789 @ f0736b24) :
 constexpr uint32_t OVERSCAN_MED_RES = 0x0040;  // bordures retirées ET ligne en MOYENNE résolution (No Cooper greetings)
 constexpr uint32_t LEFT_OFF_MED     = 0x0100;  // retrait gauche par bascule hi→MED (scroll hard 4 px / stab med)
 constexpr uint32_t LEFT_OFF_2_STE_MED = 1u << 16;   // variante courte STE du retrait gauche med
 constexpr uint32_t MED_OFFSET_MASK  = 0xFu << 20;   // décalage SOURCE (octets) de la ligne med overscan (0=No Cooper, 2=PYM)
-// Fenêtres de détection des tricks res (video.h:100-106) — FIXES, hors table wakestate.
+// Fenêtres de détection des tricks res ([D] video.h:100-106 @ f0736b24) — FIXES, hors table wakestate.
 constexpr int LINE_LEFT_STAB_LOW    = 16;      // retrait gauche + stab med (hi/med/lo)
 constexpr int LINE_SCROLL_13_CYCLE  = 20;      // scrolls « hardware » droite (px)
 constexpr int LINE_SCROLL_9_CYCLE   = 24;
@@ -69,9 +69,9 @@ constexpr uint32_t VO_NO_DE        = 0x10;
 // (Video_InitTimings_Copy : WS1 = base, WS3 = +1, WS4 = +2, WS2 = +3), la
 // position de l'IRQ HBL (WS1 : cpl−4 ; WS2/3/4 : cpl) et la VBL (WS1 : 60 ;
 // autres : 64). L'oracle Hatari tourne au défaut VIDEO_TIMING_DEFAULT = WS3
-// (video.c:624) et le STE (sans wakestate) a AUSSI l'HBL à cpl → NeoST adopte
+// ([D] video.c:624 @ f0736b24) et le STE (sans wakestate) a AUSSI l'HBL à cpl → NeoST adopte
 // WS3. ⚠ Les ancres de RENDU / compteur vidéo / spec512 restent les constantes
-// FIXES 56/376 : Hatari utilise LINE_START/END_CYCLE_* (video.h:91-95) HORS
+// FIXES 56/376 : Hatari utilise LINE_START/END_CYCLE_* ([D] video.h:91-95 @ f0736b24) HORS
 // table wakestate pour Video_CalculateAddress, spec512.c et la copie écran — les
 // DE stockés par la Glue (table WS-décalée, ≙ ShifterLines) sont re-normalisés
 // de −kWsInc au rendu (cf. renderGlueFrame). Idem Timer B : la position par
@@ -93,10 +93,10 @@ inline const int kWsInc    = (wakestate() == 1) ? 0 : (wakestate() == 3) ? 1
 inline const int kWsHblAdj = (wakestate() == 1) ? -4 : 0;  // IRQ HBL : cpl−4 en WS1, cpl sinon
 constexpr int LINE_END_FULL      = 512;        // FIXE (LINE_END_CYCLE_FULL, hors table wakestate)
 
-// Table de timings de la Glue PAR MACHINE — port de VideoTimings[] (video.c:927-1057).
+// Table de timings de la Glue PAR MACHINE — port de VideoTimings[] ([D] video.c:927-1057 @ f0736b24).
 // STF : base WS1 + kWsInc (wakestate tranché WS3) ; STE : le GST MCU (MMU+GLUE
 // fusionnés) n'a PAS de wakestate — valeurs PROPRES : preload MMU (le shifter
-// commence à charger 16 cyc avant DE, positions Preload_Start_*), Line_Set_Pal 56,
+// commence à charger 16 cyc avant DE, positions Preload_Start_*), Line_Set_Pal 58,
 // HSync −52/−12, RemoveBorder 500. `inc` = décalage des positions STOCKÉES vs les
 // ancres FIXES du rendu (re-normalisation, cf. renderGlueFrame) : kWsInc en STF,
 // 0 en STE. Hbl_Pos_* : canal HBL_Pos/nCyclesPerLine (video.c 977-979) — chaque
@@ -109,7 +109,7 @@ struct Timing {
     int HBlank_Off_Low_60, HBlank_Off_Low_50;  //  24 / 28
     int Preload_Start_Low_60;                  //  36 (STE)
     int HDE_On_Low_60;                         //  52
-    int Line_Set_Pal;                          //  54 STF / 56 STE
+    int Line_Set_Pal;                          //  54 STF / 58 STE
     int Preload_Start_Low_50;                  //  40 (STE)
     int HDE_On_Low_50;                         //  56
     int HDE_Off_Hi;                            // 164
@@ -144,7 +144,8 @@ inline const Timing kSte = {
     24, 28,
     36,                   // Preload_Start_Low_60
     52,
-    56,                   // Line_Set_Pal (≠ STF 54)
+    58,                   // Line_Set_Pal (≠ STF 54). [D] gstmcu @ 4a6db7cc, tools/run_glue_sweep.py : toute
+                          // la table 60 Hz concorde à 58, pas à 56 (Hatari video.c @ f0736b24).
     40,                   // Preload_Start_Low_50
     56,
     164,

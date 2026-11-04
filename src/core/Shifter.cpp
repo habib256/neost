@@ -97,7 +97,7 @@ bool Shifter::lineLenEnv() {
 
 // Seuil de détection « image spec512 » : nombre d'écritures palette MOT par trame
 // à partir duquel on bascule sur le re-rendu intra-ligne. **1 = le défaut Hatari**
-// (configuration.c:769 nSpec512Threshold = 1 ; spec512.c:222 compare en >=) : la
+// ([D] configuration.c:769 @ f0736b24 nSpec512Threshold = 1 ; [D] spec512.c:222 @ f0736b24 compare en >=) : la
 // PREMIÈRE écriture palette de la trame suffit — toute trame qui touche la palette
 // est rendue palette-par-pixel, datation −25/alignement bus compris. C'est ce qui
 // rend l'écriture palette mid-ligne byte-exacte face à l'oracle même HORS image
@@ -144,12 +144,12 @@ Shifter::Shifter(Bus& bus) : bus_(bus) {
     resizeFor(mode);
 }
 
-// Remise à zéro au RESET machine — port fidèle de Video_Reset (video.c:810).
+// Remise à zéro au RESET machine — port fidèle de Video_Reset ([D] video.c:810 @ f0736b24).
 // Hatari remet : la base vidéo (VideoBase = 0), les registres STE (LineWidth,
 // HWScrollCount) et leurs modifications DIFFÉRÉES (NewLineWidth/NewHWScrollCount
 // = −1, VideoCounterDelayedOffset = 0), l'état mémorisé de la Glue
 // (ShifterFrame.Freq/Res = −1) et les lignes par-trame (Video_InitShifterLines).
-// Video_Reset_Glue (video.c:904) remet en plus freq $FF820A = 0 et la résolution
+// Video_Reset_Glue ([D] video.c:904 @ f0736b24) remet en plus freq $FF820A = 0 et la résolution
 // à basse (moniteur couleur — le mono est piloté ailleurs, bit7 GPIP).
 // ⚠ Video_Reset ne touche PAS la palette : les registres couleur survivent au
 // reset (vérifié : aucun accès à HBLPalettes/IoMem $FF8240 dans Video_Reset).
@@ -160,7 +160,7 @@ void Shifter::reset() {
     sync = 0;
     mode = Mode::Low;
     // Registres STE + modifications différées annulées (« cancel pending
-    // modifications set before the reset », video.c:850-853).
+    // modifications set before the reset », [D] video.c:852-853 @ f0736b24).
     lineWidth            = 0;
     hwScrollCount        = 0;
     hwScrollPrefetch     = false;
@@ -172,6 +172,7 @@ void Shifter::reset() {
     newHwScrollCount_    = -1;
     newHwScrollPrefetch_ = false;
     vcDelayedOffset_     = 0;
+    vcDelayedAddr_       = -1;
     // Résolution côté Shifter (ShifterFrame.Res_Shifter = −1, ResPosStop_Shifter
     // effacé, VideoRasterDelayedInc et DisplayPixelShift par ligne remis à 0).
     shifterRes_       = static_cast<uint8_t>(mode);
@@ -184,7 +185,7 @@ void Shifter::reset() {
     vcStopInc_        = 0;
     shifterStopLine_  = -1;
     shifterStopShift_ = 0;
-    // ShifterFrame.Freq/Res = −1 (video.c:824-825) : le filtre « même valeur
+    // ShifterFrame.Freq/Res = −1 ([D] video.c:824-825 @ f0736b24) : le filtre « même valeur
     // ignorée » de recordSyncWrite repart neutre — la 1ʳᵉ écriture freq/res
     // après reset est TOUJOURS traitée.
     lastGlueFreq_ = -1;
@@ -205,6 +206,7 @@ void Shifter::reset() {
     spec512Active_   = false;
     bordersTrick_    = false;
     frameMode_ = mode;
+    frameStartRes_ = static_cast<int>(mode) & 3;
     frameSync_ = sync;
     resizeFor(frameMode_);
     const Geometry g = geometry();
@@ -289,6 +291,14 @@ void Shifter::resizeFor(Mode m) {
 void Shifter::beginFrame() {
     lastScroll8265Cycle_ = -1;   // la paire d'écritures doit appartenir à la même VBL
     frameMode_ = mode;
+    frameStartRes_ = static_cast<int>(mode) & 3;
+    // Une trame qui démarre en moyenne résolution peut mêler des lignes basses : DHS Double Rez
+    // Trouble termine chaque trame en res=1 après des impulsions hi/low. Le chemin moyenne
+    // décode toute la trame en 2 plans, sans bordures : on garde le chemin bas, qui décide
+    // ligne par ligne (cf. renderGlueFrame). [D] Hatari video.c, Video_StoreResolution @ f0736b24.
+    if (mode == Mode::Medium)
+        for (const auto& w : syncWrites_)
+            if (w.isRes && (w.val & 3) != 1) { frameMode_ = Mode::Low; break; }
     frameSync_ = sync;
     resizeFor(frameMode_);
     // Réinitialise l'enregistrement spec512 de la trame qui commence. La palette
@@ -305,7 +315,7 @@ void Shifter::beginFrame() {
     // VDE_On live du compteur vidéo : valeur nominale selon la fréquence verrouillée
     // (50 Hz → 63, 60 Hz → 34). En MONO (haute rés), Hatari force nStartHBL =
     // VIDEO_START_HBL_71HZ = 34 QUELLE QUE SOIT la fréquence du registre $FF820A
-    // (Video_ResetShifterTimings, video.c:4498-4504 : haute rés ⇒ 71 Hz ⇒ 34) —
+    // (Video_ResetShifterTimings, [D] video.c:4498-4504 @ f0736b24 : haute rés ⇒ 71 Hz ⇒ 34) —
     // cohérent avec geometryFor(High) qui pose déjà dispStartLine = 34. Les
     // bascules freq de la trame peuvent l'avancer (retrait bordure haute) via
     // updateLiveStartHBL.
@@ -326,7 +336,7 @@ void Shifter::beginFrame() {
                                           : videoBase) & kVideoAddrMask;
     // Scroll hard « Shifter arrêté » : comme le DisplayPixelShift d'Hatari
     // (Video_InitShifterLines à chaque VBL), le décalage ne vaut que pour la trame
-    // où le stop a eu lieu. ⚠ Hatari note lui-même (TODO video.c:1915) que sur le
+    // où le stop a eu lieu. ⚠ Hatari note lui-même (TODO [D] video.c:1915 @ f0736b24) que sur le
     // vrai STF le décalage devrait PERSISTER aux trames suivantes ; faute de mesure
     // matérielle, on garde le comportement de la référence.
     shifterStopLine_  = -1;
@@ -375,7 +385,7 @@ void Shifter::beginFrame() {
     }
     liveGlueLine_   = -1;
     liveGlueWi_     = 0;
-    liveGlueRes_    = (frameMode_ == Mode::Medium) ? 1 : (frameMode_ == Mode::High ? 2 : 0);
+    liveGlueRes_    = frameStartRes_ == 3 ? 0 : frameStartRes_;
     liveGlueFreq50_ = (frameSync_ & 0x02) ? 1 : 0;
     // LINELEN : échelle des débuts de ligne réels (remplie au fil des avances).
     glueLineStart_.assign(glueLines_.size(), 0);
@@ -460,7 +470,7 @@ int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
 // shifter a consommé 1 mot PAR PLAN de plus (8 octets en basse rés, 4 en moyenne) ;
 // sans prefetch ($FF8264) : rien. En mono, Hatari avance toujours d'1 mot.
 int Shifter::steBorderBytes(uint32_t bm) {
-    // Priorités des branches de recopie Hatari video.c:4020-4075. Le retrait
+    // Priorités des branches de recopie Hatari [D] video.c:4020-4075 @ f0736b24. Le retrait
     // court STE LOW se cumule avec +8 octets, pas le retrait MED ni LEFT_PLUS_2.
     return (bm & (glue::LEFT_OFF | glue::LEFT_OFF_MED | glue::LEFT_OFF_2_STE_MED
                   | glue::LEFT_PLUS_2)) ? 0 : 8;
@@ -508,7 +518,7 @@ void Shifter::renderLine(int y) {
     uint32_t* dst = frame_.data() + static_cast<std::size_t>(activeY_ + y) * curW_ + activeX_ - lead;
 
     // Shifter ARRÊTÉ (res 3 côté Shifter) : il n'absorbe plus les mots du MMU et ne
-    // sort aucun pixel — l'aire active sort NOIRE (Hatari video.c:1912 « all pixels
+    // sort aucun pixel — l'aire active sort NOIRE (Hatari [D] video.c:1911-1912 @ f0736b24 « all pixels
     // will be black during the time when shifter is stopped », observation Troed/
     // Sync sur STF). ⚠ Incertain : noir franc vs couleur 0, et comportement STE non
     // documenté — on applique le modèle STF aux deux, comme Hatari. Les bordures,
@@ -654,7 +664,7 @@ void Shifter::finishFrame() {
 }
 
 // Rejoue HORS-LIGNE les wait states d'alignement bus du shifter (port fidèle de
-// Hatari M68000_SyncCpuBus, video.c:5382). Les registres couleur ($FF824x) ne
+// Hatari M68000_SyncCpuBus, [D] video.c:5415 @ f0736b24). Les registres couleur ($FF824x) ne
 // s'accèdent que sur une frontière de 4 cycles : une écriture mot qui arrive à un
 // cycle non multiple de 4 fait patienter le CPU jusqu'à la frontière, soit
 // (4 - cyc%4) cycles de gel. Le CPU étant gelé, CE wait DÉCALE D'AUTANT toutes les
@@ -724,6 +734,11 @@ void Shifter::recordColorWrite(int index) {
 // début d'accès, et avec les offsets de datation write +2 / read −6).
 void Shifter::syncCpuBus() {
     if (!liveFrameClock_ || !bus_.cpu) return;
+    // Le blitter est maître du bus : ses accès coûtent ses 4 cycles (Blitter::billCycles), pas
+    // l'attente d'un cycle CPU. [D] Hatari Blitter_WriteWord @ f0736b24, STMemory_DMA_WriteWord
+    // sans état d'attente. Exhibiteur : DHS Sea of Colour, blitter vers la palette à chaque
+    // ligne, 688 cycles de retard sur 192 lignes et bordure basse manquée.
+    if (bus_.blitterMasterAccess) return;
     const int64_t fc = liveFrameClock_();
     if (fc < 0) return;                                  // hors trame courante
     const int wait = static_cast<int>((4 - ((fc + 2) & 3)) & 3);   // fin d'accès → frontière
@@ -883,14 +898,17 @@ void Shifter::renderGlueFrame() {
     // pile sur ce cas pathologique (nPix clampé ci-dessous par ceinture ET bretelles).
     uint8_t idx[1072];
     const int wsInc = glue::timing(bus_.machine).inc;              // re-normalisation des DE stockés (cf. plus bas)
+    // Résolution au début de la ligne, relue au fil des écritures datées (lignes croissantes).
+    std::size_t resWrite = 0;
+    int lineStartRes = frameStartRes_ == 3 ? 0 : frameStartRes_;
     for (int row = 0; row < curH_; ++row) {
         const int sl = baseStart + (row - activeY_);       // scanline de cette ligne buffer
         // Fenêtre verticale = [nStartHBL, nEndHBL + BlankLines) comme Hatari
-        // (video.c:3985, :1568) : les lignes blanches no-sync insérées (glueBlank-
+        // ([D] video.c:4010 @ f0736b24, :1572) : les lignes blanches no-sync insérées (glueBlank-
         // Lines_) repoussent la fin d'affichage d'autant. 0 sans trick no-sync.
         // VO_NO_DE : trame 50 Hz dont le DE vertical n'a JAMAIS été activé (bascule
         // de fréquence entre Top_Pos et nStartHBL) — chez Hatari, TOUTES les lignes
-        // tombent dans le test « total blank line » (video.c:3988) et sortent à
+        // tombent dans le test « total blank line » ([D] video.c:4007-4010 @ f0736b24) et sortent à
         // l'index couleur 0. Le drapeau est figé dès nStartHBL, donc l'appliquer à
         // la trame entière au rendu équivaut au test par-ligne d'Hatari.
         const bool displayed = (sl >= glueStartHBL_ && sl < glueEndHBL_ + glueBlankLines_
@@ -898,7 +916,7 @@ void Shifter::renderGlueFrame() {
                                 && !(glueVOverscan_ & glue::VO_NO_DE));
         int ds = 0, de = 0, shift = 0; uint32_t bm = 0;
         if (displayed) { const GlueLine& L = glueLines_[sl]; ds = L.displayStartCycle; de = L.displayEndCycle; bm = L.borderMask; shift = L.displayPixelShift; }
-        // Scroll hard « Shifter arrêté » (Troed/Sync, port video.c:1968-1972) : les
+        // Scroll hard « Shifter arrêté » (Troed/Sync, port [D] video.c:1968-1972 @ f0736b24) : les
         // lignes APRÈS celle du stop prennent DisplayPixelShift = 0/−4/−8/−12. Chez
         // Hatari, une écriture Glue POSTÉRIEURE sur une de ces lignes (retrait gauche,
         // stab…) réécrit son DisplayPixelShift : on ne l'applique donc qu'aux lignes
@@ -941,13 +959,21 @@ void Shifter::renderGlueFrame() {
         // Shifter arrêté (res 3) sur toute la fenêtre DE de CETTE ligne (bit 7 posé
         // au commit par lineStoppedOver) : aire active noire (cf. renderLine). La lecture RAM/compteur n'est pas affectée (le MMU continue).
         const bool lineStopped = scrollSnapped && (lineScrollSnap_[sl] & 0x80) != 0;
-        // V2 — résolution PAR LIGNE (port Video_StoreResolution, video.c:3729-3733) :
+        // V2 — résolution PAR LIGNE (port Video_StoreResolution, [D] video.c:3729-3733 @ f0736b24) :
         // une ligne marquée OVERSCAN_MED_RES / LEFT_OFF_2_STE_MED se décode en
         // MOYENNE résolution (2 plans, 2 px/cycle) au sein d'une trame basse rés.
         // Le buffer reste à 1 px/cycle → on émet le pixel med PAIR (convention
         // alignée sur la comparaison oracle : Hatari 832 px sous-échantillonné 2×).
+        // [D] Hatari video.c, Video_StoreResolution @ f0736b24 : sans masque, la ligne garde la
+        // résolution lue à son début ; un masque autre que moyenne force la basse.
+        while (resWrite < syncWrites_.size()
+               && syncWrites_[resWrite].frameCycle <= static_cast<int64_t>(sl) * cpl) {
+            if (syncWrites_[resWrite].isRes) lineStartRes = syncWrites_[resWrite].val & 3;
+            ++resWrite;
+        }
         const bool lineMed = (frameMode_ == Mode::Low)
-                           && (bm & (glue::OVERSCAN_MED_RES | glue::LEFT_OFF_2_STE_MED)) != 0;
+                           && ((bm & (glue::OVERSCAN_MED_RES | glue::LEFT_OFF_2_STE_MED)) != 0
+                               || (bm == 0 && lineStartRes == 1));
         static const bool medDiag = std::getenv("NEOST_MED_DIAG") != nullptr;
         if (medDiag && displayed && sl == 120) {
             static long n = 0;
@@ -1000,8 +1026,15 @@ void Shifter::renderGlueFrame() {
         }();
         int medSrcBytes = lineMed
             ? 2 - static_cast<int>((bm & glue::MED_OFFSET_MASK) >> 20) : 0;
-        const int medSrcPx = lineMed ? kMedCal : 0;
-        // Scroll hardware STF 4 px / stab med (port video.c:3946-3990, « ST Cnx »
+        int medSrcPx = lineMed ? kMedCal : 0;
+        // Retrait gauche court du STE en moyenne résolution. [D] Hatari video.c,
+        // Video_CopyScreenLineColor @ f0736b24 : l'octet b tombe à l'octet 8+b du tampon, puis le
+        // tampon glisse de 16 px med. Colonne 8+2b, soit le début de la fenêtre DE (cycle 16) :
+        // ni le décalage de source ni la calibration des autres lignes med ne s'y appliquent.
+        // Une ligne moyenne sans retrait (bm nul) démarre aussi à sa fenêtre DE.
+        // Exhibiteur : DHS Double Rez Trouble (bandes de couleur fausse, texte dédoublé).
+        if ((bm & glue::LEFT_OFF_2_STE_MED) || bm == 0) medSrcBytes = medSrcPx = 0;
+        // Scroll hardware STF 4 px / stab med (port [D] video.c:3946-3990 @ f0736b24, « ST Cnx »
         // et « 'Closure' demo Troed/Sync ») : le retrait gauche par bascule
         // hi→med→lo déplace CHAQUE ligne selon le cycle de sa bascule retour
         // (displayPixelShift stocké 13/9/5/1, ou 0 = stab). Hatari applique un
@@ -1018,15 +1051,15 @@ void Shifter::renderGlueFrame() {
         // rend pas ces lignes au faisceau : il RECOPIE des octets dans un tampon de
         // SCREENBYTES_LINE = 208 o (24 bordure G + 160 fenêtre + 24 bordure D = 416 px),
         // en partant de `raster + BORDERBYTES_LEFT − SCREENBYTES_LEFT + VideoOffset`
-        // = `raster + 2 + VideoOffset` (video.c:4014-4019), PUIS décale tout le tampon
-        // de STF_PixelScroll (video.c:4273+). Dans le repère du buffer NeoST
+        // = `raster + 2 + VideoOffset` ([D] video.c:4014-4019 @ f0736b24), PUIS décale tout le tampon
+        // de STF_PixelScroll ([D] video.c:4273 @ f0736b24+). Dans le repère du buffer NeoST
         // (x = cyc − 8, DE d'une ligne left-off à ds = 4), cela donne
         //     index source Hatari  s_H(x) = x + 4 + 2·VideoOffset − scrollFinal
         // et notre rendu, source décalée de medSrcBytes octets (1 o = 2 px),
         //     s_N(x) = x + 4 − shEff + 2·medSrcBytes.
         // Avec la convention DÉJÀ posée ici (medSrcBytes = VideoOffset + 2), les deux
         // coïncident si et seulement si **shEff = 4 + scrollFinal**.
-        // Le stab med de Closure (VideoOffset −4, scrollFinal −8, video.c:3990-3993)
+        // Le stab med de Closure (VideoOffset −4, scrollFinal −8, [D] video.c:3990-3993 @ f0736b24)
         // vaut donc shEff = −4, et PAS −8 : le −8 recopiait le scroll d'Hatari en
         // oubliant que son ancrage de recopie est 4 px à droite du faisceau. C'était
         // A40 : 4 px de décalage sur TOUTE l'image (oracle 64,08 % → 1,81 %, puis
@@ -1041,7 +1074,7 @@ void Shifter::renderGlueFrame() {
         // Queue de ligne SANS SOURCE. Le tampon d'Hatari fait SCREENBYTES_LINE, soit
         // exactement la largeur du buffer : décalé de `scrollFinal` pixels vers la
         // gauche, ses |scrollFinal| DERNIERS pixels n'ont plus de source et restent à
-        // l'index couleur 0 (video.c:4295, « entering pixels to the extreme right
+        // l'index couleur 0 ([D] video.c:4303 @ f0736b24, « entering pixels to the extreme right
         // should be set to color 0 »). Exprimé en COLONNES du buffer, la règle vaut
         // quelle que soit la largeur rendue (bordures ou non). Sans elle il restait
         // 8 px par ligne, soit 2 083 px sur l'étalon closure.
@@ -1061,6 +1094,12 @@ void Shifter::renderGlueFrame() {
                 default: break;                    // −4 : left-off standard, non mesuré
             }
         }
+        // Retrait gauche court du STE (left+2) en basse résolution, sans le mode 336 px.
+        // [D] Hatari video.c, Video_CopyScreenLineColor @ f0736b24 : l'octet b de la ligne tombe
+        // à l'octet 8+b du tampon, puis tout le tampon glisse de 8 px : colonne 8+2b. La fenêtre
+        // DE commence ici au cycle 16, donc à cette colonne : le −8 est déjà compté, et le
+        // réappliquer décalait l'image de 8 px. Exhibiteurs : DHS More or Less Zero, Double Rez Trouble.
+        if (!lineMed && (bm & glue::LEFT_OFF_2_STE) && !lineBorder) shEff = 0;
         // Source des pixels : la CAPTURE datée au faisceau de cette scanline si elle
         // existe (cf. lineSnap_ — seul l'échantillon voit un sprite dessiné puis
         // effacé EN COURSE avec le faisceau, ex. robot du menu Cuddly), sinon repli
@@ -1083,7 +1122,7 @@ void Shifter::renderGlueFrame() {
         }
 
         // Ligne basse rés décalée par Shifter arrêté : chez Hatari TOUTE la ligne de
-        // 416 px (bordures comprises) glisse de |shift| px à gauche (video.c:4273+) —
+        // 416 px (bordures comprises) glisse de |shift| px à gauche ([D] video.c:4294 @ f0736b24+) —
         // les premiers pixels actifs débordent dans la bordure gauche et la queue de
         // l'aire active montre la bordure. On décale donc la FENÊTRE d'émission, la
         // source restant indexée depuis ds (s = 0 au premier pixel émis).
@@ -1116,7 +1155,7 @@ void Shifter::renderGlueFrame() {
                 // réduction que l'oracle 2× → un étalon référencé sur l'oracle
                 // vérifie les DEUX phases med). Le displayPixelShift du retrait
                 // hi (−4) ne s'applique pas au chemin med (Hatari rend ces
-                // lignes via VideoOffset seul, video.c:3932).
+                // lignes via VideoOffset seul, [D] video.c:3993-3998 @ f0736b24).
                 if (x >= blankTailFrom) {                  // queue sans source (cf. plus haut)
                     dst[x] = stColorToArgb(pal[0]);
                     continue;
@@ -1128,7 +1167,9 @@ void Shifter::renderGlueFrame() {
                     const int s2 = (s + 1 < nDec) ? s + 1 : s;
                     const uint32_t a = stColorToArgb(pal[idx[s]]);
                     const uint32_t b = stColorToArgb(pal[idx[s2]]);
-                    dst[x] = 0xFF000000u | ((((a & 0x00FEFEFE) + (b & 0x00FEFEFE)) >> 1) & 0x00FFFFFF);
+                    // Moyenne exacte par composante, arrondie vers le bas comme la réduction 2×
+                    // de compare_screenshot.py (_downscale2).
+                    dst[x] = 0xFF000000u | (((a & b) + (((a ^ b) & 0x00FEFEFE) >> 1)) & 0x00FFFFFF);
                 } else {
                     dst[x] = stColorToArgb(pal[idx[s]]);   // dans la fenêtre → contenu
                 }
@@ -1138,7 +1179,7 @@ void Shifter::renderGlueFrame() {
         }
         // Adresse vidéo ACCUMULÉE : avance par NOMBRES D'OCTETS FIXES selon les
         // drapeaux de bordure (port de Video_CopyScreenLineColor / BORDERBYTES_*,
-        // video.h:111-115) et NON par (DE_end-DE_start)/2 : la fenêtre RIGHT_OFF
+        // [D] video.h:111-115 @ f0736b24) et NON par (DE_end-DE_start)/2 : la fenêtre RIGHT_OFF
         // s'arrête à cpl-50=462 mais le shifter lit 160+44=204 octets (bord réel
         // 464) — l'ancien calcul perdait 1 octet PAR LIGNE et le décor dérivait
         // cumulativement vers le bas (loader TDA de Rick Dangerous : bandes de
@@ -1320,7 +1361,7 @@ uint8_t Shifter::read8(uint32_t addr) {
     if (addr == 0xFF8201) return static_cast<uint8_t>(videoBase >> 16);
     if (addr == 0xFF8203) return static_cast<uint8_t>(videoBase >> 8);
     // Octet bas de la base vidéo $FF820D : STE seulement. Sur ST/MegaST le registre
-    // n'existe pas : zone VOID → 0xFF (ioMemTabST.c:53, IoMem_VoidRead — l'ancien 0
+    // n'existe pas : zone VOID → 0xFF ([D] ioMemTabST.c:53 @ f0736b24, IoMem_VoidRead — l'ancien 0
     // suivait Video_BaseLow_ReadByte, qui n'est PAS mappé sur la table ST).
     if (addr == 0xFF820D) return machineIsSte(bus_.machine) ? static_cast<uint8_t>(videoBase) : 0xFF;
     // Une écriture du compteur pendant le DE est en attente (vcDelayedOffset_) : la
@@ -1374,12 +1415,12 @@ uint8_t Shifter::read8(uint32_t addr) {
     if (addr == 0xFF820F) return machineIsSte(bus_.machine) ? lineWidth : 0xFF;
     // $FF8260 (résolution GLUE+Shifter) et son alias Shifter-seul $FF8261 partagent la
     // même lecture (Video_ResGlueShifter/ResShifter_ReadByte → Video_Res_ReadByte,
-    // video.c:5281,5300-5308) : STF/Mega ST forcent les bits inutilisés 2-7 à 1, STE/Mega
+    // [D] video.c:5314 @ f0736b24) : STF/Mega ST forcent les bits inutilisés 2-7 à 1, STE/Mega
     // STE les laissent à 0. (Le moniteur mono impose déjà mode = High = 2 en amont, comme
     // le `if (bUseHighRes) IoMem=2` de Hatari.) Avant : $8260 rendait bits 2-7=0 sur ST
     // (faux) et $8261 tombait en zone void → 0xFF (non géré).
     // La valeur relue est celle du SHIFTER (c'est lui qui pilote le bus de données,
-    // commentaire Hatari video.c:5310 « the value is read from the SHIFTER ») : elle
+    // commentaire Hatari [D] video.c:5310 @ f0736b24 « the value is read from the SHIFTER ») : elle
     // ne diffère de la Glue qu'après une écriture $FF8261 seule. ⚠ Hatari relit
     // IoMem[adresse] (dernier octet écrit À CETTE adresse) ; le Shifter n'ayant que
     // D8-D9, ce qu'une lecture OCTET de $FF8261 (D0-D7) voit sur le vrai matériel
@@ -1390,7 +1431,7 @@ uint8_t Shifter::read8(uint32_t addr) {
         return machineIsSte(bus_.machine) ? r : static_cast<uint8_t>(r | 0xFC);
     }
     // Scroll fin (STE seulement — sur ST/MegaST $FF8262-7F est une zone void → 0xFF,
-    // ioMemTabST.c:72). $FF8264 : Hatari n'intercepte PAS la lecture (video.c:5813,
+    // [D] ioMemTabST.c:72 @ f0736b24). $FF8264 : Hatari n'intercepte PAS la lecture ([D] video.c:5846 @ f0736b24,
     // Video_HorScroll_Read_8264 = wait state seul) → on renvoie la dernière valeur
     // BRUTE écrite, comme IoMem. $FF8265 : valeur de scroll courante.
     if (addr == 0xFF8264 && machineIsSte(bus_.machine)) { syncCpuBus(); return hwScrollReg8264_; }
@@ -1418,7 +1459,7 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
     const bool ste = machineIsSte(bus_.machine);
     switch (addr) {
         case 0xFF8201:
-            // Octet haut masqué comme le compteur $FF8205 (port Hatari video.c:5084
+            // Octet haut masqué comme le compteur $FF8205 (port Hatari [D] video.c:5117 @ f0736b24
             // DMA_MaskAddressHigh) : sans lui, une base $FFxxxx ferait fetcher la
             // MMIO par le rendu (lectures à effets de bord — UDR MFP, STR FDC… —
             // voire bus error déclenchée HORS exécution CPU).
@@ -1442,7 +1483,11 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
                              (long long)(fc>=0?fc/cpl:-1), (long long)(fc>=0?fc%cpl:-1));
             }
             return;
-        case 0xFF820A: syncCpuBus(); recordSyncWrite(false, v); sync = v; return;   // synchro 50/60 Hz (+ bordures + wait-state bus, FIX2 : aligne l'accès sur 4 cyc comme $FF8260/palette, port wait_cpu_cycle_write)
+        // $FF820A répond sans créneau : SYNCSEL pose DTACK directement.
+        // [B] ST-4081 feuille 8 (ST4081S.PDF, sha256 935c4dd9), porte P8019 ; feuille 19, CMAP = VMAPB/SMAPB
+        // seulement. [D] gstmcu.v @ 4a6db7cc, latence 0 mesurée (Vste_tb --dtack). [D] Hatari
+        // Video_Sync_WriteByte @ f0736b24 n'aligne pas non plus. STE ; le GLUE du ST reste sans netlist.
+        case 0xFF820A: recordSyncWrite(false, v); sync = v; return;   // synchro 50/60 Hz (+ bordures + wait-state bus, FIX2 : aligne l'accès sur 4 cyc comme $FF8260/palette, port wait_cpu_cycle_write)
         // Compteur vidéo $FF8205/07/09 : INSCRIPTIBLE sur STE/TT seulement (port
         // Video_ScreenCounter_WriteByte) — immédiat hors affichage, différé sinon.
         case 0xFF8205: case 0xFF8207: case 0xFF8209:
@@ -1460,9 +1505,14 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
             if (ste) {
                 int line = 0, cyc = 0;
                 const Geometry g = geometry();
-                const int la = beamPos(line, cyc) ? line - liveStartHBL_ : -1;
-                const bool active = la >= 0 && la < g.displayLines;
-                if (!active || cyc <= g.lineEndCycle) { lineWidth = v; newLineWidth_ = -1; }
+                const bool active = beamPos(line, cyc) && beamLineActive(line);
+                // [D] Hatari Video_LineWidth_WriteByte @ f0736b24 : fin de DE de CETTE ligne.
+                const int deEnd = !syncWrites_.empty() && line < static_cast<int>(glueLines_.size())
+                                ? glueLines_[line].displayEndCycle : g.lineEndCycle;
+                // Le modèle prend l'écriture jusqu'à 8 cycles avant cette limite. [D] gstmcu @ 4a6db7cc + fx68k @ 0602ee46,
+                // tools/run_stcpu_raster.py --kind offset : 64 dates sur 64 identiques au pixel, 62 sans ce retrait ;
+                // Pacemaker, More or Less Zero et Double Rez Trouble inchangées.
+                if (!active || cyc - 8 <= deEnd) { lineWidth = v; newLineWidth_ = -1; }
                 else                                  { newLineWidth_ = v; }
             }
             return;
@@ -1475,7 +1525,7 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
             writeShifterRes(v & 0x3);
             return;  // résolution (+ bordures + wait state bus)
         // Alias $FF8261 : résolution du SHIFTER SEUL, la Glue n'est pas touchée (ni
-        // timings ni bordures — ioMemTabST.c:71 / ioMemTabSTE.c:120). Seul un accès
+        // timings ni bordures — [D] ioMemTabST.c:71 @ f0736b24 / [D] ioMemTabSTE.c:120 @ f0736b24). Seul un accès
         // OCTET compte : dans un move.w vers $FF8260, l'octet bas qui « tombe » ici
         // est ignoré par le Shifter (il lit D8-D9 = l'octet de $FF8260, déjà traité
         // ci-dessus). move.b #x,$FF8261 duplique x sur D8-D15 → Shifter = x.
@@ -1497,12 +1547,11 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
                     && fc >= lastScroll8265Cycle_ && fc - lastScroll8265Cycle_ <= 40;
                 if (prefetch) lastScroll8265Cycle_ = sc ? static_cast<int32_t>(fc) : -1;
                 // $FF8264 : mémorise l'octet BRUT pour la relecture (Hatari laisse
-                // IoMem tel quel — la lecture n'est pas interceptée, video.c:5813).
+                // IoMem tel quel — la lecture n'est pas interceptée, [D] video.c:5846 @ f0736b24).
                 if (!prefetch) hwScrollReg8264_ = v;
                 int line = 0, cyc = 0;
                 const Geometry g = geometry();
-                const int la = beamPos(line, cyc) ? line - liveStartHBL_ : -1;
-                const bool active = la >= 0 && la < g.displayLines;
+                const bool active = beamPos(line, cyc) && beamLineActive(line);
                 if (!active || cyc <= g.lineStartCycle) {
                     hwScrollCount = sc; hwScrollPrefetch = prefetch; newHwScrollCount_ = -1;
                     steBorderFlag_ = add16;

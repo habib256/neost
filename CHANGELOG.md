@@ -6,6 +6,154 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## MFP confronté à ses fiches, et parties jouées au joystick (2026-11-04)
+
+- **Le MFP est audité contre MC68901, MC68HC901 et MK68901** : 189 commentaires gradés, 11 désaccords relevés. Quatre sont corrigés :
+  - En event-count, I3 et I4 gardent leur interruption. Seule la fiche de 1984 disait le contraire, contre les deux autres, le RTL et Hatari.
+  - Le reset garde TADR à TDDR et les compteurs. Il efface SCR, UCR, RSR et arrête l'USART.
+  - Une erreur de réception part sur Buffer Full quand son canal est désactivé.
+  - Le bit 0 d'UCR se lit à zéro, et SCR masque ses bits inutilisés.
+  Le reste est dans le TODO. Aucun étalon ne bouge : aucun logiciel du catalogue n'exerce ces cas, ce sont des preuves de fiche.
+- **`compare_titles --joy`** : la même suite de masques joystick des deux côtés. 49 disques sur ST, clavier et joystick jusqu'à la trame 8000, sans plantage propre à NeoST. 40 restent sous 3 % à tous les écrans vus. Les écarts lus sont du jeu qui diverge (Buggy Boy, Xenon 2, Captain Blood, circuits de Super Sprint, cartes de Teenage Queen, messages de Super Hang-On et de Gods), du cadrage de l'outil (Killing Game Show), ou la lecture du tir sur Flood.
+- **Étalon `rtl_med_pal`** : moyenne résolution contre le modèle GSTMCU, 0 pixel d'écart sur 640×200.
+
+## Audit des fiches : YM2149, WD1772, ACIA, et empreinte d'état (2026-11-04)
+
+- **Passes tenues au joystick** : 49 disques sur ST, 63 sur STE, 61 sur Mega STE, sans plantage propre à NeoST aux écrans vus. Sur Mega STE, la comparaison est plus bruitée : le TOS 2.06 démarre ~170 trames plus tard que sous Hatari, qui patche sa somme de contrôle.
+- **`tools/run_game_replay.py`** : sept parties jouées contre Hatari, sous 0,5 % à toutes les trames relevées. Sur ST : Buggy Boy, Lemmings, Chase HQ, Flying Shark. Sur STE : Stardust, Just Musix 2, Super Sprint. Sur Buggy Boy, la course entière est identique à 0,0 %, accident compris. Hors paliers, à lancer à la main avec un Python qui a Pillow : il faut les disques privés.
+- **Quatre puces de plus confrontées à leur fiche** : YM2149, WD1772, MC6850, Z85C30. Leurs écarts sont marqués `⚠ [B]` sur place.
+- **SCC** : une lecture du port donnée ne remet plus le pointeur de registre à zéro, [B] UM010902-0609 p. 28 et 30. Hatari le remet. Diagnostic Mega STE et étalons inchangés.
+- **WD1772, six points de fiche corrigés** : Restore (DR et sens), Seek Error selon V, STEP sortant en piste 0, $Dx au repos, bit CRC d'un ID faux. Le test : 80 disques joués, images identiques avant et après. Aucun logiciel du catalogue n'en dépend, donc ce sont des preuves de fiche.
+- **ACIA, IRQ tenue haute pendant le master reset** : fiche et RTL d'accord, Hatari la laisse lever sous `CR=%x01xxx11`. 80 disques joués, images identiques.
+- **ACIA, RDRF après overrun** : la lecture à la lettre de la fiche bloque cinq jeux. Essayée puis retirée, consignée dans `docs/REFERENCE_LADDER.md`.
+- **Filtre C10 du STF** : il coupe maintenant à 7,7 et 2,1 kHz, les valeurs du circuit. Les coefficients d'Hatari sont calculés pour 44,1 kHz et appliqués à 250 kHz, soit 43 et 11 kHz. Le STF sonne donc moins clair. Non écouté sur machine réelle.
+- Le test `tests/ym_c10_noise_logic.cpp` garde les deux : un ton à 10,4 kHz sort à 36 % de son amplitude sous C10.
+- **Bruit du YM à R6 = 0** : égal à R6 = 1, comme Hatari dit l'avoir mesuré. Son code tirait le LFSR 2× trop vite.
+- **`--state-hash-every N`** hache l'état complet. `tools/run_determinism.py` vérifie deux passes et une reprise de save-state, au palier `fast`. Il a fait figer l'horloge de l'UltraSatan, seule date hôte restée dans l'état.
+- **`tools/classify_selftests.py`** lit l'échelon que chaque test de logique déclare.
+
+## GLUE du STE sur écran entier à 60 Hz (2026-11-04)
+
+- **Le balayage GLUE repasse sur une trame à 60 Hz**, dans une seconde référence. Il trouve un décompte hérité d'Hatari : ses constantes d'octets supposent une ligne de 56 à 376, alors qu'à 60 Hz elle va de 52 à 372. Hatari n'annule que les deux masques posés ensemble ; un aller-retour par 50 Hz en cours de ligne en laisse un seul, et 2 octets d'écart avec le modèle.
+- **Le décompte part maintenant des fenêtres sur écran entier à 60 Hz, STE et Mega STE** : 664 écarts de bascule sur 1024 avant, 0 après. 42 écarts restent sur 2560, tous en haute résolution, inscrits. Le Mega STE reprend la correction par analogie, sans modèle propre.
+- **Aucun effet sur le logiciel réel** : 40 titres, jeux STE et démos, ROM américaine, 3000 trames, images identiques avant et après. Aucun programme connu n'exerce donc ce chemin, et le banc reste sa seule preuve.
+
+## Banc fx68k : tous les modes d'adressage, et --key dans la passe de jeux (2026-11-04)
+
+- **Banc fx68k** : huit programmes de plus, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur, sur tous les modes d'adressage. Plus de 6 700 accès, tous en accord une fois corrigé un seul défaut : la lecture en plus de MOVEM en relatif PC annonçait FC données au lieu de programme.
+- **`compare_titles --key`** entre dans les jeux : 51 disques sur ST, espace pressé jusqu'à la trame 8000. 45 sous 1 % d'écart avec Hatari. Les autres : animations aléatoires, cadrage de l'outil en moyenne résolution, et deux sans capture Hatari, à revoir.
+
+## Spectrum 512 : le logiciel réel juge le pixel, et contredit le RTL (2026-11-04)
+
+Le format Spectrum 512 documente à quel pixel chaque couleur de la ligne s'applique. Le vrai visualiseur tourne dans NeoST, et chaque pixel est comparé au décodage de l'image, sans émulateur ni RTL en jeu.
+- **13 images exactes à 0 pixel** sur 63 680 chacune : 7 sur ST, 6 sur STE. Quatre pixels d'avance sur la palette, comme le modèle, en donneraient de 10 à 1 118 de faux selon l'image.
+- **Le modèle a tort sur la palette** : son Shifter change la couleur 4 pixels trop tôt. Question close, code inchangé.
+- **Règle ajoutée** à `docs/REFERENCE_LADDER.md` : un écart de date d'écriture contre le RTL ne se porte pas sans démos ou images réelles.
+
+## Le 68000 et le faisceau sur STE : les RTL réunis, et la prise d'interruption (2026-11-04)
+
+Nouveau banc : le même programme sur fx68k + GSTMCU et dans NeoST, qui relève le compteur vidéo en RAM. 48 544 lectures comparées à l'octet.
+- **Compteur vidéo et phase de l'E-clock** : 47 999 lectures sur 48 000 identiques dès le premier passage. La relation CPU-faisceau, calée sur Hatari, est confirmée par un modèle du circuit.
+- **Prise d'interruption sur STE, corrigée** : la broche HBL ou VBL monte au cycle exact et `POLL_IPL` la voit, au lieu d'un commit au dispatch d'événement. MULU passe de 63 à 256 lectures exactes sur 256, la boucle courte de 216 à 256.
+  Le mécanisme existait en essai (`NEOST_PIN_ARM`), écarté en juillet parce qu'il s'écartait d'Hatari.
+- **Portée** : STE à 8 MHz. ST et Mega STE gardent le commit d'Hatari, faute de modèle. Écart accepté face à Hatari : première IRQ de `timer_b_event`, 14 cycles. Aucun étalon ne bouge.
+- **Le pixel** : une vraie écriture du CPU à chaque date de la ligne, 60 sur 64 identiques à la trame entière. Sur les 4 autres, le modèle réagit à `$FF820A` 3 cycles avant NeoST.
+  Avancer de 4 cycles donne 62 sur 64, et casse DHS More or Less Zero et Double Rez Trouble, écrites sur de vrais STE : le logiciel réel prime, la date reste celle d'Hatari. Question ouverte.
+- **Compteur du son DMA sur STE** : il suit la FIFO dès la fin de DE, au lieu de bondir au HBL. `dmasnd_poll`, qui figeait l'ancien comportement, est reposé. L'IRQ de fin de trame reste datée au HBL.
+- **`$FF820F`** : écriture prise jusqu'à 8 cycles avant la limite d'Hatari, 64 dates sur 64 identiques au pixel. Démos inchangées.
+- **Reset STE** : item clos sans code. `$FF8901` et la base vidéo sont effacés par /RESET sur le modèle (`gstmcu.v:401-438`), ce que NeoST faisait déjà ; la note « gardé par PORB » était fausse.
+- **Save-state** : version 58.
+
+## La GLUE du STE confrontée au modèle, impulsion par impulsion (2026-11-04)
+
+Nouveau banc : une impulsion 60 Hz ou haute résolution à chaque phase de la ligne, sur le modèle GSTMCU et dans la machine GLUE de NeoST, sans CPU. 1654 sur 1664 concordent,
+DE et octets, dont tous les retraits usuels. Les fenêtres de cette machine, port d'Hatari, n'avaient jamais été confrontées à un modèle du circuit.
+- **Trois seuils corrigés sur STE** : `Line_Set_Pal` à 58 ; haute résolution posée à 4 sans retrait gauche ; posée dans (40, 48] et retirée à 56 sans `NO_DE`.
+- **Écart accepté avec Hatari**, consigné. Aucun étalon ne bouge, démos STE repassées sans changement.
+- **Non traité** : 10 impulsions inscrites en référence, dont le DE précoce à 44. Largeurs au-delà de 32 hors verdict. Le ST garde la table d'Hatari, faute de modèle.
+
+## Le bus du STE lu sur la netlist ST-4081 (2026-11-04)
+
+Deux questions P1 restaient alignées sur Hatari, sans source. La netlist et une sonde du modèle GSTMCU les tranchent.
+- **Contention vidéo et son sur la RAM** : il n'y en a pas au-delà du créneau de 4 cycles sur STE. `RAMCYC` ne dépend que de `RAMSEL` et `CYCSEL`.
+  Mesuré aussi : même latence de DTACK, DE actif ou non, son DMA à 50 kHz ou non. MAME modélise une contention : non retenue.
+- **`$FF8920-3F`** attend maintenant le créneau de la RAM sur STE ; **`$FF820A`** ne l'attend plus. Aucun étalon ne bouge.
+- **Banc GSTMCU** : branché au palier `full`, avec un contrôle de latence par zone.
+- **Non tranché** : l'arbitrage du DMA disque, et le ST et le Mega STE, qui n'ont pas de netlist disponible.
+
+## Banc du blitter contre `stBlitter.sv`, et la netlist ST-4082 (2026-11-04)
+
+Nouveau banc : le blitter de NeoST contre fx68k et `stBlitter.sv` câblés sur un même bus, accès par accès, sur 78 programmes.
+Les données écrites concordaient déjà, et le mode HOG au cycle près. Le mode partagé cachait des défauts qu'aucun étalon `hatari` ne pouvait voir.
+- **Partage du bus** : fenêtre de comptage de 2 cycles au lieu de 4 ; un accès CPU retenu compte parmi les 64 du CPU ; le crédit de
+  cycles recouverts n'absorbe plus cet accès, qui durait 0 cycle. Une boucle d'EXG donne 64 accès par tranche, et non 63.
+- **SMUDGE en HOP 0** lit la source, **l'adresse source** avance avec la lecture et se relit juste en plein mot.
+- **Sources** : la netlist ST-4082 lue d'abord (compteur cadencé par AS, HOP<1> OU SMUDGE), puis le RTL. La largeur de la fenêtre reste
+  sans relevé sur machine.
+- **Écart accepté avec Hatari** : 122 px sur `blitter_timer`, et les sondes `blitter_shared_large` et `blitter_shared_ram`.
+- **Save-state** : version 57, le champ `fetchSrc_` disparaît.
+- **Garde sans Verilator** : `tests/blitter_share_gap_logic.cpp` dans le selftest. Le banc tourne au palier `full`.
+
+## Cernit Trandafir, et le changement de disquette daté (2026-11-04)
+
+DHS Cernit Trandafir n'attendait pas sur le bureau par défaut d'émulation : il exige 2 Mo, et demande son disque 2 vers la trame 3000.
+- **`--disk-at N FILE`** (headless) change la disquette du lecteur A à la trame N, comme le menu de la GUI.
+- **`--swap TRAME:DISQUE`** (`tools/compare_titles.py`) fait le même geste des deux côtés, par `setopt --disk-a` côté Hatari.
+- **Résultat** : disque 2 inséré à la trame 3200, les huit écrans vus jusqu'à la trame 20000 sont à 0,0 % d'écart avec Hatari.
+
+## Étalons de boot : chaque TOS présent, Mega ST compris (2026-11-04)
+
+Huit étalons `boot_tos*` comparent le bureau à l'Hatari épinglé : TOS 1.00, 1.04 et 1.06, Mega ST sous TOS 1.02 et 1.04, TOS 1.62,
+2.05 et 2.06. Les huit sont à 0 px. Le manifeste passe à 55 étalons machine, dont 42 `hatari`.
+- **TOS 2.06 arrive plus tard au bureau que sous Hatari**, d'environ 170 trames. Ce n'est pas un défaut : Hatari saute le contrôle
+  de somme de la ROM par un patch, et les boucles du test mémoire ont les mêmes périodes des deux côtés (`docs/HATARI_DIVERGENCES.md`).
+- **TOS 2.05 attend environ 100 s sur un écran blanc** des deux côtés. La première capture, à la trame 780, était uniforme :
+  son 0 px ne validait rien, et `--verify-refs` l'a refusée. L'étalon regarde maintenant le bureau, à la trame 5180.
+- **Portée** : ces étalons disent que chaque TOS démarre au bureau. Ils ne disent rien des programmes lancés ensuite sur ces machines.
+
+## STE : démos à résolution mêlée, et une passe sur les titres (2026-11-03)
+
+La campagne sur les démos STE livrées par Cursor (`disks/st/demos`) a trouvé de vrais défauts. DHS Double Rez Trouble (STE,
+Sommarhack 2025) sortait illisible, et More or Less Zero décalé de 8 px.
+- **Compteur vidéo écrit en bordure droite** : gardé en adresse absolue, comme `pVideoRasterDelayed` d'Hatari. L'écart
+  relatif ajoutait 8 octets par ligne, car le compteur avance encore jusqu'à la fin de ligne.
+- **Trame démarrée en moyenne résolution avec des lignes basses** : décodée entière en 2 plans, sans bordures. Elle passe
+  maintenant par le chemin bas, qui décide ligne par ligne comme `Video_StoreResolution`.
+- **Lignes left+2 STE** : le décalage de 8 px était compté deux fois, et les lignes moyennes recevaient la calibration
+  d'un autre cas (plans mal appariés, texte dédoublé).
+- **Fenêtre verticale réelle** pour les écritures de compteur, `$FF820F` et scroll : le test portait sur les 200 lignes
+  nominales. DHS Sea of Colour, à 276 lignes, cassait le bas de ses écrans.
+- **Blitter vers les registres vidéo** : ses accès ajoutaient l'état d'attente du CPU, soit 688 cycles de retard sur 192 lignes.
+  La bordure basse de Sea of Colour était manquée ; ligne 262 cycle 496 maintenant, comme Hatari.
+- **Moyenne des lignes en moyenne résolution** : exacte par composante, elle perdait un bit.
+- `tools/compare_titles.py` : NeoST contre Hatari sur de vrais disques, captures par le débogueur car l'AVI d'Hatari s'arrête
+  au premier changement de résolution. Étalons libres `doublerez_ste` et `doublerez_tall_ste` : 0 px d'Hatari. Le second
+  mesure 52 % d'écart sans ces corrections.
+
+## 68000 : STOP et ordre des accès alignés sur fx68k (2026-11-03)
+
+Le banc différentiel a localisé des écarts de Moira que la durée totale des instructions masquait.
+- **STOP durait 0 cycle** depuis le 2026-10-22 : retirer le préfetch a retiré ses 4 cycles, et `CYCLES_IP` ne
+  compte rien en mode précis. [B] M68000UM § 8.11 : 4(0/0). Une IRQ déjà pendante part maintenant au même cycle que
+  fx68k et Hatari : l'écart « Hatari met 12 » du 2026-10-22 était ce défaut.
+- Mot bas d'abord sur MOVEM.L -(An), ADD/SUB/ADDI/SUBI/ADDQ/SUBQ.L en mémoire et ADDX/SUBX.L ; préfetch du DBcc expiré
+  à l'adresse de branchement ; lecture en plus de MOVEM.L après le dernier mot ; JSR préfetche avant d'empiler ; ordre
+  de la trame de groupe 0 ; 2 cycles au reset.
+- Nouveau programme `rmw_long` : toutes les écritures longues sur six modes. Banc : 26 variantes sur 35. Palier `full` :
+  étalons pixel inchangés, à 0 px de leurs références. Reste la date limite de la broche IPL.
+
+## MFP : modes pulse des timers A/B, d'après la fiche (2026-11-03)
+
+Hatari et NeoST traitaient les contrôles 9-15 comme le mode délai, ce que la fiche contredit.
+- [B] MC68901 § 5.1.2 : TAI/TBI autorisent le comptage au niveau de leur bit d'AER. Hors impulsion le
+  compteur est figé et TxDR le charge ; les canaux de I4/I3 répondent au front opposé, I3/I4 perdent leur
+  interruption mais restent lisibles. Entrer dans le mode ou en sortir peut lever le canal.
+- TBI suit le DE réel (source d'ordonnanceur `TBI_EDGE`, armée en mode pulse seulement). `.state` v56.
+- 33 contrôles puce nue et des contrôles machine entière pour les trois fréquences. Palier `full` vert. Aucun
+  logiciel réel connu ne l'exerce : ce n'est prouvé que contre la fiche.
+- Event-count (2026-11-04) : les canaux de I4/I3 répondent aussi à TAI/TBI, [B] § 5.1.3. Aucun des 83 disques du catalogue n'y
+  est exposé. TBI n'est suivi que si le canal I3 est activé : les jeux à rasters ne paient rien.
+
 ## Banc Moira↔fx68k : le 68000 nu contre le RTL, et le TODO rangé sur le cap (2026-11-03)
 
 **Le cœur 68000 n'avait jamais été confronté à autre chose qu'Hatari et aux totaux de

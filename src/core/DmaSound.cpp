@@ -18,15 +18,15 @@
 static const double kRate[4] = { 6258.0, 12517.0, 25033.0, 50066.0 };
 
 // Gain du canal numérique AVANT les gains LMC — port de la comptabilité Hatari
-// (dmaSnd.c:1146-1158) : « DMA sound is 3/4 level of YM sound », rapporté à
+// ([D] dmaSnd.c:524-530 @ f0736b24) : « DMA sound is 3/4 level of YM sound », rapporté à
 // l'échelle DEMI du YM STE (outScale_ 0.5, marge anti-saturation) parce que les
 // gains LMC sont DOUBLÉS en compensation (cf. gainLeft/gainRight). Objectif : un
 // rapport DMA/YM de ¾ après ces gains, comme Hatari (module exact ci-dessous).
 // NÉGATIF : le LMC1992 INVERSE le signal DMA (le YM ressort en +1 : −1 ampli-op ×
-// −1 LMC). Port du « Multiply DMA sound by -1 » d'Hatari (dmaSnd.c:520-535, formule
+// −1 LMC). Port du « Multiply DMA sound by -1 » d'Hatari ([D] dmaSnd.c:520-535 @ f0736b24, formule
 // −((256×¾)/4)/4). Module 0.1875 = ¾ × ¼ : le ÷4 d'Hatari couvre À LA FOIS la table
 // YM demi-amplitude STE (≙ outScale_ 0.5) ET la pré-compensation du ×2 kLmcMakeup
-// des gains — gains appliqués ensuite au MIX ENTIER, DMA compris (dmaSnd.c:699/706).
+// des gains — gains appliqués ensuite au MIX ENTIER, DMA compris ([D] dmaSnd.c:699/706 @ f0736b24).
 // L'ancien −0.375 (= ¾ × ½) ne retranchait que la demi-table : le ×2 des gains
 // s'appliquait une DEUXIÈME fois au canal DMA → +6 dB vs Hatari (à 0 dB LMC,
 // s=127 : Hatari 0.372 fs, NeoST sortait 0.744 fs — bug hunt 10ᵉ passe).
@@ -58,7 +58,7 @@ void DmaSound::setXsint(bool level) {
 }
 
 // (Re)démarre une trame DMA : recale le fetch sur l'adresse de début et latche
-// début/fin. Port de Hatari DmaSnd_StartNewFrame (dmaSnd.c:456-479) : si début ==
+// début/fin. Port de Hatari DmaSnd_StartNewFrame ([D] dmaSnd.c:456-479 @ f0736b24) : si début ==
 // fin (égalité STRICTE, comparateur du HW) ET repeat OFF, la trame est VIDE → on
 // coupe la lecture SANS lever XSINT (sinon GPIP7 resterait figé HAUT, faussant la
 // détection moniteur ; bug des demos start==end comme l'Amberstar cracktro).
@@ -66,9 +66,9 @@ void DmaSound::setXsint(bool level) {
 // (début == fin, repeat ON → trame 2^24 octets, cf. fifoRefill).
 void DmaSound::startNewFrame() {
     curAddr_ = startAddr_;
-    // ⚠ NE PAS remettre phase_/haveCur_ ici : DmaSnd_StartNewFrame (dmaSnd.c:456-479)
+    // ⚠ NE PAS remettre phase_/haveCur_ ici : DmaSnd_StartNewFrame ([D] dmaSnd.c:456-479 @ f0736b24)
     // ne touche PAS l'état de rééchantillonnage (DmaInitSample/frameCounter_float),
-    // remis au SEUL front PLAY 0→1 (DmaSnd_SoundControl_WriteWord, dmaSnd.c:806-812).
+    // remis au SEUL front PLAY 0→1 (DmaSnd_SoundControl_WriteWord, [D] dmaSnd.c:806-812 @ f0736b24).
     // startNewFrame tourne AUSSI à chaque relatch repeat (fifoRefill) : y forcer
     // haveCur_=false consommait un octet du flux mono hors comptabilité de phase et
     // effaçait le reste fractionnaire → click/dérive d'un octet par boucle de sample.
@@ -85,7 +85,7 @@ void DmaSound::startNewFrame() {
 }
 
 // Remplit la FIFO par MOTS tant qu'il y a au moins 2 places — port exact de
-// DmaSnd_FIFO_Refill (dmaSnd.c:342-368). C'est ICI que la fin de trame est
+// DmaSnd_FIFO_Refill ([D] dmaSnd.c:342-368 @ f0736b24). C'est ICI que la fin de trame est
 // détectée : au FETCH du dernier mot (le vrai DMA fetche en avance de la FIFO
 // sur le DAC) → XSINT bas (event Timer A), puis relatch si repeat, sinon le
 // MATÉRIEL auto-efface le bit PLAY ($FF8901 relit 0 — démo STE « Faster »).
@@ -108,7 +108,7 @@ void DmaSound::fifoRefill() {
         curAddr_ = (curAddr_ + 2) & 0xFFFFFF;
         if (curAddr_ == frameEndAddr_) {               // fin de trame atteinte AU FETCH
             // Cas « début == fin, repeat ON » (trame 2^24 octets) : sur STE réel
-            // AUCUNE interruption de fin de trame n'est générée (dmaSnd.c:336-341)
+            // AUCUNE interruption de fin de trame n'est générée ([D] dmaSnd.c:336-341 @ f0736b24)
             // — le fetch vient de wrapper sur début, on continue SANS pulser XSINT.
             if ((ctrl_ & 0x02) && frameEndAddr_ == frameStartAddr_) continue;
             setXsint(false);                           // XSINT → BAS (compte Timer A si AER bit4=0)
@@ -127,7 +127,7 @@ void DmaSound::fifoRefill() {
 }
 
 // Tire l'octet le plus ancien de la FIFO (refill à la volée si elle est vide et
-// que le DMA joue encore) — port de DmaSnd_FIFO_PullByte (dmaSnd.c:387-409).
+// que le DMA joue encore) — port de DmaSnd_FIFO_PullByte ([D] dmaSnd.c:387-409 @ f0736b24).
 int8_t DmaSound::fifoPull() {
     if (fifoNb_ == 0) {
         fifoRefill();
@@ -141,7 +141,7 @@ int8_t DmaSound::fifoPull() {
 
 // Passage mono → stéréo : réaligne la position de lecture de la FIFO sur une
 // frontière PAIRE (octet pair = gauche, impair = droite), en sautant un octet si
-// besoin — port de DmaSnd_FIFO_SetStereo (dmaSnd.c:419-438).
+// besoin — port de DmaSnd_FIFO_SetStereo ([D] dmaSnd.c:419-438 @ f0736b24).
 void DmaSound::fifoSetStereo() {
     if (fifoPos_ & 1) {
         fifoPos_ = (fifoPos_ + 1) & 7;
@@ -202,7 +202,7 @@ void DmaSound::updateDac() {
     }
 }
 
-// Tic HBL — port de DmaSnd_STE_HBL_Update (dmaSnd.c:727-741) : le DMA garde la
+// Tic HBL — port de DmaSnd_STE_HBL_Update ([D] dmaSnd.c:727-741 @ f0736b24) : le DMA garde la
 // FIFO pleine à chaque ligne (refill), le DAC consomme ce qui est dû (update),
 // puis la FIFO est re-remplie derrière. C'est ce grain « par ligne » qui rend
 // fidèles les programmes modifiant le tampon PENDANT la lecture (Mental
@@ -226,7 +226,7 @@ void DmaSound::reset(bool cold) {
     aPlaying_ = false; aMode_ = 0;                 // état audio « push »
     aPhase_ = 0.0; aHaveCur_ = false;
     events_.clear();
-    fifoPos_ = fifoNb_ = 0;                        // FIFO vidée (≙ DmaSnd_Reset, dmaSnd.c:253-254)
+    fifoPos_ = fifoNb_ = 0;                        // FIFO vidée (≙ DmaSnd_Reset, [D] dmaSnd.c:240 @ f0736b24)
     dacLast_ = sched_ ? sched_->liveNow() : 0;
     dacRem_  = 0;
     capR_ = capW_;                                 // flux capturé drainé
@@ -283,7 +283,7 @@ void DmaSound::decodeMicrowire() {
 
 // Valeur relue en $FF8924 : pendant le transfert le masque TOURNE au rythme du
 // shift — `(mask << (16 - étapes_restantes)) | (mask >> étapes_restantes)`, port
-// exact de Hatari DmaSnd_InterruptHandler_Microwire (dmaSnd.c:1063-1064). Après
+// exact de Hatari DmaSnd_InterruptHandler_Microwire ([D] dmaSnd.c:1037 @ f0736b24). Après
 // les 16 pas la rotation est complète → le masque relu redevient la valeur écrite
 // (c'est aussi pourquoi decodeMicrowire peut décoder sur mwMask_ intact).
 uint16_t DmaSound::mwMaskRead() const {
@@ -329,7 +329,7 @@ void DmaSound::advanceMicrowire(int64_t nextEdge, int64_t now) {
 }
 
 // Plateaux (shelving) 1er ORDRE du correcteur LMC1992 — port EXACT de Hatari
-// DmaSnd_Bass_Shelf / DmaSnd_Treble_Shelf (dmaSnd.c:1366-1404, méthode Savinkoff),
+// DmaSnd_Bass_Shelf / DmaSnd_Treble_Shelf ([D] dmaSnd.c:1366-1404 @ f0736b24, méthode Savinkoff),
 // coupures MESURÉES 118.2763 Hz (basses) / 8438.756 Hz (aigus). L'ancien modèle
 // (RBJ 2e ordre 200/8000 Hz) donnait une réponse différente dès que basses/aigus
 // quittaient 0 dB. À 0 dB (g = 1) : b0 = 1, b1 = a1 → transfert identité, d'où le
@@ -356,7 +356,7 @@ static void shelf1(bool lowShelf, double dB, double f0, double fs,
 void DmaSound::applyTone(float* out, uint32_t frames, uint32_t sampleRate) {
     if ((mwBass_ == 6 && mwTreble_ == 6) || sampleRate == 0) return;   // 0/0 dB → bypass
     // Codes 0-12 → -12..+12 dB (pas de 2 dB) ; codes 13-15 SATURENT à +12 dB, comme la
-    // table LMC1992_Bass_Treble_Table de Hatari (dmaSnd.c:211-214) — sans ça les codes
+    // table LMC1992_Bass_Treble_Table de Hatari ([D] dmaSnd.c:211-214 @ f0736b24) — sans ça les codes
     // 13-15 donnaient +14/+16/+18 dB.
     const int bassCode = mwBass_   < 12 ? mwBass_   : 12;
     const int trebCode = mwTreble_ < 12 ? mwTreble_ : 12;
@@ -408,9 +408,9 @@ void DmaSound::applyToneStereo(float* st, uint32_t frames, uint32_t sampleRate) 
 }
 
 // HPF sous-sonique appliqué au MIX YM+DMA (STE) — port de Subsonic_IIR_HPF_Left/Right
-// (sound.c:382-399, pôle 1 − 64/32768) tel qu'appelé par DmaSnd_Apply_LMC AVANT
-// gains + tonalité (dmaSnd.c:699,706). Sur ST le HPF reste DANS la chaîne YM
-// (sound.c:1744) ; sur STE le YM entre BRUT dans le mix (YM2149::setHpfBypass) et
+// ([D] sound.c:382-399 @ f0736b24, pôle 1 − 64/32768) tel qu'appelé par DmaSnd_Apply_LMC AVANT
+// gains + tonalité ([D] dmaSnd.c:699,706 @ f0736b24). Sur ST le HPF reste DANS la chaîne YM
+// ([D] sound.c:1744 @ f0736b24) ; sur STE le YM entre BRUT dans le mix (YM2149::setHpfBypass) et
 // c'est le MÉLANGE — composante continue du DMA comprise — qui est filtré ici.
 // États NON sérialisés : transitoire de rendu (<0,1 s), format save-state inchangé.
 void DmaSound::applyHpfStereo(float* st, uint32_t frames) {
@@ -434,7 +434,7 @@ void DmaSound::applyHpfMono(float* out, uint32_t frames) {
     }
 }
 
-// Facteur ×2 des gains LMC — port de Hatari dmaSnd.c:1152-1153/1460-1461 :
+// Facteur ×2 des gains LMC — port de Hatari [D] dmaSnd.c:1152-1153/1460-1461 @ f0736b24 :
 // « lmc1992.left_gain = leftVolume × masterVolume × 2/(65536²) ». Le ×2 compense
 // la DEMI-amplitude du YM en STE (table `YM_OUTPUT_LEVEL>>1` chez Hatari ≙
 // outScale_ 0.5 ici, marge anti-saturation pour le DMA) : à volume LMC plein
@@ -497,15 +497,18 @@ void DmaSound::syncAudioFromCpu() {
 // synchronise d'abord la consommation DAC + le fetch à l'instant émulé courant
 // (≙ le Sound_Update en tête), puis on rend l'adresse de FETCH (le compteur
 // matériel montre où le DMA LIT, en avance de la FIFO — ≤ 8 octets — sur le
-// DAC). À l'ARRÊT, le vrai HW renvoie l'adresse de DÉBUT (dmaSnd.c:756-759).
+// DAC). À l'ARRÊT, le vrai HW renvoie l'adresse de DÉBUT ([D] dmaSnd.c:756-759 @ f0736b24).
 uint32_t DmaSound::liveCounter() {
-    // Port EXACT de DmaSnd_GetFrameCount (dmaSnd.c:748-761) : il appelle SEULEMENT
-    // Sound_Update (≙ updateDac), PAS de refill FIFO. Le refill ne se fait qu'au HBL
-    // (onHbl) ou à la volée quand la FIFO se vide (fifoPull). Un `fifoRefill()` ajouté
-    // ici re-topait curAddr_ à CHAQUE lecture du compteur → un poll serré de
-    // $FF8909-0D à l'intérieur d'une ligne voyait l'adresse de fetch avancer en
-    // continu (+2, +2…) au lieu de sauter par paquets au HBL comme sur le vrai STE.
-    if (playing_ && sched_) updateDac();
+    // Le compteur montre le fetch, et le fetch n'attend pas le HBL : il suit la FIFO dès que DE est fini.
+    // [B] ST-4081 feuille 20 (ST4081S.PDF, sha256 935c4dd9) : SNDEN = HDE1 latché bas et SREQ, sur les
+    // créneaux que le CPU n'a pas. [D] mcucontrol.v et sndcnt.v @ 4a6db7cc : tools/make_stcpu_snd.py, marches
+    // de $FF890D dès le cycle 380, plus aucune entre DE-start et DE-end.
+    // [D] Hatari DmaSnd_GetFrameCount @ f0736b24 ne refait le plein qu'au HBL : non retenu sur STE.
+    // Profondeur de la FIFO non tranchée : le modèle a 7 mots par choix d'auteur (gstshifter.v:414-419).
+    if (playing_ && sched_) {
+        updateDac();
+        if (fetchWindowOpen && fetchWindowOpen()) fifoRefill();
+    }
     if (!playing_) return startAddr_;                  // à l'arrêt : adresse de DÉBUT
     return curAddr_;
 }
@@ -513,12 +516,12 @@ uint32_t DmaSound::liveCounter() {
 uint8_t DmaSound::read8(uint32_t addr) {
     if ((addr & 0xFF) >= 0x22 && (addr & 0xFF) <= 0x25) catchUpMicrowire();
     switch (addr & 0xFF) {
-        // $FF8900 : registre MOT chez Hatari (ioMemTabSTE.c:142) — la lecture pose
+        // $FF8900 : registre MOT chez Hatari ([D] ioMemTabSTE.c:142 @ f0736b24) — la lecture pose
         // nDmaSoundControl en 16 bits, l'octet PAIR relit donc 0x00 (pas 0xFF) :
         // « move.w $FF8900,d0 » doit rendre $000x, pas $FF0x.
         case 0x00: return 0x00;
         case 0x01: return ctrl_;
-        // $FF8920 : octet lu/écrit SANS interception chez Hatari (ioMemTabSTE.c:162)
+        // $FF8920 : octet lu/écrit SANS interception chez Hatari ([D] ioMemTabSTE.c:162 @ f0736b24)
         // — il conserve la valeur écrite (0 au boot), sauvegardée avec les
         // registres comme l'IoMem dans STMemory_MemorySnapShot_Capture d'Hatari.
         case 0x20: return pad20_;
@@ -528,7 +531,7 @@ uint8_t DmaSound::read8(uint32_t addr) {
         // Compteur courant (position de lecture) : position LIVE cycle-exacte
         // dérivée de l'horloge émulée (cf. liveCounter — port DmaSnd_GetFrameCount
         // qui appelle Sound_Update en tête). À l'ARRÊT, le vrai HW renvoie
-        // l'adresse de DÉBUT, pas la dernière position (dmaSnd.c:756-759).
+        // l'adresse de DÉBUT, pas la dernière position ([D] dmaSnd.c:756-759 @ f0736b24).
         case 0x09: return uint8_t(liveCounter() >> 16);
         case 0x0B: return uint8_t(liveCounter() >> 8);
         case 0x0D: return uint8_t(liveCounter());
@@ -588,7 +591,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         case 0x20: pad20_ = v; break;
         // Mode : seuls les bits existant sur un vrai STE sont câblés — masque 0x8F
         // (bit7 mono + bits0-1 fréquence), la relecture montre la valeur masquée
-        // (Hatari DmaSnd_SoundModeCtrl_WriteByte, dmaSnd.c:1013-1027). La
+        // (Hatari DmaSnd_SoundModeCtrl_WriteByte, [D] dmaSnd.c:1001 @ f0736b24). La
         // consommation due est datée à l'ANCIENNE cadence avant le changement, et
         // le passage mono → stéréo réaligne la FIFO sur frontière paire.
         case 0x21: {
@@ -601,16 +604,16 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         // Microwire : mots 16 bits ($FF8922 data, $FF8924 mask). Pendant un
         // transfert EN COURS (shift), les écritures data/mask sont IGNORÉES —
         // « Only update, if no shift is in progress » (Hatari DmaSnd_MicrowireData/
-        // Mask_WriteWord, dmaSnd.c:1195-1206 et 1238-1244).
+        // Mask_WriteWord, [D] dmaSnd.c:1195-1206 @ f0736b24 et 1238-1244).
         case 0x22:
             if (mwSteps_ == 0) {
                 // L'autre octet vient du registre visible, déjà décalé à zéro
                 // après la commande précédente (Hatari : IoMem_ReadWord).
                 mwData_ = uint16_t((mwShift_ & 0x00FF) | (v << 8));
                 // Accès OCTET isolé (move.b $FF8922) : Hatari intercepte la donnée
-                // Microwire en SIZE_WORD (ioMemTabSTE.c:164) — TOUT accès écriture,
+                // Microwire en SIZE_WORD ([D] ioMemTabSTE.c:164 @ f0736b24) — TOUT accès écriture,
                 // même octet, déclenche le transfert avec (octet haut neuf | octet
-                // bas ancien) (dmaSnd.c:1195-1204). L'accès MOT (write16 → 2 write8)
+                // bas ancien) ([D] dmaSnd.c:1195-1204 @ f0736b24). L'accès MOT (write16 → 2 write8)
                 // ne démarre que sur l'octet BAS (case 0x23), mot complet posé.
                 if (bus_.ioAccessWidth() == 1) {
                     mwShift_ = mwData_;
@@ -641,7 +644,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
 }
 
 // Filtre anti-repliement du canal DMA — port du DmaSnd_LowPassFilter d'Hatari
-// (dmaSnd.c:1316-1349) : FIR 3 points (1,2,1)/4 appliqué à CHAQUE octet tiré à la
+// ([D] dmaSnd.c:1316-1349 @ f0736b24) : FIR 3 points (1,2,1)/4 appliqué à CHAQUE octet tiré à la
 // cadence DMA quand elle dépasse la fréquence de sortie hôte (50066 Hz → 48 kHz :
 // sans lui, le repliement siffle). Filtre coupé : simple retard d'un échantillon
 // (×4), pour garder gain et latence constants — le /4 est appliqué au mixage,
@@ -662,7 +665,7 @@ void DmaSound::mix(float* out, uint32_t frames, uint32_t sampleRate) {
 
     // Registre de mixage du LMC1992 (commande 0) : seul mixing==1 mélange YM2149 + DMA ;
     // 0/2/3 routent le DMA SEUL → il écrase le YM (cf. Hatari DmaSnd_GenerateSamples,
-    // dmaSnd.c:555-568). N'a d'effet qu'ici, trame en cours : DMA à l'arrêt → `mix` sort
+    // [D] dmaSnd.c:538 @ f0736b24). N'a d'effet qu'ici, trame en cours : DMA à l'arrêt → `mix` sort
     // plus haut et le YM passe intact (pas de mute du YM hors lecture DMA).
     const bool addYm = (mwMixing_ == 1);
     for (uint32_t i = 0; i < frames; ++i) {

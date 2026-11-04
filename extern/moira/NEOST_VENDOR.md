@@ -13,6 +13,16 @@ premier `git submodule update`** — ce qui s'est déjà produit une fois (fork 
 perdu, commits `e4da365`/`a1e52ec` introuvables). La vendorisation fige le code et
 le patch dans l'historique NeoST, à l'épreuve du clobber.
 
+## Ordre des accès, d'après le banc fx68k (2026-11-03)
+
+`tools/run_fx68k_bench.py` compare ce cœur à fx68k cycle bus par cycle bus ; tableau et témoins dans
+`docs/FX68K_BENCH.md`. Sur 68000 seulement : STOP compte ses 4 cycles (`execStop`) ; mot bas écrit d'abord pour
+MOVEM.L -(An) (`execMovemRgEa`), ADD/SUB/ADDI/SUBI/ADDQ/SUBQ.L en mémoire (`execAddRgEa`, `execAddiEa`, `execAddqEa`) ;
+mot bas lu d'abord pour ADDX/SUBX.L (`execAddxEa`, drapeau `REVERSE` ajouté à `read`) ; préfetch à l'adresse de
+branchement du DBcc expiré (`execDbcc`) ; lecture en plus de MOVEM après le dernier mot, en .L comme en .W
+(`execMovemEaRg`) ; préfetch de la cible avant l'empilement de JSR (`execJsr`) ; ordre de la trame de groupe 0
+(`writeStackFrameAEBE`) ; 2 cycles de plus au reset. Une évolution de l'amont sur ces sites se compare au banc.
+
 ## ANDI/ORI/EORI #,SR/#,CCR et MOVE to CCR : double rechargement (2026-10-20)
 
 - `MoiraExec_cpp.h`, `execAndisr` (ANDI/ORI/EORI #,SR), `execAndiccr`
