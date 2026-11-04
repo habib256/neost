@@ -26,7 +26,7 @@ Le bit 6 retombe au départ d'un Write Sector, [B] p. 1-9. INTRQ 24 µs après l
 
 ## Bancs RTL en CI (2026-11-04)
 
-Nouveau job `rtl` dans `tests.yml` : Verilator 5.054 compilé puis gardé en cache, RTL aux épingles, six bancs. Écrit sans pouvoir l'exécuter ici : il n'est pas bloquant tant qu'il n'a pas prouvé qu'il tourne.
+Nouveau job `rtl` dans `tests.yml` : Verilator 5.054 compilé puis gardé en cache, RTL aux épingles, six bancs. Premier passage vert sur `72ded68`, GCC et Linux, 27 minutes avec la compilation de Verilator : mêmes verdicts que sur macOS, et le job devient bloquant.
 
 ## Suite d'Hatari : le port série aussi (2026-11-04)
 

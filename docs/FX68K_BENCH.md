@@ -131,4 +131,3 @@ Le n° 1 du tableau a trouvé son banc : `tools/run_stcpu_bench.py`, où aucun r
 - **Autovecteur par VPA, dans le verdict** : relevé à part, ci-dessous, pas comparé accès par accès.
 - Le GSTMCU (`run_gstmcu_bench.py`) n'exécute pas de code. `stBlitter.sv` a son propre banc,
   [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md).
-- Verilator **en CI** : les bancs RTL sont SKIP sur les runners.
