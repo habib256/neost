@@ -149,6 +149,9 @@ FAST = [
     # palier ne relise jamais cette image.
     ("Disquette livrée (disks/diskA.st : FAT12 valide, conforme au générateur)",
      [sys.executable, str(TOOLS / "check_disk_assets.py")]),
+    # Détecteur de wakestate de Troed : longueur d'une ligne composée, sans Hatari ni disque privé.
+    ("WSDETECT (Troed/SYNC : longueur de ligne par wakestate et par machine)",
+     [sys.executable, str(TOOLS / "run_wsdetect.py")]),
     # Empreinte de l'état complet : deux passes et une reprise de save-state, mêmes empreintes.
     ("Déterminisme de l'état complet (empreintes, reprise de save-state)",
      [sys.executable, str(TOOLS / "run_determinism.py")]),

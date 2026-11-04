@@ -6,6 +6,10 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## WSDETECT : un juge de la GLUE qui ne doit rien à Hatari (2026-11-04)
+
+- **`tools/run_wsdetect.py`**, palier `fast` : le détecteur de wakestate de Troed/SYNC, disque CC0, sous EmuTOS. NeoST rend les longueurs que son source annonce : 162, 54, 206, 204 octets en WS1 à WS4, 180 sur STE et Mega STE, 206 sur Mega ST. Aucun relevé de ce disque sur machine réelle n'est au dépôt.
+
 ## MFP confronté à ses fiches, et parties jouées au joystick (2026-11-04)
 
 - **Le MFP est audité contre MC68901, MC68HC901 et MK68901** : 189 commentaires gradés, 11 désaccords relevés. Quatre sont corrigés :
