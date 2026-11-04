@@ -1,0 +1,121 @@
+{
+  "_comment": "Parties rejouées contre l'Hatari épinglé, échelon `hatari`. Disques privés, non versionnés : SKIP s'ils manquent. Un script tient chaque commande plus longtemps que la période d'interrogation du jeu, sinon le résultat dépend de la phase du tir (docs/CASE_STUDIES.md, Flood). Aucune capture de jeu n'est versionnée : la référence est Hatari, recalculé à chaque passe.",
+  "replays": [
+    {
+      "id": "buggy_boy_race",
+      "disk": "disks/st/Buggy Boy (1988)(Elite).st",
+      "machine": "st",
+      "rom": "roms/tos102uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500
+      ],
+      "joy_at": 1000,
+      "joy": "F*5 .*145 F*5 .*145 F*5 .*145 F*5 .*145 F*5 .*145 F*5 .*145 F*5 .*145 F*5 .*145 F*5 .*145 F*5 .*145 F*5 .*145 U*400 .*20 U*400 .*20 U*400 .*20 U*400 .*20 U*400 .*20 U*400 .*20",
+      "frames": [
+        2800,
+        3000,
+        3200,
+        3400,
+        3600,
+        3800,
+        4000,
+        4400,
+        4800
+      ],
+      "window": 4,
+      "max_diff": 0.5
+    },
+    {
+      "id": "lemmings",
+      "disk": "disks/st/Lemmings (1990)(Psygnosis)[cr BBC][a].st",
+      "machine": "st",
+      "rom": "roms/tos102uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 20,
+      "frames": [
+        3000,
+        4000,
+        5000,
+        6000,
+        8000
+      ],
+      "window": 30,
+      "max_diff": 0.5
+    },
+    {
+      "id": "chase_hq",
+      "disk": "disks/st/Chase HQ (1989)(Ocean)[cr Replicants].st",
+      "machine": "st",
+      "rom": "roms/tos102uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 20,
+      "frames": [
+        3000,
+        4000,
+        5000,
+        6000,
+        8000
+      ],
+      "window": 30,
+      "max_diff": 0.5
+    },
+    {
+      "id": "flying_shark",
+      "disk": "disks/st/Flying Shark (1988)(Firebird)[h][one disk].st",
+      "machine": "st",
+      "rom": "roms/tos102uk.img",
+      "mem": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 20,
+      "frames": [
+        3000,
+        4000,
+        5000,
+        6000,
+        8000
+      ],
+      "window": 30,
+      "max_diff": 0.5
+    }
+  ]
+}

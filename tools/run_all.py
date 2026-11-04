@@ -247,6 +247,9 @@ FULL = FAST + [
     # sans les RTL épinglés → SKIP recensé (77).
     ("Banc blitter ↔ stBlitter.sv (accès et dates, contre le RTL)",
      [sys.executable, str(TOOLS / "run_stblitter_bench.py")]),
+    # Parties jouées contre Hatari : disques privés et Pillow requis, SKIP sinon.
+    ("Parties rejouées (joystick et clavier, mêmes masques des deux côtés)",
+     [sys.executable, str(TOOLS / "run_game_replay.py")]),
     ("P2 provenance des références",
      [sys.executable, str(TOOLS / "run_etalons.py"), "--verify-refs"]),
     ("P2 étalons pixel (oracle + snapshots)",

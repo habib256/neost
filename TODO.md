@@ -223,7 +223,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 - **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
   Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
-  s'affichent correctement aux écrans vus. `--key` et `--swap` permettent d'entrer dans les titres ; restent les parties suivantes et les titres au joystick.
+  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde quatre parties. Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu.
 
 ## 4. 🪜 Harnais et preuve
 

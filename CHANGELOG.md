@@ -19,6 +19,7 @@ l'ordre inverse. Version courante : **0.6.2**.
 
 ## Audit des fiches : YM2149, WD1772, ACIA, et empreinte d'état (2026-11-04)
 
+- **`tools/run_game_replay.py`** : quatre parties jouées contre Hatari, Buggy Boy, Lemmings, Chase HQ, Flying Shark, sous 0,5 % à toutes les trames relevées. Sur Buggy Boy, la course entière est identique à 0,0 %, accident compris. Palier `full`, SKIP sans Pillow ni disques.
 - **Trois puces de plus confrontées à leur fiche**, commentaires seuls : YM2149, WD1772, MC6850. Leurs écarts sont marqués `⚠ [B]` sur place.
 - **WD1772, six points de fiche corrigés** : Restore (DR et sens), Seek Error selon V, STEP sortant en piste 0, $Dx au repos, bit CRC d'un ID faux. Le test : 80 disques joués, images identiques avant et après. Aucun logiciel du catalogue n'en dépend, donc ce sont des preuves de fiche.
 - **ACIA, RDRF après overrun** : la lecture à la lettre de la fiche bloque cinq jeux. Essayée puis retirée, consignée dans `docs/REFERENCE_LADDER.md`.
