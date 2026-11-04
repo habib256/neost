@@ -6,6 +6,11 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Banc fx68k : tous les modes d'adressage, et --key dans la passe de jeux (2026-11-04)
+
+- **Banc fx68k** : huit programmes de plus, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur, sur tous les modes d'adressage. Plus de 6 700 accès, tous en accord une fois corrigé un seul défaut : la lecture en plus de MOVEM en relatif PC annonçait FC données au lieu de programme.
+- **`compare_titles --key`** entre dans les jeux : 51 disques sur ST, espace pressé jusqu'à la trame 8000. 45 sous 1 % d'écart avec Hatari. Les autres : animations aléatoires, cadrage de l'outil en moyenne résolution, et deux sans capture Hatari, à revoir.
+
 ## Spectrum 512 : le logiciel réel juge le pixel, et contredit le RTL (2026-11-04)
 
 Le format Spectrum 512 documente à quel pixel chaque couleur de la ligne s'applique. Le vrai visualiseur tourne dans NeoST, et chaque pixel est comparé au décodage de l'image, sans émulateur ni RTL en jeu.

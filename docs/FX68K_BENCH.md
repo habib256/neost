@@ -129,8 +129,6 @@ Le n° 1 du tableau a trouvé son banc : `tools/run_stcpu_bench.py`, où aucun r
 
 - **Bus error** (BERR, et la relance par HALT, non implémentée dans fx68k).
 - **Autovecteur par VPA, dans le verdict** : relevé à part, ci-dessous, pas comparé accès par accès.
-- **RESET** (l'instruction), Bcc.w/BSR.s pris et non pris en séries,
-  `CHK` et `DIVS` en trap, `RTR`, `TRAPV` pris, `LINE A` en mode utilisateur.
 - Le GSTMCU (`run_gstmcu_bench.py`) n'exécute pas de code. `stBlitter.sv` a son propre banc,
   [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md).
 - Verilator **en CI** : les bancs RTL sont SKIP sur les runners.

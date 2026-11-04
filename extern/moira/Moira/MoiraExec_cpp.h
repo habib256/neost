@@ -3364,8 +3364,9 @@ Moira::execMovemEaRg(u16 opcode)
         }
     }
     // [D] fx68k @ 0602ee46, Hatari op_4cd8_13_ff @ f0736b24 : la lecture en plus suit le dernier
-    // mot, en .L comme en .W. L'amont la plaçait avant le premier en .L.
-    (void)read<C, AddrSpace::DATA, Word>(ea);
+    // mot, en .L comme en .W. L'amont la plaçait avant le premier en .L. Même espace que les autres
+    // mots : FC programme en relatif PC.
+    (void)readM<C, M, Word>(ea);
 
     prefetch<C, POLL>();
 

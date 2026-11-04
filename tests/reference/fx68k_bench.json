@@ -79,6 +79,126 @@
    2802
   ]
  },
+ "ea_move_w": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   2410,
+   2410
+  ]
+ },
+ "ea_move_l": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   2998,
+   2998
+  ]
+ },
+ "ea_alu": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   3700,
+   3700
+  ]
+ },
+ "ea_alu_mem": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   3986,
+   3986
+  ]
+ },
+ "ea_unary": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   5964,
+   5964
+  ]
+ },
+ "flow": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   1032,
+   1032
+  ]
+ },
+ "movem": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   7406,
+   7406
+  ]
+ },
+ "misc_extra": {
+  "status": "agree",
+  "first": null,
+  "mismatches": 0,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   1364,
+   1364
+  ]
+ },
  "trace": {
   "status": "agree",
   "first": null,

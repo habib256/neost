@@ -369,6 +369,197 @@ def prog_stop_pending(a: Asm) -> None:
     sentinel(a)
 
 
+# --- Couverture systématique des modes d'adressage (2026-11-04) --------------------------
+# (mode, registre, mots d'extension) ; a0 pointe $2040, d2 = 2. [B] M68000UM § 2 pour les modes.
+EA_RW = [(2, 0, ()), (3, 0, ()), (4, 0, ()), (5, 0, (4,)), (6, 0, (0x2002,)), (7, 0, (DATA,)), (7, 1, (0, DATA))]
+EA_PC = [(7, 2, (2,)), (7, 3, (0x2002,))]
+
+
+def reload_a0(a: Asm) -> None:
+    a.w(0x207C).l(DATA + 0x40)                           # movea.l #$2040,a0
+
+
+def prelude_ea(a: Asm) -> None:
+    prologue(a)
+    a.w(0x2E7C).l(STACK)
+    a.w(0x263C).l(0x01234567)                            # move.l #$01234567,d3
+
+
+def prog_ea_move_w(a: Asm) -> None:
+    """MOVE.W, toutes les sources vers toutes les destinations."""
+    prelude_ea(a)
+    for sm, sr, sx in EA_RW + EA_PC + [(7, 4, (0x1234,)), (0, 3, ())]:
+        for dm, dr, dx in EA_RW:
+            reload_a0(a)
+            a.w(0x3000 | (dr << 9) | (dm << 6) | (sm << 3) | sr, *sx, *dx)
+    sentinel(a)
+
+
+def prog_ea_move_l(a: Asm) -> None:
+    """MOVE.L, toutes les sources vers toutes les destinations."""
+    prelude_ea(a)
+    for sm, sr, sx in EA_RW + EA_PC + [(7, 4, (0x1234, 0x5678)), (0, 3, ())]:
+        for dm, dr, dx in EA_RW:
+            reload_a0(a)
+            a.w(0x2000 | (dr << 9) | (dm << 6) | (sm << 3) | sr, *sx, *dx)
+    sentinel(a)
+
+
+def prog_ea_alu(a: Asm) -> None:
+    """ADD, SUB, CMP, AND, OR (.W, .L) vers Dn, et ADDA, SUBA, CMPA, sur toutes les sources."""
+    prelude_ea(a)
+    for base in (0xD000, 0x9000, 0xB000, 0xC000, 0x8000):
+        for size in (1, 2):
+            for sm, sr, sx in EA_RW + EA_PC:
+                reload_a0(a)
+                a.w(base | (4 << 9) | (size << 6) | (sm << 3) | sr, *sx)
+    for base in (0xD000, 0x9000, 0xB000):
+        for opm in (3, 7):
+            for sm, sr, sx in EA_RW:
+                reload_a0(a)
+                a.w(base | (2 << 9) | (opm << 6) | (sm << 3) | sr, *sx)
+    sentinel(a)
+
+
+def prog_ea_alu_mem(a: Asm) -> None:
+    """ADD, SUB, AND, OR, EOR (.W, .L) de Dn vers la mémoire ; quick et immédiats .W sur la mémoire."""
+    prelude_ea(a)
+    for base in (0xD000, 0x9000, 0xC000, 0x8000, 0xB000):
+        for opm in (5, 6):
+            for m, r, x in EA_RW:
+                reload_a0(a)
+                a.w(base | (3 << 9) | (opm << 6) | (m << 3) | r, *x)
+    for m, r, x in EA_RW:
+        for op in (0x5240, 0x5340):                      # addq.w, subq.w
+            reload_a0(a)
+            a.w(op | (m << 3) | r, *x)
+        for op in (0x0640, 0x0440, 0x0240, 0x0040, 0x0A40, 0x0C40):    # addi, subi, andi, ori, eori, cmpi .w
+            reload_a0(a)
+            a.w(op | (m << 3) | r, 0x1234, *x)
+    sentinel(a)
+
+
+def prog_ea_unary(a: Asm) -> None:
+    """CLR, NEG, NEGX, NOT, TST, Scc, décalages mémoire, bits, LEA, PEA, JMP, JSR, TAS."""
+    prelude_ea(a)
+    for m, r, x in EA_RW:
+        for op in (0x4240, 0x4280, 0x4440, 0x4480, 0x4040, 0x4640, 0x4A40, 0x4A80, 0x4800, 0x50C0, 0x51C0, 0x4AC0):
+            reload_a0(a)
+            a.w(op | (m << 3) | r, *x)
+    for m, r, x in EA_RW:
+        for op in (0xE0C0, 0xE1C0, 0xE2C0, 0xE3C0, 0xE4C0, 0xE5C0, 0xE6C0, 0xE7C0):    # décalages et rotations mémoire
+            reload_a0(a)
+            a.w(op | (m << 3) | r, *x)
+    for m, r, x in EA_RW:
+        for op in (0x0100, 0x0140, 0x0180, 0x01C0):      # btst, bchg, bclr, bset Dn,<ea>
+            reload_a0(a)
+            a.w(op | (2 << 9) | (m << 3) | r, *x)
+        for op in (0x0800, 0x0840, 0x0880, 0x08C0):      # btst, bchg, bclr, bset #n,<ea>
+            reload_a0(a)
+            a.w(op | (m << 3) | r, 3, *x)
+    for m, r, x in [e for e in EA_RW if e[0] not in (3, 4)] + EA_PC:
+        reload_a0(a)
+        a.w(0x43C0 | (m << 3) | r, *x)                   # lea <ea>,a1
+        a.w(0x4840 | (m << 3) | r, *x)                   # pea <ea>
+        a.w(0x588F)                                      # addq.l #4,sp
+    sentinel(a)
+
+
+def prog_flow(a: Asm) -> None:
+    """Sauts : JMP et JSR sur tous les modes de contrôle, Bcc, BSR, DBcc, RTS, RTR, RTE, LINK, UNLK."""
+    prelude_ea(a)
+    a.w(0x47F9).addr("fsub")                             # lea fsub.l,a3
+    a.w(0x4E93)                                          # jsr (a3)
+    a.w(0x4EAB, 0)                                       # jsr 0(a3)
+    a.w(0x4EB3, 0x2000)                                  # jsr 0(a3,d2.w) : d2 = 2, cf. fsub - 2
+    a.w(0x4EB8, 0x1E00)                                  # jsr $1E00.w
+    a.w(0x4EB9).l(0x1E00)                                # jsr $1E00.l
+    a.w(0x4EBA, 0x0002).bra8(0x6000, "n1")               # jsr 2(pc) ; bra.s
+    a.w(0x4E75)                                          # rts (cible du jsr pc)
+    a.label("n1")
+    a.w(0x44FC, 0x0000)                                  # move #0,ccr
+    for cond in range(16):                               # Bcc.s, pris ou non selon CCR = 0
+        a.bra8(0x6000 | (cond << 8) if cond else 0x6000, f"bs{cond}")
+        a.w(NOP)
+        a.label(f"bs{cond}")
+    for cond in range(2, 16):                            # Bcc.w
+        a.bra16(0x6000 | (cond << 8), f"bw{cond}")
+        a.w(NOP)
+        a.label(f"bw{cond}")
+    a.bra8(0x6100, "bsrs").bra8(0x6000, "n2")            # bsr.s ; bra.s
+    a.label("bsrs").w(0x4E75)
+    a.label("n2")
+    a.bra16(0x6100, "bsrw").bra8(0x6000, "n3")           # bsr.w ; bra.s
+    a.label("bsrw").w(0x4E75)
+    a.label("n3")
+    for cond in (0, 1, 7, 6):                            # DBT, DBF, DBEQ, DBNE
+        a.w(0x7E02)                                      # moveq #2,d7
+        a.label(f"db{cond}")
+        a.bra16(0x50C8 | (cond << 8) | 7, f"db{cond}")
+    a.w(0x4E56, 0xFFF8)                                  # link a6,#-8
+    a.w(0x4E5E)                                          # unlk a6
+    a.w(0x4879).addr("rr").w(0x3F3C, 0x0000)             # pea rr.l ; move.w #0,-(sp)
+    a.w(0x4E77)                                          # rtr
+    a.label("rr")
+    a.w(0x4879).addr("re").w(0x3F3C, 0x2700)             # pea re.l ; move.w #$2700,-(sp)
+    a.w(RTE)
+    a.label("re")
+    sentinel(a)
+    a.label("fsub").w(0x4E75, 0x4E75)                    # rts ; rts (cible avec index d2 = 2)
+
+
+def prog_movem(a: Asm) -> None:
+    """MOVEM .W et .L, dans les deux sens, tous les modes, liste courte et longue."""
+    prelude_ea(a)
+    masks = (0x0001, 0x0007, 0x00FF, 0x7F7F)
+    for mask in masks:
+        for size in (0, 1):
+            for m, r, x in [(2, 0, ()), (3, 0, ()), (5, 0, (4,)), (6, 0, (0x2002,)), (7, 0, (DATA,)), (7, 1, (0, DATA))] + EA_PC:
+                reload_a0(a)
+                a.w(0x4C80 | (size << 6) | (m << 3) | r, mask, *x)        # movem <ea>,regs
+            for m, r, x in [(2, 0, ()), (5, 0, (4,)), (6, 0, (0x2002,)), (7, 0, (DATA,)), (7, 1, (0, DATA))]:
+                reload_a0(a)
+                a.w(0x4880 | (size << 6) | (m << 3) | r, mask, *x)        # movem regs,<ea>
+            reload_a0(a)
+            a.w(0x4880 | (size << 6) | (4 << 3), mask)                    # movem regs,-(a0)
+    sentinel(a)
+
+
+def prog_misc_extra(a: Asm) -> None:
+    """RESET, MOVE USP, EXG, EXT, SWAP, ADDX, SUBX, ABCD, SBCD, CMPM, MOVEP, CHK et DIVS à effet de bord."""
+    prelude_ea(a)
+    a.w(0x4E70)                                          # reset
+    a.w(0x4E63).w(0x4E6B)                                # move a3,usp ; move usp,a3
+    a.w(0xC143, 0xC34B, 0xC54B)                          # exg d0,d3 ; exg a1,a3 ; exg d2,a3
+    a.w(0x4883, 0x48C3, 0x4843)                          # ext.w, ext.l, swap d3
+    for op in (0xD148, 0xD548, 0xD588, 0x9148, 0x9548, 0x9588, 0xC108, 0x8108, 0xB148, 0xB588):
+        # addx.b/.w/.l -(a0),-(a0) ; subx.b/.w/.l ; abcd, sbcd -(a0) ; cmpm.w/.l (a0)+,(a0)+
+        reload_a0(a)
+        a.w(op)
+    for op, ext in ((0x0108, 4), (0x0148, 4), (0x0188, 4), (0x01C8, 4)):   # movep d0,4(a0) et inverses
+        reload_a0(a)
+        a.w(op, ext)
+    # CHK dans la plage et hors de la plage, sur la mémoire aussi : le handler repart.
+    a.w(0x7605)                                          # moveq #5,d3
+    a.w(0x47BC, 0x0010)                                  # chk #16,d3
+    reload_a0(a)
+    a.w(0x4790)                                          # chk (a0),d3
+    a.w(0x76FF)                                          # moveq #-1,d3
+    a.w(0x47BC, 0x0010)                                  # chk #16,d3 → trap
+    a.w(0x263C).l(0x7FFFFFFF)                            # move.l #$7FFFFFFF,d3
+    a.w(0x87FC, 0x0001)                                  # divs #1,d3 : débordement
+    a.w(0x7600)                                          # moveq #0,d3
+    a.w(0x87C3)                                          # divs d3,d3 → division par zéro
+    a.w(0x44FC, 0x0002).w(0x4E76)                        # move #2,ccr ; trapv pris
+    a.w(0x027C, 0xDFFF)                                  # andi #$DFFF,sr → mode utilisateur
+    a.w(0xA000)                                          # ligne A en utilisateur
+    a.w(0xF000)                                          # ligne F en utilisateur
+    a.w(0x4E40)                                          # trap #0 en utilisateur
+    a.w(0x4E70)                                          # reset en utilisateur → privilège
+    a.w(NOP)
+    sentinel(a)
+
+
 # (nom, générateur, options) — options : irq = [(T, L)], sweep = (nb, pas) pour répéter
 # avec T + k·pas, k ∈ [0, nb). T compté depuis le premier accès après le reset. reset = True : les
 # intervalles de la séquence de reset comptent (sinon ils sont ignorés, cf. le comparateur).
@@ -378,6 +569,14 @@ PROGRAMS = [
     ("mixed", prog_mixed, {}),
     ("exceptions", prog_exceptions, {}),
     ("rmw_long", prog_rmw_long, {}),
+    ("ea_move_w", prog_ea_move_w, {}),
+    ("ea_move_l", prog_ea_move_l, {}),
+    ("ea_alu", prog_ea_alu, {}),
+    ("ea_alu_mem", prog_ea_alu_mem, {}),
+    ("ea_unary", prog_ea_unary, {}),
+    ("flow", prog_flow, {}),
+    ("movem", prog_movem, {}),
+    ("misc_extra", prog_misc_extra, {}),
     ("trace", prog_trace, {}),
     ("tas", prog_tas, {}),
     ("irq_nop", prog_irq_nop, {"irq": [(100, 5)], "sweep": (8, 1)}),
@@ -401,6 +600,8 @@ def build(name: str) -> bytes:
     image = bytearray(STACK)
     image[0:len(vec_bytes)] = vec_bytes
     image[CODE:CODE + len(code_bytes)] = code_bytes
+    # Cible de JSR abs de prog_flow : un RTS à une adresse fixe.
+    image[0x1E00:0x1E02] = bytes.fromhex("4E75")
     assert CODE + len(code_bytes) < DATA, ("code déborde sur les données", name)
     # Données : motif non nul, pour que les lectures racontent quelque chose.
     for i in range(DATA, DATA + 0x200):
