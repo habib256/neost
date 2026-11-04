@@ -19,12 +19,14 @@ l'ordre inverse. Version courante : **0.6.2**.
 
 ## Audit des fiches : YM2149, WD1772, ACIA, et empreinte d'état (2026-11-04)
 
+- **Passes tenues au joystick** : 49 disques sur ST, 63 sur STE, 61 sur Mega STE, sans plantage propre à NeoST aux écrans vus. Sur Mega STE, la comparaison est plus bruitée : le TOS 2.06 démarre ~170 trames plus tard que sous Hatari, qui patche sa somme de contrôle.
 - **`tools/run_game_replay.py`** : quatre parties jouées contre Hatari, Buggy Boy, Lemmings, Chase HQ, Flying Shark, sous 0,5 % à toutes les trames relevées. Sur Buggy Boy, la course entière est identique à 0,0 %, accident compris. Palier `full`, SKIP sans Pillow ni disques.
 - **Trois puces de plus confrontées à leur fiche**, commentaires seuls : YM2149, WD1772, MC6850. Leurs écarts sont marqués `⚠ [B]` sur place.
 - **WD1772, six points de fiche corrigés** : Restore (DR et sens), Seek Error selon V, STEP sortant en piste 0, $Dx au repos, bit CRC d'un ID faux. Le test : 80 disques joués, images identiques avant et après. Aucun logiciel du catalogue n'en dépend, donc ce sont des preuves de fiche.
 - **ACIA, IRQ tenue haute pendant le master reset** : fiche et RTL d'accord, Hatari la laisse lever sous `CR=%x01xxx11`. 80 disques joués, images identiques.
 - **ACIA, RDRF après overrun** : la lecture à la lettre de la fiche bloque cinq jeux. Essayée puis retirée, consignée dans `docs/REFERENCE_LADDER.md`.
 - **Filtre C10 du STF** : il coupe maintenant à 7,7 et 2,1 kHz, les valeurs du circuit. Les coefficients d'Hatari sont calculés pour 44,1 kHz et appliqués à 250 kHz, soit 43 et 11 kHz. Le STF sonne donc moins clair. Non écouté sur machine réelle.
+- Le test `tests/ym_c10_noise_logic.cpp` garde les deux : un ton à 10,4 kHz sort à 36 % de son amplitude sous C10.
 - **Bruit du YM à R6 = 0** : égal à R6 = 1, comme Hatari dit l'avoir mesuré. Son code tirait le LFSR 2× trop vite.
 - **`--state-hash-every N`** hache l'état complet. `tools/run_determinism.py` vérifie deux passes et une reprise de save-state, au palier `fast`. Il a fait figer l'horloge de l'UltraSatan, seule date hôte restée dans l'état.
 - **`tools/classify_selftests.py`** lit l'échelon que chaque test de logique déclare.

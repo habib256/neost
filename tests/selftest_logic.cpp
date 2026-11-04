@@ -151,6 +151,7 @@ int testMfpMmioDecode(); // pairs fautifs, mots partiels et impairs void MFP
 bool testPsgOddWrite(); // ombres impaires PSG selon largeur du Bus
 int testDmaSoundMmioState(); // octet FF8920 conservé dans les sauvegardes
 bool testPsgReset(); // image des registres et silence après reset PSG
+bool testYmC10Noise(); // filtre C10 aux coupures du circuit, bruit R6=0 égal à R6=1
 int testBlitterRmw(); // atomicité TAS devant une échéance blitter
 int testBlitterShareGap(); // tranches du blitter selon l'instruction du CPU (banc stBlitter)
 int testSteCmapSlot(); // $FF8920-3F attend le créneau de la RAM sur STE (netlist ST-4081)
@@ -2905,6 +2906,7 @@ int main() {
     if (testPsgOddWrite()) ++g_ok; else ++g_fail;
     if (const int failures = testDmaSoundMmioState()) g_fail += failures; else ++g_ok;
     if (testPsgReset()) ++g_ok; else ++g_fail;
+    if (testYmC10Noise()) ++g_ok; else ++g_fail;
     if (const int failures = testBlitterRmw()) g_fail += failures; else ++g_ok;
     if (const int failures = testBlitterShareGap()) g_fail += failures; else ++g_ok;
     if (const int failures = testSteCmapSlot()) g_fail += failures; else ++g_ok;
