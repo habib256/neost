@@ -29,6 +29,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `run_hatari_suite.py`, `cycles`, `blitter`, `cpu`, `gemdos` (4) | `hatari` | Aucun readme ne donne la provenance de l'attendu. |
 | `run_spec512_truth.py` (13 images, ST et STE) | `rom` | De vraies images Spectrum 512 par le vrai visualiseur, contre la formule du format, sans aucun émulateur : 0 pixel faux. Juge la date des écritures palette, à 4 pixels près. |
 | `run_wsdetect.py` (7 cas, ST WS1 à WS4, Mega ST, STE, Mega STE) | `rom` | Le détecteur de Troed/SYNC compose une ligne de 4 bascules et lit ce qu'elle consomme : 162, 54, 206, 204 et 180 octets, sans aucun émulateur. Juge la grille de la GLUE, les dates d'écriture et le compteur. Pas de relevé de ce disque sur machine réelle au dépôt. |
+| `run_sting_boot.py` | `rom` | Le vrai pilote `ENEC.STX` charge et active le port sur la NE2000 de NeoST, sans réseau. |
 | `run_megaste_diag.py` (suite Q, 12/12) | `rom` | Le diagnostic Field Service prouve le contrat attendu par le logiciel, pas le silicium. |
 | `run_timing_oracle.py`, `run_megaste_bus_oracle.py` | `hatari` | |
 | `run_game_replay.py` | `hatari` | Des parties jouées au joystick, mêmes masques des deux côtés, à l'image près. Hors paliers : Pillow et disques privés requis, à lancer à la main. |

@@ -152,6 +152,9 @@ FAST = [
     # Détecteur de wakestate de Troed : longueur d'une ligne composée, sans Hatari ni disque privé.
     ("WSDETECT (Troed/SYNC : longueur de ligne par wakestate et par machine)",
      [sys.executable, str(TOOLS / "run_wsdetect.py")]),
+    # Le vrai pilote ENEC.STX sur la NE2000, sans réseau.
+    ("STinG + ENEC.STX (le vrai pilote trouve la NE2000, hors réseau)",
+     [sys.executable, str(TOOLS / "run_sting_boot.py")]),
     # Empreinte de l'état complet : deux passes et une reprise de save-state, mêmes empreintes.
     ("Déterminisme de l'état complet (empreintes, reprise de save-state)",
      [sys.executable, str(TOOLS / "run_determinism.py")]),

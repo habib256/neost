@@ -9,6 +9,7 @@ l'ordre inverse. Version courante : **0.6.2**.
 ## WSDETECT : un juge de la GLUE qui ne doit rien à Hatari (2026-11-04)
 
 - **`tools/run_wsdetect.py`**, palier `fast` : le détecteur de wakestate de Troed/SYNC, disque CC0, sous EmuTOS. NeoST rend les longueurs que son source annonce : 162, 54, 206, 204 octets en WS1 à WS4, 180 sur STE et Mega STE, 206 sur Mega ST. Aucun relevé de ce disque sur machine réelle n'est au dépôt.
+- **`tools/run_sting_boot.py`**, palier `fast` : STinG 1.26 et le vrai `ENEC.STX` chargent et activent le port sur la NE2000, sans réseau. En `--slirp-restricted`, 279 paquets sortent sans perte et la résolution échoue faute de réseau, comme prévu. Le GET HTTP réel n'a pas été rejoué.
 
 ## MFP confronté à ses fiches, et parties jouées au joystick (2026-11-04)
 
