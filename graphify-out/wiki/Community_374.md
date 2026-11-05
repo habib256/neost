@@ -1,30 +1,31 @@
 # Community 374
 
-> 6 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **** (9 connections) — `src/io/StePads.hpp`
-- **DOWN** (1 connections) — `src/io/StePads.hpp`
-- **FIRE** (1 connections) — `src/io/StePads.hpp`
-- **LEFT** (1 connections) — `src/io/StePads.hpp`
-- **RIGHT** (1 connections) — `src/io/StePads.hpp`
-- **UP** (1 connections) — `src/io/StePads.hpp`
+- **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
+- **.didExecute()** (7 connections) — `src/core/Cpu68k.cpp`
+- **Mode** (2 connections)
+- **Size** (2 connections)
+- **trapObserver** (2 connections) — `src/core/Cpu68k.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 106](Community_106.md) (1 shared connections)
+- [Community 64](Community_64.md) (5 shared connections)
+- [Community 0](Community_0.md) (2 shared connections)
+- [Community 84](Community_84.md) (2 shared connections)
+- [Community 349](Community_349.md) (1 shared connections)
+- [Community 66](Community_66.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/StePads.hpp`
+- `src/core/Cpu68k.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 15 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

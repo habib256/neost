@@ -1,34 +1,25 @@
 # Community 377
 
-> 8 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **testBlitterRmw()** (10 connections) — `tests/blitter_rmw_logic.cpp`
-- **Checks** (4 connections) — `tests/blitter_rmw_logic.cpp`
-- **.step()** (3 connections) — `tests/blitter_rmw_logic.cpp`
-- **.equal()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **main()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **.copyToOperand()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **count** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- **failures** (1 connections) — `tests/blitter_rmw_logic.cpp`
+- **.produceFrame()** (3 connections) — `src/audio/Audio.hpp`
+- **dmaGate_** (2 connections) — `src/audio/Audio.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 132](Community_132.md) (3 shared connections)
-- [Community 35](Community_35.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 182](Community_182.md) (1 shared connections)
+- [Community 61](Community_61.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/blitter_rmw_logic.cpp`
+- `src/audio/Audio.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (83%)
-- INFERRED: 3 (17%)
+- EXTRACTED: 3 (75%)
+- INFERRED: 1 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

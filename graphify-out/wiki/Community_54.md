@@ -1,48 +1,57 @@
 # Community 54
 
-> 16 nodes
+> 29 nodes
 
 ## Key Concepts
 
-- **fuzz_diskimage.cpp** (19 connections) — `tests/fuzz_diskimage.cpp`
-- **StxImage.hpp** (10 connections) — `src/io/StxImage.hpp`
-- **Rng** (6 connections) — `tests/fuzz_diskimage.cpp`
-- **main()** (6 connections) — `tests/fuzz_diskimage.cpp`
-- **repairIpfCrcs()** (6 connections) — `tests/fuzz_diskimage.cpp`
-- **seedCorpus()** (6 connections) — `tests/fuzz_diskimage.cpp`
-- **mutate()** (5 connections) — `tests/fuzz_diskimage.cpp`
-- **fail()** (4 connections) — `tests/fuzz_diskimage.cpp`
-- **DiskImageCodec.hpp** (4 connections) — `src/io/DiskImageCodec.hpp`
-- **.below()** (3 connections) — `tests/fuzz_diskimage.cpp`
-- **wrBe32()** (3 connections) — `tests/fuzz_diskimage.cpp`
-- **rdBe32()** (2 connections) — `tests/fuzz_diskimage.cpp`
-- **size_t** (2 connections)
-- **.next()** (1 connections) — `tests/fuzz_diskimage.cpp`
-- **.Rng()** (1 connections) — `tests/fuzz_diskimage.cpp`
-- **s** (1 connections) — `tests/fuzz_diskimage.cpp`
+- **run_gstmcu_bench.py** (19 connections) — `tools/run_gstmcu_bench.py`
+- **make_stcpu_raster.py** (10 connections) — `tools/make_stcpu_raster.py`
+- **appimage_ls.py** (8 connections) — `tools/appimage_ls.py`
+- **build()** (7 connections) — `tools/make_stcpu_raster.py`
+- **names_of()** (6 connections) — `tools/appimage_ls.py`
+- **main()** (6 connections) — `tools/run_gstmcu_bench.py`
+- **write_ref()** (6 connections) — `tools/run_gstmcu_bench.py`
+- **make_rtl_screen.py** (6 connections) — `tools/make_rtl_screen.py`
+- **metadata()** (5 connections) — `tools/appimage_ls.py`
+- **screen_words()** (5 connections) — `tools/make_rtl_screen.py`
+- **analyse()** (5 connections) — `tools/run_gstmcu_bench.py`
+- **make_screen()** (5 connections) — `tools/run_gstmcu_bench.py`
+- **superblock()** (4 connections) — `tools/appimage_ls.py`
+- **zlib** (4 connections)
+- **boot_disk()** (3 connections) — `tools/make_rtl_screen.py`
+- **build()** (3 connections) — `tools/run_gstmcu_bench.py`
+- **falling()** (3 connections) — `tools/run_gstmcu_bench.py`
+- **physical()** (3 connections) — `tools/run_gstmcu_bench.py`
+- **main()** (2 connections) — `tools/appimage_ls.py`
+- **check_dtack()** (2 connections) — `tools/run_gstmcu_bench.py`
+- **rising()** (2 connections) — `tools/run_gstmcu_bench.py`
+- **w()** (1 connections) — `tools/make_rtl_screen.py`
+- **runs()** (1 connections) — `tools/run_gstmcu_bench.py`
+- **Path** (1 connections)
+- **Offset du superbloc squashfs 4.0/gzip, ou None.** (1 connections) — `tools/appimage_ls.py`
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 256](Community_256.md) (9 shared connections)
-- [Community 4](Community_4.md) (6 shared connections)
-- [Community 170](Community_170.md) (5 shared connections)
-- [Community 9](Community_9.md) (3 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 153](Community_153.md) (1 shared connections)
-- [Community 63](Community_63.md) (1 shared connections)
-- [Community 208](Community_208.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
+- [Community 3](Community_3.md) (11 shared connections)
+- [Community 18](Community_18.md) (6 shared connections)
+- [Community 146](Community_146.md) (5 shared connections)
+- [Community 248](Community_248.md) (4 shared connections)
+- [Community 34](Community_34.md) (2 shared connections)
+- [Community 55](Community_55.md) (1 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/DiskImageCodec.hpp`
-- `src/io/StxImage.hpp`
-- `tests/fuzz_diskimage.cpp`
+- `tools/appimage_ls.py`
+- `tools/make_rtl_screen.py`
+- `tools/make_stcpu_raster.py`
+- `tools/run_gstmcu_bench.py`
 
 ## Audit Trail
 
-- EXTRACTED: 53 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 76 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

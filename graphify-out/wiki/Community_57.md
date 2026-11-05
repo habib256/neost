@@ -1,11 +1,12 @@
 # Community 57
 
-> 39 nodes
+> 50 nodes
 
 ## Key Concepts
 
 - **MoiraTypes.h** (34 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **Mode** (25 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Model** (10 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **InstrInfo** (9 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **IrqMode** (6 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **Core** (4 connections) — `extern/moira/Moira/MoiraTypes.h`
@@ -14,6 +15,7 @@
 - **AddrSpace** (3 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **Moira::execChkCmp2()** (3 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **isRegMode()** (3 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **optional** (3 connections)
 - **setBusLock()** (2 connections) — `extern/moira/Moira/Moira.h`
 - **isDspMode()** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **isIdxMode()** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
@@ -27,17 +29,15 @@
 - **Size** (1 connections)
 - **I** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **AUTO** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **SPURIOUS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **UNINITIALIZED** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- *... and 14 more nodes in this community*
+- *... and 25 more nodes in this community*
 
 ## Relationships
 
 - [Community 33](Community_33.md) (6 shared connections)
 - [Community 60](Community_60.md) (5 shared connections)
-- [Community 99](Community_99.md) (4 shared connections)
 - [Community 109](Community_109.md) (3 shared connections)
 - [Community 16](Community_16.md) (3 shared connections)
+- [Community 99](Community_99.md) (3 shared connections)
 - [Community 160](Community_160.md) (3 shared connections)
 - [Community 0](Community_0.md) (2 shared connections)
 - [Community 56](Community_56.md) (2 shared connections)
@@ -54,8 +54,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 80 (94%)
-- INFERRED: 5 (6%)
+- EXTRACTED: 91 (95%)
+- INFERRED: 5 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

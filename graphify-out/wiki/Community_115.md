@@ -1,50 +1,38 @@
 # Community 115
 
-> 22 nodes
+> 15 nodes
 
 ## Key Concepts
 
-- **run_gstmcu_bench.py** (19 connections) — `tools/run_gstmcu_bench.py`
-- **appimage_ls.py** (8 connections) — `tools/appimage_ls.py`
-- **names_of()** (6 connections) — `tools/appimage_ls.py`
-- **main()** (6 connections) — `tools/run_gstmcu_bench.py`
-- **write_ref()** (6 connections) — `tools/run_gstmcu_bench.py`
-- **metadata()** (5 connections) — `tools/appimage_ls.py`
-- **analyse()** (5 connections) — `tools/run_gstmcu_bench.py`
-- **make_screen()** (5 connections) — `tools/run_gstmcu_bench.py`
-- **superblock()** (4 connections) — `tools/appimage_ls.py`
-- **zlib** (4 connections)
-- **build()** (3 connections) — `tools/run_gstmcu_bench.py`
-- **falling()** (3 connections) — `tools/run_gstmcu_bench.py`
-- **physical()** (3 connections) — `tools/run_gstmcu_bench.py`
-- **main()** (2 connections) — `tools/appimage_ls.py`
-- **check_dtack()** (2 connections) — `tools/run_gstmcu_bench.py`
-- **rising()** (2 connections) — `tools/run_gstmcu_bench.py`
-- **runs()** (1 connections) — `tools/run_gstmcu_bench.py`
-- **Path** (1 connections)
-- **Offset du superbloc squashfs 4.0/gzip, ou None.** (1 connections) — `tools/appimage_ls.py`
-- **Concatène les blocs de métadonnées squashfs de [start, end). Format d'un bloc :…** (1 connections) — `tools/appimage_ls.py`
-- **Valeur qui sort des DAC : sur STE, le bit 3 de chaque composante est le bit de…** (1 connections) — `tools/run_gstmcu_bench.py`
-- **Décode la VRAM en index de couleur, sans passer par le modèle.** (1 connections) — `tools/run_gstmcu_bench.py`
+- **StopRig** (13 connections) — `tests/scc_rx_stop_logic.cpp`
+- **testSccRxStop()** (10 connections) — `tests/scc_rx_stop_logic.cpp`
+- **scc_rx_stop_logic.cpp** (6 connections) — `tests/scc_rx_stop_logic.cpp`
+- **.write()** (3 connections) — `tests/scc_rx_stop_logic.cpp`
+- **main()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
+- **.pop()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
+- **.status()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
+- **.StopRig()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
+- **.transmit()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
+- **Scc** (1 connections)
+- **Scheduler** (1 connections)
+- **channel** (1 connections) — `tests/scc_rx_stop_logic.cpp`
+- **output** (1 connections) — `tests/scc_rx_stop_logic.cpp`
+- **scc** (1 connections) — `tests/scc_rx_stop_logic.cpp`
+- **scheduler** (1 connections) — `tests/scc_rx_stop_logic.cpp`
 
 ## Relationships
 
-- [Community 3](Community_3.md) (7 shared connections)
-- [Community 18](Community_18.md) (4 shared connections)
-- [Community 146](Community_146.md) (3 shared connections)
-- [Community 34](Community_34.md) (2 shared connections)
-- [Community 248](Community_248.md) (2 shared connections)
-- [Community 55](Community_55.md) (1 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
 
 ## Source Files
 
-- `tools/appimage_ls.py`
-- `tools/run_gstmcu_bench.py`
+- `tests/scc_rx_stop_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 54 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 26 (93%)
+- INFERRED: 2 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

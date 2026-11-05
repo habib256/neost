@@ -1,14 +1,15 @@
 # Community 5
 
-> 108 nodes
+> 109 nodes
 
 ## Key Concepts
 
 - **Shifter** (175 connections) — `src/core/Shifter.hpp`
 - **function** (5 connections)
-- **.lineStoppedOver()** (3 connections) — `src/core/Shifter.hpp`
+- **.glueSelfTest()** (4 connections) — `src/core/Shifter.hpp`
 - **.liveTop()** (3 connections) — `src/core/Shifter.hpp`
 - **.snapLiveTop()** (3 connections) — `src/core/Shifter.hpp`
+- **P1 — Registres vidéo STE : 2 restes** (3 connections) — `docs/CYCLE_ACCURACY.md`
 - **.liveHeight()** (2 connections) — `src/core/Shifter.hpp`
 - **.setBeamClock()** (2 connections) — `src/core/Shifter.hpp`
 - **.setHblShorten()** (2 connections) — `src/core/Shifter.hpp`
@@ -28,32 +29,32 @@
 - **.snapBordersOpen()** (1 connections) — `src/core/Shifter.hpp`
 - **.snapSideBordersOpen()** (1 connections) — `src/core/Shifter.hpp`
 - **.snapSideTrickLines()** (1 connections) — `src/core/Shifter.hpp`
-- **.snapVertBordersOpen()** (1 connections) — `src/core/Shifter.hpp`
-- *... and 83 more nodes in this community*
+- *... and 84 more nodes in this community*
 
 ## Relationships
 
-- [Community 88](Community_88.md) (29 shared connections)
-- [Community 288](Community_288.md) (12 shared connections)
+- [Community 88](Community_88.md) (25 shared connections)
+- [Community 359](Community_359.md) (18 shared connections)
 - [Community 22](Community_22.md) (9 shared connections)
-- [Community 359](Community_359.md) (5 shared connections)
-- [Community 173](Community_173.md) (5 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
+- [Community 288](Community_288.md) (6 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 243](Community_243.md) (2 shared connections)
 - [Community 10](Community_10.md) (2 shared connections)
-- [Community 67](Community_67.md) (2 shared connections)
+- [Community 124](Community_124.md) (2 shared connections)
+- [Community 205](Community_205.md) (2 shared connections)
 - [Community 328](Community_328.md) (1 shared connections)
-- [Community 393](Community_393.md) (1 shared connections)
-- [Community 411](Community_411.md) (1 shared connections)
 - [Community 235](Community_235.md) (1 shared connections)
+- [Community 275](Community_275.md) (1 shared connections)
 
 ## Source Files
 
+- `docs/CYCLE_ACCURACY.md`
 - `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 183 (99%)
-- INFERRED: 2 (1%)
+- EXTRACTED: 184 (98%)
+- INFERRED: 4 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

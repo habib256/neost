@@ -1,39 +1,37 @@
 # Community 230
 
-> 12 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **AudioPacer** (12 connections) — `src/core/Pacing.hpp`
-- **testPacing()** (11 connections) — `tests/selftest_logic.cpp`
-- **.applyMasterVolume()** (2 connections) — `src/core/Pacing.hpp`
-- **.clampStereo()** (2 connections) — `src/core/Pacing.hpp`
-- **.samplesForFrame()** (2 connections) — `src/core/Pacing.hpp`
-- **.volumeSmoothed()** (2 connections) — `src/core/Pacing.hpp`
-- **frameNanos()** (2 connections) — `src/core/Pacing.hpp`
-- **.carry()** (1 connections) — `src/core/Pacing.hpp`
-- **.reset()** (1 connections) — `src/core/Pacing.hpp`
-- **kMaxAdjust** (1 connections) — `src/core/Pacing.hpp`
-- **kServoDivisor** (1 connections) — `src/core/Pacing.hpp`
-- **volSmooth_** (1 connections) — `src/core/Pacing.hpp`
+- **Mode borne (kiosk)** (9 connections) — `docs/KIOSK.md`
+- **.state()** (4 connections) — `src/io/CartridgeKey.hpp`
+- **Dossiers ROM** (2 connections) — `docs/KIOSK.md`
+- **Raccourcis** (2 connections) — `docs/KIOSK.md`
+- **Borne Raspberry Pi** (1 connections) — `docs/KIOSK.md`
+- **Clavier & souris (SELECT manette, ou F12)** (1 connections) — `docs/KIOSK.md`
+- **Démarrage direct sur un jeu (attract)** (1 connections) — `docs/KIOSK.md`
+- **Joysticks** (1 connections) — `docs/KIOSK.md`
+- **Menu in-game (START manette, ou F9)** (1 connections) — `docs/KIOSK.md`
+- **Zoom adaptatif (défaut, bascule F10)** (1 connections) — `docs/KIOSK.md`
 
 ## Relationships
 
-- [Community 35](Community_35.md) (5 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 61](Community_61.md) (1 shared connections)
-- [Community 58](Community_58.md) (1 shared connections)
-- [Community 245](Community_245.md) (1 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 124](Community_124.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Pacing.hpp`
-- `tests/selftest_logic.cpp`
+- `docs/KIOSK.md`
+- `src/io/CartridgeKey.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (71%)
-- INFERRED: 7 (29%)
+- EXTRACTED: 10 (71%)
+- INFERRED: 4 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

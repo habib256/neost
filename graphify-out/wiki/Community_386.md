@@ -1,6 +1,6 @@
 # Community 386
 
-> 24 nodes
+> 25 nodes
 
 ## Key Concepts
 
@@ -16,6 +16,7 @@
 - **.mmuConfNow()** (3 connections) — `src/core/Bus.hpp`
 - **mmuFastLimit_** (3 connections) — `src/core/Bus.hpp`
 - **.write8()** (3 connections) — `src/core/Bus.hpp`
+- **Techniques vérifiées** (3 connections) — `DEV.md`
 - **2. Le profil de départ (boot TOS 1.62, 300 trames)** (3 connections) — `docs/PERFORMANCE.md`
 - **3.2 Bus — cache du décodage MMU et chemin rapide en ligne** (3 connections) — `docs/PERFORMANCE.md`
 - **mmuXlatSTE()** (2 connections) — `src/core/Bus.cpp`
@@ -33,13 +34,13 @@
 
 - [Community 30](Community_30.md) (8 shared connections)
 - [Community 14](Community_14.md) (7 shared connections)
+- [Community 203](Community_203.md) (6 shared connections)
 - [Community 200](Community_200.md) (5 shared connections)
-- [Community 203](Community_203.md) (5 shared connections)
 - [Community 39](Community_39.md) (3 shared connections)
 - [Community 202](Community_202.md) (2 shared connections)
+- [Community 64](Community_64.md) (2 shared connections)
 - [Community 148](Community_148.md) (1 shared connections)
 - [Community 10](Community_10.md) (1 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
 - [Community 24](Community_24.md) (1 shared connections)
 - [Community 173](Community_173.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
@@ -47,6 +48,7 @@
 ## Source Files
 
 - `CHANGELOG.md`
+- `DEV.md`
 - `docs/IMPLEMENTED.md`
 - `docs/PERFORMANCE.md`
 - `src/core/Bus.cpp`
@@ -54,8 +56,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 45 (64%)
-- INFERRED: 25 (36%)
+- EXTRACTED: 46 (64%)
+- INFERRED: 26 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

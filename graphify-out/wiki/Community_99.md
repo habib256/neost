@@ -1,11 +1,10 @@
 # Community 99
 
-> 54 nodes
+> 37 nodes
 
 ## Key Concepts
 
 - **Moira.h** (32 connections) — `extern/moira/Moira/Moira.h`
-- **M68kException** (23 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **u16** (11 connections)
 - **.getSR()** (10 connections) — `extern/moira/Moira/Moira.h`
 - **Moira::execInterrupt()** (10 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
@@ -29,21 +28,22 @@
 - **didJumpToVector()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **didReachCatchpoint()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **iackSyncAfter()** (3 connections) — `extern/moira/Moira/Moira.h`
-- *... and 29 more nodes in this community*
+- **iackSyncBefore()** (3 connections) — `extern/moira/Moira/Moira.h`
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
 - [Community 16](Community_16.md) (21 shared connections)
-- [Community 40](Community_40.md) (12 shared connections)
+- [Community 40](Community_40.md) (11 shared connections)
 - [Community 60](Community_60.md) (7 shared connections)
 - [Community 56](Community_56.md) (7 shared connections)
 - [Community 333](Community_333.md) (5 shared connections)
-- [Community 57](Community_57.md) (4 shared connections)
-- [Community 349](Community_349.md) (2 shared connections)
+- [Community 84](Community_84.md) (4 shared connections)
+- [Community 57](Community_57.md) (3 shared connections)
 - [Community 0](Community_0.md) (2 shared connections)
 - [Community 64](Community_64.md) (2 shared connections)
 - [Community 276](Community_276.md) (2 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 243](Community_243.md) (1 shared connections)
 - [Community 27](Community_27.md) (1 shared connections)
 
 ## Source Files
@@ -55,8 +55,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 111 (71%)
-- INFERRED: 45 (29%)
+- EXTRACTED: 92 (67%)
+- INFERRED: 45 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

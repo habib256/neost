@@ -1,23 +1,26 @@
 # Community 397
 
-> 2 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **.serialize()** (2 connections) — `src/core/Blitter.hpp`
-- **StateArchive** (1 connections)
+- **.write8()** (5 connections) — `src/core/YM2149.hpp`
+- **cycleClock_** (2 connections) — `src/core/YM2149.hpp`
+- **portAsink_** (2 connections) — `src/core/YM2149.hpp`
+- **portBsink_** (2 connections) — `src/core/YM2149.hpp`
+- **printerSink_** (2 connections) — `src/core/YM2149.hpp`
 
 ## Relationships
 
-- [Community 37](Community_37.md) (1 shared connections)
+- [Community 28](Community_28.md) (5 shared connections)
 
 ## Source Files
 
-- `src/core/Blitter.hpp`
+- `src/core/YM2149.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
+- EXTRACTED: 9 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -534,17 +534,34 @@ Seule l'image `[cr Elite]` reste requise dans la ludothèque.
 `vroom_elite_ste` couvre uniquement
 la sortie d'intro ; `vroom_elite_ste_race` ajoute le menu, la grille, l'accélération
 et le braquage sous TOS 1.62, avec contrôle snapshot des scènes inspectées.
-Le parcours natif Elite de `tests/replays/vroom_laps.json` franchit
-un tour complet (« Lap 1 »), puis continue à rouler. Rejoué depuis le reset
-sur 15 401 trames, il retrouve exactement sa capture inspectée,
+`vroom_elite_tos206_ste_race` couvre ces mêmes étapes sous TOS 2.06 UK,
+avec des entrées souris/joystick décalées de 2224 trames ; ses quatre
+captures passent face à Hatari à 0,02–0,18 % (seuil 0,5 %).
+Les deux parcours natifs Elite de `tests/replays/vroom_laps.json`
+franchissent un tour complet (« Lap 1 »), puis continuent à rouler.
+Rejoués depuis le reset sur **15 401 trames sous 1.62** et **18 001 sous
+2.06**, ils retrouvent exactement leurs captures inspectées,
 sans halt ni modification des médias :
 
 ```sh
 python3 tools/run_game_replay.py --manifest tests/replays/vroom_laps.json
 ```
 
-C'est une garde **snapshot**, comptée séparément des comparaisons Hatari.
-Elle ne ferme pas les défauts ci-dessous.
+Ce sont des gardes **snapshot**, comptées séparément des comparaisons Hatari.
+Elles ne ferment pas les défauts ci-dessous.
+
+Elite sous 2.06 : la trame d'intro 8500 rayée se rétablit dès 8501,
+sans nouvelle entrée. Hatari reproduit aussi cette séquence : 20 occurrences
+sur 1 000 trames sans entrée hôte, dont 8054 (capture à VBL 8055).
+La sonde `tools/probe_vroom_intro_glue.py` retrouve les mêmes 230/184 octets
+avec GSTMCU et NeoST ; la datation sur matériel reste à mesurer.
+Le Game Over à zéro point affiche deux bombes
+dans les deux émulateurs : les données de scores de ce média sont invalides.
+Le premier témoin Hatari marquait 60 points, ce qui masquait le défaut.
+Les quatre diagnostics de
+`tests/replays/vroom_elite_tos206_diagnostics.json` se sélectionnent par
+`--manifest` et `--only` : ils reproduisent ces états, sans valider la
+compatibilité. Mécanisme des bordures et recettes dans CASE_STUDIES.md.
 
 L'image sans suffixe a été retirée le 2026-11-05 à la demande du mainteneur.
 Ses six scénarios sont archivés dans `tests/replays/archive/vroom_retired.json`.

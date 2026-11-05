@@ -1,11 +1,10 @@
 # Community 140
 
-> 20 nodes
+> 19 nodes
 
 ## Key Concepts
 
 - **YM2149.cpp** (24 connections) — `src/core/YM2149.cpp`
-- **Audio** (10 connections) — `docs/IMPLEMENTED.md`
 - **.synthesizeFrame()** (9 connections) — `src/core/YM2149.hpp`
 - **.doSamples250()** (7 connections) — `src/core/YM2149.hpp`
 - **.renderHost()** (7 connections) — `src/core/YM2149.hpp`
@@ -27,30 +26,27 @@
 
 ## Relationships
 
-- [Community 28](Community_28.md) (13 shared connections)
-- [Community 13](Community_13.md) (4 shared connections)
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 173](Community_173.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 67](Community_67.md) (2 shared connections)
-- [Community 152](Community_152.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
+- [Community 28](Community_28.md) (12 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 83](Community_83.md) (2 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 409](Community_409.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 383](Community_383.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 368](Community_368.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/IMPLEMENTED.md`
 - `src/core/YM2149.cpp`
 - `src/core/YM2149.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 43 (58%)
-- INFERRED: 31 (42%)
+- EXTRACTED: 42 (64%)
+- INFERRED: 24 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

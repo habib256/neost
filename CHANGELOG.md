@@ -6,6 +6,77 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Vroom Elite : intro rayée reproduite dans Hatari et sonde GLUE (2026-11-05)
+
+La trame rayée n'est plus un écart démontré propre à NeoST. Un balayage
+d'Hatari sur 1 000 trames sans entrée retrouve 20 fois la même séquence :
+basculement 60 Hz à 33:500, retour à 50 Hz à 34:40, compteur avancé de
+deux octets, attente du stabilisateur raccourcie de quatre cycles. Les
+captures aux VBL 8054/8055/8056 montrent l'intro lisible, rayée, puis lisible.
+
+La sonde `probe_vroom_intro_glue.py`, sans ROM ni données du jeu, rejoue
+les écritures dans GSTMCU et NeoST : 160/230 octets en séquence normale,
+162/184 en séquence tardive. Les limites du modèle et l'écart connu de
+quatre cycles sur la fin DE normale sont conservés. Aucun recalage du
+cœur ni modification des médias ; les mesures d'entrée VBL et de fréquence
+du défaut sur STE réel restent nécessaires pour une conclusion matérielle.
+
+Validation : sonde GLUE conforme aux observations, diagnostics intro
+rayée/rétablie et Game Over à zéro point reproduits. Les bancs et les
+56 étalons pixel du palier `full` passent. Le test GUI reste bloqué dans
+le sandbox macOS ; interrompu seul, il fait échouer l'orchestrateur. Le
+même boot de 400 trames et le contrôle de capture passent hors sandbox.
+Contrôles des verdicts de rejeu verts ; Graphify et wiki rafraîchis sans API.
+
+## Vroom Elite : cause des bombes après Game Over (2026-11-05)
+
+Le plantage à zéro point vient des données de scores de l'image Elite.
+Le chargeur copie un secteur brut dans le classement ; le jeu saute sa
+mise à jour si le score est nul, puis utilise une valeur invalide comme
+indice de glyphe et écrit à `$FFC97A`. Hatari avait marqué 60 points dans
+le premier témoin, ce qui masquait cette chaîne. Une course accélérant
+sans braquer reproduit aussi les deux bombes dans Hatari, sans modifier
+le disque ni la RAM du jeu. Les bandes diffèrent entre émulateurs : la
+nouvelle garde reste un diagnostic snapshot natif, hors compatibilité.
+
+Le diagnostic, CASE_STUDIES, TEST_SOFTWARE et le suivi des bugs sont
+corrigés. Aucun changement du cœur n'est justifié par ce cas ; le défaut
+d'intro reste ouvert. Réinitialiser directement le secteur sur une copie
+jetable casse aussi le chargement : aucun correctif de média n'est livré,
+et l'image originale reste intacte.
+
+## Vroom Elite : intro qualifiée et course couverte sous TOS 2.06 (2026-11-05)
+
+Le parcours STE 1 Mo sous TOS 2.06 UK atteint le menu JOYSTICK/AUTO,
+la grille puis la conduite : quatre captures à 0,02–0,18 % d'Hatari,
+fenêtre ±40 et seuil 0,5 % conservés. Les entrées souris/joystick sont
+décalées de 2224 trames par rapport au parcours 1.62 ; sans ce décalage,
+la démonstration automatique pouvait être prise pour une partie.
+Un pilotage adapté franchit un tour complet, puis ses commandes figées
+reproduisent exactement la capture finale depuis reset, sur 18 001 trames.
+Le nouveau snapshot complète celui d'Elite sous 1.62.
+
+L'intro rayée est isolée à la seule trame 8500 parmi 61 captures ; elle
+se rétablit dès 8501 sans nouvelle entrée. Les traces localisent des
+écritures de bordure avancées de quatre cycles, un retrait droit manqué
+et 184 octets consommés par ligne au lieu de 230. Le mécanisme est établi
+dans NeoST, sa conformité matérielle reste inconnue. Le cœur est inchangé.
+
+Un défaut distinct est conservé : l'ancien pilotage transposé finit en
+Game Over, puis NeoST affiche deux bombes tandis qu'Hatari atteint les
+scores. Trois diagnostics snapshot explicites gardent cet échec, la trame
+rayée et son rétablissement ; ils ne comptent pas comme compatibilité.
+Les médias et les références matérielles/RTL restent inchangés.
+
+Validation : nouveau rejeu comparé, tour snapshot et trois diagnostics
+rejoués avec succès. Les bancs du palier `full` passent ; l'orchestrateur
+termine en échec sur le GUI bloqué par le sandbox macOS, puis le même boot
+de 400 trames et sa capture non uniforme passent hors sandbox. Le contrôle
+du comparateur, sauté faute de Pillow dans le Python système, passe dans
+l'environnement de test équipé, ainsi que les contrôles des verdicts de
+rejeu. Ancres et chiffres de documentation vérifiés ; Graphify et wiki
+régénérés localement, sans API.
+
 ## Vroom : conserver uniquement l'image Elite dans la ludothèque (2026-11-05)
 
 À la demande du mainteneur, l'image sans suffixe est supprimée de la

@@ -1,53 +1,33 @@
 # Community 245
 
-> 44 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **FdcRig** (17 connections) — `tests/selftest_logic.cpp`
-- **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
-- **IkbdRig** (11 connections) — `tests/selftest_logic.cpp`
-- **SndRig** (11 connections) — `tests/selftest_logic.cpp`
-- **.send()** (4 connections) — `tests/selftest_logic.cpp`
-- **Scheduler** (4 connections)
-- **.drain()** (3 connections) — `tests/selftest_logic.cpp`
-- **.run()** (3 connections) — `tests/selftest_logic.cpp`
-- **.counter()** (3 connections) — `tests/selftest_logic.cpp`
-- **Bus** (3 connections)
-- **.peek16()** (2 connections) — `tests/selftest_logic.cpp`
-- **.poke16()** (2 connections) — `tests/selftest_logic.cpp`
-- **.program()** (2 connections) — `tests/selftest_logic.cpp`
-- **.dmaAddr()** (2 connections) — `tests/selftest_logic.cpp`
-- **.setMode()** (2 connections) — `tests/selftest_logic.cpp`
-- **.settle()** (2 connections) — `tests/selftest_logic.cpp`
-- **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
-- **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
-- **Mfp** (2 connections)
-- **Le pixel : une écriture du CPU, la trame qui sort** (2 connections) — `docs/STCPU_BENCH.md`
-- **.BlitRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **.FdcRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **.IkbdRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **blit** (1 connections) — `tests/selftest_logic.cpp`
-- *... and 19 more nodes in this community*
+- **MegaSteTransferChecks** (11 connections) — `tools/test_timing_oracle.py`
+- **.valid()** (4 connections) — `tools/test_timing_oracle.py`
+- **.validate()** (4 connections) — `tools/test_timing_oracle.py`
+- **.test_lower_bounds_keep_blitter_at_bus_frequency()** (3 connections) — `tools/test_timing_oracle.py`
+- **.test_missing_sample_rejected()** (3 connections) — `tools/test_timing_oracle.py`
+- **.test_one_impossible_completion_or_irq_rejected()** (3 connections) — `tools/test_timing_oracle.py`
+- **.test_irq_while_busy_rejected_even_with_valid_counts_and_durations()** (2 connections) — `tools/test_timing_oracle.py`
+- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
+- **.test_iack_idle_keeps_cpu_clock_domain()** (1 connections) — `tools/test_timing_oracle.py`
+- **.test_iack_missing_or_wrong_domain_rejected()** (1 connections) — `tools/test_timing_oracle.py`
 
 ## Relationships
 
-- [Community 35](Community_35.md) (16 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
-- [Community 230](Community_230.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
+- [Community 207](Community_207.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/STCPU_BENCH.md`
-- `tests/selftest_logic.cpp`
+- `tools/test_timing_oracle.py`
 
 ## Audit Trail
 
-- EXTRACTED: 65 (97%)
-- INFERRED: 2 (3%)
+- EXTRACTED: 18 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -4,20 +4,21 @@
 
 ## Key Concepts
 
-- **A11 — l'oracle Hatari entre en CI, et sa première exécution trouve deux références non re-dérivables (2026-09-01)** (2 connections) — `CHANGELOG.md`
-- **Ce que la première exécution a trouvé** (1 connections) — `CHANGELOG.md`
+- **Mt32Synth** (3 connections) — `src/audio/Audio.hpp`
+- **.setMt32()** (2 connections) — `src/audio/Audio.hpp`
 
 ## Relationships
 
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 61](Community_61.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
+- `src/audio/Audio.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

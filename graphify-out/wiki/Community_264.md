@@ -4,27 +4,28 @@
 
 ## Key Concepts
 
-- **framebufferTexture2DCompat()** (4 connections) — `src/gui/CrtEffectStack.cpp`
-- **GLuint** (4 connections)
-- **bindFramebufferCompat()** (3 connections) — `src/gui/CrtEffectStack.cpp`
-- **deleteFramebuffersCompat()** (3 connections) — `src/gui/CrtEffectStack.cpp`
-- **genFramebuffersCompat()** (3 connections) — `src/gui/CrtEffectStack.cpp`
-- **GLenum** (3 connections)
-- **checkFramebufferStatusCompat()** (2 connections) — `src/gui/CrtEffectStack.cpp`
-- **GLsizei** (2 connections)
-- **GLint** (1 connections)
+- **Rig** (12 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.Rig()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **Ikbd** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **ikbd** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **live** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **mfp** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **scheduler** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
 
 ## Relationships
 
-- [Community 91](Community_91.md) (5 shared connections)
+- [Community 110](Community_110.md) (3 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/CrtEffectStack.cpp`
+- `tests/ikbd_sci_reset_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (100%)
+- EXTRACTED: 12 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

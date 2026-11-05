@@ -4,39 +4,27 @@
 
 ## Key Concepts
 
-- **compile()** (7 connections) — `src/android/main_android.cpp`
-- **Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)** (6 connections) — `docs/IMPLEMENTED.md`
-- **stScancode()** (5 connections) — `src/headless/main_headless.cpp`
-- **Headless : `--joy-at`, `--joy-script` et `--mouse-at` deviennent répétables (`OUTIL-1`) (2026-08-25)** (2 connections) — `CHANGELOG.md`
-- **Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05)** (2 connections) — `CHANGELOG.md`
-- **0. Démarrer en cinq commandes** (2 connections) — `docs/OPENDST.md`
-- **GLenum** (1 connections)
-- **GLuint** (1 connections)
+- **Server** (8 connections) — `tools/opendst_explore.py`
+- **.cmd()** (4 connections) — `tools/opendst_explore.py`
+- **.fields()** (3 connections) — `tools/opendst_explore.py`
+- **.close()** (2 connections) — `tools/opendst_explore.py`
+- **.tail()** (2 connections) — `tools/opendst_explore.py`
+- **.__init__()** (1 connections) — `tools/opendst_explore.py`
+- **Le serveur NeoST au bout d'un tuyau : une commande, une réponse.** (1 connections) — `tools/opendst_explore.py`
+- **Réponse « frame=… screen=… ram=… nom=0x… » → dictionnaire.** (1 connections) — `tools/opendst_explore.py`
 
 ## Relationships
 
-- [Community 58](Community_58.md) (2 shared connections)
-- [Community 67](Community_67.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
-- [Community 362](Community_362.md) (1 shared connections)
-- [Community 151](Community_151.md) (1 shared connections)
-- [Community 291](Community_291.md) (1 shared connections)
+- [Community 151](Community_151.md) (2 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/IMPLEMENTED.md`
-- `docs/OPENDST.md`
-- `src/android/main_android.cpp`
-- `src/headless/main_headless.cpp`
+- `tools/opendst_explore.py`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (53%)
-- INFERRED: 9 (47%)
+- EXTRACTED: 12 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

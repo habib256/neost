@@ -1,32 +1,27 @@
 # Community 368
 
-> 6 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **FdcSound** (10 connections) — `src/io/Fdc.hpp`
-- **Index** (1 connections) — `src/io/Fdc.hpp`
-- **MotorOff** (1 connections) — `src/io/Fdc.hpp`
-- **MotorOn** (1 connections) — `src/io/Fdc.hpp`
-- **Seek** (1 connections) — `src/io/Fdc.hpp`
-- **Step** (1 connections) — `src/io/Fdc.hpp`
+- **Banc du blitter — NeoST contre `stBlitter.sv` et fx68k** (5 connections) — `docs/STBLITTER_BENCH.md`
+- **Ce que le banc a trouvé (2026-11-04)** (1 connections) — `docs/STBLITTER_BENCH.md`
+- **Ce qui manque** (1 connections) — `docs/STBLITTER_BENCH.md`
+- **Comment** (1 connections) — `docs/STBLITTER_BENCH.md`
+- **Pourquoi** (1 connections) — `docs/STBLITTER_BENCH.md`
 
 ## Relationships
 
-- [Community 113](Community_113.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
-- [Community 140](Community_140.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Fdc.hpp`
+- `docs/STBLITTER_BENCH.md`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (80%)
-- INFERRED: 2 (20%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

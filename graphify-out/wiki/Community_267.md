@@ -4,30 +4,32 @@
 
 ## Key Concepts
 
-- **Model** (9 connections) — `src/io/CartridgeKey.hpp`
-- **.serialize()** (4 connections) — `src/io/CartridgeKey.hpp`
-- **.model()** (3 connections) — `src/io/CartridgeKey.hpp`
-- **StateArchive** (1 connections)
-- **Auto** (1 connections) — `src/io/CartridgeKey.hpp`
-- **Cubase2** (1 connections) — `src/io/CartridgeKey.hpp`
-- **Cubase3** (1 connections) — `src/io/CartridgeKey.hpp`
-- **None** (1 connections) — `src/io/CartridgeKey.hpp`
-- **Notator** (1 connections) — `src/io/CartridgeKey.hpp`
+- **SndRig** (11 connections) — `tests/selftest_logic.cpp`
+- **Bus** (3 connections)
+- **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
+- **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
+- **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **DmaSound** (1 connections)
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
+- **snd** (1 connections) — `tests/selftest_logic.cpp`
 
 ## Relationships
 
-- [Community 150](Community_150.md) (4 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
-- [Community 380](Community_380.md) (1 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 204](Community_204.md) (1 shared connections)
+- [Community 226](Community_226.md) (1 shared connections)
+- [Community 263](Community_263.md) (1 shared connections)
+- [Community 183](Community_183.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/CartridgeKey.hpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 15 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

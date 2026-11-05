@@ -1,63 +1,61 @@
 # Community 63
 
-> 41 nodes
+> 65 nodes
 
 ## Key Concepts
 
-- **Fdc.cpp** (113 connections) — `src/io/Fdc.cpp`
-- **.readTrackStx()** (17 connections) — `src/io/Fdc.hpp`
-- **FDC WD1772 + DMA + STX — `Fdc.cpp`, `StxImage.cpp` ↔ `fdc.c`, `floppies/stx.c`** (15 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.readTrackST()** (12 connections) — `src/io/Fdc.hpp`
-- **.bufferAdd()** (11 connections) — `src/io/Fdc.hpp`
-- **.writeBack()** (11 connections) — `src/io/Fdc.hpp`
-- **.nextSectorIDStx()** (11 connections) — `src/io/Fdc.hpp`
-- **Disquette (FDC WD1772 + DMA)** (11 connections) — `docs/IMPLEMENTED.md`
-- **.cyclesPerRev()** (10 connections) — `src/io/Fdc.hpp`
-- **.writeSectorST()** (10 connections) — `src/io/Fdc.hpp`
-- **.writeTrackBuffer()** (10 connections) — `src/io/Fdc.hpp`
-- **.readAddressST()** (9 connections) — `src/io/Fdc.hpp`
-- **.readSectorStx()** (9 connections) — `src/io/Fdc.hpp`
-- **.densityFactor()** (8 connections) — `src/io/Fdc.hpp`
-- **.bytesPerTrackStx()** (8 connections) — `src/io/Fdc.hpp`
-- **.readSectorST()** (8 connections) — `src/io/Fdc.hpp`
-- **.stOverrideHere()** (8 connections) — `src/io/Fdc.hpp`
-- **.writeSectorStx()** (8 connections) — `src/io/Fdc.hpp`
-- **.sectorsCountView()** (8 connections) — `src/io/StxImage.hpp`
-- **.stOverrideFound()** (7 connections) — `src/io/Fdc.hpp`
-- **.readAddressStx()** (7 connections) — `src/io/Fdc.hpp`
-- **.msaSelfTest()** (7 connections) — `src/io/Fdc.hpp`
-- **.refreshImageGeometry()** (7 connections) — `src/io/Fdc.hpp`
-- **stxTrackWithSectorWrites()** (7 connections) — `src/io/Fdc.cpp`
-- **.indexCurrentPosBytes()** (6 connections) — `src/io/Fdc.hpp`
-- *... and 16 more nodes in this community*
+- **Track** (40 connections) — `src/io/StxImage.hpp`
+- **StxImage** (30 connections) — `src/io/StxImage.hpp`
+- **Priorités — divergences HAUTE et MOYENNE** (20 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Sector** (19 connections) — `src/io/StxImage.hpp`
+- **.loadWd1772()** (9 connections) — `src/io/StxImage.hpp`
+- **.reinterpretSaveTrack()** (8 connections) — `src/io/StxImage.hpp`
+- **.findTrack()** (7 connections) — `src/io/StxImage.hpp`
+- **.findSectorByPosition()** (6 connections) — `src/io/StxImage.hpp`
+- **SaveTrack** (5 connections) — `src/io/StxImage.hpp`
+- **.sides()** (2 connections) — `src/io/StxImage.hpp`
+- **.tracksPerSide()** (2 connections) — `src/io/StxImage.hpp`
+- **rd16be()** (2 connections) — `src/io/StxImage.cpp`
+- **rd32be()** (2 connections) — `src/io/StxImage.cpp`
+- **string** (2 connections)
+- **.revision()** (1 connections) — `src/io/StxImage.hpp`
+- **.tracksCount()** (1 connections) — `src/io/StxImage.hpp`
+- **.valid()** (1 connections) — `src/io/StxImage.hpp`
+- **data** (1 connections) — `src/io/StxImage.hpp`
+- **side** (1 connections) — `src/io/StxImage.hpp`
+- **track** (1 connections) — `src/io/StxImage.hpp`
+- **bitPosition** (1 connections) — `src/io/StxImage.hpp`
+- **dataOffset** (1 connections) — `src/io/StxImage.hpp`
+- **fdcStatus** (1 connections) — `src/io/StxImage.hpp`
+- **idCrc** (1 connections) — `src/io/StxImage.hpp`
+- **idHead** (1 connections) — `src/io/StxImage.hpp`
+- *... and 40 more nodes in this community*
 
 ## Relationships
 
-- [Community 95](Community_95.md) (52 shared connections)
-- [Community 24](Community_24.md) (38 shared connections)
-- [Community 12](Community_12.md) (31 shared connections)
-- [Community 9](Community_9.md) (12 shared connections)
-- [Community 170](Community_170.md) (12 shared connections)
-- [Community 78](Community_78.md) (9 shared connections)
-- [Community 102](Community_102.md) (9 shared connections)
-- [Community 256](Community_256.md) (5 shared connections)
-- [Community 173](Community_173.md) (4 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
+- [Community 9](Community_9.md) (19 shared connections)
+- [Community 76](Community_76.md) (14 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 23](Community_23.md) (2 shared connections)
 - [Community 67](Community_67.md) (2 shared connections)
-- [Community 201](Community_201.md) (2 shared connections)
+- [Community 83](Community_83.md) (2 shared connections)
+- [Community 173](Community_173.md) (2 shared connections)
+- [Community 22](Community_22.md) (2 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 215](Community_215.md) (2 shared connections)
+- [Community 78](Community_78.md) (1 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
 
 ## Source Files
 
 - `docs/HATARI_DIVERGENCES.md`
-- `docs/IMPLEMENTED.md`
-- `src/io/Fdc.cpp`
-- `src/io/Fdc.hpp`
+- `src/io/StxImage.cpp`
 - `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 172 (58%)
-- INFERRED: 127 (42%)
+- EXTRACTED: 91 (69%)
+- INFERRED: 41 (31%)
 - AMBIGUOUS: 0 (0%)
 
 ---

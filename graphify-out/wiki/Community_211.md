@@ -1,46 +1,37 @@
 # Community 211
 
-> 10 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **.synthAvailable()** (6 connections) — `src/audio/MidiOutHost.hpp`
-- **.portAvailable()** (6 connections) — `src/audio/MidiOutHost.hpp`
-- **.midiOutApply()** (6 connections) — `src/gui/App.hpp`
-- **.available()** (5 connections) — `src/audio/MidiOutHost.hpp`
-- **.destinationsAvailable()** (4 connections) — `src/audio/MidiOutHost.hpp`
-- **shortMessageLength()** (4 connections) — `src/audio/MidiMessageParser.hpp`
-- **Le MIDI Windows rejoint macOS et Linux — backend winmm (2026-08-31)** (4 connections) — `CHANGELOG.md`
-- **byte()** (3 connections) — `src/audio/MidiMessageParser.hpp`
-- **dataBytesFor()** (3 connections) — `src/audio/MidiMessageParser.hpp`
-- **Quatre bugs d'outillage que Windows a mis au jour** (2 connections) — `CHANGELOG.md`
+- **Model** (9 connections) — `src/io/CartridgeKey.hpp`
+- **.setModel()** (5 connections) — `src/io/CartridgeKey.hpp`
+- **.serialize()** (4 connections) — `src/io/CartridgeKey.hpp`
+- **.reset()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **.model()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **StateArchive** (1 connections)
+- **Auto** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Cubase2** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Cubase3** (1 connections) — `src/io/CartridgeKey.hpp`
+- **None** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Notator** (1 connections) — `src/io/CartridgeKey.hpp`
 
 ## Relationships
 
-- [Community 84](Community_84.md) (5 shared connections)
-- [Community 42](Community_42.md) (4 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 51](Community_51.md) (3 shared connections)
-- [Community 380](Community_380.md) (2 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [Community 1](Community_1.md) (1 shared connections)
-- [Community 223](Community_223.md) (1 shared connections)
-- [Community 269](Community_269.md) (1 shared connections)
-- [Community 213](Community_213.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 55](Community_55.md) (1 shared connections)
+- [Community 150](Community_150.md) (5 shared connections)
+- [Community 176](Community_176.md) (2 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
+- [Community 358](Community_358.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/audio/MidiMessageParser.hpp`
-- `src/audio/MidiOutHost.hpp`
-- `src/gui/App.hpp`
+- `src/io/CartridgeKey.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 24 (71%)
-- INFERRED: 10 (29%)
+- EXTRACTED: 17 (85%)
+- INFERRED: 3 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

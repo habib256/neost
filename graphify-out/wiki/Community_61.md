@@ -1,61 +1,57 @@
 # Community 61
 
-> 66 nodes
+> 37 nodes
 
 ## Key Concepts
 
 - **Audio** (51 connections) — `src/audio/Audio.hpp`
-- **Audio.cpp** (17 connections) — `src/audio/Audio.cpp`
-- **Audio.hpp** (17 connections) — `src/audio/Audio.hpp`
-- **AudioMix.hpp** (11 connections) — `src/core/AudioMix.hpp`
-- **SampleRing.hpp** (7 connections) — `src/audio/SampleRing.hpp`
-- **FrameMixBuffers** (6 connections) — `src/core/AudioMix.hpp`
-- **atomic** (6 connections)
-- **Audio::Audio()** (5 connections) — `src/audio/Audio.cpp`
-- **.stop()** (4 connections) — `src/audio/Audio.hpp`
-- **mixEmulatedFrame()** (4 connections) — `src/core/AudioMix.cpp`
-- **GmSynth** (3 connections) — `src/audio/Audio.hpp`
-- **Mt32Synth** (3 connections) — `src/audio/Audio.hpp`
-- **.produceFrame()** (3 connections) — `src/audio/Audio.hpp`
-- **dataCallback()** (3 connections) — `src/audio/Audio.cpp`
 - **DmaSound** (2 connections) — `src/audio/Audio.hpp`
 - **DriveSound** (2 connections) — `src/audio/Audio.hpp`
 - **YM2149** (2 connections) — `src/audio/Audio.hpp`
 - **.start()** (2 connections) — `src/audio/Audio.hpp`
 - **.render()** (2 connections) — `src/audio/Audio.hpp`
-- **.setDmaGate()** (2 connections) — `src/audio/Audio.hpp`
-- **.setGm()** (2 connections) — `src/audio/Audio.hpp`
-- **.setMt32()** (2 connections) — `src/audio/Audio.hpp`
-- **dmaGate_** (2 connections) — `src/audio/Audio.hpp`
-- **function** (2 connections)
-- **DmaSound** (1 connections) — `src/core/AudioMix.hpp`
-- *... and 41 more nodes in this community*
+- **.latencyMs()** (1 connections) — `src/audio/Audio.hpp`
+- **.masterVolume()** (1 connections) — `src/audio/Audio.hpp`
+- **.ok()** (1 connections) — `src/audio/Audio.hpp`
+- **.rate()** (1 connections) — `src/audio/Audio.hpp`
+- **.setLatencyMs()** (1 connections) — `src/audio/Audio.hpp`
+- **.setMasterVolume()** (1 connections) — `src/audio/Audio.hpp`
+- **.setMixGains()** (1 connections) — `src/audio/Audio.hpp`
+- **device_** (1 connections) — `src/audio/Audio.hpp`
+- **devLostFrames_** (1 connections) — `src/audio/Audio.hpp`
+- **dma_** (1 connections) — `src/audio/Audio.hpp`
+- **drive_** (1 connections) — `src/audio/Audio.hpp`
+- **driveScratch_** (1 connections) — `src/audio/Audio.hpp`
+- **gainDma_** (1 connections) — `src/audio/Audio.hpp`
+- **gainDrive_** (1 connections) — `src/audio/Audio.hpp`
+- **gainGm_** (1 connections) — `src/audio/Audio.hpp`
+- **gainMt32_** (1 connections) — `src/audio/Audio.hpp`
+- **gainYm_** (1 connections) — `src/audio/Audio.hpp`
+- **gm_** (1 connections) — `src/audio/Audio.hpp`
+- **masterVol_** (1 connections) — `src/audio/Audio.hpp`
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (13 shared connections)
-- [Community 256](Community_256.md) (7 shared connections)
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 58](Community_58.md) (3 shared connections)
-- [Community 187](Community_187.md) (2 shared connections)
-- [Community 230](Community_230.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 113](Community_113.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
+- [Community 377](Community_377.md) (2 shared connections)
+- [Community 385](Community_385.md) (2 shared connections)
+- [Community 392](Community_392.md) (2 shared connections)
+- [Community 389](Community_389.md) (2 shared connections)
+- [Community 187](Community_187.md) (1 shared connections)
+- [Community 292](Community_292.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 307](Community_307.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Audio.cpp`
 - `src/audio/Audio.hpp`
-- `src/audio/SampleRing.hpp`
-- `src/core/AudioMix.cpp`
-- `src/core/AudioMix.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 116 (97%)
-- INFERRED: 3 (3%)
+- EXTRACTED: 56 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

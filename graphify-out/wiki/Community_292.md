@@ -1,25 +1,27 @@
 # Community 292
 
-> 8 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **Server** (8 connections) — `tools/opendst_explore.py`
-- **.cmd()** (4 connections) — `tools/opendst_explore.py`
-- **.fields()** (3 connections) — `tools/opendst_explore.py`
-- **.close()** (2 connections) — `tools/opendst_explore.py`
-- **.tail()** (2 connections) — `tools/opendst_explore.py`
-- **.__init__()** (1 connections) — `tools/opendst_explore.py`
-- **Le serveur NeoST au bout d'un tuyau : une commande, une réponse.** (1 connections) — `tools/opendst_explore.py`
-- **Réponse « frame=… screen=… ram=… nom=0x… » → dictionnaire.** (1 connections) — `tools/opendst_explore.py`
+- **FrameMixBuffers** (6 connections) — `src/core/AudioMix.hpp`
+- **mixEmulatedFrame()** (4 connections) — `src/core/AudioMix.cpp`
+- **AudioMix.cpp** (4 connections) — `src/core/AudioMix.cpp`
+- **DmaSound** (1 connections)
+- **YM2149** (1 connections)
+- **st** (1 connections) — `src/core/AudioMix.hpp`
+- **ym** (1 connections) — `src/core/AudioMix.hpp`
 
 ## Relationships
 
-- [Community 151](Community_151.md) (2 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 61](Community_61.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_explore.py`
+- `src/core/AudioMix.cpp`
+- `src/core/AudioMix.hpp`
 
 ## Audit Trail
 

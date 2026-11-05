@@ -20,7 +20,7 @@
 ## Relationships
 
 - [Community 101](Community_101.md) (1 shared connections)
-- [Community 55](Community_55.md) (1 shared connections)
+- [Community 18](Community_18.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files

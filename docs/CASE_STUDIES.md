@@ -64,6 +64,149 @@ défauts restent documentés, sans être déclarés corrigés. Pour rejouer un c
 archivé, il faut rétablir explicitement l'image privée dont l'empreinte est
 consignée et passer `--manifest tests/replays/archive/vroom_retired.json`.
 
+### Elite sous TOS 2.06 : intro qualifiée et course rejouée (2026-11-05)
+
+**Périmètre : STE 1 Mo, TOS 2.06 UK, image Elite intacte, FDC normal.**
+Le nouveau parcours `vroom_elite_tos206_ste_race` atteint le menu
+**ARCADE / JOYSTICK / AUTO**, la grille puis la conduite. SPACE reste à
+2000 et 3008 ; le joystick et la souris sont décalés de 2224 trames par
+rapport au parcours 1.62 : Fire à 6040, première sélection à 6860,
+démarrage à 7764, accélération à 9024. Sans ce décalage, Fire arrive trop
+tôt et la démonstration automatique finit par rouler : ce n'est pas une
+partie pilotée. Les graines NeoST et Hatari sont 1, indépendamment.
+
+Les captures inspectées aux trames 7724, 8974, 9324 et 9624 donnent
+**0,05 / 0,03 / 0,02 / 0,18 %** face à Hatari `f0736b24`, sans patch TOS,
+fast boot ou fast FDC. Fenêtre ±40 et seuil 0,5 % conservés ; les empreintes
+`scene_hashes` gardent les étapes du parcours. Le verdict reste de grade D.
+
+Un pilote visuel externe poursuit ensuite la course à partir de la trame
+10001, par les seules commandes joystick, et franchit **Lap 1**. Ses
+entrées figées sont rejouées **depuis reset sur 18 001 trames**, sans
+chargement d'état ; l'image finale est identique à celle du pilotage.
+`vroom_elite_tos206_ste_lap`, dans `tests/replays/vroom_laps.json`, garde
+ce résultat à l'échelon **snapshot**, avec les empreintes des médias.
+Il complète le tour Elite sous 1.62, sans valider toutes les issues du jeu.
+
+**Intro rayée, graine 5 : une trame transitoire, mécanisme localisé.**
+La recette initiale (SPACE 2000/3008, Fire 6040 tenu 20 trames) est
+rejouée sans autre entrée. Parmi les **61 captures consécutives 8470–8530**,
+seule **8500** est rayée ; les 60 autres sont identiques entre elles.
+L'image initialement signalée est reproduite à l'octet, puis **8501**
+retrouve spontanément l'intro lisible. Aucun halt ni chargement supplémentaire.
+
+Les traces depuis reset et la reprise d'un état à 8495 concordent. Dans
+la trame fautive, le basculement 60 Hz en `$E558` se date à la ligne 33,
+cycle **500**, contre **480** à 8499 ; le retour 50 Hz est à 34:40.
+Après lecture de `$FF8209` par le stabilisateur `$E58A–$E590`, les
+écritures de résolution arrivent à **34:504 / 35:8**, contre
+**34:508 / 35:12**. Les bascules de fréquence des lignes suivantes se
+font à **372/380**, contre **376/384** : le retrait droit est manqué.
+Le rendu consomme alors **184 au lieu de 230 octets** par ligne pleine,
+ce qui explique les bandes sans corruption permanente de l'image.
+À 8501, les dates et les 230 octets reviennent.
+
+**Contre-épreuve longue : Hatari reproduit aussi la trame rayée.** Sous la
+même configuration (STE, TOS 2.06 UK, graine 5), sans aucune entrée hôte,
+les traces `video_sync,video_addr` de 8000 à 8999 contiennent **20 séquences**
+avec le basculement à 33:500, le retour à 34:40 et le compteur `$026A0E`
+à 34:80. La première est à 8054. Les captures prises aux VBL 8054, 8055
+et 8056 montrent respectivement une intro lisible, rayée, puis lisible.
+La capture rayée correspond donc à la trame achevée 8054. Le premier
+témoin court avait manqué ces occurrences ; son écart de 62,67 % ne
+permettait pas de conclure à une faute propre à NeoST.
+
+Le mécanisme est désormais précis : après le préchargement 60 Hz, le
+retour à 50 Hz à 34:40 conserve le départ anticipé de la ligne, à 52 au
+lieu de 56. Le compteur expose **14 au lieu de 12** à 34:80. Le programme
+soustrait cette valeur de 16 puis attend par `lsl.w D2,D4` ; ces deux
+unités en trop raccourcissent l'attente de quatre cycles. Le retrait
+droit est ensuite tenté à 372/380 au lieu de 376/384.
+
+**Sonde horizontale indépendante du jeu :**
+
+```sh
+python3 tools/probe_vroom_intro_glue.py
+```
+
+Elle rejoue les deux séquences, translatées des lignes 33–36 aux lignes
+99–102 pour isoler l'horizontal, sans CPU ni données du jeu. Le modèle
+GSTMCU `4a6db7cc` et NeoST donnent **160 puis 230 octets** pour la séquence
+normale, **162 puis 184** pour la tardive. La fin DE normale reste décalée
+de quatre cycles entre modèles (écart déjà décrit dans GLUE_SWEEP), sans
+écart d'octets ; la séquence tardive concorde aussi sur les fenêtres DE.
+Le témoin reçoit les chutes d'AS, NeoST les dates AS+8 du banc CPU/raster
+existant. Ce choix est explicite, sans recalage propre à Vroom.
+
+Le schéma **[B] Atari ST-4081 rév. A, 27 octobre 1988, feuille 29** montre
+les décodeurs CPAL/CNTSC et les registres successifs du départ HDE
+(PT004/PT010/PT017/PT026). Il soutient le mécanisme à mémoire ; il ne
+valide pas à lui seul les dates numériques de ce rejeu. SHA-256 du PDF :
+`935c4dd9a09a9af8f738276ccfeb32ee8d8e254a8d0985dad57a23326fcdfc9f`.
+
+Aucun changement CPU/GLUE n'est déduit de ce cas. **L'accord des modèles
+ne prouve pas le comportement matériel** : restent à mesurer la latence
+d'entrée VBL et la fréquence des trames rayées sur un STE réel. Modifier
+la lecture du compteur ou avancer globalement les écritures pour effacer
+cette trame masquerait une séquence reproduite par les deux témoins.
+Traces, captures et plans : `build/vroom-intro-fix/` (non versionné).
+
+**Game Over à zéro point : défaut du média Elite, reproduit dans Hatari.**
+L'ancien pilotage `vroom_elite_ste_lap.joy` transposé de 2224 trames
+finit à zéro point dans NeoST, contre 60 dans Hatari. Leurs issues
+initialement différentes ne comparaient donc pas le même état du jeu.
+Le contre-exemple `vroom_elite_tos206_gameover_zero` conserve les
+entrées du menu, puis accélère sans braquer (`F*20 .*2964 U*14000`,
+départ 6040) : Hatari affiche lui aussi les bandes et deux bombes à 22000.
+Ce témoin ne modifie ni le disque ni la mémoire du jeu.
+
+Les captures RAM et le désassemblage donnent la chaîne causale suivante
+(image SHA-256 `4c2f63befd89e4a55b5867dbc744a93bc2210504889ce48f18736de6635461a2`) :
+
+- Le chargeur `$1E670` lit piste 78, face 0, secteur 1 ; `$1E6AA` copie
+  108 octets à `$73E0`. Dans les deux émulateurs, ils sont identiques aux
+  octets bruts de l'image à l'offset 798720, sans validation.
+- `$40D0` lit le score courant à `$74B8`. S'il est nul, `$40D6` saute
+  directement à `$4170`, sans remplacer le classement. Avec 60 points,
+  Hatari passe par `$4162` et remplace les valeurs ; ce chemin masquait
+  le défaut du média dans la première comparaison.
+- Avec zéro point, `$4216` lit `$9786EB66` dans la dernière entrée
+  (`$7400`). La division non signée par 10000 à `$117CE` déborde ; la
+  valeur `$EB66` devient un indice de glyphe. `$13C24` écrit alors à
+  `$FFC97A` dans l'ancien parcours (`$FFC976` sans braquage), ce qui
+  déclenche l'erreur de bus. Le handler `$12E34`
+  exécute `RTE` sans supprimer la cause.
+
+Le cœur CPU/FDC n'est pas modifié pour masquer ce défaut logiciel.
+Une expérience sur une **copie jetable** a aussi montré que réinitialiser
+les 108 octets directement sur disque casse le chargement. Leur rôle
+exact dans ce chargement reste à isoler ; les traiter comme un bloc de
+scores indépendant n'est pas une réparation sûre. L'original reste intact ;
+aucun correctif de l'image n'est livré. La fréquence matérielle du plantage
+reste non mesurée.
+
+Quatre diagnostics **snapshot** séparés conservent la trame rayée, son
+rétablissement et les bombes après Game Over (ancien pilotage et accélération
+sans braquage). Leur succès signifie
+uniquement « défaut/état reproduit », jamais « compatibilité validée ».
+Le contre-exemple Hatari montre les mêmes bombes mais pas les mêmes bandes
+(44,93 % de pixels différents à 22000, fenêtre ±40) ; aucun accord pixel
+n’est revendiqué. La nouvelle garde est donc native, elle aussi :
+
+```sh
+python3 tools/run_game_replay.py --only vroom_elite_tos206_ste_race
+python3 tools/run_game_replay.py --manifest tests/replays/vroom_laps.json --only vroom_elite_tos206_ste_lap
+python3 tools/run_game_replay.py --manifest tests/replays/vroom_elite_tos206_diagnostics.json --only vroom_elite_tos206_intro_raster,vroom_elite_tos206_intro_recovery,vroom_elite_tos206_gameover,vroom_elite_tos206_gameover_zero
+```
+
+Pour observer chaque trame autour du défaut, reprendre les arguments du
+diagnostic `intro_raster`, porter `--frames` à 8531 et ajouter
+`--shot-from 8470 --shot-every 1 /tmp/elite-intro-`.
+Commandes exactes, captures, traces et contre-épreuves de cette passe :
+`build/vroom-goal/elite206-finish/` (non versionné).
+L'enquête Game Over, ses captures RAM et le témoin Hatari à zéro point
+sont dans `build/vroom-gameover-fix/` (non versionné).
+
 ### Croisement des deux images et des deux TOS (2026-11-05)
 
 **Les échecs de chargement et d'arrêt audio de cette campagne concernent
@@ -88,7 +231,8 @@ la même phase. **Contre-épreuve sans nouvelles entrées : Elite/2.06/graine 5
 affiche une intro rayée à 8500, sans halt.** Un autre rejeu sans nouvelle
 entrée, jusqu'à 12000 pour les trois graines, conserve l'intro intacte aux
 captures 8000, 9000, 10000, 11000 et 12000, sans halt. L'aspect rayé à 8500
-reste donc à qualifier ; cette capture isolée ne démontre pas un plantage.
+restait alors à qualifier ; la reprise détaillée ci-dessus l'isole à une
+trame et localise les écritures de bordure décalées.
 Les appuis supplémentaires ne doivent pas masquer cette observation ; la
 cause de l'attente initiale et de l'aspect rayé n'est pas établie par cette
 campagne. Le

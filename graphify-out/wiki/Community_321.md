@@ -4,26 +4,31 @@
 
 ## Key Concepts
 
-- **MegaSteBusComparison** (7 connections) — `tools/test_timing_oracle.py`
-- **.check()** (5 connections) — `tools/test_timing_oracle.py`
-- **.test_changed_program_rejected()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_exact_reference_and_probe_identity()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_missing_sample_rejected()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_one_cycle_and_clock_domain_errors_rejected()** (2 connections) — `tools/test_timing_oracle.py`
-- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
+- **10. GEMDOS HD / cartouche / RTC / SCU / joysticks (gemdos.c, cart.c, rtc.c, scu_vme.c, joy.c)** (7 connections) — `docs/HATARI_MAPPING.md`
+- **.pexecBpCreated()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.setAnalog()** (2 connections) — `src/io/StePads.hpp`
+- **IKBD — cadence commune et monitoring (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **IKBD — PAUSE et octet SCI engagé (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **SCC — générateur de débit (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **USART MFP — réception (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
 
 ## Relationships
 
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 17](Community_17.md) (1 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
+- [Community 106](Community_106.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/test_timing_oracle.py`
+- `docs/HATARI_MAPPING.md`
+- `src/io/GemdosHd.hpp`
+- `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 7 (70%)
+- INFERRED: 3 (30%)
 - AMBIGUOUS: 0 (0%)
 
 ---

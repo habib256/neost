@@ -1,21 +1,20 @@
 # Community 122
 
-> 26 nodes
+> 25 nodes
 
 ## Key Concepts
 
 - **testAcsiCapacityLimit()** (14 connections) — `tests/acsi_capacity_limit_logic.cpp`
-- **acsi_capacity_limit_logic.cpp** (12 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **testAcsiLargeBounds()** (11 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **.mount()** (7 connections) — `src/io/Acsi.hpp`
 - **.selectTarget()** (6 connections) — `src/io/Acsi.hpp`
 - **send()** (6 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **sense()** (6 connections) — `tests/acsi_large_bounds_logic.cpp`
+- **.writeToDisk()** (5 connections) — `src/io/Acsi.hpp`
 - **command()** (5 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **Checks** (4 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **Checks** (4 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **.readBuffer()** (4 connections) — `src/io/Acsi.hpp`
-- **stat** (4 connections)
 - **.targetEnabled()** (3 connections) — `src/io/Acsi.hpp`
 - **.dataLen()** (3 connections) — `src/io/Acsi.hpp`
 - **.status()** (3 connections) — `src/io/Acsi.hpp`
@@ -29,20 +28,16 @@
 - **failures** (1 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **initializer_list** (1 connections)
 - **count** (1 connections) — `tests/acsi_large_bounds_logic.cpp`
-- *... and 1 more nodes in this community*
+- **failures** (1 connections) — `tests/acsi_large_bounds_logic.cpp`
 
 ## Relationships
 
-- [Community 103](Community_103.md) (10 shared connections)
-- [Community 102](Community_102.md) (9 shared connections)
-- [Community 31](Community_31.md) (7 shared connections)
+- [Community 103](Community_103.md) (11 shared connections)
+- [Community 102](Community_102.md) (10 shared connections)
+- [Community 31](Community_31.md) (9 shared connections)
 - [Community 212](Community_212.md) (2 shared connections)
-- [Community 35](Community_35.md) (2 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 58](Community_58.md) (1 shared connections)
-- [Community 36](Community_36.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,8 +47,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (67%)
-- INFERRED: 24 (33%)
+- EXTRACTED: 40 (61%)
+- INFERRED: 26 (39%)
 - AMBIGUOUS: 0 (0%)
 
 ---

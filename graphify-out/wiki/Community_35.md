@@ -1,61 +1,63 @@
 # Community 35
 
-> 40 nodes
+> 38 nodes
 
 ## Key Concepts
 
-- **main()** (161 connections) — `tests/selftest_logic.cpp`
-- **selftest_logic.cpp** (75 connections) — `tests/selftest_logic.cpp`
-- **checkBool()** (28 connections) — `tests/selftest_logic.cpp`
-- **testCartridgeKey()** (13 connections) — `tests/selftest_logic.cpp`
-- **checkStr()** (12 connections) — `tests/selftest_logic.cpp`
-- **testFdcTruthTable()** (9 connections) — `tests/selftest_logic.cpp`
-- **testDmaSoundTruthTable()** (8 connections) — `tests/selftest_logic.cpp`
-- **testIkbdProtocol()** (8 connections) — `tests/selftest_logic.cpp`
-- **testBlitterTruthTable()** (7 connections) — `tests/selftest_logic.cpp`
-- **testMfpClock()** (6 connections) — `tests/mfp_clock_logic.cpp`
-- **checkHex()** (6 connections) — `tests/selftest_logic.cpp`
-- **testChannelMask()** (6 connections) — `tests/selftest_logic.cpp`
-- **testJoyScript()** (6 connections) — `tests/selftest_logic.cpp`
-- **testMidiInJitter()** (6 connections) — `tests/selftest_logic.cpp`
-- **testTwoCpus()** (6 connections) — `tests/selftest_logic.cpp`
-- **checkInt()** (5 connections) — `tests/selftest_logic.cpp`
-- **testFixBools()** (5 connections) — `tests/selftest_logic.cpp`
-- **testMissingHwHint()** (5 connections) — `tests/selftest_logic.cpp`
-- **testMmioTable()** (5 connections) — `tests/selftest_logic.cpp`
-- **testPortDevices()** (5 connections) — `tests/selftest_logic.cpp`
-- **testYmEventDomain()** (5 connections) — `tests/selftest_logic.cpp`
-- **duration()** (5 connections) — `tests/ste_cmap_slot_logic.cpp`
-- **checkMasks()** (4 connections) — `tests/selftest_logic.cpp`
-- **testConfigPath()** (4 connections) — `tests/selftest_logic.cpp`
-- **testDongleTable()** (4 connections) — `tests/selftest_logic.cpp`
-- *... and 15 more nodes in this community*
+- **shutil** (50 connections)
+- **compare_titles.py** (32 connections) — `tools/compare_titles.py`
+- **check_compare_titles.py** (13 connections) — `tools/check_compare_titles.py`
+- **main()** (12 connections) — `tools/compare_titles.py`
+- **trace_tos206_boot.py** (12 connections) — `tools/trace_tos206_boot.py`
+- **run_hatari_keys()** (10 connections) — `tools/compare_titles.py`
+- **neost_frames()** (9 connections) — `tools/compare_titles.py`
+- **one()** (9 connections) — `tools/compare_titles.py`
+- **Path** (9 connections)
+- **hatari_shots()** (8 connections) — `tools/compare_titles.py`
+- **read_neost_frames()** (8 connections) — `tools/compare_titles.py`
+- **main()** (8 connections) — `tools/trace_tos206_boot.py`
+- **main()** (7 connections) — `tools/check_compare_titles.py`
+- **best_match()** (6 connections) — `tools/compare_titles.py`
+- **mouse_events()** (6 connections) — `tools/compare_titles.py`
+- **pixel_difference()** (6 connections) — `tools/compare_titles.py`
+- **parse_mouse()** (5 connections) — `tools/compare_titles.py`
+- **swap_copy()** (5 connections) — `tools/compare_titles.py`
+- **Image** (5 connections)
+- **reduce_2x()** (4 connections) — `tools/compare_titles.py`
+- **parse_seed()** (3 connections) — `tools/compare_titles.py`
+- **parse_swap()** (3 connections) — `tools/compare_titles.py`
+- **sheet()** (3 connections) — `tools/compare_titles.py`
+- **sha()** (3 connections) — `tools/trace_tos206_boot.py`
+- **Parcours de conduite** (3 connections) — `docs/CASE_STUDIES.md`
+- *... and 13 more nodes in this community*
 
 ## Relationships
 
-- [Community 41](Community_41.md) (50 shared connections)
-- [Community 245](Community_245.md) (16 shared connections)
-- [Community 102](Community_102.md) (14 shared connections)
-- [Community 4](Community_4.md) (12 shared connections)
-- [Community 83](Community_83.md) (10 shared connections)
-- [Community 256](Community_256.md) (9 shared connections)
-- [Community 101](Community_101.md) (6 shared connections)
-- [Community 200](Community_200.md) (6 shared connections)
-- [Community 230](Community_230.md) (5 shared connections)
-- [Community 150](Community_150.md) (4 shared connections)
-- [Community 176](Community_176.md) (4 shared connections)
-- [Community 213](Community_213.md) (3 shared connections)
+- [Community 18](Community_18.md) (40 shared connections)
+- [Community 55](Community_55.md) (9 shared connections)
+- [Community 151](Community_151.md) (8 shared connections)
+- [Community 207](Community_207.md) (7 shared connections)
+- [Community 248](Community_248.md) (4 shared connections)
+- [Community 146](Community_146.md) (4 shared connections)
+- [Community 49](Community_49.md) (3 shared connections)
+- [Community 166](Community_166.md) (3 shared connections)
+- [Community 34](Community_34.md) (2 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 127](Community_127.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_clock_logic.cpp`
-- `tests/selftest_logic.cpp`
-- `tests/ste_cmap_slot_logic.cpp`
+- `docs/CASE_STUDIES.md`
+- `packaging/make_icon.py`
+- `tools/check_compare_titles.py`
+- `tools/compare_titles.py`
+- `tools/trace_tos206_boot.py`
 
 ## Audit Trail
 
-- EXTRACTED: 189 (55%)
-- INFERRED: 152 (45%)
+- EXTRACTED: 165 (96%)
+- INFERRED: 6 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

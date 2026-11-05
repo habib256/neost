@@ -431,6 +431,77 @@
     "7100": "5ffd4f641320128c967988fd2a797776158018e37a874c8b55c219a0d8b1a6c3",
     "7400": "4f33828aaffdd1e02904425c2a1e092270adae338ef5e7763deb3cdd849a39dd"
   }
+},
+{
+  "id": "vroom_elite_tos206_ste_race",
+  "disk": "disks/st/Vroom (1991)(Lankhor)[cr Elite].st",
+  "machine": "ste",
+  "rom": "roms/tos206uk.img",
+  "mem": 1,
+  "fdc_seed": 1,
+  "hatari_seed": 1,
+  "keys": [
+    2000,
+    3008
+  ],
+  "mouse": [
+    [
+      6860,
+      "11111111111111111111"
+    ],
+    [
+      7424,
+      "D"
+    ],
+    [
+      7464,
+      "D"
+    ],
+    [
+      7504,
+      "11111111111111111111"
+    ],
+    [
+      7564,
+      "R"
+    ],
+    [
+      7604,
+      "11111111111111111111"
+    ],
+    [
+      7664,
+      "U"
+    ],
+    [
+      7704,
+      "U"
+    ],
+    [
+      7764,
+      "11111111111111111111"
+    ]
+  ],
+  "joy_at": 6040,
+  "joy": "F*20 .*2964 U*380 [UR]*30 U*200",
+  "frames": [
+    7724,
+    8974,
+    9324,
+    9624
+  ],
+  "window": 40,
+  "step": 1,
+  "max_diff": 0.5,
+  "mouse_step": 60,
+  "note": "TOS 2.06 UK, depuis reset : menu ARCADE / JOYSTICK / AUTO, grille puis conduite. Commandes souris/joystick décalées de 2224 trames par rapport au parcours 1.62 ; SPACE inchangé. Garde snapshot des scènes inspectées et comparaison Hatari, sans preuve matérielle.",
+  "key_hold": 8,
+  "scene_hashes": {
+    "7724": "82be3b53b5fa4fcbc079d200734e1e869c5cee34e338ca821dd755473fa6ea5c",
+    "8974": "2f3eb84d2629559a54d703e935abbb5d35942e47294efaaa3bff4b166e77d5de",
+    "9324": "24dda8f903466d0a8edc62f0095f98b0da26115641f172a3b9e7b05e3003d672",
+    "9624": "20dc157916d110f893205dc3a91eb4936d32a1ecf62f9c9492a10f6fc28b2777"
+  }
 }
   ]
 }

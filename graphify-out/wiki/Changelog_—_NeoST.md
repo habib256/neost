@@ -1,6 +1,6 @@
 # Changelog — NeoST
 
-> God node · 274 connections · `CHANGELOG.md`
+> God node · 278 connections · `CHANGELOG.md`
 
 **Community:** [Community 130](Community_130.md)
 
@@ -27,7 +27,7 @@
 - Passe de cohérence doc ↔ code, 3ᵉ tour (2026-08-19) `EXTRACTED`
 - Chemins hôte unifiés, logique pure testable, `main.cpp` dégrossi (2026-08-17) `EXTRACTED`
 - A42 soldé : l'élection de l'IRQ MFP voit enfin tout le lot de dispatch (2026-09-03) `EXTRACTED`
-- *…and 254 more `contains` connection(s) not listed (lowest-degree first to go)*
+- *…and 258 more `contains` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

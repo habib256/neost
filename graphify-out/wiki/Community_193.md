@@ -1,11 +1,12 @@
 # Community 193
 
-> 13 nodes
+> 14 nodes
 
 ## Key Concepts
 
 - **PsgResetRig** (12 connections) — `tests/psg_reset_logic.cpp`
 - **testPsgReset()** (8 connections) — `tests/psg_reset_logic.cpp`
+- **psg_reset_logic.cpp** (8 connections) — `tests/psg_reset_logic.cpp`
 - **main()** (2 connections) — `tests/psg_reset_logic.cpp`
 - **.read()** (2 connections) — `tests/psg_reset_logic.cpp`
 - **.write()** (2 connections) — `tests/psg_reset_logic.cpp`
@@ -20,10 +21,9 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (4 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
-- [Community 35](Community_35.md) (1 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -31,8 +31,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 19 (90%)
-- INFERRED: 2 (10%)
+- EXTRACTED: 24 (92%)
+- INFERRED: 2 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

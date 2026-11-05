@@ -1,55 +1,44 @@
 # Community 93
 
-> 18 nodes
+> 19 nodes
 
 ## Key Concepts
 
-- **runKioskMenu()** (16 connections) — `src/gui/AppLoop.cpp`
-- **joyResolveRoles()** (8 connections) — `src/gui/JoyMap.cpp`
-- **JoyMap.cpp** (7 connections) — `src/gui/JoyMap.cpp`
-- **joymapSerialize()** (6 connections) — `src/gui/JoyMap.cpp`
-- **drawKioskDiskMenu()** (6 connections) — `src/gui/KioskMenu.cpp`
-- **kioskScanDisks()** (6 connections) — `src/gui/KioskMenu.cpp`
-- **joyGuid()** (5 connections) — `src/gui/JoyMap.cpp`
-- **joymapParse()** (5 connections) — `src/gui/JoyMap.cpp`
-- **kioskScanBrowse()** (5 connections) — `src/gui/KioskMenu.cpp`
-- **App** (5 connections)
-- **kioskComputeShortcuts()** (4 connections) — `src/gui/KioskMenu.cpp`
-- **kioskPruneRomDirs()** (3 connections) — `src/gui/KioskMenu.cpp`
-- **App** (3 connections)
-- **string** (3 connections)
-- **string** (3 connections)
-- **FPU transcendantes bit-exact, suite Hatari rejouée, nouveaux étalons et sondes (2026-10-20)** (3 connections) — `CHANGELOG.md`
-- **low** (2 connections) — `src/io/SoftFloatX80.hpp`
-- **Paquet Android : premier APK qui tourne (2026-08-11)** (2 connections) — `CHANGELOG.md`
+- **stx_raw_track_wrap_logic.cpp** (26 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **Scenario** (11 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **testStxRawTrackWrap()** (10 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **writeImage()** (9 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **updateExpected()** (7 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **rotatedDump()** (6 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **dumpTrack()** (5 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **position()** (5 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **put16()** (4 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **put32()** (4 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **checksum()** (3 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **main()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **path** (1 connections)
+- **ambiguousDam** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **badCrc** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **name** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **nonzeroSync** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **rotation** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **truncated** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
-- [Community 380](Community_380.md) (6 shared connections)
-- [Community 101](Community_101.md) (3 shared connections)
-- [Community 51](Community_51.md) (2 shared connections)
-- [Community 15](Community_15.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 21](Community_21.md) (1 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [Community 224](Community_224.md) (1 shared connections)
-- [Community 229](Community_229.md) (1 shared connections)
-- [Community 92](Community_92.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
+- [Community 102](Community_102.md) (16 shared connections)
+- [Community 70](Community_70.md) (11 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/gui/AppLoop.cpp`
-- `src/gui/JoyMap.cpp`
-- `src/gui/KioskMenu.cpp`
-- `src/io/SoftFloatX80.hpp`
+- `tests/stx_raw_track_wrap_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 34 (56%)
-- INFERRED: 27 (44%)
+- EXTRACTED: 63 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

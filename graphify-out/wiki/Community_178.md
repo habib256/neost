@@ -1,11 +1,12 @@
 # Community 178
 
-> 14 nodes
+> 15 nodes
 
 ## Key Concepts
 
 - **Rig** (12 connections) — `tests/ikbd_acia_init_logic.cpp`
 - **testIkbdAciaInit()** (8 connections) — `tests/ikbd_acia_init_logic.cpp`
+- **ikbd_acia_init_logic.cpp** (6 connections) — `tests/ikbd_acia_init_logic.cpp`
 - **main()** (2 connections) — `tests/ikbd_acia_init_logic.cpp`
 - **.advance()** (2 connections) — `tests/ikbd_acia_init_logic.cpp`
 - **.data()** (2 connections) — `tests/ikbd_acia_init_logic.cpp`
@@ -21,9 +22,8 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 35](Community_35.md) (1 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
 
 ## Source Files
 
@@ -31,8 +31,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 20 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 23 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

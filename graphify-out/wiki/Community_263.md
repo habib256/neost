@@ -4,27 +4,29 @@
 
 ## Key Concepts
 
-- **Décomposition de l'écart global (2026-10-19)** (9 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Correction du préfetch appuyée par le microcode matériel** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Expérience de préfetch dans une copie temporaire de Moira** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Expérience IACK en domaine bus (2026-10-19)** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Expérience PRE_START dans Hatari temporaire** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Mesures avant expériences supplémentaires** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Partie dominante : IACK → handler** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Remplissage du cache après invalidation DMA (2026-10-19)** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Reproduction et preuves** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
+- **.peek16()** (2 connections) — `tests/selftest_logic.cpp`
+- **.poke16()** (2 connections) — `tests/selftest_logic.cpp`
+- **.program()** (2 connections) — `tests/selftest_logic.cpp`
+- **.BlitRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **blit** (1 connections) — `tests/selftest_logic.cpp`
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
+- **Blitter** (1 connections)
 
 ## Relationships
 
-- [Community 205](Community_205.md) (1 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 267](Community_267.md) (1 shared connections)
+- [Community 204](Community_204.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MEGASTE_AUDIT.md`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 14 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

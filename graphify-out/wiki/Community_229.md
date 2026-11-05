@@ -1,23 +1,30 @@
 # Community 229
 
-> 18 nodes
+> 25 nodes
 
 ## Key Concepts
 
-- **DebugWindows.cpp** (17 connections) — `src/gui/DebugWindows.cpp`
-- **DebugWindows.hpp** (9 connections) — `src/gui/DebugWindows.hpp`
+- **drawSideWindows()** (14 connections) — `src/gui/AppLoop.cpp`
 - **drawJoystickWindow()** (7 connections) — `src/gui/DebugWindows.cpp`
+- **drawKeyboardWindow()** (7 connections) — `src/gui/KeyboardWindow.cpp`
+- **keyboardWindowReleaseAll()** (7 connections) — `src/gui/KeyboardWindow.cpp`
+- **.switchKioskMode()** (6 connections) — `src/gui/App.hpp`
+- **applyCrtPreset()** (5 connections) — `src/gui/CrtUi.cpp`
+- **drawCrtControls()** (5 connections) — `src/gui/CrtUi.cpp`
 - **drawCpuState()** (5 connections) — `src/gui/DebugWindows.cpp`
+- **drawCrtSettings()** (4 connections) — `src/gui/CrtUi.cpp`
 - **drawDebugger()** (4 connections) — `src/gui/DebugWindows.cpp`
 - **drawHexViewer()** (4 connections) — `src/gui/DebugWindows.cpp`
+- **releaseSticky()** (4 connections) — `src/gui/KeyboardWindow.cpp`
 - **App** (4 connections)
+- **.toggleFullscreen()** (3 connections) — `src/gui/App.hpp`
+- **loadTexture()** (3 connections) — `src/gui/KeyboardWindow.cpp`
+- **Ikbd** (3 connections)
 - **drawJoyDirLed()** (2 connections) — `src/gui/DebugWindows.cpp`
 - **drawJoystickAxisBar()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **App** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Bus** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Cpu68k** (1 connections) — `src/gui/DebugWindows.hpp`
-- **GLFWwindow** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Machine** (1 connections) — `src/gui/DebugWindows.hpp`
+- **App** (2 connections)
+- **string** (2 connections)
+- **string** (1 connections)
 - **Bus** (1 connections)
 - **Cpu68k** (1 connections)
 - **GLFWwindow** (1 connections)
@@ -25,23 +32,28 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
-- [Community 224](Community_224.md) (4 shared connections)
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 380](Community_380.md) (1 shared connections)
-- [Community 93](Community_93.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 4](Community_4.md) (16 shared connections)
+- [Community 380](Community_380.md) (6 shared connections)
+- [Community 1](Community_1.md) (2 shared connections)
+- [Community 100](Community_100.md) (2 shared connections)
+- [Community 214](Community_214.md) (2 shared connections)
+- [Community 129](Community_129.md) (1 shared connections)
+- [Community 200](Community_200.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
+- [Community 231](Community_231.md) (1 shared connections)
 
 ## Source Files
 
+- `src/gui/App.hpp`
+- `src/gui/AppLoop.cpp`
+- `src/gui/CrtUi.cpp`
 - `src/gui/DebugWindows.cpp`
-- `src/gui/DebugWindows.hpp`
+- `src/gui/KeyboardWindow.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 35 (85%)
-- INFERRED: 6 (15%)
+- EXTRACTED: 47 (72%)
+- INFERRED: 18 (28%)
 - AMBIGUOUS: 0 (0%)
 
 ---

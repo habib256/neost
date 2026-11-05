@@ -1,61 +1,64 @@
 # Community 9
 
-> 65 nodes
+> 36 nodes
 
 ## Key Concepts
 
-- **Track** (40 connections) — `src/io/StxImage.hpp`
-- **StxImage** (30 connections) — `src/io/StxImage.hpp`
 - **StxImage.cpp** (22 connections) — `src/io/StxImage.cpp`
+- **fuzz_diskimage.cpp** (19 connections) — `tests/fuzz_diskimage.cpp`
 - **main()** (11 connections) — `tests/stx_writetrack_test.cpp`
 - **stx_writetrack_test.cpp** (11 connections) — `tests/stx_writetrack_test.cpp`
 - **.parse()** (10 connections) — `src/io/StxImage.hpp`
-- **.loadWd1772()** (9 connections) — `src/io/StxImage.hpp`
-- **.reinterpretSaveTrack()** (8 connections) — `src/io/StxImage.hpp`
-- **.findTrack()** (7 connections) — `src/io/StxImage.hpp`
-- **.findSectorByPosition()** (6 connections) — `src/io/StxImage.hpp`
+- **StxImage.hpp** (10 connections) — `src/io/StxImage.hpp`
+- **fuzzOne()** (7 connections) — `tests/fuzz_diskimage.cpp`
+- **Rng** (6 connections) — `tests/fuzz_diskimage.cpp`
 - **.saveWd1772()** (6 connections) — `src/io/StxImage.hpp`
 - **.buildSectorsSimple()** (6 connections) — `src/io/StxImage.hpp`
-- **SaveTrack** (5 connections) — `src/io/StxImage.hpp`
+- **main()** (6 connections) — `tests/fuzz_diskimage.cpp`
+- **repairIpfCrcs()** (6 connections) — `tests/fuzz_diskimage.cpp`
+- **seedCorpus()** (6 connections) — `tests/fuzz_diskimage.cpp`
+- **mutate()** (5 connections) — `tests/fuzz_diskimage.cpp`
 - **forgeFlux()** (5 connections) — `tests/stx_writetrack_test.cpp`
 - **crc16()** (4 connections) — `src/io/StxImage.cpp`
+- **fail()** (4 connections) — `tests/fuzz_diskimage.cpp`
+- **fuzzIpf()** (4 connections) — `tests/fuzz_diskimage.cpp`
+- **MoiraConfig.h** (4 connections) — `extern/moira/Moira/MoiraConfig.h`
+- **DiskImageCodec.hpp** (4 connections) — `src/io/DiskImageCodec.hpp`
+- **cassert** (4 connections)
 - **wr16be()** (3 connections) — `src/io/StxImage.cpp`
 - **wr32be()** (3 connections) — `src/io/StxImage.cpp`
-- **add()** (3 connections) — `tests/stx_writetrack_test.cpp`
-- **expect()** (3 connections) — `tests/stx_writetrack_test.cpp`
-- **forgeStx()** (3 connections) — `tests/stx_writetrack_test.cpp`
-- **.sides()** (2 connections) — `src/io/StxImage.hpp`
-- **.tracksPerSide()** (2 connections) — `src/io/StxImage.hpp`
-- **rd16be()** (2 connections) — `src/io/StxImage.cpp`
-- **rd16le()** (2 connections) — `src/io/StxImage.cpp`
-- **rd32be()** (2 connections) — `src/io/StxImage.cpp`
-- *... and 40 more nodes in this community*
+- **.below()** (3 connections) — `tests/fuzz_diskimage.cpp`
+- **wrBe32()** (3 connections) — `tests/fuzz_diskimage.cpp`
+- *... and 11 more nodes in this community*
 
 ## Relationships
 
-- [Community 256](Community_256.md) (13 shared connections)
-- [Community 63](Community_63.md) (12 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 54](Community_54.md) (3 shared connections)
-- [Community 201](Community_201.md) (3 shared connections)
-- [Community 23](Community_23.md) (2 shared connections)
-- [Community 163](Community_163.md) (2 shared connections)
-- [Community 170](Community_170.md) (2 shared connections)
-- [Community 78](Community_78.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
-- [Community 173](Community_173.md) (1 shared connections)
+- [Community 102](Community_102.md) (27 shared connections)
+- [Community 63](Community_63.md) (19 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
+- [Community 76](Community_76.md) (3 shared connections)
+- [Community 163](Community_163.md) (1 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
+- [Community 153](Community_153.md) (1 shared connections)
+- [Community 40](Community_40.md) (1 shared connections)
+- [Community 99](Community_99.md) (1 shared connections)
+- [Community 112](Community_112.md) (1 shared connections)
+- [Community 208](Community_208.md) (1 shared connections)
+- [Community 30](Community_30.md) (1 shared connections)
 
 ## Source Files
 
+- `extern/moira/Moira/MoiraConfig.h`
+- `src/io/DiskImageCodec.hpp`
 - `src/io/StxImage.cpp`
 - `src/io/StxImage.hpp`
+- `tests/fuzz_diskimage.cpp`
 - `tests/stx_writetrack_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 118 (80%)
-- INFERRED: 29 (20%)
+- EXTRACTED: 115 (89%)
+- INFERRED: 14 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

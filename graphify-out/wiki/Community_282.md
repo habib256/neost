@@ -1,32 +1,32 @@
 # Community 282
 
-> 10 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Model** (10 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68000** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68010** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68EC020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68EC030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68EC040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68LC040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **testRtcWriteOnly()** (7 connections) — `tests/rtc_write_only_logic.cpp`
+- **rtc_write_only_logic.cpp** (7 connections) — `tests/rtc_write_only_logic.cpp`
+- **Checks** (4 connections) — `tests/rtc_write_only_logic.cpp`
+- **address()** (2 connections) — `tests/rtc_write_only_logic.cpp`
+- **.equal()** (2 connections) — `tests/rtc_write_only_logic.cpp`
+- **main()** (2 connections) — `tests/rtc_write_only_logic.cpp`
+- **count** (1 connections) — `tests/rtc_write_only_logic.cpp`
+- **failures** (1 connections) — `tests/rtc_write_only_logic.cpp`
 
 ## Relationships
 
-- [Community 57](Community_57.md) (1 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraTypes.h`
+- `tests/rtc_write_only_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 15 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

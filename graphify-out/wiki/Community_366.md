@@ -4,30 +4,27 @@
 
 ## Key Concepts
 
-- **.controlWritten()** (6 connections) — `src/core/Blitter.hpp`
-- **.writeRegisters()** (5 connections) — `src/core/Blitter.hpp`
-- **regWriteMask()** (5 connections) — `src/core/Blitter.cpp`
-- **.write8()** (4 connections) — `src/core/Blitter.hpp`
-- **.write16()** (4 connections) — `src/core/Blitter.hpp`
-- **.write32()** (4 connections) — `src/core/Blitter.hpp`
+- **** (9 connections) — `src/io/StePads.hpp`
+- **DOWN** (1 connections) — `src/io/StePads.hpp`
+- **FIRE** (1 connections) — `src/io/StePads.hpp`
+- **LEFT** (1 connections) — `src/io/StePads.hpp`
+- **RIGHT** (1 connections) — `src/io/StePads.hpp`
+- **UP** (1 connections) — `src/io/StePads.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 37](Community_37.md) (5 shared connections)
-- [Community 350](Community_350.md) (1 shared connections)
-- [Community 363](Community_363.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 106](Community_106.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Blitter.cpp`
-- `src/core/Blitter.hpp`
+- `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (62%)
-- INFERRED: 8 (38%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,17 +1,10 @@
 # Community 28
 
-> 58 nodes
+> 51 nodes
 
 ## Key Concepts
 
 - **YM2149** (80 connections) — `src/core/YM2149.hpp`
-- **.write8()** (5 connections) — `src/core/YM2149.hpp`
-- **.dacRaw()** (3 connections) — `src/core/YM2149.hpp`
-- **.setPortBDac()** (2 connections) — `src/core/YM2149.hpp`
-- **cycleClock_** (2 connections) — `src/core/YM2149.hpp`
-- **portAsink_** (2 connections) — `src/core/YM2149.hpp`
-- **portBsink_** (2 connections) — `src/core/YM2149.hpp`
-- **printerSink_** (2 connections) — `src/core/YM2149.hpp`
 - **.clearEvents()** (1 connections) — `src/core/YM2149.hpp`
 - **.portBDac()** (1 connections) — `src/core/YM2149.hpp`
 - **.read8()** (1 connections) — `src/core/YM2149.hpp`
@@ -29,18 +22,26 @@
 - **dacLevel_** (1 connections) — `src/core/YM2149.hpp`
 - **envCnt_** (1 connections) — `src/core/YM2149.hpp`
 - **envMask3_** (1 connections) — `src/core/YM2149.hpp`
-- *... and 33 more nodes in this community*
+- **envPer_** (1 connections) — `src/core/YM2149.hpp`
+- **envPos_** (1 connections) — `src/core/YM2149.hpp`
+- **envReload_** (1 connections) — `src/core/YM2149.hpp`
+- **envShape_** (1 connections) — `src/core/YM2149.hpp`
+- **events_** (1 connections) — `src/core/YM2149.hpp`
+- **freqDiv2_** (1 connections) — `src/core/YM2149.hpp`
+- **hpfBypass_** (1 connections) — `src/core/YM2149.hpp`
+- *... and 26 more nodes in this community*
 
 ## Relationships
 
-- [Community 140](Community_140.md) (13 shared connections)
-- [Community 385](Community_385.md) (5 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 383](Community_383.md) (1 shared connections)
-- [Community 307](Community_307.md) (1 shared connections)
-- [Community 173](Community_173.md) (1 shared connections)
-- [Community 398](Community_398.md) (1 shared connections)
+- [Community 140](Community_140.md) (12 shared connections)
+- [Community 397](Community_397.md) (5 shared connections)
+- [Community 393](Community_393.md) (5 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 409](Community_409.md) (2 shared connections)
+- [Community 243](Community_243.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
+- [Community 406](Community_406.md) (1 shared connections)
+- [Community 408](Community_408.md) (1 shared connections)
 
 ## Source Files
 
@@ -48,8 +49,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 85 (99%)
-- INFERRED: 1 (1%)
+- EXTRACTED: 80 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

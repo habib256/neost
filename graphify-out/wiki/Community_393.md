@@ -1,27 +1,27 @@
 # Community 393
 
-> 4 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **SyncWrite** (5 connections) — `src/core/Shifter.hpp`
-- **frameCycle** (1 connections) — `src/core/Shifter.hpp`
-- **isRes** (1 connections) — `src/core/Shifter.hpp`
-- **val** (1 connections) — `src/core/Shifter.hpp`
+- **function** (5 connections)
+- **.setCycleClock()** (2 connections) — `src/core/YM2149.hpp`
+- **.setPortASink()** (2 connections) — `src/core/YM2149.hpp`
+- **.setPortBSink()** (2 connections) — `src/core/YM2149.hpp`
+- **.setPrinterSink()** (2 connections) — `src/core/YM2149.hpp`
 
 ## Relationships
 
-- [Community 5](Community_5.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 28](Community_28.md) (5 shared connections)
 
 ## Source Files
 
-- `src/core/Shifter.hpp`
+- `src/core/YM2149.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (80%)
-- INFERRED: 1 (20%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

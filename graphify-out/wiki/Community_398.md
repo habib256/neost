@@ -1,23 +1,26 @@
 # Community 398
 
-> 2 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **.serialize()** (2 connections) — `src/core/YM2149.hpp`
-- **StateArchive** (1 connections)
+- **Action** (5 connections) — `src/util/DesktopPointer.hpp`
+- **left** (1 connections) — `src/util/DesktopPointer.hpp`
+- **right** (1 connections) — `src/util/DesktopPointer.hpp`
+- **x** (1 connections) — `src/util/DesktopPointer.hpp`
+- **y** (1 connections) — `src/util/DesktopPointer.hpp`
 
 ## Relationships
 
-- [Community 28](Community_28.md) (1 shared connections)
+- [Community 90](Community_90.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/YM2149.hpp`
+- `src/util/DesktopPointer.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

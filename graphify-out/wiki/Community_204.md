@@ -4,32 +4,34 @@
 
 ## Key Concepts
 
-- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
-- **main()** (7 connections) — `tools/opendst_memdiff.py`
-- **Server** (6 connections) — `tools/opendst_memdiff.py`
-- **runs()** (3 connections) — `tools/opendst_memdiff.py`
-- **.cmd()** (3 connections) — `tools/opendst_memdiff.py`
-- **.dump()** (3 connections) — `tools/opendst_memdiff.py`
-- **parse_hex()** (2 connections) — `tools/opendst_memdiff.py`
-- **read_word()** (2 connections) — `tools/opendst_memdiff.py`
-- **.close()** (2 connections) — `tools/opendst_memdiff.py`
-- **.__init__()** (1 connections) — `tools/opendst_memdiff.py`
-- **Image mémoire [start, start+length) par tranches de 4 Ko.** (1 connections) — `tools/opendst_memdiff.py`
-- **Adresses triées → plages contiguës [(début, fin)].** (1 connections) — `tools/opendst_memdiff.py`
+- **IkbdRig** (11 connections) — `tests/selftest_logic.cpp`
+- **.send()** (4 connections) — `tests/selftest_logic.cpp`
+- **Scheduler** (4 connections)
+- **.drain()** (3 connections) — `tests/selftest_logic.cpp`
+- **.run()** (3 connections) — `tests/selftest_logic.cpp`
+- **Mfp** (2 connections)
+- **.IkbdRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **Ikbd** (1 connections)
+- **initializer_list** (1 connections)
+- **ikbd** (1 connections) — `tests/selftest_logic.cpp`
+- **mfp** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
 
 ## Relationships
 
-- [Community 18](Community_18.md) (3 shared connections)
-- [Community 248](Community_248.md) (2 shared connections)
-- [Community 151](Community_151.md) (1 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 183](Community_183.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 263](Community_263.md) (1 shared connections)
+- [Community 267](Community_267.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_memdiff.py`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
+- EXTRACTED: 21 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

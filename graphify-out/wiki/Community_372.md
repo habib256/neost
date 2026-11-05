@@ -1,33 +1,24 @@
 # Community 372
 
-> 8 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **testRtcWriteOnly()** (7 connections) — `tests/rtc_write_only_logic.cpp`
-- **rtc_write_only_logic.cpp** (7 connections) — `tests/rtc_write_only_logic.cpp`
-- **Checks** (4 connections) — `tests/rtc_write_only_logic.cpp`
-- **address()** (2 connections) — `tests/rtc_write_only_logic.cpp`
-- **.equal()** (2 connections) — `tests/rtc_write_only_logic.cpp`
-- **main()** (2 connections) — `tests/rtc_write_only_logic.cpp`
-- **count** (1 connections) — `tests/rtc_write_only_logic.cpp`
-- **failures** (1 connections) — `tests/rtc_write_only_logic.cpp`
+- **A11 — l'oracle Hatari entre en CI, et sa première exécution trouve deux références non re-dérivables (2026-09-01)** (2 connections) — `CHANGELOG.md`
+- **Ce que la première exécution a trouvé** (1 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 35](Community_35.md) (1 shared connections)
-- [Community 364](Community_364.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/rtc_write_only_logic.cpp`
+- `CHANGELOG.md`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 2 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

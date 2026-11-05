@@ -1,37 +1,30 @@
 # Community 350
 
-> 8 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.onSlice()** (10 connections) — `src/core/Blitter.hpp`
-- **.noteCpuBusAccess()** (5 connections) — `src/core/Blitter.hpp`
-- **.clearPreStartWindow()** (5 connections) — `src/core/Blitter.hpp`
-- **.pauseTransfer()** (5 connections) — `src/core/Blitter.hpp`
-- **.start()** (4 connections) — `src/core/Blitter.hpp`
-- **.armPreStartWindow()** (4 connections) — `src/core/Blitter.hpp`
-- **.reset()** (3 connections) — `src/core/Blitter.hpp`
-- **P2 — Blitter non-hog (`blitter.c:251,395`)** (3 connections) — `docs/CYCLE_ACCURACY.md`
+- **testGemdosDriveMapping()** (5 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **Checks** (4 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **.equal()** (2 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **main()** (2 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **count** (1 connections) — `tests/gemdos_drive_mapping_logic.cpp`
+- **failures** (1 connections) — `tests/gemdos_drive_mapping_logic.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 37](Community_37.md) (7 shared connections)
-- [Community 363](Community_363.md) (3 shared connections)
-- [Community 205](Community_205.md) (1 shared connections)
-- [Community 173](Community_173.md) (1 shared connections)
-- [Community 366](Community_366.md) (1 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 177](Community_177.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/CYCLE_ACCURACY.md`
-- `src/core/Blitter.hpp`
+- `tests/gemdos_drive_mapping_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (50%)
-- INFERRED: 15 (50%)
+- EXTRACTED: 9 (90%)
+- INFERRED: 1 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

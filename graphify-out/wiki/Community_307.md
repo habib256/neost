@@ -1,32 +1,30 @@
 # Community 307
 
-> 6 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Prochains travaux de précision** (6 connections) — `docs/HATARI_MAPPING.md`
-- **.setHpfBypass()** (3 connections) — `src/core/YM2149.hpp`
-- **P4 — Audio (registre-exactitude et chaîne STE)** (2 connections) — `docs/HATARI_MAPPING.md`
-- **✗ Candidats réfutés (mémo anti-faux-positifs)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **P2 — Datation d'événements localisée** (1 connections) — `docs/HATARI_MAPPING.md`
-- **P3 — Comportement / protocole (IRQ, registres, resets)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **Audio::Audio()** (5 connections) — `src/audio/Audio.cpp`
+- **.stop()** (4 connections) — `src/audio/Audio.hpp`
+- **DriveSound** (1 connections)
+- **DmaSound** (1 connections)
+- **YM2149** (1 connections)
 
 ## Relationships
 
-- [Community 28](Community_28.md) (1 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [Community 228](Community_228.md) (1 shared connections)
-- [Community 215](Community_215.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 61](Community_61.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MAPPING.md`
-- `src/core/YM2149.hpp`
+- `src/audio/Audio.cpp`
+- `src/audio/Audio.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (78%)
-- INFERRED: 2 (22%)
+- EXTRACTED: 6 (75%)
+- INFERRED: 2 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

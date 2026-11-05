@@ -1,69 +1,56 @@
 # Community 83
 
-> 33 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **check()** (49 connections) — `tests/fpu_decimal_oracle.cpp`
-- **fpu_decimal_oracle.cpp** (14 connections) — `tests/fpu_decimal_oracle.cpp`
-- **main()** (6 connections) — `tests/fpu_decimal_oracle.cpp`
-- **packedOutput()** (6 connections) — `tests/fpu_decimal_oracle.cpp`
-- **raw()** (6 connections) — `tests/fpu_decimal_oracle.cpp`
-- **oracleStatus()** (5 connections) — `tests/fpu_decimal_oracle.cpp`
-- **packedInput()** (5 connections) — `tests/fpu_decimal_oracle.cpp`
-- **testMmuMapping()** (5 connections) — `tests/mmu_logic.cpp`
-- **testPsgOddWrite()** (5 connections) — `tests/psg_odd_write_logic.cpp`
-- **flags()** (4 connections) — `tests/fpu_decimal_oracle.cpp`
-- **testIkbdMonitorMachine()** (4 connections) — `tests/ikbd_monitor_machine_logic.cpp`
-- **testMachineScc()** (4 connections) — `tests/machine_scc_logic.cpp`
-- **testSccAsync()** (4 connections) — `tests/scc_async_logic.cpp`
-- **testSccAutoEnables()** (4 connections) — `tests/scc_auto_enables_logic.cpp`
-- **testSccStatusModes()** (4 connections) — `tests/scc_status_modes_logic.cpp`
-- **testSccSync()** (4 connections) — `tests/scc_sync_logic.cpp`
-- **scc_async_logic.cpp** (4 connections) — `tests/scc_async_logic.cpp`
-- **scc_auto_enables_logic.cpp** (4 connections) — `tests/scc_auto_enables_logic.cpp`
-- **scc_status_modes_logic.cpp** (4 connections) — `tests/scc_status_modes_logic.cpp`
-- **scc_sync_logic.cpp** (4 connections) — `tests/scc_sync_logic.cpp`
-- **testMachineMfpTx()** (3 connections) — `tests/machine_mfp_tx_logic.cpp`
-- **testMachineMidi()** (3 connections) — `tests/machine_midi_logic.cpp`
-- **random64()** (2 connections) — `tests/fpu_decimal_oracle.cpp`
-- **main()** (2 connections) — `tests/ikbd_monitor_machine_logic.cpp`
-- **main()** (2 connections) — `tests/machine_scc_logic.cpp`
-- *... and 8 more nodes in this community*
+- **.fifoRefill()** (14 connections) — `src/core/DmaSound.hpp`
+- **.updateDac()** (11 connections) — `src/core/DmaSound.hpp`
+- **Audio** (10 connections) — `docs/IMPLEMENTED.md`
+- **.write8()** (9 connections) — `src/core/DmaSound.hpp`
+- **4. Ce qui RESTE — inventaire priorisé** (8 connections) — `docs/CYCLE_ACCURACY.md`
+- **.liveCounter()** (7 connections) — `src/core/DmaSound.hpp`
+- **.setXsint()** (6 connections) — `src/core/DmaSound.hpp`
+- **.startNewFrame()** (6 connections) — `src/core/DmaSound.hpp`
+- **.recordEvent()** (5 connections) — `src/core/DmaSound.hpp`
+- **.fifoPull()** (4 connections) — `src/core/DmaSound.hpp`
+- **.onHbl()** (4 connections) — `src/core/DmaSound.hpp`
+- **.reset()** (3 connections) — `src/core/DmaSound.hpp`
+- **P2 — Son DMA STE (`dmaSnd.c:737`)** (3 connections) — `docs/CYCLE_ACCURACY.md`
+- **fetchWindowOpen** (2 connections) — `src/core/DmaSound.hpp`
+- **Le fetch du son DMA se mesure enfin — et c'est l'oracle qui ne se reproduit pas (2026-09-02)** (2 connections) — `CHANGELOG.md`
+- **Passe de cohérence doc ↔ code, 2ᵉ tour (2026-08-19)** (2 connections) — `CHANGELOG.md`
+- **✅ Beam-sync : CLOS (2026-07-09, complété 2026-08-06) — ex-P1 de tête** (1 connections) — `docs/CYCLE_ACCURACY.md`
+- **P2 — Restes vidéo « plan »** (1 connections) — `docs/CYCLE_ACCURACY.md`
+- **P3 — Horloges & divers** (1 connections) — `docs/CYCLE_ACCURACY.md`
+- **P3 — Précision « démos extrêmes »** (1 connections) — `docs/CYCLE_ACCURACY.md`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (19 shared connections)
-- [Community 41](Community_41.md) (17 shared connections)
-- [Community 35](Community_35.md) (10 shared connections)
-- [Community 15](Community_15.md) (4 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 162](Community_162.md) (1 shared connections)
-- [Community 236](Community_236.md) (1 shared connections)
-- [Community 193](Community_193.md) (1 shared connections)
-- [Community 8](Community_8.md) (1 shared connections)
-- [Community 194](Community_194.md) (1 shared connections)
-- [Community 195](Community_195.md) (1 shared connections)
-- [Community 196](Community_196.md) (1 shared connections)
+- [Community 48](Community_48.md) (15 shared connections)
+- [Community 13](Community_13.md) (11 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 63](Community_63.md) (2 shared connections)
+- [Community 243](Community_243.md) (2 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 140](Community_140.md) (2 shared connections)
+- [Community 281](Community_281.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
+- [Community 37](Community_37.md) (1 shared connections)
+- [Community 317](Community_317.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fpu_decimal_oracle.cpp`
-- `tests/ikbd_monitor_machine_logic.cpp`
-- `tests/machine_mfp_tx_logic.cpp`
-- `tests/machine_midi_logic.cpp`
-- `tests/machine_scc_logic.cpp`
-- `tests/mmu_logic.cpp`
-- `tests/psg_odd_write_logic.cpp`
-- `tests/scc_async_logic.cpp`
-- `tests/scc_auto_enables_logic.cpp`
-- `tests/scc_status_modes_logic.cpp`
-- `tests/scc_sync_logic.cpp`
+- `CHANGELOG.md`
+- `docs/CYCLE_ACCURACY.md`
+- `docs/IMPLEMENTED.md`
+- `src/core/DmaSound.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 66 (55%)
-- INFERRED: 55 (45%)
+- EXTRACTED: 32 (44%)
+- INFERRED: 41 (56%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,19 +1,23 @@
 # Community 62
 
-> 36 nodes
+> 41 nodes
 
 ## Key Concepts
 
 - **Rig** (28 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **stx_raw_track_overlay_logic.cpp** (22 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **testStxRawTrackOverlay()** (11 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **checkDump()** (10 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **writeSector()** (9 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **.data()** (7 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **.reg()** (7 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **writeImage()** (7 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **Checks** (6 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **dumpTrack()** (5 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **.read()** (5 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **.equal()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **put16()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **put32()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **.finish()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **.mode()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **checksum()** (3 connections) — `tests/stx_raw_track_overlay_logic.cpp`
@@ -25,17 +29,13 @@
 - **.irq()** (2 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **.next()** (2 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **.pending()** (1 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **.Rig()** (1 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **count** (1 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **failures** (1 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **Bus** (1 connections)
-- *... and 11 more nodes in this community*
+- *... and 16 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (10 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 35](Community_35.md) (1 shared connections)
+- [Community 102](Community_102.md) (15 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -43,7 +43,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 73 (99%)
+- EXTRACTED: 94 (99%)
 - INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 

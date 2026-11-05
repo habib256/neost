@@ -1,33 +1,32 @@
 # Community 356
 
-> 10 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **MegaSteTransferChecks** (11 connections) — `tools/test_timing_oracle.py`
-- **.valid()** (4 connections) — `tools/test_timing_oracle.py`
-- **.validate()** (4 connections) — `tools/test_timing_oracle.py`
-- **.test_lower_bounds_keep_blitter_at_bus_frequency()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_missing_sample_rejected()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_one_impossible_completion_or_irq_rejected()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_irq_while_busy_rejected_even_with_valid_counts_and_durations()** (2 connections) — `tools/test_timing_oracle.py`
-- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
-- **.test_iack_idle_keeps_cpu_clock_domain()** (1 connections) — `tools/test_timing_oracle.py`
-- **.test_iack_missing_or_wrong_domain_rejected()** (1 connections) — `tools/test_timing_oracle.py`
+- **.triggerBusError()** (5 connections) — `src/core/Cpu68k.hpp`
+- **Bug hunt 11ᵉ passe : 24 correctifs sur six sous-systèmes, save-state v51 (2026-10-20)** (4 connections) — `CHANGELOG.md`
+- **CPU (Moira + intégration) — suivi (audit vendor 2026-08-13)** (2 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 207](Community_207.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 27](Community_27.md) (2 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 105](Community_105.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/test_timing_oracle.py`
+- `CHANGELOG.md`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (56%)
+- INFERRED: 4 (44%)
 - AMBIGUOUS: 0 (0%)
 
 ---

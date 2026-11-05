@@ -1,34 +1,39 @@
 # Community 231
 
-> 9 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **testSccExtendedRead()** (9 connections) — `tests/scc_extended_read_logic.cpp`
-- **ExtendedRig** (7 connections) — `tests/scc_extended_read_logic.cpp`
-- **.write()** (4 connections) — `tests/scc_extended_read_logic.cpp`
-- **.extended()** (3 connections) — `tests/scc_extended_read_logic.cpp`
-- **.ExtendedRig()** (2 connections) — `tests/scc_extended_read_logic.cpp`
-- **.read()** (2 connections) — `tests/scc_extended_read_logic.cpp`
-- **main()** (2 connections) — `tests/scc_extended_read_logic.cpp`
-- **Scc** (1 connections)
-- **scc** (1 connections) — `tests/scc_extended_read_logic.cpp`
+- **IconButton()** (7 connections) — `src/gui/UiCommon.cpp`
+- **drawHardDiskPage()** (6 connections) — `src/gui/MediaPages.cpp`
+- **drawFloppyWindow()** (5 connections) — `src/gui/ConfigWindow.cpp`
+- **drawCartPage()** (4 connections) — `src/gui/MediaPages.cpp`
+- **drawFloppyPage()** (4 connections) — `src/gui/MediaPages.cpp`
+- **hardDiskDriveLetters()** (4 connections) — `src/gui/MediaPages.cpp`
+- **string** (4 connections)
+- **pathEntryRow()** (3 connections) — `src/gui/MediaPages.cpp`
+- **App** (2 connections)
+- **size_t** (1 connections)
 
 ## Relationships
 
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
-- [Community 35](Community_35.md) (1 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
+- [Community 380](Community_380.md) (3 shared connections)
+- [Community 51](Community_51.md) (3 shared connections)
+- [Community 11](Community_11.md) (1 shared connections)
+- [Community 229](Community_229.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_extended_read_logic.cpp`
+- `src/gui/ConfigWindow.cpp`
+- `src/gui/MediaPages.cpp`
+- `src/gui/UiCommon.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (89%)
-- INFERRED: 2 (11%)
+- EXTRACTED: 17 (61%)
+- INFERRED: 11 (39%)
 - AMBIGUOUS: 0 (0%)
 
 ---

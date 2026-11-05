@@ -1,32 +1,27 @@
 # Community 361
 
-> 7 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **testRtcElapsedDifferential()** (7 connections) — `tests/rtc_elapsed_differential_logic.cpp`
-- **rtc_elapsed_differential_logic.cpp** (7 connections) — `tests/rtc_elapsed_differential_logic.cpp`
-- **configure()** (5 connections) — `tests/rtc_elapsed_differential_logic.cpp`
-- **address()** (3 connections) — `tests/rtc_elapsed_differential_logic.cpp`
-- **main()** (2 connections) — `tests/rtc_elapsed_differential_logic.cpp`
-- **DateTime** (1 connections)
-- **Rtc** (1 connections)
+- **Checks** (4 connections) — `tests/blitter_rmw_logic.cpp`
+- **.equal()** (2 connections) — `tests/blitter_rmw_logic.cpp`
+- **count** (1 connections) — `tests/blitter_rmw_logic.cpp`
+- **failures** (1 connections) — `tests/blitter_rmw_logic.cpp`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 35](Community_35.md) (1 shared connections)
-- [Community 364](Community_364.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/rtc_elapsed_differential_logic.cpp`
+- `tests/blitter_rmw_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

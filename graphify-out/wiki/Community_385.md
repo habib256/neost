@@ -1,26 +1,23 @@
 # Community 385
 
-> 5 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **function** (5 connections)
-- **.setCycleClock()** (2 connections) — `src/core/YM2149.hpp`
-- **.setPortASink()** (2 connections) — `src/core/YM2149.hpp`
-- **.setPortBSink()** (2 connections) — `src/core/YM2149.hpp`
-- **.setPrinterSink()** (2 connections) — `src/core/YM2149.hpp`
+- **.setDmaGate()** (2 connections) — `src/audio/Audio.hpp`
+- **function** (2 connections)
 
 ## Relationships
 
-- [Community 28](Community_28.md) (5 shared connections)
+- [Community 61](Community_61.md) (2 shared connections)
 
 ## Source Files
 
-- `src/core/YM2149.hpp`
+- `src/audio/Audio.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 3 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

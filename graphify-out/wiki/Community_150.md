@@ -1,12 +1,10 @@
 # Community 150
 
-> 21 nodes
+> 19 nodes
 
 ## Key Concepts
 
 - **CartridgeKey** (39 connections) — `src/io/CartridgeKey.hpp`
-- **.setModel()** (5 connections) — `src/io/CartridgeKey.hpp`
-- **.reset()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **.attached()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **.rom3Read()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **.setLog()** (3 connections) — `src/io/CartridgeKey.hpp`
@@ -28,16 +26,15 @@
 
 ## Relationships
 
-- [Community 176](Community_176.md) (12 shared connections)
-- [Community 267](Community_267.md) (4 shared connections)
-- [Community 35](Community_35.md) (4 shared connections)
+- [Community 176](Community_176.md) (11 shared connections)
+- [Community 211](Community_211.md) (5 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 - [Community 10](Community_10.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 244](Community_244.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
+- [Community 230](Community_230.md) (1 shared connections)
 - [Community 136](Community_136.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 358](Community_358.md) (1 shared connections)
+- [Community 243](Community_243.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 51](Community_51.md) (1 shared connections)
 
@@ -48,8 +45,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 44 (83%)
-- INFERRED: 9 (17%)
+- EXTRACTED: 41 (85%)
+- INFERRED: 7 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

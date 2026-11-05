@@ -1,27 +1,29 @@
 # Community 353
 
-> 3 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **mfp_usart_control_logic.cpp** (4 connections) — `tests/mfp_usart_control_logic.cpp`
-- **testMfpUsartControl()** (3 connections) — `tests/mfp_usart_control_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_usart_control_logic.cpp`
+- **MegaSteBusComparison** (7 connections) — `tools/test_timing_oracle.py`
+- **.check()** (5 connections) — `tools/test_timing_oracle.py`
+- **.test_changed_program_rejected()** (2 connections) — `tools/test_timing_oracle.py`
+- **.test_exact_reference_and_probe_identity()** (2 connections) — `tools/test_timing_oracle.py`
+- **.test_missing_sample_rejected()** (2 connections) — `tools/test_timing_oracle.py`
+- **.test_one_cycle_and_clock_domain_errors_rejected()** (2 connections) — `tools/test_timing_oracle.py`
+- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
 
 ## Relationships
 
-- [Community 35](Community_35.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_usart_control_logic.cpp`
+- `tools/test_timing_oracle.py`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 11 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

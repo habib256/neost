@@ -1,12 +1,10 @@
 # Community 120
 
-> 23 nodes
+> 21 nodes
 
 ## Key Concepts
 
 - **Timing** (21 connections) — `src/core/VideoGlue.hpp`
-- **VideoGlue.hpp** (8 connections) — `src/core/VideoGlue.hpp`
-- **wakestate()** (1 connections) — `src/core/VideoGlue.hpp`
 - **Hbl_Pos_Hi** (1 connections) — `src/core/VideoGlue.hpp`
 - **Hbl_Pos_Low_50** (1 connections) — `src/core/VideoGlue.hpp`
 - **Hbl_Pos_Low_60** (1 connections) — `src/core/VideoGlue.hpp`
@@ -30,12 +28,7 @@
 
 ## Relationships
 
-- [Community 200](Community_200.md) (1 shared connections)
 - [Community 88](Community_88.md) (1 shared connections)
-- [Community 22](Community_22.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
 
 ## Source Files
 
@@ -43,7 +36,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 28 (100%)
+- EXTRACTED: 21 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

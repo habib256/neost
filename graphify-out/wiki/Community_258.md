@@ -1,34 +1,44 @@
 # Community 258
 
-> 10 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **build()** (10 connections) — `tools/make_selftest_cart.py`
-- **make_selftest_cart.py** (5 connections) — `tools/make_selftest_cart.py`
-- **raw()** (3 connections) — `tools/make_selftest_cart.py`
-- **stritem()** (3 connections) — `tools/make_selftest_cart.py`
-- **main()** (3 connections) — `tools/make_selftest_cart.py`
-- **lbl()** (2 connections) — `tools/make_selftest_cart.py`
-- **raw32()** (2 connections) — `tools/make_selftest_cart.py`
-- **br()** (1 connections) — `tools/make_selftest_cart.py`
-- **imm_addr()** (1 connections) — `tools/make_selftest_cart.py`
-- **vec()** (1 connections) — `tools/make_selftest_cart.py`
+- **compile()** (7 connections) — `src/android/main_android.cpp`
+- **Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)** (6 connections) — `docs/IMPLEMENTED.md`
+- **stScancode()** (5 connections) — `src/headless/main_headless.cpp`
+- **initGl()** (3 connections) — `src/android/main_android.cpp`
+- **Headless : `--joy-at`, `--joy-script` et `--mouse-at` deviennent répétables (`OUTIL-1`) (2026-08-25)** (2 connections) — `CHANGELOG.md`
+- **Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05)** (2 connections) — `CHANGELOG.md`
+- **0. Démarrer en cinq commandes** (2 connections) — `docs/OPENDST.md`
+- **GLenum** (1 connections)
+- **GLuint** (1 connections)
 
 ## Relationships
 
-- [Community 3](Community_3.md) (2 shared connections)
-- [Community 18](Community_18.md) (2 shared connections)
-- [Community 248](Community_248.md) (1 shared connections)
+- [Community 58](Community_58.md) (3 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 200](Community_200.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
+- [Community 151](Community_151.md) (1 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/make_selftest_cart.py`
+- `CHANGELOG.md`
+- `docs/IMPLEMENTED.md`
+- `docs/OPENDST.md`
+- `src/android/main_android.cpp`
+- `src/headless/main_headless.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 12 (57%)
+- INFERRED: 9 (43%)
 - AMBIGUOUS: 0 (0%)
 
 ---

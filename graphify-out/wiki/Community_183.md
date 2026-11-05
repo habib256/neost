@@ -1,39 +1,37 @@
 # Community 183
 
-> 14 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **StopRig** (13 connections) — `tests/scc_rx_stop_logic.cpp`
-- **testSccRxStop()** (10 connections) — `tests/scc_rx_stop_logic.cpp`
-- **.write()** (3 connections) — `tests/scc_rx_stop_logic.cpp`
-- **main()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
-- **.pop()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
-- **.status()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
-- **.StopRig()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
-- **.transmit()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
-- **Scc** (1 connections)
-- **Scheduler** (1 connections)
-- **channel** (1 connections) — `tests/scc_rx_stop_logic.cpp`
-- **output** (1 connections) — `tests/scc_rx_stop_logic.cpp`
-- **scc** (1 connections) — `tests/scc_rx_stop_logic.cpp`
-- **scheduler** (1 connections) — `tests/scc_rx_stop_logic.cpp`
+- **FdcRig** (17 connections) — `tests/selftest_logic.cpp`
+- **.dmaAddr()** (2 connections) — `tests/selftest_logic.cpp`
+- **.setMode()** (2 connections) — `tests/selftest_logic.cpp`
+- **.settle()** (2 connections) — `tests/selftest_logic.cpp`
+- **.FdcRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **Fdc** (1 connections)
+- **YM2149** (1 connections)
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **fdc** (1 connections) — `tests/selftest_logic.cpp`
+- **mfp** (1 connections) — `tests/selftest_logic.cpp`
+- **psg** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (4 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
-- [Community 35](Community_35.md) (1 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
+- [Community 204](Community_204.md) (2 shared connections)
+- [Community 267](Community_267.md) (1 shared connections)
+- [Community 249](Community_249.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_rx_stop_logic.cpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (92%)
-- INFERRED: 2 (8%)
+- EXTRACTED: 19 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

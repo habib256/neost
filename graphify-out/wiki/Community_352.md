@@ -1,31 +1,30 @@
 # Community 352
 
-> 6 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **ym_c10_noise_logic.cpp** (8 connections) — `tests/ym_c10_noise_logic.cpp`
-- **testYmC10Noise()** (5 connections) — `tests/ym_c10_noise_logic.cpp`
-- **render()** (4 connections) — `tests/ym_c10_noise_logic.cpp`
-- **setReg()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
-- **swing()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
-- **YM2149** (1 connections)
+- **Docs à corriger** (7 connections) — `docs/HATARI_MAPPING.md`
+- **Commentaires code (signalés au passage)** (2 connections) — `docs/HATARI_MAPPING.md`
+- **CHANGELOG.md** (1 connections) — `docs/HATARI_MAPPING.md`
+- **DEV.md** (1 connections) — `docs/HATARI_MAPPING.md`
+- **docs/CYCLE_ACCURACY.md** (1 connections) — `docs/HATARI_MAPPING.md`
+- **docs/HATARI_DIVERGENCES.md** (1 connections) — `docs/HATARI_MAPPING.md`
+- **TODO.md** (1 connections) — `docs/HATARI_MAPPING.md`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (4 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 35](Community_35.md) (1 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ym_c10_noise_logic.cpp`
+- `docs/HATARI_MAPPING.md`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (88%)
-- INFERRED: 2 (12%)
+- EXTRACTED: 7 (88%)
+- INFERRED: 1 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 20
 
-> 70 nodes
+> 69 nodes
 
 ## Key Concepts
 
@@ -21,7 +21,6 @@
 - **.sfFold()** (6 connections) — `src/io/Fpu.hpp`
 - **.armOut()** (6 connections) — `src/io/Fpu.hpp`
 - **.setCC()** (6 connections) — `src/io/Fpu.hpp`
-- **Fpu.hpp** (6 connections) — `src/io/Fpu.hpp`
 - **.romConstant()** (5 connections) — `src/io/Fpu.hpp`
 - **.armIn()** (5 connections) — `src/io/Fpu.hpp`
 - **.read8()** (5 connections) — `src/io/Fpu.hpp`
@@ -29,22 +28,23 @@
 - **.dToExt()** (5 connections) — `src/io/Fpu.hpp`
 - **.toE()** (5 connections) — `src/io/Fpu.hpp`
 - **.fmtLen()** (4 connections) — `src/io/Fpu.hpp`
-- *... and 45 more nodes in this community*
+- **.condition()** (4 connections) — `src/io/Fpu.hpp`
+- *... and 44 more nodes in this community*
 
 ## Relationships
 
-- [Community 15](Community_15.md) (6 shared connections)
+- [Community 15](Community_15.md) (5 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
 - [Community 175](Community_175.md) (3 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
 - [Community 67](Community_67.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 243](Community_243.md) (1 shared connections)
 - [Community 218](Community_218.md) (1 shared connections)
 - [Community 149](Community_149.md) (1 shared connections)
-- [Community 364](Community_364.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 395](Community_395.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 
 ## Source Files
 
@@ -54,7 +54,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 126 (69%)
+- EXTRACTED: 122 (69%)
 - INFERRED: 56 (31%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,53 +1,46 @@
 # Community 170
 
-> 16 nodes
+> 14 nodes
 
 ## Key Concepts
 
-- **.loadImage()** (13 connections) — `src/io/Fdc.hpp`
-- **.eject()** (8 connections) — `src/io/Fdc.hpp`
-- **decodeMsa()** (8 connections) — `src/io/Fdc.cpp`
-- **fuzzOne()** (7 connections) — `tests/fuzz_diskimage.cpp`
-- **Débogage headless (l'outil n°1)** (7 connections) — `DEV.md`
-- **decodeDim()** (6 connections) — `src/io/Fdc.cpp`
-- **.present()** (6 connections) — `src/io/Fdc.hpp`
-- **.transitionSetState()** (5 connections) — `src/io/Fdc.hpp`
-- **.transitionForceWprt()** (4 connections) — `src/io/Fdc.hpp`
-- **decodeContainer()** (4 connections) — `src/io/Fdc.cpp`
-- **looksLikeMsaHeader()** (4 connections) — `src/io/Fdc.cpp`
-- **fuzzIpf()** (4 connections) — `tests/fuzz_diskimage.cpp`
-- **A30 — les parseurs d'images disquette passent au fuzzer, et la CI ne bâtissait pas ce qu'elle lance (2026-08-28)** (4 connections) — `CHANGELOG.md`
-- **Techniques vérifiées** (3 connections) — `DEV.md`
-- **.inserted()** (2 connections) — `src/io/Fdc.hpp`
-- **string** (1 connections)
+- **testMfpClock()** (6 connections) — `tests/mfp_clock_logic.cpp`
+- **testFdcTiming()** (5 connections) — `tests/fdc_timing_logic.cpp`
+- **duration()** (5 connections) — `tests/ste_cmap_slot_logic.cpp`
+- **mfp_clock_logic.cpp** (5 connections) — `tests/mfp_clock_logic.cpp`
+- **word** (5 connections) — `tools/gstmcu_bench.cpp`
+- **Checks** (4 connections) — `tests/fdc_timing_logic.cpp`
+- **.execute()** (3 connections) — `tests/fdc_timing_logic.cpp`
+- **testSteCmapSlot()** (3 connections) — `tests/ste_cmap_slot_logic.cpp`
+- **.MegaSteRig()** (2 connections) — `tests/blitter_rmw_logic.cpp`
+- **.equal()** (2 connections) — `tests/fdc_timing_logic.cpp`
+- **main()** (2 connections) — `tests/fdc_timing_logic.cpp`
+- **main()** (2 connections) — `tests/mfp_clock_logic.cpp`
+- **count** (1 connections) — `tests/fdc_timing_logic.cpp`
+- **failures** (1 connections) — `tests/fdc_timing_logic.cpp`
 
 ## Relationships
 
-- [Community 63](Community_63.md) (12 shared connections)
-- [Community 12](Community_12.md) (5 shared connections)
-- [Community 256](Community_256.md) (5 shared connections)
-- [Community 54](Community_54.md) (5 shared connections)
-- [Community 24](Community_24.md) (4 shared connections)
-- [Community 95](Community_95.md) (2 shared connections)
-- [Community 151](Community_151.md) (2 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 9](Community_9.md) (2 shared connections)
-- [Community 315](Community_315.md) (1 shared connections)
-- [Community 78](Community_78.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 41](Community_41.md) (6 shared connections)
+- [Community 132](Community_132.md) (1 shared connections)
+- [Community 192](Community_192.md) (1 shared connections)
+- [Community 200](Community_200.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 272](Community_272.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `DEV.md`
-- `src/io/Fdc.cpp`
-- `src/io/Fdc.hpp`
-- `tests/fuzz_diskimage.cpp`
+- `tests/blitter_rmw_logic.cpp`
+- `tests/fdc_timing_logic.cpp`
+- `tests/mfp_clock_logic.cpp`
+- `tests/ste_cmap_slot_logic.cpp`
+- `tools/gstmcu_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 36 (55%)
-- INFERRED: 30 (45%)
+- EXTRACTED: 24 (75%)
+- INFERRED: 8 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---
