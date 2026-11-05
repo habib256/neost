@@ -55,6 +55,15 @@ Ce qui reste OUVERT est dans [`../TODO.md`](../TODO.md).
 
 ## Vroom STE : vérifier la conduite et l'arrêt audio (2026-11-05)
 
+**Périmètre actuel : seule l'image `[cr Elite]` reste dans la ludothèque.**
+Le mainteneur a demandé le retrait de l'image sans suffixe après la campagne
+ci-dessous. Ses six scénarios sont archivés dans
+`tests/replays/archive/vroom_retired.json` et ne font plus partie des suites
+actives. Les mesures qui suivent décrivent les médias avant ce retrait ; les
+défauts restent documentés, sans être déclarés corrigés. Pour rejouer un cas
+archivé, il faut rétablir explicitement l'image privée dont l'empreinte est
+consignée et passer `--manifest tests/replays/archive/vroom_retired.json`.
+
 ### Croisement des deux images et des deux TOS (2026-11-05)
 
 **Les échecs de chargement et d'arrêt audio de cette campagne concernent
@@ -188,7 +197,7 @@ rouge**, exclu de la suite normale :
 
 ```sh
 python3 tools/run_game_replay.py --only vroom_elite_ste_race
-python3 tools/run_game_replay.py --only vroom_tos206_audio_stop,vroom_tos206_ste_race
+python3 tools/run_game_replay.py --manifest tests/replays/archive/vroom_retired.json --only vroom_tos206_audio_stop,vroom_tos206_ste_race
 ```
 
 La seconde commande doit encore rendre 1. Chaîne causale lue dans le jeu :
@@ -342,7 +351,7 @@ graines NeoST 5 / Hatari 3 : même bruit, 0,0 % à 5200. Le rejeu utilise désor
 cette image ; aucune préparation ni réparation du média n'est nécessaire :
 
 ```sh
-python3 tools/run_game_replay.py --only vroom_tos206_loader_collision
+python3 tools/run_game_replay.py --manifest tests/replays/archive/vroom_retired.json --only vroom_tos206_loader_collision
 ```
 
 Le JSON du rejeu contient le script joystick répété 40 fois. La contre-épreuve

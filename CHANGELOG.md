@@ -6,6 +6,17 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Vroom : conserver uniquement l'image Elite dans la ludothèque (2026-11-05)
+
+À la demande du mainteneur, l'image sans suffixe est supprimée de la
+ludothèque locale. Sa copie `[reloc fix]` rejoint les artefacts d'audit hors
+de `disks/`. Les six scénarios qui en dépendent sont conservés dans
+`tests/replays/archive/vroom_retired.json`, hors des suites actives ; leurs
+échecs documentés ne sont pas considérés comme corrigés. Les rejeux Elite
+restent actifs, dont le parcours natif d'un tour complet.
+Validation : suite `full`, boot GUI compris, deux rejeux Elite et un parcours
+snapshot Elite passent ; l'empreinte de sa disquette est inchangée.
+
 ## Vroom STE : conduite vérifiée et verdicts du banc renforcés (2026-11-05)
 
 Croisement des deux images sous TOS 1.62 et 2.06, STE 1 Mo, huit graines par

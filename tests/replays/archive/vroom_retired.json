@@ -1,0 +1,250 @@
+{
+  "_comment": "Image sans suffixe retirée de la ludothèque le 2026-11-05 à la demande du mainteneur. Scénarios historiques, hors suites actives ; échecs connus conservés. Nécessitent de rétablir explicitement le média privé correspondant.",
+  "replays": [
+    {
+      "id": "vroom_tos206_ste",
+      "machine": "ste",
+      "mem": 1,
+      "note": "Menu puis entrée en course sous TOS 2.06 UK, sans course complète validée. SPACE à partir de 900 ; voir le cas distinct de pile TOS avec SPACE précoce dans docs/CASE_STUDIES.md.",
+      "disk": "disks/st/Vroom (1991)(Lankhor).st",
+      "rom": "roms/tos206uk.img",
+      "fdc_seed": 1,
+      "hatari_seed": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 20,
+      "frames": [
+        4000,
+        6000,
+        8000
+      ],
+      "window": 80,
+      "step": 1,
+      "max_diff": 0.5
+    },
+    {
+      "id": "vroom_tos206_megaste",
+      "machine": "megaste",
+      "mem": 4,
+      "note": "Menu puis entrée en course sous TOS 2.06 UK, sans course complète validée. SPACE à partir de 900 ; voir le cas distinct de pile TOS avec SPACE précoce dans docs/CASE_STUDIES.md.",
+      "disk": "disks/st/Vroom (1991)(Lankhor).st",
+      "rom": "roms/tos206uk.img",
+      "fdc_seed": 1,
+      "hatari_seed": 1,
+      "keys": [
+        900,
+        1200,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000,
+        5500
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 20,
+      "frames": [
+        4000,
+        6000,
+        8000
+      ],
+      "window": 80,
+      "step": 1,
+      "max_diff": 0.5
+    },
+    {
+      "id": "vroom_tos206_loader_collision",
+      "diagnostic": true,
+      "machine": "ste",
+      "mem": 1,
+      "note": "Diagnostic sur la disquette originale : échec de chargement connu, sans halt CPU, bruit identique chez Hatari. Exclu de la suite de compatibilité par défaut ; ne valide pas une partie réussie ni la fréquence matérielle.",
+      "disk": "disks/st/Vroom (1991)(Lankhor).st",
+      "rom": "roms/tos206uk.img",
+      "fdc_seed": 5,
+      "hatari_seed": 3,
+      "keys": [
+        1300,
+        1600,
+        2000,
+        2500,
+        3200,
+        4000
+      ],
+      "joy_at": 1000,
+      "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10",
+      "joy_repeat": 40,
+      "frames": [
+        5200
+      ],
+      "window": 0,
+      "step": 1,
+      "max_diff": 0.0,
+      "key_hold": 12
+    },
+    {
+      "id": "vroom_tos206_audio_stop",
+      "disk": "disks/st/Vroom (1991)(Lankhor).st",
+      "machine": "ste",
+      "rom": "roms/tos206uk.img",
+      "mem": 1,
+      "fdc_seed": 5,
+      "hatari_seed": 5,
+      "keys": [
+        2000
+      ],
+      "joy_at": 6040,
+      "joy": "F*20 .*1960",
+      "frames": [
+        6000,
+        6200,
+        7000
+      ],
+      "window": 20,
+      "step": 1,
+      "max_diff": 0.5,
+      "diagnostic": true,
+      "note": "Diagnostic ouvert : SPACE 2000 puis un seul Fire 6040. Une IRQ Timer A en attente relance la musique après TACR=0 ; le chargement écrase le gestionnaire encore actif. NeoST bombe/halt, Hatari atteint le menu. Ce rejeu échoue actuellement et ne compte pas comme compatibilité."
+    },
+    {
+      "id": "vroom_tos206_ste_race",
+      "disk": "disks/st/Vroom (1991)(Lankhor).st",
+      "machine": "ste",
+      "rom": "roms/tos206uk.img",
+      "mem": 1,
+      "fdc_seed": 5,
+      "hatari_seed": 5,
+      "keys": [
+        2000
+      ],
+      "mouse": [
+        [
+          5200,
+          "D"
+        ],
+        [
+          5240,
+          "D"
+        ],
+        [
+          5280,
+          "11111111111111111111"
+        ],
+        [
+          5340,
+          "R"
+        ],
+        [
+          5380,
+          "11111111111111111111"
+        ],
+        [
+          5440,
+          "U"
+        ],
+        [
+          5480,
+          "U"
+        ],
+        [
+          5540,
+          "11111111111111111111"
+        ]
+      ],
+      "joy_at": 4008,
+      "joy": "F*20 .*2772 U*380 [UR]*30 U*200",
+      "frames": [
+        5500,
+        6750,
+        7100,
+        7400
+      ],
+      "window": 40,
+      "step": 1,
+      "max_diff": 0.5,
+      "mouse_step": 60,
+      "diagnostic": true,
+      "note": "Parcours piloté inspecté, image originale : JOYSTICK/AUTO puis accélération et braquage. Deux émulateurs roulent mais divergent à 7400 (12,35 %), seuil 0,5 % conservé ; diagnostic de comparaison encore rouge, distinct du halt audio et du chargement bruité.",
+      "scene_hashes": {
+        "5500": "8ddeb76f6142ae8360f46cb4f31c66c2c8a3033f24dd14ab2cb70c963e842f92",
+        "6750": "613f9c2e54849a56a6010bc8af13c7775c933055a3aa12cf50a73f111d977e6c",
+        "7100": "3c3b69034f0c8399c54a9896770fd77ad72d927502bc0a3fd950a55bd1e54257",
+        "7400": "c77f230dc3e4b2874b22639414661d99de5fc4c1b8fcc3fe48317a37259d6517"
+      }
+    },
+    {
+      "id": "vroom_tos206_ste_lap",
+      "ref_kind": "snapshot",
+      "note": "Depuis reset, STE 1 Mo, FDC normal, 15401 trames. Capture inspectée : Lap 1, conduite poursuivie. Ne résout pas les collisions de démarrage et ne prouve pas le matériel.",
+      "disk": "disks/st/Vroom (1991)(Lankhor).st",
+      "rom": "roms/tos206uk.img",
+      "args": [
+        "roms/tos206uk.img",
+        "--machine",
+        "ste",
+        "--mem",
+        "1m",
+        "--disk",
+        "disks/st/Vroom (1991)(Lankhor).st",
+        "--disk-ro",
+        "--fdc-seed",
+        "5",
+        "--frames",
+        "15401",
+        "--key-hold",
+        "8",
+        "--scancode-at",
+        "2000",
+        "39",
+        "--joy-script-file",
+        "4008",
+        "tests/replays/archive/vroom_tos206_ste_lap.joy",
+        "--mouse-at",
+        "5200",
+        "D",
+        "--mouse-at",
+        "5240",
+        "D",
+        "--mouse-at",
+        "5280",
+        "11111111111111111111",
+        "--mouse-at",
+        "5340",
+        "R",
+        "--mouse-at",
+        "5380",
+        "11111111111111111111",
+        "--mouse-at",
+        "5440",
+        "U",
+        "--mouse-at",
+        "5480",
+        "U",
+        "--mouse-at",
+        "5540",
+        "11111111111111111111",
+        "--mouse-step",
+        "60"
+      ],
+      "size": [
+        416,
+        276
+      ],
+      "rgb_sha256": "28f06484ed84f8d392b068eac569276a9d5945d57b720465efe5042c24545162",
+      "media_sha256": {
+        "disks/st/Vroom (1991)(Lankhor).st": "ffb031bc01554ff50944517e59b06e3b5823721eb6b7b7167b0ce85e9daf0b84",
+        "roms/tos206uk.img": "b776d5ade5ace0d09cb9f13a85ac07f6d492ab69fcac1b56995573f620f74e6c"
+      }
+    }
+  ]
+}

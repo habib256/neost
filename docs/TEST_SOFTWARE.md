@@ -530,24 +530,28 @@ Le halt TOS 2.06 à graine 4 reste ouvert, reproduit sur `diskA.st`.
 
 ## Vroom : périmètre des parcours STE (2026-11-05)
 
-Les deux images locales restent requises. `vroom_elite_ste` couvre uniquement
+Seule l'image `[cr Elite]` reste requise dans la ludothèque.
+`vroom_elite_ste` couvre uniquement
 la sortie d'intro ; `vroom_elite_ste_race` ajoute le menu, la grille, l'accélération
 et le braquage sous TOS 1.62, avec contrôle snapshot des scènes inspectées.
-Les deux parcours natifs de `tests/replays/vroom_laps.json` franchissent
-un tour complet (« Lap 1 »), puis continuent à rouler. Rejoués depuis le reset
-sur 15 401 trames, ils retrouvent exactement leurs captures inspectées,
+Le parcours natif Elite de `tests/replays/vroom_laps.json` franchit
+un tour complet (« Lap 1 »), puis continue à rouler. Rejoué depuis le reset
+sur 15 401 trames, il retrouve exactement sa capture inspectée,
 sans halt ni modification des médias :
 
 ```sh
 python3 tools/run_game_replay.py --manifest tests/replays/vroom_laps.json
 ```
 
-Ce sont deux gardes **snapshot**, comptées séparément des comparaisons Hatari.
-Elles ne ferment pas les défauts ci-dessous.
+C'est une garde **snapshot**, comptée séparément des comparaisons Hatari.
+Elle ne ferme pas les défauts ci-dessous.
 
-Sous TOS 2.06, `vroom_tos206_ste_race` conduit l'image sans suffixe mais reste
+L'image sans suffixe a été retirée le 2026-11-05 à la demande du mainteneur.
+Ses six scénarios sont archivés dans `tests/replays/archive/vroom_retired.json`.
+Sous TOS 2.06, `vroom_tos206_ste_race` conduisait cette image mais reste
 un diagnostic rouge (écart final de 12,35 %). `vroom_tos206_audio_stop` garde
 un autre échec : sortie du titre à 6040, relance du timer audio, bombes puis
 halt NeoST. La réussite d'un autre moment d'appui ne ferme pas ce défaut.
-Les diagnostics restent exclus par défaut et se demandent avec `--only`.
+Les archives se rejouent seulement avec `--manifest tests/replays/archive/vroom_retired.json`
+et `--only`, après restauration explicite du média privé correspondant.
 Recettes et preuves : [CASE_STUDIES.md](CASE_STUDIES.md#vroom-ste--vérifier-la-conduite-et-larrêt-audio-2026-11-05).
