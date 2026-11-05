@@ -1,54 +1,65 @@
 # Mfp
 
-> 106 nodes · cohesion 0.02
+> God node · 177 connections · `src/io/Mfp.hpp`
 
-## Key Concepts
+**Community:** [Community 6](Community_6.md)
 
-- **Mfp** (162 connections) — `src/io/Mfp.hpp`
-- **function** (4 connections)
-- **.iack()** (3 connections) — `src/io/Mfp.hpp`
-- **.setAciaLineKbd()** (3 connections) — `src/io/Mfp.hpp`
-- **.hostRxPending()** (2 connections) — `src/io/Mfp.hpp`
-- **.serialBaud()** (2 connections) — `src/io/Mfp.hpp`
-- **.serialize()** (2 connections) — `src/io/Mfp.hpp`
-- **.serialUcr()** (2 connections) — `src/io/Mfp.hpp`
-- **.setAciaLine()** (2 connections) — `src/io/Mfp.hpp`
-- **.setGpipReadHook()** (2 connections) — `src/io/Mfp.hpp`
-- **.setScheduler()** (2 connections) — `src/io/Mfp.hpp`
-- **.setSerialSink()** (2 connections) — `src/io/Mfp.hpp`
-- **.setTimerBEdgeSink()** (2 connections) — `src/io/Mfp.hpp`
-- **Scheduler** (2 connections)
-- **size_t** (2 connections)
-- **Interruptions (MFP 68901)** (2 connections) — `docs/IMPLEMENTED.md`
-- **.colorMonitor()** (1 connections) — `src/io/Mfp.hpp`
-- **.loopback()** (1 connections) — `src/io/Mfp.hpp`
-- **.setColorMonitor()** (1 connections) — `src/io/Mfp.hpp`
-- **.setHasDmaSound()** (1 connections) — `src/io/Mfp.hpp`
-- **.setInDispatch()** (1 connections) — `src/io/Mfp.hpp`
-- **.setLoopback()** (1 connections) — `src/io/Mfp.hpp`
-- **deque** (1 connections)
-- **StateArchive** (1 connections)
-- **aciaLineKbd_** (1 connections) — `src/io/Mfp.hpp`
-- *... and 81 more nodes in this community*
+## Connections by Relation
 
-## Relationships
+### contains
+- Mfp.hpp `EXTRACTED`
 
-- [Mfp.cpp](Mfp.cpp.md) (42 shared connections)
-- [.gpipSetLine](gpipSetLine.md) (18 shared connections)
-- [Community 24](Community_24.md) (2 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
-- [Community 211](Community_211.md) (1 shared connections)
+### defines
+- serialSink_ `EXTRACTED`
+- tbiPulseSink_ `EXTRACTED`
+- gpipHook_ `EXTRACTED`
+- timerBEdgeSink_ `EXTRACTED`
+- irqUpdateNeeded_ `EXTRACTED`
+- inDispatch_ `EXTRACTED`
+- SRC_DCD `EXTRACTED`
+- SRC_CTS `EXTRACTED`
+- SRC_GPU `EXTRACTED`
+- SRC_TIMERD `EXTRACTED`
+- SRC_TIMERC `EXTRACTED`
+- aer `EXTRACTED`
+- ddr `EXTRACTED`
+- gpip `EXTRACTED`
+- iera `EXTRACTED`
+- ierb `EXTRACTED`
+- ipra `EXTRACTED`
+- iprb `EXTRACTED`
+- imra `EXTRACTED`
+- imrb `EXTRACTED`
+- *…and 68 more `defines` connection(s) not listed (lowest-degree first to go)*
 
-## Source Files
+### method
+- .write8() `EXTRACTED`
+- .gpipSetLine() `EXTRACTED`
+- .writeTimerCtrl() `EXTRACTED`
+- .raiseAt() `EXTRACTED`
+- .gpipInput() `EXTRACTED`
+- .scheduleTimerAt() `EXTRACTED`
+- .timerCtrl() `EXTRACTED`
+- .timerPeriodSubCycles() `EXTRACTED`
+- .advanceSerialTx() `EXTRACTED`
+- .readTimerData() `EXTRACTED`
+- .updatePulseGate() `EXTRACTED`
+- .timerPulseMode() `EXTRACTED`
+- .storeStoppedCounter() `EXTRACTED`
+- .gpipEdges() `EXTRACTED`
+- .gpipUpdateInterrupt() `EXTRACTED`
+- .timerA_setLineInput() `EXTRACTED`
+- .read8() `EXTRACTED`
+- .startSerialTx() `EXTRACTED`
+- .gpipIrqView() `EXTRACTED`
+- .gpipUpdateInterruptAt() `EXTRACTED`
+- *…and 64 more `method` connection(s) not listed (lowest-degree first to go)*
 
-- `docs/IMPLEMENTED.md`
-- `src/io/Mfp.hpp`
-
-## Audit Trail
-
-- EXTRACTED: 172 (98%)
-- INFERRED: 3 (2%)
-- AMBIGUOUS: 0 (0%)
+### references
+- function `EXTRACTED`
+- size_t `EXTRACTED`
+- Scheduler `EXTRACTED`
+- deque `EXTRACTED`
 
 ---
 

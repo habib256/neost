@@ -6,6 +6,235 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Vroom STE : conduite vérifiée et verdicts du banc renforcés (2026-11-05)
+
+Croisement des deux images sous TOS 1.62 et 2.06, STE 1 Mo, huit graines par
+combinaison : l'image sans suffixe donne six échecs de chargement sous 1.62
+et un halt après l'arrêt audio sous 2.06. Elite atteint les huit menus sous
+1.62 ; sous 2.06, cinq menus avec les mêmes entrées, trois après des appuis
+supplémentaires. Une capture d'intro rayée reste à qualifier. Les médias et
+ROM restent inchangés ; ces essais ne prouvent pas la fidélité matérielle.
+
+Les deux images présentes atteignent une course pilotée, Elite sous TOS 1.62
+et l'image sans suffixe sous TOS 2.06. Les parcours longs franchissent un tour
+complet, puis continuent à rouler ; leurs 15 401 trames sont rejouées depuis le
+reset avec les mêmes captures finales. Deux gardes snapshot séparées des
+comparaisons Hatari : `tests/replays/vroom_laps.json`.
+L'objectif reste ouvert : cette dernière
+plante encore suivant le moment où l'on quitte le titre. Un nouveau cas isolé
+montre une IRQ Timer A en attente qui relance la musique après son arrêt, puis
+le chargement écrase son gestionnaire encore actif. La fiche Motorola ne permet
+pas d'effacer cette IRQ pour faire passer le jeu ; aucune modification du cœur.
+
+Le comparateur rejoue maintenant la souris, avec un déplacement configurable
+identique des deux côtés. Des empreintes des scènes inspectées empêchent un
+accord entre deux titres ou menus de valider une prétendue course. Le nouveau
+parcours Elite passe à 0–0,48 % ; deux diagnostics de l'autre image restent
+rouges, seuils conservés. Recettes et limites dans `docs/CASE_STUDIES.md`.
+Le comptage des pixels utilise aussi les trois composantes RGB : l'ancien
+arrondi en luminance pouvait cacher une petite différence bleue.
+Le banc lit désormais les fichiers aux dates exactes : demander 101/201
+lisait auparavant deux fois la trame 200, et une image absente pouvait être
+remplacée silencieusement par la dernière disponible. Les cinq rejeux Vroom
+conservent leurs verdicts. L'audit audio relève 19 changements d'échantillon
+avec seulement 72 cycles de dérive sur 2264 trames : l'écart de phase est
+principalement présent au démarrage de la musique, pas accumulé par le timer.
+La dernière lecture disquette porte déjà 236 036 cycles de décalage ;
+l'initialisation audio n'y ajoute que 12 cycles. La variante VBL rejetée
+reste bloquée dans l'intro Elite avec le parcours d'entrées complet.
+
+## Audit contradictoire du témoin VBL (2026-11-05)
+
+Confrontation aux schémas ST-4081 et au manuel 68000, puis substitutions
+isolées de VSYNC/verrou et variations de reset/E-clock. Un artefact du
+harnais est corrigé : l'absence de front de reset explicite créait une VBL
+initiale dans la variante asynchrone. Après correction, les variantes donnent
+les mêmes PC que le témoin courant. Les captures tronquées, CPU arrêté et
+arguments invalides sont désormais refusés par le pilote RTL.
+
+Les trois écarts NeoST restent ouverts ; les scores changent avec la phase
+E-clock. Le fonctionnement des jeux sur le matériel reste une contrainte :
+la variante qui bloque Vroom est rejetée. Aucun changement du cœur, aucun
+étalon réécrit. Neuf cas de refus contrôlés ; banc CPU+GSTMCU vert avec
+ses références inchangées. Recettes et limites : `docs/STCPU_BENCH.md`.
+
+## TOS 2.06 : contre-épreuves Timer C et VBL (2026-11-04)
+
+Timer C démarre déjà 88 cycles plus tôt dans NeoST que dans le témoin
+expérimental à phases disque et origine VBL alignées. Modifier sa conversion
+d'horloge ne résout pas la collision. La nouvelle sonde VBL indépendante du
+TOS relève 16/19 PC empilés identiques au modèle CPU + GSTMCU ; le préarmement
+hors STOP donne 19/19, mais conserve le halt TOS et bloque Vroom Elite.
+Ces variantes restent dans les binaires de diagnostic : aucun correctif
+non validé n'est ajouté au cœur. La sonde conserve un verdict rouge explicite.
+
+## TOS 2.06 : résidu avant AUTO localisé (2026-11-04)
+
+Le traceur ajoute `--phase preauto` (trame 340 → entrée AUTO) et un relevé
+JSON des points de passage, cycles et registres. Dans le témoin expérimental
+à phases disque et origine VBL alignées, l'attente disque expire 64 cycles
+plus tard sur le compteur système 200 Hz ; le balayage mémoire ramène l'écart
+à 60. Les 832 dernières instructions avant AUTO gardent cet écart constant.
+La prochaine mesure porte sur l'armement Timer C et sa chaîne d'interruption.
+Cœur inchangé ; collision toujours ouverte, aucune fidélité matérielle déduite
+de cet accord partiel entre émulateurs.
+
+Validation : captures reset, preauto et auto exécutées ; les deux fenêtres
+existantes reproduisent leurs écarts documentés. Les 31 tests du comparateur
+passent. Graphify et wiki régénérés ; aucune suite pixel relancée, cœur inchangé.
+
+## Comparaisons sans patch TOS et lecture des traces Hatari (2026-11-04)
+
+La reprise des traces depuis le reset révèle une lecture périmée du compteur
+événementiel Timer B : le front DE échu attendait encore le dispatch de fin
+d'instruction. Les accès MFP consomment désormais ce front avant de lire ou
+écrire les registres. Les 25 491 instructions du premier délai vidéo TOS 2.06
+suivent le même flux qu'Hatari ; les registres et cycles ne sont pas tous égaux.
+`trace_tos206_boot.py` rend les captures reset/AUTO reproductibles avec les
+configurations, commandes et empreintes. La collision finale de pile reste ouverte.
+Les contre-épreuves à phases disque alignées isolent aussi une dérive de l'origine
+VBL d'Hatari au milieu d'une instruction ; elle n'est pas portée dans NeoST.
+Après neutralisation dans une copie temporaire du témoin, 60 cycles restent à
+expliquer avant AUTO. Suite complète et 17 rejeux verts ; la graine 4 reste en échec.
+
+Les rejeux imposent maintenant `--patch-tos off --fast-boot off --fastfdc off`
+à Hatari. `audit_tos_patches.py` mesure ses changements ROM et RAM avant
+exécution : 21 captures sur sept versions natives ST/STE, sources inchangées.
+L'analyse de chaque famille de patch explique comment s'en passer dans
+`docs/HATARI_AUTOMATION.md` ; aucun patch n'est ajouté dans NeoST.
+
+Correction issue de cet audit : sélectionner TOS 2.05 avec un profil ST/Mega ST
+bascule maintenant vers STE. La ROM originale accède au son DMA dès `$E00096`,
+avant l'installation des vecteurs ; l'ancien profil partait en RAM vide et
+restait sur un écran uniforme. Le démarrage FR atteint désormais le bureau,
+capture identique au lancement STE explicite. Les profils STE/Mega STE sont
+conservés. Hatari contourne cette incompatibilité avec ses patchs `TP_ANTI_STE`.
+
+Le lecteur de traces ne compte plus l'aperçu `cpu_regs` d'Hatari comme une
+instruction exécutée et associe ces registres au PC suivant. Il ne confond
+plus un opérande `D0` avec sa valeur. Quatre contrôles ajoutés, 31 tests du
+comparateur et banc temporel verts. Les traces TOS 2.06 concordent sur
+1190 instructions avant l'entrée VBL fautive de NeoST : la collision reste
+ouverte.
+
+Lemmings : le faux échec pixel du menu est résolu. Les traces au premier
+passage en `$4370` donnent les trames 2615/3159, soit 544 de décalage de
+chargement. Avec la convention de capture (fin de trame NeoST, VBL Hatari),
+l'offset est 545 ; le pas 2 recherchait auparavant la mauvaise parité. Le
+rejeu transmet cet offset mesuré, sans changer le seuil 0,5 % ni la fenêtre
+±30. Les 16 autres rejeux sont verts sans patch TOS, puis Lemmings a été
+rejoué avec succès. Sa couverture reste le menu, aucune partie jouée.
+
+Validation finale : `run_all.py --tier full` entier vert, démarrage GUI inclus ;
+cinq captures Lemmings à 0 pixel, 31 tests du comparateur verts, audit des
+21 configurations terminé. Empreintes des ROM et disquettes originales
+inchangées. La collision rare TOS 2.06 n'est pas déclarée corrigée.
+
+## FDC : cadence DMA et reproduction Switchblade (2026-11-04)
+
+Le vol de bus DMA immobilise le CPU, sans retarder le prochain octet du WD1772.
+NeoST conserve les 32 cycles de coût CPU par bloc de 16 octets, mais retire leur
+ajout aux échéances FDC : cadence DD de 4096 au lieu de 4128 cycles. Cette
+correction suit la fiche WD1772 et diverge volontairement du handler Hatari.
+Le précédent alignement sur Hatari ne constituait pas une preuve matérielle.
+
+Deux autres erreurs de domaine temporel sont corrigées : conversion de SCLK
+STE/Mega STE vers l’horloge bus, et attente d’index réarmée depuis l’horloge
+qui a servi à calculer le temps restant. Tests de cadence avec/sans CPU,
+conservation du vol de bus et dispatch d’index en retard ajoutés. Le banc
+intégré distingue cadence disque, temps de scrutation CPU et fin de commande ;
+les captures de référence Hatari ne sont pas réécrites.
+
+Switchblade, image originale, graine 8 : titre débloqué ; le rejeu permanent
+utilise désormais cette graine. TOS 2.06, graine 4 : double faute toujours
+reproduite, explicitement laissée ouverte. Aucun patch de ROM, de disquette
+ou de RAM invitée n’est ajouté.
+
+Validation : 64 graines Switchblade, 64 titres identiques à Hatari (0 pixel),
+rejeu à graine 8 vert ; 641 autotests logiques verts et banc temporel corrigé vert.
+Les autres bancs du palier full sont passés ; ses deux échecs de comparaison
+(FDC et snapshot audio) ont été corrigés puis leurs sous-suites rejouées. Le GUI,
+bloqué par le sandbox macOS, a été validé hors sandbox. Le snapshot audio a
+changé de 192 pixels avec la phase de boot : 100 mots cohérents, 29 paliers,
+progression 382→384 octets ; les bancs CPU+GSTMCU restent inchangés.
+**À ce stade du chantier : 16/17 rejeux verts, Lemmings en échec pixel**, seuil conservé à 0,5 % :
+menu atteint des deux côtés, aucun halt, mais 0,75 à 36,39 % d’écart avec la
+fenêtre originale. Une recherche diagnostique élargie à ±240 trames ne résout
+pas les différences. Résolu ensuite par l'alignement sur l'entrée du menu
+(voir « Comparaisons sans patch TOS » ci-dessus), pas par un changement du rendu.
+Aucun accord général de compatibilité n’est revendiqué.
+
+## Rejeux : médias intacts et refus des faux verts (2026-11-04)
+
+Le TOS et les disquettes de jeu ne sont pas corrigés ni remplacés pour faire
+passer la compatibilité. `compare_titles.py` conserve les journaux et vérifie
+les SHA-256 des sources avant/après, ROM, lecteur B et échanges de disquette
+compris. Une altération devient une erreur ; les écritures émulées restent
+dans les copies de travail.
+
+Un CPU arrêté ou une capture demandée absente invalide désormais un rejeu,
+même si les pixels comparés concordent. Les diagnostics d'échecs connus sont
+exclus du parcours par défaut et comptés à part avec `--only` ; le bruit Vroom
+ne compte plus comme un jeu compatible et son diagnostic a été reproduit sur
+l’image originale, désormais utilisée par le rejeu (graines 5/3, 0,0 % à 5200).
+Les IDs inconnus et les sorties anormales d'Hatari sont également refusés. Contrôles sans ROM
+ajoutés à `run_all.py` ; contre-épreuve avec le halt TOS 2.06 public, bien rejeté.
+
+Validation : 17 parcours de compatibilité, 0 échec, contrôle d'intégrité des
+médias actif ; diagnostic Vroom séparé. Palier `full` vert, GUI compris, et
+nouveaux contrôles de verdict verts. Cœur inchangé : cette passe corrige le
+harnais, pas les collisions rares encore consignées au TODO.
+
+## Vroom : cause de l'écran bruité sous TOS 2.06 (2026-11-04)
+
+Recette retrouvée dans les scripts temporaires : SPACE à partir de 1300, tenu
+12 trames, joystick à 1000. Les taux initiaux se reproduisent : 6/12 graines
+STE, 4/12 Mega STE sur la copie réparée. La VBL du jeu désélectionne le lecteur
+pendant le chargement ; le jeu ignore l'erreur et copie un tampon périmé sur
+l'image. Depuis le même état, annuler uniquement l'indicateur d'arrêt automatique
+en `$3A` suffit à obtenir le menu normal. Cœur inchangé ; fréquence sur le fer
+inconnue. Le mécanisme sort des bugs à expliquer → `docs/CASE_STUDIES.md`.
+
+`compare_titles.py --key-hold` et le champ `key_hold` des rejeux gardent la durée
+d'appui des deux côtés et dans le résumé JSON, avec le défaut inchangé de 8.
+`vroom_tos206_loader_collision` conserve l'échec connu sur la copie réparée,
+graines NeoST 2 / Hatari 3 : bruit identique, 0,0 % à 5200. Ce vert ne désigne
+pas une partie réussie. Les deux parcours Vroom TOS 2.06 existants passent avec
+leur durée par défaut ; durées nulles ou négatives rejetées.
+
+## TOS 2.06 : collision de pile au démarrage, indépendante de Vroom (2026-11-04)
+
+SPACE aux trames 100 et 300, STE 1 Mo, graine 4 : double faute avant toute
+instruction de Vroom, reproduite aussi avec la disquette publique `diskA.st`.
+La VBL écrase le contexte GEMDOS dans la basepage avant le passage sur la pile
+noyau. Depuis le même état, masquer seulement la fenêtre de changement de pile
+fait atteindre le bureau. Preuve ROM de grade C ; fréquence sur le fer inconnue.
+Recette et contre-épreuve dans `docs/CASE_STUDIES.md`. Cœur inchangé.
+
+L'ancien écran bruité reste à reproduire avec ses entrées exactes. Les nouveaux
+rejeux `vroom_tos206_ste` et `vroom_tos206_megaste` couvrent le menu puis l'entrée
+en course sur l'image originale, avec SPACE plus tardif et graines explicites.
+Validation : les deux rejeux passent, écart maximal de 0,0 % sur STE et 0,05 %
+sur Mega STE aux trois captures. Balayage public : 1 halt sur 64 graines ;
+contre-épreuve depuis le même état : halt sans masquage, bureau avec masquage.
+
+## Switchblade : cause de l'écran noir, et graines dans les rejeux (2026-11-04)
+
+Le chargeur laisse `flock` nul : une VBL du TOS 1.04 UK lit le statut FDC et acquitte
+la fin du READ TRACK avant sa boucle d'attente. Depuis le même état sauvegardé,
+poser seulement l'octet `$43E` fait passer la graine 8. Le cœur reste inchangé :
+l'acquittement suit la fiche WD1772. La fréquence sur machine réelle reste inconnue
+→ `docs/CASE_STUDIES.md`.
+
+`compare_titles.py` accepte `--fdc-seed` et `--hatari-seed`, indépendants et consignés
+dans son JSON. Les rejeux acceptent les deux champs ; `switchblade_title_st` garde
+le parcours jusqu'au titre, sans prétendre couvrir une partie jouée.
+
+Validation : rejeux Switchblade et Vroom Elite verts ; étapes non graphiques du
+palier `full` vertes, dont les 56 étalons pixel et les bancs RTL. Le boot GUI est
+bloqué par les services macOS dans le sandbox ; relancé hors sandbox, il termine
+ses 400 trames et sa capture passe le contrôle. Binaires reconstruits avant verdict.
+
 ## Bubble Ghost et Chessmaster, lancés sans passer par le bureau (2026-11-04)
 
 `--auto` les démarre sous TOS 1.04 ou plus, sans modifier les images, et `compare_titles` accepte `--disk-b`. Les deux entrent aux parties rejouées, sans joystick, et concordent à 0,0 % sur ST jusqu'aux écrans vus. Chessmaster plante sous TOS 1.62 chez NeoST comme chez Hatari, à la même instruction.

@@ -12,6 +12,8 @@
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test. Les RTL ne sont jamais liés à NeoST.
 // =============================================================================
+#include <cerrno>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -39,16 +41,38 @@ static void tick(int c) {
     t->eval();
 }
 
+// Un argument invalide ne doit pas produire un dump RAM hors limites.
+static bool unsignedArg(const char* s, int base, unsigned long long& value) {
+    if (!s || !*s || *s == '-') return false;
+    errno = 0;
+    char* end = nullptr;
+    value = std::strtoull(s, &end, base);
+    return errno == 0 && end != s && *end == 0;
+}
+
 int main(int argc, char** argv) {
     if (argc != 6) { std::fprintf(stderr, "usage: %s rom.img trames adresse longueur sortie\n", argv[0]); return 2; }
+    unsigned long long framesArg, addrArg, lenArg;
+    if (!unsignedArg(argv[2], 10, framesArg) || framesArg == 0 || framesArg > INT_MAX
+        || !unsignedArg(argv[3], 16, addrArg) || addrArg >= ram.size()
+        || !unsignedArg(argv[4], 0, lenArg) || lenArg == 0 || lenArg > ram.size() - addrArg) {
+        std::fprintf(stderr, "Invalid frame count or RAM range\n"); return 2;
+    }
+    const int frames = static_cast<int>(framesArg);
+    const uint32_t addr = static_cast<uint32_t>(addrArg), len = static_cast<uint32_t>(lenArg);
     FILE* f = std::fopen(argv[1], "rb");
     if (!f) { std::perror(argv[1]); return 2; }
-    if (std::fread(rom.data(), 1, rom.size(), f) == 0) return 2;
+    const size_t loaded = std::fread(rom.data(), 1, rom.size(), f);
     std::fclose(f);
-    const int frames = std::atoi(argv[2]);
-    const uint32_t addr = std::strtoul(argv[3], nullptr, 16), len = std::strtoul(argv[4], nullptr, 0);
+    if (loaded != rom.size()) {
+        std::fprintf(stderr, "Incomplete ROM: expected %zu bytes, got %zu\n", rom.size(), loaded); return 2;
+    }
     Verilated::commandArgs(argc, argv);
     t = new Vstcpu_bench_top;
+    // Déclencher réellement le front de reset des blocs asynchrones : leur
+    // valeur initiale Verilator à zéro n'est pas une transition 1 -> 0.
+    t->clk32 = 0; t->porb = 1; t->resb = 1; t->pwrUp = 1; t->extReset = 1; t->eval();
+    t->porb = 0; t->resb = 0; t->eval();
     t->porb = 0; t->resb = 0; t->pwrUp = 1; t->extReset = 1; t->mdin = 0;
     for (int i = 0; i < 64; ++i) { tick(1); tick(0); }
     t->porb = 1;
@@ -78,6 +102,14 @@ int main(int argc, char** argv) {
         prev = t->vsync_n;
         if (!t->halted_n) { std::fprintf(stderr, "CPU arrêté\n"); break; }
     }
+    // Un halt ou la garde de durée ne constituent pas une capture réussie.
+    if (!t->halted_n || seen != frames) {
+        std::fprintf(stderr, "Incomplete simulation: %d/%d VSYNC, halted=%d\n",
+                     seen, frames, !t->halted_n);
+        if (trace) std::fclose(trace);
+        delete t;
+        return 1;
+    }
     if (videoPath) {
         FILE* v = std::fopen(videoPath, "wb");
         if (!v) { std::perror(videoPath); return 2; }
@@ -86,8 +118,10 @@ int main(int argc, char** argv) {
     }
     FILE* o = std::fopen(argv[5], "wb");
     if (!o) { std::perror(argv[5]); return 2; }
-    std::fwrite(ram.data() + addr, 1, len, o);
-    std::fclose(o);
+    const size_t written = std::fwrite(ram.data() + addr, 1, len, o);
+    const int closed = std::fclose(o);
+    if (trace) std::fclose(trace);
+    if (written != len || closed != 0) { delete t; return 2; }
     std::fprintf(stderr, "VSYNC vus : %d\n", seen);
     delete t;
     return 0;

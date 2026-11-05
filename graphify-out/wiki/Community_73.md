@@ -1,41 +1,51 @@
 # Community 73
 
-> 12 nodes · cohesion 0.17
+> 34 nodes
 
 ## Key Concepts
 
-- **Les extensions, une par une** (10 connections) — `docs/EXTENSIONS.md`
-- **Clé Steinberg — dongle Cubase sur le port cartouche (`--dongle`, GUI Dongles)** (4 connections) — `docs/EXTENSIONS.md`
-- **Périphériques des ports — un par port : clés joystick / série, DAC Pro Sound, boutons (`--plug`, GUI Dongles)** (3 connections) — `docs/EXTENSIONS.md`
-- **Anneau MIDI réseau — MIDIMaze en ligne (`--midi-net H:P[:L]`)** (2 connections) — `docs/EXTENSIONS.md`
-- **Appareils MIDI de l'hôte — le câble DIN du ST vers du vrai matériel** (2 connections) — `docs/EXTENSIONS.md`
-- **Recette de capture matérielle (à faire quand une clé et un logiciel sont réunis)** (2 connections) — `docs/EXTENSIONS.md`
-- **UltraSatan — interface SD/MMC sur le bus ACSI (`--ultrasatan`, GUI Hard Disks)** (2 connections) — `docs/EXTENSIONS.md`
-- **EtherNEC — NE2000 sur le port cartouche (`--ethernec`, GUI Network)** (1 connections) — `docs/EXTENSIONS.md`
-- **Inventaire des dongles ST connus (recherche 2026-08-23) et pourquoi le reste n'est pas émulé** (1 connections) — `docs/EXTENSIONS.md`
-- **Modem Hayes sur RS-232 (`--modem`, GUI Network)** (1 connections) — `docs/EXTENSIONS.md`
-- **Oracle : trace de référence et rejeu (`--key-log`, `--key-replay`)** (1 connections) — `docs/EXTENSIONS.md`
-- **Tests UltraSatan + NetUSBee** (1 connections) — `docs/EXTENSIONS.md`
+- **make_blitter_programs.py** (25 connections) — `tools/make_blitter_programs.py`
+- **dump()** (15 connections) — `tools/make_blitter_programs.py`
+- **setup()** (15 connections) — `tools/make_blitter_programs.py`
+- **start()** (15 connections) — `tools/make_blitter_programs.py`
+- **wait_busy()** (15 connections) — `tools/make_blitter_programs.py`
+- **P** (10 connections) — `tools/make_blitter_programs.py`
+- **gen()** (8 connections) — `tools/make_blitter_programs.py`
+- **.w()** (6 connections) — `tools/make_blitter_programs.py`
+- **edit_during_pause()** (5 connections) — `tools/make_blitter_programs.py`
+- **gen()** (5 connections) — `tools/make_blitter_programs.py`
+- **mulu_during_start()** (5 connections) — `tools/make_blitter_programs.py`
+- **gen()** (5 connections) — `tools/make_blitter_programs.py`
+- **pause_resume()** (5 connections) — `tools/make_blitter_programs.py`
+- **read_live()** (5 connections) — `tools/make_blitter_programs.py`
+- **restart_done()** (5 connections) — `tools/make_blitter_programs.py`
+- **rewrite_y_during_pause()** (5 connections) — `tools/make_blitter_programs.py`
+- **set_hog_while_running()** (5 connections) — `tools/make_blitter_programs.py`
+- **share_markers()** (5 connections) — `tools/make_blitter_programs.py`
+- **gen()** (5 connections) — `tools/make_blitter_programs.py`
+- **two_blits()** (5 connections) — `tools/make_blitter_programs.py`
+- **write_hop_byte()** (5 connections) — `tools/make_blitter_programs.py`
+- **gap()** (4 connections) — `tools/make_blitter_programs.py`
+- **start_then()** (4 connections) — `tools/make_blitter_programs.py`
+- **pause_at()** (3 connections) — `tools/make_blitter_programs.py`
+- **.mark()** (2 connections) — `tools/make_blitter_programs.py`
+- *... and 9 more nodes in this community*
 
 ## Relationships
 
-- [Community 136](Community_136.md) (1 shared connections)
-- [AppConfig.cpp](AppConfig.cpp.md) (1 shared connections)
-- [NeostMoira](NeostMoira.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Machine](Machine.md) (1 shared connections)
-- [PortDevices](PortDevices.md) (1 shared connections)
-- [Community 150](Community_150.md) (1 shared connections)
-- [Community 103](Community_103.md) (1 shared connections)
+- [Community 292](Community_292.md) (3 shared connections)
+- [Community 18](Community_18.md) (2 shared connections)
+- [Community 3](Community_3.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/EXTENSIONS.md`
+- `tools/make_blitter_programs.py`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (68%)
-- INFERRED: 6 (32%)
+- EXTRACTED: 90 (87%)
+- INFERRED: 14 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

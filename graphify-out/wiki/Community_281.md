@@ -1,27 +1,38 @@
 # Community 281
 
-> 4 nodes · cohesion 0.50
+> 6 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/fdc_media_change_logic.cpp`
-- **.equal()** (2 connections) — `tests/fdc_media_change_logic.cpp`
-- **count** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_media_change_logic.cpp`
+- **machineHasBlitter()** (10 connections) — `src/core/MachineType.hpp`
+- **.buildIoFault()** (7 connections) — `src/core/Bus.hpp`
+- **.write16()** (3 connections) — `src/core/Bus.hpp`
+- **.write32()** (3 connections) — `src/core/Bus.hpp`
+- **Cas où NeoST améliore Hatari (choix à préserver / documenter)** (3 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.claimsBlitter()** (2 connections) — `src/core/Bus.hpp`
 
 ## Relationships
 
-- [Community 100](Community_100.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
+- [Community 14](Community_14.md) (4 shared connections)
+- [Community 200](Community_200.md) (4 shared connections)
+- [Community 30](Community_30.md) (3 shared connections)
+- [Community 362](Community_362.md) (2 shared connections)
+- [Community 119](Community_119.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
+- [Community 105](Community_105.md) (1 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_media_change_logic.cpp`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/core/Bus.hpp`
+- `src/core/MachineType.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 10 (43%)
+- INFERRED: 13 (57%)
 - AMBIGUOUS: 0 (0%)
 
 ---

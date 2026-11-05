@@ -1,11 +1,10 @@
 # Community 118
 
-> 10 nodes · cohesion 0.24
+> 9 nodes
 
 ## Key Concepts
 
 - **Rig** (7 connections) — `tests/blitter_reset_retention_logic.cpp`
-- **blitter_reset_retention_logic.cpp** (6 connections) — `tests/blitter_reset_retention_logic.cpp`
 - **testBlitterResetRetention()** (4 connections) — `tests/blitter_reset_retention_logic.cpp`
 - **main()** (2 connections) — `tests/blitter_reset_retention_logic.cpp`
 - **.transfer()** (2 connections) — `tests/blitter_reset_retention_logic.cpp`
@@ -17,8 +16,8 @@
 
 ## Relationships
 
-- [Community 100](Community_100.md) (3 shared connections)
-- [Community 8](Community_8.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
@@ -26,8 +25,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 11 (92%)
+- INFERRED: 1 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 168
 
-> 14 nodes · cohesion 0.14
+> 14 nodes
 
 ## Key Concepts
 
@@ -21,7 +21,7 @@
 
 ## Relationships
 
-- [PortDevices](PortDevices.md) (2 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
 
 ## Source Files
 

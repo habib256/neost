@@ -1,60 +1,78 @@
 # Community 41
 
-> 85 nodes · cohesion 0.04
+> 197 nodes
 
 ## Key Concepts
 
-- **selftest_logic.cpp** (74 connections) — `tests/selftest_logic.cpp`
+- **main()** (161 connections) — `tests/selftest_logic.cpp`
+- **.saver()** (96 connections) — `src/core/StateArchive.hpp`
+- **.loader()** (93 connections) — `src/core/StateArchive.hpp`
+- **selftest_logic.cpp** (75 connections) — `tests/selftest_logic.cpp`
+- **check()** (49 connections) — `tests/fpu_decimal_oracle.cpp`
+- **Scc.hpp** (42 connections) — `src/io/Scc.hpp`
 - **checkBool()** (28 connections) — `tests/selftest_logic.cpp`
-- **FdcRig** (17 connections) — `tests/selftest_logic.cpp`
-- **AudioPacer** (12 connections) — `src/core/Pacing.hpp`
-- **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
-- **IkbdRig** (11 connections) — `tests/selftest_logic.cpp`
-- **SndRig** (11 connections) — `tests/selftest_logic.cpp`
-- **checkStr()** (11 connections) — `tests/selftest_logic.cpp`
-- **testPacing()** (11 connections) — `tests/selftest_logic.cpp`
+- **Rig** (12 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **checkStr()** (12 connections) — `tests/selftest_logic.cpp`
+- **testBlitterRmw()** (10 connections) — `tests/blitter_rmw_logic.cpp`
+- **testIkbdSciReset()** (10 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **ikbd_sci_reset_logic.cpp** (10 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **compareSci()** (9 connections) — `tests/ikbd_sci_reset_logic.cpp`
 - **testFdcTruthTable()** (9 connections) — `tests/selftest_logic.cpp`
+- **selftest_scc.cpp** (9 connections) — `tests/selftest_scc.cpp`
+- **testDmaSoundMicrowireTiming()** (8 connections) — `tests/dmasound_microwire_timing_logic.cpp`
 - **testDmaSoundTruthTable()** (8 connections) — `tests/selftest_logic.cpp`
 - **testIkbdProtocol()** (8 connections) — `tests/selftest_logic.cpp`
+- **testMidiHomonymes()** (8 connections) — `tests/selftest_logic.cpp`
+- **Oracle** (7 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **testMmioFidelity()** (7 connections) — `tests/mmio_fidelity_logic.cpp`
 - **testBlitterTruthTable()** (7 connections) — `tests/selftest_logic.cpp`
-- **checkHex()** (6 connections) — `tests/selftest_logic.cpp`
-- **testChannelMask()** (6 connections) — `tests/selftest_logic.cpp`
-- **testJoyScript()** (6 connections) — `tests/selftest_logic.cpp`
-- **testTwoCpus()** (6 connections) — `tests/selftest_logic.cpp`
-- **checkInt()** (5 connections) — `tests/selftest_logic.cpp`
-- **testMissingHwHint()** (5 connections) — `tests/selftest_logic.cpp`
-- **testPortDevices()** (5 connections) — `tests/selftest_logic.cpp`
-- **checkMasks()** (4 connections) — `tests/selftest_logic.cpp`
-- **.send()** (4 connections) — `tests/selftest_logic.cpp`
-- **testConfigPath()** (4 connections) — `tests/selftest_logic.cpp`
-- **testDongleTable()** (4 connections) — `tests/selftest_logic.cpp`
-- **testGmSynth()** (4 connections) — `tests/selftest_logic.cpp`
-- *... and 60 more nodes in this community*
+- **netusbeeSelfTest()** (6 connections) — `src/headless/main_headless.cpp`
+- **testMfpTurnaround()** (6 connections) — `tests/mfp_turnaround_logic.cpp`
+- **testSccAutoEcho()** (6 connections) — `tests/scc_auto_echo_logic.cpp`
+- *... and 172 more nodes in this community*
 
 ## Relationships
 
-- [Community 8](Community_8.md) (29 shared connections)
-- [Community 100](Community_100.md) (19 shared connections)
-- [cstdint](cstdint.md) (13 shared connections)
-- [AppConfig.cpp](AppConfig.cpp.md) (5 shared connections)
-- [Community 215](Community_215.md) (3 shared connections)
-- [Community 249](Community_249.md) (2 shared connections)
-- [Community 213](Community_213.md) (2 shared connections)
-- [.mmioSlotFor](mmioSlotFor.md) (2 shared connections)
-- [Ea](Ea.md) (2 shared connections)
-- [Community 385](Community_385.md) (2 shared connections)
-- [Community 200](Community_200.md) (2 shared connections)
-- [Config](Config.md) (2 shared connections)
+- [Community 102](Community_102.md) (125 shared connections)
+- [Community 4](Community_4.md) (25 shared connections)
+- [Community 372](Community_372.md) (16 shared connections)
+- [Community 399](Community_399.md) (7 shared connections)
+- [Community 137](Community_137.md) (7 shared connections)
+- [Community 15](Community_15.md) (7 shared connections)
+- [Community 182](Community_182.md) (6 shared connections)
+- [Community 161](Community_161.md) (6 shared connections)
+- [Community 200](Community_200.md) (6 shared connections)
+- [Community 101](Community_101.md) (6 shared connections)
+- [Community 38](Community_38.md) (5 shared connections)
+- [Community 8](Community_8.md) (5 shared connections)
 
 ## Source Files
 
-- `src/core/Pacing.hpp`
-- `tests/selftest_logic.cpp`
+- `src/core/StateArchive.hpp`
+- `src/headless/main_headless.cpp`
+- `src/io/Scc.hpp`
+- `tests/blitter_rmw_logic.cpp`
+- `tests/dmasound_microwire_byte_logic.cpp`
+- `tests/dmasound_microwire_timing_logic.cpp`
+- `tests/dmasound_mmio_state_logic.cpp`
+- `tests/fpu_decimal_oracle.cpp`
+- `tests/ikbd_sci_reset_logic.cpp`
+- `tests/ikbd_tx_control_logic.cpp`
+- `tests/ikbd_tx_phase_logic.cpp`
+- `tests/machine_mfp_tx_logic.cpp`
+- `tests/machine_midi_logic.cpp`
+- `tests/mfp_async_break_logic.cpp`
+- `tests/mfp_break_logic.cpp`
+- `tests/mfp_gpip_lines_logic.cpp`
+- `tests/mfp_pulse_logic.cpp`
+- `tests/mfp_rx_enable_logic.cpp`
+- `tests/mfp_rx_format_logic.cpp`
+- `tests/mfp_rx_timing_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 223 (93%)
-- INFERRED: 16 (7%)
+- EXTRACTED: 680 (78%)
+- INFERRED: 194 (22%)
 - AMBIGUOUS: 0 (0%)
 
 ---

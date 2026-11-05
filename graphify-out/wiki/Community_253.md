@@ -1,6 +1,6 @@
 # Community 253
 
-> 8 nodes · cohesion 0.39
+> 8 nodes
 
 ## Key Concepts
 
@@ -15,9 +15,9 @@
 
 ## Relationships
 
-- [struct](struct.md) (2 shared connections)
-- [Community 267](Community_267.md) (1 shared connections)
-- [subprocess](subprocess.md) (1 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
+- [Community 18](Community_18.md) (1 shared connections)
 
 ## Source Files
 

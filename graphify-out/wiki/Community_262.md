@@ -1,6 +1,6 @@
 # Community 262
 
-> 8 nodes · cohesion 0.25
+> 8 nodes
 
 ## Key Concepts
 
@@ -15,7 +15,7 @@
 
 ## Relationships
 
-- [Community 201](Community_201.md) (1 shared connections)
+- [Community 164](Community_164.md) (1 shared connections)
 
 ## Source Files
 

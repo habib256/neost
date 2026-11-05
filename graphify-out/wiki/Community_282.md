@@ -1,26 +1,32 @@
 # Community 282
 
-> 3 nodes · cohesion 1.00
+> 10 nodes
 
 ## Key Concepts
 
-- **mfp_gpip_composite_logic.cpp** (4 connections) — `tests/mfp_gpip_composite_logic.cpp`
-- **testMfpGpipComposite()** (3 connections) — `tests/mfp_gpip_composite_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_gpip_composite_logic.cpp`
+- **Model** (10 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68000** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68010** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68EC020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68EC030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68EC040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68LC040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 
 ## Relationships
 
-- [Community 100](Community_100.md) (2 shared connections)
-- [Community 8](Community_8.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_gpip_composite_logic.cpp`
+- `extern/moira/Moira/MoiraTypes.h`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

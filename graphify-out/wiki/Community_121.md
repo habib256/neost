@@ -1,35 +1,44 @@
 # Community 121
 
-> 11 nodes · cohesion 0.29
+> 17 nodes
 
 ## Key Concepts
 
-- **rtc_long_elapsed_logic.cpp** (7 connections) — `tests/rtc_long_elapsed_logic.cpp`
-- **testRtcLongElapsed()** (6 connections) — `tests/rtc_long_elapsed_logic.cpp`
-- **Checks** (5 connections) — `tests/rtc_long_elapsed_logic.cpp`
-- **.date()** (5 connections) — `tests/rtc_long_elapsed_logic.cpp`
-- **afterEpoch()** (3 connections) — `tests/rtc_long_elapsed_logic.cpp`
-- **.equal()** (3 connections) — `tests/rtc_long_elapsed_logic.cpp`
-- **main()** (2 connections) — `tests/rtc_long_elapsed_logic.cpp`
-- **DateTime** (2 connections)
-- **count** (1 connections) — `tests/rtc_long_elapsed_logic.cpp`
-- **failures** (1 connections) — `tests/rtc_long_elapsed_logic.cpp`
-- **Rtc** (1 connections)
+- **DongleRule** (13 connections) — `src/io/DongleTable.hpp`
+- **DongleTable.cpp** (10 connections) — `src/io/DongleTable.cpp`
+- **parseDongleTable()** (9 connections) — `src/io/DongleTable.cpp`
+- **matchDongleRules()** (5 connections) — `src/io/DongleTable.cpp`
+- **lower()** (4 connections) — `src/io/DongleTable.cpp`
+- **string** (4 connections)
+- **trim()** (3 connections) — `src/io/DongleTable.cpp`
+- **sstream** (3 connections)
+- **key** (2 connections) — `src/io/DongleTable.hpp`
+- **defaultDongleTable()** (1 connections) — `src/io/DongleTable.cpp`
+- **cart** (1 connections) — `src/io/DongleTable.hpp`
+- **dev** (1 connections) — `src/io/DongleTable.hpp`
+- **pattern** (1 connections) — `src/io/DongleTable.hpp`
+- **port** (1 connections) — `src/io/DongleTable.hpp`
+- **Device** (1 connections)
+- **Model** (1 connections)
+- **string** (1 connections)
 
 ## Relationships
 
-- [Community 100](Community_100.md) (2 shared connections)
-- [Community 8](Community_8.md) (1 shared connections)
-- [Community 165](Community_165.md) (1 shared connections)
+- [Community 51](Community_51.md) (5 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 119](Community_119.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/rtc_long_elapsed_logic.cpp`
+- `src/io/DongleTable.cpp`
+- `src/io/DongleTable.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 19 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 37 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

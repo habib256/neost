@@ -1,39 +1,35 @@
 # Community 214
 
-> 7 nodes · cohesion 0.29
+> 9 nodes
 
 ## Key Concepts
 
-- **.buildIoFault()** (7 connections) — `src/core/Bus.hpp`
-- **machineHasBlitter()** (7 connections) — `src/core/MachineType.hpp`
-- **.write16()** (3 connections) — `src/core/Bus.hpp`
-- **.write32()** (3 connections) — `src/core/Bus.hpp`
-- **.clear()** (3 connections) — `src/core/Symbols.hpp`
-- **Passe de cohérence doc ↔ code (2026-08-19)** (3 connections) — `CHANGELOG.md`
-- **.claimsBlitter()** (2 connections) — `src/core/Bus.hpp`
+- **SndRig** (11 connections) — `tests/selftest_logic.cpp`
+- **Scheduler** (4 connections)
+- **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
+- **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
+- **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **DmaSound** (1 connections)
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
+- **snd** (1 connections) — `tests/selftest_logic.cpp`
 
 ## Relationships
 
-- [Bus](Bus.md) (4 shared connections)
-- [Community 368](Community_368.md) (3 shared connections)
-- [Community 200](Community_200.md) (3 shared connections)
-- [Symbols.cpp](Symbols.cpp.md) (2 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 211](Community_211.md) (2 shared connections)
+- [Community 226](Community_226.md) (1 shared connections)
+- [Community 245](Community_245.md) (1 shared connections)
 - [Community 204](Community_204.md) (1 shared connections)
-- [Community 203](Community_203.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 115](Community_115.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/core/Bus.hpp`
-- `src/core/MachineType.hpp`
-- `src/core/Symbols.hpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (55%)
-- INFERRED: 10 (45%)
+- EXTRACTED: 16 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

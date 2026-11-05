@@ -1,0 +1,43 @@
+# Community 139
+
+> 18 nodes
+
+## Key Concepts
+
+- **u32** (12 connections)
+- **Imd** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **Imu** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **UInt** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **UInt24** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **UInt32** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **Av** (3 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Imd()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Imu()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **.UInt24()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **.UInt32()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **.UInt()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **ext1** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+
+## Relationships
+
+- [Community 135](Community_135.md) (6 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
+
+## Source Files
+
+- `extern/moira/Moira/StrWriter.h`
+
+## Audit Trail
+
+- EXTRACTED: 29 (100%)
+- INFERRED: 0 (0%)
+- AMBIGUOUS: 0 (0%)
+
+---
+
+*Part of the graphify knowledge wiki. See [index](index.md) to navigate.*

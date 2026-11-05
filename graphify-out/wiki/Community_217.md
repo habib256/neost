@@ -1,35 +1,54 @@
 # Community 217
 
-> 7 nodes · cohesion 0.33
+> 28 nodes
 
 ## Key Concepts
 
-- **CpuCore** (10 connections) — `src/core/Cpu68k.hpp`
-- **.Cpu68k()** (6 connections) — `src/core/Cpu68k.hpp`
-- **.setCore()** (5 connections) — `src/core/Cpu68k.hpp`
-- **.initCore()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.core()** (3 connections) — `src/core/Cpu68k.hpp`
-- **Bus** (2 connections)
-- **Moira** (1 connections) — `src/core/Cpu68k.hpp`
+- **Decoder** (26 connections) — `src/io/IpfImage.cpp`
+- **Out** (11 connections) — `src/io/IpfImage.cpp`
+- **decode()** (10 connections) — `src/io/IpfImage.cpp`
+- **.scanAll()** (10 connections) — `src/io/IpfImage.cpp`
+- **.block()** (9 connections) — `src/io/IpfImage.cpp`
+- **.blockData()** (8 connections) — `src/io/IpfImage.cpp`
+- **.track()** (8 connections) — `src/io/IpfImage.cpp`
+- **be32()** (7 connections) — `src/io/IpfImage.cpp`
+- **.gapFromDescription()** (7 connections) — `src/io/IpfImage.cpp`
+- **.fail()** (6 connections) — `src/io/IpfImage.cpp`
+- **.timings()** (6 connections) — `src/io/IpfImage.cpp`
+- **.gap3()** (5 connections) — `src/io/IpfImage.cpp`
+- **.writeMfm()** (5 connections) — `src/io/IpfImage.cpp`
+- **.gap0()** (4 connections) — `src/io/IpfImage.cpp`
+- **.gapReservedSize()** (4 connections) — `src/io/IpfImage.cpp`
+- **.parseImge()** (4 connections) — `src/io/IpfImage.cpp`
+- **.parseInfo()** (4 connections) — `src/io/IpfImage.cpp`
+- **.rb()** (4 connections) — `src/io/IpfImage.cpp`
+- **data** (4 connections) — `src/io/IpfImage.cpp`
+- **.timingSet()** (3 connections) — `src/io/IpfImage.cpp`
+- **.writeRaw()** (3 connections) — `src/io/IpfImage.cpp`
+- **.writeWeak()** (3 connections) — `src/io/IpfImage.cpp`
+- **string** (2 connections)
+- **map** (1 connections)
+- **err** (1 connections) — `src/io/IpfImage.cpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Cpu68k.cpp](Cpu68k.cpp.md) (9 shared connections)
-- [Community 200](Community_200.md) (3 shared connections)
-- [Community 93](Community_93.md) (1 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Moira.cpp](Moira.cpp.md) (1 shared connections)
-- [CpuState](CpuState.md) (1 shared connections)
+- [Community 208](Community_208.md) (8 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
+- [Community 268](Community_268.md) (4 shared connections)
+- [Community 326](Community_326.md) (2 shared connections)
+- [Community 370](Community_370.md) (2 shared connections)
+- [Community 220](Community_220.md) (1 shared connections)
+- [Community 284](Community_284.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.hpp`
+- `src/io/IpfImage.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 19 (79%)
-- INFERRED: 5 (21%)
+- EXTRACTED: 90 (99%)
+- INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

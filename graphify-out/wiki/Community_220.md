@@ -1,6 +1,6 @@
 # Community 220
 
-> 52 nodes · cohesion 0.06
+> 51 nodes
 
 ## Key Concepts
 
@@ -8,7 +8,7 @@
 - **MidiInHost.cpp** (26 connections) — `src/audio/MidiInHost.cpp`
 - **.setDevices()** (12 connections) — `src/audio/MidiInHost.hpp`
 - **.sources()** (9 connections) — `src/audio/MidiInHost.hpp`
-- **.feed()** (7 connections) — `src/audio/MidiInHost.hpp`
+- **.feed()** (8 connections) — `src/audio/MidiInHost.hpp`
 - **InBuffer** (5 connections) — `src/audio/MidiInHost.cpp`
 - **.pushForTest()** (5 connections) — `src/audio/MidiInHost.hpp`
 - **.openNames()** (5 connections) — `src/audio/MidiInHost.hpp`
@@ -24,27 +24,27 @@
 - **size_t** (3 connections)
 - **string** (3 connections)
 - **data** (3 connections) — `src/audio/MidiInHost.cpp`
+- **poll** (3 connections)
 - **MIDIPacketList** (2 connections) — `src/audio/MidiInHost.hpp`
 - **.MidiInHost()** (2 connections) — `src/audio/MidiInHost.hpp`
 - **.tryPop()** (2 connections) — `src/audio/MidiInHost.hpp`
 - **MidiInHost::coreMidiRead()** (2 connections) — `src/audio/MidiInHost.cpp`
-- **.deviceCount()** (2 connections) — `src/audio/MidiInHost.hpp`
-- *... and 27 more nodes in this community*
+- *... and 26 more nodes in this community*
 
 ## Relationships
 
-- [cstdint](cstdint.md) (7 shared connections)
-- [Community 100](Community_100.md) (6 shared connections)
-- [Community 213](Community_213.md) (5 shared connections)
-- [Device](Device.md) (3 shared connections)
-- [Community 349](Community_349.md) (2 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
+- [Community 223](Community_223.md) (4 shared connections)
+- [Community 185](Community_185.md) (3 shared connections)
+- [Community 84](Community_84.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
 - [Community 200](Community_200.md) (1 shared connections)
-- [PortDevices](PortDevices.md) (1 shared connections)
-- [MidiWinmm.hpp](MidiWinmm.hpp.md) (1 shared connections)
-- [Community 50](Community_50.md) (1 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
-- [Community 165](Community_165.md) (1 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
+- [Community 217](Community_217.md) (1 shared connections)
+- [Community 126](Community_126.md) (1 shared connections)
 
 ## Source Files
 
@@ -54,7 +54,7 @@
 ## Audit Trail
 
 - EXTRACTED: 105 (91%)
-- INFERRED: 10 (9%)
+- INFERRED: 11 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

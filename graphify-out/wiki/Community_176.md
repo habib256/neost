@@ -1,34 +1,32 @@
 # Community 176
 
-> 8 nodes · cohesion 0.46
+> 10 nodes
 
 ## Key Concepts
 
-- **testFdcMediaChange()** (14 connections) — `tests/fdc_media_change_logic.cpp`
-- **.reg()** (6 connections) — `tests/fdc_media_change_logic.cpp`
-- **.read()** (5 connections) — `tests/fdc_media_change_logic.cpp`
-- **.data()** (4 connections) — `tests/fdc_media_change_logic.cpp`
-- **.mode()** (4 connections) — `tests/fdc_media_change_logic.cpp`
-- **.armIndex()** (3 connections) — `tests/fdc_media_change_logic.cpp`
-- **.select()** (3 connections) — `tests/fdc_media_change_logic.cpp`
-- **main()** (2 connections) — `tests/fdc_media_change_logic.cpp`
+- **** (10 connections) — `src/io/StxImage.hpp`
+- **FLAG_CRC** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_FUZZY** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_LOST_DATA** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RECORD_TYPE** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RNF** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_VARIABLE_TIME** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE_SYNC** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_SECTOR_BLOCK** (1 connections) — `src/io/StxImage.hpp`
 
 ## Relationships
 
-- [Community 46](Community_46.md) (8 shared connections)
-- [Community 8](Community_8.md) (3 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
-- [Community 281](Community_281.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_media_change_logic.cpp`
+- `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 26 (93%)
-- INFERRED: 2 (7%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

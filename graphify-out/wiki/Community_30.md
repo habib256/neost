@@ -1,46 +1,61 @@
 # Community 30
 
-> 10 nodes · cohesion 0.29
+> 45 nodes
 
 ## Key Concepts
 
-- **🔴 Actionnables (par sévérité)** (12 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.matchHostDirEntry()** (8 connections) — `src/io/GemdosHd.hpp`
-- **.addPathComponent()** (7 connections) — `src/io/GemdosHd.hpp`
-- **determineMaxPartitions()** (5 connections) — `src/io/GemdosHd.cpp`
-- **filenameInvalidChar()** (4 connections) — `src/io/GemdosHd.cpp`
-- **fsfirst_match()** (4 connections) — `src/io/GemdosHd.cpp`
-- **Sur macOS, un fichier accentué du lecteur GEMDOS était introuvable (2026-09-02)** (4 connections) — `CHANGELOG.md`
-- **🧩 3ᵉ passe — sous-systèmes périphériques (2026-06-15, workflow 5 agents)** (4 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Choix intentionnels / NeoST plus correct que Hatari (NE PAS « corriger »)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Confirmé FIDÈLE 1:1 (scruté cette passe)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Bus.cpp** (91 connections) — `src/core/Bus.cpp`
+- **A31 — le dispatch MMIO devient une table, et sa cohérence est PROUVÉE (2026-08-28)** (7 connections) — `CHANGELOG.md`
+- **.megaSteCacheable()** (5 connections) — `src/core/Bus.hpp`
+- **.loadTos()** (4 connections) — `src/core/Bus.hpp`
+- **.seedResetVectors()** (4 connections) — `src/core/Bus.hpp`
+- **IoSpan** (3 connections) — `src/core/Bus.cpp`
+- **.rdStePads()** (3 connections) — `src/core/Bus.hpp`
+- **.wrStePads()** (3 connections) — `src/core/Bus.hpp`
+- **.stealBusCycles()** (3 connections) — `src/core/Bus.hpp`
+- **.loadCart()** (3 connections) — `src/core/Bus.hpp`
+- **.serialize()** (3 connections) — `src/core/Bus.hpp`
+- **.megaSteCacheRead()** (3 connections) — `src/core/Bus.hpp`
+- **.megaSteCacheUpdate()** (3 connections) — `src/core/Bus.hpp`
+- **.rdMfp()** (3 connections) — `src/core/Bus.hpp`
+- **.wrMfp()** (3 connections) — `src/core/Bus.hpp`
+- **.wrIkbd()** (2 connections) — `src/core/Bus.hpp`
+- **.rdMidi()** (2 connections) — `src/core/Bus.hpp`
+- **.wrMidi()** (2 connections) — `src/core/Bus.hpp`
+- **.rdRtc()** (2 connections) — `src/core/Bus.hpp`
+- **.wrRtc()** (2 connections) — `src/core/Bus.hpp`
+- **.rdMsteCtl()** (2 connections) — `src/core/Bus.hpp`
+- **.rdFpu()** (2 connections) — `src/core/Bus.hpp`
+- **.wrFpu()** (2 connections) — `src/core/Bus.hpp`
+- **.rdScu()** (2 connections) — `src/core/Bus.hpp`
+- **.wrScu()** (2 connections) — `src/core/Bus.hpp`
+- *... and 20 more nodes in this community*
 
 ## Relationships
 
-- [Community 218](Community_218.md) (5 shared connections)
-- [Community 36](Community_36.md) (5 shared connections)
-- [GemdosHd](GemdosHd.md) (2 shared connections)
-- [Community 211](Community_211.md) (2 shared connections)
-- [HostPath.cpp](HostPath.cpp.md) (2 shared connections)
-- [SoftFloatX80.hpp](SoftFloatX80.hpp.md) (2 shared connections)
-- [Scheduler](Scheduler.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 105](Community_105.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Machine](Machine.md) (1 shared connections)
+- [Community 14](Community_14.md) (41 shared connections)
+- [Community 102](Community_102.md) (16 shared connections)
+- [Community 203](Community_203.md) (9 shared connections)
+- [Community 202](Community_202.md) (8 shared connections)
+- [Community 386](Community_386.md) (7 shared connections)
+- [Community 399](Community_399.md) (3 shared connections)
+- [Community 281](Community_281.md) (3 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
+- [Community 372](Community_372.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `src/io/GemdosHd.cpp`
-- `src/io/GemdosHd.hpp`
+- `src/core/Bus.cpp`
+- `src/core/Bus.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 19 (51%)
-- INFERRED: 18 (49%)
+- EXTRACTED: 135 (92%)
+- INFERRED: 11 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

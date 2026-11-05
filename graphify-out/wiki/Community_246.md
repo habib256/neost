@@ -1,29 +1,37 @@
 # Community 246
 
-> 7 nodes · cohesion 0.48
+> 13 nodes
 
 ## Key Concepts
 
-- **MegaSteBusComparison** (7 connections) — `tools/test_timing_oracle.py`
-- **.check()** (5 connections) — `tools/test_timing_oracle.py`
-- **.test_changed_program_rejected()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_exact_reference_and_probe_identity()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_missing_sample_rejected()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_one_cycle_and_clock_domain_errors_rejected()** (2 connections) — `tools/test_timing_oracle.py`
-- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
+- **Rig** (12 connections) — `tests/ikbd_autosend_logic.cpp`
+- **testIkbdAutoSend()** (7 connections) — `tests/ikbd_autosend_logic.cpp`
+- **.due()** (3 connections) — `tests/ikbd_autosend_logic.cpp`
+- **.advance()** (2 connections) — `tests/ikbd_autosend_logic.cpp`
+- **.warm()** (2 connections) — `tests/ikbd_autosend_logic.cpp`
+- **.Rig()** (1 connections) — `tests/ikbd_autosend_logic.cpp`
+- **Ikbd** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **ikbd** (1 connections) — `tests/ikbd_autosend_logic.cpp`
+- **live** (1 connections) — `tests/ikbd_autosend_logic.cpp`
+- **mfp** (1 connections) — `tests/ikbd_autosend_logic.cpp`
+- **sched** (1 connections) — `tests/ikbd_autosend_logic.cpp`
 
 ## Relationships
 
-- [Community 331](Community_331.md) (1 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 77](Community_77.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/test_timing_oracle.py`
+- `tests/ikbd_autosend_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 19 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

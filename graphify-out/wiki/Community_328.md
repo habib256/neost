@@ -1,26 +1,32 @@
 # Community 328
 
-> 3 nodes · cohesion 1.00
+> 9 nodes
 
 ## Key Concepts
 
-- **testSccStatusModes()** (4 connections) — `tests/scc_status_modes_logic.cpp`
-- **scc_status_modes_logic.cpp** (4 connections) — `tests/scc_status_modes_logic.cpp`
-- **main()** (2 connections) — `tests/scc_status_modes_logic.cpp`
+- **VideoCounterState** (10 connections) — `src/core/Shifter.hpp`
+- **delayedAddr** (1 connections) — `src/core/Shifter.hpp`
+- **delayedOffset** (1 connections) — `src/core/Shifter.hpp`
+- **frameBase** (1 connections) — `src/core/Shifter.hpp`
+- **lineBase** (1 connections) — `src/core/Shifter.hpp`
+- **lineY** (1 connections) — `src/core/Shifter.hpp`
+- **restartBase** (1 connections) — `src/core/Shifter.hpp`
+- **restartLine** (1 connections) — `src/core/Shifter.hpp`
+- **stopInc** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 8](Community_8.md) (2 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_status_modes_logic.cpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (71%)
-- INFERRED: 2 (29%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

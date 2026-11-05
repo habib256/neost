@@ -1,47 +1,30 @@
 # Community 224
 
-> 18 nodes · cohesion 0.14
+> 8 nodes
 
 ## Key Concepts
 
-- **DebugWindows.cpp** (17 connections) — `src/gui/DebugWindows.cpp`
-- **DebugWindows.hpp** (9 connections) — `src/gui/DebugWindows.hpp`
-- **drawJoystickWindow()** (7 connections) — `src/gui/DebugWindows.cpp`
-- **drawCpuState()** (5 connections) — `src/gui/DebugWindows.cpp`
-- **drawDebugger()** (4 connections) — `src/gui/DebugWindows.cpp`
-- **drawHexViewer()** (4 connections) — `src/gui/DebugWindows.cpp`
-- **App** (4 connections)
-- **drawJoyDirLed()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **drawJoystickAxisBar()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **App** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Bus** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Cpu68k** (1 connections) — `src/gui/DebugWindows.hpp`
-- **GLFWwindow** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Machine** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Bus** (1 connections)
-- **Cpu68k** (1 connections)
-- **GLFWwindow** (1 connections)
-- **Machine** (1 connections)
+- **Key** (8 connections) — `src/gui/KeyboardWindow.cpp`
+- **name** (1 connections) — `src/gui/KeyboardWindow.cpp`
+- **sc** (1 connections) — `src/gui/KeyboardWindow.cpp`
+- **sticky** (1 connections) — `src/gui/KeyboardWindow.cpp`
+- **x0** (1 connections) — `src/gui/KeyboardWindow.cpp`
+- **x1** (1 connections) — `src/gui/KeyboardWindow.cpp`
+- **y0** (1 connections) — `src/gui/KeyboardWindow.cpp`
+- **y1** (1 connections) — `src/gui/KeyboardWindow.cpp`
 
 ## Relationships
 
-- [cstdint](cstdint.md) (8 shared connections)
-- [Community 329](Community_329.md) (5 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
-- [Community 241](Community_241.md) (1 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
-- [Community 165](Community_165.md) (1 shared connections)
+- [Community 91](Community_91.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/DebugWindows.cpp`
-- `src/gui/DebugWindows.hpp`
+- `src/gui/KeyboardWindow.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 35 (85%)
-- INFERRED: 6 (15%)
+- EXTRACTED: 8 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

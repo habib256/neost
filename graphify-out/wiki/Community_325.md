@@ -1,27 +1,27 @@
 # Community 325
 
-> 4 nodes · cohesion 0.50
+> 5 nodes
 
 ## Key Concepts
 
-- **SyncWrite** (5 connections) — `src/core/Shifter.hpp`
-- **frameCycle** (1 connections) — `src/core/Shifter.hpp`
-- **isRes** (1 connections) — `src/core/Shifter.hpp`
-- **val** (1 connections) — `src/core/Shifter.hpp`
+- **** (5 connections) — `src/core/YM2149.cpp`
+- **ENV_DOWN** (1 connections) — `src/core/YM2149.cpp`
+- **ENV_GODOWN** (1 connections) — `src/core/YM2149.cpp`
+- **ENV_GOUP** (1 connections) — `src/core/YM2149.cpp`
+- **ENV_UP** (1 connections) — `src/core/YM2149.cpp`
 
 ## Relationships
 
-- [Shifter](Shifter.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 140](Community_140.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Shifter.hpp`
+- `src/core/YM2149.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (80%)
-- INFERRED: 1 (20%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

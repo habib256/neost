@@ -1,60 +1,61 @@
 # Community 84
 
-> 28 nodes · cohesion 0.13
+> 35 nodes
 
 ## Key Concepts
 
-- **json** (30 connections)
-- **run_perfbench.py** (18 connections) — `tools/run_perfbench.py`
-- **host_info()** (9 connections) — `tools/run_perfbench.py`
-- **run_cyclebench.py** (9 connections) — `tools/run_cyclebench.py`
-- **measure()** (7 connections) — `tools/run_cyclebench.py`
-- **budget()** (6 connections) — `tools/run_perfbench.py`
-- **_cpu_name()** (6 connections) — `tools/run_perfbench.py`
-- **measure_load()** (6 connections) — `tools/run_perfbench.py`
-- **check_env_locks.py** (6 connections) — `tools/check_env_locks.py`
-- **main()** (5 connections) — `tools/run_perfbench.py`
-- **run_timed()** (4 connections) — `tools/run_cyclebench.py`
-- **measure_all()** (4 connections) — `tools/run_perfbench.py`
-- **run_timed()** (4 connections) — `tools/run_perfbench.py`
-- **main()** (3 connections) — `tools/check_env_locks.py`
-- **scan()** (3 connections) — `tools/check_env_locks.py`
-- **main()** (3 connections) — `tools/run_cyclebench.py`
-- **compare()** (3 connections) — `tools/run_perfbench.py`
-- **measure()** (3 connections) — `tools/run_perfbench.py`
-- **_ram_bytes()** (3 connections) — `tools/run_perfbench.py`
-- **platform** (3 connections)
-- **time** (3 connections)
-- **collections** (2 connections)
-- **(trames/s au meilleur des REPS, Hz de balayage annoncé par la machine). Le Hz…** (1 connections) — `tools/run_perfbench.py`
-- **Un passage complet du banc → {clé: ratio vs boot}.** (1 connections) — `tools/run_perfbench.py`
-- **Affiche les ratios et renvoie la liste des clés hors tolérance.** (1 connections) — `tools/run_perfbench.py`
-- *... and 3 more nodes in this community*
+- **MidiOutHost.cpp** (41 connections) — `src/audio/MidiOutHost.cpp`
+- **.setDestinations()** (14 connections) — `src/audio/MidiOutHost.hpp`
+- **.closeDestinations()** (10 connections) — `src/audio/MidiOutHost.hpp`
+- **.destinations()** (8 connections) — `src/audio/MidiOutHost.hpp`
+- **.synthAvailable()** (6 connections) — `src/audio/MidiOutHost.hpp`
+- **.portAvailable()** (6 connections) — `src/audio/MidiOutHost.hpp`
+- **.releasePort_()** (6 connections) — `src/audio/MidiOutHost.hpp`
+- **.available()** (5 connections) — `src/audio/MidiOutHost.hpp`
+- **displayName()** (5 connections) — `src/audio/MidiOutHost.cpp`
+- **MidiOutHost::MidiOutHost()** (5 connections) — `src/audio/MidiOutHost.cpp`
+- **uniqueId()** (5 connections) — `src/audio/MidiOutHost.cpp`
+- **.destinationsAvailable()** (4 connections) — `src/audio/MidiOutHost.hpp`
+- **.portKindName()** (4 connections) — `src/audio/MidiOutHost.hpp`
+- **.updateTimerRes_()** (4 connections) — `src/audio/MidiOutHost.hpp`
+- **.ensurePort_()** (4 connections) — `src/audio/MidiOutHost.hpp`
+- **.openVirtualPort()** (4 connections) — `src/audio/MidiOutHost.hpp`
+- **.closeVirtualPort()** (4 connections) — `src/audio/MidiOutHost.hpp`
+- **Le MIDI Windows rejoint macOS et Linux — backend winmm (2026-08-31)** (4 connections) — `CHANGELOG.md`
+- **.closeSynth()** (3 connections) — `src/audio/MidiOutHost.hpp`
+- **.anchor()** (3 connections) — `src/audio/MidiOutHost.hpp`
+- **.workerLoop()** (3 connections) — `src/audio/MidiOutHost.hpp`
+- **.backendName()** (2 connections) — `src/audio/MidiOutHost.hpp`
+- **.openSynth()** (2 connections) — `src/audio/MidiOutHost.hpp`
+- **.byteAt()** (2 connections) — `src/audio/MidiOutHost.hpp`
+- **.byte()** (2 connections) — `src/audio/MidiOutHost.hpp`
+- *... and 10 more nodes in this community*
 
 ## Relationships
 
-- [subprocess](subprocess.md) (14 shared connections)
-- [Community 207](Community_207.md) (8 shared connections)
-- [Community 267](Community_267.md) (7 shared connections)
-- [re](re.md) (4 shared connections)
-- [Community 35](Community_35.md) (3 shared connections)
-- [Community 331](Community_331.md) (3 shared connections)
-- [Asm](Asm.md) (2 shared connections)
-- [Community 49](Community_49.md) (2 shared connections)
-- [Community 264](Community_264.md) (1 shared connections)
-- [Community 332](Community_332.md) (1 shared connections)
-- [struct](struct.md) (1 shared connections)
+- [Community 42](Community_42.md) (21 shared connections)
+- [Community 350](Community_350.md) (8 shared connections)
+- [Community 380](Community_380.md) (4 shared connections)
+- [Community 223](Community_223.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 51](Community_51.md) (3 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 175](Community_175.md) (2 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 220](Community_220.md) (2 shared connections)
+- [Community 269](Community_269.md) (1 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/check_env_locks.py`
-- `tools/run_cyclebench.py`
-- `tools/run_perfbench.py`
+- `CHANGELOG.md`
+- `src/audio/MidiOutHost.cpp`
+- `src/audio/MidiOutHost.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 94 (98%)
-- INFERRED: 2 (2%)
+- EXTRACTED: 89 (77%)
+- INFERRED: 27 (23%)
 - AMBIGUOUS: 0 (0%)
 
 ---

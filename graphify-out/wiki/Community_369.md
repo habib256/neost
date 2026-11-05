@@ -1,14 +1,15 @@
 # Community 369
 
-> 7 nodes · cohesion 0.29
+> 8 nodes
 
 ## Key Concepts
 
 - **CLAUDE.md** (7 connections) — `CLAUDE.md`
 - **Disquettes & ROM** (2 connections) — `CLAUDE.md`
+- **⭐ Méthode imposée (ordre strict)** (2 connections) — `CLAUDE.md`
 - **Build & run** (1 connections) — `CLAUDE.md`
 - **Conventions non négociables** (1 connections) — `CLAUDE.md`
-- **⭐ Méthode imposée (ordre strict)** (1 connections) — `CLAUDE.md`
+- **Les grades de preuve — à écrire dans le code** (1 connections) — `CLAUDE.md`
 - **Où trouver quoi** (1 connections) — `CLAUDE.md`
 - **Tester = le headless (outil n°1)** (1 connections) — `CLAUDE.md`
 
@@ -23,8 +24,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 7 (88%)
-- INFERRED: 1 (12%)
+- EXTRACTED: 8 (89%)
+- INFERRED: 1 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

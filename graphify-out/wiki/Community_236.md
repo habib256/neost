@@ -1,31 +1,32 @@
 # Community 236
 
-> 8 nodes · cohesion 0.36
+> 10 nodes
 
 ## Key Concepts
 
-- **testRtcWriteOnly()** (7 connections) — `tests/rtc_write_only_logic.cpp`
-- **rtc_write_only_logic.cpp** (7 connections) — `tests/rtc_write_only_logic.cpp`
-- **Checks** (4 connections) — `tests/rtc_write_only_logic.cpp`
-- **address()** (2 connections) — `tests/rtc_write_only_logic.cpp`
-- **.equal()** (2 connections) — `tests/rtc_write_only_logic.cpp`
-- **main()** (2 connections) — `tests/rtc_write_only_logic.cpp`
-- **count** (1 connections) — `tests/rtc_write_only_logic.cpp`
-- **failures** (1 connections) — `tests/rtc_write_only_logic.cpp`
+- **2. 🔬 Fidélité au silicium — par puce** (10 connections) — `TODO.md`
+- **2.1 CPU 68000 (Moira) — ce que le banc fx68k a localisé** (1 connections) — `TODO.md`
+- **2.2 GLUE, MMU, Shifter — vidéo et bus** (1 connections) — `TODO.md`
+- **2.3 MFP 68901** (1 connections) — `TODO.md`
+- **2.4 Blitter** (1 connections) — `TODO.md`
+- **2.5 Son — YM2149, DMA STE, Microwire** (1 connections) — `TODO.md`
+- **2.6 Disquette — WD1772, DMA, ACSI** (1 connections) — `TODO.md`
+- **2.7 Clavier — IKBD HD6301, ACIA 6850, MIDI** (1 connections) — `TODO.md`
+- **2.8 Mega STE — SCC Z85C30, RTC RP5C15, cache** (1 connections) — `TODO.md`
+- **2.9 TOS, GEMDOS, cartouche** (1 connections) — `TODO.md`
 
 ## Relationships
 
-- [Community 8](Community_8.md) (3 shared connections)
-- [Community 100](Community_100.md) (3 shared connections)
+- [Community 237](Community_237.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/rtc_write_only_logic.cpp`
+- `TODO.md`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

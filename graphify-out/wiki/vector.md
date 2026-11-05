@@ -1,8 +1,8 @@
 # vector
 
-> God node · 258 connections · `src/core/Cpu68k.hpp`
+> God node · 302 connections · `src/core/Cpu68k.hpp`
 
-**Community:** [Community 100](Community_100.md)
+**Community:** [Community 102](Community_102.md)
 
 ## Connections by Relation
 
@@ -10,50 +10,50 @@
 - Fault `EXTRACTED`
 
 ### imports
-- selftest_logic.cpp `EXTRACTED`
-- Bus.hpp `EXTRACTED`
-- AppInit.cpp `EXTRACTED`
-- [Moira.cpp](Moira.cpp.md) `EXTRACTED`
 - AppLoop.cpp `EXTRACTED`
+- Bus.hpp `EXTRACTED`
+- selftest_logic.cpp `EXTRACTED`
+- AppInit.cpp `EXTRACTED`
+- Moira.cpp `EXTRACTED`
 - Machine.hpp `EXTRACTED`
 - main_headless.cpp `EXTRACTED`
 - App.cpp `EXTRACTED`
-- [main_web.cpp](main_web.cpp.md) `EXTRACTED`
+- main_web.cpp `EXTRACTED`
 - App.hpp `EXTRACTED`
-- StateArchive.hpp `EXTRACTED`
 - Fdc.hpp `EXTRACTED`
+- StateArchive.hpp `EXTRACTED`
 - YM2149.hpp `EXTRACTED`
 - main_android.cpp `EXTRACTED`
+- ipf_image_logic.cpp `EXTRACTED`
 - stx_raw_track_wrap_logic.cpp `EXTRACTED`
-- [YM2149.cpp](YM2149.cpp.md) `EXTRACTED`
+- YM2149.cpp `EXTRACTED`
+- gstmcu_bench.cpp `EXTRACTED`
 - stx_raw_track_overlay_logic.cpp `EXTRACTED`
 - stx_read_address_crc_logic.cpp `EXTRACTED`
-- MidiInHost.hpp `EXTRACTED`
-- KioskMenu.cpp `EXTRACTED`
-- *…and 110 more `imports` connection(s) not listed (lowest-degree first to go)*
+- *…and 123 more `imports` connection(s) not listed (lowest-degree first to go)*
 
 ### references
+- [Shifter](Shifter.md) `EXTRACTED`
 - [Fdc](Fdc.md) `EXTRACTED`
 - [App](App.md) `EXTRACTED`
 - [Bus](Bus.md) `EXTRACTED`
-- [Shifter](Shifter.md) `EXTRACTED`
-- [GemdosHd](GemdosHd.md) `EXTRACTED`
-- [DmaSound](DmaSound.md) `EXTRACTED`
+- GemdosHd `EXTRACTED`
+- DmaSound `EXTRACTED`
 - .saver() `EXTRACTED`
-- [ConfigUi](ConfigUi.md) `EXTRACTED`
-- [Config](Config.md) `EXTRACTED`
-- [YM2149](YM2149.md) `EXTRACTED`
-- [MidiOutHost](MidiOutHost.md) `EXTRACTED`
+- ConfigUi `EXTRACTED`
+- Config `EXTRACTED`
+- YM2149 `EXTRACTED`
+- MidiOutHost `EXTRACTED`
 - Acsi `EXTRACTED`
-- [Isp1160](Isp1160.md) `EXTRACTED`
-- [Audio](Audio.md) `EXTRACTED`
-- [Ne2000](Ne2000.md) `EXTRACTED`
+- Isp1160 `EXTRACTED`
+- Ne2000 `EXTRACTED`
+- Audio `EXTRACTED`
 - MidiInHost `EXTRACTED`
 - Track `EXTRACTED`
+- FloppyDisk `EXTRACTED`
 - SlirpBackend `EXTRACTED`
-- [FloppyDisk](FloppyDisk.md) `EXTRACTED`
 - Mt32Synth `EXTRACTED`
-- *…and 107 more `references` connection(s) not listed (lowest-degree first to go)*
+- *…and 138 more `references` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

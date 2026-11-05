@@ -1,25 +1,29 @@
 # Community 365
 
-> 4 nodes · cohesion 0.83
+> 7 nodes
 
 ## Key Concepts
 
-- **setMouseCaptured()** (4 connections) — `src/web/main_web.cpp`
-- **onKey()** (3 connections) — `src/web/main_web.cpp`
-- **onMouseButton()** (3 connections) — `src/web/main_web.cpp`
-- **GLFWwindow** (3 connections)
+- **stblitter_bench_top** (3 connections) — `tools/stblitter_bench_top.sv`
+- **stcpu_bench_top** (3 connections) — `tools/stcpu_bench_top.v`
+- **fx68k** (2 connections)
+- **stBlitter** (1 connections)
+- **ste_tb** (1 connections)
+- **stblitter_bench_top.sv** (1 connections) — `tools/stblitter_bench_top.sv`
+- **stcpu_bench_top.v** (1 connections) — `tools/stcpu_bench_top.v`
 
 ## Relationships
 
-- [main_web.cpp](main_web.cpp.md) (3 shared connections)
+- No strong cross-community connections detected
 
 ## Source Files
 
-- `src/web/main_web.cpp`
+- `tools/stblitter_bench_top.sv`
+- `tools/stcpu_bench_top.v`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (100%)
+- EXTRACTED: 6 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

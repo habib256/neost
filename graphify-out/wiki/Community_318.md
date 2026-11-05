@@ -1,48 +1,35 @@
 # Community 318
 
-> 12 nodes · cohesion 0.17
+> 11 nodes
 
 ## Key Concepts
 
-- **compile()** (7 connections) — `src/android/main_android.cpp`
-- **stScancode()** (5 connections) — `src/headless/main_headless.cpp`
-- **Cas tranchés — diagnostics de terrain** (5 connections) — `docs/CASE_STUDIES.md`
-- **Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)** (5 connections) — `docs/IMPLEMENTED.md`
-- **initGl()** (3 connections) — `src/android/main_android.cpp`
-- **Headless : `--joy-at`, `--joy-script` et `--mouse-at` deviennent répétables (`OUTIL-1`) (2026-08-25)** (2 connections) — `CHANGELOG.md`
-- **Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05)** (2 connections) — `CHANGELOG.md`
-- **0. Démarrer en cinq commandes** (2 connections) — `docs/OPENDST.md`
-- **GLenum** (1 connections)
-- **GLuint** (1 connections)
-- **Cubase Lite « figé » au chargement d'un morceau : le câble MIDI de bouclage (2026-08-21)** (1 connections) — `docs/CASE_STUDIES.md`
-- **Le réflexe qui tranche le plus de cas : la RAM (puis la ROM)** (1 connections) — `docs/CASE_STUDIES.md`
+- **rtc_long_elapsed_logic.cpp** (7 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **testRtcLongElapsed()** (6 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **Checks** (5 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **.date()** (5 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **afterEpoch()** (3 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **.equal()** (3 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **main()** (2 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **DateTime** (2 connections)
+- **count** (1 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **failures** (1 connections) — `tests/rtc_long_elapsed_logic.cpp`
+- **Rtc** (1 connections)
 
 ## Relationships
 
-- [Community 58](Community_58.md) (3 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [Community 165](Community_165.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
-- [Community 211](Community_211.md) (1 shared connections)
-- [Community 31](Community_31.md) (1 shared connections)
-- [Community 93](Community_93.md) (1 shared connections)
-- [Community 291](Community_291.md) (1 shared connections)
+- [Community 372](Community_372.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/CASE_STUDIES.md`
-- `docs/IMPLEMENTED.md`
-- `docs/OPENDST.md`
-- `src/android/main_android.cpp`
-- `src/headless/main_headless.cpp`
+- `tests/rtc_long_elapsed_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (62%)
-- INFERRED: 9 (38%)
+- EXTRACTED: 19 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

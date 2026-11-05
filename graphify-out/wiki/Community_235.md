@@ -1,6 +1,6 @@
 # Community 235
 
-> 5 nodes · cohesion 0.40
+> 5 nodes
 
 ## Key Concepts
 
@@ -12,7 +12,7 @@
 
 ## Relationships
 
-- [Shifter](Shifter.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
 - [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files

@@ -1,30 +1,33 @@
 # Community 264
 
-> 5 nodes · cohesion 0.40
+> 7 nodes
 
 ## Key Concepts
 
-- **2. Installation** (5 connections) — `packaging/raspberry/README.md`
-- **Disposition installée** (3 connections) — `packaging/raspberry/README.md`
-- **Fichiers de ce dossier** (2 connections) — `packaging/raspberry/README.md`
-- **2.a — Voie automatique : tout préparer sur la carte SD (recommandé)** (1 connections) — `packaging/raspberry/README.md`
-- **2.b — Voie manuelle** (1 connections) — `packaging/raspberry/README.md`
+- **FramePacer** (8 connections) — `src/core/Pacing.hpp`
+- **.resync()** (4 connections) — `src/core/Pacing.hpp`
+- **A28 — le servo audio et la cadence rentrent dans le cœur (2026-08-28)** (2 connections) — `CHANGELOG.md`
+- **.nextDueMs()** (1 connections) — `src/core/Pacing.hpp`
+- **armed_** (1 connections) — `src/core/Pacing.hpp`
+- **kMaxCatchUp** (1 connections) — `src/core/Pacing.hpp`
+- **nextMs_** (1 connections) — `src/core/Pacing.hpp`
 
 ## Relationships
 
-- [Community 292](Community_292.md) (1 shared connections)
-- [AppConfig.cpp](AppConfig.cpp.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
-- [Community 84](Community_84.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 58](Community_58.md) (2 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `packaging/raspberry/README.md`
+- `CHANGELOG.md`
+- `src/core/Pacing.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (62%)
-- INFERRED: 3 (38%)
+- EXTRACTED: 8 (67%)
+- INFERRED: 4 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

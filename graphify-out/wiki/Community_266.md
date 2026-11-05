@@ -1,30 +1,38 @@
 # Community 266
 
-> 7 nodes · cohesion 0.38
+> 17 nodes
 
 ## Key Concepts
 
-- **.open()** (5 connections) — `src/audio/Mt32Synth.hpp`
-- **loadRom()** (5 connections) — `src/audio/Mt32Synth.cpp`
-- **freeRom()** (4 connections) — `src/audio/Mt32Synth.cpp`
-- **.close()** (3 connections) — `src/audio/Mt32Synth.hpp`
-- **ROMImage** (2 connections)
-- **string** (2 connections)
-- **path** (1 connections)
+- **Cond** (17 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **BF** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **BT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **CC** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **CS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **EQ** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **GE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **GT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **HI** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **LE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **LS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **LT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MI** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **NE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **PL** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **VC** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **VS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 
 ## Relationships
 
-- [Community 201](Community_201.md) (4 shared connections)
-- [Community 117](Community_117.md) (2 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Mt32Synth.cpp`
-- `src/audio/Mt32Synth.hpp`
+- `extern/moira/Moira/MoiraTypes.h`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (100%)
+- EXTRACTED: 17 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

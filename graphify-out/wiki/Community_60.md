@@ -1,61 +1,58 @@
 # Community 60
 
-> 36 nodes · cohesion 0.10
+> 31 nodes
 
 ## Key Concepts
 
-- **Moira.h** (31 connections) — `extern/moira/Moira/Moira.h`
-- **u16** (11 connections)
-- **.getSR()** (10 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::execInterrupt()** (10 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **didExecute()** (9 connections) — `extern/moira/Moira/Moira.h`
-- **willExecute()** (9 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::execAddressError()** (9 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **Moira::execBusError()** (9 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **.setSupervisorMode()** (8 connections) — `extern/moira/Moira/Moira.h`
-- **.clearTraceFlags()** (7 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::execException()** (7 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **u8** (7 connections)
-- **.getIrqVector()** (6 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::jumpToVector()** (6 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **.reset()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **read16OnReset()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **readIrqUserVector()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **sync()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **didChangeCAAR()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **didChangeCACR()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **didJumpToVector()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **didReachCatchpoint()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **iackSyncAfter()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **iackSyncBefore()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **willInterrupt()** (3 connections) — `extern/moira/Moira/Moira.h`
-- *... and 11 more nodes in this community*
+- **StackFrame** (21 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MoiraExceptions_cpp.h** (13 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **u16** (7 connections)
+- **u32** (7 connections)
+- **exception** (6 connections) — `extern/moira/Moira/Moira.h`
+- **AddressError** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **BusError** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **PrefetchQueue** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Moira::writeStackFrame1000()** (4 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame0000()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame0001()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame0010()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame1001()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame1010()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame1011()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **IllegalInstruction** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Moira::writeStackFrameAEBE()** (2 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **.AddressError()** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.BusError()** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **u16** (2 connections)
+- **u32** (2 connections)
+- **stackFrame** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **stackFrame** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **irc** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **ird** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- *... and 6 more nodes in this community*
 
 ## Relationships
 
-- [Moira](Moira.md) (22 shared connections)
-- [Moira.cpp](Moira.cpp.md) (12 shared connections)
-- [Community 83](Community_83.md) (6 shared connections)
-- [Community 333](Community_333.md) (5 shared connections)
-- [MoiraDataflow_cpp.h](MoiraDataflow_cpp.h.md) (5 shared connections)
-- [MoiraTypes.h](MoiraTypes.h.md) (5 shared connections)
-- [M68kException](M68kException.md) (4 shared connections)
-- [NeostMoira](NeostMoira.md) (3 shared connections)
-- [Instr](Instr.md) (2 shared connections)
-- [read16Dasm](read16Dasm.md) (2 shared connections)
-- [Cpu68k.cpp](Cpu68k.cpp.md) (1 shared connections)
-- [MoiraDebugger.h](MoiraDebugger.h.md) (1 shared connections)
+- [Community 99](Community_99.md) (7 shared connections)
+- [Community 57](Community_57.md) (5 shared connections)
+- [Community 16](Community_16.md) (2 shared connections)
+- [Community 333](Community_333.md) (2 shared connections)
+- [Community 167](Community_167.md) (1 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
+- [Community 56](Community_56.md) (1 shared connections)
+- [Community 40](Community_40.md) (1 shared connections)
+- [Community 104](Community_104.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraDataflow_cpp.h`
 - `extern/moira/Moira/MoiraExceptions_cpp.h`
+- `extern/moira/Moira/MoiraTypes.h`
 
 ## Audit Trail
 
-- EXTRACTED: 89 (67%)
-- INFERRED: 44 (33%)
+- EXTRACTED: 67 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

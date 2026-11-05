@@ -2,15 +2,14 @@
 # =============================================================================
 #  trace_diff.py — Aligne et compare une trace NeoST et une trace Hatari.
 #
-#  Méthode (cf. CLAUDE.md) : « MAME et Hatari sont les sources de vérité
-#  matérielle » et « la séquence de PC est le signal de diff ». Cet outil prend
+#  Hatari est une référence comparative, pas une preuve matérielle. Cet outil prend
 #  deux traces d'exécution du MÊME ROM/disquette, les aligne sur un PC commun,
 #  puis localise la PREMIÈRE divergence — soit du flux (PC différent), soit d'un
 #  registre (PC identique mais D0-D7/A0-A7/SR qui divergent en amont du branch).
 #
 #  Générer les traces :
 #    NeoST  : ./build/neost-headless --frames N --trace neost.txt --regs --irq
-#    Hatari : hatari --trace cpu_disasm --log-file hatari.txt \
+#    Hatari : hatari --trace cpu_disasm --trace-file hatari.txt \
 #                    --tos roms/etos192us.img --disk-a disks/diskA.st <...>
 #             (ajouter cpu_regs au --trace pour comparer aussi les registres)
 #
@@ -38,8 +37,9 @@ RE_HATARI = re.compile(
     r'([0-9A-Fa-f]{6,8})\s+([0-9A-Fa-f]{2,4}\s.*)$')                       # adresse + octets
 
 # Registres, tolérant aux deux notations ("D0=12345678" ou "D0 12345678").
-RE_REG = re.compile(r'\b([DA][0-7])\s*[= ]\s*([0-9A-Fa-f]{1,8})\b')
-RE_SR  = re.compile(r'\bSR\s*[= ]\s*([0-9A-Fa-f]{1,4})\b')
+# La largeur évite de lire « D0 D0=... » comme un registre valant $D0.
+RE_REG = re.compile(r'\b([DA][0-7])\s*[= ]\s*([0-9A-Fa-f]{8})\b')
+RE_SR  = re.compile(r'\bSR\s*[= ]\s*([0-9A-Fa-f]{4})\b')
 
 
 class Insn:
@@ -73,16 +73,18 @@ def detect_format(lines):
 
 
 def parse(path, fmt=None):
-    """Lit un fichier de trace → liste d'Insn. Les lignes de continuation
-    (dump registres multi-lignes Hatari, marqueurs IRQ NeoST) sont rattachées à
-    l'instruction courante pour l'extraction des registres."""
+    """Lit un fichier de trace → liste d'Insn avec état avant exécution.
+    Hatari a un lecteur distinct : ses dumps suivent l'exécution précédente.
+    """
     with open(path, 'r', errors='replace') as f:
         lines = f.read().splitlines()
     if fmt is None:
         fmt = detect_format(lines)
         if fmt is None:
             sys.exit(f"[trace_diff] format non reconnu : {path}")
-    rx = RE_HATARI if fmt == 'hatari' else RE_NEOST
+    if fmt == 'hatari':
+        return parse_hatari(lines), fmt
+    rx = RE_NEOST
 
     insns, cur, blob = [], None, []
     def flush():
@@ -100,6 +102,51 @@ def parse(path, fmt=None):
             blob.append(ln)                 # continuation (regs, flags, IRQ…)
     flush()
     return insns, fmt
+
+
+def parse_hatari(lines):
+    """Sépare les instructions exécutées des aperçus du dump de registres.
+
+    [D] Hatari debug/debugcpu.c:1389 et cpu/newcpu.c:948 @ f0736b24 :
+    cpu_disasm précède l'exécution, cpu_regs suit l'instruction et désassemble
+    le PC suivant. Ce dump décrit donc l'entrée de l'instruction suivante,
+    pas celle qui vient d'être exécutée. Le compter deux fois crée un faux
+    écart de flux ; rattacher ses registres au PC précédent en crée un autre.
+    """
+    events, dump, preview = [], None, None
+    for line in lines:
+        if re.match(r'^\s+D0\s+[0-9A-Fa-f]{8}\b', line):
+            dump, preview = [line], None
+            continue
+        if dump is not None:
+            if line.startswith('Next PC:'):
+                if preview is not None:
+                    preview.parse_regs(' '.join(dump))
+                    events.append(('dump', preview))
+                dump, preview = None, None
+            else:
+                match = RE_HATARI.match(line)
+                if match:
+                    preview = Insn(int(match.group(2), 16), line.rstrip())
+                else:
+                    dump.append(line)
+            continue
+        match = RE_HATARI.match(line)
+        if match:
+            cycle = int(match.group(1)) if match.group(1) is not None else None
+            events.append(('exec', Insn(int(match.group(2), 16), line.rstrip(), cycle)))
+    if not any(kind == 'exec' for kind, _ in events):
+        return [ins for _, ins in events]  # cpu_regs seul
+    result, pending = [], None
+    for kind, ins in events:
+        if kind == 'dump':
+            pending = ins
+        else:
+            if pending is not None and pending.pc == ins.pc:
+                ins.regs = pending.regs
+            pending = None
+            result.append(ins)
+    return result
 
 
 def trim_to_pc(insns, pc):

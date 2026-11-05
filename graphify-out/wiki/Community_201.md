@@ -1,41 +1,38 @@
 # Community 201
 
-> 10 nodes · cohesion 0.22
+> 15 nodes
 
 ## Key Concepts
 
-- **Mt32Synth.cpp** (19 connections) — `src/audio/Mt32Synth.cpp`
-- **.available()** (4 connections) — `src/audio/Mt32Synth.hpp`
-- **.parse()** (3 connections) — `src/audio/Mt32Synth.hpp`
-- **.byteAt()** (2 connections) — `src/audio/Mt32Synth.hpp`
-- **.clearEvents()** (2 connections) — `src/audio/Mt32Synth.hpp`
-- **.render()** (2 connections) — `src/audio/Mt32Synth.hpp`
-- **dataBytesFor()** (2 connections) — `src/audio/Mt32Synth.cpp`
-- **cstdarg** (2 connections)
-- **Mt32Synth::Mt32Synth()** (1 connections) — `src/audio/Mt32Synth.cpp`
-- **mt32emu** (1 connections)
+- **Sector** (19 connections) — `src/io/StxImage.hpp`
+- **bitPosition** (1 connections) — `src/io/StxImage.hpp`
+- **dataOffset** (1 connections) — `src/io/StxImage.hpp`
+- **fdcStatus** (1 connections) — `src/io/StxImage.hpp`
+- **idCrc** (1 connections) — `src/io/StxImage.hpp`
+- **idHead** (1 connections) — `src/io/StxImage.hpp`
+- **idSector** (1 connections) — `src/io/StxImage.hpp`
+- **idSize** (1 connections) — `src/io/StxImage.hpp`
+- **idTrack** (1 connections) — `src/io/StxImage.hpp`
+- **pData** (1 connections) — `src/io/StxImage.hpp`
+- **pFuzzy** (1 connections) — `src/io/StxImage.hpp`
+- **pTiming** (1 connections) — `src/io/StxImage.hpp`
+- **readTime** (1 connections) — `src/io/StxImage.hpp`
+- **saveIndex** (1 connections) — `src/io/StxImage.hpp`
+- **sectorSize** (1 connections) — `src/io/StxImage.hpp`
 
 ## Relationships
 
-- [Community 117](Community_117.md) (5 shared connections)
-- [Community 266](Community_266.md) (4 shared connections)
-- [Community 100](Community_100.md) (3 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
-- [PortDevices](PortDevices.md) (1 shared connections)
-- [cstdint](cstdint.md) (1 shared connections)
-- [Community 165](Community_165.md) (1 shared connections)
-- [Community 262](Community_262.md) (1 shared connections)
-- [Community 59](Community_59.md) (1 shared connections)
+- [Community 110](Community_110.md) (3 shared connections)
+- [Community 9](Community_9.md) (2 shared connections)
 
 ## Source Files
 
-- `src/audio/Mt32Synth.cpp`
-- `src/audio/Mt32Synth.hpp`
+- `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 28 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 17 (89%)
+- INFERRED: 2 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

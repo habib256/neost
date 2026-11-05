@@ -15,11 +15,15 @@
 #  Usage : compare_titles.py SORTIE DISQUE... [--machine ste] [--rom roms/tos162uk.img]
 #            [--mem 1] [--frames 1000,2000,4000] [--window 60] [--offset 0] [--step 1]
 #            [--auto A:\\PROG.PRG] [--gemdos DOSSIER] [--disk-b DISQUE] [--swap TRAME:DISQUE]... [--key TRAME:SCANCODE]...
-#            [--joy TRAME:FICHIER] [--jobs 4]
+#            [--joy TRAME:FICHIER] [--mouse TRAME:SCRIPT] [--jobs 4]
+#            [--fdc-seed N] [--hatari-seed N]
+#  Les graines sont indépendantes : une même valeur ne donne pas le même angle dans les deux émulateurs.
 #  --joy : script joystick daté, port 1, grammaire de neost-headless --joy-script-file. La même suite de masques
 #  des deux côtés : compilée par NeoST, jouée par Hatari via son patch NEOST_JOY_SCRIPT (docs/HATARI_AUTOMATION.md).
-#  --key : touche ST tenue KEY_HOLD trames (scancode décimal, 57 = espace). Côté Hatari, par sa
+#  --key : touche ST tenue --key-hold trames (8 par défaut ; scancode décimal, 57 = espace). Côté Hatari, par sa
 #  fifo de commande à un arrêt du débogueur, comme tools/hatari_oracle.sh.
+#  --mouse : .LRUD123, un caractère par trame comme --mouse-at ; déplacement relatif de 8 unités.
+#  Requiert le patch mousemove de l’oracle ; mêmes boutons et relâchement final des deux côtés.
 #  Sorties : SORTIE/summary.json, SORTIE/sheet.png. Exige Pillow et ffmpeg ; code 77 sinon.
 #  Les disques sont copiés avant chaque exécution : un programme peut y écrire.
 #
@@ -53,7 +57,14 @@ HEADLESS = ROOT / "build" / "neost-headless"
 HATARI = ROOT / "extern" / "hatari" / "build" / "src" / "hatari"
 
 
-KEY_HOLD = 8                    # trames d'appui, les mêmes des deux côtés
+KEY_HOLD = 8                    # défaut en trames d'appui, le même des deux côtés
+
+
+def parse_seed(text: str) -> int:
+    value = int(text, 0)
+    if not 0 <= value <= 0xFFFFFFFF:
+        raise argparse.ArgumentTypeError("seed must be an unsigned 32-bit integer")
+    return value
 
 
 def parse_key(text: str) -> tuple[int, int]:
@@ -61,14 +72,48 @@ def parse_key(text: str) -> tuple[int, int]:
     return int(at), int(code)
 
 
-def run_hatari_keys(cmd: list[str], keys, work: Path, env: dict) -> None:
+def parse_mouse(text: str) -> tuple[int, str]:
+    at, sep, script = text.partition(":")
+    if not sep or not at.isdecimal() or int(at) < 1 or not script or set(script) - set(".LRUD123"):
+        raise argparse.ArgumentTypeError("mouse input must be FRAME:SCRIPT (FRAME >= 1; .LRUD123, one character per frame)")
+    return int(at), script
+
+
+def mouse_events(scripts, step=8) -> list[tuple[int, str]]:
+    """Même grammaire et relâchement final que --mouse-at du headless.
+
+    Les scripts ne se chevauchent pas : autrement leur ordre pourrait remplacer
+    un bouton encore tenu par le script précédent dans un seul des deux témoins.
+    """
+    events = []
+    previous_end = -1
+    for start, script in sorted(scripts):
+        if start <= previous_end:
+            raise ValueError("mouse scripts overlap (including the final release frame)")
+        previous_end = start + len(script)
+        buttons = 0
+        for offset, char in enumerate(script + "."):
+            current = {"1": 1, "2": 2, "3": 3}.get(char, 0)
+            for bit, name in ((1, "left"), (2, "right")):
+                if (buttons ^ current) & bit:
+                    events.append((start + offset, name + ("down" if current & bit else "up")))
+            buttons = current
+            dx, dy = {"L": (-step, 0), "R": (step, 0), "U": (0, -step), "D": (0, step)}.get(char, (0, 0))
+            if dx or dy:
+                events.append((start + offset, f"mousemove {dx} {dy}"))
+    return events
+
+
+def run_hatari_keys(cmd: list[str], keys, work: Path, env: dict, key_hold: int = KEY_HOLD, mouse=(), mouse_step=8) -> None:
     """Hatari avec des touches datées : un arrêt du débogueur par événement, puis l'événement dans la
     fifo et « c » sur stdin. Mesuré sur le build épinglé, cf. le bandeau de tools/hatari_oracle.sh."""
-    events = sorted([(at, "keydown", code) for at, code in keys] + [(at + KEY_HOLD, "keyup", code) for at, code in keys])
+    events = sorted([(at, f"keydown {code}") for at, code in keys]
+                    + [(at + key_hold, f"keyup {code}") for at, code in keys]
+                    + mouse_events(mouse, mouse_step), key=lambda event: event[0])
     parse = work / "start.ini"
     with parse.open("a") as f:
-        for vbl, _, _ in events:
-            f.write(f"b VBL = {vbl} :once\n")
+        if events:
+            f.write(f"b VBL = {events[0][0]} :once\n")
     fifo = work / "cmd.fifo"
     log = work / "hatari.log"
     with log.open("w") as out:
@@ -83,11 +128,15 @@ def run_hatari_keys(cmd: list[str], keys, work: Path, env: dict) -> None:
             seen = len(prompts)
             vbl = int(prompts[-1])
             while sent < len(events) and events[sent][0] <= vbl:
-                _, kind, code = events[sent]
+                _, event = events[sent]
                 with fifo.open("w") as f:
-                    f.write(f"hatari-event {kind} {code}\n")
+                    f.write(f"hatari-event {event}\n")
                 sent += 1
             try:
+                # Un seul arrêt d'entrée actif : des dizaines de pas souris ne
+                # doivent pas ralentir toutes les instructions du démarrage.
+                if sent < len(events):
+                    proc.stdin.write(f"b VBL = {events[sent][0]} :once\n")
                 proc.stdin.write("c\n")
                 proc.stdin.flush()
             except BrokenPipeError:
@@ -95,7 +144,12 @@ def run_hatari_keys(cmd: list[str], keys, work: Path, env: dict) -> None:
         time.sleep(0.02)
     if proc.poll() is None:
         proc.kill()
-    proc.wait()
+        proc.wait()
+        raise TimeoutError("Hatari timed out while replaying keyboard input")
+    if proc.wait() != 0:
+        raise subprocess.CalledProcessError(proc.returncode, cmd)
+    if "ERROR: unrecognized event:" in log.read_text(errors="replace"):
+        raise RuntimeError("Hatari rejected an input event; rebuild its NeoST oracle instrumentation")
 
 
 def swap_copy(disk: Path, work: Path, tag: str) -> Path:
@@ -109,36 +163,56 @@ def parse_swap(text: str) -> tuple[int, Path]:
     return int(at), Path(path)
 
 
+def read_neost_frames(prefix: Path, frames) -> dict[int, Image.Image]:
+    """Les noms du headless portent les numéros réels, pas des indices de capture."""
+    out = {}
+    for frame in frames:
+        path = Path(f"{prefix}{frame:05d}.ppm")
+        if not path.exists():
+            raise RuntimeError(f"Missing NeoST capture at frame {frame}: {path.name}")
+        with Image.open(path) as img:
+            out[frame] = img.convert("RGB").copy()
+    return out
+
+
 def neost_frames(disk: Path, args, work: Path) -> dict[int, Image.Image]:
     copy = work / ("n" + disk.suffix)
     shutil.copy(disk, copy)
     prefix = work / "n_"
-    # Une capture tous les `step` trames : le plus grand pas commun aux trames demandées.
-    step = reduce(gcd, (f - args.frames[0] for f in args.frames[1:]), 0) or 1
+    # Le headless capture les multiples absolus du pas, pas depuis --shot-from.
+    # Le PGCD des seuls écarts décalait par exemple [101,201] vers [200,300].
+    step = reduce(gcd, args.frames) or 1
     cmd = [str(HEADLESS), args.rom, "--machine", args.machine, "--mem", f"{args.mem}m",
            *(["--disk", str(copy)] if not args.gemdos else ["--gemdos", str(args.gemdos.resolve())]),
            "--frames", str(max(args.frames) + 1),
            "--shot-from", str(min(args.frames)), "--shot-every", str(step), str(prefix)]
     if args.disk_b:
         cmd += ["--diskb", str(swap_copy(args.disk_b, work, "nb"))]
+    if args.fdc_seed is not None:
+        cmd += ["--fdc-seed", str(args.fdc_seed)]
     if args.auto:
         cmd += ["--auto", args.auto]
     if args.joy:
         cmd += ["--joy-script-file", str(args.joy[0]), str(args.joy[1])]
+    for at, script in args.mouse:
+        cmd += ["--mouse-at", str(at), script]
+    if args.mouse:
+        cmd += ["--mouse-step", str(args.mouse_step)]
     for i, (at, other) in enumerate(args.swap):
         cmd += ["--disk-at", str(at), str(swap_copy(other, work, f"ns{i}"))]
     if args.key:
-        cmd += ["--key-hold", str(KEY_HOLD)]
+        cmd += ["--key-hold", str(args.key_hold)]
         for at, code in args.key:
             cmd += ["--scancode-at", str(at), f"{code:x}"]
-    subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, errors="replace", timeout=1200, check=True)
+    done = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, errors="replace", timeout=1200)
+    (work / "neost.log").write_text(done.stdout + done.stderr)
+    done.check_returncode()
     shots = sorted(work.glob("n_*"))
     if not shots:
         raise RuntimeError("NeoST n'a produit aucune capture")
-    out = {}
-    for f in args.frames:
-        name = shots[min((f - args.frames[0]) // step, len(shots) - 1)]
-        out[f] = Image.open(name).convert("RGB").copy()
+    # Ne jamais remplacer une capture absente par la dernière disponible :
+    # cela cachait un arrêt prématuré et fabriquait des trames dans summary.json.
+    out = read_neost_frames(prefix, args.frames)
     for s in shots:
         s.unlink()
     return out
@@ -173,8 +247,11 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
         (work / f"s{vbl}.ini").write_text("\n".join(lines) + "\n")
     parse = work / "start.ini"
     parse.write_text(f"b VBL = {wanted[0]} :once :trace :file {work / f's{wanted[0]}.ini'}\n")
+    # Comparer le TOS original, y compris ses tests RAM et attentes de boot.
+    # --patch-tos contrôle aussi les variables système préremplies par Hatari.
     cmd = [str(HATARI), "--machine", args.machine, "--tos", str(ROOT / args.rom), "--monitor", "rgb",
            "--memsize", str(args.mem), "--cpu-exact", "on", "--compatible", "on",
+           "--patch-tos", "off", "--fast-boot", "off", "--fastfdc", "off",
            *(["--disk-a", str(copy)] if not args.gemdos else ["--harddrive", str(args.gemdos.resolve())]),
            "--sound", "25033", "--fast-forward", "on", "--confirm-quit", "off", "--statusbar", "off",
            "--drive-led", "off", "--frameskips", "0", "--alert-level", "fatal",
@@ -183,14 +260,16 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
         cmd += ["--disk-b", str(swap_copy(args.disk_b, work, "hb"))]
     if args.auto:
         cmd += ["--auto", args.auto]
-    env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HATARI_SEED="1")
+    env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HATARI_SEED=str(args.hatari_seed))
     if args.joy:
         env.update(NEOST_JOY_SCRIPT=str(args.joy[2]), NEOST_JOY_START=str(args.joy[0]))
-    if args.key:
-        run_hatari_keys(cmd, args.key, work, env)
+    if args.key or args.mouse:
+        run_hatari_keys(cmd, args.key, work, env, args.key_hold, args.mouse, args.mouse_step)
     else:
-        subprocess.run(cmd, capture_output=True, text=True, errors="replace", timeout=1800, env=env, cwd=work,
-                       stdin=subprocess.DEVNULL)
+        done = subprocess.run(cmd, capture_output=True, text=True, errors="replace", timeout=1800, env=env, cwd=work,
+                              stdin=subprocess.DEVNULL)
+        (work / "hatari.log").write_text(done.stdout + done.stderr)
+        done.check_returncode()
     return shots
 
 
@@ -204,6 +283,19 @@ def reduce_2x(img: Image.Image, size: tuple[int, int]) -> Image.Image:
     return img.reduce((img.width // size[0], img.height // size[1]))
 
 
+def pixel_difference(a: Image.Image, b: Image.Image) -> float:
+    """Pourcentage de pixels RGB différents, sans arrondi en luminance.
+
+    Une différence bleue de 1 devenait zéro avec convert('L') : deux images
+    différentes pouvaient donc être annoncées identiques.
+    """
+    if a.size != b.size:
+        raise ValueError(f"Capture dimensions differ: {a.size} != {b.size}")
+    red, green, blue = ImageChops.difference(a, b).split()
+    hist = ImageChops.lighter(ImageChops.lighter(red, green), blue).histogram()
+    return 100.0 * (sum(hist) - hist[0]) / sum(hist)
+
+
 def best_match(shots: Path, frame: int, args, ref: Image.Image):
     best, best_img, best_vbl = 100.0, None, None
     for vbl in range(max(1, frame + args.offset - args.window),
@@ -212,23 +304,33 @@ def best_match(shots: Path, frame: int, args, ref: Image.Image):
         if not path.exists():
             continue
         small = reduce_2x(Image.open(path).convert("RGB"), ref.size)
-        hist = ImageChops.difference(ref, small).convert("L").histogram()
-        pct = 100.0 * (sum(hist) - hist[0]) / sum(hist)
+        pct = pixel_difference(ref, small)
         if pct < best:
             best, best_img, best_vbl = pct, small.copy(), vbl
     return round(best, 2), best_img, best_vbl
 
 
 def one(disk: Path, args, out: Path) -> dict:
-    res = {"disk": disk.name, "frames": {}}
+    res = {"disk": disk.name, "fdc_seed": args.fdc_seed, "hatari_seed": args.hatari_seed,
+           "key_hold": args.key_hold, "offset": args.offset,
+           "window": args.window, "step": args.step, "mouse": args.mouse, "mouse_step": args.mouse_step, "frames": {}}
     with tempfile.TemporaryDirectory(dir=out) as tmp:
         work = Path(tmp)
+        key = hashlib.md5(disk.name.encode()).hexdigest()[:8]
+        # Les copies de travail peuvent être écrites par les logiciels émulés ;
+        # les médias fournis, ROM comprise, doivent garder leur empreinte.
+        paths = [disk, ROOT / args.rom]
+        if args.disk_b:
+            paths.append(args.disk_b)
+        paths.extend(other for _, other in args.swap)
+        fingerprints = {}
         try:
+            fingerprints = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+            res["media_sha256"] = fingerprints
             shots = neost_frames(disk, args, work)
             shots_h = hatari_shots(disk, args, work)
             if not any(shots_h.iterdir()):
                 raise RuntimeError("Hatari n'a produit aucune capture")
-            key = hashlib.md5(disk.name.encode()).hexdigest()[:8]
             for f, img in shots.items():
                 pct, match, vbl = best_match(shots_h, f, args, img)
                 img.save(out / f"{key}_{f}_n.png")
@@ -236,9 +338,26 @@ def one(disk: Path, args, out: Path) -> dict:
                     match.save(out / f"{key}_{f}_h.png")
                 res["frames"][str(f)] = {"diff": pct, "hatari_vbl": vbl,
                                          "colors": len(img.getcolors(1 << 20) or []),
+                                         "neost_rgb_sha256": hashlib.sha256(img.tobytes()).hexdigest(),
                                          "key": f"{key}_{f}"}
         except Exception as exc:
             res["error"] = str(exc)[:300]
+        finally:
+            for name, suffix in (("neost", "n"), ("hatari", "h")):
+                log = work / f"{name}.log"
+                if log.exists():
+                    message = log.read_text(errors="replace")
+                    # Le headless rend actuellement 0 même après une double faute.
+                    # Un écran identique et figé n'est pas une validation du jeu.
+                    res[f"{name}_halted"] = "CPU halted" in message
+                    shutil.copyfile(log, out / f"{key}_{suffix}.log")
+            for path, expected in fingerprints.items():
+                try:
+                    intact = hashlib.sha256(Path(path).read_bytes()).hexdigest() == expected
+                except OSError:
+                    intact = False
+                if not intact:
+                    res["error"] = f"Source media changed during comparison: {path}"
     return res
 
 
@@ -265,6 +384,8 @@ def main() -> int:
     ap.add_argument("--machine", default="ste")
     ap.add_argument("--rom", default="roms/tos162uk.img")
     ap.add_argument("--mem", type=int, default=1)
+    ap.add_argument("--fdc-seed", type=parse_seed, help="graine de l'angle disquette NeoST (défaut du cœur si omise)")
+    ap.add_argument("--hatari-seed", type=parse_seed, default=1, help="graine indépendante d'Hatari (défaut : 1)")
     ap.add_argument("--frames", default="1000,2000,4000")
     ap.add_argument("--window", type=int, default=60)
     ap.add_argument("--offset", type=int, default=0, help="centre de la fenêtre Hatari : trame + OFFSET")
@@ -276,9 +397,22 @@ def main() -> int:
                     help="TRAME:DISQUE, change la disquette du lecteur A à cette trame (répétable)")
     ap.add_argument("--key", type=parse_key, action="append", default=[],
                     help="TRAME:SCANCODE, touche tenue à cette trame (répétable)")
+    ap.add_argument("--key-hold", type=int, default=KEY_HOLD,
+                    help="durée d'appui en trames, identique dans les deux émulateurs (défaut : 8)")
     ap.add_argument("--joy", help="TRAME:FICHIER, script joystick du port 1 à partir de cette trame")
+    ap.add_argument("--mouse", type=parse_mouse, action="append", default=[],
+                    help="TRAME:SCRIPT, souris .LRUD123 comme --mouse-at (répétable, sans chevauchement)")
+    ap.add_argument("--mouse-step", type=int, default=8, help="déplacement par pas L/R/U/D (1..127, défaut : 8)")
     ap.add_argument("--jobs", type=int, default=4)
     args = ap.parse_args()
+    if args.key_hold < 1:
+        ap.error("--key-hold must be at least 1 frame")
+    if not 1 <= args.mouse_step <= 127:
+        ap.error("--mouse-step must be between 1 and 127")
+    try:
+        mouse_events(args.mouse)
+    except ValueError as exc:
+        ap.error(str(exc))
     args.frames = sorted(int(x) for x in args.frames.split(","))
     if shutil.which("ffmpeg") is None or not HATARI.exists() or not HEADLESS.exists():
         print("SKIP — compare_titles : ffmpeg, Hatari ou neost-headless absent")

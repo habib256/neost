@@ -1,31 +1,53 @@
 # Community 169
 
-> 9 nodes · cohesion 0.28
+> 28 nodes
 
 ## Key Concepts
 
-- **framebufferTexture2DCompat()** (4 connections) — `src/gui/CrtEffectStack.cpp`
-- **GLuint** (4 connections)
-- **bindFramebufferCompat()** (3 connections) — `src/gui/CrtEffectStack.cpp`
-- **deleteFramebuffersCompat()** (3 connections) — `src/gui/CrtEffectStack.cpp`
-- **genFramebuffersCompat()** (3 connections) — `src/gui/CrtEffectStack.cpp`
-- **GLenum** (3 connections)
-- **checkFramebufferStatusCompat()** (2 connections) — `src/gui/CrtEffectStack.cpp`
-- **GLsizei** (2 connections)
-- **GLint** (1 connections)
+- **BareMoira** (25 connections) — `tools/moira_bare_bench.cpp`
+- **.emit()** (8 connections) — `tools/moira_bare_bench.cpp`
+- **.fc()** (6 connections) — `tools/moira_bare_bench.cpp`
+- **.read16()** (6 connections) — `tools/moira_bare_bench.cpp`
+- **u32** (6 connections)
+- **.read8()** (5 connections) — `tools/moira_bare_bench.cpp`
+- **.write16()** (5 connections) — `tools/moira_bare_bench.cpp`
+- **.write8()** (5 connections) — `tools/moira_bare_bench.cpp`
+- **u16** (5 connections)
+- **IrqEv** (4 connections) — `tools/moira_bare_bench.cpp`
+- **.read16OnReset()** (4 connections) — `tools/moira_bare_bench.cpp`
+- **.readIrqUserVector()** (4 connections) — `tools/moira_bare_bench.cpp`
+- **u8** (4 connections)
+- **V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01)** (3 connections) — `CHANGELOG.md`
+- **main()** (2 connections) — `tools/moira_bare_bench.cpp`
+- **i64** (2 connections)
+- **.BareMoira()** (1 connections) — `tools/moira_bare_bench.cpp`
+- **done** (1 connections) — `tools/moira_bare_bench.cpp`
+- **irqIdx** (1 connections) — `tools/moira_bare_bench.cpp`
+- **irqs** (1 connections) — `tools/moira_bare_bench.cpp`
+- **nEmit** (1 connections) — `tools/moira_bare_bench.cpp`
+- **out** (1 connections) — `tools/moira_bare_bench.cpp`
+- **ram** (1 connections) — `tools/moira_bare_bench.cpp`
+- **tOrigin** (1 connections) — `tools/moira_bare_bench.cpp`
+- **FILE** (1 connections)
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 91](Community_91.md) (5 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 333](Community_333.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/CrtEffectStack.cpp`
+- `CHANGELOG.md`
+- `tools/moira_bare_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 53 (95%)
+- INFERRED: 3 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

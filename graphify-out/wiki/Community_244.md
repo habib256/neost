@@ -1,30 +1,34 @@
 # Community 244
 
-> 7 nodes · cohesion 0.48
+> 9 nodes
 
 ## Key Concepts
 
-- **main()** (10 connections) — `tools/check_server_media.py`
-- **Session** (5 connections) — `tools/check_server_media.py`
-- **.cmd()** (4 connections) — `tools/check_server_media.py`
-- **.close()** (3 connections) — `tools/check_server_media.py`
-- **seen()** (2 connections) — `tools/check_server_media.py`
-- **check()** (1 connections) — `tools/check_server_media.py`
-- **.__init__()** (1 connections) — `tools/check_server_media.py`
+- **CartDevice** (10 connections) — `src/core/CartDevice.hpp`
+- **.addCartDevice()** (4 connections) — `src/core/Bus.hpp`
+- **.removeCartDevice()** (4 connections) — `src/core/Bus.hpp`
+- **.refreshUds()** (3 connections) — `src/core/Bus.hpp`
+- **.~CartDevice()** (1 connections) — `src/core/CartDevice.hpp`
+- **.rom3Read()** (1 connections) — `src/core/CartDevice.hpp`
+- **.rom4Read()** (1 connections) — `src/core/CartDevice.hpp`
+- **.udsCycle()** (1 connections) — `src/core/CartDevice.hpp`
+- **.wantsUds()** (1 connections) — `src/core/CartDevice.hpp`
 
 ## Relationships
 
-- [subprocess](subprocess.md) (4 shared connections)
-- [Asm](Asm.md) (2 shared connections)
+- [Community 14](Community_14.md) (4 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/check_server_media.py`
+- `src/core/Bus.hpp`
+- `src/core/CartDevice.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (81%)
-- INFERRED: 3 (19%)
+- EXTRACTED: 16 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

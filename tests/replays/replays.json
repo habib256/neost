@@ -32,6 +32,8 @@
     },
     {
       "id": "lemmings",
+      "note": "Menu animé seulement, aucune partie jouée. Traces au premier PC $4370 : entrée NeoST trame 2615, Hatari VBL 3159. Décalage 544, plus une VBL car la capture NeoST suit sa trame zéro-indexée : offset 545. La recherche au pas 2 doit garder cette parité ; seuil et fenêtre inchangés.",
+      "offset": 545,
       "disk": "disks/st/Lemmings (1990)(Psygnosis)[cr BBC][a].st",
       "machine": "st",
       "rom": "roms/tos102uk.img",
@@ -358,6 +360,170 @@
     },
   {"id": "bubble_ghost_st", "note": "Image STX, lancée par --auto, jusqu'aux scores. La démo qui suit tire ses salles : non jugée.", "disk": "disks/stx/Bubble Ghost - Ère Informatique.stx", "machine": "st", "rom": "roms/tos104uk.img", "mem": 1, "auto": "A:\\GHOST.PRG", "frames": [2500, 3000], "window": 70, "step": 1, "max_diff": 0.5},
   {"id": "chessmaster_st", "note": "Image STX, lancée par --auto, disque 2 en B, jusqu'à l'échiquier. La partie se joue à la souris : non jouée.", "disk": "disks/stx/Chessmaster 2000 (The) - Electronic Arts (France) (Disk 1 of 2).stx", "disk_b": "disks/stx/Chessmaster 2000 (The) - Electronic Arts (France) (Disk 2 of 2).stx", "machine": "st", "rom": "roms/tos104uk.img", "mem": 1, "auto": "A:\\CMASTER.PRG", "frames": [1500, 4000, 7000], "window": 70, "step": 1, "max_diff": 0.5},
-  {"id": "vroom_elite_ste", "note": "Intro plein écran : SPACE doit mener au titre. La VBL prise à la broche ou l'attente ACIA mal datée la figent.", "disk": "disks/st/Vroom (1991)(Lankhor)[cr Elite].st", "machine": "ste", "rom": "roms/tos162uk.img", "mem": 1, "keys": [2000], "frames": [2300, 3000, 4000], "window": 40, "step": 1, "max_diff": 0.5}
+  {"id": "vroom_elite_ste", "note": "Intro plein écran : SPACE doit mener au titre. La VBL prise à la broche ou l'attente ACIA mal datée la figent.", "disk": "disks/st/Vroom (1991)(Lankhor)[cr Elite].st", "machine": "ste", "rom": "roms/tos162uk.img", "mem": 1, "keys": [2000], "frames": [2300, 3000, 4000], "window": 40, "step": 1, "max_diff": 0.5},
+  {"id": "switchblade_title_st", "note": "Jusqu'au titre, sans partie jouée. Graine NeoST 8 : régression de cadence FDC/DMA, disquette originale intacte (docs/CASE_STUDIES.md).", "disk": "disks/st/Switchblade (1989)(Core Design)[cr Replicants][t +2].st", "machine": "st", "rom": "roms/tos104uk.img", "mem": 1, "fdc_seed": 8, "hatari_seed": 1, "keys": [900, 1200, 1600, 2000, 2500, 3200], "frames": [3500, 4000], "window": 40, "step": 1, "max_diff": 0.5},
+  {"id": "vroom_tos206_ste", "machine": "ste", "mem": 1, "note": "Menu puis entrée en course sous TOS 2.06 UK, sans course complète validée. SPACE à partir de 900 ; voir le cas distinct de pile TOS avec SPACE précoce dans docs/CASE_STUDIES.md.", "disk": "disks/st/Vroom (1991)(Lankhor).st", "rom": "roms/tos206uk.img", "fdc_seed": 1, "hatari_seed": 1, "keys": [900, 1200, 1600, 2000, 2500, 3200, 4000, 5500], "joy_at": 1000, "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10", "joy_repeat": 20, "frames": [4000, 6000, 8000], "window": 80, "step": 1, "max_diff": 0.5},
+  {"id": "vroom_tos206_megaste", "machine": "megaste", "mem": 4, "note": "Menu puis entrée en course sous TOS 2.06 UK, sans course complète validée. SPACE à partir de 900 ; voir le cas distinct de pile TOS avec SPACE précoce dans docs/CASE_STUDIES.md.", "disk": "disks/st/Vroom (1991)(Lankhor).st", "rom": "roms/tos206uk.img", "fdc_seed": 1, "hatari_seed": 1, "keys": [900, 1200, 1600, 2000, 2500, 3200, 4000, 5500], "joy_at": 1000, "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10", "joy_repeat": 20, "frames": [4000, 6000, 8000], "window": 80, "step": 1, "max_diff": 0.5},
+  {"id": "vroom_tos206_loader_collision", "diagnostic": true, "machine": "ste", "mem": 1, "note": "Diagnostic sur la disquette originale : échec de chargement connu, sans halt CPU, bruit identique chez Hatari. Exclu de la suite de compatibilité par défaut ; ne valide pas une partie réussie ni la fréquence matérielle.", "disk": "disks/st/Vroom (1991)(Lankhor).st", "rom": "roms/tos206uk.img", "fdc_seed": 5, "hatari_seed": 3, "keys": [1300, 1600, 2000, 2500, 3200, 4000], "joy_at": 1000, "joy": "F*16 .*24 U*120 [UR]*30 U*60 [UL]*30 U*60 [UF]*30 .*30 D*20 .*20 [RF]*16 .*24 L*30 .*10 R*30 .*10", "joy_repeat": 40, "frames": [5200], "window": 0, "step": 1, "max_diff": 0.0, "key_hold": 12},
+{
+  "id": "vroom_elite_ste_race",
+  "disk": "disks/st/Vroom (1991)(Lankhor)[cr Elite].st",
+  "machine": "ste",
+  "rom": "roms/tos162uk.img",
+  "mem": 1,
+  "fdc_seed": 1,
+  "hatari_seed": 1,
+  "keys": [
+    2000,
+    3008
+  ],
+  "mouse": [
+    [
+      4636,
+      "11111111111111111111"
+    ],
+    [
+      5200,
+      "D"
+    ],
+    [
+      5240,
+      "D"
+    ],
+    [
+      5280,
+      "11111111111111111111"
+    ],
+    [
+      5340,
+      "R"
+    ],
+    [
+      5380,
+      "11111111111111111111"
+    ],
+    [
+      5440,
+      "U"
+    ],
+    [
+      5480,
+      "U"
+    ],
+    [
+      5540,
+      "11111111111111111111"
+    ]
+  ],
+  "joy_at": 3816,
+  "joy": "F*20 .*2964 U*380 [UR]*30 U*200",
+  "frames": [
+    5500,
+    6750,
+    7100,
+    7400
+  ],
+  "window": 40,
+  "step": 1,
+  "max_diff": 0.5,
+  "mouse_step": 60,
+  "note": "Menu ARCADE / JOYSTICK / AUTO inspecté, grille puis conduite (281 km/h à 7400), sans tour complet. scene_hashes : garde snapshot des scènes inspectées, distincte de la comparaison Hatari. Aucun patch du média ou du TOS.",
+  "scene_hashes": {
+    "5500": "82be3b53b5fa4fcbc079d200734e1e869c5cee34e338ca821dd755473fa6ea5c",
+    "6750": "504b2fdd5b84c8d9778070287c0493e802a63e4065fdd22a76a386e424357efc",
+    "7100": "5ffd4f641320128c967988fd2a797776158018e37a874c8b55c219a0d8b1a6c3",
+    "7400": "4f33828aaffdd1e02904425c2a1e092270adae338ef5e7763deb3cdd849a39dd"
+  }
+},
+{
+  "id": "vroom_tos206_audio_stop",
+  "disk": "disks/st/Vroom (1991)(Lankhor).st",
+  "machine": "ste",
+  "rom": "roms/tos206uk.img",
+  "mem": 1,
+  "fdc_seed": 5,
+  "hatari_seed": 5,
+  "keys": [
+    2000
+  ],
+  "joy_at": 6040,
+  "joy": "F*20 .*1960",
+  "frames": [
+    6000,
+    6200,
+    7000
+  ],
+  "window": 20,
+  "step": 1,
+  "max_diff": 0.5,
+  "diagnostic": true,
+  "note": "Diagnostic ouvert : SPACE 2000 puis un seul Fire 6040. Une IRQ Timer A en attente relance la musique après TACR=0 ; le chargement écrase le gestionnaire encore actif. NeoST bombe/halt, Hatari atteint le menu. Ce rejeu échoue actuellement et ne compte pas comme compatibilité."
+},
+{
+  "id": "vroom_tos206_ste_race",
+  "disk": "disks/st/Vroom (1991)(Lankhor).st",
+  "machine": "ste",
+  "rom": "roms/tos206uk.img",
+  "mem": 1,
+  "fdc_seed": 5,
+  "hatari_seed": 5,
+  "keys": [
+    2000
+  ],
+  "mouse": [
+    [
+      5200,
+      "D"
+    ],
+    [
+      5240,
+      "D"
+    ],
+    [
+      5280,
+      "11111111111111111111"
+    ],
+    [
+      5340,
+      "R"
+    ],
+    [
+      5380,
+      "11111111111111111111"
+    ],
+    [
+      5440,
+      "U"
+    ],
+    [
+      5480,
+      "U"
+    ],
+    [
+      5540,
+      "11111111111111111111"
+    ]
+  ],
+  "joy_at": 4008,
+  "joy": "F*20 .*2772 U*380 [UR]*30 U*200",
+  "frames": [
+    5500,
+    6750,
+    7100,
+    7400
+  ],
+  "window": 40,
+  "step": 1,
+  "max_diff": 0.5,
+  "mouse_step": 60,
+  "diagnostic": true,
+  "note": "Parcours piloté inspecté, image originale : JOYSTICK/AUTO puis accélération et braquage. Deux émulateurs roulent mais divergent à 7400 (12,35 %), seuil 0,5 % conservé ; diagnostic de comparaison encore rouge, distinct du halt audio et du chargement bruité.",
+  "scene_hashes": {
+    "5500": "8ddeb76f6142ae8360f46cb4f31c66c2c8a3033f24dd14ab2cb70c963e842f92",
+    "6750": "613f9c2e54849a56a6010bc8af13c7775c933055a3aa12cf50a73f111d977e6c",
+    "7100": "3c3b69034f0c8399c54a9896770fd77ad72d927502bc0a3fd950a55bd1e54257",
+    "7400": "c77f230dc3e4b2874b22639414661d99de5fc4c1b8fcc3fe48317a37259d6517"
+  }
+}
 ]
 }

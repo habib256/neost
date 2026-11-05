@@ -1,40 +1,50 @@
 # Community 149
 
-> 16 nodes · cohesion 0.15
+> 58 nodes
 
 ## Key Concepts
 
-- **Rig** (13 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **testIkbdMouseMonitor()** (9 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **.command()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **.due()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **main()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **.advance()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **.data()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **initializer_list** (2 connections)
-- **.Rig()** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **Ikbd** (1 connections)
-- **Mfp** (1 connections)
-- **Scheduler** (1 connections)
-- **ikbd** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **live** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **mfp** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **sched** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **** (55 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80** (38 connections)
+- **float_status** (35 connections)
+- **packFloatx80()** (27 connections) — `src/io/SoftFloatFpsp.hpp`
+- **propagateFloatx80NaNOneArg()** (25 connections) — `src/io/SoftFloatFpsp.hpp`
+- **extractFloatx80Exp()** (24 connections) — `src/io/SoftFloatFpsp.hpp`
+- **extractFloatx80Frac()** (24 connections) — `src/io/SoftFloatFpsp.hpp`
+- **extractFloatx80Sign()** (23 connections) — `src/io/SoftFloatFpsp.hpp`
+- **float_raise()** (23 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_etox()** (23 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_logn()** (23 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_lognp1()** (22 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_sinh()** (22 connections) — `src/io/SoftFloatFpsp.hpp`
+- **resetPrec()** (22 connections) — `src/io/SoftFloatFpsp.hpp`
+- **setPrec()** (22 connections) — `src/io/SoftFloatFpsp.hpp`
+- **float64_to_floatx80()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_add()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_etoxm1()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_mul()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_tan()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
+- **float32_to_floatx80()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_acos()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_asin()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_atan()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
+- **floatx80_cos()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
+- *... and 33 more nodes in this community*
 
 ## Relationships
 
-- [Community 100](Community_100.md) (4 shared connections)
-- [Community 8](Community_8.md) (3 shared connections)
-- [Source](Source.md) (1 shared connections)
+- [Community 15](Community_15.md) (17 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ikbd_mouse_monitor_logic.cpp`
+- `src/io/SoftFloatFpsp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 463 (97%)
+- INFERRED: 16 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

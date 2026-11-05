@@ -54,7 +54,8 @@ struct EventRig {
     Scheduler sched;
     Fdc fdc{bus, psg, mfp};
     int64_t live = 0;
-    EventRig(bool fast) {
+    EventRig(bool fast, MachineType machine) {
+        bus.machine = machine;
         sched.setLiveClock([this] { return live; });
         sched.setCallback(Scheduler::FDC, [this] { fdc.onFdcEvent(); });
         fdc.setScheduler(&sched); fdc.setFastFdc(fast);
@@ -134,9 +135,14 @@ int testFdcTiming() {
         r.bus.write8(0xFF860E, 3); (void)r.bus.read16(0xFF860E);
         c.equal("observation hors run ne change pas horloge", r.cpu.busClockNow(), before);
     }
-    for (bool fast : {false, true}) {
-        EventRig r(fast);
-        const int period = fast ? 50 : 500;
+    for (const auto& profile : profiles) for (bool fast : {false, true}) {
+        EventRig r(fast, profile.machine);
+        const bool ste = profile.machine == MachineType::Ste || profile.machine == MachineType::MegaSte;
+        // [D] clocks_timings.c @ f0736b24 : SCLK STE=8010613, bus PAL=8021247.
+        // 500 cycles FDC -> 501 cycles bus ; le mode 16 MHz ne change pas le bus.
+        const int period = fast ? 50 : (ste ? 501 : 500);
+        c.equal("préparation type IV convertie vers bus", r.sched.nextDue(),
+                fast ? 80 : (ste ? 801 : 800));
         for (int i = 0; i < 5; ++i) {
             const int64_t due = r.sched.nextDue();
             r.live = due + 37; // retard de dispatch inférieur à une période

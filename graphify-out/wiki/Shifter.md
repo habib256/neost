@@ -1,60 +1,74 @@
 # Shifter
 
-> 94 nodes · cohesion 0.02
+> God node · 175 connections · `src/core/Shifter.hpp`
 
-## Key Concepts
+**Community:** [Community 5](Community_5.md)
 
-- **Shifter** (154 connections) — `src/core/Shifter.hpp`
-- **function** (5 connections)
-- **.liveTop()** (3 connections) — `src/core/Shifter.hpp`
-- **.snapLiveTop()** (3 connections) — `src/core/Shifter.hpp`
-- **.liveHeight()** (2 connections) — `src/core/Shifter.hpp`
-- **.setBeamClock()** (2 connections) — `src/core/Shifter.hpp`
-- **.setHblShorten()** (2 connections) — `src/core/Shifter.hpp`
-- **.setLineGeom()** (2 connections) — `src/core/Shifter.hpp`
-- **.setLiveFrameClock()** (2 connections) — `src/core/Shifter.hpp`
-- **.snapLiveHeight()** (2 connections) — `src/core/Shifter.hpp`
-- **.activeLeft()** (1 connections) — `src/core/Shifter.hpp`
-- **.bordersOpen()** (1 connections) — `src/core/Shifter.hpp`
-- **.height()** (1 connections) — `src/core/Shifter.hpp`
-- **.pixels()** (1 connections) — `src/core/Shifter.hpp`
-- **.refreshHz()** (1 connections) — `src/core/Shifter.hpp`
-- **.resetGlue()** (1 connections) — `src/core/Shifter.hpp`
-- **.snapBordersOpen()** (1 connections) — `src/core/Shifter.hpp`
-- **.snapSideBordersOpen()** (1 connections) — `src/core/Shifter.hpp`
-- **.snapSideTrickLines()** (1 connections) — `src/core/Shifter.hpp`
-- **.snapVertBordersOpen()** (1 connections) — `src/core/Shifter.hpp`
-- **.spec512Active()** (1 connections) — `src/core/Shifter.hpp`
-- **.width()** (1 connections) — `src/core/Shifter.hpp`
-- **array** (1 connections)
-- **Bus** (1 connections)
-- **size_t** (1 connections)
-- *... and 69 more nodes in this community*
+## Connections by Relation
 
-## Relationships
+### contains
+- Shifter.hpp `EXTRACTED`
+- Geometry `EXTRACTED`
+- FrameGeometry `EXTRACTED`
+- GlueProbe `EXTRACTED`
+- GlueLine `EXTRACTED`
+- ColorWrite `EXTRACTED`
+- Mode `EXTRACTED`
+- SyncWrite `EXTRACTED`
 
-- [Community 67](Community_67.md) (17 shared connections)
-- [Community 204](Community_204.md) (16 shared connections)
-- [Community 256](Community_256.md) (13 shared connections)
-- [Community 160](Community_160.md) (6 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
-- [Community 170](Community_170.md) (2 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
-- [Community 293](Community_293.md) (1 shared connections)
-- [Community 235](Community_235.md) (1 shared connections)
-- [Community 93](Community_93.md) (1 shared connections)
-- [Mfp.cpp](Mfp.cpp.md) (1 shared connections)
-- [Community 275](Community_275.md) (1 shared connections)
+### defines
+- liveFrameClock_ `EXTRACTED`
+- beamClock_ `EXTRACTED`
+- hblShorten_ `EXTRACTED`
+- lineGeom_ `EXTRACTED`
+- videoBase `EXTRACTED`
+- palette `EXTRACTED`
+- mode `EXTRACTED`
+- sync `EXTRACTED`
+- hwScrollCount `EXTRACTED`
+- hwScrollPrefetch `EXTRACTED`
+- lineWidth `EXTRACTED`
+- hwScrollReg8264_ `EXTRACTED`
+- steBorderFlag_ `EXTRACTED`
+- newSteBorderFlag_ `EXTRACTED`
+- lastScroll8265Cycle_ `EXTRACTED`
+- vc_ `EXTRACTED`
+- newHwScrollCount_ `EXTRACTED`
+- newHwScrollPrefetch_ `EXTRACTED`
+- newLineWidth_ `EXTRACTED`
+- kVideoAddrMask `EXTRACTED`
+- *…and 62 more `defines` connection(s) not listed (lowest-degree first to go)*
 
-## Source Files
+### method
+- .geometry() `EXTRACTED`
+- .renderGlueFrame() `EXTRACTED`
+- .renderLine() `EXTRACTED`
+- .write8() `EXTRACTED`
+- .beginFrame() `EXTRACTED`
+- .liveGlueCatchUp() `EXTRACTED`
+- .finishFrame() `EXTRACTED`
+- .stColorToArgb() `EXTRACTED`
+- .geometryFor() `EXTRACTED`
+- .resizeFor() `EXTRACTED`
+- .glueLineBytes() `EXTRACTED`
+- .decodeLineIndices() `EXTRACTED`
+- .updateGlueState() `EXTRACTED`
+- .endVideoLine() `EXTRACTED`
+- .videoCounter() `EXTRACTED`
+- .scrollCounterAdvance() `EXTRACTED`
+- .syncCpuBus() `EXTRACTED`
+- .spec512SelfTest() `EXTRACTED`
+- .read8() `EXTRACTED`
+- .updateGlueRes() `EXTRACTED`
+- *…and 59 more `method` connection(s) not listed (lowest-degree first to go)*
 
-- `src/core/Shifter.hpp`
-
-## Audit Trail
-
-- EXTRACTED: 162 (100%)
-- INFERRED: 0 (0%)
-- AMBIGUOUS: 0 (0%)
+### references
+- [vector](vector.md) `EXTRACTED`
+- VideoCounterState `EXTRACTED`
+- function `EXTRACTED`
+- array `EXTRACTED`
+- size_t `EXTRACTED`
+- [Bus](Bus.md) `EXTRACTED`
 
 ---
 

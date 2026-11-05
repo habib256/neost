@@ -1,22 +1,22 @@
 # Community 287
 
-> 5 nodes · cohesion 0.40
+> 5 nodes
 
 ## Key Concepts
 
-- **Mesurer l'IACK sur un MegaSTE** (5 connections) — `docs/MFP_IACK_MEASUREMENT.md`
-- **Ce qui est exécuté** (1 connections) — `docs/MFP_IACK_MEASUREMENT.md`
-- **Confronter sans forcer l'égalité** (1 connections) — `docs/MFP_IACK_MEASUREMENT.md`
-- **Préparer la sonde** (1 connections) — `docs/MFP_IACK_MEASUREMENT.md`
-- **Signaux à enregistrer** (1 connections) — `docs/MFP_IACK_MEASUREMENT.md`
+- **ShadowMask** (5 connections) — `src/gui/CrtParams.h`
+- **Aperture** (1 connections) — `src/gui/CrtParams.h`
+- **Dot** (1 connections) — `src/gui/CrtParams.h`
+- **Off** (1 connections) — `src/gui/CrtParams.h`
+- **Triad** (1 connections) — `src/gui/CrtParams.h`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 129](Community_129.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/MFP_IACK_MEASUREMENT.md`
+- `src/gui/CrtParams.h`
 
 ## Audit Trail
 

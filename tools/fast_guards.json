@@ -2,6 +2,14 @@
   "_doc": "A38 : registre des contrôles du palier fast. Pour chaque étape (libellé EXACT de run_all.py) : date de pose et DERNIER DÉCLENCHEMENT RÉEL — un défaut véritable arrêté, jamais un fil-piège ni une mutation volontaire. Un déclenchement réel se consigne ici dans le commit qui corrige le défaut. Règle de retrait : sans déclenchement réel depuis plus de review_after_days jours, le contrôle se rejustifie (pourquoi le garder ?) ou s'en va ; run_all.py --tier fast les liste, sans échouer.",
   "review_after_days": 180,
   "guards": {
+    "Verdicts des rejeux (halt, captures manquantes, diagnostics séparés)": {
+      "since": "2026-11-04",
+      "last_real_catch": {"date": "2026-11-05", "what": "un parcours Vroom annoncé vert restait au titre ou au menu dans les deux émulateurs ; les scènes inspectées sont désormais exigées", "source": "docs/CASE_STUDIES.md, Vroom STE 2026-11-05"}
+    },
+    "Comparateur de titres (pixels RGB, boutons et déplacements datés)": {
+      "since": "2026-11-05",
+      "last_real_catch": {"date": "2026-11-05", "what": "la conversion RGB en luminance masquait un écart bleu de 1 ; les captures 101/201 lisaient deux fois la trame 200, et une capture finale absente était remplacée par la dernière disponible", "source": "tools/compare_titles.py, pixel_difference / neost_frames / read_neost_frames"}
+    },
     "P0 auto-test logique pure (hostpath — sémantiques POSIX ET Windows)": {
       "since": "2026-08-17",
       "last_real_catch": {"date": "2026-08-17", "what": "issue #37 : sémantique des chemins Windows invisible depuis macOS et la CI Linux", "source": "commentaire de run_all.py"}

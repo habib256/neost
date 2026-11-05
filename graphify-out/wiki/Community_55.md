@@ -1,35 +1,63 @@
 # Community 55
 
-> 12 nodes · cohesion 0.26
+> 40 nodes
 
 ## Key Concepts
 
-- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
-- **main()** (7 connections) — `tools/opendst_memdiff.py`
-- **Server** (6 connections) — `tools/opendst_memdiff.py`
-- **runs()** (3 connections) — `tools/opendst_memdiff.py`
-- **.cmd()** (3 connections) — `tools/opendst_memdiff.py`
-- **.dump()** (3 connections) — `tools/opendst_memdiff.py`
-- **parse_hex()** (2 connections) — `tools/opendst_memdiff.py`
-- **read_word()** (2 connections) — `tools/opendst_memdiff.py`
-- **.close()** (2 connections) — `tools/opendst_memdiff.py`
-- **.__init__()** (1 connections) — `tools/opendst_memdiff.py`
-- **Image mémoire [start, start+length) par tranches de 4 Ko.** (1 connections) — `tools/opendst_memdiff.py`
-- **Adresses triées → plages contiguës [(début, fin)].** (1 connections) — `tools/opendst_memdiff.py`
+- **shutil** (50 connections)
+- **compare_titles.py** (32 connections) — `tools/compare_titles.py`
+- **check_compare_titles.py** (13 connections) — `tools/check_compare_titles.py`
+- **main()** (12 connections) — `tools/compare_titles.py`
+- **trace_tos206_boot.py** (12 connections) — `tools/trace_tos206_boot.py`
+- **run_hatari_keys()** (10 connections) — `tools/compare_titles.py`
+- **neost_frames()** (9 connections) — `tools/compare_titles.py`
+- **one()** (9 connections) — `tools/compare_titles.py`
+- **Path** (9 connections)
+- **hatari_shots()** (8 connections) — `tools/compare_titles.py`
+- **read_neost_frames()** (8 connections) — `tools/compare_titles.py`
+- **main()** (8 connections) — `tools/trace_tos206_boot.py`
+- **main()** (7 connections) — `tools/check_compare_titles.py`
+- **best_match()** (6 connections) — `tools/compare_titles.py`
+- **mouse_events()** (6 connections) — `tools/compare_titles.py`
+- **pixel_difference()** (6 connections) — `tools/compare_titles.py`
+- **parse_mouse()** (5 connections) — `tools/compare_titles.py`
+- **swap_copy()** (5 connections) — `tools/compare_titles.py`
+- **Image** (5 connections)
+- **Vroom STE : vérifier la conduite et l'arrêt audio (2026-11-05)** (5 connections) — `docs/CASE_STUDIES.md`
+- **reduce_2x()** (4 connections) — `tools/compare_titles.py`
+- **parse_seed()** (3 connections) — `tools/compare_titles.py`
+- **parse_swap()** (3 connections) — `tools/compare_titles.py`
+- **sheet()** (3 connections) — `tools/compare_titles.py`
+- **sha()** (3 connections) — `tools/trace_tos206_boot.py`
+- *... and 15 more nodes in this community*
 
 ## Relationships
 
-- [subprocess](subprocess.md) (4 shared connections)
-- [Community 267](Community_267.md) (2 shared connections)
+- [Community 18](Community_18.md) (31 shared connections)
+- [Community 258](Community_258.md) (20 shared connections)
+- [Community 207](Community_207.md) (7 shared connections)
+- [Community 151](Community_151.md) (5 shared connections)
+- [Community 34](Community_34.md) (5 shared connections)
+- [Community 49](Community_49.md) (3 shared connections)
+- [Community 166](Community_166.md) (3 shared connections)
+- [Community 146](Community_146.md) (3 shared connections)
+- [Community 248](Community_248.md) (2 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
+- [Community 48](Community_48.md) (2 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_memdiff.py`
+- `docs/CASE_STUDIES.md`
+- `packaging/make_icon.py`
+- `tools/check_compare_titles.py`
+- `tools/compare_titles.py`
+- `tools/trace_tos206_boot.py`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 167 (97%)
+- INFERRED: 6 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

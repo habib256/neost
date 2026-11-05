@@ -26,9 +26,8 @@
 // cycle d'instruction est indépendante du dispatch). VALIDÉ : EL remarche (jeu rendu),
 // étalons 19/0, différentiel 14/14. Le sync-driven reste accessible en OPT-IN pour A/B.
 
-// Port de Hatari TOS_CheckSysConfig (sous-ensemble utile à NeoST) : abaisse la
-// machine si le TOS chargé ne la supporte pas. Seul le cas « TOS <= 1.04 → ST »
-// est porté (les autres règles d'Hatari visent TT/Falcon, hors champ NeoST).
+// Choisit une machine compatible avec la ROM originale. Les adaptations de
+// TOS_CheckSysConfig d'Hatari visant TT/Falcon restent hors champ NeoST.
 MachineType Machine::adjustMachineForTos(MachineType requested, const std::string& romPath) {
     std::ifstream f(romPath, std::ios::binary);
     if (!f) return requested;                 // introuvable → loadTos signalera l'erreur
@@ -58,6 +57,17 @@ MachineType Machine::adjustMachineForTos(MachineType requested, const std::strin
             "[NeoST] TOS %X.%02X is an STE-only ROM — switching %s -> STE.\n"
             "        (on ST its RAM clear overruns and halts the CPU: frozen screen)\n",
             tosVer >> 8, tosVer & 0xFF, machineName(requested));
+        return MachineType::Ste;
+    }
+    // [C] TOS 2.05 FR, $E00096 : CLR.W $FFFF8900 avant l'installation des
+    // vecteurs d'exception ; ce son DMA n'existe pas sur ST/Mega ST. Le boot
+    // part en RAM vide après la faute. [D] Hatari tos.c:462-478 @ f0736b24
+    // contourne cela par les patchs TP_ANTI_STE. Ici on conserve la ROM et
+    // choisit le STE, sans changer les profils STE/Mega STE déjà compatibles.
+    if (tosVer == 0x0205 && !machineIsSte(requested)) {
+        std::fprintf(stderr,
+            "[NeoST] Unmodified TOS 2.05 requires STE hardware — switching %s -> STE.\n",
+            machineName(requested));
         return MachineType::Ste;
     }
     // Le Mega STE exige un TOS ≥ 2.0x : lui seul programme le cache 16 Ko, le SCU et

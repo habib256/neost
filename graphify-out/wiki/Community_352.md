@@ -1,26 +1,34 @@
 # Community 352
 
-> 2 nodes · cohesion 1.00
+> 9 nodes
 
 ## Key Concepts
 
-- **.process()** (4 connections) — `src/gui/CrtEffectStack.h`
-- **.createTextures()** (3 connections) — `src/gui/CrtEffectStack.h`
+- **ym_c10_noise_logic.cpp** (8 connections) — `tests/ym_c10_noise_logic.cpp`
+- **ikbd_monitor_machine_logic.cpp** (6 connections) — `tests/ikbd_monitor_machine_logic.cpp`
+- **testYmC10Noise()** (5 connections) — `tests/ym_c10_noise_logic.cpp`
+- **testIkbdMonitorMachine()** (4 connections) — `tests/ikbd_monitor_machine_logic.cpp`
+- **render()** (4 connections) — `tests/ym_c10_noise_logic.cpp`
+- **setReg()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
+- **swing()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
+- **main()** (2 connections) — `tests/ikbd_monitor_machine_logic.cpp`
+- **YM2149** (1 connections)
 
 ## Relationships
 
-- [Community 91](Community_91.md) (2 shared connections)
-- [CrtEffectStack](CrtEffectStack.md) (2 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
+- [Community 102](Community_102.md) (9 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/CrtEffectStack.h`
+- `tests/ikbd_monitor_machine_logic.cpp`
+- `tests/ym_c10_noise_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (67%)
-- INFERRED: 2 (33%)
+- EXTRACTED: 21 (84%)
+- INFERRED: 4 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

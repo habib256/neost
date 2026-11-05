@@ -1,6 +1,6 @@
 # Community 19
 
-> 70 nodes · cohesion 0.10
+> 71 nodes
 
 ## Key Concepts
 
@@ -29,27 +29,29 @@
 - **.updateRR0LatchOff()** (6 connections) — `src/io/Scc.hpp`
 - **.intSourcesChange()** (6 connections) — `src/io/Scc.hpp`
 - **.doIACK()** (6 connections) — `src/io/Scc.hpp`
-- *... and 45 more nodes in this community*
+- *... and 46 more nodes in this community*
 
 ## Relationships
 
-- [Community 100](Community_100.md) (4 shared connections)
-- [Source](Source.md) (2 shared connections)
-- [Community 165](Community_165.md) (2 shared connections)
-- [Chn](Chn.md) (1 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 77](Community_77.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 53](Community_53.md) (1 shared connections)
+- [Community 105](Community_105.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 245](Community_245.md) (1 shared connections)
-- [cstdint](cstdint.md) (1 shared connections)
 
 ## Source Files
 
+- `CHANGELOG.md`
 - `src/io/Scc.cpp`
 - `src/io/Scc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 134 (54%)
-- INFERRED: 112 (46%)
+- EXTRACTED: 135 (55%)
+- INFERRED: 112 (45%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -73,6 +73,30 @@ struct Rig {
 
 int testMachineTimerBAer() {
     Checks check;
+    for (int videoMode = 0; videoMode < 3; ++videoMode) {
+        // [B] MC68901 § 5.1.3 p. 5-3 : TBI fait avancer le compteur sans attendre
+        // la fin d'une instruction CPU. Une lecture traversant DE voit ce front.
+        Rig rig(videoMode);
+        const int line = rig.geometry.dispStartLine;
+        const int64_t edge = rig.cycle(line, rig.edge(line, false));
+        rig.advance(edge - 1);
+        rig.arm(2, 8);
+        rig.machine->bus.write8(0xFFFA07, 1);
+        rig.machine->bus.write8(0xFFFA13, 1);
+        check.equal("TBDR avant DE", rig.count(), 2);
+        const int64_t dispatched = rig.machine->sched.now();
+        rig.live = edge + 8; // le CPU a avancé, aucun runTo depuis edge-1
+        check.equal("TBDR après DE non dispatché", rig.count(), 1);
+        check.equal("lecture ne déplace pas horloge dispatchée", rig.machine->sched.now(), dispatched);
+        check.equal("deuxième lecture sans nouveau tic", rig.count(), 1);
+        rig.machine->sched.runTo(rig.live);
+        check.equal("dispatch ne recompte pas DE", rig.count(), 1);
+        const int64_t next = rig.deadline();
+        rig.advance(next - 1);
+        rig.live = next + 8;
+        check.equal("TBDR recharge au deuxième DE", rig.count(), 2);
+        check.equal("IRQ du front déjà passé visible", rig.machine->mfp.irqPending(), true);
+    }
     for (int videoMode = 0; videoMode < 3; ++videoMode)
     for (bool displayed : {false, true})
     for (bool eventMode : {false, true}) {

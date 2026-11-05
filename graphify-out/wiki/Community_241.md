@@ -1,39 +1,36 @@
 # Community 241
 
-> 10 nodes · cohesion 0.27
+> 8 nodes
 
 ## Key Concepts
 
-- **IconButton()** (7 connections) — `src/gui/UiCommon.cpp`
-- **drawHardDiskPage()** (6 connections) — `src/gui/MediaPages.cpp`
-- **drawFloppyWindow()** (5 connections) — `src/gui/ConfigWindow.cpp`
-- **drawCartPage()** (4 connections) — `src/gui/MediaPages.cpp`
-- **drawFloppyPage()** (4 connections) — `src/gui/MediaPages.cpp`
-- **hardDiskDriveLetters()** (4 connections) — `src/gui/MediaPages.cpp`
-- **string** (4 connections)
-- **pathEntryRow()** (3 connections) — `src/gui/MediaPages.cpp`
-- **App** (2 connections)
-- **size_t** (1 connections)
+- **.fifoPush()** (9 connections) — `src/io/Fdc.hpp`
+- **dmaAddressMask()** (8 connections) — `src/io/Fdc.cpp`
+- **.fifoPull()** (7 connections) — `src/io/Fdc.hpp`
+- **.billDmaCycles()** (5 connections) — `src/io/Fdc.hpp`
+- **.noteFifoFlush()** (4 connections) — `src/io/Fdc.hpp`
+- **.writeDmaAddressByte()** (4 connections) — `src/io/Fdc.hpp`
+- **dmaMaskAddressHigh()** (3 connections) — `src/io/Fdc.cpp`
+- **size_t** (2 connections)
 
 ## Relationships
 
-- [cstdint](cstdint.md) (7 shared connections)
-- [Community 329](Community_329.md) (3 shared connections)
-- [PortDevices](PortDevices.md) (3 shared connections)
-- [ConfigUi](ConfigUi.md) (1 shared connections)
-- [Community 224](Community_224.md) (1 shared connections)
-- [AppConfig.cpp](AppConfig.cpp.md) (1 shared connections)
+- [Community 63](Community_63.md) (7 shared connections)
+- [Community 12](Community_12.md) (5 shared connections)
+- [Community 95](Community_95.md) (5 shared connections)
+- [Community 24](Community_24.md) (3 shared connections)
+- [Community 110](Community_110.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/ConfigWindow.cpp`
-- `src/gui/MediaPages.cpp`
-- `src/gui/UiCommon.cpp`
+- `src/io/Fdc.cpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (61%)
-- INFERRED: 11 (39%)
+- EXTRACTED: 20 (62%)
+- INFERRED: 12 (38%)
 - AMBIGUOUS: 0 (0%)
 
 ---

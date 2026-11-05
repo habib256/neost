@@ -1,6 +1,6 @@
 # Community 317
 
-> 11 nodes · cohesion 0.18
+> 11 nodes
 
 ## Key Concepts
 
@@ -13,15 +13,15 @@
 - **2.3 Unité interne CPU↔MFP (anti-arrondi)** (1 connections) — `docs/CYCLE_ACCURACY.md`
 - **2.4 Vidéo au cycle (`video.c`)** (1 connections) — `docs/CYCLE_ACCURACY.md`
 - **2.5 MFP (`mfp.c`) et FDC (`fdc.c`)** (1 connections) — `docs/CYCLE_ACCURACY.md`
-- **5. Ce qu'on ne fera PAS (décisions actées)** (1 connections) — `docs/CYCLE_ACCURACY.md`
+- **5. Décisions rouvertes (2026-11-03)** (1 connections) — `docs/CYCLE_ACCURACY.md`
 - **6. Méthode de validation** (1 connections) — `docs/CYCLE_ACCURACY.md`
 
 ## Relationships
 
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 - [Community 67](Community_67.md) (1 shared connections)
-- [Scheduler](Scheduler.md) (1 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 - [Community 115](Community_115.md) (1 shared connections)
 

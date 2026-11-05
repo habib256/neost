@@ -1,26 +1,31 @@
 # Community 326
 
-> 3 nodes · cohesion 1.00
+> 8 nodes
 
 ## Key Concepts
 
-- **testSccAsync()** (4 connections) — `tests/scc_async_logic.cpp`
-- **scc_async_logic.cpp** (4 connections) — `tests/scc_async_logic.cpp`
-- **main()** (2 connections) — `tests/scc_async_logic.cpp`
+- **Info** (10 connections) — `src/io/IpfImage.hpp`
+- **encoder** (1 connections) — `src/io/IpfImage.hpp`
+- **maxCylinder** (1 connections) — `src/io/IpfImage.hpp`
+- **maxHead** (1 connections) — `src/io/IpfImage.hpp`
+- **minCylinder** (1 connections) — `src/io/IpfImage.hpp`
+- **minHead** (1 connections) — `src/io/IpfImage.hpp`
+- **release** (1 connections) — `src/io/IpfImage.hpp`
+- **revision** (1 connections) — `src/io/IpfImage.hpp`
 
 ## Relationships
 
-- [Community 8](Community_8.md) (2 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
+- [Community 217](Community_217.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_async_logic.cpp`
+- `src/io/IpfImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (71%)
-- INFERRED: 2 (29%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

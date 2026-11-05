@@ -1,54 +1,64 @@
 # Community 35
 
-> 32 nodes · cohesion 0.10
+> 46 nodes
 
 ## Key Concepts
 
-- **trace_diff.py** (16 connections) — `tools/trace_diff.py`
-- **TimingComparison** (13 connections) — `tools/test_timing_oracle.py`
-- **parse()** (10 connections) — `tools/trace_diff.py`
-- **.check()** (8 connections) — `tools/test_timing_oracle.py`
-- **main()** (8 connections) — `tools/trace_diff.py`
-- **report_periods()** (8 connections) — `tools/trace_diff.py`
-- **Insn** (6 connections) — `tools/trace_diff.py`
-- **color()** (4 connections) — `tools/trace_diff.py`
-- **cycle_periods()** (4 connections) — `tools/trace_diff.py`
-- **show_window()** (4 connections) — `tools/trace_diff.py`
-- **.test_absent_pc_fails_periods()** (3 connections) — `tools/test_timing_oracle.py`
-- **detect_format()** (3 connections) — `tools/trace_diff.py`
-- **histo()** (3 connections) — `tools/trace_diff.py`
-- **trim_to_pc()** (3 connections) — `tools/trace_diff.py`
-- **.test_changed_probe_and_short_reference()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_delayed_first_irq()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_missing_interrupt_with_unchanged_dominant_period()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_references_match_themselves()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_reset_clock_bias_is_detected()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_slow_drift_with_unchanged_dominant_period()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_transfer_mutations_and_strict_blitter()** (2 connections) — `tools/test_timing_oracle.py`
-- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
-- **.__init__()** (1 connections) — `tools/trace_diff.py`
-- **.parse_regs()** (1 connections) — `tools/trace_diff.py`
-- **flush()** (1 connections) — `tools/trace_diff.py`
-- *... and 7 more nodes in this community*
+- **DmaSound.cpp** (42 connections) — `src/core/DmaSound.cpp`
+- **.fifoRefill()** (14 connections) — `src/core/DmaSound.hpp`
+- **.updateDac()** (11 connections) — `src/core/DmaSound.hpp`
+- **Audio** (10 connections) — `docs/IMPLEMENTED.md`
+- **.write8()** (9 connections) — `src/core/DmaSound.hpp`
+- **.liveCounter()** (7 connections) — `src/core/DmaSound.hpp`
+- **.mixStereo()** (7 connections) — `src/core/DmaSound.hpp`
+- **.setXsint()** (6 connections) — `src/core/DmaSound.hpp`
+- **.startNewFrame()** (6 connections) — `src/core/DmaSound.hpp`
+- **.mixSegment()** (6 connections) — `src/core/DmaSound.hpp`
+- **.fifoSetStereo()** (5 connections) — `src/core/DmaSound.hpp`
+- **.capPullLR()** (5 connections) — `src/core/DmaSound.hpp`
+- **.catchUpMicrowire()** (5 connections) — `src/core/DmaSound.hpp`
+- **.advanceMicrowire()** (5 connections) — `src/core/DmaSound.hpp`
+- **.recordEvent()** (5 connections) — `src/core/DmaSound.hpp`
+- **.read8()** (5 connections) — `src/core/DmaSound.hpp`
+- **.mix()** (5 connections) — `src/core/DmaSound.hpp`
+- **7ᵉ passe — bug hunt post-perf (2026-08-06, 4 agents parallèles)** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.fifoPull()** (4 connections) — `src/core/DmaSound.hpp`
+- **.capPush()** (4 connections) — `src/core/DmaSound.hpp`
+- **.onHbl()** (4 connections) — `src/core/DmaSound.hpp`
+- **.decodeMicrowire()** (4 connections) — `src/core/DmaSound.hpp`
+- **.synthesize()** (4 connections) — `src/core/YM2149.hpp`
+- **Son de la démo WASM : les samples redeviennent audibles (2026-08-11)** (4 connections) — `CHANGELOG.md`
+- **.reset()** (3 connections) — `src/core/DmaSound.hpp`
+- *... and 21 more nodes in this community*
 
 ## Relationships
 
-- [Community 207](Community_207.md) (8 shared connections)
-- [Community 267](Community_267.md) (4 shared connections)
-- [Community 84](Community_84.md) (3 shared connections)
-- [Community 331](Community_331.md) (2 shared connections)
-- [subprocess](subprocess.md) (2 shared connections)
-- [re](re.md) (1 shared connections)
+- [Community 13](Community_13.md) (35 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 140](Community_140.md) (4 shared connections)
+- [Community 130](Community_130.md) (4 shared connections)
+- [Community 349](Community_349.md) (3 shared connections)
+- [Community 24](Community_24.md) (3 shared connections)
+- [Community 115](Community_115.md) (2 shared connections)
+- [Community 110](Community_110.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 67](Community_67.md) (2 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
+- [Community 28](Community_28.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/test_timing_oracle.py`
-- `tools/trace_diff.py`
+- `CHANGELOG.md`
+- `docs/HATARI_DIVERGENCES.md`
+- `docs/IMPLEMENTED.md`
+- `src/core/DmaSound.cpp`
+- `src/core/DmaSound.hpp`
+- `src/core/YM2149.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 69 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 89 (57%)
+- INFERRED: 66 (43%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 103
 
-> 27 nodes · cohesion 0.07
+> 27 nodes
 
 ## Key Concepts
 
@@ -33,15 +33,15 @@
 
 ## Relationships
 
-- [Community 65](Community_65.md) (22 shared connections)
+- [Community 31](Community_31.md) (22 shared connections)
 - [Community 122](Community_122.md) (10 shared connections)
-- [Community 100](Community_100.md) (3 shared connections)
-- [testAcsiPartitions](testAcsiPartitions.md) (3 shared connections)
-- [Scu](Scu.md) (2 shared connections)
-- [Fdc](Fdc.md) (1 shared connections)
-- [Dev](Dev.md) (1 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
-- [Community 73](Community_73.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 212](Community_212.md) (3 shared connections)
+- [Community 175](Community_175.md) (2 shared connections)
+- [Community 12](Community_12.md) (1 shared connections)
+- [Community 188](Community_188.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 136](Community_136.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files

@@ -69,6 +69,86 @@ retour sur cette machine.
 trames à la trame 600, −11 à 1000, −110 à 1500 ; le −200 à 2000 égale la demi-fenêtre
 utilisée et peut être un artefact d'ancre statique, cf. `docs/OPENDST.md` § 9). Cf. `docs/OPENDST.md` § 9.
 
+## Patchs TOS : ce qu'ils contournent (audit du 2026-11-04)
+
+Capturer les deux fenêtres du démarrage TOS 2.06 UK original, dans des répertoires
+de sortie neufs :
+
+```sh
+python3 tools/trace_tos206_boot.py --phase reset --out build/tos206-reset
+python3 tools/trace_tos206_boot.py --phase auto --out build/tos206-auto
+```
+
+Le pilote fixe STE 1 Mo, RGB, CPU 8 MHz, SPACE aux trames 100/300 pendant huit
+trames ; désactive patchs TOS, fast boot et fast FDC ; utilise des copies de
+`diskA.st` et vérifie les empreintes des originaux. Il conserve les commandes,
+la configuration effective Hatari, son commit et le diff local (`source.patch`),
+les empreintes des exécutables et les
+comparaisons de flux/registres. `reset` s'arrête avant le premier appui ; `auto`
+reprend NeoST après les deux appuis, à `$E01240`. Son code de sortie zéro valide
+la capture, **pas l'absence de divergence**. Pillow est requis par le pilote FIFO.
+La graine 4/4 ne garantit pas un même angle de disque ; le premier écart trouvé
+au reset précède toutefois toute commande FDC. Les événements clavier partagent
+leurs numéros de trame, pas une datation commune des broches.
+
+La reprise TOS 2.06 a aussi isolé une dérive de l'origine VBL du témoin Hatari
+lors d'un callback au milieu d'une instruction. Les traces ordinaires restent
+celles du binaire de référence ; les copies instrumentées et les essais de
+phases imposées sont séparés et décrits dans `CASE_STUDIES.md`. Aucun réglage
+de phase ni changement du témoin n'est une correction de NeoST.
+
+**[D] Référence : Hatari `f0736b24b32b0439300b52107ba6ab434469ec3c`,
+`src/tos.c:69-114,443-503,759-824,1220-1253` et
+`src/stMemory.c:228-306,367-390,478-500`.** Ces patchs ne sont pas tous des
+compensations d'un défaut matériel émulé. Les transporter dans le cœur ferait
+parfois disparaître un comportement authentique du logiciel.
+
+| Patch / condition | Effet constaté ou code remplacé | Comment s'en passer dans NeoST |
+|---|---|---|
+| TOS 2.06, checksum, `TP_ALWAYS` | `$E007FA` : `2e3c0001` devient `60000098`, branchement vers `$E00894`. Le commentaire Hatari explique que les autres patchs invalident le checksum. Même sans autre patch ROM actif, celui-ci reste appliqué. | Charger les octets originaux et exécuter le contrôle. Ce patch ne protège ni GEMDOS ni sa pile ; il change surtout la chronologie du boot. |
+| TOS 1.00–2.06, boot DMA, `TP_HDIMAGE_OFF` | Remplace l'appel de recherche du disque dur par deux NOP. Pour 2.06 : `$E00898`, appel de `$E0097A`. Condition effective : pas d'ACSI, pas d'IDE 0 **et `fast-boot on`**. | Laisser le TOS sonder le bus ACSI et expirer en l'absence de cible. `Fdc::writeAcsi` ne lève déjà pas d'IRQ pour une cible absente. Ne pas faire réussir artificiellement la détection. |
+| TOS 1.02, souris grandes résolutions, `TP_ALWAYS` | UK : `$FD0030`, `ADDA.W D1,A1` devient `ADDA.L D1,A1` (`d2c1 → d3c1`). Appliqué même sans VDI étendu. | Émuler correctement les deux instructions et conserver le code original. Le patch corrige le logiciel pour les grandes résolutions VDI ; il ne démontre pas un défaut du 68000. |
+| TOS 2.05 sur ST, `TP_ANTI_STE` | Supprime des accès son DMA, Microwire, joypads, compteur vidéo et densité disquette STE ; modifie aussi des branches. | `Machine::adjustMachineForTos` sélectionne désormais STE si ST/Mega ST a été demandé, en préservant STE/Mega STE. La trace FR diverge dès `CLR.W $FFFF8900` en `$E00096`, avant l'installation des vecteurs : écran uniforme. Le bureau est atteint après correction sans patch de ROM. Les branches conditionnelles Hatari sont inventoriées dans la source, pas exercées par l'audit natif STE ci-dessous. |
+| Logo TOS 2.06, `TP_VDIRES` | Remplace le dessin du logo par une routine adaptée aux dimensions/plans VDI étendus. | Les modes vidéo ST/STE natifs exécutent la routine originale. Une résolution VDI virtuelle est une extension distincte, pas une correction du Shifter. |
+| RAM de démarrage, `bPatchTos` | Même avec `fast-boot off`, Hatari préremplit `phystop` (`$42E`) et `memtop` (`$436`). Avec fast boot : signatures `memvalid/memval2/memval3`, configuration MMU, etc. | Laisser le TOS découvrir la RAM par le décodage MMU et produire ses propres variables. `--patch-tos off` est nécessaire en plus de `--fast-boot off` pour comparer cet état initial. |
+
+Les patchs PMMU, 68040/060, RAM supplémentaire Falcon, Sparrow et ST-Book concernent
+d'autres configurations. Leur présence dans Hatari ne constitue pas une liste
+de corrections à appliquer au ST/STE 68000 de NeoST. L'override du pays des
+EmuTOS multilingues est encore un autre chemin (`tos.c:1231-1243`), hors du test
+des ROM Atari ci-dessous.
+
+**Mesure reproductible, sans disque et sans écriture dans les ROM sources :**
+
+```sh
+python3 tools/audit_tos_patches.py \
+  roms/tos100uk.img roms/tos102uk.img roms/tos104uk.img \
+  roms/tos106uk.img roms/tos162uk.img roms/tos205fr.img roms/tos206uk.img \
+  --out build/tos-patch-audit
+```
+
+Le débogueur relève ROM et RAM basse avant la première instruction du TOS dans
+trois modes : patchs désactivés, patchs actifs sans fast boot, puis avec fast boot.
+Le JSON conserve révision, commandes, empreintes et plages réellement différentes.
+Résultat sur les sept ROM : **21 captures**, zéro différence ROM dans les sept
+captures sans patch ; un octet différent pour 1.02 et trois pour 2.06 avec les
+patchs par défaut ; quatre octets de plus avec fast boot pour chacune des sept ROM.
+Les plages remplacées peuvent être plus grandes que le nombre d'octets différents.
+Les empreintes des sources restent identiques après l'audit.
+
+Sur le scénario TOS 2.06 STE 1 Mo, `diskA.st`, graine Hatari 4, SPACE à 100/300
+tenu huit trames, le PC `$E01240` est atteint au cycle **55 796 504** sans patch,
+contre **26 920 016** avec patch et sans fast boot. Les registres D3/D6 diffèrent
+aussi. Ce delta de 28 876 488 cycles est celui du scénario complet, pas une
+mesure isolée du coût de la routine checksum. Les deux parcours changent donc
+les conditions temporelles de la collision GEMDOS ; aucun patch répertorié ne
+répare directement cette collision. Voir le cas TOS 2.06 dans `CASE_STUDIES.md`.
+
+`compare_titles.py` force désormais `--patch-tos off --fast-boot off --fastfdc off`
+pour les rejeux : les médias restent des copies identiques, et les délais matériels
+ne dépendent plus de ces préférences implicites de l'oracle. Les références pixel
+et seuils ne sont pas modifiés pour accompagner ce changement.
+
 ## Se procurer l'oracle (rien ne le fait à votre place)
 
 ⚠ `extern/hatari` est **gitignoré et n'est PAS un sous-module** : `git clone` du dépôt
@@ -546,3 +626,25 @@ résiduels restent à qualifier. Protocole, mesures et patch diagnostique :
 [`HATARI_MEGASTE_AUDIT.md`](HATARI_MEGASTE_AUDIT.md). Les tests
 locaux couvrent séparément les quatre phases RAM, l'invalidation avant
 arbitration et la conservation d'un hit déjà lu quand la DMA change la RAM.
+
+
+## Rejouer la souris et vérifier les étapes (2026-11-05)
+
+`compare_titles.py --mouse 5200:D --mouse 5280:11111111111111111111
+--mouse-step 60` injecte le même déplacement relatif et le même clic dans
+NeoST et Hatari. Grammaire `.LRUD123`, un caractère par trame ; `3` tient
+les deux boutons. Le déplacement par défaut reste 8. Le relâchement final
+occupe la trame suivante ; des scripts qui la chevauchent sont refusés.
+
+Le patch `hatari_neost_oracle.patch` expose `hatari-event mousemove DX DY`
+(-127 à 127), en alimentant les accumulateurs du chemin souris hôte.
+Rebâtir l'oracle après mise à jour du patch ; un événement rejeté invalide
+la comparaison. Le pilote n'arme qu'un arrêt d'entrée à la fois pour éviter
+que les mouvements ralentissent tout le démarrage.
+
+Les champs de rejeu `mouse` et `mouse_step` transmettent ces options.
+`scene_hashes` peut verrouiller les étapes réellement inspectées : SHA-256
+des pixels RGB NeoST, publié sous `neost_rgb_sha256` dans le résumé.
+C'est une garde **snapshot**, distincte de la référence **hatari** : deux
+menus identiques ne doivent pas valider une course. Ne pas renouveler ces
+empreintes sans inspecter les scènes et justifier le changement.

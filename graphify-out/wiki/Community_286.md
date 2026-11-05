@@ -1,26 +1,32 @@
 # Community 286
 
-> 3 nodes · cohesion 1.00
+> 9 nodes
 
 ## Key Concepts
 
-- **mfp_usart_control_logic.cpp** (4 connections) — `tests/mfp_usart_control_logic.cpp`
-- **testMfpUsartControl()** (3 connections) — `tests/mfp_usart_control_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_usart_control_logic.cpp`
+- **Échelle des références** (10 connections) — `docs/REFERENCE_LADDER.md`
+- **L'échelon `rtl`** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Les documents primaires** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Les règles d'arbitrage** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Les verdicts hors étalons pixel** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Les échelons** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Quand le RTL se trompe (2026-11-04)** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Quand une fiche lue à la lettre bloque le logiciel réel (2026-11-04)** (1 connections) — `docs/REFERENCE_LADDER.md`
+- **Sans machine réelle** (1 connections) — `docs/REFERENCE_LADDER.md`
 
 ## Relationships
 
-- [Community 100](Community_100.md) (2 shared connections)
-- [Community 8](Community_8.md) (1 shared connections)
+- [Community 376](Community_376.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_usart_control_logic.cpp`
+- `docs/REFERENCE_LADDER.md`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

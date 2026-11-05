@@ -1,24 +1,25 @@
 # Community 207
 
-> 59 nodes · cohesion 0.08
+> 68 nodes
 
 ## Key Concepts
 
-- **run_timing_oracle.py** (28 connections) — `tools/run_timing_oracle.py`
+- **run_timing_oracle.py** (31 connections) — `tools/run_timing_oracle.py`
+- **hashlib** (26 connections)
 - **run_megaste_blitter_checks.py** (17 connections) — `tools/run_megaste_blitter_checks.py`
 - **Assembler** (16 connections) — `tools/timing_extended.py`
 - **run_megaste_bus_oracle.py** (16 connections) — `tools/run_megaste_bus_oracle.py`
 - **build()** (14 connections) — `tools/run_megaste_blitter_checks.py`
 - **build_extended()** (14 connections) — `tools/timing_extended.py`
+- **parse()** (12 connections) — `tools/trace_diff.py`
 - **analyze_megaste_blitter_gap.py** (12 connections) — `tools/analyze_megaste_blitter_gap.py`
 - **read_transfer_trace()** (11 connections) — `tools/run_timing_oracle.py`
-- **hashlib** (11 connections)
+- **timing_extended.py** (11 connections) — `tools/timing_extended.py`
 - **build()** (10 connections) — `tools/make_timing_probe.py`
 - **main()** (10 connections) — `tools/run_megaste_blitter_checks.py`
+- **capture()** (10 connections) — `tools/run_timing_oracle.py`
 - **build()** (9 connections) — `tools/run_megaste_bus_oracle.py`
-- **capture()** (9 connections) — `tools/run_timing_oracle.py`
 - **.w()** (9 connections) — `tools/timing_extended.py`
-- **timing_extended.py** (9 connections) — `tools/timing_extended.py`
 - **main()** (8 connections) — `tools/analyze_megaste_blitter_gap.py`
 - **identity()** (8 connections) — `tools/run_timing_oracle.py`
 - **main()** (7 connections) — `tools/run_megaste_bus_oracle.py`
@@ -26,21 +27,22 @@
 - **sha()** (7 connections) — `tools/run_timing_oracle.py`
 - **make_timing_probe.py** (7 connections) — `tools/make_timing_probe.py`
 - **capture()** (6 connections) — `tools/run_megaste_bus_oracle.py`
-- **compare()** (6 connections) — `tools/run_timing_oracle.py`
 - **.long()** (6 connections) — `tools/timing_extended.py`
-- **disk_image()** (6 connections) — `tools/timing_extended.py`
-- *... and 34 more nodes in this community*
+- **stx_image()** (6 connections) — `tools/timing_extended.py`
+- *... and 43 more nodes in this community*
 
 ## Relationships
 
-- [subprocess](subprocess.md) (24 shared connections)
-- [Community 84](Community_84.md) (8 shared connections)
-- [Community 35](Community_35.md) (8 shared connections)
-- [struct](struct.md) (7 shared connections)
-- [Community 331](Community_331.md) (7 shared connections)
-- [re](re.md) (5 shared connections)
-- [Asm](Asm.md) (3 shared connections)
-- [Community 267](Community_267.md) (3 shared connections)
+- [Community 18](Community_18.md) (26 shared connections)
+- [Community 258](Community_258.md) (12 shared connections)
+- [Community 252](Community_252.md) (10 shared connections)
+- [Community 3](Community_3.md) (8 shared connections)
+- [Community 248](Community_248.md) (8 shared connections)
+- [Community 55](Community_55.md) (7 shared connections)
+- [Community 34](Community_34.md) (5 shared connections)
+- [Community 151](Community_151.md) (5 shared connections)
+- [Community 26](Community_26.md) (3 shared connections)
+- [Community 356](Community_356.md) (2 shared connections)
 - [Community 189](Community_189.md) (1 shared connections)
 
 ## Source Files
@@ -52,11 +54,12 @@
 - `tools/run_timing_oracle.py`
 - `tools/test_timing_oracle.py`
 - `tools/timing_extended.py`
+- `tools/trace_diff.py`
 
 ## Audit Trail
 
-- EXTRACTED: 186 (88%)
-- INFERRED: 25 (12%)
+- EXTRACTED: 221 (89%)
+- INFERRED: 26 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

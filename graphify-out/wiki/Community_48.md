@@ -1,57 +1,40 @@
 # Community 48
 
-> 20 nodes · cohesion 0.11
+> 13 nodes
 
 ## Key Concepts
 
-- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (19 connections) — `CHANGELOG.md`
-- **resolveData()** (8 connections) — `src/gui/App.cpp`
-- **.midiOutApply()** (7 connections) — `src/gui/App.hpp`
-- **.switchKioskMode()** (7 connections) — `src/gui/App.hpp`
-- **fileExists()** (6 connections) — `src/gui/App.cpp`
-- **appShutdown()** (6 connections) — `src/gui/AppLoop.cpp`
-- **.neBackend()** (5 connections) — `src/gui/App.hpp`
-- **string** (5 connections)
-- **.resolvePath()** (4 connections) — `src/gui/App.hpp`
-- **main()** (4 connections) — `src/main.cpp`
-- **.usatanApply()** (3 connections) — `src/gui/App.hpp`
-- **.etherApply()** (3 connections) — `src/gui/App.hpp`
-- **.netUsbeeApply()** (3 connections) — `src/gui/App.hpp`
-- **.toggleFullscreen()** (3 connections) — `src/gui/App.hpp`
-- **App** (2 connections)
-- **main.cpp** (2 connections) — `src/main.cpp`
-- **Slirp : le « dernier pas » est clos — 5/5, le coupable était Little Snitch (2026-08-27)** (2 connections) — `CHANGELOG.md`
-- **NetBackend** (1 connections)
-- **Et les trois avertissements que personne ne voyait plus** (1 connections) — `CHANGELOG.md`
-- **Et une affirmation fausse trouvée en corrigeant ces renvois** (1 connections) — `CHANGELOG.md`
+- **run_glue_sweep.py** (17 connections) — `tools/run_glue_sweep.py`
+- **main()** (8 connections) — `tools/run_glue_sweep.py`
+- **run_neost()** (4 connections) — `tools/run_glue_sweep.py`
+- **run_rtl()** (4 connections) — `tools/run_glue_sweep.py`
+- **one()** (4 connections) — `tools/run_glue_sweep.py`
+- **writes_of()** (4 connections) — `tools/run_glue_sweep.py`
+- **line_pieces()** (3 connections) — `tools/run_glue_sweep.py`
+- **compare()** (2 connections) — `tools/run_glue_sweep.py`
+- **experiments()** (2 connections) — `tools/run_glue_sweep.py`
+- **rtl_plan_line()** (2 connections) — `tools/run_glue_sweep.py`
+- **Path** (1 connections)
+- **Écritures en coordonnées de la GLUE : ligne, cycle, résolution ?, valeur.** (1 connections) — `tools/run_glue_sweep.py`
+- **Morceaux de DE (début, fin, octets) des deux lignes qui suivent, en cycles…** (1 connections) — `tools/run_glue_sweep.py`
 
 ## Relationships
 
-- [cstdint](cstdint.md) (12 shared connections)
-- [Community 200](Community_200.md) (10 shared connections)
-- [App](App.md) (8 shared connections)
-- [Community 329](Community_329.md) (7 shared connections)
-- [Community 350](Community_350.md) (3 shared connections)
-- [AppConfig.cpp](AppConfig.cpp.md) (3 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 349](Community_349.md) (1 shared connections)
-- [Scu](Scu.md) (1 shared connections)
-- [Community 264](Community_264.md) (1 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
+- [Community 18](Community_18.md) (6 shared connections)
+- [Community 258](Community_258.md) (2 shared connections)
+- [Community 55](Community_55.md) (2 shared connections)
+- [Community 151](Community_151.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
+- [Community 34](Community_34.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/gui/App.cpp`
-- `src/gui/App.hpp`
-- `src/gui/AppLoop.cpp`
-- `src/main.cpp`
+- `tools/run_glue_sweep.py`
 
 ## Audit Trail
 
-- EXTRACTED: 38 (54%)
-- INFERRED: 33 (46%)
+- EXTRACTED: 33 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

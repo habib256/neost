@@ -1,27 +1,26 @@
 # Community 364
 
-> 4 nodes · cohesion 0.50
+> 2 nodes
 
 ## Key Concepts
 
-- **compileShader()** (4 connections) — `src/web/main_web.cpp`
-- **initGl()** (3 connections) — `src/web/main_web.cpp`
-- **GLenum** (1 connections)
-- **GLuint** (1 connections)
+- **.process()** (4 connections) — `src/gui/CrtEffectStack.h`
+- **.createTextures()** (3 connections) — `src/gui/CrtEffectStack.h`
 
 ## Relationships
 
-- [main_web.cpp](main_web.cpp.md) (2 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
+- [Community 91](Community_91.md) (2 shared connections)
+- [Community 43](Community_43.md) (2 shared connections)
+- [Community 124](Community_124.md) (1 shared connections)
 
 ## Source Files
 
-- `src/web/main_web.cpp`
+- `src/gui/CrtEffectStack.h`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 4 (67%)
+- INFERRED: 2 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

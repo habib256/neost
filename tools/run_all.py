@@ -124,6 +124,10 @@ FAST = [
     # répétables). Un instrument non testé fabrique des bugs qui n'existent pas.
     ("Harnais headless (options de pilotage : répétabilité, durée d'appui, scancodes)",
      [sys.executable, str(TOOLS / "check_headless_options.py")]),
+    ("Verdicts des rejeux (halt, captures manquantes, diagnostics séparés)",
+     [sys.executable, str(TOOLS / "check_game_replays.py")]),
+    ("Comparateur de titres (pixels RGB, boutons et déplacements datés)",
+     [sys.executable, str(TOOLS / "check_compare_titles.py")]),
     ("P1 verdicts série (cartouche diagnostic)",
      [sys.executable, str(TOOLS / "run_selftests.py")]),
     ("Cycle-bench (auto-régression du modèle de cycle 68000)",
@@ -200,7 +204,7 @@ FULL = FAST + [
     # requis. La CI oracle vérifie séparément leur reproductibilité à l'épingle.
     ("Comparateur temporel (IRQ absentes, perdues ou dérivantes)",
      [sys.executable, str(TOOLS / "test_timing_oracle.py")]),
-    ("Timings MFP, DMA son/disquette et blitter (Hatari, comparaison stricte)",
+    ("Timings MFP, DMA et blitter (Hatari ; cadence FDC selon fiche WD1772)",
      [sys.executable, str(TOOLS / "run_timing_oracle.py")]),
     ("MegaSTE 16 MHz : bus et cache (Hatari, égalité exacte)",
      [sys.executable, str(TOOLS / "run_megaste_bus_oracle.py")]),

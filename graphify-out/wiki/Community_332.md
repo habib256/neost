@@ -1,6 +1,6 @@
 # Community 332
 
-> 12 nodes · cohesion 0.17
+> 12 nodes
 
 ## Key Concepts
 
@@ -19,8 +19,8 @@
 
 ## Relationships
 
-- [AppConfig.cpp](AppConfig.cpp.md) (1 shared connections)
-- [Community 84](Community_84.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 18](Community_18.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files

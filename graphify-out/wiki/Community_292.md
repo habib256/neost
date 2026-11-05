@@ -1,36 +1,42 @@
 # Community 292
 
-> 11 nodes · cohesion 0.18
+> 14 nodes
 
 ## Key Concepts
 
-- **Borne NeoST sur Raspberry Pi — démarrage direct sur l'émulateur** (8 connections) — `packaging/raspberry/README.md`
-- **3bis. La sortie son — HDMI ou Bluetooth** (3 connections) — `packaging/raspberry/README.md`
-- **4. Exploitation** (3 connections) — `packaging/raspberry/README.md`
-- **0. Avant tout : mesurer d'où viennent les coupures son** (2 connections) — `packaging/raspberry/README.md`
-- **Verrouillage pour une expo publique** (2 connections) — `packaging/raspberry/README.md`
-- **1. Ce que la borne enlève, et ce que ça rapporte** (1 connections) — `packaging/raspberry/README.md`
-- **3. Réglages de la borne — `/etc/neost-kiosk.conf`** (1 connections) — `packaging/raspberry/README.md`
-- **Bluetooth (`install_kiosk.sh --bluetooth-audio`)** (1 connections) — `packaging/raspberry/README.md`
-- **HDMI (défaut, `install_kiosk.sh` sans option)** (1 connections) — `packaging/raspberry/README.md`
-- **Le binaire compte autant que le système** (1 connections) — `packaging/raspberry/README.md`
-- **Survivre aux coupures de courant** (1 connections) — `packaging/raspberry/README.md`
+- **Server** (8 connections) — `tools/opendst_explore.py`
+- **main()** (8 connections) — `tools/opendst_explore.py`
+- **opendst_explore.py** (7 connections) — `tools/opendst_explore.py`
+- **build()** (5 connections) — `tools/make_blitter_programs.py`
+- **.cmd()** (4 connections) — `tools/opendst_explore.py`
+- **random** (4 connections)
+- **.fields()** (3 connections) — `tools/opendst_explore.py`
+- **.close()** (2 connections) — `tools/opendst_explore.py`
+- **.tail()** (2 connections) — `tools/opendst_explore.py`
+- **key_of()** (1 connections) — `tools/opendst_explore.py`
+- **score_of()** (1 connections) — `tools/opendst_explore.py`
+- **.__init__()** (1 connections) — `tools/opendst_explore.py`
+- **Le serveur NeoST au bout d'un tuyau : une commande, une réponse.** (1 connections) — `tools/opendst_explore.py`
+- **Réponse « frame=… screen=… ram=… nom=0x… » → dictionnaire.** (1 connections) — `tools/opendst_explore.py`
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 264](Community_264.md) (1 shared connections)
-- [AppConfig.cpp](AppConfig.cpp.md) (1 shared connections)
+- [Community 73](Community_73.md) (3 shared connections)
+- [Community 18](Community_18.md) (2 shared connections)
+- [Community 258](Community_258.md) (2 shared connections)
+- [Community 248](Community_248.md) (2 shared connections)
+- [Community 151](Community_151.md) (2 shared connections)
+- [Community 3](Community_3.md) (1 shared connections)
 
 ## Source Files
 
-- `packaging/raspberry/README.md`
+- `tools/make_blitter_programs.py`
+- `tools/opendst_explore.py`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 30 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

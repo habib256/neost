@@ -1,34 +1,53 @@
 # Community 186
 
-> 7 nodes · cohesion 0.33
+> 26 nodes
 
 ## Key Concepts
 
-- **mainLoop()** (7 connections) — `src/web/main_web.cpp`
-- **syncCanvasSize()** (4 connections) — `src/web/main_web.cpp`
-- **Plein écran WASM : zoom adaptatif (2026-08-11)** (4 connections) — `CHANGELOG.md`
-- **displaySize()** (3 connections) — `src/web/main_web.cpp`
-- **produceAudioFrame()** (3 connections) — `src/web/main_web.cpp`
-- **drawScreen()** (2 connections) — `src/web/main_web.cpp`
-- **uploadFrame()** (2 connections) — `src/web/main_web.cpp`
+- **Server.cpp** (18 connections) — `src/headless/Server.cpp`
+- **run()** (13 connections) — `src/headless/Server.cpp`
+- **Options** (8 connections) — `src/headless/Server.hpp`
+- **Slot** (8 connections) — `src/headless/Server.cpp`
+- **arity()** (5 connections) — `src/headless/Server.cpp`
+- **string** (5 connections)
+- **reply()** (4 connections) — `src/headless/Server.cpp`
+- **words()** (4 connections) — `src/headless/Server.cpp`
+- **applyJoy()** (3 connections) — `src/headless/Server.cpp`
+- **parseLong()** (3 connections) — `src/headless/Server.cpp`
+- **splitFirst()** (3 connections) — `src/headless/Server.cpp`
+- **data** (3 connections) — `src/headless/Server.cpp`
+- **Machine** (2 connections)
+- **size_t** (1 connections)
+- **string** (1 connections)
+- **identityHead** (1 connections) — `src/headless/Server.hpp`
+- **identityTail** (1 connections) — `src/headless/Server.hpp`
+- **probes** (1 connections) — `src/headless/Server.hpp`
+- **slots** (1 connections) — `src/headless/Server.hpp`
+- **frame** (1 connections) — `src/headless/Server.cpp`
+- **joy0** (1 connections) — `src/headless/Server.cpp`
+- **joy1** (1 connections) — `src/headless/Server.cpp`
+- **joyKnown** (1 connections) — `src/headless/Server.cpp`
+- **used** (1 connections) — `src/headless/Server.cpp`
+- **csignal** (1 connections)
+- *... and 1 more nodes in this community*
 
 ## Relationships
 
-- [main_web.cpp](main_web.cpp.md) (7 shared connections)
-- [Community 58](Community_58.md) (1 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 398](Community_398.md) (3 shared connections)
+- [Community 154](Community_154.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/web/main_web.cpp`
+- `src/headless/Server.cpp`
+- `src/headless/Server.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (72%)
-- INFERRED: 5 (28%)
+- EXTRACTED: 53 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

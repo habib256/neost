@@ -1,30 +1,40 @@
 # Community 184
 
-> 8 nodes · cohesion 0.36
+> 16 nodes
 
 ## Key Concepts
 
-- **Server** (8 connections) — `tools/opendst_explore.py`
-- **.cmd()** (4 connections) — `tools/opendst_explore.py`
-- **.fields()** (3 connections) — `tools/opendst_explore.py`
-- **.close()** (2 connections) — `tools/opendst_explore.py`
-- **.tail()** (2 connections) — `tools/opendst_explore.py`
-- **.__init__()** (1 connections) — `tools/opendst_explore.py`
-- **Le serveur NeoST au bout d'un tuyau : une commande, une réponse.** (1 connections) — `tools/opendst_explore.py`
-- **Réponse « frame=… screen=… ram=… nom=0x… » → dictionnaire.** (1 connections) — `tools/opendst_explore.py`
+- **Rig** (13 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **testIkbdMouseMonitor()** (9 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.command()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.due()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **main()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.advance()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.data()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **initializer_list** (2 connections)
+- **.Rig()** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **Ikbd** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **ikbd** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **live** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **mfp** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **sched** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
 
 ## Relationships
 
-- [subprocess](subprocess.md) (2 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 77](Community_77.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_explore.py`
+- `tests/ikbd_mouse_monitor_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 25 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

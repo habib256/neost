@@ -1,55 +1,49 @@
 # Instr
 
-> 295 nodes · cohesion 0.01
+> God node · 306 connections · `extern/moira/Moira/MoiraTypes.h`
 
-## Key Concepts
+**Community:** [Community 0](Community_0.md)
 
-- **Instr** (306 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ABCD** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ABCD_LOOP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ADD** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ADD_LOOP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ADDA** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ADDA_LOOP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ADDI** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ADDQ** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ADDX** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ADDX_LOOP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **AND** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **AND_LOOP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ANDI** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ANDICCR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ANDISR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ASL** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ASL_LOOP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ASR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ASR_LOOP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BCC** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BCHG** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BCLR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BCS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BEQ** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- *... and 270 more nodes in this community*
+## Connections by Relation
 
-## Relationships
+### case_of
+- DIVS `EXTRACTED`
+- DIVU `EXTRACTED`
+- EOR `EXTRACTED`
+- EORI `EXTRACTED`
+- EORICCR `EXTRACTED`
+- EORISR `EXTRACTED`
+- EXG `EXTRACTED`
+- EXT `EXTRACTED`
+- ILLEGAL `EXTRACTED`
+- JMP `EXTRACTED`
+- JSR `EXTRACTED`
+- LEA `EXTRACTED`
+- LINE_A `EXTRACTED`
+- LINE_F `EXTRACTED`
+- LINK `EXTRACTED`
+- LSL `EXTRACTED`
+- LSR `EXTRACTED`
+- MOVE `EXTRACTED`
+- MOVEA `EXTRACTED`
+- MOVEFCCR `EXTRACTED`
+- *…and 274 more `case_of` connection(s) not listed (lowest-degree first to go)*
 
-- [Moira.cpp](Moira.cpp.md) (3 shared connections)
-- [MoiraTypes.h](MoiraTypes.h.md) (2 shared connections)
-- [Community 60](Community_60.md) (2 shared connections)
-- [NeostMoira](NeostMoira.md) (2 shared connections)
-- [.isValidExt](isValidExt.md) (1 shared connections)
-- [MoiraExecFPU_cpp.h](MoiraExecFPU_cpp.h.md) (1 shared connections)
-- [MoiraExecMMU_cpp.h](MoiraExecMMU_cpp.h.md) (1 shared connections)
+### contains
+- MoiraTypes.h `EXTRACTED`
 
-## Source Files
-
-- `extern/moira/Moira/MoiraTypes.h`
-
-## Audit Trail
-
-- EXTRACTED: 306 (100%)
-- INFERRED: 0 (0%)
-- AMBIGUOUS: 0 (0%)
+### references
+- .isValidExt() `EXTRACTED`
+- .isAvailable() `EXTRACTED`
+- InstrInfo `EXTRACTED`
+- didExecute() `EXTRACTED`
+- .availabilityMask() `EXTRACTED`
+- willExecute() `EXTRACTED`
+- .willExecute() `EXTRACTED`
+- .availabilityString() `EXTRACTED`
+- Moira::isValidExtMMU() `EXTRACTED`
+- .didExecute() `EXTRACTED`
+- Moira::isValidExtFPU() `EXTRACTED`
 
 ---
 

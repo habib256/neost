@@ -1,59 +1,75 @@
 # App
 
-> 149 nodes · cohesion 0.01
+> God node · 168 connections · `src/gui/App.hpp`
 
-## Key Concepts
+**Community:** [Community 1](Community_1.md)
 
-- **App** (168 connections) — `src/gui/App.hpp`
-- **Audio** (2 connections) — `src/gui/App.hpp`
-- **DriveSound** (2 connections) — `src/gui/App.hpp`
-- **GLFWwindow** (2 connections) — `src/gui/App.hpp`
-- **GlScreen** (2 connections) — `src/gui/App.hpp`
-- **GmSynth** (2 connections) — `src/gui/App.hpp`
-- **HayesModem** (2 connections) — `src/gui/App.hpp`
-- **Ikbd** (2 connections) — `src/gui/App.hpp`
-- **Machine** (2 connections) — `src/gui/App.hpp`
-- **MidiInHost** (2 connections) — `src/gui/App.hpp`
-- **MidiOutHost** (2 connections) — `src/gui/App.hpp`
-- **Mt32Synth** (2 connections) — `src/gui/App.hpp`
-- **NetBackendNull** (2 connections) — `src/gui/App.hpp`
-- **SlirpBackend** (2 connections) — `src/gui/App.hpp`
-- **.App()** (2 connections) — `src/gui/App.hpp`
-- **audio** (1 connections) — `src/gui/App.hpp`
-- **audioRate** (1 connections) — `src/gui/App.hpp`
-- **autoCartKey** (1 connections) — `src/gui/App.hpp`
-- **autoPortDev** (1 connections) — `src/gui/App.hpp`
-- **autoZoom** (1 connections) — `src/gui/App.hpp`
-- **browseDir** (1 connections) — `src/gui/App.hpp`
-- **browseSel** (1 connections) — `src/gui/App.hpp`
-- **browseShortcutLabels** (1 connections) — `src/gui/App.hpp`
-- **browseShortcutPaths** (1 connections) — `src/gui/App.hpp`
-- **browseSubdirs** (1 connections) — `src/gui/App.hpp`
-- *... and 124 more nodes in this community*
+## Connections by Relation
 
-## Relationships
+### contains
+- App.hpp `EXTRACTED`
 
-- [cstdint](cstdint.md) (15 shared connections)
-- [Community 48](Community_48.md) (8 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
-- [Community 350](Community_350.md) (2 shared connections)
-- [Config](Config.md) (1 shared connections)
-- [DesktopPointer](DesktopPointer.md) (1 shared connections)
-- [CrtEffectStack](CrtEffectStack.md) (1 shared connections)
-- [CrtParams](CrtParams.md) (1 shared connections)
-- [Symbols.cpp](Symbols.cpp.md) (1 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
+### defines
+- autoZoom `EXTRACTED`
+- mouseSpeed `EXTRACTED`
+- kioskDiskMenu `EXTRACTED`
+- kioskPage `EXTRACTED`
+- kioskDiskSel `EXTRACTED`
+- kioskZone `EXTRACTED`
+- kioskActSel `EXTRACTED`
+- kioskKeySel `EXTRACTED`
+- kioskJoySel `EXTRACTED`
+- kioskDisks `EXTRACTED`
+- kioskKeyRelease `EXTRACTED`
+- kioskMouseRelL `EXTRACTED`
+- kioskMouseRelR `EXTRACTED`
+- kioskInjectHold `EXTRACTED`
+- kioskRomDirs `EXTRACTED`
+- romDirSel `EXTRACTED`
+- browseDir `EXTRACTED`
+- browseSubdirs `EXTRACTED`
+- browseShortcutPaths `EXTRACTED`
+- browseShortcutLabels `EXTRACTED`
+- *…and 107 more `defines` connection(s) not listed (lowest-degree first to go)*
 
-## Source Files
+### method
+- .applyConfig() `EXTRACTED`
+- .midiOutApply() `EXTRACTED`
+- .midiLearnUids() `EXTRACTED`
+- .switchKioskMode() `EXTRACTED`
+- .loadDongleTable() `EXTRACTED`
+- .neBackend() `EXTRACTED`
+- .resolvePath() `EXTRACTED`
+- .slirpApply() `EXTRACTED`
+- .midiInApply() `EXTRACTED`
+- .usatanApply() `EXTRACTED`
+- .etherApply() `EXTRACTED`
+- .netUsbeeApply() `EXTRACTED`
+- .toggleFullscreen() `EXTRACTED`
+- .App() `EXTRACTED`
 
-- `src/gui/App.hpp`
-
-## Audit Trail
-
-- EXTRACTED: 182 (100%)
-- INFERRED: 0 (0%)
-- AMBIGUOUS: 0 (0%)
+### references
+- [vector](vector.md) `EXTRACTED`
+- Config `EXTRACTED`
+- CrtEffectStack `EXTRACTED`
+- DesktopPointer `EXTRACTED`
+- CrtParams `EXTRACTED`
+- SymbolTable `EXTRACTED`
+- [Ikbd](Ikbd.md) `EXTRACTED`
+- GLFWwindow `EXTRACTED`
+- Machine `EXTRACTED`
+- HayesModem `EXTRACTED`
+- NetBackendNull `EXTRACTED`
+- SlirpBackend `EXTRACTED`
+- MidiOutHost `EXTRACTED`
+- MidiInHost `EXTRACTED`
+- Mt32Synth `EXTRACTED`
+- GmSynth `EXTRACTED`
+- DriveSound `EXTRACTED`
+- Audio `EXTRACTED`
+- GlScreen `EXTRACTED`
+- map `EXTRACTED`
+- *…and 6 more `references` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

@@ -1,24 +1,26 @@
 # Community 351
 
-> 2 nodes · cohesion 1.00
+> 3 nodes
 
 ## Key Concepts
 
-- **stContentRegion()** (2 connections) — `src/core/Framing.cpp`
-- **Shifter** (1 connections)
+- **mfp_rx_irq_timing_logic.cpp** (4 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
+- **testMfpRxIrqTiming()** (3 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
+- **main()** (2 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
 
 ## Relationships
 
-- [Community 100](Community_100.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Framing.cpp`
+- `tests/mfp_rx_irq_timing_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

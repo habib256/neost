@@ -19,6 +19,15 @@ tester avec ses propres images.
 
 ## ⚠ Configuration : PAL/NTSC et couverture de la suite
 
+**Compatibilité : TOS et disquettes sources inchangés.** Un jeu qui fonctionne
+dans Hatari à configuration équivalente doit aussi fonctionner dans NeoST.
+Corriger l'émulateur à partir d'un écart reproduit ; ne pas réparer le média ou
+le TOS pour déclarer le jeu compatible. `compare_titles.py` vérifie les SHA-256
+des sources avant/après et conserve les journaux ; les écritures du logiciel
+émulé restent dans les copies de travail. Un halt CPU ou une capture manquante
+invalide un rejeu. Les entrées `diagnostic` sont exclues de la suite normale :
+un échec partagé avec Hatari est une observation, pas une compatibilité validée.
+
 **C'est la ROM TOS qui fixe la fréquence de balayage au boot**, et cela change l'image
 affichée par les démos :
 
@@ -507,3 +516,38 @@ que jeu par jeu.
 | **Hatari Test Suite** | Micro-tests 68000 (instructions/exceptions non documentées) + Shifter | dépôt Hatari (`tests/`) |
 | **ST-STE Hardware Test** (Troed / Sync) | Timings fins du Shifter, détection des modes de rémanence, variations de cycles mémoire (accès RAM asynchrones CPU/vidéo) | scène Atari |
 | **Anatool / Discovery Cartridge** | Lignes de statut WD1772 lors du formatage / lecture de pistes corrompues | utilitaire bas niveau |
+
+## Reprise FDC du 2026-11-04
+
+Switchblade utilise désormais la graine NeoST 8, ancien blocage : titre à 0 pixel
+d’écart avec Hatari, médias originaux ; balayage 1–64 également vert au titre.
+Les 16 autres rejeux passent sans patch TOS. Lemmings passe après alignement
+mesuré par traces : menu `$4370` à 2615/3159, captures Hatari décalées de +545
+(chargement + convention de trame). Seuil 0,5 % et fenêtre ±30 inchangés ;
+le rejeu couvre seulement le menu animé. Une partie à la souris reste à tester.
+Le halt TOS 2.06 à graine 4 reste ouvert, reproduit sur `diskA.st`.
+
+
+## Vroom : périmètre des parcours STE (2026-11-05)
+
+Les deux images locales restent requises. `vroom_elite_ste` couvre uniquement
+la sortie d'intro ; `vroom_elite_ste_race` ajoute le menu, la grille, l'accélération
+et le braquage sous TOS 1.62, avec contrôle snapshot des scènes inspectées.
+Les deux parcours natifs de `tests/replays/vroom_laps.json` franchissent
+un tour complet (« Lap 1 »), puis continuent à rouler. Rejoués depuis le reset
+sur 15 401 trames, ils retrouvent exactement leurs captures inspectées,
+sans halt ni modification des médias :
+
+```sh
+python3 tools/run_game_replay.py --manifest tests/replays/vroom_laps.json
+```
+
+Ce sont deux gardes **snapshot**, comptées séparément des comparaisons Hatari.
+Elles ne ferment pas les défauts ci-dessous.
+
+Sous TOS 2.06, `vroom_tos206_ste_race` conduit l'image sans suffixe mais reste
+un diagnostic rouge (écart final de 12,35 %). `vroom_tos206_audio_stop` garde
+un autre échec : sortie du titre à 6040, relance du timer audio, bombes puis
+halt NeoST. La réussite d'un autre moment d'appui ne ferme pas ce défaut.
+Les diagnostics restent exclus par défaut et se demandent avec `--only`.
+Recettes et preuves : [CASE_STUDIES.md](CASE_STUDIES.md#vroom-ste--vérifier-la-conduite-et-larrêt-audio-2026-11-05).

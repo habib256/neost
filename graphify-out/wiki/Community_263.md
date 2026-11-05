@@ -1,32 +1,32 @@
 # Community 263
 
-> 6 nodes · cohesion 0.47
+> 8 nodes
 
 ## Key Concepts
 
-- **InputCallbacks.cpp** (11 connections) — `src/gui/InputCallbacks.cpp`
-- **mouseReachesSt()** (3 connections) — `src/gui/InputCallbacks.cpp`
-- **onMouseButton()** (3 connections) — `src/gui/InputCallbacks.cpp`
-- **onKey()** (2 connections) — `src/gui/InputCallbacks.cpp`
-- **GLFWwindow** (2 connections)
-- **onGlfwError()** (1 connections) — `src/gui/InputCallbacks.cpp`
+- **Rig** (9 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.finish()** (3 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.Rig()** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **mfp** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **scheduler** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **sent** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
 
 ## Relationships
 
-- [cstdint](cstdint.md) (4 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
+- [Community 294](Community_294.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 77](Community_77.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/InputCallbacks.cpp`
+- `tests/mfp_internal_loopback_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 11 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

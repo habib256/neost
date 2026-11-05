@@ -1,26 +1,29 @@
 # Community 327
 
-> 3 nodes · cohesion 1.00
+> 6 nodes
 
 ## Key Concepts
 
-- **testSccAutoEnables()** (4 connections) — `tests/scc_auto_enables_logic.cpp`
-- **scc_auto_enables_logic.cpp** (4 connections) — `tests/scc_auto_enables_logic.cpp`
-- **main()** (2 connections) — `tests/scc_auto_enables_logic.cpp`
+- **Fault** (7 connections) — `src/core/Cpu68k.hpp`
+- **.lastFault()** (3 connections) — `src/core/Cpu68k.hpp`
+- **addr** (1 connections) — `src/core/Cpu68k.hpp`
+- **pc** (1 connections) — `src/core/Cpu68k.hpp`
+- **valid** (1 connections) — `src/core/Cpu68k.hpp`
+- **write** (1 connections) — `src/core/Cpu68k.hpp`
 
 ## Relationships
 
-- [Community 8](Community_8.md) (2 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
+- [Community 27](Community_27.md) (3 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_auto_enables_logic.cpp`
+- `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (71%)
-- INFERRED: 2 (29%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

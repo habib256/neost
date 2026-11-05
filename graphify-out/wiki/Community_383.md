@@ -1,6 +1,6 @@
 # Community 383
 
-> 4 nodes · cohesion 0.50
+> 4 nodes
 
 ## Key Concepts
 
@@ -11,7 +11,7 @@
 
 ## Relationships
 
-- [YM2149](YM2149.md) (1 shared connections)
+- [Community 28](Community_28.md) (1 shared connections)
 - [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files

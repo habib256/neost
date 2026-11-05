@@ -1,18 +1,21 @@
 # Community 124
 
-> 21 nodes · cohesion 0.13
+> 24 nodes
 
 ## Key Concepts
 
 - **** (32 connections) — `src/io/JoystickInput.hpp`
+- **Frontend & outillage** (21 connections) — `docs/IMPLEMENTED.md`
 - **compose()** (5 connections) — `src/io/JoystickInput.hpp`
 - **debug()** (5 connections) — `src/io/JoystickInput.hpp`
 - **composeAux()** (4 connections) — `src/io/JoystickInput.hpp`
 - **readStick()** (4 connections) — `src/io/JoystickInput.hpp`
 - **resolveAssign()** (4 connections) — `src/io/JoystickInput.hpp`
+- **.activeHeight()** (3 connections) — `src/core/Shifter.hpp`
 - **readAux()** (3 connections) — `src/io/JoystickInput.hpp`
+- **readStickRaw()** (3 connections) — `src/io/JoystickInput.hpp`
+- **.activeTop()** (2 connections) — `src/core/Shifter.hpp`
 - **GLFWwindow** (2 connections)
-- **Signature** (2 connections) — `packaging/android/README.md`
 - **kbdBit()** (1 connections) — `src/io/JoystickInput.hpp`
 - **AUX_RETURN** (1 connections) — `src/io/JoystickInput.hpp`
 - **AUX_SPACE** (1 connections) — `src/io/JoystickInput.hpp`
@@ -28,24 +31,29 @@
 
 ## Relationships
 
-- [cstdint](cstdint.md) (6 shared connections)
-- [main_web.cpp](main_web.cpp.md) (3 shared connections)
-- [Community 170](Community_170.md) (3 shared connections)
-- [Community 224](Community_224.md) (1 shared connections)
-- [Community 263](Community_263.md) (1 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
+- [Community 119](Community_119.md) (3 shared connections)
+- [Community 67](Community_67.md) (3 shared connections)
+- [Community 68](Community_68.md) (2 shared connections)
+- [Community 5](Community_5.md) (2 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
+- [Community 101](Community_101.md) (2 shared connections)
+- [Community 93](Community_93.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 355](Community_355.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
+- [Community 129](Community_129.md) (1 shared connections)
 
 ## Source Files
 
-- `packaging/android/README.md`
+- `docs/IMPLEMENTED.md`
+- `src/core/Shifter.hpp`
 - `src/io/JoystickInput.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 41 (91%)
-- INFERRED: 4 (9%)
+- EXTRACTED: 43 (65%)
+- INFERRED: 23 (35%)
 - AMBIGUOUS: 0 (0%)
 
 ---

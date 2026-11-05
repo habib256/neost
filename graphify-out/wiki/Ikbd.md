@@ -1,58 +1,70 @@
 # Ikbd
 
-> 94 nodes · cohesion 0.02
+> God node · 190 connections · `src/io/Ikbd.hpp`
 
-## Key Concepts
+**Community:** [Community 7](Community_7.md)
 
-- **Ikbd** (155 connections) — `src/io/Ikbd.hpp`
-- **Mfp** (2 connections) — `src/io/Ikbd.hpp`
-- **.setJoystickProbe()** (2 connections) — `src/io/Ikbd.hpp`
-- **.setScheduler()** (2 connections) — `src/io/Ikbd.hpp`
-- **function** (2 connections)
-- **Scheduler** (2 connections)
-- **.desktopMouseReady()** (1 connections) — `src/io/Ikbd.hpp`
-- **.setClock()** (1 connections) — `src/io/Ikbd.hpp`
-- **.setJoystick()** (1 connections) — `src/io/Ikbd.hpp`
-- **array** (1 connections)
-- **deque** (1 connections)
-- **absMaxX_** (1 connections) — `src/io/Ikbd.hpp`
-- **absMaxY_** (1 connections) — `src/io/Ikbd.hpp`
-- **absX_** (1 connections) — `src/io/Ikbd.hpp`
-- **absY_** (1 connections) — `src/io/Ikbd.hpp`
-- **aciaClockInitialized_** (1 connections) — `src/io/Ikbd.hpp`
-- **asMagic_** (1 connections) — `src/io/Ikbd.hpp`
-- **asReadCount_** (1 connections) — `src/io/Ikbd.hpp`
-- **bOldL_** (1 connections) — `src/io/Ikbd.hpp`
-- **bOldR_** (1 connections) — `src/io/Ikbd.hpp`
-- **bothMouseAndJoy_** (1 connections) — `src/io/Ikbd.hpp`
-- **chaosCount_** (1 connections) — `src/io/Ikbd.hpp`
-- **chaosFirst_** (1 connections) — `src/io/Ikbd.hpp`
-- **chaosIgnore_** (1 connections) — `src/io/Ikbd.hpp`
-- **chaosIndex_** (1 connections) — `src/io/Ikbd.hpp`
-- *... and 69 more nodes in this community*
+## Connections by Relation
 
-## Relationships
+### contains
+- Ikbd.hpp `EXTRACTED`
+- CustomW `EXTRACTED`
+- MouseMode `EXTRACTED`
+- JoystickMode `EXTRACTED`
+- CustomR `EXTRACTED`
 
-- [Community 59](Community_59.md) (24 shared connections)
-- [Community 47](Community_47.md) (16 shared connections)
-- [.sendAutoInput](sendAutoInput.md) (9 shared connections)
-- [Community 222](Community_222.md) (7 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
-- [MouseMode](MouseMode.md) (1 shared connections)
-- [JoystickMode](JoystickMode.md) (1 shared connections)
-- [CustomW](CustomW.md) (1 shared connections)
-- [CustomR](CustomR.md) (1 shared connections)
-- [.serialize](serialize.md) (1 shared connections)
+### defines
+- joyProbe_ `EXTRACTED`
+- inLineIdle_ `EXTRACTED`
+- inMouseEmit_ `EXTRACTED`
+- sched_ `EXTRACTED`
+- rx_ `EXTRACTED`
+- rdr_ `EXTRACTED`
+- rdrf_ `EXTRACTED`
+- rxShiftData_ `EXTRACTED`
+- rxPending_ `EXTRACTED`
+- responseDelayBits_ `EXTRACTED`
+- rxWaitingDelay_ `EXTRACTED`
+- rxOverrun_ `EXTRACTED`
+- ovrn_ `EXTRACTED`
+- srRead_ `EXTRACTED`
+- aciaClockInitialized_ `EXTRACTED`
+- control_ `EXTRACTED`
+- txEnableInt_ `EXTRACTED`
+- tdre_ `EXTRACTED`
+- txData_ `EXTRACTED`
+- txShiftData_ `EXTRACTED`
+- *…and 83 more `defines` connection(s) not listed (lowest-degree first to go)*
 
-## Source Files
+### method
+- .dispatchCommand() `EXTRACTED`
+- .sendAutoInput() `EXTRACTED`
+- .rxFree() `EXTRACTED`
+- .onLineIdle() `EXTRACTED`
+- .firmwareEventTime() `EXTRACTED`
+- .armRx() `EXTRACTED`
+- .pushRxDelayed() `EXTRACTED`
+- .customWriteDispatch() `EXTRACTED`
+- .sendRelMousePacket() `EXTRACTED`
+- .catchUpCpuTx() `EXTRACTED`
+- .bootRom() `EXTRACTED`
+- .customReadDispatch() `EXTRACTED`
+- .sendCursorKeys() `EXTRACTED`
+- .customCodeCrcForTest() `EXTRACTED`
+- .exitExeMode() `EXTRACTED`
+- .readJoystickState() `EXTRACTED`
+- .sendKeycodeJoystick() `EXTRACTED`
+- .liftPause() `EXTRACTED`
+- .sendAbsMousePos() `EXTRACTED`
+- .lineFree() `EXTRACTED`
+- *…and 57 more `method` connection(s) not listed (lowest-degree first to go)*
 
-- `src/io/Ikbd.hpp`
-
-## Audit Trail
-
-- EXTRACTED: 158 (100%)
-- INFERRED: 0 (0%)
-- AMBIGUOUS: 0 (0%)
+### references
+- [Mfp](Mfp.md) `EXTRACTED`
+- Scheduler `EXTRACTED`
+- function `EXTRACTED`
+- deque `EXTRACTED`
+- array `EXTRACTED`
 
 ---
 

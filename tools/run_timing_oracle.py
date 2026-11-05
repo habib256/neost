@@ -17,7 +17,7 @@ import tempfile
 
 import trace_diff as td
 from make_timing_probe import CASES, build
-from timing_extended import DIV_PAIRS, disk_image, stx_image
+from timing_extended import DIV_PAIRS, STX_READ_TIME, disk_image, stx_image
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "tests/out/timing"
@@ -32,12 +32,10 @@ FRAMES, WARMUP, SAMPLES = 40, 32, 256
 LIMITS = {case: (512, 512) if case == "dma_sound" else (4, 4) for case in CASES}
 # fdc_read_stx : la fin se mesure depuis la dernière détection, arrondie elle aussi
 # à un tour de scrutation (24 cycles) faute de pouvoir aligner l'angle de départ.
-# Fin de commande FDC (fdc_read/fdc_write, 2026-10-22) : NeoST et Hatari ont la même chaîne
-# dernier octet → CRC (512) → INTRQ (+8) ; l'écart Δ=6 est fait de deux artefacts d'Hatari
-# (CRC arrondi à 513 par rint sur SCLK STE, fdc.c FDC_FdcCyclesToCpuCycles — son propre TODO ;
-# GPIP5 daté à l'heure de dispatch dans STOP, +1..3) et de la phase rotationnelle (±2). Ils
-# étaient masqués par les 4 cycles d'IACK en trop (g_iackMfp 16→12). Tolérance 8, pas de port.
-LIMITS.update(blitter_hog=(4, 4), blitter_shared=(4, 4), fdc_read=(24, 8), fdc_read_stx=(24, 24),
+# Le dernier bloc est observé par scrutation (24 cycles en lecture). La phase
+# change avec la cadence matérielle, indépendante du stall DMA. La conversion
+# SCLK STE vers BUS est maintenant appliquée aussi au délai CRC de NeoST.
+LIMITS.update(blitter_hog=(4, 4), blitter_shared=(4, 4), fdc_read=(24, 24), fdc_read_stx=(24, 24),
               fdc_write=(24, 8))
 SOURCES = ("src/mfp.c", "src/dmaSnd.c", "src/cycInt.c", "src/video.c",
            "src/cpu/newcpu.c", "src/m68000.c", "src/fdc.c", "src/floppies/stx.c",
@@ -256,22 +254,29 @@ def compare(case, actual, expected, strict=False):
             raise ValueError("Disquette synthétique différente de la référence")
         if len(a) != 32 or len(b) != 32 or a[0] != 0 or b[0] != 0:
             raise ValueError("FDC : 32 rafales requises")
-        phase = max(abs(x-y) for x, y in zip(a, b))
+        # [B] WD177X-00 p. 1-1,1-5 : un octet MFM toutes les 256 horloges,
+        # sans pause pendant le DMA RAM. Hatari ajoute 32 cycles par bloc ;
+        # sa dérive n'est donc PLUS la référence de cadence. STX : ReadTime
+        # de la fixture, exprimé en µs à 8 MHz (arrondi par octet conservé).
+        period = STX_READ_TIME * 8 // 32 if case.endswith("_stx") else 16 * 256
+        phase = max(abs(x - i * period) for i, x in enumerate(a))
         # [B] WD177X-00 p. 1-12, 1-13 : INTRQ 24 µs après le dernier CRC d'un Write Sector. Hatari finit ~1 µs après.
-        tail = abs(actual["completion"] - expected["completion"] - ACCEPTED_COMPLETION.get(case, 0))
+        tail = abs(actual["completion"] - expected["completion"] - ACCEPTED_COMPLETION.get(case, 0) + 32)
         if len(actual["polls"]) != 31 or len(expected["polls"]) != 31:
             raise ValueError("FDC : 31 intervalles de travail CPU requis")
-        # La première rafale n'est pas au même angle de rotation chez les deux
-        # émulateurs (attente initiale exclue) : en écriture, la détection par
-        # scrutation de $FF860D s'arrondit alors à un tour de boucle près (22
-        # cycles, d'où la borne de phase). fdc_read reste exact sur le travail.
-        slack = 0 if case == "fdc_read" else 1
-        drift = max(abs(x - y) for x, y in zip(actual["polls"], expected["polls"]))
-        work = drift <= slack
+        # Comparer le temps HORS scrutation : la période disque raccourcie
+        # enlève du travail CPU, mais le coût du DMA doit rester. Les boucles
+        # font 24 cycles (lecture RAM) / 22 (adresse DMA en écriture). Retirer
+        # le stall CPU changerait ce résidu de 32 cycles et ferait échouer le test.
+        loop = 22 if case == "fdc_write" else 24
+        residual_a = [a[i+1] - a[i] - loop * p for i, p in enumerate(actual["polls"])]
+        residual_b = [b[i+1] - b[i] - loop * p for i, p in enumerate(expected["polls"])]
+        drift = max(abs(x-y) for x, y in zip(residual_a, residual_b))
+        work = drift == 0
         ok = phase <= LIMITS[case][0] and tail <= LIMITS[case][1] and work
         print(f"  {'OK' if ok else 'FAIL'} {case}: 32 rafales, "
-              f"phase max={phase}/24 cycles, IRQ après dernière rafale Δ={tail}/{LIMITS[case][1]}, "
-              f"travail CPU Δ={drift}/{slack} tour")
+              f"phase vs cadence {period} max={phase}/24 cycles, IRQ après dernière rafale Δ={tail}/{LIMITS[case][1]}, "
+              f"coût hors scrutation Δ={drift}/0 cycle")
         return ok
     if len(a) != SAMPLES or len(b) != SAMPLES or a[0] != 0 or b[0] != 0:
         raise ValueError(f"{case} : référence/mesure incomplète")

@@ -1,38 +1,49 @@
 # Community 174
 
-> 13 nodes · cohesion 0.17
+> 28 nodes
 
 ## Key Concepts
 
-- **StateArchive** (14 connections) — `src/core/StateArchive.hpp`
-- **.raw()** (5 connections) — `src/core/StateArchive.hpp`
-- **podVec()** (4 connections) — `src/core/StateArchive.hpp`
-- **.vec()** (3 connections) — `src/core/StateArchive.hpp`
-- **arr()** (2 connections) — `src/core/StateArchive.hpp`
-- **operator()()** (2 connections) — `src/core/StateArchive.hpp`
-- **.fail()** (1 connections) — `src/core/StateArchive.hpp`
-- **.loading()** (1 connections) — `src/core/StateArchive.hpp`
-- **.ok()** (1 connections) — `src/core/StateArchive.hpp`
-- **.saveSize()** (1 connections) — `src/core/StateArchive.hpp`
-- **in_** (1 connections) — `src/core/StateArchive.hpp`
-- **inEnd_** (1 connections) — `src/core/StateArchive.hpp`
-- **out_** (1 connections) — `src/core/StateArchive.hpp`
+- **Rig** (22 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **testStxDataCrcWrite()** (12 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.command()** (5 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.reg()** (5 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **Checks** (4 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.data()** (4 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.finish()** (4 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.advance()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.irq()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.mode()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.equal()** (2 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **main()** (2 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.address()** (2 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.select()** (2 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.Rig()** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **count** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **failures** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **Bus** (1 connections)
+- **Fdc** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **YM2149** (1 connections)
+- **bus** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **fdc** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **live** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 100](Community_100.md) (7 shared connections)
-- [Community 8](Community_8.md) (2 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/StateArchive.hpp`
+- `tests/stx_data_crc_write_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 46 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

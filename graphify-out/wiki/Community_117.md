@@ -1,6 +1,6 @@
 # Community 117
 
-> 21 nodes · cohesion 0.10
+> 21 nodes
 
 ## Key Concepts
 
@@ -28,10 +28,10 @@
 
 ## Relationships
 
-- [Community 201](Community_201.md) (5 shared connections)
-- [Community 266](Community_266.md) (2 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
-- [cstdint](cstdint.md) (1 shared connections)
+- [Community 164](Community_164.md) (5 shared connections)
+- [Community 247](Community_247.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 - [Community 298](Community_298.md) (1 shared connections)
 
 ## Source Files

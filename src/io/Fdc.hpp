@@ -264,10 +264,6 @@ public:
     // Idempotent : ne ré-ancre l'index que si le lecteur a effectivement changé.
     void     billDmaCycles(int n);           // stall CPU du DMA FDC (cf. .cpp, D3)
     void     noteFifoFlush();                // sonde NEOST_FDC_FLUSH_DIAG (cf. .cpp)
-    // Cycles de stall DMA facturés depuis la dernière échéance FDC servie, à reporter
-    // sur le réarmement (cf. billDmaCycles). Transitoire : remis à 0 à chaque
-    // réarmement, donc toujours nul à une frontière de trame → non sérialisé.
-    int64_t  dmaStallPending_ = 0;
     void     refreshDriveSide();
 
 private:
@@ -345,6 +341,8 @@ private:
     int      bytesPerTrack()            const;  // piste .ST : 6268 o × facteur de densité (DD/HD/ED)
     int      bytesPerTrackStx(int track, int side) const;       // longueur réelle de la piste STX
     int64_t  cyclesPerRev() const;              // période d'un tour (constante .ST, par piste STX)
+    int64_t  fdcToBusCycles(int64_t cycles) const;
+    int64_t  busToFdcCycles(int64_t cycles) const;
 
     // --- Densité du média (cf. Hatari FDC_ComputeFloppyDensity & co) -----------
     // La densité (DD=1, HD=2, ED=4) est DÉDUITE de la géométrie : 18 spt → HD,
@@ -367,7 +365,7 @@ private:
     int      indexCurrentPosBytes() const;      // position tête depuis l'index, en octets (−1 si pas de média)
     int      indexCurrentPosCycles() const;     // position tête depuis l'index, en cycles FDC (STX)
     bool     indexState() const;                // signal d'index actif ([D] fdc.c:422-423 @ f0736b24 : ≈ 3,71 ms/tour)
-    int64_t  nextIndexCycles() const;           // cycles FDC avant la prochaine impulsion (−1 si pas de média)
+    int64_t  nextIndexCycles() const;           // cycles BUS avant la prochaine impulsion (−1 si pas de média)
 
     // --- Machine à états des commandes (cf. Hatari FDC_Update*Cmd) -------------
     void     executeCommand(uint8_t cmd);       // décode CR, lance la commande, programme le 1er événement

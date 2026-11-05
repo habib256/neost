@@ -1,26 +1,29 @@
 # Community 330
 
-> 3 nodes · cohesion 1.00
+> 6 nodes
 
 ## Key Concepts
 
-- **testSccSync()** (4 connections) — `tests/scc_sync_logic.cpp`
-- **scc_sync_logic.cpp** (4 connections) — `tests/scc_sync_logic.cpp`
-- **main()** (2 connections) — `tests/scc_sync_logic.cpp`
+- **SysExJob** (7 connections) — `src/audio/MidiOutHost.cpp`
+- **HMIDIOUT** (1 connections)
+- **MIDIHDR** (1 connections)
+- **buf** (1 connections) — `src/audio/MidiOutHost.cpp`
+- **h** (1 connections) — `src/audio/MidiOutHost.cpp`
+- **hdr** (1 connections) — `src/audio/MidiOutHost.cpp`
 
 ## Relationships
 
-- [Community 8](Community_8.md) (2 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 84](Community_84.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/scc_sync_logic.cpp`
+- `src/audio/MidiOutHost.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (71%)
-- INFERRED: 2 (29%)
+- EXTRACTED: 7 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

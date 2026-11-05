@@ -1,14 +1,14 @@
 # Changelog — NeoST
 
-> God node · 215 connections · `CHANGELOG.md`
+> God node · 274 connections · `CHANGELOG.md`
 
 **Community:** [Community 130](Community_130.md)
 
 ## Connections by Relation
 
 ### contains
-- Chasse aux bugs multi-agents : 9 défauts trouvés et corrigés, dont un hors bornes qui ne visait que Windows (2026-09-01) `EXTRACTED`
 - A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30) `EXTRACTED`
+- Chasse aux bugs multi-agents : 9 défauts trouvés et corrigés, dont un hors bornes qui ne visait que Windows (2026-09-01) `EXTRACTED`
 - CHANGELOG.md `EXTRACTED`
 - Performance du cœur : ~2,4× sur la même machine, à sortie octet-identique (2026-08-02) `EXTRACTED`
 - Bug hunt multi-agents (2026-07-29) `EXTRACTED`
@@ -27,7 +27,7 @@
 - Passe de cohérence doc ↔ code, 3ᵉ tour (2026-08-19) `EXTRACTED`
 - Chemins hôte unifiés, logique pure testable, `main.cpp` dégrossi (2026-08-17) `EXTRACTED`
 - A42 soldé : l'élection de l'IRQ MFP voit enfin tout le lot de dispatch (2026-09-03) `EXTRACTED`
-- *…and 195 more `contains` connection(s) not listed (lowest-degree first to go)*
+- *…and 254 more `contains` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

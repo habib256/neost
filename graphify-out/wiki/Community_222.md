@@ -1,6 +1,6 @@
 # Community 222
 
-> 7 nodes · cohesion 0.43
+> 7 nodes
 
 ## Key Concepts
 
@@ -14,8 +14,8 @@
 
 ## Relationships
 
-- [Community 59](Community_59.md) (7 shared connections)
-- [Ikbd](Ikbd.md) (7 shared connections)
+- [Community 171](Community_171.md) (7 shared connections)
+- [Community 7](Community_7.md) (7 shared connections)
 - [Community 47](Community_47.md) (1 shared connections)
 
 ## Source Files

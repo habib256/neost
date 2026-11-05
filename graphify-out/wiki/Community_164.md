@@ -1,37 +1,41 @@
 # Community 164
 
-> 13 nodes · cohesion 0.18
+> 10 nodes
 
 ## Key Concepts
 
-- **Rig** (12 connections) — `tests/ikbd_autosend_logic.cpp`
-- **testIkbdAutoSend()** (7 connections) — `tests/ikbd_autosend_logic.cpp`
-- **.due()** (3 connections) — `tests/ikbd_autosend_logic.cpp`
-- **.advance()** (2 connections) — `tests/ikbd_autosend_logic.cpp`
-- **.warm()** (2 connections) — `tests/ikbd_autosend_logic.cpp`
-- **.Rig()** (1 connections) — `tests/ikbd_autosend_logic.cpp`
-- **Ikbd** (1 connections)
-- **Mfp** (1 connections)
-- **Scheduler** (1 connections)
-- **ikbd** (1 connections) — `tests/ikbd_autosend_logic.cpp`
-- **live** (1 connections) — `tests/ikbd_autosend_logic.cpp`
-- **mfp** (1 connections) — `tests/ikbd_autosend_logic.cpp`
-- **sched** (1 connections) — `tests/ikbd_autosend_logic.cpp`
+- **Mt32Synth.cpp** (19 connections) — `src/audio/Mt32Synth.cpp`
+- **.available()** (4 connections) — `src/audio/Mt32Synth.hpp`
+- **.parse()** (3 connections) — `src/audio/Mt32Synth.hpp`
+- **.byteAt()** (2 connections) — `src/audio/Mt32Synth.hpp`
+- **.clearEvents()** (2 connections) — `src/audio/Mt32Synth.hpp`
+- **.render()** (2 connections) — `src/audio/Mt32Synth.hpp`
+- **dataBytesFor()** (2 connections) — `src/audio/Mt32Synth.cpp`
+- **cstdarg** (2 connections)
+- **Mt32Synth::Mt32Synth()** (1 connections) — `src/audio/Mt32Synth.cpp`
+- **mt32emu** (1 connections)
 
 ## Relationships
 
-- [Community 8](Community_8.md) (3 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
-- [Source](Source.md) (1 shared connections)
+- [Community 117](Community_117.md) (5 shared connections)
+- [Community 247](Community_247.md) (4 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
+- [Community 262](Community_262.md) (1 shared connections)
+- [Community 171](Community_171.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ikbd_autosend_logic.cpp`
+- `src/audio/Mt32Synth.cpp`
+- `src/audio/Mt32Synth.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 19 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 28 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

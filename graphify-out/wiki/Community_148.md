@@ -1,57 +1,61 @@
 # Community 148
 
-> 21 nodes · cohesion 0.11
+> 24 nodes
 
 ## Key Concepts
 
-- **.mmuTranslate()** (18 connections) — `src/core/Bus.hpp`
-- **.read8Slow()** (9 connections) — `src/core/Bus.hpp`
-- **Performance du cœur NeoST — profil, optimisations, recette de build** (7 connections) — `docs/PERFORMANCE.md`
-- **.rebuildMmuCache()** (6 connections) — `src/core/Bus.hpp`
-- **3. Les optimisations, et ce qu'elles paient** (6 connections) — `docs/PERFORMANCE.md`
-- **ramBanks()** (4 connections) — `src/core/Bus.cpp`
-- **.mmuConfNow()** (3 connections) — `src/core/Bus.hpp`
-- **mmuFastLimit_** (3 connections) — `src/core/Bus.hpp`
-- **mmuConfSize()** (3 connections) — `src/core/Bus.cpp`
-- **2. Le profil de départ (boot TOS 1.62, 300 trames)** (3 connections) — `docs/PERFORMANCE.md`
-- **3.2 Bus — cache du décodage MMU et chemin rapide en ligne** (3 connections) — `docs/PERFORMANCE.md`
-- **.read8()** (2 connections) — `src/core/Bus.hpp`
-- **mmuXlatSTE()** (2 connections) — `src/core/Bus.cpp`
-- **mmuXlatSTF()** (2 connections) — `src/core/Bus.cpp`
-- **9ᵉ passe — workflow zones peu couvertes (2026-08-06)** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **3.3 `busFaultN` — sortie anticipée pour la RAM ordinaire** (2 connections) — `docs/PERFORMANCE.md`
-- **5. La recette de build : PGO + LTO** (2 connections) — `docs/PERFORMANCE.md`
-- **⚠ Le piège du PGO, qui coûte le gain sans rien dire** (2 connections) — `docs/PERFORMANCE.md`
-- **1. Refaire le profil** (1 connections) — `docs/PERFORMANCE.md`
-- **4. Résultat des optimisations de code** (1 connections) — `docs/PERFORMANCE.md`
-- **6. Ce qui reste sur la table** (1 connections) — `docs/PERFORMANCE.md`
+- **string** (17 connections)
+- **.initDrives()** (13 connections) — `src/io/GemdosHd.hpp`
+- **.setDirectory()** (8 connections) — `src/io/GemdosHd.hpp`
+- **8ᵉ passe — workflow (6 chasseurs + vérif adversariale, 2026-08-06)** (8 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.reset()** (7 connections) — `src/io/GemdosHd.hpp`
+- **A39 — le disque dur GEMDOS passe son premier audit, et reçoit son premier test (2026-08-28)** (7 connections) — `CHANGELOG.md`
+- **makeAbsoluteName()** (6 connections) — `src/io/GemdosHd.cpp`
+- **physicalCanon()** (6 connections) — `src/io/GemdosHd.cpp`
+- **.initCurPaths()** (5 connections) — `src/io/GemdosHd.hpp`
+- **.clearAllInternalDTAs()** (5 connections) — `src/io/GemdosHd.hpp`
+- **.hostRamPtr()** (4 connections) — `src/core/Bus.hpp`
+- **cleanFileName()** (4 connections) — `src/io/GemdosHd.cpp`
+- **Retours 0.5.2 : HD GEMDOS sous Windows, disquette livrée (2026-08-16)** (4 connections) — `CHANGELOG.md`
+- **.installSystemCart()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.driveMask()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.clearInternalDTA()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.addRemainingPath()** (3 connections) — `src/io/GemdosHd.hpp`
+- **addSlash()** (3 connections) — `src/io/GemdosHd.cpp`
+- **dirExists()** (3 connections) — `src/io/GemdosHd.cpp`
+- **.clampToSandbox()** (3 connections) — `src/io/GemdosHd.hpp`
+- **hostDriveFolderExists()** (3 connections) — `src/io/GemdosHd.cpp`
+- **.createHostFileName()** (2 connections) — `src/io/GemdosHd.hpp`
+- **.gemChDir()** (2 connections) — `src/io/GemdosHd.hpp`
+- **host2atari()** (2 connections) — `src/io/GemdosHd.cpp`
 
 ## Relationships
 
-- [Community 368](Community_368.md) (8 shared connections)
-- [Bus](Bus.md) (6 shared connections)
-- [Community 203](Community_203.md) (3 shared connections)
-- [.mmioSlotFor](mmioSlotFor.md) (3 shared connections)
-- [Community 200](Community_200.md) (2 shared connections)
-- [NeostMoira](NeostMoira.md) (2 shared connections)
-- [Scheduler](Scheduler.md) (2 shared connections)
-- [Community 218](Community_218.md) (1 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
-- [Community 31](Community_31.md) (1 shared connections)
-- [.gpipSetLine](gpipSetLine.md) (1 shared connections)
+- [Community 36](Community_36.md) (21 shared connections)
+- [Community 17](Community_17.md) (12 shared connections)
+- [Community 218](Community_218.md) (5 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 30](Community_30.md) (1 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
+- [Community 358](Community_358.md) (1 shared connections)
 - [Community 105](Community_105.md) (1 shared connections)
+- [Community 27](Community_27.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 
+- `CHANGELOG.md`
 - `docs/HATARI_DIVERGENCES.md`
-- `docs/PERFORMANCE.md`
-- `src/core/Bus.cpp`
 - `src/core/Bus.hpp`
+- `src/io/GemdosHd.cpp`
+- `src/io/GemdosHd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 37 (64%)
-- INFERRED: 21 (36%)
+- EXTRACTED: 57 (66%)
+- INFERRED: 29 (34%)
 - AMBIGUOUS: 0 (0%)
 
 ---

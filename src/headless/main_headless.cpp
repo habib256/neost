@@ -127,6 +127,7 @@ void usage() {
         "  --mouse-at N S    mouse script from frame N: L/R/U/D = +/-8 px, 1/2 = left/\n"
         "                    right click, . = idle (one frame each)\n"
         "                    (repeatable)\n"
+        "  --mouse-step N    displacement per L/R/U/D token (1..127, default 8)\n"
         "  --joy P1[,P0]     hold a joystick state (bits up$01 down$02 l$04 r$08 fire$80)\n"
         "  --disk FILE       mount an image in drive A (default disks/diskA.st)\n"
         "  --disk-at N FILE  swap the disk in drive A at frame N (repeatable)\n"
@@ -1243,6 +1244,7 @@ int main(int argc, char** argv) {
     // commande gagne (ils sont appliqués dans l'ordre) ; s'ils ne se chevauchent pas, ils
     // jouent tous les deux.
     std::vector<std::pair<int, std::string>> mouseAtList;
+    int mouseStep = 8;
     // --joy-script N "SCRIPT" : pose l'état joystick port 1 trame par trame à partir de N.
     // Tokens : U/D/L/R = direction, F = feu, '.' = neutre. Permet de PULSER (presser puis
     // relâcher) le feu et de bouger une sélection dans un menu joystick (ex. Vroom).
@@ -1445,6 +1447,16 @@ int main(int argc, char** argv) {
             joyAtList.emplace_back(f, uint8_t(v));
         }
         else if (!std::strcmp(a, "--mouse-at"))    { const int f = std::atoi(next(a)); mouseAtList.emplace_back(f, next(a)); }
+        else if (!std::strcmp(a, "--mouse-step")) {
+            const char* value = next(a);
+            char* end = nullptr;
+            const long step = std::strtol(value, &end, 10);
+            if (end == value || *end || step < 1 || step > 127) {
+                std::fprintf(stderr, "--mouse-step expects an integer from 1 to 127\n");
+                return 2;
+            }
+            mouseStep = int(step);
+        }
         else if (!std::strcmp(a, "--joy-script")) {
             const int f = std::atoi(next(a));
             const char* txt = next(a);
@@ -2380,10 +2392,10 @@ int main(int argc, char** argv) {
                 const char t = mouseAt[idx];
                 int dx = 0, dy = 0; bool l = false, r = false;
                 switch (t) {
-                    case 'L': dx = -8; break;
-                    case 'R': dx =  8; break;
-                    case 'U': dy = -8; break;
-                    case 'D': dy =  8; break;
+                    case 'L': dx = -mouseStep; break;
+                    case 'R': dx =  mouseStep; break;
+                    case 'U': dy = -mouseStep; break;
+                    case 'D': dy =  mouseStep; break;
                     case '1': l = true; mClickL = true; break;   // clic gauche : appui
                     case '2': r = true; mClickR = true; break;   // clic droit : appui
                     case '3': l = r = true; mClickL = mClickR = true; break;  // les deux (ex. nitro Super Hang-On)

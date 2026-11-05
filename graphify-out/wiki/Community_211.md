@@ -1,40 +1,34 @@
 # Community 211
 
-> 7 nodes · cohesion 0.29
+> 10 nodes
 
 ## Key Concepts
 
-- **Ce qui est implémenté — par sous-système** (14 connections) — `docs/IMPLEMENTED.md`
-- **Cœur & boot** (5 connections) — `docs/IMPLEMENTED.md`
-- **Disque dur GEMDOS (émulation HD façon Hatari)** (3 connections) — `docs/IMPLEMENTED.md`
-- **Types de machine & mémoire** (2 connections) — `docs/IMPLEMENTED.md`
-- **Validé** (2 connections) — `docs/IMPLEMENTED.md`
-- **Compléments de fidélité du 2026-10-18** (1 connections) — `docs/IMPLEMENTED.md`
-- **Réseau — extensions NeoST (INACTIVES par défaut, cf. `docs/EXTENSIONS.md`)** (1 connections) — `docs/IMPLEMENTED.md`
+- **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
+- **Bus** (3 connections)
+- **.peek16()** (2 connections) — `tests/selftest_logic.cpp`
+- **.poke16()** (2 connections) — `tests/selftest_logic.cpp`
+- **.program()** (2 connections) — `tests/selftest_logic.cpp`
+- **.BlitRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **blit** (1 connections) — `tests/selftest_logic.cpp`
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
+- **Blitter** (1 connections)
 
 ## Relationships
 
-- [Community 256](Community_256.md) (2 shared connections)
-- [Scheduler](Scheduler.md) (2 shared connections)
-- [Community 30](Community_30.md) (2 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 115](Community_115.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
-- [Mfp](Mfp.md) (1 shared connections)
-- [Community 318](Community_318.md) (1 shared connections)
-- [Community 110](Community_110.md) (1 shared connections)
-- [Cpu68k.cpp](Cpu68k.cpp.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 214](Community_214.md) (2 shared connections)
+- [Community 245](Community_245.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/IMPLEMENTED.md`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (64%)
-- INFERRED: 8 (36%)
+- EXTRACTED: 16 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

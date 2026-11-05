@@ -10,7 +10,7 @@
 #  conditionnés par une variable d'environnement, les événements souris et le
 #  script joystick ne font qu'ouvrir une voie d'injection d'entrée.
 #
-#    src/control.c    events fifo « leftdown/leftup/rightdown/rightup »
+#    src/control.c    events fifo « leftdown/leftup/rightdown/rightup/mousemove »
 #                     (oracle des menus SOURIS)
 #    src/joy.c        NEOST_JOY_SCRIPT / NEOST_JOY_START : état joystick 1 posé
 #                     par VBL depuis un fichier — l'oracle DIFFÉRENTIEL rejoue
@@ -43,10 +43,10 @@
 #  re-vérifier l'application AVANT d'être commis.
 # =============================================================================
 diff --git a/src/control.c b/src/control.c
-index 0eb5e800..1d54c65b 100644
+index 0eb5e800..661b7d5c 100644
 --- a/src/control.c
 +++ b/src/control.c
-@@ -155,6 +155,15 @@ static bool Control_InsertEvent(const char *event)
+@@ -155,6 +155,24 @@ static bool Control_InsertEvent(const char *event)
  		Keyboard.LButtonDblClk = 1;
  		return true;
  	}
@@ -57,6 +57,15 @@ index 0eb5e800..1d54c65b 100644
 +	}
 +	if (strcmp(event, "leftup") == 0) {
 +		Keyboard.bLButtonDown &= ~BUTTON_MOUSE;
++		return true;
++	}
++	/* NeoST: même accumulation relative que GuiEvent_HandleMouseMotion (sans accélération hôte). */
++	int dx, dy;
++	char extra;
++	if (sscanf(event, "mousemove %d %d %c", &dx, &dy, &extra) == 2
++	    && dx >= -127 && dx <= 127 && dy >= -127 && dy <= 127) {
++		KeyboardProcessor.Mouse.dx += dx;
++		KeyboardProcessor.Mouse.dy += dy;
 +		return true;
 +	}
  	if (strcmp(event, "rightdown") == 0) {

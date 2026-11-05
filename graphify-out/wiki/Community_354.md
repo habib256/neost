@@ -1,12 +1,13 @@
 # Community 354
 
-> 11 nodes · cohesion 0.18
+> 13 nodes
 
 ## Key Concepts
 
-- **Discipline de release — NeoST** (6 connections) — `docs/RELEASE.md`
-- **Le JOUR J — dossier prêt pour la prochaine release (préparé le 2026-09-01)** (6 connections) — `docs/RELEASE.md`
+- **Discipline de release — NeoST** (7 connections) — `docs/RELEASE.md`
+- **Le JOUR J 0.6.1 — dossier de la release précédente (préparé le 2026-09-01)** (6 connections) — `docs/RELEASE.md`
 - **Ce que la 0.6.1 emporte, déjà dans `main`** (2 connections) — `docs/RELEASE.md`
+- **Le JOUR J 0.6.2 — dossier préparé le 2026-10-20** (2 connections) — `docs/RELEASE.md`
 - **Ce que la machine vérifie déjà** (1 connections) — `docs/RELEASE.md`
 - **Ce qui BLOQUE encore une release publique** (1 connections) — `docs/RELEASE.md`
 - **✅ Fait le 2026-09-02 — le dernier blocage est soldé** (1 connections) — `docs/RELEASE.md`
@@ -14,11 +15,12 @@
 - **Le numéro : `0.6.1`** (1 connections) — `docs/RELEASE.md`
 - **Les trois pas qu'on saute, dans l'ordre** (1 connections) — `docs/RELEASE.md`
 - **Notes de release, EN ANGLAIS, prêtes à coller** (1 connections) — `docs/RELEASE.md`
+- **Notes de release, EN ANGLAIS, prêtes à coller** (1 connections) — `docs/RELEASE.md`
 - **Pourquoi ce fichier** (1 connections) — `docs/RELEASE.md`
 
 ## Relationships
 
-- [AppConfig.cpp](AppConfig.cpp.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
@@ -27,8 +29,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (92%)
-- INFERRED: 1 (8%)
+- EXTRACTED: 13 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

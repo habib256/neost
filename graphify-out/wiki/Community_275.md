@@ -1,13 +1,17 @@
 # Community 275
 
-> 21 nodes · cohesion 0.10
+> 25 nodes
 
 ## Key Concepts
 
+- **.gpipInput()** (13 connections) — `src/io/Mfp.hpp`
 - **Chantier CLOSURE (Sync) — état de l'enquête** (10 connections) — `docs/CLOSURE_CHANTIER.md`
+- **.gpipUpdateInterruptAt()** (7 connections) — `src/io/Mfp.hpp`
 - **Cycle 5 (2026-08-12) — LE FIX : datation par parité d'`into` ; la démo VIT** (4 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle 6 (2026-08-12) — le hachis cerné : motifs de transitoires hors répertoire** (4 connections) — `docs/CLOSURE_CHANTIER.md`
 - **.timerBFrameCycleForLine()** (3 connections) — `src/core/Shifter.hpp`
+- **.setAciaLineKbdAt()** (3 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineMidiAt()** (3 connections) — `src/io/Mfp.hpp`
 - **Closure (Sync) boote : datation des écritures freq/res par parité d'accès (2026-08-12)** (3 connections) — `CHANGELOG.md`
 - **Cycle Timer B (2026-08-11 soir) — portage posé, activation à débugger** (3 connections) — `docs/CLOSURE_CHANTIER.md`
 - **CLOSURE_CHANTIER.md** (2 connections) — `docs/CLOSURE_CHANTIER.md`
@@ -28,8 +32,11 @@
 
 ## Relationships
 
-- [.gpipSetLine](gpipSetLine.md) (2 shared connections)
-- [Shifter](Shifter.md) (1 shared connections)
+- [Community 215](Community_215.md) (8 shared connections)
+- [Community 6](Community_6.md) (4 shared connections)
+- [Community 173](Community_173.md) (3 shared connections)
+- [Community 165](Community_165.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 
@@ -38,11 +45,12 @@
 - `CHANGELOG.md`
 - `docs/CLOSURE_CHANTIER.md`
 - `src/core/Shifter.hpp`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 21 (84%)
-- INFERRED: 4 (16%)
+- EXTRACTED: 32 (71%)
+- INFERRED: 13 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

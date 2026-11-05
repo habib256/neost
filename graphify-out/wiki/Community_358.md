@@ -1,37 +1,29 @@
 # Community 358
 
-> 10 nodes · cohesion 0.20
+> 2 nodes
 
 ## Key Concepts
 
-- **Mode borne (kiosk)** (9 connections) — `docs/KIOSK.md`
-- **.state()** (4 connections) — `src/io/CartridgeKey.hpp`
-- **Dossiers ROM** (2 connections) — `docs/KIOSK.md`
-- **Raccourcis** (2 connections) — `docs/KIOSK.md`
-- **Borne Raspberry Pi** (1 connections) — `docs/KIOSK.md`
-- **Clavier & souris (SELECT manette, ou F12)** (1 connections) — `docs/KIOSK.md`
-- **Démarrage direct sur un jeu (attract)** (1 connections) — `docs/KIOSK.md`
-- **Joysticks** (1 connections) — `docs/KIOSK.md`
-- **Menu in-game (START manette, ou F9)** (1 connections) — `docs/KIOSK.md`
-- **Zoom adaptatif (défaut, bascule F10)** (1 connections) — `docs/KIOSK.md`
+- **.glueSelfTest()** (4 connections) — `src/core/Shifter.hpp`
+- **P1 — Registres vidéo STE : 2 restes** (3 connections) — `docs/CYCLE_ACCURACY.md`
 
 ## Relationships
 
-- [Community 150](Community_150.md) (1 shared connections)
-- [Community 215](Community_215.md) (1 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
+- [Community 148](Community_148.md) (1 shared connections)
+- [Community 254](Community_254.md) (1 shared connections)
+- [Community 115](Community_115.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/KIOSK.md`
-- `src/io/CartridgeKey.hpp`
+- `docs/CYCLE_ACCURACY.md`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (71%)
-- INFERRED: 4 (29%)
+- EXTRACTED: 2 (33%)
+- INFERRED: 4 (67%)
 - AMBIGUOUS: 0 (0%)
 
 ---

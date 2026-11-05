@@ -15,6 +15,20 @@ from make_timing_probe import build
 from run_mfp_iack_probe import check_output as check_iack_probe
 
 
+def fdc_fixture(case, reference):
+    """Sonde synthétique : flux continu, scrutation quantifiée, vol CPU conservé."""
+    result = copy.deepcopy(reference)
+    loop, overhead = (22, 60) if case == "fdc_write" else (24, 56)
+    period = 5000 if case == "fdc_read_stx" else 4096
+    result["cycles"], result["polls"] = [0], []
+    for i in range(1, 32):
+        polls = round((i * period - result["cycles"][-1] - overhead) / loop)
+        result["polls"].append(polls)
+        result["cycles"].append(result["cycles"][-1] + polls * loop + overhead)
+    result["completion"] += timing.ACCEPTED_COMPLETION.get(case, 0) - 32
+    return result
+
+
 class HardwareProbeProtocol(unittest.TestCase):
     def test_completion_requires_all_counts_and_single_record(self):
         valid = bytes.fromhex("004800480048beef")
@@ -33,6 +47,49 @@ class HardwareProbeProtocol(unittest.TestCase):
     def test_halt_cannot_pass_with_old_completion_record(self):
         with self.assertRaises(ValueError):
             check_iack_probe(bytes.fromhex("004800480048beef"), "[cpu] 68000 halted", 72, True)
+
+
+class TraceRegisters(unittest.TestCase):
+    # Format observé sur le boot TOS 2.06 avec cpu_disasm,cpu_regs,cpu_video_cycles.
+    HATARI = """cpu video_cyc=106580  84@208 55796504 : 00e01240 defc 0010 adda.w #$0010,a7
+  D0 0000CCB6   D1 00E00000   D2 00000004   D3 000000FF
+  A0 00E0095D   A7 00003DE8
+SR=2300 T=00 S=1 M=0 X=0 N=0 Z=0 V=0 C=0 IM=3 STP=0
+Prefetch 2040 (MOVEA) 217c (MOVE) Chip latch 00000000
+00e01244 2040 movea.l d0,a0
+Next PC: 00e01246
+cpu video_cyc=106592  96@208 55796516 : 00e01244 2040 movea.l d0,a0
+  D0 0000CCB6   D1 00E00000
+  A0 0000CCB6   A7 00003DE8
+SR=2300 T=00 S=1 M=0 X=0 N=0 Z=0 V=0 C=0 IM=3 STP=0
+00e01246 217c 00e0 126a 0008 move.l #$00e0126a,($0008,a0)
+Next PC: 00e0124e
+cpu video_cyc=106596 100@208 55796520 : 00e01246 217c 00e0 126a 0008 move.l #$00e0126a,($0008,a0)
+"""
+
+    def test_dump_preview_is_not_an_executed_instruction(self):
+        ins = td.parse_hatari(self.HATARI.splitlines())
+        self.assertEqual([i.pc for i in ins], [0xe01240, 0xe01244, 0xe01246])
+        self.assertEqual([i.cyc for i in ins], [55796504, 55796516, 55796520])
+        self.assertEqual(ins[0].regs, {})  # état initial absent : ne pas l'inventer
+        self.assertEqual(ins[1].regs['A0'], 0xe0095d)
+        self.assertEqual(ins[2].regs['A0'], 0xccb6)
+
+    def test_registers_only_and_unclocked_disassembly(self):
+        regs = [s for s in self.HATARI.splitlines() if not s.startswith('cpu video')]
+        self.assertEqual([i.pc for i in td.parse_hatari(regs)], [0xe01244, 0xe01246])
+        plain = re.sub(r'cpu video_cyc=.*? : ', '', self.HATARI)
+        self.assertEqual(len(td.parse_hatari(plain.splitlines())), 3)
+
+    def test_neost_operand_does_not_consume_register_dump(self):
+        ins = td.Insn(0xe0fb38, '')
+        ins.parse_regs('move.w (A7)+, D0  D0=00002300 A7=00003DD2 SR=2300')
+        self.assertEqual(ins.regs, {'D0': 0x2300, 'A7': 0x3dd2, 'SR': 0x2300})
+
+    def test_intervening_exception_cannot_reuse_stale_registers(self):
+        mutated = self.HATARI.replace('55796516 : 00e01244', '55796516 : 00e00c06')
+        ins = td.parse_hatari(mutated.splitlines())
+        self.assertEqual(ins[1].regs, {})
 
 
 class TimingComparison(unittest.TestCase):
@@ -95,12 +152,10 @@ class TimingComparison(unittest.TestCase):
     def test_transfer_mutations_and_strict_blitter(self):
         for case in (c for c in self.all_reference if c.startswith(("fdc_", "blitter_"))):
             reference = self.all_reference[case]
-            baseline = copy.deepcopy(reference)
+            baseline = fdc_fixture(case, reference) if case.startswith("fdc_") else copy.deepcopy(reference)
             # Un écart accepté face à Hatari fait partie de l'attendu ; une mutation s'y ajoute.
             for field, offset in timing.ACCEPTED_BLITTER.get(case, {}).items():
                 baseline[field] = [t + offset for t in baseline[field]]
-            if case in timing.ACCEPTED_COMPLETION:
-                baseline["completion"] += timing.ACCEPTED_COMPLETION[case]
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertTrue(timing.compare(case, baseline, reference))
                 self.assertTrue(timing.compare(case, baseline, reference, strict=True))
@@ -113,8 +168,8 @@ class TimingComparison(unittest.TestCase):
                 for field in (("cycles", "polls") if case.startswith("fdc_") else ("durations", "irq_durations", "polls")):
                     mutant = copy.deepcopy(baseline)
                     if field == "cycles":
-                        # DMA sans stall de 32 cycles : chaque rafale avance trop tôt.
-                        mutant[field] = [t - 32*i for i, t in enumerate(mutant[field])]
+                        # Ancienne erreur : le stall CPU ralentit aussi le disque.
+                        mutant[field] = [t + 32*i for i, t in enumerate(mutant[field])]
                     else:
                         mutant[field][12] += 8
                     self.assertFalse(timing.compare(case, mutant, reference))
@@ -143,14 +198,14 @@ class TimingComparison(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertFalse(timing.compare("fdc_read_stx", mutant, reference))
 
-    def test_fdc_write_tolerates_one_poll_only(self):
+    def test_fdc_write_preserves_cpu_stall_independently_of_disk_cadence(self):
         reference = self.all_reference["fdc_write"]
         with contextlib.redirect_stdout(io.StringIO()):
-            mutant = copy.deepcopy(reference); mutant["polls"][5] += 1
-            mutant["completion"] += timing.ACCEPTED_COMPLETION["fdc_write"]
+            mutant = fdc_fixture("fdc_write", reference)
             self.assertTrue(timing.compare("fdc_write", mutant, reference))
             mutant["polls"][5] += 1
             self.assertFalse(timing.compare("fdc_write", mutant, reference))
+            self.assertFalse(timing.compare("fdc_write", reference, reference))
 
     def test_transfer_trace_integrity(self):
         for case in ("fdc_read", "blitter_shared"):

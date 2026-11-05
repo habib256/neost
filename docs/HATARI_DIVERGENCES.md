@@ -50,6 +50,22 @@ de contradiction avec les sections historiques.
 
 ---
 
+## TOS original et profils compatibles — 2026-11-04
+
+**Différence volontaire de configuration.** Pour TOS 2.05 sur ST, Hatari
+`tos.c:462-478,791 @ f0736b24` modifie la ROM afin de supprimer ses accès STE.
+NeoST conserve la ROM et `Machine::adjustMachineForTos` choisit désormais STE
+si le profil demandé est ST/Mega ST. Les profils STE/Mega STE restent conservés.
+**[C] TOS 2.05 FR `$E00096`** : l'accès au son DMA intervient avant les vecteurs
+d'exception ; le profil ST reste donc incompatible avec cette ROM non modifiée.
+Boot à 2000 trames : bureau identique à Hatari **STE sans patch**, 0 pixel.
+
+L'audit `tools/audit_tos_patches.py` et sa lecture par famille se trouvent dans
+`HATARI_AUTOMATION.md`, section « Patchs TOS ». Les patchs de checksum, de boot
+DMA et les variables RAM préremplies ne sont pas portés. La collision de pile
+TOS 2.06 reste distincte et ouverte : les traces concordent sur 1190 instructions
+depuis `$E01240`, puis divergent à la VBL avant le changement de pile.
+
 ## Lignes NO_DE et STOP_MIDDLE sans palette — corrigé le 2026-10-19
 
 **Sévérité moyenne, défaut NeoST démontré.** `Shifter::finishFrame` ne lançait
@@ -148,7 +164,7 @@ citent les anciens identifiants.*
 | S2 ✅ | Son | ~~DMA STE sans FIFO 8 octets ni avance HBL~~ **corrigé (2026-07-07 soir)** : FIFO 8 octets fetchée par MOTS à chaque HBL (`DmaSound::onHbl` ← `Machine::onHbl`), fin de trame **au fetch** (XSINT/Timer A en avance, HBL-quantifié), octets **capturés au faisceau** pour le rendu (plus de relecture RAM en fin de trame — cas Mental Hangover), réalignement mono→stéréo, compteur $FF8909 = adresse de fetch. Étalon `tools/make_dmasnd_test.py` : 33,3 % d'octets B = oracle Hatari (33,2 %) | moyenne | `DmaSound.cpp` (`fifoRefill`/`updateDac`) | `DmaSnd_FIFO_*` / `DmaSnd_STE_HBL_Update` `dmaSnd.c:342-438,727-741` |
 | D1 | FDC/DMA | **WRITE TRACK STX réinterprété** en secteurs (CRC « nettoyé », statut neutralisé) | moyenne | `StxImage.cpp:293-344` (`reinterpretSaveTrack`), `Fdc.cpp:1674-1701` (`writeTrackStx`) | `FDC_WriteTrack_STX` (TODO, pas de relecture) `stx.c:2027-2134` |
 | D2 | FDC/DMA | **READ TRACK STX** renvoie la piste réécrite (conséquence de D1) | moyenne | `Fdc.cpp:1829` (`readTrackStx`) | `FDC_ReadTrack_STX` `stx.c:1863` |
-| D3 ✅ | FDC/DMA | ~~Flush FIFO↔RAM ne stalle pas le CPU~~ **CORRIGÉ (2026-08-26, 3ᵉ tentative — la bonne formulation est `due + stall + delay`).** Les quatre formulations MESURÉES (sonde `NEOST_FDC_FLUSH_DIAG=1`, régime de rafale, Blood Money) : `nowCyc()+delay` (l'ancien code) = **4203** cyc/flush (+76 vs Hatari) ; `due+delay` (ancrage pur) = 4096 (stall absorbé) ; `nowCyc()+stall+delay` = 4235 (ancrage neutralisé) ; **`due+stall+delay` = 4127,8** — cible Hatari **4127**. La clé est l'ORDRE chez Hatari : `PendingCyclesOver` est capturé EN TÊTE de handler (fdc.c:2332), PUIS `M68000_AddCycles_CE` avance le compteur global, PUIS le réarmement retranche l'overshoot (fdc.c:2388) — le stall échappe donc à l'ancrage et décale réellement la suite. Implémenté : stall 32 cyc aux deux flushs avec l'**invariant BL3** (`addBusWaitCycles` + `Scheduler::addStolenCycles`, hors quantum) ; ancrage sur `Scheduler::firingDue()` ; report du stall via `dmaStallPending_` (transitoire, remis à zéro par RAII à chaque événement, toujours nul à une frontière de trame → non sérialisé). **Validé** : mécanisme chiffré (`NEOST_FDC_LATE_DIAG=1` : dispatch en retard de 6,7 cyc en moyenne, ~107/cycle de 16 o = l'écart 4203→4096) ; **14/14 étalons pixel verts**, dont `nocooper` **0 px vs oracle** (réf re-posée, cf. sa note : la démo exige un ESPACE que `hatari_oracle.sh` n'injecte pas — `--cmd-fifo` + `hatari-event keydown 57`) ; canaris Lethal Xcess (aucun break) et Stardust STE OK. ✅ Suivi lateness 132→252 CLOS (instrumenté le jour même) : **deux pics isolés de Timer D** (161 et 252 cyc) sur ~300 000 échéances — un timer échu pendant une instruction allongée par le stall DMA intra-quantum attend la fin de l'instruction, comme pour tout wait-state. Fidèle ; le régime est inchangé. ⚠ Leçon consignée : DEUX faux verdicts successifs venaient d'artefacts d'outillage — sonde logée dans le correctif (inactive côté témoin), puis AVI oracle FIGÉ (7297 × la même frame) lu comme « diff constante ». Contrôle désormais obligatoire avant tout scan : **md5 de 2-3 frames éloignées de l'AVI**. | — | `Fdc.cpp` (`billDmaCycles`, `fifoPush`/`fifoPull`, `onFdcEvent`) | `FDC_DMA_FIFO_Push/Pull` `fdc.c:1355,1411`, `-PendingCyclesOver` `fdc.c:2332,2388` |
+| D3 ✅ | FDC/DMA | **Cadence disque indépendante du vol de bus CPU (2026-11-04).** Les 32 cycles par bloc DMA sont facturés au CPU et au Scheduler, mais retirés du réarmement FDC : 4096 cycles pour 16 octets MFM, au lieu de 4128. [B] WD177X-00 p. 1-1, 1-5, 1-13 : flux série continu, indépendant du bus RAM. Le précédent verdict « due + stall + delay correct » prouvait seulement l’accord avec Hatari, dont le handler conserve le stall après compensation du retard. **Divergence volontaire** avec `fdc.c:2332,2388 @ f0736b24`. Le banc vérifie désormais séparément la cadence, le travail CPU et la fin de commande ; les captures Hatari restent intactes. L’attente d’index, calculée depuis l’horloge live, est réarmée depuis cette même horloge. | — | `Fdc.cpp` (`billDmaCycles`, `onFdcEvent`) | [fiche WD1772](https://hxc2001.com/download/datasheet/floppy/thirdparty/FDC/WesternDigital/WD%201773%20Floppy%20Disk%20Controller.pdf) |
 | M1 ✅ | MFP | ~~Lignes GPIP on-chip sans machine de fronts AER/DDR~~ **corrigé (bc15a67)** : `gpipSetLine`/`gpipUpdateInterrupt` = port de `MFP_GPIP_Set_Line_Input`, tous les appelants convertis | moyenne | `Mfp.hpp:547-560`, `Mfp.cpp:1101-1116` | `MFP_GPIP_Set_Line_Input` `mfp.c:1143-1219` |
 | S4 ✅ | Son | ~~Table DAC « model » seul~~ **corrigé (2026-07-07 soir)** : table MESURÉE par défaut (`ym2149_fixed_vol.h` vendorisé + port de `interpolate_volumetable`), modèle conservé sous `NEOST_YM_MIXING=model` | moyenne | `YM2149.cpp` `dacTable()` | `YM_TABLE_MIXING` défaut `configuration.c:807`, `sound.c:505-543` |
 | S3 ✅ | Son | ~~Gain LMC ×2 manquant (YM STE −6 dB)~~ **corrigé (2026-07-07 soir)** : `kLmcMakeup=2.0` dans `gainLeft/Right/masterGain` + `kDmaGain` 0.7→0.375 (= ¾×½). Validé : cloche GEM ST vs STE ratio RMS **1.000** ; ratio DMA 0.75 exact | moyenne (audible) | `DmaSound.cpp` | ×2 `dmaSnd.c:1152-1153,1460-1461` + « 3/4 level » `dmaSnd.c:1146-1158` |
@@ -444,8 +460,8 @@ extension DAM NeoST qualifiée ci-dessus.
   exploitable remplace aussi la vue des secteurs par une vue vide. Les anciennes
   données ne réapparaissent plus, même après remontage du `.wd1772`. Choix
   D1/D2 conservés ; READ TRACK reste une reconstruction, sans promesse de flux brut exact.
-- ✅ **D3 déjà porté** : stall 32 cycles bus aux flushs FIFO, échéance suivante
-  `due + stall + delay`. Revérifié le 2026-10-18 ; voir le bilan D3 en tête.
+- ✅ **D3 corrigé selon la fiche (2026-11-04)** : stall CPU de 32 cycles
+  conservé aux flushs FIFO ; échéance FDC `due + delay`. Voir le bilan D3 en tête.
 - **[D4 — faux positif, revérifié le 2026-10-18]** La piste standard de repli
   vaut **6268** dans les deux émulateurs ; la formule 6250 est commentée chez Hatari.
 - ✅ **Registres DMA (2026-10-18)** : le reset FIFO par bascule du bit 8 conserve
@@ -1454,6 +1470,8 @@ divergence HAUTE**, les 4 correctifs sont CORRECTS. La passe remonte surtout des
   (`Blitter.cpp`), comme Hatari `Blitter_Start` (blitter.c:895) ; `finishTransfer` la rabaisse.
 
 ### 🟠 Nouveaux — MOYENNES (fidélité)
+- **Timer B événementiel corrigé (2026-11-04)** : les accès MFP servent désormais le front DE déjà échu avant de lire le compteur. L’exclusion de `TIMER_B` dans `runMfpTimersTo` pouvait rendre la valeur précédente pendant une instruction. Le flux des 25 491 instructions du délai vidéo initial de TOS 2.06 concorde avec Hatari ; la collision de pile ultérieure reste ouverte. Références et limites : `CASE_STUDIES.md`, cas TOS 2.06.
+- **Origine VBL du témoin Hatari — ne pas porter (2026-11-04)** : `video.c:4984-4993 @ f0736b24` soustrait un dépassement mesuré sur l'horloge immédiate à l'horloge globale sans les cycles internes CPU. Les traces TOS 2.06 montrent des périodes PAL raccourcies de 12 cycles sans changement de mode. Une contre-épreuve dans une copie temporaire d'Hatari restaure les origines et périodes de NeoST. À phases d'index imposées identiques, il reste 60 cycles d'écart à AUTO ; la collision NeoST n'est pas fermée. Sources, limites et recettes dans `CASE_STUDIES.md`.
 - **MFP ✅ porté (2026-09-02)** — ~~pas de dispatch des timers échus (`MFP_UpdateTimers`) avant
   lecture des registres d'IRQ~~ : `Mfp::updateTimers` → `Scheduler::runMfpTimersTo` en tête de
   `Mfp::read8`/`write8` (`Mfp.cpp:63-70, 324, 418`), `NEOST_MFP_UPDTIMERS` ON par défaut ;

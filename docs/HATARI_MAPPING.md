@@ -119,7 +119,7 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 |---|---|---|---|
 | mfp.c:519-569 (MFP_Reset) | Mfp.cpp:80-112 (resetChip) + 114-160 (reset) + Machine.hpp:102 | porté | GPIP = 0x00 comme Hatari, mais entrées recalculées à la lecture : repos $F9 (ST) / $F1 (avec blitter) contre $B1 chez Hatari — bits 6 (RI) et 3 (GPU_DONE) tirés haut sur le matériel (HATARI_DIVERGENCES § Cas où NeoST améliore Hatari). |
 | mfp.c:390-393, 431-451 + cycInt.c:26-45 (conversions, unités internes) | Mfp.cpp:629-650, 769-801 | porté (2026-08-14) | Période et échéance en 1/256 cycle CPU (`timerPeriodSubCycles`, `timerDueSub_`), comme CYCINT_SHIFT=8 d'Hatari. Le rechargement repart de l'échéance fractionnaire. Candidat n°4 clos. |
-| mfp.c:681-692 (MFP_UpdateTimers avant CHAQUE accès registre) | `Mfp::updateTimers` Mfp.cpp:63-70 (en tête de read8 :324 et write8 :418) + `Scheduler::runMfpTimersTo` | porté (timers délai) | Défaut ON (NEOST_MFP_UPDTIMERS). TIMER_B event-count est exclu à dessein (Scheduler.hpp). Le repli modulo reste dans readTimerData (Mfp.cpp:735-741). Candidat n°5 clos pour A/B/C/D en mode délai. |
+| mfp.c:681-692 (MFP_UpdateTimers avant CHAQUE accès registre) | `Mfp::updateTimers` Mfp.cpp:63-70 (en tête de read8 :324 et write8 :418) + `Scheduler::runMfpTimersTo` | porté (timers délai + DE) | Défaut ON (NEOST_MFP_UPDTIMERS). Depuis le 2026-11-04, inclut aussi le front DE échu de TIMER_B : une lecture TBDR au milieu d’une instruction ne doit pas attendre le dispatch global. Le repli modulo reste dans readTimerData (Mfp.cpp:735-741). Candidat n°5 clos pour A/B/C/D en mode délai. |
 | mfp.c:736-799 (GetIRQ_CPU + délai 4 cyc) | Mfp.cpp:1234-1238, 1176-1192 | porté | Front visible à irqTime_+4 via événement MFP_IRQ. |
 | mfp.c:893-913 (ProcessIRQ frontière) | Mfp.cpp:20-21, 1181-1189 (g_mfpExact bit1) | porté | Défaut NEOST_MFP_EXACT=3. |
 | mfp.c:946-983 (MFP_UpdateIRQ) | Mfp.cpp:1165-1193 (updateIrq) | porté | Antidatage timers, retombée si bloquée — 1:1. |
@@ -138,7 +138,7 @@ précision proposés, **43 confirmés** (36 uniques après déduplication), **8 
 | mfp.c:1386-1393 (jitter LX, PC codé en dur) | — | volontaire | NeoST résout LX par le vrai beam-sync. |
 | mfp.c:1448-1453 (TimerBEventCountCycleStart) | — (équivalent par construction) | porté | TBCR relu live au dispatch de chaque ligne. |
 | mfp.c:1552-1633 (ReadTimer, règle « <1 unité au stop ») | Mfp.cpp:711-756, 679-704 | porté | + repli modulo (Captain Blood). |
-| mfp.c:2552-2594 (hack TBDR event-count) | Mfp.cpp:361-366 | **partiel ⚠** | CONFIRMÉ : hack requis seulement si !CE chez Hatari. NeoST garde une fenêtre ≤1 instruction, car TIMER_B event-count est exclu d'updateTimers. |
+| mfp.c:2552-2594 (hack TBDR event-count) | Mfp.cpp:361-366 | **corrigé (2026-11-04)** | Le hack non-CE n’est pas repris : `runMfpTimersTo` sert le front DE échu avant la lecture, comme le chemin CE. Test lecture/recharge/IRQ sans double comptage ; capture exacte au signal DS encore distincte. |
 | mfp.c (M68000_WaitState(4) tous handlers) | Bus.cpp:892-896, 904 + Cpu68k.cpp:1147-1149 | porté | 4 cyc/accès sans dédup, octet impair seulement. |
 | mfp.c:1957-2028 (GPIP_ReadByte) | Mfp.cpp:326-336 | porté | Sorties = verrou, entrées calculées live. |
 | mfp.c:2700-2731 (GPIP_WriteByte) | Mfp.cpp:420 | porté | Équivalence démontrée en commentaire (jamais de front possible). |
@@ -363,7 +363,7 @@ MFP d'Hatari en cycles bus laisse +3/+4 cycles à 16 MHz : la constante reste
 |---|---|---|---|
 | cycInt.c (Add*/InsertInt, liste triée) | Scheduler.hpp:128-170, 336-421 | porté | Tableau + cache O(1) ; tie-break par énum documenté. |
 | cycInt.c:531-552 + PendingInterruptCount | Machine.cpp:679-687 + Scheduler.hpp:183-186 | porté | Dispatch frontière d'instruction (CE) ; sync-driven mid-instruction RÉFUTÉ (deadlock EL), supprimé (A34). |
-| cycInt.c:340-363 (DelayedCycles, anti-dérive) | Scheduler.hpp:406, 423 (firingDue) + Machine.cpp | porté | Vidéo sur grille théorique, MFP et FDC sur firingDue (Fdc.cpp:2719-2721). |
+| cycInt.c:340-363 (DelayedCycles, anti-dérive) | Scheduler.hpp:406, 423 (firingDue) + Machine.cpp | porté | Vidéo sur grille théorique, MFP et transferts FDC sur firingDue ; attentes d’index FDC depuis live, origine du calcul du temps restant (2026-11-04). |
 | cycInt.c:26-45 + cycInt.h:53-63 (unités internes ×256) | Mfp.cpp:629-646, 769-801 | porté | Unité 1/256 cycle (CYCINT_SHIFT=8) et reste fractionnaire conservé entre recharges (timerDueSub_). |
 | cycInt.c:486-497 (FindCyclesRemaining) | Scheduler.hpp:312-326 | porté | rawCyclesUntil plus fin qu'Hatari. |
 | cycles.c:47 (CyclesGlobalClockCounter) | Cpu68k.cpp:233-238, 963-965 | porté | Horloge maîtresse = compteur Moira, continue. |
@@ -592,7 +592,7 @@ timing d'abord. Effort : S (< ½ journée, localisé) / M (chantier borné) / L 
 | # | Candidat | Hatari | NeoST | Effort |
 |---|---|---|---|---|
 | 1 | **Wait states FDC/DMA portés le 2026-10-18** : 4 cycles CPU par handler, lecture SCREG/statut DMA et adresses sans attente | fdc.c (DiskController*_Word, DmaModeControl), m68000.c (WaitState) | Fdc.cpp (registerWait), tests/fdc_timing_logic.cpp | clos |
-| 2 | **Ancrage anti-dérive déjà porté**, avec conservation du stall DMA | fdc.c:2310-2316, 2370 | Fdc.cpp (onFdcEvent), vérifié 2026-10-18 | clos |
+| 2 | **Ancrage anti-dérive corrigé (2026-11-04)** : coût CPU DMA conservé, flux disque non ralenti | fdc.c:2310-2316, 2370 | Fdc.cpp (onFdcEvent), vérifié 2026-10-18 | clos |
 | 3 | **Stall FIFO DMA déjà porté**, 32 cycles bus au flush de 16 octets | fdc.c:1340,1396 | Fdc.cpp (billDmaCycles), clos 2026-08-26 | clos |
 | 4 | ~~**Conversion MFP→CPU avec reste accumulé**~~ **PORTÉE** (2026-08-14) : échéances absolues ×256, plafond vers le Scheduler, phase sérialisée (v11) ; Timer C 200 Hz = 40106,238 cycles sans dérive | cycInt.c:21-47, cycInt.h:53-63, mfp.c:1408-1423 | Mfp.cpp (`timerPeriodSubCycles`, `scheduleTimerAt`) | — |
 | 5 ✅ | **Fait le 2026-09-02** (`Mfp::updateTimers` → `Scheduler::runMfpTimersTo`, NEOST_MFP_UPDTIMERS actif par défaut) — **MFP_UpdateTimers avant lecture IPR/ISR/TBDR** (poll vu ≤1 instruction en retard en mode bloc ; runTo ciblé sur les sources TIMER_* au read MMIO $FFFAxx, sans réactiver le sync-driven réfuté) | mfp.c:681-692 (+ ~30 handlers) | Mfp.cpp:63-70, 324, 418 | clos |

@@ -98,8 +98,9 @@ int testFdcLiveMedia() {
         const bool ok = std::fwrite(image.data(), 1, image.size(), f) == image.size();
         std::fclose(f); if (!ok) return 1;
     }
-    for (bool write : {false, true}) {
+    for (MachineType machine : {MachineType::St, MachineType::Ste}) for (bool write : {false, true}) {
         Rig r;
+        r.bus.machine = machine;
         c.equal("montage A 2 spt", r.fdc.loadImage(paths[0].string(), 0), true);
         c.equal("montage B 1 spt", r.fdc.loadImage(paths[1].string(), 1), true);
         r.select(5);
@@ -110,7 +111,9 @@ int testFdcLiveMedia() {
         r.mode(write ? 0x180 : 0x80); r.data(write ? 0xA8 : 0x88);
         unsigned n = 0;
         while (++n < 10000 && r.next()) {
-            if (write ? r.address() >= 0x2010 : r.sched.nextDue() - r.live == 38 * 256) break;
+            // Gap de 38 octets : 9728 cycles FDC, soit 9741 cycles BUS sur STE.
+            const int gap = machine == MachineType::St ? 9728 : 9741;
+            if (write ? r.address() >= 0x2010 : r.sched.nextDue() - r.live == gap) break;
         }
         c.equal("point de changement atteint", n < 10000, true);
         c.equal("commande encore busy", r.fdc.read8(0xFF8605) & 1, 1);

@@ -1,31 +1,41 @@
 # Community 163
 
-> 10 nodes · cohesion 0.20
+> 19 nodes
 
 ## Key Concepts
 
-- **Model** (10 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68000** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68010** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68EC020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68EC030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68EC040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **M68LC040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Rig** (20 connections) — `tests/ipf_image_logic.cpp`
+- **.readSector()** (5 connections) — `tests/ipf_image_logic.cpp`
+- **.reg()** (5 connections) — `tests/ipf_image_logic.cpp`
+- **.finish()** (3 connections) — `tests/ipf_image_logic.cpp`
+- **.mode()** (3 connections) — `tests/ipf_image_logic.cpp`
+- **.irq()** (2 connections) — `tests/ipf_image_logic.cpp`
+- **.select()** (2 connections) — `tests/ipf_image_logic.cpp`
+- **.Rig()** (1 connections) — `tests/ipf_image_logic.cpp`
+- **Bus** (1 connections)
+- **Fdc** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **YM2149** (1 connections)
+- **bus** (1 connections) — `tests/ipf_image_logic.cpp`
+- **fdc** (1 connections) — `tests/ipf_image_logic.cpp`
+- **live** (1 connections) — `tests/ipf_image_logic.cpp`
+- **mfp** (1 connections) — `tests/ipf_image_logic.cpp`
+- **psg** (1 connections) — `tests/ipf_image_logic.cpp`
+- **sched** (1 connections) — `tests/ipf_image_logic.cpp`
 
 ## Relationships
 
-- [MoiraTypes.h](MoiraTypes.h.md) (1 shared connections)
+- [Community 153](Community_153.md) (7 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraTypes.h`
+- `tests/ipf_image_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
+- EXTRACTED: 30 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

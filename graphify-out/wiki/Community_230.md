@@ -1,36 +1,38 @@
 # Community 230
 
-> 11 nodes · cohesion 0.18
+> 12 nodes
 
 ## Key Concepts
 
-- **Model** (9 connections) — `src/io/CartridgeKey.hpp`
-- **.setModel()** (5 connections) — `src/io/CartridgeKey.hpp`
-- **.serialize()** (4 connections) — `src/io/CartridgeKey.hpp`
-- **.reset()** (3 connections) — `src/io/CartridgeKey.hpp`
-- **.model()** (3 connections) — `src/io/CartridgeKey.hpp`
-- **StateArchive** (1 connections)
-- **Auto** (1 connections) — `src/io/CartridgeKey.hpp`
-- **Cubase2** (1 connections) — `src/io/CartridgeKey.hpp`
-- **Cubase3** (1 connections) — `src/io/CartridgeKey.hpp`
-- **None** (1 connections) — `src/io/CartridgeKey.hpp`
-- **Notator** (1 connections) — `src/io/CartridgeKey.hpp`
+- **AudioPacer** (12 connections) — `src/core/Pacing.hpp`
+- **testPacing()** (11 connections) — `tests/selftest_logic.cpp`
+- **.applyMasterVolume()** (2 connections) — `src/core/Pacing.hpp`
+- **.clampStereo()** (2 connections) — `src/core/Pacing.hpp`
+- **.samplesForFrame()** (2 connections) — `src/core/Pacing.hpp`
+- **.volumeSmoothed()** (2 connections) — `src/core/Pacing.hpp`
+- **frameNanos()** (2 connections) — `src/core/Pacing.hpp`
+- **.carry()** (1 connections) — `src/core/Pacing.hpp`
+- **.reset()** (1 connections) — `src/core/Pacing.hpp`
+- **kMaxAdjust** (1 connections) — `src/core/Pacing.hpp`
+- **kServoDivisor** (1 connections) — `src/core/Pacing.hpp`
+- **volSmooth_** (1 connections) — `src/core/Pacing.hpp`
 
 ## Relationships
 
-- [Community 150](Community_150.md) (5 shared connections)
-- [Community 215](Community_215.md) (3 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
-- [Community 248](Community_248.md) (1 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 61](Community_61.md) (1 shared connections)
+- [Community 245](Community_245.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/CartridgeKey.hpp`
+- `src/core/Pacing.hpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (85%)
-- INFERRED: 3 (15%)
+- EXTRACTED: 17 (71%)
+- INFERRED: 7 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

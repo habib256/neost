@@ -185,7 +185,7 @@ public:
         else now_ = cycle;
     }
 
-    // Dispatch CIBLÉ des timers MFP DATÉS (TIMER_A/B_DELAY/C/D) échus à `cycle` — port
+    // Dispatch ciblé des timers MFP et des fronts DE de Timer B échus à `cycle` — port
     // RESTREINT de `MFP_UpdateTimers` ([D] mfp.c:681 @ f0736b24), qu'Hatari appelle avant
     // CHAQUE accès registre du MFP « to ensure MFP timers are updated in chronological
     // order ».
@@ -208,9 +208,12 @@ public:
     // déplace le faisceau vidéo sous les pieds du rendu. Les quatre timers DÉLAI du MFP,
     // eux, ne touchent QUE l'état du MFP (compteur rechargé, IRQ antidatée à l'échéance
     // via `firingDue()`), donc les anticiper ne peut réordonner aucune autre puce.
-    // TIMER_B (event-count) est délibérément EXCLU : il n'est pas daté par une période
-    // calculée mais posé par `Machine` sur le Display-Enable, et l'avancer déplacerait
-    // un tic vidéo.
+    // [B] MC68901, janvier 1984, § 5.1.3 p. 5-3 (MC68901_Jan84.pdf, sha256 5441a092) :
+    // le compteur événementiel suit TBI indépendamment du CPU.
+    // TIMER_B doit donc aussi consommer un front DE déjà passé avant un accès MFP.
+    // Son callback vérifie le front Glue et avance le compteur, sans rendre la ligne
+    // ni servir HBL/VBL. [D] Hatari mfp.c:2536-2590 @ f0736b24 : en cycle-exact,
+    // MFP_UpdateTimers sert également ce front avant de lire TBDR.
     //
     // `now_` n'est PAS avancé : il reste l'horloge DISPATCHÉE du modèle bloc. On ne fait
     // qu'anticiper des événements que le prochain `runTo` aurait servis de toute façon,
@@ -461,9 +464,9 @@ private:
     static bool isMfpTimer(int s) {              // sources dont le retard dépend de la préemption
         return s == TIMER_A || s == TIMER_B_DELAY || s == TIMER_C || s == TIMER_D;
     }
-    // Les MÊMES quatre sources en masque, pour runMfpTimersTo (TIMER_B event-count exclu).
+    // Les quatre timers délai et le front DE de Timer B, pour les accès MFP.
     static constexpr uint32_t kMfpTimerMask =
-        (1u << TIMER_A) | (1u << TIMER_B_DELAY) | (1u << TIMER_C) | (1u << TIMER_D);
+        (1u << TIMER_A) | (1u << TIMER_B) | (1u << TIMER_B_DELAY) | (1u << TIMER_C) | (1u << TIMER_D);
     // Scan complet du plus proche événement dû (-1 si aucun). N'est plus sur le chemin
     // chaud : runTo calcule désormais ce minimum au passage (cf. minAll). Il ne reste
     // appelé que par cancel() de l'échéance minimale et par le nextDue() public.

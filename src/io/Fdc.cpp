@@ -153,7 +153,7 @@ enum {
     RUN_MOTOR_STOP, RUN_MOTOR_STOP_WAIT, RUN_MOTOR_STOP_COMPLETE,
 };
 
-// --- Constantes de temps (cycles FDC = cycles CPU ≈ 8,021 MHz sur ST) -------
+// --- Constantes de temps en cycles FDC (conversion BUS à l'ordonnancement) --
 // [B] WD177X-00 p. 1-5 : horloge de 8 MHz, base des délais de la fiche. [D] fdc.c:385 @ f0736b24 :
 // 8,021247 MHz sur ST, hors de la tolérance de 0,1 % de la p. 1-2.
 static constexpr int64_t MFM_BYTE         = 4 * 8 * 8;     // 256 cyc : 4µs/bit × 8 bits × 8 MHz ([B] p. 1-1 : 250 kbit/s en MFM)
@@ -1044,12 +1044,28 @@ int Fdc::bytesPerTrackStx(int track, int side) const {
     return sz > 0 ? sz : BYTES_PER_TRACK;
 }
 
+// [B] Atari, STe Schematic C300780-001 rev. A, 03/10/1989, feuille 3/6 :
+// U303=8.010613 MHz, SCLK va directement à CLK du WD1772 U301, distinct de CLK8.
+// https://info-coach.fr/atari/documents/general/ste/STe_Schematic_10-3-1989.pdf
+// SHA-256 408a1394282157945447ede283a78b96050a256316e296e98b583a75fc1fed05.
+// [D] Hatari clocks_timings.c:137-146,218-241,270-276 @ f0736b24 : bus PAL
+// à 8 021 247 Hz ; même SCLK FDC sur Mega STE. Le Scheduler compte en cycles BUS.
+// Arrondi par événement comme FDC_FdcCyclesToCpuCycles (fdc.c:1009-1021).
+int64_t Fdc::fdcToBusCycles(int64_t cycles) const {
+    if (bus_.machine == MachineType::St || bus_.machine == MachineType::MegaSt) return cycles;
+    return (cycles * 8021247 + 8010613 / 2) / 8010613;
+}
+int64_t Fdc::busToFdcCycles(int64_t cycles) const {
+    if (bus_.machine == MachineType::St || bus_.machine == MachineType::MegaSt) return cycles;
+    return (cycles * 8010613 + 8021247 / 2) / 8021247;
+}
+
 // Période d'un tour : constante pour .ST, dérivée de la longueur de piste pour STX
 // (au débit de la densité du média : une piste HD a 2× plus d'octets, 2× plus vite).
 int64_t Fdc::cyclesPerRev() const {
     if (driveSel_ >= 0 && drive_[driveSel_].imgType == FloppyDisk::IMG_STX) {
         const int sz = bytesPerTrackStx(drive_[driveSel_].headTrack, side_);
-        return int64_t(sz) * MFM_BYTE / densityFactor();
+        return fdcToBusCycles(int64_t(sz) * MFM_BYTE / densityFactor());
     }
     return CYCLES_PER_REV;
 }
@@ -1113,13 +1129,13 @@ void Fdc::indexIncrease(int64_t ipTime) {
 int Fdc::indexCurrentPosBytes() const {
     if (driveSel_ < 0 || indexTime_ == 0) return -1;
     const int64_t since = nowCyc() - indexTime_;
-    return int(since * densityFactor() / MFM_BYTE);        // HD : 2× plus d'octets/tour
+    return int(busToFdcCycles(since) * densityFactor() / MFM_BYTE); // HD : 2× plus d'octets/tour
 }
 
 // Position tête depuis l'index en CYCLES FDC (STX : BitPosition est en bits/cycles).
 int Fdc::indexCurrentPosCycles() const {
     if (driveSel_ < 0 || indexTime_ == 0) return -1;
-    return int(nowCyc() - indexTime_);
+    return int(busToFdcCycles(nowCyc() - indexTime_));
 }
 
 bool Fdc::indexState() const {
@@ -1241,18 +1257,14 @@ void Fdc::billDmaCycles(int n) {
     // L'invariant stall CPU + crédit ordonnanceur (discriminant Cpu68k::inRun) vit
     // dans Bus::stealBusCycles (A23) — même primitive que Blitter::billCycles.
     bus_.stealBusCycles(sched_, n);
-    // Le stall doit AUSSI décaler la prochaine échéance du FDC. Chez Hatari c'est
-    // automatique : `M68000_AddCycles_CE` avance le compteur global, qui EST la base
-    // de temps des échéances CycInt. Ici les deux sont distincts, donc on mémorise le
-    // stall et `onFdcEvent` le reporte sur le réarmement. Sans ce report, l'ancrage
-    // anti-dérive ABSORBE les 32 cycles et la cadence retombe au modèle sans stall
-    // (mesuré : 4096 cyc/flush au lieu des 4127 d'Hatari).
-    dmaStallPending_ += n;
+    // [B] WD177X-00 p. 1-1, 1-5, 1-13 (SHA-256 a2b26709…fe8388) : le flux
+    // série et DRQ suivent CLK et le disque, pas le bus mémoire du CPU. Le vol
+    // de bus est bien facturé ci-dessus, mais ne doit PAS ralentir ce flux.
 }
 
 // SONDE (NEOST_FDC_FLUSH_DIAG=1) : cycles écoulés entre deux flushs FIFO de 16 o.
-// C'est LA grandeur qui mesure D3 — l'audit de 2026-08-25 l'a chiffrée à 4173
-// cyc/flush pour NeoST contre 4127 pour Hatari, le modèle sans stall valant 4096.
+// Cadence DD attendue : 4096 cycles, indépendamment des 32 cycles de bus CPU.
+// L'ancien alignement sur les ~4127 cycles d'Hatari ralentissait aussi le disque.
 //
 // ⚠ ELLE EST APPELÉE DEPUIS LES SITES DE FLUSH, PAS DEPUIS billDmaCycles. Le
 // 2026-08-26 elle y était logée, et comme `billDmaCycles` n'est appelée QUE si le
@@ -2964,7 +2976,7 @@ void Fdc::executeCommand(uint8_t cmd) {
     replaceCommandPossible_ = true;     // remplaçable pendant prepare+spinup ([D] fdc.c:4567 @ f0736b24 ; ⚠ cf. write8)
     // Le délai de préparation (type I/II/III/IV) est une commande, donc accéléré en
     // mode « FDC rapide » (jamais cadencé sur la rotation).
-    if (sched_) sched_->schedule(Scheduler::FDC, nowCyc() + applyFastFdc(fdcCycles));
+    if (sched_) sched_->schedule(Scheduler::FDC, nowCyc() + fdcToBusCycles(applyFastFdc(fdcCycles)));
 }
 
 // Échéance de la machine à états : avance d'une ou plusieurs phases (les phases
@@ -3008,21 +3020,12 @@ void Fdc::onFdcEvent() {
         }
     }
 
-    // ⚠ Remis à zéro à CHAQUE événement, y compris ceux qui ne réarment PAS : sinon le
-    // report s'accumulait d'un événement à l'autre au lieu de valoir UN stall — mesuré,
-    // c'est ce qui donnait 4235 cyc/flush au lieu de 4128.
-    struct StallReset { int64_t& v; ~StallReset() { v = 0; } } stallReset{dmaStallPending_};
     if (command_ != CMD_NULL && sched_) {
         // Délai de commande/transfert → accéléré en mode « FDC rapide » ; délai cadencé
         // sur la rotation (spin-up, arrêt moteur, attente d'index) → durée réelle.
-        const int delay = delayIndexPaced_ ? fdcCycles : applyFastFdc(fdcCycles);
-        // SONDE (NEOST_FDC_LATE_DIAG=1) : de COMBIEN l'échéance FDC est-elle servie en
-        // retard ? C'est la grandeur qui décide du chantier D3 : chez Hatari,
-        // `-PendingCyclesOver` ne compense QUE ce dépassement-là, qui est petit
-        // (dispatch cycle-exact). Si NeoST dispatche avec un retard BIEN plus grand
-        // (granularité du bloc CPU), alors réancrer sur `firingDue()` ne « porte » pas
-        // le mécanisme d'Hatari : ça retranche un retard qu'Hatari n'a jamais eu — ce
-        // qui expliquerait le doublement du débit DMA mesuré le 2026-08-26.
+        const int delay = delayIndexPaced_ ? fdcCycles : int(fdcToBusCycles(applyFastFdc(fdcCycles)));
+        // SONDE (NEOST_FDC_LATE_DIAG=1) : retard de dispatch par rapport à
+        // l'échéance, distinct de la cadence du flux et du coût du DMA RAM.
         static const bool lateDiag = std::getenv("NEOST_FDC_LATE_DIAG") != nullptr;
         if (lateDiag) {
             const int64_t due = sched_->firingDue();
@@ -3036,22 +3039,19 @@ void Fdc::onFdcEvent() {
                                  n, double(sum) / double(n), (long long)mx, delay);
             }
         }
-        // FORMULATION COMPLÈTE du couple D3 (la seule jamais mesurée jusqu'ici) :
-        //   échéance suivante = due + stall + delay
-        // C'est exactement l'arithmétique d'Hatari, où l'ORDRE fait tout :
-        // PendingCyclesOver est capturé EN TÊTE de handler ([D] fdc.c:2332 @ f0736b24), PUIS le stall
-        // M68000_AddCycles_CE avance le compteur global, PUIS le réarmement se fait
-        // « maintenant − overshoot + delay » ([D] fdc.c:2388 @ f0736b24) = due + stall + delay.
-        // → l'ancrage retire le retard de DISPATCH (mesuré : 6,7 cyc/échéance, ~107
-        //   par cycle de 16 octets — l'écart 4203→4096), mais PAS le stall, qui décale
-        //   réellement la suite. Cadence attendue : 16×256 + 32 = 4128 ≈ 4127 (Hatari).
-        // Les deux variantes partielles sont FAUSSES et ont été mesurées comme telles :
-        //   due + delay            → 4096 (stall absorbé, modèle sans stall)
-        //   nowCyc() + stall+delay → 4235 (ancrage neutralisé)
-        // dmaStallPending_ est remis à zéro par le StallReset en tête d'événement.
+        // [B] WD177X-00 p. 1-1, 1-5, 1-13 : cadence indépendante du DMA RAM.
+        // Les 32 cycles de vol de bus restent dans l'horloge CPU/ordonnanceur ;
+        // les ajouter ici retardait AUSSI le prochain octet, soit 4128 au lieu
+        // de 4096 cycles par bloc de 16 octets MFM. Le disque ne s'arrête pas.
+        // [D] Divergence volontaire avec Hatari fdc.c:2332,2388 @ f0736b24 :
+        // son réarmement conserve ce stall après compensation du retard.
         const int64_t fdcDue = sched_->firingDue();
+        // nextIndexCycles() mesure depuis nowCyc(), contrairement aux périodes
+        // de transfert. La réancrer sur firingDue() retranchait le retard de
+        // dispatch une seconde fois et réveillait READ TRACK avant l'index.
+        const int64_t base = delayIndexPaced_ || fdcDue < 0 ? nowCyc() : fdcDue;
         sched_->schedule(Scheduler::FDC,
-                         (fdcDue >= 0 ? fdcDue : nowCyc()) + dmaStallPending_ + delay);
+                         base + delay);
     }
 }
 

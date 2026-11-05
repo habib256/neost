@@ -1,23 +1,25 @@
 # Community 357
 
-> 2 nodes · cohesion 1.00
+> 4 nodes
 
 ## Key Concepts
 
-- **.setDmaGate()** (2 connections) — `src/audio/Audio.hpp`
-- **function** (2 connections)
+- **KioskKey** (4 connections) — `src/gui/KioskMenu.hpp`
+- **kind** (1 connections) — `src/gui/KioskMenu.hpp`
+- **label** (1 connections) — `src/gui/KioskMenu.hpp`
+- **scancode** (1 connections) — `src/gui/KioskMenu.hpp`
 
 ## Relationships
 
-- [Audio](Audio.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Audio.hpp`
+- `src/gui/KioskMenu.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,31 +1,45 @@
 # Community 269
 
-> 5 nodes · cohesion 0.50
+> 13 nodes
 
 ## Key Concepts
 
-- **applyCrtPreset()** (5 connections) — `src/gui/CrtUi.cpp`
-- **drawCrtControls()** (5 connections) — `src/gui/CrtUi.cpp`
-- **drawCrtSettings()** (4 connections) — `src/gui/CrtUi.cpp`
-- **App** (2 connections)
-- **string** (1 connections)
+- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (19 connections) — `CHANGELOG.md`
+- **.midiOutApply()** (6 connections) — `src/gui/App.hpp`
+- **.switchKioskMode()** (6 connections) — `src/gui/App.hpp`
+- **.neBackend()** (5 connections) — `src/gui/App.hpp`
+- **.resolvePath()** (4 connections) — `src/gui/App.hpp`
+- **.usatanApply()** (3 connections) — `src/gui/App.hpp`
+- **.etherApply()** (3 connections) — `src/gui/App.hpp`
+- **.netUsbeeApply()** (3 connections) — `src/gui/App.hpp`
+- **.toggleFullscreen()** (3 connections) — `src/gui/App.hpp`
+- **Slirp : le « dernier pas » est clos — 5/5, le coupable était Little Snitch (2026-08-27)** (2 connections) — `CHANGELOG.md`
+- **NetBackend** (1 connections)
+- **Et les trois avertissements que personne ne voyait plus** (1 connections) — `CHANGELOG.md`
+- **Et une affirmation fausse trouvée en corrigeant ces renvois** (1 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [cstdint](cstdint.md) (3 shared connections)
-- [CrtParams](CrtParams.md) (1 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [PortDevices](PortDevices.md) (1 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
+- [Community 4](Community_4.md) (9 shared connections)
+- [Community 1](Community_1.md) (8 shared connections)
+- [Community 101](Community_101.md) (3 shared connections)
+- [Community 223](Community_223.md) (3 shared connections)
+- [Community 200](Community_200.md) (3 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 76](Community_76.md) (2 shared connections)
+- [Community 84](Community_84.md) (1 shared connections)
+- [Community 229](Community_229.md) (1 shared connections)
+- [Community 249](Community_249.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/CrtUi.cpp`
+- `CHANGELOG.md`
+- `src/gui/App.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (75%)
-- INFERRED: 3 (25%)
+- EXTRACTED: 25 (56%)
+- INFERRED: 20 (44%)
 - AMBIGUOUS: 0 (0%)
 
 ---

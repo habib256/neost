@@ -1,16 +1,16 @@
 # Community 315
 
-> 3 nodes · cohesion 0.67
+> 3 nodes
 
 ## Key Concepts
 
-- **Fc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Fc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Pcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Pcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
-- [StrWriter.h](StrWriter.h.md) (1 shared connections)
+- [Community 135](Community_135.md) (1 shared connections)
 
 ## Source Files
 

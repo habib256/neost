@@ -1,13 +1,12 @@
 # Community 50
 
-> 43 nodes · cohesion 0.07
+> 37 nodes
 
 ## Key Concepts
 
 - **SlirpBackend** (35 connections) — `src/net/SlirpBackend.hpp`
 - **SlirpBackend.cpp** (25 connections) — `src/net/SlirpBackend.cpp`
 - **.open()** (7 connections) — `src/net/SlirpBackend.hpp`
-- **Timer** (5 connections) — `src/net/SlirpBackend.hpp`
 - **strace()** (5 connections) — `src/net/SlirpBackend.cpp`
 - **.fireDueTimers()** (4 connections) — `src/net/SlirpBackend.hpp`
 - **.poll()** (4 connections) — `src/net/SlirpBackend.hpp`
@@ -16,7 +15,6 @@
 - **.cbSendPacket()** (3 connections) — `src/net/SlirpBackend.hpp`
 - **.cbGuestError()** (3 connections) — `src/net/SlirpBackend.hpp`
 - **.cbTimerNewOpaque()** (3 connections) — `src/net/SlirpBackend.hpp`
-- **poll** (3 connections)
 - **.cbNotify()** (2 connections) — `src/net/SlirpBackend.hpp`
 - **.close()** (2 connections) — `src/net/SlirpBackend.hpp`
 - **.cbClockNs()** (2 connections) — `src/net/SlirpBackend.hpp`
@@ -29,14 +27,17 @@
 - **.netmask()** (2 connections) — `src/net/SlirpBackend.hpp`
 - **.isOpen()** (1 connections) — `src/net/SlirpBackend.hpp`
 - **.name()** (1 connections) — `src/net/SlirpBackend.hpp`
-- *... and 18 more nodes in this community*
+- **.rxFrames()** (1 connections) — `src/net/SlirpBackend.hpp`
+- **SlirpBackend::SlirpBackend()** (1 connections) — `src/net/SlirpBackend.cpp`
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
-- [Community 165](Community_165.md) (4 shared connections)
-- [Community 100](Community_100.md) (3 shared connections)
-- [cstdint](cstdint.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 399](Community_399.md) (3 shared connections)
 - [Community 249](Community_249.md) (2 shared connections)
+- [Community 300](Community_300.md) (1 shared connections)
 - [Community 220](Community_220.md) (1 shared connections)
 
 ## Source Files
@@ -46,8 +47,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 73 (94%)
-- INFERRED: 5 (6%)
+- EXTRACTED: 67 (93%)
+- INFERRED: 5 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

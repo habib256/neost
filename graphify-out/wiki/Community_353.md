@@ -1,32 +1,26 @@
 # Community 353
 
-> 10 nodes · cohesion 0.20
+> 3 nodes
 
 ## Key Concepts
 
-- **** (10 connections) — `src/io/StxImage.hpp`
-- **FLAG_CRC** (1 connections) — `src/io/StxImage.hpp`
-- **FLAG_FUZZY** (1 connections) — `src/io/StxImage.hpp`
-- **FLAG_LOST_DATA** (1 connections) — `src/io/StxImage.hpp`
-- **FLAG_RECORD_TYPE** (1 connections) — `src/io/StxImage.hpp`
-- **FLAG_RNF** (1 connections) — `src/io/StxImage.hpp`
-- **FLAG_VARIABLE_TIME** (1 connections) — `src/io/StxImage.hpp`
-- **TRACK_FLAG_IMAGE** (1 connections) — `src/io/StxImage.hpp`
-- **TRACK_FLAG_IMAGE_SYNC** (1 connections) — `src/io/StxImage.hpp`
-- **TRACK_FLAG_SECTOR_BLOCK** (1 connections) — `src/io/StxImage.hpp`
+- **mfp_usart_control_logic.cpp** (4 connections) — `tests/mfp_usart_control_logic.cpp`
+- **testMfpUsartControl()** (3 connections) — `tests/mfp_usart_control_logic.cpp`
+- **main()** (2 connections) — `tests/mfp_usart_control_logic.cpp`
 
 ## Relationships
 
-- [StxImage](StxImage.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/StxImage.hpp`
+- `tests/mfp_usart_control_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

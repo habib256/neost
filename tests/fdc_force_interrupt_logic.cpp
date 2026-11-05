@@ -1,6 +1,7 @@
 // Sélection PSG et index avant accès WD1772 : registres publics + Scheduler.
 // Références Hatari : psg.c:FDC_SetDriveSide, fdc.c:FDC_UpdateAll et accès $8604.
 #include "core/Bus.hpp"
+#include "core/Cpu68k.hpp"
 #include "core/Scheduler.hpp"
 #include "core/YM2149.hpp"
 #include "io/Fdc.hpp"
@@ -134,6 +135,47 @@ int testFdcForceInterrupt() {
         c.equal("disque absent sans impulsion", r.pulses, pulses);
         c.equal("disque absent sans IRQ index", r.irq(), false);
         c.equal("DMA adresse intacte", r.address(), 0);
+    }
+    {
+        Rig r;
+        c.equal("montage index daté", r.fdc.loadImage(path.string()), true);
+        int64_t due = r.armIndex();
+        for (int late : {37, 19, 0}) {
+            r.advance(due + late);
+            c.equal("index suivant indépendant du retard de dispatch", r.sched.nextDue(), due + 1604249);
+            due += 1604249;
+        }
+    }
+    for (bool withCpu : {false, true}) {
+        // [B] WD177X-00 p. 1-1 et 1-5 : 32 µs par octet MFM à CLK=8 MHz.
+        // Le DMA RAM stalle le CPU, sans ralentir la réception série du WD1772.
+        Rig r;
+        Cpu68k cpu(r.bus);
+        c.equal("montage cadence DMA", r.fdc.loadImage(path.string()), true);
+        r.select(5); r.read(1);
+        if (withCpu) r.bus.cpu = &cpu;
+        int64_t cpuStalls = 0;
+        uint32_t address = r.address();
+        int64_t lastFlush = -1;
+        int flushes = 0;
+        for (unsigned n = 0; n < 10000 && !r.irq(); ++n) {
+            if (withCpu && r.sched.nextDue() > cpu.busClockNow())
+                cpu.addBusWaitCycles(int(r.sched.nextDue() - cpu.busClockNow()));
+            const int64_t cpuBefore = cpu.busClockNow();
+            if (!r.next()) break;
+            cpuStalls += cpu.busClockNow() - cpuBefore;
+            const uint32_t nextAddress = r.address();
+            if (nextAddress == address) continue;
+            c.equal("bloc DMA de 16 octets", nextAddress - address, 16);
+            if (lastFlush >= 0)
+                c.equal("cadence FDC indépendante du stall CPU", r.live - lastFlush, 16 * 256);
+            lastFlush = r.live;
+            address = nextAddress;
+            ++flushes;
+        }
+        c.equal("secteur complet", flushes, 32);
+        c.equal("IRQ fin de secteur", r.irq(), true);
+        c.equal("vol de bus CPU conservé", cpuStalls, withCpu ? 32 * 32 : 0);
     }
     std::fprintf(stderr, "[fdc-force-interrupt] %d checks, %d FAIL\n", c.count, c.failures);
     return c.failures;

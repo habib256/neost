@@ -1,60 +1,84 @@
 # Bus
 
-> 76 nodes · cohesion 0.03
+> God node · 167 connections · `src/core/Bus.hpp`
 
-## Key Concepts
+**Community:** [Community 14](Community_14.md)
 
-- **Bus** (162 connections) — `src/core/Bus.hpp`
-- **.read16Slow()** (3 connections) — `src/core/Bus.hpp`
-- **.wrPsg()** (3 connections) — `src/core/Bus.hpp`
-- **Blitter** (2 connections) — `src/core/Bus.hpp`
-- **Cpu68k** (2 connections) — `src/core/Bus.hpp`
-- **DmaSound** (2 connections) — `src/core/Bus.hpp`
-- **Fdc** (2 connections) — `src/core/Bus.hpp`
-- **GemdosHd** (2 connections) — `src/core/Bus.hpp`
-- **Ikbd** (2 connections) — `src/core/Bus.hpp`
-- **Isp1160** (2 connections) — `src/core/Bus.hpp`
-- **Mfp** (2 connections) — `src/core/Bus.hpp`
-- **MidiAcia** (2 connections) — `src/core/Bus.hpp`
-- **Ne2000** (2 connections) — `src/core/Bus.hpp`
-- **Rtc** (2 connections) — `src/core/Bus.hpp`
-- **Scc** (2 connections) — `src/core/Bus.hpp`
-- **Shifter** (2 connections) — `src/core/Bus.hpp`
-- **YM2149** (2 connections) — `src/core/Bus.hpp`
-- **.ioAccessWidth()** (2 connections) — `src/core/Bus.hpp`
-- **.read16()** (2 connections) — `src/core/Bus.hpp`
-- **.setFpuPresent()** (2 connections) — `src/core/Bus.hpp`
-- **.claimsFdc()** (1 connections) — `src/core/Bus.hpp`
-- **.claimsFpu()** (1 connections) — `src/core/Bus.hpp`
-- **.claimsIkbd()** (1 connections) — `src/core/Bus.hpp`
-- **.claimsMfp()** (1 connections) — `src/core/Bus.hpp`
-- **.claimsMidi()** (1 connections) — `src/core/Bus.hpp`
-- *... and 51 more nodes in this community*
+## Connections by Relation
 
-## Relationships
+### contains
+- Bus.hpp `EXTRACTED`
+- MmioSlot `EXTRACTED`
+- MegaSteCache `EXTRACTED`
 
-- [Community 368](Community_368.md) (39 shared connections)
-- [Community 100](Community_100.md) (16 shared connections)
-- [.mmioSlotFor](mmioSlotFor.md) (10 shared connections)
-- [Community 203](Community_203.md) (9 shared connections)
-- [Community 148](Community_148.md) (6 shared connections)
-- [Community 229](Community_229.md) (5 shared connections)
-- [CartDevice](CartDevice.md) (4 shared connections)
-- [Community 214](Community_214.md) (4 shared connections)
-- [Community 200](Community_200.md) (3 shared connections)
-- [MmuGlue](MmuGlue.md) (1 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Scu](Scu.md) (1 shared connections)
+### defines
+- watchHook `EXTRACTED`
+- gameCart `EXTRACTED`
+- shifter `EXTRACTED`
+- psg `EXTRACTED`
+- glue `EXTRACTED`
+- mfp `EXTRACTED`
+- ikbd `EXTRACTED`
+- fdc `EXTRACTED`
+- dmasnd `EXTRACTED`
+- blitter `EXTRACTED`
+- blitterWinStart `EXTRACTED`
+- blitterWinEnd `EXTRACTED`
+- blitterMasterAccess `EXTRACTED`
+- blitterCountCpu `EXTRACTED`
+- rtc `EXTRACTED`
+- midi `EXTRACTED`
+- cpu `EXTRACTED`
+- watchBase_ `EXTRACTED`
+- gemdos `EXTRACTED`
+- scc `EXTRACTED`
+- *…and 24 more `defines` connection(s) not listed (lowest-degree first to go)*
 
-## Source Files
+### method
+- .mmuTranslate() `EXTRACTED`
+- .peek8() `EXTRACTED`
+- .busFault() `EXTRACTED`
+- .read8Slow() `EXTRACTED`
+- .busFaultN() `EXTRACTED`
+- .romWindowSize() `EXTRACTED`
+- .steCartWindow() `EXTRACTED`
+- .busFaultNSlow() `EXTRACTED`
+- .mmioTable() `EXTRACTED`
+- .rebuildMmuCache() `EXTRACTED`
+- .buildIoFault() `EXTRACTED`
+- .mmioRead8() `EXTRACTED`
+- .mmioSlotFor() `EXTRACTED`
+- .steRomSelectVoid() `EXTRACTED`
+- .steCartRelocated() `EXTRACTED`
+- .megaSteCacheFlush() `EXTRACTED`
+- .megaSteCacheable() `EXTRACTED`
+- .write8Slow() `EXTRACTED`
+- .mmioWrite8() `EXTRACTED`
+- .mmioTableSize() `EXTRACTED`
+- *…and 76 more `method` connection(s) not listed (lowest-degree first to go)*
 
-- `src/core/Bus.hpp`
-
-## Audit Trail
-
-- EXTRACTED: 179 (99%)
-- INFERRED: 2 (1%)
-- AMBIGUOUS: 0 (0%)
+### references
+- [vector](vector.md) `EXTRACTED`
+- Fpu `EXTRACTED`
+- StePads `EXTRACTED`
+- MachineType `EXTRACTED`
+- Scu `EXTRACTED`
+- CartDevice `EXTRACTED`
+- MmuGlue `EXTRACTED`
+- [Shifter](Shifter.md) `EXTRACTED`
+- YM2149 `EXTRACTED`
+- [Mfp](Mfp.md) `EXTRACTED`
+- [Ikbd](Ikbd.md) `EXTRACTED`
+- [Fdc](Fdc.md) `EXTRACTED`
+- DmaSound `EXTRACTED`
+- Blitter `EXTRACTED`
+- Rtc `EXTRACTED`
+- MidiAcia `EXTRACTED`
+- Cpu68k `EXTRACTED`
+- GemdosHd `EXTRACTED`
+- Scc `EXTRACTED`
+- Ne2000 `EXTRACTED`
+- *…and 4 more `references` connection(s) not listed (lowest-degree first to go)*
 
 ---
 
