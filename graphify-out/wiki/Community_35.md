@@ -1,64 +1,61 @@
 # Community 35
 
-> 46 nodes
+> 40 nodes
 
 ## Key Concepts
 
-- **DmaSound.cpp** (42 connections) — `src/core/DmaSound.cpp`
-- **.fifoRefill()** (14 connections) — `src/core/DmaSound.hpp`
-- **.updateDac()** (11 connections) — `src/core/DmaSound.hpp`
-- **Audio** (10 connections) — `docs/IMPLEMENTED.md`
-- **.write8()** (9 connections) — `src/core/DmaSound.hpp`
-- **.liveCounter()** (7 connections) — `src/core/DmaSound.hpp`
-- **.mixStereo()** (7 connections) — `src/core/DmaSound.hpp`
-- **.setXsint()** (6 connections) — `src/core/DmaSound.hpp`
-- **.startNewFrame()** (6 connections) — `src/core/DmaSound.hpp`
-- **.mixSegment()** (6 connections) — `src/core/DmaSound.hpp`
-- **.fifoSetStereo()** (5 connections) — `src/core/DmaSound.hpp`
-- **.capPullLR()** (5 connections) — `src/core/DmaSound.hpp`
-- **.catchUpMicrowire()** (5 connections) — `src/core/DmaSound.hpp`
-- **.advanceMicrowire()** (5 connections) — `src/core/DmaSound.hpp`
-- **.recordEvent()** (5 connections) — `src/core/DmaSound.hpp`
-- **.read8()** (5 connections) — `src/core/DmaSound.hpp`
-- **.mix()** (5 connections) — `src/core/DmaSound.hpp`
-- **7ᵉ passe — bug hunt post-perf (2026-08-06, 4 agents parallèles)** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.fifoPull()** (4 connections) — `src/core/DmaSound.hpp`
-- **.capPush()** (4 connections) — `src/core/DmaSound.hpp`
-- **.onHbl()** (4 connections) — `src/core/DmaSound.hpp`
-- **.decodeMicrowire()** (4 connections) — `src/core/DmaSound.hpp`
-- **.synthesize()** (4 connections) — `src/core/YM2149.hpp`
-- **Son de la démo WASM : les samples redeviennent audibles (2026-08-11)** (4 connections) — `CHANGELOG.md`
-- **.reset()** (3 connections) — `src/core/DmaSound.hpp`
-- *... and 21 more nodes in this community*
+- **main()** (161 connections) — `tests/selftest_logic.cpp`
+- **selftest_logic.cpp** (75 connections) — `tests/selftest_logic.cpp`
+- **checkBool()** (28 connections) — `tests/selftest_logic.cpp`
+- **testCartridgeKey()** (13 connections) — `tests/selftest_logic.cpp`
+- **checkStr()** (12 connections) — `tests/selftest_logic.cpp`
+- **testFdcTruthTable()** (9 connections) — `tests/selftest_logic.cpp`
+- **testDmaSoundTruthTable()** (8 connections) — `tests/selftest_logic.cpp`
+- **testIkbdProtocol()** (8 connections) — `tests/selftest_logic.cpp`
+- **testBlitterTruthTable()** (7 connections) — `tests/selftest_logic.cpp`
+- **testMfpClock()** (6 connections) — `tests/mfp_clock_logic.cpp`
+- **checkHex()** (6 connections) — `tests/selftest_logic.cpp`
+- **testChannelMask()** (6 connections) — `tests/selftest_logic.cpp`
+- **testJoyScript()** (6 connections) — `tests/selftest_logic.cpp`
+- **testMidiInJitter()** (6 connections) — `tests/selftest_logic.cpp`
+- **testTwoCpus()** (6 connections) — `tests/selftest_logic.cpp`
+- **checkInt()** (5 connections) — `tests/selftest_logic.cpp`
+- **testFixBools()** (5 connections) — `tests/selftest_logic.cpp`
+- **testMissingHwHint()** (5 connections) — `tests/selftest_logic.cpp`
+- **testMmioTable()** (5 connections) — `tests/selftest_logic.cpp`
+- **testPortDevices()** (5 connections) — `tests/selftest_logic.cpp`
+- **testYmEventDomain()** (5 connections) — `tests/selftest_logic.cpp`
+- **duration()** (5 connections) — `tests/ste_cmap_slot_logic.cpp`
+- **checkMasks()** (4 connections) — `tests/selftest_logic.cpp`
+- **testConfigPath()** (4 connections) — `tests/selftest_logic.cpp`
+- **testDongleTable()** (4 connections) — `tests/selftest_logic.cpp`
+- *... and 15 more nodes in this community*
 
 ## Relationships
 
-- [Community 13](Community_13.md) (35 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 140](Community_140.md) (4 shared connections)
-- [Community 130](Community_130.md) (4 shared connections)
-- [Community 349](Community_349.md) (3 shared connections)
-- [Community 24](Community_24.md) (3 shared connections)
-- [Community 115](Community_115.md) (2 shared connections)
-- [Community 110](Community_110.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 67](Community_67.md) (2 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 28](Community_28.md) (1 shared connections)
+- [Community 41](Community_41.md) (50 shared connections)
+- [Community 245](Community_245.md) (16 shared connections)
+- [Community 102](Community_102.md) (14 shared connections)
+- [Community 4](Community_4.md) (12 shared connections)
+- [Community 83](Community_83.md) (10 shared connections)
+- [Community 256](Community_256.md) (9 shared connections)
+- [Community 101](Community_101.md) (6 shared connections)
+- [Community 200](Community_200.md) (6 shared connections)
+- [Community 230](Community_230.md) (5 shared connections)
+- [Community 150](Community_150.md) (4 shared connections)
+- [Community 176](Community_176.md) (4 shared connections)
+- [Community 213](Community_213.md) (3 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/IMPLEMENTED.md`
-- `src/core/DmaSound.cpp`
-- `src/core/DmaSound.hpp`
-- `src/core/YM2149.hpp`
+- `tests/mfp_clock_logic.cpp`
+- `tests/selftest_logic.cpp`
+- `tests/ste_cmap_slot_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 89 (57%)
-- INFERRED: 66 (43%)
+- EXTRACTED: 189 (55%)
+- INFERRED: 152 (45%)
 - AMBIGUOUS: 0 (0%)
 
 ---

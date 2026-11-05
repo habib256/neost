@@ -1,34 +1,31 @@
 # Community 352
 
-> 9 nodes
+> 6 nodes
 
 ## Key Concepts
 
 - **ym_c10_noise_logic.cpp** (8 connections) — `tests/ym_c10_noise_logic.cpp`
-- **ikbd_monitor_machine_logic.cpp** (6 connections) — `tests/ikbd_monitor_machine_logic.cpp`
 - **testYmC10Noise()** (5 connections) — `tests/ym_c10_noise_logic.cpp`
-- **testIkbdMonitorMachine()** (4 connections) — `tests/ikbd_monitor_machine_logic.cpp`
 - **render()** (4 connections) — `tests/ym_c10_noise_logic.cpp`
 - **setReg()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
 - **swing()** (3 connections) — `tests/ym_c10_noise_logic.cpp`
-- **main()** (2 connections) — `tests/ikbd_monitor_machine_logic.cpp`
 - **YM2149** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (9 shared connections)
-- [Community 41](Community_41.md) (4 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 256](Community_256.md) (4 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ikbd_monitor_machine_logic.cpp`
 - `tests/ym_c10_noise_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 21 (84%)
-- INFERRED: 4 (16%)
+- EXTRACTED: 14 (88%)
+- INFERRED: 2 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

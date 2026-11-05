@@ -1,24 +1,32 @@
 # Community 368
 
-> 2 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.serialize()** (2 connections) — `src/io/Mfp.hpp`
-- **StateArchive** (1 connections)
+- **FdcSound** (10 connections) — `src/io/Fdc.hpp`
+- **Index** (1 connections) — `src/io/Fdc.hpp`
+- **MotorOff** (1 connections) — `src/io/Fdc.hpp`
+- **MotorOn** (1 connections) — `src/io/Fdc.hpp`
+- **Seek** (1 connections) — `src/io/Fdc.hpp`
+- **Step** (1 connections) — `src/io/Fdc.hpp`
 
 ## Relationships
 
-- [Community 6](Community_6.md) (1 shared connections)
+- [Community 113](Community_113.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 140](Community_140.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Mfp.hpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 8 (80%)
+- INFERRED: 2 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -4,22 +4,21 @@
 
 ## Key Concepts
 
-- **Audio::Audio()** (5 connections) — `src/audio/Audio.cpp`
-- **.stop()** (4 connections) — `src/audio/Audio.hpp`
-- **DriveSound** (1 connections)
-- **DmaSound** (1 connections)
-- **YM2149** (1 connections)
+- **GemdosHd::GemdosHd()** (5 connections) — `src/io/GemdosHd.cpp`
+- **.closeInfOverride()** (2 connections) — `src/io/GemdosHd.hpp`
+- **setD0()** (2 connections) — `src/io/GemdosHd.cpp`
+- **Cpu68k** (2 connections)
+- **Bus** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 61](Community_61.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 36](Community_36.md) (3 shared connections)
+- [Community 17](Community_17.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Audio.cpp`
-- `src/audio/Audio.hpp`
+- `src/io/GemdosHd.cpp`
+- `src/io/GemdosHd.hpp`
 
 ## Audit Trail
 

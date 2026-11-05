@@ -1,29 +1,33 @@
 # Community 366
 
-> 7 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Banc différentiel Moira ↔ fx68k — le 68000 nu contre le RTL** (7 connections) — `docs/FX68K_BENCH.md`
-- **Autovecteur par VPA et E-clock (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
-- **Ce qui manque au banc** (1 connections) — `docs/FX68K_BENCH.md`
-- **Comment** (1 connections) — `docs/FX68K_BENCH.md`
-- **La date limite d'IPL, confrontée dans NeoST (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
-- **Pourquoi** (1 connections) — `docs/FX68K_BENCH.md`
-- **État (2026-11-03)** (1 connections) — `docs/FX68K_BENCH.md`
+- **.controlWritten()** (6 connections) — `src/core/Blitter.hpp`
+- **.writeRegisters()** (5 connections) — `src/core/Blitter.hpp`
+- **regWriteMask()** (5 connections) — `src/core/Blitter.cpp`
+- **.write8()** (4 connections) — `src/core/Blitter.hpp`
+- **.write16()** (4 connections) — `src/core/Blitter.hpp`
+- **.write32()** (4 connections) — `src/core/Blitter.hpp`
 
 ## Relationships
 
-- [Community 376](Community_376.md) (1 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
+- [Community 37](Community_37.md) (5 shared connections)
+- [Community 350](Community_350.md) (1 shared connections)
+- [Community 363](Community_363.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/FX68K_BENCH.md`
+- `src/core/Blitter.cpp`
+- `src/core/Blitter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 13 (62%)
+- INFERRED: 8 (38%)
 - AMBIGUOUS: 0 (0%)
 
 ---

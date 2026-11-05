@@ -1,26 +1,29 @@
 # Community 374
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/ipf_image_logic.cpp`
-- **.equal()** (2 connections) — `tests/ipf_image_logic.cpp`
-- **count** (1 connections) — `tests/ipf_image_logic.cpp`
-- **failures** (1 connections) — `tests/ipf_image_logic.cpp`
+- **** (9 connections) — `src/io/StePads.hpp`
+- **DOWN** (1 connections) — `src/io/StePads.hpp`
+- **FIRE** (1 connections) — `src/io/StePads.hpp`
+- **LEFT** (1 connections) — `src/io/StePads.hpp`
+- **RIGHT** (1 connections) — `src/io/StePads.hpp`
+- **UP** (1 connections) — `src/io/StePads.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 153](Community_153.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 106](Community_106.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ipf_image_logic.cpp`
+- `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 9 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

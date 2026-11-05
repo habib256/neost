@@ -1,6 +1,6 @@
 # Community 101
 
-> 41 nodes
+> 39 nodes
 
 ## Key Concepts
 
@@ -12,9 +12,8 @@
 - **writeConfigAtomic()** (10 connections) — `src/gui/AppConfig.cpp`
 - **writeConfigKeys()** (10 connections) — `src/gui/AppConfig.cpp`
 - **testConfigParser()** (10 connections) — `tests/selftest_logic.cpp`
-- **resolveData()** (9 connections) — `src/gui/App.cpp`
 - **Profils de réglages nommés (2026-08-10)** (8 connections) — `CHANGELOG.md`
-- **fileExists()** (6 connections) — `src/gui/App.cpp`
+- **autoDongleRetract()** (6 connections) — `src/gui/App.cpp`
 - **cfgPath()** (6 connections) — `src/gui/AppConfig.cpp`
 - **loadConfig()** (6 connections) — `src/gui/AppConfig.cpp`
 - **loadProfileInto()** (6 connections) — `src/gui/AppConfig.cpp`
@@ -22,29 +21,30 @@
 - **snapshotRtc()** (5 connections) — `src/gui/App.cpp`
 - **parseRtcConfig()** (5 connections) — `src/gui/AppConfig.cpp`
 - **saveProfile()** (5 connections) — `src/gui/AppConfig.cpp`
-- **string** (5 connections)
 - **Chemins hôte unifiés, logique pure testable, `main.cpp` dégrossi (2026-08-17)** (5 connections) — `CHANGELOG.md`
 - **decodeRecords()** (4 connections) — `src/gui/AppConfig.cpp`
 - **formatChannelMask()** (4 connections) — `src/gui/AppConfig.cpp`
 - **listProfiles()** (4 connections) — `src/gui/AppConfig.cpp`
 - **mixGain()** (4 connections) — `src/gui/AppConfig.cpp`
 - **parseChannelMask()** (4 connections) — `src/gui/AppConfig.cpp`
-- *... and 16 more nodes in this community*
+- **profileFileName()** (4 connections) — `src/gui/AppConfig.cpp`
+- **profilesDir()** (4 connections) — `src/gui/AppConfig.cpp`
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
-- [Community 21](Community_21.md) (12 shared connections)
-- [Community 4](Community_4.md) (11 shared connections)
-- [Community 380](Community_380.md) (8 shared connections)
+- [Community 21](Community_21.md) (13 shared connections)
+- [Community 380](Community_380.md) (12 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
 - [Community 200](Community_200.md) (7 shared connections)
 - [Community 130](Community_130.md) (7 shared connections)
-- [Community 41](Community_41.md) (6 shared connections)
-- [Community 76](Community_76.md) (5 shared connections)
+- [Community 35](Community_35.md) (6 shared connections)
 - [Community 51](Community_51.md) (5 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 269](Community_269.md) (3 shared connections)
-- [Community 100](Community_100.md) (3 shared connections)
+- [Community 256](Community_256.md) (4 shared connections)
 - [Community 93](Community_93.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 24](Community_24.md) (2 shared connections)
+- [Community 67](Community_67.md) (2 shared connections)
 
 ## Source Files
 
@@ -56,8 +56,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 112 (62%)
-- INFERRED: 69 (38%)
+- EXTRACTED: 106 (62%)
+- INFERRED: 65 (38%)
 - AMBIGUOUS: 0 (0%)
 
 ---

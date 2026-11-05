@@ -220,6 +220,12 @@ contre-épreuve depuis le même état : halt sans masquage, bureau avec masquage
 
 ## Switchblade : cause de l'écran noir, et graines dans les rejeux (2026-11-04)
 
+La fusion de `nuit/todo` ajoute le PC au journal des fronts INTRQ et conserve
+les résultats historiques de ses balayages. La conclusion matérielle reste
+ouverte : les fréquences mesurées dans les émulateurs ne sont pas des mesures
+sur ST, et la correction ultérieure FDC/DMA débloque la graine 8.
+
+
 Le chargeur laisse `flock` nul : une VBL du TOS 1.04 UK lit le statut FDC et acquitte
 la fin du READ TRACK avant sa boucle d'attente. Depuis le même état sauvegardé,
 poser seulement l'octet `$43E` fait passer la graine 8. Le cœur reste inchangé :

@@ -699,6 +699,15 @@ Une copie locale préexistante `[flock fix]` remplace les six octets à l'offset
 écriture du mode DMA : la contre-épreuve à un seul octet ci-dessus isole mieux la cause.
 Aucune image du jeu n'est modifiée par cette enquête ni distribuée dans le dépôt.
 
+La campagne antérieure de `nuit/todo` (commit `73ccc78`, avant la correction
+FDC/DMA) complète cette trace : le journal INTRQ relève désormais aussi le PC ;
+à la graine 8, la lecture TOS efface l'interruption 55 instructions après sa
+montée. Sur 96 graines par TOS, elle rapportait deux écrans noirs sous 1.04
+et un sous 1.06 chez NeoST, un sous 1.02 chez Hatari. La copie avec `flock`
+posée atteignait le titre sur 96/96 graines sous 1.04. Ces nombres décrivent
+les anciens exécutables et ces images, pas une fréquence sur machine réelle
+ni le cœur courant ; le correctif de cadence a depuis débloqué la graine 8.
+
 Recette de non-régression de l’ancien échec (SPACE tenu huit trames à chaque date) :
 
 ```sh

@@ -1,33 +1,33 @@
 # Community 267
 
-> 6 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **GlueProbe** (7 connections) — `src/core/Shifter.hpp`
-- **Shifter::glueBenchLine()** (3 connections) — `src/core/VideoGlue.cpp`
-- **lineStart** (2 connections) — `src/core/Shifter.hpp`
-- **bytes** (1 connections) — `src/core/Shifter.hpp`
-- **end** (1 connections) — `src/core/Shifter.hpp`
-- **start** (1 connections) — `src/core/Shifter.hpp`
+- **Model** (9 connections) — `src/io/CartridgeKey.hpp`
+- **.serialize()** (4 connections) — `src/io/CartridgeKey.hpp`
+- **.model()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **StateArchive** (1 connections)
+- **Auto** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Cubase2** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Cubase3** (1 connections) — `src/io/CartridgeKey.hpp`
+- **None** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Notator** (1 connections) — `src/io/CartridgeKey.hpp`
 
 ## Relationships
 
-- [Community 167](Community_167.md) (1 shared connections)
-- [Community 5](Community_5.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 362](Community_362.md) (1 shared connections)
+- [Community 150](Community_150.md) (4 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Shifter.hpp`
-- `src/core/VideoGlue.cpp`
+- `src/io/CartridgeKey.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (80%)
-- INFERRED: 2 (20%)
+- EXTRACTED: 13 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

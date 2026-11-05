@@ -16,7 +16,7 @@
 - [Community 47](Community_47.md) (1 shared connections)
 - [Community 7](Community_7.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 - [Community 63](Community_63.md) (1 shared connections)
 
 ## Source Files

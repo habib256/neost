@@ -1,27 +1,32 @@
 # Community 361
 
-> 2 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **Shifter::timerBPosForLine()** (3 connections) — `src/core/VideoGlue.cpp`
-- **.timerBLinePos()** (2 connections) — `src/core/Shifter.hpp`
+- **testRtcElapsedDifferential()** (7 connections) — `tests/rtc_elapsed_differential_logic.cpp`
+- **rtc_elapsed_differential_logic.cpp** (7 connections) — `tests/rtc_elapsed_differential_logic.cpp`
+- **configure()** (5 connections) — `tests/rtc_elapsed_differential_logic.cpp`
+- **address()** (3 connections) — `tests/rtc_elapsed_differential_logic.cpp`
+- **main()** (2 connections) — `tests/rtc_elapsed_differential_logic.cpp`
+- **DateTime** (1 connections)
+- **Rtc** (1 connections)
 
 ## Relationships
 
-- [Community 5](Community_5.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
+- [Community 364](Community_364.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Shifter.hpp`
-- `src/core/VideoGlue.cpp`
+- `tests/rtc_elapsed_differential_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (50%)
-- INFERRED: 2 (50%)
+- EXTRACTED: 15 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

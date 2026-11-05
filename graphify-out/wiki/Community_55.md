@@ -1,63 +1,61 @@
 # Community 55
 
-> 40 nodes
+> 37 nodes
 
 ## Key Concepts
 
-- **shutil** (50 connections)
-- **compare_titles.py** (32 connections) — `tools/compare_titles.py`
-- **check_compare_titles.py** (13 connections) — `tools/check_compare_titles.py`
-- **main()** (12 connections) — `tools/compare_titles.py`
-- **trace_tos206_boot.py** (12 connections) — `tools/trace_tos206_boot.py`
-- **run_hatari_keys()** (10 connections) — `tools/compare_titles.py`
-- **neost_frames()** (9 connections) — `tools/compare_titles.py`
-- **one()** (9 connections) — `tools/compare_titles.py`
-- **Path** (9 connections)
-- **hatari_shots()** (8 connections) — `tools/compare_titles.py`
-- **read_neost_frames()** (8 connections) — `tools/compare_titles.py`
-- **main()** (8 connections) — `tools/trace_tos206_boot.py`
-- **main()** (7 connections) — `tools/check_compare_titles.py`
-- **best_match()** (6 connections) — `tools/compare_titles.py`
-- **mouse_events()** (6 connections) — `tools/compare_titles.py`
-- **pixel_difference()** (6 connections) — `tools/compare_titles.py`
-- **parse_mouse()** (5 connections) — `tools/compare_titles.py`
-- **swap_copy()** (5 connections) — `tools/compare_titles.py`
-- **Image** (5 connections)
-- **Vroom STE : vérifier la conduite et l'arrêt audio (2026-11-05)** (5 connections) — `docs/CASE_STUDIES.md`
-- **reduce_2x()** (4 connections) — `tools/compare_titles.py`
-- **parse_seed()** (3 connections) — `tools/compare_titles.py`
-- **parse_swap()** (3 connections) — `tools/compare_titles.py`
-- **sheet()** (3 connections) — `tools/compare_titles.py`
-- **sha()** (3 connections) — `tools/trace_tos206_boot.py`
-- *... and 15 more nodes in this community*
+- **json** (63 connections)
+- **run_all.py** (18 connections) — `tools/run_all.py`
+- **run_perfbench.py** (18 connections) — `tools/run_perfbench.py`
+- **host_info()** (9 connections) — `tools/run_perfbench.py`
+- **main()** (7 connections) — `tools/run_all.py`
+- **time** (7 connections)
+- **budget()** (6 connections) — `tools/run_perfbench.py`
+- **_cpu_name()** (6 connections) — `tools/run_perfbench.py`
+- **measure_load()** (6 connections) — `tools/run_perfbench.py`
+- **check_env_locks.py** (6 connections) — `tools/check_env_locks.py`
+- **run_tier()** (5 connections) — `tools/run_all.py`
+- **main()** (5 connections) — `tools/run_perfbench.py`
+- **git_hooks_dir()** (4 connections) — `tools/run_all.py`
+- **gui_available()** (4 connections) — `tools/run_all.py`
+- **report_guards()** (4 connections) — `tools/run_all.py`
+- **measure_all()** (4 connections) — `tools/run_perfbench.py`
+- **run_timed()** (4 connections) — `tools/run_perfbench.py`
+- **main()** (3 connections) — `tools/check_env_locks.py`
+- **check_guard_registry()** (3 connections) — `tools/run_all.py`
+- **install_hook()** (3 connections) — `tools/run_all.py`
+- **selftest_ids()** (3 connections) — `tools/run_all.py`
+- **compare()** (3 connections) — `tools/run_perfbench.py`
+- **measure()** (3 connections) — `tools/run_perfbench.py`
+- **_ram_bytes()** (3 connections) — `tools/run_perfbench.py`
+- **platform** (3 connections)
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (31 shared connections)
-- [Community 258](Community_258.md) (20 shared connections)
-- [Community 207](Community_207.md) (7 shared connections)
-- [Community 151](Community_151.md) (5 shared connections)
-- [Community 34](Community_34.md) (5 shared connections)
-- [Community 49](Community_49.md) (3 shared connections)
+- [Community 18](Community_18.md) (33 shared connections)
+- [Community 151](Community_151.md) (10 shared connections)
+- [Community 248](Community_248.md) (8 shared connections)
+- [Community 207](Community_207.md) (8 shared connections)
+- [Community 34](Community_34.md) (6 shared connections)
 - [Community 166](Community_166.md) (3 shared connections)
-- [Community 146](Community_146.md) (3 shared connections)
-- [Community 248](Community_248.md) (2 shared connections)
-- [Community 26](Community_26.md) (2 shared connections)
+- [Community 49](Community_49.md) (2 shared connections)
 - [Community 48](Community_48.md) (2 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 227](Community_227.md) (2 shared connections)
+- [Community 146](Community_146.md) (2 shared connections)
+- [Community 211](Community_211.md) (1 shared connections)
+- [Community 332](Community_332.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/CASE_STUDIES.md`
-- `packaging/make_icon.py`
-- `tools/check_compare_titles.py`
-- `tools/compare_titles.py`
-- `tools/trace_tos206_boot.py`
+- `tools/check_env_locks.py`
+- `tools/run_all.py`
+- `tools/run_perfbench.py`
 
 ## Audit Trail
 
-- EXTRACTED: 167 (97%)
-- INFERRED: 6 (3%)
+- EXTRACTED: 146 (99%)
+- INFERRED: 2 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

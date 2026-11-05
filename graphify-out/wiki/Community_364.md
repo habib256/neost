@@ -1,26 +1,40 @@
 # Community 364
 
-> 2 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.process()** (4 connections) — `src/gui/CrtEffectStack.h`
-- **.createTextures()** (3 connections) — `src/gui/CrtEffectStack.h`
+- **Rtc.hpp** (17 connections) — `src/io/Rtc.hpp`
+- **rtc_long_phase_logic.cpp** (9 connections) — `tests/rtc_long_phase_logic.cpp`
+- **testRtcLongPhase()** (6 connections) — `tests/rtc_long_phase_logic.cpp`
+- **limits** (4 connections)
+- **main()** (2 connections) — `tests/rtc_long_phase_logic.cpp`
+- **rtcAddress()** (2 connections) — `tests/rtc_long_phase_logic.cpp`
 
 ## Relationships
 
-- [Community 91](Community_91.md) (2 shared connections)
-- [Community 43](Community_43.md) (2 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
+- [Community 256](Community_256.md) (5 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 35](Community_35.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 52](Community_52.md) (2 shared connections)
+- [Community 318](Community_318.md) (2 shared connections)
+- [Community 30](Community_30.md) (1 shared connections)
+- [Community 361](Community_361.md) (1 shared connections)
+- [Community 372](Community_372.md) (1 shared connections)
+- [Community 395](Community_395.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/CrtEffectStack.h`
+- `src/io/Rtc.hpp`
+- `tests/rtc_long_phase_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (67%)
-- INFERRED: 2 (33%)
+- EXTRACTED: 32 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

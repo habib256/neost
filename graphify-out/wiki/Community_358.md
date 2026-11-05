@@ -1,29 +1,38 @@
 # Community 358
 
-> 2 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **.glueSelfTest()** (4 connections) — `src/core/Shifter.hpp`
-- **P1 — Registres vidéo STE : 2 restes** (3 connections) — `docs/CYCLE_ACCURACY.md`
+- **Syntax** (8 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.setDasmSyntax()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **.NeostMoira()** (4 connections) — `src/core/Cpu68k.cpp`
+- **GNU** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **GNU_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MOIRA** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MOIRA_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MUSASHI** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 
 ## Relationships
 
-- [Community 5](Community_5.md) (1 shared connections)
-- [Community 148](Community_148.md) (1 shared connections)
-- [Community 254](Community_254.md) (1 shared connections)
-- [Community 115](Community_115.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 40](Community_40.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
+- [Community 333](Community_333.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/CYCLE_ACCURACY.md`
-- `src/core/Shifter.hpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraTypes.h`
+- `src/core/Cpu68k.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (33%)
-- INFERRED: 4 (67%)
+- EXTRACTED: 11 (79%)
+- INFERRED: 3 (21%)
 - AMBIGUOUS: 0 (0%)
 
 ---

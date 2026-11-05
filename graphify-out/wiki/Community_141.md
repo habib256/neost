@@ -1,16 +1,18 @@
 # Community 141
 
-> 16 nodes
+> 18 nodes
 
 ## Key Concepts
 
 - **Rig** (15 connections) — `tests/gemdos_dta_reuse_logic.cpp`
+- **testGemdosDtaReuse()** (8 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **.first()** (5 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **.dta()** (3 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **.name()** (3 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **.next()** (3 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **.trap()** (3 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **string** (3 connections)
+- **main()** (2 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **.copy()** (2 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **.Rig()** (2 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **Bus** (1 connections)
@@ -23,7 +25,9 @@
 
 ## Relationships
 
-- [Community 399](Community_399.md) (4 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
 
 ## Source Files
 
@@ -31,8 +35,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 25 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 30 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

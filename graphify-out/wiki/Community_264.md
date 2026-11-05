@@ -1,33 +1,31 @@
 # Community 264
 
-> 7 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **FramePacer** (8 connections) — `src/core/Pacing.hpp`
-- **.resync()** (4 connections) — `src/core/Pacing.hpp`
-- **A28 — le servo audio et la cadence rentrent dans le cœur (2026-08-28)** (2 connections) — `CHANGELOG.md`
-- **.nextDueMs()** (1 connections) — `src/core/Pacing.hpp`
-- **armed_** (1 connections) — `src/core/Pacing.hpp`
-- **kMaxCatchUp** (1 connections) — `src/core/Pacing.hpp`
-- **nextMs_** (1 connections) — `src/core/Pacing.hpp`
+- **framebufferTexture2DCompat()** (4 connections) — `src/gui/CrtEffectStack.cpp`
+- **GLuint** (4 connections)
+- **bindFramebufferCompat()** (3 connections) — `src/gui/CrtEffectStack.cpp`
+- **deleteFramebuffersCompat()** (3 connections) — `src/gui/CrtEffectStack.cpp`
+- **genFramebuffersCompat()** (3 connections) — `src/gui/CrtEffectStack.cpp`
+- **GLenum** (3 connections)
+- **checkFramebufferStatusCompat()** (2 connections) — `src/gui/CrtEffectStack.cpp`
+- **GLsizei** (2 connections)
+- **GLint** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 58](Community_58.md) (2 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 91](Community_91.md) (5 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/core/Pacing.hpp`
+- `src/gui/CrtEffectStack.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (67%)
-- INFERRED: 4 (33%)
+- EXTRACTED: 15 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

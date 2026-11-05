@@ -1,18 +1,23 @@
 # Community 74
 
-> 33 nodes
+> 39 nodes
 
 ## Key Concepts
 
 - **Rig** (27 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **testStxReadAddressCrc()** (10 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **readAddress()** (8 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **writeImage()** (7 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.reg()** (6 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **Checks** (5 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.data()** (5 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **idBytes()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **put16()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **put32()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.mode()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.read()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.equal()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **checksum()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.armIndex()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.finish()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.select()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
@@ -24,17 +29,13 @@
 - **.pending()** (1 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **.Rig()** (1 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **count** (1 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **failures** (1 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **Bus** (1 connections)
-- **Fdc** (1 connections)
-- **Mfp** (1 connections)
-- **Scheduler** (1 connections)
-- *... and 8 more nodes in this community*
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (8 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (10 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
 
 ## Source Files
 
@@ -42,8 +43,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 57 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 71 (99%)
+- INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

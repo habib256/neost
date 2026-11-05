@@ -1,31 +1,30 @@
 # Community 263
 
-> 8 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **Rig** (9 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **.finish()** (3 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **.Rig()** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **Mfp** (1 connections)
-- **Scheduler** (1 connections)
-- **mfp** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **scheduler** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **sent** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **Décomposition de l'écart global (2026-10-19)** (9 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Correction du préfetch appuyée par le microcode matériel** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Expérience de préfetch dans une copie temporaire de Moira** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Expérience IACK en domaine bus (2026-10-19)** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Expérience PRE_START dans Hatari temporaire** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Mesures avant expériences supplémentaires** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Partie dominante : IACK → handler** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Remplissage du cache après invalidation DMA (2026-10-19)** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Reproduction et preuves** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 
 ## Relationships
 
-- [Community 294](Community_294.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 77](Community_77.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_internal_loopback_logic.cpp`
+- `docs/HATARI_MEGASTE_AUDIT.md`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (100%)
+- EXTRACTED: 9 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

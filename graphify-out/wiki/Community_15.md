@@ -1,6 +1,6 @@
 # Community 15
 
-> 86 nodes
+> 76 nodes
 
 ## Key Concepts
 
@@ -25,36 +25,33 @@
 - **defaultNaN()** (14 connections) — `src/io/SoftFloatX80.hpp`
 - **sglmul()** (14 connections) — `src/io/SoftFloatX80.hpp`
 - **subSigs()** (14 connections) — `src/io/SoftFloatX80.hpp`
-- **fpu_decimal_oracle.cpp** (14 connections) — `tests/fpu_decimal_oracle.cpp`
 - **fromDecimalRaw()** (13 connections) — `src/io/SoftFloatDecimal.hpp`
 - **propagateNaN()** (13 connections) — `src/io/SoftFloatX80.hpp`
 - **addSigs()** (12 connections) — `src/io/SoftFloatX80.hpp`
-- *... and 61 more nodes in this community*
+- **toInt()** (12 connections) — `src/io/SoftFloatX80.hpp`
+- *... and 51 more nodes in this community*
 
 ## Relationships
 
 - [Community 149](Community_149.md) (17 shared connections)
-- [Community 41](Community_41.md) (7 shared connections)
-- [Community 20](Community_20.md) (5 shared connections)
+- [Community 20](Community_20.md) (6 shared connections)
+- [Community 83](Community_83.md) (4 shared connections)
 - [Community 93](Community_93.md) (2 shared connections)
-- [Community 24](Community_24.md) (2 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
 - [Community 218](Community_218.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
 - `src/io/SoftFloatDecimal.hpp`
 - `src/io/SoftFloatX80.hpp`
-- `tests/fpu_decimal_oracle.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 389 (88%)
-- INFERRED: 54 (12%)
+- EXTRACTED: 361 (87%)
+- INFERRED: 54 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

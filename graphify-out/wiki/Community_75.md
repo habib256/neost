@@ -1,6 +1,6 @@
 # Community 75
 
-> 20 nodes
+> 21 nodes
 
 ## Key Concepts
 
@@ -18,6 +18,7 @@
 - **makeAbsolute()** (4 connections) — `src/util/HostPath.cpp`
 - **stripTrailingSep()** (4 connections) — `src/util/HostPath.cpp`
 - **neost::hostpath::precomposeUtf8()** (2 connections) — `src/util/HostPath.cpp`
+- **direct** (2 connections)
 - **size_t** (1 connections)
 - **base** (1 connections) — `src/util/HostPath.cpp`
 - **comb** (1 connections) — `src/util/HostPath.cpp`
@@ -30,8 +31,8 @@
 - [Community 219](Community_219.md) (3 shared connections)
 - [Community 4](Community_4.md) (3 shared connections)
 - [Community 218](Community_218.md) (2 shared connections)
-- [Community 36](Community_36.md) (1 shared connections)
 - [Community 399](Community_399.md) (1 shared connections)
+- [Community 36](Community_36.md) (1 shared connections)
 
 ## Source Files
 
@@ -40,7 +41,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 52 (96%)
+- EXTRACTED: 53 (96%)
 - INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,11 +1,17 @@
 # Community 23
 
-> 13 nodes
+> 22 nodes
 
 ## Key Concepts
 
 - **SaveSector** (14 connections) — `src/io/StxImage.hpp`
-- **stxTrackWithSectorWrites()** (7 connections) — `src/io/Fdc.cpp`
+- **** (10 connections) — `src/io/StxImage.hpp`
+- **FLAG_CRC** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_FUZZY** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_LOST_DATA** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RECORD_TYPE** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RNF** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_VARIABLE_TIME** (1 connections) — `src/io/StxImage.hpp`
 - **bitPos** (1 connections) — `src/io/StxImage.hpp`
 - **data** (1 connections) — `src/io/StxImage.hpp`
 - **dataMark** (1 connections) — `src/io/StxImage.hpp`
@@ -17,24 +23,24 @@
 - **side** (1 connections) — `src/io/StxImage.hpp`
 - **track** (1 connections) — `src/io/StxImage.hpp`
 - **used** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE_SYNC** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_SECTOR_BLOCK** (1 connections) — `src/io/StxImage.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 110](Community_110.md) (2 shared connections)
-- [Community 63](Community_63.md) (2 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 208](Community_208.md) (1 shared connections)
+- [Community 9](Community_9.md) (2 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
+- [Community 63](Community_63.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Fdc.cpp`
 - `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 19 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 24 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

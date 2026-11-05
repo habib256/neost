@@ -20,10 +20,10 @@
 - **.jump()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.remove()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **Size** (3 connections)
-- **.stepInto()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.stepOver()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.disableLogging()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.loggedInstructions()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.logInstruction()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **guards** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **MoiraMacros.h** (2 connections) — `extern/moira/Moira/MoiraMacros.h`
 - **Patch local : watchpoints masqués au bus 24 bits (2026-07-11)** (2 connections) — `extern/moira/NEOST_VENDOR.md`
@@ -35,13 +35,11 @@
 - [Community 144](Community_144.md) (13 shared connections)
 - [Community 199](Community_199.md) (11 shared connections)
 - [Community 209](Community_209.md) (3 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 40](Community_40.md) (2 shared connections)
 - [Community 210](Community_210.md) (2 shared connections)
 - [Community 99](Community_99.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
 - [Community 57](Community_57.md) (1 shared connections)
-- [Community 40](Community_40.md) (1 shared connections)
 - [Community 333](Community_333.md) (1 shared connections)
 
 ## Source Files

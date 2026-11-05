@@ -1,13 +1,12 @@
 # Community 228
 
-> 22 nodes
+> 21 nodes
 
 ## Key Concepts
 
 - **Cartographie Hatari ↔ NeoST — audit de correspondance** (14 connections) — `docs/HATARI_MAPPING.md`
 - **10. GEMDOS HD / cartouche / RTC / SCU / joysticks (gemdos.c, cart.c, rtc.c, scu_vme.c, joy.c)** (7 connections) — `docs/HATARI_MAPPING.md`
 - **Docs à corriger** (7 connections) — `docs/HATARI_MAPPING.md`
-- **.pexecBpCreated()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.setAnalog()** (2 connections) — `src/io/StePads.hpp`
 - **7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c)** (2 connections) — `docs/HATARI_MAPPING.md`
 - **Commentaires code (signalés au passage)** (2 connections) — `docs/HATARI_MAPPING.md`
@@ -29,27 +28,25 @@
 
 ## Relationships
 
-- [Community 17](Community_17.md) (1 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
 - [Community 106](Community_106.md) (1 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
 - [Community 59](Community_59.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 152](Community_152.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 - [Community 200](Community_200.md) (1 shared connections)
 - [Community 307](Community_307.md) (1 shared connections)
 - [Community 88](Community_88.md) (1 shared connections)
-- [Community 362](Community_362.md) (1 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
 
 ## Source Files
 
 - `docs/HATARI_MAPPING.md`
-- `src/io/GemdosHd.hpp`
 - `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 26 (84%)
-- INFERRED: 5 (16%)
+- EXTRACTED: 25 (86%)
+- INFERRED: 4 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,39 +1,37 @@
 # Community 350
 
-> 12 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **.emit()** (8 connections) — `src/audio/MidiOutHost.hpp`
-- **OpenDest** (7 connections) — `src/audio/MidiOutHost.hpp`
-- **.panic()** (5 connections) — `src/audio/MidiOutHost.hpp`
-- **.reapSysEx_()** (5 connections) — `src/audio/MidiOutHost.hpp`
-- **.sendTo()** (5 connections) — `src/audio/MidiOutHost.hpp`
-- **.sendSysEx_()** (4 connections) — `src/audio/MidiOutHost.hpp`
-- **.parse()** (3 connections) — `src/audio/MidiOutHost.hpp`
-- **string** (2 connections)
-- **channels** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **ep** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **name** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **uid** (1 connections) — `src/audio/MidiOutHost.hpp`
+- **.onSlice()** (10 connections) — `src/core/Blitter.hpp`
+- **.noteCpuBusAccess()** (5 connections) — `src/core/Blitter.hpp`
+- **.clearPreStartWindow()** (5 connections) — `src/core/Blitter.hpp`
+- **.pauseTransfer()** (5 connections) — `src/core/Blitter.hpp`
+- **.start()** (4 connections) — `src/core/Blitter.hpp`
+- **.armPreStartWindow()** (4 connections) — `src/core/Blitter.hpp`
+- **.reset()** (3 connections) — `src/core/Blitter.hpp`
+- **P2 — Blitter non-hog (`blitter.c:251,395`)** (3 connections) — `docs/CYCLE_ACCURACY.md`
 
 ## Relationships
 
-- [Community 84](Community_84.md) (8 shared connections)
-- [Community 42](Community_42.md) (7 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 171](Community_171.md) (1 shared connections)
-- [Community 223](Community_223.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 37](Community_37.md) (7 shared connections)
+- [Community 363](Community_363.md) (3 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
+- [Community 366](Community_366.md) (1 shared connections)
+- [Community 317](Community_317.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiOutHost.hpp`
+- `docs/CYCLE_ACCURACY.md`
+- `src/core/Blitter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 20 (65%)
-- INFERRED: 11 (35%)
+- EXTRACTED: 15 (50%)
+- INFERRED: 15 (50%)
 - AMBIGUOUS: 0 (0%)
 
 ---

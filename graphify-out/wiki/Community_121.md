@@ -1,12 +1,14 @@
 # Community 121
 
-> 17 nodes
+> 19 nodes
 
 ## Key Concepts
 
 - **DongleRule** (13 connections) — `src/io/DongleTable.hpp`
 - **DongleTable.cpp** (10 connections) — `src/io/DongleTable.cpp`
 - **parseDongleTable()** (9 connections) — `src/io/DongleTable.cpp`
+- **.loadDongleTable()** (5 connections) — `src/gui/App.hpp`
+- **.portFromId()** (5 connections) — `src/io/PortDevices.hpp`
 - **matchDongleRules()** (5 connections) — `src/io/DongleTable.cpp`
 - **lower()** (4 connections) — `src/io/DongleTable.cpp`
 - **string** (4 connections)
@@ -24,21 +26,27 @@
 
 ## Relationships
 
-- [Community 51](Community_51.md) (5 shared connections)
+- [Community 51](Community_51.md) (6 shared connections)
 - [Community 4](Community_4.md) (4 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
+- [Community 200](Community_200.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 269](Community_269.md) (1 shared connections)
 - [Community 119](Community_119.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
 
 ## Source Files
 
+- `src/gui/App.hpp`
 - `src/io/DongleTable.cpp`
 - `src/io/DongleTable.hpp`
+- `src/io/PortDevices.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 37 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 44 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

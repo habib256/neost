@@ -1200,8 +1200,8 @@ int Fdc::spinWaitDelay() {
 void Fdc::setIntrqLine(bool on) {
     static const bool fdcDebug = getenv("NEOST_FDC_DEBUG") != nullptr;
     if (fdcDebug)
-        std::fprintf(stderr, "[fdc-irq] @%lldms intrq=%d (sig=%02x)\n",
-                     (long long)(nowCyc() / 8021), on ? 1 : 0, irqSignal_);
+        std::fprintf(stderr, "[fdc-irq] @%lldms intrq=%d (sig=%02x) pc=%06x\n",
+                     (long long)(nowCyc() / 8021), on ? 1 : 0, irqSignal_, bus_.cpu ? bus_.cpu->pc() : 0u);
     // Ligne GPIP5 (polling EmuTOS via timeout_gpip) ; le canal 7 est levé par le
     // détecteur de FRONT du setter (règle AER) — pas de raise() manuel : une INTRQ
     // maintenue (commandes enchaînées) ne regénère pas d'IRQ sans front réel.

@@ -1,12 +1,12 @@
 # Community 9
 
-> 43 nodes
+> 65 nodes
 
 ## Key Concepts
 
+- **Track** (40 connections) — `src/io/StxImage.hpp`
 - **StxImage** (30 connections) — `src/io/StxImage.hpp`
 - **StxImage.cpp** (22 connections) — `src/io/StxImage.cpp`
-- **FDC WD1772 + DMA + STX — `Fdc.cpp`, `StxImage.cpp` ↔ `fdc.c`, `floppies/stx.c`** (15 connections) — `docs/HATARI_DIVERGENCES.md`
 - **main()** (11 connections) — `tests/stx_writetrack_test.cpp`
 - **stx_writetrack_test.cpp** (11 connections) — `tests/stx_writetrack_test.cpp`
 - **.parse()** (10 connections) — `src/io/StxImage.hpp`
@@ -19,8 +19,6 @@
 - **SaveTrack** (5 connections) — `src/io/StxImage.hpp`
 - **forgeFlux()** (5 connections) — `tests/stx_writetrack_test.cpp`
 - **crc16()** (4 connections) — `src/io/StxImage.cpp`
-- **MoiraConfig.h** (4 connections) — `extern/moira/Moira/MoiraConfig.h`
-- **cassert** (4 connections)
 - **wr16be()** (3 connections) — `src/io/StxImage.cpp`
 - **wr32be()** (3 connections) — `src/io/StxImage.cpp`
 - **add()** (3 connections) — `tests/stx_writetrack_test.cpp`
@@ -29,35 +27,35 @@
 - **.sides()** (2 connections) — `src/io/StxImage.hpp`
 - **.tracksPerSide()** (2 connections) — `src/io/StxImage.hpp`
 - **rd16be()** (2 connections) — `src/io/StxImage.cpp`
-- *... and 18 more nodes in this community*
+- **rd16le()** (2 connections) — `src/io/StxImage.cpp`
+- **rd32be()** (2 connections) — `src/io/StxImage.cpp`
+- *... and 40 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (17 shared connections)
-- [Community 110](Community_110.md) (13 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 24](Community_24.md) (3 shared connections)
-- [Community 201](Community_201.md) (2 shared connections)
-- [Community 153](Community_153.md) (2 shared connections)
-- [Community 54](Community_54.md) (2 shared connections)
-- [Community 63](Community_63.md) (2 shared connections)
-- [Community 95](Community_95.md) (2 shared connections)
+- [Community 256](Community_256.md) (13 shared connections)
+- [Community 63](Community_63.md) (12 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 54](Community_54.md) (3 shared connections)
+- [Community 201](Community_201.md) (3 shared connections)
+- [Community 23](Community_23.md) (2 shared connections)
+- [Community 163](Community_163.md) (2 shared connections)
+- [Community 170](Community_170.md) (2 shared connections)
 - [Community 78](Community_78.md) (1 shared connections)
-- [Community 23](Community_23.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `extern/moira/Moira/MoiraConfig.h`
 - `src/io/StxImage.cpp`
 - `src/io/StxImage.hpp`
 - `tests/stx_writetrack_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 97 (73%)
-- INFERRED: 35 (27%)
+- EXTRACTED: 118 (80%)
+- INFERRED: 29 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

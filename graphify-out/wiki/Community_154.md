@@ -1,51 +1,41 @@
 # Community 154
 
-> 22 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **Observe.hpp** (19 connections) — `src/headless/Observe.hpp`
-- **ProbeSet** (11 connections) — `src/headless/Observe.hpp`
-- **ProbeSpec** (10 connections) — `src/headless/Observe.hpp`
-- **probeFields()** (8 connections) — `src/headless/Observe.hpp`
-- **Machine** (6 connections)
-- **addProbe()** (5 connections) — `src/headless/Observe.hpp`
-- **emitProbeLine()** (5 connections) — `src/headless/Observe.hpp`
-- **parseProbeSpec()** (5 connections) — `src/headless/Observe.hpp`
-- **probeValue()** (5 connections) — `src/headless/Observe.hpp`
-- **ramHash()** (4 connections) — `src/headless/Observe.hpp`
-- **read8()** (4 connections) — `src/headless/Observe.hpp`
-- **screenHash()** (4 connections) — `src/headless/Observe.hpp`
-- **string** (4 connections)
-- **writePpm()** (3 connections) — `src/headless/Observe.hpp`
-- **Chasse round 5 : le save-state acceptait une AUTRE ROM, et le harnais annonçait des écritures tronquées comme réussies (2026-09-02)** (3 connections) — `CHANGELOG.md`
-- **hashRam** (1 connections) — `src/headless/Observe.hpp`
-- **hashRamAddr** (1 connections) — `src/headless/Observe.hpp`
-- **hashRamLen** (1 connections) — `src/headless/Observe.hpp`
-- **probes** (1 connections) — `src/headless/Observe.hpp`
-- **addr** (1 connections) — `src/headless/Observe.hpp`
-- **len** (1 connections) — `src/headless/Observe.hpp`
-- **name** (1 connections) — `src/headless/Observe.hpp`
+- **Rig** (11 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **testDmaSoundMicrowireTiming()** (8 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **Checks** (4 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **.equal()** (2 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **main()** (2 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **.due()** (2 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **.start()** (2 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **.Rig()** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **count** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **failures** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **Bus** (1 connections)
+- **DmaSound** (1 connections)
+- **Scheduler** (1 connections)
+- **bus** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **live** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **scheduler** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **sound** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
 
 ## Relationships
 
-- [Community 200](Community_200.md) (5 shared connections)
 - [Community 102](Community_102.md) (4 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 186](Community_186.md) (2 shared connections)
-- [Community 398](Community_398.md) (2 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 362](Community_362.md) (1 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/headless/Observe.hpp`
+- `tests/dmasound_microwire_timing_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 57 (93%)
-- INFERRED: 4 (7%)
+- EXTRACTED: 23 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

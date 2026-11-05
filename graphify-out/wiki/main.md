@@ -2,7 +2,7 @@
 
 > God node · 161 connections · `tests/selftest_logic.cpp`
 
-**Community:** [Community 41](Community_41.md)
+**Community:** [Community 35](Community_35.md)
 
 ## Connections by Relation
 

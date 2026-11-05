@@ -1,31 +1,36 @@
 # Community 363
 
-> 5 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
-- **.didExecute()** (7 connections) — `src/core/Cpu68k.cpp`
-- **Mode** (2 connections)
-- **Size** (2 connections)
-- **trapObserver** (2 connections) — `src/core/Cpu68k.cpp`
+- **.runSlice()** (7 connections) — `src/core/Blitter.hpp`
+- **Blitter — `Blitter.cpp` ↔ `blitter.c`** (6 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.readWord()** (5 connections) — `src/core/Blitter.hpp`
+- **.writeWord()** (5 connections) — `src/core/Blitter.hpp`
+- **.billCycles()** (5 connections) — `src/core/Blitter.hpp`
+- **accessObserver** (3 connections) — `src/core/Blitter.hpp`
 
 ## Relationships
 
-- [Community 64](Community_64.md) (5 shared connections)
-- [Community 0](Community_0.md) (2 shared connections)
-- [Community 83](Community_83.md) (2 shared connections)
-- [Community 349](Community_349.md) (1 shared connections)
-- [Community 66](Community_66.md) (1 shared connections)
+- [Community 37](Community_37.md) (5 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 350](Community_350.md) (3 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
+- [Community 27](Community_27.md) (1 shared connections)
+- [Community 366](Community_366.md) (1 shared connections)
+- [Community 249](Community_249.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.cpp`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/core/Blitter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 10 (42%)
+- INFERRED: 14 (58%)
 - AMBIGUOUS: 0 (0%)
 
 ---

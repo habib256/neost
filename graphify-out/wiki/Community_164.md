@@ -19,11 +19,11 @@
 
 - [Community 117](Community_117.md) (5 shared connections)
 - [Community 247](Community_247.md) (4 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 - [Community 380](Community_380.md) (1 shared connections)
 - [Community 51](Community_51.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
 - [Community 262](Community_262.md) (1 shared connections)
 - [Community 171](Community_171.md) (1 shared connections)
 

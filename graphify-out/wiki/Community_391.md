@@ -1,30 +1,24 @@
 # Community 391
 
-> 6 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **FrameMixBuffers** (6 connections) — `src/core/AudioMix.hpp`
-- **mixEmulatedFrame()** (4 connections) — `src/core/AudioMix.cpp`
-- **DmaSound** (1 connections)
-- **YM2149** (1 connections)
-- **st** (1 connections) — `src/core/AudioMix.hpp`
-- **ym** (1 connections) — `src/core/AudioMix.hpp`
+- **Cpcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Cpcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 61](Community_61.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 135](Community_135.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/AudioMix.cpp`
-- `src/core/AudioMix.hpp`
+- `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 3 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

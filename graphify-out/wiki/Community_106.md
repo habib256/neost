@@ -1,11 +1,11 @@
 # Community 106
 
-> 34 nodes
+> 31 nodes
 
 ## Key Concepts
 
 - **StePads** (34 connections) — `src/io/StePads.hpp`
-- **** (9 connections) — `src/io/StePads.hpp`
+- **🧷 4ᵉ passe — couches d'intégration (2026-06-15, workflow 2 agents)** (4 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.readButtonsDip()** (3 connections) — `src/io/StePads.hpp`
 - **.readDirections()** (3 connections) — `src/io/StePads.hpp`
 - **.sel()** (3 connections) — `src/io/StePads.hpp`
@@ -20,36 +20,36 @@
 - **.setMegaSte()** (1 connections) — `src/io/StePads.hpp`
 - **.writeSelectByte()** (1 connections) — `src/io/StePads.hpp`
 - **.writeSelectWord()** (1 connections) — `src/io/StePads.hpp`
-- **DOWN** (1 connections) — `src/io/StePads.hpp`
-- **FIRE** (1 connections) — `src/io/StePads.hpp`
 - **StateArchive** (1 connections)
-- **LEFT** (1 connections) — `src/io/StePads.hpp`
-- **RIGHT** (1 connections) — `src/io/StePads.hpp`
 - **analog_** (1 connections) — `src/io/StePads.hpp`
 - **ANALOG_MAX** (1 connections) — `src/io/StePads.hpp`
 - **ANALOG_MID** (1 connections) — `src/io/StePads.hpp`
 - **ANALOG_MIN** (1 connections) — `src/io/StePads.hpp`
-- *... and 9 more nodes in this community*
+- **hasAnalog_** (1 connections) — `src/io/StePads.hpp`
+- **megaSte_** (1 connections) — `src/io/StePads.hpp`
+- **MEGASTE_DIP** (1 connections) — `src/io/StePads.hpp`
+- **oe_** (1 connections) — `src/io/StePads.hpp`
+- *... and 6 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
 - [Community 175](Community_175.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 113](Community_113.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
+- [Community 374](Community_374.md) (1 shared connections)
 - [Community 228](Community_228.md) (1 shared connections)
-- [Community 105](Community_105.md) (1 shared connections)
 - [Community 24](Community_24.md) (1 shared connections)
+- [Community 105](Community_105.md) (1 shared connections)
 
 ## Source Files
 
+- `docs/HATARI_DIVERGENCES.md`
 - `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 43 (91%)
-- INFERRED: 4 (9%)
+- EXTRACTED: 38 (90%)
+- INFERRED: 4 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

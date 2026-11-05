@@ -1,16 +1,18 @@
 # Community 166
 
-> 18 nodes
+> 20 nodes
 
 ## Key Concepts
 
 - **run_fx68k_bench.py** (22 connections) — `tools/run_fx68k_bench.py`
 - **main()** (14 connections) — `tools/run_fx68k_bench.py`
+- **build()** (8 connections) — `tools/make_fx68k_programs.py`
 - **ipl_sweep()** (7 connections) — `tools/run_fx68k_bench.py`
 - **compare()** (5 connections) — `tools/run_fx68k_bench.py`
 - **run_one()** (5 connections) — `tools/run_fx68k_bench.py`
 - **build_fx68k()** (4 connections) — `tools/run_fx68k_bench.py`
 - **parse()** (4 connections) — `tools/run_fx68k_bench.py`
+- **main()** (3 connections) — `tools/make_fx68k_programs.py`
 - **first_frame_write()** (3 connections) — `tools/run_fx68k_bench.py`
 - **cut()** (2 connections) — `tools/run_fx68k_bench.py`
 - **fmt()** (2 connections) — `tools/run_fx68k_bench.py`
@@ -25,19 +27,19 @@
 
 ## Relationships
 
-- [Community 18](Community_18.md) (7 shared connections)
-- [Community 107](Community_107.md) (4 shared connections)
+- [Community 18](Community_18.md) (10 shared connections)
+- [Community 107](Community_107.md) (6 shared connections)
 - [Community 55](Community_55.md) (3 shared connections)
-- [Community 258](Community_258.md) (2 shared connections)
 - [Community 248](Community_248.md) (1 shared connections)
 
 ## Source Files
 
+- `tools/make_fx68k_programs.py`
 - `tools/run_fx68k_bench.py`
 
 ## Audit Trail
 
-- EXTRACTED: 49 (100%)
+- EXTRACTED: 56 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

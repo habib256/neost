@@ -1,11 +1,14 @@
 # Community 130
 
-> 196 nodes
+> 199 nodes
 
 ## Key Concepts
 
 - **Changelog — NeoST** (274 connections) — `CHANGELOG.md`
 - **Bug hunt passes 1-3 + CI de release (2026-07-31)** (2 connections) — `CHANGELOG.md`
+- **Le fetch du son DMA se mesure enfin — et c'est l'oracle qui ne se reproduit pas (2026-09-02)** (2 connections) — `CHANGELOG.md`
+- **MIDI IN — l'ACIA tire à 31 250 bauds au lieu d'une rafale par trame (2026-08-29)** (2 connections) — `CHANGELOG.md`
+- **Pilotage externe déterministe de NeoST (2026-09-04)** (2 connections) — `CHANGELOG.md`
 - **0.5.1 — Windows, et le vrai paquet Pi 400 (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.2 — la 0.5.1, mais réellement livrée (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.4 — dongles, ports, MIDI vérifié (2026-08-23)** (1 connections) — `CHANGELOG.md`
@@ -26,25 +29,22 @@
 - **Audit d'architecture quatre dimensions + grand ménage du TODO (2026-08-27)** (1 connections) — `CHANGELOG.md`
 - **Audit des fiches : YM2149, WD1772, ACIA, et empreinte d'état (2026-11-04)** (1 connections) — `CHANGELOG.md`
 - **Banc du blitter contre `stBlitter.sv`, et la netlist ST-4082 (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- **Banc fx68k : tous les modes d'adressage, et --key dans la passe de jeux (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- **Banc Moira↔fx68k : le 68000 nu contre le RTL, et le TODO rangé sur le cap (2026-11-03)** (1 connections) — `CHANGELOG.md`
-- **Bancs RTL en CI (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- *... and 171 more nodes in this community*
+- *... and 174 more nodes in this community*
 
 ## Relationships
 
 - [Community 101](Community_101.md) (7 shared connections)
-- [Community 152](Community_152.md) (5 shared connections)
-- [Community 35](Community_35.md) (4 shared connections)
-- [Community 200](Community_200.md) (3 shared connections)
-- [Community 67](Community_67.md) (3 shared connections)
-- [Community 88](Community_88.md) (3 shared connections)
-- [Community 288](Community_288.md) (3 shared connections)
-- [Community 58](Community_58.md) (2 shared connections)
+- [Community 39](Community_39.md) (6 shared connections)
+- [Community 88](Community_88.md) (5 shared connections)
+- [Community 269](Community_269.md) (3 shared connections)
+- [Community 13](Community_13.md) (3 shared connections)
+- [Community 200](Community_200.md) (2 shared connections)
+- [Community 315](Community_315.md) (2 shared connections)
 - [Community 329](Community_329.md) (2 shared connections)
+- [Community 215](Community_215.md) (2 shared connections)
+- [Community 67](Community_67.md) (2 shared connections)
 - [Community 175](Community_175.md) (2 shared connections)
-- [Community 84](Community_84.md) (2 shared connections)
-- [Community 68](Community_68.md) (2 shared connections)
+- [Community 42](Community_42.md) (2 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 274 (100%)
-- INFERRED: 1 (0%)
+- EXTRACTED: 274 (99%)
+- INFERRED: 4 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

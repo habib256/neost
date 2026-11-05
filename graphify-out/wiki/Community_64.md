@@ -1,6 +1,6 @@
 # Community 64
 
-> 38 nodes
+> 37 nodes
 
 ## Key Concepts
 
@@ -28,22 +28,22 @@
 - **.read16OnReset()** (5 connections) — `src/core/Cpu68k.cpp`
 - **.superNow()** (5 connections) — `src/core/Cpu68k.cpp`
 - **.getSR()** (4 connections) — `src/io/GemdosHd.hpp`
-- **.commitIpl()** (4 connections) — `src/core/Cpu68k.cpp`
-- *... and 13 more nodes in this community*
+- **.iackSyncBefore()** (4 connections) — `src/core/Cpu68k.cpp`
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
+- [Community 349](Community_349.md) (12 shared connections)
 - [Community 27](Community_27.md) (11 shared connections)
-- [Community 349](Community_349.md) (6 shared connections)
-- [Community 363](Community_363.md) (5 shared connections)
 - [Community 16](Community_16.md) (5 shared connections)
-- [Community 314](Community_314.md) (4 shared connections)
 - [Community 66](Community_66.md) (3 shared connections)
+- [Community 333](Community_333.md) (2 shared connections)
+- [Community 314](Community_314.md) (2 shared connections)
 - [Community 36](Community_36.md) (2 shared connections)
 - [Community 99](Community_99.md) (2 shared connections)
-- [Community 152](Community_152.md) (2 shared connections)
-- [Community 333](Community_333.md) (2 shared connections)
-- [Community 203](Community_203.md) (2 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 241](Community_241.md) (2 shared connections)
+- [Community 358](Community_358.md) (1 shared connections)
 - [Community 17](Community_17.md) (1 shared connections)
 
 ## Source Files
@@ -56,8 +56,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 129 (77%)
-- INFERRED: 39 (23%)
+- EXTRACTED: 128 (77%)
+- INFERRED: 38 (23%)
 - AMBIGUOUS: 0 (0%)
 
 ---

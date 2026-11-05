@@ -1,35 +1,37 @@
 # Community 214
 
-> 9 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **SndRig** (11 connections) — `tests/selftest_logic.cpp`
-- **Scheduler** (4 connections)
-- **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
-- **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
-- **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **DmaSound** (1 connections)
-- **bus** (1 connections) — `tests/selftest_logic.cpp`
-- **sched** (1 connections) — `tests/selftest_logic.cpp`
-- **snd** (1 connections) — `tests/selftest_logic.cpp`
+- **Mode borne (kiosk)** (9 connections) — `docs/KIOSK.md`
+- **.state()** (4 connections) — `src/io/CartridgeKey.hpp`
+- **Dossiers ROM** (2 connections) — `docs/KIOSK.md`
+- **Raccourcis** (2 connections) — `docs/KIOSK.md`
+- **Borne Raspberry Pi** (1 connections) — `docs/KIOSK.md`
+- **Clavier & souris (SELECT manette, ou F12)** (1 connections) — `docs/KIOSK.md`
+- **Démarrage direct sur un jeu (attract)** (1 connections) — `docs/KIOSK.md`
+- **Joysticks** (1 connections) — `docs/KIOSK.md`
+- **Menu in-game (START manette, ou F9)** (1 connections) — `docs/KIOSK.md`
+- **Zoom adaptatif (défaut, bascule F10)** (1 connections) — `docs/KIOSK.md`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 211](Community_211.md) (2 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
-- [Community 245](Community_245.md) (1 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 93](Community_93.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/selftest_logic.cpp`
+- `docs/KIOSK.md`
+- `src/io/CartridgeKey.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 10 (71%)
+- INFERRED: 4 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,63 +1,51 @@
 # Community 110
 
-> 43 nodes
+> 25 nodes
 
 ## Key Concepts
 
-- **Track** (40 connections) — `src/io/StxImage.hpp`
-- **Priorités — divergences HAUTE et MOYENNE** (20 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.readTrackStx()** (17 connections) — `src/io/Fdc.hpp`
-- **.nextSectorIDStx()** (11 connections) — `src/io/Fdc.hpp`
-- **Disquette (FDC WD1772 + DMA)** (11 connections) — `docs/IMPLEMENTED.md`
-- **.readSectorStx()** (9 connections) — `src/io/Fdc.hpp`
-- **.densityFactor()** (8 connections) — `src/io/Fdc.hpp`
-- **.bytesPerTrackStx()** (8 connections) — `src/io/Fdc.hpp`
-- **.writeSectorStx()** (8 connections) — `src/io/Fdc.hpp`
-- **.sectorsCountView()** (8 connections) — `src/io/StxImage.hpp`
-- **.indexCurrentPosBytes()** (6 connections) — `src/io/Fdc.hpp`
-- **.indexCurrentPosCycles()** (6 connections) — `src/io/Fdc.hpp`
-- **.writeTrackStx()** (6 connections) — `src/io/Fdc.hpp`
-- **.rngNext()** (6 connections) — `src/io/Fdc.hpp`
-- **.stxPersist()** (5 connections) — `src/io/Fdc.hpp`
-- **.busToFdcCycles()** (4 connections) — `src/io/Fdc.hpp`
-- **.bufferReadBytePos()** (4 connections) — `src/io/Fdc.hpp`
-- **.bufferAddTiming()** (3 connections) — `src/io/Fdc.hpp`
-- **Images IPF (SPS/CAPS) dans les lecteurs A et B, sans libcapsimage (2026-10-22)** (3 connections) — `CHANGELOG.md`
-- **blockSize** (1 connections) — `src/io/StxImage.hpp`
-- **flags** (1 connections) — `src/io/StxImage.hpp`
-- **fuzzySize** (1 connections) — `src/io/StxImage.hpp`
-- **mfmSize** (1 connections) — `src/io/StxImage.hpp`
-- **pFuzzy** (1 connections) — `src/io/StxImage.hpp`
-- **pSectorsImage** (1 connections) — `src/io/StxImage.hpp`
-- *... and 18 more nodes in this community*
+- **Rig** (12 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **testIkbdSciReset()** (10 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **ikbd_sci_reset_logic.cpp** (10 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **compareSci()** (9 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **Oracle** (7 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **Checks** (5 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.equal()** (3 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.bit()** (3 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **main()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.raw()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.at()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.bootDue()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.Rig()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **count** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **failures** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **Ikbd** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **left** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **state** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **value** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **ikbd** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **live** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **mfp** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **scheduler** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
 
 ## Relationships
 
-- [Community 63](Community_63.md) (23 shared connections)
-- [Community 12](Community_12.md) (14 shared connections)
-- [Community 9](Community_9.md) (13 shared connections)
-- [Community 95](Community_95.md) (10 shared connections)
-- [Community 24](Community_24.md) (6 shared connections)
-- [Community 201](Community_201.md) (3 shared connections)
-- [Community 288](Community_288.md) (3 shared connections)
-- [Community 23](Community_23.md) (2 shared connections)
-- [Community 35](Community_35.md) (2 shared connections)
-- [Community 173](Community_173.md) (2 shared connections)
-- [Community 152](Community_152.md) (2 shared connections)
-- [Community 215](Community_215.md) (2 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
+- [Community 35](Community_35.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/IMPLEMENTED.md`
-- `src/io/Fdc.hpp`
-- `src/io/StxImage.hpp`
+- `tests/ikbd_sci_reset_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 62 (41%)
-- INFERRED: 88 (59%)
+- EXTRACTED: 43 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---
