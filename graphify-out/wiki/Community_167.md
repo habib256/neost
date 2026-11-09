@@ -1,43 +1,35 @@
 # Community 167
 
-> 13 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **MidiAcia.cpp** (20 connections) — `src/io/MidiAcia.cpp`
-- **.write8()** (8 connections) — `src/io/MidiAcia.hpp`
-- **.advanceTx()** (7 connections) — `src/io/MidiAcia.hpp`
-- **.txBitCycles()** (7 connections) — `src/io/MidiAcia.hpp`
-- **.emitTx()** (6 connections) — `src/io/MidiAcia.hpp`
-- **.nextTxEdge()** (5 connections) — `src/io/MidiAcia.hpp`
-- **.armTx()** (4 connections) — `src/io/MidiAcia.hpp`
-- **.txData()** (4 connections) — `src/io/MidiAcia.hpp`
-- **.pushRx()** (2 connections) — `src/io/MidiAcia.hpp`
-- **.onTxEmpty()** (2 connections) — `src/io/MidiAcia.hpp`
-- **.read8()** (2 connections) — `src/io/MidiAcia.hpp`
-- **midiSink_** (2 connections) — `src/io/MidiAcia.hpp`
-- **midiSinkTimed_** (2 connections) — `src/io/MidiAcia.hpp`
+- **.mixSegment()** (7 connections) — `src/core/DmaSound.hpp`
+- **.capPullLR()** (5 connections) — `src/core/DmaSound.hpp`
+- **.mix()** (5 connections) — `src/core/DmaSound.hpp`
+- **.capPush()** (4 connections) — `src/core/DmaSound.hpp`
+- **.mixStereo()** (4 connections) — `src/core/DmaSound.hpp`
+- **.syncAudioFromCpu()** (3 connections) — `src/core/DmaSound.hpp`
+- **.lowPassPull()** (3 connections) — `src/core/DmaSound.hpp`
+- **.capAvail()** (3 connections) — `src/core/DmaSound.hpp`
+- **.capRenderAvail()** (3 connections) — `src/core/DmaSound.hpp`
+- **fir121()** (2 connections) — `src/core/DmaSound.cpp`
 
 ## Relationships
 
-- [Community 25](Community_25.md) (13 shared connections)
-- [Community 302](Community_302.md) (5 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 59](Community_59.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 391](Community_391.md) (1 shared connections)
-- [Community 429](Community_429.md) (1 shared connections)
+- [Community 48](Community_48.md) (9 shared connections)
+- [Community 13](Community_13.md) (9 shared connections)
+- [Community 352](Community_352.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/MidiAcia.cpp`
-- `src/io/MidiAcia.hpp`
+- `src/core/DmaSound.cpp`
+- `src/core/DmaSound.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 34 (71%)
-- INFERRED: 14 (29%)
+- EXTRACTED: 18 (62%)
+- INFERRED: 11 (38%)
 - AMBIGUOUS: 0 (0%)
 
 ---

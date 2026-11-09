@@ -1,10 +1,11 @@
 # Community 214
 
-> 17 nodes
+> 18 nodes
 
 ## Key Concepts
 
 - **runKioskMenu()** (16 connections) — `src/gui/AppLoop.cpp`
+- **consumeProfileRequests()** (12 connections) — `src/gui/AppLoop.cpp`
 - **joyResolveRoles()** (8 connections) — `src/gui/JoyMap.cpp`
 - **JoyMap.cpp** (7 connections) — `src/gui/JoyMap.cpp`
 - **joymapSerialize()** (6 connections) — `src/gui/JoyMap.cpp`
@@ -24,10 +25,11 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
-- [Community 380](Community_380.md) (6 shared connections)
-- [Community 200](Community_200.md) (4 shared connections)
-- [Community 397](Community_397.md) (2 shared connections)
+- [Community 380](Community_380.md) (11 shared connections)
+- [Community 4](Community_4.md) (9 shared connections)
+- [Community 101](Community_101.md) (3 shared connections)
+- [Community 200](Community_200.md) (3 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
 - [Community 204](Community_204.md) (2 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
 - [Community 21](Community_21.md) (1 shared connections)
@@ -43,8 +45,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 33 (58%)
-- INFERRED: 24 (42%)
+- EXTRACTED: 37 (55%)
+- INFERRED: 30 (45%)
 - AMBIGUOUS: 0 (0%)
 
 ---

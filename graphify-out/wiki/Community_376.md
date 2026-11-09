@@ -1,10 +1,9 @@
 # Community 376
 
-> 8 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **DockLayout.cpp** (14 connections) — `src/gui/DockLayout.cpp`
 - **WinSettings_WriteAll()** (4 connections) — `src/gui/DockLayout.cpp`
 - **ImGuiContext** (4 connections)
 - **ImGuiSettingsHandler** (4 connections)
@@ -15,9 +14,7 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (6 shared connections)
-- [Community 200](Community_200.md) (3 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
 
 ## Source Files
 
@@ -25,7 +22,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
+- EXTRACTED: 13 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

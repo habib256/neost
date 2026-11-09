@@ -1,34 +1,31 @@
 # Community 264
 
-> 10 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **build()** (10 connections) — `tools/make_selftest_cart.py`
-- **make_selftest_cart.py** (5 connections) — `tools/make_selftest_cart.py`
-- **raw()** (3 connections) — `tools/make_selftest_cart.py`
-- **stritem()** (3 connections) — `tools/make_selftest_cart.py`
-- **main()** (3 connections) — `tools/make_selftest_cart.py`
-- **lbl()** (2 connections) — `tools/make_selftest_cart.py`
-- **raw32()** (2 connections) — `tools/make_selftest_cart.py`
-- **br()** (1 connections) — `tools/make_selftest_cart.py`
-- **imm_addr()** (1 connections) — `tools/make_selftest_cart.py`
-- **vec()** (1 connections) — `tools/make_selftest_cart.py`
+- **drawStKiosk()** (7 connections) — `src/gui/StScreenView.cpp`
+- **crtApply()** (6 connections) — `src/gui/StScreenView.cpp`
+- **drawStScreen()** (5 connections) — `src/gui/StScreenView.cpp`
+- **GlScreen** (3 connections)
+- **App** (3 connections)
+- **GLuint** (1 connections)
 
 ## Relationships
 
-- [Community 3](Community_3.md) (2 shared connections)
-- [Community 18](Community_18.md) (2 shared connections)
-- [Community 151](Community_151.md) (1 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 380](Community_380.md) (2 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
+- [Community 211](Community_211.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/make_selftest_cart.py`
+- `src/gui/StScreenView.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 12 (75%)
+- INFERRED: 4 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

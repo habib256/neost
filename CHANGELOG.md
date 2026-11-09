@@ -15,7 +15,11 @@ ne fournit pas indirectement `std::fill` aux modèles NE2000 et ISP1160. Les cin
 NAT sont inscrits (sans déclenchement réel inventé), le registre reste valide
 avec les étapes réseau désactivées, et `<algorithm>` est inclus directement.
 Le même audit couvre les autres appels aux algorithmes standard du cœur
-(CPU, YM2149, Shifter et Machine) sans inclusion explicite.
+(CPU, YM2149, Shifter et Machine) sans inclusion explicite. Le cœur Moira
+inclut aussi `<cstdlib>` pour les appels `std::getenv` de son instrumentation,
+y compris ceux des en-têtes d'implémentation ; aucune logique CPU ne change.
+Le job WASM fixe désormais Emscripten à la version 7.0.0 utilisée pour cette
+validation, plutôt que de suivre une version `latest` changeante.
 Les jobs Windows/Winsock, macOS Universal 2, Linux bionic/ARM64 et Android
 passent sur le commit du port ; les corrections sont validées séparément
 avant le nouveau passage CI.

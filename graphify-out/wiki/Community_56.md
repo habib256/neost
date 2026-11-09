@@ -1,42 +1,44 @@
 # Community 56
 
-> 18 nodes
+> 19 nodes
 
 ## Key Concepts
 
-- **run()** (11 connections) — `src/headless/Server.cpp`
-- **Slot** (8 connections) — `src/headless/Server.cpp`
-- **arity()** (5 connections) — `src/headless/Server.cpp`
-- **string** (5 connections)
-- **reply()** (4 connections) — `src/headless/Server.cpp`
-- **words()** (4 connections) — `src/headless/Server.cpp`
-- **applyJoy()** (3 connections) — `src/headless/Server.cpp`
-- **parseLong()** (3 connections) — `src/headless/Server.cpp`
-- **splitFirst()** (3 connections) — `src/headless/Server.cpp`
-- **data** (3 connections) — `src/headless/Server.cpp`
-- **Machine** (2 connections)
-- **Options** (1 connections)
-- **size_t** (1 connections)
-- **frame** (1 connections) — `src/headless/Server.cpp`
-- **joy0** (1 connections) — `src/headless/Server.cpp`
-- **joy1** (1 connections) — `src/headless/Server.cpp`
-- **joyKnown** (1 connections) — `src/headless/Server.cpp`
-- **used** (1 connections) — `src/headless/Server.cpp`
+- **HayesModem** (17 connections) — `src/net/HayesModem.hpp`
+- **HayesModem.cpp** (13 connections) — `src/net/HayesModem.cpp`
+- **.execute()** (8 connections) — `src/net/HayesModem.hpp`
+- **.sendStr()** (7 connections) — `src/net/HayesModem.hpp`
+- **.hangup()** (7 connections) — `src/net/HayesModem.hpp`
+- **.dial()** (6 connections) — `src/net/HayesModem.hpp`
+- **.onTx()** (5 connections) — `src/net/HayesModem.hpp`
+- **.HayesModem()** (4 connections) — `src/net/HayesModem.hpp`
+- **mtrace()** (4 connections) — `src/net/HayesModem.cpp`
+- **string** (4 connections)
+- **.poll()** (3 connections) — `src/net/HayesModem.hpp`
+- **Mfp** (2 connections)
+- **.connected()** (1 connections) — `src/net/HayesModem.hpp`
+- **cmd_** (1 connections) — `src/net/HayesModem.hpp`
+- **dataMode_** (1 connections) — `src/net/HayesModem.hpp`
+- **echo_** (1 connections) — `src/net/HayesModem.hpp`
+- **fd_** (1 connections) — `src/net/HayesModem.hpp`
+- **plusCount_** (1 connections) — `src/net/HayesModem.hpp`
+- **string** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 186](Community_186.md) (1 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `src/headless/Server.cpp`
+- `src/net/HayesModem.cpp`
+- `src/net/HayesModem.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 34 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 37 (79%)
+- INFERRED: 10 (21%)
 - AMBIGUOUS: 0 (0%)
 
 ---

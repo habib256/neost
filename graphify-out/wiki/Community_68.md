@@ -1,6 +1,6 @@
 # Community 68
 
-> 35 nodes
+> 36 nodes
 
 ## Key Concepts
 
@@ -21,6 +21,7 @@
 - **neost_set_volume()** (3 connections) — `src/web/main_web.cpp`
 - **onKey()** (3 connections) — `src/web/main_web.cpp`
 - **onMouseButton()** (3 connections) — `src/web/main_web.cpp`
+- **produceAudioFrame()** (3 connections) — `src/web/main_web.cpp`
 - **GLFWwindow** (3 connections)
 - **drawScreen()** (2 connections) — `src/web/main_web.cpp`
 - **neost_audio_close()** (2 connections) — `src/web/main_web.cpp`
@@ -28,22 +29,21 @@
 - **neost_audio_set_queued()** (2 connections) — `src/web/main_web.cpp`
 - **neost_get_volume()** (2 connections) — `src/web/main_web.cpp`
 - **neost_load_tos()** (2 connections) — `src/web/main_web.cpp`
-- **neost_mount_disk()** (2 connections) — `src/web/main_web.cpp`
-- *... and 10 more nodes in this community*
+- *... and 11 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (6 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
 - [Community 136](Community_136.md) (2 shared connections)
-- [Community 281](Community_281.md) (2 shared connections)
-- [Community 58](Community_58.md) (2 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
 - [Community 256](Community_256.md) (2 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
-- [Community 284](Community_284.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 281](Community_281.md) (1 shared connections)
 - [Community 124](Community_124.md) (1 shared connections)
-- [Community 374](Community_374.md) (1 shared connections)
-- [Community 362](Community_362.md) (1 shared connections)
+- [Community 245](Community_245.md) (1 shared connections)
+- [Community 264](Community_264.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 74 (89%)
-- INFERRED: 9 (11%)
+- EXTRACTED: 74 (88%)
+- INFERRED: 10 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

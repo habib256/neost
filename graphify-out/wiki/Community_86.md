@@ -30,8 +30,7 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 228](Community_228.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 
 ## Source Files
 

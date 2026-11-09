@@ -5,6 +5,13 @@ directement dans le dépôt NeoST (« vendorisée ») du cœur 68000 cycle-exact
 [Moira](https://github.com/dirkwhoffmann/Moira) de Dirk W. Hoffmann (licence MIT,
 cf. `LICENSE`).
 
+## En-têtes standard explicites (2026-11-09)
+
+`Moira.cpp` inclut `<cstdlib>` pour les appels `std::getenv` du diagnostic
+`NEOST_EXC_DIAG`, y compris ceux des en-têtes d'implémentation inclus dans
+cette unité. Emscripten 7.0.0 ne fournissait pas cette déclaration par ses
+inclusions indirectes. Aucun changement de logique ou de cycles.
+
 ## Pourquoi vendorisé
 
 NeoST **modifie** des fichiers internes de Moira (cf. patch ci-dessous). Avec un

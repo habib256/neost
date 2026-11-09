@@ -1,12 +1,13 @@
 # Community 33
 
-> 50 nodes
+> 42 nodes
 
 ## Key Concepts
 
 - **MoiraExec_cpp.h** (54 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
-- **MoiraExecMMU_cpp.h** (10 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
-- **Moira::isValidExtMMU()** (5 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::execBitFieldDn()** (3 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
+- **Moira::execMullMoira()** (3 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
+- **Moira::execMullMusashi()** (3 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execBcc()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execBkpt()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execCas()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
@@ -28,28 +29,26 @@
 - **Moira::execDivu()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execDivuMusashi()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execMove16AiAl()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
-- **Moira::execMove16AlAi()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
-- *... and 25 more nodes in this community*
+- *... and 17 more nodes in this community*
 
 ## Relationships
 
-- [Community 2](Community_2.md) (51 shared connections)
-- [Community 16](Community_16.md) (4 shared connections)
-- [Community 54](Community_54.md) (3 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 0](Community_0.md) (1 shared connections)
+- [Community 2](Community_2.md) (44 shared connections)
+- [Community 16](Community_16.md) (5 shared connections)
+- [Community 57](Community_57.md) (4 shared connections)
+- [Community 155](Community_155.md) (1 shared connections)
 - [Community 145](Community_145.md) (1 shared connections)
+- [Community 54](Community_54.md) (1 shared connections)
 - [Community 32](Community_32.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - `extern/moira/Moira/MoiraExec_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 113 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 95 (97%)
+- INFERRED: 3 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

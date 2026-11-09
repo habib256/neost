@@ -1,6 +1,6 @@
 # Community 150
 
-> 31 nodes
+> 33 nodes
 
 ## Key Concepts
 
@@ -12,6 +12,7 @@
 - **.udsCycle()** (6 connections) — `src/io/CartridgeKey.hpp`
 - **.clockN()** (5 connections) — `src/io/CartridgeKey.hpp`
 - **.attached()** (5 connections) — `src/io/CartridgeKey.hpp`
+- **.serialize()** (4 connections) — `src/io/CartridgeKey.hpp`
 - **.outputByte()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **.clock2()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **.clock3()** (3 connections) — `src/io/CartridgeKey.hpp`
@@ -28,19 +29,18 @@
 - **chosen_** (1 connections) — `src/io/CartridgeKey.hpp`
 - **d_** (1 connections) — `src/io/CartridgeKey.hpp`
 - **feedb1_** (1 connections) — `src/io/CartridgeKey.hpp`
-- **last_** (1 connections) — `src/io/CartridgeKey.hpp`
-- *... and 6 more nodes in this community*
+- *... and 8 more nodes in this community*
 
 ## Relationships
 
+- [Community 245](Community_245.md) (7 shared connections)
 - [Community 41](Community_41.md) (7 shared connections)
-- [Community 245](Community_245.md) (6 shared connections)
-- [Community 374](Community_374.md) (3 shared connections)
-- [Community 10](Community_10.md) (2 shared connections)
 - [Community 4](Community_4.md) (2 shared connections)
+- [Community 268](Community_268.md) (2 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
 - [Community 244](Community_244.md) (1 shared connections)
 - [Community 287](Community_287.md) (1 shared connections)
-- [Community 268](Community_268.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 51](Community_51.md) (1 shared connections)
@@ -53,8 +53,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 55 (71%)
-- INFERRED: 22 (29%)
+- EXTRACTED: 56 (71%)
+- INFERRED: 23 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

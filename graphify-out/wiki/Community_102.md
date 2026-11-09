@@ -1,6 +1,6 @@
 # Community 102
 
-> 137 nodes
+> 136 nodes
 
 ## Key Concepts
 
@@ -15,13 +15,10 @@
 - **YM2149.hpp** (37 connections) — `src/core/YM2149.hpp`
 - **Cpu68k.hpp** (31 connections) — `src/core/Cpu68k.hpp`
 - **Ikbd.hpp** (30 connections) — `src/io/Ikbd.hpp`
-- **ipf_image_logic.cpp** (26 connections) — `tests/ipf_image_logic.cpp`
-- **MidiAcia.hpp** (20 connections) — `src/io/MidiAcia.hpp`
 - **functional** (20 connections)
 - **DmaSound.hpp** (18 connections) — `src/core/DmaSound.hpp`
 - **Blitter.hpp** (17 connections) — `src/core/Blitter.hpp`
 - **Rtc.hpp** (17 connections) — `src/io/Rtc.hpp`
-- **GemdosHd.hpp** (15 connections) — `src/io/GemdosHd.hpp`
 - **acsi_write_destination_logic.cpp** (15 connections) — `tests/acsi_write_destination_logic.cpp`
 - **fdc_sector_size_switch_logic.cpp** (15 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **stx_data_crc_write_logic.cpp** (15 connections) — `tests/stx_data_crc_write_logic.cpp`
@@ -29,21 +26,24 @@
 - **fdc_acsi_logic.cpp** (14 connections) — `tests/fdc_acsi_logic.cpp`
 - **fdc_force_interrupt_logic.cpp** (14 connections) — `tests/fdc_force_interrupt_logic.cpp`
 - **fdc_track_id_location_logic.cpp** (14 connections) — `tests/fdc_track_id_location_logic.cpp`
-- *... and 112 more nodes in this community*
+- **Acsi.hpp** (13 connections) — `src/io/Acsi.hpp`
+- **fdc_live_media_logic.cpp** (13 connections) — `tests/fdc_live_media_logic.cpp`
+- **fdc_media_change_logic.cpp** (13 connections) — `tests/fdc_media_change_logic.cpp`
+- *... and 111 more nodes in this community*
 
 ## Relationships
 
-- [Community 256](Community_256.md) (119 shared connections)
-- [Community 4](Community_4.md) (106 shared connections)
+- [Community 256](Community_256.md) (107 shared connections)
+- [Community 4](Community_4.md) (92 shared connections)
 - [Community 41](Community_41.md) (58 shared connections)
-- [Community 30](Community_30.md) (16 shared connections)
+- [Community 399](Community_399.md) (16 shared connections)
+- [Community 30](Community_30.md) (15 shared connections)
 - [Community 14](Community_14.md) (15 shared connections)
-- [Community 58](Community_58.md) (15 shared connections)
-- [Community 152](Community_152.md) (14 shared connections)
+- [Community 153](Community_153.md) (10 shared connections)
+- [Community 183](Community_183.md) (10 shared connections)
 - [Community 27](Community_27.md) (9 shared connections)
-- [Community 183](Community_183.md) (9 shared connections)
-- [Community 93](Community_93.md) (8 shared connections)
-- [Community 182](Community_182.md) (7 shared connections)
+- [Community 95](Community_95.md) (8 shared connections)
+- [Community 37](Community_37.md) (7 shared connections)
 - [Community 239](Community_239.md) (7 shared connections)
 
 ## Source Files
@@ -53,26 +53,26 @@
 - `src/core/Bus.hpp`
 - `src/core/Cpu68k.hpp`
 - `src/core/DmaSound.hpp`
+- `src/core/Framing.cpp`
 - `src/core/Machine.hpp`
 - `src/core/MmuGlue.hpp`
 - `src/core/Scheduler.hpp`
 - `src/core/Shifter.hpp`
 - `src/core/StateArchive.hpp`
 - `src/core/YM2149.hpp`
+- `src/io/Acsi.hpp`
 - `src/io/Fdc.hpp`
 - `src/io/Fpu.hpp`
-- `src/io/GemdosHd.hpp`
 - `src/io/Ikbd.hpp`
 - `src/io/Isp1160.hpp`
 - `src/io/Mfp.hpp`
-- `src/io/MidiAcia.hpp`
 - `src/io/Ne2000.hpp`
 - `src/io/Rtc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 951 (97%)
-- INFERRED: 25 (3%)
+- EXTRACTED: 884 (97%)
+- INFERRED: 26 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

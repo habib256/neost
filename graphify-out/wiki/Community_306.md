@@ -1,32 +1,28 @@
 # Community 306
 
-> 8 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **Info** (10 connections) — `src/io/IpfImage.hpp`
-- **encoder** (1 connections) — `src/io/IpfImage.hpp`
-- **maxCylinder** (1 connections) — `src/io/IpfImage.hpp`
-- **maxHead** (1 connections) — `src/io/IpfImage.hpp`
-- **minCylinder** (1 connections) — `src/io/IpfImage.hpp`
-- **minHead** (1 connections) — `src/io/IpfImage.hpp`
-- **release** (1 connections) — `src/io/IpfImage.hpp`
-- **revision** (1 connections) — `src/io/IpfImage.hpp`
+- **.switchKioskMode()** (6 connections) — `src/gui/App.hpp`
+- **.toggleFullscreen()** (3 connections) — `src/gui/App.hpp`
 
 ## Relationships
 
-- [Community 217](Community_217.md) (1 shared connections)
-- [Community 305](Community_305.md) (1 shared connections)
-- [Community 172](Community_172.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 1](Community_1.md) (2 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
+- [Community 204](Community_204.md) (1 shared connections)
+- [Community 211](Community_211.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/IpfImage.hpp`
+- `src/gui/App.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (62%)
+- INFERRED: 3 (38%)
 - AMBIGUOUS: 0 (0%)
 
 ---

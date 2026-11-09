@@ -1,6 +1,6 @@
 # Community 2
 
-> 173 nodes
+> 170 nodes
 
 ## Key Concepts
 
@@ -9,7 +9,7 @@
 - **StrWriter** (157 connections) — `extern/moira/Moira/StrWriter.h`
 - **MoiraDasm_cpp.h** (139 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **MoiraDasmFPU_cpp.h** (15 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
-- **.isValidExt()** (12 connections) — `extern/moira/Moira/Moira.h`
+- **Moira::isValidExt()** (12 connections) — `extern/moira/Moira/Moira.cpp`
 - **MoiraDasmMMU_cpp.h** (9 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
 - **.isValidExtFPU()** (7 connections) — `extern/moira/Moira/Moira.h`
 - **Moira::dasmFMove()** (6 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
@@ -29,37 +29,37 @@
 - **Moira::dasmFMovem()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
 - **Moira::dasmFScc()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
 - **Moira::dasmFTrapcc()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
-- *... and 148 more nodes in this community*
+- *... and 145 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (54 shared connections)
-- [Community 33](Community_33.md) (51 shared connections)
-- [Community 54](Community_54.md) (51 shared connections)
+- [Community 16](Community_16.md) (57 shared connections)
+- [Community 33](Community_33.md) (44 shared connections)
 - [Community 32](Community_32.md) (33 shared connections)
 - [Community 109](Community_109.md) (29 shared connections)
-- [Community 134](Community_134.md) (25 shared connections)
-- [Community 166](Community_166.md) (16 shared connections)
-- [Community 64](Community_64.md) (15 shared connections)
+- [Community 54](Community_54.md) (29 shared connections)
+- [Community 134](Community_134.md) (26 shared connections)
+- [Community 9](Community_9.md) (25 shared connections)
+- [Community 166](Community_166.md) (19 shared connections)
+- [Community 64](Community_64.md) (19 shared connections)
 - [Community 145](Community_145.md) (14 shared connections)
-- [Community 57](Community_57.md) (13 shared connections)
-- [Community 169](Community_169.md) (11 shared connections)
-- [Community 104](Community_104.md) (2 shared connections)
+- [Community 57](Community_57.md) (10 shared connections)
+- [Community 155](Community_155.md) (10 shared connections)
 
 ## Source Files
 
+- `extern/moira/Moira/Moira.cpp`
 - `extern/moira/Moira/Moira.h`
 - `extern/moira/Moira/MoiraDasmFPU_cpp.h`
 - `extern/moira/Moira/MoiraDasmMMU_cpp.h`
 - `extern/moira/Moira/MoiraDasm_cpp.h`
-- `extern/moira/Moira/MoiraExec_cpp.h`
 - `extern/moira/Moira/MoiraTypes.h`
 - `extern/moira/Moira/StrWriter.h`
 - `src/core/Cpu68k.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 931 (97%)
+- EXTRACTED: 928 (97%)
 - INFERRED: 31 (3%)
 - AMBIGUOUS: 0 (0%)
 

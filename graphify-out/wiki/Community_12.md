@@ -1,20 +1,18 @@
 # Community 12
 
-> 69 nodes
+> 68 nodes
 
 ## Key Concepts
 
 - **Fdc** (174 connections) — `src/io/Fdc.hpp`
-- **.emitSound()** (7 connections) — `src/io/Fdc.hpp`
-- **.indexIncrease()** (5 connections) — `src/io/Fdc.hpp`
 - **.Fdc()** (4 connections) — `src/io/Fdc.hpp`
+- **.serialize()** (4 connections) — `src/io/Fdc.hpp`
 - **Bus** (3 connections) — `src/io/Fdc.hpp`
 - **Mfp** (3 connections) — `src/io/Fdc.hpp`
 - **YM2149** (3 connections) — `src/io/Fdc.hpp`
 - **.sidesPerDisk()** (2 connections) — `src/io/Fdc.hpp`
 - **.setScheduler()** (2 connections) — `src/io/Fdc.hpp`
 - **.setSoundSink()** (2 connections) — `src/io/Fdc.hpp`
-- **soundSink_** (2 connections) — `src/io/Fdc.hpp`
 - **function** (2 connections)
 - **Scheduler** (2 connections)
 - **.driveEnabled()** (1 connections) — `src/io/Fdc.hpp`
@@ -29,22 +27,24 @@
 - **bufPos_** (1 connections) — `src/io/Fdc.hpp`
 - **bufTiming_** (1 connections) — `src/io/Fdc.hpp`
 - **command_** (1 connections) — `src/io/Fdc.hpp`
-- *... and 44 more nodes in this community*
+- **commandState_** (1 connections) — `src/io/Fdc.hpp`
+- **commandType_** (1 connections) — `src/io/Fdc.hpp`
+- *... and 43 more nodes in this community*
 
 ## Relationships
 
-- [Community 24](Community_24.md) (30 shared connections)
-- [Community 95](Community_95.md) (30 shared connections)
-- [Community 93](Community_93.md) (25 shared connections)
-- [Community 121](Community_121.md) (8 shared connections)
-- [Community 230](Community_230.md) (6 shared connections)
+- [Community 95](Community_95.md) (41 shared connections)
+- [Community 24](Community_24.md) (31 shared connections)
+- [Community 93](Community_93.md) (13 shared connections)
+- [Community 121](Community_121.md) (6 shared connections)
+- [Community 23](Community_23.md) (5 shared connections)
 - [Community 102](Community_102.md) (4 shared connections)
-- [Community 103](Community_103.md) (3 shared connections)
-- [Community 212](Community_212.md) (3 shared connections)
+- [Community 103](Community_103.md) (4 shared connections)
+- [Community 212](Community_212.md) (4 shared connections)
 - [Community 78](Community_78.md) (2 shared connections)
-- [Community 398](Community_398.md) (2 shared connections)
+- [Community 63](Community_63.md) (2 shared connections)
 - [Community 256](Community_256.md) (1 shared connections)
-- [Community 389](Community_389.md) (1 shared connections)
+- [Community 374](Community_374.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 186 (97%)
-- INFERRED: 6 (3%)
+- EXTRACTED: 185 (99%)
+- INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

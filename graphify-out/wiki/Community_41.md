@@ -1,6 +1,6 @@
 # Community 41
 
-> 107 nodes
+> 118 nodes
 
 ## Key Concepts
 
@@ -21,30 +21,30 @@
 - **testJoyScript()** (6 connections) — `tests/selftest_logic.cpp`
 - **testRamDisplay()** (6 connections) — `tests/selftest_logic.cpp`
 - **testTwoCpus()** (6 connections) — `tests/selftest_logic.cpp`
-- **mmu_logic.cpp** (6 connections) — `tests/mmu_logic.cpp`
+- **ikbd_acia_init_logic.cpp** (6 connections) — `tests/ikbd_acia_init_logic.cpp`
+- **ikbd_acia_reset_logic.cpp** (6 connections) — `tests/ikbd_acia_reset_logic.cpp`
 - **mmioNeedsBetterMachine()** (5 connections) — `src/core/MachineType.hpp`
 - **testBlitterRmw()** (5 connections) — `tests/blitter_rmw_logic.cpp`
 - **checkInt()** (5 connections) — `tests/selftest_logic.cpp`
 - **testMissingHwHint()** (5 connections) — `tests/selftest_logic.cpp`
-- **machine_scc_logic.cpp** (5 connections) — `tests/machine_scc_logic.cpp`
-- **MissingHw** (4 connections) — `src/core/MachineType.hpp`
-- **testMmuMapping()** (4 connections) — `tests/mmu_logic.cpp`
-- *... and 82 more nodes in this community*
+- **mfp_async_break_logic.cpp** (5 connections) — `tests/mfp_async_break_logic.cpp`
+- **mfp_clock_logic.cpp** (5 connections) — `tests/mfp_clock_logic.cpp`
+- *... and 93 more nodes in this community*
 
 ## Relationships
 
+- [Community 256](Community_256.md) (60 shared connections)
 - [Community 102](Community_102.md) (58 shared connections)
-- [Community 256](Community_256.md) (51 shared connections)
-- [Community 4](Community_4.md) (18 shared connections)
-- [Community 58](Community_58.md) (13 shared connections)
+- [Community 4](Community_4.md) (22 shared connections)
+- [Community 136](Community_136.md) (8 shared connections)
 - [Community 150](Community_150.md) (7 shared connections)
 - [Community 101](Community_101.md) (6 shared connections)
-- [Community 136](Community_136.md) (6 shared connections)
-- [Community 182](Community_182.md) (5 shared connections)
 - [Community 219](Community_219.md) (5 shared connections)
-- [Community 213](Community_213.md) (4 shared connections)
+- [Community 192](Community_192.md) (4 shared connections)
+- [Community 399](Community_399.md) (4 shared connections)
 - [Community 201](Community_201.md) (4 shared connections)
 - [Community 301](Community_301.md) (4 shared connections)
+- [Community 252](Community_252.md) (4 shared connections)
 
 ## Source Files
 
@@ -52,27 +52,27 @@
 - `src/core/Pacing.hpp`
 - `tests/blitter_rmw_logic.cpp`
 - `tests/ikbd_acia_format_logic.cpp`
+- `tests/ikbd_acia_init_logic.cpp`
+- `tests/ikbd_acia_reset_logic.cpp`
 - `tests/ikbd_autosend_logic.cpp`
 - `tests/ikbd_cpu_serial_logic.cpp`
 - `tests/machine_mfp_tx_logic.cpp`
 - `tests/machine_midi_logic.cpp`
-- `tests/machine_scc_logic.cpp`
+- `tests/mfp_async_break_logic.cpp`
+- `tests/mfp_clock_logic.cpp`
 - `tests/mfp_gpip_composite_logic.cpp`
 - `tests/mfp_gpip_lines_logic.cpp`
 - `tests/mfp_pulse_logic.cpp`
 - `tests/mfp_rx_format_logic.cpp`
 - `tests/mfp_rx_irq_timing_logic.cpp`
 - `tests/mfp_turnaround_logic.cpp`
+- `tests/mfp_underrun_clear_logic.cpp`
 - `tests/mfp_underrun_logic.cpp`
-- `tests/mfp_usart_control_logic.cpp`
-- `tests/mfp_vector_register_logic.cpp`
-- `tests/midi_break_logic.cpp`
-- `tests/midi_rx_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 288 (64%)
-- INFERRED: 162 (36%)
+- EXTRACTED: 311 (66%)
+- INFERRED: 161 (34%)
 - AMBIGUOUS: 0 (0%)
 
 ---

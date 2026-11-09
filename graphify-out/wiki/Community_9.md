@@ -1,47 +1,62 @@
 # Community 9
 
-> 25 nodes
+> 35 nodes
 
 ## Key Concepts
 
-- **Rig** (28 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.reg()** (5 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.read()** (4 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.armIndex()** (3 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.mode()** (3 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.advance()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.finish()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.irq()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.next()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.select()** (2 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.address()** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.pending()** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **.Rig()** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **Bus** (1 connections)
-- **Fdc** (1 connections)
-- **Mfp** (1 connections)
-- **Scheduler** (1 connections)
-- **YM2149** (1 connections)
-- **bus** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **fdc** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **live** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **mfp** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **psg** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **pulses** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
-- **sched** (1 connections) — `tests/stx_raw_track_wrap_logic.cpp`
+- **NeostMoira** (41 connections) — `src/core/Cpu68k.cpp`
+- **.getClock()** (19 connections) — `extern/moira/Moira/Moira.h`
+- **.sync()** (17 connections) — `src/core/Cpu68k.cpp`
+- **.read16()** (13 connections) — `src/core/Cpu68k.cpp`
+- **.read8()** (11 connections) — `src/core/Cpu68k.cpp`
+- **.faultOrHalt()** (10 connections) — `src/core/Cpu68k.cpp`
+- **.getPC0()** (9 connections) — `extern/moira/Moira/Moira.h`
+- **.readMste16Mhz()** (9 connections) — `src/core/Cpu68k.cpp`
+- **.write16()** (9 connections) — `src/core/Cpu68k.cpp`
+- **.write8()** (9 connections) — `src/core/Cpu68k.cpp`
+- **.writeMste16Mhz()** (9 connections) — `src/core/Cpu68k.cpp`
+- **.busDiag()** (8 connections) — `src/core/Cpu68k.cpp`
+- **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
+- **.readIrqUserVector()** (7 connections) — `src/core/Cpu68k.cpp`
+- **.willAccessBus()** (7 connections) — `src/core/Cpu68k.cpp`
+- **.alignRamBus()** (6 connections) — `src/core/Cpu68k.cpp`
+- **.raiseBusError()** (6 connections) — `src/core/Cpu68k.cpp`
+- **.udsDone()** (6 connections) — `src/core/Cpu68k.cpp`
+- **.latchDb()** (5 connections) — `src/core/Cpu68k.cpp`
+- **.read16OnReset()** (5 connections) — `src/core/Cpu68k.cpp`
+- **.iackSyncBefore()** (4 connections) — `src/core/Cpu68k.cpp`
+- **.latchDb8()** (4 connections) — `src/core/Cpu68k.cpp`
+- **.superNow()** (4 connections) — `src/core/Cpu68k.cpp`
+- **.willInterrupt()** (4 connections) — `src/core/Cpu68k.cpp`
+- **6. Ce qui reste sur la table** (4 connections) — `docs/PERFORMANCE.md`
+- *... and 10 more nodes in this community*
 
 ## Relationships
 
-- [Community 70](Community_70.md) (6 shared connections)
+- [Community 2](Community_2.md) (25 shared connections)
+- [Community 54](Community_54.md) (10 shared connections)
+- [Community 16](Community_16.md) (7 shared connections)
+- [Community 22](Community_22.md) (6 shared connections)
+- [Community 349](Community_349.md) (5 shared connections)
+- [Community 166](Community_166.md) (3 shared connections)
+- [Community 66](Community_66.md) (3 shared connections)
+- [Community 27](Community_27.md) (2 shared connections)
+- [Community 182](Community_182.md) (2 shared connections)
+- [Community 138](Community_138.md) (2 shared connections)
+- [Community 32](Community_32.md) (2 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
 
 ## Source Files
 
-- `tests/stx_raw_track_wrap_logic.cpp`
+- `CHANGELOG.md`
+- `docs/PERFORMANCE.md`
+- `extern/moira/Moira/Moira.h`
+- `src/core/Cpu68k.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 37 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 133 (79%)
+- INFERRED: 36 (21%)
 - AMBIGUOUS: 0 (0%)
 
 ---

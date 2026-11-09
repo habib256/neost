@@ -1,14 +1,19 @@
 # Community 22
 
-> 13 nodes
+> 18 nodes
 
 ## Key Concepts
 
+- **busOfClock()** (14 connections) — `src/core/Cpu68k.cpp`
 - **Convergence Moira ↔ WinUAE — chantier « full timing-engine » (beam-sync)** (10 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
 - **Cpu68k::cyclesIntoInstr()** (6 connections) — `src/core/Cpu68k.cpp`
 - **Cpu68k::busClockNow()** (4 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::setMegaSteSpeed()** (4 connections) — `src/core/Cpu68k.cpp`
 - **7. CHANTIER RESTANT (plus de deadlock, mais EL scramble en jeu)** (4 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
 - **⭐ ÉTAT COURANT (posé le 2026-08-27 — lire CECI avant tout le reste)** (4 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
+- **Cpu68k::addAciaWaitCycles()** (3 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::cyclesRunInQuantum()** (3 connections) — `src/core/Cpu68k.cpp`
+- **noteBlitterPreStart()** (3 connections) — `src/core/Cpu68k.cpp`
 - **1. L'outil n°1 — harnais différentiel de cycles (Moira ↔ WinUAE)** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
 - **2. Carte des divergences (source-grounded, 3 agents — file:line des DEUX côtés)** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
 - **3. Vérités MESURÉES cette session (corrigent la mémoire)** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
@@ -20,12 +25,15 @@
 
 ## Relationships
 
-- [Community 27](Community_27.md) (6 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
-- [Community 356](Community_356.md) (1 shared connections)
+- [Community 27](Community_27.md) (12 shared connections)
+- [Community 9](Community_9.md) (6 shared connections)
+- [Community 138](Community_138.md) (3 shared connections)
+- [Community 135](Community_135.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 - [Community 258](Community_258.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 
 ## Source Files
 
@@ -34,8 +42,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 17 (68%)
-- INFERRED: 8 (32%)
+- EXTRACTED: 38 (83%)
+- INFERRED: 8 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

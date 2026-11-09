@@ -1,43 +1,45 @@
 # Community 153
 
-> 16 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **Stream** (15 connections) — `src/io/IpfImage.cpp`
-- **CellTrack** (15 connections) — `src/io/IpfImage.hpp`
-- **.cell()** (4 connections) — `src/io/IpfImage.cpp`
-- **.wrap()** (4 connections) — `src/io/IpfImage.cpp`
-- **.byte()** (3 connections) — `src/io/IpfImage.cpp`
-- **.weak()** (3 connections) — `src/io/IpfImage.cpp`
-- **.raw16()** (2 connections) — `src/io/IpfImage.cpp`
-- **.Stream()** (2 connections) — `src/io/IpfImage.cpp`
-- **.timeAt()** (2 connections) — `src/io/IpfImage.cpp`
-- **cells** (1 connections) — `src/io/IpfImage.hpp`
-- **cylinder** (1 connections) — `src/io/IpfImage.hpp`
-- **head** (1 connections) — `src/io/IpfImage.hpp`
-- **noise** (1 connections) — `src/io/IpfImage.hpp`
-- **timeNs** (1 connections) — `src/io/IpfImage.hpp`
-- **n** (1 connections) — `src/io/IpfImage.cpp`
-- **start** (1 connections) — `src/io/IpfImage.cpp`
+- **GemdosHd.hpp** (15 connections) — `src/io/GemdosHd.hpp`
+- **gemdos_directory_entries_logic.cpp** (12 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **gemdos_dta_reuse_logic.cpp** (12 connections) — `tests/gemdos_dta_reuse_logic.cpp`
+- **Checks** (4 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **testGemdosDirectoryEntries()** (4 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **testGemdosDtaReuse()** (3 connections) — `tests/gemdos_dta_reuse_logic.cpp`
+- **main()** (2 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **main()** (2 connections) — `tests/gemdos_dta_reuse_logic.cpp`
+- **count** (2 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **StateArchive** (1 connections) — `src/io/GemdosHd.hpp`
+- **.equal()** (1 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **failures** (1 connections) — `tests/gemdos_directory_entries_logic.cpp`
 
 ## Relationships
 
-- [Community 282](Community_282.md) (6 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 305](Community_305.md) (2 shared connections)
-- [Community 183](Community_183.md) (2 shared connections)
-- [Community 172](Community_172.md) (1 shared connections)
+- [Community 102](Community_102.md) (10 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
+- [Community 256](Community_256.md) (5 shared connections)
+- [Community 17](Community_17.md) (3 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 27](Community_27.md) (1 shared connections)
+- [Community 36](Community_36.md) (1 shared connections)
+- [Community 190](Community_190.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
+- [Community 141](Community_141.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/IpfImage.cpp`
-- `src/io/IpfImage.hpp`
+- `src/io/GemdosHd.hpp`
+- `tests/gemdos_directory_entries_logic.cpp`
+- `tests/gemdos_dta_reuse_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 33 (94%)
-- INFERRED: 2 (6%)
+- EXTRACTED: 43 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

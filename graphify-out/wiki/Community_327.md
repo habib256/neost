@@ -1,29 +1,18 @@
 # Community 327
 
-> 6 nodes
+> 1 nodes
 
 ## Key Concepts
 
-- **Fault** (7 connections) — `src/core/Cpu68k.hpp`
-- **Cpu68k::lastFault()** (3 connections) — `src/core/Cpu68k.cpp`
-- **addr** (1 connections) — `src/core/Cpu68k.hpp`
-- **pc** (1 connections) — `src/core/Cpu68k.hpp`
-- **valid** (1 connections) — `src/core/Cpu68k.hpp`
-- **write** (1 connections) — `src/core/Cpu68k.hpp`
+- **Model** (0 connections)
 
 ## Relationships
 
-- [Community 27](Community_27.md) (3 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
-
-## Source Files
-
-- `src/core/Cpu68k.cpp`
-- `src/core/Cpu68k.hpp`
+- No strong cross-community connections detected
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 0 (0%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

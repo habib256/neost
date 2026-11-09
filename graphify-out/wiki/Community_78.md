@@ -1,12 +1,10 @@
 # Community 78
 
-> 46 nodes
+> 35 nodes
 
 ## Key Concepts
 
 - **FloppyDisk** (36 connections) — `src/io/Fdc.hpp`
-- **StOverrideSector** (11 connections) — `src/io/Fdc.hpp`
-- **StOverrideTrack** (7 connections) — `src/io/Fdc.hpp`
 - **ImgFormat** (4 connections) — `src/io/Fdc.hpp`
 - **TransitionPhase** (4 connections) — `src/io/Fdc.hpp`
 - **ImgType** (3 connections) — `src/io/Fdc.hpp`
@@ -29,15 +27,18 @@
 - **transitionEndVbl2** (1 connections) — `src/io/Fdc.hpp`
 - **transitionPhase** (1 connections) — `src/io/Fdc.hpp`
 - **transitionPhase2** (1 connections) — `src/io/Fdc.hpp`
-- *... and 21 more nodes in this community*
+- **wd1772Path** (1 connections) — `src/io/Fdc.hpp`
+- **writeProtect** (1 connections) — `src/io/Fdc.hpp`
+- *... and 10 more nodes in this community*
 
 ## Relationships
 
-- [Community 93](Community_93.md) (7 shared connections)
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 121](Community_121.md) (2 shared connections)
+- [Community 93](Community_93.md) (6 shared connections)
 - [Community 12](Community_12.md) (2 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 - [Community 63](Community_63.md) (1 shared connections)
+- [Community 95](Community_95.md) (1 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
 - [Community 122](Community_122.md) (1 shared connections)
 
 ## Source Files
@@ -46,7 +47,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 61 (98%)
+- EXTRACTED: 46 (98%)
 - INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 

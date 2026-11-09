@@ -1,15 +1,16 @@
 # Community 265
 
-> 9 nodes
+> 10 nodes
 
 ## Key Concepts
 
 - **jobs** (12 connections) — `.github/workflows/release.yml`
+- **release.yml** (5 connections) — `.github/workflows/release.yml`
 - **wasm** (5 connections) — `.github/workflows/release.yml`
-- **version** (4 connections) — `.github/workflows/release.yml`
-- **outputs** (2 connections) — `.github/workflows/release.yml`
-- **neost_version** (1 connections) — `.github/workflows/release.yml`
-- **runs-on** (1 connections) — `.github/workflows/release.yml`
+- **concurrency** (3 connections) — `.github/workflows/release.yml`
+- **cancel-in-progress** (1 connections) — `.github/workflows/release.yml`
+- **group** (1 connections) — `.github/workflows/release.yml`
+- **name** (1 connections) — `.github/workflows/release.yml`
 - **needs** (1 connections) — `.github/workflows/release.yml`
 - **runs-on** (1 connections) — `.github/workflows/release.yml`
 - **timeout-minutes** (1 connections) — `.github/workflows/release.yml`
@@ -17,14 +18,15 @@
 ## Relationships
 
 - [Community 144](Community_144.md) (3 shared connections)
-- [Community 276](Community_276.md) (2 shared connections)
+- [Community 209](Community_209.md) (2 shared connections)
 - [Community 208](Community_208.md) (1 shared connections)
-- [Community 209](Community_209.md) (1 shared connections)
-- [Community 148](Community_148.md) (1 shared connections)
 - [Community 388](Community_388.md) (1 shared connections)
+- [Community 267](Community_267.md) (1 shared connections)
 - [Community 381](Community_381.md) (1 shared connections)
 - [Community 198](Community_198.md) (1 shared connections)
 - [Community 269](Community_269.md) (1 shared connections)
+- [Community 148](Community_148.md) (1 shared connections)
+- [Community 276](Community_276.md) (1 shared connections)
 
 ## Source Files
 
@@ -32,7 +34,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 20 (100%)
+- EXTRACTED: 22 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,11 +1,12 @@
 # Community 8
 
-> 11 nodes
+> 12 nodes
 
 ## Key Concepts
 
 - **PriorityRig** (9 connections) — `tests/scc_ack_priority_logic.cpp`
 - **testSccAckPriority()** (8 connections) — `tests/scc_ack_priority_logic.cpp`
+- **scc_ack_priority_logic.cpp** (6 connections) — `tests/scc_ack_priority_logic.cpp`
 - **.command()** (4 connections) — `tests/scc_ack_priority_logic.cpp`
 - **.read()** (4 connections) — `tests/scc_ack_priority_logic.cpp`
 - **.write()** (4 connections) — `tests/scc_ack_priority_logic.cpp`
@@ -27,8 +28,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 17 (77%)
-- INFERRED: 5 (23%)
+- EXTRACTED: 20 (80%)
+- INFERRED: 5 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

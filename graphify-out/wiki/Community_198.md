@@ -1,13 +1,12 @@
 # Community 198
 
-> 12 nodes
+> 11 nodes
 
 ## Key Concepts
 
 - **pages** (8 connections) — `.github/workflows/release.yml`
 - **environment** (3 connections) — `.github/workflows/release.yml`
 - **permissions** (3 connections) — `.github/workflows/release.yml`
-- **steps** (3 connections) — `.github/workflows/release.yml`
 - **name** (1 connections) — `.github/workflows/release.yml`
 - **url** (1 connections) — `.github/workflows/release.yml`
 - **if** (1 connections) — `.github/workflows/release.yml`
@@ -20,7 +19,6 @@
 ## Relationships
 
 - [Community 265](Community_265.md) (1 shared connections)
-- [Community 276](Community_276.md) (1 shared connections)
 - [Community 144](Community_144.md) (1 shared connections)
 
 ## Source Files
@@ -29,7 +27,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 14 (100%)
+- EXTRACTED: 12 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

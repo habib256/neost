@@ -1,43 +1,30 @@
 # Community 267
 
-> 9 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **main()** (11 connections) — `tests/stx_writetrack_test.cpp`
-- **stx_writetrack_test.cpp** (11 connections) — `tests/stx_writetrack_test.cpp`
-- **forgeFlux()** (5 connections) — `tests/stx_writetrack_test.cpp`
-- **FDC WD1772 + DMA + STX — `Fdc.cpp`, `StxImage.cpp` ↔ `fdc.c`, `floppies/stx.c`** (4 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.setFdcLine()** (3 connections) — `src/io/Mfp.hpp`
-- **.sectorsCountView()** (3 connections) — `src/io/StxImage.hpp`
-- **add()** (3 connections) — `tests/stx_writetrack_test.cpp`
-- **expect()** (3 connections) — `tests/stx_writetrack_test.cpp`
-- **forgeStx()** (3 connections) — `tests/stx_writetrack_test.cpp`
+- **steps** (6 connections) — `.github/workflows/release.yml`
+- **pi400** (5 connections) — `.github/workflows/release.yml`
+- **needs** (1 connections) — `.github/workflows/release.yml`
+- **runs-on** (1 connections) — `.github/workflows/release.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/release.yml`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (5 shared connections)
-- [Community 63](Community_63.md) (5 shared connections)
-- [Community 173](Community_173.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 135](Community_135.md) (1 shared connections)
-- [Community 6](Community_6.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 54](Community_54.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
-- [Community 93](Community_93.md) (1 shared connections)
+- [Community 144](Community_144.md) (3 shared connections)
+- [Community 265](Community_265.md) (1 shared connections)
+- [Community 210](Community_210.md) (1 shared connections)
+- [Community 148](Community_148.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `src/io/Mfp.hpp`
-- `src/io/StxImage.hpp`
-- `tests/stx_writetrack_test.cpp`
+- `.github/workflows/release.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (70%)
-- INFERRED: 10 (30%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

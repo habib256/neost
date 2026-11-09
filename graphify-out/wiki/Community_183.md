@@ -1,53 +1,63 @@
 # Community 183
 
-> 21 nodes
+> 72 nodes
 
 ## Key Concepts
 
+- **ipf_image_logic.cpp** (26 connections) — `tests/ipf_image_logic.cpp`
+- **IpfImage.cpp** (23 connections) — `src/io/IpfImage.cpp`
+- **Stream** (15 connections) — `src/io/IpfImage.cpp`
+- **CellTrack** (15 connections) — `src/io/IpfImage.hpp`
 - **testIpfImage()** (13 connections) — `tests/ipf_image_logic.cpp`
+- **IpfImage.hpp** (13 connections) — `src/io/IpfImage.hpp`
+- **StxStats** (12 connections) — `src/io/IpfImage.hpp`
+- **toStx()** (12 connections) — `src/io/IpfImage.cpp`
 - **Stream** (11 connections) — `tests/ipf_image_logic.cpp`
 - **sectorStream()** (11 connections) — `tests/ipf_image_logic.cpp`
+- **StxImage.hpp** (10 connections) — `src/io/StxImage.hpp`
+- **Kind** (9 connections) — `tests/ipf_image_logic.cpp`
 - **buildIpf()** (9 connections) — `tests/ipf_image_logic.cpp`
+- **findSectors()** (8 connections) — `src/io/IpfImage.cpp`
+- **readDataField()** (7 connections) — `src/io/IpfImage.cpp`
 - **record()** (7 connections) — `tests/ipf_image_logic.cpp`
-- **.data()** (7 connections) — `tests/ipf_image_logic.cpp`
+- **TrackRev** (6 connections) — `src/io/IpfImage.hpp`
 - **.end()** (6 connections) — `tests/ipf_image_logic.cpp`
+- **readTrackDump()** (5 connections) — `src/io/IpfImage.cpp`
 - **be32()** (5 connections) — `tests/ipf_image_logic.cpp`
 - **.elem()** (5 connections) — `tests/ipf_image_logic.cpp`
-- **setBe32()** (4 connections) — `tests/ipf_image_logic.cpp`
-- **.bytes()** (4 connections) — `tests/ipf_image_logic.cpp`
-- **.totalNs()** (3 connections) — `src/io/IpfImage.hpp`
-- **pattern()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **.fill()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **.sync3()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **.weak()** (3 connections) — `tests/ipf_image_logic.cpp`
-- **main()** (2 connections) — `tests/ipf_image_logic.cpp`
-- **CI : registre fast et inclusion NE2000 explicite (2026-11-09)** (2 connections) — `CHANGELOG.md`
-- **size_t** (1 connections)
-- **cells** (1 connections) — `tests/ipf_image_logic.cpp`
-- **d** (1 connections) — `tests/ipf_image_logic.cpp`
+- **** (4 connections) — `src/io/IpfImage.hpp`
+- **crc16Ccitt()** (4 connections) — `src/io/IpfImage.cpp`
+- **put16le()** (4 connections) — `src/io/IpfImage.cpp`
+- **put32le()** (4 connections) — `src/io/IpfImage.cpp`
+- *... and 47 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (9 shared connections)
-- [Community 256](Community_256.md) (6 shared connections)
-- [Community 385](Community_385.md) (3 shared connections)
-- [Community 163](Community_163.md) (3 shared connections)
-- [Community 153](Community_153.md) (2 shared connections)
-- [Community 63](Community_63.md) (2 shared connections)
-- [Community 282](Community_282.md) (1 shared connections)
+- [Community 256](Community_256.md) (18 shared connections)
+- [Community 217](Community_217.md) (15 shared connections)
+- [Community 102](Community_102.md) (10 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
+- [Community 63](Community_63.md) (6 shared connections)
+- [Community 163](Community_163.md) (5 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 172](Community_172.md) (2 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 95](Community_95.md) (1 shared connections)
+- [Community 405](Community_405.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
+- `src/io/IpfImage.cpp`
 - `src/io/IpfImage.hpp`
+- `src/io/StxImage.hpp`
 - `tests/ipf_image_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 59 (89%)
-- INFERRED: 7 (11%)
+- EXTRACTED: 188 (95%)
+- INFERRED: 10 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -21,9 +21,9 @@
 ## Relationships
 
 - [Community 41](Community_41.md) (5 shared connections)
-- [Community 201](Community_201.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
 - [Community 301](Community_301.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 201](Community_201.md) (1 shared connections)
 
 ## Source Files
 

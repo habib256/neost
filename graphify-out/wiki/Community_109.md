@@ -45,7 +45,7 @@
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/Moira.cpp`
 - `extern/moira/Moira/MoiraDasm_cpp.h`
 - `extern/moira/Moira/MoiraTypes.h`
 - `extern/moira/Moira/StrWriter.h`

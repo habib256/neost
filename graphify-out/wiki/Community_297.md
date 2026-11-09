@@ -1,33 +1,29 @@
 # Community 297
 
-> 11 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **Rig** (12 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **.at()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **.bootDue()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **.Rig()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **Ikbd** (1 connections)
-- **Mfp** (1 connections)
-- **Scheduler** (1 connections)
-- **ikbd** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **live** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **mfp** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **scheduler** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **rtc_write_only_logic.cpp** (7 connections) — `tests/rtc_write_only_logic.cpp`
+- **testRtcWriteOnly()** (4 connections) — `tests/rtc_write_only_logic.cpp`
+- **address()** (2 connections) — `tests/rtc_write_only_logic.cpp`
+- **main()** (2 connections) — `tests/rtc_write_only_logic.cpp`
 
 ## Relationships
 
-- [Community 110](Community_110.md) (2 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 427](Community_427.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ikbd_sci_reset_logic.cpp`
+- `tests/rtc_write_only_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 9 (90%)
+- INFERRED: 1 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

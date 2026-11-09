@@ -1,17 +1,15 @@
 # Community 275
 
-> 23 nodes
+> 20 nodes
 
 ## Key Concepts
 
 - **Chantier CLOSURE (Sync) — état de l'enquête** (10 connections) — `docs/CLOSURE_CHANTIER.md`
-- **.lineLenEnv()** (5 connections) — `src/core/Shifter.hpp`
 - **Cycle 5 (2026-08-12) — LE FIX : datation par parité d'`into` ; la démo VIT** (5 connections) — `docs/CLOSURE_CHANTIER.md`
-- **Cycle Timer B (2026-08-11 soir) — portage posé, activation à débugger** (5 connections) — `docs/CLOSURE_CHANTIER.md`
 - **.recordSyncWrite()** (4 connections) — `src/core/Shifter.hpp`
+- **.timerBPosForLine()** (4 connections) — `src/core/Shifter.hpp`
 - **Closure (Sync) boote : datation des écritures freq/res par parité d'accès (2026-08-12)** (4 connections) — `CHANGELOG.md`
 - **Cycle 6 (2026-08-12) — le hachis cerné : motifs de transitoires hors répertoire** (4 connections) — `docs/CLOSURE_CHANTIER.md`
-- **.timerBFrameCycleForLine()** (2 connections) — `src/core/Shifter.hpp`
 - **CLOSURE_CHANTIER.md** (2 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle 3 (2026-08-11 nuit) — GPIP convergé, le mécanisme de la file élucidé** (2 connections) — `docs/CLOSURE_CHANTIER.md`
 - **PROCHAINE ÉTAPE (précise)** (2 connections) — `docs/CLOSURE_CHANTIER.md`
@@ -20,7 +18,6 @@
 - **Cycle 6 — addendum : logo d'intro (kSnapLead)** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle 6 — confirmations finales (couleurs décalées)** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle 6 — RÉSOLUTION : le port manquant du scroll hardware STF (X-DISTING)** (1 connections) — `docs/CLOSURE_CHANTIER.md`
-- **Cycle Timer B, suite (débogage) — état précis** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Diags ajoutés au Cycle 5** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Diags AJOUTÉS pendant l'enquête (commités ou à committer)** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Découverte complémentaire : le chronomètre = Timer B** (1 connections) — `docs/CLOSURE_CHANTIER.md`
@@ -30,15 +27,14 @@
 
 ## Relationships
 
-- [Community 5](Community_5.md) (3 shared connections)
-- [Community 258](Community_258.md) (2 shared connections)
+- [Community 5](Community_5.md) (2 shared connections)
 - [Community 215](Community_215.md) (2 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 419](Community_419.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
 - [Community 288](Community_288.md) (1 shared connections)
+- [Community 135](Community_135.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 10](Community_10.md) (1 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
 
 ## Source Files
 
@@ -48,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 24 (69%)
-- INFERRED: 11 (31%)
+- EXTRACTED: 22 (76%)
+- INFERRED: 7 (24%)
 - AMBIGUOUS: 0 (0%)
 
 ---

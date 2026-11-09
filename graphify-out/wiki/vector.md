@@ -1,6 +1,6 @@
 # vector
 
-> God node · 300 connections · `src/core/Cpu68k.hpp`
+> God node · 299 connections · `src/core/Cpu68k.hpp`
 
 **Community:** [Community 256](Community_256.md)
 
@@ -14,7 +14,6 @@
 - Bus.hpp `EXTRACTED`
 - selftest_logic.cpp `EXTRACTED`
 - AppInit.cpp `EXTRACTED`
-- Moira.cpp `EXTRACTED`
 - main_headless.cpp `EXTRACTED`
 - Machine.hpp `EXTRACTED`
 - App.cpp `EXTRACTED`
@@ -30,7 +29,8 @@
 - gstmcu_bench.cpp `EXTRACTED`
 - stx_raw_track_overlay_logic.cpp `EXTRACTED`
 - stx_read_address_crc_logic.cpp `EXTRACTED`
-- *…and 122 more `imports` connection(s) not listed (lowest-degree first to go)*
+- MidiInHost.hpp `EXTRACTED`
+- *…and 121 more `imports` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [Shifter](Shifter.md) `EXTRACTED`

@@ -1,6 +1,6 @@
 # Community 136
 
-> 31 nodes
+> 30 nodes
 
 ## Key Concepts
 
@@ -9,13 +9,12 @@
 - **parseRamBytes()** (10 connections) — `src/core/MachineType.hpp`
 - **machineName()** (8 connections) — `src/core/MachineType.hpp`
 - **parseMachine()** (8 connections) — `src/core/MachineType.hpp`
-- **Bug hunt de la 10ᵉ passe (workflow 6 chasseurs + vérif adversariale, 2026-08-07)** (7 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.applyConfig()** (6 connections) — `src/gui/App.hpp`
 - **ramLabel()** (6 connections) — `src/core/MachineType.hpp`
 - **main()** (6 connections) — `src/web/main_web.cpp`
+- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
 - **main()** (5 connections) — `tests/midi_ring_logic.cpp`
 - **Machine** (5 connections)
-- **.iack()** (4 connections) — `src/io/Mfp.hpp`
 - **natSelfTest()** (4 connections) — `src/headless/main_headless.cpp`
 - **serialLoopbackSelfTest()** (4 connections) — `src/headless/main_headless.cpp`
 - **size_t** (4 connections)
@@ -29,38 +28,37 @@
 - **usage()** (2 connections) — `src/headless/main_headless.cpp`
 - **.open()** (2 connections) — `src/net/MidiRing.hpp`
 - **.poll()** (2 connections) — `src/net/MidiRing.hpp`
-- *... and 6 more nodes in this community*
+- **.ok()** (1 connections) — `src/net/MidiRing.hpp`
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (11 shared connections)
-- [Community 41](Community_41.md) (6 shared connections)
+- [Community 4](Community_4.md) (10 shared connections)
+- [Community 41](Community_41.md) (8 shared connections)
+- [Community 51](Community_51.md) (6 shared connections)
 - [Community 200](Community_200.md) (5 shared connections)
-- [Community 51](Community_51.md) (5 shared connections)
-- [Community 182](Community_182.md) (4 shared connections)
 - [Community 119](Community_119.md) (4 shared connections)
-- [Community 380](Community_380.md) (3 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 192](Community_192.md) (2 shared connections)
+- [Community 380](Community_380.md) (2 shared connections)
+- [Community 138](Community_138.md) (2 shared connections)
 - [Community 386](Community_386.md) (2 shared connections)
-- [Community 99](Community_99.md) (2 shared connections)
-- [Community 281](Community_281.md) (2 shared connections)
 - [Community 68](Community_68.md) (2 shared connections)
-- [Community 113](Community_113.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
 - `src/core/MachineType.hpp`
 - `src/gui/App.hpp`
 - `src/headless/main_headless.cpp`
-- `src/io/Mfp.hpp`
 - `src/net/MidiRing.hpp`
 - `src/web/main_web.cpp`
 - `tests/midi_ring_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 62 (59%)
-- INFERRED: 43 (41%)
+- EXTRACTED: 60 (60%)
+- INFERRED: 40 (40%)
 - AMBIGUOUS: 0 (0%)
 
 ---

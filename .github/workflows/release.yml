@@ -681,8 +681,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Installer Emscripten
+      - name: Installer Emscripten (version validée)
         uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '7.0.0'
 
       - name: Build WASM (contenu libre uniquement)
         run: |

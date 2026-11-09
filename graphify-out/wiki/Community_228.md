@@ -1,34 +1,34 @@
 # Community 228
 
-> 9 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **testFdcSectorSizeSwitch()** (6 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **saveImage()** (5 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **Checks** (4 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **sourceImage()** (3 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **.equal()** (2 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **main()** (2 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **count** (1 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **path** (1 connections)
+- **FramePacer** (9 connections) — `src/core/Pacing.hpp`
+- **.resync()** (4 connections) — `src/core/Pacing.hpp`
+- **A28 — le servo audio et la cadence rentrent dans le cœur (2026-08-28)** (4 connections) — `CHANGELOG.md`
+- **.nextDueMs()** (1 connections) — `src/core/Pacing.hpp`
+- **armed_** (1 connections) — `src/core/Pacing.hpp`
+- **kMaxCatchUp** (1 connections) — `src/core/Pacing.hpp`
+- **nextMs_** (1 connections) — `src/core/Pacing.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 86](Community_86.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 58](Community_58.md) (2 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_sector_size_switch_logic.cpp`
+- `CHANGELOG.md`
+- `src/core/Pacing.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 8 (57%)
+- INFERRED: 6 (43%)
 - AMBIGUOUS: 0 (0%)
 
 ---

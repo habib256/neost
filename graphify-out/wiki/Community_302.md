@@ -1,39 +1,28 @@
 # Community 302
 
-> 9 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **.reset()** (6 connections) — `src/io/MidiAcia.hpp`
-- **.setRxSource()** (5 connections) — `src/io/MidiAcia.hpp`
-- **.armRxPace()** (5 connections) — `src/io/MidiAcia.hpp`
-- **.serialize()** (5 connections) — `src/io/MidiAcia.hpp`
-- **.raiseIfReady()** (3 connections) — `src/io/MidiAcia.hpp`
-- **6ᵉ passe — bug hunt pré-release (2026-07-12, agents parallèles)** (3 connections) — `docs/HATARI_DIVERGENCES.md`
-- **MIDI IN — l'ACIA tire à 31 250 bauds au lieu d'une rafale par trame (2026-08-29)** (2 connections) — `CHANGELOG.md`
-- **function** (1 connections)
-- **StateArchive** (1 connections)
+- **ikbd_monitor_machine_logic.cpp** (6 connections) — `tests/ikbd_monitor_machine_logic.cpp`
+- **testIkbdMonitorMachine()** (3 connections) — `tests/ikbd_monitor_machine_logic.cpp`
+- **main()** (2 connections) — `tests/ikbd_monitor_machine_logic.cpp`
 
 ## Relationships
 
-- [Community 167](Community_167.md) (5 shared connections)
-- [Community 25](Community_25.md) (5 shared connections)
-- [Community 59](Community_59.md) (1 shared connections)
-- [Community 213](Community_213.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 105](Community_105.md) (1 shared connections)
-- [Community 15](Community_15.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `src/io/MidiAcia.hpp`
+- `tests/ikbd_monitor_machine_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (74%)
-- INFERRED: 6 (26%)
+- EXTRACTED: 7 (88%)
+- INFERRED: 1 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

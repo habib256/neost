@@ -1,36 +1,34 @@
 # Community 155
 
-> 13 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **TrackInfo** (17 connections) — `src/io/IpfImage.cpp`
-- **blockCount** (1 connections) — `src/io/IpfImage.cpp`
-- **cylinder** (1 connections) — `src/io/IpfImage.cpp`
-- **data** (1 connections) — `src/io/IpfImage.cpp`
-- **dataSize** (1 connections) — `src/io/IpfImage.cpp`
-- **hasData** (1 connections) — `src/io/IpfImage.cpp`
-- **head** (1 connections) — `src/io/IpfImage.cpp`
-- **indexCells** (1 connections) — `src/io/IpfImage.cpp`
-- **infoSet** (1 connections) — `src/io/IpfImage.cpp`
-- **process** (1 connections) — `src/io/IpfImage.cpp`
-- **sigtype** (1 connections) — `src/io/IpfImage.cpp`
-- **sizeCells** (1 connections) — `src/io/IpfImage.cpp`
-- **type** (1 connections) — `src/io/IpfImage.cpp`
+- **MoiraExecMMU_cpp.h** (10 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::isValidExtMMU()** (5 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::execPFlush()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::execPFlush40()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::execPFlusha()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::execPGen()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::execPLoad()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::execPMove()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::execPTest()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::execPTest40()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Mode** (1 connections)
 
 ## Relationships
 
-- [Community 217](Community_217.md) (3 shared connections)
-- [Community 305](Community_305.md) (1 shared connections)
-- [Community 282](Community_282.md) (1 shared connections)
+- [Community 2](Community_2.md) (10 shared connections)
+- [Community 0](Community_0.md) (1 shared connections)
+- [Community 33](Community_33.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/IpfImage.cpp`
+- `extern/moira/Moira/MoiraExecMMU_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (100%)
+- EXTRACTED: 22 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

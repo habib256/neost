@@ -1,36 +1,35 @@
 # Community 299
 
-> 11 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **run_selftests.py** (14 connections) — `tools/run_selftests.py`
-- **run_one()** (7 connections) — `tools/run_selftests.py`
-- **ensure_rom_asset()** (5 connections) — `tools/run_selftests.py`
-- **run_timed()** (5 connections) — `tools/run_selftests.py`
-- **is_untracked()** (4 connections) — `tools/run_selftests.py`
-- **main()** (4 connections) — `tools/run_selftests.py`
-- **rom_is_free()** (3 connections) — `tools/run_selftests.py`
-- **load_manifest()** (2 connections) — `tools/run_selftests.py`
-- **parse_verdicts()** (2 connections) — `tools/run_selftests.py`
-- **EmuTOS (`roms/etos*.img`) est livré avec le dépôt : son absence est une casse.…** (1 connections) — `tools/run_selftests.py`
-- **Vrai si git ne versionne PAS `path` (étalon gitignoré). Sans git (archive…** (1 connections) — `tools/run_selftests.py`
+- **9. CPU / cycles / ordonnanceur (cycInt.c, cycles.c, clocks_timings.c, hatari-glue.c, newcpu.c)** (6 connections) — `docs/HATARI_MAPPING.md`
+- **.peripheralReset()** (4 connections) — `src/core/Bus.hpp`
+- **.iackSyncAfter()** (3 connections) — `src/core/Cpu68k.cpp`
 
 ## Relationships
 
-- [Community 18](Community_18.md) (8 shared connections)
-- [Community 151](Community_151.md) (2 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 34](Community_34.md) (1 shared connections)
+- [Community 30](Community_30.md) (1 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
+- [Community 59](Community_59.md) (1 shared connections)
+- [Community 54](Community_54.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 352](Community_352.md) (1 shared connections)
+- [Community 166](Community_166.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_selftests.py`
+- `docs/HATARI_MAPPING.md`
+- `src/core/Bus.hpp`
+- `src/core/Cpu68k.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 29 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 5 (45%)
+- INFERRED: 6 (55%)
 - AMBIGUOUS: 0 (0%)
 
 ---

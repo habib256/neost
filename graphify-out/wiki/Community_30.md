@@ -1,12 +1,11 @@
 # Community 30
 
-> 41 nodes
+> 40 nodes
 
 ## Key Concepts
 
 - **Bus.cpp** (90 connections) — `src/core/Bus.cpp`
 - **.megaSteCacheable()** (5 connections) — `src/core/Bus.hpp`
-- **.peripheralReset()** (4 connections) — `src/core/Bus.hpp`
 - **.loadTos()** (4 connections) — `src/core/Bus.hpp`
 - **IoSpan** (3 connections) — `src/core/Bus.cpp`
 - **.loadCart()** (3 connections) — `src/core/Bus.hpp`
@@ -29,21 +28,22 @@
 - **.wrScc()** (2 connections) — `src/core/Bus.hpp`
 - **.ejectCart()** (2 connections) — `src/core/Bus.hpp`
 - **.read32()** (2 connections) — `src/core/Bus.hpp`
-- *... and 16 more nodes in this community*
+- **.rdShifter()** (2 connections) — `src/core/Bus.hpp`
+- *... and 15 more nodes in this community*
 
 ## Relationships
 
-- [Community 14](Community_14.md) (36 shared connections)
-- [Community 102](Community_102.md) (16 shared connections)
+- [Community 14](Community_14.md) (37 shared connections)
+- [Community 102](Community_102.md) (15 shared connections)
 - [Community 203](Community_203.md) (8 shared connections)
 - [Community 386](Community_386.md) (8 shared connections)
 - [Community 202](Community_202.md) (8 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
 - [Community 281](Community_281.md) (3 shared connections)
-- [Community 54](Community_54.md) (2 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 445](Community_445.md) (2 shared connections)
-- [Community 59](Community_59.md) (1 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 54](Community_54.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
 - [Community 419](Community_419.md) (1 shared connections)
 
 ## Source Files
@@ -53,8 +53,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 130 (96%)
-- INFERRED: 6 (4%)
+- EXTRACTED: 129 (97%)
+- INFERRED: 4 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

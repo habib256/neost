@@ -1,46 +1,40 @@
 # Community 211
 
-> 12 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Blitter.cpp** (27 connections) — `src/core/Blitter.cpp`
-- **.controlWritten()** (7 connections) — `src/core/Blitter.hpp`
-- **.writeRegisters()** (6 connections) — `src/core/Blitter.hpp`
-- **.clearPreStartWindow()** (5 connections) — `src/core/Blitter.hpp`
-- **regWriteMask()** (5 connections) — `src/core/Blitter.cpp`
-- **🟡 Nouveaux — BASSES (cas-limites/cosmétiques)** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.write8()** (4 connections) — `src/core/Blitter.hpp`
-- **.write16()** (4 connections) — `src/core/Blitter.hpp`
-- **.write32()** (4 connections) — `src/core/Blitter.hpp`
-- **.pauseTransfer()** (4 connections) — `src/core/Blitter.hpp`
-- **.read8()** (3 connections) — `src/core/Blitter.hpp`
-- **.notePreStartCpuAccess()** (2 connections) — `src/core/Blitter.hpp`
+- **Mode kiosk — invariants d'implémentation (`gui/AppInit.cpp`, `gui/AppLoop.cpp`, `gui/KioskMenu.cpp`)** (5 connections) — `DEV.md`
+- **.start()** (4 connections) — `src/audio/Audio.hpp`
+- **.setLatencyMs()** (4 connections) — `src/audio/Audio.hpp`
+- **Borne Raspberry Pi : démarrage direct + latence audio réglable (2026-08-02)** (3 connections) — `CHANGELOG.md`
+- **3bis. La sortie son — HDMI ou Bluetooth** (3 connections) — `packaging/raspberry/README.md`
+- **3. Réglages de la borne — `/etc/neost-kiosk.conf`** (2 connections) — `packaging/raspberry/README.md`
+- **Bluetooth (`install_kiosk.sh --bluetooth-audio`)** (2 connections) — `packaging/raspberry/README.md`
+- **HDMI (défaut, `install_kiosk.sh` sans option)** (1 connections) — `packaging/raspberry/README.md`
 
 ## Relationships
 
-- [Community 37](Community_37.md) (12 shared connections)
-- [Community 139](Community_139.md) (10 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 176](Community_176.md) (2 shared connections)
-- [Community 374](Community_374.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 61](Community_61.md) (2 shared connections)
+- [Community 362](Community_362.md) (2 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 205](Community_205.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 321](Community_321.md) (1 shared connections)
+- [Community 306](Community_306.md) (1 shared connections)
+- [Community 264](Community_264.md) (1 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `src/core/Blitter.cpp`
-- `src/core/Blitter.hpp`
+- `CHANGELOG.md`
+- `DEV.md`
+- `packaging/raspberry/README.md`
+- `src/audio/Audio.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 39 (70%)
-- INFERRED: 17 (30%)
+- EXTRACTED: 9 (53%)
+- INFERRED: 8 (47%)
 - AMBIGUOUS: 0 (0%)
 
 ---

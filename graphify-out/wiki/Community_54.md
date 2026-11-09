@@ -1,55 +1,54 @@
 # Community 54
 
-> 83 nodes
+> 63 nodes
 
 ## Key Concepts
 
-- **NeostMoira** (41 connections) — `src/core/Cpu68k.cpp`
 - **u8** (39 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **Moira.h** (32 connections) — `extern/moira/Moira/Moira.h`
-- **.getClock()** (19 connections) — `extern/moira/Moira/Moira.h`
-- **.sync()** (17 connections) — `src/core/Cpu68k.cpp`
-- **.read16()** (13 connections) — `src/core/Cpu68k.cpp`
-- **.read8()** (11 connections) — `src/core/Cpu68k.cpp`
+- **Moira.h** (31 connections) — `extern/moira/Moira/Moira.h`
+- **BareMoira** (25 connections) — `tools/moira_bare_bench.cpp`
 - **Moira::execInterrupt()** (10 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **.faultOrHalt()** (10 connections) — `src/core/Cpu68k.cpp`
-- **Moira::makeFrame()** (9 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **.getPC0()** (9 connections) — `extern/moira/Moira/Moira.h`
-- **.didExecute()** (9 connections) — `src/core/Cpu68k.cpp`
-- **.readMste16Mhz()** (9 connections) — `src/core/Cpu68k.cpp`
-- **.write16()** (9 connections) — `src/core/Cpu68k.cpp`
-- **.write8()** (9 connections) — `src/core/Cpu68k.cpp`
-- **.writeMste16Mhz()** (9 connections) — `src/core/Cpu68k.cpp`
-- **.busDiag()** (8 connections) — `src/core/Cpu68k.cpp`
-- **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
+- **.emit()** (8 connections) — `tools/moira_bare_bench.cpp`
 - **Moira::jumpToVector()** (7 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **.readIrqUserVector()** (7 connections) — `src/core/Cpu68k.cpp`
-- **.willAccessBus()** (7 connections) — `src/core/Cpu68k.cpp`
-- **Moira::execLink()** (6 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::read()** (6 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
 - **Moira::write()** (6 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **.setFC()** (6 connections) — `extern/moira/Moira/Moira.h`
-- *... and 58 more nodes in this community*
+- **Moira::setFC()** (6 connections) — `extern/moira/Moira/Moira.cpp`
+- **Moira::setIPL()** (6 connections) — `extern/moira/Moira/Moira.cpp`
+- **.read16()** (6 connections) — `tools/moira_bare_bench.cpp`
+- **Moira::execute()** (5 connections) — `extern/moira/Moira/Moira.cpp`
+- **Moira::getIrqVector()** (5 connections) — `extern/moira/Moira/Moira.cpp`
+- **.commitIpl()** (5 connections) — `src/core/Cpu68k.cpp`
+- **.fc()** (5 connections) — `tools/moira_bare_bench.cpp`
+- **.read8()** (5 connections) — `tools/moira_bare_bench.cpp`
+- **.write16()** (5 connections) — `tools/moira_bare_bench.cpp`
+- **.write8()** (5 connections) — `tools/moira_bare_bench.cpp`
+- **IrqEv** (4 connections) — `tools/moira_bare_bench.cpp`
+- **UInt8** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **Moira::execBitFieldEa()** (4 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
+- **didReachWatchpoint()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **willAccessBus()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **.read16OnReset()** (4 connections) — `tools/moira_bare_bench.cpp`
+- **.readIrqUserVector()** (4 connections) — `tools/moira_bare_bench.cpp`
+- *... and 38 more nodes in this community*
 
 ## Relationships
 
-- [Community 2](Community_2.md) (51 shared connections)
-- [Community 16](Community_16.md) (28 shared connections)
-- [Community 64](Community_64.md) (14 shared connections)
-- [Community 27](Community_27.md) (9 shared connections)
-- [Community 349](Community_349.md) (7 shared connections)
-- [Community 32](Community_32.md) (6 shared connections)
-- [Community 57](Community_57.md) (6 shared connections)
-- [Community 166](Community_166.md) (6 shared connections)
-- [Community 169](Community_169.md) (5 shared connections)
-- [Community 182](Community_182.md) (4 shared connections)
+- [Community 2](Community_2.md) (29 shared connections)
+- [Community 16](Community_16.md) (21 shared connections)
+- [Community 9](Community_9.md) (10 shared connections)
+- [Community 64](Community_64.md) (9 shared connections)
+- [Community 32](Community_32.md) (5 shared connections)
+- [Community 57](Community_57.md) (4 shared connections)
 - [Community 134](Community_134.md) (4 shared connections)
-- [Community 66](Community_66.md) (3 shared connections)
+- [Community 399](Community_399.md) (3 shared connections)
+- [Community 166](Community_166.md) (3 shared connections)
+- [Community 109](Community_109.md) (2 shared connections)
+- [Community 104](Community_104.md) (2 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MAPPING.md`
-- `docs/PERFORMANCE.md`
+- `extern/moira/Moira/Moira.cpp`
 - `extern/moira/Moira/Moira.h`
 - `extern/moira/Moira/MoiraALU_cpp.h`
 - `extern/moira/Moira/MoiraConfig.h`
@@ -64,8 +63,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 259 (75%)
-- INFERRED: 85 (25%)
+- EXTRACTED: 164 (84%)
+- INFERRED: 32 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

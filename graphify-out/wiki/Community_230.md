@@ -4,29 +4,34 @@
 
 ## Key Concepts
 
-- **.densityFactor()** (7 connections) — `src/io/Fdc.hpp`
-- **.bytesPerTrackStx()** (7 connections) — `src/io/Fdc.hpp`
-- **.nextSectorIDStx()** (7 connections) — `src/io/Fdc.hpp`
-- **.indexCurrentPosBytes()** (6 connections) — `src/io/Fdc.hpp`
-- **.indexCurrentPosCycles()** (5 connections) — `src/io/Fdc.hpp`
-- **.busToFdcCycles()** (4 connections) — `src/io/Fdc.hpp`
+- **.destinations()** (9 connections) — `src/audio/MidiOutHost.hpp`
+- **Le MIDI Windows rejoint macOS et Linux — backend winmm (2026-08-31)** (6 connections) — `CHANGELOG.md`
+- **displayName()** (5 connections) — `src/audio/MidiOutHost.cpp`
+- **uniqueId()** (5 connections) — `src/audio/MidiOutHost.cpp`
+- **MIDIObjectRef** (2 connections)
+- **string** (2 connections)
 
 ## Relationships
 
-- [Community 93](Community_93.md) (8 shared connections)
-- [Community 12](Community_12.md) (6 shared connections)
-- [Community 95](Community_95.md) (5 shared connections)
-- [Community 24](Community_24.md) (4 shared connections)
-- [Community 112](Community_112.md) (1 shared connections)
+- [Community 42](Community_42.md) (8 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
+- [Community 25](Community_25.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 55](Community_55.md) (1 shared connections)
+- [Community 220](Community_220.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Fdc.hpp`
+- `CHANGELOG.md`
+- `src/audio/MidiOutHost.cpp`
+- `src/audio/MidiOutHost.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (40%)
-- INFERRED: 18 (60%)
+- EXTRACTED: 16 (73%)
+- INFERRED: 6 (27%)
 - AMBIGUOUS: 0 (0%)
 
 ---

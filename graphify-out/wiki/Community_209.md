@@ -18,12 +18,10 @@
 
 ## Relationships
 
-- [Community 144](Community_144.md) (2 shared connections)
-- [Community 265](Community_265.md) (1 shared connections)
+- [Community 144](Community_144.md) (3 shared connections)
+- [Community 265](Community_265.md) (2 shared connections)
 - [Community 210](Community_210.md) (1 shared connections)
-- [Community 276](Community_276.md) (1 shared connections)
 - [Community 148](Community_148.md) (1 shared connections)
-- [Community 208](Community_208.md) (1 shared connections)
 
 ## Source Files
 
