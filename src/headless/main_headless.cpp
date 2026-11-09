@@ -31,9 +31,8 @@
 #include <iterator>
 #include <thread>
 
-// Sockets du répondeur loopback de --slirp-selftest (point 4). Si libslirp est
-// dans le build, la couche socket de la plate-forme l'est forcément aussi.
-#ifdef NEOST_WITH_SLIRP
+// Sockets du répondeur loopback de --nat-selftest (point 4).
+#ifdef NEOST_WITH_NET
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -50,7 +49,7 @@
 #include "util/HostPath.hpp"   // chemins hôte : UNE définition d'« absolu »
 #include "gui/AppConfig.hpp"   // neost.cfg : UNE définition du rognage de ligne
 #include "net/NetBackend.hpp"
-#include "net/SlirpBackend.hpp"
+#include "net/NatBackend.hpp"
 #include "audio/MidiInHost.hpp"   // hors NEOST_WITH_NET : utilisé sans condition (--midi-in-device)
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
@@ -167,10 +166,13 @@ void usage() {
         "                    for STinG/MiNTnet drivers — exclusive with --cart)\n"
         "  --netusbee        NetUSBee on the cartridge port: NE2000 (as EtherNEC) +\n"
         "                    ISP1160 USB host controller (empty root hub; exclusive with --cart)\n"
-        "  --slirp           REAL Internet for the NE2000 (--ethernec/--netusbee): user-mode\n"
-        "                    NAT via libslirp. The ST gets 10.0.2.15/24, gateway 10.0.2.2,\n"
+        "  --nat             REAL Internet for the NE2000 (--ethernec/--netusbee): user-mode\n"
+        "                    Built-in NAT. The ST gets 10.0.2.15/24, gateway 10.0.2.2,\n"
         "                    DNS 10.0.2.3 (DHCP served) — needs a TCP/IP stack on the ST side\n"
-        "                    (STinG + ENEC.STX). --slirp-restricted = sandbox, no outbound\n"
+        "                    (STinG + ENEC.STX). --nat-restricted = virtual services only\n"
+        "  --nat-allow-loopback  allow connections to host loopback (off by default)\n"
+        "  --nat-forwards F  publish TCP/UDP ports: tcp:127.0.0.1:6502:23;udp:0.0.0.0:6503:6502\n"
+        "                    --slirp/--slirp-restricted remain aliases for --nat/--nat-restricted\n"
         "  --ultrasatan      UltraSatan SD interface on the ACSI bus: 2 slots on targets\n"
         "                    N and N+1 (default 0-1), JOOKIE INQUIRY, RTC, 'US' commands\n"
         "  --ultrasatan-id N first ACSI ID of the UltraSatan (0-6, default 0)\n"
@@ -219,7 +221,7 @@ void usage() {
         "                    ICD 'US' packets, RTC, empty slot) then exit\n"
         "  --netusbee-selftest self-test of the NetUSBee ISP1160 (cartridge-port wire\n"
         "                    protocol, chip ID, registers, ATL) + NE2000 coexistence, then exit\n"
-        "  --slirp-selftest  self-test of the real-Internet backend (libslirp): ARP, DHCP and\n"
+        "  --nat-selftest    self-test through the NE2000: ARP, DHCP and\n"
         "                    a loopback UDP round-trip through the emulated NE2000 — no\n"
         "                    outbound traffic needed (NEOST_SLIRP_ONLINE=1 adds a real DNS\n"
         "                    query; NEOST_SLIRP_DNS=a.b.c.d[:port] picks the resolver), then exit\n"
@@ -709,37 +711,39 @@ int netusbeeSelfTest(Machine& machine) {
 }
 
 // =============================================================================
-//  --slirp-selftest — auto-test du backend Internet (libslirp) AU NIVEAU FIL.
+//  --nat-selftest — auto-test du NAT intégré AU NIVEAU FIL.
 //
 //  On pilote la NE2000 exactement comme le pilote ST (écritures par fausses
 //  lectures $FA0000+reg*512+data*2, lectures $FB0000+reg*512, Remote DMA), on
-//  émet une trame construite à la main, et on vérifie que SLIRP répond — donc
+//  émet une trame construite à la main, et on vérifie que NAT répond — donc
 //  que TOUT le chemin ST → carte → NAT → carte → ST fonctionne :
 //
 //    1. ARP « qui a 10.0.2.2 ? » → réponse ARP de la passerelle ;
 //    2. DHCP DISCOVER → OFFER attribuant 10.0.2.15 (adresse, masque, routeur, DNS).
 //
-//  AUCUN accès à Internet n'est requis : les deux réponses viennent de SLIRP
+//  AUCUN accès à Internet n'est requis : les deux réponses viennent de NAT
 //  lui-même (serveur ARP/DHCP internes) — l'auto-test est donc DÉTERMINISTE et
 //  utilisable en CI hors ligne, contrairement à un vrai GET HTTP.
 // =============================================================================
-int slirpSelfTest(Machine& machine) {
+int natSelfTest(Machine& machine) {
     int passed = 0, failed = 0;
     auto check = [&](bool ok, const char* what) {
-        std::fprintf(stderr, "[slirp-selftest] %-40s %s\n", what, ok ? "OK" : "FAIL");
+        std::fprintf(stderr, "[nat-selftest] %-40s %s\n", what, ok ? "OK" : "FAIL");
         (ok ? passed : failed)++;
     };
-    if (!SlirpBackend::available()) {
-        std::fprintf(stderr, "[slirp-selftest] libslirp absente de ce build — test sauté\n");
+    if (!NatBackend::available()) {
+        std::fprintf(stderr, "[nat-selftest] Host networking disabled — test skipped\n");
         return 0;                                    // pas un échec : dépendance optionnelle
     }
-    SlirpBackend net;
-    if (!net.open(false)) {
-        std::fprintf(stderr, "[slirp-selftest] open: %s\n", net.lastError().c_str());
+    NatBackend net;
+    NatBackend::Options testOptions;
+    testOptions.allowHostLoopback = true; // seulement le répondeur local du test
+    if (!net.open(testOptions)) {
+        std::fprintf(stderr, "[nat-selftest] open: %s\n", net.lastError().c_str());
         return 1;
     }
     machine.ne2000.setBackend(&net);
-    if (!machine.enableNetUsbee()) { std::fprintf(stderr, "[slirp-selftest] enable failed\n"); return 1; }
+    if (!machine.enableNetUsbee()) { std::fprintf(stderr, "[nat-selftest] enable failed\n"); return 1; }
 
     Bus& bus = machine.bus;
     auto wr = [&](uint8_t reg, uint8_t data) {
@@ -756,7 +760,7 @@ int slirpSelfTest(Machine& machine) {
     wr(0x00, 0x21);
     wr(0x0C, 0x04);                                   // RCR : accepte le broadcast
 
-    // Émet `frame` par la carte, puis laisse SLIRP travailler quelques tours.
+    // Émet `frame` par la carte, puis laisse NAT travailler quelques tours.
     auto transmit = [&](const std::vector<uint8_t>& frame) {
         const uint16_t addr = uint16_t(kTxPage) * 256u;
         wr(0x08, uint8_t(addr)); wr(0x09, uint8_t(addr >> 8));
@@ -841,7 +845,7 @@ int slirpSelfTest(Machine& machine) {
     dhcp[udpOff + 4] = uint8_t(udpLen >> 8); dhcp[udpOff + 5] = uint8_t(udpLen);
     const uint16_t ipLen = uint16_t(dhcp.size() - ipOff);
     dhcp[ipOff + 2] = uint8_t(ipLen >> 8); dhcp[ipOff + 3] = uint8_t(ipLen);
-    // Somme de contrôle IPv4 (obligatoire, SLIRP la vérifie).
+    // Somme de contrôle IPv4 (obligatoire, NAT la vérifie).
     uint32_t sum = 0;
     for (std::size_t i = ipOff; i < ipOff + 20; i += 2)
         sum += (uint32_t(dhcp[i]) << 8) | dhcp[i + 1];
@@ -901,7 +905,7 @@ int slirpSelfTest(Machine& machine) {
         const uint16_t c2 = uint16_t(~s2);
         dns[ip2 + 10] = uint8_t(c2 >> 8); dns[ip2 + 11] = uint8_t(c2);
         if (std::getenv("NEOST_SLIRP_TRACE")) {
-            std::fprintf(stderr, "[slirp-selftest] trame DNS (%zu o) : ", dns.size());
+            std::fprintf(stderr, "[nat-selftest] trame DNS (%zu o) : ", dns.size());
             for (uint8_t b : dns) std::fprintf(stderr, "%02x", b);
             std::fprintf(stderr, "\n");
         }
@@ -922,7 +926,7 @@ int slirpSelfTest(Machine& machine) {
             for (uint8_t pg = kRxStart; pg < kRxStop; ++pg) {
                 std::vector<uint8_t> r;
                 if (!readRing(pg, r) || r.size() < 28) continue;
-                // ⚠ SLIRP nous ARPe AVANT de livrer : il lui faut la MAC de 10.0.2.15.
+                // ⚠ NAT nous ARPe AVANT de livrer : il lui faut la MAC de 10.0.2.15.
                 // Sur un vrai ST c'est la pile TCP/IP (STinG) qui répond ; ici c'est à
                 // l'auto-test de le faire, sinon la réponse DNS n'est jamais remise et
                 // le test conclut à tort « rien ne revient » (diagnostiqué le 2026-08-22).
@@ -953,12 +957,12 @@ int slirpSelfTest(Machine& machine) {
         return false;
     };
 
-#ifdef NEOST_WITH_SLIRP
+#ifdef NEOST_WITH_NET
     // --- 4. BOUCLE RETOUR loopback : une VRAIE socket hôte, aller-retour --------
-    // Les points 1-2 sont servis par SLIRP en interne : aucun octet n'y traverse
+    // Les points 1-2 sont servis par NAT en interne : aucun octet n'y traverse
     // de socket hôte. Ici, un répondeur UDP local éphémère joue le résolveur, visé
     // À TRAVERS le NAT (10.0.2.2:port → 127.0.0.1:port) : la requête sort par une
-    // socket hôte et la réponse refait tout le chemin inverse (socket → SLIRP →
+    // socket hôte et la réponse refait tout le chemin inverse (socket → NAT →
     // ARP → anneau RX). Déterministe et HORS LIGNE — donc CI-compatible — et
     // insensible aux filtres applicatifs : Little Snitch ne filtre pas le
     // loopback, alors qu'il jette silencieusement l'UDP externe des binaires non
@@ -978,7 +982,11 @@ int slirpSelfTest(Machine& machine) {
         in.sin_family = AF_INET;
         in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
         in.sin_port = 0;                                   // port éphémère
+        #ifdef _WIN32
+        int sl = sizeof in;
+#else
         socklen_t sl = sizeof in;
+#endif
         if (respOk && ::bind(resp, reinterpret_cast<sockaddr*>(&in), sizeof in) == 0
                    && ::getsockname(resp, reinterpret_cast<sockaddr*>(&in), &sl) == 0) {
 #ifdef _WIN32
@@ -989,7 +997,7 @@ int slirpSelfTest(Machine& machine) {
             const uint8_t vhost[4] = {10, 0, 2, 2};
             transmit(buildDns(vhost, ntohs(in.sin_port), 0xB00C));
             auto service = [&]() {
-                uint8_t q[512]; sockaddr_in peer{}; socklen_t pl = sizeof peer;
+                uint8_t q[512]; sockaddr_in peer{}; decltype(sl) pl = sizeof peer;
                 const long n = long(::recvfrom(resp, reinterpret_cast<char*>(q), sizeof q, 0,
                                                reinterpret_cast<sockaddr*>(&peer), &pl));
                 if (n < 12) return;
@@ -1012,7 +1020,7 @@ int slirpSelfTest(Machine& machine) {
 #endif
         check(loopOk, "BOUCLE RETOUR: reponse UDP loopback via NAT");
     }
-#endif // NEOST_WITH_SLIRP
+#endif // NEOST_WITH_NAT
 
     // --- 5. SORTIE RÉELLE (opt-in) : requête DNS vers l'extérieur ---------------
     // Hors CI par défaut : les auto-tests du projet ne doivent JAMAIS dépendre du
@@ -1021,7 +1029,7 @@ int slirpSelfTest(Machine& machine) {
     // paquets QUITTENT la machine. ⚠ Un pare-feu applicatif (Little Snitch…) peut
     // le faire échouer alors que NeoST est correct : le point 4 tranche.
     if (std::getenv("NEOST_SLIRP_ONLINE")) {
-        // Cible du DNS : par défaut le relais interne de SLIRP (10.0.2.3), qui
+        // Cible du DNS : par défaut le relais interne de NAT (10.0.2.3), qui
         // réexpédie vers le résolveur de l'hôte. NEOST_SLIRP_DNS=a.b.c.d[:port]
         // vise un résolveur PUBLIC à la place — utile pour distinguer « le relais
         // ne marche pas » de « rien ne sort du tout ».
@@ -1037,12 +1045,12 @@ int slirpSelfTest(Machine& machine) {
         transmit(buildDns(dnsIp, uint16_t(dnsPort), 0xBEEF));
         check(awaitDnsAnswer(0xBEEF, 300, nullptr), "SORTIE REELLE : DNS resout theoldnet.com");
     } else {
-        std::fprintf(stderr, "[slirp-selftest] (sortie reelle non testee — NEOST_SLIRP_ONLINE=1 pour l'activer)\n");
+        std::fprintf(stderr, "[nat-selftest] (sortie reelle non testee — NEOST_SLIRP_ONLINE=1 pour l'activer)\n");
     }
 
     machine.disableNetUsbee();
     net.close();
-    std::fprintf(stderr, "[slirp-selftest] %d passed, %d failed\n", passed, failed);
+    std::fprintf(stderr, "[nat-selftest] %d passed, %d failed\n", passed, failed);
     return failed == 0 ? 0 : 1;
 }
 
@@ -1147,7 +1155,9 @@ int main(int argc, char** argv) {
     bool        ethernecFlag   = false;          // --ethernec : NE2000 port cartouche
     bool        netusbeeFlag   = false;          // --netusbee : NE2000 + ISP1160 port cartouche
     bool        slirpFlag      = false;          // --slirp : NAT user-mode (Internet réel)
-    bool        slirpRestricted = false;         // --slirp-restricted : bac à sable
+    bool        slirpRestricted = false;
+    bool        natAllowLoopback = false;
+    std::string natForwards;         // publications explicites de ports hôte
     bool        ultrasatan     = false;          // --ultrasatan : interface SD sur le bus ACSI
     int         ultrasatanId   = 0;              // --ultrasatan-id N : première cible (0-6)
     std::string sd1Img, sd2Img;                  // --sd1/--sd2 IMG : images des slots SD
@@ -1328,8 +1338,10 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--modem"))           modemFlag = true;
         else if (!std::strcmp(a, "--ethernec"))        ethernecFlag = true;
         else if (!std::strcmp(a, "--netusbee"))        netusbeeFlag = true;
-        else if (!std::strcmp(a, "--slirp"))           slirpFlag = true;
-        else if (!std::strcmp(a, "--slirp-restricted")) { slirpFlag = true; slirpRestricted = true; }
+        else if (!std::strcmp(a, "--nat") || !std::strcmp(a, "--slirp"))           slirpFlag = true;
+        else if (!std::strcmp(a, "--nat-restricted") || !std::strcmp(a, "--slirp-restricted")) { slirpFlag = true; slirpRestricted = true; }
+        else if (!std::strcmp(a, "--nat-allow-loopback")) { slirpFlag = true; natAllowLoopback = true; }
+        else if (!std::strcmp(a, "--nat-forwards")) { slirpFlag = true; natForwards = next(a); }
         else if (!std::strcmp(a, "--ultrasatan"))      ultrasatan = true;
         else if (!std::strcmp(a, "--ultrasatan-id"))   { ultrasatan = true; ultrasatanId = std::atoi(next(a)); }
         else if (!std::strcmp(a, "--sd1"))             { ultrasatan = true; sd1Img = next(a); }
@@ -1402,7 +1414,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--enec-selftest")) enecSelfTestFlag = true;
         else if (!std::strcmp(a, "--usatan-selftest")) usatanSelfTestFlag = true;
         else if (!std::strcmp(a, "--netusbee-selftest")) netusbeeSelfTestFlag = true;
-        else if (!std::strcmp(a, "--slirp-selftest")) slirpSelfTestFlag = true;
+        else if (!std::strcmp(a, "--nat-selftest") || !std::strcmp(a, "--slirp-selftest")) slirpSelfTestFlag = true;
         else if (!std::strcmp(a, "--shot-every"))  {
             shotEvery = std::atoi(next(a)); shotPrefix = next(a);
             if (shotEvery <= 0)             // le préfixe a été consommé pour rien : le dire
@@ -1612,6 +1624,9 @@ int main(int argc, char** argv) {
             ethernecFlag = fc.ethernec;
             netusbeeFlag = fc.netusbee;
             slirpFlag    = fc.slirp;
+            slirpRestricted = fc.natRestricted;
+            natAllowLoopback = fc.natAllowLoopback;
+            natForwards = fc.natForwards;
             if (!fc.machine.empty()) machType = parseMachine(fc.machine.c_str());
             if (!fc.mem.empty())     ramBytes = parseRamBytes(fc.mem.c_str());
             if (!fc.cpu.empty())     cpuCore  = Cpu68k::parseCore(fc.cpu.c_str());
@@ -1734,7 +1749,7 @@ int main(int argc, char** argv) {
     if (enecSelfTestFlag) return enecSelfTest(machine);
     if (usatanSelfTestFlag) return usatanSelfTest(machine);
     if (netusbeeSelfTestFlag) return netusbeeSelfTest(machine);
-    if (slirpSelfTestFlag) return slirpSelfTest(machine);
+    if (slirpSelfTestFlag) return natSelfTest(machine);
     std::fprintf(stderr, "[headless] CPU core: %s | machine: %s | RAM: %s\n",
                  Cpu68k::coreName(machine.cpu.core()), machineName(machType), ramLabel(ramBytes));
     if (!machine.loadTos(romPath)) {
@@ -1852,14 +1867,14 @@ int main(int argc, char** argv) {
     // EtherNEC (--ethernec) : NE2000 sur le port cartouche, backend boucle locale
     // (aucune E/S réseau). Exclusif d'une cartouche montée.
     NetBackendLoop enecLoop;
-    SlirpBackend   slirpNet;
+    NatBackend   natNet;
     if ((ethernecFlag || netusbeeFlag) && slirpFlag) {
-        if (slirpNet.open(slirpRestricted)) {
-            machine.ne2000.setBackend(&slirpNet);
+        if (natNet.open(NatBackend::Options{slirpRestricted, natAllowLoopback, natForwards})) {
+            machine.ne2000.setBackend(&natNet);
         } else {
-            std::fprintf(stderr, "[headless] --slirp: %s — repli sur la boucle locale\n",
-                         slirpNet.lastError().c_str());
-            slirpFlag = false;
+            std::fprintf(stderr, "[headless] --nat: %s\n",
+                         natNet.lastError().c_str());
+            return 1;
         }
     }
     if (ethernecFlag || netusbeeFlag) {
@@ -1872,7 +1887,7 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "[headless] --%s refused: the cartridge port is in use\n",
                          netusbeeFlag ? "netusbee" : "ethernec");
     } else if (slirpFlag) {
-        std::fprintf(stderr, "[headless] --slirp ignored: needs --ethernec or --netusbee\n");
+        std::fprintf(stderr, "[headless] --nat ignored: needs --ethernec or --netusbee\n");
     }
     // Clé du jeu (disks/dongles.txt à côté de l'image, sinon table livrée) : comme le
     // GUI, seulement les emplacements vides — --dongle / --plug explicites priment.
@@ -2198,7 +2213,7 @@ int main(int argc, char** argv) {
         // jamais drainée, mesuré). Et elles cassent le déterminisme que le serveur
         // vend (docs/OPENDST.md § 1) : refus, pas avertissement.
         if (modemFlag || !midiNetPeer.empty() || ethernecFlag || netusbeeFlag || slirpFlag) {
-            std::fprintf(stderr, "[server] --modem/--midi-net/--ethernec/--netusbee/--slirp are "
+            std::fprintf(stderr, "[server] --modem/--midi-net/--ethernec/--netusbee/--nat are "
                                  "not supported in server mode: their host pumps only run in the "
                                  "--frames loop, and they break determinism\n");
             return 2;

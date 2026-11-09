@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Audio::Audio()** (5 connections) — `src/audio/Audio.cpp`
-- **.stop()** (4 connections) — `src/audio/Audio.hpp`
+- **.stop()** (3 connections) — `src/audio/Audio.hpp`
 - **DriveSound** (1 connections)
 - **DmaSound** (1 connections)
 - **YM2149** (1 connections)
@@ -14,7 +14,6 @@
 
 - [Community 4](Community_4.md) (2 shared connections)
 - [Community 61](Community_61.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 
@@ -23,8 +22,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 6 (75%)
-- INFERRED: 2 (25%)
+- EXTRACTED: 6 (86%)
+- INFERRED: 1 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

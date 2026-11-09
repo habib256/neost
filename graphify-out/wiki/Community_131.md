@@ -1,44 +1,41 @@
 # Community 131
 
-> 20 nodes
+> 15 nodes
 
 ## Key Concepts
 
-- **HayesModem** (17 connections) — `src/net/HayesModem.hpp`
-- **HayesModem.cpp** (13 connections) — `src/net/HayesModem.cpp`
-- **.execute()** (8 connections) — `src/net/HayesModem.hpp`
-- **.sendStr()** (7 connections) — `src/net/HayesModem.hpp`
-- **.hangup()** (7 connections) — `src/net/HayesModem.hpp`
-- **.dial()** (6 connections) — `src/net/HayesModem.hpp`
-- **.onTx()** (5 connections) — `src/net/HayesModem.hpp`
-- **.HayesModem()** (4 connections) — `src/net/HayesModem.hpp`
-- **mtrace()** (4 connections) — `src/net/HayesModem.cpp`
-- **string** (4 connections)
-- **.poll()** (3 connections) — `src/net/HayesModem.hpp`
-- **Mfp** (2 connections)
-- **.connected()** (1 connections) — `src/net/HayesModem.hpp`
-- **cmd_** (1 connections) — `src/net/HayesModem.hpp`
-- **dataMode_** (1 connections) — `src/net/HayesModem.hpp`
-- **echo_** (1 connections) — `src/net/HayesModem.hpp`
-- **fd_** (1 connections) — `src/net/HayesModem.hpp`
-- **plusCount_** (1 connections) — `src/net/HayesModem.hpp`
-- **SocketHandle** (1 connections)
-- **string** (1 connections)
+- **stx_raw_track_overlay_logic.cpp** (22 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **testStxRawTrackOverlay()** (9 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **writeImage()** (7 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **Checks** (6 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **checkDump()** (6 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **dumpTrack()** (5 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **put16()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **put32()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **writeSector()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **checksum()** (3 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **.equal()** (2 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **main()** (2 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **count** (1 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **failures** (1 connections) — `tests/stx_raw_track_overlay_logic.cpp`
+- **path** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (5 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 256](Community_256.md) (7 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 62](Community_62.md) (6 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `src/net/HayesModem.cpp`
-- `src/net/HayesModem.hpp`
+- `tests/stx_raw_track_overlay_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 37 (79%)
-- INFERRED: 10 (21%)
+- EXTRACTED: 49 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

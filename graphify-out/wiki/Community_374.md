@@ -1,31 +1,29 @@
 # Community 374
 
-> 5 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
-- **.didExecute()** (7 connections) — `src/core/Cpu68k.cpp`
-- **Mode** (2 connections)
-- **Size** (2 connections)
-- **trapObserver** (2 connections) — `src/core/Cpu68k.cpp`
+- **Slot** (8 connections) — `src/headless/Server.cpp`
+- **frame** (1 connections) — `src/headless/Server.cpp`
+- **joy0** (1 connections) — `src/headless/Server.cpp`
+- **joy1** (1 connections) — `src/headless/Server.cpp`
+- **joyKnown** (1 connections) — `src/headless/Server.cpp`
+- **used** (1 connections) — `src/headless/Server.cpp`
 
 ## Relationships
 
-- [Community 64](Community_64.md) (5 shared connections)
-- [Community 0](Community_0.md) (2 shared connections)
-- [Community 84](Community_84.md) (2 shared connections)
-- [Community 349](Community_349.md) (1 shared connections)
-- [Community 66](Community_66.md) (1 shared connections)
+- [Community 186](Community_186.md) (2 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.cpp`
+- `src/headless/Server.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 8 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,34 +1,43 @@
 # Community 321
 
-> 7 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **10. GEMDOS HD / cartouche / RTC / SCU / joysticks (gemdos.c, cart.c, rtc.c, scu_vme.c, joy.c)** (7 connections) — `docs/HATARI_MAPPING.md`
-- **.pexecBpCreated()** (3 connections) — `src/io/GemdosHd.hpp`
-- **.setAnalog()** (2 connections) — `src/io/StePads.hpp`
+- **10. GEMDOS HD / cartouche / RTC / SCU / joysticks (gemdos.c, cart.c, rtc.c, scu_vme.c, joy.c)** (8 connections) — `docs/HATARI_MAPPING.md`
+- **Référence d’implémentation : composant NeoST ↔ Hatari** (7 connections) — `DEV.md`
+- **.trap()** (4 connections) — `src/io/GemdosHd.hpp`
+- **Disque dur GEMDOS (`GemdosHd`)** (3 connections) — `DEV.md`
+- **.handleOpcode()** (2 connections) — `src/io/GemdosHd.hpp`
+- **.serialize()** (2 connections) — `src/io/GemdosHd.hpp`
 - **IKBD — cadence commune et monitoring (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
 - **IKBD — PAUSE et octet SCI engagé (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **SCC — générateur de débit (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
-- **USART MFP — réception (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_MAPPING.md`
 
 ## Relationships
 
-- [Community 17](Community_17.md) (1 shared connections)
+- [Community 17](Community_17.md) (3 shared connections)
+- [Community 48](Community_48.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 103](Community_103.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
-- [Community 106](Community_106.md) (1 shared connections)
-- [Community 228](Community_228.md) (1 shared connections)
+- [Community 63](Community_63.md) (1 shared connections)
+- [Community 215](Community_215.md) (1 shared connections)
+- [Community 19](Community_19.md) (1 shared connections)
+- [Community 352](Community_352.md) (1 shared connections)
+- [Community 124](Community_124.md) (1 shared connections)
 
 ## Source Files
 
+- `DEV.md`
 - `docs/HATARI_MAPPING.md`
 - `src/io/GemdosHd.hpp`
-- `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (70%)
-- INFERRED: 3 (30%)
+- EXTRACTED: 10 (48%)
+- INFERRED: 11 (52%)
 - AMBIGUOUS: 0 (0%)
 
 ---

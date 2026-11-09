@@ -61,15 +61,10 @@ fi
 assert_universal build-deps/glfw/lib/libglfw3.a
 
 # --- Build NeoST universel contre le GLFW statique ---------------------------
-# NEOST_WITH_SLIRP=OFF, EXPLICITEMENT : les paquets publiés sont bâtis sans
-# libslirp (la CI ne l'installe pas, et le README le dit). En AUTO, une machine de
-# dev qui a la libslirp de Homebrew produisait autre chose que la release — et,
-# Homebrew étant MONO-ARCH, la tranche x86_64 ne se liait même pas
-# (« ld: symbol(s) not found for architecture x86_64 » sur slirp_new, mesuré le
-# 2026-09-01 en rebâtissant le .dmg 0.6). Le paquet doit être le même partout.
+# Le NAT intégré est construit dans les deux architectures, sans libslirp Homebrew.
 cmake -B build-macos -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_OSX_ARCHITECTURES="$ARCHS" -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOS_MIN" \
-      -DNEOST_VERSION_STR="$VERSION" -DNEOST_WITH_SLIRP=OFF \
+      -DNEOST_VERSION_STR="$VERSION" \
       -DCMAKE_PREFIX_PATH="$ROOT/build-deps/glfw"
 cmake --build build-macos -j"$(sysctl -n hw.ncpu)"
 test -x build-macos/neost || { echo "ERREUR : le frontend GUI n'a pas été construit (GLFW introuvable ?)"; exit 1; }

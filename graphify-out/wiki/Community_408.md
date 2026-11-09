@@ -1,23 +1,25 @@
 # Community 408
 
-> 2 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **.serialize()** (2 connections) — `src/core/YM2149.hpp`
-- **StateArchive** (1 connections)
+- **setMouseCaptured()** (4 connections) — `src/web/main_web.cpp`
+- **onKey()** (3 connections) — `src/web/main_web.cpp`
+- **onMouseButton()** (3 connections) — `src/web/main_web.cpp`
+- **GLFWwindow** (3 connections)
 
 ## Relationships
 
-- [Community 28](Community_28.md) (1 shared connections)
+- [Community 68](Community_68.md) (3 shared connections)
 
 ## Source Files
 
-- `src/core/YM2149.hpp`
+- `src/web/main_web.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
+- EXTRACTED: 8 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,65 +1,50 @@
 # Community 40
 
-> 43 nodes
+> 29 nodes
 
 ## Key Concepts
 
-- **Moira.cpp** (57 connections) — `extern/moira/Moira/Moira.cpp`
-- **u32** (11 connections)
-- **.isAvailable()** (10 connections) — `extern/moira/Moira/Moira.h`
-- **.availabilityMask()** (9 connections) — `extern/moira/Moira/Moira.h`
-- **.setIPL()** (8 connections) — `extern/moira/Moira/Moira.h`
-- **u16** (8 connections)
-- **.availabilityString()** (7 connections) — `extern/moira/Moira/Moira.h`
-- **.setCACR()** (6 connections) — `extern/moira/Moira/Moira.h`
-- **u8** (6 connections)
-- **.cacrMask()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **.setCAAR()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **.setModel()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **.readFC()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::createJumpTable()** (5 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
-- **2. Carte des divergences (source-grounded, 3 agents — file:line des DEUX côtés)** (5 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **Patch local : `NEOST_IPLFETCH` (reconnaissance IPL différée)** (5 connections) — `extern/moira/NEOST_VENDOR.md`
-- **.getCCR()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **.setCCR()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **.pollIpl()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **.createJumpTable()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **Mode** (4 connections)
-- **.hasCPI()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.hasFPU()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.addrMask()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **parse()** (3 connections) — `extern/moira/Moira/MoiraInit_cpp.h`
-- *... and 18 more nodes in this community*
+- **NatBackend** (23 connections) — `src/net/NatBackend.hpp`
+- **NatBackend.cpp** (13 connections) — `src/net/NatBackend.cpp`
+- **Options** (5 connections) — `src/net/NatBackend.hpp`
+- **.open()** (3 connections) — `src/net/NatBackend.hpp`
+- **.recv()** (3 connections) — `src/net/NatBackend.hpp`
+- **.NatBackend()** (2 connections) — `src/net/NatBackend.hpp`
+- **.available()** (2 connections) — `src/net/NatBackend.hpp`
+- **.close()** (2 connections) — `src/net/NatBackend.hpp`
+- **.isOpen()** (2 connections) — `src/net/NatBackend.hpp`
+- **.send()** (2 connections) — `src/net/NatBackend.hpp`
+- **.poll()** (2 connections) — `src/net/NatBackend.hpp`
+- **.txFrames()** (2 connections) — `src/net/NatBackend.hpp`
+- **.rxFrames()** (2 connections) — `src/net/NatBackend.hpp`
+- **impl_** (2 connections) — `src/net/NatBackend.hpp`
+- **string** (2 connections)
+- **.gatewayIp()** (1 connections) — `src/net/NatBackend.hpp`
+- **.guestIp()** (1 connections) — `src/net/NatBackend.hpp`
+- **.name()** (1 connections) — `src/net/NatBackend.hpp`
+- **.nameserver()** (1 connections) — `src/net/NatBackend.hpp`
+- **.netmask()** (1 connections) — `src/net/NatBackend.hpp`
+- **Impl** (1 connections)
+- **Options** (1 connections)
+- **NetBackend** (1 connections)
+- **unique_ptr** (1 connections)
+- **error_** (1 connections) — `src/net/NatBackend.hpp`
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (25 shared connections)
-- [Community 99](Community_99.md) (11 shared connections)
-- [Community 333](Community_333.md) (7 shared connections)
-- [Community 56](Community_56.md) (5 shared connections)
-- [Community 238](Community_238.md) (4 shared connections)
-- [Community 0](Community_0.md) (3 shared connections)
-- [Community 2](Community_2.md) (3 shared connections)
-- [Community 64](Community_64.md) (3 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 160](Community_160.md) (3 shared connections)
-- [Community 27](Community_27.md) (2 shared connections)
-- [Community 358](Community_358.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- `extern/moira/Moira/Moira.cpp`
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraInit_cpp.h`
-- `extern/moira/Moira/MoiraMacros.h`
-- `extern/moira/NEOST_VENDOR.md`
-- `tools/moira_bare_bench.cpp`
+- `src/net/NatBackend.cpp`
+- `src/net/NatBackend.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 123 (80%)
-- INFERRED: 31 (20%)
+- EXTRACTED: 42 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

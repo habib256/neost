@@ -4,32 +4,31 @@
 
 ## Key Concepts
 
-- **SndRig** (11 connections) — `tests/selftest_logic.cpp`
-- **Bus** (3 connections)
-- **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
-- **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
-- **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **DmaSound** (1 connections)
-- **bus** (1 connections) — `tests/selftest_logic.cpp`
-- **sched** (1 connections) — `tests/selftest_logic.cpp`
-- **snd** (1 connections) — `tests/selftest_logic.cpp`
+- **MidiInDev** (8 connections) — `src/gui/AppConfig.hpp`
+- **MidiOutDev** (6 connections) — `src/gui/AppConfig.hpp`
+- **string** (3 connections)
+- **channel** (1 connections) — `src/gui/AppConfig.hpp`
+- **name** (1 connections) — `src/gui/AppConfig.hpp`
+- **uid** (1 connections) — `src/gui/AppConfig.hpp`
+- **channels** (1 connections) — `src/gui/AppConfig.hpp`
+- **name** (1 connections) — `src/gui/AppConfig.hpp`
+- **uid** (1 connections) — `src/gui/AppConfig.hpp`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
-- [Community 226](Community_226.md) (1 shared connections)
-- [Community 263](Community_263.md) (1 shared connections)
-- [Community 183](Community_183.md) (1 shared connections)
+- [Community 21](Community_21.md) (3 shared connections)
+- [Community 11](Community_11.md) (2 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/selftest_logic.cpp`
+- `src/gui/AppConfig.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 13 (87%)
+- INFERRED: 2 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

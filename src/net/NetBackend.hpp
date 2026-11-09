@@ -10,7 +10,7 @@
 //    · NetBackendNull  — aucun réseau (les trames émises sont perdues) ;
 //    · NetBackendLoop  — boucle locale (une trame émise revient : utile aux
 //      auto-tests du chemin ring buffer) ;
-//    · (SLIRP/pcap : à brancher quand la lib est présente — cf. CMake).
+//    · (NAT intégré : à brancher quand la lib est présente — cf. CMake).
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================

@@ -65,7 +65,7 @@ check_dlls() {
         case "${dll,,}" in
             kernel32.dll|user32.dll|gdi32.dll|shell32.dll|advapi32.dll|ole32.dll|\
             oleaut32.dll|winmm.dll|imm32.dll|version.dll|setupapi.dll|cfgmgr32.dll|\
-            msvcrt.dll|opengl32.dll|dwmapi.dll|shlwapi.dll|ws2_32.dll|bcrypt.dll|\
+            msvcrt.dll|opengl32.dll|dwmapi.dll|shlwapi.dll|ws2_32.dll|iphlpapi.dll|bcrypt.dll|\
             avrt.dll|mmdevapi.dll|api-ms-win-*|ext-ms-*) ;;
             *) bad="$bad $dll" ;;
         esac

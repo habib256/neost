@@ -4,35 +4,34 @@
 
 ## Key Concepts
 
-- **IkbdRig** (11 connections) — `tests/selftest_logic.cpp`
-- **.send()** (4 connections) — `tests/selftest_logic.cpp`
-- **Scheduler** (4 connections)
-- **.drain()** (3 connections) — `tests/selftest_logic.cpp`
-- **.run()** (3 connections) — `tests/selftest_logic.cpp`
-- **Mfp** (2 connections)
-- **.IkbdRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **Ikbd** (1 connections)
-- **initializer_list** (1 connections)
-- **ikbd** (1 connections) — `tests/selftest_logic.cpp`
-- **mfp** (1 connections) — `tests/selftest_logic.cpp`
-- **sched** (1 connections) — `tests/selftest_logic.cpp`
+- **ProbeSet** (11 connections) — `src/headless/Observe.hpp`
+- **ProbeSpec** (10 connections) — `src/headless/Observe.hpp`
+- **addProbe()** (4 connections) — `src/headless/Observe.hpp`
+- **string** (4 connections)
+- **parseProbeSpec()** (3 connections) — `src/headless/Observe.hpp`
+- **hashRam** (1 connections) — `src/headless/Observe.hpp`
+- **hashRamAddr** (1 connections) — `src/headless/Observe.hpp`
+- **hashRamLen** (1 connections) — `src/headless/Observe.hpp`
+- **probes** (1 connections) — `src/headless/Observe.hpp`
+- **addr** (1 connections) — `src/headless/Observe.hpp`
+- **len** (1 connections) — `src/headless/Observe.hpp`
+- **name** (1 connections) — `src/headless/Observe.hpp`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (4 shared connections)
-- [Community 183](Community_183.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 263](Community_263.md) (1 shared connections)
-- [Community 267](Community_267.md) (1 shared connections)
+- [Community 284](Community_284.md) (8 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
+- [Community 370](Community_370.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/selftest_logic.cpp`
+- `src/headless/Observe.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 21 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 24 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

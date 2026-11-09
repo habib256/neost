@@ -47,7 +47,7 @@
 
 #include "core/Machine.hpp"
 #include "net/NetBackend.hpp"
-#include "net/SlirpBackend.hpp"
+#include "net/NatBackend.hpp"
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
 #endif
@@ -1124,13 +1124,19 @@ static void consumeConfigRequests(App& A, Frame& F) {
         reqHardReset = true;
         cfgUi.reqNetUsbee = -1;
     }
-    if (cfgUi.reqSlirp >= 0) {
-        cfg.slirp = (cfgUi.reqSlirp == 1);
-        A.slirpApply(cfg.slirp);           // peut refuser (lib absente, échec d'init)
+    if (cfgUi.reqNat >= 0 || cfgUi.reqNatOptions) {
+        if (cfgUi.reqNatOptions) {
+            cfg.natRestricted = cfgUi.natRestricted;
+            cfg.natAllowLoopback = cfgUi.natAllowLoopback;
+            cfg.natForwards = cfgUi.natForwards;
+            cfgUi.reqNatOptions = false;
+        }
+        if (cfgUi.reqNat >= 0) cfg.slirp = (cfgUi.reqNat == 1);
+        A.natApply(cfg.slirp);           // peut refuser (options invalides ou port occupé)
         saveConfig(A, exeDir, cfg, &machine);
         // Pas de reset : la carte vue par le pilote ne change pas, seul son
         // « câble » change — la bascule boucle locale ↔ Internet est à chaud.
-        cfgUi.reqSlirp = -1;
+        cfgUi.reqNat = -1;
     }
     if (cfgUi.driveSound != driveSoundOn) {
         driveSoundOn = cfgUi.driveSound; drive.setEnabled(driveSoundOn);
@@ -1267,7 +1273,7 @@ static void consumeProfileRequests(App& A, Frame& F) {
 #ifdef NEOST_WITH_NET
             A.modemApply(cfg.modem);
 #endif
-            A.slirpApply(cfg.slirp);
+            A.natApply(cfg.slirp);
             A.netUsbeeApply(cfg.netusbee);
             A.etherApply(cfg.ethernec);
             // Son/MIDI du profil : sorties (GM/CoreMIDI/MT-32 + modèle), câble de
@@ -1279,6 +1285,7 @@ static void consumeProfileRequests(App& A, Frame& F) {
             audio.setMixGains(cfg.mixYm, cfg.mixDma, cfg.mixDrive, cfg.mixMt32, cfg.mixGm);
             machine.psg.setPortBDacGain(cfg.mixDac);
             cfgUi.mixInit = false;
+            cfgUi.natInit = false;
             saveConfig(A, exeDir, cfg, &machine);
             reqRebuild = true;        // modèle/RAM/FPU/ROM/cartouche/HD/moniteur/FDC (+ UltraSatan)
             cfgUi.pendInit = false;   // resème les champs « en attente »

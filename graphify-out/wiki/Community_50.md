@@ -1,53 +1,48 @@
 # Community 50
 
-> 43 nodes
+> 27 nodes
 
 ## Key Concepts
 
-- **SlirpBackend** (35 connections) — `src/net/SlirpBackend.hpp`
-- **SlirpBackend.cpp** (25 connections) — `src/net/SlirpBackend.cpp`
-- **.open()** (7 connections) — `src/net/SlirpBackend.hpp`
-- **Timer** (5 connections) — `src/net/SlirpBackend.hpp`
-- **strace()** (5 connections) — `src/net/SlirpBackend.cpp`
-- **.fireDueTimers()** (4 connections) — `src/net/SlirpBackend.hpp`
-- **.poll()** (4 connections) — `src/net/SlirpBackend.hpp`
-- **.send()** (3 connections) — `src/net/SlirpBackend.hpp`
-- **.recv()** (3 connections) — `src/net/SlirpBackend.hpp`
-- **.cbSendPacket()** (3 connections) — `src/net/SlirpBackend.hpp`
-- **.cbGuestError()** (3 connections) — `src/net/SlirpBackend.hpp`
-- **.cbTimerNewOpaque()** (3 connections) — `src/net/SlirpBackend.hpp`
-- **poll** (3 connections)
-- **.cbNotify()** (2 connections) — `src/net/SlirpBackend.hpp`
-- **.close()** (2 connections) — `src/net/SlirpBackend.hpp`
-- **.cbClockNs()** (2 connections) — `src/net/SlirpBackend.hpp`
-- **.cbTimerFree()** (2 connections) — `src/net/SlirpBackend.hpp`
-- **.cbTimerMod()** (2 connections) — `src/net/SlirpBackend.hpp`
-- **nowMs()** (2 connections) — `src/net/SlirpBackend.cpp`
-- **.gatewayIp()** (2 connections) — `src/net/SlirpBackend.hpp`
-- **.guestIp()** (2 connections) — `src/net/SlirpBackend.hpp`
-- **.nameserver()** (2 connections) — `src/net/SlirpBackend.hpp`
-- **.netmask()** (2 connections) — `src/net/SlirpBackend.hpp`
-- **.isOpen()** (1 connections) — `src/net/SlirpBackend.hpp`
-- **.name()** (1 connections) — `src/net/SlirpBackend.hpp`
-- *... and 18 more nodes in this community*
+- **steps** (7 connections) — `.github/workflows/oracle.yml`
+- **oracle.yml** (5 connections) — `.github/workflows/oracle.yml`
+- **oracle** (5 connections) — `.github/workflows/oracle.yml`
+- **with** (5 connections) — `.github/workflows/oracle.yml`
+- **concurrency** (3 connections) — `.github/workflows/oracle.yml`
+- **on** (3 connections) — `.github/workflows/oracle.yml`
+- **jobs** (2 connections) — `.github/workflows/oracle.yml`
+- **schedule** (2 connections) — `.github/workflows/oracle.yml`
+- **permissions** (2 connections) — `.github/workflows/oracle.yml`
+- **cancel-in-progress** (1 connections) — `.github/workflows/oracle.yml`
+- **group** (1 connections) — `.github/workflows/oracle.yml`
+- **name** (1 connections) — `.github/workflows/oracle.yml`
+- **workflow_dispatch** (1 connections) — `.github/workflows/oracle.yml`
+- **name** (1 connections) — `.github/workflows/oracle.yml`
+- **runs-on** (1 connections) — `.github/workflows/oracle.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/oracle.yml`
+- **contents** (1 connections) — `.github/workflows/oracle.yml`
+- **cron** (1 connections) — `.github/workflows/oracle.yml`
+- **id** (1 connections) — `.github/workflows/oracle.yml`
+- **if** (1 connections) — `.github/workflows/oracle.yml`
+- **name** (1 connections) — `.github/workflows/oracle.yml`
+- **run** (1 connections) — `.github/workflows/oracle.yml`
+- **uses** (1 connections) — `.github/workflows/oracle.yml`
+- **if-no-files-found** (1 connections) — `.github/workflows/oracle.yml`
+- **key** (1 connections) — `.github/workflows/oracle.yml`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 249](Community_249.md) (2 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
-- [Community 220](Community_220.md) (1 shared connections)
+- No strong cross-community connections detected
 
 ## Source Files
 
-- `src/net/SlirpBackend.cpp`
-- `src/net/SlirpBackend.hpp`
+- `.github/workflows/oracle.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 73 (94%)
-- INFERRED: 5 (6%)
+- EXTRACTED: 26 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

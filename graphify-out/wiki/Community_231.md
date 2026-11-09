@@ -4,36 +4,35 @@
 
 ## Key Concepts
 
-- **IconButton()** (7 connections) — `src/gui/UiCommon.cpp`
-- **drawHardDiskPage()** (6 connections) — `src/gui/MediaPages.cpp`
-- **drawFloppyWindow()** (5 connections) — `src/gui/ConfigWindow.cpp`
-- **drawCartPage()** (4 connections) — `src/gui/MediaPages.cpp`
-- **drawFloppyPage()** (4 connections) — `src/gui/MediaPages.cpp`
-- **hardDiskDriveLetters()** (4 connections) — `src/gui/MediaPages.cpp`
-- **string** (4 connections)
-- **pathEntryRow()** (3 connections) — `src/gui/MediaPages.cpp`
-- **App** (2 connections)
-- **size_t** (1 connections)
+- **steps** (7 connections) — `.github/workflows/tests.yml`
+- **steps** (6 connections) — `.github/workflows/tests.yml`
+- **steps** (6 connections) — `.github/workflows/tests.yml`
+- **name** (6 connections) — `.github/workflows/tests.yml`
+- **run** (6 connections) — `.github/workflows/tests.yml`
+- **uses** (6 connections) — `.github/workflows/tests.yml`
+- **steps** (4 connections) — `.github/workflows/tests.yml`
+- **steps** (4 connections) — `.github/workflows/tests.yml`
+- **if** (3 connections) — `.github/workflows/tests.yml`
+- **id** (1 connections) — `.github/workflows/tests.yml`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (7 shared connections)
-- [Community 380](Community_380.md) (3 shared connections)
-- [Community 51](Community_51.md) (3 shared connections)
-- [Community 11](Community_11.md) (1 shared connections)
-- [Community 229](Community_229.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
+- [Community 363](Community_363.md) (3 shared connections)
+- [Community 277](Community_277.md) (3 shared connections)
+- [Community 402](Community_402.md) (1 shared connections)
+- [Community 403](Community_403.md) (1 shared connections)
+- [Community 199](Community_199.md) (1 shared connections)
+- [Community 404](Community_404.md) (1 shared connections)
+- [Community 358](Community_358.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/ConfigWindow.cpp`
-- `src/gui/MediaPages.cpp`
-- `src/gui/UiCommon.cpp`
+- `.github/workflows/tests.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (61%)
-- INFERRED: 11 (39%)
+- EXTRACTED: 30 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

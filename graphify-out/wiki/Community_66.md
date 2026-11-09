@@ -1,14 +1,13 @@
 # Community 66
 
-> 46 nodes
+> 45 nodes
 
 ## Key Concepts
 
 - **CpuState** (50 connections) — `src/core/Cpu68k.cpp`
-- **.setTracer()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.setTrapObserver()** (3 connections) — `src/core/Cpu68k.hpp`
-- **function** (2 connections)
-- **Tracer** (2 connections)
+- **.setScheduler()** (3 connections) — `src/core/Cpu68k.hpp`
+- **Scheduler** (2 connections)
+- **trapObserver** (2 connections) — `src/core/Cpu68k.cpp`
 - **Cpu68k** (1 connections)
 - **appliedIpl** (1 connections) — `src/core/Cpu68k.cpp`
 - **blitterAccessCounted** (1 connections) — `src/core/Cpu68k.cpp`
@@ -29,13 +28,15 @@
 - **faultAddr** (1 connections) — `src/core/Cpu68k.cpp`
 - **faultPc** (1 connections) — `src/core/Cpu68k.cpp`
 - **faultValid** (1 connections) — `src/core/Cpu68k.cpp`
-- *... and 21 more nodes in this community*
+- **faultWrite** (1 connections) — `src/core/Cpu68k.cpp`
+- *... and 20 more nodes in this community*
 
 ## Relationships
 
-- [Community 27](Community_27.md) (7 shared connections)
-- [Community 64](Community_64.md) (3 shared connections)
-- [Community 374](Community_374.md) (1 shared connections)
+- [Community 27](Community_27.md) (6 shared connections)
+- [Community 64](Community_64.md) (2 shared connections)
+- [Community 32](Community_32.md) (1 shared connections)
+- [Community 327](Community_327.md) (1 shared connections)
 
 ## Source Files
 
@@ -44,7 +45,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 55 (98%)
+- EXTRACTED: 53 (98%)
 - INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,12 +1,11 @@
 # Community 135
 
-> 19 nodes
+> 15 nodes
 
 ## Key Concepts
 
 - **StrWriter.h** (55 connections) — `extern/moira/Moira/StrWriter.h`
-- **Pcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **Scale** (3 connections) — `extern/moira/Moira/StrWriter.h`
+- **Av** (3 connections) — `extern/moira/Moira/StrWriter.h`
 - **Ccr** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **Dfc** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **Finish** (1 connections) — `extern/moira/Moira/StrWriter.h`
@@ -19,25 +18,22 @@
 - **Szb** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **Usp** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **Zpc** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Pcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Scale()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **ext1** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
 - [Community 109](Community_109.md) (14 shared connections)
-- [Community 139](Community_139.md) (6 shared connections)
-- [Community 155](Community_155.md) (5 shared connections)
-- [Community 239](Community_239.md) (2 shared connections)
-- [Community 210](Community_210.md) (1 shared connections)
-- [Community 277](Community_277.md) (1 shared connections)
+- [Community 2](Community_2.md) (2 shared connections)
+- [Community 32](Community_32.md) (2 shared connections)
+- [Community 134](Community_134.md) (1 shared connections)
+- [Community 432](Community_432.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 433](Community_433.md) (1 shared connections)
+- [Community 434](Community_434.md) (1 shared connections)
+- [Community 435](Community_435.md) (1 shared connections)
+- [Community 427](Community_427.md) (1 shared connections)
+- [Community 139](Community_139.md) (1 shared connections)
 - [Community 297](Community_297.md) (1 shared connections)
-- [Community 391](Community_391.md) (1 shared connections)
-- [Community 301](Community_301.md) (1 shared connections)
-- [Community 299](Community_299.md) (1 shared connections)
-- [Community 296](Community_296.md) (1 shared connections)
-- [Community 305](Community_305.md) (1 shared connections)
 
 ## Source Files
 
@@ -45,7 +41,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 59 (100%)
+- EXTRACTED: 57 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

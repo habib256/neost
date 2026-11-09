@@ -802,6 +802,13 @@ jobs:
           NEOST_VERSION: ${{ needs.version.outputs.neost_version }}
         run: packaging/windows/build_mingw.sh
 
+      - name: NAT sur Winsock (IPv4/IPv6, DNS simulé, ports et NE2000)
+        run: |
+          ./build-win/neost-nat-test.exe
+          ./build-win/neost-resolver-test.exe
+          ./build-win/neost-nat-adapter-test.exe
+          ./build-win/neost-headless.exe roms/etos192us.img --nat-selftest
+
       - name: Vérifier le zip (contenu libre, pas de DLL parasite)
         run: |
           set -euo pipefail

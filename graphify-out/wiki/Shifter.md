@@ -1,6 +1,6 @@
 # Shifter
 
-> God node · 175 connections · `src/core/Shifter.hpp`
+> God node · 204 connections · `src/core/Shifter.hpp`
 
 **Community:** [Community 5](Community_5.md)
 
@@ -11,9 +11,9 @@
 - Geometry `EXTRACTED`
 - FrameGeometry `EXTRACTED`
 - GlueProbe `EXTRACTED`
+- Mode `EXTRACTED`
 - GlueLine `EXTRACTED`
 - ColorWrite `EXTRACTED`
-- Mode `EXTRACTED`
 - SyncWrite `EXTRACTED`
 
 ### defines
@@ -41,26 +41,26 @@
 
 ### method
 - .geometry() `EXTRACTED`
-- .renderGlueFrame() `EXTRACTED`
-- .renderLine() `EXTRACTED`
+- Shifter::glueSelfTest() `EXTRACTED`
 - .write8() `EXTRACTED`
-- .beginFrame() `EXTRACTED`
-- .liveGlueCatchUp() `EXTRACTED`
+- .renderGlueFrame() `EXTRACTED`
+- .read8() `EXTRACTED`
 - .finishFrame() `EXTRACTED`
-- .stColorToArgb() `EXTRACTED`
 - .geometryFor() `EXTRACTED`
 - .resizeFor() `EXTRACTED`
-- .glueLineBytes() `EXTRACTED`
-- .decodeLineIndices() `EXTRACTED`
-- .updateGlueState() `EXTRACTED`
-- .endVideoLine() `EXTRACTED`
+- .renderLine() `EXTRACTED`
+- .liveGlueCatchUp() `EXTRACTED`
+- .beginFrame() `EXTRACTED`
+- .stColorToArgb() `EXTRACTED`
 - .videoCounter() `EXTRACTED`
-- .scrollCounterAdvance() `EXTRACTED`
-- .syncCpuBus() `EXTRACTED`
+- .decodeLineIndices() `EXTRACTED`
+- .writeShifterRes() `EXTRACTED`
+- Shifter::videoCounter() `EXTRACTED`
+- Shifter::endVideoLine() `EXTRACTED`
+- Shifter::liveGlueCatchUp() `EXTRACTED`
+- Shifter::replayGlue() `EXTRACTED`
 - .spec512SelfTest() `EXTRACTED`
-- .read8() `EXTRACTED`
-- .updateGlueRes() `EXTRACTED`
-- *…and 59 more `method` connection(s) not listed (lowest-degree first to go)*
+- *…and 88 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [vector](vector.md) `EXTRACTED`
@@ -68,7 +68,7 @@
 - function `EXTRACTED`
 - array `EXTRACTED`
 - size_t `EXTRACTED`
-- [Bus](Bus.md) `EXTRACTED`
+- Bus `EXTRACTED`
 
 ---
 

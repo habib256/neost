@@ -5,20 +5,20 @@
 ## Key Concepts
 
 - **Rig** (19 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **testGemdosSnapshot()** (14 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **.trap()** (9 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **.trap()** (8 connections) — `tests/gemdos_snapshot_logic.cpp`
 - **.string()** (7 connections) — `tests/gemdos_snapshot_logic.cpp`
 - **string** (6 connections)
-- **.chdir()** (5 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **.first()** (5 connections) — `tests/gemdos_snapshot_logic.cpp`
 - **.write()** (5 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **.chdir()** (4 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **.first()** (4 connections) — `tests/gemdos_snapshot_logic.cpp`
 - **.open()** (4 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **.close()** (3 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **.load()** (3 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **.read()** (3 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **.save()** (3 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **.seek()** (3 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **testGemdosSnapshot()** (4 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **.close()** (2 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **.load()** (2 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **.read()** (2 connections) — `tests/gemdos_snapshot_logic.cpp`
 - **.Rig()** (2 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **.save()** (2 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **.seek()** (2 connections) — `tests/gemdos_snapshot_logic.cpp`
 - **Bus** (1 connections)
 - **Cpu68k** (1 connections)
 - **GemdosHd** (1 connections)
@@ -28,8 +28,9 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
@@ -37,7 +38,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 51 (98%)
+- EXTRACTED: 41 (98%)
 - INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 

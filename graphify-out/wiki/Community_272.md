@@ -1,6 +1,6 @@
 # Community 272
 
-> 22 nodes
+> 23 nodes
 
 ## Key Concepts
 
@@ -24,15 +24,15 @@
 - **cycle** (1 connections) — `tools/gstmcu_bench.cpp`
 - **frame** (1 connections) — `tools/gstmcu_bench.cpp`
 - **line** (1 connections) — `tools/gstmcu_bench.cpp`
+- **word** (1 connections) — `tools/gstmcu_bench.cpp`
 - **vste_tb** (1 connections)
 - **vste_tb_024root** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
+- [Community 399](Community_399.md) (3 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 

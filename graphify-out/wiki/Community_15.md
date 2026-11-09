@@ -1,6 +1,6 @@
 # Community 15
 
-> 86 nodes
+> 87 nodes
 
 ## Key Concepts
 
@@ -29,22 +29,21 @@
 - **fromDecimalRaw()** (13 connections) — `src/io/SoftFloatDecimal.hpp`
 - **propagateNaN()** (13 connections) — `src/io/SoftFloatX80.hpp`
 - **addSigs()** (12 connections) — `src/io/SoftFloatX80.hpp`
-- *... and 61 more nodes in this community*
+- *... and 62 more nodes in this community*
 
 ## Relationships
 
-- [Community 149](Community_149.md) (17 shared connections)
-- [Community 41](Community_41.md) (6 shared connections)
+- [Community 149](Community_149.md) (18 shared connections)
 - [Community 20](Community_20.md) (5 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 214](Community_214.md) (2 shared connections)
 - [Community 218](Community_218.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 205](Community_205.md) (1 shared connections)
-- [Community 243](Community_243.md) (1 shared connections)
-- [Community 161](Community_161.md) (1 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 173](Community_173.md) (1 shared connections)
+- [Community 25](Community_25.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
+- [Community 349](Community_349.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -55,7 +54,7 @@
 ## Audit Trail
 
 - EXTRACTED: 389 (88%)
-- INFERRED: 54 (12%)
+- INFERRED: 53 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -36,7 +36,8 @@ void drawHardDiskPage(const std::string& hdDir, const std::string& gemdosDefault
                       std::string& reqMountAcsi,  bool& reqEjectAcsi,
                       int& reqUltraSatan, std::string& reqMountSd2, bool& reqEjectSd2);
 
+struct ConfigUi;
 void drawNetworkPage(bool modemOn, bool etherOn,
                      bool netusbeeOn, bool cartMounted,
-                     bool slirpOn, bool slirpAvail,
-                     int& reqModem, int& reqEther, int& reqNetUsbee, int& reqSlirp);
+                     bool natOn, bool natAvail,
+                     int& reqModem, int& reqEther, int& reqNetUsbee, int& reqNat, ConfigUi& ui);

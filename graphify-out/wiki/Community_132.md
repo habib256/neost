@@ -1,19 +1,20 @@
 # Community 132
 
-> 28 nodes
+> 29 nodes
 
 ## Key Concepts
 
 - **Rig** (22 connections) — `tests/blitter_rmw_logic.cpp`
 - **MegaSteRig** (12 connections) — `tests/blitter_rmw_logic.cpp`
 - **.Rig()** (3 connections) — `tests/blitter_rmw_logic.cpp`
-- **.romWord()** (3 connections) — `tests/blitter_rmw_logic.cpp`
-- **.serialize()** (3 connections) — `tests/blitter_rmw_logic.cpp`
 - **.configureCopy()** (2 connections) — `tests/blitter_rmw_logic.cpp`
+- **.romWord()** (2 connections) — `tests/blitter_rmw_logic.cpp`
+- **.serialize()** (2 connections) — `tests/blitter_rmw_logic.cpp`
 - **Blitter** (2 connections)
 - **Bus** (2 connections)
 - **Cpu68k** (2 connections)
 - **Scheduler** (2 connections)
+- **.MegaSteRig()** (1 connections) — `tests/blitter_rmw_logic.cpp`
 - **Mfp** (1 connections)
 - **StateArchive** (1 connections)
 - **blitter** (1 connections) — `tests/blitter_rmw_logic.cpp`
@@ -28,14 +29,12 @@
 - **mfp** (1 connections) — `tests/blitter_rmw_logic.cpp`
 - **readCycle** (1 connections) — `tests/blitter_rmw_logic.cpp`
 - **scheduler** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- **serviceCycle** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- *... and 3 more nodes in this community*
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 41](Community_41.md) (4 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
 
 ## Source Files
 
@@ -43,8 +42,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 38 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 37 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

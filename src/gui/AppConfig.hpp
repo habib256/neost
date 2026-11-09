@@ -92,7 +92,10 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 bool autoDongle = true; // disks/dongles.txt : brancher la clé d'un jeu au montage
                 bool ethernec = false; // NE2000/EtherNEC sur le port cartouche
                 bool netusbee = false; // NetUSBee : NE2000 + ISP1160 USB sur le port cartouche (exclusif d'ethernec)
-                bool slirp = false;    // NE2000 : sortie Internet réelle (NAT libslirp) au lieu de la boucle locale
+                bool slirp = false;    // NAT intégré ; nom interne conservé pour les anciens profils
+                bool natRestricted = false;
+                bool natAllowLoopback = false;
+                std::string natForwards; // tcp|udp:adresse-hôte:port-hôte:port-ST, séparés par ;
                 bool ultrasatan = false; // UltraSatan sur les cibles ACSI 0-1 (slot 1 = acsi, slot 2 = sd2)
                 std::string sd2;       // image SD du slot 2 de l'UltraSatan (cible 1 ; vide = slot vide)
                 std::string cpu = "moira"; std::string machine = "st";

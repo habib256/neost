@@ -1,57 +1,47 @@
 # Community 160
 
-> 32 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **DasmNumberFormat** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **DasmStyle** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **StrWriter_cpp.h** (11 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **LetterCase** (6 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **.setNumberFormat()** (6 connections) — `extern/moira/Moira/Moira.h`
-- **sprintx()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprintx_signed()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **u64** (6 connections)
-- **hexDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprint()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprint_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprintd()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **sprintd_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **decDigits()** (4 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **.setDasmLetterCase()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.setDasmNumberFormat()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.setDumpNumberFormat()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **binDigits()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
-- **u8** (3 connections)
-- **i64** (3 connections)
-- **.StrWriter()** (2 connections) — `extern/moira/Moira/StrWriter.h`
-- **plainZero** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **prefix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **radix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **upperCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- *... and 7 more nodes in this community*
+- **Divergences OUVERTES à jour (par sous-système, sévérité décroissante)** (18 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.read8()** (11 connections) — `src/io/Mfp.hpp`
+- **.updateTimers()** (10 connections) — `src/io/Mfp.hpp`
+- **.flushIrqUpdate()** (6 connections) — `src/io/Mfp.hpp`
+- **L'élection de l'exception MFP : la règle chronologique existait mais ne pouvait jamais s'appliquer (2026-09-02)** (6 connections) — `CHANGELOG.md`
+- **🔁 2ᵉ passe d'audit approfondi (2026-06-15, workflow 7 agents)** (6 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Conclusion** (6 connections) — `docs/HATARI_DIVERGENCES.md`
+- **🟠 Nouveaux — MOYENNES (fidélité)** (6 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.setInDispatch()** (2 connections) — `src/io/Mfp.hpp`
+- **gpipHook_** (2 connections) — `src/io/Mfp.hpp`
+- **Le poll de timer MFP passe à 0 px de l'oracle — et la divergence qu'on croyait tenir n'existait plus (2026-09-02)** (2 connections) — `CHANGELOG.md`
+- **Vérification des correctifs mergés** (1 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 16](Community_16.md) (5 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 40](Community_40.md) (3 shared connections)
-- [Community 2](Community_2.md) (2 shared connections)
-- [Community 104](Community_104.md) (2 shared connections)
-- [Community 358](Community_358.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 215](Community_215.md) (11 shared connections)
+- [Community 6](Community_6.md) (6 shared connections)
+- [Community 39](Community_39.md) (6 shared connections)
+- [Community 349](Community_349.md) (4 shared connections)
+- [Community 288](Community_288.md) (2 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 105](Community_105.md) (2 shared connections)
+- [Community 24](Community_24.md) (2 shared connections)
+- [Community 28](Community_28.md) (2 shared connections)
+- [Community 182](Community_182.md) (2 shared connections)
+- [Community 37](Community_37.md) (1 shared connections)
+- [Community 281](Community_281.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraTypes.h`
-- `extern/moira/Moira/StrWriter.h`
-- `extern/moira/Moira/StrWriter_cpp.h`
+- `CHANGELOG.md`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 72 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 17 (28%)
+- INFERRED: 44 (72%)
 - AMBIGUOUS: 0 (0%)
 
 ---

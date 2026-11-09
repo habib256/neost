@@ -26,7 +26,7 @@
 #include "gui/UiCommon.hpp"
 #include "io/JoystickInput.hpp"
 #include "io/MediaScan.hpp"
-#include "net/SlirpBackend.hpp"
+#include "net/NatBackend.hpp"
 
 namespace fs = std::filesystem;
 using namespace neost::appconfig;   // profileFileName / listProfiles, comme dans main.cpp
@@ -231,8 +231,8 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         drawNetworkPage(ui.cfg && ui.cfg->modem, ui.machine->ne2000.enabled(),
                         ui.machine->netUsbeeEnabled(),
                         !ui.machine->bus.mountedCartPath().empty(),
-                        ui.cfg && ui.cfg->slirp, SlirpBackend::available(),
-                        ui.reqModem, ui.reqEther, ui.reqNetUsbee, ui.reqSlirp);
+                        ui.cfg && ui.cfg->slirp, NatBackend::available(),
+                        ui.reqModem, ui.reqEther, ui.reqNetUsbee, ui.reqNat, ui);
         break;
     // ── Dongles ───────────────────────────────────────────────────────────────
     // Tout ce qui se branchait sur un port pour qu'un logiciel le sonde : les clés du

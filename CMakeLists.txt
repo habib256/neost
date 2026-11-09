@@ -138,59 +138,39 @@ set_source_files_properties(
 #  threads). Toujours bâtie ; les sources à sockets n'entrent que si
 #  NEOST_WITH_NET.
 # =============================================================================
-add_library(neost_net STATIC
-    src/net/SlirpBackend.cpp)
+add_library(neost_net STATIC src/net/NatBackend.cpp)
 target_link_libraries(neost_net PUBLIC neost_core)
 
-# libslirp (BSD-3-Clause — corrigé le 2026-08-28 : ce commentaire annonçait
-# « LGPL 2.1+ », la licence du fichier LICENSE livré avec la bibliothèque est bien
-# BSD-3-Clause) : NAT en espace utilisateur — l'accès Internet RÉEL de la
-# NE2000 émulée (NetUSBee/EtherNEC), sans root ni pcap. Optionnel : sans lui,
-# SlirpBackend compile en coquille vide et l'option reste grisée.
-#
-# ⚠ VERSION MINIMALE 4.7, et un plancher EXPLICITE. SlirpBackend appelait
-# slirp_pollfds_fill_socket() (libslirp >= 4.8) sans que rien ne le vérifie : toute
-# machine portant la libslirp de sa distribution — Debian 12 bookworm = Raspberry
-# Pi OS, Ubuntu 24.04, toutes en 4.7.0 — échouait à COMPILER NeoST, sans aucun
-# moyen de refuser la fonctionnalité. SlirpBackend accepte désormais les DEUX API
-# (cf. son bloc SLIRP_CONFIG_VERSION_MAX) ; le plancher reste ici pour donner un
-# diagnostic net, et NEOST_WITH_SLIRP permet de trancher à la main.
-#
-#   AUTO (défaut) : activé si une libslirp >= 4.8 est là, sinon ignoré en silence.
-#   ON            : exigé — la configuration ÉCHOUE si elle manque (CI, paquets).
-#   OFF           : jamais compilé, même si la bibliothèque est présente.
-set(NEOST_WITH_SLIRP "AUTO" CACHE STRING
-    "Internet réel pour la NE2000 via libslirp >= 4.7 : AUTO, ON ou OFF")
-set_property(CACHE NEOST_WITH_SLIRP PROPERTY STRINGS AUTO ON OFF)
-
-if(NOT NEOST_WITH_SLIRP STREQUAL "OFF")
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(SLIRP QUIET "slirp>=4.7")
-    endif()
-endif()
-if(SLIRP_FOUND)
-    target_compile_definitions(neost_net PUBLIC NEOST_WITH_SLIRP=1)
-    target_include_directories(neost_net PUBLIC ${SLIRP_INCLUDE_DIRS})
-    target_link_libraries(neost_net PUBLIC ${SLIRP_LINK_LIBRARIES})
-    message(STATUS "NeoST: libslirp ${SLIRP_VERSION} trouvée — Internet réel pour la NE2000")
-elseif(NEOST_WITH_SLIRP STREQUAL "ON")
-    # Diagnostic UTILE : distinguer « absente » de « trop vieille » évite de
-    # chercher un paquet déjà installé.
-    if(PkgConfig_FOUND)
-        pkg_check_modules(SLIRP_ANY QUIET slirp)
-    endif()
-    if(SLIRP_ANY_FOUND)
-        message(FATAL_ERROR "NeoST: NEOST_WITH_SLIRP=ON mais libslirp ${SLIRP_ANY_VERSION} "
-                            "est trop ancienne (4.7 minimum).")
+# NAT POM2 épinglé : aucune dépendance libslirp/GLib, uniquement les API système.
+if(NEOST_WITH_NET)
+    set(NEOST_NAT_DIR "${CMAKE_SOURCE_DIR}/extern/pom2nat")
+    add_library(neost_nat STATIC
+        ${NEOST_NAT_DIR}/BuiltinNatBackend.cpp ${NEOST_NAT_DIR}/NatPacket.cpp
+        ${NEOST_NAT_DIR}/NatDhcp.cpp ${NEOST_NAT_DIR}/NatDns.cpp
+        ${NEOST_NAT_DIR}/NatUdp.cpp ${NEOST_NAT_DIR}/NatTcp.cpp
+        ${NEOST_NAT_DIR}/NatHostSockets.cpp ${NEOST_NAT_DIR}/W5100NameResolver.cpp)
+    target_include_directories(neost_nat PUBLIC "${NEOST_NAT_DIR}")
+    target_compile_definitions(neost_nat PUBLIC NEOST_WITH_NET=1)
+    find_package(Threads REQUIRED)
+    target_link_libraries(neost_nat PUBLIC Threads::Threads)
+    if(WIN32)
+        target_link_libraries(neost_nat PUBLIC ws2_32 iphlpapi)
     else()
-        message(FATAL_ERROR "NeoST: NEOST_WITH_SLIRP=ON mais libslirp est introuvable "
-                            "(paquet libslirp-dev / libslirp-devel, 4.7 minimum).")
+        target_link_libraries(neost_nat PUBLIC resolv)
     endif()
-elseif(NEOST_WITH_SLIRP STREQUAL "OFF")
-    message(STATUS "NeoST: libslirp désactivée (NEOST_WITH_SLIRP=OFF)")
-else()
-    message(STATUS "NeoST: libslirp >= 4.7 absente — NE2000 en boucle locale seulement")
+    target_link_libraries(neost_net PRIVATE neost_nat)
+    add_executable(neost-nat-test ${NEOST_NAT_DIR}/tests/builtin_nat_test.cpp)
+    target_link_libraries(neost-nat-test PRIVATE neost_nat)
+    add_executable(neost-resolver-test ${NEOST_NAT_DIR}/tests/w5100_name_resolver_test.cpp)
+    target_link_libraries(neost-resolver-test PRIVATE neost_nat)
+    # Le test importé place aussi des appels dans assert() : actifs en Release.
+    if(MSVC)
+        target_compile_options(neost-resolver-test PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(neost-resolver-test PRIVATE -UNDEBUG)
+    endif()
+    add_executable(neost-nat-adapter-test tests/nat_backend_test.cpp)
+    target_link_libraries(neost-nat-adapter-test PRIVATE neost_net neost_nat)
 endif()
 set(NEOST_NET_SRC)
 if(NEOST_WITH_NET)
@@ -296,6 +276,9 @@ endif()
 # --midi-dump capture déjà ce que le ST émet, sans dépendre du matériel branché, et
 # lier MidiOutHost tirerait AudioToolbox (synthé GM) dans une cible qui n'a pas d'audio.
 add_executable(neost-headless src/headless/main_headless.cpp src/audio/MidiInHost.cpp src/headless/Server.cpp)
+if(NEOST_WITH_NET)
+    add_dependencies(neost-headless neost-nat-test neost-resolver-test neost-nat-adapter-test)
+endif()
 target_link_libraries(neost-headless PRIVATE neost_net)  # neost_core via neost_net (PUBLIC)
 if(APPLE)
     target_link_libraries(neost-headless PRIVATE "-framework CoreFoundation" "-framework CoreMIDI")

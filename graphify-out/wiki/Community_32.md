@@ -1,48 +1,65 @@
 # Community 32
 
-> 51 nodes
+> 92 nodes
 
 ## Key Concepts
 
 - **MoiraALU_cpp.h** (43 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **u32** (27 connections)
-- **u64** (12 connections)
-- **i32** (6 connections)
-- **i64** (5 connections)
+- **i64** (22 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **u64** (20 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **DasmNumberFormat** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **DasmStyle** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **i32** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **StrWriter_cpp.h** (11 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **Syntax** (8 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **LetterCase** (6 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.setNumberFormat()** (6 connections) — `extern/moira/Moira/Moira.h`
+- **sprintx()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprintx_signed()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **hexDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprint()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprint_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprintd()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprintd_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **Ims** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **Int** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **Moira::computeEAbrief()** (4 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
 - **Moira::divlsMoira()** (4 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
 - **Moira::divlsMusashi()** (4 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
 - **Moira::divluMoira()** (4 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
 - **Moira::divluMusashi()** (4 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **pair** (4 connections)
-- **CLEAR()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **CLIP()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::bit()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::cyclesDiv()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::mulls()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::mullu()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::setUndefinedDIVS()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::setUndefinedDIVSL()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::setUndefinedDIVU()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::setUndefinedDIVUL()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::shift()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **SEXT()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **u16** (3 connections)
-- **CARRY()** (2 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::addsub()** (2 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- *... and 26 more nodes in this community*
+- **Moira::setUndefinedDIVS()** (4 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
+- *... and 67 more nodes in this community*
 
 ## Relationships
 
-- [Community 40](Community_40.md) (1 shared connections)
+- [Community 2](Community_2.md) (35 shared connections)
+- [Community 16](Community_16.md) (17 shared connections)
+- [Community 57](Community_57.md) (9 shared connections)
+- [Community 64](Community_64.md) (4 shared connections)
+- [Community 135](Community_135.md) (2 shared connections)
+- [Community 169](Community_169.md) (2 shared connections)
+- [Community 56](Community_56.md) (1 shared connections)
+- [Community 33](Community_33.md) (1 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
+- [Community 66](Community_66.md) (1 shared connections)
+- [Community 134](Community_134.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
+- `extern/moira/Moira/Moira.h`
 - `extern/moira/Moira/MoiraALU_cpp.h`
+- `extern/moira/Moira/MoiraDataflow_cpp.h`
+- `extern/moira/Moira/MoiraExec_cpp.h`
+- `extern/moira/Moira/MoiraTypes.h`
+- `extern/moira/Moira/StrWriter.h`
+- `extern/moira/Moira/StrWriter_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 103 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 211 (97%)
+- INFERRED: 6 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,21 +1,22 @@
 # Community 400
 
-> 4 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Pending** (4 connections) — `src/audio/MidiOutHost.hpp`
-- **time_point** (2 connections)
-- **b** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **when** (1 connections) — `src/audio/MidiOutHost.hpp`
+- **RtcPhaseRig** (5 connections) — `tests/rtc_long_phase_logic.cpp`
+- **.RtcPhaseRig()** (1 connections) — `tests/rtc_long_phase_logic.cpp`
+- **Rtc** (1 connections)
+- **clock** (1 connections) — `tests/rtc_long_phase_logic.cpp`
+- **rtc** (1 connections) — `tests/rtc_long_phase_logic.cpp`
 
 ## Relationships
 
-- [Community 42](Community_42.md) (2 shared connections)
+- [Community 395](Community_395.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/MidiOutHost.hpp`
+- `tests/rtc_long_phase_logic.cpp`
 
 ## Audit Trail
 

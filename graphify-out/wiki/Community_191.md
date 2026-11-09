@@ -1,15 +1,14 @@
 # Community 191
 
-> 13 nodes
+> 12 nodes
 
 ## Key Concepts
 
 - **Rig** (12 connections) — `tests/ikbd_acia_format_logic.cpp`
-- **testIkbdAciaFormat()** (7 connections) — `tests/ikbd_acia_format_logic.cpp`
-- **.at()** (2 connections) — `tests/ikbd_acia_format_logic.cpp`
-- **.response()** (2 connections) — `tests/ikbd_acia_format_logic.cpp`
-- **.status()** (2 connections) — `tests/ikbd_acia_format_logic.cpp`
+- **.at()** (1 connections) — `tests/ikbd_acia_format_logic.cpp`
+- **.response()** (1 connections) — `tests/ikbd_acia_format_logic.cpp`
 - **.Rig()** (1 connections) — `tests/ikbd_acia_format_logic.cpp`
+- **.status()** (1 connections) — `tests/ikbd_acia_format_logic.cpp`
 - **Ikbd** (1 connections)
 - **Mfp** (1 connections)
 - **Scheduler** (1 connections)
@@ -20,8 +19,7 @@
 
 ## Relationships
 
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
@@ -29,8 +27,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 18 (95%)
-- INFERRED: 1 (5%)
+- EXTRACTED: 12 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

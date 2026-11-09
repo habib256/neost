@@ -1,41 +1,40 @@
 # Community 152
 
-> 12 nodes
+> 14 nodes
 
 ## Key Concepts
 
-- **tcpConnect()** (8 connections) — `src/net/Socket.cpp`
-- **SocketHandle** (6 connections)
-- **socketValid()** (5 connections) — `src/net/Socket.hpp`
-- **.select()** (4 connections) — `src/io/StePads.hpp`
-- **sockClose()** (4 connections) — `src/net/Socket.cpp`
-- **sockRecv()** (4 connections) — `src/net/Socket.cpp`
-- **FujiNet retiré : NeoST n'émule plus que du matériel qui a existé (2026-08-22)** (4 connections) — `CHANGELOG.md`
-- **sockHasData()** (3 connections) — `src/net/Socket.cpp`
-- **sockSend()** (3 connections) — `src/net/Socket.cpp`
-- **netInitOnce()** (2 connections) — `src/net/Socket.cpp`
-- **string** (1 connections)
-- **SocketHandle** (1 connections)
+- **stx_read_address_crc_logic.cpp** (21 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **testStxReadAddressCrc()** (7 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **writeImage()** (7 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **Checks** (5 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **idBytes()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **put16()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **put32()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **readAddress()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **checksum()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **.equal()** (2 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **main()** (2 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **count** (1 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **failures** (1 connections) — `tests/stx_read_address_crc_logic.cpp`
+- **path** (1 connections)
 
 ## Relationships
 
-- [Community 399](Community_399.md) (6 shared connections)
-- [Community 113](Community_113.md) (2 shared connections)
-- [Community 106](Community_106.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 256](Community_256.md) (5 shared connections)
+- [Community 74](Community_74.md) (3 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/StePads.hpp`
-- `src/net/Socket.cpp`
-- `src/net/Socket.hpp`
+- `tests/stx_read_address_crc_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 19 (68%)
-- INFERRED: 9 (32%)
+- EXTRACTED: 41 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

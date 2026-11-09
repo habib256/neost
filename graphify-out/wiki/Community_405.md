@@ -1,26 +1,27 @@
 # Community 405
 
-> 2 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **.lateBytes()** (2 connections) — `src/audio/MidiOutHost.hpp`
-- **MIDI — profil Circuit Tracks et avance de sortie réglable (2026-08-29)** (2 connections) — `CHANGELOG.md`
+- **Mode** (5 connections) — `src/core/Shifter.hpp`
+- **High** (1 connections) — `src/core/Shifter.hpp`
+- **Low** (1 connections) — `src/core/Shifter.hpp`
+- **Medium** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 42](Community_42.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/audio/MidiOutHost.hpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (67%)
-- INFERRED: 1 (33%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

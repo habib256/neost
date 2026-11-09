@@ -1,25 +1,20 @@
 # Community 169
 
-> 28 nodes
+> 23 nodes
 
 ## Key Concepts
 
 - **BareMoira** (25 connections) — `tools/moira_bare_bench.cpp`
 - **.emit()** (8 connections) — `tools/moira_bare_bench.cpp`
-- **.fc()** (6 connections) — `tools/moira_bare_bench.cpp`
 - **.read16()** (6 connections) — `tools/moira_bare_bench.cpp`
-- **u32** (6 connections)
+- **.fc()** (5 connections) — `tools/moira_bare_bench.cpp`
 - **.read8()** (5 connections) — `tools/moira_bare_bench.cpp`
 - **.write16()** (5 connections) — `tools/moira_bare_bench.cpp`
 - **.write8()** (5 connections) — `tools/moira_bare_bench.cpp`
-- **u16** (5 connections)
 - **IrqEv** (4 connections) — `tools/moira_bare_bench.cpp`
 - **.read16OnReset()** (4 connections) — `tools/moira_bare_bench.cpp`
 - **.readIrqUserVector()** (4 connections) — `tools/moira_bare_bench.cpp`
-- **u8** (4 connections)
-- **V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01)** (3 connections) — `CHANGELOG.md`
 - **main()** (2 connections) — `tools/moira_bare_bench.cpp`
-- **i64** (2 connections)
 - **.BareMoira()** (1 connections) — `tools/moira_bare_bench.cpp`
 - **done** (1 connections) — `tools/moira_bare_bench.cpp`
 - **irqIdx** (1 connections) — `tools/moira_bare_bench.cpp`
@@ -29,25 +24,26 @@
 - **ram** (1 connections) — `tools/moira_bare_bench.cpp`
 - **tOrigin** (1 connections) — `tools/moira_bare_bench.cpp`
 - **FILE** (1 connections)
-- *... and 3 more nodes in this community*
+- **Moira** (1 connections)
+- **level** (1 connections) — `tools/moira_bare_bench.cpp`
+- **t** (1 connections) — `tools/moira_bare_bench.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 40](Community_40.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 22](Community_22.md) (1 shared connections)
+- [Community 2](Community_2.md) (11 shared connections)
+- [Community 16](Community_16.md) (5 shared connections)
+- [Community 32](Community_32.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
 - `tools/moira_bare_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 53 (95%)
-- INFERRED: 3 (5%)
+- EXTRACTED: 52 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

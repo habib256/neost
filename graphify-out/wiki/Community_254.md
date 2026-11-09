@@ -7,7 +7,7 @@
 - **Logiciels étalons — cas limites d'émulation** (13 connections) — `docs/TEST_SOFTWARE.md`
 - **Suite headless NeoST (`tools/run_etalons.py`)** (7 connections) — `docs/TEST_SOFTWARE.md`
 - **⚠ Configuration : PAL/NTSC et couverture de la suite** (4 connections) — `docs/TEST_SOFTWARE.md`
-- **1. Shifter / synchro CPU-vidéo** (2 connections) — `docs/TEST_SOFTWARE.md`
+- **1. Shifter / synchro CPU-vidéo** (3 connections) — `docs/TEST_SOFTWARE.md`
 - **Lignes masquées ST/STE (2026-10-19)** (2 connections) — `docs/TEST_SOFTWARE.md`
 - **2. MFP 68901 / interruptions** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **3. YM2149 PSG / digidrums (PCM)** (1 connections) — `docs/TEST_SOFTWARE.md`
@@ -30,7 +30,8 @@
 
 ## Relationships
 
-- [Community 5](Community_5.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
@@ -39,8 +40,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 23 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 23 (92%)
+- INFERRED: 2 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

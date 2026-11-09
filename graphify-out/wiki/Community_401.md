@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **.neBackend()** (5 connections) — `src/gui/App.hpp`
+- **.neBackend()** (4 connections) — `src/gui/App.hpp`
 - **Slirp : le « dernier pas » est clos — 5/5, le coupable était Little Snitch (2026-08-27)** (2 connections) — `CHANGELOG.md`
 - **NetBackend** (1 connections)
 
@@ -12,7 +12,6 @@
 
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
@@ -22,8 +21,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 4 (67%)
-- INFERRED: 2 (33%)
+- EXTRACTED: 4 (80%)
+- INFERRED: 1 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

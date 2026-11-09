@@ -101,7 +101,10 @@ struct ConfigUi {
     float mixYm = 1.0f, mixDma = 1.0f, mixDrive = 1.0f, mixMt32 = 1.0f, mixDac = 1.0f, mixGm = 1.0f;
     bool  mixInit = false, mixDirty = false, mixDone = false;
     int  reqNetUsbee = -1;                // NetUSBee NE2000 + ISP1160 (0/1)
-    int  reqSlirp = -1;                   // NE2000 : Internet réel via SLIRP (0/1)
+    bool natInit = false, reqNatOptions = false;
+    bool natRestricted = false, natAllowLoopback = false;
+    char natForwards[2048] = {};
+    int  reqNat = -1;                   // NE2000 : Internet réel via NAT intégré (0/1)
     int  reqUltraSatan = -1;              // UltraSatan sur les IDs ACSI 0-1 (0/1)
     std::string reqMountSd2;              // image SD du slot 2 (ID 1)
     bool reqEjectSd2 = false;

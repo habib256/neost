@@ -1,28 +1,32 @@
 # Community 314
 
-> 3 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **.serialize()** (5 connections) — `src/core/Cpu68k.hpp`
-- **.serializeState()** (4 connections) — `src/core/Cpu68k.cpp`
-- **StateArchive** (2 connections)
+- **Rig** (9 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.finish()** (2 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **.Rig()** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **mfp** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **scheduler** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
+- **sent** (1 connections) — `tests/mfp_internal_loopback_logic.cpp`
 
 ## Relationships
 
-- [Community 27](Community_27.md) (2 shared connections)
-- [Community 64](Community_64.md) (2 shared connections)
-- [Community 358](Community_358.md) (1 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
+- [Community 294](Community_294.md) (1 shared connections)
+- [Community 77](Community_77.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.cpp`
-- `src/core/Cpu68k.hpp`
+- `tests/mfp_internal_loopback_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (88%)
-- INFERRED: 1 (12%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

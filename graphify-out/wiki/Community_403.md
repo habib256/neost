@@ -1,24 +1,26 @@
 # Community 403
 
-> 3 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **IoSpan** (3 connections) — `src/core/Bus.cpp`
-- **addr** (1 connections) — `src/core/Bus.cpp`
-- **span** (1 connections) — `src/core/Bus.cpp`
+- **nat** (5 connections) — `.github/workflows/tests.yml`
+- **name** (1 connections) — `.github/workflows/tests.yml`
+- **runs-on** (1 connections) — `.github/workflows/tests.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/tests.yml`
 
 ## Relationships
 
-- [Community 30](Community_30.md) (1 shared connections)
+- [Community 199](Community_199.md) (1 shared connections)
+- [Community 231](Community_231.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Bus.cpp`
+- `.github/workflows/tests.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

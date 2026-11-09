@@ -1,56 +1,43 @@
 # Community 100
 
-> 19 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (19 connections) — `CHANGELOG.md`
-- **consumeProfileRequests()** (12 connections) — `src/gui/AppLoop.cpp`
-- **resolveData()** (9 connections) — `src/gui/App.cpp`
-- **.midiOutApply()** (6 connections) — `src/gui/App.hpp`
-- **fileExists()** (6 connections) — `src/gui/App.cpp`
-- **string** (5 connections)
-- **2. Installation** (5 connections) — `packaging/raspberry/README.md`
-- **.resolvePath()** (4 connections) — `src/gui/App.hpp`
-- **pickTosForMachine()** (4 connections) — `src/gui/App.cpp`
+- **Chasse aux bugs multi-agents : 9 défauts trouvés et corrigés, dont un hors bornes qui ne visait que Windows (2026-09-01)** (12 connections) — `CHANGELOG.md`
+- **.unmountAll()** (7 connections) — `src/io/Acsi.hpp`
+- **.writeToDisk()** (5 connections) — `src/io/Acsi.hpp`
 - **.usatanApply()** (3 connections) — `src/gui/App.hpp`
-- **.etherApply()** (3 connections) — `src/gui/App.hpp`
-- **.netUsbeeApply()** (3 connections) — `src/gui/App.hpp`
-- **Disposition installée** (3 connections) — `packaging/raspberry/README.md`
-- **Interface : une fenêtre « Configuration » unique + barre d'état (2026-08-07)** (2 connections) — `CHANGELOG.md`
-- **Et les trois avertissements que personne ne voyait plus** (1 connections) — `CHANGELOG.md`
-- **Et une affirmation fausse trouvée en corrigeant ces renvois** (1 connections) — `CHANGELOG.md`
-- **2.a — Voie automatique : tout préparer sur la carte SD (recommandé)** (1 connections) — `packaging/raspberry/README.md`
-- **2.b — Voie manuelle** (1 connections) — `packaging/raspberry/README.md`
-- **Fichiers de ce dossier** (1 connections) — `packaging/raspberry/README.md`
+- **Acsi::~Acsi()** (2 connections) — `src/io/Acsi.cpp`
+- **.unmountAcsi()** (2 connections) — `src/io/Fdc.hpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (10 shared connections)
-- [Community 380](Community_380.md) (8 shared connections)
-- [Community 200](Community_200.md) (6 shared connections)
-- [Community 1](Community_1.md) (5 shared connections)
-- [Community 101](Community_101.md) (4 shared connections)
-- [Community 223](Community_223.md) (3 shared connections)
-- [Community 229](Community_229.md) (2 shared connections)
-- [Community 214](Community_214.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 42](Community_42.md) (1 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
-- [Community 401](Community_401.md) (1 shared connections)
+- [Community 31](Community_31.md) (7 shared connections)
+- [Community 103](Community_103.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 212](Community_212.md) (1 shared connections)
+- [Community 122](Community_122.md) (1 shared connections)
+- [Community 12](Community_12.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 53](Community_53.md) (1 shared connections)
+- [Community 106](Community_106.md) (1 shared connections)
+- [Community 283](Community_283.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `packaging/raspberry/README.md`
-- `src/gui/App.cpp`
 - `src/gui/App.hpp`
-- `src/gui/AppLoop.cpp`
+- `src/io/Acsi.cpp`
+- `src/io/Acsi.hpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 35 (51%)
-- INFERRED: 33 (49%)
+- EXTRACTED: 9 (35%)
+- INFERRED: 17 (65%)
 - AMBIGUOUS: 0 (0%)
 
 ---

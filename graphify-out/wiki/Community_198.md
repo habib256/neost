@@ -4,33 +4,33 @@
 
 ## Key Concepts
 
-- **MoiraDasmMMU_cpp.h** (9 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
-- **u16** (8 connections)
-- **u32** (8 connections)
-- **.isValidExtMMU()** (6 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::dasmPFlush()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
-- **Moira::dasmPFlusha()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
-- **Moira::dasmPLoad()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
-- **Moira::dasmPMove()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
-- **Moira::dasmPTest()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
-- **Moira::dasmPFlush40()** (4 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
-- **Moira::dasmPGen()** (4 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
-- **Moira::dasmPTest40()** (4 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **pages** (8 connections) — `.github/workflows/release.yml`
+- **environment** (3 connections) — `.github/workflows/release.yml`
+- **permissions** (3 connections) — `.github/workflows/release.yml`
+- **steps** (3 connections) — `.github/workflows/release.yml`
+- **name** (1 connections) — `.github/workflows/release.yml`
+- **url** (1 connections) — `.github/workflows/release.yml`
+- **if** (1 connections) — `.github/workflows/release.yml`
+- **needs** (1 connections) — `.github/workflows/release.yml`
+- **runs-on** (1 connections) — `.github/workflows/release.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/release.yml`
+- **id-token** (1 connections) — `.github/workflows/release.yml`
+- **pages** (1 connections) — `.github/workflows/release.yml`
 
 ## Relationships
 
-- [Community 2](Community_2.md) (9 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
+- [Community 265](Community_265.md) (1 shared connections)
+- [Community 276](Community_276.md) (1 shared connections)
+- [Community 144](Community_144.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- `.github/workflows/release.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 34 (87%)
-- INFERRED: 5 (13%)
+- EXTRACTED: 14 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

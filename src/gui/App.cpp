@@ -30,7 +30,7 @@
 #include "gui/StScreenView.hpp"
 #include "net/NetBackend.hpp"
 #include "util/HostPath.hpp"   // chemins hôte : UNE définition d'« absolu »
-#include "net/SlirpBackend.hpp"
+#include "net/NatBackend.hpp"
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
 #endif
@@ -234,28 +234,29 @@ void App::modemApply(bool on) {
 
 NetBackend* App::neBackend() {
     App& A = *this;
-    SlirpBackend& slirpNet = *A.slirpNet;
+    NatBackend& natNet = *A.natNet;
     NetBackendNull& etherNull = *A.etherNull;
-    return slirpNet.isOpen() ? static_cast<NetBackend*>(&slirpNet) : &etherNull;
+    return natNet.isOpen() ? static_cast<NetBackend*>(&natNet) : &etherNull;
 }
 
-void App::slirpApply(bool on) {
+void App::natApply(bool on) {
     App& A = *this;
     Machine& machine = *A.machine;
     Config& cfg = A.cfg;
-    SlirpBackend& slirpNet = *A.slirpNet;
-    if (on && !slirpNet.isOpen()) {
-        if (!SlirpBackend::available()) {
-            A.stateMsg = "This build has no libslirp (NEOST_WITH_SLIRP)";
+    NatBackend& natNet = *A.natNet;
+    if (on) {
+        natNet.close();
+        if (!NatBackend::available()) {
+            A.stateMsg = "Host networking is disabled (NEOST_WITH_NET=OFF)";
             A.stateMsgFrames = 150;
             cfg.slirp = false;
-        } else if (!slirpNet.open(false)) {
-            A.stateMsg = "slirp: " + slirpNet.lastError();
+        } else if (!natNet.open(NatBackend::Options{cfg.natRestricted, cfg.natAllowLoopback, cfg.natForwards})) {
+            A.stateMsg = "NAT: " + natNet.lastError();
             A.stateMsgFrames = 150;
             cfg.slirp = false;
         }
     } else if (!on) {
-        slirpNet.close();
+        natNet.close();
     }
     machine.ne2000.setBackend(A.neBackend());
 }

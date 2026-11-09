@@ -1,17 +1,14 @@
 # Community 184
 
-> 16 nodes
+> 13 nodes
 
 ## Key Concepts
 
 - **Rig** (13 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **testIkbdMouseMonitor()** (9 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **.command()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **.due()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **main()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **.advance()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
-- **.data()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.command()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.due()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
 - **initializer_list** (2 connections)
+- **.advance()** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
 - **.Rig()** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
 - **Ikbd** (1 connections)
 - **Mfp** (1 connections)
@@ -23,8 +20,7 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
 - [Community 77](Community_77.md) (1 shared connections)
 
 ## Source Files
@@ -33,8 +29,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 25 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 16 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

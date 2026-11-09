@@ -1,12 +1,11 @@
 # Community 167
 
-> 14 nodes
+> 11 nodes
 
 ## Key Concepts
 
 - **MoiraExecMMU_cpp.h** (10 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
-- **u16** (9 connections)
-- **Moira::isValidExtMMU()** (7 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
+- **Moira::isValidExtMMU()** (5 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::execPFlush()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::execPFlush40()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::execPFlusha()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
@@ -15,26 +14,22 @@
 - **Moira::execPMove()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::execPTest()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
 - **Moira::execPTest40()** (2 connections) — `extern/moira/Moira/MoiraExecMMU_cpp.h`
-- **fc** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **Mode** (1 connections)
-- **u32** (1 connections)
 
 ## Relationships
 
+- [Community 2](Community_2.md) (10 shared connections)
 - [Community 0](Community_0.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
 - [Community 33](Community_33.md) (1 shared connections)
-- [Community 60](Community_60.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/MoiraExecMMU_cpp.h`
-- `extern/moira/Moira/MoiraTypes.h`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (92%)
-- INFERRED: 2 (8%)
+- EXTRACTED: 22 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

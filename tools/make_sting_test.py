@@ -78,7 +78,7 @@ IP_ST = 0x0A00020F               # 10.0.2.15 (1re adresse du NAT SLIRP)
 IP_MASK = 0xFFFFFF00             # 255.255.255.0
 
 
-def build_code(host: str, fetch: bool = True) -> Asm:
+def build_code(host: str, fetch: bool = True, port: int = 80, connect_ip: int | None = None) -> Asm:
     # fetch=False : PRG de CONFIGURATION seule (port + routes), sans resolve ni
     # GET — pour préparer STinG à un VRAI client (CAB…) sans laisser derrière
     # soi une connexion TCP ouverte qui polluerait les traces.
@@ -228,8 +228,13 @@ def build_code(host: str, fetch: bool = True) -> Asm:
     # ---- TCP_open(ip, 80, 0, 2000) -----------------------------------------
     a.w(0x3F3C, 2000)                             # move.w #2000,-(sp)  buffer
     a.w(0x4267)                                   # clr.w -(sp)         tos
-    a.w(0x3F3C, 80)                               # move.w #80,-(sp)    port
-    a.w(0x2F39); a.abs32('iplist')                # move.l iplist,-(sp) hôte
+    a.w(0x3F3C, port)                             # move.w #port,-(sp)
+    if connect_ip is None:
+        a.w(0x2F39); a.abs32('iplist')            # move.l iplist,-(sp) hôte
+    else:
+        # Le banc local peut vérifier le DNS puis contacter la passerelle NAT,
+        # sans envoyer 127/8 dans la boucle locale de la pile invitée.
+        a.w(0x2F3C); a.l32(connect_ip)            # move.l #ip,-(sp)
     a.w(0x206D, TPL_TCP_OPEN)                     # movea.l 40(a5),a0
     a.w(0x4E90); a.w(0x4FEF, 0x000A)              # jsr ; lea 10(sp),sp
     a.w(0x3C00)                                   # move.w d0,d6 = handle

@@ -1,42 +1,43 @@
 # Community 144
 
-> 16 nodes
+> 14 nodes
 
 ## Key Concepts
 
-- **Debugger** (34 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.vectorName()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.reset()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.stepInto()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.clearLog()** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **string** (1 connections)
-- **u8** (1 connections)
-- **breakpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **catchpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **logBuffer** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **logBufferCapacity** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **logCnt** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **softStop** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **swTraps** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **watchpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **i64** (1 connections)
+- **uses** (10 connections) — `.github/workflows/release.yml`
+- **name** (9 connections) — `.github/workflows/release.yml`
+- **steps** (7 connections) — `.github/workflows/release.yml`
+- **steps** (6 connections) — `.github/workflows/release.yml`
+- **steps** (6 connections) — `.github/workflows/release.yml`
+- **android** (5 connections) — `.github/workflows/release.yml`
+- **pi400** (5 connections) — `.github/workflows/release.yml`
+- **needs** (1 connections) — `.github/workflows/release.yml`
+- **runs-on** (1 connections) — `.github/workflows/release.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/release.yml`
+- **needs** (1 connections) — `.github/workflows/release.yml`
+- **runs-on** (1 connections) — `.github/workflows/release.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/release.yml`
+- **if** (1 connections) — `.github/workflows/release.yml`
 
 ## Relationships
 
-- [Community 112](Community_112.md) (13 shared connections)
-- [Community 209](Community_209.md) (4 shared connections)
-- [Community 210](Community_210.md) (4 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
-- [Community 104](Community_104.md) (1 shared connections)
+- [Community 276](Community_276.md) (5 shared connections)
+- [Community 148](Community_148.md) (5 shared connections)
+- [Community 210](Community_210.md) (3 shared connections)
+- [Community 265](Community_265.md) (3 shared connections)
+- [Community 209](Community_209.md) (2 shared connections)
+- [Community 381](Community_381.md) (2 shared connections)
+- [Community 388](Community_388.md) (2 shared connections)
+- [Community 269](Community_269.md) (2 shared connections)
+- [Community 198](Community_198.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDebugger.h`
+- `.github/workflows/release.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 39 (100%)
+- EXTRACTED: 40 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

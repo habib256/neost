@@ -30,7 +30,7 @@
 
 - [Community 164](Community_164.md) (5 shared connections)
 - [Community 247](Community_247.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 298](Community_298.md) (1 shared connections)
 

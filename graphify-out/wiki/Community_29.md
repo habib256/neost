@@ -13,10 +13,10 @@
 - **.serialize()** (5 connections) — `src/io/UltraSatan.hpp`
 - **.fromSecs()** (5 connections) — `src/io/UltraSatan.hpp`
 - **.getDateTime()** (4 connections) — `src/io/UltraSatan.hpp`
-- **.writeData()** (4 connections) — `src/io/UltraSatan.hpp`
 - **.setDateTime()** (4 connections) — `src/io/UltraSatan.hpp`
 - **DateTime** (4 connections)
 - **.execute()** (3 connections) — `src/io/UltraSatan.hpp`
+- **.writeData()** (3 connections) — `src/io/UltraSatan.hpp`
 - **.initFromHostTime()** (3 connections) — `src/io/UltraSatan.hpp`
 - **.buildInquiry()** (2 connections) — `src/io/UltraSatan.hpp`
 - **.catchUp()** (2 connections) — `src/io/UltraSatan.hpp`
@@ -27,15 +27,16 @@
 - **.reset()** (2 connections) — `src/io/UltraSatan.hpp`
 - **.setClock()** (2 connections) — `src/io/UltraSatan.hpp`
 - **function** (2 connections)
+- **UltraSatan::UltraSatan()** (1 connections) — `src/io/UltraSatan.cpp`
 - **.dataLen()** (1 connections) — `src/io/UltraSatan.hpp`
-- **.isWrite()** (1 connections) — `src/io/UltraSatan.hpp`
 - *... and 28 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -44,8 +45,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 76 (92%)
-- INFERRED: 7 (8%)
+- EXTRACTED: 76 (93%)
+- INFERRED: 6 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

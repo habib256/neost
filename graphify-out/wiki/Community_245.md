@@ -4,30 +4,33 @@
 
 ## Key Concepts
 
-- **MegaSteTransferChecks** (11 connections) — `tools/test_timing_oracle.py`
-- **.valid()** (4 connections) — `tools/test_timing_oracle.py`
-- **.validate()** (4 connections) — `tools/test_timing_oracle.py`
-- **.test_lower_bounds_keep_blitter_at_bus_frequency()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_missing_sample_rejected()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_one_impossible_completion_or_irq_rejected()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_irq_while_busy_rejected_even_with_valid_counts_and_durations()** (2 connections) — `tools/test_timing_oracle.py`
-- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
-- **.test_iack_idle_keeps_cpu_clock_domain()** (1 connections) — `tools/test_timing_oracle.py`
-- **.test_iack_missing_or_wrong_domain_rejected()** (1 connections) — `tools/test_timing_oracle.py`
+- **stx_sector_dam_logic.cpp** (18 connections) — `tests/stx_sector_dam_logic.cpp`
+- **testStxSectorDam()** (7 connections) — `tests/stx_sector_dam_logic.cpp`
+- **Checks** (5 connections) — `tests/stx_sector_dam_logic.cpp`
+- **verifyTrack()** (5 connections) — `tests/stx_sector_dam_logic.cpp`
+- **formattedTrack()** (3 connections) — `tests/stx_sector_dam_logic.cpp`
+- **.equal()** (2 connections) — `tests/stx_sector_dam_logic.cpp`
+- **crc16()** (2 connections) — `tests/stx_sector_dam_logic.cpp`
+- **main()** (2 connections) — `tests/stx_sector_dam_logic.cpp`
+- **count** (1 connections) — `tests/stx_sector_dam_logic.cpp`
+- **failures** (1 connections) — `tests/stx_sector_dam_logic.cpp`
 
 ## Relationships
 
-- [Community 207](Community_207.md) (2 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
+- [Community 71](Community_71.md) (3 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/test_timing_oracle.py`
+- `tests/stx_sector_dam_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 30 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -34,19 +34,19 @@
 
 ### method
 - .applyConfig() `EXTRACTED`
-- .midiOutApply() `EXTRACTED`
-- .midiLearnUids() `EXTRACTED`
 - .switchKioskMode() `EXTRACTED`
+- .midiLearnUids() `EXTRACTED`
 - .loadDongleTable() `EXTRACTED`
 - .neBackend() `EXTRACTED`
 - .resolvePath() `EXTRACTED`
-- .slirpApply() `EXTRACTED`
-- .midiInApply() `EXTRACTED`
 - .usatanApply() `EXTRACTED`
-- .etherApply() `EXTRACTED`
-- .netUsbeeApply() `EXTRACTED`
+- .midiOutApply() `EXTRACTED`
 - .toggleFullscreen() `EXTRACTED`
 - .App() `EXTRACTED`
+- .natApply() `EXTRACTED`
+- .etherApply() `EXTRACTED`
+- .netUsbeeApply() `EXTRACTED`
+- .midiInApply() `EXTRACTED`
 
 ### references
 - [vector](vector.md) `EXTRACTED`
@@ -60,7 +60,7 @@
 - Machine `EXTRACTED`
 - HayesModem `EXTRACTED`
 - NetBackendNull `EXTRACTED`
-- SlirpBackend `EXTRACTED`
+- NatBackend `EXTRACTED`
 - MidiOutHost `EXTRACTED`
 - MidiInHost `EXTRACTED`
 - Mt32Synth `EXTRACTED`
@@ -68,7 +68,7 @@
 - DriveSound `EXTRACTED`
 - Audio `EXTRACTED`
 - GlScreen `EXTRACTED`
-- map `EXTRACTED`
+- string `EXTRACTED`
 - *…and 6 more `references` connection(s) not listed (lowest-degree first to go)*
 
 ---

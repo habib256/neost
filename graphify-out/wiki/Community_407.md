@@ -1,23 +1,25 @@
 # Community 407
 
-> 2 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **.serialize()** (2 connections) — `src/core/DmaSound.hpp`
-- **StateArchive** (1 connections)
+- **RegEvent** (4 connections) — `src/core/YM2149.hpp`
+- **cycle** (1 connections) — `src/core/YM2149.hpp`
+- **reg** (1 connections) — `src/core/YM2149.hpp`
+- **val** (1 connections) — `src/core/YM2149.hpp`
 
 ## Relationships
 
-- [Community 13](Community_13.md) (1 shared connections)
+- [Community 28](Community_28.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/DmaSound.hpp`
+- `src/core/YM2149.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,27 +1,27 @@
 # Community 404
 
-> 3 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **machine_scc_logic.cpp** (5 connections) — `tests/machine_scc_logic.cpp`
-- **testMachineScc()** (4 connections) — `tests/machine_scc_logic.cpp`
-- **main()** (2 connections) — `tests/machine_scc_logic.cpp`
+- **pixel** (5 connections) — `.github/workflows/tests.yml`
+- **name** (1 connections) — `.github/workflows/tests.yml`
+- **runs-on** (1 connections) — `.github/workflows/tests.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/tests.yml`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 199](Community_199.md) (1 shared connections)
+- [Community 231](Community_231.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/machine_scc_logic.cpp`
+- `.github/workflows/tests.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (75%)
-- INFERRED: 2 (25%)
+- EXTRACTED: 5 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

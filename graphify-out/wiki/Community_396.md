@@ -1,25 +1,26 @@
 # Community 396
 
-> 4 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **** (4 connections) — `src/io/IpfImage.hpp`
-- **CELL_0** (1 connections) — `src/io/IpfImage.hpp`
-- **CELL_1** (1 connections) — `src/io/IpfImage.hpp`
-- **CELL_WEAK** (1 connections) — `src/io/IpfImage.hpp`
+- **GlueLine** (5 connections) — `src/core/Shifter.hpp`
+- **borderMask** (1 connections) — `src/core/Shifter.hpp`
+- **displayEndCycle** (1 connections) — `src/core/Shifter.hpp`
+- **displayPixelShift** (1 connections) — `src/core/Shifter.hpp`
+- **displayStartCycle** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/IpfImage.hpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

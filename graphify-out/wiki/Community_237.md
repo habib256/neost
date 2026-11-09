@@ -10,6 +10,7 @@
 - **4. 🪜 Harnais et preuve** (3 connections) — `TODO.md`
 - **5. 🔌 Extensions — matériel réel, OFF par défaut** (3 connections) — `TODO.md`
 - **Le cap** (2 connections) — `TODO.md`
+- **Réseau, stockage, ports** (2 connections) — `TODO.md`
 - **1. 🎯 Prochaines actions** (1 connections) — `TODO.md`
 - **2.1 CPU 68000 (Moira) — ce que le banc fx68k a localisé** (1 connections) — `TODO.md`
 - **2.2 GLUE, MMU, Shifter — vidéo et bus** (1 connections) — `TODO.md`
@@ -26,11 +27,11 @@
 - **Instruments** (1 connections) — `TODO.md`
 - **Monter l'échelle** (1 connections) — `TODO.md`
 - **Règles de tenue de ce fichier** (1 connections) — `TODO.md`
-- **Réseau, stockage, ports** (1 connections) — `TODO.md`
 - **Station MIDI** (1 connections) — `TODO.md`
 
 ## Relationships
 
+- [Community 203](Community_203.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 - [Community 380](Community_380.md) (1 shared connections)
 
@@ -40,8 +41,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 25 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 25 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

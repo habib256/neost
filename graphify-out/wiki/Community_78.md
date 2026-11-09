@@ -1,19 +1,21 @@
 # Community 78
 
-> 45 nodes
+> 47 nodes
 
 ## Key Concepts
 
 - **FloppyDisk** (36 connections) — `src/io/Fdc.hpp`
 - **StOverrideSector** (11 connections) — `src/io/Fdc.hpp`
 - **StOverrideTrack** (7 connections) — `src/io/Fdc.hpp`
+- **.stOverrideFound()** (7 connections) — `src/io/Fdc.hpp`
 - **ImgFormat** (4 connections) — `src/io/Fdc.hpp`
 - **TransitionPhase** (4 connections) — `src/io/Fdc.hpp`
 - **ImgType** (3 connections) — `src/io/Fdc.hpp`
-- **.mountAcsi()** (2 connections) — `src/io/Fdc.hpp`
+- **.mountAcsi()** (3 connections) — `src/io/Fdc.hpp`
 - **string** (2 connections)
 - **density** (1 connections) — `src/io/Fdc.hpp`
 - **headTrack** (1 connections) — `src/io/Fdc.hpp`
+- **image** (1 connections) — `src/io/Fdc.hpp`
 - **imgFormat** (1 connections) — `src/io/Fdc.hpp`
 - **imgType** (1 connections) — `src/io/Fdc.hpp`
 - **msaSides** (1 connections) — `src/io/Fdc.hpp`
@@ -27,18 +29,17 @@
 - **transitionEndVbl** (1 connections) — `src/io/Fdc.hpp`
 - **transitionEndVbl2** (1 connections) — `src/io/Fdc.hpp`
 - **transitionPhase** (1 connections) — `src/io/Fdc.hpp`
-- **transitionPhase2** (1 connections) — `src/io/Fdc.hpp`
-- **wd1772Path** (1 connections) — `src/io/Fdc.hpp`
-- *... and 20 more nodes in this community*
+- *... and 22 more nodes in this community*
 
 ## Relationships
 
-- [Community 76](Community_76.md) (8 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 12](Community_12.md) (2 shared connections)
-- [Community 212](Community_212.md) (1 shared connections)
+- [Community 95](Community_95.md) (6 shared connections)
+- [Community 12](Community_12.md) (4 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
+- [Community 23](Community_23.md) (2 shared connections)
+- [Community 121](Community_121.md) (2 shared connections)
 - [Community 63](Community_63.md) (1 shared connections)
-- [Community 121](Community_121.md) (1 shared connections)
+- [Community 122](Community_122.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,8 +47,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 61 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 63 (94%)
+- INFERRED: 4 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

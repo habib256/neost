@@ -1,12 +1,11 @@
 # Community 216
 
-> 12 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **testSccFirstErrorReset()** (10 connections) — `tests/scc_first_error_reset_logic.cpp`
 - **FirstResetRig** (9 connections) — `tests/scc_first_error_reset_logic.cpp`
-- **scc_first_error_reset_logic.cpp** (6 connections) — `tests/scc_first_error_reset_logic.cpp`
+- **testSccFirstErrorReset()** (7 connections) — `tests/scc_first_error_reset_logic.cpp`
 - **.command()** (4 connections) — `tests/scc_first_error_reset_logic.cpp`
 - **.write()** (4 connections) — `tests/scc_first_error_reset_logic.cpp`
 - **.read()** (3 connections) — `tests/scc_first_error_reset_logic.cpp`
@@ -19,8 +18,8 @@
 
 ## Relationships
 
-- [Community 41](Community_41.md) (5 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
@@ -28,8 +27,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 24 (92%)
-- INFERRED: 2 (8%)
+- EXTRACTED: 19 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

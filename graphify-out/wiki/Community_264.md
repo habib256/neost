@@ -1,31 +1,33 @@
 # Community 264
 
-> 9 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **Rig** (12 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **.Rig()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **Ikbd** (1 connections)
-- **Mfp** (1 connections)
-- **Scheduler** (1 connections)
-- **ikbd** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **live** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **mfp** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **scheduler** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **build()** (10 connections) — `tools/make_selftest_cart.py`
+- **make_selftest_cart.py** (5 connections) — `tools/make_selftest_cart.py`
+- **raw()** (3 connections) — `tools/make_selftest_cart.py`
+- **stritem()** (3 connections) — `tools/make_selftest_cart.py`
+- **main()** (3 connections) — `tools/make_selftest_cart.py`
+- **lbl()** (2 connections) — `tools/make_selftest_cart.py`
+- **raw32()** (2 connections) — `tools/make_selftest_cart.py`
+- **br()** (1 connections) — `tools/make_selftest_cart.py`
+- **imm_addr()** (1 connections) — `tools/make_selftest_cart.py`
+- **vec()** (1 connections) — `tools/make_selftest_cart.py`
 
 ## Relationships
 
-- [Community 110](Community_110.md) (3 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 18](Community_18.md) (2 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ikbd_sci_reset_logic.cpp`
+- `tools/make_selftest_cart.py`
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
+- EXTRACTED: 18 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

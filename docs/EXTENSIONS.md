@@ -52,24 +52,58 @@ elle écrase la 80ᵉ colonne (une ligne HTML n'y laissait voir que son dernier 
 une colonne de « > »), d'où le repli à 78 colonnes et le CR ajouté sur les LF seuls.
 `src/net/HayesModem.cpp`.
 
-Le NetUSBee/EtherNEC **sort réellement sur Internet** : `--slirp` en headless, la case
-« Real Internet for the NE2000 » de la page **Network** dans le GUI (clé `slirp=` de
-`neost.cfg`, rejouée par `--from-cfg` comme `netusbee=`). La bascule boucle locale ↔
-Internet est à chaud — la carte vue par le pilote ST ne change pas. En détail : `--slirp` branche
-`SlirpBackend` (`src/net/SlirpBackend.cpp`, libslirp, NAT mode utilisateur — ST en 10.0.2.15, passerelle 10.0.2.2,
-DNS relayé 10.0.2.3), `--slirp-restricted` la variante bac à sable sans sortie. Build :
-option CMake `NEOST_WITH_SLIRP` (AUTO via pkg-config `slirp`). Validation :
-`--slirp-selftest` pilote la NE2000 au niveau fil et vérifie **4 points déterministes et
-hors ligne** (réponse ARP de la passerelle, OFFER DHCP, compteurs, et une **boucle retour
-UDP loopback à travers le NAT** — un répondeur local éphémère prouve le chemin complet
-socket hôte → SLIRP → ARP → anneau RX sans toucher au réseau). `NEOST_SLIRP_ONLINE=1`
-ajoute le 5ᵉ point, opt-in : une vraie requête DNS sortante (`NEOST_SLIRP_DNS=a.b.c.d[:port]`
-pour viser un résolveur précis ; `NEOST_SLIRP_TRACE=1` trace trames et sockets).
-⚠ **Un pare-feu applicatif (Little Snitch…) peut faire échouer ce 5ᵉ point seul** : il
-jette silencieusement l'UDP externe des binaires non signés (`sendto` OK, réponse jamais
-vue) et une alerte en attente peut même **geler `sendto` dans le noyau** jusqu'au verdict —
-autoriser `build/neost-headless` en sortie (règle à refaire après un rebuild, binaire non
-signé). Le point 4, insensible au filtre, tranche : si lui passe, NeoST est correct.
+Le NetUSBee/EtherNEC utilise le **NAT intégré de POM2**, épinglé à
+`b07f3a0a5ac699989be0e61c5f36369f5c1287a2` sous `extern/pom2nat`.
+`NatBackend` (`src/net/NatBackend.cpp`) adapte les trames à `NetBackend` ;
+aucune dépendance libslirp/GLib. Le NAT est construit avec `NEOST_WITH_NET`
+(par défaut sur bureau, coupé sur Android et WASM). La case **Real Internet
+for the NE2000** de la page **Network**, ou `--nat`, branche le câble à chaud.
+Le pilote ST garde la même carte : ST `10.0.2.15/24`, passerelle `10.0.2.2`,
+DNS `10.0.2.3`. `--slirp`, `--slirp-restricted` et `--slirp-selftest` restent
+des alias ; les anciens profils `slirp=1` sont relus, les nouveaux écrivent `nat=1`.
+
+Le backend fournit ARP, DHCP, ping des services virtuels, relais TCP/UDP,
+fragmentation/réassemblage IPv4/IPv6 bornés, sondes TCP de fenêtre nulle et DNS
+A/AAAA/MX/TXT/PTR/SRV. IPv6 : préfixe `fd00:2::/64`, routeur `fe80::2`,
+passerelle `fd00:2::2`, DNS `fd00:2::3` (ND et SLAAC). Les DNS A passent par
+le résolveur hôte ; les autres types par les API DNS natives, sur des tâches
+bornées hors du thread d'émulation. Le réseau réel reste hors déterminisme
+et hors save-state. Aucun autre ICMP n'est relayé sur Internet.
+
+Les options `--nat-restricted` et `--nat-allow-loopback` correspondent à
+`nat_restricted=` et `nat_allow_loopback=`. Le mode restreint conserve les
+services virtuels mais refuse les relais et les publications. L'accès aux
+services loopback de l'hôte est désactivé par défaut.
+
+Publication explicite de services, également réglable dans la page Network :
+
+```sh
+./build/neost-headless roms/etos256us.img --ethernec --nat \
+  --nat-forwards 'tcp:0.0.0.0:6502:23;udp:0.0.0.0:6503:6502' --frames 1500
+```
+
+Format : `tcp|udp:adresse-hôte:port-hôte:port-ST`, règles séparées par `;`,
+32 maximum, avec adresse de publication IPv4. `127.0.0.1` réserve l'accès à
+l'hôte ; `0.0.0.0` publie sur le LAN.
+La clé `nat_forwards=` est rejouée par `--from-cfg`, avec les autres options NAT.
+Une liste invalide ou un port indisponible fait échouer l'ouverture, sans liste
+partiellement appliquée. Deux ST peuvent garder `10.0.2.15` : chacun contacte
+l'adresse LAN de l'autre ordinateur et son **port hôte**. Ce n'est pas un pont
+Ethernet : les broadcasts et protocoles non-IP ne traversent pas les NAT.
+
+`--nat-selftest` pilote la NE2000 au niveau fil : ARP, OFFER DHCP, compteurs
+et aller-retour UDP sur une socket loopback locale. Les tests `neost-nat-test`,
+`neost-resolver-test` et `neost-nat-adapter-test` couvrent aussi le protocole,
+les fragments, IPv6, les redirections entre deux instances et les erreurs de bind.
+Ils sont lancés par les paliers `fast`/`full`, sans dépendance à Internet.
+`tools/run_nat_sting.py` fait aussi résoudre `localhost` à STinG/ENEC, puis
+exécute un GET HTTP vers un serveur local éphémère via `10.0.2.2` : la réponse
+est vérifiée sur RS-232 et la requête côté serveur. Le domaine de recherche
+STinG est vidé dans une copie temporaire du disque pour éviter un nom externe.
+`NEOST_SLIRP_ONLINE=1` garde son nom historique : requête DNS réelle opt-in ;
+`NEOST_SLIRP_DNS=a.b.c.d[:port]` choisit sa cible. Ces contrôles ne qualifient
+pas toutes les piles Atari ni un LAN entre deux ordinateurs physiques.
+
 Côté ST, le banc bout-en-bout est **`tools/make_sting_test.py`** : il génère une
 disquette de boot STinG 1.26 + `ENEC.STX` (URLs des archives freeware/GPL dans son
 en-tête) dont l'`AUTO` embarque un PRG maison qui configure le port « EtherNet » par
@@ -78,7 +112,7 @@ fait un GET HTTP, verdict recopié sur RS-232 :
 
 ```sh
 python3 tools/make_sting_test.py /tmp/sting.st <dossier sting126> <dossier ENEC.STX>
-./build/neost-headless roms/etos256us.img --ethernec --slirp --disk /tmp/sting.st \
+./build/neost-headless roms/etos256us.img --ethernec --nat --disk /tmp/sting.st \
     --frames 3500 --serial-dump /tmp/ser.txt     # attendu : DNS=a.b.c.d puis HTTP/1.x
 ```
 
@@ -106,8 +140,7 @@ ni lire ni écrire la carte — découvert à la première session STinG réelle
 
 Décodé dans `Bus::read8Slow` (`src/io/Ne2000.cpp`). Modèle DP8390 classique (pages 0/1,
 anneau de réception avec en-tête 4 octets, Remote DMA, filtrage MAC/broadcast). Backend
-physique = interface `NetBackend` (boucle locale, ou SLIRP avec `--slirp` quand libslirp
-est présente ; pcap = point d'extension). **Exclusif d'une cartouche montée** (conflit de
+physique = interface `NetBackend` (boucle locale, ou NAT intégré avec `--nat`e ; pcap = point d'extension). **Exclusif d'une cartouche montée** (conflit de
 fenêtre $FA0000 — le montage est refusé avec message). Auto-test : `--enec-selftest`
 (palier `fast`, qui vérifie aussi la PROM et sa lecture seule).
 

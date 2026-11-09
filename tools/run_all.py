@@ -169,6 +169,24 @@ FAST = [
      [sys.executable, str(TOOLS / "run_midi_sequencer.py")]),
 ]
 
+# Les tests réseau utilisent des pairs locaux et des résolveurs simulés.
+# Aucun accès Internet ; le build headless les compile quand NEOST_WITH_NET est actif.
+_cache = ROOT / "build" / "CMakeCache.txt"
+_net_off = _cache.exists() and "NEOST_WITH_NET:BOOL=OFF" in _cache.read_text()
+if not _net_off:
+    FAST[1:1] = [
+        ("NAT intégré : protocoles, fragments, IPv6 et redirections locales",
+         [str(ROOT / "build" / ("neost-nat-test" + _EXE))]),
+        ("NAT : résolveur asynchrone, cache et durée de vie",
+         [str(ROOT / "build" / ("neost-resolver-test" + _EXE))]),
+        ("NAT : adaptateur NeoST, options et échecs de publication",
+         [str(ROOT / "build" / ("neost-nat-adapter-test" + _EXE))]),
+        ("NAT à travers la NE2000 : ARP, DHCP et UDP loopback",
+         [str(HEADLESS), "roms/etos192us.img", "--nat-selftest"]),
+        ("STinG + NAT : DNS localhost et HTTP sur serveur local",
+         [sys.executable, str(TOOLS / "run_nat_sting.py")]),
+    ]
+
 # Boot GUI (A9a, audit 2026-08-27) : build/neost était à 0 % de couverture LOCALE —
 # seul le job CI xvfb le lançait. 400 trames EmuTOS + capture non uniforme, en
 # harnais (--run-frames, qui depuis A9a ne réécrit PAS neost.cfg : un test ne doit

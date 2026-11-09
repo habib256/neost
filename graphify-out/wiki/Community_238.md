@@ -1,33 +1,32 @@
 # Community 238
 
-> 7 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **.isValidExt()** (12 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::dasmBitFieldDn()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmCas()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmCas2()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmChkCmp2()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmDivl()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmMull()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **** (10 connections) — `src/io/StxImage.hpp`
+- **FLAG_CRC** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_FUZZY** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_LOST_DATA** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RECORD_TYPE** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_RNF** (1 connections) — `src/io/StxImage.hpp`
+- **FLAG_VARIABLE_TIME** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_IMAGE_SYNC** (1 connections) — `src/io/StxImage.hpp`
+- **TRACK_FLAG_SECTOR_BLOCK** (1 connections) — `src/io/StxImage.hpp`
 
 ## Relationships
 
-- [Community 2](Community_2.md) (24 shared connections)
-- [Community 40](Community_40.md) (4 shared connections)
-- [Community 0](Community_0.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
+- [Community 63](Community_63.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraDasm_cpp.h`
+- `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (83%)
-- INFERRED: 6 (17%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -4,24 +4,26 @@
 
 ## Key Concepts
 
-- **Action** (5 connections) — `src/util/DesktopPointer.hpp`
-- **left** (1 connections) — `src/util/DesktopPointer.hpp`
-- **right** (1 connections) — `src/util/DesktopPointer.hpp`
-- **x** (1 connections) — `src/util/DesktopPointer.hpp`
-- **y** (1 connections) — `src/util/DesktopPointer.hpp`
+- **GemdosHd::GemdosHd()** (5 connections) — `src/io/GemdosHd.cpp`
+- **.closeInfOverride()** (2 connections) — `src/io/GemdosHd.hpp`
+- **setD0()** (2 connections) — `src/io/GemdosHd.cpp`
+- **Cpu68k** (2 connections)
+- **Bus** (1 connections)
 
 ## Relationships
 
-- [Community 90](Community_90.md) (1 shared connections)
+- [Community 36](Community_36.md) (3 shared connections)
+- [Community 17](Community_17.md) (1 shared connections)
 
 ## Source Files
 
-- `src/util/DesktopPointer.hpp`
+- `src/io/GemdosHd.cpp`
+- `src/io/GemdosHd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 6 (75%)
+- INFERRED: 2 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

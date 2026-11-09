@@ -1,64 +1,63 @@
 # Community 10
 
-> 116 nodes
+> 90 nodes
 
 ## Key Concepts
 
 - **Machine** (122 connections) — `src/core/Machine.hpp`
-- **machineIsSte()** (19 connections) — `src/core/MachineType.hpp`
-- **.~Machine()** (12 connections) — `src/core/Machine.hpp`
-- **.installSchedulerCallbacks()** (9 connections) — `src/core/Machine.hpp`
-- **.scheduleFrameEvents()** (9 connections) — `src/core/Machine.hpp`
-- **kHblOff()** (9 connections) — `src/core/Machine.cpp`
-- **.armTbiEdge()** (6 connections) — `src/core/Machine.hpp`
-- **.retargetTimerB()** (6 connections) — `src/core/Machine.hpp`
-- **.onHbl()** (6 connections) — `src/core/Machine.hpp`
-- **.timerBEdgeCycle()** (5 connections) — `src/core/Machine.hpp`
-- **.onTbiPulseMode()** (5 connections) — `src/core/Machine.hpp`
-- **.onTimerB()** (5 connections) — `src/core/Machine.hpp`
-- **.onVbl()** (5 connections) — `src/core/Machine.hpp`
-- **.reset()** (5 connections) — `src/core/Machine.hpp`
+- **.hardReset()** (7 connections) — `src/core/Machine.hpp`
+- **.reset()** (6 connections) — `src/core/Machine.hpp`
+- **.reset()** (5 connections) — `src/io/CartridgeKey.hpp`
 - **string** (5 connections)
-- **.onTbiEdge()** (4 connections) — `src/core/Machine.hpp`
-- **.lineLenEnv()** (4 connections) — `src/core/Shifter.hpp`
+- **.reset()** (4 connections) — `src/io/PortDevices.hpp`
 - **.enableEtherNec()** (4 connections) — `src/core/Machine.hpp`
-- **.hardReset()** (4 connections) — `src/core/Machine.hpp`
-- **.plugPort()** (4 connections) — `src/core/Machine.hpp`
-- **Shifter::vblankAtLine()** (4 connections) — `src/core/VideoGlue.cpp`
-- **.desktopMousePosition()** (3 connections) — `src/core/Machine.hpp`
-- **.desktopMouseMove()** (3 connections) — `src/core/Machine.hpp`
-- **.onRender()** (3 connections) — `src/core/Machine.hpp`
-- **.enableNetUsbee()** (3 connections) — `src/core/Machine.hpp`
-- *... and 91 more nodes in this community*
+- **.setPrinterFile()** (4 connections) — `src/core/Machine.hpp`
+- **NetUSBee — NE2000 + hôte USB ISP1160 sur le port cartouche (`--netusbee`, GUI Network)** (3 connections) — `docs/EXTENSIONS.md`
+- **Trouvailles** (3 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.disableEtherNec()** (2 connections) — `src/core/Machine.hpp`
+- **.disableNetUsbee()** (2 connections) — `src/core/Machine.hpp`
+- **.enableNetUsbee()** (2 connections) — `src/core/Machine.hpp`
+- **.loadCart()** (2 connections) — `src/core/Machine.hpp`
+- **.loadDisk()** (2 connections) — `src/core/Machine.hpp`
+- **.loadDiskB()** (2 connections) — `src/core/Machine.hpp`
+- **.loadTos()** (2 connections) — `src/core/Machine.hpp`
+- **.pressPortButton()** (2 connections) — `src/core/Machine.hpp`
+- **.disableUltraSatan()** (1 connections) — `src/core/Machine.hpp`
+- **.ejectCart()** (1 connections) — `src/core/Machine.hpp`
+- **.enableUltraSatan()** (1 connections) — `src/core/Machine.hpp`
+- **.frameCycles()** (1 connections) — `src/core/Machine.hpp`
+- **.netUsbeeEnabled()** (1 connections) — `src/core/Machine.hpp`
+- **.ultraSatanEnabled()** (1 connections) — `src/core/Machine.hpp`
+- **Isp1160** (1 connections)
+- *... and 65 more nodes in this community*
 
 ## Relationships
 
 - [Community 182](Community_182.md) (22 shared connections)
-- [Community 200](Community_200.md) (12 shared connections)
 - [Community 67](Community_67.md) (6 shared connections)
-- [Community 88](Community_88.md) (3 shared connections)
-- [Community 359](Community_359.md) (3 shared connections)
-- [Community 288](Community_288.md) (3 shared connections)
-- [Community 51](Community_51.md) (2 shared connections)
-- [Community 281](Community_281.md) (2 shared connections)
-- [Community 5](Community_5.md) (2 shared connections)
-- [Community 205](Community_205.md) (2 shared connections)
-- [Community 150](Community_150.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 51](Community_51.md) (6 shared connections)
+- [Community 364](Community_364.md) (3 shared connections)
+- [Community 200](Community_200.md) (2 shared connections)
+- [Community 150](Community_150.md) (2 shared connections)
+- [Community 48](Community_48.md) (2 shared connections)
+- [Community 218](Community_218.md) (2 shared connections)
+- [Community 349](Community_349.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 
 ## Source Files
 
 - `docs/EXTENSIONS.md`
-- `src/core/Machine.cpp`
+- `docs/HATARI_DIVERGENCES.md`
 - `src/core/Machine.hpp`
-- `src/core/MachineType.hpp`
-- `src/core/Shifter.hpp`
-- `src/core/VideoGlue.cpp`
+- `src/io/CartridgeKey.hpp`
+- `src/io/PortDevices.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 169 (76%)
-- INFERRED: 53 (24%)
+- EXTRACTED: 137 (90%)
+- INFERRED: 16 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

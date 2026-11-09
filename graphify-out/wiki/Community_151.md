@@ -1,6 +1,6 @@
 # Community 151
 
-> 46 nodes
+> 52 nodes
 
 ## Key Concepts
 
@@ -12,43 +12,44 @@
 - **opendst_oracle.py** (10 connections) — `tools/opendst_oracle.py`
 - **check_game_replays.py** (9 connections) — `tools/check_game_replays.py`
 - **fetch_disk.py** (9 connections) — `tools/fetch_disk.py`
+- **Server** (8 connections) — `tools/opendst_explore.py`
 - **main()** (8 connections) — `tools/opendst_explore.py`
-- **run_wsdetect.py** (8 connections) — `tools/run_wsdetect.py`
 - **io** (8 connections)
 - **play_snapshot()** (7 connections) — `tools/run_game_replay.py`
 - **opendst_explore.py** (7 connections) — `tools/opendst_explore.py`
 - **main()** (6 connections) — `tools/check_game_replays.py`
 - **run()** (6 connections) — `tools/opendst_oracle.py`
 - **main()** (6 connections) — `tools/run_game_replay.py`
-- **concurrent_futures** (6 connections)
+- **audit_citations.py** (6 connections) — `tools/audit_citations.py`
 - **main()** (5 connections) — `tools/fetch_disk.py`
 - **download_zip_member()** (5 connections) — `tools/fetch_etalons.py`
 - **build()** (5 connections) — `tools/make_blitter_programs.py`
-- **5. Le mode serveur — `--server`** (5 connections) — `docs/OPENDST.md`
 - **download()** (4 connections) — `tools/fetch_disk.py`
 - **find_download_links()** (4 connections) — `tools/fetch_disk.py`
+- **.cmd()** (4 connections) — `tools/opendst_explore.py`
 - **assess()** (4 connections) — `tools/run_game_replay.py`
-- **measure()** (4 connections) — `tools/run_wsdetect.py`
-- *... and 21 more nodes in this community*
+- **5. Le mode serveur — `--server`** (4 connections) — `docs/OPENDST.md`
+- *... and 27 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (35 shared connections)
-- [Community 55](Community_55.md) (12 shared connections)
+- [Community 18](Community_18.md) (34 shared connections)
 - [Community 248](Community_248.md) (12 shared connections)
-- [Community 35](Community_35.md) (8 shared connections)
-- [Community 26](Community_26.md) (6 shared connections)
+- [Community 55](Community_55.md) (10 shared connections)
+- [Community 146](Community_146.md) (10 shared connections)
 - [Community 207](Community_207.md) (5 shared connections)
+- [Community 26](Community_26.md) (5 shared connections)
 - [Community 34](Community_34.md) (4 shared connections)
-- [Community 146](Community_146.md) (4 shared connections)
 - [Community 73](Community_73.md) (3 shared connections)
 - [Community 3](Community_3.md) (2 shared connections)
-- [Community 315](Community_315.md) (2 shared connections)
-- [Community 121](Community_121.md) (2 shared connections)
+- [Community 252](Community_252.md) (2 shared connections)
+- [Community 165](Community_165.md) (2 shared connections)
+- [Community 133](Community_133.md) (2 shared connections)
 
 ## Source Files
 
 - `docs/OPENDST.md`
+- `tools/audit_citations.py`
 - `tools/check_game_replays.py`
 - `tools/fetch_disk.py`
 - `tools/fetch_etalons.py`
@@ -56,12 +57,11 @@
 - `tools/opendst_explore.py`
 - `tools/opendst_oracle.py`
 - `tools/run_game_replay.py`
-- `tools/run_wsdetect.py`
 
 ## Audit Trail
 
-- EXTRACTED: 178 (96%)
-- INFERRED: 7 (4%)
+- EXTRACTED: 180 (97%)
+- INFERRED: 5 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

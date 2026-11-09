@@ -1,55 +1,38 @@
 # Community 112
 
-> 22 nodes
+> 15 nodes
 
 ## Key Concepts
 
-- **MoiraDebugger.cpp** (42 connections) — `extern/moira/Moira/MoiraDebugger.cpp`
-- **u32** (15 connections)
-- **.watchpointMatches()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.isSetAt()** (5 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.replace()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.eval()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.eval()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.guardAddr()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.setAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.removeAt()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.softstopMatches()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.breakpointMatches()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.catchpointMatches()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.jump()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.remove()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Size** (3 connections)
-- **.stepOver()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.enableLogging()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.disableLogging()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.loggedInstructions()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.logInstruction()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **optional** (1 connections)
+- **Sector** (19 connections) — `src/io/StxImage.hpp`
+- **bitPosition** (1 connections) — `src/io/StxImage.hpp`
+- **dataOffset** (1 connections) — `src/io/StxImage.hpp`
+- **fdcStatus** (1 connections) — `src/io/StxImage.hpp`
+- **idCrc** (1 connections) — `src/io/StxImage.hpp`
+- **idHead** (1 connections) — `src/io/StxImage.hpp`
+- **idSector** (1 connections) — `src/io/StxImage.hpp`
+- **idSize** (1 connections) — `src/io/StxImage.hpp`
+- **idTrack** (1 connections) — `src/io/StxImage.hpp`
+- **pData** (1 connections) — `src/io/StxImage.hpp`
+- **pFuzzy** (1 connections) — `src/io/StxImage.hpp`
+- **pTiming** (1 connections) — `src/io/StxImage.hpp`
+- **readTime** (1 connections) — `src/io/StxImage.hpp`
+- **saveIndex** (1 connections) — `src/io/StxImage.hpp`
+- **sectorSize** (1 connections) — `src/io/StxImage.hpp`
 
 ## Relationships
 
-- [Community 134](Community_134.md) (14 shared connections)
-- [Community 144](Community_144.md) (13 shared connections)
-- [Community 199](Community_199.md) (11 shared connections)
-- [Community 209](Community_209.md) (3 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 210](Community_210.md) (2 shared connections)
-- [Community 333](Community_333.md) (1 shared connections)
-- [Community 99](Community_99.md) (1 shared connections)
-- [Community 40](Community_40.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
+- [Community 63](Community_63.md) (3 shared connections)
+- [Community 95](Community_95.md) (2 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDebugger.cpp`
-- `extern/moira/Moira/MoiraDebugger.h`
+- `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 81 (95%)
-- INFERRED: 4 (5%)
+- EXTRACTED: 17 (89%)
+- INFERRED: 2 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

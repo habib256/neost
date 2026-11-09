@@ -1,29 +1,38 @@
 # Community 276
 
-> 4 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **read16Dasm()** (6 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::dasmIncRead()** (3 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::dasmRead()** (3 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **Moira::disassemble()** (3 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **run** (10 connections) — `.github/workflows/release.yml`
+- **steps** (6 connections) — `.github/workflows/release.yml`
+- **publish** (5 connections) — `.github/workflows/release.yml`
+- **steps** (4 connections) — `.github/workflows/release.yml`
+- **id** (2 connections) — `.github/workflows/release.yml`
+- **if** (1 connections) — `.github/workflows/release.yml`
+- **needs** (1 connections) — `.github/workflows/release.yml`
+- **runs-on** (1 connections) — `.github/workflows/release.yml`
 
 ## Relationships
 
-- [Community 2](Community_2.md) (6 shared connections)
-- [Community 99](Community_99.md) (2 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
+- [Community 144](Community_144.md) (5 shared connections)
+- [Community 148](Community_148.md) (3 shared connections)
+- [Community 265](Community_265.md) (2 shared connections)
+- [Community 210](Community_210.md) (1 shared connections)
+- [Community 198](Community_198.md) (1 shared connections)
+- [Community 209](Community_209.md) (1 shared connections)
+- [Community 381](Community_381.md) (1 shared connections)
+- [Community 388](Community_388.md) (1 shared connections)
+- [Community 269](Community_269.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraDasm_cpp.h`
+- `.github/workflows/release.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (75%)
-- INFERRED: 3 (25%)
+- EXTRACTED: 23 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

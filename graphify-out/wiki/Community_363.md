@@ -1,25 +1,27 @@
 # Community 363
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Slice** (5 connections) — `tests/blitter_share_gap_logic.cpp`
-- **accesses** (1 connections) — `tests/blitter_share_gap_logic.cpp`
-- **last** (1 connections) — `tests/blitter_share_gap_logic.cpp`
-- **start** (1 connections) — `tests/blitter_share_gap_logic.cpp`
+- **with** (8 connections) — `.github/workflows/tests.yml`
+- **if-no-files-found** (1 connections) — `.github/workflows/tests.yml`
+- **key** (1 connections) — `.github/workflows/tests.yml`
+- **name** (1 connections) — `.github/workflows/tests.yml`
+- **path** (1 connections) — `.github/workflows/tests.yml`
+- **submodules** (1 connections) — `.github/workflows/tests.yml`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 231](Community_231.md) (3 shared connections)
 
 ## Source Files
 
-- `tests/blitter_share_gap_logic.cpp`
+- `.github/workflows/tests.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 8 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

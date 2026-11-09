@@ -1,36 +1,5 @@
-# =============================================================================
-#  Tests — ce que les jobs de PACKAGING ne couvrent pas.
-#
-#  ⚠ MISE À JOUR 2026-08-26 (chantier A1) — le palier PIXEL garde désormais le push.
-#  `release.yml` lançait bien `run_all.py --tier full`, mais SEULEMENT à la
-#  publication : une régression de rendu partait donc sur `main` et n'était vue que
-#  des semaines plus tard. Le job `pixel` ci-dessous le lance à chaque push et
-#  pull_request. Le palier `fast` des deux autres jobs ne compare AUCUN pixel — il
-#  ne remplace pas celui-ci, il couvre autre chose (slirp compilé, sanitizers).
-#
-#  `release.yml` ne compile QUE ce que la release livre, en Release, sans libslirp.
-#  Deux zones restaient donc hors CI :
-#
-#   1. `slirp`      — `src/net/SlirpBackend.cpp` ne se compilait NULLE PART :
-#                     absent de la CI (libslirp-dev jamais installé, donc coquille
-#                     vide) et cassé sur toute machine en libslirp 4.7 (Debian 12
-#                     bookworm = Raspberry Pi OS, Ubuntu 24.04). Ce job installe
-#                     la bibliothèque, force NEOST_WITH_SLIRP=ON — la configuration
-#                     ÉCHOUE si elle manque, plus de repli silencieux — et exécute
-#                     l'auto-test hors ligne (ARP + DHCP + compteurs).
-#
-#   2. `sanitizers` — aucun build Debug n'existait dans le projet, donc les quatre
-#                     `assert()` du dépôt (cache O(1) de Scheduler, chemin rapide
-#                     MMU de Bus — les deux optimisations dont PERFORMANCE.md dit
-#                     que la désynchronisation est « la seule faute possible de ce
-#                     montage ») étaient retirés par NDEBUG et n'ont JAMAIS tourné.
-#                     Ce job les active, et ajoute ASan+UBSan sur le palier fast :
-#                     les campagnes de durcissement mémoire étaient jusqu'ici des
-#                     passes manuelles dont rien ne restait.
-#
-#  Volontairement séparé de `release.yml` : le casser n'empêche pas de publier, et
-#  un contributeur voit un job qui s'appelle « tests ».
-# =============================================================================
+# Tests du cœur, des images, du GUI et du NAT intégré (sans libslirp/GLib).
+# Les tests réseau restent hors ligne : sockets locales et résolveurs simulés.
 name: Tests
 
 on:
@@ -47,43 +16,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ---------------------------------------------------------------- libslirp --
-  slirp:
-    name: libslirp (NE2000 vers l'Internet réel)
+  # NAT intégré : le même code est livré sur toutes les cibles de bureau.
+  nat:
+    name: NAT intégré (NE2000, IPv4/IPv6, TCP/UDP)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
-
       - name: Dépendances
         run: |
-          # Dépôt Microsoft de l'image runner : inutile ici, et ses 403 font échouer l'update.
           sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
-          sudo apt-get update -o Acquire::Retries=3
-          # ubuntu-24.04 fournit libslirp 4.7.0 : c'est EXACTEMENT la version qui
-          # ne compilait pas, donc c'est la bonne à tester.
-          # libglib2.0-dev n'est PAS un caprice : slirp.pc déclare « Requires: glib-2.0 »,
-          # donc sans les fichiers .pc de glib, pkg-config REFUSE de résoudre slirp — et
-          # le pkg_check_modules du CMakeLists échoue derrière, en erreur fatale puisque
-          # NEOST_WITH_SLIRP=ON. C'est exactement ce qui a fait tomber le premier run.
-          sudo apt-get install -y --no-install-recommends \
-            cmake g++ libglfw3-dev libgl1-mesa-dev libslirp-dev libglib2.0-dev ffmpeg
-          pkg-config --modversion slirp
-
-      - name: Configurer (NEOST_WITH_SLIRP=ON — échoue si la lib manque)
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DNEOST_WITH_SLIRP=ON
-
-      - name: Compiler
+          # Le miroir Azure a consommé les 30 min du job le 2026-11-05.
+          # Conserver la sélection de suites du runner, changer seulement le miroir.
+          for source in /etc/apt/apt-mirrors*.txt /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's@http://azure.archive.ubuntu.com/ubuntu@http://archive.ubuntu.com/ubuntu@g' "$source"
+            fi
+          done
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+          sudo apt-get install -y --no-install-recommends -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=30 cmake g++ ffmpeg
+      - name: Configurer
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DNEOST_WITH_NET=ON
+      - name: Compiler (headless et tests NAT inclus)
         run: cmake --build build -j"$(nproc)" --target neost-headless neost-selftest neost-stx-test neost-fuzz-disk
-
-      - name: Auto-test SLIRP (hors ligne — ARP, DHCP, compteurs)
-        # La 4ᵉ vérification (sortie DNS réelle) reste opt-in via
-        # NEOST_SLIRP_ONLINE=1 : la règle du projet interdit qu'un test de CI
-        # dépende du réseau.
-        run: ./build/neost-headless roms/etos192us.img --slirp-selftest
-
-      - name: Palier fast (le reste du filet, avec SLIRP compilé)
+      - name: Palier fast (protocoles NAT, sockets locales et NE2000)
         run: python3 tools/run_all.py --tier fast
+
+  net-off:
+    name: Réseau hôte désactivé (NEOST_WITH_NET=OFF)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configurer et compiler sans sockets hôte
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DNEOST_WITH_NET=OFF
+          cmake --build build -j"$(nproc)" --target neost-headless
+      - name: NAT refusé explicitement
+        run: |
+          if ./build/neost-headless roms/etos192us.img --ethernec --nat --frames 1 > nat-off.log 2>&1; then
+            cat nat-off.log
+            exit 1
+          fi
+          grep -F 'NEOST_WITH_NET=OFF' nat-off.log
 
   # -------------------------------------------------------------------- pixel --
   pixel:

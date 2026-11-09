@@ -1,13 +1,11 @@
 # Community 211
 
-> 11 nodes
+> 9 nodes
 
 ## Key Concepts
 
 - **Model** (9 connections) — `src/io/CartridgeKey.hpp`
-- **.setModel()** (5 connections) — `src/io/CartridgeKey.hpp`
 - **.serialize()** (4 connections) — `src/io/CartridgeKey.hpp`
-- **.reset()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **.model()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **StateArchive** (1 connections)
 - **Auto** (1 connections) — `src/io/CartridgeKey.hpp`
@@ -18,11 +16,10 @@
 
 ## Relationships
 
-- [Community 150](Community_150.md) (5 shared connections)
-- [Community 176](Community_176.md) (2 shared connections)
+- [Community 150](Community_150.md) (3 shared connections)
+- [Community 364](Community_364.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 - [Community 380](Community_380.md) (1 shared connections)
-- [Community 358](Community_358.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
@@ -30,8 +27,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 17 (85%)
-- INFERRED: 3 (15%)
+- EXTRACTED: 13 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

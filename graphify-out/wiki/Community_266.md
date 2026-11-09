@@ -1,10 +1,11 @@
 # Community 266
 
-> 17 nodes
+> 27 nodes
 
 ## Key Concepts
 
 - **Cond** (17 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Model** (10 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **BF** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **BT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **CC** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
@@ -21,10 +22,18 @@
 - **PL** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **VC** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **VS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68000** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68010** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68EC020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68EC030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 57](Community_57.md) (1 shared connections)
+- [Community 57](Community_57.md) (2 shared connections)
 
 ## Source Files
 
@@ -32,7 +41,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 17 (100%)
+- EXTRACTED: 27 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

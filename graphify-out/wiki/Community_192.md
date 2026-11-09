@@ -1,13 +1,16 @@
 # Community 192
 
-> 21 nodes
+> 24 nodes
 
 ## Key Concepts
 
+- **EventRig** (14 connections) — `tests/fdc_timing_logic.cpp`
 - **CpuRig** (13 connections) — `tests/fdc_timing_logic.cpp`
-- **EventRig** (13 connections) — `tests/fdc_timing_logic.cpp`
+- **testFdcTiming()** (5 connections) — `tests/fdc_timing_logic.cpp`
 - **.CpuRig()** (2 connections) — `tests/fdc_timing_logic.cpp`
+- **.execute()** (2 connections) — `tests/fdc_timing_logic.cpp`
 - **.EventRig()** (2 connections) — `tests/fdc_timing_logic.cpp`
+- **main()** (2 connections) — `tests/fdc_timing_logic.cpp`
 - **Bus** (2 connections)
 - **Fdc** (2 connections)
 - **Mfp** (2 connections)
@@ -28,9 +31,9 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
 - [Community 200](Community_200.md) (2 shared connections)
-- [Community 170](Community_170.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
@@ -38,8 +41,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 28 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 31 (91%)
+- INFERRED: 3 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

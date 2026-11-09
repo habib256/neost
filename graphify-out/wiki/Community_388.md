@@ -1,31 +1,30 @@
 # Community 388
 
-> 8 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **DockLayout.cpp** (14 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_WriteAll()** (4 connections) — `src/gui/DockLayout.cpp`
-- **ImGuiContext** (4 connections)
-- **ImGuiSettingsHandler** (4 connections)
-- **WinSettings_ApplyAll()** (3 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_ReadLine()** (3 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_ReadOpen()** (3 connections) — `src/gui/DockLayout.cpp`
-- **ImGuiTextBuffer** (1 connections)
+- **steps** (6 connections) — `.github/workflows/release.yml`
+- **raspberry** (5 connections) — `.github/workflows/release.yml`
+- **needs** (1 connections) — `.github/workflows/release.yml`
+- **runs-on** (1 connections) — `.github/workflows/release.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/release.yml`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (6 shared connections)
-- [Community 380](Community_380.md) (3 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 144](Community_144.md) (2 shared connections)
+- [Community 265](Community_265.md) (1 shared connections)
+- [Community 210](Community_210.md) (1 shared connections)
+- [Community 148](Community_148.md) (1 shared connections)
+- [Community 276](Community_276.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/DockLayout.cpp`
+- `.github/workflows/release.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
+- EXTRACTED: 10 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

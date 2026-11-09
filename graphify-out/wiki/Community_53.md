@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **Chn** (41 connections) — `src/io/Scc.hpp`
+- **Chn** (42 connections) — `src/io/Scc.hpp`
 - **breakPending** (1 connections) — `src/io/Scc.hpp`
 - **breakRaw** (1 connections) — `src/io/Scc.hpp`
 - **brgFraction** (1 connections) — `src/io/Scc.hpp`
@@ -34,7 +34,8 @@
 ## Relationships
 
 - [Community 19](Community_19.md) (1 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
+- [Community 100](Community_100.md) (1 shared connections)
+- [Community 283](Community_283.md) (1 shared connections)
 
 ## Source Files
 
@@ -42,8 +43,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 40 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 40 (95%)
+- INFERRED: 2 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

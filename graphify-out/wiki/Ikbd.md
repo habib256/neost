@@ -43,20 +43,20 @@
 - .onLineIdle() `EXTRACTED`
 - .firmwareEventTime() `EXTRACTED`
 - .armRx() `EXTRACTED`
+- .bootRom() `EXTRACTED`
 - .pushRxDelayed() `EXTRACTED`
 - .customWriteDispatch() `EXTRACTED`
 - .sendRelMousePacket() `EXTRACTED`
 - .catchUpCpuTx() `EXTRACTED`
-- .bootRom() `EXTRACTED`
+- .mouseEvent() `EXTRACTED`
 - .customReadDispatch() `EXTRACTED`
 - .sendCursorKeys() `EXTRACTED`
-- .customCodeCrcForTest() `EXTRACTED`
 - .exitExeMode() `EXTRACTED`
 - .readJoystickState() `EXTRACTED`
-- .sendKeycodeJoystick() `EXTRACTED`
 - .liftPause() `EXTRACTED`
 - .sendAbsMousePos() `EXTRACTED`
 - .lineFree() `EXTRACTED`
+- .emitButtonKeys() `EXTRACTED`
 - *…and 57 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references

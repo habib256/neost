@@ -6,6 +6,34 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## NAT intégré : remplacement de libslirp par le réseau de POM2 (2026-11-09)
+
+Le backend réseau de POM2 est importé à `b07f3a0a`, avec ses tests et sa
+provenance sous `extern/pom2nat`. `NatBackend` l'adapte à la NE2000 sans
+modifier le cœur : IPv4/IPv6, DHCP, DNS asynchrone, TCP/UDP, fragments,
+sondes de fenêtre nulle et publications explicites de ports. Le GUI, les
+profils et le headless utilisent `nat` ; les anciennes options `--slirp*`
+et la clé `slirp=` restent acceptées. Les profils rejouent aussi le mode
+restreint, l'accès loopback et la liste de publications. Un port occupé
+refuse le backend entier, plutôt que d'appliquer une liste partielle.
+
+La dépendance libslirp/GLib et sa détection sont retirées. Le NAT est livré
+avec le réseau hôte des cibles de bureau, désactivé avec `NEOST_WITH_NET=OFF`
+et sur Android/WASM. La CI exécute les tests NAT, un build sans sockets,
+et les échanges Winsock dans le job Windows ; le packaging autorise désormais
+la DLL système `iphlpapi`. Le job NAT évite le miroir Ubuntu Azure qui avait
+consommé ses 30 minutes sans atteindre la compilation.
+
+Validation locale macOS : GUI/headless compilés en Release, 645 contrôles de
+configuration/logique, tests NAT/résolveur/adaptateur, test NAT ASan/UBSan,
+quatre contrôles via la NE2000 et STinG/ENEC résolvant localhost puis recevant
+une réponse HTTP locale. Le palier `full` passe, y compris les 56 étalons
+pixel disponibles et le boot GUI ; 12 étalons sur ROM propriétaire et neuf
+étapes dépendant de médias/RTL absents sont recensés comme non exécutés.
+L'adaptateur sans réseau est configuré, compilé et exécuté séparément.
+Graphify et son wiki sont rafraîchis par AST local sans API. Les nouveaux
+jobs CI et un LAN physique entre ordinateurs restent à exécuter.
+
 ## Vroom Elite : intro rayée reproduite dans Hatari et sonde GLUE (2026-11-05)
 
 La trame rayée n'est plus un écart démontré propre à NeoST. Un balayage

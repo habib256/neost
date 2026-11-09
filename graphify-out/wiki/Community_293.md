@@ -1,15 +1,18 @@
 # Community 293
 
-> 12 nodes
+> 15 nodes
 
 ## Key Concepts
 
 - **StateArchive** (14 connections) — `src/core/StateArchive.hpp`
 - **.raw()** (5 connections) — `src/core/StateArchive.hpp`
+- **podVec()** (4 connections) — `src/core/StateArchive.hpp`
 - **.vec()** (3 connections) — `src/core/StateArchive.hpp`
 - **arr()** (2 connections) — `src/core/StateArchive.hpp`
 - **operator()()** (2 connections) — `src/core/StateArchive.hpp`
+- **.saver()** (2 connections) — `src/core/StateArchive.hpp`
 - **.fail()** (1 connections) — `src/core/StateArchive.hpp`
+- **.loader()** (1 connections) — `src/core/StateArchive.hpp`
 - **.loading()** (1 connections) — `src/core/StateArchive.hpp`
 - **.ok()** (1 connections) — `src/core/StateArchive.hpp`
 - **.saveSize()** (1 connections) — `src/core/StateArchive.hpp`
@@ -19,9 +22,10 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
+- [Community 256](Community_256.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 443](Community_443.md) (1 shared connections)
+- [Community 349](Community_349.md) (1 shared connections)
 
 ## Source Files
 
@@ -29,8 +33,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 21 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 24 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

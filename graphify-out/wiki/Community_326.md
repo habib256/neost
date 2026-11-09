@@ -1,31 +1,32 @@
 # Community 326
 
-> 8 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **Info** (10 connections) — `src/io/IpfImage.hpp`
-- **encoder** (1 connections) — `src/io/IpfImage.hpp`
-- **maxCylinder** (1 connections) — `src/io/IpfImage.hpp`
-- **maxHead** (1 connections) — `src/io/IpfImage.hpp`
-- **minCylinder** (1 connections) — `src/io/IpfImage.hpp`
-- **minHead** (1 connections) — `src/io/IpfImage.hpp`
-- **release** (1 connections) — `src/io/IpfImage.hpp`
-- **revision** (1 connections) — `src/io/IpfImage.hpp`
+- **midi_irq_timing_logic.cpp** (7 connections) — `tests/midi_irq_timing_logic.cpp`
+- **Checks** (4 connections) — `tests/midi_irq_timing_logic.cpp`
+- **testMidiIrqTiming()** (3 connections) — `tests/midi_irq_timing_logic.cpp`
+- **main()** (2 connections) — `tests/midi_irq_timing_logic.cpp`
+- **.equal()** (1 connections) — `tests/midi_irq_timing_logic.cpp`
+- **count** (1 connections) — `tests/midi_irq_timing_logic.cpp`
+- **failures** (1 connections) — `tests/midi_irq_timing_logic.cpp`
 
 ## Relationships
 
-- [Community 217](Community_217.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 143](Community_143.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/IpfImage.hpp`
+- `tests/midi_irq_timing_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 11 (92%)
+- INFERRED: 1 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

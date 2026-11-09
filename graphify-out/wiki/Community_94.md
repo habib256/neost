@@ -1,27 +1,21 @@
 # Community 94
 
-> 29 nodes
+> 23 nodes
 
 ## Key Concepts
 
 - **Rig** (23 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **testFdcTrackIdLocation()** (11 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **.read()** (5 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **.reg()** (5 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **Checks** (4 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **.data()** (4 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **.mode()** (4 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **.finish()** (3 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **.equal()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **main()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
+- **.read()** (4 connections) — `tests/fdc_track_id_location_logic.cpp`
+- **.reg()** (4 connections) — `tests/fdc_track_id_location_logic.cpp`
+- **.mode()** (3 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **.advance()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
+- **.finish()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **.irq()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **.next()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **.select()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **.address()** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **.Rig()** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **count** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
+- **.select()** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **Bus** (1 connections)
 - **Fdc** (1 connections)
 - **Mfp** (1 connections)
@@ -29,12 +23,14 @@
 - **YM2149** (1 connections)
 - **bus** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **fdc** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
-- *... and 4 more nodes in this community*
+- **live** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
+- **mfp** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
+- **psg** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
+- **sched** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 
 ## Source Files
 
@@ -42,8 +38,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 45 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 31 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

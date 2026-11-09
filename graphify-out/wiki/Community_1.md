@@ -1,6 +1,6 @@
 # Community 1
 
-> 149 nodes
+> 153 nodes
 
 ## Key Concepts
 
@@ -16,8 +16,12 @@
 - **MidiInHost** (2 connections) — `src/gui/App.hpp`
 - **MidiOutHost** (2 connections) — `src/gui/App.hpp`
 - **Mt32Synth** (2 connections) — `src/gui/App.hpp`
+- **NatBackend** (2 connections) — `src/gui/App.hpp`
 - **NetBackendNull** (2 connections) — `src/gui/App.hpp`
-- **SlirpBackend** (2 connections) — `src/gui/App.hpp`
+- **.natApply()** (2 connections) — `src/gui/App.hpp`
+- **.etherApply()** (2 connections) — `src/gui/App.hpp`
+- **.netUsbeeApply()** (2 connections) — `src/gui/App.hpp`
+- **.midiInApply()** (2 connections) — `src/gui/App.hpp`
 - **.App()** (2 connections) — `src/gui/App.hpp`
 - **audio** (1 connections) — `src/gui/App.hpp`
 - **audioRate** (1 connections) — `src/gui/App.hpp`
@@ -25,26 +29,22 @@
 - **autoPortDev** (1 connections) — `src/gui/App.hpp`
 - **autoZoom** (1 connections) — `src/gui/App.hpp`
 - **browseDir** (1 connections) — `src/gui/App.hpp`
-- **browseSel** (1 connections) — `src/gui/App.hpp`
-- **browseShortcutLabels** (1 connections) — `src/gui/App.hpp`
-- **browseShortcutPaths** (1 connections) — `src/gui/App.hpp`
-- **browseSubdirs** (1 connections) — `src/gui/App.hpp`
-- *... and 124 more nodes in this community*
+- *... and 128 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (16 shared connections)
-- [Community 100](Community_100.md) (5 shared connections)
-- [Community 223](Community_223.md) (2 shared connections)
-- [Community 229](Community_229.md) (2 shared connections)
+- [Community 4](Community_4.md) (19 shared connections)
+- [Community 200](Community_200.md) (3 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 362](Community_362.md) (2 shared connections)
 - [Community 21](Community_21.md) (1 shared connections)
 - [Community 90](Community_90.md) (1 shared connections)
 - [Community 43](Community_43.md) (1 shared connections)
 - [Community 129](Community_129.md) (1 shared connections)
 - [Community 119](Community_119.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 100](Community_100.md) (1 shared connections)
 - [Community 401](Community_401.md) (1 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
+- [Community 423](Community_423.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,7 +52,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 182 (100%)
+- EXTRACTED: 186 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

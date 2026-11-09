@@ -4,24 +4,28 @@
 
 ## Key Concepts
 
-- **.write8()** (5 connections) — `src/core/YM2149.hpp`
-- **cycleClock_** (2 connections) — `src/core/YM2149.hpp`
-- **portAsink_** (2 connections) — `src/core/YM2149.hpp`
-- **portBsink_** (2 connections) — `src/core/YM2149.hpp`
-- **printerSink_** (2 connections) — `src/core/YM2149.hpp`
+- **applyCrtPreset()** (5 connections) — `src/gui/CrtUi.cpp`
+- **drawCrtControls()** (5 connections) — `src/gui/CrtUi.cpp`
+- **drawCrtSettings()** (4 connections) — `src/gui/CrtUi.cpp`
+- **App** (2 connections)
+- **string** (1 connections)
 
 ## Relationships
 
-- [Community 28](Community_28.md) (5 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 129](Community_129.md) (1 shared connections)
+- [Community 200](Community_200.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/YM2149.hpp`
+- `src/gui/CrtUi.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 9 (75%)
+- INFERRED: 3 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

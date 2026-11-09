@@ -255,9 +255,14 @@ Bundled third-party components, with thanks:
 The bundled demos — *The Cuddly Demos*, *No Cooper* and *Closure* — are demoscene
 productions, distributed by the scene's own long-standing practice.
 
-Optional at build time, **not shipped in any package**: [libslirp](https://gitlab.freedesktop.org/slirp/libslirp)
-≥ 4.7 (BSD-3-Clause), the user-mode NAT behind the NE2000's real Internet access — the
-release builds are made without it.
+The NE2000 uses the **pom2nat** built-in user-mode NAT (GPL-3.0-or-later,
+ported from POM2); no libslirp or GLib installation is needed. Enable it with
+`--ethernec --nat` or the Network page. The guest keeps 10.0.2.15/24,
+gateway 10.0.2.2 and DNS 10.0.2.3; it needs STinG/ENEC or another ST TCP/IP stack.
+TCP/UDP port forwards, IPv6 and IP fragments are supported. For example,
+`--nat-forwards 'tcp:0.0.0.0:6502:23'` publishes guest TCP port 23 on host port
+6502. Other computers connect to the host's LAN address. Ethernet broadcasts
+and non-IP protocols stay on the virtual network. See [network extensions](docs/EXTENSIONS.md).
 
 **No proprietary ROM is distributed.** The packages carry EmuTOS only, and the
 repository's history has been rewritten so that it never served an Atari TOS, a

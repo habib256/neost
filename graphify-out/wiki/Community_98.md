@@ -1,50 +1,47 @@
 # Community 98
 
-> 53 nodes
+> 24 nodes
 
 ## Key Concepts
 
 - **Rig** (22 connections) — `tests/fdc_acsi_logic.cpp`
-- **Rig** (19 connections) — `tests/fdc_register_logic.cpp`
-- **testAcsiIrqTiming()** (16 connections) — `tests/fdc_acsi_logic.cpp`
-- **testFdcRegisters()** (11 connections) — `tests/fdc_register_logic.cpp`
-- **.mode()** (5 connections) — `tests/fdc_acsi_logic.cpp`
-- **Checks** (4 connections) — `tests/fdc_acsi_logic.cpp`
-- **Checks** (4 connections) — `tests/fdc_register_logic.cpp`
-- **.prepare()** (4 connections) — `tests/fdc_acsi_logic.cpp`
-- **.command()** (4 connections) — `tests/fdc_register_logic.cpp`
-- **.ack()** (3 connections) — `tests/fdc_acsi_logic.cpp`
+- **testAcsiIrqTiming()** (5 connections) — `tests/fdc_acsi_logic.cpp`
+- **.mode()** (4 connections) — `tests/fdc_acsi_logic.cpp`
 - **.data()** (3 connections) — `tests/fdc_acsi_logic.cpp`
+- **.prepare()** (3 connections) — `tests/fdc_acsi_logic.cpp`
 - **.reset()** (3 connections) — `tests/fdc_acsi_logic.cpp`
-- **.start()** (3 connections) — `tests/fdc_acsi_logic.cpp`
-- **.busy()** (3 connections) — `tests/fdc_register_logic.cpp`
-- **.data()** (3 connections) — `tests/fdc_register_logic.cpp`
-- **.dmaStatus()** (3 connections) — `tests/fdc_register_logic.cpp`
-- **.finish()** (3 connections) — `tests/fdc_register_logic.cpp`
-- **.mode()** (3 connections) — `tests/fdc_register_logic.cpp`
-- **.expect()** (2 connections) — `tests/fdc_acsi_logic.cpp`
 - **main()** (2 connections) — `tests/fdc_acsi_logic.cpp`
-- **.address()** (2 connections) — `tests/fdc_acsi_logic.cpp`
-- **.advance()** (2 connections) — `tests/fdc_acsi_logic.cpp`
-- **.irq()** (2 connections) — `tests/fdc_acsi_logic.cpp`
+- **.ack()** (2 connections) — `tests/fdc_acsi_logic.cpp`
 - **.Rig()** (2 connections) — `tests/fdc_acsi_logic.cpp`
-- **.equal()** (2 connections) — `tests/fdc_register_logic.cpp`
-- *... and 28 more nodes in this community*
+- **.start()** (2 connections) — `tests/fdc_acsi_logic.cpp`
+- **.address()** (1 connections) — `tests/fdc_acsi_logic.cpp`
+- **.advance()** (1 connections) — `tests/fdc_acsi_logic.cpp`
+- **.irq()** (1 connections) — `tests/fdc_acsi_logic.cpp`
+- **Bus** (1 connections)
+- **Fdc** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **YM2149** (1 connections)
+- **bus** (1 connections) — `tests/fdc_acsi_logic.cpp`
+- **fdc** (1 connections) — `tests/fdc_acsi_logic.cpp`
+- **live** (1 connections) — `tests/fdc_acsi_logic.cpp`
+- **mfp** (1 connections) — `tests/fdc_acsi_logic.cpp`
+- **psg** (1 connections) — `tests/fdc_acsi_logic.cpp`
+- **sched** (1 connections) — `tests/fdc_acsi_logic.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (8 shared connections)
-- [Community 41](Community_41.md) (4 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
 - `tests/fdc_acsi_logic.cpp`
-- `tests/fdc_register_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 83 (97%)
-- INFERRED: 3 (3%)
+- EXTRACTED: 32 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

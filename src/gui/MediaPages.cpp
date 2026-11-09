@@ -3,6 +3,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "gui/MediaPages.hpp"
+#include "gui/ConfigWindow.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -433,8 +434,8 @@ void drawHardDiskPage(const std::string& hdDir, const std::string& gemdosDefault
 // Discipline habituelle : données en entrée, requêtes en sortie, AUCUNE E/S ici.
 void drawNetworkPage(bool modemOn, bool etherOn,
                      bool netusbeeOn, bool cartMounted,
-                     bool slirpOn, bool slirpAvail,
-                     int& reqModem, int& reqEther, int& reqNetUsbee, int& reqSlirp) {
+                     bool natOn, bool natAvail,
+                     int& reqModem, int& reqEther, int& reqNetUsbee, int& reqNat, ConfigUi& ui) {
     ImGui::TextDisabled("Network extensions (NeoST)");
     ImGui::TextWrapped("Hardware that really existed on the ST, emulated here: a Hayes "
                        "modem on the serial port, and NE2000-based cartridge-port "
@@ -462,17 +463,30 @@ void drawNetworkPage(bool modemOn, bool etherOn,
             reqNetUsbee = nub ? 1 : 0;
     }
 
-    // SLIRP : le « câble » de la NE2000 — boucle locale (défaut) ou Internet réel
+    // NAT : le « câble » de la NE2000 — boucle locale (défaut) ou Internet réel
     // (NAT mode utilisateur). Bascule à chaud : la carte vue par le pilote ST ne
     // change pas. Sans effet tant qu'aucun adaptateur ci-dessus n'est monté.
     ImGui::Separator();
-    if (!slirpAvail) {
-        ImGui::TextDisabled("Real Internet (libslirp): not available in this build");
+    if (!natAvail) {
+        ImGui::TextDisabled("Host networking is disabled in this build");
     } else {
-        bool sl = slirpOn;
-        if (ImGui::Checkbox("Real Internet for the NE2000 (user-mode NAT, libslirp)", &sl))
-            reqSlirp = sl ? 1 : 0;
+        bool sl = natOn;
+        if (ImGui::Checkbox("Real Internet for the NE2000 (built-in NAT)", &sl))
+            reqNat = sl ? 1 : 0;
         ImGui::TextDisabled("ST 10.0.2.15, gateway 10.0.2.2, DNS 10.0.2.3 \xe2\x80\x94 needs an ST-side"
                             " TCP/IP stack (STinG ENEC.STX, MiNTnet)");
+        if (!ui.natInit && ui.cfg) {
+            ui.natRestricted = ui.cfg->natRestricted;
+            ui.natAllowLoopback = ui.cfg->natAllowLoopback;
+            std::snprintf(ui.natForwards, sizeof(ui.natForwards), "%s", ui.cfg->natForwards.c_str());
+            ui.natInit = true;
+        }
+        ImGui::Checkbox("Restricted: virtual services only", &ui.natRestricted);
+        ImGui::Checkbox("Allow access to host loopback", &ui.natAllowLoopback);
+        ImGui::InputText("Published ports", ui.natForwards, sizeof(ui.natForwards));
+        ImGui::TextDisabled("tcp:127.0.0.1:6502:23;udp:0.0.0.0:6503:6502");
+        ImGui::TextWrapped("Use 0.0.0.0 to publish on the LAN. Remote guests connect to this "
+                           "computer's LAN address and host port. Ethernet broadcasts stay local.");
+        if (ImGui::Button("Apply NAT settings")) ui.reqNatOptions = true;
     }
 }

@@ -5,16 +5,16 @@
 ## Key Concepts
 
 - **StePads** (34 connections) — `src/io/StePads.hpp`
+- **.sel()** (4 connections) — `src/io/StePads.hpp`
 - **.readButtonsDip()** (3 connections) — `src/io/StePads.hpp`
 - **.readDirections()** (3 connections) — `src/io/StePads.hpp`
-- **.sel()** (3 connections) — `src/io/StePads.hpp`
 - **.fireButtons()** (2 connections) — `src/io/StePads.hpp`
 - **.fixSerializedBools()** (2 connections) — `src/io/StePads.hpp`
 - **.stickData()** (2 connections) — `src/io/StePads.hpp`
 - **.noteLowByteRead()** (1 connections) — `src/io/StePads.hpp`
-- **.readAnalog()** (1 connections) — `src/io/StePads.hpp`
 - **.readLightpen()** (1 connections) — `src/io/StePads.hpp`
 - **.resetSelect()** (1 connections) — `src/io/StePads.hpp`
+- **.setAnalog()** (1 connections) — `src/io/StePads.hpp`
 - **.setJoystick()** (1 connections) — `src/io/StePads.hpp`
 - **.setMegaSte()** (1 connections) — `src/io/StePads.hpp`
 - **.writeSelectByte()** (1 connections) — `src/io/StePads.hpp`
@@ -33,13 +33,14 @@
 
 ## Relationships
 
-- [Community 175](Community_175.md) (2 shared connections)
-- [Community 152](Community_152.md) (1 shared connections)
+- [Community 349](Community_349.md) (2 shared connections)
+- [Community 113](Community_113.md) (1 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
 - [Community 366](Community_366.md) (1 shared connections)
-- [Community 321](Community_321.md) (1 shared connections)
+- [Community 100](Community_100.md) (1 shared connections)
+- [Community 283](Community_283.md) (1 shared connections)
 - [Community 105](Community_105.md) (1 shared connections)
-- [Community 243](Community_243.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
 
 ## Source Files
 
@@ -47,8 +48,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 35 (90%)
-- INFERRED: 4 (10%)
+- EXTRACTED: 35 (88%)
+- INFERRED: 5 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

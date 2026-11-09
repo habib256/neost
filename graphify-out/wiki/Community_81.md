@@ -1,40 +1,39 @@
 # Community 81
 
-> 32 nodes
+> 26 nodes
 
 ## Key Concepts
 
 - **Rig** (26 connections) — `tests/fdc_selection_logic.cpp`
-- **testFdcSelection()** (15 connections) — `tests/fdc_selection_logic.cpp`
-- **.reg()** (6 connections) — `tests/fdc_selection_logic.cpp`
-- **.read()** (5 connections) — `tests/fdc_selection_logic.cpp`
-- **Checks** (4 connections) — `tests/fdc_selection_logic.cpp`
-- **.armIndex()** (4 connections) — `tests/fdc_selection_logic.cpp`
+- **.reg()** (5 connections) — `tests/fdc_selection_logic.cpp`
 - **.data()** (4 connections) — `tests/fdc_selection_logic.cpp`
-- **.mode()** (4 connections) — `tests/fdc_selection_logic.cpp`
-- **.advance()** (3 connections) — `tests/fdc_selection_logic.cpp`
-- **.finish()** (3 connections) — `tests/fdc_selection_logic.cpp`
-- **.irq()** (3 connections) — `tests/fdc_selection_logic.cpp`
-- **.select()** (3 connections) — `tests/fdc_selection_logic.cpp`
-- **.equal()** (2 connections) — `tests/fdc_selection_logic.cpp`
-- **main()** (2 connections) — `tests/fdc_selection_logic.cpp`
-- **.address()** (2 connections) — `tests/fdc_selection_logic.cpp`
+- **.read()** (4 connections) — `tests/fdc_selection_logic.cpp`
+- **.armIndex()** (3 connections) — `tests/fdc_selection_logic.cpp`
+- **.mode()** (3 connections) — `tests/fdc_selection_logic.cpp`
+- **.advance()** (2 connections) — `tests/fdc_selection_logic.cpp`
+- **.finish()** (2 connections) — `tests/fdc_selection_logic.cpp`
+- **.irq()** (2 connections) — `tests/fdc_selection_logic.cpp`
 - **.next()** (2 connections) — `tests/fdc_selection_logic.cpp`
-- **.pending()** (2 connections) — `tests/fdc_selection_logic.cpp`
+- **.select()** (2 connections) — `tests/fdc_selection_logic.cpp`
+- **.address()** (1 connections) — `tests/fdc_selection_logic.cpp`
+- **.pending()** (1 connections) — `tests/fdc_selection_logic.cpp`
 - **.Rig()** (1 connections) — `tests/fdc_selection_logic.cpp`
-- **count** (1 connections) — `tests/fdc_selection_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_selection_logic.cpp`
 - **Bus** (1 connections)
 - **Fdc** (1 connections)
 - **Mfp** (1 connections)
 - **Scheduler** (1 connections)
 - **YM2149** (1 connections)
-- *... and 7 more nodes in this community*
+- **bus** (1 connections) — `tests/fdc_selection_logic.cpp`
+- **fdc** (1 connections) — `tests/fdc_selection_logic.cpp`
+- **live** (1 connections) — `tests/fdc_selection_logic.cpp`
+- **mfp** (1 connections) — `tests/fdc_selection_logic.cpp`
+- **psg** (1 connections) — `tests/fdc_selection_logic.cpp`
+- **pulses** (1 connections) — `tests/fdc_selection_logic.cpp`
+- *... and 1 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 
 ## Source Files
 
@@ -42,8 +41,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 54 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 36 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

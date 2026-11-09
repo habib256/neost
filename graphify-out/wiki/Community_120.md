@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **Timing** (21 connections) — `src/core/VideoGlue.hpp`
+- **Timing** (25 connections) — `src/core/VideoGlue.hpp`
 - **Hbl_Pos_Hi** (1 connections) — `src/core/VideoGlue.hpp`
 - **Hbl_Pos_Low_50** (1 connections) — `src/core/VideoGlue.hpp`
 - **Hbl_Pos_Low_60** (1 connections) — `src/core/VideoGlue.hpp`
@@ -28,7 +28,11 @@
 
 ## Relationships
 
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 37](Community_37.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 
 ## Source Files
 
@@ -36,8 +40,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 21 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 21 (84%)
+- INFERRED: 4 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

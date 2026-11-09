@@ -4,23 +4,24 @@
 
 ## Key Concepts
 
-- **function** (5 connections)
-- **.setCycleClock()** (2 connections) — `src/core/YM2149.hpp`
-- **.setPortASink()** (2 connections) — `src/core/YM2149.hpp`
-- **.setPortBSink()** (2 connections) — `src/core/YM2149.hpp`
-- **.setPrinterSink()** (2 connections) — `src/core/YM2149.hpp`
+- **nat_backend_test.cpp** (6 connections) — `tests/nat_backend_test.cpp`
+- **check()** (2 connections) — `tests/nat_backend_test.cpp`
+- **main()** (2 connections) — `tests/nat_backend_test.cpp`
+- **natpacket** (1 connections)
+- **socketcompat** (1 connections)
 
 ## Relationships
 
-- [Community 28](Community_28.md) (5 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/YM2149.hpp`
+- `tests/nat_backend_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
+- EXTRACTED: 7 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

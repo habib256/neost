@@ -1,41 +1,40 @@
 # Community 84
 
-> 17 nodes
+> 18 nodes
 
 ## Key Concepts
 
-- **M68kException** (23 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ADDRESS_ERROR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BKPT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **BUS_ERROR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **CHK** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **DIVIDE_BY_ZERO** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **FORMAT_ERROR** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ILLEGAL** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **IRQ_SPURIOUS** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **IRQ_UNINITIALIZED** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **LINEA** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **LINEF** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **PRIVILEGE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **RESET** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **TRACE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **TRAP** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **TRAPV** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **build-bionic-image.yml** (4 connections) — `.github/workflows/build-bionic-image.yml`
+- **steps** (4 connections) — `.github/workflows/build-bionic-image.yml`
+- **build-image** (4 connections) — `.github/workflows/build-bionic-image.yml`
+- **on** (3 connections) — `.github/workflows/build-bionic-image.yml`
+- **push** (3 connections) — `.github/workflows/build-bionic-image.yml`
+- **permissions** (3 connections) — `.github/workflows/build-bionic-image.yml`
+- **jobs** (2 connections) — `.github/workflows/build-bionic-image.yml`
+- **runs-on** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **name** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **workflow_dispatch** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **contents** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **packages** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **branches** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **paths** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **name** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **run** (1 connections) — `.github/workflows/build-bionic-image.yml`
+- **uses** (1 connections) — `.github/workflows/build-bionic-image.yml`
 
 ## Relationships
 
-- [Community 99](Community_99.md) (4 shared connections)
-- [Community 374](Community_374.md) (2 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
+- No strong cross-community connections detected
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraTypes.h`
+- `.github/workflows/build-bionic-image.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 22 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 17 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

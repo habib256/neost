@@ -45,7 +45,7 @@
 
 #include "core/Machine.hpp"
 #include "net/NetBackend.hpp"
-#include "net/SlirpBackend.hpp"
+#include "net/NatBackend.hpp"
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
 #endif
@@ -420,15 +420,15 @@ int appInit(App& A, int argc, char** argv) {
     if (cfg.modem) A.modemApply(true);
 #endif
     // EtherNEC (ethernec= dans neost.cfg) : NE2000 sur le port cartouche. Backend
-    // par défaut = boucle locale (NetBackendNull une fois un pont SLIRP/pcap
+    // par défaut = boucle locale (NetBackendNull une fois un pont NAT intégré
     // absent) : la carte est DÉTECTÉE par le pilote, sans trafic hôte v1.
     A.etherNull = std::make_unique<NetBackendNull>();
-    // SLIRP (slirp= dans neost.cfg) : la sortie Internet RÉELLE de la NE2000 (NAT
-    // mode utilisateur, cf. --slirp du headless). Un seul point de vérité pour le
-    // backend : SLIRP ouvert → SLIRP, sinon boucle locale. La bascule est à chaud —
+    // NAT (slirp= dans neost.cfg) : la sortie Internet RÉELLE de la NE2000 (NAT
+    // mode utilisateur, cf. --nat du headless). Un seul point de vérité pour le
+    // backend : NAT ouvert → NAT, sinon boucle locale. La bascule est à chaud —
     // la carte vue par le pilote ST ne change pas, seul son « câble » change.
-    A.slirpNet = std::make_unique<SlirpBackend>();
-    if (cfg.slirp)    A.slirpApply(true);           // AVANT : les applicateurs lisent A.neBackend()
+    A.natNet = std::make_unique<NatBackend>();
+    if (cfg.slirp)    A.natApply(true);           // AVANT : les applicateurs lisent A.neBackend()
     if (cfg.netusbee) A.netUsbeeApply(true);
     if (cfg.ethernec) A.etherApply(true);
     machine.midi.setLoopback(cfg.midiLoopback);   // fiche MIDI OUT→IN (OFF par défaut)

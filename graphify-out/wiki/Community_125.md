@@ -1,25 +1,19 @@
 # Community 125
 
-> 21 nodes
+> 15 nodes
 
 ## Key Concepts
 
 - **Rig** (16 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **testMachineTimerBAer()** (11 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **Checks** (4 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **.equal()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **main()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **.advance()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **.arm()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **.count()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **.cycle()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **.deadline()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **.edge()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
 - **.Rig()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **.selectStart()** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
 - **geometry** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **count** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
-- **failures** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
+- **.advance()** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
+- **.arm()** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
+- **.count()** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
+- **.cycle()** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
+- **.deadline()** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
+- **.edge()** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
+- **.selectStart()** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
 - **Machine** (1 connections)
 - **unique_ptr** (1 connections)
 - **frameStart** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
@@ -28,9 +22,8 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 359](Community_359.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
 
 ## Source Files
 
@@ -38,8 +31,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 32 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 17 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

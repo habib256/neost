@@ -8,12 +8,12 @@
 - **Ne2000.cpp** (23 connections) — `src/io/Ne2000.cpp`
 - **.writeReg()** (6 connections) — `src/io/Ne2000.hpp`
 - **.setIsr()** (6 connections) — `src/io/Ne2000.hpp`
-- **.transmit()** (5 connections) — `src/io/Ne2000.hpp`
 - **.loadProm()** (5 connections) — `src/io/Ne2000.hpp`
 - **.readReg()** (5 connections) — `src/io/Ne2000.hpp`
 - **NetBackend** (4 connections) — `src/io/Ne2000.hpp`
 - **.remoteDmaReadByte()** (4 connections) — `src/io/Ne2000.hpp`
 - **.remoteDmaWriteByte()** (4 connections) — `src/io/Ne2000.hpp`
+- **.transmit()** (4 connections) — `src/io/Ne2000.hpp`
 - **.deliverFrame()** (4 connections) — `src/io/Ne2000.hpp`
 - **.page0Read()** (3 connections) — `src/io/Ne2000.hpp`
 - **.page0Write()** (3 connections) — `src/io/Ne2000.hpp`
@@ -33,9 +33,10 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (5 shared connections)
 - [Community 102](Community_102.md) (3 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -44,8 +45,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 81 (84%)
-- INFERRED: 15 (16%)
+- EXTRACTED: 81 (85%)
+- INFERRED: 14 (15%)
 - AMBIGUOUS: 0 (0%)
 
 ---

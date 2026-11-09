@@ -5,18 +5,20 @@
 ## Key Concepts
 
 - **JoyScript.hpp** (12 connections) — `src/util/JoyScript.hpp`
-- **parseHexU32()** (7 connections) — `src/util/JoyScript.hpp`
-- **parse()** (6 connections) — `src/util/JoyScript.hpp`
+- **parse()** (5 connections) — `src/util/JoyScript.hpp`
+- **parseHexU32()** (5 connections) — `src/util/JoyScript.hpp`
 - **bitFor()** (2 connections) — `src/util/JoyScript.hpp`
 - **hexDigit()** (2 connections) — `src/util/JoyScript.hpp`
 - **string** (2 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (5 shared connections)
-- [Community 186](Community_186.md) (4 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
 - [Community 41](Community_41.md) (2 shared connections)
+- [Community 284](Community_284.md) (1 shared connections)
+- [Community 186](Community_186.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
@@ -24,7 +26,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 21 (95%)
+- EXTRACTED: 18 (95%)
 - INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 

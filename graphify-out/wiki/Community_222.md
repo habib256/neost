@@ -1,31 +1,37 @@
 # Community 222
 
-> 7 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **.catchUpCpuTx()** (8 connections) — `src/io/Ikbd.hpp`
-- **.scheduleCpuTx()** (5 connections) — `src/io/Ikbd.hpp`
-- **.write8()** (5 connections) — `src/io/Ikbd.hpp`
-- **.resetHw()** (5 connections) — `src/io/Ikbd.hpp`
-- **.nextTxClock()** (4 connections) — `src/io/Ikbd.hpp`
-- **.clockSciRx()** (3 connections) — `src/io/Ikbd.hpp`
-- **.advanceTx()** (3 connections) — `src/io/Ikbd.hpp`
+- **Performance du cœur NeoST — profil, optimisations, recette de build** (7 connections) — `docs/PERFORMANCE.md`
+- **3. Les optimisations, et ce qu'elles paient** (6 connections) — `docs/PERFORMANCE.md`
+- **6. Ce qui reste sur la table** (4 connections) — `docs/PERFORMANCE.md`
+- **3.5 `busDiag` — un diagnostic éteint qui coûtait à chaque accès bus** (2 connections) — `docs/PERFORMANCE.md`
+- **5. La recette de build : PGO + LTO** (2 connections) — `docs/PERFORMANCE.md`
+- **⚠ Le piège du PGO, qui coûte le gain sans rien dire** (2 connections) — `docs/PERFORMANCE.md`
+- **1. Refaire le profil** (1 connections) — `docs/PERFORMANCE.md`
+- **3.3 `busFaultN` — sortie anticipée pour la RAM ordinaire** (1 connections) — `docs/PERFORMANCE.md`
+- **3.4 Shifter — deux tables au lieu de deux boucles** (1 connections) — `docs/PERFORMANCE.md`
+- **4. Résultat des optimisations de code** (1 connections) — `docs/PERFORMANCE.md`
 
 ## Relationships
 
-- [Community 171](Community_171.md) (7 shared connections)
-- [Community 7](Community_7.md) (7 shared connections)
-- [Community 47](Community_47.md) (1 shared connections)
+- [Community 64](Community_64.md) (3 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Ikbd.hpp`
+- `docs/PERFORMANCE.md`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (58%)
-- INFERRED: 10 (42%)
+- EXTRACTED: 13 (72%)
+- INFERRED: 5 (28%)
 - AMBIGUOUS: 0 (0%)
 
 ---

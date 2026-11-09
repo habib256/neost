@@ -1,8 +1,8 @@
 # vector
 
-> God node · 302 connections · `src/core/Cpu68k.hpp`
+> God node · 300 connections · `src/core/Cpu68k.hpp`
 
-**Community:** [Community 102](Community_102.md)
+**Community:** [Community 256](Community_256.md)
 
 ## Connections by Relation
 
@@ -30,16 +30,15 @@
 - gstmcu_bench.cpp `EXTRACTED`
 - stx_raw_track_overlay_logic.cpp `EXTRACTED`
 - stx_read_address_crc_logic.cpp `EXTRACTED`
-- *…and 123 more `imports` connection(s) not listed (lowest-degree first to go)*
+- *…and 122 more `imports` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [Shifter](Shifter.md) `EXTRACTED`
 - [Fdc](Fdc.md) `EXTRACTED`
 - [App](App.md) `EXTRACTED`
-- [Bus](Bus.md) `EXTRACTED`
+- Bus `EXTRACTED`
 - GemdosHd `EXTRACTED`
 - DmaSound `EXTRACTED`
-- .saver() `EXTRACTED`
 - ConfigUi `EXTRACTED`
 - Config `EXTRACTED`
 - YM2149 `EXTRACTED`
@@ -49,11 +48,12 @@
 - Ne2000 `EXTRACTED`
 - Audio `EXTRACTED`
 - MidiInHost `EXTRACTED`
-- Track `EXTRACTED`
 - FloppyDisk `EXTRACTED`
-- SlirpBackend `EXTRACTED`
+- Track `EXTRACTED`
 - Mt32Synth `EXTRACTED`
-- *…and 138 more `references` connection(s) not listed (lowest-degree first to go)*
+- StxImage `EXTRACTED`
+- BareMoira `EXTRACTED`
+- *…and 137 more `references` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

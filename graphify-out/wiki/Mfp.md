@@ -34,25 +34,25 @@
 
 ### method
 - .write8() `EXTRACTED`
-- .gpipSetLine() `EXTRACTED`
 - .writeTimerCtrl() `EXTRACTED`
-- .raiseAt() `EXTRACTED`
 - .gpipInput() `EXTRACTED`
-- .scheduleTimerAt() `EXTRACTED`
+- .gpipSetLine() `EXTRACTED`
+- .raiseAt() `EXTRACTED`
 - .timerCtrl() `EXTRACTED`
-- .timerPeriodSubCycles() `EXTRACTED`
+- .read8() `EXTRACTED`
+- .updateTimers() `EXTRACTED`
 - .advanceSerialTx() `EXTRACTED`
-- .readTimerData() `EXTRACTED`
 - .updatePulseGate() `EXTRACTED`
 - .timerPulseMode() `EXTRACTED`
-- .storeStoppedCounter() `EXTRACTED`
+- .scheduleTimerAt() `EXTRACTED`
+- .readTimerData() `EXTRACTED`
 - .gpipEdges() `EXTRACTED`
-- .gpipUpdateInterrupt() `EXTRACTED`
 - .timerA_setLineInput() `EXTRACTED`
-- .read8() `EXTRACTED`
+- .writeEventTime() `EXTRACTED`
 - .startSerialTx() `EXTRACTED`
 - .gpipIrqView() `EXTRACTED`
 - .gpipUpdateInterruptAt() `EXTRACTED`
+- .timerPeriodSubCycles() `EXTRACTED`
 - *…and 64 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references

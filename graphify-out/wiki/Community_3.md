@@ -1,11 +1,10 @@
 # Community 3
 
-> 145 nodes
+> 138 nodes
 
 ## Key Concepts
 
-- **struct** (144 connections)
-- **build()** (10 connections) — `tools/make_selftest_cart.py`
+- **struct** (146 connections)
 - **make_cycle_bench.py** (10 connections) — `tools/make_cycle_bench.py`
 - **fix_short_reloc.py** (9 connections) — `tools/fix_short_reloc.py`
 - **make_freqswitch_test.py** (9 connections) — `tools/make_freqswitch_test.py`
@@ -29,22 +28,23 @@
 - **bpb()** (4 connections) — `tools/fix_short_reloc.py`
 - **read_file()** (4 connections) — `tools/fix_short_reloc.py`
 - **add_dir()** (4 connections) — `tools/make_floppy.py`
-- *... and 120 more nodes in this community*
+- **add_file()** (4 connections) — `tools/make_floppy.py`
+- *... and 113 more nodes in this community*
 
 ## Relationships
 
 - [Community 248](Community_248.md) (19 shared connections)
-- [Community 26](Community_26.md) (18 shared connections)
-- [Community 54](Community_54.md) (11 shared connections)
-- [Community 18](Community_18.md) (8 shared connections)
+- [Community 26](Community_26.md) (15 shared connections)
+- [Community 54](Community_54.md) (9 shared connections)
 - [Community 207](Community_207.md) (8 shared connections)
+- [Community 146](Community_146.md) (7 shared connections)
 - [Community 34](Community_34.md) (5 shared connections)
+- [Community 60](Community_60.md) (5 shared connections)
 - [Community 133](Community_133.md) (4 shared connections)
 - [Community 108](Community_108.md) (3 shared connections)
 - [Community 227](Community_227.md) (3 shared connections)
 - [Community 151](Community_151.md) (2 shared connections)
-- [Community 253](Community_253.md) (2 shared connections)
-- [Community 146](Community_146.md) (2 shared connections)
+- [Community 18](Community_18.md) (2 shared connections)
 
 ## Source Files
 
@@ -63,15 +63,15 @@
 - `tools/make_poll_test.py`
 - `tools/make_respulse_test.py`
 - `tools/make_scroll_test.py`
-- `tools/make_selftest_cart.py`
 - `tools/make_spec512_test.py`
 - `tools/make_spec512_view.py`
+- `tools/make_stcpu_rom.py`
 - `tools/make_trace_odd_test.py`
 
 ## Audit Trail
 
-- EXTRACTED: 322 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 312 (100%)
+- INFERRED: 1 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

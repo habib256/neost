@@ -1,33 +1,35 @@
 # Community 263
 
-> 9 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
-- **.peek16()** (2 connections) — `tests/selftest_logic.cpp`
-- **.poke16()** (2 connections) — `tests/selftest_logic.cpp`
-- **.program()** (2 connections) — `tests/selftest_logic.cpp`
-- **.BlitRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **blit** (1 connections) — `tests/selftest_logic.cpp`
-- **bus** (1 connections) — `tests/selftest_logic.cpp`
-- **sched** (1 connections) — `tests/selftest_logic.cpp`
-- **Blitter** (1 connections)
+- **stx_sector_rewrite_logic.cpp** (16 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **testStxSectorRewrite()** (6 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **Checks** (5 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **verifyTrack()** (5 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **formattedTrack()** (3 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **crc16()** (2 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **main()** (2 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **.equal()** (1 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **count** (1 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **failures** (1 connections) — `tests/stx_sector_rewrite_logic.cpp`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (4 shared connections)
-- [Community 267](Community_267.md) (1 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
+- [Community 72](Community_72.md) (3 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/selftest_logic.cpp`
+- `tests/stx_sector_rewrite_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 27 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

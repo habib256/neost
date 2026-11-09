@@ -56,7 +56,7 @@ class Mt32Synth;
 class GmSynth;
 class NetBackend;
 class NetBackendNull;
-class SlirpBackend;
+class NatBackend;
 
 // Pages du menu borne (plein écran, piloté à la manette).
 enum { KIOSK_PAGE_LIST = 0, KIOSK_PAGE_KEYS = 1, KIOSK_PAGE_QUIT = 2,
@@ -290,7 +290,7 @@ struct App {
     std::unique_ptr<Machine>        machine;
     std::unique_ptr<HayesModem>     hayesModem;   // nul tant que le modem est OFF
     std::unique_ptr<NetBackendNull> etherNull;
-    std::unique_ptr<SlirpBackend>   slirpNet;
+    std::unique_ptr<NatBackend>   natNet;
     std::unique_ptr<MidiOutHost>    midiOut;
     std::unique_ptr<MidiInHost>     midiIn;
     std::unique_ptr<Mt32Synth>      mt32;
@@ -347,7 +347,7 @@ struct App {
     void modemApply(bool on);
 #endif
     NetBackend* neBackend();
-    void slirpApply(bool on);
+    void natApply(bool on);
     void etherApply(bool on);
     void netUsbeeApply(bool on);
     void midiOutApply();

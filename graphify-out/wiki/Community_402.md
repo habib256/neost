@@ -1,24 +1,26 @@
 # Community 402
 
-> 3 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **dataCallback()** (3 connections) — `src/audio/Audio.cpp`
-- **ma_device** (1 connections)
-- **ma_uint32** (1 connections)
+- **gui** (5 connections) — `.github/workflows/tests.yml`
+- **name** (1 connections) — `.github/workflows/tests.yml`
+- **runs-on** (1 connections) — `.github/workflows/tests.yml`
+- **timeout-minutes** (1 connections) — `.github/workflows/tests.yml`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 199](Community_199.md) (1 shared connections)
+- [Community 231](Community_231.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Audio.cpp`
+- `.github/workflows/tests.yml`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

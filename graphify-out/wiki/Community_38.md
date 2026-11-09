@@ -1,27 +1,20 @@
 # Community 38
 
-> 25 nodes
+> 18 nodes
 
 ## Key Concepts
 
 - **Rig** (17 connections) — `tests/ikbd_response_logic.cpp`
-- **testIkbdResponses()** (15 connections) — `tests/ikbd_response_logic.cpp`
-- **ikbd_response_logic.cpp** (10 connections) — `tests/ikbd_response_logic.cpp`
-- **.load()** (5 connections) — `tests/ikbd_response_logic.cpp`
-- **Checks** (4 connections) — `tests/ikbd_response_logic.cpp`
-- **.save()** (4 connections) — `tests/ikbd_response_logic.cpp`
-- **.command()** (3 connections) — `tests/ikbd_response_logic.cpp`
 - **.data()** (3 connections) — `tests/ikbd_response_logic.cpp`
-- **.equal()** (2 connections) — `tests/ikbd_response_logic.cpp`
-- **main()** (2 connections) — `tests/ikbd_response_logic.cpp`
-- **.advance()** (2 connections) — `tests/ikbd_response_logic.cpp`
-- **.due()** (2 connections) — `tests/ikbd_response_logic.cpp`
-- **.froggies()** (2 connections) — `tests/ikbd_response_logic.cpp`
-- **.ready()** (2 connections) — `tests/ikbd_response_logic.cpp`
+- **.load()** (3 connections) — `tests/ikbd_response_logic.cpp`
+- **.command()** (2 connections) — `tests/ikbd_response_logic.cpp`
+- **.save()** (2 connections) — `tests/ikbd_response_logic.cpp`
 - **initializer_list** (2 connections)
+- **.advance()** (1 connections) — `tests/ikbd_response_logic.cpp`
+- **.due()** (1 connections) — `tests/ikbd_response_logic.cpp`
+- **.froggies()** (1 connections) — `tests/ikbd_response_logic.cpp`
+- **.ready()** (1 connections) — `tests/ikbd_response_logic.cpp`
 - **.Rig()** (1 connections) — `tests/ikbd_response_logic.cpp`
-- **count** (1 connections) — `tests/ikbd_response_logic.cpp`
-- **failures** (1 connections) — `tests/ikbd_response_logic.cpp`
 - **Ikbd** (1 connections)
 - **Mfp** (1 connections)
 - **Scheduler** (1 connections)
@@ -32,9 +25,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 41](Community_41.md) (5 shared connections)
-- [Community 59](Community_59.md) (1 shared connections)
+- [Community 399](Community_399.md) (3 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
 
 ## Source Files
 
@@ -42,8 +34,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 23 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---
