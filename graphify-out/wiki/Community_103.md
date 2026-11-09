@@ -1,6 +1,6 @@
 # Community 103
 
-> 29 nodes
+> 28 nodes
 
 ## Key Concepts
 
@@ -11,7 +11,6 @@
 - **.reset()** (2 connections) — `src/io/Acsi.hpp`
 - **.markDmaRangeError()** (2 connections) — `src/io/Acsi.hpp`
 - **.usatanFirstTarget()** (2 connections) — `src/io/Acsi.hpp`
-- **.acsiActive()** (2 connections) — `src/io/Fdc.hpp`
 - **.usatanFirstTarget()** (2 connections) — `src/io/Fdc.hpp`
 - **UltraSatan + NetUSBee : le vrai couple stockage/réseau du ST (2026-08-21)** (2 connections) — `CHANGELOG.md`
 - **.byteCount()** (1 connections) — `src/io/Acsi.hpp`
@@ -29,22 +28,23 @@
 - **MAX_DEVS** (1 connections) — `src/io/Acsi.hpp`
 - **opcode_** (1 connections) — `src/io/Acsi.hpp`
 - **target_** (1 connections) — `src/io/Acsi.hpp`
-- *... and 4 more nodes in this community*
+- **usatan_** (1 connections) — `src/io/Acsi.hpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 31](Community_31.md) (21 shared connections)
+- [Community 31](Community_31.md) (23 shared connections)
 - [Community 122](Community_122.md) (10 shared connections)
-- [Community 12](Community_12.md) (4 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 12](Community_12.md) (3 shared connections)
 - [Community 212](Community_212.md) (3 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 100](Community_100.md) (2 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
 - [Community 188](Community_188.md) (1 shared connections)
 - [Community 67](Community_67.md) (1 shared connections)
 - [Community 321](Community_321.md) (1 shared connections)
 - [Community 268](Community_268.md) (1 shared connections)
-- [Community 23](Community_23.md) (1 shared connections)
+- [Community 93](Community_93.md) (1 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
@@ -54,7 +54,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 68 (88%)
+- EXTRACTED: 67 (88%)
 - INFERRED: 9 (12%)
 - AMBIGUOUS: 0 (0%)
 

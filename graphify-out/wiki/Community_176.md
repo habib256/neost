@@ -4,38 +4,39 @@
 
 ## Key Concepts
 
-- **CartridgeKey.cpp** (12 connections) — `src/io/CartridgeKey.cpp`
-- **.cartRead()** (7 connections) — `src/io/CartridgeKey.hpp`
-- **.rom4Listen()** (6 connections) — `src/io/CartridgeKey.hpp`
-- **.replay()** (6 connections) — `src/io/CartridgeKey.hpp`
-- **.udsCycle()** (6 connections) — `src/io/CartridgeKey.hpp`
-- **.clockN()** (5 connections) — `src/io/CartridgeKey.hpp`
-- **.outputByte()** (3 connections) — `src/io/CartridgeKey.hpp`
-- **.clock2()** (3 connections) — `src/io/CartridgeKey.hpp`
-- **.clock3()** (3 connections) — `src/io/CartridgeKey.hpp`
-- **.ster()** (3 connections) — `src/io/CartridgeKey.hpp`
-- **.rom4Read()** (2 connections) — `src/io/CartridgeKey.hpp`
-- **size_t** (1 connections)
+- **SocketHandle** (10 connections) — `src/net/Socket.hpp`
+- **tcpConnect()** (8 connections) — `src/net/Socket.cpp`
+- **socketValid()** (5 connections) — `src/net/Socket.hpp`
+- **.select()** (4 connections) — `src/io/StePads.hpp`
+- **sockClose()** (4 connections) — `src/net/Socket.cpp`
+- **sockRecv()** (4 connections) — `src/net/Socket.cpp`
+- **sockShutdown()** (4 connections) — `src/net/Socket.cpp`
+- **FujiNet retiré : NeoST n'émule plus que du matériel qui a existé (2026-08-22)** (4 connections) — `CHANGELOG.md`
+- **sockHasData()** (3 connections) — `src/net/Socket.cpp`
+- **sockSend()** (3 connections) — `src/net/Socket.cpp`
+- **netInitOnce()** (2 connections) — `src/net/Socket.cpp`
+- **string** (1 connections)
 
 ## Relationships
 
-- [Community 150](Community_150.md) (10 shared connections)
-- [Community 41](Community_41.md) (4 shared connections)
-- [Community 364](Community_364.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 211](Community_211.md) (1 shared connections)
-- [Community 10](Community_10.md) (1 shared connections)
+- [Community 4](Community_4.md) (9 shared connections)
+- [Community 106](Community_106.md) (1 shared connections)
+- [Community 113](Community_113.md) (1 shared connections)
+- [Community 100](Community_100.md) (1 shared connections)
+- [Community 136](Community_136.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/CartridgeKey.cpp`
-- `src/io/CartridgeKey.hpp`
+- `CHANGELOG.md`
+- `src/io/StePads.hpp`
+- `src/net/Socket.cpp`
+- `src/net/Socket.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (66%)
-- INFERRED: 13 (34%)
+- EXTRACTED: 23 (70%)
+- INFERRED: 10 (30%)
 - AMBIGUOUS: 0 (0%)
 
 ---

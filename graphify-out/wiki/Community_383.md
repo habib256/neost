@@ -1,27 +1,32 @@
 # Community 383
 
-> 5 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **** (5 connections) — `src/core/YM2149.cpp`
-- **ENV_DOWN** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_GODOWN** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_GOUP** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_UP** (1 connections) — `src/core/YM2149.cpp`
+- **gemdos_directory_entries_logic.cpp** (12 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **Checks** (4 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **testGemdosDirectoryEntries()** (4 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **main()** (2 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **count** (2 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **.equal()** (1 connections) — `tests/gemdos_directory_entries_logic.cpp`
+- **failures** (1 connections) — `tests/gemdos_directory_entries_logic.cpp`
 
 ## Relationships
 
-- [Community 140](Community_140.md) (1 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 190](Community_190.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/YM2149.cpp`
+- `tests/gemdos_directory_entries_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 17 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

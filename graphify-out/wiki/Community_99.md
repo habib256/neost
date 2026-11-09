@@ -1,11 +1,13 @@
 # Community 99
 
-> 16 nodes
+> 18 nodes
 
 ## Key Concepts
 
 - **DongleRule** (13 connections) — `src/io/DongleTable.hpp`
 - **DongleTable.cpp** (10 connections) — `src/io/DongleTable.cpp`
+- **parseDongleTable()** (9 connections) — `src/io/DongleTable.cpp`
+- **.portFromId()** (5 connections) — `src/io/PortDevices.hpp`
 - **matchDongleRules()** (5 connections) — `src/io/DongleTable.cpp`
 - **lower()** (4 connections) — `src/io/DongleTable.cpp`
 - **string** (4 connections)
@@ -24,9 +26,9 @@
 ## Relationships
 
 - [Community 51](Community_51.md) (6 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 136](Community_136.md) (1 shared connections)
 - [Community 119](Community_119.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
 
@@ -34,10 +36,11 @@
 
 - `src/io/DongleTable.cpp`
 - `src/io/DongleTable.hpp`
+- `src/io/PortDevices.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 33 (100%)
+- EXTRACTED: 41 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

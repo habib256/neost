@@ -1,11 +1,12 @@
 # Community 197
 
-> 12 nodes
+> 13 nodes
 
 ## Key Concepts
 
 - **InterruptRig** (10 connections) — `tests/scc_mie_ius_logic.cpp`
 - **testSccMieIus()** (8 connections) — `tests/scc_mie_ius_logic.cpp`
+- **scc_mie_ius_logic.cpp** (6 connections) — `tests/scc_mie_ius_logic.cpp`
 - **.write()** (5 connections) — `tests/scc_mie_ius_logic.cpp`
 - **.control()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
 - **.master()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
@@ -19,7 +20,7 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
@@ -28,8 +29,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 23 (88%)
-- INFERRED: 3 (12%)
+- EXTRACTED: 26 (90%)
+- INFERRED: 3 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

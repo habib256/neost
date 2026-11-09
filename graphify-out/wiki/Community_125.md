@@ -22,8 +22,8 @@
 
 ## Relationships
 
-- [Community 288](Community_288.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
+- [Community 317](Community_317.md) (1 shared connections)
+- [Community 409](Community_409.md) (1 shared connections)
 
 ## Source Files
 

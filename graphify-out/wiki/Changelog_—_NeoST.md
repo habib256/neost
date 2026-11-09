@@ -1,6 +1,6 @@
 # Changelog — NeoST
 
-> God node · 279 connections · `CHANGELOG.md`
+> God node · 280 connections · `CHANGELOG.md`
 
 **Community:** [Community 130](Community_130.md)
 
@@ -20,14 +20,14 @@
 - Bug hunt multi-agents (2026-07-29) `EXTRACTED`
 - L'élection de l'exception MFP : la règle chronologique existait mais ne pouvait jamais s'appliquer (2026-09-02) `EXTRACTED`
 - Le MIDI Windows rejoint macOS et Linux — backend winmm (2026-08-31) `EXTRACTED`
-- Le paquet se montre : trois démos embarquées, et le frontend web reprend la main (2026-08-30) `EXTRACTED`
+- Bug hunt sur les travaux du 27-30 août : quatre bugs, quatre correctifs, quatre tests (2026-08-30) `EXTRACTED`
 - A32 — le Shifter perd 1 586 lignes, le GLUE vidéo retrouve son nom (2026-08-28) `EXTRACTED`
 - Le FPU arrondissait deux fois — et son banc de test ne voyait pas les tests qu'on lui ajoutait (2026-09-02) `EXTRACTED`
+- Le paquet se montre : trois démos embarquées, et le frontend web reprend la main (2026-08-30) `EXTRACTED`
 - A31 — le dispatch MMIO devient une table, et sa cohérence est PROUVÉE (2026-08-28) `EXTRACTED`
 - Chemins hôte unifiés, logique pure testable, `main.cpp` dégrossi (2026-08-17) `EXTRACTED`
 - Closure (Sync) boote : datation des écritures freq/res par parité d'accès (2026-08-12) `EXTRACTED`
-- Les trois autres pistes « Super Hang-On » d'Hatari, instruites (2026-09-02) `EXTRACTED`
-- *…and 259 more `contains` connection(s) not listed (lowest-degree first to go)*
+- *…and 260 more `contains` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

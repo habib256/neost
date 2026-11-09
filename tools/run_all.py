@@ -173,19 +173,20 @@ FAST = [
 # Aucun accès Internet ; le build headless les compile quand NEOST_WITH_NET est actif.
 _cache = ROOT / "build" / "CMakeCache.txt"
 _net_off = _cache.exists() and "NEOST_WITH_NET:BOOL=OFF" in _cache.read_text()
+NAT_STEPS = [
+    ("NAT intégré : protocoles, fragments, IPv6 et redirections locales",
+     [str(ROOT / "build" / ("neost-nat-test" + _EXE))]),
+    ("NAT : résolveur asynchrone, cache et durée de vie",
+     [str(ROOT / "build" / ("neost-resolver-test" + _EXE))]),
+    ("NAT : adaptateur NeoST, options et échecs de publication",
+     [str(ROOT / "build" / ("neost-nat-adapter-test" + _EXE))]),
+    ("NAT à travers la NE2000 : ARP, DHCP et UDP loopback",
+     [str(HEADLESS), "roms/etos192us.img", "--nat-selftest"]),
+    ("STinG + NAT : DNS localhost et HTTP sur serveur local",
+     [sys.executable, str(TOOLS / "run_nat_sting.py")]),
+]
 if not _net_off:
-    FAST[1:1] = [
-        ("NAT intégré : protocoles, fragments, IPv6 et redirections locales",
-         [str(ROOT / "build" / ("neost-nat-test" + _EXE))]),
-        ("NAT : résolveur asynchrone, cache et durée de vie",
-         [str(ROOT / "build" / ("neost-resolver-test" + _EXE))]),
-        ("NAT : adaptateur NeoST, options et échecs de publication",
-         [str(ROOT / "build" / ("neost-nat-adapter-test" + _EXE))]),
-        ("NAT à travers la NE2000 : ARP, DHCP et UDP loopback",
-         [str(HEADLESS), "roms/etos192us.img", "--nat-selftest"]),
-        ("STinG + NAT : DNS localhost et HTTP sur serveur local",
-         [sys.executable, str(TOOLS / "run_nat_sting.py")]),
-    ]
+    FAST[1:1] = NAT_STEPS
 
 # Boot GUI (A9a, audit 2026-08-27) : build/neost était à 0 % de couverture LOCALE —
 # seul le job CI xvfb le lançait. 400 trames EmuTOS + capture non uniforme, en
@@ -372,8 +373,10 @@ GUARDS = TOOLS / "fast_guards.json"
 
 def check_guard_registry(labels) -> int:
     reg = json.loads(GUARDS.read_text())["guards"]
-    missing = [label for label in labels if label not in reg]
-    stale = [label for label in reg if label not in labels]
+    # Les étapes NAT restent inscrites lorsque le build coupe le réseau hôte.
+    expected = set(labels) | {label for label, _ in NAT_STEPS}
+    missing = sorted(label for label in expected if label not in reg)
+    stale = [label for label in reg if label not in expected]
     for label in missing:
         print(f"✗ étape fast absente de {GUARDS.name} : {label}", file=sys.stderr)
     for label in stale:

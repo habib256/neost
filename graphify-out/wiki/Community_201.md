@@ -1,35 +1,43 @@
 # Community 201
 
-> 12 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
-- **main()** (7 connections) — `tools/opendst_memdiff.py`
-- **Server** (6 connections) — `tools/opendst_memdiff.py`
-- **runs()** (3 connections) — `tools/opendst_memdiff.py`
-- **.cmd()** (3 connections) — `tools/opendst_memdiff.py`
-- **.dump()** (3 connections) — `tools/opendst_memdiff.py`
-- **parse_hex()** (2 connections) — `tools/opendst_memdiff.py`
-- **read_word()** (2 connections) — `tools/opendst_memdiff.py`
-- **.close()** (2 connections) — `tools/opendst_memdiff.py`
-- **.__init__()** (1 connections) — `tools/opendst_memdiff.py`
-- **Image mémoire [start, start+length) par tranches de 4 Ko.** (1 connections) — `tools/opendst_memdiff.py`
-- **Adresses triées → plages contiguës [(début, fin)].** (1 connections) — `tools/opendst_memdiff.py`
+- **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
+- **SndRig** (11 connections) — `tests/selftest_logic.cpp`
+- **Scheduler** (4 connections)
+- **Bus** (3 connections)
+- **.peek16()** (2 connections) — `tests/selftest_logic.cpp`
+- **.poke16()** (2 connections) — `tests/selftest_logic.cpp`
+- **.program()** (2 connections) — `tests/selftest_logic.cpp`
+- **.counter()** (2 connections) — `tests/selftest_logic.cpp`
+- **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
+- **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
+- **.BlitRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **blit** (1 connections) — `tests/selftest_logic.cpp`
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
+- **Blitter** (1 connections)
+- **DmaSound** (1 connections)
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
+- **snd** (1 connections) — `tests/selftest_logic.cpp`
 
 ## Relationships
 
-- [Community 18](Community_18.md) (3 shared connections)
-- [Community 248](Community_248.md) (2 shared connections)
-- [Community 151](Community_151.md) (1 shared connections)
+- [Community 41](Community_41.md) (8 shared connections)
+- [Community 219](Community_219.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_memdiff.py`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
+- EXTRACTED: 31 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -13,8 +13,8 @@
 - **resolveAssign()** (4 connections) — `src/io/JoystickInput.hpp`
 - **.bordersOpen()** (3 connections) — `src/core/Shifter.hpp`
 - **readAux()** (3 connections) — `src/io/JoystickInput.hpp`
-- **readStickRaw()** (3 connections) — `src/io/JoystickInput.hpp`
 - **.setClock()** (2 connections) — `src/io/Ikbd.hpp`
+- **readStickRaw()** (2 connections) — `src/io/JoystickInput.hpp`
 - **GLFWwindow** (2 connections)
 - **Le zoom auto cadrait Enchanted Land sur 416 px de large pour une image de 320 (2026-09-02)** (2 connections) — `CHANGELOG.md`
 - **kbdBit()** (1 connections) — `src/io/JoystickInput.hpp`
@@ -34,16 +34,16 @@
 
 - [Community 4](Community_4.md) (7 shared connections)
 - [Community 119](Community_119.md) (3 shared connections)
-- [Community 68](Community_68.md) (2 shared connections)
+- [Community 138](Community_138.md) (2 shared connections)
 - [Community 101](Community_101.md) (2 shared connections)
-- [Community 229](Community_229.md) (1 shared connections)
+- [Community 436](Community_436.md) (1 shared connections)
 - [Community 214](Community_214.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 5](Community_5.md) (1 shared connections)
 - [Community 7](Community_7.md) (1 shared connections)
 - [Community 321](Community_321.md) (1 shared connections)
 - [Community 355](Community_355.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
@@ -55,8 +55,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 44 (67%)
-- INFERRED: 22 (33%)
+- EXTRACTED: 44 (68%)
+- INFERRED: 21 (32%)
 - AMBIGUOUS: 0 (0%)
 
 ---

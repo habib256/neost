@@ -1,38 +1,50 @@
 # Community 183
 
-> 12 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **StatusRegister** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **Moira::disassembleSR()** (2 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **c** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **ipl** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **m** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **n** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **s** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **t0** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **t1** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **v** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **x** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **z** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **testIpfImage()** (13 connections) — `tests/ipf_image_logic.cpp`
+- **Stream** (11 connections) — `tests/ipf_image_logic.cpp`
+- **sectorStream()** (11 connections) — `tests/ipf_image_logic.cpp`
+- **buildIpf()** (9 connections) — `tests/ipf_image_logic.cpp`
+- **record()** (7 connections) — `tests/ipf_image_logic.cpp`
+- **.data()** (7 connections) — `tests/ipf_image_logic.cpp`
+- **.end()** (6 connections) — `tests/ipf_image_logic.cpp`
+- **be32()** (5 connections) — `tests/ipf_image_logic.cpp`
+- **.elem()** (5 connections) — `tests/ipf_image_logic.cpp`
+- **setBe32()** (4 connections) — `tests/ipf_image_logic.cpp`
+- **.bytes()** (4 connections) — `tests/ipf_image_logic.cpp`
+- **pattern()** (3 connections) — `tests/ipf_image_logic.cpp`
+- **.fill()** (3 connections) — `tests/ipf_image_logic.cpp`
+- **.sync3()** (3 connections) — `tests/ipf_image_logic.cpp`
+- **.weak()** (3 connections) — `tests/ipf_image_logic.cpp`
+- **main()** (2 connections) — `tests/ipf_image_logic.cpp`
+- **CI : registre fast et inclusion NE2000 explicite (2026-11-09)** (2 connections) — `CHANGELOG.md`
+- **size_t** (1 connections)
+- **cells** (1 connections) — `tests/ipf_image_logic.cpp`
+- **d** (1 connections) — `tests/ipf_image_logic.cpp`
 
 ## Relationships
 
-- [Community 104](Community_104.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
-- [Community 2](Community_2.md) (1 shared connections)
+- [Community 102](Community_102.md) (15 shared connections)
+- [Community 163](Community_163.md) (3 shared connections)
+- [Community 385](Community_385.md) (2 shared connections)
+- [Community 153](Community_153.md) (2 shared connections)
+- [Community 63](Community_63.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 448](Community_448.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDasm_cpp.h`
-- `extern/moira/Moira/MoiraTypes.h`
+- `CHANGELOG.md`
+- `tests/ipf_image_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 57 (89%)
+- INFERRED: 7 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

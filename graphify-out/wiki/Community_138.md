@@ -1,38 +1,39 @@
 # Community 138
 
-> 14 nodes
+> 15 nodes
 
 ## Key Concepts
 
 - **.run()** (21 connections) — `src/core/Cpu68k.hpp`
-- **.reconfigure()** (9 connections) — `src/core/Machine.hpp`
+- **Ce qui est implémenté — par sous-système** (18 connections) — `docs/IMPLEMENTED.md`
 - **Cœur & boot** (8 connections) — `docs/IMPLEMENTED.md`
 - **.parseCore()** (6 connections) — `src/core/Cpu68k.hpp`
 - **Le CPU (Moira, cycle-exact)** (6 connections) — `DEV.md`
-- **.endTimeslice()** (4 connections) — `src/core/Cpu68k.hpp`
 - **.disassemble()** (4 connections) — `src/core/Cpu68k.hpp`
 - **.disassemble()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **cpuClockForBus()** (2 connections) — `src/core/Cpu68k.cpp`
-- **.irqDeliverable()** (2 connections) — `src/core/Cpu68k.cpp`
-- **.isStopped()** (2 connections) — `src/core/Cpu68k.cpp`
 - **Patch local : instruction illégale délégable (`illegalOpcodeHook`) (2026-10-01)** (2 connections) — `extern/moira/NEOST_VENDOR.md`
 - **string** (1 connections)
-- **size_t** (1 connections)
+- **Compléments de fidélité du 2026-10-18** (1 connections) — `docs/IMPLEMENTED.md`
+- **Compléments du 2026-10-20** (1 connections) — `docs/IMPLEMENTED.md`
+- **Compléments du 2026-10-22** (1 connections) — `docs/IMPLEMENTED.md`
+- **Compléments du 2026-11-03** (1 connections) — `docs/IMPLEMENTED.md`
+- **Compléments du 2026-11-04** (1 connections) — `docs/IMPLEMENTED.md`
 
 ## Relationships
 
-- [Community 27](Community_27.md) (13 shared connections)
-- [Community 16](Community_16.md) (4 shared connections)
-- [Community 67](Community_67.md) (3 shared connections)
-- [Community 200](Community_200.md) (3 shared connections)
-- [Community 22](Community_22.md) (2 shared connections)
-- [Community 37](Community_37.md) (2 shared connections)
-- [Community 258](Community_258.md) (2 shared connections)
+- [Community 27](Community_27.md) (12 shared connections)
+- [Community 16](Community_16.md) (3 shared connections)
 - [Community 64](Community_64.md) (2 shared connections)
+- [Community 37](Community_37.md) (2 shared connections)
+- [Community 67](Community_67.md) (2 shared connections)
+- [Community 218](Community_218.md) (2 shared connections)
+- [Community 124](Community_124.md) (2 shared connections)
+- [Community 349](Community_349.md) (2 shared connections)
+- [Community 258](Community_258.md) (2 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
 - [Community 317](Community_317.md) (1 shared connections)
 - [Community 105](Community_105.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
 
 ## Source Files
 
@@ -42,12 +43,11 @@
 - `extern/moira/NEOST_VENDOR.md`
 - `src/core/Cpu68k.cpp`
 - `src/core/Cpu68k.hpp`
-- `src/core/Machine.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (45%)
-- INFERRED: 31 (55%)
+- EXTRACTED: 34 (57%)
+- INFERRED: 26 (43%)
 - AMBIGUOUS: 0 (0%)
 
 ---

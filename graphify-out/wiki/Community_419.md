@@ -1,29 +1,33 @@
 # Community 419
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **ikbd_acia_reset_logic.cpp** (6 connections) — `tests/ikbd_acia_reset_logic.cpp`
-- **testIkbdAciaReset()** (4 connections) — `tests/ikbd_acia_reset_logic.cpp`
-- **main()** (2 connections) — `tests/ikbd_acia_reset_logic.cpp`
-- **.data()** (2 connections) — `tests/ikbd_acia_reset_logic.cpp`
+- **Le palier P1 de l'audit est soldé : A16-A24, neuf corrections en une passe (2026-08-27)** (7 connections) — `CHANGELOG.md`
+- **.stealBusCycles()** (4 connections) — `src/core/Bus.hpp`
+- **Scheduler** (1 connections)
 
 ## Relationships
 
-- [Community 179](Community_179.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 30](Community_30.md) (1 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 37](Community_37.md) (1 shared connections)
+- [Community 95](Community_95.md) (1 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ikbd_acia_reset_logic.cpp`
+- `CHANGELOG.md`
+- `src/core/Bus.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (90%)
-- INFERRED: 1 (10%)
+- EXTRACTED: 4 (40%)
+- INFERRED: 6 (60%)
 - AMBIGUOUS: 0 (0%)
 
 ---

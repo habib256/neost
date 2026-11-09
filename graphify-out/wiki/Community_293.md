@@ -1,12 +1,11 @@
 # Community 293
 
-> 15 nodes
+> 14 nodes
 
 ## Key Concepts
 
 - **StateArchive** (14 connections) — `src/core/StateArchive.hpp`
 - **.raw()** (5 connections) — `src/core/StateArchive.hpp`
-- **podVec()** (4 connections) — `src/core/StateArchive.hpp`
 - **.vec()** (3 connections) — `src/core/StateArchive.hpp`
 - **arr()** (2 connections) — `src/core/StateArchive.hpp`
 - **operator()()** (2 connections) — `src/core/StateArchive.hpp`
@@ -22,10 +21,8 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (4 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
 - [Community 443](Community_443.md) (1 shared connections)
-- [Community 349](Community_349.md) (1 shared connections)
 
 ## Source Files
 
@@ -33,8 +30,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 24 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 22 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

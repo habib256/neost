@@ -1,32 +1,37 @@
 # Community 287
 
-> 7 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **make_vblank_test.py** (8 connections) — `tools/make_vblank_test.py`
-- **w()** (5 connections) — `tools/make_vblank_test.py`
-- **bra()** (4 connections) — `tools/make_vblank_test.py`
-- **delay()** (4 connections) — `tools/make_vblank_test.py`
-- **relative()** (3 connections) — `tools/make_vblank_test.py`
-- **label()** (2 connections) — `tools/make_vblank_test.py`
-- **Disquette libre : retrait bas PAL et VBlank, ancrés par VBL/STOP. on :…** (1 connections) — `tools/make_vblank_test.py`
+- **Mode borne (kiosk)** (9 connections) — `docs/KIOSK.md`
+- **.state()** (4 connections) — `src/io/CartridgeKey.hpp`
+- **Dossiers ROM** (2 connections) — `docs/KIOSK.md`
+- **Raccourcis** (2 connections) — `docs/KIOSK.md`
+- **Borne Raspberry Pi** (1 connections) — `docs/KIOSK.md`
+- **Clavier & souris (SELECT manette, ou F12)** (1 connections) — `docs/KIOSK.md`
+- **Démarrage direct sur un jeu (attract)** (1 connections) — `docs/KIOSK.md`
+- **Joysticks** (1 connections) — `docs/KIOSK.md`
+- **Menu in-game (START manette, ou F9)** (1 connections) — `docs/KIOSK.md`
+- **Zoom adaptatif (défaut, bascule F10)** (1 connections) — `docs/KIOSK.md`
 
 ## Relationships
 
-- [Community 3](Community_3.md) (2 shared connections)
-- [Community 349](Community_349.md) (1 shared connections)
-- [Community 22](Community_22.md) (1 shared connections)
-- [Community 248](Community_248.md) (1 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
+- [Community 124](Community_124.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/make_vblank_test.py`
+- `docs/KIOSK.md`
+- `src/io/CartridgeKey.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (88%)
-- INFERRED: 2 (12%)
+- EXTRACTED: 10 (71%)
+- INFERRED: 4 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

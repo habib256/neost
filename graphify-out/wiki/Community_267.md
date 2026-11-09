@@ -1,34 +1,43 @@
 # Community 267
 
-> 9 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **MidiInDev** (8 connections) — `src/gui/AppConfig.hpp`
-- **MidiOutDev** (6 connections) — `src/gui/AppConfig.hpp`
-- **string** (3 connections)
-- **channel** (1 connections) — `src/gui/AppConfig.hpp`
-- **name** (1 connections) — `src/gui/AppConfig.hpp`
-- **uid** (1 connections) — `src/gui/AppConfig.hpp`
-- **channels** (1 connections) — `src/gui/AppConfig.hpp`
-- **name** (1 connections) — `src/gui/AppConfig.hpp`
-- **uid** (1 connections) — `src/gui/AppConfig.hpp`
+- **main()** (11 connections) — `tests/stx_writetrack_test.cpp`
+- **stx_writetrack_test.cpp** (11 connections) — `tests/stx_writetrack_test.cpp`
+- **forgeFlux()** (5 connections) — `tests/stx_writetrack_test.cpp`
+- **FDC WD1772 + DMA + STX — `Fdc.cpp`, `StxImage.cpp` ↔ `fdc.c`, `floppies/stx.c`** (4 connections) — `docs/HATARI_DIVERGENCES.md`
+- **cassert** (4 connections)
+- **.setFdcLine()** (3 connections) — `src/io/Mfp.hpp`
+- **.sectorsCountView()** (3 connections) — `src/io/StxImage.hpp`
+- **add()** (3 connections) — `tests/stx_writetrack_test.cpp`
+- **expect()** (3 connections) — `tests/stx_writetrack_test.cpp`
+- **forgeStx()** (3 connections) — `tests/stx_writetrack_test.cpp`
 
 ## Relationships
 
-- [Community 21](Community_21.md) (3 shared connections)
-- [Community 11](Community_11.md) (2 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
-- [Community 51](Community_51.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 63](Community_63.md) (5 shared connections)
+- [Community 6](Community_6.md) (2 shared connections)
+- [Community 173](Community_173.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
+- [Community 93](Community_93.md) (1 shared connections)
+- [Community 54](Community_54.md) (1 shared connections)
+- [Community 30](Community_30.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/AppConfig.hpp`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/io/Mfp.hpp`
+- `src/io/StxImage.hpp`
+- `tests/stx_writetrack_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (87%)
-- INFERRED: 2 (13%)
+- EXTRACTED: 26 (72%)
+- INFERRED: 10 (28%)
 - AMBIGUOUS: 0 (0%)
 
 ---

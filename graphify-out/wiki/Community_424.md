@@ -1,29 +1,34 @@
 # Community 424
 
-> 3 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.setLoopback()** (3 connections) — `src/io/MidiAcia.hpp`
-- **Câble de bouclage MIDI débranché par défaut — Cubase Lite charge ses morceaux (2026-08-21)** (2 connections) — `CHANGELOG.md`
-- **Cubase Lite « figé » au chargement d'un morceau : le câble MIDI de bouclage (2026-08-21)** (2 connections) — `docs/CASE_STUDIES.md`
+- **.receiveByte()** (6 connections) — `src/io/Mfp.hpp`
+- **.scheduleSerialRx()** (4 connections) — `src/io/Mfp.hpp`
+- **.onSerialRxEvent()** (4 connections) — `src/io/Mfp.hpp`
+- **.internalSerialLoopback()** (4 connections) — `src/io/Mfp.hpp`
+- **Réseau : FujiNet + modem Hayes + EtherNEC + anneau MIDI (2026-08-12)** (2 connections) — `CHANGELOG.md`
+- **Modem Hayes sur RS-232 (`--modem`, GUI Network)** (2 connections) — `docs/EXTENSIONS.md`
 
 ## Relationships
 
+- [Community 215](Community_215.md) (5 shared connections)
+- [Community 6](Community_6.md) (4 shared connections)
 - [Community 25](Community_25.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 268](Community_268.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/CASE_STUDIES.md`
-- `src/io/MidiAcia.hpp`
+- `docs/EXTENSIONS.md`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (60%)
-- INFERRED: 2 (40%)
+- EXTRACTED: 9 (53%)
+- INFERRED: 8 (47%)
 - AMBIGUOUS: 0 (0%)
 
 ---

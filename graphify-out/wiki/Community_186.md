@@ -1,42 +1,55 @@
 # Community 186
 
-> 15 nodes
+> 54 nodes
 
 ## Key Concepts
 
+- **Observe.hpp** (19 connections) — `src/headless/Observe.hpp`
 - **Server.cpp** (18 connections) — `src/headless/Server.cpp`
+- **JoyScript.hpp** (12 connections) — `src/util/JoyScript.hpp`
+- **ProbeSet** (11 connections) — `src/headless/Observe.hpp`
 - **run()** (11 connections) — `src/headless/Server.cpp`
+- **ProbeSpec** (10 connections) — `src/headless/Observe.hpp`
+- **Slot** (8 connections) — `src/headless/Server.cpp`
+- **probeFields()** (8 connections) — `src/headless/Observe.hpp`
+- **Options** (7 connections) — `src/headless/Server.hpp`
+- **Machine** (6 connections)
+- **Server.hpp** (6 connections) — `src/headless/Server.hpp`
+- **probeValue()** (5 connections) — `src/headless/Observe.hpp`
 - **arity()** (5 connections) — `src/headless/Server.cpp`
+- **parse()** (5 connections) — `src/util/JoyScript.hpp`
+- **parseHexU32()** (5 connections) — `src/util/JoyScript.hpp`
 - **string** (5 connections)
+- **addProbe()** (4 connections) — `src/headless/Observe.hpp`
+- **emitProbeLine()** (4 connections) — `src/headless/Observe.hpp`
+- **ramHash()** (4 connections) — `src/headless/Observe.hpp`
+- **read8()** (4 connections) — `src/headless/Observe.hpp`
 - **reply()** (4 connections) — `src/headless/Server.cpp`
 - **words()** (4 connections) — `src/headless/Server.cpp`
-- **applyJoy()** (3 connections) — `src/headless/Server.cpp`
-- **parseLong()** (3 connections) — `src/headless/Server.cpp`
-- **splitFirst()** (3 connections) — `src/headless/Server.cpp`
-- **data** (3 connections) — `src/headless/Server.cpp`
-- **Machine** (2 connections)
-- **Options** (1 connections)
-- **size_t** (1 connections)
-- **csignal** (1 connections)
-- **iostream** (1 connections)
+- **string** (4 connections)
+- **parseProbeSpec()** (3 connections) — `src/headless/Observe.hpp`
+- **screenHash()** (3 connections) — `src/headless/Observe.hpp`
+- *... and 29 more nodes in this community*
 
 ## Relationships
 
-- [Community 256](Community_256.md) (4 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
-- [Community 374](Community_374.md) (2 shared connections)
-- [Community 204](Community_204.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
+- [Community 102](Community_102.md) (12 shared connections)
+- [Community 4](Community_4.md) (12 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 128](Community_128.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
 
 ## Source Files
 
+- `src/headless/Observe.hpp`
 - `src/headless/Server.cpp`
+- `src/headless/Server.hpp`
+- `src/util/JoyScript.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 38 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 120 (98%)
+- INFERRED: 2 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

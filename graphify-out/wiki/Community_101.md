@@ -1,6 +1,6 @@
 # Community 101
 
-> 31 nodes
+> 32 nodes
 
 ## Key Concepts
 
@@ -29,22 +29,22 @@
 - **crtF()** (3 connections) — `src/gui/AppConfig.cpp`
 - **deleteProfile()** (3 connections) — `src/gui/AppConfig.cpp`
 - **escapeField()** (3 connections) — `src/gui/AppConfig.cpp`
-- *... and 6 more nodes in this community*
+- *... and 7 more nodes in this community*
 
 ## Relationships
 
-- [Community 380](Community_380.md) (9 shared connections)
-- [Community 21](Community_21.md) (9 shared connections)
+- [Community 21](Community_21.md) (10 shared connections)
+- [Community 380](Community_380.md) (8 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
 - [Community 41](Community_41.md) (6 shared connections)
-- [Community 4](Community_4.md) (6 shared connections)
-- [Community 130](Community_130.md) (5 shared connections)
-- [Community 256](Community_256.md) (3 shared connections)
+- [Community 130](Community_130.md) (6 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
 - [Community 200](Community_200.md) (3 shared connections)
 - [Community 51](Community_51.md) (2 shared connections)
 - [Community 124](Community_124.md) (2 shared connections)
 - [Community 214](Community_214.md) (2 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 75](Community_75.md) (1 shared connections)
+- [Community 362](Community_362.md) (1 shared connections)
 
 ## Source Files
 
@@ -55,8 +55,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 86 (65%)
-- INFERRED: 47 (35%)
+- EXTRACTED: 87 (64%)
+- INFERRED: 48 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

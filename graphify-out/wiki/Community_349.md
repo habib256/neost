@@ -1,6 +1,6 @@
 # Community 349
 
-> 18 nodes
+> 16 nodes
 
 ## Key Concepts
 
@@ -9,7 +9,6 @@
 - **.raiseVbl()** (7 connections) — `src/core/Cpu68k.hpp`
 - **.raiseHbl()** (7 connections) — `src/core/Cpu68k.hpp`
 - **.readIrqUserVector()** (7 connections) — `src/core/Cpu68k.cpp`
-- **.updateIpl()** (6 connections) — `src/core/Cpu68k.hpp`
 - **recomputePinNextDue()** (6 connections) — `src/core/Cpu68k.cpp`
 - **.updateIplNow()** (5 connections) — `src/core/Cpu68k.hpp`
 - **.stoppedState()** (5 connections) — `src/core/Cpu68k.cpp`
@@ -17,7 +16,6 @@
 - **raiseWindowDefers()** (5 connections) — `src/core/Cpu68k.cpp`
 - **.armHblPinAt()** (4 connections) — `src/core/Cpu68k.hpp`
 - **.armVblPinAt()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.supervisor()** (3 connections) — `src/core/Cpu68k.hpp`
 - **.serialBaud()** (2 connections) — `src/io/Mfp.hpp`
 - **.serialUcr()** (2 connections) — `src/io/Mfp.hpp`
 - **.readAnalog()** (2 connections) — `src/io/StePads.hpp`
@@ -25,18 +23,18 @@
 
 ## Relationships
 
-- [Community 27](Community_27.md) (19 shared connections)
+- [Community 27](Community_27.md) (17 shared connections)
 - [Community 64](Community_64.md) (7 shared connections)
-- [Community 160](Community_160.md) (4 shared connections)
-- [Community 16](Community_16.md) (3 shared connections)
-- [Community 173](Community_173.md) (2 shared connections)
+- [Community 54](Community_54.md) (3 shared connections)
+- [Community 39](Community_39.md) (2 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 138](Community_138.md) (2 shared connections)
 - [Community 6](Community_6.md) (2 shared connections)
 - [Community 106](Community_106.md) (2 shared connections)
+- [Community 61](Community_61.md) (2 shared connections)
 - [Community 37](Community_37.md) (2 shared connections)
-- [Community 10](Community_10.md) (2 shared connections)
+- [Community 374](Community_374.md) (2 shared connections)
 - [Community 19](Community_19.md) (2 shared connections)
-- [Community 202](Community_202.md) (1 shared connections)
-- [Community 2](Community_2.md) (1 shared connections)
 
 ## Source Files
 
@@ -49,8 +47,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 52 (55%)
-- INFERRED: 42 (45%)
+- EXTRACTED: 48 (55%)
+- INFERRED: 39 (45%)
 - AMBIGUOUS: 0 (0%)
 
 ---

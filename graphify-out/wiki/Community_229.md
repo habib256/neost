@@ -1,47 +1,33 @@
 # Community 229
 
-> 18 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **DebugWindows.cpp** (17 connections) — `src/gui/DebugWindows.cpp`
-- **DebugWindows.hpp** (9 connections) — `src/gui/DebugWindows.hpp`
-- **drawJoystickWindow()** (7 connections) — `src/gui/DebugWindows.cpp`
-- **drawCpuState()** (5 connections) — `src/gui/DebugWindows.cpp`
-- **drawDebugger()** (4 connections) — `src/gui/DebugWindows.cpp`
-- **drawHexViewer()** (4 connections) — `src/gui/DebugWindows.cpp`
-- **App** (4 connections)
-- **drawJoyDirLed()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **drawJoystickAxisBar()** (2 connections) — `src/gui/DebugWindows.cpp`
-- **App** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Bus** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Cpu68k** (1 connections) — `src/gui/DebugWindows.hpp`
-- **GLFWwindow** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Machine** (1 connections) — `src/gui/DebugWindows.hpp`
-- **Bus** (1 connections)
-- **Cpu68k** (1 connections)
-- **GLFWwindow** (1 connections)
-- **Machine** (1 connections)
+- **MegaSteTransferChecks** (11 connections) — `tools/test_timing_oracle.py`
+- **.valid()** (4 connections) — `tools/test_timing_oracle.py`
+- **.validate()** (4 connections) — `tools/test_timing_oracle.py`
+- **.test_lower_bounds_keep_blitter_at_bus_frequency()** (3 connections) — `tools/test_timing_oracle.py`
+- **.test_missing_sample_rejected()** (3 connections) — `tools/test_timing_oracle.py`
+- **.test_one_impossible_completion_or_irq_rejected()** (3 connections) — `tools/test_timing_oracle.py`
+- **.test_irq_while_busy_rejected_even_with_valid_counts_and_durations()** (2 connections) — `tools/test_timing_oracle.py`
+- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
+- **.test_iack_idle_keeps_cpu_clock_domain()** (1 connections) — `tools/test_timing_oracle.py`
+- **.test_iack_missing_or_wrong_domain_rejected()** (1 connections) — `tools/test_timing_oracle.py`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
-- [Community 214](Community_214.md) (5 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 380](Community_380.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
+- [Community 207](Community_207.md) (2 shared connections)
+- [Community 55](Community_55.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/DebugWindows.cpp`
-- `src/gui/DebugWindows.hpp`
+- `tools/test_timing_oracle.py`
 
 ## Audit Trail
 
-- EXTRACTED: 35 (85%)
-- INFERRED: 6 (15%)
+- EXTRACTED: 18 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

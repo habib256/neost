@@ -1,15 +1,19 @@
 # Community 107
 
-> 57 nodes
+> 77 nodes
 
 ## Key Concepts
 
 - **Asm** (37 connections) — `tools/make_fx68k_programs.py`
 - **make_fx68k_programs.py** (33 connections) — `tools/make_fx68k_programs.py`
+- **run_fx68k_bench.py** (22 connections) — `tools/run_fx68k_bench.py`
 - **sentinel()** (21 connections) — `tools/make_fx68k_programs.py`
 - **prologue()** (14 connections) — `tools/make_fx68k_programs.py`
+- **main()** (14 connections) — `tools/run_fx68k_bench.py`
 - **prelude_ea()** (11 connections) — `tools/make_fx68k_programs.py`
 - **reload_a0()** (9 connections) — `tools/make_fx68k_programs.py`
+- **build()** (8 connections) — `tools/make_fx68k_programs.py`
+- **ipl_sweep()** (7 connections) — `tools/run_fx68k_bench.py`
 - **prog_ea_alu()** (6 connections) — `tools/make_fx68k_programs.py`
 - **prog_ea_alu_mem()** (6 connections) — `tools/make_fx68k_programs.py`
 - **prog_ea_move_l()** (6 connections) — `tools/make_fx68k_programs.py`
@@ -25,28 +29,25 @@
 - **prog_rmw_long()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_stop_irq()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_stop_pending()** (5 connections) — `tools/make_fx68k_programs.py`
-- **vectors()** (4 connections) — `tools/make_fx68k_programs.py`
-- **handlers()** (4 connections) — `tools/make_fx68k_programs.py`
-- **prog_alu_loops()** (4 connections) — `tools/make_fx68k_programs.py`
-- **prog_reset_nop()** (4 connections) — `tools/make_fx68k_programs.py`
-- *... and 32 more nodes in this community*
+- *... and 52 more nodes in this community*
 
 ## Relationships
 
-- [Community 166](Community_166.md) (6 shared connections)
-- [Community 55](Community_55.md) (1 shared connections)
+- [Community 55](Community_55.md) (7 shared connections)
+- [Community 18](Community_18.md) (5 shared connections)
+- [Community 56](Community_56.md) (3 shared connections)
+- [Community 151](Community_151.md) (2 shared connections)
 - [Community 3](Community_3.md) (1 shared connections)
-- [Community 248](Community_248.md) (1 shared connections)
-- [Community 146](Community_146.md) (1 shared connections)
 
 ## Source Files
 
 - `tools/make_fx68k_programs.py`
+- `tools/run_fx68k_bench.py`
 
 ## Audit Trail
 
-- EXTRACTED: 122 (87%)
-- INFERRED: 19 (13%)
+- EXTRACTED: 172 (90%)
+- INFERRED: 19 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

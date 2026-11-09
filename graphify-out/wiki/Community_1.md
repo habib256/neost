@@ -1,10 +1,13 @@
 # Community 1
 
-> 153 nodes
+> 156 nodes
 
 ## Key Concepts
 
 - **App** (168 connections) — `src/gui/App.hpp`
+- **.switchKioskMode()** (6 connections) — `src/gui/App.hpp`
+- **.usatanApply()** (3 connections) — `src/gui/App.hpp`
+- **.toggleFullscreen()** (3 connections) — `src/gui/App.hpp`
 - **Audio** (2 connections) — `src/gui/App.hpp`
 - **DriveSound** (2 connections) — `src/gui/App.hpp`
 - **GLFWwindow** (2 connections) — `src/gui/App.hpp`
@@ -26,25 +29,22 @@
 - **audio** (1 connections) — `src/gui/App.hpp`
 - **audioRate** (1 connections) — `src/gui/App.hpp`
 - **autoCartKey** (1 connections) — `src/gui/App.hpp`
-- **autoPortDev** (1 connections) — `src/gui/App.hpp`
-- **autoZoom** (1 connections) — `src/gui/App.hpp`
-- **browseDir** (1 connections) — `src/gui/App.hpp`
-- *... and 128 more nodes in this community*
+- *... and 131 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (19 shared connections)
+- [Community 4](Community_4.md) (23 shared connections)
 - [Community 200](Community_200.md) (3 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 362](Community_362.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 21](Community_21.md) (1 shared connections)
 - [Community 90](Community_90.md) (1 shared connections)
 - [Community 43](Community_43.md) (1 shared connections)
 - [Community 129](Community_129.md) (1 shared connections)
 - [Community 119](Community_119.md) (1 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
 - [Community 401](Community_401.md) (1 shared connections)
-- [Community 423](Community_423.md) (1 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
+- [Community 31](Community_31.md) (1 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 186 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 190 (98%)
+- INFERRED: 4 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

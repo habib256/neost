@@ -1,6 +1,6 @@
 # Community 200
 
-> 41 nodes
+> 43 nodes
 
 ## Key Concepts
 
@@ -9,6 +9,7 @@
 - **appInit()** (19 connections) — `src/gui/AppInit.cpp`
 - **machineHasDmaSound()** (10 connections) — `src/core/MachineType.hpp`
 - **parseRamBytes()** (10 connections) — `src/core/MachineType.hpp`
+- **.reconfigure()** (9 connections) — `src/core/Machine.hpp`
 - **memConfigForBytes()** (9 connections) — `src/core/MachineType.hpp`
 - **resolveData()** (9 connections) — `src/gui/App.cpp`
 - **machineName()** (8 connections) — `src/core/MachineType.hpp`
@@ -28,23 +29,22 @@
 - **pickTosForMachine()** (4 connections) — `src/gui/App.cpp`
 - **size_t** (4 connections)
 - **1. Bus & mémoire (ioMem.c, cpu/memory.c, stMemory.c)** (4 connections) — `docs/HATARI_MAPPING.md`
-- **.resolvePath()** (3 connections) — `src/gui/App.hpp`
-- *... and 16 more nodes in this community*
+- *... and 18 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (10 shared connections)
-- [Community 380](Community_380.md) (10 shared connections)
-- [Community 182](Community_182.md) (7 shared connections)
+- [Community 4](Community_4.md) (12 shared connections)
+- [Community 380](Community_380.md) (9 shared connections)
 - [Community 386](Community_386.md) (6 shared connections)
 - [Community 136](Community_136.md) (5 shared connections)
 - [Community 41](Community_41.md) (5 shared connections)
+- [Community 281](Community_281.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
 - [Community 14](Community_14.md) (3 shared connections)
-- [Community 138](Community_138.md) (3 shared connections)
-- [Community 281](Community_281.md) (3 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 10](Community_10.md) (3 shared connections)
+- [Community 288](Community_288.md) (3 shared connections)
 - [Community 1](Community_1.md) (3 shared connections)
-- [Community 68](Community_68.md) (3 shared connections)
+- [Community 101](Community_101.md) (3 shared connections)
 
 ## Source Files
 
@@ -62,8 +62,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 91 (57%)
-- INFERRED: 68 (43%)
+- EXTRACTED: 94 (57%)
+- INFERRED: 71 (43%)
 - AMBIGUOUS: 0 (0%)
 
 ---

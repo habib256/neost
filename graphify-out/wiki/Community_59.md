@@ -1,6 +1,6 @@
 # Community 59
 
-> 44 nodes
+> 42 nodes
 
 ## Key Concepts
 
@@ -23,28 +23,28 @@
 - **.customCodeCrcForTest()** (5 connections) — `src/io/Ikbd.hpp`
 - **crc32AddByte()** (5 connections) — `src/io/Ikbd.cpp`
 - **crc32Reset()** (5 connections) — `src/io/Ikbd.cpp`
-- **.trace()** (4 connections) — `src/io/Ikbd.hpp`
 - **.onVbl()** (4 connections) — `src/io/Ikbd.hpp`
 - **.updateClock()** (4 connections) — `src/io/Ikbd.hpp`
 - **.nextTxClock()** (4 connections) — `src/io/Ikbd.hpp`
 - **.chaosWrite()** (4 connections) — `src/io/Ikbd.hpp`
 - **Ikbd::Ikbd()** (3 connections) — `src/io/Ikbd.cpp`
-- *... and 19 more nodes in this community*
+- **.initClockFromHostTime()** (3 connections) — `src/io/Ikbd.hpp`
+- *... and 17 more nodes in this community*
 
 ## Relationships
 
-- [Community 7](Community_7.md) (34 shared connections)
-- [Community 47](Community_47.md) (23 shared connections)
-- [Community 171](Community_171.md) (22 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 7](Community_7.md) (33 shared connections)
+- [Community 171](Community_171.md) (23 shared connections)
+- [Community 47](Community_47.md) (22 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 - [Community 64](Community_64.md) (2 shared connections)
 - [Community 215](Community_215.md) (2 shared connections)
 - [Community 25](Community_25.md) (2 shared connections)
 - [Community 164](Community_164.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
 - [Community 270](Community_270.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
 
 ## Source Files
 
@@ -55,8 +55,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 129 (74%)
-- INFERRED: 46 (26%)
+- EXTRACTED: 126 (74%)
+- INFERRED: 45 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---

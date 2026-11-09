@@ -6,6 +6,18 @@ l'ordre inverse. Version courante : **0.6.2**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## CI : registre fast et inclusion NE2000 explicite (2026-11-09)
+
+Le premier passage distant du port NAT révèle deux gardes qui n'avaient pas
+été exercées par le palier full local : le palier fast exige l'inscription
+exacte de chaque étape dans `fast_guards.json`, et le SDK Emscripten courant
+ne fournit plus indirectement `std::fill` à `Ne2000.cpp`. Les cinq contrôles
+NAT sont inscrits (sans déclenchement réel inventé), le registre reste valide
+avec les étapes réseau désactivées, et `<algorithm>` est inclus directement.
+Les jobs Windows/Winsock, macOS Universal 2, Linux bionic/ARM64 et Android
+passent sur le commit du port ; les corrections sont validées séparément
+avant le nouveau passage CI.
+
 ## NAT intégré : remplacement de libslirp par le réseau de POM2 (2026-11-09)
 
 Le backend réseau de POM2 est importé à `b07f3a0a`, avec ses tests et sa

@@ -1,10 +1,11 @@
 # Community 92
 
-> 28 nodes
+> 29 nodes
 
 ## Key Concepts
 
 - **AndroidMenu** (17 connections) — `src/android/AndroidMenu.hpp`
+- **AndroidMenu.cpp** (11 connections) — `src/android/AndroidMenu.cpp`
 - **MediaScan.cpp** (9 connections) — `src/io/MediaScan.cpp`
 - **areSiblingImages()** (7 connections) — `src/io/MediaScan.cpp`
 - **scanDiskImages()** (7 connections) — `src/io/MediaScan.cpp`
@@ -28,14 +29,12 @@
 - **reqKeyPress** (1 connections) — `src/android/AndroidMenu.hpp`
 - **reqMount** (1 connections) — `src/android/AndroidMenu.hpp`
 - **reqQuit** (1 connections) — `src/android/AndroidMenu.hpp`
-- **reqRescan** (1 connections) — `src/android/AndroidMenu.hpp`
-- *... and 3 more nodes in this community*
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
 - [Community 4](Community_4.md) (10 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
 - [Community 281](Community_281.md) (1 shared connections)
 - [Community 124](Community_124.md) (1 shared connections)
 
@@ -48,8 +47,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 46 (88%)
-- INFERRED: 6 (12%)
+- EXTRACTED: 53 (90%)
+- INFERRED: 6 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

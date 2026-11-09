@@ -1,11 +1,10 @@
 # Community 33
 
-> 44 nodes
+> 42 nodes
 
 ## Key Concepts
 
 - **MoiraExec_cpp.h** (54 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
-- **Moira::execTasEa()** (4 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execBitFieldDn()** (3 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execMullMoira()** (3 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execMullMusashi()** (3 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
@@ -29,26 +28,27 @@
 - **Moira::execDivsMusashi()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execDivu()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execDivuMusashi()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
-- *... and 19 more nodes in this community*
+- **Moira::execMove16AiAl()** (2 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
+- *... and 17 more nodes in this community*
 
 ## Relationships
 
-- [Community 2](Community_2.md) (45 shared connections)
-- [Community 16](Community_16.md) (7 shared connections)
-- [Community 57](Community_57.md) (4 shared connections)
+- [Community 2](Community_2.md) (44 shared connections)
+- [Community 16](Community_16.md) (4 shared connections)
+- [Community 54](Community_54.md) (3 shared connections)
+- [Community 57](Community_57.md) (3 shared connections)
 - [Community 167](Community_167.md) (1 shared connections)
 - [Community 145](Community_145.md) (1 shared connections)
 - [Community 32](Community_32.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
 - `extern/moira/Moira/MoiraExec_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 97 (95%)
-- INFERRED: 5 (5%)
+- EXTRACTED: 95 (97%)
+- INFERRED: 3 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

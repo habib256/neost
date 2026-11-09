@@ -4,23 +4,22 @@
 
 ## Key Concepts
 
-- **Mode** (5 connections) — `src/core/Shifter.hpp`
-- **High** (1 connections) — `src/core/Shifter.hpp`
-- **Low** (1 connections) — `src/core/Shifter.hpp`
-- **Medium** (1 connections) — `src/core/Shifter.hpp`
+- **Checks** (4 connections) — `tests/ipf_image_logic.cpp`
+- **.equal()** (1 connections) — `tests/ipf_image_logic.cpp`
+- **count** (1 connections) — `tests/ipf_image_logic.cpp`
+- **failures** (1 connections) — `tests/ipf_image_logic.cpp`
 
 ## Relationships
 
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 5](Community_5.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Shifter.hpp`
+- `tests/ipf_image_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -5,9 +5,9 @@
 ## Key Concepts
 
 - **CpuState** (50 connections) — `src/core/Cpu68k.cpp`
-- **.setScheduler()** (3 connections) — `src/core/Cpu68k.hpp`
+- **function** (2 connections)
 - **Scheduler** (2 connections)
-- **trapObserver** (2 connections) — `src/core/Cpu68k.cpp`
+- **Tracer** (2 connections)
 - **Cpu68k** (1 connections)
 - **appliedIpl** (1 connections) — `src/core/Cpu68k.cpp`
 - **blitterAccessCounted** (1 connections) — `src/core/Cpu68k.cpp`
@@ -33,19 +33,17 @@
 
 ## Relationships
 
-- [Community 27](Community_27.md) (6 shared connections)
-- [Community 64](Community_64.md) (2 shared connections)
+- [Community 27](Community_27.md) (5 shared connections)
+- [Community 64](Community_64.md) (3 shared connections)
 - [Community 32](Community_32.md) (1 shared connections)
-- [Community 327](Community_327.md) (1 shared connections)
 
 ## Source Files
 
 - `src/core/Cpu68k.cpp`
-- `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 53 (98%)
+- EXTRACTED: 52 (98%)
 - INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 

@@ -23,8 +23,8 @@
 
 - [Community 203](Community_203.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 151](Community_151.md) (1 shared connections)
-- [Community 258](Community_258.md) (1 shared connections)
+- [Community 55](Community_55.md) (1 shared connections)
+- [Community 370](Community_370.md) (1 shared connections)
 
 ## Source Files
 

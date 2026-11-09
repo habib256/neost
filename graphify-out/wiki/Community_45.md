@@ -1,51 +1,53 @@
 # Community 45
 
-> 42 nodes
+> 57 nodes
 
 ## Key Concepts
 
 - **Isp1160** (56 connections) — `src/io/Isp1160.hpp`
+- **Isp1160.cpp** (15 connections) — `src/io/Isp1160.cpp`
+- **.dataPortRead()** (4 connections) — `src/io/Isp1160.hpp`
+- **.dataPortWrite()** (4 connections) — `src/io/Isp1160.hpp`
+- **.softReset()** (4 connections) — `src/io/Isp1160.hpp`
+- **.cartRead()** (4 connections) — `src/io/Isp1160.hpp`
+- **Ne2000::cartRead()** (3 connections) — `src/io/Ne2000.cpp`
+- **.readReg()** (3 connections) — `src/io/Isp1160.hpp`
+- **.writeReg()** (3 connections) — `src/io/Isp1160.hpp`
+- **.serialize()** (3 connections) — `src/io/Isp1160.hpp`
+- **.reset()** (3 connections) — `src/io/Isp1160.hpp`
+- **.is32()** (3 connections) — `src/io/Isp1160.hpp`
+- **.poll()** (2 connections) — `src/io/Isp1160.hpp`
+- **.trace()** (2 connections) — `src/io/Isp1160.hpp`
+- **.updateIrq()** (2 connections) — `src/io/Isp1160.hpp`
 - **.enabled()** (1 connections) — `src/io/Isp1160.hpp`
 - **.irqAsserted()** (1 connections) — `src/io/Isp1160.hpp`
 - **.setEnabled()** (1 connections) — `src/io/Isp1160.hpp`
+- **StateArchive** (1 connections)
 - **atl_** (1 connections) — `src/io/Isp1160.hpp`
 - **atlbuflen_** (1 connections) — `src/io/Isp1160.hpp`
 - **atlPending_** (1 connections) — `src/io/Isp1160.hpp`
 - **atlRd_** (1 connections) — `src/io/Isp1160.hpp`
 - **atlWr_** (1 connections) — `src/io/Isp1160.hpp`
 - **bufstat_** (1 connections) — `src/io/Isp1160.hpp`
-- **CHIP_ID** (1 connections) — `src/io/Isp1160.hpp`
-- **cmd_** (1 connections) — `src/io/Isp1160.hpp`
-- **cmdIsWrite_** (1 connections) — `src/io/Isp1160.hpp`
-- **cmdstat_** (1 connections) — `src/io/Isp1160.hpp`
-- **control_** (1 connections) — `src/io/Isp1160.hpp`
-- **DATA_READ** (1 connections) — `src/io/Isp1160.hpp`
-- **dmacfg_** (1 connections) — `src/io/Isp1160.hpp`
-- **fmintvl_** (1 connections) — `src/io/Isp1160.hpp`
-- **fmnum_** (1 connections) — `src/io/Isp1160.hpp`
-- **fmrem_** (1 connections) — `src/io/Isp1160.hpp`
-- **hwcfg_** (1 connections) — `src/io/Isp1160.hpp`
-- **intenb_** (1 connections) — `src/io/Isp1160.hpp`
-- **intstat_** (1 connections) — `src/io/Isp1160.hpp`
-- **irq_** (1 connections) — `src/io/Isp1160.hpp`
-- **itlbuflen_** (1 connections) — `src/io/Isp1160.hpp`
-- *... and 17 more nodes in this community*
+- *... and 32 more nodes in this community*
 
 ## Relationships
 
-- [Community 172](Community_172.md) (12 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 89](Community_89.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 - [Community 85](Community_85.md) (1 shared connections)
 
 ## Source Files
 
+- `src/io/Isp1160.cpp`
 - `src/io/Isp1160.hpp`
+- `src/io/Ne2000.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 56 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 74 (91%)
+- INFERRED: 7 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

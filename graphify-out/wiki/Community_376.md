@@ -1,28 +1,32 @@
 # Community 376
 
-> 5 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Balayage GLUE — la machine de NeoST contre le modèle GSTMCU** (5 connections) — `docs/GLUE_SWEEP.md`
-- **Comment** (2 connections) — `docs/GLUE_SWEEP.md`
-- **Les écarts restants, inscrits en référence** (1 connections) — `docs/GLUE_SWEEP.md`
-- **Résultat (2026-11-04)** (1 connections) — `docs/GLUE_SWEEP.md`
-- **Sur un écran entier à 60 Hz** (1 connections) — `docs/GLUE_SWEEP.md`
+- **DockLayout.cpp** (14 connections) — `src/gui/DockLayout.cpp`
+- **WinSettings_WriteAll()** (4 connections) — `src/gui/DockLayout.cpp`
+- **ImGuiContext** (4 connections)
+- **ImGuiSettingsHandler** (4 connections)
+- **WinSettings_ApplyAll()** (3 connections) — `src/gui/DockLayout.cpp`
+- **WinSettings_ReadLine()** (3 connections) — `src/gui/DockLayout.cpp`
+- **WinSettings_ReadOpen()** (3 connections) — `src/gui/DockLayout.cpp`
+- **ImGuiTextBuffer** (1 connections)
 
 ## Relationships
 
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
+- [Community 380](Community_380.md) (3 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/GLUE_SWEEP.md`
+- `src/gui/DockLayout.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 23 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

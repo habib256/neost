@@ -1,47 +1,56 @@
 # Community 166
 
-> 20 nodes
+> 29 nodes
 
 ## Key Concepts
 
-- **run_fx68k_bench.py** (22 connections) — `tools/run_fx68k_bench.py`
-- **main()** (14 connections) — `tools/run_fx68k_bench.py`
-- **build()** (8 connections) — `tools/make_fx68k_programs.py`
-- **ipl_sweep()** (7 connections) — `tools/run_fx68k_bench.py`
-- **compare()** (5 connections) — `tools/run_fx68k_bench.py`
-- **run_one()** (5 connections) — `tools/run_fx68k_bench.py`
-- **build_fx68k()** (4 connections) — `tools/run_fx68k_bench.py`
-- **parse()** (4 connections) — `tools/run_fx68k_bench.py`
-- **main()** (3 connections) — `tools/make_fx68k_programs.py`
-- **first_frame_write()** (3 connections) — `tools/run_fx68k_bench.py`
-- **cut()** (2 connections) — `tools/run_fx68k_bench.py`
-- **fmt()** (2 connections) — `tools/run_fx68k_bench.py`
-- **need_rebuild()** (2 connections) — `tools/run_fx68k_bench.py`
-- **signature()** (2 connections) — `tools/run_fx68k_bench.py`
-- **skip()** (2 connections) — `tools/run_fx68k_bench.py`
-- **variants()** (2 connections) — `tools/run_fx68k_bench.py`
-- **Path** (2 connections)
-- **Même suite d'accès, puis mêmes INTERVALLES entre accès consécutifs. Comparer…** (1 connections) — `tools/run_fx68k_bench.py`
-- **(PC empilé, date de la 1re écriture de trame), la date étant relative au 1er…** (1 connections) — `tools/run_fx68k_bench.py`
-- **Pour chaque instant T de montée de la broche : quelle frontière prend l'IRQ,…** (1 connections) — `tools/run_fx68k_bench.py`
+- **MoiraDataflow_cpp.h** (29 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Size** (19 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Mode** (6 connections)
+- **isPrgMode()** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.eval()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.watchpointMatches()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **Moira::readM()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::undoAn()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::undoAnPD()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::undoAnPI()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::updateAn()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::updateAnPD()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::updateAnPI()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::writeM()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::baseDispWords()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::computeEA()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::computeEAfull()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::misaligned()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::outerDispWords()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::penaltyCycles()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::pop()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::push()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::readExt()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::readI()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **Moira::readOp()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (9 shared connections)
-- [Community 107](Community_107.md) (6 shared connections)
-- [Community 55](Community_55.md) (3 shared connections)
-- [Community 248](Community_248.md) (1 shared connections)
-- [Community 146](Community_146.md) (1 shared connections)
+- [Community 2](Community_2.md) (17 shared connections)
+- [Community 54](Community_54.md) (6 shared connections)
+- [Community 134](Community_134.md) (5 shared connections)
+- [Community 16](Community_16.md) (5 shared connections)
+- [Community 57](Community_57.md) (4 shared connections)
+- [Community 64](Community_64.md) (2 shared connections)
+- [Community 32](Community_32.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/make_fx68k_programs.py`
-- `tools/run_fx68k_bench.py`
+- `extern/moira/Moira/MoiraDataflow_cpp.h`
+- `extern/moira/Moira/MoiraDebugger.h`
+- `extern/moira/Moira/MoiraTypes.h`
 
 ## Audit Trail
 
-- EXTRACTED: 56 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 75 (95%)
+- INFERRED: 4 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -4,37 +4,34 @@
 
 ## Key Concepts
 
-- **Probe** (9 connections) — `src/util/ConfigPath.hpp`
-- **ConfigPath.cpp** (9 connections) — `src/util/ConfigPath.cpp`
-- **resolve()** (7 connections) — `src/util/ConfigPath.cpp`
-- **userConfigDir()** (6 connections) — `src/util/ConfigPath.cpp`
-- **profilesDirFor()** (4 connections) — `src/util/ConfigPath.cpp`
-- **string** (3 connections)
-- **systemProbe()** (2 connections) — `src/util/ConfigPath.cpp`
-- **dirWritable** (2 connections) — `src/util/ConfigPath.hpp`
-- **env** (2 connections) — `src/util/ConfigPath.hpp`
-- **exists** (2 connections) — `src/util/ConfigPath.hpp`
-- **function** (1 connections)
-- **string** (1 connections)
-- **system_error** (1 connections)
+- **FdcRig** (16 connections) — `tests/selftest_logic.cpp`
+- **.dmaAddr()** (2 connections) — `tests/selftest_logic.cpp`
+- **.setDmaAddr()** (2 connections) — `tests/selftest_logic.cpp`
+- **.setMode()** (2 connections) — `tests/selftest_logic.cpp`
+- **.settle()** (2 connections) — `tests/selftest_logic.cpp`
+- **.FdcRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **Fdc** (1 connections)
+- **YM2149** (1 connections)
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **fdc** (1 connections) — `tests/selftest_logic.cpp`
+- **mfp** (1 connections) — `tests/selftest_logic.cpp`
+- **psg** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 75](Community_75.md) (3 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
+- [Community 201](Community_201.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `src/util/ConfigPath.cpp`
-- `src/util/ConfigPath.hpp`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (86%)
-- INFERRED: 4 (14%)
+- EXTRACTED: 20 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

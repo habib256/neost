@@ -1,50 +1,62 @@
 # Community 150
 
-> 16 nodes
+> 43 nodes
 
 ## Key Concepts
 
 - **CartridgeKey** (39 connections) — `src/io/CartridgeKey.hpp`
+- **CartridgeKey.cpp** (12 connections) — `src/io/CartridgeKey.cpp`
+- **Model** (9 connections) — `src/io/CartridgeKey.hpp`
+- **.cartRead()** (7 connections) — `src/io/CartridgeKey.hpp`
+- **.rom4Listen()** (6 connections) — `src/io/CartridgeKey.hpp`
+- **.replay()** (6 connections) — `src/io/CartridgeKey.hpp`
+- **.udsCycle()** (6 connections) — `src/io/CartridgeKey.hpp`
+- **.setModel()** (6 connections) — `src/io/CartridgeKey.hpp`
+- **.clockN()** (5 connections) — `src/io/CartridgeKey.hpp`
+- **.attached()** (5 connections) — `src/io/CartridgeKey.hpp`
+- **.serialize()** (4 connections) — `src/io/CartridgeKey.hpp`
+- **.setDongle()** (4 connections) — `src/core/Machine.hpp`
+- **.outputByte()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **.clock2()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **.clock3()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **.model()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **.rom3Read()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **.setLog()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **.ster()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **.wantsUds()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **Dongles, 2e passe : oracle de rejeu, un périphérique par port, port cartouche abstrait (2026-08-23)** (3 connections) — `CHANGELOG.md`
 - **.armed()** (2 connections) — `src/io/CartridgeKey.hpp`
+- **.rom4Read()** (2 connections) — `src/io/CartridgeKey.hpp`
 - **FILE** (2 connections)
 - **.lastByte()** (1 connections) — `src/io/CartridgeKey.hpp`
-- **.probes()** (1 connections) — `src/io/CartridgeKey.hpp`
-- **chosen_** (1 connections) — `src/io/CartridgeKey.hpp`
-- **d_** (1 connections) — `src/io/CartridgeKey.hpp`
-- **feedb1_** (1 connections) — `src/io/CartridgeKey.hpp`
-- **last_** (1 connections) — `src/io/CartridgeKey.hpp`
-- **locked_** (1 connections) — `src/io/CartridgeKey.hpp`
-- **log_** (1 connections) — `src/io/CartridgeKey.hpp`
-- **n_** (1 connections) — `src/io/CartridgeKey.hpp`
-- **r_** (1 connections) — `src/io/CartridgeKey.hpp`
-- **rom4Pending_** (1 connections) — `src/io/CartridgeKey.hpp`
+- *... and 18 more nodes in this community*
 
 ## Relationships
 
-- [Community 176](Community_176.md) (10 shared connections)
-- [Community 364](Community_364.md) (4 shared connections)
-- [Community 211](Community_211.md) (3 shared connections)
+- [Community 41](Community_41.md) (8 shared connections)
+- [Community 374](Community_374.md) (3 shared connections)
 - [Community 10](Community_10.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 268](Community_268.md) (2 shared connections)
 - [Community 244](Community_244.md) (1 shared connections)
-- [Community 230](Community_230.md) (1 shared connections)
-- [Community 268](Community_268.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 - [Community 349](Community_349.md) (1 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 51](Community_51.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
+- `src/core/Machine.hpp`
+- `src/io/CartridgeKey.cpp`
 - `src/io/CartridgeKey.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 38 (86%)
-- INFERRED: 6 (14%)
+- EXTRACTED: 67 (72%)
+- INFERRED: 26 (28%)
 - AMBIGUOUS: 0 (0%)
 
 ---

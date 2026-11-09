@@ -1,57 +1,63 @@
 # Community 56
 
-> 33 nodes
+> 39 nodes
 
 ## Key Concepts
 
-- **MoiraDataflow_cpp.h** (29 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Size** (19 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **.isAvailable()** (10 connections) — `extern/moira/Moira/Moira.h`
-- **.availabilityMask()** (9 connections) — `extern/moira/Moira/Moira.h`
-- **.availabilityString()** (7 connections) — `extern/moira/Moira/Moira.h`
-- **Mode** (6 connections)
-- **isPrgMode()** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **.eval()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **.watchpointMatches()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **Mode** (4 connections)
-- **Moira::readM()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::undoAn()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::undoAnPD()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::undoAnPI()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::updateAn()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::updateAnPD()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::updateAnPI()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::writeM()** (3 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::baseDispWords()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::computeEA()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::computeEAfull()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::misaligned()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::outerDispWords()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::penaltyCycles()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::pop()** (2 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- *... and 8 more nodes in this community*
+- **shutil** (50 connections)
+- **compare_titles.py** (32 connections) — `tools/compare_titles.py`
+- **check_compare_titles.py** (13 connections) — `tools/check_compare_titles.py`
+- **main()** (12 connections) — `tools/compare_titles.py`
+- **trace_tos206_boot.py** (12 connections) — `tools/trace_tos206_boot.py`
+- **run_hatari_keys()** (10 connections) — `tools/compare_titles.py`
+- **neost_frames()** (9 connections) — `tools/compare_titles.py`
+- **one()** (9 connections) — `tools/compare_titles.py`
+- **Path** (9 connections)
+- **hatari_shots()** (8 connections) — `tools/compare_titles.py`
+- **read_neost_frames()** (8 connections) — `tools/compare_titles.py`
+- **main()** (8 connections) — `tools/trace_tos206_boot.py`
+- **main()** (7 connections) — `tools/check_compare_titles.py`
+- **best_match()** (6 connections) — `tools/compare_titles.py`
+- **mouse_events()** (6 connections) — `tools/compare_titles.py`
+- **pixel_difference()** (6 connections) — `tools/compare_titles.py`
+- **swap_copy()** (5 connections) — `tools/compare_titles.py`
+- **parse_mouse()** (5 connections) — `tools/compare_titles.py`
+- **Image** (5 connections)
+- **reduce_2x()** (4 connections) — `tools/compare_titles.py`
+- **parse_seed()** (3 connections) — `tools/compare_titles.py`
+- **parse_swap()** (3 connections) — `tools/compare_titles.py`
+- **sheet()** (3 connections) — `tools/compare_titles.py`
+- **sha()** (3 connections) — `tools/trace_tos206_boot.py`
+- **Parcours de conduite** (3 connections) — `docs/CASE_STUDIES.md`
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
-- [Community 2](Community_2.md) (23 shared connections)
-- [Community 16](Community_16.md) (14 shared connections)
-- [Community 134](Community_134.md) (5 shared connections)
-- [Community 57](Community_57.md) (4 shared connections)
-- [Community 0](Community_0.md) (3 shared connections)
-- [Community 64](Community_64.md) (2 shared connections)
-- [Community 32](Community_32.md) (1 shared connections)
+- [Community 18](Community_18.md) (35 shared connections)
+- [Community 55](Community_55.md) (15 shared connections)
+- [Community 146](Community_146.md) (9 shared connections)
+- [Community 207](Community_207.md) (7 shared connections)
+- [Community 151](Community_151.md) (7 shared connections)
+- [Community 49](Community_49.md) (3 shared connections)
+- [Community 107](Community_107.md) (3 shared connections)
+- [Community 34](Community_34.md) (2 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
+- [Community 127](Community_127.md) (1 shared connections)
+- [Community 189](Community_189.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraDataflow_cpp.h`
-- `extern/moira/Moira/MoiraDebugger.h`
-- `extern/moira/Moira/MoiraTypes.h`
+- `docs/CASE_STUDIES.md`
+- `packaging/make_icon.py`
+- `tools/check_compare_titles.py`
+- `tools/compare_titles.py`
+- `tools/trace_tos206_boot.py`
 
 ## Audit Trail
 
-- EXTRACTED: 92 (92%)
-- INFERRED: 8 (8%)
+- EXTRACTED: 165 (96%)
+- INFERRED: 6 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,12 +1,10 @@
 # Community 130
 
-> 197 nodes
+> 195 nodes
 
 ## Key Concepts
 
-- **Changelog — NeoST** (279 connections) — `CHANGELOG.md`
-- **Bug hunt : les 67 disques du dépôt passés au headless (2026-08-25)** (2 connections) — `CHANGELOG.md`
-- **Images IPF (SPS/CAPS) dans les lecteurs A et B, sans libcapsimage (2026-10-22)** (2 connections) — `CHANGELOG.md`
+- **Changelog — NeoST** (280 connections) — `CHANGELOG.md`
 - **0.5.1 — Windows, et le vrai paquet Pi 400 (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.2 — la 0.5.1, mais réellement livrée (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.4 — dongles, ports, MIDI vérifié (2026-08-23)** (1 connections) — `CHANGELOG.md`
@@ -29,22 +27,24 @@
 - **Audit des fiches : YM2149, WD1772, ACIA, et empreinte d'état (2026-11-04)** (1 connections) — `CHANGELOG.md`
 - **Banc du blitter contre `stBlitter.sv`, et la netlist ST-4082 (2026-11-04)** (1 connections) — `CHANGELOG.md`
 - **Banc fx68k : tous les modes d'adressage, et --key dans la passe de jeux (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- *... and 172 more nodes in this community*
+- **Banc Moira↔fx68k : le 68000 nu contre le RTL, et le TODO rangé sur le cap (2026-11-03)** (1 connections) — `CHANGELOG.md`
+- **Bancs RTL en CI (2026-11-04)** (1 connections) — `CHANGELOG.md`
+- *... and 170 more nodes in this community*
 
 ## Relationships
 
-- [Community 101](Community_101.md) (5 shared connections)
-- [Community 37](Community_37.md) (4 shared connections)
+- [Community 101](Community_101.md) (6 shared connections)
+- [Community 160](Community_160.md) (4 shared connections)
+- [Community 25](Community_25.md) (4 shared connections)
+- [Community 27](Community_27.md) (3 shared connections)
 - [Community 39](Community_39.md) (3 shared connections)
-- [Community 218](Community_218.md) (3 shared connections)
-- [Community 288](Community_288.md) (3 shared connections)
-- [Community 380](Community_380.md) (2 shared connections)
-- [Community 258](Community_258.md) (2 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
-- [Community 215](Community_215.md) (2 shared connections)
-- [Community 68](Community_68.md) (2 shared connections)
-- [Community 200](Community_200.md) (2 shared connections)
-- [Community 25](Community_25.md) (2 shared connections)
+- [Community 258](Community_258.md) (3 shared connections)
+- [Community 121](Community_121.md) (3 shared connections)
+- [Community 37](Community_37.md) (3 shared connections)
+- [Community 214](Community_214.md) (2 shared connections)
+- [Community 370](Community_370.md) (2 shared connections)
+- [Community 67](Community_67.md) (2 shared connections)
+- [Community 61](Community_61.md) (2 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 279 (99%)
-- INFERRED: 2 (1%)
+- EXTRACTED: 280 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

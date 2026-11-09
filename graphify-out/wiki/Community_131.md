@@ -22,8 +22,7 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (7 shared connections)
-- [Community 102](Community_102.md) (7 shared connections)
+- [Community 102](Community_102.md) (14 shared connections)
 - [Community 62](Community_62.md) (6 shared connections)
 - [Community 4](Community_4.md) (2 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)

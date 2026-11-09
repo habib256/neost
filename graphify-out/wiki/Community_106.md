@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **StePads** (34 connections) — `src/io/StePads.hpp`
+- **StePads** (32 connections) — `src/io/StePads.hpp`
 - **.sel()** (4 connections) — `src/io/StePads.hpp`
 - **.readButtonsDip()** (3 connections) — `src/io/StePads.hpp`
 - **.readDirections()** (3 connections) — `src/io/StePads.hpp`
@@ -34,12 +34,10 @@
 ## Relationships
 
 - [Community 349](Community_349.md) (2 shared connections)
-- [Community 113](Community_113.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
 - [Community 366](Community_366.md) (1 shared connections)
-- [Community 100](Community_100.md) (1 shared connections)
-- [Community 283](Community_283.md) (1 shared connections)
-- [Community 105](Community_105.md) (1 shared connections)
+- [Community 325](Community_325.md) (1 shared connections)
 - [Community 386](Community_386.md) (1 shared connections)
 
 ## Source Files
@@ -48,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 35 (88%)
-- INFERRED: 5 (12%)
+- EXTRACTED: 35 (92%)
+- INFERRED: 3 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

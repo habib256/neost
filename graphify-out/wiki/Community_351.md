@@ -1,27 +1,26 @@
 # Community 351
 
-> 3 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **mfp_rx_irq_timing_logic.cpp** (4 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
-- **testMfpRxIrqTiming()** (3 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
+- **** (4 connections) — `src/io/IpfImage.hpp`
+- **CELL_0** (1 connections) — `src/io/IpfImage.hpp`
+- **CELL_1** (1 connections) — `src/io/IpfImage.hpp`
+- **CELL_WEAK** (1 connections) — `src/io/IpfImage.hpp`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_rx_irq_timing_logic.cpp`
+- `src/io/IpfImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 4 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

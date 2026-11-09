@@ -1,49 +1,51 @@
 # Community 173
 
-> 12 nodes
+> 25 nodes
 
 ## Key Concepts
 
-- **.liveNow()** (14 connections) — `src/core/Scheduler.hpp`
-- **Interruptions (MFP 68901)** (9 connections) — `docs/IMPLEMENTED.md`
-- **.reset()** (5 connections) — `src/io/Mfp.hpp`
-- **.updateSerialConfig()** (5 connections) — `src/io/Mfp.hpp`
-- **.iack()** (4 connections) — `src/io/Mfp.hpp`
-- **.resetChip()** (4 connections) — `src/io/Mfp.hpp`
-- **.cyclesUntil()** (4 connections) — `src/core/Scheduler.hpp`
-- **.rawCyclesUntil()** (4 connections) — `src/core/Scheduler.hpp`
-- **.firingDue()** (3 connections) — `src/core/Scheduler.hpp`
-- **Bug hunt passes 1-3 + CI de release (2026-07-31)** (3 connections) — `CHANGELOG.md`
-- **liveClock_** (2 connections) — `src/core/Scheduler.hpp`
-- **Statuts corrigés par cette passe (le détail ↑ dans les sections historiques est PÉRIMÉ)** (2 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Track** (34 connections) — `src/io/StxImage.hpp`
+- **blockSize** (1 connections) — `src/io/StxImage.hpp`
+- **flags** (1 connections) — `src/io/StxImage.hpp`
+- **fuzzySize** (1 connections) — `src/io/StxImage.hpp`
+- **mfmSize** (1 connections) — `src/io/StxImage.hpp`
+- **pFuzzy** (1 connections) — `src/io/StxImage.hpp`
+- **pSectorsImage** (1 connections) — `src/io/StxImage.hpp`
+- **pTiming** (1 connections) — `src/io/StxImage.hpp`
+- **pTimingData** (1 connections) — `src/io/StxImage.hpp`
+- **pTrackData** (1 connections) — `src/io/StxImage.hpp`
+- **pTrackImage** (1 connections) — `src/io/StxImage.hpp`
+- **recordType** (1 connections) — `src/io/StxImage.hpp`
+- **revolutionBytes** (1 connections) — `src/io/StxImage.hpp`
+- **saveTrackIndex** (1 connections) — `src/io/StxImage.hpp`
+- **sectors** (1 connections) — `src/io/StxImage.hpp`
+- **sectorsCount** (1 connections) — `src/io/StxImage.hpp`
+- **timingFlags** (1 connections) — `src/io/StxImage.hpp`
+- **timingSize** (1 connections) — `src/io/StxImage.hpp`
+- **trackImageSize** (1 connections) — `src/io/StxImage.hpp`
+- **trackImageSyncPos** (1 connections) — `src/io/StxImage.hpp`
+- **trackNumber** (1 connections) — `src/io/StxImage.hpp`
+- **writeData** (1 connections) — `src/io/StxImage.hpp`
+- **writeMfmSize** (1 connections) — `src/io/StxImage.hpp`
+- **writeReinterpreted** (1 connections) — `src/io/StxImage.hpp`
+- **writeSectors** (1 connections) — `src/io/StxImage.hpp`
 
 ## Relationships
 
-- [Community 215](Community_215.md) (6 shared connections)
-- [Community 39](Community_39.md) (5 shared connections)
-- [Community 6](Community_6.md) (4 shared connections)
-- [Community 105](Community_105.md) (2 shared connections)
-- [Community 349](Community_349.md) (2 shared connections)
-- [Community 77](Community_77.md) (2 shared connections)
-- [Community 200](Community_200.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
-- [Community 313](Community_313.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
+- [Community 63](Community_63.md) (5 shared connections)
+- [Community 267](Community_267.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 112](Community_112.md) (1 shared connections)
+- [Community 93](Community_93.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/IMPLEMENTED.md`
-- `src/core/Scheduler.hpp`
-- `src/io/Mfp.hpp`
+- `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 21 (46%)
-- INFERRED: 25 (54%)
+- EXTRACTED: 32 (94%)
+- INFERRED: 2 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

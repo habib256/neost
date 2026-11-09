@@ -1,25 +1,37 @@
 # Community 392
 
-> 2 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **Mt32Synth** (3 connections) — `src/audio/Audio.hpp`
-- **.setMt32()** (2 connections) — `src/audio/Audio.hpp`
+- **Périphériques des ports — un par port : clés joystick / série, DAC Pro Sound, boutons (`--plug`, GUI Dongles)** (7 connections) — `docs/EXTENSIONS.md`
+- **.setPortBDac()** (4 connections) — `src/core/YM2149.hpp`
+- **.setGpipReadHook()** (4 connections) — `src/io/Mfp.hpp`
+- **.dacRaw()** (3 connections) — `src/core/YM2149.hpp`
+- **Page « Dongles » et adaptateurs de port : `PortDongle` (2026-08-23)** (3 connections) — `CHANGELOG.md`
+- **Inventaire des dongles ST connus (recherche 2026-08-23) et pourquoi le reste n'est pas émulé** (1 connections) — `docs/EXTENSIONS.md`
 
 ## Relationships
 
-- [Community 61](Community_61.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 28](Community_28.md) (2 shared connections)
+- [Community 6](Community_6.md) (2 shared connections)
+- [Community 51](Community_51.md) (2 shared connections)
+- [Community 140](Community_140.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 268](Community_268.md) (1 shared connections)
+- [Community 7](Community_7.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Audio.hpp`
+- `CHANGELOG.md`
+- `docs/EXTENSIONS.md`
+- `src/core/YM2149.hpp`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 8 (50%)
+- INFERRED: 8 (50%)
 - AMBIGUOUS: 0 (0%)
 
 ---
