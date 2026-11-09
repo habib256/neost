@@ -1,12 +1,11 @@
 # Community 105
 
-> 15 nodes
+> 14 nodes
 
 ## Key Concepts
 
 - **Divergences NeoST ↔ Hatari — cartographie pour corrections futures** (21 connections) — `docs/HATARI_DIVERGENCES.md`
 - **🔬 5ᵉ passe — rafraîchissement complet des statuts (2026-07-07, 4 agents)** (8 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.reset()** (6 connections) — `src/core/Shifter.hpp`
 - **11ᵉ passe — deux résidus MESURÉS sur les étalons à disque généré (2026-08-19), TRANCHÉS le 2026-08-29 : un artefact de mesure, un écart réel** (3 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Extensions NeoST sans équivalent Hatari (divergences délibérées, hors fidélité)** (3 connections) — `docs/HATARI_DIVERGENCES.md`
 - **Bilan de fidélité par sous-système** (2 connections) — `docs/HATARI_DIVERGENCES.md`
@@ -22,28 +21,27 @@
 
 ## Relationships
 
-- [Community 88](Community_88.md) (4 shared connections)
-- [Community 288](Community_288.md) (2 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
-- [Community 5](Community_5.md) (1 shared connections)
-- [Community 359](Community_359.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 160](Community_160.md) (3 shared connections)
+- [Community 88](Community_88.md) (3 shared connections)
 - [Community 47](Community_47.md) (1 shared connections)
-- [Community 121](Community_121.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
-- [Community 51](Community_51.md) (1 shared connections)
-- [Community 37](Community_37.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
+- [Community 281](Community_281.md) (1 shared connections)
+- [Community 139](Community_139.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 - [Community 374](Community_374.md) (1 shared connections)
+- [Community 106](Community_106.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 
 ## Source Files
 
 - `docs/HATARI_DIVERGENCES.md`
-- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 31 (74%)
-- INFERRED: 11 (26%)
+- EXTRACTED: 28 (76%)
+- INFERRED: 9 (24%)
 - AMBIGUOUS: 0 (0%)
 
 ---

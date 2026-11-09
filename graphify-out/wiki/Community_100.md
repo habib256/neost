@@ -1,44 +1,43 @@
 # Community 100
 
-> 19 nodes
+> 18 nodes
 
 ## Key Concepts
 
-- **HayesModem** (17 connections) — `src/net/HayesModem.hpp`
-- **HayesModem.cpp** (13 connections) — `src/net/HayesModem.cpp`
-- **.execute()** (8 connections) — `src/net/HayesModem.hpp`
-- **.sendStr()** (7 connections) — `src/net/HayesModem.hpp`
-- **.hangup()** (7 connections) — `src/net/HayesModem.hpp`
-- **.dial()** (6 connections) — `src/net/HayesModem.hpp`
-- **.onTx()** (5 connections) — `src/net/HayesModem.hpp`
-- **.HayesModem()** (4 connections) — `src/net/HayesModem.hpp`
-- **mtrace()** (4 connections) — `src/net/HayesModem.cpp`
-- **string** (4 connections)
-- **.poll()** (3 connections) — `src/net/HayesModem.hpp`
-- **Mfp** (2 connections)
-- **.connected()** (1 connections) — `src/net/HayesModem.hpp`
-- **cmd_** (1 connections) — `src/net/HayesModem.hpp`
-- **dataMode_** (1 connections) — `src/net/HayesModem.hpp`
-- **echo_** (1 connections) — `src/net/HayesModem.hpp`
-- **fd_** (1 connections) — `src/net/HayesModem.hpp`
-- **plusCount_** (1 connections) — `src/net/HayesModem.hpp`
-- **string** (1 connections)
+- **run_fx68k_bench.py** (22 connections) — `tools/run_fx68k_bench.py`
+- **main()** (14 connections) — `tools/run_fx68k_bench.py`
+- **ipl_sweep()** (7 connections) — `tools/run_fx68k_bench.py`
+- **compare()** (5 connections) — `tools/run_fx68k_bench.py`
+- **run_one()** (5 connections) — `tools/run_fx68k_bench.py`
+- **build_fx68k()** (4 connections) — `tools/run_fx68k_bench.py`
+- **parse()** (4 connections) — `tools/run_fx68k_bench.py`
+- **first_frame_write()** (3 connections) — `tools/run_fx68k_bench.py`
+- **cut()** (2 connections) — `tools/run_fx68k_bench.py`
+- **fmt()** (2 connections) — `tools/run_fx68k_bench.py`
+- **need_rebuild()** (2 connections) — `tools/run_fx68k_bench.py`
+- **signature()** (2 connections) — `tools/run_fx68k_bench.py`
+- **skip()** (2 connections) — `tools/run_fx68k_bench.py`
+- **variants()** (2 connections) — `tools/run_fx68k_bench.py`
+- **Path** (2 connections)
+- **Même suite d'accès, puis mêmes INTERVALLES entre accès consécutifs. Comparer…** (1 connections) — `tools/run_fx68k_bench.py`
+- **(PC empilé, date de la 1re écriture de trame), la date étant relative au 1er…** (1 connections) — `tools/run_fx68k_bench.py`
+- **Pour chaque instant T de montée de la broche : quelle frontière prend l'IRQ,…** (1 connections) — `tools/run_fx68k_bench.py`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (5 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 18](Community_18.md) (9 shared connections)
+- [Community 107](Community_107.md) (4 shared connections)
+- [Community 55](Community_55.md) (3 shared connections)
+- [Community 151](Community_151.md) (1 shared connections)
 
 ## Source Files
 
-- `src/net/HayesModem.cpp`
-- `src/net/HayesModem.hpp`
+- `tools/run_fx68k_bench.py`
 
 ## Audit Trail
 
-- EXTRACTED: 37 (79%)
-- INFERRED: 10 (21%)
+- EXTRACTED: 49 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

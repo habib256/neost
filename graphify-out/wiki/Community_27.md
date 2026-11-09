@@ -1,61 +1,60 @@
 # Community 27
 
-> 66 nodes
+> 48 nodes
 
 ## Key Concepts
 
-- **Cpu68k.cpp** (79 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k.cpp** (80 connections) — `src/core/Cpu68k.cpp`
 - **Cpu68k** (69 connections) — `src/core/Cpu68k.hpp`
 - **busOfClock()** (14 connections) — `src/core/Cpu68k.cpp`
-- **CpuCore** (10 connections) — `src/core/Cpu68k.hpp`
-- **.addBusWaitCycles()** (8 connections) — `src/core/Cpu68k.hpp`
-- **.cyclesIntoInstr()** (8 connections) — `src/core/Cpu68k.hpp`
-- **.busClockNow()** (7 connections) — `src/core/Cpu68k.hpp`
-- **.rebaseQuantumAndSync()** (7 connections) — `src/core/Cpu68k.hpp`
-- **.updateIpl()** (6 connections) — `src/core/Cpu68k.hpp`
-- **.Cpu68k()** (6 connections) — `src/core/Cpu68k.hpp`
-- **.activate()** (5 connections) — `src/core/Cpu68k.hpp`
-- **.initCore()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.setCore()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.traceClockNow()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.addMfpWaitCycles()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.addAciaWaitCycles()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.endTimeslice()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.setMegaSteSpeed()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.lastFault()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.setTracer()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.setScheduler()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.reset()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.addPsgWaitCycles()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.cyclesRunInQuantum()** (3 connections) — `src/core/Cpu68k.hpp`
-- **.supervisor()** (3 connections) — `src/core/Cpu68k.hpp`
-- *... and 41 more nodes in this community*
+- **Cpu68k::rebaseQuantumAndSync()** (6 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::addBusWaitCycles()** (4 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::setMegaSteSpeed()** (4 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::addAciaWaitCycles()** (3 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::addMfpWaitCycles()** (3 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::cyclesRunInQuantum()** (3 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::supervisor()** (3 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::triggerBusError()** (3 connections) — `src/core/Cpu68k.cpp`
+- **noteBlitterPreStart()** (3 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::activate()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::addPsgWaitCycles()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::breakpointByIndex()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::breakpointCount()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::breakpointHit()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::breakpointHitAddr()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::breakpointHitIsWatch()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::clearAllBreakpoints()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::clearAllWatchpoints()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::clearBreakpoint()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::clearBreakpointHit()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::clearWatchpoint()** (2 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::halted()** (2 connections) — `src/core/Cpu68k.cpp`
+- *... and 23 more nodes in this community*
 
 ## Relationships
 
-- [Community 349](Community_349.md) (17 shared connections)
-- [Community 138](Community_138.md) (12 shared connections)
-- [Community 102](Community_102.md) (11 shared connections)
-- [Community 64](Community_64.md) (10 shared connections)
-- [Community 37](Community_37.md) (5 shared connections)
-- [Community 66](Community_66.md) (5 shared connections)
-- [Community 160](Community_160.md) (4 shared connections)
-- [Community 22](Community_22.md) (3 shared connections)
-- [Community 16](Community_16.md) (3 shared connections)
-- [Community 130](Community_130.md) (3 shared connections)
-- [Community 327](Community_327.md) (2 shared connections)
-- [Community 200](Community_200.md) (2 shared connections)
+- [Community 349](Community_349.md) (16 shared connections)
+- [Community 138](Community_138.md) (10 shared connections)
+- [Community 102](Community_102.md) (9 shared connections)
+- [Community 54](Community_54.md) (9 shared connections)
+- [Community 351](Community_351.md) (8 shared connections)
+- [Community 66](Community_66.md) (7 shared connections)
+- [Community 22](Community_22.md) (6 shared connections)
+- [Community 139](Community_139.md) (4 shared connections)
+- [Community 327](Community_327.md) (3 shared connections)
+- [Community 182](Community_182.md) (2 shared connections)
+- [Community 16](Community_16.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
 - `src/core/Cpu68k.cpp`
 - `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 183 (84%)
-- INFERRED: 34 (16%)
+- EXTRACTED: 165 (96%)
+- INFERRED: 7 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

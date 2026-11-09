@@ -1,24 +1,18 @@
 # Community 431
 
-> 3 nodes
+> 1 nodes
 
 ## Key Concepts
 
-- **Scale** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Scale()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Cpu68k** (0 connections)
 
 ## Relationships
 
-- [Community 135](Community_135.md) (1 shared connections)
-
-## Source Files
-
-- `extern/moira/Moira/StrWriter.h`
+- No strong cross-community connections detected
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 0 (0%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

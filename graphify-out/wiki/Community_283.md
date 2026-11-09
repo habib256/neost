@@ -1,32 +1,35 @@
 # Community 283
 
-> 6 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **FdcSound** (10 connections) — `src/io/Fdc.hpp`
-- **Index** (1 connections) — `src/io/Fdc.hpp`
-- **MotorOff** (1 connections) — `src/io/Fdc.hpp`
-- **MotorOn** (1 connections) — `src/io/Fdc.hpp`
-- **Seek** (1 connections) — `src/io/Fdc.hpp`
-- **Step** (1 connections) — `src/io/Fdc.hpp`
+- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
+- **main()** (7 connections) — `tools/opendst_memdiff.py`
+- **Server** (6 connections) — `tools/opendst_memdiff.py`
+- **runs()** (3 connections) — `tools/opendst_memdiff.py`
+- **.cmd()** (3 connections) — `tools/opendst_memdiff.py`
+- **.dump()** (3 connections) — `tools/opendst_memdiff.py`
+- **parse_hex()** (2 connections) — `tools/opendst_memdiff.py`
+- **read_word()** (2 connections) — `tools/opendst_memdiff.py`
+- **.close()** (2 connections) — `tools/opendst_memdiff.py`
+- **.__init__()** (1 connections) — `tools/opendst_memdiff.py`
+- **Image mémoire [start, start+length) par tranches de 4 Ko.** (1 connections) — `tools/opendst_memdiff.py`
+- **Adresses triées → plages contiguës [(début, fin)].** (1 connections) — `tools/opendst_memdiff.py`
 
 ## Relationships
 
-- [Community 113](Community_113.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
-- [Community 284](Community_284.md) (1 shared connections)
+- [Community 18](Community_18.md) (3 shared connections)
+- [Community 151](Community_151.md) (3 shared connections)
 
 ## Source Files
 
-- `src/io/Fdc.hpp`
+- `tools/opendst_memdiff.py`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (80%)
-- INFERRED: 2 (20%)
+- EXTRACTED: 23 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

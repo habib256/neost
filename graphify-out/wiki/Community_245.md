@@ -1,35 +1,39 @@
 # Community 245
 
-> 10 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **stx_sector_dam_logic.cpp** (18 connections) — `tests/stx_sector_dam_logic.cpp`
-- **testStxSectorDam()** (7 connections) — `tests/stx_sector_dam_logic.cpp`
-- **Checks** (5 connections) — `tests/stx_sector_dam_logic.cpp`
-- **verifyTrack()** (5 connections) — `tests/stx_sector_dam_logic.cpp`
-- **formattedTrack()** (3 connections) — `tests/stx_sector_dam_logic.cpp`
-- **.equal()** (2 connections) — `tests/stx_sector_dam_logic.cpp`
-- **crc16()** (2 connections) — `tests/stx_sector_dam_logic.cpp`
-- **main()** (2 connections) — `tests/stx_sector_dam_logic.cpp`
-- **count** (1 connections) — `tests/stx_sector_dam_logic.cpp`
-- **failures** (1 connections) — `tests/stx_sector_dam_logic.cpp`
+- **Model** (9 connections) — `src/io/CartridgeKey.hpp`
+- **.setModel()** (5 connections) — `src/io/CartridgeKey.hpp`
+- **.serialize()** (4 connections) — `src/io/CartridgeKey.hpp`
+- **.setDongle()** (4 connections) — `src/core/Machine.hpp`
+- **.model()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **Model** (1 connections)
+- **StateArchive** (1 connections)
+- **Auto** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Cubase2** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Cubase3** (1 connections) — `src/io/CartridgeKey.hpp`
+- **None** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Notator** (1 connections) — `src/io/CartridgeKey.hpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (10 shared connections)
-- [Community 71](Community_71.md) (3 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 150](Community_150.md) (6 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
+- [Community 374](Community_374.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/stx_sector_dam_logic.cpp`
+- `src/core/Machine.hpp`
+- `src/io/CartridgeKey.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 17 (81%)
+- INFERRED: 4 (19%)
 - AMBIGUOUS: 0 (0%)
 
 ---

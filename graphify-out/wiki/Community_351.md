@@ -1,26 +1,35 @@
 # Community 351
 
-> 4 nodes
+> 7 nodes
 
 ## Key Concepts
 
-- **** (4 connections) — `src/io/IpfImage.hpp`
-- **CELL_0** (1 connections) — `src/io/IpfImage.hpp`
-- **CELL_1** (1 connections) — `src/io/IpfImage.hpp`
-- **CELL_WEAK** (1 connections) — `src/io/IpfImage.hpp`
+- **CpuCore** (10 connections) — `src/core/Cpu68k.hpp`
+- **Cpu68k::Cpu68k()** (4 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::coreName()** (3 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::setCore()** (3 connections) — `src/core/Cpu68k.cpp`
+- **.core()** (3 connections) — `src/core/Cpu68k.hpp`
+- **Bus** (2 connections)
+- **Moira** (1 connections) — `src/core/Cpu68k.hpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 27](Community_27.md) (8 shared connections)
+- [Community 182](Community_182.md) (2 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 66](Community_66.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/IpfImage.hpp`
+- `src/core/Cpu68k.cpp`
+- `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 19 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,24 +1,26 @@
 # Community 391
 
-> 3 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Cpcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Cpcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **** (5 connections) — `src/io/MidiAcia.cpp`
+- **ACIA_IRQ** (1 connections) — `src/io/MidiAcia.cpp`
+- **ACIA_OVRN** (1 connections) — `src/io/MidiAcia.cpp`
+- **ACIA_RDRF** (1 connections) — `src/io/MidiAcia.cpp`
+- **ACIA_TDRE** (1 connections) — `src/io/MidiAcia.cpp`
 
 ## Relationships
 
-- [Community 135](Community_135.md) (1 shared connections)
+- [Community 167](Community_167.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `src/io/MidiAcia.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

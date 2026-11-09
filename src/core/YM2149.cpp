@@ -12,6 +12,7 @@
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
+#include <algorithm>
 #include <cstdio>
 #include "core/YM2149.hpp"
 

@@ -6,6 +6,7 @@
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
+#include <algorithm>
 #include "io/Isp1160.hpp"
 
 #include <cstdio>

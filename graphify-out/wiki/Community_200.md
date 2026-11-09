@@ -1,69 +1,64 @@
 # Community 200
 
-> 43 nodes
+> 25 nodes
 
 ## Key Concepts
 
-- **MachineType** (24 connections) — `src/core/MachineType.hpp`
-- **MachineType.hpp** (20 connections) — `src/core/MachineType.hpp`
+- **saveConfig()** (26 connections) — `src/gui/App.cpp`
 - **appInit()** (19 connections) — `src/gui/AppInit.cpp`
-- **machineHasDmaSound()** (10 connections) — `src/core/MachineType.hpp`
-- **parseRamBytes()** (10 connections) — `src/core/MachineType.hpp`
-- **.reconfigure()** (9 connections) — `src/core/Machine.hpp`
-- **memConfigForBytes()** (9 connections) — `src/core/MachineType.hpp`
+- **consumeProfileRequests()** (12 connections) — `src/gui/AppLoop.cpp`
 - **resolveData()** (9 connections) — `src/gui/App.cpp`
-- **machineName()** (8 connections) — `src/core/MachineType.hpp`
-- **parseMachine()** (8 connections) — `src/core/MachineType.hpp`
 - **parseCommandLine()** (7 connections) — `src/gui/AppInit.cpp`
 - **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (7 connections) — `CHANGELOG.md`
-- **Bug hunt de la 10ᵉ passe (workflow 6 chasseurs + vérif adversariale, 2026-08-07)** (7 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.applyConfig()** (6 connections) — `src/gui/App.hpp`
-- **ramLabel()** (6 connections) — `src/core/MachineType.hpp`
+- **autoDongleRetract()** (6 connections) — `src/gui/App.cpp`
 - **fileExists()** (6 connections) — `src/gui/App.cpp`
-- **main()** (6 connections) — `src/web/main_web.cpp`
-- **testRamDisplay()** (6 connections) — `tests/selftest_logic.cpp`
-- **mmioNeedsBetterMachine()** (5 connections) — `src/core/MachineType.hpp`
-- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
+- **loadRtcFromConfig()** (5 connections) — `src/gui/App.cpp`
+- **snapshotRtc()** (5 connections) — `src/gui/App.cpp`
+- **appShutdown()** (5 connections) — `src/gui/AppLoop.cpp`
+- **renderDockSpace()** (5 connections) — `src/gui/DockLayout.cpp`
 - **string** (5 connections)
-- **MissingHw** (4 connections) — `src/core/MachineType.hpp`
-- **pickTosForMachine()** (4 connections) — `src/gui/App.cpp`
-- **size_t** (4 connections)
-- **1. Bus & mémoire (ioMem.c, cpu/memory.c, stMemory.c)** (4 connections) — `docs/HATARI_MAPPING.md`
-- *... and 18 more nodes in this community*
+- **main()** (4 connections) — `src/main.cpp`
+- **Machine** (4 connections)
+- **.resolvePath()** (3 connections) — `src/gui/App.hpp`
+- **.midiOutApply()** (3 connections) — `src/gui/App.hpp`
+- **applyDockLayout()** (3 connections) — `src/gui/DockLayout.cpp`
+- **registerWindowSettings()** (3 connections) — `src/gui/DockLayout.cpp`
+- **App** (3 connections)
+- **App** (2 connections)
+- **App** (2 connections)
+- **main.cpp** (2 connections) — `src/main.cpp`
+- **string** (1 connections)
+- **Et une affirmation fausse trouvée en corrigeant ces renvois** (1 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (12 shared connections)
-- [Community 380](Community_380.md) (9 shared connections)
-- [Community 386](Community_386.md) (6 shared connections)
+- [Community 380](Community_380.md) (14 shared connections)
+- [Community 4](Community_4.md) (13 shared connections)
+- [Community 101](Community_101.md) (8 shared connections)
 - [Community 136](Community_136.md) (5 shared connections)
-- [Community 41](Community_41.md) (5 shared connections)
-- [Community 281](Community_281.md) (4 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 14](Community_14.md) (3 shared connections)
-- [Community 10](Community_10.md) (3 shared connections)
-- [Community 288](Community_288.md) (3 shared connections)
-- [Community 1](Community_1.md) (3 shared connections)
-- [Community 101](Community_101.md) (3 shared connections)
+- [Community 51](Community_51.md) (4 shared connections)
+- [Community 21](Community_21.md) (4 shared connections)
+- [Community 362](Community_362.md) (4 shared connections)
+- [Community 214](Community_214.md) (4 shared connections)
+- [Community 204](Community_204.md) (3 shared connections)
+- [Community 376](Community_376.md) (3 shared connections)
+- [Community 1](Community_1.md) (2 shared connections)
+- [Community 374](Community_374.md) (2 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/HATARI_MAPPING.md`
-- `src/core/Bus.hpp`
-- `src/core/Machine.hpp`
-- `src/core/MachineType.hpp`
 - `src/gui/App.cpp`
 - `src/gui/App.hpp`
 - `src/gui/AppInit.cpp`
-- `src/web/main_web.cpp`
-- `tests/selftest_logic.cpp`
+- `src/gui/AppLoop.cpp`
+- `src/gui/DockLayout.cpp`
+- `src/main.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 94 (57%)
-- INFERRED: 71 (43%)
+- EXTRACTED: 58 (52%)
+- INFERRED: 53 (48%)
 - AMBIGUOUS: 0 (0%)
 
 ---

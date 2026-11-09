@@ -4,45 +4,43 @@
 
 ## Key Concepts
 
-- **StrWriter.h** (55 connections) — `extern/moira/Moira/StrWriter.h`
-- **Av** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **Ccr** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Dfc** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Finish** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Ins** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Pc** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Sep** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Sfc** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Sr** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Sz** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Szb** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Usp** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **Zpc** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **ext1** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **.gpipSetLine()** (14 connections) — `src/io/Mfp.hpp`
+- **.mfpSelfTest()** (6 connections) — `src/io/Mfp.hpp`
+- **3. MFP 68901 (mfp.c)** (6 connections) — `docs/HATARI_MAPPING.md`
+- **Machine::retargetTimerB()** (4 connections) — `src/core/Machine.cpp`
+- **.setXsintLine()** (4 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineKbd()** (3 connections) — `src/io/Mfp.hpp`
+- **.setBlitterLine()** (3 connections) — `src/io/Mfp.hpp`
+- **.setAciaLine()** (2 connections) — `src/io/Mfp.hpp`
+- **.setAciaLineMidi()** (2 connections) — `src/io/Mfp.hpp`
+- **.setBusyLine()** (2 connections) — `src/io/Mfp.hpp`
+- **.setMonitorButton()** (2 connections) — `src/io/Mfp.hpp`
+- **.setRs232Cts()** (2 connections) — `src/io/Mfp.hpp`
+- **.setRs232Dcd()** (2 connections) — `src/io/Mfp.hpp`
+- **.setRs232Ri()** (2 connections) — `src/io/Mfp.hpp`
+- **.timerBStartOfLine()** (2 connections) — `src/io/Mfp.hpp`
 
 ## Relationships
 
-- [Community 109](Community_109.md) (14 shared connections)
-- [Community 2](Community_2.md) (2 shared connections)
-- [Community 32](Community_32.md) (2 shared connections)
-- [Community 134](Community_134.md) (1 shared connections)
-- [Community 432](Community_432.md) (1 shared connections)
-- [Community 54](Community_54.md) (1 shared connections)
-- [Community 433](Community_433.md) (1 shared connections)
-- [Community 434](Community_434.md) (1 shared connections)
-- [Community 435](Community_435.md) (1 shared connections)
-- [Community 427](Community_427.md) (1 shared connections)
-- [Community 139](Community_139.md) (1 shared connections)
-- [Community 297](Community_297.md) (1 shared connections)
+- [Community 6](Community_6.md) (13 shared connections)
+- [Community 215](Community_215.md) (7 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
+- [Community 267](Community_267.md) (1 shared connections)
+- [Community 352](Community_352.md) (1 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `docs/HATARI_MAPPING.md`
+- `src/core/Machine.cpp`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 57 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 30 (73%)
+- INFERRED: 11 (27%)
 - AMBIGUOUS: 0 (0%)
 
 ---

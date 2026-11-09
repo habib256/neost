@@ -1,29 +1,34 @@
 # Community 398
 
-> 5 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **GemdosHd::GemdosHd()** (5 connections) — `src/io/GemdosHd.cpp`
-- **.closeInfOverride()** (2 connections) — `src/io/GemdosHd.hpp`
-- **setD0()** (2 connections) — `src/io/GemdosHd.cpp`
-- **Cpu68k** (2 connections)
-- **Bus** (1 connections)
+- **Disquette (FDC WD1772 + DMA)** (8 connections) — `docs/IMPLEMENTED.md`
+- **Machine::onVbl()** (5 connections) — `src/core/Machine.cpp`
+- **.onVbl()** (2 connections) — `src/io/Fdc.hpp`
+- **.setFastFdc()** (2 connections) — `src/io/Fdc.hpp`
 
 ## Relationships
 
-- [Community 36](Community_36.md) (3 shared connections)
-- [Community 17](Community_17.md) (1 shared connections)
+- [Community 182](Community_182.md) (2 shared connections)
+- [Community 93](Community_93.md) (2 shared connections)
+- [Community 12](Community_12.md) (2 shared connections)
+- [Community 63](Community_63.md) (2 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
+- [Community 95](Community_95.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/GemdosHd.cpp`
-- `src/io/GemdosHd.hpp`
+- `docs/IMPLEMENTED.md`
+- `src/core/Machine.cpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (75%)
-- INFERRED: 2 (25%)
+- EXTRACTED: 5 (36%)
+- INFERRED: 9 (64%)
 - AMBIGUOUS: 0 (0%)
 
 ---

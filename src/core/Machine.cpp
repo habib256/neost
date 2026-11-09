@@ -10,6 +10,7 @@
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
+#include <algorithm>
 #include "core/Machine.hpp"
 #include "core/StateArchive.hpp"
 #include <cstdio>

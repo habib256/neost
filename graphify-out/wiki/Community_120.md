@@ -30,9 +30,9 @@
 
 - [Community 4](Community_4.md) (1 shared connections)
 - [Community 160](Community_160.md) (1 shared connections)
-- [Community 37](Community_37.md) (1 shared connections)
+- [Community 139](Community_139.md) (1 shared connections)
 - [Community 205](Community_205.md) (1 shared connections)
-- [Community 258](Community_258.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 

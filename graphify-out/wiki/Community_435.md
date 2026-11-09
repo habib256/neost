@@ -1,25 +1,18 @@
 # Community 435
 
-> 3 nodes
+> 1 nodes
 
 ## Key Concepts
 
-- **UInt32** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **.UInt32()** (2 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **array** (0 connections)
 
 ## Relationships
 
-- [Community 2](Community_2.md) (2 shared connections)
-- [Community 135](Community_135.md) (1 shared connections)
-
-## Source Files
-
-- `extern/moira/Moira/StrWriter.h`
+- No strong cross-community connections detected
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 0 (0%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

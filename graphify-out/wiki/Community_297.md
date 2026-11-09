@@ -1,24 +1,32 @@
 # Community 297
 
-> 3 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Cc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Cc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Rig** (12 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.at()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.bootDue()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.Rig()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **Ikbd** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **ikbd** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **live** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **mfp** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **scheduler** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
 
 ## Relationships
 
-- [Community 135](Community_135.md) (1 shared connections)
+- [Community 110](Community_110.md) (2 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `tests/ikbd_sci_reset_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 12 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

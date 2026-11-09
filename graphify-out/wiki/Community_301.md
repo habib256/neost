@@ -1,24 +1,34 @@
 # Community 301
 
-> 3 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **Fcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Fcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **SndRig** (11 connections) — `tests/selftest_logic.cpp`
+- **Scheduler** (4 connections)
+- **.counter()** (2 connections) — `tests/selftest_logic.cpp`
+- **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
+- **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
+- **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
+- **DmaSound** (1 connections)
+- **bus** (1 connections) — `tests/selftest_logic.cpp`
+- **sched** (1 connections) — `tests/selftest_logic.cpp`
+- **snd** (1 connections) — `tests/selftest_logic.cpp`
 
 ## Relationships
 
-- [Community 135](Community_135.md) (1 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 201](Community_201.md) (2 shared connections)
+- [Community 219](Community_219.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `tests/selftest_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 17 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

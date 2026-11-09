@@ -1,12 +1,13 @@
 # Community 228
 
-> 8 nodes
+> 9 nodes
 
 ## Key Concepts
 
 - **testFdcSectorSizeSwitch()** (6 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **saveImage()** (5 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **Checks** (4 connections) — `tests/fdc_sector_size_switch_logic.cpp`
+- **sourceImage()** (3 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **.equal()** (2 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **main()** (2 connections) — `tests/fdc_sector_size_switch_logic.cpp`
 - **count** (1 connections) — `tests/fdc_sector_size_switch_logic.cpp`
@@ -15,7 +16,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 256](Community_256.md) (2 shared connections)
 - [Community 86](Community_86.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
 
@@ -25,8 +27,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 14 (93%)
-- INFERRED: 1 (7%)
+- EXTRACTED: 16 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

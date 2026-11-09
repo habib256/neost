@@ -1,6 +1,6 @@
 # Community 75
 
-> 33 nodes
+> 35 nodes
 
 ## Key Concepts
 
@@ -8,6 +8,7 @@
 - **HostPath.cpp** (15 connections) — `src/util/HostPath.cpp`
 - **string** (10 connections)
 - **Probe** (9 connections) — `src/util/ConfigPath.hpp`
+- **ConfigPath.cpp** (9 connections) — `src/util/ConfigPath.cpp`
 - **resolve()** (7 connections) — `src/util/ConfigPath.cpp`
 - **lexicalAbsolute()** (7 connections) — `src/util/HostPath.cpp`
 - **userConfigDir()** (6 connections) — `src/util/ConfigPath.cpp`
@@ -28,15 +29,15 @@
 - **dirWritable** (2 connections) — `src/util/ConfigPath.hpp`
 - **env** (2 connections) — `src/util/ConfigPath.hpp`
 - **exists** (2 connections) — `src/util/ConfigPath.hpp`
-- **direct** (2 connections)
-- *... and 8 more nodes in this community*
+- *... and 10 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (9 shared connections)
-- [Community 282](Community_282.md) (1 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
 - [Community 374](Community_374.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 - [Community 101](Community_101.md) (1 shared connections)
 - [Community 36](Community_36.md) (1 shared connections)
@@ -51,7 +52,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 71 (90%)
+- EXTRACTED: 76 (90%)
 - INFERRED: 8 (10%)
 - AMBIGUOUS: 0 (0%)
 

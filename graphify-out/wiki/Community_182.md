@@ -1,61 +1,65 @@
 # Community 182
 
-> 29 nodes
+> 43 nodes
 
 ## Key Concepts
 
-- **Machine.cpp** (37 connections) — `src/core/Machine.cpp`
-- **.~Machine()** (11 connections) — `src/core/Machine.hpp`
-- **.installSchedulerCallbacks()** (9 connections) — `src/core/Machine.hpp`
-- **.scheduleFrameEvents()** (8 connections) — `src/core/Machine.hpp`
-- **.onVbl()** (8 connections) — `src/core/Machine.hpp`
+- **Machine.cpp** (38 connections) — `src/core/Machine.cpp`
+- **MachineType** (24 connections) — `src/core/MachineType.hpp`
+- **machineIsSte()** (19 connections) — `src/core/MachineType.hpp`
+- **Machine::onHbl()** (12 connections) — `src/core/Machine.cpp`
+- **Machine::Machine()** (10 connections) — `src/core/Machine.cpp`
+- **Machine::adjustMachineForTos()** (10 connections) — `src/core/Machine.cpp`
+- **.reconfigure()** (9 connections) — `src/core/Machine.hpp`
 - **kHblOff()** (8 connections) — `src/core/Machine.cpp`
-- **.loadState()** (7 connections) — `src/core/Machine.hpp`
-- **.retargetTimerB()** (7 connections) — `src/core/Machine.hpp`
-- **.onTimerB()** (7 connections) — `src/core/Machine.hpp`
+- **Cpu68k::serialize()** (7 connections) — `src/core/Cpu68k.cpp`
+- **Machine::loadState()** (7 connections) — `src/core/Machine.cpp`
+- **.serializeState()** (7 connections) — `src/core/Cpu68k.cpp`
 - **stateCrc32()** (7 connections) — `src/core/Machine.cpp`
-- **.armTbiEdge()** (6 connections) — `src/core/Machine.hpp`
-- **.beginFrame_()** (6 connections) — `src/core/Machine.hpp`
-- **.serializeState()** (6 connections) — `src/core/Machine.hpp`
-- **.saveState()** (5 connections) — `src/core/Machine.hpp`
-- **.timerBEdgeCycle()** (5 connections) — `src/core/Machine.hpp`
-- **.onTbiPulseMode()** (5 connections) — `src/core/Machine.hpp`
+- **Machine::serializeState()** (6 connections) — `src/core/Machine.cpp`
+- **Machine::saveState()** (5 connections) — `src/core/Machine.cpp`
+- **Machine::scheduleFrameEvents()** (5 connections) — `src/core/Machine.cpp`
 - **cartFingerprint()** (5 connections) — `src/core/Machine.cpp`
-- **.saveStateFile()** (4 connections) — `src/core/Machine.hpp`
-- **.loadStateFile()** (4 connections) — `src/core/Machine.hpp`
-- **.onTbiEdge()** (4 connections) — `src/core/Machine.hpp`
-- **.desktopMousePosition()** (3 connections) — `src/core/Machine.hpp`
-- **.desktopMouseMove()** (3 connections) — `src/core/Machine.hpp`
-- **.onRender()** (3 connections) — `src/core/Machine.hpp`
+- **.syncFrameEnd_()** (4 connections) — `src/core/Machine.hpp`
+- **Machine::loadStateFile()** (3 connections) — `src/core/Machine.cpp`
+- **Machine::saveStateFile()** (3 connections) — `src/core/Machine.cpp`
+- **machineIsMega()** (3 connections) — `src/core/MachineType.hpp`
+- **array** (3 connections)
 - **size_t** (3 connections)
 - **string** (3 connections)
-- *... and 4 more nodes in this community*
+- **Patchs TOS : ce qu'ils contournent (audit du 2026-11-04)** (3 connections) — `docs/HATARI_AUTOMATION.md`
+- **Machine::armTbiEdge()** (2 connections) — `src/core/Machine.cpp`
+- *... and 18 more nodes in this community*
 
 ## Relationships
 
-- [Community 10](Community_10.md) (20 shared connections)
+- [Community 10](Community_10.md) (22 shared connections)
 - [Community 102](Community_102.md) (7 shared connections)
+- [Community 386](Community_386.md) (6 shared connections)
+- [Community 281](Community_281.md) (6 shared connections)
 - [Community 67](Community_67.md) (6 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
+- [Community 136](Community_136.md) (4 shared connections)
+- [Community 54](Community_54.md) (4 shared connections)
 - [Community 4](Community_4.md) (4 shared connections)
-- [Community 205](Community_205.md) (3 shared connections)
-- [Community 288](Community_288.md) (3 shared connections)
-- [Community 200](Community_200.md) (2 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
-- [Community 275](Community_275.md) (2 shared connections)
-- [Community 258](Community_258.md) (2 shared connections)
-- [Community 254](Community_254.md) (2 shared connections)
-- [Community 27](Community_27.md) (1 shared connections)
+- [Community 14](Community_14.md) (3 shared connections)
+- [Community 258](Community_258.md) (3 shared connections)
+- [Community 139](Community_139.md) (3 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
+- `docs/HATARI_AUTOMATION.md`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/core/Bus.hpp`
+- `src/core/Cpu68k.cpp`
 - `src/core/Machine.cpp`
 - `src/core/Machine.hpp`
+- `src/core/MachineType.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 79 (65%)
-- INFERRED: 43 (35%)
+- EXTRACTED: 116 (68%)
+- INFERRED: 55 (32%)
 - AMBIGUOUS: 0 (0%)
 
 ---

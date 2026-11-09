@@ -1,54 +1,41 @@
 # Community 349
 
-> 16 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **Bus error & cartouches de diagnostic** (34 connections) — `docs/IMPLEMENTED.md`
 - **neostUpdateIpl()** (14 connections) — `src/core/Cpu68k.cpp`
-- **.raiseVbl()** (7 connections) — `src/core/Cpu68k.hpp`
-- **.raiseHbl()** (7 connections) — `src/core/Cpu68k.hpp`
-- **.readIrqUserVector()** (7 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::raiseHbl()** (7 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::raiseVbl()** (7 connections) — `src/core/Cpu68k.cpp`
 - **recomputePinNextDue()** (6 connections) — `src/core/Cpu68k.cpp`
-- **.updateIplNow()** (5 connections) — `src/core/Cpu68k.hpp`
+- **Cpu68k::updateIplNow()** (5 connections) — `src/core/Cpu68k.cpp`
 - **.stoppedState()** (5 connections) — `src/core/Cpu68k.cpp`
 - **pinsAtCycle()** (5 connections) — `src/core/Cpu68k.cpp`
 - **raiseWindowDefers()** (5 connections) — `src/core/Cpu68k.cpp`
-- **.armHblPinAt()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.armVblPinAt()** (4 connections) — `src/core/Cpu68k.hpp`
-- **.serialBaud()** (2 connections) — `src/io/Mfp.hpp`
-- **.serialUcr()** (2 connections) — `src/io/Mfp.hpp`
-- **.readAnalog()** (2 connections) — `src/io/StePads.hpp`
+- **Cpu68k::armHblPinAt()** (4 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::armVblPinAt()** (4 connections) — `src/core/Cpu68k.cpp`
+- **Cpu68k::updateIpl()** (4 connections) — `src/core/Cpu68k.cpp`
 - **Autostart `--auto`, EMail 1.56, chasse aux bugs (2026-10-24)** (2 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 27](Community_27.md) (17 shared connections)
-- [Community 64](Community_64.md) (7 shared connections)
-- [Community 54](Community_54.md) (3 shared connections)
-- [Community 39](Community_39.md) (2 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
-- [Community 6](Community_6.md) (2 shared connections)
-- [Community 106](Community_106.md) (2 shared connections)
-- [Community 61](Community_61.md) (2 shared connections)
-- [Community 37](Community_37.md) (2 shared connections)
-- [Community 374](Community_374.md) (2 shared connections)
-- [Community 19](Community_19.md) (2 shared connections)
+- [Community 27](Community_27.md) (16 shared connections)
+- [Community 54](Community_54.md) (7 shared connections)
+- [Community 160](Community_160.md) (3 shared connections)
+- [Community 374](Community_374.md) (1 shared connections)
+- [Community 215](Community_215.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/IMPLEMENTED.md`
 - `src/core/Cpu68k.cpp`
-- `src/core/Cpu68k.hpp`
-- `src/io/Mfp.hpp`
-- `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 48 (55%)
-- INFERRED: 39 (45%)
+- EXTRACTED: 42 (86%)
+- INFERRED: 7 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 183
 
-> 20 nodes
+> 21 nodes
 
 ## Key Concepts
 
@@ -15,6 +15,7 @@
 - **.elem()** (5 connections) — `tests/ipf_image_logic.cpp`
 - **setBe32()** (4 connections) — `tests/ipf_image_logic.cpp`
 - **.bytes()** (4 connections) — `tests/ipf_image_logic.cpp`
+- **.totalNs()** (3 connections) — `src/io/IpfImage.hpp`
 - **pattern()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.fill()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.sync3()** (3 connections) — `tests/ipf_image_logic.cpp`
@@ -27,23 +28,25 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (15 shared connections)
+- [Community 102](Community_102.md) (9 shared connections)
+- [Community 256](Community_256.md) (6 shared connections)
+- [Community 385](Community_385.md) (3 shared connections)
 - [Community 163](Community_163.md) (3 shared connections)
-- [Community 385](Community_385.md) (2 shared connections)
 - [Community 153](Community_153.md) (2 shared connections)
 - [Community 63](Community_63.md) (2 shared connections)
+- [Community 282](Community_282.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
-- [Community 448](Community_448.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
+- `src/io/IpfImage.hpp`
 - `tests/ipf_image_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 57 (89%)
+- EXTRACTED: 59 (89%)
 - INFERRED: 7 (11%)
 - AMBIGUOUS: 0 (0%)
 

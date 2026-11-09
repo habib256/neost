@@ -1,39 +1,45 @@
 # Community 282
 
-> 10 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **.initDrives()** (12 connections) — `src/io/GemdosHd.hpp`
-- **.reset()** (7 connections) — `src/io/GemdosHd.hpp`
-- **.initCurPaths()** (5 connections) — `src/io/GemdosHd.hpp`
-- **.clearAllInternalDTAs()** (5 connections) — `src/io/GemdosHd.hpp`
-- **determineMaxPartitions()** (5 connections) — `src/io/GemdosHd.cpp`
-- **.driveMask()** (3 connections) — `src/io/GemdosHd.hpp`
-- **.clearInternalDTA()** (3 connections) — `src/io/GemdosHd.hpp`
-- **addSlash()** (3 connections) — `src/io/GemdosHd.cpp`
-- **hostDriveFolderExists()** (3 connections) — `src/io/GemdosHd.cpp`
-- **Sur macOS, un fichier accentué du lecteur GEMDOS était introuvable (2026-09-02)** (3 connections) — `CHANGELOG.md`
+- **IpfImage.cpp** (23 connections) — `src/io/IpfImage.cpp`
+- **toStx()** (12 connections) — `src/io/IpfImage.cpp`
+- **findSectors()** (8 connections) — `src/io/IpfImage.cpp`
+- **readDataField()** (7 connections) — `src/io/IpfImage.cpp`
+- **size_t** (6 connections)
+- **readTrackDump()** (5 connections) — `src/io/IpfImage.cpp`
+- **crc16Ccitt()** (4 connections) — `src/io/IpfImage.cpp`
+- **put16le()** (4 connections) — `src/io/IpfImage.cpp`
+- **put32le()** (4 connections) — `src/io/IpfImage.cpp`
+- **set32le()** (4 connections) — `src/io/IpfImage.cpp`
+- **crc32()** (3 connections) — `src/io/IpfImage.cpp`
+- **isIpf()** (3 connections) — `src/io/IpfImage.cpp`
 
 ## Relationships
 
-- [Community 36](Community_36.md) (11 shared connections)
-- [Community 218](Community_218.md) (7 shared connections)
-- [Community 17](Community_17.md) (6 shared connections)
-- [Community 374](Community_374.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 75](Community_75.md) (1 shared connections)
+- [Community 153](Community_153.md) (6 shared connections)
+- [Community 256](Community_256.md) (6 shared connections)
+- [Community 305](Community_305.md) (5 shared connections)
+- [Community 303](Community_303.md) (3 shared connections)
+- [Community 304](Community_304.md) (3 shared connections)
+- [Community 217](Community_217.md) (3 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 385](Community_385.md) (1 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
+- [Community 93](Community_93.md) (1 shared connections)
+- [Community 172](Community_172.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/GemdosHd.cpp`
-- `src/io/GemdosHd.hpp`
+- `src/io/IpfImage.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (66%)
-- INFERRED: 13 (34%)
+- EXTRACTED: 57 (95%)
+- INFERRED: 3 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

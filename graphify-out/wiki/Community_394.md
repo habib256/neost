@@ -1,24 +1,26 @@
 # Community 394
 
-> 3 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **Fc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Fc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Action** (5 connections) — `src/util/DesktopPointer.hpp`
+- **left** (1 connections) — `src/util/DesktopPointer.hpp`
+- **right** (1 connections) — `src/util/DesktopPointer.hpp`
+- **x** (1 connections) — `src/util/DesktopPointer.hpp`
+- **y** (1 connections) — `src/util/DesktopPointer.hpp`
 
 ## Relationships
 
-- [Community 135](Community_135.md) (1 shared connections)
+- [Community 90](Community_90.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `src/util/DesktopPointer.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

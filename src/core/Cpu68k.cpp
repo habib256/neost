@@ -8,6 +8,7 @@
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
+#include <algorithm>
 #include "core/Cpu68k.hpp"
 #include "core/Blitter.hpp"
 #include "core/Bus.hpp"

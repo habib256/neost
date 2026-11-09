@@ -1,25 +1,25 @@
 # Community 427
 
-> 3 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **Imu** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Imu()** (2 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Checks** (4 connections) — `tests/rtc_write_only_logic.cpp`
+- **.equal()** (1 connections) — `tests/rtc_write_only_logic.cpp`
+- **count** (1 connections) — `tests/rtc_write_only_logic.cpp`
+- **failures** (1 connections) — `tests/rtc_write_only_logic.cpp`
 
 ## Relationships
 
-- [Community 2](Community_2.md) (2 shared connections)
-- [Community 135](Community_135.md) (1 shared connections)
+- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `tests/rtc_write_only_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

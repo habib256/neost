@@ -2,7 +2,7 @@
 
 > God node · 300 connections · `src/core/Cpu68k.hpp`
 
-**Community:** [Community 102](Community_102.md)
+**Community:** [Community 256](Community_256.md)
 
 ## Connections by Relation
 
@@ -15,8 +15,8 @@
 - selftest_logic.cpp `EXTRACTED`
 - AppInit.cpp `EXTRACTED`
 - Moira.cpp `EXTRACTED`
-- Machine.hpp `EXTRACTED`
 - main_headless.cpp `EXTRACTED`
+- Machine.hpp `EXTRACTED`
 - App.cpp `EXTRACTED`
 - main_web.cpp `EXTRACTED`
 - App.hpp `EXTRACTED`
@@ -24,9 +24,9 @@
 - StateArchive.hpp `EXTRACTED`
 - YM2149.hpp `EXTRACTED`
 - main_android.cpp `EXTRACTED`
+-  `EXTRACTED`
 - ipf_image_logic.cpp `EXTRACTED`
 - stx_raw_track_wrap_logic.cpp `EXTRACTED`
-- YM2149.cpp `EXTRACTED`
 - gstmcu_bench.cpp `EXTRACTED`
 - stx_raw_track_overlay_logic.cpp `EXTRACTED`
 - stx_read_address_crc_logic.cpp `EXTRACTED`

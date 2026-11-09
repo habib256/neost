@@ -1,10 +1,15 @@
 # Community 130
 
-> 195 nodes
+> 206 nodes
 
 ## Key Concepts
 
 - **Changelog — NeoST** (280 connections) — `CHANGELOG.md`
+- **A34 — un seul modèle d'exécution, et les 83 verrous du cœur sont enfin classés (2026-08-28)** (2 connections) — `CHANGELOG.md`
+- **Bug hunt : les 67 disques du dépôt passés au headless (2026-08-25)** (2 connections) — `CHANGELOG.md`
+- **Images IPF (SPS/CAPS) dans les lecteurs A et B, sans libcapsimage (2026-10-22)** (2 connections) — `CHANGELOG.md`
+- **Passe de cohérence doc ↔ code, 3ᵉ tour (2026-08-19)** (2 connections) — `CHANGELOG.md`
+- **V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01)** (2 connections) — `CHANGELOG.md`
 - **0.5.1 — Windows, et le vrai paquet Pi 400 (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.2 — la 0.5.1, mais réellement livrée (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.4 — dongles, ports, MIDI vérifié (2026-08-23)** (1 connections) — `CHANGELOG.md`
@@ -24,27 +29,22 @@
 - **Alt+Entrée : plein écran et capture souris (2026-10-18)** (1 connections) — `CHANGELOG.md`
 - **Audit contradictoire du témoin VBL (2026-11-05)** (1 connections) — `CHANGELOG.md`
 - **Audit d'architecture quatre dimensions + grand ménage du TODO (2026-08-27)** (1 connections) — `CHANGELOG.md`
-- **Audit des fiches : YM2149, WD1772, ACIA, et empreinte d'état (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- **Banc du blitter contre `stBlitter.sv`, et la netlist ST-4082 (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- **Banc fx68k : tous les modes d'adressage, et --key dans la passe de jeux (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- **Banc Moira↔fx68k : le 68000 nu contre le RTL, et le TODO rangé sur le cap (2026-11-03)** (1 connections) — `CHANGELOG.md`
-- **Bancs RTL en CI (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- *... and 170 more nodes in this community*
+- *... and 181 more nodes in this community*
 
 ## Relationships
 
 - [Community 101](Community_101.md) (6 shared connections)
-- [Community 160](Community_160.md) (4 shared connections)
-- [Community 25](Community_25.md) (4 shared connections)
-- [Community 27](Community_27.md) (3 shared connections)
 - [Community 39](Community_39.md) (3 shared connections)
+- [Community 218](Community_218.md) (3 shared connections)
 - [Community 258](Community_258.md) (3 shared connections)
-- [Community 121](Community_121.md) (3 shared connections)
-- [Community 37](Community_37.md) (3 shared connections)
 - [Community 214](Community_214.md) (2 shared connections)
 - [Community 370](Community_370.md) (2 shared connections)
-- [Community 67](Community_67.md) (2 shared connections)
-- [Community 61](Community_61.md) (2 shared connections)
+- [Community 215](Community_215.md) (2 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 389](Community_389.md) (2 shared connections)
+- [Community 42](Community_42.md) (2 shared connections)
+- [Community 68](Community_68.md) (2 shared connections)
+- [Community 121](Community_121.md) (2 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 280 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 280 (98%)
+- INFERRED: 5 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

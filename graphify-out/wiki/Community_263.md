@@ -1,12 +1,14 @@
 # Community 263
 
-> 8 nodes
+> 10 nodes
 
 ## Key Concepts
 
+- **stx_sector_rewrite_logic.cpp** (16 connections) — `tests/stx_sector_rewrite_logic.cpp`
 - **testStxSectorRewrite()** (6 connections) — `tests/stx_sector_rewrite_logic.cpp`
 - **Checks** (5 connections) — `tests/stx_sector_rewrite_logic.cpp`
 - **verifyTrack()** (5 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **formattedTrack()** (3 connections) — `tests/stx_sector_rewrite_logic.cpp`
 - **crc16()** (2 connections) — `tests/stx_sector_rewrite_logic.cpp`
 - **main()** (2 connections) — `tests/stx_sector_rewrite_logic.cpp`
 - **.equal()** (1 connections) — `tests/stx_sector_rewrite_logic.cpp`
@@ -15,8 +17,9 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 72](Community_72.md) (2 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 256](Community_256.md) (3 shared connections)
+- [Community 72](Community_72.md) (3 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
@@ -25,8 +28,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 15 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 27 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

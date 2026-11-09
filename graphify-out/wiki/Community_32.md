@@ -1,6 +1,6 @@
 # Community 32
 
-> 67 nodes
+> 69 nodes
 
 ## Key Concepts
 
@@ -9,6 +9,7 @@
 - **u64** (20 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **i32** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **StrWriter_cpp.h** (11 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **.execute()** (9 connections) — `extern/moira/Moira/Moira.h`
 - **sprintx()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprintx_signed()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **hexDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
@@ -24,27 +25,26 @@
 - **Moira::divluMoira()** (4 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
 - **Moira::divluMusashi()** (4 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
 - **Moira::setUndefinedDIVS()** (4 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
+- **.executeUntil()** (4 connections) — `extern/moira/Moira/Moira.h`
 - **decDigits()** (4 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **pair** (4 connections)
 - **i8** (4 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **Moira::cyclesDiv()** (3 connections) — `extern/moira/Moira/MoiraALU_cpp.h`
-- **Moira::execDivlMoira()** (3 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
-- *... and 42 more nodes in this community*
+- *... and 44 more nodes in this community*
 
 ## Relationships
 
 - [Community 2](Community_2.md) (33 shared connections)
+- [Community 16](Community_16.md) (12 shared connections)
 - [Community 57](Community_57.md) (9 shared connections)
-- [Community 16](Community_16.md) (8 shared connections)
-- [Community 135](Community_135.md) (2 shared connections)
-- [Community 54](Community_54.md) (2 shared connections)
+- [Community 54](Community_54.md) (6 shared connections)
+- [Community 109](Community_109.md) (3 shared connections)
 - [Community 169](Community_169.md) (2 shared connections)
-- [Community 64](Community_64.md) (2 shared connections)
 - [Community 166](Community_166.md) (1 shared connections)
 - [Community 33](Community_33.md) (1 shared connections)
-- [Community 109](Community_109.md) (1 shared connections)
+- [Community 64](Community_64.md) (1 shared connections)
 - [Community 66](Community_66.md) (1 shared connections)
 - [Community 134](Community_134.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -58,8 +58,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 169 (97%)
-- INFERRED: 6 (3%)
+- EXTRACTED: 173 (94%)
+- INFERRED: 12 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

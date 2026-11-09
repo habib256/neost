@@ -11,9 +11,11 @@ l'ordre inverse. Version courante : **0.6.2**.
 Le premier passage distant du port NAT révèle deux gardes qui n'avaient pas
 été exercées par le palier full local : le palier fast exige l'inscription
 exacte de chaque étape dans `fast_guards.json`, et le SDK Emscripten courant
-ne fournit plus indirectement `std::fill` à `Ne2000.cpp`. Les cinq contrôles
+ne fournit pas indirectement `std::fill` aux modèles NE2000 et ISP1160. Les cinq contrôles
 NAT sont inscrits (sans déclenchement réel inventé), le registre reste valide
 avec les étapes réseau désactivées, et `<algorithm>` est inclus directement.
+Le même audit couvre les autres appels aux algorithmes standard du cœur
+(CPU, YM2149, Shifter et Machine) sans inclusion explicite.
 Les jobs Windows/Winsock, macOS Universal 2, Linux bionic/ARM64 et Android
 passent sur le commit du port ; les corrections sont validées séparément
 avant le nouveau passage CI.

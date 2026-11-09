@@ -7,8 +7,8 @@
 ## Connections by Relation
 
 ### contains
-- Shifter.hpp `EXTRACTED`
 - Geometry `EXTRACTED`
+- Shifter.hpp `EXTRACTED`
 - FrameGeometry `EXTRACTED`
 - GlueProbe `EXTRACTED`
 - Mode `EXTRACTED`

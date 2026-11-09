@@ -1,24 +1,31 @@
 # Community 304
 
-> 3 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **Fp** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Fp()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **StxStats** (12 connections) — `src/io/IpfImage.hpp`
+- **dataCrcErrors** (1 connections) — `src/io/IpfImage.hpp`
+- **deleted** (1 connections) — `src/io/IpfImage.hpp`
+- **fuzzySectors** (1 connections) — `src/io/IpfImage.hpp`
+- **idCrcErrors** (1 connections) — `src/io/IpfImage.hpp`
+- **noData** (1 connections) — `src/io/IpfImage.hpp`
+- **sectors** (1 connections) — `src/io/IpfImage.hpp`
+- **timedSectors** (1 connections) — `src/io/IpfImage.hpp`
+- **tracks** (1 connections) — `src/io/IpfImage.hpp`
 
 ## Relationships
 
-- [Community 135](Community_135.md) (1 shared connections)
+- [Community 282](Community_282.md) (3 shared connections)
+- [Community 172](Community_172.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `src/io/IpfImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 12 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

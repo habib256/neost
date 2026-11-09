@@ -1,11 +1,12 @@
 # Community 106
 
-> 28 nodes
+> 30 nodes
 
 ## Key Concepts
 
 - **StePads** (32 connections) — `src/io/StePads.hpp`
 - **.sel()** (4 connections) — `src/io/StePads.hpp`
+- **🧷 4ᵉ passe — couches d'intégration (2026-06-15, workflow 2 agents)** (4 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.readButtonsDip()** (3 connections) — `src/io/StePads.hpp`
 - **.readDirections()** (3 connections) — `src/io/StePads.hpp`
 - **.fireButtons()** (2 connections) — `src/io/StePads.hpp`
@@ -28,26 +29,27 @@
 - **megaSte_** (1 connections) — `src/io/StePads.hpp`
 - **MEGASTE_DIP** (1 connections) — `src/io/StePads.hpp`
 - **oe_** (1 connections) — `src/io/StePads.hpp`
-- **pad0_** (1 connections) — `src/io/StePads.hpp`
-- *... and 3 more nodes in this community*
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 349](Community_349.md) (2 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
+- [Community 374](Community_374.md) (2 shared connections)
+- [Community 113](Community_113.md) (1 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
 - [Community 366](Community_366.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
 - [Community 386](Community_386.md) (1 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 105](Community_105.md) (1 shared connections)
 
 ## Source Files
 
+- `docs/HATARI_DIVERGENCES.md`
 - `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 35 (92%)
-- INFERRED: 3 (8%)
+- EXTRACTED: 38 (93%)
+- INFERRED: 3 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

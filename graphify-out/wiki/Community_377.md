@@ -1,34 +1,28 @@
 # Community 377
 
-> 7 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **FramePacer** (9 connections) — `src/core/Pacing.hpp`
-- **.resync()** (4 connections) — `src/core/Pacing.hpp`
-- **A28 — le servo audio et la cadence rentrent dans le cœur (2026-08-28)** (4 connections) — `CHANGELOG.md`
-- **.nextDueMs()** (1 connections) — `src/core/Pacing.hpp`
-- **armed_** (1 connections) — `src/core/Pacing.hpp`
-- **kMaxCatchUp** (1 connections) — `src/core/Pacing.hpp`
-- **nextMs_** (1 connections) — `src/core/Pacing.hpp`
+- **Pending** (4 connections) — `src/audio/MidiOutHost.hpp`
+- **.destinationCount()** (2 connections) — `src/audio/MidiOutHost.hpp`
+- **time_point** (2 connections)
+- **size_t** (1 connections)
+- **b** (1 connections) — `src/audio/MidiOutHost.hpp`
+- **when** (1 connections) — `src/audio/MidiOutHost.hpp`
 
 ## Relationships
 
-- [Community 58](Community_58.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 42](Community_42.md) (3 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/core/Pacing.hpp`
+- `src/audio/MidiOutHost.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (57%)
-- INFERRED: 6 (43%)
+- EXTRACTED: 7 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

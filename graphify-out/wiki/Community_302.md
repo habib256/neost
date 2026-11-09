@@ -1,32 +1,39 @@
 # Community 302
 
-> 10 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **2. 🔬 Fidélité au silicium — par puce** (10 connections) — `TODO.md`
-- **2.1 CPU 68000 (Moira) — ce que le banc fx68k a localisé** (1 connections) — `TODO.md`
-- **2.2 GLUE, MMU, Shifter — vidéo et bus** (1 connections) — `TODO.md`
-- **2.3 MFP 68901** (1 connections) — `TODO.md`
-- **2.4 Blitter** (1 connections) — `TODO.md`
-- **2.5 Son — YM2149, DMA STE, Microwire** (1 connections) — `TODO.md`
-- **2.6 Disquette — WD1772, DMA, ACSI** (1 connections) — `TODO.md`
-- **2.7 Clavier — IKBD HD6301, ACIA 6850, MIDI** (1 connections) — `TODO.md`
-- **2.8 Mega STE — SCC Z85C30, RTC RP5C15, cache** (1 connections) — `TODO.md`
-- **2.9 TOS, GEMDOS, cartouche** (1 connections) — `TODO.md`
+- **.reset()** (6 connections) — `src/io/MidiAcia.hpp`
+- **.setRxSource()** (5 connections) — `src/io/MidiAcia.hpp`
+- **.armRxPace()** (5 connections) — `src/io/MidiAcia.hpp`
+- **.serialize()** (5 connections) — `src/io/MidiAcia.hpp`
+- **.raiseIfReady()** (3 connections) — `src/io/MidiAcia.hpp`
+- **6ᵉ passe — bug hunt pré-release (2026-07-12, agents parallèles)** (3 connections) — `docs/HATARI_DIVERGENCES.md`
+- **MIDI IN — l'ACIA tire à 31 250 bauds au lieu d'une rafale par trame (2026-08-29)** (2 connections) — `CHANGELOG.md`
+- **function** (1 connections)
+- **StateArchive** (1 connections)
 
 ## Relationships
 
-- [Community 237](Community_237.md) (1 shared connections)
+- [Community 167](Community_167.md) (5 shared connections)
+- [Community 25](Community_25.md) (5 shared connections)
+- [Community 59](Community_59.md) (1 shared connections)
+- [Community 213](Community_213.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 105](Community_105.md) (1 shared connections)
+- [Community 15](Community_15.md) (1 shared connections)
 
 ## Source Files
 
-- `TODO.md`
+- `CHANGELOG.md`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/io/MidiAcia.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 17 (74%)
+- INFERRED: 6 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,25 +1,36 @@
 # Community 155
 
-> 3 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **Cn** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Cn()** (2 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **TrackInfo** (17 connections) — `src/io/IpfImage.cpp`
+- **blockCount** (1 connections) — `src/io/IpfImage.cpp`
+- **cylinder** (1 connections) — `src/io/IpfImage.cpp`
+- **data** (1 connections) — `src/io/IpfImage.cpp`
+- **dataSize** (1 connections) — `src/io/IpfImage.cpp`
+- **hasData** (1 connections) — `src/io/IpfImage.cpp`
+- **head** (1 connections) — `src/io/IpfImage.cpp`
+- **indexCells** (1 connections) — `src/io/IpfImage.cpp`
+- **infoSet** (1 connections) — `src/io/IpfImage.cpp`
+- **process** (1 connections) — `src/io/IpfImage.cpp`
+- **sigtype** (1 connections) — `src/io/IpfImage.cpp`
+- **sizeCells** (1 connections) — `src/io/IpfImage.cpp`
+- **type** (1 connections) — `src/io/IpfImage.cpp`
 
 ## Relationships
 
-- [Community 2](Community_2.md) (2 shared connections)
-- [Community 135](Community_135.md) (1 shared connections)
+- [Community 217](Community_217.md) (3 shared connections)
+- [Community 305](Community_305.md) (1 shared connections)
+- [Community 282](Community_282.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `src/io/IpfImage.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 17 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

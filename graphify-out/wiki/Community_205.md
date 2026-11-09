@@ -4,48 +4,47 @@
 
 ## Key Concepts
 
-- **Cartographie Hatari ↔ NeoST — audit de correspondance** (14 connections) — `docs/HATARI_MAPPING.md`
-- **.onHbl()** (12 connections) — `src/core/Machine.hpp`
 - **Vidéo (Shifter + Glue) — `Shifter.cpp` ↔ `video.c`** (9 connections) — `docs/HATARI_DIVERGENCES.md`
+- **Shifter::liveGlueCatchUp()** (8 connections) — `src/core/VideoGlue.cpp`
+- **Shifter::replayGlue()** (8 connections) — `src/core/VideoGlue.cpp`
 - **.writeShifterRes()** (8 connections) — `src/core/Shifter.hpp`
-- **Prochains travaux de précision** (6 connections) — `docs/HATARI_MAPPING.md`
-- **🟡 Nouveaux — BASSES (cas-limites/cosmétiques)** (5 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.updateGlueState()** (5 connections) — `src/core/Shifter.hpp`
+- **glueLineLenFor()** (5 connections) — `src/core/VideoGlue.cpp`
 - **2. Vidéo / Shifter / Glue (video.c, spec512.c, conv_st.c)** (5 connections) — `docs/HATARI_MAPPING.md`
-- **.syncFrameEnd_()** (4 connections) — `src/core/Machine.hpp`
 - **.updateGlueRes()** (4 connections) — `src/core/Shifter.hpp`
 - **P3 — Comportement / protocole (IRQ, registres, resets)** (4 connections) — `docs/HATARI_MAPPING.md`
-- **.read8()** (3 connections) — `src/core/Blitter.hpp`
+- **.startHBL()** (3 connections) — `src/core/Shifter.hpp`
 - **.writeVideoCounterByte()** (3 connections) — `src/core/Shifter.hpp`
 - **.liveLineLength()** (2 connections) — `src/core/Shifter.hpp`
-- **✗ Candidats réfutés (mémo anti-faux-positifs)** (1 connections) — `docs/HATARI_MAPPING.md`
+- **lineGeom_** (2 connections) — `src/core/Shifter.hpp`
+- **NO_SYNC/SYNC_HIGH — gardes comparatives ajoutées le 2026-10-19** (2 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 37](Community_37.md) (6 shared connections)
-- [Community 288](Community_288.md) (6 shared connections)
-- [Community 5](Community_5.md) (4 shared connections)
-- [Community 182](Community_182.md) (3 shared connections)
-- [Community 160](Community_160.md) (3 shared connections)
-- [Community 284](Community_284.md) (3 shared connections)
-- [Community 10](Community_10.md) (2 shared connections)
-- [Community 200](Community_200.md) (2 shared connections)
+- [Community 5](Community_5.md) (9 shared connections)
+- [Community 288](Community_288.md) (5 shared connections)
+- [Community 88](Community_88.md) (3 shared connections)
 - [Community 258](Community_258.md) (2 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
-- [Community 349](Community_349.md) (1 shared connections)
-- [Community 121](Community_121.md) (1 shared connections)
+- [Community 67](Community_67.md) (2 shared connections)
+- [Community 182](Community_182.md) (2 shared connections)
+- [Community 352](Community_352.md) (2 shared connections)
+- [Community 211](Community_211.md) (1 shared connections)
+- [Community 139](Community_139.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 105](Community_105.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 
 ## Source Files
 
 - `docs/HATARI_DIVERGENCES.md`
 - `docs/HATARI_MAPPING.md`
-- `src/core/Blitter.hpp`
-- `src/core/Machine.hpp`
 - `src/core/Shifter.hpp`
+- `src/core/VideoGlue.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 32 (50%)
-- INFERRED: 32 (50%)
+- EXTRACTED: 25 (50%)
+- INFERRED: 25 (50%)
 - AMBIGUOUS: 0 (0%)
 
 ---

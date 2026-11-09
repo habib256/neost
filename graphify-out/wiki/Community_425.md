@@ -12,7 +12,7 @@
 
 - [Community 14](Community_14.md) (2 shared connections)
 - [Community 30](Community_30.md) (1 shared connections)
-- [Community 284](Community_284.md) (1 shared connections)
+- [Community 392](Community_392.md) (1 shared connections)
 - [Community 205](Community_205.md) (1 shared connections)
 - [Community 352](Community_352.md) (1 shared connections)
 

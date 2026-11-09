@@ -4,22 +4,23 @@
 
 ## Key Concepts
 
-- **setMouseCaptured()** (4 connections) — `src/web/main_web.cpp`
-- **onKey()** (3 connections) — `src/web/main_web.cpp`
-- **onMouseButton()** (3 connections) — `src/web/main_web.cpp`
-- **GLFWwindow** (3 connections)
+- **Mode** (5 connections) — `src/core/Shifter.hpp`
+- **High** (1 connections) — `src/core/Shifter.hpp`
+- **Low** (1 connections) — `src/core/Shifter.hpp`
+- **Medium** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 68](Community_68.md) (3 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
 
 ## Source Files
 
-- `src/web/main_web.cpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

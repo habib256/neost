@@ -4,14 +4,14 @@
 
 ## Key Concepts
 
-- **Framing.cpp** (4 connections) — `src/core/Framing.cpp`
+- **Framing.cpp** (3 connections) — `src/core/Framing.cpp`
 - **stContentRegion()** (2 connections) — `src/core/Framing.cpp`
 - **Shifter** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
@@ -19,7 +19,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 4 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
