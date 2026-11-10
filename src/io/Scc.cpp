@@ -500,9 +500,8 @@ void Scc::processTX(int c) {
         if (!ch.txInterrupted) serialWriteByte(c, ch.tsr);
         ch.txInterrupted = false; ch.txRemaining = 0;
         ch.tsrFull = false; ch.txActive = false;
-        // [B] UM0109 RR1 D0 p.180 : All Sent suit la fin de trame en asynchrone.
-        // ⚠ [B] UM0109 RR1 D0 p.180 : il reste à 1 en synchrone et SDLC ; ici il retombe dans
-        //    tous les modes dès qu'un caractère est chargé. Écart non corrigé.
+        // [B] UM0109 RR1 D0 p.180 : All Sent suit la fin de trame en asynchrone ; il se lit
+        //    toujours à 1 en synchrone et SDLC (forcé à la lecture, cf. read8).
         ch.RR[1] |= RR1_ALL_SENT;
     }
     if ((ch.RR[0] & RR0_TX_BUFFER_EMPTY) == 0 && transmitAllowed(c))
@@ -585,8 +584,10 @@ int64_t Scc::serialPeriod(int c, bool tx, bool advance) {
     static constexpr int mults[] = {1,16,32,64};
     static constexpr int stops2[] = {0,2,3,4};
     // [B] UM0109 WR4 D7-D6 p.150 : le mode 1X est forcé en synchrone.
-    // ⚠ [B] UM0109 WR4 p.150 : sauf en External Sync, où ces bits comptent ; ici 1X aussi.
-    //    Écart non corrigé.
+    // [B] UM0109 WR4 p.150-151 : en External Sync, D7-D6 ne choisissent plus un multiplicateur
+    //    mais une variante de synchronisation (/SYNC seul, /SYNC ou WR7, SDLC), et doivent valoir
+    //    00 en mode caractère (p.84). [F] L'horloge reste traitée en 1X ; aucune de ces variantes
+    //    n'est modélisée. Tranché par : un 85C30 en External Sync avec D7-D6 ≠ 00.
     const int mult = (ch.WR[4] & 12) ? mults[ch.WR[4] >> 6] : 1;
     const int source = (ch.WR[11] >> (tx ? 3 : 5)) & 3;
     const int bits = tx ? (ch.tsrFull ? ch.tsrBits : ch.txBits) : ch.rxBits;
@@ -808,7 +809,11 @@ uint8_t Scc::readControl(int c) {
     switch (reg) {
     // [B] UM0109 p.144-145, p.182-187 : RR4/5/9/11/14 sont les images de RR0/1/13/15/10.
     case 0: case 4: updateRR0(c); value = chn_[c].RR[0]; break;
-    case 1: case 5: value = chn_[c].RR[1]; break;
+    case 1: case 5:
+        // [B] UM0109 RR1 D0 p.180 : « This bit is always set in synchronous and SDLC modes » ;
+        // WR4 D3-D2 = 00 sélectionne ces modes (p.150). Le suivi interne reste celui de l'asynchrone.
+        value = chn_[c].RR[1] | ((chn_[c].WR[4] & 0x0C) == 0 ? RR1_ALL_SENT : 0);
+        break;
     case 2:
         updateRR2();
         if (chn_[0].WR[9] & WR9_SOFT_INTACK) doIACK(true);

@@ -59,6 +59,23 @@ bool testSccAsync() {
         r.s.write8(0x83, 0x15);
         check(r.pop(0) == 0xf5, "local loopback applies receiver format independently of TX");
     }
+    // [B] UM0109 RR1 D0 p.180 : All Sent suit l'émetteur en asynchrone, et se lit toujours à 1
+    // en synchrone et SDLC (WR4 D3-D2 = 00).
+    for (int channel = 0; channel < 2; ++channel) {
+        Rig r; Scheduler scheduler;             // jamais avancé : le caractère reste en émission
+        r.s.setScheduler(&scheduler);
+        auto rr1 = [&] { r.s.write8(0x81 + 4 * channel, 1); return r.s.read8(0x81 + 4 * channel); };
+        r.wr(channel, 4, 0x44);                  // asynchrone, x16, 1 stop
+        r.wr(channel, 5, 0x68);                  // TX activé, 8 bits
+        r.s.write8(0x83 + 4 * channel, 0x55);    // caractère chargé
+        check((rr1() & 1) == 0, "async: All Sent drops once a character is loaded");
+        r.wr(channel, 4, 0x00);                  // synchrone
+        check((rr1() & 1) == 1, "sync: All Sent always reads one");
+        r.wr(channel, 4, 0x20);                  // SDLC (D5-D4 = 10)
+        check((rr1() & 1) == 1, "SDLC: All Sent always reads one");
+        r.wr(channel, 4, 0x44);                  // retour en asynchrone
+        check((rr1() & 1) == 0, "async again: All Sent follows the transmitter");
+    }
     return failures == 0;
 }
 #ifdef SCC_ASYNC_STANDALONE

@@ -2563,6 +2563,15 @@ les étalons de fidélité** (réseau OFF pendant `run_all.py --tier fast/full`)
   vraie carte. ITL/isochrone et timing électrique restent non exécutés. Références,
   tests et limites : `docs/NETUSBEE.md`.
 
+## SCC : All Sent toujours à 1 en synchrone et SDLC (2026-11-10)
+
+**Divergence volontaire, grade B.** Zilog SCC/ESCC User Manual UM010902-0609, RR1 D0 p.180 :
+« This bit is always set in synchronous and SDLC modes ». `Scc::read8` force ce bit quand
+WR4 D3-D2 = 00 ; en asynchrone il suit toujours l'émetteur. Hatari `scc.c:1969,2003 @ f0736b24`
+le fait retomber dans tous les modes. Test : `tests/scc_async_logic.cpp`, deux canaux.
+Au passage, la note sur WR4 D7-D6 en External Sync est requalifiée : ces bits y choisissent
+une variante de synchronisation, pas un multiplicateur (p.150-151) ; non modélisé, grade F.
+
 ## ACIA 6850 : TDRE sous master reset et reset à chaud du MIDI (2026-11-10)
 
 **Divergences volontaires, grade B.** Motorola MC6850 (`extern/datasheets/MC6850.pdf`) :

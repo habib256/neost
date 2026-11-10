@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## A43, SCC : All Sent en synchrone et SDLC (2026-11-10)
+
+- RR1 D0 (All Sent) se lit toujours à 1 en modes synchrone et SDLC (UM0109 RR1 p.180) ;
+  en asynchrone, il suit l'émetteur. Divergence volontaire avec Hatari, documentée.
+- La note sur WR4 D7-D6 en External Sync est requalifiée : variante de synchronisation,
+  pas multiplicateur d'horloge, non modélisée (grade F).
+- Le vecteur RR2 d'une condition spéciale sous réception désarmée reste ouvert : le manuel
+  ne dit pas sa priorité face aux autres sources.
+
 ## A43, ACIA 6850 : TDRE sous master reset, MIDI au reset à chaud (2026-11-10)
 
 - Les deux ACIA lisent TDRE à 0 tant que la puce est tenue en master reset (CR1-0 = 11),
