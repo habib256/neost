@@ -468,6 +468,14 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                      if (((aerOld ^ v) & 8) && timerBEdgeSink_) timerBEdgeSink_((v & 8) != 0);
                      aer = v;
                      gpipUpdateInterrupt(gpipInput(), gpipInput(), aerOld, aer);
+                     // [B] MC68901 janv. 1984 § 5.1.3 p. 5-4 : en event-count, changer le bit
+                     // de front « may produce a count pulse » ; § 4.2.2, note p. 4-2 : le
+                     // détecteur est un XOR du bit et de l'entrée. L'impulsion naît donc quand
+                     // l'entrée vaut déjà le nouveau bit. Divergence avec [D] Hatari
+                     // mfp.c:2742-2810 @ f0736b24, qui ne compte rien. Timer B : Machine::retargetTimerB.
+                     if (((aerOld ^ v) & 0x10) && (timer_[0x19] & 0x0F) == 0x08
+                         && tai_ == (((v >> 4) & 1) != 0))
+                         countTimerAEvent();
                      // [B] MC68901 § 5.1.2 : l'AER définit aussi le niveau actif de TAI/TBI.
                      { const int64_t when = sched_ ? sched_->liveNow() : 0;
                        updatePulseGate(0, when); updatePulseGate(1, when); }
@@ -982,8 +990,8 @@ void Mfp::hblank() {
 
 void Mfp::hblankAt(int64_t when) {
     // [B] MC68901 § 5.1.3 p. 5-3, § 5.1.1 p. 5-2 ; [D] mfp.c:1297-1322 @ f0736b24.
-    // ⚠ [B] MC68901 § 5.1.3 p. 5-4, MK68901 p. 13 : changer le bit d'AER en event-count peut produire une
-    // impulsion de comptage. Ni ce code ni Hatari ne la produisent, sur Timer A comme sur Timer B.
+    // [B] MC68901 § 5.1.3 p. 5-4 : changer le bit d'AER en event-count compte une impulsion
+    // quand DE vaut déjà le nouveau bit — Machine::retargetTimerB (Timer A : Mfp::write8 $03).
     // En mode event-count (TBCR bits 0-3 == 0x08), Timer B décompte d'une unité
     // par ligne ; à 0 il recharge et lève l'IRQ Timer B (canal 8) si armée.
     // Pas de garde sur compteur==0 : comme pour le Timer A, data reg 0 vaut 256
@@ -1022,9 +1030,13 @@ void Mfp::timerA_setLineInput(bool bit) {
     // [B] MC68901 § 5.1.3, p. 5-4 : le front actif produit aussi l'IRQ du canal I4.
     gpipEdges(viewBefore, gpipIrqView(gpipInput()), aer, aer, sched_ ? sched_->liveNow() : 0);
     if (bit != ((aer >> 4) & 1)) return;           // front non sélectionné par l'AER GPIP4
-    // [B] MC68901 § 5.1.3 p. 5-3 ; [D] mfp.c:1244-1261 @ f0736b24.
-    // À 1, le compteur expire : recharge depuis TADR puis IRQ. Sinon décrément ; comme
-    // taCounter_ est un uint8_t, 0 décrémente vers 255 → data reg 0 vaut bien 256.
+    countTimerAEvent();
+}
+
+// [B] MC68901 § 5.1.3 p. 5-3 ; [D] mfp.c:1244-1261 @ f0736b24.
+// À 1, le compteur expire : recharge depuis TADR puis IRQ. Sinon décrément ; comme
+// taCounter_ est un uint8_t, 0 décrémente vers 255 → data reg 0 vaut bien 256.
+void Mfp::countTimerAEvent() {
     if (taCounter_ == 1) {
         taCounter_ = taReload_;
         raise(SRC_TIMERA);

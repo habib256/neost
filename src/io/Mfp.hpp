@@ -136,6 +136,8 @@ public:
     // [F] Usage par TOS 1.x non revérifié : tranché par le désassemblage de la ROM.
     void hblank();
     void hblankAt(int64_t when);
+    // Mode event-count du Timer B ($FFFA1B bits 0-3 = 8) : DE est alors compté.
+    bool timerBEventCount() const { return (tbcr_ & 0x0F) == 0x08; }
 
     // [B] MC68901 § 5.1.3 p. 5-4 : le bit 3 d'AER choisit le front actif de TBI.
     // [D] Position DE+24 : Hatari mfp.c:2737-2740 @ f0736b24 et [D] video.c:3179-3188 @ f0736b24.
@@ -588,6 +590,7 @@ private:
     uint8_t timer_[0x40] = {};
 
 private:
+    void countTimerAEvent();        // impulsion de comptage du Timer A en event-count
     int highestPending() const;     // n° de source prête la plus prioritaire, -1 sinon
     int highestInService() const;   // n° de source en cours de service, -1 sinon
 

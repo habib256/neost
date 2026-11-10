@@ -1,4 +1,5 @@
-// Hatari mfp.c ActiveEdge_WriteByte + video.c Video_AddInterruptTimerB (strict >).
+// [D] Hatari mfp.c ActiveEdge_WriteByte + video.c Video_AddInterruptTimerB (strict >) @ f0736b24,
+// sauf l'impulsion de comptage au changement d'AER3 : [B] MC68901 janv. 1984 § 5.1.3.
 #include "core/Machine.hpp"
 #include <algorithm>
 #include <cstdlib>
@@ -115,9 +116,12 @@ int testMachineTimerBAer() {
         rig.advance(rig.cycle(line, (start + end) / 2));
         const int previous = rig.count();
         rig.selectStart(false);
+        // [B] MC68901 janv. 1984 § 5.1.3 p. 5-4, § 4.2.2 note p. 4-2 : AER3 remis à 0
+        // alors que DE vaut déjà 0 (ligne non affichée) compte une impulsion. Hatari, non.
+        check.equal("AER3 1→0, DE bas : impulsion", rig.count(), previous - (eventMode && !displayed));
         check.equal("début vers fin même ligne", rig.deadline(), rig.cycle(line, end));
         rig.advance(rig.cycle(line, end));
-        check.equal("second front physique", rig.count(), previous - (eventMode && displayed));
+        check.equal("second front physique", rig.count(), previous - eventMode);
     }
 
     // [B] MC68901 § 5.1.2, p. 5-2 : en mode pulse, TBI (= DE) autorise le comptage, et le
@@ -162,9 +166,12 @@ int testMachineTimerBAer() {
         rig.advance(rig.cycle(line, (start + end) / 2));
         rig.arm(200, 8);
         rig.selectStart(true);
+        // [B] MC68901 janv. 1984 § 5.1.3 p. 5-4, § 4.2.2 note p. 4-2 : AER3 mis à 1
+        // pendant DE (entrée déjà à 1) compte une impulsion, datée à l'écriture.
+        check.equal("AER3 0→1 pendant DE : impulsion", rig.count(), 199);
         check.equal("nouveau début passé", rig.deadline(), rig.cycle(line + 1, start));
         rig.advance(rig.cycle(line, end));
-        check.equal("ancienne fin annulée sans tic", rig.count(), 200);
+        check.equal("ancienne fin annulée sans tic", rig.count(), 199);
     }
 
     for (int videoMode = 0; videoMode < 3; ++videoMode)

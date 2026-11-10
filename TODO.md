@@ -140,7 +140,7 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
 - **Lecture du dernier cycle fractionnaire d'un timer** · P3 ⭘ · [F] — la conversion entière peut rendre 0 juste avant l'échéance interne ; forcer 1 change `mfp_poll` de 16 pixels. Lecture conservée, datation DS/horloge à isoler par une sonde ; distinct de l'arrêt du compteur corrigé selon la fiche le 2026-11-10. → `docs/HATARI_DIVERGENCES.md`
 - **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
-- **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp`. Élection datée par requête, venue du seul Hatari (`mfp.c:998 @ f0736b24`, posée pour Fuzion CD Menus 77, 78, 84), contre la priorité fixe de § 3.1 : ne pas retirer sans ces disques ; TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; effacement de UE en un bit au lieu d'un cycle de TC ; prescaler changé en marche (§ 5.1.1) ; impulsion de comptage quand AER change en event-count (§ 5.1.3).
+- **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp`. Élection datée par requête, venue du seul Hatari (`mfp.c:998 @ f0736b24`, posée pour Fuzion CD Menus 77, 78, 84), contre la priorité fixe de § 3.1 : ne pas retirer sans ces disques ; TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; effacement de UE en un bit au lieu d'un cycle de TC ; prescaler changé en marche (§ 5.1.1).
 - **Citations MAME sans révision** · P3 ⭘ · [D] — dans le MFP, l'ACIA, le YM et le FDC. Aucune copie de MAME dans `extern` : à épingler ou à retirer.
 
 ### 2.4 Blitter

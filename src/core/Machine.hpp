@@ -342,6 +342,7 @@ private:
     void armTbiEdge(int64_t after);
     void onTbiEdge();
     void onTbiPulseMode(bool on);
+    bool tbiLevelAt(int64_t now);          // niveau de DE (TBI) à cette date
     int  tbiLine_ = 0;          // ligne du prochain front de TBI
     bool tbiNextHigh_ = false;  // vrai : le prochain front est le début de DE
     void onTimerB();        // Timer B event-count sur DE (position DE-dépendante)

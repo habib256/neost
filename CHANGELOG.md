@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## A43, MFP : impulsion de comptage au changement d'AER (2026-11-10)
+
+- En event-count, changer le bit de front compte une impulsion quand l'entrée vaut déjà
+  le nouveau bit : MC68901 janv. 1984 § 5.1.3 et détecteur XOR du § 4.2.2. Timer A (TAI,
+  AER bit 4) et Timer B (DE, AER bit 3). Divergence volontaire avec Hatari, documentée.
+- Tests : 5 assertions Timer A ; les 6 attentes Timer B qui suivaient Hatari passent à la
+  fiche. Palier full vert, 19 parcours de jeu OK ; la porte d'empreintes montre qu'aucun
+  étalon n'exerce ce chemin (état identique à l'octet).
+
 ## Porte d'échange du cœur 68000 (2026-11-10)
 
 - `neost-headless --arch-hash-every N` : empreinte indépendante du cœur CPU, l'état

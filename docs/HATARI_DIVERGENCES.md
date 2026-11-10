@@ -2561,6 +2561,26 @@ les étalons de fidélité** (réseau OFF pendant `run_all.py --tier fast/full`)
   vraie carte. ITL/isochrone et timing électrique restent non exécutés. Références,
   tests et limites : `docs/NETUSBEE.md`.
 
+## Impulsion de comptage au changement d'AER en event-count (2026-11-10)
+
+**Divergence volontaire, grade B.** Motorola, *MC68901 Advance Information*, janvier 1984
+(`MC68901_Jan84.pdf`, SHA-256 préfixe `5441a092`) :
+- § 5.1.3 p. 5-4 : « changing the state of the edge bit while the timer is in the event
+  count mode may produce a count pulse » ;
+- § 4.2.2, note p. 4-2 : le détecteur de transition est un XOR du bit de front et du
+  tampon d'entrée.
+
+L'impulsion naît donc quand l'entrée vaut déjà le nouveau bit. NeoST la compte pour le
+Timer A (TAI, bit 4 d'AER, `Mfp::write8`) et pour le Timer B (DE, bit 3,
+`Machine::retargetTimerB`), datée à l'écriture. Hatari `mfp.c:2742-2810 @ f0736b24` ne fait
+que déplacer le front du Timer B, sans compter.
+
+Couverture : 5 assertions Timer A (`tests/mfp_pulse_logic.cpp`) et 6 Timer B
+(`tests/machine_timer_b_aer_logic.cpp`, dont les attentes suivaient Hatari). **Aucun
+logiciel du corpus ne l'exerce** : la porte `cpu_swap_gate.py` rend les 56 étalons
+identiques à l'octet avant et après, et les 19 parcours de jeu passent. Un titre réel qui
+divergerait sur ce point prime sur la fiche, dont le texte dit « may ».
+
 ## Arrêt MFP dans le dernier intervalle de prescaler (2026-11-10)
 
 **Divergence volontaire, grade B** : `Mfp::storeStoppedCounter` conserve 1 à

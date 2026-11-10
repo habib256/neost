@@ -218,6 +218,28 @@ int testMfpPulse() {
             check(r.mfp.read8(data) == 1, "restart uses saved one");
         }
     }
+    // [B] MC68901 janv. 1984 § 5.1.3 p. 5-4, § 4.2.2 note p. 4-2 : en event-count, changer
+    // le bit de front compte une impulsion quand l'entrée vaut déjà le nouveau bit (XOR).
+    {
+        Rig r;
+        r.mfp.write8(kAer, 0x00);
+        r.mfp.write8(kTadr, 10);
+        r.mfp.write8(kTacr, 0x08);                 // event-count, TAI au repos (0)
+        r.mfp.write8(kAer, 0x10);                  // TAI=0, nouveau bit 1 : pas d'impulsion
+        check(r.mfp.read8(kTadr) == 10, "AER4 0->1 with TAI low: no count");
+        r.mfp.write8(kAer, 0x00);                  // TAI=0, nouveau bit 0 : impulsion
+        check(r.mfp.read8(kTadr) == 9, "AER4 1->0 with TAI low: one count");
+        r.mfp.timerA_setLineInput(true);           // front montant, non sélectionné
+        check(r.mfp.read8(kTadr) == 9, "TAI rising edge with AER4=0: no count");
+        r.mfp.write8(kAer, 0x10);                  // TAI=1, nouveau bit 1 : impulsion
+        check(r.mfp.read8(kTadr) == 8, "AER4 0->1 with TAI high: one count");
+        r.mfp.write8(kTacr, 0x01);                 // délai : le changement d'AER ne compte plus
+        r.mfp.write8(kTacr, 0x00);
+        const int stopped = r.mfp.read8(kTadr);
+        r.mfp.write8(kAer, 0x00);
+        r.mfp.write8(kAer, 0x10);
+        check(r.mfp.read8(kTadr) == stopped, "AER4 change outside event-count: no count");
+    }
     std::fprintf(stderr, "[mfp-pulse] %d checks, %d FAIL\n", checks, failures);
     return failures;
 }

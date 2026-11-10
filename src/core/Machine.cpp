@@ -526,17 +526,20 @@ void Machine::onTbiEdge() {
     armTbiEdge(when);
 }
 
+// Niveau de DE (entrée TBI du MFP) à la date `now` : haut entre les fronts de début et
+// de fin d'une ligne que la Glue affiche, bas ailleurs et hors trame.
+bool Machine::tbiLevelAt(int64_t now) {
+    if (!frameInProgress_) return false;
+    for (int line = 0; line < lpf_; ++line)
+        if (timerBEdgeCycle(line, true) <= now && now < timerBEdgeCycle(line, false))
+            return shifter.liveLineDisplayed(line);
+    return false;
+}
+
 void Machine::onTbiPulseMode(bool on) {
     if (!on) { sched.cancel(Scheduler::TBI_EDGE); return; }
     const int64_t now = sched.liveNow();
-    bool high = false;
-    if (frameInProgress_)
-        for (int line = 0; line < lpf_; ++line)
-            if (timerBEdgeCycle(line, true) <= now && now < timerBEdgeCycle(line, false)) {
-                high = shifter.liveLineDisplayed(line);
-                break;
-            }
-    mfp.setTbiLevelQuiet(high);
+    mfp.setTbiLevelQuiet(tbiLevelAt(now));
     if (frameInProgress_) armTbiEdge(now);
 }
 
@@ -550,6 +553,14 @@ void Machine::retargetTimerB(bool startOfLine) {
         if (remaining == INT64_MIN || remaining > 0) break;
         sched.cancel(Scheduler::TIMER_B);
         onTimerB();
+    }
+    // [B] MC68901 janv. 1984 § 5.1.3 p. 5-4 et § 4.2.2, note p. 4-2 : changer le bit de
+    // front en event-count compte une impulsion si DE vaut déjà le nouveau bit (détecteur
+    // XOR). Divergence avec [D] Hatari mfp.c:2772-2810 @ f0736b24, qui ne fait que
+    // déplacer le front. Datée à l'écriture, après les fronts déjà échus.
+    if (mfp.timerBEventCount() && tbiLevelAt(now) == startOfLine) {
+        mfp.hblankAt(now);
+        cpu.updateIpl();
     }
     auto edgeAt = [&](int line, bool start) { return timerBEdgeCycle(line, start); };
     auto lineStart = [&](int line) {
