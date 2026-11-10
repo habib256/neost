@@ -31,6 +31,10 @@
 //  Trace : une ligne par cycle bus « t fc R|W taille adresse donnée » (hexadécimal
 //  sauf t, fc et taille), puis « END t=<cycles> reason=<sentinel|halt|limit> ».
 //  Le programme se termine par une écriture dans $F00000-$F0FFFF (sentinelle).
+//  BUS ERROR : tout accès hors IACK à $E00000-$EFFFFF se termine par BERR au lieu de
+//  DTACK, posé dès AS comme DTACK l'est ailleurs (aucun chien de garde : c'est le cœur
+//  qu'on mesure, pas le GLUE). Une lecture fautive est consignée avec la donnée 0, une
+//  écriture fautive n'atteint pas la RAM. Même fenêtre côté Moira.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test. fx68k reste GPL-3 et n'est
 //  jamais lié au binaire NeoST : ce pilote est un exécutable à part.
@@ -74,6 +78,8 @@ void setIpl(int level) {
 }
 
 uint16_t ramWord(uint32_t a) { a &= 0xFFFFFE; return uint16_t(ram[a] << 8 | ram[a + 1]); }
+
+bool berrWindow(uint32_t a) { return (a & 0xF00000) == 0xE00000; }
 
 void emit(const Access& a) {
     std::fprintf(out, "%lld %d %c %d %06X %0*X\n", (long long)a.t, a.fc, a.read ? 'R' : 'W',
@@ -124,12 +130,14 @@ void observe() {
             if (strobe && cur.strobed) cur.data = cur.size == 2 ? w : (uds ? w >> 8 : w & 0xFF);
         } else if (strobe && cur.strobed) {          // écriture : latch de la donnée
             const uint16_t w = cpu->oEdb;
-            if (uds) ram[wordAddr] = uint8_t(w >> 8);
-            if (lds) ram[wordAddr + 1] = uint8_t(w);
+            if (uds && !berrWindow(wordAddr)) ram[wordAddr] = uint8_t(w >> 8);
+            if (lds && !berrWindow(wordAddr)) ram[wordAddr + 1] = uint8_t(w);
             cur.data = cur.size == 2 ? w : (uds ? w >> 8 : w & 0xFF);
         }
-        cpu->DTACKn = (useVpa && fc == 7) ? 1 : 0;
+        const bool berr = fc != 7 && berrWindow(wordAddr);
+        cpu->DTACKn = ((useVpa && fc == 7) || berr) ? 1 : 0;
         cpu->VPAn = (useVpa && fc == 7) ? 0 : 1;
+        cpu->BERRn = berr ? 0 : 1;
         if (!strobe && strobeLow) {                  // fin du transfert
             strobeLow = false;
             if (!cur.emitted) { emit(cur); cur.emitted = true; }
@@ -137,6 +145,7 @@ void observe() {
     } else {
         cpu->DTACKn = 1;
         cpu->VPAn = 1;
+        cpu->BERRn = 1;
         if (asLow) {
             asLow = false; strobeLow = false;
             if (!cur.emitted) { emit(cur); cur.emitted = true; }

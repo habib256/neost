@@ -563,6 +563,100 @@ def prog_misc_extra(a: Asm) -> None:
 # (nom, générateur, options) — options : irq = [(T, L)], sweep = (nb, pas) pour répéter
 # avec T + k·pas, k ∈ [0, nb). T compté depuis le premier accès après le reset. reset = True : les
 # intervalles de la séquence de reset comptent (sinon ils sont ignorés, cf. le comparateur).
+BERR = 0xE00000                           # fenêtre BERR des deux pilotes ($E00000-$EFFFFF)
+
+
+def regs_dump(a: Asm) -> None:
+    """D0-D7/A0-A6 vers $2100 : l'état laissé par les fautes devient une suite d'écritures comparées."""
+    a.w(0x48F8, 0x7FFF, DATA + 0x100)                    # movem.l d0-d7/a0-a6,$2100.w
+
+
+def prog_berr(a: Asm) -> None:
+    """Bus error sur chaque forme d'accès : lecture et écriture, octet, mot, long, RMW (CLR,
+    ADD, TAS), MOVEM, mode prédécrémenté et postincrémenté, préfetch (JMP). Chaque faute
+    passe par h_group0, qui reprend à l'adresse posée en $2000 ; la trame empilée (mot
+    d'état, adresse, IR, SR, PC) est comparée comme toute écriture. [B] M68000UM § 6.3.9."""
+    prologue(a)
+    a.w(0x2E7C).l(STACK)                                 # movea.l #$8000,sp
+    a.w(0x203C).l(0x5A5AA5A5)                            # move.l #$5A5AA5A5,d0
+    cases = [
+        (0x3039, BERR),            # move.w $E00000.l,d0
+        (0x33C0, BERR),            # move.w d0,$E00000.l
+        (0x1039, BERR + 1),        # move.b $E00001.l,d0
+        (0x13C0, BERR + 1),        # move.b d0,$E00001.l
+        (0x2039, BERR),            # move.l $E00000.l,d0
+        (0x23C0, BERR),            # move.l d0,$E00000.l
+        (0x4279, BERR),            # clr.w $E00000.l (lit d'abord sur 68000)
+        (0x4AF9, BERR),            # tas $E00000.l
+        (0x0679, BERR, 0x1234),    # addi.w #$1234,$E00000.l
+    ]
+    for n, (op, addr, *imm) in enumerate(cases):
+        a.w(0x21FC).addr(f"berr{n}").w(DATA)             # move.l #berrN,$2000.w
+        a.w(op, *imm).l(addr)
+        a.w(NOP)
+        a.label(f"berr{n}")
+    # Modes indirects : l'adresse de A2 après la faute dit si l'incrément a eu lieu.
+    for n, op in enumerate((0x301A, 0x3500, 0xD152, 0x2522)):  # (a2)+ ; -(a2) ; add.w d0,(a2) ; move.l -(a2),-(a2)
+        a.w(0x247C).l(BERR + 0x100)                      # movea.l #$E00100,a2
+        a.w(0x21FC).addr(f"berri{n}").w(DATA)
+        a.w(op)
+        a.w(NOP)
+        a.label(f"berri{n}")
+        a.w(0x21CA, DATA + 0x180 + 4 * n)                # move.l a2,$2180+4n.w : A2 laissé par la faute
+    a.w(0x21FC).addr("berrm").w(DATA)
+    a.w(0x48F9, 0x0003).l(BERR)                          # movem.l d0-d1,$E00000.l
+    a.w(NOP)
+    a.label("berrm")
+    a.w(0x21FC).addr("berrm2").w(DATA)
+    a.w(0x4CF9, 0x0300).l(BERR)                          # movem.l $E00000.l,a0-a1
+    a.w(NOP)
+    a.label("berrm2")
+    a.w(0x21FC).addr("berrj").w(DATA)
+    a.w(0x4EF9).l(BERR + 0x200)                          # jmp $E00200.l → faute au préfetch
+    a.w(NOP)
+    a.label("berrj")
+    regs_dump(a)
+    sentinel(a)
+
+
+def prog_double_fault(a: Asm) -> None:
+    """Bus error dont la trame tombe elle-même dans la fenêtre BERR : double faute, HALT.
+    [B] M68000UM § 6.3.9 : une bus error pendant le traitement d'une erreur de bus ou
+    d'adresse arrête le processeur. Pas de sentinelle : la trace finit sur halt."""
+    prologue(a)
+    a.w(0x2E7C).l(BERR + 0x100)                          # movea.l #$E00100,sp
+    a.w(0x3039).l(BERR)                                  # move.w $E00000.l,d0
+    sentinel(a)
+
+
+def prog_double_fault_trap(a: Asm) -> None:
+    """TRAP dont l'empilement faute (bus error, groupe 0), puis la trame de la bus error
+    faute à son tour : double faute, HALT."""
+    prologue(a)
+    a.w(0x2E7C).l(BERR + 0x100)                          # movea.l #$E00100,sp
+    a.w(0x4E40)                                          # trap #0
+    sentinel(a)
+
+
+def prog_double_fault_addr(a: Asm) -> None:
+    """Pile impaire : l'empilement du TRAP lève une erreur d'adresse, dont la trame tombe
+    à la même adresse impaire : double faute, HALT."""
+    prologue(a)
+    a.w(0x2E7C).l(STACK - 1)                             # movea.l #$7FFF,sp
+    a.w(0x4E40)                                          # trap #0
+    sentinel(a)
+
+
+def prog_double_fault_vec(a: Asm) -> None:
+    """Vecteur de bus error pointé dans la fenêtre : la trame s'empile, puis le préfetch du
+    gestionnaire faute. Faute pendant le traitement d'une erreur de bus : HALT attendu."""
+    prologue(a)
+    a.w(0x2E7C).l(STACK)
+    a.w(0x21FC).l(BERR + 0x400).w(0x0008)                # move.l #$E00400,$0008.w
+    a.w(0x3039).l(BERR)                                  # move.w $E00000.l,d0
+    sentinel(a)
+
+
 PROGRAMS = [
     ("reset_nop", prog_reset_nop, {"reset": True}),     # seul à dater la séquence de reset
     ("alu_loops", prog_alu_loops, {}),
@@ -583,6 +677,11 @@ PROGRAMS = [
     ("irq_mulu", prog_irq_mulu, {"irq": [(120, 5)], "sweep": (8, 1)}),
     ("stop_irq", prog_stop_irq, {"irq": [(140, 5)], "sweep": (8, 1)}),
     ("stop_pending", prog_stop_pending, {"irq": [(70, 5)], "sweep": (4, 1)}),
+    ("berr", prog_berr, {}),
+    ("double_fault", prog_double_fault, {}),
+    ("double_fault_trap", prog_double_fault_trap, {}),
+    ("double_fault_addr", prog_double_fault_addr, {}),
+    ("double_fault_vec", prog_double_fault_vec, {}),
 ]
 
 

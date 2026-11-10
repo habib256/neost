@@ -21,6 +21,11 @@
 //  fx68k enchaîne l'IACK aussitôt après l'écriture du PC bas, sans cycle mort. Le
 //  comparateur rapporte de toute façon l'écart de cette date à part.
 //
+//  BUS ERROR : tout accès hors IACK à $E00000-$EFFFFF lève moira::BusError, avec la
+//  trame que construit NeoST (Cpu68k.cpp, raiseBusError) ; la double faute est celle de
+//  Moira (processException → halt), comme dans NeoST. Ni chien de garde ni attente :
+//  la faute tombe à la place du DTACK, comme côté fx68k.
+//
 //  Usage : neost-moira-bare <image.bin> <trace.txt> [--limit N] [--irq T:L]... [--ipl-fetch]
 //  Mêmes arguments et même sortie que Vfx68k_bench. --ipl-fetch active le port de
 //  WinUAE ipl_fetch_next (seuils 4/2, ce que NeoST fait sous NEOST_IPLFETCH=1) : le
@@ -71,24 +76,44 @@ public:
         if (write && (addr & 0xFF0000) == 0xF00000) done = true;
     }
 
+    static bool berrWindow(u32 a) { return (a & 0xF00000) == 0xE00000; }
+
+    // Trame de groupe 0 telle que NeoST la construit (Cpu68k.cpp, raiseBusError).
+    [[noreturn]] void busError(u32 addr, bool write) const {
+        moira::StackFrame f{};
+        const u16 ird = getIRD();
+        f.code = u16((ird & 0xFFE0) | readFC() | (write ? 0 : 0x10));
+        f.addr = addr;
+        f.ird  = ird;
+        f.sr   = getSR();
+        f.pc   = getPC();
+        f.fc   = readFC();
+        f.ssw  = f.fc;
+        throw moira::BusError(f);
+    }
+
     u8 read8(u32 a) const override {
+        if (berrWindow(a & 0xFFFFFF)) { emit(fc(), false, 1, a, 0); busError(a, false); }
         const u8 v = ram[a & 0xFFFFFF];
         emit(fc(), false, 1, a, v);
         return v;
     }
     u16 read16(u32 a) const override {
         a &= 0xFFFFFE;
+        if (berrWindow(a)) { emit(fc(), false, 2, a, 0); busError(a, false); }
         const u16 v = u16(ram[a] << 8 | ram[a + 1]);
         emit(fc(), false, 2, a, v);
         return v;
     }
     u16 read16OnReset(u32 a) const override { return read16(a); }
     void write8(u32 a, u8 v) const override {
+        if (berrWindow(a & 0xFFFFFF)) { emit(fc(), true, 1, a, v); busError(a, true); }
         ram[a & 0xFFFFFF] = v;
         emit(fc(), true, 1, a, v);
     }
     void write16(u32 a, u16 v) const override {
         a &= 0xFFFFFE;
+        if (berrWindow(a)) { emit(fc(), true, 2, a, v); busError(a, true); }
         ram[a] = u8(v >> 8); ram[a + 1] = u8(v);
         emit(fc(), true, 2, a, v);
     }

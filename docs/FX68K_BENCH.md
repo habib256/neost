@@ -65,7 +65,7 @@ paste -d'|' tests/out/fx68k_bench/stop_pending+0.fx.txt tests/out/fx68k_bench/st
 
 ## État (2026-11-03)
 
-26 variantes sur 35 concordent cycle à cycle. Instructions ordinaires, exceptions, trace, écritures
+26 variantes sur 35 concordent cycle à cycle (34 sur 48 au 2026-11-10, bus errors comprises : § *Bus error et double faute*). Instructions ordinaires, exceptions, trace, écritures
 longues sur tous les modes (`rmw_long`), reset et STOP avec IRQ pendante sont alignés.
 
 **Corrigé dans Moira le 2026-11-03**, avec fx68k @ `0602ee46` et un autre témoin à chaque fois,
@@ -125,9 +125,43 @@ créneaux de 4 cycles d'un ST, les deux séries donnent les mêmes dates (20, 20
 
 Le n° 1 du tableau a trouvé son banc : `tools/run_stcpu_bench.py`, où aucun retard n'a été nécessaire. Le « +3 » est celui de Moira **nu** dans sa propre convention de broche ; dans NeoST sur STE, la broche et `POLL_IPL` donnent 256/256 sur quatre boucles, à 4 cycles de résolution. → [`STCPU_BENCH.md`](STCPU_BENCH.md)
 
+## Bus error et double faute (2026-11-10)
+
+Les deux pilotes répondent par **BERR au lieu de DTACK** à tout accès hors IACK dans
+`$E00000-$EFFFFF`, dès AS : pas de chien de garde, c'est le cœur qu'on mesure. Côté Moira,
+`moira::BusError` porte la trame que construit NeoST (`Cpu68k.cpp`, `raiseBusError`) ; la
+double faute est celle de Moira (`processException` → `halt`). Aucun programme antérieur
+n'accède à la fenêtre : leurs verdicts n'ont pas bougé. Cinq programmes, aucun en accord :
+
+| Programme | Ce qu'il fait |
+|---|---|
+| `berr` | Bus error sur lecture et écriture octet, mot, long ; CLR, TAS, ADDI en mémoire ; `(a2)+`, `-(a2)`, `add.w d0,(a2)`, `move.l -(a2),-(a2)` (A2 relevé après la faute) ; MOVEM dans les deux sens ; préfetch après JMP. |
+| `double_fault` | Pile dans la fenêtre, puis une lecture fautive : la trame faute à son tour. |
+| `double_fault_trap` | Pile dans la fenêtre, puis TRAP : l'empilement faute (bus error), puis la trame de la bus error. |
+| `double_fault_addr` | Pile impaire, puis TRAP. |
+| `double_fault_vec` | Vecteur 2 pointé dans la fenêtre : la trame passe, le préfetch du gestionnaire faute. |
+
+Les cinq finissent sur `halt` des deux côtés, sauf `double_fault_addr` chez Moira (ci-dessous).
+Écarts, du plus au moins témoigné. Hatari @ `f0736b24` (`cpuemu_13.c` généré, `newcpu.c`) est
+indépendant de fx68k : deux témoins de grade D qui s'accordent contre Moira pèsent plus qu'un.
+
+| Écart | fx68k | Moira | Autres témoins |
+|---|---|---|---|
+| Pile impaire à l'empilement d'un TRAP | erreur d'adresse, puis double faute : `halt` | trame écrite à l'adresse arrondie (`writeStackFrame0000` : `& ~1`), gestionnaire exécuté ; `halt` plus tard, sur le RTE | Hatari `newcpu.c:3088` et `exception3_notinstruction` : erreur d'adresse, puis `halt`. [B] M68000UM § 6.3.9 : une erreur d'adresse pendant le traitement d'une erreur de bus ou d'adresse arrête le processeur. |
+| An après une faute sur `(An)+` ou `-(An)` | incrément ou décrément faits ($E00102, $E000FE) | An inchangé ($E00100) | Hatari `op_3018_13_ff` : `m68k_areg += 2` avant `exception2_read`. |
+| PC empilé, faute sur `(An)+`, `add.w Dn,(An)`, `move.l -(An),-(An)` | instruction + 2 de plus que Moira | — | Hatari `op_3018_13_ff` : `m68k_incpci(2)` avant la faute. Les modes absolus concordent. |
+| PC empilé, faute au préfetch après JMP | près du JMP (`$114C`) | la cible (`$E00200`) | Hatari `op_4ef9_13_ff` : `pcoffset = (oldpc − srca) + 2`, près du JMP. |
+| Entrée de l'exception | 14 cycles de l'AS fautif à la première écriture de trame, puis 4 avant le vecteur | 10, puis 6 : 2 cycles de moins au total | Non confronté. Moira abandonne le `SYNC(2)` de fin du cycle fautif (`MoiraDataflow_cpp.h`). Dans NeoST sur STE, le chien de garde du GSTMCU (60 cycles) précède de toute façon la faute. TAS : 15 contre 10. |
+| SP de la trame de bus error quand l'empilement d'un TRAP faute | SP d'avant le TRAP (première écriture à `$E000FE`) | SP déjà décrémenté de 6 (`$E000F8`) | Hatari comme Moira (`m68k_areg(7) -= 3*2` avant les écritures). Sans effet visible : la machine s'arrête. |
+
+**Rien n'est porté** : le cœur est gelé jusqu'à l'échange (`TODO.md` § 9). Aucun titre connu ne
+dépend de ces cas ; ce sont des **questions à requalifier sur POM68K**, que le banc rejouera
+telles quelles. Un titre qui récupère d'une bus error en relisant An ou le PC empilé (protection,
+sondage de mémoire) serait le premier à les révéler.
+
 ## Ce qui manque au banc
 
-- **Bus error** (BERR, et la relance par HALT, non implémentée dans fx68k).
-- **Autovecteur par VPA, dans le verdict** : relevé à part, ci-dessous, pas comparé accès par accès.
+- **Relance par HALT** après une bus error (non implémentée dans fx68k).
+- **Autovecteur par VPA, dans le verdict** : relevé à part, ci-dessus, pas comparé accès par accès.
 - Le GSTMCU (`run_gstmcu_bench.py`) n'exécute pas de code. `stBlitter.sv` a son propre banc,
   [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md).

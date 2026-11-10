@@ -34,7 +34,7 @@ dont chaque verdict dit son échelon**, **des paquets livrables sans surprise**.
 
 **État au 2026-11-10** : contrat logiciel Mega STE tenu et gardé (suite Q du diagnostic Field
 Service 12/12, grade C) ; les écarts que les fiches MFP, WD1772, ACIA et SCC suffisaient à
-trancher sont corrigés ; **banc fx68k : 34 variantes sur 43 en accord** cycle à cycle (§ 9) ;
+trancher sont corrigés ; **banc fx68k : 34 variantes sur 48 en accord** cycle à cycle, bus errors et double faute comprises (§ 9) ;
 blitter, GLUE et lecture du faisceau confrontés aux RTL sur STE (§ 5) ; 21 parcours de jeu
 contre Hatari, et la collection entière inchangée en A/B après les corrections du jour.
 **Pas d'accès à un vrai ST** : les ⏸ matériel passent par les relevés de tiers, les
@@ -98,9 +98,9 @@ Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md).
   aujourd'hui à Hatari, donc sans égalité à l'octet. Leur faire relever la même empreinte
   `--arch-hash-every`, NeoST contre NeoST, sans Hatari ni Pillow.
 - **Banc fx68k, étendre** · P1 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET,
-  RTR, traps et ligne A/F en utilisateur concordent. Restent BERR et double faute, et
-  l'autovecteur dans le verdict : ce sont les chemins où deux cœurs divergent le plus
-  volontiers. → `docs/FX68K_BENCH.md` § *Ce qui manque*
+  RTR, traps et ligne A/F en utilisateur concordent ; BERR et double faute sont au banc
+  depuis le 2026-11-10 (cinq programmes, écarts au § 9). Reste l'autovecteur dans le
+  verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Mega STE à 16 MHz dans le filet** · P2 ⭘ — la porte ne le voit que par ses étalons, alors
   que l'horloge du cœur y vaut deux fois l'horloge bus (`cpuMul`, `cpuBias`). Banc du
   blitter à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres : 78
@@ -276,7 +276,7 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
 ## 5. 🪜 Harnais et preuve
 
 40 étalons `hatari`, 13 `snapshot`, 3 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
-contact du matériel, par des relevés de tiers. Le banc fx68k ajoute 43 variantes `rtl` pour
+contact du matériel, par des relevés de tiers. Le banc fx68k ajoute 48 variantes `rtl` pour
 le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
@@ -459,8 +459,15 @@ et **sa ligne s'ajoute à la table des patches** de `docs/CPU_SWAP_GATE.md`.
 témoins : tous grade D, Moira non modifié. La chaîne MFP→IPL de NeoST ajoute ses propres délais :
 requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md).
 
-- **Les 9 variantes hors accord au banc fx68k** · P1 ⏸ cœur — à rejouer telles quelles sur POM68K :
+- **Les 14 variantes hors accord au banc fx68k** · P1 ⏸ cœur — à rejouer telles quelles sur POM68K :
   le verdict de chacune dit si l'échange est un progrès.
+- **Bus error : état laissé par la faute** · P2 ⏸ cœur · [D] ×2 — fx68k et Hatari s'accordent contre
+  Moira : An incrémenté ou décrémenté par `(An)+`/`-(An)` fautifs, PC empilé de 2 plus loin sur
+  ces modes, PC proche du JMP (et non sa cible) quand le préfetch faute. L'entrée de l'exception
+  dure 2 cycles de moins chez Moira (fx68k seul). → `docs/FX68K_BENCH.md` § *Bus error et double faute*
+- **Pile impaire à l'empilement d'un TRAP** · P2 ⏸ cœur · [B] + [D] ×2 — Moira écrit la trame à
+  l'adresse arrondie et poursuit ; fx68k, Hatari et la fiche (§ 6.3.9) lèvent l'erreur d'adresse
+  puis s'arrêtent en double faute. Aucun titre connu n'en dépend ; à vérifier d'abord sur POM68K.
 - **Prise d'IPL sur ST et Mega STE** · P2 ⏸ source · [F] — le STE suit fx68k + GSTMCU pour la HBL et pour la VBL pendant un STOP, depuis le 2026-11-04 (`docs/STCPU_BENCH.md`). Hors STOP, sa VBL se prend au dispatch, car l'intro de Vroom `[cr Elite]` se fige sinon ; ST et Mega STE gardent le commit
   d'Hatari, faute de modèle du GLUE. Le 68000 est le même : à trancher par un modèle du GLUE ST, ou un relevé de tiers.
 - **Latence IACK MFP** · P1 ⏸ matériel · [D] 12 cycles — capturer CLK CPU/MFP, IACK et les

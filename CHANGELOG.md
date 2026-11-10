@@ -6,6 +6,19 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Banc fx68k : bus error et double faute (2026-11-10)
+
+- Les deux pilotes (`tools/fx68k_bench.cpp`, `tools/moira_bare_bench.cpp`) répondent par BERR
+  au lieu de DTACK dans `$E00000-$EFFFFF`. Côté Moira, la trame est celle de NeoST
+  (`raiseBusError`). Cinq programmes : `berr` (toutes les formes d'accès, An et PC relevés
+  après la faute), `double_fault`, `double_fault_trap`, `double_fault_addr`,
+  `double_fault_vec`. Banc : 34 variantes sur 48 en accord ; les 43 anciennes inchangées.
+- Écarts consignés, aucun porté (cœur gelé, `TODO.md` § 9). fx68k et Hatari @ `f0736b24`
+  s'accordent contre Moira sur quatre points : pile impaire au TRAP (erreur d'adresse puis
+  arrêt, [B] M68000UM § 6.3.9), An mis à jour par `(An)+`/`-(An)` fautifs, PC empilé de 2
+  plus loin, PC proche du JMP quand son préfetch faute. Avec fx68k seul : 2 cycles de moins à
+  l'entrée de l'exception. → `docs/FX68K_BENCH.md` § *Bus error et double faute*
+
 ## Doc : le TODO et les docs rangés par rapport à l'échange du cœur (2026-11-10)
 
 - `TODO.md` : trois temps — avant l'échange (§ 1 à 8), l'échange (§ 9, l'intérieur du cœur

@@ -1052,5 +1052,117 @@
     210
    ]
   }
+ },
+ "berr": {
+  "status": "diverge",
+  "first": {
+   "index": 33,
+   "kind": "time",
+   "after": "fc5 R2 E00000=0000",
+   "access": "fc5 W2 007FFE=1042",
+   "delta": [
+    14,
+    10
+   ]
+  },
+  "mismatches": 32,
+  "swaps": 0,
+  "access_mismatches": 7,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   2705,
+   2672
+  ]
+ },
+ "double_fault": {
+  "status": "diverge",
+  "first": {
+   "index": 24,
+   "kind": "time",
+   "after": "fc5 R2 E00000=0000",
+   "access": "fc5 W2 E000FE=1034",
+   "delta": [
+    14,
+    10
+   ]
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   112,
+   108
+  ]
+ },
+ "double_fault_trap": {
+  "status": "diverge",
+  "first": {
+   "index": 22,
+   "kind": "access",
+   "fx": "fc5 W2 E000FE=1030",
+   "moira": "fc5 W2 E000F8=1030"
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 1,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   108,
+   104
+  ]
+ },
+ "double_fault_addr": {
+  "status": "diverge",
+  "first": {
+   "index": 21,
+   "kind": "access",
+   "fx": "fc5 W0 007FFC=00",
+   "moira": "fc5 W2 007FFC=1030"
+  },
+  "mismatches": 1,
+  "swaps": 0,
+  "access_mismatches": 2,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   106,
+   120
+  ]
+ },
+ "double_fault_vec": {
+  "status": "diverge",
+  "first": {
+   "index": 30,
+   "kind": "time",
+   "after": "fc5 R2 E00000=0000",
+   "access": "fc5 W2 007FFE=103C",
+   "delta": [
+    14,
+    10
+   ]
+  },
+  "mismatches": 2,
+  "swaps": 0,
+  "access_mismatches": 0,
+  "extra": [
+   0,
+   0
+  ],
+  "total": [
+   172,
+   170
+  ]
  }
 }
