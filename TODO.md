@@ -261,6 +261,9 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   diagnostics Vroom et Magic Pockets sont exclus par défaut. À étendre : parties plus longues,
   musique et son, disques STE. Un script joystick tient chaque commande plus que la période
   d'interrogation du jeu. Chaque parcours ajouté entre aussi dans la porte d'échange (§ 2).
+  Essai du 2026-11-10 : Pang, New Zealand Story, Bombjack et Giana Sisters restent au bureau
+  (à lancer à la souris), Onslaught attend ses touches ; Xenon 2 atteint le jeu, mais aucun des
+  30 couples de graines essayés n'aligne le chargement à la trame près.
   → `docs/CASE_STUDIES.md`, `docs/OPENDST.md`
 - **Passe de la collection** · P3 ⭘ — 94 images en ST et en STE : A/B du 2026-11-10 identique à
   l'octet sur 185 cas sur 188 ; passe d'angle du 2026-11-04 (5 graines), seul Vroom change de
