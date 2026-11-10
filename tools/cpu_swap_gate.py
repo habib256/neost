@@ -49,6 +49,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -168,7 +169,88 @@ def megaste_scenarios() -> list[Scenario]:
                 "--fastfdc", "--disk-ro", "--scancode-at", "320", "10,90,1c,9c",
                 "--loopback-at", "330", "--dma-fixture", "--frames", "6600"]
     out.append(Scenario("mste/diag_q", diag))
+
+    # Sondes du catalogue étendu (DMA disquette et blitter, tools/timing_extended.py), passées à
+    # 16 MHz : seule la vitesse change, injectée en tête du programme. Plus le blit sur ses propres
+    # registres. Empreintes NeoST contre NeoST, sans verdict extérieur.
+    import timing_extended as TE
+    speeds = {"8": 0, "16": 2, "16cache": 3}
+    for case in ("fdc_read", "fdc_read_stx", "fdc_write", "blitter_hog", "blitter_shared", "blitter_hog_tas"):
+        for speed in ("16", "16cache"):
+            def build(work: Path, case=case, speed=speed) -> list[str] | str:
+                if not rom.exists():
+                    return f"skip: ROM absente ({rom.name})"
+                cart = work / "probe.bin"
+                cart.write_bytes(assemble_at_speed(TE, lambda: TE.build_extended(case), speeds[speed])[0])
+                cmd = [str(E.HEADLESS), str(rom), "--machine", "megaste", "--mem", "1m",
+                       "--cart", str(cart), "--frames", "30"]
+                if case.startswith("fdc_"):
+                    disk = work / ("d.stx" if case.endswith("_stx") else "d.st")
+                    disk.write_bytes(TE.stx_image() if case.endswith("_stx") else TE.disk_image())
+                    cmd += ["--disk", str(disk)]
+                return cmd
+            out.append(Scenario(f"mste/ext/{case}_{speed}", build, every=1))
+    for mode in ("hog", "shared"):
+        for speed in speeds:
+            def build(work: Path, mode=mode, speed=speed) -> list[str] | str:
+                if not rom.exists():
+                    return f"skip: ROM absente ({rom.name})"
+                cart = work / "probe.bin"
+                cart.write_bytes(assemble_at_speed(TE, lambda: self_blit(TE, mode == "hog"), speeds[speed])[0])
+                return [str(E.HEADLESS), str(rom), "--machine", "megaste", "--mem", "1m",
+                        "--cart", str(cart), "--frames", "10"]
+            out.append(Scenario(f"mste/selfblit_{mode}_{speed}", build, every=1))
     return out
+
+
+_ASM_LOCK = threading.Lock()
+
+
+def assemble_at_speed(TE, make, speed: int):
+    """Assemble une sonde pour le Mega STE : `move.b #$40,$FF8E0D` (SCU : MFP autorisé, comme
+    run_megaste_blitter_checks.py ; sans lui, une sonde qui attend l'IRQ du MFP par STOP ne
+    se réveille jamais) puis `move.b #speed,$FF8E21`, en premières instructions. build_extended
+    instancie timing_extended.Assembler par son nom : on le remplace le temps de l'appel, sous
+    verrou (la porte assemble en parallèle)."""
+    base_cls = TE.Assembler
+
+    class AtSpeed(base_cls):
+        def __init__(self, base=0xfa0000):
+            super().__init__(base)
+            self.byte(0x8e0d, 0x40)
+            if speed:
+                self.byte(0x8e21, speed)
+
+    with _ASM_LOCK:
+        TE.Assembler = AtSpeed
+        try:
+            return make()
+        finally:
+            TE.Assembler = base_cls
+
+
+def self_blit(TE, hog: bool):
+    """Le blitter écrit sa RAM de demi-teinte ($FF8A00), le CPU la relit, puis le blitter la
+    relit comme source. HOP=2 (source seule), LOP=3 (copie), 16 mots."""
+    a = TE.Assembler(0xfa0000)
+    a.w(0x46fc, 0x2700, 0x2e7c); a.long(0x10000)
+    a.w(0x207c); a.long(0x18000); a.w(0x303c, 15, 0x7201)       # motif en $18000 ; moveq #1,d1
+    a.label("fill"); a.w(0x30c1, 0x5241); a.branch(0x51c8, "fill")  # move.w d1,(a0)+ ; addq.w #1,d1
+    for address in (0x8a20, 0x8a22, 0x8a2e, 0x8a30):
+        a.word(address, 2)
+    for address in (0x8a28, 0x8a2a, 0x8a2c):
+        a.word(address, 0xffff)
+    a.byte(0x8a3a, 2); a.byte(0x8a3b, 3); a.byte(0x8a3d, 0)
+    start = 0xc0 if hog else 0x80
+    for n, (src, dst) in enumerate(((0x18000, 0xff8a00), (0xff8a00, 0x19100))):
+        a.address(0x8a24, src); a.address(0x8a32, dst)
+        a.word(0x8a36, 16); a.word(0x8a38, 1)
+        a.byte(0x8a3c, start)
+        a.label(f"poll{n}"); a.w(0x0838, 7, 0x8a3c); a.branch(0x6600, f"poll{n}")
+    a.w(0x41f9); a.long(0xff8a00); a.w(0x43f9); a.long(0x19000); a.w(0x700f)  # lea ; lea ; moveq #15,d0
+    a.label("copy"); a.w(0x32d8); a.branch(0x51c8, "copy")       # move.w (a0)+,(a1)+ ; dbra
+    a.label("idle"); a.w(0x4e72, 0x2700); a.branch(0x6000, "idle")
+    return a.finish()
 
 
 def scenarios(suites: list[str], only: list[str] | None) -> list[Scenario]:

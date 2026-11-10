@@ -17,7 +17,7 @@ ce qui est gelé d'ici là : [`../TODO.md`](../TODO.md) § 2 et § 9.
 | `etalons` | les 56 étalons pixel de `tools/etalons.json` | celle de `run_etalons.py` |
 | `replays` | les 22 parcours de `tests/replays/replays.json`, diagnostics compris | celle de `compare_titles.py` côté NeoST, par `tools/title_cmd.py` : mêmes touches, joystick, souris, disquettes changées |
 | `collection` | chaque image de `disks/st` et `disks/stx`, en ST/TOS 1.04, STE/TOS 1.62 et Mega STE/TOS 2.06 | ESPACE toutes les 500 trames de 1000 à 3500, 4000 trames |
-| `megaste` | sondes blitter/IRQ et bus/cache à 8, 16 et 16 MHz + cache ; suite Q du diagnostic Field Service | générateurs de `run_megaste_blitter_checks.py` et `run_megaste_bus_oracle.py` ; recette de `run_megaste_diag.py` |
+| `megaste` | sondes blitter/IRQ et bus/cache à 8, 16 et 16 MHz + cache ; DMA disquette et blitter du catalogue étendu à 16 MHz ; blit sur ses propres registres (demi-teinte écrite puis relue) ; suite Q du diagnostic Field Service | générateurs de `run_megaste_blitter_checks.py`, `run_megaste_bus_oracle.py` et `timing_extended.py` (SCU ouvert et vitesse injectés en tête) ; recette de `run_megaste_diag.py` |
 
 Les médias privés manquants (images, TOS Atari, cartouche) sont sautés et nommés à
 l'enregistrement ; à la vérification, un scénario de la référence qui a disparu est un

@@ -6,6 +6,17 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Porte d'échange : DMA disquette et blit sur ses registres, à 16 MHz (2026-11-10)
+
+- Suite `megaste` de `cpu_swap_gate.py` : 42 scénarios. S'ajoutent les sondes `fdc_read`,
+  `fdc_read_stx`, `fdc_write`, `blitter_hog`, `blitter_shared` et `blitter_hog_tas` de
+  `timing_extended.py`, à 16 MHz et 16 MHz + cache, et un blit sur ses propres registres
+  (demi-teinte `$FF8A00` écrite par le blitter, relue par le CPU puis par le blitter), à 8, 16
+  et 16 MHz + cache, HOG et partagé. Toutes atteignent leur label `success` : la vitesse se lit
+  dans leur durée (trame 4, 3 puis 2 pour le blitter en HOG).
+- Piège noté dans l'outil : sur Mega STE, une sonde qui attend l'IRQ du MFP par STOP ne se
+  réveille pas sans `$FF8E0D` (SCU) ; l'injection l'écrit avant la vitesse.
+
 ## Déterminisme : refus explicite d'un état d'une autre version, gardé (2026-11-10)
 
 - `tools/run_determinism.py`, passe C : le save-state de la passe B, numéro de format décrémenté,

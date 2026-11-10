@@ -76,7 +76,9 @@ autres étalons et la suite d'Hatari restent à leur verdict.
 
 ## Ce qui manque
 
-- **Mega STE à 16 MHz** : NeoST y garde la fenêtre de 4 cycles d'Hatari, seul témoin.
+- **Mega STE à 16 MHz** : NeoST y garde la fenêtre de 4 cycles d'Hatari, seul témoin. La porte
+  d'échange y rejoue, NeoST contre NeoST, le blitter, le DMA disquette et le blit sur ses propres
+  registres (`docs/CPU_SWAP_GATE.md`) ; aucun verdict extérieur.
 - **Disputes de bus** : son DMA, disquette, et l'attente du blitter pendant ces accès.
 - **Le blitter qui s'écrit lui-même** ou qui lit ses registres, et les zones fautives.
 - **Le mode `--flat`** reste à 1 ou 2 cycles d'écart dans l'arbitrage : le CPU y est en phase impaire, ce
