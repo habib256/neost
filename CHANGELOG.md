@@ -11,8 +11,9 @@ l'ordre inverse. Version courante : **0.6.3**.
 - `TODO.md` : trois temps — avant l'échange (§ 1 à 8), l'échange (§ 9, l'intérieur du cœur
   gelé), le TT et le Falcon (§ 10). Nouveau § 1 en cinq lots, nouveau § 2 « Le filet de
   l'échange ». Les questions du 68000, l'amont Moira, A33 et les points chauds du cœur
-  passent au § 9. Dans chaque section, le faisable précède les ⏸. Aucun item retiré ; sept
-  items marqués *(proposé)* attendent la validation de l'auteur.
+  passent au § 9. Dans chaque section, le faisable précède les ⏸. Aucun item retiré ; six
+  items marqués *(proposé)* attendent la validation de l'auteur. Le lot 0 (ligne de
+  base) est la 0.6.3, déjà publiée ; son dossier rejoint `docs/archive/`.
 - `docs/IMPLEMENTED.md` : les cinq blocs « Compléments du … » de tête sont fondus dans la
   section de leur puce, date après le titre ; le fourre-tout « Bus error & cartouches de
   diagnostic » (79 entrées) est réparti en Bus, Blitter, Mega ST/STE, FPU, Ports et clés,

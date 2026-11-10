@@ -74,7 +74,7 @@ correction de fidélité.
 
 | Lot | But | Items (titre → §) | Prio |
 |-----|-----|-------------------|------|
-| **0. Ligne de base** | Une version publiée sur le cœur actuel, à laquelle tout se compare ensuite | Release 0.6.3 → § 7 | P1 ⏸ décision |
+| **0. Ligne de base** | Une version publiée sur le cœur actuel, à laquelle tout se compare ensuite | Fait : **0.6.3** publiée le 2026-11-10 (`355b6c0`). Une dernière version juste avant l'échange reste possible. | — |
 | **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, banc fx68k étendu, Mega STE 16 MHz au banc, sort des `.state` → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | DMA disque sur le bus, restes vidéo au cycle, restes MFP de la fiche, délai de bus error, WS3 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, ST-STE Hardware Test, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK double faute, parcours étendus (son, STE, parties longues) → § 4 | P2 |
@@ -361,10 +361,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 ## 7. 📦 Livraison et interface
 
-- **Release 0.6.3, ligne de base d'avant l'échange** · P1 ⏸ décision *(proposé comme jalon)* —
-  dossier prêt (`docs/RELEASE.md`, notes dans `docs/release-notes/0.6.3.md`). Avant le
-  tag : palier `full` et CI verte du commit visé. C'est la dernière version à laquelle
-  comparer un comportement après l'échange.
 - **Identification des disquettes de menus** · P2 ⭘ — nom de fichier → équipe, numéro et jeux
   (Automation, D-Bug…) pour la ludothèque et la borne. Catalogue de 4 515 disques sous licence
   MIT dans `data/compdisks/` ; à lire par le code, puis à embarquer avec sa licence.

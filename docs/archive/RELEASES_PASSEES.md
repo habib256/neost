@@ -3,6 +3,42 @@
 > **Archive.** Extrait de [`../RELEASE.md`](../RELEASE.md) le 2026-11-10 : dossiers « jour J » et notes
 > publiques des versions déjà publiées. La procédure en vigueur est dans `RELEASE.md`.
 
+## Dossier 0.6.3 — préparé le 2026-11-10
+
+✅ **Exécuté le 2026-11-10.** Tag `0.6.3` posé sur `355b6c0`, Release GitHub publiée
+(9 paquets) ; issue #44 fermée.
+
+Numéro **0.6.3**, explicitement demandé par le mainteneur, y compris pour les
+fonctionnalités NetUSBee/NAT (exception à la règle MINOR du pas 1).
+CMake et CHANGELOG sont alignés ; les [notes publiques en anglais](../release-notes/0.6.3.md)
+sont prêtes. Le format de sauvegarde passe à v59. L'issue #44 est corrigée dans
+le code et couverte par le palier fast ; sa fermeture GitHub attend la livraison.
+
+La préparation locale ne pose aucun tag et ne publie aucun paquet. Avant de
+taguer, vérifier le palier full et la CI du commit destiné à la release, puis
+appliquer les pas 6–7 ci-dessus. Message prévu :
+
+```sh
+git tag -a 0.6.3 -m "NeoST 0.6.3 — NetUSBee USB and built-in networking"
+```
+
+Après publication : `gh release edit 0.6.3 --notes-file docs/release-notes/0.6.3.md`.
+Les vérifications exécutées pendant cette préparation sont consignées dans
+le bilan ci-dessous ; ce dossier ne prétend pas que la CI ou les paquets d'un
+futur tag ont été vérifiés.
+
+**Validation locale, 2026-11-10, macOS Release** : GUI et headless annoncent
+`0.6.3`. Le palier `full` passe avec les comparaisons pixel, les bancs RTL,
+le boot GUI et les sockets NAT. Un contrôle optionnel est recensé SKIP :
+`check_compare_titles.py`, faute de Pillow dans Python. Les autres contrôles
+incluent 647 vérifications de logique, les pilotes USB4TOS (fichier FAT16
+persisté, Bconin, mousevec), les 13 cas de verdict Spectrum 512 et les
+39 contrôles NetUSBee du binaire final. STinG s'active aussi en mode NetUSBee.
+La reproduction avec ROM STE absente conserve les sept images ST à zéro
+pixel d'écart et retourne 77. La reprise d'un état avec les deux HID est
+déterministe. Graphify et son wiki sont rafraîchis sans API. Aucun tag,
+publication, fermeture distante d'issue ni validation CI de ce changement.
+
 ## Le JOUR J 0.6.2 — dossier préparé le 2026-10-20
 
 ✅ **Exécuté le 2026-10-20.** Tag annoté `0.6.2` posé sur `6dbac89`, Release GitHub publiée
