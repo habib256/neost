@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## `compare_titles` : entrées d'Hatari décalables ; essais de parcours (2026-11-11)
+
+- `--hatari-delay N` (et `--hatari-delay-from F`, aussi lus du manifeste des parcours) : retarde
+  de N trames les touches, la souris, le joystick et les changements de disquette d'Hatari, quand
+  son chargement a pris N trames de plus. NeoST n'est pas touché. N'a pas suffi pour CarVup, dont
+  la partie diverge encore : ces jeux tirent leur hasard du minutage fin, pas de la seule trame.
+- Essais : Rainbow Islands exige 4 Mo (remarque du mainteneur) et y entre en jeu en accord avec
+  Hatari ; Super Hang-On, Nitro, Dynamite Dux, Cybernoid II et CarVup divergent en partie.
+
 ## A32 : l'état du compteur vidéo n'est plus écrit que par ses méthodes (2026-11-11)
 
 - `VideoCounterState` (`src/core/Shifter.hpp`) porte ses écritures : `resetAll`, `beginFrame`,

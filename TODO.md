@@ -254,7 +254,11 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   Essais du 2026-11-10 : Rick Dangerous et Pang joués (lancés du bureau). Bombjack et Xenon 2
   atteignent le jeu mais divergent au joystick générique (chargement décalé de quelques trames) ;
   New Zealand Story affiche des barres noires, identiques chez Hatari ; Giana Sisters passe par un
-  menu D-Bug qu'ESPACE quitte ; Onslaught attend ses touches.
+  menu D-Bug qu'ESPACE quitte ; Onslaught attend ses touches. Rainbow Islands (Ocean, deux STX)
+  exige **4 Mo** : en 4 Mo, disque B à 7000, l'entrée en jeu concorde (0,02 % à 13000), puis la
+  partie dérive ; en 1 Mo, NeoST et Hatari se séparent dès le chargement. CarVup passe trainer
+  (N), niveau (F1) et instructions à l'identique, puis diverge, même avec `--hatari-delay`.
+  Super Hang-On, Nitro, Dynamite Dux et Cybernoid II : en jeu, parties divergentes.
   → `docs/CASE_STUDIES.md`, `docs/OPENDST.md`
 - **Passe de la collection** · P3 ⭘ — 94 images en ST et en STE : A/B du 2026-11-10 identique à
   l'octet sur 185 cas sur 188 ; passe d'angle du 2026-11-04 (5 graines), seul Vroom change de

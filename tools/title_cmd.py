@@ -96,6 +96,10 @@ def build_parser(description: str | None = None) -> argparse.ArgumentParser:
     ap.add_argument("--frames", default="1000,2000,4000")
     ap.add_argument("--window", type=int, default=60)
     ap.add_argument("--offset", type=int, default=0, help="centre de la fenêtre Hatari : trame + OFFSET")
+    ap.add_argument("--hatari-delay", type=int, default=0,
+                    help="retarde de N trames les entrées d'Hatari (touches, souris, joystick, disquettes) datées "
+                         "à partir de --hatari-delay-from : son chargement a pris N trames de plus que celui de NeoST")
+    ap.add_argument("--hatari-delay-from", type=int, default=0, help="première trame d'entrée décalée (défaut : 0)")
     ap.add_argument("--step", type=int, default=1, help="pas de capture dans la fenêtre")
     ap.add_argument("--auto")
     ap.add_argument("--gemdos", type=Path, help="dossier monté en C: à la place de la disquette")

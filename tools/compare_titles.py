@@ -149,7 +149,11 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
                      for v in range(max(1, f + args.offset - args.window),
                                     f + args.offset + args.window + 1, args.step)})
     # Un changement de disquette est un arrêt de plus, en ordre de VBL avec les captures.
-    swaps = {at: swap_copy(other, work, f"hs{i}") for i, (at, other) in enumerate(args.swap)}
+    # --hatari-delay : l'angle de disquette tiré par chaque émulateur change la durée du
+    # chargement ; décaler les entrées d'Hatari du même nombre de trames lui donne les mêmes
+    # commandes au même instant du JEU. NeoST n'est pas touché.
+    shift = lambda at: at + args.hatari_delay if at >= args.hatari_delay_from else at
+    swaps = {shift(at): swap_copy(other, work, f"hs{i}") for i, (at, other) in enumerate(args.swap)}
     wanted = sorted(set(wanted) | set(swaps))
     shoot = {v for f in args.frames
              for v in range(max(1, f + args.offset - args.window),
@@ -183,9 +187,10 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
         cmd += ["--trace", args.hatari_trace, "--trace-file", str(work / "hatari_trace.txt")]
     env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HATARI_SEED=str(args.hatari_seed))
     if args.joy:
-        env.update(NEOST_JOY_SCRIPT=str(args.joy[2]), NEOST_JOY_START=str(args.joy[0]))
+        env.update(NEOST_JOY_SCRIPT=str(args.joy[2]), NEOST_JOY_START=str(shift(args.joy[0])))
     if args.key or args.mouse:
-        run_hatari_keys(cmd, args.key, work, env, args.key_hold, args.mouse, args.mouse_step)
+        run_hatari_keys(cmd, [(shift(at), code) for at, code in args.key], work, env, args.key_hold,
+                        [(shift(at), script) for at, script in args.mouse], args.mouse_step)
     else:
         done = subprocess.run(cmd, capture_output=True, text=True, errors="replace", timeout=1800, env=env, cwd=work,
                               stdin=subprocess.DEVNULL)

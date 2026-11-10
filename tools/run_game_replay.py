@@ -66,7 +66,7 @@ def compare_argv(r: dict, work: Path) -> list[str]:
     cmd = ["--machine", r["machine"], "--rom", r["rom"], "--mem", str(r["mem"]),
            "--frames", ",".join(map(str, r["frames"])), "--window", str(r.get("window", 6)), "--step", str(r.get("step", 2)),
            "--jobs", "1"]
-    for field in ("fdc_seed", "hatari_seed", "key_hold", "offset", "mouse_step"):
+    for field in ("fdc_seed", "hatari_seed", "key_hold", "offset", "mouse_step", "hatari_delay", "hatari_delay_from"):
         if field in r:
             cmd += ["--" + field.replace("_", "-"), str(r[field])]
     if "joy" in r:                                     # sans joystick : un titre qui se joue à la souris
