@@ -20,7 +20,10 @@
 //  ignoré et INEX2 jamais levé. Les TRANSCENDANTES ont quitté le `double` hôte à
 //  leur tour : algorithmes FPSP en étendu 80 bits (SoftFloatFpsp.hpp), égaux bit à bit
 //  à Hatari. Le décimal empaqueté (P) passe par SoftFloatDecimal.hpp. Constantes ROM FMOVECR
-//  bit-exactes (dumps silicium recoupés MAME/Previous/WinUAE).
+//  bit-exactes (dumps silicium recoupés Previous/WinUAE). [D] MAME m68kfpu.cpp:1764-1880
+//  @ ce391499d37d concorde sur toutes sauf e ($0C), qu'il arrondit au plus près
+//  (…A9B, l. 1780) là où le silicium porte …A9A ; il ne lève ni INEX2 ni ajustement
+//  d'arrondi, et s'arrête (fatalerror) sur un décalage hors table (vérifié le 2026-11-10).
 // =============================================================================
 #include "Fpu.hpp"
 #include "io/SoftFloatDecimal.hpp"

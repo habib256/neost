@@ -13,7 +13,9 @@
 //
 //  Hatari N'ÉMULE PAS ce socket ($FFFA40 reste une bus error → « FPU not
 //  found »). Son moteur 6888x fournit toutefois la référence des opérations,
-//  constantes et conversions ; le dialogue CIR suit le manuel Motorola et MAME.
+//  constantes et conversions ; le dialogue CIR suit le manuel Motorola. MAME
+//  m68kfpu.cpp:3078-3117 @ ce391499d37d ne le contient pas : seule la carte des CIR y
+//  figure, en commentaire, et la lecture rend 0 (« TODO ») (vérifié le 2026-11-10).
 //
 //  Interface émulée : dialogue CIR (Command/Response/
 //  Operand/Condition/Save/Restore), registres FP0-FP7 en étendu 80 bits,

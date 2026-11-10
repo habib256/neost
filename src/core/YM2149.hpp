@@ -147,7 +147,7 @@ public:
     void reset() {
         regs_.fill(0);
         // [B] YM2149 Broches § 3 p. 3 et [D] psg.c:222 @ f0736b24 : R7 vaut zéro comme les autres
-        // registres sonores (MAME ay8910_reset_ym de même, cité sans révision et non relu). Les
+        // registres sonores ([D] MAME ay8910.cpp:1321-1322 @ ce391499d37d, ay8910_reset_ym, de même). Les
         // volumes R8–R10 à zéro assurent le silence sans altérer le registre mixeur visible
         // par le processeur.
         // ⚠ [B] YM2149 Broches § 3 p. 3 : R14 revient à 0 lui aussi. R7 = 0 met alors le port en entrée

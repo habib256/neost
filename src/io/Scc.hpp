@@ -9,8 +9,8 @@
 //            extern/datasheets/Zilog_PS0117.pdf,
 //            sha256 feb4b46341bf20cab3ce5e555b02b7c13e1c2422cb12a9ba2dbfa121d0a34faa.
 //   Hatari = src/scc.c (sauf mention) @ f0736b24 ; lignes vérifiées à cette révision.
-//   MAME   = d'anciens commentaires le citent sans révision et il n'est pas dans
-//            extern/ : ces points sont gradés F, jamais D.
+//   MAME   = src/devices/machine/z80scc.cpp @ ce391499d37d (extern/mame, épinglé par
+//            tools/setup_silicon_refs.sh) ; lignes vérifiées à cette révision.
 //
 //  [D] Hatari scc.c:31 @ f0736b24 — le Mega STE porte ce Zilog 85C30 à deux canaux.
 //  [D] Hatari ioMem.c:225 @ f0736b24 — plage $FF8C80-$FF8C87.

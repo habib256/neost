@@ -12,14 +12,15 @@
 //
 //   1. decode() : conteneur IPF (blocs CAPS/INFO/IMGE/DATA, CRC32 vérifiés) →
 //      flux de cellules par piste (niveau 0/1/weak + durée en ns). Adapté du
-//      décodeur IPF INDÉPENDANT de MAME (src/lib/formats/ipf_dsk.cpp, Olivier
-//      Galibert, licence BSD-3-Clause) — PAS de libcapsimage (licence SPS non
+//      décodeur IPF INDÉPENDANT de MAME (src/lib/formats/ipf_dsk.cpp @ ce391499d37d,
+//      Olivier Galibert, licence BSD-3-Clause) — PAS de libcapsimage (licence SPS non
 //      libre). Cf. l'en-tête d'IpfImage.cpp pour l'attribution.
 //
 //   2. toStx() : un « lecteur WD1772 » parcourt ce flux comme le ferait le
 //      séparateur de données du contrôleur (règles de synchro de MAME
-//      wd_fdc.cpp : 3×$A1 avant l'IDAM, fenêtre DAM 28..43 octets après le CRC
-//      de l'ID, pas de resynchro pendant les données) et en tire ce qu'un
+//      wd_fdc.cpp @ ce391499d37d : 3×$A1 avant l'IDAM l. 1853-1874, fenêtre DAM
+//      28..43 octets après le CRC de l'ID l. 1943-1953, pas de resynchro pendant
+//      les données l. 2022-2048) et en tire ce qu'un
 //      programme ST peut OBSERVER : champs ID réels (positions angulaires
 //      exactes, CRC bon/mauvais), champs données, marques F8/FB, bits fuzzy,
 //      durée de chaque bloc de 16 octets, et le dump READ TRACK. Le résultat
@@ -60,7 +61,8 @@ struct Info {
     uint32_t minCylinder = 0, maxCylinder = 0, minHead = 0, maxHead = 0;
 };
 
-// Signature : bloc « CAPS » de 12 octets avec son CRC fixe (cf. MAME identify).
+// Signature : bloc « CAPS » de 12 octets avec son CRC fixe (cf. MAME ipf_dsk.cpp:94-106
+// @ ce391499d37d, identify).
 bool isIpf(const uint8_t* p, std::size_t n);
 
 // Étage 1 : conteneur → flux de cellules. Renvoie false (et un message en

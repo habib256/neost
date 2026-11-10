@@ -185,12 +185,12 @@ void Mfp::receiveByte(uint8_t b) {
 void Mfp::scheduleSerialRx(bool continuation) {
     if (!sched_ || serialRxArmed_ || hostRx_.empty()) return;
     // [B] MC68901 Fig. 6-2 p. 6-3 : un start, 5..8 données, parité et stops 1/1,5/2.
-    // [D] Hatari rs232.c:345-353 @ f0736b24. [D] MAME mc68901.cpp REGISTER_UCR, sans révision épinglée.
+    // [D] Hatari rs232.c:345-353 @ f0736b24. [D] MAME mc68901.cpp:856-918 @ ce391499d37d (REGISTER_UCR).
     // Mode synchrone non modélisé : conserver le transport hôte 8N1 historique.
     const uint8_t ucr = timer_[0x29];
     const int stops = (ucr >> 3) & 3;
     // [B] MC68901 § 6.1.1 p. 6-1 : données courtes complétées par des zéros, puis bit de parité.
-    // [D] MAME rx_frame_start/rx_clock, sans révision épinglée : compteur de longueur au start, données
+    // [D] MAME mc68901.cpp:1134, 1309-1320 @ ce391499d37d (rx_frame_start/rx_clock) : compteur de longueur au start, données
     // courtes alignées à droite et complétées par des zéros. Le transport par
     // octets fige le format au caractère ; pas de reconstruction des fronts.
     serialRxMask_ = stops ? uint8_t(0xFF >> ((ucr >> 5) & 3)) : 0xFF;
@@ -221,7 +221,7 @@ void Mfp::onSerialRxEvent() {
     hostRx_.pop_front();
     const int64_t due = sched_ ? sched_->firingDue() : -1;
     // [B] MC68901 § 2.1.7.1 p. 2-4, § 2.1.7.3 p. 2-5, Fig. 6-4 p. 6-7 ; MC68HC901 § 2.10.1/.3 ;
-    // [D] MAME rc_w, sans révision épinglée : SI/RC externes sont déconnectés
+    // [D] MAME mc68901.cpp:1085-1094, 1100-1111 @ ce391499d37d (rc_w, tc_w) : SI/RC externes sont déconnectés
     // par H/L=11 ; les octets du fil hôte continuent à passer sans remplir RDR.
     if (!internalSerialLoopback())
         receiveSerialByte(b, due >= 0 ? due : (sched_ ? sched_->liveNow() : 0));
@@ -229,7 +229,7 @@ void Mfp::onSerialRxEvent() {
 }
 
 // [B] MC68901 Fig. 6-3 p. 6-4, MC68HC901 § 7.2.2 p. 7-5 (OE) ;
-// [D] MAME rx_async_frame_complete / REGISTER_UDR, sans révision épinglée :
+// [D] MAME mc68901.cpp:1157-1192, 522-528, 539-554 @ ce391499d37d (rx_async_frame_complete, REGISTER_RSR/UDR) :
 // la perte reste invisible tant que RDR n'est pas lu. OE visible bloque ensuite
 // l'assemblage jusqu'à la lecture RSR ; aucun framing physique n'est synthétisé.
 void Mfp::receiveSerialByte(uint8_t byte, int64_t when) {
@@ -292,7 +292,7 @@ void Mfp::scheduleSerialTxHalfBits(int halfBits, bool continuation) {
 }
 
 // [B] MC68901 Fig. 6-4 p. 6-7 ; MC68HC901 § 7.3.2 : END immédiat si aucun caractère ne reste en vol.
-// [B] MC68901 § 6.3.1 p. 6-6, Fig. 6-3 p. 6-5, Fig. 6-4 p. 6-7 ; [D] MAME tx_clock, sans révision épinglée :
+// [B] MC68901 § 6.3.1 p. 6-6, Fig. 6-3 p. 6-5, Fig. 6-4 p. 6-7 ; [D] MAME mc68901.cpp:1394-1407 @ ce391499d37d (tx_clock) :
 // END déclenche TXERR, AT active RE puis se désarme.
 void Mfp::finishSerialTx(int64_t when) {
     if (!serialTxEnd_) {
@@ -318,9 +318,12 @@ void Mfp::advanceSerialTx(int64_t when) {
         if (!(timer_[0x2D] & 1)) { finishSerialTx(when); return; }
         const bool sendBreak = (timer_[0x2D] & 8) && (timer_[0x29] & 0x18);
         if (kind == 1 && sendBreak) {
-            // [B] MK68901 p. 18 ; MC68HC901 § 7.3.2 p. 7-8 ; [D] MAME mc68901, sans révision épinglée : TSR inchangé ;
+            // [B] MK68901 p. 18 ; MC68HC901 § 7.3.2 p. 7-8 : TSR inchangé ;
             // UE et IPR doivent être libres
             // pour observer chaque frontière normale pendant le BREAK.
+            // [D] MAME mc68901.cpp:1387, 1409, 1470-1474 @ ce391499d37d (tx_clock) laisse aussi le TSR inchangé
+            // (pas d'UE sous BREAK), mais n'y lève AUCUNE interruption : l'IRQ à chaque
+            // frontière ne repose que sur [B] (vérifié le 2026-11-10).
             if (!serialTxUnderrun_ && !(ipra & (1u << (SRC_TXERR & 7)))) raiseAt(SRC_TXERR, when);
             startSerialTx(true);
         } else if (serialTxFull_ || sendBreak) startSerialTx(true);
@@ -331,14 +334,15 @@ void Mfp::advanceSerialTx(int64_t when) {
         return;
     }
     if (serialSink_) serialSink_(serialTxByte_);
-    // [D] MAME tc_w, sans révision épinglée, sélectionne le mode H/L courant à chaque front, sans latch au
+    // [D] MAME mc68901.cpp:1085-1094, 1100-1111 @ ce391499d37d (rc_w, tc_w) sélectionne le mode H/L courant à chaque front, sans latch au
     // départ. Ici il est évalué à la livraison de l'octet : une commutation au
     // milieu d'une trame ne reconstruit pas les bits partiels ni leurs erreurs.
     if (loopback_ || internalSerialLoopback()) receiveSerialByte(serialTxByte_, when);
     if (!(timer_[0x2D] & 1)) {
         finishSerialTx(when);
     } else if (!serialTxFull_ && !serialTxUnderrun_ && !((timer_[0x2D] & 8) && (timer_[0x29] & 0x18))) {
-        // [B] MC68901 Fig. 6-4 p. 6-7 ; MK68901 p. 17 ; [D] MAME tx_clock, sans révision épinglée :
+        // [B] MC68901 Fig. 6-4 p. 6-7 ; MK68901 p. 17 ; [D] MAME mc68901.cpp:1409-1417, 530-537, 961-967,
+        // 1011-1015 @ ce391499d37d (tx_clock, REGISTER_TSR, REGISTER_UDR) :
         // UE est mémorisé jusqu'à lecture TSR ou TE=0.
         // Écrire/recharger TDR ne l'efface pas et ne crée pas un nouveau front.
         serialTxUnderrunClearCycle_ = when + serialTcCycles();
@@ -377,7 +381,7 @@ uint8_t Mfp::read8(uint32_t addr) {
         case 0x15: return imrb;
         // (diag lectures TBDR : cf. case 0x21 ci-dessous)
         // [B] MC68901 Fig. 3-2 p. 3-2 ; MC68HC901 § 4.1.3 p. 4-3 ;
-        // [D] MAME REGISTER_VR, sans révision épinglée : bits2..0 inutilisés,
+        // [D] MAME mc68901.cpp:641, 510 @ ce391499d37d (REGISTER_VR) : bits2..0 inutilisés,
         // toujours lus à zéro, y compris depuis un ancien état brut sauvegardé.
         case 0x17: return uint8_t(vr & 0xF8);
         case 0x1B: return tbcr_;     // Timer B control
@@ -423,7 +427,7 @@ uint8_t Mfp::read8(uint32_t addr) {
         // [B] MC68901 Fig. 6-3 p. 6-4 ; MK68901 p. 15 : OE et son interruption attendent la lecture de l'UDR.
         case 0x2F:                   // UDR : lecture → consomme l'octet reçu (l'overrun, lui,
                                      // ne se vide qu'à la lecture du RSR → le handler RxErr le voit)
-            // [D] MAME REGISTER_UDR, sans révision épinglée, retourne toujours le registre RX, même BF=0.
+            // [D] MAME mc68901.cpp:539-554 @ ce391499d37d (REGISTER_UDR) retourne toujours le registre RX, même BF=0.
             // Une lecture vide ne révèle pas le registre TX distinct.
             rxFull_ = false;
             if (rxPendingOverrun_) {
@@ -556,12 +560,12 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
         case 0x2B:
                    if (!(v & 1)) {
                        // [B] MC68901 Fig. 6-3 p. 6-5, MK68901 p. 15 : RE=0 coupe aussitôt et efface tous les drapeaux.
-                       // [D] MAME REGISTER_RSR, sans révision épinglée : RE=0 remet le RSR entier à zéro,
+                       // [D] MAME mc68901.cpp:920-926 @ ce391499d37d (REGISTER_RSR) : RE=0 remet le RSR entier à zéro,
                        // sans effacer les données RX ni les IRQ MFP déjà pendantes.
                        timer_[0x2B] = 0;
                        rxFull_ = rxOverrun_ = rxPendingOverrun_ = false;
                    } else {
-                       // [B] MC68901 Fig. 6-3 p. 6-4 et p. 6-5 ; [D] MAME REGISTER_RSR, sans révision épinglée :
+                       // [B] MC68901 Fig. 6-3 p. 6-4 et p. 6-5 ; [D] MAME mc68901.cpp:927-955 @ ce391499d37d (REGISTER_RSR) :
                        // seuls RE/SS sont contrôlables ;
                        // F/S l'est aussi en synchrone. BF/OE/PE/FE/M/CIP et
                        // le bit Break asynchrone appartiennent au récepteur.
@@ -619,7 +623,9 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
 
 // -----------------------------------------------------------------------------
 //  [B] MC68901 § 2.1.6.3 p. 2-4, Fig. 7-3 p. 7-3, Fig. 6-2 p. 6-3 ; MC68HC901 § 7.1.3.
-//  [D] MAME mc68901.cpp, sans révision épinglée. [D] TDO relié à TC et RC : Hatari mfp.c:203 @ f0736b24.
+//  [D] MAME mc68901.cpp:175, 233-258, 1248, 1455-1463 @ ce391499d37d (PRESCALER, timer_count,
+//  /16 de rx_clock et tx_clock) ; horloge 2,4576 MHz et TDO relié à TC et RC :
+//  [D] MAME atarist.cpp:85, 1373-1376 @ ce391499d37d. [D] TDO relié à TC et RC : Hatari mfp.c:203 @ f0736b24.
 //  Timer D : 2,4576 MHz / prescaler / données ; sortie basculée à chaque
 //  expiration (/2). UCR bit7 choisit
 //  /16 ou /1. Mode synchrone non modélisé : repli de transport 8N1 /16.
@@ -1262,8 +1268,8 @@ uint8_t Mfp::gpipInput() const {
     //    receiver »). Le MC1489 INVERSE et, entrée ouverte, sort HAUT ([B] fiche TI, non rouverte en A43 :
     //    SLLS095, VOH « Input open » ≥ 2,6 V) ; un RI désasserté (−12 V, marque) sort
     //    haut aussi. Sans câble, ou avec tout câble dont RI ne sonne pas : bit6 = 1.
-    //    Concordants : [D] MAME, sans révision épinglée (rs232_port_device : RI = 1 sans appareil, relié à i6
-    //    sans inversion) et [A] une lecture de tiers sur STFM réel, non rouverte en A43 (exxos, exxosforum t=3992
+    //    Concordants : [D] MAME rs232.cpp:89, 99 et atarist.cpp:1383 @ ce391499d37d (rs232_port_device : RI = 1
+    //    sans appareil, relié à i6 sans inversion) et [A] une lecture de tiers sur STFM réel, non rouverte en A43 (exxos, exxosforum t=3992
     //    p.49, 2022 : $FFFA01 = 233 = $E9, bits 6 et 3 à 1). Hatari rend 0 par pur
     //    artefact : MFP_Reset pose GPIP = 0 ([D] mfp.c:523 @ f0736b24) et rien ne pilote jamais le
     //    bit 6. RI reste ACTIVE BASSE (assertion → 0, front descendant sous AER=0) :

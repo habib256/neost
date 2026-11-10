@@ -65,6 +65,8 @@ extern/moira-upstream/
 # Références RTL (tools/setup_silicon_refs.sh) : lues, jamais liées au binaire.
 extern/fx68k/
 extern/mistery/
+# MAME, épinglé et réduit aux fichiers cités (setup_silicon_refs.sh) : lu, jamais compilé.
+extern/mame/
 # Fiches et schémas ASIC, sous copyright : manifeste dans setup_silicon_refs.sh.
 extern/datasheets/
 build-moira-runner/

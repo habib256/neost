@@ -297,8 +297,8 @@ int64_t Bus::mmuTranslate(uint32_t addr) const {
     //    ne ferait que corriger phystop marche : banque 1 déclarée 2 Mo + puce 512 Ko
     //    se décode LINÉAIREMENT sur ses 512 premiers Ko (RAS/CAS entrelacés STE,
     //    mmuXlatSTE) — la RAM $200000-$27FFFF est utilisable.
-    //  · banques indépendantes (bits 0-1 honorés, modèle MAME stmmu.cpp, qui ne gère
-    //    d'ailleurs pas 2176/2560) : TOS 1.62/2.06 reconnaîtraient 2,5 Mo d'emblée —
+    //  · banques indépendantes (bits 0-1 honorés, modèle [D] MAME stmmu.cpp:475-494 @ ce391499d37d,
+    //    configure_ram, qui ne gère d'ailleurs pas 2176/2560) : TOS 1.62/2.06 reconnaîtraient 2,5 Mo d'emblée —
     //    contredit les deux sources ci-dessus (aucun besoin de SIMMFIX).
     // Le modèle Hatari est donc le seul cohérent avec les témoignages matériels. Reste
     // non prouvé faute de mesure directe : la lecture de $FF8001 bits 0-1 sur STE et le

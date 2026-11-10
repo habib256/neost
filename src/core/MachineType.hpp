@@ -8,7 +8,8 @@
 //    - son DMA STE  : présent sur STE / Mega STE ;
 //    - blitter      : présent sur Mega ST / Mega STE (émulation à venir).
 //
-//  Réf. : EmuTOS configuration.c, Hatari, MAME atarist.cpp. (c) 2026 NeoST.
+//  Réf. : EmuTOS configuration.c, Hatari, MAME atarist.cpp @ ce391499d37d (révision de
+//  vérification ; pilotes st, megast, ste, megaste). (c) 2026 NeoST.
 // =============================================================================
 #pragma once
 #include <cstddef>

@@ -7,17 +7,21 @@
 //  l'index) est une ADAPTATION du décodeur IPF de MAME :
 //      src/lib/formats/ipf_dsk.cpp — copyright-holders: Olivier Galibert
 //      licence BSD-3-Clause (compatible GPL 3), github.com/mamedev/mame
+//      Relu @ ce391499d37d (révision de vérification, extern/mame) : le fichier n'a pas
+//      changé depuis 0e882c0f2b43 (2026-10-17), antérieur à l'adaptation (2026-10-22).
 //  Le texte de la licence BSD-3-Clause figure dans packaging/licenses/THIRD-PARTY.txt.
 //  Écarts volontaires avec l'original : bornes vérifiées sur TOUS les accès au
-//  conteneur (MAME lit les descriptions de gap sans borne au second passage),
-//  modulo signé pour les motifs de gap « à rebours » (MAME s'appuie sur
-//  l'enroulement uint32, juste seulement pour les motifs de 2^k bits), pas de
-//  marquage du raccord d'écriture (sans effet sur la lecture : il tombe dans un
-//  gap), sortie en tableaux niveau/durée au lieu de floppy_image.
+//  conteneur (MAME lit les descriptions de gap sans borne au second passage,
+//  ipf_dsk.cpp:652-654), modulo signé pour les motifs de gap « à rebours » (MAME
+//  s'appuie sur l'enroulement uint32, ipf_dsk.cpp:520-524, 690 : juste seulement pour
+//  les motifs de 2^k bits), pas de marquage du raccord d'écriture (MAME
+//  mark_track_splice, ipf_dsk.cpp:359-370, 498 ; sans effet sur la lecture : il tombe
+//  dans un gap), sortie en tableaux niveau/durée au lieu de floppy_image.
 //
 //  L'étage 2 (lecteur WD1772 → STX) est propre à NeoST ; ses règles de synchro
-//  suivent MAME src/devices/machine/wd_fdc.cpp (live_run : SEARCH_ADDRESS_MARK_*,
-//  READ_TRACK_DATA), lui-même calé sur les fiches WD177x.
+//  suivent MAME src/devices/machine/wd_fdc.cpp @ ce391499d37d (live_run :
+//  SEARCH_ADDRESS_MARK_* l. 1828-1953, READ_TRACK_DATA l. 2057-2105), lui-même calé
+//  sur les fiches WD177x.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST (GPL 3).
 // =============================================================================
@@ -74,7 +78,7 @@ inline uint32_t be32(const uint8_t* p) {
 }
 
 // =============================================================================
-//  Étage 1 — conteneur IPF → flux de cellules (adapté de MAME ipf_dsk.cpp).
+//  Étage 1 — conteneur IPF → flux de cellules (adapté de MAME ipf_dsk.cpp @ ce391499d37d).
 // =============================================================================
 struct TrackInfo {
     uint32_t cylinder = 0, head = 0, type = 0, sigtype = 0, process = 0;
@@ -482,7 +486,8 @@ struct Decoder {
         }
         if (t.blockCount == 0 || t.blockCount > 4096) return fail("bad block count");
         if (t.dataSize < 32ull * t.blockCount) return fail("block descriptors truncated");
-        // Les gaps trop petits sont ignorés et changent la taille réelle (MAME).
+        // Les gaps trop petits sont ignorés et changent la taille réelle
+        // ([D] MAME ipf_dsk.cpp:788-789, 829-830 @ ce391499d37d).
         uint64_t real = 0;
         for (uint32_t i = 0; i != t.blockCount; ++i) {
             const uint8_t* th = t.data + 32 * std::size_t(i);
@@ -580,8 +585,8 @@ struct FoundSector {
 constexpr int kSyncA1 = 0x4489, kSyncC2 = 0x5224;
 
 // Champ données associé à l'ID dont le dernier octet de CRC finit à la cellule
-// `idEnd` : fenêtre de synchro 28..43 octets (MAME wd_fdc SEARCH_ADDRESS_MARK_DATA,
-// fiche WD1772 : DAM dans les 43 octets MFM qui suivent le CRC de l'ID).
+// `idEnd` : fenêtre de synchro 28..43 octets ([D] MAME wd_fdc.cpp:1943-1953 @ ce391499d37d,
+// SEARCH_ADDRESS_MARK_DATA ; fiche WD1772 : DAM dans les 43 octets MFM qui suivent le CRC de l'ID).
 void readDataField(const Stream& s, int64_t idEnd, FoundSector& fs, StxStats* st) {
     uint16_t sr = 0;
     int64_t sync = -1;
@@ -645,7 +650,7 @@ void readDataField(const Stream& s, int64_t idEnd, FoundSector& fs, StxStats* st
     }
 }
 
-// Dump READ TRACK : MAME wd_fdc READ_TRACK_DATA — un octet toutes les 16
+// Dump READ TRACK : [D] MAME wd_fdc.cpp:2057-2105 @ ce391499d37d (READ_TRACK_DATA) — un octet toutes les 16
 // cellules, resynchro sur $4489/$5224 (octet émis seulement si > 8 cellules
 // s'étaient accumulées). Les cellules faibles reçoivent une valeur pseudo-
 // aléatoire figée (le dump STX est, lui aussi, une lecture figée).

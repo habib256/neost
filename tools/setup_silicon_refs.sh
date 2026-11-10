@@ -7,7 +7,9 @@
 #  l'échelon `rtl` (docs/REFERENCE_LADDER.md), que rien ne rapatriait.
 #
 #  extern/fx68k et extern/mistery sont gitignorés, lus et JAMAIS liés au binaire
-#  (GPL-3). Rien n'y est compilé ici. Idempotent ; une épingle ne bouge que par
+#  (GPL-3). Rien n'y est compilé ici. MAME (grade D, comme Hatari) n'entre dans
+#  extern/mame que par les fichiers que le code cite, pour qu'une citation
+#  `fichier:ligne @ révision` se rouvre. Idempotent ; une épingle ne bouge que par
 #  décision humaine, car elle déplace toutes les citations de ligne.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test (domaine public).
@@ -17,6 +19,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 FX68K_PIN=0602ee4627b10f301298f2673d826cdd6baa9327     # ijor/fx68k, 2021-02-16
 MISTERY_PIN=a00deb5b4e964124987d80ae854163b3edbd7555   # gyurco/MiSTery, 2025-03-21
+MAME_PIN=ce391499d37dc21a4cf8fba85e4b774698ff2945      # mamedev/mame, 2026-11-10
 
 fetch() {  # <url> <dossier> <sha>
   [[ -d "$2/.git" ]] || git clone -q "$1" "$2"
@@ -33,6 +36,27 @@ git -C "$ROOT/extern/mistery" submodule update -q --init gstmcu fdc1772 ikbd fx6
 if [[ "${1:-}" == "--rtl-only" ]]; then
   exit 0
 fi
+
+# MAME : dépôt de plusieurs Go, donc clone superficiel, sans blobs, réduit aux fichiers
+# cités dans src/ (MFP, SCC, FDC, RTC, YM, IPF, RS-232, MMU et carte de l'Atari ST, FPU, MT-32).
+fetch_sparse() {  # <url> <dossier> <sha> <chemins…>
+  local url=$1 dir=$2 sha=$3; shift 3
+  [[ -d "$dir/.git" ]] || { git init -q "$dir"; git -C "$dir" remote add origin "$url"; }
+  git -C "$dir" sparse-checkout set --no-cone "$@"
+  git -C "$dir" cat-file -e "$sha^{commit}" 2>/dev/null \
+    || git -C "$dir" fetch -q --depth 1 --filter=blob:none origin "$sha"
+  git -C "$dir" checkout -q --detach "$sha"
+}
+fetch_sparse https://github.com/mamedev/mame.git "$ROOT/extern/mame" "$MAME_PIN" \
+  /src/devices/machine/mc68901.cpp /src/devices/machine/mc68901.h \
+  /src/devices/machine/z80scc.cpp /src/devices/machine/z80scc.h \
+  /src/devices/machine/wd_fdc.cpp /src/devices/machine/wd_fdc.h \
+  /src/devices/machine/rp5c15.cpp /src/devices/machine/rp5c15.h \
+  /src/devices/sound/ay8910.cpp /src/devices/sound/ay8910.h \
+  /src/lib/formats/ipf_dsk.cpp /src/lib/formats/ipf_dsk.h \
+  /src/devices/bus/rs232/rs232.cpp /src/devices/bus/rs232/rs232.h \
+  /src/mame/atari/atarist.cpp /src/mame/atari/stmmu.cpp /src/mame/atari/stmmu.h \
+  /src/devices/cpu/m68000/m68kfpu.cpp /src/mame/roland/roland_mt32.cpp
 
 # Documents primaires (grade B), sous copyright : jamais versionnés, seules leur URL et
 # leur empreinte le sont. Une empreinte qui change arrête le script : un autre scan change
@@ -82,3 +106,4 @@ mkdir -p "$DOCS/asic"
 
 echo "fx68k   ${FX68K_PIN:0:12}"
 echo "MiSTery ${MISTERY_PIN:0:12} (gstmcu $(git -C "$ROOT/extern/mistery/gstmcu" rev-parse --short=12 HEAD))"
+echo "MAME    ${MAME_PIN:0:12}"

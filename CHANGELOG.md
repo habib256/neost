@@ -6,6 +6,16 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Citations MAME épinglées et relues (2026-11-10)
+
+- `tools/setup_silicon_refs.sh` épingle MAME `ce391499d37d` (master du 2026-11-10) : clone
+  superficiel sans blobs, réduit aux fichiers que `src/` cite, dans `extern/mame` (gitignoré).
+- Chaque mention de MAME sous `src/` (MFP, SCC, RTC, YM, FDC, MMU, IPF, FPU, MT-32) a été
+  relue à l'épingle et réécrite `fichier:ligne @ ce391499d37d`. Trois ne tenaient pas telles
+  quelles : MAME n'a pas de dialogue CIR (`Fpu.hpp`), arrondit e au plus près dans FMOVECR
+  (`Fpu.cpp`), et ne lève aucune interruption sous BREAK de l'USART (`Mfp.cpp`) ; les
+  commentaires le disent. L'ACIA n'avait aucune citation MAME. Commentaires seuls.
+
 ## Logithèque : Rick Dangerous et Pang joués, lancés du bureau GEM (2026-11-10)
 
 - `rick_dangerous_boulder` : recette de `docs/OPENDST.md` § 7 (cracktro, double-clic sur

@@ -80,7 +80,8 @@ const MT32Emu::ROMImage* loadRom(const std::filesystem::path& p, std::string& na
     if (!img) { delete f; return nullptr; }
     const MT32Emu::ROMInfo* info = img->getROMInfo();
     if (!info) { MT32Emu::ROMImage::freeROMImage(img); delete f; return nullptr; }
-    // ROM COMPLÈTES seulement : les moitiés (ic26/ic27, pcm_h/pcm_l des lots MAME) ont
+    // ROM COMPLÈTES seulement : les moitiés (ic27/ic26 et PCM ic21/ic22 des lots MAME,
+    // roland_mt32.cpp:397-418, 432-433 @ ce391499d37d ; pcm_mt32_l/_h chez munt) ont
     // un pairType ≠ Full et ne s'ouvrent pas seules.
     if (info->pairType != MT32Emu::ROMInfo::Full) { MT32Emu::ROMImage::freeROMImage(img); delete f; return nullptr; }
     name = info->shortName ? info->shortName : "";

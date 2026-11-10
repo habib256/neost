@@ -89,7 +89,7 @@ uint8_t Rtc::read8(uint32_t addr) {
     catchUp();
     const int i = static_cast<int>((addr - 0xFFFC21) >> 1) & 0x0F;
     if (mode_ & 1) {
-        // [B] Ricoh EK-086-9908 p6 ; MAME rp5c15 [D], sans révision : 2..8 sont les alarmes,
+        // [B] Ricoh EK-086-9908 p6 ; [D] MAME rp5c15.cpp:319, 355-361 @ ce391499d37d : 2..8 sont les alarmes,
         // jamais des alias des compteurs. Hauts F conservés pour la sonde TOS.
         if (i >= 2 && i <= 8) return uint8_t(bank1_[i] | (i <= 3 ? 0xF0 : 0));
         if (i < 13) return bank1_[i];
@@ -97,7 +97,7 @@ uint8_t Rtc::read8(uint32_t addr) {
     if (i < 13) return uint8_t(d_[i] & 0x0F);           // chiffre BCD (4 bits utiles)
     if (i == 13) return uint8_t((mode_ & 0x0F) | 0xF0); // mode : bits hauts à 1 (cf. Hatari)
     // [B] Ricoh EK-086-9908 p7 : Eh/Fh sont uniquement accessibles en écriture.
-    // [F] La valeur relue n'est pas définie. 0 comme MAME rp5c15_device::read, sans révision : ne pas exposer les commandes mémorisées.
+    // [F] La valeur relue n'est pas définie. 0 comme [D] MAME rp5c15.cpp:313-316 @ ce391499d37d (rp5c15_device::read) : ne pas exposer les commandes mémorisées.
     return 0;
 }
 

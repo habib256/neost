@@ -1849,10 +1849,10 @@ uint8_t Fdc::writeSectorStx(int size) {
     StxImage::Sector& sec = t->sectorsView()[stxNextSector_];
     if (sec.fdcStatus & StxImage::FLAG_RNF) return STR_RNF;
     // CRC seul (sans RNF) = erreur CRC du champ DONNÉES ([B] WD177X-00 p. 1-18, S3). Le WD1772 ne
-    // contrôle que le CRC du champ ID ([B] p. 1-9, 1-10 ; la mention de MAME wd_fdc.cpp write_sector,
-    // sans révision et non relue ici, ne pèse pas) puis écrit un champ données NEUF avec un CRC
-    // juste ([B] p. 1-12, « Write CRC ») : l'écriture réussit et la relecture est saine. Hatari
-    // (stx.c FDC_WriteSector_STX) refuse ce cas en renvoyant CRC — contre son propre
+    // contrôle que le CRC du champ ID ([B] p. 1-9, 1-10 ; concordant, [D] MAME wd_fdc.cpp:1028-1043
+    // @ ce391499d37d, write_sector_continue, puis 2290-2313, champ données et CRC neufs) puis
+    // écrit un champ données NEUF avec un CRC juste ([B] p. 1-12, « Write CRC ») : l'écriture
+    // réussit et la relecture est saine. Hatari (stx.c FDC_WriteSector_STX) refuse ce cas en renvoyant CRC — contre son propre
     // commentaire (« ID field CRC ») — et sa machine à états, qui ne teste que RNF,
     // annonçait alors un SUCCÈS sans rien écrire : écriture perdue en silence.
     // Un CRC d'ID erroné est codé RNF+CRC par Pasti, déjà refusé ci-dessus.
@@ -2601,7 +2601,9 @@ int Fdc::updateWriteSectors() {
         // Protection en écriture testée APRÈS la montée en régime (6 index si h=0) et
         // le délai E de 15 ms, avant la recherche d'ID : [B] WD177X-00 p. 1-9, organigramme
         // type II (la p. 1-2 dit WPRT échantillonné à la réception, l'organigramme est plus
-        // précis ; la mention de MAME wd_fdc.cpp, sans révision et non relue ici, ne pèse pas).
+        // précis ; concordant, [D] MAME wd_fdc.cpp:1005-1012, 1051-1055 @ ce391499d37d,
+        // write_sector_continue : WPRT testé à SETTLE_DONE, après montée en régime et délai E,
+        // re-testé à chaque secteur).
         // Hatari la teste dès le premier événement, avant le moteur ([D] fdc.c:3381-3382
         // @ f0736b24) : l'erreur tombait sans démarrage.
         // Re-testée à chaque secteur d'un multi-secteurs (retour par MOTORON ; [B] p. 1-11,
@@ -2736,8 +2738,8 @@ int Fdc::updateReadAddress() {
         if (bufPos_ < bufferSize()) fdcCycles = int(bufferReadTiming());
         else {
             // [B] WD177X-00 p. 1-13 : les six octets restent transférés malgré un CRC ID
-            // invalide, et le bit CRC est posé (la mention de MAME wd_fdc.cpp, sans révision et non
-            // relue ici, ne pèse pas). Hatari collecte ce résultat dans Status_Temp mais omet de
+            // invalide, et le bit CRC est posé (concordant, [D] MAME wd_fdc.cpp:1912-1925 @ ce391499d37d,
+            // READ_ID_BLOCK_TO_DMA_BYTE). Hatari collecte ce résultat dans Status_Temp mais omet de
             // le rendre visible dans cette commande ([D] fdc.c:3724-3733, 3738-3750 @ f0736b24).
             if (statusTemp_ & STR_CRC) updateStr(0, STR_CRC);
             commandState_ = RUN_RA_COMPLETE;
@@ -2821,9 +2823,9 @@ int Fdc::updateWriteTrack() {
         [[fallthrough]];
      case RUN_WT_MOTORON:
         // Protection en écriture : après le délai E, AVANT l'attente de l'index
-        // ([B] WD177X-00 p. 1-14, organigramme type III ; la mention de MAME, sans révision et non
-        // relue ici, ne pèse pas). Hatari la teste après l'index ([D] fdc.c:3977 @ f0736b24) :
-        // l'erreur arrivait jusqu'à un tour trop tard.
+        // ([B] WD177X-00 p. 1-14, organigramme type III ; concordant, [D] MAME wd_fdc.cpp:883-890
+        // @ ce391499d37d, write_track_continue : WPRT à SETTLE_DONE, avant WAIT_INDEX). Hatari la
+        // teste après l'index ([D] fdc.c:3977 @ f0736b24) : l'erreur arrivait jusqu'à un tour trop tard.
         // ⚠ [B] p. 1-13, 1-14 : ensuite DRQ monte, 3 octets d'attente, et sans service la commande finit
         // en Lost Data, AVANT d'attendre l'index. Ici rien de tout cela : écart non corrigé. Sur ST,
         // [D] fdc.c:145-149, 5515 @ f0736b24 dit DRQ toujours servi ; seule la date du départ change, d'au

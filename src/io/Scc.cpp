@@ -515,9 +515,9 @@ void Scc::processTX(int c) {
 
 // [B] UM0109 p.45 : lire la donnée dépile données et erreurs ensemble ; RR1 D5 p.179 : seul
 // le caractère écrasé porte l'overrun, latché à sa lecture.
-// [F] L'overrun remplace le dernier emplacement, en conservant les deux plus anciens : le
+// [D] L'overrun remplace le dernier emplacement, en conservant les deux plus anciens : le
 // manuel ne nomme pas l'emplacement, et le registre à décalage en attente n'est pas modélisé.
-// Vient de MAME receive_data, sans révision. Tranché par : un overrun provoqué sur un 85C30.
+// Vient de MAME z80scc.cpp:2674-2684 @ ce391499d37d (receive_data). Tranché par : un overrun provoqué sur un 85C30.
 void Scc::refreshRx(int c) {
     auto& ch = chn_[c];
     // [B] UM0109 RR1 p.178-179 : framing/EOF suivent le caractère ; parité et overrun collent.
@@ -664,8 +664,8 @@ void Scc::updateSerial(int c) {
     auto& ch = chn_[c];
     // [B] UM0109 WR5 D4 p.153 : BREAK force TxD à 0 au prochain coup d'horloge ; à sa fin,
     // TxD reprend le contenu du TSR.
-    // [F] Que le TSR soit suspendu sans consommer de donnée vient de MAME tra_callback, sans
-    // révision ; le manuel ne le dit pas. Tranché par : un BREAK en cours de caractère sur un 85C30.
+    // [D] Que le TSR soit suspendu sans consommer de donnée vient de MAME z80scc.cpp:1203-1208
+    // @ ce391499d37d (tra_callback) ; le manuel ne le dit pas. Tranché par : un BREAK en cours de caractère sur un 85C30.
     // Notre tranche au caractère
     // conserve les cycles restants, sans phase sous-bit ni erreurs RX inventées.
     // Un caractère coupé ne peut pas être livré comme un octet intact.
@@ -805,8 +805,9 @@ uint8_t Scc::readControl(int c) {
     // [B] UM0109 table Z85X30 p.144-145, RR6/RR7 p.182 : RR6B/RR7B sont les images RR2B/RR3B,
     // sélectionnées par WR15B (idem A).
     // [D] Hatari scc.c:1574,1581 @ f0736b24 — teste et lit ici A seul : le manuel prime.
-    // [F] Le soft IACK (WR9 bit5) à la lecture de l'image RR6 : le manuel ne cite que RR2 (p.160).
-    // Vient de MAME scc_register_read, sans révision. Tranché par : RR6 lu sur un 85C30, WR9 D5=1.
+    // [D] Le soft IACK (WR9 bit5) à la lecture de l'image RR6 : le manuel ne cite que RR2 (p.160).
+    // Vient de MAME z80scc.cpp:1702-1706, 1527-1530 @ ce391499d37d (scc_register_read replie RR6 sur
+    // do_sccreg_rr2 hors FIFO d'état). Tranché par : RR6 lu sur un 85C30, WR9 D5=1.
     if ((reg == 6 || reg == 7) && !(chn_[c].WR[15] & WR15_STATUS_FIFO)) reg -= 4;
     switch (reg) {
     // [B] UM0109 p.144-145, p.182-187 : RR4/5/9/11/14 sont les images de RR0/1/13/15/10.
@@ -943,8 +944,8 @@ void Scc::writeControl(int c, uint8_t value) {
     switch (activeReg_) {
     case 1:
         // [B] UM0109 p.56-57 : masquer l'IP conserve les latches.
-        // [F] Le réarmement rend visible la condition mémorisée, sans nouveau front : déduit du
-        // manuel (IP = latches fermés) et de MAME do_sccreg_wr1, sans révision. Tranché par :
+        // [D] Le réarmement rend visible la condition mémorisée, sans nouveau front : déduit du
+        // manuel (IP = latches fermés) et de MAME z80scc.cpp:1964-1967 @ ce391499d37d (do_sccreg_wr1). Tranché par :
         // WR1 D0 remis à 1 sous latch fermé sur un 85C30, puis RR3 lu.
         updateRR3Bit((value & WR1_EXT_INT_ENABLE) && ch.rr0Latched,
                      c ? RR3_EXT_IP_B : RR3_EXT_IP_A);
