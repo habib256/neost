@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Sanitizers sur la collection privée et fuzzing prolongé (2026-11-10)
+
+- Build Debug ASan/UBSan (`build-asan`, options du job `sanitizers` de la CI) : les 94 images de
+  `disks/st` et `disks/stx` en ST/TOS 1.04 et STE/TOS 1.62, 2000 trames, ESPACE toutes les 400
+  trames dès 600 : **188 cas sur 188 sans violation**. La CI ne voit que trois démos : la
+  collection est privée, la passe se refait à la main.
+- `neost-fuzz-disk` sous ASan/UBSan, graines 1 à 4, 200 000 itérations chacune : 0 violation
+  (le palier `fast` en fait 20 000 sur une graine).
+
 ## Porte d'échange élargie : parcours, collection, Mega STE à 16 MHz (2026-11-10)
 
 - `tools/cpu_swap_gate.py` rejoue quatre suites, NeoST contre NeoST, sans Hatari ni Pillow :
