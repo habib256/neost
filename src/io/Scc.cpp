@@ -161,8 +161,10 @@ void Scc::updateBrg(int c) {
     // [B] UM0109 figure p.72 : ZC précède le diviseur /2 et le multiplicateur WR4.
     // [B] UM0109 p.72, WR12 p.167 : une nouvelle constante n'entre au compteur qu'au
     // prochain rechargement.
-    // ⚠ [B] UM0109 WR14 D0 p.172 : l'activation n'atteint la sortie qu'après deux comptes
-    // du compteur ; ici le premier ZC tombe après TC+2 sans ce délai. Écart non corrigé.
+    // [B] UM0109 WR14 D0 p.172 : l'activation « is not reflected by the output of the BRG for
+    // two counts of the counter ». [F] Deux lectures : départ du compteur retardé de deux coups,
+    // ou sortie seule masquée deux coups. Ici le premier ZC tombe après TC+2, sans délai.
+    // Tranché par : la date du premier ZC après WR14 D0 sur un vrai 85C30.
     if (ch.brgSource == source && brgPeriod_[c]) return;
     ch.brgSource = source; ch.brgFraction = 0;
     ch.brgPulseStart = ch.brgPulseEnd = -1;

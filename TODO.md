@@ -58,7 +58,7 @@ documents primaires, les ROM et le RTL épinglé.
 | # | Action | Prio | § |
 |---|--------|------|---|
 | 1 | Logithèque : relire les écarts de `compare_titles.py --joy`, étendre `tests/replays/replays.json` | P1 | 3 |
-| 2 | A43 : relire les écarts `⚠ [B]` restants du MFP, du WD1772, de l'ACIA et du SCC | P1 | 4 |
+| 2 | A43 : écarts `⚠ [B]` restants : tous attendent une mesure, une source ou contredisent un jeu (relu le 2026-11-10) | P2 ⏸ | 4 |
 | 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
 | 4 | A32 : méthodes du compteur vidéo dans leur objet (un chantier à la fois) | P2 | 7 |
 | 5 | Échange du cœur 68000 par le Moira de POM68K (prélude au TT et au Falcon) | P1 ⏸ cœur | 7 |
@@ -240,7 +240,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. MFP, YM2149, WD1772, ACIA et SCC sont confrontés à leurs fiches, et leurs écarts marqués `⚠ [B]` sur place. `audit_citations.py list` signale encore 2 citations, justes, dont la révision suit sur la même phrase. Restent les GLUE/MMU sans schéma. Le SCC n'a pas été relu pour le synchrone, le SDLC et le DMA.
+- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. MFP, YM2149, WD1772, ACIA et SCC sont confrontés à leurs fiches, et leurs écarts marqués `⚠ [B]` sur place. Le 2026-11-10, tous ceux que la fiche suffisait à trancher sont corrigés (MFP arrêt, AER, élection ; ACIA TDRE, reset MIDI ; SCC All Sent) ; les restants attendent un relevé sur le fer ou sont gardés parce qu'un jeu contredit la fiche. `audit_citations.py list` signale encore 2 citations, justes, dont la révision suit sur la même phrase. Restent les GLUE/MMU sans schéma. Le SCC n'a pas été relu pour le synchrone, le SDLC et le DMA.
 - **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée.
 - **Banc fx68k, étendre** · P3 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur concordent. Restent BERR et double faute, et l'autovecteur dans le verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
