@@ -14,7 +14,7 @@ Ce qui reste OUVERT est dans [`../TODO.md`](../TODO.md).
 | Jeu | Verdict | Piste / renvoi |
 |-----|---------|----------------|
 | **Vroom**, écran bruité sous TOS 2.06 (2026-11-04) | **Cause isolée : la VBL du jeu désélectionne le lecteur pendant le chargement.** Erreur ignorée, tampon périmé copié sur l’écran. Un octet neutralisant l’arrêt automatique fait passer le même état. Cœur inchangé, fréquence réelle inconnue. | [Recette et contre-épreuve](#vroom-sous-tos-206--la-vbl-désélectionne-le-lecteur-pendant-le-chargement-2026-11-04). |
-| **TOS 2.06 UK**, double faute au démarrage (2026-11-04) | **Cause démontrée dans NeoST : collision de pile et de contexte GEMDOS.** Reproduite avec `diskA.st`, sans Vroom ; masquer la fenêtre de changement de pile débloque le même état. Cœur inchangé, datation matérielle non établie. | [Trace et recette publique](#tos-206--la-vbl-écrase-le-contexte-sur-la-pile-temporaire-2026-11-04). |
+| **TOS 2.06 UK**, double faute au démarrage (2026-11-04, jugé le 2026-11-10) | **Course réelle de la ROM ; fréquence due au tirage discret (2026-11-10).** NeoST 3/256, Hatari 0/1024 : une seule trajectoire de boot touche une fenêtre de 16 cycles, le réseau des trajectoires étant figé par la phase MFP/CPU au reset. **Cause démontrée dans NeoST : collision de pile et de contexte GEMDOS.** Reproduite avec `diskA.st`, sans Vroom ; masquer la fenêtre de changement de pile débloque le même état. Cœur inchangé, datation matérielle non établie. | [Trace et recette publique](#tos-206--la-vbl-écrase-le-contexte-sur-la-pile-temporaire-2026-11-04). |
 | **TOS 2.05 FR**, écran uniforme avec le profil ST/Mega ST (2026-11-04) | **Corrigé par le choix du profil compatible, sans patch TOS.** `$E00096` accède au son DMA STE avant l'installation des vecteurs. Le profil ST partait ensuite en RAM vide. NeoST sélectionne désormais STE ; STE/Mega STE déjà choisis sont conservés. Hatari contourne cette incompatibilité par les patchs `TP_ANTI_STE`. | `tos205fr.img`, ST demandé, 1 Mo, `diskA.st`, SPACE 100/300 tenu 8 trames, capture 2000 : bureau, 0 pixel d'écart avec STE explicite et Hatari STE sans patch. Audit détaillé dans `HATARI_AUTOMATION.md`, section « Patchs TOS ». |
 | **Switchblade** `[cr Replicants][t +2]`, écran noir rare (2026-11-04) | **Graine 8 débloquée par la correction de cadence FDC/DMA.** Le flux disque ne ralentit plus pendant le DMA RAM. Le chargeur laisse toujours `flock` nul ; aucun patch logiciel. Fréquence réelle des collisions inconnue. | [Trace, contre-épreuve et recette](#switchblade--une-vbl-du-tos-acquitte-le-read-track-du-chargeur-2026-11-04). |
 | **Barbarian (Psygnosis, 1987)** — souris ET joystick actifs ensemble (2026-10-22) | ✅ **FIDÈLE, par la ROM 6301 et non plus par un hack.** Le jeu envoie `$80 $01 $08 $0B 03 03 $14` d'un seul trait : tout arrive pendant l'initialisation de la ROM (sei `$F010` … cli `$F139`). `$08` reste dans le RDR, l'octet suivant déborde et la routine `$FF40` jette tout. Il reste les défauts : souris relative (seuil 1) + joystick 1 en événement. Hatari obtenait le même résultat par un quirk « `$08+$14` pendant le reset », qui laissait en plus passer le joystick 0. Vérifié : joystick 1 → le barbare avance, souris → le pointeur bouge, depuis le même état. | `--server` : `run 2800`, `insert A …(Disk 2).STX`, `run 1500`, `key make 39`/`break 39`, `run 800`, `save 1`, puis `joy 08` ou `mouse 6 3 0` ×30. Trace : `NEOST_KBD_TRACE=1` (`reset-window … held/overrun`). |
@@ -818,6 +818,38 @@ Empreintes SHA-256 de la reproduction publique :
 
 - ROM : `b776d5ade5ace0d09cb9f13a85ac07f6d492ab69fcac1b56995573f620f74e6c` ;
 - `diskA.st` : `aacabef42939d2217afd0482965b7a6ff5789b58fdc296922f6a18b06f390197`.
+
+**Verdict du 2026-11-10 : course réelle de la ROM, fréquence due au tirage discret.**
+Même recette (STE 1 Mo, `diskA.st`, ESPACE 100/300 tenu huit trames) :
+
+| Émulateur | Halts | Graines |
+|---|---|---|
+| NeoST `84c12d1` | 3 (graines 4, 69, 161) | 256 |
+| Hatari `f0736b24` sans patch ni démarrage rapide | 0 | 1 024 |
+
+La différence est significative, mais elle ne désigne pas un défaut de NeoST. La fenêtre
+exposée va de `$E0FB76` (A7 écrit en basepage+`$7C`) à `$E0FB7E` (passage sur `$31D0`) :
+le seul `lea`, une quinzaine de cycles. Le processus AUTO ne la traverse que **deux fois**
+par démarrage avec A6 = `$CCB6`, à 8 420 cycles d'écart. Si la phase de la VBL y était
+uniforme, le taux serait de l'ordre de 2 × 16 / 160 256, soit 2 × 10⁻⁴.
+
+Elle ne l'est pas : le premier passage suit un tic du Timer C, à 200 Hz. Mesuré sur 72
+graines (distance à la dernière VBL prise, `--trace --irq --regs`), il ne prend qu'une
+trentaine de valeurs, groupées vers 33 000, 72 000, 112 000 et 152 000 cycles. Une même
+valeur revient à l'identique (112 650 pour les graines 13, 15, 20 et 22). Les trois graines
+qui haltent partagent **une seule trajectoire** : 151 750, puis 160 170, à 86 cycles de la
+VBL suivante. Ses voisines, 151 578 et 151 918, passent à côté.
+
+Pourquoi un réseau discret : chez NeoST, l'horloge du MFP part du front 0 au cycle CPU 0 et
+garde un rapport exact au CPU (31 333/9 600, `src/io/Mfp.cpp`, [F] déjà consigné). La phase
+du Timer C par rapport à la VBL est donc une fonction déterministe de la durée du boot, que la
+graine FDC ne fait varier que par crans. Hatari tire un autre réseau, qui ne contient pas de
+trajectoire touchée. Sur le fer, MFP et CPU ont chacun leur oscillateur : la phase n'a aucune
+raison d'être figée, et le taux attendu redevient celui de la phase uniforme.
+
+**Conséquence** : le mécanisme est réel (grade C pour la ROM ; fx68k reproduit la collision,
+cf. plus haut). Le taux de NeoST mesure son réseau de trajectoires, pas le matériel. Aucun
+correctif d'émulation. Reste ouvert, au TODO : la phase de l'horloge du MFP au reset.
 
 ## Switchblade : une VBL du TOS acquitte le READ TRACK du chargeur (2026-11-04)
 

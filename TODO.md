@@ -77,7 +77,7 @@ correction de fidélité.
 | **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** en cours de route ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
 | **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie (faite), banc fx68k étendu (BERR fait), Mega STE 16 MHz au banc, sort des `.state` → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | DMA disque sur le bus, restes vidéo au cycle, restes MFP de la fiche, délai de bus error, WS3 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
-| **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK double faute, parcours étendus (son, STE, parties longues) → § 4 | P2 |
+| **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Disquettes de menus nommées, retour arrière, pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
 | **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | A32, oracle et fiches TT/Falcon → § 8 et § 10 ; inventaire fait (`docs/HYPOTHESES_ST.md`) | P2 |
 
@@ -166,6 +166,10 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 - **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp` et `Mfp.hpp`. TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; prescaler changé en marche (§ 5.1.1, borne MC68901 contre MK68901). UE après un cycle de TC est corrigé (`0ce2471`).
 - **Jitter des périodes Timer B** · P2 ⏸ cœur · [F] — sonde Super Hang-On : NeoST {512, 516, 508,
   520}, Hatari {512, 520, 504}. Dépend de la prise d'IPL (§ 9) : à rejouer après l'échange.
+- **Phase de l'horloge du MFP au reset** · P3 ⭘ · [F] — front 0 au cycle CPU 0 et rapport exact
+  31 333/9 600 : la phase du Timer C face à la VBL est une fonction déterministe de la durée du
+  boot. Sur le fer, deux oscillateurs. Une phase tirée au reset (en option, déterministe par
+  graine) rendrait réaliste la fréquence des courses comme celle de TOS 2.06 UK (`docs/CASE_STUDIES.md`).
 - **Lecture du dernier cycle fractionnaire d'un timer** · P3 ⭘ · [F] — la conversion entière peut rendre 0 juste avant l'échéance interne ; forcer 1 change `mfp_poll` de 16 pixels. Lecture conservée, datation DS/horloge à isoler par une sonde ; distinct de l'arrêt du compteur corrigé selon la fiche le 2026-11-10. → `docs/HATARI_DIVERGENCES.md`
 - **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
@@ -246,7 +250,6 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 | Titre | Prio | Symptôme | Piste |
 |-------|------|----------|-------|
-| **TOS 2.06 UK**, double faute au démarrage avec SPACE précoce | P2 ⭘ | Une VBL écrase le contexte GEMDOS sur la pile temporaire, avant le changement de pile (STE 1 Mo, graine 4). Hatari : aucun halt sur 256 graines. | Résidu localisé à la sortie d'attente 200 Hz (+64 cycles) puis au balayage mémoire (+60) ; même prise de VBL que Vroom. `tools/trace_tos206_boot.py`. Seul plantage ouvert qui ne dépende d'aucune ressource externe. |
 | **Lemmings** `[cr BBC][a]` | P3 ◐ | Menu et premier niveau gardés (`lemmings_first_level`). | Attribuer des compétences et terminer un niveau. |
 | **Vroom** `[cr Elite]`, intro sous TOS 2.06 | P2 ⏸ matériel | Trame rayée transitoire, 20/1 000 trames, reproduite aussi par Hatari ; la sonde GSTMCU retrouve 230/184 octets. | Mesurer latence VBL et fréquence de la séquence sur STE réel avant tout recalage CPU/GLUE (`tools/probe_vroom_intro_glue.py`). |
 | **Switchblade** `[cr Replicants][t +2]` | P3 ⏸ relevé | Graine 8 débloquée par la cadence FDC/DMA ; seule la datation émulée change. | Relever la probabilité de collision sur un vrai ST. |

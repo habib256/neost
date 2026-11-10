@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## TOS 2.06 UK, double faute : jugée, course réelle et tirage discret (2026-11-10)
+
+- Même recette, NeoST 3 halts sur 256 graines, Hatari `f0736b24` 0 sur 1 024. Les trois halts
+  partagent une seule trajectoire de boot : le second passage exposé (`$E0FB76-$E0FB7E`, deux
+  par démarrage) tombe 86 cycles avant une VBL. Les passages ne prennent qu'une trentaine de
+  valeurs, alignées sur le Timer C, parce que la phase MFP/CPU est figée au reset. Course
+  réelle de la ROM, taux propre au réseau de trajectoires de chaque émulateur : aucun correctif.
+  L'item sort des bugs ouverts ; la phase du MFP au reset entre au § 3.2 (P3).
+
 ## Sanitizers sur la collection privée et fuzzing prolongé (2026-11-10)
 
 - Build Debug ASan/UBSan (`build-asan`, options du job `sanitizers` de la CI) : les 94 images de
