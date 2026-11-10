@@ -1022,7 +1022,9 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
         if (mapDbg) std::fprintf(stderr, "[state-map] %-8s @ %zu\n", who, off);
     };
     bus.serialize(ar);      mapAt("cpu",     ar.saveSize());
+    if (!ar.loading()) cpuSectionBegin_ = ar.saveSize();
     cpu.serialize(ar);      mapAt("sched",   ar.saveSize());
+    if (!ar.loading()) cpuSectionEnd_ = ar.saveSize();
     sched.serialize(ar);    mapAt("shifter", ar.saveSize());
     // ⚠ ANCRAGE ABSOLU de la fenêtre de trame sur l'horloge maître — impossible plus
     // haut, `sched` n'étant restauré qu'ICI. Les gardes ci-dessus ne contraignent que
@@ -1292,6 +1294,32 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
         std::fprintf(stderr, "[state] truncated/inconsistent file — session state restored\n");
         return false;
     }
+    return true;
+}
+
+bool Machine::archHash(uint64_t& machine, uint64_t& cpuHash) {
+    std::vector<uint8_t> st;
+    if (!saveState(st)) return false;
+    if (cpuSectionBegin_ < kStateHeaderSize || cpuSectionEnd_ < cpuSectionBegin_
+        || cpuSectionEnd_ > st.size()) return false;
+    auto fnv = [](uint64_t h, const uint8_t* p, std::size_t n) {
+        for (std::size_t i = 0; i < n; ++i) { h ^= p[i]; h *= 1099511628211ull; }
+        return h;
+    };
+    constexpr uint64_t kBasis = 14695981039346656037ull;
+    machine = fnv(kBasis, st.data() + kStateHeaderSize, cpuSectionBegin_ - kStateHeaderSize);
+    machine = fnv(machine, st.data() + cpuSectionEnd_, st.size() - cpuSectionEnd_);
+    // Champ par champ, en petit-boutiste explicite : l'empreinte ne dépend ni du
+    // bourrage de la structure ni de l'hôte.
+    const Cpu68k::ArchState a = cpu.archState();
+    std::vector<uint8_t> rec;
+    auto put = [&](uint64_t v, int bytes) { for (int i = 0; i < bytes; ++i) rec.push_back(uint8_t(v >> (8 * i))); };
+    for (uint32_t v : a.d) put(v, 4);
+    for (uint32_t v : a.a) put(v, 4);
+    put(a.usp, 4); put(a.ssp, 4); put(a.pc0, 4);
+    put(a.sr, 2); put(a.irc, 2); put(a.ird, 2);
+    put(uint64_t(a.busClock), 8); put(a.halted, 1); put(a.stopped, 1);
+    cpuHash = fnv(kBasis, rec.data(), rec.size());
     return true;
 }
 

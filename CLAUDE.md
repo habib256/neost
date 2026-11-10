@@ -31,6 +31,7 @@ les puces) et **`neost_core` ne dépend pas du GUI**.
 | [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md) | Catalogue des **logiciels étalons** par sous-système. |
 | [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md) | **Cas tranchés** : titres corrigés OU jugés fidèles, avec la recette. À lire avant de rouvrir un « bug ». |
 | [`docs/MOIRA_WINUAE_CONVERGENCE.md`](docs/MOIRA_WINUAE_CONVERGENCE.md) | **Beam-sync** : convergence Moira↔WinUAE, mesures, pistes éliminées. |
+| [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md) | **Échange du cœur 68000** (Moira POM68K) : porte d'empreintes indépendante du cœur, procédure, contrat attendu du cœur (surcharges, internes, patches). |
 | [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md) | **Banc Moira↔fx68k** : le 68000 nu contre le RTL cycle-exact, conventions de datation, écarts trouvés et ce qui les tranche. |
 | [`docs/STBLITTER_BENCH.md`](docs/STBLITTER_BENCH.md) | **Banc du blitter** : NeoST contre `stBlitter.sv` et fx68k, accès, données et dates ; ce que la netlist ST-4082 a tranché. |
 | [`docs/STCPU_BENCH.md`](docs/STCPU_BENCH.md) | **Banc CPU + GSTMCU** : ce que le 68000 voit du faisceau, compteur et interruptions, contre les RTL, à l'octet. |

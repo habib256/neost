@@ -238,6 +238,9 @@ void usage() {
         "                    the first differing line dates a loss of determinism\n"
         "  --probe-every N   emit one sample line on STDOUT every N frames:\n"
         "                    'probe frame=.. screen=<hash> [ram=<hash>] NAME=0x..'\n"
+        "  --arch-hash-every N  print a CPU-core-independent hash every N frames: the machine\n"
+        "                    state minus the CPU section, and the 68000 architectural state\n"
+        "                    (registers, SR, prefetch, bus clock) - the CPU swap gate\n"
         "  --hash-ram A:L    add ram=<hash> over L bytes at $A (both hex): a cheap\n"
         "                    cell key for an external state-space explorer\n"
         "  --server          command loop on stdin/stdout instead of --frames:\n"
@@ -1424,6 +1427,7 @@ int main(int argc, char** argv) {
     // marché pour un pilote externe. Cf. headless/Observe.hpp.
     observe::ProbeSet probeSet;
     int         probeEvery  = 0;      // 0 = pas d'échantillonnage
+    int         archHashEvery = 0;    // --arch-hash-every : empreinte indépendante du cœur CPU
     int         stateHashEvery = 0;   // --state-hash-every : empreinte de l'état complet (StateArchive)
     // --server : la même machine, conduite au tuyau au lieu d'être rejouée en entier
     // à chaque itération. Cf. headless/Server.cpp et docs/OPENDST.md.
@@ -1667,6 +1671,7 @@ int main(int argc, char** argv) {
             if (!observe::addProbe(probeSet, p, e)) { std::fprintf(stderr, "--probe: %s\n", e.c_str()); return 2; }
         }
         else if (!std::strcmp(a, "--state-hash-every")) stateHashEvery = std::atoi(next(a));
+        else if (!std::strcmp(a, "--arch-hash-every")) archHashEvery = std::atoi(next(a));
         else if (!std::strcmp(a, "--probe-every")) {
             // Strict : « abc » et « 0 » devenaient 1 en silence, à rebours de la rigueur
             // affichée pour --probe et --server-slots.
@@ -2614,6 +2619,12 @@ int main(int argc, char** argv) {
                 for (uint8_t b : st) { h ^= b; h *= 1099511628211ull; }
                 std::printf("state-hash frame=%d %016llx\n", frame + 1, static_cast<unsigned long long>(h));
             }
+        }
+        if (archHashEvery > 0 && (frame + 1) % archHashEvery == 0) {
+            uint64_t hm = 0, hc = 0;
+            if (machine.archHash(hm, hc))
+                std::printf("arch-hash frame=%d machine=%016llx cpu=%016llx\n", frame + 1,
+                            static_cast<unsigned long long>(hm), static_cast<unsigned long long>(hc));
         }
         framesRun = frame + 1;
         // NEOST_BAND_DIAG=1 : signale l'APPARITION d'une bande pleine largeur d'une

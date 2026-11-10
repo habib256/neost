@@ -224,6 +224,19 @@ public:
     uint32_t reg(int idx) const;   // 0-7 = D0-D7, 8-15 = A0-A7
     uint16_t sr()  const;          // status register
 
+    // État ARCHITECTURAL du 68000 : ce que tout cœur cycle-exact doit rendre à
+    // l'identique, quelle que soit la façon dont il sérialise ses internes. Sert à
+    // l'empreinte --arch-hash-every, la porte d'échange du cœur (docs/CPU_SWAP_GATE.md).
+    struct ArchState {
+        uint32_t d[8] = {}, a[8] = {};  // a[7] = pointeur de pile actif
+        uint32_t usp = 0, ssp = 0;
+        uint32_t pc0 = 0;               // instruction suivante à exécuter
+        uint16_t sr = 0, irc = 0, ird = 0;
+        int64_t  busClock = 0;          // horloge BUS (8 MHz), pas l'horloge du cœur
+        uint8_t  halted = 0, stopped = 0;
+    };
+    ArchState archState() const;
+
     // --- Accès écriture aux registres pour l'émulation GEMDOS HD --------------------
     // L'interception d'un appel GEMDOS (trap #1 redirigé via la cartouche système)
     // lit/modifie les registres et le SR du 68000 directement, comme le fait Hatari

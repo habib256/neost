@@ -194,6 +194,10 @@ public:
     bool desktopMousePosition(int& x, int& y, int& width, int& height) const;
     bool desktopMouseMove(int x, int y, bool left, bool right);
     bool loadState(const uint8_t* data, std::size_t n);
+    // Empreinte INDÉPENDANTE DU CŒUR CPU (porte d'échange, docs/CPU_SWAP_GATE.md) :
+    // `machine` hache l'archive du save-state privée de son en-tête (version de format)
+    // et de la section CPU ; `cpu` hache Cpu68k::archState(). FNV-1a 64 bits.
+    bool archHash(uint64_t& machine, uint64_t& cpu);
     // Variantes fichier (wrappers I/O). saveStateFile écrit le buffer ; loadStateFile lit
     // le fichier puis loadState. Renvoient false sur erreur d'I/O ou en-tête invalide.
     bool saveStateFile(const std::string& path);
@@ -327,6 +331,7 @@ private:
     void beginFrame_();     // amorce une trame (ancre + événements) — cf. runFrame/stepInstruction
     void finalizeFrame_();  // finalise une trame (rattrapage + décodage lignes + spec512)
     void serializeState(StateArchive& ar, bool hostFiles = true);
+    std::size_t cpuSectionBegin_ = 0, cpuSectionEnd_ = 0;  // relevés au dernier save (archHash)
     mutable uint32_t desktopLineA_ = 0; // cache hôte dérivé, validé avant chaque utilisation
     // Handlers des événements datés vidéo (positions au cycle dans la ligne).
     // Les Timers A/C/D (mode délai) sont datés par le MFP lui-même.

@@ -96,13 +96,14 @@ def run_selftest(flag: str, cpu: str, extra_env: dict | None = None) -> int:
     return run_timed(cmd, 300, cwd=ROOT, env=env).returncode
 
 
-def run_headless_capture(entry: dict, out_ppm: Path) -> int:
+def headless_cmd(entry: dict) -> list[str]:
+    """Commande neost-headless d'un étalon pixel, sans la capture. Partagée avec
+    tools/cpu_swap_gate.py : la porte d'échange du cœur rejoue les mêmes scénarios."""
     rom = entry.get("rom", "roms/etos192us.img")
     cmd = [str(HEADLESS), str(ROOT / rom), "--cpu", entry.get("cpu", "moira"),
            "--machine", entry.get("machine", "ste"),
            "--mem", entry.get("mem", "512k"),
-           "--frames", str(entry.get("frames", 200)),
-           "--screenshot", str(out_ppm)]
+           "--frames", str(entry.get("frames", 200))]
     if entry.get("fastfdc"):
         cmd.append("--fastfdc")
     disk = entry.get("disk")
@@ -125,6 +126,11 @@ def run_headless_capture(entry: dict, out_ppm: Path) -> int:
             cmd += ["--keys-at", str(n), keys]
     if entry.get("cart"):
         cmd += ["--cart", str(ROOT / entry["cart"])]
+    return cmd
+
+
+def run_headless_capture(entry: dict, out_ppm: Path) -> int:
+    cmd = headless_cmd(entry) + ["--screenshot", str(out_ppm)]
     print("  $", " ".join(cmd))
     r = run_timed(cmd, 900, cwd=ROOT)
     return r.returncode

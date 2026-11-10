@@ -1509,6 +1509,22 @@ uint16_t Cpu68k::sr() const {
     return state_->moira->getSR();
 }
 
+Cpu68k::ArchState Cpu68k::archState() const {
+    ArchState s;
+    const auto& m = *state_->moira;
+    for (int i = 0; i < 8; ++i) { s.d[i] = m.getD(i); s.a[i] = m.getA(i); }
+    s.usp = m.getUSP();
+    s.ssp = m.getISP();             // 68000 : pas de bit M, ISP = SSP
+    s.pc0 = m.getPC0();
+    s.sr  = m.getSR();
+    s.irc = m.getIRC();
+    s.ird = m.getIRD();
+    s.busClock = busClockNow();
+    s.halted  = m.isHalted() ? 1 : 0;
+    s.stopped = m.isStopped() ? 1 : 0;
+    return s;
+}
+
 void Cpu68k::setReg(int idx, uint32_t v) {
     if (idx < 8) state_->moira->setD(idx, v); else state_->moira->setA(idx - 8, v);
 }

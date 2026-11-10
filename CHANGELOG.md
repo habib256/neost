@@ -6,6 +6,17 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Porte d'échange du cœur 68000 (2026-11-10)
+
+- `neost-headless --arch-hash-every N` : empreinte indépendante du cœur CPU, l'état
+  machine sans la section CPU ni l'en-tête de format, et l'état architectural du 68000
+  (`Cpu68k::archState`). Non perturbante : `--state-hash-every` inchangé avec ou sans.
+- `tools/cpu_swap_gate.py` : enregistre puis compare ces empreintes sur les 56 étalons
+  pixel (8 793 empreintes, ~1 min 30). Éprouvée : accord contre elle-même, écart vu sous
+  `NEOST_MFP_BATCH=0` (machine) et `NEOST_IPLDELAY=1` (machine et cpu).
+- `docs/CPU_SWAP_GATE.md` : procédure et contrat attendu du Moira de POM68K.
+  `run_etalons.py` expose `headless_cmd`, partagée avec la porte. Émulation inchangée.
+
 ## Magic Pockets STE et audit WD1772 sans ID (2026-11-10)
 
 - Magic Pockets : parcours droite/tir/saut conservé, trois captures identiques

@@ -61,6 +61,7 @@ documents primaires, les ROM et le RTL épinglé.
 | 2 | A43 : relire les écarts `⚠ [B]` restants du MFP, du WD1772, de l'ACIA et du SCC | P1 | 4 |
 | 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
 | 4 | A32 : méthodes du compteur vidéo dans leur objet (un chantier à la fois) | P2 | 7 |
+| 5 | Échange du cœur 68000 par le Moira de POM68K (prélude au TT et au Falcon) | P1 ⏸ cœur | 7 |
 
 ---
 
@@ -342,6 +343,7 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
   fonctions statiques `(App&, Frame&)`. Plus grosse pièce restante :
   `runKioskMenu` — 380 lignes d'un seul tenant. Prochain pas éventuel : sortir ses pages,
   puis `consumeConfigRequests` (219 lignes). Déplacements mécaniques uniquement.
+- **Échange du cœur : Moira de POM68K** · P1 ⏸ cœur POM68K — 68000/030/040, JIT déterministe, FPU et MMU intégrés ; cycle-exact en 68000. Porte prête (`tools/cpu_swap_gate.py`) : enregistrer la référence sur le dernier commit avant l'échange. Contrat attendu du cœur → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md)
 - **Suivre l'amont Moira** · P3 ⭘ — 10 commits non portés depuis le pin (68020/68030, vAmiga,
   empreinte mémoire) ; rien pour le 68000 hormis DIVU/DIVS, porté. Rejouer
   `tools/run_moira_runner.sh` et le banc fx68k à chaque patch du cœur.
