@@ -365,3 +365,14 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
   ni les bords STOP_MIDDLE, ni `closure` passé en `hatari` (A41), **ni Moira ajusté pour égaler
   fx68k** : un écart du banc se tranche à une source plus haute ou reste écrit.
 - **Garder un contrôle par un autre contrôle** : A38 ne se traite pas avec un 18ᵉ outil.
+
+---
+
+## 8. 📚 Logiciels réservés au TT et au Falcon
+
+- **Suite AERA de yaary.music** · P2 ⏸ Falcon dans NeoST — <https://yaary.music/software/atari-st/>.
+  Dix programmes GEM en C, sous GPL v2 (« ou ultérieure » sur la page d'EWeb) : EWeb (navigateur), EMail, ECal, EContact, EFTP, EPDF, EPlay (MP3), EHypView,
+  EUpdate, ClaudeST. Sur Falcon et TT, EWeb fait son TLS 1.2 et décode ses JPEG **sur le DSP**,
+  EPlay lit le MP3 sur le DSP : d'excellents juges du DSP56001 et de la pile réseau. Sur ST, ils
+  passent par AERA-Gateway (<https://yaary.music/software/aera-gateway/>). À tester quand le
+  Falcon sera émulé (cœur POM68K, `docs/CPU_SWAP_GATE.md`).
