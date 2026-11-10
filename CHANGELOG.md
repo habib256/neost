@@ -6,6 +6,14 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Logithèque STE : Lethal Xcess et Golden Axe gardés en partie (2026-11-10)
+
+- `lethal_xcess_ste` : en partie, bordure haute ouverte, trames 4000 à 5000 ; garde directe du
+  départ des timers MFP (l'ancien binaire s'y écartait de 37 %).
+- `golden_axe_ste` : même parcours que sur ST, disque B inséré, début du niveau 1, trames 7000 à
+  9000 ; la mêlée (0,97 % à 10000) n'est pas jugée, comme sur ST. L'écart STE du 2026-11-04 ne se
+  reproduit plus. 21 parcours de compatibilité au manifeste.
+
 ## MFP : départ des timers sur leur horloge, Lethal Xcess STE réparé (2026-11-10)
 
 - Un timer MFP ne démarre plus qu'au front suivant de l'horloge des timers (MC68901 § 5.1.1) : son

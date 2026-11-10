@@ -41,7 +41,7 @@ une régression du cœur.
 - `python3 tools/run_all.py --tier full` : les auto-tests de logique, le banc fx68k (verdicts
   figés dans `tests/reference/fx68k_bench.json`), le banc CPU + GSTMCU, le diagnostic Mega STE.
 - `tools/run_moira_runner.sh` : le cœur nu.
-- `/usr/bin/python3 tools/run_game_replay.py` : les 18 parcours de jeu (Pillow requis ; le
+- `/usr/bin/python3 tools/run_game_replay.py` : les parcours de jeu de `tests/replays/replays.json` (Pillow requis ; le
   `python3` de Homebrew ne l'a pas et sort en SKIP).
 - `tools/run_determinism.py` : reprise de save-state avec le **nouveau** format CPU.
 - Mega STE à 16 MHz : la porte le voit par ses étalons Mega STE, mais l'horloge du cœur
