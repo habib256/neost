@@ -6,6 +6,13 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Logithèque : Rick Dangerous joué, du bureau GEM au rocher (2026-11-10)
+
+- `rick_dangerous_boulder` : recette de `docs/OPENDST.md` § 7 (cracktro, double-clic sur
+  `RICKLOAD.TOS` au bureau, intro, niveau 1 par feu pulsé), puis course et rocher. Accord avec
+  Hatari à décalage nul pendant la course, empreintes de trois scènes distinctes. 22 parcours
+  de compatibilité ; la porte d'échange le rejoue aussi.
+
 ## Fiche du HD6301 rapatriée ; cadence du SCI de l'IKBD mise en question (2026-11-10)
 
 - `tools/setup_silicon_refs.sh` épingle le *HD6301/HD6303 Series Handbook* d'Hitachi (1989,
