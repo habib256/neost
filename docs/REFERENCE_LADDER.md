@@ -140,8 +140,8 @@ MC6850 § Receiver Overrun p. 8-9 : « The RDRF bit remains set until the Overru
 
 Le projet n'a pas d'accès à un vrai ST. Le sommet atteignable passe donc, dans l'ordre, par :
 
-1. **Les relevés de tiers** — déjà les bus errors ; à chercher : ST-STE Hardware Test (Troed),
-   notes de Steven Tattersall. Un relevé compte en `hardware` s'il nomme sa machine et son
+1. **Les relevés de tiers** — déjà les bus errors et WSDETECT (Troed) ; à chercher : notes de
+   Steven Tattersall. Un relevé compte en `hardware` s'il nomme sa machine et son
    protocole.
 2. **Les documents primaires** — ci-dessus, à lire avant le RTL.
 3. **Les ROM** — TOS et diagnostics exécutés sous NeoST.

@@ -514,7 +514,7 @@ que jeu par jeu.
 | Suite | Cible de validation | Réf. |
 |-------|---------------------|------|
 | **Hatari Test Suite** | Micro-tests 68000 (instructions/exceptions non documentées) + Shifter | dépôt Hatari (`tests/`) |
-| **ST-STE Hardware Test** (Troed / Sync) | Timings fins du Shifter, détection des modes de rémanence, variations de cycles mémoire (accès RAM asynchrones CPU/vidéo) | scène Atari |
+| **WSDETECT** (Troed / Sync) | Wakestate GLUE/CPU par une ligne dont la longueur change selon l'état (ST WS1-WS4, STE) ; seul programme de test publié par Troed (un « ST-STE Hardware Test » cité ici auparavant reste introuvable, recherche du 2026-11-10) | `tools/run_wsdetect.py` |
 | **Anatool / Discovery Cartridge** | Lignes de statut WD1772 lors du formatage / lecture de pistes corrompues | utilitaire bas niveau |
 
 ## Reprise FDC du 2026-11-04

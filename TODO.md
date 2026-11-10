@@ -76,7 +76,7 @@ correction de fidélité.
 |-----|-----|-------------------|------|
 | **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** en cours de route ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
 | **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, banc fx68k étendu, Mega STE 16 MHz au banc, sort des `.state` → § 2 | P1 |
-| **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | DMA disque sur le bus, restes vidéo au cycle, restes MFP de la fiche, délai de bus error, WS3 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, ST-STE Hardware Test, documents primaires → § 5 | P2 |
+| **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | DMA disque sur le bus, restes vidéo au cycle, restes MFP de la fiche, délai de bus error, WS3 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK double faute, parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Disquettes de menus nommées, retour arrière, pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
 | **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | A32, inventaire des hypothèses ST dans le code, oracle et fiches TT/Falcon → § 8 et § 10 | P2 |
@@ -167,7 +167,7 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.2 MFP 68901
 
-- **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp`. TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; effacement de UE en un bit au lieu d'un cycle de TC ; prescaler changé en marche (§ 5.1.1).
+- **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp` et `Mfp.hpp`. TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; prescaler changé en marche (§ 5.1.1, borne MC68901 contre MK68901). UE après un cycle de TC est corrigé (`0ce2471`).
 - **Jitter des périodes Timer B** · P2 ⏸ cœur · [F] — sonde Super Hang-On : NeoST {512, 516, 508,
   520}, Hatari {512, 520, 504}. Dépend de la prise d'IPL (§ 9) : à rejouer après l'échange.
 - **Lecture du dernier cycle fractionnaire d'un timer** · P3 ⭘ · [F] — la conversion entière peut rendre 0 juste avant l'échéance interne ; forcer 1 change `mfp_poll` de 16 pixels. Lecture conservée, datation DS/horloge à isoler par une sonde ; distinct de l'arrêt du compteur corrigé selon la fiche le 2026-11-10. → `docs/HATARI_DIVERGENCES.md`
@@ -283,9 +283,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 - **Étendre les étalons `rtl`** · P2 ◐ — `rtl_low_pal`, `rtl_low_ntsc` et `rtl_med_pal` posés, ce dernier à 0 pixel. Reste ce qui bouge en cours de ligne (palette, fréquence), là où NeoST et le
   modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`.
-- **Relevés de tiers** · P2 ⭘ — ST-STE Hardware Test (Troed), notes de Steven Tattersall,
-  résultats de la suite Hatari. Un relevé entre en `hardware` s'il nomme machine et protocole.
-- **Étalon Troed** · P2 ◐ — WSDETECT est en place (`tools/run_wsdetect.py`). Reste ST-STE Hardware Test, à rapatrier et calibrer.
+- **Relevés de tiers** · P2 ⭘ — notes de Steven Tattersall, résultats de la suite Hatari,
+  relevés publiés avec WSDETECT. Un relevé entre en `hardware` s'il nomme machine et protocole.
 - **Documents primaires manquants** · P2 ⭘ — HD6301, schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST.
 - **A43 — dette de preuve** · P2 ⏸ — tout commentaire cite ses références (règle : `CLAUDE.md`) ;

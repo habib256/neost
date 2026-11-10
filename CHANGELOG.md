@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## TODO : l'étalon Troed se clôt sur WSDETECT, l'UE du MFP était déjà corrigé (2026-11-10)
+
+- « ST-STE Hardware Test (Troed) » reste introuvable : deux recherches du 2026-11-10 ne
+  trouvent de Troed/SYNC que WSDETECT et synctable. WSDETECT est en place
+  (`tools/run_wsdetect.py`) ; l'item « Étalon Troed » sort du TODO, et la mention est
+  corrigée dans `docs/TEST_SOFTWARE.md` et `docs/REFERENCE_LADDER.md`.
+- « Fiche contre code, restes de l'audit » (MFP) listait encore l'effacement de UE, corrigé par
+  `0ce2471` le 2026-11-04, trois heures après la rédaction de l'item.
+
 ## Banc fx68k : bus error et double faute (2026-11-10)
 
 - Les deux pilotes (`tools/fx68k_bench.cpp`, `tools/moira_bare_bench.cpp`) répondent par BERR
