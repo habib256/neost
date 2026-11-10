@@ -168,7 +168,6 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 - **Lecture du dernier cycle fractionnaire d'un timer** · P3 ⭘ · [F] — la conversion entière peut rendre 0 juste avant l'échéance interne ; forcer 1 change `mfp_poll` de 16 pixels. Lecture conservée, datation DS/horloge à isoler par une sonde ; distinct de l'arrêt du compteur corrigé selon la fiche le 2026-11-10. → `docs/HATARI_DIVERGENCES.md`
 - **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
-- **Citations MAME sans révision** · P3 ⭘ · [D] — dans le MFP, l'ACIA, le YM et le FDC. Aucune copie de MAME dans `extern` : à épingler ou à retirer.
 
 ### 3.3 Blitter
 
@@ -264,9 +263,10 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   diagnostics Vroom et Magic Pockets sont exclus par défaut. À étendre : parties plus longues,
   musique et son, disques STE. Un script joystick tient chaque commande plus que la période
   d'interrogation du jeu. Chaque parcours ajouté entre aussi dans la porte d'échange (§ 2).
-  Essai du 2026-11-10 : Pang, New Zealand Story, Bombjack et Giana Sisters restent au bureau
-  (à lancer à la souris), Onslaught attend ses touches ; Xenon 2 atteint le jeu, mais aucun des
-  30 couples de graines essayés n'aligne le chargement à la trame près.
+  Essais du 2026-11-10 : Rick Dangerous et Pang joués (lancés du bureau). Bombjack et Xenon 2
+  atteignent le jeu mais divergent au joystick générique (chargement décalé de quelques trames) ;
+  New Zealand Story affiche des barres noires, identiques chez Hatari ; Giana Sisters passe par un
+  menu D-Bug qu'ESPACE quitte ; Onslaught attend ses touches.
   → `docs/CASE_STUDIES.md`, `docs/OPENDST.md`
 - **Passe de la collection** · P3 ⭘ — 94 images en ST et en STE : A/B du 2026-11-10 identique à
   l'octet sur 185 cas sur 188 ; passe d'angle du 2026-11-04 (5 graines), seul Vroom change de
@@ -317,8 +317,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **Traces Hatari de référence pour `trace_diff`** · P3 ⭘ — Arkanoid et autres.
 - **Étalon spec512 en overscan** · P3 ⭘ — si une démo libre à bordures ouvertes est rapatriée.
 
-> **Les références se bâtissent** : `extern/hatari`, `extern/fx68k`, `extern/mistery` et
-> `extern/datasheets` sont gitignorés, absents d'une machine fraîche. `tools/setup_hatari.sh` et
+> **Les références se bâtissent** : `extern/hatari`, `extern/fx68k`, `extern/mistery`,
+> `extern/mame` (les seuls fichiers cités) et `extern/datasheets` sont gitignorés, absents d'une machine fraîche. `tools/setup_hatari.sh` et
 > `tools/setup_silicon_refs.sh` les rapatrient à leur épingle.
 > → [`docs/HATARI_AUTOMATION.md`](docs/HATARI_AUTOMATION.md)
 
