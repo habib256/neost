@@ -154,6 +154,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     rtc.setClock([this] { return sched.now() + cpu.cyclesRunInQuantum(); });
     // L'horloge de l'UltraSatan (pile propre) suit la même horloge émulée.
     usatan.setClock([this] { return sched.now() + cpu.cyclesRunInQuantum(); });
+    isp1160.setClock([this] { return sched.liveNow(); });
     // Horloge « live » de l'ordonnanceur = cycle bus absolu live du cœur. Les puces
     // qui datent un événement en plein milieu d'une instruction (MFP timers, compteur
     // vidéo…) s'en servent pour le caler sur l'instant RÉEL de l'accès. C'est l'horloge
@@ -629,6 +630,7 @@ void Machine::onTimerB() {
 }
 
 void Machine::onHbl() {
+    if (isp1160.enabled()) isp1160.sync();
     // DIAG (NEOST_HBL_DIAG=1) : timestamp ABSOLU de l'événement HBL (= la frontière
     // de ligne où la broche IRQ monte) — ancre le repère ligne dans les traces cyc=.
     static const long hblDiagN = []{ const char* s = std::getenv("NEOST_HBL_DIAG");
@@ -874,7 +876,7 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 58; // TBI_EDGE au Scheduler, niveau TBI du MFP (mode pulse)
+static constexpr uint16_t kStateVersion = 59; // USB : périphériques, phases EP0/BOT et horloge 1 ms
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
@@ -1048,7 +1050,10 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     scc.serialize(ar);      mapAt("ne2000",  ar.saveSize());   // SCC Z85C30 (Mega STE)
     ne2000.serialize(ar);   mapAt("usatan",  ar.saveSize());   // NE2000/EtherNEC (v10)
     usatan.serialize(ar);   mapAt("isp1160", ar.saveSize());   // UltraSatan (v12)
-    isp1160.serialize(ar);  mapAt("dongle",  ar.saveSize());   // ISP1160/NetUSBee (v12)
+    isp1160.serialize(ar);
+    ar.arr(keyRoute_);                       // v59 : les BREAK suivent leur MAKE après hotplug
+    if (ar.loading()) for (uint8_t route : keyRoute_) ar.check(route <= 2, "USB keyboard routing");
+    mapAt("dongle", ar.saveSize());
     dongle.serialize(ar);   mapAt("ports",   ar.saveSize());   // clé cartouche (v14/v15)
     ports.serialize(ar);    mapAt("gemdos",  ar.saveSize());   // périphériques des ports (v16)
     if (ar.loading()) {
@@ -1144,12 +1149,42 @@ bool Machine::desktopMouseMove(int x, int y, bool left, bool right) {
     if (x != currentX || y != currentY) {
         // Un seul paquet à la fois, puis retour du pilote avant la correction
         // suivante : ni dérive à la réentrée ni accumulation pendant une pause.
-        ikbd.mouseEvent(std::clamp(x - currentX, -127, 127),
+        mouseEvent(std::clamp(x - currentX, -127, 127),
                         std::clamp(y - currentY, -127, 127), buttons & 1, buttons & 2);
         return false; // les clics attendent que le curseur ait atteint leur position
     }
-    if (buttons != ((left ? 1 : 0) | (right ? 2 : 0))) ikbd.mouseEvent(0, 0, left, right);
+    if (buttons != ((left ? 1 : 0) | (right ? 2 : 0))) mouseEvent(0, 0, left, right);
     return true;
+}
+
+void Machine::keyEvent(uint8_t scancode, bool down) {
+    const unsigned scan = scancode & 127;
+    bool usb = isp1160.enabled() && (isp1160.device(0).kind() == UsbDevice::Kind::Keyboard ||
+                                    isp1160.device(1).kind() == UsbDevice::Kind::Keyboard);
+    if (down) keyRoute_[scan] = usb ? 2 : 1;
+    else { if (keyRoute_[scan]) usb = keyRoute_[scan] == 2; keyRoute_[scan] = 0; }
+    if (usb) {
+        // [B] HID Usage Tables 1.12 §10, usages clavier ; positions Atari
+        // identiques aux tables de StKeys. Les touches sans usage restent ignorées.
+        static constexpr uint8_t usage[128] = {
+            0,0x29,0x1E,0x1F,0x20,0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x2D,0x2E,0x2A,0x2B,
+            0x14,0x1A,0x08,0x15,0x17,0x1C,0x18,0x0C,0x12,0x13,0x2F,0x30,0x28,0xE0,0x04,0x16,
+            0x07,0x09,0x0A,0x0B,0x0D,0x0E,0x0F,0x33,0x34,0x35,0xE1,0x31,0x1D,0x1B,0x06,0x19,
+            0x05,0x11,0x10,0x36,0x37,0x38,0xE5,0,0xE2,0x2C,0x39,0x3A,0x3B,0x3C,0x3D,0x3E,
+            0x3F,0x40,0x41,0x42,0x43,0,0,0x4A,0x52,0,0x56,0x50,0,0x4F,0x57,0,
+            0x51,0,0x49,0x4C,0,0,0,0,0,0,0,0,0,0,0,0,
+            0x7A,0x75,0,0x54,0x55,0,0,0x5F,0x60,0x61,0x5C,0x5D,0x5E,0x59,0x5A,0x5B,
+            0x62,0x63,0x58,0,0,0,0,0,0,0,0,0,0,0,0,0
+        };
+        isp1160.keyEvent(usage[scancode & 127], down);
+    } else ikbd.keyEvent(scancode, down);
+}
+
+void Machine::mouseEvent(int dx, int dy, bool left, bool right) {
+    if (isp1160.enabled() && (isp1160.device(0).kind() == UsbDevice::Kind::Mouse ||
+                             isp1160.device(1).kind() == UsbDevice::Kind::Mouse))
+        isp1160.mouseEvent(dx, dy, left, right);
+    else ikbd.mouseEvent(dx, dy, left, right);
 }
 
 bool Machine::saveState(std::vector<uint8_t>& out) {

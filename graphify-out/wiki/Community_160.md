@@ -1,44 +1,51 @@
 # Community 160
 
-> 10 nodes
+> 19 nodes
 
 ## Key Concepts
 
-- **Machine::adjustMachineForTos()** (10 connections) — `src/core/Machine.cpp`
-- **⚠ Configuration : PAL/NTSC et couverture de la suite** (4 connections) — `docs/TEST_SOFTWARE.md`
-- **Machine::loadStateFile()** (3 connections) — `src/core/Machine.cpp`
-- **Machine::saveStateFile()** (3 connections) — `src/core/Machine.cpp`
-- **string** (3 connections)
-- **Patchs TOS : ce qu'ils contournent (audit du 2026-11-04)** (3 connections) — `docs/HATARI_AUTOMATION.md`
-- **TOS original et profils compatibles — 2026-11-04** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Lignes masquées ST/STE (2026-10-19)** (2 connections) — `docs/TEST_SOFTWARE.md`
-- **Les images disquette ne sont plus modifiées par les runs (A14, 2026-08-28)** (1 connections) — `docs/TEST_SOFTWARE.md`
-- **ROM libres vs ROM propriétaires (depuis le 2026-08-19)** (1 connections) — `docs/TEST_SOFTWARE.md`
+- **DasmStyle** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Syntax** (8 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **LetterCase** (6 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.setDasmSyntax()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **.NeostMoira()** (4 connections) — `src/core/Cpu68k.cpp`
+- **.setDasmLetterCase()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **.StrWriter()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **letterCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **numberFormat** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **syntax** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **tab** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **LOWER_CASE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MIXED_CASE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **UPPER_CASE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **GNU** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **GNU_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MOIRA** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MOIRA_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **MUSASHI** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 
 ## Relationships
 
-- [Community 182](Community_182.md) (3 shared connections)
-- [Community 10](Community_10.md) (3 shared connections)
-- [Community 192](Community_192.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
-- [Community 136](Community_136.md) (1 shared connections)
-- [Community 386](Community_386.md) (1 shared connections)
-- [Community 313](Community_313.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 105](Community_105.md) (1 shared connections)
-- [Community 254](Community_254.md) (1 shared connections)
+- [Community 16](Community_16.md) (3 shared connections)
+- [Community 57](Community_57.md) (3 shared connections)
+- [Community 131](Community_131.md) (2 shared connections)
+- [Community 2](Community_2.md) (2 shared connections)
+- [Community 314](Community_314.md) (2 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_AUTOMATION.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/TEST_SOFTWARE.md`
-- `src/core/Machine.cpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraTypes.h`
+- `extern/moira/Moira/StrWriter.h`
+- `src/core/Cpu68k.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (70%)
-- INFERRED: 7 (30%)
+- EXTRACTED: 30 (91%)
+- INFERRED: 3 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

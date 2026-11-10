@@ -10,8 +10,8 @@
 #  aussitôt : l'outil le mesure, avec `--shifts`.
 #
 #  Usage : run_spec512_truth.py [--shifts] [--write-refs]
-#  Code : 0 si les images exactes égalent tests/reference/spec512_truth.json ; 1 sinon ; 77 sans la
-#  disquette, qui n'est pas versionnée.
+#  Code : 0 si tous les verdicts concordent ; 1 pour un écart ; 77 pour une
+#  couverture partielle (ROM manquante) ou absente. Les cas présents restent comparés.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test.
 # =============================================================================
@@ -32,6 +32,35 @@ REF = ROOT / "tests" / "reference" / "spec512_truth.json"
 X0, Y0 = 48, 30       # 1er pixel de la 2e ligne d'écran : la 1re ligne d'une image Spectrum est vide
 RUNS = (("st", "roms/tos102uk.img"), ("ste", "roms/tos162uk.img"))
 FRAMES, EVERY = 3600, 60
+EXIT_SKIPPED = 77
+
+
+def finish_results(verdict: dict, skipped: list[str], write_refs: bool = False) -> int:
+    """Comparer uniquement les machines exécutées, sans masquer leurs régressions."""
+    if not verdict:
+        print("SKIP — images Spectrum 512 : aucune machine exécutée")
+        return EXIT_SKIPPED
+    if write_refs:
+        if skipped:
+            print("SKIP — référence conservée : toutes les ROM sont requises pour --write-refs")
+            return EXIT_SKIPPED
+        REF.write_text(json.dumps(verdict, indent=0, sort_keys=True) + "\n")
+        print(f"référence écrite : {REF}")
+        return 0
+    if not REF.exists():
+        print("Pas de référence.")
+        return 1
+    expected = json.loads(REF.read_text())
+    changed = [machine for machine, result in verdict.items()
+               if machine not in expected or expected[machine] != result]
+    if changed:
+        print("IMAGES SPECTRUM 512 : verdicts changés : " + ", ".join(changed))
+        return 1
+    if skipped:
+        print("SKIP — images Spectrum 512 : verdicts présents identiques ; ROM absentes : " + ", ".join(skipped))
+        return EXIT_SKIPPED
+    print("IMAGES SPECTRUM 512 OK : verdicts identiques à la référence")
+    return 0
 
 
 class Fat:
@@ -158,7 +187,13 @@ def main() -> int:
     a = ap.parse_args()
     if not DISK.exists():
         print("SKIP — images Spectrum 512 : disquette absente")
-        return 77
+        return EXIT_SKIPPED
+    skipped = [machine for machine, rom_path in RUNS if not (ROOT / rom_path).exists()]
+    if len(skipped) == len(RUNS):
+        return finish_results({}, skipped, a.write_refs)
+    if not HEADLESS.exists():
+        print("SKIP — images Spectrum 512 : neost-headless absent")
+        return EXIT_SKIPPED
     fat = Fat(DISK.read_bytes())
     pictures = {}
     for path, c, z in fat.walk():
@@ -168,7 +203,7 @@ def main() -> int:
         elif path.upper().endswith(".SPU") and len(data) == 51104:
             pictures[path] = decode_spu(data)
     truth = {name: render(*pic) for name, pic in pictures.items()}
-    verdict, failed = {}, False
+    verdict = {}
     for machine, rom_path in RUNS:
         if not (ROOT / rom_path).exists():
             print(f"  {machine}: {rom_path} absente, sautée")
@@ -202,18 +237,7 @@ def main() -> int:
                                    for ar in [screen_area(s) for s in sorted(Path(tmp).glob("s_*"))] if ar)
                         row.append(f"{k:+d}:{best}")
                     print(f"     {name.split(chr(92))[-1]} décalage " + " ".join(row))
-    if a.write_refs:
-        REF.write_text(json.dumps(verdict, indent=0, sort_keys=True) + "\n")
-        print(f"référence écrite : {REF}")
-        return 0
-    if not REF.exists():
-        print("Pas de référence.")
-        return 1
-    if json.loads(REF.read_text()) != json.loads(json.dumps(verdict)):
-        print("IMAGES SPECTRUM 512 : verdicts changés")
-        return 1
-    print("IMAGES SPECTRUM 512 OK : verdicts identiques à la référence")
-    return 0
+    return finish_results(verdict, skipped, a.write_refs)
 
 
 if __name__ == "__main__":

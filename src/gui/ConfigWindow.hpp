@@ -101,6 +101,10 @@ struct ConfigUi {
     float mixYm = 1.0f, mixDma = 1.0f, mixDrive = 1.0f, mixMt32 = 1.0f, mixDac = 1.0f, mixGm = 1.0f;
     bool  mixInit = false, mixDirty = false, mixDone = false;
     int  reqNetUsbee = -1;                // NetUSBee NE2000 + ISP1160 (0/1)
+    int reqUsbPort = -1;
+    std::string reqUsbSpec;
+    char usbImage[2][1024] = {};
+    bool usbReadOnly[2] = {};
     bool natInit = false, reqNatOptions = false;
     bool natRestricted = false, natAllowLoopback = false;
     char natForwards[2048] = {};

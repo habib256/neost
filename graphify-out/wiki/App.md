@@ -34,19 +34,19 @@
 
 ### method
 - .applyConfig() `EXTRACTED`
-- .switchKioskMode() `EXTRACTED`
+- .midiOutApply() `EXTRACTED`
 - .midiLearnUids() `EXTRACTED`
+- .switchKioskMode() `EXTRACTED`
 - .loadDongleTable() `EXTRACTED`
 - .neBackend() `EXTRACTED`
+- .netUsbeeApply() `EXTRACTED`
 - .resolvePath() `EXTRACTED`
+- .midiInApply() `EXTRACTED`
 - .usatanApply() `EXTRACTED`
-- .midiOutApply() `EXTRACTED`
-- .toggleFullscreen() `EXTRACTED`
-- .App() `EXTRACTED`
 - .natApply() `EXTRACTED`
 - .etherApply() `EXTRACTED`
-- .netUsbeeApply() `EXTRACTED`
-- .midiInApply() `EXTRACTED`
+- .toggleFullscreen() `EXTRACTED`
+- .App() `EXTRACTED`
 
 ### references
 - [vector](vector.md) `EXTRACTED`
@@ -68,7 +68,7 @@
 - DriveSound `EXTRACTED`
 - Audio `EXTRACTED`
 - GlScreen `EXTRACTED`
-- string `EXTRACTED`
+- map `EXTRACTED`
 - *…and 6 more `references` connection(s) not listed (lowest-degree first to go)*
 
 ---

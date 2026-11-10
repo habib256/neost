@@ -1,78 +1,78 @@
 # Community 41
 
-> 118 nodes
+> 177 nodes
 
 ## Key Concepts
 
 - **main()** (161 connections) — `tests/selftest_logic.cpp`
+- **.saver()** (96 connections) — `src/core/StateArchive.hpp`
+- **.loader()** (93 connections) — `src/core/StateArchive.hpp`
 - **selftest_logic.cpp** (75 connections) — `tests/selftest_logic.cpp`
+- **Scc.hpp** (42 connections) — `src/io/Scc.hpp`
 - **checkBool()** (28 connections) — `tests/selftest_logic.cpp`
-- **MachineType.hpp** (20 connections) — `src/core/MachineType.hpp`
-- **AudioPacer** (13 connections) — `src/core/Pacing.hpp`
 - **testCartridgeKey()** (13 connections) — `tests/selftest_logic.cpp`
 - **checkStr()** (12 connections) — `tests/selftest_logic.cpp`
-- **testPacing()** (10 connections) — `tests/selftest_logic.cpp`
+- **testBlitterRmw()** (10 connections) — `tests/blitter_rmw_logic.cpp`
 - **testFdcTruthTable()** (9 connections) — `tests/selftest_logic.cpp`
+- **testDmaSoundMicrowireTiming()** (8 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **testGemdosDtaReuse()** (8 connections) — `tests/gemdos_dta_reuse_logic.cpp`
 - **testDmaSoundTruthTable()** (8 connections) — `tests/selftest_logic.cpp`
 - **testIkbdProtocol()** (8 connections) — `tests/selftest_logic.cpp`
+- **testRtcElapsedDifferential()** (7 connections) — `tests/rtc_elapsed_differential_logic.cpp`
 - **testBlitterTruthTable()** (7 connections) — `tests/selftest_logic.cpp`
+- **rtc_elapsed_differential_logic.cpp** (7 connections) — `tests/rtc_elapsed_differential_logic.cpp`
+- **testMfpTurnaround()** (6 connections) — `tests/mfp_turnaround_logic.cpp`
+- **testMmioFidelity()** (6 connections) — `tests/mmio_fidelity_logic.cpp`
 - **checkHex()** (6 connections) — `tests/selftest_logic.cpp`
 - **testChannelMask()** (6 connections) — `tests/selftest_logic.cpp`
 - **testJoyScript()** (6 connections) — `tests/selftest_logic.cpp`
-- **testRamDisplay()** (6 connections) — `tests/selftest_logic.cpp`
+- **testMidiInJitter()** (6 connections) — `tests/selftest_logic.cpp`
 - **testTwoCpus()** (6 connections) — `tests/selftest_logic.cpp`
-- **ikbd_acia_init_logic.cpp** (6 connections) — `tests/ikbd_acia_init_logic.cpp`
-- **ikbd_acia_reset_logic.cpp** (6 connections) — `tests/ikbd_acia_reset_logic.cpp`
-- **mmioNeedsBetterMachine()** (5 connections) — `src/core/MachineType.hpp`
-- **testBlitterRmw()** (5 connections) — `tests/blitter_rmw_logic.cpp`
-- **checkInt()** (5 connections) — `tests/selftest_logic.cpp`
-- **testMissingHwHint()** (5 connections) — `tests/selftest_logic.cpp`
-- **mfp_async_break_logic.cpp** (5 connections) — `tests/mfp_async_break_logic.cpp`
-- **mfp_clock_logic.cpp** (5 connections) — `tests/mfp_clock_logic.cpp`
-- *... and 93 more nodes in this community*
+- **mfp_rx_timing_logic.cpp** (6 connections) — `tests/mfp_rx_timing_logic.cpp`
+- *... and 152 more nodes in this community*
 
 ## Relationships
 
-- [Community 256](Community_256.md) (60 shared connections)
-- [Community 102](Community_102.md) (58 shared connections)
-- [Community 4](Community_4.md) (22 shared connections)
-- [Community 136](Community_136.md) (8 shared connections)
-- [Community 150](Community_150.md) (7 shared connections)
+- [Community 102](Community_102.md) (121 shared connections)
+- [Community 4](Community_4.md) (28 shared connections)
+- [Community 150](Community_150.md) (9 shared connections)
+- [Community 170](Community_170.md) (6 shared connections)
 - [Community 101](Community_101.md) (6 shared connections)
+- [Community 38](Community_38.md) (5 shared connections)
+- [Community 110](Community_110.md) (5 shared connections)
+- [Community 228](Community_228.md) (5 shared connections)
+- [Community 138](Community_138.md) (5 shared connections)
 - [Community 219](Community_219.md) (5 shared connections)
-- [Community 192](Community_192.md) (4 shared connections)
-- [Community 399](Community_399.md) (4 shared connections)
-- [Community 201](Community_201.md) (4 shared connections)
-- [Community 301](Community_301.md) (4 shared connections)
-- [Community 252](Community_252.md) (4 shared connections)
+- [Community 98](Community_98.md) (4 shared connections)
+- [Community 46](Community_46.md) (4 shared connections)
 
 ## Source Files
 
-- `src/core/MachineType.hpp`
-- `src/core/Pacing.hpp`
+- `src/core/StateArchive.hpp`
+- `src/io/Scc.hpp`
 - `tests/blitter_rmw_logic.cpp`
-- `tests/ikbd_acia_format_logic.cpp`
-- `tests/ikbd_acia_init_logic.cpp`
-- `tests/ikbd_acia_reset_logic.cpp`
-- `tests/ikbd_autosend_logic.cpp`
-- `tests/ikbd_cpu_serial_logic.cpp`
+- `tests/dmasound_microwire_byte_logic.cpp`
+- `tests/dmasound_microwire_timing_logic.cpp`
+- `tests/dmasound_mmio_state_logic.cpp`
+- `tests/gemdos_dta_reuse_logic.cpp`
+- `tests/ikbd_tx_control_logic.cpp`
+- `tests/ikbd_tx_phase_logic.cpp`
 - `tests/machine_mfp_tx_logic.cpp`
 - `tests/machine_midi_logic.cpp`
 - `tests/mfp_async_break_logic.cpp`
-- `tests/mfp_clock_logic.cpp`
-- `tests/mfp_gpip_composite_logic.cpp`
+- `tests/mfp_break_logic.cpp`
 - `tests/mfp_gpip_lines_logic.cpp`
 - `tests/mfp_pulse_logic.cpp`
+- `tests/mfp_rx_enable_logic.cpp`
 - `tests/mfp_rx_format_logic.cpp`
-- `tests/mfp_rx_irq_timing_logic.cpp`
+- `tests/mfp_rx_timing_logic.cpp`
 - `tests/mfp_turnaround_logic.cpp`
-- `tests/mfp_underrun_clear_logic.cpp`
-- `tests/mfp_underrun_logic.cpp`
+- `tests/mfp_tx_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 311 (66%)
-- INFERRED: 161 (34%)
+- EXTRACTED: 644 (81%)
+- INFERRED: 152 (19%)
 - AMBIGUOUS: 0 (0%)
 
 ---

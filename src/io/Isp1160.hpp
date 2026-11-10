@@ -16,23 +16,22 @@
 //  Le pilote envoie l'index (| $80 pour écrire) sur le port commande puis les mots
 //  sur le port données — modèle ISP116x classique (Linux isp116x-hcd).
 //
-//  ⚠ La fenêtre LSB_WRITE ($FA0000-$FA01FF) est AUSSI celle des écritures du
-//  registre 0 (CR) de la NE2000 ($FA0000 + 0*512 + d*2). Sans schéma du NetUSBee,
-//  NeoST ne peut pas prouver qu'un décodage matériel sépare les deux : il applique
-//  ce que les adresses publiées impliquent — les DEUX puces voient l'accès.
-//  Divergence potentielle consignée dans docs/EXTENSIONS.md § NetUSBee.
+//  [B] NetUSBee program_spec.txt (archive 11/2007) : A15 sépare Ethernet et USB.
+//  [C] FreeMiNT 098f002a, isp116x.h : latch LSB en $FA0000. Cet accès lit
+//  aussi le CR Ethernet, SANS le modifier (Ne2000::READ_BASE = $FA0000).
+//  Le texte de conception de 2006 décrit un autre latch ($FA8000) : la carte
+//  réellement attendue par le pilote prime ici ; une capture reste à obtenir.
 //
-//  Périmètre v1 : le contrôleur est PRÉSENT et FONCTIONNEL (ID de puce, reset
-//  logiciel, registres OHCI, hub racine à deux ports, FIFO ATL/ITL) mais aucun
-//  périphérique USB n'est branché : les pilotes (FreeMiNT netusbee.ucd, TOS
-//  NetUSBee) s'initialisent et n'énumèrent rien. Brancher un périphérique hôte
-//  (clavier/souris/stockage) est le point d'extension suivant.
+//  Deux ports USB : clavier/souris HID boot ou disque SCSI/Bulk-Only sur image.
+//  Aucun passthrough USB hôte ; ITL/isochrone non exécuté. Cf. docs/NETUSBEE.md.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
 #include <cstdint>
 #include <vector>
+#include <functional>
+#include "io/UsbDevice.hpp"
 
 #include "core/StateArchive.hpp"
 
@@ -59,6 +58,12 @@ public:
 
     void setEnabled(bool on) { enabled_ = on; }
     bool enabled() const { return enabled_; }
+    void setClock(std::function<int64_t()> clock) { clock_ = std::move(clock); }
+    void sync();                          // horloge USB 1 ms, indépendante de la vidéo
+    bool attach(unsigned port, UsbDevice::Kind kind, const std::string& image = {}, bool readOnly = false);
+    const UsbDevice& device(unsigned port) const { return devices_[port]; }
+    void keyEvent(uint8_t usage, bool down);
+    void mouseEvent(int dx, int dy, bool left, bool right);
 
     // Décodage d'une lecture dans la fenêtre cartouche. `first` = premier octet
     // d'un accès CPU (octet pair d'un mot, ou accès octet) : les effets de bord
@@ -67,8 +72,7 @@ public:
     // un accès ISP1160 (le NE2000 peut la voir AUSSI, cf. en-tête).
     bool cartRead(uint32_t addr, uint8_t& out, bool first);
 
-    // Une trame émulée : achève les transferts ATL en « device not responding »
-    // (hub racine vide) et lève les drapeaux correspondants.
+    // Une trame USB (1 ms) : reset des ports, transferts ATL et interruptions.
     void poll();
 
     void reset();              // power-cycle (reset matériel de la carte)
@@ -103,6 +107,12 @@ private:
     std::vector<uint8_t> atl_ = std::vector<uint8_t>(std::size_t(kBufSize), 0);
     int atlWr_ = 0, atlRd_ = 0;
     bool atlPending_ = false;
+    uint16_t fifoRemaining_ = 0;
+    uint8_t portResetMs_[2] = {};
+    UsbDevice devices_[2];
+    std::function<int64_t()> clock_;
+    int64_t lastCycle_ = 0;
+    uint32_t framePhase_ = 0;              // cycles ×1000, reste modulo kCpuHzInt
 
     uint32_t readReg(uint8_t idx, bool is32);
     void     writeReg(uint8_t idx, uint32_t v, bool is32);
@@ -111,5 +121,7 @@ private:
     void     dataPortWrite(uint16_t w);
     void     softReset();
     void     updateIrq();
+    void     finishFifo(bool writing);
+    void     portPower(unsigned port, bool on);
     void     trace(const char* what, unsigned a, unsigned b) const;
 };

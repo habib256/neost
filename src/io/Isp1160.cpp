@@ -8,6 +8,7 @@
 // =============================================================================
 #include <algorithm>
 #include "io/Isp1160.hpp"
+#include "core/Pacing.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -47,6 +48,7 @@ void Isp1160::trace(const char* what, unsigned a, unsigned b) const {
 }
 
 void Isp1160::reset() {
+    lastCycle_ = clock_ ? clock_() : 0; framePhase_ = 0;
     latch_ = 0; cmd_ = 0; cmdIsWrite_ = false; wordIdx_ = 0; readLo_ = 0; wdata_ = 0;
     hwcfg_ = 0; dmacfg_ = 0; xferctr_ = 0; upintenb_ = 0; scratch_ = 0;
     upint_ = UPINT_CLKRDY;                   // horloge interne prête (le pilote l'attend)
@@ -59,9 +61,11 @@ void Isp1160::softReset() {
     control_ = 0; cmdstat_ = 0; intstat_ = 0; intenb_ = 0;
     fmintvl_ = 0x2EDF; fmrem_ = 0; fmnum_ = 0; lsthresh_ = 0x0628;
     rhdesca_ = 0x02; rhdescb_ = 0; rhstatus_ = 0;
-    rhport_[0] = rhport_[1] = 0;             // CCS = 0 : rien de branché
+    rhport_[0] = rhport_[1] = 0;
+    for (unsigned i = 0; i < 2; ++i) { devices_[i].reset(); portResetMs_[i] = 0; }
     itlbuflen_ = 0; atlbuflen_ = 0; bufstat_ = 0;
     atlWr_ = atlRd_ = 0; atlPending_ = false;
+    fifoRemaining_ = 0;
     std::fill(atl_.begin(), atl_.end(), uint8_t(0));
     irq_ = false;
 }
@@ -69,6 +73,7 @@ void Isp1160::softReset() {
 void Isp1160::updateIrq() {
     // OPR (OHCI interrupt) reflète HcInterruptStatus & Enable (MIE requis).
     if ((intstat_ & intenb_ & 0x7FFFFFFFu) && (intenb_ & HCINT_MIE)) upint_ |= UPINT_OPR;
+    else upint_ &= uint16_t(~UPINT_OPR);
     irq_ = (hwcfg_ & HWCFG_INT_ENABLE) && (upint_ & upintenb_);
 }
 
@@ -77,6 +82,7 @@ void Isp1160::updateIrq() {
 // -----------------------------------------------------------------------------
 bool Isp1160::cartRead(uint32_t addr, uint8_t& out, bool first) {
     if (!enabled_) return false;
+    if (first) sync();
     if (addr >= LSB_WRITE && addr < LSB_WRITE + 512u) {
         if (first) latch_ = uint8_t((addr - LSB_WRITE) >> 1);
         out = 0xFF;
@@ -92,6 +98,14 @@ bool Isp1160::cartRead(uint32_t addr, uint8_t& out, bool first) {
             cmd_ = latch_;
             cmdIsWrite_ = (cmd_ & 0x80) != 0;
             wordIdx_ = 0;
+            if ((cmd_ & 0x7F) == HCATLPORT) {
+                if (cmdIsWrite_) {
+                    atlWr_ = atlRd_ = 0;
+                    atlPending_ = false;
+                    std::fill(atl_.begin(), atl_.end(), uint8_t(0));
+                } else atlRd_ = 0;
+                fifoRemaining_ = std::min<uint16_t>(xferctr_, kBufSize);
+            }
             trace(cmdIsWrite_ ? "cmd-wr" : "cmd-rd", cmd_ & 0x7F, 0);
         }
         out = 0xFF;
@@ -115,15 +129,13 @@ uint16_t Isp1160::dataPortRead() {
     const uint8_t idx = cmd_ & 0x7F;
     if (idx == HCATLPORT || idx == HCITLPORT) {
         if (idx == HCITLPORT) return 0;
+        if (!fifoRemaining_) return 0;
         uint16_t w = 0;
-        if (atlRd_ + 1 < kBufSize && atlRd_ + 1 < atlWr_) {
+        if (atlRd_ + 1 < kBufSize) {
             w = uint16_t(atl_[std::size_t(atlRd_)] | (atl_[std::size_t(atlRd_) + 1] << 8));
         }
         atlRd_ += 2;
-        if (atlRd_ >= atlWr_) {              // liste relue en entier
-            bufstat_ &= uint16_t(~BUFSTAT_ATL_DONE);
-            atlRd_ = atlWr_ = 0;
-        }
+        finishFifo(false);
         return w;
     }
     const uint32_t v = readReg(idx, is32(idx));
@@ -139,13 +151,13 @@ void Isp1160::dataPortWrite(uint16_t w) {
     const uint8_t idx = cmd_ & 0x7F;
     if (!cmdIsWrite_) return;
     if (idx == HCATLPORT) {
+        if (!fifoRemaining_ || (bufstat_ & BUFSTAT_ATL_FULL)) return;
         if (atlWr_ + 1 < kBufSize) {
             atl_[std::size_t(atlWr_)]     = uint8_t(w & 0xFF);
             atl_[std::size_t(atlWr_) + 1] = uint8_t(w >> 8);
             atlWr_ += 2;
         }
-        atlPending_ = true;
-        bufstat_ |= BUFSTAT_ATL_FULL;
+        finishFifo(true);
         return;
     }
     if (idx == HCITLPORT) return;             // ISO non géré : octets ignorés
@@ -155,6 +167,17 @@ void Isp1160::dataPortWrite(uint16_t w) {
     const uint32_t v = (uint32_t(w) << 16) | wdata_;
     writeReg(idx, v, true);
     trace("wr", idx, v);
+}
+
+// [B] ISP1160 Rev.05 §10.4.3 et §10.6.7 : EOT au compteur d'octets,
+// y compris les transferts impairs (accès physiques par mots de 16 bits).
+void Isp1160::finishFifo(bool writing) {
+    fifoRemaining_ = fifoRemaining_ > 2 ? uint16_t(fifoRemaining_ - 2) : 0;
+    if (fifoRemaining_) return;
+    upint_ |= 4;                            // AllEOTInterrupt
+    if (writing) { atlPending_ = true; bufstat_ = uint16_t((bufstat_ & ~BUFSTAT_ATL_DONE) | BUFSTAT_ATL_FULL); }
+    else { bufstat_ &= uint16_t(~(BUFSTAT_ATL_DONE | BUFSTAT_ATL_FULL)); }
+    updateIrq();
 }
 
 // -----------------------------------------------------------------------------
@@ -197,7 +220,6 @@ void Isp1160::writeReg(uint8_t idx, uint32_t v, bool /*is32*/) {
     switch (idx) {
     case HCCONTROL:
         control_ = v;
-        if ((v & HCCONTROL_HCFS) == HCCONTROL_USB_OPER) fmnum_ = 0;
         break;
     case HCCMDSTAT:
         if (v & HCCMDSTAT_HCR) softReset();    // HCR se remet à 0 de lui-même (« < 1 ms »)
@@ -206,28 +228,45 @@ void Isp1160::writeReg(uint8_t idx, uint32_t v, bool /*is32*/) {
     case HCINTENB:  intenb_ |= v;  updateIrq(); break;
     case HCINTDIS:  intenb_ &= ~v; updateIrq(); break;
     case HCFMINTVL: fmintvl_ = v; break;
-    case HCFMREM:   fmrem_ = v; break;
-    case HCFMNUM:   fmnum_ = v; break;
+    // [B] ISP1160 Rev.05 §10.2.2-3 : Remaining/Number sont en lecture seule.
     case HCLSTHRESH: lsthresh_ = v; break;
-    case HCRHDESCA: rhdesca_ = (v & ~RH_A_NDP_MASK) | 2u; break;
+    case HCRHDESCA:
+        rhdesca_ = (v & ~RH_A_NDP_MASK) | 2u;
+        if (v & 0x200) for (unsigned i = 0; i < 2; ++i) portPower(i, true); // NPS
+        break;
     case HCRHDESCB: rhdescb_ = v; break;
     case HCRHSTATUS:
-        // SetGlobalPower/ClearGlobalPower (bits 16/0) : sans port alimenté, rien.
-        if (v & RH_HS_LPS) rhstatus_ &= ~RH_HS_LPSC;
+        // [B] ISP1160 Rev.05 §10.3.3-4 : commandes globales ou par port
+        // selon PSM/PPCM ; NPS laisse l'alimentation toujours active.
+        if (v & 0x80000000u) rhstatus_ &= ~0x8000u;
+        if (v & 0x8000u) rhstatus_ |= 0x8000u;
+        for (unsigned i = 0; i < 2; ++i) {
+            if ((rhdesca_ & 0x100) && (rhdescb_ & (1u << (17 + i)))) continue;
+            if (v & RH_HS_LPS) portPower(i, false);
+            if (v & RH_HS_LPSC) portPower(i, true);
+        }
         break;
     case HCRHPORT1:
     case HCRHPORT2: {
         uint32_t& p = rhport_[idx - HCRHPORT1];
+        const unsigned port = idx - HCRHPORT1;
+        p &= ~(v & RH_PS_CHANGE);
         // Écritures = « features » : CCS→ClearPortEnable, PES→SetPortEnable (refusé
         // sans périphérique), PSS→SetPortSuspend, PRS→SetPortReset (achève tout de
         // suite, PRSC posé), PPS→SetPortPower, LSDA→ClearPortPower ; bits 16-20 = W1C.
         if (v & RH_PS_CCS) p &= ~RH_PS_PES;
         // OHCI 7.4.4 : SetPortReset sans périphérique (CCS = 0) est ignoré et pose CSC.
-        if (v & RH_PS_PRS) p |= (p & RH_PS_CCS) ? RH_PS_PRSC : RH_PS_CSC;
-        if (v & RH_PS_PPS) p |= RH_PS_PPS;
-        if (v & RH_PS_LSDA) p &= ~RH_PS_PPS;
-        p &= ~(v & RH_PS_CHANGE);
-        (void)RH_PS_PSS;
+        if (v & RH_PS_PES) { if (p & RH_PS_CCS) p |= RH_PS_PES; else p |= RH_PS_CSC; }
+        if (v & RH_PS_PSS) { if (p & RH_PS_PES) p |= RH_PS_PSS; else if (!(p & RH_PS_CCS)) p |= RH_PS_CSC; }
+        if ((v & 8) && (p & RH_PS_PSS)) { p = (p & ~RH_PS_PSS) | (1u << 18); }
+        if (v & RH_PS_PRS) {
+            if (p & RH_PS_CCS) { p = (p | RH_PS_PRS) & ~RH_PS_PES; portResetMs_[port] = 10; }
+            else p |= RH_PS_CSC;
+        }
+        if ((rhdesca_ & 0x100) && (rhdescb_ & (1u << (17 + port)))) {
+            if (v & RH_PS_PPS) portPower(port, true);
+            if (v & RH_PS_LSDA) portPower(port, false);
+        }
         if (p & RH_PS_CHANGE) { intstat_ |= HCINT_RHSC; updateIrq(); }
         break;
     }
@@ -244,9 +283,56 @@ void Isp1160::writeReg(uint8_t idx, uint32_t v, bool /*is32*/) {
     case HCSCRATCH:   scratch_ = uint16_t(v); break;
     case HCSWRES:     if (uint16_t(v) == HCSWRES_MAGIC) softReset(); break;
     case HCITLBUFLEN: itlbuflen_ = uint16_t(v); break;
-    case HCATLBUFLEN: atlbuflen_ = uint16_t(v); break;
+    case HCATLBUFLEN: atlbuflen_ = uint16_t(std::min<uint32_t>(v, kBufSize)); break;
     default: break;
     }
+}
+
+void Isp1160::portPower(unsigned port, bool on) {
+    uint32_t& p = rhport_[port];
+    on = on || (rhdesca_ & 0x200);           // NoPowerSwitching
+    const bool wasConnected = (p & RH_PS_CCS) != 0;
+    if (on) {
+        p |= RH_PS_PPS;
+        if (devices_[port].kind() != UsbDevice::Kind::None) p |= RH_PS_CCS;
+    } else {
+        p &= ~(RH_PS_PPS | RH_PS_CCS | RH_PS_PES | RH_PS_PSS | RH_PS_PRS);
+        portResetMs_[port] = 0; devices_[port].reset();
+    }
+    if (wasConnected != bool(p & RH_PS_CCS)) { p |= RH_PS_CSC; intstat_ |= HCINT_RHSC; }
+    updateIrq();
+}
+
+bool Isp1160::attach(unsigned port, UsbDevice::Kind kind, const std::string& image, bool readOnly) {
+    if (port >= 2) return false;
+    sync();
+    if (!devices_[port].attach(kind, image, readOnly)) return false;
+    const bool connected = (rhport_[port] & RH_PS_CCS) != 0;
+    rhport_[port] &= ~(RH_PS_CCS | RH_PS_PES | RH_PS_PSS | RH_PS_PRS);
+    portResetMs_[port] = 0;
+    if ((rhport_[port] & RH_PS_PPS) && kind != UsbDevice::Kind::None) rhport_[port] |= RH_PS_CCS;
+    if (connected || (rhport_[port] & RH_PS_CCS)) { rhport_[port] |= RH_PS_CSC; intstat_ |= HCINT_RHSC; }
+    updateIrq(); return true;
+}
+
+void Isp1160::keyEvent(uint8_t usage, bool down) {
+    if (enabled_) for (auto& d : devices_) d.keyEvent(usage, down);
+}
+void Isp1160::mouseEvent(int dx, int dy, bool left, bool right) {
+    if (enabled_) for (auto& d : devices_) d.mouseEvent(dx, dy, left, right);
+}
+
+// [B] ISP1160 Rev.05 §9.3 : trames de 1 ms. Le polling vidéo donnait
+// 50/60/71 trames USB/s. Aucun IRQ ST n'étant câblé, rattrapage aux accès CPU
+// et aux HBL ; l'instant du prochain SOF ne dépend pas de la fréquence vidéo.
+void Isp1160::sync() {
+    if (!clock_) return;
+    const int64_t now = clock_();
+    if (now < lastCycle_) { lastCycle_ = now; framePhase_ = 0; return; }
+    const uint64_t elapsed = uint64_t(now - lastCycle_) * 1000 + framePhase_;
+    lastCycle_ = now;
+    framePhase_ = uint32_t(elapsed % neost::pacing::kCpuHzInt);
+    for (uint64_t n = elapsed / neost::pacing::kCpuHzInt; n; --n) poll();
 }
 
 // -----------------------------------------------------------------------------
@@ -259,21 +345,55 @@ void Isp1160::poll() {
     fmnum_ = (fmnum_ + 1) & 0xFFFF;
     intstat_ |= HCINT_SF;
     upint_ |= UPINT_SOF;
+    for (unsigned i = 0; i < 2; ++i) {
+        devices_[i].tick();
+        if (portResetMs_[i] && --portResetMs_[i] == 0) {
+            devices_[i].reset();
+            rhport_[i] = (rhport_[i] & ~(RH_PS_PRS | RH_PS_PSS)) | RH_PS_PRSC | RH_PS_PES;
+            intstat_ |= HCINT_RHSC;
+        }
+    }
     if (atlPending_) {
-        // Parcourt les PTD (en-tête 8 octets + charge utile arrondie au mot).
+        // [B] ISP1160 Rev.05 §9.3-9.4 : en-tête et payload alignés sur
+        // QUATRE octets ; IN peut n'avoir que son en-tête écrit (FreeMiNT).
         int off = 0;
         while (off + 8 <= atlWr_) {
             uint16_t w0 = uint16_t(atl_[std::size_t(off)] | (atl_[std::size_t(off) + 1] << 8));
+            const uint16_t w1 = uint16_t(atl_[std::size_t(off) + 2] | (atl_[std::size_t(off) + 3] << 8));
             const uint16_t w2 = uint16_t(atl_[std::size_t(off) + 4] | (atl_[std::size_t(off) + 5] << 8));
             const int total = w2 & 0x3FF;
-            w0 = uint16_t((w0 & ~(PTD_ACTIVE | PTD_CC_MASK | 0x3FF)) | PTD_CC_NOTRESP);
+            if (off + 8 + ((total + 3) & ~3) > atlbuflen_) break;
+            if (w0 & PTD_ACTIVE) {
+                unsigned actual = 0;
+                uint16_t cc = PTD_CC_NOTRESP;
+                const unsigned address = atl_[std::size_t(off) + 6] & 127;
+                const unsigned pid = (w2 >> 10) & 3, ep = w1 >> 12, maxPacket = w1 & 0x3FF;
+                for (unsigned port = 0; port < 2; ++port) {
+                    if ((rhport_[port] & (RH_PS_CCS | RH_PS_PES | RH_PS_PSS | RH_PS_PRS)) != (RH_PS_CCS | RH_PS_PES) ||
+                        devices_[port].address() != address) continue;
+                    const auto result = devices_[port].transfer(ep, pid, atl_.data() + off + 8, unsigned(total), actual, maxPacket);
+                    if (result == UsbDevice::Result::Nak) cc = 0xF000; // non accédé, pilote replanifie
+                    else if (result == UsbDevice::Result::Stall) cc = 0x4000;
+                    else cc = (pid == 2 && actual < unsigned(total)) ? 0x9000 : 0;
+                    break;
+                }
+                if (cc == 0xF000) w0 = uint16_t((w0 & ~PTD_CC_MASK) | cc);
+                else {
+                    unsigned packets = maxPacket ? (actual + maxPacket - 1) / maxPacket : 1;
+                    if (pid == 2 && actual < unsigned(total) && maxPacket && actual % maxPacket == 0) ++packets;
+                    if (!actual && (cc == 0 || cc == 0x9000)) packets = 1;
+                    if ((packets & 1) && (cc == 0 || cc == 0x9000)) w0 ^= 0x400;
+                    w0 = uint16_t((w0 & ~(PTD_ACTIVE | PTD_CC_MASK | 0x3FF)) | cc | actual);
+                }
+            }
             atl_[std::size_t(off)]     = uint8_t(w0 & 0xFF);
             atl_[std::size_t(off) + 1] = uint8_t(w0 >> 8);
-            off += 8 + ((total + 1) & ~1);
+            if (w1 & 0x800) break;           // LastPTD
+            off += 8 + ((total + 3) & ~3);
         }
         atlPending_ = false;
         atlRd_ = 0;
-        bufstat_ = uint16_t((bufstat_ & ~BUFSTAT_ATL_FULL) | BUFSTAT_ATL_DONE);
+        bufstat_ |= BUFSTAT_ATL_DONE;
         upint_ |= UPINT_ATL;
         trace("atl-done", unsigned(atlWr_), 0);
     }
@@ -294,8 +414,13 @@ void Isp1160::serialize(StateArchive& ar) {
     if (ar.loading() && atl_.size() != std::size_t(kBufSize)) atl_.assign(kBufSize, 0);
     ar.vec(atl_);
     ar(atlWr_); ar(atlRd_); ar(atlPending_);
+    ar(fifoRemaining_); ar.arr(portResetMs_); ar(lastCycle_); ar(framePhase_);
+    for (auto& d : devices_) d.serialize(ar);
     ar.check(atl_.size() == std::size_t(kBufSize), "Isp1160::atl_ taille inattendue");
     ar.check(atlWr_ >= 0 && atlWr_ <= kBufSize && atlRd_ >= 0 && atlRd_ <= kBufSize,
              "Isp1160::FIFO ATL hors bornes");
     ar.check(wordIdx_ == 0 || wordIdx_ == 1, "Isp1160::wordIdx_ invalide");
+    ar.check(atlbuflen_ <= kBufSize && fifoRemaining_ <= kBufSize &&
+             portResetMs_[0] <= 10 && portResetMs_[1] <= 10 &&
+             framePhase_ < neost::pacing::kCpuHzInt, "Isp1160::USB state bounds");
 }

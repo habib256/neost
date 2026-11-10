@@ -1,10 +1,10 @@
 # Community 11
 
-> 88 nodes
+> 92 nodes
 
 ## Key Concepts
 
-- **ConfigUi** (94 connections) — `src/gui/ConfigWindow.hpp`
+- **ConfigUi** (98 connections) — `src/gui/ConfigWindow.hpp`
 - **Machine** (2 connections) — `src/gui/ConfigWindow.hpp`
 - **cartsDir** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **cfg** (1 connections) — `src/gui/ConfigWindow.hpp`
@@ -29,15 +29,14 @@
 - **midiOutOpen** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **mixDac** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **mixDirty** (1 connections) — `src/gui/ConfigWindow.hpp`
-- *... and 63 more nodes in this community*
+- *... and 67 more nodes in this community*
 
 ## Relationships
 
-- [Community 173](Community_173.md) (2 shared connections)
+- [Community 21](Community_21.md) (3 shared connections)
 - [Community 4](Community_4.md) (2 shared connections)
-- [Community 21](Community_21.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
-- [Community 213](Community_213.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 220](Community_220.md) (1 shared connections)
 - [Community 223](Community_223.md) (1 shared connections)
 
 ## Source Files
@@ -46,7 +45,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 95 (100%)
+- EXTRACTED: 99 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

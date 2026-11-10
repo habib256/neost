@@ -1,48 +1,55 @@
 # Community 140
 
-> 20 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **** (30 connections) — `src/core/YM2149.cpp`
-- **YM2149::nextResampleWeightedN()** (4 connections) — `src/core/YM2149.cpp`
-- **YM2149::updateFromRegs()** (4 connections) — `src/core/YM2149.cpp`
-- **YM2149::doSamples250()** (3 connections) — `src/core/YM2149.cpp`
-- **YM2149::applyLpfStf250()** (2 connections) — `src/core/YM2149.cpp`
-- **YM2149::applyPwm250()** (2 connections) — `src/core/YM2149.cpp`
-- **YM2149::applyRegs()** (2 connections) — `src/core/YM2149.cpp`
-- **YM2149::ensureMargin()** (2 connections) — `src/core/YM2149.cpp`
-- **YM2149::renderHost()** (2 connections) — `src/core/YM2149.cpp`
-- **YM2149::synthBlock()** (2 connections) — `src/core/YM2149.cpp`
-- **YM2149::synthesize()** (2 connections) — `src/core/YM2149.cpp`
+- **YM2149.cpp** (25 connections) — `src/core/YM2149.cpp`
+- **.synthesizeFrame()** (9 connections) — `src/core/YM2149.hpp`
+- **.doSamples250()** (7 connections) — `src/core/YM2149.hpp`
+- **.renderHost()** (7 connections) — `src/core/YM2149.hpp`
+- **.applyLpfStf250()** (6 connections) — `src/core/YM2149.hpp`
+- **.nextResampleWeightedN()** (6 connections) — `src/core/YM2149.hpp`
+- **.applyRegs()** (6 connections) — `src/core/YM2149.hpp`
+- **.synthBlock()** (6 connections) — `src/core/YM2149.hpp`
+- **Le PSG grésillait dans Super Hang-On : un digidrum à 45 kHz décimé de 61 % (2026-09-02)** (6 connections) — `CHANGELOG.md`
+- **.updateFromRegs()** (5 connections) — `src/core/YM2149.hpp`
+- **.ensureMargin()** (4 connections) — `src/core/YM2149.hpp`
+- **.synthesize()** (4 connections) — `src/core/YM2149.hpp`
+- **.applyPwm250()** (3 connections) — `src/core/YM2149.hpp`
+- **.setStfLowPass()** (3 connections) — `src/core/YM2149.hpp`
+- **Son (YM2149 + DMA STE) — `YM2149.cpp`, `DmaSound.cpp` ↔ `psg.c`, `dmaSnd.c`, `sound.c`** (3 connections) — `docs/HATARI_DIVERGENCES.md`
 - **fixedToSample()** (2 connections) — `src/core/YM2149.cpp`
 - **rndCompute()** (2 connections) — `src/core/YM2149.cpp`
 - **sampleToFixed()** (2 connections) — `src/core/YM2149.cpp`
 - **tonePeriod()** (2 connections) — `src/core/YM2149.cpp`
+- **.reset()** (2 connections) — `src/core/YM2149.hpp`
 - **mergeVoice()** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_DOWN** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_GODOWN** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_GOUP** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_UP** (1 connections) — `src/core/YM2149.cpp`
 
 ## Relationships
 
-- [Community 28](Community_28.md) (10 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
-- [Community 392](Community_392.md) (1 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
+- [Community 28](Community_28.md) (14 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 48](Community_48.md) (3 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
+- [Community 135](Community_135.md) (1 shared connections)
+- [Community 95](Community_95.md) (1 shared connections)
+- [Community 370](Community_370.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 105](Community_105.md) (1 shared connections)
 
 ## Source Files
 
+- `CHANGELOG.md`
+- `docs/HATARI_DIVERGENCES.md`
 - `src/core/YM2149.cpp`
+- `src/core/YM2149.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 44 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 45 (63%)
+- INFERRED: 26 (37%)
 - AMBIGUOUS: 0 (0%)
 
 ---

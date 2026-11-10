@@ -302,16 +302,29 @@ void App::netUsbeeApply(bool on) {
             cfg.netusbee = false;
             return;
         }
-        if (machine.netUsbeeEnabled()) return;
         if (machine.dongle.attached()) {           // cf. etherApply : exclusivité clé/réseau
             A.stateMsg = "NetUSBee needs the cartridge port free (a Steinberg key is plugged)";
             A.stateMsgFrames = 150;
             cfg.netusbee = false;
             return;
         }
-        machine.disableEtherNec();                 // la NE2000 repart avec le NetUSBee
-        machine.ne2000.setBackend(A.neBackend());
-        machine.enableNetUsbee();
+        if (!machine.netUsbeeEnabled()) {
+            machine.disableEtherNec();
+            machine.ne2000.setBackend(A.neBackend());
+            machine.enableNetUsbee();
+        }
+        const std::string specs[2] = {cfg.usb1, cfg.usb2};
+        for (unsigned i = 0; i < 2; ++i) {
+            UsbDevice::Kind kind; std::string path; bool ro;
+            const bool valid = UsbDevice::parseSpec(specs[i], kind, path, ro);
+            if (!path.empty()) path = resolveData(path, A.exeDir);
+            const auto& current = machine.isp1160.device(i);
+            if (valid && current.kind() == kind && current.image() == path && current.readOnly() == ro) continue;
+            if (!valid || !machine.isp1160.attach(i, kind, path, ro)) {
+                A.stateMsg = "USB port " + std::to_string(i + 1) + ": cannot attach " + specs[i];
+                A.stateMsgFrames = 200;
+            }
+        }
     } else if (machine.netUsbeeEnabled()) {
         machine.disableNetUsbee();
         if (cfg.ethernec) A.etherApply(true);        // EtherNEC seul reprend la NE2000
@@ -519,7 +532,7 @@ void App::toggleFullscreen() {
     if (glfwRawMouseMotionSupported())
         glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, fullscreen ? GLFW_TRUE : GLFW_FALSE);
     glfwSetInputMode(window, GLFW_CURSOR, fullscreen ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-    if (ikbd) ikbd->mouseEvent(0, 0, false, false);
+    if (machine) machine->mouseEvent(0, 0, false, false);
     desktopPointer.reset();
     mouseAccX = mouseAccY = 0;
     glfwGetCursorPos(window, &lastMx, &lastMy);
@@ -536,10 +549,10 @@ void App::switchKioskMode(bool on) {
     double& lastMx = A.lastMx;
     double& lastMy = A.lastMy;
     bool& kbdJoyDesk = A.kbdJoyDesk;
-    keyboardWindowReleaseAll(machine.ikbd);   // rien ne reste enfoncé à travers la bascule
+    keyboardWindowReleaseAll(machine);   // rien ne reste enfoncé à travers la bascule
     if (on == A.kiosk) return;
     A.desktopPointer.reset();
-    machine.ikbd.mouseEvent(0, 0, false, false);
+    machine.mouseEvent(0, 0, false, false);
     std::vector<uint8_t> snap;
     if (!machine.saveState(snap)) return;    // (1) instantané, avant toute destruction GUI
 

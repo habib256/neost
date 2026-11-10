@@ -1,50 +1,62 @@
 # Community 31
 
-> 21 nodes
+> 37 nodes
 
 ## Key Concepts
 
-- **Acsi.cpp** (37 connections) — `src/io/Acsi.cpp`
-- **.emulateCommand()** (16 connections) — `src/io/Acsi.hpp`
-- **.usatanSlot()** (11 connections) — `src/io/Acsi.hpp`
-- **.prepRespBuf()** (10 connections) — `src/io/Acsi.hpp`
-- **.feedByte()** (10 connections) — `src/io/Acsi.hpp`
-- **.lba()** (8 connections) — `src/io/Acsi.hpp`
-- **.count()** (7 connections) — `src/io/Acsi.hpp`
-- **.cmdInquiry()** (7 connections) — `src/io/Acsi.hpp`
-- **.cmdReadSector()** (7 connections) — `src/io/Acsi.hpp`
-- **.cmdWriteSector()** (7 connections) — `src/io/Acsi.hpp`
-- **.cmdRequestSense()** (6 connections) — `src/io/Acsi.hpp`
-- **.executeUltraSatan()** (5 connections) — `src/io/Acsi.hpp`
-- **.cmdReadCapacity()** (5 connections) — `src/io/Acsi.hpp`
-- **.cmdTestUnitReady()** (4 connections) — `src/io/Acsi.hpp`
-- **.cmdModeSense()** (4 connections) — `src/io/Acsi.hpp`
-- **.cmdSeek()** (4 connections) — `src/io/Acsi.hpp`
-- **.cmdReportLuns()** (4 connections) — `src/io/Acsi.hpp`
-- **.cmdFormatDrive()** (3 connections) — `src/io/Acsi.hpp`
-- **.lun()** (3 connections) — `src/io/Acsi.hpp`
-- **rdInt24()** (2 connections) — `src/io/Acsi.cpp`
-- **rdInt32()** (2 connections) — `src/io/Acsi.cpp`
+- **Track** (40 connections) — `src/io/StxImage.hpp`
+- **.readTrackStx()** (17 connections) — `src/io/Fdc.hpp`
+- **.nextSectorIDStx()** (11 connections) — `src/io/Fdc.hpp`
+- **Disquette (FDC WD1772 + DMA)** (11 connections) — `docs/IMPLEMENTED.md`
+- **.readSectorStx()** (9 connections) — `src/io/Fdc.hpp`
+- **.densityFactor()** (8 connections) — `src/io/Fdc.hpp`
+- **stxTrackWithSectorWrites()** (8 connections) — `src/io/Fdc.cpp`
+- **.sectorsCountView()** (8 connections) — `src/io/StxImage.hpp`
+- **.readAddressStx()** (7 connections) — `src/io/Fdc.hpp`
+- **.indexCurrentPosBytes()** (6 connections) — `src/io/Fdc.hpp`
+- **.indexCurrentPosCycles()** (6 connections) — `src/io/Fdc.hpp`
+- **.busToFdcCycles()** (4 connections) — `src/io/Fdc.hpp`
+- **.bufferAddTiming()** (3 connections) — `src/io/Fdc.hpp`
+- **blockSize** (1 connections) — `src/io/StxImage.hpp`
+- **flags** (1 connections) — `src/io/StxImage.hpp`
+- **fuzzySize** (1 connections) — `src/io/StxImage.hpp`
+- **mfmSize** (1 connections) — `src/io/StxImage.hpp`
+- **pFuzzy** (1 connections) — `src/io/StxImage.hpp`
+- **pSectorsImage** (1 connections) — `src/io/StxImage.hpp`
+- **pTiming** (1 connections) — `src/io/StxImage.hpp`
+- **pTimingData** (1 connections) — `src/io/StxImage.hpp`
+- **pTrackData** (1 connections) — `src/io/StxImage.hpp`
+- **pTrackImage** (1 connections) — `src/io/StxImage.hpp`
+- **recordType** (1 connections) — `src/io/StxImage.hpp`
+- **revolutionBytes** (1 connections) — `src/io/StxImage.hpp`
+- *... and 12 more nodes in this community*
 
 ## Relationships
 
-- [Community 103](Community_103.md) (21 shared connections)
-- [Community 122](Community_122.md) (7 shared connections)
-- [Community 212](Community_212.md) (7 shared connections)
-- [Community 389](Community_389.md) (4 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 95](Community_95.md) (27 shared connections)
+- [Community 12](Community_12.md) (9 shared connections)
+- [Community 63](Community_63.md) (8 shared connections)
+- [Community 24](Community_24.md) (6 shared connections)
+- [Community 121](Community_121.md) (5 shared connections)
+- [Community 112](Community_112.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
+- [Community 23](Community_23.md) (1 shared connections)
+- [Community 143](Community_143.md) (1 shared connections)
+- [Community 93](Community_93.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Acsi.cpp`
-- `src/io/Acsi.hpp`
+- `docs/IMPLEMENTED.md`
+- `src/io/Fdc.cpp`
+- `src/io/Fdc.hpp`
+- `src/io/StxImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 58 (56%)
-- INFERRED: 46 (44%)
+- EXTRACTED: 55 (48%)
+- INFERRED: 59 (52%)
 - AMBIGUOUS: 0 (0%)
 
 ---

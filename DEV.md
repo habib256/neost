@@ -64,6 +64,8 @@ src/
     Ne2000.{hpp,cpp}        Extension NeoST : NE2000 (EtherNEC, cf. docs/EXTENSIONS.md).
     UltraSatan/Isp1160      Extensions NeoST : interface SD UltraSatan (ACSI, paquets 'US'), hôte USB
                             ISP1160 du NetUSBee (port cartouche, avec Ne2000). Cf. docs/EXTENSIONS.md.
+    UsbDevice.{hpp,cpp}     Périphériques NetUSBee : énumération, HID clavier/souris et disque BOT/SCSI.
+                            Entrées routées par Machine ; temps USB par Isp1160::sync, pas la vidéo.
   net/                      Couche réseau hôte (neost_net) : Socket (TCP/UDP partagé),
                             HayesModem, MidiRing, NetBackend/SlirpBackend.
   gui/                      LE frontend fenêtré (A9, 2026-08-30 : main.cpp est passé de

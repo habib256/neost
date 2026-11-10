@@ -659,6 +659,7 @@ static void testConfigParser() {
         a.machine = "megaste";       a.mem = "4m";  a.mono = true;  a.fpu = true;
         a.modem = true;              a.ethernec = true;
         a.netusbee = true;           a.slirp = true;
+        a.usb1 = "keyboard"; a.usb2 = "disk-ro:/tmp/USB disk.img";
         a.natRestricted = true; a.natAllowLoopback = true;
         a.natForwards = "tcp:127.0.0.1:6502:23;udp:0.0.0.0:6503:6502";
         a.joyport = 0;               a.joymap = "GUID1:0,GUID2:x";
@@ -684,6 +685,8 @@ static void testConfigParser() {
         checkBool("aller-retour modem",    b.modem    == a.modem,    true);
         checkBool("aller-retour ethernec", b.ethernec == a.ethernec, true);
         checkBool("aller-retour netusbee", b.netusbee == a.netusbee, true);
+        checkStr("aller-retour USB port 1", b.usb1, a.usb1);
+        checkStr("aller-retour USB port 2", b.usb2, a.usb2);
         checkBool("aller-retour NAT", b.slirp == a.slirp, true);
         checkBool("aller-retour NAT restreint", b.natRestricted == a.natRestricted, true);
         checkBool("aller-retour NAT loopback", b.natAllowLoopback == a.natAllowLoopback, true);

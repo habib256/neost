@@ -1,6 +1,6 @@
 # Community 300
 
-> 21 nodes
+> 22 nodes
 
 ## Key Concepts
 
@@ -18,6 +18,7 @@
 - **La date limite d'IPL, confrontée dans NeoST (2026-11-04)** (1 connections) — `docs/FX68K_BENCH.md`
 - **Pourquoi** (1 connections) — `docs/FX68K_BENCH.md`
 - **État (2026-11-03)** (1 connections) — `docs/FX68K_BENCH.md`
+- **Comment** (1 connections) — `docs/GLUE_SWEEP.md`
 - **Les écarts restants, inscrits en référence** (1 connections) — `docs/GLUE_SWEEP.md`
 - **Résultat (2026-11-04)** (1 connections) — `docs/GLUE_SWEEP.md`
 - **Sur un écran entier à 60 Hz** (1 connections) — `docs/GLUE_SWEEP.md`
@@ -29,7 +30,6 @@
 ## Relationships
 
 - [Community 232](Community_232.md) (9 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
 - [Community 286](Community_286.md) (1 shared connections)
 - [Community 226](Community_226.md) (1 shared connections)
 

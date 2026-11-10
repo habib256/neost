@@ -1,25 +1,23 @@
 # Community 422
 
-> 4 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/stx_written_track_logic.cpp`
-- **.equal()** (1 connections) — `tests/stx_written_track_logic.cpp`
-- **count** (1 connections) — `tests/stx_written_track_logic.cpp`
-- **failures** (1 connections) — `tests/stx_written_track_logic.cpp`
+- **Moira::dump8()** (2 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **u8** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 2](Community_2.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/stx_written_track_logic.cpp`
+- `extern/moira/Moira/MoiraDasm_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
+- EXTRACTED: 2 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

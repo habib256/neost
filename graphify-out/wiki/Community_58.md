@@ -1,63 +1,61 @@
 # Community 58
 
-> 29 nodes
+> 26 nodes
 
 ## Key Concepts
 
-- **main_android.cpp** (33 connections) — `src/android/main_android.cpp`
-- **main()** (11 connections) — `src/android/main_android.cpp`
-- **compile()** (7 connections) — `src/android/main_android.cpp`
-- **prepareData()** (6 connections) — `src/android/main_android.cpp`
-- **stScancode()** (5 connections) — `src/headless/main_headless.cpp`
-- **Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)** (5 connections) — `docs/IMPLEMENTED.md`
-- **assetSize()** (4 connections) — `src/android/main_android.cpp`
-- **fileHasSize()** (4 connections) — `src/android/main_android.cpp`
-- **string** (4 connections)
-- **copyAsset()** (3 connections) — `src/android/main_android.cpp`
-- **initGl()** (3 connections) — `src/android/main_android.cpp`
-- **produceAudioFrame()** (3 connections) — `src/android/main_android.cpp`
-- **readPad()** (3 connections) — `src/android/main_android.cpp`
-- **audioCallback()** (2 connections) — `src/android/main_android.cpp`
-- **drawScreen()** (2 connections) — `src/android/main_android.cpp`
-- **openAudio()** (2 connections) — `src/android/main_android.cpp`
-- **uploadFrame()** (2 connections) — `src/android/main_android.cpp`
-- **Sint64** (2 connections)
-- **Headless : `--joy-at`, `--joy-script` et `--mouse-at` deviennent répétables (`OUTIL-1`) (2026-08-25)** (2 connections) — `CHANGELOG.md`
-- **Pilotage externe : menu, spécification du protocole, recherche d'adresses (2026-09-05)** (2 connections) — `CHANGELOG.md`
-- **0. Démarrer en cinq commandes** (2 connections) — `docs/OPENDST.md`
-- **SDL_GameController** (1 connections)
-- **GLenum** (1 connections)
-- **GLuint** (1 connections)
-- **Uint8** (1 connections)
-- *... and 4 more nodes in this community*
+- **StackFrame** (21 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.processException()** (8 connections) — `extern/moira/Moira/Moira.h`
+- **.halt()** (6 connections) — `extern/moira/Moira/Moira.h`
+- **exception** (6 connections) — `extern/moira/Moira/Moira.h`
+- **AddressError** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **BusError** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **PrefetchQueue** (5 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.willProcessFault()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **Patch local : reset gardé (2026-07-08)** (3 connections) — `extern/moira/NEOST_VENDOR.md`
+- **IllegalInstruction** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **cpuDidHalt()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **Moira::writeStackFrameAEBE()** (2 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **.AddressError()** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **.BusError()** (2 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **u16** (2 connections)
+- **u32** (2 connections)
+- **stackFrame** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **stackFrame** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **irc** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **ird** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **addr** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **code** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **ird** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **pc** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **sr** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- *... and 1 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (9 shared connections)
-- [Community 114](Community_114.md) (3 shared connections)
-- [Community 228](Community_228.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 281](Community_281.md) (1 shared connections)
-- [Community 136](Community_136.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
-- [Community 122](Community_122.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
-- [Community 258](Community_258.md) (1 shared connections)
+- [Community 64](Community_64.md) (6 shared connections)
+- [Community 57](Community_57.md) (5 shared connections)
+- [Community 16](Community_16.md) (5 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
+- [Community 314](Community_314.md) (2 shared connections)
+- [Community 155](Community_155.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 166](Community_166.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
+- [Community 104](Community_104.md) (1 shared connections)
+- [Community 333](Community_333.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/IMPLEMENTED.md`
-- `docs/OPENDST.md`
-- `src/android/main_android.cpp`
-- `src/headless/main_headless.cpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraExceptions_cpp.h`
+- `extern/moira/Moira/MoiraTypes.h`
+- `extern/moira/NEOST_VENDOR.md`
 
 ## Audit Trail
 
-- EXTRACTED: 61 (85%)
-- INFERRED: 11 (15%)
+- EXTRACTED: 48 (86%)
+- INFERRED: 8 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

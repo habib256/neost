@@ -34,16 +34,16 @@
 - *…and 30 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
-- .updateReadAddress() `EXTRACTED`
+- .onFdcEvent() `EXTRACTED`
 - .updateReadTrack() `EXTRACTED`
 - .updateWriteTrack() `EXTRACTED`
-- .onFdcEvent() `EXTRACTED`
+- .readTrackStx() `EXTRACTED`
+- .updateReadAddress() `EXTRACTED`
 - .updateReadSectors() `EXTRACTED`
-- .nextSectorID() `EXTRACTED`
-- .loadImage() `EXTRACTED`
-- .refreshDriveSide() `EXTRACTED`
-- .updateStr() `EXTRACTED`
 - .updateWriteSectors() `EXTRACTED`
+- .nextSectorID() `EXTRACTED`
+- .updateStr() `EXTRACTED`
+- .loadImage() `EXTRACTED`
 - .transferDelay() `EXTRACTED`
 - .executeCommand() `EXTRACTED`
 - .setMotorOn() `EXTRACTED`
@@ -59,7 +59,7 @@
 ### references
 - [vector](vector.md) `EXTRACTED`
 - Acsi `EXTRACTED`
-- Bus `EXTRACTED`
+- [Bus](Bus.md) `EXTRACTED`
 - YM2149 `EXTRACTED`
 - [Mfp](Mfp.md) `EXTRACTED`
 - function `EXTRACTED`

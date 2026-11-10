@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "imgui.h"
-#include "io/Ikbd.hpp"
+#include "core/Machine.hpp"
 #include "stb_image.h"
 
 namespace {
@@ -101,22 +101,22 @@ void loadTexture(const std::string& path) {
     g_texW = w; g_texH = h;
 }
 
-void releaseSticky(Ikbd& ikbd) {
+void releaseSticky(Machine& machine) {
     for (const Key& k : kKeys)
-        if (k.sticky && g_sticky[k.sc]) { ikbd.keyEvent(k.sc, false); g_sticky[k.sc] = false; }
+        if (k.sticky && g_sticky[k.sc]) { machine.keyEvent(k.sc, false); g_sticky[k.sc] = false; }
 }
 } // namespace
 
-void keyboardWindowReleaseAll(Ikbd& ikbd) {
-    if (g_heldKey >= 0) { ikbd.keyEvent(kKeys[g_heldKey].sc, false); g_heldKey = -1; }
-    releaseSticky(ikbd);
+void keyboardWindowReleaseAll(Machine& machine) {
+    if (g_heldKey >= 0) { machine.keyEvent(kKeys[g_heldKey].sc, false); g_heldKey = -1; }
+    releaseSticky(machine);
 }
 
-void drawKeyboardWindow(bool* open, Ikbd& ikbd, const std::string& imagePath) {
+void drawKeyboardWindow(bool* open, Machine& machine, const std::string& imagePath) {
     if (!g_texTried) loadTexture(imagePath);
     ImGui::SetNextWindowSize(ImVec2(900, 320), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Keyboard", open) || !*open) {   // repliée ou fermée : rien ne reste enfoncé
-        keyboardWindowReleaseAll(ikbd);
+        keyboardWindowReleaseAll(machine);
         ImGui::End();
         return;
     }
@@ -146,16 +146,16 @@ void drawKeyboardWindow(bool* open, Ikbd& ikbd, const std::string& imagePath) {
         if (ImGui::IsItemActivated()) {
             if (k.sticky) {
                 g_sticky[k.sc] = !g_sticky[k.sc];
-                ikbd.keyEvent(k.sc, g_sticky[k.sc]);
+                machine.keyEvent(k.sc, g_sticky[k.sc]);
             } else {
-                ikbd.keyEvent(k.sc, true);
+                machine.keyEvent(k.sc, true);
                 g_heldKey = i;
             }
         }
         if (ImGui::IsItemDeactivated() && !k.sticky && g_heldKey == i) {
-            ikbd.keyEvent(k.sc, false);
+            machine.keyEvent(k.sc, false);
             g_heldKey = -1;
-            releaseSticky(ikbd);                 // les modificateurs retombent après la touche
+            releaseSticky(machine);                 // les modificateurs retombent après la touche
         }
         ImGui::PopID();
         const bool lit = (k.sticky && g_sticky[k.sc]) || g_heldKey == i;

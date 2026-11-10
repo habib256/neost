@@ -1,14 +1,17 @@
 # Community 206
 
-> 10 nodes
+> 13 nodes
 
 ## Key Concepts
 
 - **Rig** (11 connections) — `tests/scc_serial_logic.cpp`
-- **.arm()** (2 connections) — `tests/scc_serial_logic.cpp`
-- **.wr()** (2 connections) — `tests/scc_serial_logic.cpp`
+- **testSccSerial()** (8 connections) — `tests/scc_serial_logic.cpp`
+- **scc_serial_logic.cpp** (6 connections) — `tests/scc_serial_logic.cpp`
+- **.arm()** (3 connections) — `tests/scc_serial_logic.cpp`
+- **.wr()** (3 connections) — `tests/scc_serial_logic.cpp`
+- **main()** (2 connections) — `tests/scc_serial_logic.cpp`
+- **.rr()** (2 connections) — `tests/scc_serial_logic.cpp`
 - **.Rig()** (1 connections) — `tests/scc_serial_logic.cpp`
-- **.rr()** (1 connections) — `tests/scc_serial_logic.cpp`
 - **Scc** (1 connections)
 - **Scheduler** (1 connections)
 - **output** (1 connections) — `tests/scc_serial_logic.cpp`
@@ -17,7 +20,8 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (2 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
 
 ## Source Files
 
@@ -25,8 +29,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 12 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 23 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

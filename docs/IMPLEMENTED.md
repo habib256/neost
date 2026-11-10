@@ -2267,13 +2267,13 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   EmuTOS monte **C:** depuis une image SD générée sans pilote (`tools/make_usatan_hd.py`).
   Auto-tests : `--usatan-selftest` (fil, 15 checks) + verdict série `usatan_netusbee`
   (programme ST, séquence LongRW de `US_CONF`). Save-states **v12**.
-- **NetUSBee — NE2000 + ISP1160 USB sur le port cartouche** (`io/Isp1160` + `io/Ne2000`,
-  `--netusbee`, 2026-08-21) : la NE2000 de l'EtherNEC (inchangée) + le contrôleur hôte USB
-  décodé aux adresses du pilote FreeMiNT (`$FA0000` latch, `$FA8000` lecture, `$FB8000`/`$FBC000`
-  données/commande, mots 16 bits) — ID `$6120`, reset logiciel, registres OHCI/ISP, **hub racine
-  vide**, ATL achevée en `DeviceNotResponding`. Les pilotes s'initialisent, rien n'est énuméré
-  (périphérique USB hôte = point d'extension). Auto-tests : `--netusbee-selftest` (11 checks)
-  + verdict série. ⚠ fenêtre LSB partagée avec le CR NE2000 (cf. `docs/EXTENSIONS.md`).
+- **NetUSBee — NE2000 + ISP1160 USB sur le port cartouche** (`io/Isp1160`, `io/UsbDevice`,
+  `io/Ne2000`, `--netusbee`) : Ethernet/NAT et deux ports USB virtuels pour clavier, souris
+  HID ou disque SCSI/Bulk-Only sur image (lecture/écriture ou lecture seule). Branchement
+  à chaud, réglages Network/profils/headless, horloge USB 1 ms, ATL/EOT et save-state v59.
+  Vérifié avec USB4TOS 098f002a : lecture/écriture GEMDOS, touche via Bconin et paquet souris
+  via mousevec ; 39 contrôles du protocole dans `--netusbee-selftest`. ITL/isochrone et
+  USB hôte brut non exécutés. Références et limites : [`NETUSBEE.md`](NETUSBEE.md).
 - **Anneau MIDI réseau** (`net/MidiRing`, `--midi-net H:P[:L]`) : **MIDIMaze en ligne** —
   MIDI OUT → UDP → pair aval, datagrammes amont → MIDI IN (`MidiAcia::setMidiSink`/
   `tryPop` via la source série, collecte UDP par trame et consommation à 2560 cycles). Vérifié

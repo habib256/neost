@@ -1,40 +1,47 @@
 # Community 152
 
-> 14 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **stx_read_address_crc_logic.cpp** (21 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **testStxReadAddressCrc()** (7 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **writeImage()** (7 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **Checks** (5 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **idBytes()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **put16()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **put32()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **readAddress()** (4 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **checksum()** (3 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **.equal()** (2 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **main()** (2 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **count** (1 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **failures** (1 connections) — `tests/stx_read_address_crc_logic.cpp`
-- **path** (1 connections)
+- **Guards** (40 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.guardNr()** (8 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.setEnable()** (6 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isDisabled()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.setEnableAll()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isEnabled()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.ignore()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.toggle()** (3 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disable()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.disableAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.enable()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.enableAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.isSet()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.removeAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **guards** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.elements()** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **capacity** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **count** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **hit** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 256](Community_256.md) (5 shared connections)
-- [Community 74](Community_74.md) (3 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 134](Community_134.md) (14 shared connections)
+- [Community 268](Community_268.md) (9 shared connections)
+- [Community 282](Community_282.md) (3 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 285](Community_285.md) (1 shared connections)
+- [Community 124](Community_124.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/stx_read_address_crc_logic.cpp`
+- `extern/moira/Moira/MoiraDebugger.h`
 
 ## Audit Trail
 
-- EXTRACTED: 41 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 55 (92%)
+- INFERRED: 5 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

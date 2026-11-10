@@ -33,17 +33,17 @@
 - MoiraTypes.h `EXTRACTED`
 
 ### references
-- Moira::isValidExt() `EXTRACTED`
-- Moira::isAvailable() `EXTRACTED`
+- .isValidExt() `EXTRACTED`
+- .isAvailable() `EXTRACTED`
 - InstrInfo `EXTRACTED`
 - didExecute() `EXTRACTED`
+- .availabilityMask() `EXTRACTED`
 - willExecute() `EXTRACTED`
-- .didExecute() `EXTRACTED`
 - .willExecute() `EXTRACTED`
-- Moira::availabilityMask() `EXTRACTED`
-- Moira::availabilityString() `EXTRACTED`
-- Moira::isValidExtFPU() `EXTRACTED`
+- .availabilityString() `EXTRACTED`
 - Moira::isValidExtMMU() `EXTRACTED`
+- .didExecute() `EXTRACTED`
+- Moira::isValidExtFPU() `EXTRACTED`
 
 ---
 

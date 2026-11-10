@@ -1,17 +1,18 @@
 # Community 158
 
-> 15 nodes
+> 16 nodes
 
 ## Key Concepts
 
 - **Rig** (15 connections) — `tests/ikbd_cpu_serial_logic.cpp`
-- **.load()** (2 connections) — `tests/ikbd_cpu_serial_logic.cpp`
-- **.save()** (2 connections) — `tests/ikbd_cpu_serial_logic.cpp`
-- **.at()** (1 connections) — `tests/ikbd_cpu_serial_logic.cpp`
-- **.responseDue()** (1 connections) — `tests/ikbd_cpu_serial_logic.cpp`
+- **testIkbdCpuSerial()** (8 connections) — `tests/ikbd_cpu_serial_logic.cpp`
+- **.load()** (4 connections) — `tests/ikbd_cpu_serial_logic.cpp`
+- **.save()** (4 connections) — `tests/ikbd_cpu_serial_logic.cpp`
+- **.at()** (2 connections) — `tests/ikbd_cpu_serial_logic.cpp`
+- **.responseDue()** (2 connections) — `tests/ikbd_cpu_serial_logic.cpp`
+- **.send()** (2 connections) — `tests/ikbd_cpu_serial_logic.cpp`
+- **.status()** (2 connections) — `tests/ikbd_cpu_serial_logic.cpp`
 - **.Rig()** (1 connections) — `tests/ikbd_cpu_serial_logic.cpp`
-- **.send()** (1 connections) — `tests/ikbd_cpu_serial_logic.cpp`
-- **.status()** (1 connections) — `tests/ikbd_cpu_serial_logic.cpp`
 - **Ikbd** (1 connections)
 - **Mfp** (1 connections)
 - **Scheduler** (1 connections)
@@ -22,7 +23,8 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (3 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 
 ## Source Files
 
@@ -30,8 +32,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 17 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 26 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

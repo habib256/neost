@@ -1,21 +1,23 @@
 # Community 116
 
-> 20 nodes
+> 22 nodes
 
 ## Key Concepts
 
 - **Rig** (19 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **testIkbdOutputCapacity()** (14 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **.advance()** (4 connections) — `tests/ikbd_output_capacity_logic.cpp`
 - **.data()** (4 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **.due()** (4 connections) — `tests/ikbd_output_capacity_logic.cpp`
 - **.next()** (4 connections) — `tests/ikbd_output_capacity_logic.cpp`
-- **.advance()** (3 connections) — `tests/ikbd_output_capacity_logic.cpp`
-- **.due()** (3 connections) — `tests/ikbd_output_capacity_logic.cpp`
-- **.cmd()** (2 connections) — `tests/ikbd_output_capacity_logic.cpp`
-- **.drainKeys()** (2 connections) — `tests/ikbd_output_capacity_logic.cpp`
-- **.fullRdr()** (2 connections) — `tests/ikbd_output_capacity_logic.cpp`
-- **.queued()** (2 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **.queued()** (4 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **.cmd()** (3 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **.drainKeys()** (3 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **.fullRdr()** (3 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **main()** (2 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **.froggies()** (2 connections) — `tests/ikbd_output_capacity_logic.cpp`
+- **.keys()** (2 connections) — `tests/ikbd_output_capacity_logic.cpp`
 - **initializer_list** (2 connections)
-- **.froggies()** (1 connections) — `tests/ikbd_output_capacity_logic.cpp`
-- **.keys()** (1 connections) — `tests/ikbd_output_capacity_logic.cpp`
 - **.Rig()** (1 connections) — `tests/ikbd_output_capacity_logic.cpp`
 - **Ikbd** (1 connections)
 - **Mfp** (1 connections)
@@ -27,7 +29,8 @@
 
 ## Relationships
 
-- [Community 399](Community_399.md) (3 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
 
 ## Source Files
 
@@ -35,8 +38,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 28 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 42 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

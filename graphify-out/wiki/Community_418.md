@@ -1,26 +1,26 @@
 # Community 418
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/fdc_selection_logic.cpp`
-- **.equal()** (1 connections) — `tests/fdc_selection_logic.cpp`
-- **count** (1 connections) — `tests/fdc_selection_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_selection_logic.cpp`
+- **mfp_rx_irq_timing_logic.cpp** (4 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
+- **testMfpRxIrqTiming()** (3 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
+- **main()** (2 connections) — `tests/mfp_rx_irq_timing_logic.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_selection_logic.cpp`
+- `tests/mfp_rx_irq_timing_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

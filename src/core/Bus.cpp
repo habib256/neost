@@ -437,8 +437,8 @@ uint8_t Bus::read8Slow(uint32_t addr) {
     // (Machine::enableEtherNec refuse si une cartouche est montée).
     // NetUSBee : l'ISP1160 partage la fenêtre. Il est décodé D'ABORD (effets de
     // bord une fois par accès CPU : octet pair d'un mot, ou accès octet), puis la
-    // NE2000 voit l'accès à son tour — la fenêtre LSB ($FA0000-$FA01FF) est aussi
-    // son registre CR, et sans schéma on ne suppose aucun décodage exclusif.
+    // NE2000 voit l'accès à son tour : $FA0000 est une LECTURE du CR,
+    // sans effet sur sa valeur. [C] FreeMiNT 098f002a isp116x.h ; cf. Isp1160.hpp.
     bool ispHit = false;
     uint8_t ispVal = 0xFF;
     if (isp1160 && addr >= stmap::CART_BASE && addr < stmap::CART_END) {
@@ -447,7 +447,10 @@ uint8_t Bus::read8Slow(uint32_t addr) {
     }
     if (ne2000 && addr >= stmap::CART_BASE && addr < stmap::CART_END) {
         uint8_t v;
-        if (ne2000->cartRead(addr, v)) return ispHit ? ispVal : v;
+        // [B] NetUSBee program_spec.txt (archive 11/2007), Network Data Reads :
+        // A15=0, la RTL8019 pilote D8-D15. Le latch LSB USB ne pilote pas
+        // les données ; son accès fantôme ne doit pas masquer le CR par $FF.
+        if (ne2000->cartRead(addr, v)) return v;
     }
     if (ispHit) return ispVal;
 

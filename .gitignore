@@ -123,3 +123,5 @@ wasm/
 
 # Froggies Over The Fence : disquettes locales, non versionnées (décision 2026-10-20).
 /disks/etalons/froggies_over_the_fence/
+# Pilotes USB4TOS officiels pour le banc logiciel optionnel (non redistribués).
+extern/usb4tos/

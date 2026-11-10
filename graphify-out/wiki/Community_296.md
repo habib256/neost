@@ -1,25 +1,33 @@
 # Community 296
 
-> 4 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **Sym** (4 connections) — `src/core/Symbols.hpp`
-- **string** (2 connections)
-- **addr** (1 connections) — `src/core/Symbols.hpp`
-- **name** (1 connections) — `src/core/Symbols.hpp`
+- **build()** (10 connections) — `tools/make_selftest_cart.py`
+- **make_selftest_cart.py** (5 connections) — `tools/make_selftest_cart.py`
+- **raw()** (3 connections) — `tools/make_selftest_cart.py`
+- **stritem()** (3 connections) — `tools/make_selftest_cart.py`
+- **main()** (3 connections) — `tools/make_selftest_cart.py`
+- **lbl()** (2 connections) — `tools/make_selftest_cart.py`
+- **raw32()** (2 connections) — `tools/make_selftest_cart.py`
+- **br()** (1 connections) — `tools/make_selftest_cart.py`
+- **imm_addr()** (1 connections) — `tools/make_selftest_cart.py`
+- **vec()** (1 connections) — `tools/make_selftest_cart.py`
 
 ## Relationships
 
-- [Community 119](Community_119.md) (2 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 18](Community_18.md) (2 shared connections)
+- [Community 151](Community_151.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Symbols.hpp`
+- `tools/make_selftest_cart.py`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 18 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

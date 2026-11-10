@@ -1,65 +1,52 @@
 # Community 37
 
-> 57 nodes
+> 26 nodes
 
 ## Key Concepts
 
 - **Blitter** (44 connections) — `src/core/Blitter.hpp`
-- **Blitter.cpp** (27 connections) — `src/core/Blitter.cpp`
-- **.onSlice()** (14 connections) — `src/core/Blitter.hpp`
-- **Priorités — divergences HAUTE et MOYENNE** (14 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Blitter — `Blitter.cpp` ↔ `blitter.c`** (13 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.billCycles()** (11 connections) — `src/core/Blitter.hpp`
-- **8. Blitter (blitter.c)** (11 connections) — `docs/HATARI_MAPPING.md`
-- **.controlWritten()** (7 connections) — `src/core/Blitter.hpp`
-- **.reset()** (7 connections) — `src/core/Blitter.hpp`
-- **Les cycles volés par le blitter avancent enfin l'horloge des timers (2026-08-25)** (7 connections) — `CHANGELOG.md`
-- **.writeWord()** (6 connections) — `src/core/Blitter.hpp`
-- **.writeRegisters()** (6 connections) — `src/core/Blitter.hpp`
-- **.noteCpuBusAccess()** (6 connections) — `src/core/Blitter.hpp`
-- **.runSlice()** (6 connections) — `src/core/Blitter.hpp`
-- **.addStolenCycles()** (6 connections) — `src/core/Scheduler.hpp`
-- **.readWord()** (5 connections) — `src/core/Blitter.hpp`
-- **.start()** (5 connections) — `src/core/Blitter.hpp`
-- **.clearPreStartWindow()** (5 connections) — `src/core/Blitter.hpp`
-- **regWriteMask()** (5 connections) — `src/core/Blitter.cpp`
-- **🟡 Nouveaux — BASSES (cas-limites/cosmétiques)** (5 connections) — `docs/HATARI_DIVERGENCES.md`
-- **P1 — Timing systémique (dérives d'horloge, phase CPU↔faisceau)** (5 connections) — `docs/HATARI_MAPPING.md`
-- **.write8()** (4 connections) — `src/core/Blitter.hpp`
-- **.write16()** (4 connections) — `src/core/Blitter.hpp`
-- **.write32()** (4 connections) — `src/core/Blitter.hpp`
-- **.armPreStartWindow()** (4 connections) — `src/core/Blitter.hpp`
-- *... and 32 more nodes in this community*
+- **Bus** (3 connections) — `src/core/Blitter.hpp`
+- **.notePreStartCpuAccess()** (2 connections) — `src/core/Blitter.hpp`
+- **.Blitter()** (2 connections) — `src/core/Blitter.hpp`
+- **.serialize()** (2 connections) — `src/core/Blitter.hpp`
+- **.setScheduler()** (2 connections) — `src/core/Blitter.hpp`
+- **Scheduler** (2 connections)
+- **.busy()** (1 connections) — `src/core/Blitter.hpp`
+- **buffer_** (1 connections) — `src/core/Blitter.hpp`
+- **busCountError_** (1 connections) — `src/core/Blitter.hpp`
+- **busWord_** (1 connections) — `src/core/Blitter.hpp`
+- **cpuBusCnt_** (1 connections) — `src/core/Blitter.hpp`
+- **dstWord_** (1 connections) — `src/core/Blitter.hpp`
+- **haveDst_** (1 connections) — `src/core/Blitter.hpp`
+- **haveFxsr_** (1 connections) — `src/core/Blitter.hpp`
+- **haveSrc_** (1 connections) — `src/core/Blitter.hpp`
+- **inSlice_** (1 connections) — `src/core/Blitter.hpp`
+- **midBlit_** (1 connections) — `src/core/Blitter.hpp`
+- **nfsrInt_** (1 connections) — `src/core/Blitter.hpp`
+- **reg_** (1 connections) — `src/core/Blitter.hpp`
+- **sched_** (1 connections) — `src/core/Blitter.hpp`
+- **sliceBus_** (1 connections) — `src/core/Blitter.hpp`
+- **xReset_** (1 connections) — `src/core/Blitter.hpp`
+- **yLatch_** (1 connections) — `src/core/Blitter.hpp`
+- **function** (1 connections)
+- *... and 1 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 39](Community_39.md) (6 shared connections)
-- [Community 135](Community_135.md) (4 shared connections)
-- [Community 176](Community_176.md) (4 shared connections)
-- [Community 120](Community_120.md) (4 shared connections)
-- [Community 130](Community_130.md) (3 shared connections)
-- [Community 138](Community_138.md) (3 shared connections)
-- [Community 27](Community_27.md) (2 shared connections)
-- [Community 215](Community_215.md) (2 shared connections)
-- [Community 352](Community_352.md) (2 shared connections)
-- [Community 182](Community_182.md) (2 shared connections)
-- [Community 386](Community_386.md) (1 shared connections)
+- [Community 256](Community_256.md) (10 shared connections)
+- [Community 366](Community_366.md) (5 shared connections)
+- [Community 364](Community_364.md) (4 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/HATARI_MAPPING.md`
-- `src/core/Blitter.cpp`
 - `src/core/Blitter.hpp`
-- `src/core/Cpu68k.hpp`
-- `src/core/Scheduler.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 88 (52%)
-- INFERRED: 80 (48%)
+- EXTRACTED: 49 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

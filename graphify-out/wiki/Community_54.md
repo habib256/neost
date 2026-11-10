@@ -1,70 +1,53 @@
 # Community 54
 
-> 63 nodes
+> 28 nodes
 
 ## Key Concepts
 
-- **u8** (39 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **Moira.h** (31 connections) — `extern/moira/Moira/Moira.h`
 - **BareMoira** (25 connections) — `tools/moira_bare_bench.cpp`
-- **Moira::execInterrupt()** (10 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
 - **.emit()** (8 connections) — `tools/moira_bare_bench.cpp`
-- **Moira::jumpToVector()** (7 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::read()** (6 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::write()** (6 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **Moira::setFC()** (6 connections) — `extern/moira/Moira/Moira.cpp`
-- **Moira::setIPL()** (6 connections) — `extern/moira/Moira/Moira.cpp`
+- **.fc()** (6 connections) — `tools/moira_bare_bench.cpp`
 - **.read16()** (6 connections) — `tools/moira_bare_bench.cpp`
-- **Moira::execute()** (5 connections) — `extern/moira/Moira/Moira.cpp`
-- **Moira::getIrqVector()** (5 connections) — `extern/moira/Moira/Moira.cpp`
-- **.commitIpl()** (5 connections) — `src/core/Cpu68k.cpp`
-- **.fc()** (5 connections) — `tools/moira_bare_bench.cpp`
+- **u32** (6 connections)
 - **.read8()** (5 connections) — `tools/moira_bare_bench.cpp`
 - **.write16()** (5 connections) — `tools/moira_bare_bench.cpp`
 - **.write8()** (5 connections) — `tools/moira_bare_bench.cpp`
+- **u16** (5 connections)
 - **IrqEv** (4 connections) — `tools/moira_bare_bench.cpp`
-- **UInt8** (4 connections) — `extern/moira/Moira/StrWriter.h`
-- **Moira::execBitFieldEa()** (4 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
-- **didReachWatchpoint()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **willAccessBus()** (4 connections) — `extern/moira/Moira/Moira.h`
 - **.read16OnReset()** (4 connections) — `tools/moira_bare_bench.cpp`
 - **.readIrqUserVector()** (4 connections) — `tools/moira_bare_bench.cpp`
-- *... and 38 more nodes in this community*
+- **u8** (4 connections)
+- **V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01)** (3 connections) — `CHANGELOG.md`
+- **main()** (2 connections) — `tools/moira_bare_bench.cpp`
+- **i64** (2 connections)
+- **.BareMoira()** (1 connections) — `tools/moira_bare_bench.cpp`
+- **done** (1 connections) — `tools/moira_bare_bench.cpp`
+- **irqIdx** (1 connections) — `tools/moira_bare_bench.cpp`
+- **irqs** (1 connections) — `tools/moira_bare_bench.cpp`
+- **nEmit** (1 connections) — `tools/moira_bare_bench.cpp`
+- **out** (1 connections) — `tools/moira_bare_bench.cpp`
+- **ram** (1 connections) — `tools/moira_bare_bench.cpp`
+- **tOrigin** (1 connections) — `tools/moira_bare_bench.cpp`
+- **FILE** (1 connections)
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 2](Community_2.md) (29 shared connections)
-- [Community 16](Community_16.md) (21 shared connections)
-- [Community 9](Community_9.md) (10 shared connections)
-- [Community 64](Community_64.md) (9 shared connections)
-- [Community 32](Community_32.md) (5 shared connections)
-- [Community 57](Community_57.md) (4 shared connections)
-- [Community 134](Community_134.md) (4 shared connections)
-- [Community 399](Community_399.md) (3 shared connections)
-- [Community 166](Community_166.md) (3 shared connections)
-- [Community 109](Community_109.md) (2 shared connections)
-- [Community 104](Community_104.md) (2 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.cpp`
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraALU_cpp.h`
-- `extern/moira/Moira/MoiraConfig.h`
-- `extern/moira/Moira/MoiraDasm_cpp.h`
-- `extern/moira/Moira/MoiraDataflow_cpp.h`
-- `extern/moira/Moira/MoiraExceptions_cpp.h`
-- `extern/moira/Moira/MoiraExec_cpp.h`
-- `extern/moira/Moira/MoiraTypes.h`
-- `extern/moira/Moira/StrWriter.h`
-- `src/core/Cpu68k.cpp`
+- `CHANGELOG.md`
 - `tools/moira_bare_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 164 (84%)
-- INFERRED: 32 (16%)
+- EXTRACTED: 53 (95%)
+- INFERRED: 3 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

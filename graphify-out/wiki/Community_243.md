@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **DmaEvent** (8 connections) — `src/core/DmaSound.hpp`
+- **DmaEvent** (9 connections) — `src/core/DmaSound.hpp`
 - **capW** (1 connections) — `src/core/DmaSound.hpp`
 - **cycle** (1 connections) — `src/core/DmaSound.hpp`
 - **end** (1 connections) — `src/core/DmaSound.hpp`
@@ -16,6 +16,7 @@
 ## Relationships
 
 - [Community 13](Community_13.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
@@ -23,8 +24,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 8 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 8 (89%)
+- INFERRED: 1 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

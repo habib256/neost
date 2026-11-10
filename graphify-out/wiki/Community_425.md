@@ -1,29 +1,25 @@
 # Community 425
 
-> 3 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **.wrPsg()** (6 connections) — `src/core/Bus.hpp`
-- **.ioAccessWidth()** (2 connections) — `src/core/Bus.hpp`
-- **docs/HATARI_DIVERGENCES.md** (2 connections) — `docs/HATARI_MAPPING.md`
+- **GmSynth** (3 connections) — `src/audio/Audio.hpp`
+- **.setGm()** (2 connections) — `src/audio/Audio.hpp`
 
 ## Relationships
 
-- [Community 14](Community_14.md) (2 shared connections)
-- [Community 352](Community_352.md) (2 shared connections)
-- [Community 30](Community_30.md) (1 shared connections)
-- [Community 120](Community_120.md) (1 shared connections)
+- [Community 61](Community_61.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MAPPING.md`
-- `src/core/Bus.hpp`
+- `src/audio/Audio.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (50%)
-- INFERRED: 4 (50%)
+- EXTRACTED: 4 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

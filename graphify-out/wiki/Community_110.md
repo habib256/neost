@@ -1,20 +1,21 @@
 # Community 110
 
-> 24 nodes
+> 25 nodes
 
 ## Key Concepts
 
 - **Rig** (12 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **testIkbdSciReset()** (10 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **ikbd_sci_reset_logic.cpp** (10 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **compareSci()** (9 connections) — `tests/ikbd_sci_reset_logic.cpp`
 - **Oracle** (7 connections) — `tests/ikbd_sci_reset_logic.cpp`
 - **Checks** (5 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **compareSci()** (5 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **testIkbdSciReset()** (4 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.equal()** (3 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.bit()** (3 connections) — `tests/ikbd_sci_reset_logic.cpp`
 - **main()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **.equal()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **.bit()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **.raw()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **.at()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **.bootDue()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.raw()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.at()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.bootDue()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
 - **.Rig()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
 - **count** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
 - **failures** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
@@ -31,8 +32,9 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (6 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 41](Community_41.md) (5 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 150](Community_150.md) (1 shared connections)
 
 ## Source Files
 
@@ -40,8 +42,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 29 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 43 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

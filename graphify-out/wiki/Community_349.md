@@ -1,43 +1,30 @@
 # Community 349
 
-> 12 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **neostUpdateIpl()** (14 connections) — `src/core/Cpu68k.cpp`
-- **Cpu68k::raiseHbl()** (7 connections) — `src/core/Cpu68k.cpp`
-- **Cpu68k::raiseVbl()** (7 connections) — `src/core/Cpu68k.cpp`
-- **recomputePinNextDue()** (6 connections) — `src/core/Cpu68k.cpp`
-- **Cpu68k::updateIplNow()** (5 connections) — `src/core/Cpu68k.cpp`
-- **.stoppedState()** (5 connections) — `src/core/Cpu68k.cpp`
-- **pinsAtCycle()** (5 connections) — `src/core/Cpu68k.cpp`
-- **raiseWindowDefers()** (5 connections) — `src/core/Cpu68k.cpp`
-- **Cpu68k::armHblPinAt()** (4 connections) — `src/core/Cpu68k.cpp`
-- **Cpu68k::armVblPinAt()** (4 connections) — `src/core/Cpu68k.cpp`
-- **Cpu68k::updateIpl()** (4 connections) — `src/core/Cpu68k.cpp`
-- **Autostart `--auto`, EMail 1.56, chasse aux bugs (2026-10-24)** (2 connections) — `CHANGELOG.md`
+- **** (9 connections) — `src/io/StePads.hpp`
+- **DOWN** (1 connections) — `src/io/StePads.hpp`
+- **FIRE** (1 connections) — `src/io/StePads.hpp`
+- **LEFT** (1 connections) — `src/io/StePads.hpp`
+- **RIGHT** (1 connections) — `src/io/StePads.hpp`
+- **UP** (1 connections) — `src/io/StePads.hpp`
 
 ## Relationships
 
-- [Community 27](Community_27.md) (16 shared connections)
-- [Community 9](Community_9.md) (5 shared connections)
-- [Community 135](Community_135.md) (3 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
-- [Community 166](Community_166.md) (1 shared connections)
-- [Community 54](Community_54.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 106](Community_106.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/core/Cpu68k.cpp`
+- `src/io/StePads.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 42 (86%)
-- INFERRED: 7 (14%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

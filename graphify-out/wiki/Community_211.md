@@ -1,40 +1,43 @@
 # Community 211
 
-> 8 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **Mode kiosk — invariants d'implémentation (`gui/AppInit.cpp`, `gui/AppLoop.cpp`, `gui/KioskMenu.cpp`)** (5 connections) — `DEV.md`
-- **.start()** (4 connections) — `src/audio/Audio.hpp`
-- **.setLatencyMs()** (4 connections) — `src/audio/Audio.hpp`
-- **Borne Raspberry Pi : démarrage direct + latence audio réglable (2026-08-02)** (3 connections) — `CHANGELOG.md`
-- **3bis. La sortie son — HDMI ou Bluetooth** (3 connections) — `packaging/raspberry/README.md`
-- **3. Réglages de la borne — `/etc/neost-kiosk.conf`** (2 connections) — `packaging/raspberry/README.md`
-- **Bluetooth (`install_kiosk.sh --bluetooth-audio`)** (2 connections) — `packaging/raspberry/README.md`
-- **HDMI (défaut, `install_kiosk.sh` sans option)** (1 connections) — `packaging/raspberry/README.md`
+- **Debugger** (34 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.vectorName()** (4 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.reset()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.stepInto()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **.clearLog()** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **string** (1 connections)
+- **u8** (1 connections)
+- **breakpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **catchpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **logBuffer** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **logBufferCapacity** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **logCnt** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **softStop** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **swTraps** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **watchpoints** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
+- **i64** (1 connections)
 
 ## Relationships
 
-- [Community 61](Community_61.md) (2 shared connections)
-- [Community 362](Community_362.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 321](Community_321.md) (1 shared connections)
-- [Community 306](Community_306.md) (1 shared connections)
-- [Community 264](Community_264.md) (1 shared connections)
-- [Community 380](Community_380.md) (1 shared connections)
+- [Community 134](Community_134.md) (13 shared connections)
+- [Community 282](Community_282.md) (4 shared connections)
+- [Community 285](Community_285.md) (4 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 104](Community_104.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `DEV.md`
-- `packaging/raspberry/README.md`
-- `src/audio/Audio.hpp`
+- `extern/moira/Moira/MoiraDebugger.h`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (53%)
-- INFERRED: 8 (47%)
+- EXTRACTED: 39 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

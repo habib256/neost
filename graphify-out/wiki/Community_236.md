@@ -1,11 +1,10 @@
 # Community 236
 
-> 9 nodes
+> 8 nodes
 
 ## Key Concepts
 
 - **Rig** (9 connections) — `tests/mfp_pulse_logic.cpp`
-- **.advance()** (1 connections) — `tests/mfp_pulse_logic.cpp`
 - **.Rig()** (1 connections) — `tests/mfp_pulse_logic.cpp`
 - **Mfp** (1 connections)
 - **Scheduler** (1 connections)
@@ -17,6 +16,7 @@
 ## Relationships
 
 - [Community 102](Community_102.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 

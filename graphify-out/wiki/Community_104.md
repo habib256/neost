@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **Registers** (19 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **Registers** (18 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **StatusRegister** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **Moira::disassembleSR()** (2 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **caar** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
@@ -32,12 +32,12 @@
 
 ## Relationships
 
-- [Community 2](Community_2.md) (2 shared connections)
-- [Community 54](Community_54.md) (2 shared connections)
+- [Community 131](Community_131.md) (2 shared connections)
 - [Community 57](Community_57.md) (2 shared connections)
 - [Community 16](Community_16.md) (1 shared connections)
-- [Community 134](Community_134.md) (1 shared connections)
-- [Community 389](Community_389.md) (1 shared connections)
+- [Community 211](Community_211.md) (1 shared connections)
+- [Community 58](Community_58.md) (1 shared connections)
+- [Community 2](Community_2.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 32 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 32 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

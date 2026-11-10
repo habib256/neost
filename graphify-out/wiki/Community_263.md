@@ -1,35 +1,36 @@
 # Community 263
 
-> 10 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **stx_sector_rewrite_logic.cpp** (16 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **testStxSectorRewrite()** (6 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **Checks** (5 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **verifyTrack()** (5 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **formattedTrack()** (3 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **crc16()** (2 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **main()** (2 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **.equal()** (1 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **count** (1 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **failures** (1 connections) — `tests/stx_sector_rewrite_logic.cpp`
+- **MoiraDasmMMU_cpp.h** (9 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **u16** (8 connections)
+- **u32** (8 connections)
+- **.isValidExtMMU()** (6 connections) — `extern/moira/Moira/Moira.h`
+- **Moira::dasmPFlush()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **Moira::dasmPFlusha()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **Moira::dasmPLoad()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **Moira::dasmPMove()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **Moira::dasmPTest()** (5 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **Moira::dasmPFlush40()** (4 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **Moira::dasmPGen()** (4 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
+- **Moira::dasmPTest40()** (4 connections) — `extern/moira/Moira/MoiraDasmMMU_cpp.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 72](Community_72.md) (3 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 2](Community_2.md) (9 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/stx_sector_rewrite_logic.cpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraDasmMMU_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 27 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 34 (87%)
+- INFERRED: 5 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

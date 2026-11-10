@@ -1,50 +1,50 @@
 # Community 9
 
-> 35 nodes
+> 44 nodes
 
 ## Key Concepts
 
 - **NeostMoira** (41 connections) — `src/core/Cpu68k.cpp`
 - **.getClock()** (19 connections) — `extern/moira/Moira/Moira.h`
-- **.sync()** (17 connections) — `src/core/Cpu68k.cpp`
-- **.read16()** (13 connections) — `src/core/Cpu68k.cpp`
-- **.read8()** (11 connections) — `src/core/Cpu68k.cpp`
-- **.faultOrHalt()** (10 connections) — `src/core/Cpu68k.cpp`
+- **u32** (15 connections)
+- **.sync()** (13 connections) — `src/core/Cpu68k.cpp`
+- **.faultOrHalt()** (11 connections) — `src/core/Cpu68k.cpp`
+- **u16** (11 connections)
+- **.busDiag()** (10 connections) — `src/core/Cpu68k.cpp`
+- **.read16()** (10 connections) — `src/core/Cpu68k.cpp`
+- **.readMste16Mhz()** (10 connections) — `src/core/Cpu68k.cpp`
 - **.getPC0()** (9 connections) — `extern/moira/Moira/Moira.h`
-- **.readMste16Mhz()** (9 connections) — `src/core/Cpu68k.cpp`
-- **.write16()** (9 connections) — `src/core/Cpu68k.cpp`
-- **.write8()** (9 connections) — `src/core/Cpu68k.cpp`
+- **.raiseBusError()** (9 connections) — `src/core/Cpu68k.cpp`
+- **.read8()** (9 connections) — `src/core/Cpu68k.cpp`
 - **.writeMste16Mhz()** (9 connections) — `src/core/Cpu68k.cpp`
-- **.busDiag()** (8 connections) — `src/core/Cpu68k.cpp`
+- **.udsDone()** (8 connections) — `src/core/Cpu68k.cpp`
 - **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
-- **.readIrqUserVector()** (7 connections) — `src/core/Cpu68k.cpp`
+- **u8** (8 connections)
+- **.didExecute()** (7 connections) — `src/core/Cpu68k.cpp`
 - **.willAccessBus()** (7 connections) — `src/core/Cpu68k.cpp`
+- **.write16()** (7 connections) — `src/core/Cpu68k.cpp`
+- **.write8()** (7 connections) — `src/core/Cpu68k.cpp`
 - **.alignRamBus()** (6 connections) — `src/core/Cpu68k.cpp`
-- **.raiseBusError()** (6 connections) — `src/core/Cpu68k.cpp`
-- **.udsDone()** (6 connections) — `src/core/Cpu68k.cpp`
+- **.readIrqUserVector()** (6 connections) — `src/core/Cpu68k.cpp`
 - **.latchDb()** (5 connections) — `src/core/Cpu68k.cpp`
 - **.read16OnReset()** (5 connections) — `src/core/Cpu68k.cpp`
-- **.iackSyncBefore()** (4 connections) — `src/core/Cpu68k.cpp`
-- **.latchDb8()** (4 connections) — `src/core/Cpu68k.cpp`
-- **.superNow()** (4 connections) — `src/core/Cpu68k.cpp`
-- **.willInterrupt()** (4 connections) — `src/core/Cpu68k.cpp`
-- **6. Ce qui reste sur la table** (4 connections) — `docs/PERFORMANCE.md`
-- *... and 10 more nodes in this community*
+- **.superNow()** (5 connections) — `src/core/Cpu68k.cpp`
+- *... and 19 more nodes in this community*
 
 ## Relationships
 
-- [Community 2](Community_2.md) (25 shared connections)
-- [Community 54](Community_54.md) (10 shared connections)
-- [Community 16](Community_16.md) (7 shared connections)
-- [Community 22](Community_22.md) (6 shared connections)
-- [Community 349](Community_349.md) (5 shared connections)
-- [Community 166](Community_166.md) (3 shared connections)
-- [Community 66](Community_66.md) (3 shared connections)
-- [Community 27](Community_27.md) (2 shared connections)
-- [Community 182](Community_182.md) (2 shared connections)
-- [Community 138](Community_138.md) (2 shared connections)
-- [Community 32](Community_32.md) (2 shared connections)
+- [Community 27](Community_27.md) (17 shared connections)
+- [Community 16](Community_16.md) (5 shared connections)
+- [Community 66](Community_66.md) (4 shared connections)
+- [Community 64](Community_64.md) (4 shared connections)
+- [Community 176](Community_176.md) (3 shared connections)
+- [Community 416](Community_416.md) (2 shared connections)
+- [Community 36](Community_36.md) (2 shared connections)
 - [Community 39](Community_39.md) (2 shared connections)
+- [Community 0](Community_0.md) (2 shared connections)
+- [Community 321](Community_321.md) (2 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 17](Community_17.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,11 +52,12 @@
 - `docs/PERFORMANCE.md`
 - `extern/moira/Moira/Moira.h`
 - `src/core/Cpu68k.cpp`
+- `src/io/GemdosHd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 133 (79%)
-- INFERRED: 36 (21%)
+- EXTRACTED: 141 (78%)
+- INFERRED: 39 (22%)
 - AMBIGUOUS: 0 (0%)
 
 ---

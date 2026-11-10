@@ -1,28 +1,32 @@
 # Community 304
 
-> 3 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **mfp_break_logic.cpp** (5 connections) — `tests/mfp_break_logic.cpp`
-- **testMfpBreak()** (3 connections) — `tests/mfp_break_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_break_logic.cpp`
+- **StxStats** (12 connections) — `src/io/IpfImage.hpp`
+- **dataCrcErrors** (1 connections) — `src/io/IpfImage.hpp`
+- **deleted** (1 connections) — `src/io/IpfImage.hpp`
+- **fuzzySectors** (1 connections) — `src/io/IpfImage.hpp`
+- **idCrcErrors** (1 connections) — `src/io/IpfImage.hpp`
+- **noData** (1 connections) — `src/io/IpfImage.hpp`
+- **sectors** (1 connections) — `src/io/IpfImage.hpp`
+- **timedSectors** (1 connections) — `src/io/IpfImage.hpp`
+- **tracks** (1 connections) — `src/io/IpfImage.hpp`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 143](Community_143.md) (3 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_break_logic.cpp`
+- `src/io/IpfImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (86%)
-- INFERRED: 1 (14%)
+- EXTRACTED: 12 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

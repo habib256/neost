@@ -7,12 +7,12 @@
 - **AndroidMenu** (17 connections) — `src/android/AndroidMenu.hpp`
 - **AndroidMenu.cpp** (11 connections) — `src/android/AndroidMenu.cpp`
 - **MediaScan.cpp** (9 connections) — `src/io/MediaScan.cpp`
-- **areSiblingImages()** (7 connections) — `src/io/MediaScan.cpp`
 - **scanDiskImages()** (7 connections) — `src/io/MediaScan.cpp`
 - **.draw()** (6 connections) — `src/android/AndroidMenu.hpp`
+- **actionRow()** (5 connections) — `src/android/AndroidMenu.cpp`
+- **areSiblingImages()** (5 connections) — `src/io/MediaScan.cpp`
 - **commonPrefixLenCI()** (5 connections) — `src/io/MediaScan.cpp`
 - **.refresh()** (4 connections) — `src/android/AndroidMenu.hpp`
-- **actionRow()** (4 connections) — `src/android/AndroidMenu.cpp`
 - **string** (4 connections)
 - **lowerOf()** (3 connections) — `src/android/AndroidMenu.cpp`
 - **lowerOf()** (3 connections) — `src/io/MediaScan.cpp`
@@ -34,10 +34,8 @@
 ## Relationships
 
 - [Community 4](Community_4.md) (10 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 281](Community_281.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
 
 ## Source Files
 
@@ -48,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 53 (90%)
-- INFERRED: 6 (10%)
+- EXTRACTED: 53 (91%)
+- INFERRED: 5 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

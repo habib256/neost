@@ -47,7 +47,7 @@ void onMouseButton(GLFWwindow* w, int button, int action, int /*mods*/) {
     const bool l = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
     const bool r = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     if (A.dbgMouse) std::fprintf(stderr, "[mouse] button  L=%d R=%d\n", l, r);
-    A.ikbd->mouseEvent(0, 0, l, r);
+    A.machine->mouseEvent(0, 0, l, r);
 }
 
 // Clavier : touche GLFW → scancode ST. Tables et keymap international extraits
@@ -126,7 +126,7 @@ void onKey(GLFWwindow*, int key, int scancode, int action, int mods) {
     if (action != GLFW_PRESS) {
         if (stHeld[sc & 0x7F]) {
             stHeld[sc & 0x7F] = false;
-            A.ikbd->keyEvent(sc, false);
+            A.machine->keyEvent(sc, false);
         }
         return;
     }
@@ -155,5 +155,5 @@ void onKey(GLFWwindow*, int key, int scancode, int action, int mods) {
     // touches déjà tenues sont gérés plus haut → pas de touche « collée ».
     if (A.kioskDiskMenu) return;
     stHeld[sc & 0x7F] = true;
-    A.ikbd->keyEvent(sc, true);
+    A.machine->keyEvent(sc, true);
 }

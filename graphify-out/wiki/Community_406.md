@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **SyncWrite** (4 connections) — `src/core/Shifter.hpp`
+- **SyncWrite** (5 connections) — `src/core/Shifter.hpp`
 - **frameCycle** (1 connections) — `src/core/Shifter.hpp`
 - **isRes** (1 connections) — `src/core/Shifter.hpp`
 - **val** (1 connections) — `src/core/Shifter.hpp`
@@ -12,6 +12,7 @@
 ## Relationships
 
 - [Community 5](Community_5.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
@@ -19,8 +20,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 4 (80%)
+- INFERRED: 1 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

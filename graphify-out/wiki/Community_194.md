@@ -1,13 +1,12 @@
 # Community 194
 
-> 14 nodes
+> 13 nodes
 
 ## Key Concepts
 
+- **testSccChannelReset()** (12 connections) — `tests/scc_channel_reset_logic.cpp`
 - **ResetRig** (11 connections) — `tests/scc_channel_reset_logic.cpp`
-- **testSccChannelReset()** (10 connections) — `tests/scc_channel_reset_logic.cpp`
 - **.write()** (6 connections) — `tests/scc_channel_reset_logic.cpp`
-- **scc_channel_reset_logic.cpp** (6 connections) — `tests/scc_channel_reset_logic.cpp`
 - **.configure()** (4 connections) — `tests/scc_channel_reset_logic.cpp`
 - **.control()** (4 connections) — `tests/scc_channel_reset_logic.cpp`
 - **.read()** (4 connections) — `tests/scc_channel_reset_logic.cpp`
@@ -21,8 +20,8 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 
 ## Source Files
 
@@ -30,8 +29,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 26 (81%)
-- INFERRED: 6 (19%)
+- EXTRACTED: 30 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

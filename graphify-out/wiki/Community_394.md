@@ -1,26 +1,25 @@
 # Community 394
 
-> 5 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **Action** (5 connections) — `src/util/DesktopPointer.hpp`
-- **left** (1 connections) — `src/util/DesktopPointer.hpp`
-- **right** (1 connections) — `src/util/DesktopPointer.hpp`
-- **x** (1 connections) — `src/util/DesktopPointer.hpp`
-- **y** (1 connections) — `src/util/DesktopPointer.hpp`
+- **setMouseCaptured()** (4 connections) — `src/web/main_web.cpp`
+- **onKey()** (3 connections) — `src/web/main_web.cpp`
+- **onMouseButton()** (3 connections) — `src/web/main_web.cpp`
+- **GLFWwindow** (3 connections)
 
 ## Relationships
 
-- [Community 90](Community_90.md) (1 shared connections)
+- [Community 68](Community_68.md) (3 shared connections)
 
 ## Source Files
 
-- `src/util/DesktopPointer.hpp`
+- `src/web/main_web.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 8 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

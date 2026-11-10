@@ -6,8 +6,8 @@
 
 - **Rig** (11 connections) — `tests/dmasound_mono_logic.cpp`
 - **testDmaSoundMono()** (6 connections) — `tests/dmasound_mono_logic.cpp`
-- **.load()** (3 connections) — `tests/dmasound_mono_logic.cpp`
-- **.save()** (3 connections) — `tests/dmasound_mono_logic.cpp`
+- **.load()** (4 connections) — `tests/dmasound_mono_logic.cpp`
+- **.save()** (4 connections) — `tests/dmasound_mono_logic.cpp`
 - **main()** (2 connections) — `tests/dmasound_mono_logic.cpp`
 - **.stop()** (2 connections) — `tests/dmasound_mono_logic.cpp`
 - **.Rig()** (1 connections) — `tests/dmasound_mono_logic.cpp`
@@ -20,9 +20,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 
 ## Source Files
 
@@ -30,7 +29,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 19 (95%)
+- EXTRACTED: 21 (95%)
 - INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 

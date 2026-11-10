@@ -5,11 +5,11 @@
 ## Key Concepts
 
 - **InterruptRig** (10 connections) — `tests/scc_mie_ius_logic.cpp`
-- **testSccMieIus()** (8 connections) — `tests/scc_mie_ius_logic.cpp`
+- **testSccMieIus()** (10 connections) — `tests/scc_mie_ius_logic.cpp`
 - **scc_mie_ius_logic.cpp** (6 connections) — `tests/scc_mie_ius_logic.cpp`
+- **.master()** (5 connections) — `tests/scc_mie_ius_logic.cpp`
 - **.write()** (5 connections) — `tests/scc_mie_ius_logic.cpp`
 - **.control()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
-- **.master()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
 - **.receive()** (4 connections) — `tests/scc_mie_ius_logic.cpp`
 - **.InterruptRig()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
 - **.pop()** (3 connections) — `tests/scc_mie_ius_logic.cpp`
@@ -20,8 +20,9 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 333](Community_333.md) (1 shared connections)
 
 ## Source Files
 
@@ -29,8 +30,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 26 (90%)
-- INFERRED: 3 (10%)
+- EXTRACTED: 30 (94%)
+- INFERRED: 2 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

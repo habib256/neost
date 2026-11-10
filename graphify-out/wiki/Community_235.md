@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **ColorWrite** (5 connections) — `src/core/Shifter.hpp`
+- **ColorWrite** (6 connections) — `src/core/Shifter.hpp`
 - **colour** (1 connections) — `src/core/Shifter.hpp`
 - **frameCycle** (1 connections) — `src/core/Shifter.hpp`
 - **index** (1 connections) — `src/core/Shifter.hpp`
@@ -13,6 +13,7 @@
 ## Relationships
 
 - [Community 5](Community_5.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
@@ -20,8 +21,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (83%)
+- INFERRED: 1 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

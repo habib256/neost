@@ -1,19 +1,25 @@
 # Community 423
 
-> 1 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **StateArchive** (0 connections)
+- **.produceFrame()** (3 connections) — `src/audio/Audio.hpp`
+- **dmaGate_** (2 connections) — `src/audio/Audio.hpp`
 
 ## Relationships
 
-- No strong cross-community connections detected
+- [Community 61](Community_61.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+
+## Source Files
+
+- `src/audio/Audio.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 0 (0%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 3 (75%)
+- INFERRED: 1 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

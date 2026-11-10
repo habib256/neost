@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **ErrorIrqRig** (12 connections) — `tests/scc_rx_error_irq_logic.cpp`
-- **testSccRxErrorIrq()** (10 connections) — `tests/scc_rx_error_irq_logic.cpp`
+- **testSccRxErrorIrq()** (12 connections) — `tests/scc_rx_error_irq_logic.cpp`
 - **.command()** (4 connections) — `tests/scc_rx_error_irq_logic.cpp`
 - **.write()** (4 connections) — `tests/scc_rx_error_irq_logic.cpp`
 - **.read()** (3 connections) — `tests/scc_rx_error_irq_logic.cpp`
@@ -21,8 +21,8 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 
 ## Source Files
 
@@ -30,7 +30,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 25 (96%)
+- EXTRACTED: 27 (96%)
 - INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 

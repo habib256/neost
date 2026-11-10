@@ -129,12 +129,12 @@ static void applyHostRequests(App& A) {
     double& lastMy = A.lastMy;
     if (A.resumeAtariReq) {
         A.resumeAtariReq = false;
-        keyboardWindowReleaseAll(machine.ikbd);
+        keyboardWindowReleaseAll(machine);
         A.kioskDiskMenu = false;
         A.kioskPage = KIOSK_PAGE_LIST;
         A.kioskZone = KIOSK_ZONE_LIST;
         A.desktopPointer.reset();
-        machine.ikbd.mouseEvent(0, 0, false, false);
+        machine.mouseEvent(0, 0, false, false);
         glfwGetCursorPos(window, &lastMx, &lastMy);
         emuNext = clock::now();
     }
@@ -151,7 +151,7 @@ static void applyHostRequests(App& A) {
         A.mouseCaptureToggleReq = false;
         A.mouseCaptured = !A.mouseCaptured;
         A.desktopPointer.reset();
-        machine.ikbd.mouseEvent(0, 0, false, false);
+        machine.mouseEvent(0, 0, false, false);
         glfwSetInputMode(window, GLFW_CURSOR,
                          A.mouseCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
         if (A.mouseCaptured) {
@@ -183,7 +183,7 @@ static void feedMouse(App& A) {
         auto& pointer = A.desktopPointer;
         if (!mouseReachesSt() || !glfwGetWindowAttrib(window, GLFW_FOCUSED)) {
             if (pointer.leftHeld || pointer.rightHeld || !pointer.clicks.empty())
-                machine.ikbd.mouseEvent(0, 0, false, false);
+                machine.mouseEvent(0, 0, false, false);
             pointer.reset();
         } else if (!pointer.clicks.empty()) {
             const auto action = pointer.clicks.front();
@@ -215,7 +215,7 @@ static void feedMouse(App& A) {
                 const bool l = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
                 const bool r = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
                 if (A.dbgMouse) std::fprintf(stderr, "[mouse] move dx=%d dy=%d L=%d R=%d\n", dx, dy, l, r);
-                machine.ikbd.mouseEvent(dx * MOUSE_X_SIGN, dy * MOUSE_Y_SIGN, l, r);
+                machine.mouseEvent(dx * MOUSE_X_SIGN, dy * MOUSE_Y_SIGN, l, r);
             }
         }
     }
@@ -309,9 +309,9 @@ static void feedJoysticks(App& A) {
             uint8_t aux = A.kioskDiskMenu ? 0 : stjoy::composeAux(joyRoles, A.port0Auto);
             const uint8_t delta = aux ^ prevAux;
             if (delta & stjoy::AUX_SPACE)
-                machine.ikbd.keyEvent(0x39, aux & stjoy::AUX_SPACE);   // ESPACE
+                machine.keyEvent(0x39, aux & stjoy::AUX_SPACE);   // ESPACE
             if (delta & stjoy::AUX_RETURN)
-                machine.ikbd.keyEvent(0x1C, aux & stjoy::AUX_RETURN);  // RETURN
+                machine.keyEvent(0x1C, aux & stjoy::AUX_RETURN);  // RETURN
             prevAux = aux;
         }
         // Paddles / axes analogiques STE ($FF9211-17) : axes BRUTS de la
@@ -341,11 +341,11 @@ static void finishInputs(App& A) {
     // quelques trames plus tard → frappe brève que le jeu voit passer.
     if (A.kioskInjectHold > 0 && --A.kioskInjectHold == 0) {
         if (A.kioskKeyRelease >= 0) {
-            machine.ikbd.keyEvent((uint8_t)A.kioskKeyRelease, false);
+            machine.keyEvent((uint8_t)A.kioskKeyRelease, false);
             A.kioskKeyRelease = -1;
         }
         if (A.kioskMouseRelL || A.kioskMouseRelR) {
-            machine.ikbd.mouseEvent(0, 0, false, false);
+            machine.mouseEvent(0, 0, false, false);
             A.kioskMouseRelL = A.kioskMouseRelR = false;
         }
     }
@@ -408,7 +408,6 @@ static void runDueFrames(App& A) {
             if (hayesModem) hayesModem->poll();   // TCP entrant → file RX du MFP
 #endif
             if (machine.ne2000.enabled()) machine.ne2000.poll();   // trames RX → anneau
-            if (machine.isp1160.enabled()) machine.isp1160.poll(); // trame USB (ATL → done)
             // Sortie MIDI horodatée : cette trame DOIT commencer à emuNext (temps réel).
             if (midiOut.anyOpen()) midiOut.anchor(machine.sched.now(), emuNext);
             // Injections datées (harnais A8) — appliquées APRÈS le polling manettes
@@ -439,7 +438,7 @@ static void runDueFrames(App& A) {
                     }
                     if (t != '1' && t != '3' && mL) { l = false; mL = false; }
                     if (t != '2' && t != '3' && mR) { r = false; mR = false; }
-                    machine.ikbd.mouseEvent(dx, dy, l, r);
+                    machine.mouseEvent(dx, dy, l, r);
                 }
             }
             const int stride = (A.keyHold + 2 > 4) ? A.keyHold + 2 : 4;
@@ -449,8 +448,8 @@ static void runDueFrames(App& A) {
                 const long idx = rel / stride;
                 if (idx < (long)sl.size()) {
                     const int ph = int(rel % stride);
-                    if      (ph == 0)         machine.ikbd.keyEvent(sl[idx], true);
-                    else if (ph == A.keyHold) machine.ikbd.keyEvent(sl[idx], false);
+                    if      (ph == 0)         machine.keyEvent(sl[idx], true);
+                    else if (ph == A.keyHold) machine.keyEvent(sl[idx], false);
                 }
             }
             machine.runFrame();                          // une trame (timing + décodage)
@@ -1124,6 +1123,16 @@ static void consumeConfigRequests(App& A, Frame& F) {
         reqHardReset = true;
         cfgUi.reqNetUsbee = -1;
     }
+    if (cfgUi.reqUsbPort >= 0) {
+        const unsigned port = unsigned(cfgUi.reqUsbPort);
+        UsbDevice::Kind kind; std::string path; bool ro;
+        if (machine.netUsbeeEnabled() && UsbDevice::parseSpec(cfgUi.reqUsbSpec, kind, path, ro) &&
+            machine.isp1160.attach(port, kind, path.empty() ? path : resolveData(path, exeDir), ro)) {
+            (port ? cfg.usb2 : cfg.usb1) = cfgUi.reqUsbSpec;
+            saveConfig(A, exeDir, cfg, &machine);
+        } else { A.stateMsg = "Cannot attach USB device: " + cfgUi.reqUsbSpec; A.stateMsgFrames = 200; }
+        cfgUi.reqUsbPort = -1;
+    }
     if (cfgUi.reqNat >= 0 || cfgUi.reqNatOptions) {
         if (cfgUi.reqNatOptions) {
             cfg.natRestricted = cfgUi.natRestricted;
@@ -1238,7 +1247,7 @@ static void consumeProfileRequests(App& A, Frame& F) {
             A.autoZoom = cfg.autoZoom;
             A.desktopMouse = cfg.desktopMouse; A.mouseSpeed = cfg.mouseSpeed;
             A.desktopPointer.reset();
-            machine.ikbd.mouseEvent(0, 0, false, false);
+            machine.mouseEvent(0, 0, false, false);
             A.crtOn    = cfg.crt; A.crtParams = cfg.crtParams;
             A.kbdJoyPort  = cfg.joyport;
             A.port0Auto   = (cfg.port0 == "auto");   // cf. init au démarrage
@@ -1331,9 +1340,9 @@ static void drawSideWindows(App& A, Frame& F) {
     if (A.showHex)  drawHexViewer(A, machine.bus);
     if (A.showCpu)  drawCpuState(A, machine.cpu, reqReset);
     if (A.showJoy)  drawJoystickWindow(A, window, A.lastJoy0, A.lastJoy1);
-    if (A.showKbd)  drawKeyboardWindow(&A.showKbd, machine.ikbd,
+    if (A.showKbd)  drawKeyboardWindow(&A.showKbd, machine,
                                        resolveData("pic/Black_Keyboard_AtariST.jpeg", exeDir));
-    else            keyboardWindowReleaseAll(machine.ikbd);   // fenêtre masquée : rien d'enfoncé
+    else            keyboardWindowReleaseAll(machine);   // fenêtre masquée : rien d'enfoncé
     if (A.showDbg)  drawDebugger(A, machine);
     if (A.showCrt) {                     // fenêtre de réglages CRT
         bool crtChanged = false;
@@ -1559,11 +1568,11 @@ static void runKioskMenu(App& A, Frame& F) {
             if (okNow && !pOk && A.kioskInjectHold == 0) {
                 const KioskKey& k = KIOSK_KEYS[A.kioskKeySel];
                 if (k.kind == 0) {                       // touche clavier ST
-                    machine.ikbd.keyEvent(k.scancode, true);
+                    machine.keyEvent(k.scancode, true);
                     A.kioskKeyRelease = k.scancode;
                 } else {                                 // clic souris (G/D)
                     const bool L = (k.kind == 1), R = (k.kind == 2);
-                    machine.ikbd.mouseEvent(0, 0, L, R);
+                    machine.mouseEvent(0, 0, L, R);
                     A.kioskMouseRelL = L; A.kioskMouseRelR = R;
                 }
                 A.kioskInjectHold = 4;                   // ~4 trames de maintien

@@ -1,35 +1,31 @@
 # Community 299
 
-> 3 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **9. CPU / cycles / ordonnanceur (cycInt.c, cycles.c, clocks_timings.c, hatari-glue.c, newcpu.c)** (6 connections) — `docs/HATARI_MAPPING.md`
-- **.peripheralReset()** (4 connections) — `src/core/Bus.hpp`
-- **.iackSyncAfter()** (3 connections) — `src/core/Cpu68k.cpp`
+- **Décomposition de l'écart global (2026-10-19)** (9 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Correction du préfetch appuyée par le microcode matériel** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Expérience de préfetch dans une copie temporaire de Moira** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Expérience IACK en domaine bus (2026-10-19)** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Expérience PRE_START dans Hatari temporaire** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Mesures avant expériences supplémentaires** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Partie dominante : IACK → handler** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Remplissage du cache après invalidation DMA (2026-10-19)** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **Reproduction et preuves** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
 
 ## Relationships
 
-- [Community 30](Community_30.md) (1 shared connections)
-- [Community 14](Community_14.md) (1 shared connections)
-- [Community 59](Community_59.md) (1 shared connections)
-- [Community 54](Community_54.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
-- [Community 166](Community_166.md) (1 shared connections)
-- [Community 182](Community_182.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MAPPING.md`
-- `src/core/Bus.hpp`
-- `src/core/Cpu68k.cpp`
+- `docs/HATARI_MEGASTE_AUDIT.md`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (45%)
-- INFERRED: 6 (55%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

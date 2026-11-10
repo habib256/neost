@@ -4,34 +4,31 @@
 
 ## Key Concepts
 
-- **Mode borne (kiosk)** (9 connections) — `docs/KIOSK.md`
-- **.state()** (4 connections) — `src/io/CartridgeKey.hpp`
-- **Dossiers ROM** (2 connections) — `docs/KIOSK.md`
-- **Raccourcis** (2 connections) — `docs/KIOSK.md`
-- **Borne Raspberry Pi** (1 connections) — `docs/KIOSK.md`
-- **Clavier & souris (SELECT manette, ou F12)** (1 connections) — `docs/KIOSK.md`
-- **Démarrage direct sur un jeu (attract)** (1 connections) — `docs/KIOSK.md`
-- **Joysticks** (1 connections) — `docs/KIOSK.md`
-- **Menu in-game (START manette, ou F9)** (1 connections) — `docs/KIOSK.md`
-- **Zoom adaptatif (défaut, bascule F10)** (1 connections) — `docs/KIOSK.md`
+- **MoiraExceptions_cpp.h** (13 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **u16** (7 connections)
+- **u32** (7 connections)
+- **Moira::writeStackFrame1000()** (4 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame0000()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame0001()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame0010()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame1001()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame1010()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **Moira::writeStackFrame1011()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
 
 ## Relationships
 
-- [Community 150](Community_150.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 325](Community_325.md) (1 shared connections)
-- [Community 214](Community_214.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
+- [Community 64](Community_64.md) (4 shared connections)
+- [Community 58](Community_58.md) (2 shared connections)
+- [Community 314](Community_314.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/KIOSK.md`
-- `src/io/CartridgeKey.hpp`
+- `extern/moira/Moira/MoiraExceptions_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (71%)
-- INFERRED: 4 (29%)
+- EXTRACTED: 28 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -463,6 +463,36 @@ void drawNetworkPage(bool modemOn, bool etherOn,
             reqNetUsbee = nub ? 1 : 0;
     }
 
+    if (netusbeeOn && ui.cfg) {
+        const char* names[] = {"Empty", "USB keyboard", "USB mouse", "USB disk image", "USB disk image (read only)"};
+        for (int p = 0; p < 2; ++p) {
+            ImGui::PushID(p);
+            const auto& spec = p ? ui.cfg->usb2 : ui.cfg->usb1;
+            int kind = spec == "keyboard" ? 1 : spec == "mouse" ? 2 :
+                       spec.rfind("disk-ro:",0) == 0 ? 4 : spec.rfind("disk:",0) == 0 ? 3 : 0;
+            if (ImGui::Combo(p ? "USB port 2" : "USB port 1", &kind, names, 5)) {
+                if (kind < 3) { ui.reqUsbPort = p; ui.reqUsbSpec = kind == 1 ? "keyboard" : kind == 2 ? "mouse" : "none"; }
+                else {
+                    ui.usbReadOnly[p] = kind == 4;
+                    const std::string path = spec.rfind("disk-ro:",0) == 0 ? spec.substr(8) : spec.rfind("disk:",0) == 0 ? spec.substr(5) : "";
+                    std::snprintf(ui.usbImage[p], sizeof(ui.usbImage[p]), "%s", path.c_str());
+                    ImGui::OpenPopup("USB disk");
+                }
+            }
+            if (ImGui::BeginPopup("USB disk")) {
+                ImGui::InputText("Image path", ui.usbImage[p], sizeof(ui.usbImage[p]));
+                if (ImGui::Button("Mount")) {
+                    ui.reqUsbPort = p; ui.reqUsbSpec = std::string(ui.usbReadOnly[p] ? "disk-ro:" : "disk:") + ui.usbImage[p];
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            if (kind >= 3) ImGui::TextWrapped("%s", spec.c_str());
+            ImGui::PopID();
+        }
+        ImGui::TextDisabled("USB drivers required inside the ST (FreeMiNT/TOS USB stack).");
+    }
+
     // NAT : le « câble » de la NE2000 — boucle locale (défaut) ou Internet réel
     // (NAT mode utilisateur). Bascule à chaud : la carte vue par le pilote ST ne
     // change pas. Sans effet tant qu'aucun adaptateur ci-dessus n'est monté.

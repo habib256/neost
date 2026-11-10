@@ -1,35 +1,43 @@
 # Community 167
 
-> 10 nodes
+> 18 nodes
 
 ## Key Concepts
 
-- **.mixSegment()** (7 connections) — `src/core/DmaSound.hpp`
-- **.capPullLR()** (5 connections) — `src/core/DmaSound.hpp`
-- **.mix()** (5 connections) — `src/core/DmaSound.hpp`
-- **.capPush()** (4 connections) — `src/core/DmaSound.hpp`
-- **.mixStereo()** (4 connections) — `src/core/DmaSound.hpp`
-- **.syncAudioFromCpu()** (3 connections) — `src/core/DmaSound.hpp`
-- **.lowPassPull()** (3 connections) — `src/core/DmaSound.hpp`
-- **.capAvail()** (3 connections) — `src/core/DmaSound.hpp`
-- **.capRenderAvail()** (3 connections) — `src/core/DmaSound.hpp`
-- **fir121()** (2 connections) — `src/core/DmaSound.cpp`
+- **MoiraDasmFPU_cpp.h** (15 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **u16** (14 connections)
+- **u32** (14 connections)
+- **.isValidExtFPU()** (7 connections) — `extern/moira/Moira/Moira.h`
+- **Moira::dasmFDbcc()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFGen()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFMove()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFMovecr()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFMovem()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFScc()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFTrapcc()** (5 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFBcc()** (4 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFGeneric()** (4 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFGeneric2()** (4 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFGeneric3()** (4 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFNop()** (4 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFRestore()** (4 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
+- **Moira::dasmFSave()** (4 connections) — `extern/moira/Moira/MoiraDasmFPU_cpp.h`
 
 ## Relationships
 
-- [Community 48](Community_48.md) (9 shared connections)
-- [Community 13](Community_13.md) (9 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
+- [Community 2](Community_2.md) (15 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
+- [Community 314](Community_314.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/DmaSound.cpp`
-- `src/core/DmaSound.hpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraDasmFPU_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 18 (62%)
-- INFERRED: 11 (38%)
+- EXTRACTED: 58 (89%)
+- INFERRED: 7 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -8,28 +8,27 @@
 - **fuzzOne()** (7 connections) — `tests/fuzz_diskimage.cpp`
 - **Rng** (6 connections) — `tests/fuzz_diskimage.cpp`
 - **main()** (6 connections) — `tests/fuzz_diskimage.cpp`
-- **mutate()** (6 connections) — `tests/fuzz_diskimage.cpp`
 - **repairIpfCrcs()** (6 connections) — `tests/fuzz_diskimage.cpp`
-- **seedCorpus()** (5 connections) — `tests/fuzz_diskimage.cpp`
+- **seedCorpus()** (6 connections) — `tests/fuzz_diskimage.cpp`
+- **mutate()** (5 connections) — `tests/fuzz_diskimage.cpp`
 - **fail()** (4 connections) — `tests/fuzz_diskimage.cpp`
 - **fuzzIpf()** (4 connections) — `tests/fuzz_diskimage.cpp`
 - **DiskImageCodec.hpp** (4 connections) — `src/io/DiskImageCodec.hpp`
 - **.below()** (3 connections) — `tests/fuzz_diskimage.cpp`
 - **wrBe32()** (3 connections) — `tests/fuzz_diskimage.cpp`
 - **rdBe32()** (2 connections) — `tests/fuzz_diskimage.cpp`
-- **.next()** (2 connections) — `tests/fuzz_diskimage.cpp`
 - **size_t** (2 connections)
+- **.next()** (1 connections) — `tests/fuzz_diskimage.cpp`
 - **.Rng()** (1 connections) — `tests/fuzz_diskimage.cpp`
 - **s** (1 connections) — `tests/fuzz_diskimage.cpp`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (8 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
+- [Community 102](Community_102.md) (10 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
 - [Community 63](Community_63.md) (2 shared connections)
-- [Community 183](Community_183.md) (2 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
 - [Community 121](Community_121.md) (1 shared connections)
+- [Community 183](Community_183.md) (1 shared connections)
 - [Community 95](Community_95.md) (1 shared connections)
 
 ## Source Files
@@ -39,8 +38,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 44 (88%)
-- INFERRED: 6 (12%)
+- EXTRACTED: 46 (92%)
+- INFERRED: 4 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

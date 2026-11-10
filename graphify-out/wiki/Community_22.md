@@ -1,49 +1,61 @@
 # Community 22
 
-> 18 nodes
+> 63 nodes
 
 ## Key Concepts
 
-- **busOfClock()** (14 connections) — `src/core/Cpu68k.cpp`
-- **Convergence Moira ↔ WinUAE — chantier « full timing-engine » (beam-sync)** (10 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **Cpu68k::cyclesIntoInstr()** (6 connections) — `src/core/Cpu68k.cpp`
-- **Cpu68k::busClockNow()** (4 connections) — `src/core/Cpu68k.cpp`
-- **Cpu68k::setMegaSteSpeed()** (4 connections) — `src/core/Cpu68k.cpp`
-- **7. CHANTIER RESTANT (plus de deadlock, mais EL scramble en jeu)** (4 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **⭐ ÉTAT COURANT (posé le 2026-08-27 — lire CECI avant tout le reste)** (4 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **Cpu68k::addAciaWaitCycles()** (3 connections) — `src/core/Cpu68k.cpp`
-- **Cpu68k::cyclesRunInQuantum()** (3 connections) — `src/core/Cpu68k.cpp`
-- **noteBlitterPreStart()** (3 connections) — `src/core/Cpu68k.cpp`
-- **1. L'outil n°1 — harnais différentiel de cycles (Moira ↔ WinUAE)** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **2. Carte des divergences (source-grounded, 3 agents — file:line des DEUX côtés)** (2 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **3. Vérités MESURÉES cette session (corrigent la mémoire)** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **4. Implémenté (RAM_SLOT+IACK DÉFAUT ON depuis 2026-06-17 ; toggle via `=0`)** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **5. ✅ CONVERGENCE INSTRUCTION — COMPLÈTE (validée par workflow 6 classes)** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **6. ✅ FONDATION CORRIGÉE — dispatch BLOC (Enchanted Land DÉBLOQUÉ)** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **8. 🎯 PLAN D'ATTAQUE COORDONNÉ (refonte beam-sync) — pour la prochaine passe** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- **(archive) Sous-problèmes d'entrée d'IRQ — désormais RAFFINEMENTS, plus des blocages** (1 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
+- **UsbDevice** (58 connections) — `src/io/UsbDevice.hpp`
+- **UsbDevice.cpp** (23 connections) — `src/io/UsbDevice.cpp`
+- **Result** (7 connections) — `src/io/UsbDevice.hpp`
+- **.transfer()** (7 connections) — `src/io/UsbDevice.hpp`
+- **.bulk()** (7 connections) — `src/io/UsbDevice.hpp`
+- **.parseSpec()** (7 connections) — `src/io/UsbDevice.hpp`
+- **.report()** (6 connections) — `src/io/UsbDevice.hpp`
+- **.netUsbeeApply()** (5 connections) — `src/gui/App.hpp`
+- **setup_** (5 connections) — `src/io/UsbDevice.hpp`
+- **.scsi()** (5 connections) — `src/io/UsbDevice.hpp`
+- **.control()** (4 connections) — `src/io/UsbDevice.hpp`
+- **.attach()** (4 connections) — `src/io/UsbDevice.hpp`
+- **.descriptor()** (4 connections) — `src/io/UsbDevice.hpp`
+- **.serialize()** (3 connections) — `src/io/UsbDevice.hpp`
+- **.keyEvent()** (2 connections) — `src/io/UsbDevice.hpp`
+- **.mouseEvent()** (2 connections) — `src/io/UsbDevice.hpp`
+- **.tick()** (2 connections) — `src/io/UsbDevice.hpp`
+- **.UsbDevice()** (2 connections) — `src/io/UsbDevice.hpp`
+- **.reset()** (2 connections) — `src/io/UsbDevice.hpp`
+- **be32()** (2 connections) — `src/io/UsbDevice.cpp`
+- **put32()** (2 connections) — `src/io/UsbDevice.cpp`
+- **Kind** (2 connections)
+- **string** (2 connections)
+- **.address()** (1 connections) — `src/io/UsbDevice.hpp`
+- **.readOnly()** (1 connections) — `src/io/UsbDevice.hpp`
+- *... and 38 more nodes in this community*
 
 ## Relationships
 
-- [Community 27](Community_27.md) (12 shared connections)
-- [Community 9](Community_9.md) (6 shared connections)
-- [Community 138](Community_138.md) (3 shared connections)
-- [Community 135](Community_135.md) (1 shared connections)
-- [Community 16](Community_16.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
-- [Community 258](Community_258.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 325](Community_325.md) (4 shared connections)
+- [Community 356](Community_356.md) (2 shared connections)
+- [Community 214](Community_214.md) (2 shared connections)
+- [Community 45](Community_45.md) (1 shared connections)
+- [Community 351](Community_351.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 200](Community_200.md) (1 shared connections)
+- [Community 247](Community_247.md) (1 shared connections)
+- [Community 249](Community_249.md) (1 shared connections)
+- [Community 217](Community_217.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/MOIRA_WINUAE_CONVERGENCE.md`
-- `src/core/Cpu68k.cpp`
+- `src/gui/App.hpp`
+- `src/io/UsbDevice.cpp`
+- `src/io/UsbDevice.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 38 (83%)
-- INFERRED: 8 (17%)
+- EXTRACTED: 104 (91%)
+- INFERRED: 10 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

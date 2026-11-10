@@ -263,6 +263,8 @@ void parseConfigLine(Config& c, std::string line) {
     }
     else if (line.rfind("ethernec=", 0) == 0) c.ethernec = (line.substr(9) == "1");
     else if (line.rfind("netusbee=", 0) == 0) c.netusbee = (line.substr(9) == "1");
+    else if (line.rfind("usb1=", 0) == 0) c.usb1 = line.substr(5);
+    else if (line.rfind("usb2=", 0) == 0) c.usb2 = line.substr(5);
     else if (line.rfind("nat=", 0) == 0) c.slirp = (line.substr(4) == "1");
     else if (line.rfind("nat_restricted=", 0) == 0) c.natRestricted = (line.substr(15) == "1");
     else if (line.rfind("nat_allow_loopback=", 0) == 0) c.natAllowLoopback = (line.substr(19) == "1");
@@ -375,6 +377,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
       << "\nauto_dongle=" << (w.autoDongle ? 1 : 0)
       << "\nethernec=" << (w.ethernec ? 1 : 0)
       << "\nnetusbee=" << (w.netusbee ? 1 : 0)
+      << "\nusb1=" << w.usb1 << "\nusb2=" << w.usb2
       << "\nnat=" << (w.slirp ? 1 : 0)
       << "\nnat_restricted=" << (w.natRestricted ? 1 : 0)
       << "\nnat_allow_loopback=" << (w.natAllowLoopback ? 1 : 0)

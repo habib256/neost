@@ -314,7 +314,7 @@ void onKey(GLFWwindow* w, int key, int /*scancode*/, int action, int mods) {
     // droit) pilotent la manette et ne sont PAS transmises au clavier ST.
     if (g_kbdJoy && stjoy::kbdBit(key)) return;
     const uint8_t sc = neost::stkeys::scancodeFor(key, 0);
-    if (sc) g_machine->ikbd.keyEvent(sc, action == GLFW_PRESS);
+    if (sc) g_machine->keyEvent(sc, action == GLFW_PRESS);
 }
 
 void onMouseButton(GLFWwindow* w, int button, int action, int /*mods*/) {
@@ -326,7 +326,7 @@ void onMouseButton(GLFWwindow* w, int button, int action, int /*mods*/) {
     if (!g_mouseCaptured) return;
     const bool l = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
     const bool r = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-    g_machine->ikbd.mouseEvent(0, 0, l, r);
+    g_machine->mouseEvent(0, 0, l, r);
 }
 
 // Produit le son d'UNE trame émulée et le remet à la page. À appeler APRÈS
@@ -393,7 +393,7 @@ void mainLoop() {
             g_lastMx += dx; g_lastMy += dy;
             const bool l = glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
             const bool r = glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-            g_machine->ikbd.mouseEvent(dx * MOUSE_X_SIGN, dy * MOUSE_Y_SIGN, l, r);
+            g_machine->mouseEvent(dx * MOUSE_X_SIGN, dy * MOUSE_Y_SIGN, l, r);
         }
     }
 

@@ -1,6 +1,6 @@
 # Community 56
 
-> 19 nodes
+> 20 nodes
 
 ## Key Concepts
 
@@ -22,13 +22,13 @@
 - **echo_** (1 connections) — `src/net/HayesModem.hpp`
 - **fd_** (1 connections) — `src/net/HayesModem.hpp`
 - **plusCount_** (1 connections) — `src/net/HayesModem.hpp`
+- **SocketHandle** (1 connections)
 - **string** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 

@@ -1,6 +1,6 @@
 # Community 17
 
-> 86 nodes
+> 83 nodes
 
 ## Key Concepts
 
@@ -19,28 +19,31 @@
 - **.boot()** (1 connections) — `src/io/GemdosHd.hpp`
 - **.captureBios()** (1 connections) — `src/io/GemdosHd.hpp`
 - **.captureConsole()** (1 connections) — `src/io/GemdosHd.hpp`
-- **.clampToSandbox()** (1 connections) — `src/io/GemdosHd.hpp`
-- **.createHostFileName()** (1 connections) — `src/io/GemdosHd.hpp`
 - **.createInfOverride()** (1 connections) — `src/io/GemdosHd.hpp`
-- **.gemChDir()** (1 connections) — `src/io/GemdosHd.hpp`
 - **.gemClose()** (1 connections) — `src/io/GemdosHd.hpp`
 - **.gemCreate()** (1 connections) — `src/io/GemdosHd.hpp`
 - **.gemDFree()** (1 connections) — `src/io/GemdosHd.hpp`
 - **.gemFattrib()** (1 connections) — `src/io/GemdosHd.hpp`
 - **.gemFDelete()** (1 connections) — `src/io/GemdosHd.hpp`
 - **.gemForce()** (1 connections) — `src/io/GemdosHd.hpp`
-- *... and 61 more nodes in this community*
+- **.gemGetDir()** (1 connections) — `src/io/GemdosHd.hpp`
+- **.gemGSDToF()** (1 connections) — `src/io/GemdosHd.hpp`
+- **.gemLSeek()** (1 connections) — `src/io/GemdosHd.hpp`
+- *... and 58 more nodes in this community*
 
 ## Relationships
 
-- [Community 36](Community_36.md) (26 shared connections)
-- [Community 218](Community_218.md) (14 shared connections)
+- [Community 36](Community_36.md) (30 shared connections)
+- [Community 218](Community_218.md) (10 shared connections)
 - [Community 123](Community_123.md) (5 shared connections)
-- [Community 153](Community_153.md) (3 shared connections)
-- [Community 175](Community_175.md) (3 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 258](Community_258.md) (2 shared connections)
+- [Community 175](Community_175.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 - [Community 316](Community_316.md) (1 shared connections)
 - [Community 289](Community_289.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 352](Community_352.md) (1 shared connections)
 
 ## Source Files
 

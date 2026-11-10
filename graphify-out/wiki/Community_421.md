@@ -1,26 +1,27 @@
 # Community 421
 
-> 4 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/stx_data_crc_write_logic.cpp`
-- **.equal()** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
-- **count** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
-- **failures** (1 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **.iack()** (3 connections) — `src/io/Mfp.hpp`
+- **Interruptions (MFP 68901)** (2 connections) — `docs/IMPLEMENTED.md`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 215](Community_215.md) (1 shared connections)
+- [Community 6](Community_6.md) (1 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/stx_data_crc_write_logic.cpp`
+- `docs/IMPLEMENTED.md`
+- `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 3 (75%)
+- INFERRED: 1 (25%)
 - AMBIGUOUS: 0 (0%)
 
 ---

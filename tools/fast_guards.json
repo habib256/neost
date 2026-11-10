@@ -2,6 +2,10 @@
   "_doc": "A38 : registre des contrôles du palier fast. Pour chaque étape (libellé EXACT de run_all.py) : date de pose et DERNIER DÉCLENCHEMENT RÉEL — un défaut véritable arrêté, jamais un fil-piège ni une mutation volontaire. Un déclenchement réel se consigne ici dans le commit qui corrige le défaut. Règle de retrait : sans déclenchement réel depuis plus de review_after_days jours, le contrôle se rejustifie (pourquoi le garder ?) ou s'en va ; run_all.py --tier fast les liste, sans échouer.",
   "review_after_days": 180,
   "guards": {
+    "Verdicts Spectrum 512 (ROM absentes, couverture partielle, références préservées)": {
+      "since": "2026-11-10",
+      "last_real_catch": {"date": "2026-11-10", "what": "une ROM STE absente devenait un écart de référence au lieu de SKIP ; issue #44", "source": "https://github.com/habib256/neost/issues/44"}
+    },
     "Verdicts des rejeux (halt, captures manquantes, diagnostics séparés)": {
       "since": "2026-11-04",
       "last_real_catch": {"date": "2026-11-05", "what": "un parcours Vroom annoncé vert restait au titre ou au menu dans les deux émulateurs ; les scènes inspectées sont désormais exigées", "source": "docs/CASE_STUDIES.md, Vroom STE 2026-11-05"}

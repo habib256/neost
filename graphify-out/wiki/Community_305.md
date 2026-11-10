@@ -1,28 +1,35 @@
 # Community 305
 
-> 3 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **mfp_rx_enable_logic.cpp** (5 connections) — `tests/mfp_rx_enable_logic.cpp`
-- **testMfpRxEnable()** (3 connections) — `tests/mfp_rx_enable_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_rx_enable_logic.cpp`
+- **CellTrack** (14 connections) — `src/io/IpfImage.hpp`
+- **.totalNs()** (3 connections) — `src/io/IpfImage.hpp`
+- **.Stream()** (2 connections) — `src/io/IpfImage.cpp`
+- **cells** (1 connections) — `src/io/IpfImage.hpp`
+- **cylinder** (1 connections) — `src/io/IpfImage.hpp`
+- **head** (1 connections) — `src/io/IpfImage.hpp`
+- **noise** (1 connections) — `src/io/IpfImage.hpp`
+- **timeNs** (1 connections) — `src/io/IpfImage.hpp`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 143](Community_143.md) (4 shared connections)
+- [Community 217](Community_217.md) (2 shared connections)
+- [Community 163](Community_163.md) (2 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_rx_enable_logic.cpp`
+- `src/io/IpfImage.cpp`
+- `src/io/IpfImage.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 6 (86%)
-- INFERRED: 1 (14%)
+- EXTRACTED: 15 (88%)
+- INFERRED: 2 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

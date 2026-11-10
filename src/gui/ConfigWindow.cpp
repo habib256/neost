@@ -702,7 +702,7 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         // Ce curseur divise le delta hôte AVANT l'IKBD (cf. App::mouseSpeed).
         if (ImGui::Checkbox("Desktop mouse (GEM, no capture)", &A.desktopMouse)) {
             A.desktopPointer.reset();
-            A.machine->ikbd.mouseEvent(0, 0, false, false);
+            A.machine->mouseEvent(0, 0, false, false);
             ui.cfgDirty = true;
         }
         ImGui::TextDisabled("Point inside the ST image. Middle-click still toggles relative capture.");

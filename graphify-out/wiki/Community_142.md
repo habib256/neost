@@ -1,16 +1,19 @@
 # Community 142
 
-> 15 nodes
+> 18 nodes
 
 ## Key Concepts
 
 - **Rig** (15 connections) — `tests/ikbd_pause_logic.cpp`
-- **.cmd()** (2 connections) — `tests/ikbd_pause_logic.cpp`
+- **testIkbdPause()** (11 connections) — `tests/ikbd_pause_logic.cpp`
+- **.cmd()** (3 connections) — `tests/ikbd_pause_logic.cpp`
+- **main()** (2 connections) — `tests/ikbd_pause_logic.cpp`
+- **.advance()** (2 connections) — `tests/ikbd_pause_logic.cpp`
+- **.data()** (2 connections) — `tests/ikbd_pause_logic.cpp`
+- **.due()** (2 connections) — `tests/ikbd_pause_logic.cpp`
+- **.keys()** (2 connections) — `tests/ikbd_pause_logic.cpp`
+- **.ready()** (2 connections) — `tests/ikbd_pause_logic.cpp`
 - **initializer_list** (2 connections)
-- **.advance()** (1 connections) — `tests/ikbd_pause_logic.cpp`
-- **.due()** (1 connections) — `tests/ikbd_pause_logic.cpp`
-- **.keys()** (1 connections) — `tests/ikbd_pause_logic.cpp`
-- **.ready()** (1 connections) — `tests/ikbd_pause_logic.cpp`
 - **.Rig()** (1 connections) — `tests/ikbd_pause_logic.cpp`
 - **Ikbd** (1 connections)
 - **Mfp** (1 connections)
@@ -22,7 +25,8 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (3 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 
 ## Source Files
 
@@ -30,8 +34,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 17 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 28 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **.open()** (5 connections) — `src/audio/Mt32Synth.hpp`
+- **.open()** (6 connections) — `src/audio/Mt32Synth.hpp`
 - **loadRom()** (5 connections) — `src/audio/Mt32Synth.cpp`
 - **freeRom()** (4 connections) — `src/audio/Mt32Synth.cpp`
 - **.close()** (3 connections) — `src/audio/Mt32Synth.hpp`
@@ -16,6 +16,7 @@
 
 - [Community 164](Community_164.md) (4 shared connections)
 - [Community 117](Community_117.md) (2 shared connections)
+- [Community 22](Community_22.md) (1 shared connections)
 
 ## Source Files
 
@@ -24,8 +25,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 14 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 14 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

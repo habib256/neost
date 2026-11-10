@@ -1,64 +1,52 @@
 # Community 176
 
-> 24 nodes
+> 14 nodes
 
 ## Key Concepts
 
-- **Bus error & cartouches de diagnostic** (34 connections) — `docs/IMPLEMENTED.md`
-- **Détail par sous-système** (15 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.setIPL()** (8 connections) — `extern/moira/Moira/Moira.h`
 - **make_vblank_test.py** (8 connections) — `tools/make_vblank_test.py`
+- **.setIplDelay()** (5 connections) — `extern/moira/Moira/Moira.h`
 - **w()** (5 connections) — `tools/make_vblank_test.py`
+- **2. Carte des divergences (source-grounded, 3 agents — file:line des DEUX côtés)** (5 connections) — `docs/MOIRA_WINUAE_CONVERGENCE.md`
+- **Patch local : `NEOST_IPLFETCH` (reconnaissance IPL différée)** (5 connections) — `extern/moira/NEOST_VENDOR.md`
+- **.pollIpl()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **.applyIplFetchConfig()** (4 connections) — `src/core/Cpu68k.cpp`
 - **bra()** (4 connections) — `tools/make_vblank_test.py`
 - **delay()** (4 connections) — `tools/make_vblank_test.py`
-- **Machine::beginFrame_()** (3 connections) — `src/core/Machine.cpp`
-- **.syncState()** (3 connections) — `src/io/Scu.hpp`
 - **relative()** (3 connections) — `tools/make_vblank_test.py`
-- **.setStfLowPass()** (2 connections) — `src/core/YM2149.hpp`
-- **.serialBaud()** (2 connections) — `src/io/Mfp.hpp`
-- **.serialUcr()** (2 connections) — `src/io/Mfp.hpp`
-- **.readAnalog()** (2 connections) — `src/io/StePads.hpp`
 - **label()** (2 connections) — `tools/make_vblank_test.py`
-- **ACIA 6850 / IKBD HD6301 / MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **MFP 68901 — `Mfp.cpp` ↔ `mfp.c`** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **SCC Z85C30 (MegaSTE) — `Scc.cpp` ↔ `scc.c`** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Son (YM2149 + DMA STE) — `YM2149.cpp`, `DmaSound.cpp` ↔ `psg.c`, `dmaSnd.c`, `sound.c`** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **CPU (Moira + intégration) — suivi (audit vendor 2026-08-13)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **FDC — phase INDEX des médias (actualisé le 2026-10-18)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **GEMDOS HD — autostart `--auto` (2026-10-24)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **GEMDOS HD — sauvegardes (2026-10-19)** (1 connections) — `docs/HATARI_DIVERGENCES.md`
-- **USART MFP — réception hôte** (1 connections) — `docs/HATARI_DIVERGENCES.md`
+- **.sync()** (2 connections) — `tools/moira_bare_bench.cpp`
 - **Disquette libre : retrait bas PAL et VBlank, ancrés par VBL/STOP. on :…** (1 connections) — `tools/make_vblank_test.py`
 
 ## Relationships
 
-- [Community 37](Community_37.md) (4 shared connections)
-- [Community 6](Community_6.md) (2 shared connections)
-- [Community 106](Community_106.md) (2 shared connections)
-- [Community 3](Community_3.md) (2 shared connections)
-- [Community 120](Community_120.md) (2 shared connections)
+- [Community 16](Community_16.md) (4 shared connections)
+- [Community 314](Community_314.md) (3 shared connections)
+- [Community 9](Community_9.md) (3 shared connections)
 - [Community 27](Community_27.md) (2 shared connections)
-- [Community 245](Community_245.md) (2 shared connections)
-- [Community 19](Community_19.md) (2 shared connections)
-- [Community 182](Community_182.md) (1 shared connections)
-- [Community 10](Community_10.md) (1 shared connections)
-- [Community 28](Community_28.md) (1 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 416](Community_416.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
+- [Community 54](Community_54.md) (1 shared connections)
+- [Community 151](Community_151.md) (1 shared connections)
+- [Community 205](Community_205.md) (1 shared connections)
+- [Community 333](Community_333.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/IMPLEMENTED.md`
-- `src/core/Machine.cpp`
-- `src/core/YM2149.hpp`
-- `src/io/Mfp.hpp`
-- `src/io/Scu.hpp`
-- `src/io/StePads.hpp`
+- `docs/MOIRA_WINUAE_CONVERGENCE.md`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/NEOST_VENDOR.md`
+- `src/core/Cpu68k.cpp`
 - `tools/make_vblank_test.py`
+- `tools/moira_bare_bench.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 37 (49%)
-- INFERRED: 38 (51%)
+- EXTRACTED: 27 (66%)
+- INFERRED: 14 (34%)
 - AMBIGUOUS: 0 (0%)
 
 ---

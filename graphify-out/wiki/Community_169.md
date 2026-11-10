@@ -1,36 +1,41 @@
 # Community 169
 
-> 10 nodes
+> 18 nodes
 
 ## Key Concepts
 
-- **stx_sector_dam_logic.cpp** (18 connections) — `tests/stx_sector_dam_logic.cpp`
-- **testStxSectorDam()** (7 connections) — `tests/stx_sector_dam_logic.cpp`
-- **Checks** (5 connections) — `tests/stx_sector_dam_logic.cpp`
-- **verifyTrack()** (5 connections) — `tests/stx_sector_dam_logic.cpp`
-- **formattedTrack()** (3 connections) — `tests/stx_sector_dam_logic.cpp`
-- **.equal()** (2 connections) — `tests/stx_sector_dam_logic.cpp`
-- **crc16()** (2 connections) — `tests/stx_sector_dam_logic.cpp`
-- **main()** (2 connections) — `tests/stx_sector_dam_logic.cpp`
-- **count** (1 connections) — `tests/stx_sector_dam_logic.cpp`
-- **failures** (1 connections) — `tests/stx_sector_dam_logic.cpp`
+- **u32** (12 connections)
+- **Imd** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **Imu** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **UInt** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **UInt24** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **UInt32** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **Av** (3 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Imd()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Imu()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **.UInt24()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **.UInt32()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **.UInt()** (2 connections) — `extern/moira/Moira/StrWriter.h`
+- **ext1** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 71](Community_71.md) (3 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 76](Community_76.md) (6 shared connections)
+- [Community 109](Community_109.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/stx_sector_dam_logic.cpp`
+- `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 29 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

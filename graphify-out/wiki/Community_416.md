@@ -1,26 +1,28 @@
 # Community 416
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/fdc_media_change_logic.cpp`
-- **.equal()** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **count** (1 connections) — `tests/fdc_media_change_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_media_change_logic.cpp`
+- **.serialize()** (5 connections) — `src/core/Cpu68k.hpp`
+- **.serializeState()** (4 connections) — `src/core/Cpu68k.cpp`
+- **StateArchive** (2 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 27](Community_27.md) (2 shared connections)
+- [Community 9](Community_9.md) (2 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_media_change_logic.cpp`
+- `src/core/Cpu68k.cpp`
+- `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 7 (88%)
+- INFERRED: 1 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

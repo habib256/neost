@@ -1,10 +1,55 @@
 # Changelog — NeoST
 
 (c) 2026 VERHILLE Arnaud. **La chronologie** : releases, puis les chantiers datés dans
-l'ordre inverse. Version courante : **0.6.2**.
+l'ordre inverse. Version courante : **0.6.3**.
 
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
+
+## 0.6.3 — USB du NetUSBee et réseau intégré (préparée le 2026-11-10)
+
+**NetUSBee USB** : deux ports pour clavier, souris HID ou disque USB sur image,
+branchables à chaud depuis Network, les profils et le headless. Les pilotes
+USB4TOS 68000 sont vérifiés de bout en bout : lecture/écriture GEMDOS sur disque,
+touche reçue par Bconin, paquet souris livré au TOS. Le contrôleur respecte une
+cadence USB de 1 ms, les compteurs EOT et l'alignement des transferts Philips.
+Les images peuvent être montées en lecture seule. Les limites matérielles
+restent explicites dans [`docs/NETUSBEE.md`](docs/NETUSBEE.md).
+
+**Réseau** : le NAT IPv4/IPv6 intégré remplace libslirp et ses dépendances.
+STinG/ENEC charge une page HTTP ; DNS, DHCP, TCP/UDP et publications de ports
+ont leurs contrôles locaux, dont un build sans sockets.
+
+**Fidélité et jeux** : corrections issues des fiches MFP, SCC, WD1772, ACIA,
+YM2149, et des bancs 68000/vidéo. Le démarrage de Vroom Elite sur STE est
+corrigé ; les défauts de médias ou les incertitudes relevées sur Vroom et
+Switchblade restent documentés, sans promettre une correction du logiciel.
+
+**Issue #44** : Spectrum 512 compare les machines disponibles et recense les
+ROM manquantes en SKIP (77). Une régression sur une machine exécutée reste
+un échec ; `--write-refs` refuse d'effacer une référence avec une couverture
+partielle. Treize cas contrôlent ce verdict sans ROM propriétaire.
+
+**Sauvegardes** : format **v59**, incompatible avec les anciennes sauvegardes.
+Les fichiers disque restent externes et ne sont pas rembobinés par un état.
+Le numéro **0.6.3** est demandé par le mainteneur malgré les fonctionnalités
+ajoutées (exception explicite à la règle MINOR de `docs/RELEASE.md`). La release
+est préparée localement ; aucun tag ni paquet n'est publié par ce changement.
+
+## NetUSBee : périphériques USB et cadence du contrôleur (2026-11-10)
+
+`io/UsbDevice` fournit l'énumération standard, les rapports HID clavier/souris
+et le transport BOT/SCSI sur image. `Isp1160` traite les PTD ATL alignés sur
+quatre octets, les IN dont seul l'en-tête est écrit, le compteur de transfert
+et EOT, les erreurs et les NAK ; le hub racine gère connexion, puissance et
+reset. La cadence USB de 1 ms est indépendante de la vidéo. Les entrées passent
+par `Machine`, y compris clavier graphique et scripts, et leur relâchement
+conserve la destination de l'appui à travers un branchement.
+
+Validation : 39 contrôles au niveau cartouche et banc avec USB4TOS 098f002a
+(GEMDOS/Bconin/mousevec). Références Philips/USB, recettes et limites dans
+`docs/NETUSBEE.md`. L'ancienne affirmation d'une écriture du CR Ethernet par
+le latch USB est corrigée : il s'agit d'une lecture sans modification.
 
 ## CI : registre fast et inclusion NE2000 explicite (2026-11-09)
 
@@ -1696,7 +1741,7 @@ et `full` verts sur chaque lot. Les écarts assumés vis-à-vis d'Hatari sont co
   de 512 octets avant conversion, au lieu de tronquer la taille. Maximum
   représentable : 2 Tio moins 512 octets. Limite des compteurs NeoST,
   sans nouvelle limite matérielle revendiquée. Boîtier UltraSatan conservé
-  sans carte après refus. Banc sparse POSIX : 38 contrôles, 11 échecs avant
+  sans carte après refus. Banc sparse POSIX : 39 contrôles, 11 échecs avant
   et zéro après, sans allocation de blocs de données ; Windows/FS non sparse
   sautés. Six bancs ACSI, soit 301 contrôles, verts sous ASan/UBSan ciblés.
 - **SCC WR1** : transition First/Special ↔ Special Only conserve le verrou

@@ -1,25 +1,24 @@
 # Community 413
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/fdc_acsi_logic.cpp`
-- **.expect()** (1 connections) — `tests/fdc_acsi_logic.cpp`
-- **count** (1 connections) — `tests/fdc_acsi_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_acsi_logic.cpp`
+- **Rn** (3 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Rn()** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 76](Community_76.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_acsi_logic.cpp`
+- `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
+- EXTRACTED: 3 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

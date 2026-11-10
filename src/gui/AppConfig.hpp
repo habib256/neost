@@ -92,6 +92,7 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 bool autoDongle = true; // disks/dongles.txt : brancher la clé d'un jeu au montage
                 bool ethernec = false; // NE2000/EtherNEC sur le port cartouche
                 bool netusbee = false; // NetUSBee : NE2000 + ISP1160 USB sur le port cartouche (exclusif d'ethernec)
+                std::string usb1, usb2; // none / keyboard / mouse / disk:IMAGE / disk-ro:IMAGE
                 bool slirp = false;    // NAT intégré ; nom interne conservé pour les anciens profils
                 bool natRestricted = false;
                 bool natAllowLoopback = false;

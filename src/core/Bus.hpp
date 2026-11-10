@@ -332,7 +332,7 @@ public:
     Ne2000*  ne2000 = nullptr;
     // Contrôleur hôte USB ISP1160 du NetUSBee (extension NeoST) : fenêtres
     // $FA0000/$FA8000/$FB8000/$FBC000 décodées AVANT la NE2000 — qui peut voir le
-    // même accès (latch LSB = registre CR, cf. io/Isp1160.hpp). Posé par Machine.
+    // même accès (latch LSB = LECTURE du CR, cf. io/Isp1160.hpp). Posé par Machine.
     Isp1160* isp1160 = nullptr;
     // Périphériques du port cartouche abonnés aux signaux /ROM3, /ROM4, /UDS
     // (clés de protection…) : consultés dans l'ordre, avant la ROM cartouche et le

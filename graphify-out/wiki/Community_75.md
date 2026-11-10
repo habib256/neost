@@ -1,60 +1,48 @@
 # Community 75
 
-> 35 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **Style** (15 connections) — `src/util/HostPath.hpp`
 - **HostPath.cpp** (15 connections) — `src/util/HostPath.cpp`
+- **Style** (14 connections) — `src/util/HostPath.hpp`
 - **string** (10 connections)
-- **Probe** (9 connections) — `src/util/ConfigPath.hpp`
-- **ConfigPath.cpp** (9 connections) — `src/util/ConfigPath.cpp`
-- **resolve()** (7 connections) — `src/util/ConfigPath.cpp`
 - **lexicalAbsolute()** (7 connections) — `src/util/HostPath.cpp`
-- **userConfigDir()** (6 connections) — `src/util/ConfigPath.cpp`
 - **isAbsolute()** (6 connections) — `src/util/HostPath.cpp`
 - **normalizeSeparators()** (6 connections) — `src/util/HostPath.cpp`
 - **rootPrefixLen()** (6 connections) — `src/util/HostPath.cpp`
 - **hasDriveLetter()** (5 connections) — `src/util/HostPath.cpp`
 - **join()** (5 connections) — `src/util/HostPath.cpp`
 - **Precomp** (4 connections) — `src/util/HostPath.cpp`
-- **profilesDirFor()** (4 connections) — `src/util/ConfigPath.cpp`
 - **currentDir()** (4 connections) — `src/util/HostPath.cpp`
 - **makeAbsolute()** (4 connections) — `src/util/HostPath.cpp`
 - **stripTrailingSep()** (4 connections) — `src/util/HostPath.cpp`
-- **string** (3 connections)
-- **A36 — `neost.cfg` sait où il habite, y compris installé dans `/usr` (2026-08-28)** (3 connections) — `CHANGELOG.md`
 - **neost::hostpath::precomposeUtf8()** (2 connections) — `src/util/HostPath.cpp`
-- **systemProbe()** (2 connections) — `src/util/ConfigPath.cpp`
-- **dirWritable** (2 connections) — `src/util/ConfigPath.hpp`
-- **env** (2 connections) — `src/util/ConfigPath.hpp`
-- **exists** (2 connections) — `src/util/ConfigPath.hpp`
-- *... and 10 more nodes in this community*
+- **direct** (2 connections)
+- **size_t** (1 connections)
+- **base** (1 connections) — `src/util/HostPath.cpp`
+- **comb** (1 connections) — `src/util/HostPath.cpp`
+- **pre** (1 connections) — `src/util/HostPath.cpp`
+- **Posix** (1 connections) — `src/util/HostPath.hpp`
+- **Windows** (1 connections) — `src/util/HostPath.hpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (6 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
-- [Community 218](Community_218.md) (1 shared connections)
-- [Community 245](Community_245.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
+- [Community 245](Community_245.md) (3 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 258](Community_258.md) (2 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
 - [Community 36](Community_36.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/util/ConfigPath.cpp`
-- `src/util/ConfigPath.hpp`
 - `src/util/HostPath.cpp`
 - `src/util/HostPath.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 76 (90%)
-- INFERRED: 8 (10%)
+- EXTRACTED: 53 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

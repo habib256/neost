@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **drawStKiosk()** (7 connections) — `src/gui/StScreenView.cpp`
+- **drawStKiosk()** (8 connections) — `src/gui/StScreenView.cpp`
 - **crtApply()** (6 connections) — `src/gui/StScreenView.cpp`
 - **drawStScreen()** (5 connections) — `src/gui/StScreenView.cpp`
 - **GlScreen** (3 connections)
@@ -15,8 +15,9 @@
 
 - [Community 4](Community_4.md) (3 shared connections)
 - [Community 380](Community_380.md) (2 shared connections)
+- [Community 329](Community_329.md) (1 shared connections)
 - [Community 68](Community_68.md) (1 shared connections)
-- [Community 211](Community_211.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
 
 ## Source Files
 
@@ -24,8 +25,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 12 (75%)
-- INFERRED: 4 (25%)
+- EXTRACTED: 13 (76%)
+- INFERRED: 4 (24%)
 - AMBIGUOUS: 0 (0%)
 
 ---

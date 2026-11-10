@@ -5,9 +5,9 @@
 ## Key Concepts
 
 - **Rig** (11 connections) — `tests/dmasound_microwire_timing_logic.cpp`
-- **.due()** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **.due()** (2 connections) — `tests/dmasound_microwire_timing_logic.cpp`
+- **.start()** (2 connections) — `tests/dmasound_microwire_timing_logic.cpp`
 - **.Rig()** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
-- **.start()** (1 connections) — `tests/dmasound_microwire_timing_logic.cpp`
 - **Bus** (1 connections)
 - **DmaSound** (1 connections)
 - **Scheduler** (1 connections)
@@ -18,7 +18,8 @@
 
 ## Relationships
 
-- [Community 412](Community_412.md) (1 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
@@ -26,7 +27,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (100%)
+- EXTRACTED: 13 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

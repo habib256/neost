@@ -62,7 +62,8 @@ note for note playing a standard MIDI file, and the Steinberg dongle is emulated
 🔌 **The odd hardware, too.** An UltraSatan SD card on the ACSI bus, a NetUSBee /
 EtherNEC giving the ST a NE2000 and **real Internet access** — the CAB browser loads
 [theoldnet.com](https://theoldnet.com) — a Hayes modem, a MIDI ring between machines, and
-the copy-protection dongles. All of it existed on real STs. See [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md).
+the copy-protection dongles. NetUSBee also supports **USB keyboards, mice and disk
+images**, with hot-plugging and the original USB4TOS drivers. All of it existed on real STs. See [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md).
 
 🕹️ **Arcade cabinet mode.** Full screen, no chrome, frozen config, entirely
 gamepad-driven. Point it at a Raspberry Pi and you have a machine for the living room.
@@ -202,7 +203,7 @@ the Falcon, which NeoST does not. NeoST exists to be opened up.
 
 ## Where it stands
 
-**0.6.2.** EmuTOS and TOS 1.02/1.62/2.06 boot; all three Field Service diagnostic
+**0.6.3 (prepared).** EmuTOS and TOS 1.02/1.62/2.06 boot; all three Field Service diagnostic
 cartridges pass their internal tests, the Mega STE's Q suite 12/12. Demanding games and
 demos run: Enchanted Land, Super Hang-On, Lethal Xcess, The Cuddly Demos, No Cooper,
 Closure. The whole thing is validated by a tiered regression suite ending in a

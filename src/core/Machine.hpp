@@ -273,6 +273,9 @@ public:
         return true;
     }
     bool netUsbeeEnabled() const { return isp1160.enabled(); }
+    void keyEvent(uint8_t scancode, bool down);
+    void mouseEvent(int dx, int dy, bool left, bool right);
+    uint8_t keyRoute_[128] = {};           // destination du MAKE, pour router aussi son BREAK
 
     // Branche `d` sur le port `p` (None = débranche). Faux si le connecteur ne convient
     // pas. Pas de conflit possible avec le reste : rien ici ne décode d'adresse.

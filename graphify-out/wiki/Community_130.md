@@ -1,22 +1,25 @@
 # Community 130
 
-> 202 nodes
+> 207 nodes
 
 ## Key Concepts
 
-- **Changelog — NeoST** (280 connections) — `CHANGELOG.md`
-- **Bug hunt : les 67 disques du dépôt passés au headless (2026-08-25)** (2 connections) — `CHANGELOG.md`
-- **Images IPF (SPS/CAPS) dans les lecteurs A et B, sans libcapsimage (2026-10-22)** (2 connections) — `CHANGELOG.md`
+- **Changelog — NeoST** (282 connections) — `CHANGELOG.md`
+- **A10 — la couverture Spectrum 512 est RENDUE, sans une ligne de ROM Atari (2026-08-28)** (2 connections) — `CHANGELOG.md`
+- **A11 — les deux écarts oracle « inexpliqués » sont tranchés : un n'existait pas (2026-08-29)** (2 connections) — `CHANGELOG.md`
+- **Bug hunt passes 1-3 + CI de release (2026-07-31)** (2 connections) — `CHANGELOG.md`
+- **Chasse round 4 : le tactile Android est REPRIS D'UN BLOC, et le web public démarrait le STE sur une ROM ST (2026-09-01)** (2 connections) — `CHANGELOG.md`
+- **Closure : l'image rejoint l'oracle — scroll hardware STF 4 px / stab med (2026-08-12)** (2 connections) — `CHANGELOG.md`
 - **0.5.1 — Windows, et le vrai paquet Pi 400 (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.2 — la 0.5.1, mais réellement livrée (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.5.4 — dongles, ports, MIDI vérifié (2026-08-23)** (1 connections) — `CHANGELOG.md`
 - **0.5 « Newborn » — première release taguée (2026-08-10)** (1 connections) — `CHANGELOG.md`
 - **0.6.1 — vos réglages restent en place (2026-09-02)** (1 connections) — `CHANGELOG.md`
 - **0.6.2 — plus près du silicium (2026-10-20)** (1 connections) — `CHANGELOG.md`
+- **0.6.3 — USB du NetUSBee et réseau intégré (préparée le 2026-11-10)** (1 connections) — `CHANGELOG.md`
 - **0.6 — le MegaSTE au banc, le studio MIDI, un paquet 100 % libre (2026-09-01)** (1 connections) — `CHANGELOG.md`
 - **68000 : STOP et ordre des accès alignés sur fx68k (2026-11-03)** (1 connections) — `CHANGELOG.md`
-- **A10 — la couverture Spectrum 512 est RENDUE, sans une ligne de ROM Atari (2026-08-28)** (1 connections) — `CHANGELOG.md`
-- **A11 — les deux écarts oracle « inexpliqués » sont tranchés : un n'existait pas (2026-08-29)** (1 connections) — `CHANGELOG.md`
+- **A14 — `--disk-ro` : une campagne de test ne modifie plus les images du dépôt (2026-08-28)** (1 connections) — `CHANGELOG.md`
 - **A29 — le blitter, le son DMA et le FDC ont enfin une table de vérité (2026-08-28)** (1 connections) — `CHANGELOG.md`
 - **A33 — deux CPU peuvent enfin vivre dans le même processus (2026-08-28)** (1 connections) — `CHANGELOG.md`
 - **A37 — la discipline de release s'écrit, et une machine la garde (2026-08-28)** (1 connections) — `CHANGELOG.md`
@@ -26,25 +29,22 @@
 - **Alt+Entrée : plein écran et capture souris (2026-10-18)** (1 connections) — `CHANGELOG.md`
 - **Audit contradictoire du témoin VBL (2026-11-05)** (1 connections) — `CHANGELOG.md`
 - **Audit d'architecture quatre dimensions + grand ménage du TODO (2026-08-27)** (1 connections) — `CHANGELOG.md`
-- **Audit des fiches : YM2149, WD1772, ACIA, et empreinte d'état (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- **Banc du blitter contre `stBlitter.sv`, et la netlist ST-4082 (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- **Banc fx68k : tous les modes d'adressage, et --key dans la passe de jeux (2026-11-04)** (1 connections) — `CHANGELOG.md`
-- *... and 177 more nodes in this community*
+- *... and 182 more nodes in this community*
 
 ## Relationships
 
-- [Community 101](Community_101.md) (6 shared connections)
-- [Community 39](Community_39.md) (4 shared connections)
-- [Community 25](Community_25.md) (4 shared connections)
-- [Community 258](Community_258.md) (4 shared connections)
-- [Community 218](Community_218.md) (3 shared connections)
-- [Community 37](Community_37.md) (3 shared connections)
-- [Community 214](Community_214.md) (2 shared connections)
-- [Community 58](Community_58.md) (2 shared connections)
+- [Community 101](Community_101.md) (7 shared connections)
+- [Community 39](Community_39.md) (5 shared connections)
+- [Community 88](Community_88.md) (4 shared connections)
+- [Community 138](Community_138.md) (4 shared connections)
+- [Community 214](Community_214.md) (3 shared connections)
+- [Community 48](Community_48.md) (3 shared connections)
+- [Community 205](Community_205.md) (2 shared connections)
+- [Community 182](Community_182.md) (2 shared connections)
+- [Community 329](Community_329.md) (2 shared connections)
 - [Community 135](Community_135.md) (2 shared connections)
-- [Community 215](Community_215.md) (2 shared connections)
-- [Community 389](Community_389.md) (2 shared connections)
-- [Community 9](Community_9.md) (2 shared connections)
+- [Community 67](Community_67.md) (2 shared connections)
+- [Community 175](Community_175.md) (2 shared connections)
 
 ## Source Files
 
@@ -52,8 +52,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 280 (99%)
-- INFERRED: 2 (1%)
+- EXTRACTED: 282 (98%)
+- INFERRED: 5 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

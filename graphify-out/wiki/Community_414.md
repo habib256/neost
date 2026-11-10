@@ -1,21 +1,21 @@
 # Community 414
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/fdc_force_interrupt_logic.cpp`
-- **.equal()** (1 connections) — `tests/fdc_force_interrupt_logic.cpp`
-- **count** (1 connections) — `tests/fdc_force_interrupt_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_force_interrupt_logic.cpp`
+- **Tab** (4 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Tab()** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 2](Community_2.md) (1 shared connections)
+- [Community 76](Community_76.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_force_interrupt_logic.cpp`
+- `extern/moira/Moira/StrWriter.h`
 
 ## Audit Trail
 

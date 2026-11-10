@@ -4,29 +4,30 @@
 
 ## Key Concepts
 
-- **midi_irq_timing_logic.cpp** (7 connections) — `tests/midi_irq_timing_logic.cpp`
-- **Checks** (4 connections) — `tests/midi_irq_timing_logic.cpp`
-- **testMidiIrqTiming()** (3 connections) — `tests/midi_irq_timing_logic.cpp`
-- **main()** (2 connections) — `tests/midi_irq_timing_logic.cpp`
-- **.equal()** (1 connections) — `tests/midi_irq_timing_logic.cpp`
-- **count** (1 connections) — `tests/midi_irq_timing_logic.cpp`
-- **failures** (1 connections) — `tests/midi_irq_timing_logic.cpp`
+- **.isValidExt()** (12 connections) — `extern/moira/Moira/Moira.h`
+- **Moira::dasmBitFieldDn()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmCas()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmCas2()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmChkCmp2()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmDivl()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dasmMull()** (5 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (2 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 143](Community_143.md) (1 shared connections)
+- [Community 2](Community_2.md) (24 shared connections)
+- [Community 314](Community_314.md) (4 shared connections)
+- [Community 0](Community_0.md) (1 shared connections)
+- [Community 16](Community_16.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/midi_irq_timing_logic.cpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraDasm_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 11 (92%)
-- INFERRED: 1 (8%)
+- EXTRACTED: 30 (83%)
+- INFERRED: 6 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

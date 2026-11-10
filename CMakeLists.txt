@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(NeoST
-    VERSION 0.6.2
+    VERSION 0.6.3
     DESCRIPTION "Emulateur Atari ST orienté transparence matérielle"
     LANGUAGES C CXX)
 
@@ -115,6 +115,7 @@ add_library(neost_core STATIC
     src/io/Ne2000.cpp
     src/io/UltraSatan.cpp
     src/io/Isp1160.cpp
+    src/io/UsbDevice.cpp
     src/io/CartridgeKey.cpp
     src/io/PortDevices.cpp
     src/io/DongleTable.cpp
@@ -127,6 +128,7 @@ target_include_directories(neost_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
 # (Cpu68k.cpp est traité à part : il inclut l'en-tête tiers Moira.h → C++20 sans
 #  -Wpedantic strict, cf. le bloc Moira plus bas.)
 set_source_files_properties(
+    src/io/UsbDevice.cpp
     src/core/Bus.cpp src/core/Shifter.cpp src/core/VideoGlue.cpp
     src/core/VideoCounter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Blitter.cpp

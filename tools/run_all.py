@@ -126,6 +126,8 @@ FAST = [
      [sys.executable, str(TOOLS / "check_headless_options.py")]),
     ("Verdicts des rejeux (halt, captures manquantes, diagnostics séparés)",
      [sys.executable, str(TOOLS / "check_game_replays.py")]),
+    ("Verdicts Spectrum 512 (ROM absentes, couverture partielle, références préservées)",
+     [sys.executable, str(TOOLS / "check_spec512_verdicts.py")]),
     ("Comparateur de titres (pixels RGB, boutons et déplacements datés)",
      [sys.executable, str(TOOLS / "check_compare_titles.py")]),
     ("P1 verdicts série (cartouche diagnostic)",
@@ -219,6 +221,8 @@ def gui_available() -> str | None:
         return "pas d'affichage (DISPLAY/WAYLAND_DISPLAY absents — xvfb-run pour forcer)"
     return None
 FULL = FAST + [
+    ("NetUSBee USB4TOS (clavier, souris, fichiers disque via les pilotes réels)",
+     [sys.executable, str(TOOLS / "run_netusbee_boot.py")]),
     # Traces temporelles contre Hatari : références publiques, pas d'oracle local
     # requis. La CI oracle vérifie séparément leur reproductibilité à l'épingle.
     ("Comparateur temporel (IRQ absentes, perdues ou dérivantes)",

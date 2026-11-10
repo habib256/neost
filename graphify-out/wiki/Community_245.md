@@ -1,51 +1,40 @@
 # Community 245
 
-> 15 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **🔴 Actionnables (par sévérité)** (10 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Model** (9 connections) — `src/io/CartridgeKey.hpp`
-- **.hardReset()** (7 connections) — `src/core/Machine.hpp`
-- **.reset()** (6 connections) — `src/core/Machine.hpp`
-- **.reset()** (5 connections) — `src/io/CartridgeKey.hpp`
-- **.setModel()** (5 connections) — `src/io/CartridgeKey.hpp`
-- **.reset()** (4 connections) — `src/io/PortDevices.hpp`
-- **.setDongle()** (4 connections) — `src/core/Machine.hpp`
-- **.model()** (3 connections) — `src/io/CartridgeKey.hpp`
-- **Model** (1 connections)
-- **Auto** (1 connections) — `src/io/CartridgeKey.hpp`
-- **Cubase2** (1 connections) — `src/io/CartridgeKey.hpp`
-- **Cubase3** (1 connections) — `src/io/CartridgeKey.hpp`
-- **None** (1 connections) — `src/io/CartridgeKey.hpp`
-- **Notator** (1 connections) — `src/io/CartridgeKey.hpp`
+- **Probe** (9 connections) — `src/util/ConfigPath.hpp`
+- **ConfigPath.cpp** (9 connections) — `src/util/ConfigPath.cpp`
+- **resolve()** (8 connections) — `src/util/ConfigPath.cpp`
+- **userConfigDir()** (6 connections) — `src/util/ConfigPath.cpp`
+- **profilesDirFor()** (4 connections) — `src/util/ConfigPath.cpp`
+- **string** (3 connections)
+- **systemProbe()** (2 connections) — `src/util/ConfigPath.cpp`
+- **dirWritable** (2 connections) — `src/util/ConfigPath.hpp`
+- **env** (2 connections) — `src/util/ConfigPath.hpp`
+- **exists** (2 connections) — `src/util/ConfigPath.hpp`
+- **function** (1 connections)
+- **string** (1 connections)
+- **system_error** (1 connections)
 
 ## Relationships
 
-- [Community 150](Community_150.md) (7 shared connections)
-- [Community 10](Community_10.md) (3 shared connections)
-- [Community 218](Community_218.md) (3 shared connections)
-- [Community 51](Community_51.md) (2 shared connections)
-- [Community 176](Community_176.md) (2 shared connections)
-- [Community 15](Community_15.md) (2 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
-- [Community 380](Community_380.md) (1 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
+- [Community 75](Community_75.md) (3 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
-- [Community 105](Community_105.md) (1 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 75](Community_75.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `src/core/Machine.hpp`
-- `src/io/CartridgeKey.hpp`
-- `src/io/PortDevices.hpp`
+- `src/util/ConfigPath.cpp`
+- `src/util/ConfigPath.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 22 (52%)
-- INFERRED: 20 (48%)
+- EXTRACTED: 25 (83%)
+- INFERRED: 5 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

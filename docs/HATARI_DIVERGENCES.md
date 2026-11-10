@@ -2553,6 +2553,10 @@ les étalons de fidélité** (réseau OFF pendant `run_all.py --tier fast/full`)
   Spec : `docs/EXTENSIONS.md` § UltraSatan.
 - **[EXTENSION] NetUSBee — ISP1160 USB sur le port cartouche** (`src/io/Isp1160.*`, `Bus::read8Slow`,
   2026-08-21). La moitié NE2000 est l'EtherNEC existant ; l'ISP1160 est décodé aux adresses du
-  pilote FreeMiNT. Hub racine vide (aucun périphérique USB). ⚠ La fenêtre LSB `$FA0000-$FA01FF`
-  est partagée avec le registre CR de la NE2000 : sans schéma, NeoST laisse les DEUX puces voir
-  l'accès — à corriger si le matériel gate l'une d'elles. Spec : `docs/EXTENSIONS.md` § NetUSBee.
+  pilote FreeMiNT. Depuis le 2026-11-10 : deux ports pour clavier/souris HID ou disque
+  SCSI/Bulk-Only sur image, horloge USB de 1 ms et transferts ATL ; validés avec
+  USB4TOS 098f002a, sans équivalent Hatari. La fenêtre LSB `$FA0000-$FA01FF`
+  partage une **lecture** du CR Ethernet, sans le modifier. Le document de conception
+  de 2006 place ce latch ailleurs ; la différence de révision reste à mesurer sur une
+  vraie carte. ITL/isochrone et timing électrique restent non exécutés. Références,
+  tests et limites : `docs/NETUSBEE.md`.

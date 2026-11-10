@@ -1,47 +1,41 @@
 # Community 325
 
-> 9 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **Frontend & outillage** (19 connections) — `docs/IMPLEMENTED.md`
-- **.process()** (4 connections) — `src/gui/CrtEffectStack.h`
-- **composeAux()** (4 connections) — `src/io/JoystickInput.hpp`
-- **resolveAssign()** (4 connections) — `src/io/JoystickInput.hpp`
-- **.createTextures()** (3 connections) — `src/gui/CrtEffectStack.h`
-- **.bordersOpen()** (3 connections) — `src/core/Shifter.hpp`
-- **readAux()** (3 connections) — `src/io/JoystickInput.hpp`
-- **.setClock()** (2 connections) — `src/io/Ikbd.hpp`
-- **Le zoom auto cadrait Enchanted Land sur 416 px de large pour une image de 320 (2026-09-02)** (2 connections) — `CHANGELOG.md`
+- **le16()** (10 connections) — `src/io/UsbDevice.cpp`
+- **le32()** (10 connections) — `src/io/UsbDevice.cpp`
+- **writeStx()** (8 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **sourceImage()** (5 connections) — `tests/fdc_sector_size_switch_logic.cpp`
+- **forgeStx()** (5 connections) — `tests/stx_writetrack_test.cpp`
+- **crc16()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
+- **initializer_list** (1 connections)
+- **path** (1 connections)
 
 ## Relationships
 
-- [Community 124](Community_124.md) (4 shared connections)
-- [Community 119](Community_119.md) (3 shared connections)
-- [Community 91](Community_91.md) (2 shared connections)
-- [Community 43](Community_43.md) (2 shared connections)
-- [Community 182](Community_182.md) (2 shared connections)
-- [Community 101](Community_101.md) (2 shared connections)
-- [Community 5](Community_5.md) (1 shared connections)
-- [Community 7](Community_7.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 258](Community_258.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
-- [Community 129](Community_129.md) (1 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 22](Community_22.md) (4 shared connections)
+- [Community 69](Community_69.md) (2 shared connections)
+- [Community 71](Community_71.md) (2 shared connections)
+- [Community 72](Community_72.md) (2 shared connections)
+- [Community 82](Community_82.md) (2 shared connections)
+- [Community 174](Community_174.md) (2 shared connections)
+- [Community 86](Community_86.md) (1 shared connections)
+- [Community 63](Community_63.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/IMPLEMENTED.md`
-- `src/core/Shifter.hpp`
-- `src/gui/CrtEffectStack.h`
-- `src/io/Ikbd.hpp`
-- `src/io/JoystickInput.hpp`
+- `src/io/UsbDevice.cpp`
+- `tests/fdc_sector_size_switch_logic.cpp`
+- `tests/stx_data_crc_write_logic.cpp`
+- `tests/stx_writetrack_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 14 (41%)
-- INFERRED: 20 (59%)
+- EXTRACTED: 19 (58%)
+- INFERRED: 14 (42%)
 - AMBIGUOUS: 0 (0%)
 
 ---

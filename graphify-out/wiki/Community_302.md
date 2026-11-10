@@ -1,28 +1,34 @@
 # Community 302
 
-> 3 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **ikbd_monitor_machine_logic.cpp** (6 connections) — `tests/ikbd_monitor_machine_logic.cpp`
-- **testIkbdMonitorMachine()** (3 connections) — `tests/ikbd_monitor_machine_logic.cpp`
-- **main()** (2 connections) — `tests/ikbd_monitor_machine_logic.cpp`
+- **FoundSector** (14 connections) — `src/io/IpfImage.cpp`
+- **bitPos** (1 connections) — `src/io/IpfImage.cpp`
+- **fuzzy** (1 connections) — `src/io/IpfImage.cpp`
+- **hasFuzzy** (1 connections) — `src/io/IpfImage.cpp`
+- **hasTiming** (1 connections) — `src/io/IpfImage.cpp`
+- **id** (1 connections) — `src/io/IpfImage.cpp`
+- **idCrc** (1 connections) — `src/io/IpfImage.cpp`
+- **readTimeUs** (1 connections) — `src/io/IpfImage.cpp`
+- **status** (1 connections) — `src/io/IpfImage.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 143](Community_143.md) (3 shared connections)
+- [Community 217](Community_217.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ikbd_monitor_machine_logic.cpp`
+- `src/io/IpfImage.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (88%)
-- INFERRED: 1 (12%)
+- EXTRACTED: 14 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

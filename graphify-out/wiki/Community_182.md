@@ -1,62 +1,53 @@
 # Community 182
 
-> 28 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **Machine.cpp** (38 connections) — `src/core/Machine.cpp`
-- **Machine::Machine()** (10 connections) — `src/core/Machine.cpp`
-- **kHblOff()** (8 connections) — `src/core/Machine.cpp`
-- **Cpu68k::serialize()** (7 connections) — `src/core/Cpu68k.cpp`
-- **Machine::loadState()** (7 connections) — `src/core/Machine.cpp`
-- **.serializeState()** (7 connections) — `src/core/Cpu68k.cpp`
+- **Machine.cpp** (40 connections) — `src/core/Machine.cpp`
+- **.loadState()** (13 connections) — `src/core/Machine.hpp`
+- **.saveState()** (7 connections) — `src/core/Machine.hpp`
 - **stateCrc32()** (7 connections) — `src/core/Machine.cpp`
-- **Machine::serializeState()** (6 connections) — `src/core/Machine.cpp`
-- **Machine::saveState()** (5 connections) — `src/core/Machine.cpp`
-- **Machine::scheduleFrameEvents()** (5 connections) — `src/core/Machine.cpp`
+- **.serializeState()** (6 connections) — `src/core/Machine.hpp`
+- **.loadStateFile()** (5 connections) — `src/core/Machine.hpp`
 - **cartFingerprint()** (5 connections) — `src/core/Machine.cpp`
-- **.syncFrameEnd_()** (4 connections) — `src/core/Machine.hpp`
-- **Machine::installSchedulerCallbacks()** (3 connections) — `src/core/Machine.cpp`
-- **.timerBPos()** (3 connections) — `src/core/Machine.hpp`
-- **array** (3 connections)
+- **Mode kiosk — invariants d'implémentation (`gui/AppInit.cpp`, `gui/AppLoop.cpp`, `gui/KioskMenu.cpp`)** (5 connections) — `DEV.md`
+- **.saveStateFile()** (4 connections) — `src/core/Machine.hpp`
+- **writePpm()** (3 connections) — `src/headless/Observe.hpp`
 - **size_t** (3 connections)
-- **Machine::armTbiEdge()** (2 connections) — `src/core/Machine.cpp`
-- **Machine::desktopMouseMove()** (2 connections) — `src/core/Machine.cpp`
-- **Machine::desktopMousePosition()** (2 connections) — `src/core/Machine.cpp`
-- **Machine::finalizeFrame_()** (2 connections) — `src/core/Machine.cpp`
-- **Machine::onRender()** (2 connections) — `src/core/Machine.cpp`
-- **Machine::onTbiEdge()** (2 connections) — `src/core/Machine.cpp`
-- **Machine::onTbiPulseMode()** (2 connections) — `src/core/Machine.cpp`
-- **Machine::timerBEdgeCycle()** (2 connections) — `src/core/Machine.cpp`
+- **string** (3 connections)
+- **Chasse round 5 : le save-state acceptait une AUTRE ROM, et le harnais annonçait des écritures tronquées comme réussies (2026-09-02)** (3 connections) — `CHANGELOG.md`
 - **stateCrcTable()** (2 connections) — `src/core/Machine.cpp`
-- *... and 3 more nodes in this community*
+- **Pilotage externe déterministe de NeoST (2026-09-04)** (2 connections) — `CHANGELOG.md`
+- **StateArchive** (1 connections)
 
 ## Relationships
 
-- [Community 10](Community_10.md) (17 shared connections)
-- [Community 120](Community_120.md) (5 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 27](Community_27.md) (3 shared connections)
-- [Community 288](Community_288.md) (3 shared connections)
-- [Community 256](Community_256.md) (3 shared connections)
-- [Community 160](Community_160.md) (3 shared connections)
-- [Community 37](Community_37.md) (2 shared connections)
-- [Community 325](Community_325.md) (2 shared connections)
-- [Community 9](Community_9.md) (2 shared connections)
-- [Community 135](Community_135.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 10](Community_10.md) (24 shared connections)
+- [Community 102](Community_102.md) (8 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
+- [Community 67](Community_67.md) (4 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 138](Community_138.md) (3 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 26](Community_26.md) (1 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
+- [Community 321](Community_321.md) (1 shared connections)
+- [Community 264](Community_264.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_MAPPING.md`
-- `src/core/Cpu68k.cpp`
+- `CHANGELOG.md`
+- `DEV.md`
 - `src/core/Machine.cpp`
 - `src/core/Machine.hpp`
+- `src/headless/Observe.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 82 (79%)
-- INFERRED: 22 (21%)
+- EXTRACTED: 69 (84%)
+- INFERRED: 13 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

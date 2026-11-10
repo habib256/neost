@@ -438,7 +438,7 @@ void handleTouch(const SDL_Event& e) {
         g_touch.travel += SDL_fabsf(dx) + SDL_fabsf(dy);
         const int mx = int(dx * kTouchSpeed);
         const int my = int(dy * kTouchSpeed);
-        if ((mx || my) && g_machine) g_machine->ikbd.mouseEvent(mx, my, false, false);
+        if ((mx || my) && g_machine) g_machine->mouseEvent(mx, my, false, false);
         break;
     }
     case SDL_FINGERUP: {
@@ -457,7 +457,7 @@ void handleTouch(const SDL_Event& e) {
             // Ikbd::mouseEvent n'émet rien, il écrase l'état, et le paquet souris
             // n'est construit qu'à la VBL, qui ne verrait donc aucun changement.
             const bool right = g_touch.peak >= 2;        // deux doigts = clic droit
-            g_machine->ikbd.mouseEvent(0, 0, !right, right);
+            g_machine->mouseEvent(0, 0, !right, right);
             g_injectScancode = 0;
             g_injectClick    = true;
             g_injectHold     = 4;
@@ -673,7 +673,7 @@ int main(int argc, char* argv[]) {
         // est DIFFÉRÉE d'une ou deux trames, jamais perdue ni empilée.
         if (g_injectHold == 0 && g_menu.reqKeyPress >= 0) {
             const int k = g_menu.reqKeyPress;
-            machine.ikbd.keyEvent(neost::kKeys[k].scancode, true);
+            machine.keyEvent(neost::kKeys[k].scancode, true);
             g_injectScancode = neost::kKeys[k].scancode;
             g_injectClick    = false;
             g_injectHold     = 4;                     // ~4 trames de maintien
@@ -681,7 +681,7 @@ int main(int argc, char* argv[]) {
         }
         if (g_injectHold == 0 && g_menu.reqClick) {
             const bool right = (g_menu.reqClick == 2);
-            machine.ikbd.mouseEvent(0, 0, !right, right);
+            machine.mouseEvent(0, 0, !right, right);
             g_injectClick = true;
             g_injectHold  = 4;                        // clic MAINTENU, comme la borne
             g_menu.reqClick = 0;
@@ -705,8 +705,8 @@ int main(int argc, char* argv[]) {
                 machine.runFrame();
                 produceAudioFrame();                  // le son suit la trame
                 if (g_injectHold > 0 && --g_injectHold == 0) {
-                    if (g_injectClick) machine.ikbd.mouseEvent(0, 0, false, false);
-                    else               machine.ikbd.keyEvent(g_injectScancode, false);
+                    if (g_injectClick) machine.mouseEvent(0, 0, false, false);
+                    else               machine.keyEvent(g_injectScancode, false);
                 }
                 return machine.frameCycles();
             });

@@ -1,11 +1,11 @@
 # Community 207
 
-> 68 nodes
+> 67 nodes
 
 ## Key Concepts
 
 - **run_timing_oracle.py** (31 connections) — `tools/run_timing_oracle.py`
-- **hashlib** (26 connections)
+- **hashlib** (28 connections)
 - **run_megaste_blitter_checks.py** (17 connections) — `tools/run_megaste_blitter_checks.py`
 - **Assembler** (16 connections) — `tools/timing_extended.py`
 - **run_megaste_bus_oracle.py** (16 connections) — `tools/run_megaste_bus_oracle.py`
@@ -29,18 +29,19 @@
 - **capture()** (6 connections) — `tools/run_megaste_bus_oracle.py`
 - **.long()** (6 connections) — `tools/timing_extended.py`
 - **stx_image()** (6 connections) — `tools/timing_extended.py`
-- *... and 43 more nodes in this community*
+- *... and 42 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (27 shared connections)
-- [Community 55](Community_55.md) (11 shared connections)
-- [Community 151](Community_151.md) (11 shared connections)
-- [Community 248](Community_248.md) (10 shared connections)
+- [Community 55](Community_55.md) (21 shared connections)
+- [Community 18](Community_18.md) (21 shared connections)
+- [Community 151](Community_151.md) (10 shared connections)
 - [Community 3](Community_3.md) (8 shared connections)
-- [Community 34](Community_34.md) (8 shared connections)
+- [Community 227](Community_227.md) (8 shared connections)
 - [Community 26](Community_26.md) (5 shared connections)
-- [Community 146](Community_146.md) (4 shared connections)
+- [Community 34](Community_34.md) (5 shared connections)
+- [Community 248](Community_248.md) (5 shared connections)
+- [Community 315](Community_315.md) (3 shared connections)
 - [Community 229](Community_229.md) (2 shared connections)
 - [Community 189](Community_189.md) (1 shared connections)
 
@@ -57,8 +58,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 221 (89%)
-- INFERRED: 26 (11%)
+- EXTRACTED: 223 (90%)
+- INFERRED: 25 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

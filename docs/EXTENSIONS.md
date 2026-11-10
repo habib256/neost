@@ -412,28 +412,26 @@ $FBC000              MSB_CMD_WRITE  : écrit le MOT latch dans le port COMMANDE 
 $FA8000              DATA_READ      : lit un mot 16 bits du port DONNÉES (registres 32 bits : bas puis haut)
 ```
 
-`src/io/Isp1160.*` modélise le contrôleur : `HcChipID` = `$6120` (masque `$FF00` = `$6100`),
-`HcSoftwareReset` (`$F6`) et `HcCommandStatus.HCR` auto-effacé, registres OHCI (`HcControl`,
-`HcFmInterval`, `HcRhDescriptorA` avec **NDP = 2 figé**, `HcRhPortStatus1/2`…), registres ISP
-(`HcHardwareConfiguration`, `HcuPInterrupt`/`Enable`, `HcScratch`, `HcITL/ATLBufferLength`,
-`HcBufferStatus`), **FIFO ATL** : les PTD écrits sont « exécutés » à chaque trame et relus avec
-**CC = 5 (DeviceNotResponding)**, `Active = 0` — c'est un **hub racine vide** : les pilotes
-(FreeMiNT `netusbee.ucd`, NetUSBee TOS) s'initialisent, n'énumèrent rien. Ligne IRQ modélisée
-(`irqAsserted()`), non câblée (les pilotes ST tournent en polling).
+`src/io/Isp1160.*` exécute les transferts ATL et fournit deux ports USB : clavier
+HID, souris HID ou disque SCSI/Bulk-Only sur image. L'horloge USB est de 1 ms,
+indépendante de la vidéo ; puissance, connexion, reset et changements de statut
+sont visibles dans le hub racine. Le branchement se fait à chaud dans la page
+**Network**, ou avec `--usb1` / `--usb2` (`keyboard`, `mouse`, `disk:IMAGE`,
+`disk-ro:IMAGE`, `none`). Les pilotes USB4TOS 68000 sont vérifiés en exécution.
+L'IRQ reste non câblée (polling), ITL/isochrone et passthrough USB hôte non exécutés.
 
-⚠ **Divergence possible, consignée** : la fenêtre `LSB_WRITE` (`$FA0000-$FA01FF`) est AUSSI
-celle des écritures du registre 0 (CR) de la NE2000. Sans schéma du NetUSBee, NeoST applique
-ce que les adresses publiées impliquent : **les deux puces voient l'accès**. Si le vrai
-matériel gate l'une des deux, ce point est à corriger ici (`Bus::read8Slow`).
+Le latch `$FA0000` partage une **lecture** du CR Ethernet, sans le modifier.
+L'ancienne mention d'une écriture partagée du CR était erronée. La différence de
+latch entre le document de conception de 2006 et le pilote FreeMiNT reste consignée.
 
 | Où | Comment |
 |----|---------|
-| Headless | `--netusbee` (backend boucle locale ; exclusif de `--cart`) |
-| GUI | Configuration → **Network** : case NetUSBee (exclusive d'EtherNEC) ; `neost.cfg` : `netusbee=` |
-| Code | `machine.enableNetUsbee()` (= `enableEtherNec()` + ISP1160) |
+| Headless | `--netusbee` ; `--usb1 keyboard --usb2 mouse` ou `--usb2 disk:IMAGE` |
+| GUI | Configuration → **Network** : NetUSBee puis les deux ports USB |
+| Configuration | `netusbee=1`, `usb1=keyboard`, `usb2=disk:IMAGE` (profils et `--from-cfg`) |
+| Code | `machine.enableNetUsbee()` puis `machine.isp1160.attach(port, kind, image, ro)` |
 
-Point d'extension suivant : brancher un périphérique USB hôte (clavier/souris/stockage) —
-l'ATL/ITL et le hub racine sont là, il manque un « device » derrière `HcRhPortStatus`.
+Protocoles, références primaires, limites et banc USB4TOS : **[NETUSBEE.md](NETUSBEE.md)**.
 
 ## Tests UltraSatan + NetUSBee
 
@@ -443,9 +441,10 @@ l'ATL/ITL et le hub racine sont là, il manque un « device » derrière `HcRhPo
   carte (TEST UNIT READY, READ CAPACITY, READ(6)), `CurntFW`, `RdCl`/`WrCl` (horloge figée),
   `RdINQRN`/`WrINQRN`, `RdSt`/`WrSt`, refus flash/inconnu, **verrouillage** du paquet `'US'`
   aux cibles UltraSatan. Palier `fast` (`tools/etalons.json`, type `usatan_selftest`).
-* `neost-headless --netusbee-selftest` — 11 vérifications : les primitives **exactes** du pilote
+* `neost-headless --netusbee-selftest` — 39 vérifications : les primitives **exactes** du pilote
   FreeMiNT (`raw_read/write_data16/32`, lectures MOT), ID de puce, scratch, reset logiciel,
-  registres 32 bits, hub racine vide, ATL → CC = 5, IRQ, NE2000 toujours décodée, save-state.
+  registres 32 bits, ATL/EOT, IRQ, coexistence NE2000, énumération, rapports HID, disque
+  BOT/SCSI, erreurs et lecture seule, save-state, cadence de 1 ms.
   Palier `fast` (type `netusbee_selftest`).
 * `tools/selftests.json` → **`usatan_netusbee`** (palier `fast`, verdict série) : une carte SD
   générée (`tools/make_usatan_hd.py`, 16 Mo, partition GEM FAT16) qu'EmuTOS monte en **C:** sans

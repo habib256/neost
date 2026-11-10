@@ -1,41 +1,50 @@
 # Community 131
 
-> 15 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **stx_raw_track_overlay_logic.cpp** (22 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **testStxRawTrackOverlay()** (9 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **writeImage()** (7 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **Checks** (6 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **checkDump()** (6 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **dumpTrack()** (5 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **put16()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **put32()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **writeSector()** (4 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **checksum()** (3 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **.equal()** (2 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **main()** (2 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **count** (1 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **failures** (1 connections) — `tests/stx_raw_track_overlay_logic.cpp`
-- **path** (1 connections)
+- **DasmNumberFormat** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **StrWriter_cpp.h** (11 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **.setNumberFormat()** (6 connections) — `extern/moira/Moira/Moira.h`
+- **sprintx()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprintx_signed()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **u64** (6 connections)
+- **hexDigits()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprint()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprint_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprintd()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **sprintd_signed()** (5 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **decDigits()** (4 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **.setDasmNumberFormat()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **.setDumpNumberFormat()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **binDigits()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **u8** (3 connections)
+- **i64** (3 connections)
+- **plainZero** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **prefix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **radix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **upperCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (7 shared connections)
-- [Community 102](Community_102.md) (7 shared connections)
-- [Community 62](Community_62.md) (6 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 16](Community_16.md) (3 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 314](Community_314.md) (2 shared connections)
+- [Community 104](Community_104.md) (2 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/stx_raw_track_overlay_logic.cpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraTypes.h`
+- `extern/moira/Moira/StrWriter_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 49 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 54 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

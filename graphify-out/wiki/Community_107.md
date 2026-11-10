@@ -26,9 +26,9 @@
 - **prog_rmw_long()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_stop_irq()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_stop_pending()** (5 connections) — `tools/make_fx68k_programs.py`
-- **vectors()** (4 connections) — `tools/make_fx68k_programs.py`
 - **handlers()** (4 connections) — `tools/make_fx68k_programs.py`
 - **prog_alu_loops()** (4 connections) — `tools/make_fx68k_programs.py`
+- **prog_reset_nop()** (4 connections) — `tools/make_fx68k_programs.py`
 - *... and 34 more nodes in this community*
 
 ## Relationships
@@ -37,7 +37,7 @@
 - [Community 55](Community_55.md) (2 shared connections)
 - [Community 3](Community_3.md) (1 shared connections)
 - [Community 151](Community_151.md) (1 shared connections)
-- [Community 34](Community_34.md) (1 shared connections)
+- [Community 227](Community_227.md) (1 shared connections)
 
 ## Source Files
 

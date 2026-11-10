@@ -1,23 +1,23 @@
 # Community 319
 
-> 7 nodes
+> 8 nodes
 
 ## Key Concepts
 
 - **ikbd_irq_timing_logic.cpp** (7 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **testIkbdIrqTiming()** (5 connections) — `tests/ikbd_irq_timing_logic.cpp`
 - **Checks** (4 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **testIkbdIrqTiming()** (3 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **.equal()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
 - **main()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **.equal()** (1 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **.run()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
 - **count** (1 connections) — `tests/ikbd_irq_timing_logic.cpp`
 - **failures** (1 connections) — `tests/ikbd_irq_timing_logic.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 159](Community_159.md) (2 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
-- [Community 256](Community_256.md) (1 shared connections)
-- [Community 159](Community_159.md) (1 shared connections)
 
 ## Source Files
 
@@ -25,8 +25,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (92%)
-- INFERRED: 1 (8%)
+- EXTRACTED: 14 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

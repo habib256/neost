@@ -18,6 +18,7 @@
 #include "core/Framing.hpp"   // stContentRegion (diagnostic NEOST_FRAMING_DIAG)
 #include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <vector>
 #include <cstdlib>
@@ -165,7 +166,9 @@ void usage() {
         "  --ethernec        NE2000/EtherNEC on the cartridge port (loopback backend;\n"
         "                    for STinG/MiNTnet drivers — exclusive with --cart)\n"
         "  --netusbee        NetUSBee on the cartridge port: NE2000 (as EtherNEC) +\n"
-        "                    ISP1160 USB host controller (empty root hub; exclusive with --cart)\n"
+        "                    ISP1160 USB host controller (exclusive with --cart)\n"
+        "  --usb1 SPEC       NetUSBee port 1: none, keyboard, mouse, disk:IMAGE, disk-ro:IMAGE\n"
+        "  --usb2 SPEC       NetUSBee port 2 (same choices; requires --netusbee)\n"
         "  --nat             REAL Internet for the NE2000 (--ethernec/--netusbee): user-mode\n"
         "                    Built-in NAT. The ST gets 10.0.2.15/24, gateway 10.0.2.2,\n"
         "                    DNS 10.0.2.3 (DHCP served) — needs a TCP/IP stack on the ST side\n"
@@ -668,6 +671,7 @@ int netusbeeSelfTest(Machine& machine) {
           "root hub: no device, port power");
     // --- 6. ATL : écrire un PTD, poll → ATL_DONE, CC = DeviceNotResponding -------
     wr16(Isp1160::HCATLBUFLEN, 16);
+    wr16(Isp1160::HCXFERCTR, 16);
     writeAddr(uint8_t(Isp1160::HCATLPORT | 0x80));
     // PTD : w0 Active=1, w1 MPS=8, w2 total=8 (SETUP), w3 addr 0 ; puis 8 octets
     for (uint16_t w : {uint16_t(0x0800), uint16_t(0x0008), uint16_t(0x0008), uint16_t(0x0000),
@@ -676,8 +680,10 @@ int netusbeeSelfTest(Machine& machine) {
     const bool full = (rd16(Isp1160::HCBUFSTAT) & 0x04) != 0;
     machine.isp1160.poll();
     const uint16_t bs = rd16(Isp1160::HCBUFSTAT);
+    wr16(Isp1160::HCXFERCTR, 16);
     writeAddr(Isp1160::HCATLPORT);
     const uint16_t w0 = rawReadw(Isp1160::DATA_READ);          // mot 0 du PTD
+    for (int i = 0; i < 7; ++i) (void)readData16();
     check(full && (bs & 0x20) && ((w0 >> 12) & 0xF) == 5 && !(w0 & 0x800),
           "ATL: done after poll, CC=5, inactive");
     // --- 7. IRQ : OPR via HcInterrupt RHSC + HWCFG INT_ENABLE --------------------
@@ -691,12 +697,139 @@ int netusbeeSelfTest(Machine& machine) {
     (void)bus.read8(Ne2000::WRITE_BASE + 0u * 512u + 0x21u * 2u);   // CR = page 0, stop
     (void)bus.read8(Ne2000::WRITE_BASE + 3u * 512u + 0x46u * 2u);   // BNRY = $46
     check(bus.read8(Ne2000::READ_BASE + 3u * 512u) == 0x46, "NE2000 BNRY round-trip in NetUSBee mode");
-    // --- 9. Save-state round-trip de l'ISP1160 (registres + FIFO) ----------------
+    check(bus.read8(Ne2000::READ_BASE) == 0x21, "USB latch leaves Ethernet CR readable");
+    // [B] ISP1160 Rev.05 §9.3-9.4, USB 2.0 chap.9, HID 1.11 annexe B,
+    // BOT 1.0 §5-6 : transactions au FIL, y compris le FIFO IN écrit sans payload
+    // (comme pack_fifo FreeMiNT), adresses et descripteurs USB little-endian.
+    wr32(Isp1160::HCRHDESCA, 0x1200); // NPS, sans protection OC comme le pilote TOS
+    wr16(Isp1160::HCATLBUFLEN, 4096);
+    auto transfer = [&](unsigned address, unsigned ep, unsigned pid, unsigned length,
+                        const std::vector<uint8_t>& payload = {}) {
+        wr16(Isp1160::HCXFERCTR, uint16_t(8 + (pid == 2 ? 0 : length)));
+        writeAddr(uint8_t(Isp1160::HCATLPORT | 0x80));
+        writeData16(0xF800);
+        writeData16(uint16_t(0x840 | (ep << 12))); // Last, MPS=64
+        writeData16(uint16_t(length | (pid << 10)));
+        writeData16(uint16_t(address));
+        if (pid != 2) for (unsigned j = 0; j < length; j += 2)
+            writeData16(uint16_t((j < payload.size() ? payload[j] : 0) |
+                                ((j + 1 < payload.size() ? payload[j + 1] : 0) << 8)));
+        machine.isp1160.poll();
+        wr16(Isp1160::HCXFERCTR, uint16_t(8 + length));
+        writeAddr(Isp1160::HCATLPORT);
+        std::vector<uint8_t> result;
+        for (unsigned j = 0; j < 8 + length; j += 2) {
+            const uint16_t word = readData16(); result.push_back(uint8_t(word)); result.push_back(uint8_t(word >> 8));
+        }
+        return result;
+    };
+    auto success = [](const std::vector<uint8_t>& r) { return (r[1] & 0xF8) == 0; };
+    auto setup = [&](unsigned addr, uint8_t type, uint8_t request, uint16_t value, uint16_t length) {
+        return transfer(addr,0,0,8,{type,request,uint8_t(value),uint8_t(value >> 8),0,0,uint8_t(length),uint8_t(length >> 8)});
+    };
+    auto configure = [&](unsigned addr) {
+        setup(0,0,5,uint16_t(addr),0); transfer(0,0,2,0); // SET_ADDRESS + status IN à l'ancienne adresse
+        setup(addr,0,9,1,0); transfer(addr,0,2,0);         // SET_CONFIGURATION
+    };
+    auto resetPort = [&](unsigned port) {
+        wr32(port ? Isp1160::HCRHPORT2 : Isp1160::HCRHPORT1,0x10);
+        for (int j = 0; j < 10; ++j) machine.isp1160.poll();
+    };
+    check(machine.isp1160.attach(0,UsbDevice::Kind::Keyboard), "attach keyboard");
+    resetPort(0);
+    check((rd32(Isp1160::HCRHPORT1) & 0x113) == 0x103, "port reset completes, device enabled");
+    setup(0,0x80,6,0x100,18);
+    const auto descriptor = transfer(0,0,2,18);
+    check(success(descriptor) && descriptor[0] == 18 && descriptor[8] == 18 && descriptor[9] == 1 && descriptor[15] == 8,
+          "device descriptor through IN header-only FIFO");
+    configure(3);
+    setup(3,0x80,8,0,1);
+    check(transfer(3,0,2,1)[8] == 1, "SET_ADDRESS status, SET_CONFIGURATION");
+    transfer(3,0,1,0);
+    machine.keyEvent(0x1E,true); machine.keyEvent(0x2A,true); // A + Shift
+    const auto keys = transfer(3,1,2,8);
+    check(success(keys) && keys[8] == 2 && keys[10] == 4, "USB keyboard modifiers and key usage");
+    check((transfer(3,1,2,8)[1] & 0xF8) == 0xF8, "unchanged HID report NAKs (active PTD)");
+    machine.keyEvent(0x1E,false); machine.keyEvent(0x2A,false);
+    check(transfer(3,1,2,8)[10] == 0, "USB keyboard release");
+    setup(3,0x80,6,0x9900,8);
+    check((transfer(3,0,2,8)[1] >> 4) == 4, "unknown descriptor STALLs");
+    setup(3,0x80,8,0,1);
+    check(transfer(3,0,2,1)[8] == 1, "new SETUP recovers control STALL");
+    transfer(3,0,1,0);
+
+    check(machine.isp1160.attach(1,UsbDevice::Kind::Mouse), "attach mouse on second port");
+    resetPort(1); configure(4);
+    machine.mouseEvent(200,-150,true,false);
+    const auto mouse = transfer(4,1,2,3);
+    const auto remainder = transfer(4,1,2,3);
+    check(success(mouse) && mouse[8] == 1 && mouse[9] == 127 && mouse[10] == 129 &&
+          remainder[9] == 73 && remainder[10] == 233, "USB mouse signed motion, buttons, remainder");
+    check(machine.isp1160.attach(1,UsbDevice::Kind::None) && (rd32(Isp1160::HCRHPORT2) & 0x10001) == 0x10000,
+          "hot unplug clears CCS and raises CSC");
+
+    const auto diskPath = std::filesystem::temp_directory_path() /
+        ("neost-usb-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".img");
+    {
+        std::ofstream image(diskPath, std::ios::binary);
+        std::vector<uint8_t> sectors(2048,0); sectors[512] = 0xA5; sectors[513] = 0x5A;
+        image.write(reinterpret_cast<const char*>(sectors.data()), std::streamsize(sectors.size()));
+    }
+    check(machine.isp1160.attach(1,UsbDevice::Kind::Storage,diskPath.string()), "mount USB disk image");
+    resetPort(1); configure(5);
+    auto cbw = [&](std::vector<uint8_t> cdb, unsigned length, bool in) {
+        std::vector<uint8_t> cb(31,0); cb[0] = 0x55; cb[1] = 0x53; cb[2] = 0x42; cb[3] = 0x43; cb[4] = 0x73;
+        for (unsigned j = 0; j < 4; ++j) cb[8+j] = uint8_t(length >> (8*j));
+        cb[12] = in ? 0x80 : 0; cb[14] = uint8_t(cdb.size()); std::copy(cdb.begin(), cdb.end(), cb.begin()+15);
+        return transfer(5,2,1,31,cb);
+    };
+    cbw({0x12,0,0,0,36,0},36,true);
+    const auto inquiry = transfer(5,1,2,36), csw = transfer(5,1,2,13);
+    check(success(inquiry) && inquiry[8] == 0 && inquiry[9] == 0x80 && inquiry[16] == 'N' &&
+          csw[8] == 0x55 && csw[11] == 0x53 && csw[12] == 0x73 && csw[20] == 0,
+          "BOT INQUIRY and CSW tag/signature/status");
+    cbw({0x25,0,0,0,0,0,0,0,0,0},8,true);
+    const auto capacity = transfer(5,1,2,8); transfer(5,1,2,13);
+    check(capacity[11] == 3 && capacity[14] == 2 && capacity[15] == 0, "READ CAPACITY: four 512-byte blocks");
+    cbw({0x28,0,0,0,0,1,0,0,1,0},512,true);
+    const auto sector = transfer(5,1,2,512); transfer(5,1,2,13);
+    check(sector[8] == 0xA5 && sector[9] == 0x5A, "READ(10) from USB image");
+    cbw({0x2A,0,0,0,0,2,0,0,1,0},512,false);
+    std::vector<uint8_t> writeSector(512,0xC3);
+    transfer(5,2,1,512,writeSector);
+    check(transfer(5,1,2,13)[20] == 0, "WRITE(10) successful CSW");
+    {
+        std::ifstream image(diskPath,std::ios::binary); image.seekg(1024);
+        check(image.get() == 0xC3, "USB write persisted in host image");
+    }
+    cbw({0x28,0,0,0,0,4,0,0,1,0},512,true);
+    const auto emptyRead = transfer(5,1,2,512);
+    check((emptyRead[1] >> 4) == 9 && emptyRead[0] == 0, "failed SCSI IN ends data with short packet");
+    check(transfer(5,1,2,13)[20] == 1, "out-of-range LBA fails SCSI command");
+    cbw({3,0,0,0,18,0},18,true);
+    const auto sense = transfer(5,1,2,18); transfer(5,1,2,13);
+    check(sense[10] == 5 && sense[20] == 0x21, "REQUEST SENSE reports LBA out of range");
+    transfer(5,2,1,31,std::vector<uint8_t>(31,0));
+    check((transfer(5,1,2,13)[1] >> 4) == 4, "invalid CBW halts BOT endpoints");
+    setup(5,0x21,0xFF,0,0); transfer(5,0,2,0);
+    // CLEAR_FEATURE endpoint recipient demande wIndex ; primitives explicites.
+    for (uint8_t endpoint : {uint8_t(0x81),uint8_t(2)}) {
+        transfer(5,0,0,8,{2,1,0,0,endpoint,0,0,0}); transfer(5,0,2,0);
+    }
+    cbw({0,0,0,0,0,0},0,false);
+    check(transfer(5,1,2,13)[20] == 0, "BOT reset and clear-halt recovery");
+    // Sauvegarde au milieu d'une réponse (image remontée, pas ouverte par l'état).
+    cbw({0x28,0,0,0,0,1,0,0,1,0},512,true);
+    transfer(5,1,2,64);
+
+    // --- 9. Save-state round-trip de l'ISP1160 (registres + FIFO + USB) ----------
     {
         std::vector<uint8_t> blob;
         StateArchive out = StateArchive::saver(blob);
         machine.isp1160.serialize(out);
         Isp1160 copy;
+        copy.attach(0,UsbDevice::Kind::Keyboard);
+        copy.attach(1,UsbDevice::Kind::Storage,diskPath.string());
         StateArchive in = StateArchive::loader(blob.data(), blob.size());
         copy.serialize(in);
         std::vector<uint8_t> blob2;
@@ -704,6 +837,24 @@ int netusbeeSelfTest(Machine& machine) {
         copy.serialize(out2);
         check(!blob.empty() && in.ok() && blob == blob2, "ISP1160 serialize round-trip");
     }
+
+    check(machine.isp1160.attach(1,UsbDevice::Kind::Storage,diskPath.string(),true), "mount read-only USB image");
+    resetPort(1); configure(5);
+    cbw({0x2A,0,0,0,0,2,0,0,1,0},512,false); transfer(5,2,1,512,writeSector);
+    check(transfer(5,1,2,13)[20] == 1, "read-only WRITE rejected");
+    machine.isp1160.attach(1,UsbDevice::Kind::None);
+    std::error_code removeError; std::filesystem::remove(diskPath,removeError);
+
+    int64_t usbCycles = 0;
+    machine.isp1160.setClock([&] { return usbCycles; });
+    machine.isp1160.reset();
+    wr32(Isp1160::HCCONTROL,0x80);
+    usbCycles = neost::pacing::kCpuHzInt;
+    check(rd32(Isp1160::HCFMNUM) == 1000, "USB clock: 1000 frames per emulated second");
+    wr32(Isp1160::HCCONTROL,0);
+    usbCycles += neost::pacing::kCpuHzInt;
+    check(rd32(Isp1160::HCFMNUM) == 1000, "USB clock stops outside operational state");
+    machine.isp1160.setClock([&machine] { return machine.sched.liveNow(); });
 
     machine.disableNetUsbee();
     std::fprintf(stderr, "[netusbee-selftest] %d passed, %d failed\n", passed, failed);
@@ -1154,6 +1305,7 @@ int main(int argc, char** argv) {
     bool        modemFlag      = false;          // --modem : modem Hayes sur l'USART
     bool        ethernecFlag   = false;          // --ethernec : NE2000 port cartouche
     bool        netusbeeFlag   = false;          // --netusbee : NE2000 + ISP1160 port cartouche
+    std::string usbSpecs[2];
     bool        slirpFlag      = false;          // --slirp : NAT user-mode (Internet réel)
     bool        slirpRestricted = false;
     bool        natAllowLoopback = false;
@@ -1338,6 +1490,10 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--modem"))           modemFlag = true;
         else if (!std::strcmp(a, "--ethernec"))        ethernecFlag = true;
         else if (!std::strcmp(a, "--netusbee"))        netusbeeFlag = true;
+        else if ((!std::strcmp(a, "--usb1") || !std::strcmp(a, "--usb2")) && i + 1 < argc) {
+            const unsigned port = a[5] == '2' ? 1u : 0u;
+            usbSpecs[port] = argv[++i];
+        }
         else if (!std::strcmp(a, "--nat") || !std::strcmp(a, "--slirp"))           slirpFlag = true;
         else if (!std::strcmp(a, "--nat-restricted") || !std::strcmp(a, "--slirp-restricted")) { slirpFlag = true; slirpRestricted = true; }
         else if (!std::strcmp(a, "--nat-allow-loopback")) { slirpFlag = true; natAllowLoopback = true; }
@@ -1623,6 +1779,11 @@ int main(int argc, char** argv) {
             modemFlag    = fc.modem;
             ethernecFlag = fc.ethernec;
             netusbeeFlag = fc.netusbee;
+            usbSpecs[0] = fc.usb1; usbSpecs[1] = fc.usb2;
+            for (auto& spec : usbSpecs) {
+                if (spec.rfind("disk:",0) == 0) spec = "disk:" + resolve(spec.substr(5));
+                else if (spec.rfind("disk-ro:",0) == 0) spec = "disk-ro:" + resolve(spec.substr(8));
+            }
             slirpFlag    = fc.slirp;
             slirpRestricted = fc.natRestricted;
             natAllowLoopback = fc.natAllowLoopback;
@@ -1888,6 +2049,14 @@ int main(int argc, char** argv) {
                          netusbeeFlag ? "netusbee" : "ethernec");
     } else if (slirpFlag) {
         std::fprintf(stderr, "[headless] --nat ignored: needs --ethernec or --netusbee\n");
+    }
+    for (unsigned port = 0; port < 2; ++port) if (!usbSpecs[port].empty()) {
+        UsbDevice::Kind kind; std::string path; bool ro;
+        if (!machine.netUsbeeEnabled() || !UsbDevice::parseSpec(usbSpecs[port], kind, path, ro) ||
+            !machine.isp1160.attach(port, kind, path, ro)) {
+            std::fprintf(stderr, "[headless] USB port %u: cannot attach '%s' (requires --netusbee and a valid device/image)\n", port + 1, usbSpecs[port].c_str());
+            return 1;
+        }
     }
     // Clé du jeu (disks/dongles.txt à côté de l'image, sinon table livrée) : comme le
     // GUI, seulement les emplacements vides — --dongle / --plug explicites priment.
@@ -2298,7 +2467,6 @@ int main(int argc, char** argv) {
         if (modem) modem->poll();   // pompe le TCP entrant vers la file RX du MFP
 #endif
         if (machine.ne2000.enabled()) machine.ne2000.poll();   // trames RX → anneau
-        if (machine.isp1160.enabled()) machine.isp1160.poll(); // trame USB (ATL → done)
 #ifdef NEOST_WITH_NET
         if (midiRing) midiRing->poll([](uint8_t) { return false; });
 #endif
@@ -2311,10 +2479,10 @@ int main(int argc, char** argv) {
         // Touche tenue (--key-down / --key-up) : make ou break isolé à la trame dite.
         for (const auto& [kf, kc] : keyDownList)
             if (frame == kf) { const uint8_t sc = stScancode(kc);
-                               if (sc) { machine.ikbd.keyEvent(sc, true);  machine.cpu.updateIpl(); } }
+                               if (sc) { machine.keyEvent(sc, true);  machine.cpu.updateIpl(); } }
         for (const auto& [kf, kc] : keyUpList)
             if (frame == kf) { const uint8_t sc = stScancode(kc);
-                               if (sc) { machine.ikbd.keyEvent(sc, false); machine.cpu.updateIpl(); } }
+                               if (sc) { machine.keyEvent(sc, false); machine.cpu.updateIpl(); } }
         // Pas par caractère : appui (keyHold trames) + 2 trames de relâche, au moins 4
         // pour ne pas déplacer les recettes existantes (défaut keyHold=2 → pas de 4).
         const int keyStride = (keyHold + 2 > 4) ? keyHold + 2 : 4;
@@ -2326,8 +2494,8 @@ int main(int argc, char** argv) {
                 const uint8_t sc = stScancode(ks[idx]);
                 if (sc) {
                     const int ph = rel % keyStride;
-                    if      (ph == 0)       { machine.ikbd.keyEvent(sc, true);  machine.cpu.updateIpl(); }
-                    else if (ph == keyHold) { machine.ikbd.keyEvent(sc, false); machine.cpu.updateIpl(); }
+                    if      (ph == 0)       { machine.keyEvent(sc, true);  machine.cpu.updateIpl(); }
+                    else if (ph == keyHold) { machine.keyEvent(sc, false); machine.cpu.updateIpl(); }
                 }
             }
         }
@@ -2339,8 +2507,8 @@ int main(int argc, char** argv) {
             const int idx = rel / keyStride;
             if (idx < (int)sl.size()) {
                 const int ph = rel % keyStride;
-                if      (ph == 0)       { machine.ikbd.keyEvent(sl[idx], true);  machine.cpu.updateIpl(); }
-                else if (ph == keyHold) { machine.ikbd.keyEvent(sl[idx], false); machine.cpu.updateIpl(); }
+                if      (ph == 0)       { machine.keyEvent(sl[idx], true);  machine.cpu.updateIpl(); }
+                else if (ph == keyHold) { machine.keyEvent(sl[idx], false); machine.cpu.updateIpl(); }
             }
         }
         if (dumpAtFrame >= 0 && frame == dumpAtFrame && dumpLen) {
@@ -2399,7 +2567,7 @@ int main(int argc, char** argv) {
             // ouvrait alors plusieurs fenêtres).
             if (idx == (int)mouseAt.size() && (mClickL || mClickR)) {
                 mClickL = mClickR = false;
-                machine.ikbd.mouseEvent(0, 0, false, false);
+                machine.mouseEvent(0, 0, false, false);
                 machine.cpu.updateIpl();
                 continue;
             }
@@ -2420,7 +2588,7 @@ int main(int argc, char** argv) {
                 // ne l'est pas, on relâche (paquet bouton=0) pour finir le clic.
                 if (t != '1' && t != '3' && mClickL) { l = false; mClickL = false; }
                 if (t != '2' && t != '3' && mClickR) { r = false; mClickR = false; }
-                machine.ikbd.mouseEvent(dx, dy, l, r);
+                machine.mouseEvent(dx, dy, l, r);
                 machine.cpu.updateIpl();
             }
         }
@@ -2604,7 +2772,7 @@ int main(int argc, char** argv) {
     if (walkMouse) {
         auto idle   = [&](int frames) { for (int i = 0; i < frames; ++i) machine.runFrame(); };
         auto packet = [&](int dx, int dy, bool l) {
-            machine.ikbd.mouseEvent(dx, dy, l, false);
+            machine.mouseEvent(dx, dy, l, false);
             machine.cpu.updateIpl();
             machine.runFrame();
         };
@@ -2628,8 +2796,8 @@ int main(int argc, char** argv) {
         for (char c : keys) {
             const uint8_t sc = stScancode(c);
             if (!sc) continue;
-            machine.ikbd.keyEvent(sc, true);  machine.cpu.updateIpl(); idle(2);
-            machine.ikbd.keyEvent(sc, false); machine.cpu.updateIpl(); idle(2);
+            machine.keyEvent(sc, true);  machine.cpu.updateIpl(); idle(2);
+            machine.keyEvent(sc, false); machine.cpu.updateIpl(); idle(2);
         }
         // « Branche » le connecteur de bouclage RS232 APRÈS la navigation clavier :
         // s'il était branché plus tôt, l'écho du rapport série imprimé en console au

@@ -1,26 +1,28 @@
 # Community 420
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/ikbd_monitor_logic.cpp`
-- **.equal()** (1 connections) — `tests/ikbd_monitor_logic.cpp`
-- **count** (1 connections) — `tests/ikbd_monitor_logic.cpp`
-- **failed** (1 connections) — `tests/ikbd_monitor_logic.cpp`
+- **mmu_logic.cpp** (6 connections) — `tests/mmu_logic.cpp`
+- **testMmuMapping()** (4 connections) — `tests/mmu_logic.cpp`
+- **main()** (2 connections) — `tests/mmu_logic.cpp`
 
 ## Relationships
 
-- [Community 399](Community_399.md) (1 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ikbd_monitor_logic.cpp`
+- `tests/mmu_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 7 (78%)
+- INFERRED: 2 (22%)
 - AMBIGUOUS: 0 (0%)
 
 ---

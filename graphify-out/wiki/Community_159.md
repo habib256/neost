@@ -1,12 +1,11 @@
 # Community 159
 
-> 10 nodes
+> 9 nodes
 
 ## Key Concepts
 
 - **Rig** (10 connections) — `tests/ikbd_irq_timing_logic.cpp`
 - **.Rig()** (1 connections) — `tests/ikbd_irq_timing_logic.cpp`
-- **.run()** (1 connections) — `tests/ikbd_irq_timing_logic.cpp`
 - **Ikbd** (1 connections)
 - **Mfp** (1 connections)
 - **Scheduler** (1 connections)
@@ -17,7 +16,7 @@
 
 ## Relationships
 
-- [Community 319](Community_319.md) (1 shared connections)
+- [Community 319](Community_319.md) (2 shared connections)
 
 ## Source Files
 

@@ -295,10 +295,8 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 ### Réseau, stockage, ports
 - **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — STinG + `ENEC.STX`.
-- **NetUSBee — fenêtre LSB partagée** · P3 ⏸ schéma — `$FA0000-$FA01FF` = latch ISP1160 ET
-  registre CR NE2000 ; trancher sur le schéma (hardware.atari.org), puis `Bus::read8Slow`.
-- **NetUSBee : périphériques USB** · P3 ⭘ — l'ISP1160 est un hub racine vide ; HID puis stockage
-  de masse derrière `HcRhPortStatus` (banc : FreeMiNT `netusbee.ucd` + `usb.km`).
+- **NetUSBee : validation MiNT et matériel** · P3 ⭘ — USB4TOS vérifié (HID + disque) ;
+  restent FreeMiNT, capture du latch des différentes cartes, timing électrique et ITL/isochrone.
 - **STinG, premier run en échec DNS** · P3 ⭘ · [F] — `err -17` au tout premier `--slirp` du 2026-11-04, puis 4 succès d'affilée, alors que le `--slirp-selftest` en ligne passait juste après. Le filtre de l'hôte reste la piste la plus simple, sans preuve. À regarder si l'échec revient, avec `NEOST_SLIRP_TRACE=1`.
 - **Modem / STinG** · P3 ⭘ — documenter l'installation dans `docs/TEST_SOFTWARE.md` ; banc SLIP
   de bout en bout.

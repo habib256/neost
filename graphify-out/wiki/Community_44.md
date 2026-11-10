@@ -6,6 +6,7 @@
 
 - **GmSynth** (24 connections) — `src/audio/GmSynth.hpp`
 - **GmSynth.cpp** (15 connections) — `src/audio/GmSynth.cpp`
+- **.available()** (5 connections) — `src/audio/GmSynth.hpp`
 - **sf2In()** (5 connections) — `src/audio/GmSynth.cpp`
 - **Event** (4 connections) — `src/audio/GmSynth.hpp`
 - **.open()** (4 connections) — `src/audio/GmSynth.hpp`
@@ -13,7 +14,6 @@
 - **.render()** (3 connections) — `src/audio/GmSynth.hpp`
 - **isSf2()** (3 connections) — `src/audio/GmSynth.cpp`
 - **.clearEvents()** (2 connections) — `src/audio/GmSynth.hpp`
-- **.available()** (2 connections) — `src/audio/GmSynth.hpp`
 - **.close()** (2 connections) — `src/audio/GmSynth.hpp`
 - **.byteAt()** (2 connections) — `src/audio/GmSynth.hpp`
 - **path** (2 connections)
@@ -33,10 +33,12 @@
 
 ## Relationships
 
-- [Community 256](Community_256.md) (3 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
 - [Community 4](Community_4.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
 - [Community 185](Community_185.md) (1 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
@@ -45,7 +47,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 48 (98%)
+- EXTRACTED: 51 (98%)
 - INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 

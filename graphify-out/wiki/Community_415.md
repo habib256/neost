@@ -1,25 +1,24 @@
 # Community 415
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/fdc_live_media_logic.cpp`
-- **.equal()** (1 connections) — `tests/fdc_live_media_logic.cpp`
-- **count** (1 connections) — `tests/fdc_live_media_logic.cpp`
-- **failures** (1 connections) — `tests/fdc_live_media_logic.cpp`
+- **dataCallback()** (3 connections) — `src/audio/Audio.cpp`
+- **ma_device** (1 connections)
+- **ma_uint32** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/fdc_live_media_logic.cpp`
+- `src/audio/Audio.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
+- EXTRACTED: 3 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -32,12 +32,9 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (9 shared connections)
-- [Community 256](Community_256.md) (4 shared connections)
-- [Community 43](Community_43.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 325](Community_325.md) (2 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
+- [Community 4](Community_4.md) (10 shared connections)
+- [Community 102](Community_102.md) (6 shared connections)
+- [Community 43](Community_43.md) (4 shared connections)
 
 ## Source Files
 

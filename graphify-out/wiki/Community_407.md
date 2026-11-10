@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **RegEvent** (4 connections) — `src/core/YM2149.hpp`
+- **RegEvent** (5 connections) — `src/core/YM2149.hpp`
 - **cycle** (1 connections) — `src/core/YM2149.hpp`
 - **reg** (1 connections) — `src/core/YM2149.hpp`
 - **val** (1 connections) — `src/core/YM2149.hpp`
@@ -12,6 +12,7 @@
 ## Relationships
 
 - [Community 28](Community_28.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
@@ -19,8 +20,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 4 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 4 (80%)
+- INFERRED: 1 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---
