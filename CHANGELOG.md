@@ -6,6 +6,35 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Magic Pockets STE et audit WD1772 sans ID (2026-11-10)
+
+- Magic Pockets : parcours droite/tir/saut conservé, trois captures identiques
+  à Hatari. Retour à gauche gardé séparément en diagnostic (29,63 % à 9000),
+  sensible à une pause de deux trames dans les entrées Hatari après chargement.
+  Aucun défaut matériel déduit, aucun changement du cœur ou du média.
+- WD1772 : piste réellement sans ID construite par WRITE TRACK de `$4E` ;
+  READ/WRITE SECTOR attendent déjà cinq index, posent RNF sans transfert DMA.
+  Dix assertions ajoutées sur ces deux commandes, groupe à 178 contrôles verts.
+  La face absente d’un `.st` reste une incertitude de représentation (grade F),
+  distincte de cette règle de la fiche (grade B). Timings inchangés.
+
+## Parcours souris et arrêt des timers MFP (2026-11-10)
+
+- **Logithèque** : Bubble Ghost quitte le titre et se joue dans la première salle ;
+  trois captures concordent exactement avec Hatari. Nouveau parcours distinct
+  `lemmings_first_level` : entrée à la souris puis marcheurs dans le premier niveau,
+  seuil 0,5 % et fenêtre ±30 conservés. Des empreintes des scènes inspectées gardent
+  ces parcours contre un faux succès au menu. Aucun niveau terminé n'est revendiqué.
+- **A43, MFP** : la dernière valeur 1 est conservée à l'arrêt des quatre timers,
+  conformément à MC68901 janvier 1984 § 5.1.1 et Fig. 5-3. Divergence volontaire
+  avec la recharge anticipée d'Hatari, documentée dans `docs/HATARI_DIVERGENCES.md`.
+  64 assertions ajoutées ; les contrôles d’arrêt et de reprise échouaient avant correction ; aucune mesure sur le fer.
+
+Validation : palier `fast` final vert (647 tests de logique), 56 étalons pixel
+verts et deux parcours souris rejoués. Les autres bancs de la passe `full` sont
+verts ; son unique échec pixel (`mfp_poll`, 16 px) venait de l'essai de modification
+de lecture, retiré avant ces validations finales. Références et seuils inchangés.
+
 ## 0.6.3 — USB du NetUSBee et réseau intégré (2026-11-10)
 
 **NetUSBee USB** : deux ports pour clavier, souris HID ou disque USB sur image,

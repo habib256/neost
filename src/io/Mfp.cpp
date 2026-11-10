@@ -819,12 +819,11 @@ void Mfp::writeTimerCtrl(int timer, uint8_t newCtrl) {
         gpipEdges(viewBefore, gpipIrqView(gpipInput()), aer, aer, sched_ ? sched_->liveNow() : 0);
 }
 
-// Port de MFP_ReadTimerX(…, TimerIsStopping=true), [D] mfp.c:1563-1577 @ f0736b24 : à l'arrêt d'un délai, le
-// compteur vivant est figé dans le backing store. Cas limite Hatari : s'il
-// reste moins d'une unité de prescaler (compteur interne < 1), le data reg
-// vaudra la RECHARGE au prochain redémarrage.
-// ⚠ [B] MC68901 Fig. 5-3 p. 5-6 et MK68901 p. 9 : compteur inchangé à l'arrêt ; § 5.1.1 p. 5-1 : il attend
-// à 01 sa dernière impulsion. Ce cas limite vient du seul [D], alors qu'une lecture juste avant rend 1.
+// [B] MC68901 Advance Information, janv. 1984, § 5.1.1 p. 5-1 et Fig. 5-3
+// p. 5-6/5-7 (MC68901_Jan84.pdf, sha256 5441a092) : arrêter inhibe le comptage,
+// sans changer le compteur ; seul le résidu du prescaler est perdu.
+// Divergence volontaire avec [D] Hatari mfp.c:1563-1577,1606-1620 @ f0736b24 :
+// sa recharge anticipée dans le dernier intervalle de prescaler contredit la fiche.
 void Mfp::storeStoppedCounter(int timer, int64_t when) {
     const int ctrl = delayCtrl(timerCtrl(timer));     // contrôle AVANT l'arrêt
     uint8_t reload;
@@ -845,8 +844,8 @@ void Mfp::storeStoppedCounter(int timer, int64_t when) {
             const int64_t remSub = dueSub - when * 256;
             const int64_t remMfp = remSub > 0 ? (remSub * 9600 / 31333) >> 8 : 0;
             const int     div    = kMfpDiv[ctrl];
-            if (remMfp >= div)                                     // sinon : règle « < 1 » → recharge
-                count = static_cast<uint8_t>(((remMfp + div - 1) / div) & 0xFF);
+            if (remSub > 0)
+                count = static_cast<uint8_t>(std::max<int64_t>(1, (remMfp + div - 1) / div) & 0xFF);
         }
     }
     timerCounterRef(timer) = count;

@@ -2156,9 +2156,12 @@ int Fdc::nextSectorID(int* pFdcCycles) {
     // jeux qui sondent la face 2 (Drakkhen, Bolo) obtiennent le RNF rapide, pas le
     // timeout 5 tours de l'ancien RET_NO_DRIVE (~1 s par sonde).
     // [B] WD177X-00 p. 1-6 : le 1772 n'a pas de comparaison de face (C/S : 1773 seul).
-    // ⚠ [B] p. 1-10 : une face sans aucun ID mène au RNF après 5 impulsions d'index, pas avant un
-    // tour. Écart non corrigé, hérité d'Hatari : l'image ne dit pas si la face 2 du disque d'origine
-    // était vierge ou formatée, et ce RNF arrive ~0,8 s trop tôt si elle était vierge.
+    // [B] WD177X-00, organigramme type II p. 1-10 (sha256 a2b26709) : une piste
+    // sans ID attend cinq index. Vérifié après WRITE TRACK de $4E (testFdcTrackIdLocation).
+    // [F] La face absente d'un .st ne dit pas si le disque d'origine avait des IDs :
+    // la synthèse héritée d'Hatari reste une convention de média, pas une propriété du 1772.
+    // Si cette face était vierge, le RNF synthétique arrive trop tôt. Trancher demande
+    // un dump de cette face ou une convention explicite du format, pas un recalage du FDC.
     if (dk.headTrack >= tracksPerDisk(driveSel_)) return RET_NO_DRIVE;  // piste inexistante
 
     const int maxSector = dk.spt;

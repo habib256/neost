@@ -2560,3 +2560,45 @@ les étalons de fidélité** (réseau OFF pendant `run_all.py --tier fast/full`)
   de 2006 place ce latch ailleurs ; la différence de révision reste à mesurer sur une
   vraie carte. ITL/isochrone et timing électrique restent non exécutés. Références,
   tests et limites : `docs/NETUSBEE.md`.
+
+## Arrêt MFP dans le dernier intervalle de prescaler (2026-11-10)
+
+**Divergence volontaire, grade B** : `Mfp::storeStoppedCounter` conserve 1 à
+l'arrêt, au lieu de recharger prématurément. Motorola, *MC68901 Advance
+Information*, janvier 1984, § 5.1.1 p. 5-1 et Fig. 5-3 p. 5-6/5-7
+(`MC68901_Jan84.pdf`, SHA-256 préfixe `5441a092`) : le compteur reste à 01
+jusqu'à l'impulsion suivante ; l'arrêt inhibe le comptage et perd seulement le
+résidu du prescaler. Hatari `mfp.c:1563-1577,1606-1620 @ f0736b24` force au
+contraire la recharge dans ce dernier intervalle. La lecture dans le dernier cycle MFP fractionnaire reste inchangée :
+la borner à 1 fait diverger `mfp_poll` de 16 pixels. Sa datation exacte reste
+à établir par une sonde distincte ; aucune référence pixel n’est recalée.
+
+Le test de `tests/mfp_pulse_logic.cpp` couvre les quatre timers, quatre dates
+avant expiration, la lecture, l'arrêt, l'attente arrêté et la reprise : 64
+assertions de grade B ; les contrôles d’arrêt et de reprise échouaient avant correction. Cela ne constitue
+pas une capture sur machine réelle ; la phase électrique exacte reste hors de
+ce test de puce nue.
+
+## WD1772 : piste sans ID et face absente du média (2026-11-10)
+
+L’organigramme type II de *WD177X-00*, p. 1-10, exige cinq impulsions d’index
+avant INTRQ/RNF lorsqu’aucun ID ne correspond (SHA-256 du PDF :
+`a2b267094ec9af10c0f4d68fbc5c6ea94ec873897ad9b129a2ff607ad7fe8388`).
+Son dessin a été relu : la prose p. 1-9 mentionne aussi « four revolutions »,
+mais le nombre d’index explicite de l’organigramme est cinq ; compter les index
+évite d’assimiler cela à cinq périodes entières depuis une phase quelconque.
+
+`testFdcTrackIdLocation` formate maintenant une piste en `$4E` uniquement,
+puis vérifie READ SECTOR et WRITE SECTOR : aucune IRQ avant cinq index,
+exactement cinq index à la fin, RNF seul parmi BUSY/DRQ/LOST/CRC/RNF, aucun octet
+DMA transféré. Les impulsions sont observées via le puits public `FdcSound::Index`,
+sans accès aux états privés du FDC. Le groupe donne 178 contrôles sans échec.
+Le cœur satisfaisait déjà ce cas ; aucun timing n’a été modifié. Grade B,
+pas une mesure physique du lecteur ni de la phase exacte d’INTRQ.
+
+La face omise d’un fichier `.st` est une autre question : Hatari
+`fdc.c:5184-5205 @ f0736b24` synthétise des ID selon la géométrie du lecteur,
+puis la lecture de données échoue sur la face absente. NeoST garde cette
+convention. Le fichier ne permet pas de savoir si la face d’origine était
+vierge ou formatée : **grade F**, à trancher par un dump de cette face ou une
+convention de représentation, sans confondre ce manque avec le délai du 1772.

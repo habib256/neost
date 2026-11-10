@@ -77,15 +77,16 @@ public:
     // d'IRQ Timer A / GPIP7 « fantôme » survivant à un reset à chaud. NE TOUCHE PAS aux
     // propriétés machine/fixture (moniteur, son DMA, bouclage) ni aux lignes d'ENTRÉE
     // pilotées par les autres puces (reforcées à la lecture, puces resynchronisées).
-    // ⚠ [B] MC68901 § 2.2.3 p. 2-8 : ce reset s'écarte du document, cf. Mfp::resetChip.
+    // Mise sous tension : efface en plus TxDR, compteurs, UDR et TSR, que la broche
+    // préserve ([B] MC68901 § 2.2.3 p. 2-8) — cf. Mfp::resetChip.
     void reset();
 
-    // RESET *partiel* du MFP — port STRICT de MFP_Reset ([D] mfp.c:519-569 @ f0736b24), celui que
-    // la broche /RESET du 68000 déclenche (customreset → MFP_Reset_All). Ne touche
-    // QUE les registres MFP + les échéances de timers ; l'USART (RSR/UDR/UCR/débit),
-    // la ligne XSINT et les lignes RS232 en entrée ne sont PAS remises (Hatari ne les
-    // touche pas dans MFP_Reset). reset() (reset MACHINE) l'appelle puis élargit.
-    // ⚠ [B] MC68901 § 2.2.3 p. 2-8 : la broche efface aussi UCR, RSR et SCR, et arrête l'USART.
+    // RESET par la broche du MFP, que /RESET du 68000 pilote (customreset → MFP_Reset_All,
+    // [D] mfp.c:519-569 @ f0736b24). [B] MC68901 § 2.2.3 p. 2-8 : registres d'interruption,
+    // contrôles des timers, SCR/UCR/RSR effacés, USART arrêté ; TxDR, compteurs, UDR et TSR
+    // (hors TE) préservés. Divergence avec Hatari, qui efface TxDR et ne touche pas à
+    // l'USART. XSINT et les lignes RS232 en entrée, pilotées par d'autres puces, restent.
+    // reset() (reset MACHINE) l'appelle puis élargit.
     void resetChip();
 
     // Partie entière de la période en CYCLES CPU d'un timer (0..3 = A/B/C/D) en
@@ -110,8 +111,8 @@ public:
     // d'un délai → fige le compteur courant (relisible, continuation possible) ;
     // démarrage → échéance calculée depuis le COMPTEUR (pas la recharge).
     void    writeTimerCtrl(int timer, uint8_t newCtrl);
-    // Fige le compteur vivant d'un délai qu'on arrête (port MFP_ReadTimerX(stopping),
-    // [D] mfp.c:1563-1577 @ f0736b24).
+    // [B] MC68901 Jan. 1984 Fig. 5-3 p. 5-6/5-7 : fige le compteur vivant,
+    // y compris sa dernière valeur 1 (divergence Hatari documentée dans Mfp.cpp).
     void    storeStoppedCounter(int timer, int64_t when);
     // Référence du compteur (backing store) d'un timer.
     uint8_t& timerCounterRef(int timer);

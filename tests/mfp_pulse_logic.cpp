@@ -197,6 +197,27 @@ int testMfpPulse() {
         r.mfp.write8(kTacr, 0x0F);
         check(r.mfp.timerPulseMode(0), "control 15 is a pulse mode");
     }
+    // [B] MC68901 Jan. 1984 § 5.1.1 et Fig. 5-3 : le compteur reste à 1
+    // jusqu'à l'impulsion suivante ; l'arrêt ne change pas ce compteur.
+    for (int timer = 0; timer < 4; ++timer) {
+        for (int stopAt : {250, 251, 255, 257}) {
+            Rig r;
+            const uint32_t data = 0x1F + 2 * timer;
+            const uint32_t control = timer < 2 ? 0x19 + 2 * timer : 0x1D;
+            const uint8_t start = timer == 2 ? 0x10 : 0x01;
+            r.mfp.write8(data, 20); // /4 : expiration après 261 cycles CPU
+            r.mfp.write8(control, start);
+            r.advance(stopAt);
+            check(r.mfp.read8(data) == 1, "last prescaler interval reads one");
+            r.mfp.write8(control, 0);
+            check(r.mfp.read8(data) == 1, "stop preserves one, not reload");
+            r.advance(100);
+            check(r.mfp.read8(data) == 1, "stopped counter remains one");
+            r.mfp.write8(control, start);
+            r.advance(5);
+            check(r.mfp.read8(data) == 1, "restart uses saved one");
+        }
+    }
     std::fprintf(stderr, "[mfp-pulse] %d checks, %d FAIL\n", checks, failures);
     return failures;
 }

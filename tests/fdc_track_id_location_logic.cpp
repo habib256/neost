@@ -115,7 +115,7 @@ int testFdcTrackIdLocation() {
     image[0x18] = 2; image[0x19] = 0;
     image[0x1A] = 2; image[0x1B] = 0;
 
-    for (int scenario = 0; scenario < 5; ++scenario) {
+    for (int scenario = 0; scenario < 6; ++scenario) {
         FILE* file = std::fopen(path.string().c_str(), "wb");
         if (!file) return 1;
         const bool saved = std::fwrite(image.data(), 1, image.size(), file) == image.size();
@@ -124,7 +124,8 @@ int testFdcTrackIdLocation() {
         Rig r;
         c.equal("montage image ST", r.fdc.loadImage(path.string()), true);
         r.select(5); // tête0, face0 : aucune commande STEP/SEEK pendant le formatage.
-        const auto track = trackImage(scenario == 1 ? 1 : 0, scenario == 2 ? 1 : 0, image, scenario == 3, scenario == 4);
+        auto track = trackImage(scenario == 1 ? 1 : 0, scenario == 2 ? 1 : 0, image, scenario == 3, scenario == 4);
+        if (scenario == 5) std::fill(track.begin(), track.end(), 0x4E);
         std::copy(track.begin(), track.end(), r.bus.ram.begin() + 0x2000);
         r.mode(0x190); r.data(13);
         r.fdc.write8(0xFF860D, 0);
@@ -137,6 +138,31 @@ int testFdcTrackIdLocation() {
         // est gardée en mémoire et relue selon SES IDs (le WD1772 ne compare pas la
         // face ; un ID de piste ≠ TR ou un numéro absent → RNF).
         c.equal("WRITE TRACK sans erreur", r.reg(0) & 0x5D, 0);
+        if (scenario == 5) {
+            // [B] WD177X-00, organigramme type II p. 1-10 (sha256 a2b26709) :
+            // faute d'ID, RNF au cinquième index. La piste vient d'être écrite en
+            // $4E : son absence d'ID est certaine, contrairement à une face absente
+            // d'un fichier .st. Le moteur tourne déjà : pas de spin-up à compter.
+            for (uint8_t command : {uint8_t(0x88), uint8_t(0xA8)}) {
+                int indexes = 0;
+                r.fdc.setSoundSink([&](FdcSound event) {
+                    if (event == FdcSound::Index) ++indexes;
+                });
+                r.read(1, command);
+                bool early = false;
+                for (int event = 0; event < 100000 && !r.irq(); ++event) {
+                    if (!r.next()) break;
+                    if (r.irq() && indexes < 5) early = true;
+                }
+                c.equal("piste sans ID : aucune IRQ avant cinq index", early, false);
+                c.equal("piste sans ID : commande terminée", r.irq(), true);
+                c.equal("piste sans ID : exactement cinq index", indexes, 5);
+                c.equal("piste sans ID : RNF seul, BUSY/DRQ/CRC/LOST effacés", r.reg(0) & 0x1F, 0x10);
+                c.equal("piste sans ID : aucun octet DMA", r.address(), 0x2000);
+                r.fdc.setSoundSink({}); // indexes ne doit pas survivre au bloc
+            }
+            continue;
+        }
         auto expected = image;
         if (!scenario) { expected[100] = 0xCC; expected[612] = 0xCC; }
         // Piste 0 face 0 reformatée hors géométrie : secteur lisible (données écrites)

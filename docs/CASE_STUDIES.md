@@ -929,3 +929,86 @@ Réflexe : rejouer en `--mem 1m` **avant** de tracer, puis confirmer à l'oracle
 (mêmes ROM/disque/touches). Dans ces trois cas Hatari plantait **à l'identique** : la
 configuration était en cause, pas l'émulation. Second réflexe : la ROM fixe 50/60 Hz
 (suffixe `us` = NTSC, cf. [`../CLAUDE.md`](../CLAUDE.md)).
+
+## Premiers parcours souris : Bubble Ghost et Lemmings (2026-11-10)
+
+`tests/replays/replays.json` garde désormais `bubble_ghost_st` dans sa première salle :
+clic à 3500, déplacement droite/bas et clic à 4500. Sous ST, TOS 1.04 UK, 1 Mo,
+les captures à 4000, 5000 et 6000 concordent exactement avec Hatari. Le fantôme se
+déplace ; la salle n'est pas terminée. Les empreintes RGB des scènes inspectées
+empêchent un retour au titre de passer pour une partie.
+
+`lemmings_first_level`, ST/TOS 1.02 UK/1 Mo, conserve les espaces du chargement,
+puis clique sur « 1 player » à 4000 et entre dans le niveau à 6000. Les captures
+à 8000 et 10000 montrent les marcheurs dans le premier niveau. Le décalage 545,
+la fenêtre ±30 et le seuil 0,5 % sont conservés ; aucun niveau terminé ni
+compétence attribuée n'est revendiqué. Le rejeu du menu reste distinct.
+Ces verdicts sont `hatari`, assortis de garde-fous `snapshot`, sans mesure matérielle.
+
+Chessmaster arrive à l'échiquier, mais les essais de clics isolés ou prolongés
+sur e2 puis e4 n'ont déplacé aucune pièce : son parcours reste celui du démarrage.
+
+## Magic Pockets STX sur STE : retour à gauche sensible à l’alignement (2026-11-10)
+
+STE, TOS 1.62 UK, 1 Mo, disque `Magic Pockets.STX` SHA-256
+`87c8807f1499c164d1e72be32a59a3fa200edfafd2ae0bf1e178a0014108fd77`,
+Hatari épinglé, graine 1. Aucun changement du cœur ni du média.
+
+`magic_pockets_ste` garde les étapes inspectées à 8550 (droite), 8650
+(tir) et 8800 (saut) : 0 pixel d’écart, aux VBL Hatari 8553, 8652 et 8802.
+Les commandes de jeu commencent à 8500, après le chargement ; les impulsions
+précédentes servent à démarrer. Les empreintes RGB empêchent un écran de titre
+de valider ce parcours. Cela reste une comparaison Hatari, pas une preuve matérielle.
+
+À 9000, après le retour à gauche, la meilleure capture dans ±60 trames est à
+8952 : 29,63 % d’écart. Le diagnostic `magic_pockets_ste_return_diagnostic`
+conserve cet échec et reste exclu de la suite normale. Ne pas élargir son seuil.
+Une pause de deux trames **côté Hatari seulement**, insérée juste avant les
+commandes de jeu à 8500, ramène les quatre étapes 8550/8650/8800/9000 à 0 %,
+la dernière à 8979. C’est un contrôle de sensibilité des entrées, pas la preuve
+que cette pause représente la datation matérielle correcte. Le désaccord de
+scénario est plausible ; aucun défaut matériel n’est établi par cette expérience.
+La passe sans entrée à 4000/6000/8000 concorde aussi, sur les écrans vus seulement.
+
+Reproduction des deux parcours enregistrés :
+
+```sh
+python3 tools/run_game_replay.py --only magic_pockets_ste
+python3 tools/run_game_replay.py --only magic_pockets_ste_return_diagnostic
+# Le second doit actuellement signaler l'écart, avec un code de sortie 1.
+```
+
+Pour reproduire le contrôle de sensibilité, enregistrer le script suivant dans
+un fichier temporaire et l’exécuter depuis la racine (Pillow requis). Il reprend
+le script du diagnostic, compile les mêmes masques, puis ajoute uniquement deux
+masques neutres dans le flux Hatari à l’index 3500 (5000 + 3500 = VBL 8500).
+Les captures et seuils restent ceux de la comparaison normale.
+
+```python
+import copy, json, sys, tempfile
+from pathlib import Path
+sys.path.insert(0, str(Path('tools').resolve()))
+import compare_titles as c
+r = next(r for r in json.loads(Path('tests/replays/replays.json').read_text())['replays']
+         if r['id'] == 'magic_pockets_ste_return_diagnostic')
+original = c.hatari_shots
+
+def delayed(disk, args, work):
+    args = copy.copy(args)
+    start, source, compiled = args.joy
+    data = compiled.read_bytes()
+    shifted = work / 'shifted.bin'
+    shifted.write_bytes(data[:3500] + bytes(2) + data[3500:])
+    args.joy = (start, source, shifted)
+    return original(disk, args, work)
+
+c.hatari_shots = delayed
+with tempfile.TemporaryDirectory() as tmp:
+    joy = Path(tmp) / 'input.joy'
+    joy.write_text(r['joy'])
+    sys.argv = ['compare_titles', 'tests/out/magic_alignment', r['disk'],
+                '--machine', r['machine'], '--rom', r['rom'], '--mem', '1',
+                '--frames', '8550,8650,8800,9000', '--window', '60', '--step', '1',
+                '--hatari-seed', '1', '--joy', f'5000:{joy}', '--jobs', '1']
+    raise SystemExit(c.main())
+```
