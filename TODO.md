@@ -74,7 +74,7 @@ correction de fidélité.
 
 | Lot | But | Items (titre → §) | Prio |
 |-----|-----|-------------------|------|
-| **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** en cours de route ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
+| **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** publiée le 2026-11-11 (`bf5d61f`) ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
 | **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, Mega STE 16 MHz, banc fx68k étendu et sort des `.state` (refus explicite) : faits → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | DMA disque sur le bus, restes vidéo au cycle, restes MFP de la fiche, délai de bus error, WS3 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
@@ -352,8 +352,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 ## 7. 📦 Livraison et interface
 
-- **Release 0.6.4** · P1 ⭘ — version intermédiaire sur le cœur actuel, avec ce que les lots
-  1 à 4 auront fermé. Procédure → `docs/RELEASE.md`.
 - **Release 0.6.5, la dernière sur le Moira de NeoST** · P1 ⏸ cœur — posée **juste avant
   l'intégration du cœur POM68K**, quand l'auteur le déclare prêt. Palier `full` et CI verts,
   filet du § 2 en place ; la référence de `cpu_swap_gate.py` s'enregistre sur son commit.

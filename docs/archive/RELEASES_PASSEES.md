@@ -3,6 +3,15 @@
 > **Archive.** Extrait de [`../RELEASE.md`](../RELEASE.md) le 2026-11-10 : dossiers « jour J » et notes
 > publiques des versions déjà publiées. La procédure en vigueur est dans `RELEASE.md`.
 
+## Dossier 0.6.4 — 2026-11-11
+
+✅ **Exécuté le 2026-11-11.** Tag annoté `0.6.4` posé sur `bf5d61f`, après le palier `full`
+local et la CI de ce commit verts (workflow Tests : palier pixel, ASan/UBSan, bancs RTL,
+GUI sous xvfb, NAT, build sans réseau ; workflow Artefacts : les dix jobs de paquets).
+Numéro et publication demandés par le mainteneur le 2026-11-11. Format de sauvegarde v59,
+inchangé depuis la 0.6.3. [Notes publiques en anglais](../release-notes/0.6.4.md), posées par
+`gh release edit 0.6.4 --notes-file docs/release-notes/0.6.4.md`.
+
 ## Dossier 0.6.3 — préparé le 2026-11-10
 
 ✅ **Exécuté le 2026-11-10.** Tag `0.6.3` posé sur `355b6c0`, Release GitHub publiée
