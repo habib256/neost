@@ -35,6 +35,8 @@ l'ordre inverse. Version courante : **0.6.3**.
   trouvent de Troed/SYNC que WSDETECT et synctable. WSDETECT est en place
   (`tools/run_wsdetect.py`) ; l'item « Étalon Troed » sort du TODO, et la mention est
   corrigée dans `docs/TEST_SOFTWARE.md` et `docs/REFERENCE_LADDER.md`.
+- « Délai de bus error sur ST, Mega ST et Mega STE » passe en ⏸ source : chzsoft.de n'a que
+  le GSTMCU du STE, ni GLUE ni MMU du ST, ni MCU du Mega STE.
 - « Fiche contre code, restes de l'audit » (MFP) listait encore l'effacement de UE, corrigé par
   `0ce2471` le 2026-11-04, trois heures après la rédaction de l'item.
 

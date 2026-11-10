@@ -126,8 +126,6 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 - **Restes vidéo au cycle** · P2 ⭘ — `VIDEO_ENDLINE` distinct du HBL, VBL au cycle exact
   (vraie fin de trame + offset 64/68), phase exacte du tic Timer C, lecture du compteur à
   cheval sur deux lignes. Étalons : démos plein écran. → `docs/CYCLE_ACCURACY.md` § 4
-- **Délai de bus error sur ST, Mega ST et Mega STE** · P2 ⭘ · [F] — porté sur STE seulement,
-  faute de netlist du GLUE. Chercher le schéma du GLUE sur chzsoft.de.
 - **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut reste sans source : sur le fer, l'état se tire à la mise sous tension. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option.
 - **Basse résolution PAL issue du reset** · P2 ⭘ · [F] — le modèle GSTMCU garde une phase de
   plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
@@ -145,6 +143,9 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   trame dont la phase tourne à chaque changement de timing du boot ; les ancrer dans leur
   programme (compter les VBL, ou phase fixée par `stop` + attente). **À faire avant
   l'échange si le nouveau cœur déplace la phase du boot.**
+- **Délai de bus error sur ST, Mega ST et Mega STE** · P2 ⏸ source · [F] — porté sur STE seulement,
+  faute de netlist du GLUE. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE (ST-4081),
+  ni GLUE ni MMU du ST, ni MCU du Mega STE. Tranche : un relevé de tiers, ou ces schémas.
 - **Couleur pendant BLANK** · P2 ⏸ source · [F] palette 0 — `gstshifter.v:263-265 @ 4a6db7cc` force le
   noir hors mono, et le banc le confirme (étalons `rtl_low_*` : seul écart, 2 lignes en PAL,
   13 en NTSC). Hatari l'admet (`video.c:4008-4009 @ f0736b24`). Code inchangé tant qu'une source
