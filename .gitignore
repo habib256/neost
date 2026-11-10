@@ -113,6 +113,8 @@ wasm/
 # --dongle notator. Pas dans les paquets.
 /disks/midi/NOTATOR/
 /disks/notator.st
+# Liste locale des compilations Fuzion (jeux commerciaux). Pas de disques, pas de paquet.
+/disks/fuzion/
 /disks/tools/spectrum_512_st_format.msa
 /disks/etalons/spectrum_512_auto_diapo.st
 /dev/agt/
