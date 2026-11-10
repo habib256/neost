@@ -6,6 +6,20 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Étalons sensibles à la phase E-clock : verrouillés sur le compteur vidéo (2026-11-10)
+
+- Mesure : en décalant la trame capturée de −4 à +4, seuls `spec512_bands`, `spec512_view`,
+  `blankline_blank_st` et `blankline_blank_ste` ne passaient qu'à une phase du cycle de 5 trames
+  (VBL prise depuis STOP, E-clock). Un cœur qui déplace la phase du boot les aurait fait rougir
+  sans défaut. Leurs générateurs se verrouillent désormais sur `$FF8209` (scrutation jusqu'à DE,
+  puis LSL.W de 6+2n cycles) : chaque trame est identique, dans NeoST comme dans Hatari.
+- `spec512_bands`, `spec512_view` : références Hatari reposées, identiques à NeoST dès la
+  première image comparée. `blankline_blank_ste` : écriture à la ligne 99, cycle 40, référence
+  inchangée. `blankline_blank_st` : cycle 28, le BLANK que l'étalon nomme ; Hatari identique aux
+  trames 360, 377, 380 et 391, l'étalon passe de `snapshot` à `hatari` (41 `hatari`, 12
+  `snapshot`). Les quatre passent aux neuf décalages. Le résolveur de branches des deux
+  générateurs spec512 ignorait `beq.s`, corrigé.
+
 ## Porte d'échange : DMA disquette et blit sur ses registres, à 16 MHz (2026-11-10)
 
 - Suite `megaste` de `cpu_swap_gate.py` : 42 scénarios. S'ajoutent les sondes `fdc_read`,

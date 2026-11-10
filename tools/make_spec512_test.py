@@ -135,12 +135,28 @@ w(0x4E72, 0x2300)                 # stop #$2300       → réveil à la VBL, lat
 bra_s('idle')
 
 label('vbl')
+# ---- verrou sur le compteur vidéo (2026-11-10) -----------------------------
+# La latence d'une VBL prise depuis STOP n'est pas fixe : l'autovecteur attend l'E-clock,
+# dont la phase tourne de 4 cycles par trame (cycle de 5 trames). La capture dépendait
+# donc de la phase du boot, et un cœur qui la déplace aurait fait rougir l'étalon sans
+# défaut. Verrou des démos : scruter l'octet bas du compteur ($FF8209) jusqu'au début de
+# DE de la première ligne affichée, puis LSL.W de durée 6+2n avec n = 32 − valeur lue.
+# Un cran du compteur (2 octets) vaut 4 cycles, deux crans de n aussi : la gigue de la
+# scrutation (une boucle de 20 cycles) s'annule, et chaque trame part au même cycle.
+w(0x41F8, 0x8209)                 # lea $ffff8209.w,a0
+w(0x7000)                         # moveq #0,d0
+label('sync')
+w(0x1010)                         # move.b (a0),d0
+bcc_s(0x67, 'sync')               # beq.s sync         → DE commencé
+w(0x7220)                         # moveq #32,d1
+w(0x9240)                         # sub.w d0,d1
+w(0xE368)                         # lsl.w d1,d0        → 6+2n cycles, n = 32 − valeur lue
 # Nombre d'itérations : chacune coûte ~300 cycles (3 écritures + 3 délais), mesuré
 # à la trace NEOST_PAL_TRACE. Une trame PAL fait 313×512 = 160 256 cycles, donc ~500
 # itérations la couvrent en laissant de quoi se resynchroniser. Trop peu → le bas de
 # l'écran garde la dernière couleur ; trop → la boucle déborde sur la trame suivante
 # et le resync ne voit qu'une trame sur deux (constaté avec 2 600).
-w(0x363C, 500)                    # move.w #500,d3
+w(0x363C, 400)                    # move.w #400,d3   (le verrou part de la 1re ligne affichée)
 label('band')
 w(0x31FC, 0x0700, 0x8242)         # move.w #$0700,$8242.w   → palette[1] = ROUGE
 w(0x383C, DELAY)                  # move.w #DELAY,d4
@@ -161,7 +177,7 @@ w(0x4E73)                         # rte → retour au stop
 for off, name in fixups:
     target = labels[name]
     op = code[off]
-    if op in (0x60, 0x65, 0x64):                  # bra.s / bcs.s / bcc.s : 8 bits
+    if op in (0x60, 0x65, 0x64, 0x67):            # bra.s / bcs.s / bcc.s / beq.s : 8 bits
         disp = target - (off + 2)
         assert -128 <= disp <= 127, f"branche courte hors portée {name} : {disp}"
         code[off + 1] = disp & 0xFF

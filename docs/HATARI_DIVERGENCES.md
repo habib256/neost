@@ -274,7 +274,9 @@ auto/software, antidatage), timers datés, compteur vivant, event-count Timer A/
   premier LOAD après DE (decap Cwik, `shifter_video.v`), principe qu'Hatari applique
   lui-même à LEFT_OFF (`DisplayPixelShift=-4`, `video.c:256`). Même famille qu'`overscan_top`.
   Étalon `blankline_blank_st` passé en `ref_kind: snapshot` (phase 32 ; à phase 28 l'image
-  est bit-identique à l'oracle).
+  est bit-identique à l'oracle). Remonté en `hatari` le 2026-11-10 : le programme se verrouille
+  sur le compteur vidéo et écrit au cycle 28 à chaque trame, où les deux émulateurs concordent ;
+  l'écart left+2 ci-dessus reste vrai à 32-36, hors étalon.
 Cœur Glue **STF** = transcription quasi ligne-à-ligne (`updateGlueState` ≙ `Video_Update_Glue_State`
 branche STF), constantes = `VIDEO_TIMING_STF_WS1`, compteur vidéo, bordures H/B/G/D 50/60 Hz,
 spec512, scroll fin STE de base, masquage palette par machine : **conformes**.

@@ -28,7 +28,19 @@ import struct
 import sys
 
 
-def make_disk(out: Path, mode: str) -> None:
+# Mode blank (2026-11-10) : la seule capture qui dépendait de la phase du boot. La VBL prise
+# depuis STOP attend l'E-clock, dont la phase tourne de 4 cycles par trame : l'écriture 60 Hz
+# tombait à 28, 28, 36, 32 ou 32 cycles de la ligne 99 selon la trame (cycle de 5 trames),
+# et un cœur qui déplace la phase du boot aurait changé l'image capturée. Verrou des démos
+# sur le compteur vidéo ($FF8209, puis LSL.W de 6+2n cycles), attente de LOCK_DELAY tours
+# (12 cycles l'un sur le bus du ST), puis des NOP par machine. Mesuré par NEOST_VARLINE_TRACE :
+#   ST  → ligne 99, cycle 28 : le BLANK que l'étalon nomme ;
+#   STE → ligne 99, cycle 40 : NO_DE sans avance du compteur, la phase de sa référence.
+LOCK_DELAY = 1522
+LOCK_NOPS = {'st': 1, 'ste': 4}
+
+
+def make_disk(out: Path, mode: str, machine: str = 'st') -> None:
     nops_before = {'blank': 4, 'node': 0, 'node_late': 8, 'stop': 22,
                    'nosync': 102, 'nosync_cancel': 102,
                    'sync_high': 116, 'sync_high_cancel': 116}
@@ -73,9 +85,20 @@ def make_disk(out: Path, mode: str) -> None:
     label('idle')
     w(0x4E72, 0x2300); relative('idle', short=True)
     label('vbl')
-    delay('target', 4212)
-    for _ in range(nops_before[mode]):
-        w(0x4E71)
+    if mode == 'blank':
+        w(0x41F8, 0x8209)            # lea $ffff8209.w,a0
+        w(0x7000)                    # moveq #0,d0
+        label('sync')
+        w(0x1010)                    # move.b (a0),d0
+        w(0x6700 | 0xFC)             # beq.s sync        → DE commencé
+        w(0x7220, 0x9240, 0xE368)    # moveq #32,d1 ; sub.w d0,d1 ; lsl.w d1,d0
+        delay('target', LOCK_DELAY)
+        for _ in range(LOCK_NOPS[machine]):
+            w(0x4E71)
+    else:
+        delay('target', 4212)
+        for _ in range(nops_before[mode]):
+            w(0x4E71)
     register = 0x820A if mode == 'blank' else 0x8260
     w(0x11FC, 0 if mode == 'blank' else 2, register)
     # Retour avant DE pour node : conserve une ligne PAL de 512 cycles,
@@ -122,4 +145,4 @@ if __name__ == '__main__':
     mode = sys.argv[2] if len(sys.argv) > 2 else next(
         (m for m in ('nosync_cancel', 'sync_high_cancel', 'sync_high', 'nosync',
                      'node_late', 'node', 'blank', 'stop') if f'blankline_{m}' in out.stem), '')
-    make_disk(out, mode)
+    make_disk(out, mode, 'ste' if out.stem.endswith('_ste') else 'st')

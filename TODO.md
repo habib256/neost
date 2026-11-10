@@ -138,10 +138,6 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 - **Écritures en plein DE sur STE** · P3 ⭘ · [D] — `$FF8207` et `$FF8265` agissent aussitôt sur le modèle, à la ligne suivante chez NeoST et Hatari. Aucun logiciel connu n'en dépend. Porter `$FF8207` demande un rendu en deux segments par ligne.
 - **Hardscroll 4 px de Paulo Simoes** · P3 ⭘ · [D] — seul reste des tricks par changement de
   résolution (`video.c`, bloc V2) ; aucun titre de la collection ne l'exerce.
-- **Étalons sensibles à la phase E-clock** · P3 ⭘ — `blankline_*`, `spec512_*` capturent une
-  trame dont la phase tourne à chaque changement de timing du boot ; les ancrer dans leur
-  programme (compter les VBL, ou phase fixée par `stop` + attente). **À faire avant
-  l'échange si le nouveau cœur déplace la phase du boot.**
 - **Délai de bus error sur ST, Mega ST et Mega STE** · P2 ⏸ source · [F] — porté sur STE seulement,
   faute de netlist du GLUE. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE (ST-4081),
   ni GLUE ni MMU du ST, ni MCU du Mega STE. Tranche : un relevé de tiers, ou ces schémas.
@@ -276,7 +272,7 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
 
 ## 5. 🪜 Harnais et preuve
 
-40 étalons `hatari`, 13 `snapshot`, 3 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
+41 étalons `hatari`, 12 `snapshot`, 3 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
 contact du matériel, par des relevés de tiers. Le banc fx68k ajoute 48 variantes `rtl` pour
 le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
@@ -295,7 +291,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   Restent les GLUE/MMU sans schéma, et le SCC en synchrone, SDLC et DMA.
 - **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée.
 - **Auto-tests sans source** · P3 ◐ — `tools/classify_selftests.py` lit l'échelon que chaque test de logique déclare : hardware 0 · primary 70 · rom 6 · rtl 1 · hatari 44 · aucun 14 (total 135). Ce qui ne cite rien reste à sourcer. C'est une déclaration, pas une relecture des attendus.
-- **Monter les 13 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
+- **Monter les 12 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
   confrontée au modèle (`docs/GLUE_SWEEP.md`), pas leurs pixels ; `closure` et
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
 

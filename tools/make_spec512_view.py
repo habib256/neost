@@ -25,7 +25,7 @@
 #  Le 68000 est BIG-ENDIAN : tous les mots sont assemblés octet par octet.
 #  Secteur de boot exécutable = somme des 256 mots (mod 65536) == 0x1234.
 #
-#  Usage : make_spec512_view.py [sortie.st] [délai_avant_première_ligne]
+#  Usage : make_spec512_view.py [sortie.st]
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test (domaine public).
 # =============================================================================
@@ -64,9 +64,6 @@ def dbra(reg, name):           # dbra Dn,label — déplacement 16 bits
 SCREEN = 0x020000
 PALBUF = 0x030000              # après les 32 000 octets d'écran
 LINES = 199
-# Itérations de dbra (~10 cycles) entre l'entrée du handler et la première ligne :
-# la bordure haute dure ~63 lignes de 512 cycles. Réglable en 2ᵉ argument.
-DELAY = int(sys.argv[2]) if len(sys.argv) > 2 else 2900
 MOVEM_REGS = 0x027F            # d0-d6/a1 : 8 longs = 16 couleurs
 
 # ---- secteur de boot : offset 0 = bra.s vers le code (saute le BPB) ----------
@@ -121,9 +118,18 @@ bcc_s(0x60, 'idle')
 
 label('vbl')
 w(0x287C); l(PALBUF)              # movea.l #PALBUF,a4
-w(0x363C, DELAY)                  # move.w #DELAY,d3
-label('wait')
-dbra(3, 'wait')
+# Verrou sur le compteur vidéo (2026-11-10), comme make_spec512_test.py : la latence de la
+# VBL prise depuis STOP tourne de 4 cycles par trame avec l'E-clock (cycle de 5 trames) ;
+# scruter $FF8209 jusqu'au début de DE de la première ligne affichée, puis LSL.W de
+# 6+2n cycles, n = 32 − valeur lue, rend le départ indépendant de la phase du boot.
+w(0x41F8, 0x8209)                 # lea $ffff8209.w,a0
+w(0x7000)                         # moveq #0,d0
+label('sync')
+w(0x1010)                         # move.b (a0),d0
+bcc_s(0x67, 'sync')               # beq.s sync         → DE commencé
+w(0x7220)                         # moveq #32,d1
+w(0x9240)                         # sub.w d0,d1
+w(0xE368)                         # lsl.w d1,d0        → 6+2n cycles
 w(0x3E3C, LINES - 1)              # move.w #198,d7
 label('line')
 for _ in range(3):
@@ -137,7 +143,7 @@ w(0x4E73)                         # rte → retour au stop
 for off, name in fixups:
     target = labels[name]
     op = code[off]
-    if op in (0x60, 0x66):                        # bra.s / bne.s : 8 bits
+    if op in (0x60, 0x66, 0x67):                  # bra.s / bne.s / beq.s : 8 bits
         disp = target - (off + 2)
         assert -128 <= disp <= 127, f"branche courte hors portée {name} : {disp}"
         code[off + 1] = disp & 0xFF
@@ -176,4 +182,4 @@ img[0:512] = boot
 out = sys.argv[1] if len(sys.argv) > 1 else "disks/etalons/spec512_view.st"
 with open(out, 'wb') as f:
     f.write(img)
-print(f"écrit {out} ({len(img)} o) ; code={len(code)} o ; délai={DELAY} ; checksum OK (0x1234)")
+print(f"écrit {out} ({len(img)} o) ; code={len(code)} o ; verrou $FF8209 ; checksum OK (0x1234)")
