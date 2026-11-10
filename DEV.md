@@ -324,7 +324,7 @@ ruptures assumées avec l'ancien parseur : un caractère inconnu **refuse le run
 boot** (il valait « neutre »), et les minuscules `u/d/l/r/f` valent la direction (elles
 valaient « neutre ») — une recette archivée avec un caractère de remplissage doit être
 réécrite avec `.`,
-`--mouse-at N "SCRIPT"` (L/R/U/D = ±8 px, `1`/`2` = clic gauche/droit, `.` = idle — c'est
+`--mouse-at N "SCRIPT"` (L/R/U/D = ±8 px, `l/r/u/d` = idem bouton gauche tenu, `1`/`2` = clic gauche/droit, `.` = idle — c'est
 ainsi qu'on pilote Vroom : clic droit au titre, clic droit en course).
 
 Le GUI propose aussi **Configuration → Input → Desktop mouse (GEM, no capture)**

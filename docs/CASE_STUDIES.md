@@ -324,7 +324,7 @@ finale absente échoue. Les dates du manifeste existant étaient divisibles par
 l'ancien pas : les cinq rejeux Vroom conservent leurs trois succès et leurs
 deux échecs, aux mêmes pourcentages.
 
-`compare_titles.py --mouse TRAME:SCRIPT` transmet `.LRUD123` aux deux témoins.
+`compare_titles.py --mouse TRAME:SCRIPT` transmet `.LRUDlrud123` aux deux témoins.
 `--mouse-step 60` permet ici les gestes du menu ; les anciens pas de 8 restent
 le défaut. Les scripts qui se chevauchent sont refusés, boutons relâchés en
 fin de script. L'oracle ajoute seulement l'entrée relative `mousemove` à
@@ -945,8 +945,9 @@ la fenêtre ±30 et le seuil 0,5 % sont conservés ; aucun niveau terminé ni
 compétence attribuée n'est revendiqué. Le rejeu du menu reste distinct.
 Ces verdicts sont `hatari`, assortis de garde-fous `snapshot`, sans mesure matérielle.
 
-Chessmaster arrive à l'échiquier, mais les essais de clics isolés ou prolongés
-sur e2 puis e4 n'ont déplacé aucune pièce : son parcours reste celui du démarrage.
+Chessmaster arrive à l'échiquier ; les clics isolés ou prolongés sur e2 puis e4 ne déplacent
+aucune pièce : le jeu attend un glisser-déposer. Depuis le 2026-11-10, les jetons `l/r/u/d`
+(bouton gauche tenu) le permettent : e2-e4 à 4000, réponse e7-e6, accord Hatari à 5000 et 7000.
 
 ## Magic Pockets STX sur STE : retour à gauche sensible à l’alignement (2026-11-10)
 

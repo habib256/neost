@@ -22,7 +22,8 @@
 #  des deux côtés : compilée par NeoST, jouée par Hatari via son patch NEOST_JOY_SCRIPT (docs/HATARI_AUTOMATION.md).
 #  --key : touche ST tenue --key-hold trames (8 par défaut ; scancode décimal, 57 = espace). Côté Hatari, par sa
 #  fifo de commande à un arrêt du débogueur, comme tools/hatari_oracle.sh.
-#  --mouse : .LRUD123, un caractère par trame comme --mouse-at ; déplacement relatif de 8 unités.
+#  --mouse : .LRUDlrud123, un caractère par trame comme --mouse-at ; déplacement relatif de 8 unités ;
+#            lrud déplace bouton gauche tenu (glisser-déposer).
 #  Requiert le patch mousemove de l’oracle ; mêmes boutons et relâchement final des deux côtés.
 #  Sorties : SORTIE/summary.json, SORTIE/sheet.png. Exige Pillow et ffmpeg ; code 77 sinon.
 #  Les disques sont copiés avant chaque exécution : un programme peut y écrire.
@@ -74,8 +75,8 @@ def parse_key(text: str) -> tuple[int, int]:
 
 def parse_mouse(text: str) -> tuple[int, str]:
     at, sep, script = text.partition(":")
-    if not sep or not at.isdecimal() or int(at) < 1 or not script or set(script) - set(".LRUD123"):
-        raise argparse.ArgumentTypeError("mouse input must be FRAME:SCRIPT (FRAME >= 1; .LRUD123, one character per frame)")
+    if not sep or not at.isdecimal() or int(at) < 1 or not script or set(script) - set(".LRUDlrud123"):
+        raise argparse.ArgumentTypeError("mouse input must be FRAME:SCRIPT (FRAME >= 1; .LRUDlrud123, one character per frame)")
     return int(at), script
 
 
@@ -93,12 +94,14 @@ def mouse_events(scripts, step=8) -> list[tuple[int, str]]:
         previous_end = start + len(script)
         buttons = 0
         for offset, char in enumerate(script + "."):
-            current = {"1": 1, "2": 2, "3": 3}.get(char, 0)
+            # l/r/u/d : déplacement bouton gauche tenu (glisser), comme le headless.
+            current = {"1": 1, "2": 2, "3": 3, "l": 1, "r": 1, "u": 1, "d": 1}.get(char, 0)
             for bit, name in ((1, "left"), (2, "right")):
                 if (buttons ^ current) & bit:
                     events.append((start + offset, name + ("down" if current & bit else "up")))
             buttons = current
-            dx, dy = {"L": (-step, 0), "R": (step, 0), "U": (0, -step), "D": (0, step)}.get(char, (0, 0))
+            dx, dy = {"L": (-step, 0), "R": (step, 0), "U": (0, -step), "D": (0, step),
+                      "l": (-step, 0), "r": (step, 0), "u": (0, -step), "d": (0, step)}.get(char, (0, 0))
             if dx or dy:
                 events.append((start + offset, f"mousemove {dx} {dy}"))
     return events
@@ -406,7 +409,7 @@ def main() -> int:
                     help="durée d'appui en trames, identique dans les deux émulateurs (défaut : 8)")
     ap.add_argument("--joy", help="TRAME:FICHIER, script joystick du port 1 à partir de cette trame")
     ap.add_argument("--mouse", type=parse_mouse, action="append", default=[],
-                    help="TRAME:SCRIPT, souris .LRUD123 comme --mouse-at (répétable, sans chevauchement)")
+                    help="TRAME:SCRIPT, souris .LRUDlrud123 comme --mouse-at (lrud : bouton gauche tenu) (répétable, sans chevauchement)")
     ap.add_argument("--mouse-step", type=int, default=8, help="déplacement par pas L/R/U/D (1..127, défaut : 8)")
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--hatari-trace", metavar="FLAGS",

@@ -124,7 +124,8 @@ void usage() {
         "                    are ignored — long rollouts no longer fit on argv\n"
         "  --joy-script-compile F  write the COMPILED script (one mask byte per frame)\n"
         "                    to F and exit: feeds the same input to the Hatari oracle\n"
-        "  --mouse-at N S    mouse script from frame N: L/R/U/D = +/-8 px, 1/2 = left/\n"
+        "  --mouse-at N S    mouse script from frame N: L/R/U/D = +/-8 px, l/r/u/d = the same\n"
+        "                    move with the left button held (drag), 1/2 = left/\n"
         "                    right click, . = idle (one frame each)\n"
         "                    (repeatable)\n"
         "  --mouse-step N    displacement per L/R/U/D token (1..127, default 8)\n"
@@ -2584,6 +2585,11 @@ int main(int argc, char** argv) {
                     case 'R': dx =  mouseStep; break;
                     case 'U': dy = -mouseStep; break;
                     case 'D': dy =  mouseStep; break;
+                    // Glisser (A15) : déplacement bouton gauche TENU, pour un glisser-déposer.
+                    case 'l': dx = -mouseStep; l = true; mClickL = true; break;
+                    case 'r': dx =  mouseStep; l = true; mClickL = true; break;
+                    case 'u': dy = -mouseStep; l = true; mClickL = true; break;
+                    case 'd': dy =  mouseStep; l = true; mClickL = true; break;
                     case '1': l = true; mClickL = true; break;   // clic gauche : appui
                     case '2': r = true; mClickR = true; break;   // clic droit : appui
                     case '3': l = r = true; mClickL = mClickR = true; break;  // les deux (ex. nitro Super Hang-On)
@@ -2591,7 +2597,8 @@ int main(int argc, char** argv) {
                 }
                 // Maintien d'un clic : si la trame précédente était un appui et celle-ci
                 // ne l'est pas, on relâche (paquet bouton=0) pour finir le clic.
-                if (t != '1' && t != '3' && mClickL) { l = false; mClickL = false; }
+                const bool leftHeld = t == '1' || t == '3' || t == 'l' || t == 'r' || t == 'u' || t == 'd';
+                if (!leftHeld && mClickL) { l = false; mClickL = false; }
                 if (t != '2' && t != '3' && mClickR) { r = false; mClickR = false; }
                 machine.mouseEvent(dx, dy, l, r);
                 machine.cpu.updateIpl();

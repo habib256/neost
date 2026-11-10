@@ -632,8 +632,8 @@ arbitration et la conservation d'un hit déjà lu quand la DMA change la RAM.
 
 `compare_titles.py --mouse 5200:D --mouse 5280:11111111111111111111
 --mouse-step 60` injecte le même déplacement relatif et le même clic dans
-NeoST et Hatari. Grammaire `.LRUD123`, un caractère par trame ; `3` tient
-les deux boutons. Le déplacement par défaut reste 8. Le relâchement final
+NeoST et Hatari. Grammaire `.LRUDlrud123`, un caractère par trame ; `3` tient
+les deux boutons ; `l/r/u/d` déplacent bouton gauche tenu (glisser-déposer). Le déplacement par défaut reste 8. Le relâchement final
 occupe la trame suivante ; des scripts qui la chevauchent sont refusés.
 
 Le patch `hatari_neost_oracle.patch` expose `hatari-event mousemove DX DY`

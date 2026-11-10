@@ -6,6 +6,14 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## A15 clos : glisser-déposer à la souris, Chessmaster joué (2026-11-10)
+
+- Grammaire souris de `--mouse-at` et de `compare_titles.py --mouse` : `l/r/u/d` déplacent avec le
+  bouton gauche tenu, mêmes événements des deux côtés (`leftdown`, `mousemove`, `leftup` chez Hatari).
+- `chessmaster_st` joue son premier coup : e2-e4 au glisser-déposer, Chessmaster répond e7-e6 ;
+  accord Hatari à 5000 et 7000, empreintes NeoST des deux scènes. Un coup joué change 1,04 % de
+  l'image, au-dessus du seuil de 0,5 %. Les clics simples ne déplaçaient aucune pièce.
+
 ## Logithèque STE : Lethal Xcess et Golden Axe gardés en partie (2026-11-10)
 
 - `lethal_xcess_ste` : en partie, bordure haute ouverte, trames 4000 à 5000 ; garde directe du

@@ -925,7 +925,7 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   (overrun compris), lectures RDR et reset matériel, datés en cycles bus.
   `NEOST_DEBUG_IKBD=1` trace les commandes reçues par l'IKBD ;
   `NEOST_DEBUG_ACIA=1` trace chaque lecture du data register (valeur, file, cycle).
-  Headless : `--mouse-at N "SCRIPT"` (script souris daté L/R/U/D/1/2/.) et
+  Headless : `--mouse-at N "SCRIPT"` (script souris daté L/R/U/D/l/r/u/d/1/2/., minuscules = glisser bouton gauche tenu) et
   `--joy-script N "SCRIPT"` / `--joy-script-file N FICHIER` (état joystick par trame) pour
   piloter des menus de jeux ; `stScancode` étendu (flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`…).
   Le script compile vers **un masque par trame** (`src/util/JoyScript.hpp`, couvert par
