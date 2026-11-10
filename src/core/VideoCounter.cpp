@@ -206,19 +206,24 @@ uint32_t Shifter::videoCounter() {
     fc += kVideoCounterReadOffsetCyc;                   // datation lecture fidèle Hatari (fin d'accès − 8)
     // (NEOST_VC_OFF est déjà intégré à kVideoCounterReadOffsetCyc — ne pas l'ajouter
     // une 2ᵉ fois ici ; l'ancien double-ajout faussait les balayages de calibration.)
+    return vc_.read(fc, *this, lineLenAttrEnv());
+}
+
+// Le calcul lui-même (A32, 2026-11-11) : il ne lit plus le Shifter que par la vue `glue`.
+uint32_t VideoCounterState::read(int64_t fc, GlueView& glue, bool lineLenRead) const {
     // Géométrie VERROUILLÉE de la trame (cycles/ligne et début DE dépendent de la
     // fréquence 50/60/71 Hz : avant, 512 et 56/52 étaient figés → compteur faux en
     // 60 Hz). frameSync_ est posé par beginFrame, comme frameMode_.
-    const Geometry g = geometry();
+    const GlueView::Frame g = glue.frame();
     const int  kCyclesPerLine = g.cyclesPerLine;
-    const bool hi   = (frameMode_ == Mode::High);
+    const bool hi   = g.hi;
     const int  bpl  = hi ? 80 : 160;                    // octets/ligne affichée
     const int  disp = g.displayLines;                   // lignes affichées
     const int  lineStart = g.lineStartCycle;            // début Display-Enable (50/60/71 Hz)
     // Stride réel d'une ligne = octets affichés + line-offset STE ($FF820F, en mots)
     // + 1 mot PAR PLAN si scroll fin avec prefetch (cf. scrollCounterAdvance).
     // lineWidth=0 et scroll=0 sur ST/STF → bpl.
-    const int  stride = bpl + static_cast<int>(lineWidth) * 2 + scrollCounterAdvance();
+    const int  stride = bpl + glue.lineWidthWords() * 2 + glue.scrollAdvance(-1);
     // Compteur MATÉRIALISÉ (≙ pVideoRaster) : vc_.lineBase = début de la ligne active
     // vc_.lineY (les lignes déjà rendues ont déjà accumulé leur stride réel — lineWidth
     // variable, écritures du compteur, scroll). L'affichage couvre les lignes
@@ -247,50 +252,50 @@ uint32_t Shifter::videoCounter() {
     // clignotement vertical bistable (fenêtre 34..310 ↔ 63..263). Mesuré à
     // l'oracle (traces video_addr + cpu_disasm, 2026-07-03) : chemin CPU et
     // ancre VBL identiques, seule la fonction valeur(t) différait.
-    const bool lineLenRead = lineLenAttrEnv();
-    if (lineLenRead && frameMode_ != Mode::High && !syncWrites_.empty()
-        && static_cast<std::size_t>(line) + 2 < glueLineStart_.size()) {
-        liveGlueCatchUp(line + 1);
-        int wl = liveGlueLine_ < line + 1 ? liveGlueLine_ : line + 1;
+    if (lineLenRead && !hi && glue.hasSyncWrites()
+        && static_cast<std::size_t>(line) + 2 < static_cast<std::size_t>(glue.lineStartCount())) {
+        glue.catchUp(line + 1);
+        int wl = glue.liveLine() < line + 1 ? glue.liveLine() : line + 1;
         if (wl >= 0) {
-            while (wl > 0 && fc < glueLineStart_[wl]) --wl;
-            while (wl < liveGlueLine_ && static_cast<std::size_t>(wl) + 1 < glueLineStart_.size()
-                   && fc >= glueLineStart_[wl + 1]) ++wl;
+            while (wl > 0 && fc < glue.lineStart(wl)) --wl;
+            while (wl < glue.liveLine()
+                   && static_cast<std::size_t>(wl) + 1 < static_cast<std::size_t>(glue.lineStartCount())
+                   && fc >= glue.lineStart(wl + 1)) ++wl;
             line = wl;
-            X = static_cast<int>(fc - glueLineStart_[wl]);
+            X = static_cast<int>(fc - glue.lineStart(wl));
         }
     }
     // Compteur REDÉMARRÉ en fin de trame (port Video_RestartVideoCounter, ligne
     // 310/260 cycle 56) : les lectures au-delà renvoient la base rechargée, FIGÉE
     // jusqu'au DE de la trame suivante (chez Hatari, pVideoRaster vaut alors
     // &STRam[VideoBase] et plus rien ne l'avance avant la prochaine ligne affichée).
-    if (vc_.restartBase >= 0 && line >= vc_.restartLine)
-        return static_cast<uint32_t>(vc_.restartBase) & kVideoAddrMask;
-    int dispStart = liveStartHBL_;
+    if (restartBase >= 0 && line >= restartLine)
+        return static_cast<uint32_t>(restartBase) & kAddrMask;
+    int dispStart = glue.liveStartHBL();
     int disp2     = disp;
-    if (frameMode_ != Mode::High && !syncWrites_.empty()
-        && static_cast<std::size_t>(line) + 1 < glueLines_.size()) {
-        liveGlueCatchUp(line);
-        dispStart = glueStartHBL_;
+    if (!hi && glue.hasSyncWrites()
+        && static_cast<std::size_t>(line) + 1 < static_cast<std::size_t>(glue.lineCount())) {
+        glue.catchUp(line);
+        dispStart = glue.vdeStart();
         // Bordure basse retirée → plus long ; + BlankLines (lignes blanches no-sync
         // insérées) comme le `nEndHBL + BlankLines` de Video_CalculateAddress
         // ([D] video.c:1568 @ f0736b24) — ces lignes sont NO_DE (glueLineBytes = 0), elles ne font
         // pas avancer le compteur mais restent dans la fenêtre active.
-        disp2     = glueEndHBL_ + glueBlankLines_ - glueStartHBL_;
+        disp2     = glue.vdeEnd() + glue.blankLines() - glue.vdeStart();
     }
     const int  la   = line - dispStart;                 // index de ligne active du faisceau
-    uint32_t addr = vc_.lineBase;
+    uint32_t addr = lineBase;
     if (la >= 0) {
         // Ligne au-delà de celle du compteur matérialisé (rendu pas encore passé) :
         // extrapole au stride courant. Bordure basse : figé à l'écran entièrement lu.
         const int laEff = la < disp2 ? la : disp2;
-        if (laEff > vc_.lineY) {
-            if (!syncWrites_.empty() && frameMode_ != Mode::High) {
+        if (laEff > lineY) {
+            if (glue.hasSyncWrites() && !hi) {
                 // Trame à tricks : somme des octets RÉELS par ligne (machine Glue
                 // live) — une ligne élargie (left/right off) ou raccourcie (-2)
                 // décale toutes les suivantes (accumulation inter-lignes, port de
                 // Video_CalculateAddress qui parcourt ShifterLines[]).
-                liveGlueCatchUp(line);
+                glue.catchUp(line);
                 // `extra` (prefetch scroll + line-offset STE) ne s'applique qu'aux
                 // lignes RÉELLEMENT affichées, exactement comme le chemin de commit
                 // endVideoLine (`if (bpl > 0)`, Shifter.cpp:785 ≙ [D] video.c:4007 @ f0736b24). Une
@@ -298,18 +303,18 @@ uint32_t Shifter::videoCounter() {
                 // raccourcie) ne fait avancer NI line-offset NI prefetch — l'ajouter
                 // ici faisait diverger l'extrapolation du commit, et le compteur
                 // reculait entre deux lectures $FF8205/07/09 encadrant un HBL.
-                for (int y = vc_.lineY; y < laEff; ++y) {
-                    const int lb = glueLineBytes(dispStart + y);
-                    const int extra = static_cast<int>(lineWidth) * 2 + scrollCounterAdvance(dispStart + y);
+                for (int y = lineY; y < laEff; ++y) {
+                    const int lb = glue.lineBytes(dispStart + y);
+                    const int extra = glue.lineWidthWords() * 2 + glue.scrollAdvance(dispStart + y);
                     addr += static_cast<uint32_t>(lb + (lb > 0 ? extra : 0));
                 }
             } else {
-                addr += static_cast<uint32_t>(laEff - vc_.lineY) * static_cast<uint32_t>(stride);
+                addr += static_cast<uint32_t>(laEff - lineY) * static_cast<uint32_t>(stride);
             }
         }
         // Offset intra-ligne UNIQUEMENT si la ligne courante n'a pas déjà été rendue
         // (la < vc_.lineY = bordure droite : le stride de la ligne est déjà accumulé).
-        if (la < disp2 && laEff >= vc_.lineY) {
+        if (la < disp2 && laEff >= lineY) {
             // Port FIDÈLE de Video_CalculateAddress ([D] video.c:1600 @ f0736b24, 2026-07-02) :
             // pour l'intra-ligne, Hatari NE lit PAS DisplayStart/EndCycle de la Glue —
             // il RECONSTRUIT le départ (ds) et la TAILLE (CurSize) depuis le
@@ -326,13 +331,14 @@ uint32_t Shifter::videoCounter() {
             bool leftOff = false;
             uint32_t bm = 0;
             bool haveGlue = false;
-            if (frameMode_ != Mode::High && !syncWrites_.empty()
-                && static_cast<std::size_t>(line) + 1 < glueLines_.size()) {
-                liveGlueCatchUp(line);
-                const GlueLine& L = glueLines_[static_cast<std::size_t>(line)];
-                if (L.displayStartCycle >= 0) {
+            int dsc = -1;
+            if (!hi && glue.hasSyncWrites()
+                && static_cast<std::size_t>(line) + 1 < static_cast<std::size_t>(glue.lineCount())) {
+                glue.catchUp(line);
+                uint32_t lineMask = 0;
+                if (glue.lineState(line, dsc, lineMask) && dsc >= 0) {
                     haveGlue = true;
-                    bm = L.borderMask;
+                    bm = lineMask;
                     leftOff = (bm & glue::LEFT_OFF) != 0;
                     int curSize = 160;                                // BORDERBYTES_NORMAL
                     if (leftOff)                       curSize += 26; // BORDERBYTES_LEFT
@@ -343,18 +349,18 @@ uint32_t Shifter::videoCounter() {
                     // l'offset intra-ligne, et la borne de gel LineEndCycle tombait
                     // 40 cycles trop tôt. Ordre repris d'Hatari : LEFT_OFF garde la
                     // priorité, LEFT_PLUS_2 reste APRÈS les variantes STE.
-                    else if (bm & glue::LEFT_OFF_2_STE) curSize += 20 + (steBorderFlag_ ? 8 : 0);
+                    else if (bm & glue::LEFT_OFF_2_STE) curSize += 20 + (glue.steBorder() ? 8 : 0);
                     else if (bm & glue::LEFT_OFF_2_STE_MED) curSize += 20;
                     else if (bm & glue::LEFT_PLUS_2)   curSize += 2;
-                    else if (steBorderFlag_)          curSize += 8;
-                    else if (hwScrollCount && hwScrollPrefetch) curSize += 8;
+                    else if (glue.steBorder())        curSize += 8;
+                    else if (glue.scrollPrefetch())   curSize += 8;
                     if (bm & glue::STOP_MIDDLE)        curSize -= 106;
                     else if (bm & glue::RIGHT_MINUS_2) curSize -= 2;
                     else if (bm & glue::RIGHT_OFF)     curSize += 44; // BORDERBYTES_RIGHT
                     if (bm & glue::RIGHT_OFF_FULL)     curSize += 22; // BORDERBYTES_RIGHT_FULL
                     if (bm & glue::LEFT_PLUS_2)        ds = 52;       // LINE_START_CYCLE_60
                     else if (leftOff)                  ds = 0;        // LINE_START_CYCLE_71
-                    else if (steBorderFlag_ || (hwScrollCount && hwScrollPrefetch)) ds = lineStart - 16;
+                    else if (glue.steBorder() || glue.scrollPrefetch()) ds = lineStart - 16;
                     lineBytes = curSize;
                 }
             }
@@ -362,13 +368,13 @@ uint32_t Shifter::videoCounter() {
             // cycles avant le HDE_On et lit 8 octets de plus (l'ANCRE que mesure la
             // calibration sync-scroll d'EL — sans ce −16 ses impulsions visaient
             // ~16 cyc trop tôt et aucun comparateur n'était enjambé).
-            if (!haveGlue && frameMode_ != Mode::High
-                && (steBorderFlag_ || (hwScrollCount && hwScrollPrefetch))) { ds -= 16; lineBytes += 8; }
+            if (!haveGlue && !hi
+                && (glue.steBorder() || glue.scrollPrefetch())) { ds -= 16; lineBytes += 8; }
             int Xc = X;
             if (Xc < ds) Xc = ds;
             else if (Xc > ds + lineBytes * 2) {
                 Xc = ds + lineBytes * 2;               // affichage désactivé (bordure droite)
-                addr += static_cast<uint32_t>(lineWidth) * 2u;   // STE : mots sautés dès DE off
+                addr += static_cast<uint32_t>(glue.lineWidthWords()) * 2u;   // STE : mots sautés dès DE off
             }
             int nb = (Xc - ds) >> 1;                    // 2 cycles par octet
             nb &= ~1;                                   // le shifter lit par MOTS
@@ -392,18 +398,31 @@ uint32_t Shifter::videoCounter() {
     static const bool vcTrace = std::getenv("NEOST_VC_TRACE") != nullptr;
     if (vcTrace) {
         std::fprintf(stderr, "[VC] fc=%lld line=%d X=%d addr=%06X vcY=%d vcB=%06X"
-                     " dispStart=%d disp2=%d la=%d sw=%zu startHBL=%d [",
-                     (long long)fc, line, X, addr & 0xFFFFFF, vc_.lineY, vc_.lineBase,
-                     dispStart, disp2, la, syncWrites_.size(), glueStartHBL_);
-        for (std::size_t i = 0; i < syncWrites_.size() && i < 8; ++i)
-            std::fprintf(stderr, "%s%c%02x@%d", i ? " " : "",
-                         syncWrites_[i].isRes ? 'r' : 'f', syncWrites_[i].val,
-                         syncWrites_[i].frameCycle);
-        std::fprintf(stderr, "]\n");
+                     " dispStart=%d disp2=%d la=%d ",
+                     (long long)fc, line, X, addr & 0xFFFFFF, lineY, lineBase,
+                     dispStart, disp2, la);
+        glue.traceSyncWrites();
     }
     // Compteur 22 bits : l'intra-ligne/l'extrapolation ne peuvent pas « déborder »
     // au-delà de $3FFFFF (registre $FF8205 sur 6 bits utiles, cf. kVideoAddrMask).
-    return addr & kVideoAddrMask;
+    return addr & kAddrMask;
+}
+
+// GlueView (A32) : état Glue d'une ligne, et la trace des écritures freq/res.
+bool Shifter::lineState(int line, int& displayStartCycle, uint32_t& borderMask) const {
+    const GlueLine& L = glueLines_[static_cast<std::size_t>(line)];
+    displayStartCycle = L.displayStartCycle;
+    borderMask = L.borderMask;
+    return true;
+}
+
+void Shifter::traceSyncWrites() const {
+    std::fprintf(stderr, "sw=%zu startHBL=%d [", syncWrites_.size(), glueStartHBL_);
+    for (std::size_t i = 0; i < syncWrites_.size() && i < 8; ++i)
+        std::fprintf(stderr, "%s%c%02x@%d", i ? " " : "",
+                     syncWrites_[i].isRes ? 'r' : 'f', syncWrites_[i].val,
+                     syncWrites_[i].frameCycle);
+    std::fprintf(stderr, "]\n");
 }
 
 // Écriture du compteur vidéo $FF8205/07/09 (STE/TT) — port fidèle de

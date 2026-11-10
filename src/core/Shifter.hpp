@@ -18,6 +18,35 @@
 #include "core/StateArchive.hpp"
 #include "core/Bus.hpp"
 
+// Ce que le compteur vidéo lit de la Glue et du faisceau (A32, 2026-11-11). Le Shifter l'implémente ;
+// le VIDEL du Falcon et la vidéo du TT, qui n'ont pas de Glue ST, en fourniront la leur. Valeurs
+// simples seulement : aucun type interne du Shifter ne traverse l'interface.
+class GlueView {
+public:
+    struct Frame { int cyclesPerLine; int displayLines; int lineStartCycle; bool hi; };
+    virtual Frame    frame() const = 0;                 // géométrie verrouillée de la trame
+    virtual bool     hasSyncWrites() const = 0;         // écritures freq/res dans la trame
+    virtual void     catchUp(int line) = 0;             // machine Glue LIVE jusqu'à `line` (l'avance)
+    virtual int      lineCount() const = 0;             // lignes Glue disponibles
+    // État Glue d'une ligne : faux si son début de DE n'est pas encore posé.
+    virtual bool     lineState(int line, int& displayStartCycle, uint32_t& borderMask) const = 0;
+    virtual int      lineStartCount() const = 0;        // débuts de ligne réels (grille Glue)
+    virtual int64_t  lineStart(int line) const = 0;
+    virtual int      liveLine() const = 0;              // dernière ligne initialisée par le live
+    virtual int      vdeStart() const = 0;              // VDE_On/Off : nStartHBL / nEndHBL d'Hatari
+    virtual int      vdeEnd() const = 0;
+    virtual int      blankLines() const = 0;
+    virtual int      liveStartHBL() const = 0;          // fenêtre « sticky » historique
+    virtual int      lineBytes(int scanline) const = 0; // octets lus sur la ligne (bordures)
+    virtual int      scrollAdvance(int scanline) const = 0;
+    virtual int      lineWidthWords() const = 0;        // line-offset STE $FF820F
+    virtual bool     scrollPrefetch() const = 0;        // scroll fin armé avec prefetch
+    virtual bool     steBorder() const = 0;             // latch 336 px du STE
+    virtual void     traceSyncWrites() const = 0;       // diagnostic NEOST_VC_TRACE
+protected:
+    ~GlueView() = default;
+};
+
 // État du compteur vidéo ($FF8205/07/09), lu et avancé par VideoCounter.cpp (A32). Premier pas vers un objet
 // à part entière : les méthodes restent sur Shifter, car elles lisent la machine Glue et le faisceau.
 struct VideoCounterState {
@@ -34,6 +63,8 @@ struct VideoCounterState {
     // calculs qui dépendent de la Glue et du faisceau (octets lus par ligne, position, fenêtre
     // verticale) restent au Shifter, qui passe des valeurs : ces signatures dessinent
     // l'interface vers la Glue que le VIDEL et la vidéo du TT réutiliseront.
+    // Le compteur matériel n'a que A1..A21 ([D] video.c:4423 @ f0736b24 « pVideoRaster & VideoMask »).
+    static constexpr uint32_t kAddrMask = 0x3FFFFFu;
     enum class WriteMode { Immediate, DelayedAbsolute, DelayedRelative };
 
     void resetAll() { frameBase = 0; lineBase = 0; lineY = 0; restartBase = -1; restartLine = 0; }
@@ -83,12 +114,15 @@ struct VideoCounterState {
                 break;
         }
     }
+    // Adresse vidéo courante au cycle de trame `fc` (port de Video_CalculateAddress,
+    // VideoCounter.cpp). Ne modifie pas le compteur ; avance la Glue LIVE par `glue.catchUp`.
+    uint32_t read(int64_t fc, GlueView& glue, bool lineLenRead) const;
     // Auto-tests de la Glue seulement : place le compteur sur une ligne donnée.
     void setLineForTest(int y) { lineY = y; }
     void setLineForTest(uint32_t base, int y) { lineBase = base; lineY = y; }
 };
 
-class Shifter {
+class Shifter : private GlueView {
 public:
     // Résolutions ST, sélectionnées par le registre $FF8260 :
     //   0 = basse  (320x200, 16 couleurs, 4 plans)
@@ -442,7 +476,7 @@ private:
     // non émulés ici. Le compteur se REPLIE donc modulo 4 Mo quand il avance, et
     // chaque mot fetché par le DMA vidéo est adressé modulo 4 Mo (video_memcpy_mmu,
     // [D] video.c:3797 @ f0736b24) — jamais la MMIO $FFxxxx (lectures à effets de bord).
-    static constexpr uint32_t kVideoAddrMask = 0x3FFFFFu;
+    static constexpr uint32_t kVideoAddrMask = VideoCounterState::kAddrMask;
     static constexpr int kLineSnapBytes = 256;   // ≥ kSnapLead + 230 (LEFT+RIGHT_OFF) + marge décodage
     // Marge de TÊTE de chaque slot de capture : les octets [base−kSnapLead, base)
     // précèdent la base de ligne — nécessaires quand l'offset source d'une ligne
@@ -579,6 +613,28 @@ private:
     // hors-ligne en fin de trame (la timeline live est inchangée → zéro régression).
     struct SyncWrite { int32_t frameCycle; uint8_t val; bool isRes; };
     std::vector<SyncWrite> syncWrites_;             // écritures freq/res de la trame
+    // --- GlueView (A32) : ce que le compteur vidéo lit de la Glue et du faisceau ---
+    Frame   frame() const override {
+        const Geometry g = geometry();
+        return {g.cyclesPerLine, g.displayLines, g.lineStartCycle, frameMode_ == Mode::High};
+    }
+    bool    hasSyncWrites() const override { return !syncWrites_.empty(); }
+    void    catchUp(int line) override { liveGlueCatchUp(line); }
+    int     lineCount() const override { return static_cast<int>(glueLines_.size()); }
+    bool    lineState(int line, int& displayStartCycle, uint32_t& borderMask) const override;
+    int     lineStartCount() const override { return static_cast<int>(glueLineStart_.size()); }
+    int64_t lineStart(int line) const override { return glueLineStart_[static_cast<std::size_t>(line)]; }
+    int     liveLine() const override { return liveGlueLine_; }
+    int     vdeStart() const override { return glueStartHBL_; }
+    int     vdeEnd() const override { return glueEndHBL_; }
+    int     blankLines() const override { return glueBlankLines_; }
+    int     liveStartHBL() const override { return liveStartHBL_; }
+    int     lineBytes(int scanline) const override { return glueLineBytes(scanline); }
+    int     scrollAdvance(int scanline) const override { return scrollCounterAdvance(scanline); }
+    int     lineWidthWords() const override { return lineWidth; }
+    bool    scrollPrefetch() const override { return hwScrollCount && hwScrollPrefetch; }
+    bool    steBorder() const override { return steBorderFlag_; }
+    void    traceSyncWrites() const override;
     bool   bordersTrick_ = false;                   // ≥1 ligne avec une bordure retirée
     // Moitié LATÉRALE du signal ci-dessus (≥1 ligne affichée dont le DE déborde des
     // cycles nominaux) — calculée séparément par replayGlue. NON SÉRIALISÉE À DESSEIN :

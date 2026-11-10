@@ -19,6 +19,12 @@ l'ordre inverse. Version courante : **0.6.4**.
 
 ## A32 : l'état du compteur vidéo n'est plus écrit que par ses méthodes (2026-11-11)
 
+- Deuxième pas : la lecture du compteur (`VideoCounterState::read`) ne voit plus le Shifter que
+  par `GlueView`, une interface à valeurs simples (géométrie de trame, fenêtre verticale, octets
+  par ligne, rattrapage de la Glue LIVE, scroll). Le Shifter l'implémente ; `Shifter::videoCounter`
+  n'est plus qu'une enveloppe. Le masque 22 bits devient `VideoCounterState::kAddrMask`. Porte en
+  accord à l'octet sur les 404 scénarios de la référence `8090a2c`.
+
 - `VideoCounterState` (`src/core/Shifter.hpp`) porte ses écritures : `resetAll`, `beginFrame`,
   `latchFrame`, `restart`, `advanceLine`, `applyWrite`, `setStopInc` et un réglage réservé aux
   auto-tests de la Glue. `Shifter`, `VideoCounter.cpp` et `VideoGlue.cpp` ne touchent plus ses

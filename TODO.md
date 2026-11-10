@@ -113,16 +113,16 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   fin de DE a son événement Timer B distinct du HBL, et la lecture du compteur concorde au RTL sur STE
   (47 999 sur 48 000, `docs/STCPU_BENCH.md`). Restent ST et Mega ST, sans netlist, et la phase du Timer C
   (→ « Phase de l'horloge du MFP au reset »). → `docs/CYCLE_ACCURACY.md` § 4
-- **Offsets de datation dérivés d'Hatari** · P2 ◐ — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
-  `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
-  `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu,
-  et la palette, contredite de même par 13 images réelles, va dans ce sens : le modèle prend les écritures trop tôt (`docs/REFERENCE_LADDER.md`). ⚠ read et write bougent par paire.
 - **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P3 ⭘ · [F] — la fin de DE à 164 et les 54 octets concordent avec le modèle (`docs/GLUE_SWEEP.md`) ; Hatari rend trois pixels de plus, et le HSYNC parasite vers le cycle 28 n'est pas modélisé. Sondes `blankline_stop_st/ste` en snapshot.
 - **STE, impulsions restantes face au modèle** · P3 ⭘ · [D] — DE précoce à 44, 14 impulsions sur 2560 en écart à 50 Hz, 42 sur 2560 à 60 Hz, toutes en haute résolution, et les
   largeurs au-delà de 32 qui enjambent HSYNC. Hors logiciel connu. → `docs/GLUE_SWEEP.md`
 - **Écritures en plein DE sur STE** · P3 ⭘ · [D] — `$FF8207` et `$FF8265` agissent aussitôt sur le modèle, à la ligne suivante chez NeoST et Hatari. Aucun logiciel connu n'en dépend. Porter `$FF8207` demande un rendu en deux segments par ligne.
 - **Hardscroll 4 px de Paulo Simoes** · P3 ⭘ · [D] — seul reste des tricks par changement de
   résolution (`video.c`, bloc V2) ; aucun titre de la collection ne l'exerce.
+- **Offsets de datation dérivés d'Hatari** · P2 ⏸ source — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
+  `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
+  `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu,
+  et la palette, contredite de même par 13 images réelles, va dans ce sens : le modèle prend les écritures trop tôt (`docs/REFERENCE_LADDER.md`). ⚠ read et write bougent par paire. Tranche : la date d'une écriture `$FF820A`/`$FF8240` mesurée sur le fer, ou une netlist du ST pour la lecture.
 - **Basse résolution PAL issue du reset** · P2 ⏸ source · [F] — le modèle GSTMCU garde une phase de
   plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
 - **Wakestate WS3 par défaut** · P2 ⏸ source · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut reste sans source : sur le fer, l'état se tire à la mise sous tension. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option. Un tirage au reset demande d'abord de sortir le wakestate des constantes figées avant `main()` (`kWsInc`, `VideoGlue.hpp`).
