@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## A/B de la collection après les changements de timing du jour (2026-11-10)
+
+- Binaire de `355b6c0` (début de journée) contre `8efaa9b`, sur les 94 images de `disks/st` et
+  `disks/stx` (sous-dossiers compris), en ST/TOS 1.04 et en STE/TOS 1.62, SPACE répété, captures
+  aux trames 1000 à 4000 : **185 cas sur 188 identiques à l'octet**, aucun arrêt CPU apparu ni
+  disparu. Les trois écarts sont des phases d'animation : Time Bandit (38 px, fumée du titre),
+  Fuzion 078 et 084 (5 px, une étoile). Couvre l'arrêt et l'AER du MFP, l'élection par priorité
+  fixe, le départ des timers sur leur horloge, l'ACIA et le SCC. Aucune mesure matérielle.
+
 ## `compare_titles` : la cause d'un échec n'est plus coupée (2026-11-10)
 
 - Une erreur d'Hatari ou de NeoST était tronquée à ses 300 premiers caractères, c'est-à-dire à la
