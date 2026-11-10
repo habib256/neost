@@ -6,6 +6,16 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## A43, ACIA 6850 : TDRE sous master reset, MIDI au reset à chaud (2026-11-10)
+
+- Les deux ACIA lisent TDRE à 0 tant que la puce est tenue en master reset (CR1-0 = 11),
+  et à 1 dès la sortie : MC6850 § Interrupt Request p. 6 et § Counter Divide Select Bits.
+- L'ACIA MIDI n'est plus effacée par le reset à chaud de la machine : la puce n'a pas de
+  broche de reset (Pin Assignment p. 1), comme l'ACIA clavier. Un octet en cours d'émission
+  part ; la mise sous tension garde l'état d'Hatari.
+- Divergences volontaires avec Hatari, documentées. Tests ajoutés pour les deux ACIA ; les
+  attentes qui suivaient Hatari passent à la fiche. Palier full vert, 19 parcours de jeu OK.
+
 ## A43, MFP : élection par priorité fixe, Fuzion à l'appui (2026-11-10)
 
 - Le canal MFP élu suit la priorité fixe de la fiche (MC68901 § 3.1), et non plus la

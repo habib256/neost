@@ -2563,6 +2563,23 @@ les étalons de fidélité** (réseau OFF pendant `run_all.py --tier fast/full`)
   vraie carte. ITL/isochrone et timing électrique restent non exécutés. Références,
   tests et limites : `docs/NETUSBEE.md`.
 
+## ACIA 6850 : TDRE sous master reset et reset à chaud du MIDI (2026-11-10)
+
+**Divergences volontaires, grade B.** Motorola MC6850 (`extern/datasheets/MC6850.pdf`) :
+- § Interrupt Request p. 6 : TDRE reflète le registre d'émission « except when inhibited by […]
+  the ACIA being maintained in the Reset condition » ; § Counter Divide Select Bits p. 8 : le
+  master reset « clears the Status Register ». Les deux ACIA (`Ikbd::read8`, `MidiAcia::read8`)
+  lisent donc TDRE à 0 tant que CR1-0 = 11, et à 1 dès la sortie. Hatari `acia.c:681 @ f0736b24`
+  pose TDRE pendant le reset.
+- Pin Assignment p. 1 : la puce n'a pas de broche de reset. Le reset à chaud de la machine ne
+  touche plus l'ACIA MIDI (`MidiAcia::warmReset`), comme l'ACIA clavier (`Ikbd::resetHw`) ;
+  un octet en cours d'émission part. Hatari `midi.c:110-122 @ f0736b24` efface tout. La mise
+  sous tension (`Machine::hardReset`) garde l'état initial d'Hatari, la fiche ne le définissant
+  qu'après un master reset ; le TOS en fait un au démarrage.
+
+Restent ouverts : RDRF tenu jusqu'à l'acquittement de l'overrun (l'essai du 2026-11-04 bloque
+cinq jeux, il faut un relevé), l'octet MIDI en vol au master reset, le format 7 bits + parité.
+
 ## Élection MFP par priorité fixe (2026-11-10)
 
 **Divergence volontaire, grade B.** MC68901 janv. 1984 § 3.1 et § 3.1.1 p. 3-1, MK68901 p. 9 :

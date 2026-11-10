@@ -58,8 +58,10 @@ int testIkbdAciaFormat() {
     }
     {
         Rig r; r.k.write8(0,0xF6); r.k.write8(2,0x1C); r.k.write8(0,3);
-        eq("master reset discards break TDR",r.status()&2,2);
+        // [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé sous master reset, relu à 1 à sa sortie.
+        eq("master reset discards break TDR",r.status()&2,0);
         eq("master reset leaves no TX deadline",r.s.cyclesUntil(Scheduler::IKBD_TX),-1);
+        r.k.write8(0,0x96); eq("leaving master reset: TDR empty",r.status()&2,2);
     }
     std::printf("[ikbd-acia-format] %d checks, %d failures\n",checks,failures);
     return failures;

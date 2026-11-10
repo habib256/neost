@@ -1036,6 +1036,9 @@ static void testMidiTdre() {
     midi.reset(); midi.write8(kCtrl, 0x15); midi.write8(kData, 0x90);
     checkBool("émetteur occupé après écriture", tdre() == 0, true);
     midi.write8(kCtrl, 0x03);
+    // [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé sous master reset, relu à 1 à sa sortie.
+    checkBool("master reset tenu : TDRE inhibé", tdre() == 0, true);
+    midi.write8(kCtrl, 0x15);
     checkBool("master reset : émetteur au repos", tdre() == 1, true);
 
     // Un pilote qui scrute n'enchaîne pas les octets sans attendre.
@@ -1447,6 +1450,9 @@ static void testIkbdTdre() {
     // d'Ikbdws passait sans attendre, tous les octets d'une commande au même cycle.
     checkBool("TIE coupé : TDRE tombe aussi", ecritUnOctet(0x96) == 0, true);
     ikbd.write8(kCtrl, 0x03);
+    // [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé sous master reset, relu à 1 à sa sortie.
+    checkBool("master reset tenu : TDRE inhibé", tdre() == 0, true);
+    ikbd.write8(kCtrl, 0x96);
     checkBool("master reset : émetteur au repos", tdre() == 1, true);
 }
 

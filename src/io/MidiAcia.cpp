@@ -46,7 +46,9 @@ uint8_t MidiAcia::read8(uint32_t addr) {
         // $FFFC04 : statut. TDRE indique la case TDR, indépendamment de TIE ;
         // RX plein si le bouclage a livré un octet ; IRQ si une cause RX ou TX
         // est active (cf. acia.c ACIA_UpdateIRQ).
-        uint8_t s = tdre_ ? ACIA_TDRE : 0;
+        // [B] MC6850 § Interrupt Request p. 6 et § Counter Divide Select Bits p. 8 : TDRE inhibé
+        // sous master reset (CR0-1=11), relu à 1 à sa sortie. Divergence avec [D] Hatari acia.c:681 @ f0736b24.
+        uint8_t s = (tdre_ && (control_ & 0x03) != 0x03) ? ACIA_TDRE : 0;
         if (rdrf_) s |= ACIA_RDRF;
         if (ovrn_) s |= ACIA_OVRN;
         if ((control_ & 0x03) != 0x03 && (((rdrf_ || rxOverrun_) && (control_ & 0x80)) || (txEnableInt_ && tdre_)))

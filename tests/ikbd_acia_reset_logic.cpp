@@ -120,6 +120,17 @@ int testIkbdAciaReset() {
         equal("nouveau boot reçu", rig.data(), 0xF1);
         equal("RIE survit pour prochain caractère", rig.status(), 2);
     }
+    {
+        // [B] MC6850 § Interrupt Request p. 6, § Counter Divide Select Bits p. 8 : TDRE inhibé
+        // tant que la puce est tenue en master reset, et relu à 1 à sa sortie.
+        Rig rig;
+        rig.ikbd.write8(0, 0x03);
+        equal("master reset : SR entièrement à 0", rig.status(), 0x00);
+        rig.ikbd.write8(0, 0x03);
+        equal("master reset tenu : TDRE toujours inhibé", rig.status() & 2, 0);
+        rig.ikbd.write8(0, 0x96);
+        equal("sortie du reset : TDRE à 1", rig.status(), 0x02);
+    }
     std::fprintf(stderr, "[ikbd-acia-reset] %d checks, %d FAIL\n", checks, failures);
     return failures;
 }

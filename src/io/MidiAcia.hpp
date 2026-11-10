@@ -110,15 +110,16 @@ public:
     uint8_t read8(uint32_t addr);            // $FFFC04 statut / $FFFC06 données
     void    write8(uint32_t addr, uint8_t v);
 
-    // Reset matériel — appelé par les resets CHAUD et FROID, comme chez Hatari
-    // ([D] reset.c:111 @ f0736b24 ACIA_Reset + :124 Midi_Reset, tous deux dans Reset_ST()). Sans
-    // lui, un séquenceur qui avait armé RIE/TIE laissait après un Ctrl-Alt-Del un
-    // statut périmé sur $FFFC04 et un octet fantôme livrable sur $FFFC06.
-    // ⚠ [B] MC6850 Pin Assignment p. 1, § Counter Divide Select Bits p. 8 : pas de broche de reset, seul
-    // CR0=CR1=1 remet la puce à zéro. Un vrai ST garde donc ces registres jusqu'au master reset du
-    // logiciel : ce « statut périmé » est le comportement de la fiche, et Ikbd::resetHw le conserve
-    // déjà ([D] Hatari acia.c:330-347 @ f0736b24). Ici tout est effacé, héritage de [D] Hatari
-    // midi.c:110-122 @ f0736b24 : écart non corrigé.
+    // Reset à CHAUD de la machine : [B] MC6850 Pin Assignment p. 1, § Counter Divide Select Bits
+    // p. 8 — pas de broche de reset, seul CR0=CR1=1 remet la puce à zéro. Registres, émission et
+    // réception en cours sont conservés jusqu'au master reset du logiciel (TOS le fait au boot),
+    // comme Ikbd::resetHw. Seule la ligne IRQ est republiée vers le MFP, qui vient d'être remis.
+    // Divergence avec [D] Hatari midi.c:110-122 @ f0736b24, dont Midi_Reset efface tout.
+    void warmReset() { raiseIfReady(); }
+
+    // Mise sous tension ([D] Hatari midi.c:110-122 @ f0736b24). [B] MC6850 § Counter Divide Select
+    // Bits p. 8 : l'état après mise sous tension n'est défini qu'après un master reset ; on part
+    // de celui d'Hatari.
     void reset() {
         rxOverrun_ = ovrn_ = srRead_ = false;
         // [D] Hatari midi.c:116 @ f0736b24 : amorçage à 1. [F] Fiche muette sur RDR à la mise sous
@@ -197,10 +198,11 @@ private:
     // ⚠ [B] MC6850 § Receiver Overrun p. 8-9 : « The RDRF bit remains set until the Overrun is reset ».
     //   read8 efface RDRF dès la lecture du caractère valide, comme [D] Hatari acia.c:858 @ f0736b24 ;
     //   l'IRQ d'overrun retombe avec lui, comme [D] acia.c:721-724,869-873 @ f0736b24 : écart non corrigé.
-    // ⚠ [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé « being maintained in the Reset condition ». write8 pose
-    //   tdre_, comme [D] acia.c:681 @ f0736b24 et gen_uart.v:273,301 @ a00deb5b : écart non corrigé.
+    // [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé « being maintained in the Reset condition ». write8 pose
+    //   tdre_ (état interne), read8 masque TDRE sous CR0-1=11.
     // ⚠ [B] MC6850 § Counter Divide Select Bits p. 8 : le master reset initialise le récepteur.
-    //   onRxPace livre l'octet déjà en vol, y compris sous CR0-1=11 : écart non corrigé.
+    //   onRxPace livre l'octet déjà en vol, y compris sous CR0-1=11 : écart non corrigé (il faudrait
+    //   dater le début de l'octet, donc un champ sérialisé de plus).
     // ⚠ [B] MC6850 § Receive p. 6, § Word Select Bits p. 8, Table 1 p. 7 : en 7 bits + parité, D7 reçu
     //   vaut 0 ; PE et FE signalent les erreurs. pushRx stocke l'octet entier, bits 4 et 6 toujours à 0 :
     //   écart non corrigé.

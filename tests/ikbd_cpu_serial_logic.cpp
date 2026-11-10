@@ -67,7 +67,9 @@ int testIkbdCpuSerial() {
     {
         Rig r; r.send(0x1C); r.at(1024); r.k.write8(0,3); r.at(10240);
         eq("master reset discards active TSR",r.responseDue(),-1);
-        eq("master reset restores TDRE",r.status()&2,2);
+        // [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé sous master reset, relu à 1 à sa sortie.
+        eq("master reset inhibits TDRE",r.status()&2,0);
+        r.k.write8(0,0x96); eq("master reset restores TDRE on exit",r.status()&2,2);
     }
     {
         Rig r; r.send(0x1C); r.k.resetHw();

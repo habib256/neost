@@ -45,6 +45,27 @@ int testMidiTxControl() {
     live=160; midi.write8(4,0x75);
     live=300; midi.write8(4,0x35);
     eq("diviseur changé en BREAK",sched.rawCyclesUntil(Scheduler::MIDI_TX),116);
+    // [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé en master reset, relu à 1 ensuite.
+    {
+        Scheduler s2; Mfp m2; MidiAcia a2(m2); int64_t l2=0;
+        a2.setScheduler(&s2); s2.setLiveClock([&] {return l2;});
+        a2.write8(4,0x03); eq("master reset : TDRE inhibé",a2.read8(4)&2,0);
+        a2.write8(4,0x95); eq("sortie du reset : TDRE à 1",a2.read8(4)&2,2);
+    }
+    // [B] MC6850 Pin Assignment p. 1 : pas de broche de reset ; un reset à chaud de la
+    // machine laisse CR, RIE/TIE et l'octet reçu en place jusqu'au master reset logiciel.
+    {
+        Scheduler s3; Mfp m3; MidiAcia a3(m3); int64_t l3=0;
+        a3.setScheduler(&s3); s3.setLiveClock([&] {return l3;});
+        a3.write8(4,0x03); a3.write8(4,0xB5);          // RIE + TIE, /16 8N1
+        a3.receiveExternal(0x42);
+        const uint8_t before=a3.read8(4);
+        eq("avant reset : RDRF, TDRE, IRQ",before,0x83);
+        m3.reset(); a3.warmReset();
+        eq("reset à chaud : SR conservé",a3.read8(4),0x83);
+        eq("reset à chaud : octet reçu conservé",a3.read8(6),0x42);
+        eq("IRQ MIDI republiée vers le MFP (GPIP4 bas)",m3.read8(0xFFFA01)&0x10,0);
+    }
     std::fprintf(stderr,"[midi-tx-control] %d checks, %d failures\n",checks,failures);
     return failures;
 }

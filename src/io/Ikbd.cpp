@@ -185,7 +185,10 @@ uint8_t Ikbd::read8(uint32_t addr) {
         // livraison est gelée → RDRF ne remonte plus (octets en file). Lire SR
         // est mémorisé (srRead_) : la prochaine lecture de RDR effacera OVRN
         // ([B] MC6850 § Interrupt Request p. 6 : séquence SR→RDR ; [D] Hatari acia.c:768 @ f0736b24).
-        uint8_t s = tdre_ ? ACIA_TDRE : 0;
+        // [B] MC6850 § Interrupt Request p. 6 : TDRE est inhibé « being maintained in the Reset
+        // condition » ; § Counter Divide Select Bits p. 8 : le master reset efface le SR. tdre_
+        // reste vrai en interne : TDRE se relit à 1 dès la sortie du reset.
+        uint8_t s = (tdre_ && (control_ & 0x03) != 0x03) ? ACIA_TDRE : 0;
         if (rdrf_)       s |= ACIA_RDRF;
         if (ovrn_)       s |= ACIA_OVRN;
         if (irqActive()) s |= ACIA_IRQ;
@@ -309,8 +312,7 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         // [B] MC6850 § Counter Divide Select Bits p. 8 : bits 0-1 = 11 → master reset de l'ACIA, qui efface le
         // SR hors CTS/DCD et initialise récepteur et émetteur.
         // [D] Hatari acia.c:669-705 @ f0736b24 ACIA_MasterReset : SR repart à TDRE seul → RDRF/OVRN effacés.
-        // ⚠ [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé « being maintained in the Reset condition ».
-        // Ici TDRE se lit à 1 sous CR0-1=11 : écart non corrigé.
+        // TDRE se lit à 0 tant que CR0-1=11 (cf. read8) ; divergence avec [D] Hatari acia.c:681 @ f0736b24.
         // [B] MC6850 § Master Reset p. 5 : IRQ tenue haute, cf. irqActive. [D] Hatari acia.c:727-730 @ f0736b24 la lève sous CR=%x01xxx11.
         // La file IKBD et la livraison
         // en vol sont CONSERVÉES (elles vivent côté 6301, pas côté ACIA).

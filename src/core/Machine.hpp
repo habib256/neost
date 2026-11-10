@@ -103,7 +103,7 @@ public:
         bus.megaSteReset(); cpu.setMegaSteSpeed(false); bus.fpu.reset(); bus.scu.reset(/*cold=*/false);
         gemdos.reset();    // ferme les fichiers HD GEMDOS ouverts (no-op si inactif)
         scc.reset();       // SCC série (Mega STE) au repos
-        midi.reset();      // ACIA MIDI ([D] reset.c:111 @ f0736b24 ACIA_Reset + :124 Midi_Reset)
+        midi.warmReset();  // ACIA MIDI : pas de broche de reset ([B] MC6850 p. 1), cf. MidiAcia::warmReset
         dongle.reset(); bus.refreshUds();   // clé cartouche : registres à 0
         ports.reset();
         bus.seedResetVectors();    // vecteurs SSP/PC $0-$7 : miroir ROM en RAM (stMemory.c)

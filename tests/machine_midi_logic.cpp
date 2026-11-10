@@ -31,9 +31,11 @@ int testMachineMidi() {
               "pending character follows at wire speed");
         m->bus.write8(0xFFFC06, 0x40);
         m->reset();
-        check(m->sched.cyclesUntil(Scheduler::MIDI_TX) < 0, "reset cancels MIDI transmission");
+        // [B] MC6850 Pin Assignment p. 1 : pas de broche de reset ; le reset à chaud de la
+        // machine n'arrête pas l'émission, seul le master reset logiciel le ferait.
+        check(m->sched.cyclesUntil(Scheduler::MIDI_TX) >= 0, "warm reset keeps MIDI transmission");
         m->sched.runTo(8000);
-        check(sent.size() == 2, "cancelled byte never reaches sink");
+        check(sent.size() == 3 && sent[2].first == 0x40, "byte in flight reaches sink after warm reset");
         m->midi.setMidiSinkTimed({});
         m->midi.setLoopback(true);
         m->bus.write8(0xFFFC04, 0x95);

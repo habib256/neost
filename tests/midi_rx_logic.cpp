@@ -41,7 +41,7 @@ int testMidiRx() {
     eq("snapshot keeps pending overrun", sr(), 0x22);
     midi.receiveExternal(0x61); midi.receiveExternal(0x62);
     midi.write8(0xFFFC04, 3);
-    eq("master reset clears flags", sr(), 2);
+    eq("master reset clears flags", sr(), 0);   // [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé sous master reset, relu à 1 à sa sortie.
     eq("master reset retains RDR contents", rdr(), 0x61);
     midi.receiveExternal(0x63);
     eq("new completion replaces reset RDR", rdr(), 0x63);

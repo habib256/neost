@@ -75,9 +75,11 @@ int testMidiBreak() {
     midi.read8(6);
     eq("last IRQ cause releases GPIP4",mfp.read8(0xFFFA01) & 0x10,0x10);
     cr(0x75); data(0x77); cr(3);
-    eq("master reset clears pending",sr(),2);
+    // [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé sous master reset, relu à 1 à sa sortie.
+    eq("master reset clears pending",sr(),0);
     eq("master reset cancels TX",sched.cyclesUntil(Scheduler::MIDI_TX),-1);
     eq("master reset preserves RX",sched.rawCyclesUntil(Scheduler::MIDI_RX),2480);
+    cr(0x15); eq("leaving master reset: TDRE empty",sr()&2,2);
     cr(0x75); data(0x88); midi.reset();
     eq("hardware reset clears break pending",sr(),2);
     eq("hardware reset preserves RX",sched.rawCyclesUntil(Scheduler::MIDI_RX),2480);
