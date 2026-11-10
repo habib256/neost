@@ -1,51 +1,66 @@
 # Community 160
 
-> 19 nodes
+> 52 nodes
 
 ## Key Concepts
 
-- **DasmStyle** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **Syntax** (8 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **LetterCase** (6 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **.setDasmSyntax()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **.NeostMoira()** (4 connections) — `src/core/Cpu68k.cpp`
-- **.setDasmLetterCase()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.StrWriter()** (2 connections) — `extern/moira/Moira/StrWriter.h`
-- **letterCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **numberFormat** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **syntax** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **tab** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **LOWER_CASE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **MIXED_CASE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **UPPER_CASE** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **GNU** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **GNU_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **MOIRA** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **MOIRA_MIT** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
-- **MUSASHI** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **sys** (105 connections)
+- **os** (47 connections)
+- **main()** (11 connections) — `tools/opendst_oracle.py`
+- **fetch_etalons.py** (10 connections) — `tools/fetch_etalons.py`
+- **opendst_oracle.py** (10 connections) — `tools/opendst_oracle.py`
+- **fetch_disk.py** (9 connections) — `tools/fetch_disk.py`
+- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
+- **Server** (8 connections) — `tools/opendst_explore.py`
+- **main()** (8 connections) — `tools/opendst_explore.py`
+- **main()** (7 connections) — `tools/opendst_memdiff.py`
+- **opendst_explore.py** (7 connections) — `tools/opendst_explore.py`
+- **Server** (6 connections) — `tools/opendst_memdiff.py`
+- **run()** (6 connections) — `tools/opendst_oracle.py`
+- **audit_citations.py** (6 connections) — `tools/audit_citations.py`
+- **zipfile** (6 connections)
+- **main()** (5 connections) — `tools/fetch_disk.py`
+- **download_zip_member()** (5 connections) — `tools/fetch_etalons.py`
+- **opendst.py** (5 connections) — `tools/opendst.py`
+- **download()** (4 connections) — `tools/fetch_disk.py`
+- **find_download_links()** (4 connections) — `tools/fetch_disk.py`
+- **.cmd()** (4 connections) — `tools/opendst_explore.py`
+- **main()** (4 connections) — `tools/opendst.py`
+- **random** (4 connections)
+- **fetch_entry()** (3 connections) — `tools/fetch_etalons.py`
+- **main()** (3 connections) — `tools/fetch_etalons.py`
+- *... and 27 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (3 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 131](Community_131.md) (2 shared connections)
-- [Community 2](Community_2.md) (2 shared connections)
-- [Community 314](Community_314.md) (2 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 150](Community_150.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
+- [Community 18](Community_18.md) (43 shared connections)
+- [Community 3](Community_3.md) (24 shared connections)
+- [Community 227](Community_227.md) (18 shared connections)
+- [Community 8](Community_8.md) (11 shared connections)
+- [Community 26](Community_26.md) (9 shared connections)
+- [Community 34](Community_34.md) (9 shared connections)
+- [Community 207](Community_207.md) (7 shared connections)
+- [Community 151](Community_151.md) (5 shared connections)
+- [Community 146](Community_146.md) (5 shared connections)
+- [Community 49](Community_49.md) (4 shared connections)
+- [Community 83](Community_83.md) (4 shared connections)
+- [Community 165](Community_165.md) (3 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraTypes.h`
-- `extern/moira/Moira/StrWriter.h`
-- `src/core/Cpu68k.cpp`
+- `tools/audit_citations.py`
+- `tools/check_ppm_nonuniform.py`
+- `tools/fetch_disk.py`
+- `tools/fetch_etalons.py`
+- `tools/opendst.py`
+- `tools/opendst_explore.py`
+- `tools/opendst_memdiff.py`
+- `tools/opendst_oracle.py`
 
 ## Audit Trail
 
-- EXTRACTED: 30 (91%)
-- INFERRED: 3 (9%)
+- EXTRACTED: 253 (100%)
+- INFERRED: 1 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

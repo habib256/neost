@@ -1,65 +1,67 @@
 # Community 214
 
-> 27 nodes
+> 43 nodes
 
 ## Key Concepts
 
+- **App** (28 connections)
+- **appLoop()** (26 connections) — `src/gui/AppLoop.cpp`
 - **runKioskMenu()** (16 connections) — `src/gui/AppLoop.cpp`
-- **consumeConfigRequests()** (12 connections) — `src/gui/AppLoop.cpp`
 - **consumeProfileRequests()** (12 connections) — `src/gui/AppLoop.cpp`
-- **resolveData()** (11 connections) — `src/gui/App.cpp`
 - **joyResolveRoles()** (8 connections) — `src/gui/JoyMap.cpp`
 - **JoyMap.cpp** (7 connections) — `src/gui/JoyMap.cpp`
-- **fileExists()** (6 connections) — `src/gui/App.cpp`
 - **joymapSerialize()** (6 connections) — `src/gui/JoyMap.cpp`
 - **drawKioskDiskMenu()** (6 connections) — `src/gui/KioskMenu.cpp`
 - **kioskScanDisks()** (6 connections) — `src/gui/KioskMenu.cpp`
+- **8. 🧱 Dette d'architecture et de documentation** (6 connections) — `TODO.md`
+- **applyRequests()** (5 connections) — `src/gui/AppLoop.cpp`
+- **beginDraw()** (5 connections) — `src/gui/AppLoop.cpp`
+- **drawOverlays()** (5 connections) — `src/gui/AppLoop.cpp`
+- **handleDrops()** (5 connections) — `src/gui/AppLoop.cpp`
+- **prepareConfigUi()** (5 connections) — `src/gui/AppLoop.cpp`
+- **renderImGui()** (5 connections) — `src/gui/AppLoop.cpp`
 - **joyGuid()** (5 connections) — `src/gui/JoyMap.cpp`
 - **joymapParse()** (5 connections) — `src/gui/JoyMap.cpp`
 - **kioskScanBrowse()** (5 connections) — `src/gui/KioskMenu.cpp`
-- **string** (5 connections)
 - **App** (5 connections)
-- **7. 🧱 Dette d'architecture** (5 connections) — `TODO.md`
-- **pickTosForMachine()** (4 connections) — `src/gui/App.cpp`
+- **applyHostRequests()** (4 connections) — `src/gui/AppLoop.cpp`
+- **feedJoysticks()** (4 connections) — `src/gui/AppLoop.cpp`
+- **feedMouse()** (4 connections) — `src/gui/AppLoop.cpp`
 - **kioskComputeShortcuts()** (4 connections) — `src/gui/KioskMenu.cpp`
-- **kioskPruneRomDirs()** (3 connections) — `src/gui/KioskMenu.cpp`
-- **App** (3 connections)
-- **string** (3 connections)
-- **string** (3 connections)
-- **FPU transcendantes bit-exact, suite Hatari rejouée, nouveaux étalons et sondes (2026-10-20)** (3 connections) — `CHANGELOG.md`
-- **low** (2 connections) — `src/io/SoftFloatX80.hpp`
-- **Interface : une fenêtre « Configuration » unique + barre d'état (2026-08-07)** (2 connections) — `CHANGELOG.md`
-- *... and 2 more nodes in this community*
+- **captureWindow()** (3 connections) — `src/gui/AppLoop.cpp`
+- *... and 18 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (13 shared connections)
-- [Community 380](Community_380.md) (12 shared connections)
-- [Community 101](Community_101.md) (7 shared connections)
-- [Community 138](Community_138.md) (4 shared connections)
-- [Community 204](Community_204.md) (3 shared connections)
-- [Community 130](Community_130.md) (3 shared connections)
-- [Community 22](Community_22.md) (2 shared connections)
+- [Community 4](Community_4.md) (28 shared connections)
+- [Community 248](Community_248.md) (16 shared connections)
+- [Community 138](Community_138.md) (13 shared connections)
+- [Community 204](Community_204.md) (4 shared connections)
+- [Community 101](Community_101.md) (4 shared connections)
 - [Community 51](Community_51.md) (2 shared connections)
-- [Community 150](Community_150.md) (2 shared connections)
-- [Community 397](Community_397.md) (2 shared connections)
 - [Community 15](Community_15.md) (2 shared connections)
-- [Community 175](Community_175.md) (1 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 283](Community_283.md) (1 shared connections)
+- [Community 21](Community_21.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
 - `TODO.md`
-- `src/gui/App.cpp`
+- `docs/KIOSK.md`
 - `src/gui/AppLoop.cpp`
 - `src/gui/JoyMap.cpp`
 - `src/gui/KioskMenu.cpp`
+- `src/gui/StScreenView.cpp`
 - `src/io/SoftFloatX80.hpp`
+- `tools/audit_citations.py`
 
 ## Audit Trail
 
-- EXTRACTED: 61 (58%)
-- INFERRED: 44 (42%)
+- EXTRACTED: 110 (70%)
+- INFERRED: 48 (30%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 132
 
-> 29 nodes
+> 28 nodes
 
 ## Key Concepts
 
@@ -9,7 +9,6 @@
 - **.Rig()** (3 connections) — `tests/blitter_rmw_logic.cpp`
 - **.romWord()** (3 connections) — `tests/blitter_rmw_logic.cpp`
 - **.serialize()** (3 connections) — `tests/blitter_rmw_logic.cpp`
-- **.copyToOperand()** (2 connections) — `tests/blitter_rmw_logic.cpp`
 - **.configureCopy()** (2 connections) — `tests/blitter_rmw_logic.cpp`
 - **Blitter** (2 connections)
 - **Bus** (2 connections)
@@ -29,7 +28,8 @@
 - **mfp** (1 connections) — `tests/blitter_rmw_logic.cpp`
 - **readCycle** (1 connections) — `tests/blitter_rmw_logic.cpp`
 - **scheduler** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- *... and 4 more nodes in this community*
+- **serviceCycle** (1 connections) — `tests/blitter_rmw_logic.cpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
@@ -43,8 +43,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 39 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 38 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

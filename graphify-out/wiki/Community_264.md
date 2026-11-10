@@ -1,32 +1,34 @@
 # Community 264
 
-> 6 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **drawStKiosk()** (8 connections) — `src/gui/StScreenView.cpp`
-- **crtApply()** (6 connections) — `src/gui/StScreenView.cpp`
-- **drawStScreen()** (5 connections) — `src/gui/StScreenView.cpp`
-- **GlScreen** (3 connections)
-- **App** (3 connections)
-- **GLuint** (1 connections)
+- **MidiInDev** (8 connections) — `src/gui/AppConfig.hpp`
+- **MidiOutDev** (6 connections) — `src/gui/AppConfig.hpp`
+- **string** (3 connections)
+- **channel** (1 connections) — `src/gui/AppConfig.hpp`
+- **name** (1 connections) — `src/gui/AppConfig.hpp`
+- **uid** (1 connections) — `src/gui/AppConfig.hpp`
+- **channels** (1 connections) — `src/gui/AppConfig.hpp`
+- **name** (1 connections) — `src/gui/AppConfig.hpp`
+- **uid** (1 connections) — `src/gui/AppConfig.hpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 380](Community_380.md) (2 shared connections)
-- [Community 329](Community_329.md) (1 shared connections)
-- [Community 68](Community_68.md) (1 shared connections)
-- [Community 182](Community_182.md) (1 shared connections)
+- [Community 21](Community_21.md) (3 shared connections)
+- [Community 11](Community_11.md) (2 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/StScreenView.cpp`
+- `src/gui/AppConfig.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (76%)
-- INFERRED: 4 (24%)
+- EXTRACTED: 13 (87%)
+- INFERRED: 2 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

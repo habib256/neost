@@ -38,9 +38,10 @@
 - [Community 59](Community_59.md) (16 shared connections)
 - [Community 331](Community_331.md) (7 shared connections)
 - [Community 102](Community_102.md) (4 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
 - [Community 230](Community_230.md) (1 shared connections)
-- [Community 164](Community_164.md) (1 shared connections)
+- [Community 397](Community_397.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 - [Community 270](Community_270.md) (1 shared connections)
 
 ## Source Files

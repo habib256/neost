@@ -1,11 +1,12 @@
 # Community 181
 
-> 14 nodes
+> 15 nodes
 
 ## Key Concepts
 
 - **ErrorIrqRig** (12 connections) — `tests/scc_rx_error_irq_logic.cpp`
 - **testSccRxErrorIrq()** (12 connections) — `tests/scc_rx_error_irq_logic.cpp`
+- **scc_rx_error_irq_logic.cpp** (6 connections) — `tests/scc_rx_error_irq_logic.cpp`
 - **.command()** (4 connections) — `tests/scc_rx_error_irq_logic.cpp`
 - **.write()** (4 connections) — `tests/scc_rx_error_irq_logic.cpp`
 - **.read()** (3 connections) — `tests/scc_rx_error_irq_logic.cpp`
@@ -21,8 +22,8 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 
 ## Source Files
 
@@ -30,8 +31,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 27 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 30 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

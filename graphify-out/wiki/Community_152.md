@@ -1,6 +1,6 @@
 # Community 152
 
-> 20 nodes
+> 19 nodes
 
 ## Key Concepts
 
@@ -19,7 +19,6 @@
 - **.isSet()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.removeAll()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.setNeedsCheck()** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
-- **guards** (2 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **.elements()** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **capacity** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
 - **count** (1 connections) — `extern/moira/Moira/MoiraDebugger.h`
@@ -32,7 +31,7 @@
 - [Community 282](Community_282.md) (3 shared connections)
 - [Community 57](Community_57.md) (1 shared connections)
 - [Community 285](Community_285.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 
 ## Source Files
 
@@ -40,7 +39,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 55 (92%)
+- EXTRACTED: 54 (92%)
 - INFERRED: 5 (8%)
 - AMBIGUOUS: 0 (0%)
 

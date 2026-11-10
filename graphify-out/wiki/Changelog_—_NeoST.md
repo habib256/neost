@@ -1,6 +1,6 @@
 # Changelog — NeoST
 
-> God node · 282 connections · `CHANGELOG.md`
+> God node · 296 connections · `CHANGELOG.md`
 
 **Community:** [Community 130](Community_130.md)
 
@@ -26,8 +26,8 @@
 - Les cycles volés par le blitter avancent enfin l'horloge des timers (2026-08-25) `EXTRACTED`
 - Passe de cohérence doc ↔ code, 3ᵉ tour (2026-08-19) `EXTRACTED`
 - Chemins hôte unifiés, logique pure testable, `main.cpp` dégrossi (2026-08-17) `EXTRACTED`
-- A42 soldé : l'élection de l'IRQ MFP voit enfin tout le lot de dispatch (2026-09-03) `EXTRACTED`
-- *…and 262 more `contains` connection(s) not listed (lowest-degree first to go)*
+- Bug hunt 11ᵉ passe : 24 correctifs sur six sous-systèmes, save-state v51 (2026-10-20) `EXTRACTED`
+- *…and 276 more `contains` connection(s) not listed (lowest-degree first to go)*
 
 ---
 

@@ -4,23 +4,25 @@
 
 ## Key Concepts
 
-- **RtcPhaseRig** (5 connections) — `tests/rtc_long_phase_logic.cpp`
-- **.RtcPhaseRig()** (1 connections) — `tests/rtc_long_phase_logic.cpp`
-- **Rtc** (1 connections)
-- **clock** (1 connections) — `tests/rtc_long_phase_logic.cpp`
-- **rtc** (1 connections) — `tests/rtc_long_phase_logic.cpp`
+- **nat_backend_test.cpp** (6 connections) — `tests/nat_backend_test.cpp`
+- **main()** (3 connections) — `tests/nat_backend_test.cpp`
+- **check()** (2 connections) — `tests/nat_backend_test.cpp`
+- **natpacket** (1 connections)
+- **socketcompat** (1 connections)
 
 ## Relationships
 
-- [Community 318](Community_318.md) (1 shared connections)
+- [Community 40](Community_40.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/rtc_long_phase_logic.cpp`
+- `tests/nat_backend_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 8 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

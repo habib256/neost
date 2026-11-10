@@ -1,6 +1,6 @@
 # Community 13
 
-> 81 nodes
+> 79 nodes
 
 ## Key Concepts
 
@@ -9,7 +9,6 @@
 - **Scheduler** (3 connections) — `src/core/DmaSound.hpp`
 - **Mfp** (2 connections) — `src/core/DmaSound.hpp`
 - **.DmaSound()** (2 connections) — `src/core/DmaSound.hpp`
-- **.serialize()** (2 connections) — `src/core/DmaSound.hpp`
 - **.setCycleClock()** (2 connections) — `src/core/DmaSound.hpp`
 - **.setScheduler()** (2 connections) — `src/core/DmaSound.hpp`
 - **function** (2 connections)
@@ -29,13 +28,16 @@
 - **by2R_** (1 connections) — `src/core/DmaSound.hpp`
 - **cap_** (1 connections) — `src/core/DmaSound.hpp`
 - **capLimit_** (1 connections) — `src/core/DmaSound.hpp`
-- *... and 56 more nodes in this community*
+- **capR_** (1 connections) — `src/core/DmaSound.hpp`
+- *... and 54 more nodes in this community*
 
 ## Relationships
 
-- [Community 48](Community_48.md) (35 shared connections)
+- [Community 48](Community_48.md) (27 shared connections)
+- [Community 55](Community_55.md) (8 shared connections)
 - [Community 102](Community_102.md) (5 shared connections)
 - [Community 243](Community_243.md) (1 shared connections)
+- [Community 380](Community_380.md) (1 shared connections)
 
 ## Source Files
 
@@ -43,7 +45,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 124 (100%)
+- EXTRACTED: 123 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

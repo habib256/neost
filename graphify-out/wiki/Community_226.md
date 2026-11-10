@@ -21,8 +21,8 @@
 
 - [Community 41](Community_41.md) (1 shared connections)
 - [Community 301](Community_301.md) (1 shared connections)
-- [Community 300](Community_300.md) (1 shared connections)
-- [Community 27](Community_27.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
+- [Community 247](Community_247.md) (1 shared connections)
 
 ## Source Files
 

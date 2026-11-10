@@ -4,23 +4,24 @@
 
 ## Key Concepts
 
-- **mfp_gpip_composite_logic.cpp** (4 connections) — `tests/mfp_gpip_composite_logic.cpp`
-- **testMfpGpipComposite()** (3 connections) — `tests/mfp_gpip_composite_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_gpip_composite_logic.cpp`
+- **machine_scc_logic.cpp** (5 connections) — `tests/machine_scc_logic.cpp`
+- **testMachineScc()** (3 connections) — `tests/machine_scc_logic.cpp`
+- **main()** (2 connections) — `tests/machine_scc_logic.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_gpip_composite_logic.cpp`
+- `tests/machine_scc_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 6 (86%)
+- INFERRED: 1 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

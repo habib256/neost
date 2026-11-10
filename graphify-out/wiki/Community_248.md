@@ -1,39 +1,62 @@
 # Community 248
 
-> 14 nodes
+> 51 nodes
 
 ## Key Concepts
 
-- **TimingComparison** (16 connections) — `tools/test_timing_oracle.py`
-- **compare()** (9 connections) — `tools/run_timing_oracle.py`
-- **.check()** (8 connections) — `tools/test_timing_oracle.py`
-- **.test_fdc_write_preserves_cpu_stall_independently_of_disk_cadence()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_transfer_mutations_and_strict_blitter()** (3 connections) — `tools/test_timing_oracle.py`
-- **.test_changed_probe_and_short_reference()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_delayed_first_irq()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_div_order_is_exact()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_missing_interrupt_with_unchanged_dominant_period()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_references_match_themselves()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_reset_clock_bias_is_detected()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_slow_drift_with_unchanged_dominant_period()** (2 connections) — `tools/test_timing_oracle.py`
-- **.test_stx_read_time_is_honoured()** (2 connections) — `tools/test_timing_oracle.py`
-- **.setUpClass()** (1 connections) — `tools/test_timing_oracle.py`
+- **Frame** (45 connections) — `src/gui/AppLoop.cpp`
+- **drawConfigWindow()** (27 connections) — `src/gui/ConfigWindow.cpp`
+- **drawDesktopChrome()** (15 connections) — `src/gui/AppLoop.cpp`
+- **drawMenuBar()** (10 connections) — `src/gui/AppLoop.cpp`
+- **drawStatusBar()** (7 connections) — `src/gui/AppLoop.cpp`
+- **syncConfigUi()** (7 connections) — `src/gui/AppLoop.cpp`
+- **IconButton()** (7 connections) — `src/gui/UiCommon.cpp`
+- **drawToolbar()** (6 connections) — `src/gui/AppLoop.cpp`
+- **drawHardDiskPage()** (6 connections) — `src/gui/MediaPages.cpp`
+- **drawFloppyWindow()** (5 connections) — `src/gui/ConfigWindow.cpp`
+- **drawCartPage()** (4 connections) — `src/gui/MediaPages.cpp`
+- **drawFloppyPage()** (4 connections) — `src/gui/MediaPages.cpp`
+- **hardDiskDriveLetters()** (4 connections) — `src/gui/MediaPages.cpp`
+- **string** (4 connections)
+- **romIsNtsc()** (3 connections) — `src/gui/ConfigWindow.cpp`
+- **drawNetworkPage()** (3 connections) — `src/gui/MediaPages.cpp`
+- **pathEntryRow()** (3 connections) — `src/gui/MediaPages.cpp`
+- **App** (2 connections)
+- **ConfigUi** (2 connections)
+- **ConfigUi** (1 connections)
+- **string** (1 connections)
+- **cfgUi** (1 connections) — `src/gui/AppLoop.cpp`
+- **cH** (1 connections) — `src/gui/AppLoop.cpp`
+- **color** (1 connections) — `src/gui/AppLoop.cpp`
+- **cTop** (1 connections) — `src/gui/AppLoop.cpp`
+- *... and 26 more nodes in this community*
 
 ## Relationships
 
-- [Community 207](Community_207.md) (5 shared connections)
-- [Community 227](Community_227.md) (3 shared connections)
-- [Community 151](Community_151.md) (2 shared connections)
+- [Community 214](Community_214.md) (16 shared connections)
+- [Community 4](Community_4.md) (16 shared connections)
+- [Community 138](Community_138.md) (6 shared connections)
+- [Community 51](Community_51.md) (5 shared connections)
+- [Community 298](Community_298.md) (5 shared connections)
+- [Community 204](Community_204.md) (4 shared connections)
+- [Community 101](Community_101.md) (3 shared connections)
+- [Community 44](Community_44.md) (2 shared connections)
+- [Community 397](Community_397.md) (2 shared connections)
+- [Community 220](Community_220.md) (2 shared connections)
+- [Community 283](Community_283.md) (1 shared connections)
+- [Community 42](Community_42.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_timing_oracle.py`
-- `tools/test_timing_oracle.py`
+- `src/gui/AppLoop.cpp`
+- `src/gui/ConfigWindow.cpp`
+- `src/gui/MediaPages.cpp`
+- `src/gui/UiCommon.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 33 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 105 (79%)
+- INFERRED: 28 (21%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,33 +1,33 @@
 # Community 364
 
-> 5 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.onSlice()** (10 connections) — `src/core/Blitter.hpp`
-- **.noteCpuBusAccess()** (5 connections) — `src/core/Blitter.hpp`
-- **.start()** (4 connections) — `src/core/Blitter.hpp`
-- **.armPreStartWindow()** (4 connections) — `src/core/Blitter.hpp`
-- **P2 — Blitter non-hog (`blitter.c:251,395`)** (3 connections) — `docs/CYCLE_ACCURACY.md`
+- **MouseMode** (7 connections) — `src/io/Ikbd.hpp`
+- **Relecture adversariale pré-release (2026-08-01)** (4 connections) — `CHANGELOG.md`
+- **ABS** (1 connections) — `src/io/Ikbd.hpp`
+- **CURSOR** (1 connections) — `src/io/Ikbd.hpp`
+- **OFF** (1 connections) — `src/io/Ikbd.hpp`
+- **REL** (1 connections) — `src/io/Ikbd.hpp`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (5 shared connections)
-- [Community 37](Community_37.md) (4 shared connections)
-- [Community 366](Community_366.md) (2 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
-- [Community 95](Community_95.md) (1 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
+- [Community 47](Community_47.md) (1 shared connections)
+- [Community 7](Community_7.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 110](Community_110.md) (1 shared connections)
+- [Community 24](Community_24.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/CYCLE_ACCURACY.md`
-- `src/core/Blitter.hpp`
+- `CHANGELOG.md`
+- `src/io/Ikbd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (45%)
-- INFERRED: 11 (55%)
+- EXTRACTED: 7 (70%)
+- INFERRED: 3 (30%)
 - AMBIGUOUS: 0 (0%)
 
 ---

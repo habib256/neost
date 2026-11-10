@@ -1,6 +1,6 @@
 # Community 275
 
-> 21 nodes
+> 20 nodes
 
 ## Key Concepts
 
@@ -10,7 +10,6 @@
 - **.timerBFrameCycleForLine()** (3 connections) — `src/core/Shifter.hpp`
 - **Closure (Sync) boote : datation des écritures freq/res par parité d'accès (2026-08-12)** (3 connections) — `CHANGELOG.md`
 - **Cycle Timer B (2026-08-11 soir) — portage posé, activation à débugger** (3 connections) — `docs/CLOSURE_CHANTIER.md`
-- **CLOSURE_CHANTIER.md** (2 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle 3 (2026-08-11 nuit) — GPIP convergé, le mécanisme de la file élucidé** (2 connections) — `docs/CLOSURE_CHANTIER.md`
 - **PROCHAINE ÉTAPE (précise)** (2 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Chaîne déductive — ce qui est PROUVÉ (2026-08-11)** (1 connections) — `docs/CLOSURE_CHANTIER.md`
@@ -41,8 +40,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 21 (84%)
-- INFERRED: 4 (16%)
+- EXTRACTED: 20 (83%)
+- INFERRED: 4 (17%)
 - AMBIGUOUS: 0 (0%)
 
 ---

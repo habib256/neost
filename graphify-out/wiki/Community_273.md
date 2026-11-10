@@ -1,33 +1,31 @@
 # Community 273
 
-> 6 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **MouseMode** (7 connections) — `src/io/Ikbd.hpp`
-- **Relecture adversariale pré-release (2026-08-01)** (4 connections) — `CHANGELOG.md`
-- **ABS** (1 connections) — `src/io/Ikbd.hpp`
-- **CURSOR** (1 connections) — `src/io/Ikbd.hpp`
-- **OFF** (1 connections) — `src/io/Ikbd.hpp`
-- **REL** (1 connections) — `src/io/Ikbd.hpp`
+- **3. 🔬 Fidélité au silicium, hors cœur — par puce** (9 connections) — `TODO.md`
+- **3.1 GLUE, MMU, Shifter — vidéo et bus** (1 connections) — `TODO.md`
+- **3.2 MFP 68901** (1 connections) — `TODO.md`
+- **3.3 Blitter** (1 connections) — `TODO.md`
+- **3.4 Son — YM2149, DMA STE, Microwire** (1 connections) — `TODO.md`
+- **3.5 Disquette — WD1772, DMA, ACSI** (1 connections) — `TODO.md`
+- **3.6 Clavier — IKBD HD6301, ACIA 6850, MIDI** (1 connections) — `TODO.md`
+- **3.7 Mega STE — SCC Z85C30, RTC RP5C15, cache** (1 connections) — `TODO.md`
+- **3.8 TOS, GEMDOS, cartouche** (1 connections) — `TODO.md`
 
 ## Relationships
 
-- [Community 47](Community_47.md) (1 shared connections)
-- [Community 7](Community_7.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
-- [Community 121](Community_121.md) (1 shared connections)
+- [Community 237](Community_237.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/Ikbd.hpp`
+- `TODO.md`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (70%)
-- INFERRED: 3 (30%)
+- EXTRACTED: 9 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,6 +1,6 @@
 # Community 42
 
-> 46 nodes
+> 51 nodes
 
 ## Key Concepts
 
@@ -9,6 +9,11 @@
 - **.portKindName()** (4 connections) — `src/audio/MidiOutHost.hpp`
 - **.anchor()** (3 connections) — `src/audio/MidiOutHost.hpp`
 - **.anyOpen()** (3 connections) — `src/audio/MidiOutHost.hpp`
+- **.backendName()** (2 connections) — `src/audio/MidiOutHost.hpp`
+- **.openSynth()** (2 connections) — `src/audio/MidiOutHost.hpp`
+- **.byteAt()** (2 connections) — `src/audio/MidiOutHost.hpp`
+- **.byte()** (2 connections) — `src/audio/MidiOutHost.hpp`
+- **.setLeadMs()** (2 connections) — `src/audio/MidiOutHost.hpp`
 - **.destinationCount()** (2 connections) — `src/audio/MidiOutHost.hpp`
 - **.lateBytes()** (2 connections) — `src/audio/MidiOutHost.hpp`
 - **.portOpen()** (2 connections) — `src/audio/MidiOutHost.hpp`
@@ -24,22 +29,18 @@
 - **mutex** (1 connections)
 - **size_t** (1 connections)
 - **thread** (1 connections)
-- **anchorCycle_** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **anchored_** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **anchorHost_** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **client_** (1 connections) — `src/audio/MidiOutHost.hpp`
-- **cv_** (1 connections) — `src/audio/MidiOutHost.hpp`
-- *... and 21 more nodes in this community*
+- *... and 26 more nodes in this community*
 
 ## Relationships
 
-- [Community 230](Community_230.md) (26 shared connections)
-- [Community 223](Community_223.md) (4 shared connections)
+- [Community 230](Community_230.md) (23 shared connections)
+- [Community 298](Community_298.md) (4 shared connections)
+- [Community 200](Community_200.md) (3 shared connections)
 - [Community 130](Community_130.md) (2 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 185](Community_185.md) (1 shared connections)
+- [Community 44](Community_44.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 380](Community_380.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 
 ## Source Files
 
@@ -48,7 +49,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 82 (98%)
+- EXTRACTED: 87 (98%)
 - INFERRED: 2 (2%)
 - AMBIGUOUS: 0 (0%)
 

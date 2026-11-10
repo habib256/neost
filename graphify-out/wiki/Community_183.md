@@ -17,7 +17,6 @@
 - **.sync3()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.weak()** (3 connections) — `tests/ipf_image_logic.cpp`
 - **.fill()** (2 connections) — `tests/ipf_image_logic.cpp`
-- **d** (2 connections) — `tests/ipf_image_logic.cpp`
 - **size_t** (1 connections)
 - **BAD_DATA_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
 - **BAD_ID_CRC** (1 connections) — `tests/ipf_image_logic.cpp`
@@ -26,13 +25,13 @@
 - **NORMAL** (1 connections) — `tests/ipf_image_logic.cpp`
 - **WEAK** (1 connections) — `tests/ipf_image_logic.cpp`
 - **cells** (1 connections) — `tests/ipf_image_logic.cpp`
+- **d** (1 connections) — `tests/ipf_image_logic.cpp`
 
 ## Relationships
 
 - [Community 102](Community_102.md) (13 shared connections)
 - [Community 163](Community_163.md) (7 shared connections)
 - [Community 172](Community_172.md) (1 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
 
 ## Source Files
 
@@ -40,8 +39,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 54 (96%)
-- INFERRED: 2 (4%)
+- EXTRACTED: 54 (98%)
+- INFERRED: 1 (2%)
 - AMBIGUOUS: 0 (0%)
 
 ---

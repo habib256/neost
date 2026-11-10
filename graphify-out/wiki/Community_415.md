@@ -4,22 +4,29 @@
 
 ## Key Concepts
 
-- **dataCallback()** (3 connections) — `src/audio/Audio.cpp`
-- **ma_device** (1 connections)
-- **ma_uint32** (1 connections)
+- **.triggerBusError()** (5 connections) — `src/core/Cpu68k.hpp`
+- **Bug hunt 11ᵉ passe : 24 correctifs sur six sous-systèmes, save-state v51 (2026-10-20)** (4 connections) — `CHANGELOG.md`
+- **CPU (Moira + intégration) — suivi (audit vendor 2026-08-13)** (2 connections) — `docs/HATARI_DIVERGENCES.md`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 27](Community_27.md) (2 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 203](Community_203.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 176](Community_176.md) (1 shared connections)
 
 ## Source Files
 
-- `src/audio/Audio.cpp`
+- `CHANGELOG.md`
+- `docs/HATARI_DIVERGENCES.md`
+- `src/core/Cpu68k.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 5 (56%)
+- INFERRED: 4 (44%)
 - AMBIGUOUS: 0 (0%)
 
 ---

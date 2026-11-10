@@ -1,73 +1,48 @@
 # Community 55
 
-> 95 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **subprocess** (114 connections)
-- **json** (67 connections)
-- **run_all.py** (18 connections) — `tools/run_all.py`
-- **run_perfbench.py** (18 connections) — `tools/run_perfbench.py`
-- **audit_vbl_witness.py** (16 connections) — `tools/audit_vbl_witness.py`
-- **run_stblitter_bench.py** (16 connections) — `tools/run_stblitter_bench.py`
-- **run_stcpu_raster.py** (15 connections) — `tools/run_stcpu_raster.py`
-- **run_stcpu_bench.py** (14 connections) — `tools/run_stcpu_bench.py`
-- **run_vbl_entry_probe.py** (14 connections) — `tools/run_vbl_entry_probe.py`
-- **main()** (11 connections) — `tools/audit_vbl_witness.py`
-- **main()** (11 connections) — `tools/run_stblitter_bench.py`
-- **audit_tos_patches.py** (10 connections) — `tools/audit_tos_patches.py`
-- **host_info()** (9 connections) — `tools/run_perfbench.py`
-- **main()** (9 connections) — `tools/run_stcpu_bench.py`
-- **build_stcpu_bench.py** (9 connections) — `tools/build_stcpu_bench.py`
-- **run_cyclebench.py** (9 connections) — `tools/run_cyclebench.py`
-- **run_wsdetect.py** (8 connections) — `tools/run_wsdetect.py`
-- **main()** (7 connections) — `tools/audit_tos_patches.py`
-- **main()** (7 connections) — `tools/run_all.py`
-- **measure()** (7 connections) — `tools/run_cyclebench.py`
-- **one()** (7 connections) — `tools/run_stcpu_raster.py`
-- **time** (7 connections)
-- **budget()** (6 connections) — `tools/run_perfbench.py`
-- **_cpu_name()** (6 connections) — `tools/run_perfbench.py`
-- **measure_load()** (6 connections) — `tools/run_perfbench.py`
-- *... and 70 more nodes in this community*
+- **.fifoRefill()** (14 connections) — `src/core/DmaSound.hpp`
+- **.updateDac()** (11 connections) — `src/core/DmaSound.hpp`
+- **4. Ce qui RESTE — l'angle « précision cycle »** (8 connections) — `docs/CYCLE_ACCURACY.md`
+- **.liveCounter()** (7 connections) — `src/core/DmaSound.hpp`
+- **.fifoPull()** (4 connections) — `src/core/DmaSound.hpp`
+- **.capPush()** (4 connections) — `src/core/DmaSound.hpp`
+- **.onHbl()** (4 connections) — `src/core/DmaSound.hpp`
+- **.capAvail()** (3 connections) — `src/core/DmaSound.hpp`
+- **Passe de cohérence doc ↔ code (2026-08-19)** (3 connections) — `CHANGELOG.md`
+- **P2 — Son DMA STE (`dmaSnd.c:737`)** (3 connections) — `docs/CYCLE_ACCURACY.md`
+- **fetchWindowOpen** (2 connections) — `src/core/DmaSound.hpp`
+- **Le fetch du son DMA se mesure enfin — et c'est l'oracle qui ne se reproduit pas (2026-09-02)** (2 connections) — `CHANGELOG.md`
+- **Passe de cohérence doc ↔ code, 2ᵉ tour (2026-08-19)** (2 connections) — `CHANGELOG.md`
+- **✅ Beam-sync : CLOS (2026-07-09, complété 2026-08-06) — ex-P1 de tête** (1 connections) — `docs/CYCLE_ACCURACY.md`
+- **P2 — Restes vidéo « plan »** (1 connections) — `docs/CYCLE_ACCURACY.md`
+- **P3 — Horloges & divers** (1 connections) — `docs/CYCLE_ACCURACY.md`
+- **P3 — Précision « démos extrêmes »** (1 connections) — `docs/CYCLE_ACCURACY.md`
 
 ## Relationships
 
-- [Community 18](Community_18.md) (72 shared connections)
-- [Community 227](Community_227.md) (28 shared connections)
-- [Community 207](Community_207.md) (21 shared connections)
-- [Community 151](Community_151.md) (21 shared connections)
-- [Community 315](Community_315.md) (18 shared connections)
-- [Community 146](Community_146.md) (16 shared connections)
-- [Community 34](Community_34.md) (13 shared connections)
-- [Community 173](Community_173.md) (8 shared connections)
-- [Community 100](Community_100.md) (6 shared connections)
-- [Community 3](Community_3.md) (5 shared connections)
-- [Community 26](Community_26.md) (5 shared connections)
-- [Community 49](Community_49.md) (4 shared connections)
+- [Community 48](Community_48.md) (13 shared connections)
+- [Community 13](Community_13.md) (8 shared connections)
+- [Community 39](Community_39.md) (4 shared connections)
+- [Community 130](Community_130.md) (3 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 37](Community_37.md) (1 shared connections)
+- [Community 317](Community_317.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/audit_tos_patches.py`
-- `tools/audit_vbl_witness.py`
-- `tools/build_stcpu_bench.py`
-- `tools/check_env_locks.py`
-- `tools/check_headless_options.py`
-- `tools/run_all.py`
-- `tools/run_cyclebench.py`
-- `tools/run_fpu_oracles.py`
-- `tools/run_perfbench.py`
-- `tools/run_stblitter_bench.py`
-- `tools/run_stcpu_bench.py`
-- `tools/run_stcpu_raster.py`
-- `tools/run_sting_boot.py`
-- `tools/run_vbl_entry_probe.py`
-- `tools/run_wsdetect.py`
+- `CHANGELOG.md`
+- `docs/CYCLE_ACCURACY.md`
+- `src/core/DmaSound.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 424 (99%)
-- INFERRED: 4 (1%)
+- EXTRACTED: 25 (48%)
+- INFERRED: 27 (52%)
 - AMBIGUOUS: 0 (0%)
 
 ---

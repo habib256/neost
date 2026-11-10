@@ -10,8 +10,8 @@
 - **Build from source** (1 connections) — `README.md`
 - **Documentation** (1 connections) — `README.md`
 - **👉 **[habib256.github.io/neost](https://habib256.github.io/neost/)**** (1 connections) — `README.md`
-- **Hatari is the reference** (1 connections) — `README.md`
 - **Licence** (1 connections) — `README.md`
+- **Real hardware is the reference** (1 connections) — `README.md`
 - **ROMs** (1 connections) — `README.md`
 - **Using it** (1 connections) — `README.md`
 - **Where it stands** (1 connections) — `README.md`

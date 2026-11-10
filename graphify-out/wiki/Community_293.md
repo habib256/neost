@@ -1,36 +1,32 @@
 # Community 293
 
-> 12 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **StateArchive** (14 connections) — `src/core/StateArchive.hpp`
-- **.raw()** (5 connections) — `src/core/StateArchive.hpp`
-- **.vec()** (3 connections) — `src/core/StateArchive.hpp`
-- **arr()** (2 connections) — `src/core/StateArchive.hpp`
-- **operator()()** (2 connections) — `src/core/StateArchive.hpp`
-- **.fail()** (1 connections) — `src/core/StateArchive.hpp`
-- **.loading()** (1 connections) — `src/core/StateArchive.hpp`
-- **.ok()** (1 connections) — `src/core/StateArchive.hpp`
-- **.saveSize()** (1 connections) — `src/core/StateArchive.hpp`
-- **in_** (1 connections) — `src/core/StateArchive.hpp`
-- **inEnd_** (1 connections) — `src/core/StateArchive.hpp`
-- **out_** (1 connections) — `src/core/StateArchive.hpp`
+- **testRtcWriteOnly()** (7 connections) — `tests/rtc_write_only_logic.cpp`
+- **rtc_write_only_logic.cpp** (7 connections) — `tests/rtc_write_only_logic.cpp`
+- **Checks** (4 connections) — `tests/rtc_write_only_logic.cpp`
+- **address()** (2 connections) — `tests/rtc_write_only_logic.cpp`
+- **.equal()** (2 connections) — `tests/rtc_write_only_logic.cpp`
+- **main()** (2 connections) — `tests/rtc_write_only_logic.cpp`
+- **count** (1 connections) — `tests/rtc_write_only_logic.cpp`
+- **failures** (1 connections) — `tests/rtc_write_only_logic.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/StateArchive.hpp`
+- `tests/rtc_write_only_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 21 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 15 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

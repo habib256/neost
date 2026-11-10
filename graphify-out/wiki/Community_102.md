@@ -1,6 +1,6 @@
 # Community 102
 
-> 135 nodes
+> 145 nodes
 
 ## Key Concepts
 
@@ -8,8 +8,7 @@
 - **cstdio** (205 connections)
 - **Mfp.hpp** (88 connections) — `src/io/Mfp.hpp`
 - **Bus.hpp** (80 connections) — `src/core/Bus.hpp`
-- **algorithm** (75 connections)
-- **cstring** (53 connections)
+- **algorithm** (76 connections)
 - **filesystem** (48 connections)
 - **Scheduler.hpp** (45 connections) — `src/core/Scheduler.hpp`
 - **Fdc.hpp** (41 connections) — `src/io/Fdc.hpp`
@@ -18,6 +17,7 @@
 - **Cpu68k.hpp** (31 connections) — `src/core/Cpu68k.hpp`
 - **Ikbd.hpp** (29 connections) — `src/io/Ikbd.hpp`
 - **ipf_image_logic.cpp** (26 connections) — `tests/ipf_image_logic.cpp`
+- **fstream** (23 connections)
 - **stx_raw_track_overlay_logic.cpp** (22 connections) — `tests/stx_raw_track_overlay_logic.cpp`
 - **stx_read_address_crc_logic.cpp** (21 connections) — `tests/stx_read_address_crc_logic.cpp`
 - **functional** (21 connections)
@@ -28,27 +28,26 @@
 - **Shifter.hpp** (17 connections) — `src/core/Shifter.hpp`
 - **stx_deleted_track_logic.cpp** (16 connections) — `tests/stx_deleted_track_logic.cpp`
 - **stx_sector_rewrite_logic.cpp** (16 connections) — `tests/stx_sector_rewrite_logic.cpp`
-- **acsi_write_destination_logic.cpp** (15 connections) — `tests/acsi_write_destination_logic.cpp`
-- *... and 110 more nodes in this community*
+- **GemdosHd.hpp** (15 connections) — `src/io/GemdosHd.hpp`
+- *... and 120 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (183 shared connections)
-- [Community 41](Community_41.md) (121 shared connections)
-- [Community 30](Community_30.md) (17 shared connections)
-- [Community 70](Community_70.md) (17 shared connections)
-- [Community 14](Community_14.md) (16 shared connections)
-- [Community 63](Community_63.md) (14 shared connections)
-- [Community 288](Community_288.md) (14 shared connections)
+- [Community 4](Community_4.md) (169 shared connections)
+- [Community 41](Community_41.md) (129 shared connections)
+- [Community 399](Community_399.md) (37 shared connections)
+- [Community 14](Community_14.md) (33 shared connections)
+- [Community 70](Community_70.md) (18 shared connections)
+- [Community 172](Community_172.md) (17 shared connections)
+- [Community 24](Community_24.md) (17 shared connections)
+- [Community 63](Community_63.md) (15 shared connections)
 - [Community 183](Community_183.md) (13 shared connections)
 - [Community 62](Community_62.md) (12 shared connections)
-- [Community 95](Community_95.md) (11 shared connections)
-- [Community 27](Community_27.md) (10 shared connections)
-- [Community 143](Community_143.md) (10 shared connections)
+- [Community 27](Community_27.md) (11 shared connections)
+- [Community 122](Community_122.md) (10 shared connections)
 
 ## Source Files
 
-- `src/core/AudioMix.cpp`
 - `src/core/Blitter.hpp`
 - `src/core/Bus.hpp`
 - `src/core/Cpu68k.hpp`
@@ -58,21 +57,22 @@
 - `src/core/Shifter.hpp`
 - `src/core/StateArchive.hpp`
 - `src/core/YM2149.hpp`
+- `src/gui/App.hpp`
 - `src/io/Acsi.hpp`
 - `src/io/Fdc.hpp`
 - `src/io/Fpu.hpp`
+- `src/io/GemdosHd.hpp`
 - `src/io/Ikbd.hpp`
 - `src/io/Isp1160.hpp`
 - `src/io/Mfp.hpp`
 - `src/io/MidiAcia.hpp`
-- `src/io/StxImage.hpp`
-- `src/io/UsbDevice.hpp`
-- `tests/acsi_partitions_logic.cpp`
+- `src/io/Ne2000.hpp`
+- `src/io/UltraSatan.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 1473 (100%)
-- INFERRED: 6 (0%)
+- EXTRACTED: 1482 (99%)
+- INFERRED: 11 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

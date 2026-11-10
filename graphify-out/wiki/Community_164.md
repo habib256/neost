@@ -1,39 +1,32 @@
 # Community 164
 
-> 10 nodes
+> 11 nodes
 
 ## Key Concepts
 
-- **Mt32Synth.cpp** (19 connections) — `src/audio/Mt32Synth.cpp`
-- **.available()** (4 connections) — `src/audio/Mt32Synth.hpp`
-- **.parse()** (3 connections) — `src/audio/Mt32Synth.hpp`
-- **.byteAt()** (2 connections) — `src/audio/Mt32Synth.hpp`
-- **.clearEvents()** (2 connections) — `src/audio/Mt32Synth.hpp`
-- **.render()** (2 connections) — `src/audio/Mt32Synth.hpp`
-- **dataBytesFor()** (2 connections) — `src/audio/Mt32Synth.cpp`
-- **cstdarg** (2 connections)
-- **Mt32Synth::Mt32Synth()** (1 connections) — `src/audio/Mt32Synth.cpp`
-- **mt32emu** (1 connections)
+- **Rig** (12 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.at()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.bootDue()** (2 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **.Rig()** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **Ikbd** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **ikbd** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **live** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **mfp** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
+- **scheduler** (1 connections) — `tests/ikbd_sci_reset_logic.cpp`
 
 ## Relationships
 
-- [Community 117](Community_117.md) (5 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 247](Community_247.md) (4 shared connections)
-- [Community 380](Community_380.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 262](Community_262.md) (1 shared connections)
-- [Community 171](Community_171.md) (1 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
 
 ## Source Files
 
-- `src/audio/Mt32Synth.cpp`
-- `src/audio/Mt32Synth.hpp`
+- `tests/ikbd_sci_reset_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 28 (100%)
+- EXTRACTED: 14 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

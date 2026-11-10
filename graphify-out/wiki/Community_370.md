@@ -1,27 +1,33 @@
 # Community 370
 
-> 5 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **** (5 connections) — `src/core/YM2149.cpp`
-- **ENV_DOWN** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_GODOWN** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_GOUP** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_UP** (1 connections) — `src/core/YM2149.cpp`
+- **GlueProbe** (7 connections) — `src/core/Shifter.hpp`
+- **Shifter::glueBenchLine()** (3 connections) — `src/core/VideoGlue.cpp`
+- **lineStart** (2 connections) — `src/core/Shifter.hpp`
+- **bytes** (1 connections) — `src/core/Shifter.hpp`
+- **end** (1 connections) — `src/core/Shifter.hpp`
+- **start** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 140](Community_140.md) (1 shared connections)
+- [Community 155](Community_155.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/YM2149.cpp`
+- `src/core/Shifter.hpp`
+- `src/core/VideoGlue.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 8 (80%)
+- INFERRED: 2 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

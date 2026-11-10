@@ -18,6 +18,7 @@
 - testIkbdOutputCapacity() `INFERRED`
 - testAcsiCapacityLimit() `INFERRED`
 - testGemdosSnapshot() `INFERRED`
+- testFdcTrackIdLocation() `INFERRED`
 - testCartridgeKey() `EXTRACTED`
 - testAcsiWriteDestination() `INFERRED`
 - testFdcSectorSizeSwitch() `INFERRED`
@@ -26,7 +27,6 @@
 - testFdcForceInterrupt() `INFERRED`
 - testSccChannelReset() `INFERRED`
 - testSccRxErrorIrq() `INFERRED`
-- testStxDataCrcWrite() `INFERRED`
 - *…and 140 more `calls` connection(s) not listed (lowest-degree first to go)*
 
 ### contains

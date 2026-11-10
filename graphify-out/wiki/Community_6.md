@@ -1,11 +1,13 @@
 # Community 6
 
-> 114 nodes
+> 117 nodes
 
 ## Key Concepts
 
-- **Mfp** (177 connections) — `src/io/Mfp.hpp`
+- **Mfp** (180 connections) — `src/io/Mfp.hpp`
 - **function** (5 connections)
+- **Interruptions (MFP 68901)** (4 connections) — `docs/IMPLEMENTED.md`
+- **.iack()** (3 connections) — `src/io/Mfp.hpp`
 - **.setAciaLineKbd()** (3 connections) — `src/io/Mfp.hpp`
 - **.highestPending()** (2 connections) — `src/io/Mfp.hpp`
 - **.irqPending()** (2 connections) — `src/io/Mfp.hpp`
@@ -27,27 +29,26 @@
 - **.loopback()** (1 connections) — `src/io/Mfp.hpp`
 - **.setColorMonitor()** (1 connections) — `src/io/Mfp.hpp`
 - **.setHasBlitter()** (1 connections) — `src/io/Mfp.hpp`
-- **.setHasDmaSound()** (1 connections) — `src/io/Mfp.hpp`
-- **.setInDispatch()** (1 connections) — `src/io/Mfp.hpp`
-- *... and 89 more nodes in this community*
+- *... and 92 more nodes in this community*
 
 ## Relationships
 
 - [Community 215](Community_215.md) (47 shared connections)
 - [Community 392](Community_392.md) (16 shared connections)
-- [Community 135](Community_135.md) (5 shared connections)
-- [Community 24](Community_24.md) (2 shared connections)
+- [Community 294](Community_294.md) (5 shared connections)
+- [Community 39](Community_39.md) (3 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 421](Community_421.md) (1 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
 
 ## Source Files
 
+- `docs/IMPLEMENTED.md`
 - `src/io/Mfp.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 188 (98%)
-- INFERRED: 4 (2%)
+- EXTRACTED: 193 (97%)
+- INFERRED: 5 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

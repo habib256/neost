@@ -1,33 +1,35 @@
 # Community 139
 
-> 6 nodes
+> 12 nodes
 
 ## Key Concepts
 
-- **GlueProbe** (7 connections) — `src/core/Shifter.hpp`
-- **Shifter::glueBenchLine()** (3 connections) — `src/core/VideoGlue.cpp`
-- **mask** (2 connections) — `src/core/Shifter.hpp`
-- **bytes** (1 connections) — `src/core/Shifter.hpp`
-- **end** (1 connections) — `src/core/Shifter.hpp`
-- **start** (1 connections) — `src/core/Shifter.hpp`
+- **testSccAckPriority()** (10 connections) — `tests/scc_ack_priority_logic.cpp`
+- **PriorityRig** (9 connections) — `tests/scc_ack_priority_logic.cpp`
+- **scc_ack_priority_logic.cpp** (6 connections) — `tests/scc_ack_priority_logic.cpp`
+- **.command()** (4 connections) — `tests/scc_ack_priority_logic.cpp`
+- **.read()** (4 connections) — `tests/scc_ack_priority_logic.cpp`
+- **.write()** (4 connections) — `tests/scc_ack_priority_logic.cpp`
+- **.acknowledge()** (3 connections) — `tests/scc_ack_priority_logic.cpp`
+- **main()** (2 connections) — `tests/scc_ack_priority_logic.cpp`
+- **.pop()** (2 connections) — `tests/scc_ack_priority_logic.cpp`
+- **.PriorityRig()** (2 connections) — `tests/scc_ack_priority_logic.cpp`
+- **Scc** (1 connections)
+- **scc** (1 connections) — `tests/scc_ack_priority_logic.cpp`
 
 ## Relationships
 
-- [Community 10](Community_10.md) (1 shared connections)
-- [Community 5](Community_5.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 155](Community_155.md) (1 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 
 ## Source Files
 
-- `src/core/Shifter.hpp`
-- `src/core/VideoGlue.cpp`
+- `tests/scc_ack_priority_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 8 (80%)
-- INFERRED: 2 (20%)
+- EXTRACTED: 26 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

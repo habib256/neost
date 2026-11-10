@@ -35,14 +35,16 @@
 
 - [Community 149](Community_149.md) (17 shared connections)
 - [Community 20](Community_20.md) (5 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
 - [Community 214](Community_214.md) (2 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
 - [Community 258](Community_258.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 161](Community_161.md) (1 shared connections)
+- [Community 88](Community_88.md) (1 shared connections)
+- [Community 262](Community_262.md) (1 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
@@ -53,7 +55,7 @@
 ## Audit Trail
 
 - EXTRACTED: 389 (88%)
-- INFERRED: 54 (12%)
+- INFERRED: 55 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

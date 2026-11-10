@@ -39,9 +39,9 @@
 - didExecute() `EXTRACTED`
 - .availabilityMask() `EXTRACTED`
 - willExecute() `EXTRACTED`
+- Moira::isValidExtMMU() `EXTRACTED`
 - .willExecute() `EXTRACTED`
 - .availabilityString() `EXTRACTED`
-- Moira::isValidExtMMU() `EXTRACTED`
 - .didExecute() `EXTRACTED`
 - Moira::isValidExtFPU() `EXTRACTED`
 

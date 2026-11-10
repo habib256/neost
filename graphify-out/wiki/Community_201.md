@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
-- **Scheduler** (4 connections)
+- **Bus** (3 connections)
 - **.peek16()** (2 connections) — `tests/selftest_logic.cpp`
 - **.poke16()** (2 connections) — `tests/selftest_logic.cpp`
 - **.program()** (2 connections) — `tests/selftest_logic.cpp`
@@ -20,7 +20,6 @@
 - [Community 41](Community_41.md) (4 shared connections)
 - [Community 301](Community_301.md) (2 shared connections)
 - [Community 219](Community_219.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
@@ -28,7 +27,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 17 (100%)
+- EXTRACTED: 16 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

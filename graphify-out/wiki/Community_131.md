@@ -1,11 +1,13 @@
 # Community 131
 
-> 21 nodes
+> 33 nodes
 
 ## Key Concepts
 
 - **DasmNumberFormat** (14 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **DasmStyle** (12 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **StrWriter_cpp.h** (11 connections) — `extern/moira/Moira/StrWriter_cpp.h`
+- **Syntax** (8 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **.setNumberFormat()** (6 connections) — `extern/moira/Moira/Moira.h`
 - **sprintx()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **sprintx_signed()** (6 connections) — `extern/moira/Moira/StrWriter_cpp.h`
@@ -21,29 +23,34 @@
 - **binDigits()** (3 connections) — `extern/moira/Moira/StrWriter_cpp.h`
 - **u8** (3 connections)
 - **i64** (3 connections)
+- **.StrWriter()** (2 connections) — `extern/moira/Moira/StrWriter.h`
 - **plainZero** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **prefix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **radix** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 - **upperCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **letterCase** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- *... and 8 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (3 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
+- [Community 57](Community_57.md) (4 shared connections)
+- [Community 16](Community_16.md) (4 shared connections)
+- [Community 2](Community_2.md) (2 shared connections)
 - [Community 314](Community_314.md) (2 shared connections)
 - [Community 104](Community_104.md) (2 shared connections)
-- [Community 57](Community_57.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
 - `extern/moira/Moira/Moira.h`
 - `extern/moira/Moira/MoiraTypes.h`
+- `extern/moira/Moira/StrWriter.h`
 - `extern/moira/Moira/StrWriter_cpp.h`
 
 ## Audit Trail
 
-- EXTRACTED: 54 (100%)
+- EXTRACTED: 72 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

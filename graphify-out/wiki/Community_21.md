@@ -1,13 +1,10 @@
 # Community 21
 
-> 80 nodes
+> 71 nodes
 
 ## Key Concepts
 
 - **Config** (94 connections) — `src/gui/AppConfig.hpp`
-- **MidiInDev** (8 connections) — `src/gui/AppConfig.hpp`
-- **MidiOutDev** (6 connections) — `src/gui/AppConfig.hpp`
-- **string** (3 connections)
 - **acsi** (1 connections) — `src/gui/AppConfig.hpp`
 - **audioLatencyMs** (1 connections) — `src/gui/AppConfig.hpp`
 - **autoDongle** (1 connections) — `src/gui/AppConfig.hpp`
@@ -29,20 +26,24 @@
 - **gemdos** (1 connections) — `src/gui/AppConfig.hpp`
 - **gmSoundFont** (1 connections) — `src/gui/AppConfig.hpp`
 - **joy0** (1 connections) — `src/gui/AppConfig.hpp`
-- *... and 55 more nodes in this community*
+- **joy1** (1 connections) — `src/gui/AppConfig.hpp`
+- **joydeadzone** (1 connections) — `src/gui/AppConfig.hpp`
+- **joymap** (1 connections) — `src/gui/AppConfig.hpp`
+- *... and 46 more nodes in this community*
 
 ## Relationships
 
-- [Community 101](Community_101.md) (13 shared connections)
-- [Community 11](Community_11.md) (3 shared connections)
+- [Community 101](Community_101.md) (8 shared connections)
+- [Community 138](Community_138.md) (4 shared connections)
+- [Community 264](Community_264.md) (3 shared connections)
 - [Community 41](Community_41.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
 - [Community 129](Community_129.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
+- [Community 11](Community_11.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 380](Community_380.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 - [Community 214](Community_214.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
 
 ## Source Files
 
@@ -50,8 +51,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 98 (92%)
-- INFERRED: 8 (8%)
+- EXTRACTED: 88 (94%)
+- INFERRED: 6 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

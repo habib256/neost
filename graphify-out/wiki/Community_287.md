@@ -1,34 +1,32 @@
 # Community 287
 
-> 10 nodes
+> 8 nodes
 
 ## Key Concepts
 
-- **MoiraExceptions_cpp.h** (13 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **u16** (7 connections)
-- **u32** (7 connections)
-- **Moira::writeStackFrame1000()** (4 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **Moira::writeStackFrame0000()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **Moira::writeStackFrame0001()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **Moira::writeStackFrame0010()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **Moira::writeStackFrame1001()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **Moira::writeStackFrame1010()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
-- **Moira::writeStackFrame1011()** (3 connections) — `extern/moira/Moira/MoiraExceptions_cpp.h`
+- **ikbd_irq_timing_logic.cpp** (7 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **testIkbdIrqTiming()** (5 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **Checks** (4 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **.equal()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **main()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **.run()** (2 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **count** (1 connections) — `tests/ikbd_irq_timing_logic.cpp`
+- **failures** (1 connections) — `tests/ikbd_irq_timing_logic.cpp`
 
 ## Relationships
 
-- [Community 64](Community_64.md) (4 shared connections)
-- [Community 58](Community_58.md) (2 shared connections)
-- [Community 314](Community_314.md) (1 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 159](Community_159.md) (2 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraExceptions_cpp.h`
+- `tests/ikbd_irq_timing_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 28 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 14 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

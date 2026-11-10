@@ -1,6 +1,6 @@
 # Community 54
 
-> 28 nodes
+> 29 nodes
 
 ## Key Concepts
 
@@ -18,6 +18,7 @@
 - **.readIrqUserVector()** (4 connections) — `tools/moira_bare_bench.cpp`
 - **u8** (4 connections)
 - **V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01)** (3 connections) — `CHANGELOG.md`
+- **.sync()** (2 connections) — `tools/moira_bare_bench.cpp`
 - **main()** (2 connections) — `tools/moira_bare_bench.cpp`
 - **i64** (2 connections)
 - **.BareMoira()** (1 connections) — `tools/moira_bare_bench.cpp`
@@ -28,16 +29,15 @@
 - **out** (1 connections) — `tools/moira_bare_bench.cpp`
 - **ram** (1 connections) — `tools/moira_bare_bench.cpp`
 - **tOrigin** (1 connections) — `tools/moira_bare_bench.cpp`
-- **FILE** (1 connections)
-- *... and 3 more nodes in this community*
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
+- [Community 110](Community_110.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 53 (95%)
-- INFERRED: 3 (5%)
+- EXTRACTED: 53 (93%)
+- INFERRED: 4 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

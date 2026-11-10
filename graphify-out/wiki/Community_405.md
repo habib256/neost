@@ -4,23 +4,22 @@
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/ipf_image_logic.cpp`
-- **.equal()** (2 connections) — `tests/ipf_image_logic.cpp`
-- **count** (1 connections) — `tests/ipf_image_logic.cpp`
-- **failures** (1 connections) — `tests/ipf_image_logic.cpp`
+- **setMouseCaptured()** (4 connections) — `src/web/main_web.cpp`
+- **onKey()** (3 connections) — `src/web/main_web.cpp`
+- **onMouseButton()** (3 connections) — `src/web/main_web.cpp`
+- **GLFWwindow** (3 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 163](Community_163.md) (1 shared connections)
+- [Community 68](Community_68.md) (3 shared connections)
 
 ## Source Files
 
-- `tests/ipf_image_logic.cpp`
+- `src/web/main_web.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 8 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

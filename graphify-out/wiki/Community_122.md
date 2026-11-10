@@ -1,12 +1,10 @@
 # Community 122
 
-> 27 nodes
+> 24 nodes
 
 ## Key Concepts
 
 - **testAcsiCapacityLimit()** (14 connections) — `tests/acsi_capacity_limit_logic.cpp`
-- **acsi_capacity_limit_logic.cpp** (12 connections) — `tests/acsi_capacity_limit_logic.cpp`
-- **acsi_large_bounds_logic.cpp** (12 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **testAcsiLargeBounds()** (11 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **.mount()** (7 connections) — `src/io/Acsi.hpp`
 - **.selectTarget()** (6 connections) — `src/io/Acsi.hpp`
@@ -16,7 +14,6 @@
 - **Checks** (4 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **Checks** (4 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **.readBuffer()** (4 connections) — `src/io/Acsi.hpp`
-- **stat** (4 connections)
 - **.targetEnabled()** (3 connections) — `src/io/Acsi.hpp`
 - **.dataLen()** (3 connections) — `src/io/Acsi.hpp`
 - **.status()** (3 connections) — `src/io/Acsi.hpp`
@@ -29,17 +26,15 @@
 - **count** (1 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **failures** (1 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **initializer_list** (1 connections)
-- *... and 2 more nodes in this community*
+- **count** (1 connections) — `tests/acsi_large_bounds_logic.cpp`
+- **failures** (1 connections) — `tests/acsi_large_bounds_logic.cpp`
 
 ## Relationships
 
 - [Community 103](Community_103.md) (18 shared connections)
-- [Community 102](Community_102.md) (9 shared connections)
+- [Community 102](Community_102.md) (10 shared connections)
 - [Community 212](Community_212.md) (2 shared connections)
 - [Community 41](Community_41.md) (2 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
-- [Community 36](Community_36.md) (1 shared connections)
 
 ## Source Files
 
@@ -49,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 54 (69%)
-- INFERRED: 24 (31%)
+- EXTRACTED: 38 (61%)
+- INFERRED: 24 (39%)
 - AMBIGUOUS: 0 (0%)
 
 ---

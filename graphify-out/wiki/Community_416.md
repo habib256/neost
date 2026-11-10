@@ -4,25 +4,27 @@
 
 ## Key Concepts
 
-- **.serialize()** (5 connections) — `src/core/Cpu68k.hpp`
-- **.serializeState()** (4 connections) — `src/core/Cpu68k.cpp`
-- **StateArchive** (2 connections)
+- **.claimsRtc()** (3 connections) — `src/core/Bus.hpp`
+- **machineIsMega()** (3 connections) — `src/core/MachineType.hpp`
+- **Fidélité matérielle, suite : capacité ACSI et verrou RX SCC (2026-10-19)** (2 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 27](Community_27.md) (2 shared connections)
-- [Community 9](Community_9.md) (2 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
+- [Community 14](Community_14.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.cpp`
-- `src/core/Cpu68k.hpp`
+- `CHANGELOG.md`
+- `src/core/Bus.hpp`
+- `src/core/MachineType.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (88%)
-- INFERRED: 1 (12%)
+- EXTRACTED: 4 (67%)
+- INFERRED: 2 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

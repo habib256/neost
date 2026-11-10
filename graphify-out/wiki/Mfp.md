@@ -1,6 +1,6 @@
 # Mfp
 
-> God node · 177 connections · `src/io/Mfp.hpp`
+> God node · 180 connections · `src/io/Mfp.hpp`
 
 **Community:** [Community 6](Community_6.md)
 
@@ -28,8 +28,8 @@
 - ierb `EXTRACTED`
 - ipra `EXTRACTED`
 - iprb `EXTRACTED`
+- SRC_ACIA `EXTRACTED`
 - imra `EXTRACTED`
-- imrb `EXTRACTED`
 - *…and 68 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
@@ -46,14 +46,14 @@
 - .updatePulseGate() `EXTRACTED`
 - .timerPulseMode() `EXTRACTED`
 - .storeStoppedCounter() `EXTRACTED`
+- .timerA_setLineInput() `EXTRACTED`
 - .gpipEdges() `EXTRACTED`
 - .gpipUpdateInterrupt() `EXTRACTED`
-- .timerA_setLineInput() `EXTRACTED`
 - .read8() `EXTRACTED`
 - .startSerialTx() `EXTRACTED`
 - .gpipIrqView() `EXTRACTED`
 - .gpipUpdateInterruptAt() `EXTRACTED`
-- *…and 64 more `method` connection(s) not listed (lowest-degree first to go)*
+- *…and 67 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - function `EXTRACTED`

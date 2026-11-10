@@ -1,20 +1,23 @@
 # Community 253
 
-> 6 nodes
+> 8 nodes
 
 ## Key Concepts
 
 - **make_disk()** (7 connections) — `tools/make_blankline_test.py`
+- **make_blankline_test.py** (5 connections) — `tools/make_blankline_test.py`
 - **delay()** (4 connections) — `tools/make_blankline_test.py`
 - **relative()** (3 connections) — `tools/make_blankline_test.py`
 - **w()** (3 connections) — `tools/make_blankline_test.py`
 - **label()** (2 connections) — `tools/make_blankline_test.py`
 - **Path** (1 connections)
+- **Disquette libre : lignes masquées, avec motif discriminant pour le compteur.…** (1 connections) — `tools/make_blankline_test.py`
 
 ## Relationships
 
-- [Community 3](Community_3.md) (1 shared connections)
-- [Community 227](Community_227.md) (1 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
+- [Community 160](Community_160.md) (1 shared connections)
+- [Community 18](Community_18.md) (1 shared connections)
 
 ## Source Files
 
@@ -22,7 +25,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (100%)
+- EXTRACTED: 15 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

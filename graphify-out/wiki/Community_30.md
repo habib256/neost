@@ -1,61 +1,59 @@
 # Community 30
 
-> 42 nodes
+> 23 nodes
 
 ## Key Concepts
 
-- **Bus.cpp** (91 connections) — `src/core/Bus.cpp`
-- **A31 — le dispatch MMIO devient une table, et sa cohérence est PROUVÉE (2026-08-28)** (7 connections) — `CHANGELOG.md`
-- **.loadTos()** (4 connections) — `src/core/Bus.hpp`
-- **.seedResetVectors()** (4 connections) — `src/core/Bus.hpp`
-- **IoSpan** (3 connections) — `src/core/Bus.cpp`
-- **.rdStePads()** (3 connections) — `src/core/Bus.hpp`
-- **.wrStePads()** (3 connections) — `src/core/Bus.hpp`
-- **.stealBusCycles()** (3 connections) — `src/core/Bus.hpp`
-- **.loadCart()** (3 connections) — `src/core/Bus.hpp`
-- **.serialize()** (3 connections) — `src/core/Bus.hpp`
-- **.rdMfp()** (3 connections) — `src/core/Bus.hpp`
-- **.wrMfp()** (3 connections) — `src/core/Bus.hpp`
-- **.rdIkbd()** (2 connections) — `src/core/Bus.hpp`
-- **.wrIkbd()** (2 connections) — `src/core/Bus.hpp`
-- **.rdMidi()** (2 connections) — `src/core/Bus.hpp`
-- **.wrMidi()** (2 connections) — `src/core/Bus.hpp`
-- **.rdRtc()** (2 connections) — `src/core/Bus.hpp`
-- **.wrRtc()** (2 connections) — `src/core/Bus.hpp`
-- **.rdMsteCtl()** (2 connections) — `src/core/Bus.hpp`
-- **.rdFpu()** (2 connections) — `src/core/Bus.hpp`
-- **.wrFpu()** (2 connections) — `src/core/Bus.hpp`
-- **.rdScu()** (2 connections) — `src/core/Bus.hpp`
-- **.wrScu()** (2 connections) — `src/core/Bus.hpp`
-- **.rdScc()** (2 connections) — `src/core/Bus.hpp`
-- **.wrScc()** (2 connections) — `src/core/Bus.hpp`
-- *... and 17 more nodes in this community*
+- **Moira.h** (32 connections) — `extern/moira/Moira/Moira.h`
+- **.execute()** (9 connections) — `extern/moira/Moira/Moira.h`
+- **.processException()** (8 connections) — `extern/moira/Moira/Moira.h`
+- **.halt()** (6 connections) — `extern/moira/Moira/Moira.h`
+- **Moira::jumpToVector()** (6 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
+- **.reset()** (5 connections) — `extern/moira/Moira/Moira.h`
+- **.executeUntil()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **read16OnReset()** (4 connections) — `extern/moira/Moira/Moira.h`
+- **MoiraConfig.h** (4 connections) — `extern/moira/Moira/MoiraConfig.h`
+- **cassert** (4 connections)
+- **didChangeCAAR()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **didChangeCACR()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **didJumpToVector()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **didReachBreakpoint()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **didReachCatchpoint()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **didReachSoftstop()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **.willProcessFault()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **Patch local : reset gardé (2026-07-08)** (3 connections) — `extern/moira/NEOST_VENDOR.md`
+- **cpuDidHalt()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **cpuDidReset()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **didReachSoftwareTrap()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **i64** (2 connections)
+- **looping()** (1 connections) — `extern/moira/Moira/Moira.h`
 
 ## Relationships
 
-- [Community 14](Community_14.md) (36 shared connections)
-- [Community 102](Community_102.md) (17 shared connections)
-- [Community 203](Community_203.md) (11 shared connections)
-- [Community 386](Community_386.md) (8 shared connections)
-- [Community 202](Community_202.md) (7 shared connections)
-- [Community 4](Community_4.md) (5 shared connections)
-- [Community 281](Community_281.md) (3 shared connections)
-- [Community 368](Community_368.md) (2 shared connections)
-- [Community 392](Community_392.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 218](Community_218.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
+- [Community 16](Community_16.md) (14 shared connections)
+- [Community 314](Community_314.md) (10 shared connections)
+- [Community 64](Community_64.md) (8 shared connections)
+- [Community 58](Community_58.md) (4 shared connections)
+- [Community 166](Community_166.md) (4 shared connections)
+- [Community 57](Community_57.md) (3 shared connections)
+- [Community 333](Community_333.md) (2 shared connections)
+- [Community 134](Community_134.md) (2 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
+- [Community 9](Community_9.md) (1 shared connections)
+- [Community 27](Community_27.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/core/Bus.cpp`
-- `src/core/Bus.hpp`
+- `extern/moira/Moira/Moira.h`
+- `extern/moira/Moira/MoiraConfig.h`
+- `extern/moira/Moira/MoiraDataflow_cpp.h`
+- `extern/moira/NEOST_VENDOR.md`
 
 ## Audit Trail
 
-- EXTRACTED: 132 (94%)
-- INFERRED: 8 (6%)
+- EXTRACTED: 64 (74%)
+- INFERRED: 22 (26%)
 - AMBIGUOUS: 0 (0%)
 
 ---

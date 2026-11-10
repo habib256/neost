@@ -1,11 +1,10 @@
 # Community 245
 
-> 13 nodes
+> 11 nodes
 
 ## Key Concepts
 
 - **Probe** (9 connections) — `src/util/ConfigPath.hpp`
-- **ConfigPath.cpp** (9 connections) — `src/util/ConfigPath.cpp`
 - **resolve()** (8 connections) — `src/util/ConfigPath.cpp`
 - **userConfigDir()** (6 connections) — `src/util/ConfigPath.cpp`
 - **profilesDirFor()** (4 connections) — `src/util/ConfigPath.cpp`
@@ -16,15 +15,14 @@
 - **exists** (2 connections) — `src/util/ConfigPath.hpp`
 - **function** (1 connections)
 - **string** (1 connections)
-- **system_error** (1 connections)
 
 ## Relationships
 
-- [Community 4](Community_4.md) (4 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
 - [Community 75](Community_75.md) (3 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
-- [Community 138](Community_138.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
 
 ## Source Files
 
@@ -33,8 +31,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 25 (83%)
-- INFERRED: 5 (17%)
+- EXTRACTED: 20 (80%)
+- INFERRED: 5 (20%)
 - AMBIGUOUS: 0 (0%)
 
 ---

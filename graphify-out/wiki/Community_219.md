@@ -1,11 +1,10 @@
 # Community 219
 
-> 13 nodes
+> 12 nodes
 
 ## Key Concepts
 
 - **FdcRig** (17 connections) — `tests/selftest_logic.cpp`
-- **.setDmaAddr()** (3 connections) — `tests/selftest_logic.cpp`
 - **.dmaAddr()** (2 connections) — `tests/selftest_logic.cpp`
 - **.setMode()** (2 connections) — `tests/selftest_logic.cpp`
 - **.settle()** (2 connections) — `tests/selftest_logic.cpp`
@@ -20,12 +19,12 @@
 
 ## Relationships
 
-- [Community 41](Community_41.md) (5 shared connections)
-- [Community 301](Community_301.md) (1 shared connections)
-- [Community 252](Community_252.md) (1 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
 - [Community 201](Community_201.md) (1 shared connections)
-- [Community 228](Community_228.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 301](Community_301.md) (1 shared connections)
 - [Community 249](Community_249.md) (1 shared connections)
+- [Community 228](Community_228.md) (1 shared connections)
 
 ## Source Files
 
@@ -33,8 +32,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 20 (91%)
-- INFERRED: 2 (9%)
+- EXTRACTED: 19 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

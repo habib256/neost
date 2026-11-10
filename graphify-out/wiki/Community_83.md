@@ -1,41 +1,57 @@
 # Community 83
 
-> 11 nodes
+> 25 nodes
 
 ## Key Concepts
 
-- **Blitter et IRQ MegaSTE : contrôle des domaines d'horloge** (10 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **.finishTransfer()** (5 connections) — `src/core/Blitter.hpp`
-- **Cohérence BUSY / GPU_DONE dans NeoST** (3 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **🔴 Nouveaux — BUGS NETS actionnables — ✅ CORRIGÉS** (2 connections) — `docs/HATARI_DIVERGENCES.md`
-- **Audit indépendant et expériences causales** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Borne de durée** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Correctif NeoST indépendant** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Horloge des cycles internes après IACK** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Protocole** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Reproduire** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
-- **Résultats observés au pin** (1 connections) — `docs/HATARI_MEGASTE_AUDIT.md`
+- **run_nat_sting.py** (14 connections) — `tools/run_nat_sting.py`
+- **make_sting_test.py** (10 connections) — `tools/make_sting_test.py`
+- **main()** (9 connections) — `tools/run_nat_sting.py`
+- **replace_program()** (8 connections) — `tools/run_nat_sting.py`
+- **build_floppy()** (7 connections) — `tools/make_sting_test.py`
+- **socket** (7 connections)
+- **build_prg()** (6 connections) — `tools/make_sting_test.py`
+- **build_code()** (5 connections) — `tools/make_sting_test.py`
+- **main()** (5 connections) — `tools/make_sting_test.py`
+- **handle()** (5 connections) — `tools/net_gateway80.py`
+- **net_gateway80.py** (5 connections) — `tools/net_gateway80.py`
+- **threading** (4 connections)
+- **net_localdns.py** (3 connections) — `tools/net_localdns.py`
+- **alloc()** (2 connections) — `tools/make_sting_test.py`
+- **set_fat()** (2 connections) — `tools/make_sting_test.py`
+- **pump()** (2 connections) — `tools/net_gateway80.py`
+- **chain()** (2 connections) — `tools/run_nat_sting.py`
+- **replace()** (2 connections) — `tools/run_nat_sting.py`
+- **cl_off()** (1 connections) — `tools/make_sting_test.py`
+- **entry()** (1 connections) — `tools/make_sting_test.py`
+- **rd()** (1 connections) — `tools/make_sting_test.py`
+- **qname()** (1 connections) — `tools/net_localdns.py`
+- **serve()** (1 connections) — `tools/run_nat_sting.py`
+- **STinG/ENEC → NAT → HTTP loopback, avec DNS localhost, sans accès Internet. Le…** (1 connections) — `tools/run_nat_sting.py`
+- **Remplace AUTO/STGTEST.PRG dans les clusters déjà alloués du FAT12.** (1 connections) — `tools/run_nat_sting.py`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (1 shared connections)
-- [Community 37](Community_37.md) (1 shared connections)
-- [Community 364](Community_364.md) (1 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
-- [Community 232](Community_232.md) (1 shared connections)
-- [Community 299](Community_299.md) (1 shared connections)
-- [Community 366](Community_366.md) (1 shared connections)
+- [Community 3](Community_3.md) (5 shared connections)
+- [Community 18](Community_18.md) (5 shared connections)
+- [Community 8](Community_8.md) (4 shared connections)
+- [Community 34](Community_34.md) (4 shared connections)
+- [Community 160](Community_160.md) (4 shared connections)
+- [Community 441](Community_441.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
-- `docs/HATARI_MEGASTE_AUDIT.md`
-- `src/core/Blitter.hpp`
+- `tools/make_sting_test.py`
+- `tools/net_gateway80.py`
+- `tools/net_localdns.py`
+- `tools/run_nat_sting.py`
 
 ## Audit Trail
 
-- EXTRACTED: 13 (76%)
-- INFERRED: 4 (24%)
+- EXTRACTED: 62 (95%)
+- INFERRED: 3 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

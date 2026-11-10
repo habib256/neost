@@ -1,24 +1,26 @@
 # Community 411
 
-> 3 nodes
+> 4 nodes
 
 ## Key Concepts
 
-- **Pcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Pcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **Checks** (4 connections) — `tests/blitter_rmw_logic.cpp`
+- **.equal()** (2 connections) — `tests/blitter_rmw_logic.cpp`
+- **count** (1 connections) — `tests/blitter_rmw_logic.cpp`
+- **failures** (1 connections) — `tests/blitter_rmw_logic.cpp`
 
 ## Relationships
 
-- [Community 76](Community_76.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 41](Community_41.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/StrWriter.h`
+- `tests/blitter_rmw_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 3 (100%)
+- EXTRACTED: 5 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

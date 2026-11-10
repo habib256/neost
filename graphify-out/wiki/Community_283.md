@@ -1,37 +1,33 @@
 # Community 283
 
-> 12 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
-- **main()** (7 connections) — `tools/opendst_memdiff.py`
-- **Server** (6 connections) — `tools/opendst_memdiff.py`
-- **runs()** (3 connections) — `tools/opendst_memdiff.py`
-- **.cmd()** (3 connections) — `tools/opendst_memdiff.py`
-- **.dump()** (3 connections) — `tools/opendst_memdiff.py`
-- **parse_hex()** (2 connections) — `tools/opendst_memdiff.py`
-- **read_word()** (2 connections) — `tools/opendst_memdiff.py`
-- **.close()** (2 connections) — `tools/opendst_memdiff.py`
-- **.__init__()** (1 connections) — `tools/opendst_memdiff.py`
-- **Image mémoire [start, start+length) par tranches de 4 Ko.** (1 connections) — `tools/opendst_memdiff.py`
-- **Adresses triées → plages contiguës [(début, fin)].** (1 connections) — `tools/opendst_memdiff.py`
+- **drawStKiosk()** (8 connections) — `src/gui/StScreenView.cpp`
+- **crtApply()** (6 connections) — `src/gui/StScreenView.cpp`
+- **drawStScreen()** (5 connections) — `src/gui/StScreenView.cpp`
+- **GlScreen** (3 connections)
+- **App** (3 connections)
+- **GLuint** (1 connections)
 
 ## Relationships
 
-- [Community 18](Community_18.md) (2 shared connections)
-- [Community 151](Community_151.md) (2 shared connections)
-- [Community 315](Community_315.md) (1 shared connections)
-- [Community 55](Community_55.md) (1 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 329](Community_329.md) (1 shared connections)
+- [Community 214](Community_214.md) (1 shared connections)
+- [Community 303](Community_303.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/opendst_memdiff.py`
+- `src/gui/StScreenView.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 13 (76%)
+- INFERRED: 4 (24%)
 - AMBIGUOUS: 0 (0%)
 
 ---

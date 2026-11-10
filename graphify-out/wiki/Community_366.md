@@ -1,30 +1,29 @@
 # Community 366
 
-> 5 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.runSlice()** (7 connections) — `src/core/Blitter.hpp`
-- **.readWord()** (5 connections) — `src/core/Blitter.hpp`
-- **.writeWord()** (5 connections) — `src/core/Blitter.hpp`
-- **.billCycles()** (5 connections) — `src/core/Blitter.hpp`
-- **accessObserver** (3 connections) — `src/core/Blitter.hpp`
+- **Ce que NeoST attend du cœur** (4 connections) — `docs/CPU_SWAP_GATE.md`
+- **Porte d'échange du cœur 68000 (Moira NeoST → Moira POM68K)** (3 connections) — `docs/CPU_SWAP_GATE.md`
+- **La porte** (2 connections) — `docs/CPU_SWAP_GATE.md`
+- **Ce que la porte ne couvre pas, à rejouer à part** (1 connections) — `docs/CPU_SWAP_GATE.md`
+- **Méthodes surchargées** (1 connections) — `docs/CPU_SWAP_GATE.md`
+- **Patches de NeoST, à retrouver dans POM68K** (1 connections) — `docs/CPU_SWAP_GATE.md`
 
 ## Relationships
 
-- [Community 256](Community_256.md) (5 shared connections)
-- [Community 37](Community_37.md) (5 shared connections)
-- [Community 364](Community_364.md) (2 shared connections)
-- [Community 83](Community_83.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Blitter.hpp`
+- `docs/CPU_SWAP_GATE.md`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (47%)
-- INFERRED: 10 (53%)
+- EXTRACTED: 7 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

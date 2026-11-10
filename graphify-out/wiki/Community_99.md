@@ -24,10 +24,10 @@
 
 ## Relationships
 
+- [Community 102](Community_102.md) (5 shared connections)
 - [Community 51](Community_51.md) (4 shared connections)
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 - [Community 119](Community_119.md) (1 shared connections)
 - [Community 41](Community_41.md) (1 shared connections)
 

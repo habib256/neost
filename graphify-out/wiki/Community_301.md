@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **SndRig** (11 connections) — `tests/selftest_logic.cpp`
-- **Bus** (3 connections)
+- **Scheduler** (4 connections)
 - **.setEnd()** (2 connections) — `tests/selftest_logic.cpp`
 - **.setStart()** (2 connections) — `tests/selftest_logic.cpp`
 - **.SndRig()** (1 connections) — `tests/selftest_logic.cpp`
@@ -20,6 +20,7 @@
 - [Community 201](Community_201.md) (2 shared connections)
 - [Community 226](Community_226.md) (1 shared connections)
 - [Community 219](Community_219.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
@@ -27,7 +28,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 15 (100%)
+- EXTRACTED: 16 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

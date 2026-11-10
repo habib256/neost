@@ -1,12 +1,11 @@
 # Community 76
 
-> 22 nodes
+> 19 nodes
 
 ## Key Concepts
 
 - **StrWriter.h** (55 connections) — `extern/moira/Moira/StrWriter.h`
-- **Cpcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
-- **Fc** (3 connections) — `extern/moira/Moira/StrWriter.h`
+- **Pcc** (3 connections) — `extern/moira/Moira/StrWriter.h`
 - **Scale** (3 connections) — `extern/moira/Moira/StrWriter.h`
 - **Ccr** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **Dfc** (1 connections) — `extern/moira/Moira/StrWriter.h`
@@ -20,10 +19,8 @@
 - **Szb** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **Usp** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **Zpc** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Cpcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **.Fc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
+- **.Pcc()** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **.Scale()** (1 connections) — `extern/moira/Moira/StrWriter.h`
-- **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 - **raw** (1 connections) — `extern/moira/Moira/StrWriter.h`
 
@@ -36,8 +33,8 @@
 - [Community 285](Community_285.md) (1 shared connections)
 - [Community 385](Community_385.md) (1 shared connections)
 - [Community 398](Community_398.md) (1 shared connections)
+- [Community 437](Community_437.md) (1 shared connections)
 - [Community 401](Community_401.md) (1 shared connections)
-- [Community 411](Community_411.md) (1 shared connections)
 - [Community 400](Community_400.md) (1 shared connections)
 - [Community 395](Community_395.md) (1 shared connections)
 - [Community 413](Community_413.md) (1 shared connections)
@@ -48,7 +45,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 61 (100%)
+- EXTRACTED: 59 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

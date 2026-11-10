@@ -1,10 +1,9 @@
 # Community 213
 
-> 11 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **MidiEndpoint.hpp** (17 connections) — `src/audio/MidiEndpoint.hpp`
 - **Wanted** (10 connections) — `src/audio/MidiEndpoint.hpp`
 - **testMidiHomonymes()** (8 connections) — `tests/selftest_logic.cpp`
 - **countMatchable()** (7 connections) — `src/audio/MidiEndpoint.hpp`
@@ -18,13 +17,12 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
-- [Community 220](Community_220.md) (7 shared connections)
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 41](Community_41.md) (4 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
+- [Community 220](Community_220.md) (6 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 - [Community 230](Community_230.md) (1 shared connections)
-- [Community 397](Community_397.md) (1 shared connections)
-- [Community 126](Community_126.md) (1 shared connections)
+- [Community 248](Community_248.md) (1 shared connections)
 
 ## Source Files
 
@@ -33,8 +31,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 39 (83%)
-- INFERRED: 8 (17%)
+- EXTRACTED: 27 (77%)
+- INFERRED: 8 (23%)
 - AMBIGUOUS: 0 (0%)
 
 ---

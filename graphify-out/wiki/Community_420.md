@@ -1,28 +1,24 @@
 # Community 420
 
-> 3 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **mmu_logic.cpp** (6 connections) — `tests/mmu_logic.cpp`
-- **testMmuMapping()** (4 connections) — `tests/mmu_logic.cpp`
-- **main()** (2 connections) — `tests/mmu_logic.cpp`
+- **compdisks/README.md** (1 connections) — `data/compdisks/README.md`
+- **Catalogue des disquettes de compilation (CompDisks.json)** (1 connections) — `data/compdisks/README.md`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- No strong cross-community connections detected
 
 ## Source Files
 
-- `tests/mmu_logic.cpp`
+- `data/compdisks/README.md`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (78%)
-- INFERRED: 2 (22%)
+- EXTRACTED: 1 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

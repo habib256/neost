@@ -26,35 +26,36 @@
 - **.setLog()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **.ster()** (3 connections) — `src/io/CartridgeKey.hpp`
 - **.wantsUds()** (3 connections) — `src/io/CartridgeKey.hpp`
+- **Dongles, 2e passe : oracle de rejeu, un périphérique par port, port cartouche abstrait (2026-08-23)** (3 connections) — `CHANGELOG.md`
 - **.armed()** (2 connections) — `src/io/CartridgeKey.hpp`
 - **.rom4Read()** (2 connections) — `src/io/CartridgeKey.hpp`
-- **FILE** (2 connections)
 - *... and 26 more nodes in this community*
 
 ## Relationships
 
-- [Community 41](Community_41.md) (9 shared connections)
+- [Community 41](Community_41.md) (10 shared connections)
 - [Community 4](Community_4.md) (2 shared connections)
-- [Community 214](Community_214.md) (2 shared connections)
 - [Community 10](Community_10.md) (1 shared connections)
 - [Community 244](Community_244.md) (1 shared connections)
-- [Community 51](Community_51.md) (1 shared connections)
 - [Community 136](Community_136.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
-- [Community 110](Community_110.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
-- [Community 124](Community_124.md) (1 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 299](Community_299.md) (1 shared connections)
+- [Community 67](Community_67.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
 
 ## Source Files
 
+- `CHANGELOG.md`
 - `docs/KIOSK.md`
 - `src/io/CartridgeKey.cpp`
 - `src/io/CartridgeKey.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 73 (73%)
+- EXTRACTED: 74 (73%)
 - INFERRED: 27 (27%)
 - AMBIGUOUS: 0 (0%)
 

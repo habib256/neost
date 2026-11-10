@@ -1,11 +1,9 @@
 # Community 95
 
-> 52 nodes
+> 27 nodes
 
 ## Key Concepts
 
-- **Fdc.cpp** (113 connections) — `src/io/Fdc.cpp`
-- **Priorités — divergences HAUTE et MOYENNE** (20 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.updateReadTrack()** (17 connections) — `src/io/Fdc.hpp`
 - **.updateWriteTrack()** (17 connections) — `src/io/Fdc.hpp`
 - **.onFdcEvent()** (17 connections) — `src/io/Fdc.hpp`
@@ -23,40 +21,34 @@
 - **.updateRestore()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateSeek()** (11 connections) — `src/io/Fdc.hpp`
 - **.updateStep()** (11 connections) — `src/io/Fdc.hpp`
-- **.writeSectorST()** (10 connections) — `src/io/Fdc.hpp`
-- **.writeTrackBuffer()** (10 connections) — `src/io/Fdc.hpp`
-- **.updateFloppyDensity()** (10 connections) — `src/io/Fdc.hpp`
-- **.fifoPush()** (9 connections) — `src/io/Fdc.hpp`
-- **.readAddressST()** (9 connections) — `src/io/Fdc.hpp`
 - **.bufferSize()** (9 connections) — `src/io/Fdc.hpp`
-- *... and 27 more nodes in this community*
+- **.nextIndexCycles()** (7 connections) — `src/io/Fdc.hpp`
+- **.bytesPerTrack()** (7 connections) — `src/io/Fdc.hpp`
+- **.bufferReset()** (7 connections) — `src/io/Fdc.hpp`
+- **.verifyTrack()** (6 connections) — `src/io/Fdc.hpp`
+- **.updateMotorStop()** (6 connections) — `src/io/Fdc.hpp`
+- **.tracksPerDisk()** (6 connections) — `src/io/Fdc.hpp`
+- **.canHandleDensity()** (5 connections) — `src/io/Fdc.hpp`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 24](Community_24.md) (51 shared connections)
-- [Community 12](Community_12.md) (47 shared connections)
-- [Community 31](Community_31.md) (27 shared connections)
-- [Community 121](Community_121.md) (19 shared connections)
-- [Community 102](Community_102.md) (11 shared connections)
-- [Community 78](Community_78.md) (9 shared connections)
-- [Community 4](Community_4.md) (5 shared connections)
-- [Community 135](Community_135.md) (3 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 48](Community_48.md) (2 shared connections)
-- [Community 392](Community_392.md) (2 shared connections)
-- [Community 172](Community_172.md) (1 shared connections)
+- [Community 24](Community_24.md) (47 shared connections)
+- [Community 12](Community_12.md) (29 shared connections)
+- [Community 31](Community_31.md) (14 shared connections)
+- [Community 262](Community_262.md) (5 shared connections)
+- [Community 121](Community_121.md) (4 shared connections)
+- [Community 63](Community_63.md) (2 shared connections)
+- [Community 39](Community_39.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `src/io/Fdc.cpp`
 - `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 178 (47%)
-- INFERRED: 203 (53%)
+- EXTRACTED: 51 (26%)
+- INFERRED: 147 (74%)
 - AMBIGUOUS: 0 (0%)
 
 ---

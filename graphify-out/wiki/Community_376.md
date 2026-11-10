@@ -1,32 +1,33 @@
 # Community 376
 
-> 8 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **DockLayout.cpp** (14 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_WriteAll()** (4 connections) — `src/gui/DockLayout.cpp`
-- **ImGuiContext** (4 connections)
-- **ImGuiSettingsHandler** (4 connections)
-- **WinSettings_ApplyAll()** (3 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_ReadLine()** (3 connections) — `src/gui/DockLayout.cpp`
-- **WinSettings_ReadOpen()** (3 connections) — `src/gui/DockLayout.cpp`
-- **ImGuiTextBuffer** (1 connections)
+- **rtc_long_phase_logic.cpp** (9 connections) — `tests/rtc_long_phase_logic.cpp`
+- **testRtcLongPhase()** (6 connections) — `tests/rtc_long_phase_logic.cpp`
+- **limits** (5 connections)
+- **main()** (2 connections) — `tests/rtc_long_phase_logic.cpp`
+- **rtcAddress()** (2 connections) — `tests/rtc_long_phase_logic.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (6 shared connections)
-- [Community 380](Community_380.md) (3 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 20](Community_20.md) (1 shared connections)
+- [Community 22](Community_22.md) (1 shared connections)
+- [Community 297](Community_297.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/DockLayout.cpp`
+- `tests/rtc_long_phase_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 23 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 17 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

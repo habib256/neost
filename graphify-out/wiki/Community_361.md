@@ -1,27 +1,29 @@
 # Community 361
 
-> 4 nodes
+> 3 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/blitter_rmw_logic.cpp`
-- **.equal()** (2 connections) — `tests/blitter_rmw_logic.cpp`
-- **count** (1 connections) — `tests/blitter_rmw_logic.cpp`
-- **failures** (1 connections) — `tests/blitter_rmw_logic.cpp`
+- **.neBackend()** (5 connections) — `src/gui/App.hpp`
+- **Slirp : le « dernier pas » est clos — 5/5, le coupable était Little Snitch (2026-08-27)** (2 connections) — `CHANGELOG.md`
+- **NetBackend** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/blitter_rmw_logic.cpp`
+- `CHANGELOG.md`
+- `src/gui/App.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 4 (67%)
+- INFERRED: 2 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

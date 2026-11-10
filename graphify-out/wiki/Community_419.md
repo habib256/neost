@@ -1,26 +1,28 @@
 # Community 419
 
-> 3 nodes
+> 2 nodes
 
 ## Key Concepts
 
-- **mfp_usart_control_logic.cpp** (4 connections) — `tests/mfp_usart_control_logic.cpp`
-- **testMfpUsartControl()** (3 connections) — `tests/mfp_usart_control_logic.cpp`
-- **main()** (2 connections) — `tests/mfp_usart_control_logic.cpp`
+- **writePpm()** (3 connections) — `src/headless/Observe.hpp`
+- **Chasse round 5 : le save-state acceptait une AUTRE ROM, et le harnais annonçait des écritures tronquées comme réussies (2026-09-02)** (3 connections) — `CHANGELOG.md`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mfp_usart_control_logic.cpp`
+- `CHANGELOG.md`
+- `src/headless/Observe.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (83%)
-- INFERRED: 1 (17%)
+- EXTRACTED: 3 (60%)
+- INFERRED: 2 (40%)
 - AMBIGUOUS: 0 (0%)
 
 ---

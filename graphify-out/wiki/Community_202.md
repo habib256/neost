@@ -1,42 +1,32 @@
 # Community 202
 
-> 13 nodes
+> 10 nodes
 
 ## Key Concepts
 
-- **.mmioTable()** (7 connections) — `src/core/Bus.hpp`
-- **MmioSlot** (6 connections) — `src/core/Bus.hpp`
-- **.mmioSlotFor()** (6 connections) — `src/core/Bus.hpp`
-- **.mmioRead8()** (6 connections) — `src/core/Bus.hpp`
-- **.mmioTableSize()** (5 connections) — `src/core/Bus.hpp`
-- **.mmioWrite8()** (5 connections) — `src/core/Bus.hpp`
-- **.mmioTableDisjoint()** (4 connections) — `src/core/Bus.hpp`
-- **size_t** (4 connections)
-- **Le Bus** (3 connections) — `DEV.md`
-- **Bus::Bus()** (2 connections) — `src/core/Bus.cpp`
-- **hi** (1 connections) — `src/core/Bus.hpp`
-- **lo** (1 connections) — `src/core/Bus.hpp`
-- **name** (1 connections) — `src/core/Bus.hpp`
+- **Model** (10 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68000** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68010** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68EC020** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68EC030** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68EC040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
+- **M68LC040** (1 connections) — `extern/moira/Moira/MoiraTypes.h`
 
 ## Relationships
 
-- [Community 14](Community_14.md) (7 shared connections)
-- [Community 30](Community_30.md) (7 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
-- [Community 203](Community_203.md) (2 shared connections)
-- [Community 386](Community_386.md) (2 shared connections)
-- [Community 321](Community_321.md) (1 shared connections)
+- [Community 57](Community_57.md) (1 shared connections)
 
 ## Source Files
 
-- `DEV.md`
-- `src/core/Bus.cpp`
-- `src/core/Bus.hpp`
+- `extern/moira/Moira/MoiraTypes.h`
 
 ## Audit Trail
 
-- EXTRACTED: 26 (72%)
-- INFERRED: 10 (28%)
+- EXTRACTED: 10 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

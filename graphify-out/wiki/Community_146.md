@@ -1,6 +1,6 @@
 # Community 146
 
-> 47 nodes
+> 44 nodes
 
 ## Key Concepts
 
@@ -8,7 +8,6 @@
 - **P** (18 connections) — `tools/make_stcpu_rom.py`
 - **make_stcpu_rom.py** (13 connections) — `tools/make_stcpu_rom.py`
 - **make_stcpu_raster.py** (10 connections) — `tools/make_stcpu_raster.py`
-- **test_stcpu_driver.py** (9 connections) — `tools/test_stcpu_driver.py`
 - **DriverChecks** (8 connections) — `tools/test_stcpu_driver.py`
 - **movebi()** (8 connections) — `tools/make_stcpu_rom.py`
 - **build()** (7 connections) — `tools/make_stcpu_raster.py`
@@ -29,15 +28,16 @@
 - **done_dbra()** (2 connections) — `tools/make_stcpu_rom.py`
 - **lea_a0()** (2 connections) — `tools/make_stcpu_rom.py`
 - **.addr()** (2 connections) — `tools/make_stcpu_rom.py`
-- *... and 22 more nodes in this community*
+- **.b8()** (2 connections) — `tools/make_stcpu_rom.py`
+- *... and 19 more nodes in this community*
 
 ## Relationships
 
-- [Community 55](Community_55.md) (16 shared connections)
+- [Community 18](Community_18.md) (20 shared connections)
 - [Community 3](Community_3.md) (11 shared connections)
-- [Community 227](Community_227.md) (6 shared connections)
-- [Community 151](Community_151.md) (5 shared connections)
-- [Community 18](Community_18.md) (2 shared connections)
+- [Community 160](Community_160.md) (5 shared connections)
+- [Community 227](Community_227.md) (1 shared connections)
+- [Community 26](Community_26.md) (1 shared connections)
 
 ## Source Files
 
@@ -50,7 +50,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 116 (98%)
+- EXTRACTED: 109 (98%)
 - INFERRED: 2 (2%)
 - AMBIGUOUS: 0 (0%)
 

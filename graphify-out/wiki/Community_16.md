@@ -1,21 +1,15 @@
 # Community 16
 
-> 78 nodes
+> 70 nodes
 
 ## Key Concepts
 
 - **Moira** (133 connections) — `extern/moira/Moira/Moira.h`
 - **u32** (34 connections)
-- **.setSR()** (11 connections) — `extern/moira/Moira/Moira.h`
 - **Moira::execMovecRcRx()** (11 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **Moira::execMovecRxRc()** (11 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
 - **.getSP()** (5 connections) — `extern/moira/Moira/Moira.h`
 - **i64** (5 connections)
-- **.setMasterMode()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **.setSupervisorFlags()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::execSccEa()** (4 connections) — `extern/moira/Moira/MoiraExec_cpp.h`
-- **.clearTrace0Flag()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.clearTraceFlag()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **.getCAAR()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **.getCACR()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **.getDFC()** (3 connections) — `extern/moira/Moira/Moira.h`
@@ -29,20 +23,26 @@
 - **.setMSP()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **.setSFC()** (3 connections) — `extern/moira/Moira/Moira.h`
 - **.setSP()** (3 connections) — `extern/moira/Moira/Moira.h`
-- *... and 53 more nodes in this community*
+- **.setUSP()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **.setVBR()** (3 connections) — `extern/moira/Moira/Moira.h`
+- **.getA()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **.getD()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **.setA()** (2 connections) — `extern/moira/Moira/Moira.h`
+- **.setClock()** (2 connections) — `extern/moira/Moira/Moira.h`
+- *... and 45 more nodes in this community*
 
 ## Relationships
 
-- [Community 64](Community_64.md) (25 shared connections)
-- [Community 314](Community_314.md) (24 shared connections)
-- [Community 166](Community_166.md) (7 shared connections)
-- [Community 33](Community_33.md) (6 shared connections)
-- [Community 58](Community_58.md) (5 shared connections)
+- [Community 314](Community_314.md) (25 shared connections)
+- [Community 30](Community_30.md) (14 shared connections)
+- [Community 64](Community_64.md) (13 shared connections)
+- [Community 57](Community_57.md) (6 shared connections)
+- [Community 299](Community_299.md) (5 shared connections)
 - [Community 9](Community_9.md) (5 shared connections)
-- [Community 176](Community_176.md) (4 shared connections)
-- [Community 160](Community_160.md) (3 shared connections)
-- [Community 131](Community_131.md) (3 shared connections)
-- [Community 109](Community_109.md) (1 shared connections)
+- [Community 131](Community_131.md) (4 shared connections)
+- [Community 33](Community_33.md) (4 shared connections)
+- [Community 166](Community_166.md) (3 shared connections)
+- [Community 58](Community_58.md) (2 shared connections)
 - [Community 211](Community_211.md) (1 shared connections)
 - [Community 104](Community_104.md) (1 shared connections)
 
@@ -54,8 +54,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 182 (85%)
-- INFERRED: 32 (15%)
+- EXTRACTED: 174 (89%)
+- INFERRED: 22 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

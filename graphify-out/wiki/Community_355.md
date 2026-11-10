@@ -1,13 +1,12 @@
 # Community 355
 
-> 11 nodes
+> 10 nodes
 
 ## Key Concepts
 
 - **Paquet Android** (9 connections) — `packaging/android/README.md`
 - **android/README.md** (2 connections) — `packaging/android/README.md`
 - **Le menu, décalqué de la borne** (2 connections) — `packaging/android/README.md`
-- **Signature** (2 connections) — `packaging/android/README.md`
 - **Ce que c'est (et ce que ce n'est pas)** (1 connections) — `packaging/android/README.md`
 - **Construire** (1 connections) — `packaging/android/README.md`
 - **Données embarquées, et la licence** (1 connections) — `packaging/android/README.md`
@@ -27,8 +26,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (92%)
-- INFERRED: 1 (8%)
+- EXTRACTED: 11 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

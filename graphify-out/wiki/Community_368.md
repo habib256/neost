@@ -1,28 +1,29 @@
 # Community 368
 
-> 5 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **.megaSteCacheFlush()** (5 connections) — `src/core/Bus.hpp`
-- **.wrMsteCtl()** (3 connections) — `src/core/Bus.hpp`
-- **.megaSteCacheFlushIfEnabled()** (3 connections) — `src/core/Bus.hpp`
-- **.megaSteCacheEnabled()** (2 connections) — `src/core/Bus.hpp`
-- **.megaSteReset()** (2 connections) — `src/core/Bus.hpp`
+- **SysExJob** (7 connections) — `src/audio/MidiOutHost.cpp`
+- **HMIDIOUT** (1 connections)
+- **MIDIHDR** (1 connections)
+- **buf** (1 connections) — `src/audio/MidiOutHost.cpp`
+- **h** (1 connections) — `src/audio/MidiOutHost.cpp`
+- **hdr** (1 connections) — `src/audio/MidiOutHost.cpp`
 
 ## Relationships
 
-- [Community 14](Community_14.md) (5 shared connections)
-- [Community 30](Community_30.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 230](Community_230.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Bus.hpp`
+- `src/audio/MidiOutHost.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (91%)
-- INFERRED: 1 (9%)
+- EXTRACTED: 7 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---
