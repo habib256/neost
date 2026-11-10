@@ -316,6 +316,22 @@ def best_match(shots: Path, frame: int, args, ref: Image.Image):
     return round(best, 2), best_img, best_vbl
 
 
+def describe_error(exc: Exception, work: Path) -> str:
+    """La CAUSE d'un échec, pas le début de la ligne de commande : un CalledProcessError
+    commence par la commande entière, et la tronquer au début cachait le code de sortie."""
+    if isinstance(exc, subprocess.TimeoutExpired):
+        return f"{Path(str(exc.cmd[0])).name} : délai de {exc.timeout} s dépassé"
+    if isinstance(exc, subprocess.CalledProcessError):
+        name = Path(str(exc.cmd[0])).name
+        log = work / ("hatari.log" if name.startswith("hatari") else "neost.log")
+        tail = ""
+        if log.exists():
+            lines = [l for l in log.read_text(errors="replace").splitlines() if l.strip()]
+            tail = " | ".join(lines[-3:])
+        return f"{name} : code de sortie {exc.returncode}" + (f" — {tail[-400:]}" if tail else "")
+    return str(exc)[-300:]
+
+
 def one(disk: Path, args, out: Path) -> dict:
     res = {"disk": disk.name, "fdc_seed": args.fdc_seed, "hatari_seed": args.hatari_seed,
            "key_hold": args.key_hold, "offset": args.offset,
@@ -347,7 +363,7 @@ def one(disk: Path, args, out: Path) -> dict:
                                          "neost_rgb_sha256": hashlib.sha256(img.tobytes()).hexdigest(),
                                          "key": f"{key}_{f}"}
         except Exception as exc:
-            res["error"] = str(exc)[:300]
+            res["error"] = describe_error(exc, work)
         finally:
             for name, suffix in (("neost", "n"), ("hatari", "h")):
                 log = work / f"{name}.log"

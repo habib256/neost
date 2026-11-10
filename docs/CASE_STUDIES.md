@@ -1053,6 +1053,8 @@ Correctif, physique et non spécifique : un timer ne démarre qu'au front suivan
 timers (`docs/HATARI_DIVERGENCES.md` § MFP). Lethal Xcess concorde alors avec Hatari de 4000 à 8000
 (0,0 %, 0,01 % à 5000) ; la fermeture vers 5480 est une transition du jeu, chez les deux.
 Outils : `NEOST_SYNC_TRACE=1` côté NeoST, `compare_titles.py --hatari-trace video_sync` côté Hatari.
-`compare_titles.py` avec plusieurs trames et `--jobs` > 1 fait échouer Hatari sur ce disque ;
-`--jobs 1` passe.
+Deux exécutions d'Hatari ont échoué pendant l'enquête, alors qu'une autre instance tournait ;
+non reproduit ensuite (trois comparaisons simultanées passent). `--jobs` ne parallélise que les
+disques. `compare_titles.py` garde désormais la cause d'un échec (code de sortie, délai, fin du
+journal) au lieu du début de la ligne de commande.
 

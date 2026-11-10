@@ -6,6 +6,12 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## `compare_titles` : la cause d'un échec n'est plus coupée (2026-11-10)
+
+- Une erreur d'Hatari ou de NeoST était tronquée à ses 300 premiers caractères, c'est-à-dire à la
+  ligne de commande : le code de sortie disparaissait. Elle rend désormais le code de sortie ou le
+  délai dépassé, et les dernières lignes du journal de l'émulateur concerné.
+
 ## A15 clos : glisser-déposer à la souris, Chessmaster joué (2026-11-10)
 
 - Grammaire souris de `--mouse-at` et de `compare_titles.py --mouse` : `l/r/u/d` déplacent avec le
