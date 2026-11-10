@@ -85,6 +85,7 @@ clos et ne fait plus foi va dans `docs/archive/` (hors contrôle d'ancres).
 | [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md) | **Extensions NeoST (stockage/réseau)** : **UltraSatan** (SD sur ACSI), **NetUSBee**/EtherNEC (NE2000 + USB, port cartouche), modem Hayes, anneau MIDI, **appareils MIDI hôtes** (destination/source matérielle), clés Steinberg et **adaptateurs de port** (dongles joystick/série, DAC Pro Sound, boutons Multiface/URC). Tout est du matériel qui a réellement existé sur ST. OFF par défaut, sans effet sur les étalons. |
 | [`docs/OPENDST.md`](docs/OPENDST.md) | **Pilotage externe déterministe** : contrat de déterminisme, scripts joystick, sondes mémoire, boucle d'exploration d'états (Go-Explore), recette Rick Dangerous. |
 | [`packaging/android/README.md`](packaging/android/README.md) | **Paquet Android** : build, pièges (jlink, Gradle/JDK), validation ARM64 sous QEMU. |
+| [`docs/HYPOTHESES_ST.md`](docs/HYPOTHESES_ST.md) | **Ce que le TT et le Falcon remettent en cause** : masques 24 bits, plan mémoire, `MachineType`, 68000 hors du cœur, vidéo — `fichier:ligne` et effort, relevé sans rien changer. |
 | [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md) | **Échange du cœur 68000** (Moira POM68K) : porte d'empreintes indépendante du cœur, procédure, contrat attendu du cœur (surcharges, internes, patches). **Tout patch de `extern/moira` y ajoute sa ligne.** |
 
 ## Build & run

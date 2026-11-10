@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Inventaire des hypothèses ST dans le code (2026-11-10)
+
+- `docs/HYPOTHESES_ST.md` : ce qui suppose un ST hors du cœur, relevé à `ee571b2` sans rien
+  changer, en six catégories avec `fichier:ligne` et effort. Le plus structurel :
+  `stmap::ADDR_MASK` (17 sites) et la frontière RAM de 4 Mo du `Bus`, le bloc RAM unique,
+  l'horloge unique à 8 MHz de l'ordonnanceur, le contrat des états d'attente du 68000, 124 tests
+  de `MachineType` dans 16 fichiers, le Shifter et la GLUE. Le Falcon reste en 24 bits
+  décodés ; le TT impose en plus 32 bits, la TT-RAM et un second MFP. L'item du TODO § 8 sort.
+
 ## TODO : l'étalon Troed se clôt sur WSDETECT, l'UE du MFP était déjà corrigé (2026-11-10)
 
 - « ST-STE Hardware Test (Troed) » reste introuvable : deux recherches du 2026-11-10 ne
