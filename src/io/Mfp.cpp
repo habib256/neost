@@ -939,8 +939,19 @@ void Mfp::scheduleTimerAt(int timer, int64_t anchor, bool fromCounter) {
     // Une programmation fraîche repart de l'horloge CPU entière de l'écriture.
     // Un rechargement repart de l'échéance FRACTIONNAIRE précédente et non de son
     // ceil entier exposé au Scheduler : c'est le reste accumulé de cycInt/Hatari.
-    const int64_t anchorSub = (!fromCounter && timerDueSub_[timer] > 0)
-                            ? timerDueSub_[timer] : anchor * 256;
+    const bool reload = !fromCounter && timerDueSub_[timer] > 0;
+    int64_t anchorSub = reload ? timerDueSub_[timer] : anchor * 256;
+    // Départ frais : [B] MC68901 janv. 1984 § 5.1.1 p. 5-1 — le prescaler compte des cycles de
+    // l'horloge des timers (XTAL, 2,4576 MHz), asynchrone du CPU. Le timer ne part donc qu'au
+    // front suivant de cette horloge : le délai réel varie d'une fraction de cycle MFP selon
+    // la phase de l'écriture. Lethal Xcess calibre sa bordure haute sur cette gigue ; [D] Hatari
+    // mfp.c:1386-1392 @ f0736b24 l'imite par un aléa réservé à ce jeu (PC $14D72).
+    // [F] Origine de la grille : front 0 au cycle CPU 0 ; la phase réelle à la mise sous
+    // tension est inconnue. Tranché par : rien d'observable sans relevé des deux horloges.
+    if (!reload) {
+        const int64_t k = (anchor * 9600 + 31333 - 1) / 31333;          // premier front ≥ anchor
+        anchorSub = (k * 31333 * 256 + 9600 - 1) / 9600;
+    }
     int64_t nextSub = anchorSub + periodSub;
     const int64_t nowSub = sched_->liveNow() * 256;
     if (nextSub <= nowSub) {

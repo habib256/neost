@@ -6,6 +6,18 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## MFP : départ des timers sur leur horloge, Lethal Xcess STE réparé (2026-11-10)
+
+- Un timer MFP ne démarre plus qu'au front suivant de l'horloge des timers (MC68901 § 5.1.1) : son
+  délai varie d'une fraction de cycle MFP selon la phase, comme sur le matériel. Lethal Xcess, qui
+  calibre sa bordure haute sur cette gigue, garde son plein écran en partie et concorde avec Hatari
+  sans la rustine qu'Hatari lui réserve. Recette : `docs/CASE_STUDIES.md`.
+- Étalons : `mfp_poll` et `blitter_hog` passent de `hatari` à `snapshot` (ils sondent ce départ au
+  cycle près), `dmasnd_poll` est reposé, `nocooper` capture une trame plus tard à 0 px de sa
+  référence Hatari. Échelle : 40 `hatari`, 13 `snapshot`, 3 `rtl`.
+- `compare_titles.py --hatari-trace FLAGS` relève une trace Hatari avec les mêmes entrées.
+- Palier full vert, 19 parcours de jeu OK.
+
 ## A43, SCC : All Sent en synchrone et SDLC (2026-11-10)
 
 - RR1 D0 (All Sent) se lit toujours à 1 en modes synchrone et SDLC (UM0109 RR1 p.180) ;

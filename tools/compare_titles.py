@@ -260,6 +260,9 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
         cmd += ["--disk-b", str(swap_copy(args.disk_b, work, "hb"))]
     if args.auto:
         cmd += ["--auto", args.auto]
+    if args.hatari_trace:
+        # Trace Hatari avec les mêmes entrées que la comparaison (fichier : <sortie>/<id>_hatari_trace.txt).
+        cmd += ["--trace", args.hatari_trace, "--trace-file", str(work / "hatari_trace.txt")]
     env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HATARI_SEED=str(args.hatari_seed))
     if args.joy:
         env.update(NEOST_JOY_SCRIPT=str(args.joy[2]), NEOST_JOY_START=str(args.joy[0]))
@@ -351,6 +354,8 @@ def one(disk: Path, args, out: Path) -> dict:
                     # Un écran identique et figé n'est pas une validation du jeu.
                     res[f"{name}_halted"] = "CPU halted" in message
                     shutil.copyfile(log, out / f"{key}_{suffix}.log")
+            if (work / "hatari_trace.txt").exists():
+                shutil.copyfile(work / "hatari_trace.txt", out / f"{key}_hatari_trace.txt")
             for path, expected in fingerprints.items():
                 try:
                     intact = hashlib.sha256(Path(path).read_bytes()).hexdigest() == expected
@@ -404,6 +409,8 @@ def main() -> int:
                     help="TRAME:SCRIPT, souris .LRUD123 comme --mouse-at (répétable, sans chevauchement)")
     ap.add_argument("--mouse-step", type=int, default=8, help="déplacement par pas L/R/U/D (1..127, défaut : 8)")
     ap.add_argument("--jobs", type=int, default=4)
+    ap.add_argument("--hatari-trace", metavar="FLAGS",
+                    help="drapeaux --trace d'Hatari (ex. video_sync), relevés avec les mêmes entrées")
     args = ap.parse_args()
     if args.key_hold < 1:
         ap.error("--key-hold must be at least 1 frame")

@@ -5,6 +5,7 @@
 #include "core/Scheduler.hpp"
 #include "io/Mfp.hpp"
 #include <cstdint>
+#include <algorithm>
 #include <cstdio>
 
 namespace {
@@ -151,7 +152,9 @@ int testMfpPulse() {
         r.advance(kPeriod * 2);
         check(r.expiredB == 0, "TBI inactive: Timer B does not run");
         r.mfp.setTbiLine(true, r.sched.liveNow());
-        r.advance(kPeriod + 1);
+        // [B] MC68901 § 5.1.1 : le comptage part au front suivant de l'horloge des timers,
+        // donc jusqu'à un cycle MFP (≤ 4 cycles CPU) après l'ouverture de la porte.
+        r.advance(kPeriod + 4);
         check(r.expiredB == 1, "TBI active: Timer B reaches its time out");
         check(r.mfp.read8(kIpra) & kTimerBIpra, "Timer B channel raised");
         r.mfp.write8(kIprb, 0x00);
@@ -239,6 +242,22 @@ int testMfpPulse() {
         r.mfp.write8(kAer, 0x00);
         r.mfp.write8(kAer, 0x10);
         check(r.mfp.read8(kTadr) == stopped, "AER4 change outside event-count: no count");
+    }
+    // [B] MC68901 § 5.1.1 p. 5-1 : le prescaler compte l'horloge des timers, asynchrone du CPU.
+    // Un départ frais attend le front suivant : selon la phase de l'écriture, le délai jusqu'à
+    // l'expiration varie entre la durée nominale et la durée nominale plus un cycle MFP.
+    {
+        int64_t lo = INT64_MAX, hi = 0;
+        for (int phase = 0; phase < 10; ++phase) {
+            Rig r;
+            r.advance(1000 + phase);
+            r.mfp.write8(kTadr, 100);
+            r.mfp.write8(kTacr, 0x01);                     // délai, /4 : 400 cycles MFP
+            const int64_t delay = r.sched.rawCyclesUntil(Scheduler::TIMER_A);
+            lo = std::min(lo, delay); hi = std::max(hi, delay);
+        }
+        check(lo >= 1306 && hi <= 1306 + 4, "fresh start delay stays within one MFP cycle");
+        check(hi > lo, "fresh start delay jitters with the CPU/MFP clock phase");
     }
     std::fprintf(stderr, "[mfp-pulse] %d checks, %d FAIL\n", checks, failures);
     return failures;

@@ -2563,6 +2563,19 @@ les étalons de fidélité** (réseau OFF pendant `run_all.py --tier fast/full`)
   vraie carte. ITL/isochrone et timing électrique restent non exécutés. Références,
   tests et limites : `docs/NETUSBEE.md`.
 
+## MFP : départ des timers sur l'horloge des timers (2026-11-10)
+
+**Divergence volontaire, grade B.** MC68901 janv. 1984 § 5.1.1 p. 5-1 : le prescaler compte des
+cycles de l'horloge des timers (XTAL, 2,4576 MHz), asynchrone du CPU. Un départ frais attend donc
+le front suivant de cette horloge, et son délai varie d'une fraction de cycle MFP selon la phase
+de l'écriture (`Mfp::scheduleTimerAt`). Hatari démarre au cycle CPU exact et n'imite cette gigue
+que par un aléa de ± 2 cycles MFP réservé à Lethal Xcess (`mfp.c:1386-1392 @ f0736b24`). [F] La phase
+de la grille par rapport au CPU à la mise sous tension est inconnue (front 0 au cycle 0).
+
+Effets : Lethal Xcess STE garde sa bordure haute en partie (cf. `docs/CASE_STUDIES.md`). `mfp_poll`
+et `blitter_hog`, qui sondent ce départ au cycle près, passent de `hatari` à `snapshot` ;
+`dmasnd_poll` est reposé ; `nocooper` capture une trame plus tard, à 0 px de sa référence Hatari.
+
 ## SCC : All Sent toujours à 1 en synchrone et SDLC (2026-11-10)
 
 **Divergence volontaire, grade B.** Zilog SCC/ESCC User Manual UM010902-0609, RR1 D0 p.180 :

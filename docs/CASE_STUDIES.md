@@ -1034,3 +1034,24 @@ Décision : canal élu par priorité fixe ([B]), front IRQ daté de la plus anci
 éligible (`Mfp::earliestEligible`), qui est ce qui fait monter la ligne. Le plantage de
 2013 relevait du modèle d'Hatari de l'époque, pas d'un besoin de ces menus sous NeoST.
 
+## Lethal Xcess STE : la bordure haute calibrée sur la gigue du MFP (2026-11-10)
+
+Recette : `Lethal_Xcess_Disk_1.STX` en A, `Disk_2` en B, STE, TOS 1.62 UK, 1 Mo ; SPACE aux trames
+900, 1500, 2500, puis un script joystick à partir de 3000. NeoST ouvrait la bordure haute de 3796 à
+3820, puis la refermait pour toujours ; Hatari la garde ouverte. Écart antérieur à la session
+(binaire de `355b6c0` identique).
+
+Chaîne du jeu : le Timer B déclenche la bordure basse (ligne 262) et réarme le Timer A (/200).
+Au tour suivant, son gestionnaire lit TADR en boucle jusqu'à la recharge moins 2, cale la bascule
+par des `lsr.l` dont les décalages (`$14CE8`) sont **calibrés au démarrage**, puis écrit `$FF820A`
+vers la ligne 33, cycle 404 (NeoST) ou 420 (Hatari). La calibration converge au bord de la fenêtre
+quand le délai du timer est parfaitement stable : la bascule retombe dans la ligne 33 et la chaîne
+déraille. Hatari le sait et ajoute un aléa réservé à ce jeu (`mfp.c:1386-1392 @ f0736b24`).
+
+Correctif, physique et non spécifique : un timer ne démarre qu'au front suivant de l'horloge des
+timers (`docs/HATARI_DIVERGENCES.md` § MFP). Lethal Xcess concorde alors avec Hatari de 4000 à 8000
+(0,0 %, 0,01 % à 5000) ; la fermeture vers 5480 est une transition du jeu, chez les deux.
+Outils : `NEOST_SYNC_TRACE=1` côté NeoST, `compare_titles.py --hatari-trace video_sync` côté Hatari.
+`compare_titles.py` avec plusieurs trames et `--jobs` > 1 fait échouer Hatari sur ce disque ;
+`--jobs 1` passe.
+
