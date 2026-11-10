@@ -1,10 +1,33 @@
 # Changelog — NeoST
 
 (c) 2026 VERHILLE Arnaud. **La chronologie** : releases, puis les chantiers datés dans
-l'ordre inverse. Version courante : **0.6.3**.
+l'ordre inverse. Version courante : **0.6.4**.
 
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
+
+## 0.6.4 — un filet avant le nouveau cœur (2026-11-11)
+
+Dernière étape avant la 0.6.5, qui précédera l'intégration du cœur 68000 de POM68K.
+
+**Fidélité** : les timers du MFP démarrent sur leur propre horloge, comme le dit la fiche ;
+Lethal Xcess sur STE retrouve sa bordure haute. Le MFP élit ses interruptions par priorité
+fixe, fige son compteur à l'arrêt et compte l'impulsion d'un changement d'AER. L'ACIA, le
+SCC et le WD1772 suivent leurs fiches sur des points restés à l'écart.
+
+**Souris** : le glisser-déposer passe au jeu ; Chessmaster se joue. Le headless et
+`compare_titles` partagent la même grammaire.
+
+**Jeux** : Lethal Xcess, Golden Axe (STE), Rick Dangerous et Pang rejoints aux parcours
+joués contre Hatari, 23 en tout. La double faute de TOS 2.06 UK au démarrage, avec ESPACE
+précoce, est expliquée : une course réelle de la ROM, sans défaut d'émulation.
+
+**Preuve** : la porte d'échange du cœur rejoue étalons, parcours, collection (ST, STE,
+Mega STE) et Mega STE à 16 MHz ; le banc 68000 confronte bus errors et double faute au RTL ;
+quatre étalons ne dépendent plus de la phase du démarrage ; la collection et les parcours
+passent sous ASan/UBSan sans violation ; toutes les citations de MAME portent leur révision.
+
+**Sauvegardes** : format **v59**, inchangé depuis la 0.6.3.
 
 ## Citations MAME épinglées et relues (2026-11-10)
 
@@ -62,7 +85,8 @@ l'ordre inverse. Version courante : **0.6.3**.
 
 - `tools/run_determinism.py`, passe C : le save-state de la passe B, numéro de format décrémenté,
   doit être refusé avec « unsupported format » et un code non nul. Vert (v58 refusé par v59).
-  C'est l'attendu de l'échange du cœur tant que l'auteur garde la convention du refus.
+  C'est l'attendu de l'échange du cœur : l'auteur a retenu le refus explicite des anciens états
+  (2026-11-11), l'item « Sort des `.state` à l'échange » sort du TODO.
 
 ## TOS 2.06 UK, double faute : jugée, course réelle et tirage discret (2026-11-10)
 
