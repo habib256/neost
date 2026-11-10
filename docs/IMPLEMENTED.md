@@ -7,182 +7,11 @@ vient répondre à « NeoST gère-t-il X ? ».
 Pour *quand* une chose est arrivée → [`../CHANGELOG.md`](../CHANGELOG.md).
 Pour ce qui reste → [`../TODO.md`](../TODO.md).
 
-## Compléments du 2026-11-04
-
-- **Blitter** : accord au cycle avec fx68k + `stBlitter.sv` sur 78 programmes, ST à 8 MHz, accès, données et dates. Partage du bus
-  corrigé d'après la netlist ST-4082 et le RTL ; SMUDGE en HOP 0 lit la source ; adresse source relisible en plein mot. → `docs/STBLITTER_BENCH.md`
-- **Spectrum 512** : 7 images sur ST et 6 sur STE, exactes à 0 pixel contre la formule du format, par le vrai visualiseur. → `tools/run_spec512_truth.py`
-- **CPU et faisceau sur STE** : compteur vidéo lu en boucle, en HBL et en VBL, à l'octet près contre fx68k + GSTMCU, sauf une lecture sur 48 544. HBL et VBL échantillonnées par la broche. → `docs/STCPU_BENCH.md`
-- **GLUE du STE** : confrontée au modèle GSTMCU, impulsion par impulsion, à chaque phase de la ligne : 2546 sur 2560 en accord à 50 Hz, 2518 sur 2560 sur un écran entier à 60 Hz. → `docs/GLUE_SWEEP.md`
-- **Bus STE** : latence de DTACK par zone mesurée sur le GSTMCU et lue sur la netlist ST-4081. `$FF8920-3F` passe par le créneau de la RAM, `$FF820A`
-  n'y passe plus. Ni la vidéo, ni le son, ni le rafraîchissement n'ajoutent d'attente au CPU. → `docs/CYCLE_ACCURACY.md` § 5
-- **Couverture** : étalons `boot_tos*`, chaque TOS présent jusqu'au bureau, Mega ST compris. `--disk-at` change la disquette en cours.
-
-## Compléments du 2026-11-03
-
-- **STE, résolutions mêlées** : une trame qui démarre en moyenne résolution mais mêle des lignes basses est décodée ligne
-  par ligne ; compteur vidéo écrit en bordure droite gardé en adresse absolue ; placement des lignes left+2, basses et
-  moyennes. Fenêtre verticale réelle pour le compteur, `$FF820F` et le scroll ; accès du blitter aux registres vidéo sans
-  l'attente du CPU. DHS Double Rez Trouble et More or Less Zero concordent avec Hatari, Sea of Colour et Drone s'affichent
-  correctement. Étalons générés `doublerez_ste` et `doublerez_tall_ste`.
-- **68000** : ordre des accès et durée de STOP alignés sur fx68k, Hatari et le microcode (MOVEM.L, ADD/SUB.L,
-  ADDX/SUBX.L, DBcc, JSR, trame de groupe 0, reset). Tableau → `docs/FX68K_BENCH.md`.
-- **MFP, event-count** : d'après la fiche MC68901 § 5.1.3, les canaux de I4/I3 répondent à TAI/TBI sur le front de l'AER.
-- **MFP, modes pulse des timers A/B** (TxCR 9-15), d'après la fiche MC68901 § 5.1.2 : TAI ou TBI
-  autorise le comptage au niveau du bit d'AER, le compteur est figé hors impulsion, TxDR le charge
-  à ce moment-là, et les canaux de I4/I3 répondent à TAI/TBI sur le front opposé. TBI suit le DE
-  réel de chaque ligne affichée. Table de vérité `tests/mfp_pulse_logic.cpp`, et test machine entière
-  dans `tests/machine_timer_b_aer_logic.cpp`. Aucun logiciel réel connu ne l'exerce.
-
-## Compléments du 2026-10-22
-
-- **FDC** : WRITE TRACK hors géométrie sur .st gardé en mémoire et relu (STE_Test test F).
-- **IKBD** : touche tenue au reset ; interruptions 1 ms dans l'échantillonnage `$18`.
-- **Pads STE** : validation de la sélection (JOYWE) d'après la netlist.
-- **Décodage STE d'après la netlist Atari du GST MCU (4081)** : ROM $E00000-$EBFFFF,
-  /ROM5-/ROM6 ($D00000-$D7FFFF) et /ROMP ($FE0000-$FE1FFF) en bus ouvert, registre
-  « gamecart » `$FF9000` (port cartouche déplacé en $D80000-$DFFFFF), `$FF8001` sur 4 bits,
-  banque « 11 » = 2 Mo. Détail → `docs/HATARI_DIVERGENCES.md` § Bus.
-- **IKBD d'après la ROM 6301** : port 0 partagé souris/joystick (`$14`, `$15`, `$17`, `$18`,
-  `$19`), disponibilité `$92` = bit 7 de l'octet de mode, fin de surveillance `$17` sur
-  commande souris.
-- **Blitter** : ligne GPIP3 = BUSY (pause, reprise, impulsion à l'écriture de `$FF8A3C`).
-- **IKBD, seconde passe sur la ROM** : fenêtre de reset, tampon de 21 octets, PAUSE,
-  souris absolue (`$09`, `$0D`, `$0E`), `$16`/`$1A`/`$94`, modes `$18` et `$19`.
-- **Blitter (netlists 4051/4082)** : registres mot, `$FF8A3D`, reset à chaud.
-- **STE (netlist 4081)** : délai de bus error, pads en lecture seule, `$FF8901`, fin du son
-  DMA figée par trame.
-- **Disquette** : images **IPF** (SPS/CAPS) montées dans les lecteurs A et B, détectées
-  par contenu, sans libcapsimage — détail au § Disquette (« Images IPF »).
-
-## Compléments du 2026-10-20
-
-- **CPU** : DIVU/DIVS font leurs cycles internes avant le préfetch (68000), comme Hatari
-  CE ; sonde temporelle `cpu_div_ram` exacte au cycle.
-- **GEMDOS** : tampons et noms de fichiers lus aussi dans le port cartouche
-  (`$FA0000-$FBFFFF`), comme le TOS ; codes d'erreur confrontés à `gemdos.c`.
-- **MFP** : tables de vérité puce nue du mode délai pour les quatre timers (prescalers
-  /4, /16, /64, /200, donnée 0 = 256), conversion MFP→CPU au 1/256ᵉ de cycle.
-- **Disquette** : écriture DMA et lecture STX (`ReadTime`, positions d'ID non standard)
-  comparées à Hatari par le banc temporel.
-- **FPU** : les 19 opérations transcendantes (FSIN… FSINCOS) en étendu 80 bits par le port
-  de `softfloat_fpsp.c`, bit à bit comme Hatari ; plus aucun calcul en `double` hôte.
-  Six oracles FPU désormais lancés au palier `full` (`tools/run_fpu_oracles.py`).
-- **Vidéo** : motif d'un visualiseur Spectrum 512 (48 couleurs par ligne, rafales
-  `movem.l`) à 0 px de l'oracle, étalon `spec512_view`.
-
-Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
-
-- **CPU** : ANDI/ORI/EORI #,SR/#,CCR et MOVE to CCR rechargent les deux mots de préfetch
-  après l'écriture de SR/CCR (microcode). Une bus error levée hors instruction (accès
-  hôte) abandonne l'accès sans exception.
-- **Vidéo, Shifter arrêté (res 3)** : stop et retour exigés sur la même ligne, datation sur
-  la grille réelle, ligne noire seulement si l'arrêt couvre toute la fenêtre DE.
-- **Son DMA STE** : les événements sont repérés par cycle ET par l'index d'écriture de
-  l'anneau de capture (`DmaEvent.capW`). Un PLAY ou un changement de MODE en milieu de
-  trame prend effet à son échantillon exact.
-- **IKBD** : `$09` remet à zéro la position absolue ; `$88` souris coupée rend 8 octets ;
-  `$9A` distingue `$15` de `$1A` ; `$17` sous `$13` ne met rien en file. GPIP3 relâché au
-  reset du blitter.
-- **Disquette / ACSI** : WPRT testé après la montée en régime (WRITE SECTOR) ou avant
-  l'index (WRITE TRACK) ; compteur de secteurs DMA appliqué à l'ACSI ; durée de secteur STX
-  standard divisée par la densité (HD/ED) ; secteur STX à CRC données faux réinscriptible.
-- **NE2000** : PROM d'adresse station (MAC doublée + signature `WW`, lecture seule), MAC
-  par défaut `02:4E:53:54:00:01` ; les PAR restent au pilote.
-- **Save-states v51** et deux durcissements : géométrie Shifter liée à `frameMode_`, cache
-  DTA GEMDOS vide refusé quand un lecteur est monté.
-
-## Compléments de fidélité du 2026-10-18
-
-- **ACSI** : IRQ de fin de DMA différée de 1000 cycles CPU, soit 1000 cycles bus
-  à 8 MHz ou 500 à 16 MHz ; une bascule de fréquence recalcule le délai restant.
-  Les registres DMA reproduisent aussi les retenues d’adresse ST/Mega ST et
-  préservent le statut d’erreur lors du reset FIFO ; le reset matériel l’efface.
-  L’acquittement immédiat des octets de commande est conservé. Délai repris
-  d’Hatari pour Idris OS ; ce système n’a pas été testé ici.
-- **VBlank couleur** : comparateurs de fin de ligne 50/60 Hz et remise à ON au
-  VSYNC ; masquage à la palette 0 et suppression de l’avancement de base vidéo.
-  Les deux étalons générés `vblank_on/off` correspondent à l’oracle Hatari.
-- **Lignes masquées sans écriture palette** : le rendu final applique NO_DE,
-  BLANK et STOP_MIDDLE même sans extension de bordure. Compteur vidéo et
-  cadrage adaptatif conservent leurs décisions propres. Huit sondes générées
-  `blankline_*` couvrent ST/STE et la fenêtre de préchargement différente.
-  La couleur physique du blanking reste à mesurer (palette 0 comme Hatari).
-- **NO_SYNC/SYNC_HIGH** : ligne suivante sans DE ni avance RAM, Timer B inhibé
-  sur cette ligne, fin d'affichage décalée ; annulation précoce supprimant les
-  masques et l'extension. Huit sondes de boot ST/STE et 52 contrôles Glue
-  supplémentaires couvrent le modèle comparatif, sans changer l'exécution.
-  Les signaux physiques de synchronisation restent à mesurer sur Atari.
-- **Registres Blitter** : miroir MMIO brut pour les lectures octet des registres
-  mot rejetées par les handlers Hatari. Les lectures mot/long rafraîchissent ce
-  miroir ; reset chaud le conserve, reset froid l’efface. $FF860E/F est un registre
-  de densité uniquement sur Mega STE, void ailleurs quand l’accès est autorisé.
-- **Réponses IKBD** : attente firmware globale, puis transmission série ; valeurs
-  centrales déterministes des plages Hatari, quantifiées à 1024 cycles par bit.
-  Horloge, joysticks, position absolue, rapports et réponse Froggies sont couverts.
-  Phase SCI sortante sous-octet encore approximative. Le transit CPU→IKBD
-  utilise TDR/TSR, avec TDRE au chargement TSR et commande reçue au bit de stop
-  (/64 8N1 ; autres formats et diviseurs non simulés). Le break suspend
-  les départs en conservant le TDR ; le TSR engagé se termine normalement.
-  Les départs TX ordinaires /64 8N1 et la reprise BREAK conservent la phase
-  du dernier changement de diviseur CR. Un TDR en attente est recalé si ce
-  diviseur change ; le TSR engagé garde son stop mémorisé.
-  Les échéances TX franchies sont traitées avant les écritures MMIO ; un
-  caractère engagé ne peut plus être annulé rétroactivement par BREAK.
-  La ligne break physique et ses erreurs de trame restent hors modèle.
-  PAUSE $13 retient les prochains départs SCI ; l’unique octet déjà engagé
-  finit normalement. Boot ROM conserve cet octet, reset matériel l’annule.
-  Le registre SCI et le RDR ACIA sont distincts des 1024 octets de la file
-  firmware ; ils ne réduisent pas sa capacité. Les archives au-delà de cette
-  capacité sont refusées avant le chargement de la file.
-- **Monitoring joystick $17** : période demandée en centièmes de seconde,
-  indépendante du VBL et de la vitesse CPU, avec sauvegarde de la phase.
-- **FDC** : attentes des handlers de registres portées (4 cycles CPU, avec
-  exclusions SCREG en lecture, statut DMA et adresses). Le registre de densité Mega STE a aussi son attente.
-  Éjection et réinsertion du lecteur actif remettent la phase INDEX à zéro ;
-  un lecteur vide ne conserve plus l’impulsion du média précédent. Un changement
-  de lecteur pendant transfert valide le secteur sur le nouveau média ; un
-  secteur inexistant renvoie RNF, sans accéder à la face/piste suivante.
-- **Autosend IKBD** : scrutation toutes les 150000 cycles bus, indépendante du VBL ;
-  reset répété préserve l’échéance. $17 remplace la cadence commune jusqu’au
-  boot ROM ; MouseAction et position absolue précèdent le monitoring joystick.
-- **Initialisation ACIA clavier** : sorties firmware ignorées avant programmation
-  effective du diviseur, y compris leur délai global ; état conservé aux resets
-  et sauvegardé. Formats série physiques hors /64 8N1 encore différés.
-- **READ ADDRESS STX** : erreur CRC ID publiée après les six octets transférés,
-  avant IRQ ; CRC de données seul sans effet sur cette commande.
-- **Sauvegardes v51** (`kStateVersion`) : intervalles « Shifter arrêté » et ligne du dernier
-  changement de résolution Shifter, `lastMouseMode_`/`joysticksEnabled_` IKBD, repère
-  `capW` des événements son DMA, bouchon RS-232 retiré de l'état, v51 ;
-  résolution côté Shifter (`$FF8261`, res 3) et
-  échantillon IPL différé Moira (`iplDeferred`, CPU3) v50 ; crédit de recouvrement CPU/blitter v49,
-  handles GEMDOS HD v48 ; progression TX ACIA et réception SCI partielles v47 ;
-  ajoutées à l’initialisation du diviseur ACIA clavier v46. États antérieurs
-  refusés explicitement. Cible et secteur ACSI ajoutés en v45 ;
-  ajoutés à l’overrun USART MFP en attente de lecture UDR v44 ;
-  ajouté au compteur Mediach FDC et aux fins de phases en indices VBL réels
-  v43, eux-mêmes ajoutés à l’octet scratch son DMA $FF8920 v42 et à la
-  seconde phase de changement de média FDC v41, elle-même ajoutée
-  à la séquence BREAK MFP et à l’éligibilité de trame écho/RX SCC v40,
-  elles-mêmes ajoutées aux fronts BREAK SCC et à la phase de reprise IKBD v39,
-  à la retenue du diviseur RTC et à la phase de reprise BREAK MIDI v38,
-  à la parité du TSR SCC et à la banque RTC indépendante v37,
-  à la phase/pulse Zero Count SCC et aux délais UE MFP v36,
-  aux fractions SCC étendues au BRG v35 et aux bornes de longues
-  suspensions BREAK ; fractions TX/RX SCC v34 ajoutées à la
-  suspension TSR SCC pendant BREAK v33, à
-  l’indicateur TX engagé SCC et à l’octet SCI IKBD v32, à la
-  largeur RX MFP en vol et au format TSR SCC v31, au
-  diviseur matériel exact USART v30, à la
-  sortie physique RTS SCC v29, aux
-  TDR/TSR USART TX et SERIAL_TX v28, aux
-  RDR/OVRN MIDI et phase USART MFP v27, aux
-  TDR/TSR MIDI et échéances v26, aux
-  TDR/TSR clavier et FIFO RX SCC v25, aux
-  événements TX/RX SCC, file RX et autosend IKBD v24,
-  à la période/échéance du monitoring v23, au délai IKBD
-  et miroir Blitter v22, aux échéances ACSI/SCC et période BRG v21. Les anciens formats sont refusés
-  explicitement ; le VBlank est reconstruit sans champ ajouté.
+**Une section par puce ou par sous-système** : Cœur & boot · Types de machine & mémoire ·
+Vidéo · MFP · Clavier/IKBD/MIDI · Disquette/ACSI · GEMDOS · Audio · Bus & bus error ·
+Blitter · Mega ST/STE (RTC, SCU, cache, SCC) · FPU · Ports et clés · Passes d'audit ·
+Réseau · Frontend · Validé. Une nouveauté s'ajoute **en fin de la section de sa puce**,
+date entre parenthèses après le titre — jamais dans un bloc « compléments » en tête.
 
 ## Cœur & boot
 - **Cœur Musashi RETIRÉ — Moira seul cœur 68000.** L'ancien cœur Musashi (rapide mais
@@ -314,6 +143,47 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   Diagnostics gated ajoutés : `NEOST_FRAME_DIAG`, `NEOST_BUS_DIAG=<page-pc>`, champ `into=`
   dans `NEOST_VC_TRACE`. **Validé** : étalons 19/0 TOUS OK aux défauts finaux, loader EL OK,
   LX titre 0,00 % churn, SHO titre/menus propres (période HBL régulière, pas de double-prise).
+- **Sauvegardes v51** (2026-10-18) (`kStateVersion`) : intervalles « Shifter arrêté » et ligne du dernier
+  changement de résolution Shifter, `lastMouseMode_`/`joysticksEnabled_` IKBD, repère
+  `capW` des événements son DMA, bouchon RS-232 retiré de l'état, v51 ;
+  résolution côté Shifter (`$FF8261`, res 3) et
+  échantillon IPL différé Moira (`iplDeferred`, CPU3) v50 ; crédit de recouvrement CPU/blitter v49,
+  handles GEMDOS HD v48 ; progression TX ACIA et réception SCI partielles v47 ;
+  ajoutées à l’initialisation du diviseur ACIA clavier v46. États antérieurs
+  refusés explicitement. Cible et secteur ACSI ajoutés en v45 ;
+  ajoutés à l’overrun USART MFP en attente de lecture UDR v44 ;
+  ajouté au compteur Mediach FDC et aux fins de phases en indices VBL réels
+  v43, eux-mêmes ajoutés à l’octet scratch son DMA $FF8920 v42 et à la
+  seconde phase de changement de média FDC v41, elle-même ajoutée
+  à la séquence BREAK MFP et à l’éligibilité de trame écho/RX SCC v40,
+  elles-mêmes ajoutées aux fronts BREAK SCC et à la phase de reprise IKBD v39,
+  à la retenue du diviseur RTC et à la phase de reprise BREAK MIDI v38,
+  à la parité du TSR SCC et à la banque RTC indépendante v37,
+  à la phase/pulse Zero Count SCC et aux délais UE MFP v36,
+  aux fractions SCC étendues au BRG v35 et aux bornes de longues
+  suspensions BREAK ; fractions TX/RX SCC v34 ajoutées à la
+  suspension TSR SCC pendant BREAK v33, à
+  l’indicateur TX engagé SCC et à l’octet SCI IKBD v32, à la
+  largeur RX MFP en vol et au format TSR SCC v31, au
+  diviseur matériel exact USART v30, à la
+  sortie physique RTS SCC v29, aux
+  TDR/TSR USART TX et SERIAL_TX v28, aux
+  RDR/OVRN MIDI et phase USART MFP v27, aux
+  TDR/TSR MIDI et échéances v26, aux
+  TDR/TSR clavier et FIFO RX SCC v25, aux
+  événements TX/RX SCC, file RX et autosend IKBD v24,
+  à la période/échéance du monitoring v23, au délai IKBD
+  et miroir Blitter v22, aux échéances ACSI/SCC et période BRG v21. Les anciens formats sont refusés
+  explicitement ; le VBlank est reconstruit sans champ ajouté.
+- **CPU** (2026-10-20) : DIVU/DIVS font leurs cycles internes avant le préfetch (68000), comme Hatari
+  CE ; sonde temporelle `cpu_div_ram` exacte au cycle.
+- **CPU** (2026-10-20) : ANDI/ORI/EORI #,SR/#,CCR et MOVE to CCR rechargent les deux mots de préfetch
+  après l'écriture de SR/CCR (microcode). Une bus error levée hors instruction (accès
+  hôte) abandonne l'accès sans exception.
+- **Save-states v51** (2026-10-20) et deux durcissements : géométrie Shifter liée à `frameMode_`, cache
+  DTA GEMDOS vide refusé quand un lecteur est monté.
+- **68000** (2026-11-03) : ordre des accès et durée de STOP alignés sur fx68k, Hatari et le microcode (MOVEM.L, ADD/SUB.L,
+  ADDX/SUBX.L, DBcc, JSR, trame de groupe 0, reset). Tableau → `docs/FX68K_BENCH.md`.
 
 ## Types de machine & mémoire
 - **Zone RAM « void » : on relit le dernier mot du bus de données** (port Hatari
@@ -702,6 +572,39 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   freq/res → chemin historique strictement inchangé. **Zéro régression** : glue
   self-test 19/19, étalons `run_etalons` TOUS OK (boot STE, spec512 diapo, overscan top),
   overscan L/D (`make_overscan_lr`) ouvre toujours les bordures, menu Cuddly stable.
+- **Quirk palette — écriture octet miroir + masque** (port `Video_ColorReg_WriteWord`) :
+  une écriture OCTET sur `$FF8240-$FF825F` duplique l'octet sur les DEUX moitiés du
+  mot (le 68000 pose l'octet sur les deux moitiés du bus de données, le Shifter
+  latche le mot : `move.b #$07,$FF8240` → couleur `$0707`, adresse paire ou impaire) ;
+  la couleur est STOCKÉE masquée — `$777` (ST, 512 couleurs) / `$FFF` (STE, 4096) —
+  donc RELUE masquée : des jeux écrivent `$FFFF` et relisent pour détecter le STE.
+  Validé par mini-ROM (`$0707` ; `$FFFF`→`$0777` ST / `$0FFF` STE ; octet impair
+  `$AB`→`$0323`/`$0BAB`) ; étalons byte-identiques (gate spec512).
+- **VBlank couleur** (2026-10-18) : comparateurs de fin de ligne 50/60 Hz et remise à ON au
+  VSYNC ; masquage à la palette 0 et suppression de l’avancement de base vidéo.
+  Les deux étalons générés `vblank_on/off` correspondent à l’oracle Hatari.
+- **Lignes masquées sans écriture palette** (2026-10-18) : le rendu final applique NO_DE,
+  BLANK et STOP_MIDDLE même sans extension de bordure. Compteur vidéo et
+  cadrage adaptatif conservent leurs décisions propres. Huit sondes générées
+  `blankline_*` couvrent ST/STE et la fenêtre de préchargement différente.
+  La couleur physique du blanking reste à mesurer (palette 0 comme Hatari).
+- **NO_SYNC/SYNC_HIGH** (2026-10-18) : ligne suivante sans DE ni avance RAM, Timer B inhibé
+  sur cette ligne, fin d'affichage décalée ; annulation précoce supprimant les
+  masques et l'extension. Huit sondes de boot ST/STE et 52 contrôles Glue
+  supplémentaires couvrent le modèle comparatif, sans changer l'exécution.
+  Les signaux physiques de synchronisation restent à mesurer sur Atari.
+- **Vidéo** (2026-10-20) : motif d'un visualiseur Spectrum 512 (48 couleurs par ligne, rafales
+  `movem.l`) à 0 px de l'oracle, étalon `spec512_view`.
+- **Vidéo, Shifter arrêté (res 3)** (2026-10-20) : stop et retour exigés sur la même ligne, datation sur
+  la grille réelle, ligne noire seulement si l'arrêt couvre toute la fenêtre DE.
+- **STE, résolutions mêlées** (2026-11-03) : une trame qui démarre en moyenne résolution mais mêle des lignes basses est décodée ligne
+  par ligne ; compteur vidéo écrit en bordure droite gardé en adresse absolue ; placement des lignes left+2, basses et
+  moyennes. Fenêtre verticale réelle pour le compteur, `$FF820F` et le scroll ; accès du blitter aux registres vidéo sans
+  l'attente du CPU. DHS Double Rez Trouble et More or Less Zero concordent avec Hatari, Sea of Colour et Drone s'affichent
+  correctement. Étalons générés `doublerez_ste` et `doublerez_tall_ste`.
+- **Spectrum 512** (2026-11-04) : 7 images sur ST et 6 sur STE, exactes à 0 pixel contre la formule du format, par le vrai visualiseur. → `tools/run_spec512_truth.py`
+- **CPU et faisceau sur STE** (2026-11-04) : compteur vidéo lu en boucle, en HBL et en VBL, à l'octet près contre fx68k + GSTMCU, sauf une lecture sur 48 544. HBL et VBL échantillonnées par la broche. → `docs/STCPU_BENCH.md`
+- **GLUE du STE** (2026-11-04) : confrontée au modèle GSTMCU, impulsion par impulsion, à chaque phase de la ligne : 2546 sur 2560 en accord à 50 Hz, 2518 sur 2560 sur un écran entier à 60 Hz. → `docs/GLUE_SWEEP.md`
 
 ## Interruptions (MFP 68901)
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.
@@ -801,6 +704,71 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   de front actif au boot), 2 cœurs.
 - Chaînage des lignes : **I3** blitter, **I4** ACIA (clavier+MIDI en OU câblé), **I5** FDC,
   **I7** son DMA XSINT (moniteur XOR XSINT).
+- **MFP VR** : bits2..0 réservés lus zéro et ignorés en écriture, y compris
+  après chargement d’une ancienne valeur brute. Base du vecteur et mode S
+  conservés (Motorola §4.1.3, MAME REGISTER_VR).
+- **Port série RS-232 / USART MFP** : RSR/UDR, IRQ RxFull (12)/TxEmpty (10)/RxErr (11)/
+  TxErr (9), lignes RTS→CTS (GPIP2)/DTR→DCD (GPIP1)/RI (GPIP6) via PSG port A.
+- **USART RX cadencée selon UCR** : longueur de données, parité et stops
+  déterminent la durée du caractère. Le reste fractionnaire conserve la cadence
+  à long terme ; les callbacks tardifs ne réancrent pas le flux. Phase sauvegardée,
+  reconfiguration effective au caractère suivant. Les mots RX hôtes de 5..8 bits
+  sont alignés à droite, bits inutilisés à zéro ; largeur mémorisée au départ
+  du caractère et sauvegardée. RE=0 efface RSR/BF/overrun et conserve les
+  données ; UDR restitue le dernier octet RX même vide, indépendamment de TX.
+  Les écritures RSR ne changent que RE/SS, plus F/S en mode synchrone ;
+  les bits de statut matériel sont préservés.
+  Les IRQ MFP pendantes restent acquittées séparément. Réacquisition en milieu
+  de caractère encore approximative. Mode synchrone en repli 8N1,
+  diviseurs /1 et /16 selon UCR7, sans plancher RX artificiel.
+  **Overrun RX différé** : octet plein conservé ; OE/RXERR publiés seulement
+  après lecture UDR. Lecture RSR préalable sans effet sur l’erreur en attente ;
+  après publication, réception bloquée jusqu’à lecture RSR (Motorola §7.2.2).
+  Deux étapes préservées par les sauvegardes v44. RXFULL garde la date du stop
+  même au dispatch tardif ; RXERR prend la date de l’accès UDR.
+  **Bouclage interne TSR H/L=11** : les caractères TX achevés alimentent
+  RX sans prise de test externe ; entrée SI/horloge RC hôte ignorées dans
+  ce mode. Prise externe et boucle interne ne doublent pas les données ; RE
+  reste honoré et SO reste observable par le sink. Mode déjà sérialisé dans
+  TSR, sans nouveau champ. Modèle par octet, sans reconstruction des bits lors
+  d’une commutation H/L en pleine trame (Motorola §2.10/§7.3.2, MAME).
+- **USART TX cadencée** : TDR/TSR distincts, attente écrasable, Buffer Empty
+  au chargement TSR, sortie/bouclage en fin de caractère. IRQ TXEMPTY et
+  underrun/EOT distincts ; TE coupé laisse finir le caractère actif. Format UCR,
+  phase fractionnaire et sauvegarde. END et auto-turnaround sont immédiats
+  lors d’un arrêt au repos, différés à la fin du caractère en vol ; RX et TDR
+  sont conservés. IRQ END seulement sur nouveau front. Restent premier front TC, synchro et
+  forme d’onde BREAK ; le callback hôte d’octet n’a pas de timestamp.
+  Le bit BREAK ne bloque que l’asynchrone (MC68901UM §7.3.2). En repli
+  synchrone 8N1, il ne retient plus le TDR et ne supprime plus UE ; changer
+  UCR libère le TDR si B devient inopérant. **BREAK asynchrone** : TXERR à
+  chaque frontière de caractère lorsque UE et IPR TXERR le permettent, sans
+  livrer d’octet au sink ni au récepteur. TSR et BE préexistants préservés,
+  TDR retenu. TE coupé termine l’intervalle avant END/AT, sans stop de fin.
+  Reprise activée après un stop modélisé d’une période TX, puis TDR ou UE si
+  vide. La durée de ce stop est une déduction du manuel MC68HC901 p.7-8,
+  avec ancrage MMIO ; la phase du premier front TC et l’onde restent abstraites.
+- **Config effective de l'USART** (`Mfp::updateSerialConfig`, port de `rs232.c`
+  `RS232_SetBaudRateFromTimerD` + `RS232_HandleUCR`) : bauds dérivés du Timer D
+  (2.4576 MHz, sortie ÷2, UCR /1 ou /16 ; maximum 307200 bauds),
+  sans arrondis tty hôte. TX/RX utilisent le rapport matériel exact, sans tronquer
+  les débits non entiers ; la fraction survit aux changements de débit. Le débit
+  exposé par `serialBaud()` reste entier et informatif. Format depuis l’UCR (taille bits 5-6, parité bits 1-2,
+  stops bits 3-4). Recalculée à chaque écriture UCR/TDDR/TCDCR, exposée
+  (`serialBaud()`/`serialUcr()`) et JOURNALISÉE au changement — au boot on voit
+  EmuTOS/TOS négocier `9600 bauds, 8N1`. NeoST cadence les caractères
+  TX et RX sur cette base ; le transport synchrone garde un repli 8N1 /16.
+- **GPIP7 et XSINT** : détection de front après composition moniteur, son DMA
+  et bouton Multiface. Bouton maintenant la pin basse : aucune IRQ XSINT parasite ;
+  DDR/AER et transitions après relâchement préservés.
+- **MFP** (2026-10-20) : tables de vérité puce nue du mode délai pour les quatre timers (prescalers
+  /4, /16, /64, /200, donnée 0 = 256), conversion MFP→CPU au 1/256ᵉ de cycle.
+- **MFP, event-count** (2026-11-03) : d'après la fiche MC68901 § 5.1.3, les canaux de I4/I3 répondent à TAI/TBI sur le front de l'AER.
+- **MFP, modes pulse des timers A/B** (2026-11-03) (TxCR 9-15), d'après la fiche MC68901 § 5.1.2 : TAI ou TBI
+  autorise le comptage au niveau du bit d'AER, le compteur est figé hors impulsion, TxDR le charge
+  à ce moment-là, et les canaux de I4/I3 répondent à TAI/TBI sur le front opposé. TBI suit le DE
+  réel de chaque ligne affichée. Table de vérité `tests/mfp_pulse_logic.cpp`, et test machine entière
+  dans `tests/machine_timer_b_aer_logic.cpp`. Aucun logiciel réel connu ne l'exerce.
 
 ## Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)
 - **Souris Desktop sans capture** (2026-10-19) : option Input persistée
@@ -960,6 +928,72 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   passes. Repose sur `tools/hatari_neost_oracle.patch` (script joystick daté par VBL +
   graine `HATARI_SEED`) et sur `--joy-script-compile`. Client Go-Explore d'exemple :
   `tools/opendst_explore.py`.
+- **IRQ MIDI datées** : chargement TDR→TSR, fin RX hôte et retour de
+  bouclage conservent leur échéance série jusqu’au front GPIP4 du MFP, même
+  si le callback est servi en retard. Détecteur AER/DDR, ligne partagée clavier
+  et délai de quatre cycles inchangés ; CR et RDR restent datés de l’accès.
+- **MIDI** (`MidiAcia`, `$FFFC04/06`) : IRQ canal 6 (RX/TX), TDRE cadencé à 31250 bauds ; fiche de bouclage OUT→IN **optionnelle** (`--loopback`, menu Machine, `midi_loopback=`), **débranchée par défaut** depuis le 2026-08-21 (Cubase/MROS + Thru = larsen sinon).
+  Validé par l'étalon `tools/run_midi_sequencer.py` (2026-08-23) : Cubase Lite importe un SMF et le joue, `--midi-dump` journalise le MIDI OUT daté au cycle, `tools/midi_compare.py` confronte notes/vélocités/durées/pédale/tempo au fichier (pente 1,001, gigue σ ≈ 1 ms).
+- **Joypads STE COMPLETS + DIP MegaSTE** (`$FF9200-$FF9223`, port fidèle `joy.c` /
+  `ioMemTabSTE.c`) : le stub « valeurs au repos » est remplacé par un vrai module
+  `StePads` (`src/io/StePads.hpp`, membre `Bus::stePads`) — **multiplexage** par le
+  latch de sélection `$FF9202` (nibble bas = pad A, haut = pad B, ligne active à 0),
+  **boutons feu** `$FF9201` (feu A pad A → bit1, pad B → bit3), **directions** lues en
+  `$FF9202` (`~dir`, nibble par pad), paddles `$FF9211-17` au neutre `0x24`, lightpen
+  `$FF9220/22` à `0x0000`. **DIP MegaSTE** octet haut de `$FF9200` = `0xBF` (logique
+  inversée : switch 7 ON → lecteur HD 1.44 monté, switch 8 OFF → son DMA actif, fidèle
+  `IoMemTabMegaSTE_DIPSwitches_Read`) ; STE simple → `0xFF`. Les pads reçoivent le
+  **même état joystick** que l'IKBD (pad A = port 1 « jeux », pad B = port 0) depuis le
+  GUI, le web et le headless (`--joy`/`--joy-at`/`--joy-script`), comme le mapping
+  manette global d'Hatari. Validé : glue self-test 19/19, boots STE/MegaSTE propres,
+  `--joy 0x88` maintenu sans faute parasite.
+- **Joypads STE — finitions** (port `joy.c`) : **bus error sur accès OCTET** de
+  `$FF9200` (adresse paire seulement, lecture ET écriture — `$FF9201` reste lisible
+  en octet) et des mots lightpen `$FF9220/22` en lecture (écritures ignorées sans
+  faute, `IoMem_WriteWithoutInterception`) — déclenchée par le périphérique comme le
+  FDC `$FF8604` octet. **Paddles analogiques réels** (`StePads::readAnalog`, port
+  `Joy_GetStickAnalogData`) : plage `$04`-`$43` (neutre `$24`), axes manette hôte
+  (stick gauche GLFW, conversion REALSTICK exacte `MIN + (upos>>8)/4`) avec REPLI
+  numérique façon « mode clavier » Hatari (gauche/haut → `$04`, droite/bas → `$43`).
+  Lightpen : non supporté (0 + bus error octet), fidèle à Hatari. Validé par mini-ROM
+  (3 fautes attendues prises, `$FF9201`/mot sans faute, paddle `$24`→`$43` sous
+  `--joy 0x08`, identique Moira/Musashi) + étalons inchangés.
+- **Réponses IKBD** (2026-10-18) : attente firmware globale, puis transmission série ; valeurs
+  centrales déterministes des plages Hatari, quantifiées à 1024 cycles par bit.
+  Horloge, joysticks, position absolue, rapports et réponse Froggies sont couverts.
+  Phase SCI sortante sous-octet encore approximative. Le transit CPU→IKBD
+  utilise TDR/TSR, avec TDRE au chargement TSR et commande reçue au bit de stop
+  (/64 8N1 ; autres formats et diviseurs non simulés). Le break suspend
+  les départs en conservant le TDR ; le TSR engagé se termine normalement.
+  Les départs TX ordinaires /64 8N1 et la reprise BREAK conservent la phase
+  du dernier changement de diviseur CR. Un TDR en attente est recalé si ce
+  diviseur change ; le TSR engagé garde son stop mémorisé.
+  Les échéances TX franchies sont traitées avant les écritures MMIO ; un
+  caractère engagé ne peut plus être annulé rétroactivement par BREAK.
+  La ligne break physique et ses erreurs de trame restent hors modèle.
+  PAUSE $13 retient les prochains départs SCI ; l’unique octet déjà engagé
+  finit normalement. Boot ROM conserve cet octet, reset matériel l’annule.
+  Le registre SCI et le RDR ACIA sont distincts des 1024 octets de la file
+  firmware ; ils ne réduisent pas sa capacité. Les archives au-delà de cette
+  capacité sont refusées avant le chargement de la file.
+- **Monitoring joystick $17** (2026-10-18) : période demandée en centièmes de seconde,
+  indépendante du VBL et de la vitesse CPU, avec sauvegarde de la phase.
+- **Autosend IKBD** (2026-10-18) : scrutation toutes les 150000 cycles bus, indépendante du VBL ;
+  reset répété préserve l’échéance. $17 remplace la cadence commune jusqu’au
+  boot ROM ; MouseAction et position absolue précèdent le monitoring joystick.
+- **Initialisation ACIA clavier** (2026-10-18) : sorties firmware ignorées avant programmation
+  effective du diviseur, y compris leur délai global ; état conservé aux resets
+  et sauvegardé. Formats série physiques hors /64 8N1 encore différés.
+- **IKBD** (2026-10-20) : `$09` remet à zéro la position absolue ; `$88` souris coupée rend 8 octets ;
+  `$9A` distingue `$15` de `$1A` ; `$17` sous `$13` ne met rien en file. GPIP3 relâché au
+  reset du blitter.
+- **IKBD** (2026-10-22) : touche tenue au reset ; interruptions 1 ms dans l'échantillonnage `$18`.
+- **Pads STE** (2026-10-22) : validation de la sélection (JOYWE) d'après la netlist.
+- **IKBD d'après la ROM 6301** (2026-10-22) : port 0 partagé souris/joystick (`$14`, `$15`, `$17`, `$18`,
+  `$19`), disponibilité `$92` = bit 7 de l'octet de mode, fin de surveillance `$17` sur
+  commande souris.
+- **IKBD, seconde passe sur la ROM** (2026-10-22) : fenêtre de reset, tampon de 21 octets, PAUSE,
+  souris absolue (`$09`, `$0D`, `$0E`), `$16`/`$1A`/`$94`, modes `$18` et `$19`.
 
 ## Disquette (FDC WD1772 + DMA)
 
@@ -1155,6 +1189,100 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   `MOIRA_EMULATE_ADDRESS_ERROR`, l'ancien `M68K_EMULATE_ADDRESS_ERROR` de Musashi étant retiré) — requises par les
   anti-debug de certaines protections. Boot EmuTOS byte-identique, batterie Z des
   diagnostics inchangée.
+- **Disque dur ACSI complet** (`io/Acsi`, port de `hdc.c` ; routage DMA via `Fdc`,
+  `$FF8604/06` bit `DMA_CSACSI`) : boot et lecture/écriture depuis une **vraie image
+  de disque dur** (dump de secteurs brut, `--acsi`/`--hd` ou `NEOST_ACSI_IMG`),
+  jusqu'à **8 cibles**. Paquets de commande 6 octets (classe 0) / 10 octets (classe 1)
+  reçus octet par octet (broche A1 = `DMA_A0`), transfert DMA RAM↔image piloté par le
+  `Fdc` (sens contrôlé par `DMA_WRBIT`, déclenché à la fin du paquet et sur
+  `HDC_DmaTransfer` à l'écriture $FF8606). Commandes SCSI portées 1:1 : TEST UNIT
+  READY, INQUIRY (LUN), REQUEST SENSE (sens court/long + `nLastBlockAddr`), MODE SENSE
+  (pages 0x00/0x04/0x3f), READ CAPACITY, READ/WRITE(6 et 10), SEEK, FORMAT, REPORT
+  LUNS, SHIP. Comptage de partitions (DOS MBR + Atari/AHDI, `partitionCount`). IRQ HDC
+  (INTRQ/GPIP5) + statut DMA acquittés par octet ; cible vide → « pas de disque ».
+  Validé headless (EmuTOS 192 Ko) : sonde ACSI (TEST UNIT READY → INQUIRY → READ
+  CAPACITY → lecture table de partitions LBA 0 + BPB LBA 1), bureau « GEMDOS drives:
+  ABC » avec icône **DISK C**, `_bootdev=C:`, **boot + Pexec depuis C:**, et un PRG
+  `C:\AUTO` recopiant `HELLO.TXT`→`OUTPUT.TXT` **persisté dans l'image** (WRITE(6),
+  relu par mtools). _(Remplace l'ancien disque virtuel en mémoire, qui n'était qu'un
+  bouchon pour le diagnostic « Hard Disk DMA Exerciser ».)_
+- **Boîtier de test DMA du kit Field Service** (2026-08-27, `Fdc::setDmaFixture`,
+  `--dma-fixture` headless, OFF par défaut — matériel de banc d'atelier, exclusif d'un
+  disque réel sur la cible 0) : cible ACSI 0 à **UN octet de commande**
+  `((count-1)<<6) | opcode` — $10 = avale count×512 octets (RAM→boîtier), $08 = les
+  rend — transfert immédiat, compteur de secteurs décompté à zéro, adresse DMA avancée,
+  IRQ GPIP5. Fait passer le test **« D DMA Port »** des diagnostics Atari (suite Q du
+  MegaSTE_Diagnostic v1.5 : **12/12**) ; Hatari, sans boîtier, échoue D0/D1/D3.
+- **WRITE TRACK sur image ST** : validation des IDs avant toute copie.
+  C/H doivent correspondre à la tête/face physiques, secteurs uniques et
+  piste complète ; sinon LOST_DATA, sans écriture sur une autre piste/face.
+  La réinterprétation en secteurs reste une extension NeoST ; une image ST
+  ne représente pas les IDs mensongers ou dupliqués d’un flux protégé.
+- **WRITE SECTOR et sélection live STX→ST** : un ID STX de 1 024 octets
+  engagé avant une bascule vers une image ST ne peut écrire que 512 octets
+  sur cette dernière ; voisin et fin d’image préservés. Le transfert DMA
+  engagé garde sa taille, comme le chemin Hatari vers un secteur ST logique.
+- **ACSI INQUIRY — « Additional Length » fixe (31)** : `buf[4]` n'est plus écrasé par
+  `count()-5` (valeur variable erronée) → la longueur additionnelle reste 31 comme Hatari
+  (`HDC_Cmd_Inquiry` n'écrit jamais cet octet) ; un pilote HD lisant ce champ n'est plus trompé.
+- **STX WRITE SECTOR A8/A9** : bit0 choisit la DAM FB/F8, restituée dans
+  RECTYPE et READ TRACK reconstruit avec CRC régénérée sur la marque choisie.
+  A9→A8 remplace aussi la métadonnée d’un overlay existant. F8 persiste via
+  le supplément SECT `NDAM` + marque ; ancien SECT sans extension = FB.
+  Un secteur à CRC données faux est réécrit avec un CRC juste et relu sans erreur
+  (2026-10-20, le WD1772 ne contrôle que le CRC d'ID) ; CRC d'ID faux toujours refusé. Fusion locale
+  des overlays dans l’image de piste décodée décrite ci-dessous ; images
+  ST/MSA/DIM sans DAM persistante.
+  États v45 inchangés : commande en vol conservée avec le même média monté,
+  mais contenu des images et overlays hors snapshot, sans retour en arrière.
+- **STX READ TRACK et overlays** : copie de l’image de piste décodée,
+  puis remplacement local DAM/données/CRC pour les SECT identifiables sans
+  ambiguïté. Parcours circulaire des champs coupés par l’index, strictement
+  inférieur à un tour. Synchronisation zéro, ancrage ID aligné dans le dump,
+  données non fuzzy et CRC d’origine concordants requis. Longueur, timing,
+  gaps, ID/CRC et secteurs non ciblés conservés. Collisions circulaires,
+  associations ambiguës et champs incomplets refusés ; aucune traversée de
+  la fin artificielle d’un dump écrêté. Pas de reconstruction de secours ni
+  de mutation de l’image source ou des fichiers hôtes.
+- **STX WRITE TRACK et marque supprimée** : F8 devient le statut RECTYPE
+  en lecture de secteur et reste F8 dans le flux READ TRACK reconstruit.
+  CRC régénérée avec cette marque ; snapshot et fichier compagnon .wd1772
+  conservés. Extension de réinterprétation NeoST, aucun flux physique exact.
+- **Limite de montage ACSI** : maximum UINT32_MAX secteurs de 512 octets,
+  soit 2 Tio moins 512 octets. Images au-delà refusées avant conversion, sans
+  tronquer les compteurs ni annoncer une capacité incohérente. UltraSatan reste
+  présent sans carte si l’image est refusée. Limite de représentation NeoST,
+  sans nouvelle limite matérielle revendiquée ; format v45 inchangé.
+- **ACSI grande capacité** : borne READ/WRITE gardée non signée, y compris
+  lorsque les secteurs restants dépassent INT_MAX ; dépassement de fin toujours
+  rejeté. Banc POSIX sparse de 1 Tio + 2 Ko, occupation physique de quelques Ko.
+  Aucun élargissement des compteurs ou du format d’image ; banc sauté sous
+  Windows ou sur un système de fichiers qui matérialise les trous.
+- **ACSI WRITE différé** : cible et LBA figés à la commande, même si un nouveau
+  paquet sélectionne une autre cible avant ouverture du DMA. Reprise de cette
+  phase sauvegardée en v45 ; aucune écriture détournée vers la nouvelle image.
+- **ACSI** (2026-10-18) : IRQ de fin de DMA différée de 1000 cycles CPU, soit 1000 cycles bus
+  à 8 MHz ou 500 à 16 MHz ; une bascule de fréquence recalcule le délai restant.
+  Les registres DMA reproduisent aussi les retenues d’adresse ST/Mega ST et
+  préservent le statut d’erreur lors du reset FIFO ; le reset matériel l’efface.
+  L’acquittement immédiat des octets de commande est conservé. Délai repris
+  d’Hatari pour Idris OS ; ce système n’a pas été testé ici.
+- **FDC** (2026-10-18) : attentes des handlers de registres portées (4 cycles CPU, avec
+  exclusions SCREG en lecture, statut DMA et adresses). Le registre de densité Mega STE a aussi son attente.
+  Éjection et réinsertion du lecteur actif remettent la phase INDEX à zéro ;
+  un lecteur vide ne conserve plus l’impulsion du média précédent. Un changement
+  de lecteur pendant transfert valide le secteur sur le nouveau média ; un
+  secteur inexistant renvoie RNF, sans accéder à la face/piste suivante.
+- **READ ADDRESS STX** (2026-10-18) : erreur CRC ID publiée après les six octets transférés,
+  avant IRQ ; CRC de données seul sans effet sur cette commande.
+- **Disquette** (2026-10-20) : écriture DMA et lecture STX (`ReadTime`, positions d'ID non standard)
+  comparées à Hatari par le banc temporel.
+- **Disquette / ACSI** (2026-10-20) : WPRT testé après la montée en régime (WRITE SECTOR) ou avant
+  l'index (WRITE TRACK) ; compteur de secteurs DMA appliqué à l'ACSI ; durée de secteur STX
+  standard divisée par la densité (HD/ED) ; secteur STX à CRC données faux réinscriptible.
+- **FDC** (2026-10-22) : WRITE TRACK hors géométrie sur .st gardé en mémoire et relu (STE_Test test F).
+- **Disquette** (2026-10-22) : images **IPF** (SPS/CAPS) montées dans les lecteurs A et B, détectées
+  par contenu, sans libcapsimage — détail au § Disquette (« Images IPF »).
 
 ## Disque dur GEMDOS (émulation HD façon Hatari)
 - **Port complet de `gemdos.c`** (`io/GemdosHd.{hpp,cpp}`) : un dossier hôte est
@@ -1223,6 +1351,8 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   seconde passe un `?` ne matche QUE des caractères réellement invalides pour un nom Atari
   (`filenameInvalidChar`), au lieu de n'importe quel caractère → plus de risque d'ouvrir/écraser
   le mauvais fichier hôte quand un nom contient `: ? \ /` ou des points en trop.
+- **GEMDOS** (2026-10-20) : tampons et noms de fichiers lus aussi dans le port cartouche
+  (`$FA0000-$FBFFFF`), comme le TOS ; codes d'erreur confrontés à `gemdos.c`.
 
 ## Audio
 
@@ -1403,19 +1533,68 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   Les fronts BUSY passent par le détecteur GPIP0 : AER, DDR et IER qualifient
   l’IRQ ; écrire le même niveau ne produit aucun nouvel événement.
   Validé : mini-ROM imprimant « NeoST\n » via le protocole Centronics → fichier capturé identique.
-
-## Bus error & cartouches de diagnostic
 - **Miroir matériel du YM2149** : tout `$FF8800-$FF88FF` (et plus seulement `$FF8800-03`) est routé
   vers le PSG (décodage `addr & 3`, wait-states inclus), comme le shadow PSG d'Hatari (`ioMem.c`
   `IoMem_Init`). Cf. `docs/HATARI_DIVERGENCES.md` (BU1).
+- **Son — S3 : le YM STE ressort à pleine amplitude (×2 LMC porté)** : Hatari compense la
+  demi-amplitude du YM en STE (`YM_OUTPUT_LEVEL>>1`, marge anti-saturation DMA) en DOUBLANT
+  les gains LMC1992 (`left/right_gain × 2`, dmaSnd.c:1152-1153/1460-1461) — NeoST ne le
+  faisait pas → **YM STE 6 dB sous le ST**, enterré sous le DMA. Fix : `kLmcMakeup = 2.0`
+  dans `gainLeft/gainRight/masterGain` (`DmaSound.cpp`) + `kDmaGain` 0.7 → **0.375** (= ¾ × ½ :
+  la comptabilité « DMA sound is 3/4 level of YM sound » d'Hatari, rapportée à l'échelle demie
+  puis re-doublée). À volume LMC plein (init TOS) : YM = 1.0, DMA = 0.75, exactement Hatari.
+  ⚠ Depuis (bug hunt 10ᵉ passe) `kDmaGain = −0.1875` : signe inversé (le LMC1992 inverse le
+  DMA, dmaSnd.c:520-535) et ÷2 de plus, le ×2 `kLmcMakeup` s'appliquant aussi au canal DMA
+  (l'ancien 0.375 sortait +6 dB vs Hatari).
+  **Validé** : cloche/keyclick GEM (EmuTOS, YM pur) — ratio RMS STE/ST = **1.000** (avant :
+  0.5) ; musique Rick Dangerous II STE saine, pas d'écrêtage.
+- **Son — S4 : table DAC YM MESURÉE par défaut (comme Hatari)** : le rendu des 3 voies passait
+  par le seul « modèle de circuit » (`YM2149_BuildModelVolumeTable`) alors que le DÉFAUT
+  d'Hatari est `YM_TABLE_MIXING` — la table 16³ mesurée sur un vrai ST par Paulo Simoes
+  (`ym2149_fixed_vol.h`, © 2012, **vendorisé** dans `src/core/`) interpolée en 32³ par moyennes
+  géométriques (port exact d'`interpolate_volumetable`, sound.c:507-545). L'interaction
+  NON-LINÉAIRE réelle des 3 voies (timbre/balance des accords) remplace le modèle ;
+  `NEOST_YM_MIXING=model` rebranche l'ancien pour A/B. Indexation plate 1:1 (idx = A|B<<5|C<<10
+  ≙ `ymout5[Tone3Voices]`), normalisation ≙ `YM2149_Normalise_5bit_Table` (le niveau STE ÷2
+  restant porté par `outScale_`).
+- **Son — S2 : FIFO 8 octets du DMA STE fetchée AU FAISCEAU (2026-07-07 soir)** : port complet
+  du modèle Hatari (`DmaSnd_FIFO_*`, `DmaSnd_STE_HBL_Update`). Le DMA fetche des MOTS dans une
+  FIFO anneau de 8 octets entretenue à **chaque HBL** (`DmaSound::onHbl` ← `Machine::onHbl`,
+  ≙ video.c:3340) ; la consommation DAC est datée au reste fractionnaire (`updateDac` ≙
+  `Sound_Update`) et **capture les octets tirés** dans un anneau fixe que le rendu audio
+  consomme — `mixStereo`/`mix` ne relisent PLUS la RAM en fin de trame. Conséquences fidèles :
+  un programme qui **modifie le tampon pendant la lecture** est correct (Mental Hangover,
+  Power Up Plus) ; la **fin de trame tombe au FETCH** du dernier mot (XSINT/Timer A en avance
+  ≤ 8 octets, quantifiée HBL, comme le vrai HW — `Scheduler::DMASND` supprimé) ; le compteur
+  `$FF8909+` montre l'adresse de **fetch** après synchronisation (≙ `DmaSnd_GetFrameCount`) ;
+  passage mono→stéréo réaligné sur frontière paire (`fifoSetStereo`). Piège : la dette de
+  rééchantillonnage du rendu hôte est PLAFONNÉE à 1 octet en sous-alimentation, sinon le
+  rattrapage saute des octets en rafale (mesuré : 21 % d'octets B au lieu de 33 % sur l'étalon).
+  Depuis le 2026-10-20, chaque événement (PLAY, MODE…) porte aussi l'index d'écriture de
+  l'anneau de capture à son instant (`DmaEvent.capW`). `mixStereo` borne la consommation de
+  chaque segment au repère de l'événement suivant. Un PLAY en milieu de trame (DMA au repos)
+  ne fait plus rendre dès l'échantillon 0 les octets tirés après l'écriture, et les octets
+  capturés après un changement de MODE ne sont plus lus dans l'ancien format.
+  **Validé contre l'oracle Hatari bâti dans le conteneur** (SDL2 présent — AVI audio + `--trace
+  dmasound`) via un étalon dédié `tools/make_dmasnd_test.py` (secteur de boot STE : sample en
+  boucle + handler VBL qui écrit un plateau B transitoire mid-trame, invisible à la frontière
+  de trame) : NeoST fetch **33,3 %** de mots B = oracle **33,2 %**, et le WAV rendu montre le
+  même ratio. `NEOST_DMASND_TRACE=1` émet le refill au format Hatari (diff direct). Étalons
+  19/0 + 8 OK ; WAV cloche GEM / Rick Dangerous II **bit-identiques** (YM intact).
+- **Microwire DATA octet** : l’autre octet vient du registre visible décalé,
+  sans réutiliser l’ancienne commande terminée. Déclenchement octet haut/bas,
+  staging mot/long, rejet occupé, rattrapage tardif et commandes LMC conservés.
+- **PSG `$FF8802` relisible** (read-modify-write `bclr/bset` du port A).
+- **Son DMA STE** (2026-10-20) : les événements sont repérés par cycle ET par l'index d'écriture de
+  l'anneau de capture (`DmaEvent.capW`). Un PLAY ou un changement de MODE en milieu de
+  trame prend effet à son échantillon exact.
+
+## Bus, bus error & cartouches de diagnostic
 - **Modèle bus error = port fidèle Hatari** (`ioMem.c`+`ioMemTabST/STE.c`+`cpu/memory.c`) :
   tout `$FF8000-$FFFFFF` faute par défaut, whitelist des registres câblés par modèle
   (`Bus::buildIoFault`, carte octet par octet) + zones void + fixups ST/MegaST/MegaSTE.
   Hors IO : `$400000-$F9FFFF` et `$FF0000-$FF7FFF` fautent. Règle word/long : faute
   seulement si TOUS les octets fautent (`busFaultN`). Suivi par les DEUX cœurs.
-- **SCU Mega STE décodé sur les adresses IMPAIRES uniquement** (`$FF8E01/03/…/0F`, même
-  câblage que le MFP) : les octets PAIRS `$FF8E02-$FF8E0E` ne sont pas décodés → bus error
-  en accès octet (cf. `ioMem.c`). Boot EmuTOS 256 Mega STE (qui programme le SCU) inchangé.
 - **Fenêtre ROM complète** (`Bus::romWindowSize`, port `memory.c` map_banks ROMmem) :
   une ROM à `$E00000` répond sur TOUT `$E00000-$EFFFFF` (1 Mo, 16 banques), pas
   seulement sur la taille du fichier — lire au-delà du TOS chargé renvoie 0 (tampon
@@ -1436,6 +1615,41 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   (format-8, 58 o) au lieu de la trame 68000 (14 o) → les handlers `adda #8 ; rte` des
   diags revenaient sur PC corrompue. **Le déblocage principal.** Adresse fautive
   (`m68ki_aerr_*`) renseignée → diags affichent la vraie adresse.
+- **Bus — miroirs 24 bits en écriture mot/long** : adresse normalisée
+  avant le chemin atomique blitter ; contrôle/skew restent simultanés aux
+  miroirs. Correction d’API Bus/outils ; Moira masquait déjà les cycles CPU.
+  Largeur MMIO restaurée et rebouclage au-delà de `$FFFFFF` conservés.
+- **Bus — largeur d'accès `ioAccessWidth_` non fuitée par le blitter** : `write16`/`write32`
+  restaurent la largeur sauvegardée avant leur `return` de la branche blitter ; sans ça, après le
+  1ᵉʳ blit mot, les bus-errors d'accès **octet** ($FF9200/lightpen/FDC) restaient désarmées en
+  permanence. Cf. `docs/HATARI_DIVERGENCES.md` §2ᵉ passe (BUS-LEAK).
+- **Séparation user/supervisor** (`Bus::busFaultN(addr, n, write)`, port des banques
+  `SysMem_*`/`ROMmem_*` de `cpu/memory.c` + `is_super_access` d'`ioMem.c`) — pour TOUS
+  les modèles : en mode **utilisateur** (bit S=0, lu via `Cpu68k::supervisor()`), tout
+  accès à `$0-$7FF` (variables système) ou à l'espace **IO** `$FF8000-$FFFFFF` → bus
+  error ; en **écriture** (même superviseur) : ROM TOS, port cartouche et `$0-$7`
+  (miroir ROM des vecteurs reset) → bus error. Code fonction de la trame d'exception
+  (user/super) désormais correct sous Musashi aussi. Blitter/DMA exemptés (équivalent
+  `BusMode != BUS_MODE_CPU`). Validé : ROMs de test (lecture `$400` en user → handler
+  de bus error atteint, écriture ROM en superviseur → idem, 2 cœurs) ; étalons
+  ST/STE/MegaSTE inchangés (EmuTOS/TOS ne violent jamais ces protections).
+- **Bus map gaté par modèle** : sur Mega ST/STE `$FF8002-$FF800D` est void (pas de faute)
+  contrairement au ST (`IoMem_FixVoidAccessForMegaST`).
+- **Décodage STE d'après la netlist Atari du GST MCU (4081)** (2026-10-22) : ROM $E00000-$EBFFFF,
+  /ROM5-/ROM6 ($D00000-$D7FFFF) et /ROMP ($FE0000-$FE1FFF) en bus ouvert, registre
+  « gamecart » `$FF9000` (port cartouche déplacé en $D80000-$DFFFFF), `$FF8001` sur 4 bits,
+  banque « 11 » = 2 Mo. Détail → `docs/HATARI_DIVERGENCES.md` § Bus.
+- **STE (netlist 4081)** (2026-10-22) : délai de bus error, pads en lecture seule, `$FF8901`, fin du son
+  DMA figée par trame.
+- **Bus STE** (2026-11-04) : latence de DTACK par zone mesurée sur le GSTMCU et lue sur la netlist ST-4081. `$FF8920-3F` passe par le créneau de la RAM, `$FF820A`
+  n'y passe plus. Ni la vidéo, ni le son, ni le rafraîchissement n'ajoutent d'attente au CPU. → `docs/CYCLE_ACCURACY.md` § 5
+
+**Résultat** : les **3 cartouches** (`ST_Diagnostic`, `STE_Test`, `MegaSTE_Diagnostic`)
+atteignent leur menu et passent leur batterie de tests internes (Z) **sans erreur**, sur
+les **2 cœurs**, avec un vrai TOS. Restes (« Hard error »/VME/FPU) = périphériques absents,
+fidèles à Hatari, pas des bugs.
+
+## Blitter
 - **Blitter** (`Blitter.cpp`, port Hatari) : HOP, LOP 16 ops, FXSR/NFSR, skew, smudge,
   halftone, endmasks, comptes X/Y, incréments signés. Reset chaud : RAM
   halftone et pipeline source conservés comme Hatari ; remise à zéro froide
@@ -1499,60 +1713,382 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
   des incréments (`&0xFFFE`) et adresses src/dst (`&0x00FFFFFE`) via `regWriteMask` ;
   **`busCountError_` remis à zéro** à chaque entrée en PRE_START (blitter.c:1457).
   Étalons `run_etalons.py` TOUS OK. Cf. `docs/HATARI_DIVERGENCES.md` § Blitter.
-- **GUI — contrôle de volume dans la barre de menu** : menu haut-parleur (icône selon le
-  niveau : muet/bas/haut) avec slider 0-100 % et bascule « Muet » (mémorise et restaure le
-  niveau). Volume MAÎTRE de la sortie hôte, appliqué au mix final dans `Audio::produceFrame`
-  (avant clamp) — indépendant du LMC1992 émulé, qui appartient à la machine. Persisté dans
-  `neost.cfg` (`volume=`, sauvé en fin de glissé), ré-appliqué au démarrage.
-- **Son — S3 : le YM STE ressort à pleine amplitude (×2 LMC porté)** : Hatari compense la
-  demi-amplitude du YM en STE (`YM_OUTPUT_LEVEL>>1`, marge anti-saturation DMA) en DOUBLANT
-  les gains LMC1992 (`left/right_gain × 2`, dmaSnd.c:1152-1153/1460-1461) — NeoST ne le
-  faisait pas → **YM STE 6 dB sous le ST**, enterré sous le DMA. Fix : `kLmcMakeup = 2.0`
-  dans `gainLeft/gainRight/masterGain` (`DmaSound.cpp`) + `kDmaGain` 0.7 → **0.375** (= ¾ × ½ :
-  la comptabilité « DMA sound is 3/4 level of YM sound » d'Hatari, rapportée à l'échelle demie
-  puis re-doublée). À volume LMC plein (init TOS) : YM = 1.0, DMA = 0.75, exactement Hatari.
-  ⚠ Depuis (bug hunt 10ᵉ passe) `kDmaGain = −0.1875` : signe inversé (le LMC1992 inverse le
-  DMA, dmaSnd.c:520-535) et ÷2 de plus, le ×2 `kLmcMakeup` s'appliquant aussi au canal DMA
-  (l'ancien 0.375 sortait +6 dB vs Hatari).
-  **Validé** : cloche/keyclick GEM (EmuTOS, YM pur) — ratio RMS STE/ST = **1.000** (avant :
-  0.5) ; musique Rick Dangerous II STE saine, pas d'écrêtage.
-- **Son — S4 : table DAC YM MESURÉE par défaut (comme Hatari)** : le rendu des 3 voies passait
-  par le seul « modèle de circuit » (`YM2149_BuildModelVolumeTable`) alors que le DÉFAUT
-  d'Hatari est `YM_TABLE_MIXING` — la table 16³ mesurée sur un vrai ST par Paulo Simoes
-  (`ym2149_fixed_vol.h`, © 2012, **vendorisé** dans `src/core/`) interpolée en 32³ par moyennes
-  géométriques (port exact d'`interpolate_volumetable`, sound.c:507-545). L'interaction
-  NON-LINÉAIRE réelle des 3 voies (timbre/balance des accords) remplace le modèle ;
-  `NEOST_YM_MIXING=model` rebranche l'ancien pour A/B. Indexation plate 1:1 (idx = A|B<<5|C<<10
-  ≙ `ymout5[Tone3Voices]`), normalisation ≙ `YM2149_Normalise_5bit_Table` (le niveau STE ÷2
-  restant porté par `outScale_`).
-- **Headless — `--sound-dump F.wav`** : dump audio 48 kHz stéréo s16 de la boucle `--frames`,
-  même chaîne que la GUI (YM2149 horodaté modèle push + DMA STE + gains/tonalité LMC1992,
-  débit exact sans asservissement d'anneau) → l'A/B audio contre l'oracle Hatari (WAV) ou
-  entre configs devient scriptable (profil RMS par seconde). Cf. `DEV.md`.
-- **Son — S2 : FIFO 8 octets du DMA STE fetchée AU FAISCEAU (2026-07-07 soir)** : port complet
-  du modèle Hatari (`DmaSnd_FIFO_*`, `DmaSnd_STE_HBL_Update`). Le DMA fetche des MOTS dans une
-  FIFO anneau de 8 octets entretenue à **chaque HBL** (`DmaSound::onHbl` ← `Machine::onHbl`,
-  ≙ video.c:3340) ; la consommation DAC est datée au reste fractionnaire (`updateDac` ≙
-  `Sound_Update`) et **capture les octets tirés** dans un anneau fixe que le rendu audio
-  consomme — `mixStereo`/`mix` ne relisent PLUS la RAM en fin de trame. Conséquences fidèles :
-  un programme qui **modifie le tampon pendant la lecture** est correct (Mental Hangover,
-  Power Up Plus) ; la **fin de trame tombe au FETCH** du dernier mot (XSINT/Timer A en avance
-  ≤ 8 octets, quantifiée HBL, comme le vrai HW — `Scheduler::DMASND` supprimé) ; le compteur
-  `$FF8909+` montre l'adresse de **fetch** après synchronisation (≙ `DmaSnd_GetFrameCount`) ;
-  passage mono→stéréo réaligné sur frontière paire (`fifoSetStereo`). Piège : la dette de
-  rééchantillonnage du rendu hôte est PLAFONNÉE à 1 octet en sous-alimentation, sinon le
-  rattrapage saute des octets en rafale (mesuré : 21 % d'octets B au lieu de 33 % sur l'étalon).
-  Depuis le 2026-10-20, chaque événement (PLAY, MODE…) porte aussi l'index d'écriture de
-  l'anneau de capture à son instant (`DmaEvent.capW`). `mixStereo` borne la consommation de
-  chaque segment au repère de l'événement suivant. Un PLAY en milieu de trame (DMA au repos)
-  ne fait plus rendre dès l'échantillon 0 les octets tirés après l'écriture, et les octets
-  capturés après un changement de MODE ne sont plus lus dans l'ancien format.
-  **Validé contre l'oracle Hatari bâti dans le conteneur** (SDL2 présent — AVI audio + `--trace
-  dmasound`) via un étalon dédié `tools/make_dmasnd_test.py` (secteur de boot STE : sample en
-  boucle + handler VBL qui écrit un plateau B transitoire mid-trame, invisible à la frontière
-  de trame) : NeoST fetch **33,3 %** de mots B = oracle **33,2 %**, et le WAV rendu montre le
-  même ratio. `NEOST_DMASND_TRACE=1` émet le refill au format Hatari (diff direct). Étalons
-  19/0 + 8 OK ; WAV cloche GEM / Rick Dangerous II **bit-identiques** (YM intact).
+- **Blitter — partage de bus non-hog cycle-exact (2ᵉ passe, 2026-07-07 soir)** : les deux
+  dernières divergences de timing portées depuis le modèle CE d'Hatari (celui de l'oracle).
+  **Suspension MID-WORD** (`BLITTER_CONTINUE_LATER_IF_MAX_BUS_REACHED`) : la tranche rend le
+  bus exactement au 64ᵉ (ou 63ᵉ) accès, même entre la lecture et l'écriture d'un même mot —
+  l'état du mot en cours (`haveSrc_/haveDst_/fetchSrc_/dstWord_` ≙ `BlitterState` d'Hatari)
+  persiste entre tranches. ⚠ Piège corrigé pendant la mise au point : ces drapeaux doivent être
+  SAUVEGARDÉS en fin de tranche, sinon la reprise refait la lecture source (double `srcShift` →
+  pipeline skew corrompu → mots perdus au bord des icônes GEM). **Part CPU = 64 accès bus CPU
+  RÉELS** (port `BLITTER_PHASE_COUNT_CPU_BUS`) : comptés par les callbacks mémoire de Moira
+  (`Blitter::noteCpuBusAccess` via `Bus::blitterCountCpu`), le 64ᵉ accès arme la fenêtre
+  PRE_START et date la tranche suivante à +4 cycles — remplace le forfait de 256 cycles (un CPU
+  qui ne touche pas le bus, cycles internes ou STOP, retarde désormais le blitter comme sur le
+  vrai matériel). Diag `NEOST_BLIT_TRACE=1` ajouté (un état des lieux par blit, pendant du
+  `--trace blitter` d'Hatari). Validation : étalons TOUS OK ; scénario blitter-intensif
+  `--walk-mouse` tos106fr STE (132 blits, redraws d'icônes FXSR/NFSR/skew) **byte-identique**
+  à l'ancien modèle ; Enchanted Land et Super Hang-On inchangés (SHO n'utilise pas le blitter :
+  0 blit mesuré jusqu'au menu). Reste documenté : pas d'exécution CPU parallèle pendant la
+  tranche (hooks par-cycle Moira requis), cf. `docs/HATARI_DIVERGENCES.md`.
+- **Registres Blitter** (2026-10-18) : miroir MMIO brut pour les lectures octet des registres
+  mot rejetées par les handlers Hatari. Les lectures mot/long rafraîchissent ce
+  miroir ; reset chaud le conserve, reset froid l’efface. $FF860E/F est un registre
+  de densité uniquement sur Mega STE, void ailleurs quand l’accès est autorisé.
+- **Blitter** (2026-10-22) : ligne GPIP3 = BUSY (pause, reprise, impulsion à l'écriture de `$FF8A3C`).
+- **Blitter (netlists 4051/4082)** (2026-10-22) : registres mot, `$FF8A3D`, reset à chaud.
+- **Blitter** (2026-11-04) : accord au cycle avec fx68k + `stBlitter.sv` sur 78 programmes, ST à 8 MHz, accès, données et dates. Partage du bus
+  corrigé d'après la netlist ST-4082 et le RTL ; SMUDGE en HOP 0 lit la source ; adresse source relisible en plein mot. → `docs/STBLITTER_BENCH.md`
+
+## Mega ST / Mega STE — RTC, SCU, cache, SCC
+- **SCU Mega STE décodé sur les adresses IMPAIRES uniquement** (`$FF8E01/03/…/0F`, même
+  câblage que le MFP) : les octets PAIRS `$FF8E02-$FF8E0E` ne sont pas décodés → bus error
+  en accès octet (cf. `ioMem.c`). Boot EmuTOS 256 Mega STE (qui programme le SCU) inchangé.
+- **RTC RP5C15** (Mega ST/Mega STE, `$FFFC21-$FFFC3F`) : modèle paresseux déterministe
+  (cycle CPU du dernier top de seconde + rattrapage), registre RESET, débordement BCD
+  calendaire. La seconde vaut une seconde de la BASE DE TEMPS DE LA MACHINE
+  (trame × Hz, posée par `Machine::beginFrame_`) et non une constante : sinon
+  l'horloge dérivait de 0,105 % contre le reste. **TIMER EN** (bit3 du registre
+  mode) honoré : à 0 le compteur est arrêté — TOS 1.02 et EmuTOS écrivent `$9`
+  puis `$8` au boot (ils ne basculent que le bit0 de banque), seule la cartouche
+  de diagnostic le coupe pour figer l'heure. Corrige « C0 No clock installed »
+  + « C1 clock increment error » : la batterie **Z de la cartouche Atari Field
+  Service v4.4 passe INTÉGRALEMENT sur Mega ST** (RAM, ROM, couleur, clavier,
+  audio, MFP/Glue/vidéo, horloge avec rollover de siècle, blitter).
+  **Banque 1 RP5C15** : alarmes indépendantes des compteurs, RESET bit0
+  limité aux alarmes, registres réservés isolés. Sélection 12/24 h avec API
+  DateTime en 24 h, compteur bissextile indépendant et ajustement des secondes
+  ADJ avec retenue et remise à zéro du diviseur. Registre CLKOUT mémorisé,
+  sans génération de signal ; aucune sortie d’alarme ajoutée.
+  **TEST/RESET en écriture seule** : Eh/Fh ne relisent plus les commandes
+  écrites (Ricoh p.7). Zéro en lecture selon convention MAME, sans mesure
+  matérielle du bus flottant ; actions RESET et anciens octets de sauvegarde
+  conservés. TEST reste un registre d’inspection non émulé.
+  **Arrêt TIMER EN** : phase sous-seconde continue ; une retenue saturante
+  est délivrée dès la reprise, sans rattraper toutes les secondes arrêtées.
+  RESET du diviseur et ADJ annulent cette retenue, déduction du reset des étages
+  secondes et inférieurs décrit par Ricoh, sans mesure matérielle revendiquée.
+  ⚠ Non modélisé : la sortie CLKOUT du RP5C15 — aucun consommateur observé
+  (Hatari ne la modélise pas non plus, elle n'apparaît que dans son brochage).
+  **Rattrapage long corrigé le 2026-10-19** : suppression du plafond de
+  90 000 secondes qui perdait le reste du temps écoulé. Cascade arithmétique
+  puis fins de mois et cycles de 100 ans, avec compteur bissextile indépendant,
+  chiffres bruts des étages non atteints et phase sous-seconde conservés.
+- **Persistance RTC entre sessions** (`neost.cfg` : clés `rtc=` date/heure BCD,
+  `rtc_saved=` horodatage hôte) : reprise au boot avec rattrapage du temps écoulé ;
+  snapshot à chaque sauvegarde de config (`saveConfig` / `snapshotRtc`).
+- **SCC First et Error Reset** : retirer le premier caractère en erreur
+  efface aussi son IP ; le suivant ne l’hérite pas. Enable Next reste nécessaire
+  pour réarmer, lecture verrouillée sans retrait préservée.
+- **SCC WR1 et erreurs verrouillées** : passer entre First/Special et Special
+  Only conserve le verrou et l’IP spécial déjà acquis, sans relire la donnée.
+  Error Reset libère toujours le caractère ; modes Disabled/All inchangés.
+- **SCC RX All/Special** : dernier caractère retiré efface IP/IRQ, sans effacer
+  les erreurs RR1 collantes. Le prochain caractère reste qualifié spécial jusqu’à
+  Error Reset ; modes First/Special verrouillés conservés.
+- **SCC lectures étendues Z85C30** : WR7’ D6 expose WR3/4/5/7’/10 via
+  RR9/4/5/14/11, indépendamment de WR15 D0/D2 ; FIFO RX et IRQ préservées.
+  Autres fonctions WR7’ et FIFO SDLC hors de cette correction.
+- **SCC Z85C30 — contrôleur série Mega STE** (`io/Scc`, port de `scc.c`,
+  `$FF8C80-$FF8C87`) : deux canaux A/B, jeu complet WR0-15 / RR0-15 par canal
+  (pointeur de registre via WR0, commandes WR0/WR9, reset matériel/canal), statut RR0
+  (TX buffer empty, RX char available, CTS/DCD au repos = assertés comme Hatari sans
+  TTY), vecteur RR2A/RR2B (+ statut, Status High/Low, VIS/NV), IP RR3 + sources
+  d'interruption, **IRQ niveau 5 vectorisée gatée par le SCU** (VmeIntState bit 5,
+  IACK → vecteur, IUS, `Reset Highest IUS`). Décodage des accès façon Hatari (octets
+  IMPAIRS seulement ; `$..81/85` = ctrl A/B, `$..83/87` = data A/B). TX cadencé
+  (puits série + **bouclage local** WR14 bit4) et RX par injection. Câblé via le SCU
+  (`Scu::syncState` niveau 5) et `Cpu68k::neostUpdateIpl`/`readIrqUserVector`.
+  Validé headless : **EmuTOS 256K et TOS 2.06 Mega STE initialisent les deux canaux**
+  (WR9=$C0 reset, WR4 async, WR2 vecteur, WR3/5 8 bits…) et **bootent au bureau** sans
+  plante ; bouclage TX→RX prouvé (programme superviseur via Supexec écrit `$42` sur le
+  canal A en loopback, le relit et le renvoie sur l'AUX → sortie série `<B>`).
+  **Contrôle BRG WR14 D1..0** : sa modification conserve aussi l’écho
+  RX direct. Arrêt/reprise d’un RX sur BRG ne rend plus éligible l’écho
+  interrompu ; le prochain caractère prend son nouvel état. Les autres bits
+  WR14 et les RX BRG/DPLL conservent leur invalidation.
+  **Constante BRG WR12/13** : sa modification conserve l’écho RX en
+  cours si RX utilise RTxC/TRxC directs. Si RX utilise le BRG, son caractère
+  engagé reste invalidé ; aucun changement de cadence BRG/Zero Count.
+  **Horloge TX WR11 D4..3** : sa modification seule conserve l’écho RX
+  engagé ; les multiplexeurs TX/RX sont indépendants (Zilog p.166–167).
+  Un changement de source RX garde son invalidation, sans trame reconstruite.
+  **Durée RX asynchrone** : un stop vérifié, indépendamment du choix
+  1/1,5/2 stops de TX (Zilog UM0109 p.93/p.151). Une simple bascule des
+  stops TX entre modes asynchrones n’invalide plus l’écho RX en cours.
+  Échéance RX engagée conservée ; les suivantes utilisent la durée corrigée.
+  Transport hôte par octets sans information sur les gaps/stops physiques.
+  **Priorité INTACK** : la chaîne des IUS bloque aussi l’acquittement des
+  sources inférieures par IRQ ou RR2 Software INTACK ; préemption par une
+  source supérieure préservée (Zilog UM0109 p.41–42).
+  **MIE WR9 D3** : masque l’IRQ sans effacer les IUS. Aucun nouvel IUS
+  n’est créé à l’acquittement tant que MIE=0 ; les IUS précédents reprennent
+  leur rôle de priorité au réarmement (Zilog UM0109 p.161).
+  **Reset de canal WR9** : IP et IUS effacés sur le seul canal visé ;
+  demandes, FIFO et IUS de l’autre canal conservés (Zilog UM0109 p.160).
+  Le reset matériel forcé continue d’effacer les deux canaux, avec les bits
+  partagés programmés par WR9 conservés selon la commande.
+  **Prises de bouclage EXTERNES du kit Field Service** (2026-08-27, `Scc::setLoopback`,
+  `--loopback`/`--loopback-at` headless, OFF par défaut) : TxD→RxD, RTS→CTS, DTR→DCD,
+  DTR→DSR (/SYNC) et **BREAK émis (WR5 bit4) → RR0 bit7 Break/Abort** au retour — le
+  mécanisme de détection des prises du test « I SCC » du diagnostic MegaSTE, qui rend
+  **Pass** (Port A, Port B et LAN détectés, async, modem control, IRQ ext-status).
+  **Parité RX courte** : en bouclage de même largeur, les mots 5/6/7 bits
+  exposent la parité émise dans le bit suivant les données (Zilog WR4 p.152).
+  Valeur mémorisée au chargement TSR, puis conservée dans la FIFO et les états.
+  L’injection hôte d’octets ne fournit pas de parité physique ; formats discordants
+  et erreurs de parité/framing ne sont pas synthétisés.
+  **Statuts externes** : les verrous RR0 sélectionnés par WR15 fonctionnent
+  même avec WR1 External/Status désactivé. WR1 ne contrôle que la demande
+  d’interruption ; sa réactivation retrouve un verrou déjà fermé. WR0 ouvre
+  les verrous et acquitte la demande, sans nouveau champ de sauvegarde.
+  **Fronts BREAK pendant verrou externe** : assertion et relâchement sont
+  mémorisés même si CTS/DCD a déjà fermé les verrous (Zilog p.58), puis
+  servis au fil des resets WR0. Répétitions coalescées par polarité ; aucune
+  file illimitée ni erreur RX synthétique. État des fronts sauvegardé en v39.
+  **Qualification des modes** : Sync/Hunt forcé à zéro sans fermeture de
+  verrou quand la broche /SYNC est occupée par l’oscillateur en asynchrone
+  ou External Sync ; BREAK nul en synchrone hors SDLC. Cela ne modélise pas
+  la recherche de synchronisation ni la détection physique d’aborts SDLC.
+  **WR0 Reset Tx Underrun/EOM** : champ D7–D6 décodé indépendamment
+  de la commande et du pointeur. Efface le statut brut EOM, même en asynchrone
+  (exception explicitée dans Zilog p.176), sans créer de front IRQ descendant
+  ni effacer l’image External/Status déjà verrouillée. Les commandes combinées
+  restent actives ; aucun moteur CRC/SDLC physique ajouté.
+  **Auto Echo WR14 D3** : sortie TSR déconnectée du sink et des bouclages,
+  avec priorité sur Local Loopback (Zilog p.69–70/p.172). TDR/TSR et IRQ
+  continuent de fonctionner. Écho des octets hôtes RX huit bits sans parité
+  après un stop RX abstrait, indépendamment des stops TX et de RXEN/DCD ; réception CPU
+  qualifiée séparément. Mode/format/horloge modifiés en vol invalident l’écho
+  courant. Sans reconstitution des bits, des parités ni des formats inconnus ;
+  prise externe sans boucle récursive. Trois états de trame sauvegardés en v40.
+  **Local Loopback** : TX atteint le sink et le récepteur interne ; RxD
+  externe est déconnecté. Entrer dans ce mode invalide le caractère hôte en
+  cours même si le mode est rétabli avant son stop, sans vider la FIFO déjà
+  complétée. La prise externe occupe le sink et ne double pas la réception.
+  Priorité Auto Echo D3 sur D4 conservée, états v40 réutilisés.
+  **BRG / Zero Count (2026-10-18)** : PCLK/RTxC, constantes WR12/13 et
+  activation WR14 alimentent deux événements Scheduler. ZC précède /2 et WR4 :
+  période (TC+2)/source, retenue rationnelle ; nouveau TC au prochain reload.
+  RR0 suit une pulse d’un cycle source, non latchée et masquée par WR15.
+  IRQ externes masquées,
+  vecteurs, IUS, reset et restauration de phase sont gardés par le banc SCC.
+  **Auto Enables WR3** : les broches CTS/DCD qualifient les bits logiciels
+  d’émission/réception ; la FIFO reçue survit à une perte DCD, seul le caractère
+  en cours est perdu. Le TSR finit avant suspension CTS. Qualification brute
+  indépendante de RR0 verrouillé ; exceptions de bouclage selon le composant.
+  En asynchrone Auto Enables, RTS attend le dernier stop du TSR et du TDR ;
+  la prise CTS suit cette sortie physique, sauvegardée séparément de WR5.
+  **Horloges directes TX/RX** : RTxC/TRxC calculées avec rapport rationnel,
+  fractions indépendantes par canal/direction. Pas de troncature à chaque bit ;
+  configuration engagée conservée, reprise après silence sur l’horloge vive.
+  Changer de fréquence source remet la fraction à zéro au prochain caractère.
+  Les caractères issus du BRG utilisent aussi le rapport exact PCLK/RTxC,
+  WR12/13 et WR4, sans arrondi du baud ni seuil à 1 baud. Zero Count possède
+  sa phase rationnelle indépendante ; BREAK reste sans précision de phase bit.
+  **Désactivation TX** : le TSR réellement engagé finit à son échéance initiale
+  même si WR5 TX Enable tombe ; le TDR attend la réactivation, sans écraser le
+  TSR actif. CTS, RTS différé et All Sent conservent leurs rôles.
+  **SEND BREAK WR5** : TSR suspendu et TDR retenu ; relâcher BREAK reprend
+  le temps restant. Un caractère interrompu ne produit pas de faux octet intact.
+  Reste et interruption sauvegardés. Modèle au caractère, sans phase de bit ni
+  erreurs RX synthétiques ; indication BREAK bouclée immédiate et X21 hors modèle.
+  **TX caractères courts** : 6/7 bits masqués et encodage WR5 « cinq ou moins »
+  pour 1..5 bits. Données et longueur fixées au chargement du TSR, durée selon
+  cette longueur ; un TDR en attente prend le format courant à son transfert.
+  **WR3 Sync Character Load Inhibit** : filtrage WR6 avant FIFO et IRQ dans
+  les modes non SDLC, y compris asynchrone ; exception Bisync 12 bits. Aucun
+  synchroniseur de bits ajouté (Zilog UM0109 p.149).
+  Le câblage BRG suit aussi les changements de profil ST → Mega STE.
+  **Miroirs RR6/RR7** : sélection WR15 locale au canal et lecture RR2/RR3 locale,
+  vecteur actualisé et soft IACK compris (Zilog/MAME, correction du défaut partagé
+  avec Hatari). La FIFO SDLC reste non implémentée.
+  Le reset matériel annule les événements dont WR14 a désactivé la source.
+  **Caractères TX/RX cadencés** selon les horloges et formats SCC : TDR/TSR,
+  IRQ au transfert TDR→TSR, All Sent en fin TX, RX mis en file. Bouclage à la
+  fin TX. FIFO RX matérielle de trois octets : ordre, erreurs associées,
+  débordement du dernier emplacement, modes premier/tous/spécial et Error Reset.
+  Restent FIFO SDLC, DPLL et série hôte réelle.
+- **SCC No-Vector → vecteur spurious 24** (`Cpu68k::readIrqUserVector`) : sur IACK niveau 5 avec
+  WR9 NV armé (`Scc::processIack()` = -1), le wrapper renvoie désormais le vecteur **spurious 24**
+  ($60) — comme la branche MFP et `iack_cycle` d'Hatari (`vector<0 → 24`) — au lieu de
+  l'auto-vecteur 29 ($74) erroné. Boots ST/STE/MegaSTE inchangés.
+- **SCU MegaSTE — gate d'interruptions complet** (`$FF8E01-$FF8E0F`, port `scu_vme.c`,
+  `Scu.hpp`) : sur MegaSTE, **toutes** les IRQ sont gatées par `SysIntMask`/`VmeIntMask`
+  avant d'atteindre l'IPL (MFP niv6/SCC niv5 via VmeIntMask, VSYNC niv4/HSYNC niv2/soft IRQ1
+  via SysIntMask), **toujours actif** comme `SCU_IsEnabled()` d'Hatari (= MegaSTE/TT).
+  `gatedLevel` consulté dans `neostUpdateIpl`, état synchronisé depuis les sources vivantes
+  (MFP/VBL/HBL). 8 registres relisibles, écrire un masque remet l'état pending à 0 ;
+  `GPR1`=0x01 au reset (contournement « TOS v2/v3 »). Validé (2 cœurs) : **TOS 2.06 et
+  EmuTOS 256K (`Atari Mega STe`) bootent au bureau GEM** + diagnostic MegaSTE OK — tous
+  programment le SCU tôt au boot (`SysIntMask=0x14`, `VmeIntMask=0x40/0x60`), comme sur
+  Hatari. ST/STE/Mega ST inchangés (gating MegaSTE seul). ⚠ L'EmuTOS 192 Ko est un build
+  « Atari ST » (TOS 1.4) qu'Hatari refuse aussi sur MegaSTE → utiliser `etos256us/fr` ou TOS 2.06.
+- **Registre Cache/CPU MegaSTE `$FF8E21` relisible** (port `IoMemTabMegaSTE_CacheCpuCtrl_WriteByte`) :
+  octet latché (bit0 = cache, bit1 = vitesse 8/16 MHz) avec la contrainte matérielle « cache
+  impossible à 8 MHz » (bit0 forcé à 0 si bit1=0). Reset = 0.
+- **SCU réinitialisé au reset** (port `SCU_Reset`) : `Scu::reset(bool cold)` remet `SysIntMask`/
+  `VmeIntMask`/états à 0 (le SCU masque tout jusqu'à reprogrammation par l'OS), GPR1=0x01, GPR2
+  effacé au cold boot ; appelé par `Machine::reset()`/`hardReset()`. Avant, les masques persistaient
+  à travers un reset doux (non déterministe selon l'historique de session).
+- **Bascule CPU 8/16 MHz MegaSTE — EFFET RÉEL** (`$FF8E21` bit1, port
+  `m68000.c:MegaSTE_CPU_Cache_Update` / `MegaSTE_CPU_Set_16Mhz`) : l'ordonnanceur et
+  toutes les puces restent en cycles **bus 8 MHz** ; le cœur CPU convertit
+  (`Cpu68k.cpp` : `bus = (clock + biais) / mul`, biais rebasé à chaque bascule pour
+  une horloge bus **continue**, même en plein quantum). **Moira (cycle-exact)** : port
+  des `mem_access_delay_*_megaste_16` — accès **RAM ST** cadencés bus (attente du
+  créneau CPU/Shifter de 8 cycles CPU + accès 8 cycles au lieu de 4), **ROM/cartouche/
+  IO « FAST »** sans wait state (mesuré sur vrai STF par Hatari) → 2× plus rapides ;
+  wait states PSG/MFP/ACIA et alignement shifter ×2 ; E-Clock recalée sur l'horloge
+  bus. Validé par
+  ROMs de test synthétiques (mesure historique avant correction des bornes RAM
+  du 2026-10-19, boucle `nop`+`bra` comptée sur 10 trames, Moira) :
+  **ROM 16 MHz = 2.000×**, **RAM 16 MHz sans cache = 0,88×** (aucun bénéfice, le bus
+  8 MHz domine — fidèle au matériel), **RAM 16 MHz + cache = 2.000×**. Reset/reconfigure → retour 8 MHz (`MegaSTE_CPU_Cache_Reset`).
+- **Cache externe 16 Ko MegaSTE** (`$FF8E21` bit0, port `m68000.c:MegaSTE_Cache_*`) :
+  8192 lignes × 1 mot (tag = bits 14-23, ligne = bits 1-13, bit 0 ignoré), données
+  dans `Bus::megaSteCache`, facturation des cycles côté Moira (hit = 4 cycles CPU
+  16 MHz ; miss → accès bus + remplissage, lecture octet remplie par le MOT du bus ;
+  écriture **write-through**, jamais accélérée, maj de ligne octet seulement si déjà
+  cachée). Cachable : RAM ST installée (< 4 Mo) + ROM TOS en lecture ; jamais IO/
+  cartouche, ni accès fautifs (mot impair, `$0-$3` en écriture, `$0-$7FF` en user).
+  **Invalidation** : bit0 → 0, reset, bus error, et BGACK (départ blitter, DMA
+  FDC/ACSI) — les écritures DMA ne traversent pas le cache, comme sur le vrai matériel.
+- **Bornes bus/cache 16 MHz (2026-10-19)** : misses alignés avant SYNC(2),
+  quatre cycles CPU RAM supplémentaires servis par `sync`, hit/miss et donnée
+  choisie avant les cycles. Un hit déjà lu reste stable si le blitter change
+  ensuite la RAM. Cache invalidé avant les huit cycles d'arbitrage, comme Hatari.
+  Onze sondes CPU/cache (off, fill, hit ; byte/word/long et écritures) en égalité
+  exacte après conversion CPU 16 MHz → bus 8 MHz ; tests locaux de phases et DMA.
+  PRE_START blitter à 16 MHz corrigé : cinq cycles bus depuis le callback CPU.
+  Après IACK, les quatre cycles internes restent en horloge CPU : bloc MFP
+  de 36 cycles CPU à 16 MHz au lieu de 40, bloc périphérique conservé ; même
+  séparation pour HBL/VBL. 199 contrôles CPU/blitter sous ASan/UBSan.
+  Douze cas globaux passent données, IRQ et bornes physiques. La comparaison
+  temporelle exacte reste ouverte : deux défauts Hatari isolés et des écarts
+  résiduels après correctifs expérimentaux (`HATARI_MEGASTE_AUDIT.md`).
+
+## FPU MC68881
+- **MC68881 optionnel — sonde + trapping** (`src/io/Fpu.hpp`, `--fpu` headless /
+  case « FPU 68881 » du menu Modèle, `neost.cfg fpu=1`) : interface mémoire des
+  registres coprocesseur (CIR) du socket 68881 du Mega STE en `$FFFA40-$FFFA5F`.
+  Par défaut **absent** = fidèle Hatari (bus error, TOS/diagnostic concluent « FPU
+  not found », cf. `M68000_IsVerboseBusError` qui silence la sonde `$fffa42`). Avec
+  `--fpu` : la zone répond (Response CIR = `$0802` « null primitive, processing
+  finished », Save CIR = trame IDLE `$1F18`, autres registres latched) → **TOS 2.06
+  détecte le FPU** (lecture du Response CIR observée, cookie `_FPU`) et le dialogue
+  CIR est **journalisé** sur stderr (trapping : tout usage flottant réel est visible).
+  L'arithmétique 68881 n'est PAS émulée (cf. `TODO.md`).
+- **MC68881 — mantisse 64 bits RÉELLE (softfloat) + livraison d'exception FP**
+  (`src/io/SoftFloatX80.hpp`, `src/io/Fpu.{cpp,hpp}`) : l'arithmétique ALGÉBRIQUE
+  (FADD/FSUB/FMUL/FDIV/FSQRT/FCMP/FINT/FINTRZ/FREM/FMOD/FSCALE/FGETEXP/FGETMAN/FSGLxxx) ne
+  passe plus par le `double` hôte (53 bits) mais par un **portage propre de SoftFloat-2a
+  (Hauser), format étendu 80 bits** → **64 bits de mantisse réels**, 4 modes d'arrondi FPCR,
+  précision étendu/double/simple et drapeaux d'exception IEEE exacts (leaf multi-mots via
+  `__uint128_t`). Les transcendantes restent en `double` hôte (le 68881 les approxime — comme
+  MAME/Previous). Les **exceptions FP activées dans le FPCR** sont en plus **LIVRÉES** via le
+  Response CIR (primitive « Take Pre-Instruction Exception »). Validé : `make_fpu_testrom.py`
+  étendu à **9/9 PASS**, dont `1.0/3.0` relu en FMOVE.X = `$3FFD AAAAAAAA_AAAAAAAB` exact (un
+  calcul 53 bits donnerait `…A800`) et FDIV par 0 avec DZ activée → Response CIR `$7032`.
+- **MC68881 FONCTIONNEL — mode périphérique complet** (`src/io/Fpu.{hpp,cpp}`) : le
+  niveau « sonde + trapping » devient une vraie émulation du 68881 câblé en
+  périphérique (MC68881 UM §7 + AN-947 ; Hatari n'émule pas ce socket — rien à
+  porter, références = manuel Motorola, MAME `m68kfpu`, et la **glue SFP004 de la
+  MiNTLib** qui est la spec de facto : écrire le mot de commande F-line en `$FFFA4A`,
+  scruter `$FFFA40` tant qu'il vaut `$8900`, transférer par `$FFFA50`). Implémenté :
+  registres **FP0-FP7 en étendu 80 bits** (FMOVE.X aller-retour bit-exact),
+  FPCR/FPSR/FPIAR, machine à états CIR (Command/Response avec primitives de
+  transfert `$95xx/$96xx/$B1xx/$B2xx`, fenêtre Operand bouclante, Condition avec les
+  32 prédicats, Save/Restore trame IDLE `$1F18` + reset par trame nulle), formats
+  **B/W/L/S/D/X/P** (packed BCD avec k-factor), **FMOVECR bit-exact** (table ROM
+  silicium recoupée MAME/Previous/WinUAE, y compris le `e` à 1 ulp), FMOVEM données
+  et registres de contrôle, et toute l'arithmétique (FADD/FSUB/FMUL/FDIV/FSQRT/
+  FCMP/FTST/FREM/FMOD/FSCALE/FGETEXP/FGETMAN/FINT/FINTRZ/FSGLMUL/FSGLDIV/FSINCOS +
+  transcendantes via libm hôte), codes condition N/Z/I/NAN, octet quotient,
+  exceptions OPERR/DZ/OVFL/BSUN en bits FPSR (pas d'IRQ : le socket se scrute).
+  **Limite documentée** : calculs en double hôte (53 bits de mantisse au lieu de
+  64). Validations : mini-ROM `tools/make_fpu_testrom.py` (dialogue SFP004 réel)
+  — FADD.S, FDIV.D, FMOVECR π **bit-exact**, FSQRT.D **bit-exact**, FINTRZ+
+  FMOVE.L, FCMP+Condition CIR, aller-retour FPCR → **7/7 PASS** ; diagnostic
+  cartouche MegaSTE (tos206us) : boot self-test « **FPU idle** » (détecté via la
+  trame Save CIR) avec `--fpu`, « FPU not found » fidèle Hatari sans (la
+  cartouche n'a pas de test FPU dédié au menu : F = Floppy, V = VME) ;
+  non-régression : écrans byte-identiques avec/sans `--fpu` (EmuTOS 256K,
+  TOS 2.06 megaste) et gate EmuTOS 192K/ST intact.
+- **MC68881 — fidélité NaN / SNaN / masques / FSGLMUL** (recoupé `cpu/fpp*.c` softfloat) :
+  la **propagation des NaN** renvoie désormais l'opérande NaN réel quiété (signe + payload) au
+  lieu d'un default-NaN ; une **entrée SNaN** lève `FPSR.SNAN` (vecteur 54) et non plus OPERR
+  (flag softfloat `flag_signaling` distinct) ; les **masques FPCR/FPSR** forcent à 0 les bits
+  réservés (`&0xFFF0` / `&0x0FFFFFF8`) ; **FSGLMUL** tronque ses entrées à 24 bits avant le produit
+  (cf. `floatx80_sglmul`). Mini-ROM FPU **9/9 PASS** inchangé.
+- **MC68881 — FSCALE exposant ∞/NaN + octet AEXC** : **FSCALE** par un exposant ∞/NaN ne fait plus
+  d'UB (`int(trunc(±inf/nan))`) — NaN → propagation, ±∞ → OPERR + NaN par défaut (cf.
+  `floatx80_scale`) ; l'**octet AEXC accumulé** suit `updateaccrued`/`fpsr_make_status` (UNFL
+  accumulé seulement si INEXACT l'est aussi ; INEX accumulé sur INEX2 OU OVFL). Mini-ROM FPU 9/9 inchangé.
+- **MC68881 — FMOVECR arrondi par mode + INEX2** (`romConstant`, port table `fpp_cr` de `fpp.c`) :
+  les constantes ROM portent désormais une colonne `inex` (la valeur est-elle inexacte en étendu ?)
+  et `rnd[4]` (ajustement des 32 bits de poids faible par mode d'arrondi RN/RZ/RM/RP). `FMOVECR`
+  applique l'ajustement selon le mode FPCR, puis arme `EXC_INEX2`/`AEXC_INEX` et déclenche la
+  livraison d'exception si activée — au lieu de toujours renvoyer la valeur RN sans drapeau. Mini-ROM FPU 9/9.
+- **MC68881 — précision FPCR de FMOVECR (2026-10-18)** : après l'ajustement de la
+  table, arrondi de la mantisse à 24 ou 53 bits, avec la plage d'exposant étendue
+  (`roundSigAndPack`, comme `fpp_round32/64` d'Hatari). Une constante exacte en étendu
+  mais inexacte à la précision demandée lève aussi INEX2. La ROM CIR passe à **23 tests** :
+  les nouveaux cas gardent les quatre modes d'arrondi, la précision double/réservée,
+  les grands exposants et les drapeaux ; ils couvrent aussi FSGLMUL/FSGLDIV et FMOD,
+  dont les corrections étaient déjà présentes.
+- **MC68881 — précision des unaires et constantes indéfinies (2026-10-18)** :
+  FMOVE/FABS/FNEG appliquent la précision FPCR et sa plage d'exposant simple/double,
+  avec OVFL/UNFL/INEX2 ; les NaN gardent signe/payload et les SNaN sont quiétés.
+  FMOVECR reproduit aussi les onze motifs `fpp_cr_undef`, les ajustements du mot
+  haut de mantisse et les codes de condition particuliers des offsets 3 et 7.
+  Les comparaisons CIR utilisent les véritables fonctions Hatari compilées :
+  1 443 cas unaires et 2 048 combinaisons offset/précision/arrondi pour FMOVECR.
+- **MC68881 — décimal empaqueté (2026-10-18)** : `SoftFloatDecimal.hpp` porte
+  les conversions d'Hatari en entiers exacts, dans les deux sens : 17 chiffres,
+  quatre arrondis, k positif ou négatif, grands exposants, zéros et NaN/SNaN.
+  INEX1 entrant et INEX2 sortant remontent au FPSR et au Response CIR ; les
+  exceptions de conversion sont conservées pendant l'opération. Une garde
+  OPERR+NaN rejette les étendus non canoniques en sortie P (l'oracle peut y faire
+  des décalages indéfinis). Le k dynamique reste fixé à 17 en mode périphérique.
+  `tools/test_fpu_decimal_oracle.py --sanitize` : **161 348 contrôles, zéro échec**,
+  conversions et emballage 96 bits comparés au source C original, gardes vérifiées
+  sous UBSan.
+- **FPU** (2026-10-20) : les 19 opérations transcendantes (FSIN… FSINCOS) en étendu 80 bits par le port
+  de `softfloat_fpsp.c`, bit à bit comme Hatari ; plus aucun calcul en `double` hôte.
+  Six oracles FPU désormais lancés au palier `full` (`tools/run_fpu_oracles.py`).
+
+## Ports, cartouches et clés
+- **Périphériques des ports** (`PortDevices`, un par port : `joy0=`/`joy1=`/`rs232=`/`printer=`/`cartbutton=`, `--plug PORT=DEVICE`, page Dongles, auto-branchement `disks/dongles.txt`, save-state v16, format courant v17) — 2026-08-23, **OFF par défaut**. Onze périphériques de Steem SSE : Leader Board / 10th Frame (joystick 1, haut+bas), Cricket Captain / Soccer Manager (joystick 0) et Rugby Coach (joystick 1) (oscillateur `%1100`/`%1101`), B.A.T. II (CTS=0), Music Master (DTR→DCD +200 cycles), Jeanne d'Arc (DCD sur décroissance RTS|DTR), Pro Sound Designer (DAC 8 bits port parallèle, rejoué par le YM), boutons Multiface ST (GPIP7) / Ultimate Ripper (RI) avec `--button-at`. Protocoles Steem/WinUAE, aucun jeu à clé dans le dépôt. Cf. `docs/EXTENSIONS.md`.
+- **Port cartouche abstrait** (`core/CartDevice.hpp`) — 2026-08-23 : abonnés aux signaux /ROM3, /ROM4, /UDS, consultés par le `Bus` dans l'ordre ; plusieurs clés possibles. **Oracle de rejeu** : `--key-log` / `--key-replay` (format `R3`/`R4`/`U`), cf. `docs/EXTENSIONS.md`.
+- **Clé C-Lab Notator / Creator** (`CartridgeKey::Model::Notator`, `--dongle notator`, page Dongles) — 2026-08-23, **OFF par défaut**. EP600 : armement `FEEDB1 := STER` sur /ROM4 (`$FA00EA`), 8 bascules D actives bas cadencées par UDS (désarmée) ou par la descente de /ROM3 (armée, lecture après horloge), resets asynchrones D9 (A4·A2) / D8 (A3·A1). Équations TPH (atari-forum t=43078, 10/2025) via le firmware SidecarTridge `md-notator`. Crochet `Bus → rom4Read`. Save-state v15. ⚠ Pas confrontée à un Notator réel.
+- **Clé Steinberg** (`CartridgeKey`, `/ROM3` `$FB0000-$FBFFFF`, `--dongle cubase2|cubase3|auto`, page Dongles, `dongle=`) — 2026-08-23, **OFF par défaut**. Clé **rouge** (Cubase 3.10 / Score / Audio : EPLD 5C060, 16 bascules T, entrée A8, sortie D8, cadencée par /ROM3) et clé **noire** (Cubase 2.01 : PAL16R8, A1-A8 → D8-D15, cadencée par **chaque** front /UDS du CPU — crochet dans `NeostMoira`, « au mieux »). Équations transcrites de MiSTery (`cubase2_dongle.v`, `cubase3_dongle.v`). Invisible du TOS (/ROM4 seul sondé), cohabite avec le HD GEMDOS. ⚠ Pas encore confrontée à un vrai Cubase 3.10 (aucun logiciel à clé dans le dépôt) ; auto-test de transcription dans `neost-selftest`.
+  **Sorties hôte** (GUI, 2026-08-21) : synthé GM intégré, port virtuel « NeoST MIDI OUT »
+  (CoreMIDI sous macOS, séquenceur ALSA sous Linux) — livraison **horodatée** (cycle ST →
+  heure réelle de la trame + 30 ms, thread dédié : gigue mesurée ±60 ms → nulle) — et
+  **Roland MT-32/CM-32L** via libmt32emu (Munt 2.8.3, **vendorisé** dans `extern/mt32emu`
+  et lié en statique — plus de paquet système à installer ; ROM Roland à fournir dans
+  `roms/mt32/`), rendu dans la sortie audio avec événements datés à l'échantillon.
+  **Synthé GM sur toutes les plateformes** depuis le 2026-08-30 : là où macOS a le
+  DLSMusicDevice, Linux/Windows ont `audio/GmSynth` (**TinySoundFont vendorisé** dans
+  `extern/tsf` + banque **TimGM6mb livrée** dans `roms/gm/`, remplaçable par
+  `gm_soundfont=`), rendu daté à l'échantillon comme le MT-32, fader dédié page Sound,
+  garde `neost-selftest` (banque livrée + datation mi-trame).
+  **Appareils MIDI hôtes sur les TROIS plateformes** depuis le 2026-08-31 : le backend
+  **winmm** (`audio/MidiWinmm.hpp`) donne à Windows les destinations matérielles ET les
+  sources qu'avaient déjà CoreMIDI et ALSA — énumération, aiguillage par canal, fusion,
+  canalisation, panique, apprentissage d'identifiant. Windows y gagne même un
+  **identifiant unique** (chemin d'interface `DRV_QUERYDEVICEINTERFACE`, hub et prise
+  compris) là où ALSA n'en a aucun, et `timeBeginPeriod(1)` tant qu'une sortie est
+  ouverte ramène la gigue de livraison de σ 5,34 ms à **σ 0,30 ms** (mesuré sur
+  matériel réel). Seul manque, **irréductible sans pilote tiers** : le port virtuel
+  « NeoST MIDI OUT » — Windows n'a aucune API pour en créer un (loopMIDI le fournit, et
+  son port apparaît alors comme un appareil ordinaire).
+  `audio/MidiOutHost`, `audio/MidiInHost`, `audio/MidiWinmm.hpp`, `audio/Mt32Synth`,
+  `audio/GmSynth`.
+
+## Passes d'audit et chasses aux bugs
+Récits de passes entières ; le détail daté est au [`../CHANGELOG.md`](../CHANGELOG.md).
 - **Divergences Hatari — 5ᵉ passe de rafraîchissement (2026-07-07, 4 agents)** : tous les
   statuts de `docs/HATARI_DIVERGENCES.md` remis en phase avec le code réel. Découverte : le
   commit `bc15a67` contient l'INTÉGRALITÉ du bug hunt 39-findings (pas seulement le fix STOP) —
@@ -1686,556 +2222,6 @@ Bug hunt 11ᵉ passe (même jour, détail dans le CHANGELOG) :
     la datasheet, Hatari rend WR9), $FF8E07 (bug copier-coller Hatari), purge des pendings SCU
     à l'accès des masques (modèle « sources vivantes »). Les handles GEMDOS HD
     sont inclus depuis v48 (2026-10-19).
-- **Blitter — partage de bus non-hog cycle-exact (2ᵉ passe, 2026-07-07 soir)** : les deux
-  dernières divergences de timing portées depuis le modèle CE d'Hatari (celui de l'oracle).
-  **Suspension MID-WORD** (`BLITTER_CONTINUE_LATER_IF_MAX_BUS_REACHED`) : la tranche rend le
-  bus exactement au 64ᵉ (ou 63ᵉ) accès, même entre la lecture et l'écriture d'un même mot —
-  l'état du mot en cours (`haveSrc_/haveDst_/fetchSrc_/dstWord_` ≙ `BlitterState` d'Hatari)
-  persiste entre tranches. ⚠ Piège corrigé pendant la mise au point : ces drapeaux doivent être
-  SAUVEGARDÉS en fin de tranche, sinon la reprise refait la lecture source (double `srcShift` →
-  pipeline skew corrompu → mots perdus au bord des icônes GEM). **Part CPU = 64 accès bus CPU
-  RÉELS** (port `BLITTER_PHASE_COUNT_CPU_BUS`) : comptés par les callbacks mémoire de Moira
-  (`Blitter::noteCpuBusAccess` via `Bus::blitterCountCpu`), le 64ᵉ accès arme la fenêtre
-  PRE_START et date la tranche suivante à +4 cycles — remplace le forfait de 256 cycles (un CPU
-  qui ne touche pas le bus, cycles internes ou STOP, retarde désormais le blitter comme sur le
-  vrai matériel). Diag `NEOST_BLIT_TRACE=1` ajouté (un état des lieux par blit, pendant du
-  `--trace blitter` d'Hatari). Validation : étalons TOUS OK ; scénario blitter-intensif
-  `--walk-mouse` tos106fr STE (132 blits, redraws d'icônes FXSR/NFSR/skew) **byte-identique**
-  à l'ancien modèle ; Enchanted Land et Super Hang-On inchangés (SHO n'utilise pas le blitter :
-  0 blit mesuré jusqu'au menu). Reste documenté : pas d'exécution CPU parallèle pendant la
-  tranche (hooks par-cycle Moira requis), cf. `docs/HATARI_DIVERGENCES.md`.
-- **Bus — miroirs 24 bits en écriture mot/long** : adresse normalisée
-  avant le chemin atomique blitter ; contrôle/skew restent simultanés aux
-  miroirs. Correction d’API Bus/outils ; Moira masquait déjà les cycles CPU.
-  Largeur MMIO restaurée et rebouclage au-delà de `$FFFFFF` conservés.
-- **Bus — largeur d'accès `ioAccessWidth_` non fuitée par le blitter** : `write16`/`write32`
-  restaurent la largeur sauvegardée avant leur `return` de la branche blitter ; sans ça, après le
-  1ᵉʳ blit mot, les bus-errors d'accès **octet** ($FF9200/lightpen/FDC) restaient désarmées en
-  permanence. Cf. `docs/HATARI_DIVERGENCES.md` §2ᵉ passe (BUS-LEAK).
-- **RTC RP5C15** (Mega ST/Mega STE, `$FFFC21-$FFFC3F`) : modèle paresseux déterministe
-  (cycle CPU du dernier top de seconde + rattrapage), registre RESET, débordement BCD
-  calendaire. La seconde vaut une seconde de la BASE DE TEMPS DE LA MACHINE
-  (trame × Hz, posée par `Machine::beginFrame_`) et non une constante : sinon
-  l'horloge dérivait de 0,105 % contre le reste. **TIMER EN** (bit3 du registre
-  mode) honoré : à 0 le compteur est arrêté — TOS 1.02 et EmuTOS écrivent `$9`
-  puis `$8` au boot (ils ne basculent que le bit0 de banque), seule la cartouche
-  de diagnostic le coupe pour figer l'heure. Corrige « C0 No clock installed »
-  + « C1 clock increment error » : la batterie **Z de la cartouche Atari Field
-  Service v4.4 passe INTÉGRALEMENT sur Mega ST** (RAM, ROM, couleur, clavier,
-  audio, MFP/Glue/vidéo, horloge avec rollover de siècle, blitter).
-  **Banque 1 RP5C15** : alarmes indépendantes des compteurs, RESET bit0
-  limité aux alarmes, registres réservés isolés. Sélection 12/24 h avec API
-  DateTime en 24 h, compteur bissextile indépendant et ajustement des secondes
-  ADJ avec retenue et remise à zéro du diviseur. Registre CLKOUT mémorisé,
-  sans génération de signal ; aucune sortie d’alarme ajoutée.
-  **TEST/RESET en écriture seule** : Eh/Fh ne relisent plus les commandes
-  écrites (Ricoh p.7). Zéro en lecture selon convention MAME, sans mesure
-  matérielle du bus flottant ; actions RESET et anciens octets de sauvegarde
-  conservés. TEST reste un registre d’inspection non émulé.
-  **Arrêt TIMER EN** : phase sous-seconde continue ; une retenue saturante
-  est délivrée dès la reprise, sans rattraper toutes les secondes arrêtées.
-  RESET du diviseur et ADJ annulent cette retenue, déduction du reset des étages
-  secondes et inférieurs décrit par Ricoh, sans mesure matérielle revendiquée.
-  ⚠ Non modélisé : la sortie CLKOUT du RP5C15 — aucun consommateur observé
-  (Hatari ne la modélise pas non plus, elle n'apparaît que dans son brochage).
-  **Rattrapage long corrigé le 2026-10-19** : suppression du plafond de
-  90 000 secondes qui perdait le reste du temps écoulé. Cascade arithmétique
-  puis fins de mois et cycles de 100 ans, avec compteur bissextile indépendant,
-  chiffres bruts des étages non atteints et phase sous-seconde conservés.
-- **Persistance RTC entre sessions** (`neost.cfg` : clés `rtc=` date/heure BCD,
-  `rtc_saved=` horodatage hôte) : reprise au boot avec rattrapage du temps écoulé ;
-  snapshot à chaque sauvegarde de config (`saveConfig` / `snapshotRtc`).
-- **IRQ MIDI datées** : chargement TDR→TSR, fin RX hôte et retour de
-  bouclage conservent leur échéance série jusqu’au front GPIP4 du MFP, même
-  si le callback est servi en retard. Détecteur AER/DDR, ligne partagée clavier
-  et délai de quatre cycles inchangés ; CR et RDR restent datés de l’accès.
-- **MIDI** (`MidiAcia`, `$FFFC04/06`) : IRQ canal 6 (RX/TX), TDRE cadencé à 31250 bauds ; fiche de bouclage OUT→IN **optionnelle** (`--loopback`, menu Machine, `midi_loopback=`), **débranchée par défaut** depuis le 2026-08-21 (Cubase/MROS + Thru = larsen sinon).
-  Validé par l'étalon `tools/run_midi_sequencer.py` (2026-08-23) : Cubase Lite importe un SMF et le joue, `--midi-dump` journalise le MIDI OUT daté au cycle, `tools/midi_compare.py` confronte notes/vélocités/durées/pédale/tempo au fichier (pente 1,001, gigue σ ≈ 1 ms).
-- **Périphériques des ports** (`PortDevices`, un par port : `joy0=`/`joy1=`/`rs232=`/`printer=`/`cartbutton=`, `--plug PORT=DEVICE`, page Dongles, auto-branchement `disks/dongles.txt`, save-state v16, format courant v17) — 2026-08-23, **OFF par défaut**. Onze périphériques de Steem SSE : Leader Board / 10th Frame (joystick 1, haut+bas), Cricket Captain / Soccer Manager (joystick 0) et Rugby Coach (joystick 1) (oscillateur `%1100`/`%1101`), B.A.T. II (CTS=0), Music Master (DTR→DCD +200 cycles), Jeanne d'Arc (DCD sur décroissance RTS|DTR), Pro Sound Designer (DAC 8 bits port parallèle, rejoué par le YM), boutons Multiface ST (GPIP7) / Ultimate Ripper (RI) avec `--button-at`. Protocoles Steem/WinUAE, aucun jeu à clé dans le dépôt. Cf. `docs/EXTENSIONS.md`.
-- **Port cartouche abstrait** (`core/CartDevice.hpp`) — 2026-08-23 : abonnés aux signaux /ROM3, /ROM4, /UDS, consultés par le `Bus` dans l'ordre ; plusieurs clés possibles. **Oracle de rejeu** : `--key-log` / `--key-replay` (format `R3`/`R4`/`U`), cf. `docs/EXTENSIONS.md`.
-- **Clé C-Lab Notator / Creator** (`CartridgeKey::Model::Notator`, `--dongle notator`, page Dongles) — 2026-08-23, **OFF par défaut**. EP600 : armement `FEEDB1 := STER` sur /ROM4 (`$FA00EA`), 8 bascules D actives bas cadencées par UDS (désarmée) ou par la descente de /ROM3 (armée, lecture après horloge), resets asynchrones D9 (A4·A2) / D8 (A3·A1). Équations TPH (atari-forum t=43078, 10/2025) via le firmware SidecarTridge `md-notator`. Crochet `Bus → rom4Read`. Save-state v15. ⚠ Pas confrontée à un Notator réel.
-- **Clé Steinberg** (`CartridgeKey`, `/ROM3` `$FB0000-$FBFFFF`, `--dongle cubase2|cubase3|auto`, page Dongles, `dongle=`) — 2026-08-23, **OFF par défaut**. Clé **rouge** (Cubase 3.10 / Score / Audio : EPLD 5C060, 16 bascules T, entrée A8, sortie D8, cadencée par /ROM3) et clé **noire** (Cubase 2.01 : PAL16R8, A1-A8 → D8-D15, cadencée par **chaque** front /UDS du CPU — crochet dans `NeostMoira`, « au mieux »). Équations transcrites de MiSTery (`cubase2_dongle.v`, `cubase3_dongle.v`). Invisible du TOS (/ROM4 seul sondé), cohabite avec le HD GEMDOS. ⚠ Pas encore confrontée à un vrai Cubase 3.10 (aucun logiciel à clé dans le dépôt) ; auto-test de transcription dans `neost-selftest`.
-  **Sorties hôte** (GUI, 2026-08-21) : synthé GM intégré, port virtuel « NeoST MIDI OUT »
-  (CoreMIDI sous macOS, séquenceur ALSA sous Linux) — livraison **horodatée** (cycle ST →
-  heure réelle de la trame + 30 ms, thread dédié : gigue mesurée ±60 ms → nulle) — et
-  **Roland MT-32/CM-32L** via libmt32emu (Munt 2.8.3, **vendorisé** dans `extern/mt32emu`
-  et lié en statique — plus de paquet système à installer ; ROM Roland à fournir dans
-  `roms/mt32/`), rendu dans la sortie audio avec événements datés à l'échantillon.
-  **Synthé GM sur toutes les plateformes** depuis le 2026-08-30 : là où macOS a le
-  DLSMusicDevice, Linux/Windows ont `audio/GmSynth` (**TinySoundFont vendorisé** dans
-  `extern/tsf` + banque **TimGM6mb livrée** dans `roms/gm/`, remplaçable par
-  `gm_soundfont=`), rendu daté à l'échantillon comme le MT-32, fader dédié page Sound,
-  garde `neost-selftest` (banque livrée + datation mi-trame).
-  **Appareils MIDI hôtes sur les TROIS plateformes** depuis le 2026-08-31 : le backend
-  **winmm** (`audio/MidiWinmm.hpp`) donne à Windows les destinations matérielles ET les
-  sources qu'avaient déjà CoreMIDI et ALSA — énumération, aiguillage par canal, fusion,
-  canalisation, panique, apprentissage d'identifiant. Windows y gagne même un
-  **identifiant unique** (chemin d'interface `DRV_QUERYDEVICEINTERFACE`, hub et prise
-  compris) là où ALSA n'en a aucun, et `timeBeginPeriod(1)` tant qu'une sortie est
-  ouverte ramène la gigue de livraison de σ 5,34 ms à **σ 0,30 ms** (mesuré sur
-  matériel réel). Seul manque, **irréductible sans pilote tiers** : le port virtuel
-  « NeoST MIDI OUT » — Windows n'a aucune API pour en créer un (loopMIDI le fournit, et
-  son port apparaît alors comme un appareil ordinaire).
-  `audio/MidiOutHost`, `audio/MidiInHost`, `audio/MidiWinmm.hpp`, `audio/Mt32Synth`,
-  `audio/GmSynth`.
-- **MFP VR** : bits2..0 réservés lus zéro et ignorés en écriture, y compris
-  après chargement d’une ancienne valeur brute. Base du vecteur et mode S
-  conservés (Motorola §4.1.3, MAME REGISTER_VR).
-- **Port série RS-232 / USART MFP** : RSR/UDR, IRQ RxFull (12)/TxEmpty (10)/RxErr (11)/
-  TxErr (9), lignes RTS→CTS (GPIP2)/DTR→DCD (GPIP1)/RI (GPIP6) via PSG port A.
-- **USART RX cadencée selon UCR** : longueur de données, parité et stops
-  déterminent la durée du caractère. Le reste fractionnaire conserve la cadence
-  à long terme ; les callbacks tardifs ne réancrent pas le flux. Phase sauvegardée,
-  reconfiguration effective au caractère suivant. Les mots RX hôtes de 5..8 bits
-  sont alignés à droite, bits inutilisés à zéro ; largeur mémorisée au départ
-  du caractère et sauvegardée. RE=0 efface RSR/BF/overrun et conserve les
-  données ; UDR restitue le dernier octet RX même vide, indépendamment de TX.
-  Les écritures RSR ne changent que RE/SS, plus F/S en mode synchrone ;
-  les bits de statut matériel sont préservés.
-  Les IRQ MFP pendantes restent acquittées séparément. Réacquisition en milieu
-  de caractère encore approximative. Mode synchrone en repli 8N1,
-  diviseurs /1 et /16 selon UCR7, sans plancher RX artificiel.
-  **Overrun RX différé** : octet plein conservé ; OE/RXERR publiés seulement
-  après lecture UDR. Lecture RSR préalable sans effet sur l’erreur en attente ;
-  après publication, réception bloquée jusqu’à lecture RSR (Motorola §7.2.2).
-  Deux étapes préservées par les sauvegardes v44. RXFULL garde la date du stop
-  même au dispatch tardif ; RXERR prend la date de l’accès UDR.
-  **Bouclage interne TSR H/L=11** : les caractères TX achevés alimentent
-  RX sans prise de test externe ; entrée SI/horloge RC hôte ignorées dans
-  ce mode. Prise externe et boucle interne ne doublent pas les données ; RE
-  reste honoré et SO reste observable par le sink. Mode déjà sérialisé dans
-  TSR, sans nouveau champ. Modèle par octet, sans reconstruction des bits lors
-  d’une commutation H/L en pleine trame (Motorola §2.10/§7.3.2, MAME).
-- **USART TX cadencée** : TDR/TSR distincts, attente écrasable, Buffer Empty
-  au chargement TSR, sortie/bouclage en fin de caractère. IRQ TXEMPTY et
-  underrun/EOT distincts ; TE coupé laisse finir le caractère actif. Format UCR,
-  phase fractionnaire et sauvegarde. END et auto-turnaround sont immédiats
-  lors d’un arrêt au repos, différés à la fin du caractère en vol ; RX et TDR
-  sont conservés. IRQ END seulement sur nouveau front. Restent premier front TC, synchro et
-  forme d’onde BREAK ; le callback hôte d’octet n’a pas de timestamp.
-  Le bit BREAK ne bloque que l’asynchrone (MC68901UM §7.3.2). En repli
-  synchrone 8N1, il ne retient plus le TDR et ne supprime plus UE ; changer
-  UCR libère le TDR si B devient inopérant. **BREAK asynchrone** : TXERR à
-  chaque frontière de caractère lorsque UE et IPR TXERR le permettent, sans
-  livrer d’octet au sink ni au récepteur. TSR et BE préexistants préservés,
-  TDR retenu. TE coupé termine l’intervalle avant END/AT, sans stop de fin.
-  Reprise activée après un stop modélisé d’une période TX, puis TDR ou UE si
-  vide. La durée de ce stop est une déduction du manuel MC68HC901 p.7-8,
-  avec ancrage MMIO ; la phase du premier front TC et l’onde restent abstraites.
-- **Config effective de l'USART** (`Mfp::updateSerialConfig`, port de `rs232.c`
-  `RS232_SetBaudRateFromTimerD` + `RS232_HandleUCR`) : bauds dérivés du Timer D
-  (2.4576 MHz, sortie ÷2, UCR /1 ou /16 ; maximum 307200 bauds),
-  sans arrondis tty hôte. TX/RX utilisent le rapport matériel exact, sans tronquer
-  les débits non entiers ; la fraction survit aux changements de débit. Le débit
-  exposé par `serialBaud()` reste entier et informatif. Format depuis l’UCR (taille bits 5-6, parité bits 1-2,
-  stops bits 3-4). Recalculée à chaque écriture UCR/TDDR/TCDCR, exposée
-  (`serialBaud()`/`serialUcr()`) et JOURNALISÉE au changement — au boot on voit
-  EmuTOS/TOS négocier `9600 bauds, 8N1`. NeoST cadence les caractères
-  TX et RX sur cette base ; le transport synchrone garde un repli 8N1 /16.
-- **Disque dur ACSI complet** (`io/Acsi`, port de `hdc.c` ; routage DMA via `Fdc`,
-  `$FF8604/06` bit `DMA_CSACSI`) : boot et lecture/écriture depuis une **vraie image
-  de disque dur** (dump de secteurs brut, `--acsi`/`--hd` ou `NEOST_ACSI_IMG`),
-  jusqu'à **8 cibles**. Paquets de commande 6 octets (classe 0) / 10 octets (classe 1)
-  reçus octet par octet (broche A1 = `DMA_A0`), transfert DMA RAM↔image piloté par le
-  `Fdc` (sens contrôlé par `DMA_WRBIT`, déclenché à la fin du paquet et sur
-  `HDC_DmaTransfer` à l'écriture $FF8606). Commandes SCSI portées 1:1 : TEST UNIT
-  READY, INQUIRY (LUN), REQUEST SENSE (sens court/long + `nLastBlockAddr`), MODE SENSE
-  (pages 0x00/0x04/0x3f), READ CAPACITY, READ/WRITE(6 et 10), SEEK, FORMAT, REPORT
-  LUNS, SHIP. Comptage de partitions (DOS MBR + Atari/AHDI, `partitionCount`). IRQ HDC
-  (INTRQ/GPIP5) + statut DMA acquittés par octet ; cible vide → « pas de disque ».
-  Validé headless (EmuTOS 192 Ko) : sonde ACSI (TEST UNIT READY → INQUIRY → READ
-  CAPACITY → lecture table de partitions LBA 0 + BPB LBA 1), bureau « GEMDOS drives:
-  ABC » avec icône **DISK C**, `_bootdev=C:`, **boot + Pexec depuis C:**, et un PRG
-  `C:\AUTO` recopiant `HELLO.TXT`→`OUTPUT.TXT` **persisté dans l'image** (WRITE(6),
-  relu par mtools). _(Remplace l'ancien disque virtuel en mémoire, qui n'était qu'un
-  bouchon pour le diagnostic « Hard Disk DMA Exerciser ».)_
-- **Boîtier de test DMA du kit Field Service** (2026-08-27, `Fdc::setDmaFixture`,
-  `--dma-fixture` headless, OFF par défaut — matériel de banc d'atelier, exclusif d'un
-  disque réel sur la cible 0) : cible ACSI 0 à **UN octet de commande**
-  `((count-1)<<6) | opcode` — $10 = avale count×512 octets (RAM→boîtier), $08 = les
-  rend — transfert immédiat, compteur de secteurs décompté à zéro, adresse DMA avancée,
-  IRQ GPIP5. Fait passer le test **« D DMA Port »** des diagnostics Atari (suite Q du
-  MegaSTE_Diagnostic v1.5 : **12/12**) ; Hatari, sans boîtier, échoue D0/D1/D3.
-- **WRITE TRACK sur image ST** : validation des IDs avant toute copie.
-  C/H doivent correspondre à la tête/face physiques, secteurs uniques et
-  piste complète ; sinon LOST_DATA, sans écriture sur une autre piste/face.
-  La réinterprétation en secteurs reste une extension NeoST ; une image ST
-  ne représente pas les IDs mensongers ou dupliqués d’un flux protégé.
-- **WRITE SECTOR et sélection live STX→ST** : un ID STX de 1 024 octets
-  engagé avant une bascule vers une image ST ne peut écrire que 512 octets
-  sur cette dernière ; voisin et fin d’image préservés. Le transfert DMA
-  engagé garde sa taille, comme le chemin Hatari vers un secteur ST logique.
-- **ACSI INQUIRY — « Additional Length » fixe (31)** : `buf[4]` n'est plus écrasé par
-  `count()-5` (valeur variable erronée) → la longueur additionnelle reste 31 comme Hatari
-  (`HDC_Cmd_Inquiry` n'écrit jamais cet octet) ; un pilote HD lisant ce champ n'est plus trompé.
-- **Microwire DATA octet** : l’autre octet vient du registre visible décalé,
-  sans réutiliser l’ancienne commande terminée. Déclenchement octet haut/bas,
-  staging mot/long, rejet occupé, rattrapage tardif et commandes LMC conservés.
-- **SCC First et Error Reset** : retirer le premier caractère en erreur
-  efface aussi son IP ; le suivant ne l’hérite pas. Enable Next reste nécessaire
-  pour réarmer, lecture verrouillée sans retrait préservée.
-- **STX WRITE SECTOR A8/A9** : bit0 choisit la DAM FB/F8, restituée dans
-  RECTYPE et READ TRACK reconstruit avec CRC régénérée sur la marque choisie.
-  A9→A8 remplace aussi la métadonnée d’un overlay existant. F8 persiste via
-  le supplément SECT `NDAM` + marque ; ancien SECT sans extension = FB.
-  Un secteur à CRC données faux est réécrit avec un CRC juste et relu sans erreur
-  (2026-10-20, le WD1772 ne contrôle que le CRC d'ID) ; CRC d'ID faux toujours refusé. Fusion locale
-  des overlays dans l’image de piste décodée décrite ci-dessous ; images
-  ST/MSA/DIM sans DAM persistante.
-  États v45 inchangés : commande en vol conservée avec le même média monté,
-  mais contenu des images et overlays hors snapshot, sans retour en arrière.
-
-- **STX READ TRACK et overlays** : copie de l’image de piste décodée,
-  puis remplacement local DAM/données/CRC pour les SECT identifiables sans
-  ambiguïté. Parcours circulaire des champs coupés par l’index, strictement
-  inférieur à un tour. Synchronisation zéro, ancrage ID aligné dans le dump,
-  données non fuzzy et CRC d’origine concordants requis. Longueur, timing,
-  gaps, ID/CRC et secteurs non ciblés conservés. Collisions circulaires,
-  associations ambiguës et champs incomplets refusés ; aucune traversée de
-  la fin artificielle d’un dump écrêté. Pas de reconstruction de secours ni
-  de mutation de l’image source ou des fichiers hôtes.
-- **STX WRITE TRACK et marque supprimée** : F8 devient le statut RECTYPE
-  en lecture de secteur et reste F8 dans le flux READ TRACK reconstruit.
-  CRC régénérée avec cette marque ; snapshot et fichier compagnon .wd1772
-  conservés. Extension de réinterprétation NeoST, aucun flux physique exact.
-- **Limite de montage ACSI** : maximum UINT32_MAX secteurs de 512 octets,
-  soit 2 Tio moins 512 octets. Images au-delà refusées avant conversion, sans
-  tronquer les compteurs ni annoncer une capacité incohérente. UltraSatan reste
-  présent sans carte si l’image est refusée. Limite de représentation NeoST,
-  sans nouvelle limite matérielle revendiquée ; format v45 inchangé.
-- **SCC WR1 et erreurs verrouillées** : passer entre First/Special et Special
-  Only conserve le verrou et l’IP spécial déjà acquis, sans relire la donnée.
-  Error Reset libère toujours le caractère ; modes Disabled/All inchangés.
-- **ACSI grande capacité** : borne READ/WRITE gardée non signée, y compris
-  lorsque les secteurs restants dépassent INT_MAX ; dépassement de fin toujours
-  rejeté. Banc POSIX sparse de 1 Tio + 2 Ko, occupation physique de quelques Ko.
-  Aucun élargissement des compteurs ou du format d’image ; banc sauté sous
-  Windows ou sur un système de fichiers qui matérialise les trous.
-- **GPIP7 et XSINT** : détection de front après composition moniteur, son DMA
-  et bouton Multiface. Bouton maintenant la pin basse : aucune IRQ XSINT parasite ;
-  DDR/AER et transitions après relâchement préservés.
-- **SCC RX All/Special** : dernier caractère retiré efface IP/IRQ, sans effacer
-  les erreurs RR1 collantes. Le prochain caractère reste qualifié spécial jusqu’à
-  Error Reset ; modes First/Special verrouillés conservés.
-- **ACSI WRITE différé** : cible et LBA figés à la commande, même si un nouveau
-  paquet sélectionne une autre cible avant ouverture du DMA. Reprise de cette
-  phase sauvegardée en v45 ; aucune écriture détournée vers la nouvelle image.
-- **SCC lectures étendues Z85C30** : WR7’ D6 expose WR3/4/5/7’/10 via
-  RR9/4/5/14/11, indépendamment de WR15 D0/D2 ; FIFO RX et IRQ préservées.
-  Autres fonctions WR7’ et FIFO SDLC hors de cette correction.
-- **SCC Z85C30 — contrôleur série Mega STE** (`io/Scc`, port de `scc.c`,
-  `$FF8C80-$FF8C87`) : deux canaux A/B, jeu complet WR0-15 / RR0-15 par canal
-  (pointeur de registre via WR0, commandes WR0/WR9, reset matériel/canal), statut RR0
-  (TX buffer empty, RX char available, CTS/DCD au repos = assertés comme Hatari sans
-  TTY), vecteur RR2A/RR2B (+ statut, Status High/Low, VIS/NV), IP RR3 + sources
-  d'interruption, **IRQ niveau 5 vectorisée gatée par le SCU** (VmeIntState bit 5,
-  IACK → vecteur, IUS, `Reset Highest IUS`). Décodage des accès façon Hatari (octets
-  IMPAIRS seulement ; `$..81/85` = ctrl A/B, `$..83/87` = data A/B). TX cadencé
-  (puits série + **bouclage local** WR14 bit4) et RX par injection. Câblé via le SCU
-  (`Scu::syncState` niveau 5) et `Cpu68k::neostUpdateIpl`/`readIrqUserVector`.
-  Validé headless : **EmuTOS 256K et TOS 2.06 Mega STE initialisent les deux canaux**
-  (WR9=$C0 reset, WR4 async, WR2 vecteur, WR3/5 8 bits…) et **bootent au bureau** sans
-  plante ; bouclage TX→RX prouvé (programme superviseur via Supexec écrit `$42` sur le
-  canal A en loopback, le relit et le renvoie sur l'AUX → sortie série `<B>`).
-  **Contrôle BRG WR14 D1..0** : sa modification conserve aussi l’écho
-  RX direct. Arrêt/reprise d’un RX sur BRG ne rend plus éligible l’écho
-  interrompu ; le prochain caractère prend son nouvel état. Les autres bits
-  WR14 et les RX BRG/DPLL conservent leur invalidation.
-  **Constante BRG WR12/13** : sa modification conserve l’écho RX en
-  cours si RX utilise RTxC/TRxC directs. Si RX utilise le BRG, son caractère
-  engagé reste invalidé ; aucun changement de cadence BRG/Zero Count.
-  **Horloge TX WR11 D4..3** : sa modification seule conserve l’écho RX
-  engagé ; les multiplexeurs TX/RX sont indépendants (Zilog p.166–167).
-  Un changement de source RX garde son invalidation, sans trame reconstruite.
-  **Durée RX asynchrone** : un stop vérifié, indépendamment du choix
-  1/1,5/2 stops de TX (Zilog UM0109 p.93/p.151). Une simple bascule des
-  stops TX entre modes asynchrones n’invalide plus l’écho RX en cours.
-  Échéance RX engagée conservée ; les suivantes utilisent la durée corrigée.
-  Transport hôte par octets sans information sur les gaps/stops physiques.
-  **Priorité INTACK** : la chaîne des IUS bloque aussi l’acquittement des
-  sources inférieures par IRQ ou RR2 Software INTACK ; préemption par une
-  source supérieure préservée (Zilog UM0109 p.41–42).
-  **MIE WR9 D3** : masque l’IRQ sans effacer les IUS. Aucun nouvel IUS
-  n’est créé à l’acquittement tant que MIE=0 ; les IUS précédents reprennent
-  leur rôle de priorité au réarmement (Zilog UM0109 p.161).
-  **Reset de canal WR9** : IP et IUS effacés sur le seul canal visé ;
-  demandes, FIFO et IUS de l’autre canal conservés (Zilog UM0109 p.160).
-  Le reset matériel forcé continue d’effacer les deux canaux, avec les bits
-  partagés programmés par WR9 conservés selon la commande.
-  **Prises de bouclage EXTERNES du kit Field Service** (2026-08-27, `Scc::setLoopback`,
-  `--loopback`/`--loopback-at` headless, OFF par défaut) : TxD→RxD, RTS→CTS, DTR→DCD,
-  DTR→DSR (/SYNC) et **BREAK émis (WR5 bit4) → RR0 bit7 Break/Abort** au retour — le
-  mécanisme de détection des prises du test « I SCC » du diagnostic MegaSTE, qui rend
-  **Pass** (Port A, Port B et LAN détectés, async, modem control, IRQ ext-status).
-  **Parité RX courte** : en bouclage de même largeur, les mots 5/6/7 bits
-  exposent la parité émise dans le bit suivant les données (Zilog WR4 p.152).
-  Valeur mémorisée au chargement TSR, puis conservée dans la FIFO et les états.
-  L’injection hôte d’octets ne fournit pas de parité physique ; formats discordants
-  et erreurs de parité/framing ne sont pas synthétisés.
-  **Statuts externes** : les verrous RR0 sélectionnés par WR15 fonctionnent
-  même avec WR1 External/Status désactivé. WR1 ne contrôle que la demande
-  d’interruption ; sa réactivation retrouve un verrou déjà fermé. WR0 ouvre
-  les verrous et acquitte la demande, sans nouveau champ de sauvegarde.
-  **Fronts BREAK pendant verrou externe** : assertion et relâchement sont
-  mémorisés même si CTS/DCD a déjà fermé les verrous (Zilog p.58), puis
-  servis au fil des resets WR0. Répétitions coalescées par polarité ; aucune
-  file illimitée ni erreur RX synthétique. État des fronts sauvegardé en v39.
-  **Qualification des modes** : Sync/Hunt forcé à zéro sans fermeture de
-  verrou quand la broche /SYNC est occupée par l’oscillateur en asynchrone
-  ou External Sync ; BREAK nul en synchrone hors SDLC. Cela ne modélise pas
-  la recherche de synchronisation ni la détection physique d’aborts SDLC.
-  **WR0 Reset Tx Underrun/EOM** : champ D7–D6 décodé indépendamment
-  de la commande et du pointeur. Efface le statut brut EOM, même en asynchrone
-  (exception explicitée dans Zilog p.176), sans créer de front IRQ descendant
-  ni effacer l’image External/Status déjà verrouillée. Les commandes combinées
-  restent actives ; aucun moteur CRC/SDLC physique ajouté.
-  **Auto Echo WR14 D3** : sortie TSR déconnectée du sink et des bouclages,
-  avec priorité sur Local Loopback (Zilog p.69–70/p.172). TDR/TSR et IRQ
-  continuent de fonctionner. Écho des octets hôtes RX huit bits sans parité
-  après un stop RX abstrait, indépendamment des stops TX et de RXEN/DCD ; réception CPU
-  qualifiée séparément. Mode/format/horloge modifiés en vol invalident l’écho
-  courant. Sans reconstitution des bits, des parités ni des formats inconnus ;
-  prise externe sans boucle récursive. Trois états de trame sauvegardés en v40.
-  **Local Loopback** : TX atteint le sink et le récepteur interne ; RxD
-  externe est déconnecté. Entrer dans ce mode invalide le caractère hôte en
-  cours même si le mode est rétabli avant son stop, sans vider la FIFO déjà
-  complétée. La prise externe occupe le sink et ne double pas la réception.
-  Priorité Auto Echo D3 sur D4 conservée, états v40 réutilisés.
-  **BRG / Zero Count (2026-10-18)** : PCLK/RTxC, constantes WR12/13 et
-  activation WR14 alimentent deux événements Scheduler. ZC précède /2 et WR4 :
-  période (TC+2)/source, retenue rationnelle ; nouveau TC au prochain reload.
-  RR0 suit une pulse d’un cycle source, non latchée et masquée par WR15.
-  IRQ externes masquées,
-  vecteurs, IUS, reset et restauration de phase sont gardés par le banc SCC.
-  **Auto Enables WR3** : les broches CTS/DCD qualifient les bits logiciels
-  d’émission/réception ; la FIFO reçue survit à une perte DCD, seul le caractère
-  en cours est perdu. Le TSR finit avant suspension CTS. Qualification brute
-  indépendante de RR0 verrouillé ; exceptions de bouclage selon le composant.
-  En asynchrone Auto Enables, RTS attend le dernier stop du TSR et du TDR ;
-  la prise CTS suit cette sortie physique, sauvegardée séparément de WR5.
-  **Horloges directes TX/RX** : RTxC/TRxC calculées avec rapport rationnel,
-  fractions indépendantes par canal/direction. Pas de troncature à chaque bit ;
-  configuration engagée conservée, reprise après silence sur l’horloge vive.
-  Changer de fréquence source remet la fraction à zéro au prochain caractère.
-  Les caractères issus du BRG utilisent aussi le rapport exact PCLK/RTxC,
-  WR12/13 et WR4, sans arrondi du baud ni seuil à 1 baud. Zero Count possède
-  sa phase rationnelle indépendante ; BREAK reste sans précision de phase bit.
-  **Désactivation TX** : le TSR réellement engagé finit à son échéance initiale
-  même si WR5 TX Enable tombe ; le TDR attend la réactivation, sans écraser le
-  TSR actif. CTS, RTS différé et All Sent conservent leurs rôles.
-  **SEND BREAK WR5** : TSR suspendu et TDR retenu ; relâcher BREAK reprend
-  le temps restant. Un caractère interrompu ne produit pas de faux octet intact.
-  Reste et interruption sauvegardés. Modèle au caractère, sans phase de bit ni
-  erreurs RX synthétiques ; indication BREAK bouclée immédiate et X21 hors modèle.
-  **TX caractères courts** : 6/7 bits masqués et encodage WR5 « cinq ou moins »
-  pour 1..5 bits. Données et longueur fixées au chargement du TSR, durée selon
-  cette longueur ; un TDR en attente prend le format courant à son transfert.
-  **WR3 Sync Character Load Inhibit** : filtrage WR6 avant FIFO et IRQ dans
-  les modes non SDLC, y compris asynchrone ; exception Bisync 12 bits. Aucun
-  synchroniseur de bits ajouté (Zilog UM0109 p.149).
-  Le câblage BRG suit aussi les changements de profil ST → Mega STE.
-  **Miroirs RR6/RR7** : sélection WR15 locale au canal et lecture RR2/RR3 locale,
-  vecteur actualisé et soft IACK compris (Zilog/MAME, correction du défaut partagé
-  avec Hatari). La FIFO SDLC reste non implémentée.
-  Le reset matériel annule les événements dont WR14 a désactivé la source.
-  **Caractères TX/RX cadencés** selon les horloges et formats SCC : TDR/TSR,
-  IRQ au transfert TDR→TSR, All Sent en fin TX, RX mis en file. Bouclage à la
-  fin TX. FIFO RX matérielle de trois octets : ordre, erreurs associées,
-  débordement du dernier emplacement, modes premier/tous/spécial et Error Reset.
-  Restent FIFO SDLC, DPLL et série hôte réelle.
-- **SCC No-Vector → vecteur spurious 24** (`Cpu68k::readIrqUserVector`) : sur IACK niveau 5 avec
-  WR9 NV armé (`Scc::processIack()` = -1), le wrapper renvoie désormais le vecteur **spurious 24**
-  ($60) — comme la branche MFP et `iack_cycle` d'Hatari (`vector<0 → 24`) — au lieu de
-  l'auto-vecteur 29 ($74) erroné. Boots ST/STE/MegaSTE inchangés.
-- **PSG `$FF8802` relisible** (read-modify-write `bclr/bset` du port A).
-- **SCU MegaSTE — gate d'interruptions complet** (`$FF8E01-$FF8E0F`, port `scu_vme.c`,
-  `Scu.hpp`) : sur MegaSTE, **toutes** les IRQ sont gatées par `SysIntMask`/`VmeIntMask`
-  avant d'atteindre l'IPL (MFP niv6/SCC niv5 via VmeIntMask, VSYNC niv4/HSYNC niv2/soft IRQ1
-  via SysIntMask), **toujours actif** comme `SCU_IsEnabled()` d'Hatari (= MegaSTE/TT).
-  `gatedLevel` consulté dans `neostUpdateIpl`, état synchronisé depuis les sources vivantes
-  (MFP/VBL/HBL). 8 registres relisibles, écrire un masque remet l'état pending à 0 ;
-  `GPR1`=0x01 au reset (contournement « TOS v2/v3 »). Validé (2 cœurs) : **TOS 2.06 et
-  EmuTOS 256K (`Atari Mega STe`) bootent au bureau GEM** + diagnostic MegaSTE OK — tous
-  programment le SCU tôt au boot (`SysIntMask=0x14`, `VmeIntMask=0x40/0x60`), comme sur
-  Hatari. ST/STE/Mega ST inchangés (gating MegaSTE seul). ⚠ L'EmuTOS 192 Ko est un build
-  « Atari ST » (TOS 1.4) qu'Hatari refuse aussi sur MegaSTE → utiliser `etos256us/fr` ou TOS 2.06.
-- **Registre Cache/CPU MegaSTE `$FF8E21` relisible** (port `IoMemTabMegaSTE_CacheCpuCtrl_WriteByte`) :
-  octet latché (bit0 = cache, bit1 = vitesse 8/16 MHz) avec la contrainte matérielle « cache
-  impossible à 8 MHz » (bit0 forcé à 0 si bit1=0). Reset = 0.
-- **SCU réinitialisé au reset** (port `SCU_Reset`) : `Scu::reset(bool cold)` remet `SysIntMask`/
-  `VmeIntMask`/états à 0 (le SCU masque tout jusqu'à reprogrammation par l'OS), GPR1=0x01, GPR2
-  effacé au cold boot ; appelé par `Machine::reset()`/`hardReset()`. Avant, les masques persistaient
-  à travers un reset doux (non déterministe selon l'historique de session).
-- **Bascule CPU 8/16 MHz MegaSTE — EFFET RÉEL** (`$FF8E21` bit1, port
-  `m68000.c:MegaSTE_CPU_Cache_Update` / `MegaSTE_CPU_Set_16Mhz`) : l'ordonnanceur et
-  toutes les puces restent en cycles **bus 8 MHz** ; le cœur CPU convertit
-  (`Cpu68k.cpp` : `bus = (clock + biais) / mul`, biais rebasé à chaque bascule pour
-  une horloge bus **continue**, même en plein quantum). **Moira (cycle-exact)** : port
-  des `mem_access_delay_*_megaste_16` — accès **RAM ST** cadencés bus (attente du
-  créneau CPU/Shifter de 8 cycles CPU + accès 8 cycles au lieu de 4), **ROM/cartouche/
-  IO « FAST »** sans wait state (mesuré sur vrai STF par Hatari) → 2× plus rapides ;
-  wait states PSG/MFP/ACIA et alignement shifter ×2 ; E-Clock recalée sur l'horloge
-  bus. Validé par
-  ROMs de test synthétiques (mesure historique avant correction des bornes RAM
-  du 2026-10-19, boucle `nop`+`bra` comptée sur 10 trames, Moira) :
-  **ROM 16 MHz = 2.000×**, **RAM 16 MHz sans cache = 0,88×** (aucun bénéfice, le bus
-  8 MHz domine — fidèle au matériel), **RAM 16 MHz + cache = 2.000×**. Reset/reconfigure → retour 8 MHz (`MegaSTE_CPU_Cache_Reset`).
-- **Cache externe 16 Ko MegaSTE** (`$FF8E21` bit0, port `m68000.c:MegaSTE_Cache_*`) :
-  8192 lignes × 1 mot (tag = bits 14-23, ligne = bits 1-13, bit 0 ignoré), données
-  dans `Bus::megaSteCache`, facturation des cycles côté Moira (hit = 4 cycles CPU
-  16 MHz ; miss → accès bus + remplissage, lecture octet remplie par le MOT du bus ;
-  écriture **write-through**, jamais accélérée, maj de ligne octet seulement si déjà
-  cachée). Cachable : RAM ST installée (< 4 Mo) + ROM TOS en lecture ; jamais IO/
-  cartouche, ni accès fautifs (mot impair, `$0-$3` en écriture, `$0-$7FF` en user).
-  **Invalidation** : bit0 → 0, reset, bus error, et BGACK (départ blitter, DMA
-  FDC/ACSI) — les écritures DMA ne traversent pas le cache, comme sur le vrai matériel.
-- **Bornes bus/cache 16 MHz (2026-10-19)** : misses alignés avant SYNC(2),
-  quatre cycles CPU RAM supplémentaires servis par `sync`, hit/miss et donnée
-  choisie avant les cycles. Un hit déjà lu reste stable si le blitter change
-  ensuite la RAM. Cache invalidé avant les huit cycles d'arbitrage, comme Hatari.
-  Onze sondes CPU/cache (off, fill, hit ; byte/word/long et écritures) en égalité
-  exacte après conversion CPU 16 MHz → bus 8 MHz ; tests locaux de phases et DMA.
-  PRE_START blitter à 16 MHz corrigé : cinq cycles bus depuis le callback CPU.
-  Après IACK, les quatre cycles internes restent en horloge CPU : bloc MFP
-  de 36 cycles CPU à 16 MHz au lieu de 40, bloc périphérique conservé ; même
-  séparation pour HBL/VBL. 199 contrôles CPU/blitter sous ASan/UBSan.
-  Douze cas globaux passent données, IRQ et bornes physiques. La comparaison
-  temporelle exacte reste ouverte : deux défauts Hatari isolés et des écarts
-  résiduels après correctifs expérimentaux (`HATARI_MEGASTE_AUDIT.md`).
-- **Séparation user/supervisor** (`Bus::busFaultN(addr, n, write)`, port des banques
-  `SysMem_*`/`ROMmem_*` de `cpu/memory.c` + `is_super_access` d'`ioMem.c`) — pour TOUS
-  les modèles : en mode **utilisateur** (bit S=0, lu via `Cpu68k::supervisor()`), tout
-  accès à `$0-$7FF` (variables système) ou à l'espace **IO** `$FF8000-$FFFFFF` → bus
-  error ; en **écriture** (même superviseur) : ROM TOS, port cartouche et `$0-$7`
-  (miroir ROM des vecteurs reset) → bus error. Code fonction de la trame d'exception
-  (user/super) désormais correct sous Musashi aussi. Blitter/DMA exemptés (équivalent
-  `BusMode != BUS_MODE_CPU`). Validé : ROMs de test (lecture `$400` en user → handler
-  de bus error atteint, écriture ROM en superviseur → idem, 2 cœurs) ; étalons
-  ST/STE/MegaSTE inchangés (EmuTOS/TOS ne violent jamais ces protections).
-- **MC68881 optionnel — sonde + trapping** (`src/io/Fpu.hpp`, `--fpu` headless /
-  case « FPU 68881 » du menu Modèle, `neost.cfg fpu=1`) : interface mémoire des
-  registres coprocesseur (CIR) du socket 68881 du Mega STE en `$FFFA40-$FFFA5F`.
-  Par défaut **absent** = fidèle Hatari (bus error, TOS/diagnostic concluent « FPU
-  not found », cf. `M68000_IsVerboseBusError` qui silence la sonde `$fffa42`). Avec
-  `--fpu` : la zone répond (Response CIR = `$0802` « null primitive, processing
-  finished », Save CIR = trame IDLE `$1F18`, autres registres latched) → **TOS 2.06
-  détecte le FPU** (lecture du Response CIR observée, cookie `_FPU`) et le dialogue
-  CIR est **journalisé** sur stderr (trapping : tout usage flottant réel est visible).
-  L'arithmétique 68881 n'est PAS émulée (cf. `TODO.md`).
-- **MC68881 — mantisse 64 bits RÉELLE (softfloat) + livraison d'exception FP**
-  (`src/io/SoftFloatX80.hpp`, `src/io/Fpu.{cpp,hpp}`) : l'arithmétique ALGÉBRIQUE
-  (FADD/FSUB/FMUL/FDIV/FSQRT/FCMP/FINT/FINTRZ/FREM/FMOD/FSCALE/FGETEXP/FGETMAN/FSGLxxx) ne
-  passe plus par le `double` hôte (53 bits) mais par un **portage propre de SoftFloat-2a
-  (Hauser), format étendu 80 bits** → **64 bits de mantisse réels**, 4 modes d'arrondi FPCR,
-  précision étendu/double/simple et drapeaux d'exception IEEE exacts (leaf multi-mots via
-  `__uint128_t`). Les transcendantes restent en `double` hôte (le 68881 les approxime — comme
-  MAME/Previous). Les **exceptions FP activées dans le FPCR** sont en plus **LIVRÉES** via le
-  Response CIR (primitive « Take Pre-Instruction Exception »). Validé : `make_fpu_testrom.py`
-  étendu à **9/9 PASS**, dont `1.0/3.0` relu en FMOVE.X = `$3FFD AAAAAAAA_AAAAAAAB` exact (un
-  calcul 53 bits donnerait `…A800`) et FDIV par 0 avec DZ activée → Response CIR `$7032`.
-- **MC68881 FONCTIONNEL — mode périphérique complet** (`src/io/Fpu.{hpp,cpp}`) : le
-  niveau « sonde + trapping » devient une vraie émulation du 68881 câblé en
-  périphérique (MC68881 UM §7 + AN-947 ; Hatari n'émule pas ce socket — rien à
-  porter, références = manuel Motorola, MAME `m68kfpu`, et la **glue SFP004 de la
-  MiNTLib** qui est la spec de facto : écrire le mot de commande F-line en `$FFFA4A`,
-  scruter `$FFFA40` tant qu'il vaut `$8900`, transférer par `$FFFA50`). Implémenté :
-  registres **FP0-FP7 en étendu 80 bits** (FMOVE.X aller-retour bit-exact),
-  FPCR/FPSR/FPIAR, machine à états CIR (Command/Response avec primitives de
-  transfert `$95xx/$96xx/$B1xx/$B2xx`, fenêtre Operand bouclante, Condition avec les
-  32 prédicats, Save/Restore trame IDLE `$1F18` + reset par trame nulle), formats
-  **B/W/L/S/D/X/P** (packed BCD avec k-factor), **FMOVECR bit-exact** (table ROM
-  silicium recoupée MAME/Previous/WinUAE, y compris le `e` à 1 ulp), FMOVEM données
-  et registres de contrôle, et toute l'arithmétique (FADD/FSUB/FMUL/FDIV/FSQRT/
-  FCMP/FTST/FREM/FMOD/FSCALE/FGETEXP/FGETMAN/FINT/FINTRZ/FSGLMUL/FSGLDIV/FSINCOS +
-  transcendantes via libm hôte), codes condition N/Z/I/NAN, octet quotient,
-  exceptions OPERR/DZ/OVFL/BSUN en bits FPSR (pas d'IRQ : le socket se scrute).
-  **Limite documentée** : calculs en double hôte (53 bits de mantisse au lieu de
-  64). Validations : mini-ROM `tools/make_fpu_testrom.py` (dialogue SFP004 réel)
-  — FADD.S, FDIV.D, FMOVECR π **bit-exact**, FSQRT.D **bit-exact**, FINTRZ+
-  FMOVE.L, FCMP+Condition CIR, aller-retour FPCR → **7/7 PASS** ; diagnostic
-  cartouche MegaSTE (tos206us) : boot self-test « **FPU idle** » (détecté via la
-  trame Save CIR) avec `--fpu`, « FPU not found » fidèle Hatari sans (la
-  cartouche n'a pas de test FPU dédié au menu : F = Floppy, V = VME) ;
-  non-régression : écrans byte-identiques avec/sans `--fpu` (EmuTOS 256K,
-  TOS 2.06 megaste) et gate EmuTOS 192K/ST intact.
-- **MC68881 — fidélité NaN / SNaN / masques / FSGLMUL** (recoupé `cpu/fpp*.c` softfloat) :
-  la **propagation des NaN** renvoie désormais l'opérande NaN réel quiété (signe + payload) au
-  lieu d'un default-NaN ; une **entrée SNaN** lève `FPSR.SNAN` (vecteur 54) et non plus OPERR
-  (flag softfloat `flag_signaling` distinct) ; les **masques FPCR/FPSR** forcent à 0 les bits
-  réservés (`&0xFFF0` / `&0x0FFFFFF8`) ; **FSGLMUL** tronque ses entrées à 24 bits avant le produit
-  (cf. `floatx80_sglmul`). Mini-ROM FPU **9/9 PASS** inchangé.
-- **MC68881 — FSCALE exposant ∞/NaN + octet AEXC** : **FSCALE** par un exposant ∞/NaN ne fait plus
-  d'UB (`int(trunc(±inf/nan))`) — NaN → propagation, ±∞ → OPERR + NaN par défaut (cf.
-  `floatx80_scale`) ; l'**octet AEXC accumulé** suit `updateaccrued`/`fpsr_make_status` (UNFL
-  accumulé seulement si INEXACT l'est aussi ; INEX accumulé sur INEX2 OU OVFL). Mini-ROM FPU 9/9 inchangé.
-- **MC68881 — FMOVECR arrondi par mode + INEX2** (`romConstant`, port table `fpp_cr` de `fpp.c`) :
-  les constantes ROM portent désormais une colonne `inex` (la valeur est-elle inexacte en étendu ?)
-  et `rnd[4]` (ajustement des 32 bits de poids faible par mode d'arrondi RN/RZ/RM/RP). `FMOVECR`
-  applique l'ajustement selon le mode FPCR, puis arme `EXC_INEX2`/`AEXC_INEX` et déclenche la
-  livraison d'exception si activée — au lieu de toujours renvoyer la valeur RN sans drapeau. Mini-ROM FPU 9/9.
-- **MC68881 — précision FPCR de FMOVECR (2026-10-18)** : après l'ajustement de la
-  table, arrondi de la mantisse à 24 ou 53 bits, avec la plage d'exposant étendue
-  (`roundSigAndPack`, comme `fpp_round32/64` d'Hatari). Une constante exacte en étendu
-  mais inexacte à la précision demandée lève aussi INEX2. La ROM CIR passe à **23 tests** :
-  les nouveaux cas gardent les quatre modes d'arrondi, la précision double/réservée,
-  les grands exposants et les drapeaux ; ils couvrent aussi FSGLMUL/FSGLDIV et FMOD,
-  dont les corrections étaient déjà présentes.
-- **MC68881 — précision des unaires et constantes indéfinies (2026-10-18)** :
-  FMOVE/FABS/FNEG appliquent la précision FPCR et sa plage d'exposant simple/double,
-  avec OVFL/UNFL/INEX2 ; les NaN gardent signe/payload et les SNaN sont quiétés.
-  FMOVECR reproduit aussi les onze motifs `fpp_cr_undef`, les ajustements du mot
-  haut de mantisse et les codes de condition particuliers des offsets 3 et 7.
-  Les comparaisons CIR utilisent les véritables fonctions Hatari compilées :
-  1 443 cas unaires et 2 048 combinaisons offset/précision/arrondi pour FMOVECR.
-- **MC68881 — décimal empaqueté (2026-10-18)** : `SoftFloatDecimal.hpp` porte
-  les conversions d'Hatari en entiers exacts, dans les deux sens : 17 chiffres,
-  quatre arrondis, k positif ou négatif, grands exposants, zéros et NaN/SNaN.
-  INEX1 entrant et INEX2 sortant remontent au FPSR et au Response CIR ; les
-  exceptions de conversion sont conservées pendant l'opération. Une garde
-  OPERR+NaN rejette les étendus non canoniques en sortie P (l'oracle peut y faire
-  des décalages indéfinis). Le k dynamique reste fixé à 17 en mode périphérique.
-  `tools/test_fpu_decimal_oracle.py --sanitize` : **161 348 contrôles, zéro échec**,
-  conversions et emballage 96 bits comparés au source C original, gardes vérifiées
-  sous UBSan.
-- **Joypads STE COMPLETS + DIP MegaSTE** (`$FF9200-$FF9223`, port fidèle `joy.c` /
-  `ioMemTabSTE.c`) : le stub « valeurs au repos » est remplacé par un vrai module
-  `StePads` (`src/io/StePads.hpp`, membre `Bus::stePads`) — **multiplexage** par le
-  latch de sélection `$FF9202` (nibble bas = pad A, haut = pad B, ligne active à 0),
-  **boutons feu** `$FF9201` (feu A pad A → bit1, pad B → bit3), **directions** lues en
-  `$FF9202` (`~dir`, nibble par pad), paddles `$FF9211-17` au neutre `0x24`, lightpen
-  `$FF9220/22` à `0x0000`. **DIP MegaSTE** octet haut de `$FF9200` = `0xBF` (logique
-  inversée : switch 7 ON → lecteur HD 1.44 monté, switch 8 OFF → son DMA actif, fidèle
-  `IoMemTabMegaSTE_DIPSwitches_Read`) ; STE simple → `0xFF`. Les pads reçoivent le
-  **même état joystick** que l'IKBD (pad A = port 1 « jeux », pad B = port 0) depuis le
-  GUI, le web et le headless (`--joy`/`--joy-at`/`--joy-script`), comme le mapping
-  manette global d'Hatari. Validé : glue self-test 19/19, boots STE/MegaSTE propres,
-  `--joy 0x88` maintenu sans faute parasite.
-- **Joypads STE — finitions** (port `joy.c`) : **bus error sur accès OCTET** de
-  `$FF9200` (adresse paire seulement, lecture ET écriture — `$FF9201` reste lisible
-  en octet) et des mots lightpen `$FF9220/22` en lecture (écritures ignorées sans
-  faute, `IoMem_WriteWithoutInterception`) — déclenchée par le périphérique comme le
-  FDC `$FF8604` octet. **Paddles analogiques réels** (`StePads::readAnalog`, port
-  `Joy_GetStickAnalogData`) : plage `$04`-`$43` (neutre `$24`), axes manette hôte
-  (stick gauche GLFW, conversion REALSTICK exacte `MIN + (upos>>8)/4`) avec REPLI
-  numérique façon « mode clavier » Hatari (gauche/haut → `$04`, droite/bas → `$43`).
-  Lightpen : non supporté (0 + bus error octet), fidèle à Hatari. Validé par mini-ROM
-  (3 fautes attendues prises, `$FF9201`/mot sans faute, paddle `$24`→`$43` sous
-  `--joy 0x08`, identique Moira/Musashi) + étalons inchangés.
-- **Quirk palette — écriture octet miroir + masque** (port `Video_ColorReg_WriteWord`) :
-  une écriture OCTET sur `$FF8240-$FF825F` duplique l'octet sur les DEUX moitiés du
-  mot (le 68000 pose l'octet sur les deux moitiés du bus de données, le Shifter
-  latche le mot : `move.b #$07,$FF8240` → couleur `$0707`, adresse paire ou impaire) ;
-  la couleur est STOCKÉE masquée — `$777` (ST, 512 couleurs) / `$FFF` (STE, 4096) —
-  donc RELUE masquée : des jeux écrivent `$FFFF` et relisent pour détecter le STE.
-  Validé par mini-ROM (`$0707` ; `$FFFF`→`$0777` ST / `$0FFF` STE ; octet impair
-  `$AB`→`$0323`/`$0BAB`) ; étalons byte-identiques (gate spec512).
-- **Bus map gaté par modèle** : sur Mega ST/STE `$FF8002-$FF800D` est void (pas de faute)
-  contrairement au ST (`IoMem_FixVoidAccessForMegaST`).
-
-**Résultat** : les **3 cartouches** (`ST_Diagnostic`, `STE_Test`, `MegaSTE_Diagnostic`)
-atteignent leur menu et passent leur batterie de tests internes (Z) **sans erreur**, sur
-les **2 cœurs**, avec un vrai TOS. Restes (« Hard error »/VME/FPU) = périphériques absents,
-fidèles à Hatari, pas des bugs.
 
 ## Réseau — extensions NeoST (INACTIVES par défaut, cf. `docs/EXTENSIONS.md`)
 
@@ -2278,6 +2264,8 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   MIDI OUT → UDP → pair aval, datagrammes amont → MIDI IN (`MidiAcia::setMidiSink`/
   `tryPop` via la source série, collecte UDP par trame et consommation à 2560 cycles). Vérifié
   `MIDITEST.TOS` (OUT 10/10 octets ordre exact ; round-trip complet OUT→réseau→IN→ACIA).
+- **NE2000** (2026-10-20) : PROM d'adresse station (MAC doublée + signature `WW`, lecture seule), MAC
+  par défaut `02:4E:53:54:00:01` ; les PAR restent au pilote.
 
 ## Frontend & outillage
 - **Capture souris accessible sans bouton central (2026-08-15)** : clic molette ou
@@ -2437,6 +2425,15 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   pas la RTC — elle suivait l'heure HÔTE et cassait le diff pixel de `etos_ste_boot`
   (la référence embarquait l'heure de sa capture). Référence régénérée, étalon
   désormais **déterministe** et au vert.
+- **GUI — contrôle de volume dans la barre de menu** : menu haut-parleur (icône selon le
+  niveau : muet/bas/haut) avec slider 0-100 % et bascule « Muet » (mémorise et restaure le
+  niveau). Volume MAÎTRE de la sortie hôte, appliqué au mix final dans `Audio::produceFrame`
+  (avant clamp) — indépendant du LMC1992 émulé, qui appartient à la machine. Persisté dans
+  `neost.cfg` (`volume=`, sauvé en fin de glissé), ré-appliqué au démarrage.
+- **Headless — `--sound-dump F.wav`** : dump audio 48 kHz stéréo s16 de la boucle `--frames`,
+  même chaîne que la GUI (YM2149 horodaté modèle push + DMA STE + gains/tonalité LMC1992,
+  débit exact sans asservissement d'anneau) → l'A/B audio contre l'oracle Hatari (WAV) ou
+  entre configs devient scriptable (profil RMS par seconde). Cf. `DEV.md`.
 
 ## Validé
 - EmuTOS (FR/US) : green desktop, fichiers disquette, double-clic, fenêtres.
@@ -2454,3 +2451,4 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   (calibration fullscreen du loader sur `$FF8209`).
 - **The Cuddly Demos** : menu fullscreen statique stable (flicker résolu par VDE_On live) ;
   conforme aux briques d'Hatari.
+- **Couverture** (2026-11-04) : étalons `boot_tos*`, chaque TOS présent jusqu'au bureau, Mega ST compris. `--disk-at` change la disquette en cours.

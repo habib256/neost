@@ -310,7 +310,7 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
   (aire active seulement, bordures intactes) si un intervalle res 3, en cours ou le dernier
   terminé, couvre toute sa fenêtre DE (`lineStoppedOver`). Hatari n'affiche pas de noir.
   Un arrêt partiel (trick, 8 à 32 cycles) ne noircit rien, comme Hatari (TODO video.c:1914).
-  Noir franc ou couleur 0 : non mesuré (TODO.md § 3).
+  Noir franc ou couleur 0 : non mesuré (`TODO.md`, « Shifter arrêté »).
 - **[V3] ✅ CLOS le 2026-09-01** — attribution de ligne à la grille réelle **promue par défaut** (`NEOST_LINELEN_ATTR`, ON) après preuve à l'oracle sur l'exhibiteur `freq_switch` : la longueur de ligne ne persistait pas d'une ligne à l'autre (retombait à 512 sans écriture), donc le verrou ne pouvait pas produire la dérive qu'il vise — corrigé (`glueLineLenFor`), 18/18 écritures freq attribuées comme Hatari (ligne et cycle), `TODO.md` § restes. Historique : `RestartVideoCounter` **PORTÉ** (2026-07-02,
   `restartVideoCounter`, événement `VC_RESTART`, check freq live). ⚠ **« CyclesPerVBL ±4 »
   RETIRÉ le 2026-08-25 : FAUX POSITIF prouvé** (cf. la ligne V3 du tableau des priorités —

@@ -101,22 +101,24 @@ validations dans `CHANGELOG.md`) :
 > bus + fix DIV). C'est l'objet du doc [`MOIRA_WINUAE_CONVERGENCE.md`](MOIRA_WINUAE_CONVERGENCE.md),
 > qui tient le détail et le front beam-sync.
 
-## 4. Ce qui RESTE — inventaire priorisé
+## 4. Ce qui RESTE — l'angle « précision cycle »
 
-Établi en diffant `extern/hatari/src` contre `src/` sous-système par sous-système. Trié par
-priorité d'impact. Les divergences logiques bornées (V1, S2, D3, M1…) sont cataloguées avec
-sévérité + `fichier:ligne` des deux côtés dans
-[`HATARI_DIVERGENCES.md`](HATARI_DIVERGENCES.md) ; ici, l'angle « précision cycle ».
+**La liste de l'ouvert, ses priorités et ses statuts vivent au [`../TODO.md`](../TODO.md)** (§ 3,
+sous chaque puce ; § 9 pour ce qui touche le 68000). Cette section garde le *pourquoi* : ce
+qui a été fait pour chaque chantier, et ce qui en reste exactement. Les divergences logiques
+bornées (V1, S2, D3, M1…) sont cataloguées dans [`HATARI_DIVERGENCES.md`](HATARI_DIVERGENCES.md).
 
-| Priorité | Chantier | Effort | Étalon type |
-|----------|----------|--------|-------------|
-| ~~P1~~ ✅ | Géométrie mid-trame (V3) — **CLOS le 2026-09-01** : attribution de ligne à la grille réelle promue par défaut, prouvée à l'oracle sur l'étalon généré `freq_switch` (18/18 écritures freq à la même ligne/cycle qu'Hatari) ; le verrou ne faisait rien jusque-là (longueur de ligne non persistante) | — | overscan plein écran, ULM Dark Side |
-| ~~P1~~ ✅ | Déclenchement du rendu des lignes masquées sans palette corrigé ; retrait bas gardé. Bord final STOP_MIDDLE (3 pixels) et couleur physique du blanking restent ouverts | — | sondes libres `blankline_*` |
-| **P2** | Blitter : comparaison globale MegaSTE 16 MHz/IRQ (CPU/cache qualifié séparément ; HOG/partagé et BL5 clos) | moyen | démos CPU+blitter simultanés |
-| **P2** | Son DMA STE : quantification HBL du refill à confronter à l'oracle (compteur live et FIFO PORTÉS) | moyen | STE_Test, sync zik/raster |
-| **P2** | Restes vidéo : `VIDEO_ENDLINE`, VBL au cycle exact, phase Timer C | moyen | démos fullscreen |
-| **P3** | Qualification WS1-4 (table portée, WS3 par défaut), overscan med-res ; NO_SYNC/SYNC_HIGH comparés sur sondes générées, mesures matérielles ouvertes | élevé | démos « extrêmes » (Closure…) |
-| **P3** | Fréquences exactes centralisées (unité interne ×256 des timers MFP : faite) | faible | dérive long terme |
+| Chantier encore ouvert | Item du `TODO.md` | Étalon type |
+|------------------------|-------------------|-------------|
+| Blitter : comparaison globale Mega STE 16 MHz/IRQ | « Résidu blitter/IRQ Mega STE 16 MHz », « Mega STE à 16 MHz dans le filet » | démos CPU+blitter simultanés |
+| Son DMA STE : quantification HBL du refill, fin de trame | « IRQ de fin de trame du son DMA » | STE_Test, sync zik/raster |
+| Restes vidéo : `VIDEO_ENDLINE`, VBL au cycle exact, phase Timer C | « Restes vidéo au cycle » | démos fullscreen |
+| Bord final STOP_MIDDLE, couleur physique du blanking | « Bord de fin STOP_MIDDLE », « Couleur pendant BLANK » | sondes `blankline_*` |
+| WS1-4 (WS3 par défaut), overscan med-res, NO_SYNC/SYNC_HIGH au fer | « Wakestate WS3 par défaut », « Vidéo — mesures sur Atari » | démos « extrêmes » (Closure…) |
+| Fréquences exactes centralisées | « Fréquences exactes centralisées » | dérive long terme |
+
+Clos depuis l'inventaire d'origine : géométrie mid-trame V3 (2026-09-01), rendu des lignes
+masquées sans palette (2026-10-19), beam-sync (ci-dessous).
 
 ### ✅ Beam-sync : CLOS (2026-07-09, complété 2026-08-06) — ex-P1 de tête
 
@@ -305,13 +307,13 @@ et le code ne change pas tant qu'une source de rang supérieur n'a pas tranché.
   Mesuré sur ce modèle (`Vste_tb --dtack`, palier `full`) : même latence, DE actif ou non, son à 50 kHz ou non.
   MAME (`stmmu.cpp`) modélise une contention : non retenue. `[F]` ST et Mega STE sans netlist.
 - **Vol de cycles du DMA disque** : `[B]` il prend le bus par BR/BG et cadence ASO/DSO sur 4 cycles par mot (feuille 8). Les
-  32 cycles de NeoST pour 8 mots concordent par lecture ; l'arbitrage autour de la rafale reste à relever. → `TODO.md` § 2.2
+  32 cycles de NeoST pour 8 mots concordent par lecture ; l'arbitrage autour de la rafale reste à relever. → `TODO.md`, « DMA disque sur le bus »
 - **Créneau hors RAM** : `$FF8240-7F` et, sur STE, `$FF8920-3F` passent par `CYCSEL` (feuilles 19 et 21). ROM, cartouche,
   `$FF8001`, `$FF8200-0D`, `$FF820A`, `$FF8900-0F` répondent sans attendre. NeoST aligne maintenant `$FF8920-3F`, et n'aligne plus `$FF820A`.
 - **Modes pulse du MFP (9-15)** : portés le 2026-11-03 d'après `[B]` MC68901 § 5.1.2. Hatari
   les approxime en mode délai : l'écart est voulu.
 
-Suivi → `TODO.md` § 2.
+Suivi → `TODO.md` § 3.
 
 ## 6. Méthode de validation
 

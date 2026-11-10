@@ -6,6 +6,25 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Doc : le TODO et les docs rangés par rapport à l'échange du cœur (2026-11-10)
+
+- `TODO.md` : trois temps — avant l'échange (§ 1 à 8), l'échange (§ 9, l'intérieur du cœur
+  gelé), le TT et le Falcon (§ 10). Nouveau § 1 en cinq lots, nouveau § 2 « Le filet de
+  l'échange ». Les questions du 68000, l'amont Moira, A33 et les points chauds du cœur
+  passent au § 9. Dans chaque section, le faisable précède les ⏸. Aucun item retiré ; sept
+  items marqués *(proposé)* attendent la validation de l'auteur.
+- `docs/IMPLEMENTED.md` : les cinq blocs « Compléments du … » de tête sont fondus dans la
+  section de leur puce, date après le titre ; le fourre-tout « Bus error & cartouches de
+  diagnostic » (79 entrées) est réparti en Bus, Blitter, Mega ST/STE, FPU, Ports et clés,
+  Passes d'audit, le reste rejoignant Audio, MFP, Clavier, Disquette, Vidéo et Frontend.
+  Déplacements seuls, contrôlés ligne à ligne.
+- `docs/HATARI_MAPPING.md` : les tables « Docs à corriger » et « Prochains travaux » du
+  2026-07-08 vont dans `docs/archive/` ; deux candidats encore ouverts entrent au TODO
+  (tenue du dernier échantillon DMA, hardscroll 4 px).
+- `docs/RELEASE.md` : dossiers 0.6.1 et 0.6.2 archivés. `docs/CYCLE_ACCURACY.md` § 4 : la
+  table ne liste plus que l'ouvert et renvoie au TODO par titre.
+- `CLAUDE.md` : un rôle par document, cinq docs orphelines ajoutées au hub, règle du gel.
+
 ## Doc : TODO, README et CLAUDE réorganisés (2026-11-10)
 
 - `TODO.md` : prochaines actions à jour, état au 2026-11-10, bugs ouverts et campagnes ramenés à

@@ -11,5 +11,5 @@ les jeux qu'elle contient (`Games`) et la clé de sa capture de menu (`Screensho
   paquet qui embarquerait ce fichier (et à nommer dans `packaging/licenses/THIRD-PARTY.txt`).
 - **Aucune image disque** : seulement des noms et des listes de jeux.
 
-Usage prévu (`TODO.md` § 6, « Identification des disquettes de menus ») : nommer les disquettes
+Usage prévu (`TODO.md` § 7, « Identification des disquettes de menus ») : nommer les disquettes
 de menus de la ludothèque et de la borne. Pas encore lu par le code ; pas encore dans les paquets.

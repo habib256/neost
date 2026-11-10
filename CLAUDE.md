@@ -16,10 +16,18 @@ les puces) et **`neost_core` ne dépend pas du GUI**.
 
 **Cap suivant : le TT et le Falcon**, sur le Moira de POM68K (68000/030/040, JIT
 déterministe, FPU et MMU), qui remplacera aussi le cœur du ST. **Rien ne s'intègre avant
-que l'auteur le déclare prêt** ; la porte d'échange est posée (`docs/CPU_SWAP_GATE.md`,
-`TODO.md` § 8).
+que l'auteur le déclare prêt** ; la porte d'échange est posée (`docs/CPU_SWAP_GATE.md`).
+D'ici là, `TODO.md` range le travail en trois temps : **avant l'échange** (le filet, puis
+tout ce qui ne dépend pas du cœur), **l'échange** (§ 9 — l'intérieur du cœur est **gelé** :
+pas de patch dans `extern/moira` ni de refactor de `src/core/Cpu68k.cpp`, sauf défaut qui
+casse un titre), **le TT et le Falcon** (§ 10).
 
 ## Où trouver quoi
+
+**Un rôle par document.** L'ouvert ne vit que dans `TODO.md` ; le fait, par puce, dans
+`docs/IMPLEMENTED.md` ; le récit daté dans `CHANGELOG.md`. Une doc de sous-système décrit
+un modèle, un banc ou un cas, et renvoie au TODO par le **titre** de l'item. Ce qui est
+clos et ne fait plus foi va dans `docs/archive/` (hors contrôle d'ancres).
 
 **Le projet**
 
@@ -28,7 +36,7 @@ que l'auteur le déclare prêt** ; la porte d'échange est posée (`docs/CPU_SWA
 | [`DEV.md`](DEV.md) | **Détails techniques** : architecture, horloge, bus, débogage headless, mapping Hatari, pièges matériels. |
 | [`CHANGELOG.md`](CHANGELOG.md) | **Chronologie** : releases puis chantiers datés. |
 | [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) | **Ce qui est fait, par puce** — répond à « NeoST gère-t-il X ? ». |
-| [`TODO.md`](TODO.md) | **Ce qui reste**, priorisé (P1-P3) : prochaines actions, attentes externes (matériel, médias), restes par puce, bugs jeux, extensions, dette, TT/Falcon. Un item clos en sort. |
+| [`TODO.md`](TODO.md) | **Ce qui reste**, priorisé (P1-P3) et rangé par rapport à l'échange du cœur : plan en lots, filet de l'échange, restes par puce, bugs jeux, harnais, extensions, livraison, dette, puis ce qui est gelé jusqu'à l'échange et le TT/Falcon. Un item clos en sort. |
 | [`README.md`](README.md) | Présentation et usage (en anglais, public). |
 
 **Méthode et preuve**
@@ -51,7 +59,16 @@ que l'auteur le déclare prêt** ; la porte d'échange est posée (`docs/CPU_SWA
 | [`docs/STBLITTER_BENCH.md`](docs/STBLITTER_BENCH.md) | **Banc du blitter** : NeoST contre `stBlitter.sv` et fx68k, accès, données et dates ; ce que la netlist ST-4082 a tranché. |
 | [`docs/STCPU_BENCH.md`](docs/STCPU_BENCH.md) | **Banc CPU + GSTMCU** : ce que le 68000 voit du faisceau, compteur et interruptions, contre les RTL, à l'octet. |
 | [`docs/GLUE_SWEEP.md`](docs/GLUE_SWEEP.md) | **Balayage GLUE du STE** : impulsions 60 Hz et haute résolution à chaque phase, NeoST contre le modèle GSTMCU. |
-| [`docs/MOIRA_WINUAE_CONVERGENCE.md`](docs/MOIRA_WINUAE_CONVERGENCE.md) | **Beam-sync** : convergence Moira↔WinUAE, mesures, pistes éliminées. |
+| [`docs/HATARI_MEGASTE_AUDIT.md`](docs/HATARI_MEGASTE_AUDIT.md) | **Blitter et IRQ du Mega STE** : domaines d'horloge à 16 MHz contre Hatari, résidu ouvert. |
+| [`docs/MFP_IACK_MEASUREMENT.md`](docs/MFP_IACK_MEASUREMENT.md) | **Protocole de mesure de l'IACK** sur un vrai Mega STE : sonde prête, capture à faire. |
+
+**Journaux d'enquête** (chantiers clos, gardés pour leurs mesures et leurs pistes éliminées)
+
+| Doc | Contenu |
+|-----|---------|
+| [`docs/MOIRA_WINUAE_CONVERGENCE.md`](docs/MOIRA_WINUAE_CONVERGENCE.md) | **Beam-sync** : convergence Moira↔WinUAE, mesures, pistes éliminées. À relire à l'échange du cœur. |
+| [`docs/CLOSURE_CHANTIER.md`](docs/CLOSURE_CHANTIER.md) | **Closure (Sync)** : la chaîne causale Timer B → GPIP → datation, résolue le 2026-08-12. |
+| [`docs/archive/`](docs/archive) | Tables de l'audit de cartographie du 2026-07-08, dossiers des releases passées. |
 
 **Livraison, usage et suite**
 
@@ -61,10 +78,12 @@ que l'auteur le déclare prêt** ; la porte d'échange est posée (`docs/CPU_SWA
 | [`docs/HW_VALIDATION.md`](docs/HW_VALIDATION.md) | **Validation sur matériel réel** : registre par cible de livraison (config + mesures), protocole en cinq pas, mesure du budget temps réel (`run_perfbench.py --budget`). |
 | [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) | Recette callgrind, points chauds, build PGO+LTO et son piège. |
 | [`docs/KIOSK.md`](docs/KIOSK.md) | Mode borne : options, menu manette, zoom adaptatif, Raspberry Pi. |
+| [`docs/NETUSBEE.md`](docs/NETUSBEE.md) | **NetUSBee en détail** : ports USB virtuels (HID, disque), modèle, limites et preuves. |
+| [`docs/GRAPHIFY.md`](docs/GRAPHIFY.md) | **Carte du code** (`graphify-out/`) : consultation, périmètre, limites. |
 | [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md) | **Extensions NeoST (stockage/réseau)** : **UltraSatan** (SD sur ACSI), **NetUSBee**/EtherNEC (NE2000 + USB, port cartouche), modem Hayes, anneau MIDI, **appareils MIDI hôtes** (destination/source matérielle), clés Steinberg et **adaptateurs de port** (dongles joystick/série, DAC Pro Sound, boutons Multiface/URC). Tout est du matériel qui a réellement existé sur ST. OFF par défaut, sans effet sur les étalons. |
 | [`docs/OPENDST.md`](docs/OPENDST.md) | **Pilotage externe déterministe** : contrat de déterminisme, scripts joystick, sondes mémoire, boucle d'exploration d'états (Go-Explore), recette Rick Dangerous. |
 | [`packaging/android/README.md`](packaging/android/README.md) | **Paquet Android** : build, pièges (jlink, Gradle/JDK), validation ARM64 sous QEMU. |
-| [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md) | **Échange du cœur 68000** (Moira POM68K) : porte d'empreintes indépendante du cœur, procédure, contrat attendu du cœur (surcharges, internes, patches). |
+| [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md) | **Échange du cœur 68000** (Moira POM68K) : porte d'empreintes indépendante du cœur, procédure, contrat attendu du cœur (surcharges, internes, patches). **Tout patch de `extern/moira` y ajoute sa ligne.** |
 
 ## Build & run
 

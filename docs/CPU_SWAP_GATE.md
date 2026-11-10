@@ -7,6 +7,9 @@ au ST, au STE et au Mega STE**, et **ce que NeoST attend du cœur**.
 
 ## La porte
 
+Ce qui doit être prêt avant l'échange (porte élargie, banc étendu, sort des `.state`) et
+ce qui est gelé d'ici là : [`../TODO.md`](../TODO.md) § 2 et § 9.
+
 `tools/cpu_swap_gate.py` rejoue les 56 étalons pixel de `tools/etalons.json`, avec la
 commande exacte de `run_etalons.py`. Toutes les 10 trames, il relève l'empreinte
 `--arch-hash-every`, qui ne dépend pas de la façon dont le cœur sérialise ses internes :

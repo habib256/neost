@@ -224,6 +224,10 @@ pour `Cpu68k`, `Bus`, `Shifter` et `Moira`.
 
 ## 6. Ce qui reste sur la table
 
+> **Gelé jusqu'à l'échange du cœur** (`TODO.md` § 9) : trois de ces quatre postes sont dans
+> Moira ou dans son enveloppe, que le cœur de POM68K et son JIT remplacent. Refaire le
+> profil (§ 1) après l'échange avant d'optimiser quoi que ce soit ici.
+
 Par ordre de poids dans le profil final, avec la raison de ne pas y avoir touché :
 
 | Poste | Part | Pourquoi c'est resté |

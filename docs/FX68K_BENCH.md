@@ -8,7 +8,7 @@ cycle-exact, accès bus par accès bus.** Posé le 2026-11-03. Instrument : `too
 - Ce que le banc ne voit pas : la carte mère. Créneaux RAM, états d'attente, E-clock, bus
   errors du GLUE sont hors du modèle (RAM plate, DTACK immédiat). C'est voulu : un écart
   ici est un écart **de cœur**, pas de Bus.
-- Les questions ouvertes qui en sortent vivent dans [`../TODO.md`](../TODO.md) § 2.1.
+- Les questions ouvertes qui en sortent vivent dans [`../TODO.md`](../TODO.md) § 9 (gelées jusqu'à l'échange du cœur).
 
 ## Pourquoi
 

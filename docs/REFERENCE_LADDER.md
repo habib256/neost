@@ -149,4 +149,4 @@ Le projet n'a pas d'accès à un vrai ST. Le sommet atteignable passe donc, dans
    2026-11-03 (`tools/run_fx68k_bench.py`, [`FX68K_BENCH.md`](FX68K_BENCH.md)) ; `stBlitter.sv` depuis le
    2026-11-04 (`tools/run_stblitter_bench.py`, [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md)).
 
-Ce qui exige vraiment une machine reste inscrit comme tel au `TODO.md` § 3.2.
+Ce qui exige vraiment une machine reste inscrit comme tel au `TODO.md`, statut « ⏸ matériel ».
