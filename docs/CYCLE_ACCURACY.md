@@ -307,7 +307,8 @@ et le code ne change pas tant qu'une source de rang supérieur n'a pas tranché.
   Mesuré sur ce modèle (`Vste_tb --dtack`, palier `full`) : même latence, DE actif ou non, son à 50 kHz ou non.
   MAME (`stmmu.cpp`) modélise une contention : non retenue. `[F]` ST et Mega STE sans netlist.
 - **Vol de cycles du DMA disque** : `[B]` il prend le bus par BR/BG et cadence ASO/DSO sur 4 cycles par mot (feuille 8). Les
-  32 cycles de NeoST pour 8 mots concordent par lecture ; l'arbitrage autour de la rafale reste à relever. → `TODO.md`, « DMA disque sur le bus »
+  32 cycles de NeoST pour 8 mots concordent par lecture. L'arbitrage est relevé sur fx68k (2026-11-11) : le 68000 ne
+  bloque qu'à son prochain accès, NeoST facture la rafale sans condition. → `TODO.md` § 9, « DMA disque : le CPU ne cède que le bus »
 - **Créneau hors RAM** : `$FF8240-7F` et, sur STE, `$FF8920-3F` passent par `CYCSEL` (feuilles 19 et 21). ROM, cartouche,
   `$FF8001`, `$FF8200-0D`, `$FF820A`, `$FF8900-0F` répondent sans attendre. NeoST aligne maintenant `$FF8920-3F`, et n'aligne plus `$FF820A`.
 - **Modes pulse du MFP (9-15)** : portés le 2026-11-03 d'après `[B]` MC68901 § 5.1.2. Hatari

@@ -21,8 +21,12 @@
 //  UDS/LDS moins un cycle : [B] § 5.1.2 p. 5-6, une écriture pose DS à S4, un cycle après
 //  AS ; § 5.1.3 p. 5-9, la phase d'écriture du RMW pose DS à S16.
 //
-//  Usage : Vfx68k_bench <image.bin> <trace.txt> [--limit N] [--irq T:L]... [--vpa]
+//  Usage : Vfx68k_bench <image.bin> <trace.txt> [--limit N] [--irq T:L]... [--vpa] [--br T:N]
 //    --vpa : l'IACK répond par VPA, sans DTACK, comme HBL et VBL sur ST (autovecteur $18+niveau).
+//    --br T:N : un maître DMA pose BR au cycle T (même origine que --irq), prend le bus en 3 fils
+//               dès BG accordé et le bus libre (AS et DTACK retombés : [B] M68000UM § 5.2.3), le
+//               garde N cycles sous BGACK, puis le rend. Dates de BR, BG, BGACK et de la remise
+//               sur stderr (« ARB … »). Sert à relever ce que le 68000 fait du bus prêté.
 //    image.bin : contenu de la mémoire à partir de $000000 (le reste est à zéro).
 //    --irq T:L : poser le niveau L sur IPL au cycle T, compté depuis le 7e accès bus, le
 //                premier après la séquence de reset (SSP, PC, deux préfetchs), comme côté
@@ -69,6 +73,8 @@ Access cur;
 bool asLow = false, strobeLow = false, done = false;
 bool armed = false;   // vrai dès qu'AS a été vu haut : les sorties valent 0 avant le reset
 bool useVpa = false;  // l'IACK répond par VPA (autovecteur)
+int64_t brAt = -1, brLen = 0;        // --br T:N
+int64_t brT = -1, bgT = -1, ackT = -1, relT = -1;
 std::string reason = "limit";
 
 void setIpl(int level) {
@@ -161,9 +167,19 @@ void halfCycle(bool phi1) {
     cpu->clk = 0; cpu->eval();
 }
 
+void arbitrate() {
+    if (brAt < 0 || tOrigin < 0 || relT >= 0) return;
+    if (brT < 0 && cyc - tOrigin >= brAt) { cpu->BRn = 0; brT = cyc; }
+    if (brT >= 0 && bgT < 0 && !cpu->BGn) bgT = cyc;
+    // [B] M68000UM Rev 8 § 5.2.3 : le maître attend BG, puis AS, DTACK et BGACK retombés.
+    if (bgT >= 0 && ackT < 0 && cpu->ASn && cpu->DTACKn) { cpu->BGACKn = 0; cpu->BRn = 1; ackT = cyc; }
+    if (ackT >= 0 && cyc - ackT >= brLen) { cpu->BGACKn = 1; relT = cyc; }
+}
+
 void cpuCycle() {
     if (tOrigin >= 0)
         while (irqIdx < irqs.size() && cyc - tOrigin >= irqs[irqIdx].t) setIpl(irqs[irqIdx++].level);
+    arbitrate();
     halfCycle(true);
     halfCycle(false);
     ++cyc;
@@ -181,6 +197,11 @@ int main(int argc, char** argv) {
             if (!c) { std::fprintf(stderr, "--irq attend T:L\n"); return 2; }
             irqs.push_back({std::atoll(s), std::atoi(c + 1)});
         } else if (!std::strcmp(argv[i], "--vpa")) useVpa = true;
+        else if (!std::strcmp(argv[i], "--br") && i + 1 < argc) {
+            const char* s = argv[++i]; const char* c = std::strchr(s, ':');
+            if (!c) { std::fprintf(stderr, "--br attend T:N\n"); return 2; }
+            brAt = std::atoll(s); brLen = std::atoll(c + 1);
+        }
         else { std::fprintf(stderr, "argument inconnu : %s\n", argv[i]); return 2; }
     }
     if (FILE* f = std::fopen(argv[1], "rb")) {
@@ -207,6 +228,9 @@ int main(int argc, char** argv) {
         if (!cpu->oHALTEDn) { reason = "halt"; break; }
     }
     std::fprintf(out, "END t=%lld reason=%s\n", (long long)cyc, reason.c_str());
+    if (brAt >= 0)
+        std::fprintf(stderr, "ARB br=%lld bg=%lld ack=%lld rel=%lld\n", (long long)brT, (long long)bgT,
+                     (long long)ackT, (long long)relT);
     std::fclose(out);
     cpu->final();
     delete cpu;

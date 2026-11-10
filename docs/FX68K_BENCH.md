@@ -159,6 +159,31 @@ dépend de ces cas ; ce sont des **questions à requalifier sur POM68K**, que le
 telles quelles. Un titre qui récupère d'une bus error en relisant An ou le PC empilé (protection,
 sondage de mémoire) serait le premier à les révéler.
 
+## Bus prêté à un DMA, BR/BG (2026-11-11)
+
+`Vfx68k_bench --br T:N` : un maître pose BR au cycle T (origine des `--irq`), prend le bus en trois fils
+dès BG accordé, AS et DTACK retombés ([B] M68000UM Rev 8 § 5.2.3), le garde N cycles sous BGACK, puis le
+rend ; les dates sortent sur stderr (`ARB …`). Relevé sur `irq_mulu` (prologue riche en accès, puis
+boucle de MULU), N = 32 comme une rafale de 16 octets du DMA disque, T de 0 à 120 par pas de 4 :
+
+| BR tombe pendant | BR → BG | Retard du CPU sur l'accès qui suit la remise |
+|---|---|---|
+| le prologue (accès bus serrés) | 2 cycles | 32 ou 33, 29 à deux phases |
+| un MULU (calcul interne) | 2 cycles | **0** : le calcul continue, le prêt est masqué |
+
+Le 68000 ne s'arrête pas : il rend le bus et ne bloque qu'au prochain accès dont il a besoin. NeoST
+facture au CPU 32 cycles à chaque vidage de FIFO du DMA disque, sans condition (`Fdc::billDmaCycles`
+→ `Bus::stealBusCycles`, port d'`M68000_AddCycles_CE` d'Hatari). Le blitter, lui, partage déjà le bus
+de cette façon (crédit de recouvrement dans l'enveloppe `NeostMoira::sync`). Grade D (RTL) sur un
+point que la fiche ne dit pas. Rien n'est porté : l'arbitrage vit dans l'enveloppe du cœur, gelée
+jusqu'à l'échange (`TODO.md` § 9).
+
+```sh
+python3 -c "import sys; sys.path.insert(0,'tools'); import make_fx68k_programs as m; open('/tmp/mulu.bin','wb').write(m.build('irq_mulu'))"
+(cd build-rtl/fx68k && ./Vfx68k_bench /tmp/mulu.bin /tmp/base.txt --limit 3000 \
+   && ./Vfx68k_bench /tmp/mulu.bin /tmp/br.txt --limit 3000 --br 96:32)
+```
+
 ## Ce qui manque au banc
 
 - **Relance par HALT** après une bus error (non implémentée dans fx68k).

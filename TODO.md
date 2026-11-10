@@ -76,7 +76,7 @@ correction de fidélité.
 |-----|-----|-------------------|------|
 | **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** publiée le 2026-11-11 (`bf5d61f`) ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
 | **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, Mega STE 16 MHz, banc fx68k étendu et sort des `.state` (refus explicite) : faits → § 2 | P1 |
-| **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | DMA disque sur le bus, restes vidéo au cycle, restes MFP de la fiche, délai de bus error, WS3 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
+| **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | restes MFP de la fiche, WS3 → § 3 (DMA disque relevé, reporté au § 9) ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Disquettes de menus nommées, retour arrière, pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
 | **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | A32, oracle et fiches TT/Falcon → § 8 et § 10 ; inventaire fait (`docs/HYPOTHESES_ST.md`) | P2 |
@@ -109,12 +109,10 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.1 GLUE, MMU, Shifter — vidéo et bus
 
-- **DMA disque sur le bus** · P2 ⭘ — il passe par BR/BG et ASO/DSO, un mot par 4 cycles ([B] ST-4081 feuille 8) ; les
-  32 cycles de NeoST pour 8 mots concordent, par lecture. L'arbitrage autour de la rafale n'est ni simulé ni relevé.
-  ST et Mega STE : aucune netlist, le STE fait référence. → `docs/CYCLE_ACCURACY.md` § 5
-- **Restes vidéo au cycle** · P2 ⭘ — `VIDEO_ENDLINE` distinct du HBL, VBL au cycle exact
-  (vraie fin de trame + offset 64/68), phase exacte du tic Timer C, lecture du compteur à
-  cheval sur deux lignes. Étalons : démos plein écran. → `docs/CYCLE_ACCURACY.md` § 4
+- **Restes vidéo au cycle** · P3 ⭘ — la VBL est datée à la fin de trame + 64/68 (`Machine.cpp`), la
+  fin de DE a son événement Timer B distinct du HBL, et la lecture du compteur concorde au RTL sur STE
+  (47 999 sur 48 000, `docs/STCPU_BENCH.md`). Restent ST et Mega ST, sans netlist, et la phase du Timer C
+  (→ « Phase de l'horloge du MFP au reset »). → `docs/CYCLE_ACCURACY.md` § 4
 - **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut reste sans source : sur le fer, l'état se tire à la mise sous tension. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option.
 - **Basse résolution PAL issue du reset** · P2 ⭘ · [F] — le modèle GSTMCU garde une phase de
   plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
@@ -468,6 +466,12 @@ requalifier dans NeoST avant de conclure sur une IRQ réelle. Détail → [`docs
   non normalisé après underflow à vérifier. `k` dynamique fixé à 17 (le dialogue
   périphérique ne transmet pas Dn). POM68K apporte son FPU : décider si `src/io/Fpu.cpp`
   garde son arithmétique pour le 68881 en périphérique du Mega STE, ou la lui délègue.
+
+- **DMA disque : le CPU ne cède que le bus** · P3 ⏸ cœur · [D] — relevé sur fx68k le 2026-11-11
+  (`Vfx68k_bench --br`) : BR → BG en 2 cycles, puis le 68000 ne bloque qu'à son prochain accès ; un
+  prêt de 32 cycles pendant un MULU ne le retarde pas du tout. NeoST facture 32 cycles par rafale
+  sans condition (`Fdc::billDmaCycles`). À porter avec l'arbitrage de bus du nouveau cœur, comme
+  le recouvrement du blitter. → `docs/FX68K_BENCH.md` § *Bus prêté à un DMA*
 
 ### Dette qui attend le nouveau cœur
 

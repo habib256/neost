@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Banc fx68k : bus prêté à un DMA ; restes vidéo requalifiés (2026-11-11)
+
+- `Vfx68k_bench --br T:N` : un maître prend le bus par BR/BG/BGACK. Sur `irq_mulu`, BR → BG en
+  2 cycles ; un prêt de 32 cycles retarde le CPU de 32-33 cycles pendant des accès serrés, et de 0
+  pendant un MULU. NeoST facture la rafale du DMA disque sans condition : écart relevé, reporté
+  au § 9 du TODO (l'arbitrage vit dans l'enveloppe du cœur). L'item « DMA disque sur le bus » sort.
+- « Restes vidéo au cycle » datait de juin : VBL à fin de trame + 64/68, fin de DE distincte du HBL
+  et lecture du compteur (RTL, STE) sont faites. Requalifié P3 ; restent ST/Mega ST et Timer C.
+
 ## 0.6.4 — un filet avant le nouveau cœur (2026-11-11)
 
 Dernière étape avant la 0.6.5, qui précédera l'intégration du cœur 68000 de POM68K.
