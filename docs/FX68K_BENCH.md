@@ -162,6 +162,9 @@ sondage de mémoire) serait le premier à les révéler.
 ## Ce qui manque au banc
 
 - **Relance par HALT** après une bus error (non implémentée dans fx68k).
-- **Autovecteur par VPA, dans le verdict** : relevé à part, ci-dessus, pas comparé accès par accès.
+- **Autovecteur par VPA, dans le verdict** : relevé à part, ci-dessus, pas comparé accès par accès. Volontairement : la
+  synchronisation E-clock vit dans l'enveloppe NeoST (`iackSyncBefore/After`), pas dans Moira, et le chemin complet
+  (VPA, E-clock, IACK, prise de HBL et de VBL) est confronté dans la machine par le banc CPU + GSTMCU, 256 sur 256 et
+  32 sur 32 ([`STCPU_BENCH.md`](STCPU_BENCH.md)).
 - Le GSTMCU (`run_gstmcu_bench.py`) n'exécute pas de code. `stBlitter.sv` a son propre banc,
   [`STBLITTER_BENCH.md`](STBLITTER_BENCH.md).

@@ -75,7 +75,7 @@ correction de fidélité.
 | Lot | But | Items (titre → §) | Prio |
 |-----|-----|-------------------|------|
 | **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** en cours de route ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
-| **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie et Mega STE 16 MHz (faits), banc fx68k étendu (BERR fait), sort des `.state` (refus gardé) → § 2 | P1 |
+| **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, Mega STE 16 MHz et banc fx68k étendu (faits), sort des `.state` (refus gardé) → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | DMA disque sur le bus, restes vidéo au cycle, restes MFP de la fiche, délai de bus error, WS3 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Disquettes de menus nommées, retour arrière, pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
@@ -94,10 +94,6 @@ Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md). La p
 **56 étalons, 22 parcours, la collection en ST, STE et Mega STE, et 42 sondes Mega STE**
 (8, 16 et 16 MHz + cache : blitter/IRQ, bus/cache, DMA disquette, blit sur ses propres registres).
 
-- **Banc fx68k, étendre** · P1 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET,
-  RTR, traps et ligne A/F en utilisateur concordent ; BERR et double faute sont au banc
-  depuis le 2026-11-10 (cinq programmes, écarts au § 9). Reste l'autovecteur dans le
-  verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Sort des `.state` à l'échange** · P2 ⏸ décision *(proposé)* — la section CPU du save-state
   change de forme avec le cœur. Refus explicite des anciens états, comme à chaque
   changement de version, ou reprise par `Cpu68k::archState` ? Le refus est l'attendu par

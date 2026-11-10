@@ -125,6 +125,9 @@ l'ordre inverse. Version courante : **0.6.3**.
   (`raiseBusError`). Cinq programmes : `berr` (toutes les formes d'accès, An et PC relevés
   après la faute), `double_fault`, `double_fault_trap`, `double_fault_addr`,
   `double_fault_vec`. Banc : 34 variantes sur 48 en accord ; les 43 anciennes inchangées.
+- L'autovecteur reste hors de ce banc : sa synchronisation E-clock est dans l'enveloppe NeoST,
+  et le chemin complet est déjà jugé dans la machine par le banc CPU + GSTMCU. L'item « Banc
+  fx68k, étendre » sort du TODO.
 - Écarts consignés, aucun porté (cœur gelé, `TODO.md` § 9). fx68k et Hatari @ `f0736b24`
   s'accordent contre Moira sur quatre points : pile impaire au TRAP (erreur d'adresse puis
   arrêt, [B] M68000UM § 6.3.9), An mis à jour par `(An)+`/`-(An)` fautifs, PC empilé de 2
