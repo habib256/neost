@@ -20,14 +20,15 @@ commande exacte de `run_etalons.py`. Toutes les 10 trames, il relève l'empreint
 | `cpu` | `Cpu68k::archState()` : D0-D7, A0-A7, USP, SSP, PC, SR, IRC, IRD, horloge **bus**, halt, stop | le cœur lui-même |
 
 ```sh
-# 1. Sur le DERNIER commit NeoST avant l'échange (Moira actuel) :
+# 1. Sur le commit de la 0.6.5, DERNIER avant l'échange (Moira actuel) :
 python3 tools/cpu_swap_gate.py --record /chemin/gate.json      # ~1 min 30, 8 793 empreintes
 # 2. Sur le commit de l'échange :
 python3 tools/cpu_swap_gate.py --check  /chemin/gate.json
 ```
 
 La référence n'est **pas versionnée** : chaque correction d'émulation la périme. Elle
-s'enregistre juste avant l'échange, sur un arbre au palier `full` vert.
+s'enregistre juste avant l'échange, sur le commit de la release **0.6.5** (dernière sur le
+Moira de NeoST), arbre au palier `full` vert.
 
 La porte a été éprouvée le 2026-11-10 (commit `8dcbf65`) : accord contre elle-même ;
 `NEOST_MFP_BATCH=0` est vu en `machine` seul, sur plusieurs scénarios ; `NEOST_IPLDELAY=1`

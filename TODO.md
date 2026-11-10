@@ -74,7 +74,7 @@ correction de fidélité.
 
 | Lot | But | Items (titre → §) | Prio |
 |-----|-----|-------------------|------|
-| **0. Ligne de base** | Une version publiée sur le cœur actuel, à laquelle tout se compare ensuite | Fait : **0.6.3** publiée le 2026-11-10 (`355b6c0`). Une dernière version juste avant l'échange reste possible. | — |
+| **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** en cours de route ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
 | **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, banc fx68k étendu, Mega STE 16 MHz au banc, sort des `.state` → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | DMA disque sur le bus, restes vidéo au cycle, restes MFP de la fiche, délai de bus error, WS3 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, ST-STE Hardware Test, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK double faute, parcours étendus (son, STE, parties longues) → § 4 | P2 |
@@ -110,8 +110,8 @@ Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md).
   change de forme avec le cœur. Refus explicite des anciens états, comme à chaque
   changement de version, ou reprise par `Cpu68k::archState` ? À décider avant, pour que
   `tools/run_determinism.py` ait un attendu.
-- **Enregistrer la référence** · P1 ⏸ cœur — `cpu_swap_gate.py --record` sur le **dernier**
-  commit avant l'échange, palier `full` vert. La référence ne se versionne pas.
+- **Enregistrer la référence** · P1 ⏸ cœur — `cpu_swap_gate.py --record` sur le commit de la
+  **0.6.5**, dernier avant l'échange, palier `full` vert. La référence ne se versionne pas.
 
 ---
 
@@ -361,6 +361,12 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 ## 7. 📦 Livraison et interface
 
+- **Release 0.6.4** · P1 ⭘ — version intermédiaire sur le cœur actuel, avec ce que les lots
+  1 à 4 auront fermé. Procédure → `docs/RELEASE.md`.
+- **Release 0.6.5, la dernière sur le Moira de NeoST** · P1 ⏸ cœur — posée **juste avant
+  l'intégration du cœur POM68K**, quand l'auteur le déclare prêt. Palier `full` et CI verts,
+  filet du § 2 en place ; la référence de `cpu_swap_gate.py` s'enregistre sur son commit.
+  Elle reste la version de repli tant que POM68K n'a pas fait ses preuves.
 - **Identification des disquettes de menus** · P2 ⭘ — nom de fichier → équipe, numéro et jeux
   (Automation, D-Bug…) pour la ludothèque et la borne. Catalogue de 4 515 disques sous licence
   MIT dans `data/compdisks/` ; à lire par le code, puis à embarquer avec sa licence.
@@ -439,7 +445,7 @@ et **sa ligne s'ajoute à la table des patches** de `docs/CPU_SWAP_GATE.md`.
 
 ### Le jour de l'échange
 
-1. Filet du § 2 en place, référence enregistrée sur le dernier commit d'avant.
+1. Filet du § 2 en place, **0.6.5 publiée**, référence enregistrée sur son commit.
 2. `diff` de `extern/moira/Moira` contre le cœur POM68K en mode 68000 : chaque patch de
    `extern/moira/NEOST_VENDOR.md` s'y retrouve, ou son absence est expliquée.
 3. `cpu_swap_gate.py --check`, palier `full`, `run_moira_runner.sh`, parcours de jeu,

@@ -17,6 +17,8 @@ les puces) et **`neost_core` ne dépend pas du GUI**.
 **Cap suivant : le TT et le Falcon**, sur le Moira de POM68K (68000/030/040, JIT
 déterministe, FPU et MMU), qui remplacera aussi le cœur du ST. **Rien ne s'intègre avant
 que l'auteur le déclare prêt** ; la porte d'échange est posée (`docs/CPU_SWAP_GATE.md`).
+Jalons : **0.6.4**, puis **0.6.5** juste avant l'intégration du cœur POM68K — la dernière
+sur le Moira de NeoST.
 D'ici là, `TODO.md` range le travail en trois temps : **avant l'échange** (le filet, puis
 tout ce qui ne dépend pas du cœur), **l'échange** (§ 9 — l'intérieur du cœur est **gelé** :
 pas de patch dans `extern/moira` ni de refactor de `src/core/Cpu68k.cpp`, sauf défaut qui
