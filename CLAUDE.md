@@ -14,35 +14,57 @@ n'a **jamais tourné sur un appareil réel** (validé sous QEMU arm64 seulement)
 Architecture en deux mots : **le `Bus` *est* le plan mémoire** (route read8/write8 vers
 les puces) et **`neost_core` ne dépend pas du GUI**.
 
+**Cap suivant : le TT et le Falcon**, sur le Moira de POM68K (68000/030/040, JIT
+déterministe, FPU et MMU), qui remplacera aussi le cœur du ST. **Rien ne s'intègre avant
+que l'auteur le déclare prêt** ; la porte d'échange est posée (`docs/CPU_SWAP_GATE.md`,
+`TODO.md` § 8).
+
 ## Où trouver quoi
+
+**Le projet**
 
 | Doc | Contenu |
 |-----|---------|
 | [`DEV.md`](DEV.md) | **Détails techniques** : architecture, horloge, bus, débogage headless, mapping Hatari, pièges matériels. |
 | [`CHANGELOG.md`](CHANGELOG.md) | **Chronologie** : releases puis chantiers datés. |
 | [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) | **Ce qui est fait, par puce** — répond à « NeoST gère-t-il X ? ». |
-| [`TODO.md`](TODO.md) | **Ce qui reste**, priorisé (P1-P3) : prochaines actions, attentes externes (matériel, médias), restes par puce, bugs jeux, extensions, dette. Un item clos en sort. |
+| [`TODO.md`](TODO.md) | **Ce qui reste**, priorisé (P1-P3) : prochaines actions, attentes externes (matériel, médias), restes par puce, bugs jeux, extensions, dette, TT/Falcon. Un item clos en sort. |
 | [`README.md`](README.md) | Présentation et usage (en anglais, public). |
-| [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md) | **Précision cycle** : modèle Hatari, acquis, inventaire priorisé du restant. |
+
+**Méthode et preuve**
+
+| Doc | Contenu |
+|-----|---------|
 | [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md) | **Échelle des références** : contre quoi chaque verdict du harnais est vrai (`hardware` > `primary` > `rom` > `rtl` > `hatari` > `snapshot`), règles d'arbitrage. **À lire avant de conclure « fidèle » sur un vert.** |
 | [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md) | **Inventaire maître** des écarts NeoST↔Hatari (sévérité + `fichier:ligne`). |
 | [`docs/HATARI_MAPPING.md`](docs/HATARI_MAPPING.md) | Correspondances Hatari↔NeoST↔docs. **À consulter AVANT tout audit.** |
 | [`docs/HATARI_AUTOMATION.md`](docs/HATARI_AUTOMATION.md) | Exécuter Hatari en **oracle headless** (boot → PNG, traces, `--cmd-fifo`). |
-| [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md) | Catalogue des **logiciels étalons** par sous-système. |
 | [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md) | **Cas tranchés** : titres corrigés OU jugés fidèles, avec la recette. À lire avant de rouvrir un « bug ». |
-| [`docs/MOIRA_WINUAE_CONVERGENCE.md`](docs/MOIRA_WINUAE_CONVERGENCE.md) | **Beam-sync** : convergence Moira↔WinUAE, mesures, pistes éliminées. |
-| [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md) | **Échange du cœur 68000** (Moira POM68K) : porte d'empreintes indépendante du cœur, procédure, contrat attendu du cœur (surcharges, internes, patches). |
+| [`docs/TEST_SOFTWARE.md`](docs/TEST_SOFTWARE.md) | Catalogue des **logiciels étalons** par sous-système. |
+| [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md) | **Précision cycle** : modèle Hatari, acquis, inventaire priorisé du restant. |
+
+**Bancs contre le silicium**
+
+| Doc | Contenu |
+|-----|---------|
 | [`docs/FX68K_BENCH.md`](docs/FX68K_BENCH.md) | **Banc Moira↔fx68k** : le 68000 nu contre le RTL cycle-exact, conventions de datation, écarts trouvés et ce qui les tranche. |
 | [`docs/STBLITTER_BENCH.md`](docs/STBLITTER_BENCH.md) | **Banc du blitter** : NeoST contre `stBlitter.sv` et fx68k, accès, données et dates ; ce que la netlist ST-4082 a tranché. |
 | [`docs/STCPU_BENCH.md`](docs/STCPU_BENCH.md) | **Banc CPU + GSTMCU** : ce que le 68000 voit du faisceau, compteur et interruptions, contre les RTL, à l'octet. |
 | [`docs/GLUE_SWEEP.md`](docs/GLUE_SWEEP.md) | **Balayage GLUE du STE** : impulsions 60 Hz et haute résolution à chaque phase, NeoST contre le modèle GSTMCU. |
-| [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) | Recette callgrind, points chauds, build PGO+LTO et son piège. |
+| [`docs/MOIRA_WINUAE_CONVERGENCE.md`](docs/MOIRA_WINUAE_CONVERGENCE.md) | **Beam-sync** : convergence Moira↔WinUAE, mesures, pistes éliminées. |
+
+**Livraison, usage et suite**
+
+| Doc | Contenu |
+|-----|---------|
 | [`docs/RELEASE.md`](docs/RELEASE.md) | **Poser une version** : procédure, le piège du cache `NEOST_VERSION_STR`, ce qui bloque encore une release publique. |
 | [`docs/HW_VALIDATION.md`](docs/HW_VALIDATION.md) | **Validation sur matériel réel** : registre par cible de livraison (config + mesures), protocole en cinq pas, mesure du budget temps réel (`run_perfbench.py --budget`). |
-| [`docs/OPENDST.md`](docs/OPENDST.md) | **Pilotage externe déterministe** : contrat de déterminisme, scripts joystick, sondes mémoire, boucle d'exploration d'états (Go-Explore), recette Rick Dangerous. |
+| [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) | Recette callgrind, points chauds, build PGO+LTO et son piège. |
 | [`docs/KIOSK.md`](docs/KIOSK.md) | Mode borne : options, menu manette, zoom adaptatif, Raspberry Pi. |
 | [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md) | **Extensions NeoST (stockage/réseau)** : **UltraSatan** (SD sur ACSI), **NetUSBee**/EtherNEC (NE2000 + USB, port cartouche), modem Hayes, anneau MIDI, **appareils MIDI hôtes** (destination/source matérielle), clés Steinberg et **adaptateurs de port** (dongles joystick/série, DAC Pro Sound, boutons Multiface/URC). Tout est du matériel qui a réellement existé sur ST. OFF par défaut, sans effet sur les étalons. |
+| [`docs/OPENDST.md`](docs/OPENDST.md) | **Pilotage externe déterministe** : contrat de déterminisme, scripts joystick, sondes mémoire, boucle d'exploration d'états (Go-Explore), recette Rick Dangerous. |
 | [`packaging/android/README.md`](packaging/android/README.md) | **Paquet Android** : build, pièges (jlink, Gradle/JDK), validation ARM64 sous QEMU. |
+| [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md) | **Échange du cœur 68000** (Moira POM68K) : porte d'empreintes indépendante du cœur, procédure, contrat attendu du cœur (surcharges, internes, patches). |
 
 ## Build & run
 
@@ -138,9 +160,9 @@ manque et qui correspond au matériel, puis RETESTER**. Ne jamais porter un déf
 confirmé d'Hatari pour obtenir une égalité de traces. Ce n'est QUE si l'on a la conviction d'avoir tout porté
 correctement et que l'erreur persiste qu'on investigue en détail (trace → boucle →
 source EmuTOS [github.com/emutos/emutos](https://github.com/emutos/emutos)).
-
-Bugs trouvés ainsi : int-ack vectorisé, GPIP4/5/7, Timer B/C, modèle de bus error
-(whitelist Hatari), double bus fault → halt, trame de bus error 68000.
+Une rustine d'Hatari réservée à un titre (test du PC, aléa) signale un phénomène
+matériel non modélisé : chercher la physique qu'elle imite, pas la copier (cas Lethal
+Xcess, `docs/CASE_STUDIES.md`).
 
 Fichiers Hatari clés (← composant NeoST) — table complète dans `DEV.md` :
 - `ioMem.c` + `ioMemTabST/STE.c` → carte des bus errors MMIO (← `Bus::busFault/buildIoFault`)
@@ -170,6 +192,20 @@ python3 tools/run_all.py --tier full   # + TOUS les étalons pixel (parallèles,
 compare que 4 étalons pixel courts (garde-fou, pas une couverture) : des commits ont
 déjà sur-promis sur la base d'un fast vert.
 
+**Hors paliers, à lancer soi-même** (Hatari et Pillow requis, médias privés) :
+
+```sh
+python3 tools/run_game_replay.py [--only ID]      # parties jouées contre Hatari
+python3 tools/compare_titles.py OUT disque…       # --key/--joy/--mouse/--swap, --hatari-trace
+python3 tools/cpu_swap_gate.py --record F | --check F   # état identique à l'octet (A/B)
+```
+
+Après un changement de timing : parcours de jeu, puis A/B de la collection
+(`--arch-hash-every`, ou captures binaire avant/après). Grammaire souris : `L/R/U/D`
+déplacent, `l/r/u/d` déplacent bouton gauche tenu (glisser), `1`/`2` cliquent.
+⚠ Sous zsh, une variable non citée n'est **pas** découpée : `$K` multi-mots reste UN
+argument.
+
 Points critiques : `--irq` indispensable pour les bugs d'IRQ ; `--cart` + `--keys` pour
 les cartouches de diagnostic (rapport sur port série), `--loopback` branché APRÈS
 `--keys`. **VME/FPU MegaSTE « not found » est CORRECT** (Hatari n'émule pas le VME).
@@ -187,6 +223,10 @@ les cartouches de diagnostic (rapport sur port série), `--loopback` branché AP
 Lecteur A monte `.st`, `.msa`, `.dim` (détectés par contenu) et `.stx` (Pasti, jeux
 protégés). Outils : `tools/make_floppy.py` (régénère `disks/diskA.st`),
 `tools/fetch_disk.py <url>` (⚠ domaine public / freeware / démos uniquement).
+
+**Médias privés** : `disks/st/`, `disks/stx/` et les TOS Atari sont gitignorés et ne se
+versionnent jamais. Les jeux commerciaux ne se téléchargent pas : l'auteur les fournit.
+`data/compdisks/CompDisks.json` (MIT) nomme 4 515 disquettes de compilation de la scène.
 
 EmuTOS est le défaut libre. **Le build dépend de la machine** : **192 Ko**
 (`etos192*`, se présente « Atari ST »/TOS 1.4) = **ST / Mega ST seulement** ; **256 Ko**

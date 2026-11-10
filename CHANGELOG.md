@@ -6,6 +6,18 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Doc : TODO, README et CLAUDE réorganisés (2026-11-10)
+
+- `TODO.md` : prochaines actions à jour, état au 2026-11-10, bugs ouverts et campagnes ramenés à
+  quelques lignes (le récit reste dans `docs/CASE_STUDIES.md`), nouveau § 8 « Vers le TT et le
+  Falcon » (cœur POM68K, puces, suite AERA), EWeb et la passerelle au § 5, menus débloqués par
+  CompDisks au § 6.
+- `README.md` : « Real hardware is the reference » remplace « Hatari is the reference », selon
+  la méthode réelle (fiches et ROM d'abord, Hatari témoin exécuté) ; le NAT passe de la licence
+  à l'usage ; TT et Falcon annoncés comme horizon.
+- `CLAUDE.md` : table des docs en quatre groupes, cap TT/Falcon, outils hors paliers
+  (parcours, comparaison, A/B), médias privés et catalogue CompDisks.
+
 ## A/B de la collection après les changements de timing du jour (2026-11-10)
 
 - Binaire de `355b6c0` (début de journée) contre `8efaa9b`, sur les 94 images de `disks/st` et

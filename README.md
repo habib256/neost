@@ -28,11 +28,12 @@ account, no build.
 nothing. If you have ever wanted to *learn* how a 16-bit machine actually works, this is
 a machine with the lid off.
 
-⚙️ **It is honest about timing.** The 68000 core is [Moira](https://github.com/dirkwhoffmann/Moira),
-cycle-exact down to inter-instruction timing, IPL sampled per cycle and bus contention.
-Hardware behaviour is ported register by register from [Hatari](https://www.hatari-emu.org/)
-and MAME — and checked against Hatari as a *running oracle*, not just read.
-See [how that works](#hatari-is-the-reference).
+⚙️ **It is honest about timing — and about its evidence.** The 68000 core is
+[Moira](https://github.com/dirkwhoffmann/Moira), cycle-exact down to inter-instruction timing,
+IPL sampled per cycle and bus contention. Chip behaviour follows the datasheets, the ROMs and
+models derived from the real schematics first; [Hatari](https://www.hatari-emu.org/) and MAME
+are read and run as witnesses. Every hardware claim in the code says what backs it.
+See [how that works](#real-hardware-is-the-reference).
 
 🖥️ **Four real machines.** ST, Mega ST, STE, Mega STE, chosen before boot, with the
 optional hardware correctly present or absent per model. The Mega STE gets its 8/16 MHz
@@ -156,6 +157,14 @@ during the EmuTOS startup screen after **Machine → Hard Reset** to boot **A:**
 while keeping the hard disk mounted. These demo disks do not contain a normal
 GEMDOS directory; opening them from the desktop can show meaningless filenames.
 
+**Network** — the NE2000 (EtherNEC/NetUSBee) uses **pom2nat** (GPL-3.0-or-later, ported
+from POM2), a built-in user-mode NAT; no libslirp or GLib installation is needed. Enable it
+with `--ethernec --nat` or the Network page. The guest keeps 10.0.2.15/24, gateway 10.0.2.2
+and DNS 10.0.2.3; it needs STinG/ENEC or another ST TCP/IP stack. TCP/UDP port forwards,
+IPv6 and IP fragments are supported: `--nat-forwards 'tcp:0.0.0.0:6502:23'` publishes guest
+TCP port 23 on host port 6502. Ethernet broadcasts and non-IP protocols stay on the virtual
+network. See [network extensions](docs/EXTENSIONS.md).
+
 **Cabinet mode** (`--kiosk`, or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd>) — exclusive full screen, no window
 chrome, configuration frozen so the cabinet always restarts identical, and an in-game
 menu on **START** to swap games, remap pads or send keystrokes without ever leaving full
@@ -181,25 +190,28 @@ machine profile for the ROM you give it.
 faithfully so, that is what real hardware does. If a demo looks wrong, check the status
 bar first.
 
-## Hatari is the reference
+## Real hardware is the reference
 
-[**Hatari**](https://www.hatari-emu.org/) ([source](https://framagit.org/hatari/hatari))
-is the mature, decades-old Atari ST/STE/TT/Falcon emulator, and NeoST treats it as the
-authority on what the hardware does — alongside MAME. That is not a figure of speech; it
-is the working method:
+The goal is what a real Atari ST does — not what another emulator does. In practice:
 
-1. **Its sources are read as hardware documentation.** When a game misbehaves, the first
-   move is not to disassemble the game — it is to compare `mfp.c`, `video.c`, `fdc.c`,
-   `blitter.c` with NeoST's equivalent and port what is missing.
-2. **It is then run as an oracle.** Hatari boots the same disk headless and dumps the
-   same frame, and NeoST's output is diffed against it pixel by pixel. Spectrum 512
-   pictures and No Cooper's med-res overscan come out **0 pixels different**.
-3. **Every remaining disagreement is written down** — file and line on both sides — in
-   [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md), including the handful of
-   cases where NeoST is deliberately *not* going to match.
+1. **Primary sources first.** Chip datasheets (MC68901, WD1772, MC6850, YM2149, Z85C30…),
+   TOS and EmuTOS disassembly, and cycle-exact hardware models derived from the original
+   schematics ([fx68k](https://github.com/ijor/fx68k), the MiSTery ST core) come before any
+   emulator. Every hardware claim in the source carries a **grade**, from A (measured on a
+   real machine) down to F (assumed), with the reference that backs it.
+2. **[Hatari](https://www.hatari-emu.org/) is the experienced witness.** Its sources are read
+   chip by chip, and it is run headless as an **oracle**: it boots the same disk with the
+   same keyboard, joystick and mouse input, and NeoST's frames are diffed against it pixel by
+   pixel — Spectrum 512 pictures and No Cooper's med-res overscan come out **0 pixels
+   different**, and whole game sessions are replayed against it.
+3. **Disagreements are written down both ways** — file and line on both sides — in
+   [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md). Where a datasheet says
+   otherwise, NeoST follows the datasheet and says so; where only a game can decide, the
+   game wins. Each test verdict states what it was checked against:
+   [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md).
 
 If you want an emulator to *use*, use Hatari — it is excellent, and it covers the TT and
-the Falcon, which NeoST does not. NeoST exists to be opened up.
+the Falcon, which NeoST does not yet. NeoST exists to be opened up.
 
 ## Where it stands
 
@@ -211,7 +223,8 @@ pixel-exact comparison against the Hatari oracle (`tools/run_all.py --tier full`
 
 The long game is **cycle accuracy** — borders and the fine timing of games and demos.
 What is left, honestly listed: [`TODO.md`](TODO.md) and
-[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md).
+[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md). Next on the horizon: the **TT and the
+Falcon**, on a new 68000/68030/68040 core.
 
 The interface and log messages are in English; code comments and documentation are in
 French.
@@ -225,6 +238,8 @@ French.
 | [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) | What is implemented, chip by chip — "does NeoST do X?" |
 | [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md) | Storage, network, MIDI and dongle hardware you can plug in |
 | [`docs/KIOSK.md`](docs/KIOSK.md) | Arcade cabinet mode, gamepad menu, Raspberry Pi |
+| [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md) | What each test verdict is checked against, from real hardware down to self-snapshots |
+| [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md) | Games and demos investigated — fixed or judged faithful — with the recipe |
 | [`docs/OPENDST.md`](docs/OPENDST.md) | Driving NeoST from an external program: `--server` protocol, memory probes, state-space exploration (Go-Explore), differential oracle against Hatari |
 | [`TODO.md`](TODO.md) | What is left — game catalogue and per-subsystem roadmap |
 | [`CLAUDE.md`](CLAUDE.md) | Working method and sources of truth (also the map to everything else) |
@@ -255,15 +270,6 @@ Bundled third-party components, with thanks:
 
 The bundled demos — *The Cuddly Demos*, *No Cooper* and *Closure* — are demoscene
 productions, distributed by the scene's own long-standing practice.
-
-The NE2000 uses the **pom2nat** built-in user-mode NAT (GPL-3.0-or-later,
-ported from POM2); no libslirp or GLib installation is needed. Enable it with
-`--ethernec --nat` or the Network page. The guest keeps 10.0.2.15/24,
-gateway 10.0.2.2 and DNS 10.0.2.3; it needs STinG/ENEC or another ST TCP/IP stack.
-TCP/UDP port forwards, IPv6 and IP fragments are supported. For example,
-`--nat-forwards 'tcp:0.0.0.0:6502:23'` publishes guest TCP port 23 on host port
-6502. Other computers connect to the host's LAN address. Ethernet broadcasts
-and non-IP protocols stay on the virtual network. See [network extensions](docs/EXTENSIONS.md).
 
 **No proprietary ROM is distributed.** The packages carry EmuTOS only, and the
 repository's history has been rewritten so that it never served an Atari TOS, a

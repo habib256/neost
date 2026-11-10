@@ -27,10 +27,13 @@ fichier est rangé dans cet ordre :
    pas bougé ». Monter l'échelle est un chantier en soi.
 4. **Livrable partout, sans surprise** (§ 5-6) — extensions réelles, paquets validés,
    interface qui sert.
+5. **Puis le TT et le Falcon** (§ 8) — sur le cœur 68000/030/040 de POM68K, quand il sera prêt.
 
-**État au 2026-11-03** : contrat logiciel Mega STE tenu et gardé (suite Q du diagnostic Field
-Service 12/12, grade C) ; aucune divergence haute face à Hatari ; 2 étalons `rtl` ;
-**banc fx68k : 34 variantes sur 43 en accord** cycle à cycle (§ 2.1) ; blitter, GLUE et lecture du faisceau confrontés aux RTL sur STE (§ 4).
+**État au 2026-11-10** : contrat logiciel Mega STE tenu et gardé (suite Q du diagnostic Field
+Service 12/12, grade C) ; les écarts que les fiches MFP, WD1772, ACIA et SCC suffisaient à
+trancher sont corrigés ; **banc fx68k : 34 variantes sur 43 en accord** cycle à cycle (§ 2.1) ;
+blitter, GLUE et lecture du faisceau confrontés aux RTL sur STE (§ 4) ; 21 parcours de jeu
+contre Hatari, et la collection entière inchangée en A/B après les corrections du jour.
 **Pas d'accès à un vrai ST** : les ⏸ matériel passent par les relevés de tiers, les
 documents primaires, les ROM et le RTL épinglé.
 
@@ -57,11 +60,14 @@ documents primaires, les ROM et le RTL épinglé.
 
 | # | Action | Prio | § |
 |---|--------|------|---|
-| 1 | Logithèque : relire les écarts de `compare_titles.py --joy`, étendre `tests/replays/replays.json` | P1 | 3 |
-| 2 | A43 : écarts `⚠ [B]` restants : tous attendent une mesure, une source ou contredisent un jeu (relu le 2026-11-10) | P2 ⏸ | 4 |
-| 3 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ | 6 |
-| 4 | A32 : méthodes du compteur vidéo dans leur objet (un chantier à la fois) | P2 | 7 |
-| 5 | Échange du cœur 68000 par le Moira de POM68K (prélude au TT et au Falcon) | P1 ⏸ cœur | 7 |
+| 1 | Échange du cœur 68000 par le Moira de POM68K, porte d'empreintes prête | P1 ⏸ cœur | 8 |
+| 2 | A12 : valider les paquets sur Raspberry Pi, Windows, Linux, Android | P1 ⏸ matériel | 6 |
+| 3 | Nommer les disquettes de menus de la ludothèque avec `data/compdisks/CompDisks.json` | P2 | 6 |
+| 4 | EWeb ST derrière AERA-Gateway, par le NAT : premier GET HTTP réel de bout en bout | P2 | 5 |
+| 5 | Monter l'échelle : étalons `rtl` en cours de ligne, relevés de tiers, ST-STE Hardware Test | P2 | 4 |
+
+Tout le reste est P3, ou attend une ressource externe (⏸) : mesures sur le fer, schémas,
+médias, décisions.
 
 ---
 
@@ -174,7 +180,6 @@ Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → 
   Tranche : relecture sur un vrai lecteur d'une piste écrite par un jeu (sauvegarde), ou IPF.
 - **ACSI : essai Idris OS** · P3 ⭘ — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté.
 - **WD1772, restes de l'audit** · P3 ⭘ · [B] contre [D] — marqués `⚠ [B]` dans `src/io/Fdc.cpp` : INTRQ de $D8 effaçable par toute commande, gardé car la fiche à la lettre fait diverger Super Hang-On ; $Dx annulé si une commande suit à moins de 16 µs. Deux écarts voulus protègent de vrais programmes : TR/SR écrits pendant BUSY (Delirious Demo IV) et commande remplacée pendant BUSY (Overdrive Demos).
-
 - **Face absente d’un fichier ST** · P3 ⭘ · [F] — aucun contenu de la face omise : vierge ou formatée à l’origine ? Les cinq index avant RNF sont vérifiés sur une piste réellement sans ID (WRITE TRACK de $4E). La synthèse d’ID sur une face absente reste une convention héritée d’Hatari, à trancher par un dump ou une convention de format. → `docs/HATARI_DIVERGENCES.md`
 
 ### 2.7 Clavier — IKBD HD6301, ACIA 6850, MIDI
@@ -201,7 +206,6 @@ Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → 
   Dsetpath sur un masque. Échelon `rom` : rejouer sous TOS réel exécuté par NeoST.
 - **Port cartouche générique** `$FA0000-$FBFFFF` · P3 ⭘ — au-delà du système GEMDOS ; `cart.c`.
 
-**Hors périmètre** : SCSI / NCR5380 — TT et Falcon seulement.
 
 ---
 
@@ -216,21 +220,25 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 | Titre | Prio | Symptôme | Piste |
 |-------|------|----------|-------|
-| **Vroom** `[cr Elite]`, intro sous TOS 2.06 | P2 attente mesure matérielle | Trame rayée transitoire reproduite aussi dans Hatari : 20/1 000 trames sans entrée, retour 50 Hz à 34:40, compteur avancé de deux octets et retrait droit manqué. La sonde GSTMCU et NeoST retrouve 230/184 octets. | Mesurer la latence VBL et la fréquence de cette séquence sur STE réel avant tout recalage CPU/GLUE. `tools/probe_vroom_intro_glue.py`, traces et limites dans `docs/CASE_STUDIES.md`. Le Game Over à zéro point provient des données du média et plante aussi dans Hatari ; aucun correctif de l’image livré. Course courte et tour complet sous 2.06 conservés. |
-| **Lemmings** `[cr BBC][a]`, couverture d'une partie | P3 à compléter | Faux échec du menu résolu par traces : entrée `$4370` à 2615 chez NeoST, 3159 chez Hatari ; alignement des captures +545, seuil de 0,5 % et fenêtre ±30 conservés. Le rejeu du menu passe. | Entrée souris et évolution du premier niveau gardées par `lemmings_first_level` (2026-11-10). Reste à attribuer les compétences et terminer le niveau ; le menu animé seul ne valide pas une partie. |
-| **TOS 2.06 UK**, double faute au démarrage avec SPACE précoce | P2 ouvert | Pile temporaire dans la basepage : une VBL écrase le contexte GEMDOS avant le changement de pile. STE 1 Mo, `diskA.st`, graine 4, SPACE aux trames 100 et 300. Le défaut persiste après les corrections FDC et la lecture du Timer B événementiel. Les traces depuis le reset ont permis cette dernière correction : 25 491 PC concordants jusqu’à $E000A8, puis collision AUTO toujours reproduite. Hatari sans patch TOS : aucun halt sur 256 graines. Preuve ROM de grade C, datation matérielle encore non établie (`docs/CASE_STUDIES.md`). | Poursuivre la chronologie avant AUTO avec tools/trace_tos206_boot.py et les sondes de CASE_STUDIES.md : phases disque alignées et dérive VBL du témoin neutralisée, le résidu est localisé à la sortie d’attente 200 Hz (+64 cycles), puis au balayage mémoire (+60). Armement Timer C mesuré : NeoST précède le témoin de 88 cycles dès le démarrage du timer. La sonde run_vbl_entry_probe.py révèle 3 PC interrompus différents sur 19 ; le préarmement hors STOP les corrige mais laisse le halt TOS et bloque Vroom Elite. Résoudre les deux cas ensemble. Audit du témoin du 2026-11-05 : artefact de reset asynchrone corrigé dans le harnais, sans effet sur les 3 écarts du témoin courant ; phase E-clock sensible, fonctionnement matériel des jeux prioritaire. Ne pas porter la dérive d’origine VBL d’Hatari. Un relevé STE réel reste nécessaire pour valider la fréquence matérielle de la collision. |
-| **Switchblade** `[cr Replicants][t +2]`, fréquence matérielle des collisions | P3 ⏸ relevé de tiers | Graine 8 débloquée sans patch logiciel : correction de cadence FDC/DMA, 4096 cycles par bloc au lieu de 4128. Le chargeur laisse toujours `flock` nul ; seule la datation émulée change. Rejeu de non-régression passé à la graine 8 (`docs/CASE_STUDIES.md`). | Relever ce disque sur un vrai ST : probabilité de collision et dates de fin READ TRACK non confirmées. |
-| **Shadow Warriors** (2Hot2Handle) | P3 ⏸ média | Après SPACE, titre et musique OK, le bouton joystick ne lance pas le jeu (Castle Warrior fonctionne). Sur la version Ocean, ce n'est pas un défaut : le titre attend la touche 1 (« PUSH 1P OR 2P BUTTON »), et le tir ne lance rien non plus sous Hatari. Partie jouée, disques 1 et 2, sans écart avant le combat (`shadow_warrior_st`). | Le disque 2Hot2Handle reste absent. S'il revient, essayer d'abord la touche 1. |
+| **Vroom** `[cr Elite]`, intro sous TOS 2.06 | P2 ⏸ matériel | Trame rayée transitoire, 20/1 000 trames, reproduite aussi par Hatari ; la sonde GSTMCU retrouve 230/184 octets. | Mesurer latence VBL et fréquence de la séquence sur STE réel avant tout recalage CPU/GLUE (`tools/probe_vroom_intro_glue.py`). |
+| **TOS 2.06 UK**, double faute au démarrage avec SPACE précoce | P2 ⭘ | Une VBL écrase le contexte GEMDOS sur la pile temporaire, avant le changement de pile (STE 1 Mo, graine 4). Hatari : aucun halt sur 256 graines. | Résidu localisé à la sortie d'attente 200 Hz (+64 cycles) puis au balayage mémoire (+60) ; à résoudre avec Vroom (même prise de VBL). `tools/trace_tos206_boot.py`. |
+| **Lemmings** `[cr BBC][a]` | P3 ◐ | Menu et premier niveau gardés (`lemmings_first_level`). | Attribuer des compétences et terminer un niveau. |
+| **Switchblade** `[cr Replicants][t +2]` | P3 ⏸ relevé | Graine 8 débloquée par la cadence FDC/DMA ; seule la datation émulée change. | Relever la probabilité de collision sur un vrai ST. |
+| **Shadow Warriors** (2Hot2Handle) | P3 ⏸ média | Version Ocean jouée sans écart (`shadow_warrior_st`) ; le disque 2Hot2Handle manque. | S'il revient, essayer la touche 1. |
+
+Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md).
 
 ### Campagnes à mener
 
-- **Passe logithèque** · P2 ◐ — tous les disques ont démarré sous NeoST et Hatari le 2026-11-03 : aucun
-  plantage propre à NeoST ; écrans d'intro ou titres seulement, sans partie jouée. À étendre :
-  disquettes STX à lancer, parties pilotées (`docs/OPENDST.md`), musique et son, disques STE.
-
-- **Logithèque STE de référence** · P1 ◐ — `tools/compare_titles.py` compare NeoST à Hatari sur `disks/st/demos`. E605,
-  Obsession, Pacemaker, Just Musix 2, More or Less Zero, Double Rez Trouble, Sea of Colour, Drone et Cernit Trandafir
-  s'affichent correctement aux écrans vus. `--key`, `--swap` et `--joy` permettent d'entrer dans les titres et d'y jouer ; `tools/run_game_replay.py` garde 21 parcours de compatibilité sur médias originaux, changements de disquette compris ; les trois diagnostics Vroom, eux aussi sur les originaux, sont exclus par défaut. Halt CPU, capture manquante et altération des médias sources invalident le verdict. Passe STX du 2026-11-04 : 11 disques, 10 à 0,0 % aux écrans vus sur ST, disques B compris pour 5 titres. Sur STE, 8 à 0,0 % ; Lethal Xcess et Golden Axe concordent depuis le 2026-11-10 et sont gardés en partie (`lethal_xcess_ste`, `golden_axe_ste` ; départ des timers MFP sur leur horloge, `docs/CASE_STUDIES.md`) ; Magic Pockets au retour à gauche (diagnostic sensible à deux trames d’alignement des entrées, voir `docs/CASE_STUDIES.md`) ; Super Off Road reste à sa demande de disque de données chez les deux émulateurs, Bubble Ghost et Chessmaster se lancent par `--auto A:\GHOST.PRG` et `--auto A:\CMASTER.PRG`, sous TOS 1.04 ou plus, sans toucher à l'image, à 0,0 % sur ST jusqu'aux écrans vus. Ils se jouent à la souris ; `compare_titles` sait désormais rejouer ces entrées, les parcours interactifs de Bubble Ghost (première salle, non terminée) et de Chessmaster (premier coup au glisser-déposer) sont gardés. Chessmaster plante sous TOS 1.62 chez les deux émulateurs (`docs/CASE_STUDIES.md`). Un script joystick doit tenir chaque commande plus que la période d'interrogation du jeu. Passe d'angle du 2026-11-04, 89 disques sur ST et sur STE, 5 valeurs de `--fdc-seed` et SPACE répété, jusqu'à la trame 4000 : un seul titre change de sort selon la graine, Vroom, ouvert ci-dessus. Les six arrêts CPU touchent cinq disques STE lancés sur ST et Epic disque 2, à toutes les graines, et l'arrêt d'Epic existe aussi sous Hatari.
+- **Logithèque jouée** · P2 ◐ — `tools/run_game_replay.py` garde 21 parcours de compatibilité
+  contre Hatari (médias originaux, changements de disquette, souris et glisser-déposer) ; les
+  diagnostics Vroom et Magic Pockets sont exclus par défaut. À étendre : parties plus longues,
+  musique et son, disques STE. Un script joystick tient chaque commande plus que la période
+  d'interrogation du jeu. → `docs/CASE_STUDIES.md`, `docs/OPENDST.md`
+- **Passe de la collection** · P3 ⭘ — 94 images en ST et en STE : A/B du 2026-11-10 identique à
+  l'octet sur 185 cas sur 188 ; passe d'angle du 2026-11-04 (5 graines), seul Vroom change de
+  sort. À refaire après tout changement de timing. Super Off Road attend son disque de données
+  et Chessmaster plante sous TOS 1.62, chez les deux émulateurs.
 
 ## 4. 🪜 Harnais et preuve
 
@@ -240,7 +248,11 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **A43 — dette de preuve** · P1 ◐ — tout commentaire cite ses références (règle : `CLAUDE.md`). Les 312 citations d'Hatari par numéro de ligne portent grade et révision, relues à l'épingle : `tools/audit_citations.py list` n'en rend plus aucune à relire. Le Blitter nomme sa netlist ou sa ligne où il citait déjà une source. MFP, YM2149, WD1772, ACIA et SCC sont confrontés à leurs fiches, et leurs écarts marqués `⚠ [B]` sur place. Le 2026-11-10, tous ceux que la fiche suffisait à trancher sont corrigés (MFP arrêt, AER, élection ; ACIA TDRE, reset MIDI ; SCC All Sent) ; les restants attendent un relevé sur le fer ou sont gardés parce qu'un jeu contredit la fiche. `audit_citations.py list` signale encore 2 citations, justes, dont la révision suit sur la même phrase. Restent les GLUE/MMU sans schéma. Le SCC n'a pas été relu pour le synchrone, le SDLC et le DMA.
+- **A43 — dette de preuve** · P2 ⏸ — tout commentaire cite ses références (règle : `CLAUDE.md`) ;
+  les 312 citations d'Hatari portent grade et révision. MFP, YM2149, WD1772, ACIA et SCC sont
+  confrontés à leurs fiches : ce qu'elles tranchaient seules est corrigé (2026-11-10), les `⚠ [B]`
+  restants attendent un relevé sur le fer, ou sont gardés parce qu'un jeu contredit la fiche.
+  Restent les GLUE/MMU sans schéma, et le SCC en synchrone, SDLC et DMA.
 - **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée.
 - **Banc fx68k, étendre** · P3 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET, RTR, traps et ligne A/F en utilisateur concordent. Restent BERR et double faute, et l'autovecteur dans le verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
 - **Banc du blitter, étendre** · P3 ⭘ — Mega STE à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres.
@@ -267,7 +279,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   QUAND la démo relit le clavier avant de raccourcir.
 - **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **44 étalons pixel sur 56** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
-  réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → § 3.
+  réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → ci-dessus.
 - **Banc temporel Hatari** · P2 ◐ — 20 sondes, dont écriture DMA disquette, lecture STX et
   DIVU/DIVS ; le résidu blitter/IRQ Mega STE attend la capture IACK. → `docs/HATARI_MEGASTE_AUDIT.md`
 - **Comparaison MAME ↔ NeoST** · P3 ⭘ — memory map, bus errors, FIFO FDC/MMU, blitter, SCC.
@@ -298,6 +310,13 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   le GUI et un test à deux nœuds (un seul processus, bloqué par A33).
 
 ### Réseau, stockage, ports
+- **EWeb ST derrière AERA-Gateway** · P2 ⭘ — navigateur GEM libre (GPL v2) : la passerelle en
+  Docker sur l'hôte, EWeb dans NeoST (STE 4 Mo, STinG + `ENEC.STX`) par le NAT, port 8280.
+  Premier parcours web réel de bout en bout ; en faire un test s'il passe.
+  → <https://yaary.music/software/atari-st/eweb/>
+- **Passerelle intégrée au NAT** · P3 ⏸ décision — relais TLS côté hôte pour HTTP, IMAP, SMTP et
+  FTP, aux ports des clients AERA ; les services lourds (images, scripts, PDF) restent à une
+  AERA externe. Lire d'abord le protocole d'EWeb sur le fil, avec la vraie passerelle.
 - **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — STinG + `ENEC.STX`.
 - **NetUSBee : validation MiNT et matériel** · P3 ⭘ — USB4TOS vérifié (HID + disque) ;
   restent FreeMiNT, capture du latch des différentes cartes, timing électrique et ITL/isochrone.
@@ -324,8 +343,9 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   de l'empreinte machine (§ 4). Modèle : ASE `TimeWarp.cs`.
 - **Explorateur de bitmaps** · P3 ⭘ — la RAM en plans ST avec la palette courante, dans le
   débogueur. Modèle : ASE `DebugWindow`.
-- **Identification des disquettes de menus** · P3 ⭘ — nom de fichier → jeu (Automation,
-  D-Bug…) pour la ludothèque kiosk ; catalogue ASE `GameMenus.json` (licence à vérifier).
+- **Identification des disquettes de menus** · P2 ⭘ — nom de fichier → équipe, numéro et jeux
+  (Automation, D-Bug…) pour la ludothèque et la borne. Catalogue de 4 515 disques sous licence
+  MIT dans `data/compdisks/` ; à lire par le code, puis à embarquer avec sa licence.
 - **Kiosk & CRT, cosmétique** · P3 ⭘ — membres `srcW_`/`srcH_` morts dans `CrtEffectStack` ;
   tenir gauche/droite bloque la répétition haut/bas en kiosk. Limitations CRT v1 assumées.
 - **Hygiène FujiNet** · P3 ⏸ décision — code retiré le 2026-08-22 ; deux mentions historiques
@@ -343,7 +363,6 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
   fonctions statiques `(App&, Frame&)`. Plus grosse pièce restante :
   `runKioskMenu` — 380 lignes d'un seul tenant. Prochain pas éventuel : sortir ses pages,
   puis `consumeConfigRequests` (219 lignes). Déplacements mécaniques uniquement.
-- **Échange du cœur : Moira de POM68K** · P1 ⏸ cœur POM68K — 68000/030/040, JIT déterministe, FPU et MMU intégrés ; cycle-exact en 68000. Porte prête (`tools/cpu_swap_gate.py`) : enregistrer la référence sur le dernier commit avant l'échange. Contrat attendu du cœur → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md)
 - **Suivre l'amont Moira** · P3 ⭘ — 10 commits non portés depuis le pin (68020/68030, vAmiga,
   empreinte mémoire) ; rien pour le 68000 hormis DIVU/DIVS, porté. Rejouer
   `tools/run_moira_runner.sh` et le banc fx68k à chaque patch du cœur.
@@ -367,11 +386,18 @@ Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANG
 
 ---
 
-## 8. 📚 Logiciels réservés au TT et au Falcon
+## 8. 🚀 Vers le TT et le Falcon
 
-- **Suite AERA de yaary.music** · P2 ⏸ Falcon dans NeoST — <https://yaary.music/software/atari-st/>.
-  Dix programmes GEM en C, sous GPL v2 (« ou ultérieure » sur la page d'EWeb) : EWeb (navigateur), EMail, ECal, EContact, EFTP, EPDF, EPlay (MP3), EHypView,
-  EUpdate, ClaudeST. Sur Falcon et TT, EWeb fait son TLS 1.2 et décode ses JPEG **sur le DSP**,
-  EPlay lit le MP3 sur le DSP : d'excellents juges du DSP56001 et de la pile réseau. Sur ST, ils
-  passent par AERA-Gateway (<https://yaary.music/software/aera-gateway/>). À tester quand le
-  Falcon sera émulé (cœur POM68K, `docs/CPU_SWAP_GATE.md`).
+Rien ne s'intègre avant que le cœur de POM68K soit prêt ; ici, la préparation et ce qui attend.
+
+- **Échange du cœur : Moira de POM68K** · P1 ⏸ cœur — 68000/030/040, JIT déterministe, FPU et
+  MMU intégrés, cycle-exact en 68000 ; il remplace aussi le cœur du ST. Porte prête
+  (`tools/cpu_swap_gate.py`) : enregistrer la référence sur le dernier commit avant l'échange.
+  Contrat attendu du cœur → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md)
+- **Puces du TT et du Falcon** · P2 ⏸ cœur — DSP56001, VIDEL, Crossbar, second MFP du TT,
+  SCSI NCR5380, IDE, NVRAM MC146818 ; bus 32 bits et cartes MMIO par machine. Fiches à
+  rapatrier par `tools/setup_silicon_refs.sh` ; témoins : `extern/hatari/src/falcon`.
+- **Suite AERA de yaary.music** · P2 ⏸ Falcon — <https://yaary.music/software/atari-st/>.
+  Dix programmes GEM en C, sous GPL v2 : EWeb, EMail, ECal, EContact, EFTP, EPDF, EPlay,
+  EHypView, EUpdate, ClaudeST. Sur Falcon, EWeb fait son TLS 1.2 et ses JPEG **sur le DSP**,
+  et EPlay y décode le MP3 : de vrais juges du DSP56001. Sur ST, ils passent par AERA-Gateway.
