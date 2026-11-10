@@ -12,6 +12,8 @@ l'ordre inverse. Version courante : **0.6.3**.
   `disks/st` et `disks/stx` en ST/TOS 1.04 et STE/TOS 1.62, 2000 trames, ESPACE toutes les 400
   trames dès 600 : **188 cas sur 188 sans violation**. La CI ne voit que trois démos : la
   collection est privée, la passe se refait à la main.
+- Les 22 parcours de jeu et les 24 sondes Mega STE (suite Q du diagnostic comprise), avec les
+  commandes de `cpu_swap_gate.py` : **46 sur 46 sans violation**.
 - `neost-fuzz-disk` sous ASan/UBSan, graines 1 à 4, 200 000 itérations chacune : 0 violation
   (le palier `fast` en fait 20 000 sur une graine).
 
