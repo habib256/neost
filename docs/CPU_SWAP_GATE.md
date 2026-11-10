@@ -62,7 +62,8 @@ une régression du cœur.
 - `/usr/bin/python3 tools/run_game_replay.py` : l'accord des parcours avec Hatari (la porte
   ne vérifie que leur égalité NeoST contre NeoST ; Pillow requis, le `python3` de Homebrew
   ne l'a pas et sort en SKIP).
-- `tools/run_determinism.py` : reprise de save-state avec le **nouveau** format CPU.
+- `tools/run_determinism.py` : reprise de save-state avec le **nouveau** format CPU, et refus
+  explicite d'un état d'une autre version (passe C).
 - Mega STE à 16 MHz face à une référence extérieure : la porte ne dit que « inchangé ».
   L'accord avec Hatari et la borne physique du bus restent à `run_megaste_bus_oracle.py`
   et `run_megaste_blitter_checks.py`.

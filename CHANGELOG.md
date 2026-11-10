@@ -6,6 +6,12 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Déterminisme : refus explicite d'un état d'une autre version, gardé (2026-11-10)
+
+- `tools/run_determinism.py`, passe C : le save-state de la passe B, numéro de format décrémenté,
+  doit être refusé avec « unsupported format » et un code non nul. Vert (v58 refusé par v59).
+  C'est l'attendu de l'échange du cœur tant que l'auteur garde la convention du refus.
+
 ## TOS 2.06 UK, double faute : jugée, course réelle et tirage discret (2026-11-10)
 
 - Même recette, NeoST 3 halts sur 256 graines, Hatari `f0736b24` 0 sur 1 024. Les trois halts

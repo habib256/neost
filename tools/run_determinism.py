@@ -9,7 +9,10 @@
 #  COMMENT. Trois passes, avec les mêmes entrées joystick et clavier :
 #    A   : le boot en entier, une empreinte toutes les N trames ;
 #    A'  : la même chose, qui doit rendre les mêmes empreintes ;
-#    B   : reprise depuis un save-state pris en cours de route, mêmes entrées : mêmes empreintes.
+#    B   : reprise depuis un save-state pris en cours de route, mêmes entrées : mêmes empreintes ;
+#    C   : le même état, numéro de format décrémenté : refus EXPLICITE (message, code non nul),
+#          jamais un chargement silencieux ni un plantage. C'est l'attendu de l'échange du cœur
+#          tant qu'il change le format (TODO § 2, « Sort des .state à l'échange »).
 #  La première ligne qui diffère date la perte. Le test porte sur la ROM libre, sans disque privé.
 #
 #  Usage : run_determinism.py [--rom roms/etos192fr.img] [--frames 800] [--every 50]
@@ -73,11 +76,23 @@ def main() -> int:
         resumed = hashes(base + ["--load-state", state, "--frames", str(a.frames - split),
                                  "--joy-script", str(start - split), script * 8,
                                  "--scancode-at", str(start + 40 - split), "39"])
+        # C : l'en-tête porte magic(4) puis la version (2 octets, petit-boutiste).
+        data = bytearray(Path(state).read_bytes())
+        version = int.from_bytes(data[4:6], "little")
+        data[4:6] = ((version - 1) & 0xFFFF).to_bytes(2, "little")
+        older = Path(tmp) / "older.state"
+        older.write_bytes(data)
+        r = subprocess.run(base + ["--load-state", str(older), "--frames", "1"], cwd=ROOT,
+                           capture_output=True, text=True, timeout=600)
     gap = first_gap(first, resumed, split)
     if gap is not None or not resumed:
         print(f"ÉCHEC — la reprise depuis le save-state diverge à la trame {gap}")
         return 1
-    print(f"DÉTERMINISME OK : {len(first)} empreintes, reprise à la trame {split} identique sur {len(resumed)} empreintes")
+    if r.returncode in (0, None) or r.returncode < 0 or "unsupported format" not in r.stderr + r.stdout:
+        print(f"ÉCHEC — un état au format v{version - 1} n'est pas refusé explicitement (code {r.returncode})")
+        return 1
+    print(f"DÉTERMINISME OK : {len(first)} empreintes, reprise à la trame {split} identique sur {len(resumed)} "
+          f"empreintes ; état v{version - 1} refusé par le format v{version}")
     return 0
 
 

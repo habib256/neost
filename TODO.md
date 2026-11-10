@@ -103,8 +103,10 @@ Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md). La p
   ses propres registres (78 programmes en accord à 8 MHz seulement). → `docs/STBLITTER_BENCH.md`
 - **Sort des `.state` à l'échange** · P2 ⏸ décision *(proposé)* — la section CPU du save-state
   change de forme avec le cœur. Refus explicite des anciens états, comme à chaque
-  changement de version, ou reprise par `Cpu68k::archState` ? À décider avant, pour que
-  `tools/run_determinism.py` ait un attendu.
+  changement de version, ou reprise par `Cpu68k::archState` ? Le refus est l'attendu par
+  défaut, gardé depuis le 2026-11-10 par la passe C de `tools/run_determinism.py` (un état
+  d'une autre version est refusé avec message et code non nul) ; choisir la reprise
+  changerait cette passe.
 - **Enregistrer la référence** · P1 ⏸ cœur — `cpu_swap_gate.py --record` sur le commit de la
   **0.6.5**, dernier avant l'échange, palier `full` vert. La référence ne se versionne pas.
 
