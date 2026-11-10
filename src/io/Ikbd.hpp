@@ -70,6 +70,10 @@ public:
     // départ de la file) → il devient le RDR courant ([B] MC6850 § Receive Data Register p. 7 :
     // RDRF=1 au caractère complet, IRQ ACIA). Cette
     // CADENCE est celle du SCI d'Hatari ([D] ikbd.c:1035 @ f0736b24 : 1024 cycles/bit à 7812,5 bauds) ; des
+    // [B] HD6301/HD6303 Series Handbook (Hitachi, 1989), table 2-6-1 p. 153, sha256 dbee534e… : avec
+    // un quartz de 4,0 MHz, E÷128 donne 128 µs par bit, soit 1026,7 cycles du CPU PAL et non 1024
+    // (Hatari suppose un CPU à 8 MHz tout rond). [F] Le quartz de l'IKBD n'est pas sourcé ici :
+    // tranché par le schéma de la carte ST ou le document Atari du protocole IKBD.
     // jeux (Vroom) synchronisent leur parseur de paquets souris dessus — une
     // livraison instantanée des 3 octets leur fait confondre dx et dy.
     // [F] La fiche ne date pas RDRF : le suréchantillonnage /64 (§ Receive p. 6) et § Receiver Overrun p. 8

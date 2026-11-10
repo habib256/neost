@@ -6,6 +6,14 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Fiche du HD6301 rapatriée ; cadence du SCI de l'IKBD mise en question (2026-11-10)
+
+- `tools/setup_silicon_refs.sh` épingle le *HD6301/HD6303 Series Handbook* d'Hitachi (1989,
+  bitsavers, sha256 `dbee534e…`), document primaire de l'IKBD.
+- Sa table 2-6-1 (p. 153) donne 128 µs par bit à 7812,5 bauds avec un quartz de 4 MHz, soit
+  1026,7 cycles du CPU PAL ; NeoST et Hatari comptent 1024, en supposant un CPU à 8 MHz. Le
+  quartz de l'IKBD n'étant pas sourcé, rien ne change : question ouverte au TODO § 3.6.
+
 ## Étalons sensibles à la phase E-clock : verrouillés sur le compteur vidéo (2026-11-10)
 
 - Mesure : en décalant la trame capturée de −4 à +4, seuls `spec512_bands`, `spec512_view`,

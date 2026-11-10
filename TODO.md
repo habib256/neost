@@ -212,6 +212,11 @@ Extension du banc à 16 MHz → § 2.
 
 - **Liaison série physique** · P3 ⭘ — formats et diviseurs autres que /64 8N1, phase SCI
   sortante exacte ; ligne BREAK et erreurs de trame hors modèle.
+- **Cadence du SCI de l'IKBD** · P3 ⏸ source · [D] — 1024 cycles par bit, comme Hatari, qui
+  suppose un CPU à 8 MHz. La fiche du HD6301 (table 2-6-1 p. 153) donne 128 µs par bit avec un
+  quartz de 4 MHz, soit 1026,7 cycles du CPU PAL : 27 cycles de plus par octet. Tranche : le
+  quartz sur le schéma de la carte ST, ou le document Atari du protocole IKBD ; puis A/B de la
+  porte et des parcours.
 - **Firmware IKBD, restes face à la ROM** · P3 ⭘ — `$19` scruté toutes les 1 ms (la ROM le fait à
   chaque tour) ; l'état hôte ne change qu'aux événements de l'hôte ; code 6301 custom
   (`Execute`). Les délais de `$18` sont comptés sur la ROM, pas mesurés sur un IKBD.
@@ -282,7 +287,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`.
 - **Relevés de tiers** · P2 ⭘ — notes de Steven Tattersall, résultats de la suite Hatari,
   relevés publiés avec WSDETECT. Un relevé entre en `hardware` s'il nomme machine et protocole.
-- **Documents primaires manquants** · P2 ⭘ — HD6301, schémas GLUE/MMU ST et Mega STE,
+- **Documents primaires manquants** · P2 ⭘ — HD6301 rapatrié le 2026-11-10 (Hitachi, *HD6301/HD6303 Series Handbook*, 1989) ; restent les schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST.
 - **A43 — dette de preuve** · P2 ⏸ — tout commentaire cite ses références (règle : `CLAUDE.md`) ;
   les 312 citations d'Hatari portent grade et révision. MFP, YM2149, WD1772, ACIA et SCC sont

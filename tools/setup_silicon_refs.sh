@@ -65,6 +65,9 @@ doc Zilog_PS0117.pdf feb4b46341bf20cab3ce5e555b02b7c13e1c2422cb12a9ba2dbfa121d0a
     https://www.zilog.com/docs/serial/ps0117.pdf
 doc RP5C15_Ricoh.pdf b929eeb470dfc0df7b2673cd3810debe17d08e8e1f155126e6c274dc0fadcf3e \
     https://static.datasheets.com/doc/21798444-ricoh-rj5c15-ds.pdf
+# Hitachi, HD6301/HD6303 Series Handbook, 1989 (U07) : le microcontrôleur de l'IKBD.
+doc HD6301_HD6303_Handbook_1989.pdf dbee534e751ccb9a84f91d59c9eb86547d0cd3a521dbfb681cacb0f930cb69a6 \
+    "$BITS/hitachi/_dataBooks/1989_U07_HD6301_HD6303_Series_Handbook_1989.pdf"
 # Transcription tierce du microcode du 68000 : même origine que fx68k, donc pas un témoin
 # indépendant de lui. Chaque mot y dit quels accès bus la séquence fait, et dans quel ordre.
 doc m68k_microcode_all.txt f678abb9ec4f32ac19a0b67cf7a9e5d1ab8c581e38588d2cdc5d17577e88eb8b \
