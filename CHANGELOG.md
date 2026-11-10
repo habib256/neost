@@ -6,6 +6,20 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Porte d'échange élargie : parcours, collection, Mega STE à 16 MHz (2026-11-10)
+
+- `tools/cpu_swap_gate.py` rejoue quatre suites, NeoST contre NeoST, sans Hatari ni Pillow :
+  les 56 étalons, les 22 parcours de jeu (même partie que `compare_titles`), chaque image de
+  `disks/st` et `disks/stx` en ST/TOS 1.04, STE/TOS 1.62 et Mega STE/TOS 2.06, et 24 sondes
+  Mega STE (blitter/IRQ et bus/cache à 8, 16 et 16 MHz + cache, suite Q du diagnostic).
+  `--show ID` imprime la commande d'un scénario pour la tracer ; un scénario disparu de la
+  référence échoue. Mesuré : 266 scénarios et 101 494 empreintes en 494 s sans le Mega STE,
+  accord avec soi-même ; `NEOST_MFP_BATCH=0` fait rougir les 22 parcours, en `machine`
+  d'abord. La suite Mega STE : 1 108 empreintes, déterministe.
+- `tools/title_cmd.py` : la ligne de commande NeoST d'un titre joué, sortie de
+  `compare_titles.py` pour que la porte rejoue la même partie ; `run_game_replay.py` expose
+  `compare_argv`. Parcours contre Hatari inchangés (clavier, souris, joystick rejoués).
+
 ## Inventaire des hypothèses ST dans le code (2026-11-10)
 
 - `docs/HYPOTHESES_ST.md` : ce qui suppose un ST hors du cœur, relevé à `ee571b2` sans rien

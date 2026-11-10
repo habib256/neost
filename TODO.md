@@ -75,7 +75,7 @@ correction de fidélité.
 | Lot | But | Items (titre → §) | Prio |
 |-----|-----|-------------------|------|
 | **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** en cours de route ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
-| **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, banc fx68k étendu, Mega STE 16 MHz au banc, sort des `.state` → § 2 | P1 |
+| **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie (faite), banc fx68k étendu (BERR fait), Mega STE 16 MHz au banc, sort des `.state` → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | DMA disque sur le bus, restes vidéo au cycle, restes MFP de la fiche, délai de bus error, WS3 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK double faute, parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Disquettes de menus nommées, retour arrière, pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
@@ -90,22 +90,17 @@ externe (⏸).
 ## 2. 🥅 Le filet de l'échange
 
 Ce qui doit exister **avant** le commit de l'échange pour qu'il se juge sur pièces.
-Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md).
+Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md). La porte rejoue
+**56 étalons, 22 parcours, la collection en ST, STE et Mega STE, et 24 sondes Mega STE**.
 
-- **Porte élargie aux parcours et à la collection** · P1 ⭘ *(proposé)* —
-  `tools/cpu_swap_gate.py` ne rejoue que les 56 étalons pixel. Les 21 parcours de jeu et la
-  collection (94 images, ST et STE) exercent bien plus de code, mais se comparent
-  aujourd'hui à Hatari, donc sans égalité à l'octet. Leur faire relever la même empreinte
-  `--arch-hash-every`, NeoST contre NeoST, sans Hatari ni Pillow.
 - **Banc fx68k, étendre** · P1 ◐ — tous les modes d'adressage, MOVE, ALU, MOVEM, sauts, RESET,
   RTR, traps et ligne A/F en utilisateur concordent ; BERR et double faute sont au banc
   depuis le 2026-11-10 (cinq programmes, écarts au § 9). Reste l'autovecteur dans le
   verdict. → `docs/FX68K_BENCH.md` § *Ce qui manque*
-- **Mega STE à 16 MHz dans le filet** · P2 ⭘ — la porte ne le voit que par ses étalons, alors
-  que l'horloge du cœur y vaut deux fois l'horloge bus (`cpuMul`, `cpuBias`). Banc du
-  blitter à 16 MHz, disputes de bus avec le DMA, blit sur ses propres registres : 78
-  programmes en accord à 8 MHz ; `blitter_timer` et deux sondes s'écartent d'Hatari,
-  consigné. → `docs/STBLITTER_BENCH.md`
+- **Mega STE à 16 MHz dans le filet** · P2 ◐ — la porte rejoue depuis le 2026-11-10 les sondes
+  blitter/IRQ et bus/cache à 8, 16 et 16 MHz + cache, la suite Q du diagnostic et la collection
+  en Mega STE. Restent des sondes à 16 MHz pour les disputes de bus avec le DMA et le blit sur
+  ses propres registres (78 programmes en accord à 8 MHz seulement). → `docs/STBLITTER_BENCH.md`
 - **Sort des `.state` à l'échange** · P2 ⏸ décision *(proposé)* — la section CPU du save-state
   change de forme avec le cœur. Refus explicite des anciens états, comme à chaque
   changement de version, ou reprise par `Cpu68k::archState` ? À décider avant, pour que
@@ -264,7 +259,7 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   contre Hatari (médias originaux, changements de disquette, souris et glisser-déposer) ; les
   diagnostics Vroom et Magic Pockets sont exclus par défaut. À étendre : parties plus longues,
   musique et son, disques STE. Un script joystick tient chaque commande plus que la période
-  d'interrogation du jeu. Chaque parcours ajouté élargit aussi le filet (§ 2).
+  d'interrogation du jeu. Chaque parcours ajouté entre aussi dans la porte d'échange (§ 2).
   → `docs/CASE_STUDIES.md`, `docs/OPENDST.md`
 - **Passe de la collection** · P3 ⭘ — 94 images en ST et en STE : A/B du 2026-11-10 identique à
   l'octet sur 185 cas sur 188 ; passe d'angle du 2026-11-04 (5 graines), seul Vroom change de

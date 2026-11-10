@@ -10,9 +10,20 @@ au ST, au STE et au Mega STE**, et **ce que NeoST attend du cœur**.
 Ce qui doit être prêt avant l'échange (porte élargie, banc étendu, sort des `.state`) et
 ce qui est gelé d'ici là : [`../TODO.md`](../TODO.md) § 2 et § 9.
 
-`tools/cpu_swap_gate.py` rejoue les 56 étalons pixel de `tools/etalons.json`, avec la
-commande exacte de `run_etalons.py`. Toutes les 10 trames, il relève l'empreinte
-`--arch-hash-every`, qui ne dépend pas de la façon dont le cœur sérialise ses internes :
+`tools/cpu_swap_gate.py` rejoue quatre suites, NeoST contre NeoST, sans Hatari ni Pillow :
+
+| Suite | Scénarios | Commande |
+|-------|-----------|----------|
+| `etalons` | les 56 étalons pixel de `tools/etalons.json` | celle de `run_etalons.py` |
+| `replays` | les 22 parcours de `tests/replays/replays.json`, diagnostics compris | celle de `compare_titles.py` côté NeoST, par `tools/title_cmd.py` : mêmes touches, joystick, souris, disquettes changées |
+| `collection` | chaque image de `disks/st` et `disks/stx`, en ST/TOS 1.04, STE/TOS 1.62 et Mega STE/TOS 2.06 | ESPACE toutes les 500 trames de 1000 à 3500, 4000 trames |
+| `megaste` | sondes blitter/IRQ et bus/cache à 8, 16 et 16 MHz + cache ; suite Q du diagnostic Field Service | générateurs de `run_megaste_blitter_checks.py` et `run_megaste_bus_oracle.py` ; recette de `run_megaste_diag.py` |
+
+Les médias privés manquants (images, TOS Atari, cartouche) sont sautés et nommés à
+l'enregistrement ; à la vérification, un scénario de la référence qui a disparu est un
+échec. Toutes les 10 trames (à chaque trame pour les sondes Mega STE), la porte relève
+l'empreinte `--arch-hash-every`, qui ne dépend pas de la façon dont le cœur sérialise ses
+internes :
 
 | Hachage | Contenu | Un écart désigne |
 |---------|---------|------------------|
@@ -21,9 +32,12 @@ commande exacte de `run_etalons.py`. Toutes les 10 trames, il relève l'empreint
 
 ```sh
 # 1. Sur le commit de la 0.6.5, DERNIER avant l'échange (Moira actuel) :
-python3 tools/cpu_swap_gate.py --record /chemin/gate.json      # ~1 min 30, 8 793 empreintes
+python3 tools/cpu_swap_gate.py --record /chemin/gate.json      # toutes les suites
 # 2. Sur le commit de l'échange :
-python3 tools/cpu_swap_gate.py --check  /chemin/gate.json
+python3 tools/cpu_swap_gate.py --check  /chemin/gate.json      # les suites de la référence
+# Localiser : la commande d'un scénario, pour --trace F --trace-from N --regs --irq
+python3 tools/cpu_swap_gate.py --show replay/golden_axe_ste
+python3 tools/cpu_swap_gate.py --list --suite megaste
 ```
 
 La référence n'est **pas versionnée** : chaque correction d'émulation la périme. Elle
@@ -45,11 +59,13 @@ une régression du cœur.
 - `python3 tools/run_all.py --tier full` : les auto-tests de logique, le banc fx68k (verdicts
   figés dans `tests/reference/fx68k_bench.json`), le banc CPU + GSTMCU, le diagnostic Mega STE.
 - `tools/run_moira_runner.sh` : le cœur nu.
-- `/usr/bin/python3 tools/run_game_replay.py` : les parcours de jeu de `tests/replays/replays.json` (Pillow requis ; le
-  `python3` de Homebrew ne l'a pas et sort en SKIP).
+- `/usr/bin/python3 tools/run_game_replay.py` : l'accord des parcours avec Hatari (la porte
+  ne vérifie que leur égalité NeoST contre NeoST ; Pillow requis, le `python3` de Homebrew
+  ne l'a pas et sort en SKIP).
 - `tools/run_determinism.py` : reprise de save-state avec le **nouveau** format CPU.
-- Mega STE à 16 MHz : la porte le voit par ses étalons Mega STE, mais l'horloge du cœur
-  y vaut deux fois l'horloge bus (`cpuMul`, `cpuBias`).
+- Mega STE à 16 MHz face à une référence extérieure : la porte ne dit que « inchangé ».
+  L'accord avec Hatari et la borne physique du bus restent à `run_megaste_bus_oracle.py`
+  et `run_megaste_blitter_checks.py`.
 
 ## Ce que NeoST attend du cœur
 

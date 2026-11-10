@@ -58,11 +58,12 @@ def play_snapshot(r: dict, work: Path) -> tuple[int, list[str]]:
     return 0, ["snapshot only; no hardware or Hatari verdict"]
 
 
-def play(r: dict, work: Path) -> tuple[int, list[str]]:
-    if r.get("ref_kind") == "snapshot":
-        return play_snapshot(r, work)
-    cmd = [sys.executable, str(ROOT / "tools" / "compare_titles.py"), str(work / "out"), r["disk"],
-           "--machine", r["machine"], "--rom", r["rom"], "--mem", str(r["mem"]),
+def compare_argv(r: dict, work: Path) -> list[str]:
+    """Options de compare_titles.py pour un parcours du manifeste (sans SORTIE ni DISQUE).
+
+    Partagé avec cpu_swap_gate.py, qui rejoue la même partie dans NeoST seul.
+    """
+    cmd = ["--machine", r["machine"], "--rom", r["rom"], "--mem", str(r["mem"]),
            "--frames", ",".join(map(str, r["frames"])), "--window", str(r.get("window", 6)), "--step", str(r.get("step", 2)),
            "--jobs", "1"]
     for field in ("fdc_seed", "hatari_seed", "key_hold", "offset", "mouse_step"):
@@ -84,6 +85,14 @@ def play(r: dict, work: Path) -> tuple[int, list[str]]:
         cmd += ["--mouse", f"{at}:{script}"]
     for at, disk in r.get("swaps", []):                # changement de disquette : [trame, chemin]
         cmd += ["--swap", f"{at}:{disk}"]
+    return cmd
+
+
+def play(r: dict, work: Path) -> tuple[int, list[str]]:
+    if r.get("ref_kind") == "snapshot":
+        return play_snapshot(r, work)
+    cmd = [sys.executable, str(ROOT / "tools" / "compare_titles.py"), str(work / "out"), r["disk"],
+           *compare_argv(r, work)]
     done = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=1800)
     if done.returncode == 77:
         return 77, [done.stdout.strip()]

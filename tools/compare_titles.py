@@ -32,7 +32,6 @@
 # =============================================================================
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import os
@@ -43,8 +42,6 @@ import sys
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
-from functools import reduce
-from math import gcd
 from pathlib import Path
 
 try:
@@ -58,53 +55,8 @@ HEADLESS = ROOT / "build" / "neost-headless"
 HATARI = ROOT / "extern" / "hatari" / "build" / "src" / "hatari"
 
 
-KEY_HOLD = 8                    # défaut en trames d'appui, le même des deux côtés
-
-
-def parse_seed(text: str) -> int:
-    value = int(text, 0)
-    if not 0 <= value <= 0xFFFFFFFF:
-        raise argparse.ArgumentTypeError("seed must be an unsigned 32-bit integer")
-    return value
-
-
-def parse_key(text: str) -> tuple[int, int]:
-    at, _, code = text.partition(":")
-    return int(at), int(code)
-
-
-def parse_mouse(text: str) -> tuple[int, str]:
-    at, sep, script = text.partition(":")
-    if not sep or not at.isdecimal() or int(at) < 1 or not script or set(script) - set(".LRUDlrud123"):
-        raise argparse.ArgumentTypeError("mouse input must be FRAME:SCRIPT (FRAME >= 1; .LRUDlrud123, one character per frame)")
-    return int(at), script
-
-
-def mouse_events(scripts, step=8) -> list[tuple[int, str]]:
-    """Même grammaire et relâchement final que --mouse-at du headless.
-
-    Les scripts ne se chevauchent pas : autrement leur ordre pourrait remplacer
-    un bouton encore tenu par le script précédent dans un seul des deux témoins.
-    """
-    events = []
-    previous_end = -1
-    for start, script in sorted(scripts):
-        if start <= previous_end:
-            raise ValueError("mouse scripts overlap (including the final release frame)")
-        previous_end = start + len(script)
-        buttons = 0
-        for offset, char in enumerate(script + "."):
-            # l/r/u/d : déplacement bouton gauche tenu (glisser), comme le headless.
-            current = {"1": 1, "2": 2, "3": 3, "l": 1, "r": 1, "u": 1, "d": 1}.get(char, 0)
-            for bit, name in ((1, "left"), (2, "right")):
-                if (buttons ^ current) & bit:
-                    events.append((start + offset, name + ("down" if current & bit else "up")))
-            buttons = current
-            dx, dy = {"L": (-step, 0), "R": (step, 0), "U": (0, -step), "D": (0, step),
-                      "l": (-step, 0), "r": (step, 0), "u": (0, -step), "d": (0, step)}.get(char, (0, 0))
-            if dx or dy:
-                events.append((start + offset, f"mousemove {dx} {dy}"))
-    return events
+from title_cmd import (KEY_HOLD, build_parser, finish_args, mouse_events, neost_cmd,  # noqa: E402,F401
+                       parse_key, parse_mouse, parse_seed, parse_swap, swap_copy)
 
 
 def run_hatari_keys(cmd: list[str], keys, work: Path, env: dict, key_hold: int = KEY_HOLD, mouse=(), mouse_step=8) -> None:
@@ -155,17 +107,6 @@ def run_hatari_keys(cmd: list[str], keys, work: Path, env: dict, key_hold: int =
         raise RuntimeError("Hatari rejected an input event; rebuild its NeoST oracle instrumentation")
 
 
-def swap_copy(disk: Path, work: Path, tag: str) -> Path:
-    copy = work / (tag + disk.suffix)
-    shutil.copy(disk, copy)
-    return copy
-
-
-def parse_swap(text: str) -> tuple[int, Path]:
-    at, _, path = text.partition(":")
-    return int(at), Path(path)
-
-
 def read_neost_frames(prefix: Path, frames) -> dict[int, Image.Image]:
     """Les noms du headless portent les numéros réels, pas des indices de capture."""
     out = {}
@@ -179,34 +120,8 @@ def read_neost_frames(prefix: Path, frames) -> dict[int, Image.Image]:
 
 
 def neost_frames(disk: Path, args, work: Path) -> dict[int, Image.Image]:
-    copy = work / ("n" + disk.suffix)
-    shutil.copy(disk, copy)
     prefix = work / "n_"
-    # Le headless capture les multiples absolus du pas, pas depuis --shot-from.
-    # Le PGCD des seuls écarts décalait par exemple [101,201] vers [200,300].
-    step = reduce(gcd, args.frames) or 1
-    cmd = [str(HEADLESS), args.rom, "--machine", args.machine, "--mem", f"{args.mem}m",
-           *(["--disk", str(copy)] if not args.gemdos else ["--gemdos", str(args.gemdos.resolve())]),
-           "--frames", str(max(args.frames) + 1),
-           "--shot-from", str(min(args.frames)), "--shot-every", str(step), str(prefix)]
-    if args.disk_b:
-        cmd += ["--diskb", str(swap_copy(args.disk_b, work, "nb"))]
-    if args.fdc_seed is not None:
-        cmd += ["--fdc-seed", str(args.fdc_seed)]
-    if args.auto:
-        cmd += ["--auto", args.auto]
-    if args.joy:
-        cmd += ["--joy-script-file", str(args.joy[0]), str(args.joy[1])]
-    for at, script in args.mouse:
-        cmd += ["--mouse-at", str(at), script]
-    if args.mouse:
-        cmd += ["--mouse-step", str(args.mouse_step)]
-    for i, (at, other) in enumerate(args.swap):
-        cmd += ["--disk-at", str(at), str(swap_copy(other, work, f"ns{i}"))]
-    if args.key:
-        cmd += ["--key-hold", str(args.key_hold)]
-        for at, code in args.key:
-            cmd += ["--scancode-at", str(at), f"{code:x}"]
+    cmd = neost_cmd(disk, args, work, prefix)
     done = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, errors="replace", timeout=1200)
     (work / "neost.log").write_text(done.stdout + done.stderr)
     done.check_returncode()
@@ -402,54 +317,18 @@ def sheet(rows: list[dict], out: Path) -> None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("out", type=Path)
-    ap.add_argument("disks", nargs="+", type=Path)
-    ap.add_argument("--machine", default="ste")
-    ap.add_argument("--rom", default="roms/tos162uk.img")
-    ap.add_argument("--mem", type=int, default=1)
-    ap.add_argument("--fdc-seed", type=parse_seed, help="graine de l'angle disquette NeoST (défaut du cœur si omise)")
-    ap.add_argument("--hatari-seed", type=parse_seed, default=1, help="graine indépendante d'Hatari (défaut : 1)")
-    ap.add_argument("--frames", default="1000,2000,4000")
-    ap.add_argument("--window", type=int, default=60)
-    ap.add_argument("--offset", type=int, default=0, help="centre de la fenêtre Hatari : trame + OFFSET")
-    ap.add_argument("--step", type=int, default=1, help="pas de capture dans la fenêtre")
-    ap.add_argument("--auto")
-    ap.add_argument("--gemdos", type=Path, help="dossier monté en C: à la place de la disquette")
-    ap.add_argument("--disk-b", type=Path, help="disquette du lecteur B, pour un titre qui la demande")
-    ap.add_argument("--swap", type=parse_swap, action="append", default=[],
-                    help="TRAME:DISQUE, change la disquette du lecteur A à cette trame (répétable)")
-    ap.add_argument("--key", type=parse_key, action="append", default=[],
-                    help="TRAME:SCANCODE, touche tenue à cette trame (répétable)")
-    ap.add_argument("--key-hold", type=int, default=KEY_HOLD,
-                    help="durée d'appui en trames, identique dans les deux émulateurs (défaut : 8)")
-    ap.add_argument("--joy", help="TRAME:FICHIER, script joystick du port 1 à partir de cette trame")
-    ap.add_argument("--mouse", type=parse_mouse, action="append", default=[],
-                    help="TRAME:SCRIPT, souris .LRUDlrud123 comme --mouse-at (lrud : bouton gauche tenu) (répétable, sans chevauchement)")
-    ap.add_argument("--mouse-step", type=int, default=8, help="déplacement par pas L/R/U/D (1..127, défaut : 8)")
-    ap.add_argument("--jobs", type=int, default=4)
-    ap.add_argument("--hatari-trace", metavar="FLAGS",
-                    help="drapeaux --trace d'Hatari (ex. video_sync), relevés avec les mêmes entrées")
-    args = ap.parse_args()
-    if args.key_hold < 1:
-        ap.error("--key-hold must be at least 1 frame")
-    if not 1 <= args.mouse_step <= 127:
-        ap.error("--mouse-step must be between 1 and 127")
-    try:
-        mouse_events(args.mouse)
-    except ValueError as exc:
-        ap.error(str(exc))
-    args.frames = sorted(int(x) for x in args.frames.split(","))
+    ap = build_parser(__doc__)
+    args = finish_args(ap, ap.parse_args())
     if shutil.which("ffmpeg") is None or not HATARI.exists() or not HEADLESS.exists():
         print("SKIP — compare_titles : ffmpeg, Hatari ou neost-headless absent")
         return 77
     args.out.mkdir(parents=True, exist_ok=True)
     if args.joy:
-        at, _, path = args.joy.partition(":")
+        at, path = args.joy
         compiled = args.out.resolve() / "joy.bin"
-        subprocess.run([str(HEADLESS), args.rom, "--joy-script-compile", str(compiled), "--joy-script-file", at, path],
+        subprocess.run([str(HEADLESS), args.rom, "--joy-script-compile", str(compiled), "--joy-script-file", str(at), str(path)],
                        cwd=ROOT, capture_output=True, text=True, check=True)
-        args.joy = (int(at), Path(path).resolve(), compiled)
+        args.joy = (at, path, compiled)
     with ThreadPoolExecutor(args.jobs) as ex:
         rows = list(ex.map(lambda d: one(d, args, args.out), args.disks))
     (args.out / "summary.json").write_text(json.dumps(rows, indent=1, ensure_ascii=False))
