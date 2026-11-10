@@ -168,10 +168,10 @@ public:
     // Élection GROUPÉE de l'IRQ (≙ MFP_UpdateNeeded / MFP_UpdateIRQ, [D] mfp.c:1125 @ f0736b24 et
     // [D] newcpu.c:3005,5509 @ f0736b24…). Une ENTRÉE d'interruption ne déclenche PAS l'élection : elle
     // pose seulement son bit pending et sa date, puis marque l'élection « à faire ».
-    // C'est ce qui permet à la règle chronologique (`pendingTime_ <= pendingTimeMin_`)
-    // de départager PLUSIEURS entrées d'une même instruction — Hatari :
-    // « we must call MFP_UpdateIRQ() only later […] when all inputs were received, to
-    // choose the oldest input's event time ». Une ÉCRITURE registre, elle, élit
+    // L'élection voit ainsi TOUTES les entrées d'une même instruction : le canal suit la
+    // priorité fixe ([B] MC68901 § 3.1), le front IRQ la plus ancienne (earliestEligible).
+    // Hatari : « we must call MFP_UpdateIRQ() only later […] when all inputs were
+    // received, to choose the oldest input's event time ». Une ÉCRITURE registre, elle, élit
     // immédiatement avec le cycle d'écriture (cf. write8).
     // NON SÉRIALISÉ À DESSEIN : transitoire à l'intérieur d'une instruction, et toujours
     // consommé par le calcul d'IPL qui suit tout dispatch. La sérialiser imposerait un
@@ -592,6 +592,7 @@ private:
 private:
     void countTimerAEvent();        // impulsion de comptage du Timer A en event-count
     int highestPending() const;     // n° de source prête la plus prioritaire, -1 sinon
+    int64_t earliestEligible() const; // date de la plus ancienne requête éligible (front IRQ)
     int highestInService() const;   // n° de source en cours de service, -1 sinon
 
     // --- Signal IRQ daté (port mfp.c : MFP_UpdateIRQ / MFP_InputOnChannel) ---------

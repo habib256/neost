@@ -1204,17 +1204,15 @@ bool Mfp::mfpSelfTest() {
         chk("reset : GPIP pristine (ST nu)", probe.gpipInput(), 0xF9);
     }
 
-    // --- (f) ÉLECTION DE L'EXCEPTION : la PLUS ANCIENNE l'emporte ------------------
-    // Table de vérité du chantier A42. La règle d'Hatari
-    // (MFP_InterruptRequest, [D] mfp.c:998 @ f0736b24 : `Pending_Time[Int] <= Pending_Time_Min`), est
-    // que seules les requêtes les PLUS ANCIENNES concourent — la priorité ne départage
-    // qu'entre elles. Elle n'a de sens que si l'élection voit PLUSIEURS entrées à la
-    // fois, d'où l'élection groupée (flushIrqUpdate).
-    // ⚠ Ces cas testent currentInt_ avant l'IACK, pas le vecteur : cf. checkPendingInterrupts.
-    // ⚠ C'est l'exhibiteur que le TODO exigeait avant de toucher à ce chemin : sans lui,
-    // la règle était inobservable (aucun étalon pixel ne bouge, et `mfp_poll` masque les
-    // IRQ, donc il est aveugle à toute l'élection).
+    // --- (f) ÉLECTION DE L'EXCEPTION : priorité fixe, front daté de la plus ancienne ---
+    // [B] MC68901 janv. 1984 § 3.1 et § 3.1.1 p. 3-1 : seule la priorité fixe choisit le
+    // canal. Jusqu'au 2026-11-10, NeoST suivait [D] Hatari mfp.c:998 @ f0736b24 (la plus
+    // ANCIENNE d'une instruction l'emportait), règle posée pour les Fuzion CD Menus 77, 78,
+    // 84 ; ces disques tournent sous la fiche (docs/CASE_STUDIES.md § Fuzion). La ligne IRQ
+    // reste datée de la plus ancienne requête éligible : c'est elle qui l'a fait monter.
+    // Les cas exigent l'élection groupée (flushIrqUpdate) : deux entrées, une seule élection.
     {
+        struct Result { int src; int64_t time; };
         auto elect = [&](int firstSrc, int64_t firstT, int secondSrc, int64_t secondT) {
             Scheduler s;
             Mfp p;
@@ -1224,21 +1222,21 @@ bool Mfp::mfpSelfTest() {
             p.raiseAt(firstSrc, firstT);
             p.raiseAt(secondSrc, secondT);   // AUCUNE élection entre les deux
             p.flushIrqUpdate();
-            return p.currentInt_;
+            return Result{p.currentInt_, p.irqTime_};
         };
-        // Timer D (source 4, priorité BASSE) arrive AVANT Timer A (13, HAUTE) :
-        // c'est D qui doit être servi. Sans élection groupée, A l'emportait.
-        chk("élection : la PLUS ANCIENNE gagne (D avant A)",
-            elect(SRC_TIMERD, 100, SRC_TIMERA, 140), SRC_TIMERD);
-        // L'ordre des raise ne doit rien changer : c'est la DATE qui tranche.
-        chk("élection : ordre des entrées indifférent",
-            elect(SRC_TIMERA, 140, SRC_TIMERD, 100), SRC_TIMERD);
-        // Dates ÉGALES → la priorité reprend ses droits (la plus haute gagne).
+        // Timer D (source 4, priorité BASSE) arrive AVANT Timer A (13, HAUTE) : A est servi,
+        // mais la ligne IRQ est montée à l'arrivée de D.
+        const Result da = elect(SRC_TIMERD, 100, SRC_TIMERA, 140);
+        chk("élection : la plus PRIORITAIRE gagne (A malgré D plus ancien)", da.src, SRC_TIMERA);
+        chk("élection : front IRQ daté de la plus ancienne (D)", da.time, 100);
+        // L'ordre des raise ne change rien.
+        const Result ad = elect(SRC_TIMERA, 140, SRC_TIMERD, 100);
+        chk("élection : ordre des entrées indifférent", ad.src, SRC_TIMERA);
+        chk("élection : ordre indifférent, front à 100", ad.time, 100);
         chk("élection : à date égale, la plus PRIORITAIRE",
-            elect(SRC_TIMERD, 100, SRC_TIMERA, 100), SRC_TIMERA);
-        // La plus ancienne EST la plus prioritaire : pas de conflit.
+            elect(SRC_TIMERD, 100, SRC_TIMERA, 100).src, SRC_TIMERA);
         chk("élection : plus ancienne ET prioritaire",
-            elect(SRC_TIMERA, 100, SRC_TIMERD, 140), SRC_TIMERA);
+            elect(SRC_TIMERA, 100, SRC_TIMERD, 140).src, SRC_TIMERA);
     }
 
     std::fprintf(stderr, "[mfp-selftest] %d OK, %d FAIL\n", pass, fail);
@@ -1321,9 +1319,9 @@ void Mfp::gpipEdges(uint8_t gpipOld, uint8_t gpipNew, uint8_t aerOld, uint8_t ae
 // [B] MC68901 § 3.3.1 p. 3-3, § 3.3.2 p. 3-5, § 3.3.3 p. 3-5 pour le bit pendant ; la date vient du seul [D].
 // Port de MFP_InputOnChannel ([D] mfp.c:1088-1131 @ f0736b24) : une requête sur un canal ACTIVÉ
 // (IER=1) pose le bit pendant et DATE son arrivée (pendingTime_) ; sur un canal
-// désactivé elle l'EFFACE. La plus ancienne requête non masquée de la fenêtre est
-// suivie (pendingTimeMin_) pour servir les requêtes simultanées dans l'ordre
-// chronologique. `when` peut être ANTÉRIEUR à l'horloge (timer servi en retard).
+// désactivé elle l'EFFACE. pendingTimeMin_ (plus ancienne requête non masquée de la
+// fenêtre) reste tenu et sérialisé, mais ne départage plus l'élection depuis le
+// 2026-11-10. `when` peut être ANTÉRIEUR à l'horloge (timer servi en retard).
 void Mfp::raise(int source) {
     raiseAt(source, sched_ ? sched_->liveNow() : 0);
 }
@@ -1342,10 +1340,9 @@ void Mfp::raiseAt(int source, int64_t when) {
     }
     // ⚠ PAS D'ÉLECTION ICI (port de MFP_InputOnChannel, [D] mfp.c:1125 @ f0736b24 : « MFP_UpdateNeeded
     // = true ; Tell main CPU loop to call MFP_UpdateIRQ() »). Élire tout de suite
-    // consommerait `pendingTimeMin_` avant l'arrivée des autres entrées de la MÊME
-    // instruction, et la règle chronologique ne pourrait jamais les départager : une
-    // interruption PLUS RÉCENTE mais plus prioritaire l'emporterait, là où Hatari élit
-    // la PLUS ANCIENNE ; la fiche ne le dit pas, cf. checkPendingInterrupts.
+    // se ferait avant l'arrivée des autres entrées de la MÊME instruction : le front IRQ
+    // prendrait la date de la première entrée élue au lieu de la plus ancienne éligible,
+    // cf. checkPendingInterrupts et earliestEligible.
     // Deux entrées consécutives existent dans ce fichier même
     // (TXERR→TXEMPTY, RXERR→RXFULL). L'élection est faite par flushIrqUpdate(), appelé
     // au calcul d'IPL — l'équivalent NeoST de la boucle CPU d'Hatari.
@@ -1372,7 +1369,7 @@ void Mfp::updateIrq(int64_t eventTime) {
     int newInt = -1;
     if ((ipra & imra) | (iprb & imrb)) newInt = checkPendingInterrupts();
     if (newInt >= 0) {
-        if (!irq_) irqTime_ = eventTime != 0 ? eventTime : pendingTime_[newInt];
+        if (!irq_) irqTime_ = eventTime != 0 ? eventTime : earliestEligible();
         irq_ = true;
         currentInt_ = newInt;
     } else {
@@ -1398,32 +1395,43 @@ void Mfp::updateIrq(int64_t eventTime) {
     }
 }
 
-// Port de MFP_CheckPendingInterrupts + MFP_InterruptRequest ([D] mfp.c:993-1071 @ f0736b24) :
-// balayage par priorité décroissante (sources 15..8 puis 7..0) ; une source n'est
-// éligible que si (1) pendante et non masquée, (2) la plus ANCIENNE de la fenêtre
-// courante (pendingTime_ ≤ pendingTimeMin_ : deux requêtes dans la même instruction
-// sont servies dans l'ordre d'arrivée, pas de priorité), (3) aucune source de
-// priorité ≥ n'est en service (l'ISR n'est non nul qu'en mode software-EOI, le test
-// inconditionnel est donc équivalent au câblage réel : [B] MC68901 § 3.4.2 et § 3.4.3 p. 3-6, MK68901 p. 8).
-// ⚠ [B] MC68901 § 3.1 et § 3.1.1 p. 3-1, MK68901 p. 9 : seule la priorité fixe choisit le canal ; aucun
-// document primaire ne date les requêtes, et [D] mfp.v:244 @ a00deb5b non plus. La règle (2) vient du seul
-// [D] mfp.c:998 @ f0736b24. À l'IACK, pendingTimeMin_ vaut en général kNever et la priorité reprend ;
-// deux effets restent. Deux entrées non élues avant l'IACK rendent le vecteur de la plus ancienne. Une
-// ancienne bloquée par ISR, reçue avec une récente plus prioritaire, retombe IRQ jusqu'à la prochaine
-// élection, contre § 3.4.3. Non corrigé.
+// Élection du canal : [B] MC68901 janv. 1984 § 3.1 et § 3.1.1 p. 3-1, MK68901 p. 9 — priorité
+// fixe seule, sources 15..8 puis 7..0 ; un canal n'est éligible que (1) pendant et non masqué,
+// (2) sans canal de priorité ≥ en service (l'ISR n'est non nul qu'en software-EOI : [B] § 3.4.2
+// et § 3.4.3 p. 3-6, MK68901 p. 8). Aucun document primaire ne date les requêtes, et
+// [D] mfp.v:244 @ a00deb5b non plus.
+// Divergence volontaire avec [D] Hatari mfp.c:998 @ f0736b24, qui n'élit que la requête la plus
+// ancienne d'une même instruction (posé pour Fuzion CD Menus 77, 78, 84). Ces trois disques
+// tournent sous NeoST avec la priorité fixe, sans plantage : docs/CASE_STUDIES.md § Fuzion.
+// La date de la ligne IRQ, elle, suit la plus ancienne requête éligible : cf. earliestEligible.
 int Mfp::checkPendingInterrupts() const {
     const uint8_t pa = ipra & imra;
     const uint8_t pb = iprb & imrb;
     const int hi = highestInService();
     for (int b = 7; b >= 0; --b) {
         const int s = 8 + b;
-        if ((pa & (1u << b)) && pendingTime_[s] <= pendingTimeMin_ && hi < s) return s;
+        if ((pa & (1u << b)) && hi < s) return s;
     }
     for (int b = 7; b >= 0; --b) {
         const int s = b;
-        if ((pb & (1u << b)) && pendingTime_[s] <= pendingTimeMin_ && hi < s) return s;
+        if ((pb & (1u << b)) && hi < s) return s;
     }
     return -1;
+}
+
+// Date de la plus ancienne requête éligible (mêmes conditions que l'élection). C'est elle
+// qui a fait monter IRQ : une requête plus prioritaire arrivée ensuite dans la même
+// instruction change le vecteur servi à l'IACK, pas l'instant du front.
+int64_t Mfp::earliestEligible() const {
+    const uint8_t pa = ipra & imra;
+    const uint8_t pb = iprb & imrb;
+    const int hi = highestInService();
+    int64_t t = kNever;
+    for (int s = 0; s < 16; ++s) {
+        const uint8_t bits = s >= 8 ? pa : pb;
+        if ((bits & (1u << (s & 7))) && hi < s && pendingTime_[s] < t) t = pendingTime_[s];
+    }
+    return t;
 }
 
 int Mfp::highestPending() const {

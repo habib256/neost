@@ -6,6 +6,17 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## A43, MFP : élection par priorité fixe, Fuzion à l'appui (2026-11-10)
+
+- Le canal MFP élu suit la priorité fixe de la fiche (MC68901 § 3.1), et non plus la
+  requête la plus ancienne d'Hatari (`mfp.c:998`, posée pour les Fuzion CD Menus 77,
+  78, 84). Le front IRQ reste daté de la plus ancienne requête éligible
+  (`Mfp::earliestEligible`).
+- Fuzion 77, 78, 84 (disques privés) : aucun plantage sous la priorité fixe, 3 menus ×
+  4 graines × 15 000 trames ; à l'image, seule la phase des VU-mètres bouge. Recette :
+  `docs/CASE_STUDIES.md` § Fuzion. `mfp_selftest` suit la fiche et vérifie la date du front.
+- Palier full vert, 19 parcours de jeu OK.
+
 ## A43, MFP : impulsion de comptage au changement d'AER (2026-11-10)
 
 - En event-count, changer le bit de front compte une impulsion quand l'entrée vaut déjà

@@ -901,9 +901,9 @@ void neostUpdateIpl(bool commit) {
     // Élection GROUPÉE du MFP, juste avant de lire son signal : c'est l'équivalent NeoST
     // de la boucle CPU d'Hatari (« if (MFP_UpdateNeeded) MFP_UpdateIRQ_All(0) »,
     // [D] newcpu.c:3005 @ f0736b24 et 5509). Toutes les entrées d'interruption d'une même instruction
-    // ont posé leur bit et leur date sans élire ; l'élection a donc ici la vue complète
-    // et peut appliquer la règle « seules les plus anciennes concourent »
-    // (`pendingTime_ <= pendingTimeMin_`). Ce site est le bon parce que TOUT callback
+    // ont posé leur bit et leur date sans élire ; l'élection a donc ici la vue complète :
+    // canal par priorité fixe, front IRQ daté de la plus ancienne requête éligible
+    // (Mfp::earliestEligible). Ce site est le bon parce que TOUT callback
     // d'ordonnanceur susceptible de lever une IRQ MFP est suivi d'un updateIpl()
     // (cf. Machine.cpp) : aucune entrée ne peut donc rester non élue.
     if (g_cur->bus && g_cur->bus->mfp) g_cur->bus->mfp->flushIrqUpdate();

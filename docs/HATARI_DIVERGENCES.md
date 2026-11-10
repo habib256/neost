@@ -2023,6 +2023,8 @@ TODO) :
   (`neostUpdateIpl`) et en fin de `Mfp::updateTimers` (≙ mfp.c:689). Les paires d'entrées
   d'une MÊME fonction — `TXERR`→`TXEMPTY`, `RXERR`→`RXFULL` — sont désormais départagées
   correctement. Verrou d'A/B : `NEOST_MFP_BATCH=0`.
+  **2026-11-10 :** l'élection suit désormais la priorité fixe de la fiche ; le lot ne sert
+  plus qu'à dater le front de la plus ancienne requête (§ *Élection MFP par priorité fixe*).
   ✅ **Fermé le 2026-09-03 (A42)** : `Scheduler::setDispatchHooks` borne le lot ; `Machine`
   suspend l'élection pendant le dispatch (`Mfp::setInDispatch`, garde `Mfp.cpp:1154`) et la
   tranche une fois en fin de lot avant de relire l'IPL (`Machine.cpp:250-262`, verrou
@@ -2560,6 +2562,16 @@ les étalons de fidélité** (réseau OFF pendant `run_all.py --tier fast/full`)
   de 2006 place ce latch ailleurs ; la différence de révision reste à mesurer sur une
   vraie carte. ITL/isochrone et timing électrique restent non exécutés. Références,
   tests et limites : `docs/NETUSBEE.md`.
+
+## Élection MFP par priorité fixe (2026-11-10)
+
+**Divergence volontaire, grade B.** MC68901 janv. 1984 § 3.1 et § 3.1.1 p. 3-1, MK68901 p. 9 :
+seule la priorité fixe choisit le canal. Hatari `mfp.c:998 @ f0736b24` n'élit que la requête la
+plus ancienne d'une même instruction, règle posée en 2013 pour les Fuzion CD Menus 77, 78 et 84.
+`Mfp::checkPendingInterrupts` suit désormais la fiche. Le front IRQ reste daté de la plus
+ancienne requête éligible (`Mfp::earliestEligible`), et l'élection groupée (`flushIrqUpdate`)
+reste nécessaire pour cette date. Les trois menus tournent sous NeoST avec la priorité fixe :
+recette et mesures dans `docs/CASE_STUDIES.md` § Fuzion.
 
 ## Impulsion de comptage au changement d'AER en event-count (2026-11-10)
 

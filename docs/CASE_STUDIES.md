@@ -1012,3 +1012,25 @@ with tempfile.TemporaryDirectory() as tmp:
                 '--hatari-seed', '1', '--joy', f'5000:{joy}', '--jobs', '1']
     raise SystemExit(c.main())
 ```
+
+## Fuzion CD Menus 77, 78, 84 : la priorité fixe du MFP suffit (2026-11-10)
+
+Hatari élit, parmi les requêtes MFP d'une même instruction, la plus ancienne
+(`mfp.c:998 @ f0736b24`, release-notes : « Fuzion CD 77/78/84 Menu (MFP, random crash
+with digidrums in STF mode) »). La fiche MC68901 (§ 3.1) ne connaît que la priorité fixe.
+NeoST avait porté la règle d'Hatari ; `TODO.md` interdisait de la retirer sans ces disques.
+
+Recette : `disks/st/fuzcd0{77,78,84}.msa` (privés, non versionnés), ST, TOS 1.02 UK, 1 Mo.
+- Les deux règles s'écartent souvent : 741 à 1 712 élections en 3 000 trames, toujours
+  Timer B (canal 8) contre Timer C (canal 5) pendants ensemble.
+- Priorité fixe seule : 3 menus × 4 graines × 15 000 trames, aucun halt, menu vivant.
+- L'état machine diverge entre les deux règles vers la trame 900 ; à l'image, 0 pixel
+  sur 57 captures sur 60, et environ 130 pixels sur les trois autres (hauteur des
+  VU-mètres et étoiles : même animation, phase différente).
+- Contre Hatari (`compare_titles.py`, fenêtre ±40) : 9 à 12 % d'écart, même menu, phases
+  d'animation différentes (cycle du logo, scroller), plus longues que la fenêtre.
+
+Décision : canal élu par priorité fixe ([B]), front IRQ daté de la plus ancienne requête
+éligible (`Mfp::earliestEligible`), qui est ce qui fait monter la ligne. Le plantage de
+2013 relevait du modèle d'Hatari de l'époque, pas d'un besoin de ces menus sous NeoST.
+

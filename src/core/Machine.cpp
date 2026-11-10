@@ -259,10 +259,10 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     // CycInt_Process sert tous les événements échus, PUIS la boucle CPU fait
     // `if (MFP_UpdateNeeded) MFP_UpdateIRQ_All(0)`, PUIS l'IPL est évalué
     // ([D] newcpu.c:3005 @ f0736b24, 5509). Sans ça, chaque callback élisait pour son compte — les 18
-    // `cpu.updateIpl()` de ce fichier — et la règle « seules les plus anciennes
-    // concourent » (`pendingTime_ <= pendingTimeMin_`) ne voyait jamais plus d'un
-    // candidat : deux timers échus dans le MÊME lot étaient élus séparément, et le plus
-    // RÉCENT mais plus prioritaire l'emportait. Verrou d'A/B : NEOST_IPL_BATCH=0.
+    // `cpu.updateIpl()` de ce fichier — et l'élection ne voyait jamais plus d'un
+    // candidat : deux timers échus dans le MÊME lot étaient élus séparément, et le front
+    // IRQ prenait la date du premier élu, pas de la plus ancienne requête. Verrou d'A/B :
+    // NEOST_IPL_BATCH=0.
     // ⚠ Le CPU est ARRÊTÉ pendant le lot : les updateIpl() intermédiaires des callbacks
     // deviennent donc sans effet observable (Moira ne relit sa broche qu'à une frontière
     // d'instruction), et on les laisse en place — les retirer serait une seconde refonte.
