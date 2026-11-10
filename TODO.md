@@ -76,7 +76,7 @@ correction de fidélité.
 |-----|-----|-------------------|------|
 | **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** publiée le 2026-11-11 (`bf5d61f`) ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
 | **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, Mega STE 16 MHz, banc fx68k étendu et sort des `.state` (refus explicite) : faits → § 2 | P1 |
-| **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | restes MFP de la fiche, WS3 → § 3 (DMA disque relevé, reporté au § 9) ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
+| **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | restes MFP de la fiche et WS3 en attente de source, DMA disque relevé et reporté au § 9 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Disquettes de menus nommées, retour arrière, pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
 | **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | A32, oracle et fiches TT/Falcon → § 8 et § 10 ; inventaire fait (`docs/HYPOTHESES_ST.md`) | P2 |
@@ -113,9 +113,6 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   fin de DE a son événement Timer B distinct du HBL, et la lecture du compteur concorde au RTL sur STE
   (47 999 sur 48 000, `docs/STCPU_BENCH.md`). Restent ST et Mega ST, sans netlist, et la phase du Timer C
   (→ « Phase de l'horloge du MFP au reset »). → `docs/CYCLE_ACCURACY.md` § 4
-- **Wakestate WS3 par défaut** · P2 ⭘ · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut reste sans source : sur le fer, l'état se tire à la mise sous tension. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option.
-- **Basse résolution PAL issue du reset** · P2 ⭘ · [F] — le modèle GSTMCU garde une phase de
-  plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
 - **Offsets de datation dérivés d'Hatari** · P2 ◐ — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
   `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
   `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu,
@@ -126,6 +123,9 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 - **Écritures en plein DE sur STE** · P3 ⭘ · [D] — `$FF8207` et `$FF8265` agissent aussitôt sur le modèle, à la ligne suivante chez NeoST et Hatari. Aucun logiciel connu n'en dépend. Porter `$FF8207` demande un rendu en deux segments par ligne.
 - **Hardscroll 4 px de Paulo Simoes** · P3 ⭘ · [D] — seul reste des tricks par changement de
   résolution (`video.c`, bloc V2) ; aucun titre de la collection ne l'exerce.
+- **Basse résolution PAL issue du reset** · P2 ⏸ source · [F] — le modèle GSTMCU garde une phase de
+  plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
+- **Wakestate WS3 par défaut** · P2 ⏸ source · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut reste sans source : sur le fer, l'état se tire à la mise sous tension. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option. Un tirage au reset demande d'abord de sortir le wakestate des constantes figées avant `main()` (`kWsInc`, `VideoGlue.hpp`).
 - **Délai de bus error sur ST, Mega ST et Mega STE** · P2 ⏸ source · [F] — porté sur STE seulement,
   faute de netlist du GLUE. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE (ST-4081),
   ni GLUE ni MMU du ST, ni MCU du Mega STE. Tranche : un relevé de tiers, ou ces schémas.
@@ -146,7 +146,7 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.2 MFP 68901
 
-- **Fiche contre code, restes de l'audit** · P2 ⭘ · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp` et `Mfp.hpp`. TxDR relu à l'accès, et non au dernier front de DS (§ 5.2.1) ; prescaler changé en marche (§ 5.1.1, borne MC68901 contre MK68901). UE après un cycle de TC est corrigé (`0ce2471`).
+- **Fiche contre code, restes de l'audit** · P2 ⏸ source · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp` et `Mfp.hpp`. TxDR : la fiche fixe la règle (« captured on the last low-to-high transition of the DS pin », MC68901 § 5.2.1 p. 5-5, relu le 2026-11-11) mais pas la date de ce front face à l'horloge où NeoST lit (`liveNow`), qui dépend du placement des états d'attente du MFP dans le cycle : 2 à 6 cycles, de sens non établi, et `mfp_poll` concorde aujourd'hui à l'octet avec Hatari. Prescaler changé en marche : MC68901 (1 à 200 cycles) contre MK68901 (jusqu'à 200 fois la donnée). Tranche : la datation des états S d'un accès MFP sur le fer, ou un relevé de tiers. UE corrigé (`0ce2471`).
 - **Jitter des périodes Timer B** · P2 ⏸ cœur · [F] — sonde Super Hang-On : NeoST {512, 516, 508,
   520}, Hatari {512, 520, 504}. Dépend de la prise d'IPL (§ 9) : à rejouer après l'échange.
 - **Phase de l'horloge du MFP au reset** · P3 ⭘ · [F] — front 0 au cycle CPU 0 et rapport exact
