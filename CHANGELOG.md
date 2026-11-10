@@ -6,7 +6,7 @@ l'ordre inverse. Version courante : **0.6.3**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
-## 0.6.3 — USB du NetUSBee et réseau intégré (préparée le 2026-11-10)
+## 0.6.3 — USB du NetUSBee et réseau intégré (2026-11-10)
 
 **NetUSBee USB** : deux ports pour clavier, souris HID ou disque USB sur image,
 branchables à chaud depuis Network, les profils et le headless. Les pilotes
@@ -33,8 +33,7 @@ partielle. Treize cas contrôlent ce verdict sans ROM propriétaire.
 **Sauvegardes** : format **v59**, incompatible avec les anciennes sauvegardes.
 Les fichiers disque restent externes et ne sont pas rembobinés par un état.
 Le numéro **0.6.3** est demandé par le mainteneur malgré les fonctionnalités
-ajoutées (exception explicite à la règle MINOR de `docs/RELEASE.md`). La release
-est préparée localement ; aucun tag ni paquet n'est publié par ce changement.
+ajoutées (exception explicite à la règle MINOR de `docs/RELEASE.md`).
 
 ## NetUSBee : périphériques USB et cadence du contrôleur (2026-11-10)
 
