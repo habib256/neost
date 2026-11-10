@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## A32 : l'état du compteur vidéo n'est plus écrit que par ses méthodes (2026-11-11)
+
+- `VideoCounterState` (`src/core/Shifter.hpp`) porte ses écritures : `resetAll`, `beginFrame`,
+  `latchFrame`, `restart`, `advanceLine`, `applyWrite`, `setStopInc` et un réglage réservé aux
+  auto-tests de la Glue. `Shifter`, `VideoCounter.cpp` et `VideoGlue.cpp` ne touchent plus ses
+  champs qu'en lecture ; les valeurs qui dépendent de la Glue et du faisceau passent en paramètres.
+- Filet posé avant : référence de la porte d'échange sur `8090a2c` (404 scénarios, 145 122
+  empreintes), puis accord à l'octet après le changement ; auto-test Glue 176/176, palier fast vert.
+
 ## Banc fx68k : bus prêté à un DMA ; restes vidéo requalifiés (2026-11-11)
 
 - `Vfx68k_bench --br T:N` : un maître prend le bus par BR/BG/BGACK. Sur `irq_mulu`, BR → BG en

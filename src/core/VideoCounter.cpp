@@ -105,7 +105,10 @@ void Shifter::endVideoLine() {
         lineScrollSnap_[sl] = uint8_t(0x40 | hwScrollCount | (hwScrollPrefetch ? 0x10 : 0)
                                      | (steBorderFlag_ ? 0x20 : 0)
                                      | (lineStoppedOver(sl) ? 0x80 : 0));
-    vc_.lineBase += static_cast<uint32_t>(bpl);
+    // Prefetch scroll et line-offset STE, lus AVANT les latches HSCROLL/LINEWIDTH ci-dessous ;
+    // appliqués par advanceLine sur une ligne réellement affichée seulement (bpl > 0).
+    const uint32_t extra = static_cast<uint32_t>(scrollCounterAdvance(sl))
+                         + static_cast<uint32_t>(lineWidth) * 2u;
     // Prefetch et line-offset STE ne s'appliquent QUE sur une ligne réellement
     // affichée : chez Hatari les deux sont dans la branche « else » de la ligne
     // totalement blanche ([D] video.c:4007 @ f0736b24 → :4246 « pVideoRaster += LineWidth*2 »),
@@ -113,18 +116,10 @@ void Shifter::endVideoLine() {
     // dehors ([D] video.c:3857-3873 @ f0736b24). Les appliquer sur une ligne NO_DE faisait dériver
     // le compteur vidéo d'autant d'octets par ligne non affichée — visible sur STE
     // à scrolling matériel dès qu'une trame se termine avant sa fin nominale.
-    if (bpl > 0) {
-        vc_.lineBase += static_cast<uint32_t>(scrollCounterAdvance(sl));
-        vc_.lineBase += static_cast<uint32_t>(lineWidth) * 2u;  // line-offset STE (mots sautés)
-    }
-    if (vc_.delayedOffset != 0) {                           // écriture compteur pendant le DE
-        vc_.lineBase += static_cast<uint32_t>(vc_.delayedOffset & ~1);
-        vc_.delayedOffset = 0;
-    }
-    if (vc_.delayedAddr >= 0) {                             // écriture en bordure droite
-        vc_.lineBase = static_cast<uint32_t>(vc_.delayedAddr);
-        vc_.delayedAddr = -1;
-    }
+    // Le compteur avance (stride, extra, écritures différées, « Shifter arrêté », 22 bits) :
+    // ces effets ne lisent ni n'écrivent les latches HSCROLL/LINEWIDTH qui suivent, d'où leur
+    // regroupement dans VideoCounterState::advanceLine sans changer l'ordre observable.
+    vc_.advanceLine(bpl, extra, kVideoAddrMask);
     if (newHwScrollCount_ >= 0) {                          // HSCROLL différé (NewHWScrollCount)
         hwScrollCount    = static_cast<uint8_t>(newHwScrollCount_);
         hwScrollPrefetch = newHwScrollPrefetch_;
@@ -135,17 +130,9 @@ void Shifter::endVideoLine() {
         lineWidth = static_cast<uint8_t>(newLineWidth_);
         newLineWidth_ = -1;
     }
-    // Scroll hard « Shifter arrêté » : ajustement du compteur à la fin de la ligne
-    // du stop (port VideoRasterDelayedInc, [D] video.c:4410-4416 @ f0736b24 — hors de la branche
-    // « ligne blanche », donc appliqué quelle que soit la ligne).
-    if (vc_.stopInc != 0) {
-        vc_.lineBase += static_cast<uint32_t>(vc_.stopInc);
-        vc_.stopInc = 0;
-    }
-    // Repli du compteur sur 22 bits (port [D] video.c:4423 @ f0736b24 « pVideoRaster & VideoMask ») :
-    // le compteur matériel n'a que A1..A21 — au-delà de $3FFFFF il reprend en $000000.
-    vc_.lineBase &= kVideoAddrMask;
-    ++vc_.lineY;
+    // Scroll hard « Shifter arrêté » (port VideoRasterDelayedInc, [D] video.c:4410-4416 @ f0736b24,
+    // appliqué quelle que soit la ligne) et repli sur 22 bits ([D] video.c:4423 @ f0736b24 :
+    // A1..A21 seulement) : faits par advanceLine ci-dessus.
 }
 
 // Commit des scanlines TERMINÉES au HBL de chaque ligne (port de l'appel
@@ -190,8 +177,7 @@ void Shifter::commitScanline(int line) {
 // mesure le stabilisateur beam-sync d'Enchanted Land en jeu (poll $FF8209).
 // Les lectures des lignes ≥ restart renvoient cette base figée (videoCounter).
 void Shifter::restartVideoCounter(int line) {
-    vc_.restartBase = static_cast<int64_t>(videoBase & kVideoAddrMask);
-    vc_.restartLine = line;
+    vc_.restart(videoBase & kVideoAddrMask, line);
 }
 
 // Position du faisceau (ligne absolue + cycle dans la ligne) depuis l'horloge de
@@ -472,16 +458,12 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     const bool overlapsNext = active && la > vc_.lineY;   // fin de ligne pas encore servie
     const bool rightBorder  = active && line < static_cast<int>(glueLines_.size())
                            && cyc > glueLines_[line].displayEndCycle;
-    if (!havePos || !active || (cyc <= mmuStart && !overlapsNext) || la < vc_.lineY) {
-        vc_.lineBase = an;                                      // application immédiate
-        vc_.delayedOffset = 0;
-        vc_.delayedAddr = -1;
-    } else if (rightBorder || overlapsNext) {
-        vc_.delayedOffset = 0;
-        vc_.delayedAddr = static_cast<int32_t>(an);
-    } else {
-        vc_.delayedOffset = static_cast<int>(an) - static_cast<int>(cur);  // pendant le DE → fin de ligne
-        vc_.delayedAddr = -1;
-    }
+    using WM = VideoCounterState::WriteMode;
+    if (!havePos || !active || (cyc <= mmuStart && !overlapsNext) || la < vc_.lineY)
+        vc_.applyWrite(an, cur, WM::Immediate);                 // application immédiate
+    else if (rightBorder || overlapsNext)
+        vc_.applyWrite(an, cur, WM::DelayedAbsolute);           // adresse gardée pour la fin de ligne
+    else
+        vc_.applyWrite(an, cur, WM::DelayedRelative);           // pendant le DE → écart, fin de ligne
 }
 

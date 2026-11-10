@@ -29,6 +29,63 @@ struct VideoCounterState {
     int64_t  restartBase   = -1;  // base relatchée au restart de fin de trame ; −1 = pas encore, cf. restartVideoCounter
     int      restartLine   = 0;   // ligne absolue du restart effectué
     int      stopInc       = 0;   // ≙ VideoRasterDelayedInc (appliqué par endVideoLine)
+
+    // --- Écritures (A32, 2026-11-11) : SEULES ces méthodes modifient l'état ci-dessus. Les
+    // calculs qui dépendent de la Glue et du faisceau (octets lus par ligne, position, fenêtre
+    // verticale) restent au Shifter, qui passe des valeurs : ces signatures dessinent
+    // l'interface vers la Glue que le VIDEL et la vidéo du TT réutiliseront.
+    enum class WriteMode { Immediate, DelayedAbsolute, DelayedRelative };
+
+    void resetAll() { frameBase = 0; lineBase = 0; lineY = 0; restartBase = -1; restartLine = 0; }
+    void clearPendingWrites() { delayedOffset = 0; delayedAddr = -1; }
+    void clearStopInc() { stopInc = 0; }
+    void setStopInc(int inc) { stopInc = inc; }
+    // Début de trame : la base du restart de fin de trame s'il a eu lieu, sinon `videoBase`.
+    void beginFrame(uint32_t videoBase, uint32_t mask) {
+        frameBase   = ((restartBase >= 0) ? static_cast<uint32_t>(restartBase) : videoBase) & mask;
+        restartBase = -1;
+        lineBase    = frameBase;
+        lineY       = 0;
+    }
+    // Trame rendue d'un bloc : `lines` lignes déjà committées depuis `base`.
+    void latchFrame(uint32_t base, int lines) { frameBase = base; lineBase = base; lineY = lines; }
+    void restart(uint32_t base, int line) { restartBase = static_cast<int64_t>(base); restartLine = line; }
+    // Fin d'une ligne active ([D] video.c:3853-3873, 4007, 4410-4423 @ f0736b24) : stride réel
+    // `bpl`, `extra` (prefetch scroll + line-offset STE) sur une ligne affichée seulement, puis
+    // les écritures différées et le décalage « Shifter arrêté », repli sur 22 bits.
+    void advanceLine(int bpl, uint32_t extra, uint32_t mask) {
+        lineBase += static_cast<uint32_t>(bpl);
+        if (bpl > 0) lineBase += extra;
+        if (delayedOffset != 0) {                      // écriture compteur pendant le DE
+            lineBase += static_cast<uint32_t>(delayedOffset & ~1);
+            delayedOffset = 0;
+        }
+        if (delayedAddr >= 0) {                        // écriture en bordure droite
+            lineBase = static_cast<uint32_t>(delayedAddr);
+            delayedAddr = -1;
+        }
+        if (stopInc != 0) {
+            lineBase += static_cast<uint32_t>(stopInc);
+            stopInc = 0;
+        }
+        lineBase &= mask;
+        ++lineY;
+    }
+    // Écriture $FF8205/07/09 : `an` nouvelle adresse, `cur` compteur courant (port de
+    // Video_ScreenCounter_WriteByte, [D] video.c:5177 @ f0736b24).
+    void applyWrite(uint32_t an, uint32_t cur, WriteMode mode) {
+        switch (mode) {
+            case WriteMode::Immediate:       lineBase = an; delayedOffset = 0; delayedAddr = -1; break;
+            case WriteMode::DelayedAbsolute: delayedOffset = 0; delayedAddr = static_cast<int32_t>(an); break;
+            case WriteMode::DelayedRelative:
+                delayedOffset = static_cast<int>(an) - static_cast<int>(cur);
+                delayedAddr = -1;
+                break;
+        }
+    }
+    // Auto-tests de la Glue seulement : place le compteur sur une ligne donnée.
+    void setLineForTest(int y) { lineY = y; }
+    void setLineForTest(uint32_t base, int y) { lineBase = base; lineY = y; }
 };
 
 class Shifter {

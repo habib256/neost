@@ -433,7 +433,7 @@ void Shifter::writeShifterRes(uint8_t res) {
             case 8:  inc = -4; shift =  -8; break;       // 76 + 16n
             default: break;
         }
-        if (inc != 0) vc_.stopInc = inc;                  // ≙ VideoRasterDelayedInc
+        if (inc != 0) vc_.setStopInc(inc);                // ≙ VideoRasterDelayedInc
         shifterStopLine_  = line;                        // lignes > line décalées
         shifterStopShift_ = shift;
         if (std::getenv("NEOST_SYNC_TRACE"))
@@ -1375,7 +1375,7 @@ bool Shifter::glueSelfTest() {
         chk("336 pending", newSteBorderFlag_, true);
         const auto pending = save();
         reset(); load(pending);
-        vc_.lineY = 37; commitAnchor_ = 63; endVideoLine();
+        vc_.setLineForTest(37); commitAnchor_ = 63; endVideoLine();
         chk("336 restore pending", steBorderFlag_, true);
         chk("336 metadata without RAM", lineScrollSnap_[100], 0x40);
         chk("336 no RAM snapshot", lineSnapLen_[100], 0);
@@ -1399,7 +1399,7 @@ bool Shifter::glueSelfTest() {
         // 1. Le compteur avance au-delà de $3FFFFF → reprend en $000000.
         reset(); mode = Mode::Low; sync = 2; videoBase = 0x3FFF00; beginFrame();
         chk("b15 frame base", vc_.frameBase, 0x3FFF00);
-        vc_.lineY = 0; commitAnchor_ = 63;
+        vc_.setLineForTest(0); commitAnchor_ = 63;
         endVideoLine(); endVideoLine();                  // +160 +160 = $400040
         chk("b15 counter wraps", vc_.lineBase, 0x40);
         // 2. Le fetch d'une ligne qui chevauche $3FFFFF relit le BAS de la RAM.
@@ -1409,7 +1409,7 @@ bool Shifter::glueSelfTest() {
             for (int i = 0; i < 4; ++i) saved[i] = bus_.read16(probe + 2u * i);
             bus_.write16(probe, 0x8000); bus_.write16(probe + 2, 0);
             bus_.write16(probe + 4, 0);  bus_.write16(probe + 6, 0);
-            vc_.lineBase = 0x3FFF80; vc_.lineY = 0;
+            vc_.setLineForTest(0x3FFF80, 0);
             uint8_t ix[660];
             decodeLineIndices(0, ix);
             chk("b15 fetch wraps px", ix[19 * 16], 1);
@@ -1485,7 +1485,7 @@ bool Shifter::glueSelfTest() {
         }
         // AddressInc appliqué à la fin de la ligne du stop.
         stop(68, 80);
-        vc_.lineY = 37; commitAnchor_ = 63;
+        vc_.setLineForTest(37); commitAnchor_ = 63;
         {
             const uint32_t b0 = vc_.lineBase;
             endVideoLine();
@@ -1615,7 +1615,7 @@ bool Shifter::glueSelfTest() {
     }
     // La copie de ligne VBlank ne crédite ni octets, ni prefetch/line-offset.
     vb(50, {});
-    vc_.lineY = 245; commitAnchor_ = 63; lineWidth = 7;
+    vc_.setLineForTest(245); commitAnchor_ = 63; lineWidth = 7;
     hwScrollCount = 4; hwScrollPrefetch = true;
     const uint32_t oldBase = vc_.lineBase;
     endVideoLine();

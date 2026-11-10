@@ -171,8 +171,7 @@ void Shifter::reset() {
     newLineWidth_        = -1;
     newHwScrollCount_    = -1;
     newHwScrollPrefetch_ = false;
-    vc_.delayedOffset     = 0;
-    vc_.delayedAddr       = -1;
+    vc_.clearPendingWrites();
     // Résolution côté Shifter (ShifterFrame.Res_Shifter = −1, ResPosStop_Shifter
     // effacé, VideoRasterDelayedInc et DisplayPixelShift par ligne remis à 0).
     shifterRes_       = static_cast<uint8_t>(mode);
@@ -182,7 +181,7 @@ void Shifter::reset() {
     stopFromFc_       = -1;
     lastStopFromFc_   = -1;
     lastStopToFc_     = -1;
-    vc_.stopInc        = 0;
+    vc_.clearStopInc();
     shifterStopLine_  = -1;
     shifterStopShift_ = 0;
     // ShifterFrame.Freq/Res = −1 ([D] video.c:824-825 @ f0736b24) : le filtre « même valeur
@@ -191,11 +190,7 @@ void Shifter::reset() {
     lastGlueFreq_ = -1;
     lastGlueRes_  = -1;
     // Compteur vidéo matérialisé (≙ pVideoRaster = &STRam[0]) + restart fin de trame.
-    vc_.frameBase   = 0;
-    vc_.lineBase    = 0;
-    vc_.lineY       = 0;
-    vc_.restartBase = -1;
-    vc_.restartLine = 0;
+    vc_.resetAll();
     // État glue PAR-TRAME (≙ Video_InitShifterLines + Video_ClearOnVBL) : écritures
     // datées purgées, curseurs live remis, bordures nominales, spec512 désarmé.
     // beginFrame ré-écrase tout au prochain début de trame ; on garantit ici un
@@ -332,8 +327,7 @@ void Shifter::beginFrame() {
     // qui fait foi — une écriture $FF8201/03 entre la ligne 310 et la ligne 0
     // n'est PAS reprise (comme Hatari). Sinon (mono, ou freq inadaptée à la
     // ligne de restart), latch classique au début de trame.
-    vc_.frameBase = ((vc_.restartBase >= 0) ? static_cast<uint32_t>(vc_.restartBase)
-                                          : videoBase) & kVideoAddrMask;
+    vc_.beginFrame(videoBase, kVideoAddrMask);   // base de trame, restart consommé, ligne 0
     // Scroll hard « Shifter arrêté » : comme le DisplayPixelShift d'Hatari
     // (Video_InitShifterLines à chaque VBL), le décalage ne vaut que pour la trame
     // où le stop a eu lieu. ⚠ Hatari note lui-même (TODO [D] video.c:1915 @ f0736b24) que sur le
@@ -349,9 +343,6 @@ void Shifter::beginFrame() {
     if (stopFromFc_ >= 0) stopFromFc_ = 0;
     lastStopFromFc_  = -1;
     lastStopToFc_    = -1;
-    vc_.restartBase = -1;
-    vc_.lineBase  = vc_.frameBase;
-    vc_.lineY     = 0;
     commitAnchor_ = -1;   // ancre verticale du commit : re-latchée au 1er commit
     // Fond bordure : remplit tout le buffer overscan avec la couleur de bordure
     // (registre 0) au début de trame. Les lignes actives écrasent leur zone ; les
@@ -1239,7 +1230,7 @@ bool Shifter::spec512SelfTest() {
     }
     // Compteur matérialisé : base latchée = videoBase, TOUTES les lignes committées
     // (vc_.lineY = curAH_) → decodeLineIndices prend la voie analytique base + y·160.
-    vc_.frameBase = videoBase; vc_.lineBase = videoBase; vc_.lineY = curAH_;
+    vc_.latchFrame(videoBase, curAH_);
 
     // 3. Palette de départ : index 1 = C0. Écritures datées sur l'index 1.
     //    Cycle-pixel du pixel c de la ligne active y : (ds+y)·cpl + lst + c  (span/W=1).
@@ -1305,7 +1296,7 @@ bool Shifter::spec512SelfTest() {
     //    ouvertes (≠ chemin borderless testé ci-dessus). Smoke test : la voie est armée
     //    (bordersTrick_) et les couleurs injectées apparaissent (palette non figée).
     beginFrame();                         // réinitialise colorWrites_/syncWrites_/glue
-    vc_.frameBase = videoBase; vc_.lineBase = videoBase; vc_.lineY = curAH_;
+    vc_.latchFrame(videoBase, curAH_);
     frameStartPalette_.fill(0x000); frameStartPalette_[1] = C0;
     colorWrites_.clear();
     colorWrites_.push_back({ cycForPixel(0, b2), C2, 1, 0 });

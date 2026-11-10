@@ -385,7 +385,7 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
 Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
 
-- **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits. L'état du compteur vidéo est un membre, `VideoCounterState vc_`, sans changement de l'empreinte d'état. Prochain pas : y déplacer les méthodes, ce qui demande une interface vers la Glue et le faisceau, puis seulement la Glue. Le VIDEL du Falcon et la vidéo du TT se brancheront sur cette interface : la finir avant eux.
+- **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits. L'état du compteur vidéo est un membre, `VideoCounterState vc_`, et depuis le 2026-11-11 seules ses méthodes l'écrivent (`advanceLine`, `applyWrite`, `beginFrame`, `restart`…) : ce qui dépend de la Glue et du faisceau passe en paramètres, et ces signatures dessinent l'interface. Prouvé neutre par la porte d'échange (404 scénarios à l'octet). Prochain pas : déplacer les calculs de `videoCounter()` derrière une vue de la Glue (fenêtre verticale, octets par ligne, rattrapage), puis la Glue elle-même. Le VIDEL du Falcon et la vidéo du TT se brancheront sur cette interface : la finir avant eux.
 - **A9 — `appLoop` découpée** · P3 ◐ — `main()` tient en 10 lignes ; les 28 phases sont des
   fonctions statiques `(App&, Frame&)`. Plus grosse pièce restante :
   `runKioskMenu` — 380 lignes d'un seul tenant. Prochain pas éventuel : sortir ses pages,
