@@ -12,6 +12,8 @@ l'ordre inverse. Version courante : **0.6.4**.
   de N trames les touches, la souris, le joystick et les changements de disquette d'Hatari, quand
   son chargement a pris N trames de plus. NeoST n'est pas touché. N'a pas suffi pour CarVup, dont
   la partie diverge encore : ces jeux tirent leur hasard du minutage fin, pas de la seule trame.
+- `rainbow_islands_4mb` : seul parcours en 4 Mo, deux STX et changement de disquette ; accord
+  Hatari à 9000 et 13000, partie non jugée. 24 parcours.
 - Essais : Rainbow Islands exige 4 Mo (remarque du mainteneur) et y entre en jeu en accord avec
   Hatari ; Super Hang-On, Nitro, Dynamite Dux, Cybernoid II et CarVup divergent en partie.
 
