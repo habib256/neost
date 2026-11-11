@@ -2302,10 +2302,10 @@ int main(int argc, char** argv) {
     if (rewindTest) {
         constexpr int kInterval = 10, kRun = 35;
         Rewind rewind;
-        rewind.setEnabled(true);
         rewind.setInterval(kInterval);
         auto step = [&] { machine.runFrame(); rewind.onFrame(machine); };
-        for (int i = 0; i < frames; ++i) step();
+        for (int i = 0; i < frames; ++i) machine.runFrame();
+        rewind.setEnabled(true);                            // l'instant visé sera le premier de l'anneau
         // Compté par taken() : à budget plein, count() ne bouge plus. Un chargement continu
         // peut retarder l'instantané (aucun pendant une commande FDC), d'où la marge.
         const uint64_t before = rewind.taken();
@@ -2315,28 +2315,47 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "[rewind-test] FAIL: no snapshot taken\n");
             return 1;
         }
-        for (int i = 0; i < kRun; ++i) step();              // 3 instantanés de plus, 5 trames après
+        for (int i = 0; i < kRun; ++i) step();              // d'autres instantanés, leur nombre selon le FDC
         if (!machine.saveState(direct)) return 1;
         const uint64_t directScreen = observe::screenHash(machine);
         std::string why;
-        for (int i = 0; i < 4; ++i)                         // +30, +20, +10, puis l'instant visé
+        // Jusqu'au premier instantané : une commande STX retarde les autres, leur nombre varie.
+        do {
             if (!rewind.stepBack(machine, &why)) {
-                std::fprintf(stderr, "[rewind-test] FAIL: step %d: %s\n", i, why.c_str());
+                std::fprintf(stderr, "[rewind-test] FAIL: step: %s\n", why.c_str());
                 return 1;
             }
+        } while (rewind.count() > 1);
         if (!machine.saveState(back)) return 1;
         const bool sameState = back == target;
         for (int i = 0; i < kRun; ++i) machine.runFrame();  // la même partie, sans l'anneau
         if (!machine.saveState(replay)) return 1;
         const bool sameReplay = replay == direct && observe::screenHash(machine) == directScreen;
-        rewind.setBudget(1);                                // le budget garde au moins le dernier
-        const bool budget = rewind.count() == 1;
+        // Une disquette éjectée après l'instantané revient avec lui.
+        rewind.clear();
+        auto waitSnapshots = [&](std::size_t n) {
+            for (int guard = 0; rewind.count() < n && guard < 3000; ++guard) step();
+            return rewind.count() >= n;
+        };
+        bool media = true;
+        const std::string mounted = machine.fdc.mountedPath(0);
+        if (!mounted.empty()) {
+            media = waitSnapshots(1);
+            machine.fdc.eject(0);
+            for (int i = 0; i < kInterval / 2 - 1; ++i) machine.runFrame();
+            media = media && rewind.stepBack(machine, &why) && machine.fdc.mountedPath(0) == mounted
+                          && machine.fdc.inserted(0);
+        }
+        // Le budget évince les plus anciens et garde au moins le dernier.
+        const bool filled = waitSnapshots(3);
+        rewind.setBudget(1);
+        const bool budget = filled && rewind.count() == 1;
         rewind.setEnabled(false);
         const bool off = rewind.count() == 0 && !rewind.stepBack(machine, &why);
-        std::fprintf(stderr, "[rewind-test] state %s | replay %s | budget %s | off %s\n",
-                     sameState ? "OK" : "DIFF", sameReplay ? "OK" : "DIFF",
+        std::fprintf(stderr, "[rewind-test] state %s | replay %s | media %s | budget %s | off %s\n",
+                     sameState ? "OK" : "DIFF", sameReplay ? "OK" : "DIFF", media ? "OK" : "FAIL",
                      budget ? "OK" : "FAIL", off ? "OK" : "FAIL");
-        return (sameState && sameReplay && budget && off) ? 0 : 1;
+        return (sameState && sameReplay && media && budget && off) ? 0 : 1;
     }
 
     // Save-state — test de DÉTERMINISME (le vrai) : run N trames → save A → passe DIRECTE

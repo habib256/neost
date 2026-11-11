@@ -160,7 +160,7 @@ FAST = [
      [sys.executable, str(TOOLS / "run_wsdetect.py")]),
     # Retour arrière : média écrit, changé et éjecté annulé ; état à l'octet ; reprise identique.
     ("Retour arrière (disquette restaurée, état à l'octet, reprise identique)",
-     [str(HEADLESS), "roms/etos192fr.img", "--machine", "st", "--frames", "400", "--rewind-test"]),
+     [str(HEADLESS), "roms/etos192fr.img", "--machine", "st", "--disk-ro", "--frames", "400", "--rewind-test"]),
     # Relevés HWTST de tiers sur de vrais Mega STE : boucle registre à 8, 16 et 16 MHz + cache.
     ("HWTST (Mega STE réel : rapport de vitesse 16 MHz sans cache et avec cache)",
      [sys.executable, str(TOOLS / "run_hwtst_loop.py")]),

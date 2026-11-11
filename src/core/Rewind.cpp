@@ -51,7 +51,7 @@ void Rewind::onFrame(Machine& m) {
     if (since_ < interval_) ++since_;
     if (since_ < interval_) return;
     if (blocker(m)) { clear(); return; }
-    if (m.fdc.commandActive()) return;         // réessai à la trame suivante
+    if (m.fdc.stxCommandActive()) return;      // réessai à la trame suivante
 
     Snap snap;
     if (!m.saveState(snap.state)) return;
@@ -77,7 +77,6 @@ bool Rewind::stepBack(Machine& m, std::string* why) {
     };
     if (!enabled_) return fail("Rewind is off");
     if (const char* reason = blocker(m)) return fail(reason);
-    if (m.fdc.commandActive()) return fail("Floppy command in progress");
 
     // Une écriture STX n'est pas réversible : ce qui la précède n'est plus accessible.
     const uint64_t stx = m.fdc.stxWrites();

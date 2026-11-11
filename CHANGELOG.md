@@ -30,11 +30,15 @@ l'ordre inverse. Version courante : **0.6.4**.
 - Le save-state ne porte pas les disquettes : le FDC donne à chaque lecteur une génération, neuve à
   chaque écriture, montage ou éjection, et l'anneau ne copie un média que s'il a changé. Reculer
   remonte le bon média et **réécrit le fichier hôte à l'instant visé**.
-- Limites : aucun instantané pendant une commande WD1772 ; rien avec un disque dur (GEMDOS, ACSI,
+- Limites : aucun instantané pendant une commande sur un STX ; rien avec un disque dur (GEMDOS, ACSI,
   UltraSatan, clé USB) ; une écriture STX ne se franchit pas.
 - `neost-headless --rewind-test`, palier fast : écriture, échange et éjection annulés en mémoire et
   sur le fichier, état à l'octet près, partie rejouée identique. Le raccourci lui-même n'a pas été
-  essayé en session graphique.
+  essayé en session graphique. Passé sur les 95 images de la collection en ST et en STE, à deux
+  instants, STX compris : 380 cas sur 380. Cette passe a montré qu'exclure toute commande FDC privait
+  d'instantané les chargeurs qui lisent sans relâche (Epic, Enchanted Land, Super Hang-On, Vroom) :
+  seule une commande sur un STX suspend désormais l'anneau. Le franchissement d'une écriture STX n'a
+  pas de test.
 
 ## Relevés HWTST : horloges, son DMA et cache du Mega STE (2026-11-11)
 

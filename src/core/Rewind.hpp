@@ -10,7 +10,7 @@
 //  l'instantané partage la copie précédente. Un budget d'octets évince les plus anciens.
 //
 //  LIMITES.
-//    - Aucun instantané pendant une commande WD1772 : on réessaie à la trame suivante.
+//    - Aucun instantané pendant une commande sur un STX : on réessaie à la trame suivante.
 //    - Désactivé avec un disque dur (GEMDOS, ACSI, UltraSatan, clé USB) : leur contenu
 //      n'est pas copié, et un retour arrière le désaccorderait du système.
 //    - Une écriture STX n'est pas réversible : les instantanés antérieurs sont abandonnés.

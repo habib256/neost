@@ -44,6 +44,7 @@
 #include <functional>
 
 #include <filesystem>
+#include <chrono>
 
 // --- Bits DMA control ($FF8606), cf. EmuTOS bios/dma.h -----------------------
 enum : uint16_t {
@@ -3482,7 +3483,10 @@ std::size_t Fdc::mediaCopyBytes(const MediaCopy& copy) {
 bool Fdc::mediaSelfTest() {
     namespace fs = std::filesystem;
     constexpr std::size_t kSize = 737280;                 // 720 Ko : 80 pistes, 9 secteurs, 2 faces
-    const fs::path dir = fs::temp_directory_path() / "neost_media_selftest";
+    // Un dossier par exécution : deux auto-tests lancés ensemble ne se marchent pas dessus.
+    const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+    const fs::path dir = fs::temp_directory_path()
+        / ("neost_media_selftest_" + std::to_string(stamp) + "_" + std::to_string(reinterpret_cast<std::uintptr_t>(this)));
     std::error_code ec;
     fs::create_directories(dir, ec);
     const std::string pathA = (dir / "a.st").string(), pathB = (dir / "b.st").string();
@@ -3514,7 +3518,12 @@ bool Fdc::mediaSelfTest() {
     hostWriteBack_ = true;
     FloppyDisk& dk = drive_[1];
 
-    check(loadImage(pathA, 1), "mount A");
+    if (!loadImage(pathA, 1)) {                           // la suite écrit dans l'image
+        std::fprintf(stderr, "[media-selftest] FAIL mount A\n");
+        hostWriteBack_ = savedWriteBack;
+        fs::remove_all(dir, ec);
+        return false;
+    }
     const auto copyA = copyMedia(1);
     const uint64_t genA = dk.gen;
 

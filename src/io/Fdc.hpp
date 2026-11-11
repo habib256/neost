@@ -144,8 +144,12 @@ public:
     bool restoreMedia(int drive, const MediaCopy& copy);
     static uint64_t mediaCopyGeneration(const MediaCopy& copy);
     static std::size_t mediaCopyBytes(const MediaCopy& copy);
-    // Une commande WD1772 est en cours (BUSY) : pas d'instantané au milieu.
-    bool commandActive() const { return command_ != 0; }
+    // Une commande est en cours sur un STX : ses dates suivent la piste réelle, on n'y
+    // prend pas d'instantané. Sur un .ST le save-state porte la commande entière : l'exclure
+    // aussi priverait de retour arrière les chargeurs qui lisent sans relâche.
+    bool stxCommandActive() const {
+        return command_ != 0 && driveSel_ >= 0 && drive_[driveSel_].imgType == FloppyDisk::IMG_STX;
+    }
 
     // MMIO $FF8600-$FF860F (accès octets ; le 68000 y fait des mots big-endian).
     uint8_t read8(uint32_t addr);
