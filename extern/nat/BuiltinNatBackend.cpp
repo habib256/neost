@@ -27,7 +27,7 @@
 #include <sstream>
 #include <algorithm>
 
-namespace pom2 {
+namespace nat {
 
 bool parseNatForwards(const std::string& text, std::vector<BuiltinNatOptions::PortForward>& out)
 {
@@ -68,7 +68,7 @@ bool parseNatForwards(const std::string& text, std::vector<BuiltinNatOptions::Po
     return true;
 }
 
-namespace nat {
+namespace detail {
 
 Route routeDestination(uint32_t destination, uint16_t port, bool tcp,
                        const RoutePolicy& policy, Endpoint& host)
@@ -127,11 +127,11 @@ Route routeDestination6(const Ipv6& destination, uint16_t port, bool tcp,
     return Route::Host;
 }
 
-}  // namespace nat
+}  // namespace detail
 
 namespace {
 
-using namespace nat;
+using namespace detail;
 
 // [D] libslirp's convention for its virtual hosts: 52:55 then the address.
 constexpr Mac kGatewayMac = { 0x52, 0x55, 0x0A, 0x00, 0x02, 0x02 };
@@ -740,17 +740,17 @@ bool builtinNatAvailable()
 }
 
 std::unique_ptr<NetworkBackend> makeBuiltinNatBackend(
-    const BuiltinNatOptions& options, std::unique_ptr<nat::HostNetwork> network,
+    const BuiltinNatOptions& options, std::unique_ptr<detail::HostNetwork> network,
     std::unique_ptr<W5100Resolver> resolver)
 {
-    if (!network) network = nat::makeHostNetwork();
+    if (!network) network = detail::makeHostNetwork();
     if (!network) return nullptr;
     auto configured = options;
     if (!resolver) {
         resolver = std::make_unique<W5100NameResolver>();
-        if (!configured.dnsLookup) configured.dnsLookup = nat::queryHostDns;
+        if (!configured.dnsLookup) configured.dnsLookup = detail::queryHostDns;
     }
     return std::make_unique<BuiltinNat>(configured, std::move(network), std::move(resolver));
 }
 
-}  // namespace pom2
+}  // namespace nat

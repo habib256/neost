@@ -32,8 +32,8 @@
 #include <map>
 #include <tuple>
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 using Mac = std::array<uint8_t, 6>;
 using Bytes = std::vector<uint8_t>;
@@ -191,7 +191,7 @@ Bytes buildTcp(const TcpSegment& segment);
 /// The reply to an ICMP echo request (`request` is the ICMP message).
 Bytes buildIcmpEchoReply(View request);
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2
 
 #endif  // POM2_NAT_PACKET_H

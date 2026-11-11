@@ -9,8 +9,8 @@
 #include <algorithm>
 #include <cstddef>
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 namespace {
 
 // BOOTP fixed fields (RFC 2131 § 2), then the magic cookie and the options
@@ -90,5 +90,5 @@ Bytes dhcpReply(View r, const DhcpLease& lease)
     return out;
 }
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2

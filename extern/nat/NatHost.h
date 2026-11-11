@@ -29,8 +29,8 @@
 #include <memory>
 #include "NatPacket.h"
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 struct Endpoint {
     uint32_t ip   = 0;
@@ -93,7 +93,7 @@ std::unique_ptr<HostNetwork> makeHostNetwork();
 /// Blocking native DNS exchange. Only called on DnsProxy's bounded workers.
 Bytes queryHostDns(const Bytes& query);
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2
 
 #endif  // POM2_NAT_HOST_H

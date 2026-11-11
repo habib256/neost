@@ -6,8 +6,8 @@
 
 #include "NatUdp.h"
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 UdpRelay::Flow* UdpRelay::flowFor(uint16_t guestPort, uint64_t nowMs, bool ipv6)
 {
@@ -79,5 +79,5 @@ void UdpRelay::pump(uint64_t nowMs)
     }
 }
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2

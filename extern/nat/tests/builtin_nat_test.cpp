@@ -53,8 +53,8 @@
 #include <atomic>
 #include <algorithm>
 
-using namespace pom2;
-using namespace pom2::nat;
+using namespace nat;
+using namespace nat::detail;
 
 namespace {
 

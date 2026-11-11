@@ -13,8 +13,8 @@
 #include <algorithm>
 #include <thread>
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 namespace {
 
 constexpr std::size_t kHeader = 12;
@@ -270,5 +270,5 @@ void DnsProxy::pumpRaw(uint64_t now, const Emit& emit)
     }
 }
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2

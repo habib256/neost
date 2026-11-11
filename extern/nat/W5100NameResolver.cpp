@@ -31,7 +31,7 @@
 #include <condition_variable>
 #include <thread>
 
-namespace pom2 {
+namespace nat {
 namespace {
 
 #if POM2_HAS_SOCKETS
@@ -234,4 +234,4 @@ void W5100NameResolver::clearCache()
     cache_.clear();
 }
 
-} // namespace pom2
+} // namespace nat

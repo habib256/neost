@@ -16,7 +16,7 @@
 
 // Minimal levelled logger — thread-safe stderr sink with a tag per message.
 // Used everywhere a subsystem wants to log something:
-//   pom2::log().info("ROM", "Loaded apple2.rom");
+//   nat::log().info("ROM", "Loaded apple2.rom");
 
 #ifndef POM2_LOGGER_H
 #define POM2_LOGGER_H
@@ -26,7 +26,7 @@
 #include <mutex>
 #include <string>
 
-namespace pom2 {
+namespace nat {
 
 enum class LogLevel { Debug = 0, Info = 1, Warn = 2, Error = 3 };
 
@@ -111,6 +111,6 @@ private:
 /// mutex and a FILE* the OS reclaims anyway is the cheaper half of the trade.
 inline Logger& log() { static Logger& g = *new Logger(); return g; }
 
-} // namespace pom2
+} // namespace nat
 
 #endif // POM2_LOGGER_H

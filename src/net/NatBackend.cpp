@@ -5,14 +5,14 @@
 
 struct NatBackend::Impl {
 #ifdef NEOST_WITH_NET
-    std::unique_ptr<pom2::NetworkBackend> backend;
+    std::unique_ptr<nat::NetworkBackend> backend;
 #endif
 };
 NatBackend::NatBackend() = default;
 NatBackend::~NatBackend() = default;
 bool NatBackend::available() {
 #ifdef NEOST_WITH_NET
-    return pom2::builtinNatAvailable();
+    return nat::builtinNatAvailable();
 #else
     return false;
 #endif
@@ -25,8 +25,8 @@ bool NatBackend::open(bool restricted) {
 bool NatBackend::open(const Options& options) {
     error_.clear();
 #ifdef NEOST_WITH_NET
-    pom2::BuiltinNatOptions config;
-    if (!pom2::parseNatForwards(options.forwards, config.forwards)) {
+    nat::BuiltinNatOptions config;
+    if (!nat::parseNatForwards(options.forwards, config.forwards)) {
         error_ = "Invalid NAT forwards: expected tcp|udp:bind-ip:host-port:guest-port";
         return false;
     }
@@ -37,7 +37,7 @@ bool NatBackend::open(const Options& options) {
     config.restricted = options.restricted;
     config.allowHostLoopback = options.allowHostLoopback;
     auto next = std::make_unique<Impl>();
-    next->backend = pom2::makeBuiltinNatBackend(config);
+    next->backend = nat::makeBuiltinNatBackend(config);
     if (!next->backend || !next->backend->isValid()) {
         error_ = "Cannot start NAT or bind a requested host port";
         return false;
@@ -62,7 +62,7 @@ void NatBackend::send(const uint8_t* frame, int len) {
 bool NatBackend::recv(std::vector<uint8_t>& out) {
 #ifdef NEOST_WITH_NET
     if (impl_) {
-        out.resize(pom2::kMaxEthFrame);
+        out.resize(nat::kMaxEthFrame);
         const int size = impl_->backend->receive(out.data(), int(out.size()));
         if (size > 0) { out.resize(std::size_t(size)); return true; }
     }

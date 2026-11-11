@@ -28,11 +28,11 @@
 #include <memory>
 #include <mutex>
 
-namespace pom2 {
+namespace nat {
 
 class W5100Resolver;
 
-namespace nat {
+namespace detail {
 
 inline constexpr uint16_t kDnsPort = 53;
 
@@ -93,7 +93,7 @@ private:
     void pumpRaw(uint64_t now, const Emit& emit);
 };
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2
 
 #endif  // POM2_NAT_DNS_H

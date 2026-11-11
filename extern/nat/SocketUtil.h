@@ -65,7 +65,7 @@
 #include <netdb.h>
 #endif
 
-namespace pom2 {
+namespace nat {
 
 enum class PollAccept {
     Accepted,   ///< outFd holds a connected client
@@ -189,7 +189,7 @@ inline bool resolveBounded(const std::string& host, const std::string& portStr,
     std::thread([shared, host, portStr, socktype, protocol,
                  p = std::move(ready)]() mutable {
         bool settled = false;
-        pom2::runGuarded("SockResolve", [&] {
+        nat::runGuarded("SockResolve", [&] {
             addrinfo hints{};
             hints.ai_family   = AF_INET;
             hints.ai_socktype = socktype;
@@ -270,7 +270,7 @@ inline bool connectBounded(const addrinfo* a, int timeoutMs, socket_t& out,
     return true;
 }
 
-} // namespace pom2
+} // namespace nat
 
 #endif // POM2_HAS_SOCKETS
 #endif // POM2_SOCKET_UTIL_H

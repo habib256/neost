@@ -30,7 +30,7 @@
 #include <cstdint>
 #include <string>
 
-namespace pom2 {
+namespace nat {
 
 class W5100Resolver
 {
@@ -64,6 +64,6 @@ public:
     virtual void clearCache() = 0;
 };
 
-} // namespace pom2
+} // namespace nat
 
 #endif // POM2_W5100_RESOLVER_H

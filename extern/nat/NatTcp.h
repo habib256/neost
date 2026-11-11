@@ -47,8 +47,8 @@
 #include <memory>
 #include <tuple>
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 class TcpConnection
 {
@@ -175,7 +175,7 @@ private:
     uint32_t                                                   nextIsn_ = 0x01000000;
 };
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2
 
 #endif  // POM2_NAT_TCP_H

@@ -9,8 +9,8 @@
 #include <algorithm>
 #include <vector>
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 // ── One connection ───────────────────────────────────────────────────────
 
@@ -392,5 +392,5 @@ uint32_t TcpRelay::takeIsn()
     return isn;
 }
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2

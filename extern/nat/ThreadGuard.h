@@ -29,8 +29,8 @@
 //
 // Usage — the two shapes are equivalent, pick whichever reads better at the
 // call site:
-//     worker_ = pom2::guardedThread("FujiNet", [this] { workerLoop(); });
-//     std::thread([this] { pom2::runGuarded("Printer", [this]{ loop(); }); });
+//     worker_ = nat::guardedThread("FujiNet", [this] { workerLoop(); });
+//     std::thread([this] { nat::runGuarded("Printer", [this]{ loop(); }); });
 //
 // `tag` is the logger tag and must have static storage duration (a string
 // literal at every call site) — the guard keeps the pointer, not a copy.
@@ -52,7 +52,7 @@
 
 #include "Logger.h"
 
-namespace pom2 {
+namespace nat {
 
 /// Run `fn` as the body of a thread, turning an escaping exception into a
 /// logged error instead of std::terminate(). Never throws.
@@ -78,6 +78,6 @@ std::thread guardedThread(const char* tag, Fn&& fn)
     });
 }
 
-} // namespace pom2
+} // namespace nat
 
 #endif // POM2_THREAD_GUARD_H

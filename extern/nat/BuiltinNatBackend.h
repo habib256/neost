@@ -65,9 +65,9 @@
 #include <memory>
 #include <string>
 
-namespace pom2 {
-
 namespace nat {
+
+namespace detail {
 
 inline constexpr uint32_t kNetwork     = 0x0A000200;   // 10.0.2.0
 inline constexpr uint32_t kSubnetMask  = 0xFFFFFF00;   // /24
@@ -98,16 +98,16 @@ Route routeDestination(uint32_t destination, uint16_t port, bool tcp,
 Route routeDestination6(const Ipv6& destination, uint16_t port, bool tcp,
                         const RoutePolicy& policy, Endpoint& host);
 
-}  // namespace nat
+}  // namespace detail
 
 struct BuiltinNatOptions {
     struct PortForward {
         bool tcp = true;
-        nat::Endpoint bind{nat::kLoopbackIp, 0};
+        detail::Endpoint bind{detail::kLoopbackIp, 0};
         uint16_t guestPort = 0;
     };
     std::vector<PortForward> forwards;
-    std::function<nat::Bytes(const nat::Bytes&)> dnsLookup;
+    std::function<detail::Bytes(const detail::Bytes&)> dnsLookup;
     /// Let the guest reach the host's loopback interface: through the
     /// gateway address (10.0.2.2 -> 127.0.0.1) and by naming 127/8 directly.
     /// FALSE by default; key `uthernet_allow_loopback`.
@@ -151,9 +151,9 @@ inline const char* resolveEthernetBackend(const std::string& choice, bool slirpC
 /// selects the host's real sockets and resolver.
 std::unique_ptr<NetworkBackend> makeBuiltinNatBackend(
     const BuiltinNatOptions& options = {},
-    std::unique_ptr<nat::HostNetwork> network = nullptr,
+    std::unique_ptr<detail::HostNetwork> network = nullptr,
     std::unique_ptr<W5100Resolver> resolver = nullptr);
 
-}  // namespace pom2
+}  // namespace nat
 
 #endif  // POM2_BUILTIN_NAT_BACKEND_H

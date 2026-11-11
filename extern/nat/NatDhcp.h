@@ -18,8 +18,8 @@
 
 #include <cstdint>
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 inline constexpr uint16_t kDhcpServerPort = 67;
 inline constexpr uint16_t kDhcpClientPort = 68;
@@ -36,7 +36,7 @@ struct DhcpLease {
 /// empty when there is none.
 Bytes dhcpReply(View request, const DhcpLease& lease);
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2
 
 #endif  // POM2_NAT_DHCP_H

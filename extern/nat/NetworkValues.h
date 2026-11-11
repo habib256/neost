@@ -27,7 +27,7 @@
 
 #include <cstdint>
 
-namespace pom2 {
+namespace nat {
 
 inline constexpr uint16_t byteSwap16(uint16_t v)
 {
@@ -43,6 +43,6 @@ inline constexpr uint16_t hostToNet16(uint16_t v) { return byteSwap16(v); }
 inline constexpr uint16_t netToHost16(uint16_t v) { return byteSwap16(v); }
 #endif
 
-} // namespace pom2
+} // namespace nat
 
 #endif // POM2_NETWORK_VALUES_H

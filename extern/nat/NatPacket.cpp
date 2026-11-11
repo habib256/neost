@@ -9,8 +9,8 @@
 #include <algorithm>
 #include <cstring>
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 uint16_t rd16(const uint8_t* p)
 {
@@ -450,5 +450,5 @@ Bytes Ipv6Reassembler::accept(View p, uint64_t now)
     return result;
 }
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2

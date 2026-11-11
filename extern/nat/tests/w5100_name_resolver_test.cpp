@@ -35,7 +35,7 @@
 
 namespace {
 
-using namespace pom2;
+using namespace nat;
 using Status = W5100NameResolver::Status;
 
 // ── A cached answer costs no lookup at all ───────────────────────────────

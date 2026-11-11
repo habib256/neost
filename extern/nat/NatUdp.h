@@ -37,8 +37,8 @@
 #include <memory>
 #include <vector>
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 class UdpRelay
 {
@@ -86,7 +86,7 @@ private:
     std::vector<uint8_t>     buffer_;
 };
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2
 
 #endif  // POM2_NAT_UDP_H

@@ -67,7 +67,7 @@
 #include <string_view>
 #include <vector>
 
-namespace pom2 {
+namespace nat {
 
 /// 6-byte Ethernet hardware address.
 struct MacAddress {
@@ -198,6 +198,6 @@ private:
     std::deque<std::vector<uint8_t>> queue_;
 };
 
-} // namespace pom2
+} // namespace nat
 
 #endif // POM2_NETWORK_BACKEND_H

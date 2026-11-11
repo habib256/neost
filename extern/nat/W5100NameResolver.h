@@ -50,7 +50,7 @@
 #include <string>
 #include <vector>
 
-namespace pom2 {
+namespace nat {
 
 class W5100NameResolver final : public W5100Resolver
 {
@@ -154,6 +154,6 @@ private:
     std::chrono::steady_clock::time_point  rateStamp_{};
 };
 
-} // namespace pom2
+} // namespace nat
 
 #endif // POM2_W5100_NAME_RESOLVER_H

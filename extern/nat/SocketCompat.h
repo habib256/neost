@@ -76,11 +76,11 @@
 // headers holding a handle — W5100Device::Socket::fd — compile unchanged;
 // only the API is absent. Nothing can open one, so the value is never
 // anything but kInvalidSocket.
-namespace pom2 {
+namespace nat {
 using socket_t = int;
 inline constexpr socket_t kInvalidSocket = -1;
 inline bool isValidSocket(socket_t s) { return s != kInvalidSocket; }
-} // namespace pom2
+} // namespace nat
 #endif
 
 // ─── Byte order + protocol selectors, available in BOTH builds ───────────
@@ -100,7 +100,7 @@ inline bool isValidSocket(socket_t s) { return s != kInvalidSocket; }
 #include "NetworkValues.h"   // byteSwap16 / hostToNet16 / the protocol selectors
 
 #if !POM2_HAS_SOCKETS
-namespace pom2 {
+namespace nat {
 // Socketless build: the SnMR mode switch still names these, but
 // `openSystemSocket()` refuses before reaching a syscall, so the values are
 // inert. They keep the BSD numbering so a reader comparing against
@@ -109,7 +109,7 @@ inline constexpr int kSockStream = 1;
 inline constexpr int kSockDgram  = 2;
 inline constexpr int kIpProtoTcp = 6;
 inline constexpr int kIpProtoUdp = 17;
-} // namespace pom2
+} // namespace nat
 #endif
 
 #if POM2_HAS_SOCKETS
@@ -151,7 +151,7 @@ WIN32_LEAN_AND_MEAN before the windows.h include)."
 #  include <unistd.h>
 #endif
 
-namespace pom2 {
+namespace nat {
 
 // ── Protocol selectors ────────────────────────────────────────────────
 // Named here rather than used raw at the call site so the SnMR mode switch
@@ -656,7 +656,7 @@ inline bool setListenerBindPolicy(socket_t s)
 #endif
 }
 
-} // namespace pom2
+} // namespace nat
 
 #endif // POM2_HAS_SOCKETS
 #endif // POM2_SOCKET_COMPAT_H

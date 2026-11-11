@@ -17,8 +17,8 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 class GuestSink
 {
@@ -30,7 +30,7 @@ public:
     virtual uint32_t guestIp() const = 0;
 };
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2
 
 #endif  // POM2_NAT_GUEST_SINK_H

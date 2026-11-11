@@ -27,8 +27,8 @@
 #endif
 #endif
 
-namespace pom2 {
 namespace nat {
+namespace detail {
 
 #if POM2_HAS_SOCKETS
 
@@ -348,5 +348,5 @@ Bytes queryHostDns(const Bytes&) { return {}; }
 
 #endif
 
+}  // namespace detail
 }  // namespace nat
-}  // namespace pom2

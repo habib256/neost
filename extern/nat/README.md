@@ -8,8 +8,12 @@ Dernière reprise : `4625ec82547118918bfafc795f6b7128cdb616ae` (2026-11-11).
 Licence : GPL-3.0-or-later, © 2026 VERHILLE Arnaud (`LICENSE`).
 Les références au dessin Casso @ `2d899adf` (MIT) sont conservées dans les sources.
 
+Espaces de noms : `nat` (ex-`pom2` amont) et `nat::detail` (ex-`pom2::nat`).
+Une reprise de correctifs POM2 applique ce renommage (`pom2::` → `nat::`,
+`nat::` interne → `detail::`) avant la fusion à trois voies.
+
 Les fichiers de protocole, le résolveur et leurs tests sont importés sans
-réécriture. Le raccord NeoST vit dans `src/net/NatBackend.*` ; il appelle
+autre réécriture. Le raccord NeoST vit dans `src/net/NatBackend.*` ; il appelle
 `nicReset()` à la mise sous tension de la NE2000 (`Ne2000::powerCycle`), pas
 au port reset du DP8390, comme POM2 pour le registre MR du W5100.
 Les commentaires anglais de cette copie amont sont conservés pour faciliter
