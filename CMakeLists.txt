@@ -316,8 +316,11 @@ if(MINGW)
     target_sources(neost-headless PRIVATE $<TARGET_OBJECTS:neost_win_rc>)
 endif()
 if(NEOST_WITH_NET)
+    # Tout binaire réclamé par le palier fast (tools/run_all.py) doit être ici : la CI ne
+    # bâtit que des cibles nommées, et un oubli sort en « Build requis » (neost-modem-test,
+    # 2026-11-11).
     add_dependencies(neost-headless neost-nat-test neost-resolver-test neost-nat-adapter-test
-                     neost-midi-ring-test)
+                     neost-midi-ring-test neost-modem-test)
 endif()
 target_link_libraries(neost-headless PRIVATE neost_net)  # neost_core via neost_net (PUBLIC)
 if(APPLE)
