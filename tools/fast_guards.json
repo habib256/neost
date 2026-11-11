@@ -130,7 +130,11 @@
       "since": "2026-11-09",
       "last_real_catch": null
     },
-    "Anneau MIDI : 20 octets UDP locaux rendus dans l'ordre par l'ACIA": {
+    "Anneau MIDI : datagrammes v1 séquencés, doublons et sources étrangères rejetés": {
+      "since": "2026-11-11",
+      "last_real_catch": null
+    },
+    "Modem Hayes : ATDT asynchrone, DTR (&D2/&D0), abandon, reset du PSG": {
       "since": "2026-11-11",
       "last_real_catch": null
     },

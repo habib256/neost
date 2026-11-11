@@ -2062,6 +2062,12 @@ int main(int argc, char** argv) {
     // Modem Hayes (--modem) : commandes AT sur l'USART → pont TCP réel. Le sink
     // série CHAÎNE la capture de verdicts (inchangée) et le modem.
     std::unique_ptr<HayesModem> modem;
+    // Détruit avant modem : la machine ne garde pas l'adresse du modem libéré.
+    struct ModemWiring {
+        Machine& m;
+        const std::unique_ptr<HayesModem>& modem;
+        ~ModemWiring() { if (modem) { m.setRs232LineSink({}); m.mfp.setSerialSink({}); } }
+    } modemWiring{machine, modem};
     if (modemFlag) {
         modem = std::make_unique<HayesModem>(machine.mfp);
         HayesModem* m = modem.get();
@@ -2069,6 +2075,7 @@ int main(int argc, char** argv) {
             serialOut.push_back(char(b));
             m->onTx(b);
         });
+        machine.setRs232LineSink([m](uint8_t a) { m->onPortA(a); });   // DTR, reset
         std::fprintf(stderr, "[headless] Hayes modem on RS-232 (ATDT host:port)\n");
     }
 #else
