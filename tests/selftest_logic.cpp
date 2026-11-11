@@ -1733,9 +1733,10 @@ static void testDmaSoundTruthTable() {
     r.snd.write8(SND + 0x01, 0x00);
     checkHex("contrôle : arrêt", r.snd.read8(SND + 0x01), 0x00);
 
-    // --- 4. Mode $FF8921 : masque $8F (mono + fréquence) --------------------
+    // --- 4. Mode $FF8921 : masque $83 (mono + fréquence) --------------------
+    // [B] Atari TT030 HW Reference Manual, « 8920 RW 0000 0000 a000 00bb » (cf. DmaSound.cpp).
     r.snd.write8(SND + 0x21, 0xFF);
-    checkHex("mode : masque $8F (mono + fréquence)", r.snd.read8(SND + 0x21), 0x8F);
+    checkHex("mode : masque $83 (mono + fréquence)", r.snd.read8(SND + 0x21), 0x83);
 
     // --- 5. Le compteur VIVANT : à l'arrêt il montre l'adresse de DÉBUT ------
     r.setStart(0x020000);

@@ -516,6 +516,11 @@ extension DAM NeoST qualifiée ci-dessus.
 
 ### Son (YM2149 + DMA STE) — `YM2149.cpp`, `DmaSound.cpp` ↔ `psg.c`, `dmaSnd.c`, `sound.c`
 
+- ✅ **`$FF8921` relu sous le masque `0x83` (2026-11-11)** — divergence voulue : Hatari garde
+  `0x8F` ; le manuel matériel du TT (Atari, « 8920 RW 0000 0000 a000 00bb ») et la
+  transcription du STE Developer Addendum mettent les bits 2-6 à zéro, comme MAME et MiSTery.
+  Grade B contre D (`DmaSound.cpp`, case `0x21`).
+
 - ✅ **Microwire DATA octet (2026-10-19)** : fusion avec la valeur visible
   après décalage, sans réutiliser l’autre octet d’une ancienne commande.
   Déclenchements high/low isolés, staging mot/long, rejet occupé et état v45
@@ -1822,7 +1827,7 @@ MFP, périphériques (FDC/son-statuts/bus/SCC/ACIA), son approfondi (cœur YM + 
   passe de bug hunt) : `mmuTranslate` rend void `$40000-$7FFFF` quand bank0 = 128 Ko et
   bank1 = 2 Mo (≙ `memory_map_Standard_RAM`, cpu/memory.c — quirk mesuré sur STF).
 - **Son : bruit ≥/250 kHz** (incrément 125 kHz, comparaison 250 kHz, plancher per=1 retiré —
-  `YM2149.cpp:187-190,248-258` = sound.c:1050-1058) et **`mode_ &= 0x8F`** (`DmaSound.cpp:589`).
+  `YM2149.cpp:187-190,248-258` = sound.c:1050-1058) et `mode_ &= 0x8F` (`DmaSound.cpp:589`, remplacé le 2026-11-11 par `0x83`, grade B, cf. § Son).
 - **Filtre « écriture redondante » freq/res** — PRÉSENT (`recordSyncWrite`, `VideoGlue.cpp:278-361`,
   persistant inter-trames ≙ `ShifterFrame.Freq/Res`) — l'entrée « absent » de la 2ᵉ passe est fausse.
 - **V3 partiel : restart du compteur vidéo PORTÉ** (2026-07-02) — `restartVideoCounter`

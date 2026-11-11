@@ -594,19 +594,21 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         case 0x13: endAddr_   = (endAddr_   & 0xFFFF00) | (uint32_t(v) & 0xFE); break;
         // $FF8920 : octet scratch relisible (cf. read8 — Hatari ne l'intercepte pas).
         case 0x20: pad20_ = v; break;
-        // Mode : bit7 mono + bits0-1 fréquence. Masque de relecture 0x8F :
-        // [D] Hatari dmaSnd.c:1017 @ f0736b24 — garde les bits 2-3 (« only bits that
-        //     exist on a real STE », sans source citée).
+        // Mode : bit7 mono + bits0-1 fréquence, masque de relecture 0x83.
+        // [B] Atari TT030 Hardware Reference Manual, page « DMA SOUND SUBSYSTEM »
+        //     (p. 26 du PDF, sha256 93c17bee…) : « 8920 RW 0000 0000 a000 00bb Sound
+        //     Mode Control » — bits 2-6 à zéro. Le son DMA du TT est celui du STE ;
+        //     la transcription du STE Developer Addendum (« STe Programming info »,
+        //     comp.sys.atari.st.tech, 13 fév. 1991) donne le même « m000 00rr ».
         // [D] MAME atarist.cpp:589 @ ce391499 et MiSTery gstshifter.v:125,159 @ 4a6db7cc
-        //     disent 0x83 (bits 2-3 non câblés).
-        // [F] Trois émulateurs, deux réponses, aucune fiche lisible : on garde 0x8F tant
-        //     qu'un titre ne tranche pas. Tranché par : la documentation Atari du STE
-        //     (registre Sound Mode Control) ou un programme qui relit $FF8921. La
-        // consommation due est datée à l'ANCIENNE cadence avant le changement, et
+        //     concordent (0x83).
+        // [D] Hatari dmaSnd.c:1017 @ f0736b24 garde les bits 2-3 (0x8F, « only bits
+        //     that exist on a real STE », sans source) : écart assumé, grade inférieur.
+        // La consommation due est datée à l'ANCIENNE cadence avant le changement, et
         // le passage mono → stéréo réaligne la FIFO sur frontière paire.
         case 0x21: {
             updateDac();
-            const uint8_t newMode = v & 0x8F;
+            const uint8_t newMode = v & 0x83;
             if ((mode_ & 0x80) && !(newMode & 0x80)) fifoSetStereo();
             if (newMode != mode_) { mode_ = newMode; recordEvent(2); }   // MODE daté (cadence du rendu)
             break;
