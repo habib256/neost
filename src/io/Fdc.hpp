@@ -338,11 +338,17 @@ private:
         // MÉMOIRE (volatiles : ni le fichier .st ni le save-state ne les portent) ;
         // un WRITE TRACK standard ultérieur de la même piste les efface. Clé :
         // (piste physique << 1) | face. Cf. STE_Test v1.9, test F (secteurs 10-18).
+        // Lu comme le relira la puce : marques précédées de 3 A1 de synchro ($F5 écrits),
+        // CRC relus sur la piste et comparés ([B] WD177X-00 p. 1-13, 1-18 ; cf. parseWrittenTrack).
         struct StOverrideSector {
             uint8_t tr = 0, hd = 0, sr = 0, sz = 2;
-            int     idPos = 0;                  // position de l'IDAM ($FE) dans le flux
+            int     idPos = 0;                  // position de l'IDAM ($FE) sur la piste relue
+            uint16_t idCrc = 0;                 // deux octets de CRC relus après l'ID
+            bool    idCrcOk = true;             // CRC d'ID juste
+            bool    hasData = true;             // marque de données trouvée dans la fenêtre
+            bool    dataCrcOk = true;           // CRC du champ données juste
             bool    deleted = false;            // marque $F8
-            std::vector<uint8_t> data;
+            std::vector<uint8_t> data;          // 128 << (sz & 3) octets, même sans marque
         };
         struct StOverrideTrack {
             std::vector<uint8_t> raw;           // flux WRITE TRACK tel qu'écrit par le programme
@@ -545,6 +551,15 @@ private:
     uint64_t stxWrites_ = 0;     // écritures STX persistées depuis le lancement
     void touchMedia(FloppyDisk& dk) { dk.gen = ++mediaSerial_; }
     bool stOverrideFromBuffer(FloppyDisk& dk);
+    // Champ ID retenu par le dernier nextSectorID, sans champ de données derrière lui
+    // (STX : RNF sans CRC ; piste .ST réécrite : pas de marque dans la fenêtre).
+    bool foundIdHasNoData();
+public:
+    // Flux WRITE TRACK → secteurs tels que le WD1772 les relira (marques, CRC, fenêtre de
+    // la marque de données). Public pour les auto-tests ; `trackLen` borne la piste relue.
+    static std::vector<FloppyDisk::StOverrideSector> parseWrittenTrack(const uint8_t* raw, int n,
+                                                                       int trackLen);
+private:
     uint8_t  tr_ = 0;        // Track Register
     uint8_t  sr_ = 1;        // Sector Register
     uint8_t  dr_ = 0;        // Data Register (destination des SEEK, [B] WD177X-00 p. 1-3)

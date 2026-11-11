@@ -126,6 +126,7 @@ int testGemdosSnapshot(); // reprise transactionnelle des fichiers hôtes GEMDOS
 int testDesktopMouse(); // pointeur absolu GEM, géométrie et pilote EmuTOS
 int testMfpVectorRegister(); // bits réservés VR nuls, S et base préservés
 int testFdcTrackIdLocation(); // IDs de piste ST compatibles avec tête et face réelles
+int testFdcWrittenMarks(); // marques/CRC d'une piste écrite, ID sans données (5 tours)
 int testMfpInternalLoopback(); // TSR H/L sélectionne le bouclage matériel interne
 int testFdcSectorSizeSwitch(); // secteur STX long vers lecteur ST sélectionné en vol
 int testMfpRxOverrun(); // erreur différée UDR puis acquittement RSR
@@ -1976,17 +1977,19 @@ static void testFdcTruthTable() {
     std::vector<uint8_t> track(60, 0x4E);
     for (uint8_t sec = 1; sec <= 9; ++sec) {
         track.insert(track.end(), 12, 0);
-        track.insert(track.end(), {0xA1, 0xA1, 0xA1, 0xFE, 0, 0, sec, 2, 0, 0});
+        // [B] WD177X-00 p. 1-13, 1-18 : trois $F5 (A1 de synchro) avant chaque marque,
+        // $F7 pour les deux octets de CRC.
+        track.insert(track.end(), {0xF5, 0xF5, 0xF5, 0xFE, 0, 0, sec, 2, 0xF7});
         track.insert(track.end(), 22, 0x4E);
         track.insert(track.end(), 12, 0);
-        track.insert(track.end(), {0xA1, 0xA1, 0xA1, 0xFB});
+        track.insert(track.end(), {0xF5, 0xF5, 0xF5, 0xFB});
         const size_t data = track.size();
         track.insert(track.end(), 512, uint8_t(0x60 + sec));
         if (sec == 1) {
             std::copy_n(image.begin(), 512, track.begin() + data);
             track[data + 0x1A] = 1;
         }
-        track.insert(track.end(), 2, 0); // CRC synthétisé à la relecture
+        track.push_back(0xF7);
         track.insert(track.end(), 40, 0x4E);
     }
     track.resize(6268, 0x4E);
@@ -2951,6 +2954,7 @@ int main() {
     if (const int failures = testDesktopMouse()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpVectorRegister()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcTrackIdLocation()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcWrittenMarks()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpInternalLoopback()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcSectorSizeSwitch()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpRxOverrun()) g_fail += failures; else ++g_ok;

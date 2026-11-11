@@ -497,6 +497,12 @@ bool StxImage::loadWd1772(const std::string& path) {
                     (extra[4] == 0xFB || extra[4] == 0xF8)) ss.dataMark = extra[4];
             }
             Sector* sec = findSectorByPosition(ss.track, ss.side, ss.bitPos);
+            // ID sans champ de données (RNF seul) réécrit par Write Sector : il a pris la
+            // taille de son ID ([B] WD177X-00 p. 1-5, 1-12), comme Fdc::writeSectorStx.
+            if (sec && sec->sectorSize == 0 && (sec->fdcStatus & FLAG_RNF)
+                    && !(sec->fdcStatus & FLAG_CRC)
+                    && ss.data.size() == std::size_t(128u << (sec->idSize & SECTOR_SIZE_MASK)))
+                sec->sectorSize = uint16_t(ss.data.size());
             if (sec && ss.data.size() != sec->sectorSize) {
                 // Overlay d'une autre taille que le secteur : les lecteurs bouclent
                 // sur sec.sectorSize → un bloc plus court ferait lire hors du vector.
