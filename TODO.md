@@ -275,12 +275,12 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Monter l'échelle
 
-- **Étendre les étalons `rtl`** · P2 ◐ — `rtl_low_pal`, `rtl_low_ntsc` et `rtl_med_pal` posés, ce dernier à 0 pixel. Reste ce qui bouge en cours de ligne (palette, fréquence), là où NeoST et le
-  modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`.
+- **Étendre les étalons `rtl`** · P2 ⏸ source — `rtl_low_pal`, `rtl_low_ntsc` et `rtl_med_pal` posés, ce dernier à 0 pixel. Reste ce qui bouge en cours de ligne (palette, fréquence), là où NeoST et le
+  modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`. En attente : le modèle date les écritures 3 à 4 cycles trop tôt face à de vraies images (`docs/REFERENCE_LADDER.md`) ; un étalon en cours de ligne contre lui ne trancherait rien sans relevé.
 - **Relevés de tiers** · P2 ⭘ — notes de Steven Tattersall, résultats de la suite Hatari,
   relevés publiés avec WSDETECT. Un relevé entre en `hardware` s'il nomme machine et protocole.
-- **Documents primaires manquants** · P2 ⭘ — HD6301 rapatrié le 2026-11-10 (Hitachi, *HD6301/HD6303 Series Handbook*, 1989) ; restent les schémas GLUE/MMU ST et Mega STE,
-  schéma du Shifter ST.
+- **Documents primaires manquants** · P2 ⏸ source — HD6301 rapatrié le 2026-11-10 (Hitachi, *HD6301/HD6303 Series Handbook*, 1989) ; restent les schémas GLUE/MMU ST et Mega STE,
+  schéma du Shifter ST. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE y est.
 - **A43 — dette de preuve** · P2 ⏸ — tout commentaire cite ses références (règle : `CLAUDE.md`) ;
   les 312 citations d'Hatari portent grade et révision. MFP, YM2149, WD1772, ACIA et SCC sont
   confrontés à leurs fiches : ce qu'elles tranchaient seules est corrigé (2026-11-10), les `⚠ [B]`
@@ -294,9 +294,9 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 ### Instruments
 
-- **Suite de tests d'Hatari : restes** · P2 ◐ — `run_hatari_suite.py` rejoue cycles, blitter,
-  bus errors, `cpu`, `gemdos` et `serial`. Reste `screen` (référence PNG au format Hatari) ; `xbios`/`mem_end` hors périmètre.
-- **Banc temporel Hatari** · P2 ◐ — 20 sondes, dont écriture DMA disquette, lecture STX et
+- **Suite de tests d'Hatari : restes** · P2 ⏸ source — `run_hatari_suite.py` rejoue cycles, blitter,
+  bus errors, `cpu`, `gemdos` et `serial`. Reste `screen` (référence PNG au format Hatari) ; `xbios`/`mem_end` hors périmètre. `screen` attend que l'écart de 4 px de `flixfull.prg` soit tranché (§ 5, Instruments, P3 [F]).
+- **Banc temporel Hatari** · P2 ⏸ IACK — 20 sondes, dont écriture DMA disquette, lecture STX et
   DIVU/DIVS ; le résidu blitter/IRQ Mega STE attend la capture IACK. → `docs/HATARI_MEGASTE_AUDIT.md`
 - **`screen/flixfull.prg`** · P3 ⭘ · [F] — NeoST est 4 px à gauche d'Hatari sur toute la ligne, ST comme STE. Écritures et décisions du GLUE identiques (LEFT_OFF + RIGHT_OFF, DE 5 à 463, 230 octets) :
   l'écart est dans la recopie de la ligne. Aucun témoin réel ne dit qui a raison, et le Shifter du modèle n'est pas fiable à ce grain. Tranche : une capture sur machine.
