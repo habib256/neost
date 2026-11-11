@@ -119,9 +119,9 @@ public:
     //  qu'il s'inline chez l'appelant (Moira, blitter, DMA). Cf. mmuFastLimit().
     uint8_t read8(uint32_t addr) {
         addr &= stmap::ADDR_MASK;
-        // L'overlay de boot ne concerne QUE $0-$7 et ne vit que le temps de la
-        // lecture SSP/PC au reset : il est exclu du chemin rapide, pas ignoré.
-        if (addr < mmuFastLimit() && !(bootOverlay && addr < 8)) return ram[addr];
+        // $0-$7 : la GLUE y sert la ROM à TOUTE lecture CPU (cf. read8Slow, rvec) —
+        // exclus du chemin rapide, la copie RAM n'est pas ce que lit le 68000.
+        if (addr < mmuFastLimit() && addr >= 8) return ram[addr];
         // ROM TOS : deuxième source d'accès en volume — le code du TOS (et du GEM)
         // s'EXÉCUTE depuis la ROM, chaque mot d'opcode passe donc ici. `addr-romBase`
         // en arithmétique non signée : sous romBase le décalage déborde et le test
@@ -149,7 +149,7 @@ public:
     // ne peut pas atteindre par construction.
     uint16_t read16(uint32_t addr) {
         addr &= stmap::ADDR_MASK;
-        if (addr + 1 < mmuFastLimit() && !(bootOverlay && addr < 8))
+        if (addr + 1 < mmuFastLimit() && addr >= 8)       // $0-$7 : ROM, cf. read8
             return uint16_t((ram[addr] << 8) | ram[addr + 1]);
         const uint32_t off = addr - romBase;             // cf. read8 : non signé
         // ⚠ `off + 1` seul déborderait à 0 quand off == 0xFFFFFFFF (addr == romBase-1,
@@ -164,7 +164,23 @@ public:
     void     write16(uint32_t addr, uint16_t v);
     void     write32(uint32_t addr, uint32_t v);
 
-    // Accès mémoire des contrôleurs DMA (FDC, ACSI, son STE) — port de Hatari
+    // Cycle RAM du MCU (vidéo, son DMA STE) : adresse 22 bits posée sur le bus RAM,
+    // décodée par le seul MMU — ni ROM, ni cartouche, ni MMIO, ni rabattement des
+    // vecteurs $0-$7 sur la ROM (réservé aux lectures CPU).
+    // [D] gstmcu.v:132-138 @ 4a6db7cc (MiSTery a00deb5b) — mux ADDR : vidéo et son
+    //     posent { 2'b0, snd } / vid_reg, toujours en cycle RAM (addrselb = 1).
+    uint8_t ramCycleRead8(uint32_t addr) {
+        addr &= 0x3FFFFFu;
+        if (addr < mmuFastLimit()) return ram[addr];
+        return ramSpaceRead8(addr);
+    }
+    uint16_t ramCycleRead16(uint32_t addr) {
+        addr &= 0x3FFFFFu;
+        if (addr + 1 < mmuFastLimit()) return uint16_t((ram[addr] << 8) | ram[addr + 1]);
+        return ramCycleRead16Slow(addr);
+    }
+
+    // Accès mémoire des contrôleurs DMA (FDC, ACSI ; le son STE passe par ramCycleRead8) — port de Hatari
     // stMemory.c STMemory_DMA_ReadByte/WriteByte : le DMA traverse le MÊME plan
     // mémoire que le CPU (traduction MMU / aliasing de banques inclus, ROM lisible)
     // mais ne déclenche JAMAIS de bus error — lire une zone fautive renvoie une
@@ -382,10 +398,11 @@ public:
     // MMIO ni au-delà de la RAM.
     uint8_t* hostRamPtr(uint32_t addr, uint32_t len);
 
-    // Overlay de boot : au reset, le 68000 lit SSP ($0) et PC ($4). Le GLUE
-    // route ces tout premiers accès vers la ROM. On désactive l'overlay dès
-    // que les vecteurs ont été lus (cf. Cpu68k::reset), pour rendre ensuite
-    // la vraie table des vecteurs en RAM accessible aux exceptions.
+    // Ancien overlay de boot ($0-$7 servis par la ROM le temps de lire SSP/PC au
+    // reset). Le décodage le rend désormais inutile : la GLUE sert la ROM à TOUTE
+    // lecture CPU de $0-$7, pas seulement au reset (cf. read8Slow). Gardé parce
+    // qu'il est sérialisé (format d'état) et posé par Cpu68k::reset ; il n'est plus
+    // consulté par le décodage.
     bool bootOverlay = true;
 
     // Registre Cache/CPU MegaSTE $FF8E21 (octet) : bit0 = cache 16 Ko (0=off),
@@ -442,6 +459,8 @@ public:
 
 private:
     uint8_t  read8Slow (uint32_t addr);          // décodage complet (cf. read8)
+    uint8_t  ramSpaceRead8(uint32_t addr);       // $0-$3FFFFF par le MMU, banque vide = bus ouvert
+    uint16_t ramCycleRead16Slow(uint32_t addr);  // cf. ramCycleRead16
     uint16_t read16Slow(uint32_t addr);
     void     write8Slow(uint32_t addr, uint8_t v);
 

@@ -92,7 +92,7 @@ void Shifter::endVideoLine() {
         // kSnapLead octets de garde AVANT la base de ligne (offsets sources
         // négatifs du scroll hard, cf. déclaration kSnapLead) puis la ligne.
         for (int i = 0; i < n + kSnapLead; ++i)
-            snap[i] = bus_.read8((vc_.lineBase - static_cast<uint32_t>(kSnapLead)
+            snap[i] = bus_.ramCycleRead8((vc_.lineBase - static_cast<uint32_t>(kSnapLead)
                                   + static_cast<uint32_t>(i)) & kVideoAddrMask);   // DMA vidéo 22 bits
         lineSnapLen_[sl] = static_cast<uint16_t>(n);
     }

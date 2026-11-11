@@ -108,11 +108,25 @@ void Blitter::reset(bool cold) {
 // / absorbe l'écriture au lieu de déclencher une bus error (le blitter est un maître
 // de bus, pas de cycle d'exception). Les vecteurs reset $0-$7 (miroir ROM) sont
 // protégés en écriture aussi pour les maîtres non-CPU (Hatari SysMem_wput, memory.c).
+//
+// Faute d'un accès MOT : seulement si SES DEUX octets fautent, comme pour le CPU
+// (whitelist, busFaultNSlow). Hatari juge l'octet pair seul (STMemory_CheckAddrBusError
+// sur `addr`, [D] stMemory.c:729 @ f0736b24) : un mot vers le MFP ($FFFA00, octet pair
+// non décodé) y lit $0000 et n'écrit rien. Or le 68901 répond à un cycle mot :
+// [B] MC68901 (Motorola, janv. 1984) § 2.1.3.2 et 2.1.3.4, extern/datasheets/
+//     MC68901_Jan84.pdf (sha256 5441a092…) — DS câblé sur LDS, registres sur octets
+//     impairs, DTACK émis dès que CS est actif ;
+// [D] gstmcu.v:176 @ 4a6db7cc — MFPCS_N décodé sur A[15:6] sans UDS ni LDS.
+// Hors espace IO, les deux octets d'un mot aligné tombent dans la même zone.
+static bool blitWordFault(const Bus& bus, uint32_t addr) {
+    return bus.busFault(addr) && bus.busFault(addr + 1);
+}
+
 uint16_t Blitter::readWord(uint32_t addr) {
     ++sliceBus_;
     addr &= 0xFFFFFE;
     bus_.blitterMasterAccess = true;
-    const uint16_t v = bus_.busFault(addr) ? 0x0000 : bus_.read16(addr);
+    const uint16_t v = blitWordFault(bus_, addr) ? 0x0000 : bus_.read16(addr);
     bus_.blitterMasterAccess = false;
     if (accessObserver) accessObserver(false, addr, v);
     // Port de Blitter_ReadWord ([D] blitter.c:428-441 @ f0736b24) : l'accès est effectué D'ABORD,
@@ -127,7 +141,7 @@ void Blitter::writeWord(uint32_t addr, uint16_t v) {
     addr &= 0xFFFFFE;
     if (accessObserver) accessObserver(true, addr, v);
     bus_.blitterMasterAccess = true;
-    if (!bus_.busFault(addr) && addr >= 0x8) bus_.write16(addr, v);
+    if (!blitWordFault(bus_, addr) && addr >= 0x8) bus_.write16(addr, v);
     bus_.blitterMasterAccess = false;
     billCycles(kCyclesPerBusAccess);   // cf. readWord (Blitter_WriteWord, [D] blitter.c:444-453 @ f0736b24)
 }
