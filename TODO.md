@@ -79,7 +79,7 @@ correction de fidélité.
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | restes MFP de la fiche et WS3 en attente de source, DMA disque relevé et reporté au § 9 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Disquettes de menus nommées, retour arrière, pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
-| **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | A32, oracle et fiches TT/Falcon → § 8 et § 10 ; inventaire fait (`docs/HYPOTHESES_ST.md`) | P2 |
+| **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | Oracle et fiches TT/Falcon → § 10 ; A32 et inventaire faits (`docs/HYPOTHESES_ST.md`) | P2 |
 
 **À ne pas entreprendre avant l'échange** : tout ce qui est au § 9 (prise d'IPL, IACK,
 amont Moira, `g_cur`, points chauds du cœur). Le reste est P3, ou attend une ressource
@@ -389,7 +389,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
 Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
 
-- **A32 — `Shifter` en trois classes** · P2 ◐ — fichiers et noms faits. L'état du compteur vidéo est un membre, `VideoCounterState vc_`, et depuis le 2026-11-11 seules ses méthodes l'écrivent (`advanceLine`, `applyWrite`, `beginFrame`, `restart`…) : ce qui dépend de la Glue et du faisceau passe en paramètres, et ces signatures dessinent l'interface. Prouvé neutre par la porte d'échange (404 scénarios à l'octet). Prochain pas : déplacer les calculs de `videoCounter()` derrière une vue de la Glue (fenêtre verticale, octets par ligne, rattrapage), puis la Glue elle-même. Le VIDEL du Falcon et la vidéo du TT se brancheront sur cette interface : la finir avant eux.
 - **A9 — `appLoop` découpée** · P3 ◐ — `main()` tient en 10 lignes ; les 28 phases sont des
   fonctions statiques `(App&, Frame&)`. Plus grosse pièce restante :
   `runKioskMenu` — 380 lignes d'un seul tenant. Prochain pas éventuel : sortir ses pages,
@@ -503,7 +502,7 @@ Après l'échange. D'ici là : des inventaires, des fiches et des oracles, aucun
   ci-dessus à `tools/setup_silicon_refs.sh`, avec leurs empreintes ; vérifier que l'oracle
   Hatari headless démarre en TT et en Falcon avec un EmuTOS 512 Ko, et noter la recette dans
   `docs/HATARI_AUTOMATION.md`. Aucun code NeoST.
-- **Terrain dans le code** → A32 (§ 8) ; ce que le TT et le Falcon remettent en cause, chiffré par catégorie : [`docs/HYPOTHESES_ST.md`](docs/HYPOTHESES_ST.md) (le plus structurel : `ADDR_MASK` et la frontière de 4 Mo du `Bus`, l'horloge unique à 8 MHz de l'ordonnanceur, 124 tests de `MachineType`).
+- **Terrain dans le code** → A32 fait (2026-11-11 : `VideoGlue`, `VideoCounter` et le Shifter, le compteur lisant la Glue par `GlueView`). Reste l'interface de puce vidéo que liront les frontends au lieu de `Shifter&` (`docs/HYPOTHESES_ST.md` § 5) ; ce que le TT et le Falcon remettent en cause, chiffré par catégorie : [`docs/HYPOTHESES_ST.md`](docs/HYPOTHESES_ST.md) (le plus structurel : `ADDR_MASK` et la frontière de 4 Mo du `Bus`, l'horloge unique à 8 MHz de l'ordonnanceur, 124 tests de `MachineType`).
 - **Suite AERA de yaary.music** · P2 ⏸ Falcon — <https://yaary.music/software/atari-st/>.
   Dix programmes GEM en C, sous GPL v2 : EWeb, EMail, ECal, EContact, EFTP, EPDF, EPlay,
   EHypView, EUpdate, ClaudeST. Sur Falcon, EWeb fait son TLS 1.2 et ses JPEG **sur le DSP**,

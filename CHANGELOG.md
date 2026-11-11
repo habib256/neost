@@ -17,6 +17,25 @@ l'ordre inverse. Version courante : **0.6.4**.
 - Essais : Rainbow Islands exige 4 Mo (remarque du mainteneur) et y entre en jeu en accord avec
   Hatari ; Super Hang-On, Nitro, Dynamite Dux, Cybernoid II et CarVup divergent en partie.
 
+## A32 clos : le Shifter en trois classes (2026-11-11)
+
+- **`VideoGlue`** (`Shifter.hpp`, méthodes dans `VideoGlue.cpp`) possède l'état de la machine Glue,
+  regroupé en membre `glue_` (écritures freq/res datées, lignes, fenêtre `vdeOn`/`vdeOff`, curseur
+  LIVE, grille des débuts de ligne), et ses huit méthodes : `startHBL`, `updateGlueState`,
+  `updateGlueRes`, `liveGlueCatchUp`, `updateLiveStartHBL`, `liveLineDisplayed`, `vblankAtLine`,
+  `replayGlue`. Ce qu'elle sait de la trame (mode, fréquence, géométrie `VideoGeometry`) est
+  recopié par `Shifter::syncGlueFrame` à chaque verrou ; la machine est lue en direct ; le latch
+  336 px du STE lui est demandé par un rappel.
+- **`VideoCounter`** (ex-`VideoCounterState`) possède le compteur vidéo, ne l'écrit que par ses
+  méthodes et lit la Glue par `GlueView`.
+- **Le Shifter** garde les registres, la palette, le rendu, la datation des écritures, l'arrêt en
+  résolution 3 et les requêtes Timer B que `Machine` lui adresse.
+- Prouvé neutre : porte d'échange en accord à l'octet sur les 404 scénarios de la référence
+  `8090a2c` (étalons, parcours, collection ST/STE/Mega STE, Mega STE à 16 MHz), auto-test Glue
+  176/176, déterminisme, paliers fast. Un défaut de l'extraction (synchronisation posée avant que
+  `beginFrame` fixe la fréquence) ne se voyait pas sur les étalons : l'auto-test Glue l'a pris.
+- Reste, hors A32 : l'interface de puce vidéo que liront les frontends (`docs/HYPOTHESES_ST.md`).
+
 ## A32 : l'état du compteur vidéo n'est plus écrit que par ses méthodes (2026-11-11)
 
 - Deuxième pas : la lecture du compteur (`VideoCounterState::read`) ne voit plus le Shifter que

@@ -27,9 +27,9 @@
 // bordure de la machine Glue (port BORDERBYTES_* / Video_CopyScreenLineColor). Sans
 // écriture freq/res cette trame (cas ultra-majoritaire), renvoie le bpl nominal.
 // Ancre verticale du commit de scanlines (endVideoLine/commitScanline) : la 1ʳᵉ
-// scanline dont le commit avance le compteur vidéo. Base = liveStartHBL_ (sticky,
+// scanline dont le commit avance le compteur vidéo. Base = glue_.liveStartHBL (sticky,
 // chemin historique, zéro régression hors tricks). Sur une trame à écritures
-// freq/res, la fenêtre verticale RÉELLE fait foi : glueStartHBL_ (machine Glue
+// freq/res, la fenêtre verticale RÉELLE fait foi : glue_.startHBL (machine Glue
 // LIVE, port fidèle du nStartHBL d'Hatari — une paire 60/50 trop tôt dans la
 // ligne n'ouvre PAS le haut, contrairement au sticky). max() : un vrai retrait
 // haut donne 34 des deux côtés ; le sticky bogus (34 vs Glue 63) suit la Glue.
@@ -38,9 +38,9 @@
 // lineSnap_/vc_.lineY gardent une indexation stable (verrou Cuddly conservé).
 int Shifter::commitAnchor() {
     if (commitAnchor_ >= 0) return commitAnchor_;
-    int a = liveStartHBL_;
-    if (frameMode_ != Mode::High && !syncWrites_.empty() && glueStartHBL_ > a)
-        a = glueStartHBL_;
+    int a = glue_.liveStartHBL;
+    if (frameMode_ != Mode::High && !glue_.syncWrites.empty() && glue_.vdeOn > a)
+        a = glue_.vdeOn;
     return a;
 }
 
@@ -54,11 +54,11 @@ void Shifter::endVideoLine() {
     // ligne modifient le nombre d'octets lus (accumulation inter-lignes — la
     // calibration fullscreen d'Enchanted Land mesure $FF8209 à travers des lignes
     // élargies/raccourcies). Sans trick, glueLineBytes == bpl (chemin historique).
-    if (!syncWrites_.empty())
-        liveGlueCatchUp(commitAnchor() + vc_.lineY);
-    // Ancre verticale du commit : commitAnchor() = max(liveStartHBL_, glueStartHBL_)
+    if (!glue_.syncWrites.empty())
+        glue_.liveGlueCatchUp(commitAnchor() + vc_.lineY);
+    // Ancre verticale du commit : commitAnchor() = max(glue_.liveStartHBL, glue_.startHBL)
     // sur une trame à tricks, LATCHÉE au 1er commit de la trame (cf. déclaration).
-    // liveStartHBL_ (sticky) passe à 34 sur TOUTE bascule 60 Hz avant la ligne 63 —
+    // glue_.liveStartHBL (sticky) passe à 34 sur TOUTE bascule 60 Hz avant la ligne 63 —
     // y compris une paire 60/50 qui n'ouvre PAS réellement le haut (Hatari exige que
     // le 60 Hz couvre la comparaison de fin de ligne 33). La calibration de Lethal
     // Xcess émet une telle paire à la ligne 32 : committer sur l'ancre sticky 34
@@ -74,7 +74,7 @@ void Shifter::endVideoLine() {
     // daté au faisceau, cf. lineSnap_) : bpl + marge d'arrondi au groupe de 16 px
     // du décodage fenêtré (+ avance scroll STE). Consommé par renderGlueFrame —
     // donc capturé si la trame est candidate au rendu glue : écritures freq/res
-    // (syncWrites_) OU palette touchée (spec512Active_, seuil 1 = toute écriture
+    // (glue_.syncWrites) OU palette touchée (spec512Active_, seuil 1 = toute écriture
     // palette re-rend la trame ; sans capture, renderGlueFrame relirait la RAM de
     // FIN de trame et ré-introduirait l'artefact « sprite en course avec le
     // faisceau » sur tout moteur single-buffer qui pose une couleur au VBL). Les
@@ -84,7 +84,7 @@ void Shifter::endVideoLine() {
     // retombe sur la relecture RAM de fin de trame. Discrimine « instant de capture
     // faux » vs « autre cause » quand un moteur redessine en course avec le faisceau.
     static const bool noSnap = envFlag("NEOST_NO_SNAP", false);
-    if (!noSnap && (!syncWrites_.empty() || spec512Active_ || shifterStopLine_ >= 0) && bpl > 0 &&
+    if (!noSnap && (!glue_.syncWrites.empty() || spec512Active_ || shifterStopLine_ >= 0) && bpl > 0 &&
         sl >= 0 && sl < static_cast<int>(lineSnapLen_.size())) {
         int n = bpl + scrollCounterAdvance(sl) + 8;
         if (n > kLineSnapBytes - kSnapLead) n = kLineSnapBytes - kSnapLead;
@@ -118,7 +118,7 @@ void Shifter::endVideoLine() {
     // à scrolling matériel dès qu'une trame se termine avant sa fin nominale.
     // Le compteur avance (stride, extra, écritures différées, « Shifter arrêté », 22 bits) :
     // ces effets ne lisent ni n'écrivent les latches HSCROLL/LINEWIDTH qui suivent, d'où leur
-    // regroupement dans VideoCounterState::advanceLine sans changer l'ordre observable.
+    // regroupement dans VideoCounter::advanceLine sans changer l'ordre observable.
     vc_.advanceLine(bpl, extra, kVideoAddrMask);
     if (newHwScrollCount_ >= 0) {                          // HSCROLL différé (NewHWScrollCount)
         hwScrollCount    = static_cast<uint8_t>(newHwScrollCount_);
@@ -148,22 +148,22 @@ void Shifter::endVideoLine() {
 // Plafond : curAH_ (mêmes lignes que finishFrame) pour une trame ordinaire ; sur
 // une trame à tricks (écritures freq/res), on étend aux lignes AFFICHÉES par la
 // machine Glue LIVE au-delà de curAH_ (bordure basse retirée : l'affichage
-// continue jusqu'à glueEndHBL_ — sans capture, ces lignes du bas retombaient sur
+// continue jusqu'à glue_.endHBL — sans capture, ces lignes du bas retombaient sur
 // la RAM de fin de trame et l'artefact sprite y persistait). Le rattrapage de
 // renderLine/finishFrame reste en filet (CPU halté, bordure haute mi-trame).
 void Shifter::commitScanline(int line) {
     // Met la Glue LIVE à jour jusqu'à la ligne qui se termine AVANT d'évaluer
-    // l'ancre : commitAnchor() consulte glueStartHBL_ (fenêtre verticale réelle).
-    if (frameMode_ != Mode::High && !syncWrites_.empty())
-        liveGlueCatchUp(line);
+    // l'ancre : commitAnchor() consulte glue_.startHBL (fenêtre verticale réelle).
+    if (frameMode_ != Mode::High && !glue_.syncWrites.empty())
+        glue_.liveGlueCatchUp(line);
     while (true) {
         const int sl = commitAnchor() + vc_.lineY;
         if (sl > line) break;
         if (vc_.lineY >= curAH_) {
-            if (frameMode_ == Mode::High || syncWrites_.empty()) break;
-            if (sl + 1 >= static_cast<int>(glueLines_.size())) break;
-            liveGlueCatchUp(sl);
-            if (sl >= glueEndHBL_ + glueBlankLines_) break;   // fin d'affichage LIVE
+            if (frameMode_ == Mode::High || glue_.syncWrites.empty()) break;
+            if (sl + 1 >= static_cast<int>(glue_.lines.size())) break;
+            glue_.liveGlueCatchUp(sl);
+            if (sl >= glue_.vdeOff + glue_.blankLines) break;   // fin d'affichage LIVE
         }
         endVideoLine();
     }
@@ -210,7 +210,7 @@ uint32_t Shifter::videoCounter() {
 }
 
 // Le calcul lui-même (A32, 2026-11-11) : il ne lit plus le Shifter que par la vue `glue`.
-uint32_t VideoCounterState::read(int64_t fc, GlueView& glue, bool lineLenRead) const {
+uint32_t VideoCounter::read(int64_t fc, GlueView& glue, bool lineLenRead) const {
     // Géométrie VERROUILLÉE de la trame (cycles/ligne et début DE dépendent de la
     // fréquence 50/60/71 Hz : avant, 512 et 56/52 étaient figés → compteur faux en
     // 60 Hz). frameSync_ est posé par beginFrame, comme frameMode_.
@@ -231,16 +231,16 @@ uint32_t VideoCounterState::read(int64_t fc, GlueView& glue, bool lineLenRead) c
     // compteur reste à la base latchée ; pendant, il vaut base de ligne + offset
     // intra-ligne ; après (bordure BASSE), il reste figé sur l'écran entièrement lu.
     // VDE_On/Off LIVE : sur une trame à écritures freq/res, on consulte la machine
-    // Glue LIVE (glueStartHBL_/glueEndHBL_, mêmes règles que Hatari nStartHBL/nEndHBL,
-    // re-fermeture comprise) — l'ancien modèle « sticky » (liveStartHBL_, retrait
+    // Glue LIVE (glue_.startHBL/glue_.endHBL, mêmes règles que Hatari nStartHBL/nEndHBL,
+    // re-fermeture comprise) — l'ancien modèle « sticky » (glue_.liveStartHBL, retrait
     // verrouillé à la 1ʳᵉ bascule) MENTAIT aux calibrations qui testent une impulsion
     // puis vérifient si elle a réellement ouvert le haut (Enchanted Land en jeu :
     // le moteur croyait sa visée bonne alors que le GLUE la refusait). Un écran sans
-    // écriture freq/res garde le chemin historique (liveStartHBL_ = 63, zéro régression).
+    // écriture freq/res garde le chemin historique (glue_.liveStartHBL = 63, zéro régression).
     int line = static_cast<int>(fc / kCyclesPerLine);
     int X    = static_cast<int>(fc % kCyclesPerLine);
     // NEOST_LINELEN_ATTR : la LECTURE du compteur se mappe sur la GRILLE RÉELLE des
-    // débuts de ligne (glueLineStart_), pas sur la grille fixe 512 — port du
+    // débuts de ligne (glue_.lineStart), pas sur la grille fixe 512 — port du
     // Video_ConvertPosition sur nCyclesPerLine réel qu'utilise
     // Video_CalculateAddress (video.c). Décisif pour The Cuddly Demos (menu
     // robot) : le synchroniseur de la démo (pc=f264) émet une paire 60/50 Hz
@@ -410,18 +410,18 @@ uint32_t VideoCounterState::read(int64_t fc, GlueView& glue, bool lineLenRead) c
 
 // GlueView (A32) : état Glue d'une ligne, et la trace des écritures freq/res.
 bool Shifter::lineState(int line, int& displayStartCycle, uint32_t& borderMask) const {
-    const GlueLine& L = glueLines_[static_cast<std::size_t>(line)];
+    const GlueLine& L = glue_.lines[static_cast<std::size_t>(line)];
     displayStartCycle = L.displayStartCycle;
     borderMask = L.borderMask;
     return true;
 }
 
 void Shifter::traceSyncWrites() const {
-    std::fprintf(stderr, "sw=%zu startHBL=%d [", syncWrites_.size(), glueStartHBL_);
-    for (std::size_t i = 0; i < syncWrites_.size() && i < 8; ++i)
+    std::fprintf(stderr, "sw=%zu startHBL=%d [", glue_.syncWrites.size(), glue_.vdeOn);
+    for (std::size_t i = 0; i < glue_.syncWrites.size() && i < 8; ++i)
         std::fprintf(stderr, "%s%c%02x@%d", i ? " " : "",
-                     syncWrites_[i].isRes ? 'r' : 'f', syncWrites_[i].val,
-                     syncWrites_[i].frameCycle);
+                     glue_.syncWrites[i].isRes ? 'r' : 'f', glue_.syncWrites[i].val,
+                     glue_.syncWrites[i].frameCycle);
     std::fprintf(stderr, "]\n");
 }
 
@@ -446,12 +446,12 @@ void Shifter::traceSyncWrites() const {
 // écrit à chaque ligne, bas de l'écran cassé au-delà de la 200e ligne).
 bool Shifter::beamLineActive(int line) {
     if (line < 0) return false;
-    if (frameMode_ == Mode::High || syncWrites_.empty()) {
-        const int la = line - liveStartHBL_;
+    if (frameMode_ == Mode::High || glue_.syncWrites.empty()) {
+        const int la = line - glue_.liveStartHBL;
         return la >= 0 && la < geometry().displayLines;
     }
-    liveGlueCatchUp(line);
-    return line >= liveStartHBL_ && line < glueEndHBL_ + glueBlankLines_;
+    glue_.liveGlueCatchUp(line);
+    return line >= glue_.liveStartHBL && line < glue_.vdeOff + glue_.blankLines;
 }
 
 void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
@@ -469,15 +469,15 @@ void Shifter::writeVideoCounterByte(uint32_t addr, uint8_t v) {
     int line = 0, cyc = 0;
     const Geometry g  = geometry();
     const bool havePos = beamPos(line, cyc);
-    const int  la      = havePos ? line - liveStartHBL_ : -1;
+    const int  la      = havePos ? line - glue_.liveStartHBL : -1;
     const bool active  = havePos && beamLineActive(line);
     // Le MMU commence à lire 16 cycles AVANT le HDE_On quand le scroll fin est armé
     // AVEC PREFETCH ($FF8265 ; rien via $FF8264) — port Video_GetMMUStartCycle.
     const int mmuStart = g.lineStartCycle - ((steBorderFlag_ || (hwScrollCount && hwScrollPrefetch)) ? 16 : 0);
     const bool overlapsNext = active && la > vc_.lineY;   // fin de ligne pas encore servie
-    const bool rightBorder  = active && line < static_cast<int>(glueLines_.size())
-                           && cyc > glueLines_[line].displayEndCycle;
-    using WM = VideoCounterState::WriteMode;
+    const bool rightBorder  = active && line < static_cast<int>(glue_.lines.size())
+                           && cyc > glue_.lines[line].displayEndCycle;
+    using WM = VideoCounter::WriteMode;
     if (!havePos || !active || (cyc <= mmuStart && !overlapsNext) || la < vc_.lineY)
         vc_.applyWrite(an, cur, WM::Immediate);                 // application immédiate
     else if (rightBorder || overlapsNext)

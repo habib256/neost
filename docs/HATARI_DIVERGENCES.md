@@ -2301,7 +2301,7 @@ agent. 7 findings uniques, 5 CONFIRMÉS (2 faux positifs écartés : Bus/MMIO et
   du bac à sable. Fix racine : `physicalCanon(hdEmuDir)` une fois au montage (`initDrives`, dossier
   confirmé existant) → toutes les comparaisons `host↔hdEmuDir` partagent l'espace canonique.
   Idempotent ; montage normal inchangé.
-- **[BASSE, save-state — trous résiduels de durcissement] `Shifter::glueLineStart_`** : restauré
+- **[BASSE, save-state — trous résiduels de durcissement] `VideoGlue::lineStart`** : restauré
   sans check de taille, indexé sans garde de lecture dans `liveGlueCatchUp` (ex-`advanceGlueLive`, `VideoGlue.cpp:116`, `:123`, `:160`) → lecture hors-tas d'un `int64_t` (invariant `== glueLines_.size()` ajouté).
   **`Machine::curLineLen_`** : consommé par `advanceLine` (`lineCarry_ += cpl_ - curLineLen_`) →
   forgé, désancre `lineCarry_` après son propre check (borné `]0,4096]`). **`CpuState::cpuMul`** (il s'appelait g_cpuMul avant le regroupement d'état d'A33) :

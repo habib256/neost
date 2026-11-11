@@ -130,7 +130,7 @@ de FPU au cœur, ou céder la place à celui de POM68K : décision au TODO § 9.
 | src/core/Shifter.hpp:388 ; VideoCounter.cpp:455 ; Shifter.cpp:1466 | compteur vidéo sur 22 bits (`0x3FFFFF`, octet fort & $3F) | local |
 | src/core/Shifter.cpp, ShifterInternal.hpp, VideoCounter.cpp | rendu en plans 1/2/4, spec512, scroll fin et `lineWidth` STE | structurel : garder pour les modes compatibles ST, une nouvelle puce à côté |
 | src/core/VideoGlue.cpp/.hpp | GLUE : bordures, overscan, wakestates, timings STF/STE | structurel (sans équivalent TT/Falcon) |
-| src/core/Framing.hpp:48 ; AppLoop.cpp:478, 550, 564 ; web/main_web.cpp:438 ; headless/Observe.hpp:53 | les frontends lisent `Shifter&`/`shifter.pixels()` directement | local : une interface de puce vidéo (A32) |
+| src/core/Framing.hpp:48 ; AppLoop.cpp:478, 550, 564 ; web/main_web.cpp:438 ; headless/Observe.hpp:53 | les frontends lisent `Shifter&`/`shifter.pixels()` directement | local : une interface de puce vidéo, à poser après A32 (fait le 2026-11-11 : `VideoGlue`, `VideoCounter`, `GlueView`) |
 
 ## 6. Divers
 

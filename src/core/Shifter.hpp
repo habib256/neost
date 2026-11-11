@@ -18,6 +18,149 @@
 #include "core/StateArchive.hpp"
 #include "core/Bus.hpp"
 
+// Géométrie verrouillée d'une trame (A32 : sortie du Shifter pour être partagée avec VideoGlue).
+struct VideoGeometry {
+    int cyclesPerLine;    // 512 (50 Hz) / 508 (60 Hz) / 224 (71 Hz mono)
+    int linesPerFrame;    // 313 / 263 / 501
+    int displayLines;     // scanlines affichées (= height) : 200 couleur / 400 mono
+    int lineStartCycle;   // début Display-Enable : 56 / 52 / 0
+    int lineEndCycle;     // fin Display-Enable (→ rendu de la scanline) : 376 / 372 / 160
+    // Numéro de la PREMIÈRE scanline affichée dans la trame (VDE_On), port des
+    // constantes Hatari VIDEO_START_HBL_* : 63 (50 Hz) / 34 (60 Hz) / 34 (71 Hz).
+    // Avant ce champ, NeoST faisait commencer l'affichage actif à la ligne 0 (pas
+    // de bordure HAUTE dans la timeline) ; aligner sur VDE_On place l'affichage au
+    // bon endroit de la trame (lignes 63..262 en 50 Hz) — prérequis du retrait de
+    // bordures (les manipulations 50/60 Hz se font DANS les bordures haut/bas) et
+    // corrige le décalage dLine du spec512. La fin d'affichage = dispStartLine +
+    // displayLines (VDE_Off : 263 / 234 / 434).
+    int dispStartLine;
+};
+
+// État de la machine Glue vidéo (A32, 2026-11-11) : écritures freq/res datées de la trame, état
+// par scanline (port SHIFTER_LINE), fenêtre verticale, curseur LIVE et grille réelle des débuts de
+// ligne. Possédé par le Shifter (membre glue_), manipulé par VideoGlue.cpp ; prochain pas : ses
+// méthodes. Les noms courts reprennent ceux d'Hatari quand ils existent (nStartHBL → startHBL).
+class VideoGlue {
+public:
+    // Dernier Freq (bit1 de $FF820A) / dernière Res ($FF8260 & 3) VUS par la Glue —
+    // port de ShifterFrame.Freq / ShifterFrame.Res : une réécriture de la MÊME
+    // valeur est IGNORÉE par la machine Glue (Video_Sync_WriteByte [D] video.c:3056 @ f0736b24,
+    // Video_WriteToGlueRes [D] video.c:1630 @ f0736b24 — `if (Freq == ShifterFrame.Freq) return;`).
+    // Persistants À TRAVERS les trames ; remis à −1 SEULEMENT au reset (Video_Reset
+    // [D] video.c:824-825 @ f0736b24), jamais à beginFrame. −1 = aucune écriture vue.
+    int lastFreq = -1;
+    int lastRes  = -1;
+    // VDE_On LIVE pour le compteur vidéo $FF8205/07/09 (port du retrait de bordure
+    // HAUTE de Hatari Video_Update_Glue_State / Video_EndHBL). Le compteur d'adresse
+    // n'avance qu'à partir de la 1ʳᵉ ligne AFFICHÉE (VDE_On) ; une bascule 60 Hz dans
+    // la bordure haute (ligne < 63) avance ce VDE_On à 34 (retrait haut), ce qui
+    // fait monter $FF8209 PLUS TÔT. Les boucles d'auto-synchro fullscreen (Cuddly Demo)
+    // sondent $FF8209 et S'EN SERVENT pour se verrouiller : sans VDE_On live, le compteur
+    // ne monte qu'à la ligne 63 (50 Hz) et le verrouillage échoue → flicker. Mis à jour
+    // par recordSyncWrite (écritures freq), lu par videoCounter. 50 Hz normal → reste 63
+    // (zéro régression). Réinitialisé à beginFrame.
+    int liveStartHBL = 63;
+    // Une écriture freq($FF820A)/res($FF8260) datée, pour rejouer la machine Glue
+    // hors-ligne en fin de trame (la timeline live est inchangée → zéro régression).
+    struct SyncWrite { int32_t frameCycle; uint8_t val; bool isRes; };
+    std::vector<SyncWrite> syncWrites;             // écritures freq/res de la trame
+    bool   bordersTrick = false;                   // ≥1 ligne avec une bordure retirée
+    // Moitié LATÉRALE du signal ci-dessus (≥1 ligne affichée dont le DE déborde des
+    // cycles nominaux) — calculée séparément par replayGlue. NON SÉRIALISÉE À DESSEIN :
+    // entièrement re-dérivée à chaque finishFrame, elle ne pilote que le CADRAGE de
+    // l'interface. La sérialiser imposerait un bump du format de save-state pour un
+    // champ cosmétique dont la valeur est reconstruite à la trame suivante.
+    bool   sideTrick = false;
+    int    sideTrickLines = 0;                     // NOMBRE de lignes élargies (cf. sideTrick)
+    // État d'affichage d'UNE scanline, port de Hatari SHIFTER_LINE. Calculé par le
+    // replay Glue (replayGlue) puis consommé par le rendu fenêtré (renderGlueFrame).
+    struct GlueLine {
+        int16_t  displayStartCycle;   // début DE (cycle dans la ligne) ; -1 = pas encore posé
+        int16_t  displayEndCycle;     // fin DE (0/160/372/376/458/512…)
+        int16_t  displayPixelShift;   // décalage pixels (<0 = vers la gauche)
+        uint32_t borderMask;          // BORDERMASK_* (cf. Shifter.cpp)
+    };
+    std::vector<GlueLine> lines;               // état par scanline (taille lpf+2)
+    bool lateHiOn = false;                     // rejeu STE : haute résolution posée dans (40, 56]
+    std::vector<int64_t>* benchLineStarts = nullptr;    // banc seul : débuts de ligne vus par le rejeu
+    std::vector<int64_t> benchStarts;
+    int  vdeOn   = 63;                       // nStartHBL : 1ʳᵉ ligne affichée (peut baisser → top retiré)
+    int  vdeOff     = 263;                      // nEndHBL : dernière ligne+1 (peut monter → bottom retiré)
+    uint32_t vOverscan = 0;                     // V_OVERSCAN_* (NO_TOP/NO_BOTTOM/NO_DE…)
+    int  blankLines = 0;                        // lignes blanches insérées (no-sync)
+    // Snapshot Glue de la DERNIÈRE trame RENDUE — capturé à la fin de finishFrame()
+    // après replayGlue(). Non écrasé par beginFrame_() : stable entre trames.
+    int      snapStart      = 63;
+    int      snapEnd        = 263;
+    uint32_t snapVOverscan  = 0;
+    int      snapBlankLines = 0;
+    bool     snapBordersTrick   = false;
+    bool     snapSideTrick      = false;   // cf. sideTrick (non sérialisé)
+    int      snapSideTrickLines = 0;
+    // Sortie du canal HBL_Pos/nCyclesPerLine de updateGlueState (−1 = pas de match
+    // freq sur cette écriture ; sinon position IRQ HBL et longueur de ligne).
+    int  hblPos     = -1;
+    int  cyclesLine = -1;
+    // LINELEN : grille réelle du chemin live — début (cycle-trame) de chaque ligne
+    // atteinte, et longueur courante de la ligne en cours (déplacée par les matches).
+    std::vector<int64_t> lineStart;
+    int  liveLen = 512;
+    int  screenRefreshRate = 50;                   // fréquence NOMINALE de l'écran (50/60), cf. replayGlue
+    int         liveLine   = -1;   // dernière ligne initialisée (startHBL) par le live
+    std::size_t liveWi     = 0;    // prochaine écriture syncWrites à consommer
+    int         liveRes    = 0;    // res courante du curseur live (0/1/2)
+    int         liveFreq50 = 1;    // freq courante du curseur live (bit1 $FF820A)
+    // --- Ce que la Glue sait de la trame et de la machine (A32, 2026-11-11) : posé par le Shifter
+    // à chaque verrou de trame (Shifter::syncGlueFrame), jamais lu ailleurs que dans ses méthodes.
+    enum : int { kLow = 0, kMedium = 1, kHigh = 2 };
+    struct Frame {
+        int           mode     = kLow;       // résolution verrouillée de la trame (0/1/2)
+        uint8_t       sync     = 0x02;       // $FF820A verrouillé
+        int           startRes = 0;          // $FF8260 au début de la trame
+        VideoGeometry geo{};
+    };
+    Frame frame;
+    const MachineType* machine = nullptr;               // profil du bus, lu EN DIRECT (pas un instantané)
+    std::function<int64_t()>          liveFrameClock;   // cycle live dans la trame
+    std::function<void(int, int, int)> lineGeom;        // (ligne, hblPos, cyclesLine), Timer B
+    std::function<bool(int)>          border336At;      // latch 336 px du STE sur la ligne (Shifter)
+
+    // --- La machine Glue (VideoGlue.cpp) ---
+    // Valeurs par défaut d'une ligne selon res/freq courants (port Video_StartHBL).
+    void startHBL(int line, int curRes, int curFreqHz);
+    // Port fidèle de Video_Update_Glue_State (chemin STF) : applique une écriture
+    // freq/res au cycle `lineCycles` de la scanline `line` → met à jour la GlueLine
+    // (DE start/end, BorderMask, PixelShift) et les bordures haut/bas (nStartHBL/End).
+    void updateGlueState(int line, int lineCycles, bool writeToRes, int curFreqHz);
+    // V2 — post-traitement d'une écriture RES ($FF8260) APRÈS updateGlueState :
+    // détections spécifiques aux bascules de résolution (Video_WriteToGlueRes,
+    // [D] video.c:1637-1753 @ f0736b24) — overscan MED-RES (No Cooper/PYM), retrait gauche med
+    // (LEFT_OFF_MED), variante courte STE, stab med et scrolls « hardware »
+    // 13/9/5/1 px. `prevRes`/`newRes` = valeur $FF8260&3 avant/après l'écriture.
+    void updateGlueRes(int line, int lineCycles, int prevRes, int newRes);
+    // Machine Glue LIVE : curseur incrémental qui fait tourner startHBL/updateGlueState
+    // AU FIL de la trame (mêmes structures que replayGlue, qui ré-écrase tout en fin de
+    // trame). Permet à videoCounter() de refléter EN DIRECT la fenêtre DE réelle de la
+    // ligne courante (bascules 60/50 mi-ligne : right-2, stop, retraits) — c'est ce que
+    // mesurent les routines de calibration fullscreen (Enchanted Land) sur $FF8209.
+    void liveGlueCatchUp(int targetLine);
+    void updateLiveStartHBL(int32_t frameCycle, bool isRes, uint8_t val);
+    // La scanline est-elle AFFICHÉE (Display-Enable vertical) d'après la machine
+    // Glue LIVE ? Fenêtre nominale [VDE_On, VDE_Off) sans écriture freq/res ; avec
+    // tricks, glue_.startHBL/glue_.endHBL + NO_DE par ligne (avance liveGlueCatchUp).
+    // Pilote les tics Timer B event-count (Machine::onTimerB), comme Hatari
+    // Video_AddInterruptTimerB recalculé par ligne.
+    bool liveLineDisplayed(int line);
+    // Signal VBlank reconstruit depuis la même histoire freq/res, en live et
+    // au replay : aucun état supplémentaire dans les save-states.
+    bool vblankAtLine(int scanline) const;
+    // Rejoue la machine Glue sur les glue_.syncWrites de la trame (ligne par ligne :
+    // StartHBL defaults + Update_Glue_State par écriture + détection top/bottom) →
+    // remplit glue_.lines / glue_.startHBL / glue_.endHBL et arme glue_.bordersTrick.
+    void replayGlue();
+
+};
+
 // Ce que le compteur vidéo lit de la Glue et du faisceau (A32, 2026-11-11). Le Shifter l'implémente ;
 // le VIDEL du Falcon et la vidéo du TT, qui n'ont pas de Glue ST, en fourniront la leur. Valeurs
 // simples seulement : aucun type interne du Shifter ne traverse l'interface.
@@ -49,7 +192,7 @@ protected:
 
 // État du compteur vidéo ($FF8205/07/09), lu et avancé par VideoCounter.cpp (A32). Premier pas vers un objet
 // à part entière : les méthodes restent sur Shifter, car elles lisent la machine Glue et le faisceau.
-struct VideoCounterState {
+struct VideoCounter {
     uint32_t frameBase = 0;       // base latchée au début de trame (lecture bordure haute)
     uint32_t lineBase  = 0;       // adresse de début de la PROCHAINE ligne active à rendre
     int      lineY     = 0;       // index (0..disp-1) de cette ligne active
@@ -213,28 +356,13 @@ public:
     // au moment d'une écriture palette. Indispensable au spec512 : plusieurs
     // écritures par ligne doivent être datées au cycle près, pas au quantum.
     // Posée par Machine (sched.liveNow() - frameStart_). Cf. setBeamClock.
-    void setLiveFrameClock(std::function<int64_t()> fn) { liveFrameClock_ = std::move(fn); }
+    void setLiveFrameClock(std::function<int64_t()> fn) { liveFrameClock_ = fn; glue_.liveFrameClock = std::move(fn); }
 
     // Géométrie d'une trame, dérivée de la résolution (mono = 71 Hz) et, en
     // basse/moyenne, de la fréquence 50/60 Hz ($FF820A bit1). Port des constantes
     // STF de `extern/hatari/src/includes/video.h` (CYCLES_PER_LINE_*,
     // SCANLINES_PER_FRAME_*, LINE_START/END_CYCLE_*). Verrouillée à beginFrame.
-    struct Geometry {
-        int cyclesPerLine;    // 512 (50 Hz) / 508 (60 Hz) / 224 (71 Hz mono)
-        int linesPerFrame;    // 313 / 263 / 501
-        int displayLines;     // scanlines affichées (= height) : 200 couleur / 400 mono
-        int lineStartCycle;   // début Display-Enable : 56 / 52 / 0
-        int lineEndCycle;     // fin Display-Enable (→ rendu de la scanline) : 376 / 372 / 160
-        // Numéro de la PREMIÈRE scanline affichée dans la trame (VDE_On), port des
-        // constantes Hatari VIDEO_START_HBL_* : 63 (50 Hz) / 34 (60 Hz) / 34 (71 Hz).
-        // Avant ce champ, NeoST faisait commencer l'affichage actif à la ligne 0 (pas
-        // de bordure HAUTE dans la timeline) ; aligner sur VDE_On place l'affichage au
-        // bon endroit de la trame (lignes 63..262 en 50 Hz) — prérequis du retrait de
-        // bordures (les manipulations 50/60 Hz se font DANS les bordures haut/bas) et
-        // corrige le décalage dLine du spec512. La fin d'affichage = dispStartLine +
-        // displayLines (VDE_Off : 263 / 234 / 434).
-        int dispStartLine;
-    };
+    using Geometry = VideoGeometry;                 // cf. VideoGeometry (A32 : partagé avec VideoGlue)
     // Géométrie de la trame VERROUILLÉE (cf. frameMode_/frameSync_, posés par beginFrame).
     Geometry geometry() const { return geometryFor(frameMode_, frameSync_); }
     // Longueur par défaut de la ligne qui COMMENCE d'après la FRÉQUENCE live ($FF820A
@@ -274,47 +402,47 @@ public:
     int activeLeft() const { return activeX_; }
     int activeTop()  const { return activeY_; }
     // La trame COURANTE retire-t-elle une bordure (overscan démo : haut/bas via
-    // glueVOverscan_, gauche/droite via bordersTrick_) ? Signal MATÉRIEL de la Glue,
+    // glue_.vOverscan, gauche/droite via glue_.bordersTrick) ? Signal MATÉRIEL de la Glue,
     // STABLE — PAS une détection au pixel. Le zoom kiosk s'en sert : cadre FIXE sur la
     // zone active par défaut, élargi à la zone LIVE uniquement quand ceci est vrai.
-    bool bordersOpen() const { return bordersTrick_ || glueVOverscan_ != 0; }
+    bool bordersOpen() const { return glue_.bordersTrick || glue_.vOverscan != 0; }
     // Zone affichée par la Glue LIVE en coordonnées buffer (kiosk overscan).
     // En mode standard : == activeTop()/activeHeight(). En overscan haut (EL, LX…) :
-    // glueStartHBL_ < 63 → liveTop() < activeTop(), liveHeight() > activeHeight().
-    // Les lignes basses vides (glueBlankLines_) sont incluses dans liveHeight().
+    // glue_.startHBL < 63 → liveTop() < activeTop(), liveHeight() > activeHeight().
+    // Les lignes basses vides (glue_.blankLines) sont incluses dans liveHeight().
     // 63 serait le début d'affichage 50 Hz seulement : en 60 Hz il vaut 34, et coder
     // la valeur PAL en dur faisait rendre 0 sur une trame 60 Hz à bordure retirée —
     // le cadrage kiosk en concluait alors qu'aucune bordure basse n'était ouverte.
     int liveTop() const {
-        return std::max(0, activeY_ + (glueStartHBL_ - geometry().dispStartLine));
+        return std::max(0, activeY_ + (glue_.vdeOn - geometry().dispStartLine));
     }
     int liveHeight() const {
         const int lt = liveTop();
-        return std::min(curH_ - lt, (glueEndHBL_ + glueBlankLines_) - glueStartHBL_);
+        return std::min(curH_ - lt, (glue_.vdeOff + glue_.blankLines) - glue_.vdeOn);
     }
     // Snapshot de l'état Glue de la DERNIÈRE trame RENDUE (capturé en fin de
     // finishFrame, après replayGlue). Stable entre trames : les valeurs ne sont pas
-    // écrasées par beginFrame_() du cycle suivant, contrairement à glueStartHBL_ /
-    // glueEndHBL_ qui sont resettés à chaque début de trame. Le zoom kiosk DOIT
+    // écrasées par beginFrame_() du cycle suivant, contrairement à glue_.startHBL /
+    // glue_.endHBL qui sont resettés à chaque début de trame. Le zoom kiosk DOIT
     // utiliser ces accesseurs (et non liveTop/liveHeight) pour éviter de lire l'état
     // de début de trame N+1 au lieu de fin de trame N.
     int snapLiveTop() const {
-        return std::max(0, activeY_ + (snapGlueStart_ - geometry().dispStartLine));
+        return std::max(0, activeY_ + (glue_.snapStart - geometry().dispStartLine));
     }
     int snapLiveHeight() const {
         const int lt = snapLiveTop();
-        return std::min(curH_ - lt, (snapGlueEnd_ + snapGlueBlankLines_) - snapGlueStart_);
+        return std::min(curH_ - lt, (glue_.snapEnd + glue_.snapBlankLines) - glue_.snapStart);
     }
-    bool snapBordersOpen() const { return snapBordersTrick_ || snapGlueVOverscan_ != 0; }
+    bool snapBordersOpen() const { return glue_.snapBordersTrick || glue_.snapVOverscan != 0; }
     // Les DEUX MOITIÉS du signal ci-dessus, séparément. Le cadrage adaptatif en a
     // besoin : une bordure LATÉRALE retirée étend l'image en LARGEUR, une bordure
     // haute/basse en HAUTEUR — et les confondre élargit à 416 px une image qui n'en
     // occupe que 320 (cf. core/Framing.cpp, chantier Enchanted Land du 2026-09-02).
-    bool snapSideBordersOpen() const { return snapSideTrick_; }
+    bool snapSideBordersOpen() const { return glue_.snapSideTrick; }
     // Nombre de lignes AFFICHÉES dont le DE déborde des cycles nominaux — la moitié
     // LATÉRALE du trick, en proportion et non en booléen (cf. Framing.cpp).
-    int  snapSideTrickLines() const { return snapSideTrickLines_; }
-    bool snapVertBordersOpen() const { return snapGlueVOverscan_ != 0; }
+    int  snapSideTrickLines() const { return glue_.snapSideTrickLines; }
+    bool snapVertBordersOpen() const { return glue_.snapVOverscan != 0; }
 
     // Fréquence verrouillée pour la trame. Une impulsion hi-res de bordure
     // ne transforme pas l'affichage couleur en écran mono dans le frontend.
@@ -333,12 +461,6 @@ public:
     // Machine s'en sert pour HBL/VBL ; le détail vit dans glue:: (Shifter.cpp).
     static int wakestate();
 
-    // V2 — post-traitement d'une écriture RES ($FF8260) APRÈS updateGlueState :
-    // détections spécifiques aux bascules de résolution (Video_WriteToGlueRes,
-    // [D] video.c:1637-1753 @ f0736b24) — overscan MED-RES (No Cooper/PYM), retrait gauche med
-    // (LEFT_OFF_MED), variante courte STE, stab med et scrolls « hardware »
-    // 13/9/5/1 px. `prevRes`/`newRes` = valeur $FF8260&3 avant/après l'écriture.
-    void updateGlueRes(int line, int lineCycles, int prevRes, int newRes);
 
     // Position (cycle DANS la ligne) du tic Timer B en mode event-count, portée de
     // Hatari `Video_TimerB_GetDefaultPos` : on compte les FINS de ligne (DE_end+24)
@@ -382,7 +504,7 @@ public:
     // de l'IRQ HBL dans la ligne, longueur de la ligne en cycles : 224/508/512). La
     // Machine reprogramme l'événement HBL de la ligne et cumule le raccourcissement
     // (lineCarry_) pour décaler les lignes suivantes. Gated NEOST_LINELEN côté Machine.
-    void setLineGeom(std::function<void(int, int, int)> fn) { lineGeom_ = std::move(fn); }
+    void setLineGeom(std::function<void(int, int, int)> fn) { lineGeom_ = fn; glue_.lineGeom = std::move(fn); }
 
     // --- État exposé au débogueur (lecture directe) -------------------------
     uint32_t videoBase = 0;                 // adresse RAM du framebuffer (registres haut/milieu/bas)
@@ -418,9 +540,6 @@ private:
     bool steBorderFlag_ = false;
     bool newSteBorderFlag_ = false;
     int32_t lastScroll8265Cycle_ = -1;
-    // Signal VBlank reconstruit depuis la même histoire freq/res, en live et
-    // au replay : aucun état supplémentaire dans les save-states.
-    bool vblankAtLine(int scanline) const;
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
     // Géométrie du tampon imposée par une résolution verrouillée (seule source de
     // vérité, partagée par resizeFor et la validation du save-state).
@@ -441,7 +560,7 @@ private:
     // BASE en cours de trame ne s'applique qu'à la trame suivante ; les écritures du
     // COMPTEUR $FF8205/07/09 (STE) et les changements LINEWIDTH/HSCROLL différés
     // s'accumulent ligne à ligne au lieu de rétro-s'appliquer.
-    VideoCounterState vc_;
+    VideoCounter vc_;
     // Écritures STE différées, appliquées en fin de ligne (port video.c : NewHWScrollCount,
     // NewLineWidth, VideoCounterDelayedOffset). -1 = rien en attente.
     int      newHwScrollCount_   = -1;
@@ -476,7 +595,7 @@ private:
     // non émulés ici. Le compteur se REPLIE donc modulo 4 Mo quand il avance, et
     // chaque mot fetché par le DMA vidéo est adressé modulo 4 Mo (video_memcpy_mmu,
     // [D] video.c:3797 @ f0736b24) — jamais la MMIO $FFxxxx (lectures à effets de bord).
-    static constexpr uint32_t kVideoAddrMask = VideoCounterState::kAddrMask;
+    static constexpr uint32_t kVideoAddrMask = VideoCounter::kAddrMask;
     static constexpr int kLineSnapBytes = 256;   // ≥ kSnapLead + 230 (LEFT+RIGHT_OFF) + marge décodage
     // Marge de TÊTE de chaque slot de capture : les octets [base−kSnapLead, base)
     // précèdent la base de ligne — nécessaires quand l'offset source d'une ligne
@@ -492,18 +611,18 @@ private:
     // Octets lus par le shifter sur une scanline (160 nominal, modulé par les
     // drapeaux de bordure glue — port BORDERBYTES_*). Hors line-offset/scroll STE.
     int  glueLineBytes(int scanline) const;
-    // Ancre verticale du commit de scanlines (cf. Shifter.cpp) : max(liveStartHBL_,
-    // glueStartHBL_) sur trame à tricks, latchée au 1er commit (commitAnchor_).
+    // Ancre verticale du commit de scanlines (cf. Shifter.cpp) : max(glue_.liveStartHBL,
+    // glue_.startHBL) sur trame à tricks, latchée au 1er commit (commitAnchor_).
     int  commitAnchor();
     int  commitAnchor_ = -1;
 
 public:
     // La scanline est-elle AFFICHÉE (Display-Enable vertical) d'après la machine
     // Glue LIVE ? Fenêtre nominale [VDE_On, VDE_Off) sans écriture freq/res ; avec
-    // tricks, glueStartHBL_/glueEndHBL_ + NO_DE par ligne (avance liveGlueCatchUp).
+    // tricks, glue_.startHBL/glue_.endHBL + NO_DE par ligne (avance liveGlueCatchUp).
     // Pilote les tics Timer B event-count (Machine::onTimerB), comme Hatari
     // Video_AddInterruptTimerB recalculé par ligne.
-    bool liveLineDisplayed(int line);
+    bool liveLineDisplayed(int line) { return glue_.liveLineDisplayed(line); }   // cf. VideoGlue
 
     // RESTART du compteur vidéo en fin de trame (port Video_RestartVideoCounter,
     // cf. vc_.restartBase). Appelé par Machine à la ligne 310 (50 Hz) / 260 (60 Hz),
@@ -539,14 +658,6 @@ private:
     // Video_Update_Glue_State). `isRes` = $FF8260, sinon $FF820A.
     void recordSyncWrite(bool isRes, uint8_t val);
     int64_t datedResWriteCycle() const;           // datation commune des écritures freq/res (−1 hors trame)
-    // Dernier Freq (bit1 de $FF820A) / dernière Res ($FF8260 & 3) VUS par la Glue —
-    // port de ShifterFrame.Freq / ShifterFrame.Res : une réécriture de la MÊME
-    // valeur est IGNORÉE par la machine Glue (Video_Sync_WriteByte [D] video.c:3056 @ f0736b24,
-    // Video_WriteToGlueRes [D] video.c:1630 @ f0736b24 — `if (Freq == ShifterFrame.Freq) return;`).
-    // Persistants À TRAVERS les trames ; remis à −1 SEULEMENT au reset (Video_Reset
-    // [D] video.c:824-825 @ f0736b24), jamais à beginFrame. −1 = aucune écriture vue.
-    int lastGlueFreq_ = -1;
-    int lastGlueRes_  = -1;
 
     // --- Résolution VUE PAR LE SHIFTER ($FF8260 ET son alias $FF8261) ----------
     // Le registre de résolution existe en DOUBLE : dans la GLUE (timings, DE,
@@ -595,112 +706,40 @@ private:
     // démos (spec512, boucles d'auto-synchro fullscreen).
     void syncCpuBus();
 
-    // VDE_On LIVE pour le compteur vidéo $FF8205/07/09 (port du retrait de bordure
-    // HAUTE de Hatari Video_Update_Glue_State / Video_EndHBL). Le compteur d'adresse
-    // n'avance qu'à partir de la 1ʳᵉ ligne AFFICHÉE (VDE_On) ; une bascule 60 Hz dans
-    // la bordure haute (ligne < 63) avance ce VDE_On à 34 (retrait haut), ce qui
-    // fait monter $FF8209 PLUS TÔT. Les boucles d'auto-synchro fullscreen (Cuddly Demo)
-    // sondent $FF8209 et S'EN SERVENT pour se verrouiller : sans VDE_On live, le compteur
-    // ne monte qu'à la ligne 63 (50 Hz) et le verrouillage échoue → flicker. Mis à jour
-    // par recordSyncWrite (écritures freq), lu par videoCounter. 50 Hz normal → reste 63
-    // (zéro régression). Réinitialisé à beginFrame.
-    int liveStartHBL_ = 63;
-    void updateLiveStartHBL(int32_t frameCycle, bool isRes, uint8_t val);
 
     // --- Retrait de bordures : MACHINE GLUE (port Hatari Video_Update_Glue_State +
     //     Video_StartHBL + Video_EndHBL, video.c) -------------------------------
-    // Une écriture freq($FF820A)/res($FF8260) datée, pour rejouer la machine Glue
-    // hors-ligne en fin de trame (la timeline live est inchangée → zéro régression).
-    struct SyncWrite { int32_t frameCycle; uint8_t val; bool isRes; };
-    std::vector<SyncWrite> syncWrites_;             // écritures freq/res de la trame
+    VideoGlue glue_;                           // état de la machine Glue (A32), cf. VideoGlue
+    void syncGlueFrame();                      // recopie mode/sync/géométrie verrouillés dans glue_.frame
+    bool lineBorder336(int line) const;        // latch 336 px du STE vu par la ligne (snap ou courant)
+    using GlueLine  = VideoGlue::GlueLine;
+    using SyncWrite = VideoGlue::SyncWrite;
     // --- GlueView (A32) : ce que le compteur vidéo lit de la Glue et du faisceau ---
     Frame   frame() const override {
         const Geometry g = geometry();
         return {g.cyclesPerLine, g.displayLines, g.lineStartCycle, frameMode_ == Mode::High};
     }
-    bool    hasSyncWrites() const override { return !syncWrites_.empty(); }
-    void    catchUp(int line) override { liveGlueCatchUp(line); }
-    int     lineCount() const override { return static_cast<int>(glueLines_.size()); }
+    bool    hasSyncWrites() const override { return !glue_.syncWrites.empty(); }
+    void    catchUp(int line) override { glue_.liveGlueCatchUp(line); }
+    int     lineCount() const override { return static_cast<int>(glue_.lines.size()); }
     bool    lineState(int line, int& displayStartCycle, uint32_t& borderMask) const override;
-    int     lineStartCount() const override { return static_cast<int>(glueLineStart_.size()); }
-    int64_t lineStart(int line) const override { return glueLineStart_[static_cast<std::size_t>(line)]; }
-    int     liveLine() const override { return liveGlueLine_; }
-    int     vdeStart() const override { return glueStartHBL_; }
-    int     vdeEnd() const override { return glueEndHBL_; }
-    int     blankLines() const override { return glueBlankLines_; }
-    int     liveStartHBL() const override { return liveStartHBL_; }
+    int     lineStartCount() const override { return static_cast<int>(glue_.lineStart.size()); }
+    int64_t lineStart(int line) const override { return glue_.lineStart[static_cast<std::size_t>(line)]; }
+    int     liveLine() const override { return glue_.liveLine; }
+    int     vdeStart() const override { return glue_.vdeOn; }
+    int     vdeEnd() const override { return glue_.vdeOff; }
+    int     blankLines() const override { return glue_.blankLines; }
+    int     liveStartHBL() const override { return glue_.liveStartHBL; }
     int     lineBytes(int scanline) const override { return glueLineBytes(scanline); }
     int     scrollAdvance(int scanline) const override { return scrollCounterAdvance(scanline); }
     int     lineWidthWords() const override { return lineWidth; }
     bool    scrollPrefetch() const override { return hwScrollCount && hwScrollPrefetch; }
     bool    steBorder() const override { return steBorderFlag_; }
     void    traceSyncWrites() const override;
-    bool   bordersTrick_ = false;                   // ≥1 ligne avec une bordure retirée
-    // Moitié LATÉRALE du signal ci-dessus (≥1 ligne affichée dont le DE déborde des
-    // cycles nominaux) — calculée séparément par replayGlue. NON SÉRIALISÉE À DESSEIN :
-    // entièrement re-dérivée à chaque finishFrame, elle ne pilote que le CADRAGE de
-    // l'interface. La sérialiser imposerait un bump du format de save-state pour un
-    // champ cosmétique dont la valeur est reconstruite à la trame suivante.
-    bool   sideTrick_ = false;
-    int    sideTrickLines_ = 0;                     // NOMBRE de lignes élargies (cf. sideTrick_)
 
-    // État d'affichage d'UNE scanline, port de Hatari SHIFTER_LINE. Calculé par le
-    // replay Glue (replayGlue) puis consommé par le rendu fenêtré (renderGlueFrame).
-    struct GlueLine {
-        int16_t  displayStartCycle;   // début DE (cycle dans la ligne) ; -1 = pas encore posé
-        int16_t  displayEndCycle;     // fin DE (0/160/372/376/458/512…)
-        int16_t  displayPixelShift;   // décalage pixels (<0 = vers la gauche)
-        uint32_t borderMask;          // BORDERMASK_* (cf. Shifter.cpp)
-    };
-    std::vector<GlueLine> glueLines_;               // état par scanline (taille lpf+2)
-    bool glueLateHiOn_ = false;                     // rejeu STE : haute résolution posée dans (40, 56]
-    std::vector<int64_t>* benchLineStarts_ = nullptr;    // banc seul : débuts de ligne vus par le rejeu
-    std::vector<int64_t> glueBenchStarts_;
-    int  glueStartHBL_   = 63;                       // nStartHBL : 1ʳᵉ ligne affichée (peut baisser → top retiré)
-    int  glueEndHBL_     = 263;                      // nEndHBL : dernière ligne+1 (peut monter → bottom retiré)
-    uint32_t glueVOverscan_ = 0;                     // V_OVERSCAN_* (NO_TOP/NO_BOTTOM/NO_DE…)
-    int  glueBlankLines_ = 0;                        // lignes blanches insérées (no-sync)
-    // Snapshot Glue de la DERNIÈRE trame RENDUE — capturé à la fin de finishFrame()
-    // après replayGlue(). Non écrasé par beginFrame_() : stable entre trames.
-    int      snapGlueStart_      = 63;
-    int      snapGlueEnd_        = 263;
-    uint32_t snapGlueVOverscan_  = 0;
-    int      snapGlueBlankLines_ = 0;
-    bool     snapBordersTrick_   = false;
-    bool     snapSideTrick_      = false;   // cf. sideTrick_ (non sérialisé)
-    int      snapSideTrickLines_ = 0;
-    // Sortie du canal HBL_Pos/nCyclesPerLine de updateGlueState (−1 = pas de match
-    // freq sur cette écriture ; sinon position IRQ HBL et longueur de ligne).
-    int  glueHblPos_     = -1;
-    int  glueCyclesLine_ = -1;
-    // LINELEN : grille réelle du chemin live — début (cycle-trame) de chaque ligne
-    // atteinte, et longueur courante de la ligne en cours (déplacée par les matches).
-    std::vector<int64_t> glueLineStart_;
-    int  liveGlueLen_ = 512;
-    int  nScreenRefreshRate_ = 50;                   // fréquence NOMINALE de l'écran (50/60), cf. replayGlue
 
-    // Rejoue la machine Glue sur les syncWrites_ de la trame (ligne par ligne :
-    // StartHBL defaults + Update_Glue_State par écriture + détection top/bottom) →
-    // remplit glueLines_ / glueStartHBL_ / glueEndHBL_ et arme bordersTrick_.
-    void replayGlue();
-    // Port fidèle de Video_Update_Glue_State (chemin STF) : applique une écriture
-    // freq/res au cycle `lineCycles` de la scanline `line` → met à jour la GlueLine
-    // (DE start/end, BorderMask, PixelShift) et les bordures haut/bas (nStartHBL/End).
-    void updateGlueState(int line, int lineCycles, bool writeToRes, int curFreqHz);
-    // Valeurs par défaut d'une ligne selon res/freq courants (port Video_StartHBL).
-    void startHBL(int line, int curRes, int curFreqHz);
-    // Machine Glue LIVE : curseur incrémental qui fait tourner startHBL/updateGlueState
-    // AU FIL de la trame (mêmes structures que replayGlue, qui ré-écrase tout en fin de
-    // trame). Permet à videoCounter() de refléter EN DIRECT la fenêtre DE réelle de la
-    // ligne courante (bascules 60/50 mi-ligne : right-2, stop, retraits) — c'est ce que
-    // mesurent les routines de calibration fullscreen (Enchanted Land) sur $FF8209.
-    void liveGlueCatchUp(int targetLine);
     bool beamLineActive(int line);
-    int         liveGlueLine_   = -1;   // dernière ligne initialisée (startHBL) par le live
-    std::size_t liveGlueWi_     = 0;    // prochaine écriture syncWrites_ à consommer
-    int         liveGlueRes_    = 0;    // res courante du curseur live (0/1/2)
-    int         liveGlueFreq50_ = 1;    // freq courante du curseur live (bit1 $FF820A)
-    // Re-rendu fenêtré : pour chaque scanline affichée [glueStartHBL_, glueEndHBL_),
+    // Re-rendu fenêtré : pour chaque scanline affichée [glue_.startHBL, glue_.endHBL),
     // décode [displayStartCycle, displayEndCycle) avec adresse vidéo ACCUMULÉE
     // (Video_CalculateAddress) + palette roulante (raster/spec512). Hors fenêtre =
     // couleur de bordure (registre 0 au cycle courant).
@@ -865,63 +904,63 @@ public:
         // 8 bits sont donc tous légitimes, plus de borne à revalider.
 
         // --- Filtre Glue « même valeur ignorée » (persistant inter-trames) ---
-        ar(lastGlueFreq_);
-        ar(lastGlueRes_);
-        ar(liveStartHBL_);
+        ar(glue_.lastFreq);
+        ar(glue_.lastRes);
+        ar(glue_.liveStartHBL);
         ar(commitAnchor_);   // ancre verticale du commit (latchée mi-trame)
 
         // --- Machine Glue : retrait de bordures / overscan ---
         // SyncWrite/GlueLine/ColorWrite ont du PADDING interne → champ par champ
         // (objVec) : podVec sérialiserait des octets non initialisés (fichier non
         // byte-déterministe, cf. StateArchive).
-        ar.objVec(syncWrites_, 6, [](StateArchive& a, SyncWrite& w) {
+        ar.objVec(glue_.syncWrites, 6, [](StateArchive& a, SyncWrite& w) {
             a(w.frameCycle); a(w.val); a(w.isRes);
         });
-        ar(bordersTrick_);
-        ar.objVec(glueLines_, 10, [](StateArchive& a, GlueLine& g) {
+        ar(glue_.bordersTrick);
+        ar.objVec(glue_.lines, 10, [](StateArchive& a, GlueLine& g) {
             a(g.displayStartCycle); a(g.displayEndCycle);
             a(g.displayPixelShift); a(g.borderMask);
         });
         // commitAnchor_ nourrit « sl = commitAnchor_ + vc_.lineY » : borne LARGE
         // (convention cpl_/lpf_ ≤ 4096 de Machine) — un INT_MAX forgé rendait
         // l'addition UB, même si les indexeurs aval re-bornent sl. Pas de borne
-        // sur glueLines_.size() : replayGlue() peut légitimement redimensionner
-        // glueLines_ en cours de trame (lpf changé), l'ancre restant à l'ancienne
+        // sur glue_.lines.size() : glue_.replayGlue() peut légitimement redimensionner
+        // glue_.lines en cours de trame (lpf changé), l'ancre restant à l'ancienne
         // géométrie jusqu'au beginFrame suivant.
         ar.check(commitAnchor_ >= -1 && commitAnchor_ <= 4096,
                  "Shifter::commitAnchor_ hors [-1, 4096]");
-        ar(glueStartHBL_);
-        ar(glueEndHBL_);
-        ar(glueVOverscan_);
-        ar(glueBlankLines_);
-        ar(glueHblPos_);
-        ar(glueCyclesLine_);
-        ar.podVec(glueLineStart_);  // std::vector<int64_t>
-        // Invariant : glueLineStart_ est TOUJOURS assigné à glueLines_.size().
-        // Tenu aux DEUX sites qui dimensionnent glueLines_ : beginFrame (assign) et
+        ar(glue_.vdeOn);
+        ar(glue_.vdeOff);
+        ar(glue_.vOverscan);
+        ar(glue_.blankLines);
+        ar(glue_.hblPos);
+        ar(glue_.cyclesLine);
+        ar.podVec(glue_.lineStart);  // std::vector<int64_t>
+        // Invariant : glue_.lineStart est TOUJOURS assigné à glue_.lines.size().
+        // Tenu aux DEUX sites qui dimensionnent glue_.lines : beginFrame (assign) et
         // replayGlue (resize — A16b, 2026-08-28). replayGlue ne le tenait PAS : le
         // glue-selftest, qui l'appelle sans beginFrame, déréférençait un vecteur vide
         // (SIGSEGV), et une trame dont lpf change en cours de route lisait hors du tas
         // en silence. L'auto-test `glue_selftest_attr` (etalons.json) garde le cas.
-        // liveGlueCatchUp indexe glueLineStart_[wl]/[liveGlueLine_] (VideoGlue.cpp:116,
-        // 120,123,160) où wl ≤ liveGlueLine_ < glueLines_.size() — SANS garde de lecture
+        // liveGlueCatchUp indexe glue_.lineStart[wl]/[glue_.liveLine] (VideoGlue.cpp:116,
+        // 120,123,160) où wl ≤ glue_.liveLine < glue_.lines.size() — SANS garde de lecture
         // (seule l'écriture, ligne 169, en a une : le test de taille ligne 168 ; numéros
-        // vérifiés le 2026-10-20). Un .state forgé posant un glueLineStart_
+        // vérifiés le 2026-10-20). Un .state forgé posant un glue_.lineStart
         // plus court → lecture hors-tas d'un int64_t. On revalide l'invariant au load.
-        ar.check(glueLineStart_.size() == glueLines_.size(),
-                 "Shifter::glueLineStart_ désynchronisé de glueLines_");
-        ar(liveGlueLen_);
-        ar(nScreenRefreshRate_);
-        ar(liveGlueLine_);
-        // liveGlueLine_ indexe glueLines_ via startHBL (curseur de rattrapage) :
+        ar.check(glue_.lineStart.size() == glue_.lines.size(),
+                 "Shifter::glue_.lineStart désynchronisé de glue_.lines");
+        ar(glue_.liveLen);
+        ar(glue_.screenRefreshRate);
+        ar(glue_.liveLine);
+        // glue_.liveLine indexe glue_.lines via startHBL (curseur de rattrapage) :
         // −1 = trame pas encore commencée, sinon une ligne existante. Une valeur
         // négative forgée faisait écrire AVANT le tampon (cf. garde de startHBL).
-        ar.check(liveGlueLine_ >= -1
-                 && liveGlueLine_ < static_cast<int>(glueLines_.size()),
-                 "Shifter::liveGlueLine_ hors de glueLines_");
-        ar(liveGlueWi_);            // std::size_t
-        ar(liveGlueRes_);
-        ar(liveGlueFreq50_);
+        ar.check(glue_.liveLine >= -1
+                 && glue_.liveLine < static_cast<int>(glue_.lines.size()),
+                 "Shifter::glue_.liveLine hors de glue_.lines");
+        ar(glue_.liveWi);            // std::size_t
+        ar(glue_.liveRes);
+        ar(glue_.liveFreq50);
 
         // --- Spec512 : palette intra-ligne ---
         ar.objVec(colorWrites_, 11, [](StateArchive& a, ColorWrite& c) {
@@ -979,12 +1018,13 @@ public:
         // C'est la borne BASSE qui ferme le gel ; l'indexation de lineSnap_ par
         // commitAnchor_ + vc_.lineY est déjà gardée sur place (endVideoLine).
         // ⚠ La borne haute n'est PAS curAH_ : bordure BASSE retirée, commitScanline
-        // pousse volontairement vc_.lineY au-delà de curAH_ jusqu'à glueEndHBL_
+        // pousse volontairement vc_.lineY au-delà de curAH_ jusqu'à glue_.endHBL
         // (overscan_top.st le fait) — un plafond curAH_ refusait cet état LÉGITIME.
         // On plafonne donc au nombre de lignes de la trame, seule absurdité visée.
         ar.check(vc_.lineY >= 0
-                 && vc_.lineY <= static_cast<int>(glueLines_.size()) + curAH_,
+                 && vc_.lineY <= static_cast<int>(glue_.lines.size()) + curAH_,
                  "Shifter::vc_.lineY hors bornes");
+        syncGlueFrame();   // A32 : la Glue suit la trame verrouillée rechargée
     }
 };
 
