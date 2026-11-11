@@ -22,6 +22,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #pragma once
+#include "io/CompDisks.hpp"
 #include "util/DesktopPointer.hpp"
 
 #include <chrono>
@@ -279,6 +280,9 @@ struct App {
     // appInit() dans cet ordre : chemins, config, machine, hôtes, fenêtre.
     std::string exeDir;                    // dossier de l'exécutable (résolu, jamais argv[0] nu)
     std::string disksDir, cartsDir, hdDir, gemdosDir, romsDir;
+    // Catalogue des disquettes de compilation (data/compdisks, MIT) : nomme les menus
+    // de la scène dans la ludothèque et la borne. Vide si le fichier manque.
+    neost::CompDiskCatalog compDisks;
     neost::appconfig::Config cfg;          // la config de TRAVAIL (cf. cfgPristine)
     // ⚠ L'ORDRE de ces membres est un CONTRAT, pas une présentation : c'est l'ordre
     // de construction de l'ancien main(), et la destruction le déroule À L'ENVERS.

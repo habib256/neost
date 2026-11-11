@@ -307,6 +307,7 @@ int appInit(App& A, int argc, char** argv) {
     const std::string diskPath = resolveData(pos.size() > 1 ? pos[1] : defDisk, exeDir);
     const std::string cartPath = cfg.cart.empty() ? std::string() : resolveData(cfg.cart, exeDir);
     A.disksDir = resolveData("disks", exeDir);   // dossier pour la Disk Library
+    A.compDisks.load(resolveData("data/compdisks/CompDisks.json", exeDir));   // absent : listes nues
     A.loadDongleTable();   // crée disks/dongles.txt (titres connus) dès le premier lancement
     A.cartsDir  = resolveData("carts", exeDir);   // dossier pour la Cart Library
     A.hdDir     = resolveData("hd", exeDir);      // dossier pour la fenêtre Hard Disks

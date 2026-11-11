@@ -106,6 +106,13 @@ TCP/IP stack and the EtherNEC driver, loaded from the AUTO folder.
 - `AUTO\STGTEST.PRG` and the configuration files are NeoST's own (GPL-3.0): they set
   the port address through the STinG API and fetch a page, proving the stack works.
 
+Atari Compilation Disks catalogue (`data/compdisks/CompDisks.json`)
+--------------------------------------------------------------------
+Names, teams and game lists of 4,515 Atari ST compilation (menu) disks, used to label
+them in the disk library and the kiosk menu. No disk image is included. MIT License,
+Copyright (c) 2026 Dimitris Filios — full text in `data/compdisks/LICENSE`. Source:
+https://github.com/dimfilhub/Atari-Compilation-Disks (commit d70d6193e197).
+
 Reference emulators
 -------------------
 Hatari (GPLv2+, https://framagit.org/hatari/hatari) and MAME are used as behavioural

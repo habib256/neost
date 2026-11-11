@@ -205,6 +205,7 @@ void drawKioskDiskMenu(App& A, const std::string& disksDir, const std::string& m
         const float bf = ImGui::GetFontSize();               // taille de police de base
         const float footer = 6.0f * (bf * 2.3f + sp)         // 6 rangées d'action @2.3
                            + (bf * 1.3f + sp)                // ligne « Roms found » @1.3
+                           + (bf * 1.3f + sp)                // disquette de compilation reconnue @1.3
                            + (sp + 6.0f);                    // séparateur + petite marge
         ImGui::SetWindowFontScale(1.6f);
         ImGui::TextColored(zList ? kYellow : kDim,
@@ -249,6 +250,11 @@ void drawKioskDiskMenu(App& A, const std::string& disksDir, const std::string& m
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.3f);
         ImGui::TextColored(kYellow, ICON_FA_COMPACT_DISC " Roms found: %d", (int)A.kioskDisks.size());
+        // Disquette de compilation sous le curseur (data/compdisks) : équipe, numéro, jeux.
+        const neost::CompDiskInfo* cd = (A.kioskDiskSel >= 0 && A.kioskDiskSel < (int)A.kioskDisks.size())
+                                      ? A.compDisks.find(A.kioskDisks[A.kioskDiskSel]) : nullptr;
+        if (cd) ImGui::TextColored(kDim, "%s: %s", cd->name.c_str(), cd->games.c_str());
+        else    ImGui::TextUnformatted(" ");
         ImGui::SetWindowFontScale(1.0f);
     }
 

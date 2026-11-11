@@ -13,6 +13,7 @@
 // =============================================================================
 #pragma once
 
+#include "io/CompDisks.hpp"
 #include <cstdint>
 #include <string>
 
@@ -20,7 +21,8 @@
 void drawFloppyPage(const std::string& disksDir,
                     const std::string& mountedA, const std::string& mountedB,
                     std::string& reqMountA, std::string& reqMountB,
-                    bool& reqEjectA, bool& reqEjectB);
+                    bool& reqEjectA, bool& reqEjectB,
+                    const neost::CompDiskCatalog* catalog = nullptr);
 
 void drawCartPage(const std::string& cartsDir, const std::string& mounted,
                   std::string& reqMount, bool& reqEject);

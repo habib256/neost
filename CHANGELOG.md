@@ -17,6 +17,17 @@ l'ordre inverse. Version courante : **0.6.4**.
 - Essais : Rainbow Islands exige 4 Mo (remarque du mainteneur) et y entre en jeu en accord avec
   Hatari ; Super Hang-On, Nitro, Dynamite Dux, Cybernoid II et CarVup divergent en partie.
 
+## Disquettes de menus nommées (2026-11-11)
+
+- `src/io/CompDisks.cpp` lit le catalogue CompDisks (MIT, 4 515 disquettes) et retrouve une image :
+  nom exact sans casse ni extension, sinon même numéro et préfixe compatible (`fuzcd077.msa` →
+  « Fuzion Disk 77 »), rien en cas d'ambiguïté. Lecteur JSON limité à la forme du catalogue.
+- Page **Floppy** : l'équipe et le numéro s'affichent à côté du fichier, les jeux en info-bulle.
+  **Borne** : la ligne du bas donne le disque et ses jeux sous le curseur.
+- Paquets : `data/compdisks/` (catalogue, licence MIT, README) et l'entrée `THIRD-PARTY.txt`.
+- `neost-selftest` : 12 contrôles (correspondances, ambiguïté refusée, échappements JSON, catalogue
+  réel). Le menu Android ne lit pas encore le catalogue.
+
 ## TT et Falcon : fiches épinglées, oracle Hatari au bureau (2026-11-11)
 
 - `tools/setup_silicon_refs.sh` épingle neuf documents : MC68030 (manuel et fiche), DSP56000/56001

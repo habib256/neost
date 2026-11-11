@@ -28,7 +28,8 @@ char g_gdBuf[512] = {0}, g_hdBuf[512] = {0};
 void drawFloppyPage(const std::string& disksDir,
                     const std::string& mountedA, const std::string& mountedB,
                     std::string& reqMountA, std::string& reqMountB,
-                    bool& reqEjectA, bool& reqEjectB) {
+                    bool& reqEjectA, bool& reqEjectB,
+                    const neost::CompDiskCatalog* catalog) {
     auto driveRow = [](const char* letter, const std::string& mounted, bool& reqEject) {
         if (!mounted.empty()) {
             ImGui::PushID(letter);
@@ -115,6 +116,15 @@ void drawFloppyPage(const std::string& disksDir,
         else if (ImGui::SmallButton("B")) reqMountB = en.path;
         ImGui::SameLine();
         ImGui::TextUnformatted(en.rel.c_str());        // affiché (montre le dossier)
+        // Disquette de compilation reconnue (data/compdisks) : équipe et numéro en clair,
+        // jeux en info-bulle.
+        if (const neost::CompDiskInfo* cd = catalog ? catalog->find(en.path) : nullptr) {
+            const bool hov = ImGui::IsItemHovered();
+            ImGui::SameLine();
+            ImGui::TextDisabled("%s", cd->name.c_str());
+            if ((hov || ImGui::IsItemHovered()) && !cd->games.empty())
+                ImGui::SetTooltip("%s\n%s", cd->name.c_str(), cd->games.c_str());
+        }
         ImGui::PopID();
     }
 }

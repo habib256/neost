@@ -357,9 +357,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   l'intégration du cœur POM68K**, quand l'auteur le déclare prêt. Palier `full` et CI verts,
   filet du § 2 en place ; la référence de `cpu_swap_gate.py` s'enregistre sur son commit.
   Elle reste la version de repli tant que POM68K n'a pas fait ses preuves.
-- **Identification des disquettes de menus** · P2 ⭘ — nom de fichier → équipe, numéro et jeux
-  (Automation, D-Bug…) pour la ludothèque et la borne. Catalogue de 4 515 disques sous licence
-  MIT dans `data/compdisks/` ; à lire par le code, puis à embarquer avec sa licence.
 - **Retour arrière (rewind)** · P2 ⭘ — un `.state` par seconde en anneau, disquettes copiées si
   modifiées ; jamais pendant une commande STX minutée ; désactivé avec un disque dur. Dépend
   de l'empreinte machine (§ 5) et du sort des `.state` (§ 2). Modèle : ASE `TimeWarp.cs`.

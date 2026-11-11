@@ -11,5 +11,5 @@ les jeux qu'elle contient (`Games`) et la clé de sa capture de menu (`Screensho
   paquet qui embarquerait ce fichier (et à nommer dans `packaging/licenses/THIRD-PARTY.txt`).
 - **Aucune image disque** : seulement des noms et des listes de jeux.
 
-Usage prévu (`TODO.md` § 7, « Identification des disquettes de menus ») : nommer les disquettes
-de menus de la ludothèque et de la borne. Pas encore lu par le code ; pas encore dans les paquets.
+Lu par `src/io/CompDisks.cpp` (2026-11-11) : la page Floppy et la borne affichent l'équipe, le numéro
+et les jeux d'une disquette reconnue. Embarqué dans les paquets avec sa licence.

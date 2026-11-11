@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+#include "io/CompDisks.hpp"
 #include "audio/MidiEndpoint.hpp"
 #include "audio/MidiOutHost.hpp"
 #include "gui/AppConfig.hpp"
@@ -51,6 +52,7 @@ using neost::appconfig::Config;
 struct ConfigUi {
     // Dossiers scannés (résolus une fois au démarrage).
     std::string disksDir, cartsDir, romsDir, hdDir, gemdosDir;
+    const neost::CompDiskCatalog* compDisks = nullptr;   // menus de la scène (App::compDisks)
     std::string profDir;          // dossier des profils nommés (profiles/)
     // Lecture de l'état courant.
     const Config* cfg = nullptr;

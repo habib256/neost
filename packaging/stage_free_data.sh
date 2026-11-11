@@ -53,6 +53,11 @@ cp "$SRC/disks/cubase_lite.st" "$DEST/disks/"
 # AUTO — cf. THIRD-PARTY.txt. Sans ce disque, la carte NetUSBee/EtherNEC et le NAT
 # intégré n'ont aucun logiciel côté ST dans le paquet. Décision de mainteneur, 2026-11-11.
 cp "$SRC/disks/sting_ethernec.st" "$DEST/disks/"
+# Catalogue des disquettes de compilation (MIT, © Dimitris Filios) : nomme les menus de
+# la scène dans la ludothèque et la borne (resolveData cherche exeDir/../data). Sa licence
+# l'accompagne, comme l'exige la MIT.
+mkdir -p "$DEST/data/compdisks"
+cp "$SRC/data/compdisks/CompDisks.json" "$SRC/data/compdisks/LICENSE" "$SRC/data/compdisks/README.md" "$DEST/data/compdisks/"
 
 # Polices de l'interface (resolveData cherche exeDir/../fonts) : DejaVu Sans et
 # Font Awesome Free, toutes deux librement redistribuables. SANS elles, le GUI

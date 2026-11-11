@@ -578,6 +578,7 @@ static void prepareConfigUi(App& A, Frame& F) {
     // ouvertures de la fenêtre.
     static ConfigUi cfgUi;
     cfgUi.disksDir = disksDir; cfgUi.cartsDir = cartsDir; cfgUi.romsDir = romsDir;
+    cfgUi.compDisks = &A.compDisks;
     cfgUi.hdDir    = hdDir;    cfgUi.gemdosDir = gemdosDir;
     // Résolu à la PREMIÈRE trame, donc après le saveConfig de démarrage : c'est lui
     // qui a tranché où vit neost.cfg, et les profils le suivent (cf. profilesDir).

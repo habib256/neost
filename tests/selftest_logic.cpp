@@ -15,6 +15,7 @@
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
+#include "io/CompDisks.hpp"
 #include "gui/AppConfig.hpp"
 #include "util/HostPath.hpp"
 #include "util/JoyScript.hpp"
@@ -2815,7 +2816,37 @@ static void testJoyScript() {
     checkBool("parseHexU32(9 chiffres) refusé", parseHexU32("123456789", v), false);
 }
 
+// CompDisks : catalogue des disquettes de compilation (data/compdisks, MIT).
+static void testCompDisks() {
+    neost::CompDiskCatalog c;
+    const char* json = R"({
+      "Pompey Pirates Disk 1": {"Games": "Rick Dangerous", "File": "PP_001.MSA", "Team": "Pompey Pirates"},
+      "Fuzion Disk 77": {"Games": "Darkman, Puzzmania", "File": "FUZ077.MSA", "Team": "Fuzion", "Extra": [1, {"x": 2}]},
+      "Automation Disk 77": {"Games": "A, B", "File": "AUTO077.MSA", "Team": "Automation"},
+      "Medway Boys Disk 12": {"Games": "Caf\u00e9 \"Q\"", "File": "MB12.ST", "Team": "Medway Boys"},
+      "Medway Boys Disk 12b": {"Games": "Other", "File": "MB12B.ST", "Team": "Medway Boys"}
+    })";
+    checkInt("compdisks: chargement", (c.loadFromText(json)) ? 1 : 0, 1);
+    checkInt("compdisks: 5 entrées", (c.size() == 5) ? 1 : 0, 1);
+    auto name = [&](const char* f) { const auto* e = c.find(f); return e ? e->name : std::string("-"); };
+    checkInt("compdisks: nom exact sans casse ni extension", (name("disks/st/pp_001.msa") == "Pompey Pirates Disk 1") ? 1 : 0, 1);
+    checkInt("compdisks: préfixe compatible (fuz ⊂ fuzcd)", (name("fuzcd077.msa") == "Fuzion Disk 77") ? 1 : 0, 1);
+    checkInt("compdisks: nom d'équipe et numéro", (name("Automation 77.st") == "Automation Disk 77") ? 1 : 0, 1);
+    checkInt("compdisks: numéro seul ne suffit pas", (name("xyz077.st") == "-") ? 1 : 0, 1);
+    checkInt("compdisks: pas de numéro, pas d'entrée", (name("Rick Dangerous.st") == "-") ? 1 : 0, 1);
+    checkInt("compdisks: échappements \\u et \\\" rendus", (c.find("mb12.st") && c.find("mb12.st")->games == "Caf\xc3\xa9 \"Q\"") ? 1 : 0, 1);
+    checkInt("compdisks: deux candidats (12, 12b) → aucun", (name("medway 12.st") == "-") ? 1 : 0, 1);
+    checkInt("compdisks: forme inattendue refusée", (!c.loadFromText("[1,2]")) ? 1 : 0, 1);
+    // Le vrai catalogue, s'il est là (dépôt) : 4 515 entrées, Fuzion 77 retrouvé depuis fuzcd077.
+    neost::CompDiskCatalog real;
+    if (real.load("data/compdisks/CompDisks.json")) {
+        checkInt("compdisks: catalogue réel, 4 515 entrées", (real.size() == 4515) ? 1 : 0, 1);
+        checkInt("compdisks: fuzcd077 → Fuzion", (real.find("fuzcd077.msa") && real.find("fuzcd077.msa")->team == "Fuzion") ? 1 : 0, 1);
+    }
+}
+
 int main() {
+    testCompDisks();
     testDongleTable();
     testCartridgeKey();
     testPortDevices();
