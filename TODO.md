@@ -497,10 +497,12 @@ Après l'échange. D'ici là : des inventaires, des fiches et des oracles, aucun
 - **Puces du TT et du Falcon** · P2 ⏸ cœur — DSP56001, VIDEL, Crossbar, second MFP du TT,
   SCSI NCR5380, IDE, NVRAM MC146818 ; bus 32 bits et cartes MMIO par machine. Fiches à
   rapatrier par `tools/setup_silicon_refs.sh` ; témoins : `extern/hatari/src/falcon`.
-- **Fiches et oracle, dès maintenant** · P2 ⭘ *(proposé)* — ajouter les fiches des puces
-  ci-dessus à `tools/setup_silicon_refs.sh`, avec leurs empreintes ; vérifier que l'oracle
-  Hatari headless démarre en TT et en Falcon avec un EmuTOS 512 Ko, et noter la recette dans
-  `docs/HATARI_AUTOMATION.md`. Aucun code NeoST.
+- **Fiches et oracle, restes** · P3 ⏸ source — fait le 2026-11-11 : MC68030, DSP56001, NCR5380,
+  MC146818A, TT030 Hardware Reference Manual et deux éditions de la doc développeur Falcon épinglés
+  (`tools/setup_silicon_refs.sh`) ; oracle Hatari en TT et en Falcon jusqu'au bureau avec EmuTOS
+  512 Ko (`docs/HATARI_AUTOMATION.md`). Manquent la carte des registres du VIDEL et une fiche du
+  Crossbar (aucune publiée par Atari), et la norme ATA pour l'IDE. Fixer `--cpu-exact`/`--compatible`
+  avant toute référence TT/Falcon.
 - **Terrain dans le code** → A32 fait (2026-11-11 : `VideoGlue`, `VideoCounter` et le Shifter, le compteur lisant la Glue par `GlueView`). Reste l'interface de puce vidéo que liront les frontends au lieu de `Shifter&` (`docs/HYPOTHESES_ST.md` § 5) ; ce que le TT et le Falcon remettent en cause, chiffré par catégorie : [`docs/HYPOTHESES_ST.md`](docs/HYPOTHESES_ST.md) (le plus structurel : `ADDR_MASK` et la frontière de 4 Mo du `Bus`, l'horloge unique à 8 MHz de l'ordonnanceur, 124 tests de `MachineType`).
 - **Suite AERA de yaary.music** · P2 ⏸ Falcon — <https://yaary.music/software/atari-st/>.
   Dix programmes GEM en C, sous GPL v2 : EWeb, EMail, ECal, EContact, EFTP, EPDF, EPlay,

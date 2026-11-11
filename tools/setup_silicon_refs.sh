@@ -96,6 +96,44 @@ doc HD6301_HD6303_Handbook_1989.pdf dbee534e751ccb9a84f91d59c9eb86547d0cd3a521db
 # indépendant de lui. Chaque mot y dit quels accès bus la séquence fait, et dans quel ordre.
 doc m68k_microcode_all.txt f678abb9ec4f32ac19a0b67cf7a9e5d1ab8c581e38588d2cdc5d17577e88eb8b \
     https://og.kervella.org/m68k/all.txt
+# TT et Falcon (TODO § 10, « Fiches et oracle ») : la FPU MC68882 est déjà épinglée plus
+# haut (MC68881_MC68882_UM_1987.pdf) ; le second MFP du TT est un MC68901, déjà là aussi.
+# Motorola, MC68030 Enhanced 32-Bit Microprocessor User's Manual, 3ᵉ éd., 1990 : le CPU des deux.
+doc MC68030_UM_3ed_1990.pdf ec2a2e6c926e4337b9bc982882ea247fe41eece15769a880dca4f9ebf08d185d \
+    "$BITS/motorola/68000/68030/MC68030_Users_Manual_3ed_1990.pdf"
+# Motorola, MC68030 Technical Summary (MC68030/D), 1991 : brochage, timings AC.
+doc MC68030_Data_Sheet_1991.pdf 87534e555998a5fb48cbcc03dc1db7ec04ca8392980b2252b5b16a6002b9f287 \
+    "$BITS/motorola/68000/68030/MC68030_Data_Sheet_1991.pdf"
+# Motorola, DSP56000/DSP56001 Digital Signal Processor User's Manual, 1990 : le DSP du Falcon.
+doc DSP56000_DSP56001_UM_1990.pdf 036102ba475711350483c544d4f6cee05cfb711ee0c13683a50e859b218ae36a \
+    "$BITS/motorola/56000/56000/1990_DSP56000_DSP56001_Users_Manual.pdf"
+# Motorola, DSP56001 Technical Data (DSP56001/D), 1991 : brochage, port hôte, timings.
+doc DSP56001_Data_Sheet_1991.pdf 34d3bb2e26a8f5d30cf2b588e60e0a457147e9c49ed8cb273bbb0b6fad5c58d3 \
+    "$BITS/motorola/56000/56000/DSP56001_Data_Sheet_1991.pdf"
+# NCR, 5380-53C80 SCSI Interface Chip Design Manual (SP-1051), mars 1986 : le SCSI du TT
+# (Atari y monte le LS5380 de Logic Devices, compatible ; cf. références du manuel TT).
+doc NCR5380_53C80_Design_Manual_Mar86.pdf 8bf11ad5a6f25358917194b63f9c00d1f7ddaf3a76b3bae28bd9d721e9d19240 \
+    "$BITS/ncr_symbios/scsi/5380/SP-1051_NCR_5380-53C80_SCSI_Interface_Chip_Design_Manual_Mar86.pdf"
+# Motorola, MC146818A Real-Time Clock Plus RAM, Advance Information : horloge et NVRAM du
+# TT et du Falcon. Copie de cours (specs Pintos), à défaut d'une archive constructeur ;
+# copie identique, même empreinte : web.eecs.umich.edu/~ryanph/jhu/cs318/fall22/project/specs/.
+doc MC146818A_RTC.pdf ab2a1a92080a6b1b5a66c24a25017a4bd6889a622993b695a79e95dfd88bbc7b \
+    https://www.scs.stanford.edu/22wi-cs212/pintos/specs/mc146818a.pdf
+# Documents Atari (scans sans couche texte), fichiers « original » d'archive.org : leurs
+# dérivés (OCR, _text.pdf) sont régénérés par le site et changeraient d'empreinte.
+ARCH=https://archive.org/download
+# Atari Corp., TT030 Hardware Reference Manual, juin 1990 : carte mémoire, second MFP,
+# SCSI, RTC, vidéo TT.
+doc Atari_TT030_HW_Reference_Manual.pdf 93c17beebfc42517f1df3318f1c55c9f0ac68aadd07949369c0a0517d68063ee \
+    "$ARCH/tos306uk/Atari-TT030-Hardware-Reference-Manual.pdf"
+# Atari Corp., Falcon030 Developer Documentation, 1ᵉʳ oct. 1992 : guide matériel (DSP et
+# sous-système audio, matrice de connexion du Crossbar, ports), XBIOS son/vidéo/DSP.
+doc Atari_Falcon030_DevDoc_1992-10-01.pdf 035d6bac88dd659b73d01e77d2bd539930c71944d56b34670ad297f3ee227bc9 \
+    "$ARCH/Atari_Falcon030_Developer_Documentation_Oct_1_1992/Atari_Falcon030_Developer_Documentation_Oct_1_1992.pdf"
+# Même documentation, édition du 25 janv. 1993 (120 p.) : pages révisées et outils DSP.
+doc Atari_Falcon030_DevDoc_1993-01-25.pdf abf48cb4ec0010417f9ea9852d341a0c187f54025b969ce3dbef5355dfbaa623 \
+    "$ARCH/Atari_Falcon030_Developer_Documentation_Jan_25_1993/Atari_Falcon030_Developer_Documentation_Jan_25_1993.pdf"
+
 doc ASICs-new.zip 89512ee7d588b60d1ea964e048152a66c04672560c216862ff7e9f797ca06097 \
     https://www.chzsoft.de/asic-web/ASICs-new.zip
 # Noms d'entrée à antislashs : unzip les normalise, pas zipfile de Python.

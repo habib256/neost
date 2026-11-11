@@ -591,6 +591,83 @@ unzip -o /tmp/e.zip -d /tmp/e && cp /tmp/e/emutos-256k-1.4/etos256us.img roms/
 Le paquet `256k` contient toutes les langues (`etos256us.img`, `etos256fr.img`, …). Le
 paquet `192k` est pour ST/STE (TOS 1.x), le `256k` pour Mega ST/STE/TT/Falcon (TOS 2.x/3.x).
 
+## Oracle en TT et en Falcon (EmuTOS 512 Ko, 2026-11-11)
+
+Préalable du TT et du Falcon (`TODO.md` § 10, *Fiches et oracle, dès maintenant*) :
+l'oracle épinglé (`f0736b24`, v2.6.1-devel) démarre les deux machines **jusqu'au bureau
+GEM**, en headless, avec un EmuTOS 512 Ko. Aucun code NeoST n'y est engagé.
+
+**La ROM.** EmuTOS 1.4, paquet `512k` (GPL), une image **par langue** (`etos512us.img`,
+`etos512fr.img`, …) et non une image multilingue :
+
+| Fichier | Source | sha256 |
+|---|---|---|
+| `emutos-512k-1.4.zip` | `https://downloads.sourceforge.net/project/emutos/emutos/1.4/emutos-512k-1.4.zip` | `1ef7bd25f61bcfc66d19debc2f0ebb0d5e5ba811ccd7f0fddfcb105bb72d1663` |
+| `etos512us.img` (dans le zip) | idem | `167f5f148419a684a3646519ef12cd7be00e1a35e10040358184f4d471e27da9` |
+| `etos512fr.img` (dans le zip) | idem | `6787ef0b2e5f6e372fb50f24ff6594f70416d9613fa98063ea47109b51b32a3b` |
+
+⚠ **Ne pas la poser dans `roms/`** : les `roms/etos*.img` y sont **versionnés** (192 et
+256 Ko) et `.gitignore` n'y masque que `tos*` ; une `etos512*.img` y apparaîtrait comme
+fichier à commiter. On la garde hors du dépôt :
+
+```sh
+curl -fsSL -o /tmp/etos512.zip \
+  "https://downloads.sourceforge.net/project/emutos/emutos/1.4/emutos-512k-1.4.zip"
+echo "1ef7bd25f61bcfc66d19debc2f0ebb0d5e5ba811ccd7f0fddfcb105bb72d1663  /tmp/etos512.zip" \
+  | shasum -a 256 -c
+unzip -o -q /tmp/etos512.zip -d /tmp/etos512
+ROM=/tmp/etos512/emutos-512k-1.4/etos512us.img
+```
+
+**Les deux démarrages** (même socle que la recette ST, plus la mémoire de la machine) :
+
+```sh
+export SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy HOME=/tmp/hatari_home
+mkdir -p "$HOME"
+HATARI=extern/hatari/build/src/hatari
+COMMON=(--tos "$ROM" --monitor vga --memsize 4
+        --sound off --fast-forward on --confirm-quit off --statusbar off --drive-led off
+        --alert-level fatal --run-vbls 1500 --avirecord on --avi-vcodec png)
+# TT030 : 4 Mo de ST-RAM + 16 Mo de TT-RAM (Alt-RAM).
+"$HATARI" --machine tt --ttram 16 "${COMMON[@]}" --avi-file /tmp/tt.avi
+# Falcon030 : DSP émulé (c'est déjà le défaut de --machine falcon, on l'écrit quand même).
+"$HATARI" --machine falcon --dsp emu "${COMMON[@]}" --avi-file /tmp/falcon.avi
+for m in tt falcon; do
+  ffmpeg -v error -y -reinit_filter 0 -i /tmp/$m.avi -vf "select=eq(n\,1450)" \
+         -frames:v 1 -update 1 -pix_fmt rgb24 /tmp/$m.png
+done
+```
+
+**Vérifié** (captures PNG relues à l'œil, build épinglé, macOS) :
+
+- **TT** : écran d'accueil EmuTOS « CPU type M68030 · Machine Atari TT · ST-RAM 4 MB ·
+  Alt-RAM 16 MB » vers la VBL 450, **bureau GEM** (menu Desk/File/View/Options, disques
+  A et B, corbeille, imprimante) à la VBL 1 100, stable à 1 400. AVI 640×480, ~9 s pour
+  600 VBL, ~17 s pour 1 500.
+- **Falcon** : accueil « M68030 · Atari Falcon · ST-RAM 4 MB » vers la VBL 600, bureau
+  GEM à la VBL 1 300. AVI 640×480, ~15 s pour 1 500 VBL.
+- Ce que `--machine` impose [D] Hatari `src/options.c` (traitement de `--machine`)
+  @ `f0736b24` : TT → 68030 à 32 MHz + FPU 68882 ; Falcon → 68030 à 16 MHz, DSP `emu`,
+  sans FPU.
+
+**Limites connues.**
+
+- **Lent à démarrer** : l'écran d'accueil d'EmuTOS (« Hold <Shift> to pause ») et le
+  test mémoire repoussent le bureau au-delà de 1 000 VBL ; `--fast-boot on` ne le
+  raccourcit pas de façon visible (essayé sur Falcon : rien qu'un écran blanc à la
+  VBL 850). Prévoir 1 500 VBL et extraire vers 1 450.
+- **Bruit de journal normal** : une rafale de `WARN : Bus Error reading/writing at
+  address …` au boot (EmuTOS sonde le matériel absent) ; en TT, `ERROR: Automatically
+  enabling 32-bit addressing to support TT-RAM` ; en Falcon, `ERROR: Microphone:
+  SDL_OpenAudioDevice failed` (pilote audio factice) et `Strange screen size 16x480`
+  (transitoire de VIDEL au changement de mode). Aucun ne bloque.
+- **Seul le boot est vérifié** : ni disquette, ni SCSI/IDE, ni son DMA/Crossbar, ni
+  programme DSP, ni les autres moniteurs (`rgb`/`tv`/`mono`). `--cpu-exact` /
+  `--compatible` ne sont pas forcés ici, contrairement à `hatari_oracle.sh` : à fixer
+  le jour où une référence TT/Falcon sera posée, pour la même raison qu'en ST.
+- La langue suit l'image (`etos512us` → anglais/clavier US) ; avec `--monitor vga` la
+  fréquence de la ROM ne joue pas (le VGA balaie à 60 Hz quelle que soit la ROM).
+
 
 ## CPU et cache MegaSTE à 16 MHz
 

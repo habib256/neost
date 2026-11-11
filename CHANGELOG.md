@@ -17,6 +17,16 @@ l'ordre inverse. Version courante : **0.6.4**.
 - Essais : Rainbow Islands exige 4 Mo (remarque du mainteneur) et y entre en jeu en accord avec
   Hatari ; Super Hang-On, Nitro, Dynamite Dux, Cybernoid II et CarVup divergent en partie.
 
+## TT et Falcon : fiches épinglées, oracle Hatari au bureau (2026-11-11)
+
+- `tools/setup_silicon_refs.sh` épingle neuf documents : MC68030 (manuel et fiche), DSP56000/56001
+  (manuel et fiche), NCR 5380, MC146818A, TT030 Hardware Reference Manual (juin 1990), doc
+  développeur Falcon030 (octobre 1992 et janvier 1993, fichiers « original » d'archive.org). Le
+  MC68882 et le second MFP du TT reprennent les fiches déjà en place.
+- `docs/HATARI_AUTOMATION.md` : Hatari démarre en TT (68030, TT-RAM 16 Mo) et en Falcon (DSP émulé)
+  jusqu'au bureau GEM avec EmuTOS 1.4 512 Ko, en headless ; commandes, empreintes et limites. Rien
+  dans le code de NeoST.
+
 ## Paquets : la disquette STinG + EtherNEC est livrée (2026-11-11)
 
 - `disks/sting_ethernec.st` entre dans les paquets (`packaging/stage_free_data.sh`, listes
