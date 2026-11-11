@@ -17,7 +17,9 @@
 #  hasard ou qui change d'écran à une autre date en donne aussi.
 #
 #  Usage : compare_sound.py SORTIE DISQUE... [--machine st] [--rom roms/etos192fr.img]
-#            [--mem 1] [--frames 2500] [--window 12] [--min-corr 0.7] [--jobs 6]
+#            [--mem 1] [--frames 2500] [--window 12] [--min-corr 0.7] [--jobs 6] [--launch]
+#  --launch : démarre le plus gros programme de la racine (.PRG, .TOS, .APP) par --auto, pour
+#  les titres qui attendent au bureau. .st et .msa seulement ; sans programme, le verdict est « no-program ».
 #  Exige ffmpeg et l'Hatari épinglé ; code 77 sinon. Sortie : SORTIE/summary.json.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST.
@@ -86,9 +88,57 @@ def best_shift(a: list[float], b: list[float], window_s: float) -> tuple[float, 
     return best, where * WINDOW / RATE
 
 
+def floppy_bytes(disk: Path) -> bytes | None:
+    """Image brute d'un .st ou d'un .msa (RLE par piste, marqueur $E5), None sinon."""
+    data = disk.read_bytes()
+    if disk.suffix.lower() == ".st":
+        return data
+    if disk.suffix.lower() != ".msa" or data[:2] != b"\x0e\x0f":
+        return None
+    out, at = bytearray(), 10
+    while at + 2 <= len(data):
+        size = int.from_bytes(data[at:at + 2], "big")
+        track, at = data[at + 2:at + 2 + size], at + 2 + size
+        length = int.from_bytes(data[2:4], "big") * 512
+        if size == length:
+            out += track
+            continue
+        i = 0
+        while i < len(track):
+            if track[i] == 0xE5 and i + 3 < len(track):
+                out += track[i + 1:i + 2] * int.from_bytes(track[i + 2:i + 4], "big")
+                i += 4
+            else:
+                out.append(track[i])
+                i += 1
+    return bytes(out)
+
+
+def main_program(disk: Path) -> str | None:
+    """A:\\NOM du plus gros programme de la racine, ou None."""
+    image = floppy_bytes(disk)
+    if not image or len(image) < 1024:
+        return None
+    sector = int.from_bytes(image[11:13], "little") or 512
+    root = (int.from_bytes(image[14:16], "little") + image[16] * int.from_bytes(image[22:24], "little")) * sector
+    best, size = None, 0
+    for offset in range(root, root + int.from_bytes(image[17:19], "little") * 32, 32):
+        entry = image[offset:offset + 32]
+        if len(entry) < 32 or entry[0] == 0:
+            break
+        if entry[0] == 0xE5 or entry[11] & 0x18:
+            continue
+        name, ext = entry[:8].decode("latin1").strip(), entry[8:11].decode("latin1").strip()
+        length = int.from_bytes(entry[28:32], "little")
+        if ext.upper() in ("PRG", "TOS", "APP") and length > size:
+            best, size = f"A:\\{name}.{ext}", length
+    return best
+
+
 def run_neost(disk: Path, args, wav: Path) -> None:
     subprocess.run([str(HEADLESS), args.rom, "--machine", args.machine, "--mem", f"{args.mem}m",
-                    "--disk", str(disk), "--disk-ro", "--frames", str(args.frames), "--sound-dump", str(wav)],
+                    "--disk", str(disk), "--disk-ro", "--frames", str(args.frames), "--sound-dump", str(wav),
+                    *(["--auto", args.auto] if args.auto else [])],
                    cwd=ROOT, capture_output=True, timeout=900, check=True)
 
 
@@ -105,7 +155,8 @@ def run_hatari(disk: Path, args, work: Path, wav: Path) -> None:
                                  "--cpu-exact", "on", "--compatible", "on", "--patch-tos", "off", "--fast-boot", "off",
                                  "--fastfdc", "off", "--disk-a", str(copy), "--sound", "48000", "--fast-forward", "on",
                                  "--confirm-quit", "off", "--statusbar", "off", "--drive-led", "off", "--frameskips", "0",
-                                 "--alert-level", "fatal", "--run-vbls", str(args.frames), "--cmd-fifo", str(fifo)],
+                                 "--alert-level", "fatal", "--run-vbls", str(args.frames), "--cmd-fifo", str(fifo),
+                                 *(["--auto", args.auto] if args.auto else [])],
                                 stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, env=env, cwd=work)
     # Ouverture non bloquante : tant qu'Hatari n'a pas ouvert sa fifo, ENXIO, et un open
     # bloquant attendrait à jamais un Hatari mort avant d'y arriver.
@@ -124,6 +175,12 @@ def run_hatari(disk: Path, args, work: Path, wav: Path) -> None:
 
 def compare(disk: Path, args) -> dict:
     result = {"disk": disk.name}
+    if args.launch:
+        program = main_program(disk)
+        if not program:
+            return {**result, "verdict": "no-program"}
+        args = argparse.Namespace(**{**vars(args), "auto": program})
+        result["auto"] = program
     with tempfile.TemporaryDirectory(prefix="neost-sound-") as tmp:
         work = Path(tmp)
         neost_wav, hatari_wav = work / "n.wav", work / "h.wav"
@@ -162,7 +219,9 @@ def main() -> int:
     ap.add_argument("--window", type=float, default=12.0)
     ap.add_argument("--min-corr", type=float, default=0.7)
     ap.add_argument("--jobs", type=int, default=6)
+    ap.add_argument("--launch", action="store_true")
     args = ap.parse_args()
+    args.auto = None
     if not HATARI.exists() or not HEADLESS.exists() or not shutil.which("ffmpeg"):
         print("SKIP: Hatari, neost-headless or ffmpeg missing")
         return 77

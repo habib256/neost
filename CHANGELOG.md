@@ -11,7 +11,8 @@ l'ordre inverse. Version courante : **0.6.4**.
 - `tools/compare_sound.py`, hors paliers : même disque dans NeoST et Hatari, enveloppe RMS au meilleur
   décalage. Sur 95 images, 60 s après le boot : ST 21 concordants, 1 à écouter (Dynamite Dux),
   71 muets des deux côtés, 2 muets côté Hatari ; STE 24 concordants, 69 muets, 1 de chaque côté.
-  Niveau médian NeoST/Hatari : 0,985 et 1,0.
+  Niveau médian NeoST/Hatari : 0,985 et 1,0. `--launch` démarre le plus gros programme de la racine :
+  6 et 7 titres de plus, concordants.
 - `fuzcd084` s'arrête en double faute dans les deux émulateurs : Hatari se tait, NeoST laisse le YM
   tenir ses registres. Super Sprint, à peine sonore, passe sous le seuil d'un côté ou de l'autre.
 

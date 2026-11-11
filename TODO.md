@@ -241,8 +241,10 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   contre Hatari (médias originaux, changements de disquette, souris et glisser-déposer) ; le
   diagnostic Magic Pockets est exclu par défaut. À étendre : parties plus longues, disques STE.
   Son : première passe du 2026-11-11 (`tools/compare_sound.py`, enveloppe contre Hatari, 60 s après
-  le boot, ST et STE) : 21 et 24 titres sonores concordants, niveau médian 0,985 et 1,0 ; 71 et 69
-  restent muets au bureau, à rejouer lancés. Dynamite Dux reste à écouter (0,64 en ST, 0,72 en STE).
+  le boot, ST et STE) : 21 et 24 titres sonores concordants, niveau médian 0,985 et 1,0. Parmi les
+  muets, `--launch` en ajoute 6 et 7, concordants ; 17 et 16 restent muets une fois lancés, 48 et 46
+  n'ont pas de programme à la racine (amorçage ou dossier). Dynamite Dux reste à écouter (0,64 en
+  ST, 0,72 en STE).
   Un script joystick tient chaque commande plus que la période
   d'interrogation du jeu. Chaque parcours ajouté entre aussi dans la porte d'échange (§ 2).
   Essais du 2026-11-10 : Rick Dangerous et Pang joués (lancés du bureau). Bombjack et Xenon 2
