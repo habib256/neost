@@ -333,8 +333,10 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 → [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md). Tout a existé sur ST ; rien n'agit sur les étalons.
 
 ### Réseau, stockage, ports
-- **EWeb ST derrière AERA-Gateway** · P2 ⭘ — navigateur GEM libre (GPL v2) : la passerelle en
-  Docker sur l'hôte, EWeb dans NeoST (STE 4 Mo, STinG + `ENEC.STX`) par le NAT, port 8280.
+- **EWeb ST derrière AERA-Gateway** · P2 ⭘ — navigateur GEM libre (GPL v2) : `gateway/webgate.py`
+  lancé seul sur l'hôte, sans Docker (Python standard, avec `aeragate.py` et `translateclient.py` ;
+  essayé le 2026-11-11 en boucle locale, requête au format proxy), EWeb dans NeoST (STE 4 Mo,
+  STinG + `ENEC.STX`) par le NAT, port 8280. Un site en HTTP simple se passe de passerelle.
   Premier parcours web réel de bout en bout ; en faire un test s'il passe.
   → <https://yaary.music/software/atari-st/eweb/>
 - **NetUSBee : validation MiNT et matériel** · P3 ⭘ — USB4TOS vérifié (HID + disque) ;
