@@ -1,4 +1,7 @@
 // Horloge RX MIDI : phase série, retard de dispatch et câblage hors snapshot.
+// [D] Hatari acia.c:1038-1144 @ f0736b24 (ACIA_Clock_RX) : réception cadencée par
+//     l'horloge de l'ACIA. [interne] Le reste est un contrat de NeoST : un dispatch servi en
+//     retard ou des resets répétés ne déplacent ni n'affament l'échéance.
 #include "io/MidiAcia.hpp"
 #include "io/Mfp.hpp"
 #include <cstdio>

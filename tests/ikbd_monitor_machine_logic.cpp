@@ -1,4 +1,6 @@
 // Garde d'intégration réelle du callback IKBD_MONITOR, à travers Bus et Machine.
+// [interne] Câblage Bus/Machine/Scheduler. Le départ du paquet $F8 sur ligne libre est
+// [E] (« ROM 6301 », sans adresse) : à retrouver dans le désassemblage de la ROM HD6301.
 #include "core/Machine.hpp"
 #include "core/Pacing.hpp"
 #include <cstdio>

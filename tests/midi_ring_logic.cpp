@@ -1,3 +1,4 @@
+// [interne] Anneau MIDI, extension NeoST : aucune affirmation sur le matériel.
 // Test manuel UDP local, hors selftest (les CI peuvent interdire les sockets).
 // c++ -std=c++17 -Isrc tests/midi_ring_logic.cpp src/net/MidiRing.cpp \
 //   src/net/Socket.cpp src/io/MidiAcia.cpp src/io/Mfp.cpp -pthread -o /tmp/midi-ring-test

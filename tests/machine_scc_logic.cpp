@@ -1,4 +1,7 @@
 // Le câblage BRG doit survivre à un changement de profil sans recréer Machine.
+// [B] Zilog UM0109 (UM010902-0609) p. 72-73 (Zilog_SCC_ESCC_UM.pdf, sha256 2a13683e) :
+//     le compteur du BRG repasse à zéro toutes les TC+2 horloges.
+// [interne] Le reste vérifie le câblage des rappels série après reset et reconfiguration.
 #include "core/Machine.hpp"
 #include <cstdio>
 #include <memory>

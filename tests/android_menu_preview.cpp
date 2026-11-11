@@ -1,3 +1,4 @@
+// [interne] Aperçu de mise en page, aucune affirmation sur le matériel.
 // =============================================================================
 //  android_menu_preview.cpp — Aperçu BUREAU du menu Android.
 //

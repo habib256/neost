@@ -7,7 +7,8 @@
 #  d'Hatari ne prouvent pas la même chose.
 #
 #  COMMENT. Lit les commentaires de tests/*.cpp et retient l'échelon le plus haut qu'ils citent. C'est
-#  ce que le test DÉCLARE, pas une relecture de ses attendus. « aucun » = il ne nomme aucune source.
+#  ce que le test DÉCLARE, pas une relecture de ses attendus. « interne » = contrat de NeoST sans
+#  affirmation sur le matériel, marqué [interne]. « aucun » = il ne nomme aucune source.
 #
 #  Usage : classify_selftests.py [--list ÉCHELON]
 #
@@ -28,6 +29,7 @@ LADDER = (
     ("rom", r"\[C\]|ROM \$|TOS \d\.\d+ \$|EmuTOS"),
     ("rtl", r"\.sv\b|\.v:\d|gstmcu|fx68k|stBlitter|MiSTery"),
     ("hatari", r"\[D\]|[Hh]atari|\b[a-zA-Z_0-9]+\.c\b"),
+    ("interne", r"\[interne\]"),
 )
 
 

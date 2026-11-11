@@ -130,10 +130,11 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   le 2026-11-11 ([B] Atari, « MegaST Bus », 1991, DOIT_ST § 3.11 : « The ST will automatically generate
   this signal if a bus cycle does not complete within 64 clock cycles ») ; étalons pixel inchangés. Le Mega
   STE reste sans source.
-- **Couleur pendant BLANK** · P2 ⏸ source · [F] palette 0 — `gstshifter.v:263-265 @ 4a6db7cc` force le
+- **Couleur pendant BLANK** · P3 ⏸ source · [F] palette 0 — `gstshifter.v:263-265 @ 4a6db7cc` force le
   noir hors mono, et le banc le confirme (étalons `rtl_low_*` : seul écart, 2 lignes en PAL,
-  13 en NTSC). Hatari l'admet (`video.c:4008-4009 @ f0736b24`). Code inchangé tant qu'une source
-  plus haute manque ; passer au noir déplacerait les références `hatari` à bordure visible.
+  13 en NTSC). Hatari l'admet (`video.c:4008-4009 @ f0736b24`). Décision de l'auteur
+  (2026-11-11) : palette 0 tant qu'aucune mesure ni document ne tranche ; passer au noir
+  déplacerait les références `hatari` à bordure visible. Tranche : une capture sur machine.
   ⚠ Le schéma 4118 est le shifter de la Panther ; aucun schéma du Shifter ST n'est disponible.
 - **Vidéo — mesures sur Atari** · P2 ⏸ matériel · [F] — comportement électrique de
   NO_SYNC/SYNC_HIGH et confirmation au fer de tout ce § 3.1.
@@ -299,7 +300,6 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   restants attendent un relevé sur le fer, ou sont gardés parce qu'un jeu contredit la fiche.
   Restent les GLUE/MMU sans schéma, et le SCC en synchrone, SDLC et DMA.
 - **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée.
-- **Auto-tests sans source** · P3 ◐ — `tools/classify_selftests.py` lit l'échelon que chaque test de logique déclare : hardware 0 · primary 70 · rom 6 · rtl 1 · hatari 44 · aucun 14 (total 135). Ce qui ne cite rien reste à sourcer. C'est une déclaration, pas une relecture des attendus.
 - **Monter les 12 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
   confrontée au modèle (`docs/GLUE_SWEEP.md`), pas leurs pixels ; `closure` et
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).

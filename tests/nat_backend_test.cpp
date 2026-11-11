@@ -1,4 +1,4 @@
-// Contrat de l'adaptateur NeoST : options, cycle de vie, trames et échec de bind.
+// [interne] Contrat de l'adaptateur NeoST : options, cycle de vie, trames et échec de bind.
 #include "net/NatBackend.hpp"
 #include "NatPacket.h"
 #include "SocketCompat.h"

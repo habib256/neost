@@ -1,4 +1,8 @@
 // Calendrier par lots comparé au chemin public n=1 (tickOneSecond indépendant).
+// [interne] Test différentiel : la référence est tickOneSecond, pas le silicium.
+// [B] Ricoh EK-086-9908 p. 7 (RP5C15_Ricoh.pdf, sha256 b929eeb4) : compteur bissextile
+//     indépendant de l'année, cycle de quatre ans ; d'où les cas « année impaire mais
+//     leap=0 » et « année paire mais pas bissextile ».
 #include "io/Rtc.hpp"
 #include <cstdio>
 #include <vector>

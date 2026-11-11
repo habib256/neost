@@ -1,4 +1,8 @@
-// RE : désactivation immédiate du récepteur (MAME REGISTER_RSR/rc_w).
+// RE : désactivation immédiate du récepteur.
+// [B] MC68901, janvier 1984, § 6.2.2 p. 6-5 (MC68901_Jan84.pdf, sha256 5441a092) : RE à zéro coupe le récepteur
+//     aussitôt et efface tous les drapeaux.
+// [D] MAME mc68901.cpp:920-925 @ ce391499d37d (REGISTER_RSR) : RSR remis à zéro, tampon de
+//     réception intact. La fiche ne dit rien du tampon : sa conservation vient de MAME.
 #include "io/Mfp.hpp"
 #include "core/Pacing.hpp"
 #include <cstdio>

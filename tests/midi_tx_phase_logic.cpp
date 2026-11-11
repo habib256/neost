@@ -1,4 +1,8 @@
 // ACIA Clock_TX IDLE consomme TDR au prochain front du timer déjà actif.
+// [B] MC6850 § Transmit Data Register p. 7 (MC6850.pdf, sha256 294a8b9f) : l'octet passe
+//     du TDR au registre à décalage, et TDRE remonte à ce transfert.
+// [D] Hatari acia.c:954-1027 @ f0736b24 (ACIA_Clock_TX) : le transfert attend le front
+//     d'horloge suivant ; la fiche ne date pas la phase.
 #include "io/MidiAcia.hpp"
 #include "io/Mfp.hpp"
 #include <cstdio>

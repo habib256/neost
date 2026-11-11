@@ -1,4 +1,8 @@
 // Émission USART à travers Bus/Machine : les échéances doivent être exécutées.
+// [B] MC68901, janvier 1984, § 6.3.2 p. 6-7 (MC68901_Jan84.pdf, sha256 5441a092) : UE se pose quand le registre
+//     à décalage se vide avant une écriture du tampon, et s'efface à la lecture du TSR.
+// [D] MAME mc68901.cpp:530-537 @ ce391499d37d (REGISTER_TSR) : l'effacement n'a lieu qu'après une
+//     période complète de l'horloge d'émission. La fiche ne donne pas ce délai.
 #include "core/Machine.hpp"
 #include "core/Pacing.hpp"
 #include <cstdio>

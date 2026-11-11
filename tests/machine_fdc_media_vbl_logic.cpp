@@ -1,4 +1,7 @@
 // Mediach suit les callbacks VBL Machine réels, même lorsque PAL/NTSC/mono changent.
+// [D] Hatari floppy.c:425-469 @ f0736b24, includes/floppy.h:20 : une insertion ou une
+//     éjection dure 18 VBL (FLOPPY_DRIVE_TRANSITION_DELAY_VBL, « min of 16 VBLs »).
+// [interne] Le reste vérifie le câblage VBL → Fdc à travers Machine.
 #include "core/Machine.hpp"
 #include <algorithm>
 #include <cstdio>

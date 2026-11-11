@@ -1,4 +1,9 @@
 // ACIA Clock_TX/Clock_RX → GPIP4 : front série, puis propagation MFP de 4 cycles.
+// [B] MC6850 § Transmit Data Register p. 7 (MC6850.pdf, sha256 294a8b9f) : TDRE remonte
+//     au transfert TDR→TSR ; § Status Register p. 9 : le bit IRQ suit la sortie IRQ.
+// [D] Hatari acia.c:954-1027, 1038-1144 @ f0736b24 (ACIA_Clock_TX, ACIA_Clock_RX) : dates
+//     des fronts série. mfp.c:374 @ f0736b24 (MFP_IRQ_DELAY_TO_CPU) : 4 cycles avant que
+//     le CPU voie l'IRQ. Aucune fiche ne chiffre ce délai.
 #include "io/Ikbd.hpp"
 #include "io/Mfp.hpp"
 #include <cstdio>

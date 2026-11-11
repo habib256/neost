@@ -506,6 +506,9 @@ private:
     // Hatari Floppy_DriveTransitionUpdateState (Force=1 pendant l'éjection).
     bool     transitionForceWprt(int drive);
     void     transitionSetState(int drive, int phase);
+    // [D] Hatari includes/floppy.h:20 @ f0736b24 (FLOPPY_DRIVE_TRANSITION_DELAY_VBL, « min of 16
+    // VBLs ») : durée d'une insertion ou d'une éjection. [F] Sur le fer, elle dépend de la main
+    // de l'utilisateur : 18 est un choix d'émulateur, pas une mesure.
     static constexpr int64_t kMediaChangeVbl = 18;
     void     emitSound(FdcSound e) { if (soundSink_) soundSink_(e); }
 

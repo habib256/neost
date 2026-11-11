@@ -1,4 +1,9 @@
-// MC68HC901 p7-8 (famille68901), MAME mc68901 : TXERR à chaque frontière BREAK, TSR inchangé, TE0 différé.
+// BREAK asynchrone : TXERR à chaque frontière, TSR inchangé, TE0 différé.
+// [B] MC68901, janvier 1984, § 6.3 p. 6-6 (MC68901_Jan84.pdf, sha256 5441a092) : END à chaque frontière normale
+//     pendant un BREAK ; le caractère du tampon part à la fin du BREAK ; TE coupé pendant
+//     un BREAK l'arrête à la fin du caractère courant, sans BE ni UE. § 6.3.2 p. 6-7 : AT
+//     réactive le récepteur une fois l'émission finie.
+// [D] MAME mc68901.cpp:958-1000, 1367-1480 @ ce391499d37d (REGISTER_TSR, tx_clock) : même lecture.
 #include "io/Mfp.hpp"
 #include "core/Pacing.hpp"
 #include <cstdio>

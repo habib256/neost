@@ -6,6 +6,16 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Tous les auto-tests déclarent leur source (2026-11-11)
+
+- Les 14 tests de logique qui ne citaient rien portent leur grade : fiches MC68901 (RE, BREAK, UE),
+  MC6850, RP5C15 et Zilog UM0109 quand elles tranchent, MAME ou Hatari épinglés pour ce qu'elles
+  taisent. Cinq ne testent qu'un contrat de NeoST (adaptateur NAT, anneau MIDI, chargeur d'état,
+  aperçu Android) : `tools/classify_selftests.py` les range sous `[interne]`. Plus aucun test sans échelon.
+- Le départ du paquet souris $F8 sur ligne libre reste [E] : la ROM 6301 est citée sans adresse.
+- `Fdc::kMediaChangeVbl` (18 VBL) cite sa source, Hatari `floppy.h:20`, et dit que c'est un choix.
+- Couleur pendant BLANK sur ST : l'auteur garde la palette 0 tant qu'aucune mesure ne tranche.
+
 ## Le son des titres comparé à Hatari (2026-11-11)
 
 - `tools/compare_sound.py`, hors paliers : même disque dans NeoST et Hatari, enveloppe RMS au meilleur

@@ -1,3 +1,4 @@
+// [interne] Robustesse du chargeur d'état, aucune affirmation sur le matériel.
 // Save-state du Shifter : la géométrie du tampon est LIÉE à la résolution verrouillée.
 // Un .state forgé (curW_ = 1024, frame_ assorti) passait les bornes lâches et
 // renderLine décodait 928 px dans son tampon de pile idx[660] (SIGABRT).
