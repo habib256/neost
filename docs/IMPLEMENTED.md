@@ -75,6 +75,8 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   - **MFP 68901** : **4 cyc** à CHAQUE accès registre (lecture ou écriture ; `M68000_WaitState(4)`).
   - **ACIA 6850** (clavier + MIDI) : **6 cyc** par accès **+ synchro E-Clock** (1 MHz = CPU/10 ;
     `10 − clock%10`, motif `[0 8 6 4 2]`, port `M68000_WaitEClock`) au seul 1ᵉʳ accès de l'instruction.
+    Sur STE (2026-11-11), un octet impair `$FFFC01-07` est un cycle de la puce (écriture sur le
+    registre pair, lecture `$FF`) et l'attente vaut pour toute la zone `$FFFC00-$FFFDFF` ([D] GST MCU).
   Non-régression vérifiée : boot EmuTOS/TOS propre, **glue self-test 19/19** (géométrie bordures
   inchangée), **Spec512 stable** (diaporama : mêmes paires de flicker, mêmes magnitudes —
   une transition de diapo décalée d'1 trame, effet attendu du temps CPU réel passé à scruter
@@ -1299,6 +1301,9 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   Fwrite, attributs caché/système/archive retenus pour la session, alias 8.3 `~N` pour deux
   noms hôtes tronqués pareil. Pexec 0 sous TOS 1.00/1.02 sans fuite. Banc
   `tools/run_gemdos_ab.py` (disquette contre dossier sous trois TOS) ; save-state v61.
+  Puis : Fforce par processus, fichier ouvert détruit (EACCDN / EINTRN), codes d'erreur du
+  vrai TOS pour dossier, joker et lecteurs croisés, attributs persistés (natifs sous Windows,
+  xattr `user.neost.tosattr` ailleurs) ; banc à 79 écarts, tous de montage ; save-state v62.
 - **Mécanisme d'interception fidèle à Hatari** : une CARTOUCHE système (octets
   assemblés de `cart_asm.s`/`cartData.c`) est exposée à `$FA0000` ; au boot le TOS
   exécute son C-INIT (`sys_init`) qui installe un nouveau vecteur GEMDOS (`$84`)

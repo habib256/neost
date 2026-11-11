@@ -109,13 +109,14 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.1 GLUE, MMU, Shifter — vidéo et bus
 
-- **Plan mémoire : bus ouvert et DMA disque** · P3 ⏸ source · [F] — le bus ouvert rend trois
-  valeurs selon la zone (`$00` fenêtre ROM, dernier mot sur banque RAM vide, `$FF` cartouche et
-  octets pairs du MFP) ; MAME rend `$FF` partout. L'attente MFP d'un accès du blitter n'est pas
-  facturée au CPU. Le RTL sélectionne aussi la RAM pour tout cycle DMA disque/ACSI
-  (`gstmcu.v:226 @ 4a6db7cc`) alors que `dmaRead8` lit encore ROM et cartouche comme Hatari.
-  Tranche : une lecture sur un vrai STE. La carte des bus errors en lecture donne 0 écart contre
-  les relevés de vraies machines sur les quatre modèles.
+- **Plan mémoire : bus ouvert** · P3 ⏸ source · [F] — trois valeurs selon la zone (`$00` fenêtre
+  ROM, dernier mot sur banque RAM vide, `$FF` cartouche et octets pairs du MFP) ; MAME rend `$FF`
+  partout. L'attente MFP d'un accès du blitter n'est pas facturée au CPU. Tranche : une lecture
+  sur un vrai STE. La carte des bus errors en lecture donne 0 écart contre les relevés de vraies
+  machines sur les quatre modèles.
+- **Cache Mega STE et écritures DMA** *(proposé)* · P3 ⏸ source · [F] — une écriture DMA (disque,
+  ACSI) ne met pas à jour le cache 16 Ko du Mega STE : une ligne cachée relue après le transfert
+  rendrait l'ancienne valeur. Tranche : la doc du contrôleur de cache du Mega STE.
 
 - **Restes vidéo au cycle** · P3 ⭘ — la VBL est datée à la fin de trame + 64/68 (`Machine.cpp`), la
   fin de DE a son événement Timer B distinct du HBL, et la lecture du compteur concorde au RTL sur STE
@@ -192,9 +193,12 @@ Extension du banc à 16 MHz → § 2.
 
 ### 3.4 Son — YM2149, DMA STE, Microwire
 
-- **Microwire : écriture pendant un décalage** · P3 ⏸ source · [F] — ignorée comme dans Hatari,
-  MiSTery relance ou arrête le transfert (démo Systematic Error). Ni le manuel du TT ni le STE
-  Developer Addendum n'en parlent. Tranche : cette démo.
+- **Microwire : écriture pendant un décalage** · P3 ⏸ source · [F] — la démo Systematic Error
+  (validée sur le fer) écrit le masque en plein décalage et exclut seulement le masque pris sans
+  arrêt ni relance (`docs/CASE_STUDIES.md`). Ignorer (Hatari, NeoST) et arrêter (MiSTery) restent
+  possibles : ils ne diffèrent que par les aigus +12 dB de la commande interrompue. L'écriture de
+  la donnée en cours de décalage n'est exercée par aucun logiciel connu. Tranche : la musique de
+  la démo enregistrée sur un vrai STE, ou la netlist du Shifter STE.
 
 - **IRQ de fin de trame du son DMA, datée au HBL** · P3 ⭘ · [D] — le fetch suit désormais la fin de DE à la lecture du compteur (`docs/STCPU_BENCH.md`), mais la fin de trame n'a pas son événement propre : au plus 136 cycles de retard. Profondeur réelle de la FIFO : 8 octets d'Hatari contre 7 mots du modèle, choix d'auteur. Tranche : relevé sur STE.
 - **Tenue du dernier échantillon DMA** · P3 ⭘ · [D] — Hatari tient le niveau continu du dernier
@@ -208,12 +212,11 @@ Extension du banc à 16 MHz → § 2.
   reconstruction : seule divergence de sévérité moyenne assumée, sans promesse de flux brut.
   Tranche : relecture sur un vrai lecteur d'une piste écrite par un jeu (sauvegarde), ou IPF.
 - **ACSI : essai Idris OS** · P3 ⭘ — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté.
-- **FDC : restes de WRITE TRACK** · P3 ⏸ source · [F] — compteur DMA en écriture décrémenté au 33ᵉ
-  rechargement de 16 octets (Hatari et NeoST) contre le 32ᵉ (MiSTery), documenté dans
-  `Fdc::fifoPull` ; WRITE TRACK sur STX (`StxImage::reinterpretSaveTrack`) garde la règle
-  laxiste d'Hatari (marques sans `$F5`) quand le .ST suit la fiche. L'ID sans données relancé
-  jusqu'au 5ᵉ index n'a pas encore été observé sur un titre (seul cas : Lethal Xcess disque 1,
-  piste 79 face 1, jamais lu par la recette). Tranche : une fiche du DMA du ST.
+- **Compteur DMA en écriture** · P3 ⏸ source · [F] — décrémenté au 33ᵉ rechargement de 16 octets
+  (Hatari, NeoST) contre le 32ᵉ (MiSTery `dma.v`) ; ni l'archive des ASIC Atari ni le manuel TT ne
+  décrivent la puce C025913. L'ID sans données relancé jusqu'au 5ᵉ index n'a pas encore été
+  observé sur un titre (seul cas : Lethal Xcess disque 1, piste 79 face 1, jamais lu par la
+  recette). Tranche : la fiche ou le schéma du C025913.
 - **WD1772, restes de l'audit** · P3 ⭘ · [B] contre [D] — marqués `⚠ [B]` dans `src/io/Fdc.cpp` : INTRQ de $D8 effaçable par toute commande, gardé car la fiche à la lettre fait diverger Super Hang-On ; $Dx annulé si une commande suit à moins de 16 µs. Deux écarts voulus protègent de vrais programmes : TR/SR écrits pendant BUSY (Delirious Demo IV) et commande remplacée pendant BUSY (Overdrive Demos).
 - **Face absente d’un fichier ST** · P3 ⭘ · [F] — aucun contenu de la face omise : vierge ou formatée à l’origine ? Les cinq index avant RNF sont vérifiés sur une piste réellement sans ID (WRITE TRACK de $4E). La synthèse d’ID sur une face absente reste une convention héritée d’Hatari, à trancher par un dump ou une convention de format. → `docs/HATARI_DIVERGENCES.md`
 
@@ -230,10 +233,9 @@ Extension du banc à 16 MHz → § 2.
   chaque tour) ; l'état hôte ne change qu'aux événements de l'hôte ; code 6301 custom
   (`Execute`). Les délais de `$18` sont comptés sur la ROM, pas mesurés sur un IKBD.
 - **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; BREAK non simulé.
-- **ACIA : octets impairs `$FFFC01/03/05/07`** *(proposé)* · P3 ⏸ source · [D] — rendus vides ;
-  le GST MCU décode l'ACIA sans UDS (`gstmcu.v:181`), donc une écriture octet impaire atteindrait
-  la puce, et la plage `$FFFC00-$FFFDFF` devrait payer l'attente E-clock. Tranche : netlist du
-  GLUE du ST.
+- **ACIA : octets impairs sur ST et Mega STE** · P3 ⏸ source · [F] — vides comme Hatari ; le STE
+  suit le GST MCU depuis le 2026-11-11 (cycle de la puce, écriture sur le registre pair, attente
+  E-clock sur `$FFFC00-$FFFDFF`). Tranche : la netlist du GLUE du ST, ou de la MCU du Mega STE.
 
 ### 3.7 Mega STE — SCC Z85C30, RTC RP5C15, cache
 
@@ -245,15 +247,12 @@ Extension du banc à 16 MHz → § 2.
 
 ### 3.8 TOS, GEMDOS, cartouche
 
-- **GEMDOS : écarts communs à NeoST et Hatari face au vrai TOS** · P3 ⭘ · [D] — Fdelete/Fopen sur
-  un dossier, Frename entre systèmes de fichiers, Dsetpath sur un masque. Échelon `rom` :
-  rejouer sous TOS réel exécuté par NeoST.
-- **GEMDOS : restes du banc A/B** · P3 ⭘ · [C] — 86 écarts masqués sur trois TOS
-  (`tools/run_gemdos_ab.py`), presque tous de convention (ordre de listage, carte des lecteurs,
-  Dfree, étiquette de volume). Défauts restants : Fclose d'un fichier supprimé ouvert rend 0 au
-  lieu de −65 ; l'héritage du dossier courant est paresseux (Pexec 3, Dsetpath du parent, puis
-  Pexec 4 : l'enfant voit le chemin récent) ; Fforce ne défait pas la redirection d'un parent
-  pour un seul enfant ; attributs caché/système/archive retenus pour la session seulement.
+- **GEMDOS : conventions du montage** · P3 ⏸ décision — 79 écarts au banc
+  (`tools/run_gemdos_ab.py`, TOS 1.04, 2.06, EmuTOS), tous de convention : ordre de listage (FAT
+  contre hôte trié), lecteur de boot, carte des lecteurs, Dfree, étiquette de volume, octets
+  après le NUL d'un nom. Les E/S sur un fichier détruit encore ouvert rendent EINTRN [F].
+- **GEMDOS : handles du TOS au-delà de 63** *(proposé)* · P3 ⭘ · [D] — `BASE_FILEHANDLE` = 64
+  (hérité d'Hatari) : sous EmuTOS, un handle TOS ≥ 64 se confondrait avec un handle hôte.
 - **Port cartouche générique** `$FA0000-$FBFFFF` · P3 ⭘ — au-delà du système GEMDOS ; `cart.c`.
 
 ---
@@ -371,9 +370,9 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 → [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md). Tout a existé sur ST ; rien n'agit sur les étalons.
 
 ### Réseau, stockage, ports
-- **Clés cartouche au reset à chaud** *(proposé)* · P3 ⏸ source · [F] — remises à zéro alors que le
-  port cartouche n'a pas de ligne /RESET ; FEEDB1 de la Notator armé un cycle trop tard sur un
-  accès octet impair.
+- **Clés cartouche au reset à chaud** · P3 ⏸ source · [E] — gardées depuis le 2026-11-11 sur la foi
+  de brochages publiés (START vol. 1 n° 3, ST-Log n° 27 : 40 broches, pas de /RESET). Passe au
+  grade B avec un schéma Atari de la carte mère (C070112 pour le 520ST).
 - **EWeb ST derrière AERA-Gateway** · P2 ⭘ — navigateur GEM libre (GPL v2) : `gateway/webgate.py`
   lancé seul sur l'hôte, sans Docker (Python standard, avec `aeragate.py` et `translateclient.py` ;
   essayé le 2026-11-11 en boucle locale, requête au format proxy), EWeb dans NeoST (STE 4 Mo,

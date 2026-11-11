@@ -6,6 +6,39 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Restes de la chasse aux bugs ; format d'état v62 (2026-11-11)
+
+- **DMA disque/ACSI.** Tout cycle DMA est un cycle RAM ([D] `gstmcu.v:226 @ 4a6db7cc`) : jamais
+  la ROM ni la cartouche, et les vecteurs `$0-$7` sont la copie RAM, lue et écrite. Hatari lit le
+  plan du CPU et perd l'écriture.
+- **WRITE TRACK sur STX** relu comme la puce, avec l'analyse des .ST (`src/io/WrittenTrack`) :
+  marques derrière trois `$F5`, CRC relus, fenêtre de 43 octets ([B] WD177X-00 p. 1-9, 1-13,
+  1-18) ; les drapeaux STX suivent les défauts. A/B sur 80 images, ST et STE : identique.
+- **ACIA (STE).** Un octet impair à `$FFFC01-07` est un cycle de la puce, comme le câble le GST
+  MCU (sans UDS/LDS, VPA sur `$FFFC00-$FFFDFF`, [D] `gstmcu.v:175,181`) : l'écriture atteint le
+  registre pair (le 68000 recopie l'octet sur D8-D15, [D] fx68k), la lecture a son effet et rend
+  `$FF`, l'attente E-clock vaut pour toute la zone. Câblage des MC6850 confirmé par le schéma du
+  Sparrow (feuille 2/5). ST et Mega ST inchangés, [F].
+- **Clés cartouche.** Gardées au reset à chaud : le port n'a pas de ligne /RESET ([E] brochages
+  de 1986 et 1989). La clé Notator s'arme dans le cycle même d'un accès octet impair à `$FA00EB`.
+- **Microwire, cas Systematic Error.** La démo (Imagina, 1993) écrit le masque `$FF8924` en plein
+  décalage puis attend qu'il relise `$7FF`. Validée sur le fer, elle exclut une puce qui
+  prendrait le masque sans arrêter ni relancer le transfert ; ignorer (Hatari, NeoST) et arrêter
+  (MiSTery) la font tourner tous deux. Règle d'Hatari gardée en [F] ; auto-test de la séquence
+  exacte, recette dans `docs/CASE_STUDIES.md`.
+- **GEMDOS hôte, par processus (suite).** Redirections Fforce tenues par processus et recopiées à
+  la naissance de l'enfant ; un enfant de Pexec 3 garde le dossier de sa naissance. Fdelete et
+  Fcreate rendent EACCDN si un autre processus tient le fichier, sinon il est détruit et son
+  Fclose rend EINTRN. Fopen et Fdelete d'un dossier rendent EFILNF, Frename entre lecteurs
+  ENSAME, Dsetpath avec un joker EPTHNF (le retrait du masque de juillet, sans preuve, est
+  retiré) ; sous EmuTOS, les codes suivent la ROM. Attributs caché, système et archive persistés :
+  natifs sous Windows, attribut étendu `user.neost.tosattr` ailleurs, rien sous `--gemdos-ro`.
+  Banc A/B : de 113 à 79 écarts, tous propres au montage.
+- **Format d'état v62.** Redirections par processus et drapeau « détruit » par handle.
+- **CI.** `neost-modem-test` bâti avec `neost-headless` (les jobs NAT et ASan sortaient en
+  « Build requis ») ; la charge de référence du banc de débit nomme `disks/diskA.st`, sans quoi
+  le boot EmuTOS ralentit de ~20 % et mfp/boot sortait de la tolérance.
+
 ## Chantiers de la chasse aux bugs fermés ; format d'état v61 (2026-11-11)
 
 Les items *(proposé)* ouverts par la chasse du même jour, traités en six lots parallèles

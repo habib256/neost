@@ -888,7 +888,7 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 61; // GEMDOS : processus, attributs, dates de handle, alias 8.3 (v60 : en-tête de session ; v59 : USB)
+static constexpr uint16_t kStateVersion = 62; // GEMDOS : Fforce par processus, handle détruit (v61 : processus, attributs, dates, alias 8.3 ; v60 : en-tête de session)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
