@@ -82,6 +82,7 @@
   "NEOST_BLIT_TRACE": 1,
   "NEOST_BLIT_START_DIAG": 1,
   "NEOST_DMASND_TRACE": 1,
+  "NEOST_MW_TRACE": "écritures Microwire $FF8922-25 (décalages restants, donnée, masque, cycle) et commandes LMC1992 décodées ; stderr uniquement.",
   "NEOST_FDC_DEBUG": 1,
   "NEOST_FDC_FLUSH_DIAG": 1,
   "NEOST_FDC_LATE_DIAG": 1,

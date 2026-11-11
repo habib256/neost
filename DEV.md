@@ -292,6 +292,8 @@ tail t.txt                                   # localiser la boucle d'attente (PC
 #   DMA STE : NEOST_DMASND_TRACE=1 émet chaque fetch FIFO au format « DMA snd fifo refill »
 #   d'Hatari (--trace dmasound) → diff direct des séquences adr/contenu ; étalon dédié
 #   tools/make_dmasnd_test.py (tampon modifié pendant la lecture, cas Mental Hangover)
+#   Microwire : NEOST_MW_TRACE=1 trace chaque écriture $FF8922-25 (décalages restants)
+#   et chaque commande LMC1992 décodée ; à confronter à Hatari --trace dmasound
 #   DIGIDRUM : tools/make_digidrum_test.py — carré ~997 Hz écrit dans le registre de VOLUME
 #   du YM à 7 979 Hz (Timer A), tonalités coupées. C'est le seul de nos étalons qui
 #   DISCRIMINE une synthèse horodatée d'une lecture « en direct » des registres : un flux
