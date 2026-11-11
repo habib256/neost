@@ -13,6 +13,7 @@ Ce qui reste OUVERT est dans [`../TODO.md`](../TODO.md).
 
 | Jeu | Verdict | Piste / renvoi |
 |-----|---------|----------------|
+| **Systematic Error (Imagina, 1993)**, STE : masque Microwire écrit pendant un décalage (2026-11-11) | ✅ **Contrainte établie, règle non tranchée.** La boucle d'init `$F1AC` écrit `$FF8924` 28 cycles après la donnée précédente, en plein décalage, puis attend que le masque relise `$7FF`. La démo tourne sur le fer : une puce qui prendrait le masque sans arrêter ni relancer le transfert la bloquerait (masque tourné de 13 crans). Ignorer (Hatari, NeoST) et arrêter (MiSTery) la laissent tourner tous deux ; seule la commande interrompue `$048C` (aigus +12 dB) diffère : appliquée chez Hatari et NeoST, perdue chez MiSTery. | [Recette et contre-épreuve](#systematic-error--le-masque-microwire-écrit-en-plein-décalage-2026-11-11). |
 | **Vroom**, écran bruité sous TOS 2.06 (2026-11-04) | **Cause isolée : la VBL du jeu désélectionne le lecteur pendant le chargement.** Erreur ignorée, tampon périmé copié sur l’écran. Un octet neutralisant l’arrêt automatique fait passer le même état. Cœur inchangé, fréquence réelle inconnue. | [Recette et contre-épreuve](#vroom-sous-tos-206--la-vbl-désélectionne-le-lecteur-pendant-le-chargement-2026-11-04). |
 | **TOS 2.06 UK**, double faute au démarrage (2026-11-04, jugé le 2026-11-10) | **Course réelle de la ROM ; fréquence due au tirage discret (2026-11-10).** NeoST 3/256, Hatari 0/1024 : une seule trajectoire de boot touche une fenêtre de 16 cycles, le réseau des trajectoires étant figé par la phase MFP/CPU au reset. **Cause démontrée dans NeoST : collision de pile et de contexte GEMDOS.** Reproduite avec `diskA.st`, sans Vroom ; masquer la fenêtre de changement de pile débloque le même état. Cœur inchangé, datation matérielle non établie. | [Trace et recette publique](#tos-206--la-vbl-écrase-le-contexte-sur-la-pile-temporaire-2026-11-04). |
 | **TOS 2.05 FR**, écran uniforme avec le profil ST/Mega ST (2026-11-04) | **Corrigé par le choix du profil compatible, sans patch TOS.** `$E00096` accède au son DMA STE avant l'installation des vecteurs. Le profil ST partait ensuite en RAM vide. NeoST sélectionne désormais STE ; STE/Mega STE déjà choisis sont conservés. Hatari contourne cette incompatibilité par les patchs `TP_ANTI_STE`. | `tos205fr.img`, ST demandé, 1 Mo, `diskA.st`, SPACE 100/300 tenu 8 trames, capture 2000 : bureau, 0 pixel d'écart avec STE explicite et Hatari STE sans patch. Audit détaillé dans `HATARI_AUTOMATION.md`, section « Patchs TOS ». |
@@ -1090,3 +1091,43 @@ non reproduit ensuite (trois comparaisons simultanées passent). `--jobs` ne par
 disques. `compare_titles.py` garde désormais la cause d'un échec (code de sortie, délai, fin du
 journal) au lieu du début de la ligne de commande.
 
+## Systematic Error : le masque Microwire écrit en plein décalage (2026-11-11)
+
+Recette : `disks/st/systematic_error.msa` (Imagina, 1993, image fournie par l'auteur, sha256
+`7af68f56…`, non versionnée), STE, `tos162fr.img`, 1 Mo :
+`NEOST_MW_TRACE=1 neost-headless roms/tos162fr.img --machine ste --mem 1m --disk
+disks/st/systematic_error.msa --disk-ro --frames 1000`. Sous EmuTOS 256 la démo reste sur un
+écran noir, chez NeoST comme chez Hatari : elle demande un TOS Atari.
+
+Vers la trame 722, la routine `$F19E` coupe le son DMA puis envoie trois commandes LMC1992 :
+
+```
+F1AC  move.w #$7ff,$ff8924     ; masque
+F1B2  cmpi.w #$7ff,$ff8924     ; attend que le masque relise $7FF
+F1B8  bne    F1B2
+F1BA  move.w (a0)+,$ff8922     ; donnée : $0001, $048C, $0449
+F1BE  dbra   d0,F1AC
+```
+
+Le masque de la commande suivante tombe 28 cycles après la donnée, au troisième des seize
+décalages. Les règles en présence :
+
+- [D] Hatari `dmaSnd.c:1195-1206, 1238-1244 @ f0736b24` ignore l'écriture ; NeoST fait de même.
+  Le masque tourne jusqu'au bout et relit `$7FF` après 124 cycles ; `$048C` (aigus 12) puis
+  `$0449` (basses 9) s'appliquent. Trace Hatari `--trace dmasound` : « new trebble=0xc »,
+  « new bass=0x9 ».
+- [D] MiSTery `gstshifter.v:332-367 @ gstmcu 4a6db7cc` arrête le transfert (commits gstmcu
+  `d90a1dca`, qui relançait, puis `05cf1df0`, qui arrête, le 2020-01-21 : « Systematic Error
+  does it ») : le masque relit `$7FF` aussitôt, `$048C` est perdu, seules les basses passent.
+
+La démo tourne sur un vrai STE ([A], logiciel réel validé sur matériel). Elle prouve donc que
+le masque finit par relire la valeur écrite. Une puce qui prendrait l'écriture sans arrêter ni
+relancer le transfert le laisserait tourné de 13 crans, et la boucle ne sortirait plus. Les deux
+règles restantes la font tourner ; elle ne les départage pas, et elle n'écrit jamais la donnée
+pendant un décalage. **Contre-épreuve** : la règle de MiSTery greffée dans `DmaSound::write8`
+laisse sortir la boucle de `tests/dmasound_microwire_timing_logic.cpp` et ne change que les aigus
+(6 au lieu de 12).
+
+NeoST garde la règle d'Hatari, marquée [F]. Ce qui tranchera : la musique de la démo enregistrée
+sur un vrai STE (aigus relevés de 12 dB ou non), ou la netlist du Shifter STE (l'archive des ASIC
+n'a que le GSTMCU).

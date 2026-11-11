@@ -125,6 +125,39 @@ int testDmaSoundMicrowireTiming() {
         check.equal("fin annule source échue", rig.due(), -1);
         check.equal("décodage exact à fin", rig.sound.masterGain() < 0.001f, true);
     }
+    {
+        // Systematic Error (Imagina, 1993) : boucle d'init $F1AC, espacements relevés sous
+        // TOS 1.62 (NEOST_MW_TRACE) — masque, +40 donnée, puis masque 28 cycles après la
+        // donnée, en plein décalage, et attente « cmpi.w #$7ff,$ff8924 / bne » (28 cycles
+        // par tour). La démo tourne sur le fer : la boucle DOIT sortir à chaque commande.
+        // Ignorer l'écriture (règle actuelle, [F] contre l'arrêt de MiSTery) applique
+        // aussi la commande interrompue : aigus 12 ($048C) puis basses 9 ($0449).
+        Rig rig;
+        const uint16_t cmds[3] = {0x0001, 0x048C, 0x0449};
+        bool exits = true;
+        for (uint16_t cmd : cmds) {
+            rig.bus.write16(0xFF8924, 0x07FF);
+            int polls = 0;
+            rig.live += 12;
+            rig.scheduler.runTo(rig.live);
+            while (rig.bus.read16(0xFF8924) != 0x07FF && polls < 64) {
+                rig.live += 28;
+                rig.scheduler.runTo(rig.live);
+                ++polls;
+            }
+            exits = exits && polls < 64;
+            rig.live += 28;
+            rig.scheduler.runTo(rig.live);
+            rig.bus.write16(0xFF8922, cmd);
+            rig.live += 28;                        // dbra puis masque de la commande suivante
+            rig.scheduler.runTo(rig.live);
+        }
+        rig.live += 256;
+        rig.scheduler.runTo(rig.live);
+        check.equal("Systematic Error : l'attente du masque sort", exits, true);
+        check.equal("Systematic Error : aigus de la commande interrompue", rig.sound.lmcTreble(), 12);
+        check.equal("Systematic Error : basses de la dernière commande", rig.sound.lmcBass(), 9);
+    }
     std::printf("[dmasound-microwire-timing] %d checks, %d FAIL\n", check.count, check.failures);
     return check.failures;
 }

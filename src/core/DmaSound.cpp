@@ -281,6 +281,10 @@ void DmaSound::decodeMicrowire() {
     if (cmdLen < 11 || ((cmd >> (cmdLen - 2)) & 0x03) != 0x02)
         return;
 
+    static const bool mwTrace = std::getenv("NEOST_MW_TRACE") != nullptr;
+    if (mwTrace)
+        std::fprintf(stderr, "Microwire command=%03x len=%d (data=%04x mask=%04x)\n",
+                     unsigned(cmd & 0x7FF), cmdLen, mwData_, mwMask_);
     switch ((cmd >> 6) & 0x07) {
         case 0: mwMixing_ = cmd & 0x03; break;
         case 1: mwBass_   = cmd & 0x0F; break;
@@ -566,7 +570,16 @@ uint8_t DmaSound::read8(uint32_t addr) {
 }
 
 void DmaSound::write8(uint32_t addr, uint8_t v) {
-    if ((addr & 0xFF) >= 0x22 && (addr & 0xFF) <= 0x25) catchUpMicrowire();
+    if ((addr & 0xFF) >= 0x22 && (addr & 0xFF) <= 0x25) {
+        catchUpMicrowire();
+        // Trace Microwire (NEOST_MW_TRACE=1) : chaque écriture data/mask, avec le
+        // nombre de décalages restants (≠ 0 = écriture pendant un transfert).
+        static const bool mwTrace = std::getenv("NEOST_MW_TRACE") != nullptr;
+        if (mwTrace)
+            std::fprintf(stderr, "Microwire write $FF89%02X=%02x width=%d steps=%d data=%04x mask=%04x cyc=%lld\n",
+                         unsigned(addr & 0xFF), v, bus_.ioAccessWidth(), mwSteps_, mwData_, mwMask_,
+                         (long long)(sched_ ? sched_->liveNow() : 0));
+    }
     switch (addr & 0xFF) {
         case 0x01: {                                  // contrôle : play / repeat
             updateDac();                               // date l'état AVANT le changement (≙ Sound_Update
@@ -620,9 +633,25 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
             break;
         }
         // Microwire : mots 16 bits ($FF8922 data, $FF8924 mask). Pendant un
-        // transfert EN COURS (shift), les écritures data/mask sont IGNORÉES —
-        // « Only update, if no shift is in progress » (Hatari DmaSnd_MicrowireData/
-        // Mask_WriteWord, [D] dmaSnd.c:1195-1206 @ f0736b24 et 1238-1244).
+        // transfert EN COURS (shift), les écritures data/mask sont IGNORÉES.
+        // [D] Hatari dmaSnd.c:1195-1206 et 1238-1244 @ f0736b24 : « Only update, if no
+        //     shift is in progress ».
+        // [D] MiSTery gstshifter.v:332-367 @ gstmcu 4a6db7cc : une écriture data relance le
+        //     transfert avec la nouvelle donnée ; une écriture mask l'ARRÊTE (commits gstmcu
+        //     d90a1dca puis 05cf1df0 du 2020-01-21, « Systematic Error does it »).
+        // [A] Systematic Error (Imagina, 1993, STE), logiciel réel validé sur matériel — cas
+        //     tranché dans docs/CASE_STUDIES.md. Sa routine d'init ($F1AC) envoie trois
+        //     commandes par « move.w #$7ff,$ff8924 / cmpi.w #$7ff,$ff8924 / bne / move.w
+        //     (a0)+,$ff8922 » : l'écriture du masque tombe 28 cycles après la donnée
+        //     précédente, en plein décalage. Ce qu'elle prouve : après cette écriture, le
+        //     masque finit par relire la valeur écrite, sinon la démo reste bloquée. Une
+        //     puce qui prendrait le masque sans arrêter ni relancer le transfert le
+        //     laisserait tourné de 13 crans : exclu. Ignorer (Hatari, ici) et arrêter
+        //     (MiSTery) passent tous deux ; ils ne diffèrent que par la commande
+        //     interrompue ($048C, aigus +12 dB) : appliquée ici, perdue sous MiSTery.
+        // [F] Inconnu : ignorer ou arrêter, et l'écriture data en cours de décalage (la démo
+        //     n'en fait pas). Tranché par : la musique de la démo enregistrée sur un vrai STE
+        //     (aigus relevés de 12 dB ou non), ou la netlist du Shifter STE.
         case 0x22:
             if (mwSteps_ == 0) {
                 // L'autre octet vient du registre visible, déjà décalé à zéro

@@ -100,6 +100,8 @@ public:
     // S'applique à TOUT le son STE (YM2149 + DMA), comme la puce réelle. 1.0 par
     // défaut (0 dB) → aucun effet tant que le microwire n'est pas programmé.
     float   masterGain() const;
+    int     lmcBass()   const { return mwBass_; }     // registres LMC1992 décodés (auto-tests)
+    int     lmcTreble() const { return mwTreble_; }
 
     // Gains LINÉAIRES par canal du LMC1992 (volume maître × gauche, × droite). C'est
     // ce qui réalise le PANORAMIQUE STE : un jeu qui programme leftVolume≠rightVolume
