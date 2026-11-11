@@ -136,6 +136,9 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
 
 // Chemin du neost.cfg (à côté de build/, cf. exeDir).
 std::string cfgPath(const std::string& exeDir);
+// Slot de save-state : À CÔTÉ de neost.cfg, donc dans le dossier de configuration
+// utilisateur quand celui du binaire est en lecture seule (AppImage, .dmg, /usr/bin).
+std::string stateFilePath(const std::string& exeDir);
 
 // « sec,min,hour,wday,day,month,year » → Rtc::DateTime (false si la ligne ment).
 bool parseRtcConfig(const std::string& s, Rtc::DateTime& dt);

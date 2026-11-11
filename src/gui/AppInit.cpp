@@ -53,6 +53,7 @@
 #include "audio/DriveSound.hpp"
 #include "io/JoystickInput.hpp"
 #include "io/MediaScan.hpp"
+#include "util/JoyScript.hpp"     // parseHexU32 : même lecture de masque que le headless
 #include "io/DongleTable.hpp"
 #include "core/Framing.hpp"
 #include "util/HostPath.hpp"   // chemins hôte : UNE définition d'« absolu »
@@ -181,7 +182,18 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
             A.shotWinFrom   = std::atol(argv[++i]);
             A.shotWinMax    = std::atoi(argv[++i]);
         }
-        else if (a == "--key-hold" && i + 1 < argc)   A.keyHold = std::atoi(argv[++i]);
+        else if (a == "--key-hold" && i + 1 < argc) {
+            // Même borne que le headless : 0 ou négatif n'envoyait jamais le relâchement
+            // (touche collée), INT_MAX faisait déborder keyHold + 2.
+            const char* txt = argv[++i];
+            char* end = nullptr;
+            const long v = std::strtol(txt, &end, 10);
+            if (end == txt || *end || v < 1 || v > 216000) {
+                std::fprintf(stderr, "[main] --key-hold expects a frame count in 1..216000 (got '%s')\n", txt);
+                return 2;
+            }
+            A.keyHold = int(v);
+        }
         else if (a == "--scancode-at" && i + 2 < argc) {
             const long f = std::atol(argv[++i]);
             std::vector<uint8_t> sc;
@@ -194,7 +206,15 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
         }
         else if (a == "--joy-at" && i + 2 < argc) {
             const long f = std::atol(argv[++i]);
-            A.joyAt.emplace_back(f, (uint8_t)std::strtoul(argv[++i], nullptr, 0));
+            // Masque HEXA comme dans le headless et l'aide (« fire$80 ») : strtoul en
+            // base 0 lisait « 80 » en décimal et « $80 » comme 0, sans un mot.
+            const std::string txt = argv[++i];
+            uint32_t v = 0;
+            if (!neost::joyscript::parseHexU32(txt, v) || v > 0xFF) {
+                std::fprintf(stderr, "[main] --joy-at expects a hex mask (got '%s')\n", txt.c_str());
+                return 2;
+            }
+            A.joyAt.emplace_back(f, uint8_t(v));
         }
         else if (a == "--mouse-at" && i + 2 < argc) {
             const long f = std::atol(argv[++i]);
@@ -383,8 +403,14 @@ int appInit(App& A, int argc, char** argv) {
     std::fprintf(stderr, "[main] CPU core: %s | machine: %s | RAM: %s\n",
                  Cpu68k::coreName(machine.cpu.core()),
                  machineName(machType0), cfg.mem.c_str());
-    if (!machine.loadTos(tosPath))
+    if (!machine.loadTos(tosPath)) {
         std::fprintf(stderr, "[main] Starting without a TOS (the CPU will run on nothing).\n");
+    } else {
+        // Ce qui TOURNE (cf. App::hwRom) : la référence à laquelle applyConfig revient
+        // si une ROM demandée plus tard ne se charge pas.
+        A.hwRom = romLogical; A.hwMachine = cfg.machine; A.hwMem = cfg.mem; A.hwFpu = cfg.fpu;
+        A.hwValid = true;
+    }
     neost::stkeys::setCountryFromTos(machine.bus.rom);    // pays du TOS → surcharges keymap (FR/DE/UK…)
     if (!machine.loadDisk(diskPath))
         std::fprintf(stderr, "[main] No floppy mounted (%s).\n", diskPath.c_str());
@@ -418,10 +444,8 @@ int appInit(App& A, int argc, char** argv) {
         else cfg.acsi.clear();                 // image invalide → idem
     }
     A.usatanApply();
-#ifdef NEOST_WITH_NET
     // Modem Hayes (modem= dans neost.cfg) : commandes AT sur l'USART → pont TCP.
-    if (cfg.modem) A.modemApply(true);
-#endif
+    // Branché, comme le reste du réseau, par applyPeripherals ci-dessous.
     // EtherNEC (ethernec= dans neost.cfg) : NE2000 sur le port cartouche. Backend
     // par défaut = boucle locale (NetBackendNull une fois un pont NAT intégré
     // absent) : la carte est DÉTECTÉE par le pilote, sans trafic hôte v1.
@@ -431,34 +455,11 @@ int appInit(App& A, int argc, char** argv) {
     // backend : NAT ouvert → NAT, sinon boucle locale. La bascule est à chaud —
     // la carte vue par le pilote ST ne change pas, seul son « câble » change.
     A.natNet = std::make_unique<NatBackend>();
-    if (cfg.slirp)    A.natApply(true);           // AVANT : les applicateurs lisent A.neBackend()
-    if (cfg.netusbee) A.netUsbeeApply(true);
-    if (cfg.ethernec) A.etherApply(true);
-    machine.midi.setLoopback(cfg.midiLoopback);   // fiche MIDI OUT→IN (OFF par défaut)
-    // Clé Steinberg (dongle= dans neost.cfg) : /ROM3, cohabite avec le HD GEMDOS.
-    if (!cfg.dongle.empty()) {
-        const CartridgeKey::Model dm = cfg.dongle == "cubase2" ? CartridgeKey::Model::Cubase2
-                                     : cfg.dongle == "cubase3" ? CartridgeKey::Model::Cubase3
-                                     : cfg.dongle == "auto"    ? CartridgeKey::Model::Auto
-                                     : cfg.dongle == "notator" ? CartridgeKey::Model::Notator
-                                     : CartridgeKey::Model::None;
-        if (!machine.setDongle(dm)) {
-            A.stateMsg = "Steinberg key needs the cartridge port free (EtherNEC/NetUSBee)";
-            A.stateMsgFrames = 150;
-            cfg.dongle.clear();
-        }
-    }
-    // Périphériques des ports (joy0= … cartbutton= dans neost.cfg).
-    {
-        std::string* slots[] = { &cfg.joy0, &cfg.joy1, &cfg.rs232, &cfg.printer, &cfg.cartbutton };
-        for (int pi = 0; pi < int(PortDevices::Port::Count); ++pi) {
-            if (slots[pi]->empty()) continue;
-            const PortDevices::Device d = PortDevices::fromId(slots[pi]->c_str());
-            if (d == PortDevices::Device::None || !machine.plugPort(PortDevices::Port(pi), d))
-                slots[pi]->clear();   // identifiant inconnu ou connecteur inadapté : on oublie
-        }
-        machine.psg.setPortBDacGain(cfg.mixDac);
-    }
+    // Réseau (NAT, NetUSBee, EtherNEC), fiche MIDI, clé Steinberg (dongle=) et
+    // périphériques des ports (joy0= … cartbutton=) : APRÈS cartouche et disques durs,
+    // dans l'ordre unique d'App::applyPeripherals — le chargement d'un profil passe
+    // par la même fonction.
+    A.applyPeripherals();
     // Un périphérique que dongles.txt EXPLIQUE pour la disquette montée au démarrage
     // est réputé image-dérivé : on le marque comme auto-branché (sans rien brancher ni
     // débrancher ici) pour qu'un montage à chaud ultérieur le retire. Sans ça, la clé
@@ -591,6 +592,20 @@ int appInit(App& A, int argc, char** argv) {
     // la disposition de fenêtres du poste et n'y laisse rien (même règle que le gel
     // de saveConfig). IniFilename=nullptr coupe le chargement ET l'auto-save d'ImGui.
     if (A.harnessRun) ImGui::GetIO().IniFilename = nullptr;
+    else {
+        // imgui.ini À CÔTÉ de neost.cfg, pas dans le répertoire courant : il porte la
+        // disposition ancrée et la taille de la fenêtre, et le défaut d'ImGui (relatif
+        // au cwd) ne retenait rien depuis le Finder (cwd = /) et semait un fichier par
+        // dossier de lancement. ImGui garde le pointeur : chaîne statique.
+        static std::string iniPath;
+        iniPath = (std::filesystem::path(cfgPath(A.exeDir)).parent_path() / "imgui.ini").string();
+        // Reprise d'un imgui.ini laissé dans le répertoire courant par une version
+        // antérieure : la disposition de l'utilisateur n'est pas perdue au passage.
+        std::error_code iec;
+        if (!std::filesystem::exists(iniPath, iec) && std::filesystem::exists("imgui.ini", iec))
+            std::filesystem::copy_file("imgui.ini", iniPath, iec);
+        ImGui::GetIO().IniFilename = iniPath.c_str();
+    }
 #ifdef IMGUI_HAS_DOCK
     // Ancrage (branche `docking` de Dear ImGui) : les fenêtres de debug deviennent
     // des onglets d'une disposition persistante. Le MULTI-VIEWPORT (l'autre apport

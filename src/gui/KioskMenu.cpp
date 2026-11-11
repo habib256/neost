@@ -46,9 +46,12 @@ void kioskScanBrowse(App& A, const std::string& dir) {
     A.browseSel = 0;
     std::error_code ec;
     if (!fs::is_directory(dir, ec)) return;
-    for (const auto& e : fs::directory_iterator(dir, ec)) {
+    // Itération MANUELLE : l'incrément d'un range-for lève filesystem_error (clé USB
+    // retirée ou EIO pendant le parcours) et rien ne l'attrapait — la borne tombait.
+    for (fs::directory_iterator it(dir, fs::directory_options::skip_permission_denied, ec), end;
+         !ec && it != end; it.increment(ec)) {
         std::error_code e2;
-        if (e.is_directory(e2)) A.browseSubdirs.push_back(e.path().string());
+        if (it->is_directory(e2)) A.browseSubdirs.push_back(it->path().string());
     }
     std::sort(A.browseSubdirs.begin(), A.browseSubdirs.end(),
               [](const std::string& a, const std::string& b) {
@@ -106,11 +109,12 @@ void kioskComputeShortcuts(App& A) {
     for (const auto& r : roots) {
         std::error_code ec;
         if (!fs::is_directory(r, ec)) continue;
-        for (const auto& e : fs::directory_iterator(r, ec)) {
+        for (fs::directory_iterator it(r, fs::directory_options::skip_permission_denied, ec), end;
+             !ec && it != end; it.increment(ec)) {     // itération manuelle, cf. kioskScanBrowse
             std::error_code e2;
-            if (e.is_directory(e2))
-                add(e.path().string(),
-                    std::string(ICON_FA_HDD) + " " + e.path().filename().string());
+            if (it->is_directory(e2))
+                add(it->path().string(),
+                    std::string(ICON_FA_HDD) + " " + it->path().filename().string());
         }
     }
 }

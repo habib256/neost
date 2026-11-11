@@ -28,6 +28,20 @@ std::string cfgPath(const std::string& exeDir) {
     return resolved;
 }
 
+std::string stateFilePath(const std::string& exeDir) {
+    // Résolu une fois (appelé à chaque tour de boucle) ; le dossier utilisateur peut ne
+    // pas exister encore si aucun neost.cfg n'y a été écrit.
+    static const std::string resolved = [&] {
+        const std::filesystem::path dir = std::filesystem::path(cfgPath(exeDir)).parent_path();
+        std::error_code ec;
+        std::filesystem::create_directories(dir, ec);
+        // Pas de reprise de l'ancien neost.state : ce changement d'emplacement arrive
+        // avec le format v60, qui refuse de toute façon les états antérieurs.
+        return (dir / "neost.state").string();
+    }();
+    return resolved;
+}
+
 // Gain d'une voie du mixeur, borné comme le curseur de la page Sound (0..200 %).
 // Test EN POSITIF : NaN (fichier corrompu, « mix_ym=nan ») échoue toute comparaison
 // et passerait au travers d'un « if (v < 0) … if (v > 2) … ». Un gain NaN se propage

@@ -18,6 +18,7 @@
 #include "audio/MidiEndpoint.hpp"
 #include "audio/MidiOutHost.hpp"
 #include "gui/AppConfig.hpp"
+#include "core/MachineType.hpp"
 
 struct App;
 class Machine;
@@ -135,5 +136,15 @@ enum ConfigPage {
 
 // Suffixe pays d'une ROM → fréquence de balayage (« us » = 60 Hz NTSC).
 bool romIsNtsc(const std::string& filename);
+// Modèle en clair (« ST », « Mega ST », « STE », « Mega STE »).
+const char* machineLabel(MachineType t);
+// Le modèle RÉEL (Machine::machineType(), après adjustMachineForTos) diffère-t-il du
+// modèle DEMANDÉ (cfg.machine) ? `why` = raison courte, `advice` = quoi changer
+// (en anglais, pour l'interface). La barre d'état, la page Machine et le bandeau
+// de halt affichaient le modèle demandé : avec etos192us et « STE » choisi, la
+// machine tournait en ST, la barre disait STE, la page « up to date », et le bandeau
+// conseillait… de choisir STE — une boucle sans issue.
+bool machineForcedByTos(const std::string& requested, MachineType real,
+                        std::string& why, std::string& advice);
 void drawFloppyWindow(App& A, ConfigUi& ui);
 void drawConfigWindow(App& A, ConfigUi& ui);

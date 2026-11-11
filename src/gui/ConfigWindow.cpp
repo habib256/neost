@@ -7,6 +7,7 @@
 #include "gui/ConfigWindow.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -54,6 +55,40 @@ void drawFloppyWindow(App& A, ConfigUi& ui) {
 bool romIsNtsc(const std::string& filename) {
     const std::string stem = fs::path(filename).stem().string();
     return stem.size() >= 2 && stem.compare(stem.size() - 2, 2, "us") == 0;
+}
+
+const char* machineLabel(MachineType t) {
+    switch (t) {
+        case MachineType::St:      return "ST";
+        case MachineType::MegaSt:  return "Mega ST";
+        case MachineType::Ste:     return "STE";
+        case MachineType::MegaSte: return "Mega STE";
+    }
+    return "STE";
+}
+
+bool machineForcedByTos(const std::string& requested, MachineType real,
+                        std::string& why, std::string& advice) {
+    // Lecture SILENCIEUSE de cfg.machine : parseMachine journalise une valeur inconnue,
+    // et ceci est appelé à chaque trame par la barre d'état. Même défaut (STE).
+    const MachineType req = requested == "st"      ? MachineType::St
+                          : requested == "megast"  ? MachineType::MegaSt
+                          : requested == "megaste" ? MachineType::MegaSte : MachineType::Ste;
+    if (req == real) return false;
+    // Les deux bascules de Machine::adjustMachineForTos (comme Hatari) : TOS ≤ 1.04
+    // ne connaît pas le STE → ST ; TOS 1.06/1.62 n'existent que pour le STE → STE.
+    if (real == MachineType::St && machineIsSte(req)) {
+        why = req == MachineType::MegaSte ? "this TOS cannot run a Mega STE"
+                                          : "this TOS cannot run an STE";
+        advice = "Pick an STE ROM (EmuTOS 256 KB, TOS 1.62 or 2.06) on the ROM / TOS page.";
+    } else if (real == MachineType::Ste) {
+        why = "this TOS is STE-only";
+        advice = "Pick an ST ROM (TOS 1.00-1.04, EmuTOS 192 KB) on the ROM / TOS page.";
+    } else {
+        why = "set by the TOS";
+        advice = "The TOS in ROM decides the model: change it on the ROM / TOS page.";
+    }
+    return true;
 }
 
 void drawConfigWindow(App& A, ConfigUi& ui) {
@@ -139,6 +174,20 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
 
     switch (A.cfgPage) {
     case kCfgMachine: {
+        // Le modèle qui TOURNE, pas celui qui est demandé : c'est la ROM qui a le dernier
+        // mot (adjustMachineForTos), et le dire ici évite de rechoisir STE en boucle.
+        {
+            const MachineType real = ui.machine->machineType();
+            std::string why, advice;
+            if (machineForcedByTos(cfg.machine, real, why, advice)) {
+                ImGui::TextColored(ImVec4(1.f, .6f, .2f, 1.f), ICON_FA_WARNING " Running as %s (%s)",
+                                   machineLabel(real), why.c_str());
+                ImGui::TextDisabled("%s", advice.c_str());
+            } else {
+                ImGui::Text("Running as %s", machineLabel(real));
+            }
+            ImGui::Separator();
+        }
         ImGui::TextDisabled("Machine model");
         static const char* labels[] = { "ST", "Mega ST", "STE", "Mega STE" };
         static const char* ids[]    = { "st", "megast", "ste", "megaste" };
@@ -775,12 +824,48 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         ImGui::SetNextItemWidth(220.0f);
         ImGui::InputTextWithHint("##profname", "profile name", nameBuf, sizeof nameBuf);
         const std::string clean = profileFileName(nameBuf);
+        // Écraser un profil existant demande CONFIRMATION. Le test porte sur le chemin
+        // RÉEL, pas sur la liste : sous macOS (et Windows) le système de fichiers ignore
+        // la casse, « Demo » et « demo » sont le même fichier, et le profil patiemment
+        // réglé partait sans un mot sous un nom qui semblait neuf.
+        static std::string confirmSave, confirmSaveShown;
         ImGui::BeginDisabled(clean.empty() || frozen);
         if (ImGui::Button(ICON_FA_SAVE " Save current settings")) {
-            ui.reqSaveProfile = clean;
-            nameBuf[0] = '\0';
+            std::error_code pec;
+            if (fs::exists(fs::path(ui.profDir) / (clean + ".cfg"), pec)) {
+                confirmSave = clean;
+                confirmSaveShown = clean;   // nom tel qu'il existe sur le disque, si on le trouve
+                for (const std::string& n : listProfiles(ui.profDir)) {
+                    if (n.size() != clean.size()) continue;
+                    bool same = true;
+                    for (std::size_t i = 0; i < n.size() && same; ++i)
+                        same = std::tolower((unsigned char)n[i]) == std::tolower((unsigned char)clean[i]);
+                    if (same) { confirmSaveShown = n; break; }
+                }
+                ImGui::OpenPopup("##overwriteProfile");
+            } else {
+                ui.reqSaveProfile = clean;
+                nameBuf[0] = '\0';
+            }
         }
         ImGui::EndDisabled();
+        if (ImGui::BeginPopupModal("##overwriteProfile", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("A profile named \"%s\" already exists.", confirmSaveShown.c_str());
+            ImGui::TextDisabled("Overwrite it with the current settings?");
+            if (ImGui::Button("Overwrite")) {
+                // Le nom DÉJÀ sur le disque : un seul fichier, une seule casse.
+                ui.reqSaveProfile = confirmSaveShown;
+                nameBuf[0] = '\0';
+                confirmSave.clear();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+                confirmSave.clear();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
         if (frozen) ImGui::TextDisabled("(kiosk: frozen configuration, nothing is written)");
         ImGui::Separator();
 
@@ -853,8 +938,18 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_POWER_OFF " Apply and restart")) ui.reqApply = true;
     } else {
-        ImGui::TextDisabled("Machine up to date. Model, RAM, FPU and ROM are applied");
-        ImGui::TextDisabled("together, by a single restart.");
+        // « À jour » vis-à-vis de la config, mais la ROM a pu imposer un autre modèle :
+        // on le dit ici aussi, sinon ce pied de page affirme le contraire de la barre.
+        std::string why, advice;
+        const MachineType real = ui.machine->machineType();
+        if (machineForcedByTos(cfg.machine, real, why, advice)) {
+            ImGui::TextColored(ImVec4(1.f, .6f, .2f, 1.f), "Running as %s: %s.",
+                               machineLabel(real), why.c_str());
+            ImGui::TextDisabled("%s", advice.c_str());
+        } else {
+            ImGui::TextDisabled("Machine up to date. Model, RAM, FPU and ROM are applied");
+            ImGui::TextDisabled("together, by a single restart.");
+        }
     }
     ImGui::End();
 }

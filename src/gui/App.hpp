@@ -272,11 +272,27 @@ struct App {
     // précédent restait en place. Une clé Leader Board oubliée sur le port 1 force
     // HAUT+BAS en permanence (PortDevices::joyOverlay) — la manette du jeu suivant est
     // cassée, et cfg.joy1 ayant été persisté, ça survit au redémarrage.
-    // On note donc ce que l'auto-plug a posé, pour le retirer au montage suivant. On ne
-    // retire QUE ce qu'on a posé ET qui n'a pas bougé depuis : la page Dongles reste
+    // On note donc ce que l'auto-plug a posé, pour le retirer au RESET EXPLICITE suivant
+    // si la disquette de A ne le désigne plus (pas au simple changement de disquette :
+    // une vraie clé ne bouge pas quand on insère le disque 2 — cf. autoDongleSync). On
+    // ne retire QUE ce qu'on a posé ET qui n'a pas bougé depuis : la page Dongles reste
     // souveraine.
     PortDevices::Device autoPortDev[int(PortDevices::Port::Count)] = {};
     CartridgeKey::Model autoCartKey = CartridgeKey::Model::None;
+
+    // ─── Matériel RÉELLEMENT appliqué (modèle demandé, RAM, FPU, ROM) ────────
+    // `cfg` dit ce qu'on VEUT ; ces champs disent ce qui tourne. Sans eux, une ROM
+    // disparue entre la saisie et l'application (profil, préréglage) laissait une
+    // machine hybride — nouveau modèle, ancienne ROM — et le rom= manquant déjà écrit
+    // dans neost.cfg : « Starting without a TOS » au lancement suivant. applyConfig
+    // revient sur eux quand la ROM voulue ne se charge pas.
+    std::string hwRom, hwMachine, hwMem;
+    bool hwFpu = false;
+    bool hwValid = false;                  // faux tant qu'aucune ROM n'a été chargée
+    // Un chemin HORS de la fenêtre Configuration a changé cfg.rom/machine/mem (dépôt
+    // d'un TOS, repli d'applyConfig) : ses champs « en attente » doivent être ressemés,
+    // sinon « Apply and restart » remettrait l'ancienne valeur. Consommé par la boucle.
+    bool cfgUiResync = false;
 
     // ─── La SESSION : la machine émulée et ses périphériques hôtes ───────────
     // Tout ce que main() tenait en variables locales, et que la boucle ET les
@@ -361,6 +377,9 @@ struct App {
     void midiOutApply();
     void midiInApply();
     bool midiLearnUids();
+    // Réseau, clé cartouche et périphériques des ports depuis `cfg`, dans UN SEUL
+    // ordre — celui du démarrage — partagé par AppInit et le chargement d'un profil.
+    void applyPeripherals();
     void applyConfig();
     void switchKioskMode(bool on);
     void toggleFullscreen();
@@ -371,12 +390,23 @@ struct App {
 // passer un contexte : ils passent par ici. Tout le reste reçoit `App&`.
 App& app();
 
-// Retire du ST ce que l'AUTO-PLUG avait posé, et rien d'autre (cf. autoPortDev /
-// autoCartKey ci-dessus, où le pourquoi est écrit).
-void autoDongleRetract(App& A, Machine& machine, neost::appconfig::Config& cfg);
+// Accorde l'AUTO-PLUG (disks/dongles.txt) à l'image `image` du lecteur A. Branche ce
+// qu'elle désigne dans les emplacements LIBRES, sans jamais rebrancher ce qui y est
+// déjà (une clé rebranchée repart de zéro). `atReset` : reset machine explicite — seul
+// moment où l'on RETIRE ce que l'auto-plug avait posé et que l'image ne désigne plus
+// (cf. autoPortDev / autoCartKey ci-dessus). Renvoie ce qui a été branché, en clair ;
+// `changed` dit si `cfg` a bougé (à persister).
+std::string autoDongleSync(App& A, Machine& machine, neost::appconfig::Config& cfg,
+                           const std::string& image, bool atReset, bool& changed);
 
 // ─── Services libres (ils ne touchent pas à l'état, ou seulement au gel) ────
 bool fileExists(const std::string& p);
+// Bus::loadTos accepterait-il ce fichier ? (présent, régulier, 1 octet à 1 Mo). Test
+// fait AVANT d'appliquer un modèle, pour ne jamais le laisser sans sa ROM.
+bool romLoadable(const std::string& resolvedPath);
+// Le fichier a-t-il l'en-tête d'un TOS : BRA.S ($601E pour TOS 1.00, $602E ensuite)
+// puis une version plausible à l'offset 2 ? `size` reçoit la taille du fichier.
+bool looksLikeTosHeader(const std::string& path, std::uintmax_t& size);
 // Résout un chemin de données indépendamment du répertoire courant : tel quel,
 // puis relatif au répertoire de l'exécutable (utile quand on lance depuis build/).
 std::string resolveData(const std::string& given, const std::string& exeDir);
