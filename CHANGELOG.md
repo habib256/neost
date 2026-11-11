@@ -6,6 +6,29 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Blit HOG : la trame continue, l'hôte reprend la main (2026-11-11)
+
+- **Blitter.** Un blit HOG parti dans une instruction ne fige plus la trame : à la fin de trame
+  franchie pendant le blit, la suivante commence à son heure (HBL, Timer B, RENDER, VBL ; [D]
+  Hatari `blitter.c:356-375 @ f0736b24`). Avant, sur un blit de 4 trames, 3 VBL étaient perdues
+  et une arrivait 91 760 cycles en retard ; après, une VBL par trame, à 0-12 cycles de son
+  heure. A/B sur 86 images, STE et Mega STE : identique à l'octet.
+- **Blit HOG long.** `runFrame` rend la main à chaque trame : l'instruction est garée sur une
+  coroutine (`core/EmuFiber`, ucontext sous Linux et macOS, fibres sous Windows, 16 Mio de pile)
+  et reprise à l'appel suivant, sans patch de Moira (une version à deux fils doublait le temps
+  sous charge). Pendant ce temps, état, chargement, retour arrière, pas-à-pas et bascule kiosque
+  sont refusés avec un motif ; reset, reconfiguration et destruction abandonnent l'instruction
+  (`EmuFiber::Abort`, hors `std::exception`, traverse `Moira::execute`). Web, Android et ASan
+  gardent l'exécution d'un seul tenant (`NEOST_NO_FIBER=1` la force). `--reset-at N` au headless ;
+  `tools/check_hog_park.py` au palier fast. Porte `cpu_swap_gate` : 414/414 sans coroutine ; avec
+  elle, les empreintes hors trames garées concordent dans l'ordre avec l'exécution d'un seul
+  tenant.
+- Lethal Xcess, Just Musix, Stardust, Pirates et la suite Q du diagnostic Mega STE font des blits
+  HOG qui franchissent une fin de trame : leurs empreintes par numéro de trame hôte se décalent
+  après le premier blit. La référence de `cpu_swap_gate` s'enregistre après ce commit.
+- **Moira.** Le gel du cœur est levé par l'auteur (patch permis, resynchronisé ensuite avec
+  POM68K) ; ce lot n'en a pas eu besoin.
+
 ## Handles GEMDOS hors de la plage du TOS ; format d'état v63 (2026-11-11)
 
 - **GEMDOS hôte.** Les handles hôte passent de 64..127 à 88..127 (40 fichiers ouverts) : TOS

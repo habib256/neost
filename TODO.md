@@ -167,17 +167,11 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.3 Blitter
 
-- **Blit HOG long : l'hôte ne rend pas la main** · P2 ⏸ décision — 65 536 × 4 096 mots sur Mega
-  STE : une trame en 40 s, GUI figé. La tranche part au milieu d'une instruction
-  (`NeostMoira::sync` → `Blitter::onSlice`) : la suspendre impose de garder le cadre de Moira,
-  gelé. Seule voie exacte : `runFrame` sur un fil-coroutine (état, pas-à-pas et retour arrière
-  refusés tant qu'une instruction est garée ; pas de pthreads sur le web). La lancer hors
-  quantum décale son départ, ce que mesure `blitter_timer`. Mesuré : 75 ns par accès, dont 27 %
-  propres au blitter. À revoir à l'échange du cœur.
-- **Blit HOG à cheval sur la fin de trame : trame suivante non programmée** · P2 ⭘ · [D] — tant que
-  l'instruction n'est pas finie, `beginFrame_` n'est pas appelé : HBL, Timer B, RENDER et VBL de la
-  trame suivante attendent (`Machine.cpp`, arrêt à `lpf_`), le faisceau s'arrête pendant le blit.
-  [D] Hatari sert ses événements à chaque accès du blitter, passage de trame compris.
+- **Blit HOG long sans coroutine : web, Android, ASan** *(proposé)* · P3 ⏸ décision — `runFrame`
+  rend la main à chaque trame grâce à `core/EmuFiber` (ucontext sous Linux et macOS, fibres sous
+  Windows) ; le web (pas de `makecontext`, `emscripten_fiber` possible avec Asyncify), Android
+  (bionic sans `makecontext`) et les builds ASan gardent l'exécution d'un seul tenant : un blit de
+  plusieurs secondes y fige encore l'hôte. La version Windows n'est que compilée en croisé.
 
 Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → `docs/STBLITTER_BENCH.md`.
 Extension du banc à 16 MHz → § 2.

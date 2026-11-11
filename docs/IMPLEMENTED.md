@@ -1671,6 +1671,10 @@ fidèles à Hatari, pas des bugs.
   Cohérence observée pendant l'arbitrage à 8/16 MHz et en HOG/partagé ;
   155 contrôles CPU/blitter sous ASan/UBSan. La sonde MegaSTE v2 refuse
   directement une IRQ reçue pendant BUSY (douze configurations NeoST passent).
+- **Blit HOG à cheval sur une fin de trame** (2026-11-11) : la trame suivante est amorcée dans
+  l'instruction (`Machine::rollFrameInInstruction_`), HBL/Timer B/VBL à l'heure ; `runFrame`
+  rend la main à chaque trame, l'instruction garée sur une coroutine (`core/EmuFiber`,
+  bureau seulement). État et pas-à-pas refusés tant qu'une instruction est garée.
 - **Blitter — partage de bus (hog ET non-hog)** (port du modèle non-CE d'Hatari,
   blitter.c:860-946) : le transfert n'est plus instantané. **HOG** (bit6) : le blitter
   garde le bus jusqu'à `y_count=0`, le CPU est arrêté toute la durée (4 cycles par
