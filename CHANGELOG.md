@@ -17,6 +17,13 @@ l'ordre inverse. Version courante : **0.6.4**.
 - Essais : Rainbow Islands exige 4 Mo (remarque du mainteneur) et y entre en jeu en accord avec
   Hatari ; Super Hang-On, Nitro, Dynamite Dux, Cybernoid II et CarVup divergent en partie.
 
+## Logithèque : Pacemaker, démo STE, rejouée (2026-11-11)
+
+- `pacemaker_ste` : démo Paradox (1 Mo) sur STE/TOS 1.62, quatre scènes distinctes de 6000 à
+  12000, Hatari décalé d'exactement 9 trames à chaque capture. 25 parcours. Essayées sans suite :
+  E605 (écran noir, identique chez Hatari), More or Less Zero (retour au bureau après le disque 2),
+  Obsession, Cernit Trandafir et Just Musix 2 (à lancer du bureau).
+
 ## A32 clos : le Shifter en trois classes (2026-11-11)
 
 - **`VideoGlue`** (`Shifter.hpp`, méthodes dans `VideoGlue.cpp`) possède l'état de la machine Glue,
