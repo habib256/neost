@@ -78,8 +78,12 @@ REPS = 3          # on garde le MEILLEUR temps : le bruit d'ordonnancement ne fa
 
 # La première charge est l'ÉTALON DE VITESSE MACHINE (ratio 1 par construction).
 LOADS = [
-    ("boot", "boot EmuTOS nu (aucun blitter, aucun disque)",
-     ["roms/etos192fr.img", "--machine", "st"]),
+    # La disquette est NOMMÉE : les ratios de référence ont été calibrés quand le headless
+    # montait disks/diskA.st d'office. Sans elle, EmuTOS boote ~20 % plus lentement
+    # (1,3 s contre 1,1 s pour 600 trames) et mfp/boot sortait de la tolérance (CI du
+    # 2026-11-11, après « lecteur A vide sans --disk »).
+    ("boot", "boot EmuTOS nu (aucun blitter, disks/diskA.st)",
+     ["roms/etos192fr.img", "--machine", "st", "--disk", "disks/diskA.st", "--disk-ro"]),
     ("blitter", "blitter non-hog STE (~400 tranches/run)",
      ["roms/etos256us.img", "--machine", "ste", "--mem", "512k",
       "--disk", "disks/etalons/blitter_timer.st"]),
