@@ -13,8 +13,13 @@
 #include <cstdio>
 #include <cstdlib>
 
-// Fréquences d'échantillonnage STE (cristal 25.175 MHz / diviseurs), bits 0-1 de
-// $FF8921. Réf. doc matérielle / Hatari.
+// Fréquences d'échantillonnage STE, bits 0-1 de $FF8921 : SCLK / 1280, 640, 320, 160.
+// [D] Hatari clocks_timings.c @ f0736b24 — SCLK = oscillateur U303 à 8 010 613 Hz,
+//     distinct du quartz vidéo : 8 010 613 / 160 = 50 066,3 Hz.
+// [A] Relevés HWTST de tiers (atari-forum t=24862, relu par web.archive.org, 2013) : son
+//     DMA à 50 065-50 068 Hz (±4 Hz) sur un 1040 STE (Jungsi), un STE et un Mega STE PAL
+//     (Cyprian), un Mega STE NTSC (bullis1) et un Mega STE PAL (AtariZoll). La même cadence en
+//     PAL et en NTSC confirme l'oscillateur séparé.
 static const double kRate[4] = { 6258.0, 12517.0, 25033.0, 50066.0 };
 
 // Gain du canal numérique AVANT les gains LMC — port de la comptabilité Hatari

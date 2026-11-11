@@ -6,6 +6,24 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Relevés HWTST : horloges, son DMA et cache du Mega STE (2026-11-11)
+
+- Source : HWTST de ljbk, fil atari-forum t=24862 (2013-2016), relu par web.archive.org. Le
+  programme date la VBL en cycles CPU et chronomètre le CPU contre le quartz du MFP ; chaque
+  relevé nomme sa machine.
+- **Mega STE, cache** : la boucle d'HWTST va 2,1816 fois plus vite à 16 MHz avec cache (bullis1,
+  NTSC ; 2,1814 chez AtariZoll, PAL) et pas plus vite sans cache (0,9999). Dans NeoST, une boucle
+  de 22 cycles nominaux, arrondis à 24 sur le bus ST et 11 cycles bus en cache, donne 2,1818 et
+  1,0001. Nouveau verdict `hardware` au palier fast : `tools/run_hwtst_loop.py`. La boucle
+  d'HWTST n'est pas publiée : la sonde la reconstruit [F], et juge le rapport.
+- **Horloges** : STE et Mega STE PAL mesurés à 8,021 MHz, comme `kCpuHz`. Les STF PAL ont deux
+  quartz, 32,084988 et 32,0424 MHz (8,02 ou 8,01 MHz), et le Mega STE NTSC tourne à 8,054 MHz :
+  item « Horloges NTSC et quartz STF à 32,0424 MHz » au TODO. Rien ne change par défaut.
+- **Son DMA** : 50 065-50 068 Hz sur cinq STE et Mega STE, PAL comme NTSC : concorde avec
+  `kRate`. Le commentaire qui attribuait la cadence à un quartz de 25,175 MHz est corrigé.
+- Doc : la porte de l'échange compte 28 parcours, dont le diagnostic Magic Pockets ; Vroom n'en est
+  plus un.
+
 ## `compare_titles` : entrées d'Hatari décalables ; essais de parcours (2026-11-11)
 
 - `--hatari-delay N` (et `--hatari-delay-from F`, aussi lus du manifeste des parcours) : retarde

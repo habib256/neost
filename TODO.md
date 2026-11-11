@@ -91,7 +91,7 @@ externe (⏸).
 
 Ce qui doit exister **avant** le commit de l'échange pour qu'il se juge sur pièces.
 Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md). La porte rejoue
-**56 étalons, 22 parcours, la collection en ST, STE et Mega STE, et 42 sondes Mega STE**
+**56 étalons, 28 parcours (27 de compatibilité et le diagnostic Magic Pockets), la collection en ST, STE et Mega STE, et 42 sondes Mega STE**
 (8, 16 et 16 MHz + cache : blitter/IRQ, bus/cache, DMA disquette, blit sur ses propres registres).
 
 - **Enregistrer la référence** · P1 ⏸ cœur — `cpu_swap_gate.py --record` sur le commit de la
@@ -244,8 +244,8 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
 ### Campagnes à mener
 
 - **Logithèque jouée** · P2 ◐ — `tools/run_game_replay.py` garde 27 parcours de compatibilité
-  contre Hatari (médias originaux, changements de disquette, souris et glisser-déposer) ; les
-  diagnostics Vroom et Magic Pockets sont exclus par défaut. À étendre : parties plus longues,
+  contre Hatari (médias originaux, changements de disquette, souris et glisser-déposer) ; le
+  diagnostic Magic Pockets est exclu par défaut. À étendre : parties plus longues,
   musique et son, disques STE. Un script joystick tient chaque commande plus que la période
   d'interrogation du jeu. Chaque parcours ajouté entre aussi dans la porte d'échange (§ 2).
   Essais du 2026-11-10 : Rick Dangerous et Pang joués (lancés du bureau). Bombjack et Xenon 2
@@ -277,10 +277,20 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **Relevés de tiers** · P2 ◐ — passe du 2026-11-11 (sources relues par web.archive.org) : bus error à
   64 cycles sur ST/Mega ST (document Atari, appliqué), YM2149 (N. Pomarède, STF : `per`=0 ≡ 1 pour
   le bruit et l'enveloppe, bruit deux fois plus lent que le ton, R13 relance forme et phase —
-  concordant), wakestate à froid (Troed, WS3), machines des relevés bus error d'Hatari. À exploiter :
-  la bride BLANK du ST (diodes CR1-CR3, transcription KiCad du schéma C070231), les fréquences CPU
-  et du son DMA mesurées par HWTST (atari-forum t=24862). Les notes de Steven Tattersall ne
-  contiennent aucune mesure. Un relevé entre en `hardware` s'il nomme machine et protocole.
+  concordant), wakestate à froid (Troed, WS3), machines des relevés bus error d'Hatari, HWTST
+  (atari-forum t=24862) : horloges CPU de huit machines et son DMA à 50 066 Hz concordants, et
+  rapport de vitesse du Mega STE à 16 MHz (2,1816 avec cache, 0,9999 sans) reproduit à 0,0003
+  près — `tools/run_hwtst_loop.py`, palier fast, verdict `hardware`. À exploiter : la
+  bride BLANK du ST (diodes CR1-CR3, transcription KiCad du schéma C070231). Les notes de Steven
+  Tattersall ne contiennent aucune mesure. Un relevé entre en `hardware` s'il nomme machine et
+  protocole.
+- **Horloges NTSC et quartz STF à 32,0424 MHz** · P3 ⭘ · [A] — NeoST, comme Hatari, cadence le CPU
+  à 8,021 MHz quelle que soit la ROM (`kCpuHz`, `core/Pacing.hpp`). Relevés HWTST : Mega STE NTSC
+  à 8,0540 MHz ; Mega ST4 et plusieurs STF PAL à 8,0097-8,0101 MHz ; 1040 STF UK à 8,0064 MHz.
+  Le rapport CPU/MFP change donc de -0,14 % à +0,41 % selon la machine : Troed craignait que
+  Closure échoue sur 8,05 MHz. Option envisagée : un quartz choisi par machine et région, le
+  défaut restant 8,021 MHz pour ne déplacer aucune référence. Le rapport `31333/9600` du MFP
+  (`io/Mfp.cpp`) et `kCpuHz` sont les deux points à paramétrer.
 - **Documents primaires manquants** · P2 ⏸ source — HD6301 rapatrié le 2026-11-10 (Hitachi, *HD6301/HD6303 Series Handbook*, 1989) ; restent les schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE y est.
 - **A43 — dette de preuve** · P2 ⏸ — tout commentaire cite ses références (règle : `CLAUDE.md`) ;

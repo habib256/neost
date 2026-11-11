@@ -24,6 +24,14 @@ namespace neost::pacing {
 
 // Horloge CPU/bus du ST (PAL). LA référence : tout ce qui convertit des cycles
 // émulés en temps réel passe par ici.
+// [D] Hatari clocks_timings.c @ f0736b24 : quartz 32 084 988 Hz / 4 = 8 021 247 Hz.
+// [A] Relevés HWTST de tiers (atari-forum t=24862, 2013-2016), horloge CPU mesurée contre
+//     le quartz MFP de 2,4576 MHz : STE et Mega STE PAL 8 020 7xx-8 021 2xx Hz (Jungsi,
+//     Cyprian, AtariZoll) — concordant. Les STF PAL varient : Troed et exxos ont des STFM à
+//     32,084988 MHz (8,02 MHz), mais un Mega ST4, un 520 STF FR et un 1040 STF tournent à
+//     8,0097-8,0101 MHz (quartz 32,0424 MHz) et un 1040 STF UK à 8,0064 MHz. 8,02 MHz est
+//     donc un cas réel du ST ; les autres quartz ne sont pas modélisés, ni l'horloge NTSC
+//     (Mega STE NTSC mesuré à 8,0540 MHz) : NeoST, comme Hatari, garde l'horloge PAL.
 inline constexpr double kCpuHz = 8021248.0;
 // Même horloge, en ENTIER : les puces qui comptent des cycles émulés (RTC,
 // son DMA, UltraSatan) travaillent en int64 et n'ont que faire d'un double.

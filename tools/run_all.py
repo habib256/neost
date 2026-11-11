@@ -158,6 +158,9 @@ FAST = [
     # Détecteur de wakestate de Troed : longueur d'une ligne composée, sans Hatari ni disque privé.
     ("WSDETECT (Troed/SYNC : longueur de ligne par wakestate et par machine)",
      [sys.executable, str(TOOLS / "run_wsdetect.py")]),
+    # Relevés HWTST de tiers sur de vrais Mega STE : boucle registre à 8, 16 et 16 MHz + cache.
+    ("HWTST (Mega STE réel : rapport de vitesse 16 MHz sans cache et avec cache)",
+     [sys.executable, str(TOOLS / "run_hwtst_loop.py")]),
     # Le vrai pilote ENEC.STX sur la NE2000, sans réseau.
     ("STinG + ENEC.STX (le vrai pilote trouve la NE2000, hors réseau)",
      [sys.executable, str(TOOLS / "run_sting_boot.py")]),
