@@ -34,6 +34,7 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `run_megaste_diag.py` (suite Q, 12/12) | `rom` | Le diagnostic Field Service prouve le contrat attendu par le logiciel, pas le silicium. |
 | `run_timing_oracle.py`, `run_megaste_bus_oracle.py` | `hatari` | |
 | `run_game_replay.py` | `hatari` | Des parties jouées au joystick, mêmes masques des deux côtés, à l'image près. Hors paliers : Pillow et disques privés requis, à lancer à la main. |
+| `compare_sound.py` | `hatari` | Enveloppe sonore de vrais titres, au meilleur décalage. Repérage hors paliers ; Hatari filtre son mix, seuls les ratios se comparent. Hatari se tait quand le CPU s'arrête, NeoST laisse le YM tenir ses registres (`fuzcd084`). |
 | `run_gstmcu_bench.py` | `rtl` | Valide le banc contre un écran calculé, pose les références de `rtl_low_*`, contrôle la latence de DTACK par zone. |
 | `run_fx68k_bench.py` (48 variantes, 34 en accord) | `rtl` | Moira nu contre fx68k, cycle bus par cycle bus. Verdicts posés dans `tests/reference/fx68k_bench.json` ; un écart localise, ne tranche pas. → [`FX68K_BENCH.md`](FX68K_BENCH.md) |
 | `run_stcpu_bench.py` (48 000 lectures, 1 écart) | `rtl` | Le CPU lit le compteur vidéo, en boucle, en HBL et en VBL, sur fx68k + GSTMCU et dans NeoST. → [`STCPU_BENCH.md`](STCPU_BENCH.md) |

@@ -239,8 +239,11 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
 
 - **Logithèque jouée** · P2 ◐ — `tools/run_game_replay.py` garde 27 parcours de compatibilité
   contre Hatari (médias originaux, changements de disquette, souris et glisser-déposer) ; le
-  diagnostic Magic Pockets est exclu par défaut. À étendre : parties plus longues,
-  musique et son, disques STE. Un script joystick tient chaque commande plus que la période
+  diagnostic Magic Pockets est exclu par défaut. À étendre : parties plus longues, disques STE.
+  Son : première passe du 2026-11-11 (`tools/compare_sound.py`, enveloppe contre Hatari, 60 s après
+  le boot, ST et STE) : 21 et 24 titres sonores concordants, niveau médian 0,985 et 1,0 ; 71 et 69
+  restent muets au bureau, à rejouer lancés. Dynamite Dux reste à écouter (0,64 en ST, 0,72 en STE).
+  Un script joystick tient chaque commande plus que la période
   d'interrogation du jeu. Chaque parcours ajouté entre aussi dans la porte d'échange (§ 2).
   Essais du 2026-11-10 : Rick Dangerous et Pang joués (lancés du bureau). Bombjack et Xenon 2
   atteignent le jeu mais divergent au joystick générique (chargement décalé de quelques trames) ;

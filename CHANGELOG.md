@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Le son des titres comparé à Hatari (2026-11-11)
+
+- `tools/compare_sound.py`, hors paliers : même disque dans NeoST et Hatari, enveloppe RMS au meilleur
+  décalage. Sur 95 images, 60 s après le boot : ST 21 concordants, 1 à écouter (Dynamite Dux),
+  71 muets des deux côtés, 2 muets côté Hatari ; STE 24 concordants, 69 muets, 1 de chaque côté.
+  Niveau médian NeoST/Hatari : 0,985 et 1,0.
+- `fuzcd084` s'arrête en double faute dans les deux émulateurs : Hatari se tait, NeoST laisse le YM
+  tenir ses registres. Super Sprint, à peine sonore, passe sous le seuil d'un côté ou de l'autre.
+
 ## Borne : répétition par direction ; ménage (2026-11-11)
 
 - Menu de la borne : le front de navigation se juge par direction (`gui/NavRepeat.hpp`, testé).
