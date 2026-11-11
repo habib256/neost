@@ -9,12 +9,15 @@ l'ordre inverse. Version courante : **0.6.4**.
 ## Le son des titres comparé à Hatari (2026-11-11)
 
 - `tools/compare_sound.py`, hors paliers : même disque dans NeoST et Hatari, enveloppe RMS au meilleur
-  décalage. Sur 95 images, 60 s après le boot : ST 21 concordants, 1 à écouter (Dynamite Dux),
+  décalage. Sur 95 images, 60 s après le boot : ST 21 concordants, 1 écart expliqué (Dynamite Dux),
   71 muets des deux côtés, 2 muets côté Hatari ; STE 24 concordants, 69 muets, 1 de chaque côté.
   Niveau médian NeoST/Hatari : 0,985 et 1,0. `--launch` démarre le plus gros programme de la racine :
   6 et 7 titres de plus, concordants.
 - `fuzcd084` s'arrête en double faute dans les deux émulateurs : Hatari se tait, NeoST laisse le YM
   tenir ses registres. Super Sprint, à peine sonore, passe sous le seuil d'un côté ou de l'autre.
+- Dynamite Dux : images en phase, mais écritures YM différentes. Le morceau dépend de l'angle de
+  disquette tiré au démarrage : NeoST (graines 1, 4) et Hatari (graines 2, 3, 4) jouent la même
+  séquence. Pas un défaut ; pour comparer ce titre, il faut un tirage qui tombe du même côté.
 
 ## Borne : répétition par direction ; ménage (2026-11-11)
 
@@ -47,8 +50,8 @@ l'ordre inverse. Version courante : **0.6.4**.
   essayé en session graphique. Passé sur les 95 images de la collection en ST et en STE, à deux
   instants, STX compris : 380 cas sur 380. Cette passe a montré qu'exclure toute commande FDC privait
   d'instantané les chargeurs qui lisent sans relâche (Epic, Enchanted Land, Super Hang-On, Vroom) :
-  seule une commande sur un STX suspend désormais l'anneau. Le franchissement d'une écriture STX n'a
-  pas de test.
+  seule une commande sur un STX suspend désormais l'anneau. Le refus de franchir une écriture STX est
+  testé au niveau de l'anneau, avec une écriture simulée.
 
 ## Relevés HWTST : horloges, son DMA et cache du Mega STE (2026-11-11)
 

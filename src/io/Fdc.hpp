@@ -138,6 +138,7 @@ public:
     // Écritures STX depuis le lancement : leurs overlays et le .wd1772 compagnon ne se
     // copient pas, un retour arrière ne franchit donc pas une écriture STX.
     uint64_t stxWrites() const { return stxWrites_; }
+    void     noteStxWriteForTest() { ++stxWrites_; }   // --rewind-test : sans STX ni programme qui écrive
     std::shared_ptr<const MediaCopy> copyMedia(int drive) const;
     // Remonte le média copié (chemin, puis contenu .ST et overlays) et réécrit le fichier
     // hôte au même instant. Faux si l'image ne se remonte plus.

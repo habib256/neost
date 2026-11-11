@@ -2350,12 +2350,19 @@ int main(int argc, char** argv) {
         const bool filled = waitSnapshots(3);
         rewind.setBudget(1);
         const bool budget = filled && rewind.count() == 1;
+        // Une écriture STX n'est pas réversible : ce qui la précède n'est plus accessible,
+        // mais un instantané pris après reste bon.
+        rewind.setBudget(Rewind::kDefaultBudget);
+        bool stx = waitSnapshots(1);
+        machine.fdc.noteStxWriteForTest();
+        stx = stx && !rewind.stepBack(machine, &why) && rewind.count() == 0;
+        stx = stx && waitSnapshots(1) && rewind.stepBack(machine, &why);
         rewind.setEnabled(false);
         const bool off = rewind.count() == 0 && !rewind.stepBack(machine, &why);
-        std::fprintf(stderr, "[rewind-test] state %s | replay %s | media %s | budget %s | off %s\n",
+        std::fprintf(stderr, "[rewind-test] state %s | replay %s | media %s | budget %s | stx %s | off %s\n",
                      sameState ? "OK" : "DIFF", sameReplay ? "OK" : "DIFF", media ? "OK" : "FAIL",
-                     budget ? "OK" : "FAIL", off ? "OK" : "FAIL");
-        return (sameState && sameReplay && media && budget && off) ? 0 : 1;
+                     budget ? "OK" : "FAIL", stx ? "OK" : "FAIL", off ? "OK" : "FAIL");
+        return (sameState && sameReplay && media && budget && stx && off) ? 0 : 1;
     }
 
     // Save-state — test de DÉTERMINISME (le vrai) : run N trames → save A → passe DIRECTE
