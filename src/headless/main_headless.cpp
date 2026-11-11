@@ -432,6 +432,23 @@ int enecSelfTest(Machine& machine) {
     (void)next;
     check((rsr & 0x01) && rlen == sizeof frame + 4, "RX ring packet header (status/len)");
 
+    // --- 6. Remote DMA à cheval sur PSTOP : le pointeur repart à PSTART -------
+    // [B] DP8390D § 9.0, p. 15 (cf. Ne2000::advanceRemoteDma).
+    const uint16_t edge = uint16_t(kRxStop) * 256u - 2u;
+    const uint8_t wrap[4] = {0x5A, 0xA5, 0x3C, 0xC3};
+    wr(0x08, uint8_t(edge)); wr(0x09, uint8_t(edge >> 8));
+    wr(0x0A, 4); wr(0x0B, 0);
+    wr(0x00, 0x12);                           // Remote Write
+    for (uint8_t b : wrap) wr(0x10, b);
+    const bool rsarWrapped = rd(0x08) == uint8_t(kRxStart * 256u + 2u)
+                          && rd(0x09) == uint8_t((kRxStart * 256u + 2u) >> 8);
+    wr(0x08, uint8_t(edge)); wr(0x09, uint8_t(edge >> 8));
+    wr(0x0A, 4); wr(0x0B, 0);
+    wr(0x00, 0x0A);                           // Remote Read
+    bool wrapOk = rsarWrapped;
+    for (uint8_t b : wrap) wrapOk = wrapOk && rd(0x10) == b;
+    check(wrapOk, "remote DMA wraps PSTOP -> PSTART");
+
     std::fprintf(stderr, "[enec-selftest] %d passed, %d failed\n", passed, failed);
     return failed == 0 ? 0 : 1;
 }

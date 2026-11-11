@@ -118,6 +118,7 @@ private:
     uint8_t page1Read(uint8_t reg);
     void writeReg(uint8_t reg, uint8_t v);   // dispatch selon la page (cr_ bits 6-7)
     uint8_t readReg(uint8_t reg);
+    void    advanceRemoteDma();      // RSAR++, enroulé à PSTOP (fiche § 9.0)
     uint8_t remoteDmaReadByte();             // port données $10 en lecture
     void    remoteDmaWriteByte(uint8_t v);   // port données $10 en écriture
     void    transmit();                      // commande TXP → envoi via backend

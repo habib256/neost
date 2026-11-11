@@ -69,6 +69,11 @@ doc() {  # <fichier> <sha256> <url>
   echo "$2  $DOCS/$1" | shasum -a 256 -c --status \
     || { echo "empreinte inattendue : $1" >&2; exit 1; }
 }
+docgz() {  # <fichier> <sha256 du fichier décompressé> <url .gz>
+  [[ -s "$DOCS/$1" ]] || curl -fsSL -A 'Mozilla/5.0' "$3" | gunzip > "$DOCS/$1"
+  echo "$2  $DOCS/$1" | shasum -a 256 -c --status \
+    || { echo "empreinte inattendue : $1" >&2; exit 1; }
+}
 doc MC68901_Jan84.pdf 5441a092562cc5b55bb167298030647622132e0061c0be8d976e25fb60ba959c \
     "$BITS/motorola/68000/MC68901_Multi-Function_Peripheral_Jan84.pdf"
 doc MK68901.pdf 8a032fa12da2d0e15fb9f4ca8747d96fffb3d07321d55099464f8a00086a8c9b \
@@ -89,6 +94,10 @@ doc Zilog_PS0117.pdf feb4b46341bf20cab3ce5e555b02b7c13e1c2422cb12a9ba2dbfa121d0a
     https://www.zilog.com/docs/serial/ps0117.pdf
 doc RP5C15_Ricoh.pdf b929eeb470dfc0df7b2673cd3810debe17d08e8e1f155126e6c274dc0fadcf3e \
     https://static.datasheets.com/doc/21798444-ricoh-rj5c15-ds.pdf
+# National Semiconductor, DP8390D/NS32490D NIC Network Interface Controller, juillet 1995 :
+# le cœur de la NE2000 de l'EtherNEC et du NetUSBee. Copie de la documentation de Bochs.
+docgz DP8390D.pdf 1447683959e5f164e5800fb2995e5df22f220da0ff675c105b4dd635b91991c5 \
+    https://bochs.sourceforge.io/techspec/DP8390D.pdf.gz
 # Hitachi, HD6301/HD6303 Series Handbook, 1989 (U07) : le microcontrôleur de l'IKBD.
 doc HD6301_HD6303_Handbook_1989.pdf dbee534e751ccb9a84f91d59c9eb86547d0cd3a521dbfb681cacb0f930cb69a6 \
     "$BITS/hitachi/_dataBooks/1989_U07_HD6301_HD6303_Series_Handbook_1989.pdf"
