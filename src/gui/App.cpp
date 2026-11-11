@@ -725,7 +725,14 @@ void App::switchKioskMode(bool on) {
     A.desktopPointer.reset();
     machine.mouseEvent(0, 0, false, false);
     std::vector<uint8_t> snap;
-    if (!machine.saveState(snap)) return;    // (1) instantané, avant toute destruction GUI
+    if (!machine.saveState(snap)) {          // (1) instantané, avant toute destruction GUI
+        // Refus motivé (instruction garée par un blit HOG, fichier hôte perdu) : dit, pas muet.
+        if (!machine.lastStateError().empty()) {
+            A.stateMsg = "Mode switch refused: " + machine.lastStateError();
+            A.stateMsgFrames = 240;
+        }
+        return;
+    }
 
     if (on) {
         // GUI → KIOSK. La config est GELÉE en kiosk : on persiste d'abord l'état

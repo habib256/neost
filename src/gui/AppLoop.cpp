@@ -407,6 +407,12 @@ static void runDueFrames(App& A) {
         // reprise les rejouait toutes en rafale écrêtée sur UNE trame.
         if (A.dbgPaused && A.dbgStepInstr) {
             A.dbgStepInstr = false;
+            // Instruction garée au milieu d'un blit HOG : pas de pas-à-pas avant qu'elle
+            // se termine (Machine::parkedInInstruction) — « Step frame » l'avance.
+            if (machine.parkedInInstruction()) {
+                A.stateMsg = "Step refused: the CPU is halted by a blitter transfer (use Step frame)";
+                A.stateMsgFrames = 180;
+            }
             machine.stepInstruction();
             machine.psg.clearEvents();
             machine.dmasnd.clearEvents();
@@ -572,8 +578,11 @@ static void handleQuickState(App& A) {
         const std::string statePath = stateFilePath(exeDir);
         if (A.saveStateReq) {
             A.saveStateReq = false;
+            machine.lastStateError_.clear();
             const bool ok = machine.saveStateFile(statePath);
-            A.stateMsg = ok ? "\xef\x83\x87 State saved (F5)" : "Save failed";
+            A.stateMsg = ok ? "\xef\x83\x87 State saved (F5)"
+                       : machine.lastStateError().empty() ? "Save failed"
+                       : "Save refused: " + machine.lastStateError();
             A.stateMsgFrames = 120;
             std::fprintf(stderr, "[state] save %s → %s\n", ok ? "OK" : "FAILED", statePath.c_str());
         }

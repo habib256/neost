@@ -124,6 +124,10 @@ FAST = [
     # répétables). Un instrument non testé fabrique des bugs qui n'existent pas.
     ("Harnais headless (options de pilotage : répétabilité, durée d'appui, scancodes)",
      [sys.executable, str(TOOLS / "check_headless_options.py")]),
+    # Un blit HOG de plusieurs trames : l'instruction est GARÉE à chaque fin de trame
+    # (core/EmuFiber), à l'octet près comme d'un seul tenant ; état refusé, reset propre.
+    ("Blit HOG de plusieurs trames (instruction garée, accord à l'octet, reset)",
+     [sys.executable, str(TOOLS / "check_hog_park.py")]),
     ("Verdicts des rejeux (halt, captures manquantes, diagnostics séparés)",
      [sys.executable, str(TOOLS / "check_game_replays.py")]),
     ("Verdicts Spectrum 512 (ROM absentes, couverture partielle, références préservées)",

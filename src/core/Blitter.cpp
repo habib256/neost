@@ -91,6 +91,9 @@ void Blitter::reset(bool cold) {
     busWord_ = 0;
     midBlit_ = false; haveFxsr_ = false; nfsrInt_ = false;
     haveSrc_ = false; haveDst_ = false; dstWord_ = 0;
+    // Tranche abandonnée par le déroulement d'une instruction garée (Machine::
+    // abortParked_ → EmuFiber::Abort) : la garde de ré-entrance resterait levée.
+    inSlice_ = false;
     busCountError_ = false;
     cpuBusCnt_ = 0; bus_.blitterCountCpu = false;
     clearPreStartWindow();
@@ -168,7 +171,9 @@ void Blitter::billCycles(int n) {
     // Une tranche peut maintenant tourner DANS le quantum CPU. Préserver le
     // dispatch par accès de BL4 : reverser le temps, rebaser le quantum puis
     // servir les échéances franchies, sans compter ces cycles deux fois.
-    if (sched_ && bus_.cpu && bus_.cpu->inRun()) bus_.cpu->rebaseQuantumAndSync();
+    // `true` : une fin de trame franchie par ces cycles enchaîne la trame suivante à
+    // son heure (Scheduler::syncToRollingFrames).
+    if (sched_ && bus_.cpu && bus_.cpu->inRun()) bus_.cpu->rebaseQuantumAndSync(true);
 }
 
 uint8_t Blitter::read8(uint32_t addr) {

@@ -95,6 +95,25 @@ exister dans le cœur POM68K, avec la même sémantique en 68000.
 `irqDeliverable`, `faultOrHalt`. Ils servent au save-state et à la prise d'IPL : un
 renommage côté POM68K se reporte ici, une disparition demande un équivalent.
 
+### Instruction garée (coroutine de `runFrame`)
+
+Depuis le 2026-11-11, `Machine::runFrame` tourne sur une pile à part (`src/core/EmuFiber`) :
+quand un blit HOG parti dans une instruction franchit la fin de trame, la trame est close à
+son heure et la pile est **suspendue au milieu de l'instruction**, depuis `sync()` (Moira →
+`sync` → `Blitter::onSlice` → `Scheduler::syncToRollingFrames` →
+`Machine::rollFrameInInstruction_`). Aucun patch de Moira ; le cœur doit seulement :
+
+- tolérer qu'une instruction soit suspendue puis reprise **sur le même fil** entre deux
+  appels hôte — aucun état lié à l'adresse de pile ou au fil ;
+- laisser traverser `execute()` une exception qui ne dérive **pas** de `std::exception`
+  (`EmuFiber::Abort`, levée pour abandonner une instruction garée au reset ou à la
+  destruction). Moira n'intercepte que `std::exception` (`Moira.cpp:276` et suivantes) ; un
+  `catch (...)` dans le chemin d'exécution du cœur casserait l'abandon. Le JIT de POM68K
+  devra garder cette propriété sur ses blocs compilés qui appellent `sync`.
+
+`tools/check_hog_park.py` (palier `fast`) vérifie l'accord à l'octet avec une exécution d'un
+seul tenant (`NEOST_NO_FIBER=1`), le refus de l'état pendant le garage et l'abandon au reset.
+
 ### Patches de NeoST, à retrouver dans POM68K
 
 Détail et preuves → `extern/moira/NEOST_VENDOR.md`. À vérifier selon la date du fork de POM68K :

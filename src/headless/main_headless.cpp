@@ -149,6 +149,7 @@ void usage() {
         "                    guest still reads back what it wrote — this protects the\n"
         "                    FILE, not the disk, so emulation is unchanged\n"
         "  --loopback        \"plug in\" the RS232 and MIDI OUT->IN loopback connectors\n"
+        "  --reset-at N      warm reset (reset button) before frame N\n"
         "  --loopback-at N   same, plugged at frame N exactly (recipes with dated key\n"
         "                    injections: the automatic plug waits for the LAST injection,\n"
         "                    which can be too late for a test that starts on Return)\n"
@@ -1381,6 +1382,7 @@ int main(int argc, char** argv) {
     uint8_t     joy0Hold   = 0, joy1Hold = 0;  // bits ST (haut$01 bas$02 gauche$04 droite$08 feu$80)
     bool        loopback   = false;   // « branche » le connecteur de bouclage RS232 (test S)
     int         loopbackAt = -1;      // --loopback-at N : trame de branchement EXPLICITE (sinon auto)
+    int         resetAt = -1;         // --reset-at N : reset à chaud (bouton) avant la trame N
     bool        dmaFixture = false;   // boîtier de test DMA du kit Field Service (test D)
     bool        machineMono = false;
     bool        glueSelfTest = false; // auto-test déterministe de la machine Glue (bordures)
@@ -1608,6 +1610,7 @@ int main(int argc, char** argv) {
         }
         else if (!std::strcmp(a, "--loopback"))   loopback  = true;
         else if (!std::strcmp(a, "--loopback-at")) { loopback = true; loopbackAt = std::atoi(next(a)); }
+        else if (!std::strcmp(a, "--reset-at"))    resetAt = std::atoi(next(a));
         else if (!std::strcmp(a, "--dma-fixture")) dmaFixture = true;
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
         else if (!std::strcmp(a, "--glue-selftest")) glueSelfTest = true;
@@ -2624,6 +2627,9 @@ int main(int argc, char** argv) {
                 uint64_t h = 14695981039346656037ull;
                 for (uint8_t b : st) { h ^= b; h *= 1099511628211ull; }
                 std::printf("state-hash frame=%d %016llx\n", done, static_cast<unsigned long long>(h));
+            } else if (machine.parkedInInstruction()) {
+                // Instruction garée au milieu d'un blit HOG : pas d'état sérialisable.
+                std::printf("state-hash frame=%d parked\n", done);
             }
         }
         if (archHashEvery > 0 && done % archHashEvery == 0) {
@@ -2631,6 +2637,8 @@ int main(int argc, char** argv) {
             if (machine.archHash(hm, hc))
                 std::printf("arch-hash frame=%d machine=%016llx cpu=%016llx\n", done,
                             static_cast<unsigned long long>(hm), static_cast<unsigned long long>(hc));
+            else if (machine.parkedInInstruction())
+                std::printf("arch-hash frame=%d parked\n", done);
         }
     };
     // --shot-every : P<done>.ppm est l'écran après `done` trames, soit exactement ce
@@ -2663,6 +2671,12 @@ int main(int argc, char** argv) {
         // courante — ce que « voyait » la machine quand le pilote a décidé l'entrée.
         if (probeEvery > 0 && (frame % probeEvery) == 0)
             observe::emitProbeLine(frame, machine, probeSet);
+        if (frame == resetAt) {
+            // Bouton reset : coupe aussi une instruction garée (blit HOG, cf.
+            // Machine::parkedInInstruction).
+            machine.reset();
+            std::fprintf(stderr, "[headless] warm reset at frame %d\n", frame);
+        }
         if (frame == loopbackAtFrame) {
             machine.mfp.setLoopback(true); machine.midi.setLoopback(true); machine.scc.setLoopback(true);
             std::fprintf(stderr, "[headless] loopback connectors plugged at frame %d\n", frame);
@@ -2975,6 +2989,8 @@ int main(int argc, char** argv) {
         const bool ok = machine.saveStateFile(saveStatePath);
         std::fprintf(stderr, ok ? "[headless] state saved \xe2\x86\x92 %s\n"
                                 : "[headless] FAILED to save state %s\n", saveStatePath.c_str());
+        if (!ok && !machine.lastStateError().empty())
+            std::fprintf(stderr, "[headless] reason: %s\n", machine.lastStateError().c_str());
         if (!ok) outFail = true;
     }
 

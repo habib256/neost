@@ -62,6 +62,10 @@
       "since": "2026-08-26",
       "last_real_catch": null
     },
+    "Blit HOG de plusieurs trames (instruction garée, accord à l'octet, reset)": {
+      "since": "2026-11-11",
+      "last_real_catch": null
+    },
     "P1 verdicts série (cartouche diagnostic)": {
       "since": "2026-07-09",
       "last_real_catch": null
