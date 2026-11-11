@@ -68,6 +68,11 @@ void Ne2000::reset() {
     loadProm();                      // la PROM survit au reset (elle est en ROM)
 }
 
+void Ne2000::powerCycle() {
+    reset();
+    if (backend_) backend_->nicReset();
+}
+
 void Ne2000::setIsr(uint8_t bits) {
     isr_ |= bits;
     if (isr_ & imr_ & 0x7F) irq_ = true;

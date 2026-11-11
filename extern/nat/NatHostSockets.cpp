@@ -254,7 +254,16 @@ Bytes queryHostDns(const Bytes& query)
     state.retry = 2;
     const int n = res_nsend(&state, query.data(), static_cast<int>(query.size()),
                              answer.data(), static_cast<int>(answer.size()));
+    // Apple's libresolv (BIND 9's, like FreeBSD's) splits the teardown:
+    // res_nclose only closes the sockets, res_ndestroy also frees what
+    // res_ninit allocated. With res_nclose every lookup leaked ~250 bytes —
+    // measured +49 MB over 200 000 lookups (NeoST audit, 2026-11-11). glibc
+    // has no res_ndestroy; its res_nclose frees what its res_ninit took.
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    res_ndestroy(&state);
+#else
     res_nclose(&state);
+#endif
     if (n < 12 || n > static_cast<int>(answer.size())) return {};
     answer.resize(static_cast<std::size_t>(n));
     return answer;

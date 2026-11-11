@@ -106,6 +106,14 @@ public:
     /// cycle hook; must use a zero timeout.
     virtual void poll() {}
 
+    /// The NIC was reset — the slot's RESET line or a power cycle. Every
+    /// socket, flow and connection the guest had through its stack is gone
+    /// on the guest side; a backend that relays them for this one guest
+    /// (the built-in NAT) drops its side too, instead of holding host
+    /// sockets and table slots for connections nobody will ever finish.
+    /// Port forwards and configuration survive.
+    virtual void nicReset() {}
+
     /// Resolve an IPv4 address (network byte order, as it sits in the
     /// W5100 registers) to the MAC a frame for it should be addressed to.
     /// Returns false when unknown — the caller then falls back to

@@ -32,6 +32,7 @@ public:
     void send(const uint8_t* frame, int len) override;
     bool recv(std::vector<uint8_t>& out) override;
     void poll() override;
+    void nicReset() override;
     uint64_t txFrames() const;
     uint64_t rxFrames() const;
 private:

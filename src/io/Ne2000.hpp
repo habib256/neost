@@ -72,6 +72,9 @@ public:
 
     // Reset matériel (bouton reset / power-cycle).
     void reset();
+    // Mise sous tension de la carte : reset() puis vidage de l'état du backend
+    // (connexions NAT orphelines). Le port reset ($1F) n'appelle que reset().
+    void powerCycle();
 
     // Ligne d'interruption vers le CPU (EtherNEC : câblée sur… rien de standard —
     // les pilotes ST tournent en POLLING). Exposée pour complétude/tests.

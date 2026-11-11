@@ -166,9 +166,9 @@ set_source_files_properties(
 add_library(neost_net STATIC src/net/NatBackend.cpp)
 target_link_libraries(neost_net PUBLIC neost_core)
 
-# NAT POM2 épinglé : aucune dépendance libslirp/GLib, uniquement les API système.
+# NAT de NeoST (issu de POM2) : aucune dépendance libslirp/GLib, uniquement les API système.
 if(NEOST_WITH_NET)
-    set(NEOST_NAT_DIR "${CMAKE_SOURCE_DIR}/extern/pom2nat")
+    set(NEOST_NAT_DIR "${CMAKE_SOURCE_DIR}/extern/nat")
     add_library(neost_nat STATIC
         ${NEOST_NAT_DIR}/BuiltinNatBackend.cpp ${NEOST_NAT_DIR}/NatPacket.cpp
         ${NEOST_NAT_DIR}/NatDhcp.cpp ${NEOST_NAT_DIR}/NatDns.cpp

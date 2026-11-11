@@ -8,6 +8,9 @@
 // record types retain their RDATA, compression pointers and response codes.
 // The CPU thread never waits. Queries are validated, retries share a lookup,
 // pending work is bounded and new wire lookups are limited to four/second.
+// The IPv4 and IPv6 servers of one backend share that budget
+// (`shareBudgetWith`): two proxies with a bucket each let a guest reach
+// eight a second by alternating families (NeoST audit, 2026-11-11).
 // queryHostDns in NatHostSockets owns the platform-specific blocking call.
 //
 // [B] RFC 1035 § 4 (message format), § 4.1.1 (header, RCODE values).
@@ -49,7 +52,16 @@ public:
     explicit DnsProxy(W5100Resolver* resolver, Lookup lookup = {})
         : resolver_(resolver), lookup_(std::move(lookup)) {}
 
-    void query(uint16_t guestPort, View payload, uint64_t nowMs, const Emit& emit);
+    /// False when the datagram was ignored: no reply will EVER be emitted
+    /// for it (a response, QR=1, or less than a header). Anything else is
+    /// answered, at once or by pump() within kTimeoutMs — so a caller that
+    /// keeps per-query state may drop it on false and must not keep it
+    /// longer than kTimeoutMs on true.
+    bool query(uint16_t guestPort, View payload, uint64_t nowMs, const Emit& emit);
+    /// Draw new wire lookups and worker threads from `other`'s budget, so a
+    /// backend's two proxies are one limit (four lookups a second, eight
+    /// workers) rather than two.
+    void shareBudgetWith(const DnsProxy& other) { workers_ = other.workers_; }
     void pump(uint64_t nowMs, const Emit& emit);
     void clear() { pending_.clear(); raw_.clear(); }
     std::size_t pending() const { return pending_.size() + raw_.size(); }
@@ -65,13 +77,18 @@ private:
     W5100Resolver*       resolver_;
     std::vector<Pending> pending_;
     struct Job { std::mutex mutex; bool ready = false; Bytes answer; };
-    struct Workers { std::mutex mutex; unsigned active = 0; };
+    /// `active` is written by the workers, under `mutex`. The token bucket
+    /// is touched only by query(), on the CPU thread, and needs no lock.
+    struct Workers {
+        std::mutex mutex; unsigned active = 0;
+        double tokens = 16; uint64_t tokenMs = 0;
+    };
     struct RawPending { uint16_t port; Bytes query; uint64_t deadline; std::shared_ptr<Job> job; };
     std::vector<RawPending> raw_;
     std::shared_ptr<Workers> workers_ = std::make_shared<Workers>();
     Lookup lookup_;
-    double tokens_ = 16;
-    uint64_t tokenMs_ = 0;
+    void handleQuery(uint16_t guestPort, View payload, uint16_t flags, uint64_t nowMs,
+                     const Emit& emit);
     void queryRaw(uint16_t port, const Bytes& query, uint64_t now, const Emit& emit);
     void pumpRaw(uint64_t now, const Emit& emit);
 };

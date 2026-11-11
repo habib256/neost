@@ -37,10 +37,10 @@ libraries it pulls in, each under its own licence. Sources: https://www.glfw.org
 
 SDL2 replaces GLFW on Android only: https://libsdl.org/ (release-2.30.9).
 
-pom2nat — built-in user-mode NAT, GPL-3.0-or-later, © 2026 VERHILLE Arnaud.
-Imported from https://github.com/habib256/POM2 at
-b07f3a0a5ac699989be0e61c5f36369f5c1287a2. Sources and provenance are supplied
-in extern/pom2nat; GPL-3.0.txt accompanies this package. The protocol design
+nat — NeoST's built-in user-mode NAT, GPL-3.0-or-later, © 2026 VERHILLE Arnaud.
+Derived from https://github.com/habib256/POM2, last synchronised at
+4625ec82547118918bfafc795f6b7128cdb616ae. Sources and provenance are supplied
+in extern/nat; GPL-3.0.txt accompanies this package. The protocol design
 references Casso @ 2d899adf (MIT), as recorded in the imported sources.
 
 EmuTOS source: https://emutos.sourceforge.io/ — the exact version shipped here is the

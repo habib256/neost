@@ -26,6 +26,11 @@
 //     table and on how long either handshake may stay pending.
 // [B] RFC 9293 § 3.8.6.1: zero-window probes back off without exhausting
 //     the retransmission budget while the receiver keeps its window shut.
+// [B] RFC 5382 § 5 REQ-5: an established connection's idle timeout MUST NOT
+//     be less than 2 hours 4 minutes — kIdleMs is exactly that. Without one,
+//     a guest that rebooted or lost its stack left connections with nothing
+//     in flight (so nothing ever retransmitted and failed) holding slots of
+//     the 32-entry table for the whole session (NeoST audit, 2026-11-11).
 
 #ifndef POM2_NAT_TCP_H
 #define POM2_NAT_TCP_H
@@ -73,11 +78,12 @@ public:
     static constexpr uint64_t    kMaxRtoMs         = 60000;
     static constexpr int         kMaxRetransmits   = 8;
     static constexpr uint64_t    kConnectTimeoutMs = 30000;
+    static constexpr uint64_t    kIdleMs           = (2 * 60 + 4) * 60 * 1000;
 
     TcpConnection(GuestSink& sink, const Key& key, std::unique_ptr<HostSocket> host,
                   const TcpSegment& syn, uint32_t isn, uint64_t nowMs, bool inbound = false);
 
-    void  onGuestSegment(const TcpSegment& segment);
+    void  onGuestSegment(const TcpSegment& segment, uint64_t nowMs);
     void  pump(uint64_t nowMs);
     State state() const { return state_; }
     bool  closed() const { return state_ == State::Closed; }
@@ -96,8 +102,8 @@ private:
     void onFin(const TcpSegment& segment);
 
     void pumpConnect(uint64_t nowMs);
-    void pumpHostWrite();
-    void pumpHostRead();
+    void pumpHostWrite(uint64_t nowMs);
+    void pumpHostRead(uint64_t nowMs);
     void pumpGuestSend(uint64_t nowMs);
     void pumpRetransmit(uint64_t nowMs);
     void pumpPersist(uint64_t nowMs);
@@ -121,6 +127,7 @@ private:
     bool                        finAcked_ = false;
     uint64_t                    startedMs_ = 0;
     uint64_t                    lastSendMs_ = 0;
+    uint64_t                    lastActivityMs_ = 0;   ///< a segment or host bytes, either way
     int                         retransmits_ = 0;
     uint64_t                    persistMs_ = 0;
     unsigned                    persistBackoff_ = 0;
@@ -148,6 +155,11 @@ public:
     void pump(uint64_t nowMs);
     void closeAll() { connections_.clear(); }
     std::size_t connectionCount() const { return connections_.size(); }
+    /// The guest-side peer address of every connection in the table.
+    template <class F> void forEachPeer(F&& f) const
+    {
+        for (const auto& c : connections_) f(c.first.peerIp);
+    }
 
 private:
     void     startOutbound(const TcpSegment& syn, uint64_t nowMs);

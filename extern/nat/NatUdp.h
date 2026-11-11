@@ -60,6 +60,15 @@ public:
     void pump(uint64_t nowMs);
     void closeAll() { flows_.clear(); }
     std::size_t flowCount() const { return flows_.size(); }
+    /// Every guest-side address a live flow may still present a reply as.
+    /// The backend's IPv6 aliases are reclaimed only when no flow names them.
+    template <class F> void forEachShown(F&& f) const
+    {
+        for (const auto& [key, flow] : flows_) {
+            for (const auto& p : flow.peers)  f(p.second);
+            for (const auto& p : flow.peers6) f(p.second);
+        }
+    }
 
 private:
     struct Flow {

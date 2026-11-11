@@ -52,8 +52,8 @@ elle écrase la 80ᵉ colonne (une ligne HTML n'y laissait voir que son dernier 
 une colonne de « > »), d'où le repli à 78 colonnes et le CR ajouté sur les LF seuls.
 `src/net/HayesModem.cpp`.
 
-Le NetUSBee/EtherNEC utilise le **NAT intégré de POM2**, épinglé à
-`b07f3a0a5ac699989be0e61c5f36369f5c1287a2` sous `extern/pom2nat`.
+Le NetUSBee/EtherNEC utilise le **NAT intégré de NeoST** (`extern/nat`), issu de
+POM2 ; dernière reprise des correctifs amont : `4625ec82547118918bfafc795f6b7128cdb616ae`.
 `NatBackend` (`src/net/NatBackend.cpp`) adapte les trames à `NetBackend` ;
 aucune dépendance libslirp/GLib. Le NAT est construit avec `NEOST_WITH_NET`
 (par défaut sur bureau, coupé sur Android et WASM). La case **Real Internet

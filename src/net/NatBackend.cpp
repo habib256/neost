@@ -75,6 +75,11 @@ void NatBackend::poll() {
     if (impl_) impl_->backend->poll();
 #endif
 }
+void NatBackend::nicReset() {
+#ifdef NEOST_WITH_NET
+    if (impl_) impl_->backend->nicReset();   // garde les ports publiés
+#endif
+}
 uint64_t NatBackend::txFrames() const {
 #ifdef NEOST_WITH_NET
     if (impl_) return impl_->backend->framesSent();

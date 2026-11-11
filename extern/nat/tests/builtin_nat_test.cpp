@@ -34,6 +34,7 @@
 #include "NatDns.h"
 #include "NatHost.h"
 #include "NatPacket.h"
+#include "NatTcp.h"
 #include "NetworkBackend.h"
 #include "SocketCompat.h"
 #include "W5100Resolver.h"
@@ -1237,6 +1238,161 @@ void testIpv6()
     CHECK(routeDestination6(peer, 80, true, {false,true}, host) == Route::Refused);
 }
 
+// ── 13. The NeoST audit of 2026-11-11 ────────────────────────────────────
+//
+// Six findings against this code imported into NeoST at b07f3a0a. Each case
+// below failed before its fix.
+
+/// An IPv6 guest on fd00:2::/64, talking through `rig`.
+struct Guest6 {
+    Rig& rig;
+    Ipv6 self = [] { Ipv6 a = kGateway6; a[15] = 15; return a; }();
+    void send(const Ipv6& dest, uint8_t proto, Bytes payload)
+    {
+        const std::size_t at = proto == kProtoTcp ? 16 : proto == kProtoUdp ? 6 : 2;
+        wr16(payload.data() + at, 0);
+        const auto sum = checksum6(self, dest, proto, {payload.data(), payload.size()});
+        wr16(payload.data() + at, sum ? sum : 0xffff);
+        transmitIp(*rig.net, buildIpv6(self, dest, proto, payload, 64), kEtherTypeIpv6);
+    }
+    void udp(const Ipv6& dest, uint16_t from, uint16_t to, const Bytes& data)
+    {
+        send(dest, kProtoUdp, buildUdp(0, 0, from, to, data.data(), data.size()));
+    }
+    struct Datagram { Ipv6 source; uint16_t sourcePort, destinationPort; Bytes payload; };
+    std::vector<Datagram> datagrams()
+    {
+        std::vector<Datagram> out;
+        Ipv6Reassembler reassembly;
+        for (const auto& f : rig.frames()) {
+            EthernetFrame e; Ipv6Packet ip;
+            if (!parseEthernet(f.data(), f.size(), e) || e.etherType != kEtherTypeIpv6) continue;
+            const Bytes whole = reassembly.accept(e.payload, rig.clock);
+            if (whole.empty() || !parseIpv6({whole.data(), whole.size()}, ip) ||
+                ip.protocol != kProtoUdp || ip.payload.size < 8) continue;
+            out.push_back({ip.source, rd16(ip.payload.data), rd16(ip.payload.data + 2),
+                           Bytes(ip.payload.data + 8, ip.payload.data + ip.payload.size)});
+        }
+        return out;
+    }
+};
+
+void testAudit20261111()
+{
+    std::printf("[13] NeoST audit 2026-11-11: alias and DNS tables, DNS budget, TCP idle, NIC reset\n");
+    const auto peerNumber = [](unsigned n) {
+        Ipv6 a{0x20,1,0x0d,0xb8}; a[14] = static_cast<uint8_t>(n >> 8); a[15] = static_cast<uint8_t>(n); return a;
+    };
+
+    // 1. A refused IPv6 destination spends no alias, and aliases nobody
+    //    names any more are reclaimed: 600 link-local datagrams, then more
+    //    distinct peers than the table holds, and IPv6 still works.
+    {
+        Rig rig; Guest6 g{rig};
+        for (unsigned i = 1; i <= 600; ++i) {
+            Ipv6 linkLocal{0xfe,0x80}; linkLocal[14] = static_cast<uint8_t>(i >> 8); linkLocal[15] = static_cast<uint8_t>(i);
+            g.udp(linkLocal, 7000, 69, text("x"));
+        }
+        CHECK(rig.world.opened == 0);
+        constexpr unsigned kPeers = 3000;
+        for (unsigned i = 1; i <= kPeers; ++i) g.udp(peerNumber(i), 7000, 69, text("y"));
+        FakeSocket* socket = rig.world.last();
+        CHECK(rig.world.opened == 1 && socket && socket->datagramsOut.size() == kPeers);
+        if (!socket || socket->datagramsOut.empty()) return;
+        CHECK(socket->datagramsOut.back().first.ipv6 == peerNumber(kPeers));
+        // The last peer's answer reaches the guest under the peer's own address.
+        Endpoint from; from.isIpv6 = true; from.ipv6 = peerNumber(kPeers); from.port = 69;
+        socket->datagramsIn.push_back({from, text("ack")});
+        rig.pump(1);
+        const auto back = g.datagrams();
+        CHECK(back.size() == 1 && back[0].source == peerNumber(kPeers) &&
+              back[0].sourcePort == 69 && back[0].destinationPort == 7000 &&
+              back[0].payload == text("ack"));
+    }
+
+    // 2. Responses (QR=1) sent to the IPv6 DNS server do not fill the table
+    //    of guests waiting for an answer.
+    {
+        Rig rig; Guest6 g{rig};
+        uint32_t wire = 0; const uint8_t quad[4] = {93, 184, 216, 34}; std::memcpy(&wire, quad, 4);
+        rig.names.answers["v6.example"] = {W5100Resolver::Status::Resolved, wire};
+        for (uint16_t id = 1; id <= 40; ++id) {
+            Bytes response = dnsQuery(id, "v6.example");
+            wr16(response.data() + 2, 0x8180);
+            g.udp(kDns6, 5300, 53, response);
+        }
+        CHECK(g.datagrams().empty());
+        g.udp(kDns6, 5300, 53, dnsQuery(0x7777, "v6.example"));
+        const auto replies = g.datagrams();
+        CHECK(replies.size() == 1 && replies[0].source == kDns6 &&
+              replies[0].payload.size() >= 12 && rd16(replies[0].payload.data()) == 0x7777 &&
+              (replies[0].payload[3] & 0x0F) == 0);
+    }
+
+    // 4. The IPv4 and IPv6 DNS servers draw on ONE budget of wire lookups:
+    //    once the IPv4 side has spent the burst, an IPv6 query is SERVFAIL
+    //    without reaching the host.
+    {
+        std::atomic<int> calls{0};
+        Rig rig(false, false, {}, [&](const Bytes& q) { ++calls; return rawDnsAnswer(q); });
+        Guest6 g{rig};
+        for (int i = 0; i < 16; ++i) {
+            const std::string name = "n" + std::to_string(i) + ".example";
+            rig.sendUdp(kDnsIp, 6300, 53, dnsQuery(static_cast<uint16_t>(0x100 + i), name.c_str(), 16));
+            std::vector<Rig::Datagram> got;
+            for (int n = 0; n < 2000 && got.empty(); ++n) {
+                rig.pump(0); got = rig.datagrams();
+                if (got.empty()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            CHECK(got.size() == 1);
+        }
+        CHECK(calls == 16);
+        g.udp(kDns6, 6301, 53, dnsQuery(0x200, "late.example", 16));
+        const auto replies = g.datagrams();
+        CHECK(replies.size() == 1 && replies[0].payload.size() >= 12 &&
+              (replies[0].payload[3] & 0x0F) == 2);
+        CHECK(calls == 16);
+    }
+
+    // 5a. An established connection idle for RFC 5382's 2 h 4 min is reset;
+    //     a keepalive counts as activity.
+    {
+        Rig rig;
+        const uint32_t ours = handshake(rig, 4100, kPublicIp, 80);
+        FakeSocket* s = rig.world.last();
+        if (!s || !ours) { CHECK(false); return; }
+        rig.pump(TcpConnection::kIdleMs / 2);
+        rig.sendTcp(kPublicIp, 4100, 80, kTcpAck, kGuestIsn, ours);          // keepalive
+        rig.segments();                                                      // its ACK
+        rig.pump(TcpConnection::kIdleMs / 2 + 10);
+        CHECK(rig.frames().empty() && rig.world.closed == 0);
+        rig.pump(TcpConnection::kIdleMs / 2);
+        const auto seg = rig.segments();
+        CHECK(seg.size() == 1 && (seg[0].flags & kTcpRst));
+        CHECK(rig.world.closed == 1 && rig.world.live.empty());
+    }
+
+    // 5b. A NIC reset drops every relay — TCP, UDP, pending DNS — and keeps
+    //     the port forwards' listeners; the network works afterwards.
+    {
+        BuiltinNatOptions::PortForward forward;
+        forward.tcp = true; forward.bind = {kLoopbackIp, 8080}; forward.guestPort = 80;
+        Rig rig(false, false, {forward});
+        CHECK(rig.world.live.size() == 1);                                   // the listener
+        handshake(rig, 4200, kPublicIp, 80);
+        rig.sendUdp(kPublicIp, 4201, 69, text("tftp"));
+        rig.sendUdp(kDnsIp, 4202, 53, dnsQuery(0x3131, "pending.example"));
+        CHECK(rig.world.live.size() == 3);
+        rig.net->nicReset();
+        CHECK(rig.world.live.size() == 1 && rig.frames().empty());
+        rig.names.answers["pending.example"] = {W5100Resolver::Status::Resolved, 1};
+        rig.pump(1);
+        CHECK(rig.frames().empty());                                         // forgotten
+        rig.sendUdp(kPublicIp, 4201, 69, text("again"));
+        CHECK(rig.world.live.size() == 2 && rig.world.last()->datagramsOut.size() == 1);
+    }
+}
+
 // ── 7. Real sockets, on 127.0.0.1 ────────────────────────────────────────
 
 #if POM2_HAS_SOCKETS
@@ -1526,6 +1682,7 @@ int main()
     testInbound();
     testTypedDns();
     testIpv6();
+    testAudit20261111();
     testRealSockets();
     testTwoNatInstances();
     testRealIpv6();

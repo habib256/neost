@@ -28,7 +28,7 @@
 #include <chrono>
 #include <cstring>
 #include <exception>
-#include <future>
+#include <condition_variable>
 #include <thread>
 
 namespace pom2 {
@@ -137,77 +137,73 @@ W5100Resolver::Result W5100NameResolver::resolve(const std::string& name,
         return out;
     }
 
-    // Check the cap BEFORE std::async is even called: its future's destructor
-    // would block, so a guest looping OPEN over random hostnames must be
-    // stopped here rather than after the fact.
+    // Check the cap BEFORE a thread exists: a guest looping OPEN over random
+    // hostnames must be stopped here rather than after the fact.
+    auto mailbox = mailbox_;
     {
-        std::lock_guard<std::mutex> lk(mailbox_->mutex);
-        if (mailbox_->inFlight >= kMaxInFlight) {
+        std::lock_guard<std::mutex> lk(mailbox->mutex);
+        if (mailbox->inFlight >= kMaxInFlight) {
             log().warn("W5100", "too many DNS lookups in flight — '" + name +
                                     "' not attempted");
             out.status = Status::Refused;
             return out;
         }
+        ++mailbox->inFlight;     // released by the worker, or below if it never starts
     }
 
+    // ONE detached worker per lookup, and nothing on this side that can
+    // wait for it beyond `waitMs`. This was std::async plus a second
+    // thread to collect a timed-out answer; when that second thread could
+    // not be created, the std::async future died in this frame and its
+    // destructor JOINED the lookup — getaddrinfo's whole timeout, on the
+    // CPU thread, under stateMutex (NeoST audit, 2026-11-11). A lookup
+    // that throws is a failed lookup; the barrier keeps it off this thread.
+    auto job    = std::make_shared<Job>();
     auto lookup = lookup_;
-    // Thread creation can throw (std::system_error) — on the CPU thread,
-    // under stateMutex. One OPEN failing is the right outcome; the worker
-    // dying through its exception barrier is not.
-    std::future<uint32_t> future;
     try {
-        future = std::async(std::launch::async,
-                            [lookup, name]() { return lookup(name); });
+        std::thread([name, lookup, job, mailbox]() {
+            uint32_t address = 0;
+            runGuarded("W5100", [&] { address = lookup(name); });
+            bool abandoned;
+            {
+                std::lock_guard<std::mutex> lk(job->mutex);
+                job->address = address;
+                job->done    = true;
+                abandoned    = job->abandoned;
+            }
+            job->ready.notify_one();
+            std::lock_guard<std::mutex> lk(mailbox->mutex);
+            // Timed out on the caller's side: poll() folds it into the
+            // cache on the CPU thread, which keeps the cache lock-free.
+            if (abandoned) mailbox->pending.push_back({ name, address });
+            --mailbox->inFlight;
+        }).detach();
     } catch (const std::exception&) {
+        // Thread creation can throw (std::system_error) — on the CPU thread,
+        // under stateMutex. One OPEN failing is the right outcome. The slot
+        // was counted before the thread existed: give it back, or eight such
+        // failures refuse virtual DNS for good.
         log().warn("W5100", "could not start a DNS lookup thread");
-        out.status = Status::Refused;
-        return out;
-    }
-
-    if (future.wait_for(std::chrono::milliseconds(waitMs)) ==
-        std::future_status::ready) {
-        const uint32_t address = future.get();
-        store(name, address);
-        out.status  = address ? Status::Resolved : Status::Failed;
-        out.address = address;
-        return out;
-    }
-
-    // Timed out. The lookup is NOT cancelled — it parks its answer in the
-    // mailbox and poll() folds it into the cache on the CPU thread, which is
-    // what keeps the cache single-threaded despite the async lookup. The
-    // mailbox is held by shared_ptr so a lookup that outlives the card has
-    // nowhere unsafe to write.
-    auto shared = std::make_shared<std::future<uint32_t>>(std::move(future));
-    auto mailbox = mailbox_;
-    {
-        std::lock_guard<std::mutex> lk(mailbox->mutex);
-        ++mailbox->inFlight;
-    }
-    try {
-    std::thread([name, shared, mailbox]() {
-        bool counted = false;
-        runGuarded("W5100", [&] {
-            const uint32_t late = shared->get();
-            std::lock_guard<std::mutex> lk(mailbox->mutex);
-            mailbox->pending.push_back({ name, late });
-            --mailbox->inFlight;
-            counted = true;
-        });
-        // The guard swallowed an exception before the count was released;
-        // release it here or the cap leaks a slot permanently.
-        if (!counted) {
-            std::lock_guard<std::mutex> lk(mailbox->mutex);
-            --mailbox->inFlight;
-        }
-    }).detach();
-    } catch (const std::exception&) {
-        // The slot was counted before the thread existed: give it back, or
-        // eight such failures refuse virtual DNS for good.
         std::lock_guard<std::mutex> lk(mailbox->mutex);
         --mailbox->inFlight;
         out.status = Status::Refused;
         return out;
+    }
+
+    {
+        std::unique_lock<std::mutex> lk(job->mutex);
+        if (job->ready.wait_for(lk, std::chrono::milliseconds(std::max(waitMs, 0)),
+                                [&] { return job->done; })) {
+            const uint32_t address = job->address;
+            lk.unlock();
+            store(name, address);
+            out.status  = address ? Status::Resolved : Status::Failed;
+            out.address = address;
+            return out;
+        }
+        // Decided under the job's lock, so the answer goes to exactly one
+        // place: here (done first) or the mailbox (abandoned first).
+        job->abandoned = true;
     }
 
     log().info("W5100", "DNS lookup for '" + name +

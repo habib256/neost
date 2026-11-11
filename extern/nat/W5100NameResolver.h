@@ -41,6 +41,7 @@
 #include "W5100Resolver.h"
 
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -124,6 +125,16 @@ private:
         std::chrono::steady_clock::time_point stored;
     };
     void store(const std::string& name, uint32_t address);
+
+    /// One lookup's answer, shared by the caller's bounded wait and the
+    /// worker. `abandoned`: the caller stopped waiting, so the worker posts
+    /// to the mailbox instead.
+    struct Job {
+        std::mutex              mutex;
+        std::condition_variable ready;
+        bool                    done = false, abandoned = false;
+        uint32_t                address = 0;
+    };
 
     /// Written by detached resolver threads, drained by poll().
     struct Mailbox {

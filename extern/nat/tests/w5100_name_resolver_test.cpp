@@ -29,6 +29,8 @@
 #include <chrono>
 #include <cstdio>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <thread>
 
 namespace {
@@ -173,8 +175,7 @@ void testResolverDiesWithALookupInFlight()
 // ── In-flight lookups are capped ─────────────────────────────────────────
 //
 // A guest looping OPEN over random hostnames must not pile up resolver
-// threads without bound. The cap is checked BEFORE std::async is called,
-// because a future's destructor would block.
+// threads without bound. The cap is checked BEFORE a worker is started.
 void testInFlightLookupsAreCapped()
 {
     std::atomic<bool> release{ false };
@@ -247,6 +248,24 @@ void testNewLookupsAreRateLimited()
 
 } // namespace
 
+// ── A lookup that throws stays on its thread ─────────────────────────────
+//
+// With std::async the exception came back through future.get() — on the CPU
+// thread, under stateMutex, out of resolve(). It is a failed lookup, and the
+// worker gives its in-flight slot back (2026-11-11).
+void testThrowingLookupIsAFailure()
+{
+    W5100NameResolver resolver([](const std::string&) -> uint32_t {
+        throw std::runtime_error("resolver blew up");
+    });
+    for (int i = 0; i < W5100NameResolver::kMaxInFlight + 2; ++i) {
+        const auto r = resolver.resolve("boom" + std::to_string(i) + ".test",
+                                        2000 * pom2test::timeScale());
+        assert(r.status == Status::Failed);
+    }
+    std::printf("  a throwing lookup is a failure, its slot is released: OK\n");
+}
+
 int main()
 {
     std::printf("W5100 virtual-DNS resolver\n");
@@ -257,6 +276,7 @@ int main()
     testInFlightLookupsAreCapped();
     testNewLookupsAreRateLimited();
     testResolverDiesWithALookupInFlight();
+    testThrowingLookupIsAFailure();
     std::printf("OK\n");
     return 0;
 }

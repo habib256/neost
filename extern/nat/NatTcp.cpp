@@ -20,7 +20,7 @@ TcpConnection::TcpConnection(GuestSink& sink, const Key& key,
     : sink_(sink), key_(key), host_(std::move(host)), ourIsn_(isn), ourUnacked_(isn),
       ourNext_(isn), guestNext_(syn.sequence + 1), guestWindow_(syn.window),
       mss_(syn.mss != 0 ? std::min(syn.mss, kMaxMss) : kDefaultMss),
-      startedMs_(nowMs), lastSendMs_(nowMs)
+      startedMs_(nowMs), lastSendMs_(nowMs), lastActivityMs_(nowMs)
 {
     if (inbound) {
         inbound_ = true;
@@ -31,8 +31,9 @@ TcpConnection::TcpConnection(GuestSink& sink, const Key& key,
     }
 }
 
-void TcpConnection::onGuestSegment(const TcpSegment& segment)
+void TcpConnection::onGuestSegment(const TcpSegment& segment, uint64_t nowMs)
 {
+    lastActivityMs_ = nowMs;
     if (segment.flags & kTcpRst) { close(); return; }
     if (state_ == State::SynSent) {
         if ((segment.flags & (kTcpSyn | kTcpAck)) != (kTcpSyn | kTcpAck) ||
@@ -130,9 +131,10 @@ void TcpConnection::pump(uint64_t nowMs)
         return;
     }
     if (state_ != State::Established) return;
+    if (nowMs - lastActivityMs_ >= kIdleMs) { resetAndClose(); return; }
 
-    pumpHostWrite();
-    if (state_ == State::Established) pumpHostRead();
+    pumpHostWrite(nowMs);
+    if (state_ == State::Established) pumpHostRead(nowMs);
     if (state_ == State::Established) pumpGuestSend(nowMs);
     if (state_ == State::Established) pumpPersist(nowMs);
     if (state_ == State::Established) pumpRetransmit(nowMs);
@@ -155,10 +157,11 @@ void TcpConnection::pumpConnect(uint64_t nowMs)
     ourUnacked_ = ourIsn_ + 1;
     ourNext_    = ourIsn_ + 1;
     lastSendMs_ = nowMs;
+    lastActivityMs_ = nowMs;
     sendToGuest(kTcpSyn | kTcpAck, ourIsn_, nullptr, 0, kMaxMss);
 }
 
-void TcpConnection::pumpHostWrite()
+void TcpConnection::pumpHostWrite(uint64_t nowMs)
 {
     if (!toHost_.empty()) {
         const bool wasFull = toHost_.size() == kQueueLimit;
@@ -167,6 +170,7 @@ void TcpConnection::pumpHostWrite()
         const IoStatus s = host_->send(pending.data(), pending.size(), sent);
         if (s == IoStatus::Failed) { resetAndClose(); return; }
         toHost_.erase(toHost_.begin(), toHost_.begin() + static_cast<std::ptrdiff_t>(sent));
+        if (sent) lastActivityMs_ = nowMs;
         // The window this side advertised reopens.
         if (wasFull && sent != 0) sendAck();
     }
@@ -176,7 +180,7 @@ void TcpConnection::pumpHostWrite()
     }
 }
 
-void TcpConnection::pumpHostRead()
+void TcpConnection::pumpHostRead(uint64_t nowMs)
 {
     const std::size_t room = kQueueLimit - std::min(toGuest_.size(), kQueueLimit);
     if (hostEof_ || room == 0) return;
@@ -184,7 +188,8 @@ void TcpConnection::pumpHostRead()
     std::size_t received = 0;
     const IoStatus s = host_->receive(buffer.data(), buffer.size(), received);
     if (s == IoStatus::Failed) { resetAndClose(); return; }
-    if (s == IoStatus::Closed) { hostEof_ = true; return; }
+    if (s == IoStatus::Closed) { hostEof_ = true; lastActivityMs_ = nowMs; return; }
+    if (received) lastActivityMs_ = nowMs;
     toGuest_.insert(toGuest_.end(), buffer.begin(),
                     buffer.begin() + static_cast<std::ptrdiff_t>(received));
 }
@@ -319,7 +324,7 @@ void TcpRelay::onGuestSegment(const TcpSegment& segment, uint64_t nowMs)
         found = connections_.end();
     }
 
-    if (found != connections_.end())  found->second->onGuestSegment(segment);
+    if (found != connections_.end())  found->second->onGuestSegment(segment, nowMs);
     else if (isSyn)                   startOutbound(segment, nowMs);
     else if (!(segment.flags & kTcpRst)) sendReset(segment);
 }

@@ -92,12 +92,18 @@ Bytes reply(const Bytes& query, uint8_t rcode, const uint8_t* address)
 
 }  // namespace
 
-void DnsProxy::query(uint16_t guestPort, View payload, uint64_t nowMs, const Emit& emit)
+bool DnsProxy::query(uint16_t guestPort, View payload, uint64_t nowMs, const Emit& emit)
 {
-    if (payload.size < kHeader) return;                       // not even a header
+    if (payload.size < kHeader) return false;                 // not even a header
     const uint16_t flags = rd16(payload.data + 2);
-    if (flags & 0x8000) return;                               // a response, not a query
+    if (flags & 0x8000) return false;                         // a response, not a query
+    handleQuery(guestPort, payload, flags, nowMs, emit);
+    return true;
+}
 
+void DnsProxy::handleQuery(uint16_t guestPort, View payload, uint16_t flags, uint64_t nowMs,
+                           const Emit& emit)
+{
     Bytes header(payload.data, payload.data + kHeader);
     const uint8_t opcode = static_cast<uint8_t>((flags >> 11) & 0x0F);
     Question question;
@@ -210,10 +216,11 @@ void DnsProxy::queryRaw(uint16_t port, const Bytes& query, uint64_t now, const E
     }
     if (pending() >= kMaxPending) { emit(port, reply(query, kServFail, nullptr)); return; }
     if (!job) {
-        if (tokenMs_) tokens_ = std::min(16.0, tokens_ + (now - tokenMs_) * .004);
-        tokenMs_ = now;
-        if (tokens_ < 1) { emit(port, reply(query, kServFail, nullptr)); return; }
-        tokens_ -= 1;
+        Workers& b = *workers_;                     // CPU thread: no lock for the bucket
+        if (b.tokenMs) b.tokens = std::min(16.0, b.tokens + (now - b.tokenMs) * .004);
+        b.tokenMs = now;
+        if (b.tokens < 1) { emit(port, reply(query, kServFail, nullptr)); return; }
+        b.tokens -= 1;
         {
             std::lock_guard<std::mutex> lock(workers_->mutex);
             if (workers_->active >= kMaxPending) { emit(port, reply(query, kServFail, nullptr)); return; }

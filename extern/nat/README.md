@@ -1,12 +1,17 @@
-# NAT intégré issu de POM2
+# NAT intégré de NeoST
 
-Source : https://github.com/habib256/POM2
-Révision : `b07f3a0a5ac699989be0e61c5f36369f5c1287a2` (2026-11-09).
+Ce NAT appartient à NeoST. Il est issu de POM2 (même auteur) et en reprend
+les correctifs à la demande.
+
+Origine : https://github.com/habib256/POM2
+Dernière reprise : `4625ec82547118918bfafc795f6b7128cdb616ae` (2026-11-11).
 Licence : GPL-3.0-or-later, © 2026 VERHILLE Arnaud (`LICENSE`).
 Les références au dessin Casso @ `2d899adf` (MIT) sont conservées dans les sources.
 
 Les fichiers de protocole, le résolveur et leurs tests sont importés sans
-réécriture. Le raccord NeoST vit dans `src/net/NatBackend.*`.
+réécriture. Le raccord NeoST vit dans `src/net/NatBackend.*` ; il appelle
+`nicReset()` à la mise sous tension de la NE2000 (`Ne2000::powerCycle`), pas
+au port reset du DP8390, comme POM2 pour le registre MR du W5100.
 Les commentaires anglais de cette copie amont sont conservés pour faciliter
 les comparaisons et les mises à jour.
 

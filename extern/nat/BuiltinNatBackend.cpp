@@ -18,8 +18,10 @@
 #include "W5100Resolver.h"
 
 #include <chrono>
+#include <cstdio>
 #include <cstring>
 #include <deque>
+#include <set>
 #include <string>
 #include <utility>
 #include <sstream>
@@ -140,6 +142,18 @@ std::string dotted(uint32_t ip)
            std::to_string((ip >> 8) & 0xFF) + "." + std::to_string(ip & 0xFF);
 }
 
+/// Eight hex groups, uncompressed: for one log line, not for parsing.
+std::string colons(const Ipv6& ip)
+{
+    std::string out;
+    for (int i = 0; i < 16; i += 2) {
+        char group[8];
+        std::snprintf(group, sizeof group, "%s%x", i ? ":" : "", rd16(ip.data() + i));
+        out += group;
+    }
+    return "[" + out + "]";
+}
+
 class BuiltinNat final : public NetworkBackend, private GuestSink
 {
 public:
@@ -147,6 +161,25 @@ public:
     /// frames are dropped rather than the heap grown. TCP resends; UDP
     /// tolerates the loss.
     static constexpr std::size_t kMaxQueued = 256;
+
+    /// IPv6 flows are relayed under a private IPv4 alias (0xF000xxxx) so
+    /// that UdpRelay and TcpRelay serve both families. An alias lives while
+    /// a relay can still name it; one nobody names is reclaimed — when the
+    /// table is full, and every kAliasSweepMs. The cap is one more than the
+    /// relays can ever name at once (every UDP flow full of IPv4-mapped and
+    /// IPv6 peers, every TCP slot taken), so a sweep of a full table always
+    /// frees a slot. Before 2026-11-11 the table only grew and an alias was
+    /// spent even on a refused destination: 512 datagrams to fe80::x and
+    /// IPv6 was dead for the session (NeoST audit).
+    static constexpr std::size_t kMaxAliases6 =
+        UdpRelay::kMaxFlows * 2 * UdpRelay::kMaxPeers + TcpRelay::kMaxConnections + 1;
+    static constexpr uint32_t kAliasFirst = 0xF0000001, kAliasLast = 0xF000FFFE;
+    static constexpr uint64_t kAliasSweepMs = 10000;
+    /// Guests waiting on the IPv6 DNS server. Every query dns6_ accepts is
+    /// answered within DnsProxy::kTimeoutMs, so an entry older than that
+    /// (plus a margin for the pump) is an orphan and is dropped.
+    static constexpr std::size_t kMaxDnsGuests6 = 32;
+    static constexpr uint64_t    kDnsGuest6Ms   = DnsProxy::kTimeoutMs + 2000;
 
     BuiltinNat(const BuiltinNatOptions& options, std::unique_ptr<HostNetwork> network,
                std::unique_ptr<W5100Resolver> resolver)
@@ -170,6 +203,8 @@ public:
             if (socket) forwards_.push_back({rule, std::move(socket), {}});
             else { valid_ = false; log().warn("Net", "NAT port forward could not bind host port " + std::to_string(rule.bind.port)); }
         }
+        // One DNS budget for the backend, whichever family the guest asks in.
+        dns6_.shareBudgetWith(dns_);
         name_ = std::string("built-in NAT (guest 10.0.2.15, gw 10.0.2.2, dns 10.0.2.3") +
                 (policy_.restricted ? ", restricted" : "") +
                 (policy_.allowHostLoopback ? ", host loopback ALLOWED" : "") + ")";
@@ -220,6 +255,10 @@ public:
             udpToGuest(kDnsIp, kDnsPort, guestPort, reply.data(), reply.size());
         });
         dns6_.pump(t, [this](uint16_t port, const Bytes& reply) { emitDns6(port, reply); });
+        for (auto it = dnsGuests6_.begin(); it != dnsGuests6_.end();)
+            if (t >= it->second.expiresMs) it = dnsGuests6_.erase(it);
+            else ++it;
+        if (t >= nextAliasSweepMs_) { reclaimAliases6(); nextAliasSweepMs_ = t + kAliasSweepMs; }
         if (ipv6Active_ && t >= nextRaMs_) {
             Ipv6 allNodes{}; allNodes[0] = 0xff; allNodes[1] = 2; allNodes[15] = 1;
             advertise6(allNodes);
@@ -227,6 +266,23 @@ public:
         udp_.pump(t);
         tcp_.pump(t);
         pumpForwards(t);
+    }
+
+    void nicReset() override
+    {
+        tcp_.closeAll();
+        udp_.closeAll();
+        dns_.clear();
+        dns6_.clear();
+        dnsGuests6_.clear();
+        peers6_.clear();
+        aliasOf6_.clear();
+        for (auto& f : forwards_) f.peers.clear();     // the listeners stay
+        fragments_  = Ipv4Reassembler{};
+        fragments6_ = Ipv6Reassembler{};
+        outbound_.clear();
+        ipv6Active_ = false;
+        guestIp_  = kGuestIp;           // relearned from the next frame
     }
 
     /// Every address is behind the gateway (it answers ARP for all of them),
@@ -362,13 +418,28 @@ private:
     /// otherwise fill the log, and the first line is the one that matters.
     void noteRefused(uint32_t destination, uint16_t port, const char* what)
     {
+        const auto v6 = peers6_.find(destination);
+        if (v6 != peers6_.end()) { noteRefused6(v6->second.first, port, what); return; }
+        const uint8_t top = static_cast<uint8_t>(destination >> 24);
+        noteRefused(dotted(destination), destination == kGatewayIp || top == 127, port, what);
+    }
+    void noteRefused6(const Ipv6& destination, uint16_t port, const char* what)
+    {
+        Ipv6 loopback{}; loopback[15] = 1;
+        const bool mapped127 = std::all_of(destination.begin(), destination.begin() + 10,
+                                           [](uint8_t x) { return x == 0; }) &&
+                               destination[10] == 0xff && destination[11] == 0xff &&
+                               destination[12] == 127;
+        noteRefused(colons(destination), destination == kGateway6 || destination == loopback ||
+                                             mapped127, port, what);
+    }
+    void noteRefused(const std::string& destination, bool loopback, uint16_t port, const char* what)
+    {
         ++framesDropped_;
         if (refusalWarned_) return;
         refusalWarned_ = true;
-        const uint8_t top = static_cast<uint8_t>(destination >> 24);
-        const bool loopback = destination == kGatewayIp || top == 127;
         log().warn("Net", std::string("built-in NAT: guest ") + what + " to " +
-                              dotted(destination) + ":" + std::to_string(port) +
+                              destination + ":" + std::to_string(port) +
                               " refused" +
                               (loopback ? " — the host's loopback; set "
                                           "uthernet_allow_loopback to opt in"
@@ -404,7 +475,7 @@ private:
         const auto it = dnsGuests6_.find({port, rd16(reply.data())});
         if (it == dnsGuests6_.end()) return;
         auto udp = buildUdp(0, 0, 53, port, reply.data(), reply.size());
-        queue6(kDns6, it->second, kProtoUdp, std::move(udp));
+        queue6(kDns6, it->second.source, kProtoUdp, std::move(udp));
         dnsGuests6_.erase(it);
     }
 
@@ -422,19 +493,37 @@ private:
         if (ip.protocol == kProtoUdp && ip.destination == kDns6 && rd16(ip.payload.data + 2) == 53) {
             const auto port = rd16(ip.payload.data);
             View question{ip.payload.data + 8, ip.payload.size - 8};
-            if (question.size < 12 || dnsGuests6_.size() >= 32) return;
-            dnsGuests6_[{port, rd16(question.data)}] = ip.source;
-            dns6_.query(port, question, now(), [this](uint16_t p, const Bytes& r) { emitDns6(p, r); });
+            if (question.size < 12) return;
+            // The entry must exist before query(): an answer from the cache
+            // is emitted from inside it. A datagram query() ignores (a
+            // response, QR=1) will never be answered, so its entry goes
+            // again at once — or, if it collided with a query in flight, the
+            // waiting guest's entry comes back as it was.
+            const DnsGuestKey key{port, rd16(question.data)};
+            const auto previous = dnsGuests6_.find(key);
+            const bool fresh = previous == dnsGuests6_.end();
+            if (fresh && dnsGuests6_.size() >= kMaxDnsGuests6) return;
+            const DnsGuest6 kept = fresh ? DnsGuest6{} : previous->second;
+            dnsGuests6_[key] = {ip.source, now() + kDnsGuest6Ms};
+            if (!dns6_.query(port, question, now(), [this](uint16_t p, const Bytes& r) { emitDns6(p, r); })) {
+                if (fresh) dnsGuests6_.erase(key);
+                else       dnsGuests6_[key] = kept;
+            }
             return;
         }
-        uint32_t alias = 0;
-        const auto pair = std::make_pair(ip.destination, ip.source);
-        for (const auto& p : peers6_) if (p.second == pair) { alias = p.first; break; }
-        if (!alias) {
-            if (peers6_.size() >= 512) return;
-            alias = 0xf0000001 + static_cast<uint32_t>(peers6_.size());
-            peers6_[alias] = pair;
+        // A UDP destination the fence refuses spends no alias: it is dropped
+        // here. A refused TCP one takes an alias, for the reset to come back
+        // under — nothing names it afterwards, so the next sweep reclaims it.
+        if (ip.protocol == kProtoUdp) {
+            Endpoint host;
+            const uint16_t port = rd16(ip.payload.data + 2);
+            if (routeDestination6(ip.destination, port, false, policy_, host) == Route::Refused) {
+                noteRefused6(ip.destination, port, "UDP");
+                return;
+            }
         }
+        const uint32_t alias = aliasFor6({ip.destination, ip.source});
+        if (!alias) { ++framesDropped_; return; }
         // Adapt only the addresses/checksum at the relay seam. TCP's sequence
         // space, persist/retransmit state and UDP filtering are shared with v4.
         Bytes transport(ip.payload.data, ip.payload.data + ip.payload.size);
@@ -451,6 +540,37 @@ private:
                 s.mss = std::min<uint16_t>(s.mss ? s.mss : 1220, 1440);
                 tcp_.onGuestSegment(s, now());
             }
+        }
+    }
+
+    uint32_t aliasFor6(const std::pair<Ipv6, Ipv6>& pair)
+    {
+        const auto known = aliasOf6_.find(pair);
+        if (known != aliasOf6_.end()) return known->second;
+        if (peers6_.size() >= kMaxAliases6) reclaimAliases6();
+        if (peers6_.size() >= kMaxAliases6) return 0;      // cannot happen: see kMaxAliases6
+        // The range holds far more numbers than the table, so this ends;
+        // rolling on rather than restarting keeps a number just reclaimed
+        // out of use for as long as possible.
+        do nextAlias6_ = nextAlias6_ >= kAliasLast ? kAliasFirst : nextAlias6_ + 1;
+        while (peers6_.count(nextAlias6_));
+        peers6_[nextAlias6_] = pair;
+        aliasOf6_[pair] = nextAlias6_;
+        return nextAlias6_;
+    }
+
+    /// Drop every alias no relay names any more.
+    void reclaimAliases6()
+    {
+        if (peers6_.empty()) return;
+        std::set<uint32_t> named;
+        const auto note = [&](uint32_t address) { if (peers6_.count(address)) named.insert(address); };
+        udp_.forEachShown(note);
+        tcp_.forEachPeer(note);
+        for (auto it = peers6_.begin(); it != peers6_.end();) {
+            if (named.count(it->first)) { ++it; continue; }
+            aliasOf6_.erase(it->second);
+            it = peers6_.erase(it);
         }
     }
 
@@ -585,8 +705,13 @@ private:
     TcpRelay                       tcp_;
     Ipv4Reassembler                fragments_;
     Ipv6Reassembler                fragments6_;
-    std::map<uint32_t, std::pair<Ipv6, Ipv6>> peers6_;
-    std::map<std::pair<uint16_t, uint16_t>, Ipv6> dnsGuests6_;
+    std::map<uint32_t, std::pair<Ipv6, Ipv6>> peers6_;      ///< alias -> (peer, guest)
+    std::map<std::pair<Ipv6, Ipv6>, uint32_t> aliasOf6_;    ///< the reverse
+    uint32_t nextAlias6_ = kAliasLast;                      ///< the first one taken is kAliasFirst
+    uint64_t nextAliasSweepMs_ = 0;
+    using DnsGuestKey = std::pair<uint16_t, uint16_t>;      ///< guest port, DNS id
+    struct DnsGuest6 { Ipv6 source{}; uint64_t expiresMs = 0; };
+    std::map<DnsGuestKey, DnsGuest6> dnsGuests6_;
     uint32_t nextIp6Id_ = 0;
     uint64_t nextRaMs_ = 0;
     bool ipv6Active_ = false;
