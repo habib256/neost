@@ -191,6 +191,11 @@ void MidiAcia::advanceTx(int64_t cycle) {
 void MidiAcia::pushRx(uint8_t v, int64_t when) {
     // acia.c RX STOP_BIT : si RDR est encore plein, le nouvel octet est
     // perdu. Le registre à décalage ne stocke pas une seconde trame achevée.
+    // Master reset MAINTENU (CR1-0 = 11) : récepteur tenu en reset, l'octet est perdu.
+    // [B] Motorola MC6850 § Counter Divide Select Bits p. 8, § Interrupt Request p. 7.
+    // [D] Hatari acia.c:1038 @ f0736b24 le reçoit quand même : défaut non porté
+    //     (cf. Ikbd::onRxDeliver).
+    if ((control_ & 0x03) == 0x03) return;
     if (rdrf_) rxOverrun_ = true;
     else { rdr_ = v; rdrf_ = true; }
     raiseIfReady(when);

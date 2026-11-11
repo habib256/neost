@@ -208,11 +208,19 @@ uint8_t convertAttribute(mode_t mode, const char* path) {
     return a;
 }
 
+// Fichier hôte portant l'attribut GEMDOS « lecture seule » (pas un dossier, non inscriptible).
+static bool hostFileReadOnly(const std::string& host) {
+    struct stat st;
+    if (stat(host.c_str(), &st) != 0 || S_ISDIR(st.st_mode)) return false;
+    return (convertAttribute(st.st_mode, host.c_str()) & FA_READONLY) != 0;
+}
+
 // errno → code d'erreur GEMDOS (errno2gemdos). etype: false=fichier, true=chemin.
 uint32_t errno2gemdos(int error, bool pathType) {
     switch (error) {
     case ENOENT:   if (!pathType) return GEMDOS_EFILNF; /* fallthrough */
     case ENOTDIR:  return GEMDOS_EPTHNF;
+    case ENAMETOOLONG: return GEMDOS_EPTHNF;   // chemin de refus de clampToSandbox (composant de 300 car.)
     case ENOTEMPTY: case EEXIST: case EPERM: case EACCES: case EROFS:
         return GEMDOS_EACCDN;
     default:       return GEMDOS_ERROR;
@@ -834,6 +842,21 @@ static std::string physicalCanon(const std::string& path) {
 // le clamp « sep >= minlen » des « ..\ » — et on le journalise TOUJOURS : NeoST lance des
 // binaires inconnus, une tentative d'évasion est un signal de sécurité, pas une trace.
 void GemdosHd::clampToSandbox(const EmuDrive& d, const std::string& gemName, std::string& out) {
+    // Sous Windows, std::filesystem::path lit la chaîne comme de l'UTF-8 et LÈVE sur une
+    // séquence invalide — or un nom venu de l'invité est en jeu de caractères Atari
+    // (É = $90, ü = $81). Non rattrapée, l'exception tuait l'émulateur sur un simple
+    // Fopen. Toute exception vaut refus.
+    try {
+        clampToSandboxUnchecked(d, gemName, out);
+    } catch (const std::exception&) {
+        std::fprintf(stderr, "[gemdos] REFUSED: '%s' is not a usable host name\n", gemName.c_str());
+        std::string root = d.hdEmuDir;
+        addSlash(root);
+        out = root + std::string(300, '~') + std::string(1, PATHSEP) + "refused";
+    }
+}
+
+void GemdosHd::clampToSandboxUnchecked(const EmuDrive& d, const std::string& gemName, std::string& out) {
     std::string root = physicalCanon(d.hdEmuDir);
     addSlash(root);
     // Deux étapes, dans CET ordre : makeAbsoluteName retire d'abord les « .. » (le
@@ -845,12 +868,52 @@ void GemdosHd::clampToSandbox(const EmuDrive& d, const std::string& gemName, std
     makeAbsoluteName(lex);
     const std::string canon = physicalCanon(lex);
     const bool isRoot = (canon.size() + 1 == root.size() && root.compare(0, canon.size(), canon) == 0);
-    if (isRoot || canon.compare(0, root.size(), root) == 0) { out = canon; return; }
-    const std::size_t sep = canon.rfind(PATHSEP);
-    const std::string base = (sep == std::string::npos) ? canon : canon.substr(sep + 1);
-    std::fprintf(stderr, "[gemdos] REFUSED: '%s' escaped the drive (%s) — clamped to the root\n",
+    if (isRoot) { out = canon; return; }
+    bool inside = canon.compare(0, root.size(), root) == 0;
+    // Lien PENDANT (cible absente, boucle, accès refusé) : realpath échoue dessus, donc
+    // physicalCanon le recolle tel quel comme un nom « inexistant » — le préfixe passe,
+    // et un fopen("wb+") suivrait pourtant le lien hors du bac à sable. Sous le préfixe
+    // résolu il ne reste aucun lien SAUF ceux-là : on les cherche composant par
+    // composant, sans les suivre.
+    if (inside) {
+        std::error_code ec;
+        for (std::size_t sep = root.size(); inside; ++sep) {
+            sep = canon.find(PATHSEP, sep);
+            const std::string part = canon.substr(0, sep);
+            if (std::filesystem::is_symlink(std::filesystem::symlink_status(std::filesystem::path(part), ec)))
+                inside = false;
+            if (sep == std::string::npos) break;
+        }
+    }
+    if (inside) {
+        // On ne résout que le dossier PARENT : le dernier composant reste le nom demandé,
+        // sans quoi Fdelete/Frename d'un lien agissaient sur sa cible et non sur lui.
+        // La cible, elle, vient d'être vérifiée (canon) : l'ouvrir reste sous la racine.
+        std::string named = lex;
+        while (named.size() > 1 && named.back() == PATHSEP) named.pop_back();
+        const std::size_t sep = named.rfind(PATHSEP);
+        if (sep == std::string::npos || sep == 0) { out = canon; return; }
+        // Parent = racine de lecteur Windows (« E:/FILE ») : garder le séparateur, car
+        // « E: » seul désigne le répertoire COURANT de ce lecteur, pas sa racine.
+        const bool driveRoot = sep == 2 && named[1] == ':';
+        std::string parent = physicalCanon(named.substr(0, driveRoot ? sep + 1 : sep));
+        addSlash(parent);
+        const std::string kept = parent + named.substr(sep + 1);
+        const bool parentIn = kept.compare(0, root.size(), root) == 0;
+        out = parentIn ? kept : canon;
+        return;
+    }
+    // Évasion : on rend un chemin qui ne peut PAS exister sous la racine, pour que
+    // l'appel hôte échoue (ENOENT → EFILNF/EPTHNF côté GEMDOS). L'ancien rabat sur
+    // « racine + nom de base de la cible » désignait un AUTRE fichier : Fdelete d'un
+    // lien sortant supprimait l'homonyme de la racine, et un lien pendant posé à la
+    // racine restait le lien lui-même. Le composant fait 300 caractères, au-delà de la
+    // limite de nom de tous les systèmes de fichiers visés (255) : aucun appel ne peut
+    // l'ouvrir NI LE CRÉER — un nom ordinaire, même hors 8.3, l'invité pouvait le créer
+    // par Dcreate et y faire converger toutes les tentatives refusées.
+    std::fprintf(stderr, "[gemdos] REFUSED: '%s' escaped the drive (%s)\n",
                  gemName.c_str(), canon.c_str());
-    out = root + base;
+    out = root + std::string(300, '~') + std::string(1, PATHSEP) + "refused";
 }
 
 void GemdosHd::createHostFileName(int drive, const std::string& gemNameIn, std::string& out) {
@@ -918,7 +981,11 @@ void GemdosHd::createHostFileName(int drive, const std::string& gemNameIn, std::
 //  Opérations GEMDOS
 // -----------------------------------------------------------------------------
 bool GemdosHd::gemSetDrv(uint32_t p) {
-    currentDrive_ = readWord(p);
+    // Le mot vient du programme émulé : hors de A..Z, GEMDOS le refuse et le lecteur
+    // courant ne change pas. Le retenir tel quel donnait un save-state que son propre
+    // contrôle « drive < 26 » refusait ensuite au chargement.
+    const uint16_t drv = readWord(p);
+    if (drv < 26) currentDrive_ = drv;
     return false;   // redirige aussi vers TOS
 }
 
@@ -1023,6 +1090,11 @@ bool GemdosHd::gemChDir(uint32_t p) {
             host.resize(sep ? sep : 1);   // garde au moins la racine « / »
     }
     if (access(host.c_str(), F_OK) != 0) { setD0(cpu_, GEMDOS_EPTHNF); return true; }
+    // Dsetpath sur un FICHIER : EPTHNF (−34). [C] TOS 1.04, 2.06 et EmuTOS exécutés ; on
+    // rendait 0 et le « dossier » courant devenait un fichier (casse le test « est-ce un
+    // dossier ? » par Dsetpath).
+    { struct stat dst;
+      if (stat(host.c_str(), &dst) != 0 || !S_ISDIR(dst.st_mode)) { setD0(cpu_, GEMDOS_EPTHNF); return true; } }
     addSlash(host);
     makeAbsoluteName(host);
 
@@ -1115,6 +1187,13 @@ bool GemdosHd::gemOpen(uint32_t p) {
     if (toTos) return false;
 
     std::string host; createHostFileName(drive, name, host);
+    // [C] TOS 1.04, TOS 2.06 et EmuTOS exécutés (même programme depuis une disquette .st, vrai GEMDOS) : ouvrir en écriture (mode 1
+    //     ou 2) un fichier en lecture seule échoue À L'OUVERTURE par EACCDN. On rendait un
+    //     handle dont chaque Fwrite échouait ensuite. Le lecteur protégé en bloc
+    //     (writeProtect_) garde son ouverture en lecture, comme un disque à languette.
+    if (!writeProtect_ && (mode & 3) != 0 && hostFileReadOnly(host)) {
+        setD0(cpu_, GEMDOS_EACCDN); return true;
+    }
     const char* modeStr;
     if (writeProtect_ ||
         (access(host.c_str(), F_OK) == 0 && access(host.c_str(), W_OK) != 0)) {
@@ -1136,9 +1215,9 @@ bool GemdosHd::gemOpen(uint32_t p) {
     }
     if (errno == EACCES || errno == EROFS || errno == EPERM || errno == EISDIR)
         setD0(cpu_, GEMDOS_EACCDN);
-    else if (errno == ENOTDIR || filePathMissing(host))
-        setD0(cpu_, GEMDOS_EPTHNF);
     else
+        // Dossier absent compris : Fopen rend EFILNF (−33) sur les trois TOS, là où
+        // Fcreate rend EPTHNF (même source [C]).
         setD0(cpu_, GEMDOS_EFILNF);
     return true;
 }
@@ -1146,8 +1225,19 @@ bool GemdosHd::gemOpen(uint32_t p) {
 bool GemdosHd::gemClose(uint32_t p) {
     int handle = readWord(p);
     if ((handle = getValidFileHandle(handle)) < 0) return false;
-    if (fileHandles_[handle].fp && fileHandles_[handle].fp == infFile_)
-        closeInfOverride(infFile_);       // INF_CloseOverride : rembobiné ou supprimé
+    if (fileHandles_[handle].fp && fileHandles_[handle].fp == infFile_) {
+        // INF_CloseOverride : rembobiné ou supprimé. Le FILE* appartient à l'override :
+        // on l'oublie dans le handle AVANT closeFileHandle, sans quoi, une fois
+        // infFile_ remis à nullptr par la fermeture réelle, le test « fp != infFile_ »
+        // de closeFileHandle refermait le même FILE* (double fclose, abort sous glibc).
+        // [D] Hatari gemdos.c GemDOS_Close @ f0736b24 — bUsed = false avant la fermeture.
+        FILE* const inf = infFile_;
+        closeInfOverride(inf);
+        if (!infFile_)                    // réellement fermé : plus aucun handle ne le garde
+            for (auto& fh : fileHandles_)
+                if (fh.fp == inf) { fh.fp = nullptr; fh.used = false; fh.basepage = 0; }
+        fileHandles_[handle].fp = nullptr;
+    }
     closeFileHandle(handle);
     for (int i = 0; i < FORCED_HANDLES; i++)
         if (forced_[i].handle == handle) unforceFileHandle(i);
@@ -1223,6 +1313,10 @@ bool GemdosHd::gemFDelete(uint32_t p) {
     if (drive == -1) return false;
     if (writeProtect_) { setD0(cpu_, GEMDOS_EWRPRO); return true; }
     std::string host; createHostFileName(drive, name, host);
+    // [C] TOS 1.04, TOS 2.06 et EmuTOS exécutés (même programme depuis une disquette .st, vrai GEMDOS) : Fdelete d'un fichier en
+    //     lecture seule rend EACCDN (−36). unlink() ne regarde que les droits du DOSSIER
+    //     et détruisait le fichier. [D] Hatari gemdos.c:2560 @ f0736b24 a le même défaut.
+    if (hostFileReadOnly(host)) { setD0(cpu_, GEMDOS_EACCDN); return true; }
     if (unlink(host.c_str()) == 0) setD0(cpu_, GEMDOS_EOK);
     else setD0(cpu_, errno2gemdos(errno, false));
     return true;
@@ -1245,7 +1339,11 @@ bool GemdosHd::gemLSeek(uint32_t p) {
     case 0: dest = offset; break;
     case 1: dest = oldPos + offset; break;
     case 2: dest = fileSize + offset; break;
-    default: dest = -1;
+    default:
+        // Mode inconnu : EINVFN (−32), pas ERANGE (même source [C]).
+        fseeko(fp, oldPos, SEEK_SET);
+        setD0(cpu_, GEMDOS_EINVFN);
+        return true;
     }
     if (dest < 0 || dest > fileSize) {
         fseeko(fp, oldPos, SEEK_SET);
@@ -1271,6 +1369,8 @@ bool GemdosHd::gemFattrib(uint32_t p) {
     if (stat(host.c_str(), &st) != 0) { setD0(cpu_, GEMDOS_EFILNF); return true; }
     mode_t mode = st.st_mode;
 
+    // Fattrib sur un DOSSIER : EFILNF sur les trois TOS (même source [C]) — on rendait $10.
+    if (S_ISDIR(mode)) { setD0(cpu_, GEMDOS_EFILNF); return true; }
     if (rwflag == 0) { setD0(cpu_, convertAttribute(mode, host.c_str())); return true; }
     if (writeProtect_) { setD0(cpu_, GEMDOS_EWRPRO); return true; }
 
@@ -1336,7 +1436,7 @@ GemdosHd::DtaResult GemdosHd::populateDTA(InternalDta& iDTA, const std::string& 
     uint16_t tw, dw; dateTime2Tos(st.st_mtime, tw, dw);
     flushCache();
     std::string atari = host2atari(fname);
-    writeLong(dtaGemdos + 26, (uint32_t)st.st_size);     // dta_size
+    writeLong(dtaGemdos + 26, S_ISDIR(st.st_mode) ? 0u : (uint32_t)st.st_size);   // dta_size (0 pour un dossier, comme en FAT)
     writeWord(dtaGemdos + 22, tw);                       // dta_time
     writeWord(dtaGemdos + 24, dw);                       // dta_date
     writeByte(dtaGemdos + 21, (uint8_t)nFileAttr);       // dta_attrib
@@ -1469,6 +1569,8 @@ bool GemdosHd::gemRename(uint32_t p) {
     std::string newHost, oldHost;
     createHostFileName(newDrive, newName, newHost);
     createHostFileName(oldDrive, oldName, oldHost);
+    // Source en lecture seule : EACCDN, comme Fdelete (même source [C]).
+    if (hostFileReadOnly(oldHost)) { setD0(cpu_, GEMDOS_EACCDN); return true; }
     if (access(oldHost.c_str(), F_OK) == 0 && access(newHost.c_str(), F_OK) == 0)
         setD0(cpu_, GEMDOS_EACCDN);
     else if (rename(oldHost.c_str(), newHost.c_str()) == 0)
@@ -1873,7 +1975,13 @@ bool GemdosHd::closeInfOverride(FILE* fp) {
 }
 
 void GemdosHd::createInfOverride() {
-    closeInfOverride(infFile_);          // pas refermé par le TOS au boot précédent
+    if (infFile_) {                      // pas refermé par le TOS au boot précédent
+        // Fermeture INCONDITIONNELLE : closeInfOverride ne fait que rembobiner au premier
+        // Fclose d'EmuTOS, et le tmpfile (FILE + descripteur) fuyait à chaque reset.
+        for (auto& fh : fileHandles_)
+            if (fh.fp == infFile_) { fh.fp = nullptr; fh.used = false; fh.basepage = 0; }
+        std::fclose(infFile_);
+    }
     infFile_ = nullptr;
     infCloses_ = 0;
     if (autoPrg_.empty()) return;
@@ -2281,7 +2389,14 @@ void GemdosHd::serialize(StateArchive& ar) {
         for (auto& name : dta.found) {
             text(name);
             if (!ar.ok()) return;
-            if (name.empty() || name.find_first_of("/\\") != std::string::npos) {
+            // Sous POSIX « \ » est un caractère de nom ordinaire : un fichier hôte
+            // « X\Y.PRG » entrait dans la DTA et faisait échouer toute SAUVEGARDE.
+#if defined(_WIN32)
+            const char* const kSeps = "/\\";
+#else
+            const char* const kSeps = "/";
+#endif
+            if (name.empty() || name.find_first_of(kSeps) != std::string::npos) {
                 ar.fail("GEMDOS DTA invalid entry"); return;
             }
             if (name == ".." && !allowed(fs::path(dta.path).parent_path().string(), false)) {

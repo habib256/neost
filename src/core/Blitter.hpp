@@ -75,6 +75,8 @@ public:
         ar(busWord_);           // dernier mot du bus (persiste entre blits)
         ar(xReset_);            // recharge du X count
         ar(yLatch_);            // compteur Y latché (0→65536 à l'écriture)
+        // Au-delà, « int(yLatch_) » devient négatif : le blit ne finit jamais (BUSY à 1).
+        ar.check(yLatch_ <= 65536u, "Blitter::yLatch_ > 65536");
         ar(midBlit_);           // transfert engagé (même en pause)
         ar(haveFxsr_);          // lecture source extra faite (ligne)
         ar(nfsrInt_);           // dernière lecture source de la ligne sautée

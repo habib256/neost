@@ -428,6 +428,14 @@ void Acsi::writeToDisk(const uint8_t* src, int len) {
         return;
     }
     if (!dev.fp || dev.readOnly) { status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR; return; }
+    // La borne LBA + count a été vérifiée à la réception du CDB, mais l'image de la cible
+    // a pu être remontée (SD UltraSatan à chaud) avant l'ouverture du DMA : sans ce
+    // contrôle, fseeko + fwrite agrandissaient le fichier hôte au-delà de hdSize.
+    const uint64_t bs     = dev.blockSize ? dev.blockSize : 512;
+    const uint64_t blocks = (uint64_t(len > 0 ? len : 0) + bs - 1) / bs;
+    if (len < 0 || uint64_t(dmaBlockAddr_) + blocks > dev.hdSize) {
+        status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR; return;
+    }
     if (fseeko(dev.fp, (off_t)dmaBlockAddr_ * dev.blockSize, SEEK_SET) != 0) {
         status_ = HD_STATUS_ERROR; dev.lastError = HD_REQSENS_WRITEERR;
         return; // ne jamais écrire au curseur résiduel après un seek échoué
@@ -516,7 +524,7 @@ bool Acsi::feedByte(uint8_t b) {
 
     if (byteCount_ == 0) { opcode_ = b; dmaError_ = false; }
     if (byteCount_ < (int)sizeof(command_)) command_[byteCount_] = b;
-    ++byteCount_;
+    if (byteCount_ < (1 << 30)) ++byteCount_;        // compteur saturé : pas de débordement signé
 
     bool didCmd = false;
     if ((opcode_ < 0x20 && byteCount_ == 6) ||

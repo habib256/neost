@@ -1078,7 +1078,14 @@ void Bus::wrStePads(uint32_t a, uint8_t v) {
     // STE : le GST MCU n'acquitte $FF9200-01, $FF9210-17 et $FF9220-23 qu'en
     // LECTURE (netlist 4081 : BUTR/PADR/PENR contiennent IRWZ) → toute écriture
     // fait bus error. Mega STE non touché ($FF9200 y porte les DIP, pas de netlist).
-    if (machine == MachineType::Ste && cpu) { cpu->triggerBusError(a, true); return; }
+    // … sauf quand le maître du bus est le BLITTER : la faute est celle du 68000, et la
+    // lever d'ici faisait traverser une moira::BusError à un blit en cours
+    // (blitterMasterAccess resté vrai, faute sur une adresse que le CPU n'a pas touchée).
+    // L'écriture du blitter est simplement perdue.
+    if (machine == MachineType::Ste && cpu) {
+        if (!blitterMasterAccess) cpu->triggerBusError(a, true);
+        return;
+    }
     // Écriture OCTET sur $FF9200 (adresse paire) → bus error, comme en lecture
     // (Joy_StePadButtons_DIPSwitches_WriteWord). Les autres écritures de la plage
     // (lightpen incluse : IoMem_WriteWithoutInterception) sont ignorées sans faute.

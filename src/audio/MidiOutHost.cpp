@@ -197,8 +197,12 @@ bool MidiOutHost::openSynth() {
         DisposeAUGraph(graph);
         return false;
     }
-    graph_ = graph;
-    synth_ = synthUnit;
+    {
+        // Publication sous outMtx_ : le fil de livraison lit synth_ sous ce verrou (emit).
+        std::lock_guard<std::mutex> lk(outMtx_);
+        graph_ = graph;
+        synth_ = synthUnit;
+    }
     std::fprintf(stderr, "[midi-out] built-in General MIDI synth started\n");
     return true;
 #else
@@ -258,7 +262,7 @@ bool MidiOutHost::ensurePort_() {
     // running status et SysEx, qu'on n'a donc pas à réimplémenter ici. 4 Ko : de quoi
     // contenir un dump de patch (les SysEx du parseur sont bornés plus haut).
     snd_midi_event_t* enc = nullptr;
-    if (snd_midi_event_new(4096, &enc) < 0) {
+    if (snd_midi_event_new(65536, &enc) < 0) {   // = Parser::kMaxSysex
         snd_seq_delete_simple_port(seq, port); snd_seq_close(seq);
         return false;
     }
@@ -682,7 +686,7 @@ void MidiOutHost::sendTo(const OpenDest& d, const uint8_t* msg, int len) {
         snd_seq_event_output_direct(static_cast<snd_seq_t*>(seq_), &ev);
 #elif defined(__APPLE__)
     if (!outPort_) return;
-    alignas(MIDIPacketList) uint8_t buf[4096 + 64];
+    alignas(MIDIPacketList) uint8_t buf[65536 + 64];   // = Parser::kMaxSysex + en-tête
     MIDIPacketList* list = reinterpret_cast<MIDIPacketList*>(buf);
     MIDIPacket* pkt = MIDIPacketListInit(list);
     pkt = MIDIPacketListAdd(list, sizeof buf, pkt, 0, ByteCount(len), msg);
@@ -738,7 +742,7 @@ void MidiOutHost::emit(const uint8_t* msg, int len) {
         MusicDeviceMIDIEvent(static_cast<AudioUnit>(synth_), msg[0], len > 1 ? msg[1] : 0,
                              len > 2 ? msg[2] : 0, 0);
     if (src_) {
-        alignas(MIDIPacketList) uint8_t buf[4096 + 64];
+        alignas(MIDIPacketList) uint8_t buf[65536 + 64];   // = Parser::kMaxSysex + en-tête
         MIDIPacketList* list = reinterpret_cast<MIDIPacketList*>(buf);
         MIDIPacket* pkt = MIDIPacketListInit(list);
         pkt = MIDIPacketListAdd(list, sizeof buf, pkt, 0, ByteCount(len), msg);

@@ -128,6 +128,10 @@ public:
         midi.reset();      // ACIA MIDI ([D] reset.c:111 @ f0736b24 ACIA_Reset + :124 Midi_Reset)
         dongle.reset(); bus.refreshUds();   // clé cartouche : registres à 0
         ports.reset();
+        // Cartes du port cartouche : un reset à froid est un power-cycle pour elles aussi
+        // (anneau DP8390, périphériques USB déjà adressés). Sans effet si désactivées.
+        if (ne2000.enabled())  ne2000.reset();
+        if (isp1160.enabled()) isp1160.reset();
         // $FF8001 remis à 0 au FROID ([D] stMemory.c:93 @ f0736b24, bCold). ⚠ DIVERGENCE ASSUMÉE : à la
         // CONFIGURATION (constructeur / reconfigure), NeoST le pré-remplit au contraire
         // avec memConfigForBytes() alors qu'Hatari laisse 0 et compte sur le test mémoire
@@ -170,6 +174,16 @@ public:
         // ça l'état microwire d'une session STE (mixing/tonalité) colorait la suivante.
         dmasnd.reset(/*cold=*/true);
         blitter.reset(/*cold=*/true);
+        wireDmaFetchWindow();              // suit le modèle, comme bus.machine
+    }
+    // Fenêtre de rechargement de la FIFO son DMA hors DE : netlist du STE seul. Posée au
+    // ctor ET à reconfigure — sinon une bascule ST→STE par la config gardait le modèle
+    // « remplissage au HBL », et STE→Mega STE gardait celui du STE.
+    void wireDmaFetchWindow() {
+        if (machineType_ == MachineType::Ste)
+            dmasnd.fetchWindowOpen = [this] { return shifter.outsideHorizontalDe(); };
+        else
+            dmasnd.fetchWindowOpen = nullptr;
     }
 
     // Exécute UNE trame complète : 313 lignes de cycles CPU, 4 tics Timer C
@@ -194,6 +208,16 @@ public:
     bool desktopMousePosition(int& x, int& y, int& width, int& height) const;
     bool desktopMouseMove(int x, int y, bool left, bool right);
     bool loadState(const uint8_t* data, std::size_t n);
+    // L'en-tête (config, périphériques, cartouche, ROM, CRC) serait-il accepté ? Ne
+    // touche pas à la session.
+    bool stateHeaderOk(const uint8_t* data, std::size_t n);
+    // Configuration de session portée par l'en-tête (v60) : modèle de clé, périphérique
+    // de chaque port, FDC rapide. Un état pris sous une autre configuration est refusé.
+    // Motif (en anglais, pour l'interface) du dernier refus d'en-tête ; vide si accepté.
+    const std::string& lastStateError() const { return lastStateError_; }
+    std::string lastStateError_;
+    static constexpr std::size_t kSessionCfgSize = 8;
+    void sessionConfig(uint8_t out[kSessionCfgSize]) const;
     // Empreinte INDÉPENDANTE DU CŒUR CPU (porte d'échange, docs/CPU_SWAP_GATE.md) :
     // `machine` hache l'archive du save-state privée de son en-tête (version de format)
     // et de la section CPU ; `cpu` hache Cpu68k::archState(). FNV-1a 64 bits.

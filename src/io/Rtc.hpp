@@ -54,6 +54,9 @@ public:
     // closure now_ (horloge) est re-liée à la construction → non sérialisée.
     void serialize(StateArchive& ar) {
         ar(baseCycle_); ar(primed_);
+        // Top de seconde daté dans le FUTUR (état forgé) : l'horloge ne rattraperait
+        // plus rien avant cette date — figée. On le ramène au présent.
+        if (ar.loading() && now_ && baseCycle_ > now_()) baseCycle_ = now_();
         ar(d_); ar(mode_); ar(test_); ar(reset_); ar(bank1_); ar(timerCarry_);
         static constexpr uint8_t masks[13] = {7,1,15,7,15,3,7,15,3,0,1,3,0};
         for (int i = 0; i < 13; ++i)

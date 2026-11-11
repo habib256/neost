@@ -76,7 +76,11 @@ void MidiInHost::emitMessage(Device& d, const uint8_t* msg, int len) {
     // Saturé : c'est le MESSAGE NEUF ENTIER qui tombe. Jeter un fragment
     // laisserait des octets orphelins dans le flux — le pire des deux maux, et
     // c'est aussi la règle du 6850 en overrun (garder l'ancien, cf. MidiAcia).
-    if (jitter_.size() + need > kMaxJitter) {
+    // … sauf un message SEUL plus long que le tampon, file vide : un SysEx (dump de
+    // patches) dépasse couramment kMaxJitter et était jeté EN ENTIER, même sans aucune
+    // saturation — il n'atteignait jamais le ST. La file ne grossit pas pour autant :
+    // le message suivant attendra qu'elle se vide.
+    if (jitter_.size() + need > kMaxJitter && !jitter_.empty()) {
         dropped_.fetch_add(uint64_t(len), std::memory_order_relaxed);
         return;
     }
@@ -529,9 +533,18 @@ void MidiInHost::readerLoop() {
             Device* dev = nullptr;
             for (const auto& d : devices_) if (d->src == key) { dev = d.get(); break; }
             if (dev) {
-                uint8_t buf[256];
-                const long n = snd_midi_event_decode(dec, buf, sizeof buf, ev);
-                if (n > 0) feed(*dev, buf, std::size_t(n));
+                if (ev->type == SND_SEQ_EVENT_SYSEX) {
+                    // SysEx livré tel quel : snd_midi_event_decode rend -ENOMEM dès que
+                    // le bloc dépasse le tampon, et un dump envoyé d'un seul tenant par
+                    // un client en espace utilisateur (aplaymidi, DAW) disparaissait.
+                    if (ev->data.ext.ptr && ev->data.ext.len)
+                        feed(*dev, static_cast<const uint8_t*>(ev->data.ext.ptr),
+                             std::size_t(ev->data.ext.len));
+                } else {
+                    uint8_t buf[256];
+                    const long n = snd_midi_event_decode(dec, buf, sizeof buf, ev);
+                    if (n > 0) feed(*dev, buf, std::size_t(n));
+                }
             }
             if (snd_seq_event_input_pending(seq, 0) <= 0) break;
         }

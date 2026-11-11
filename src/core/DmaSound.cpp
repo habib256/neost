@@ -594,9 +594,14 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         case 0x13: endAddr_   = (endAddr_   & 0xFFFF00) | (uint32_t(v) & 0xFE); break;
         // $FF8920 : octet scratch relisible (cf. read8 — Hatari ne l'intercepte pas).
         case 0x20: pad20_ = v; break;
-        // Mode : seuls les bits existant sur un vrai STE sont câblés — masque 0x8F
-        // (bit7 mono + bits0-1 fréquence), la relecture montre la valeur masquée
-        // (Hatari DmaSnd_SoundModeCtrl_WriteByte, [D] dmaSnd.c:1001 @ f0736b24). La
+        // Mode : bit7 mono + bits0-1 fréquence. Masque de relecture 0x8F :
+        // [D] Hatari dmaSnd.c:1017 @ f0736b24 — garde les bits 2-3 (« only bits that
+        //     exist on a real STE », sans source citée).
+        // [D] MAME atarist.cpp:589 @ ce391499 et MiSTery gstshifter.v:125,159 @ 4a6db7cc
+        //     disent 0x83 (bits 2-3 non câblés).
+        // [F] Trois émulateurs, deux réponses, aucune fiche lisible : on garde 0x8F tant
+        //     qu'un titre ne tranche pas. Tranché par : la documentation Atari du STE
+        //     (registre Sound Mode Control) ou un programme qui relit $FF8921. La
         // consommation due est datée à l'ANCIENNE cadence avant le changement, et
         // le passage mono → stéréo réaligne la FIFO sur frontière paire.
         case 0x21: {
@@ -778,6 +783,14 @@ void DmaSound::mixStereo(float* st, const float* ym, uint32_t frames, uint32_t s
         // plus lent que le DAC) reste dans l'anneau et passe au segment suivant.
         capLimit_ = e.capW;
         if (off > pos) { mixSegment(st + 2 * pos, ym + pos, off - pos, sampleRate, dmaGain); pos = off; }
+        // Changement mono ↔ stéréo : le reliquat capturé à l'ANCIEN format (quelques
+        // octets, arrondi des offsets de segment) est jeté. En nombre impair, il décalait
+        // d'un octet toutes les paires stéréo suivantes — voies gauche et droite
+        // inversées jusqu'à la fin de la lecture, rien ne les réalignant.
+        if (e.kind != 1 && ((e.mode ^ aMode_) & 0x80)) {
+            if (capR_ < e.capW) capR_ = size_t(e.capW < capW_ ? e.capW : uint64_t(capW_));
+            aPhase_ = 0.0; aHaveCur_ = false;
+        }
         if (e.kind == 0) {                                    // PLAY start (0→1) : recale la cadence
             aPlaying_ = true; aMode_ = e.mode;
             aPhase_ = 0.0; aHaveCur_ = false;                 // ≙ DmaInitSample : 1er octet frais
@@ -790,4 +803,18 @@ void DmaSound::mixStereo(float* st, const float* ym, uint32_t frames, uint32_t s
     capLimit_ = UINT64_MAX;                                   // dernier segment : tout le flux
     if (pos < frames) mixSegment(st + 2 * pos, ym + pos, frames - pos, sampleRate, dmaGain);
     events_.clear();
+    // Reliquat BORNÉ. Le rendu peut tirer un peu moins que le DAC n'a capturé : dans le
+    // GUI le servo AudioPacer retire quelques échantillons hôte par trame pour suivre le
+    // quartz de la carte son, et chaque retrait laissait des octets non lus qui
+    // s'accumulaient jusqu'à la taille de l'anneau (~650 ms de retard sur le YM et
+    // l'image). Au-delà de ~5 ms on jette l'excédent, par paires pour garder la parité
+    // stéréo. Sans servo (headless, étalons) le reliquat reste à 0-2 octets : inactif.
+    {
+        const bool   stereo = !(aMode_ & 0x80);
+        const size_t perSec = size_t(kRate[aMode_ & 0x03]) * (stereo ? 2u : 1u);
+        size_t keep = perSec / 200;
+        if (keep < 16) keep = 16;
+        const size_t avail = capRenderAvail();
+        if (avail > keep) capR_ += (avail - keep) & ~size_t(1);
+    }
 }

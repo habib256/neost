@@ -297,6 +297,7 @@ void Ne2000::serialize(StateArchive& ar) {
     ar.check(mem_.size() == std::size_t(kMemSize), "Ne2000::mem_ taille inattendue");
     // Bornes de l'anneau : pstart_/pstop_/bnry_/curr_ indexent mem_ par *256 —
     // des valeurs forgées feraient déborder deliverFrame/remoteDma.
-    ar.check(pstop_ <= (kMemSize / 256) && pstart_ < pstop_,
-             "Ne2000::anneau hors bornes");
+    // Pas de garde « pstart_ < pstop_ » : PSTART/PSTOP sont écrits librement par le
+    // programme (PSTOP = 0 compris) et chaque usage de l'anneau re-borne déjà par
+    // mem_.size() — la garde refusait donc des états légitimes.
 }

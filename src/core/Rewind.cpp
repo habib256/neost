@@ -87,9 +87,18 @@ bool Rewind::stepBack(Machine& m, std::string* why) {
 
     // L'instantané tout juste pris (ou tout juste restauré) ne ramènerait nulle part :
     // on recule au précédent. Sans cela, un second appui resterait sur place.
-    if (since_ < interval_ / 2 && ring_.size() > 1) ring_.pop_back();
-
-    const Snap& target = ring_.back();
+    // Le retrait n'a lieu qu'UNE FOIS la cible acceptée (plus bas) : retiré d'emblée,
+    // chaque appui sur un état refusé rognait l'anneau d'un instantané.
+    const bool skipLast = since_ < interval_ / 2 && ring_.size() > 1;
+    const Snap& target = skipLast ? ring_[ring_.size() - 2] : ring_.back();
+    // L'en-tête AVANT le média : restoreMedia réécrit l'image et son fichier hôte, et un
+    // état refusé ensuite (clé, carte réseau ou cartouche changée depuis la capture)
+    // laissait une disquette du passé sous un TOS au présent — FAT en cache périmée.
+    // L'anneau est GARDÉ : rebrancher la clé ou la cartouche rend ces instantanés
+    // de nouveau valides.
+    if (!m.stateHeaderOk(target.state.data(), target.state.size()))
+        return fail("State refused");
+    if (skipLast) ring_.pop_back();      // `target` (l'avant-dernier) reste valide
     // Le média d'abord : la remontée arme des transitions que loadState écrase ensuite.
     for (int drive = 0; drive < 2; ++drive)
         if (target.disk[drive] && !m.fdc.restoreMedia(drive, *target.disk[drive]))

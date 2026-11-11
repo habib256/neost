@@ -318,7 +318,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     blitter.setScheduler(&sched);  // tranches non-hog du blitter (cf. Scheduler::BLITTER)
     dmasnd.setScheduler(&sched);   // le son DMA date sa consommation DAC (FIFO → Timer A)
     dmasnd.setMfp(&mfp);
-    if (machine == MachineType::Ste) dmasnd.fetchWindowOpen = [this] { return shifter.outsideHorizontalDe(); };
+    wireDmaFetchWindow();
     // STE/Mega STE : le YM2149 est mixé à DEMI-amplitude (marge pour le son DMA, évite la
     // saturation) ; ST/Mega ST : pleine amplitude. Cf. YM2149::setOutputScale.
     psg.setOutputScale(machineIsSte(machineType_) ? 0.5f : 1.0f);
@@ -851,7 +851,8 @@ void Machine::finalizeFrame_() {
 // trame est finalisée ; la prochaine amorcera une trame neuve.
 void Machine::stepInstruction() {
     if (!frameInProgress_) beginFrame_();
-    cpu.clearBreakpointHit();   // arme le skip-once du PC courant → exécute même si BP ici
+    cpu.clearBreakpointHit();
+    cpu.skipBreakpointOnce();   // un pas exécute TOUJOURS l'instruction courante, BP ou non
     // sync() n'avance QUE l'horloge — il faut dispatcher les événements échus ici,
     // comme la boucle de runFrame, sinon le pas-à-pas ne sert JAMAIS HBL/VBL/timers
     // (aucune IRQ) et tout se déverse d'un coup à la finalisation de trame —
@@ -887,7 +888,7 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 59; // USB : périphériques, phases EP0/BOT et horloge 1 ms
+static constexpr uint16_t kStateVersion = 60; // en-tête : modèle de clé, périphériques des ports, FDC rapide ; drapeaux débogueur hors archive (v59 : USB)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
@@ -979,6 +980,14 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     // ROM est précisément le composant que le state NE contient PAS.
     uint32_t romFp = bus.rom.empty() ? 0u : stateCrc32(bus.rom.data(), bus.rom.size());
     ar(flags); ar(cartFp); ar(romFp);
+    // v60 — configuration de SESSION que l'état écrasait en silence : modèle de clé
+    // (le bit 16 de `flags` ne disait que « branchée »), périphérique de chaque port,
+    // option FDC rapide. Charger un état Cubase 2 + ProSound dans une session Notator
+    // était accepté et changeait la clé, le port imprimante et le DAC du YM. Comme pour
+    // les autres composantes, l'écart est REFUSÉ par stateHeaderOk.
+    uint8_t sessionCfg[kSessionCfgSize];
+    sessionConfig(sessionCfg);
+    for (uint8_t& b : sessionCfg) ar(b);
     // CRC32 du payload (tout ce qui suit ce champ) : écrit par saveState (patch à
     // l'offset fixe 13), vérifié par loadState AVANT toute restauration. Dans le
     // flux symétrique il vaut 0 — seul le patch post-sérialisation le remplit.
@@ -993,8 +1002,14 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     // save/load à une frontière de trame — les puces suivront à l'increment 2).
     ar(frameStart_); ar(frameStartInit_); ar(frameEnd_); ar(frameInProgress_);
     ar(renderLine_); ar(tbLine_); ar(hblLine_);
-    ar(lineCarry_); ar(v2ShortLine_); ar(v2_);
-    ar(lineLenOn_); ar(curLineLen_);
+    // v2_ et lineLenOn_ sont de la configuration du PROCESSUS (NEOST_V2, NEOST_LINELEN,
+    // tools/env_locks.json) : le fichier n'a pas autorité, comme pour iplDelay4/2. Les
+    // restaurer faisait qu'un A/B parti d'un état comparait la même chose des deux côtés.
+    // Les octets restent dans le format ; au chargement on les jette.
+    ar(lineCarry_); ar(v2ShortLine_);
+    { bool fileV2 = v2_; ar(fileV2); }
+    { bool fileLineLen = lineLenOn_; ar(fileLineLen); }
+    ar(curLineLen_);
     ar(cpl_); ar(lpf_); ar(disp_); ar(deEnd_); ar(dispStart_);
     ar(tbiLine_); ar(tbiNextHigh_);
     // ⚠ INVARIANTS DE GÉOMÉTRIE ET D'HORLOGE. runFrame boucle sur
@@ -1011,7 +1026,11 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     ar.check(renderLine_ >= 0 && tbLine_ >= 0 && hblLine_ >= 0
              && renderLine_ <= lpf_ && tbLine_ <= lpf_ && hblLine_ <= lpf_,
              "Machine::renderLine_/tbLine_/hblLine_ hors [0,lpf_]");
-    ar.check(disp_ >= 0 && deEnd_ >= 0 && dispStart_ >= 0);
+    // Bornes HAUTES aussi : un dispStart_ forgé à ~2³¹ fait déborder
+    // « dispStart_ + renderLine_ » (signé, indéfini) et planifie RENDER dans le passé.
+    ar.check(disp_ >= 0 && deEnd_ >= 0 && dispStart_ >= 0
+             && disp_ <= 2 * lpf_ && dispStart_ <= 2 * lpf_ && deEnd_ <= 1024,
+             "Machine::disp_/dispStart_/deEnd_ hors bornes");
     ar.check(frameStart_ >= 0 && frameEnd_ >= frameStart_
              && frameEnd_ - frameStart_ <= 8 * int64_t(lpf_) * int64_t(cpl_));
     ar.check(lineCarry_ >= -int64_t(lpf_) * int64_t(cpl_)
@@ -1044,12 +1063,20 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     // ensuite sur `while (busClockNow() < frameEnd)` pendant 2^58 cycles — le gel à
     // 100 % de CPU que le commentaire d'en haut annonce fermer, et qu'il ne fermait
     // que pour un champ bougé SEUL. `frameStart_ >= 0` n'avait aucune borne HAUTE.
-    // Même slack que les autres gardes (8 trames) : on ne vise que l'absurde.
+    // Slack LARGE (64 trames, ~10 M cycles) : on ne vise que l'absurde. À 8 trames, un
+    // blit en mode hog de ~4 M cycles (2 Mo remplis sur STE) laissait sched.now() en
+    // avance sur la fenêtre de trame et tout état pris alors était refusé à tort.
     {
-        const int64_t slack = 8 * int64_t(lpf_) * int64_t(cpl_);
+        const int64_t slack = 64 * int64_t(lpf_) * int64_t(cpl_);
         const int64_t now = sched.now();
         ar.check(frameEnd_ - now <= slack && now - frameStart_ <= slack,
                  "Machine::frameStart_/frameEnd_ désancrés de l'horloge maître");
+        // Même ancrage pour l'horloge du 68000 (Moira::clock + cpuBias), que rien ne
+        // liait à l'ordonnanceur : décalée de 2^40 dans un état forgé, le premier IACK
+        // y faisait sauter sched.now() et la machine restait gelée sans erreur.
+        const int64_t cpuNow = cpu.busClockOfInstance();   // pas g_cur : autre Machine active possible
+        ar.check(cpuNow - now <= slack && now - cpuNow <= slack,
+                 "Cpu68k : horloge du CPU désancrée de l'horloge maître");
     }
     shifter.serialize(ar);  mapAt("mfp",     ar.saveSize());
     mfp.serialize(ar);      mapAt("psg",     ar.saveSize());
@@ -1087,10 +1114,12 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     mapAt("fin", ar.saveSize());
 }
 
-// En-tête d'un .state v23 (inchangé depuis v19) : magic(4) version(2) machine(1) ram(4) tos(2) flags(1)
-// cartFp(4) romFp(4) crc32(4) — le CRC du payload reste le DERNIER champ de l'en-tête.
-static constexpr std::size_t kStateHeaderSize = 26;
-static constexpr std::size_t kStateCrcOffset  = 22;
+// En-tête d'un .state v60 : magic(4) version(2) machine(1) ram(4) tos(2) flags(1)
+// cartFp(4) romFp(4) sessionCfg(8) crc32(4) — le CRC du payload reste le DERNIER champ
+// de l'en-tête. (v19 à v59 : sans sessionCfg, 26 octets.)
+static constexpr std::size_t kStateCfgOffset   = 22;
+static constexpr std::size_t kStateCrcOffset   = kStateCfgOffset + Machine::kSessionCfgSize;
+static constexpr std::size_t kStateHeaderSize  = kStateCrcOffset + 4;
 
 // CRC32 (IEEE, réflexe, sans table) du payload : détecte un fichier corrompu de la
 // bonne longueur AVANT de muter la machine — la seule troncature était couverte.
@@ -1214,20 +1243,33 @@ bool Machine::saveState(std::vector<uint8_t>& out) {
     return true;
 }
 
-bool Machine::loadState(const uint8_t* data, std::size_t n) {
-    desktopLineA_ = 0;
+void Machine::sessionConfig(uint8_t out[kSessionCfgSize]) const {
+    static_assert(std::size_t(PortDevices::Port::Count) == 5, "sessionCfg : 5 ports attendus");
+    out[0] = uint8_t(dongle.model());
+    for (std::size_t p = 0; p < 5; ++p) out[1 + p] = uint8_t(ports.at(PortDevices::Port(p)));
+    out[6] = fdc.fastFdc() ? 1 : 0;
+    out[7] = 0;
+}
+
+// Contrôle d'en-tête SEUL, sans rien restaurer : le retour arrière l'appelle avant de
+// remonter la disquette de l'instantané — restoreMedia réécrit l'image et son fichier
+// hôte, ce qui ne se défait pas si l'état est ensuite refusé (périphérique branché ou
+// cartouche changée depuis la capture).
+bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
     // Valide l'en-tête (magic + version + empreinte de config + CRC du payload)
     // AVANT de restaurer quoi que ce soit : un état d'une autre machine/RAM/TOS est
     // REFUSÉ (sinon machine hybride ST/STE ou RAM invitée incohérente avec la ROM
     // présente), un payload corrompu aussi.
-    if (n < kStateHeaderSize) return false;
+    lastStateError_.clear();
+    if (n < kStateHeaderSize) { lastStateError_ = "Not a NeoST state file"; return false; }
     uint32_t magic;   std::memcpy(&magic, data, 4);
     uint16_t version; std::memcpy(&version, data + 4, 2);
-    if (magic != 0x4E535453u) return false;
+    if (magic != 0x4E535453u) { lastStateError_ = "Not a NeoST state file"; return false; }
     if (version != kStateVersion) {
         std::fprintf(stderr, "[state] rejected: unsupported format v%u (this build of "
                      "NeoST writes v%u) — older states are not compatible\n",
                      version, static_cast<unsigned>(kStateVersion));
+        lastStateError_ = "State from another NeoST version";
         return false;
     }
     uint8_t  mt    = data[6];
@@ -1239,6 +1281,7 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
                      "(machine %u/RAM %u KB/TOS %03x vs session %u/%zu KB/%03x)\n",
                      mt, ramSz / 1024u, tosV, unsigned(machineType_),
                      bus.ram.size() / 1024u, bus.tosVersion);
+        lastStateError_ = "State from another machine, RAM size or TOS";
         return false;
     }
     const uint8_t  flags  = data[13];
@@ -1255,6 +1298,7 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
         std::fprintf(stderr, "[state] rejected: the state was saved with a DIFFERENT ROM "
                      "image (same TOS version %03x, but the bytes differ) — reload the "
                      "exact ROM used for the save\n", bus.tosVersion);
+        lastStateError_ = "State saved with a different ROM image";
         return false;
     }
     const uint8_t  curFlags  = uint8_t((gemdos.active() ? 1u : 0u)
@@ -1271,18 +1315,40 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
                      (flags & 4) ? "active" : "inactive", (curFlags & 4) ? "active" : "inactive",
                      (flags & 8) ? "active" : "inactive", (curFlags & 8) ? "active" : "inactive",
                      (flags & 16) ? "active" : "inactive", (curFlags & 16) ? "active" : "inactive");
+        lastStateError_ = "State needs the same hard disk / network / dongle setup";
         return false;
     }
     if (cartFp != curCartFp) {
         std::fprintf(stderr, "[state] rejected: the mounted cartridge is not the one from "
                      "the save (fingerprint %08x vs %08x)\n", cartFp, curCartFp);
+        lastStateError_ = "State needs the cartridge it was saved with";
+        return false;
+    }
+    uint8_t curCfg[kSessionCfgSize];
+    sessionConfig(curCfg);
+    if (std::memcmp(curCfg, data + kStateCfgOffset, kSessionCfgSize) != 0) {
+        const uint8_t* f = data + kStateCfgOffset;
+        std::fprintf(stderr, "[state] rejected: session config mismatch — dongle model "
+                     "%u->%u, ports (joy0/joy1/RS-232/printer/cart button) "
+                     "%u,%u,%u,%u,%u->%u,%u,%u,%u,%u, fast FDC %u->%u "
+                     "(these must match the save)\n",
+                     f[0], curCfg[0], f[1], f[2], f[3], f[4], f[5],
+                     curCfg[1], curCfg[2], curCfg[3], curCfg[4], curCfg[5], f[6], curCfg[6]);
+        lastStateError_ = "State needs the same dongle, port devices and fast-FDC setting";
         return false;
     }
     uint32_t crc; std::memcpy(&crc, data + kStateCrcOffset, 4);
     if (crc != stateCrc32(data + kStateHeaderSize, n - kStateHeaderSize)) {
         std::fprintf(stderr, "[state] rejected: invalid payload CRC (corrupt file)\n");
+        lastStateError_ = "State file is corrupt";
         return false;
     }
+    return true;
+}
+
+bool Machine::loadState(const uint8_t* data, std::size_t n) {
+    desktopLineA_ = 0;
+    if (!stateHeaderOk(data, n)) return false;
     // Filet de sécurité : un load qui échoue à MI-restauration (ok_=false — champ
     // hors bornes détecté par un ar.check(), taille incohérente — ou exception
     // d'allocation) laisserait la machine à moitié mutée. On fige l'état courant
@@ -1303,6 +1369,7 @@ bool Machine::loadState(const uint8_t* data, std::size_t n) {
         StateArchive rb = StateArchive::loader(backup.data(), backup.size());
         serializeState(rb, false);
         std::fprintf(stderr, "[state] truncated/inconsistent file — session state restored\n");
+        lastStateError_ = "State file is inconsistent";
         return false;
     }
     return true;

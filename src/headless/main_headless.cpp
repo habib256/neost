@@ -251,7 +251,9 @@ void usage() {
         "                    slots, for an external driver (see docs/OPENDST.md)\n"
         "  --server-slots N  number of in-memory state slots (default 64, max 4096)\n"
         "  --screenshot PPM  dump the final framebuffer in PPM format\n"
-        "  --shot-every N P  dump a PPM every N frames, named P00000.ppm, P00001.ppm...\n"
+        "  --shot-every N P  dump a PPM every N frames, named P<frame>.ppm (P00000.ppm,\n"
+        "                    P00060.ppm... for N=60); the file for index F shows the screen\n"
+        "                    AFTER frame F ran, i.e. what --frames F+1 --screenshot shows\n"
         "  --shot-from N     only start the --shot-every dumps at frame N\n"
         "  --version         print the build version and exit\n"
         "  rom               TOS image (default roms/etos192us.img)\n");
@@ -1469,7 +1471,19 @@ int main(int argc, char** argv) {
         }
         // Clamp ≥ 0 : une valeur négative signée se propagerait aux calculs de
         // tailles size_t (--sound-dump réserve frames × 48 kHz) → allocation géante.
-        if      (!std::strcmp(a, "--frames"))     frames    = std::max(0, std::atoi(next(a)));
+        if      (!std::strcmp(a, "--frames")) {
+            // Refus explicite : atoi rendait 0 trame, sans un mot, pour « -1 » comme pour un
+            // nombre hors plage (comportement indéfini en C) — un run vide qui sort en 0.
+            const char* txt = next(a);
+            char* end = nullptr;
+            errno = 0;
+            const long v = std::strtol(txt, &end, 10);
+            if (end == txt || *end || errno == ERANGE || v < 0 || v > 100000000L) {
+                std::fprintf(stderr, "--frames expects a frame count in 0..100000000 (got '%s')\n", txt);
+                return 2;
+            }
+            frames = int(v);
+        }
         else if (!std::strcmp(a, "--sound-dump")) soundDumpPath = next(a);
         else if (!std::strcmp(a, "--serial-dump")) serialDumpPath = next(a);
         else if (!std::strcmp(a, "--scc-dump")) sccDumpPath = next(a);
@@ -1607,9 +1621,19 @@ int main(int argc, char** argv) {
         }
         else if (!std::strcmp(a, "--scancode-at"))  { const int f = std::atoi(next(a));
                                                      std::vector<uint8_t> sc;
-                                                     for (const char* t = next(a); *t; ) {
-                                                         sc.push_back((uint8_t)std::strtoul(t, nullptr, 16));
-                                                         while (*t && *t != ',') ++t;
+                                                     const char* const list = next(a);
+                                                     for (const char* t = list; *t; ) {
+                                                         // 1 ou 2 chiffres hexa par scancode : « zz » valait 0 et
+                                                         // « 139 » valait $39, sans un mot.
+                                                         char* end = nullptr;
+                                                         const unsigned long v = std::strtoul(t, &end, 16);
+                                                         if (end == t || end - t > 2 || (*end && *end != ',') || v > 0xFF) {
+                                                             std::fprintf(stderr, "--scancode-at expects hex scancodes "
+                                                                                  "separated by commas (got '%s')\n", list);
+                                                             return 2;
+                                                         }
+                                                         sc.push_back(uint8_t(v));
+                                                         t = end;
                                                          if (*t == ',') ++t;
                                                      }
                                                      scanAtList.emplace_back(f, std::move(sc)); }
@@ -1723,7 +1747,13 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--dump-at"))     { dumpAtFrame = std::atoi(next(a));
                                                      dumpAddr = (uint32_t)std::strtoul(next(a), nullptr, 16);
                                                      dumpLen  = (uint32_t)std::strtoul(next(a), nullptr, 0);
-                                                     dumpPath = next(a); }
+                                                     dumpPath = next(a);
+                                                     // L'adresse se replie sur 24 bits : au-delà de 16 Mo le dump
+                                                     // ne ferait que boucler (FFFFFFFF = 4 Go de fichier).
+                                                     if (dumpLen > 0x1000000u) {
+                                                         std::fprintf(stderr, "--dump-at: LEN must be at most $1000000 (16 MB)\n");
+                                                         return 2;
+                                                     } }
         else if (!std::strcmp(a, "--from-cfg")) {
             // P3 — pont GUI↔headless : rejoue la config exacte de neost.cfg — machine,
             // TOS, mem, cpu, mono, fastfdc, fpu, supports (disk, diskb, cart, gemdos,
@@ -1943,7 +1973,10 @@ int main(int argc, char** argv) {
     }
     const bool diskAOk = machine.loadDisk(diskPath);          // lecteur A (optionnel)
     const bool diskBOk = diskBPath.empty() || machine.loadDiskB(diskBPath);
-    if (serverMode && ((diskRequested && !diskAOk) || !diskBOk)) outFail = true;
+    // Un média DEMANDÉ et introuvable fait échouer le run dans TOUS les modes : sinon la
+    // machine démarrait sans lui et rendait une capture « valide », code 0 — faux vert
+    // pour tout outil qui ne vérifie pas le fichier avant de lancer.
+    if ((diskRequested && !diskAOk) || !diskBOk) outFail = true;
     machine.fdc.setFastFdc(fastFdc);   // FDC rapide (--fastfdc) : accès disque ÷10
     if (haveFdcSeed) machine.fdc.setIndexSeed(fdcSeed);
     // A14 : --disk-ro protège le FICHIER, pas la disquette. Les écritures continuent
@@ -1964,7 +1997,7 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "[headless] --cart ignored: incompatible with --gemdos\n");
         machine.gemdos.setDirectory(gemdosDir);
     } else if (!cartPath.empty() && autoStart.empty()) {
-        machine.loadCart(cartPath);   // cartouche $FA0000 (optionnelle)
+        if (!machine.loadCart(cartPath)) outFail = true;   // cartouche $FA0000 demandée, introuvable
     }
     // Démarrage automatique (--auto) : INF virtuel servi par la cartouche système.
     if (!autoStart.empty()) {
@@ -2526,6 +2559,23 @@ int main(int argc, char** argv) {
         loopbackAtFrame = (last < 0) ? 0 : last + 8;
     }
     if (loopbackAt >= 0) loopbackAtFrame = loopbackAt;   // --loopback-at N : la recette décide
+    // Injection datée au-delà du run : elle n'aura jamais lieu. Avant, rien ne le disait —
+    // un bouclage jamais branché faisait conclure « No loopback connector » à un test série.
+    if (!serverMode) {
+        auto late = [&](const char* opt, int f) {
+            if (f >= frames)
+                std::fprintf(stderr, "[headless] WARNING: %s at frame %d is never applied "
+                                     "(--frames %d)\n", opt, f, frames);
+        };
+        for (const auto& e : keysAtList)  late("--keys-at", e.first);
+        for (const auto& e : scanAtList)  late("--scancode-at", e.first);
+        for (const auto& e : joyAtList)   late("--joy-at", e.first);
+        for (const auto& e : mouseAtList) late("--mouse-at", e.first);
+        for (const auto& e : diskAtList)  late("--disk-at", e.first);
+        if (loopback && loopbackAtFrame >= frames)
+            std::fprintf(stderr, "[headless] WARNING: --loopback would plug at frame %d, never "
+                                 "reached (--frames %d)\n", loopbackAtFrame, frames);
+    }
     int  framesRun = 0;           // trames RÉELLEMENT exécutées (un break peut écourter)
     for (int frame = 0; frame < frames; ++frame) {
         // Sonde périodique : l'état publié est celui qui SUIT `frame` trames exécutées
@@ -2550,8 +2600,10 @@ int main(int argc, char** argv) {
         if (midiRing) midiRing->poll([](uint8_t) { return false; });
 #endif
         for (const auto& [df, dp] : diskAtList)
-            if (frame == df && !machine.loadDisk(dp))
+            if (frame == df && !machine.loadDisk(dp)) {
                 std::fprintf(stderr, "[headless] --disk-at: cannot load %s\n", dp.c_str());
+                outFail = true;
+            }
         // Injections datées (--keys-at / --joy-at) : pilotage d'un menu de démo en
         // PLEINE boucle (l'intro Cuddly attend espace ; le robot du menu, le stick),
         // sans perdre --shot-every. Une touche = make à +0, break à +2, 4 trames/char.

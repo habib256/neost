@@ -129,6 +129,23 @@ SocketHandle tcpConnect(const std::string& host, int port, int timeoutMs, std::s
 int sockSend(SocketHandle fd, const uint8_t* p, int n) {
     int sent = 0;
     while (sent < n) {
+        // Attente BORNÉE de la place en émission : la socket est bloquante et l'appelant
+        // (modem Hayes) tourne sur le fil d'émulation. Un pair qui cesse de lire, tampons
+        // TCP pleins, gelait l'émulateur sans fin ; au-delà du délai on rend une erreur
+        // et l'appelant raccroche.
+        constexpr int kSendWaitMs = 2000;
+#ifdef _WIN32
+        fd_set wfds;
+        FD_ZERO(&wfds);
+        FD_SET(SOCKET(fd), &wfds);
+        timeval tv{kSendWaitMs / 1000, (kSendWaitMs % 1000) * 1000};
+        if (select(0, nullptr, &wfds, nullptr, &tv) <= 0) return -1;
+#else
+        pollfd wf{fd, POLLOUT, 0};
+        int pr;
+        do { pr = poll(&wf, 1, kSendWaitMs); } while (pr < 0 && errno == EINTR);
+        if (pr <= 0 || !(wf.revents & POLLOUT)) return -1;
+#endif
 #ifdef _WIN32
         const int rc = ::send(SOCKET(fd), reinterpret_cast<const char*>(p) + sent, n - sent, 0);
 #else

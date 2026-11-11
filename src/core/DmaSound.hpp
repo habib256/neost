@@ -141,6 +141,8 @@ public:
         ar.podVec(cap_);
         ar.check(cap_.size() == kCapSize);
         ar(capW_); ar(capR_);
+        // capR_ > capW_ : capRenderAvail rend 0 pour toujours, son DMA muet à jamais.
+        ar.check(capR_ <= capW_ && capW_ - capR_ <= kCapSize, "DmaSound::capR_/capW_ incohérents");
         // Microwire / LMC1992.
         ar(mwData_); ar(mwMask_); ar(mwShift_); ar(mwSteps_);
         ar.check(mwSteps_ >= 0 && mwSteps_ <= 16);   // sert de compteur de décalage (16 - mwSteps_)

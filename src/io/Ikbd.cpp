@@ -1535,8 +1535,20 @@ void Ikbd::onRxDeliver() {
         rx_.pop_front();
         if (pauseOutput_ && pauseKeep_ > 0) --pauseKeep_;
     }
-    trace("acia-receive data=$%02X result=%s", b, rdrf_ ? "overrun-drop" : "rdr");
-    if (rdrf_) {
+    trace("acia-receive data=$%02X result=%s", b,
+          (control_ & 0x03) == 0x03 ? "reset-drop" : rdrf_ ? "overrun-drop" : "rdr");
+    if ((control_ & 0x03) == 0x03) {
+        // Master reset MAINTENU (CR1-0 = 11) : le récepteur est tenu en reset et
+        // n'assemble aucun caractère — l'octet est perdu, le 6301 continue d'émettre.
+        // [B] Motorola MC6850 (extern/datasheets/MC6850.pdf) § Counter Divide Select
+        //     Bits p. 8 (« master reset which clears the Status Register […] and
+        //     initializes both the receiver and transmitter ») et § Interrupt Request
+        //     p. 7 (ACIA « maintained in the Reset condition »).
+        // [D] Hatari acia.c:1038 @ f0736b24 — ACIA_Clock_RX tourne pendant le reset et
+        //     pose RDRF : défaut d'Hatari, NON porté. Sans cette garde, une touche pressée
+        //     puis relâchée pendant un reset tenu donnait RDRF puis overrun à la sortie,
+        //     relâchement perdu, touche collée en auto-répétition.
+    } else if (rdrf_) {
         // RDR pas encore lu quand l'octet suivant finit d'arriver : OVERRUN. Le
         // nouvel octet est PERDU, RDR conserve l'ancien ([B] MC6850 § Receive Data Register p. 7 ;
         // [D] Hatari acia.c:1103-1123 @ f0736b24 ACIA_Clock_RX, état STOP_BIT). Le bit OVRN ne se posera

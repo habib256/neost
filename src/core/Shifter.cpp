@@ -158,6 +158,7 @@ Shifter::Shifter(Bus& bus) : bus_(bus) {
 // reset (vérifié : aucun accès à HBLPalettes/IoMem $FF8240 dans Video_Reset).
 void Shifter::reset() {
     videoBase = 0;                       // VideoBase = 0L
+    glue_.lateHiOn = false;
     // Video_Reset_Glue : freq et résolution à 0 (le RESET 68000 remet la Glue à
     // 60 Hz / basse rés ; TOS reprogramme aussitôt).
     sync = 0;
@@ -289,6 +290,9 @@ void Shifter::resizeFor(Mode m) {
 // ce couple — cf. geometry() — et est lue par Machine juste après cet appel.
 void Shifter::beginFrame() {
     lastScroll8265Cycle_ = -1;   // la paire d'écritures doit appartenir à la même VBL
+    // État de LIGNE de la Glue, hors save-state : remis à zéro à chaque trame pour que
+    // le direct, le rejeu de fin de trame et une reprise d'état partent du même point.
+    glue_.lateHiOn = false;
     frameMode_ = mode;
     frameStartRes_ = static_cast<int>(mode) & 3;
     // Une trame qui démarre en moyenne résolution peut mêler des lignes basses : DHS Double Rez

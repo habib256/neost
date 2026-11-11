@@ -332,7 +332,11 @@ void Isp1160::sync() {
     const uint64_t elapsed = uint64_t(now - lastCycle_) * 1000 + framePhase_;
     lastCycle_ = now;
     framePhase_ = uint32_t(elapsed % neost::pacing::kCpuHzInt);
-    for (uint64_t n = elapsed / neost::pacing::kCpuHzInt; n; --n) poll();
+    // Rattrapage borné à une seconde de trames USB : un lastCycle_ très ancien (état
+    // forgé, horloge qui saute) enchaînait sinon des milliards de poll().
+    uint64_t n = elapsed / neost::pacing::kCpuHzInt;
+    if (n > 1000) n = 1000;
+    for (; n; --n) poll();
 }
 
 // -----------------------------------------------------------------------------

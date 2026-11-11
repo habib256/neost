@@ -44,6 +44,11 @@ public:
     // Audio::produceFrame. Le parseur n'est PAS réinitialisé, pour qu'un SysEx à cheval
     // sur plusieurs trames (un dump de patch MT-32 dure ~80 ms, soit 4 trames) survive.
     void clearEvents();
+    // « MIDI panic » de l'interface : Reset All Controllers puis All Notes Off sur les
+    // 16 canaux, appliqués DIRECTEMENT à Munt (Synth::playMsgNow), hors du parseur du
+    // flux de l'ACIA — même raison que GmSynth::panic (running status et SysEx en cours
+    // de l'invité préservés). Thread d'émulation (le même que render).
+    void panic();
 
     // Rend `frames` échantillons stéréo entrelacés couvrant la trame émulée
     // [frameStartCycle, frameStartCycle + frameCycles) et les AJOUTE à `lr`.

@@ -63,11 +63,14 @@ public:
     // plutôt que de laisser un émetteur muet (ou malveillant) faire grossir un
     // tampon sans fin. La borne vaut pour le MESSAGE ENTIER, $F0 et $F7 compris —
     // c'est un INVARIANT dont les consommateurs dépendent : l'encodeur ALSA de
-    // sortie est dimensionné à cette taille exacte (snd_midi_event_new(4096),
+    // sortie est dimensionné à cette taille exacte (snd_midi_event_new(65536),
     // MidiOutHost), et un message d'un octet de plus y échouait à l'encodage,
     // donc tombait en silence (bug hunt du 2026-08-30 : le contenu était borné à
     // kMaxSysex AVANT l'ajout du $F7 final — le message tronqué faisait 4 097).
-    static constexpr std::size_t kMaxSysex = 4096;
+    // 64 Kio : la banque de 32 voix d'un DX7 fait 4 104 octets et un dump d'échantillonneur
+    // bien plus — à 4 096 le message était tronqué, $F7 recollé, somme de contrôle fausse.
+    // [B] MIDI 1.0, System Exclusive : aucune longueur maximale.
+    static constexpr std::size_t kMaxSysex = 65536;
 
     template <typename Emit>
     void byte(uint8_t b, const Emit& emit) {

@@ -103,6 +103,18 @@ void GmSynth::byteAt(uint8_t b, int64_t cycle) {
 
 void GmSynth::clearEvents() { pending_.clear(); }
 
+void GmSynth::panic() {
+    if (!synth_) return;
+    tsf* f = static_cast<tsf*>(synth_);
+    // Les événements datés de la trame en cours sont joués d'abord par render ; la
+    // panique arrive entre deux trames (requête de l'interface), la file est vide.
+    for (int ch = 0; ch < 16; ++ch) {
+        tsf_channel_sounds_off_all(f, ch);              // CC 120 All Sound Off : coupe net
+        tsf_channel_midi_control(f, ch, 121, 0);        // CC 121 Reset All Controllers (pédale comprise)
+        tsf_channel_note_off_all(f, ch);                // CC 123 All Notes Off
+    }
+}
+
 void GmSynth::apply(const uint8_t* msg, int len) {
     tsf* f = static_cast<tsf*>(synth_);
     const int ch = msg[0] & 0x0F;
