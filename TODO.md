@@ -299,7 +299,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   confrontés à leurs fiches : ce qu'elles tranchaient seules est corrigé (2026-11-10), les `⚠ [B]`
   restants attendent un relevé sur le fer, ou sont gardés parce qu'un jeu contredit la fiche.
   Restent les GLUE/MMU sans schéma, et le SCC en synchrone, SDLC et DMA.
-- **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée. Tenté en 1 Mo le 2026-11-11 : aucune trame identique dans ±90, ni avec ni sans `--fastfdc` ; la plus proche diffère de 5 213 px (avec) et 9 077 px (sans), toutes au bord de la fenêtre. Prochain essai : une fenêtre de ±300.
+- **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée. Tenté en 1 Mo le 2026-11-11 : aucune trame identique dans ±90, ni avec ni sans `--fastfdc` ; la plus proche diffère de 5 213 px (avec) et 9 077 px (sans), toutes au bord de la fenêtre. Une fenêtre de ±300 (avec `--fastfdc`) ne trouve rien non plus : l'écart n'est pas un décalage de numérotation.
 - **Monter les 12 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
   confrontée au modèle (`docs/GLUE_SWEEP.md`), pas leurs pixels ; `closure` et
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
@@ -312,8 +312,6 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   DIVU/DIVS ; le résidu blitter/IRQ Mega STE attend la capture IACK. → `docs/HATARI_MEGASTE_AUDIT.md`
 - **`screen/flixfull.prg`** · P3 ⭘ · [F] — NeoST est 4 px à gauche d'Hatari sur toute la ligne, ST comme STE. Écritures et décisions du GLUE identiques (LEFT_OFF + RIGHT_OFF, DE 5 à 463, 230 octets) :
   l'écart est dans la recopie de la ligne. Aucun témoin réel ne dit qui a raison, et le Shifter du modèle n'est pas fiable à ce grain. Tranche : une capture sur machine.
-- **Raccourcir `nocooper_greetings`** · P3 ⭘ — il borne le mur du palier pixel (~45 s) ; savoir
-  QUAND la démo relit le clavier avant de raccourcir.
 - **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **44 étalons pixel sur 56** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → ci-dessus.

@@ -574,7 +574,7 @@
    "name": "No Cooper — écran greetings (overscan MED-RES, étalon V2 principal)",
    "subsystem": "shifter/res-tricks",
    "rom": "roms/etos192fr.img",
-   "rom_note": "ROM LIBRE (EmuTOS 192 Ko, PAL 50 Hz) le 2026-08-28 — chantier A10. PREUVE : capture NeoST sous etos192fr = 0 px / 114816 contre tests/reference/nocooper_greetings.png ET contre l'oracle archivé nocooper_greetings_oracle.png — les deux références commises sont INCHANGÉES. Écran STATIQUE : le balayage 29100-29795 (pas de 5) donne 30762 px jusqu'à 29605 puis 0 px de 29610 à la fin de la fenêtre — --frames 29700 se pose au milieu du plateau, pas sur son bord. Les 5 injections ESPACE sont INCHANGÉES (900/7200/13500/19000/24500) : le décalage de boot (~+400 trames à l'arrivée) ne les désaligne pas, chaque partie de la démo dure plusieurs milliers de trames.",
+   "rom_note": "ROM LIBRE (EmuTOS 192 Ko, PAL 50 Hz) le 2026-08-28 — chantier A10. PREUVE : capture NeoST sous etos192fr = 0 px / 114816 contre tests/reference/nocooper_greetings.png ET contre l'oracle archivé nocooper_greetings_oracle.png — les deux références commises sont INCHANGÉES. Écran STATIQUE : le balayage 29100-29795 (pas de 5) donne 30762 px jusqu'à 29605 puis 0 px de 29610 à la fin de la fenêtre — --frames 29700 se pose au milieu du plateau, pas sur son bord. Injections ESPACE à 900/7200/13500/19000 ; celle de 24500 est retirée le 2026-11-11, car l'empreinte d'écran est la même avec ou sans elle à chaque trame jusqu'à 29700. Impossible de raccourcir l'étalon : chaque partie a une durée fixe (un appui à 5000 ou à 9000 agit à la même trame 9600, un appui à 3000 est ignoré). Ces injections : le décalage de boot (~+400 trames à l'arrivée) ne les désaligne pas, chaque partie de la démo dure plusieurs milliers de trames.",
    "disk": "disks/etalons/nocooper.msa",
    "machine": "st",
    "mem": "1m",
@@ -595,10 +595,6 @@
     ],
     [
      19000,
-     " "
-    ],
-    [
-     24500,
      " "
     ]
    ],
