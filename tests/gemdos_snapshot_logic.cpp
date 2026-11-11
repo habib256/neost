@@ -71,7 +71,7 @@ int testGemdosSnapshot() {
     fs::create_directory(root/"SUB");
     std::ofstream(root/"A.TXT")<<"abcdef"; std::ofstream(root/"B.TXT")<<"uvwxyz";
     for(int mode : {0,1,2}) {
-        Rig r(root.string()); const int h=r.open("C:\\A.TXT",mode); eq("Fopen",h,64);
+        Rig r(root.string()); const int h=r.open("C:\\A.TXT",mode); eq("Fopen",h,88 /* GemdosHd::BASE_FILEHANDLE */);
         eq("seek",r.seek(h,2),2);
         r.bus.write16(0x1008,0); r.bus.write16(0x100A,uint16_t(h)); eq("Fforce",r.trap(0x46),0);
         const auto saved=r.save(); eq("save non vide",saved.empty(),false);
@@ -87,7 +87,7 @@ int testGemdosSnapshot() {
     }
     {
         Rig r(root.string()); const int h=r.open("C:\\NEW.TXT",0,true);
-        eq("Fcreate",h,64); eq("écrit fichier créé",r.write(h,"created"),7);
+        eq("Fcreate",h,88 /* GemdosHd::BASE_FILEHANDLE */); eq("écrit fichier créé",r.write(h,"created"),7);
         eq("seek créé",r.seek(h,3),3); const auto saved=r.save(); r.close(h);
         eq("reprise Fcreate",r.load(saved),true); eq("wb+ ne tronque pas",fs::file_size(root/"NEW.TXT"),7);
         eq("position Fcreate",r.read(h),'a');

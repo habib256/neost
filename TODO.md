@@ -114,9 +114,6 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   partout. L'attente MFP d'un accès du blitter n'est pas facturée au CPU. Tranche : une lecture
   sur un vrai STE. La carte des bus errors en lecture donne 0 écart contre les relevés de vraies
   machines sur les quatre modèles.
-- **Cache Mega STE et écritures DMA** *(proposé)* · P3 ⏸ source · [F] — une écriture DMA (disque,
-  ACSI) ne met pas à jour le cache 16 Ko du Mega STE : une ligne cachée relue après le transfert
-  rendrait l'ancienne valeur. Tranche : la doc du contrôleur de cache du Mega STE.
 
 - **Restes vidéo au cycle** · P3 ⭘ — la VBL est datée à la fin de trame + 64/68 (`Machine.cpp`), la
   fin de DE a son événement Timer B distinct du HBL, et la lecture du compteur concorde au RTL sur STE
@@ -251,8 +248,6 @@ Extension du banc à 16 MHz → § 2.
   (`tools/run_gemdos_ab.py`, TOS 1.04, 2.06, EmuTOS), tous de convention : ordre de listage (FAT
   contre hôte trié), lecteur de boot, carte des lecteurs, Dfree, étiquette de volume, octets
   après le NUL d'un nom. Les E/S sur un fichier détruit encore ouvert rendent EINTRN [F].
-- **GEMDOS : handles du TOS au-delà de 63** *(proposé)* · P3 ⭘ · [D] — `BASE_FILEHANDLE` = 64
-  (hérité d'Hatari) : sous EmuTOS, un handle TOS ≥ 64 se confondrait avec un handle hôte.
 - **Port cartouche générique** `$FA0000-$FBFFFF` · P3 ⭘ — au-delà du système GEMDOS ; `cart.c`.
 
 ---

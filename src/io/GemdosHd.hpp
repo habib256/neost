@@ -137,8 +137,15 @@ private:
 
     // ---- État GEMDOS (port des variables globales de gemdos.c) ----------------
     static constexpr int MAX_HARDDRIVES  = 24;
-    static constexpr int MAX_FILE_HANDLES = 64;
-    static constexpr int BASE_FILEHANDLE  = 64;
+    // Handles hôte : 88..127, au-dessus de TOUT handle du TOS. [C] EmuTOS bdos/fs.h @ 5679730f :
+    // NUMHANDLES = NUMSTD (6) + OPNFILES (75), handles 0..80, et la table du même fichier donne
+    // 75 fichiers ouverts pour TOS 1.04, 2.06 et 3.06. [D] Hatari gemdos.c @ f0736b24 prend
+    // 64..127 (« MUST not be valid TOS ones, but MUST be <256 ») : 64..80 sont des handles
+    // valides du TOS, qu'un programme qui ouvre beaucoup de fichiers sur A: aurait vus
+    // détournés vers l'hôte. Rester sous 128 garde aussi le handle positif dans un octet signé.
+    static constexpr int MAX_FILE_HANDLES = 40;
+    static constexpr int BASE_FILEHANDLE  = 88;
+    static_assert(BASE_FILEHANDLE + MAX_FILE_HANDLES <= 128, "handle hôte hors d'un octet signé");
     static constexpr int TOS_NAMELEN      = 14;
     static constexpr int FORCED_HANDLES   = 5;
     static constexpr uint32_t DTA_MAGIC_NUMBER = 0x12983476u;

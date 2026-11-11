@@ -6,6 +6,17 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Handles GEMDOS hors de la plage du TOS ; format d'état v63 (2026-11-11)
+
+- **GEMDOS hôte.** Les handles hôte passent de 64..127 à 88..127 (40 fichiers ouverts) : TOS
+  1.04, 2.06, 3.06 et EmuTOS distribuent les handles 0..80 ([C] EmuTOS `bdos/fs.h` @
+  5679730f, `NUMSTD` + `OPNFILES` = 6 + 75). Avec la base d'Hatari, un programme qui ouvre
+  beaucoup de fichiers sur A: voyait ses handles 64..80 détournés vers le dossier monté.
+- **Cache Mega STE et DMA.** Vérifié, pas de défaut : chaque rafale DMA (disquette, ACSI, banc
+  Field Service) vide le cache avant d'écrire, sans instruction CPU entre les deux ([D] Hatari,
+  BGACK). Un auto-test le verrouille ; il échoue si le vidage ACSI est retiré.
+- **Format d'état v63.** Table des handles hôte à 40 entrées.
+
 ## Restes de la chasse aux bugs ; format d'état v62 (2026-11-11)
 
 - **DMA disque/ACSI.** Tout cycle DMA est un cycle RAM ([D] `gstmcu.v:226 @ 4a6db7cc`) : jamais

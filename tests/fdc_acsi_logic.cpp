@@ -236,6 +236,26 @@ int testAcsiIrqTiming() {
     restored.advance(1000); c.expect("reprise à échéance", restored.irq(), true);
     restored.ack(); restored.advance(2000);
     c.expect("reprise : événement unique", restored.irq(), false);
+
+    // Cache 16 Ko du Mega STE : une écriture DMA ne doit jamais laisser une ligne
+    // rance. Le DMA prend le bus par BGACK, qui invalide le cache ([D] Hatari
+    // m68000.c:1288-1296 @ f0736b24, MegaSTE_Cache_Flush) ; chaque rafale vide le
+    // cache AVANT ses écritures, sans instruction CPU entre les deux.
+    {
+        Rig m;
+        c.expect("cache : montage cible0", m.fdc.mountAcsi(path.string()), true);
+        m.bus.machine = MachineType::MegaSte;
+        m.bus.megaSteCacheCtrl = 1;                       // cache ON, 8 MHz
+        std::fill_n(m.bus.ram.begin() + 0x2000, 512, uint8_t(0x12));
+        c.expect("cache : ligne posée", m.bus.megaSteCacheUpdate(0x2000, 2, 0x1212, false, true), true);
+        uint16_t v = 0;
+        c.expect("cache : hit avant DMA", m.bus.megaSteCacheRead(0x2000, 2, v, true) && v == 0x1212, true);
+        m.prepare(); m.start();                           // READ : la cible écrit son bloc en RAM
+        c.expect("cache : RAM écrite par le DMA", m.bus.ram[0x2000] != 0x12, true);
+        const uint16_t ramWord = uint16_t((m.bus.ram[0x2000] << 8) | m.bus.ram[0x2001]);
+        const bool hit = m.bus.megaSteCacheRead(0x2000, 2, v, true);
+        c.expect("cache : pas de ligne rance après DMA", !hit || v == ramWord, true);
+    }
     std::printf("[selftest-acsi] %d checks, %d FAIL\n", c.count, c.failures);
     return c.failures;
 }

@@ -54,7 +54,7 @@ def parse(path):
     return d, order
 
 
-# Handles (6… sur TOS, 64… ici) et heure/date des entrées listées (horloge hôte) ne
+# Handles (6… sur TOS, 88… ici) et heure/date des entrées listées (horloge hôte) ne
 # sont pas des écarts. Les dates POSÉES par Fdatime restent comparées.
 def norm(reg, k, v):
     tid = int(k.rstrip("'"), 16)

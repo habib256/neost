@@ -603,6 +603,8 @@ cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, 
   lecteurs, Dfree, étiquette de volume, octets après le NUL d'un nom ; et sous EmuTOS le
   Dgetpath d'un dossier courant détruit (pointeur pendant dans `xrmdir`, non reproduit).
 - **Alias 8.3** `BASE~N.EXT` quand deux noms hôtes se tronquent pareil ; Hatari masque le second.
+- **Handles hôte en 88..127** (2026-11-11) : Hatari les place en 64..127, dans la plage des
+  handles du TOS (0..80, [C] EmuTOS `bdos/fs.h`) ; NeoST commence au-dessus.
 - **Pexec 0 sous TOS < 1.04** : basepage et environnement donnés à l'enfant, comme le chargeur
   du TOS ; la cartouche rend l'environnement si le chargement échoue.
 
