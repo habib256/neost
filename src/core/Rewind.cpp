@@ -52,6 +52,7 @@ void Rewind::onFrame(Machine& m) {
     if (since_ < interval_) return;
     if (blocker(m)) { clear(); return; }
     if (m.fdc.stxCommandActive()) return;      // réessai à la trame suivante
+    if (m.parkedInInstruction()) return;       // instruction garée (blit HOG) : idem
 
     Snap snap;
     if (!m.saveState(snap.state)) return;
@@ -77,6 +78,9 @@ bool Rewind::stepBack(Machine& m, std::string* why) {
     };
     if (!enabled_) return fail("Rewind is off");
     if (const char* reason = blocker(m)) return fail(reason);
+    // Instruction garée : charger un état par-dessus couperait le blit sans reset, et
+    // la reprise viendrait ensuite. Refusé tant qu'elle dure (avant toute remontée de média).
+    if (m.parkedInInstruction()) return fail("Not during a long blitter transfer");
 
     // Une écriture STX n'est pas réversible : ce qui la précède n'est plus accessible.
     const uint64_t stx = m.fdc.stxWrites();

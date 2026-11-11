@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,7 @@
 #include "core/Blitter.hpp"
 #include "core/MmuGlue.hpp"
 #include "core/Scheduler.hpp"
+#include "core/EmuFiber.hpp"
 #include "io/Mfp.hpp"
 #include "io/Ikbd.hpp"
 #include "io/Fdc.hpp"
@@ -52,6 +54,7 @@ public:
                      CpuCore cpuCore = CpuCore::Moira,
                      MachineType machine = MachineType::Ste);
     ~Machine() {
+        abortParked_();   // déroule une instruction garée tant que tout est vivant
         if (printerFile_) std::fclose(printerFile_);
     }
 
@@ -101,6 +104,7 @@ public:
     // en vol — sinon il continuerait de corrompre la RAM PENDANT le boot),
     // IKBD_Reset (→ $F1 différé) et recopie des vecteurs reset $0-$7 en RAM.
     void reset() {
+        abortParked_();   // une instruction garée (blit HOG) est coupée par le reset
         desktopLineA_ = 0;
         psg.reset(); dmasnd.reset(/*cold=*/false); mfp.reset();
         shifter.reset();           // Video_Reset : scroll/linewidth/offset différé STE, glue
@@ -122,6 +126,7 @@ public:
     // « memvalid » de TOS — il refait alors un boot COMPLET (re-détection mémoire,
     // re-init OS) au lieu du boot à chaud d'un simple reset. Puis reset matériel.
     void hardReset() {
+        abortParked_();
         desktopLineA_ = 0;
         bus.ram.assign(bus.ram.size(), 0);
         psg.reset(); dmasnd.reset(/*cold=*/true); mfp.reset();
@@ -157,6 +162,7 @@ public:
     // RAM (boot à froid). Les composants déjà câblés au bus sont conservés.
     // L'appelant recharge la ROM si besoin, repose le moniteur, puis reset().
     void reconfigure(std::size_t ramBytes, CpuCore cpuCore, MachineType machine) {
+        abortParked_();
         bus.ram.assign(ramBytes, 0);
         bus.machine     = machine;
         machineType_    = machine;
@@ -205,6 +211,24 @@ public:
     // d'arrêt, davantage quand un blit HOG parti dans une instruction a franchi une ou
     // plusieurs fins de trame (cf. rollFrameInInstruction_).
     int lastRunFrames() const { return lastRunFrames_; }
+
+    // --- Trame garée au milieu d'une instruction (cf. core/EmuFiber.hpp) -----------
+    // runFrame tourne sur une coroutine (pile à part) : quand un blit HOG parti dans une
+    // instruction franchit la fin de trame, la trame est close à son heure et runFrame
+    // rend la main à l'hôte, l'instruction GARÉE ; l'appel suivant la reprend là où
+    // elle était. Une trame par appel, comme d'habitude, même pendant un blit de
+    // plusieurs secondes. Pendant qu'une instruction est garée, l'état de la machine
+    // est celui d'un 68000 au milieu d'un cycle : save-state, chargement, retour arrière
+    // et pas-à-pas sont refusés (lastStateError dit pourquoi) ; reset, reconfiguration
+    // et destruction abandonnent l'instruction.
+    bool parkedInInstruction() const { return fiber_ && fiber_->parked(); }
+    static constexpr const char* kParkedReason =
+        "The CPU is halted by a blitter transfer that spans frames; try again when it ends";
+    // Active ou coupe la coroutine (défaut : active là où elle existe, sauf NEOST_NO_FIBER=1).
+    // Coupé, un tel blit rend la main à la fin de l'instruction (cf. lastRunFrames).
+    // Sans effet tant qu'une instruction est garée.
+    void setFrameFiber(bool on);
+    bool frameFiber() const { return fiber_ != nullptr; }
 
     // Débogueur : avance d'UNE instruction 68000 en gardant l'ordonnanceur EN LOCKSTEP
     // (sync() dispatche les événements au cycle) — pas de ré-ancrage de trame. Si le pas
@@ -366,6 +390,8 @@ private:
     void beginFrame_();     // amorce une trame (ancre + événements) — cf. runFrame/stepInstruction
     void finalizeFrame_();  // finalise une trame (rattrapage + décodage lignes + spec512)
     void rollFrameInInstruction_();  // fin de trame franchie en cours d'instruction (blit HOG)
+    void runFrameBody_();            // corps de runFrame (sur la coroutine si elle existe)
+    void abortParked_();             // abandonne une instruction garée (cf. parkedInInstruction)
     int  rolledFrames_  = 0;  // trames closes en cours d'instruction pendant ce runFrame (hors état)
     int  lastRunFrames_ = 0;  // cf. lastRunFrames() (hors état)
     void serializeState(StateArchive& ar, bool hostFiles = true);
@@ -446,4 +472,8 @@ private:
     static constexpr int HBL_CYCLE      = 508;   // 512 - 4 (Hbl_Int_Pos_Low_50)
 
     std::FILE* printerFile_ = nullptr;   // imprimante Centronics : fichier de capture (nul = désactivée)
+
+    // Coroutine de runFrame (cf. parkedInInstruction). DERNIER membre : détruit le
+    // premier, quand tout ce que touche le déroulement d'une instruction garée vit encore.
+    std::unique_ptr<EmuFiber> fiber_;
 };

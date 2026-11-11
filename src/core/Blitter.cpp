@@ -91,6 +91,9 @@ void Blitter::reset(bool cold) {
     busWord_ = 0;
     midBlit_ = false; haveFxsr_ = false; nfsrInt_ = false;
     haveSrc_ = false; haveDst_ = false; dstWord_ = 0;
+    // Tranche abandonnée par le déroulement d'une instruction garée (Machine::
+    // abortParked_ → EmuFiber::Abort) : la garde de ré-entrance resterait levée.
+    inSlice_ = false;
     busCountError_ = false;
     cpuBusCnt_ = 0; bus_.blitterCountCpu = false;
     clearPreStartWindow();

@@ -331,6 +331,10 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
     psg.setHpfBypass(machineIsSte(machineType_));
 
     installSchedulerCallbacks();
+    // Coroutine de runFrame (cf. parkedInInstruction) : sa pile (16 Mio réservés, engagés
+    // à l'usage) est prise ici. NEOST_NO_FIBER=1 rend le comportement d'un seul tenant.
+    const char* noFiber = std::getenv("NEOST_NO_FIBER");
+    setFrameFiber(!(noFiber && *noFiber && *noFiber != '0'));
 }
 
 // -----------------------------------------------------------------------------
@@ -748,6 +752,36 @@ void Machine::onVbl() {
 //  d'événement en événement (carry du dépassement), puis on finit le décodage.
 // -----------------------------------------------------------------------------
 void Machine::runFrame() {
+    // Sur la coroutine : une instruction garée (blit HOG à cheval sur la fin de
+    // trame) y reste vivante entre deux appels ; reprise si c'est le cas.
+    if (fiber_) {
+        const std::function<void()> body = [this] { runFrameBody_(); };
+        fiber_->resume(body);
+        return;
+    }
+    runFrameBody_();
+}
+
+void Machine::setFrameFiber(bool on) {
+    if (parkedInInstruction()) return;
+    if (on && EmuFiber::supported()) { if (!fiber_) fiber_ = std::make_unique<EmuFiber>(); }
+    else fiber_.reset();
+}
+
+void Machine::abortParked_() {
+    if (!parkedInInstruction()) return;
+    std::fprintf(stderr, "[fiber] parked instruction abandoned (blitter transfer cut)\n");
+    fiber_->abort();
+    // L'instruction coupée laisse le cœur au milieu d'un cycle : l'appelant (reset,
+    // reconfiguration, destruction) remplace cet état. Les gardes RAII du chemin (cœur,
+    // ordonnanceur) se sont restaurées au déroulement ; le reste est remis ici — le
+    // bloc CPU que runFrame n'a pas clos (endRun), la tranche du blitter (Blitter::reset
+    // baisse sa garde). La trame en cours est rouverte par le prochain runFrame.
+    sched.endRun();
+    frameInProgress_ = false;
+}
+
+void Machine::runFrameBody_() {
     // FIX1 (beam-sync) — ANCRE DE TRAME FIXE = VBL THÉORIQUE. Port de Hatari
     // VBL_ClockCounter = CyclesGlobalClockCounter − PendingCyclesOver ([D] video.c:4964 @ f0736b24) qui
     // RETRANCHE le carry δ du dépassement de la dernière instruction enjambant frameEnd.
@@ -830,6 +864,18 @@ void Machine::runFrame() {
 void Machine::rollFrameInInstruction_() {
     if (!frameInProgress_) return;
     finalizeFrame_();
+    if (fiber_ && fiber_->onFiber()) {
+        // Coroutine : la trame close est livrée à l'hôte MAINTENANT, l'instruction
+        // garée. runFrame rend la main ; l'appel suivant reprend ici, amorce la trame
+        // suivante et continue le blit. Une trame par appel, image exacte (aucune ligne
+        // de la trame suivante n'est encore rendue). Un abandon (reset, destruction)
+        // lève EmuFiber::Abort depuis yield.
+        frameInProgress_ = false;
+        lastRunFrames_ = 1;
+        fiber_->yield();
+        beginFrame_();
+        return;
+    }
     ++rolledFrames_;
     beginFrame_();
 }
@@ -871,6 +917,9 @@ void Machine::finalizeFrame_() {
 // pas de finalisation prématurée ni de dérive d'horloge. Si le pas franchit frameEnd_, la
 // trame est finalisée ; la prochaine amorcera une trame neuve.
 void Machine::stepInstruction() {
+    // Instruction garée : le pas-à-pas commencerait une AUTRE instruction au milieu de
+    // celle-ci. Refusé ; runFrame la termine.
+    if (parkedInInstruction()) return;
     if (!frameInProgress_) beginFrame_();
     cpu.clearBreakpointHit();
     cpu.skipBreakpointOnce();   // un pas exécute TOUJOURS l'instruction courante, BP ou non
@@ -1252,6 +1301,7 @@ void Machine::mouseEvent(int dx, int dy, bool left, bool right) {
 
 bool Machine::saveState(std::vector<uint8_t>& out) {
     out.clear();
+    if (parkedInInstruction()) { lastStateError_ = kParkedReason; return false; }
     StateArchive ar = StateArchive::saver(out);
     serializeState(ar);
     if (!ar.ok()) { out.clear(); return false; }
@@ -1368,6 +1418,7 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
 }
 
 bool Machine::loadState(const uint8_t* data, std::size_t n) {
+    if (parkedInInstruction()) { lastStateError_ = kParkedReason; return false; }
     desktopLineA_ = 0;
     if (!stateHeaderOk(data, n)) return false;
     // Filet de sécurité : un load qui échoue à MI-restauration (ok_=false — champ

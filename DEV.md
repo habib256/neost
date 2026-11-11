@@ -153,6 +153,18 @@ sur la durée réelle de la trame (`core/Pacing.hpp`) pour que le temps émulé 
 (`Scheduler::liveNow` + préemption `Cpu68k::endTimeslice`) ; le chantier ouvert est le
 **beam-sync par-ligne** — cf. [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md).
 
+**Une trame par appel, même au milieu d'une instruction.** Un blit HOG parti dans une
+instruction tient le CPU jusqu'à la fin du transfert, parfois plusieurs secondes. La fin de
+trame est franchie à son heure dans le temps émulé (`Scheduler::syncToRollingFrames` →
+`Machine::rollFrameInInstruction_` : la trame est close, la suivante amorcée), et `runFrame`
+tourne sur une coroutine (`core/EmuFiber` : ucontext sous Linux et macOS, fibres sous
+Windows) qui **gare** l'instruction et rend la main à l'hôte ; l'appel suivant la reprend.
+Pendant le garage, `Machine::parkedInInstruction()` est vrai : save-state, chargement, retour
+arrière et pas-à-pas sont refusés avec un motif (`lastStateError`), reset et reconfiguration
+abandonnent l'instruction. Le web et Android n'ont pas de coroutine (ni `NEOST_NO_FIBER=1`) :
+`runFrame` y rend la main à la fin de l'instruction et `lastRunFrames()` dit combien de
+trames il a closes. Accord à l'octet entre les deux modes : `tools/check_hog_park.py`.
+
 ## Le Bus
 
 Tout accès CPU passe par `Bus::read8/16/32` et `write8/16/32` (assemblage **big-endian** :

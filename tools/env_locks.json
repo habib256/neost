@@ -95,7 +95,8 @@
   "NEOST_DEBUG_ACIA": 1,
   "NEOST_DEBUG_JOY": 1,
   "NEOST_FAULT_TRACE": 1,
-  "NEOST_YMEV_DIAG": "écritures de registre YM par trame. Trace pure."
+  "NEOST_YMEV_DIAG": "écritures de registre YM par trame. Trace pure.",
+  "NEOST_NO_FIBER": "=1 : runFrame tourne sur la pile de l'hôte, sans la coroutine qui gare une instruction au milieu d'un blit HOG à cheval sur la fin de trame (core/EmuFiber). N'altère ni un cycle ni un pixel (A/B d'empreintes identique) : seul change l'instant où l'hôte reprend la main — à la fin de l'instruction au lieu de chaque fin de trame (cf. Machine::lastRunFrames)."
  },
  "removed": {
   "_comment": "Retirées du cœur — gardées ici pour qu'un vieux script qui les pose sache qu'elles ne font plus rien.",
