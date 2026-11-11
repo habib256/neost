@@ -6,6 +6,49 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Chasse aux bugs en quatre vagues ; format d'état v60 (2026-11-11)
+
+Dix-neuf audits en lecture seule (par dossier, puis transversaux : save-state, sanitizers,
+portabilité, fidélité des puces, harnais), chaque lot de correctifs relu par un audit séparé.
+
+- **Mémoire.** Une IPF forgée écrivait ~2³¹ cellules hors du tampon de piste (`gap3`, reste
+  calculé en 32 bits) : montage = SIGSEGV. Le rejeu Glue lisait `lines[]` jusqu'à `vdeOff`
+  (434 pour 315 entrées) quand `$FF8260=2` est tenu jusqu'en fin de trame.
+- **GEMDOS.** Double `fclose` de l'INF d'autostart à chaque `--auto` sous TOS ≥ 1.04. Un lien
+  pendant faisait sortir Fcreate du dossier monté ; Fdelete d'un lien supprimait sa cible. Une
+  évasion rend maintenant un chemin impossible (composant de 300 caractères) au lieu d'être
+  rabattue sur un homonyme de la racine. Banc A/B disquette contre dossier (TOS 1.04, 2.06,
+  EmuTOS) : Fdelete, Frename et Fopen en écriture refusent un fichier en lecture seule,
+  Dsetpath refuse un fichier, Fseek en mode inconnu rend EINVFN — 82 écarts, puis 70.
+- **Disquette.** Un lecteur devenu protégé en cours de commande n'est plus écrit : statut
+  WRITE PROTECT ([B] WD177X-00 p. 1-4). `.wd1772` réécrit par tmp + rename.
+- **Format d'état v60.** L'en-tête porte le modèle de clé, le périphérique de chaque port et
+  l'option FDC rapide : un état pris sous une autre configuration est refusé, avec un motif que
+  le GUI affiche. Les drapeaux du débogueur hôte sortent de l'archive (un chargement désarmait
+  les watchpoints ; deux sauvegardes du même état différaient selon qu'un point d'arrêt était
+  posé, ce qui faussait l'empreinte de `cpu_swap_gate`). `NEOST_V2` et `NEOST_LINELEN` ne sont
+  plus restaurés du fichier. Bornes ajoutées sur une douzaine de champs forgeables ; trois
+  gardes qui refusaient des états légitimes sont desserrées (ACSI, NE2000, blit long en hog).
+- **Retour arrière.** L'en-tête est validé avant de remonter la disquette de l'instantané.
+- **Débogueur.** Un point d'arrêt posé après un STOP retombait à chaque événement (1 745 arrêts
+  en 2 trames, 3 après) ; un pas-à-pas exécute toujours l'instruction courante.
+- **Puces.** ACIA 6850 : rien n'est reçu pendant un master reset tenu ([B] MC6850 p. 7-8, contre
+  Hatari). 68881 : un opérande non normalisé devant une transcendante gelait l'émulateur
+  (FMOVECR #9 puis FSIN). Son DMA : retard cumulé borné à 5 ms sous le servo du GUI, voies
+  gauche et droite non inversées après un passage mono → stéréo.
+- **MIDI.** SysEx jusqu'à 64 Kio (la banque de 32 voix d'un DX7, 4 104 octets, était tronquée
+  en sortie et perdue en entrée). La « panic » ne passe plus par le parseur du flux invité.
+- **GUI.** Même image refusée dans A et B ; profil dont la ROM manque refusé en bloc ; TOS 1.00
+  glissé reconnu comme ROM et non monté en ACSI ; modèle réel affiché quand la ROM en impose un
+  autre ; pause du débogueur signalée par un bandeau ; `neost.state` et `imgui.ini` à côté de
+  `neost.cfg`. Compilé, non exercé dans la fenêtre.
+- **Harnais.** `cpu_swap_gate.py`, `run_hatari_suite.py` et trois bancs rendaient un vert sur
+  zéro cas ; `check_ppm_nonuniform.py` comptait des octets ; le headless sortait en 0 avec un
+  média demandé introuvable. `tests.yml` devient appelable et `publish` en dépend.
+- **Windows.** `_FILE_OFFSET_BITS=64` (au-delà de 4 Gio une écriture ACSI visait le mauvais
+  secteur) et manifeste `activeCodePage` UTF-8. Compilé en croisé, non lancé.
+- **Android et web.** Écrits, vérifiés à la syntaxe seulement.
+
 ## Retour arrière sur le web et Android (2026-11-11)
 
 - Web : interrupteur *Rewind* (éteint par défaut, 32 Mo), bouton *Back* et accord Ctrl+Alt+R ;

@@ -681,6 +681,12 @@ feu/boutons : **conformes** (l'ancien doc `IKBD_HATARI_DIFF.md`, périmé, a ét
   Références : ikbd.h:44-45, `IKBD_OutputBuffer_CheckFreeCount` et
   `IKBD_Check_New_TDR`. Admission des paquets entiers préservée ; overrun
   toujours traité en aval. Archives dépassant 1024 octets refusées.
+- ✅ **Récepteur tenu en master reset (2026-11-11)** : tant que CR1-0 = 11, l'ACIA (clavier et
+  MIDI) n'assemble aucun caractère — l'octet arrivé entre-temps est perdu, sans RDRF ni
+  overrun à la sortie. [B] MC6850 § Counter Divide Select Bits p. 8 et § Interrupt Request
+  p. 7 (`extern/datasheets/MC6850.pdf`). Hatari reçoit quand même (`acia.c:1038 @ f0736b24`,
+  ACIA_Clock_RX tourne pendant le reset) : défaut non porté. Auto-tests `ikbd-acia-init` et
+  `midi-rx` mis à l'attendu de la fiche.
 - ✅ **Initialisation ACIA clavier (2026-10-19)** : sorties firmware rejetées
   avant initialisation du diviseur, comme IKBD_Send_Byte_Delay ; aucun octet
   ni délai ne ressuscite ensuite. Latch conservé aux resets et sauvegardé v46.
