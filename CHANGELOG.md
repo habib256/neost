@@ -6,6 +6,13 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## EWeb dans NeoST (2026-11-11)
+
+- EWeb 1.0 (`EWEBST.PRG`, GPL v2) tourne sur STE 4 Mo sous EmuTOS, en monochrome, sur disque ACSI,
+  et affiche une page HTTP servie par l'hôte à travers le NAT, la NE2000 et STinG + `ENEC.STX`.
+  Aucun changement de NeoST. La passerelle AERA n'a servi qu'à un essai isolé, sans Docker ;
+  HTTPS reste à essayer. Recette au TODO.
+
 ## Retour arrière (2026-11-11)
 
 - `core/Rewind` : un état par seconde en mémoire, 128 Mo au plus, les plus anciens évincés. Option

@@ -337,7 +337,11 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   lancé seul sur l'hôte, sans Docker (Python standard, avec `aeragate.py` et `translateclient.py` ;
   essayé le 2026-11-11 en boucle locale, requête au format proxy), EWeb dans NeoST (STE 4 Mo,
   STinG + `ENEC.STX`) par le NAT, port 8280. Un site en HTTP simple se passe de passerelle.
-  Premier parcours web réel de bout en bout ; en faire un test s'il passe.
+  EWeb 1.0 (`EWEBST.PRG`) a affiché le 2026-11-11 une page HTTP d'un serveur local (titre, styles,
+  liste, tableau), sur STE 4 Mo, EmuTOS 256 Ko, monochrome. Recette : image ACSI (`make_hd_image.py
+  --no-driver`) portant EWeb, `AUTO`, `STING` et `EMUDESK.INF` avec `#Z` — le `--gemdos` occupe le
+  port cartouche de l'EtherNEC, EmuTOS démarre sur C: dès qu'un disque est là, EWeb refuse la basse
+  résolution. Restent : un lien cliqué, la passerelle et un site HTTPS, puis un test (EWeb non versionné).
   → <https://yaary.music/software/atari-st/eweb/>
 - **NetUSBee : validation MiNT et matériel** · P3 ⭘ — USB4TOS vérifié (HID + disque) ;
   restent FreeMiNT, capture du latch des différentes cartes, timing électrique et ITL/isochrone.
