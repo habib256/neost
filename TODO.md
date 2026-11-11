@@ -407,8 +407,9 @@ Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
   puis `consumeConfigRequests` (219 lignes). Déplacements mécaniques uniquement.
 - **A38 — tenue du registre** · P3 ⭘ — `tools/fast_guards.json` inscrit les étapes du palier
   `fast` ; consigner chaque vrai déclenchement dans le commit qui corrige le défaut.
-- **A39 — modules jamais audités** · P3 ◐ — pile réseau `src/net` (comportement seulement) ; un
-  test par COUCHE du bac à sable GEMDOS, à décider (couple test et implémentation).
+- **A39 — modules jamais audités** · P3 ◐ — `src/net` relu le 2026-11-11 (modem Hayes, anneau MIDI,
+  sockets, adaptateur NAT) : un défaut corrigé, le `connect` refusé sous Windows qui attendait tout
+  le délai. Reste un test par COUCHE du bac à sable GEMDOS, à décider (couple test et implémentation).
 - **`HATARI_DIVERGENCES.md` rangé par passe d'audit** · P3 ⭘ *(proposé)* — 2 675 lignes : le détail
   par sous-système, puis onze passes datées et des sections du jour en queue. Le même
   écart se lit à plusieurs endroits. Fondre les passes dans le détail par sous-système,

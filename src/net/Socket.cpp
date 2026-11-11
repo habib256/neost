@@ -93,11 +93,17 @@ SocketHandle tcpConnect(const std::string& host, int port, int timeoutMs, std::s
         ioctlsocket(SOCKET(fd), FIONBIO, &nonBlocking);
         int rc = ::connect(SOCKET(fd), ai->ai_addr, int(ai->ai_addrlen));
         if (rc == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK) {
-            fd_set wfds;
+            // [B] Microsoft Learn, « select function (winsock2.h) », Remarks : un connect
+            // non bloquant qui échoue se signale dans exceptfds, pas dans writefds. Sans
+            // exceptfds, un port fermé attendait tout le délai au lieu d'échouer aussitôt.
+            fd_set wfds, efds;
             FD_ZERO(&wfds);
+            FD_ZERO(&efds);
             FD_SET(SOCKET(fd), &wfds);
+            FD_SET(SOCKET(fd), &efds);
             timeval tv{timeoutMs / 1000, (timeoutMs % 1000) * 1000};
-            rc = select(0, nullptr, &wfds, nullptr, &tv) == 1 ? 0 : -1;
+            rc = (select(0, nullptr, &wfds, &efds, &tv) > 0 && FD_ISSET(SOCKET(fd), &wfds)
+                  && !FD_ISSET(SOCKET(fd), &efds)) ? 0 : -1;
             if (rc == 0) {
                 int soerr = 0;
                 int sl = sizeof soerr;

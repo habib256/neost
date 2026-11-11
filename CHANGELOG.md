@@ -13,6 +13,8 @@ l'ordre inverse. Version courante : **0.6.4**.
 - Android : action `REWIND` au menu, retour arrière armé d'office (24 Mo) faute de page de
   configuration ; un refus s'affiche en pied de menu. Vérifié à la syntaxe seulement.
 - `union_demo` en 1 Mo : aucune trame Hatari identique, ni dans ±90 ni dans ±300.
+- `src/net` relu (A39) : sous Windows, un `connect` refusé se signale dans `exceptfds` ; `tcpConnect`
+  ne regardait que `writefds` et un `ATD` vers un port fermé attendait 5 s. Compilé avec MinGW, non lancé.
 - `nocooper_greetings` ne peut pas raccourcir : chaque partie de la démo a une durée fixe, un appui
   à 5000 ou à 9000 agit à la même trame 9600. L'appui à 24500 ne changeait aucune trame : retiré, 0 px.
 
