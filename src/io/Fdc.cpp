@@ -1302,7 +1302,13 @@ void Fdc::noteFifoFlush() {
     prev = now;
 }
 
+// [B] WD177X-00 p. 1-3 (Data Register) : en lecture, chaque octet assemblé passe du DSR au
+// DR ; en écriture, le DR reçoit l'octet du DMA avant de le passer au DSR (p. 1-5, DRQ).
+// Le DR relu en $FF8604 (A1A0 = 11) rend donc le dernier octet transféré, et un SEEK lancé
+// sans recharger le DR vise cet octet. Seuls les octets réellement servis par le DMA
+// chargent le DR en écriture : DMA éteint, le WD1772 écrit des zéros sans DR neuf (p. 1-5).
 void Fdc::fifoPush(uint8_t b) {
+    dr_ = b;
     ff8604recent_ = uint16_t((ff8604recent_ & 0xff00) | b);
     if (dmaSectorCount_ == 0) { dmaError_ = true; return; }   // DMA off → octet perdu
     dmaError_ = false;
@@ -1320,6 +1326,15 @@ void Fdc::fifoPush(uint8_t b) {
     if (dmaBytesInSector_ <= 0) { dmaSectorCount_--; dmaBytesInSector_ = 512; }
 }
 
+// Compteur de secteurs en écriture (RAM → disque) : décrémenté au 33ᵉ rechargement de 16 o,
+// pas au 32ᵉ comme en lecture (`< 0` ici, `<= 0` dans fifoPush), puis remis à 512 en perdant
+// le reste : la dérive croît d'un bloc par secteur.
+// [D] Hatari fdc.c:1421-1426 @ f0736b24 (FDC_DMA_FIFO_Pull) : idem, `< 0`.
+// [D] MiSTery atarist/dma.v:342-387 @ a00deb5b : décrément après 256 accès mot à la RAM dans
+//     les deux sens, soit au 32ᵉ bloc — et une FIFO double (32 o) préchargée en écriture.
+// [F] Aucune source primaire (pas de schéma de la puce DMA du ST dans extern/datasheets) :
+//     gardé. Tranché par $FF8606 bit 1 et le compteur relus pendant un Write Sector de deux
+//     secteurs sur un vrai ST, ou par la documentation Atari de la puce DMA.
 uint8_t Fdc::fifoPull() {
     if (dmaSectorCount_ == 0) { dmaError_ = true; return 0; }  // DMA off → '0'
     dmaError_ = false;
@@ -1340,6 +1355,7 @@ uint8_t Fdc::fifoPull() {
         b = fifo_[0];
     }
     ff8604recent_ = uint16_t((ff8604recent_ & 0xff00) | b);
+    dr_ = b;                                                  // octet servi → DR (cf. fifoPush)
     return b;
 }
 
@@ -1395,10 +1411,11 @@ uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSiz
         // numéro : sur une piste à IDs dupliqués, le WD1772 lit celui qui passe
         // ([B] WD177X-00 p. 1-8, 1-10 : comparaison au prochain ID rencontré).
         const auto* s = stOverrideFound(ov);
-        if (!s) return STR_RNF;
+        if (!s || !s->hasData) return STR_RNF;
         for (uint8_t b : s->data) bufferAdd(b);
         *pSize = int(s->data.size());
-        return s->deleted ? STR_RECTYPE : 0;
+        // CRC du champ données relu faux ([B] WD177X-00 p. 1-9, 1-18 : S3 sans S4).
+        return uint8_t((s->deleted ? STR_RECTYPE : 0) | (s->dataCrcOk ? 0 : STR_CRC));
     }
     FloppyDisk& dk = drive_[driveSel_];
     // Face au-delà de l'image (face 2 d'une image simple face) : les données
@@ -1437,8 +1454,14 @@ uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size
     if (auto* ov = stOverrideHere()) {
         auto* s = stOverrideFound(ov);
         if (!s) return STR_RNF;
+        // Write Sector n'attend aucune marque : il écrit la sienne, puis données et CRC
+        // neufs ([B] WD177X-00 p. 1-9, 1-12). Un ID sans données en gagne donc un.
+        s->data.resize(size_t(128) << (s->sz & 3), 0);
         for (int i = 0; i < size && i < int(s->data.size()); ++i) s->data[i] = bufferReadBytePos(i);
         s->deleted = cr_ & 1;                 // bit 0 : marque $F8 ([B] WD177X-00 p. 1-10, a0)
+        s->hasData = true;
+        s->dataCrcOk = true;
+        touchMedia(drive_[driveSel_]);
         return 0;
     }
     FloppyDisk& dk = drive_[driveSel_];
@@ -1474,11 +1497,10 @@ uint8_t Fdc::readAddressST(uint8_t track, uint8_t sector, uint8_t side) {
         // Octet de taille BRUT (nextID_LEN_ n'en garde que les bits 0-1).
         const auto* s = stOverrideFound(ov);
         if (!s) return STR_RNF;
-        uint8_t id[10] = { 0xa1, 0xa1, 0xa1, 0xfe, s->tr, s->hd, s->sr, s->sz, 0, 0 };
-        const uint16_t crc = crc16(id, 8);
-        id[8] = uint8_t(crc >> 8); id[9] = uint8_t(crc);
-        for (int i = 4; i < 10; ++i) bufferAdd(id[i]);
-        return 0;
+        // CRC tel que relu sur la piste ; faux → bit CRC ([B] WD177X-00 p. 1-13, Read Address).
+        const uint8_t id[6] = { s->tr, s->hd, s->sr, s->sz, uint8_t(s->idCrc >> 8), uint8_t(s->idCrc) };
+        for (uint8_t b : id) bufferAdd(b);
+        return s->idCrcOk ? 0 : STR_CRC;
     }
     if (track >= tracksPerDisk(driveSel_)) return STR_RNF;
     uint8_t id[10] = { 0xa1, 0xa1, 0xa1, 0xfe, track, side, sector, SECTOR_SIZE_512, 0, 0 };
@@ -1570,35 +1592,34 @@ uint8_t Fdc::writeTrackBuffer() {
         return stOverrideFromBuffer(dk) ? uint8_t(0) : uint8_t(STR_LOST);
     };
 
-    // 1re passe : extraire tous les secteurs du flux, sans rien écrire.
-    struct Found { int dataPos; uint64_t offset; };
+    // 1re passe : relire la piste écrite comme la puce (marques synchronisées, CRC), sans
+    // rien écrire. Une .st ne garde que des secteurs sains : ID et données à CRC juste,
+    // marque normale $FB. Tout autre cas (marque sans ses 3 A1, CRC écrit en clair et faux,
+    // ID sans données, marque effacée) reste lisible tel quel par la piste en mémoire.
+    const auto secs = parseWrittenTrack(buf_.data(), n, bytesPerTrack());
+    struct Found { const FloppyDisk::StOverrideSector* s; uint64_t offset; };
     std::vector<Found> found;
     std::vector<bool> seen(dk.spt + 1, false);
-    for (int i = 0; i + 6 < n; ) {
-        if (buf_[i] != 0xFE) { ++i; continue; }                // IDAM : champ d'adresse
-        const uint8_t tr = buf_[i + 1], sd = buf_[i + 2], sec = buf_[i + 3], len = buf_[i + 4];
-        int k = i + 5;                                         // cherche la marque de données
-        while (k < n && buf_[k] != 0xFB && buf_[k] != 0xF8) ++k;
-        if (k >= n || k + 1 + 512 > n) return nonStandard();   // données incomplètes
-        if ((len & 3) != SECTOR_SIZE_512) return nonStandard();// seule la taille 512 o est standard
-        if (sec < 1 || sec > dk.spt)      return nonStandard();// secteur hors géométrie
-        if (sd >= dk.sides || tr >= tracksPerDisk(driveSel_)) return nonStandard();
+    for (const auto& s : secs) {
+        if (!s.idCrcOk || !s.hasData || !s.dataCrcOk || s.deleted) return nonStandard();
+        if ((s.sz & 3) != SECTOR_SIZE_512) return nonStandard();   // seule la taille 512 o est standard
+        if (s.sr < 1 || s.sr > dk.spt)      return nonStandard();   // secteur hors géométrie
+        if (s.hd >= dk.sides || s.tr >= tracksPerDisk(driveSel_)) return nonStandard();
         // Les IDs n'actionnent ni STEP ni la sélection de face : WRITE TRACK
         // n'écrit que sous la tête actuelle ([B] WD177X-00 p. 1-13). Des C/H étrangers ou des numéros
         // dupliqués exigent une image à flux ; les accepter en ST écraserait
         // une autre piste/face ou masquerait un secteur manquant.
-        if (tr != dk.headTrack || sd != side_ || seen[sec]) return nonStandard();
-        seen[sec] = true;
-        found.push_back({k + 1, lsnOffset(tr, sd, sec, dk.spt, dk.sides)});
-        i = k + 1 + 512;
+        if (s.tr != dk.headTrack || s.hd != side_ || seen[s.sr]) return nonStandard();
+        seen[s.sr] = true;
+        found.push_back({&s, lsnOffset(s.tr, s.hd, s.sr, dk.spt, dk.sides)});
     }
     if (int(found.size()) != dk.spt) return nonStandard();     // piste incomplète / surnuméraire
 
     // 2de passe : géométrie standard confirmée → écriture des secteurs.
     for (const Found& f : found) {
         const uint64_t off = f.offset;
-        if (off + 512u > dk.image.size()) return STR_LOST;     // garde-fou (ne devrait pas arriver)
-        for (int j = 0; j < 512; ++j) dk.image[off + j] = buf_[f.dataPos + j];
+        if (off + 512u > dk.image.size() || f.s->data.size() != 512u) return STR_LOST;  // garde-fou
+        std::copy(f.s->data.begin(), f.s->data.end(), dk.image.begin() + std::ptrdiff_t(off));
     }
     // WRITE TRACK est un transfert unique : ses offsets restent ceux validés
     // avant l'écriture. Les commandes suivantes voient ensuite le nouveau BPB.
@@ -1609,30 +1630,93 @@ uint8_t Fdc::writeTrackBuffer() {
     return 0;
 }
 
-// Analyse le flux WRITE TRACK comme le relira le WD1772 (IDAM $FE → champ ID, marque
-// $FB/$F8 → données de la taille annoncée, [B] WD177X-00 p. 1-5, 1-13), même règle que StxImage::reinterpretSaveTrack.
+// Relit un flux WRITE TRACK comme le WD1772 relira la piste.
+//
+// Écriture ([B] WD177X-00 p. 1-13, table MFM) : $F5 → A1 sans horloge (synchro) et
+// préchargement du CRC, $F6 → C2 sans horloge, $F7 → deux octets de CRC ; tout autre
+// octet, $FE/$FB/$F8 compris, s'écrit avec son horloge normale : ce n'est pas une marque.
+// ⚠ [F] La fiche dit que CHAQUE $F5 précharge le CRC ; on ne précharge qu'au premier d'une
+// suite, faute de quoi les 3 $F5 du format recommandé donneraient un CRC que la lecture
+// (qui le précharge au premier A1, [D] MAME wd_fdc.cpp:1840 @ ce391499d37d, crc = 0x443b
+// après un A1) refuserait. Même convention que readTrackST. Tranché par un format à 1 ou
+// 2 $F5 relu sur un vrai 1772.
+//
+// Lecture : une marque d'ID est $FE derrière trois A1 de synchro ([B] p. 1-18 : « 3 bytes
+// of A1 must be used in MFM » ; [D] MAME wd_fdc.cpp:1853-1880 @ ce391499d37d exige les trois).
+// Le CRC d'ID est comparé à ce qui est sur la piste ([B] p. 1-10). La marque de données
+// est cherchée dans les 43 octets qui suivent le dernier octet de CRC d'ID ([B] p. 1-9) :
+// la première synchro rencontrée tranche — $FB/$F8 derrière, champ données ; autre chose,
+// pas de données (MAME : SEARCH_ADDRESS_MARK_DATA_FAILED, :1983-2000). Un champ données
+// coupé par l'index se relit sur le début de la piste, réécrit depuis : CRC faux.
+std::vector<Fdc::FloppyDisk::StOverrideSector>
+Fdc::parseWrittenTrack(const uint8_t* raw, int n, int trackLen) {
+    std::vector<uint8_t> disk, sync;                   // octets relus, 1 = A1 de synchro
+    disk.reserve(size_t(std::max(trackLen, 0)));
+    uint16_t crc = 0xFFFF;
+    bool prevF5 = false;
+    auto upd = [&](uint8_t b) {
+        crc ^= uint16_t(b) << 8;
+        for (int k = 0; k < 8; ++k)
+            crc = (crc & 0x8000) ? uint16_t((crc << 1) ^ 0x1021) : uint16_t(crc << 1);
+    };
+    auto put = [&](uint8_t b, uint8_t s) { disk.push_back(b); sync.push_back(s); };
+    for (int i = 0; i < n && int(disk.size()) < trackLen; ++i) {
+        const uint8_t b = raw[i];
+        if (b == 0xF5) { if (!prevF5) crc = 0xFFFF; upd(0xA1); put(0xA1, 1); prevF5 = true; continue; }
+        prevF5 = false;
+        if (b == 0xF7) { const uint16_t c = crc; put(uint8_t(c >> 8), 0); put(uint8_t(c), 0); continue; }
+        const uint8_t v = (b == 0xF6) ? 0xC2 : b;
+        upd(v); put(v, b == 0xF6 ? 2 : 0);
+    }
+    if (int(disk.size()) > trackLen) { disk.resize(size_t(trackLen)); sync.resize(size_t(trackLen)); }
+    const int len = int(disk.size());
+    std::vector<FloppyDisk::StOverrideSector> out;
+    if (len < 10) return out;
+    auto at = [&](int p) { return disk[size_t(p % len)]; };
+    auto syncRun = [&](int p) {                        // trois A1 de synchro consécutifs en p
+        return p + 3 < len && sync[size_t(p)] == 1 && sync[size_t(p + 1)] == 1 && sync[size_t(p + 2)] == 1;
+    };
+    constexpr int DAM_WINDOW = 43;                     // [B] p. 1-9, double densité
+    for (int p = 0; p + 10 <= len; ++p) {
+        if (!syncRun(p) || disk[size_t(p + 3)] != 0xFE) continue;
+        FloppyDisk::StOverrideSector s;
+        s.tr = disk[size_t(p + 4)]; s.hd = disk[size_t(p + 5)];
+        s.sr = disk[size_t(p + 6)]; s.sz = disk[size_t(p + 7)];
+        s.idPos = p + 3;
+        s.idCrc = uint16_t((disk[size_t(p + 8)] << 8) | disk[size_t(p + 9)]);
+        s.idCrcOk = crc16(&disk[size_t(p)], 8) == s.idCrc;
+        const int dataLen = 128 << (s.sz & 3);
+        s.data.assign(size_t(dataLen), 0);
+        s.hasData = false;
+        // Marque de données : son octet ($FB/$F8) au plus 43 octets après le CRC d'ID (p+9).
+        for (int q = p + 10; q + 3 <= p + 9 + DAM_WINDOW && q + 3 < len; ++q) {
+            if (!syncRun(q)) continue;
+            const uint8_t mark = disk[size_t(q + 3)];
+            if (mark == 0xFB || mark == 0xF8) {
+                s.hasData = true;
+                s.deleted = mark == 0xF8;
+                std::vector<uint8_t> rec(size_t(4 + dataLen));
+                for (int k = 0; k < 4 + dataLen; ++k) rec[size_t(k)] = at(q + k);
+                std::copy(rec.begin() + 4, rec.end(), s.data.begin());
+                const uint16_t stored = uint16_t((at(q + 4 + dataLen) << 8) | at(q + 5 + dataLen));
+                s.dataCrcOk = crc16(rec.data(), int(rec.size())) == stored
+                           && q + 6 + dataLen <= len;  // coupé par l'index : réécrit, faux
+            }
+            break;                                     // la première synchro tranche
+        }
+        out.push_back(std::move(s));
+        p += 3;                                        // l'ID suivant ne chevauche pas celui-ci
+    }
+    return out;
+}
+
+// Garde la piste écrite en mémoire, relue par parseWrittenTrack.
 bool Fdc::stOverrideFromBuffer(FloppyDisk& dk) {
     if (dk.headTrack < 0 || dk.headTrack > 255) return false;
     FloppyDisk::StOverrideTrack t;
     const int n = bufferSize();
     t.raw.assign(buf_.begin(), buf_.begin() + n);
-    // Position sur la piste RELUE : chaque $F7 y devient deux octets de CRC ([B] WD177X-00 p. 1-13).
-    std::vector<int> pos(n + 1, 0);
-    for (int i = 0; i < n; ++i) pos[i + 1] = pos[i] + (t.raw[i] == 0xF7 ? 2 : 1);
-    for (int i = 0; i + 5 < n; ) {
-        if (t.raw[i] != 0xFE) { ++i; continue; }
-        FloppyDisk::StOverrideSector s;
-        s.tr = t.raw[i + 1]; s.hd = t.raw[i + 2]; s.sr = t.raw[i + 3]; s.sz = t.raw[i + 4];
-        s.idPos = pos[i];
-        const int len = 128 << (s.sz & 3);
-        int k = i + 5;
-        while (k < n && t.raw[k] != 0xFB && t.raw[k] != 0xF8) ++k;
-        if (k >= n || k + 1 + len > n) { ++i; continue; }
-        s.deleted = t.raw[k] == 0xF8;
-        s.data.assign(t.raw.begin() + k + 1, t.raw.begin() + k + 1 + len);
-        t.secs.push_back(std::move(s));
-        i = k + 1 + len;
-    }
+    t.secs = parseWrittenTrack(t.raw.data(), n, bytesPerTrack());
     static bool warned = false;
     if (!warned) {
         warned = true;
@@ -1647,6 +1731,21 @@ bool Fdc::stOverrideFromBuffer(FloppyDisk& dk) {
 Fdc::FloppyDisk::StOverrideSector* Fdc::stOverrideFound(FloppyDisk::StOverrideTrack* ov) {
     if (ovSecIdx_ < 0 || ovSecIdx_ >= int(ov->secs.size())) return nullptr;
     return &ov->secs[ovSecIdx_];
+}
+
+bool Fdc::foundIdHasNoData() {
+    if (driveSel_ < 0) return false;
+    FloppyDisk& dk = drive_[driveSel_];
+    if (dk.imgType == FloppyDisk::IMG_STX) {
+        StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
+        if (!t || stxNextSector_ < 0 || stxNextSector_ >= t->sectorsCountView()) return false;
+        const StxImage::Sector& sec = t->sectorsView()[stxNextSector_];
+        return (sec.fdcStatus & StxImage::FLAG_RNF) && !(sec.fdcStatus & StxImage::FLAG_CRC)
+            && sec.saveIndex < 0;
+    }
+    if (auto* ov = stOverrideHere())
+        if (const auto* s = stOverrideFound(ov)) return !s->hasData;
+    return false;
 }
 
 Fdc::FloppyDisk::StOverrideTrack* Fdc::stOverrideHere() {
@@ -1810,7 +1909,8 @@ uint8_t Fdc::readSectorStx(int* pSize) {
     StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
     if (!t || stxNextSector_ < 0 || stxNextSector_ >= t->sectorsCountView()) return STR_RNF;
     StxImage::Sector& sec = t->sectorsView()[stxNextSector_];
-    if (sec.fdcStatus & StxImage::FLAG_RNF) return STR_RNF;
+    // RNF sans overlay : ID sans champ de données (Pasti). Un Write Sector lui en a écrit un.
+    if ((sec.fdcStatus & StxImage::FLAG_RNF) && sec.saveIndex < 0) return STR_RNF;
 
     *pSize = sec.sectorSize;
     uint32_t readTime = sec.readTime;
@@ -1874,7 +1974,12 @@ uint8_t Fdc::writeSectorStx(int size) {
     StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
     if (!t || stxNextSector_ < 0 || stxNextSector_ >= t->sectorsCountView()) return STR_RNF;
     StxImage::Sector& sec = t->sectorsView()[stxNextSector_];
-    if (sec.fdcStatus & StxImage::FLAG_RNF) return STR_RNF;
+    // RNF + CRC = CRC d'ID faux (Pasti) : jamais retenu par WS_CHECK, refusé par sûreté.
+    // RNF seul = ID sans champ de données : le WD1772 ne cherche pas de marque avant
+    // d'écrire, il écrit la sienne 22 octets après le CRC d'ID ([B] WD177X-00 p. 1-9,
+    // 1-12) ; le secteur prend la taille annoncée par l'ID ([B] p. 1-5).
+    if ((sec.fdcStatus & StxImage::FLAG_RNF) && (sec.fdcStatus & StxImage::FLAG_CRC)) return STR_RNF;
+    if (sec.sectorSize == 0) sec.sectorSize = uint16_t(128u << (sec.idSize & 3));
     // CRC seul (sans RNF) = erreur CRC du champ DONNÉES ([B] WD177X-00 p. 1-18, S3). Le WD1772 ne
     // contrôle que le CRC du champ ID ([B] p. 1-9, 1-10 ; concordant, [D] MAME wd_fdc.cpp:1028-1043
     // @ ce391499d37d, write_sector_continue, puis 2290-2313, champ données et CRC neufs) puis
@@ -2173,7 +2278,7 @@ int Fdc::nextSectorID(int* pFdcCycles) {
         else { next = &ov->secs.front(); nbBytes = bytesPerTrack() - curPos + next->idPos + 1; }
         ovSecIdx_ = int(next - ov->secs.data());
         nextID_TR_ = next->tr; nextID_SR_ = next->sr; nextID_LEN_ = uint8_t(next->sz & 3);
-        nextID_CRCOK_ = 1;
+        nextID_CRCOK_ = next->idCrcOk ? 1 : 0;
         *pFdcCycles = transferDelay(std::max(nbBytes, 1));
         return RET_OK;
     }
@@ -2563,8 +2668,19 @@ int Fdc::updateReadSectors() {
             commandState_ = RUN_RS_NEXT; fdcCycles = CMD_IMMEDIATE;
         }
         break;
+     // [B] WD177X-00 p. 1-9 (Read Sector) : pas de marque de données dans les 43 octets qui
+     // suivent le CRC d'ID → l'ID est recherché à nouveau, et RNF ne tombe qu'après cinq
+     // tours ; un doublon de l'ID porteur de données est donc lu au passage.
+     // [D] Hatari stx.c:1626-1627 @ f0736b24 (FDC_ReadSector_STX) rend RNF aussitôt sur un ID
+     // Pasti sans données, 1731-1732 de même en écriture : la fiche prime. Seul titre touché de la collection : Lethal Xcess
+     // disque 1, piste 79 face 1, secteur 1 (A/B du 2026-11-11, docs/CASE_STUDIES.md).
      case RUN_RS_TRANSFER_START:
         if (driveSel_ < 0) { fdcCycles = WAIT_NO_DRIVE; break; }
+        if (foundIdHasNoData()) {
+            commandState_ = RUN_RS_NEXT;
+            fdcCycles = transferDelay(43 - (GAP3a + GAP3b + 3 + 1));   // fin de la fenêtre de 43 octets
+            break;
+        }
         {
             bufferReset();
             int size = 0;

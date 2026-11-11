@@ -412,7 +412,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/rtc_write_only_logic.cpp tests/midi_irq_timing_logic.cpp
     tests/ikbd_irq_timing_logic.cpp
     tests/gemdos_snapshot_logic.cpp tests/desktop_mouse_logic.cpp
-    tests/fdc_track_id_location_logic.cpp
+    tests/fdc_track_id_location_logic.cpp tests/fdc_written_marks_logic.cpp
     tests/mfp_internal_loopback_logic.cpp tests/fdc_sector_size_switch_logic.cpp
     tests/mfp_rx_overrun_logic.cpp tests/mfp_rx_irq_timing_logic.cpp
     tests/mfp_mmio_decode_logic.cpp tests/psg_odd_write_logic.cpp tests/dmasound_mmio_state_logic.cpp

@@ -2697,3 +2697,44 @@ puis la lecture de données échoue sur la face absente. NeoST garde cette
 convention. Le fichier ne permet pas de savoir si la face d’origine était
 vierge ou formatée : **grade F**, à trancher par un dump de cette face ou une
 convention de représentation, sans confondre ce manque avec le délai du 1772.
+
+## WD1772 : ID sans champ de données, marques d'une piste écrite (2026-11-11)
+
+**ID sans données.** [B] WD177X-00 p. 1-9 (Read Sector) : faute de marque de données dans
+les 43 octets qui suivent le CRC d'ID, la puce recherche l'ID à nouveau, et RNF ne tombe
+qu'après cinq tours. Un doublon de l'ID porteur de données est donc lu au passage. Write
+Sector ne cherche pas de marque : il écrit la sienne 22 octets après le CRC d'ID (p. 1-12).
+Hatari (`stx.c:1626-1627, 1731-1732 @ f0736b24`) rend RNF aussitôt sur un ID Pasti sans
+données, en lecture comme en écriture : **la fiche prime, ne pas réaligner**. NeoST relance
+la recherche (`Fdc::foundIdHasNoData`, `RUN_RS_TRANSFER_START`), et Write Sector donne au
+secteur un champ neuf, persisté dans le `.wd1772` et relu au remontage. Même règle sur une
+piste `.ST` réécrite (`stOverride`).
+
+A/B du 2026-11-11, binaire avant contre après, captures toutes les 250 trames : 19 STX de
+`disks/stx`, Ivanhoe et The Union Demo (ST, TOS 1.04 UK, 4 000 trames), plus Lethal Xcess
+en jeu (recette de `docs/CASE_STUDIES.md`, 23 000 trames) — **tout identique**. Un seul ID
+sans données dans la collection : Lethal Xcess disque 1, piste 79 face 1, secteur 1, sans
+doublon ; la recette en jeu ne le lit pas. Ce qu'il change n'est donc pas encore observé :
+un RNF au cinquième index (~1 s) au lieu d'immédiat, à surveiller sur ce titre.
+
+**Marques d'une piste écrite (.ST).** [B] p. 1-13 : en MFM, seul $F5 écrit un A1 de synchro
+(horloge manquante) ; $FE, $FB et $F8 s'écrivent avec leur horloge et ne sont des marques que
+derrière trois A1 (p. 1-18, « exactly 3 bytes of A1 » ; [D] MAME `wd_fdc.cpp:1853-1880
+@ ce391499d37d` exige les trois). $F7 écrit le CRC ; deux octets écrits en clair sont relus
+tels quels et comparés. NeoST prenait tout $FE/$FB pour une marque et ne vérifiait aucun
+CRC ; `Fdc::parseWrittenTrack` relit maintenant la piste comme la puce : CRC d'ID faux →
+ID ignoré (RNF+CRC), CRC de données faux → S3, marque hors fenêtre → ID sans données. Seule
+une piste entièrement saine (ID et données à CRC juste, marque $FB) va dans le `.st` ; le
+reste est gardé en mémoire. Formatage XBIOS `Flopfmt` + `Floprd` vérifié sous TOS 1.04 et
+EmuTOS : pistes 0-2 écrites dans le `.st`, relues en $E5. ⚠ [F] CRC préchargé au premier
+$F5 d'une suite seulement (la fiche dit « chaque ») : tranché par un format à 1 ou 2 $F5 relu
+sur un vrai 1772. Le chemin STX (`StxImage::reinterpretSaveTrack`) garde l'ancienne règle
+laxiste, comme Hatari : à aligner sur `parseWrittenTrack`.
+
+**Registre de données.** [B] p. 1-3 : chaque octet transféré passe par le DR ; relu en
+$FF8604 (A1A0 = 11), il rend le dernier octet lu ou écrit. NeoST le laissait à la dernière
+valeur écrite par le CPU (Hatari de même).
+
+**Compteur DMA en écriture**, gardé : décrémenté au 33ᵉ rechargement de 16 octets ([D] Hatari
+`fdc.c:1421-1426 @ f0736b24`) quand MiSTery décompte au 32ᵉ (`atarist/dma.v:342-387
+@ a00deb5b`) ; aucune source primaire de la puce DMA du ST. [F], commentaire à `Fdc::fifoPull`.

@@ -75,17 +75,18 @@ std::vector<uint8_t> trackImage(uint8_t idTrack, uint8_t idSide,
     std::vector<uint8_t> track(60, 0x4E);
     for (uint8_t sector = 1; sector <= 2; ++sector) {
         track.insert(track.end(), 12, 0);
-        track.insert(track.end(), {0xA1, 0xA1, 0xA1, 0xFE, uint8_t(mixedTrack && sector == 2 ? 1 : idTrack), idSide,
-                                 uint8_t(duplicate ? 1 : sector), 2, 0, 0});
+        // [B] WD177X-00 p. 1-13, 1-18 : marques derrière trois $F5 (A1 de synchro), CRC par $F7.
+        track.insert(track.end(), {0xF5, 0xF5, 0xF5, 0xFE, uint8_t(mixedTrack && sector == 2 ? 1 : idTrack), idSide,
+                                 uint8_t(duplicate ? 1 : sector), 2, 0xF7});
         track.insert(track.end(), 22, 0x4E);
         track.insert(track.end(), 12, 0);
-        track.insert(track.end(), {0xA1, 0xA1, 0xA1, 0xFB});
+        track.insert(track.end(), {0xF5, 0xF5, 0xF5, 0xFB});
         // Garder un BPB valide pour que la relecture publique utilise la même géométrie.
         const auto begin = disk.begin() + (sector - 1) * 512;
         const auto data = track.size();
         track.insert(track.end(), begin, begin + 512);
         track[data + 100] = 0xCC;
-        track.insert(track.end(), 2, 0);
+        track.push_back(0xF7);
         track.insert(track.end(), 40, 0x4E);
     }
     track.resize(6268, 0x4E);
