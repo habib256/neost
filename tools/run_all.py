@@ -190,8 +190,10 @@ NAT_STEPS = [
      [str(ROOT / "build" / ("neost-nat-adapter-test" + _EXE))]),
     # Anneau MIDI (extension NeoST, docs/EXTENSIONS.md) : orphelin jusqu'au 2026-11-11,
     # cité comme « contrôle local » sans qu'aucun palier ne le lance. Sockets hôte requis.
-    ("Anneau MIDI : 20 octets UDP locaux rendus dans l'ordre par l'ACIA",
+    ("Anneau MIDI : datagrammes v1 séquencés, doublons et sources étrangères rejetés",
      [str(ROOT / "build" / ("neost-midi-ring-test" + _EXE))]),
+    ("Modem Hayes : ATDT asynchrone, DTR (&D2/&D0), abandon, reset du PSG",
+     [str(ROOT / "build" / ("neost-modem-test" + _EXE))]),
     ("NAT à travers la NE2000 : ARP, DHCP et UDP loopback",
      [str(HEADLESS), "roms/etos192us.img", "--nat-selftest"]),
     ("STinG + NAT : DNS localhost et HTTP sur serveur local",

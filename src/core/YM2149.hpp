@@ -116,6 +116,7 @@ public:
                     if (lastStrobe_ && !strobe && printerSink_) printerSink_(regs_[15]);
                     lastStrobe_ = strobe;
                     if (portAsink_) portAsink_(v);
+                    if (portALineSink_) portALineSink_(v);
                 }
                 // R15 = port B = données du port parallèle ([D] psg.c:85-92 @ f0736b24). Abonné éventuel
                 // (fixture de bouclage parallèle→BUSY/joystick du diagnostic).
@@ -131,6 +132,11 @@ public:
     // un connecteur de bouclage (cf. Machine).
     void setPortASink(std::function<void(uint8_t)> s) { portAsink_ = std::move(s); }
     void setPortBSink(std::function<void(uint8_t)> s) { portBsink_ = std::move(s); }
+    // Lignes du port A vues d'un appareil EXTERNE (modem sur la prise RS-232) : chaque
+    // écriture de R14, et $FF au reset — lignes au repos, cf. reset(). Distinct de
+    // portAsink_, que le reset ne notifie pas (lecteur, bouclage, adaptateurs : inchangés).
+    void setPortALineSink(std::function<void(uint8_t)> s) { portALineSink_ = std::move(s); }
+    uint8_t portALines() const { return regs_[14]; }
     // Abonné « imprimante Centronics » : reçoit l'octet du port B sur chaque FRONT DESCENDANT
     // du strobe (R14 bit5), cf. write8. Optionnel. [D] psg.c:372-385 @ f0736b24, qu'Hatari qualifie
     // lui-même de « prelimary dirty hack » : l'instant réel de prise de l'octet n'est pas établi.
@@ -172,6 +178,9 @@ public:
         updateFromRegs(regs_.data());
         audioRegs_ = regs_;               // resynchronise l'ombre audio (rejeu) sur les registres
         events_.clear();                  // jette les écritures horodatées en attente
+        // Les lignes repassent au repos ($FF) : un appareil branché sur la prise RS-232 voit
+        // DTR et RTS retomber ([B] YM2149 Broches § 8 p. 4, pull-ups, cf. ci-dessus).
+        if (portALineSink_) portALineSink_(regs_[14]);
     }
 
     // Branche l'horloge frame-relative (cycles CPU depuis le début de la trame), posée
@@ -389,6 +398,7 @@ private:
 
     std::function<void(uint8_t)> portAsink_;  // abonné aux écritures du port A (R14)
     std::function<void(uint8_t)> portBsink_;  // abonné aux écritures du port B (R15)
+    std::function<void(uint8_t)> portALineSink_; // appareil externe : écritures R14 + reset
     std::function<void(uint8_t)> printerSink_; // abonné « imprimante » (octet sur front strobe)
 
     // Read-latch $FF8800 ([D] psg.c:346 @ f0736b24) : dernière donnée relisible en $FF8800.

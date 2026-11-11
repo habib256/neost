@@ -220,6 +220,10 @@ set_source_files_properties(${NEOST_NET_SRC}
 if(NEOST_WITH_NET)
     add_executable(neost-midi-ring-test tests/midi_ring_logic.cpp)
     target_link_libraries(neost-midi-ring-test PRIVATE neost_net)
+    # Modem Hayes : ATDT asynchrone, DTR (&D), abandon de numérotation, reset du PSG,
+    # contre un écouteur TCP sur 127.0.0.1.
+    add_executable(neost-modem-test tests/hayes_modem_logic.cpp)
+    target_link_libraries(neost-modem-test PRIVATE neost_net)
 endif()
 
 # --- Moira (cœur 68000 cycle-exact, MIT) — SEUL cœur CPU de NeoST ------------

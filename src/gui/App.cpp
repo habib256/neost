@@ -305,8 +305,10 @@ void App::modemApply(bool on) {
         hayesModem = std::make_unique<HayesModem>(machine.mfp);
         HayesModem* m = hayesModem.get();
         machine.mfp.setSerialSink([m](uint8_t b) { m->onTx(b); });
+        machine.setRs232LineSink([m](uint8_t a) { m->onPortA(a); });   // DTR, reset
     } else if (!on && hayesModem) {
         machine.mfp.setSerialSink({});
+        machine.setRs232LineSink({});
         hayesModem.reset();
     }
 }
