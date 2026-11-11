@@ -6,6 +6,62 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Chantiers de la chasse aux bugs fermés ; format d'état v61 (2026-11-11)
+
+Les items *(proposé)* ouverts par la chasse du même jour, traités en six lots parallèles
+puis fusionnés ; deux décisions d'auteur (disquette du headless, pads STE).
+
+- **Plan mémoire.** Toute lecture CPU de `$0-$7` rend la ROM ([D] `gstmcu.v:189-195 @
+  4a6db7cc`) : un alias MMU ne la masque plus ; vidéo et son DMA lisent la copie RAM par
+  `Bus::ramCycleRead8/16`. Le blitter ne faute sur un accès mot que si ses deux octets fautent :
+  un blit vers le MFP lit et écrit l'octet impair ([B] MC68901 § 2.1.3.2, 2.1.3.4). Le bus
+  ouvert garde ses trois conventions, marquées [F].
+- **Son DMA.** Compteur sur 22 bits, qui boucle par `$000000` sans traverser ROM ni cartouche
+  ([D] `sndcnt.v:8-9`). `$FF8921` relu sous `0x83` : [B] manuel matériel du TT,
+  « 8920 RW 0000 0000 a000 00bb » (Hatari : `0x8F`, sans source).
+- **WD1772.** Un ID sans champ de données (STX, piste .ST réécrite) n'arrête plus Read
+  Sector : recherche relancée, RNF au cinquième index, doublon porteur de données lu ([B]
+  WD177X-00 p. 1-9 ; Hatari rend RNF aussitôt) ; Write Sector y écrit sa propre marque
+  (p. 1-12). WRITE TRACK sur .ST relu comme la puce : marque derrière trois `$F5`, CRC d'ID
+  et de données comparés à ce qui est écrit, fenêtre de 43 octets (p. 1-13, 1-18) ; le
+  registre de données reçoit chaque octet transféré (p. 1-3). A/B sur 21 images STX et Lethal
+  Xcess en jeu : identique au pixel.
+- **GEMDOS hôte, par processus.** Lecteur courant lu dans `p_curdrv`, dossier courant rangé
+  par basepage (hérité, rendu à Pterm) : un enfant qui fait Dsetpath ou Dsetdrv ne change plus
+  rien pour son parent. « X:NOM » part du dossier courant de X ([C] EmuTOS `proc.c` @
+  5679730f, et trois TOS exécutés). Fforce défait une redirection, Fdatime survit à un Fwrite,
+  attributs caché/système/archive retenus pour la session, alias 8.3 `~N`, Dgetpath en 8.3.
+  Pexec 0 sous TOS 1.00/1.02 ne fuit plus ~9 Ko par lancement. Banc A/B versé dans
+  `tools/run_gemdos_ab.py` : 209 → 86 écarts masqués.
+- **Format d'état v61.** Table des processus et des attributs GEMDOS, date et écriture par
+  handle, alias 8.3 par DTA.
+- **NE2000.** Le Remote DMA repart de PSTART en atteignant PSTOP ([B] DP8390D § 9.0, p. 15 ;
+  fiche épinglée dans `setup_silicon_refs.sh`). `nicReset()` vide le NAT à la mise sous
+  tension de la carte, pas au port reset du DP8390.
+- **NAT.** `extern/pom2nat` devient `extern/nat` : le NAT appartient à NeoST, issu de POM2.
+  Correctifs de l'audit repris de POM2 `4625ec82` : alias IPv6 récupérés, DNS IPv6 non
+  empoisonné par QR=1, `res_ndestroy` sous macOS, budget DNS commun aux deux proxys, TCP
+  inactif fermé après 2 h 04.
+- **Modem Hayes.** `ATDT` ne bloque plus le fil d'émulation (résolution et connexion sur un
+  fil hôte, issue livrée à la trame) ; tout caractère pendant la numérotation l'abandonne. La
+  chute de DTR suit `AT&D0-3` (défaut `&D2`, raccroche) ; le reset du ST, qui remet le port A
+  du PSG au repos, raccroche comme sur le fer. Lignes AT à commandes multiples.
+- **Anneau MIDI.** Datagrammes v1 (magie, session, séquence), octets d'une trame regroupés ;
+  source amont verrouillée, doublons et retards jetés. L'ancien format brut est refusé : les
+  deux bouts d'un anneau doivent être à jour.
+- **Pads STE.** Au repos par défaut, comme un STE sans joypad (décision d'auteur, [D] Hatari) ;
+  `--ste-pads`, `ste_pads=1` ou la page Joystick les branchent sur les joysticks ST.
+- **Headless.** Sans `--disk`, le lecteur A reste vide (décision d'auteur) : `disks/diskA.st`
+  n'est plus montée d'office depuis le répertoire courant ; le retour arrière et le séquenceur
+  MIDI la nomment. `--keys` et `--walk-mouse` tournent avant les sorties de fin de run :
+  état, son, sonde et capture décrivent le même instant. `--shot-every` : `P<F>.ppm` est
+  l'écran de `--frames F --screenshot` (l'index valait F−1).
+- **Harnais.** Un écart d'étalon accepté se tolère par sa zone (`tolerated_zones`,
+  `--tolerate`) : `blitter_timer` et `rtl_low_pal` à 0 px hors zone.
+- **Blit HOG long.** Pas de correctif : la seule voie exacte (fil-coroutine autour de
+  `runFrame`) est une décision d'architecture, au TODO avec un défaut trouvé en chemin — la
+  trame suivante n'est pas programmée pendant un blit HOG qui la chevauche.
+
 ## Chasse aux bugs en quatre vagues ; format d'état v60 (2026-11-11)
 
 Dix-neuf audits en lecture seule (par dossier, puis transversaux : save-state, sanitizers,

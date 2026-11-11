@@ -569,6 +569,21 @@ cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, 
   le secteur manque, sans alias vers la face/piste suivante. Références :
   Hatari `Floppy_ReadSectors/Floppy_WriteSectors`. STX conserve sa délégation.
 
+### GEMDOS HD — processus et banc A/B (2026-11-11)
+
+Écarts voulus face à Hatari ([D] `gemdos.c`), tranchés par le vrai TOS exécuté (banc
+`tools/run_gemdos_ab.py`, TOS 1.04, 2.06, EmuTOS) et [C] EmuTOS `proc.c` @ 5679730f.
+**Ne pas réaligner.**
+
+- **Dossier courant par processus** : rangé par basepage, hérité du parent, oublié à Pterm ;
+  Hatari le tient global, un enfant qui fait Dsetpath le change pour son parent.
+- **Lecteur courant** lu dans `p_curdrv` (basepage + `$37`).
+- **« X:NOM » et « X: »** partent du dossier courant de X ; Hatari part de la racine.
+- **Fforce(std, handle du TOS)** défait la redirection hôte posée par le même processus.
+- **Alias 8.3** `BASE~N.EXT` quand deux noms hôtes se tronquent pareil ; Hatari masque le second.
+- **Pexec 0 sous TOS < 1.04** : basepage et environnement donnés à l'enfant, comme le chargeur
+  du TOS ; la cartouche rend l'environnement si le chargement échoue.
+
 ### GEMDOS HD — sauvegardes (2026-10-19)
 
 - **A13 clos** : contexte invité sérialisé en v48 (handles, position, mode,
