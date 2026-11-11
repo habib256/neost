@@ -1,6 +1,8 @@
 // Garde d'intégration réelle du callback IKBD_MONITOR, à travers Bus et Machine.
-// [interne] Câblage Bus/Machine/Scheduler. Le départ du paquet $F8 sur ligne libre est
-// [E] (« ROM 6301 », sans adresse) : à retrouver dans le désassemblage de la ROM HD6301.
+// [interne] Câblage Bus/Machine/Scheduler.
+// [C] ROM HD6301 $F542-$F57F (MiSTery ikbd/rom/IKBD.ASM @ a00deb5b) : la boucle principale
+//     forme le paquet $F8 et le pose au tampon de sortie par $FD34, sans échéance de
+//     scrutation ; l'émetteur le vide dès que la ligne est libre.
 #include "core/Machine.hpp"
 #include "core/Pacing.hpp"
 #include <cstdio>
@@ -64,8 +66,8 @@ int testIkbdMonitorMachine() {
         normal->ikbd.mouseEvent(3, 0, false, false);
         check(normal->sched.cyclesUntil(Scheduler::IKBD_AUTOSEND) == 150000,
               "constructor arms normal autosend");
-        // ROM 6301 : le paquet $F8 part dès que la ligne est libre, sans attendre
-        // la scrutation.
+        // [C] ROM HD6301 $F56B-$F573 : le paquet $F8 part dès que la ligne est
+        // libre, sans attendre la scrutation.
         check(normal->sched.cyclesUntil(Scheduler::IKBD_RX) == 10240,
               "mouse packet starts on a free line");
         normal->sched.runTo(10240);
