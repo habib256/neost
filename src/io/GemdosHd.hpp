@@ -168,9 +168,17 @@ private:
         bool     datimeSet = false;
         uint16_t datime[2] = {0, 0};   // mot d'heure, mot de date (format GEMDOS)
         bool     written = false;      // fichier modifié → bit archive à la fermeture
+        // Fichier détruit (Fdelete, ou Fcreate du même nom) par le processus qui l'a
+        // ouvert : le TOS délie l'OFD (ixdel → ixclose) mais garde l'entrée de la table
+        // des handles, et le Fclose suivant rend EINTRN ([C] EmuTOS fsopnclo.c ixdel,
+        // ixclose @ 5679730f ; TOS 1.04, 1.62, 2.06 et EmuTOS exécutés, banc A/B).
+        // Ici le FILE* est déjà fermé (Windows ne détruit pas un fichier ouvert).
+        bool     deleted = false;
     };
     FileHandle fileHandles_[MAX_FILE_HANDLES];
 
+    // Redirections des processus SANS entrée procPaths_ (basepage illisible : boot).
+    // Les autres vivent dans leur entrée (ProcPaths::forced). `basepage` ne sert plus.
     struct ForcedHandle { int handle = -1; uint32_t basepage = 0; };
     ForcedHandle forced_[FORCED_HANDLES];
 
@@ -184,32 +192,48 @@ private:
         char dta_attrib = 0;
     };
 
-    // ---- Lecteur et dossiers courants PAR PROCESSUS -------------------------
-    // [C] EmuTOS bdos/bdosdefs.h @ 5679730f : p_curdrv à $37 et p_curdir[] à $40 de
-    // la basepage ; proc.c (création de basepage) recopie les deux du parent,
-    // ixterm les libère. Le lecteur se lit donc dans la basepage (le TOS tient
-    // p_curdrv : Dsetdrv passe par lui). Le dossier d'un lecteur hôte n'existe que
-    // côté NeoST : une table par basepage, créée au premier Dsetpath du processus
-    // (héritage paresseux : jusque-là, la chaîne des parents fait foi), libérée à
-    // Pterm. `parent` et `tbase` détectent une basepage réattribuée sans Pterm vu.
+    // ---- Lecteur, dossiers courants et handles standard PAR PROCESSUS -------
+    // [C] EmuTOS bdos/proc.c init_pd_files @ 5679730f : à la CRÉATION de la basepage
+    // (Pexec 0, 3, 5, 7), le TOS recopie du parent p_curdrv ($37), p_curdir[] et
+    // p_uft[] (handles standard, redirections Fforce comprises) ; ixterm les libère.
+    // Le lecteur se lit dans la basepage (le TOS tient p_curdrv). Le dossier d'un
+    // lecteur hôte et une redirection vers un fichier hôte n'existent que côté NeoST :
+    // une entrée par basepage, instantané de l'état du parent. Elle est créée à la
+    // naissance quand NeoST charge le programme (pexecBpCreated), sinon juste avant
+    // que le parent ne change son propre état (freezeChildren), sinon à la première
+    // modification du processus ; jusque-là, la chaîne des parents fait foi.
+    // `parent` et `tbase` détectent une basepage réattribuée sans Pterm vu.
     struct ProcPaths {
         uint32_t parent = 0, tbase = 0;
-        std::string path[MAX_HARDDRIVES];   // vide = pas encore fixé pour ce lecteur
+        std::string path[MAX_HARDDRIVES];   // vide = dossier racine du montage (fsCurrPath)
+        int forced[FORCED_HANDLES] = {-1, -1, -1, -1, -1};   // index fileHandles_, -1 = au TOS
     };
-    std::vector<std::pair<uint32_t, ProcPaths>> procPaths_;   // (basepage, chemins)
+    std::vector<std::pair<uint32_t, ProcPaths>> procPaths_;   // (basepage, état)
+    bool     romIsEmuTos();                 // ROM EmuTOS (en-tête « ETOS ») ?
     uint32_t currentBasepage();
     ProcPaths* procEntry(uint32_t bp);      // entrée valide de bp, sinon nullptr (purge si périmée)
+    ProcPaths* chainEntry(uint32_t bp);     // entrée la plus proche sur la chaîne des parents
+    ProcPaths  effectiveState(uint32_t bp); // état vu par bp (chaîne, sinon racine)
+    ProcPaths* ensureEntry(uint32_t bp, uint32_t creator = 0);   // entrée de bp, instantané du parent
+    void freezeChildren(uint32_t bp);       // fige les enfants pas encore lancés de bp
     const std::string& currentPath(int drive);   // dossier courant hôte du processus courant
     void setCurrentPath(int drive, const std::string& host);
+    int  forcedHandle(int stdh);            // index redirigé du handle standard, -1 = TOS
+    void setForcedHandle(int stdh, int idx);
+    void dropForcedTo(int idx);             // le fichier idx ferme : ses redirections tombent
     int  currentDrive();                    // p_curdrv du processus courant (repli : currentDrive_)
     void forgetProcess(uint32_t bp);
 
-    // ---- Attributs sans équivalent hôte (caché, système, archive) -----------
-    // L'hôte ne garde que « lecture seule » (droits POSIX). Les autres bits vivent
-    // ici pour la session, indexés par chemin hôte : Fcreate pose l'archive comme le
-    // TOS ([C] EmuTOS fsopnclo.c:545 @ 5679730f : à la fermeture d'un fichier
-    // modifié), Fattrib les pose et les lit, Fsfirst les rend. Perdus au démontage
-    // (aucun stockage hôte portable : ni xattr sous Windows, ni bit caché sous Linux).
+    // ---- Attributs sans équivalent POSIX (caché, système, archive) -----------
+    // « Lecture seule » vit dans les droits hôtes. Les trois autres bits sont posés
+    // comme le TOS (Fcreate et fermeture d'un fichier modifié posent l'archive, [C]
+    // EmuTOS fsopnclo.c:545 @ 5679730f ; Fattrib les pose ; Fsfirst les rend) et
+    // PERSISTÉS sur l'hôte quand il sait les garder : attributs natifs sous Windows
+    // (les mêmes trois bits que FAT), attribut étendu « user.neost.tosattr » sous
+    // macOS, Linux et Android — aucun fichier annexe, le dossier reste celui de
+    // l'utilisateur. Sans support (web, système de fichiers sans xattr), la table
+    // ci-dessous les garde pour la session ; elle sert aussi de cache et passe dans
+    // l'état sauvegardé.
     std::map<std::string, uint8_t> extraAttr_;   // ordonnée : sérialisation reproductible
     uint8_t extraAttrOf(const std::string& host) const;
     void    setExtraAttr(const std::string& host, uint8_t bits);
@@ -253,11 +277,11 @@ private:
     void initCurPaths();
     void clearAllFileHandles();
     void closeFileHandle(int i);
+    bool releaseOpenFile(const std::string& host);   // avant destruction (cf. .cpp)
     void unforceFileHandle(int i);
     void clearAllInternalDTAs();
     void clearInternalDTA(int idx);
     int  findFreeFileHandle();
-    bool basepageMatches(uint32_t checkbase);
     int  getValidFileHandle(int handle);
     int  findDriveNumber(const std::string& name);
     bool isDriveEmulated(int drive);
