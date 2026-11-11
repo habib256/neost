@@ -313,7 +313,15 @@ python3 tools/run_etalons.py
 
 Options : `--cpu moira` (seul cœur, optionnel), `--machine st|megast|ste|megaste`,
 `--mem 256k|512k|1m|2m|2176k|2560k|4m` (`2.5m` = alias de `2560k`), `--cart FILE`, `--disk`, `--diskb`, `--mono`, `--until-pc HEX`,
-`--walk-mouse`, `--keys "STR"`, `--loopback`. Pilotage daté (menus de jeux/démos) :
+`--walk-mouse`, `--keys "STR"`, `--loopback`. **Sans `--disk`, le lecteur A reste vide**
+(depuis le 2026-11-11 ; `disks/diskA.st` était montée d'office, depuis le répertoire
+courant et en écriture) : une recette qui veut la disquette publique la nomme.
+`--keys` et `--walk-mouse` tournent **après** les `--frames` trames (`--keys` : 4 trames par
+caractère, puis encore `--frames` trames), mais **avant** tous les instruments de fin de
+run : `--save-state`, `--sound-dump`, la sonde finale et `--screenshot` décrivent le même
+instant, et les empreintes périodiques continuent de compter pendant ces trames.
+`--shot-every N P` écrit `P<F>.ppm` après F trames : c'est exactement l'image de
+`--frames F --screenshot` (avant le 2026-11-11, l'index valait F−1). Pilotage daté (menus de jeux/démos) :
 `--keys-at N "STR"` (scancodes étendus : flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`, `.` et
 `|` = point et Enter du **pavé numérique** — même caractère sur tout TOS ; `--azerty` pour
 un TOS FR : A/Q, Z/W, M permutés, sinon « M » tombe en virgule dans un sélecteur GEM),

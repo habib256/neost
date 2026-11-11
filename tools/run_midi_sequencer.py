@@ -94,7 +94,11 @@ def main() -> int:
         shutil.copy(DESKTOP_INF, hd / "DESKTOP.INF")
         shutil.copy(a.song, hd / "CUBLITE" / "SONG.MID")
         log, shot = work / "midi.log", work / "end.ppm"
+        # --disk explicite : les dates de --mouse-at et --keys-at ont été calées avec la
+        # disquette publique dans A, que le headless montait d'office jusqu'au 2026-11-11.
+        # --disk-ro : l'invité n'y voit aucune différence, le fichier livré reste intact.
         cmd = [str(HEADLESS), str(ROM), "--machine", "megast", "--mem", "1m", "--mono",
+               "--disk", str(ROOT / "disks" / "diskA.st"), "--disk-ro",
                "--gemdos", str(hd), "--frames", str(a.frames), "--azerty",
                "--mouse-at", str(MOUSE_AT), MOUSE,
                "--keys-at", str(CONFIRM_AT), "\n",

@@ -8,6 +8,14 @@
 #  Usage :
 #    python3 tools/compare_screenshot.py A.ppm B.png --crop active
 #    python3 tools/compare_screenshot.py A.ppm B.png --crop active --max 0
+#    python3 tools/compare_screenshot.py A.ppm B.png --crop buffer --tolerate 0,274,416,2
+#
+#  --tolerate X,Y,W,H (répétable) : ZONE où un écart est toléré, en coordonnées de la
+#  zone comparée (buffer 416×276 pour buffer/buffer_noled/full, aire 320×200 pour
+#  active). Un écart connu se décrit par l'endroit où il vit, pas par son nombre :
+#  un seuil en pixels laissait passer n'importe quel autre jeu de pixels faux de
+#  même effectif. Les pixels tolérés sont comptés à part (tolerated_px), et --max
+#  ne s'applique qu'aux écarts HORS zone.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST.
 # =============================================================================
@@ -236,8 +244,16 @@ def _region(crop: str) -> tuple[int, int, int, int]:
     raise ValueError(f"crop inconnu : {crop}")
 
 
+def parse_zone(text: str) -> tuple[int, int, int, int]:
+    """« X,Y,W,H » → rectangle ; refuse une zone vide ou négative."""
+    parts = [int(v) for v in text.split(",")]
+    if len(parts) != 4 or parts[2] <= 0 or parts[3] <= 0 or parts[0] < 0 or parts[1] < 0:
+        raise ValueError(f"zone invalide : {text!r} (attendu X,Y,W,H, W et H > 0)")
+    return parts[0], parts[1], parts[2], parts[3]
+
+
 def compare(a_path: Path, b_path: Path, crop: str = "active",
-            report: bool = False) -> tuple[int, int, dict]:
+            report: bool = False, zones=()) -> tuple[int, int, dict]:
     aw, ah, apx = _load_image(a_path)
     bw, bh, bpx = _load_image(b_path)
     aw, ah, apx = _align_buffer(aw, ah, apx)
@@ -268,8 +284,11 @@ def compare(a_path: Path, b_path: Path, crop: str = "active",
     if crop == "buffer_noled":
         lx, ly, lw, lh = HATARI_LED
         skip = (lx - x, ly - y, lw, lh)
+    for zx, zy, zw, zh in zones:
+        if zx + zw > cw or zy + zh > ch:
+            raise ValueError(f"zone {zx},{zy},{zw},{zh} hors de la zone comparée {cw}x{ch}")
     diff = 0
-    info = {"rows": [], "first": None, "w": cw, "h": ch}   # diagnostic par ligne
+    info = {"rows": [], "first": None, "w": cw, "h": ch, "tolerated": 0}   # diagnostic par ligne
     for row in range(ch):
         rc = 0
         for col in range(cw):
@@ -277,6 +296,9 @@ def compare(a_path: Path, b_path: Path, crop: str = "active",
                 continue
             i = (row * cw + col) * 3
             if a[i : i + 3] != b[i : i + 3]:
+                if any(zx <= col < zx + zw and zy <= row < zy + zh for zx, zy, zw, zh in zones):
+                    info["tolerated"] += 1
+                    continue
                 diff += 1
                 rc += 1
                 if report and info["first"] is None:
@@ -312,16 +334,21 @@ def main() -> int:
     ap.add_argument("b")
     ap.add_argument("--crop", choices=("active", "buffer", "buffer_noled", "full"), default="active")
     ap.add_argument("--max", type=int, default=None, help="seuil max (exit 1 si dépassé)")
+    ap.add_argument("--tolerate", action="append", default=[], metavar="X,Y,W,H",
+                    help="zone où un écart est toléré (répétable), coordonnées de la zone comparée")
     ap.add_argument("--report", action="store_true",
                     help="diagnostic par scanline (localise un décalage spec512)")
     args = ap.parse_args()
     try:
-        diff, total, info = compare(Path(args.a), Path(args.b), args.crop, report=args.report)
+        zones = [parse_zone(z) for z in args.tolerate]
+        diff, total, info = compare(Path(args.a), Path(args.b), args.crop,
+                                    report=args.report, zones=zones)
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(f"ERREUR : {exc}", file=sys.stderr)
         return 2
     pct = 100.0 * diff / total if total else 0.0
-    print(f"diff_px={diff} / {total} ({pct:.2f} %)")
+    print(f"diff_px={diff} / {total} ({pct:.2f} %)"
+          + (f" | tolerated_px={info['tolerated']} in {len(zones)} zone(s)" if zones else ""))
     if args.report and diff:
         _print_report(info)
     if args.max is not None and diff > args.max:

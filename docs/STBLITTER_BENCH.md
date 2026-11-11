@@ -70,7 +70,7 @@ processeur a déjà décidé son prochain cycle. Hatari (`blitter.c:69-79 @ f073
 et précise « my guess ». **Aucun relevé sur machine ne tranche la largeur de la fenêtre.** Le test de
 vérité serait un STE qui compte les accès d'une tranche sous une boucle d'EXG.
 
-**Écart avec Hatari qui en résulte**, accepté et consigné dans `HATARI_DIVERGENCES.md` : 122 px sur
+**Écart avec Hatari qui en résulte**, accepté et consigné dans `HATARI_DIVERGENCES.md` : 122 px (tolérés par leur zone, x 48-55 et y 32-128 du buffer, pas par leur nombre) sur
 `blitter_timer`, 20 cycles de durée pour `blitter_shared_large` et 8 pour `blitter_shared_ram`. Les
 autres étalons et la suite d'Hatari restent à leur verdict.
 
