@@ -308,6 +308,36 @@ public:
         syncTo(now_ + cycles);   // O(1) tant que rien n'est dû (cache nextDue_)
     }
 
+    // syncTo pour un vol de cycles du blitter EN COURS D'INSTRUCTION (tranche HOG partie
+    // dans le quantum CPU, cf. Blitter::billCycles → Cpu68k::rebaseQuantumAndSync). Si la
+    // fin de trame est franchie, la trame suivante doit commencer à son heure, pas quand
+    // l'instruction se termine — sinon ses HBL, Timer B, RENDER et VBL ne sont pas
+    // programmés et le faisceau s'arrête pendant tout le blit. [D] Hatari sert ses
+    // échéances à chaque accès du blitter, passage de trame compris (Blitter_FlushCycles
+    // → CycInt_Process, blitter.c:356-375 @ f0736b24). Réservé à ce chemin : une
+    // instruction ordinaire qui enjambe la fin de trame (IACK compris) garde le modèle
+    // bloc, où runFrame enchaîne lui-même les trames.
+    void syncToRollingFrames(int64_t target) {
+        while (rollAt_ && rollCb_ && runTarget_ != kInactive && target > *rollAt_) {
+            const int64_t at = *rollAt_;
+            if (now_ < at) {
+                syncTo(at);                     // échéances de la trame qui finit (HBL final)
+                if (*rollAt_ != at) continue;   // un HBL a déplacé la fin de trame (LINELEN)
+            }
+            rollCb_();                          // Machine : finalise, puis amorce la suivante
+            if (*rollAt_ <= at) break;          // aucune trame en cours : rien à enchaîner
+        }
+        syncTo(target);
+    }
+
+    // Branchement du passage de trame en cours d'instruction (cf. syncToRollingFrames) :
+    // `at` désigne la fin de la trame courante, relue à chaque vol (elle bouge avec les
+    // longueurs de ligne) ; `cb` finalise la trame et amorce la suivante. Hors état.
+    void setFrameRollover(const int64_t* at, std::function<void()> cb) {
+        rollAt_ = at;
+        rollCb_ = std::move(cb);
+    }
+
     // Cycles CPU restants avant l'échéance de la source `s`, mesurés depuis
     // l'horloge LIVE (sous-instruction). Renvoie -1 si la source n'est pas armée.
     // Équivalent de `CycInt_FindCyclesRemaining` d'Hatari : permet à une puce (le
@@ -514,4 +544,6 @@ private:
     std::function<void()> dispatchBegin_{}, dispatchEnd_{};   // bornes du lot (cf. setDispatchHooks)
     int dispatchDepth_ = 0;                     // profondeur de ré-entrance de runTo
     std::function<void()>    endSlice_{};         // coupe le timeslice CPU (préemption)
+    const int64_t*           rollAt_ = nullptr;   // fin de trame courante (Machine::frameEnd_)
+    std::function<void()>    rollCb_{};           // passage de trame en cours d'instruction
 };

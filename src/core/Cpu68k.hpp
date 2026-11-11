@@ -161,7 +161,7 @@ public:
     bool inRun() const { return inRun_; }
     // Rebase du quantum + dispatch des événements échus, au point d'IACK réel
     // (≙ CycInt_Process d'Hatari avant l'élection du vecteur). Cf. .cpp.
-    void rebaseQuantumAndSync();
+    void rebaseQuantumAndSync(bool rollFrames = false);   // true : vol du blitter, fin de trame enchaînée (Scheduler::syncToRollingFrames)
 
     // Cycles BUS écoulés depuis le DÉBUT de l'instruction COURANTE, à l'instant exact
     // de l'appel (en plein accès mémoire en PRECISE_TIMING). = busClockNow() -

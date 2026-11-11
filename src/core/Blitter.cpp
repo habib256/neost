@@ -168,7 +168,9 @@ void Blitter::billCycles(int n) {
     // Une tranche peut maintenant tourner DANS le quantum CPU. Préserver le
     // dispatch par accès de BL4 : reverser le temps, rebaser le quantum puis
     // servir les échéances franchies, sans compter ces cycles deux fois.
-    if (sched_ && bus_.cpu && bus_.cpu->inRun()) bus_.cpu->rebaseQuantumAndSync();
+    // `true` : une fin de trame franchie par ces cycles enchaîne la trame suivante à
+    // son heure (Scheduler::syncToRollingFrames).
+    if (sched_ && bus_.cpu && bus_.cpu->inRun()) bus_.cpu->rebaseQuantumAndSync(true);
 }
 
 uint8_t Blitter::read8(uint32_t addr) {

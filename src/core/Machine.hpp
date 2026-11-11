@@ -201,6 +201,10 @@ public:
     //  daté (HBL/Timer C/VBL) puis on déclenche son handler. Le quantum CPU reste
     //  la ligne (512 cycles) → timing IDENTIQUE au modèle « par blocs » d'avant.
     void runFrame();
+    // Trames FINALISÉES par le dernier runFrame : 1 d'ordinaire, 0 après un point
+    // d'arrêt, davantage quand un blit HOG parti dans une instruction a franchi une ou
+    // plusieurs fins de trame (cf. rollFrameInInstruction_).
+    int lastRunFrames() const { return lastRunFrames_; }
 
     // Débogueur : avance d'UNE instruction 68000 en gardant l'ordonnanceur EN LOCKSTEP
     // (sync() dispatche les événements au cycle) — pas de ré-ancrage de trame. Si le pas
@@ -361,6 +365,9 @@ private:
     void scheduleFrameEvents(bool scheduleVbl = true);
     void beginFrame_();     // amorce une trame (ancre + événements) — cf. runFrame/stepInstruction
     void finalizeFrame_();  // finalise une trame (rattrapage + décodage lignes + spec512)
+    void rollFrameInInstruction_();  // fin de trame franchie en cours d'instruction (blit HOG)
+    int  rolledFrames_  = 0;  // trames closes en cours d'instruction pendant ce runFrame (hors état)
+    int  lastRunFrames_ = 0;  // cf. lastRunFrames() (hors état)
     void serializeState(StateArchive& ar, bool hostFiles = true);
     std::size_t cpuSectionBegin_ = 0, cpuSectionEnd_ = 0;  // relevés au dernier save (archHash)
     mutable uint32_t desktopLineA_ = 0; // cache hôte dérivé, validé avant chaque utilisation

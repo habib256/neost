@@ -337,6 +337,9 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
 //  Ordonnanceur : câblage des handlers et programmation d'une trame.
 // -----------------------------------------------------------------------------
 void Machine::installSchedulerCallbacks() {
+    // Passage de trame pendant un blit HOG parti dans le quantum CPU (cf.
+    // Scheduler::addStolenCycles et rollFrameInInstruction_).
+    sched.setFrameRollover(&frameEnd_, [this] { rollFrameInInstruction_(); });
     sched.setCallback(Scheduler::RENDER,  [this] { onRender(); });
     sched.setCallback(Scheduler::TIMER_B, [this] { onTimerB(); });
     gemdos.setPartitionCountProvider([this] { return fdc.acsiPartitionCount(); });
@@ -784,7 +787,8 @@ void Machine::runFrame() {
     //
     // cpu.run() termine son instruction et peut dépasser frameEnd de quelques cycles
     // (carry, comme Hatari) ; la boucle reboucle si nécessaire.
-    while (sched.now() < frameEnd_) {
+    rolledFrames_ = 0;
+    while (sched.now() < frameEnd_ && rolledFrames_ == 0) {
         int64_t next = sched.nextDue();
         // Événement DÉJÀ échu à cette frontière : le servir AVANT l'instruction suivante,
         // comme la boucle CPU d'Hatari (MFP_UpdateIRQ_All + test d'IRQ à la même
@@ -806,11 +810,28 @@ void Machine::runFrame() {
         const int ran = cpu.run(static_cast<int>(want > 0 ? want : 1));
         sched.endRun();
         sched.runTo(sched.now() + ran);
-        if (cpu.breakpointHit()) return;  // débogueur : rend la main SANS finaliser (résumable)
+        if (cpu.breakpointHit()) { lastRunFrames_ = rolledFrames_; return; }  // débogueur : rend la main SANS finaliser (résumable)
     }
+    // Trame(s) close(s) en cours d'instruction (blit HOG) : la suivante est déjà amorcée
+    // et entamée — on rend la main sans la finaliser, le prochain appel la reprend (même
+    // mécanique que la reprise après un point d'arrêt).
+    if (rolledFrames_ != 0) { lastRunFrames_ = rolledFrames_; return; }
     // Fin de trame atteinte (pas de breakpoint) → on finalise et on rouvre une trame neuve.
     finalizeFrame_();
     frameInProgress_ = false;
+    lastRunFrames_ = 1;
+}
+
+// Fin de trame atteinte PENDANT une instruction (vol de cycles d'un blit HOG, cf.
+// Scheduler::addStolenCycles) : l'horloge est exactement à frameEnd_, ses échéances
+// servies. On finalise la trame et on amorce la suivante sur place, comme le feraient
+// la fin de runFrame puis le début du suivant — même ancre théorique (beginFrame_),
+// même grille d'événements — mais à l'heure, sans attendre la fin de l'instruction.
+void Machine::rollFrameInInstruction_() {
+    if (!frameInProgress_) return;
+    finalizeFrame_();
+    ++rolledFrames_;
+    beginFrame_();
 }
 
 // Amorce d'une trame (FIX1 beam-sync, cf. commentaire de runFrame) : ancre frameStart_

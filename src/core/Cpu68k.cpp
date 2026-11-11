@@ -1005,7 +1005,7 @@ void Cpu68k::activate() const { g_cur = state_.get(); }
 // retour de run(), mesuré depuis quantumStartBus_) serait facturé une SECONDE fois
 // par le runTo(now+ran) de Machine, et les callbacks liraient un liveNow() gonflé.
 // Même raisonnement — et même ordre — que le saut d'attente STOP de run().
-void Cpu68k::rebaseQuantumAndSync() {
+void Cpu68k::rebaseQuantumAndSync(bool rollFrames) {
     if (!state_->sched || !state_->moira) return;
     const int64_t busNow = busOfClock(static_cast<int64_t>(state_->moira->getClock()));
     quantumStartBus_   = busNow;
@@ -1023,7 +1023,8 @@ void Cpu68k::rebaseQuantumAndSync() {
             std::fprintf(stderr, "[IACKDISP] %ld/%ld IACK with a due event (%.3f %%)\n",
                          hits, total, 100.0 * double(hits) / double(total));
     }
-    state_->sched->syncTo(busNow);
+    if (rollFrames) state_->sched->syncToRollingFrames(busNow);   // vol du blitter (cf. Blitter::billCycles)
+    else            state_->sched->syncTo(busNow);
 }
 
 // (Ré)initialise le cœur Moira. Appelé par le constructeur ET par setCore()
