@@ -811,34 +811,33 @@ bool Bus::megaSteCacheUpdate(uint32_t addr, int size, uint16_t val, bool write, 
 }
 
 // -----------------------------------------------------------------------------
-//  Accès DMA (FDC / ACSI) — port de STMemory_DMA_ReadByte/WriteByte :
-//  même plan mémoire que le CPU (MMU, ROM…), mais une zone fautive lit 0 /
-//  absorbe l'écriture au lieu de déclencher une bus error (le DMA n'a pas de
-//  cycle d'exception). Cf. Bus.hpp.
+//  Accès DMA (FDC / ACSI) : cycles RAM du MCU (cf. Bus.hpp). Au-delà de l'espace
+//  RAM de 4 Mo (compteur sur plus de 22 bits, configuration future à RAM étendue),
+//  rien n'est câblé ici : lecture 0, écriture perdue — jamais de dispatch MMIO (un
+//  registre whitelisté pourrait lever une bus error périphérique hors du try/catch
+//  de Moira).
 // -----------------------------------------------------------------------------
 uint8_t Bus::dmaRead8(uint32_t addr) {
     addr &= stmap::ADDR_MASK;
-    if (busFault(addr)) return 0x00;         // DMA_READ_BYTE_BUS_ERR
-    // Jamais de dispatch MMIO : certains registres whitelistés (pads STE
-    // $FF9200, FDC $FF8604-07) déclenchent une bus error périphérique en accès
-    // octet — levée ici hors du try/catch de Moira, elle terminerait le
-    // processus. Chez Hatari le pointeur DMA masqué n'atteint jamais l'espace
-    // IO ; on lit 0 comme pour une zone fautive (et sans effet de bord puce).
-    if (addr >= stmap::MMIO_BASE) return 0x00;
-    return read8(addr);
+    if (addr >= 0x400000) return 0x00;
+    // Accès OCTET : une banque vide relit l'octet bas du bus ouvert (VoidMem_bget),
+    // quelle que soit la largeur du dernier accès CPU.
+    const uint8_t saved = ioAccessWidth_;
+    ioAccessWidth_ = 1;
+    const uint8_t v = ramCycleRead8(addr);
+    ioAccessWidth_ = saved;
+    return v;
 }
 
 void Bus::dmaWrite8(uint32_t addr, uint8_t v) {
     addr &= stmap::ADDR_MASK;
-    // $0-$7 (SSP + PC de reset) sont mappés sur la ROM par la GLUE : personne ne peut
-    // les écrire, DMA compris. busFault() ne connaît pas cette protection en écriture,
-    // d'où le test explicite — sans lui, un pointeur DMA disquette dégénéré (registres
-    // $FF8609/0B/0D à 0) écrasait le miroir SSP/PC et faisait partir dans le décor
-    // l'idiome de reboot à chaud « move.l $4.w,a0 ; jmp (a0) ». Chez Hatari l'écriture
-    // est simplement perdue (cpu/memory.c:775, SysMem_bput : « if (addr < 0x8) »).
-    if (addr < 0x8 || busFault(addr)) return;   // écriture en zone protégée/fautive perdue
-    if (addr >= stmap::MMIO_BASE) return;       // pas de dispatch MMIO (cf. dmaRead8)
-    write8(addr, v);
+    if (addr >= 0x400000) return;
+    // Les vecteurs $0-$7 : la copie RAM EST écrite (cycle RAM). L'ancienne garde
+    // « addr < 8 » protégeait l'idiome de reboot à chaud « move.l $4.w,a0 ; jmp (a0) »
+    // d'un pointeur DMA dégénéré à 0 ; ce n'est plus nécessaire, toute lecture CPU de
+    // $0-$7 rend la ROM (read8, rvec).
+    if (watchHook && addr - watchBase_ < 0x300u) watchHook(addr, v);   // NEOST_WATCH (cf. write8)
+    ramCycleWrite8(addr, v);
 }
 
 // Espace RAM ($0-$3FFFFF) décodé par le MMU — commun au CPU (hors $0-$7, servis

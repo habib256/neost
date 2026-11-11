@@ -121,6 +121,25 @@ int testMmuMapping() {
         check(bus.peek8(0) == 0x00, "debugger peek of $0 follows CPU decode");
         check(bus.ramCycleRead16(0) == 0xDEAD, "video/sound RAM cycle sees the RAM copy");
         check(bus.ramCycleRead8(0x400001) == 0xAD, "RAM cycle wraps on 22 bits, never ROM");
+        // DMA disque/ACSI : cycle RAM aussi ([D] gstmcu.v:226 @ 4a6db7cc, iram |= ~ixdmab).
+        check(bus.dmaRead8(0) == 0xDE && bus.dmaRead8(1) == 0xAD, "DMA read of $0-$7 sees the RAM copy");
+        bus.dmaWrite8(2, 0x5A);
+        check(bus.ram[2] == 0x5A, "DMA write of $0-$7 lands in the RAM copy");
+        check(bus.read8(2) == 0x08, "CPU still reads ROM after a DMA write to $0-$7");
+    }
+    // Le DMA ne lit jamais la ROM ni la cartouche, même hors de l'espace RAM.
+    {
+        Bus bus(512 * 1024);
+        MmuGlue glue;
+        bus.glue = &glue;
+        bus.machine = MachineType::Ste;
+        bus.rom.assign(256 * 1024, 0x77);
+        bus.romBase = 0xE00000;
+        bus.write8(0xFF8001, 0x04);
+        check(bus.read8(0xE00010) == 0x77, "CPU reads ROM");
+        check(bus.dmaRead8(0xE00010) == 0x00, "DMA beyond 22-bit RAM space never reads ROM");
+        bus.dmaWrite8(0xE00010, 0x11);
+        check(bus.read8(0xE00010) == 0x77, "DMA write beyond RAM space is lost");
     }
 
     std::printf("[mmu] %d checks, %d FAIL\n", checks, failures);

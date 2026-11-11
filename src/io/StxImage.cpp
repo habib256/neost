@@ -6,6 +6,7 @@
 // =============================================================================
 #include <filesystem>
 #include "io/StxImage.hpp"
+#include "io/WrittenTrack.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -280,16 +281,34 @@ StxImage::Sector* StxImage::findSectorByPosition(int track, int side, uint16_t b
 // =============================================================================
 //  Ré-interprétation d'une piste réécrite par WRITE TRACK (au-delà de Hatari, qui
 //  laisse « convert pDataWrite into pDataRead » en TODO). Le flux brut écrit par le
-//  programme est parcouru pour en extraire les secteurs : on cherche chaque IDAM
-//  ($FE) → champ ID (piste/face/secteur/taille), puis la première DAM ($FB normal /
-//  $F8 « deleted ») → données (128 << (taille & 3) octets). On tolère un sync $A1
-//  comme $F5 (on ne s'appuie que sur $FE/$FB, comme l'extracteur .ST éprouvé).
+//  programme est relu comme le WD1772 relira la piste, par la MÊME analyse que les
+//  images .ST (wdtrack::parse, io/WrittenTrack.cpp) : une marque n'en est une que
+//  derrière trois A1 de synchro ($F5 écrits), les CRC d'ID et de données sont ceux
+//  réellement écrits ($F7 ou octets en clair), la marque de données doit tomber dans
+//  les 43 octets après l'ID. [B] WD177X-00 p. 1-9, 1-13, 1-18.
+//  L'ancienne règle de NeoST (tout $FE puis le premier $FB/$F8, CRC régénéré)
+//  acceptait des marques sans synchro, comme l'extracteur .ST d'avant le 2026-11-11.
 //
-//  Les secteurs ainsi reconstruits remplacent ceux d'origine pour la LECTURE
-//  (Track::sectorsView). La position angulaire (BitPosition, en bits DD) vient de
-//  l'offset de l'octet ID dans le flux. La CRC est ré-générée ; la marque de
-//  données FB/F8 reste représentée par le bit RECORD TYPE du secteur.
+//  Les secteurs reconstruits remplacent ceux d'origine pour la LECTURE
+//  (Track::sectorsView), avec les drapeaux Pasti de leurs défauts : CRC d'ID faux →
+//  RNF + CRC ; ID sans champ données → RNF (relancé jusqu'au 5e index par le FDC) ;
+//  CRC de données faux → CRC ; marque $F8 → RECORD TYPE. La position angulaire
+//  (BitPosition, en bits DD) est l'offset de l'octet qui suit l'IDAM sur la piste
+//  relue.
 // =============================================================================
+namespace {
+// Longueur d'un tour de la piste D'ORIGINE (octets MFM) — même dispatch que
+// Fdc::bytesPerTrackStx, hors piste réécrite : le flux relu ne dépasse pas l'index.
+int originalTrackBytes(const StxImage::Track& t) {
+    int sz;
+    if (t.revolutionBytes) sz = t.revolutionBytes;
+    else if (t.pTrackImage) sz = t.trackImageSize;
+    else if ((t.flags & StxImage::TRACK_FLAG_SECTOR_BLOCK) == 0) sz = t.mfmSize / 8;
+    else sz = t.mfmSize;
+    return sz > 0 ? sz : 6268;   // BYTES_PER_TRACK de Fdc.cpp
+}
+} // namespace
+
 void StxImage::reinterpretSaveTrack(Track& t) {
     t.writeReinterpreted = false;
     t.writeSectors.clear();
@@ -301,18 +320,10 @@ void StxImage::reinterpretSaveTrack(Track& t) {
     const int n = int(flux.size());
     t.writeMfmSize = uint16_t(n);
 
-    struct Parsed { uint8_t tr, hd, sr, sz; int fePos, dataPos, dataLen; bool deleted; };
-    std::vector<Parsed> found;
-    for (int i = 0; i + 5 < n; ) {
-        if (flux[i] != 0xFE) { ++i; continue; }              // IDAM : champ d'adresse
-        const uint8_t tr = flux[i + 1], hd = flux[i + 2], sr = flux[i + 3], sz = flux[i + 4];
-        const int dataLen = 128 << (sz & 0x03);
-        int k = i + 5;                                       // cherche la marque de données
-        while (k < n && flux[k] != 0xFB && flux[k] != 0xF8) ++k;
-        if (k >= n || k + 1 + dataLen > n) { ++i; continue; }// DAM/données incomplètes → on passe
-        found.push_back({ tr, hd, sr, sz, i, k + 1, dataLen, flux[k] == 0xF8 });
-        i = k + 1 + dataLen;
-    }
+    // La piste relue ne déborde pas d'un tour, et au moins du flux lui-même : un
+    // flux plus long que la piste d'origine vient d'un tour plus lent.
+    const std::vector<wdtrack::Sector> found =
+        wdtrack::parse(flux.data(), n, std::max(originalTrackBytes(t), n));
     // Un WRITE TRACK sans ID exploitable a effacé les anciens secteurs.
     // La vue vide doit faire foi aussi au rechargement du bloc TRCK .wd1772,
     // sinon les lectures ressuscitent silencieusement le contenu d'origine.
@@ -322,25 +333,33 @@ void StxImage::reinterpretSaveTrack(Track& t) {
     t.writeData.resize(found.size());
     t.writeSectors.resize(found.size());
     for (std::size_t s = 0; s < found.size(); ++s) {
-        const Parsed& f = found[s];
-        t.writeData[s].assign(flux.begin() + f.dataPos, flux.begin() + f.dataPos + f.dataLen);
+        const wdtrack::Sector& f = found[s];
         Sector& sec   = t.writeSectors[s];
         sec.idTrack   = f.tr; sec.idHead = f.hd; sec.idSector = f.sr; sec.idSize = f.sz;
-        sec.idCrc     = crc16({ 0xa1, 0xa1, 0xa1, 0xfe, f.tr, f.hd, f.sr, f.sz });
-        sec.fdcStatus = f.deleted ? FLAG_RECORD_TYPE : 0;
-        sec.sectorSize  = uint16_t(f.dataLen);
+        sec.idCrc     = f.idCrc;            // tel qu'écrit, juste ou non
+        uint8_t st = 0;
+        if (!f.idCrcOk)       st = FLAG_RNF | FLAG_CRC;
+        else if (!f.hasData)  st = FLAG_RNF;
+        else {
+            if (!f.dataCrcOk) st |= FLAG_CRC;
+            if (f.deleted)    st |= FLAG_RECORD_TYPE;
+        }
+        sec.fdcStatus  = st;
+        sec.sectorSize = uint16_t(f.data.size());
+        if (f.idCrcOk && f.hasData) t.writeData[s] = f.data;
         // « Juste après l'IDAM » (octet ID piste). Écrêté : un flux WRITE TRACK
         // HD/ED (~12,5/25 Ko) dépasse 65535 bits — le wrap uint16 cassait l'ordre
         // angulaire croissant supposé par nextSectorIDStx (secteurs masqués/RNF).
-        sec.bitPosition = uint16_t(std::min<uint32_t>((f.fePos + 1) * 8, 0xFFFF));
+        sec.bitPosition = uint16_t(std::min<uint32_t>(uint32_t(f.idPos + 1) * 8, 0xFFFF));
         sec.readTime    = 0;
         sec.dataOffset  = 0;
         sec.pFuzzy = nullptr; sec.pTiming = nullptr;
         sec.saveIndex = -1;
     }
     // 2e passe : pointeurs de données (writeData n'est plus redimensionné ensuite).
+    // Un secteur RNF n'a pas de données (pData nul, comme une STX Pasti).
     for (std::size_t s = 0; s < found.size(); ++s)
-        t.writeSectors[s].pData = t.writeData[s].data();
+        t.writeSectors[s].pData = t.writeData[s].empty() ? nullptr : t.writeData[s].data();
 }
 
 // =============================================================================

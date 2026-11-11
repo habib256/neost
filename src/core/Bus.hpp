@@ -180,12 +180,26 @@ public:
         return ramCycleRead16Slow(addr);
     }
 
-    // Accès mémoire des contrôleurs DMA (FDC, ACSI ; le son STE passe par ramCycleRead8) — port de Hatari
-    // stMemory.c STMemory_DMA_ReadByte/WriteByte : le DMA traverse le MÊME plan
-    // mémoire que le CPU (traduction MMU / aliasing de banques inclus, ROM lisible)
-    // mais ne déclenche JAMAIS de bus error — lire une zone fautive renvoie une
-    // constante (0), y écrire est perdu. Pas de wait states ni de test superviseur :
-    // ces protections sont propres aux accès CPU (BusMode d'Hatari).
+    // Écriture d'un cycle RAM (DMA disque/ACSI) : même décodage que ramCycleRead8 —
+    // MMU seul, banque vide = écriture perdue, $0-$7 compris (la GLUE ne protège les
+    // vecteurs qu'en lecture CPU, cf. dmaWrite8).
+    void ramCycleWrite8(uint32_t addr, uint8_t v) {
+        addr &= 0x3FFFFFu;
+        if (addr < mmuFastLimit()) { ram[addr] = v; return; }
+        const int64_t phys = mmuTranslate(addr);
+        if (phys >= 0) ram[static_cast<std::size_t>(phys)] = v;
+    }
+
+    // Accès mémoire des contrôleurs DMA (FDC, ACSI ; le son STE passe par ramCycleRead8).
+    // [D] gstmcu.v:226 @ 4a6db7cc (MiSTery a00deb5b, RTL dérivé du schéma du GST MCU) :
+    //     « iram = … | ~ixdmab | … » — TOUT cycle DMA sélectionne la RAM ; `rom` et `rvec`
+    //     exigent ixdmab (:190-191), donc ni ROM, ni cartouche, ni vecteurs $0-$7 servis
+    //     par la ROM, ni MMIO. L'adresse posée est le compteur DMA (`ADDR = dma_reg`,
+    //     :134), 22 bits sans RAM étendue (:1137) — ce que dmaAddressMask garantit déjà
+    //     jusqu'à 4 Mo. [D] Hatari stMemory.c STMemory_DMA_ReadByte/WriteByte lit le plan
+    //     CPU (ROM lisible, écriture en $0-$7 perdue) : écart voulu, RTL d'abord.
+    // Jamais de bus error : une banque vide relit le bus ouvert ([F], cf. ramSpaceRead8),
+    // une écriture y est perdue. Ni wait state ni test superviseur (propres au CPU).
     uint8_t  dmaRead8 (uint32_t addr);
     void     dmaWrite8(uint32_t addr, uint8_t v);
 

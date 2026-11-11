@@ -1371,6 +1371,12 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 - **Compteur du son DMA sur 22 bits** (2026-11-11) : il boucle de `$3FFFFE` à `$000000` et ne lit que la RAM,
   [D] `sndcnt.v:8-9` et `gstmcu.v:137 @ 4a6db7cc`. Hatari (`dmaSnd.c:353-361 @ f0736b24`) compte sur 32 bits par
   `STMemory_DMA_ReadByte` : une fin inférieure au début y traverse ROM et cartouche. Ne pas réaligner.
+- **DMA disque/ACSI en cycle RAM** (2026-11-11) : tout cycle DMA sélectionne la RAM, [D] `gstmcu.v:226 @ 4a6db7cc`
+  (`iram = … | ~ixdmab`, `rom`/`rvec` exigent `ixdmab`). `Bus::dmaRead8/dmaWrite8` passent par
+  `ramCycleRead8/ramCycleWrite8` : jamais la ROM ni la cartouche, et les vecteurs `$0-$7` sont la copie RAM, lue et
+  écrite par le DMA. Hatari (`stMemory.c STMemory_DMA_ReadByte/WriteByte @ f0736b24`) lit le plan CPU (ROM lisible)
+  et perd une écriture en `$0-$7`. Sans effet jusqu'à 4 Mo hors de `$0-$7` : le compteur DMA y tient sur 22 bits.
+  Ne pas réaligner.
 
 - **Compteur du son DMA sur STE** (2026-11-04) : il avance hors de DE, mot par mot, pas seulement au HBL (`DmaSnd_STE_HBL_Update`). [B] ST-4081 feuille 20, [D] `mcucontrol.v` @ `4a6db7cc`, `tools/make_stcpu_snd.py`. `dmasnd_poll` reposé. Ne pas réaligner.
 - **Prise des HBL et VBL sur STE** (2026-11-04) : broche levée au cycle exact et vue par `POLL_IPL`, au lieu du commit au dispatch (`intlev_load → ipl_fetch_now`). [D] fx68k @ `0602ee46` + gstmcu @ `4a6db7cc`,
@@ -2743,8 +2749,11 @@ une piste entièrement saine (ID et données à CRC juste, marque $FB) va dans l
 reste est gardé en mémoire. Formatage XBIOS `Flopfmt` + `Floprd` vérifié sous TOS 1.04 et
 EmuTOS : pistes 0-2 écrites dans le `.st`, relues en $E5. ⚠ [F] CRC préchargé au premier
 $F5 d'une suite seulement (la fiche dit « chaque ») : tranché par un format à 1 ou 2 $F5 relu
-sur un vrai 1772. Le chemin STX (`StxImage::reinterpretSaveTrack`) garde l'ancienne règle
-laxiste, comme Hatari : à aligner sur `parseWrittenTrack`.
+sur un vrai 1772. Le chemin STX (`StxImage::reinterpretSaveTrack`) suit la même analyse
+depuis le même jour (`wdtrack::parse`, `src/io/WrittenTrack.cpp`) : marques derrière trois
+$F5, CRC relus, drapeaux Pasti posés d'après les défauts (CRC d'ID → RNF+CRC, ID sans
+données → RNF, CRC de données → CRC, $F8 → RECORD TYPE). Hatari ne réinterprète pas une
+piste STX réécrite (`stx.c @ f0736b24`, TODO « convert pDataWrite into pDataRead »).
 
 **Registre de données.** [B] p. 1-3 : chaque octet transféré passe par le DR ; relu en
 $FF8604 (A1A0 = 11), il rend le dernier octet lu ou écrit. NeoST le laissait à la dernière
