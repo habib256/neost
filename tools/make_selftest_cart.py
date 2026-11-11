@@ -47,8 +47,13 @@ FRAME_HBL_HI = 268
 # confondait la ligne et la latence. DBRA #16 lit pendant DE (colonne 132).
 # Mutation vérifiée : deux NOP avant la lecture ajoutent 8 cycles → colonne 136,
 # hors bande. La sentinelle détecte donc une vraie variation de latence IPL.
-IPL_POS_LO = 130        # mesuré 132 ; bande ±2, colonne indépendante de la ligne
-IPL_POS_HI = 134
+# Recalé le 2026-11-11 : 132 → 138. Le délai de bus error (64 cycles, [B] document Atari du bus,
+# cf. Cpu68k.cpp kBerrTimeoutWait) vaut désormais aussi sur ST ; le seul bus error d'EmuTOS avant ce
+# test ajoute 60 cycles, la boucle principale est à une autre phase quand la HBL tombe, et
+# l'entrée du gestionnaire se décale de 6 cycles. Sentinelle d'auto-mesure (aucune source), pas
+# un attendu matériel : la mutation de deux NOP (+8 → 146) reste hors bande.
+IPL_POS_LO = 136        # mesuré 138 ; bande ±2, colonne indépendante de la ligne
+IPL_POS_HI = 140
 
 
 def build(break_test: str | None) -> bytes:

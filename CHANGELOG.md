@@ -25,6 +25,10 @@ l'ordre inverse. Version courante : **0.6.4**.
   Mega ST ([B] « Atari MegaST Bus », 1991 : « The ST will automatically generate this signal if a
   bus cycle does not complete within 64 clock cycles »). Le démarrage glisse sur 25 étalons
   (empreintes), mais tous les étalons pixel restent verts. Mega STE : sans source.
+  La sentinelle `ipl` de la cartouche de diagnostic (auto-mesure, sans source) passe de 132 à 138 :
+  le bus error d'EmuTOS avant le test décale la phase de la boucle de 60 cycles. Recalée sur 138 ± 2 ;
+  la cartouche cassée (`--break ipl`) échoue toujours. Le commit `9038a09` était parti avec ce palier
+  rouge : corrigé dans le suivant.
 - **YM2149** : N. Pomarède, mesure sur STF (programme calé sur la vidéo, WAV), 9 juin 2017 :
   `per`=0 ≡ 1 pour le bruit et l'enveloppe, bruit deux fois plus lent que le ton, écrire R13 relance
   la forme et une nouvelle phase. NeoST concorde ; trois commentaires passent en [A], et l'item
