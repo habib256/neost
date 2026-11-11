@@ -463,9 +463,12 @@ public:
         // Chien de garde /BERR du GST MCU (netlist 4081P11) : compteur 7 bits à 8 MHz,
         // tenu à zéro tant que /AS est inactif ; /BERR tombe au 64ᵉ front après /AS.
         // Le cycle bus attend donc ~60 cycles de plus qu'un accès normal de 4 (±4
-        // selon la phase). STE seulement : seule machine dont on a la netlist ; Hatari
-        // ne compte aucune attente.
-        if (g_cur->bus->machine == MachineType::Ste)
+        // selon la phase). STE : netlist. ST et Mega ST : [B] Atari, « Atari MegaST Bus »
+        // (texte du 9 mai 1991, DOIT_ST § 3.11, mikrosk.github.io/doitarchive/doit_st/030b.htm,
+        // relu le 2026-11-11) : « The ST will automatically generate this signal [BERR] if a
+        // bus cycle does not complete within 64 clock cycles. » Mega STE : [F], pas de source —
+        // attente non comptée. Hatari ne compte aucune attente.
+        if (g_cur->bus->machine != MachineType::MegaSte)
             const_cast<NeostMoira*>(this)->sync(kBerrTimeoutWait);
         raiseBusError(a, write);            // [[noreturn]] : lève moira::BusError
         return true;                        // inatteignable

@@ -17,6 +17,22 @@ l'ordre inverse. Version courante : **0.6.4**.
 - Essais : Rainbow Islands exige 4 Mo (remarque du mainteneur) et y entre en jeu en accord avec
   Hatari ; Super Hang-On, Nitro, Dynamite Dux, Cybernoid II et CarVup divergent en partie.
 
+## Relevés de tiers : bus error sur ST, YM2149, wakestate (2026-11-11)
+
+- Sources relues avec scrapling par web.archive.org (atari-forum est fermé aux outils) et, pour le
+  bus, par DOIT_ST. Ce qui est vérifié est cité dans le code ; le reste reste au TODO.
+- **Bus error** : le délai de 64 cycles, jusque-là compté sur STE seulement, vaut aussi pour ST et
+  Mega ST ([B] « Atari MegaST Bus », 1991 : « The ST will automatically generate this signal if a
+  bus cycle does not complete within 64 clock cycles »). Le démarrage glisse sur 25 étalons
+  (empreintes), mais tous les étalons pixel restent verts. Mega STE : sans source.
+- **YM2149** : N. Pomarède, mesure sur STF (programme calé sur la vidéo, WAV), 9 juin 2017 :
+  `per`=0 ≡ 1 pour le bruit et l'enveloppe, bruit deux fois plus lent que le ton, écrire R13 relance
+  la forme et une nouvelle phase. NeoST concorde ; trois commentaires passent en [A], et l'item
+  « Période d'enveloppe YM à l'écriture de R13 » sort du TODO.
+- **Wakestate** : Troed, STFM, 24 avril 2014 : « Cold: WS3 … Warm: WS1 ». Première source du défaut
+  WS3, faible (une machine, sans comptage).
+- `docs/REFERENCE_LADDER.md` : les relevés bus error d'Hatari nomment bien leurs machines.
+
 ## Disquettes de menus nommées (2026-11-11)
 
 - `src/io/CompDisks.cpp` lit le catalogue CompDisks (MIT, 4 515 disquettes) et retrouve une image :

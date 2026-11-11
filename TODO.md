@@ -125,10 +125,11 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   et la palette, contredite de même par 13 images réelles, va dans ce sens : le modèle prend les écritures trop tôt (`docs/REFERENCE_LADDER.md`). ⚠ read et write bougent par paire. Tranche : la date d'une écriture `$FF820A`/`$FF8240` mesurée sur le fer, ou une netlist du ST pour la lecture.
 - **Basse résolution PAL issue du reset** · P2 ⏸ source · [F] — le modèle GSTMCU garde une phase de
   plans décalée jusqu'à un passage par 60 Hz. Artefact du modèle ou effet réel ? Relevé de tiers.
-- **Wakestate WS3 par défaut** · P2 ⏸ source · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut reste sans source : sur le fer, l'état se tire à la mise sous tension. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option. Un tirage au reset demande d'abord de sortir le wakestate des constantes figées avant `main()` (`kWsInc`, `VideoGlue.hpp`).
-- **Délai de bus error sur ST, Mega ST et Mega STE** · P2 ⏸ source · [F] — porté sur STE seulement,
-  faute de netlist du GLUE. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE (ST-4081),
-  ni GLUE ni MMU du ST, ni MCU du Mega STE. Tranche : un relevé de tiers, ou ces schémas.
+- **Wakestate WS3 par défaut** · P2 ⏸ source · aligné Hatari — le modèle des quatre états est confirmé par le détecteur de Troed (`tools/run_wsdetect.py`, 162, 54, 206, 204 octets, et 180 sur STE). Le choix de WS3 comme défaut a une première source, faible : Troed, sur un STFM, « Cold: WS3 — possible to get into WS2 quite easily with a short power off/on. WS4 very seldom. WS1 almost never. Warm: WS1 » (atari-forum p=254222, 24 avril 2014, relu par web.archive.org) — une machine, de mémoire, sans comptage. Tranche : une statistique de relevés de tiers, ou un tirage au reset en option. Un tirage au reset demande d'abord de sortir le wakestate des constantes figées avant `main()` (`kWsInc`, `VideoGlue.hpp`).
+- **Délai de bus error sur Mega STE** · P3 ⏸ source · [F] — ST et Mega ST comptent les 64 cycles depuis
+  le 2026-11-11 ([B] Atari, « MegaST Bus », 1991, DOIT_ST § 3.11 : « The ST will automatically generate
+  this signal if a bus cycle does not complete within 64 clock cycles ») ; étalons pixel inchangés. Le Mega
+  STE reste sans source.
 - **Couleur pendant BLANK** · P2 ⏸ source · [F] palette 0 — `gstshifter.v:263-265 @ 4a6db7cc` force le
   noir hors mono, et le banc le confirme (étalons `rtl_low_*` : seul écart, 2 lignes en PAL,
   13 en NTSC). Hatari l'admet (`video.c:4008-4009 @ f0736b24`). Code inchangé tant qu'une source
@@ -177,10 +178,6 @@ Extension du banc à 16 MHz → § 2.
   avant toute comparaison de WAV bit à bit.
 - **Fréquences exactes centralisées** · P3 ⭘ — CPU 8 021 248 Hz PAL, VBL ≈ 50,05 Hz
   (`clocks_timings.c`) : seul impact réel, la synchro audio long terme.
-- **Période d'enveloppe YM à l'écriture de R13** · P3 ⏸ matériel · [F] — `YM2149_199209.pdf` §§ 5-6 lus le 2026-11-04 : ils définissent la période et les formes, et ne disent rien de la phase du compteur à l'écriture. Tranche : une capture sur un YM réel.
-
-### 3.5 Disquette — WD1772, DMA, ACSI
-
 - **Horloge du WD1772 sur STE = SCLK 8,010613 MHz** · P3 ⭘ · [D] — NeoST cadence le FDC sur
   l'horloge CPU (exact sur STF, −0,13 % sur STE). Un accumulateur fractionnaire décalerait les
   rafales de ~5 cycles ; Hatari tronque par octet (`rint`, TODO chez lui). Source :
@@ -277,8 +274,13 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
 - **Étendre les étalons `rtl`** · P2 ⏸ source — `rtl_low_pal`, `rtl_low_ntsc` et `rtl_med_pal` posés, ce dernier à 0 pixel. Reste ce qui bouge en cours de ligne (palette, fréquence), là où NeoST et le
   modèle peuvent vraiment diverger. Confronter aussi `ST4081S.PDF`. En attente : le modèle date les écritures 3 à 4 cycles trop tôt face à de vraies images (`docs/REFERENCE_LADDER.md`) ; un étalon en cours de ligne contre lui ne trancherait rien sans relevé.
-- **Relevés de tiers** · P2 ⭘ — notes de Steven Tattersall, résultats de la suite Hatari,
-  relevés publiés avec WSDETECT. Un relevé entre en `hardware` s'il nomme machine et protocole.
+- **Relevés de tiers** · P2 ◐ — passe du 2026-11-11 (sources relues par web.archive.org) : bus error à
+  64 cycles sur ST/Mega ST (document Atari, appliqué), YM2149 (N. Pomarède, STF : `per`=0 ≡ 1 pour
+  le bruit et l'enveloppe, bruit deux fois plus lent que le ton, R13 relance forme et phase —
+  concordant), wakestate à froid (Troed, WS3), machines des relevés bus error d'Hatari. À exploiter :
+  la bride BLANK du ST (diodes CR1-CR3, transcription KiCad du schéma C070231), les fréquences CPU
+  et du son DMA mesurées par HWTST (atari-forum t=24862). Les notes de Steven Tattersall ne
+  contiennent aucune mesure. Un relevé entre en `hardware` s'il nomme machine et protocole.
 - **Documents primaires manquants** · P2 ⏸ source — HD6301 rapatrié le 2026-11-10 (Hitachi, *HD6301/HD6303 Series Handbook*, 1989) ; restent les schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE y est.
 - **A43 — dette de preuve** · P2 ⏸ — tout commentaire cite ses références (règle : `CLAUDE.md`) ;

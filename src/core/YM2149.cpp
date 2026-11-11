@@ -209,7 +209,9 @@ void YM2149::updateFromRegs(const uint8_t* r) {
     // [D] sound.c:994-1000 @ f0736b24 garde 0 tel quel, sans l'effet mesuré que dit sound.c:1046 @ f0736b24.
     noisePer_   = std::max<uint16_t>(1, uint16_t(r[6] & 0x1f));   // NP=0 vaut NP=1, cf. doSamples250
     // [B] YM2149 § (5) p. 7 : EP sur 16 bits, fE = fMaster / (256·EP) ; EP = 0 n'y est pas défini.
-    // Le plancher à 1 revient à [D] sound.c:1045-1048 @ f0736b24 : per=0 donné pour mesuré égal à per=1.
+    // Le plancher à 1 : [A] N. Pomarède, mesure sur son STF (programme calé sur la vidéo, sortie
+    // enregistrée en WAV), « per=0 gives the same result as per=1 … it's the case for noise and env »
+    // (atari-forum.com/viewtopic.php?t=31610&start=25, 9 juin 2017, relu le 2026-11-11 par web.archive.org/web/20240505013950). Hatari le code ainsi ([D] sound.c:1045-1048 @ f0736b24).
     uint32_t ep = (r[12] << 8) | r[11];
     envPer_     = uint16_t(std::max(1u, ep));
     envShape_   = r[13] & 0x0f;
@@ -277,9 +279,9 @@ void YM2149::doSamples250(int n) {
         // COMPARAISON à 250 kHz, HORS du bloc 125 kHz — port exact de Hatari
         // ([D] sound.c:1050-1058 @ f0736b24).
         // [B] YM2149 § (2) p. 6 : fN = fMaster / (16·NP), soit un pas de LFSR tous les 2·NP pas 250 kHz.
-        // [D] sound.c:1046 @ f0736b24 : per=0 mesuré égal à per=1 sur un vrai YM2149. Le code d'Hatari ne le fait pas
-        // pour le bruit : son compteur à 125 kHz y tire le LFSR 2× trop vite. Ici, NP=0 est ramené à 1, cf. updateFromRegs.
-        // [F] Relevé de tiers, non rouvert. Tranché par : le spectre du bruit d'un vrai YM2149, R6 = 0 contre R6 = 1.
+        // [A] N. Pomarède, STF, même relevé (cf. updateFromRegs) : « noise counter is incremented twice slower
+        // than tone counter », et per=0 vaut per=1 pour le bruit. Ici, NP=0 est ramené à 1 et le LFSR avance
+        // tous les 2·NP pas 250 kHz. [D] sound.c:1046 @ f0736b24 le note sans l'appliquer au bruit.
         freqDiv2_ ^= 1;
         if (freqDiv2_ == 0)
             noiseCnt_++;
@@ -361,6 +363,8 @@ float YM2149::nextResampleWeightedN(uint32_t sampleRate) {
 // une fois par bloc d'échantillons hôte — cf. synthesizeFrame.
 void YM2149::applyRegs(const uint8_t* r) {
     updateFromRegs(r);
+    // Écrire R13 relance la forme ET une nouvelle phase : [A] N. Pomarède, STF, « writing to envwave
+    // register does both a restart of the wave pattern and a new phase » (atari-forum.com/viewtopic.php?t=31610&start=25, 9 juin 2017, relu le 2026-11-11 par web.archive.org/web/20240505013950).
     if (envReload_) {
         envReload_ = false;
         envPos_    = 0;
