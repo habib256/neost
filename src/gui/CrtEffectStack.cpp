@@ -450,11 +450,6 @@ unsigned int CrtEffectStack::process(unsigned int srcTex, int srcW, int srcH,
     dstW = std::max(1, dstW);
     dstH = std::max(1, dstH);
 
-    // srcW_/srcH_ = dims LOGIQUES source (pilotent uSrcSize, càd la fréquence
-    // scanline/masque liée aux lignes source) ; outW/outH = taille FBO écran.
-    srcW_ = srcW;
-    srcH_ = srcH;
-
     if (outputTex[0] == 0) {
         // Échec d'allocation NON définitif : on repasse simplement en rendu direct
         // pour cette trame (return 0 = passthrough côté appelant) et on retentera

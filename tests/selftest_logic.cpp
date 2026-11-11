@@ -43,6 +43,7 @@
 #include "core/DmaSound.hpp"
 #include "io/Fdc.hpp"
 #include "core/Pacing.hpp"
+#include "gui/NavRepeat.hpp"
 
 #include <cmath>
 #include "util/MouseScale.hpp"
@@ -2037,6 +2038,26 @@ static void testFdcTruthTable() {
 //  décide combien d'échantillons sortent par trame — une erreur y donne un son
 //  qui dérive ou qui hache, jamais un pixel de différence.
 // -----------------------------------------------------------------------------
+// Logique pure, aucune source matérielle : comportement voulu du menu de la borne.
+static void testNavRepeat() {
+    std::printf("Borne — répétition de la navigation\n");
+    using neost::NavRepeat;
+    NavRepeat n;
+    checkBool("rien de tenu", n.tick(0, 0), false);
+    checkBool("front : un pas", n.tick(1, 1000), true);
+    checkBool("pendant la pause", n.tick(1, 1000 + NavRepeat::kFirstDelayMs - 1), false);
+    checkBool("fin de la pause", n.tick(1, 1000 + NavRepeat::kFirstDelayMs), true);
+    checkBool("entre deux répétitions", n.tick(1, 1401 + NavRepeat::kRepeatMs - 2), false);
+    checkBool("répétition", n.tick(1, 1400 + NavRepeat::kRepeatMs), true);
+    NavRepeat m;
+    checkBool("gauche tenue : front", m.tick(4, 0), true);
+    checkBool("haut pendant gauche : front immédiat", m.tick(4 | 1, 10), true);
+    checkBool("les deux tenus : pause relancée", m.tick(4 | 1, 20), false);
+    checkBool("haut lâché : pas de front", m.tick(4, 30), false);
+    checkBool("tout lâché", m.tick(0, 40), false);
+    checkBool("rappui : front", m.tick(4, 50), true);
+}
+
 static void testPacing() {
     std::printf("Cadence & servo audio (neost::pacing)\n");
     using namespace neost::pacing;
@@ -2994,6 +3015,7 @@ int main() {
     if (const int failures = testShifterStateGeometry()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdAutoSend()) g_fail += failures; else ++g_ok;
     testPacing();
+    testNavRepeat();
     testMmioTable();
     testTwoCpus();
     testJoyScript();

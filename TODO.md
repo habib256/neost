@@ -176,12 +176,6 @@ Extension du banc à 16 MHz → § 2.
   échantillon et coupe le YM si le mixage l'exclut, après une trame sans boucle
   (`dmaSnd.c`) ; NeoST a fait un autre choix, noté dans `src/core/DmaSound.hpp`. À trancher
   avant toute comparaison de WAV bit à bit.
-- **Fréquences exactes centralisées** · P3 ⭘ — CPU 8 021 248 Hz PAL, VBL ≈ 50,05 Hz
-  (`clocks_timings.c`) : seul impact réel, la synchro audio long terme.
-- **Horloge du WD1772 sur STE = SCLK 8,010613 MHz** · P3 ⭘ · [D] — NeoST cadence le FDC sur
-  l'horloge CPU (exact sur STF, −0,13 % sur STE). Un accumulateur fractionnaire décalerait les
-  rafales de ~5 cycles ; Hatari tronque par octet (`rint`, TODO chez lui). Source :
-  `clocks_timings.c` (OSC U303), schéma STE.
 - **Préchargement DMA en écriture** · P3 ⭘ · [F] — `dma.v:277 @ a00deb5b`, modèle comportemental :
   simple témoin. Tranche : netlist du DMA.
 - **WRITE TRACK / READ TRACK sur STX** · P3 ⭘ · [D] D1/D2 — la piste réécrite est
@@ -380,8 +374,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   encore été essayé en session graphique ; les frontends Android et web ne l'appellent pas.
 - **Explorateur de bitmaps** · P3 ⭘ — la RAM en plans ST avec la palette courante, dans le
   débogueur. Modèle : ASE `DebugWindow`.
-- **Kiosk & CRT, cosmétique** · P3 ⭘ — membres `srcW_`/`srcH_` morts dans `CrtEffectStack` ;
-  tenir gauche/droite bloque la répétition haut/bas en kiosk. Limitations CRT v1 assumées.
 - **A12 — validation des paquets sur machines hôtes** · P1 ⏸ matériel — macOS arm64 passé (sauf
   le pas visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun
   budget temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et

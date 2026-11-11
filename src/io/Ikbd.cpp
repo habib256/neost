@@ -6,6 +6,7 @@
 // =============================================================================
 #include "io/Ikbd.hpp"
 #include "io/Mfp.hpp"
+#include "core/Pacing.hpp"   // kCpuHzInt — UNE horloge CPU pour tout l'arbre
 #include <cstdio>
 #include <cstdarg>
 #include <cstdlib>
@@ -983,7 +984,7 @@ void Ikbd::onJoystickMonitor() {
         // ROM $F8A2 : un échantillon par tour de boucle. Sous pause ($F17B) ou ligne
         // occupée ($D7 bit 7), le tour se fait sans échantillon. P22 (feu du joystick
         // 1, actif bas) entre par la droite de $A4 ; au 8ᵉ, $A4 part dans le TDR.
-        auto us = [](int64_t v) { return (v * 8021248 + 500000) / 1000000; };
+        auto us = [](int64_t v) { return (v * neost::pacing::kCpuHzInt + 500000) / 1000000; };
         const int64_t base = due >= 0 ? due : sched_->liveNow();
         if (pauseOutput_ || duringResetCriticalTime_) {
             sched_->schedule(Scheduler::IKBD_MONITOR, addOcfDelay(base, us(34)));
@@ -1023,7 +1024,7 @@ int64_t Ikbd::addOcfDelay(int64_t start, int64_t cycles) const {
     // 1 ms = 8 021,248 cycles CPU (8 021 248 Hz) : le k-ième tic est calculé EXACTEMENT
     // depuis l'origine. Arrondi à 8 021, la phase dérivait de 0,248 cycle par ms et
     // perdait une période entière en ~4 s de jeu.
-    constexpr int64_t kHz = 8021248;
+    constexpr int64_t kHz = neost::pacing::kCpuHzInt;
     auto us = [](int64_t v) { return (v * kHz + 500000) / 1000000; };
     auto tickAt = [this](int64_t k) { return ocfOrigin_ + (k * kHz + 500) / 1000; };
     int64_t end = start + cycles;
@@ -1167,7 +1168,7 @@ void Ikbd::sendKeycodeJoystick(uint8_t joy0) {
     // Les directions opposées enfoncées ensemble sont ignorées. Feu : $74 à l'appui,
     // $F4 au relâchement. Unités : dixièmes de seconde (prédiviseur 100 ms, $FE7D).
     if (!sched_) return;
-    constexpr int64_t kTenth = 8021248 / 10;
+    constexpr int64_t kTenth = neost::pacing::kCpuHzInt / 10;
     const int64_t now = firmwareEventTime();
     struct Axis { uint8_t neg, pos, keyNeg, keyPos; };
     static constexpr Axis kAxes[2] = { {0x04, 0x08, 0x4B, 0x4D},    // X : gauche/droite

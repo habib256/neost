@@ -6,6 +6,15 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Borne : répétition par direction ; ménage (2026-11-11)
+
+- Menu de la borne : le front de navigation se juge par direction (`gui/NavRepeat.hpp`, testé).
+  Appuyer sur haut en tenant gauche attendait la fin de la pause de 400 ms.
+- `Ikbd.cpp` portait trois `8021248` en dur, contre la règle de `core/Pacing.hpp` : ils pointent
+  sur `kCpuHzInt`, valeur inchangée. Membres morts `srcW_`/`srcH_` retirés de `CrtEffectStack`.
+- TODO : « Horloge du WD1772 sur STE » était déjà faite depuis le 2026-11-05 ([B] schéma STe) et
+  « Fréquences exactes centralisées » depuis A28 : retirées.
+
 ## EWeb dans NeoST (2026-11-11)
 
 - EWeb 1.0 (`EWEBST.PRG`, GPL v2) tourne sur STE 4 Mo sous EmuTOS, en monochrome, sur disque ACSI,

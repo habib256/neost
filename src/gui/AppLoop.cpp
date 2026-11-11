@@ -66,6 +66,7 @@
 #include "gui/JoyMap.hpp"         // manettes hôte → ports ST, par GUID
 #include "gui/KioskMenu.hpp"      // menu plein écran de la borne
 #include "gui/StScreenView.hpp"   // texture de l'écran ST + cadrages borne/bureau
+#include "gui/NavRepeat.hpp"
 #include "gui/AppConfig.hpp"
 #include "util/MouseScale.hpp"
 #include "gui/StKeys.hpp"   // neost.cfg : structure, analyse, écriture, profils
@@ -1538,19 +1539,11 @@ static void runKioskMenu(App& A, Frame& F) {
         // défilerait à des centaines de pas/s (impossible de viser un item). On
         // se cale donc sur l'horloge : 1 pas au front, puis délai avant répétition,
         // puis un pas toutes les ~150 ms tant que la direction est maintenue.
-        static bool navHeld = false;
-        static clock::time_point navNext{};
-        const bool nav = up || down || left || right || pgUp || pgDn;
-        const auto navNow = clock::now();
-        bool step = false;
-        if (nav) {
-            if (!navHeld) { step = true; navHeld = true;
-                            navNext = navNow + std::chrono::milliseconds(400); }  // pause avant répét.
-            else if (navNow >= navNext) { step = true;
-                            navNext = navNow + std::chrono::milliseconds(150); }   // cadence de répét.
-        } else {
-            navHeld = false;
-        }
+        static neost::NavRepeat navRepeat;
+        const uint32_t navHeld = (up ? 1u : 0u) | (down ? 2u : 0u) | (left ? 4u : 0u)
+                               | (right ? 8u : 0u) | (pgUp ? 16u : 0u) | (pgDn ? 32u : 0u);
+        const bool step = navRepeat.tick(navHeld, std::chrono::duration_cast<std::chrono::milliseconds>(
+                                                      clock::now().time_since_epoch()).count());
 
         if (A.kioskPage == KIOSK_PAGE_QUIT) {
             // « Quitter ? » : A/Entrée confirme, B/Échap revient à la liste.
