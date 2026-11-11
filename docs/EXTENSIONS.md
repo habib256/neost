@@ -547,14 +547,24 @@ l'armement.
 
 Pour la clé C-Lab, les accès `$FAxxxx` du **GEMDOS HD** de NeoST (qui vit sur /ROM4)
 **désarment** la clé (`FEEDB1 := 0`) — Notator le tolère s'il réarme à chaque contrôle,
-comme le ferait n'importe quel accès cartouche du TOS sur une vraie machine.
+comme le ferait n'importe quel accès cartouche du TOS sur une vraie machine. Un accès
+**octet impair** à `$FA00EB` (seul /LDS descend) arme la clé dans le même cycle, sans
+cadencer les données : FEEDB1 suit /ROM4, pas /UDS (corrigé le 2026-11-11 ; avant, l'armement
+attendait le /UDS du cycle suivant). Le format de trace ne note pas A0 : un `R4 75` rejoué
+est toujours un accès pair.
+
+**Reset à chaud** : les clés gardent leurs bascules. [E] Le port cartouche n'a pas de ligne
+/RESET — ses 40 broches sont toutes prises (+5 V ×2, D0-D15, A1-A15, /ROM3, /ROM4, /UDS,
+/LDS, masse ×3 ; START vol. 1 n° 3, hiver 1986, d'après Abacus « ST Internals » ; ST-Log
+n° 27, janv. 1989). Seule la mise sous tension les remet à 0. Tranché au grade B par un
+schéma Atari de la carte mère.
 
 Source des équations : cœur FPGA **MiSTery** (`atarist/cubase2_dongle.v`,
 `cubase3_dongle.v`, gyurco) — clé noire relevée par force brute sur une clé réelle
 (MasterOfGizmo, 2022), clé rouge depuis le JED de la puce décapsulée. Transcription en
 C++ dans `src/io/CartridgeKey.cpp` (classe `CartridgeKey`, abonnée au port cartouche via
 `core/CartDevice.hpp`), épinglée par `neost-selftest` (propriétés : registres
-à 0 au reset, motif de reset logiciel `%11011000` → 0 sur la noire, /UDS sans effet sur
+à 0 à la mise sous tension, motif de reset logiciel `%11011000` → 0 sur la noire, /UDS sans effet sur
 la rouge). Une lecture renvoie l'état **courant** (les bascules basculent en fin de
 cycle) ; octet faible `$FF`. Sérialisé dans le save-state (v14, drapeau bit 4).
 

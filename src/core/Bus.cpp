@@ -1033,34 +1033,66 @@ void Bus::wrMfp(uint32_t a, uint8_t v) {
     if (cpu) cpu->updateIpl();            // (dé)masquage, fin d'interruption...
 }
 
+// --- ACIA 6850 clavier ($FFFC00/02) et MIDI ($FFFC04/06) -----------------------
+// Octets impairs $FFFC01/03/05/07 : la puce est câblée sur D8-D15 seulement.
+// STE — [D] gstmcu.v:175,181 @ 4a6db7cc (RTL du GST MCU dérivé de son schéma, arbitre
+//     avant Hatari) : N6850 = idev & ivma & A[15:3] == $FC0, SANS UDS/LDS, et VPA_N couvre
+//     tout $FFFC00-$FFFDFF. [D] MiSTery atarist_sdram.sv:697-704,727-731 @ a00deb5b câble
+//     cs = n6850 & ±A2, rs = A1, din = D15:8. Un accès octet impair est donc un vrai cycle
+//     de la puce (cycle VPA, attente E-clock) :
+//       · en ÉCRITURE, le 68000 recopie l'octet sur les deux moitiés du bus — [D] fx68k
+//         fx68k.sv:1783-1786 @ 0602ee46 (dob[15:8] <= dobInput[7:0] en cycle octet) — et la
+//         puce latche D8-D15 : `move.b #3,$FFFC01` est un master reset de l'ACIA clavier ;
+//       · en LECTURE, la puce répond sur D8-D15 (une lecture de $FFFC03 consomme RDR comme
+//         $FFFC02) mais le CPU prend D0-D7, que personne ne pilote : $FF, la convention du
+//         bus ouvert de cette zone ([F], cf. read8Slow), comme MiSTery (cpu_din tiré à $FF).
+//     Le schéma du Sparrow (Atari Israel, SPARROW MOTHERBOARD feuille 2/5, 12 mars 1991,
+//     extern/datasheets/asic/Atari_ASICs/PCB/Atari_Sparrow.pdf p. 5) montre le même câblage
+//     des deux MC6850 : D0-D7 de la puce sur D8-D15, RS sur A1, CS0 = N6850, CS1/CS2 sur A2.
+// ST / Mega ST — [F] pas de netlist du GLUE : on garde les octets impairs « void » d'Hatari
+//     ([D] ioMemTabST.c @ f0736b24, IoMem_VoidRead/Write, sans attente). Mega STE : idem, faute
+//     de netlist de sa MCU (même parti que StePads). Tranché par : la netlist du GLUE.
+// Un accès MOT n'est qu'UN cycle bus : son octet impair n'ajoute ni effet ni attente.
+bool Bus::aciaOddByteIsChipCycle(uint32_t a) const {
+    return (a & 1) && machine == MachineType::Ste && ioAccessWidth() == 1;
+}
 uint8_t Bus::rdIkbd(uint32_t a) {
-    // $FFFC01/$FFFC03 : octets impairs non décodés (« void », ioMemTabST.c) → 0xFF
-    // sans effet de bord ACIA ni wait state. Ainsi un accès MOT à $FFFC00 ne touche
-    // l'ACIA qu'une fois (et n'est facturé qu'une fois).
-    if (a & 1) return 0xFF;
+    if (a & 1) {
+        if (!aciaOddByteIsChipCycle(a)) return 0xFF;   // void (ST, Mega STE, octet bas d'un mot)
+        if (cpu) cpu->addAciaWaitCycles();
+        (void)ikbd->read8(a & ~1u);                     // la puce répond sur D8-D15
+        if (cpu) cpu->updateIpl();
+        return 0xFF;                                    // D0-D7 non pilotés
+    }
     if (cpu) cpu->addAciaWaitCycles();    // wait state ACIA (6 cyc + E-Clock)
     const uint8_t v = ikbd->read8(a);     // ACIA clavier $FFFC00/$FFFC02
     if (cpu) cpu->updateIpl();
     return v;
 }
 void Bus::wrIkbd(uint32_t a, uint8_t v) {
-    if (a & 1) return;                    // void — écriture absorbée
+    if ((a & 1) && !aciaOddByteIsChipCycle(a)) return;   // void — écriture absorbée
     if (cpu) cpu->addAciaWaitCycles();
-    ikbd->write8(a, v);
+    ikbd->write8(a & ~1u, v);             // octet recopié sur D8-D15 (cf. en-tête)
     if (cpu) cpu->updateIpl();
 }
 
 uint8_t Bus::rdMidi(uint32_t a) {
-    if (a & 1) return 0xFF;               // $FFFC05/$FFFC07 : void (cf. ACIA clavier)
+    if (a & 1) {                          // cf. rdIkbd
+        if (!aciaOddByteIsChipCycle(a)) return 0xFF;
+        if (cpu) cpu->addAciaWaitCycles();
+        (void)midi->read8(a & ~1u);
+        if (cpu) cpu->updateIpl();
+        return 0xFF;
+    }
     if (cpu) cpu->addAciaWaitCycles();    // ACIA MIDI : même timing que l'ACIA clavier
     const uint8_t v = midi->read8(a);     // ACIA MIDI ($FFFC04/06) — bouclage OUT→IN
     if (cpu) cpu->updateIpl();            // une lecture peut effacer l'IRQ ACIA
     return v;
 }
 void Bus::wrMidi(uint32_t a, uint8_t v) {
-    if (a & 1) return;                    // void — écriture absorbée
+    if ((a & 1) && !aciaOddByteIsChipCycle(a)) return;   // void — écriture absorbée
     if (cpu) cpu->addAciaWaitCycles();
-    midi->write8(a, v);
+    midi->write8(a & ~1u, v);
     if (cpu) cpu->updateIpl();            // un octet bouclé peut lever l'IRQ ACIA
 }
 
@@ -1223,8 +1255,19 @@ const Bus::MmioSlot* Bus::mmioSlotFor(uint32_t addr) const {
     return nullptr;
 }
 
+// STE : $FFFC08-$FFFDFF ne sélectionne aucune puce mais reste un cycle VPA ([D] gstmcu.v:175
+// @ 4a6db7cc, VPA_N sur tout $FFFC00-$FFFDFF) : le 68000 attend l'E-clock comme pour l'ACIA.
+// Un cycle bus = un octet seul, ou l'octet pair d'un mot. Pas pour le blitter (pas de VPA).
+void Bus::steVpaVoidWait(uint32_t addr) {
+    if (machine != MachineType::Ste || !cpu || blitterMasterAccess) return;
+    if (addr < 0xFFFC08 || addr > 0xFFFDFF) return;
+    if ((addr & 1) && ioAccessWidth() != 1) return;
+    cpu->addAciaWaitCycles();
+}
+
 uint8_t Bus::mmioRead8(uint32_t addr) {
     if (const MmioSlot* s = mmioSlotFor(addr)) return (this->*(s->read))(addr);
+    steVpaVoidWait(addr);
     if (machine == MachineType::Ste) {
         // $FF8001 : quatre bascules ID0-3 relues sur IDB0-3, IDB4-7 à VSS (netlist
         // REGISTER.PIN du 4081) — le haut de l'octet relit 0.
@@ -1239,6 +1282,7 @@ uint8_t Bus::mmioRead8(uint32_t addr) {
 
 void Bus::mmioWrite8(uint32_t addr, uint8_t v) {
     if (const MmioSlot* s = mmioSlotFor(addr)) { (this->*(s->write))(addr, v); return; }
+    steVpaVoidWait(addr);
     if (addr == 0xFF9000 && machine == MachineType::Ste) { gameCart = v & 1; return; }
     if (glue) glue->write8(addr, v);
 }

@@ -97,6 +97,7 @@ bool testSccEchoTxClock(); // horloge TX indépendante de l’écho RX
 bool testSccEchoBrgConfig(); // TC BRG sans effet sur écho RX à horloge directe
 bool testSccEchoBrgControl(); // contrôle BRG indépendant de RXdirect, reprise écho invalidé
 int testBusMmioMirror(); // écriture blitter atomique aussi aux miroirs24bits
+int testAciaOddByte(); // STE : octet impair ACIA = cycle de la puce
 int testBlitterResetRetention(); // RAM halftone et pipeline source conservés au reset chaud
 bool testSccExtendedRead(); // images WR via WR7' D6 sur Z85C30
 int testAcsiWriteDestination(); // cible et secteur du WRITE différé conservés
@@ -857,6 +858,16 @@ static void testCartridgeKey() {
         k.cartRead(0xFB0002, true);                          // D14 ← 1 (A1)
         k.cartRead(0xFB0014, true);                          // A4·A2 : reset asynchrone de D9 ; A1=0
         checkBool("notator : reset asynchrone D9 sous A4·A2", (k.state() & 0x02) == 0, true);
+    }
+    {   // Clé Notator, armement par un accès OCTET IMPAIR ($FA00EB) : seul /LDS descend.
+        // FEEDB1 suit la remontée de /ROM4 de CE cycle ; aucun /UDS ne cadence les données.
+        CartridgeKey k; k.setModel(CartridgeKey::Model::Notator);
+        k.udsCycle(0x1002);                                   // désarmée : D14 ← 1
+        k.rom4Listen(0xFA00EB, true);                         // octet impair, pas de /UDS
+        checkBool("notator : $FA00EB arme dans le même cycle", k.armed(), true);
+        checkBool("notator : $FA00EB sans /UDS ne remet pas les données à 0", k.state() == 0x40, true);
+        k.udsCycle(0x1002);                                   // fetch suivant : clé déjà armée
+        checkBool("notator : fetch après $FA00EB sans effet (armée)", k.state() == 0x40, true);
     }
     {   // Oracle de rejeu : une trace écrite par setLog se rejoue sans écart ; une
         // trace altérée signale le premier écart (c'est ce qu'une capture matérielle
@@ -2976,6 +2987,7 @@ int main() {
     if (testSccEchoBrgConfig()) ++g_ok; else ++g_fail;
     if (testSccEchoBrgControl()) ++g_ok; else ++g_fail;
     if (const int failures = testBusMmioMirror()) g_fail += failures; else ++g_ok;
+    if (const int failures = testAciaOddByte()) g_fail += failures; else ++g_ok;
     if (const int failures = testBlitterResetRetention()) g_fail += failures; else ++g_ok;
     if (testSccExtendedRead()) ++g_ok; else ++g_fail;
     if (const int failures = testAcsiWriteDestination()) g_fail += failures; else ++g_ok;

@@ -535,6 +535,8 @@ private:
     uint8_t rdMfp    (uint32_t a);  void wrMfp    (uint32_t a, uint8_t v);
     uint8_t rdIkbd   (uint32_t a);  void wrIkbd   (uint32_t a, uint8_t v);
     uint8_t rdMidi   (uint32_t a);  void wrMidi   (uint32_t a, uint8_t v);
+    bool aciaOddByteIsChipCycle(uint32_t a) const;   // STE : octet impair = cycle ACIA (cf. Bus.cpp)
+    void steVpaVoidWait(uint32_t addr);              // STE : vide $FFFC08-$FFFDFF en cycle VPA
     uint8_t rdRtc    (uint32_t a);  void wrRtc    (uint32_t a, uint8_t v);
     uint8_t rdStePads(uint32_t a);  void wrStePads(uint32_t a, uint8_t v);
     uint8_t rdMsteCtl(uint32_t a);  void wrMsteCtl(uint32_t a, uint8_t v);

@@ -73,7 +73,8 @@ public:
     // wantsUds (CartDevice) : vrai si la clé doit voir CHAQUE cycle bus du CPU (clé
     // noire, Notator, ou Auto non encore tranché) — le Bus ne boucle sur /UDS qu'alors.
 
-    // Mise sous tension / reset : registres à 0 (cf. en-tête).
+    // Mise sous tension : registres à 0 (cf. en-tête). Pas au reset à chaud : le port
+    // cartouche n'a pas de ligne /RESET (cf. Machine::reset).
     void reset();
 
     // Lecture CPU dans $FB0000-$FBFFFF. `first` = premier octet de l'accès (octet
