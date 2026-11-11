@@ -50,7 +50,8 @@ l'ordre inverse. Version courante : **0.6.4**.
   essayé en session graphique. Passé sur les 95 images de la collection en ST et en STE, à deux
   instants, STX compris : 380 cas sur 380. Cette passe a montré qu'exclure toute commande FDC privait
   d'instantané les chargeurs qui lisent sans relâche (Epic, Enchanted Land, Super Hang-On, Vroom) :
-  seule une commande sur un STX suspend désormais l'anneau. Le refus de franchir une écriture STX est
+  `neost --rewind-at N` déclenche la même requête que l'accord : le GUI réel recule, et refuse bien
+  quand un disque GEMDOS est monté. Seule une commande sur un STX suspend désormais l'anneau. Le refus de franchir une écriture STX est
   testé au niveau de l'anneau, avec une écriture simulée.
 
 ## Relevés HWTST : horloges, son DMA et cache du Mega STE (2026-11-11)

@@ -174,6 +174,7 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
         //   arguments. En interactif, permet aussi de capturer l'état exact d'un rapport
         //   utilisateur (« l'écran est cassé à tel moment ») sans outil externe.
         else if (a == "--run-frames" && i + 1 < argc) { A.runFrames = std::atol(argv[++i]); A.harnessRun = true; }
+        else if (a == "--rewind-at" && i + 1 < argc) A.rewindAt = std::atol(argv[++i]);   // harnais : même requête que Ctrl+Alt+R
         else if (a == "--shot" && i + 1 < argc)       A.shotPath = argv[++i];
         else if (a == "--shot-window" && i + 3 < argc) {   // PREFIX FROM COUNT
             A.shotWinPrefix = argv[++i];
@@ -378,7 +379,7 @@ int appInit(App& A, int argc, char** argv) {
     A.machine = std::make_unique<Machine>(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu),
                                           machType0);   // RAM + cœur + modèle (cfg, ajusté au TOS)
     Machine& machine = *A.machine;
-    A.rewind.setEnabled(cfg.rewind);
+    A.rewind.setEnabled(cfg.rewind || A.rewindAt > 0);
     std::fprintf(stderr, "[main] CPU core: %s | machine: %s | RAM: %s\n",
                  Cpu68k::coreName(machine.cpu.core()),
                  machineName(machType0), cfg.mem.c_str());

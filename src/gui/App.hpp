@@ -95,6 +95,7 @@ struct App {
     bool saveStateReq = false;             // F5 latché dans onKey (cf. Alt+Entrée)
     bool loadStateReq = false;             // F7 latché dans onKey
     bool rewindReq = false;                // Ctrl+Alt+R latché dans onKey
+    long rewindAt = 0;                     // --rewind-at N : la requête, à la trame N (harnais)
     Rewind rewind;                         // anneau du retour arrière (cf. core/Rewind.hpp)
     std::string stateMsg;                  // message transitoire affiché en overlay
     int         stateMsgFrames = 0;

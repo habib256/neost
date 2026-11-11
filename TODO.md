@@ -376,8 +376,9 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   filet du § 2 en place ; la référence de `cpu_swap_gate.py` s'enregistre sur son commit.
   Elle reste la version de repli tant que POM68K n'a pas fait ses preuves.
 - **Retour arrière : Android, web et essai à la main** · P3 ⭘ — livré dans le GUI de bureau
-  (`core/Rewind.hpp`, option `rewind=`, Ctrl+Alt+R), jugé par `--rewind-test`. Le raccourci n'a pas
-  encore été essayé en session graphique ; les frontends Android et web ne l'appellent pas.
+  (`core/Rewind.hpp`, option `rewind=`, Ctrl+Alt+R), jugé par `--rewind-test` ; le GUI réel recule
+  aussi (`--rewind-at N`, config isolée, 2026-11-11). Reste à presser l'accord au clavier. Les
+  frontends Android et web ne l'appellent pas.
 - **Explorateur de bitmaps** · P3 ⭘ — la RAM en plans ST avec la palette courante, dans le
   débogueur. Modèle : ASE `DebugWindow`.
 - **A12 — validation des paquets sur machines hôtes** · P1 ⏸ matériel — macOS arm64 passé (sauf

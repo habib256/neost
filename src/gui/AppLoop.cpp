@@ -457,6 +457,7 @@ static void runDueFrames(App& A) {
             audio.produceFrame(machine.frameCycles(), machine.sched.now());   // son de la trame → anneau (push)
             A.rewind.onFrame(machine);
             ++A.emuFrame;
+            if (A.rewindAt > 0 && A.emuFrame == A.rewindAt) A.rewindReq = true;
             // --run-frames : sortie AUTOMATIQUE après N trames émulées (chantier A8).
             // Le décompte est fait ICI, au site d'émulation nominal — le pas-à-pas du
             // débogueur (sites runFrame du mode pausé) ne compte pas, c'est voulu :
@@ -539,6 +540,7 @@ static void handleQuickState(App& A) {
             const bool ok = !A.dbgPaused && A.rewind.stepBack(machine, &why);
             A.stateMsg = ok ? "\xef\x80\x9e Rewind" : why;
             A.stateMsgFrames = 120;
+            std::fprintf(stderr, "[rewind] %s (%zu in ring)\n", ok ? "OK" : why.c_str(), A.rewind.count());
         }
     }
 }
