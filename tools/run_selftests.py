@@ -74,11 +74,22 @@ def rom_is_free(rom: str) -> bool:
 def parse_verdicts(serial: str) -> dict:
     # Une ligne par verdict : on scanne ligne à ligne (splitlines gère \r\n) pour
     # éviter qu'un '.*' gourmand n'avale la ligne suivante.
+    # Un même nom émis deux fois avec des verdicts DIFFÉRENTS (FAIL puis PASS, ou
+    # l'inverse) est un échec : garder le dernier laissait un PASS tardif effacer un
+    # FAIL. Une fois contradictoire, le nom reste en FAIL.
     out = {}
     for line in serial.splitlines():
         m = VERDICT_RE.search(line)
-        if m:
-            out[m.group(1)] = (m.group(2), m.group(3).strip())
+        if not m:
+            continue
+        name, res, detail = m.group(1), m.group(2), m.group(3).strip()
+        prev = out.get(name)
+        if prev is not None and (prev[0] != res or prev[1].startswith("verdicts contradictoires")):
+            seen = prev[1] if prev[1].startswith("verdicts contradictoires") \
+                else f"verdicts contradictoires : {prev[0]}"
+            out[name] = ("FAIL", f"{seen} puis {res}")
+            continue
+        out[name] = (res, detail)
     return out
 
 

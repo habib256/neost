@@ -9,7 +9,7 @@
 #  COMMENT. Boote disks/sting_ethernec.st sous EmuTOS, sans aucun accès réseau, et lit sur le port série les
 #  étapes de son programme de test. Il s'arrête à la résolution de nom, qui demanderait un réseau.
 #
-#  Usage : run_sting_boot.py     Code 77 sans neost-headless ou sans la ROM.
+#  Usage : run_sting_boot.py     Code 2 sans neost-headless, la ROM EmuTOS ou la disquette.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test.
 # =============================================================================
@@ -21,19 +21,23 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-HEADLESS = ROOT / "build" / "neost-headless"
+HEADLESS = ROOT / "build" / ("neost-headless.exe" if sys.platform == "win32" else "neost-headless")
 ROM = "roms/etos256us.img"
+DISK = "disks/sting_ethernec.st"
 WANTED = ("STG: config EtherNet 10.0.2.15/24", "STG: port up", "STG: ACTIVATE=TRUE", "STG: resolving...")
 
 
 def main() -> int:
-    if not HEADLESS.exists() or not (ROOT / ROM).exists():
-        print("SKIP — STinG : neost-headless ou ROM EmuTOS absents")
-        return 77
+    # Tout est versionné (ROM EmuTOS, disquette) ou bâti ici : un manque est une casse du
+    # dépôt, pas un saut légitime.
+    missing = [str(p) for p in (HEADLESS, ROOT / ROM, ROOT / DISK) if not p.exists()]
+    if missing:
+        print("ERREUR — STinG : absent(s) : " + ", ".join(missing), file=sys.stderr)
+        return 2
     with tempfile.TemporaryDirectory() as tmp:
         dump = Path(tmp) / "serial.txt"
         subprocess.run([str(HEADLESS), ROM, "--machine", "ste", "--mem", "1m", "--ethernec", "--disk",
-                        "disks/sting_ethernec.st", "--disk-ro", "--frames", "1500", "--serial-dump", str(dump)],
+                        DISK, "--disk-ro", "--frames", "1500", "--serial-dump", str(dump)],
                        cwd=ROOT, capture_output=True, timeout=300, check=True)
         text = dump.read_text(errors="replace")
     missing = [w for w in WANTED if w not in text]

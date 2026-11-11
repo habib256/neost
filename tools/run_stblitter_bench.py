@@ -129,7 +129,13 @@ def main() -> int:
     if a.rebuild or not RTLBIN.exists() or any(p.stat().st_mtime > RTLBIN.stat().st_mtime for p in (TOP, DRIVER, RTL)):
         build_rtl()
     OUT.mkdir(parents=True, exist_ok=True)
-    names = a.only.split(",") if a.only else list(programs.PROGRAMS)
+    names = [n for n in a.only.split(",") if n] if a.only is not None else list(programs.PROGRAMS)
+    # Un nom inconnu, ou une liste vide, ne doit pas donner un bilan vide et vert.
+    unknown = [n for n in names if n not in programs.PROGRAMS]
+    if unknown or not names:
+        print(f"--only : programme(s) inconnu(s) : {', '.join(unknown) or '(liste vide)'}",
+              file=sys.stderr)
+        return 2
     env = dict(os.environ, NEOST_RAM_SLOT="0" if a.flat else "1")
     results = {}
     for n in names:

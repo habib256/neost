@@ -356,7 +356,8 @@ réseau ne constitue pas une extension du RDR.
 
 En headless, un anneau ouvert prend la place des appareils MIDI IN hôtes sur cette
 entrée DIN ; si les deux ont été demandés, le choix est signalé dans le journal.
-Le contrôle local `tests/midi_ring_logic.cpp` reçoit 20 octets dans l’ordre en
+Le contrôle local `tests/midi_ring_logic.cpp` (cible `neost-midi-ring-test`, lancée
+par le palier `fast` quand `NEOST_WITH_NET` est actif) reçoit 20 octets dans l’ordre en
 51200 cycles après une seule collecte UDP (127.0.0.1 uniquement). Le test historique
 `MIDITEST.TOS` (`dev/netdemo/`) avait aussi validé le round-trip OUT→UDP→IN→ACIA.
 Implémentation : `src/net/MidiRing.cpp`.

@@ -130,6 +130,10 @@
       "since": "2026-11-09",
       "last_real_catch": null
     },
+    "Anneau MIDI : 20 octets UDP locaux rendus dans l'ordre par l'ACIA": {
+      "since": "2026-11-11",
+      "last_real_catch": null
+    },
     "NAT à travers la NE2000 : ARP, DHCP et UDP loopback": {
       "since": "2026-11-09",
       "last_real_catch": null

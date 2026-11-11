@@ -35,7 +35,8 @@
 #  Les références ne sont PAS versionnées : elles changent à chaque correction
 #  d'émulation. Procédure → docs/CPU_SWAP_GATE.md.
 #
-#  Codes : 0 accord, 1 écart, 2 usage, 77 neost-headless absent.
+#  Codes : 0 accord, 1 écart (ou rien comparé), 2 usage (dont --only inconnu),
+#          77 neost-headless absent.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test.
 # =============================================================================
@@ -278,13 +279,19 @@ def run(sc: Scenario, every: int) -> tuple[str, str, list[tuple[int, str, str]]]
         cmd += ["--arch-hash-every", str(sc.every or every)]
         r = E.run_timed(cmd, 1800, cwd=E.ROOT, capture_output=True, text=True, errors="replace")
     rows = [(int(f), m, c) for f, m, c in LINE.findall(r.stdout or "")]
-    if r.returncode != 0 and not rows:
-        return sc.sid, f"error: exit {r.returncode}", []
+    # Un code non nul invalide les empreintes déjà imprimées (série tronquée) ; une sortie
+    # propre sans aucune empreinte aussi : sinon --record fige une référence tronquée ou vide.
+    if r.returncode != 0:
+        return sc.sid, f"error: exit {r.returncode} ({len(rows)} empreintes avant l'arrêt)", []
+    if not rows:
+        return sc.sid, "error: aucune empreinte arch-hash dans la sortie", []
     return sc.sid, "ok", rows
 
 
 def compare(want: list, rows: list) -> str | None:
     """None si accord ; sinon la description de la première divergence."""
+    if not want:
+        return "référence vide pour ce scénario (rien à comparer)"
     got = {f: (m, c) for f, m, c in rows}
     for f, m, c in want:
         g = got.get(f)
@@ -340,6 +347,14 @@ def main() -> int:
         # Une référence d'avant les suites ne connaît que les étalons.
         suites = a.suite or ref.get("suites", ["etalons"])
     todo = scenarios(suites, a.only)
+    if a.only is not None:
+        # Un identifiant inconnu ne doit pas réduire la porte à rien en silence.
+        known = {s.sid for s in todo} | set(ref["scenarios"] if ref else ())
+        unknown = [sid for sid in a.only if sid not in known]
+        if unknown or not a.only:
+            print(f"--only : scénario(s) inconnu(s) dans les suites {', '.join(suites)} : "
+                  f"{', '.join(unknown) or '(liste vide)'} (voir --list)", file=sys.stderr)
+            return 2
     t0 = time.monotonic()
     with ThreadPoolExecutor(max_workers=max(1, a.jobs)) as pool:
         results = list(pool.map(lambda s: run(s, a.every), todo))
@@ -359,6 +374,9 @@ def main() -> int:
         for sid, st in data["skipped"].items():
             print(f"  {sid} : {st}")
         print(f"enregistré : {len(data['scenarios'])} scénarios, commit {rev}, {elapsed:.0f} s")
+        if not data["scenarios"]:
+            print("ÉCHEC : aucun scénario enregistré, la référence est vide")
+            return 1
         return 1 if any(st.startswith("error") for st in data["skipped"].values()) else 0
 
     bad = 0
@@ -384,6 +402,9 @@ def main() -> int:
             print(f"  ÉCHEC {sid} : scénario de la référence disparu (média retiré ?)")
             bad += 1
     print("  " + " · ".join(f"{k} {ok}/{n}" for k, (ok, n) in per.items()) + f" · {elapsed:.0f} s")
+    if not bad and not any(n for _, n in per.values()):
+        print(f"PORTE CPU : ÉCHEC, aucun scénario comparé (référence du commit {ref.get('commit', '?')})")
+        return 1
     print(f"PORTE CPU : {'ÉCHEC, ' + str(bad) + ' scénario(s)' if bad else 'accord'} "
           f"(référence du commit {ref.get('commit', '?')})")
     return 1 if bad else 0

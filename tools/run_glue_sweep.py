@@ -202,6 +202,13 @@ def main() -> int:
     if not BARE.exists():
         print("SKIP — balayage GLUE : build/neost-glue-bare absent")
         return 77
+    if a.kinds is not None:
+        # Une forme inconnue viderait le balayage sans un mot.
+        unknown = [k for k in a.kinds.split(",") if k not in {k for k, _w, _st in PLAN}]
+        if unknown or not a.kinds:
+            print(f"--kinds : forme(s) inconnue(s) : {', '.join(unknown) or '(liste vide)'} — "
+                  f"connues : {', '.join(k for k, _w, _st in PLAN)}", file=sys.stderr)
+            return 2
     OUT.mkdir(parents=True, exist_ok=True)
     trial = bool(a.kinds or a.widths or a.step or a.offsets)
     plan = PLAN
@@ -243,6 +250,6 @@ def main() -> int:
 if __name__ == "__main__":
     rc = main()
     essai = any(x in " ".join(sys.argv[1:]) for x in ("--kinds", "--widths", "--step", "--offsets"))
-    if rc != 77 and not BASE60 and not essai:
+    if rc not in (2, 77) and not BASE60 and not essai:
         rc = subprocess.call([sys.executable, __file__, *sys.argv[1:]], env={**os.environ, "NEOST_GLUE_60": "1"}) or rc
     sys.exit(rc)

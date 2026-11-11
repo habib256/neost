@@ -94,7 +94,7 @@
    "frames": 250,
    "frame": 240,
    "crop": "buffer_noled",
-   "max_diff_px": 64,
+   "max_diff_px": 0,
    "ref_kind": "snapshot"
   },
   {
