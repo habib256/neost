@@ -211,6 +211,97 @@ int testGemdosProcess() {
     equal("Fwrite(1) au TOS ensuite",rig.intercepted,false);
     rig.handleOp(0x3E,uint16_t(o));
 
+    // --- Restes du banc A/B, 2026-11-11 (TOS 1.04, 1.62, 2.06 et EmuTOS exécutés) ---
+    // Fopen et Fdelete d'un dossier : EFILNF (recherche FA_NORM), pas EACCDN.
+    equal("Fopen dossier",rig.named(0x3D,"SUB"),-33);
+    equal("Fdelete dossier",rig.named(0x41,"SUB"),-33);
+    // Dsetpath avec un joker : EPTHNF, dossier courant inchangé.
+    equal("Dsetpath SUB\\*.*",rig.dsetpath("SUB\\*.*"),-34);
+    equal("Dsetpath *.*",rig.dsetpath("*.*"),-34);
+    same("dossier inchangé",rig.dgetpath(),"");
+    // Fdelete d'un fichier ouvert : par son propriétaire, il part et Fclose rend EINTRN ;
+    // par un autre processus, EACCDN et rien n'est détruit.
+    const int del=rig.named(0x3C,"DEL.TXT");
+    equal("Fdelete ouvert par soi",rig.named(0x41,"DEL.TXT"),0);
+    equal("fichier détruit",std::filesystem::exists(work/"DEL.TXT"),false);
+    equal("Fwrite après destruction",rig.write(uint16_t(del),"x"),-65);
+    equal("Fclose après destruction",rig.handleOp(0x3E,uint16_t(del)),-65);
+    rig.handleOp(0x3E,uint16_t(del));
+    equal("handle libéré (second Fclose au TOS)",rig.intercepted,false);
+    const int keep=rig.named(0x3C,"KEEP.TXT");
+    rig.run(CHILD);
+    equal("Fdelete ouvert par un autre",rig.named(0x41,"KEEP.TXT"),-36);
+    equal("Fcreate ouvert par un autre",rig.named(0x3C,"KEEP.TXT"),-36);
+    rig.trap(0x00);
+    rig.run(PARENT);
+    equal("toujours là",std::filesystem::exists(work/"KEEP.TXT"),true);
+    const int again=rig.named(0x3C,"KEEP.TXT");                 // Fcreate par son propriétaire
+    equal("Fcreate remplace le fichier ouvert",again>=64,true);
+    equal("ancien handle : EINTRN",rig.handleOp(0x3E,uint16_t(keep)),-65);
+    rig.handleOp(0x3E,uint16_t(again));
+    // Frename entre deux lecteurs : ENSAME, jamais de copie.
+    rig.str("C:\\KEEP.TXT");
+    for(uint32_t i=0;i<12;++i) rig.bus.write8(NAME+0x80+i,uint8_t("A:\\KEEP.TXT"[i]));
+    rig.bus.write16(0x1008,0); rig.bus.write32(0x100A,NAME); rig.bus.write32(0x100E,NAME+0x80);
+    equal("Frename C: → A:",rig.trap(0x56),-48);
+
+    // Fforce par processus : l'enfant rend sa sortie à CON, le parent reste redirigé.
+    const int out=rig.named(0x3C,"OUT.TXT");
+    rig.bus.write16(0x1008,1); rig.bus.write16(0x100A,uint16_t(out));
+    equal("parent Fforce(1, fichier)",rig.trap(0x46),0);
+    rig.run(CHILD);
+    equal("l'enfant hérite",rig.write(1,"in"),2);
+    equal("intercepté",rig.intercepted,true);
+    rig.bus.write16(0x1008,1); rig.bus.write16(0x100A,0xFFFF);   // Fforce(1, CON)
+    rig.trap(0x46);
+    equal("Fforce(1, CON) au TOS",rig.intercepted,false);
+    rig.write(1,"con");
+    equal("enfant : Fwrite(1) au TOS",rig.intercepted,false);
+    rig.trap(0x00);
+    rig.run(PARENT);
+    equal("parent toujours redirigé",rig.write(1,"P"),1);
+    equal("parent intercepté",rig.intercepted,true);
+    rig.handleOp(0x3E,1);                                        // Fclose(1) : défait la redirection
+    rig.write(1,"tos");
+    equal("Fclose(1) rend le handle au TOS",rig.intercepted,false);
+    rig.handleOp(0x3E,uint16_t(out));
+    {
+        std::ifstream f(work/"OUT.TXT"); std::string c; std::getline(f,c);
+        same("contenu redirigé",c,"inP");
+    }
+
+    // Héritage figé à la création : un enfant de Pexec 3, pas encore lancé (p_parent nul),
+    // garde le dossier qu'avait son parent quand il est né.
+    constexpr uint32_t PEXEC3 = 0x5000, MD = 0x900;
+    rig.bus.write32(0x432,0x1000);                     // _membot : descripteurs en dessous
+    rig.bus.write32(MD+4,PEXEC3); rig.bus.write32(MD+8,0x2000); rig.bus.write32(MD+12,PARENT);
+    rig.bus.write32(PEXEC3,PEXEC3); rig.bus.write32(PEXEC3+4,PEXEC3+0x2000);
+    rig.basepage(PEXEC3,0,0xB000);
+    equal("parent à la racine",rig.dsetpath("\\"),0);
+    equal("parent Dsetpath après le Pexec 3",rig.dsetpath("\\SUB"),0);
+    rig.bus.write32(PEXEC3+0x24,PARENT);               // Pexec 4 : le TOS pose p_parent
+    rig.run(PEXEC3);
+    same("l'enfant voit le dossier de sa naissance",rig.dgetpath(),"");
+    rig.trap(0x00);
+    rig.run(PARENT);
+    same("parent dans \\SUB",rig.dgetpath(),"\\SUB");
+    rig.dsetpath("\\");
+
+    // Attributs caché/système/archive : persistés sur l'hôte quand il sait les garder
+    // (attribut étendu sous macOS/Linux) — un nouveau montage les retrouve.
+    const int h=rig.named(0x3C,"HID.TXT");
+    rig.handleOp(0x3E,uint16_t(h));
+    equal("Fattrib caché",rig.named(0x43,"HID.TXT",1,0x02),0x02);
+    {
+        Rig again(work.string());
+#if (defined(__APPLE__) || defined(__linux__)) && !defined(__EMSCRIPTEN__)
+        // Système de fichiers sans attributs étendus (tmpfs ancien) : session seulement.
+        const bool persisted = again.named(0x43,"HID.TXT",0,0)==0x02;
+        if(!persisted) std::fprintf(stderr,"[gemdos-process] note: no xattr support in %s\n",work.string().c_str());
+        else equal("caché retrouvé au remontage",again.named(0x43,"HID.TXT",0,0),0x02);
+#endif
+    }
+
     std::fprintf(stderr,"[gemdos-process] %d checks, %d FAIL\n",checks,failures);
     return failures;
 }

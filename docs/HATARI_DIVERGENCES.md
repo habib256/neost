@@ -579,7 +579,29 @@ cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, 
   Hatari le tient global, un enfant qui fait Dsetpath le change pour son parent.
 - **Lecteur courant** lu dans `p_curdrv` (basepage + `$37`).
 - **« X:NOM » et « X: »** partent du dossier courant de X ; Hatari part de la racine.
-- **Fforce(std, handle du TOS)** défait la redirection hôte posée par le même processus.
+- **Redirections Fforce par processus** (2026-11-11, seconde passe) : tenues dans l'entrée
+  de chaque basepage avec ses dossiers, recopiées à la naissance de l'enfant ([C] EmuTOS
+  `proc.c init_pd_files`) ; Fforce(std, handle du TOS ou CON) les défait pour le seul
+  processus appelant, Fclose(std) aussi. Hatari les garde dans une table globale.
+- **Héritage figé à la création** : un enfant de Pexec 3 garde le dossier et les
+  redirections qu'avait son parent quand il est né, même si le parent change les siens
+  avant le Pexec 4 (instantané dans `pexecBpCreated`, ou par les descripteurs mémoire
+  pour un enfant chargé par le TOS).
+- **Fdelete / Fcreate d'un fichier ouvert** : par un autre processus → EACCDN, rien n'est
+  détruit ; par le processus qui l'a ouvert → détruit, et son Fclose rend EINTRN (−65)
+  ([C] EmuTOS `fsopnclo.c ixdel`). Hatari détruit et rend 0.
+- **Fopen et Fdelete d'un dossier** : EFILNF (recherche FA_NORM), Hatari EACCDN.
+- **Frename entre deux lecteurs** : ENSAME (−48) ([C] EmuTOS `fsdir.c xrename`), Hatari
+  rend l'errno de `rename` ou laisse le TOS.
+- **Codes propres à EmuTOS** (ROM « ETOS ») : Frename vers une destination existante →
+  EACCDN avant tout contrôle de la source, Fattrib dans un dossier absent → EPTHNF,
+  Fread de taille négative → 0. Le GEMDOS hôte remplace celui de la ROM : il parle comme elle.
+- **Attributs caché, système, archive persistés** : attributs natifs sous Windows,
+  attribut étendu `user.neost.tosattr` sous macOS, Linux et Android ; table de session
+  sinon (web). Hatari ne les garde pas.
+- Restent au banc, propres au montage : ordre de listage, lecteur de boot et carte des
+  lecteurs, Dfree, étiquette de volume, octets après le NUL d'un nom ; et sous EmuTOS le
+  Dgetpath d'un dossier courant détruit (pointeur pendant dans `xrmdir`, non reproduit).
 - **Alias 8.3** `BASE~N.EXT` quand deux noms hôtes se tronquent pareil ; Hatari masque le second.
 - **Pexec 0 sous TOS < 1.04** : basepage et environnement donnés à l'enfant, comme le chargeur
   du TOS ; la cartouche rend l'environnement si le chargement échoue.
@@ -610,14 +632,15 @@ errno → GEMDOS et replis sur le TOS sont un portage 1:1. Écarts :
   3 octets de la fin → EPLFMT (Hatari lit hors tampon, gemdos.c:4422 et :4479) ;
   effacement du tas avec `p_hitpa` < fin du BSS borné (Hatari boucle ~4 Go,
   :4466) ; somme text+data+BSS en 64 bits (Hatari : 32 bits, :4410).
-- **Dsetpath sur un chemin terminé par un masque** (`C:\DIR\*.*`) : NeoST retire le
-  masque et rend EOK, Hatari rend EPTHNF. Comportement du bureau TOS 1.62 selon le
-  commentaire de NeoST, jamais relevé sur matériel.
-- **Écarts communs aux deux émulateurs face au TOS** (non corrigés, à mesurer) :
-  Fdelete/Fopen sur un dossier (EACCDN ou ERROR selon l'hôte, TOS probablement
-  EFILNF), Frename entre systèmes de fichiers hôtes (EXDEV → ERROR, TOS : ENSAME −48),
-  Fwrite sur un fichier ouvert en lecture (refus à l'écriture, TOS : à l'ouverture),
-  contrôles ERANGE/EINTRN des tampons propres aux émulateurs.
+- ✅ **Dsetpath avec un joker** (2026-11-11) : EPTHNF, comme Hatari et comme le vrai GEMDOS
+  (TOS 1.04, 1.62, 2.06 et EmuTOS exécutés, `SUBD\*.*` comme `*.*`). Le retrait du masque
+  ajouté le 2026-07-08 pour le bureau TOS 1.62 est retiré : le bureau ouvre sans alerte les
+  dossiers de A:, servis par le vrai GEMDOS qui refuse les masques, et lancé depuis un
+  sous-dossier il passe `C:\SUBD\` (tracé).
+- ✅ **Écarts communs aux deux émulateurs face au TOS** (2026-11-11) : Fdelete/Fopen sur un
+  dossier → EFILNF, Frename entre lecteurs → ENSAME, Fwrite sur un fichier ouvert en
+  lecture refusé à l'ouverture (déjà fait). Restent propres aux émulateurs les contrôles
+  ERANGE/EINTRN de leurs tampons.
 
 ### ACIA 6850 / IKBD HD6301 / MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-# Programme principal du banc : fichiers, dossiers, DTA, Fdatime, attributs, Fforce,
-# Pexec (héritage du dossier courant, Ptermres) — et le lanceur de fuite mk_leak.
+# Programme principal du banc : fichiers, dossiers, DTA, Fdatime, attributs, Fforce
+# (par processus), Pexec (héritage du dossier courant, Pexec 3/4, Ptermres), fichiers
+# ouverts détruits — et le lanceur de fuite mk_leak.
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen import *
@@ -20,6 +21,8 @@ def mk_main():
         d.s(n, s)
     d.s('cmdP', b'\x01P'); d.s('cmdD', b'\x01D'); d.s('cmdQ', b'\x01Q'); d.s('cmdI', b'\x01I')
     d.s('btprg', '\\T.PRG'); d.s('h1', 'H1.TXT')
+    d.s('submask', 'SUBD\\*.*'); d.s('out2', 'OUT2.TXT'); d.s('out3', 'OUT3.TXT')
+    d.s('cmdF', b'\x01F'); d.s('cmdJ', b'\x01J'); d.s('cmdK', b'\x01K')
     d.b('buf', 64); d.b('dta1', 44); d.b('dta2', 44); d.b('dfb', 16); d.b('pb', 64)
     d.b('dtset', 4, bytes([0x60, 0x00, (10 << 1) | 0, (1 << 5) | 1]))   # 12:00:00, 1990-01-01
     d.b('dtget', 4)
@@ -85,6 +88,8 @@ def mk_main():
     t(0x35, 0x3A, [A('f1')])                                   # Ddelete fichier
     t(0xCC, 0x3C, [A('subd'), W(0)])                           # Fcreate sur un dossier
     t(0xCD, 0x39, [A('f1')])                                   # Dcreate sur un fichier
+    t(0x100, 0x3D, [A('subd'), W(0)], save=4)                  # Fopen sur un dossier
+    t(0x101, 0x41, [A('subd')])                                # Fdelete sur un dossier
     t(0xCE, 0x3D, [A('f1'), W(0)], save=4)
     t(0xCF, 0x42, [L(0), SW(4), W(3)])                         # Fseek mode 3
     t(0xD0, 0x3E, [SW(4)])
@@ -140,6 +145,12 @@ def mk_main():
     t(0x68, 0x3B, [A('dbsub')])                                # "\SUBD\" (séparateur final)
     t(0x69, 0x47, [A('pb'), W(0)], dump=('a', 'pb', 0, 8))
     t(0x6A, 0x3B, [A('back')])
+    t(0x102, 0x3B, [A('submask')])                             # Dsetpath "SUBD\*.*"
+    t(0x103, 0x47, [A('pb'), W(0)], dump=('a', 'pb', 0, 8))
+    t(0x104, 0x3B, [A('back')])
+    t(0x105, 0x3B, [A('all')])                                 # Dsetpath "*.*"
+    t(0x106, 0x47, [A('pb'), W(0)], dump=('a', 'pb', 0, 8))
+    t(0x107, 0x3B, [A('back')])
     # Fdatime
     t(0x70, 0x3D, [A('f1'), W(2)], save=6)
     t(0x71, 0x57, [A('dtset'), SW(6), W(1)])
@@ -175,6 +186,41 @@ def mk_main():
     t(0x90, 0x3D, [A('out'), W(0)], save=9)
     t(0x91, 0x3F, [SW(9), L(16), A('buf')], dump=('a', 'buf', 0, 8))
     t(0x92, 0x3E, [SW(9)])
+    # Fforce puis Fclose du handle sous-jacent : la redirection garde le fichier ouvert
+    t(0x108, 0x3C, [A('out2'), W(0)], save=11)
+    t(0x109, 0x45, [W(1)], save=12)                            # Fdup(1)
+    t(0x10A, 0x46, [W(1), SW(11)])
+    t(0x10B, 0x3E, [SW(11)])
+    t(0x10C, 0x40, [W(1), L(3), A('abc')])
+    t(0x10D, 0x46, [W(1), SW(12)])
+    t(0x10E, 0x3E, [SW(12)])
+    t(0x10F, 0x3D, [A('out2'), W(0)], save=11)
+    t(0x110, 0x3F, [SW(11), L(16), A('buf')], dump=('a', 'buf', 0, 8))
+    t(0x111, 0x3E, [SW(11)])
+    # Fforce par processus : l'enfant rend sa sortie à CON, le parent reste redirigé
+    t(0x112, 0x3C, [A('out3'), W(0)], save=11)
+    t(0x113, 0x45, [W(1)], save=12)
+    t(0x114, 0x46, [W(1), SW(11)])
+    t(0x115, 0x4B, [W(0), A('tprg'), A('cmdF'), L(0)])
+    t(0x116, 0x40, [W(1), L(5), A('hello')])
+    t(0x117, 0x46, [W(1), SW(12)])
+    t(0x118, 0x3E, [SW(12)])
+    t(0x119, 0x3E, [SW(11)])
+    t(0x11A, 0x3D, [A('out3'), W(0)], save=11)
+    t(0x11B, 0x3F, [SW(11), L(16), A('buf')], dump=('a', 'buf', 0, 8))
+    t(0x11C, 0x3E, [SW(11)])
+    # Héritage figé à la création : Pexec 3, Dsetpath du parent, puis Pexec 4
+    t(0x120, 0x3B, [A('back')])
+    t(0x121, 0x4B, [W(3), A('tprg'), A('cmdJ'), L(0)], save=13)
+    t(0x122, 0x3B, [A('subd')])
+    t(0x123, 0x4B, [W(4), L(0), SL(13), L(0)])
+    t(0x124, 0x47, [A('pb'), W(0)], dump=('a', 'pb', 0, 8))
+    t(0x125, 0x3B, [A('back')])
+    # Fdelete d'un fichier ouvert par un AUTRE processus
+    t(0x128, 0x3D, [A('g1'), W(0)], save=11)
+    t(0x129, 0x4B, [W(0), A('tprg'), A('cmdK'), L(0)])
+    t(0x12A, 0x3E, [SW(11)])
+    t(0x12B, 0x4E, [A('g1'), W(0)])
     # Pexec
     t(0xA0, 0x4B, [W(0), A('noprg'), A('empty'), L(0)])
     t(0xA1, 0x4B, [W(0), A('nodirprg'), A('empty'), L(0)])
@@ -228,6 +274,13 @@ def mk_main():
                   dict(id=0x98, fn=0x3B, args=[A('back')]),
                   dict(id=0x99, fn=0x4C, args=[W(4)])])
     p.table('R', [dict(id=0xE2, fn=0x31, args=[L(0x1000), W(5)])])   # Ptermres
+    p.table('F', [dict(id=0x11D, fn=0x46, args=[W(1), W(0xFFFF)]),    # Fforce(1, CON)
+                  dict(id=0x11E, fn=0x40, args=[W(1), L(3), A('xyz')]),
+                  dict(id=0x11F, fn=0x4C, args=[W(6)])])
+    p.table('J', [dict(id=0x126, fn=0x47, args=[A('pb'), W(0)], dump=('a', 'pb', 0, 8)),
+                  dict(id=0x127, fn=0x4C, args=[W(2)])])
+    p.table('K', [dict(id=0x12C, fn=0x41, args=[A('g1')]),
+                  dict(id=0x12D, fn=0x4C, args=[W(1)])])
     return build(p)
 
 def mk_leak(prefix):
