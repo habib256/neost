@@ -137,11 +137,12 @@ if [ -w "$PKG" ]; then
     echo "note : le droit d'écriture n'a pas pu être retiré (plateforme ou droits) — phase non concluante"
 else
     # Tout en ABSOLU : la phase tourne hors du paquet (c'est le but — un utilisateur
-    # lance depuis n'importe où), et `neost-headless` résout `disks/diskA.st` par
-    # rapport au RÉPERTOIRE COURANT. Sans chemin absolu la disquette n'est pas
-    # montée et la capture sort uniforme — le contrôle rougirait pour une raison
-    # qui n'a rien à voir avec la lecture seule. (Mesuré le 2026-09-01 ; le
-    # frontend GUI, lui, résout par rapport au binaire.)
+    # lance depuis n'importe où), et `neost-headless` résout `--disk` par rapport
+    # au RÉPERTOIRE COURANT. Sans chemin absolu la disquette n'est pas trouvée et
+    # le run échoue — le contrôle rougirait pour une raison qui n'a rien à voir
+    # avec la lecture seule. (Mesuré le 2026-09-01 ; le frontend GUI, lui, résout
+    # par rapport au binaire. Depuis le 2026-11-11, sans --disk, le lecteur A du
+    # headless reste vide.)
     ( cd "$RO_WORK" && "$PKG/$EXE" "$PKG/$ROM" --disk "$PKG/$DISK" \
         --frames 500 --screenshot "$RO_WORK/ro.ppm" ) \
         || { echo "ERREUR : le binaire livré échoue quand son paquet est en lecture seule" >&2
