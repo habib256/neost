@@ -238,7 +238,7 @@ private:
     // Trame DMA en cours, LATCHÉE au démarrage (port DmaSnd_StartNewFrame : le HW
     // fige début/fin à l'ouverture de la trame ; réécrire $FF8903+ pendant la
     // lecture ne vaut que pour la trame SUIVANTE). frameEndAddr_ = comparateur
-    // d'ÉGALITÉ du fetch (début == fin, repeat ON → trame 2^24 octets, le fetch
+    // d'ÉGALITÉ du fetch (début == fin, repeat ON → trame 2^22 octets, le fetch
     // traverse tout l'espace d'adressage — Hatari [D] dmaSnd.c:336-341 @ f0736b24, démo « A
     // Little Bit Insane » de Lazer).
     uint32_t frameStartAddr_  = 0;   // adresse de début latchée

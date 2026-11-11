@@ -1665,6 +1665,36 @@ static void testBlitterTruthTable() {
         checkHex ("non-hog : mot 39 copié après la 2e", r.peek16(DST + 39 * 2), 0x3027);
         checkBool("non-hog : BUSY retombé à la fin", r.blit.busy(), false);
     }
+
+    // --- 6. Accès MOT vers le MFP : jugé sur ses deux octets ----------------------
+    // L'octet pair $FFFA04 n'est pas décodé, l'impair $FFFA05 (DDR) l'est : le 68901
+    // répond au cycle mot ([B] MC68901 § 2.1.3.2/2.1.3.4). Juger l'octet pair seul
+    // (comme Hatari) faisait lire $0000 et jeter l'écriture.
+    {
+        BlitRig r;
+        Mfp mfp;
+        r.bus.mfp = &mfp;
+        r.bus.write8(0xFFFA05, 0x5A);
+        auto oneWord = [&](uint32_t src, uint32_t dst) {
+            r.blit.write16(BLT + 0x20, 2);  r.blit.write16(BLT + 0x22, 2);
+            r.blit.write32(BLT + 0x24, src);
+            r.blit.write16(BLT + 0x28, 0xFFFF); r.blit.write16(BLT + 0x2A, 0xFFFF);
+            r.blit.write16(BLT + 0x2C, 0xFFFF);
+            r.blit.write16(BLT + 0x2E, 2);  r.blit.write16(BLT + 0x30, 2);
+            r.blit.write32(BLT + 0x32, dst);
+            r.blit.write16(BLT + 0x36, 1);  r.blit.write16(BLT + 0x38, 1);
+            r.blit.write8 (BLT + 0x3A, 2);  r.blit.write8 (BLT + 0x3B, 3);
+            r.blit.write16(BLT + 0x3C, 0xC000);       // BUSY+HOG
+            r.sched.runTo(r.sched.nextDue());
+        };
+        r.poke16(DST, 0x0000);
+        oneWord(0xFFFA04, DST);
+        checkHex("blit mot depuis le MFP : DDR dans l'octet bas", r.peek16(DST) & 0xFF, 0x5A);
+        r.poke16(SRC, 0x00A5);
+        oneWord(SRC, 0xFFFA04);
+        checkHex("blit mot vers le MFP : DDR écrit", r.bus.read8(0xFFFA05), 0xA5);
+        r.bus.mfp = nullptr;
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -1761,6 +1791,25 @@ static void testDmaSoundTruthTable() {
     for (int i = 0; i < 400; ++i) { r.sched.runTo(r.sched.now() + 512); r.snd.onHbl(); }
     checkBool("fin de trame sans repeat : la lecture s'arrête",
               (r.snd.read8(SND + 0x01) & 1) == 0, true);
+
+    // --- 7. Compteur 22 bits : une fin inférieure au début boucle par $000000 ----
+    // [D] sndcnt.v:8-9 @ 4a6db7cc. Sur 24 bits (Hatari) le compteur traversait ROM et
+    // cartouche et ne retrouvait la fin qu'après 16 Mo ; ici, 48 octets plus loin.
+    {
+        SndRig w;
+        w.setStart(0x3FFFE0);
+        w.setEnd(0x000010);
+        w.snd.write8(SND + 0x21, 0x83);
+        w.snd.write8(SND + 0x01, 0x01);
+        bool sawLow = false;
+        for (int i = 0; i < 64 && (w.snd.read8(SND + 0x01) & 1); ++i) {
+            w.sched.runTo(w.sched.now() + 512); w.snd.onHbl();
+            if (w.counter() <= 0x10) sawLow = true;
+        }
+        checkBool("compteur 22 bits : repasse par $000000", sawLow, true);
+        checkBool("compteur 22 bits : trame finie après le bouclage",
+                  (w.snd.read8(SND + 0x01) & 1) == 0, true);
+    }
 }
 
 // -----------------------------------------------------------------------------

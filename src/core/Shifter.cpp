@@ -438,10 +438,10 @@ int Shifter::decodeLineIndices(int y, uint8_t* idx) const {
         // Chaque mot est adressé modulo 4 Mo (compteur 22 bits, cf. kVideoAddrMask —
         // port video_memcpy_mmu) : une ligne qui chevauche $3FFFFF reprend en $000000.
         const uint32_t a  = base + static_cast<uint32_t>(g) * groupB;
-        const uint16_t p0 = bus_.read16(a & kVideoAddrMask);
-        const uint16_t p1 = planes > 1 ? bus_.read16((a + 2) & kVideoAddrMask) : 0;
-        const uint16_t p2 = planes > 2 ? bus_.read16((a + 4) & kVideoAddrMask) : 0;
-        const uint16_t p3 = planes > 3 ? bus_.read16((a + 6) & kVideoAddrMask) : 0;
+        const uint16_t p0 = bus_.ramCycleRead16(a & kVideoAddrMask);
+        const uint16_t p1 = planes > 1 ? bus_.ramCycleRead16((a + 2) & kVideoAddrMask) : 0;
+        const uint16_t p2 = planes > 2 ? bus_.ramCycleRead16((a + 4) & kVideoAddrMask) : 0;
+        const uint16_t p3 = planes > 3 ? bus_.ramCycleRead16((a + 6) & kVideoAddrMask) : 0;
         // Dé-entrelacement des plans par TABLE, 8 pixels d'un coup (cf. kSpread) :
         // la boucle bit à bit qu'il y avait ici pesait ~10 % des instructions du
         // programme au profil callgrind — c'est le point chaud n°1 de la vidéo, appelé
@@ -778,10 +778,10 @@ int Shifter::decodeWindowIndices(uint32_t base, int nPix, uint8_t* idx, bool med
     int px = (scroll && !prefetch) ? 16 : 0;
     for (int gI = 0; gI < decodeGroups; ++gI) {
         const uint32_t a  = base + static_cast<uint32_t>(gI) * groupB;   // repli 22 bits par mot
-        const uint16_t p0 = bus_.read16(a & kVideoAddrMask);
-        const uint16_t p1 = planes > 1 ? bus_.read16((a + 2) & kVideoAddrMask) : 0;
-        const uint16_t p2 = planes > 2 ? bus_.read16((a + 4) & kVideoAddrMask) : 0;
-        const uint16_t p3 = planes > 3 ? bus_.read16((a + 6) & kVideoAddrMask) : 0;
+        const uint16_t p0 = bus_.ramCycleRead16(a & kVideoAddrMask);
+        const uint16_t p1 = planes > 1 ? bus_.ramCycleRead16((a + 2) & kVideoAddrMask) : 0;
+        const uint16_t p2 = planes > 2 ? bus_.ramCycleRead16((a + 4) & kVideoAddrMask) : 0;
+        const uint16_t p3 = planes > 3 ? bus_.ramCycleRead16((a + 6) & kVideoAddrMask) : 0;
         for (int bit = 15; bit >= 0; --bit)
             idx[px++] = static_cast<uint8_t>(((p0 >> bit) & 1) | (((p1 >> bit) & 1) << 1)
                                            | (((p2 >> bit) & 1) << 2) | (((p3 >> bit) & 1) << 3));

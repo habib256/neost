@@ -1346,6 +1346,17 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
+- **Vecteurs reset `$0-$7` servis par la ROM** (2026-11-11) : toute lecture CPU de ces 8 octets rend la ROM,
+  [D] `gstmcu.v:189-195 @ 4a6db7cc` (`rvec` → /ROM2, `iramc` exclut la RAM). Hatari (`cpu/memory.c @ f0736b24`,
+  `SysMem_*get`) lit la copie RAM, qu'un alias MMU ou un DMA peut réécrire. La vidéo et le son DMA, cycles RAM,
+  lisent toujours cette copie (`Bus::ramCycleRead8`, `Bus::ramCycleRead16`). Ne pas réaligner.
+- **Blitter, accès mot vers le MFP** (2026-11-11) : faute seulement si les deux octets fautent, comme pour le CPU ;
+  [B] MC68901 § 2.1.3.2 et 2.1.3.4 (DS sur LDS, DTACK dès CS), [D] `gstmcu.v:176 @ 4a6db7cc`. Hatari juge l'octet pair
+  seul (`stMemory.c:729 @ f0736b24`) : un blit vers `$FFFA00` y lit `$0000` et n'écrit rien. Ne pas réaligner.
+- **Compteur du son DMA sur 22 bits** (2026-11-11) : il boucle de `$3FFFFE` à `$000000` et ne lit que la RAM,
+  [D] `sndcnt.v:8-9` et `gstmcu.v:137 @ 4a6db7cc`. Hatari (`dmaSnd.c:353-361 @ f0736b24`) compte sur 32 bits par
+  `STMemory_DMA_ReadByte` : une fin inférieure au début y traverse ROM et cartouche. Ne pas réaligner.
+
 - **Compteur du son DMA sur STE** (2026-11-04) : il avance hors de DE, mot par mot, pas seulement au HBL (`DmaSnd_STE_HBL_Update`). [B] ST-4081 feuille 20, [D] `mcucontrol.v` @ `4a6db7cc`, `tools/make_stcpu_snd.py`. `dmasnd_poll` reposé. Ne pas réaligner.
 - **Prise des HBL et VBL sur STE** (2026-11-04) : broche levée au cycle exact et vue par `POLL_IPL`, au lieu du commit au dispatch (`intlev_load → ipl_fetch_now`). [D] fx68k @ `0602ee46` + gstmcu @ `4a6db7cc`,
   `tools/run_stcpu_bench.py` : MULU 256/256 contre 63/256, boucle courte 256/256 contre 216/256. Sonde `timer_b_event` à 14 cycles de première IRQ, consigné. ST inchangé, faute de modèle. Ne pas réaligner.

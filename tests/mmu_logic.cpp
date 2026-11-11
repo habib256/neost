@@ -96,6 +96,33 @@ int testMmuMapping() {
         m->reset();
         check(m->bus.read8(0xFF8001) == 0x05, "warm reset still preserves reprogrammed configuration");
     }
+    // Vecteurs reset $0-$7 : toute lecture CPU sert la ROM, même quand un alias MMU
+    // (banque sur-déclarée) a réécrit la copie RAM. La vidéo et le son DMA, cycles
+    // RAM, voient cette copie. [D] gstmcu.v:189-195 @ 4a6db7cc (rvec → /ROM2).
+    for (uint8_t conf : {uint8_t(0x04), uint8_t(0x0A)}) {   // 512K identité, puis 2M+2M sur 512K
+        Bus bus(512 * 1024);
+        MmuGlue glue;
+        bus.glue = &glue;
+        bus.machine = MachineType::St;
+        bus.rom = {0x00, 0x00, 0x08, 0x00, 0x00, 0xFC, 0x00, 0x30, 0x4E, 0x71};
+        bus.romBase = 0xFC0000;
+        bus.seedResetVectors();
+        bus.write8(0xFF8001, conf);
+        uint32_t alias = 0;
+        for (uint32_t a = 8; a < 0x400000 && !alias; a += 2)
+            if (bus.hostRamPtr(a, 1) == &bus.ram[0]) alias = a;
+        if (conf == 0x0A) check(alias != 0, "over-declared bank aliases physical $0");
+        if (alias) bus.write16(alias, 0xDEAD);
+        else       bus.ram[0] = 0xDE, bus.ram[1] = 0xAD;     // config identité : copie touchée en direct
+        check(bus.ram[0] == 0xDE, "RAM copy of reset vectors is rewritten");
+        check(bus.read8(0) == 0x00 && bus.read8(5) == 0xFC, "CPU byte read of $0-$7 serves ROM");
+        check(bus.read16(0) == 0x0000 && bus.read16(4) == 0x00FC, "CPU word read of $0-$7 serves ROM");
+        check(bus.read32(4) == 0x00FC0030u, "CPU long read of $4 serves ROM PC");
+        check(bus.peek8(0) == 0x00, "debugger peek of $0 follows CPU decode");
+        check(bus.ramCycleRead16(0) == 0xDEAD, "video/sound RAM cycle sees the RAM copy");
+        check(bus.ramCycleRead8(0x400001) == 0xAD, "RAM cycle wraps on 22 bits, never ROM");
+    }
+
     std::printf("[mmu] %d checks, %d FAIL\n", checks, failures);
     return failures;
 }
