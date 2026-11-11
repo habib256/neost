@@ -162,6 +162,7 @@ int testGemdosDriveMapping(); // GEMDOS après les partitions ACSI, routage des 
 int testAcsiPartitions(); // comptage des racines DOS/Atari et des cibles ACSI
 int testGemdosDirectoryEntries(); // points en sous-dossier selon masque et attributs
 int testGemdosDtaReuse(); // recherches DTA indépendantes, réutilisation et erreurs
+int testGemdosProcess(); // dossier/lecteur par processus, alias 8.3, Fdatime, attributs, Fforce
 int testMfpUnderrunClear(); // délai matériel avant effacement UE
 int testFdcLiveMedia(); // sélection live et validation CHS du nouveau média
 int testMidiRxPhase(); // horloge MIDI RX continue
@@ -2987,6 +2988,7 @@ int main() {
     if (const int failures = testAcsiPartitions()) g_fail += failures; else ++g_ok;
     if (const int failures = testGemdosDirectoryEntries()) g_fail += failures; else ++g_ok;
     if (const int failures = testGemdosDtaReuse()) g_fail += failures; else ++g_ok;
+    if (const int failures = testGemdosProcess()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpUnderrunClear()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcLiveMedia()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiRxPhase()) g_fail += failures; else ++g_ok;

@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -146,7 +147,8 @@ private:
 
     struct EmuDrive {
         std::string hdEmuDir;     // racine hôte du lecteur
-        std::string fsCurrPath;   // chemin courant hôte (toujours terminé par '/')
+        std::string fsCurrPath;   // dossier courant hôte des processus sans entrée procPaths_
+                                  // (ni eux ni leurs parents n'ont fait Dsetpath) ; terminé par '/'
         int  driveNumber = -1;    // C: = 2, D: = 3…
         bool used = false;
     };
@@ -160,6 +162,12 @@ private:
         uint32_t basepage = 0;
         FILE* fp = nullptr;
         std::string actualName;   // chemin hôte (pour Fdatime)
+        // Date posée par Fdatime(…, 1) : le GEMDOS la garde dans l'OFD et la recopie
+        // dans l'entrée de dossier à la fermeture, même après un Fwrite ([C] EmuTOS
+        // fsopnclo.c ixclose @ 5679730f ; TOS 1.04/2.06 exécutés, banc A/B).
+        bool     datimeSet = false;
+        uint16_t datime[2] = {0, 0};   // mot d'heure, mot de date (format GEMDOS)
+        bool     written = false;      // fichier modifié → bit archive à la fermeture
     };
     FileHandle fileHandles_[MAX_FILE_HANDLES];
 
@@ -171,9 +179,47 @@ private:
         uint32_t addr = 0;                  // adresse ST de la DTA (réutilisation)
         int  centry = 0;                    // entrée courante (Fsnext)
         std::vector<std::string> found;     // noms d'entrées correspondantes
+        std::vector<std::string> atari;     // nom 8.3 rendu pour chacune (alias compris)
         std::string path;                   // dossier hôte
         char dta_attrib = 0;
     };
+
+    // ---- Lecteur et dossiers courants PAR PROCESSUS -------------------------
+    // [C] EmuTOS bdos/bdosdefs.h @ 5679730f : p_curdrv à $37 et p_curdir[] à $40 de
+    // la basepage ; proc.c (création de basepage) recopie les deux du parent,
+    // ixterm les libère. Le lecteur se lit donc dans la basepage (le TOS tient
+    // p_curdrv : Dsetdrv passe par lui). Le dossier d'un lecteur hôte n'existe que
+    // côté NeoST : une table par basepage, créée au premier Dsetpath du processus
+    // (héritage paresseux : jusque-là, la chaîne des parents fait foi), libérée à
+    // Pterm. `parent` et `tbase` détectent une basepage réattribuée sans Pterm vu.
+    struct ProcPaths {
+        uint32_t parent = 0, tbase = 0;
+        std::string path[MAX_HARDDRIVES];   // vide = pas encore fixé pour ce lecteur
+    };
+    std::vector<std::pair<uint32_t, ProcPaths>> procPaths_;   // (basepage, chemins)
+    uint32_t currentBasepage();
+    ProcPaths* procEntry(uint32_t bp);      // entrée valide de bp, sinon nullptr (purge si périmée)
+    const std::string& currentPath(int drive);   // dossier courant hôte du processus courant
+    void setCurrentPath(int drive, const std::string& host);
+    int  currentDrive();                    // p_curdrv du processus courant (repli : currentDrive_)
+    void forgetProcess(uint32_t bp);
+
+    // ---- Attributs sans équivalent hôte (caché, système, archive) -----------
+    // L'hôte ne garde que « lecture seule » (droits POSIX). Les autres bits vivent
+    // ici pour la session, indexés par chemin hôte : Fcreate pose l'archive comme le
+    // TOS ([C] EmuTOS fsopnclo.c:545 @ 5679730f : à la fermeture d'un fichier
+    // modifié), Fattrib les pose et les lit, Fsfirst les rend. Perdus au démontage
+    // (aucun stockage hôte portable : ni xattr sous Windows, ni bit caché sous Linux).
+    std::map<std::string, uint8_t> extraAttr_;   // ordonnée : sérialisation reproductible
+    uint8_t extraAttrOf(const std::string& host) const;
+    void    setExtraAttr(const std::string& host, uint8_t bits);
+    void    moveExtraAttr(const std::string& from, const std::string& to);
+
+    // ---- Noms 8.3 sans collision --------------------------------------------
+    // Deux noms hôtes tronqués au même 8.3 se masquaient. Dans un dossier, le
+    // premier (ordre des octets, nom déjà 8.3 d'abord) garde le nom tronqué, les
+    // suivants prennent un alias « BASE~N.EXT » libre — à la façon de VFAT.
+    std::vector<std::pair<std::string, std::string>> atariNames(const std::string& dir);
     std::vector<InternalDta> dtas_;
     uint16_t dtaIndex_ = 0;
 
@@ -199,6 +245,8 @@ private:
     void sysInit();           // OpCode_SysInit : masque lecteurs + boot
     int  trap();              // GemDOS_Trap : dispatch + codes condition SR
     void pexecBpCreated();    // GemDOS_PexecBpCreated : charge+relocalise le PRG
+    // TOS < 1.04 : donne à l'enfant les blocs que Pexec 5 a créés au nom du parent.
+    bool giveBlockToChild(uint32_t start, uint32_t parent, uint32_t child);
 
     // ---- Init / gestion des lecteurs & handles --------------------------------
     bool initDrives(const std::string& hostDir);
@@ -254,7 +302,8 @@ private:
 
     // ---- DTA / dates / attributs ----------------------------------------------
     enum class DtaResult { Ok, Skip, Error };
-    DtaResult populateDTA(InternalDta& iDTA, const std::string& fname, uint32_t dtaGemdos);
+    DtaResult populateDTA(InternalDta& iDTA, const std::string& fname, const std::string& atari,
+                          uint32_t dtaGemdos);
     void terminateClose();
 
     int  loadAndReloc(const std::string& prgName, uint32_t baseaddr, bool fullBpSetup);

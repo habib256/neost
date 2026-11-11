@@ -415,6 +415,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/psg_reset_logic.cpp tests/ym_c10_noise_logic.cpp tests/blitter_rmw_logic.cpp tests/blitter_share_gap_logic.cpp tests/ste_cmap_slot_logic.cpp tests/machine_fdc_media_vbl_logic.cpp
     tests/gemdos_drive_mapping_logic.cpp tests/acsi_partitions_logic.cpp
     tests/gemdos_directory_entries_logic.cpp tests/gemdos_dta_reuse_logic.cpp
+    tests/gemdos_process_logic.cpp
     tests/fdc_acsi_logic.cpp tests/fdc_register_logic.cpp tests/machine_scc_logic.cpp
     tests/mmu_logic.cpp tests/fdc_selection_logic.cpp tests/mmio_fidelity_logic.cpp
     tests/ikbd_response_logic.cpp tests/fdc_timing_logic.cpp tests/ikbd_monitor_logic.cpp
