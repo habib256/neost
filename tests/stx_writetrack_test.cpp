@@ -26,14 +26,14 @@ static std::vector<uint8_t> forgeFlux(uint8_t track, int nSectors) {
     for (int i = 0; i < 60; ++i) add(f, 0x4e);                     // GAP1
     for (int s = 1; s <= nSectors; ++s) {
         for (int i = 0; i < 12; ++i) add(f, 0x00);                 // GAP2
-        add(f, 0xa1); add(f, 0xa1); add(f, 0xa1); add(f, 0xfe);    // sync + IDAM
+        add(f, 0xf5); add(f, 0xf5); add(f, 0xf5); add(f, 0xfe);    // sync ($F5 → A1) + IDAM
         add(f, track); add(f, 0); add(f, uint8_t(s)); add(f, 2);   // ID : tr/hd/sr/size(=512)
-        add(f, 0x12); add(f, 0x34);                                // ID CRC (ignoré à la relecture)
+        add(f, 0xf7);                                              // CRC d'ID ($F7 → deux octets)
         for (int i = 0; i < 22; ++i) add(f, 0x4e);                 // GAP3a
         for (int i = 0; i < 12; ++i) add(f, 0x00);                 // GAP3b
-        add(f, 0xa1); add(f, 0xa1); add(f, 0xa1); add(f, 0xfb);    // sync + DAM
+        add(f, 0xf5); add(f, 0xf5); add(f, 0xf5); add(f, 0xfb);    // sync + DAM
         for (int i = 0; i < 512; ++i) add(f, expect(s - 1, i));    // données distinctes/secteur
-        add(f, 0x56); add(f, 0x78);                                // data CRC (ignoré)
+        add(f, 0xf7);                                              // CRC des données
         for (int i = 0; i < 40; ++i) add(f, 0x4e);                 // GAP4
     }
     return f;
@@ -130,8 +130,52 @@ int main(int argc, char** argv) {
     for (int s = 0; s < NS; ++s)
         for (int i = 0; i < 512; ++i) assert(secs2[s].pData[i] == expect(s, i));
 
-    std::printf("OK: WRITE TRACK ré-interprété (%d secteurs, vue %d→%d) + round-trip .wd1772\n",
-                NS, origCount, t->sectorsCountView());
+    // --- Relecture comme la puce ([B] WD177X-00 p. 1-9, 1-13, 1-18) -------------------
+    // Secteur 1 : A1 écrits en clair (pas de $F5) → aucune marque, invisible.
+    // Secteur 2 : CRC d'ID écrit en clair et faux → RNF + CRC (erreur de CRC d'ID).
+    // Secteur 3 : ID sans champ données (pas de synchro dans les 43 octets) → RNF.
+    // Secteur 4 : CRC de données en clair et faux → CRC, données présentes.
+    // Secteur 5 : sain, marque $F8 → RECORD TYPE.
+    {
+        std::vector<uint8_t> f;
+        for (int i = 0; i < 60; ++i) add(f, 0x4e);
+        auto gap = [&](int n, uint8_t b) { for (int i = 0; i < n; ++i) add(f, b); };
+        auto id = [&](uint8_t sr, bool sync, bool goodCrc) {
+            gap(12, 0x00);
+            const uint8_t m = sync ? 0xf5 : 0xa1;
+            add(f, m); add(f, m); add(f, m); add(f, 0xfe);
+            add(f, TR); add(f, 0); add(f, sr); add(f, 2);
+            if (goodCrc) add(f, 0xf7); else { add(f, 0x12); add(f, 0x34); }
+        };
+        auto data = [&](uint8_t mark, bool goodCrc) {
+            gap(22, 0x4e); gap(12, 0x00);
+            add(f, 0xf5); add(f, 0xf5); add(f, 0xf5); add(f, mark);
+            for (int i = 0; i < 512; ++i) add(f, 0x5a);
+            if (goodCrc) add(f, 0xf7); else { add(f, 0x56); add(f, 0x78); }
+            gap(40, 0x4e);
+        };
+        id(1, false, true); data(0xfb, true);
+        id(2, true, false); data(0xfb, true);
+        id(3, true, true);  gap(600, 0x4e);
+        id(4, true, true);  data(0xfb, false);
+        id(5, true, true);  data(0xf8, true);
+        StxImage::SaveTrack st3; st3.track = TR; st3.side = 0; st3.data = f;
+        stx.saveTracks[size_t(t->saveTrackIndex)] = std::move(st3);
+        stx.reinterpretSaveTrack(*t);
+        const std::vector<StxImage::Sector>& v = t->sectorsView();
+        assert(t->sectorsCountView() == 4 && "A1 en clair : pas une marque");
+        assert(v[0].idSector == 2 && v[0].fdcStatus == (StxImage::FLAG_RNF | StxImage::FLAG_CRC)
+               && v[0].pData == nullptr && "CRC d'ID faux");
+        assert(v[1].idSector == 3 && v[1].fdcStatus == StxImage::FLAG_RNF && v[1].pData == nullptr
+               && "ID sans données");
+        assert(v[2].idSector == 4 && v[2].fdcStatus == StxImage::FLAG_CRC && v[2].pData != nullptr
+               && v[2].pData[0] == 0x5a && "CRC de données faux");
+        assert(v[3].idSector == 5 && v[3].fdcStatus == StxImage::FLAG_RECORD_TYPE && "marque $F8");
+    }
+
+    std::printf("OK: WRITE TRACK ré-interprété (%d secteurs, vue %d→%d) + round-trip .wd1772"
+                " + marques et CRC relus comme la puce\n",
+                NS, origCount, NS);
     std::remove(tmp);
     return 0;
 }

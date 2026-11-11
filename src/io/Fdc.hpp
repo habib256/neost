@@ -34,6 +34,7 @@
 #include "core/Scheduler.hpp"
 #include "core/StateArchive.hpp"
 #include "io/StxImage.hpp"
+#include "io/WrittenTrack.hpp"
 #include "io/Acsi.hpp"
 
 class Bus;
@@ -340,16 +341,7 @@ private:
         // (piste physique << 1) | face. Cf. STE_Test v1.9, test F (secteurs 10-18).
         // Lu comme le relira la puce : marques précédées de 3 A1 de synchro ($F5 écrits),
         // CRC relus sur la piste et comparés ([B] WD177X-00 p. 1-13, 1-18 ; cf. parseWrittenTrack).
-        struct StOverrideSector {
-            uint8_t tr = 0, hd = 0, sr = 0, sz = 2;
-            int     idPos = 0;                  // position de l'IDAM ($FE) sur la piste relue
-            uint16_t idCrc = 0;                 // deux octets de CRC relus après l'ID
-            bool    idCrcOk = true;             // CRC d'ID juste
-            bool    hasData = true;             // marque de données trouvée dans la fenêtre
-            bool    dataCrcOk = true;           // CRC du champ données juste
-            bool    deleted = false;            // marque $F8
-            std::vector<uint8_t> data;          // 128 << (sz & 3) octets, même sans marque
-        };
+        using StOverrideSector = wdtrack::Sector;   // cf. io/WrittenTrack.hpp
         struct StOverrideTrack {
             std::vector<uint8_t> raw;           // flux WRITE TRACK tel qu'écrit par le programme
             std::vector<StOverrideSector> secs; // dans l'ordre angulaire

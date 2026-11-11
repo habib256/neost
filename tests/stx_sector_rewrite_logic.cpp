@@ -81,12 +81,14 @@ namespace {
 std::vector<uint8_t> formattedTrack(uint8_t mark) {
     std::vector<uint8_t> track(60, 0x4E);
     track.insert(track.end(), 12, 0);
-    track.insert(track.end(), {0xA1, 0xA1, 0xA1, 0xFE, 0, 0, 1, 2, 0, 0});
+    // Flux tel qu'un formateur l'envoie au WD1772 : $F5 = A1 de synchro, $F7 = CRC
+    // ([B] WD177X-00 p. 1-13). Des A1 en clair ne sont pas des marques (cf. WrittenTrack).
+    track.insert(track.end(), {0xF5, 0xF5, 0xF5, 0xFE, 0, 0, 1, 2, 0xF7});
     track.insert(track.end(), 22, 0x4E);
     track.insert(track.end(), 12, 0);
-    track.insert(track.end(), {0xA1, 0xA1, 0xA1, mark});
+    track.insert(track.end(), {0xF5, 0xF5, 0xF5, mark});
     track.insert(track.end(), 512, 0xC6);
-    track.insert(track.end(), 2, 0);
+    track.insert(track.end(), 1, 0xF7);
     track.resize(6268, 0x4E);
     return track;
 }

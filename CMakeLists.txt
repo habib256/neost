@@ -127,6 +127,7 @@ add_library(neost_core STATIC
     src/io/Ikbd.cpp
     src/io/Fdc.cpp
     src/io/StxImage.cpp
+    src/io/WrittenTrack.cpp
     src/io/IpfImage.cpp
     src/io/Rtc.cpp
     src/io/MidiAcia.cpp
@@ -155,7 +156,7 @@ set_source_files_properties(
     src/core/Bus.cpp src/core/Shifter.cpp src/core/VideoGlue.cpp
     src/core/VideoCounter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Blitter.cpp
-    src/core/Machine.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/util/HostPath.cpp src/util/ConfigPath.cpp src/gui/AppConfig.cpp
+    src/core/Machine.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/util/HostPath.cpp src/util/ConfigPath.cpp src/gui/AppConfig.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # =============================================================================
@@ -473,7 +474,7 @@ set_source_files_properties(tests/fuzz_diskimage.cpp
 # compilé, jamais invoqué) pendant que StxImage.cpp (510 l. de parseur binaire exposé
 # à des fichiers arbitraires) n'avait aucun autre test. Branché au palier fast de
 # tools/run_all.py, sur une image STX FORGÉE (aucune dépendance à un disque commercial).
-add_executable(neost-stx-test tests/stx_writetrack_test.cpp src/io/StxImage.cpp)
+add_executable(neost-stx-test tests/stx_writetrack_test.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp)
 target_include_directories(neost-stx-test PRIVATE "${CMAKE_SOURCE_DIR}/src")
 # ⚠ Le test vérifie par assert() : le -DNDEBUG du profil Release les VIDERAIT tous
 # (vert creux garanti). On les réactive pour CETTE cible uniquement.
