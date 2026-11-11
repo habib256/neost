@@ -138,6 +138,8 @@ void usage() {
         "                    TOS finds one drive (_nflops = 1) and asks to swap\n"
         "                    disks in A for B: (as hatari --drive-b off)\n"
         "  --fastfdc         fast FDC (delays /10) — speeds up disk access\n"
+        "  --ste-pads        STE joypad ports (DB15) follow the ST joysticks\n"
+        "                    (default: idle, no joypad plugged in)\n"
         "  --fdc-seed N      seed of the disk angle drawn at first spin-up (default: fixed)\n"
         "  --disk-ro         floppy writes stay in RAM: the host .st/.msa/.dim file\n"
         "                    (and the .wd1772 STX overlay) is never modified. The\n"
@@ -1300,6 +1302,7 @@ int main(int argc, char** argv) {
     std::string diskBPath;                       // lecteur B (optionnel, --diskb)
     bool        driveB     = true;    // --drive-b off : lecteur B débranché (_nflops = 1)
     bool        fastFdc    = false;   // FDC rapide (--fastfdc) : délais commande/transfert ÷10
+    bool        stePads    = false;   // --ste-pads : ports DB15 du STE branchés sur les joysticks
     uint32_t    fdcSeed    = 0;       // --fdc-seed : angle de la disquette au premier tour moteur
     bool        haveFdcSeed = false;
     bool        diskRo     = false;   // A14 (--disk-ro) : les écritures ne touchent PAS le fichier hôte
@@ -1501,6 +1504,7 @@ int main(int argc, char** argv) {
             else { std::fprintf(stderr, "--drive-b expects 'on' or 'off'\n"); return 2; }
         }
         else if (!std::strcmp(a, "--fastfdc"))    fastFdc   = true;
+        else if (!std::strcmp(a, "--ste-pads"))   stePads   = true;
         else if (!std::strcmp(a, "--fdc-seed"))   { fdcSeed = (uint32_t)std::strtoul(next(a), nullptr, 0); haveFdcSeed = true; }
         else if (!std::strcmp(a, "--disk-ro"))    diskRo    = true;
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
@@ -1833,6 +1837,7 @@ int main(int argc, char** argv) {
             if (!fc.cpu.empty())     cpuCore  = Cpu68k::parseCore(fc.cpu.c_str());
             machineMono  = fc.mono;
             fastFdc      = fc.fastfdc;
+            stePads      = fc.stePads;
             fpuPresent   = fc.fpu;
             // UltraSatan comme App::usatanApply : cibles 0-1, slot 1 = l'image acsi=
             // (déjà montée sur la cible 0 ci-dessus, laissée en place par
@@ -1978,6 +1983,7 @@ int main(int argc, char** argv) {
     // pour tout outil qui ne vérifie pas le fichier avant de lancer.
     if ((diskRequested && !diskAOk) || !diskBOk) outFail = true;
     machine.fdc.setFastFdc(fastFdc);   // FDC rapide (--fastfdc) : accès disque ÷10
+    machine.bus.stePadsWired = stePads;   // DB15 du STE : au repos sauf --ste-pads
     if (haveFdcSeed) machine.fdc.setIndexSeed(fdcSeed);
     // A14 : --disk-ro protège le FICHIER, pas la disquette. Les écritures continuent
     // d'aller dans l'image en RAM (le programme invité relit ce qu'il a écrit, rien
@@ -2276,7 +2282,7 @@ int main(int argc, char** argv) {
     // jeu (« tient le feu/une direction ») ou valider le chemin de report joystick.
     if (haveJoy) {
         machine.ikbd.setJoystick(joy0Hold, joy1Hold);
-        machine.bus.stePads.setJoystick(joy0Hold, joy1Hold);   // joypads STE ($FF9200/02)
+        machine.bus.setStePadInput(joy0Hold, joy1Hold);   // joypads STE ($FF9200/02)
         std::fprintf(stderr, "[headless] joystick held: port1=$%02X port0=$%02X\n",
                      joy1Hold, joy0Hold);
     }
@@ -2458,7 +2464,7 @@ int main(int argc, char** argv) {
             // jamais le feu, silencieusement.
             if (haveJoy) {
                 machine.ikbd.setJoystick(joy0Hold, joy1Hold);
-                machine.bus.stePads.setJoystick(joy0Hold, joy1Hold);
+                machine.bus.setStePadInput(joy0Hold, joy1Hold);
                 std::fprintf(stderr, "[headless] joystick re-applied after restore: port1=$%02X port0=$%02X\n",
                              joy1Hold, joy0Hold);
             }
@@ -2682,7 +2688,7 @@ int main(int argc, char** argv) {
         for (const auto& ja : joyAtList) {
             if (frame != ja.first) continue;
             machine.ikbd.setJoystick(0, ja.second);
-            machine.bus.stePads.setJoystick(0, ja.second);   // joypads STE ($FF9200/02)
+            machine.bus.setStePadInput(0, ja.second);   // joypads STE ($FF9200/02)
             std::fprintf(stderr, "[headless] joystick applied at frame %d: port1=$%02X\n", frame, ja.second);
         }
         // Script souris daté (--mouse-at) : 1 token = 1 trame. Pilote un menu souris.
@@ -2738,7 +2744,7 @@ int main(int argc, char** argv) {
             if (idx < (int)joyScr.size()) {
                 const uint8_t st = joyScr[std::size_t(idx)];   // script COMPILÉ
                 machine.ikbd.setJoystick(0, st);
-                machine.bus.stePads.setJoystick(0, st);   // joypads STE ($FF9200/02)
+                machine.bus.setStePadInput(0, st);   // joypads STE ($FF9200/02)
                 machine.cpu.updateIpl();
             }
         }

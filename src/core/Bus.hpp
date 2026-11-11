@@ -435,10 +435,23 @@ public:
     // Cpu68k::neostUpdateIpl.
     Scu scu;
 
-    // Joypads / paddles / lightpen STE et Mega STE ($FF9200-$FF9222). Alimenté par
-    // le MÊME état joystick que l'IKBD (les frontends appellent setJoystick sur les
-    // deux). Cf. StePads.hpp pour le multiplexage et les DIP switches Mega STE.
+    // Joypads / paddles / lightpen STE et Mega STE ($FF9200-$FF9222). Cf. StePads.hpp
+    // pour le multiplexage et les DIP switches Mega STE.
     StePads stePads;
+    // Branchement hôte des ports DB15 (configuration, HORS save-state). Par défaut
+    // rien n'y est branché : un STE sans joypad lit ses lignes au repos, et un seul
+    // joystick hôte ne doit pas piloter à la fois le DB9 (IKBD) et le DB15 — un jeu
+    // qui lit les deux verrait chaque geste deux fois. [D] Hatari joy.c @ v2.6.0 :
+    // JOYID_JOYPADA/B ont leur propre réglage, JOYSTICK_DISABLED par défaut.
+    // Activé (--ste-pads, ste_pads=1) : les pads recopient les joysticks ST.
+    bool stePadsWired = false;
+    void setStePadInput(uint8_t joy0, uint8_t joy1) {
+        if (stePadsWired) stePads.setJoystick(joy0, joy1);
+        else              stePads.setJoystick(0, 0);
+    }
+    void setStePadAnalog(int pad, float x, float y) {
+        if (stePadsWired) stePads.setAnalog(pad, x, y);
+    }
 
 private:
     uint8_t  read8Slow (uint32_t addr);          // décodage complet (cf. read8)

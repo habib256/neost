@@ -645,6 +645,7 @@ void App::applyConfig() {
     A.usatanApply();                         // slot 2 + attache (unmountAcsi a tout vidé)
     machine.mfp.setColorMonitor(!cfg.mono);
     machine.fdc.setFastFdc(cfg.fastfdc);   // ré-applique le FDC rapide après reconfig
+    machine.bus.stePadsWired = cfg.stePads;
     machine.bus.setFpuPresent(cfg.fpu && machTypeR == MachineType::MegaSte);
     machine.reset();
     std::fprintf(stderr, "[main] live reconfigure: core %s | machine %s | RAM %s\n",

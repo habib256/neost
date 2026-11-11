@@ -138,7 +138,7 @@ bool arity(const std::vector<std::string>& a, std::size_t lo, std::size_t hi) {
 // rendrait le rejoué au tuyau différent du rejoué en ligne de commande.
 void applyJoy(Machine& m, uint8_t p0, uint8_t p1) {
     m.ikbd.setJoystick(p0, p1);
-    m.bus.stePads.setJoystick(p0, p1);
+    m.bus.setStePadInput(p0, p1);
     m.cpu.updateIpl();
 }
 

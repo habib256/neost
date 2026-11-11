@@ -899,7 +899,7 @@ int main(int argc, char* argv[]) {
         // Manette : au ST seulement quand l'interface ne la réclame pas.
         const uint8_t joy = uiHasInput ? 0 : readPad(pad);
         machine.ikbd.setJoystick(0, joy);             // port 1 = port « jeux »
-        machine.bus.stePads.setJoystick(0, joy);
+        machine.bus.setStePadInput(0, joy);
         machine.cpu.updateIpl();
 
         const double nowMs = double(SDL_GetTicks64());

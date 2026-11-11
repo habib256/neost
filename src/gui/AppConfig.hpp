@@ -111,6 +111,7 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 // Une manette absente de la liste est AUTO (cf. stjoy::resolveAssign).
                 std::string joymap;
                 float joydeadzone = 0.30f; bool fastfdc = false;
+                bool stePads = false;   // ports DB15 du STE branchés sur les joysticks (cf. Bus::stePadsWired)
                 float volume = 1.0f;   // volume maître de la sortie audio (0..1, barre de menu)
                 int audioLatencyMs = 85; // coussin audio visé (cf. Audio::setLatencyMs, --audio-latency)
                 bool driveSound = true;  // bruits mécaniques du lecteur (roms/drivesound/, cf. DriveSound)

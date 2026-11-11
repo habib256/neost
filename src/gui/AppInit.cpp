@@ -496,6 +496,7 @@ int appInit(App& A, int argc, char** argv) {
     if (A.midiLearnUids()) saveConfig(A, exeDir, cfg, &machine);
     machine.mfp.setColorMonitor(!cfg.mono);   // moniteur mémorisé (avant le reset)
     machine.fdc.setFastFdc(cfg.fastfdc);      // FDC rapide mémorisé (accès disque ÷10)
+    machine.bus.stePadsWired = cfg.stePads;   // ports DB15 du STE (repos par défaut)
     // Socket MC68881 (Mega STE uniquement, cf. Fpu.hpp) : sonde + trapping.
     machine.bus.setFpuPresent(cfg.fpu && machType0 == MachineType::MegaSte);
     machine.reset();
