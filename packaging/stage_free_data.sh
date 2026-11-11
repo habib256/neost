@@ -49,6 +49,10 @@ done
 # 26.04.1999, CD Keyboards). Disquette 720 Ko : CB_LITE.PRG à la racine, MROS à
 # côté, DESKTOP.INF #Z qui le lance sous TOS 1.04. Pas couvert par la GPL.
 cp "$SRC/disks/cubase_lite.st" "$DEST/disks/"
+# Réseau intégré : STinG 1.26 (freeware) + pilote EtherNEC ENEC.STX (GPL-2), boot en
+# AUTO — cf. THIRD-PARTY.txt. Sans ce disque, la carte NetUSBee/EtherNEC et le NAT
+# intégré n'ont aucun logiciel côté ST dans le paquet. Décision de mainteneur, 2026-11-11.
+cp "$SRC/disks/sting_ethernec.st" "$DEST/disks/"
 
 # Polices de l'interface (resolveData cherche exeDir/../fonts) : DejaVu Sans et
 # Font Awesome Free, toutes deux librement redistribuables. SANS elles, le GUI
@@ -93,7 +97,7 @@ for lic in GPL-3.0.txt GPL-2.0.txt THIRD-PARTY.txt; do
 done
 DEMOS_TXT="${DEMO_DISKS[*]}"
 if [ "$NO_ATARI" = "1" ]; then
-    echo "OK : données paquet copiées dans $DEST (EmuTOS SEUL + drivesound + banque GM + diskA.st + démos [$DEMOS_TXT] + cubase_lite.st + licences)"
+    echo "OK : données paquet copiées dans $DEST (EmuTOS SEUL + drivesound + banque GM + diskA.st + démos [$DEMOS_TXT] + cubase_lite.st + sting_ethernec.st + licences)"
 else
-    echo "OK : données paquet copiées dans $DEST (EmuTOS + tos102uk + tos162uk + drivesound + banque GM + diskA.st + démos [$DEMOS_TXT] + cubase_lite.st + licences)"
+    echo "OK : données paquet copiées dans $DEST (EmuTOS + tos102uk + tos162uk + drivesound + banque GM + diskA.st + démos [$DEMOS_TXT] + cubase_lite.st + sting_ethernec.st + licences)"
 fi

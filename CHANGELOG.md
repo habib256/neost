@@ -17,6 +17,15 @@ l'ordre inverse. Version courante : **0.6.4**.
 - Essais : Rainbow Islands exige 4 Mo (remarque du mainteneur) et y entre en jeu en accord avec
   Hatari ; Super Hang-On, Nitro, Dynamite Dux, Cybernoid II et CarVup divergent en partie.
 
+## Paquets : la disquette STinG + EtherNEC est livrée (2026-11-11)
+
+- `disks/sting_ethernec.st` entre dans les paquets (`packaging/stage_free_data.sh`, listes
+  blanches de `release.yml`) : la carte NetUSBee/EtherNEC et le NAT intégré ont enfin leur
+  logiciel côté ST. STinG 1.26 n'est **pas** GPL mais freeware (AtariUpToDate ; sources 1.26
+  chez th-otto) : décision du mainteneur de l'embarquer, nommé comme tel dans `THIRD-PARTY.txt`.
+  `ENEC.STX` v1.15 est GPL-2 (`COPYING.TXT` d'`etherne.zip`, sources dans son `SRC/`). L'item du
+  TODO, qui parlait de « pilotes libres GPL », sort.
+
 ## Logithèque : Pacemaker, Obsession et Extase rejoués (2026-11-11)
 
 - `pacemaker_ste` : démo Paradox (1 Mo) sur STE/TOS 1.62, quatre scènes distinctes de 6000 à

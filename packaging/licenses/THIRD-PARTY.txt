@@ -90,6 +90,22 @@ freeware build unmodified: `CB_LITE.PRG` at the root of a 720K floppy, with MROS
 beside it, and a `DESKTOP.INF` that auto-starts it under TOS 1.04. Rights remain
 with Steinberg.
 
+STinG 1.26 and EtherNEC (`disks/sting_ethernec.st`)
+---------------------------------------------------
+A boot floppy for NeoST's built-in network (NetUSBee/EtherNEC card + NAT): the STinG
+TCP/IP stack and the EtherNEC driver, loaded from the AUTO folder.
+
+- STinG 1.26 (`AUTO\STING.PRG`, `STING\TCP.STX`, `UDP.STX`, `RESOLVE.STX`), by Peter
+  Rottengatter and Ulf Ronald Andersson: **freeware**, redistributed unmodified
+  (listed as freeware by AtariUpToDate, https://atariuptodate.de/en/979/sting ; source
+  of 1.26 published at https://github.com/th-otto/STinG). It is **not** covered by the
+  GPL. Rights remain with its authors; on request it will be removed from the package.
+- EtherNEC driver `STING\ENEC.STX` v1.15, by Dr. Thomas Redelberger: **GPL-2.0**
+  (`GPL-2.0.txt` in this folder). Source: `etherne.zip`, folder `SRC/`, from
+  http://web222.webclient5.de/prj/atari/download/etherne.zip .
+- `AUTO\STGTEST.PRG` and the configuration files are NeoST's own (GPL-3.0): they set
+  the port address through the STinG API and fetch a page, proving the stack works.
+
 Reference emulators
 -------------------
 Hatari (GPLv2+, https://framagit.org/hatari/hatari) and MAME are used as behavioural

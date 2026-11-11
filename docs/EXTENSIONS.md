@@ -121,6 +121,12 @@ Sans réseau, le 2026-11-04, le pilote charge et le port s'active sous TOS 1.02 
 Rejoué le 2026-11-04 avec `disks/sting_ethernec.st` : `DNS=138.197.157.224`, puis `HTTP/1.1 200 OK` depuis theoldnet.com, sur 4 runs de suite. Le premier run du jour avait échoué en DNS (`err -17`), sans que la cause soit identifiée ni l'échec reproduit. C'est ce banc qui a démasqué l'inversion des fenêtres ROM3/ROM4 (cf. EtherNEC ci-dessous). Restent le
 navigateur (CAB) en GUI et la consignation dans `docs/CASE_STUDIES.md` — cf. `TODO.md`.
 
+**Livré dans les paquets (2026-11-11)** : `disks/sting_ethernec.st`, la disquette de boot STinG 1.26
+(freeware, P. Rottengatter et R. Andersson) + `ENEC.STX` (GPL-2, T. Redelberger), avec ses
+licences dans `licenses/THIRD-PARTY.txt`. Brancher l'EtherNEC et le NAT (page **Network**), insérer
+ce disque et redémarrer : STinG se charge en AUTO, `STGTEST.PRG` configure le port et prouve la pile
+(DNS puis GET HTTP, affichés à l'écran et recopiés sur RS-232).
+
 ## EtherNEC — NE2000 sur le port cartouche (`--ethernec`, GUI Network)
 
 Émulation de la carte réseau NE2000 vue par le port ROM (montage

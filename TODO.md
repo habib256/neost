@@ -325,7 +325,6 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   Docker sur l'hôte, EWeb dans NeoST (STE 4 Mo, STinG + `ENEC.STX`) par le NAT, port 8280.
   Premier parcours web réel de bout en bout ; en faire un test s'il passe.
   → <https://yaary.music/software/atari-st/eweb/>
-- **EtherNEC : livrer les pilotes libres GPL dans les paquets** · P2 ⭘ — STinG + `ENEC.STX`.
 - **NetUSBee : validation MiNT et matériel** · P3 ⭘ — USB4TOS vérifié (HID + disque) ;
   restent FreeMiNT, capture du latch des différentes cartes, timing électrique et ITL/isochrone.
   → [`docs/NETUSBEE.md`](docs/NETUSBEE.md)
