@@ -621,6 +621,16 @@ errno → GEMDOS et replis sur le TOS sont un portage 1:1. Écarts :
 
 ### ACIA 6850 / IKBD HD6301 / MIDI — `Ikbd.cpp`, `MidiAcia.cpp` ↔ `acia.c`, `ikbd.c`
 
+- ✅ **Octets impairs `$FFFC01/03/05/07` sur STE (2026-11-11)** — divergence voulue : Hatari
+  les tient « void » (`ioMemTabSTE.c`, `IoMem_VoidRead/Write`, sans attente). Le GST MCU
+  sélectionne l'ACIA sans UDS/LDS et pose VPA sur tout `$FFFC00-$FFFDFF` ([D] `gstmcu.v:175,181
+  @ 4a6db7cc`) ; le 68000 recopie l'octet écrit sur D8-D15 ([D] `fx68k.sv:1783-1786 @ 0602ee46`).
+  Un octet impair est donc un cycle de la puce : l'écriture atteint le registre pair (`move.b
+  #3,$FFFC01` = master reset), la lecture a son effet (RDR consommé) mais rend `$FF` (D0-D7 non
+  pilotés), avec l'attente E-clock ; le vide `$FFFC08-$FFFDFF` paie aussi l'E-clock. Câblage des
+  MC6850 sur D8-D15, RS = A1, confirmé par le schéma du Sparrow (feuille 2/5). ST, Mega ST et
+  Mega STE inchangés (pas de netlist). **Ne pas réaligner.**
+
 - ✅ **Empreinte des programmes 6301 custom (corrigé le 2026-10-20)** : NeoST calculait
   un vrai CRC32 ; la fonction d'Hatari (`utils.c:crc32_add_byte`) teste
   `(c & 0x80) ^ (crc & 0x80000000)`, vrai dès que l'un des deux bits est levé. Les

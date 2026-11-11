@@ -51,7 +51,16 @@ uint8_t CartridgeKey::cartRead(uint32_t addr, bool first) {
 void CartridgeKey::rom4Listen(uint32_t addr, bool first) {
     if (!first || model_ == Model::None) return;
     if (log_) std::fprintf(log_, "R4 %02X\n", unsigned((addr >> 1) & 0xFF));
-    if (chosen_ == Model::Notator) rom4Pending_ = ster(uint8_t((addr >> 1) & 0xFF)) ? 1 : 0;
+    if (chosen_ != Model::Notator) return;
+    const bool s = ster(uint8_t((addr >> 1) & 0xFF));
+    // Accès OCTET IMPAIR ($FA00EB) : seul /LDS descend, aucun front /UDS ne viendra
+    // clore ce cycle (Cpu68k::udsDone ne voit que les cycles avec /UDS). FEEDB1 est
+    // pourtant cadencée par la remontée de /ROM4, qui a lieu ici aussi : on l'applique
+    // tout de suite. Avant, elle attendait le /UDS du cycle SUIVANT (un fetch), qui
+    // cadençait d'abord les données avec la clé encore désarmée — un cycle de trop.
+    // [E] Équations EP600 (relevé TPH, cf. en-tête) : horloge de FEEDB1 = /ROM4 seul.
+    if ((addr & 1) && first) { feedb1_ = s; rom4Pending_ = -1; return; }
+    rom4Pending_ = s ? 1 : 0;
 }
 
 int CartridgeKey::replay(const char* path, char* err, std::size_t errLen) {

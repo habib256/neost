@@ -111,7 +111,15 @@ public:
         gemdos.reset();    // ferme les fichiers HD GEMDOS ouverts (no-op si inactif)
         scc.reset();       // SCC série (Mega STE) au repos
         midi.warmReset();  // ACIA MIDI : pas de broche de reset ([B] MC6850 p. 1), cf. MidiAcia::warmReset
-        dongle.reset(); bus.refreshUds();   // clé cartouche : registres à 0
+        // Clé cartouche : PAS remise à zéro. [E] Le port cartouche n'a pas de ligne /RESET :
+        // ses 40 broches sont toutes prises (+5 V ×2, D0-D15, A1-A15, /ROM3, /ROM4, /UDS,
+        // /LDS, masse ×3) — G. Stewart Beal, « The Cartridge Slot », START vol. 1 n° 3
+        // (hiver 1986), d'après Abacus « ST Internals » ; même liste dans ST-Log n° 27
+        // (janv. 1989) p. 38. La clé garde donc ses bascules ; le TOS qui redémarre les fait
+        // évoluer par ses propres cycles (/UDS, lecture $FA0000 qui désarme la Notator),
+        // comme sur le fer. Seule la mise sous tension (hardReset) les met à 0. Tranché au
+        // grade B par : un schéma Atari de la carte mère (C070112 pour le 520ST).
+        bus.refreshUds();
         ports.reset();
         bus.seedResetVectors();    // vecteurs SSP/PC $0-$7 : miroir ROM en RAM (stMemory.c)
         cpu.reset();

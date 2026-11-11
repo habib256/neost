@@ -398,7 +398,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/scc_channel_reset_logic.cpp tests/scc_mie_ius_logic.cpp
     tests/scc_ack_priority_logic.cpp tests/mfp_vector_register_logic.cpp
     tests/scc_rx_stop_logic.cpp tests/scc_echo_tx_clock_logic.cpp tests/scc_echo_brg_config_logic.cpp tests/scc_echo_brg_control_logic.cpp
-    tests/bus_mmio_mirror_logic.cpp
+    tests/bus_mmio_mirror_logic.cpp tests/acia_odd_byte_logic.cpp
     tests/blitter_reset_retention_logic.cpp tests/scc_extended_read_logic.cpp
     tests/acsi_write_destination_logic.cpp
     tests/acsi_large_bounds_logic.cpp tests/scc_rx_error_irq_logic.cpp tests/mfp_gpip_composite_logic.cpp
