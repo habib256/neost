@@ -919,6 +919,7 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   les variables d'un jeu en RAM par diff d'états pilotés par le serveur (candidats = « change
   avec l'entrée » − « change avec le temps »), 512 Ko en 0,4 s. Spécification du protocole
   serveur, indépendante du langage, dans `docs/OPENDST.md` § 5.
+- **Retour arrière** (`core/Rewind`, `rewind=`, Ctrl+Alt+R, 2026-11-11, **OFF par défaut**) : un état par seconde en mémoire (128 Mo), médias copiés quand leur génération change, fichier de disquette réécrit à l'instant visé. Refusé avec un disque dur ; une écriture STX ne se franchit pas. GUI de bureau seulement. Jugé par `--rewind-test`.
 - **Save-states plus rapides** : CRC-32 par table (il était calculé bit à bit) et filet de
   `loadState` sérialisé sans CRC — reprise 21,6 → 3,9 ms, sauvegarde 10,2 → 2,6 ms
   (mesuré sur la lignée précédente), à format et valeurs INCHANGÉS. Le GUI (F7/F8) en

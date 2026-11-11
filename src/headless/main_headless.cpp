@@ -47,6 +47,7 @@
 #endif
 
 #include "core/Machine.hpp"
+#include "core/Rewind.hpp"
 #include "util/HostPath.hpp"   // chemins hôte : UNE définition d'« absolu »
 #include "gui/AppConfig.hpp"   // neost.cfg : UNE définition du rognage de ligne
 #include "net/NetBackend.hpp"
@@ -235,6 +236,7 @@ void usage() {
         "  --dump-at N A L F raw dump of L bytes of RAM from $A (hex) after frame N → F\n"
         "  --probe NAME=A:L  sample L bytes (1/2/4) at hex address A, repeatable.\n"
         "                    Side-effect free (debugger read): I/O registers read $FF\n"
+        "  --rewind-test     rewind self-test: floppy media, snapshot ring, identical replay\n"
         "  --state-hash-every N  print a hash of the full machine state every N frames:\n"
         "                    the first differing line dates a loss of determinism\n"
         "  --probe-every N   emit one sample line on STDOUT every N frames:\n"
@@ -1358,6 +1360,7 @@ int main(int argc, char** argv) {
     bool        serLoopSelfTest = false;  // auto-test polarité des lignes du bouclage RS-232
     bool        mfpSelfTest  = false;  // auto-test déterministe du MFP (GPIP/fronts/Timer B)
     bool        msaSelfTest  = false;  // auto-test déterministe du ré-encodage .msa
+    bool        rewindTest   = false;  // retour arrière : média, anneau, reprise à l'identique
     bool        gemdosSelfTest = false; // A39 : bac à sable du disque dur GEMDOS
     bool        enecSelfTestFlag = false; // auto-test déterministe NE2000/EtherNEC (fil)
     bool        usatanSelfTestFlag = false;   // auto-test déterministe UltraSatan (fil ACSI)
@@ -1571,6 +1574,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--mfp-selftest")) mfpSelfTest = true;
         else if (!std::strcmp(a, "--serloop-selftest")) serLoopSelfTest = true;
         else if (!std::strcmp(a, "--msa-selftest")) msaSelfTest = true;
+        else if (!std::strcmp(a, "--rewind-test")) rewindTest = true;
         else if (!std::strcmp(a, "--gemdos-selftest")) gemdosSelfTest = true;
         else if (!std::strcmp(a, "--enec-selftest")) enecSelfTestFlag = true;
         else if (!std::strcmp(a, "--usatan-selftest")) usatanSelfTestFlag = true;
@@ -1911,6 +1915,7 @@ int main(int argc, char** argv) {
     if (mfpSelfTest) return machine.mfp.mfpSelfTest() ? 0 : 1;
     if (serLoopSelfTest) return serialLoopbackSelfTest(machine);
     if (msaSelfTest) return machine.fdc.msaSelfTest() ? 0 : 1;
+    if (rewindTest && !machine.fdc.mediaSelfTest()) return 1;
     // A39 : monte un dossier temporaire et jette des noms GEMDOS hostiles dessus.
     if (gemdosSelfTest) return machine.gemdos.sandboxSelfTest() ? 0 : 1;
     if (enecSelfTestFlag) return enecSelfTest(machine);
@@ -2292,6 +2297,48 @@ int main(int argc, char** argv) {
         else
             std::fprintf(stderr, "[headless] symbols: failed to load %s\n", symbolsPath.c_str());
     }
+    // Retour arrière : on reprend un instantané de l'anneau, l'état doit être celui de
+    // l'instant visé à l'octet, et la partie rejouée depuis là doit retomber au même point.
+    if (rewindTest) {
+        constexpr int kInterval = 10, kRun = 35;
+        Rewind rewind;
+        rewind.setEnabled(true);
+        rewind.setInterval(kInterval);
+        auto step = [&] { machine.runFrame(); rewind.onFrame(machine); };
+        for (int i = 0; i < frames; ++i) step();
+        // Compté par taken() : à budget plein, count() ne bouge plus. Un chargement continu
+        // peut retarder l'instantané (aucun pendant une commande FDC), d'où la marge.
+        const uint64_t before = rewind.taken();
+        for (int guard = 0; rewind.taken() == before && guard < 3000; ++guard) step();
+        std::vector<uint8_t> target, direct, back, replay;
+        if (rewind.taken() == before || !machine.saveState(target)) {
+            std::fprintf(stderr, "[rewind-test] FAIL: no snapshot taken\n");
+            return 1;
+        }
+        for (int i = 0; i < kRun; ++i) step();              // 3 instantanés de plus, 5 trames après
+        if (!machine.saveState(direct)) return 1;
+        const uint64_t directScreen = observe::screenHash(machine);
+        std::string why;
+        for (int i = 0; i < 4; ++i)                         // +30, +20, +10, puis l'instant visé
+            if (!rewind.stepBack(machine, &why)) {
+                std::fprintf(stderr, "[rewind-test] FAIL: step %d: %s\n", i, why.c_str());
+                return 1;
+            }
+        if (!machine.saveState(back)) return 1;
+        const bool sameState = back == target;
+        for (int i = 0; i < kRun; ++i) machine.runFrame();  // la même partie, sans l'anneau
+        if (!machine.saveState(replay)) return 1;
+        const bool sameReplay = replay == direct && observe::screenHash(machine) == directScreen;
+        rewind.setBudget(1);                                // le budget garde au moins le dernier
+        const bool budget = rewind.count() == 1;
+        rewind.setEnabled(false);
+        const bool off = rewind.count() == 0 && !rewind.stepBack(machine, &why);
+        std::fprintf(stderr, "[rewind-test] state %s | replay %s | budget %s | off %s\n",
+                     sameState ? "OK" : "DIFF", sameReplay ? "OK" : "DIFF",
+                     budget ? "OK" : "FAIL", off ? "OK" : "FAIL");
+        return (sameState && sameReplay && budget && off) ? 0 : 1;
+    }
+
     // Save-state — test de DÉTERMINISME (le vrai) : run N trames → save A → passe DIRECTE
     // (200 trames, capture état+écran) → load(A) → RE-JOUE 200 trames → capture état+écran.
     // Si la restauration est complète, l'état re-sérialisé ET l'écran sont byte-identiques.

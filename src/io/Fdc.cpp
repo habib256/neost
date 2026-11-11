@@ -629,6 +629,7 @@ bool Fdc::msaSelfTest() {
 
 bool Fdc::loadImage(const std::string& path, int drive) {
     FloppyDisk& dk = drive_[drive & 1];
+    touchMedia(dk);                         // même un échec peut avoir touché l'image
     const bool wasPresent = dk.present();   // disque déjà monté → échange à chaud
     std::ifstream f(path, std::ios::binary | std::ios::ate);
     if (!f) { std::fprintf(stderr, "[FDC] image not found: %s\n", path.c_str()); return false; }
@@ -842,6 +843,7 @@ bool Fdc::loadImage(const std::string& path, int drive) {
 
 void Fdc::eject(int drive) {
     FloppyDisk& dk = drive_[drive & 1];
+    touchMedia(dk);
     const bool wasPresent = dk.present();
     dk.image.clear();
     dk.stx.reset();
@@ -1616,6 +1618,7 @@ bool Fdc::stOverrideFromBuffer(FloppyDisk& dk) {
                      "(a .st image cannot store it)\n", dk.headTrack, side_);
     }
     dk.stOverride[(dk.headTrack << 1) | side_] = std::move(t);
+    touchMedia(dk);
     return true;
 }
 
@@ -1636,6 +1639,7 @@ Fdc::FloppyDisk::StOverrideTrack* Fdc::stOverrideHere() {
 // conteneur (cf. FloppyDisk::imgFormat) : écriture partielle pour les secteurs bruts,
 // ré-encodage complet pour le .msa.
 void Fdc::writeBack(FloppyDisk& dk, uint64_t off, uint64_t len) {
+    touchMedia(dk);   // l'image en mémoire a changé, persistée ou non (--disk-ro)
     if (!dk.raw || dk.path.empty() || off + len > dk.image.size()) return;
     if (!hostWriteBack_) return;    // A14 (--disk-ro) : RAM seulement, le fichier est intact
 
@@ -1929,7 +1933,10 @@ uint8_t Fdc::writeTrackStx() {
 // au fil de l'eau, comme writeBack pour les .st — Hatari, lui, ne sauve qu'à
 // l'éjection/sortie ; même format de fichier).
 void Fdc::stxPersist(FloppyDisk& dk) {
-    if (!dk.stx || dk.wd1772Path.empty()) return;
+    if (!dk.stx) return;
+    ++stxWrites_;     // l'overlay STX a changé : le retour arrière ne le franchit pas
+    touchMedia(dk);
+    if (dk.wd1772Path.empty()) return;
     if (!hostWriteBack_) return;    // A14 (--disk-ro) : pas de fichier compagnon .wd1772
     if (!dk.stx->saveWd1772(dk.wd1772Path)) {
         static bool warned = false;
@@ -3411,4 +3418,135 @@ void Fdc::acsiDmaTransfer() {
     const bool fastCpu = bus_.machine == MachineType::MegaSte && (bus_.megaSteCacheCtrl & 2);
     if (sched_) sched_->schedule(Scheduler::ACSI_IRQ, nowCyc() + (fastCpu ? 500 : 1000));
     else onAcsiIrq();  // contrôleur isolé sans horloge : conserver la fin synchrone
+}
+
+// =============================================================================
+//  Retour arrière : copie et restauration d'un média (cf. Fdc.hpp, core/Rewind.hpp).
+//  Un STX ne copie que son chemin : ses overlays d'écriture ne se recopient pas, et
+//  Rewind ne revient jamais avant la dernière écriture STX (stxWrites).
+// =============================================================================
+struct Fdc::MediaCopy {
+    uint64_t    gen = 0;
+    std::string path;                                   // "" = lecteur vide
+    bool        stx = false;
+    std::vector<uint8_t> image;                         // contenu .ST (vide pour un STX)
+    std::map<int, FloppyDisk::StOverrideTrack> stOverride;
+};
+
+std::shared_ptr<const Fdc::MediaCopy> Fdc::copyMedia(int drive) const {
+    const FloppyDisk& dk = drive_[drive & 1];
+    auto copy = std::make_shared<MediaCopy>();
+    copy->gen  = dk.gen;
+    copy->path = dk.present() ? dk.path : std::string();
+    copy->stx  = dk.imgType == FloppyDisk::IMG_STX;
+    if (!copy->stx) {
+        copy->image      = dk.image;
+        copy->stOverride = dk.stOverride;
+    }
+    return copy;
+}
+
+bool Fdc::restoreMedia(int drive, const MediaCopy& copy) {
+    FloppyDisk& dk = drive_[drive & 1];
+    if (dk.gen == copy.gen) return true;                // rien n'a bougé depuis la copie
+    if (copy.path.empty()) {
+        if (dk.present()) eject(drive);
+        dk.gen = copy.gen;
+        return true;
+    }
+    const bool isStx = dk.imgType == FloppyDisk::IMG_STX;
+    if (!dk.present() || dk.path != copy.path || isStx != copy.stx) {
+        if (!loadImage(copy.path, drive)) return false;
+    }
+    if (!copy.stx) {
+        dk.image      = copy.image;
+        dk.stOverride = copy.stOverride;
+        refreshImageGeometry(dk);
+        writeBack(dk, 0, dk.image.size());              // le fichier hôte revient au même instant
+    }
+    dk.gen = copy.gen;
+    return true;
+}
+
+uint64_t Fdc::mediaCopyGeneration(const MediaCopy& copy) { return copy.gen; }
+
+std::size_t Fdc::mediaCopyBytes(const MediaCopy& copy) {
+    std::size_t n = copy.image.size();
+    for (const auto& [key, track] : copy.stOverride) {
+        n += track.raw.size();
+        for (const auto& sec : track.secs) n += sec.data.size();
+    }
+    return n;
+}
+
+bool Fdc::mediaSelfTest() {
+    namespace fs = std::filesystem;
+    constexpr std::size_t kSize = 737280;                 // 720 Ko : 80 pistes, 9 secteurs, 2 faces
+    const fs::path dir = fs::temp_directory_path() / "neost_media_selftest";
+    std::error_code ec;
+    fs::create_directories(dir, ec);
+    const std::string pathA = (dir / "a.st").string(), pathB = (dir / "b.st").string();
+    auto makeImage = [](uint8_t fill) {
+        std::vector<uint8_t> v(kSize, fill);
+        v[0x13] = 0xA0; v[0x14] = 0x05;                   // BPB : 1440 secteurs
+        v[0x18] = 9;    v[0x1A] = 2;                      // 9 secteurs par piste, 2 faces
+        return v;
+    };
+    auto writeFile = [](const std::string& path, const std::vector<uint8_t>& v) {
+        std::ofstream o(path, std::ios::binary | std::ios::trunc);
+        o.write(reinterpret_cast<const char*>(v.data()), std::streamsize(v.size()));
+    };
+    auto readFile = [](const std::string& path) {
+        std::ifstream f(path, std::ios::binary);
+        return std::vector<uint8_t>(std::istreambuf_iterator<char>(f), {});
+    };
+    const std::vector<uint8_t> imageA = makeImage(0x11), imageB = makeImage(0x22);
+    writeFile(pathA, imageA);
+    writeFile(pathB, imageB);
+
+    int fail = 0;
+    auto check = [&](bool ok, const char* what) {
+        if (ok) return;
+        std::fprintf(stderr, "[media-selftest] FAIL %s\n", what);
+        ++fail;
+    };
+    const bool savedWriteBack = hostWriteBack_;
+    hostWriteBack_ = true;
+    FloppyDisk& dk = drive_[1];
+
+    check(loadImage(pathA, 1), "mount A");
+    const auto copyA = copyMedia(1);
+    const uint64_t genA = dk.gen;
+
+    // Écriture d'un secteur : la génération change, le fichier aussi.
+    const uint64_t off = 512u * 40u;
+    for (int i = 0; i < 512; ++i) dk.image[off + i] = 0xEE;
+    writeBack(dk, off, 512u);
+    check(dk.gen != genA, "a write gives a new generation");
+    check(readFile(pathA) != imageA, "the write reached the host file");
+    check(restoreMedia(1, *copyA), "restore after a write");
+    check(dk.image == imageA, "memory content restored");
+    check(readFile(pathA) == imageA, "host file restored");
+    check(dk.gen == genA, "generation restored");
+
+    // Disquette changée puis éjectée : le chemin revient.
+    check(loadImage(pathB, 1), "mount B");
+    check(dk.gen != genA, "a swap gives a new generation");
+    check(restoreMedia(1, *copyA) && dk.path == pathA && dk.image == imageA, "restore across a swap");
+    eject(1);
+    check(!dk.present(), "eject");
+    check(restoreMedia(1, *copyA) && dk.path == pathA && dk.image == imageA, "restore after an eject");
+    check(readFile(pathB) == imageB, "the other disk is untouched");
+
+    // Lecteur vide à l'instant visé : la disquette ressort.
+    eject(1);
+    const auto copyEmpty = copyMedia(1);
+    check(loadImage(pathA, 1), "mount A again");
+    check(restoreMedia(1, *copyEmpty) && !dk.present(), "restore an empty drive");
+
+    eject(1);
+    hostWriteBack_ = savedWriteBack;
+    fs::remove_all(dir, ec);
+    std::fprintf(stderr, "[media-selftest] %s\n", fail ? "FAIL" : "OK");
+    return fail == 0;
 }

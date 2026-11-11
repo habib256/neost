@@ -454,6 +454,7 @@ static void runDueFrames(App& A) {
             }
             machine.runFrame();                          // une trame (timing + décodage)
             audio.produceFrame(machine.frameCycles(), machine.sched.now());   // son de la trame → anneau (push)
+            A.rewind.onFrame(machine);
             ++A.emuFrame;
             // --run-frames : sortie AUTOMATIQUE après N trames émulées (chantier A8).
             // Le décompte est fait ICI, au site d'émulation nominal — le pas-à-pas du
@@ -530,6 +531,13 @@ static void handleQuickState(App& A) {
             A.stateMsg = ok ? "\xef\x80\x9e State restored (F7)" : "No state / failed";
             A.stateMsgFrames = 120;
             std::fprintf(stderr, "[state] load %s ← %s\n", ok ? "OK" : "FAILED", statePath.c_str());
+        }
+        if (A.rewindReq) {
+            A.rewindReq = false;
+            std::string why = "Not while debugging";     // le pas-à-pas s'arrête en milieu de trame
+            const bool ok = !A.dbgPaused && A.rewind.stepBack(machine, &why);
+            A.stateMsg = ok ? "\xef\x80\x9e Rewind" : why;
+            A.stateMsgFrames = 120;
         }
     }
 }
@@ -653,6 +661,8 @@ static void drawMenuBar(App& A, Frame& F) {
                 A.stateMsg = ok ? "\xef\x80\x9e State restored" : "No state / failed";
                 A.stateMsgFrames = 120;
             }
+            if (ImGui::MenuItem(ICON_FA_REDO " Rewind", "Ctrl+Alt+R", false, A.rewind.count() > 0))
+                A.rewindReq = true;
             ImGui::Separator();
             // Bascule borne : plein écran sans chrome, config figée, navigation à
             // la manette. La machine traverse la bascule par instantané → le jeu
@@ -903,6 +913,7 @@ static void syncConfigUi(App& A, Frame& F) {
     cfgUi.volume  = audio.masterVolume();
     cfgUi.driveSound = driveSoundOn;
     cfgUi.driveSoundAvail = driveSoundAvail;
+    cfgUi.rewind = A.rewind.enabled();
     cfgUi.curGemdos = cfg.gemdos.empty() ? std::string() : A.resolvePath(cfg.gemdos);
     cfgUi.curAcsi   = cfg.acsi.empty()   ? std::string() : A.resolvePath(cfg.acsi);
     cfgUi.curSd2    = cfg.sd2.empty()    ? std::string() : A.resolvePath(cfg.sd2);
@@ -1151,6 +1162,10 @@ static void consumeConfigRequests(App& A, Frame& F) {
     if (cfgUi.driveSound != driveSoundOn) {
         driveSoundOn = cfgUi.driveSound; drive.setEnabled(driveSoundOn);
         cfg.driveSound = driveSoundOn;   // persisté par cfgDirty (la case l'a levé)
+    }
+    if (cfgUi.rewind != A.rewind.enabled()) {
+        A.rewind.setEnabled(cfgUi.rewind);
+        cfg.rewind = cfgUi.rewind;       // persisté par cfgDirty (la case l'a levé)
     }
     if (cfgUi.reqSaveState) {
         const bool ok = machine.saveStateFile(exeDir + "/../neost.state");

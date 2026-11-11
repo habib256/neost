@@ -6,6 +6,20 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Retour arrière (2026-11-11)
+
+- `core/Rewind` : un état par seconde en mémoire, 128 Mo au plus, les plus anciens évincés. Option
+  `rewind=` (éteinte par défaut, case dans la page Machine), Ctrl+Alt+R recule d'un cran et se
+  répète tant que l'accord est tenu ; entrée dans le menu.
+- Le save-state ne porte pas les disquettes : le FDC donne à chaque lecteur une génération, neuve à
+  chaque écriture, montage ou éjection, et l'anneau ne copie un média que s'il a changé. Reculer
+  remonte le bon média et **réécrit le fichier hôte à l'instant visé**.
+- Limites : aucun instantané pendant une commande WD1772 ; rien avec un disque dur (GEMDOS, ACSI,
+  UltraSatan, clé USB) ; une écriture STX ne se franchit pas.
+- `neost-headless --rewind-test`, palier fast : écriture, échange et éjection annulés en mémoire et
+  sur le fichier, état à l'octet près, partie rejouée identique. Le raccourci lui-même n'a pas été
+  essayé en session graphique.
+
 ## Relevés HWTST : horloges, son DMA et cache du Mega STE (2026-11-11)
 
 - Source : HWTST de ljbk, fil atari-forum t=24862 (2013-2016), relu par web.archive.org. Le

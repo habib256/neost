@@ -443,6 +443,7 @@ bool App::midiLearnUids() {
 void App::applyConfig() {
     App& A = *this;
     A.desktopPointer.reset();
+    A.rewind.clear();        // les instantanés décrivent l'ancienne machine
     Machine& machine = *A.machine;
     Config& cfg = A.cfg;
     const std::string& exeDir = A.exeDir;

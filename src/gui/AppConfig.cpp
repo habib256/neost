@@ -300,6 +300,7 @@ void parseConfigLine(Config& c, std::string line) {
     }
     else if (line.rfind("audio_latency_ms=", 0) == 0) c.audioLatencyMs = std::atoi(line.substr(17).c_str());
     else if (line.rfind("drivesound=", 0) == 0) c.driveSound = (line.substr(11) == "1");
+    else if (line.rfind("rewind=", 0) == 0) c.rewind = (line.substr(7) == "1");
     // showCart=/showHd= : clés d'anciennes fenêtres devenues des pages de la
     // Configuration. showDisk= reste accepté comme ancien nom de showFloppy=.
     else if (line.rfind("showDisk=", 0) == 0) c.showFloppy = (line.substr(9) == "1");
@@ -393,7 +394,8 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
       << "\njoydeadzone=" << w.joydeadzone << "\nfastfdc=" << (w.fastfdc ? 1 : 0)
       << "\nvolume=" << w.volume
       << "\naudio_latency_ms=" << w.audioLatencyMs
-      << "\ndrivesound=" << (w.driveSound ? 1 : 0) << "\n";
+      << "\ndrivesound=" << (w.driveSound ? 1 : 0)
+      << "\nrewind=" << (w.rewind ? 1 : 0) << "\n";
     // Appareils MIDI hôtes : UNE ligne par liste. Toujours écrites, même vides —
     // c'est ce qui permet à un profil d'EFFACER le studio, là où une clé absente
     // laisserait en place celui d'avant.

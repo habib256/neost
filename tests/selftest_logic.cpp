@@ -666,6 +666,7 @@ static void testConfigParser() {
         a.joyport = 0;               a.joymap = "GUID1:0,GUID2:x";
         a.joydeadzone = 0.42f;       a.fastfdc = true;
         a.volume = 0.5f;             a.audioLatencyMs = 40;  a.driveSound = false;
+        a.rewind = true;
         a.autoZoom = false;          a.crt = true;
         a.crtParams.scanlines = 0.75f;
 
@@ -701,6 +702,7 @@ static void testConfigParser() {
         checkBool("aller-retour volume",   b.volume   == a.volume,   true);
         checkBool("aller-retour latence",  b.audioLatencyMs == a.audioLatencyMs, true);
         checkBool("aller-retour drivesound", b.driveSound == a.driveSound, true);
+        checkBool("aller-retour rewind", b.rewind == a.rewind, true);
         checkBool("aller-retour autozoom", b.autoZoom == a.autoZoom, true);
         checkBool("aller-retour crt",      b.crt      == a.crt,      true);
         checkBool("aller-retour crt_scanlines", b.crtParams.scanlines == a.crtParams.scanlines, true);

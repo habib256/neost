@@ -78,7 +78,7 @@ correction de fidélité.
 | **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, Mega STE 16 MHz, banc fx68k étendu et sort des `.state` (refus explicite) : faits → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | restes MFP de la fiche et WS3 en attente de source, DMA disque relevé et reporté au § 9 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
-| **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Disquettes de menus nommées, retour arrière, pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
+| **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
 | **5. Terrain du TT/Falcon** | Préparer sans rien intégrer | Oracle et fiches TT/Falcon → § 10 ; A32 et inventaire faits (`docs/HYPOTHESES_ST.md`) | P2 |
 
 **À ne pas entreprendre avant l'échange** : tout ce qui est au § 9 (prise d'IPL, IACK,
@@ -369,9 +369,9 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   l'intégration du cœur POM68K**, quand l'auteur le déclare prêt. Palier `full` et CI verts,
   filet du § 2 en place ; la référence de `cpu_swap_gate.py` s'enregistre sur son commit.
   Elle reste la version de repli tant que POM68K n'a pas fait ses preuves.
-- **Retour arrière (rewind)** · P2 ⭘ — un `.state` par seconde en anneau, disquettes copiées si
-  modifiées ; jamais pendant une commande STX minutée ; désactivé avec un disque dur. Dépend
-  de l'empreinte machine (§ 5) et du sort des `.state` (§ 2). Modèle : ASE `TimeWarp.cs`.
+- **Retour arrière : Android, web et essai à la main** · P3 ⭘ — livré dans le GUI de bureau
+  (`core/Rewind.hpp`, option `rewind=`, Ctrl+Alt+R), jugé par `--rewind-test`. Le raccourci n'a pas
+  encore été essayé en session graphique ; les frontends Android et web ne l'appellent pas.
 - **Explorateur de bitmaps** · P3 ⭘ — la RAM en plans ST avec la palette courante, dans le
   débogueur. Modèle : ASE `DebugWindow`.
 - **Kiosk & CRT, cosmétique** · P3 ⭘ — membres `srcW_`/`srcH_` morts dans `CrtEffectStack` ;

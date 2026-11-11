@@ -134,6 +134,7 @@ you are actually running.
 | Key | Action |
 |-----|--------|
 | <kbd>F5</kbd> / <kbd>F7</kbd> | Save / load state |
+| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd> | Rewind one second, when enabled in Configuration (also restores floppy files) |
 | <kbd>Alt</kbd>+<kbd>Enter</kbd> | Resume Atari from the kiosk menu; otherwise toggle full screen and mouse capture |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> | Toggle kiosk (cabinet) mode |
 | *Windows → Keyboard* | On-screen ST keyboard (photo): click any key, sticky Shift/Control/Alternate |

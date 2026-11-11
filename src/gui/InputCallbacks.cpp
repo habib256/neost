@@ -107,6 +107,20 @@ void onKey(GLFWwindow*, int key, int scancode, int action, int mods) {
             return;
         }
     }
+    // Ctrl+Alt+R : retour arrière, un cran par appui, et la répétition du clavier en
+    // enchaîne tant que l'accord est tenu. Même discipline que Ctrl+Alt+G.
+    static bool rewindChordHeld = false;
+    if (key == GLFW_KEY_R) {
+        if (action != GLFW_RELEASE && (mods & GLFW_MOD_CONTROL) && (mods & GLFW_MOD_ALT)) {
+            rewindChordHeld = true;
+            A.rewindReq = true;
+            return;
+        }
+        if (action == GLFW_RELEASE && rewindChordHeld) {
+            rewindChordHeld = false;
+            return;
+        }
+    }
     // F5/F7 : latchés ICI comme Alt+Entrée (même justification anti-scrutation — un appui
     // bref entre deux tours de boucle était perdu, l'utilisateur croyait l'état
     // sauvé sans qu'il le soit). Consommés à la frontière de trame.

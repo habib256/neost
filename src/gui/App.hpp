@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "core/Symbols.hpp"       // SymbolTable (débogueur)
+#include "core/Rewind.hpp"        // anneau du retour arrière
 #include "gui/AppConfig.hpp"      // Config (neost.cfg)
 #include "gui/CrtEffectStack.h"   // CrtEffectStack, CrtParams
 #include "io/CartridgeKey.hpp"    // CartridgeKey::Model (auto-plug)
@@ -93,6 +94,8 @@ struct App {
     // ─── Save-state rapide (F5 / F7) ─────────────────────────────────────────
     bool saveStateReq = false;             // F5 latché dans onKey (cf. Alt+Entrée)
     bool loadStateReq = false;             // F7 latché dans onKey
+    bool rewindReq = false;                // Ctrl+Alt+R latché dans onKey
+    Rewind rewind;                         // anneau du retour arrière (cf. core/Rewind.hpp)
     std::string stateMsg;                  // message transitoire affiché en overlay
     int         stateMsgFrames = 0;
 

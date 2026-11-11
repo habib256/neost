@@ -122,6 +122,7 @@ struct ConfigUi {
     int   reqFastFdc = -1;        // 0/1 → nouvelle valeur du FDC rapide
     bool  cfgDirty = false;       // un réglage à effet immédiat a changé → saveConfig
     bool  reqSaveState = false, reqLoadState = false;
+    bool  rewind = false;             // retour arrière actif (rewind=)
     // Profils nommés (page « Profiles ») : le nom demandé, consommé par la boucle.
     std::string reqSaveProfile, reqLoadProfile, reqDeleteProfile;
 };

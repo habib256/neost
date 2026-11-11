@@ -378,6 +378,7 @@ int appInit(App& A, int argc, char** argv) {
     A.machine = std::make_unique<Machine>(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu),
                                           machType0);   // RAM + cœur + modèle (cfg, ajusté au TOS)
     Machine& machine = *A.machine;
+    A.rewind.setEnabled(cfg.rewind);
     std::fprintf(stderr, "[main] CPU core: %s | machine: %s | RAM: %s\n",
                  Cpu68k::coreName(machine.cpu.core()),
                  machineName(machType0), cfg.mem.c_str());

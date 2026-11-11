@@ -745,6 +745,10 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         if (ImGui::Button(ICON_FA_FOLDER_OPEN " Load (F7)"))  ui.reqLoadState = true;
         ImGui::TextDisabled("A state carries a fingerprint of the config: one taken on");
         ImGui::TextDisabled("another machine/ROM is refused rather than applied.");
+        ImGui::Separator();
+        if (ImGui::Checkbox("Rewind (Ctrl+Alt+R)", &ui.rewind)) ui.cfgDirty = true;
+        ImGui::TextDisabled("One state per second kept in memory (up to 128 MB). Rewinding");
+        ImGui::TextDisabled("also restores the floppy files. Off with a hard disk.");
         if (ui.machine && ui.machine->gemdos.active()) {
             ImGui::TextDisabled("Open host files must stay unchanged until restore.");
             ImGui::TextDisabled("Their contents are not rolled back by a state.");

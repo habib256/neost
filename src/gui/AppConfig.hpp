@@ -114,6 +114,7 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 float volume = 1.0f;   // volume maître de la sortie audio (0..1, barre de menu)
                 int audioLatencyMs = 85; // coussin audio visé (cf. Audio::setLatencyMs, --audio-latency)
                 bool driveSound = true;  // bruits mécaniques du lecteur (roms/drivesound/, cf. DriveSound)
+                bool rewind = false;     // retour arrière : anneau d'états en mémoire (cf. core/Rewind.hpp)
                 bool showHex = true, showCpu = true;
                 bool showJoy = false;
                 bool showKbd = false;          // fenêtre clavier virtuel (photo pic/, touches cliquables)

@@ -109,6 +109,9 @@ public:
     // le ré-encodage .MSA réécrit le fichier de l'utilisateur, un aller-retour non
     // byte-exact détruirait sa disquette. Appelé par neost-headless --msa-selftest.
     bool msaSelfTest();
+    // Auto-test du retour arrière côté média : écriture, changement et éjection annulés,
+    // contenu en mémoire ET fichier hôte. Appelé par neost-headless --rewind-test.
+    bool mediaSelfTest();
 
     // Monte une image de disque dur ACSI (dump de secteurs brut) sur la cible
     // `target` (0-7, généralement 0). Le TOS/EmuTOS détecte le périphérique au boot,
@@ -124,6 +127,25 @@ public:
     int  usatanFirstTarget() const { return acsi_.usatanFirstTarget(); }
     bool inserted(int drive = 0) const { return drive_[drive & 1].present(); }
     const std::string& mountedPath(int drive = 0) const { return drive_[drive & 1].path; }
+
+    // --- Retour arrière (core/Rewind) -------------------------------------------
+    // Le save-state ne porte pas le contenu des disquettes (le fichier hôte le porte,
+    // écrit au fil de l'eau). Le retour arrière copie donc le média à part, et seulement
+    // quand il a changé : chaque montage, éjection ou écriture donne au lecteur une
+    // GÉNÉRATION neuve, unique sur toute la session. Hors save-state, volatile.
+    struct MediaCopy;                                  // opaque : chemin, octets .ST, overlays
+    uint64_t mediaGeneration(int drive) const { return drive_[drive & 1].gen; }
+    // Écritures STX depuis le lancement : leurs overlays et le .wd1772 compagnon ne se
+    // copient pas, un retour arrière ne franchit donc pas une écriture STX.
+    uint64_t stxWrites() const { return stxWrites_; }
+    std::shared_ptr<const MediaCopy> copyMedia(int drive) const;
+    // Remonte le média copié (chemin, puis contenu .ST et overlays) et réécrit le fichier
+    // hôte au même instant. Faux si l'image ne se remonte plus.
+    bool restoreMedia(int drive, const MediaCopy& copy);
+    static uint64_t mediaCopyGeneration(const MediaCopy& copy);
+    static std::size_t mediaCopyBytes(const MediaCopy& copy);
+    // Une commande WD1772 est en cours (BUSY) : pas d'instantané au milieu.
+    bool commandActive() const { return command_ != 0; }
 
     // MMIO $FF8600-$FF860F (accès octets ; le 68000 y fait des mots big-endian).
     uint8_t read8(uint32_t addr);
@@ -319,6 +341,7 @@ private:
 
         // Un disque est présent si on a des octets .ST OU une image STX montée.
         bool present() const { return !image.empty() || stx != nullptr; }
+        uint64_t gen = 0;                       // génération du média (retour arrière, hors état)
 
         // Détection de changement de média (Mediach) à chaud ([D] Hatari floppy.c:435-501,
         // fdc.c:198-225 @ f0736b24, relevé WPT d'un tiers sur 520 STF rapporté par Hatari) :
@@ -504,6 +527,9 @@ private:
     // Champ ID retenu par le dernier nextSectorID sur cette piste (nullptr = aucun).
     FloppyDisk::StOverrideSector* stOverrideFound(FloppyDisk::StOverrideTrack* ov);
     int ovSecIdx_ = -1;      // indice dans StOverrideTrack::secs (volatile, comme stOverride)
+    uint64_t mediaSerial_ = 0;   // dernière génération distribuée (cf. mediaGeneration)
+    uint64_t stxWrites_ = 0;     // écritures STX persistées depuis le lancement
+    void touchMedia(FloppyDisk& dk) { dk.gen = ++mediaSerial_; }
     bool stOverrideFromBuffer(FloppyDisk& dk);
     uint8_t  tr_ = 0;        // Track Register
     uint8_t  sr_ = 1;        // Sector Register
