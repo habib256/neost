@@ -24,7 +24,12 @@ android {
                 // On ne construit QUE la bibliothèque de l'application : le
                 // CMakeLists racine définit aussi neost-headless, inutile ici.
                 targets 'neost'
-                arguments '-DANDROID_STL=c++_shared'
+                // ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES : segments ELF alignés sur 16 Ko
+                // (libneost.so ET libSDL2.so, bâtie par le même CMake). Sans lui, le
+                // NDK r27 aligne sur 4 Ko et un appareil Android 15 à pages de 16 Ko
+                // refuse le dlopen — l'application meurt au lancement. Sans effet sur
+                // les appareils à pages de 4 Ko. Contrôle : packaging/android/README.md.
+                arguments '-DANDROID_STL=c++_shared', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
             }
         }
         // arm64 uniquement : c'est ce que Google Play exige depuis 2019, et

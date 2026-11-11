@@ -21,7 +21,38 @@ commité** (`extern/SDL2`, comme Hatari) — `fetch_sdl.sh` le récupère.
 **État actuel** : la machine démarre sur EmuTOS, l'image et le son sont là, la souris
 se pilote au doigt, une manette physique tient le port joystick 1, et un **menu**
 permet de changer de disquette, de redémarrer et d'envoyer des touches. Pas encore de
-stick virtuel, ni de sélecteur de ROM, ni de réglages machine.
+stick virtuel, ni de sélecteur de ROM, ni de réglages machine. Un clavier physique
+(Bluetooth, USB) n'est pas encore relayé au ST au-delà du bouton Retour.
+
+Le **bouton Retour** d'Android (et le geste de bord, le clic droit sous DeX/ChromeOS)
+est piégé (`SDL_HINT_ANDROID_TRAP_BACK_BUTTON`) : il **ouvre et ferme le menu**, il ne
+quitte jamais — on ne sort que par `QUIT`. Ne pas le confondre avec le `REWIND` du
+menu, qui recule la machine.
+
+## Où mettre ses disquettes
+
+La ludothèque scanne **deux** dossiers :
+
+- le stockage **interne** (`…/files/data`) — la disquette embarquée `diskA.st` et les
+  ROM ; inatteignable sans root ;
+- le stockage **externe propre à l'application**,
+  `Android/data/net.gistlabs.neost/files` (`.debug` en plus pour l'APK de debug) —
+  c'est là qu'on **copie ses images depuis un ordinateur, par USB (MTP)**, sans
+  aucune permission. Le menu affiche ce chemin ; `RESCAN` relit la liste.
+
+⚠ Depuis Android 11, les gestionnaires de fichiers *sur l'appareil* n'ouvrent plus
+`Android/data` : la copie se fait depuis un ordinateur. Un import par le sélecteur
+de fichiers système (SAF) reste à faire.
+
+## Mises à jour de l'APK et données déballées
+
+Les **ROM EmuTOS** sont redéballées quand le contenu embarqué change : un témoin
+`data/.assets-stamp` porte une empreinte FNV-1a des assets ROM (noms, tailles, octets).
+Ce n'est pas l'identité de build de `src/BuildInfo.hpp` : `neost_build_info` n'est pas
+lié à la bibliothèque Android, et l'empreinte change exactement quand les octets
+changent. **`diskA.st` n'est jamais écrasée** si elle existe : le FDC y écrit au fil de
+l'eau, c'est la disquette de l'utilisateur. Toutes les copies sont atomiques
+(fichier `.tmp` puis `rename`).
 
 ## Le menu, décalqué de la borne
 
@@ -74,6 +105,27 @@ export JAVA_HOME=~/jdk17          # cf. le piège jlink ci-dessous
 Le natif est bâti par le **CMakeLists racine** du dépôt (branche `if(ANDROID)`), pas
 par un fichier dupliqué ici : une seule définition de `neost_core` pour les quatre
 plateformes.
+
+## Pages de 16 Ko (Android 15)
+
+Les appareils Android 15 à pages de **16 Ko** refusent de charger une bibliothèque dont
+les segments `LOAD` sont alignés sur 4 Ko. `app/build.gradle` passe donc
+`-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON` à CMake (NDK r27), et AGP ≥ 8.5.1 aligne
+les `.so` non compressées sur 16 Ko dans l'APK. Contrôle après un build :
+
+```sh
+unzip -o app/build/outputs/apk/debug/app-debug.apk 'lib/*' -d apk-libs
+llvm-readelf -l apk-libs/lib/arm64-v8a/libneost.so | grep LOAD
+                         # la colonne Align doit valoir 0x4000 (et non 0x1000)
+```
+
+(`llvm-readelf` est dans `$ANDROID_HOME/ndk/<version>/toolchains/llvm/prebuilt/*/bin`.
+Même contrôle pour `libSDL2.so` et `libc++_shared.so`.)
+
+**`targetSdk` reste à 34**, volontairement : Google Play exige désormais un
+`targetSdk` plus récent pour publier, mais le relever peut imposer une autre version
+d'AGP/Gradle — et les pièges ci-dessous montrent ce que coûte un tel décalage. À faire
+avec un appareil sous la main, pas à l'aveugle.
 
 ## Trois pièges rencontrés
 

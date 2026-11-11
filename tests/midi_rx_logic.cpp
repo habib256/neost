@@ -44,7 +44,8 @@ int testMidiRx() {
     eq("master reset clears flags", sr(), 0);   // [B] MC6850 § Interrupt Request p. 6 : TDRE inhibé sous master reset, relu à 1 à sa sortie.
     eq("master reset retains RDR contents", rdr(), 0x61);
     midi.receiveExternal(0x63);
-    eq("new completion replaces reset RDR", rdr(), 0x63);
+    // [B] MC6850 p. 7-8: the receiver is HELD in reset while CR1-0 = 11, the byte is lost.
+    eq("receiver held in master reset drops the byte", rdr(), 0x61);
     midi.reset(); eq("machine reset initializes RDR", rdr(), 1);
     eq("machine reset clears status", sr(), 2);
     midi.write8(0xFFFC04, 0xB5);

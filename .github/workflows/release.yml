@@ -965,8 +965,19 @@ jobs:
           path: dist/*.apk
           if-no-files-found: error
 
+  # ------------------------------------------------------------------- tests --
+  # La suite complète de tests.yml (fast, pixel, RTL, GUI, sanitizers, NAT), rejouée
+  # sur le commit du tag : tests.yml ne se déclenche pas sur un tag, et `publish` ne
+  # dépendait que des paquets — une release pouvait partir sans les tests. Sur une
+  # branche, tests.yml tourne déjà de lui-même : on ne le double pas.
+  tests:
+    if: github.ref_type == 'tag'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/tests.yml
+
   publish:
-    needs: [linux-bionic, linux-arm64, raspberry, pi400, macos, wasm, windows, android]
+    needs: [tests, linux-bionic, linux-arm64, raspberry, pi400, macos, wasm, windows, android]
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
     steps:

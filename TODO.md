@@ -109,6 +109,12 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.1 GLUE, MMU, Shifter — vidéo et bus
 
+- **Plan mémoire, cas limites** *(proposé)* · P3 ⭘ · [D] — la copie RAM des vecteurs `$0-$7` est
+  écrasable par un alias MMU alors que le matériel sert toujours la ROM (`gstmcu.v:189-196`) ; le
+  blitter juge un accès mot vers le MFP sur son seul octet pair ; le bus ouvert rend trois
+  valeurs selon la zone (`$00`, dernier mot, `$FF`). La carte des bus errors en lecture, elle,
+  donne 0 écart contre les relevés de vraies machines sur les quatre modèles.
+
 - **Restes vidéo au cycle** · P3 ⭘ — la VBL est datée à la fin de trame + 64/68 (`Machine.cpp`), la
   fin de DE a son événement Timer B distinct du HBL, et la lecture du compteur concorde au RTL sur STE
   (47 999 sur 48 000, `docs/STCPU_BENCH.md`). Restent ST et Mega ST, sans netlist, et la phase du Timer C
@@ -161,6 +167,11 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.3 Blitter
 
+- **Blit HOG long : l'hôte ne rend pas la main** *(proposé)* · P2 ⭘ — une tranche HOG partie dans
+  le quantum CPU boucle jusqu'à `yCount == 0` : `runFrame` ne revient pas avant la fin du blit
+  (65 536 × 4 096 mots sur Mega STE : une trame en 40 s, GUI figé). Suspendre à la frontière de
+  trame avec l'état de reprise en milieu de mot, ou ne lancer la tranche qu'hors quantum.
+
 Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → `docs/STBLITTER_BENCH.md`.
 Extension du banc à 16 MHz → § 2.
 
@@ -171,6 +182,14 @@ Extension du banc à 16 MHz → § 2.
   latence IACK (§ 9). → `docs/HATARI_MEGASTE_AUDIT.md`
 
 ### 3.4 Son — YM2149, DMA STE, Microwire
+
+- **Masque de `$FF8921` et écritures Microwire en cours de décalage** *(proposé)* · P3 ⏸ source · [F] —
+  `0x8F` comme Hatari, `0x83` selon MAME et MiSTery ; une écriture pendant un décalage est
+  ignorée comme dans Hatari, MiSTery relance ou arrête le transfert (démo Systematic Error).
+  Tranche : la documentation Atari du STE, ou cette démo.
+- **Compteur du son DMA sur 24 bits** *(proposé)* · P3 ⭘ · [D] — le RTL boucle sur 22 bits
+  (`sndcnt.v:8-9`) et un cycle DMA sélectionne toujours la RAM ; ici une fin de trame inférieure
+  au début traverse ROM et cartouche par `dmaRead8`.
 
 - **IRQ de fin de trame du son DMA, datée au HBL** · P3 ⭘ · [D] — le fetch suit désormais la fin de DE à la lecture du compteur (`docs/STCPU_BENCH.md`), mais la fin de trame n'a pas son événement propre : au plus 136 cycles de retard. Profondeur réelle de la FIFO : 8 octets d'Hatari contre 7 mots du modèle, choix d'auteur. Tranche : relevé sur STE.
 - **Tenue du dernier échantillon DMA** · P3 ⭘ · [D] — Hatari tient le niveau continu du dernier
@@ -184,6 +203,16 @@ Extension du banc à 16 MHz → § 2.
   reconstruction : seule divergence de sévérité moyenne assumée, sans promesse de flux brut.
   Tranche : relecture sur un vrai lecteur d'une piste écrite par un jeu (sauvegarde), ou IPF.
 - **ACSI : essai Idris OS** · P3 ⭘ — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté.
+- **WD1772 : ID sans champ de données, 5 tours avant RNF** *(proposé)* · P2 ⭘ · [B] contre [D] — sur
+  une piste STX, un ID sans données termine aussitôt en RNF, comme Hatari et MAME ; la fiche
+  (WD177X-00 p. 1-9, 1-10) relance la recherche jusqu'à 5 index, donc un doublon avec données
+  est toujours lu, et Write Sector écrit sa propre marque. Touche les protections à IDs
+  dupliqués : à valider sur la collection STX avant de basculer.
+- **WRITE TRACK sur .ST : marques sans synchro, CRC non modélisé** *(proposé)* · P3 ⭘ · [B] — tout
+  `$FE`/`$FB` est pris pour une marque sans `$F5` devant, et un CRC écrit en clair au lieu de
+  `$F7` est accepté (fiche p. 1-13, 1-18) ; l'auto-test `selftest_logic.cpp` formate ainsi et
+  attend un succès. Aussi : compteur DMA en écriture décrémenté un bloc trop tard ([D] MiSTery
+  contre [D] Hatari), registre de données non chargé par les transferts ([B] p. 1-3, 1-5).
 - **WD1772, restes de l'audit** · P3 ⭘ · [B] contre [D] — marqués `⚠ [B]` dans `src/io/Fdc.cpp` : INTRQ de $D8 effaçable par toute commande, gardé car la fiche à la lettre fait diverger Super Hang-On ; $Dx annulé si une commande suit à moins de 16 µs. Deux écarts voulus protègent de vrais programmes : TR/SR écrits pendant BUSY (Delirious Demo IV) et commande remplacée pendant BUSY (Overdrive Demos).
 - **Face absente d’un fichier ST** · P3 ⭘ · [F] — aucun contenu de la face omise : vierge ou formatée à l’origine ? Les cinq index avant RNF sont vérifiés sur une piste réellement sans ID (WRITE TRACK de $4E). La synthèse d’ID sur une face absente reste une convention héritée d’Hatari, à trancher par un dump ou une convention de format. → `docs/HATARI_DIVERGENCES.md`
 
@@ -200,6 +229,10 @@ Extension du banc à 16 MHz → § 2.
   chaque tour) ; l'état hôte ne change qu'aux événements de l'hôte ; code 6301 custom
   (`Execute`). Les délais de `$18` sont comptés sur la ROM, pas mesurés sur un IKBD.
 - **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; BREAK non simulé.
+- **ACIA : octets impairs `$FFFC01/03/05/07`** *(proposé)* · P3 ⏸ source · [D] — rendus vides ;
+  le GST MCU décode l'ACIA sans UDS (`gstmcu.v:181`), donc une écriture octet impaire atteindrait
+  la puce, et la plage `$FFFC00-$FFFDFF` devrait payer l'attente E-clock. Tranche : netlist du
+  GLUE du ST.
 
 ### 3.7 Mega STE — SCC Z85C30, RTC RP5C15, cache
 
@@ -212,8 +245,17 @@ Extension du banc à 16 MHz → § 2.
 ### 3.8 TOS, GEMDOS, cartouche
 
 - **GEMDOS : écarts communs à NeoST et Hatari face au vrai TOS** · P3 ⭘ · [D] — Fdelete/Fopen sur
-  un dossier, Frename entre systèmes de fichiers, Fwrite sur un fichier ouvert en lecture,
-  Dsetpath sur un masque. Échelon `rom` : rejouer sous TOS réel exécuté par NeoST.
+  un dossier, Frename entre systèmes de fichiers, Dsetpath sur un masque. Échelon `rom` :
+  rejouer sous TOS réel exécuté par NeoST.
+- **GEMDOS : lecteur et dossier courants par processus** *(proposé)* · P2 ⭘ · [C] — ils sont
+  globaux : un enfant lancé par Pexec qui fait Dsetpath ou Dsetdrv les change pour son parent
+  (shells, `make`). Lire le lecteur dans `p_defdrv` de la basepage, indexer le chemin par
+  basepage. Mesuré en A/B disquette contre dossier sous TOS 1.04, 2.06 et EmuTOS.
+- **GEMDOS : restes du banc A/B** *(proposé)* · P3 ⭘ · [C] — Fforce ne défait pas une
+  redirection ; Pexec 0 fuit l'environnement et la basepage sous TOS 1.00/1.02 ; « X:NOM » est
+  résolu depuis la racine ; Fdatime est perdu après un Fwrite ; Dgetpath rend les noms hôtes
+  longs ; deux noms hôtes tronqués au même 8.3 se masquent ; attributs archive et caché non
+  stockés.
 - **Port cartouche générique** `$FA0000-$FBFFFF` · P3 ⭘ — au-delà du système GEMDOS ; `cart.c`.
 
 ---
@@ -305,6 +347,14 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
 
 ### Instruments
+- **Disquette par défaut du headless** *(proposé)* · P2 ⏸ décision — sans `--disk`, `disks/diskA.st`
+  est monté depuis le répertoire courant, en écriture : la même commande donne deux empreintes
+  selon le dossier de lancement. La retirer change des références enregistrées.
+- **`--keys` après la boucle principale** *(proposé)* · P3 ⭘ — save-state, empreintes et son
+  décrivent l'instant d'avant les touches, la capture celui d'après ; `--shot-every` numérote
+  avec une trame d'écart sur `--screenshot` (documenté dans l'aide, pas aligné).
+- **Tolérances d'étalon en masque de zone** *(proposé)* · P3 ⭘ — `blitter_timer` et `rtl_low_pal`
+  tolèrent un NOMBRE de pixels : un autre jeu de pixels faux, à nombre égal, passerait.
 
 - **Suite de tests d'Hatari : restes** · P2 ⏸ source — `run_hatari_suite.py` rejoue cycles, blitter,
   bus errors, `cpu`, `gemdos` et `serial`. Reste `screen` (référence PNG au format Hatari) ; `xbios`/`mem_end` hors périmètre. `screen` attend que l'écart de 4 px de `flixfull.prg` soit tranché (§ 5, Instruments, P3 [F]).
@@ -331,6 +381,21 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 → [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md). Tout a existé sur ST ; rien n'agit sur les étalons.
 
 ### Réseau, stockage, ports
+- **NAT : tables IPv6 jamais vidées** *(proposé)* · P2 ⭘ — `extern/pom2nat` : 512 destinations
+  `fe80::x` épuisent la table d'alias, 32 datagrammes DNS avec QR=1 tuent le DNS IPv6 pour la
+  session ; `res_nclose` au lieu de `res_ndestroy` fuit sous macOS. À corriger dans POM2 puis
+  réimporter.
+- **Modem Hayes : DTR et reset du ST** *(proposé)* · P3 ⭘ — ni la chute de DTR ni un reset ne
+  raccrochent ; `ATDT` bloque le fil d'émulation jusqu'à 5 s plus la résolution DNS.
+- **NE2000 : enroulement du Remote DMA à PSTOP** *(proposé)* · P3 ⏸ source · [D] — QEMU ramène
+  l'adresse à PSTART ; ici elle avance linéairement. Tranche : la fiche du DP8390.
+- **Anneau MIDI UDP sans numéro de séquence** *(proposé)* · P3 ⭘ — un datagramme par octet, source
+  non filtrée : un paquet dupliqué ou réordonné permute des octets.
+- **Clés cartouche au reset à chaud** *(proposé)* · P3 ⏸ source · [F] — remises à zéro alors que le
+  port cartouche n'a pas de ligne /RESET ; FEEDB1 de la Notator armé un cycle trop tard sur un
+  accès octet impair.
+- **Pads STE alimentés par le joystick ST** *(proposé)* · P3 ⏸ décision — un seul joystick pilote
+  les ports DB9 et DB15 ; Hatari laisse les pads au repos par défaut.
 - **EWeb ST derrière AERA-Gateway** · P2 ⭘ — navigateur GEM libre (GPL v2) : `gateway/webgate.py`
   lancé seul sur l'hôte, sans Docker (Python standard, avec `aeragate.py` et `translateclient.py` ;
   essayé le 2026-11-11 en boucle locale, requête au format proxy), EWeb dans NeoST (STE 4 Mo,

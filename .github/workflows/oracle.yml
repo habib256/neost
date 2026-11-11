@@ -117,8 +117,17 @@ jobs:
 
       # LE contrôle. Non destructif par construction : `--oracle-check` écrit ses
       # captures dans tests/out/ et ne touche jamais à tests/reference/.
+      # 77 = rien n'a échoué, mais des étalons ont été sautés (TOS Atari absents du
+      # runner) : recensés dans le journal par run_etalons.py, ce n'est pas un échec.
       - name: Oracle régénéré ↔ références commises ↔ NeoST
-        run: python3 tools/run_etalons.py --oracle-check
+        run: |
+          rc=0
+          python3 tools/run_etalons.py --oracle-check || rc=$?
+          if [ "$rc" -eq 77 ]; then
+            echo "::warning::run_etalons --oracle-check : étalons sautés (voir le journal)"
+          elif [ "$rc" -ne 0 ]; then
+            exit "$rc"
+          fi
 
       - name: Vérifier le comparateur temporel (mutations et traces incomplètes)
         run: python3 tools/test_timing_oracle.py

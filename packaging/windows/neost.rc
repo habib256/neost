@@ -1,0 +1,23 @@
+// Ressources Windows de neost.exe et neost-headless.exe, compilées par windres
+// (CMakeLists.txt, bloc « Ressources Windows »). Une seule : le manifeste d'application
+// neost.manifest, gardé en ASCII pur et sans commentaire — un manifeste que Windows
+// ne sait pas lire empêche l'exécutable de démarrer (« configuration côte à côte
+// incorrecte »).
+//
+// Ce qu'il règle :
+//  - activeCodePage = UTF-8. Sous MinGW, std::filesystem::path(std::string) lit de
+//    l'UTF-8 alors que fopen/ifstream/opendir/getenv/argv passent par la page de code
+//    ANSI : un nom d'utilisateur accentué levait une exception non rattrapée au premier
+//    lancement, une ROM rangée dans un dossier accentué restait introuvable. Pris en
+//    compte à partir de Windows 10 1903 ; un Windows plus ancien l'ignore et reste en
+//    page ANSI (le défaut d'avant).
+//  - supportedOS (7, 8, 8.1, 10/11) et requestedExecutionLevel asInvoker : ce que le
+//    manifeste par défaut de MinGW déclarait déjà. Un manifeste fourni le REMPLACE.
+//
+// 1 = CREATEPROCESS_MANIFEST_RESOURCE_ID, 24 = RT_MANIFEST, écrits en clair pour ne
+// dépendre d'aucun en-tête du SDK. LANGUAGE explicite (anglais US) : le manifeste par
+// défaut de MinGW (default-manifest.o, ajouté d'office au lien) est en langue neutre,
+// et ld l'écarte quand un autre manifeste est présent — vérifié avec binutils
+// x86_64-w64-mingw32 : un seul RT_MANIFEST, langue 0x409, dans l'exécutable lié.
+LANGUAGE 0x09, 0x01
+1 24 "neost.manifest"

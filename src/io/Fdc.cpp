@@ -734,6 +734,12 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         if (dk.stx->loadWd1772(dk.wd1772Path))
             std::fprintf(stderr, "[FDC] writes restored: %s (%zu sector(s), %zu track(s))\n",
                          dk.wd1772Path.c_str(), dk.stx->saveSectors.size(), dk.stx->saveTracks.size());
+        // Hatari FDC_InsertFloppy : chaque nouveau média reçoit sa propre phase, même
+        // lors d'un remplacement à chaud moteur déjà lancé (même bloc que la branche .ST).
+        if ((drive & 1) == driveSel_) {
+            indexTime_ = 0;
+            if (str_ & STR_MOTOR) indexInit();
+        }
         std::fprintf(stderr, "[FDC] drive %c: %s (%s, %d tracks, %d side(s))\n",
                      drive & 1 ? 'B' : 'A', path.c_str(), fmt, tps, dk.sides);
         return true;
@@ -1151,7 +1157,9 @@ int64_t Fdc::nextIndexCycles() const {
     if (driveSel_ < 0 || indexTime_ == 0) return -1;
     const int64_t rev = cyclesPerRev();
     int64_t res = rev - (nowCyc() - indexTime_);
-    if (res <= 1) res = rev;
+    // res > rev : l'index daté dans le FUTUR (état forgé). Le délai, tronqué en int par
+    // spinWaitDelay, planifiait l'événement dans le passé et figeait le lecteur.
+    if (res <= 1 || res > rev) res = rev;
     return res;
 }
 
@@ -1416,6 +1424,16 @@ uint8_t Fdc::readSectorST(uint8_t track, uint8_t sector, uint8_t side, int* pSiz
 
 uint8_t Fdc::writeSectorST(uint8_t track, uint8_t sector, uint8_t side, int size) {
     if (drive_[driveSel_].imgType == FloppyDisk::IMG_STX) return writeSectorStx(size);
+    // WPRT n'est échantillonné qu'au démarrage de la commande : une sélection live d'un
+    // lecteur protégé (PSG en plein transfert) ou une insertion à chaud d'une image en
+    // lecture seule arrivait ici et altérait l'image en mémoire, écriture annoncée
+    // réussie puis perdue au remontage.
+    // [B] WD177X-00 p. 1-4 : sur disque protégé l'écriture est interdite et la commande
+    //     se termine avec le bit WRITE PROTECT — pas RNF.
+    // [D] Hatari floppy.c:962 @ f0736b24 — Floppy_WriteSectors refuse aussi, mais sa
+    //     convention d'échec (RNF) n'est pas un comportement de la puce : non portée.
+    if (!drive_[driveSel_].present())    return STR_RNF;
+    if (drive_[driveSel_].writeProtect)  return STR_WPRT;
     if (auto* ov = stOverrideHere()) {
         auto* s = stOverrideFound(ov);
         if (!s) return STR_RNF;
@@ -1543,6 +1561,9 @@ uint8_t Fdc::writeTrackBuffer() {
     if (driveSel_ < 0 || !drive_[driveSel_].present()) return STR_LOST;
     FloppyDisk& dk = drive_[driveSel_];
     if (dk.imgType == FloppyDisk::IMG_STX) return writeTrackStx();
+    // Même garde que writeSectorST : le lecteur a pu changer depuis le test WPRT du
+    // démarrage de la commande. Rien n'est écrit sur un disque protégé.
+    if (dk.writeProtect) return STR_WPRT;   // [B] WD177X-00 p. 1-4 : terminé avec WRITE PROTECT
     const int n = bufferSize();
     // Piste non représentable dans le .st → piste volatile en mémoire.
     auto nonStandard = [&]() -> uint8_t {
@@ -1715,6 +1736,7 @@ void Fdc::writeBack(FloppyDisk& dk, uint64_t off, uint64_t len) {
     }
     f.seekp(static_cast<std::streamoff>(fileOff));
     f.write(reinterpret_cast<const char*>(dk.image.data() + off), static_cast<std::streamsize>(len));
+    f.flush();   // sans quoi l'erreur d'E/S ne sort qu'à la fermeture, en silence
     // Écriture in situ (pas d'atomicité possible sans réécrire tout le fichier) : on
     // ne peut plus annuler un secteur déchiré, mais on PRÉVIENT au lieu d'échouer en
     // silence — un disque plein laissait sinon une sauvegarde à moitié écrite sans
@@ -2675,6 +2697,10 @@ int Fdc::updateWriteSectors() {
         {
             const uint8_t st = writeSectorST(uint8_t(drive_[driveSel_].headTrack), sr_, side_, bufferSize());
             if (st & STR_RNF) { commandState_ = RUN_WS_RNF; fdcCycles = CMD_IMMEDIATE; }
+            else if (st & STR_WPRT) {     // lecteur devenu protégé en cours de commande
+                updateStr(0, STR_WPRT);
+                commandState_ = RUN_WS_COMPLETE; fdcCycles = CMD_COMPLETE;
+            }
             else              { commandState_ = RUN_WS_MULTI; fdcCycles = 24 * 8 - CMD_COMPLETE; }
         }
         break;
@@ -2885,7 +2911,11 @@ int Fdc::updateWriteTrack() {
         // différente de l'image) reste en mémoire (stOverride) et ne pose rien, à la
         // différence d'Hatari qui pose LOST_DATA partout ([D] fdc.c:5521-5539 @ f0736b24).
         // LOST_DATA ne sort ici que d'un garde-fou de NeoST, pas du WD1772 ([B] p. 1-18, S2).
-        if (writeTrackBuffer() & STR_LOST) updateStr(0, STR_LOST);
+        {
+            const uint8_t st = writeTrackBuffer();
+            if (st & STR_LOST) updateStr(0, STR_LOST);
+            if (st & STR_WPRT) updateStr(0, STR_WPRT);
+        }
         fdcCycles = cmdComplete(true);
         break;
     }

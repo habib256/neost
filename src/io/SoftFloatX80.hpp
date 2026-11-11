@@ -283,8 +283,12 @@ precision80:
 }
 inline f80 normalizeRoundAndPack(int prec, int sign, int32_t zExp, uint64_t zSig0, uint64_t zSig1, Status& st) {
     if (zSig0 == 0) { zSig0 = zSig1; zSig1 = 0; zExp -= 64; }
+    // Significande entièrement nul (FMOD/FREM à reste exact) : clz64 rend 64 et un
+    // décalage de 64 bits est indéfini — on le saute, il ne décalerait que des zéros.
+    // Le reste du chemin est GARDÉ tel quel : avec l'exposant ainsi abaissé, roundAndPack
+    // lève UNFL sur ce zéro, comme l'oracle (test_fpu_arithmetic_oracle.py, op $21/$25).
     int sc = clz64(zSig0);
-    shortShift128Left(zSig0, zSig1, sc, zSig0, zSig1);
+    if (sc < 64) shortShift128Left(zSig0, zSig1, sc, zSig0, zSig1);
     zExp -= sc;
     return roundAndPack(prec, sign, zExp, zSig0, zSig1, st);
 }

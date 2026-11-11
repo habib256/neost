@@ -267,6 +267,14 @@ def main() -> int:
     ap.add_argument("--ipl-sweep", action="store_true",
                     help="balayer l'instant de la broche IPL et afficher la frontière prise")
     args = ap.parse_args()
+    # Un nom inconnu ne doit pas réduire le banc à rien (« verdicts identiques » sur zéro cas).
+    only = {n for n in args.only.split(",") if n} if args.only is not None else None
+    if only is not None:
+        unknown = sorted(only - {name for name, _gen, _opts in PROGRAMS})
+        if unknown or not only:
+            print(f"--only : programme(s) inconnu(s) : {', '.join(unknown) or '(liste vide)'} — "
+                  f"connus : {', '.join(name for name, _g, _o in PROGRAMS)}", file=sys.stderr)
+            return 2
 
     if not shutil.which("verilator"):
         return skip("verilator absent du PATH")
@@ -288,7 +296,6 @@ def main() -> int:
         return ipl_sweep()
     progs = BUILD / "programs"
     progs.mkdir(parents=True, exist_ok=True)
-    only = set(args.only.split(",")) if args.only else None
     results: dict[str, dict] = {}
     for name, _gen, opts in PROGRAMS:
         if only and name not in only:
@@ -333,6 +340,9 @@ def main() -> int:
                     line += f" fx={f['fx']} moira={f['moira']}"
             print(line)
 
+    if not results:
+        print("Banc fx68k : aucune variante exécutée", file=sys.stderr)
+        return 2
     (OUT / "summary.json").write_text(json.dumps(results, indent=1))
     n_agree = sum(r["status"] == "agree" for r in results.values())
     print(f"\nBanc fx68k : {n_agree}/{len(results)} variantes en accord cycle à cycle "

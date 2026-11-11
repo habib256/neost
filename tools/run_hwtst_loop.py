@@ -85,9 +85,12 @@ def measure(name, words, count, label, scu):
 
 
 def main():
-    if not timing.NEOST.exists() or not timing.ROM.exists():
-        print("SKIP : neost-headless ou EmuTOS 256 Ko absent")
-        return 77
+    # neost-headless et EmuTOS 256 Ko (versionnée) : un manque est une casse du dépôt, pas
+    # un saut légitime — sortie 2, jamais 77.
+    missing = [str(p) for p in (timing.NEOST, timing.ROM) if not p.exists()]
+    if missing:
+        print("HWTST LOOP ERROR: absent(s) : " + ", ".join(missing), file=sys.stderr)
+        return 2
     OUT.mkdir(parents=True, exist_ok=True)
     ok = True
     for name, (words, count) in LOOPS.items():

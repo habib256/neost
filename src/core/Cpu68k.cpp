@@ -615,7 +615,24 @@ public:
         { moira::i64 g = stopGraceUntil; ar(g); stopGraceUntil = g; }
         ar.check(stopGraceUntil == -1 || (stopGraceUntil >= 0 && stopGraceUntil <= getClock() + 4),
                  "Moira::stopGraceUntil hors domaine");
-        ar(fcl); ar(readBuffer); ar(flags);
+        ar(fcl); ar(readBuffer);
+        // v60 — les drapeaux de Moira mêlent l'état du 68000 (STOPPED, HALTED…) et celui
+        // du DÉBOGUEUR HÔTE (CHECK_BP/WP/CP, LOGGING), qui n'appartient pas à la machine :
+        //  · restaurés, ils désarmaient en silence les watchpoints de la session
+        //    (CHECK_WP remis à 0 alors que le conteneur les porte toujours) ;
+        //  · écrits, ils rendaient deux sauvegardes du MÊME état différentes à l'octet
+        //    selon qu'un point d'arrêt était posé — empreinte cpu d'archHash faussée
+        //    (docs/CPU_SWAP_GATE.md).
+        // On écrit donc les bits hôte à 0, et au chargement la session garde les siens.
+        {
+            constexpr int kHostFlags = moira::State::CHECK_BP | moira::State::CHECK_WP
+                                     | moira::State::CHECK_CP | moira::State::LOGGING;
+            const int host = flags & kHostFlags;
+            auto f = flags;
+            f &= ~kHostFlags;
+            ar(f);
+            flags = (f & ~kHostFlags) | host;
+        }
         // LOOPING (mode loop 68010) n'est JAMAIS posé sur un 68000 : forgé dans un
         // .state (CRC recalculé), il fait prendre à execute() la branche
         // `(this->*loop[queue.ird])` dont l'assert de garde saute en Release —
@@ -1041,6 +1058,19 @@ int64_t Cpu68k::busClockNow() const {
     return busOfClock(static_cast<int64_t>(state_->moira->getClock()));
 }
 
+// Même conversion, sur l'état de CETTE instance et non sur le global g_cur : appelable
+// sur une machine qui n'est pas la machine active (save/load d'une seconde Machine).
+int64_t Cpu68k::busClockOfInstance() const {
+    const int64_t c = static_cast<int64_t>(state_->moira->getClock());
+    return state_->cpuMul == 1 ? c + state_->cpuBias : (c + state_->cpuBias) >> 1;
+}
+
+// Pas-à-pas : l'instruction COURANTE doit s'exécuter même si un point d'arrêt est posé
+// dessus, qu'on y soit arrivé par un arrêt, par un pas précédent ou par une pause.
+void Cpu68k::skipBreakpointOnce() {
+    state_->bpSkipPc = state_->moira->getPC() & 0xFFFFFFu;
+}
+
 int64_t Cpu68k::traceClockNow() const {
     return state_->sched ? state_->sched->liveNow() : busClockNow();
 }
@@ -1125,7 +1155,12 @@ int Cpu68k::run(int cycles) {
         // Débogueur : breakpoint « break-before » — stoppe AVANT d'exécuter l'instruction
         // ciblée (le run() rend la main, PC dessus). Le skip-once évite de re-déclencher à
         // la reprise (on est encore SUR le breakpoint). elements()==0 → coût nul.
-        if (state_->moira->debugger.breakpoints.elements() != 0) {
+        // Pas de test pendant un STOP : le PC désigne déjà l'instruction SUIVANTE, que
+        // le 68000 n'exécute pas encore — execute() ne fait que dormir jusqu'au prochain
+        // événement. Le skip-once y était consommé pour rien et le même point d'arrêt
+        // retombait à chaque événement de l'ordonnanceur (1 745 arrêts en 2 trames). Le
+        // point d'arrêt tombe au retour de l'exception qui réveille le CPU.
+        if (state_->moira->debugger.breakpoints.elements() != 0 && !state_->moira->isStopped()) {
             const uint32_t pc = state_->moira->getPC() & 0xFFFFFFu;
             if (pc == state_->bpSkipPc) {
                 state_->bpSkipPc = 0xFFFFFFFFu;                 // laissé passer une fois
@@ -1291,7 +1326,12 @@ bool     Cpu68k::breakpointHitIsWatch() const{ return state_->bpWatch; }
 void Cpu68k::clearBreakpointHit() {
     // Skip-once UNIQUEMENT pour un breakpoint PC (le watchpoint est « break-after »,
     // le PC a déjà avancé au-delà de l'instruction fautive → rien à ignorer).
-    if (!state_->bpWatch) state_->bpSkipPc = state_->bpAddr;
+    // Et seulement si l'on est ENCORE arrêté dessus : bpAddr n'est jamais remis à zéro,
+    // et le pas-à-pas comme « Continue » passent ici — armer sur une adresse périmée
+    // faisait sauter en silence le passage suivant par ce point d'arrêt.
+    if (state_->bpHit && !state_->bpWatch
+        && (state_->moira->getPC() & 0xFFFFFFu) == state_->bpAddr)
+        state_->bpSkipPc = state_->bpAddr;
     state_->bpHit = false; state_->bpWatch = false;
 }
 

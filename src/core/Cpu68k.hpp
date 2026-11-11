@@ -64,6 +64,8 @@ public:
     // sched.now() + cyclesRunInQuantum() (le delta intra-quantum est désormais
     // intégré au cœur, dispatché par sync()).
     int64_t busClockNow() const;
+    int64_t busClockOfInstance() const;   // idem, sans passer par la machine active
+    void    skipBreakpointOnce();         // pas-à-pas : exécuter l'instruction courante
 
     // Reset matériel : Moira lit SSP ($0) et PC ($4) via le bus (overlay ROM de
     // boot, cf. Bus::bootOverlay), puis on referme l'overlay.

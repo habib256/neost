@@ -136,7 +136,10 @@ public:
         // Invariants : byteCount_ indexe command_[16], dataLen_ borne la lecture de
         // buf_ par le DMA, target_ indexe devs_ — des valeurs restaurées hors bornes
         // (négatives comprises) liraient/écriraient hors du tas.
-        ar.check(byteCount_ >= 0 && byteCount_ <= 16);
+        // byteCount_ COMPTE les octets reçus et peut dépasser 16 (feedByte n'écrit dans
+        // command_ que sous la borne) : un secteur de boot qui en envoie 40 donnait un
+        // état que sa propre garde « <= 16 » refusait au chargement.
+        ar.check(byteCount_ >= 0);
         ar.check(dataLen_ >= 0 && static_cast<std::size_t>(dataLen_) <= buf_.size());
         ar.check(target_ >= 0 && target_ < MAX_DEVS);
         // État « soft » par cible (change au fil des commandes : REQUEST SENSE…).

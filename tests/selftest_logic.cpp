@@ -1421,7 +1421,8 @@ static void testMidiInJitter() {
         std::vector<uint8_t> msg;
         const auto emit = [&msg](const uint8_t* m, int len) { msg.assign(m, m + len); };
         prs.byte(0xF0, emit);
-        for (int i = 0; i < 6000; ++i) prs.byte(uint8_t(i & 0x7F), emit);
+        // Plus long que kMaxSysex (64 Kio depuis la levée de la borne à 4 096).
+        for (int i = 0; i < 70000; ++i) prs.byte(uint8_t(i & 0x7F), emit);
         prs.byte(0xF7, emit);
         checkBool("sysex borné : le message tronqué ne dépasse JAMAIS kMaxSysex",
                   !msg.empty() && msg.size() <= neost::midi::Parser::kMaxSysex, true);

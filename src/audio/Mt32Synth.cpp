@@ -198,6 +198,22 @@ void Mt32Synth::byteAt(uint8_t b, int64_t cycle) { if (synth_) parse(b, cycle); 
 
 void Mt32Synth::clearEvents() { pending_.clear(); }
 
+void Mt32Synth::panic() {
+#ifdef NEOST_WITH_MT32
+    if (!synth_) return;
+    auto* synth = static_cast<MT32Emu::Synth*>(synth_);
+    for (uint32_t ch = 0; ch < 16; ++ch) {
+        // Reset All Controllers D'ABORD : il relâche la pédale de sustain, sans quoi
+        // All Notes Off laisserait sonner les notes tenues par la pédale.
+        // [D] Munt Synth::playMsgOnPart (extern/mt32emu/src/Synth.cpp:1273-1279
+        //     @ libmt32emu 2.8.3 vendorisée) traite $79 et $7B ; $78 (All Sound Off)
+        //     n'y est pas reconnu — on ne l'envoie donc pas.
+        synth->playMsgNow((0xB0u | ch) | (0x79u << 8));
+        synth->playMsgNow((0xB0u | ch) | (0x7Bu << 8));
+    }
+#endif
+}
+
 namespace { constexpr std::size_t kMaxPending = 8192; }   // ~3 min de notes : jamais atteint en marche normale
 
 void Mt32Synth::parse(uint8_t b, int64_t cycle) {

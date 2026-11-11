@@ -969,6 +969,7 @@ void VideoGlue::updateGlueRes(int line, int lineCycles, int prevRes, int newRes)
 
 void VideoGlue::replayGlue() {
     bordersTrick = false;
+    lateHiOn = false;                               // le rejeu repart du début de trame, pas de l'état laissé par le direct
     if (frame.mode == kHigh) return;                // mono : pas de bordures modélisées
 
     const VideoGeometry g = frame.geo;
@@ -1091,7 +1092,10 @@ void VideoGlue::replayGlue() {
     // élargies rendent du noir, l'image n'occupe que la zone active. Le cadrage adaptatif
     // tranche sur cette proportion (cf. core/Framing.cpp).
     sideTrickLines = 0;
-    for (int sl = vdeOn; sl < vdeOff; ++sl) {
+    // vdeOff peut dépasser la trame (434 quand $FF8260=2 est tenu jusqu'à la fin d'une
+    // trame couleur 50 Hz) alors que `lines` n'a que lpf+2 entrées : sans la borne, ~1,4 Ko
+    // lus hors du tas. Même garde que la boucle voisine.
+    for (int sl = vdeOn < 0 ? 0 : vdeOn; sl < vdeOff && sl < int(lines.size()); ++sl) {
         const GlueLine& L = lines[sl];
         if (L.displayStartCycle >= 0
             && (L.displayStartCycle < nomStart || L.displayEndCycle > nomEnd))

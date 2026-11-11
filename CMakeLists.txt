@@ -27,6 +27,28 @@ set(CMAKE_C_STANDARD 99)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif()
+
+# Windows (MinGW-w64) : off_t y fait 32 bits par défaut, et `(off_t)lba * blockSize`
+# (src/io/Acsi.cpp) écrivait sur le mauvais secteur au-delà de 4 Gio — vérifié par un
+# static_assert(sizeof(off_t) == 8) en compilation croisée x86_64-w64-mingw32. Avec
+# _FILE_OFFSET_BITS=64, off_t passe à 64 bits et fseeko/ftello deviennent
+# fseeko64/ftello64. Posé AVANT toute cible : la propriété de répertoire est héritée
+# par les sous-répertoires ajoutés ensuite.
+if(MINGW)
+    add_compile_definitions(_FILE_OFFSET_BITS=64)
+endif()
+
+# Ressources Windows (MinGW) : manifeste d'application qui passe la page de code du
+# processus en UTF-8 (Windows 10 1903+), lié à neost et neost-headless. Raison et
+# contenu : packaging/windows/neost.rc.
+# Bibliothèque OBJET à part : windres ne reçoit ainsi ni les définitions des cibles
+# (NEOST_VERSION="…" et ses guillemets) ni leurs options, et ne compile qu'une fois.
+if(MINGW)
+    enable_language(RC)
+    add_library(neost_win_rc OBJECT packaging/windows/neost.rc)
+    set_source_files_properties(packaging/windows/neost.rc PROPERTIES
+        OBJECT_DEPENDS "${CMAKE_SOURCE_DIR}/packaging/windows/neost.manifest")
+endif()
 # Garder les drapeaux Release fournis par CMake, la toolchain ou l'appelant.
 # Écraser CMAKE_CXX_FLAGS_RELEASE ici rendait par exemple
 # -DCMAKE_CXX_FLAGS_RELEASE="-O0 -g" totalement inopérant.
@@ -192,6 +214,13 @@ if(NEOST_WITH_NET)
 endif()
 set_source_files_properties(${NEOST_NET_SRC}
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
+# Anneau MIDI (extension NeoST) : 20 octets par UDP sur 127.0.0.1, rendus dans l'ordre
+# par l'ACIA MIDI au rythme du baud. Lancé par le palier fast (tools/run_all.py,
+# étapes réseau) ; sans sockets hôte (NEOST_WITH_NET=OFF), il n'existe pas.
+if(NEOST_WITH_NET)
+    add_executable(neost-midi-ring-test tests/midi_ring_logic.cpp)
+    target_link_libraries(neost-midi-ring-test PRIVATE neost_net)
+endif()
 
 # --- Moira (cœur 68000 cycle-exact, MIT) — SEUL cœur CPU de NeoST ------------
 # Vendorisé (plus un sous-module) car NeoST patche Moira — cf. extern/moira/NEOST_VENDOR.md.
@@ -279,8 +308,12 @@ endif()
 # --midi-dump capture déjà ce que le ST émet, sans dépendre du matériel branché, et
 # lier MidiOutHost tirerait AudioToolbox (synthé GM) dans une cible qui n'a pas d'audio.
 add_executable(neost-headless src/headless/main_headless.cpp src/audio/MidiInHost.cpp src/headless/Server.cpp)
+if(MINGW)
+    target_sources(neost-headless PRIVATE $<TARGET_OBJECTS:neost_win_rc>)
+endif()
 if(NEOST_WITH_NET)
-    add_dependencies(neost-headless neost-nat-test neost-resolver-test neost-nat-adapter-test)
+    add_dependencies(neost-headless neost-nat-test neost-resolver-test neost-nat-adapter-test
+                     neost-midi-ring-test)
 endif()
 target_link_libraries(neost-headless PRIVATE neost_net)  # neost_core via neost_net (PUBLIC)
 if(APPLE)
@@ -705,6 +738,9 @@ add_executable(neost
     src/audio/MidiInHost.cpp
     src/audio/Mt32Synth.cpp
     src/audio/GmSynth.cpp)
+if(MINGW)
+    target_sources(neost PRIVATE $<TARGET_OBJECTS:neost_win_rc>)
+endif()
 # stb_image (extern/stb, domaine public) : décodage de la photo du clavier (pic/).
 target_include_directories(neost PRIVATE "${CMAKE_SOURCE_DIR}/extern/stb")
 # TinySoundFont (extern/tsf, MIT, un seul header) : le synthé GM intégré des

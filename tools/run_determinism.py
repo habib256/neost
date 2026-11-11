@@ -16,7 +16,7 @@
 #  La première ligne qui diffère date la perte. Le test porte sur la ROM libre, sans disque privé.
 #
 #  Usage : run_determinism.py [--rom roms/etos192fr.img] [--frames 800] [--every 50]
-#  Code 77 sans neost-headless ou sans la ROM.
+#  Code 2 sans neost-headless ou sans la ROM EmuTOS ; 77 sans un TOS Atari passé par --rom.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test.
 # =============================================================================
@@ -30,7 +30,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-HEADLESS = ROOT / "build" / "neost-headless"
+HEADLESS = ROOT / "build" / ("neost-headless.exe" if sys.platform == "win32" else "neost-headless")
 
 
 def hashes(cmd: list[str]) -> dict[int, str]:
@@ -52,8 +52,16 @@ def main() -> int:
     ap.add_argument("--frames", type=int, default=800)
     ap.add_argument("--every", type=int, default=50)
     a = ap.parse_args()
-    if not HEADLESS.exists() or not (ROOT / a.rom).exists():
-        print("SKIP — déterminisme : neost-headless ou ROM absents")
+    # Binaire ou ROM EmuTOS (versionnée) absents : dépôt cassé, pas un saut légitime.
+    # Seul un TOS Atari passé par --rom, non redistribuable, se saute (77).
+    if not HEADLESS.exists():
+        print(f"ERREUR — déterminisme : {HEADLESS} absent (cmake --build build)", file=sys.stderr)
+        return 2
+    if not (ROOT / a.rom).exists():
+        if Path(a.rom).name.startswith("etos"):
+            print(f"ERREUR — déterminisme : ROM libre {a.rom} absente — dépôt incomplet", file=sys.stderr)
+            return 2
+        print(f"SKIP — déterminisme : ROM propriétaire {a.rom} absente")
         return 77
     base = [str(HEADLESS), a.rom, "--machine", a.machine, "--state-hash-every", str(a.every)]
     split = a.frames // 2

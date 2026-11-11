@@ -1,8 +1,7 @@
 // [interne] Anneau MIDI, extension NeoST : aucune affirmation sur le matériel.
-// Test manuel UDP local, hors selftest (les CI peuvent interdire les sockets).
-// c++ -std=c++17 -Isrc tests/midi_ring_logic.cpp src/net/MidiRing.cpp \
-//   src/net/Socket.cpp src/io/MidiAcia.cpp src/io/Mfp.cpp -pthread -o /tmp/midi-ring-test
-// /tmp/midi-ring-test
+// Test UDP local (127.0.0.1), hors selftest : cible CMake `neost-midi-ring-test`, bâtie
+// avec NEOST_WITH_NET et lancée par le palier fast de tools/run_all.py (étapes réseau).
+//   cmake --build build --target neost-midi-ring-test && ./build/neost-midi-ring-test
 #include "net/MidiRing.hpp"
 #include "io/MidiAcia.hpp"
 #include "io/Mfp.hpp"

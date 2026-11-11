@@ -109,10 +109,22 @@ void drawFloppyPage(const std::string& disksDir,
         // aucun n'offrant plus le bouton Monter : le second devenait inaccessible.
         const bool inA = !mountedA.empty() && en.path == mountedA;
         const bool inB = !mountedB.empty() && en.path == mountedB;
+        // Une image déjà montée dans un lecteur ne se propose pas pour l'autre : deux
+        // lecteurs réécrivant le même fichier hôte détruisent la disquette (cf. le
+        // refus dans consumeMediaRequests, qui reste le garde-fou de tous les chemins).
+        auto otherDriveButton = [](const char* label, const char* busy) {
+            ImGui::BeginDisabled();
+            ImGui::SmallButton(label);
+            ImGui::EndDisabled();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                ImGui::SetTooltip("Already in drive %s: one image cannot be in both drives", busy);
+        };
         if (inA)      ImGui::TextDisabled("●A");
+        else if (inB) otherDriveButton("A", "B");
         else if (ImGui::SmallButton("A")) reqMountA = en.path;
         ImGui::SameLine(0.0f, 4.0f);
         if (inB)      ImGui::TextDisabled("●B");
+        else if (inA) otherDriveButton("B", "A");
         else if (ImGui::SmallButton("B")) reqMountB = en.path;
         ImGui::SameLine();
         ImGui::TextUnformatted(en.rel.c_str());        // affiché (montre le dossier)

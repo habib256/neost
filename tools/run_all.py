@@ -188,6 +188,10 @@ NAT_STEPS = [
      [str(ROOT / "build" / ("neost-resolver-test" + _EXE))]),
     ("NAT : adaptateur NeoST, options et échecs de publication",
      [str(ROOT / "build" / ("neost-nat-adapter-test" + _EXE))]),
+    # Anneau MIDI (extension NeoST, docs/EXTENSIONS.md) : orphelin jusqu'au 2026-11-11,
+    # cité comme « contrôle local » sans qu'aucun palier ne le lance. Sockets hôte requis.
+    ("Anneau MIDI : 20 octets UDP locaux rendus dans l'ordre par l'ACIA",
+     [str(ROOT / "build" / ("neost-midi-ring-test" + _EXE))]),
     ("NAT à travers la NE2000 : ARP, DHCP et UDP loopback",
      [str(HEADLESS), "roms/etos192us.img", "--nat-selftest"]),
     ("STinG + NAT : DNS localhost et HTTP sur serveur local",
@@ -212,6 +216,10 @@ GUI_STEPS = [
     ("Boot GUI — la capture montre quelque chose",
      [sys.executable, str(TOOLS / "check_ppm_nonuniform.py"), str(_GUI_SHOT)]),
 ]
+# Sorties qu'une étape DOIT recréer : effacées avant l'étape, exigées après. Sans cela,
+# un GUI qui sortait 0 sans rien capturer laissait l'étape suivante valider la capture
+# d'un run précédent.
+FRESH_OUTPUTS = {GUI_STEPS[0][0]: _GUI_SHOT}
 
 
 def gui_available() -> str | None:
@@ -335,6 +343,9 @@ def install_hook(remove: bool) -> int:
 # Lite) sort 77 : ni 0 ni 1. Avant, elle sortait 0 — son SKIP était imprimé au milieu
 # de centaines de lignes puis englouti par un « TOUS LES PALIERS OK » final. Le bilan
 # doit dire ce qui n'a PAS été vérifié : c'est tout le sujet du « vert creux ».
+# Le 77 est réservé à ce qui est réellement privé (TOS Atari, disquettes commerciales,
+# arbre Hatari, outils RTL) : une ROM EmuTOS versionnée ou un binaire de build/ absents
+# sont une CASSE du dépôt, et l'outil sort 2 (échec), jamais 77.
 EXIT_SKIPPED = 77
 
 
@@ -424,7 +435,13 @@ def run_tier(steps, skipped=(), fast=False) -> int:
     for label, cmd in steps:
         print(f"\n########## {label} ##########")
         start = time.monotonic()
+        fresh = FRESH_OUTPUTS.get(label)
+        if fresh is not None:
+            fresh.unlink(missing_ok=True)
         rc = subprocess.run(cmd, cwd=ROOT).returncode
+        if fresh is not None and rc == 0 and not fresh.is_file():
+            print(f"  {fresh.relative_to(ROOT)} non recréé par l'étape")
+            rc = 1
         durations[label] = time.monotonic() - start
         if rc == EXIT_SKIPPED:
             skipped.append(label)

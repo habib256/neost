@@ -56,7 +56,11 @@ bool actionRow(const char* label, const ImVec4& col, const ImVec2& size) {
 }  // namespace
 
 void AndroidMenu::refresh() {
-    disks = scanDiskImages({dataDir}, mounted);
+    // Les DEUX dossiers : l'interne porte la disquette embarquée, l'externe ce que
+    // l'utilisateur a copié depuis un ordinateur.
+    std::vector<std::string> dirs{dataDir};
+    if (!importDir.empty()) dirs.push_back(importDir);
+    disks = scanDiskImages(dirs, mounted);
     diskSel = 0;
     for (int i = 0; i < int(disks.size()); ++i)
         if (disks[i] == mounted) { diskSel = i; break; }
@@ -167,10 +171,7 @@ void AndroidMenu::draw(float uiScale) {
 
     ImGui::TextColored(kGreen, "GAMES");
     ImGui::BeginChild("##list", ImVec2(0, ImGui::GetContentRegionAvail().y - footer), true);
-    if (disks.empty()) {
-        ImGui::TextDisabled("(no image in %s)", dataDir.c_str());
-        ImGui::TextDisabled("Import .st/.msa/.dim/.stx/.ipf files there.");
-    }
+    if (disks.empty()) ImGui::TextDisabled("(no floppy image found)");
     const std::string mrefL = lowerOf(fs::path(mounted).filename().string());
     for (int i = 0; i < int(disks.size()); ++i) {
         const std::string fn = fs::path(disks[i]).filename().string();
@@ -191,6 +192,17 @@ void AndroidMenu::draw(float uiScale) {
         }
         ImGui::PopID();
         if (cur || sibling) ImGui::PopStyleColor();
+    }
+    // Où déposer ses images : le dossier EXTERNE, le seul qu'un utilisateur atteigne
+    // (USB/MTP depuis un ordinateur). Afficher le dossier interne invitait à copier
+    // là où rien ne peut écrire sans root. Toujours affiché, en fin de liste.
+    ImGui::Spacing();
+    if (!importDir.empty()) {
+        ImGui::TextDisabled("Add games: copy .st/.msa/.dim/.stx/.ipf files over USB to");
+        ImGui::TextDisabled("  %s", importDir.c_str());
+        ImGui::TextDisabled("then tap RESCAN.");
+    } else {
+        ImGui::TextDisabled("Shared storage unavailable: games cannot be imported right now.");
     }
     ImGui::EndChild();
 

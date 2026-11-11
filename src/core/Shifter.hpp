@@ -900,6 +900,8 @@ public:
         // mode prefetch, bit 5 du latch 336 px et bit 6 de validité (format v20).
         ar.check(lineSnap_.size() == lineSnapLen_.size() * kLineSnapBytes);
         ar.check(lineScrollSnap_.size() == lineSnapLen_.size());
+        for (const uint16_t len : lineSnapLen_)
+            if (len > kLineSnapBytes - kSnapLead) { ar.check(false, "Shifter::lineSnapLen_ hors du slot"); break; }
         // Bit 7 (format v50) = Shifter arrêté (res 3) au commit de la ligne : les
         // 8 bits sont donc tous légitimes, plus de borne à revalider.
 
@@ -933,6 +935,15 @@ public:
         ar(glue_.vdeOff);
         ar(glue_.vOverscan);
         ar(glue_.blankLines);
+        // Bornes de boucle de VideoCounter::read et commitScanline : un vdeOn forgé à
+        // −10⁹ faisait tourner UNE trame pendant plus d'une minute. Convention ≤ 4096
+        // de Machine pour les lignes.
+        ar.check(glue_.vdeOn >= 0 && glue_.vdeOn <= 4096 && glue_.vdeOff >= 0 && glue_.vdeOff <= 4096
+                 && glue_.blankLines >= 0 && glue_.blankLines <= 4096
+                 && glue_.liveStartHBL >= 0 && glue_.liveStartHBL <= 4096,
+                 "VideoGlue::vdeOn/vdeOff/blankLines/liveStartHBL hors [0, 4096]");
+        for (const SyncWrite& w : glue_.syncWrites)
+            if (w.frameCycle < 0) { ar.check(false, "VideoGlue::syncWrites : cycle négatif"); break; }
         ar(glue_.hblPos);
         ar(glue_.cyclesLine);
         ar.podVec(glue_.lineStart);  // std::vector<int64_t>

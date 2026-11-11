@@ -15,6 +15,9 @@
 #    --oracle            régénère la référence via Hatari (si disque + params)
 #    --no-compare        exécute seulement (pas de diff)
 #
+#  Codes : 0 tout vérifié, 1 échec, 2 usage, 77 rien n'a échoué mais des étalons
+#  ont été sautés (ROM propriétaire, disque optionnel ou référence absents).
+#
 #  (c) 2026 VERHILLE Arnaud — projet NeoST.
 # =============================================================================
 from __future__ import annotations
@@ -286,6 +289,14 @@ SKIPPED = []
 # Étalons NON EXÉCUTÉS faute de ROM propriétaire (roms/tos*.img). Même règle : recensés,
 # jamais fondus dans le vert. Cf. rom_is_free().
 SKIPPED_ROM = []
+# Étalons NON EXÉCUTÉS faute d'un disque `optional` absent : sautés, donc recensés aussi.
+SKIPPED_DISK = []
+# Sortie « rien d'échoué, mais des étalons sautés » : run_all.py la recense comme étape
+# NON EXÉCUTÉE au lieu de la fondre dans le vert. Même valeur que l'EXIT_SKIPPED des
+# autres outils ; nom distinct à dessein : le fil-piège de run_all.py
+# (fast_tier_proprietary) exempte tout outil qui définit EXIT_SKIPPED, et celui-ci,
+# lancé au palier fast, doit rester inspecté.
+EXIT_SKIPPED_RUN = 77
 
 
 def rom_is_free(rom: str) -> bool:
@@ -308,7 +319,7 @@ def _run_one_buffered(entry: dict, args):
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
         ok = run_one(entry, args)
-    return entry["id"], ok, buf.getvalue(), list(SKIPPED), list(SKIPPED_ROM)
+    return entry["id"], ok, buf.getvalue(), list(SKIPPED), list(SKIPPED_ROM), list(SKIPPED_DISK)
 
 
 def run_one(entry: dict, args) -> bool:
@@ -353,6 +364,7 @@ def run_one(entry: dict, args) -> bool:
         msg = f"  disque manquant : {entry['disk']}"
         if entry.get("optional"):
             print(msg + " (optionnel — SKIP)")
+            SKIPPED_DISK.append(eid)
             return True
         print(msg, file=sys.stderr)
         return False
@@ -696,7 +708,7 @@ def main() -> int:
         with concurrent.futures.ProcessPoolExecutor(max_workers=jobs) as pool:
             futs = [pool.submit(_run_one_buffered, e, args) for e in runnable]
             for fut in futs:                 # ordre de soumission = ordre du manifeste
-                _eid, one_ok, text, skipped, skipped_rom = fut.result()
+                _eid, one_ok, text, skipped, skipped_rom, skipped_disk = fut.result()
                 sys.stdout.write(text)
                 ran += 1
                 if not one_ok:
@@ -707,6 +719,9 @@ def main() -> int:
                 for x in skipped_rom:
                     if x not in SKIPPED_ROM:
                         SKIPPED_ROM.append(x)
+                for x in skipped_disk:
+                    if x not in SKIPPED_DISK:
+                        SKIPPED_DISK.append(x)
     else:
         for entry in runnable:
             ran += 1
@@ -727,9 +742,22 @@ def main() -> int:
               + ", ".join(SKIPPED_ROM)
               + "\n  (ces étalons ne valident RIEN dans cette installation ; les ROM Atari"
                 "\n   ne sont pas redistribuables — les déposer dans roms/ pour les activer)")
+    if SKIPPED_DISK:
+        print(f"\n⚠ NON EXÉCUTÉS — disque optionnel absent ({len(SKIPPED_DISK)}) : "
+              + ", ".join(SKIPPED_DISK)
+              + "\n  (ces étalons ne valident RIEN dans cette installation)")
     print("\n" + ladder_summary(runnable))
-    print("\n" + ("TOUS OK" if ok else "ÉCHECS — voir ci-dessus"))
-    return 0 if ok else 1
+    if not ok:
+        print("\nÉCHECS — voir ci-dessus")
+        return 1
+    # Un étalon sauté (ROM propriétaire, disque optionnel, référence absente) ne valide
+    # rien : la sortie 77 le fait remonter au bilan « NON EXÉCUTÉE(S) » de run_all.py
+    # au lieu d'un 0 indiscernable d'une couverture complète.
+    if SKIPPED or SKIPPED_ROM or SKIPPED_DISK:
+        print("\nTOUS OK (couverture AMPUTÉE — voir ci-dessus)")
+        return EXIT_SKIPPED_RUN
+    print("\nTOUS OK")
+    return 0
 
 
 if __name__ == "__main__":

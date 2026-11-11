@@ -190,7 +190,14 @@ public:
 
     // Jette les événements de la trame sans synthétiser (frontend audio non démarré) :
     // resynchronise l'ombre audio pour ne pas dériver, et borne la mémoire.
-    void clearEvents() { audioRegs_ = regs_; events_.clear(); }
+    void clearEvents() {
+        // Une écriture de R13 jetée redéclenche quand même l'enveloppe : sans cela la
+        // note suivante sortait sans redémarrage (pas-à-pas du débogueur).
+        for (const RegEvent& e : events_)
+            if (e.reg == 13) envReload_ = true;
+        audioRegs_ = regs_;
+        events_.clear();
+    }
 
     // Synthèse d'UNE trame en mode « push » : rejoue les écritures de registres
     // horodatées à leur position exacte (cycle → échantillon via frameCycles), en

@@ -219,6 +219,7 @@ private:
     void createHostFileName(int drive, const std::string& gemName, std::string& out);
     // Rabat un chemin hôte sous la racine du lecteur (cf. .cpp) — garde-fou de sécurité.
     void clampToSandbox(const EmuDrive& d, const std::string& gemName, std::string& out);
+    void clampToSandboxUnchecked(const EmuDrive& d, const std::string& gemName, std::string& out);
     // Nombre de partitions images fourni par le moteur, zéro sans liaison.
     int partitionCount() const;
     bool addPathComponent(std::string& path, const std::string& origname, bool isDir);

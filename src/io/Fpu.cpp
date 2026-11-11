@@ -695,7 +695,28 @@ void Fpu::genOp(uint16_t cmd, Ext src) {
 
     // -------- Opérations ALGÉBRIQUES en softfloat 80 bits (mantisse 64 bits) -
     sf::Status st = sfStatus();
-    const sf::f80 s = toF(src), d = toF(fp_[dn]);
+    // Opérande « unnormal » (exposant non nul, bit entier à 0) devant une transcendante :
+    // la réduction d'argument du FPSP (REDUCEX) ne converge jamais dessus et gelait
+    // l'émulateur — atteignable par FMOVECR #9/#10 puis FSIN, ou par un FMOVE.X de
+    // 12 octets arbitraires. Le 6888x normalise l'opérande avant d'opérer.
+    // [D] Hatari fpp.c:1460-1470 (fpp_normalize sur la source) et
+    //     softfloat.c:2129-2151 (floatx80_normalize) @ f0736b24.
+    // Les opérations arithmétiques gardent leur propre garde (sf::invalidEncoding).
+    auto fpspOperand = [op](sf::f80 a) {
+        const bool transcendental =
+            op == 0x02 || op == 0x06 || (op >= 0x08 && op <= 0x0A) || (op >= 0x0C && op <= 0x12)
+            || (op >= 0x14 && op <= 0x16) || op == 0x19 || op == 0x1C || op == 0x1D
+            || (op >= 0x30 && op <= 0x37);
+        if (!transcendental || !sf::invalidEncoding(a)) return a;
+        const int sign = sf::signOf(a);
+        int32_t e = sf::expOf(a);
+        uint64_t sig = sf::fracOf(a);
+        if (sig == 0) return sf::pack(sign, 0, 0);
+        int sc = sf::clz64(sig);
+        if (sc > e) sc = e;
+        return sf::pack(sign, e - sc, sig << sc);
+    };
+    const sf::f80 s = fpspOperand(toF(src)), d = toF(fp_[dn]);
     bool handled = true, store = true;
     sf::f80 rf{};
     switch (op) {

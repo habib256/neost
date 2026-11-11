@@ -152,17 +152,31 @@ def run_case(name, prg, produced, reference, machine, mem, rom) -> bool:
 
 
 def main() -> int:
+    args = sys.argv[1:]
+    if any(a.startswith("-") for a in args):
+        print("usage : run_hatari_suite.py [NOM…]   (sans nom : toute la suite)\n"
+              "noms : " + " ".join(c[0] for c in CASES + CONSOLE_CASES + SERIAL_CASES),
+              file=sys.stderr)
+        return 0 if set(args) & {"-h", "--help"} else 2
+    only = set(args)
+    unknown = sorted(only - {c[0] for c in CASES + CONSOLE_CASES + SERIAL_CASES})
+    if unknown:
+        print(f"programme(s) inconnu(s) : {', '.join(unknown)} (lancer --help pour la liste)",
+              file=sys.stderr)
+        return 2
     if not SUITE.is_dir():
         print(f"SAUTÉ : {SUITE.relative_to(ROOT)} absent (tools/setup_hatari.sh)")
         return EXIT_SKIPPED
     if not HEADLESS.exists():
         print("Build requis : cmake --build build", file=sys.stderr)
         return 2
-    only = set(sys.argv[1:])
     selected = [c for c in CASES if not only or c[0] in only]
     console = [c for c in CONSOLE_CASES if not only or c[0] in only]
     serial = [c for c in SERIAL_CASES if not only or c[0] in only]
     print(f"SUITE HATARI : {len(selected) + len(console) + len(serial)} programmes rejoués sous NeoST")
+    if not selected + console + serial:          # jamais vert sur rien
+        print("SUITE HATARI FAIL : aucun programme rejoué")
+        return 2
     ok = all([run_case(*c) for c in selected] + [run_console_case(*c) for c in console]
              + [run_serial_case(*c) for c in serial])
     hardware = sum(c[0].startswith("buserror-") for c in selected)

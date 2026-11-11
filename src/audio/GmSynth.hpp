@@ -44,6 +44,13 @@ public:
     // Jette les événements en attente SANS les jouer (pas de périphérique audio) —
     // même contrat que Mt32Synth::clearEvents, mêmes raisons (cf. Audio::produceFrame).
     void clearEvents();
+    // « MIDI panic » de l'interface : All Sound Off, Reset All Controllers et All Notes
+    // Off sur les 16 canaux, appliqués DIRECTEMENT au moteur TSF. Surtout pas par
+    // byteAt : le parseur est celui du flux de l'ACIA, et y injecter « Bn 78 00 »
+    // laissait son running status sur $BF — la note suivante du programme ST
+    // (« 3E 40 » après un « 90 3C 40 ») devenait un contrôleur — et coupait un SysEx
+    // en cours. Thread d'émulation (le même que render).
+    void panic();
 
     // Rend `frames` échantillons stéréo entrelacés couvrant la trame émulée
     // [frameStartCycle, frameStartCycle + frameCycles) et les AJOUTE à `lr`.

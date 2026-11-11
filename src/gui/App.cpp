@@ -49,23 +49,76 @@ App& app() {
     return instance;
 }
 
-// Retire du ST ce que l'AUTO-PLUG avait posé, et rien d'autre (cf. App::autoPortDev
-// et App::autoCartKey, où le pourquoi est écrit).
-void autoDongleRetract(App& A, Machine& machine, Config& cfg) {
+// Identifiants dongle= de neost.cfg, dans l'ordre de CartridgeKey::Model.
+static const char* const kDongleIds[] = { "", "cubase2", "cubase3", "auto", "notator" };
+static CartridgeKey::Model dongleFromId(const std::string& s) {
+    for (int i = 1; i < 5; ++i) if (s == kDongleIds[i]) return CartridgeKey::Model(i);
+    return CartridgeKey::Model::None;
+}
+
+// Auto-plug accordé à l'image du lecteur A (cf. App.hpp). Deux règles, et leur pourquoi :
+//  · Changer de disquette ne déplace JAMAIS une clé. Une vraie clé reste dans son port
+//    quand on insère le disque 2 de Cubase ; l'ancienne version la retirait puis la
+//    rebranchait à chaque montage — remise à zéro de sa machine d'états en plein
+//    programme, bascules désynchronisées de celles que Cubase avait déjà lues.
+//  · Le retrait n'a lieu qu'au reset machine explicite : c'est là que l'utilisateur
+//    change de programme, et qu'une clé Leader Board oubliée sur le port 1 (HAUT+BAS
+//    forcés, cf. PortDevices::joyOverlay) casserait la manette du jeu suivant.
+//    On ne retire que ce que l'auto-plug a posé ET qui n'a pas bougé depuis : la page
+//    Dongles reste souveraine.
+std::string autoDongleSync(App& A, Machine& machine, Config& cfg,
+                           const std::string& image, bool atReset, bool& changed) {
+    changed = false;
+    std::vector<neost::DongleRule> rules;
+    if (cfg.autoDongle && !image.empty())
+        rules = neost::matchDongleRules(A.loadDongleTable(), image);
     std::string* slots[] = { &cfg.joy0, &cfg.joy1, &cfg.rs232, &cfg.printer, &cfg.cartbutton };
-    for (int p = 0; p < int(PortDevices::Port::Count); ++p) {
-        const PortDevices::Device d = A.autoPortDev[p];
-        if (d == PortDevices::Device::None) continue;
-        A.autoPortDev[p] = PortDevices::Device::None;
-        if (machine.ports.at(PortDevices::Port(p)) != d) continue;   // l'utilisateur l'a changé
-        machine.plugPort(PortDevices::Port(p), PortDevices::Device::None);
-        slots[p]->clear();
+    if (atReset) {
+        for (int p = 0; p < int(PortDevices::Port::Count); ++p) {
+            const PortDevices::Device d = A.autoPortDev[p];
+            if (d == PortDevices::Device::None) continue;
+            bool stillWanted = false;
+            for (const auto& r : rules)
+                if (!r.cart && int(r.port) == p && r.dev == d) stillWanted = true;
+            if (stillWanted) continue;                                   // même image, même clé : on n'y touche pas
+            A.autoPortDev[p] = PortDevices::Device::None;
+            if (machine.ports.at(PortDevices::Port(p)) != d) continue;   // l'utilisateur l'a changé
+            machine.plugPort(PortDevices::Port(p), PortDevices::Device::None);
+            slots[p]->clear();
+            changed = true;
+        }
+        if (A.autoCartKey != CartridgeKey::Model::None) {
+            const CartridgeKey::Model k = A.autoCartKey;
+            bool stillWanted = false;
+            for (const auto& r : rules) if (r.cart && r.key == k) stillWanted = true;
+            if (!stillWanted) {
+                A.autoCartKey = CartridgeKey::Model::None;
+                if (machine.dongle.model() == k) {
+                    machine.setDongle(CartridgeKey::Model::None);
+                    cfg.dongle.clear();
+                    changed = true;
+                }
+            }
+        }
     }
-    if (A.autoCartKey != CartridgeKey::Model::None) {
-        const CartridgeKey::Model k = A.autoCartKey;
-        A.autoCartKey = CartridgeKey::Model::None;
-        if (machine.dongle.model() == k) { machine.setDongle(CartridgeKey::Model::None); cfg.dongle.clear(); }
+    // Ce que l'image désigne : les emplacements LIBRES seulement, et rien n'est
+    // rebranché s'il est déjà là (setDongle/plugPort remettraient l'appareil à zéro).
+    std::string plugged;
+    for (const auto& r : rules) {
+        if (r.cart) {
+            if (machine.dongle.model() == r.key) continue;
+            if (machine.dongle.attached() || !machine.setDongle(r.key)) continue;
+            cfg.dongle = kDongleIds[int(r.key)]; A.autoCartKey = r.key; changed = true;
+            plugged += std::string(plugged.empty() ? "" : ", ") + "cartridge key " + cfg.dongle;
+        } else {
+            if (machine.ports.at(r.port) == r.dev) continue;
+            if (machine.ports.at(r.port) != PortDevices::Device::None || !machine.plugPort(r.port, r.dev)) continue;
+            *slots[int(r.port)] = PortDevices::id(r.dev);
+            A.autoPortDev[int(r.port)] = r.dev; changed = true;
+            plugged += std::string(plugged.empty() ? "" : ", ") + PortDevices::label(r.dev) + " on " + PortDevices::portId(r.port);
+        }
     }
+    return plugged;
 }
 
 // Résout un chemin de données indépendamment du répertoire courant : tel quel,
@@ -75,6 +128,33 @@ void autoDongleRetract(App& A, Machine& machine, Config& cfg) {
 bool fileExists(const std::string& p) {
     std::error_code ec;
     return std::filesystem::exists(p, ec) && !ec;
+}
+
+// Mêmes bornes que Bus::loadTos (1 octet à 1 Mo, la fenêtre ROM à $E00000) : ce qui
+// passe ici sera chargé, ce qui échoue ici aurait laissé l'ancienne ROM en place.
+bool romLoadable(const std::string& p) {
+    std::error_code ec;
+    if (!fs::is_regular_file(p, ec) || ec) return false;
+    const std::uintmax_t n = fs::file_size(p, ec);
+    return !ec && n > 0 && n <= 1024u * 1024u;
+}
+
+// [C] En-tête système du TOS (TOS 1.00 à 4.x, EmuTOS) : un BRA.S vers le code de
+// démarrage en premier mot — $601E sur TOS 1.00, dont l'en-tête est plus court,
+// $602E ensuite (relevé sur les images de roms/ : tos100*.img = $601E, tos102 à
+// tos206 et etos* = $602E) — puis la version en mot big-endian à l'offset 2
+// (cf. Machine::adjustMachineForTos). Ne tester que $602E rangeait TOS 1.00 parmi
+// les disques durs ACSI au glisser-déposer.
+bool looksLikeTosHeader(const std::string& path, std::uintmax_t& size) {
+    std::error_code ec;
+    size = fs::file_size(path, ec);
+    if (ec) { size = 0; return false; }
+    uint8_t h[4] = {0, 0, 0, 0};
+    std::ifstream f(path, std::ios::binary);
+    if (!f || !f.read(reinterpret_cast<char*>(h), 4)) return false;
+    if (h[0] != 0x60 || (h[1] != 0x1E && h[1] != 0x2E)) return false;
+    const unsigned ver = (unsigned(h[2]) << 8) | h[3];
+    return ver >= 0x0100 && ver <= 0x04FF;     // TOS 1.00 (1985) .. 4.x (Falcon)
 }
 // Un chemin ABSOLU ne se combine avec rien : le préfixer d'un dossier de base est
 // exactement ce qui produisait « C:\…\NeoST\C:\Temp\atari » sous Windows (issue #37).
@@ -331,6 +411,61 @@ void App::netUsbeeApply(bool on) {
     }
 }
 
+// Réseau → clé cartouche → périphériques des ports : l'ordre du démarrage, désormais
+// écrit UNE fois. Le chargement d'un profil le refaisait à la main, dans un autre
+// ordre et à moitié : le réseau était branché AVANT que le rebuild ne change la
+// cartouche (etherApply voyait l'ancienne, refusait et persistait ethernec=0), la clé
+// et les ports du profil n'étaient jamais appliqués (page Dongles cochant une clé
+// absente). Or depuis le format de save-state v60 la clé et les ports font partie de
+// l'en-tête : `cfg` et la machine en désaccord refusaient des états sans raison
+// visible. À appeler APRÈS applyConfig (cartouche et disques durs en place).
+void App::applyPeripherals() {
+    App& A = *this;
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    // Clé et réseau s'excluent (même fenêtre du port cartouche, cf. Machine::setDongle).
+    // Une clé qui doit partir part AVANT le réseau, sinon etherApply la verrait encore
+    // et refuserait ; et quand le réseau est voulu, le réseau prime — comme au
+    // démarrage, où il est branché le premier. Une clé déjà en place et toujours
+    // voulue n'est pas débranchée : la rebrancher la remettrait à zéro.
+    const CartridgeKey::Model wantKey = dongleFromId(cfg.dongle);
+    if (machine.dongle.model() != wantKey || cfg.ethernec || cfg.netusbee)
+        machine.setDongle(CartridgeKey::Model::None);
+#ifdef NEOST_WITH_NET
+    A.modemApply(cfg.modem);
+#endif
+    A.natApply(cfg.slirp);                // AVANT : les applicateurs lisent A.neBackend()
+    A.netUsbeeApply(cfg.netusbee);
+    A.etherApply(cfg.ethernec);
+    // Un refus d'etherApply/netUsbeeApply (cartouche ou HD GEMDOS en place) remet le
+    // réglage à faux SANS débrancher une carte d'une session précédente : on aligne
+    // le matériel sur le réglage, sinon la NE2000 resterait sous la cartouche.
+    if (!cfg.netusbee && machine.netUsbeeEnabled()) machine.disableNetUsbee();
+    if (!cfg.ethernec && !cfg.netusbee && machine.ne2000.enabled()) machine.disableEtherNec();
+    machine.midi.setLoopback(cfg.midiLoopback);   // fiche MIDI OUT→IN (OFF par défaut)
+    // Clé Steinberg (dongle= dans neost.cfg) : /ROM3, cohabite avec le HD GEMDOS.
+    if (wantKey != CartridgeKey::Model::None && machine.dongle.model() != wantKey
+        && !machine.setDongle(wantKey)) {
+        A.stateMsg = "Steinberg key needs the cartridge port free (EtherNEC/NetUSBee)";
+        A.stateMsgFrames = 150;
+        cfg.dongle.clear();
+    }
+    // Périphériques des ports (joy0= … cartbutton= dans neost.cfg). Un port déjà garni
+    // du bon appareil n'est pas rebranché (même raison que la clé).
+    std::string* slots[] = { &cfg.joy0, &cfg.joy1, &cfg.rs232, &cfg.printer, &cfg.cartbutton };
+    for (int pi = 0; pi < int(PortDevices::Port::Count); ++pi) {
+        PortDevices::Device d = PortDevices::Device::None;
+        if (!slots[pi]->empty()) {
+            d = PortDevices::fromId(slots[pi]->c_str());
+            if (d == PortDevices::Device::None) slots[pi]->clear();   // identifiant inconnu : on oublie
+        }
+        if (machine.ports.at(PortDevices::Port(pi)) == d) continue;
+        if (!machine.plugPort(PortDevices::Port(pi), d))
+            slots[pi]->clear();               // connecteur inadapté : on oublie
+    }
+    machine.psg.setPortBDacGain(cfg.mixDac);
+}
+
 void App::midiOutApply() {
     App& A = *this;
     Machine& machine = *A.machine;
@@ -447,15 +582,47 @@ void App::applyConfig() {
     Machine& machine = *A.machine;
     Config& cfg = A.cfg;
     const std::string& exeDir = A.exeDir;
-    const std::string romP = resolveData(cfg.rom, exeDir);
+    // Retour à la configuration qui tournait : un modèle n'est JAMAIS appliqué sans
+    // sa ROM. Avant, reconfigure() posait le nouveau modèle, loadTos échouait, l'ancienne
+    // ROM restait — machine hybride — et le rom= manquant, déjà persisté, valait
+    // « Starting without a TOS » au lancement suivant. Les appelants vérifient la ROM
+    // avant de demander le rebuild ; ceci est le filet du dernier recours.
+    auto revertToApplied = [&](const std::string& badRom) {
+        std::fprintf(stderr, "[main] WARNING ROM not loadable: %s — keeping the previous "
+                             "machine (%s, %s)\n", badRom.c_str(),
+                     A.hwMachine.c_str(), A.hwRom.c_str());
+        A.stateMsg = "ROM not found: " + fs::path(badRom).filename().string()
+                   + " - previous machine kept";
+        A.stateMsgFrames = 300;
+        cfg.rom = A.hwRom; cfg.machine = A.hwMachine; cfg.mem = A.hwMem; cfg.fpu = A.hwFpu;
+        saveConfig(A, exeDir, cfg, &machine);
+        A.cfgUiResync = true;
+    };
+    std::string romP = resolveData(cfg.rom, exeDir);
+    if (!romLoadable(romP) && A.hwValid) {
+        revertToApplied(romP);
+        romP = resolveData(cfg.rom, exeDir);
+    }
     // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
-    const MachineType machTypeR = Machine::adjustMachineForTos(parseMachine(cfg.machine), romP);
+    MachineType machTypeR = Machine::adjustMachineForTos(parseMachine(cfg.machine), romP);
     machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu), machTypeR);
-    if (!machine.loadTos(romP))
-        // ROM absente/illisible (profil pointant un TOS non installé) : l'ANCIENNE
-        // ROM reste chargée — on le dit au lieu de laisser croire au nouveau profil.
+    bool romOk = machine.loadTos(romP);
+    if (!romOk && A.hwValid && resolveData(A.hwRom, exeDir) != romP) {
+        // La ROM a passé le premier test puis échoué (fichier retiré entre-temps) :
+        // même retour, cette fois après coup.
+        revertToApplied(romP);
+        romP = resolveData(cfg.rom, exeDir);
+        machTypeR = Machine::adjustMachineForTos(parseMachine(cfg.machine), romP);
+        machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu), machTypeR);
+        romOk = machine.loadTos(romP);
+    }
+    if (romOk) {
+        A.hwRom = cfg.rom; A.hwMachine = cfg.machine; A.hwMem = cfg.mem; A.hwFpu = cfg.fpu;
+        A.hwValid = true;
+    } else {
         std::fprintf(stderr, "[main] WARNING ROM not found: %s — the previous ROM stays active\n",
                      romP.c_str());
+    }
     neost::stkeys::setCountryFromTos(machine.bus.rom);   // la nouvelle ROM peut changer de pays clavier
     if (cfg.cart.empty()) machine.ejectCart();
     else                  machine.loadCart(resolveData(cfg.cart, exeDir));
@@ -561,6 +728,7 @@ void App::switchKioskMode(bool on) {
         // GUI → KIOSK. La config est GELÉE en kiosk : on persiste d'abord l'état
         // courant, sinon les préférences de la session seraient perdues.
         cfg.disk = machine.fdc.mountedPath();
+        cfg.diskb = machine.fdc.mountedPath(1);   // le lecteur B se persiste comme le A
         cfg.cart = machine.bus.mountedCartPath();
         cfg.mono = !machine.mfp.colorMonitor();
         cfg.showHex  = A.showHex;

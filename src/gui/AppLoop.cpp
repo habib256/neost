@@ -109,6 +109,11 @@ struct Frame {
     int kTop = 0, kH = 0, kW = 0;
     // Requêtes appliquées en fin de tour, hors rendu ImGui.
     bool reqReset = false, reqHardReset = false, reqRebuild = false;
+    // Hard reset demandé par l'UTILISATEUR (menu, barre, borne) — et non conséquence
+    // d'un montage : seul moment où l'auto-plug retire ce qu'il avait posé.
+    bool userHardReset = false;
+    // Profil chargé : réseau, clé et ports à rejouer APRÈS le rebuild (cf. applyRequests).
+    bool reqPeripherals = false;
     int  reqMonitor = -1;
     ConfigUi* cfgUi = nullptr;   // le `static ConfigUi` de prepareConfigUi (vit HORS de la trame)
     std::string reqMount, reqMountB; bool reqEject = false, reqEjectB = false;
@@ -378,6 +383,13 @@ static void runDueFrames(App& A) {
     // jeu pour qu'il reçoive les touches envoyées) → on gèle l'émulation. À la
     // reprise on recale l'échéance sur maintenant (aucun rattrapage en rafale).
     const bool kioskPaused = A.kiosk && A.kioskDiskMenu && A.kioskPage != KIOSK_PAGE_KEYS;
+    // La borne n'a pas de fenêtre Debugger, donc aucun moyen de reprendre : une pause
+    // posée au bureau puis emportée par Ctrl+Alt+F gèlerait la borne pour de bon.
+    if (A.kiosk && A.dbgPaused) {
+        machine.cpu.clearBreakpointHit();   // skip-once : l'instruction du point d'arrêt passe
+        A.dbgPaused = false;
+        A.dbgStepFrame = A.dbgStepInstr = false;
+    }
     if (kioskPaused || A.dbgPaused) {
         emuNext = clock::now();
         // Débogueur en pause : pas-à-pas TRAME (avance une trame puis reste pausé).
@@ -503,10 +515,48 @@ static void runDueFrames(App& A) {
             emuNext += std::chrono::nanoseconds(
                 neost::pacing::frameNanos(machine.frameCycles()));   // A28 : Pacing.hpp
             ++ran;
-            if (machine.cpu.breakpointHit()) { A.dbgPaused = true; break; }   // débogueur : auto-pause
+            if (machine.cpu.breakpointHit()) {
+                if (A.kiosk) {
+                    // Borne : les points d'arrêt sont ignorés (cf. ci-dessus) — on
+                    // repart aussitôt, la trame interrompue reprend à l'appel suivant.
+                    machine.cpu.clearBreakpointHit();
+                } else {
+                    // Débogueur : auto-pause, et la fenêtre qui permet de reprendre
+                    // revient au premier plan — fermée, la pause était un écran figé
+                    // et muet sans explication.
+                    A.dbgPaused = true;
+                    A.showDbg = true;
+                    break;
+                }
+            }
         }
         if (ran == 6 && clock::now() > emuNext) emuNext = clock::now();  // pause longue : resync
     }
+}
+
+// Rechargement du slot de save-state (F7, menu Machine, page Emulation), avec la
+// RAISON d'un échec. Les trois sites affichaient « No state / failed » : depuis que
+// l'en-tête porte la clé, les ports et le FDC rapide (v60), un état se refuse pour bien
+// des raisons, et l'utilisateur ne pouvait pas savoir laquelle corriger.
+static bool loadQuickState(App& A, const char* okText) {
+    Machine& machine = *A.machine;
+    const std::string path = stateFilePath(A.exeDir);
+    // loadStateFile ne touche pas au motif quand le fichier manque ou ne se lit pas :
+    // sans cette remise à zéro, l'échec suivant afficherait le motif du précédent.
+    machine.lastStateError_.clear();
+    bool ok = false;
+    if (!fileExists(path)) {
+        A.stateMsg = "No saved state yet (F5 saves one)";
+    } else {
+        ok = machine.loadStateFile(path);
+        if (ok)                                    A.stateMsg = okText;
+        else if (!machine.lastStateError().empty()) A.stateMsg = "State refused: " + machine.lastStateError();
+        else                                       A.stateMsg = "State file unreadable";
+    }
+    A.stateMsgFrames = ok ? 120 : 300;            // un refus se lit plus lentement
+    std::fprintf(stderr, "[state] load %s <- %s%s%s\n", ok ? "OK" : "FAILED", path.c_str(),
+                 ok ? "" : " : ", ok ? "" : A.stateMsg.c_str());
+    return ok;
 }
 
 // Save-state rapide F5/F7, à la frontière de trame.
@@ -519,7 +569,7 @@ static void handleQuickState(App& A) {
     {
         // Demandes latchées dans onKey (cf. le commentaire Alt+Entrée : la scrutation
         // glfwGetKey ratait un appui bref posé/relâché entre deux tours).
-        const std::string statePath = exeDir + "/../neost.state";
+        const std::string statePath = stateFilePath(exeDir);
         if (A.saveStateReq) {
             A.saveStateReq = false;
             const bool ok = machine.saveStateFile(statePath);
@@ -529,10 +579,7 @@ static void handleQuickState(App& A) {
         }
         if (A.loadStateReq) {
             A.loadStateReq = false;
-            const bool ok = machine.loadStateFile(statePath);
-            A.stateMsg = ok ? "\xef\x80\x9e State restored (F7)" : "No state / failed";
-            A.stateMsgFrames = 120;
-            std::fprintf(stderr, "[state] load %s ← %s\n", ok ? "OK" : "FAILED", statePath.c_str());
+            loadQuickState(A, "\xef\x80\x9e State restored (F7)");
         }
         if (A.rewindReq) {
             A.rewindReq = false;
@@ -595,6 +642,10 @@ static void prepareConfigUi(App& A, Frame& F) {
     // qui a tranché où vit neost.cfg, et les profils le suivent (cf. profilesDir).
     static const std::string profDirResolved = profilesDir(exeDir);
     cfgUi.profDir = profDirResolved;        // créé à la 1re sauvegarde de profil
+    // cfg.rom/machine/mem changés HORS de la fenêtre (dépôt d'un TOS, repli
+    // d'applyConfig) : ressemer les champs « en attente », sinon « Apply and restart »
+    // remettrait l'ancienne valeur par-dessus.
+    if (A.cfgUiResync) { cfgUi.pendInit = false; A.cfgUiResync = false; }
     F.cfgUi = &cfgUi;
 }
 
@@ -644,7 +695,7 @@ static void drawMenuBar(App& A, Frame& F) {
                 ImGui::MenuItem("MIDI OUT " "\xe2\x86\x92" " Roland MT-32 (needs libmt32emu at build)", nullptr, false, false);
             }
             if (ImGui::MenuItem(ICON_FA_REDO " Reset"))            reqReset = true;
-            if (ImGui::MenuItem(ICON_FA_POWER_OFF " Hard Reset"))  reqHardReset = true;
+            if (ImGui::MenuItem(ICON_FA_POWER_OFF " Hard Reset"))  reqHardReset = F.userHardReset = true;
             ImGui::Separator();
             ImGui::MenuItem(ICON_FA_SAVE " Floppies…", nullptr, &A.showFloppy);
             ImGui::MenuItem(ICON_FA_COG " Configuration…", nullptr, &A.showCfg);
@@ -655,15 +706,12 @@ static void drawMenuBar(App& A, Frame& F) {
             }
             ImGui::Separator();
             if (ImGui::MenuItem(ICON_FA_SAVE " Save state", "F5")) {
-                const bool ok = machine.saveStateFile(exeDir + "/../neost.state");
+                const bool ok = machine.saveStateFile(stateFilePath(exeDir));
                 A.stateMsg = ok ? "\xef\x83\x87 State saved" : "Save failed";
                 A.stateMsgFrames = 120;
             }
-            if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN " Load state", "F7")) {
-                const bool ok = machine.loadStateFile(exeDir + "/../neost.state");
-                A.stateMsg = ok ? "\xef\x80\x9e State restored" : "No state / failed";
-                A.stateMsgFrames = 120;
-            }
+            if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN " Load state", "F7"))
+                loadQuickState(A, "\xef\x80\x9e State restored");
             if (ImGui::MenuItem(ICON_FA_REDO " Rewind", "Ctrl+Alt+R", false, A.rewind.count() > 0))
                 A.rewindReq = true;
             ImGui::Separator();
@@ -783,7 +831,7 @@ static void drawToolbar(App& A, Frame& F) {
     if (IconButton(ICON_FA_REDO, "Reset")) reqReset = true;
     ImGui::SameLine();
     // Reset à froid : efface la ST-RAM → EmuTOS/TOS refait un boot complet.
-    if (IconButton(ICON_FA_POWER_OFF, "Hard Reset")) reqHardReset = true;
+    if (IconButton(ICON_FA_POWER_OFF, "Hard Reset")) reqHardReset = F.userHardReset = true;
     ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
     if (IconButton(color ? ICON_FA_ADJUST : ICON_FA_PALETTE, color ? "Switch to Mono" : "Switch to Color"))
         reqMonitor = color ? 0 : 1;
@@ -853,13 +901,21 @@ static void drawStatusBar(App& A, Frame& F) {
             return p.empty() ? std::string("—") : fs::path(p).filename().string();
         };
         // Modèle + RAM : les deux réglages qui décident si un jeu démarre.
-        const std::string mdl = cfg.machine == "megaste" ? "Mega STE"
-                              : cfg.machine == "ste"     ? "STE"
-                              : cfg.machine == "megast"  ? "Mega ST" : "ST";
+        // Le modèle RÉEL (après adjustMachineForTos), pas cfg.machine : la ROM a le
+        // dernier mot, et afficher le modèle demandé mentait — « STE » en barre pour
+        // une machine qui tournait en ST sous etos192us. L'écart est signalé en orange,
+        // avec sa raison.
+        const MachineType realMdl = machine.machineType();
+        std::string mdl = machineLabel(realMdl), mdlWhy, mdlAdvice;
+        const bool mdlForced = machineForcedByTos(cfg.machine, realMdl, mdlWhy, mdlAdvice);
+        if (mdlForced) mdl += " (" + mdlWhy + ")";
+        const std::string mdlTip = mdlForced
+            ? "Emulated machine model - not the one requested.\n" + mdlAdvice
+            : std::string("Emulated machine model");
         // RAM : la taille RÉELLEMENT installée (pas une liste de noms de cfg.mem,
         // qui retombait sur « 4 MB » pour toute valeur inconnue — 2176k, 2560k).
         const std::string ram = ramDisplayName(machine.bus.ram.size());
-        seg(mdl, kCfgMachine, "Emulated machine model");
+        seg(mdl, kCfgMachine, mdlTip.c_str(), mdlForced);
         seg(ram, kCfgMem,     "Installed ST-RAM");
         seg(fs::path(cfg.rom).stem().string(), kCfgRom, "TOS image in ROM");
         // Le balayage est DÉDUIT de la ROM ; on le signale en orange en 60 Hz, la
@@ -895,10 +951,8 @@ static void drawStatusBar(App& A, Frame& F) {
 
 // Dessin, chrome du bureau : état partagé par Floppies et Configuration.
 static void syncConfigUi(App& A, Frame& F) {
-    using clock = std::chrono::steady_clock;
     Machine& machine = *A.machine;
     Config& cfg = A.cfg;
-    const std::string& exeDir = A.exeDir;
     MidiOutHost& midiOut = *A.midiOut;
     MidiInHost& midiIn = *A.midiIn;
     Mt32Synth& mt32 = *A.mt32;
@@ -922,9 +976,33 @@ static void syncConfigUi(App& A, Frame& F) {
     cfgUi.curSd2    = cfg.sd2.empty()    ? std::string() : A.resolvePath(cfg.sd2);
     cfgUi.mt32Status = mt32.isOpen() ? (mt32.model() + " running") : mt32.lastError();
     cfgUi.gmStatus = gm.isOpen() ? (gm.soundFont() + " running") : gm.lastError();
-    // Appareils MIDI hôtes : énumération et RECONNEXION à 1 Hz. Le débranchement
-    // d'un câble USB ne doit pas demander de rouvrir la configuration, et 60
-    // énumérations CoreMIDI par seconde pour deux menus seraient du gaspillage.
+    // (L'énumération et la reconnexion des appareils MIDI vivent dans pollMidiDevices,
+    // appelée dans TOUS les modes — cf. là-bas.)
+    cfgUi.midiOutOpen   = midiOut.openDestinations();
+    cfgUi.midiInOpen    = midiIn.openNames();
+    cfgUi.midiInBytes   = midiIn.delivered();
+    cfgUi.midiLateBytes = midiOut.lateBytes();
+    if (!cfgUi.mixInit) {            // sème les faders depuis la config (une fois)
+        cfgUi.mixYm = cfg.mixYm; cfgUi.mixDma = cfg.mixDma; cfgUi.mixDac = cfg.mixDac;
+        cfgUi.mixDrive = cfg.mixDrive; cfgUi.mixMt32 = cfg.mixMt32; cfgUi.mixGm = cfg.mixGm;
+        cfgUi.mixInit = true;
+    }
+}
+
+// Appareils MIDI hôtes : énumération et RECONNEXION à 1 Hz. Le débranchement d'un
+// câble USB ne doit pas demander de rouvrir la configuration, et 60 énumérations
+// CoreMIDI par seconde pour deux menus seraient du gaspillage.
+// Appelée à CHAQUE tour, quel que soit le mode : elle vivait dans syncConfigUi, que
+// seul le chrome du BUREAU appelle — en plein écran et en borne, un clavier USB-MIDI
+// rebranché restait muet jusqu'au retour au bureau.
+static void pollMidiDevices(App& A, Frame& F) {
+    using clock = std::chrono::steady_clock;
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    MidiOutHost& midiOut = *A.midiOut;
+    MidiInHost& midiIn = *A.midiIn;
+    ConfigUi& cfgUi = *F.cfgUi;
     {
         static auto lastMidiScan = clock::now() - std::chrono::seconds(2);
         if (clock::now() - lastMidiScan >= std::chrono::seconds(1)) {
@@ -952,15 +1030,6 @@ static void syncConfigUi(App& A, Frame& F) {
             // identifiant : on le retient, et on ne persiste que si on a appris.
             if (A.midiLearnUids()) saveConfig(A, exeDir, cfg, &machine);
         }
-    }
-    cfgUi.midiOutOpen   = midiOut.openDestinations();
-    cfgUi.midiInOpen    = midiIn.openNames();
-    cfgUi.midiInBytes   = midiIn.delivered();
-    cfgUi.midiLateBytes = midiOut.lateBytes();
-    if (!cfgUi.mixInit) {            // sème les faders depuis la config (une fois)
-        cfgUi.mixYm = cfg.mixYm; cfgUi.mixDma = cfg.mixDma; cfgUi.mixDac = cfg.mixDac;
-        cfgUi.mixDrive = cfg.mixDrive; cfgUi.mixMt32 = cfg.mixMt32; cfgUi.mixGm = cfg.mixGm;
-        cfgUi.mixInit = true;
     }
 }
 
@@ -1111,18 +1180,16 @@ static void consumeConfigRequests(App& A, Frame& F) {
         }
     }
     // Panique : on la passe À TOUTES les destinations. Le MT-32 et le synthé GM
-    // intégré sont des synthés à part (ils ne voient pas le flux de MidiOutHost),
-    // donc leur envoyer les mêmes contrôleurs est le seul moyen de les faire taire.
+    // intégré sont des synthés à part (ils ne voient pas le flux de MidiOutHost) :
+    // leur panic() agit sur le moteur lui-même. Les contrôleurs étaient autrefois
+    // injectés par byteAt, dans le parseur du flux de l'ACIA — running status laissé
+    // sur $BF (la note suivante du programme devenait un contrôleur) et SysEx en
+    // cours coupé.
     if (cfgUi.reqMidiPanic) {
         cfgUi.reqMidiPanic = false;
         midiOut.panic();
-        for (int ch = 0; ch < 16; ++ch) {
-            const uint8_t st = uint8_t(0xB0 | ch);
-            for (uint8_t cc : {uint8_t(120), uint8_t(121), uint8_t(123)}) {
-                mt32.byteAt(st, 0); mt32.byteAt(cc, 0); mt32.byteAt(0, 0);
-                gm.byteAt(st, 0);   gm.byteAt(cc, 0);   gm.byteAt(0, 0);
-            }
-        }
+        mt32.panic();
+        gm.panic();
         A.stateMsg = "MIDI panic: all notes off"; A.stateMsgFrames = 120;
     }
     if (cfgUi.reqMt32Model >= 0) {
@@ -1171,29 +1238,40 @@ static void consumeConfigRequests(App& A, Frame& F) {
         cfg.rewind = cfgUi.rewind;       // persisté par cfgDirty (la case l'a levé)
     }
     if (cfgUi.reqSaveState) {
-        const bool ok = machine.saveStateFile(exeDir + "/../neost.state");
+        const bool ok = machine.saveStateFile(stateFilePath(exeDir));
         A.stateMsg = ok ? "\xef\x83\x87 State saved" : "Save failed";
         A.stateMsgFrames = 120; cfgUi.reqSaveState = false;
     }
     if (cfgUi.reqLoadState) {
-        const bool ok = machine.loadStateFile(exeDir + "/../neost.state");
-        A.stateMsg = ok ? "\xef\x80\x9e State restored" : "No state / failed";
-        A.stateMsgFrames = 120; cfgUi.reqLoadState = false;
+        loadQuickState(A, "\xef\x80\x9e State restored");
+        cfgUi.reqLoadState = false;
     }
     // « Appliquer et redémarrer » : les quatre réglages matériels d'un coup,
     // UN seul rebuild. Mega STE + TOS trop ancien → on remonte un TOS ≥ 2.06,
     // sinon « choisir Mega STE » redonnait un simple STE (cf. pickTosForMachine).
     if (cfgUi.reqApply) {
-        cfg.machine = cfgUi.pendMachine;
-        cfg.mem     = cfgUi.pendMem;
-        cfg.fpu     = cfgUi.pendFpu;
-        cfg.rom     = cfgUi.pendRom;
-        const std::string autoRom = pickTosForMachine(cfg.machine, cfg.rom, exeDir, romsDir);
-        if (!autoRom.empty()) cfg.rom = autoRom;
-        saveConfig(A, exeDir, cfg, &machine);
-        reqRebuild = true;
         cfgUi.reqApply = false;
-        cfgUi.pendInit = false;      // resème depuis la config appliquée
+        std::string rom = cfgUi.pendRom;
+        const std::string autoRom = pickTosForMachine(cfgUi.pendMachine, rom, exeDir, romsDir);
+        if (!autoRom.empty()) rom = autoRom;
+        // ROM vérifiée AVANT de toucher à cfg : un préréglage dont aucun candidat n'est
+        // installé (pickPresetRom rend alors le premier) ou une ROM retirée depuis la
+        // sélection laissaient le modèle appliqué sans sa ROM, et le rom= fantôme était
+        // déjà persisté. Refus : rien ne change, les champs en attente restent affichés.
+        if (!romLoadable(resolveData(rom, exeDir))) {
+            A.stateMsg = "ROM not found: " + fs::path(rom).filename().string()
+                       + " - machine unchanged";
+            A.stateMsgFrames = 300;
+            std::fprintf(stderr, "[cfg] apply refused: ROM %s not loadable\n", rom.c_str());
+        } else {
+            cfg.machine = cfgUi.pendMachine;
+            cfg.mem     = cfgUi.pendMem;
+            cfg.fpu     = cfgUi.pendFpu;
+            cfg.rom     = rom;
+            saveConfig(A, exeDir, cfg, &machine);
+            reqRebuild = true;
+            cfgUi.pendInit = false;      // resème depuis la config appliquée
+        }
     }
     if (cfgUi.cfgDirty) {
         cfg.autoZoom = A.autoZoom;
@@ -1260,6 +1338,36 @@ static void consumeProfileRequests(App& A, Frame& F) {
         // la borne) doit rester en place.
         Config p = cfg;
         if (loadProfileInto(cfgUi.profDir, cfgUi.reqLoadProfile, p)) {
+            // Tout ce que le profil désigne sur le disque est vérifié AVANT d'être
+            // appliqué. L'invariant des montages vaut ici aussi : on ne persiste QU'un
+            // support présent, sinon le fantôme est retenté à chaque démarrage. Ce qui
+            // manque garde la valeur en place, et on le dit.
+            std::vector<std::string> missing;
+            auto note = [&](const char* what, const std::string& path) {
+                missing.push_back(std::string(what) + " " + fs::path(path).filename().string());
+            };
+            // ROM absente : la BASCULE MATÉRIELLE est refusée en bloc (modèle, RAM, FPU,
+            // ROM restent ceux qui tournent). Appliquer le modèle sans sa ROM laissait
+            // une machine hybride, puis « Starting without a TOS » au lancement suivant.
+            if (p.rom != cfg.rom && !romLoadable(resolveData(p.rom, exeDir))) {
+                note("ROM", p.rom);
+                p.rom = cfg.rom; p.machine = cfg.machine; p.mem = cfg.mem; p.fpu = cfg.fpu;
+            }
+            if (!p.cart.empty() && p.cart != cfg.cart && !fileExists(resolveData(p.cart, exeDir))) {
+                note("cartridge", p.cart);
+                p.cart = cfg.cart;
+            }
+            if (!p.gemdos.empty() && p.gemdos != cfg.gemdos) {
+                std::error_code gec;
+                if (!fs::is_directory(A.resolvePath(p.gemdos), gec)) { note("GEMDOS folder", p.gemdos); p.gemdos = cfg.gemdos; }
+            }
+            if (!p.acsi.empty() && p.acsi != cfg.acsi && !fileExists(A.resolvePath(p.acsi))) {
+                note("ACSI image", p.acsi);
+                p.acsi = cfg.acsi;
+            }
+            // Cartouche et HD GEMDOS s'excluent ($FA0000) : si l'un des deux a été gardé
+            // de l'ancienne config, le HD GEMDOS prime, comme au démarrage (AppInit).
+            if (!p.gemdos.empty() && !p.cart.empty()) p.cart.clear();
             const std::string prevA = cfg.disk, prevB = cfg.diskb;
             cfg = p;
             // Réglages à effet immédiat (le matériel, lui, part au rebuild ci-dessous).
@@ -1275,41 +1383,40 @@ static void consumeProfileRequests(App& A, Frame& F) {
             audio.setMasterVolume(cfg.volume);
             driveSoundOn = driveSoundAvail && cfg.driveSound;
             drive.setEnabled(driveSoundOn);
+            // Retour arrière et avance MIDI : rejoués ici comme au démarrage — le
+            // profil les portait, la session gardait les anciens.
+            A.rewind.setEnabled(cfg.rewind || A.rewindAt > 0);
+            A.midiOut->setLeadMs(cfg.midiLeadMs);
             // Disquettes : A.applyConfig() ne touche PAS aux lecteurs (« le disque
             // monté est conservé ») → on monte/éjecte explicitement ce que dit le
             // profil, par les requêtes normales de montage.
-            // Une image DISPARUE depuis l'enregistrement du profil ne doit pas
-            // s'inscrire dans neost.cfg : l'invariant des montages est qu'on ne
-            // persiste QU'un montage réussi, sinon le fantôme est retenté à chaque
-            // démarrage. Le lecteur garde alors ce qu'il avait, et on le dit.
-            std::string missing;
             auto wantDisk = [&](std::string& want, const std::string& prev,
                                 std::string& reqMountSlot, bool& reqEjectSlot) {
                 if (want == prev) return;
                 if (want.empty()) { reqEjectSlot = true; return; }
                 const std::string img = resolveData(want, exeDir);
                 if (fileExists(img)) { reqMountSlot = img; return; }
-                if (missing.empty()) missing = want;
+                note("floppy", want);
                 want = prev;
             };
             wantDisk(cfg.disk,  prevA, reqMount,  reqEject);
             wantDisk(cfg.diskb, prevB, reqMountB, reqEjectB);
-            // Réseau : le profil porte modem=/ethernec= mais ni applyConfig
-            // ni le rebuild ne les branchent — sans ces appels, les cases
-            // affichaient l'état du profil alors que le matériel restait
-            // celui d'avant (modem coché mais AT dans le vide…).
-#ifdef NEOST_WITH_NET
-            A.modemApply(cfg.modem);
-#endif
-            A.natApply(cfg.slirp);
-            A.netUsbeeApply(cfg.netusbee);
-            A.etherApply(cfg.ethernec);
-            // Son/MIDI du profil : sorties (GM/CoreMIDI/MT-32 + modèle), câble de
-            // bouclage, faders — rejoués ici, et la page Sound ressème ses faders.
+            // Le profil est un choix EXPLICITE de clé et de périphériques : ce que
+            // l'auto-plug avait posé n'est plus « à lui » (il ne le retirera pas au
+            // prochain reset). Le montage du profil, plus bas dans la trame, remarque
+            // ce que dongles.txt explique pour la nouvelle disquette.
+            A.autoCartKey = CartridgeKey::Model::None;
+            for (auto& d : A.autoPortDev) d = PortDevices::Device::None;
+            // Réseau, clé cartouche, périphériques des ports : APRÈS le rebuild, qui
+            // pose la cartouche et les disques durs du profil (cf. applyRequests et
+            // App::applyPeripherals). Branché ici, le réseau voyait l'ANCIENNE
+            // cartouche, refusait, et persistait ethernec=0.
+            F.reqPeripherals = true;
+            // Son/MIDI du profil : sorties (GM/CoreMIDI/MT-32 + modèle), faders —
+            // rejoués ici, et la page Sound ressème ses faders.
             mt32.close();
             gm.close();
             A.midiOutApply();
-            machine.midi.setLoopback(cfg.midiLoopback);
             audio.setMixGains(cfg.mixYm, cfg.mixDma, cfg.mixDrive, cfg.mixMt32, cfg.mixGm);
             machine.psg.setPortBDacGain(cfg.mixDac);
             cfgUi.mixInit = false;
@@ -1317,10 +1424,15 @@ static void consumeProfileRequests(App& A, Frame& F) {
             saveConfig(A, exeDir, cfg, &machine);
             reqRebuild = true;        // modèle/RAM/FPU/ROM/cartouche/HD/moniteur/FDC (+ UltraSatan)
             cfgUi.pendInit = false;   // resème les champs « en attente »
-            A.stateMsg = missing.empty()
-                ? "\xef\x80\x9e Profile loaded: " + cfgUi.reqLoadProfile
-                : "Profile loaded — missing floppy: "
-                      + fs::path(missing).filename().string();
+            if (missing.empty()) {
+                A.stateMsg = "\xef\x80\x9e Profile loaded: " + cfgUi.reqLoadProfile;
+            } else {
+                std::string list;
+                for (const auto& m : missing) list += (list.empty() ? "" : ", ") + m;
+                A.stateMsg = "Profile loaded, kept current settings for missing " + list;
+                std::fprintf(stderr, "[cfg] profile %s: missing %s\n",
+                             cfgUi.reqLoadProfile.c_str(), list.c_str());
+            }
         } else {
             A.stateMsg = "Profile not readable";
             A.profilesDirty = true;   // disparu du dossier ? on relit la liste
@@ -1761,7 +1873,7 @@ static void runKioskMenu(App& A, Frame& F) {
                     if (nd > 0) reqMount = A.kioskDisks[std::min(std::max(0, A.kioskDiskSel), nd - 1)];  // INSÉRER à chaud
                 } else {
                     switch (A.kioskActSel) {
-                        case 0: reqHardReset = true;              // Redémarrer
+                        case 0: reqHardReset = F.userHardReset = true;   // Redémarrer
                                 A.kioskDiskMenu = false; break;
                         case 1: A.kioskPage = KIOSK_PAGE_KEYS;    // Clavier & souris
                                 A.kioskKeySel = 0; break;
@@ -1835,11 +1947,53 @@ static void drawOverlays(App& A) {
             ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.40f, 1.0f),
                                "$%06X is %s - absent from the \"%s\" profile.",
                                f.addr & 0xFFFFFFu, miss.chip, machineName(machine.machineType()));
-            ImGui::TextDisabled("This program needs machine = %s. Set it in Configuration "
-                                "> Machine, then reset.", miss.needs);
+            // Le modèle DEMANDÉ porte-t-il déjà la puce ? Alors c'est la ROM qui a
+            // abaissé la machine, et conseiller « choisissez STE » à qui l'a déjà
+            // choisi tournait en rond : on parle de la ROM.
+            std::string why, advice;
+            MissingHw missReq{};
+            const MachineType reqMdl = A.cfg.machine == "st"      ? MachineType::St
+                                     : A.cfg.machine == "megast"  ? MachineType::MegaSt
+                                     : A.cfg.machine == "megaste" ? MachineType::MegaSte
+                                                                  : MachineType::Ste;
+            if (machineForcedByTos(A.cfg.machine, machine.machineType(), why, advice)
+                && !mmioNeedsBetterMachine(f.addr, reqMdl, missReq)) {
+                ImGui::TextDisabled("%s is selected, but %s: the machine runs as %s.",
+                                    machineLabel(reqMdl), why.c_str(),
+                                    machineLabel(machine.machineType()));
+                ImGui::TextDisabled("%s Then reset.", advice.c_str());
+            } else {
+                ImGui::TextDisabled("This program needs machine = %s. Set it in Configuration "
+                                    "> Machine, then reset.", miss.needs);
+            }
         } else {
             ImGui::TextDisabled("Reset to restart. If a demo does this, check the machine profile first.");
         }
+        ImGui::End();
+    }
+
+    // Pause du DÉBOGUEUR : elle survit à la fermeture de la fenêtre Debugger, qui
+    // était seule à afficher « PAUSED » — écran figé et muet, indiscernable d'un
+    // plantage. Bandeau en haut de l'écran ST tant que la pause dure, avec la sortie.
+    if (A.dbgPaused) {
+        const ImGuiIO& io = ImGui::GetIO();
+        const ImVec2 at = A.stRectValid
+            ? ImVec2((A.stRectX0 + A.stRectX1) * 0.5f, A.stRectY0 + 8.0f)
+            : ImVec2(io.DisplaySize.x * 0.5f, 40.0f);
+        ImGui::SetNextWindowPos(at, ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+        ImGui::SetNextWindowBgAlpha(0.85f);
+        ImGui::Begin("##dbgpaused", nullptr,
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                     ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoSavedSettings |
+                     ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f),
+                           ICON_FA_PAUSE " Paused (debugger) - PC=$%06X", machine.cpu.pc());
+        if (A.fullscreen)
+            ImGui::TextDisabled("Alt+Enter leaves full screen; Continue in the Debugger window.");
+        else if (A.showDbg)
+            ImGui::TextDisabled("Continue or step in the Debugger window.");
+        else
+            ImGui::TextDisabled("Windows > Debugger, then Continue.");
         ImGui::End();
     }
 
@@ -1871,6 +2025,19 @@ static void renderImGui(App& A, Frame& F) {
     ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 }
 
+// Deux chemins désignent-ils le MÊME fichier ? Canonique d'abord (equivalent : liens,
+// « ./ », casse d'un système de fichiers qui l'ignore), lexical en repli quand l'un
+// des deux n'existe pas (equivalent rend alors une erreur).
+static bool sameHostFile(const std::string& a, const std::string& b) {
+    if (a.empty() || b.empty()) return false;
+    std::error_code ec;
+    if (fs::equivalent(a, b, ec) && !ec) return true;
+    std::error_code e1, e2;
+    const fs::path ca = fs::weakly_canonical(a, e1), cb = fs::weakly_canonical(b, e2);
+    if (!e1 && !e2) return ca == cb;
+    return fs::path(a).lexically_normal() == fs::path(b).lexically_normal();
+}
+
 // Glisser-déposer → requêtes de montage.
 static void handleDrops(App& A, Frame& F) {
     Machine& machine = *A.machine;
@@ -1878,38 +2045,72 @@ static void handleDrops(App& A, Frame& F) {
     const std::string& exeDir = A.exeDir;
     bool& reqRebuild = F.reqRebuild;
     std::string& reqMount = F.reqMount;
+    std::string& reqMountB = F.reqMountB;
     std::string& reqMountCart = F.reqMountCart;
     std::string& reqMountGemdos = F.reqMountGemdos;
     std::string& reqMountAcsi = F.reqMountAcsi;
     // --- Glisser-déposer : le TYPE du support décide de la destination ----
-    // Un DOSSIER = lecteur GEMDOS (C:), une image disquette = lecteur A, une image
-    // de disque dur = ACSI, un TOS = ROM, une petite image = cartouche. Traité ICI,
-    // juste avant la consommation des requêtes, pour que le montage prenne effet
-    // dans la même trame. Ignoré en BORNE : sa config est figée (cf. saveConfig) et
-    // un visiteur n'a de toute façon pas de bureau d'où glisser un fichier.
+    // Un DOSSIER = lecteur GEMDOS (C:), une image disquette = lecteur A (la deuxième
+    // = lecteur B), une image de disque dur = ACSI, un TOS = ROM, une petite image =
+    // cartouche. Traité ICI, juste avant la consommation des requêtes, pour que le
+    // montage prenne effet dans la même trame. Ignoré en BORNE : sa config est figée
+    // (cf. saveConfig) et un visiteur n'a de toute façon pas de bureau d'où glisser
+    // un fichier.
     if (!A.dropped.empty()) {
+        // Plusieurs disquettes d'un coup : la 1re en A, la 2e en B, le reste ignoré
+        // ET DIT. Avant, chaque image écrasait la requête de la précédente et seule
+        // la dernière était montée, sans un mot sur les autres.
+        int floppies = 0;
+        std::vector<std::string> ignored;
         if (!A.kiosk) for (const std::string& d : A.dropped) {
             std::error_code ec;
             if (fs::is_directory(d, ec)) { reqMountGemdos = d; continue; }
             std::string ext = fs::path(d).extension().string();
             for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
             if (ext == ".st" || ext == ".msa" || ext == ".dim" || ext == ".stx" || ext == ".ipf") {
-                reqMount = d;
+                if (floppies == 0) {
+                    reqMount = d;
+                } else if (floppies == 1 && !sameHostFile(d, reqMount)) {
+                    reqMountB = d;
+                } else {
+                    ignored.push_back(fs::path(d).filename().string());
+                }
+                ++floppies;
             } else if (ext == ".hd" || ext == ".acsi" || ext == ".vhd" || ext == ".raw") {
                 reqMountAcsi = d;
             } else if (ext == ".img" || ext == ".rom" || ext == ".bin") {
                 // `.img` désigne aussi bien un TOS qu'une cartouche ou un disque dur
-                // (roms/, carts/ et hd/ en sont tous pleins) : trancher sur la TAILLE
-                // et l'en-tête, pas sur l'extension. Un TOS commence par BRA.S ($602E)
-                // et tient en 512 Ko ; une cartouche fait au plus 128 Ko ; au-delà,
-                // c'est un disque dur.
-                const std::uintmax_t sz = fs::file_size(d, ec);
-                uint8_t hdr[2] = { 0, 0 };
-                { std::ifstream f(d, std::ios::binary);
-                  if (f) f.read(reinterpret_cast<char*>(hdr), 2); }
-                if (!ec && sz <= 512u * 1024u && hdr[0] == 0x60 && hdr[1] == 0x2E) {
+                // (roms/, carts/ et hd/ en sont tous pleins) : trancher sur l'en-tête et
+                // la TAILLE, pas sur l'extension.
+                //  · TOS : en-tête $601E/$602E + version plausible (looksLikeTosHeader)
+                //    ET taille de ROM connue — 192, 256, 512 Ko, 1 Mo. Ne tester que
+                //    $602E envoyait TOS 1.00 ($601E, 192 Ko = multiple de 512, > 128 Ko)
+                //    au montage ACSI INSCRIPTIBLE, suivi d'un hard reset.
+                //    Tolérance de 1 Ko : des dumps à un octet près circulent (dans roms/
+                //    même : tos104de.img fait 196 607 octets, tos162fr.img 262 145) et
+                //    Bus::loadTos les accepte.
+                //  · Un fichier qui a l'en-tête d'un TOS sans en avoir la taille est
+                //    REFUSÉ : il ne doit jamais atteindre le montage ACSI.
+                //  · Sinon : cartouche jusqu'à 128 Ko, disque dur au-delà.
+                std::uintmax_t sz = 0;
+                const bool tosHdr = looksLikeTosHeader(d, sz);
+                bool romSize = false;
+                for (std::uintmax_t k : { 192u, 256u, 512u, 1024u }) {
+                    const std::uintmax_t want = k * 1024u;
+                    if (sz + 1024u >= want && sz <= want + 1024u && sz <= 1024u * 1024u) romSize = true;
+                }
+                const std::uintmax_t fsz = fs::file_size(d, ec);
+                if (tosHdr && romSize) {
                     cfg.rom = d; saveConfig(A, exeDir, cfg, &machine); reqRebuild = true;
-                } else if (!ec && sz <= 128u * 1024u) {
+                    // La fenêtre Configuration ressème ses champs « en attente » : sans
+                    // ça, « Apply and restart » remettait l'ANCIENNE ROM par-dessus.
+                    A.cfgUiResync = true;
+                } else if (tosHdr) {
+                    A.stateMsg = "Looks like a TOS image but its size (" + std::to_string(sz)
+                               + " bytes) is not a ROM size: not mounted ("
+                               + fs::path(d).filename().string() + ")";
+                    A.stateMsgFrames = 300;
+                } else if (!ec && fsz <= 128u * 1024u) {
                     reqMountCart = d;
                 } else {
                     reqMountAcsi = d;
@@ -1919,6 +2120,13 @@ static void handleDrops(App& A, Frame& F) {
                              fs::path(d).filename().string() + ")";
                 A.stateMsgFrames = 150;
             }
+        }
+        if (!ignored.empty()) {
+            std::string list;
+            for (const auto& n : ignored) list += (list.empty() ? "" : ", ") + n;
+            A.stateMsg = "Two floppy drives only: ignored " + list;
+            A.stateMsgFrames = 300;
+            std::fprintf(stderr, "[drop] floppies beyond A and B ignored: %s\n", list.c_str());
         }
         A.dropped.clear();
     }
@@ -1940,36 +2148,53 @@ static void consumeMediaRequests(App& A, Frame& F) {
     std::string& reqMountAcsi = F.reqMountAcsi;
     bool& reqEjectGemdos = F.reqEjectGemdos;
     bool& reqEjectAcsi = F.reqEjectAcsi;
+    // UNE image, UN lecteur. Monter le même fichier dans A et dans B donnait deux
+    // copies en mémoire réécrivant chacune le même fichier hôte : en .msa, chaque
+    // écriture ré-encode tout le fichier et efface celles de l'autre lecteur ; en .st,
+    // la FAT se corrompt. Refus, comme Hatari :
+    // [D] Hatari floppy.c:403-408 @ f0736b24 — « Cannot insert same floppy to
+    //     multiple drives ».
+    // Les deux lecteurs changent dans la même trame (profil, dépôt de deux images) :
+    // B est libéré d'abord s'il va être remplacé ou vidé, sinon un échange A↔B serait
+    // refusé à tort.
+    if (!reqMount.empty() && (reqEjectB || !reqMountB.empty())
+        && sameHostFile(reqMount, machine.fdc.mountedPath(1)))
+        machine.fdc.eject(1);
+    auto inOtherDrive = [&](const std::string& path, int other) {
+        if (!sameHostFile(path, machine.fdc.mountedPath(other))) return false;
+        A.stateMsg = std::string("Already in drive ") + (other ? "B" : "A") + ": "
+                   + fs::path(path).filename().string()
+                   + " (one image cannot be in both drives)";
+        A.stateMsgFrames = 300;
+        std::fprintf(stderr, "[fdc] refused: %s is already in drive %c\n",
+                     path.c_str(), other ? 'B' : 'A');
+        return true;
+    };
+    // Un montage refusé ou raté ne doit pas laisser dans `cfg` une disquette que le
+    // lecteur n'a pas (un profil chargé l'y a déjà écrite) : on réaligne sur le lecteur.
+    auto resyncDisk = [&](int drive) {
+        if (A.kiosk || A.kioskLaunched) return;
+        (drive ? cfg.diskb : cfg.disk) = machine.fdc.mountedPath(drive);
+        saveConfig(A, exeDir, cfg, &machine);
+    };
     // Disk Library : montage / éjection à chaud du lecteur A. La config n'est
     // persistée QUE si le montage a réussi — sinon une image corrompue serait
     // écrite dans neost.cfg et retentée à chaque boot.
     if (!reqMount.empty()) {
-        if (machine.fdc.loadImage(reqMount)) {
-            // La clé auto-branchée pour l'image PRÉCÉDENTE s'en va d'abord (cf.
-            // autoDongleRetract) : elle n'a rien à faire dans le jeu suivant.
-            autoDongleRetract(A, machine, cfg);
-            // Clé du jeu (disks/dongles.txt) : on ne remplit que les emplacements VIDES.
-            if (cfg.autoDongle) {
-                std::string plugged;
-                for (const auto& r : neost::matchDongleRules(A.loadDongleTable(), reqMount)) {
-                    if (r.cart) {
-                        if (machine.dongle.attached() || !machine.setDongle(r.key)) continue;
-                        static const char* const kn[] = { "", "cubase2", "cubase3", "auto", "notator" };
-                        cfg.dongle = kn[int(r.key)]; A.autoCartKey = r.key;
-                        plugged += std::string(plugged.empty() ? "" : ", ") + "cartridge key " + cfg.dongle;
-                    } else {
-                        if (machine.ports.at(r.port) != PortDevices::Device::None || !machine.plugPort(r.port, r.dev)) continue;
-                        std::string* slots[] = { &cfg.joy0, &cfg.joy1, &cfg.rs232, &cfg.printer, &cfg.cartbutton };
-                        *slots[int(r.port)] = PortDevices::id(r.dev);
-                        A.autoPortDev[int(r.port)] = r.dev;
-                        plugged += std::string(plugged.empty() ? "" : ", ") + PortDevices::label(r.dev) + " on " + PortDevices::portId(r.port);
-                    }
-                }
-                if (!plugged.empty()) {
-                    A.stateMsg = "Auto-plugged: " + plugged + " (disks/dongles.txt)"; A.stateMsgFrames = 240;
-                    if (!A.kiosk && !A.kioskLaunched) saveConfig(A, exeDir, cfg, &machine);
-                }
+        if (inOtherDrive(reqMount, 1)) {
+            resyncDisk(0);
+        } else if (machine.fdc.loadImage(reqMount)) {
+            // Clé du jeu (disks/dongles.txt) : changer de disquette ne déplace AUCUNE
+            // clé déjà branchée — on ne remplit que les emplacements VIDES, et on ne
+            // rebranche pas ce qui y est déjà (remise à zéro de la clé en plein
+            // programme : Cubase lancé depuis le disque 1, le disque 2 inséré
+            // désynchronisait ses bascules). Le retrait n'a lieu qu'au reset explicite.
+            bool dongleChanged = false;
+            const std::string plugged = autoDongleSync(A, machine, cfg, reqMount, false, dongleChanged);
+            if (!plugged.empty()) {
+                A.stateMsg = "Auto-plugged: " + plugged + " (disks/dongles.txt)"; A.stateMsgFrames = 240;
             }
+            if (dongleChanged && !A.kiosk && !A.kioskLaunched) saveConfig(A, exeDir, cfg, &machine);
             // En BORNE, ne pas mémoriser la disquette insérée par un visiteur : même
             // si saveConfig(A, ) refuse d'écrire ici, salir `cfg` suffirait à faire fuir
             // ce disk= lors d'un saveConfig(A, force=true) ultérieur (dossiers ROM,
@@ -1980,11 +2205,13 @@ static void consumeMediaRequests(App& A, Frame& F) {
             }
         } else {
             A.stateMsg = "Unreadable floppy image"; A.stateMsgFrames = 120;
+            resyncDisk(0);
         }
     }
     if (reqEject) {
+        // La clé reste branchée : sur un vrai ST, éjecter la disquette ne touche pas
+        // au port cartouche. Elle part au reset explicite (cf. autoDongleSync).
         machine.fdc.eject();
-        autoDongleRetract(A, machine, cfg);   // la clé partait avec la disquette
         cfg.disk.clear(); saveConfig(A, exeDir, cfg, &machine);
     }
     // Lecteur B : même discipline que A. Le cœur le gère depuis toujours
@@ -1992,12 +2219,15 @@ static void consumeMediaRequests(App& A, Frame& F) {
     // l'ignorait — or plusieurs jeux ne DÉMARRENT qu'avec leur disque 2 monté
     // (Lethal Xcess) et les jeux 2 disquettes réclament d'en changer.
     if (!reqMountB.empty()) {
-        if (machine.fdc.loadImage(reqMountB, 1)) {
+        if (inOtherDrive(reqMountB, 0)) {
+            resyncDisk(1);
+        } else if (machine.fdc.loadImage(reqMountB, 1)) {
             if (!A.kiosk && !A.kioskLaunched) {
                 cfg.diskb = reqMountB; saveConfig(A, exeDir, cfg, &machine);
             }
         } else {
             A.stateMsg = "Unreadable floppy image (B)"; A.stateMsgFrames = 120;
+            resyncDisk(1);
         }
     }
     if (reqEjectB) {
@@ -2005,6 +2235,25 @@ static void consumeMediaRequests(App& A, Frame& F) {
         cfg.diskb.clear(); saveConfig(A, exeDir, cfg, &machine);
     }
     // Cart Library : branchement / éjection à chaud du port cartouche.
+    // EtherNEC / NetUSBee occupent $FA0000-$FA3FFF : une cartouche (ou la cartouche
+    // système du HD GEMDOS) montée par-dessus était MASQUÉE par la NE2000 — C:
+    // disparaissait sans un mot, et au lancement suivant c'est le réseau qui était
+    // refusé et ethernec=0 persisté. Symétrique exact d'etherApply/netUsbeeApply, qui
+    // refusent le réseau quand le port cartouche est occupé.
+    const bool netOnCartPort = machine.ne2000.enabled() || machine.isp1160.enabled();
+    const char* netName = machine.netUsbeeEnabled() ? "NetUSBee" : "EtherNEC";
+    if (!reqMountCart.empty() && netOnCartPort) {
+        A.stateMsg = std::string("The cartridge needs the cartridge port free (") + netName
+                   + " is on - Network page)";
+        A.stateMsgFrames = 300;
+        reqMountCart.clear();
+    }
+    if (!reqMountGemdos.empty() && netOnCartPort) {
+        A.stateMsg = std::string("The GEMDOS drive needs the cartridge port free (") + netName
+                   + " is on - Network page)";
+        A.stateMsgFrames = 300;
+        reqMountGemdos.clear();
+    }
     if (!reqMountCart.empty()) {
         // VALIDER AVANT de libérer : loadCart échoue sur un fichier illisible ou de
         // plus de 128 Ko (un .img volumineux dans carts/ est banal). Démonter le HD
@@ -2090,6 +2339,22 @@ static void applyRequests(App& A, Frame& F) {
     }
     // Application des requêtes (en fin de boucle, hors rendu ImGui) :
     if (reqRebuild)   A.applyConfig();       // modèle/RAM/cœur/ROM → reconfig à chaud
+    // Profil chargé : réseau, clé et ports APRÈS le rebuild, qui vient de poser la
+    // cartouche et les disques durs du profil (cf. App::applyPeripherals). Persisté
+    // ensuite : un refus (cartouche contre réseau…) a pu remettre un réglage à faux.
+    if (F.reqPeripherals) {
+        A.applyPeripherals();
+        saveConfig(A, exeDir, cfg, &machine);
+    }
+    // Reset EXPLICITE (menu, barre, fenêtre CPU, borne) : seul moment où l'auto-plug
+    // retire ce qu'il avait posé et que la disquette de A ne désigne plus — c'est là
+    // qu'on change de programme. Fait AVANT le reset, pour que la machine reparte
+    // avec ses vraies clés.
+    if (reqReset || F.userHardReset) {
+        bool dongleChanged = false;
+        autoDongleSync(A, machine, cfg, machine.fdc.mountedPath(0), true, dongleChanged);
+        if (dongleChanged) saveConfig(A, exeDir, cfg, &machine);
+    }
     if (reqHardReset) machine.hardReset(); // power-cycle (RAM effacée, boot à froid)
     if (reqReset)     machine.reset();     // reset « doux » (RAM conservée)
 }
@@ -2203,6 +2468,7 @@ void appLoop(App& A) {
 
         beginDraw(A, F);
         prepareConfigUi(A, F);
+        pollMidiDevices(A, F);                 // tous les modes (bureau, plein écran, borne)
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -2244,6 +2510,7 @@ void appShutdown(App& A) {
     // Mémorise le dernier ROM, la disquette/cartouche montée et le moniteur.
     // (En mode harnais, saveConfig est gelé centralement — cf. A.harnessRun.)
     cfg.disk = machine.fdc.mountedPath();
+    cfg.diskb = machine.fdc.mountedPath(1);   // le lecteur B se resynchronise comme le A
     cfg.cart = machine.bus.mountedCartPath();
     cfg.mono = !machine.mfp.colorMonitor();
     cfg.showHex = A.showHex; cfg.showCpu = A.showCpu;

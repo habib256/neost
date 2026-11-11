@@ -73,6 +73,11 @@ def fetch_entry(entry: dict) -> bool:
 def main() -> int:
     data = json.loads(MANIFEST.read_text(encoding="utf-8"))
     want = set(sys.argv[1:]) if len(sys.argv) > 1 else None
+    # Un ID inconnu ne doit pas rendre 0 sans avoir rien rapatrié.
+    unknown = sorted((want or set()) - {e["id"] for e in data["etalons"]})
+    if unknown:
+        print("ID inconnu(s) : " + ", ".join(unknown), file=sys.stderr)
+        return 2
     ok = True
     for entry in data["etalons"]:
         if want and entry["id"] not in want:

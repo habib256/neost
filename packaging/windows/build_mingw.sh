@@ -13,6 +13,11 @@
 #  DLL dans son PATH) — elle se voit chez lui, par une boîte « libstdc++-6.dll
 #  introuvable ». Statique = le zip contient tout, ou il ne se construit pas.
 #
+#  MANIFESTE UTF-8 (packaging/windows/neost.rc, lié par CMake) : les deux .exe
+#  tournent en page de code UTF-8, donc chemins et noms d'utilisateur accentués
+#  fonctionnent à partir de Windows 10 1903 ; plus ancien, Windows ignore ce réglage
+#  et ces chemins restent cassés (page ANSI).
+#
 #  Sortie : dist/NeoST-<version>-windows-x86_64.zip
 #           (neost.exe + neost-headless.exe + roms/ disks/ fonts/ + LISEZMOI)
 #
@@ -60,7 +65,14 @@ test -f "$BUILD_DIR/neost-headless.exe" || { echo "ERREUR : neost-headless.exe a
 # glfw3 dans cette liste = un zip qui ne démarre pas sur une machine nue, et le
 # smoke de ce script ne le verrait pas (MSYS2 a ces DLL dans son PATH).
 check_dlls() {
-    local exe="$1" bad=""
+    local exe="$1" bad="" out dlls
+    # Sortie capturée d'abord : un `done < <(objdump …)` échappe à set -e/pipefail, et un
+    # objdump en échec (binaire illisible, outil absent) laissait la boucle vide imprimer OK.
+    out=$(objdump -p "$exe") \
+        || { echo "ERREUR : objdump -p a échoué sur $exe" >&2; exit 1; }
+    dlls=$(printf '%s\n' "$out" | awk '/DLL Name:/ {print $3}')
+    [ -n "$dlls" ] \
+        || { echo "ERREUR : aucune ligne « DLL Name: » pour $exe — table d'import illisible" >&2; exit 1; }
     while read -r dll; do
         case "${dll,,}" in
             kernel32.dll|user32.dll|gdi32.dll|shell32.dll|advapi32.dll|ole32.dll|\
@@ -69,7 +81,7 @@ check_dlls() {
             avrt.dll|mmdevapi.dll|api-ms-win-*|ext-ms-*) ;;
             *) bad="$bad $dll" ;;
         esac
-    done < <(objdump -p "$exe" | awk '/DLL Name:/ {print $3}')
+    done <<< "$dlls"
     if [ -n "$bad" ]; then
         echo "ERREUR : $exe dépend de DLL non système :$bad" >&2
         echo "         (le zip ne démarrerait pas sur une machine sans MSYS2)" >&2

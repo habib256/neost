@@ -410,10 +410,21 @@ bool StxImage::saveWd1772(const std::string& path) const {
         out.insert(out.end(), st.data.begin(), st.data.end());
     }
 
-    std::ofstream f(path, std::ios::binary | std::ios::trunc);
-    if (!f) return false;                                 // répertoire en lecture seule…
-    f.write(reinterpret_cast<const char*>(out.data()), std::streamsize(out.size()));
-    return bool(f);
+    // Atomique (tmp + rename), comme le .msa : le fichier porte TOUTES les écritures
+    // faites sur la STX, et une erreur au milieu d'une réécriture en place (disque
+    // plein, support retiré) les perdait d'un coup.
+    const std::string tmp = path + ".tmp";
+    {
+        std::ofstream f(tmp, std::ios::binary | std::ios::trunc);
+        if (!f) return false;                             // répertoire en lecture seule…
+        f.write(reinterpret_cast<const char*>(out.data()), std::streamsize(out.size()));
+        f.flush();
+        if (!f) { f.close(); std::remove(tmp.c_str()); return false; }
+    }
+    std::error_code ec;
+    std::filesystem::rename(tmp, path, ec);
+    if (ec) { std::remove(tmp.c_str()); return false; }
+    return true;
 }
 
 bool StxImage::loadWd1772(const std::string& path) {

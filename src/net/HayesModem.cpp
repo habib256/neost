@@ -151,7 +151,15 @@ void HayesModem::onTx(uint8_t b) {
 }
 
 void HayesModem::poll() {
+    // DCD suit la porteuse (&C1) EN PERMANENCE : le reset du MFP et le branchement d'un
+    // adaptateur de port la remettaient « présente » sans connexion, alors qu'elle
+    // retombait après ATH — deux états de repos différents selon l'historique.
+    mfp_.setRs232Dcd(neonet::socketValid(fd_));
     if (!neonet::socketValid(fd_)) return;
+    // Mode commande (après « +++ ») : un modem retient les données distantes. Les lire
+    // les mêlait à l'écho et aux réponses OK/CONNECT des commandes AT ; elles restent
+    // dans le socket jusqu'à ATO.
+    if (!dataMode_) return;
     // Pompe le TCP entrant tant que la file RX du MFP a de la place — la
     // livraison à l'ST reste cadencée au débit série par le MFP lui-même.
     while (mfp_.hostRxPending() < 3500 && neonet::sockHasData(fd_)) {

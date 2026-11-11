@@ -298,12 +298,40 @@ void setMouseCaptured(GLFWwindow* w, bool captured) {
     if (g_mouseCaptured) glfwGetCursorPos(w, &g_lastMx, &g_lastMy);
 }
 
+// Le NAVIGATEUR peut rendre la souris sans nous : Échap (règle imposée du pointer
+// lock, la page ne peut pas l'empêcher), changement d'onglet, alt-tab. Le port GLFW
+// d'Emscripten ne le remonte pas : g_mouseCaptured restait vrai, le curseur LIBRE
+// continuait de déplacer la souris du ST (positions absolues lues comme des deltas)
+// et chaque clic dans le canvas la recapturait en douce (écouteur de clic posé par
+// GLFW_CURSOR_DISABLED). On écoute donc pointerlockchange : verrou perdu = capture
+// rendue, proprement (GLFW_CURSOR_NORMAL retire aussi l'écouteur de recapture).
+// Le verrou ACQUIS ne change rien : c'est setMouseCaptured qui l'a demandé.
+EM_BOOL onPointerLockChange(int /*eventType*/, const EmscriptenPointerlockChangeEvent* e,
+                            void* /*userData*/) {
+    if (e && !e->isActive && g_mouseCaptured && g_window) {
+        setMouseCaptured(g_window, false);
+        if (g_machine) g_machine->mouseEvent(0, 0, false, false);   // aucun bouton ne reste tenu
+    }
+    return EM_FALSE;                   // ne rien consommer : d'autres peuvent écouter
+}
+
+// Annonce à la page le chemin MEMFS de l'image du lecteur A ("" = vide). C'est elle
+// qui exporte la disquette (« Download A: ») et qui prévient avant un rechargement :
+// elle doit donc savoir ce qui est RÉELLEMENT monté — un retour arrière peut avoir
+// remis une autre disquette dans le lecteur, sans que la page l'ait demandé.
+void announceDriveA() {
+    if (!g_machine) return;
+    EM_ASM({ if (window.neostOnDriveA) window.neostOnDriveA(UTF8ToString($0)); },
+           g_machine->fdc.mountedPath(0).c_str());
+}
+
 // Recule d'un cran. Le journal part sur la console du navigateur.
 int stepRewind() {
     if (!g_machine) return 0;
     std::string why = "Rewind is off";
     const bool ok = g_rewind.enabled() && g_rewind.stepBack(*g_machine, &why);
     std::printf("[rewind] %s (%zu in ring)\n", ok ? "OK" : why.c_str(), g_rewind.count());
+    if (ok) announceDriveA();          // le lecteur a pu changer
     return ok ? 1 : 0;
 }
 
@@ -519,10 +547,20 @@ EMSCRIPTEN_KEEPALIVE void neost_hard_reset() {
     if (g_machine) g_machine->hardReset();
 }
 
-// Charge une autre ROM TOS (déjà présente dans le FS virtuel) et reset, comme un
-// changement de cartouche : permet de tester EmuTOS US/FR et TOS 1.02 à distance.
-EMSCRIPTEN_KEEPALIVE void neost_load_tos(const char* path) {
-    if (!g_machine || !path) return;
+// Charge une autre ROM TOS (déjà présente dans le FS virtuel) et redémarre À FROID,
+// comme le changement de ROM du bureau (App::applyConfig : reconfigure, retour
+// arrière vidé). Rend 1 si la ROM est chargée, 0 sinon — la machine reste alors
+// INTACTE (ancienne ROM, ancien profil, aucun reset), et la page le dit.
+EMSCRIPTEN_KEEPALIVE int neost_load_tos(const char* path) {
+    if (!g_machine || !path) return 0;
+    // Charger D'ABORD : Bus::loadTos refuse un fichier absent ou de taille invalide
+    // AVANT de toucher à la ROM courante. Avant, l'échec était ignoré — le profil
+    // avait déjà pu basculer, puis un reset relançait l'ancienne ROM sur une machine
+    // hybride, sans un mot. reconfigure() ne touche pas à la ROM : l'ordre est libre.
+    if (!g_machine->loadTos(path)) {
+        std::fprintf(stderr, "[web] ROM not loadable: %s — previous ROM kept\n", path);
+        return 0;
+    }
     // Garde machine/TOS comme le GUI et le headless (adjustMachineForTos) : un
     // TOS ≤ 1.04 chargé sur STE/Mega STE (menu ROM du shell) haltait le CPU —
     // écran figé sans message. On bascule le profil comme les autres frontends.
@@ -530,13 +568,17 @@ EMSCRIPTEN_KEEPALIVE void neost_load_tos(const char* path) {
     // STE→ST d'un vieux TOS était définitive — recharger ensuite un TOS moderne
     // laissait la session en ST jusqu'au rechargement de la page.
     const MachineType adj = Machine::adjustMachineForTos(g_reqMachine, path);
-    if (adj != g_machine->bus.machine) {
+    if (adj != g_machine->bus.machine)
         g_machine->reconfigure(g_machine->bus.ram.size(), CpuCore::Moira, adj);
-        g_rewind.clear();     // les instantanés décrivent l'ancienne machine
-    }
-    g_machine->loadTos(path);
+    // Vidé dans TOUS les cas, comme le bureau : un instantané pris sous l'ancienne
+    // ROM y ramènerait la RAM d'un autre OS sous la nouvelle.
+    g_rewind.clear();
     neost::stkeys::setCountryFromTos(g_machine->bus.rom);   // pays clavier de la nouvelle ROM
-    g_machine->reset();
+    // À FROID : un reset() à chaud gardait la RAM de l'ancien OS et son
+    // « memvalid » — le nouveau TOS faisait un boot court sur des variables
+    // système qui ne sont pas les siennes.
+    g_machine->hardReset();
+    return 1;
 }
 
 // mono != 0 → moniteur monochrome (haute résolution) ; sinon couleur (basse rés).
@@ -547,16 +589,28 @@ EMSCRIPTEN_KEEPALIVE void neost_set_mono(int mono) {
     g_machine->reset();
 }
 
-// Monte une image .st déjà écrite dans le FS virtuel (cf. shell : upload fichier
-// → FS.writeFile → neost_mount_disk), puis reset pour booter dessus.
-EMSCRIPTEN_KEEPALIVE void neost_mount_disk(const char* path) {
-    if (!g_machine || !path) return;
-    g_machine->fdc.loadImage(path, 0);
+// Monte une image déjà écrite dans le FS virtuel (cf. shell : dépôt de fichier
+// → FS.writeFile → neost_mount_disk) dans le lecteur A.
+//   reset != 0 : puis redémarrage À FROID pour booter dessus (« Mount A: + Reset ») ;
+//   reset == 0 : INSERTION À CHAUD, la machine continue — c'est ainsi qu'on change
+//                de disquette en cours de partie (« insert disk 2 »), comme le menu
+//                Android et la borne : le programme voit l'éjection puis l'insertion
+//                (transition de la protection en écriture, cf. Fdc::loadImage).
+// Même nom qu'avant, signature étendue : la liste EXPORTED_FUNCTIONS
+// (CMakeLists.txt) n'a pas à changer. Un ancien appel à un seul argument reçoit
+// reset = 0 (JS → wasm : argument manquant = 0) — le shell passe donc TOUJOURS les deux.
+// Rend 1 si l'image est montée, 0 sinon (rien n'est alors redémarré).
+EMSCRIPTEN_KEEPALIVE int neost_mount_disk(const char* path, int reset) {
+    if (!g_machine || !path) return 0;
+    const bool ok = g_machine->fdc.loadImage(path, 0);
+    announceDriveA();
+    if (!ok) return 0;
     // Boot à FROID, comme le montage à chaud du GUI bureau (AppLoop.cpp pose
     // reqHardReset). Un reset à chaud laisse la RAM de la session précédente et
     // son « memvalid » : le TOS saute le boot complet, et une démo chargée par
     // dessus les restes d'une autre peut démarrer de travers.
-    g_machine->hardReset();
+    if (reset) g_machine->hardReset();
+    return 1;
 }
 
 // Monte une image dans le lecteur B (secondaire) — pas de reset (B ne boote pas).
@@ -576,6 +630,7 @@ EMSCRIPTEN_KEEPALIVE void neost_set_kbd_joystick(int enabled, int port) {
 // Zone morte centrale des sticks analogiques (anti-drift), fraction [0,0.95].
 // Le D-pad numérique n'est pas concerné.
 EMSCRIPTEN_KEEPALIVE void neost_set_joy_deadzone(float dz) {
+    if (!(dz == dz)) return;                       // NaN venu de la page : ignoré
     g_joyDeadzone = (dz < 0.0f) ? 0.0f : (dz > 0.95f ? 0.95f : dz);
 }
 
@@ -630,6 +685,7 @@ EMSCRIPTEN_KEEPALIVE void neost_set_rewind(int on) {
 EMSCRIPTEN_KEEPALIVE int neost_rewind() { return stepRewind(); }
 
 EMSCRIPTEN_KEEPALIVE void neost_set_volume(float v) {
+    if (!(v == v)) return;                         // NaN : passait le clamp et sortait à pleine échelle
     g_masterVol = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
 }
 EMSCRIPTEN_KEEPALIVE float neost_get_volume() { return g_masterVol; }
@@ -748,6 +804,9 @@ int main(int argc, char** argv) {
 
     glfwSetKeyCallback(g_window, onKey);
     glfwSetMouseButtonCallback(g_window, onMouseButton);
+    emscripten_set_pointerlockchange_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, nullptr,
+                                              true, onPointerLockChange);
+    announceDriveA();                  // la page apprend ce qu'il y a dans A: au boot
 
     std::printf("[web] NeoST started. Middle mouse button or Ctrl+Alt+G = capture/release.\n");
 

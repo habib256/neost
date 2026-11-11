@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
@@ -209,8 +210,22 @@ void drawJoystickWindow(App& A, GLFWwindow* win, uint8_t lastJoy0, uint8_t lastJ
 // Guards de Moira) ; ici on ne fait qu'AFFICHER/piloter. Le gel effectif de
 // l'émulation (A.dbgPaused) et le pas-à-pas trame (A.dbgStepFrame) sont traités
 // dans la boucle principale. Les registres/mémoire ont déjà leurs propres fenêtres.
+// Adresse hexadécimale saisie → valeur 32 bits. Plus de 8 chiffres est REFUSÉ : strtoul
+// les lisait sur 64 bits puis la conversion en uint32_t tronquait en silence, et le point
+// d'arrêt tombait sur une autre adresse que celle tapée.
+static bool parseBpAddr(const char* txt, uint32_t& out) {
+    while (*txt == ' ') ++txt;
+    if (*txt == '$') ++txt;
+    std::size_t n = 0;
+    while (txt[n] && txt[n] != ' ') ++n;
+    if (n == 0 || n > 8) return false;
+    out = (uint32_t)std::strtoul(txt, nullptr, 16);
+    return true;
+}
+
 void drawDebugger(App& A, Machine& machine) {
     Cpu68k& cpu = machine.cpu;
+    static int addrTooLong = 0;               // dernier ajout refusé (> 8 chiffres) : 1 = bp, 2 = wp
     // Étiquette symbolique « <nom+off> » d'une adresse (vide si aucun symbole).
     auto symLabel = [&A](uint32_t a) -> std::string {
         uint32_t off = 0;
@@ -280,11 +295,14 @@ void drawDebugger(App& A, Machine& machine) {
                                           ImGuiInputTextFlags_EnterReturnsTrue);
     ImGui::SameLine();
     if ((ImGui::Button("Add") || entered) && bpBuf[0]) {
-        cpu.setBreakpoint((uint32_t)std::strtoul(bpBuf, nullptr, 16));
-        bpBuf[0] = '\0';
+        uint32_t a = 0;
+        addrTooLong = parseBpAddr(bpBuf, a) ? 0 : 1;
+        if (!addrTooLong) { cpu.setBreakpoint(a); bpBuf[0] = '\0'; }
     }
     ImGui::SameLine();
     if (ImGui::Button("Clear all")) cpu.clearAllBreakpoints();
+    if (addrTooLong == 1)
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.4f, 1.0f), "Address too long: 8 hex digits at most.");
 
     if (ImGui::BeginChild("##bplist", ImVec2(0, 120), true)) {
         for (int i = 0; i < cpu.breakpointCount(); ++i) {
@@ -314,11 +332,14 @@ void drawDebugger(App& A, Machine& machine) {
                                                   ImGuiInputTextFlags_EnterReturnsTrue);
     ImGui::SameLine();
     if ((ImGui::Button("Add##wp") || wpEnter) && wpBuf[0]) {
-        cpu.setWatchpoint((uint32_t)std::strtoul(wpBuf, nullptr, 16));
-        wpBuf[0] = '\0';
+        uint32_t a = 0;
+        addrTooLong = parseBpAddr(wpBuf, a) ? 0 : 2;
+        if (!addrTooLong) { cpu.setWatchpoint(a); wpBuf[0] = '\0'; }
     }
     ImGui::SameLine();
     if (ImGui::Button("Clear all##wp")) cpu.clearAllWatchpoints();
+    if (addrTooLong == 2)
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.4f, 1.0f), "Address too long: 8 hex digits at most.");
     if (ImGui::BeginChild("##wplist", ImVec2(0, 80), true)) {
         for (int i = 0; i < cpu.watchpointCount(); ++i) {
             uint32_t a = 0;

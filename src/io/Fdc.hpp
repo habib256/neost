@@ -214,6 +214,9 @@ public:
         ar(dr_);
         ar(str_);
         ar(stepDir_);
+        // STEP fait « ht += stepDir_ » et les butées testent l'égalité : toute autre
+        // valeur fait sortir la tête de [0, MAX_TRACK].
+        ar.check(stepDir_ == 1 || stepDir_ == -1, "Fdc::stepDir_ hors {-1, +1}");
         ar(side_);
         ar(driveSel_);
         ar(irqSignal_);
@@ -247,6 +250,7 @@ public:
 
         // --- Modèle rotationnel (impulsion d'index + PRNG de phase) ---
         ar(indexTime_);
+        ar.check(indexTime_ >= 0, "Fdc::indexTime_ négatif");
         ar(rng_);
 
         // --- Contrôleur DMA ---
@@ -255,6 +259,8 @@ public:
         ar(dmaSectorCount_);
         ar(dmaBytesInSector_);
         ar(dmaBytesToTransfer_);
+        ar.check(dmaBytesToTransfer_ >= -1 && dmaBytesToTransfer_ <= 256 * 512,   // −1 : post-décrément de fin de transfert
+                 "Fdc::dmaBytesToTransfer_ hors plage");
         ar.arr(fifo_);              // uint8_t[16]
         ar(fifoSize_);
         ar.check(fifoSize_ >= 0 && fifoSize_ < 16);    // fifoPush écrit fifo_[fifoSize_] : 0..15

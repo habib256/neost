@@ -357,7 +357,11 @@ struct Decoder {
         if (!gapReservedSize(d1, lim, presize) || !gapReservedSize(d1, lim, postsize)) return false;
         const uint32_t delta = gapCells & 1;
         const uint32_t usable = gapCells - delta;
-        if (uint64_t(presize) + postsize > usable) {
+        // Les deux tailles viennent du fichier. Chacune ne peut dépasser le gap : au-delà,
+        // la somme reboucle en 32 bits (presize + postsize = usable + 2^32 donnait un
+        // reste nul et un spos de ~2^31 cellules écrites hors du tampon de piste).
+        if (presize > usable || postsize > usable) return false;
+        if (presize + postsize > usable) {
             // Rognage symétrique des deux flux, comme le décodeur de référence.
             const uint32_t rem = presize + postsize - usable;
             uint32_t rem0 = rem >> 1, rem1 = rem - rem0;
@@ -374,6 +378,7 @@ struct Decoder {
         } else {
             spos = presize + (usable - presize - postsize) / 2;
         }
+        if (spos > usable) return false;
         const std::size_t at = o.pos;
         if (!gapFromDescription(data, lim, o, spos, true, ctx)) return false;
         if (delta) o.cells[at + spos] = CELL_0;
