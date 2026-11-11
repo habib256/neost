@@ -469,7 +469,13 @@ Chaque étalon pixel déclare son échelon `ref_kind` dans `etalons.json`, parmi
 ```sh
 python3 tools/run_etalons.py --verify-refs      # contrôle la provenance (oracle = .png ≥832px)
 python3 tools/compare_screenshot.py A.ppm B.png --crop active --report   # diff PAR SCANLINE
+python3 tools/compare_screenshot.py A.ppm B.png --crop buffer --tolerate 0,274,416,2   # zone tolérée
 ```
+
+Un écart connu et accepté se déclare par sa **zone** (`"tolerated_zones": [[x, y, w, h], …]`
+dans `etalons.json`, coordonnées de la zone comparée), pas par un nombre : `max_diff_px`
+laissait passer n'importe quel autre jeu de pixels faux de même effectif. Hors zone, le
+seuil reste `max_diff_px` (0 pour `blitter_timer` et `rtl_low_pal`).
 
 `--report` affiche le 1ᵉʳ pixel divergent (x/y) et les pires scanlines — un décalage vertical spec512
 apparaît en bande contiguë, un décalage horizontal en petit compte réparti sur beaucoup de lignes.

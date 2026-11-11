@@ -79,6 +79,13 @@ public:
     void ejectCart() { bus.ejectCart(); }
     bool loadDisk(const std::string& path)  { return fdc.loadImage(path, 0); }   // lecteur A
     bool loadDiskB(const std::string& path) { return fdc.loadImage(path, 1); }   // lecteur B (optionnel)
+    // Appareil RS-232 externe (modem Hayes) : reçoit les lignes du port A du PSG — RTS
+    // (bit3) et DTR (bit4), actives bas — à chaque écriture de R14 et au reset du PSG
+    // (lignes au repos). Appelé aussitôt avec l'état courant. Hors état sauvegardé.
+    void setRs232LineSink(std::function<void(uint8_t)> s) {
+        psg.setPortALineSink(s);
+        if (s) s(psg.portALines());
+    }
     // Imprimante Centronics : capture les octets du port parallèle (PSG port B, émis sur
     // FRONT de strobe) dans un fichier hôte (ajout binaire). Chemin vide = désactive.
     // Active aussi le handshake BUSY (GPIP0) à la Hatari (cf. ctor). Renvoie false si l'ouverture échoue.
@@ -130,7 +137,7 @@ public:
         ports.reset();
         // Cartes du port cartouche : un reset à froid est un power-cycle pour elles aussi
         // (anneau DP8390, périphériques USB déjà adressés). Sans effet si désactivées.
-        if (ne2000.enabled())  ne2000.reset();
+        if (ne2000.enabled())  ne2000.powerCycle();
         if (isp1160.enabled()) isp1160.reset();
         // $FF8001 remis à 0 au FROID ([D] stMemory.c:93 @ f0736b24, bCold). ⚠ DIVERGENCE ASSUMÉE : à la
         // CONFIGURATION (constructeur / reconfigure), NeoST le pré-remplit au contraire
@@ -274,7 +281,7 @@ public:
         // d'abord était refusé). L'EtherNEC décode toute la fenêtre : c'est exclusif.
         if (dongle.attached()) return false;
         ne2000.setEnabled(true);
-        ne2000.reset();
+        ne2000.powerCycle();
         bus.ne2000 = &ne2000;
         return true;
     }

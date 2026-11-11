@@ -72,6 +72,9 @@ public:
 
     // Reset matériel (bouton reset / power-cycle).
     void reset();
+    // Mise sous tension de la carte : reset() puis vidage de l'état du backend
+    // (connexions NAT orphelines). Le port reset ($1F) n'appelle que reset().
+    void powerCycle();
 
     // Ligne d'interruption vers le CPU (EtherNEC : câblée sur… rien de standard —
     // les pilotes ST tournent en POLLING). Exposée pour complétude/tests.
@@ -115,6 +118,7 @@ private:
     uint8_t page1Read(uint8_t reg);
     void writeReg(uint8_t reg, uint8_t v);   // dispatch selon la page (cr_ bits 6-7)
     uint8_t readReg(uint8_t reg);
+    void    advanceRemoteDma();      // RSAR++, enroulé à PSTOP (fiche § 9.0)
     uint8_t remoteDmaReadByte();             // port données $10 en lecture
     void    remoteDmaWriteByte(uint8_t v);   // port données $10 en écriture
     void    transmit();                      // commande TXP → envoi via backend

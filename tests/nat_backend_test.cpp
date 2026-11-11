@@ -11,8 +11,8 @@ void check(bool ok, const char* what) {
 }
 }
 int main() {
-    using namespace pom2;
-    using namespace pom2::nat;
+    using namespace nat;
+    using namespace nat::detail;
     NatBackend net;
     check(NatBackend::available(), "host sockets available");
     NatBackend::Options options;

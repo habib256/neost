@@ -160,7 +160,9 @@ FAST = [
      [sys.executable, str(TOOLS / "run_wsdetect.py")]),
     # Retour arrière : média écrit, changé et éjecté annulé ; état à l'octet ; reprise identique.
     ("Retour arrière (disquette restaurée, état à l'octet, reprise identique)",
-     [str(HEADLESS), "roms/etos192fr.img", "--machine", "st", "--disk-ro", "--frames", "400", "--rewind-test"]),
+     # --disk explicite : sans disquette, la partie « média éjecté puis rendu » est sautée.
+     [str(HEADLESS), "roms/etos192fr.img", "--machine", "st", "--disk", "disks/diskA.st",
+      "--disk-ro", "--frames", "400", "--rewind-test"]),
     # Relevés HWTST de tiers sur de vrais Mega STE : boucle registre à 8, 16 et 16 MHz + cache.
     ("HWTST (Mega STE réel : rapport de vitesse 16 MHz sans cache et avec cache)",
      [sys.executable, str(TOOLS / "run_hwtst_loop.py")]),
@@ -190,8 +192,10 @@ NAT_STEPS = [
      [str(ROOT / "build" / ("neost-nat-adapter-test" + _EXE))]),
     # Anneau MIDI (extension NeoST, docs/EXTENSIONS.md) : orphelin jusqu'au 2026-11-11,
     # cité comme « contrôle local » sans qu'aucun palier ne le lance. Sockets hôte requis.
-    ("Anneau MIDI : 20 octets UDP locaux rendus dans l'ordre par l'ACIA",
+    ("Anneau MIDI : datagrammes v1 séquencés, doublons et sources étrangères rejetés",
      [str(ROOT / "build" / ("neost-midi-ring-test" + _EXE))]),
+    ("Modem Hayes : ATDT asynchrone, DTR (&D2/&D0), abandon, reset du PSG",
+     [str(ROOT / "build" / ("neost-modem-test" + _EXE))]),
     ("NAT à travers la NE2000 : ARP, DHCP et UDP loopback",
      [str(HEADLESS), "roms/etos192us.img", "--nat-selftest"]),
     ("STinG + NAT : DNS localhost et HTTP sur serveur local",

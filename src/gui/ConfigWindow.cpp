@@ -778,6 +778,11 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
             ++nPad;
         }
         if (nPad == 0) ImGui::BulletText("(none)");
+        ImGui::Separator();
+        bool pads = ui.cfg && ui.cfg->stePads;
+        if (ImGui::Checkbox("STE joypad ports follow the ST joysticks", &pads)) ui.reqStePads = pads ? 1 : 0;
+        ImGui::TextDisabled("Off: the DB15 ports stay idle, as on an STE with no joypad plugged in.");
+        ImGui::TextDisabled("On: port 1 drives joypad A, port 0 joypad B (same as --ste-pads).");
         break;
     }
     case kCfgEmul: {

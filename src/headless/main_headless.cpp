@@ -90,7 +90,8 @@ void usage() {
         "  --symbols-base HEX  relocation base added to the symbols of a TOS executable\n"
         "  --break-sym NAME  breakpoint on a symbol (requires --symbols; repeatable)\n"
         "  --watch HEX       memory watchpoint (read/write access; break-after; repeatable)\n"
-        "  --save-state FILE write the full state (save-state) at the end of --frames\n"
+        "  --save-state FILE write the full state (save-state) at the end of the run\n"
+        "                    (after --keys / --walk-mouse, like --screenshot)\n"
         "  --load-state FILE restore a state BEFORE running (same machine config required)\n"
         "  --save-state-test DETERMINISM self-test: run --frames → save → load → re-run,\n"
         "                    the re-serialized state AND the screen must match, then exits\n"
@@ -100,8 +101,10 @@ void usage() {
         "  --fpu             populate the Mega STE MC68881 socket ($FFFA40, functional\n"
         "                    emulation — absent by default: Hatari-faithful \"not found\")\n"
         "  --mem SIZE        ST-RAM: 256k, 512k (default), 1m, 2m, 2176k, 2560k, 4m\n"
-        "  --walk-mouse      after boot, inject a mouse move + click (diagnostic)\n"
-        "  --keys STR        after boot, type STR on the keyboard (e.g. diag menus)\n"
+        "  --walk-mouse      after --frames, inject a mouse move + click (diagnostic)\n"
+        "  --keys STR        after --frames, type STR on the keyboard (4 frames per char),\n"
+        "                    then run --frames more (e.g. diag menus). Every end-of-run\n"
+        "                    output (state, sound, probe, screenshot) comes after them\n"
         "  --azerty          type --keys* for a French TOS (AZERTY scancodes: A/Q, Z/W, M)\n"
         "  --key-down N C    press key C at frame N and HOLD it (make code only)\n"
         "  --key-up N C      release key C at frame N (break code only)\n"
@@ -131,13 +134,15 @@ void usage() {
         "                    (repeatable)\n"
         "  --mouse-step N    displacement per L/R/U/D token (1..127, default 8)\n"
         "  --joy P1[,P0]     hold a joystick state (bits up$01 down$02 l$04 r$08 fire$80)\n"
-        "  --disk FILE       mount an image in drive A (default disks/diskA.st)\n"
+        "  --disk FILE       mount an image in drive A (default: drive A stays empty)\n"
         "  --disk-at N FILE  swap the disk in drive A at frame N (repeatable)\n"
         "  --diskb FILE      mount an image in drive B (second drive)\n"
         "  --drive-b on|off  connect drive B (default on). off = single-drive ST:\n"
         "                    TOS finds one drive (_nflops = 1) and asks to swap\n"
         "                    disks in A for B: (as hatari --drive-b off)\n"
         "  --fastfdc         fast FDC (delays /10) — speeds up disk access\n"
+        "  --ste-pads        STE joypad ports (DB15) follow the ST joysticks\n"
+        "                    (default: idle, no joypad plugged in)\n"
         "  --fdc-seed N      seed of the disk angle drawn at first spin-up (default: fixed)\n"
         "  --disk-ro         floppy writes stay in RAM: the host .st/.msa/.dim file\n"
         "                    (and the .wd1772 STX overlay) is never modified. The\n"
@@ -251,10 +256,10 @@ void usage() {
         "                    slots, for an external driver (see docs/OPENDST.md)\n"
         "  --server-slots N  number of in-memory state slots (default 64, max 4096)\n"
         "  --screenshot PPM  dump the final framebuffer in PPM format\n"
-        "  --shot-every N P  dump a PPM every N frames, named P<frame>.ppm (P00000.ppm,\n"
-        "                    P00060.ppm... for N=60); the file for index F shows the screen\n"
-        "                    AFTER frame F ran, i.e. what --frames F+1 --screenshot shows\n"
-        "  --shot-from N     only start the --shot-every dumps at frame N\n"
+        "  --shot-every N P  dump a PPM every N frames, named P<frame>.ppm (P00060.ppm,\n"
+        "                    P00120.ppm... for N=60); P<F>.ppm shows the screen after F\n"
+        "                    frames, i.e. exactly what --frames F --screenshot shows\n"
+        "  --shot-from N     only start the --shot-every dumps at frame N (P<N> onwards)\n"
         "  --version         print the build version and exit\n"
         "  rom               TOS image (default roms/etos192us.img)\n");
 }
@@ -429,6 +434,23 @@ int enecSelfTest(Machine& machine) {
     const uint16_t rlen = uint16_t(lenL | (lenH << 8));
     (void)next;
     check((rsr & 0x01) && rlen == sizeof frame + 4, "RX ring packet header (status/len)");
+
+    // --- 6. Remote DMA à cheval sur PSTOP : le pointeur repart à PSTART -------
+    // [B] DP8390D § 9.0, p. 15 (cf. Ne2000::advanceRemoteDma).
+    const uint16_t edge = uint16_t(kRxStop) * 256u - 2u;
+    const uint8_t wrap[4] = {0x5A, 0xA5, 0x3C, 0xC3};
+    wr(0x08, uint8_t(edge)); wr(0x09, uint8_t(edge >> 8));
+    wr(0x0A, 4); wr(0x0B, 0);
+    wr(0x00, 0x12);                           // Remote Write
+    for (uint8_t b : wrap) wr(0x10, b);
+    const bool rsarWrapped = rd(0x08) == uint8_t(kRxStart * 256u + 2u)
+                          && rd(0x09) == uint8_t((kRxStart * 256u + 2u) >> 8);
+    wr(0x08, uint8_t(edge)); wr(0x09, uint8_t(edge >> 8));
+    wr(0x0A, 4); wr(0x0B, 0);
+    wr(0x00, 0x0A);                           // Remote Read
+    bool wrapOk = rsarWrapped;
+    for (uint8_t b : wrap) wrapOk = wrapOk && rd(0x10) == b;
+    check(wrapOk, "remote DMA wraps PSTOP -> PSTART");
 
     std::fprintf(stderr, "[enec-selftest] %d passed, %d failed\n", passed, failed);
     return failed == 0 ? 0 : 1;
@@ -1295,11 +1317,16 @@ int main(int argc, char** argv) {
                                       // (fenêtrer un diff oracle sur une scène tardive — menu
                                       // de démo — sans traîner des Go de boot)
     std::string shotPath;
-    std::string diskPath   = "disks/diskA.st";
-    bool        diskRequested = false;   // --disk explicite (ou neost.cfg) : seul cas où son absence est fatale en --server
+    // Lecteur A VIDE sans --disk (2026-11-11). La disquette « disks/diskA.st » était
+    // montée par défaut, résolue par rapport au RÉPERTOIRE COURANT et en écriture : la
+    // même commande donnait deux empreintes selon le dossier de lancement, et un test
+    // d'écriture pouvait altérer la disquette livrée. Une recette qui la veut la nomme.
+    std::string diskPath;
+    bool        diskRequested = false;   // --disk explicite (ou neost.cfg) : son absence est alors fatale
     std::string diskBPath;                       // lecteur B (optionnel, --diskb)
     bool        driveB     = true;    // --drive-b off : lecteur B débranché (_nflops = 1)
     bool        fastFdc    = false;   // FDC rapide (--fastfdc) : délais commande/transfert ÷10
+    bool        stePads    = false;   // --ste-pads : ports DB15 du STE branchés sur les joysticks
     uint32_t    fdcSeed    = 0;       // --fdc-seed : angle de la disquette au premier tour moteur
     bool        haveFdcSeed = false;
     bool        diskRo     = false;   // A14 (--disk-ro) : les écritures ne touchent PAS le fichier hôte
@@ -1501,6 +1528,7 @@ int main(int argc, char** argv) {
             else { std::fprintf(stderr, "--drive-b expects 'on' or 'off'\n"); return 2; }
         }
         else if (!std::strcmp(a, "--fastfdc"))    fastFdc   = true;
+        else if (!std::strcmp(a, "--ste-pads"))   stePads   = true;
         else if (!std::strcmp(a, "--fdc-seed"))   { fdcSeed = (uint32_t)std::strtoul(next(a), nullptr, 0); haveFdcSeed = true; }
         else if (!std::strcmp(a, "--disk-ro"))    diskRo    = true;
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
@@ -1833,6 +1861,7 @@ int main(int argc, char** argv) {
             if (!fc.cpu.empty())     cpuCore  = Cpu68k::parseCore(fc.cpu.c_str());
             machineMono  = fc.mono;
             fastFdc      = fc.fastfdc;
+            stePads      = fc.stePads;
             fpuPresent   = fc.fpu;
             // UltraSatan comme App::usatanApply : cibles 0-1, slot 1 = l'image acsi=
             // (déjà montée sur la cible 0 ci-dessus, laissée en place par
@@ -1960,10 +1989,7 @@ int main(int argc, char** argv) {
     }
     // En mode serveur, « hello » ANNONCE les médias : démarrer sans la disquette
     // demandée servirait au pilote un bureau nu en lui affirmant qu'il a le jeu.
-    // La boucle --frames, elle, garde son comportement historique.
-    // Seul un média DEMANDÉ compte : la disquette par défaut « disks/diskA.st » n'est
-    // qu'un confort de développement, et son absence (binaire installé, autre cwd,
-    // borne) rendait le serveur inutilisable — mesuré, RC=1 depuis /tmp.
+    // Sans --disk, le lecteur A reste vide (plus de disquette implicite).
     // Lecteur B débranché (--drive-b off) : posé AVANT le boot, le TOS ne compte qu'un
     // lecteur. Une image --diskb n'y aurait aucun sens : refusée, et dit.
     machine.fdc.setDriveEnabled(1, driveB);
@@ -1971,13 +1997,15 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[headless] --diskb ignored: drive B is disconnected (--drive-b off)\n");
         diskBPath.clear();
     }
-    const bool diskAOk = machine.loadDisk(diskPath);          // lecteur A (optionnel)
-    const bool diskBOk = diskBPath.empty() || machine.loadDiskB(diskBPath);
+    const bool diskAOk = diskPath.empty() || machine.loadDisk(diskPath);   // lecteur A (optionnel)
+    if (diskPath.empty())
+        std::fprintf(stderr, "[headless] drive A: empty (no --disk)\n");    const bool diskBOk = diskBPath.empty() || machine.loadDiskB(diskBPath);
     // Un média DEMANDÉ et introuvable fait échouer le run dans TOUS les modes : sinon la
     // machine démarrait sans lui et rendait une capture « valide », code 0 — faux vert
     // pour tout outil qui ne vérifie pas le fichier avant de lancer.
     if ((diskRequested && !diskAOk) || !diskBOk) outFail = true;
     machine.fdc.setFastFdc(fastFdc);   // FDC rapide (--fastfdc) : accès disque ÷10
+    machine.bus.stePadsWired = stePads;   // DB15 du STE : au repos sauf --ste-pads
     if (haveFdcSeed) machine.fdc.setIndexSeed(fdcSeed);
     // A14 : --disk-ro protège le FICHIER, pas la disquette. Les écritures continuent
     // d'aller dans l'image en RAM (le programme invité relit ce qu'il a écrit, rien
@@ -2056,6 +2084,12 @@ int main(int argc, char** argv) {
     // Modem Hayes (--modem) : commandes AT sur l'USART → pont TCP réel. Le sink
     // série CHAÎNE la capture de verdicts (inchangée) et le modem.
     std::unique_ptr<HayesModem> modem;
+    // Détruit avant modem : la machine ne garde pas l'adresse du modem libéré.
+    struct ModemWiring {
+        Machine& m;
+        const std::unique_ptr<HayesModem>& modem;
+        ~ModemWiring() { if (modem) { m.setRs232LineSink({}); m.mfp.setSerialSink({}); } }
+    } modemWiring{machine, modem};
     if (modemFlag) {
         modem = std::make_unique<HayesModem>(machine.mfp);
         HayesModem* m = modem.get();
@@ -2063,6 +2097,7 @@ int main(int argc, char** argv) {
             serialOut.push_back(char(b));
             m->onTx(b);
         });
+        machine.setRs232LineSink([m](uint8_t a) { m->onPortA(a); });   // DTR, reset
         std::fprintf(stderr, "[headless] Hayes modem on RS-232 (ATDT host:port)\n");
     }
 #else
@@ -2276,7 +2311,7 @@ int main(int argc, char** argv) {
     // jeu (« tient le feu/une direction ») ou valider le chemin de report joystick.
     if (haveJoy) {
         machine.ikbd.setJoystick(joy0Hold, joy1Hold);
-        machine.bus.stePads.setJoystick(joy0Hold, joy1Hold);   // joypads STE ($FF9200/02)
+        machine.bus.setStePadInput(joy0Hold, joy1Hold);   // joypads STE ($FF9200/02)
         std::fprintf(stderr, "[headless] joystick held: port1=$%02X port0=$%02X\n",
                      joy1Hold, joy0Hold);
     }
@@ -2458,7 +2493,7 @@ int main(int argc, char** argv) {
             // jamais le feu, silencieusement.
             if (haveJoy) {
                 machine.ikbd.setJoystick(joy0Hold, joy1Hold);
-                machine.bus.stePads.setJoystick(joy0Hold, joy1Hold);
+                machine.bus.setStePadInput(joy0Hold, joy1Hold);
                 std::fprintf(stderr, "[headless] joystick re-applied after restore: port1=$%02X port0=$%02X\n",
                              joy1Hold, joy0Hold);
             }
@@ -2577,6 +2612,51 @@ int main(int argc, char** argv) {
                                  "reached (--frames %d)\n", loopbackAtFrame, frames);
     }
     int  framesRun = 0;           // trames RÉELLEMENT exécutées (un break peut écourter)
+    // Instruments de fin de trame, partagés par la boucle principale et par les
+    // séquences post-boucle (--keys, --walk-mouse). `done` = trames exécutées
+    // jusqu'ici, touches comprises : P<done>.ppm, « state-hash frame=<done> » et
+    // « --frames <done> --screenshot » décrivent le MÊME instant.
+    auto hashLines = [&](int done) {
+        if (stateHashEvery > 0 && done % stateHashEvery == 0) {
+            // Empreinte de l'état complet : FNV-1a 64 bits de l'archive du save-state.
+            std::vector<uint8_t> st;
+            if (machine.saveState(st)) {
+                uint64_t h = 14695981039346656037ull;
+                for (uint8_t b : st) { h ^= b; h *= 1099511628211ull; }
+                std::printf("state-hash frame=%d %016llx\n", done, static_cast<unsigned long long>(h));
+            }
+        }
+        if (archHashEvery > 0 && done % archHashEvery == 0) {
+            uint64_t hm = 0, hc = 0;
+            if (machine.archHash(hm, hc))
+                std::printf("arch-hash frame=%d machine=%016llx cpu=%016llx\n", done,
+                            static_cast<unsigned long long>(hm), static_cast<unsigned long long>(hc));
+        }
+    };
+    // --shot-every : P<done>.ppm est l'écran après `done` trames, soit exactement ce
+    // que « --frames <done> --screenshot » écrit. Jusqu'au 2026-11-11 l'index valait
+    // `done - 1` (P00000.ppm après une trame) : une trame d'écart avec --screenshot.
+    auto periodicShot = [&](int done) {
+        if (shotEvery <= 0 || done < shotFrom || (done % shotEvery) != 0) return;
+        char path[512];
+        std::snprintf(path, sizeof(path), "%s%05d.ppm", shotPrefix.c_str(), done);
+        if (!observe::writePpm(path, machine.shifter.pixels(),
+                      machine.shifter.width(), machine.shifter.height())) {
+            std::fprintf(stderr, "[headless] FAILED periodic screenshot %s\n", path);
+            outFail = true;
+        }
+    };
+    // Une trame des séquences post-boucle, avec les mêmes instruments que la boucle :
+    // sonde avant, puis empreintes, son et capture périodique après.
+    auto extraFrame = [&]() {
+        if (probeEvery > 0 && (framesRun % probeEvery) == 0)
+            observe::emitProbeLine(framesRun, machine, probeSet);
+        machine.runFrame();
+        ++framesRun;
+        hashLines(framesRun);
+        if (soundDump) dumpFrame();
+        periodicShot(framesRun);
+    };
     for (int frame = 0; frame < frames; ++frame) {
         // Sonde périodique : l'état publié est celui qui SUIT `frame` trames exécutées
         // (même convention que --dump-at) et PRÉCÈDE les injections de la trame
@@ -2682,7 +2762,7 @@ int main(int argc, char** argv) {
         for (const auto& ja : joyAtList) {
             if (frame != ja.first) continue;
             machine.ikbd.setJoystick(0, ja.second);
-            machine.bus.stePads.setJoystick(0, ja.second);   // joypads STE ($FF9200/02)
+            machine.bus.setStePadInput(0, ja.second);   // joypads STE ($FF9200/02)
             std::fprintf(stderr, "[headless] joystick applied at frame %d: port1=$%02X\n", frame, ja.second);
         }
         // Script souris daté (--mouse-at) : 1 token = 1 trame. Pilote un menu souris.
@@ -2738,26 +2818,12 @@ int main(int argc, char** argv) {
             if (idx < (int)joyScr.size()) {
                 const uint8_t st = joyScr[std::size_t(idx)];   // script COMPILÉ
                 machine.ikbd.setJoystick(0, st);
-                machine.bus.stePads.setJoystick(0, st);   // joypads STE ($FF9200/02)
+                machine.bus.setStePadInput(0, st);   // joypads STE ($FF9200/02)
                 machine.cpu.updateIpl();
             }
         }
         machine.runFrame();
-        if (stateHashEvery > 0 && (frame + 1) % stateHashEvery == 0) {
-            // Empreinte de l'état complet : FNV-1a 64 bits de l'archive du save-state.
-            std::vector<uint8_t> st;
-            if (machine.saveState(st)) {
-                uint64_t h = 14695981039346656037ull;
-                for (uint8_t b : st) { h ^= b; h *= 1099511628211ull; }
-                std::printf("state-hash frame=%d %016llx\n", frame + 1, static_cast<unsigned long long>(h));
-            }
-        }
-        if (archHashEvery > 0 && (frame + 1) % archHashEvery == 0) {
-            uint64_t hm = 0, hc = 0;
-            if (machine.archHash(hm, hc))
-                std::printf("arch-hash frame=%d machine=%016llx cpu=%016llx\n", frame + 1,
-                            static_cast<unsigned long long>(hm), static_cast<unsigned long long>(hc));
-        }
+        hashLines(frame + 1);
         framesRun = frame + 1;
         // NEOST_BAND_DIAG=1 : signale l'APPARITION d'une bande pleine largeur d'une
         // seule couleur dans l'aire active — le symptôme rapporté sur Super Hang-On
@@ -2848,20 +2914,58 @@ int main(int argc, char** argv) {
             break;
         }
         if (soundDump) dumpFrame();
-        if (shotEvery > 0 && frame >= shotFrom && (frame % shotEvery) == 0) {
-            char path[512];
-            std::snprintf(path, sizeof(path), "%s%05d.ppm", shotPrefix.c_str(), frame);
-            if (!observe::writePpm(path, machine.shifter.pixels(),
-                          machine.shifter.width(), machine.shifter.height())) {
-                std::fprintf(stderr, "[headless] FAILED periodic screenshot %s\n", path);
-                outFail = true;
-            }
-        }
+        periodicShot(frame + 1);
         if (haveUntil && machine.cpu.pc() == untilPc) {
             std::fprintf(stderr, "[headless] PC=$%06X reached at frame %d\n", untilPc, frame);
             break;
         }
     }
+    // Séquences post-boucle (--walk-mouse, --keys) : elles tournent AVANT les
+    // instruments de fin de run. Jusqu'au 2026-11-11 elles venaient après : la
+    // sonde finale, --save-state et --sound-dump décrivaient l'instant d'avant les
+    // touches, la capture celui d'après. Leurs trames passent par extraFrame(),
+    // donc par les mêmes empreintes, le même son et les mêmes captures périodiques.
+    // Diagnostic souris : après boot, on déplace le pointeur en diagonale et on
+    // clique au milieu du parcours, pour voir si le curseur GEM apparaît/bouge.
+    if (walkMouse) {
+        auto idle   = [&](int n) { for (int i = 0; i < n; ++i) extraFrame(); };
+        auto packet = [&](int dx, int dy, bool l) {
+            machine.mouseEvent(dx, dy, l, false);
+            machine.cpu.updateIpl();
+            extraFrame();
+        };
+        // CLIC-GLISSÉ : prendre l'icône Disque A (haut-gauche) et la traîner au centre.
+        for (int i = 0; i < 58; ++i) packet(-5, -3, false);  // 1) aller sur Disque A
+        idle(5);
+        packet(0, 0, true);                                  // 2) appui (bouton bas)
+        idle(3);
+        for (int i = 0; i < 45; ++i) packet(4, 4, true);     // 3) glisser bouton TENU
+        idle(3);
+        packet(0, 0, false);                                 // 4) relâcher
+        idle(40);
+        std::fprintf(stderr, "[headless] sequence: click-drag from Disk A to the centre\n");
+    }
+
+    // Injection de touches (pilotage des menus de diagnostic). Table de scancodes
+    // ST (jeu « PC/AT » du clavier ST) pour A-Z, 0-9 et Entrée ; on envoie make
+    // puis break, avec quelques trames de battement, puis on laisse tourner.
+    if (!keys.empty()) {
+        auto idle = [&](int n) { for (int i = 0; i < n; ++i) extraFrame(); };
+        for (char c : keys) {
+            const uint8_t sc = stScancode(c);
+            if (!sc) continue;
+            machine.keyEvent(sc, true);  machine.cpu.updateIpl(); idle(2);
+            machine.keyEvent(sc, false); machine.cpu.updateIpl(); idle(2);
+        }
+        // « Branche » le connecteur de bouclage RS232 APRÈS la navigation clavier :
+        // s'il était branché plus tôt, l'écho du rapport série imprimé en console au
+        // boot reviendrait en réception et serait lu comme entrée terminal → le test
+        // clavier échouerait. Le technicien le branche juste avant de lancer le test S.
+        if (loopback) { machine.mfp.setLoopback(true); machine.midi.setLoopback(true); machine.scc.setLoopback(true); }
+        idle(frames);   // laisse les tests déclenchés s'exécuter
+        std::fprintf(stderr, "[headless] keys injected: \"%s\"\n", keys.c_str());
+    }
+
     // Dernier échantillon : sans lui, l'état FINAL — celui que --save-state grave et
     // sur lequel le pilote va rebondir — ne serait jamais publié.
     if (probeEvery > 0)
@@ -2908,47 +3012,6 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "[headless] FAILED to open audio dump %s\n", soundDumpPath.c_str());
             outFail = true;
         }
-    }
-
-    // Diagnostic souris : après boot, on déplace le pointeur en diagonale et on
-    // clique au milieu du parcours, pour voir si le curseur GEM apparaît/bouge.
-    if (walkMouse) {
-        auto idle   = [&](int frames) { for (int i = 0; i < frames; ++i) machine.runFrame(); };
-        auto packet = [&](int dx, int dy, bool l) {
-            machine.mouseEvent(dx, dy, l, false);
-            machine.cpu.updateIpl();
-            machine.runFrame();
-        };
-        // CLIC-GLISSÉ : prendre l'icône Disque A (haut-gauche) et la traîner au centre.
-        for (int i = 0; i < 58; ++i) packet(-5, -3, false);  // 1) aller sur Disque A
-        idle(5);
-        packet(0, 0, true);                                  // 2) appui (bouton bas)
-        idle(3);
-        for (int i = 0; i < 45; ++i) packet(4, 4, true);     // 3) glisser bouton TENU
-        idle(3);
-        packet(0, 0, false);                                 // 4) relâcher
-        idle(40);
-        std::fprintf(stderr, "[headless] sequence: click-drag from Disk A to the centre\n");
-    }
-
-    // Injection de touches (pilotage des menus de diagnostic). Table de scancodes
-    // ST (jeu « PC/AT » du clavier ST) pour A-Z, 0-9 et Entrée ; on envoie make
-    // puis break, avec quelques trames de battement, puis on laisse tourner.
-    if (!keys.empty()) {
-        auto idle = [&](int n) { for (int i = 0; i < n; ++i) machine.runFrame(); };
-        for (char c : keys) {
-            const uint8_t sc = stScancode(c);
-            if (!sc) continue;
-            machine.keyEvent(sc, true);  machine.cpu.updateIpl(); idle(2);
-            machine.keyEvent(sc, false); machine.cpu.updateIpl(); idle(2);
-        }
-        // « Branche » le connecteur de bouclage RS232 APRÈS la navigation clavier :
-        // s'il était branché plus tôt, l'écho du rapport série imprimé en console au
-        // boot reviendrait en réception et serait lu comme entrée terminal → le test
-        // clavier échouerait. Le technicien le branche juste avant de lancer le test S.
-        if (loopback) { machine.mfp.setLoopback(true); machine.midi.setLoopback(true); machine.scc.setLoopback(true); }
-        idle(frames);   // laisse les tests déclenchés s'exécuter
-        std::fprintf(stderr, "[headless] keys injected: \"%s\"\n", keys.c_str());
     }
 
     std::fprintf(stderr, "[headless] %llu instructions traced\n",

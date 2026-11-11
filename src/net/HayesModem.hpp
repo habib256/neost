@@ -9,10 +9,16 @@
 //  vendus pour ST, qui se branchent sur le port série d'origine.
 //
 //  Câblage (frontend) : Mfp::setSerialSink → onTx (octets émis par l'ST) ;
+//  Machine::setRs232LineSink → onPortA (DTR, et le reset qui la fait retomber) ;
 //  les réponses/le flux entrant reviennent par Mfp::receiveByte (livraison
 //  cadencée au débit série + IRQ RxFull — cf. Scheduler::SERIAL_RX). poll()
-//  se lance une fois par trame pour pomper le TCP entrant. DCD suit la
-//  porteuse (Mfp::setRs232Dcd).
+//  se lance une fois par trame : il pompe le TCP entrant et livre l'issue d'une
+//  numérotation. DCD suit la porteuse (Mfp::setRs232Dcd).
+//
+//  Numérotation ASYNCHRONE : la résolution et la connexion tournent sur un fil
+//  hôte ; le fil d'émulation ne s'y bloque plus. CONNECT ou NO CARRIER arrive à
+//  la première trame qui suit l'issue — date hôte, comme tout le trafic réel, hors
+//  du contrat de déterminisme.
 //
 //  Échappement « +++ » : trois '+' consécutifs suffisent (sans garde de
 //  silence d'une seconde — simplification v1 documentée).
@@ -21,6 +27,8 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <string>
 
 #include "io/Mfp.hpp"
@@ -28,23 +36,41 @@
 
 class HayesModem {
 public:
-    explicit HayesModem(Mfp& mfp) : mfp_(mfp) {}
+    // `toSt` remplace Mfp::receiveByte comme sortie vers l'ST (tests) ; vide = MFP.
+    explicit HayesModem(Mfp& mfp, std::function<void(uint8_t)> toSt = {})
+        : mfp_(mfp), toSt_(std::move(toSt)) {}
     ~HayesModem();
+    HayesModem(const HayesModem&) = delete;
+    HayesModem& operator=(const HayesModem&) = delete;
 
     void onTx(uint8_t b);       // octet écrit par l'ST dans l'UDR
-    void poll();                // une fois par trame : pompe le TCP entrant
+    void onPortA(uint8_t a);    // lignes du port A du PSG (DTR = bit4, actif bas)
+    void poll();                // une fois par trame : issue du dial + TCP entrant
     bool connected() const { return neonet::socketValid(fd_); }
+    bool dialing() const { return dial_ != nullptr; }
+    bool dataMode() const { return dataMode_; }
     void hangup(bool notify);
+
+    struct DialJob;             // numérotation en vol (partagée avec son fil hôte)
 
 private:
     Mfp& mfp_;
+    std::function<void(uint8_t)> toSt_;
     neonet::SocketHandle fd_ = neonet::kInvalidSocket;
+    std::shared_ptr<DialJob> dial_;
+    std::string dialLabel_;     // « hôte:port » de la numérotation en vol (journal)
     bool dataMode_ = false;
     bool echo_ = true;
+    int  dtrMode_ = 2;          // AT&Dn
+    bool dtrOn_ = false;        // dernier DTR vu (vrai = assertée)
+    bool dtrKnown_ = false;     // aucun front tant que le premier état n'est pas connu
     int  plusCount_ = 0;
     std::string cmd_;           // ligne AT en cours d'accumulation
 
+    void out(uint8_t b);
     void sendStr(const std::string& s);       // → ST (ajoute CRLF)
-    void execute(std::string line);
+    void execute(const std::string& line);
     void dial(const std::string& target);
+    void cancelDial();
+    void resetProfile();
 };

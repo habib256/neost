@@ -121,6 +121,7 @@ struct ConfigUi {
     float reqVolume = -1.0f;      // >= 0 → nouveau volume maître
     bool  volumeDone = false;     // fin de glissé → persister
     int   reqFastFdc = -1;        // 0/1 → nouvelle valeur du FDC rapide
+    int   reqStePads = -1;        // 0/1 → ports DB15 du STE branchés sur les joysticks
     bool  cfgDirty = false;       // un réglage à effet immédiat a changé → saveConfig
     bool  reqSaveState = false, reqLoadState = false;
     bool  rewind = false;             // retour arrière actif (rewind=)

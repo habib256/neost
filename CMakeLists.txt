@@ -166,9 +166,9 @@ set_source_files_properties(
 add_library(neost_net STATIC src/net/NatBackend.cpp)
 target_link_libraries(neost_net PUBLIC neost_core)
 
-# NAT POM2 épinglé : aucune dépendance libslirp/GLib, uniquement les API système.
+# NAT de NeoST (issu de POM2) : aucune dépendance libslirp/GLib, uniquement les API système.
 if(NEOST_WITH_NET)
-    set(NEOST_NAT_DIR "${CMAKE_SOURCE_DIR}/extern/pom2nat")
+    set(NEOST_NAT_DIR "${CMAKE_SOURCE_DIR}/extern/nat")
     add_library(neost_nat STATIC
         ${NEOST_NAT_DIR}/BuiltinNatBackend.cpp ${NEOST_NAT_DIR}/NatPacket.cpp
         ${NEOST_NAT_DIR}/NatDhcp.cpp ${NEOST_NAT_DIR}/NatDns.cpp
@@ -220,6 +220,10 @@ set_source_files_properties(${NEOST_NET_SRC}
 if(NEOST_WITH_NET)
     add_executable(neost-midi-ring-test tests/midi_ring_logic.cpp)
     target_link_libraries(neost-midi-ring-test PRIVATE neost_net)
+    # Modem Hayes : ATDT asynchrone, DTR (&D), abandon de numérotation, reset du PSG,
+    # contre un écouteur TCP sur 127.0.0.1.
+    add_executable(neost-modem-test tests/hayes_modem_logic.cpp)
+    target_link_libraries(neost-modem-test PRIVATE neost_net)
 endif()
 
 # --- Moira (cœur 68000 cycle-exact, MIT) — SEUL cœur CPU de NeoST ------------
@@ -408,13 +412,14 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/rtc_write_only_logic.cpp tests/midi_irq_timing_logic.cpp
     tests/ikbd_irq_timing_logic.cpp
     tests/gemdos_snapshot_logic.cpp tests/desktop_mouse_logic.cpp
-    tests/fdc_track_id_location_logic.cpp
+    tests/fdc_track_id_location_logic.cpp tests/fdc_written_marks_logic.cpp
     tests/mfp_internal_loopback_logic.cpp tests/fdc_sector_size_switch_logic.cpp
     tests/mfp_rx_overrun_logic.cpp tests/mfp_rx_irq_timing_logic.cpp
     tests/mfp_mmio_decode_logic.cpp tests/psg_odd_write_logic.cpp tests/dmasound_mmio_state_logic.cpp
     tests/psg_reset_logic.cpp tests/ym_c10_noise_logic.cpp tests/blitter_rmw_logic.cpp tests/blitter_share_gap_logic.cpp tests/ste_cmap_slot_logic.cpp tests/machine_fdc_media_vbl_logic.cpp
     tests/gemdos_drive_mapping_logic.cpp tests/acsi_partitions_logic.cpp
     tests/gemdos_directory_entries_logic.cpp tests/gemdos_dta_reuse_logic.cpp
+    tests/gemdos_process_logic.cpp
     tests/fdc_acsi_logic.cpp tests/fdc_register_logic.cpp tests/machine_scc_logic.cpp
     tests/mmu_logic.cpp tests/fdc_selection_logic.cpp tests/mmio_fidelity_logic.cpp
     tests/ikbd_response_logic.cpp tests/fdc_timing_logic.cpp tests/ikbd_monitor_logic.cpp

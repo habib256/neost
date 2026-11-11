@@ -305,8 +305,10 @@ void App::modemApply(bool on) {
         hayesModem = std::make_unique<HayesModem>(machine.mfp);
         HayesModem* m = hayesModem.get();
         machine.mfp.setSerialSink([m](uint8_t b) { m->onTx(b); });
+        machine.setRs232LineSink([m](uint8_t a) { m->onPortA(a); });   // DTR, reset
     } else if (!on && hayesModem) {
         machine.mfp.setSerialSink({});
+        machine.setRs232LineSink({});
         hayesModem.reset();
     }
 }
@@ -645,6 +647,7 @@ void App::applyConfig() {
     A.usatanApply();                         // slot 2 + attache (unmountAcsi a tout vidé)
     machine.mfp.setColorMonitor(!cfg.mono);
     machine.fdc.setFastFdc(cfg.fastfdc);   // ré-applique le FDC rapide après reconfig
+    machine.bus.stePadsWired = cfg.stePads;
     machine.bus.setFpuPresent(cfg.fpu && machTypeR == MachineType::MegaSte);
     machine.reset();
     std::fprintf(stderr, "[main] live reconfigure: core %s | machine %s | RAM %s\n",

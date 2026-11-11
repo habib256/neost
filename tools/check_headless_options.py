@@ -24,6 +24,7 @@
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test (domaine public).
 # =============================================================================
 import subprocess
+import tempfile
 import sys
 from pathlib import Path
 
@@ -155,6 +156,80 @@ def main() -> int:
           "usage:" not in out.lower() and "video:" in out.lower(),
           "un run sans option doit émuler et rapporter « video: … Hz » ; s'il affiche "
           "l'aide, tous les autres tests mesureraient du vide.", out)
+
+    # --- Lecteur A vide sans --disk (2026-11-11) -------------------------------
+    # Le bug : « disks/diskA.st » était montée par défaut, résolue depuis le
+    # RÉPERTOIRE COURANT et en écriture — la même commande rendait deux empreintes
+    # selon le dossier de lancement. Une recette qui veut une disquette la nomme.
+    check("sans --disk, le lecteur A reste VIDE (pas de disquette implicite)",
+          "drive a: empty" in out.lower(),
+          "un run sans --disk ne doit monter aucune image : sinon son résultat dépend "
+          "du dossier d'où il est lancé.", out)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        # --- Un seul instant de fin de run, touches comprises (2026-11-11) ------
+        # Le bug : --keys tournait APRÈS la boucle principale, donc après la sonde
+        # finale, --save-state et --sound-dump ; seule la capture voyait les touches.
+        # Preuve : --keys et l'injection datée équivalente (--keys-at à la trame
+        # --frames, même cadence de 4 trames) doivent graver le MÊME état, octet
+        # pour octet, et la même capture.
+        a, b = tmp / "keys.state", tmp / "keysat.state"
+        out_k = run(["--keys", "A", "--save-state", str(a), "--screenshot", str(tmp / "k.ppm")],
+                    frames=60)
+        out_a = run(["--keys-at", "60", "A", "--save-state", str(b),
+                     "--screenshot", str(tmp / "a.ppm")], frames=60 + 4 + 60)
+        same = (a.exists() and b.exists() and a.read_bytes() == b.read_bytes()
+                and (tmp / "k.ppm").read_bytes() == (tmp / "a.ppm").read_bytes())
+        check("--keys : save-state et capture décrivent le même instant",
+              same, "l'état gravé avec --keys doit être celui de la fin du run, touches "
+              "comprises — identique à --keys-at sur la même chronologie.",
+              out_k[-300:] + out_a[-300:])
+
+        # --- --shot-every numérote comme --screenshot (2026-11-11) --------------
+        # Le bug : P<F>.ppm montrait l'écran après F+1 trames. On cherche une trame
+        # où l'écran CHANGE, pour que l'égalité ne soit pas due à un écran figé.
+        run(["--shot-every", "1", str(tmp / "p_")], frames=120)
+        shots = {int(p.stem[2:]): p.read_bytes() for p in tmp.glob("p_*.ppm")}
+        moving = [f for f in sorted(shots) if f - 1 in shots and shots[f] != shots[f - 1]]
+        aligned = False
+        if moving:
+            f = moving[-1]
+            run(["--screenshot", str(tmp / "one.ppm")], frames=f)
+            aligned = (tmp / "one.ppm").read_bytes() == shots[f]
+        check("--shot-every : P<F>.ppm est l'écran de --frames F --screenshot",
+              aligned and 0 not in shots,
+              "la capture périodique d'index F doit être celle de --frames F ; une trame "
+              "d'écart fausse tout recalage contre Hatari.",
+              f"index {sorted(shots)[:3]}…, trames mobiles {moving[-3:]}")
+        check("--shot-every : la recherche a trouvé un écran qui bouge", bool(moving),
+              "sans trame mobile entre 1 et 120, le test d'alignement ne prouve rien.")
+
+        # --- Comparateur : un écart toléré l'est par sa ZONE (2026-11-11) -------
+        # Le bug : `max_diff_px` tolérait un NOMBRE ; un autre jeu de pixels faux, de
+        # même effectif, passait. Hors zone, un seul pixel doit faire échouer.
+        w, h = 416, 276
+        hdr = f"P6\n{w} {h}\n255\n".encode()
+        ref = bytearray(w * h * 3)
+        inzone, outzone = bytearray(ref), bytearray(ref)
+        for x in range(w):
+            for y in (274, 275):
+                inzone[(y * w + x) * 3] = 0xFF
+            for y in (10, 11):
+                outzone[(y * w + x) * 3] = 0xFF
+        (tmp / "r.ppm").write_bytes(hdr + ref)
+        (tmp / "in.ppm").write_bytes(hdr + inzone)
+        (tmp / "out.ppm").write_bytes(hdr + outzone)
+
+        def cmp_rc(img):
+            return subprocess.run([sys.executable, str(ROOT / "tools" / "compare_screenshot.py"),
+                                   str(tmp / img), str(tmp / "r.ppm"), "--crop", "buffer",
+                                   "--max", "0", "--tolerate", "0,274,416,2"],
+                                  capture_output=True, timeout=120).returncode
+        check("comparateur : un écart DANS la zone tolérée passe", cmp_rc("in.ppm") == 0,
+              "--tolerate doit exclure les pixels de sa zone du compte.")
+        check("comparateur : le même nombre de pixels HORS zone échoue", cmp_rc("out.ppm") == 1,
+              "832 pixels faux ailleurs que dans la zone ne doivent pas passer pour l'écart connu.")
 
     # --- GUI : la seule surface testable SANS ÉCRAN (chantier A8) --------------
     # Le GUI est un angle mort total — aucun test ne le couvrait, et c'est pourtant

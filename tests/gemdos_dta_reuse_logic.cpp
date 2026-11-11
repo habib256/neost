@@ -95,14 +95,15 @@ int testGemdosDtaReuse() {
         Rig fresh(work.string());
         std::vector<uint8_t> bytes;
         auto save=StateArchive::saver(bytes); fresh.gemdos.serialize(save);
-        constexpr size_t tail=4+256+2;            // [u32 256][256 × used=0][u16 index]
+        // [u32 256][256 × used=0][u16 index][u32 processus = 0][u32 attributs = 0] (v61)
+        constexpr size_t tail=4+256+2+4+4;
         bool shaped=bytes.size()>tail;
         if(shaped) { uint32_t n=0; std::memcpy(&n,bytes.data()+bytes.size()-tail,4); shaped=(n==256); }
         equal("queue DTA reconnue",shaped,true);
         if(shaped) {
             bytes.resize(bytes.size()-tail);
-            const uint8_t empty[6]={0,0,0,0,0,0};   // count = 0, index = 0
-            bytes.insert(bytes.end(),empty,empty+6);
+            const uint8_t empty[14]={};   // count = 0, index = 0, tables v61 vides
+            bytes.insert(bytes.end(),empty,empty+14);
             auto load=StateArchive::loader(bytes.data(),bytes.size()); fresh.gemdos.serialize(load);
             equal("cache DTA vide refusé avec lecteur monté",load.ok(),false);
         }

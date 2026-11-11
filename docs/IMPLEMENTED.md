@@ -943,10 +943,10 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   `$FF9202` (`~dir`, nibble par pad), paddles `$FF9211-17` au neutre `0x24`, lightpen
   `$FF9220/22` à `0x0000`. **DIP MegaSTE** octet haut de `$FF9200` = `0xBF` (logique
   inversée : switch 7 ON → lecteur HD 1.44 monté, switch 8 OFF → son DMA actif, fidèle
-  `IoMemTabMegaSTE_DIPSwitches_Read`) ; STE simple → `0xFF`. Les pads reçoivent le
-  **même état joystick** que l'IKBD (pad A = port 1 « jeux », pad B = port 0) depuis le
-  GUI, le web et le headless (`--joy`/`--joy-at`/`--joy-script`), comme le mapping
-  manette global d'Hatari. Validé : glue self-test 19/19, boots STE/MegaSTE propres,
+  `IoMemTabMegaSTE_DIPSwitches_Read`) ; STE simple → `0xFF`. Depuis le
+  2026-11-11, **rien n'est branché par défaut** sur les DB15 (lignes au repos, comme un STE
+  sans joypad et comme Hatari) ; `--ste-pads`, `ste_pads=1` ou la page Joystick y recopient
+  l'état des joysticks ST (pad A = port 1 « jeux », pad B = port 0). Validé : glue self-test 19/19, boots STE/MegaSTE propres,
   `--joy 0x88` maintenu sans faute parasite.
 - **Joypads STE — finitions** (port `joy.c`) : **bus error sur accès OCTET** de
   `$FF9200` (adresse paire seulement, lecture ET écriture — `$FF9201` reste lisible
@@ -1293,6 +1293,12 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   Les appels GEMDOS (trap #1) sont interceptés et redirigés vers le système
   de fichiers hôte (POSIX). Activé par `--gemdos DIR`
   (headless) ou `NEOST_GEMDOS_DIR` (GUI). Exclusif d'une cartouche externe.
+- **Par processus** (2026-11-11) : lecteur courant lu dans `p_curdrv` de la basepage,
+  dossier courant rangé par basepage (hérité, oublié à Pterm), « X:NOM » relatif au dossier
+  courant de X. Fforce vers un handle du TOS défait la redirection hôte, Fdatime survit à un
+  Fwrite, attributs caché/système/archive retenus pour la session, alias 8.3 `~N` pour deux
+  noms hôtes tronqués pareil. Pexec 0 sous TOS 1.00/1.02 sans fuite. Banc
+  `tools/run_gemdos_ab.py` (disquette contre dossier sous trois TOS) ; save-state v61.
 - **Mécanisme d'interception fidèle à Hatari** : une CARTOUCHE système (octets
   assemblés de `cart_asm.s`/`cartData.c`) est exposée à `$FA0000` ; au boot le TOS
   exécute son C-INIT (`sys_init`) qui installe un nouveau vecteur GEMDOS (`$84`)
@@ -2234,11 +2240,15 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
 
 - **Modem Hayes sur RS-232** (`net/HayesModem`, `--modem`) : commandes `AT` sur l'USART
   MFP → **pont TCP réel** (`ATDT hôte:port` → `CONNECT`, `+++`/`ATH`, DCD suit la
-  porteuse). Débloque STiK/STinG (SLIP/PPP), terminaux, BBS. S'appuie sur
+  porteuse). Débloque STiK/STinG (SLIP/PPP), terminaux, BBS. Depuis le 2026-11-11 :
+  `ATDT` asynchrone (résultat à la trame suivante, tout caractère pendant la numérotation
+  l'annule), chute de DTR selon `AT&D0-3` (défaut `&D2`), reset du ST = DTR au repos =
+  raccroché, lignes AT à commandes multiples (`neost-modem-test`). S'appuie sur
   **`Mfp::receiveByte`** — injection RX **cadencée** au débit série (`Scheduler::SERIAL_RX`,
   IRQ RxFull par octet). Vérifié `MODMTEST.TOS` ↔ serveur TCP local.
 - **EtherNEC — NE2000 sur le port cartouche** (`io/Ne2000`, `--ethernec`) : carte réseau
-  NE2000/DP8390 (pages 0/1, anneau RX, Remote DMA, filtrage MAC) décodée dans la fenêtre
+  NE2000/DP8390 (pages 0/1, anneau RX, Remote DMA enroulé à PSTOP — [B] DP8390D § 9.0,
+  filtrage MAC) décodée dans la fenêtre
   cartouche — **lecture** `$FB0000+n*512`, **écriture** = fausse lecture
   `$FA0000+n*512+d*2`. Fait tourner les pilotes STinG/MiNTnet/MagiCNet **sans modif**.
   **PROM d'adresse station** (2026-10-20) : 32 octets à RSAR=0, MAC doublée en 0-11,
@@ -2265,6 +2275,8 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   MIDI OUT → UDP → pair aval, datagrammes amont → MIDI IN (`MidiAcia::setMidiSink`/
   `tryPop` via la source série, collecte UDP par trame et consommation à 2560 cycles). Vérifié
   `MIDITEST.TOS` (OUT 10/10 octets ordre exact ; round-trip complet OUT→réseau→IN→ACIA).
+  Format v1 depuis le 2026-11-11 : en-tête `NMR` + session + séquence, octets d'une trame
+  groupés, source amont verrouillée, doublons et retards jetés (`neost-midi-ring-test`).
 - **NE2000** (2026-10-20) : PROM d'adresse station (MAC doublée + signature `WW`, lecture seule), MAC
   par défaut `02:4E:53:54:00:01` ; les PAR restent au pilote.
 

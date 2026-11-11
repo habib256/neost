@@ -68,6 +68,11 @@ void Ne2000::reset() {
     loadProm();                      // la PROM survit au reset (elle est en ROM)
 }
 
+void Ne2000::powerCycle() {
+    reset();
+    if (backend_) backend_->nicReset();
+}
+
 void Ne2000::setIsr(uint8_t bits) {
     isr_ |= bits;
     if (isr_ & imr_ & 0x7F) irq_ = true;
@@ -176,11 +181,24 @@ void Ne2000::page1Write(uint8_t reg, uint8_t v) {
 //  Remote DMA (port données $10) : lecture/écriture de la RAM tampon NIC.
 //  RSAR = adresse courante, RBCR = octets restants. RDC posé quand RBCR atteint 0.
 // -----------------------------------------------------------------------------
+// [B] DP8390D/NS32490D (National Semiconductor, juillet 1995) § 9.0 Remote DMA, p. 15
+//     (DP8390D.pdf, sha256 14476839…) : « If the DMA pointer crosses the Page Stop
+//     Register, it is reset to the Page Start Address. This allows the Remote DMA to
+//     remove packets that have wrapped around to the top of the Receive Buffer Ring. »
+//     Un paquet à cheval sur PSTOP se lit donc d'un seul Remote Read. La fiche ne
+//     distingue pas lecture et écriture : le pointeur est le même ([D] QEMU ne2000.c
+//     ne2000_dma_update enroule aussi les deux). Rien n'enroule si l'anneau est vide
+//     ou inversé (PSTOP ≤ PSTART : registres pas encore programmés).
+void Ne2000::advanceRemoteDma() {
+    rsar_++;
+    if (pstop_ > pstart_ && rsar_ == uint16_t(pstop_ << 8)) rsar_ = uint16_t(pstart_ << 8);
+}
+
 uint8_t Ne2000::remoteDmaReadByte() {
     if (rbcr_ == 0) return 0;
     uint8_t v = 0;
     if (rsar_ < mem_.size()) v = mem_[rsar_];
-    rsar_++;
+    advanceRemoteDma();
     if (--rbcr_ == 0) setIsr(ISR_RDC);
     return v;
 }
@@ -190,7 +208,7 @@ void Ne2000::remoteDmaWriteByte(uint8_t v) {
     // PROM d'adresse : en LECTURE SEULE sur la carte — une écriture Remote DMA y
     // est sans effet (le compteur avance quand même).
     if (rsar_ >= kPromSize && rsar_ < mem_.size()) mem_[rsar_] = v;
-    rsar_++;
+    advanceRemoteDma();
     if (--rbcr_ == 0) setIsr(ISR_RDC);
 }
 

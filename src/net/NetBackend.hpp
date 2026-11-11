@@ -28,6 +28,11 @@ public:
     // Récupère une trame en attente (true + remplit `out`), ou false si vide.
     virtual bool recv(std::vector<uint8_t>& out) = 0;
     virtual void poll() {}                 // une fois par trame (backends async)
+    // Mise sous tension de la carte : un backend à état (NAT) lâche ses connexions,
+    // flux et requêtes en vol, que plus personne côté invité ne terminera. Appelé
+    // au power-cycle seulement, pas par le port reset du DP8390 (un pilote s'en sert
+    // aussi pour se remettre d'une erreur) — même partage que POM2 pour le W5100.
+    virtual void nicReset() {}
 };
 
 // Aucun réseau : la carte s'initialise et « lie », mais rien ne circule.

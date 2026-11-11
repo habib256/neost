@@ -39,6 +39,20 @@ main et affiche la réponse : en-têtes (`Content-Length`, `X-Powered-By: Expres
 HTML. C'est le chemin qui marche **sans pile TCP/IP côté ST** (le modem est un pont
 transparent octets ↔ socket) ; interactivement, `UNITERM.PRG` fait la même chose.
 
+**Numérotation asynchrone** (2026-11-11) : résolution DNS et connexion (délai 5 s) tournent
+sur un fil hôte ; `CONNECT` ou `NO CARRIER` arrive à la trame qui suit l'issue, sans geler
+le fil d'émulation ni le GUI. Tout caractère reçu pendant la numérotation l'abandonne
+(`NO CARRIER`, ITU-T V.250), sauf le LF d'une ligne terminée en CRLF : un `ATH` ou un `+++`
+annulent donc par leur premier octet. **DTR** (PSG port A bit 4, actif bas) est suivi par
+`AT&Dn` sur un **front** active → inactive : `&D0` ignore, `&D1` repasse en mode commande,
+`&D2` (défaut) raccroche, `&D3` réinitialise. Le **reset du ST** remet le port A du PSG au
+repos : DTR retombe et un appel en cours est raccroché sous `&D2`, comme sur le fer — le
+modem lui-même n'a pas de ligne de reset. Un logiciel qui ne touche jamais à DTR garde un
+modem utilisable. Les lignes `AT` enchaînent plusieurs commandes (`AT&FE0&D2`) ; `Sn?`
+répond `000`. Grades : [E] pour le jeu Hayes et V.250 (aucun texte dans
+`extern/datasheets`), [F] pour le défaut `&D2`. Contrôle local : `tests/hayes_modem_logic.cpp`
+(cible `neost-modem-test`, palier `fast`, écouteur TCP sur 127.0.0.1).
+
 ```sh
 python3 tools/make_net_test.py /tmp/nettest.st theoldnet.com /
 ./build/neost-headless roms/etos192us.img --machine megast --mem 1m --mono \
@@ -52,8 +66,8 @@ elle écrase la 80ᵉ colonne (une ligne HTML n'y laissait voir que son dernier 
 une colonne de « > »), d'où le repli à 78 colonnes et le CR ajouté sur les LF seuls.
 `src/net/HayesModem.cpp`.
 
-Le NetUSBee/EtherNEC utilise le **NAT intégré de POM2**, épinglé à
-`b07f3a0a5ac699989be0e61c5f36369f5c1287a2` sous `extern/pom2nat`.
+Le NetUSBee/EtherNEC utilise le **NAT intégré de NeoST** (`extern/nat`), issu de
+POM2 ; dernière reprise des correctifs amont : `4625ec82547118918bfafc795f6b7128cdb616ae`.
 `NatBackend` (`src/net/NatBackend.cpp`) adapte les trames à `NetBackend` ;
 aucune dépendance libslirp/GLib. Le NAT est construit avec `NEOST_WITH_NET`
 (par défaut sur bureau, coupé sur Android et WASM). La case **Real Internet
@@ -347,8 +361,20 @@ Mesuré A/B sur 40 échéances de 50 ms vers le Circuit Tracks :
 ## Anneau MIDI réseau — MIDIMaze en ligne (`--midi-net H:P[:L]`)
 
 MIDI Maze relie les ST en **anneau** par câbles MIDI (OUT de l’un → IN du suivant).
-`MidiAcia::setMidiSink` transmet les octets achevés vers le pair aval. Les datagrammes
-amont sont collectés une fois par trame dans le tampon de gigue de `MidiRing` ;
+`MidiAcia::setMidiSink` transmet les octets achevés vers le pair aval : ceux d'une trame
+partent ensemble dans **un** datagramme, au `poll()` de fin de trame (ou dès 512 octets).
+
+**Format v1** (2026-11-11) : `'N' 'M' 'R' 0x01`, session (u32 gros-boutiste, tirée à
+l'ouverture), numéro de séquence (u32, +1 par datagramme), puis 1 à 512 octets MIDI. Le
+récepteur se verrouille sur la première source valide (adresse + port) et ignore les
+autres tant qu'elle parle (relève après 5 s de silence) ; il jette doublons et
+datagrammes en retard, compte les trous, et se resynchronise quand la session de sa
+source change (pair relancé). L'ancien format — un octet brut par datagramme, sans
+en-tête, jamais documenté comme protocole — est **refusé** avec un avertissement : les
+deux bouts d'un anneau doivent être à jour. Un datagramme hors ordre est perdu, pas
+recousu : un câble MIDI ne réordonne rien.
+
+Les datagrammes amont sont collectés une fois par trame dans le tampon de gigue de `MidiRing` ;
 `tryPop` alimente ensuite la source série à **un octet toutes les 2560 cycles**.
 Il n’y a pas d’appel UDP par octet. Le 6850 n’a qu’un seul RDR : si le CPU ne le lit
 pas, le caractère suivant est perdu et l’overrun matériel est signalé. Le tampon
@@ -358,7 +384,8 @@ En headless, un anneau ouvert prend la place des appareils MIDI IN hôtes sur ce
 entrée DIN ; si les deux ont été demandés, le choix est signalé dans le journal.
 Le contrôle local `tests/midi_ring_logic.cpp` (cible `neost-midi-ring-test`, lancée
 par le palier `fast` quand `NEOST_WITH_NET` est actif) reçoit 20 octets dans l’ordre en
-51200 cycles après une seule collecte UDP (127.0.0.1 uniquement). Le test historique
+51200 cycles, portés par un seul datagramme (127.0.0.1 uniquement), et rejette doublon,
+datagramme réordonné, source étrangère et ancien format brut. Le test historique
 `MIDITEST.TOS` (`dev/netdemo/`) avait aussi validé le round-trip OUT→UDP→IN→ACIA.
 Implémentation : `src/net/MidiRing.cpp`.
 

@@ -158,8 +158,8 @@ during the EmuTOS startup screen after **Machine → Hard Reset** to boot **A:**
 while keeping the hard disk mounted. These demo disks do not contain a normal
 GEMDOS directory; opening them from the desktop can show meaningless filenames.
 
-**Network** — the NE2000 (EtherNEC/NetUSBee) uses **pom2nat** (GPL-3.0-or-later, ported
-from POM2), a built-in user-mode NAT; no libslirp or GLib installation is needed. Enable it
+**Network** — the NE2000 (EtherNEC/NetUSBee) uses NeoST's built-in user-mode NAT
+(`extern/nat`, GPL-3.0-or-later, derived from POM2); no libslirp or GLib installation is needed. Enable it
 with `--ethernec --nat` or the Network page. The guest keeps 10.0.2.15/24, gateway 10.0.2.2
 and DNS 10.0.2.3; it needs STinG/ENEC or another ST TCP/IP stack. TCP/UDP port forwards,
 IPv6 and IP fragments are supported: `--nat-forwards 'tcp:0.0.0.0:6502:23'` publishes guest

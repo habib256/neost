@@ -305,7 +305,7 @@ static void feedJoysticks(App& A) {
         // rien au ST (sinon le jeu bougerait pendant la navigation).
         if (A.kioskDiskMenu) { joy0 = 0; joy1 = 0; }
         machine.ikbd.setJoystick(joy0, joy1);
-        machine.bus.stePads.setJoystick(joy0, joy1);   // joypads STE ($FF9200/02) — même état
+        machine.bus.setStePadInput(joy0, joy1);   // joypads STE ($FF9200/02) — même état
         // Boutons auxiliaires manette → touches ST : X = ESPACE, Y = RETURN
         // (cf. stjoy::readAux — jeux « PRESS SPACE » jouables sans clavier).
         // Make/break IKBD sur les FRONTS ; tout est relâché quand l'overlay
@@ -326,7 +326,7 @@ static void feedJoysticks(App& A) {
         for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid) {
             GLFWgamepadstate gs;
             if (glfwJoystickPresent(jid) && glfwGetGamepadState(jid, &gs)) {
-                machine.bus.stePads.setAnalog(0, gs.axes[GLFW_GAMEPAD_AXIS_LEFT_X],
+                machine.bus.setStePadAnalog(0, gs.axes[GLFW_GAMEPAD_AXIS_LEFT_X],
                                                  gs.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
                 break;
             }
@@ -428,7 +428,7 @@ static void runDueFrames(App& A) {
             for (const auto& [jf, jv] : A.joyAt)
                 if (A.emuFrame >= jf) {
                     machine.ikbd.setJoystick(0, jv);
-                    machine.bus.stePads.setJoystick(0, jv);
+                    machine.bus.setStePadInput(0, jv);
                 }
             // Souris scriptée — port à l'identique du headless (mêmes tokens,
             // même relâche implicite du clic au token suivant).
@@ -1105,6 +1105,13 @@ static void consumeConfigRequests(App& A, Frame& F) {
         machine.fdc.setFastFdc(cfg.fastfdc);
         saveConfig(A, exeDir, cfg, &machine);
         cfgUi.reqFastFdc = -1;
+    }
+    if (cfgUi.reqStePads >= 0) {
+        cfg.stePads = (cfgUi.reqStePads != 0);
+        machine.bus.stePadsWired = cfg.stePads;
+        machine.bus.setStePadInput(0, 0);   // relâche tout ; le polling suivant ré-alimente
+        saveConfig(A, exeDir, cfg, &machine);
+        cfgUi.reqStePads = -1;
     }
     if (cfgUi.reqModem >= 0) {
         cfg.modem = (cfgUi.reqModem == 1);

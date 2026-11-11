@@ -68,7 +68,7 @@ void DmaSound::setXsint(bool level) {
 // coupe la lecture SANS lever XSINT (sinon GPIP7 resterait figé HAUT, faussant la
 // détection moniteur ; bug des demos start==end comme l'Amberstar cracktro).
 // Repeat ON, ou fin < début → on ne coupe pas : le fetch avance avec wrap 24 bits
-// (début == fin, repeat ON → trame 2^24 octets, cf. fifoRefill).
+// (début == fin, repeat ON → trame 2^22 octets, cf. fifoRefill).
 void DmaSound::startNewFrame() {
     curAddr_ = startAddr_;
     // ⚠ NE PAS remettre phase_/haveCur_ ici : DmaSnd_StartNewFrame ([D] dmaSnd.c:456-479 @ f0736b24)
@@ -94,25 +94,31 @@ void DmaSound::startNewFrame() {
 // détectée : au FETCH du dernier mot (le vrai DMA fetche en avance de la FIFO
 // sur le DAC) → XSINT bas (event Timer A), puis relatch si repeat, sinon le
 // MATÉRIEL auto-efface le bit PLAY ($FF8901 relit 0 — démo STE « Faster »).
-// Le fetch traverse le plan mémoire complet (traduction MMU / aliasing de
-// banques) comme le DMA disque — port STMemory_DMA_ReadByte (Bus::dmaRead8).
+// Le fetch est un cycle RAM du MCU : compteur de 22 bits posé sur le bus RAM et
+// décodé par le seul MMU (traduction, aliasing de banques), jamais la ROM ni la
+// cartouche — Bus::ramCycleRead8.
+// [D] sndcnt.v:8-9 @ 4a6db7cc (MiSTery a00deb5b) — `sfb`/`snd` sur [21:1] ;
+//     gstmcu.v:137 — ADDR = { 2'b0, snd } en cycle son. Une fin de trame inférieure
+//     au début fait donc boucler le compteur de $3FFFFE à $000000.
+// [D] Hatari dmaSnd.c:353-361 @ f0736b24 lit par STMemory_DMA_ReadByte sur 32 bits :
+//     la même trame y traverse ROM et cartouche. Ne pas réaligner.
 void DmaSound::fifoRefill() {
     if (!playing_) return;                             // PLAY off : pas de fetch
     // Trace du fetch (NEOST_DMASND_TRACE=1) : même format que le LOG_TRACE
     // « DMA snd fifo refill » d'Hatari → diff direct des séquences adr/contenu.
     static const bool trace = std::getenv("NEOST_DMASND_TRACE") != nullptr;
     while (8 - fifoNb_ >= 2) {
-        fifo_[(fifoPos_ + fifoNb_ + 0) & 7] = int8_t(bus_.dmaRead8(curAddr_));
-        fifo_[(fifoPos_ + fifoNb_ + 1) & 7] = int8_t(bus_.dmaRead8(curAddr_ + 1));
+        fifo_[(fifoPos_ + fifoNb_ + 0) & 7] = int8_t(bus_.ramCycleRead8(curAddr_));
+        fifo_[(fifoPos_ + fifoNb_ + 1) & 7] = int8_t(bus_.ramCycleRead8(curAddr_ + 1));
         if (trace)
             std::fprintf(stderr, "DMA snd fifo refill adr=%x pos %d nb %d %x %x\n",
                          curAddr_, fifoPos_, fifoNb_,
                          uint8_t(fifo_[(fifoPos_ + fifoNb_ + 0) & 7]),
                          uint8_t(fifo_[(fifoPos_ + fifoNb_ + 1) & 7]));
         fifoNb_ += 2;
-        curAddr_ = (curAddr_ + 2) & 0xFFFFFF;
+        curAddr_ = (curAddr_ + 2) & 0x3FFFFE;          // compteur 22 bits (cf. supra)
         if (curAddr_ == frameEndAddr_) {               // fin de trame atteinte AU FETCH
-            // Cas « début == fin, repeat ON » (trame 2^24 octets) : sur STE réel
+            // Cas « début == fin, repeat ON » (trame 2^22 octets) : sur STE réel
             // AUCUNE interruption de fin de trame n'est générée ([D] dmaSnd.c:336-341 @ f0736b24)
             // — le fetch vient de wrapper sur début, on continue SANS pulser XSINT.
             if ((ctrl_ & 0x02) && frameEndAddr_ == frameStartAddr_) continue;
@@ -594,19 +600,21 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         case 0x13: endAddr_   = (endAddr_   & 0xFFFF00) | (uint32_t(v) & 0xFE); break;
         // $FF8920 : octet scratch relisible (cf. read8 — Hatari ne l'intercepte pas).
         case 0x20: pad20_ = v; break;
-        // Mode : bit7 mono + bits0-1 fréquence. Masque de relecture 0x8F :
-        // [D] Hatari dmaSnd.c:1017 @ f0736b24 — garde les bits 2-3 (« only bits that
-        //     exist on a real STE », sans source citée).
+        // Mode : bit7 mono + bits0-1 fréquence, masque de relecture 0x83.
+        // [B] Atari TT030 Hardware Reference Manual, page « DMA SOUND SUBSYSTEM »
+        //     (p. 26 du PDF, sha256 93c17bee…) : « 8920 RW 0000 0000 a000 00bb Sound
+        //     Mode Control » — bits 2-6 à zéro. Le son DMA du TT est celui du STE ;
+        //     la transcription du STE Developer Addendum (« STe Programming info »,
+        //     comp.sys.atari.st.tech, 13 fév. 1991) donne le même « m000 00rr ».
         // [D] MAME atarist.cpp:589 @ ce391499 et MiSTery gstshifter.v:125,159 @ 4a6db7cc
-        //     disent 0x83 (bits 2-3 non câblés).
-        // [F] Trois émulateurs, deux réponses, aucune fiche lisible : on garde 0x8F tant
-        //     qu'un titre ne tranche pas. Tranché par : la documentation Atari du STE
-        //     (registre Sound Mode Control) ou un programme qui relit $FF8921. La
-        // consommation due est datée à l'ANCIENNE cadence avant le changement, et
+        //     concordent (0x83).
+        // [D] Hatari dmaSnd.c:1017 @ f0736b24 garde les bits 2-3 (0x8F, « only bits
+        //     that exist on a real STE », sans source) : écart assumé, grade inférieur.
+        // La consommation due est datée à l'ANCIENNE cadence avant le changement, et
         // le passage mono → stéréo réaligne la FIFO sur frontière paire.
         case 0x21: {
             updateDac();
-            const uint8_t newMode = v & 0x8F;
+            const uint8_t newMode = v & 0x83;
             if ((mode_ & 0x80) && !(newMode & 0x80)) fifoSetStereo();
             if (newMode != mode_) { mode_ = newMode; recordEvent(2); }   // MODE daté (cadence du rendu)
             break;

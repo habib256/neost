@@ -471,8 +471,9 @@
    "frames": 400,
    "frame": 380,
    "crop": "buffer_noled",
-   "max_diff_px": 122,
-   "ref_note": "Écart de 122 px accepté le 2026-11-04 : le partage du bus suit la netlist ST-4082 et stBlitter.sv (compteur cadencé par AS, tout front compte), plus Hatari qui annonce 4 cycles en précisant my guess. Détail : docs/STBLITTER_BENCH.md. Oracle Hatari epingle f0736b24, 2026-10-19. Blitter non-hog 16x8 mots, 100 copies en RAM : donnees $3B27 et 100 releves TADR identiques a Hatari, zero pixel divergent. Ancien snapshot a 68 px, corrige en alignant le debut du cycle RAM avant SYNC(2), pas son callback median apres une tranche DMA. Deux captures Hatari successives identiques ; reference PNG produite par Hatari avec --oracle, sans decalage ni tolerances ajoutees. Les 17 sondes temporelles passent aussi en strict (ROM, RAM, HOG, TAS et MULU). Historique : docs/HATARI_DIVERGENCES.md, BL5.",
+   "max_diff_px": 0,
+   "tolerated_zones": [[48, 32, 8, 97]],
+   "ref_note": "Écart de 122 px accepté le 2026-11-04, toléré par sa ZONE depuis le 2026-11-11 (x 48-55, y 32-128 du buffer : le bord gauche des barres, où tombe la bascule de couleur datée par le Timer A ; hors de ce rectangle, 0 px) : le partage du bus suit la netlist ST-4082 et stBlitter.sv (compteur cadencé par AS, tout front compte), plus Hatari qui annonce 4 cycles en précisant my guess. Détail : docs/STBLITTER_BENCH.md. Oracle Hatari epingle f0736b24, 2026-10-19. Blitter non-hog 16x8 mots, 100 copies en RAM : donnees $3B27 et 100 releves TADR identiques a Hatari, zero pixel divergent. Ancien snapshot a 68 px, corrige en alignant le debut du cycle RAM avant SYNC(2), pas son callback median apres une tranche DMA. Deux captures Hatari successives identiques ; reference PNG produite par Hatari avec --oracle, sans decalage ni tolerances ajoutees. Les 17 sondes temporelles passent aussi en strict (ROM, RAM, HOG, TAS et MULU). Historique : docs/HATARI_DIVERGENCES.md, BL5.",
    "ref_kind": "hatari"
   },
   {
@@ -1208,9 +1209,10 @@
       "frames": 500,
       "frame": 480,
       "crop": "buffer",
-      "max_diff_px": 832,
+      "max_diff_px": 0,
+      "tolerated_zones": [[0, 274, 416, 2]],
       "ref_kind": "rtl",
-      "ref_note": "Référence simulée par tools/run_gstmcu_bench.py (gstmcu 4a6db7cc), grade D. Les 832 px tolérés sont les 2 dernières lignes du buffer : noires sous BLANK dans le modèle, couleur 0 dans NeoST (TODO § 3.1). Tolérance à ramener à 0 si cet écart est tranché en faveur du modèle."
+      "ref_note": "Référence simulée par tools/run_gstmcu_bench.py (gstmcu 4a6db7cc), grade D. La zone tolérée (832 px) est faite des 2 dernières lignes du buffer : noires sous BLANK dans le modèle, couleur 0 dans NeoST (TODO § 3.1). Zone à retirer si cet écart est tranché en faveur du modèle ; hors d'elle, 0 px."
     },
     {
       "id": "rtl_med_pal",

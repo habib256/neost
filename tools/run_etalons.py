@@ -237,6 +237,10 @@ def compare_shots(neost: Path, ref: Path, entry: dict, quiet: bool = False) -> i
     mx = entry.get("max_diff_px", 0)
     cmd = [sys.executable, str(COMPARE), str(neost), str(ref),
            "--crop", crop, "--max", str(mx)]
+    # Écart connu décrit par sa ZONE (`tolerated_zones`, rectangles [x, y, w, h] dans
+    # la zone comparée) plutôt que par un nombre : hors zone, le seuil reste max_diff_px.
+    for z in entry.get("tolerated_zones", []):
+        cmd += ["--tolerate", ",".join(str(int(v)) for v in z)]
     if quiet:
         # Balayage de fenêtre : une centaine de diffs, dont on ne veut QUE le verdict.
         return run_timed(cmd, 300, cwd=ROOT, stdout=subprocess.DEVNULL,

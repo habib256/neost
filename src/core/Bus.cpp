@@ -407,27 +407,33 @@ uint8_t* Bus::hostRamPtr(uint32_t addr, uint32_t len) {
 uint8_t Bus::read8Slow(uint32_t addr) {
     addr &= stmap::ADDR_MASK;
 
-    // Overlay de boot : les 8 premiers octets ($0-$7) proviennent de la ROM
-    // tant que le 68000 n'a pas fini de lire SSP+PC au reset.
-    if (bootOverlay && addr < 8 && addr < rom.size())
-        return rom[addr];
+    // Vecteurs reset $0-$7 : la GLUE sélectionne la ROM pour TOUTE lecture CPU de
+    // ces 8 octets, pas seulement le temps du reset ; la RAM n'y est jamais choisie.
+    // [D] gstmcu.v:189-195 @ 4a6db7cc (MiSTery a00deb5b) — `rvec = irwz & ~overlap
+    //     & ifc2z & fcx & ixdmab` alimente /ROM2 sur A[23:16]=0, et `iramc = overlap
+    //     & …` (l. 224) écarte la RAM de $0-$7. Bloc d'adresse dérivé du schéma du
+    //     GST MCU.
+    // [D] Hatari cpu/memory.c @ f0736b24 lit au contraire la copie RAM (SysMem_*get)
+    //     — écrasable par un alias MMU (banque sur-déclarée qui replie $20000 sur $0)
+    //     ou par un DMA : ce que lisait le CPU divergeait alors de la ROM.
+    // Le mode utilisateur faute avant d'arriver ici ($0-$7FF, busFaultNSlow). La
+    // copie RAM (seedResetVectors) reste ce que lisent la vidéo et les DMA.
+    if (addr < 8 && addr < rom.size()) return rom[addr];
 
     // Espace RAM ($0-$3FFFFF) : décodé par le MMU (banques + aliasing).
-    if (addr < 0x400000) {
-        const int64_t phys = mmuTranslate(addr);
-        if (phys >= 0) return ram[static_cast<std::size_t>(phys)];
-        // Banque vide / au-delà de la config MMU : rien ne pilote le bus de
-        // données → on relit le dernier mot qui y a transité (cf. Hatari
-        // VoidMem_bget/wget → regs.db). Pour un accès MOT (assemblé ici octet
-        // par octet), l'adresse paire porte l'octet fort : le mot relu vaut
-        // exactement cpuDb, comme VoidMem_wget.
-        if (ioAccessWidth_ >= 2) return uint8_t((addr & 1) ? cpuDb : cpuDb >> 8);
-        return uint8_t(cpuDb);                   // accès octet : VoidMem_bget
-    }
+    if (addr < 0x400000) return ramSpaceRead8(addr);
 
     // ROM TOS. La fenêtre décodée dépasse le fichier (1 Mo à $E00000, cf.
     // romWindowSize) : au-delà du TOS chargé on lit 0, comme le tampon ROM
     // d'Hatari (memory.c) — PAS de bus error dans la fenêtre.
+    // [F] Bus ouvert : trois conventions coexistent selon la zone, faute de source
+    //     primaire sur la valeur d'un bus de données que rien ne pilote — $00 ici
+    //     (tampon ROM d'Hatari), dernier mot transité dans une banque RAM vide
+    //     (ramSpaceRead8, VoidMem d'Hatari), $FF sur le port cartouche vide et les
+    //     octets pairs du MFP (Hatari IoMem_BusErrorEven*). MAME atarist.cpp @
+    //     ce391499d37d (`unmap_value_high`) rend $FF partout. Tranché par : lecture
+    //     sur un vrai STE de $E40000 (/ROM1 sans puce), d'une banque MMU vide et du
+    //     port cartouche nu.
     if (addr >= romBase && addr < romBase + romWindowSize())
         return addr < romBase + rom.size() ? rom[addr - romBase] : 0x00;
 
@@ -805,7 +811,7 @@ bool Bus::megaSteCacheUpdate(uint32_t addr, int size, uint16_t val, bool write, 
 }
 
 // -----------------------------------------------------------------------------
-//  Accès DMA (FDC / ACSI / son STE) — port de STMemory_DMA_ReadByte/WriteByte :
+//  Accès DMA (FDC / ACSI) — port de STMemory_DMA_ReadByte/WriteByte :
 //  même plan mémoire que le CPU (MMU, ROM…), mais une zone fautive lit 0 /
 //  absorbe l'écriture au lieu de déclencher une bus error (le DMA n'a pas de
 //  cycle d'exception). Cf. Bus.hpp.
@@ -835,10 +841,34 @@ void Bus::dmaWrite8(uint32_t addr, uint8_t v) {
     write8(addr, v);
 }
 
+// Espace RAM ($0-$3FFFFF) décodé par le MMU — commun au CPU (hors $0-$7, servis
+// par la ROM) et aux cycles RAM du MCU (vidéo, son DMA : ramCycleRead*).
+uint8_t Bus::ramSpaceRead8(uint32_t addr) {
+    const int64_t phys = mmuTranslate(addr);
+    if (phys >= 0) return ram[static_cast<std::size_t>(phys)];
+    // Banque vide / au-delà de la config MMU : rien ne pilote le bus de
+    // données → on relit le dernier mot qui y a transité (cf. Hatari
+    // VoidMem_bget/wget → regs.db). Pour un accès MOT (assemblé ici octet
+    // par octet), l'adresse paire porte l'octet fort : le mot relu vaut
+    // exactement cpuDb, comme VoidMem_wget. [F] valeur du bus ouvert, cf. read8Slow.
+    if (ioAccessWidth_ >= 2) return uint8_t((addr & 1) ? cpuDb : cpuDb >> 8);
+    return uint8_t(cpuDb);                       // accès octet : VoidMem_bget
+}
+
+uint16_t Bus::ramCycleRead16Slow(uint32_t addr) {
+    const uint8_t saved = ioAccessWidth_;
+    ioAccessWidth_ = 2;
+    const uint16_t hi = ramSpaceRead8(addr);
+    const uint16_t v  = uint16_t((hi << 8) | ramSpaceRead8((addr + 1) & 0x3FFFFFu));
+    ioAccessWidth_ = saved;
+    return v;
+}
+
 // Lecture débogueur : même plan mémoire que read8 mais SANS effet de bord (pas
 // de dispatch MMIO, pas de wait state, pas de bus error). Cf. Bus.hpp.
 uint8_t Bus::peek8(uint32_t addr) const {
     addr &= stmap::ADDR_MASK;
+    if (addr < 8 && addr < rom.size()) return rom[addr];   // vecteurs reset : ROM (cf. read8Slow)
     if (addr < 0x400000) {
         const int64_t phys = mmuTranslate(addr);
         return phys >= 0 ? ram[static_cast<std::size_t>(phys)] : 0xFF;
@@ -857,6 +887,8 @@ uint8_t Bus::peek8(uint32_t addr) const {
 
 // Vecteurs reset $0-$7 : recopie ROM → RAM (STMemory_SetDefaultConfig). Écrit la
 // RAM physique directement — l'écriture CPU y fauterait (miroir ROM, cf. busFaultN).
+// Le CPU ne lit plus cette copie (read8Slow sert la ROM) ; la vidéo et les DMA,
+// qui font des cycles RAM, la voient.
 void Bus::seedResetVectors() {
     const std::size_t n = std::min<std::size_t>(8, std::min(rom.size(), ram.size()));
     for (std::size_t i = 0; i < n; ++i) ram[i] = rom[i];
@@ -982,7 +1014,11 @@ uint8_t Bus::rdMfp(uint32_t a) {
     // Wait state MFP (4 cyc) facturé UNE fois par accès : seul l'octet IMPAIR porte
     // un registre câblé (Hatari : M68000_WaitState(4) dans le handler du registre ;
     // l'octet pair d'un accès mot n'ajoute rien).
-    if (cpu) cpu->addMfpWaitCycles();
+    // Accès du blitter (maître de bus, Blitter::readWord) : rien n'est facturé au
+    // CPU, le blitter compte ses propres 4 cycles par accès.
+    // [F] Inconnu : l'attente du DTACK du 68901 allonge-t-elle le cycle du blitter ?
+    //     Tranché par : une mesure d'un blit vers $FFFA01 sur un vrai STE.
+    if (cpu && !blitterMasterAccess) cpu->addMfpWaitCycles();
     const uint8_t v = mfp->read8(a);
     if (cpu) cpu->updateIpl();            // l'état d'IRQ a pu changer
     return v;
@@ -992,7 +1028,7 @@ void Bus::wrMfp(uint32_t a, uint8_t v) {
     // l'ancien chemin en faisait 8 octets de RAM relisible cachés dans le MFP.
     // Octets PAIRS : non décodés, écriture jetée (IoMem_BusErrorEvenWriteAccess).
     if (!(a & 1) || (a & 0x3F) >= 0x31) return;
-    if (cpu) cpu->addMfpWaitCycles();
+    if (cpu && !blitterMasterAccess) cpu->addMfpWaitCycles();   // cf. rdMfp
     mfp->write8(a, v);
     if (cpu) cpu->updateIpl();            // (dé)masquage, fin d'interruption...
 }

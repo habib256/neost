@@ -302,6 +302,7 @@ void parseConfigLine(Config& c, std::string line) {
         if (!(c.joydeadzone >= 0.0f && c.joydeadzone <= 0.95f)) c.joydeadzone = 0.30f;
     }
     else if (line.rfind("fastfdc=", 0) == 0) c.fastfdc = (line.substr(8) == "1");
+    else if (line.rfind("ste_pads=", 0) == 0) c.stePads = (line.substr(9) == "1");
     else if (line.rfind("volume=", 0) == 0) {
         // ⚠ Le NaN doit être écarté AVANT le bornage : « if (v < 0) … if (v > 1) … »
         // le laissait passer intact (toute comparaison avec NaN est fausse). Un volume
@@ -406,6 +407,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
       << "\njoymap=" << w.joymap
       << "\nport0=" << w.port0
       << "\njoydeadzone=" << w.joydeadzone << "\nfastfdc=" << (w.fastfdc ? 1 : 0)
+      << "\nste_pads=" << (w.stePads ? 1 : 0)
       << "\nvolume=" << w.volume
       << "\naudio_latency_ms=" << w.audioLatencyMs
       << "\ndrivesound=" << (w.driveSound ? 1 : 0)

@@ -516,6 +516,11 @@ extension DAM NeoST qualifiée ci-dessus.
 
 ### Son (YM2149 + DMA STE) — `YM2149.cpp`, `DmaSound.cpp` ↔ `psg.c`, `dmaSnd.c`, `sound.c`
 
+- ✅ **`$FF8921` relu sous le masque `0x83` (2026-11-11)** — divergence voulue : Hatari garde
+  `0x8F` ; le manuel matériel du TT (Atari, « 8920 RW 0000 0000 a000 00bb ») et la
+  transcription du STE Developer Addendum mettent les bits 2-6 à zéro, comme MAME et MiSTery.
+  Grade B contre D (`DmaSound.cpp`, case `0x21`).
+
 - ✅ **Microwire DATA octet (2026-10-19)** : fusion avec la valeur visible
   après décalage, sans réutiliser l’autre octet d’une ancienne commande.
   Déclenchements high/low isolés, staging mot/long, rejet occupé et état v45
@@ -563,6 +568,21 @@ cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, 
   Un changement de lecteur entre ID et données ou pendant DMA renvoie RNF si
   le secteur manque, sans alias vers la face/piste suivante. Références :
   Hatari `Floppy_ReadSectors/Floppy_WriteSectors`. STX conserve sa délégation.
+
+### GEMDOS HD — processus et banc A/B (2026-11-11)
+
+Écarts voulus face à Hatari ([D] `gemdos.c`), tranchés par le vrai TOS exécuté (banc
+`tools/run_gemdos_ab.py`, TOS 1.04, 2.06, EmuTOS) et [C] EmuTOS `proc.c` @ 5679730f.
+**Ne pas réaligner.**
+
+- **Dossier courant par processus** : rangé par basepage, hérité du parent, oublié à Pterm ;
+  Hatari le tient global, un enfant qui fait Dsetpath le change pour son parent.
+- **Lecteur courant** lu dans `p_curdrv` (basepage + `$37`).
+- **« X:NOM » et « X: »** partent du dossier courant de X ; Hatari part de la racine.
+- **Fforce(std, handle du TOS)** défait la redirection hôte posée par le même processus.
+- **Alias 8.3** `BASE~N.EXT` quand deux noms hôtes se tronquent pareil ; Hatari masque le second.
+- **Pexec 0 sous TOS < 1.04** : basepage et environnement donnés à l'enfant, comme le chargeur
+  du TOS ; la cartouche rend l'environnement si le chargement échoue.
 
 ### GEMDOS HD — sauvegardes (2026-10-19)
 
@@ -1341,6 +1361,17 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 
 ## Cas où NeoST améliore Hatari (choix à préserver / documenter)
 
+- **Vecteurs reset `$0-$7` servis par la ROM** (2026-11-11) : toute lecture CPU de ces 8 octets rend la ROM,
+  [D] `gstmcu.v:189-195 @ 4a6db7cc` (`rvec` → /ROM2, `iramc` exclut la RAM). Hatari (`cpu/memory.c @ f0736b24`,
+  `SysMem_*get`) lit la copie RAM, qu'un alias MMU ou un DMA peut réécrire. La vidéo et le son DMA, cycles RAM,
+  lisent toujours cette copie (`Bus::ramCycleRead8`, `Bus::ramCycleRead16`). Ne pas réaligner.
+- **Blitter, accès mot vers le MFP** (2026-11-11) : faute seulement si les deux octets fautent, comme pour le CPU ;
+  [B] MC68901 § 2.1.3.2 et 2.1.3.4 (DS sur LDS, DTACK dès CS), [D] `gstmcu.v:176 @ 4a6db7cc`. Hatari juge l'octet pair
+  seul (`stMemory.c:729 @ f0736b24`) : un blit vers `$FFFA00` y lit `$0000` et n'écrit rien. Ne pas réaligner.
+- **Compteur du son DMA sur 22 bits** (2026-11-11) : il boucle de `$3FFFFE` à `$000000` et ne lit que la RAM,
+  [D] `sndcnt.v:8-9` et `gstmcu.v:137 @ 4a6db7cc`. Hatari (`dmaSnd.c:353-361 @ f0736b24`) compte sur 32 bits par
+  `STMemory_DMA_ReadByte` : une fin inférieure au début y traverse ROM et cartouche. Ne pas réaligner.
+
 - **Compteur du son DMA sur STE** (2026-11-04) : il avance hors de DE, mot par mot, pas seulement au HBL (`DmaSnd_STE_HBL_Update`). [B] ST-4081 feuille 20, [D] `mcucontrol.v` @ `4a6db7cc`, `tools/make_stcpu_snd.py`. `dmasnd_poll` reposé. Ne pas réaligner.
 - **Prise des HBL et VBL sur STE** (2026-11-04) : broche levée au cycle exact et vue par `POLL_IPL`, au lieu du commit au dispatch (`intlev_load → ipl_fetch_now`). [D] fx68k @ `0602ee46` + gstmcu @ `4a6db7cc`,
   `tools/run_stcpu_bench.py` : MULU 256/256 contre 63/256, boucle courte 256/256 contre 216/256. Sonde `timer_b_event` à 14 cycles de première IRQ, consigné. ST inchangé, faute de modèle. Ne pas réaligner.
@@ -1351,7 +1382,7 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
 - **Blitter en partagé** (2026-11-04) : fenêtre de comptage de 2 cycles au lieu de 4, accès CPU retenu compté parmi les 64 du CPU.
   [B] ST-4082 feuille 1 (compteur cadencé par AS) et [D] `stBlitter.sv:238-250 @ a00deb5b` avec fx68k @ `0602ee46` ; Hatari
   `blitter.c:69-79 @ f0736b24` annonce 4 cycles, « my guess ». Une boucle d'EXG donne 64 accès par tranche chez NeoST et le RTL, 63 chez Hatari.
-  Écarts mesurés : `blitter_timer` à 122 px, sondes `blitter_shared_large` et `blitter_shared_ram`. → `docs/STBLITTER_BENCH.md`. Ne pas réaligner.
+  Écarts mesurés : `blitter_timer` à 122 px, tous dans la zone x 48-55, y 32-128 du buffer (`tolerated_zones` ; 0 px hors d'elle), sondes `blitter_shared_large` et `blitter_shared_ram`. → `docs/STBLITTER_BENCH.md`. Ne pas réaligner.
 - **Blitter, SMUDGE en HOP 0** (2026-11-04) : la source se lit, [B] ST-4082 feuille 1 (HOP<1> OU SMUDGE). Hatari ne la lit pas ; même résultat, deux accès de plus par mot.
 - **Blitter, adresse source relue en plein mot** (2026-11-04) : elle avance avec la lecture, [D] `stBlitter.sv` `bltCounters` @ `a00deb5b`. Hatari l'avance en fin de mot.
 - **Contrôle de somme de la ROM TOS 2.06** (2026-11-04) : Hatari écrit un BRA en `$E007FA` (`tos.c:483 @ f0736b24`, patch
@@ -1822,7 +1853,7 @@ MFP, périphériques (FDC/son-statuts/bus/SCC/ACIA), son approfondi (cœur YM + 
   passe de bug hunt) : `mmuTranslate` rend void `$40000-$7FFFF` quand bank0 = 128 Ko et
   bank1 = 2 Mo (≙ `memory_map_Standard_RAM`, cpu/memory.c — quirk mesuré sur STF).
 - **Son : bruit ≥/250 kHz** (incrément 125 kHz, comparaison 250 kHz, plancher per=1 retiré —
-  `YM2149.cpp:187-190,248-258` = sound.c:1050-1058) et **`mode_ &= 0x8F`** (`DmaSound.cpp:589`).
+  `YM2149.cpp:187-190,248-258` = sound.c:1050-1058) et `mode_ &= 0x8F` (`DmaSound.cpp:589`, remplacé le 2026-11-11 par `0x83`, grade B, cf. § Son).
 - **Filtre « écriture redondante » freq/res** — PRÉSENT (`recordSyncWrite`, `VideoGlue.cpp:278-361`,
   persistant inter-trames ≙ `ShifterFrame.Freq/Res`) — l'entrée « absent » de la 2ᵉ passe est fausse.
 - **V3 partiel : restart du compteur vidéo PORTÉ** (2026-07-02) — `restartVideoCounter`
@@ -2681,3 +2712,44 @@ puis la lecture de données échoue sur la face absente. NeoST garde cette
 convention. Le fichier ne permet pas de savoir si la face d’origine était
 vierge ou formatée : **grade F**, à trancher par un dump de cette face ou une
 convention de représentation, sans confondre ce manque avec le délai du 1772.
+
+## WD1772 : ID sans champ de données, marques d'une piste écrite (2026-11-11)
+
+**ID sans données.** [B] WD177X-00 p. 1-9 (Read Sector) : faute de marque de données dans
+les 43 octets qui suivent le CRC d'ID, la puce recherche l'ID à nouveau, et RNF ne tombe
+qu'après cinq tours. Un doublon de l'ID porteur de données est donc lu au passage. Write
+Sector ne cherche pas de marque : il écrit la sienne 22 octets après le CRC d'ID (p. 1-12).
+Hatari (`stx.c:1626-1627, 1731-1732 @ f0736b24`) rend RNF aussitôt sur un ID Pasti sans
+données, en lecture comme en écriture : **la fiche prime, ne pas réaligner**. NeoST relance
+la recherche (`Fdc::foundIdHasNoData`, `RUN_RS_TRANSFER_START`), et Write Sector donne au
+secteur un champ neuf, persisté dans le `.wd1772` et relu au remontage. Même règle sur une
+piste `.ST` réécrite (`stOverride`).
+
+A/B du 2026-11-11, binaire avant contre après, captures toutes les 250 trames : 19 STX de
+`disks/stx`, Ivanhoe et The Union Demo (ST, TOS 1.04 UK, 4 000 trames), plus Lethal Xcess
+en jeu (recette de `docs/CASE_STUDIES.md`, 23 000 trames) — **tout identique**. Un seul ID
+sans données dans la collection : Lethal Xcess disque 1, piste 79 face 1, secteur 1, sans
+doublon ; la recette en jeu ne le lit pas. Ce qu'il change n'est donc pas encore observé :
+un RNF au cinquième index (~1 s) au lieu d'immédiat, à surveiller sur ce titre.
+
+**Marques d'une piste écrite (.ST).** [B] p. 1-13 : en MFM, seul $F5 écrit un A1 de synchro
+(horloge manquante) ; $FE, $FB et $F8 s'écrivent avec leur horloge et ne sont des marques que
+derrière trois A1 (p. 1-18, « exactly 3 bytes of A1 » ; [D] MAME `wd_fdc.cpp:1853-1880
+@ ce391499d37d` exige les trois). $F7 écrit le CRC ; deux octets écrits en clair sont relus
+tels quels et comparés. NeoST prenait tout $FE/$FB pour une marque et ne vérifiait aucun
+CRC ; `Fdc::parseWrittenTrack` relit maintenant la piste comme la puce : CRC d'ID faux →
+ID ignoré (RNF+CRC), CRC de données faux → S3, marque hors fenêtre → ID sans données. Seule
+une piste entièrement saine (ID et données à CRC juste, marque $FB) va dans le `.st` ; le
+reste est gardé en mémoire. Formatage XBIOS `Flopfmt` + `Floprd` vérifié sous TOS 1.04 et
+EmuTOS : pistes 0-2 écrites dans le `.st`, relues en $E5. ⚠ [F] CRC préchargé au premier
+$F5 d'une suite seulement (la fiche dit « chaque ») : tranché par un format à 1 ou 2 $F5 relu
+sur un vrai 1772. Le chemin STX (`StxImage::reinterpretSaveTrack`) garde l'ancienne règle
+laxiste, comme Hatari : à aligner sur `parseWrittenTrack`.
+
+**Registre de données.** [B] p. 1-3 : chaque octet transféré passe par le DR ; relu en
+$FF8604 (A1A0 = 11), il rend le dernier octet lu ou écrit. NeoST le laissait à la dernière
+valeur écrite par le CPU (Hatari de même).
+
+**Compteur DMA en écriture**, gardé : décrémenté au 33ᵉ rechargement de 16 octets ([D] Hatari
+`fdc.c:1421-1426 @ f0736b24`) quand MiSTery décompte au 32ᵉ (`atarist/dma.v:342-387
+@ a00deb5b`) ; aucune source primaire de la puce DMA du ST. [F], commentaire à `Fdc::fifoPull`.

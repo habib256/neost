@@ -126,6 +126,7 @@ int testGemdosSnapshot(); // reprise transactionnelle des fichiers hôtes GEMDOS
 int testDesktopMouse(); // pointeur absolu GEM, géométrie et pilote EmuTOS
 int testMfpVectorRegister(); // bits réservés VR nuls, S et base préservés
 int testFdcTrackIdLocation(); // IDs de piste ST compatibles avec tête et face réelles
+int testFdcWrittenMarks(); // marques/CRC d'une piste écrite, ID sans données (5 tours)
 int testMfpInternalLoopback(); // TSR H/L sélectionne le bouclage matériel interne
 int testFdcSectorSizeSwitch(); // secteur STX long vers lecteur ST sélectionné en vol
 int testMfpRxOverrun(); // erreur différée UDR puis acquittement RSR
@@ -162,6 +163,7 @@ int testGemdosDriveMapping(); // GEMDOS après les partitions ACSI, routage des 
 int testAcsiPartitions(); // comptage des racines DOS/Atari et des cibles ACSI
 int testGemdosDirectoryEntries(); // points en sous-dossier selon masque et attributs
 int testGemdosDtaReuse(); // recherches DTA indépendantes, réutilisation et erreurs
+int testGemdosProcess(); // dossier/lecteur par processus, alias 8.3, Fdatime, attributs, Fforce
 int testMfpUnderrunClear(); // délai matériel avant effacement UE
 int testFdcLiveMedia(); // sélection live et validation CHS du nouveau média
 int testMidiRxPhase(); // horloge MIDI RX continue
@@ -1665,6 +1667,36 @@ static void testBlitterTruthTable() {
         checkHex ("non-hog : mot 39 copié après la 2e", r.peek16(DST + 39 * 2), 0x3027);
         checkBool("non-hog : BUSY retombé à la fin", r.blit.busy(), false);
     }
+
+    // --- 6. Accès MOT vers le MFP : jugé sur ses deux octets ----------------------
+    // L'octet pair $FFFA04 n'est pas décodé, l'impair $FFFA05 (DDR) l'est : le 68901
+    // répond au cycle mot ([B] MC68901 § 2.1.3.2/2.1.3.4). Juger l'octet pair seul
+    // (comme Hatari) faisait lire $0000 et jeter l'écriture.
+    {
+        BlitRig r;
+        Mfp mfp;
+        r.bus.mfp = &mfp;
+        r.bus.write8(0xFFFA05, 0x5A);
+        auto oneWord = [&](uint32_t src, uint32_t dst) {
+            r.blit.write16(BLT + 0x20, 2);  r.blit.write16(BLT + 0x22, 2);
+            r.blit.write32(BLT + 0x24, src);
+            r.blit.write16(BLT + 0x28, 0xFFFF); r.blit.write16(BLT + 0x2A, 0xFFFF);
+            r.blit.write16(BLT + 0x2C, 0xFFFF);
+            r.blit.write16(BLT + 0x2E, 2);  r.blit.write16(BLT + 0x30, 2);
+            r.blit.write32(BLT + 0x32, dst);
+            r.blit.write16(BLT + 0x36, 1);  r.blit.write16(BLT + 0x38, 1);
+            r.blit.write8 (BLT + 0x3A, 2);  r.blit.write8 (BLT + 0x3B, 3);
+            r.blit.write16(BLT + 0x3C, 0xC000);       // BUSY+HOG
+            r.sched.runTo(r.sched.nextDue());
+        };
+        r.poke16(DST, 0x0000);
+        oneWord(0xFFFA04, DST);
+        checkHex("blit mot depuis le MFP : DDR dans l'octet bas", r.peek16(DST) & 0xFF, 0x5A);
+        r.poke16(SRC, 0x00A5);
+        oneWord(SRC, 0xFFFA04);
+        checkHex("blit mot vers le MFP : DDR écrit", r.bus.read8(0xFFFA05), 0xA5);
+        r.bus.mfp = nullptr;
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -1733,9 +1765,10 @@ static void testDmaSoundTruthTable() {
     r.snd.write8(SND + 0x01, 0x00);
     checkHex("contrôle : arrêt", r.snd.read8(SND + 0x01), 0x00);
 
-    // --- 4. Mode $FF8921 : masque $8F (mono + fréquence) --------------------
+    // --- 4. Mode $FF8921 : masque $83 (mono + fréquence) --------------------
+    // [B] Atari TT030 HW Reference Manual, « 8920 RW 0000 0000 a000 00bb » (cf. DmaSound.cpp).
     r.snd.write8(SND + 0x21, 0xFF);
-    checkHex("mode : masque $8F (mono + fréquence)", r.snd.read8(SND + 0x21), 0x8F);
+    checkHex("mode : masque $83 (mono + fréquence)", r.snd.read8(SND + 0x21), 0x83);
 
     // --- 5. Le compteur VIVANT : à l'arrêt il montre l'adresse de DÉBUT ------
     r.setStart(0x020000);
@@ -1760,6 +1793,25 @@ static void testDmaSoundTruthTable() {
     for (int i = 0; i < 400; ++i) { r.sched.runTo(r.sched.now() + 512); r.snd.onHbl(); }
     checkBool("fin de trame sans repeat : la lecture s'arrête",
               (r.snd.read8(SND + 0x01) & 1) == 0, true);
+
+    // --- 7. Compteur 22 bits : une fin inférieure au début boucle par $000000 ----
+    // [D] sndcnt.v:8-9 @ 4a6db7cc. Sur 24 bits (Hatari) le compteur traversait ROM et
+    // cartouche et ne retrouvait la fin qu'après 16 Mo ; ici, 48 octets plus loin.
+    {
+        SndRig w;
+        w.setStart(0x3FFFE0);
+        w.setEnd(0x000010);
+        w.snd.write8(SND + 0x21, 0x83);
+        w.snd.write8(SND + 0x01, 0x01);
+        bool sawLow = false;
+        for (int i = 0; i < 64 && (w.snd.read8(SND + 0x01) & 1); ++i) {
+            w.sched.runTo(w.sched.now() + 512); w.snd.onHbl();
+            if (w.counter() <= 0x10) sawLow = true;
+        }
+        checkBool("compteur 22 bits : repasse par $000000", sawLow, true);
+        checkBool("compteur 22 bits : trame finie après le bouclage",
+                  (w.snd.read8(SND + 0x01) & 1) == 0, true);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -1976,17 +2028,19 @@ static void testFdcTruthTable() {
     std::vector<uint8_t> track(60, 0x4E);
     for (uint8_t sec = 1; sec <= 9; ++sec) {
         track.insert(track.end(), 12, 0);
-        track.insert(track.end(), {0xA1, 0xA1, 0xA1, 0xFE, 0, 0, sec, 2, 0, 0});
+        // [B] WD177X-00 p. 1-13, 1-18 : trois $F5 (A1 de synchro) avant chaque marque,
+        // $F7 pour les deux octets de CRC.
+        track.insert(track.end(), {0xF5, 0xF5, 0xF5, 0xFE, 0, 0, sec, 2, 0xF7});
         track.insert(track.end(), 22, 0x4E);
         track.insert(track.end(), 12, 0);
-        track.insert(track.end(), {0xA1, 0xA1, 0xA1, 0xFB});
+        track.insert(track.end(), {0xF5, 0xF5, 0xF5, 0xFB});
         const size_t data = track.size();
         track.insert(track.end(), 512, uint8_t(0x60 + sec));
         if (sec == 1) {
             std::copy_n(image.begin(), 512, track.begin() + data);
             track[data + 0x1A] = 1;
         }
-        track.insert(track.end(), 2, 0); // CRC synthétisé à la relecture
+        track.push_back(0xF7);
         track.insert(track.end(), 40, 0x4E);
     }
     track.resize(6268, 0x4E);
@@ -2951,6 +3005,7 @@ int main() {
     if (const int failures = testDesktopMouse()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpVectorRegister()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcTrackIdLocation()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcWrittenMarks()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpInternalLoopback()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcSectorSizeSwitch()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpRxOverrun()) g_fail += failures; else ++g_ok;
@@ -2987,6 +3042,7 @@ int main() {
     if (const int failures = testAcsiPartitions()) g_fail += failures; else ++g_ok;
     if (const int failures = testGemdosDirectoryEntries()) g_fail += failures; else ++g_ok;
     if (const int failures = testGemdosDtaReuse()) g_fail += failures; else ++g_ok;
+    if (const int failures = testGemdosProcess()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpUnderrunClear()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcLiveMedia()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiRxPhase()) g_fail += failures; else ++g_ok;

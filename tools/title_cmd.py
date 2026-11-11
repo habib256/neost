@@ -147,7 +147,9 @@ def neost_cmd(disk: Path, args: argparse.Namespace, work: Path, shot_prefix: Pat
 
     Avec shot_prefix, une capture aux trames voulues : le headless capture les
     multiples absolus du pas, pas depuis --shot-from ; le PGCD des seuls écarts
-    décalait par exemple [101,201] vers [200,300].
+    décalait par exemple [101,201] vers [200,300]. Depuis le 2026-11-11, P<F>.ppm est
+    l'écran après F trames (celui de « --frames F --screenshot ») ; il montrait
+    auparavant l'écran après F+1 trames.
     """
     copy = work / ("n" + disk.suffix)
     shutil.copy(disk, copy)
