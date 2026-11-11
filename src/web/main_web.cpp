@@ -32,11 +32,16 @@
 #include "core/AudioMix.hpp"
 #include "core/Framing.hpp"
 #include "core/Machine.hpp"
+#include "core/Rewind.hpp"
 #include "io/JoystickInput.hpp"
 
 namespace {
 
 Machine* g_machine = nullptr;            // carte mère (allouée dans main)
+// Retour arrière, éteint par défaut comme sur le bureau. Budget réduit : l'anneau vit
+// dans le tas WebAssembly, qui ne rend jamais la mémoire au navigateur.
+Rewind g_rewind;
+constexpr std::size_t kWebRewindBudget = 32u << 20;
 MachineType g_reqMachine = MachineType::St;  // machine DEMANDÉE (?machine=…) — cf. neost_load_tos
 GLFWwindow* g_window = nullptr;
 bool   g_kbdJoy = false;                 // émulation joystick clavier (flèches + Ctrl droit)
@@ -293,6 +298,15 @@ void setMouseCaptured(GLFWwindow* w, bool captured) {
     if (g_mouseCaptured) glfwGetCursorPos(w, &g_lastMx, &g_lastMy);
 }
 
+// Recule d'un cran. Le journal part sur la console du navigateur.
+int stepRewind() {
+    if (!g_machine) return 0;
+    std::string why = "Rewind is off";
+    const bool ok = g_rewind.enabled() && g_rewind.stepBack(*g_machine, &why);
+    std::printf("[rewind] %s (%zu in ring)\n", ok ? "OK" : why.c_str(), g_rewind.count());
+    return ok ? 1 : 0;
+}
+
 void onKey(GLFWwindow* w, int key, int /*scancode*/, int action, int mods) {
     if (!g_machine || action == GLFW_REPEAT) return;   // l'IKBD gère sa répétition
     // Repli indispensable aux trackpads / souris sans bouton central. Le keydown est
@@ -313,6 +327,19 @@ void onKey(GLFWwindow* w, int key, int /*scancode*/, int action, int mods) {
     // Émulation joystick clavier active : les touches du joystick (flèches + Ctrl
     // droit) pilotent la manette et ne sont PAS transmises au clavier ST.
     if (g_kbdJoy && stjoy::kbdBit(key)) return;
+    // Ctrl+Alt+R : retour arrière, même accord que le bureau ; R seul va à l'IKBD.
+    static bool rewindChordHeld = false;
+    if (key == GLFW_KEY_R) {
+        if (action == GLFW_PRESS && (mods & GLFW_MOD_CONTROL) && (mods & GLFW_MOD_ALT)) {
+            rewindChordHeld = true;
+            stepRewind();
+            return;
+        }
+        if (action == GLFW_RELEASE && rewindChordHeld) {
+            rewindChordHeld = false;
+            return;
+        }
+    }
     const uint8_t sc = neost::stkeys::scancodeFor(key, 0);
     if (sc) g_machine->keyEvent(sc, action == GLFW_PRESS);
 }
@@ -428,6 +455,7 @@ void mainLoop() {
     const int ran = g_framePacer.runDue(nowMs, [] {
         g_machine->runFrame();
         produceAudioFrame();          // le son suit la trame, pas le rythme de l'écran
+        g_rewind.onFrame(*g_machine);
         return g_machine->frameCycles();
     });
 
@@ -502,8 +530,10 @@ EMSCRIPTEN_KEEPALIVE void neost_load_tos(const char* path) {
     // STE→ST d'un vieux TOS était définitive — recharger ensuite un TOS moderne
     // laissait la session en ST jusqu'au rechargement de la page.
     const MachineType adj = Machine::adjustMachineForTos(g_reqMachine, path);
-    if (adj != g_machine->bus.machine)
+    if (adj != g_machine->bus.machine) {
         g_machine->reconfigure(g_machine->bus.ram.size(), CpuCore::Moira, adj);
+        g_rewind.clear();     // les instantanés décrivent l'ancienne machine
+    }
     g_machine->loadTos(path);
     neost::stkeys::setCountryFromTos(g_machine->bus.rom);   // pays clavier de la nouvelle ROM
     g_machine->reset();
@@ -591,6 +621,14 @@ EMSCRIPTEN_KEEPALIVE void neost_audio_set_queued(int frames, int underruns) {
 
 // Volume maître utilisateur (0..1), appliqué en rampe au mix final. Indépendant du
 // LMC1992 ÉMULÉ, qui appartient à la machine.
+// Retour arrière : on != 0 l'arme, 0 l'éteint et vide l'anneau.
+EMSCRIPTEN_KEEPALIVE void neost_set_rewind(int on) {
+    g_rewind.setBudget(kWebRewindBudget);
+    g_rewind.setEnabled(on != 0);
+}
+// Recule d'environ une seconde ; 1 si c'est fait, 0 sinon (raison sur la console).
+EMSCRIPTEN_KEEPALIVE int neost_rewind() { return stepRewind(); }
+
 EMSCRIPTEN_KEEPALIVE void neost_set_volume(float v) {
     g_masterVol = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
 }

@@ -189,11 +189,14 @@ void AndroidMenu::draw(float uiScale) {
     }
     ImGui::EndChild();
 
-    // Quatre actions côte à côte, largeur égale (cf. la réserve `footer`).
+    // Cinq actions côte à côte, largeur égale (cf. la réserve `footer`).
     {
         const float sp = ImGui::GetStyle().ItemSpacing.x;
-        const float bw = (ImGui::GetContentRegionAvail().x - 3.0f * sp) / 4.0f;
+        const float bw = (ImGui::GetContentRegionAvail().x - 4.0f * sp) / 5.0f;
         if (actionRow("RESTART", kOrange, ImVec2(bw, rowH))) { reqRestart = true; open = false; }
+        ImGui::SameLine();
+        // Le menu se referme : le recul se voit aussitôt, la partie reprend de là.
+        if (actionRow("REWIND", kYellow, ImVec2(bw, rowH))) { reqRewind = true; open = false; }
         ImGui::SameLine();
         if (actionRow("KEYBOARD", ImVec4(0.55f, 0.80f, 1.00f, 1.0f), ImVec2(bw, rowH))) {
             keysPage = true; open = false;
@@ -217,7 +220,8 @@ void AndroidMenu::draw(float uiScale) {
         inA = inA.substr(0, cut) + "\u2026";
     }
     ImGui::PushStyleColor(ImGuiCol_Text, kDim);
-    ImGui::Text("Games found: %d   ·   in A: %s", int(disks.size()), inA.c_str());
+    ImGui::Text("Games found: %d   ·   in A: %s%s%s", int(disks.size()), inA.c_str(),
+                status.empty() ? "" : "   ·   ", status.c_str());
     ImGui::PopStyleColor();
     ImGui::End();
 }

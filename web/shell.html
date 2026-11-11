@@ -172,6 +172,8 @@
         </select>
         <select id="romSel" title="ROM / TOS (swap + reset)"></select>
         <button id="btnReset" title="Cold reset: wipes ST-RAM, so TOS boots from scratch (power-cycle)">Reset</button>
+        <button id="btnRewind" class="toggle" title="Keep a machine state every second (32 MB at most), floppies included">Rewind: off</button>
+        <button id="btnBack" title="Go back about one second (Ctrl+Alt+R). Rewind must be on.">⏪ Back</button>
       </div>
     </fieldset>
 
@@ -238,6 +240,7 @@
     var joyOn = false;
     var zoomOn = true;    // doit refléter g_autoZoom de main_web.cpp (ON par défaut)
     var ready = false;
+    var rewindOn = false;     // bouton « Rewind » (retour arrière)
     var romUserChosen = false;   // l'utilisateur a-t-il choisi une ROM à la main ?
 
     // Paramètres de construction (machine + RAM), lus une fois : aussi affichés
@@ -301,6 +304,7 @@
       driveLoad();       // crée l'AudioContext + précharge les WAV de bruits de lecteur
       audioStart();      // branche la sortie son de la machine (YM2149 + DMA STE)
       if (window.neostApplyVolume) neostApplyVolume();   // volume initial du curseur
+      if (rewindOn) Module.ccall('neost_set_rewind', null, ['number'], [1]);   // basculé avant la fin du chargement
       if (window.neostApplyJoyDeadzone) neostApplyJoyDeadzone();   // zone morte du curseur
     };
 
@@ -650,6 +654,21 @@
       if (ready) Module.ccall('neost_set_auto_zoom', null, ['number'], [zoomOn ? 1 : 0]);
       this.textContent = zoomOn ? 'Auto zoom: on' : 'Auto zoom: off';
       this.classList.toggle('on', zoomOn);
+      document.getElementById('canvas').focus();
+    });
+
+    // Retour arrière : éteint par défaut, comme l'option « Rewind » du bureau.
+    document.getElementById('btnRewind').addEventListener('click', function () {
+      rewindOn = !rewindOn;
+      if (ready) Module.ccall('neost_set_rewind', null, ['number'], [rewindOn ? 1 : 0]);
+      this.textContent = rewindOn ? 'Rewind: on' : 'Rewind: off';
+      this.classList.toggle('on', rewindOn);
+      document.getElementById('canvas').focus();
+    });
+    document.getElementById('btnBack').addEventListener('click', function () {
+      var ok = ready && Module.ccall('neost_rewind', 'number', [], []) === 1;
+      if (ok) setStatusOk('Rewind');
+      else if (statusEl) { statusEl.textContent = rewindOn ? 'Nothing to rewind to yet (see console)' : 'Turn Rewind on first'; statusEl.className = ''; }
       document.getElementById('canvas').focus();
     });
 

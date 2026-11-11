@@ -299,7 +299,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   confrontés à leurs fiches : ce qu'elles tranchaient seules est corrigé (2026-11-10), les `⚠ [B]`
   restants attendent un relevé sur le fer, ou sont gardés parce qu'un jeu contredit la fiche.
   Restent les GLUE/MMU sans schéma, et le SCC en synchrone, SDLC et DMA.
-- **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée.
+- **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée. Tenté en 1 Mo le 2026-11-11 : aucune trame identique dans ±90, ni avec ni sans `--fastfdc` ; la plus proche diffère de 5 213 px (avec) et 9 077 px (sans), toutes au bord de la fenêtre. Prochain essai : une fenêtre de ±300.
 - **Monter les 12 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
   confrontée au modèle (`docs/GLUE_SWEEP.md`), pas leurs pixels ; `closure` et
   `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
@@ -375,10 +375,11 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   l'intégration du cœur POM68K**, quand l'auteur le déclare prêt. Palier `full` et CI verts,
   filet du § 2 en place ; la référence de `cpu_swap_gate.py` s'enregistre sur son commit.
   Elle reste la version de repli tant que POM68K n'a pas fait ses preuves.
-- **Retour arrière : Android, web et essai à la main** · P3 ⭘ — livré dans le GUI de bureau
-  (`core/Rewind.hpp`, option `rewind=`, Ctrl+Alt+R), jugé par `--rewind-test` ; le GUI réel recule
-  aussi (`--rewind-at N`, config isolée, 2026-11-11). Reste à presser l'accord au clavier. Les
-  frontends Android et web ne l'appellent pas.
+- **Retour arrière : essais à la main** · P3 ⭘ — livré dans le GUI de bureau, le web et
+  Android (2026-11-11), jugé par `--rewind-test` ; le GUI réel recule aussi (`--rewind-at N`).
+  Le bouton *Back* du web a reculé deux fois dans Chrome sans écran, piloté par CDP (refus
+  éteint, anneau vide, puis deux pas). Restent à presser Ctrl+Alt+R au clavier, et `REWIND`
+  sur un téléphone : Android n'est que vérifié à la syntaxe, l'APK se construit en CI.
 - **Explorateur de bitmaps** · P3 ⭘ — la RAM en plans ST avec la palette courante, dans le
   débogueur. Modèle : ASE `DebugWindow`.
 - **A12 — validation des paquets sur machines hôtes** · P1 ⏸ matériel — macOS arm64 passé (sauf

@@ -33,6 +33,7 @@
 #include "audio/SampleRing.hpp"
 #include "core/AudioMix.hpp"
 #include "core/Machine.hpp"
+#include "core/Rewind.hpp"
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl2.h"
@@ -572,6 +573,12 @@ int main(int argc, char* argv[]) {
     // A28 : la boucle de rattrapage est PARTAGÉE avec le frontend web (Pacing.hpp).
     neost::pacing::FramePacer framePacer;
     framePacer.resync(double(SDL_GetTicks64()));
+    // Retour arrière ARMÉ d'office : le frontend n'a pas de page de configuration, et
+    // un instantané par seconde ne coûte qu'une copie d'environ 1 Mo. Budget réduit
+    // pour un téléphone : une vingtaine de secondes en 1 Mo de RAM.
+    Rewind rewind;
+    rewind.setBudget(24u << 20);
+    rewind.setEnabled(true);
     bool running = true, paused = false;
 
     while (running) {
@@ -667,6 +674,14 @@ int main(int argc, char* argv[]) {
             g_menu.reqMount.clear();
         }
         if (g_menu.reqRestart) { machine.hardReset(); g_menu.reqRestart = false; }
+        if (g_menu.reqRewind) {
+            g_menu.reqRewind = false;
+            std::string why;
+            const bool ok = rewind.stepBack(machine, &why);
+            g_menu.status = ok ? std::string() : why;
+            if (ok) g_menu.mounted = machine.fdc.mountedPath(0);   // le lecteur a pu changer
+            NEOLOG("[rewind] %s (%zu in ring)", ok ? "OK" : why.c_str(), rewind.count());
+        }
         if (g_menu.reqQuit)    { running = false; g_menu.reqQuit = false; }
         // Injection : consommée SEULEMENT quand le maintien précédent est fini
         // (recette borne). La requête reste posée dans g_menu entre-temps — elle
@@ -704,6 +719,7 @@ int main(int argc, char* argv[]) {
             ran = framePacer.runDue(nowMs, [&] {
                 machine.runFrame();
                 produceAudioFrame();                  // le son suit la trame
+                rewind.onFrame(machine);
                 if (g_injectHold > 0 && --g_injectHold == 0) {
                     if (g_injectClick) machine.mouseEvent(0, 0, false, false);
                     else               machine.keyEvent(g_injectScancode, false);

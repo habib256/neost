@@ -6,6 +6,14 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Retour arrière sur le web et Android (2026-11-11)
+
+- Web : interrupteur *Rewind* (éteint par défaut, 32 Mo), bouton *Back* et accord Ctrl+Alt+R ;
+  exports `neost_set_rewind` et `neost_rewind`. Essayé dans Chrome sans écran, piloté par CDP.
+- Android : action `REWIND` au menu, retour arrière armé d'office (24 Mo) faute de page de
+  configuration ; un refus s'affiche en pied de menu. Vérifié à la syntaxe seulement.
+- `union_demo` en 1 Mo : toujours aucune trame Hatari identique dans ±90.
+
 ## Tous les auto-tests déclarent leur source (2026-11-11)
 
 - Les 14 tests de logique qui ne citaient rien portent leur grade : fiches MC68901 (RE, BREAK, UE),
