@@ -99,14 +99,21 @@
 //  s'appelle NEOST.TOS et affiche les raccourcis NeoST (accents = jeu de
 //  caractères Atari ST). Regénéré : C-NAME (+$18), C-BSIZ (+$14), texte (+$76) ;
 //  code et adresses $FA0024/$FA002A (CART_OLDGEMDOS/CART_GEMDOS) inchangés.
+//  Divergence NeoST (2026-11-11) : l'échec du chargement après l'opcode PEXEC ($48)
+//  saute (bra.w, puis NOP jusqu'à $57) vers une routine ajoutée en fin, assemblée à
+//  la main : cleanup ($246) rend Mfree(p_env) PUIS Mfree(basepage). Hatari ne rendait
+//  que la basepage : l'environnement créé par Pexec 5/7 restait au parent (14 octets
+//  par échec, [C] TOS 1.04/2.06/EmuTOS exécutés : Malloc(-1) inchangé après un
+//  Pexec 0 refusé depuis A:).
+//      2F00 2F08 2F28002C 3F3C0049 4E41 5C8F 3F3C0049 4E41 5C8F 201F 4E73
 // -----------------------------------------------------------------------------
 static const uint8_t Cart_data[] = {
 0xab,0xcd,0xef,0x42,0x00,0x00,0x00,0x00,0x08,0xfa,0x00,0x58,0x00,0xfa,0x00,0x5e,
 0x58,0x00,0x32,0x29,0x00,0x00,0x01,0xe7,0x4e,0x45,0x4f,0x53,0x54,0x2e,0x54,0x4f,
 0x53,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x0c,0x00,0x08,0x69,0x0a,0x66,0x02,
 0x4e,0x73,0x2f,0x3a,0xff,0xf0,0x4e,0x75,0x4e,0x41,0x4f,0xef,0x00,0x10,0x4a,0x80,
-0x6b,0xee,0x00,0x09,0x69,0xec,0x67,0xe8,0x2f,0x00,0x2f,0x08,0x3f,0x3c,0x00,0x49,
-0x4e,0x41,0x5c,0x8f,0x20,0x1f,0x4e,0x73,0xa0,0x00,0x00,0x0a,0x4e,0x75,0x48,0x7a,
+0x6b,0xee,0x00,0x09,0x69,0xec,0x67,0xe8,0x60,0x00,0x01,0xfc,0x4e,0x71,0x4e,0x71,
+0x4e,0x71,0x4e,0x71,0x4e,0x71,0x4e,0x71,0xa0,0x00,0x00,0x0a,0x4e,0x75,0x48,0x7a,
 0x00,0x16,0x3f,0x3c,0x00,0x09,0x4e,0x41,0x5c,0x8f,0x3f,0x3c,0x00,0x07,0x4e,0x41,
 0x54,0x8f,0x42,0x67,0x4e,0x41,0x1b,0x45,0x0d,0x0a,0x20,0x20,0x20,0x20,0x20,0x20,
 0x20,0x20,0x3d,0x3d,0x3d,0x3d,0x3d,0x3d,0x3d,0x3d,0x3d,0x3d,0x3d,0x3d,0x3d,0x3d,
@@ -137,7 +144,9 @@ static const uint8_t Cart_data[] = {
 0x0d,0x0a,0x20,0x6c,0x65,0x20,0x62,0x6f,0x75,0x74,0x6f,0x6e,0x20,0x52,0x65,0x73,
 0x65,0x74,0x2e,0x0d,0x0a,0x20,0x51,0x75,0x69,0x74,0x74,0x65,0x72,0x20,0x3a,0x20,
 0x66,0x65,0x72,0x6d,0x65,0x72,0x20,0x6c,0x61,0x20,0x66,0x65,0x6e,0x88,0x74,0x72,
-0x65,0x2e,0x0d,0x0a,0x00,
+0x65,0x2e,0x0d,0x0a,0x00,0x00,0x2f,0x00,0x2f,0x08,0x2f,0x28,0x00,0x2c,0x3f,0x3c,
+0x00,0x49,0x4e,0x41,0x5c,0x8f,0x3f,0x3c,0x00,0x49,0x4e,0x41,0x5c,0x8f,0x20,0x1f,
+0x4e,0x73,
 };
 
 // Chemins de l'hôte : UNE définition pour tout NeoST (cf. util/HostPath.hpp).
@@ -181,7 +190,7 @@ static const char* gemdosErrorName(int32_t d0) {   // « » si ce n'est pas un c
     }
 }
 
-constexpr uint8_t FA_READONLY=0x01, FA_VOLUME=0x08, FA_DIR=0x10, FA_ARCHIVE=0x20;
+constexpr uint8_t FA_READONLY=0x01, FA_HIDDEN=0x02, FA_SYSTEM=0x04, FA_VOLUME=0x08, FA_DIR=0x10, FA_ARCHIVE=0x20;
 constexpr int IGNORED_FILE_ATTRIBS = FA_ARCHIVE | FA_READONLY;   // 0x21
 
 constexpr char PATHSEP = hostpath::SEP;   // séparateur interne commun (util/HostPath)
@@ -372,6 +381,7 @@ bool GemdosHd::setDirectory(const std::string& hostDir) {
         std::fprintf(stderr, "[gemdos] no available GEMDOS drive from %s (current mount kept)\n", hostDir.c_str());
         return false;
     }
+    if (absDir != mountedDirectory_) extraAttr_.clear();   // attributs du montage précédent
     mountedDirectory_ = absDir;
     installSystemCart();
     currentDrive_ = (uint16_t)bootDrive_;
@@ -403,6 +413,8 @@ void GemdosHd::unmount() {
     connectedDriveMask_ = 0;
     bootDrive_ = 0;
     currentDrive_ = 0;
+    procPaths_.clear();
+    extraAttr_.clear();
     bus_.gemdos = nullptr;
     // Ne retirer QUE la cartouche système GEMDOS — reconnaissable à son chemin VIDE
     // (elle est posée en mémoire par setDirectory, pas chargée d'un fichier). Vider
@@ -439,6 +451,7 @@ void GemdosHd::reset() {
     }
     initGemdos_ = false;
     initCurPaths();
+    procPaths_.clear();
     actPd_ = 0;
     currentDrive_ = (uint16_t)bootDrive_;
     clearAllFileHandles();
@@ -626,12 +639,40 @@ void GemdosHd::initCurPaths() {
 //  Gestion des handles de fichiers
 // -----------------------------------------------------------------------------
 void GemdosHd::closeFileHandle(int i) {
+    FileHandle& fh = fileHandles_[i];
     // L'INF virtuel appartient à l'override (fermé par closeInfOverride).
-    if (fileHandles_[i].used && fileHandles_[i].fp && fileHandles_[i].fp != infFile_)
-        fclose(fileHandles_[i].fp);
-    fileHandles_[i].fp = nullptr;
-    fileHandles_[i].basepage = 0;
-    fileHandles_[i].used = false;
+    const bool real = fh.used && fh.fp && fh.fp != infFile_;
+    if (real) fclose(fh.fp);
+    if (real && !fh.actualName.empty()) {
+        // Fermeture d'un fichier modifié : le TOS pose le bit archive et recopie dans
+        // l'entrée de dossier la date de l'OFD — celle d'un Fdatime, s'il y en a eu un,
+        // qu'un Fwrite postérieur n'efface pas. [C] EmuTOS fsopnclo.c:530-545 @ 5679730f ;
+        // TOS 1.04, 2.06 et EmuTOS exécutés (banc A/B, Fdatime avant et après Fwrite).
+        if (fh.written) setExtraAttr(fh.actualName, extraAttrOf(fh.actualName) | FA_ARCHIVE);
+        if (fh.datimeSet && !hostTime_ && !writeProtect_) {
+            const uint16_t tw = fh.datime[0], dw = fh.datime[1];
+            struct tm ts {};
+            ts.tm_sec  = (tw & 0x1F) << 1;
+            ts.tm_min  = (tw & 0x7E0) >> 5;
+            ts.tm_hour = (tw & 0xF800) >> 11;
+            ts.tm_mday = (dw & 0x1F);
+            ts.tm_mon  = ((dw & 0x1E0) >> 5) - 1;
+            ts.tm_year = ((dw & 0xFE00) >> 9) + 80;
+            ts.tm_isdst = -1;
+            struct stat st;
+            if (stat(fh.actualName.c_str(), &st) == 0) {
+                struct utimbuf tb;
+                tb.actime = st.st_atime;
+                tb.modtime = mktime(&ts);
+                utime(fh.actualName.c_str(), &tb);
+            }
+        }
+    }
+    fh.fp = nullptr;
+    fh.basepage = 0;
+    fh.used = false;
+    fh.datimeSet = false;
+    fh.written = false;
 }
 void GemdosHd::unforceFileHandle(int i) { forced_[i].handle = -1; forced_[i].basepage = 0; }
 void GemdosHd::clearAllFileHandles() {
@@ -645,6 +686,7 @@ int GemdosHd::findFreeFileHandle() {
 
 void GemdosHd::clearInternalDTA(int idx) {
     dtas_[idx].found.clear();
+    dtas_[idx].atari.clear();
     dtas_[idx].used = false;
 }
 void GemdosHd::clearAllInternalDTAs() {
@@ -664,6 +706,149 @@ bool GemdosHd::basepageMatches(uint32_t checkbase) {
         basepage = readLong(basepage + 0x24);      // BASEPAGE_OFFSET_PARENT
     }
     return false;
+}
+
+// -----------------------------------------------------------------------------
+//  Lecteur et dossiers courants par processus (cf. ProcPaths dans le .hpp)
+// -----------------------------------------------------------------------------
+namespace {
+constexpr uint32_t BP_PARENT = 0x24, BP_TBASE = 0x08, BP_CURDRV = 0x37;  // [C] bdosdefs.h
+constexpr int MAX_PARENTS = 12;   // même borne que basepageMatches
+}
+
+uint32_t GemdosHd::currentBasepage() {
+    return actPd_ && checkArea(actPd_, 4, true) ? readLong(actPd_) : 0;
+}
+
+GemdosHd::ProcPaths* GemdosHd::procEntry(uint32_t bp) {
+    for (size_t i = 0; i < procPaths_.size(); ++i) {
+        if (procPaths_[i].first != bp) continue;
+        ProcPaths& e = procPaths_[i].second;
+        // Basepage réutilisée par un autre processus sans que son Pterm soit passé par
+        // ici (terminaison interne du TOS, Mfree d'un Pexec 3 jamais lancé) : on oublie.
+        if (!checkArea(bp, 0x100, false) || readLong(bp + BP_PARENT) != e.parent
+            || readLong(bp + BP_TBASE) != e.tbase) {
+            procPaths_.erase(procPaths_.begin() + (long)i);
+            return nullptr;
+        }
+        return &e;
+    }
+    return nullptr;
+}
+
+const std::string& GemdosHd::currentPath(int drive) {
+    EmuDrive& d = emudrives_[drive - 2];
+    uint32_t bp = currentBasepage();
+    for (int depth = 0; bp && depth < MAX_PARENTS && checkArea(bp, 0x100, false); ++depth) {
+        if (ProcPaths* e = procEntry(bp))
+            if (!e->path[drive - 2].empty()) return e->path[drive - 2];
+        const uint32_t parent = readLong(bp + BP_PARENT);
+        if (parent == bp) break;
+        bp = parent;
+    }
+    return d.fsCurrPath;
+}
+
+void GemdosHd::setCurrentPath(int drive, const std::string& host) {
+    const uint32_t bp = currentBasepage();
+    if (!bp || !checkArea(bp, 0x100, false)) { emudrives_[drive - 2].fsCurrPath = host; return; }
+    ProcPaths* e = procEntry(bp);
+    if (!e) {
+        // Premier Dsetpath du processus : il fige ce qu'il héritait pour TOUS les
+        // lecteurs ([C] proc.c recopie p_curdir entier à la création), puis diverge.
+        ProcPaths fresh;
+        fresh.parent = readLong(bp + BP_PARENT);
+        fresh.tbase  = readLong(bp + BP_TBASE);
+        for (int i = 0; i < MAX_HARDDRIVES; ++i)
+            if (emudrives_[i].used) fresh.path[i] = currentPath(i + 2);
+        // Borne : une entrée par processus vivant ; au-delà de 64, la plus ancienne est
+        // forcément périmée (le TOS n'imbrique pas autant de Pexec).
+        if (procPaths_.size() >= 64) procPaths_.erase(procPaths_.begin());
+        procPaths_.emplace_back(bp, std::move(fresh));
+        e = &procPaths_.back().second;
+    }
+    e->path[drive - 2] = host;
+}
+
+int GemdosHd::currentDrive() {
+    // [C] EmuTOS fsmain.c xsetdrv @ 5679730f : Dsetdrv écrit run->p_curdrv ; Pexec le
+    // recopie du parent (proc.c). Lire la basepage suit donc le vrai lecteur courant
+    // de CE processus — un enfant qui change de lecteur ne le change plus pour son
+    // parent. Repli sur le dernier Dsetdrv vu tant que la basepage est illisible (boot).
+    const uint32_t bp = currentBasepage();
+    if (bp && checkArea(bp + BP_CURDRV, 1, false)) {
+        const uint8_t drv = readByte(bp + BP_CURDRV);
+        if (drv < 26) return drv;
+    }
+    return currentDrive_;
+}
+
+void GemdosHd::forgetProcess(uint32_t bp) {
+    for (size_t i = 0; i < procPaths_.size(); ++i)
+        if (procPaths_[i].first == bp) { procPaths_.erase(procPaths_.begin() + (long)i); break; }
+}
+
+// -----------------------------------------------------------------------------
+//  Attributs caché/système/archive (cf. extraAttr_ dans le .hpp)
+// -----------------------------------------------------------------------------
+uint8_t GemdosHd::extraAttrOf(const std::string& host) const {
+    const auto it = extraAttr_.find(host);
+    return it == extraAttr_.end() ? 0 : it->second;
+}
+void GemdosHd::setExtraAttr(const std::string& host, uint8_t bits) {
+    bits &= FA_HIDDEN | FA_SYSTEM | FA_ARCHIVE;
+    if (bits) extraAttr_[host] = bits;
+    else extraAttr_.erase(host);
+}
+void GemdosHd::moveExtraAttr(const std::string& from, const std::string& to) {
+    const uint8_t bits = extraAttrOf(from);
+    setExtraAttr(from, 0);
+    setExtraAttr(to, bits);
+}
+
+// -----------------------------------------------------------------------------
+//  Noms 8.3 d'un dossier hôte, sans collision (cf. le .hpp)
+// -----------------------------------------------------------------------------
+std::vector<std::pair<std::string, std::string>> GemdosHd::atariNames(const std::string& dir) {
+    std::vector<std::pair<std::string, std::string>> out;   // (hôte, Atari)
+    DIR* dp = opendir(dir.c_str());
+    if (!dp) return out;
+    struct dirent* e;
+    while ((e = readdir(dp))) {
+        std::string n = neost::hostpath::precomposeUtf8(e->d_name);
+        if (n == "." || n == "..") continue;
+        out.emplace_back(n, host2atari(n));
+    }
+    closedir(dp);
+    auto upper = [](std::string s) { for (char& c : s) c = (char)toupper((unsigned char)c); return s; };
+    // Nom hôte déjà valide en 8.3 (au sens de host2atari) d'abord, puis ordre des octets :
+    // le résultat ne dépend pas de l'ordre de readdir, donc pas du système de fichiers.
+    std::sort(out.begin(), out.end(), [&](const auto& a, const auto& b) {
+        const bool ea = upper(a.first) == a.second, eb = upper(b.first) == b.second;
+        if (ea != eb) return ea;
+        return a.first < b.first;
+    });
+    std::vector<std::string> taken;
+    for (auto& p : out) {
+        const std::string want = upper(p.second);
+        if (std::find(taken.begin(), taken.end(), want) == taken.end()) { taken.push_back(want); continue; }
+        const size_t dot = p.second.find('.');
+        const std::string base = p.second.substr(0, dot), ext = dot == std::string::npos ? "" : p.second.substr(dot);
+        for (int n = 1; n < 100000; ++n) {
+            const std::string tail = "~" + std::to_string(n);
+            std::string alias = base.substr(0, std::min(base.size(), 8 - tail.size())) + tail + ext;
+            alias = upper(alias);
+            if (std::find(taken.begin(), taken.end(), alias) != taken.end()) continue;
+            // L'alias ne doit pas non plus être le nom tronqué d'une entrée encore à venir.
+            bool later = false;
+            for (const auto& q : out) if (upper(q.second) == alias) { later = true; break; }
+            if (later) continue;
+            p.second = alias;
+            taken.push_back(alias);
+            break;
+        }
+    }
+    return out;
 }
 
 int GemdosHd::getValidFileHandle(int handle) {
@@ -697,7 +882,7 @@ int GemdosHd::findDriveNumber(const std::string& name) {
     } else if (name.size() == 4 && name[3] == ':') {
         return 0;
     }
-    return currentDrive_;
+    return currentDrive();
 }
 bool GemdosHd::isDriveEmulated(int drive) {
     drive -= 2;
@@ -755,6 +940,14 @@ bool GemdosHd::addPathComponent(std::string& path, const std::string& origname, 
         name.resize(8);
         match = matchHostDirEntry(path, name, false);
         if (!match.empty()) { path += match; return true; }
+    }
+
+    // Passe ALIAS : le nom 8.3 que Fsfirst rend pour ce dossier (tronqué, « + » pour
+    // un caractère invalide, ou « ~N » quand deux noms hôtes se recouvrent). Elle
+    // précède les passes à masque, qui prenaient le premier venu de readdir.
+    if (path.size() > 1) {
+        for (const auto& n : atariNames(path.substr(0, path.size() - 1)))
+            if (strcasecmp(n.second.c_str(), name.c_str()) == 0) { path += n.first; return true; }
     }
 
     // Passe TRONCATURE : un nom Atari a pu être tronqué à 8+3 — on transforme
@@ -932,9 +1125,12 @@ void GemdosHd::createHostFileName(int drive, const std::string& gemNameIn, std::
     const char* filename = gemName.c_str();
     if (filename[0] == '\0') return;
 
-    if (filename[1] == ':')      { out = d.hdEmuDir; filename += 2; }
-    else if (filename[0] == '\\') { out = d.hdEmuDir; }
-    else                          { out = d.fsCurrPath; }
+    // « X:NOM » part du dossier courant de X, comme « NOM » de celui du lecteur
+    // courant ; seul un « \ » mène à la racine. [C] TOS 1.04, 2.06 et EmuTOS exécutés
+    // (banc A/B : Fopen « A:INNER.TXT » après Dsetpath, Dsetpath « A: » sans effet).
+    if (filename[1] == ':') filename += 2;
+    if (filename[0] == '\\') out = d.hdEmuDir;
+    else                     out = currentPath(drive);
 
     size_t minlen = d.hdEmuDir.size();
     cleanFileName(out);
@@ -992,7 +1188,7 @@ bool GemdosHd::gemSetDrv(uint32_t p) {
 bool GemdosHd::gemDFree(uint32_t p) {
     uint32_t address = readLong(p);
     int drive = (int16_t)readWord(p + 4);
-    if (drive == 0) drive = currentDrive_; else drive--;
+    if (drive == 0) drive = currentDrive(); else drive--;
     if (!isDriveEmulated(drive)) return false;
     if (!checkArea(address, 16, false)) { setD0(cpu_, GEMDOS_ERANGE); return true; }
 
@@ -1105,7 +1301,7 @@ bool GemdosHd::gemChDir(uint32_t p) {
     std::string root = d.hdEmuDir;
     addSlash(root);
     if (host.compare(0, root.size(), root) == 0) {
-        d.fsCurrPath = host;
+        setCurrentPath(drive, host);
         setD0(cpu_, GEMDOS_EOK);
     } else {
         setD0(cpu_, GEMDOS_EPTHNF);
@@ -1147,6 +1343,11 @@ bool GemdosHd::gemCreate(uint32_t p) {
         std::strcpy(fileHandles_[idx].mode, "wb+");
         fileHandles_[idx].basepage = readLong(actPd_);
         fileHandles_[idx].actualName = host;
+        fileHandles_[idx].datimeSet = false;
+        fileHandles_[idx].written = true;   // entrée créée : archive à la fermeture
+        // Caché/système demandés à la création, archive posée par le TOS. [C] TOS 1.04,
+        // 2.06 et EmuTOS exécutés : Fattrib rend $20 (et $21 pour un Fcreate(…, 1)).
+        setExtraAttr(host, (uint8_t)((mode & (FA_HIDDEN | FA_SYSTEM)) | FA_ARCHIVE));
         setD0(cpu_, idx + BASE_FILEHANDLE);
         return true;
     }
@@ -1181,6 +1382,8 @@ bool GemdosHd::gemOpen(uint32_t p) {
         std::strcpy(fileHandles_[idx].mode, "rb");
         fileHandles_[idx].basepage = readLong(actPd_);
         fileHandles_[idx].actualName.clear();
+        fileHandles_[idx].datimeSet = false;
+        fileHandles_[idx].written = false;
         setD0(cpu_, idx + BASE_FILEHANDLE);
         return true;
     }
@@ -1210,6 +1413,8 @@ bool GemdosHd::gemOpen(uint32_t p) {
         std::strcpy(fileHandles_[idx].mode, modeStr);
         fileHandles_[idx].basepage = readLong(actPd_);
         fileHandles_[idx].actualName = host;
+        fileHandles_[idx].datimeSet = false;
+        fileHandles_[idx].written = false;
         setD0(cpu_, idx + BASE_FILEHANDLE);
         return true;
     }
@@ -1302,7 +1507,7 @@ bool GemdosHd::gemWrite(uint32_t p) {
     fseek(fp, 0, SEEK_CUR);
     long nwritten = src ? (long)fwrite(src, 1, size, fp) : 0;
     if (ferror(fp)) { setD0(cpu_, errno2gemdos(errno, false)); clearerr(fp); }
-    else { fflush(fp); setD0(cpu_, (int32_t)nwritten); }
+    else { fflush(fp); setD0(cpu_, (int32_t)nwritten); if (nwritten > 0) fileHandles_[fh].written = true; }
     return true;
 }
 
@@ -1317,7 +1522,7 @@ bool GemdosHd::gemFDelete(uint32_t p) {
     //     lecture seule rend EACCDN (−36). unlink() ne regarde que les droits du DOSSIER
     //     et détruisait le fichier. [D] Hatari gemdos.c:2560 @ f0736b24 a le même défaut.
     if (hostFileReadOnly(host)) { setD0(cpu_, GEMDOS_EACCDN); return true; }
-    if (unlink(host.c_str()) == 0) setD0(cpu_, GEMDOS_EOK);
+    if (unlink(host.c_str()) == 0) { setExtraAttr(host, 0); setD0(cpu_, GEMDOS_EOK); }
     else setD0(cpu_, errno2gemdos(errno, false));
     return true;
 }
@@ -1371,7 +1576,7 @@ bool GemdosHd::gemFattrib(uint32_t p) {
 
     // Fattrib sur un DOSSIER : EFILNF sur les trois TOS (même source [C]) — on rendait $10.
     if (S_ISDIR(mode)) { setD0(cpu_, GEMDOS_EFILNF); return true; }
-    if (rwflag == 0) { setD0(cpu_, convertAttribute(mode, host.c_str())); return true; }
+    if (rwflag == 0) { setD0(cpu_, convertAttribute(mode, host.c_str()) | extraAttrOf(host)); return true; }
     if (writeProtect_) { setD0(cpu_, GEMDOS_EWRPRO); return true; }
 
     if (attrib & FA_DIR) {
@@ -1382,7 +1587,12 @@ bool GemdosHd::gemFattrib(uint32_t p) {
     mode &= S_IRWXU | S_IRWXG | S_IRWXO;
     if (attrib & FA_READONLY) mode &= ~(mode_t)(S_IWUSR | S_IWGRP | S_IWOTH);
     else mode |= S_IWUSR;
-    if (chmod(host.c_str(), mode) == 0) { setD0(cpu_, attrib); return true; }
+    if (chmod(host.c_str(), mode) == 0) {
+        // Caché, système et archive : retenus pour la session (cf. extraAttr_).
+        setExtraAttr(host, (uint8_t)attrib);
+        setD0(cpu_, attrib);
+        return true;
+    }
     setD0(cpu_, errno2gemdos(errno, (attrib & FA_DIR) != 0));
     return true;
 }
@@ -1391,7 +1601,18 @@ bool GemdosHd::gemForce(uint32_t p) {
     int std_ = readWord(p);
     int own = readWord(p + 2);
     if (std_ > own) std::swap(std_, own);
-    if ((own = getValidFileHandle(own)) < 0) return false;
+    if ((own = getValidFileHandle(own)) < 0) {
+        // Handle du TOS (CON, ou un Fdup(1) sauvé avant la redirection) : c'est le TOS qui
+        // reprend la sortie standard. Notre redirection vers un fichier hôte doit tomber,
+        // sinon Fwrite(1) continuait d'écrire dans le fichier. [C] TOS 1.04, 2.06 et
+        // EmuTOS exécutés (banc A/B : Fdup(1), Fforce(1, f), Fforce(1, sauvegarde)).
+        // Seule la redirection posée par CE processus tombe : celle d'un parent reste la
+        // sienne (une table par processus manquerait ici pour être exact).
+        if (std_ >= 0 && std_ < FORCED_HANDLES && forced_[std_].handle != -1
+            && forced_[std_].basepage == currentBasepage())
+            unforceFileHandle(std_);
+        return false;
+    }
     if (std_ < 0 || std_ >= FORCED_HANDLES) return false;
     forced_[std_].basepage = readLong(actPd_);
     forced_[std_].handle = own;
@@ -1402,13 +1623,28 @@ bool GemdosHd::gemForce(uint32_t p) {
 bool GemdosHd::gemGetDir(uint32_t p) {
     uint32_t address = readLong(p);
     int drive = readWord(p + 4);
-    if (drive == 0) drive = currentDrive_; else drive--;
+    if (drive == 0) drive = currentDrive(); else drive--;
     if (!isDriveEmulated(drive)) return false;
 
     EmuDrive& d = emudrives_[drive - 2];
-    std::string path = d.fsCurrPath.substr(std::min(d.hdEmuDir.size(), d.fsCurrPath.size()));
-    cleanFileName(path);
-    if (path.size() == 1 && path[0] == PATHSEP) path.clear();   // racine = chaîne vide
+    const std::string& cur = currentPath(drive);
+    std::string rel = cur.substr(std::min(d.hdEmuDir.size(), cur.size()));
+    // Chaque composant rendu sous son nom 8.3 (celui que Fsfirst liste et que Dsetpath
+    // accepte), pas sous le nom hôte : « \LongDirectoryName » sortait tel quel, en
+    // débordant le tampon de 64 octets que le TOS garantit. [C] banc A/B.
+    std::string path, walk = d.hdEmuDir;
+    cleanFileName(walk);
+    for (size_t pos = 0; pos < rel.size();) {
+        size_t next = rel.find(PATHSEP, pos);
+        if (next == std::string::npos) next = rel.size();
+        const std::string comp = rel.substr(pos, next - pos);
+        pos = next + 1;
+        if (comp.empty()) continue;
+        std::string atari = host2atari(comp);
+        for (const auto& n : atariNames(walk)) if (n.first == comp) { atari = n.second; break; }
+        walk += PATHSEP; walk += comp;
+        path += PATHSEP; path += atari;
+    }
     int len = (int)path.size() + 1;
     if (!checkArea(address, len, false)) { setD0(cpu_, GEMDOS_ERANGE); return true; }
     flushCache();
@@ -1423,19 +1659,24 @@ bool GemdosHd::gemGetDir(uint32_t p) {
 // -----------------------------------------------------------------------------
 //  DTA : Fsfirst / Fsnext (port de PopulateDTA / GemDOS_SFirst / GemDOS_SNext)
 // -----------------------------------------------------------------------------
-GemdosHd::DtaResult GemdosHd::populateDTA(InternalDta& iDTA, const std::string& fname, uint32_t dtaGemdos) {
+GemdosHd::DtaResult GemdosHd::populateDTA(InternalDta& iDTA, const std::string& fname,
+                                          const std::string& atari, uint32_t dtaGemdos) {
     std::string tempstr = iDTA.path + std::string(1, PATHSEP) + fname;
     struct stat st;
     if (stat(tempstr.c_str(), &st) != 0)
         return errno == ENOENT ? DtaResult::Skip : DtaResult::Error;
 
     int nFileAttr = convertAttribute(st.st_mode, tempstr.c_str());
+    if (!S_ISDIR(st.st_mode)) nFileAttr |= extraAttrOf(tempstr);
+    // Règle du TOS : une entrée d'attribut nul passe toujours, les autres doivent
+    // partager un bit avec le masque augmenté d'archive et lecture seule — d'où le
+    // fichier caché ET archivé listé par un masque 0. [C] EmuTOS fsdir.c match() et
+    // ixsfirst @ 5679730f.
     int nAttrMask = iDTA.dta_attrib | IGNORED_FILE_ATTRIBS;
     if (nFileAttr != 0 && !(nAttrMask & nFileAttr)) return DtaResult::Skip;
 
     uint16_t tw, dw; dateTime2Tos(st.st_mtime, tw, dw);
     flushCache();
-    std::string atari = host2atari(fname);
     writeLong(dtaGemdos + 26, S_ISDIR(st.st_mode) ? 0u : (uint32_t)st.st_size);   // dta_size (0 pour un dossier, comme en FAT)
     writeWord(dtaGemdos + 22, tw);                       // dta_time
     writeWord(dtaGemdos + 24, dw);                       // dta_date
@@ -1464,7 +1705,9 @@ bool GemdosHd::gemSNext(bool /*trace*/) {
             setD0(cpu_, GEMDOS_ENMFIL);
             return true;
         }
-        result = populateDTA(dta, dta.found[dta.centry++], dtaGemdos);
+        const size_t k = (size_t)dta.centry++;
+        result = populateDTA(dta, dta.found[k],
+                             k < dta.atari.size() ? dta.atari[k] : host2atari(dta.found[k]), dtaGemdos);
     } while (result == DtaResult::Skip);
 
     setD0(cpu_, result == DtaResult::Error ? GEMDOS_EINTRN : GEMDOS_EOK);
@@ -1541,14 +1784,32 @@ bool GemdosHd::gemSFirst(uint32_t p) {
     // « . » et « .. ». Les deux chemins sont déjà physiques et bornés au montage.
     const bool subdir = dirPath != emudrives_[drive - 2].hdEmuDir;
 
+    // Nom 8.3 de chaque entrée, alias compris : le masque se compare au nom que le
+    // programme verra (« LONGFI~1.TXT »), et toujours au nom hôte comme avant.
+    const auto names = atariNames(dirPath);
+    auto atariOf = [&](const std::string& dn) {
+        for (const auto& n : names) if (n.first == dn) return n.second;
+        return host2atari(dn);
+    };
     dtas_[useidx].centry = 0;
     dtas_[useidx].found.clear();
-    for (auto& dn : all)
-        if (fsfirst_match(mask.c_str(), dn.c_str(), subdir)) dtas_[useidx].found.push_back(dn);
+    dtas_[useidx].atari.clear();
+    for (auto& dn : all) {
+        const std::string an = atariOf(dn);
+        if (fsfirst_match(mask.c_str(), dn.c_str(), subdir)
+            || (dn[0] != '.' && fsfirst_match(mask.c_str(), an.c_str(), subdir))) {
+            dtas_[useidx].found.push_back(dn);
+            dtas_[useidx].atari.push_back(an);
+        }
+    }
 
     if (dtas_[useidx].found.empty()) { setD0(cpu_, GEMDOS_EFILNF); return true; }
 
     gemSNext(false);
+    // Tous les noms écartés par leurs attributs (fichier système, masque 0) : pour
+    // Fsfirst c'est « aucun fichier » (EFILNF), pas « plus de fichier » (ENMFIL).
+    // [C] TOS 1.04, 2.06 et EmuTOS exécutés (banc A/B, Fattrib système puis Fsfirst).
+    if ((int32_t)reg(0) == GEMDOS_ENMFIL) setD0(cpu_, GEMDOS_EFILNF);
 
     if (useidx != dtaIndex_) return true;
     if (++dtaIndex_ >= dtas_.size()) {
@@ -1573,9 +1834,10 @@ bool GemdosHd::gemRename(uint32_t p) {
     if (hostFileReadOnly(oldHost)) { setD0(cpu_, GEMDOS_EACCDN); return true; }
     if (access(oldHost.c_str(), F_OK) == 0 && access(newHost.c_str(), F_OK) == 0)
         setD0(cpu_, GEMDOS_EACCDN);
-    else if (rename(oldHost.c_str(), newHost.c_str()) == 0)
+    else if (rename(oldHost.c_str(), newHost.c_str()) == 0) {
+        moveExtraAttr(oldHost, newHost);
         setD0(cpu_, GEMDOS_EOK);
-    else
+    } else
         setD0(cpu_, errno2gemdos(errno, false));
     return true;
 }
@@ -1602,14 +1864,23 @@ bool GemdosHd::gemGSDToF(uint32_t p) {
         tb.modtime = mktime(&ts);
         if (stat(fileHandles_[handle].actualName.c_str(), &fs) != 0) { setD0(cpu_, GEMDOS_EACCDN); return true; }
         tb.actime = fs.st_atime;
-        if (utime(fileHandles_[handle].actualName.c_str(), &tb) == 0) setD0(cpu_, GEMDOS_EOK);
-        else setD0(cpu_, GEMDOS_EACCDN);
+        if (utime(fileHandles_[handle].actualName.c_str(), &tb) == 0) {
+            // Retenue jusqu'à la fermeture, où closeFileHandle la repose : un Fwrite
+            // postérieur ne doit pas l'effacer (cf. FileHandle::datime).
+            fileHandles_[handle].datimeSet = true;
+            fileHandles_[handle].datime[0] = tw;
+            fileHandles_[handle].datime[1] = dw;
+            setD0(cpu_, GEMDOS_EOK);
+        } else {
+            setD0(cpu_, GEMDOS_EACCDN);
+        }
         return true;
     }
 
     struct stat fs;
     if (stat(fileHandles_[handle].actualName.c_str(), &fs) == 0) {
         uint16_t tw, dw; dateTime2Tos(fs.st_mtime, tw, dw);
+        if (fileHandles_[handle].datimeSet) { tw = fileHandles_[handle].datime[0]; dw = fileHandles_[handle].datime[1]; }
         if (checkArea(buffer, 4, false)) {
             flushCache();
             writeWord(buffer, tw);
@@ -1633,6 +1904,8 @@ void GemdosHd::terminateClose() {
         if (fileHandles_[i].basepage == current && fileHandles_[i].used) closeFileHandle(i);
     for (int i = 0; i < FORCED_HANDLES; i++)
         if (forced_[i].basepage == current) unforceFileHandle(i);
+    // Dossiers courants du processus : rendus avec lui ([C] EmuTOS proc.c ixterm).
+    forgetProcess(current);
 }
 bool GemdosHd::gemPterm0(uint32_t)   { terminateClose(); return false; }
 bool GemdosHd::gemPterm(uint32_t)    { terminateClose(); return false; }
@@ -1794,19 +2067,59 @@ void GemdosHd::pexecBpCreated() {
     }
 
     if (errcode) {
-        setAreg(0, reg(0));            // A0 = basepage (à libérer par la cartouche)
+        setAreg(0, reg(0));            // A0 = basepage (la cartouche rend elle ET son environnement)
         setD0(cpu_, (int32_t)errcode);
         sr &= ~SR_ZERO;
     } else if (mode == 0) {
         flushCache();
+        const uint32_t bp = reg(0);
+        if (bus_.tosVersion < 0x104) {
+            // TOS 1.00/1.02 n'ont pas Pexec 6 : Pexec 4 laisse la basepage et
+            // l'environnement au PARENT, qui les perdait à chaque lancement (Malloc(-1)
+            // baissait de ~9 Ko par Pexec 0 depuis C:, rien depuis A: — TOS 1.00 et 1.02
+            // exécutés). Le chargeur du TOS les donne à l'enfant avant de le lancer :
+            // Pterm les rend, Ptermres les garde. [C] EmuTOS proc.c PE_GOTHENFREE et
+            // set_owner @ 5679730f. Même geste ici, sur les descripteurs du TOS.
+            const uint32_t parent = currentBasepage();
+            const uint32_t env = readLong(bp + 0x2C);
+            const bool okBp  = giveBlockToChild(bp, parent, bp);
+            const bool okEnv = giveBlockToChild(env, parent, bp);
+            if (trace_ && !(okBp && okEnv))
+                std::fprintf(stderr, "[gemdos] Pexec: TOS memory descriptor not found (bp %d, env %d)\n",
+                             okBp, okEnv);
+        }
         // Relance un Pexec « just-go » pour démarrer le programme.
         writeWord(savedPexecParams_, bus_.tosVersion >= 0x104 ? 6 : 4);
-        writeLong(savedPexecParams_ + 6, reg(0));
+        writeLong(savedPexecParams_ + 6, bp);
         sr |= SR_OVERFLOW;
     } else {
         sr |= SR_ZERO;
     }
     setSR(sr);
+}
+
+// Descripteur mémoire du GEMDOS : { m_link, m_start, m_length, m_own }, 16 octets,
+// alloués dans la réserve système, sous _membot ([C] EmuTOS bdos/mem.h @ 5679730f ;
+// même structure dans TOS 1.0x, dont EmuTOS reprend le BDOS). La liste des blocs
+// alloués (mp_mal) vit à une adresse propre à chaque ROM : on cherche donc LE
+// descripteur dont m_start est le bloc et m_own le parent — deux pointeurs exacts
+// côte à côte, plus une longueur plausible. Un seul candidat est exigé : au moindre
+// doute, on ne touche à rien (comportement d'avant, bloc laissé au parent).
+bool GemdosHd::giveBlockToChild(uint32_t start, uint32_t parent, uint32_t child) {
+    if (!start || !parent) return false;
+    const uint32_t membot = readLong(0x432);
+    const uint32_t ramTop = (uint32_t)bus_.ram.size();
+    if (membot <= 0x800 || membot > ramTop) return false;
+    uint32_t found = 0; int hits = 0;
+    for (uint32_t a = 0x800; a + 16 <= membot; a += 2) {
+        if (readLong(a + 4) != start || readLong(a + 12) != parent) continue;
+        const uint32_t len = readLong(a + 8);
+        if (len == 0 || start + len > ramTop || len > ramTop) continue;
+        found = a; ++hits;
+    }
+    if (hits != 1) return false;
+    writeLong(found + 12, child);
+    return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -2336,6 +2649,7 @@ void GemdosHd::serialize(StateArchive& ar) {
         ar(h.used);
         if (!h.used) continue;
         ar(h.readOnly); ar(h.basepage);
+        ar(h.datimeSet); ar(h.datime[0]); ar(h.datime[1]); ar(h.written);   // v61
         std::string mode = ar.loading() ? "" : h.mode;
         text(mode); text(h.actualName);
         int64_t position = 0, size = 0, stamp = 0;
@@ -2405,6 +2719,16 @@ void GemdosHd::serialize(StateArchive& ar) {
         }
         ar.check(dta.centry >= 0 && uint32_t(dta.centry) <= names && allowed(dta.path, false),
                  "GEMDOS DTA cursor/path invalid");
+        // v61 : nom 8.3 de chaque entrée (alias). Vide ou de même longueur que found.
+        uint32_t aliases = uint32_t(dta.atari.size());
+        ar(aliases);
+        if (!ar.ok() || (aliases != 0 && aliases != names)) { ar.fail("GEMDOS DTA aliases out of range"); return; }
+        if (ar.loading()) dta.atari.resize(aliases);
+        for (auto& name : dta.atari) {
+            text(name);
+            if (!ar.ok()) return;
+            if (name.size() > 12) { ar.fail("GEMDOS DTA alias too long"); return; }
+        }
     }
     uint16_t index = dtaIndex_;
     ar(index);
@@ -2417,6 +2741,40 @@ void GemdosHd::serialize(StateArchive& ar) {
     for (const auto& f : forced)
         ar.check(f.handle == -1 || (f.handle >= 0 && f.handle < MAX_FILE_HANDLES
                  && handles[f.handle].used), "GEMDOS forced handle is closed");
+    // v61 : dossiers courants par processus, attributs de session.
+    auto procs = ar.loading() ? decltype(procPaths_)() : procPaths_;
+    uint32_t nprocs = uint32_t(procs.size());
+    ar(nprocs);
+    if (!ar.ok() || nprocs > 64) { ar.fail("GEMDOS process table out of range"); return; }
+    if (ar.loading()) procs.resize(nprocs);
+    for (auto& pe : procs) {
+        ar(pe.first); ar(pe.second.parent); ar(pe.second.tbase);
+        for (int i = 0; i < MAX_HARDDRIVES; ++i) {
+            text(pe.second.path[i]);
+            if (!ar.ok()) return;
+            const std::string& pth = pe.second.path[i];
+            if (!pth.empty() && (!emudrives_[i].used || !within(pth, emudrives_[i].hdEmuDir))) {
+                ar.fail("GEMDOS process directory unavailable or outside its drive"); return;
+            }
+        }
+    }
+    std::vector<std::pair<std::string, uint8_t>> attrList;
+    if (!ar.loading()) attrList.assign(extraAttr_.begin(), extraAttr_.end());   // ordre de la clé
+    uint32_t nattrs = uint32_t(attrList.size());
+    ar(nattrs);
+    if (!ar.ok() || nattrs > 1024 * 1024) { ar.fail("GEMDOS attribute table out of range"); return; }
+    if (ar.loading()) attrList.resize(nattrs);
+    decltype(extraAttr_) attrs;
+    for (auto& at : attrList) {
+        text(at.first); ar(at.second);
+        if (!ar.ok()) return;
+        // Fichier disparu depuis : l'entrée ne sert plus à rien, mais elle ne doit
+        // jamais désigner un chemin hors des racines montées.
+        if (!allowed(at.first, false) || !at.second
+            || (at.second & ~(FA_HIDDEN | FA_SYSTEM | FA_ARCHIVE)) || !attrs.emplace(at).second) {
+            ar.fail("GEMDOS attribute entry invalid"); return;
+        }
+    }
     if (!ar.loading() || !ar.ok()) return;
     // Dernier composant du flux Machine : tout est validé avant fermeture de
     // la session courante. Les échecs ci-dessus détruisent seulement les copies.
@@ -2426,6 +2784,7 @@ void GemdosHd::serialize(StateArchive& ar) {
     for (int i = 0; i < MAX_HARDDRIVES; ++i) emudrives_[i] = std::move(paths[i]);
     for (int i = 0; i < FORCED_HANDLES; ++i) forced_[i] = forced[i];
     dtas_ = std::move(dtas); dtaIndex_ = index;
+    procPaths_ = std::move(procs); extraAttr_ = std::move(attrs);
     currentDrive_ = drive; actPd_ = pd; callingPC_ = pc; savedPexecParams_ = pexec;
     initGemdos_ = initialized; connectedDriveMask_ = mask; bootDrive_ = boot;
 }
