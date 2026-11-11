@@ -78,9 +78,31 @@ def main() -> int:
         print(f"[hog-park] {what:<62} {'OK' if ok else 'FAIL'}")
         if not ok: fails.append(what)
 
+    # Web, Android et ASan n'ont pas de coroutine (core/EmuFiber.cpp) : le blit s'y
+    # exécute d'un seul tenant. On y vérifie alors ce qui vaut dans ce mode — la trame
+    # suivante à l'heure pendant le blit, et un programme sain après un reset — au lieu
+    # d'exiger une instruction garée que ce build ne sait pas faire.
+    ver = subprocess.run([str(HEADLESS), "--version"], capture_output=True, text=True)
+    fiber = "emulation fiber: yes" in ver.stdout
+
     with tempfile.TemporaryDirectory() as tmp:
         gem = Path(tmp) / "gem"; gem.mkdir()
         hog_prg(gem / "HOGBLIT.PRG", 4096, 20)
+        if not fiber:
+            print("[hog-park] build sans coroutine : contrôles du mode d'un seul tenant")
+            one = run(gem, ["--frames", str(FRAMES), "--state-hash-every", "1"],
+                      {"NEOST_VBL_TRACE": "1"})
+            two = run(gem, ["--frames", str(FRAMES), "--state-hash-every", "1"])
+            check(one.returncode == 0 and two.returncode == 0, "les deux exécutions aboutissent")
+            check(hashes(one.stdout) == hashes(two.stdout) and bool(hashes(one.stdout)),
+                  "deux exécutions identiques à l'octet")
+            vbls = sum(1 for ln in one.stderr.splitlines() if ln.startswith("[vbl]"))
+            late = [ln for ln in one.stderr.splitlines()
+                    if ln.startswith("[vbl]") and int(ln.split()[1].split("=")[1]) > 200]
+            check(vbls >= FRAMES and not late,
+                  f"VBL à l'heure, trames closes dans le blit comprises ({vbls}, {len(late)} en retard)")
+            print(f"[hog-park] {'ÉCHEC : ' + ', '.join(fails) if fails else 'tout est vert'}")
+            return 1 if fails else 0
         fib = run(gem, ["--frames", str(FRAMES), "--state-hash-every", "1"],
                   {"NEOST_VBL_TRACE": "1"})
         one = run(gem, ["--frames", str(FRAMES), "--state-hash-every", "1"],

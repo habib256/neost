@@ -47,6 +47,7 @@
 #endif
 
 #include "core/Machine.hpp"
+#include "core/EmuFiber.hpp"
 #include "core/Rewind.hpp"
 #include "util/HostPath.hpp"   // chemins hôte : UNE définition d'« absolu »
 #include "gui/AppConfig.hpp"   // neost.cfg : UNE définition du rognage de ligne
@@ -1496,6 +1497,10 @@ int main(int argc, char** argv) {
             std::printf("neost-headless (unknown version) (commit %s, built %s)\n",
                         neost::build::kCommit, neost::build::kDate);
 #endif
+            // Deuxième ligne (la première est lue par check_release / run_perfbench) : un
+            // banc qui exige une instruction garée (check_hog_park) sait si ce build le peut
+            // — web, Android et ASan n'ont pas de coroutine (cf. core/EmuFiber.cpp).
+            std::printf("emulation fiber: %s\n", EmuFiber::supported() ? "yes" : "no");
             return 0;
         }
         // Clamp ≥ 0 : une valeur négative signée se propagerait aux calculs de
