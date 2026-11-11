@@ -4,14 +4,15 @@
   Fournit le canvas WebGL (habillé en « moniteur »), les contrôles (machine,
   ROM, disquettes, plein écran, joystick clavier) et branche les fonctions C
   exportées (neost_reset / neost_set_mono / neost_mount_disk / …) via
-  Module.ccall. Défaut : Atari Mega STE, 1 Mo, EmuTOS 256 Ko.
+  Module.ccall. Défaut : Atari ST, 1 Mo, EmuTOS 192 Ko (main_web.cpp, ?machine=
+  et ?mem= pour les autres modèles).
   (c) 2026 VERHILLE Arnaud — projet NeoST.
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NeoST — Atari Mega STE in your browser</title>
+  <title>NeoST — Atari ST in your browser</title>
   <style>
     :root {
       color-scheme: dark;
@@ -137,7 +138,7 @@
   <header>
     <div class="fuji" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
     <h1>NeoST</h1>
-    <div class="sub">Atari Mega STE in your browser · WebAssembly · cycle-exact Moira 68000 · EmuTOS</div>
+    <div class="sub">Atari ST, STE &amp; Mega STE in your browser · WebAssembly · cycle-exact Moira 68000 · EmuTOS</div>
   </header>
 
   <div id="monitor">
@@ -183,7 +184,8 @@
         <select id="diskSel" title="Bundled floppy image"></select>
         <button id="btnMount" class="primary" title="Mount in A: and reboot">Mount A: + Reset</button>
         <button id="btnMountB" title="Mount the selected floppy in drive B (no reset)">→ B:</button>
-        <span class="badge" title="Drop a .st / .msa / .dim / .stx file anywhere on the screen to mount it in A:">or drop a floppy on the screen</span>
+        <button id="btnDownloadA" disabled title="Save the floppy in drive A: to your computer, with everything the ST wrote to it. Writes only live in this page: they are lost when it is closed or reloaded.">⤓ Download A:</button>
+        <span class="badge" title="Drop a .st / .msa / .dim / .stx / .ipf file on the screen: it goes into A: without a reset (swap disks mid-game). Hold Shift while dropping to mount it and reboot.">or drop a floppy on the screen (Shift = + Reset)</span>
       </div>
     </fieldset>
 
@@ -223,19 +225,80 @@
   <details>
     <summary>Help &amp; shortcuts</summary>
     <ul>
-      <li><b>Mouse</b>: click the middle button (usually the wheel), or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>G</kbd>, to <b>capture or release</b> it (GEM cursor). <kbd>Esc</kbd> and <kbd>Del</kbd> are sent to the ST.</li>
+      <li><b>Mouse</b>: click the middle button (usually the wheel), or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>G</kbd>, to <b>capture or release</b> it (GEM cursor). While it is captured, <kbd>Esc</kbd> belongs to the browser and releases it (a browser rule the page cannot change); otherwise <kbd>Esc</kbd> and <kbd>Del</kbd> are sent to the ST.</li>
       <li><b>Keyboard</b>: routed to the IKBD; letters follow your keyboard layout and the TOS language (AZERTY under a French TOS), other keys are positional (US layout). <b>Keyboard joystick</b>: arrows + <kbd>right Ctrl</kbd> = fire, on the port picked in the Joystick box (port 1 by default).</li>
       <li><b>USB pads</b>: detected automatically — first pad on port 1, second on port 0. The <b>dead zone</b> slider only affects analog sticks, not the D-pad.</li>
-      <li><b>Reset</b>: a <b>cold</b> reset (power-cycle) — ST-RAM is wiped and TOS boots from scratch, which is also what mounting a floppy in A: does.</li>
+      <li><b>Reset</b>: a <b>cold</b> reset (power-cycle) — ST-RAM is wiped and TOS boots from scratch, which is also what "Mount A: + Reset" and <kbd>Shift</kbd>+drop do.</li>
+      <li><b>Keys the browser would take</b> (F1–F12, arrows, Space, Page Up/Down, Ctrl/Alt+letter) go to the ST while the screen has the focus or the mouse is captured: click the screen first.</li>
       <li><b>Game floppies</b>: "Mount A: + Reset" switches to a <b>real TOS</b> when one is available (EmuTOS boots system floppies only) — TOS 2.06 on STE/Mega STE, TOS 1.0x on ST. <b>This build bundles EmuTOS alone</b>, which is free software; original Atari TOS ROMs are not ours to ship. Most commercial games therefore need you to add one to <code>/roms</code> and pick it above. The bundled <b>demos</b> boot fine on EmuTOS.</li>
-      <li><b>Drag and drop</b>: drop a <code>.st</code> / <code>.msa</code> / <code>.dim</code> / <code>.stx</code> image straight onto the screen to mount it in A: and reboot.</li>
-      <li><b>Machine &amp; RAM</b>: fixed when the machine is built → changing them reloads the page (URL parameters <code>?machine=</code> and <code>?mem=</code>, shareable).</li>
-      <li><b>Sound</b>: browsers require a user gesture — click once inside the screen to unlock audio (YM2149 + STE DMA + drive noises).</li>
+      <li><b>Drag and drop</b>: drop a <code>.st</code> / <code>.msa</code> / <code>.dim</code> / <code>.stx</code> / <code>.ipf</code> image onto the screen to <b>insert</b> it in A: without a reset — that is how you swap to "disk 2" mid-game. Hold <kbd>Shift</kbd> while dropping to mount it <b>and reboot</b>.</li>
+      <li><b>Your floppies live in this page only</b>: what the ST writes to them (saved games…) is lost when the page is closed or reloaded. <b>⤓ Download A:</b> saves the floppy in A: with its writes (for <code>.stx</code>/<code>.ipf</code>, which are never rewritten, it saves the <code>.wd1772</code> file that holds the writes — Hatari reads it too).</li>
+      <li><b>Machine &amp; RAM</b>: fixed when the machine is built → changing them reloads the page (URL parameters <code>?machine=</code> and <code>?mem=</code>, shareable). You are asked first when a floppy of yours is in use.</li>
+      <li><b>Sound</b>: browsers require a user gesture — the first click or key press anywhere on the page unlocks audio (YM2149 + STE DMA + drive noises).</li>
     </ul>
   </details>
 
   <script type='text/javascript'>
     var statusEl = document.getElementById('status');
+    var canvasEl = document.getElementById('canvas');
+    // Rend le clavier au ST : à appeler à la fin de CHAQUE gestionnaire de contrôle.
+    // Sinon le bouton ou le <select> cliqué garde le focus — Espace/Entrée le
+    // réactivent (« Mount A: + Reset » en boucle sur un PRESS SPACE) et les flèches
+    // changent la valeur du sélecteur de ROM (reset en pleine partie).
+    function focusScreen() { canvasEl.focus(); }
+
+    // ===== Touches que le NAVIGATEUR intercepte ================================
+    // Le glue GLFW d'Emscripten ne fait preventDefault que pour Backspace et Tab :
+    // F5 rechargeait la page (session, disquette déposée et ses écritures perdues),
+    // F1/F3/F6/F7/F12 ouvraient des panneaux du navigateur, flèches et Espace
+    // faisaient défiler la page, Alt+flèche naviguait dans l'historique. Écouteur en
+    // phase de CAPTURE sur window, enregistré ICI — avant le chargement du module,
+    // donc avant celui du glue (même cible, même phase : l'ordre d'inscription
+    // décide) — qui ne fait QUE preventDefault : pas de stopPropagation, le glue
+    // doit toujours recevoir la touche pour l'IKBD. Actif seulement quand le ST a
+    // le clavier (canvas focalisé ou souris capturée) : ailleurs dans la page, les
+    // touches gardent leur sens. Les raccourcis Cmd (macOS) et Ctrl+Maj (outils de
+    // développement) restent au navigateur ; Ctrl+W/T/N ne sont de toute façon pas
+    // interceptables.
+    var BROWSER_KEYS = { Space: 1, ArrowUp: 1, ArrowDown: 1, ArrowLeft: 1, ArrowRight: 1,
+                         PageUp: 1, PageDown: 1, Home: 1, End: 1, Backspace: 1, Tab: 1 };
+    function stHasKeyboard() {
+      return document.activeElement === canvasEl || document.pointerLockElement === canvasEl;
+    }
+    window.addEventListener('keydown', function (e) {
+      if (!stHasKeyboard() || e.metaKey) return;
+      var c = e.code || '';
+      if (BROWSER_KEYS[c] ||
+          /^F([1-9]|1[0-2])$/.test(c) ||                       // F1-F12, modificateurs compris (Ctrl+F5…)
+          e.key === '/' || e.key === "'" ||                     // recherche rapide de Firefox
+          ((e.ctrlKey || e.altKey) && !(e.ctrlKey && e.shiftKey) &&
+           /^(Key[A-Z]|Digit[0-9])$/.test(c)))                  // Ctrl/Alt+lettre : favoris, impression…
+        e.preventDefault();
+    }, true);
+
+    // ===== Ne pas perdre la session sur un rechargement ========================
+    // Les disquettes déposées et tout ce que le ST y écrit n'existent qu'en mémoire
+    // (MEMFS). Un rechargement ou une fermeture d'onglet par mégarde perd tout : on
+    // demande confirmation dès que la machine tourne ou qu'une disquette a été
+    // déposée (le navigateur n'affiche la question qu'après une interaction réelle
+    // avec la page). `leaving` = départ voulu, déjà confirmé (changement de machine).
+    var session = { live: false, userDisk: false, leaving: false };
+    window.addEventListener('beforeunload', function (e) {
+      if (session.leaving || !(session.live || session.userDisk)) return;
+      e.preventDefault();
+      e.returnValue = '';                 // requis par Chrome et Safari
+    });
+    // Rechargement voulu (changement de machine ou de RAM) : confirm() si une
+    // disquette de l'utilisateur est en jeu, puisque ses écritures seraient perdues.
+    function confirmReload(what) {
+      if (session.userDisk &&
+          !window.confirm('Changing the ' + what + ' reloads the page: the floppies you dropped, ' +
+                          'and everything the ST wrote to them, will be lost.\n\n' +
+                          'Use "Download A:" first to keep them. Reload anyway?'))
+        return false;
+      session.leaving = true;
+      return true;
+    }
     var monoOn = false;
     var joyOn = false;
     var zoomOn = true;    // doit refléter g_autoZoom de main_web.cpp (ON par défaut)
@@ -251,19 +314,17 @@
     var isSteFamily = (machineParam === 'ste' || machineParam === 'megaste');
 
     var MACHINE_LABELS = { st: 'ST', megast: 'Mega ST', ste: 'STE', megaste: 'Mega STE' };
-    var MEM_LABELS = { '256k': '256 KB', '512k': '512 KB', '1m': '1 MB', '2m': '2 MB', '4m': '4 MB' };
+    var MEM_LABELS = { '256k': '256 KB', '512k': '512 KB', '1m': '1 MB', '2m': '2 MB',
+                       '2176k': '2176 KB', '2560k': '2.5 MB', '4m': '4 MB' };
     document.getElementById('machineBadge').textContent =
       'Atari ' + (MACHINE_LABELS[machineParam] || machineParam) + ' · ' + (MEM_LABELS[memParam] || memParam);
 
     var Module = {
       canvas: (function () {
-        var c = document.getElementById('canvas');
-        // Le focus clavier suit le canvas dès qu'on clique dedans ; le clic est
-        // aussi le geste utilisateur qui débloque l'audio (politique navigateur).
-        c.addEventListener('click', function () {
-          c.focus();
-          if (window.au && au.ctx && au.ctx.state === 'suspended') au.ctx.resume();
-        });
+        var c = canvasEl;
+        // Le focus clavier suit le canvas dès qu'on clique dedans. (Le déblocage de
+        // l'audio, lui, se fait sur le premier geste N'IMPORTE OÙ : cf. unlockAudio.)
+        c.addEventListener('click', function () { c.focus(); });
         return c;
       })(),
       print: function (text) { console.log(text); },
@@ -294,6 +355,7 @@
     // EM_ASM appelant neostOnReady) : garantit que le runtime tourne vraiment.
     window.neostOnReady = function () {
       ready = true;
+      session.live = true;
       setStatusOk('Ready — middle-click or press Ctrl+Alt+G to capture the mouse.');
       // Peuple les menus depuis le FS virtuel : montre exactement ce qui a été
       // embarqué (tout en local, EmuTOS+diskA pour le déploiement libre). La ROM
@@ -301,6 +363,7 @@
       populateSelect('diskSel', '/disks', /\.(st|msa|dim|stx|ipf)$/i, '/disks/diskA.st');
       populateSelect('romSel', '/roms', /\.(img|rom|tos|bin)$/i,
                      isSteFamily ? '/roms/etos256us.img' : '/roms/etos192us.img');
+      romPrev = document.getElementById('romSel').value;
       driveLoad();       // crée l'AudioContext + précharge les WAV de bruits de lecteur
       audioStart();      // branche la sortie son de la machine (YM2149 + DMA STE)
       if (window.neostApplyVolume) neostApplyVolume();   // volume initial du curseur
@@ -474,9 +537,32 @@
     var drive = { buf: {}, motorSrc: null, enabled: true,
                   dir: '/roms/drivesound/epson_smd480l/' };
 
+    // Un SEUL AudioContext pour la page, créé à la demande : au premier geste de
+    // l'utilisateur s'il arrive avant que le module soit prêt (le contexte naît alors
+    // « running »), sinon par driveLoad() — il naît alors « suspended » et attend un
+    // geste (politique d'autoplay des navigateurs).
+    function ensureAudioCtx() {
+      if (!au.ctx) {
+        try { au.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch (e) { console.warn('Web Audio unavailable:', e); au.ctx = null; }
+      }
+      return au.ctx;
+    }
+    // Déblocage sur le PREMIER geste n'importe où dans la page — clic, tap OU
+    // touche. Avant, seul un clic DANS le canvas débloquait le son : qui tapait au
+    // clavier ou cliquait un bouton restait muet sans savoir pourquoi. Écouteurs
+    // permanents (et non « once ») : un navigateur peut re-suspendre le contexte
+    // (onglet en arrière-plan, interruption audio sur mobile).
+    function unlockAudio() {
+      var ctx = ensureAudioCtx();
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+    }
+    ['pointerdown', 'pointerup', 'keydown'].forEach(function (t) {
+      document.addEventListener(t, unlockAudio, true);
+    });
+
     function driveLoad() {
-      try { au.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
-      catch (e) { console.warn('Web Audio indisponible :', e); return; }
+      if (!ensureAudioCtx()) return;
       var files = { spin: 'drive_spin.wav', startup: 'drive_startup.wav',
                     click: 'drive_click.wav', seek: 'drive_seek.wav' };
       Object.keys(files).forEach(function (k) {
@@ -547,7 +633,12 @@
       this.textContent = drive.enabled ? 'Drive sound: on' : 'Drive sound: off';
       this.classList.toggle('on', drive.enabled);
       if (!drive.enabled) driveMotorStop();
+      focusScreen();
     });
+    // Curseurs : le focus revient à l'écran au RELÂCHEMENT ('change'), pas pendant
+    // le glissé ('input'), qui serait interrompu.
+    document.getElementById('volSlider').addEventListener('change', focusScreen);
+    document.getElementById('joyDzSlider').addEventListener('change', focusScreen);
 
     // Remplit un <select> avec les fichiers du dossier FS correspondant au filtre.
     function populateSelect(id, dir, rx, preselect) {
@@ -571,9 +662,18 @@
     // bureau et « Redémarrer » du menu Android font bien un boot à froid.
     function callReset()    { if (ready) Module.ccall('neost_hard_reset'); }
     function callMono(m)    { if (ready) Module.ccall('neost_set_mono', null, ['number'], [m]); }
-    function callMount(p)   { if (ready) Module.ccall('neost_mount_disk', null, ['string'], [p]); }
+    // neost_mount_disk(path, reset) : reset = 1 → montage + boot à froid, 0 →
+    // insertion à chaud. Les DEUX arguments toujours passés (un argument manquant
+    // vaudrait 0 côté wasm). Rend true si l'image est montée.
+    function callMount(p, reset) {
+      return ready && Module.ccall('neost_mount_disk', 'number', ['string', 'number'],
+                                   [p, reset ? 1 : 0]) === 1;
+    }
     function callMountB(p)  { if (ready) Module.ccall('neost_mount_disk_b', null, ['string'], [p]); }
-    function callLoadTos(p) { if (ready) Module.ccall('neost_load_tos', null, ['string'], [p]); }
+    // Rend true si la ROM est chargée ; false = machine inchangée (ancienne ROM).
+    function callLoadTos(p) {
+      return ready && Module.ccall('neost_load_tos', 'number', ['string'], [p]) === 1;
+    }
     function joyPort()      { return parseInt(document.getElementById('joyPortSel').value, 10) || 0; }
     function callKbdJoy(on) { if (ready) Module.ccall('neost_set_kbd_joystick', null, ['number', 'number'], [on ? 1 : 0, joyPort()]); }
     function callJoyDeadzone(dz) { if (ready) Module.ccall('neost_set_joy_deadzone', null, ['number'], [dz]); }
@@ -586,6 +686,7 @@
       var sel = document.getElementById('machineSel');
       sel.value = machineParam;
       sel.addEventListener('change', function () {
+        if (!confirmReload('machine')) { sel.value = machineParam; focusScreen(); return; }
         var p = new URLSearchParams(location.search);
         p.set('machine', sel.value);
         location.search = p.toString();   // recharge avec le modèle choisi
@@ -597,13 +698,17 @@
       var sel = document.getElementById('memSel');
       sel.value = memParam;
       sel.addEventListener('change', function () {
+        if (!confirmReload('RAM size')) { sel.value = memParam; focusScreen(); return; }
         var p = new URLSearchParams(location.search);
         p.set('mem', sel.value);
         location.search = p.toString();   // recharge avec la taille choisie
       });
     })();
 
-    document.getElementById('btnReset').addEventListener('click', callReset);
+    document.getElementById('btnReset').addEventListener('click', function () {
+      callReset();
+      focusScreen();
+    });
 
     // Plein écran sur le bezel (le canvas s'y étire en conservant le ratio).
     document.getElementById('btnFullscreen').addEventListener('click', function () {
@@ -620,11 +725,21 @@
                               [document.fullscreenElement ? 1 : 0]);
     });
 
-    // Changer de ROM/TOS dans le menu = chargement à chaud + reset (choix explicite).
+    // Changer de ROM/TOS dans le menu = chargement + reset À FROID (choix explicite).
+    // Échec (fichier illisible, taille invalide) : le cœur garde l'ancienne ROM et ne
+    // redémarre pas — le sélecteur y revient et la page le dit.
+    var romPrev = '';
     document.getElementById('romSel').addEventListener('change', function () {
-      romUserChosen = true;
-      callLoadTos(this.value);
-      setStatusOk('ROM: ' + this.value.split('/').pop());
+      var v = this.value;
+      if (callLoadTos(v)) {
+        romUserChosen = true;
+        romPrev = v;
+        setStatusOk('ROM: ' + v.split('/').pop());
+      } else {
+        Module.setStatus('Cannot load ROM ' + v.split('/').pop() + ' — previous ROM kept, machine untouched.');
+        if (romPrev) this.value = romPrev;
+      }
+      focusScreen();
     });
 
     // Cherche un vrai TOS adapté à la machine (pour booter les jeux) : TOS 2.06
@@ -645,7 +760,9 @@
       var p = document.getElementById('diskSel').value;
       callMountB(p);
       setStatusOk('Drive B: ' + p.split('/').pop());
+      focusScreen();
     });
+    document.getElementById('diskSel').addEventListener('change', focusScreen);
 
     // Zoom adaptatif : ON par défaut côté cœur (g_autoZoom), le bouton ne fait que
     // le refléter et permettre de revenir au buffer entier.
@@ -677,6 +794,7 @@
       callMono(monoOn ? 1 : 0);
       this.textContent = monoOn ? 'Screen: Monochrome' : 'Screen: Color';
       this.classList.toggle('on', monoOn);
+      focusScreen();
     });
 
     document.getElementById('btnJoy').addEventListener('click', function () {
@@ -715,10 +833,17 @@
       var noRealTos = false;
       if (!romUserChosen && /etos|emutos/i.test(rom.value)) {
         var tos = findRealTos();
-        if (tos) { rom.value = tos; callLoadTos(tos); note = ' — ROM: ' + tos.split('/').pop(); }
-        else noRealTos = true;
+        if (tos && callLoadTos(tos)) { rom.value = tos; romPrev = tos; note = ' — ROM: ' + tos.split('/').pop(); }
+        else {
+          noRealTos = true;
+          // Trouvé mais illisible : le cœur a gardé EmuTOS (neost_load_tos rend 0).
+          if (tos) console.warn('[NeoST] ' + tos + ' could not be loaded — EmuTOS kept');
+        }
       }
-      callMount(path);
+      if (!callMount(path, true)) {
+        Module.setStatus('Cannot mount ' + displayName + ' (unreadable or unsupported image).');
+        return;
+      }
       // Depuis la purge du 2026-08-30, le bundle public n'embarque QUE de l'EmuTOS :
       // findRealTos() ne trouve donc plus rien et la bascule ci-dessus est un no-op.
       // Sans ce message, une disquette de jeu était montée EN SILENCE sous EmuTOS —
@@ -736,10 +861,75 @@
     document.getElementById('btnMount').addEventListener('click', function () {
       var p = document.getElementById('diskSel').value;
       mountWithAutoTos(p, p.split('/').pop());
+      focusScreen();
     });
 
-    // Charge une image disquette locale (File) → FS virtuel → montage en A:.
-    function mountLocalFile(file) {
+    // Insertion À CHAUD dans A: (aucun reset) : la machine continue, le programme
+    // voit le changement de disquette — c'est « insert disk 2 » en pleine partie.
+    function insertDiskA(path, displayName) {
+      if (callMount(path, false))
+        setStatusOk('Inserted in A: ' + displayName + ' — no reset (Shift+drop or "Mount A: + Reset" to boot from it)');
+      else
+        Module.setStatus('Cannot mount ' + displayName + ' (unreadable or unsupported image).');
+    }
+
+    // ===== Lecteur A : ce qui y est, et son export =============================
+    // Le cœur annonce le chemin MEMFS réellement monté (montage, retour arrière,
+    // boot) : cf. announceDriveA dans main_web.cpp.
+    var driveA = '';
+    var uploadNames = {};          // chemin MEMFS → nom d'origine du fichier déposé
+    window.neostOnDriveA = function (p) {
+      driveA = p || '';
+      var b = document.getElementById('btnDownloadA');
+      if (b) b.disabled = !driveA;
+    };
+
+    // « Download A: » exporte l'image COURANTE du lecteur A, écritures comprises.
+    // Vérifié dans le cœur (Fdc::writeBack) : le write-through est actif sur le web
+    // (hostWriteBack_ vaut true par défaut, rien ne le coupe ici) et réécrit le
+    // fichier MEMFS MONTÉ — en place pour .st/.dim, ré-encodé en entier pour .msa.
+    // .stx/.ipf ne sont JAMAIS réécrites (raw = false) : leurs écritures vont dans
+    // un compagnon <nom>.wd1772 (Fdc::stxPersist, format partagé avec Hatari). On
+    // exporte alors CE fichier — ou on dit qu'il n'y a rien, plutôt que de proposer
+    // une image identique à celle qu'on a déposée.
+    function downloadDriveA() {
+      var p = driveA;
+      if (!ready || !p) { Module.setStatus('Drive A: is empty.'); return; }
+      var name = uploadNames[p] || p.split('/').pop();
+      var src = p, outName = name, note = '';
+      if (/\.(stx|ipf)$/i.test(p)) {
+        var comp = p.replace(/\.(stx|ipf)$/i, '') + '.wd1772';
+        var exists = false;
+        try { Module.FS.stat(comp); exists = true; } catch (e) {}
+        if (!exists) {
+          Module.setStatus(name + ': nothing to download — .stx/.ipf images are never rewritten, ' +
+                           'and the ST has written nothing to this one yet.');
+          return;
+        }
+        src = comp;
+        outName = name.replace(/\.(stx|ipf)$/i, '') + '.wd1772';
+        note = ' (the writes made to ' + name + ' — keep it next to the image)';
+      }
+      try {
+        var data = Module.FS.readFile(src);
+        var url = URL.createObjectURL(new Blob([data], { type: 'application/octet-stream' }));
+        var a = document.createElement('a');
+        a.href = url; a.download = outName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+        setStatusOk('Downloaded ' + outName + note);
+      } catch (e) {
+        Module.setStatus('Cannot export the image (' + e + ')');
+      }
+    }
+    document.getElementById('btnDownloadA').addEventListener('click', function () {
+      downloadDriveA();
+      focusScreen();
+    });
+
+    // Charge une image disquette locale (File) → FS virtuel → A:. `withReset` :
+    // montage + boot à froid ; sinon insertion à chaud (machine qui continue).
+    function mountLocalFile(file, withReset) {
       if (!file || !ready) return;
       var m = /\.(st|msa|dim|stx|ipf)$/i.exec(file.name);
       if (!m) { Module.setStatus('Unrecognized format: ' + file.name + ' (.st/.msa/.dim/.stx/.ipf)'); return; }
@@ -758,12 +948,22 @@
       };
       reader.onload = function () {
         var data = new Uint8Array(reader.result);
-        // L'extension d'origine est conservée : le FDC détecte aussi par contenu,
-        // mais STX (Pasti) se repère par son en-tête + extension.
-        var path = '/disks/_upload.' + m[1].toLowerCase();
+        // UN FICHIER PAR NOM sous /uploads (et non plus un unique /disks/_upload.st) :
+        // déposer la disquette 2 ne doit pas écraser la 1, qui porte peut-être une
+        // sauvegarde. L'extension est mise en minuscules : le FDC détecte aussi par
+        // contenu, mais STX (Pasti) se repère par son en-tête + extension.
+        var base = file.name.slice(0, file.name.length - m[0].length)
+                            .replace(/[\/\\\x00-\x1f]/g, '_').slice(0, 120) || 'floppy';
+        var path = '/uploads/' + base + '.' + m[1].toLowerCase();
         try {
+          try { Module.FS.mkdir('/uploads'); } catch (e) { /* déjà là */ }
           Module.FS.writeFile(path, data);
-          mountWithAutoTos(path, file.name + ' (' + data.length + ' bytes)');
+          uploadNames[path] = file.name;
+          session.userDisk = true;
+          var label = file.name + ' (' + data.length + ' bytes)';
+          if (withReset) mountWithAutoTos(path, label);
+          else           insertDiskA(path, label);
+          focusScreen();
         } catch (e) {
           Module.setStatus('Cannot store the image (' + e + ')');
         }
@@ -791,8 +991,9 @@
         });
       });
       bezel.addEventListener('drop', function (e) {
+        // Dépôt simple = insertion à chaud ; Maj+dépôt = montage + reset.
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length)
-          mountLocalFile(e.dataTransfer.files[0]);
+          mountLocalFile(e.dataTransfer.files[0], e.shiftKey);
       });
     })();
   </script>

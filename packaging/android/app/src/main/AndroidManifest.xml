@@ -15,6 +15,10 @@
         android:hardwareAccelerated="true"
         android:hasFragileUserData="true">
 
+        <!-- configChanges : TOUT changement de configuration est absorbé sans recréer
+             l'activité (density|fontScale compris : réglage de taille d'affichage ou
+             de police, passage sur un écran DeX). Recréée, l'activité rappellerait
+             SDL_main dans le même processus — session perdue. -->
         <activity
             android:name=".NeoSTActivity"
             android:exported="true"
@@ -22,7 +26,7 @@
             android:launchMode="singleInstance"
             android:screenOrientation="sensorLandscape"
             android:preferMinimalPostProcessing="true"
-            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation">
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation|density|fontScale">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -175,6 +175,8 @@ uint32_t               g_cushionFrames = 0;
 bool                   g_primed = false;          // appartient au THREAD AUDIO
 std::atomic<uint32_t>  g_underruns{0};            // écrit thread audio, lu principal
 float                  g_masterVol = 1.0f;
+uint32_t               g_underrunSeen = 0;        // diagnostic « son haché » (thread principal)
+int                    g_underrunMute = 0;
 
 void audioCallback(void* /*ud*/, Uint8* stream, int len) {
     float* out = reinterpret_cast<float*>(stream);
@@ -213,14 +215,14 @@ void produceAudioFrame() {
     // Diagnostic « son haché », comme le natif : un underrun isolé est bénin
     // (chargement, rotation d'écran) ; RÉPÉTÉ, c'est que l'appareil ne tient pas
     // la cadence des trames. Limité à ~1 message / 5 s.
-    static uint32_t seen = 0;
-    static int      mute = 0;
-    if (mute > 0) --mute;
+    // (Globales et non `static` locales : une relance dans le même processus doit
+    // pouvoir les remettre à zéro, cf. resetSessionGlobals.)
+    if (g_underrunMute > 0) --g_underrunMute;
     const uint32_t u = g_underruns.load(std::memory_order_relaxed);
-    if (u != seen && mute <= 0) {
+    if (u != g_underrunSeen && g_underrunMute <= 0) {
         NEOERR("audio ring underrun (total %u) — emulation not keeping up", u);
-        seen = u;
-        mute = 250;                                   // ≈ 5 s à 50 trames/s
+        g_underrunSeen = u;
+        g_underrunMute = 250;                         // ≈ 5 s à 50 trames/s
     }
 }
 
@@ -251,51 +253,83 @@ bool openAudio() {
 // — qui ne teste que l'ouverture — déclarait « déjà déballé » POUR TOUJOURS : plus
 // aucun lancement ne le recopiait, et l'application démarrait sans TOS à chaque fois.
 // Un fichier partiel est pire que pas de fichier : celui-ci se répare tout seul.
-bool copyAsset(const std::string& name, const std::string& dest) {
+
+// Lit un asset de l'APK en entier ; false (et `out` vide) s'il est absent, vide ou
+// lu partiellement.
+bool readAsset(const std::string& name, std::vector<uint8_t>& out) {
+    out.clear();
     SDL_RWops* in = SDL_RWFromFile(name.c_str(), "rb");
     if (!in) { NEOERR("asset absent: %s (%s)", name.c_str(), SDL_GetError()); return false; }
     const Sint64 sz = SDL_RWsize(in);
     if (sz <= 0) { NEOERR("asset vide ou illisible: %s", name.c_str()); SDL_RWclose(in); return false; }
     // static_cast et non size_t(sz) : `std::vector<uint8_t> buf(size_t(sz));`
     // est le « most vexing parse » — le compilateur y lit la DÉCLARATION d'une
-    // fonction `buf`, pas une variable. L'écriture d'origine y échappait par
-    // accident, son argument étant un ternaire.
-    std::vector<uint8_t> buf(static_cast<size_t>(sz));
-    const size_t got = SDL_RWread(in, buf.data(), 1, buf.size());
+    // fonction `buf`, pas une variable.
+    out.resize(static_cast<size_t>(sz));
+    const size_t got = SDL_RWread(in, out.data(), 1, out.size());
     SDL_RWclose(in);
-    if (got != buf.size()) {
-        NEOERR("asset lu partiellement: %s (%zu/%zu)", name.c_str(), got, buf.size());
-        return false;
-    }
-    SDL_RWops* out = SDL_RWFromFile(dest.c_str(), "wb");
-    if (!out) { NEOERR("écriture impossible: %s", dest.c_str()); return false; }
-    const size_t put = SDL_RWwrite(out, buf.data(), 1, buf.size());
-    SDL_RWclose(out);
-    if (put != buf.size()) {
-        NEOERR("écriture partielle: %s (%zu/%zu) — fichier supprimé", dest.c_str(), put, buf.size());
-        std::remove(dest.c_str());     // ne JAMAIS laisser un fichier tronqué derrière soi
+    if (got != out.size()) {
+        NEOERR("asset lu partiellement: %s (%zu/%zu)", name.c_str(), got, out.size());
+        out.clear();
         return false;
     }
     return true;
 }
 
-// Le fichier existe-t-il ET fait-il la taille attendue ? Tester la seule ouverture
-// laissait passer un fichier de 0 octet ou tronqué (cf. copyAsset).
-bool fileHasSize(const std::string& p, Sint64 want) {
-    SDL_RWops* f = SDL_RWFromFile(p.c_str(), "rb");
-    if (!f) return false;
-    const Sint64 sz = SDL_RWsize(f);
-    SDL_RWclose(f);
-    return sz == want;
+// Écrit `buf` dans `dest` de façon ATOMIQUE : fichier temporaire puis rename(), qui
+// remplace la destination d'un coup sous POSIX. Un processus tué en pleine copie ne
+// laisse donc plus jamais un fichier tronqué SOUS LE NOM FINAL — seulement un .tmp
+// orphelin, réécrit au lancement suivant. C'est ce qui permet de tester la seule
+// EXISTENCE de diskA.st (cf. prepareData) sans la prendre pour un fichier abîmé.
+bool writeFileAtomic(const std::string& dest, const std::vector<uint8_t>& buf) {
+    const std::string tmp = dest + ".tmp";
+    SDL_RWops* out = SDL_RWFromFile(tmp.c_str(), "wb");
+    if (!out) { NEOERR("écriture impossible: %s", tmp.c_str()); return false; }
+    const size_t put = SDL_RWwrite(out, buf.data(), 1, buf.size());
+    const bool closed = SDL_RWclose(out) == 0;
+    if (put != buf.size() || !closed) {
+        NEOERR("écriture partielle: %s (%zu/%zu) — fichier supprimé", tmp.c_str(), put, buf.size());
+        std::remove(tmp.c_str());      // ne JAMAIS laisser un fichier tronqué derrière soi
+        return false;
+    }
+    if (std::rename(tmp.c_str(), dest.c_str()) != 0) {
+        NEOERR("renommage impossible: %s -> %s", tmp.c_str(), dest.c_str());
+        std::remove(tmp.c_str());
+        return false;
+    }
+    return true;
 }
 
-// Taille d'un asset dans l'APK, ou -1 s'il est introuvable.
-Sint64 assetSize(const std::string& name) {
-    SDL_RWops* f = SDL_RWFromFile(name.c_str(), "rb");
-    if (!f) return -1;
-    const Sint64 sz = SDL_RWsize(f);
-    SDL_RWclose(f);
-    return sz;
+bool copyAsset(const std::string& name, const std::string& dest) {
+    std::vector<uint8_t> buf;
+    return readAsset(name, buf) && writeFileAtomic(dest, buf);
+}
+
+// Empreinte FNV-1a 64 bits — pas cryptographique, il ne s'agit que de savoir si
+// les octets embarqués ont changé d'un APK à l'autre.
+uint64_t fnv1a(uint64_t h, const void* p, size_t n) {
+    const auto* b = static_cast<const uint8_t*>(p);
+    for (size_t i = 0; i < n; ++i) { h ^= b[i]; h *= 0x100000001B3ull; }
+    return h;
+}
+
+// Contenu d'un petit fichier texte (le témoin), ou "" s'il est absent.
+std::string readSmallFile(const std::string& p) {
+    std::string s;
+    if (FILE* f = std::fopen(p.c_str(), "rb")) {
+        char b[128];
+        const size_t n = std::fread(b, 1, sizeof b, f);
+        std::fclose(f);
+        s.assign(b, n);
+    }
+    return s;
+}
+
+// Taille d'un fichier ordinaire, ou -1 s'il n'existe pas.
+long long fileSize(const std::string& p) {
+    struct stat st {};
+    if (::stat(p.c_str(), &st) != 0) return -1;
+    return static_cast<long long>(st.st_size);
 }
 
 // Renvoie le dossier de données de l'application (créé au besoin), assets déballés.
@@ -316,7 +350,16 @@ std::string prepareData() {
     // Déballer AILLEURS rend au nom relatif son sens : celui de l'asset.
     const std::string dir = root + "/data";
     ::mkdir(dir.c_str(), 0700);        // déjà là = EEXIST, sans conséquence
-    static const char* kAssets[] = {
+    // Deux familles, traitées différemment (cf. plus bas) :
+    //   · LECTURE SEULE — les ROM EmuTOS : rien ne les modifie, un APK plus récent
+    //     doit pouvoir les remplacer ;
+    //   · ÉCRITE PAR L'UTILISATEUR — diskA.st : le FDC y recopie chaque secteur écrit
+    //     (write-through), c'est donc SA disquette dès le premier lancement.
+    static const char* kRomAssets[] = {
+        "etos192us.img", "etos192fr.img", "etos256us.img", "etos256fr.img",
+    };
+    static const char* kUserAssets[] = { "diskA.st" };
+    static const char* kAssets[] = {   // tous, pour la purge des reliques ci-dessous
         "etos192us.img", "etos192fr.img", "etos256us.img", "etos256fr.img", "diskA.st",
     };
     // ⚠ PURGER LES RELIQUES DE LA RACINE, et pas seulement déballer ailleurs. Le
@@ -329,16 +372,75 @@ std::string prepareData() {
     // message d'erreur. Les supprimer rend au nom relatif son sens, DÉFINITIVEMENT —
     // c'est un fichier que nous avons écrit nous-mêmes, jamais un fichier utilisateur.
     for (const char* a : kAssets) std::remove((root + "/" + a).c_str());
-    for (const char* a : kAssets) {
+
+    // ROM : TÉMOIN DE VERSION. Comparer la seule taille (version précédente) ne
+    // voyait jamais une mise à jour : un EmuTOS corrigé a la MÊME taille (192 ou
+    // 256 Ko), et l'APK neuf gardait donc l'ancienne ROM déballée pour toujours.
+    // Le témoin porte une EMPREINTE DU CONTENU embarqué (noms, tailles, octets) —
+    // et non l'identité de build (src/BuildInfo.hpp) : neost_build_info n'est pas
+    // lié à la bibliothèque Android (CMakeLists.txt, branche if(ANDROID)), et
+    // l'empreinte change exactement quand les octets changent, ni plus ni moins.
+    // Coût : relire ~900 Ko d'assets à chaque lancement, quelques millisecondes.
+    const std::string stampPath = dir + "/.assets-stamp";
+    std::vector<std::vector<uint8_t>> roms(sizeof kRomAssets / sizeof kRomAssets[0]);
+    uint64_t h = 0xCBF29CE484222325ull;
+    for (size_t i = 0; i < roms.size(); ++i) {
+        readAsset(kRomAssets[i], roms[i]);           // absent → vide, compté tel quel
+        const uint64_t n = roms[i].size();
+        h = fnv1a(h, kRomAssets[i], std::strlen(kRomAssets[i]) + 1);
+        h = fnv1a(h, &n, sizeof n);
+        h = fnv1a(h, roms[i].data(), roms[i].size());
+    }
+    char stamp[32];
+    std::snprintf(stamp, sizeof stamp, "%016llx\n", static_cast<unsigned long long>(h));
+    const bool stampSame = (readSmallFile(stampPath) == stamp);
+    bool allOk = true;
+    for (size_t i = 0; i < roms.size(); ++i) {
+        if (roms[i].empty()) { allOk = false; continue; }   // asset manquant : déjà signalé
+        const std::string dest = dir + "/" + kRomAssets[i];
+        // Témoin identique ET fichier de la bonne taille → rien à faire. La taille
+        // reste vérifiée : un fichier effacé ou abîmé se répare au lancement suivant.
+        if (stampSame && fileSize(dest) == static_cast<long long>(roms[i].size())) continue;
+        if (!writeFileAtomic(dest, roms[i])) {
+            allOk = false;
+            NEOERR("déballage échoué: %s — l'application démarrera sans lui", kRomAssets[i]);
+        }
+    }
+    // Le témoin n'est posé qu'après un déballage COMPLET : un échec en cours de route
+    // laisse l'ancien témoin, donc tout sera retenté au prochain lancement.
+    if (allOk && !stampSame) {
+        const std::vector<uint8_t> s(stamp, stamp + std::strlen(stamp));
+        if (!writeFileAtomic(stampPath, s)) NEOERR("témoin non écrit: %s", stampPath.c_str());
+        else NEOLOG("ROMs unpacked (assets %s)", std::string(stamp, 16).c_str());
+    }
+
+    // DISQUETTE : JAMAIS écrasée si elle existe. Elle porte les écritures de
+    // l'utilisateur (sauvegardes de jeu, fichiers copiés depuis le bureau GEM) ; un
+    // APK neuf qui embarquerait une autre diskA.st ne doit pas les effacer. Seuls
+    // l'absence et le fichier VIDE déclenchent la copie — la copie étant atomique
+    // (writeFileAtomic), un fichier tronqué ne peut plus apparaître sous ce nom.
+    for (const char* a : kUserAssets) {
         const std::string dest = dir + "/" + a;
-        // Comparer à la taille de l'asset, et non à la seule existence : c'est ce qui
-        // rend le déballage RÉPARABLE. Un fichier absent, vide ou tronqué est recopié
-        // au lancement suivant au lieu d'être définitivement pris pour bon.
-        const Sint64 want = assetSize(a);
-        if (want > 0 && !fileHasSize(dest, want) && !copyAsset(a, dest))
+        if (fileSize(dest) > 0) continue;
+        if (!copyAsset(a, dest))
             NEOERR("déballage échoué: %s — l'application démarrera sans lui", a);
     }
     return dir;
+}
+
+// Dossier d'IMPORT de l'utilisateur : le stockage « externe » PROPRE à
+// l'application (…/Android/data/<paquet>/files). Contrairement au stockage
+// interne, il est joignable depuis un ordinateur par USB (MTP) et ne demande
+// AUCUNE permission ; SDL le crée au premier appel. "" s'il est indisponible
+// (carte retirée, stockage partagé démonté).
+std::string importDir() {
+#if defined(__ANDROID__)
+    if (!(SDL_AndroidGetExternalStorageState() & SDL_ANDROID_EXTERNAL_STORAGE_READ)) return {};
+    const char* ext = SDL_AndroidGetExternalStoragePath();
+    return ext ? std::string(ext) : std::string();
+#else
+    return {};
+#endif
 }
 
 // --- Entrées tactiles --------------------------------------------------------
@@ -372,6 +474,8 @@ struct Touch {
     bool     active   = false;     // un geste est en cours
     Uint64   startMs  = 0;
     float    travel   = 0.0f;      // distance parcourue par le doigt PILOTE
+    float    remX     = 0.0f;      // fraction de pixel ST non encore envoyée
+    float    remY     = 0.0f;      //   (un glissé lent ne produisait que des 0)
     SDL_FingerID mover = 0;        // doigt qui pilote la souris
     bool     moverOk  = false;     // ... et s'il est encore posé
 
@@ -404,6 +508,22 @@ float              g_uiScale = 1.0f;
 int                g_injectHold     = 0;      // trames de maintien restantes
 uint8_t            g_injectScancode = 0;      // touche à relâcher (0 = clic)
 bool               g_injectClick    = false;  // le maintien est un clic souris
+// Boutons TENUS par l'injection en cours. Un glissé pendant le maintien doit les
+// transmettre : Ikbd::mouseEvent écrase l'état des boutons à chaque appel, et un
+// mouvement envoyé avec (false, false) relâchait le clic avant la 4ᵉ trame — un
+// double-tap d'un doigt qui tremble ne donnait plus qu'un clic.
+bool               g_injectL        = false;
+bool               g_injectR        = false;
+
+// Pose un clic maintenu (tap, ou page clavier) ; relâché par la boucle de trame.
+void injectClick(Machine& m, bool right) {
+    m.mouseEvent(0, 0, !right, right);
+    g_injectScancode = 0;
+    g_injectClick    = true;
+    g_injectL        = !right;
+    g_injectR        = right;
+    g_injectHold     = 4;
+}
 
 constexpr float kTouchSpeed   = 900.0f;   // pixels ST par unité d'écran normalisée
 constexpr Uint64 kTapMaxMs    = 250;
@@ -437,9 +557,23 @@ void handleTouch(const SDL_Event& e) {
         // doigts ne servent qu'à compter pour le clic droit.
         if (!g_touch.moverOk || e.tfinger.fingerId != g_touch.mover) break;
         g_touch.travel += SDL_fabsf(dx) + SDL_fabsf(dy);
-        const int mx = int(dx * kTouchSpeed);
-        const int my = int(dy * kTouchSpeed);
-        if ((mx || my) && g_machine) g_machine->mouseEvent(mx, my, false, false);
+        // x et y sont normalisés SÉPARÉMENT (largeur, hauteur) : sur un écran 20:9 en
+        // paysage le même geste allait ~2,2 fois plus vite en vertical. On ramène dy à
+        // l'unité de dx (largeur de fenêtre) pour qu'un centimètre vaille autant partout.
+        float aspect = 1.0f;
+        int ww = 0, wh = 0;
+        if (g_window) SDL_GetWindowSize(g_window, &ww, &wh);
+        if (ww > 0 && wh > 0) aspect = float(wh) / float(ww);
+        // Accumulateur fractionnaire : la troncature par événement perdait le reste, et
+        // un doigt lent (< 1 pixel ST par événement à 120 Hz) ne déplaçait rien.
+        g_touch.remX += dx * kTouchSpeed;
+        g_touch.remY += dy * kTouchSpeed * aspect;
+        const int mx = int(g_touch.remX);
+        const int my = int(g_touch.remY);
+        g_touch.remX -= float(mx);
+        g_touch.remY -= float(my);
+        // Boutons : ceux que l'injection d'un tap tient encore (cf. g_injectL/R).
+        if ((mx || my) && g_machine) g_machine->mouseEvent(mx, my, g_injectL, g_injectR);
         break;
     }
     case SDL_FINGERUP: {
@@ -458,10 +592,7 @@ void handleTouch(const SDL_Event& e) {
             // Ikbd::mouseEvent n'émet rien, il écrase l'état, et le paquet souris
             // n'est construit qu'à la VBL, qui ne verrait donc aucun changement.
             const bool right = g_touch.peak >= 2;        // deux doigts = clic droit
-            g_machine->mouseEvent(0, 0, !right, right);
-            g_injectScancode = 0;
-            g_injectClick    = true;
-            g_injectHold     = 4;
+            injectClick(*g_machine, right);
         }
         g_touch = Touch{};                               // geste clos : tout repart à neuf
         break;
@@ -491,11 +622,55 @@ uint8_t readPad(SDL_GameController* pad) {
     return b;
 }
 
+// --- Relance dans le même processus -------------------------------------------
+// SDL2 n'appelle PAS exit() quand SDL_main rend la main : si Android relance
+// l'activité alors que le processus vit encore, SDL_main est rappelé avec TOUTES
+// les globales dans l'état où la session précédente les a laissées — menu ouvert,
+// doigts « posés », clic injecté jamais relâché, anneau audio plein, servo et
+// diagnostic périmés, et surtout g_texW/g_texH d'une texture morte avec l'ancien
+// contexte GL (uploadFrame ferait alors un glTexSubImage2D sur une texture jamais
+// allouée : écran noir). On remet tout à neuf en tête de SDL_main, AVANT d'ouvrir
+// l'audio : le thread audio ne tourne pas encore, g_primed s'écrit donc sans course.
+// (La Machine statique, elle, repart par hardReset — cf. main.)
+void resetSessionGlobals() {
+    g_machine = nullptr;
+    g_window  = nullptr;
+    g_gl      = nullptr;
+    g_tex = g_prog = g_vbo = 0;
+    g_locPos = g_locUV = g_locTex = -1;
+    g_texW = g_texH = 0;
+    g_ring.clear();
+    g_audioDev      = 0;
+    g_audioRate     = 0;
+    g_pacer.reset();
+    g_cushionFrames = 0;
+    g_primed        = false;
+    g_underruns.store(0, std::memory_order_relaxed);
+    g_underrunSeen  = 0;
+    g_underrunMute  = 0;
+    g_masterVol     = 1.0f;
+    g_touch   = Touch{};
+    g_menu    = neost::AndroidMenu{};
+    g_uiScale = 1.0f;
+    g_injectHold     = 0;
+    g_injectScancode = 0;
+    g_injectClick    = false;
+    g_injectL = g_injectR = false;
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
     (void)argc; (void)argv;
+    resetSessionGlobals();             // relance dans le même processus : cf. sa définition
     SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+    // Bouton RETOUR (et geste de bord en navigation gestuelle, clic droit sous DeX /
+    // ChromeOS) : sans ce hint, SDLActivity le traite lui-même et TERMINE l'activité —
+    // la partie en cours était perdue sur un geste qu'on fait sans y penser. Piégé,
+    // il arrive en SDL_KEYDOWN/SDLK_AC_BACK et bascule le menu (cf. la boucle).
+    // Posé AVANT SDL_Init : la couche Java le lit à chaque appui, mais rien ne doit
+    // pouvoir passer entre le démarrage et la première itération.
+    SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
         NEOERR("SDL_Init: %s", SDL_GetError());
         return 1;
@@ -541,7 +716,9 @@ int main(int argc, char* argv[]) {
         ImGui::GetStyle().ScaleAllSizes(g_uiScale);
         ImGui::GetIO().FontGlobalScale = g_uiScale;
     }
-    g_menu.dataDir = dataDir;
+    g_menu.dataDir   = dataDir;
+    g_menu.importDir = importDir();
+    NEOLOG("import dir: %s", g_menu.importDir.empty() ? "(unavailable)" : g_menu.importDir.c_str());
 
     // Machine par défaut : ST 1 Mo + EmuTOS 192 Ko (le build « Atari ST »), comme
     // la démo web — c'est la machine de référence des jeux et démos de l'époque.
@@ -559,7 +736,11 @@ int main(int argc, char* argv[]) {
     // registres que plus rien ne met à jour — la machine serait MUETTE.
     machine.psg.setCycleClock([] { return g_machine->frameRelCycle(); });
     machine.dmasnd.setCycleClock([] { return g_machine->frameRelCycle(); });
-    machine.reset();
+    // À FROID, pas à chaud : au premier lancement c'est équivalent (RAM neuve), mais
+    // la Machine est STATIQUE — sur une relance dans le même processus, un reset()
+    // gardait la RAM de la partie précédente et son « memvalid », et le TOS refaisait
+    // un boot court par-dessus.
+    machine.hardReset();
     openAudio();
 
     SDL_GameController* pad = nullptr;
@@ -606,7 +787,16 @@ int main(int argc, char* argv[]) {
                 if (!pad) pad = SDL_GameControllerOpen(e.cdevice.which);
                 break;
             case SDL_CONTROLLERDEVICEREMOVED:
-                if (pad) { SDL_GameControllerClose(pad); pad = nullptr; }
+                // `which` est ici l'id d'INSTANCE de la manette partie : ne fermer la
+                // nôtre que si c'est elle, puis reprendre une manette restée branchée
+                // (aucun ADDED ne viendra pour elle).
+                if (pad && SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad))
+                               == e.cdevice.which) {
+                    SDL_GameControllerClose(pad);
+                    pad = nullptr;
+                    for (int j = 0; j < SDL_NumJoysticks() && !pad; ++j)
+                        if (SDL_IsGameController(j)) pad = SDL_GameControllerOpen(j);
+                }
                 break;
             case SDL_APP_WILLENTERBACKGROUND:
                 paused = true;
@@ -645,11 +835,19 @@ int main(int argc, char* argv[]) {
                 }
                 break;
             case SDL_KEYDOWN:
-                // Retour arrière : ferme le menu s'il est ouvert, quitte sinon —
-                // c'est le geste « précédent » attendu sur Android.
-                if (e.key.keysym.sym == SDLK_AC_BACK) {
-                    if (g_menu.open || g_menu.keysPage) { g_menu.open = g_menu.keysPage = false; }
-                    else running = false;
+                // Bouton RETOUR d'Android (≠ le REWIND de l'émulateur) : il BASCULE
+                // le menu — ouvert ou page clavier → fermé, fermé → ouvert. Il ne
+                // quitte JAMAIS : un geste de bord fait par mégarde tuait la partie.
+                // On ne sort que par l'entrée QUIT du menu (ou la fermeture par le
+                // système, SDL_QUIT). Répétition ignorée : un appui long ne doit pas
+                // faire clignoter le menu.
+                if (e.key.keysym.sym == SDLK_AC_BACK && !e.key.repeat) {
+                    if (g_menu.open || g_menu.keysPage) {
+                        g_menu.open = g_menu.keysPage = false;
+                    } else {
+                        g_menu.open = true;
+                        g_menu.reqRescan = true;
+                    }
                 }
                 break;
             default: break;
@@ -694,10 +892,7 @@ int main(int argc, char* argv[]) {
             g_menu.reqKeyPress = -1;
         }
         if (g_injectHold == 0 && g_menu.reqClick) {
-            const bool right = (g_menu.reqClick == 2);
-            machine.mouseEvent(0, 0, !right, right);
-            g_injectClick = true;
-            g_injectHold  = 4;                        // clic MAINTENU, comme la borne
+            injectClick(machine, g_menu.reqClick == 2);   // clic MAINTENU, comme la borne
             g_menu.reqClick = 0;
         }
 
@@ -722,6 +917,7 @@ int main(int argc, char* argv[]) {
                 if (g_injectHold > 0 && --g_injectHold == 0) {
                     if (g_injectClick) machine.mouseEvent(0, 0, false, false);
                     else               machine.keyEvent(g_injectScancode, false);
+                    g_injectL = g_injectR = false;
                 }
                 return machine.frameCycles();
             });

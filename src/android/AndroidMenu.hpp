@@ -36,7 +36,11 @@ struct AndroidMenu {
     bool keysPage  = false;    // page clavier (machine qui TOURNE)
     int  diskSel   = 0;
     std::vector<std::string> disks;   // ludothèque, remplie par refresh()
-    std::string dataDir;              // dossier scanné (stockage interne)
+    std::string dataDir;              // stockage INTERNE : données embarquées (diskA…)
+    // Dossier d'IMPORT : stockage externe propre à l'application
+    // (…/Android/data/<paquet>/files), joignable par USB/MTP sans permission —
+    // le dossier interne, lui, est inatteignable sans root. "" si indisponible.
+    std::string importDir;
     std::string mounted;              // chemin monté dans le lecteur A
 
     // --- Requêtes sortantes (consommées puis remises à zéro par l'appelant) ---
