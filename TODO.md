@@ -390,9 +390,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 - **Notarisation macOS** · P2 ⏸ décision (99 $/an) — `.app` scellé ad hoc ; manque Developer ID.
   Signature du `.zip` Windows écartée (token HSM, SmartScreen = un clic). ⚠ Le JIT de POM68K
   touchera au hardened runtime (`allow-jit`). → `docs/RELEASE.md`
-- **Hygiène FujiNet** · P3 ⏸ décision — code retiré le 2026-08-22 ; deux mentions historiques
-  (commentaire de version save-state dans `src/core/Machine.cpp`, `CHANGELOG.md`). Reformuler
-  ou assumer.
 
 ---
 

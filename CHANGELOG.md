@@ -13,6 +13,7 @@ l'ordre inverse. Version courante : **0.6.4**.
 - Android : bascule `REWIND: OFF/ON` (éteinte par défaut, 24 Mo) et action `REWIND` au menu ;
   un refus s'affiche en pied de menu. Vérifié à la syntaxe seulement.
 - `union_demo` en 1 Mo : aucune trame Hatari identique, ni dans ±90 ni dans ±300.
+- Hygiène FujiNet : les deux mentions restantes (historique des versions de save-state, récit daté) sont assumées.
 - `src/net` relu (A39) : sous Windows, un `connect` refusé se signale dans `exceptfds` ; `tcpConnect`
   ne regardait que `writefds` et un `ATD` vers un port fermé attendait 5 s. Compilé avec MinGW, non lancé.
 - `nocooper_greetings` ne peut pas raccourcir : chaque partie de la démo a une durée fixe, un appui
