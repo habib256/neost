@@ -10,8 +10,8 @@ l'ordre inverse. Version courante : **0.6.4**.
 
 - Web : interrupteur *Rewind* (éteint par défaut, 32 Mo), bouton *Back* et accord Ctrl+Alt+R ;
   exports `neost_set_rewind` et `neost_rewind`. Essayé dans Chrome sans écran, piloté par CDP.
-- Android : action `REWIND` au menu, retour arrière armé d'office (24 Mo) faute de page de
-  configuration ; un refus s'affiche en pied de menu. Vérifié à la syntaxe seulement.
+- Android : bascule `REWIND: OFF/ON` (éteinte par défaut, 24 Mo) et action `REWIND` au menu ;
+  un refus s'affiche en pied de menu. Vérifié à la syntaxe seulement.
 - `union_demo` en 1 Mo : aucune trame Hatari identique, ni dans ±90 ni dans ±300.
 - `src/net` relu (A39) : sous Windows, un `connect` refusé se signale dans `exceptfds` ; `tcpConnect`
   ne regardait que `writefds` et un `ATD` vers un port fermé attendait 5 s. Compilé avec MinGW, non lancé.

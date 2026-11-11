@@ -45,6 +45,7 @@ struct AndroidMenu {
     bool reqQuit     = false;
     bool reqRescan   = false;
     bool reqRewind   = false;  // reculer d'environ une seconde (core/Rewind)
+    bool rewindOn    = false;  // retour arrière armé (éteint par défaut, comme le bureau)
     std::string status;        // dernier message de la boucle (retour arrière refusé…)
     int  reqKeyPress = -1;     // index dans kKeys : touche à envoyer au ST
     int  reqClick    = 0;      // 1 = clic gauche, 2 = clic droit

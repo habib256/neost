@@ -148,7 +148,12 @@ void AndroidMenu::draw(float uiScale) {
     ImGui::TextDisabled("  tap a game to insert it  ·  no reboot");
     {
         const float bw = line * 6.0f;
-        ImGui::SameLine(ImGui::GetContentRegionAvail().x - bw + ImGui::GetCursorPosX());
+        const float sp = ImGui::GetStyle().ItemSpacing.x;
+        ImGui::SameLine(ImGui::GetContentRegionAvail().x - 2.0f * bw - sp + ImGui::GetCursorPosX());
+        // Bascule du retour arrière : éteint par défaut, comme l'option du bureau.
+        if (ImGui::Button(rewindOn ? "REWIND: ON" : "REWIND: OFF", ImVec2(bw, rowH * 0.8f)))
+            rewindOn = !rewindOn;
+        ImGui::SameLine();
         if (ImGui::Button("RESUME", ImVec2(bw, rowH * 0.8f))) open = false;
     }
     ImGui::Separator();

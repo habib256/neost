@@ -35,9 +35,9 @@ exactement la contrainte d'un téléphone :
 - **insérer ne redémarre pas** (modèle « vraie machine ») : seul `RESTART` relance ;
 - page **clavier** séparée, ancrée en bas, machine qui **tourne** — c'est ce qui
   permet de répondre à un « PRESS SPACE » sans figer le jeu ;
-- `REWIND` recule d'environ une seconde et referme le menu. Contrairement au bureau,
-  le retour arrière est **armé d'office** (pas de page de configuration), avec un budget
-  de 24 Mo, une vingtaine de secondes. Un refus s'affiche en pied de menu.
+- `REWIND` recule d'environ une seconde et referme le menu. Comme sur le bureau, le
+  retour arrière est **éteint par défaut** : la bascule `REWIND: OFF/ON` est en tête du
+  menu. Budget de 24 Mo, une vingtaine de secondes. Un refus s'affiche en pied de menu.
 
 Le tri de la ludothèque n'est pas réécrit : `io/MediaScan` est **partagé** avec la
 borne (scan borné, détection des suites, ordre de proximité).

@@ -573,12 +573,10 @@ int main(int argc, char* argv[]) {
     // A28 : la boucle de rattrapage est PARTAGÉE avec le frontend web (Pacing.hpp).
     neost::pacing::FramePacer framePacer;
     framePacer.resync(double(SDL_GetTicks64()));
-    // Retour arrière ARMÉ d'office : le frontend n'a pas de page de configuration, et
-    // un instantané par seconde ne coûte qu'une copie d'environ 1 Mo. Budget réduit
-    // pour un téléphone : une vingtaine de secondes en 1 Mo de RAM.
+    // Retour arrière éteint par défaut, comme sur le bureau ; la bascule est au menu.
+    // Budget réduit pour un téléphone : une vingtaine de secondes en 1 Mo de RAM.
     Rewind rewind;
     rewind.setBudget(24u << 20);
-    rewind.setEnabled(true);
     bool running = true, paused = false;
 
     while (running) {
@@ -674,10 +672,11 @@ int main(int argc, char* argv[]) {
             g_menu.reqMount.clear();
         }
         if (g_menu.reqRestart) { machine.hardReset(); g_menu.reqRestart = false; }
+        if (g_menu.rewindOn != rewind.enabled()) rewind.setEnabled(g_menu.rewindOn);
         if (g_menu.reqRewind) {
             g_menu.reqRewind = false;
-            std::string why;
-            const bool ok = rewind.stepBack(machine, &why);
+            std::string why = "Rewind is off";
+            const bool ok = rewind.enabled() && rewind.stepBack(machine, &why);
             g_menu.status = ok ? std::string() : why;
             if (ok) g_menu.mounted = machine.fdc.mountedPath(0);   // le lecteur a pu changer
             NEOLOG("[rewind] %s (%zu in ring)", ok ? "OK" : why.c_str(), rewind.count());
