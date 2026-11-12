@@ -113,6 +113,14 @@ cœur) restent en attente de leur ressource.
   (anti-rebond `$19`, réveil SCI, BREAK du MFP) étaient arrivés tous deux en v66 : fusionnés en v67.
   Restes de fusion corrigés : fin de trame DMA, MTC et tics 1 ms de l'IKBD sur l'horloge CPU en
   service (`cpuHzInt()`), pas sur le quartz par défaut.
+- **Validation de l'ensemble** (main après les dix lots et Closure) : paliers `fast` et `full` verts, sans
+  étape amputée ; `neost-selftest` 958 OK. A/B contre le binaire d'avant la chasse (`8d96452`), 344
+  scénarios (57 étalons, 96 disques × ST/TOS 1.04, STE/TOS 1.62, Mega STE/TOS 2.06, une capture toutes les
+  250 trames) : exécution CPU identique sur 330 ; elle diverge sur 6 étalons (tous verts) et 8 disques STE
+  ou Mega STE, 4 par la fin de trame du son DMA (E605, Systematic Error, Lethal Xcess, Wings of Death) et 4
+  par le saut STOP (Enchanted Land, Nitro, DHS Just Musix 2 ×2). Captures identiques partout, sauf
+  `closure` (le correctif) et `nocooper` (une trame de décalage, recalée). Intro de Closure en TOS 1.02 UK :
+  18 trames sombres isolées sur 1 300-2 400 → 0, comme Hatari.
 - **Outils.** `compare_sound.py --mem` passe par `title_cmd.parse_mem` : même taille des deux
   côtés, `--mem 0` ne devient plus « 0m ».
 
