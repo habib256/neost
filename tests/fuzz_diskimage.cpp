@@ -28,19 +28,37 @@
 //  un « oui » sur une image de 3 octets serait un bug silencieux bien plus
 //  dangereux qu'un plantage.
 //
+//  DEUX ÉTAGES EN AVAL (2026-11-12). Le parseur n'est pas le seul à lire l'image :
+//  `StxImage::loadWd1772` relit le fichier compagnon des écritures STX (lui aussi
+//  venu du disque de l'utilisateur), et le FDC indexe pistes et secteurs de ce que
+//  les parseurs ont accepté. Une itération sur `kFdcEvery` monte donc l'image
+//  mutée dans un vrai `Fdc` (Bus + YM + MFP + Scheduler, sans CPU) — avec, pour une
+//  STX, un .wd1772 muté à côté — et lui fait lire, relire, écrire et formater.
+//  Contrat en plus du « pas de plantage » : une disquette qui tourne termine TOUTE
+//  commande (le WD1772 abandonne au plus tard après 5 tours, [B] WD177X-00 p. 1-9) ;
+//  un BUSY sans fin est une violation.
+//
 //  Lancer :  ./build/neost-fuzz-disk [--iters N] [--seed N]
-//            (câblé au palier `fast` de run_all.py, ~0,3 s à 20 000 itérations)
+//            (câblé au palier `fast` de run_all.py)
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
+#include "core/Bus.hpp"
+#include "core/Scheduler.hpp"
+#include "core/YM2149.hpp"
 #include "io/DiskImageCodec.hpp"
+#include "io/Fdc.hpp"
 #include "io/IpfImage.hpp"
+#include "io/Mfp.hpp"
 #include "io/StxImage.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>          // strtoull, setenv / _putenv_s
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -166,6 +184,167 @@ const char* fuzzOne(const uint8_t* data, std::size_t len) {
 }
 
 // -----------------------------------------------------------------------------
+//  Étages en aval : .wd1772 et FDC.
+// -----------------------------------------------------------------------------
+constexpr std::size_t kFdcEvery = 256;   // une itération sur 256 descend jusqu'au FDC (E/S fichier : ~10 ms)
+
+void writeBytes(const std::string& path, const std::vector<uint8_t>& v) {
+    std::ofstream o(path, std::ios::binary | std::ios::trunc);
+    o.write(reinterpret_cast<const char*>(v.data()), std::streamsize(v.size()));
+}
+std::vector<uint8_t> readBytes(const std::string& path) {
+    std::ifstream f(path, std::ios::binary);
+    return std::vector<uint8_t>(std::istreambuf_iterator<char>(f), {});
+}
+
+// STX minimale VALIDE : une piste (0, face 0), un secteur de 512 o — parse() l'accepte,
+// contrairement à la graine « approximative » du corpus.
+std::vector<uint8_t> validStx() {
+    std::vector<uint8_t> image = {'R','S','Y',0,3,0,0,0,0,0,1,0,0,0,0,0};
+    auto le16 = [&](unsigned value) { image.push_back(uint8_t(value)); image.push_back(uint8_t(value >> 8)); };
+    auto le32 = [&](unsigned value) { le16(value); le16(value >> 16); };
+    le32(16 + 512); le32(0); le16(1); le16(0); le16(6268 * 8);
+    image.push_back(0); image.push_back(0);
+    image.insert(image.end(), 512, 0xA5);
+    return image;
+}
+
+// Contrôleur disquette seul, horloge pilotée à la main (cf. tests/*_logic.cpp).
+struct FdcRig {
+    Bus bus{512 * 1024};
+    YM2149 psg;
+    Mfp mfp;
+    Scheduler sched;
+    Fdc fdc{bus, psg, mfp};
+    int64_t live = 0;
+    FdcRig() {
+        sched.setLiveClock([this] { return live; });
+        sched.setCallback(Scheduler::FDC, [this] { fdc.onFdcEvent(); });
+        fdc.setScheduler(&sched);
+        fdc.setHostWriteBack(true);      // le fichier est une copie jetable : on veut writeBack
+        fdc.setFastFdc(true);
+        psg.setPortASink([this](uint8_t) { fdc.refreshDriveSide(); });
+        psg.reset(); fdc.reset(true); mfp.reset();
+        mfp.write8(0xFFFA09, 0x80);
+    }
+    void select(uint8_t v) { psg.write8(0xFF8800, 14); psg.write8(0xFF8802, v); }
+    void mode(uint16_t v) { fdc.write8(0xFF8606, uint8_t(v >> 8)); fdc.write8(0xFF8607, uint8_t(v)); }
+    void data(uint8_t v) { fdc.write8(0xFF8604, 0); fdc.write8(0xFF8605, v); }
+    uint8_t reg(uint16_t a) { mode(uint16_t(0x80 | a)); return fdc.read8(0xFF8605); }
+    void reg(uint16_t a, uint8_t v) { mode(uint16_t(0x80 | a)); data(v); }
+    bool irq() { return !(mfp.read8(0xFFFA01) & 0x20); }
+    // Vrai si INTRQ est tombée dans le budget (2 s émulées : ≥ 10 tours de disquette).
+    bool finish() {
+        const int64_t end = live + 16'000'000;
+        for (unsigned n = 0; n < 1000000 && !irq() && live < end; ++n) {
+            const int64_t due = sched.nextDue();
+            if (due < 0) return false;
+            for (int64_t b = (live / 160000 + 1) * 160000; b <= due; b += 160000) {
+                live = b; sched.runTo(b); fdc.onVbl();
+            }
+            live = due; sched.runTo(due);
+        }
+        return irq();
+    }
+    void dma(bool write, uint8_t count) {
+        mode(write ? 0x190 : 0x90); mode(write ? 0x090 : 0x190); mode(write ? 0x190 : 0x90);
+        data(count);
+        fdc.write8(0xFF860D, 0); fdc.write8(0xFF860B, 0); fdc.write8(0xFF8609, 0x02);
+    }
+    bool cmd(bool write, uint8_t c) { mode(write ? 0x180 : 0x80); data(c); return finish(); }
+};
+
+// Flux WRITE TRACK plausible pour la piste `track` : jusqu'à 11 secteurs de taille
+// aléatoire, marques $F5/$FE/$FB et CRC $F7 tels qu'un formateur les envoie.
+void formatStream(FdcRig& r, Rng& rng, uint8_t track, uint8_t side) {
+    std::size_t p = 0x20000;
+    const std::size_t end = p + 14 * 512;
+    auto put = [&](uint8_t b) { if (p < end) r.bus.ram[p++] = b; };
+    for (int i = 0; i < 60; ++i) put(0x4E);
+    for (uint32_t s = 0, n = rng.below(12); s < n; ++s) {
+        for (int i = 0; i < 12; ++i) put(0);
+        for (int i = 0; i < 3; ++i) put(0xF5);
+        put(0xFE); put(track); put(side); put(uint8_t(s + 1)); put(uint8_t(rng.below(4))); put(0xF7);
+        for (int i = 0; i < 22; ++i) put(0x4E);
+        for (int i = 0; i < 12; ++i) put(0);
+        for (int i = 0; i < 3; ++i) put(0xF5);
+        put(0xFB);
+        for (int i = 0, len = 128 << rng.below(4); i < len; ++i) put(uint8_t(rng.next()));
+        put(0xF7);
+        for (int i = 0; i < 40; ++i) put(0x4E);
+    }
+    while (p < end) put(rng.below(3) ? uint8_t(0x4E) : uint8_t(rng.next()));
+}
+
+// Monte `img` (extension choisie d'après le contenu, comme la nommerait l'utilisateur)
+// et lui fait subir une courte séquence de commandes. Renvoie la violation, ou nullptr.
+const char* fuzzFdc(const std::vector<uint8_t>& img, const std::vector<uint8_t>* wd1772,
+                    const std::string& dir, Rng& rng) {
+    const char* ext = ".st";
+    if (img.size() >= 4 && img[0] == 'R' && img[1] == 'S' && img[2] == 'Y' && img[3] == 0) ext = ".stx";
+    else if (img.size() >= 4 && img[0] == 'C' && img[1] == 'A' && img[2] == 'P' && img[3] == 'S') ext = ".ipf";
+    else if (img.size() >= 2 && img[0] == 0x0E && img[1] == 0x0F) ext = ".msa";
+    else if (img.size() >= 2 && img[0] == 0x42 && img[1] == 0x42) ext = ".dim";
+    const std::string path = dir + "/img" + ext;
+    writeBytes(path, img);
+    std::remove((dir + "/img.wd1772").c_str());
+    if (wd1772) writeBytes(dir + "/img.wd1772", *wd1772);
+    FdcRig r;
+    if (!r.fdc.loadImage(path, 0)) return nullptr;      // refus propre : rien de plus à tester
+    for (int k = 0; k < 6; ++k) {
+        const uint8_t track = uint8_t(rng.below(4) ? rng.below(4) : rng.below(86));
+        const uint8_t side = uint8_t(rng.next() & 1);
+        r.select(side ? 4 : 5);
+        r.reg(6, track);
+        if (!r.cmd(false, 0x18))                         return "FDC : SEEK sans fin";
+        r.reg(2, track);
+        r.reg(4, uint8_t(rng.below(12)));
+        switch (rng.below(5)) {
+            case 0: r.dma(false, uint8_t(1 + rng.below(3)));
+                    if (!r.cmd(false, uint8_t(0x88 | ((rng.next() & 1) ? 0x10 : 0))))
+                        return "FDC : READ SECTOR sans fin";
+                    break;
+            case 1: r.dma(false, 1);
+                    if (!r.cmd(false, 0xC8))             return "FDC : READ ADDRESS sans fin";
+                    break;
+            case 2: r.dma(false, 14);
+                    if (!r.cmd(false, 0xE8))             return "FDC : READ TRACK sans fin";
+                    break;
+            case 3: r.dma(true, uint8_t(1 + rng.below(2)));
+                    for (std::size_t i = 0; i < 1024; ++i) r.bus.ram[0x20000 + i] = uint8_t(rng.next());
+                    if (!r.cmd(true, uint8_t(0xA8 | ((rng.next() & 1) ? 0x10 : 0))))
+                        return "FDC : WRITE SECTOR sans fin";
+                    break;
+            default: r.dma(true, 14);
+                     formatStream(r, rng, track, side);
+                     if (!r.cmd(true, 0xF8))             return "FDC : WRITE TRACK sans fin";
+                     break;
+        }
+    }
+    return nullptr;
+}
+
+// .wd1772 de départ : celui que NeoST écrit lui-même après un WRITE SECTOR et un WRITE
+// TRACK sur la STX valide — blocs SECT et TRCK bien formés, que la mutation abîme.
+std::vector<uint8_t> seedWd1772(const std::string& dir) {
+    const std::string path = dir + "/seed.stx";
+    writeBytes(path, validStx());
+    std::remove((dir + "/seed.wd1772").c_str());
+    Rng rng(1);
+    {
+        FdcRig r;
+        if (!r.fdc.loadImage(path, 0)) return {};
+        r.select(5);
+        r.reg(4, 1); r.dma(true, 1);
+        r.cmd(true, 0xA8);
+        r.dma(true, 14);
+        formatStream(r, rng, 0, 0);
+        r.cmd(true, 0xF8);
+    }
+    return readBytes(dir + "/seed.wd1772");
+}
+
+// -----------------------------------------------------------------------------
 //  Corpus de départ : des entrées VALIDES ou presque, pour que les mutations
 //  partent d'assez près pour franchir les gardes d'en-tête. Un fuzzeur qui part
 //  d'octets aléatoires purs ne dépasse jamais le premier `if`.
@@ -264,6 +443,9 @@ std::vector<std::vector<uint8_t>> seedCorpus() {
         corpus.push_back(std::move(ipfImg));
     }
 
+    // STX valide : sans elle, l'étage FDC ne verrait presque jamais de STX montée.
+    corpus.push_back(validStx());
+
     // Les cas dégénérés que tout parseur doit encaisser sans broncher.
     corpus.push_back({});
     corpus.push_back({0x0E});
@@ -335,6 +517,21 @@ int main(int argc, char** argv) {
     Rng rng(seed);
     std::size_t accepted = 0;
 
+    // Dossier de travail des étages en aval (images et .wd1772 réécrits à chaque passe).
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const fs::path work = fs::temp_directory_path(ec)
+        / ("neost-fuzz-disk-" + std::to_string(seed) + "-"
+           + std::to_string(reinterpret_cast<std::uintptr_t>(&rng)));
+    fs::create_directories(work, ec);
+    const std::string dir = work.string();
+    const std::vector<uint8_t> wdSeed = seedWd1772(dir);
+    if (wdSeed.size() < 16) {
+        std::printf("  FAIL graine .wd1772 non produite (STX valide non inscriptible ?)\n");
+        ++g_fail;
+    }
+    std::size_t fdcRuns = 0, wdLoads = 0;
+
     // Le corpus de départ passe d'abord TEL QUEL : si une entrée valide viole le
     // contrat, autant le dire avant d'avoir muté quoi que ce soit.
     for (const auto& c : corpus)
@@ -349,10 +546,31 @@ int main(int argc, char** argv) {
         // teste plus que le chemin de refus — il faudrait revoir le corpus.
         std::vector<uint8_t> out;
         if (diskimg::decodeContainer(v, out)) ++accepted;
-    }
 
-    std::printf("[fuzz-disk] %zu itérations (seed %llu), %zu entrées acceptées, %d violation(s)\n",
-                iters, (unsigned long long)seed, accepted, g_fail);
+        // .wd1772 muté relu par une STX valide (une itération sur 128 : E/S fichier).
+        if (it % 128 == 0 && !wdSeed.empty()) {
+            std::vector<uint8_t> w = wdSeed;
+            for (uint32_t m = 1 + rng.below(4); m; --m) mutate(w, rng);
+            const std::string wpath = dir + "/load.wd1772";
+            writeBytes(wpath, w);
+            StxImage stx;
+            if (stx.parse(validStx()) && stx.loadWd1772(wpath)) ++wdLoads;
+        }
+        // Étage FDC : l'image mutée montée et exercée ; une STX reçoit parfois un
+        // .wd1772 muté à côté.
+        if (it % kFdcEvery == 0) {
+            std::vector<uint8_t> w;
+            const bool withWd = !wdSeed.empty() && (rng.next() & 1);
+            if (withWd) { w = wdSeed; for (uint32_t m = 1 + rng.below(4); m; --m) mutate(w, rng); }
+            if (const char* why = fuzzFdc(v, withWd ? &w : nullptr, dir, rng)) fail(why, seed, it, v);
+            ++fdcRuns;
+        }
+    }
+    fs::remove_all(work, ec);
+
+    std::printf("[fuzz-disk] %zu itérations (seed %llu), %zu entrées acceptées, "
+                "%zu passages FDC, %zu .wd1772 relus, %d violation(s)\n",
+                iters, (unsigned long long)seed, accepted, fdcRuns, wdLoads, g_fail);
     if (accepted == 0) {
         std::printf("  ✗ AUCUNE entrée acceptée : le harnais n'exerce plus que le refus.\n");
         return 1;

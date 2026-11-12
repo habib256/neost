@@ -91,9 +91,10 @@ int testFdcMediaChange() {
     Checks c;std::filesystem::path work;bool made=false;
     for(int n=0;n<1000&&!made;++n){work=std::filesystem::temp_directory_path()/("neost-media-change-"+std::to_string(n));std::error_code ec;made=std::filesystem::create_directory(work,ec);if(ec)break;}
     if(!made)return 1;struct Clean{std::filesystem::path p;~Clean(){std::error_code ec;std::filesystem::remove_all(p,ec);}} clean{work};
-    const auto path=work/"disk.st",ro=work/"readonly.st";
+    // diskB.st : une image par lecteur — Fdc::loadImage refuse la même dans A et B.
+    const auto path=work/"disk.st",ro=work/"readonly.st",pathB=work/"diskB.st";
     std::vector<uint8_t> image(2048,0);image[0x13]=4;image[0x18]=2;image[0x1A]=2;
-    for(auto p:{path,ro}){FILE*f=std::fopen(p.string().c_str(),"wb");if(!f)return 1;bool ok=std::fwrite(image.data(),1,image.size(),f)==image.size();std::fclose(f);if(!ok)return 1;}
+    for(auto p:{path,ro,pathB}){FILE*f=std::fopen(p.string().c_str(),"wb");if(!f)return 1;bool ok=std::fwrite(image.data(),1,image.size(),f)==image.size();std::fclose(f);if(!ok)return 1;}
     std::filesystem::permissions(ro,std::filesystem::perms::owner_read);
     auto wprt=[](Rig&r,int drive){r.select(drive?3:5);r.reg(0,0xD0);return (r.reg(0)&0x40)!=0;};
     for(int drive:{0,1}) {
@@ -114,7 +115,7 @@ int testFdcMediaChange() {
         r.advance(38000);c.equal("snapshot transition phase2",wprt(r,drive),false);
     }
     {
-        Rig r;r.fdc.loadImage(path.string(),0);r.fdc.loadImage(path.string(),1);r.advance(20000);
+        Rig r;r.fdc.loadImage(path.string(),0);r.fdc.loadImage(pathB.string(),1);r.advance(20000);
         r.fdc.eject(0);r.advance(25000);r.fdc.loadImage(path.string(),0);
         c.equal("autre lecteur indépendant",wprt(r,1),false);
         r.fdc.loadImage(ro.string(),0);r.advance(60000);

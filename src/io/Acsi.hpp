@@ -60,6 +60,15 @@ public:
     void resetCommand() { status_ = 0; }
 
     bool anyEnabled() const;
+    // Au moins une cible porte une IMAGE ouverte (un slot UltraSatan vide est peuplé
+    // sans image : il ne compte pas, le bit UltraSatan de l'en-tête le couvre).
+    bool anyImage() const;
+    // Empreinte de l'image de `target` : FNV-1a 32 bits du chemin et de la taille en
+    // octets, jamais nulle si une image est ouverte ; 0 sinon. La CONFIG des cibles
+    // n'est pas dans le flux (cf. serialize) : un état pris avec une image et rechargé
+    // sans elle, ou avec une autre, doit être refusé AVANT la restauration — c'est
+    // l'en-tête (Machine::stateHeaderOk) qui la porte, comme l'USB porte la sienne.
+    uint32_t imageFingerprint(int target) const;
     bool targetEnabled() const;            // cible courante peuplée ?
     // Chemin de l'image montée sur `target` (vide si cible non peuplée) — permet au
     // GUI de détecter qu'un profil demande une AUTRE image (remontage nécessaire).
@@ -100,7 +109,8 @@ public:
 
     // Sérialisation save-state (SYMÉTRIQUE). On sérialise UNIQUEMENT l'état mutable
     // de traitement de commande : la CONFIG des cibles (fp/enabled/hdSize/path…) est
-    // re-établie par `mountAcsi` AVANT un load (« même config machine requise »), et
+    // re-établie par `mountAcsi` AVANT un load (« même config machine requise », VÉRIFIÉE
+    // par l'empreinte imageFingerprint de chaque cible dans l'en-tête de l'état), et
     // le CONTENU des images disque vit dans les fichiers hôtes (comme les disquettes).
     void serialize(StateArchive& ar) {
         ar(target_); ar(byteCount_); ar.arr(command_);
