@@ -17,6 +17,7 @@
 // =============================================================================
 #pragma once
 #include <cstdint>
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -68,13 +69,19 @@ public:
         // de cellules donne le temps exact (densité variable comprise). 0 = déduite
         // du dump / de MFMSize comme pour une STX Pasti.
         uint16_t revolutionBytes = 0;
+        // Piste ABSENTE de l'image d'origine, créée par un WRITE TRACK (addTrack) ou
+        // relue d'un bloc NTRK/TRCK du .wd1772. Elle n'a aucun secteur d'origine :
+        // seule sa vue réinterprétée existe. Ses blocs .wd1772 portent des
+        // identifiants NeoST (NTRK/NSCT) qu'Hatari saute (cf. saveWd1772).
+        bool added = false;
 
         // Réinterprétation d'une piste réécrite par WRITE TRACK : le flux brut
         // (saveTracks[saveTrackIndex].data) est PARSÉ en secteurs (IDAM $FE → champ
         // ID, DAM $FB/$F8 → données) pour que les LECTURES voient le nouveau contenu
         // et non plus l'original. C'est ce que Hatari laisse en TODO (« convert
         // pDataWrite into pDataRead »). writeData possède les octets ; chaque
-        // writeSectors[i].pData y pointe (stable : tracks_ n'est jamais redimensionné).
+        // writeSectors[i].pData y pointe : stable, car Track ne se déplace pas (tracks_ est
+        // une deque, qu'addTrack allonge sans déplacer les pistes existantes).
         std::vector<Sector>               writeSectors;
         std::vector<std::vector<uint8_t>> writeData;
         uint16_t writeMfmSize       = 0;       // longueur du flux écrit (octets MFM)
@@ -101,12 +108,21 @@ public:
     int  sides() const;                 // 1 ou 2 (max face + 1)
     int  tracksPerSide() const;         // nombre de pistes par face
     Track* findTrack(int track, int side);
+    const Track* findTrack(int track, int side) const;
+
+    // Crée la piste (track, side) absente de l'image — WRITE TRACK sur une piste que
+    // la STX ne décrit pas (au-delà de la dernière piste, face 1 d'une image simple
+    // face). Rend la piste existante si elle est déjà là ; nullptr hors du format
+    // STX (piste > 127, face > 1 : le numéro de piste tient sur 7 bits + face).
+    // Les Track* rendus restent valides : tracks_ est une deque (cf. Track::writeData).
+    Track* addTrack(int track, int side);
 
     // Overlay d'écriture (cf. Hatari STX_SaveStruct) : une STX est en lecture seule ;
     // les 'write sector' et 'write track' vont dans ces structures, relues en
     // priorité, et PERSISTÉES dans un fichier compagnon « .wd1772 » (format
     // compatible avec le conteneur Hatari : blocs SECT/TRCK, multi-octets BE,
-    // trailer NDAM optionnel pour la DAM (ignoré et perdu si réécrit par Hatari)).
+    // trailer NDAM optionnel pour la DAM (ignoré et perdu si réécrit par Hatari) ;
+    // une piste créée par addTrack porte ses blocs en NTRK/NSCT, cf. saveWd1772).
     struct SaveSector {
         uint8_t  track = 0, side = 0;
         uint16_t bitPos = 0;
@@ -142,7 +158,9 @@ public:
 
 private:
     std::vector<uint8_t> buf_;          // octets bruts (les pointeurs ci-dessus pointent dedans)
-    std::vector<Track>   tracks_;
+    // deque et non vector : addTrack ajoute des pistes en cours de session, et les
+    // pointeurs Track* / writeSectors[i].pData doivent survivre à l'ajout.
+    std::deque<Track>    tracks_;
     uint16_t version_ = 0, imagingTool_ = 0;
     uint8_t  tracksCountHdr_ = 0, revision_ = 0;
     bool     valid_ = false;

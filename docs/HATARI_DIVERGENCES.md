@@ -464,6 +464,17 @@ extension DAM NeoST qualifiée ci-dessus.
   exploitable remplace aussi la vue des secteurs par une vue vide. Les anciennes
   données ne réapparaissent plus, même après remontage du `.wd1772`. Choix
   D1/D2 conservés ; READ TRACK reste une reconstruction, sans promesse de flux brut exact.
+- ✅ **STX piste absente formatée (2026-11-12)** : un WRITE TRACK sur une piste
+  que l'image ne décrit pas (au-delà de sa dernière piste, 80-82 compris ; face 1
+  d'une STX simple face) **crée la piste** (`StxImage::addTrack`) puis la traite comme
+  les autres (D1/D2). [B] WD177X-00 p. 1-13 : formater = placer la tête et lancer Write
+  Track, LOST DATA ne signale qu'un registre non servi. Hatari rend LOST DATA et perd
+  l'écriture ([D] `stx.c:2036-2042` @ f0736b24). Persistance : blocs **`NTRK`/`NSCT`**
+  (dispositions de TRCK/SECT, hors compteurs d'en-tête), parce qu'Hatari rejette le
+  `.wd1772` **entier** quand un TRCK ou un SECT ne trouve pas sa piste ou son secteur
+  (`stx.c:677-685`, `648-657`) et saute les blocs inconnus (`stx.c:692-699`) : il relit
+  donc le reste du fichier et ignore la seule piste ajoutée. Test :
+  `tests/stx_absent_track_logic.cpp`.
 - ✅ **D3 corrigé selon la fiche (2026-11-04)** : stall CPU de 32 cycles
   conservé aux flushs FIFO ; échéance FDC `due + delay`. Voir le bilan D3 en tête.
 - **[D4 — faux positif, revérifié le 2026-10-18]** La piste standard de repli
