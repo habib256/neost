@@ -2556,7 +2556,10 @@ int main(int argc, char** argv) {
     // Mode déterministe absolu : l'horloge RTC Mega ST(E) doit être constante.
     // Sinon EmuTOS STE affiche l'heure système réelle sur le bureau, ce qui casse
     // la comparaison pixel au pixel (test `etos_ste_boot`).
-    machine.rtc.setDateTime(Rtc::DateTime{0, 0, 12, 1, 1, 1, 26}); // 1er jan 2026, 12:00:00
+    // Année du RP5C15 comptée depuis 1980, comme le GEMDOS (cf. Rtc::initFromHostTime) :
+    // 46 = 2026. La valeur 26 posait le 1er janvier 2006 depuis l'origine. Jour de la
+    // semaine : jeudi (4, convention tm_wday).
+    machine.rtc.setDateTime(Rtc::DateTime{0, 0, 12, 4, 1, 1, 46}); // 1er jan 2026, 12:00:00
     // Même chose pour l'horloge IKBD (commande $1C) : EmuTOS STE/ST affiche la
     // date/heure du bureau depuis l'IKBD, pas la RTC — figée pour le déterminisme.
     machine.ikbd.setClock(26, 1, 1, 12, 0, 0);

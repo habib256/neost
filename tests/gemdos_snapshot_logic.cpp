@@ -215,7 +215,7 @@ int testGemdosSnapshot() {
             // construction — deux Machines construites de part et d'autre d'un changement
             // de seconde divergeaient (intermittent, fréquent sous ASan, plus lent).
             Rig r(root.string()); r.machine->ikbd.setClock(26,1,1,12,0,0);
-            r.machine->rtc.setDateTime(Rtc::DateTime{0,0,12,1,1,1,26});
+            r.machine->rtc.setDateTime(Rtc::DateTime{0,0,12,4,1,1,46});
             r.machine->usatan.setDateTime(UltraSatan::DateTime{2026,1,1,12,0,0});
             const int h=r.open("C:\\DET.TXT",0,true); eq("Fcreate DET",h>=88,true);
             eq("Fwrite DET",r.write(h,"abc"),3);
