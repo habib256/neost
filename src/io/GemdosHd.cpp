@@ -711,21 +711,97 @@ void GemdosHd::markDeleted(const std::string& host) {
 }
 
 // Heure GEMDOS de la machine émulée, en time_t hôte (heure locale, comme les dates des
-// fichiers hôtes). Machine la lit dans la puce d'horloge (IKBD, RTC sur un Mega).
-// [C] Fcreate exécuté depuis une disquette, horloges figées du headless (2026-11-12) :
-//   · EmuTOS 192 Ko sur ST : date et heure de l'IKBD, identiques à la seconde ;
-//   · TOS 1.04 sur Mega ST : celles de la RTC, identiques ;
-//   · TOS 2.06 sur ST : heure de l'IKBD, mais l'année lue autrement (2054 pour « 26 ») ;
-//   · TOS 1.04 et 1.62 sur ST : le GEMDOS ne lit pas l'IKBD — date de la ROM, heure
-//     comptée depuis le boot.
-// [F] Écarts gardés pour les trois derniers cas : la puce reste la source, sans modèle
-// par version du TOS ni suivi de Tsetdate/Tsettime. Tranché par : un modèle de l'horloge
-// GEMDOS par TOS (date de la ROM + _hz_200, Tset* interceptés), si une date exacte compte.
+// fichiers hôtes) : celle que le GEMDOS de la ROM aurait posée sur l'entrée créée, lue
+// dans ses propres variables (romGemdosClock). Faute de les trouver (ROM inconnue) :
+// la puce d'horloge, que Machine lit (IKBD, RTC d'un Mega) — approchée, cf. plus bas.
+// Banc : tools/run_gemdos_clock.py (même run, même programme : C: hôte contre A:
+// disquette, où le GEMDOS de la ROM écrit l'entrée FAT).
 bool GemdosHd::emulatedNow(time_t& t) {
     uint16_t tw = 0, dw = 0;
-    if (!clockProvider_ || !clockProvider_(tw, dw)) return false;
+    if (!romGemdosClock(tw, dw) && (!clockProvider_ || !clockProvider_(tw, dw))) return false;
     t = tos2Time(tw, dw);
     return t != (time_t)-1;
+}
+
+// Date et heure (format DOS) que tient le GEMDOS de la ROM, dans deux mots de son BSS.
+// Ce GEMDOS ne relit PAS la puce d'horloge à chaque appel : il ensemence ses mots au
+// boot, les avance lui-même au tic (2 000 ms par pas de 2 s) et son Fcreate (ixcreat)
+// les recopie dans l'entrée de répertoire. Les lire rend donc exactement ce qu'il
+// écrirait — date de la ROM quand l'horloge n'a pas répondu au boot, année convertie à
+// sa façon, retard de son propre compte sur la puce, Tsetdate/Tsettime de l'invité —
+// sans modèle par version. [C] Désassemblage, TOS 1.04 US :
+//   · Tgetdate $FCA1A6 `link a6,#-4 ; clr.l d0 ; move.w $60BE.l,d0 ; unlk ; rts`,
+//     Tgettime $FCA234 (même forme, $378A), entrées $2A et $2C de la table des
+//     fonctions GEMDOS ($FE856A, 6 octets par entrée : routine, nombre de mots) ;
+//   · Tsetdate $FCA21A / Tsettime $FCA27E écrivent ces mots, puis XBIOS Settime ;
+//   · tic $FC9EAE : +1 au mot d'heure toutes les 2 000 ms, report sur la date ;
+//   · boot $FC0438 : date = os_gendat ($FC001E), puis RTC du Mega ($FC1F4C) ou, à
+//     défaut, Gettime IKBD ($FC31A8) si le jour rendu est non nul ;
+//   · ixcreat $FC6F62/$FC6F78 : heure → ($16,a4), date → ($18,a4) de l'entrée.
+// Formes relevées (toutes les ROM disponibles ; mots identiques d'un pays à l'autre) :
+//   TOS 1.00/1.02  link ; move.w $v.l,d0 ; ext.l d0 ; unlk ; rts
+//                  1.00 $609E/$4E0E, 1.02 (et Mega TOS 1.02) $8840/$75B0 ;
+//   TOS 1.04–3.06  link ; clr.l d0 ; move.w $v.l,d0 ; unlk ; rts — 1.04 $60BE/$378A,
+//                  1.06 et 1.62 $60FE/$37CA, 2.05 $6618/$3BB8, 2.06 $686C/$3DEC ;
+//   EmuTOS         moveq #0,d0 ; move.w $v.l,d0 ; rts (même table de 6 octets) —
+//                  etos192 du 2025-06-07 $6AA0/$6AA2, etos256 $74B0/$74B2.
+// Les adresses changent d'une construction à l'autre : on les retrouve ici dans la ROM
+// chargée — deux routines de cette forme dont les adresses figurent dans la ROM à
+// 12 octets d'écart (entrées $2A puis $2C de la table), sans table par version.
+// [F] TOS 4.0x (non émulé) et toute ROM où la recherche échoue : la puce d'horloge,
+// qui peut avancer de 2 s sur le compte du GEMDOS (EmuTOS 192 Ko sur ST : 12:00:06
+// contre 12:00:04) et ignore le report d'une date de ROM. Tranché par : la routine
+// de cette ROM, ajoutée aux formes ci-dessus.
+bool GemdosHd::romGemdosClock(uint16_t& tw, uint16_t& dw) {
+    const std::vector<uint8_t>& rom = bus_.rom;
+    const size_t n = rom.size();
+    struct Getter { uint32_t entry; uint32_t var; };
+    std::vector<Getter> getters;
+    // move.w $abs.l,d0 (30 39 xx xx xx xx), encadré d'une des trois formes.
+    auto is = [&](size_t at, std::initializer_list<int> bytes) {
+        if (at + bytes.size() > n) return false;
+        size_t i = at;
+        for (int b : bytes) { if (b >= 0 && rom[i] != uint8_t(b)) return false; ++i; }
+        return true;
+    };
+    for (size_t i = 0; i + 1 < n; i += 2) {
+        if (rom[i] != 0x30 || rom[i + 1] != 0x39) continue;
+        const uint32_t var = uint32_t(rom[i + 2] << 24 | rom[i + 3] << 16 | rom[i + 4] << 8 | rom[i + 5]);
+        size_t start = n;
+        if (i >= 4 && is(i - 4, {0x4E, 0x56, 0xFF, 0xFC}) && is(i + 6, {0x48, 0xC0, 0x4E, 0x5E, 0x4E, 0x75}))
+            start = i - 4;                                   // TOS 1.00/1.02
+        else if (i >= 6 && is(i - 6, {0x4E, 0x56, 0xFF, 0xFC, 0x42, 0x80}) && is(i + 6, {0x4E, 0x5E, 0x4E, 0x75}))
+            start = i - 6;                                   // TOS 1.04 à 3.06
+        else if (i >= 2 && is(i - 2, {0x70, 0x00}) && is(i + 6, {0x4E, 0x75}))
+            start = i - 2;                                   // EmuTOS
+        if (start < n) getters.push_back({bus_.romBase + uint32_t(start), var});
+    }
+    auto refAt = [&](uint32_t ptr) {                         // offsets où l'adresse figure
+        std::vector<size_t> at;
+        const uint8_t b[4] = {uint8_t(ptr >> 24), uint8_t(ptr >> 16), uint8_t(ptr >> 8), uint8_t(ptr)};
+        for (auto it = rom.begin(); (it = std::search(it, rom.end(), b, b + 4)) != rom.end(); ++it)
+            at.push_back(size_t(it - rom.begin()));
+        return at;
+    };
+    for (const Getter& date : getters) {
+        for (size_t at : refAt(date.entry)) {
+            if (at + 22 > n) continue;
+            auto ptr = [&](size_t o) {
+                return uint32_t(rom[o] << 24 | rom[o + 1] << 16 | rom[o + 2] << 8 | rom[o + 3]);
+            };
+            // Tsetdate ($2B, +6) et Tsettime ($2D, +18) : des routines de la ROM, eux aussi.
+            auto inRom = [&](uint32_t p) { return p >= bus_.romBase && p - bus_.romBase < n; };
+            if (!inRom(ptr(at + 6)) || !inRom(ptr(at + 18))) continue;
+            const uint32_t next = ptr(at + 12);
+            for (const Getter& time : getters) {
+                if (time.entry != next || time.var == date.var) continue;
+                dw = bus_.peek16(date.var);
+                tw = bus_.peek16(time.var);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void GemdosHd::unforceFileHandle(int i) { forced_[i].handle = -1; forced_[i].basepage = 0; }

@@ -325,7 +325,7 @@ const char* fuzzFdc(const std::vector<uint8_t>& img, const std::vector<uint8_t>*
 }
 
 // .wd1772 de départ : celui que NeoST écrit lui-même après un WRITE SECTOR et un WRITE
-// TRACK sur la STX valide — blocs SECT et TRCK bien formés, que la mutation abîme.
+// TRACK sur la STX valide — blocs SECT, TRCK, NTRK et NSCT bien formés, que la mutation abîme.
 std::vector<uint8_t> seedWd1772(const std::string& dir) {
     const std::string path = dir + "/seed.stx";
     writeBytes(path, validStx());
@@ -340,6 +340,14 @@ std::vector<uint8_t> seedWd1772(const std::string& dir) {
         r.dma(true, 14);
         formatStream(r, rng, 0, 0);
         r.cmd(true, 0xF8);
+        // Face 1, absente de la STX : WRITE TRACK la crée (blocs NTRK, puis NSCT pour
+        // le WRITE SECTOR qui suit si le format tiré porte un secteur 1).
+        r.select(4);
+        r.dma(true, 14);
+        formatStream(r, rng, 0, 1);
+        r.cmd(true, 0xF8);
+        r.reg(4, 1); r.dma(true, 1);
+        r.cmd(true, 0xA8);
     }
     return readBytes(dir + "/seed.wd1772");
 }

@@ -34,6 +34,8 @@ struct AndroidMenu {
     // --- État ----------------------------------------------------------------
     bool open      = false;    // menu affiché (machine en pause)
     bool keysPage  = false;    // page clavier (machine qui TOURNE)
+    bool romPage   = false;    // page ROM système (dans le menu : machine en pause)
+    int  romCur    = 0;        // index de la ROM chargée dans kAndroidRoms (AndroidRoms.hpp)
     int  diskSel   = 0;
     std::vector<std::string> disks;   // ludothèque, remplie par refresh()
     std::string dataDir;              // stockage INTERNE : données embarquées (diskA…)
@@ -53,6 +55,7 @@ struct AndroidMenu {
     std::string status;        // dernier message de la boucle (retour arrière refusé…)
     int  reqKeyPress = -1;     // index dans kKeys : touche à envoyer au ST
     int  reqClick    = 0;      // 1 = clic gauche, 2 = clic droit
+    int  reqRom      = -1;     // index dans kAndroidRoms : changer de ROM (boot À FROID)
 
     // Relit la ludothèque (io/MediaScan) et recale la sélection sur le monté.
     void refresh();

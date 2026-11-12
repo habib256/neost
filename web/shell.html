@@ -343,6 +343,18 @@
           statusEl.textContent = 'Emulator crashed (' + what + ') — reload the page.';
           statusEl.className = '';
         }
+      },
+      // Trame en échec sous JSPI (exception remontée de la trame, cf. main_web.cpp,
+      // neost_jspi_start_loop) : le runtime vit, la machine est arrêtée au milieu d'une
+      // instruction. Reset, ROM ou moniteur la relancent : la page reste utilisable.
+      onFrameFailed: function (what) {
+        if (statusEl) {
+          statusEl.textContent = 'Emulation stopped (' + what + ') — press Reset to restart.';
+          statusEl.className = '';
+        }
+      },
+      onFrameResumed: function () {
+        if (statusEl) { statusEl.textContent = 'Machine restarted.'; statusEl.className = 'ok'; }
       }
     };
     // JSPI (JavaScript Promise Integration) : un blit HOG de plusieurs secondes rend

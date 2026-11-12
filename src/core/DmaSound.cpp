@@ -537,14 +537,18 @@ uint8_t DmaSound::read8(uint32_t addr) {
         case 0x00: return 0x00;
         case 0x01: return ctrl_;
         // $FF8920 : octet PAIR du registre Sound Mode Control, relu à ZÉRO.
+        // [B] Atari, STE Developer Information Addendum, 25 mai 1989 (scan archive.org
+        //     « STE_Developer_Addendum_May_25_1989 », table des registres) : « FF8920 0000
+        //     0000 m000 00rr RW Sound Mode Control », quand les octets inutilisés voisins
+        //     portent « ---- » (« do not contain anything useful »). Source STE.
         // [B] Atari TT030 Hardware Reference Manual, page « DMA SOUND SUBSYSTEM » (p. 26 du
         //     PDF, sha256 93c17bee) : « 8920 RW 0000 0000 a000 00bb » — l'octet haut est écrit
         //     en zéros explicites, là où les registres voisins portent « ---- ---- ».
         // [D] MiSTery gstshifter.v:96,125 @ 4a6db7c (sous-module gstmcu) : s_dout part de 0 et
         //     seul s_dout[7:0] est posé pour A=$10 → l'octet pair relit 0.
         // [D] Hatari ioMemTabSTE.c:162 @ f0736b24 ne l'intercepte pas (octet scratch relisible) :
-        //     grade inférieur, non retenu. ⚠ La page est celle du TT ; le son DMA du STE en est
-        //     le même bloc (cf. case 0x21). Tranché pour le STE par : une lecture de $FF8920 sur le fer.
+        //     grade inférieur, non retenu. L'addendum ne donne pas de légende (« 0 » vaut-il
+        //     « relu 0 » ou « écrire 0 » ?) : une lecture sur le fer reste le dernier mot.
         case 0x20: return 0x00;
         case 0x03: return uint8_t(startAddr_ >> 16);
         case 0x05: return uint8_t(startAddr_ >> 8);
@@ -617,7 +621,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
         case 0x0F: endAddr_   = (endAddr_   & 0x00FFFF) | (uint32_t(v & 0x3F) << 16); break;
         case 0x11: endAddr_   = (endAddr_   & 0xFF00FF) | (uint32_t(v) << 8);  break;
         case 0x13: endAddr_   = (endAddr_   & 0xFFFF00) | (uint32_t(v) & 0xFE); break;
-        // $FF8920 : octet pair sans bit écrivable, l'écriture est ignorée (cf. read8, [B] manuel TT p. 26).
+        // $FF8920 : octet pair sans bit écrivable, l'écriture est ignorée (cf. read8, [B] STE Developer Addendum 1989, manuel TT p. 26).
         case 0x20: break;
         // Mode : bit7 mono + bits0-1 fréquence, masque de relecture 0x83.
         // [B] Atari TT030 Hardware Reference Manual, page « DMA SOUND SUBSYSTEM »

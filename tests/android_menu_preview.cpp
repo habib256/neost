@@ -70,6 +70,7 @@ int main(int argc, char** argv) {
         if (menu.reqQuit)     { std::printf("[preview] QUIT\n");     menu.reqQuit = false; }
         if (menu.reqKeyPress >= 0) { std::printf("[preview] KEY %s\n", neost::kKeys[menu.reqKeyPress].label); menu.reqKeyPress = -1; }
         if (menu.reqClick)    { std::printf("[preview] CLICK %d\n", menu.reqClick); menu.reqClick = 0; }
+        if (menu.reqRom >= 0) { std::printf("[preview] ROM %d\n", menu.reqRom); menu.romCur = menu.reqRom; menu.reqRom = -1; menu.open = true; }
 
         ImGui::Render();
         int fw, fh; glfwGetFramebufferSize(w, &fw, &fh);

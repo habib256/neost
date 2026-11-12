@@ -9,10 +9,13 @@
 // =============================================================================
 #include "io/StxImage.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
+#include <iterator>
+#include <string>
 #include <vector>
 
 static void add(std::vector<uint8_t>& v, uint8_t b) { v.push_back(b); }
@@ -171,6 +174,55 @@ int main(int argc, char** argv) {
         assert(v[2].idSector == 4 && v[2].fdcStatus == StxImage::FLAG_CRC && v[2].pData != nullptr
                && v[2].pData[0] == 0x5a && "CRC de données faux");
         assert(v[3].idSector == 5 && v[3].fdcStatus == StxImage::FLAG_RECORD_TYPE && "marque $F8");
+    }
+
+    // --- Piste ABSENTE de l'image (addTrack) : créée, stable, persistée en NTRK -------
+    // [B] WD177X-00 p. 1-13 : Write Track formate la piste sous la tête, quelle qu'elle soit.
+    {
+        StxImage a;
+        assert(a.parse(forgeStx(5, 10)) && "parse piste absente");
+        StxImage::Track* t5 = a.findTrack(5, 0);
+        assert(t5 && !a.findTrack(81, 0) && !a.findTrack(5, 1) && a.sides() == 1);
+        assert(!a.addTrack(128, 0) && !a.addTrack(0, 2) && "hors format STX");
+        assert(a.addTrack(5, 0) == t5 && "piste existante rendue telle quelle");
+        auto format = [&](int track, int side) {
+            StxImage::Track* t = a.addTrack(track, side);
+            assert(t && t->added && t->sectorsCountView() == 0);
+            StxImage::SaveTrack s; s.track = uint8_t(track); s.side = uint8_t(side);
+            s.data = forgeFlux(uint8_t(track), NS);
+            a.saveTracks.push_back(std::move(s));
+            t->saveTrackIndex = int(a.saveTracks.size()) - 1;
+            a.reinterpretSaveTrack(*t);
+            assert(t->writeReinterpreted && t->sectorsCountView() == NS);
+            return t;
+        };
+        StxImage::Track* t81 = format(81, 0);
+        const uint8_t* data81 = t81->sectorsView()[1].pData;
+        format(5, 1);
+        // Une piste ajoutée ne déplace ni les pistes ni leurs données réinterprétées.
+        for (int k = 20; k < 60; ++k) a.addTrack(k, 0);
+        assert(a.findTrack(5, 0) == t5 && a.findTrack(81, 0) == t81
+               && t81->sectorsView()[1].pData == data81 && data81[3] == expect(1, 3));
+        assert(a.sides() == 2 && a.tracksPerSide() == 82);
+
+        const char* tmpAdded = "/tmp/neost_wt_added.wd1772";
+        assert(a.saveWd1772(tmpAdded) && "saveWd1772 pistes ajoutées");
+        std::ifstream fw(tmpAdded, std::ios::binary);
+        std::vector<uint8_t> wd((std::istreambuf_iterator<char>(fw)), {});
+        // Compteurs SECT/TRCK nuls (Hatari alloue et indexe sur eux), deux blocs NTRK.
+        assert(wd.size() > 16 && std::equal(wd.begin() + 8, wd.begin() + 16, "\0\0\0\0\0\0\0\0"));
+        assert(std::string(wd.begin() + 16, wd.begin() + 20) == "NTRK");
+
+        StxImage b;
+        assert(b.parse(forgeStx(5, 10)) && b.loadWd1772(tmpAdded) && "rechargement NTRK");
+        for (const auto& ts : {std::make_pair(81, 0), std::make_pair(5, 1)}) {
+            StxImage::Track* t = b.findTrack(ts.first, ts.second);
+            assert(t && t->added && t->writeReinterpreted && t->sectorsCountView() == NS);
+            for (int s = 0; s < NS; ++s)
+                for (int i = 0; i < 512; ++i) assert(t->sectorsView()[s].pData[i] == expect(s, i));
+        }
+        assert(b.sides() == 2 && !b.findTrack(5, 0)->writeReinterpreted);
+        std::remove(tmpAdded);
     }
 
     std::printf("OK: WRITE TRACK ré-interprété (%d secteurs, vue %d→%d) + round-trip .wd1772"

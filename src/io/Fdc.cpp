@@ -820,6 +820,8 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         if (dk.stx->loadWd1772(dk.wd1772Path))
             std::fprintf(stderr, "[FDC] writes restored: %s (%zu sector(s), %zu track(s))\n",
                          dk.wd1772Path.c_str(), dk.stx->saveSectors.size(), dk.stx->saveTracks.size());
+        // Un bloc NTRK a pu recréer une face 1 formatée lors d'une session précédente.
+        dk.sides = dk.stx->sides();
         // Hatari FDC_InsertFloppy : chaque nouveau média reçoit sa propre phase, même
         // lors d'un remplacement à chaud moteur déjà lancé (même bloc que la branche .ST).
         if ((drive & 1) == driveSel_) {
@@ -979,9 +981,14 @@ void Fdc::reset(bool cold) {
         ff8604recent_ = 0;
         // [F] Densité $FF860E (Mega STE) repart en DD à la mise sous tension : sinon un
         // mode HD posé par un programme survivait au hard reset et aux changements de
-        // profil. Hatari ne la remet jamais à zéro ([D] fdc.c:1189-1240 @ f0736b24) ;
-        // à chaud, inconnu, gardée. Tranché par : relecture de $FF860E après RESET
-        // puis après mise sous tension sur un vrai Mega STE.
+        // profil. Hatari ne la remet jamais à zéro ([D] fdc.c:1189-1240 @ f0736b24).
+        // [B] Le latch (PAL22V10 U407) reçoit XRESET, que pilotent la mise sous tension
+        // ET le bouton reset (schéma Mega STE Rev 2, 25 avril 1990, f. 2 et 4/11) ; ses
+        // équations ne sont pas publiées, la valeur après XRESET reste [F]. Le registre
+        // étant en écriture seule (cf. read8), le logiciel ne peut pas l'observer, et le
+        // TOS le réécrit avant tout accès disquette ([C] TOS 2.06 floppy.S flopini,
+        // EmuTOS floppy.c set_density). À chaud : gardée. Tranché par : un dump JEDEC de
+        // U407, ou une lecture du FDC sans TOS après le bouton.
         densityMode_ = 0;
     }
     stepDir_ = 1;
@@ -2050,10 +2057,22 @@ uint8_t Fdc::writeSectorStx(int size) {
 // aussitôt ce flux en secteurs lisibles (reinterpretSaveTrack) → les LECTURES
 // suivantes voient le nouveau contenu. Le write track PRIME sur les 'write sector'
 // précédents de la piste, qui sont invalidés.
+//
+// Piste ABSENTE de l'image (au-delà de sa dernière piste, face 1 d'une STX simple
+// face) : [B] WD177X-00 p. 1-13 — formater, c'est placer la tête sur la piste voulue
+// et lancer Write Track ; LOST DATA ne signale qu'un registre de données non servi.
+// La piste est donc créée dans l'image (StxImage::addTrack) puis traitée comme une
+// autre, et persistée en bloc NTRK. [D] Hatari stx.c:2036-2042 @ f0736b24 rend LOST
+// DATA et perd l'écriture : défaut, non reproduit (B > D).
 uint8_t Fdc::writeTrackStx() {
     FloppyDisk& dk = drive_[driveSel_];
     StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
-    if (!t) return STR_LOST;
+    if (!t) {
+        t = dk.stx->addTrack(dk.headTrack, side_);
+        // Inatteignable (tête ≤ MAX_TRACK = 90, face 0/1) : garde du format STX.
+        if (!t) return STR_LOST;
+        dk.sides = dk.stx->sides();      // face 1 créée : verifyTrack la tient pour présente
+    }
 
     if (t->saveTrackIndex < 0) {
         dk.stx->saveTracks.emplace_back();
@@ -3361,12 +3380,19 @@ uint8_t Fdc::read8(uint32_t addr) {
         case 0xD: return uint8_t(dmaAddr_);
         // $FF860E : mot de densité (Mega STE/TT) — bit1 densité (0=DD, 1=HD),
         // bit0 fréquence FDC. TOS y écrit 0x0003 pour le mode HD.
+        // ÉCRITURE SEULE sur Mega STE : [B] source du TOS d'Atari, bios/sparrow/flop.s
+        //   (A. Pratt, journal RCS du 1990-11-20, github.com/th-otto/tos3x) : « denselect
+        //   register: it's WRITE ONLY in Mega STE. It's shadowed anyway in the DSB » ; le
+        //   latch est dans la PAL22V10 U407 ([B] schéma Mega STE Rev 2, 25 avril 1990,
+        //   f. 4/11). [D] Hatari (ioMemTabMegaSTE @ f0736b24) relit la valeur écrite : grade
+        //   inférieur, non retenu. Ce que rend la lecture n'est pas documenté : [F] $FF,
+        //   comme les octets non pilotés de ce bloc. Tranché par : une lecture sur le fer.
         case 0xE:
             // Hatari accepte aussi les octets sur la densité (Mega STE câblé
             // par le Bus). Un mot ne facture qu'à son dernier octet $860F.
             if (bus_.ioAccessWidth() == 1) registerWait();
-            return uint8_t(densityMode_ >> 8);
-        case 0xF: registerWait(); return uint8_t(densityMode_);
+            return 0xFF;
+        case 0xF: registerWait(); return 0xFF;
         default:  return 0xFF;
     }
 }

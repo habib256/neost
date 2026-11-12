@@ -173,6 +173,18 @@ trames il a closes. Accord à l'octet entre les deux modes : `tools/check_hog_pa
 (`NEOST_HEADLESS=` pour un autre binaire, p. ex. `-DNEOST_EMUFIBER_THREAD=ON`, le dorsal
 d'Android vérifié sur un bureau).
 
+Sur le web, la page rattrape comme `FramePacer::runDue` : la boucle relance la pile garée quand
+la trame suivante est due, et `neost_jspi_park` enchaîne jusqu'à 3 trames de plus tant
+qu'elles sont déjà dues (`Module.neostParkBudget`, 4 par tour au plus). Une exception qui
+remonte d'une trame arrête la machine sans figer la page (`Module.neostHalted`, statut
+« Emulation stopped ») ; reset, ROM ou moniteur la relancent. Banc dans un vrai navigateur,
+hors paliers (Chrome et le build Emscripten requis) : `node tools/check_web_jspi.mjs`
+(`--only nominal,catchup,orders,fiber0,exception`, `CHROME=`, `NEOST_WASM_DIR=`). Il sert
+`wasm/` en local, pilote Chrome sans écran par CDP et instrumente la page par un script injecté
+(aucun crochet dans le code livré) : trames livrées pendant un blit HOG de 4 096 × 1 000 mots
+monté en disquette de boot, rAF bridé à 30 et 10 Hz, budget forcé à 0 pour comparer, reset,
+ROM et moniteur en plein blit, `?fiber=0`, exception injectée dans une trame garée.
+
 ## Le Bus
 
 Tout accès CPU passe par `Bus::read8/16/32` et `write8/16/32` (assemblage **big-endian** :

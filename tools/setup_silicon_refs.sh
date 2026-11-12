@@ -98,6 +98,12 @@ doc RP5C15_Ricoh.pdf b929eeb470dfc0df7b2673cd3810debe17d08e8e1f155126e6c274dc0fa
 # le cœur de la NE2000 de l'EtherNEC et du NetUSBee. Copie de la documentation de Bochs.
 docgz DP8390D.pdf 1447683959e5f164e5800fb2995e5df22f220da0ff675c105b4dd635b91991c5 \
     https://bochs.sourceforge.io/techspec/DP8390D.pdf.gz
+# Realtek, RTL8019AS Full-Duplex Ethernet Controller with Plug and Play Function
+# (RealPNP), Specification LS003.8 du 2000-08-20, 52 p. : la puce du NetUSBee et des
+# cartes NE2000 courantes sur l'EtherNEC (page 3, identifiants $0A/$0B, CLDA).
+# Copie de cours (Univ. Complutense de Madrid), à défaut d'une archive constructeur.
+doc RTL8019AS_LS003.8_2000.pdf c6147648322daec48b200d0f2dfd4491d3690eac294e8d245dbd2191a989f62b \
+    https://www.fdi.ucm.es/profesor/mendias/PSyD/docs/rtl8019as.pdf
 # Hitachi, HD6301/HD6303 Series Handbook, 1989 (U07) : le microcontrôleur de l'IKBD.
 doc HD6301_HD6303_Handbook_1989.pdf dbee534e751ccb9a84f91d59c9eb86547d0cd3a521dbfb681cacb0f930cb69a6 \
     "$BITS/hitachi/_dataBooks/1989_U07_HD6301_HD6303_Series_Handbook_1989.pdf"

@@ -100,6 +100,9 @@ public:
     // (dk.writeProtect), qui elle changerait ce que le programme observe.
     void setHostWriteBack(bool on) { hostWriteBack_ = on; }
     bool hostWriteBack() const { return hostWriteBack_; }
+    // Densité $FF860E posée par le dernier accès d'écriture (le registre est en écriture
+    // seule sur Mega STE : cf. Fdc::read8) — pour les bancs.
+    uint16_t densityMode() const { return densityMode_; }
     // Même chose pour la seule disquette montée dans `drive` (jusqu'au prochain montage).
     void setDiskHostWriteBack(int drive, bool on) { drive_[drive & 1].hostWriteBack = on; }
     bool fastFdc() const { return fastFloppy_; }

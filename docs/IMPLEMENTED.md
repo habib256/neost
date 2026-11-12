@@ -2122,6 +2122,11 @@ Récits de passes entières ; le détail daté est au [`../CHANGELOG.md`](../CHA
   Deux chantiers ciblés et testables documentés : lignes raster transitoires SHO (3 candidats +
   traces) et son YM STE (S3 gain LMC ×2 + S4, oracle `--ym-mixing model`). Cf.
   `docs/HATARI_DIVERGENCES.md` § 5ᵉ passe.
+- **Restes de la chasse (2026-11-12)** : RTL8019AS selon sa fiche Realtek (pages 0-3, AR,
+  CLDA) ; fichiers créés sur le lecteur hôte datés par le GEMDOS de la ROM (TOS 1.00 à 2.06,
+  EmuTOS) ; WRITE TRACK d'une piste STX absente (blocs `NTRK`/`NSCT`, `StxImage::addTrack`) ;
+  `$FF860E` en écriture seule sur Mega STE ; page ROM Android, clavier essayé sur émulateur
+  arm64. Détail : [`../CHANGELOG.md`](../CHANGELOG.md).
 - **Deux chasses aux bugs, neuf lots de correction (2026-11-12, agents parallèles)** : 12 chasses
   en lecture seule, puis 9 lots en worktrees fusionnés ; format d'état v64. Par puce :
   - **Vidéo STE** : NOSCROLL suit tout accès LDS à `$FF8264-5`, sans fenêtre de temps ([B]

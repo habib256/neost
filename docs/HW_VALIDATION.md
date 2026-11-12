@@ -237,13 +237,32 @@ jamais qu'on sache y écrire ; le défaut s'est logé dans l'intervalle exact en
 clic, pas un cul-de-sac — cf. `docs/RELEASE.md`). Le protocole ci-dessus s'applique tel
 quel ; `run_perfbench.py --budget` gère déjà le suffixe `.exe`.
 
-## Android arm64 — ⭘ jamais posé sur un appareil
+## Android arm64 — ◐ émulateur arm64 API 36, jamais posé sur un appareil
 
-`NeoST-0.6-android-arm64-debug.apk`. Validé sous QEMU arm64 seulement (cf.
-`packaging/android/README.md`). Ce poste n'a ni appareil ni `adb` dans le `PATH`
-(le SDK est installé : `~/Library/Android/sdk/platform-tools/adb`). Un émulateur ne
-solderait pas la case — c'est encore QEMU, et il ne dit rien du GPU, du tactile ni de
-la thermique d'un vrai téléphone.
+`NeoST-0.6-android-arm64-debug.apk`. Le cœur seul a été validé sous `qemu-aarch64`
+(2026-08-11, image et son identiques au bit près, cf. `packaging/android/README.md`) ;
+l'APK **entier** a tourné sur l'**émulateur Android arm64 API 36** le 2026-11-12. Ce
+n'est **pas** un appareil réel : la case « appareil » reste vide — rien ici ne dit le
+GPU (l'émulateur rend en SwiftShader), le tactile, l'audio ni la thermique d'un vrai
+téléphone.
+
+**Config** : MacBook Air M1, 8 cœurs, 8 GiO, macOS 15.6 ; émulateur 35.4.9, AVD
+`Medium_Phone_API_36` (image `google_apis_playstore/arm64-v8a`, 1080×2400, rendu
+`swangle_indirect`), lancé `-no-window -no-audio -no-snapshot -cores 4 -memory 3072`.
+**APK** : artefact CI `NeoST-dev-ede89f6-android-arm64-debug.apk` (run « Artefacts
+(release) » 43198943692), puis un APK debug construit sur ce poste avec la page ROM.
+
+| Pas | Résultat |
+|---|---|
+| 1. Intégrité | — artefact de CI, pas un asset publié : pas de `SHA256SUMS.txt` à confronter. |
+| 2. Contenu | (cf. tableau des pas 1-2 ci-dessus, release 0.6.) |
+| 3. Confiance | ✅ `adb install -r` d'un APK debug : *Success*, sans avertissement. |
+| 4. Exécution | ✅ boot EmuTOS (logo puis bureau GEM) depuis les assets déballés ; souris au doigt ; **clavier** : `Ctrl+R`, `Ctrl+O`, `Ctrl+N`, saisie, Échap, Entrée reçus par le ST (captures, recette au README) ; **ROM** : bascule `etos192fr` (50 Hz, saisie AZERTY par la table FR), reprise au relancement ; `etos256fr` en STE. Défaut trouvé et corrigé : « REWIND: OFF » débordait de son bouton dans l'en-tête du menu. |
+| 5. Débit | — non mesuré : `--budget` vise le headless, et un émulateur sur Mac ne dirait rien d'un téléphone. |
+
+⚠ **Piège de l'AVD par défaut** (1 cœur, 2 Go) : la mémoire de l'invité swappe,
+SystemUI part en ANR, et l'application ne reçoit plus rien — on croit à un défaut du
+frontend. `-cores 4 -memory 3072` le lève.
 
 ## Raspberry Pi (borne) — ⭘ aucun budget temps réel mesuré
 

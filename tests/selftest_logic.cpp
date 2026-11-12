@@ -51,6 +51,8 @@
 #include <cmath>
 #include "util/MouseScale.hpp"
 #include "core/MachineType.hpp"
+#include "core/Machine.hpp"
+#include "android/AndroidRoms.hpp"
 #include <filesystem>
 #include <fstream>
 
@@ -147,6 +149,7 @@ bool testSccStatusModes(); // qualification Sync/Hunt et BREAK selon WR4/WR11
 int testMfpBreak(); // BREAK ne commande que le mode USART asynchrone
 bool testSccAutoEcho(); // sortie TSR déconnectée quand Auto Echo a priorité
 int testStxWrittenTrack(); // une piste STX effacée ne ressuscite pas ses anciens secteurs
+int testStxAbsentTrack(); // WRITE TRACK crée la piste absente d’une STX, relue et persistée
 int testMfpAsyncBreak(); // cadence BREAK, fin TE et reprise asynchrones
 bool testSccEchoReceive(); // écho hôte des formats RX connus
 int testAcsiTransfer(); // statut SCSI d'une erreur de plage DMA
@@ -2183,10 +2186,11 @@ static void testFdcTruthTable() {
     checkBool("statut DMA : bit1 = compteur de secteurs non nul",
               (r.fdc.read8(FDCR + 0x07) & 0x02) != 0, true);
 
-    // --- 4. Densité Mega STE/TT ($FF860E) : mot relisible --------------------
+    // --- 4. Densité Mega STE ($FF860E) : écriture seule ([B] TOS flop.s, Pratt) ---
     r.fdc.write8(FDCR + 0x0E, 0x00);
     r.fdc.write8(FDCR + 0x0F, 0x03);                  // HD
-    checkHex("densité $FF860F relisible", r.fdc.read8(FDCR + 0x0F), 0x03);
+    checkHex("densité $FF860F : HD retenu", r.fdc.densityMode(), 0x03);
+    checkHex("densité $FF860F : écriture seule, relu $FF", r.fdc.read8(FDCR + 0x0F), 0xFF);
 
     // --- 5. Le RESTORE du reset froid se termine, statut propre --------------
     r.settle();
@@ -2370,11 +2374,11 @@ static void testFdcTruthTable() {
     // Un mode HD posé par un programme survivait au hard reset.
     FdcRig d;
     d.fdc.write8(FDCR + 0x0F, 0x03);
-    checkHex("densité : HD posé", d.fdc.read8(FDCR + 0x0F), 0x03);
+    checkHex("densité : HD posé", d.fdc.densityMode(), 0x03);
     d.fdc.reset(/*cold=*/false);
-    checkHex("densité : gardée au reset à chaud", d.fdc.read8(FDCR + 0x0F), 0x03);
+    checkHex("densité : gardée au reset à chaud", d.fdc.densityMode(), 0x03);
     d.fdc.reset(/*cold=*/true);
-    checkHex("densité : DD après mise sous tension", d.fdc.read8(FDCR + 0x0F), 0x00);
+    checkHex("densité : DD après mise sous tension", d.fdc.densityMode(), 0x00);
 }
 
 // -----------------------------------------------------------------------------
@@ -2513,6 +2517,55 @@ static void testPacing() {
         FramePacer g;
         g.resync(500.0);
         checkInt("après resync : la trame courante est due", g.runDue(500.0, oneFrame), 1);
+    }
+
+    // --- 7. Cadence par créneaux (web, blit HOG garé par JSPI) ----------------
+    // La page rejoue, à chaque tour de requestAnimationFrame, le protocole de
+    // neost_jspi_start_loop (src/web/main_web.cpp) et de neost_jspi_park
+    // (core/EmuFiber.cpp) : une trame si due(), puis jusqu'à 3 de plus tant que la
+    // suivante est déjà due. Le rattrapage doit valoir celui de runDue : un écran à
+    // 10 Hz sur une machine à 50 Hz rattrape 4 trames par tour. due() abandonnait le
+    // retard AVANT de jouer (au-delà de 4 trames de dette, recalage sur maintenant) :
+    // une seule trame par tour, mesuré dans Chrome 157 (tools/check_web_jspi.mjs).
+    {
+        auto parkedTurn = [](FramePacer& p, double now) {
+            const int64_t fc = 313 * 512;              // 19,978 ms
+            int n = 0;
+            if (!p.due(now, fc)) return 0;
+            p.advance(fc); ++n;                        // relance par la boucle rAF
+            for (int budget = 3; budget > 0 && p.due(now, fc); --budget) {
+                p.advance(fc); ++n;                    // rattrapage (neostParkBudget)
+            }
+            return n;
+        };
+        auto runDueTurn = [](FramePacer& p, double now) {
+            return p.runDue(now, [] { return int64_t(313 * 512); });
+        };
+        FramePacer a, b;
+        int pa = 0, rb = 0, maxA = 0;
+        for (int t = 0; t <= 30; ++t) {                // 3 s de tours à 10 Hz
+            const int x = parkedTurn(a, 1000.0 + 100.0 * t);
+            pa += x; maxA = std::max(maxA, x);
+            rb += runDueTurn(b, 1000.0 + 100.0 * t);
+        }
+        std::printf("  (rAF 10 Hz, machine 50 Hz : garé %d trames, runDue %d)\n", pa, rb);
+        checkInt("garé, rAF 10 Hz : 4 trames par tour, comme runDue", pa, rb);
+        checkInt("garé, rAF 10 Hz : jamais plus de kMaxCatchUp par tour", maxA,
+                 FramePacer::kMaxCatchUp);
+        FramePacer c, d;
+        int pc = 0, rd = 0;
+        for (int t = 0; t <= 75; ++t) {                // 3 s de tours à 25 Hz : 2 par tour
+            pc += parkedTurn(c, 1000.0 + 40.0 * t);
+            rd += runDueTurn(d, 1000.0 + 40.0 * t);
+        }
+        checkBool("garé, rAF 25 Hz : la cadence suit le temps émulé (±1 trame)",
+                  std::abs(pc - rd) <= 1 && rd >= 150, true);
+        // Long sommeil (onglet en arrière-plan) : 4 trames, puis le retard est
+        // abandonné — le tour suivant, 10 ms plus tard, n'en joue qu'une.
+        FramePacer e;
+        parkedTurn(e, 1000.0);
+        checkInt("garé, après 10 s : plafonné à 4 trames", parkedTurn(e, 11000.0), 4);
+        checkInt("garé, puis la dette n'est pas traînée", parkedTurn(e, 11010.0), 1);
     }
 }
 
@@ -2747,6 +2800,59 @@ static void testFixBools() {
 //  Jusqu'au 2026-11-12, `neost jeu.st` chargeait la disquette dans la fenêtre ROM
 //  (Bus::loadTos accepte 1 octet à 1 Mo) et la persistait en rom=.
 // ---------------------------------------------------------------------------
+// Les ROM système de l'APK Android (src/android/AndroidRoms.hpp) : la table que
+// parcourent le déballage, la page ROM du menu et la lecture du choix enregistré.
+// Confrontée aux VRAIES ROM du dépôt (roms/etos*.img, suivies) : une entrée qui
+// annoncerait le mauvais profil ou le mauvais pays se verrait ici, pas sur un
+// téléphone. Jusqu'au 2026-11-12, seule etos192us se chargeait.
+static void testAndroidRoms() {
+    using namespace neost;
+    std::printf("Android : ROM système (table, choix persistant, vraies ROM)\n");
+    // --- Choix persistant : aller-retour, tolérance, repli -------------------
+    for (int i = 0; i < kAndroidRomCount; ++i)
+        checkInt("rom.cfg : aller-retour", parseAndroidRomChoice(formatAndroidRomChoice(i)), i);
+    checkInt("rom.cfg absent/vide -> défaut", parseAndroidRomChoice(""), kAndroidRomDefault);
+    checkInt("rom.cfg CRLF + blancs", parseAndroidRomChoice("  etos256fr.img\r\n"), 3);
+    checkInt("rom.cfg inconnu -> défaut", parseAndroidRomChoice("tos206fr.img\n"), kAndroidRomDefault);
+    checkInt("rom.cfg chemin -> défaut (jamais un chemin arbitraire)",
+             parseAndroidRomChoice("/sdcard/evil/etos192fr.img"), kAndroidRomDefault);
+    checkInt("index hors table -> défaut", parseAndroidRomChoice(formatAndroidRomChoice(99)),
+             kAndroidRomDefault);
+    checkStr("défaut = etos192us", kAndroidRoms[kAndroidRomDefault].file, "etos192us.img");
+
+    // --- Les vraies ROM : taille, profil, pays, balayage ----------------------
+    // [C] En-tête TOS : version à +2, os_conf à +$1C (pays << 1 | PAL).
+    for (int i = 0; i < kAndroidRomCount; ++i) {
+        const AndroidRom& r = kAndroidRoms[i];
+        const std::string path = std::string("roms/") + r.file;
+        std::ifstream f(path, std::ios::binary);
+        std::vector<uint8_t> rom((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+        char what[160];
+        std::snprintf(what, sizeof what, "%s : présente dans roms/", r.file);
+        checkBool(what, rom.size() >= 0x40, true);
+        if (rom.size() < 0x40) continue;
+        // 192 Ko = build « Atari ST », 256 Ko = STE (programme le SCU).
+        const MachineType bySize = rom.size() == 192u * 1024u ? MachineType::St : MachineType::Ste;
+        std::snprintf(what, sizeof what, "%s : profil de la table = profil de sa taille", r.file);
+        checkInt(what, int(r.machine), int(bySize));
+        // Le garde des autres frontends ne doit RIEN changer au profil de la table.
+        std::snprintf(what, sizeof what, "%s : adjustMachineForTos garde le profil", r.file);
+        checkInt(what, int(Machine::adjustMachineForTos(r.machine, path)), int(r.machine));
+        // Le pays de la ROM arme le clavier physique : 'a' est en $10 sous TOS FR
+        // (AZERTY), en $1E sous TOS US.
+        const bool fr = std::strstr(r.file, "fr") != nullptr;
+        stkeys::setCountryFromTos(rom);
+        std::snprintf(what, sizeof what, "%s : 'a' -> scancode du pays", r.file);
+        checkHex(what, stkeys::symbolicForCountry('a'), fr ? 0x10u : 0x1Eu);
+        // Le libellé du menu annonce le balayage que la ROM impose (os_conf bit 0).
+        const bool pal = (rom[0x1D] & 1) != 0;
+        std::snprintf(what, sizeof what, "%s : libellé « %s » = os_conf PAL", r.file,
+                      pal ? "50 Hz" : "60 Hz");
+        checkBool(what, std::strstr(r.label, pal ? "50 Hz" : "60 Hz") != nullptr, true);
+    }
+    stkeys::setCountryFromTos({});   // ne pas laisser un pays armé aux tests suivants
+}
+
 static void testRomProbe() {
     std::printf("argument positionnel : TOS, disquette ou refus (RomProbe)\n");
     namespace fs = std::filesystem;
@@ -3559,6 +3665,7 @@ int main() {
     if (const int failures = testMfpBreak()) g_fail += failures; else ++g_ok;
     if (testSccAutoEcho()) ++g_ok; else ++g_fail;
     if (const int failures = testStxWrittenTrack()) g_fail += failures; else ++g_ok;
+    if (const int failures = testStxAbsentTrack()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpAsyncBreak()) g_fail += failures; else ++g_ok;
     if (testSccEchoReceive()) ++g_ok; else ++g_fail;
     if (const int failures = testAcsiTransfer()) g_fail += failures; else ++g_ok;
@@ -3628,6 +3735,7 @@ int main() {
     testConfigPath();
     testConfigWriteCreatesDir();
     testRomProbe();
+    testAndroidRoms();
     testFixBools();
     testChannelMask();
     std::printf("[selftest-logic] %d OK, %d FAIL\n", g_ok, g_fail);

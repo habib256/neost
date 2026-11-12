@@ -170,16 +170,11 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.3 Blitter
 
-- **Blit HOG long : Windows, Android et Safari non vérifiés** · P3 ⭘ — la coroutine de
-  `runFrame` (`core/EmuFiber`) n'est que compilée en croisé pour Windows (fibres) et Android
-  (fil dédié, le même dorsal que les builds ASan, vérifié sous macOS et en CI). Sur le web, JSPI
-  est vérifié sous Chrome 157 ; un navigateur sans `WebAssembly.Suspending` retombe sur
-  l'exécution d'un seul tenant (l'onglet se fige le temps du blit). Le rattrapage de 4 trames
-  par tour (2026-11-12) n'a pas tourné dans un navigateur.
-
-Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → `docs/STBLITTER_BENCH.md`.
-Extension du banc à 16 MHz → § 2.
-
+- **Blit HOG long : Windows, Android et Safari non vérifiés** · P3 ⭘ — coroutine compilée
+  seulement en croisé pour Windows (fibres) et Android (fil dédié, vérifié sous macOS et en CI).
+  Web : JSPI et rattrapage de 4 trames par tour vérifiés sous Chrome 157
+  (`tools/check_web_jspi.mjs`) ; Safari et Firefox non essayés, et un navigateur sans
+  `WebAssembly.Suspending` exécute le blit d'un seul tenant.
 - **DMA externe prioritaire sur le blitter en HOG** · P3 ⭘ · [F] — netlist 4082, DMARQ,
   confiance basse.
 - **Résidu blitter/IRQ Mega STE 16 MHz** · P2 ⏸ IACK — comparaison temporelle exacte ; deux
@@ -198,8 +193,11 @@ Extension du banc à 16 MHz → § 2.
 - **RESB et le son DMA** · P3 ⭘ · [B] — l'instruction RESET efface le registre de début de trame
   (ST-4081 f. 13, PD086/PD096/PD104), non modélisé ; SNDON, lui, n'est pas remis par RESB
   (contre `gstmcu.v:438`).
-- **`$FF8920` sur STE** · P3 ⏸ matériel · [B] TT — relu 0 depuis le 2026-11-12 d'après le manuel
-  TT (p. 26) et MiSTery ; la page vaut pour le TT. Tranche : une lecture sur un STE.
+- **Bits 2-3 de `$FF8921` et relecture de `$FF8920` sur STE** · P3 ⏸ matériel · [B] — `$FF8920`
+  relu 0 : [B] STE Developer Information Addendum (25 mai 1989), « FF8920 0000 0000 m000 00rr »,
+  sans légende (« 0 » = relu 0 ou écrire 0 ?). Masque de `$FF8921` : 0x83 (addendum, MAME,
+  MiSTery) contre 0x8F (Hatari, FAQ STE de Paranoid, sans mesure décrite). Tranche : une lecture
+  sur un STE.
 - **IRQ de fin de trame du son DMA, datée au HBL** · P3 ⭘ · [D] — le fetch suit désormais la fin de DE à la lecture du compteur (`docs/STCPU_BENCH.md`), mais la fin de trame n'a pas son événement propre : au plus 136 cycles de retard. Profondeur réelle de la FIFO : 8 octets d'Hatari contre 7 mots du modèle, choix d'auteur. Tranche : relevé sur STE.
 - **Tenue du dernier échantillon DMA** · P3 ⭘ · [D] — Hatari tient le niveau continu du dernier
   échantillon et coupe le YM si le mixage l'exclut, après une trame sans boucle
@@ -211,11 +209,14 @@ Extension du banc à 16 MHz → § 2.
   réinterprétée en secteurs (CRC régénéré, statut neutralisé), READ TRACK rend cette
   reconstruction : seule divergence de sévérité moyenne assumée, sans promesse de flux brut.
   Tranche : relecture sur un vrai lecteur d'une piste écrite par un jeu (sauvegarde), ou IPF.
-- **WRITE TRACK sur une piste absente d'une STX** · P3 ⭘ · [B] contre [D] — rend LOST DATA comme
-  Hatari ; un WD1772 formate une piste vierge (WD177X-00 p. 1-13). Demande d'ajouter des pistes à
-  `StxImage` (aujourd'hui jamais redimensionné) et de les relire du `.wd1772`.
-- **Densité FDC au power-on** · P3 ⏸ matériel · [F] — `$FF860E` remis à DD au reset à froid depuis
-  le 2026-11-12 (Hatari ne le remet jamais). Tranche : une mesure sur un Mega STE.
+- **SECT sur une piste STX réécrite par WRITE TRACK** · P3 ⭘ — la position du secteur est celle de
+  la piste réinterprétée : Hatari ne la retrouve pas et rejette tout le `.wd1772` (préexistant).
+  Les pistes ajoutées par WRITE TRACK (2026-11-12) vont en blocs `NTRK`/`NSCT`, qu'Hatari saute.
+- **Densité `$FF860E` après XRESET** · P3 ⏸ source · [F] — registre en écriture seule sur Mega
+  STE ([B] TOS `bios/sparrow/flop.s`, Pratt 1990), latch dans la PAL22V10 U407 qui reçoit XRESET
+  (mise sous tension et bouton, schéma Mega STE Rev 2 f. 2 et 4/11) ; équations non publiées.
+  NeoST : DD au reset à froid, gardée à chaud, relue `$FF`. Inobservable par le logiciel, réécrite
+  par le TOS avant tout accès. Tranche : un dump JEDEC de U407/UA02.
 - **ACSI : essai Idris OS** · P3 ⭘ — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté.
 - **Compteur DMA en écriture** · P3 ⏸ source · [F] — décrémenté au 33ᵉ rechargement de 16 octets
   (Hatari, NeoST) contre le 32ᵉ (MiSTery `dma.v`) ; ni l'archive des ASIC Atari ni le manuel TT ne
@@ -256,10 +257,9 @@ Extension du banc à 16 MHz → § 2.
   (`tools/run_gemdos_ab.py`, TOS 1.04, 2.06, EmuTOS), tous de convention : ordre de listage (FAT
   contre hôte trié), lecteur de boot, carte des lecteurs, Dfree, étiquette de volume, octets
   après le NUL d'un nom. Les E/S sur un fichier détruit encore ouvert rendent EINTRN [F].
-- **Horloge GEMDOS par version de TOS** · P3 ⭘ · [F] — depuis le 2026-11-12, un fichier créé sur
-  C: prend l'horloge émulée (IKBD, RTC sur Mega) : exact sous EmuTOS et TOS 1.04 sur Mega ST. TOS
-  1.0x/1.62 sur ST (date de la ROM + `_hz_200`, Tsetdate/Tsettime) et l'année de TOS 2.06 sur ST
-  restent approchés (`emulatedNow`).
+- **Date d'un dossier créé par Dcreate sur le lecteur hôte** · P3 ⭘ — garde l'heure de l'hôte ;
+  les fichiers prennent celle du GEMDOS de la ROM depuis le 2026-11-12 (`tools/run_gemdos_clock.py`,
+  16/16). La date d'un dossier hôte bouge de toute façon dès qu'on y crée une entrée.
 - **Fforce vers un handle TOS invalide** · P3 ⭘ — fait encore tomber la redirection hôte, faute de
   voir la réponse du TOS (vers un handle hôte fermé : EIHNDL sans rien changer, corrigé).
 - **Tailles de RAM sans source** · P3 ⏸ source · [E] — 256k et 2176k sur STE/Mega STE, Mega STE
@@ -399,9 +399,11 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **NetUSBee : validation MiNT et matériel** · P3 ⭘ — USB4TOS vérifié (HID + disque) ;
   restent FreeMiNT, capture du latch des différentes cartes, timing électrique et ITL/isochrone.
   → [`docs/NETUSBEE.md`](docs/NETUSBEE.md)
-- **RTL8019AS : registres sans fiche** · P3 ⏸ source · [F] — CLDA, pointeurs de la page 2,
-  AR/SEP et identifiants `$0A`/`$0B` de la page 0 (« P », « p » sur la puce) ; il manque la fiche
-  Realtek. Le reste suit la DP8390D depuis le 2026-11-12.
+- **RTL8019AS : restes sans preuve** · P3 ⏸ source · [F] — contenu de la 93C46 du NetUSBee
+  (IRQ/E-S/média/duplex lus 0) et 93C46 non modélisée (EEDO=0 : le programmeur d'EEPROM d'Atari.org
+  ne tourne pas), registres réservés lus 0, FIFO, durée de l'auto-load, HLTCLK mode 2, TSR bits 5/1
+  et RSR bit 3 (fiche contradictoire p. 10/14). Tranché par : un dump de la page 3 et de la 9346
+  d'un vrai NetUSBee. La fiche LS003.8 tranche le reste depuis le 2026-11-12.
 - **NAT : correctifs à remonter dans POM2** · P3 ⭘ — cache DNS positif à 60 s et vidé au reset de
   la carte (2026-11-12, `extern/nat/README`) ; même défaut dans POM2 `4625ec82`.
 - **STinG, premier run en échec DNS** · P3 ⭘ · [F] — `err -17` au tout premier `--slirp` du 2026-11-04, puis 4 succès d'affilée, alors que le `--slirp-selftest` en ligne passait juste après. Le filtre de l'hôte reste la piste la plus simple, sans preuve. À regarder si l'échec revient, avec `NEOST_SLIRP_TRACE=1`.
@@ -438,9 +440,9 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   Le bouton *Back* du web a reculé deux fois dans Chrome sans écran, piloté par CDP (refus
   éteint, anneau vide, puis deux pas). Restent à presser Ctrl+Alt+R au clavier, et `REWIND`
   sur un téléphone : Android n'est que vérifié à la syntaxe, l'APK se construit en CI.
-- **Android : clavier physique et choix de la ROM** · P3 ⭘ — un clavier physique est relayé au
-  ST depuis le 2026-11-12, vérifié à la syntaxe seulement ; les quatre EmuTOS sont déballées mais
-  seule `etos192us` se choisit (il faut une entrée de menu).
+- **Android : clavier physique sur un appareil réel** · P3 ⭘ — clavier (US et FR) et page ROM
+  (quatre EmuTOS, choix persistant) exécutés sur l'émulateur arm64 API 36 le 2026-11-12. Reste un
+  vrai clavier physique (couche `.kl/.kcm`, disposition AZERTY choisie dans Android), jamais exercé.
 - **Explorateur de bitmaps** · P3 ⭘ — la RAM en plans ST avec la palette courante, dans le
   débogueur. Modèle : ASE `DebugWindow`.
 - **A12 — validation des paquets sur machines hôtes** · P1 ⏸ matériel — macOS arm64 passé (sauf

@@ -215,7 +215,7 @@ int testGemdosSnapshot() {
             // construction — deux Machines construites de part et d'autre d'un changement
             // de seconde divergeaient (intermittent, fréquent sous ASan, plus lent).
             Rig r(root.string()); r.machine->ikbd.setClock(26,1,1,12,0,0);
-            r.machine->rtc.setDateTime(Rtc::DateTime{0,0,12,1,1,1,26});
+            r.machine->rtc.setDateTime(Rtc::DateTime{0,0,12,4,1,1,46});
             r.machine->usatan.setDateTime(UltraSatan::DateTime{2026,1,1,12,0,0});
             const int h=r.open("C:\\DET.TXT",0,true); eq("Fcreate DET",h>=88,true);
             eq("Fwrite DET",r.write(h,"abc"),3);
@@ -228,6 +228,35 @@ int testGemdosSnapshot() {
         }
         eq("même état d'un run à l'autre",states[0]==states[1],true);
         fs::remove(root/"DET.TXT");
+    }
+    // Le GEMDOS de la ROM tient sa propre date (deux mots en RAM, que Tgetdate/Tgettime
+    // rendent et que son Fcreate recopie) : c'est elle que prend un fichier créé sur
+    // l'hôte, pas la puce d'horloge. Les trois formes de routine (TOS 1.00/1.02, TOS
+    // 1.04–3.06, EmuTOS), retrouvées par leurs entrées $2A/$2C de la table des fonctions
+    // (6 octets par entrée) ; sans table, la puce reste la source. Cf. romGemdosClock.
+    for(int shape=0;shape<4;++shape) {
+        Rig r(root.string()); r.machine->ikbd.setClock(26,1,1,12,0,0);
+        auto put=[&](uint32_t off,std::initializer_list<uint8_t> b){ for(uint8_t v:b) r.bus.rom[off++]=v; };
+        auto getter=[&](uint32_t off,uint16_t var) {
+            const uint8_t hi=uint8_t(var>>8), lo=uint8_t(var);
+            if(shape==0) put(off,{0x4E,0x56,0xFF,0xFC, 0x30,0x39,0,0,hi,lo, 0x48,0xC0,0x4E,0x5E,0x4E,0x75});
+            else if(shape==1) put(off,{0x4E,0x56,0xFF,0xFC,0x42,0x80, 0x30,0x39,0,0,hi,lo, 0x4E,0x5E,0x4E,0x75});
+            else put(off,{0x70,0x00, 0x30,0x39,0,0,hi,lo, 0x4E,0x75});
+        };
+        auto ptr=[&](uint32_t off,uint32_t p){ put(off,{uint8_t(p>>24),uint8_t(p>>16),uint8_t(p>>8),uint8_t(p)}); };
+        const uint32_t base=r.bus.romBase;
+        getter(0x100,0x6000); getter(0x120,0x6002);
+        if(shape!=3) { ptr(0x200,base+0x100); ptr(0x206,base+0x140); ptr(0x20C,base+0x120); ptr(0x212,base+0x140); }
+        const uint16_t date=(9<<9)|(4<<5)|6, time=1;        // 1989-04-06 00:00:02 (TOS 1.04 sans horloge)
+        r.bus.write16(0x6000,date); r.bus.write16(0x6002,time);
+        const int h=r.open("C:\\GEM.TXT",0,true); eq("Fcreate GEM",h>=88,true); r.close(h);
+        eq("Fsfirst GEM",r.first("C:\\GEM.TXT"),0);
+        const bool table=shape!=3;
+        eq(table?"date = mot du GEMDOS":"sans table : date de la puce",r.bus.peek16(0x2800+24),
+           table?date:(46<<9)|(1<<5)|1);
+        eq(table?"heure = mot du GEMDOS":"sans table : heure de la puce",r.bus.peek16(0x2800+22),
+           table?time:12<<11);
+        fs::remove(root/"GEM.TXT");
     }
     std::printf("[gemdos-snapshot] %d checks, %d FAIL\n",checks,failures);
     return failures;
