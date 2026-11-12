@@ -268,7 +268,7 @@ Hatari : `video.c`, `spec512.c`.
   4 pixels mais **un mot de plan sur 16 pixels**, d'où 16 px de plans mixtes à chaque
   bout (index 8 = $333 en tête, index 7 = $555 en queue). NeoST rend le décalage
   physique de 4 px. Détail et arithmétique : `docs/HATARI_DIVERGENCES.md` §
-  *Cas où NeoST améliore Hatari*. **Cet étalon reste donc `ref_kind: snapshot`.**
+  2, « Lignes 60 Hz isolées `left+2 / right-2` (A40) ». **Cet étalon reste donc `ref_kind: snapshot`.**
 
 - **Captain Blood** (ERE, crack 42-Crew anglais) : au chargement, le jeu scanne la ROM
   TOS à la recherche de la chaîne `AZER` (table clavier AZERTY, code en RAM `$1d69a`).
