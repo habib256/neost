@@ -38,6 +38,18 @@ def parse_seed(text: str) -> int:
 # (en Kio, [D] Hatari stMemory.c STMemory_RAM_Validate_Size_KB @ épingle de
 # docs/HATARI_AUTOMATION.md). Seules les tailles que les DEUX émulateurs acceptent.
 MEM_KB = {"256k": 256, "512k": 512, "1m": 1024, "2m": 2048, "2176k": 2176, "2560k": 2560, "4m": 4096}
+# Valeur à passer à Hatari --memsize. Le PARSEUR d'options d'Hatari borne l'entier à
+# 0..1024 ([D] options.c:1918 @ f0736b24, Opt_Int(…, 0, 1024)) avant la validation en Kio :
+# 2048 ou 4096 sont refusés (« Error while parsing argument »), il faut 2 ou 4 (Mio). Les
+# tailles 2176k et 2560k, au-delà de 1024 Kio sans être des Mio entiers, ne passent pas.
+def hatari_memsize(label: str) -> str:
+    kb = MEM_KB[label]
+    if kb <= 1024:
+        return str(kb)
+    if kb % 1024 == 0:
+        return str(kb // 1024)
+    raise SystemExit(f"Hatari cannot be given {label} of ST-RAM on its command line "
+                     f"(--memsize is bounded to 1024 by its option parser)")
 # Ancienne notation entière (en Mio, 0 = 512 Kio comme Hatari) : gardée pour les manifestes.
 _MEM_LEGACY = {"0": "512k", "1": "1m", "2": "2m", "4": "4m"}
 

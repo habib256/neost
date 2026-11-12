@@ -55,7 +55,7 @@ HEADLESS = ROOT / "build" / "neost-headless"
 HATARI = ROOT / "extern" / "hatari" / "build" / "src" / "hatari"
 
 
-from title_cmd import (KEY_HOLD, MEM_KB, build_parser, finish_args, mouse_events, neost_cmd,  # noqa: E402,F401
+from title_cmd import (KEY_HOLD, MEM_KB, build_parser, hatari_memsize, finish_args, mouse_events, neost_cmd,  # noqa: E402,F401
                        parse_key, parse_mouse, parse_seed, parse_swap, swap_copy)
 
 
@@ -172,7 +172,7 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
     # Comparer le TOS original, y compris ses tests RAM et attentes de boot.
     # --patch-tos contrôle aussi les variables système préremplies par Hatari.
     cmd = [str(HATARI), "--machine", args.machine, "--tos", str(ROOT / args.rom), "--monitor", "rgb",
-           "--memsize", str(MEM_KB[args.mem]), "--cpu-exact", "on", "--compatible", "on",
+           "--memsize", hatari_memsize(args.mem), "--cpu-exact", "on", "--compatible", "on",
            "--patch-tos", "off", "--fast-boot", "off", "--fastfdc", "off",
            *(["--disk-a", str(copy)] if not args.gemdos else ["--harddrive", str(args.gemdos.resolve())]),
            "--sound", "25033", "--fast-forward", "on", "--confirm-quit", "off", "--statusbar", "off",

@@ -6,6 +6,61 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Deux chasses aux bugs, neuf lots de correction ; format d'état v64 (2026-11-12)
+
+Douze agents en lecture seule (deux chasses), puis neuf lots en worktrees fusionnés.
+
+- **Vidéo STE.** NOSCROLL suit tout accès LDS à `$FF8264-5`, sans la fenêtre de 40 cycles
+  d'Hatari : un octet en `$FF8264` ne touche que le décalage ([B] schéma ST-4081 f. 3 et 10,
+  sha256 935c4dd9). Banc fx68k + GSTMCU : 62 913 px d'écart ramenés à la seule ligne
+  d'écriture ; A/B de 11 titres STE sur 12 000 trames, 0 image changée ; `scroll_336_late`
+  passe en `rtl`. L'instruction RESET remet `$FF820F`, la base vidéo et NOSCROLL ([B] f. 10/12),
+  pas le son DMA ([B] f. 13, contre `gstmcu.v:438`). `$FF820A` relit bien le bit de synchro
+  externe ([B] f. 10, MiSTery l'omet). Sur ST, plus de wait state en écriture sur `$FF8264/65`.
+- **MFP.** Le compteur d'un timer en délai ne se relit plus `$00` ni un cran trop tôt ([B]
+  MC68901 § 5.1.1) : arrondi au-dessus sur le reste exact, plafonné au compte de départ.
+  `mfp_poll` (snapshot) recalé, 352 px sur 25 lignes (TADR + 1). Premier front d'un timer juste
+  au-delà de 130 h émulées (débordement int64).
+- **ACIA, IKBD.** Un octet écrit sous master reset maintenu est jeté ([B] MC6850 p. 6, p. 8) ;
+  le statut IKBD rattrape le front TX avant d'être lu (le TOS voit TDRE plus tôt : empreintes
+  décalées dès le boot, images identiques sur 80 titres sur 82).
+- **Son.** `$FF8920` relit 0 et ignore l'écriture ([B] manuel TT p. 26) ; DAC Pro Sound sans
+  clic au chargement d'un état ni au branchement.
+- **Blitter.** `$FF8A24`/`$FF8A32` relisent l'adresse sur 24 bits ([D] `stBlitter.sv`).
+- **Disquette, ACSI.** `.dim` à en-tête non standard monté sans son en-tête ; une image dans un
+  seul lecteur, refusé au cœur (headless, serveur, web, `diskb=`) ; WRITE SECTOR/TRACK sans
+  disquette → WPRT ([B] WD177X-00 p. 1-9) ; STX/IPF protégées si le fichier hôte l'est ; le
+  retour arrière ne réécrit que ce qui diffère (un `.msa` n'est plus ré-encodé sans écriture) ;
+  l'image ACSI de chaque cible est vérifiée dans l'en-tête d'état. Fuzzer : `.wd1772` et FDC.
+- **GEMDOS hôte.** Un programme tué par Ctrl-C (xterm interne) ne lègue plus dossier, Fforce ni
+  fichiers ouverts au suivant ; un dossier courant détruit ne bloque plus la sauvegarde ;
+  Frename garde les attributs, y compris d'un fichier ouvert ; collisions de casse 8.3 ;
+  Fforce vers un handle fermé → EIHNDL ; `--gemdos-ro` (`gemdos_ro=1`) ; fichiers créés datés
+  par l'horloge émulée, Fwrite ne change plus la date : deux runs identiques donnent le même
+  état. Banc A/B : 79 écarts, inchangé.
+- **EtherNEC/NE2000.** Un accès mot n'est qu'un cycle `/ROM` (la trame partait deux fois) ;
+  TSR, RSR et CNTR0-2 lisibles, pages 2 et 3 isolées, STP bloque RX et TX, filtres AB/AM/PRO/MON
+  ([B] DP8390D § 10). NAT : cache DNS positif à 60 s, vidé au reset de la carte. Modem : `+++`
+  avec temps de garde. Clé cartouche et adaptateurs de port d'un autre état refusés.
+- **Machines.** Adresse de la ROM lue dans son en-tête (`os_base`) : TOS 1.06 US de 192 Ko ne
+  s'arrête plus au reset. TOS 3.0x, 4.x et 2.07 refusés (« TT/Falcon TOS not supported »).
+  Cartouches `.STC`. Densité FDC remise à DD au reset à froid [F].
+- **GUI, configuration.** 12 tables clavier par pays (ES, IT, SE/FI, CH, NO, DK, NL, CZ portés,
+  [D] Hatari `keymap.c`) ; une disquette passée en argument monte en A au lieu de devenir la ROM,
+  `rom=` retenu seulement après un chargement réussi ; `NEOST_GEMDOS_DIR`/`NEOST_ACSI_IMG` plus
+  persistés ; espaces de fin des chemins gardés, sauts de ligne refusés ; dossier GEMDOS disparu
+  démonté proprement ; le save state dit son motif partout. Android : clavier physique relayé.
+- **Headless, serveur.** Options strictes (code 2), `--until-pc` à l'instruction, médias et
+  sorties en échec → code 1, `--server` refuse ce qu'il ignorait ; `save`/`load` pendant un blit
+  HOG garé disent leur motif, `load` abandonne l'instruction garée. Web JSPI : rattrapage de
+  4 trames par tour, `parked_` remis sur exception.
+- **Outils, CI.** `trace_diff`, `compare_titles`, `run_hatari_suite`, `compare_screenshot`,
+  `title_cmd` sans faux vert ; 17 empreintes de rejeux recalculées (`--shot-every`), Lemmings
+  545 → 544 ; `hdiutil` repris trois fois ; PGO Pi sur 13 charges publiques ; smoke : l'invité lit
+  et écrit vraiment C: ; job `release-watch` et étape 6 de `docs/RELEASE.md`.
+- **Format d'état v64.** Empreintes ACSI, NE2000 TSR/RSR/CNTR, GEMDOS `ProcPaths::ran`, Shifter
+  `noscroll_`.
+
 ## Headless : disquette A montée d'office, smoke des paquets (2026-11-12)
 
 - **Headless.** Sans `--disk`, `disks/diskA.st` est de nouveau montée d'office (décision

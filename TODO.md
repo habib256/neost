@@ -123,6 +123,10 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 - **STE, impulsions restantes face au modèle** · P3 ⭘ · [D] — DE précoce à 44, 14 impulsions sur 2560 en écart à 50 Hz, 42 sur 2560 à 60 Hz, toutes en haute résolution, et les
   largeurs au-delà de 32 qui enjambent HSYNC. Hors logiciel connu. → `docs/GLUE_SWEEP.md`
 - **Écritures en plein DE sur STE** · P3 ⭘ · [D] — `$FF8207` et `$FF8265` agissent aussitôt sur le modèle, à la ligne suivante chez NeoST et Hatari. Aucun logiciel connu n'en dépend. Porter `$FF8207` demande un rendu en deux segments par ligne.
+- **NOSCROLL et décalage du Shifter STE** · P3 ⏸ source · [F] — depuis le 2026-11-12 le latch
+  suit tout accès LDS à `$FF8264-5` ([B] ST-4081 f. 3 et 10). Restent : une LECTURE de `$FF8265`
+  active-t-elle SCRLSEL (porte sans R/W) ? le GST Shifter efface-t-il son décalage au RESET ?
+  Tranche : une mesure sur un STE, ou le schéma du GST Shifter.
 - **Hardscroll 4 px de Paulo Simoes** · P3 ⭘ · [D] — seul reste des tricks par changement de
   résolution (`video.c`, bloc V2) ; aucun titre de la collection ne l'exerce.
 - **Offsets de datation dérivés d'Hatari** · P2 ⏸ source — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
@@ -161,7 +165,6 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   31 333/9 600 : la phase du Timer C face à la VBL est une fonction déterministe de la durée du
   boot. Sur le fer, deux oscillateurs. Une phase tirée au reset (en option, déterministe par
   graine) rendrait réaliste la fréquence des courses comme celle de TOS 2.06 UK (`docs/CASE_STUDIES.md`).
-- **Lecture du dernier cycle fractionnaire d'un timer** · P3 ⭘ · [F] — la conversion entière peut rendre 0 juste avant l'échéance interne ; forcer 1 change `mfp_poll` de 16 pixels. Lecture conservée, datation DS/horloge à isoler par une sonde ; distinct de l'arrêt du compteur corrigé selon la fiche le 2026-11-10. → `docs/HATARI_DIVERGENCES.md`
 - **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
 
@@ -171,7 +174,8 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   `runFrame` (`core/EmuFiber`) n'est que compilée en croisé pour Windows (fibres) et Android
   (fil dédié, le même dorsal que les builds ASan, vérifié sous macOS et en CI). Sur le web, JSPI
   est vérifié sous Chrome 157 ; un navigateur sans `WebAssembly.Suspending` retombe sur
-  l'exécution d'un seul tenant (l'onglet se fige le temps du blit).
+  l'exécution d'un seul tenant (l'onglet se fige le temps du blit). Le rattrapage de 4 trames
+  par tour (2026-11-12) n'a pas tourné dans un navigateur.
 
 Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → `docs/STBLITTER_BENCH.md`.
 Extension du banc à 16 MHz → § 2.
@@ -191,6 +195,11 @@ Extension du banc à 16 MHz → § 2.
   la donnée en cours de décalage n'est exercée par aucun logiciel connu. Tranche : la musique de
   la démo enregistrée sur un vrai STE, ou la netlist du Shifter STE.
 
+- **RESB et le son DMA** · P3 ⭘ · [B] — l'instruction RESET efface le registre de début de trame
+  (ST-4081 f. 13, PD086/PD096/PD104), non modélisé ; SNDON, lui, n'est pas remis par RESB
+  (contre `gstmcu.v:438`).
+- **`$FF8920` sur STE** · P3 ⏸ matériel · [B] TT — relu 0 depuis le 2026-11-12 d'après le manuel
+  TT (p. 26) et MiSTery ; la page vaut pour le TT. Tranche : une lecture sur un STE.
 - **IRQ de fin de trame du son DMA, datée au HBL** · P3 ⭘ · [D] — le fetch suit désormais la fin de DE à la lecture du compteur (`docs/STCPU_BENCH.md`), mais la fin de trame n'a pas son événement propre : au plus 136 cycles de retard. Profondeur réelle de la FIFO : 8 octets d'Hatari contre 7 mots du modèle, choix d'auteur. Tranche : relevé sur STE.
 - **Tenue du dernier échantillon DMA** · P3 ⭘ · [D] — Hatari tient le niveau continu du dernier
   échantillon et coupe le YM si le mixage l'exclut, après une trame sans boucle
@@ -202,6 +211,11 @@ Extension du banc à 16 MHz → § 2.
   réinterprétée en secteurs (CRC régénéré, statut neutralisé), READ TRACK rend cette
   reconstruction : seule divergence de sévérité moyenne assumée, sans promesse de flux brut.
   Tranche : relecture sur un vrai lecteur d'une piste écrite par un jeu (sauvegarde), ou IPF.
+- **WRITE TRACK sur une piste absente d'une STX** · P3 ⭘ · [B] contre [D] — rend LOST DATA comme
+  Hatari ; un WD1772 formate une piste vierge (WD177X-00 p. 1-13). Demande d'ajouter des pistes à
+  `StxImage` (aujourd'hui jamais redimensionné) et de les relire du `.wd1772`.
+- **Densité FDC au power-on** · P3 ⏸ matériel · [F] — `$FF860E` remis à DD au reset à froid depuis
+  le 2026-11-12 (Hatari ne le remet jamais). Tranche : une mesure sur un Mega STE.
 - **ACSI : essai Idris OS** · P3 ⭘ — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté.
 - **Compteur DMA en écriture** · P3 ⏸ source · [F] — décrémenté au 33ᵉ rechargement de 16 octets
   (Hatari, NeoST) contre le 32ᵉ (MiSTery `dma.v`) ; ni l'archive des ASIC Atari ni le manuel TT ne
@@ -242,6 +256,14 @@ Extension du banc à 16 MHz → § 2.
   (`tools/run_gemdos_ab.py`, TOS 1.04, 2.06, EmuTOS), tous de convention : ordre de listage (FAT
   contre hôte trié), lecteur de boot, carte des lecteurs, Dfree, étiquette de volume, octets
   après le NUL d'un nom. Les E/S sur un fichier détruit encore ouvert rendent EINTRN [F].
+- **Horloge GEMDOS par version de TOS** · P3 ⭘ · [F] — depuis le 2026-11-12, un fichier créé sur
+  C: prend l'horloge émulée (IKBD, RTC sur Mega) : exact sous EmuTOS et TOS 1.04 sur Mega ST. TOS
+  1.0x/1.62 sur ST (date de la ROM + `_hz_200`, Tsetdate/Tsettime) et l'année de TOS 2.06 sur ST
+  restent approchés (`emulatedNow`).
+- **Fforce vers un handle TOS invalide** · P3 ⭘ — fait encore tomber la redirection hôte, faute de
+  voir la réponse du TOS (vers un handle hôte fermé : EIHNDL sans rien changer, corrigé).
+- **Tailles de RAM sans source** · P3 ⏸ source · [E] — 256k et 2176k sur STE/Mega STE, Mega STE
+  sous 1 Mo : acceptées sans document (barrettes 30 broches, banque minimale probable de 512 Ko).
 - **Port cartouche générique** `$FA0000-$FBFFFF` · P3 ⭘ — au-delà du système GEMDOS ; `cart.c`.
 
 ---
@@ -344,6 +366,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → ci-dessus.
 - **Comparaison MAME ↔ NeoST** · P3 ⭘ — memory map, bus errors, FIFO FDC/MMU, blitter, SCC.
+- **`compare_sound.py --mem N`** · P3 ⭘ — passe encore `Nm` au headless (qui refuse désormais une
+  taille inconnue) : aligner sur `title_cmd.parse_mem`.
 - **Traces Hatari de référence pour `trace_diff`** · P3 ⭘ — Arkanoid et autres.
 - **Étalon spec512 en overscan** · P3 ⭘ — si une démo libre à bordures ouvertes est rapatriée.
 
@@ -375,6 +399,11 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **NetUSBee : validation MiNT et matériel** · P3 ⭘ — USB4TOS vérifié (HID + disque) ;
   restent FreeMiNT, capture du latch des différentes cartes, timing électrique et ITL/isochrone.
   → [`docs/NETUSBEE.md`](docs/NETUSBEE.md)
+- **RTL8019AS : registres sans fiche** · P3 ⏸ source · [F] — CLDA, pointeurs de la page 2,
+  AR/SEP et identifiants `$0A`/`$0B` de la page 0 (« P », « p » sur la puce) ; il manque la fiche
+  Realtek. Le reste suit la DP8390D depuis le 2026-11-12.
+- **NAT : correctifs à remonter dans POM2** · P3 ⭘ — cache DNS positif à 60 s et vidé au reset de
+  la carte (2026-11-12, `extern/nat/README`) ; même défaut dans POM2 `4625ec82`.
 - **STinG, premier run en échec DNS** · P3 ⭘ · [F] — `err -17` au tout premier `--slirp` du 2026-11-04, puis 4 succès d'affilée, alors que le `--slirp-selftest` en ligne passait juste après. Le filtre de l'hôte reste la piste la plus simple, sans preuve. À regarder si l'échec revient, avec `NEOST_SLIRP_TRACE=1`.
 - **Modem / STinG** · P3 ⭘ — documenter l'installation dans `docs/TEST_SOFTWARE.md` ; banc SLIP
   de bout en bout.
@@ -409,6 +438,9 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   Le bouton *Back* du web a reculé deux fois dans Chrome sans écran, piloté par CDP (refus
   éteint, anneau vide, puis deux pas). Restent à presser Ctrl+Alt+R au clavier, et `REWIND`
   sur un téléphone : Android n'est que vérifié à la syntaxe, l'APK se construit en CI.
+- **Android : clavier physique et choix de la ROM** · P3 ⭘ — un clavier physique est relayé au
+  ST depuis le 2026-11-12, vérifié à la syntaxe seulement ; les quatre EmuTOS sont déballées mais
+  seule `etos192us` se choisit (il faut une entrée de menu).
 - **Explorateur de bitmaps** · P3 ⭘ — la RAM en plans ST avec la palette courante, dans le
   débogueur. Modèle : ASE `DebugWindow`.
 - **A12 — validation des paquets sur machines hôtes** · P1 ⏸ matériel — macOS arm64 passé (sauf

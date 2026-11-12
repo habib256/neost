@@ -1106,8 +1106,11 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   (Mediach via bascule WPRT à l'éjection/insertion à chaud).
 - Formats : `.st` (brut), `.msa` (décompression RLE), `.dim` (en-tête 32 o retiré, port
   `floppies/dim.c` : ID 'BB', non compressé), `.stx` (Pasti) et `.ipf` (SPS/CAPS).
-  Détection par CONTENU (indépendante de l'extension). Écritures recopiées dans le `.st` ;
-  `.msa`/`.dim` protégées en écriture ; `.stx`/`.ipf` en overlay `.wd1772`.
+  Détection par CONTENU (indépendante de l'extension). Écritures recopiées dans le `.st`,
+  le `.msa` et le `.dim` (ré-encodés) ; `.stx`/`.ipf` en overlay `.wd1772`, protégées si le
+  fichier hôte est en lecture seule. Un `.dim` à en-tête non standard (extension `.dim`,
+  signature `BB`) perd son en-tête et se monte en lecture seule. Une image n'entre que dans
+  un lecteur à la fois (`Fdc::loadImage`, `.wd1772` partagé compris).
 - **Images IPF (SPS / CAPS)** (2026-10-22, `io/IpfImage.*`, test `tests/ipf_image_logic.cpp`).
   Décodeur LIBRE, adapté de MAME `src/lib/formats/ipf_dsk.cpp` (BSD-3, O. Galibert) — PAS
   de libcapsimage (licence SPS non libre ; c'est elle qu'Hatari charge, et l'oracle local
@@ -2119,6 +2122,28 @@ Récits de passes entières ; le détail daté est au [`../CHANGELOG.md`](../CHA
   Deux chantiers ciblés et testables documentés : lignes raster transitoires SHO (3 candidats +
   traces) et son YM STE (S3 gain LMC ×2 + S4, oracle `--ym-mixing model`). Cf.
   `docs/HATARI_DIVERGENCES.md` § 5ᵉ passe.
+- **Deux chasses aux bugs, neuf lots de correction (2026-11-12, agents parallèles)** : 12 chasses
+  en lecture seule, puis 9 lots en worktrees fusionnés ; format d'état v64. Par puce :
+  - **Vidéo STE** : NOSCROLL suit tout accès LDS à `$FF8264-5`, sans fenêtre de temps ([B]
+    ST-4081 f. 3/10) ; RESET remet `$FF820F`, la base vidéo et NOSCROLL ([B] f. 10/12), pas le
+    son DMA ([B] f. 13) ; `$FF820A` relit le bit EXTS ([B] f. 10, contre MiSTery) ; ST sans
+    wait state sur `$FF8264/65`. `scroll_336_late` passe en `rtl`.
+  - **MFP** : un timer en délai ne se relit jamais `$00` ni un cran trop tôt ([B] MC68901
+    § 5.1.1) ; premier front juste au-delà de 130 h émulées.
+  - **ACIA/IKBD** : octet écrit sous master reset jeté ; statut IKBD rattrapé avant lecture.
+  - **Son** : `$FF8920` relu 0 ([B] manuel TT) ; Pro Sound sans clic au chargement d'état.
+  - **Blitter** : adresses relues sur 24 bits.
+  - **FDC/ACSI** : écriture sans disquette → WPRT ; retour arrière qui ne réécrit que ce qui
+    diffère ; image ACSI vérifiée par cible dans l'en-tête d'état.
+  - **GEMDOS hôte** : processus tué par Ctrl-C purgé ; Frename, collisions de casse 8.3,
+    Fforce vers un handle fermé, `--gemdos-ro`, fichiers datés par l'horloge émulée.
+  - **EtherNEC/NE2000** : accès mot = un cycle ; TSR/RSR/CNTR, pages 2/3, STP et filtres RCR
+    ([B] DP8390D § 10) ; NAT : cache DNS à 60 s ; modem : `+++` avec temps de garde.
+  - **Machines** : adresse de la ROM lue dans son en-tête ; TOS TT/Falcon refusés ; `.STC`.
+  - **Frontends et outils** : 12 tables clavier par pays ; `neost.cfg` sans variables
+    d'environnement ni chemins rognés ; options headless strictes ; serveur OpenDST pendant un
+    blit garé ; outils Python sans faux vert ; CI (rejeux, `hdiutil`, PGO Pi, smoke GEMDOS).
+  Détail : [`../CHANGELOG.md`](../CHANGELOG.md), 2026-11-12.
 - **Bug hunt pré-release, 3ᵉ passe (2026-07-12, 5 agents parallèles) — suite complète verte** :
   - **Chargeurs de fichiers (P0, 5 crashs reproduits puis corrigés)** : sous Linux,
     `tellg()` sur un RÉPERTOIRE renvoie 2⁶³−1 (pas −1) → la garde `n <= 0` de
