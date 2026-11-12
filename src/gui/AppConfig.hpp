@@ -112,6 +112,8 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 std::string sd2;       // image SD du slot 2 de l'UltraSatan (cible 1 ; vide = slot vide)
                 std::string cpu = "moira"; std::string machine = "st";
                 std::string mem = "512k"; bool fpu = false;   // MC68881 Mega STE (cf. Fpu.hpp)
+                // Quartz maître (core/Pacing.hpp) : pal (défaut), 32042, 32216 ou auto.
+                std::string quartz = "pal";
                 int joyport = 1;
                 // port0 = ce qui occupe le port 0 (port souris) : "mouse" (défaut — une
                 // manette n'y va que si on l'y ÉPINGLE par joymap) ou "auto" (historique :

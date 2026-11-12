@@ -21,6 +21,17 @@ contre les relevés HWTST faits sur de vraies machines (échelon hardware, relev
     cmp.l + bne.s) donnerait 2,0 : elle est datée aussi, pour montrer que la forme compte.
     Tranche : le source d'HWTST004.PRG.
 
+Horloge CPU contre le quartz du MFP (option --quartz, TODO « Horloges NTSC et quartz STF »).
+HWTST mesure aussi la fréquence du CPU contre le quartz du MFP (2,4576 MHz). La sonde ci-dessous
+fait la même chose sur NeoST : Timer A en délai /200, donnée 256 (51 200 cycles MFP), le CPU en
+STOP entre deux IRQ ; l'écart entre entrées d'IRQ donne les cycles CPU par 51 200 cycles MFP, donc
+la fréquence CPU = cycles × 48. Elle doit RETROUVER le quartz choisi (à l'arrondi près de
+l'entrée d'IRQ près : sa date après STOP varie de quelques cycles, soit ±10 Hz sur 39 périodes).
+[A] Relevés HWTST (même fil) : STE et Mega STE PAL 8 020 7xx-8 021 2xx Hz ; Mega ST4, 520 STF
+    FR et 1040 STF 8 009 7xx-8 010 1xx Hz ; Mega STE NTSC 8 054 0xx Hz. Le défaut PAL doit tomber
+    dans la plage PAL ; les deux autres quartz sont affichés en face de leur relevé, sans verdict
+    de matériel (le relevé est fait contre un quartz MFP lui-même à ±100 ppm près).
+
 Sans Hatari : le verdict ne dépend que de NeoST et des relevés ci-dessus.
 """
 import os
@@ -84,6 +95,49 @@ def measure(name, words, count, label, scu):
     return (end[0] - start[0]) / N
 
 
+# Quartz → fréquence CPU attendue (core/Pacing.hpp, quartzInfo) et relevé HWTST en regard.
+QUARTZ = {"pal": (8021248, "STE/Mega STE PAL 8 020 7xx-8 021 2xx"),
+          "32042": (8010600, "Mega ST4/STF 8 009 7xx-8 010 1xx"),
+          "32216": (8053976, "Mega STE NTSC 8 054 0xx")}
+PAL_RANGE = (8020700, 8021300)        # [A] HWTST, STE et Mega STE PAL
+CLOCK_PERIODS = 40
+
+
+def build_clock():
+    """Cartouche : Timer A délai /200, donnée 0 (256), IRQ sur niveau 6 ; STOP entre les IRQ."""
+    a = Assembler()
+    a.w(0x46fc, 0x2700, 0x2e7c); a.long(0x10000)
+    for address in (0xfa07, 0xfa09, 0xfa13, 0xfa15, 0xfa19):
+        a.byte(address, 0)
+    a.byte(0xfa17, 0x40)                           # VR : base $40, fin d'IRQ automatique
+    a.vector(0x134, "isr")                         # vecteur $4D : Timer A
+    a.byte(0xfa1f, 0)                              # TADR = 0 → 256
+    a.byte(0xfa07, 0x20); a.byte(0xfa13, 0x20)     # IERA/IMRA bit 5 : Timer A
+    a.w(0x7200 | (CLOCK_PERIODS - 1))              # moveq #périodes-1,d1
+    a.byte(0xfa19, 7)                              # TACR = 7 : délai /200
+    a.label("wait"); a.w(0x4e72, 0x2500)           # stop #$2500 : seul le MFP (niveau 6) passe
+    a.branch(0x51c9, "wait")                       # dbf d1,wait
+    a.label("done"); a.w(0x4e72, 0x2700); a.branch(0x6000, "done")
+    a.label("isr"); a.w(0x4e73)                    # rte
+    return a.finish()
+
+
+def measure_clock(quartz):
+    data, labels = build_clock()
+    cart = OUT / "clock.bin"
+    cart.write_bytes(data)
+    trace = OUT / f"clock_{quartz}.trace"
+    timing.run([timing.NEOST, timing.ROM, "--machine", "ste", "--mem", "1m", "--cart", cart,
+                "--quartz", quartz, "--frames", "60", "--trace", trace],
+               OUT / f"clock_{quartz}.log", {**os.environ, "NEOST_TRACE_CYC": "1"})
+    instructions, _ = timing.td.parse(str(trace))
+    hits = [i.cyc for i in instructions if i.pc == labels["isr"]]
+    if len(hits) != CLOCK_PERIODS or None in hits:
+        raise ValueError(f"horloge {quartz} : {len(hits)} IRQ Timer A au lieu de "
+                         f"{CLOCK_PERIODS} ({trace})")
+    return (hits[-1] - hits[0]) / (len(hits) - 1) * 2457600 / 51200
+
+
 def main():
     # neost-headless et EmuTOS 256 Ko (versionnée) : un manque est une casse du dépôt, pas
     # un saut légitime — sortie 2, jamais 77.
@@ -109,6 +163,17 @@ def main():
             print(f"  {'OK' if good else 'FAIL'} {name} {k} : NeoST {ratios[k]:.4f}, "
                   f"Mega STE réel {want:.4f} ± {TOLERANCE[k]}")
             ok = ok and good
+    for quartz, (want, real) in QUARTZ.items():
+        hz = measure_clock(quartz)
+        good = abs(hz - want) <= 10
+        if quartz == "pal":
+            in_range = PAL_RANGE[0] <= hz <= PAL_RANGE[1]
+            print(f"  {'OK' if in_range else 'FAIL'} horloge {quartz} : NeoST {hz:.0f} Hz, "
+                  f"relevé réel {real}")
+            good = good and in_range
+        print(f"  {'OK' if good else 'FAIL'} quartz {quartz} : CPU mesuré contre le MFP "
+              f"{hz:.0f} Hz, choisi {want} Hz (relevé HWTST : {real})")
+        ok = ok and good
     print("HWTST LOOP OK" if ok else "HWTST LOOP FAIL")
     return 0 if ok else 1
 

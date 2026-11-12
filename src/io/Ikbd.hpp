@@ -301,7 +301,7 @@ public:
         ar(pauseKeep_);
         ar(monitorFrozen_);
         ar.check(pauseKeep_ <= rx_.size(), "Ikbd::pauseKeep_ hors domaine");
-        ar.check(monitorFrozen_ >= -1 && monitorFrozen_ <= int64_t(8021247) * 255 / 100,
+        ar.check(monitorFrozen_ >= -1 && monitorFrozen_ <= neost::pacing::busHzExact() * 255 / 100,
                  "Ikbd::monitorFrozen_ hors domaine");
 
         // --- État code 6301 custom ($20/$22) ---
@@ -350,7 +350,7 @@ public:
         ar(joystickMonitorPeriod_);
         ar.check(joystickMonitorPeriod_ == 0 ||
                  (joystickMonitorPeriod_ >= kKeycodePollCycles &&
-                  joystickMonitorPeriod_ <= int64_t(8021247) * 255 / 100),
+                  joystickMonitorPeriod_ <= neost::pacing::busHzExact() * 255 / 100),
                  "Ikbd::joystick monitor period out of range");
         ar(responseDelayBits_);
         ar(rxWaitingDelay_);

@@ -87,10 +87,11 @@ void UltraSatan::catchUp() {
     const int64_t now = now_();
     if (!primed_) { baseCycle_ = now; primed_ = true; return; }
     const int64_t elapsed = now - baseCycle_;
-    if (elapsed < CPU_HZ) return;
-    const int64_t secs = elapsed / CPU_HZ;
+    const int64_t hz = neost::pacing::cpuHzInt();   // quartz CPU en service (core/Pacing.hpp)
+    if (elapsed < hz) return;
+    const int64_t secs = elapsed / hz;
     baseSecs_  += secs;
-    baseCycle_ += secs * CPU_HZ;                    // garde la phase sub-seconde
+    baseCycle_ += secs * hz;                        // garde la phase sub-seconde
 }
 
 void UltraSatan::setDateTime(const DateTime& dt) {

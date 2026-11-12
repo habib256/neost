@@ -60,6 +60,20 @@ public:
 
     MachineType machineType() const { return machineType_; }
 
+    // --- Horloges de session, EN OPTION (défauts : quartz PAL, grille MFP historique) ----
+    // `quartz` : quartz maître (core/Pacing.hpp) — process-global, il recale aussi le
+    // rapport CPU/MFP. `mfpPhase64` (0..63) : phase de l'horloge du MFP face au CPU, en
+    // 1/64 de cycle MFP (Mfp::setClock). À poser avant le boot ou avant un reset à froid ;
+    // les deux entrent dans l'en-tête des états (sessionConfig), qui refuse un état pris
+    // sous d'autres horloges. Machine::mfpPhaseForSeed tire la phase d'une graine.
+    void setClocks(neost::pacing::Quartz quartz, int mfpPhase64);
+    static int mfpPhaseForSeed(uint32_t seed);
+    // Option « quartz » : « pal » (défaut), « 32042 », « 32216 » (alias « ntsc-stf »,
+    // « ntsc-ste »), ou « auto » = quartz de la machine et de la région de la ROM (en-tête
+    // TOS, cf. Machine.cpp). Faux si `spec` est inconnu (`out` intact).
+    static bool resolveQuartz(const std::string& spec, MachineType machine,
+                              const std::string& romPath, neost::pacing::Quartz& out);
+
     // --- Audio « push » (Phase C) : horloge pour dater les écritures registres -----
     // Durée de la trame courante en cycles CPU (lignes × cycles/ligne). Sert à calibrer
     // le nombre d'échantillons produits et à mapper les écritures horodatées.

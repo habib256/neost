@@ -119,7 +119,7 @@ public:
     // programmé à anchor + (cycle − cycleAncre)/CPU_HZ + kLeadMs. Un thread le
     // délivre à l'heure dite : latence fixe (inaudible), gigue nulle.
     // A28 : UNE seule définition de l'horloge CPU/bus, dans core/Pacing.hpp.
-    static constexpr double kCpuHz = neost::pacing::kCpuHz;
+    // Horloge CPU EN SERVICE (quartz choisi) : neost::pacing::cpuHz().
     // AVANCE de livraison, en ms. C'est un ARBITRAGE, et il appartient à
     // l'utilisateur : plus elle est courte, plus le jeu au clavier est direct ; plus
     // elle est longue, mieux elle absorbe un à-coup de la boucle GUI (drag de

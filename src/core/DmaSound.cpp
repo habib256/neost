@@ -37,8 +37,9 @@ static const double kRate[4] = { 6258.0, 12517.0, 25033.0, 50066.0 };
 // s=127 : Hatari 0.372 fs, NeoST sortait 0.744 fs — bug hunt 10ᵉ passe).
 static constexpr float kDmaGain = -0.1875f;
 
-// Horloge CPU (Hz) pour dater la consommation DAC en cycles (cf. Mfp / Scheduler).
-static constexpr int64_t CPU_HZ = neost::pacing::kCpuHzInt;   // A28 : core/Pacing.hpp
+// Horloge CPU (Hz) pour dater la consommation DAC en cycles (cf. Mfp / Scheduler) : le
+// quartz EN SERVICE, car SCLK est un oscillateur à part (cf. kRate) — un autre quartz CPU
+// change le nombre de cycles par échantillon, pas la cadence du son.
 
 // Câble le MFP et lui annonce que cette machine possède le son DMA (STE/Mega STE) :
 // seul ce signal autorise le MFP à XOR la ligne XSINT dans GPIP7 (cf. Hatari
@@ -197,8 +198,9 @@ void DmaSound::updateDac() {
     if (!playing_ && fifoNb_ == 0) { dacRem_ = 0; return; }   // DAC inactif
     const int64_t  rate    = int64_t(kRate[mode_ & 0x03]);
     const int64_t  num     = elapsed * rate + dacRem_;
-    const int64_t  samples = num / CPU_HZ;
-    dacRem_ = num % CPU_HZ;
+    const int64_t  cpuHz   = neost::pacing::cpuHzInt();
+    const int64_t  samples = num / cpuHz;
+    dacRem_ = num % cpuHz;
     const uint32_t step  = (mode_ & 0x80) ? 1u : 2u;          // octets par échantillon
     // Consommation par ÉCHANTILLON entier (paire L/R en stéréo), jamais par octet
     // isolé : s'arrêter entre le L et le R (fin de flux sur résidu impair) laissait

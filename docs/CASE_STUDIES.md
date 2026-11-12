@@ -15,7 +15,7 @@ Ce qui reste OUVERT est dans [`../TODO.md`](../TODO.md).
 |-----|---------|----------------|
 | **Systematic Error (Imagina, 1993)**, STE : masque Microwire écrit pendant un décalage (2026-11-11) | ✅ **Contrainte établie, règle non tranchée.** La boucle d'init `$F1AC` écrit `$FF8924` 28 cycles après la donnée précédente, en plein décalage, puis attend que le masque relise `$7FF`. La démo tourne sur le fer : une puce qui prendrait le masque sans arrêter ni relancer le transfert la bloquerait (masque tourné de 13 crans). Ignorer (Hatari, NeoST) et arrêter (MiSTery) la laissent tourner tous deux ; seule la commande interrompue `$048C` (aigus +12 dB) diffère : appliquée chez Hatari et NeoST, perdue chez MiSTery. | [Recette et contre-épreuve](#systematic-error--le-masque-microwire-écrit-en-plein-décalage-2026-11-11). |
 | **Vroom**, écran bruité sous TOS 2.06 (2026-11-04) | **Cause isolée : la VBL du jeu désélectionne le lecteur pendant le chargement.** Erreur ignorée, tampon périmé copié sur l’écran. Un octet neutralisant l’arrêt automatique fait passer le même état. Cœur inchangé, fréquence réelle inconnue. | [Recette et contre-épreuve](#vroom-sous-tos-206--la-vbl-désélectionne-le-lecteur-pendant-le-chargement-2026-11-04). |
-| **TOS 2.06 UK**, double faute au démarrage (2026-11-04, jugé le 2026-11-10) | **Course réelle de la ROM ; fréquence due au tirage discret (2026-11-10).** NeoST 3/256, Hatari 0/1024 : une seule trajectoire de boot touche une fenêtre de 16 cycles, le réseau des trajectoires étant figé par la phase MFP/CPU au reset. **Cause démontrée dans NeoST : collision de pile et de contexte GEMDOS.** Reproduite avec `diskA.st`, sans Vroom ; masquer la fenêtre de changement de pile débloque le même état. Cœur inchangé, datation matérielle non établie. | [Trace et recette publique](#tos-206--la-vbl-écrase-le-contexte-sur-la-pile-temporaire-2026-11-04). |
+| **TOS 2.06 UK**, double faute au démarrage (2026-11-04, jugé le 2026-11-10) | **Course réelle de la ROM ; fréquence due au tirage discret (2026-11-10).** NeoST 3/256, Hatari 0/1024 : une seule trajectoire de boot touche une fenêtre de 16 cycles, le réseau des trajectoires étant figé par le rapport exact des horloges MFP/CPU. Mesuré le 2026-11-12 : la phase MFP tirée au reset n'y change rien (3/256 sur 7 phases), un autre quartz si (0/256 à 32,0424 et 32,215905 MHz). **Cause démontrée dans NeoST : collision de pile et de contexte GEMDOS.** Reproduite avec `diskA.st`, sans Vroom ; masquer la fenêtre de changement de pile débloque le même état. Cœur inchangé, datation matérielle non établie. | [Trace et recette publique](#tos-206--la-vbl-écrase-le-contexte-sur-la-pile-temporaire-2026-11-04). |
 | **TOS 2.05 FR**, écran uniforme avec le profil ST/Mega ST (2026-11-04) | **Corrigé par le choix du profil compatible, sans patch TOS.** `$E00096` accède au son DMA STE avant l'installation des vecteurs. Le profil ST partait ensuite en RAM vide. NeoST sélectionne désormais STE ; STE/Mega STE déjà choisis sont conservés. Hatari contourne cette incompatibilité par les patchs `TP_ANTI_STE`. | `tos205fr.img`, ST demandé, 1 Mo, `diskA.st`, SPACE 100/300 tenu 8 trames, capture 2000 : bureau, 0 pixel d'écart avec STE explicite et Hatari STE sans patch. Audit détaillé dans `HATARI_AUTOMATION.md`, section « Patchs TOS ». |
 | **Switchblade** `[cr Replicants][t +2]`, écran noir rare (2026-11-04) | **Graine 8 débloquée par la correction de cadence FDC/DMA.** Le flux disque ne ralentit plus pendant le DMA RAM. Le chargeur laisse toujours `flock` nul ; aucun patch logiciel. Fréquence réelle des collisions inconnue. | [Trace, contre-épreuve et recette](#switchblade--une-vbl-du-tos-acquitte-le-read-track-du-chargeur-2026-11-04). |
 | **Barbarian (Psygnosis, 1987)** — souris ET joystick actifs ensemble (2026-10-22) | ✅ **FIDÈLE, par la ROM 6301 et non plus par un hack.** Le jeu envoie `$80 $01 $08 $0B 03 03 $14` d'un seul trait : tout arrive pendant l'initialisation de la ROM (sei `$F010` … cli `$F139`). `$08` reste dans le RDR, l'octet suivant déborde et la routine `$FF40` jette tout. Il reste les défauts : souris relative (seuil 1) + joystick 1 en événement. Hatari obtenait le même résultat par un quirk « `$08+$14` pendant le reset », qui laissait en plus passer le joystick 0. Vérifié : joystick 1 → le barbare avance, souris → le pointeur bouge, depuis le même état. | `--server` : `run 2800`, `insert A …(Disk 2).STX`, `run 1500`, `key make 39`/`break 39`, `run 800`, `save 1`, puis `joy 08` ou `mouse 6 3 0` ×30. Trace : `NEOST_KBD_TRACE=1` (`reset-window … held/overrun`). |
@@ -850,7 +850,31 @@ raison d'être figée, et le taux attendu redevient celui de la phase uniforme.
 
 **Conséquence** : le mécanisme est réel (grade C pour la ROM ; fx68k reproduit la collision,
 cf. plus haut). Le taux de NeoST mesure son réseau de trajectoires, pas le matériel. Aucun
-correctif d'émulation. Reste ouvert, au TODO : la phase de l'horloge du MFP au reset.
+correctif d'émulation.
+
+**Phase et rapport des horloges, mesurés (2026-11-12).** Deux options de session explorent
+désormais ce que le fer explore à chaque allumage (`DEV.md` § Modèle d'horloge) :
+`--mfp-phase-seed N` (front 0 de l'horloge MFP à `p/64` de cycle MFP, `p` tiré de la graine)
+et `--quartz` (rapport CPU/MFP). Même recette, graines FDC 1 à 256 :
+
+| Horloges | Halts | Graines |
+|---|---|---|
+| quartz PAL, phase 0 (défaut) | 3 (4, 69, 161) | 256 |
+| quartz PAL, phases tirées des graines 1 à 6 (43, 59, 19, 8, 1, 14 sur 64) | 3 (4, 69, 161) dans chaque cas | 6 × 256 |
+| quartz 32,0424 MHz, phase 0 | 0 | 256 |
+| quartz 32,215905 MHz, phase 0 | 0 | 256 |
+
+La phase seule ne change rien : elle ne décale un départ de timer que d'au plus un cycle MFP
+(≈ 3,26 cycles CPU), et la prise d'IRQ sur STOP arrondit à 4 cycles (sonde Timer A : premier
+IRQ au cycle 167 798 ou 167 802 selon la phase). L'état de la machine change (empreintes
+`--arch-hash-every` distinctes à la trame 340), pas la trajectoire de la course. Le **rapport**
+la déplace : Timer C armé vers le cycle 5,25 M, la fenêtre vers 55 M, un écart relatif ε déplace
+la phase du Timer C de ε × 50 M cycles, soit ~66 000 cycles à −0,13 % : un autre réseau, qui ne
+contient plus la trajectoire touchée, comme celui d'Hatari. Sur le fer, les quartz du CPU et du
+MFP s'écartent de quelques dizaines de ppm d'une machine à l'autre (relevés HWTST, 8 020 7xx à
+8 021 2xx Hz sur des STE PAL), soit ~50 cycles par ppm sur ce trajet : bien plus que la fenêtre
+de 16 cycles. Le taux matériel attendu reste celui de la phase uniforme (~2 × 10⁻⁴). Une graine
+de tolérance du quartz MFP (±ppm) serait l'option qui le reproduit ; elle n'est pas posée.
 
 ## Switchblade : une VBL du TOS acquitte le READ TRACK du chargeur (2026-11-04)
 

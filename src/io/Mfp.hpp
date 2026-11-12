@@ -34,6 +34,7 @@
 #include <functional>
 #include <deque>
 
+#include "core/Pacing.hpp"
 #include "core/Scheduler.hpp"
 #include "core/StateArchive.hpp"
 
@@ -129,7 +130,21 @@ public:
     uint8_t readTimerData(int timer) const;
     // Compteur vivant (1..256) d'un délai à `remSub` sous-cycles CPU (×256) de son
     // échéance, prescaler `div`, période partie de `start` (1..256). Cf. Mfp.cpp.
-    static int liveTimerCount(int64_t remSub, int div, int start);
+    int liveTimerCount(int64_t remSub, int div, int start) const;
+
+    // Horloge des timers face au CPU (TODO « Phase de l'horloge du MFP au reset » et
+    // « Horloges NTSC et quartz STF »). Le MFP a son propre quartz (2,4576 MHz) : le
+    // rapport CPU/MFP vaut cpuHz/2 457 600, réduit (31 333/9 600 au défaut). `phase64`
+    // (0..63) place le front 0 de cette horloge à phase64/64 de cycle MFP après le cycle
+    // CPU 0 ; 0 = grille historique (front 0 au cycle 0). Configuration de session, hors
+    // save-state : portée par l'en-tête des états (Machine::sessionConfig).
+    static constexpr int kPhaseSteps = 64;
+    void setClock(int64_t cpuHz, int phase64);
+    int64_t clockNum() const { return clkNum_; }
+    int64_t clockDen() const { return clkDen_; }
+    int     clockPhase64() const { return clkPhase64_; }
+    // Date CPU (×256, arrondie au-dessus) du premier front d'horloge MFP ≥ `anchor`.
+    int64_t firstEdgeSubAtOrAfter(int64_t anchor) const;
     // Échéance atteinte : lève l'IRQ du timer et le replanifie (mode délai).
     void    onTimerExpire(int timer);
 
@@ -661,6 +676,13 @@ private:
     int64_t timerPeriodSubCycles(int timer, bool fromCounter) const;
 
     Scheduler* sched_ = nullptr;    // pour dater les timers (mode délai)
+    // Rapport CPU/MFP réduit et phase de la grille (cf. setClock). Défaut : 8 021 248 /
+    // 2 457 600 = 31 333/9 600, front 0 au cycle CPU 0 — valeurs d'avant l'option.
+    int64_t clkCpuHz_   = neost::pacing::kCpuHzInt;
+    int64_t clkNum_     = 31333;
+    int64_t clkDen_     = 9600;
+    int64_t clkPhi_     = 0;        // phase en unités de 1/clkDen_ cycle CPU, < clkNum_
+    int     clkPhase64_ = 0;
     std::function<void(uint8_t)> serialSink_;   // port série RS-232 (UDR $FFFA2F)
     int     serialClockFactor_ = 128; // prescaler × données × division UCR, défaut 9600
     int     serialBaud_ = 0;        // bauds informatifs tronqués (0 = USART jamais configurée)

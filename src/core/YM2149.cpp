@@ -331,13 +331,13 @@ void YM2149::doSamples250(int n) {
 
 void YM2149::ensureMargin(uint32_t sampleRate) {
     if (sampleRate == 0) return;
-    const int margin = int(std::ceil(double(YM_250_HZ) / sampleRate)) + 2;
+    const int margin = int(std::ceil(double(ym250Hz()) / sampleRate)) + 2;
     while (((buf250Wr_ - buf250Rd_) & YM_BUF_250_MASK) < margin)
         doSamples250(margin);
 }
 
 float YM2149::nextResampleWeightedN(uint32_t sampleRate) {
-    const uint32_t intervalFract = uint32_t((uint64_t(YM_250_HZ) * 0x10000ULL) / sampleRate);
+    const uint32_t intervalFract = uint32_t((uint64_t(ym250Hz()) * 0x10000ULL) / sampleRate);
     int64_t total = 0;
 
     if (resampleFracN_) {
@@ -426,7 +426,7 @@ void YM2149::synthesizeFrame(float* out, uint32_t frames, uint32_t sampleRate, i
     // le rééchantillonneur pondéré (nextResampleWeightedN) fait ensuite sa moyenne, et le
     // flux est FILTRÉ au lieu d'être décimé. C'est aussi ce que fait Hatari, qui applique
     // les écritures à la frontière 250 kHz (Sound_Update avant Sound_WriteReg, [D] psg.c:342,367 @ f0736b24).
-    const uint32_t n250 = sampleRate ? uint32_t(uint64_t(frames) * YM_250_HZ / sampleRate) : 0;
+    const uint32_t n250 = sampleRate ? uint32_t(uint64_t(frames) * ym250Hz() / sampleRate) : 0;
     applyRegs(audioRegs_.data());
     uint32_t gen = 0;
     for (const RegEvent& e : events_) {

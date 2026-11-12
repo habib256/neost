@@ -331,10 +331,10 @@ void Isp1160::sync() {
     if (now < lastCycle_) { lastCycle_ = now; framePhase_ = 0; return; }
     const uint64_t elapsed = uint64_t(now - lastCycle_) * 1000 + framePhase_;
     lastCycle_ = now;
-    framePhase_ = uint32_t(elapsed % neost::pacing::kCpuHzInt);
+    framePhase_ = uint32_t(elapsed % neost::pacing::cpuHzInt());
     // Rattrapage borné à une seconde de trames USB : un lastCycle_ très ancien (état
     // forgé, horloge qui saute) enchaînait sinon des milliards de poll().
-    uint64_t n = elapsed / neost::pacing::kCpuHzInt;
+    uint64_t n = elapsed / neost::pacing::cpuHzInt();
     if (n > 1000) n = 1000;
     for (; n; --n) poll();
 }
@@ -426,5 +426,5 @@ void Isp1160::serialize(StateArchive& ar) {
     ar.check(wordIdx_ == 0 || wordIdx_ == 1, "Isp1160::wordIdx_ invalide");
     ar.check(atlbuflen_ <= kBufSize && fifoRemaining_ <= kBufSize &&
              portResetMs_[0] <= 10 && portResetMs_[1] <= 10 &&
-             framePhase_ < neost::pacing::kCpuHzInt, "Isp1160::USB state bounds");
+             framePhase_ < neost::pacing::cpuHzInt(), "Isp1160::USB state bounds");
 }

@@ -153,6 +153,23 @@ sur la durée réelle de la trame (`core/Pacing.hpp`) pour que le temps émulé 
 (`Scheduler::liveNow` + préemption `Cpu68k::endTimeslice`) ; le chantier ouvert est le
 **beam-sync par-ligne** — cf. [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md).
 
+**Quartz et phase du MFP : options de session (2026-11-12).** Tout se compte en cycles CPU ;
+les horloges *indépendantes* du quartz maître s'y convertissent par `neost::pacing::cpuHzInt()`
+/ `busHzExact()` (`core/Pacing.hpp`), jamais par un littéral. Défaut : quartz PAL
+32,084988 MHz (8 021 248 Hz pour le MFP et le temps réel, 8 021 247 Hz pour FDC STE, rotation
+et YM — l'écart d'1 Hz d'avant l'option, conservé pour ne déplacer aucune référence).
+
+| Option | Headless | `neost.cfg` / GUI | Effet |
+|---|---|---|---|
+| Quartz maître | `--quartz pal\|32042\|32216\|auto` | `quartz=` / Configuration › Machine | rapport CPU/MFP (`Mfp::setClock`), SCLK→bus (son DMA, FDC STE), IKBD, RTxC du SCC, ISP1160, cadence réelle des trames et audio. Ne bouge pas : géométrie vidéo, DMA disque, blitter (en cycles). `auto` = NTSC si l'en-tête TOS le dit (`os_conf` bit 0), 32216 sur STE/Mega STE, 32042 sur ST/Mega ST. |
+| Phase MFP | `--mfp-phase-seed N` | — | front 0 de l'horloge des timers à `p/64` de cycle MFP du cycle CPU 0, `p` tiré de la graine ; 0 = grille historique. Ne joue qu'au **départ frais** d'un timer (`Mfp::firstEdgeSubAtOrAfter`). |
+
+Les deux vont dans l'octet 7 de la configuration de session des états (`Machine::sessionConfig`,
+2 bits de quartz + 6 bits de phase, 0 aux défauts : format v65 inchangé) ; un état pris sous
+d'autres horloges est refusé. Le quartz est process-global (une machine par processus). Preuve
+que la sonde retrouve le quartz : `tools/run_hwtst_loop.py` (Timer A contre CPU, ±10 Hz).
+Le `hello` du serveur annonce `quartz=` et `mfpphase=`.
+
 **Une trame par appel, même au milieu d'une instruction.** Un blit HOG parti dans une
 instruction tient le CPU jusqu'à la fin du transfert, parfois plusieurs secondes. La fin de
 trame est franchie à son heure dans le temps émulé (`Scheduler::syncToRollingFrames` →

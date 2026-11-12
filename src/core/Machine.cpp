@@ -32,6 +32,28 @@
 // ROM (3.0x, 4.x, 2.07) ne basculent rien ici, Bus::loadTos les REFUSE avec un
 // message (tosUnsupportedMachine, MachineType.hpp) — on ne rétrograde pas un TOS
 // 68030 vers une machine qui ne peut pas l'exécuter.
+// [C] En-tête TOS, mot os_conf à l'offset $1C : bit 0 = 1 en PAL, 0 en NTSC (relu sur les
+//     ROM TOS 1.00-2.06 US, $0000, contre UK $0007 et FR $0005 ; EmuTOS us/fr idem). C'est
+//     la fréquence que la ROM programme au boot (CLAUDE.md : « us → 60 Hz »).
+// [A] HWTST (cf. core/Pacing.hpp) : Mega STE NTSC à 8,0540 MHz → quartz 32,215905 MHz.
+// [D] Hatari clocks_timings.c:138,144 @ f0736b24 : STF NTSC à 32 042 400 Hz. [A] HWTST : des
+//     Mega ST4 et STF tournent à 8,0097-8,0101 MHz — y compris des machines PAL, que « auto »
+//     ne peut pas deviner : pour elles, choisir « 32042 » explicitement.
+bool Machine::resolveQuartz(const std::string& spec, MachineType machine,
+                            const std::string& romPath, neost::pacing::Quartz& out) {
+    using neost::pacing::Quartz;
+    if (spec != "auto") return neost::pacing::parseQuartz(spec.c_str(), out);
+    bool ntsc = false;
+    if (std::ifstream f{romPath, std::ios::binary}) {
+        uint8_t b[2] = {0, 1};
+        f.seekg(0x1C);
+        f.read(reinterpret_cast<char*>(b), 2);
+        ntsc = f.gcount() == 2 && (b[1] & 1) == 0;
+    }
+    out = !ntsc ? Quartz::Pal : machineIsSte(machine) ? Quartz::Q32216 : Quartz::Q32042;
+    return true;
+}
+
 MachineType Machine::adjustMachineForTos(MachineType requested, const std::string& romPath) {
     std::ifstream f(romPath, std::ios::binary);
     if (!f) return requested;                 // introuvable → loadTos signalera l'erreur
@@ -256,6 +278,7 @@ Machine::Machine(std::size_t ramBytes, CpuCore cpuCore, MachineType machine)
         cpu.updateIpl();
     });
     mfp.setScheduler(&sched);   // le MFP date lui-même ses timers (A/C/D, mode délai)
+    mfp.setClock(neost::pacing::cpuHzInt(), 0);   // quartz en service, grille historique
 
     // A42 — L'ÉLECTION DE L'IRQ MFP EST SUSPENDUE PENDANT UN LOT DE DISPATCH, puis
     // tranchée UNE FOIS à la fin, avant que l'IPL ne soit relu. C'est l'ordre d'Hatari :
@@ -1365,10 +1388,30 @@ bool Machine::saveState(std::vector<uint8_t>& out) {
 
 void Machine::sessionConfig(uint8_t out[kSessionCfgSize]) const {
     static_assert(std::size_t(PortDevices::Port::Count) == 5, "sessionCfg : 5 ports attendus");
+    static_assert(neost::pacing::kQuartzCount <= 4 && Mfp::kPhaseSteps == 64,
+                  "sessionCfg[7] : 2 bits de quartz + 6 bits de phase MFP");
     out[0] = uint8_t(dongle.model());
     for (std::size_t p = 0; p < 5; ++p) out[1 + p] = uint8_t(ports.at(PortDevices::Port(p)));
     out[6] = fdc.fastFdc() ? 1 : 0;
-    out[7] = 0;
+    // Octet libre jusqu'à v65 (toujours 0) : horloges de session. Les défauts valent 0, si
+    // bien que les états déjà écrits restent lisibles — pas de nouvelle version de format.
+    out[7] = uint8_t(uint8_t(neost::pacing::quartz()) | (mfp.clockPhase64() << 2));
+}
+
+void Machine::setClocks(neost::pacing::Quartz quartz, int mfpPhase64) {
+    neost::pacing::setQuartzGlobal(quartz);
+    mfp.setClock(neost::pacing::cpuHzInt(), mfpPhase64);
+}
+
+// Graine → phase 0..63. Graine 0 = grille historique (phase 0) ; sinon un mélange
+// splitmix32, pour que des graines voisines tirent des phases sans rapport.
+int Machine::mfpPhaseForSeed(uint32_t seed) {
+    if (seed == 0) return 0;
+    uint32_t z = seed + 0x9E3779B9u;
+    z = (z ^ (z >> 16)) * 0x85EBCA6Bu;
+    z = (z ^ (z >> 13)) * 0xC2B2AE35u;
+    z ^= z >> 16;
+    return int(z & uint32_t(Mfp::kPhaseSteps - 1));
 }
 
 void Machine::acsiFingerprints(uint32_t out[kAcsiTargets]) const {
@@ -1480,11 +1523,12 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
         const uint8_t* f = data + kStateCfgOffset;
         std::fprintf(stderr, "[state] rejected: session config mismatch — dongle model "
                      "%u->%u, ports (joy0/joy1/RS-232/printer/cart button) "
-                     "%u,%u,%u,%u,%u->%u,%u,%u,%u,%u, fast FDC %u->%u "
-                     "(these must match the save)\n",
+                     "%u,%u,%u,%u,%u->%u,%u,%u,%u,%u, fast FDC %u->%u, "
+                     "quartz %u->%u, MFP phase %u->%u (these must match the save)\n",
                      f[0], curCfg[0], f[1], f[2], f[3], f[4], f[5],
-                     curCfg[1], curCfg[2], curCfg[3], curCfg[4], curCfg[5], f[6], curCfg[6]);
-        lastStateError_ = "State needs the same dongle, port devices and fast-FDC setting";
+                     curCfg[1], curCfg[2], curCfg[3], curCfg[4], curCfg[5], f[6], curCfg[6],
+                     f[7] & 3, curCfg[7] & 3, f[7] >> 2, curCfg[7] >> 2);
+        lastStateError_ = "State needs the same dongle, port devices, fast-FDC and clock settings";
         return false;
     }
     uint32_t crc; std::memcpy(&crc, data + kStateCrcOffset, 4);
