@@ -163,6 +163,21 @@ ln -s /Applications "$STAGE/Applications"
 codesign --verify --deep --strict "$STAGE/$(basename "$APP")" \
     || { echo "ERREUR : la copie du .app dans le .dmg n'est plus signée"; exit 1; }
 
-hdiutil create -volname "NeoST" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+# REPRISE (2026-11-12). `hdiutil create` échoue parfois sur un runner macOS par
+# « hdiutil: create failed - Resource busy » : un démon système (Spotlight, XProtect,
+# diskarbitrationd) tient encore le dossier ou l'image d'une tentative précédente.
+# Le job « Artefacts » du run 43158625480 est tombé ainsi sans aucune régression.
+# Même filet que `sdkmanager` (release.yml, job android) : trois essais espacés, en
+# retirant l'image partielle entre deux.
+ok=0
+for try in 1 2 3; do
+    if hdiutil create -volname "NeoST" -srcfolder "$STAGE" -ov -format UDZO "$DMG"; then
+        ok=1; break
+    fi
+    echo "::warning::hdiutil create a échoué (tentative $try/3) — nouvelle tentative"
+    rm -f "$DMG"
+    sleep $(( try * 10 ))
+done
+[ "$ok" = 1 ] || { echo "::error::hdiutil create a échoué 3 fois de suite — ce n'est plus un aléa"; exit 1; }
 rm -rf "$STAGE"
 echo "OK : $DMG"

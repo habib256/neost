@@ -42,7 +42,25 @@ le reste est ci-dessous.
 5. **`python3 tools/run_all.py --tier full`** — vert, sur un poste au repos. Le palier
    `full` porte les étalons pixel : c'est le seul qui interdit de publier une régression
    de rendu.
-6. **Taguer** : un tag annoté par release, `git tag -a x.y.z -m "…"`. Un seul par jour,
+6. **La CI de `main` est verte — les DEUX workflows.** `Tests` ne suffit pas :
+   `Artefacts (release)` construit et smoke-lance les huit paquets à chaque push de
+   `main`, et personne ne le regardait (rouge plusieurs runs d'affilée le 2026-11-12,
+   smoke des paquets puis `hdiutil create` « Resource busy » sur macOS, sans que rien
+   ne le signale). Avant de taguer :
+
+   ```sh
+   gh run list --workflow release.yml --branch main -L1   # le commit à taguer : success
+   gh run list --workflow tests.yml   --branch main -L1
+   ```
+
+   Le run doit porter sur le commit qu'on tague et conclure `success` (un run
+   `cancelled` a été chassé par un push suivant : regarder le suivant). Un rouge de
+   paquet se corrige avant le tag, car c'est le même workflow qui publiera : un aléa de
+   runner se relance (`gh run rerun <id> --failed`), une casse se corrige. Rappel
+   automatique : le job `release-watch` de `tests.yml` annote chaque push de `main`
+   (avertissement + résumé du run, sans échec) quand le dernier run conclu de
+   `release.yml` sur `main` est rouge.
+7. **Taguer** : un tag annoté par release, `git tag -a x.y.z -m "…"`. Un seul par jour,
    sauf raison écrite. ⚠ **Le message du tag s'écrit en ANGLAIS**, comme l'interface et
    les journaux — c'est une publication, elle s'adresse au public, pas au mainteneur.
    Idem pour les **notes de la Release GitHub** : le job `publish` les génère avec
@@ -50,7 +68,7 @@ le reste est ci-dessous.
    ensuite par un texte anglais (`gh release edit x.y.z --notes-file …`). Le CHANGELOG,
    lui, reste en français : c'est de la documentation, pas une publication.
    (Règle posée par le mainteneur le 2026-09-01, à la sortie de la 0.6.)
-7. **Publier** : la CI construit les paquets. Vérifier que chacun porte ses licences
+8. **Publier** : la CI construit les paquets. Vérifier que chacun porte ses licences
    (`GPL-3.0.txt`, `GPL-2.0.txt`, `THIRD-PARTY.txt` — huit jobs le vérifient) et que
    `check_licenses.py` est vert : tout composant livré doit être nommé avec sa licence.
 
@@ -105,3 +123,4 @@ le reste est ci-dessous.
 | `tools/check_doc_claims.py` | les chiffres cités dans la doc se recomptent |
 | `tools/check_doc_anchors.py` | les symboles cités existent encore |
 | 8 jobs de CI | les fichiers de licence accompagnent chaque paquet |
+| job `release-watch` (`tests.yml`) | un `Artefacts (release)` rouge sur `main` se voit dans les Tests (avertissement, pas un échec) |

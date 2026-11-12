@@ -80,11 +80,13 @@ say "3/5 disquette livrée ($DISK)"
 # a) structure : FAT12 720 Ko conforme au générateur du dépôt.
 python3 "$REPO/tools/check_disk_assets.py" --image "$PKG/$DISK"
 # b) l'émulateur du paquet la monte vraiment (le FDC journalise la géométrie lue).
+# Motif « [FDC] drive A: » et non « drive A: » : le headless écrit aussi
+# « [headless] drive A: empty … » quand le lecteur reste vide, qui passait le filtre.
 "./$EXE" "$ROM" --disk "$DISK" --frames 500 --screenshot smoke_disk.ppm 2> smoke_disk.log
-grep -q "drive A:" smoke_disk.log \
+grep -qF "[FDC] drive A:" smoke_disk.log \
     || { echo "ERREUR : le FDC n'a pas monté la disquette livrée :" >&2
          cat smoke_disk.log >&2; exit 1; }
-grep "drive A:" smoke_disk.log
+grep -F "[FDC] drive A:" smoke_disk.log
 python3 "$REPO/tools/check_ppm_nonuniform.py" smoke_disk.ppm
 rm -f smoke_disk.log
 
@@ -93,15 +95,61 @@ rm -f smoke_disk.log
 # était traité comme relatif et préfixé du répertoire courant. On passe donc
 # délibérément un chemin ABSOLU au format NATIF de l'hôte — d'où cygpath sous
 # MSYS2, pour ne pas dépendre de la conversion automatique des arguments.
-say "4/5 disque dur GEMDOS (chemin absolu hôte)"
-mkdir -p smoke_gemdos/SUBDIR
+#
+# L'INVITÉ LIT ET ÉCRIT (2026-11-12). Monter C: ne suffit pas : en 300 trames de
+# bureau l'invité n'ouvrait rien sur C:, et la recherche de « REFUSED » ne pouvait
+# donc jamais échouer — la résolution d'un nom GEMDOS en chemin hôte n'était pas
+# exercée. Un programme minimal, C:\AUTO\SMOKE.PRG (EmuTOS lance le dossier AUTO du
+# lecteur de démarrage, C: dès qu'un dossier GEMDOS est monté — même recette que
+# l'auto-test gemdos_irq), fait Fopen/Fread de C:\HELLO.TXT puis Fcreate/Fwrite de
+# C:\SUBDIR\ECHO.TXT. Le contrôle porte sur l'HÔTE : ECHO.TXT doit exister dans le
+# sous-dossier et reproduire HELLO.TXT à l'octet. Un nom mal résolu (lecture
+# introuvable, écriture déposée ailleurs) le fait échouer.
+say "4/5 disque dur GEMDOS (chemin absolu hôte, lecture + écriture par l'invité)"
+mkdir -p smoke_gemdos/SUBDIR smoke_gemdos/AUTO
 printf 'NeoST smoke test\r\n' > smoke_gemdos/HELLO.TXT
+python3 - "$REPO/tools" smoke_gemdos/AUTO/SMOKE.PRG <<'PYPRG'
+# SMOKE.PRG : copie C:\HELLO.TXT (64 octets au plus) vers C:\SUBDIR\ECHO.TXT, puis
+# Pterm0. Code indépendant de la position (adressage PC-relatif) : aucune relocation.
+import struct, sys
+sys.path.insert(0, sys.argv[1])
+from make_usatan_test import Asm
+a = Asm(0)
+def gemdos_open(fn, name):                  # Fopen/Fcreate(name, 0) → d7.w, bmi fail
+    a.w(0x3F3C, 0x0000)                     # move.w #0,-(sp)
+    a.br(0x487A, name)                      # pea name(pc)
+    a.w(0x3F3C, fn, 0x4E41, 0x508F)         # move.w #fn,-(sp) ; trap #1 ; addq.l #8,sp
+    a.w(0x3E00, 0x4A80)                     # move.w d0,d7 ; tst.l d0
+    a.br(0x6B00, 'fail')                    # bmi.w fail
+def gemdos_close():                         # Fclose(d7)
+    a.w(0x3F07, 0x3F3C, 0x003E, 0x4E41, 0x588F)
+gemdos_open(0x003D, 'inname')
+a.br(0x487A, 'buf')                         # pea buf(pc)
+a.w(0x2F3C); a.l32(64)                      # move.l #64,-(sp)
+a.w(0x3F07, 0x3F3C, 0x003F, 0x4E41)         # move.w d7,-(sp) ; Fread ; trap #1
+a.w(0x4FEF, 0x000C, 0x2C00)                 # lea 12(sp),sp ; move.l d0,d6
+gemdos_close()
+a.w(0x4A86); a.br(0x6F00, 'fail')           # tst.l d6 ; ble.w fail
+gemdos_open(0x003C, 'outname')
+a.br(0x487A, 'buf')                         # pea buf(pc)
+a.w(0x2F06, 0x3F07, 0x3F3C, 0x0040, 0x4E41) # move.l d6,-(sp) ; move.w d7,-(sp) ; Fwrite
+a.w(0x4FEF, 0x000C)                         # lea 12(sp),sp
+gemdos_close()
+a.lbl('fail'); a.w(0x4267, 0x4E41)          # clr.w -(sp) ; trap #1 (Pterm0)
+a.string('inname', 'C:\\HELLO.TXT')
+a.string('outname', 'C:\\SUBDIR\\ECHO.TXT')
+a.lbl('buf'); a.w(*([0] * 32))
+text = a.assemble()
+assert not a.relocs
+hdr = struct.pack('>HIIIIIIH', 0x601A, len(text), 0, 0, 0, 0, 0, 0)
+open(sys.argv[2], 'wb').write(hdr + text + b'\0\0\0\0')   # table de relocation vide
+PYPRG
 GD="$PKG/smoke_gemdos"
 if command -v cygpath >/dev/null 2>&1; then
     GD="$(cygpath -w "$GD")"
 fi
 echo "dossier monté : $GD"
-"./$EXE" "$ROM" --gemdos "$GD" --frames 300 2> smoke_gemdos.log || {
+"./$EXE" "$ROM" --gemdos "$GD" --frames 600 2> smoke_gemdos.log || {
     echo "ERREUR : l'émulateur a échoué avec --gemdos" >&2; cat smoke_gemdos.log >&2; exit 1; }
 grep -q "HDD GEMDOS : C:" smoke_gemdos.log \
     || { echo "ERREUR : dossier hôte NON monté en C: (chemin absolu mal résolu ?) :" >&2
@@ -113,6 +161,13 @@ if grep -q "REFUSED" smoke_gemdos.log; then
     echo "ERREUR : accès refusés par le bac à sable — chemins mal résolus :" >&2
     grep "REFUSED" smoke_gemdos.log >&2; exit 1
 fi
+# Comparaison par python3 (déjà requis) : `cmp` (diffutils) n'est pas garanti sous MSYS2.
+python3 -c 'import sys; a, b = (open(p, "rb").read() for p in sys.argv[1:]); sys.exit(a != b)' \
+        smoke_gemdos/HELLO.TXT smoke_gemdos/SUBDIR/ECHO.TXT 2>/dev/null \
+    || { echo "ERREUR : l'invité n'a pas recopié C:\\HELLO.TXT en C:\\SUBDIR\\ECHO.TXT" \
+              "(nom GEMDOS mal résolu vers l'hôte ?) :" >&2
+         ls -lR smoke_gemdos >&2; cat smoke_gemdos.log >&2; exit 1; }
+echo "OK : l'invité a lu C:\\HELLO.TXT et écrit C:\\SUBDIR\\ECHO.TXT sur l'hôte"
 rm -f smoke_gemdos.log
 
 # --- 5) LE SUPPORT DE LIVRAISON EST EN LECTURE SEULE (chantier A12) ---------
