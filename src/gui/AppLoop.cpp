@@ -785,6 +785,7 @@ static void drawMenuBar(App& A, Frame& F) {
             ImGui::MenuItem(ICON_FA_GAMEPAD " Joystick",     nullptr, &A.showJoy);
             ImGui::MenuItem(ICON_FA_KEYBOARD " Keyboard",     nullptr, &A.showKbd);
             ImGui::MenuItem(ICON_FA_BUG " Debugger",        nullptr, &A.showDbg);
+            ImGui::MenuItem(ICON_FA_PALETTE " Bitmap explorer", nullptr, &A.showBitmap);
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help")) {
@@ -1503,6 +1504,7 @@ static void drawSideWindows(App& A, Frame& F) {
                                        resolveData("pic/Black_Keyboard_AtariST.jpeg", exeDir));
     else            keyboardWindowReleaseAll(machine);   // fenêtre masquée : rien d'enfoncé
     if (A.showDbg)  drawDebugger(A, machine);
+    if (A.showBitmap) drawBitmapExplorer(A, machine);
     if (A.showCrt) {                     // fenêtre de réglages CRT
         bool crtChanged = false;
         drawCrtSettings(A, crtChanged);
@@ -2531,7 +2533,7 @@ void appShutdown(App& A) {
     cfg.diskb = machine.fdc.mountedPath(1);   // le lecteur B se resynchronise comme le A
     cfg.cart = machine.bus.mountedCartPath();
     cfg.mono = !machine.mfp.colorMonitor();
-    cfg.showHex = A.showHex; cfg.showCpu = A.showCpu;
+    cfg.showHex = A.showHex; cfg.showCpu = A.showCpu; cfg.showBitmap = A.showBitmap;
     cfg.showJoy = A.showJoy; cfg.showCfg = A.showCfg; cfg.showFloppy = A.showFloppy;
     cfg.showKbd = A.showKbd;
     saveConfig(A, exeDir, cfg, &machine);

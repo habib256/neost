@@ -302,7 +302,7 @@ int appInit(App& A, int argc, char** argv) {
     A.cfg = loadConfig(exeDir);
     Config& cfg = A.cfg;
     A.cfgPristine = cfg;      // référence figée pour le mode borne (cf. saveConfig)
-    A.showHex = cfg.showHex; A.showCpu = cfg.showCpu;
+    A.showHex = cfg.showHex; A.showCpu = cfg.showCpu; A.showBitmap = cfg.showBitmap;
     A.showJoy = cfg.showJoy; A.showCfg = cfg.showCfg; A.showFloppy = cfg.showFloppy;
     A.showKbd = cfg.showKbd;
     // Disposition ancrée : un imgui.ini écrit par une version antérieure garde des

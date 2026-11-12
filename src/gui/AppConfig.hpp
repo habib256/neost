@@ -118,6 +118,7 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 bool driveSound = true;  // bruits mécaniques du lecteur (roms/drivesound/, cf. DriveSound)
                 bool rewind = false;     // retour arrière : anneau d'états en mémoire (cf. core/Rewind.hpp)
                 bool showHex = true, showCpu = true;
+                bool showBitmap = false;       // explorateur de bitmaps (débogueur)
                 bool showJoy = false;
                 bool showKbd = false;          // fenêtre clavier virtuel (photo pic/, touches cliquables)
                 bool showCfg = true;           // fenêtre des réglages matériels

@@ -342,6 +342,7 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("showDisk=", 0) == 0) c.showFloppy = (line.substr(9) == "1");
     else if (line.rfind("showHex=", 0) == 0) c.showHex = (line.substr(8) == "1");
     else if (line.rfind("showCpu=", 0) == 0) c.showCpu = (line.substr(8) == "1");
+    else if (line.rfind("showBitmap=", 0) == 0) c.showBitmap = (line.substr(11) == "1");
     else if (line.rfind("showJoy=", 0) == 0) c.showJoy = (line.substr(8) == "1");
     else if (line.rfind("showKbd=", 0) == 0) c.showKbd = (line.substr(8) == "1");
     else if (line.rfind("showCfg=", 0) == 0) c.showCfg = (line.substr(8) == "1");
@@ -460,6 +461,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
     if (full)
         f << "showHex=" << (w.showHex ? 1 : 0)
           << "\nshowCpu=" << (w.showCpu ? 1 : 0)
+          << "\nshowBitmap=" << (w.showBitmap ? 1 : 0)
           << "\nshowJoy=" << (w.showJoy ? 1 : 0)
           << "\nshowKbd=" << (w.showKbd ? 1 : 0)
           << "\nshowCfg=" << (w.showCfg ? 1 : 0)

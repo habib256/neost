@@ -22,3 +22,6 @@ void drawHexViewer(App& A, Bus& bus);
 void drawCpuState(App& A, Cpu68k& cpu, bool& reqReset);
 void drawJoystickWindow(App& A, GLFWwindow* win, uint8_t lastJoy0, uint8_t lastJoy1);
 void drawDebugger(App& A, Machine& machine);
+// Explorateur de bitmaps : la mémoire lue en plans ST (1, 2 ou 4), avec la palette
+// courante, depuis une adresse quelconque. Lecture seule, sans effet de bord.
+void drawBitmapExplorer(App& A, Machine& machine);

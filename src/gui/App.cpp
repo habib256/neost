@@ -784,7 +784,7 @@ void App::switchKioskMode(bool on) {
         cfg.diskb = machine.fdc.mountedPath(1);   // le lecteur B se persiste comme le A
         cfg.cart = machine.bus.mountedCartPath();
         cfg.mono = !machine.mfp.colorMonitor();
-        cfg.showHex  = A.showHex;
+        cfg.showHex  = A.showHex;  cfg.showBitmap = A.showBitmap;
         cfg.showCpu  = A.showCpu;  cfg.showJoy  = A.showJoy;  cfg.dock = A.dockOn;
         cfg.showKbd  = A.showKbd;
         cfg.showCfg  = A.showCfg;  cfg.showFloppy = A.showFloppy;

@@ -11,12 +11,15 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "imgui.h"
 
+#include "core/BitmapView.hpp"
 #include "core/Machine.hpp"
 #include "gui/App.hpp"
 #include "gui/JoyMap.hpp"
+#include "gui/StScreenView.hpp"
 #include "gui/UiCommon.hpp"
 #include "io/JoystickInput.hpp"
 
@@ -376,6 +379,178 @@ void drawDebugger(App& A, Machine& machine) {
             }
             if (hasBp || isPc) ImGui::PopStyleColor();
             addr += (uint32_t)len;
+        }
+    }
+    ImGui::EndChild();
+    ImGui::End();
+}
+
+// =============================================================================
+//  Explorateur de bitmaps — la mémoire en plans ST, avec la palette courante.
+//
+//  Modèle : la DebugWindow de l'ASE (adresse de départ, nombre de plans, largeur
+//  en octets, palette, zoom, défilement), absente de la machine de développement :
+//  conçu ici sur ce cahier des charges. Le décodage vit dans le cœur
+//  (core/BitmapView) ; la fenêtre lit la mémoire SANS effet de bord
+//  (Bus::peekMapped8 : la RAM telle que la vidéo la voit, puis ROM et cartouche)
+//  et pose le résultat dans une texture. Rien n'est écrit dans la machine.
+//
+//  « Follow screen » recopie à chaque trame la base vidéo, la résolution et la
+//  largeur de ligne STE : la vue montre alors la RAM de l'écran, SANS bordure, scroll
+//  fin ni changement de palette en cours de trame — la mémoire, pas l'image.
+//  Décochée, l'adresse se déplace à la molette (8 lignes, une page avec Maj), aux
+//  boutons, ou se saisit.
+// =============================================================================
+namespace {
+struct BitmapExplorerState {
+    int  addr    = 0;           // adresse de départ (24 bits)
+    int  planes  = 4;           // 1, 2 ou 4
+    int  stride  = 160;         // largeur d'une ligne en octets
+    int  height  = 200;         // lignes affichées
+    int  zoom    = 2;
+    int  palette = 0;           // 0 = palette courante, 1 = gris
+    bool follow  = true;        // suit la base vidéo et la résolution
+    GlScreen tex;
+    std::vector<uint8_t>  bytes, valid;
+    std::vector<uint32_t> argb;
+};
+}  // namespace
+
+void drawBitmapExplorer(App& A, Machine& machine) {
+    static BitmapExplorerState S;
+    constexpr int kMaxStride = 1024, kMaxHeight = 1024;
+    Shifter& sh = machine.shifter;
+
+    ImGui::SetNextWindowSize(ImVec2(560, 600), ImGuiCond_FirstUseEver);
+    if (!ImGui::Begin(ICON_FA_PALETTE " Bitmap explorer", &A.showBitmap)) { ImGui::End(); return; }
+
+    // --- Suivi de l'écran : base vidéo, plans selon la résolution, ligne STE ------
+    ImGui::Checkbox("Follow screen", &S.follow);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Track the video base address, resolution and STE line width.\n"
+                          "Shows the screen RAM - no border, fine scroll or raster.");
+    if (S.follow) {
+        S.addr   = int(sh.videoBase & 0xFFFFFEu);
+        S.planes = sh.mode == Shifter::Mode::High ? 1 : sh.mode == Shifter::Mode::Medium ? 2 : 4;
+        S.stride = 160 + 2 * int(sh.lineWidth);
+        S.height = sh.mode == Shifter::Mode::High ? 400 : 200;
+    }
+
+    // --- Géométrie -----------------------------------------------------------
+    ImGui::BeginDisabled(S.follow);
+    ImGui::SetNextItemWidth(140.0f);
+    ImGui::InputInt("Address", &S.addr, 0, 0,
+                    ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue);
+    if (ImGui::IsItemDeactivated()) ImGui::SetWindowFocus(nullptr);   // rend le clavier au ST
+    ImGui::SameLine();
+    ImGui::TextDisabled("$%06X", unsigned(S.addr) & 0xFFFFFFu);
+    ImGui::TextUnformatted("Planes:"); ImGui::SameLine();
+    if (ImGui::RadioButton("1 (high)", S.planes == 1))   S.planes = 1;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("2 (medium)", S.planes == 2)) S.planes = 2;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("4 (low)", S.planes == 4))    S.planes = 4;
+    ImGui::SetNextItemWidth(140.0f);
+    ImGui::InputInt("Width (bytes)", &S.stride, 2 * S.planes, 16 * S.planes);
+    if (ImGui::IsItemDeactivated()) ImGui::SetWindowFocus(nullptr);
+    ImGui::SetNextItemWidth(140.0f);
+    ImGui::InputInt("Lines", &S.height, 8, 64);
+    if (ImGui::IsItemDeactivated()) ImGui::SetWindowFocus(nullptr);
+    ImGui::EndDisabled();
+
+    S.planes = neost::bitmapPlanes(S.planes);
+    S.stride = std::clamp(S.stride, 2 * S.planes, kMaxStride);
+    S.height = std::clamp(S.height, 1, kMaxHeight);
+
+    ImGui::SetNextItemWidth(140.0f);
+    ImGui::Combo("Palette", &S.palette, "Current (shifter)\0Grayscale\0");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(120.0f);
+    ImGui::SliderInt("Zoom", &S.zoom, 1, 8, "x%d");
+
+    // --- Défilement de l'adresse : boutons ; la molette agit sur l'image ------
+    const int page = S.stride * S.height;
+    ImGui::BeginDisabled(S.follow);
+    ImGui::TextUnformatted("Scroll:");
+    auto nudge = [&](const char* label, int delta) {
+        ImGui::SameLine();
+        if (ImGui::Button(label)) S.addr += delta;
+    };
+    nudge("-page", -page); nudge("-line", -S.stride); nudge("-word", -2);
+    nudge("+word", 2);     nudge("+line", S.stride);  nudge("+page", page);
+    ImGui::EndDisabled();
+    S.addr = std::clamp(S.addr, 0, 0xFFFFFF);
+
+    // --- Lecture sans effet de bord, puis décodage dans le cœur ---------------
+    neost::BitmapLayout lay;
+    lay.planes = S.planes; lay.strideBytes = S.stride; lay.height = S.height;
+    const int w = neost::bitmapWidthPx(lay);
+    const std::size_t n = neost::bitmapBytes(lay);
+    S.bytes.assign(n, 0);
+    S.valid.assign(n, 0);
+    for (std::size_t i = 0; i < n; ++i) {
+        const uint32_t a = (uint32_t(S.addr) + uint32_t(i)) & 0xFFFFFFu;
+        uint8_t v = 0;
+        if (machine.bus.peekMapped8(a, v)) { S.bytes[i] = v; S.valid[i] = 1; }
+    }
+    uint32_t pal[16];
+    // Haute résolution = moniteur monochrome : un plan, polarité du registre 0 seule
+    // (cf. neost::bitmapPalette). Un plan en basse ou moyenne → registres 0 et 1.
+    const bool mono = (sh.mode == Shifter::Mode::High) && S.planes == 1;
+    neost::bitmapPalette(sh.palette.data(), S.planes, mono, S.palette == 1, pal);
+    S.argb.assign(std::size_t(w) * std::size_t(S.height), 0xFF000000u);
+    // Trou du plan mémoire (banque vide, MMIO) : une teinte sombre distincte du noir.
+    neost::decodeBitmap(lay, S.bytes.data(), S.valid.data(), pal, 0xFF402040u, S.argb.data());
+
+    const uint32_t endAddr = (uint32_t(S.addr) + uint32_t(n) - 1u) & 0xFFFFFFu;
+    ImGui::Text("$%06X-$%06X  %d x %d px", unsigned(S.addr), unsigned(endAddr), w, S.height);
+
+    // --- Palette appliquée (pastilles) ----------------------------------------
+    const int colors = 1 << S.planes;
+    for (int i = 0; i < colors; ++i) {
+        const uint32_t c = pal[i];
+        const ImVec4 col(float((c >> 16) & 0xFF) / 255.0f, float((c >> 8) & 0xFF) / 255.0f,
+                         float(c & 0xFF) / 255.0f, 1.0f);
+        if (i) ImGui::SameLine(0.0f, 2.0f);
+        ImGui::PushID(i);
+        ImGui::ColorButton("##pal", col, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoBorder,
+                           ImVec2(16.0f, 16.0f));
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Color %d = $%03X", i, unsigned(sh.palette[i]) & 0xFFFu);
+        ImGui::PopID();
+    }
+
+    if (w <= 0) { ImGui::TextDisabled("Width too small for %d planes.", S.planes); ImGui::End(); return; }
+    if (S.tex.tex == 0) S.tex.init();
+    S.tex.update(S.argb.data(), w, S.height);
+
+    // --- Image : enfant défilant (barres dès que le zoom dépasse la fenêtre) ----
+    // Hors suivi, la molette déplace l'ADRESSE : l'enfant ne doit pas la consommer.
+    ImGui::BeginChild("##bitmap", ImVec2(0, 0), true,
+                      ImGuiWindowFlags_HorizontalScrollbar
+                      | (S.follow ? 0 : ImGuiWindowFlags_NoScrollWithMouse));
+    const ImVec2 origin = ImGui::GetCursorScreenPos();
+    ImGui::Image((ImTextureID)(intptr_t)S.tex.tex, ImVec2(float(w * S.zoom), float(S.height * S.zoom)));
+    if (ImGui::IsItemHovered()) {
+        const ImVec2 m = ImGui::GetMousePos();
+        const int x = int((m.x - origin.x) / float(S.zoom));
+        const int y = int((m.y - origin.y) / float(S.zoom));
+        if (x >= 0 && x < w && y >= 0 && y < S.height) {
+            const std::size_t off = std::size_t(y) * std::size_t(S.stride)
+                                  + std::size_t((x >> 4) * 2 * S.planes);
+            const unsigned group = (unsigned(S.addr) + unsigned(off)) & 0xFFFFFFu;
+            if (S.valid[off])
+                ImGui::SetTooltip("x %d  y %d\nword group $%06X\ncolor %d", x, y, group,
+                                  neost::bitmapPixelIndex(S.bytes.data() + std::size_t(y) * std::size_t(S.stride),
+                                                          S.planes, x));
+            else
+                ImGui::SetTooltip("x %d  y %d\n$%06X: unmapped", x, y, group);
+        }
+        // Molette : 8 lignes, une page avec Maj. Seulement hors suivi de l'écran.
+        const float wheel = ImGui::GetIO().MouseWheel;
+        if (!S.follow && wheel != 0.0f) {
+            const int step = ImGui::GetIO().KeyShift ? page : 8 * S.stride;
+            S.addr = std::clamp(S.addr - int(wheel) * step, 0, 0xFFFFFF);
         }
     }
     ImGui::EndChild();

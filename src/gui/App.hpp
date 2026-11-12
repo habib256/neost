@@ -246,6 +246,7 @@ struct App {
 
     // ─── Fenêtres masquables ─────────────────────────────────────────────────
     bool showHex = true, showCpu = true;   // fenêtres d'inspection
+    bool showBitmap = false;               // explorateur de bitmaps (RAM en plans ST)
     bool showJoy = false;                  // fenêtre joystick (visualisation live)
     bool showKbd = false;                  // fenêtre clavier virtuel (photo pic/, touches cliquables)
     bool showCfg = true;                   // fenêtre Configuration
