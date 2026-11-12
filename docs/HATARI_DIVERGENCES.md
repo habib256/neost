@@ -609,6 +609,12 @@ cold/warm reset : **conformes** (l'ancien doc `SOUND_HATARI_DIFF.md`, périmé, 
   handles du TOS (0..80, [C] EmuTOS `bdos/fs.h`) ; NeoST commence au-dessus.
 - **Pexec 0 sous TOS < 1.04** : basepage et environnement donnés à l'enfant, comme le chargeur
   du TOS ; la cartouche rend l'environnement si le chargement échoue.
+- **Date d'un fichier créé** (2026-11-12) : celle que tient le GEMDOS de la ROM — ses deux
+  mots de date et d'heure en RAM, retrouvés par ses routines Tgetdate/Tgettime ([C]
+  désassemblage, TOS 1.00 à 2.06 et EmuTOS, `GemdosHd::romGemdosClock`) —, donc la date de
+  la ROM sur un ST sans horloge, l'année « 2054 » de TOS 2.06 sur ST, les Tsetdate/Tsettime
+  de l'invité. Hatari laisse l'horloge de l'hôte. Banc `tools/run_gemdos_clock.py` (même
+  run : C: hôte contre A: disquette, 16 configurations ST/Mega/STE/Mega STE).
 
 ### GEMDOS HD — sauvegardes (2026-10-19)
 
