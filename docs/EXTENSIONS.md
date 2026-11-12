@@ -2,7 +2,7 @@
 
 > **Statut commun.** Toutes **inactives par défaut**, sans effet sur les étalons (aucune
 > n'ouvre de socket depuis `tools/run_all.py`), et consignées comme divergences délibérées
-> dans `docs/HATARI_DIVERGENCES.md` § Extensions — Hatari n'a aucun équivalent. Le cœur
+> dans `docs/HATARI_DIVERGENCES.md` § 16, Extensions — Hatari n'a aucun équivalent. Le cœur
 > (`neost_core`) ne fait que *signaler* ; l'I/O réelle vit dans `neost_net` (frontends).
 >
 > Toutes reproduisent du matériel que les Atariens ont réellement branché :

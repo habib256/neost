@@ -15,7 +15,7 @@
   "NEOST_IPL_BATCH": "suspend l'élection de l'IRQ MFP pendant un LOT de dispatch et la tranche une fois à la fin, avant relecture de l'IPL (défaut ON, A42) — c'est l'ordre d'Hatari (CycInt_Process, puis MFP_UpdateIRQ_All, puis IPL). Sans elle, chaque callback élit pour son compte et deux timers échus dans le même lot sont élus séparément. =0 restaure l'élection par callback.",
   "NEOST_IACK": "int-ack vectorisé (défaut ON).",
   "NEOST_IACK_VIDEO": "durée d'IACK des IRQ vidéo (défaut 14 cyc).",
-  "NEOST_IACK_MFP": "durée d'IACK MFP (défaut 16 cyc, mesuré à l'oracle sur Super Hang-On).",
+  "NEOST_IACK_MFP": "durée d'IACK MFP (défaut 12 cyc depuis le 2026-10-22 ; le 16 du 2026-08-06 compensait le défaut STOP+4 de Moira, cf. docs/HATARI_DIVERGENCES.md § 12).",
   "NEOST_IACK_SYNC": "resynchronisation d'horloge à l'IACK (défaut ON).",
   "NEOST_IACK_LEAD": "avance de l'IACK (défaut 14).",
   "NEOST_IACK_AT": "IACK daté au cycle (défaut ON).",
