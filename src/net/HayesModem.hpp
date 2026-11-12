@@ -20,8 +20,9 @@
 //  la première trame qui suit l'issue — date hôte, comme tout le trafic réel, hors
 //  du contrat de déterminisme.
 //
-//  Échappement « +++ » : trois '+' consécutifs suffisent (sans garde de
-//  silence d'une seconde — simplification v1 documentée).
+//  Échappement « +++ » : avec temps de garde (depuis le 2026-11-12) — silence,
+//  trois '+', silence, comptés en trames (kGuardPolls appels de poll()). Un « +++ »
+//  au milieu d'un transfert binaire reste donc une donnée.
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -65,6 +66,12 @@ private:
     bool dtrOn_ = false;        // dernier DTR vu (vrai = assertée)
     bool dtrKnown_ = false;     // aucun front tant que le premier état n'est pas connu
     int  plusCount_ = 0;
+    // Temps de garde de « +++ » : 50 appels de poll() (une trame chacun) = S12 par
+    // défaut (50 × 1/50 s) à 50 Hz. Le modem part « au silence » : un « +++ » tapé
+    // avant toute trame est encadré de silence.
+    static constexpr int kGuardPolls = 50;
+    int  idlePolls_ = kGuardPolls;   // trames écoulées depuis le dernier octet émis (saturé)
+    bool escArmed_ = false;          // trois '+' vus, en attente du silence final
     std::string cmd_;           // ligne AT en cours d'accumulation
 
     void out(uint8_t b);
@@ -73,4 +80,5 @@ private:
     void dial(const std::string& target);
     void cancelDial();
     void resetProfile();
+    void flushPlus();
 };

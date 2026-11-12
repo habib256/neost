@@ -899,6 +899,28 @@ static void testCartridgeKey() {
         k2.cartRead(0xFB00B4, true);
         checkBool("auto : A7..A1 ≠ 0 → clé noire", k2.wantsUds(), true);
     }
+    {   // Chargement d'état (2026-11-12) : le modèle de clé est de la CONFIG. Le flux
+        // l'écrasait (m & 7) — config de la session perdue, et valeur hors de
+        // l'énumération sur un flux forgé. Il doit être refusé, pas adopté.
+        std::vector<uint8_t> buf;
+        { CartridgeKey k; k.setModel(CartridgeKey::Model::Cubase3);
+          StateArchive s = StateArchive::saver(buf); k.serialize(s); }
+        CartridgeKey same; same.setModel(CartridgeKey::Model::Cubase3);
+        { StateArchive l = StateArchive::loader(buf.data(), buf.size()); same.serialize(l);
+          checkBool("état clé : même modèle → accepté", l.ok() && same.model() == CartridgeKey::Model::Cubase3, true); }
+        CartridgeKey other; other.setModel(CartridgeKey::Model::Cubase2);
+        { StateArchive l = StateArchive::loader(buf.data(), buf.size()); other.serialize(l);
+          checkBool("état clé : autre modèle → refusé, config intacte",
+                    !l.ok() && other.model() == CartridgeKey::Model::Cubase2, true); }
+        std::vector<uint8_t> forged = buf; forged[0] = 7;      // octet du modèle
+        CartridgeKey f; f.setModel(CartridgeKey::Model::Cubase3);
+        { StateArchive l = StateArchive::loader(forged.data(), forged.size()); f.serialize(l);
+          checkBool("état clé : modèle forgé (7) → refusé", !l.ok() && f.model() == CartridgeKey::Model::Cubase3, true); }
+        std::vector<uint8_t> badChosen = buf; badChosen[1] = 5;  // octet de la variante
+        CartridgeKey g; g.setModel(CartridgeKey::Model::Cubase3);
+        { StateArchive l = StateArchive::loader(badChosen.data(), badChosen.size()); g.serialize(l);
+          checkBool("état clé : variante forgée (5) → refusée", !l.ok(), true); }
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -972,6 +994,20 @@ static void testPortDevices() {
         PD n; n.plug(PD::Port::Rs232, PD::Device::Bat2); n.pressButton(mfp);
         checkBool("bouton : sans effet sans bouton branché", !n.buttonPressed(), true);
         checkBool("reset : relâche le bouton, garde le périphérique", [&] { d.pressButton(mfp); d.reset(); return !d.buttonPressed() && d.hasButton(); }(), true);
+    }
+    {   // Chargement d'état (2026-11-12) : les périphériques branchés sont de la config,
+        // déjà comparés par l'en-tête ; un flux qui en nomme d'autres est refusé au lieu
+        // d'écraser la session.
+        std::vector<uint8_t> buf;
+        { PD d; d.plug(PD::Port::CartButton, PD::Device::Multiface);
+          StateArchive s = StateArchive::saver(buf); d.serialize(s); }
+        PD same; same.plug(PD::Port::CartButton, PD::Device::Multiface);
+        { StateArchive l = StateArchive::loader(buf.data(), buf.size()); same.serialize(l);
+          checkBool("état ports : mêmes périphériques → accepté", l.ok(), true); }
+        PD other; other.plug(PD::Port::CartButton, PD::Device::Urc);
+        { StateArchive l = StateArchive::loader(buf.data(), buf.size()); other.serialize(l);
+          checkBool("état ports : autre périphérique → refusé, config intacte",
+                    !l.ok() && other.at(PD::Port::CartButton) == PD::Device::Urc, true); }
     }
 }
 

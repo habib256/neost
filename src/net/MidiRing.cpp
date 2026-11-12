@@ -71,12 +71,22 @@ bool MidiRing::ingest(const uint8_t* d, int n, const std::string& source, int64_
         haveSrc_ = true;
         src_ = source;
         srcSession_ = session;
+        haveOldSession_ = false;
         lastSeq_ = seq - 1;
         rtrace("upstream latched", std::to_string(session));
     } else if (source != src_) {
         ++stats_.foreign;
         return false;
+    } else if (haveOldSession_ && session == oldSession_) {
+        // Datagramme tardif de la session que le pair vient de quitter (réordonné sur
+        // le réseau) : il rebasculait srcSession_ en arrière, remettait lastSeq_ à
+        // zéro, et la session courante repassait ensuite pour « nouvelle » — doublons
+        // et octets d'une ancienne session réinjectés (2026-11-12).
+        ++stats_.duplicate;
+        return false;
     } else if (session != srcSession_) {        // même source, pair redémarré
+        oldSession_ = srcSession_;
+        haveOldSession_ = true;
         srcSession_ = session;
         lastSeq_ = seq - 1;
         rtrace("upstream session changed", std::to_string(session));

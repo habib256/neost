@@ -48,7 +48,12 @@ annulent donc par leur premier octet. **DTR** (PSG port A bit 4, actif bas) est 
 `&D2` (défaut) raccroche, `&D3` réinitialise. Le **reset du ST** remet le port A du PSG au
 repos : DTR retombe et un appel en cours est raccroché sous `&D2`, comme sur le fer — le
 modem lui-même n'a pas de ligne de reset. Un logiciel qui ne touche jamais à DTR garde un
-modem utilisable. Les lignes `AT` enchaînent plusieurs commandes (`AT&FE0&D2`) ; `Sn?`
+modem utilisable. **Échappement `+++` avec temps de garde** (2026-11-12) : silence, trois
+`+`, silence, chacun de 50 trames émulées (S12 par défaut, 1 s à 50 Hz, ~0,83 s à 60 Hz) ;
+`OK` arrive à la fin du silence final. Avant, trois `+` consécutifs suffisaient : tout
+`+++` d'un transfert binaire (ZMODEM, archive) avalait ses trois octets et passait en mode
+commande au milieu du flux. Les `+` d'un échappement avorté repartent comme données, dans
+l'ordre. Les lignes `AT` enchaînent plusieurs commandes (`AT&FE0&D2`) ; `Sn?`
 répond `000`. Grades : [E] pour le jeu Hayes et V.250 (aucun texte dans
 `extern/datasheets`), [F] pour le défaut `&D2`. Contrôle local : `tests/hayes_modem_logic.cpp`
 (cible `neost-modem-test`, palier `fast`, écouteur TCP sur 127.0.0.1).
@@ -81,7 +86,9 @@ fragmentation/réassemblage IPv4/IPv6 bornés, sondes TCP de fenêtre nulle et D
 A/AAAA/MX/TXT/PTR/SRV. IPv6 : préfixe `fd00:2::/64`, routeur `fe80::2`,
 passerelle `fd00:2::2`, DNS `fd00:2::3` (ND et SLAAC). Les DNS A passent par
 le résolveur hôte ; les autres types par les API DNS natives, sur des tâches
-bornées hors du thread d'émulation. Le réseau réel reste hors déterminisme
+bornées hors du thread d'émulation. Les réponses A sont gardées en cache 60 s (le TTL
+annoncé à l'invité), les échecs 30 s ; la mise sous tension de la carte vide ce cache
+(2026-11-12 — une adresse résolue ne périmait jamais). Le réseau réel reste hors déterminisme
 et hors save-state. Aucun autre ICMP n'est relayé sur Internet.
 
 Les options `--nat-restricted` et `--nat-allow-loopback` correspondent à
@@ -163,6 +170,26 @@ anneau de réception avec en-tête 4 octets, Remote DMA, filtrage MAC/broadcast)
 physique = interface `NetBackend` (boucle locale, ou NAT intégré avec `--nat`e ; pcap = point d'extension). **Exclusif d'une cartouche montée** (conflit de
 fenêtre $FA0000 — le montage est refusé avec message). Auto-test : `--enec-selftest`
 (palier `fast`, qui vérifie aussi la PROM et sa lecture seule).
+
+**Fidélité à la fiche DP8390D** (2026-11-12, [B] National, juillet 1995, § 10) :
+
+* **Un accès mot est un seul cycle /ROM.** L'effet de bord (écriture registre, avance du
+  Remote DMA, `TXP`) joue une fois ; la carte ne pilote que D8-D15, l'octet impair rend
+  `$FF`. Avant, chaque octet rejouait l'accès : un `move.w` au port données consommait
+  deux octets, un `move.w` de `CR=$26` émettait la trame deux fois.
+* **Lectures de la page 0** : `TSR` (PTX après émission), `NCR` = 0, `RSR` (PRX, PHY pour
+  broadcast/multicast, MPA, DIS en mode moniteur), compteurs `CNTR0-2` effacés à la
+  lecture. Ces adresses rendaient `TBCR0` et `RCR/TCR/DCR/IMR`.
+* **Pages 2 et 3** : la page 2 relit `PSTART/PSTOP/TPSR/RCR/TCR/DCR/IMR` ; ses écritures et
+  toute la page 3 (configuration RTL8019AS) sont ignorées. Elles tombaient dans la page 0
+  (`CR=$A2` puis registre 3 écrivait `BNRY`).
+* **Réception** : rien n'entre carte stoppée (`STP`, état de mise sous tension) ; `TXP`
+  sous `STP` n'émet rien. `RCR` est honoré : broadcast si `AB`, multicast si `AM` et que le
+  hachage CRC désigne un bit posé des `MAR`, adresse physique si `PRO` ou égale aux `PAR` ;
+  mode moniteur (`MON`) : rien n'est rangé, `CNTR2` compte. Un pilote doit donc démarrer
+  la carte et poser `AB` pour recevoir ARP et DHCP, comme sur le fer.
+* Non modélisés ([F]) : `CLDA`, pointeurs de la page 2, FIFO, paquets courts (`AR`) et
+  erronés (`SEP`), identifiants RTL8019AS `$0A/$0B` (lus 0 faute de la fiche Realtek).
 
 **PROM d'adresse station** (depuis le 2026-10-20) : 32 octets visibles à RSAR=0 par Remote
 DMA. La MAC y est doublée (octets 0-11) et la signature `WW` ($57) occupe les octets
@@ -369,7 +396,8 @@ l'ouverture), numéro de séquence (u32, +1 par datagramme), puis 1 à 512 octet
 récepteur se verrouille sur la première source valide (adresse + port) et ignore les
 autres tant qu'elle parle (relève après 5 s de silence) ; il jette doublons et
 datagrammes en retard, compte les trous, et se resynchronise quand la session de sa
-source change (pair relancé). L'ancien format — un octet brut par datagramme, sans
+source change (pair relancé) ; un datagramme tardif de la session qu'il vient de quitter
+est jeté comme doublon au lieu de la rétablir (2026-11-12). L'ancien format — un octet brut par datagramme, sans
 en-tête, jamais documenté comme protocole — est **refusé** avec un avertissement : les
 deux bouts d'un anneau doivent être à jour. Un datagramme hors ordre est perdu, pas
 recousu : un câble MIDI ne réordonne rien.

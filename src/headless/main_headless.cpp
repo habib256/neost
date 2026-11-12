@@ -454,6 +454,86 @@ int enecSelfTest(Machine& machine) {
     for (uint8_t b : wrap) wrapOk = wrapOk && rd(0x10) == b;
     check(wrapOk, "remote DMA wraps PSTOP -> PSTART");
 
+    // --- 7. Un accès MOT n'est qu'UN cycle /ROM (2026-11-12) -------------------
+    // Chaque octet rejouait l'effet de bord : un move.w au port données mangeait
+    // 2 octets de Remote DMA, un move.w de CR=$26 émettait la trame deux fois.
+    // L'octet impair rend $FF (D8-D15 seuls pilotés, cf. Ne2000::cartRead).
+    struct CountLoop final : NetBackend {
+        int sent = 0;
+        std::deque<std::vector<uint8_t>> q;
+        const char* name() const override { return "count"; }
+        void send(const uint8_t* f, int n) override { ++sent; q.emplace_back(f, f + n); }
+        bool recv(std::vector<uint8_t>& o) override {
+            if (q.empty()) return false;
+            o = std::move(q.front()); q.pop_front(); return true;
+        }
+    } cnt;
+    machine.ne2000.setBackend(&cnt);
+    wr(0x08, 0); wr(0x09, 0); wr(0x0A, 4); wr(0x0B, 0);
+    wr(0x00, 0x0A);                                   // Remote Read de la PROM
+    const uint16_t w = bus.read16(Ne2000::READ_BASE + 0x10u * 512u);
+    check(w == uint16_t((Ne2000::kDefaultMac[0] << 8) | 0xFF) && rd(0x08) == 1,
+          "word read of data port = 1 byte");
+    wr(0x04, kTxPage); wr(0x05, uint8_t(sizeof frame)); wr(0x06, 0);
+    (void)bus.read16(Ne2000::WRITE_BASE + 0x26u * 2u);   // move.w : CR <- $26 (TXP)
+    check(cnt.sent == 1, "word write of CR=TXP sends once");
+
+    // --- 8. Registres d'état de la page 0 ([B] DP8390D p. 17, 24, 26, 29) ------
+    // TSR rendait TBCR0 ($20 = FU pour 32 octets), $0C-$0F rendaient RCR/TCR/DCR/IMR.
+    check(rd(0x04) == 0x01 && rd(0x05) == 0, "TSR = PTX, NCR = 0 after TX");
+    wr(0x07, 0xFF);
+    machine.ne2000.poll();                            // la trame broadcast revient
+    check(rd(0x0C) == 0x21, "RSR = PRX|PHY (broadcast)");
+    check(rd(0x0D) == 0 && rd(0x0E) == 0 && rd(0x0F) == 0, "tally counters read 0");
+
+    // --- 9. Pages 2 et 3 n'écrivent plus dans la page 0 -----------------------
+    const uint8_t bnry0 = rd(0x03);
+    wr(0x00, 0xA2);                                   // page 2
+    wr(0x03, 0x77);                                   // Remote Next Packet Pointer
+    const bool p2read = rd(0x01) == kRxStart && rd(0x02) == kRxStop && rd(0x0C) == 0x04;
+    wr(0x00, 0xE2);                                   // page 3
+    wr(0x03, 0x78);
+    wr(0x00, 0x22);                                   // retour page 0
+    check(p2read && rd(0x03) == bnry0, "page 2/3 writes leave BNRY, page 2 reads config");
+
+    // --- 10. Carte stoppée : ni réception ni émission ([B] CR p. 19) ----------
+    uint8_t bc[60] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1, 2, 3, 4, 5, 6, 0x08, 0x06};
+    wr(0x00, 0x21); wr(0x07, 0xFF);
+    cnt.q.clear(); cnt.send(bc, sizeof bc); cnt.sent = 0;
+    machine.ne2000.poll();
+    wr(0x00, 0x25);                                   // TXP sous STP
+    check(!(rd(0x07) & 0x03) && cnt.sent == 0, "stopped NIC: no RX, no TX");
+
+    // --- 11. Filtres RCR : AB, AM + hachage MAR, MON ([B] RCR p. 25) ----------
+    auto rxOne = [&](const uint8_t* f) {
+        wr(0x07, 0xFF);
+        cnt.send(f, 60); machine.ne2000.poll();
+        return (rd(0x07) & 0x01) != 0;
+    };
+    wr(0x00, 0x22); wr(0x0C, 0x00);                   // started, RCR = 0
+    const bool abOff = !rxOne(bc);
+    wr(0x0C, 0x04);
+    const bool abOn = rxOne(bc);
+    check(abOff && abOn, "RCR.AB gates broadcast");
+    uint8_t mc[60] = {0x01, 0x00, 0x5E, 0x00, 0x00, 0x01, 1, 2, 3, 4, 5, 6, 0x08, 0x00};
+    wr(0x0C, 0x08);                                   // AM, MAR à 0 (reset)
+    const bool mcHashMiss = !rxOne(mc);
+    wr(0x00, 0x62);
+    for (uint8_t r = 0x08; r <= 0x0F; ++r) wr(r, 0xFF);
+    wr(0x00, 0x22);
+    const bool mcHashHit = rxOne(mc);
+    wr(0x0C, 0x00);
+    const bool amOff = !rxOne(mc);
+    check(mcHashMiss && mcHashHit && amOff, "RCR.AM + MAR hash gate multicast");
+    wr(0x0C, 0x24);                                   // MON | AB
+    const bool monNoBuf = !rxOne(bc);
+    const uint8_t rsrMon = rd(0x0C);
+    const uint8_t c2a = rd(0x0F), c2b = rd(0x0F);
+    check(monNoBuf && (rsrMon & 0x50) == 0x50 && c2a == 1 && c2b == 0,
+          "monitor mode: not buffered, CNTR2 counts");
+    wr(0x0C, 0x04);
+    machine.ne2000.setBackend(nullptr);
+
     std::fprintf(stderr, "[enec-selftest] %d passed, %d failed\n", passed, failed);
     return failed == 0 ? 0 : 1;
 }

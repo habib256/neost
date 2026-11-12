@@ -90,6 +90,13 @@ public:
     /// the host network was still coming up: unresolvable until a cold boot.
     static constexpr std::chrono::seconds kFailureTtl{ 30 };
     void setFailureTtl(std::chrono::steady_clock::duration ttl) { failureTtl_ = ttl; }
+    /// How long a RESOLVED address is trusted. NeoST: it never expired, while
+    /// the virtual DNS tells the guest to re-ask after 60 s (NatDns kTtlSeconds):
+    /// the re-query got the first answer for the whole session, so a host whose
+    /// address moved (CDN rotation, network change) stayed unreachable until a
+    /// cold boot. Keep this equal to the TTL the proxy announces.
+    static constexpr std::chrono::seconds kPositiveTtl{ 60 };
+    void setPositiveTtl(std::chrono::steady_clock::duration ttl) { positiveTtl_ = ttl; }
 
     /// New lookups per second, as a token bucket.
     ///
@@ -146,6 +153,9 @@ private:
     LookupFn                        lookup_;
     std::map<std::string, CacheEntry> cache_;
     std::chrono::steady_clock::duration failureTtl_ = kFailureTtl;
+    std::chrono::steady_clock::duration positiveTtl_ = kPositiveTtl;
+    /// Still within its lifetime (positive or negative).
+    bool fresh(const CacheEntry& e) const;
     std::shared_ptr<Mailbox>        mailbox_ = std::make_shared<Mailbox>();
 
     /// Token bucket. CPU thread only, like the cache — resolve() is called
