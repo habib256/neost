@@ -8,8 +8,9 @@
 #  puis depuis un dossier --gemdos (NeoST intercepte). La différence des journaux est
 #  l'écart. Trois programmes :
 #    T.PRG  fichiers, dossiers, DTA, Fdatime, attributs, Fforce (par processus, Fclose
-#           du handle sous-jacent), Pexec (héritage du dossier courant, figé à la
-#           création par Pexec 3/4, enfant qui change de lecteur, Ptermres), Fdelete
+#           du handle sous-jacent, handle du TOS fermé sous redirection), Pexec
+#           (héritage du dossier courant, figé à la création par Pexec 3/4, enfant
+#           qui change de lecteur, Ptermres), Fdelete
 #           d'un fichier ouvert par soi ou par un autre, Dsetpath avec un joker ;
 #    R.PRG  « X:NOM » et « X: » relatifs au dossier courant de X, Pexec refusé ;
 #    H.PRG  noms hôtes longs (dossier seul : une disquette n'en a pas) — affiché.

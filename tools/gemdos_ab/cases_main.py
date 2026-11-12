@@ -17,7 +17,7 @@ def mk_main():
                  ('noall', 'NOFILE.*'), ('nodirall', 'NODIR\\*.*'), ('tprg', 'T.PRG'),
                  ('noprg', 'NOFILE.PRG'), ('nodirprg', 'NODIR\\X.PRG'), ('out', 'OUT.TXT'),
                  ('digits', '0123456789'), ('abc', 'abc'), ('data4', 'data'), ('hello', 'hello'),
-                 ('xyz', 'xyz'), ('empty', ''), ('dbsub', '\\SUBD\\'), ('g1', 'G1.TXT'), ('g2', 'G2.TXT'), ('g3', 'G3.TXT')]:
+                 ('xyz', 'xyz'), ('empty', ''), ('dbsub', '\\SUBD\\'), ('g1', 'G1.TXT'), ('g2', 'G2.TXT'), ('g3', 'G3.TXT'), ('out4', 'OUT4.TXT')]:
         d.s(n, s)
     d.s('cmdP', b'\x01P'); d.s('cmdD', b'\x01D'); d.s('cmdQ', b'\x01Q'); d.s('cmdI', b'\x01I')
     d.s('btprg', '\\T.PRG'); d.s('h1', 'H1.TXT')
@@ -209,6 +209,20 @@ def mk_main():
     t(0x11A, 0x3D, [A('out3'), W(0)], save=11)
     t(0x11B, 0x3F, [SW(11), L(16), A('buf')], dump=('a', 'buf', 0, 8))
     t(0x11C, 0x3E, [SW(11)])
+    # Fforce(1, handle du TOS jamais ouvert) sous redirection : le TOS refuse (EIHNDL),
+    # la sortie reste dans le fichier — la redirection hôte ne doit pas tomber non plus
+    t(0x130, 0x3C, [A('out4'), W(0)], save=11)
+    t(0x131, 0x45, [W(1)], save=12)                            # Fdup(1)
+    t(0x132, 0x46, [W(1), SW(11)])
+    t(0x133, 0x46, [W(1), W(40)])                              # handle 40 : fermé
+    t(0x134, 0x40, [W(1), L(3), A('abc')])
+    t(0x135, 0x46, [W(1), SW(12)])                             # retour à l'écran : accepté
+    t(0x136, 0x40, [W(1), L(3), A('xyz')])
+    t(0x137, 0x3E, [SW(12)])
+    t(0x138, 0x3E, [SW(11)])
+    t(0x139, 0x3D, [A('out4'), W(0)], save=11)
+    t(0x13A, 0x3F, [SW(11), L(16), A('buf')], dump=('a', 'buf', 0, 8))
+    t(0x13B, 0x3E, [SW(11)])
     # Héritage figé à la création : Pexec 3, Dsetpath du parent, puis Pexec 4
     t(0x120, 0x3B, [A('back')])
     t(0x121, 0x4B, [W(3), A('tprg'), A('cmdJ'), L(0)], save=13)

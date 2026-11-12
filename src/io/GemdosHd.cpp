@@ -241,6 +241,40 @@ static bool hostFileReadOnly(const std::string& host) {
     return (convertAttribute(st.st_mode, host.c_str()) & FA_READONLY) != 0;
 }
 
+// Date du dossier qui CONTIENT une entrée que l'invité crée, détruit ou renomme. Sur la
+// FAT, la date d'un sous-dossier est celle de SON entrée dans le dossier parent, posée par
+// Dcreate ; ajouter, retirer ou renommer une entrée DANS ce sous-dossier n'écrit que ses
+// propres secteurs, jamais l'entrée qui le décrit. [C] EmuTOS fsdir.c xmkdir (date posée
+// une fois, à la création) et fsopnclo.c ixcreat (seule la nouvelle entrée est écrite)
+// @ 5679730f ; TOS 1.00 à 2.06 et EmuTOS exécutés (tools/run_gemdos_clock.py : Dcreate,
+// changement d'heure, Fcreate dedans, la date du dossier sur A: ne bouge pas). L'hôte,
+// lui, met le dossier à son heure à chaque entrée : on la rétablit en sortie d'appel.
+// Hors service avec l'heure de l'hôte (hostTime_, convention d'Hatari).
+class ParentDirTime {
+public:
+    ParentDirTime(const std::string& entry, bool on) {
+        if (!on) return;
+        std::string e = entry;
+        while (e.size() > 1 && (e.back() == '/' || e.back() == '\\')) e.pop_back();
+        dir_ = std::filesystem::path(e).parent_path();
+        std::error_code ec;
+        if (!dir_.empty()) time_ = std::filesystem::last_write_time(dir_, ec);
+        ok_ = !dir_.empty() && !ec;
+    }
+    ~ParentDirTime() {
+        if (!ok_) return;
+        std::error_code ec;
+        const auto now = std::filesystem::last_write_time(dir_, ec);
+        if (!ec && now != time_) std::filesystem::last_write_time(dir_, time_, ec);
+    }
+    ParentDirTime(const ParentDirTime&) = delete;
+    ParentDirTime& operator=(const ParentDirTime&) = delete;
+private:
+    std::filesystem::path dir_;
+    std::filesystem::file_time_type time_{};
+    bool ok_ = false;
+};
+
 // errno → code d'erreur GEMDOS (errno2gemdos). etype: false=fichier, true=chemin.
 uint32_t errno2gemdos(int error, bool pathType) {
     switch (error) {
@@ -1587,7 +1621,20 @@ bool GemdosHd::gemMkDir(uint32_t p) {
     if (drive == -1) return false;
     if (writeProtect_) { setD0(cpu_, GEMDOS_EWRPRO); return true; }
     std::string host; createHostFileName(drive, name, host);
-    if (mkdir(host.c_str(), 0755) == 0) setD0(cpu_, GEMDOS_EOK);
+    const ParentDirTime keep(host, !hostTime_);
+    if (mkdir(host.c_str(), 0755) == 0) {
+        // Date du dossier créé : l'heure GEMDOS de la machine émulée, comme un Fcreate
+        // (cf. gemCreate, emulatedNow) — l'hôte posait la sienne. [C] EmuTOS fsdir.c
+        // xmkdir @ 5679730f (entrée datée de current_time/current_date) ; TOS 1.00 à
+        // 2.06 et EmuTOS exécutés (tools/run_gemdos_clock.py, Dcreate sur A: et C:).
+        // Elle tient ensuite : une entrée créée dedans ne la change pas (ParentDirTime).
+        time_t created;
+        if (!hostTime_ && emulatedNow(created)) {
+            struct utimbuf tb; tb.actime = created; tb.modtime = created;
+            utime(host.c_str(), &tb);
+        }
+        setD0(cpu_, GEMDOS_EOK);
+    }
     else setD0(cpu_, errno2gemdos(errno, true));
     return true;
 }
@@ -1599,6 +1646,7 @@ bool GemdosHd::gemRmDir(uint32_t p) {
     if (drive == -1) return false;
     if (writeProtect_) { setD0(cpu_, GEMDOS_EWRPRO); return true; }
     std::string host; createHostFileName(drive, name, host);
+    const ParentDirTime keep(host, !hostTime_);
     if (rmdir(host.c_str()) == 0) setD0(cpu_, GEMDOS_EOK);
     else setD0(cpu_, errno2gemdos(errno, true));
     return true;
@@ -1668,6 +1716,7 @@ bool GemdosHd::gemCreate(uint32_t p) {
     std::string host; createHostFileName(drive, name, host);
     int idx = findFreeFileHandle();
     if (idx == -1) { setD0(cpu_, GEMDOS_ENHNDL); return true; }
+    const ParentDirTime keep(host, !hostTime_);
     // Fcreate d'un fichier existant le détruit d'abord (ixdel) : même règle que
     // Fdelete pour un fichier encore ouvert ([C] EmuTOS fsopnclo.c ixcreat @ 5679730f).
     // Un dossier ou un fichier en lecture seule est refusé avant, par fopen (EACCDN).
@@ -1932,6 +1981,7 @@ bool GemdosHd::gemFDelete(uint32_t p) {
     { struct stat st;
       if (stat(host.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) { setD0(cpu_, GEMDOS_EFILNF); return true; } }
     if (openByOther(host)) { setD0(cpu_, GEMDOS_EACCDN); return true; }
+    const ParentDirTime keep(host, !hostTime_);
 #if defined(_WIN32)
     markDeleted(host);                 // Windows ne détruit pas un fichier encore ouvert
     const bool gone = unlink(host.c_str()) == 0;
@@ -2020,7 +2070,9 @@ bool GemdosHd::gemFattrib(uint32_t p) {
     return true;
 }
 
-bool GemdosHd::gemForce(uint32_t p) {
+int GemdosHd::gemForce(uint32_t p) {
+    // L'appel que la cartouche relance pour la sonde (ci-dessous) va au TOS tel quel.
+    if ((callingPC_ & 0x00FFFFFF) == CART_RETRAP_RET) return false;
     // Mots SIGNÉS : un handle BIOS (CON = −1, AUX = −2, PRN = −3) est négatif.
     int std_ = (int16_t)readWord(p);
     int own = (int16_t)readWord(p + 2);
@@ -2040,12 +2092,43 @@ bool GemdosHd::gemForce(uint32_t p) {
         // à naître hérite de la nouvelle. [C] EmuTOS fshand.c ixforce, proc.c
         // init_pd_files @ 5679730f (p_uft par processus, recopié à la création) ; TOS
         // 1.04, 1.62, 2.06 et EmuTOS exécutés (banc A/B : Fforce(1, CON) dans un enfant).
-        if (forcedHandle(std_) >= 0) setForcedHandle(std_, -1);
-        return false;
+        if (forcedHandle(std_) < 0) return false;   // rien à défaire : le TOS seul
+        // ... mais seulement si le TOS ACCEPTE ce handle. [C] EmuTOS fshand.c ixforce
+        // @ 5679730f : un handle ≥ 6 que getofd ne connaît pas (fermé, jamais ouvert, hors
+        // table) rend EIHNDL AVANT d'écrire p_uft ; un négatif est rangé tel quel. Atari
+        // TOS a ses propres bornes (table de 40 ou 75 handles selon la version) : plutôt
+        // que de les modéliser par ROM, on lui pose la question. Même mécanisme que Pexec :
+        // l'appel est recopié sous la pile superviseur et la cartouche le relance (trap #1
+        // à $FA0038, servi par le TOS : cf. CART_RETRAP_RET) ; refusé (D0 < 0), elle rend
+        // la main avec l'erreur du TOS et la redirection hôte reste ; accepté (D0 = 0),
+        // elle exécute l'opcode 9 → forceAccepted, qui la défait. TOS 1.04, 2.06 et
+        // EmuTOS exécutés (banc A/B, Fforce(1, handle du TOS fermé) sous redirection).
+        const uint32_t a7 = reg(15) - 16;          // 16 octets : la cartouche fait lea 16(sp)
+        setAreg(7, a7);
+        flushCache();
+        writeWord(a7, 0x46);
+        writeWord(a7 + 2, readWord(p));            // l'ordre de l'appelant : le TOS juge
+        writeWord(a7 + 4, readWord(p + 2));
+        for (uint32_t o = 6; o < 16; o += 2) writeWord(a7 + o, 0);
+        savedPexecParams_ = FFORCE_PROBE | uint32_t(std_) << 16;
+        return -1;
     }
     setForcedHandle(std_, idx);
     setD0(cpu_, GEMDOS_EOK);
     return true;
+}
+
+// Le TOS a accepté le Fforce sondé par gemForce : le handle standard est désormais le
+// sien, la redirection hôte de CE processus tombe. D0 (= 0, celui du TOS) est rendu tel
+// quel à l'appelant (Z → rte).
+void GemdosHd::forceAccepted() {
+    const int std_ = int((savedPexecParams_ >> 16) & 0xFF);
+    savedPexecParams_ = 0;
+    if (forcedHandle(std_) >= 0) setForcedHandle(std_, -1);
+    uint16_t sr = getSR();
+    sr &= ~SR_OVERFLOW;
+    sr |= SR_ZERO;
+    setSR(sr);
 }
 
 bool GemdosHd::gemGetDir(uint32_t p) {
@@ -2294,6 +2377,7 @@ bool GemdosHd::gemRename(uint32_t p) {
         struct stat src {};
         const bool isDir = stat(oldHost.c_str(), &src) == 0 && S_ISDIR(src.st_mode);
         const uint8_t bits = isDir ? 0 : extraAttrOf(oldHost);   // avant que la source disparaisse
+        const ParentDirTime keepOld(oldHost, !hostTime_), keepNew(newHost, !hostTime_);
         if (rename(oldHost.c_str(), newHost.c_str()) == 0) {
             renameHostEntry(oldHost, newHost, bits, isDir);
             setD0(cpu_, GEMDOS_EOK);
@@ -2960,7 +3044,10 @@ int GemdosHd::trap() {
     case 0x41: finished = gemFDelete(params); break;
     case 0x42: finished = gemLSeek(params); break;
     case 0x43: finished = gemFattrib(params); break;
-    case 0x46: finished = gemForce(params); break;
+    case 0x46:
+        finished = gemForce(params);
+        if (finished == -1) { sr |= SR_OVERFLOW; finished = true; }   // sonde : cf. gemForce
+        break;
     case 0x47: finished = gemGetDir(params); break;
     case 0x4b:
         finished = gemPexec(params);
@@ -3035,7 +3122,13 @@ void GemdosHd::sysInit() {
 bool GemdosHd::handleOpcode(uint16_t opcode) {
     switch (opcode) {
     case 0x0008: trap(); break;           // GEMDOS  → dispatch (pose Z/V dans SR)
-    case 0x0009: pexecBpCreated(); break; // PEXEC   → charge+relocalise
+    case 0x0009:                          // PEXEC   → charge+relocalise
+        // … ou 2e phase d'une sonde Fforce acceptée par le TOS (cf. gemForce). La
+        // cartouche n'arrive ici qu'avec D0 ≥ 0 : une basepage pour Pexec 5/7, 0 pour
+        // Fforce — la sonde est vérifiée deux fois, par la marque et par D0.
+        if ((savedPexecParams_ & 0xFF000000u) == FFORCE_PROBE && reg(0) == 0) forceAccepted();
+        else pexecBpCreated();
+        break;
     case 0x000a: sysInit(); break;        // SYSINIT → hook + masque lecteurs
     default: return false;
     }
@@ -3398,6 +3491,76 @@ bool GemdosHd::sandboxSelfTest() {
         else { ++fail; std::fprintf(stderr,
                "  FAIL %-34s '%s' introuvable (rendu '%s')\n",
                "nom accentue NFD -> NFC", nfc.c_str(), got.c_str()); }
+    }
+
+    // --- Une garde PAR COUCHE (A39, 2026-11-12) -----------------------------------
+    // Les cas « inside » ci-dessus jugent la SORTIE de toute la chaîne : un « ..\X » que
+    // le parseur cesserait de rabattre serait encore tenu par la garde terminale (qui
+    // rend un chemin refusé, lui aussi sous la racine) — une couche pouvait donc régresser
+    // en silence derrière l'autre. Ici chaque couche est jugée SEULE, sur une entrée que
+    // seule elle doit tenir, et par une issue qui n'appartient qu'à elle :
+    //   1. normalisation « / » → « \ » et 2. parseur (« .. » rabattu tant que
+    //      sep >= minlen) : le nom est RAMENÉ à la racine (racine/X), jamais refusé ;
+    //   3. garde terminale clampToSandbox, appelée directement sur un chemin hôte BRUT
+    //      (ce que recopient les sorties anticipées du parseur) : « .. » lexical, dossier
+    //      frère au préfixe commun, lien sortant → REFUSÉ ;
+    //   4. lien pendant (realpath échoue, le préfixe passe) → REFUSÉ ;
+    //   5. dernier composant non résolu : un lien intérieur reste LUI-MÊME (Fdelete et
+    //      Frename agissent sur le lien, pas sur sa cible).
+    // Les liens (3 sortant, 4, 5) supposent create_symlink : sautés, et dits, là où
+    // l'hôte le refuse (Windows sans le privilège).
+    {
+        const std::string sep(1, PATHSEP);
+        const std::string refusedMark(300, '~');
+        auto refusedPath = [&](const std::string& h) { return h.find(refusedMark) != std::string::npos; };
+        auto layer = [&](const char* what, bool ok, const std::string& got) {
+            if (ok) ++pass;
+            else { ++fail; std::fprintf(stderr, "  FAIL couche %-38s -> %s\n", what, got.c_str()); }
+        };
+        auto pulled = [&](const char* what, const char* gemName) {   // couches 1 et 2
+            createHostFileName(2, gemName, host);
+            layer(what, !refusedPath(host) && physicalCanon(host) == rootCanon + "X", host);
+        };
+        auto guard = [&](const std::string& raw) {                   // couches 3 à 5
+            std::string o = raw;
+            clampToSandbox(emudrives_[0], "<selftest>", o);
+            return o;
+        };
+        pulled("2 parseur : ..\\..\\X ramene",            "..\\..\\X");
+        pulled("2 parseur : \\..\\X ramene",              "\\..\\X");
+        pulled("1 normalisation : ../../X ramene",        "../../X");
+        pulled("1 normalisation : C:/../X ramene",        "C:/../X");
+        // Sortie anticipée du parseur (composant inexistant) : le reste part BRUT vers
+        // la couche 3, qui doit refuser.
+        createHostFileName(2, "SUB\\NOPE\\..\\..\\..\\X", host);
+        layer("2→3 suffixe brut apres inexistant", refusedPath(host), host);
+
+        std::string g = guard(rootCanon + ".." + sep + "X");
+        layer("3 garde : racine/../X", refusedPath(g), g);
+        g = guard(rootCanon + "SUB" + sep + ".." + sep + ".." + sep + "X");
+        layer("3 garde : racine/SUB/../../X", refusedPath(g), g);
+        std::string sibling = rootCanon;
+        sibling.pop_back();                                          // sans séparateur final
+        g = guard(sibling + "EVIL" + sep + "X");
+        layer("3 garde : frere racineEVIL/X", refusedPath(g), g);
+        g = guard(rootCanon + "SUB" + sep + "FILE.TXT");
+        layer("3 garde : chemin legitime intact", g == rootCanon + "SUB" + sep + "FILE.TXT", g);
+
+        std::error_code lec;
+        stdfs::create_symlink(root.parent_path(), root / "OUT", lec);
+        if (!lec) stdfs::create_symlink(root.parent_path() / "neost-gemdos-selftest-absent", root / "DANGLE", lec);
+        if (!lec) stdfs::create_symlink(root / "SUB" / "FILE.TXT", root / "LNK", lec);
+        if (lec) {
+            std::fprintf(stderr, "  note: symlinks unavailable (%s), layers 3-5 link cases skipped\n",
+                         lec.message().c_str());
+        } else {
+            g = guard(rootCanon + "OUT" + sep + "X");
+            layer("3 garde : lien sortant OUT/X", refusedPath(g), g);
+            g = guard(rootCanon + "DANGLE");
+            layer("4 lien pendant", refusedPath(g), g);
+            g = guard(rootCanon + "LNK");
+            layer("5 lien interieur garde son nom", g == rootCanon + "LNK", g);
+        }
     }
 
     // --- Zones lisibles par un appel GEMDOS : RAM, ROM TOS et port cartouche -------
