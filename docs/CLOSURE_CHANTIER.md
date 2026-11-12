@@ -525,6 +525,14 @@ démarre une trame plus tôt ; la trame 6932 rend 0 px contre la même référen
 px, l'écart d'animation déjà noté aux recalages précédents). `frames` 6933 → 6932, référence
 inchangée ; `NEOST_STOP_PHASE=0` rend 0 px à 6933.
 
+**A/B** (`NEOST_STOP_PHASE=0` enregistré, défaut vérifié) : `cpu_swap_gate.py` — 39 scénarios
+sur 411 changent d'empreinte : les 33 étalons qui bootent EmuTOS (divergence dès la trame 170,
+le bureau d'EmuTOS attend en STOP), un parcours (`just_musix_ste`) et cinq titres de la
+collection en STE/Mega STE (Enchanted Land, Nitro, DHS Just Musix 2 ×2, DHS More or Less
+Zero) ; aucun en ST/TOS 1.04, aucune sonde Mega STE. Captures toutes les 250 trames de ces six
+scénarios : identiques à l'octet. Étalons 56/56 verts (dont `nocooper` recalé), parcours contre
+Hatari 27/27.
+
 **Recette** : `NEOST_SYNC_TRACE=1` (écritures `$FF820A`/`$FF8260` avec ligne et cycle) suffit
 à voir le décrochage sans capture ; côté Hatari `--trace video_sync,video_hbl` (≈ 1,2 Go pour
 1 900 trames : filtrer au fil de l'eau).
