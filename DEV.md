@@ -184,12 +184,18 @@ la trame suivante est due, et `neost_jspi_park` enchaîne jusqu'à 3 trames de p
 qu'elles sont déjà dues (`Module.neostParkBudget`, 4 par tour au plus). Une exception qui
 remonte d'une trame arrête la machine sans figer la page (`Module.neostHalted`, statut
 « Emulation stopped ») ; reset, ROM ou moniteur la relancent. Banc dans un vrai navigateur,
-hors paliers (Chrome et le build Emscripten requis) : `node tools/check_web_jspi.mjs`
-(`--only nominal,catchup,orders,fiber0,exception`, `CHROME=`, `NEOST_WASM_DIR=`). Il sert
-`wasm/` en local, pilote Chrome sans écran par CDP et instrumente la page par un script injecté
+hors paliers (un navigateur et le build Emscripten requis) : `node tools/check_web_jspi.mjs`
+(`--browser chrome|firefox`, `--only nominal,catchup,orders,fiber0,exception`, `CHROME=`,
+`FIREFOX=`, `NEOST_WASM_DIR=`). Il sert `wasm/` en local, pilote le navigateur sans écran
+(Chrome par CDP, Firefox par WebDriver BiDi, servi par Firefox lui-même : ni geckodriver
+ni Playwright) et instrumente la page par un script injecté
 (aucun crochet dans le code livré) : trames livrées pendant un blit HOG de 4 096 × 1 000 mots
 monté en disquette de boot, rAF bridé à 30 et 10 Hz, budget forcé à 0 pour comparer, reset,
-ROM et moniteur en plein blit, `?fiber=0`, exception injectée dans une trame garée.
+ROM et moniteur en plein blit, `?fiber=0`, exception injectée dans une trame garée. Les
+contrôles de CADENCE sur le rAF natif sont sautés (SKIP, pas FAIL) quand le navigateur tourne
+sous la fréquence de la machine avant le blit (témoin « before the blit … rAF turns/s ») ;
+le parcage, les ordres, l'exception et le rattrapage sur rAF bridé restent contrôlés. Safari
+n'est pas pilotable sans « Allow remote automation » coché par l'utilisateur.
 
 ## Le Bus
 
