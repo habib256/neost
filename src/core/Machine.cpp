@@ -351,6 +351,28 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::TIMER_B, [this] { onTimerB(); });
     gemdos.setPartitionCountProvider([this] { return fdc.acsiPartitionCount(); });
     gemdos.setFloppyProvider([this] { return fdc.inserted(0); });
+    // Heure GEMDOS d'un fichier créé sur le lecteur hôte : la puce d'horloge — la RTC d'un
+    // Mega, l'IKBD ailleurs. Format DOS (heure, date depuis 1980). Ce que chaque TOS en
+    // fait (ou n'en fait pas) : cf. GemdosHd::emulatedNow.
+    gemdos.setClockProvider([this](uint16_t& tw, uint16_t& dw) {
+        int y, mo, d, h, mi, s;
+        if (machineIsMega(bus.machine)) {
+            const Rtc::DateTime t = rtc.getDateTime();
+            y = t.year; mo = t.month; d = t.day; h = t.hour; mi = t.min; s = t.sec;   // année depuis 1980
+        } else {
+            uint8_t c[6];
+            ikbd.clockBcd(c);
+            auto dec = [](uint8_t v) { return (v >> 4) * 10 + (v & 15); };
+            const int yy = dec(c[0]);                     // 2 chiffres : 80..99 → 19xx
+            y = (yy >= 80 ? 1900 + yy : 2000 + yy) - 1980;
+            mo = dec(c[1]); d = dec(c[2]); h = dec(c[3]); mi = dec(c[4]); s = dec(c[5]);
+        }
+        if (y < 0 || y > 127 || mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59 || s > 59)
+            return false;
+        tw = uint16_t((s >> 1) | (mi << 5) | (h << 11));
+        dw = uint16_t(d | (mo << 5) | (y << 9));
+        return true;
+    });
     mfp.setTimerBEdgeSink([this](bool start) { retargetTimerB(start); });
     mfp.setTbiPulseSink([this](bool on) { onTbiPulseMode(on); });
     sched.setCallback(Scheduler::TBI_EDGE, [this] { onTbiEdge(); });

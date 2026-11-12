@@ -490,6 +490,11 @@ int appInit(App& A, int argc, char** argv) {
         }
         if (!ok) cfg.gemdos.clear();           // dossier invalide → on ne le mémorise pas
     }
+    // Protection en écriture (gemdos_ro=1, pas d'interface : clé de neost.cfg) : réglage
+    // du montage, posé même sans dossier pour suivre un montage ultérieur par le menu.
+    machine.gemdos.setWriteProtect(cfg.gemdosRo);
+    if (cfg.gemdosRo && !cfg.gemdos.empty())
+        std::fprintf(stderr, "[main] GEMDOS HD write-protected (gemdos_ro=1)\n");
     // Disque dur ACSI (image brute, cible 0) : le TOS lit la table de partitions et
     // monte C:/D:… Mémorisé (acsi=) et configurable via le menu ; NEOST_ACSI_IMG
     // prime (le temps de la séance). Cf. io/Acsi.hpp.

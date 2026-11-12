@@ -677,6 +677,7 @@ void App::applyConfig() {
                      ok ? "back to the configured folder" : "GEMDOS HD unmounted");
         A.cfgUiResync = true;
     }
+    machine.gemdos.setWriteProtect(cfg.gemdosRo);   // un profil peut aussi la changer
     if (cfg.acsi.empty())   machine.fdc.unmountAcsi();
     else {
         // Remonter aussi quand la config désigne une AUTRE image : le seul test

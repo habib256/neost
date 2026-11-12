@@ -893,6 +893,7 @@ static void testConfigParser() {
         Config a;
         a.rom = "roms/tos206fr.img"; a.disk = "disks/x.st"; a.diskb = "disks/y.st";
         a.cart = "carts/z.img";      a.gemdos = "/srv/gemdos"; a.acsi = "hd/c.img";
+        a.gemdosRo = true;
         a.machine = "megaste";       a.mem = "4m";  a.mono = true;  a.fpu = true;
         a.modem = true;              a.ethernec = true;
         a.netusbee = true;           a.slirp = true;
@@ -915,6 +916,7 @@ static void testConfigParser() {
 
         checkStr("aller-retour rom",      b.rom,     a.rom);
         checkStr("aller-retour gemdos",   b.gemdos,  a.gemdos);
+        checkBool("aller-retour gemdos_ro", b.gemdosRo == a.gemdosRo, true);
         checkStr("aller-retour machine",  b.machine, a.machine);
         checkStr("aller-retour mem",      b.mem,     a.mem);
         checkStr("aller-retour joymap",   b.joymap,  a.joymap);

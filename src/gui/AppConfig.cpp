@@ -209,6 +209,7 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("disk=", 0) == 0) c.disk = line.substr(5);
     else if (line.rfind("cart=", 0) == 0) c.cart = line.substr(5);
     else if (line.rfind("gemdos=", 0) == 0) c.gemdos = line.substr(7);
+    else if (line.rfind("gemdos_ro=", 0) == 0) c.gemdosRo = (line.substr(10) == "1");
     else if (line.rfind("acsi=", 0) == 0) c.acsi = line.substr(5);
     else if (line.rfind("modem=", 0) == 0) c.modem = (line.substr(6) == "1");
     else if (line.rfind("midi_loopback=", 0) == 0) c.midiLoopback = (line.substr(14) == "1");
@@ -403,7 +404,7 @@ static std::string oneLine(const std::string& v) {
 void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
     f << "rom=" << oneLine(w.rom) << "\ndisk=" << oneLine(w.disk) << "\ndiskb=" << oneLine(w.diskb)
       << "\ncart=" << oneLine(w.cart)
-      << "\ngemdos=" << oneLine(w.gemdos) << "\nacsi=" << oneLine(w.acsi)
+      << "\ngemdos=" << oneLine(w.gemdos) << "\ngemdos_ro=" << (w.gemdosRo ? 1 : 0) << "\nacsi=" << oneLine(w.acsi)
       << "\nmodem=" << (w.modem ? 1 : 0)
       << "\nmidi_loopback=" << (w.midiLoopback ? 1 : 0)
       << "\nmidi_out_gm=" << (w.midiOutGm ? 1 : 0)

@@ -77,6 +77,15 @@ public:
     // Liaison moteur (comme setPartitionCountProvider) : disquette dans A: ? Sert à
     // ouvrir la fenêtre du lecteur de boot dans l'INF par défaut (get_builtin_inf).
     void setFloppyProvider(std::function<bool()> provider) { floppyProvider_ = std::move(provider); }
+    // Liaison moteur : heure et date GEMDOS de l'horloge ÉMULÉE (format DOS : mot d'heure,
+    // mot de date), false si inconnue. Date d'un fichier que l'invité crée (cf. gemCreate).
+    void setClockProvider(std::function<bool(uint16_t& time, uint16_t& date)> provider) {
+        clockProvider_ = std::move(provider);
+    }
+    // Lecteur protégé en écriture (--gemdos-ro, clé gemdos_ro de neost.cfg) : toute
+    // écriture rend EWRPRO, rien n'est modifié sur l'hôte. Configuration, non sérialisée.
+    void setWriteProtect(bool on) { writeProtect_ = on; }
+    bool writeProtected() const { return writeProtect_; }
     uint32_t driveMask() const;
     int firstMappedDrive() const;
     // PUBLIQUES : l'empreinte de cartouche des save-states (Machine.cpp) doit masquer
@@ -214,6 +223,10 @@ private:
         uint32_t parent = 0, tbase = 0;
         std::string path[MAX_HARDDRIVES];   // vide = dossier racine du montage (fsCurrPath)
         int forced[FORCED_HANDLES] = {-1, -1, -1, -1, -1};   // index fileHandles_, -1 = au TOS
+        // Le processus a été vu en marche (appel GEMDOS, ou Pexec 0 qui le lance) : hors
+        // de la chaîne courante, il est mort. Un enfant de Pexec 3/5 pas encore lancé,
+        // lui, n'y est pas encore et garde son entrée (cf. reapDead).
+        bool ran = false;
     };
     std::vector<std::pair<uint32_t, ProcPaths>> procPaths_;   // (basepage, état)
     bool     romIsEmuTos();                 // ROM EmuTOS (en-tête « ETOS ») ?
@@ -230,6 +243,9 @@ private:
     void dropForcedTo(int idx);             // le fichier idx ferme : ses redirections tombent
     int  currentDrive();                    // p_curdrv du processus courant (repli : currentDrive_)
     void forgetProcess(uint32_t bp);
+    // Processus terminés sans Pterm vu par la cartouche (Ctrl-C, xterm interne du TOS) :
+    // leurs fichiers hôtes sont fermés et leur entrée oubliée (cf. le .cpp).
+    void reapDead();
 
     // ---- Attributs sans équivalent POSIX (caché, système, archive) -----------
     // « Lecture seule » vit dans les droits hôtes. Les trois autres bits sont posés
@@ -244,7 +260,9 @@ private:
     std::map<std::string, uint8_t> extraAttr_;   // ordonnée : sérialisation reproductible
     uint8_t extraAttrOf(const std::string& host) const;
     void    setExtraAttr(const std::string& host, uint8_t bits);
-    void    moveExtraAttr(const std::string& from, const std::string& to);
+    // Frename : les attributs, les handles ouverts et les entrées de la table suivent le
+    // fichier (ou le dossier) sous son nouveau nom.
+    void    renameHostEntry(const std::string& from, const std::string& to, uint8_t bits, bool isDir);
 
     // ---- Noms 8.3 sans collision --------------------------------------------
     // Deux noms hôtes tronqués au même 8.3 se masquaient. Dans un dossier, le
@@ -284,7 +302,8 @@ private:
     void initCurPaths();
     void clearAllFileHandles();
     void closeFileHandle(int i);
-    bool releaseOpenFile(const std::string& host);   // avant destruction (cf. .cpp)
+    bool openByOther(const std::string& host);       // ouvert par un autre processus ?
+    void markDeleted(const std::string& host);       // délie les handles du fichier détruit
     void unforceFileHandle(int i);
     void clearAllInternalDTAs();
     void clearInternalDTA(int idx);
@@ -341,6 +360,8 @@ private:
     std::function<int()> partitionCountProvider_; // liaison moteur, non sérialisée
     std::function<void(const std::string&)> consoleSink_; // idem
     std::function<bool()> floppyProvider_;               // idem
+    std::function<bool(uint16_t&, uint16_t&)> clockProvider_;   // idem
+    bool emulatedNow(time_t& t);                          // horloge émulée → time_t hôte
     // INF virtuel d'autostart (TosOverride d'inffile.c).
     std::string autoPrg_;                                 // « A:\EMAIL.PRG » ; vide = inactif
     FILE*       infFile_   = nullptr;                     // contenu virtuel (fichier temporaire)

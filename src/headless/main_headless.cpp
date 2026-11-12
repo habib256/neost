@@ -163,6 +163,8 @@ void usage() {
         "  --cart FILE       mount a cartridge ($FA0000): diagnostic Test Kit, etc.\n"
         "  --gemdos DIR      GEMDOS hard disk: map DIR onto C: (GEMDOS calls redirected\n"
         "                    to the host, Hatari-style; exclusive with --cart)\n"
+        "  --gemdos-ro       with --gemdos: write-protect the drive (writes return EWRPRO,\n"
+        "                    the host folder is left untouched; neost.cfg gemdos_ro=1)\n"
         "  --auto PRG        autostart PRG after boot (e.g. A:\\EMAIL.PRG; no drive = C:\\),\n"
         "                    through a virtual DESKTOP/NEWDESK/EMUDESK.INF, like Hatari --auto;\n"
         "                    TOS 1.04+ or EmuTOS; installs the GEMDOS system cartridge\n"
@@ -1423,6 +1425,7 @@ int main(int argc, char** argv) {
     std::string autoStart;                       // --auto PRG : démarrage automatique (INF virtuel)
     std::string printerPath;                     // --printer FILE : capture Centronics (port parallèle)
     std::string gemdosDir;                       // --gemdos DIR : disque dur GEMDOS (dossier hôte)
+    bool        gemdosRo = false;                // --gemdos-ro : lecteur GEMDOS protégé en écriture
     std::string acsiImg;                         // --acsi IMG : image disque dur ACSI (cible 0)
     bool        modemFlag      = false;          // --modem : modem Hayes sur l'USART
     bool        ethernecFlag   = false;          // --ethernec : NE2000 port cartouche
@@ -1626,6 +1629,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--disk-ro"))    diskRo    = true;
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--gemdos"))     gemdosDir = next(a);
+        else if (!std::strcmp(a, "--gemdos-ro"))  gemdosRo = true;
         else if (!std::strcmp(a, "--printer"))    printerPath = next(a);
         else if (!std::strcmp(a, "--console-log")) consoleLogPath = next(a);
         else if (!std::strcmp(a, "--auto"))       autoStart = next(a);
@@ -1937,6 +1941,7 @@ int main(int argc, char** argv) {
             if (!fc.diskb.empty())  diskBPath = resolve(fc.diskb);
             if (!fc.cart.empty())   cartPath  = resolve(fc.cart);
             if (!fc.gemdos.empty()) gemdosDir = resolve(fc.gemdos);
+            if (fc.gemdosRo)        gemdosRo = true;
             if (!fc.acsi.empty())   acsiImg   = resolve(fc.acsi);
             modemFlag    = fc.modem;
             ethernecFlag = fc.ethernec;
@@ -2131,9 +2136,13 @@ int main(int argc, char** argv) {
         if (!cartPath.empty())
             std::fprintf(stderr, "[headless] --cart ignored: incompatible with --gemdos\n");
         machine.gemdos.setDirectory(gemdosDir);
+        machine.gemdos.setWriteProtect(gemdosRo);
+        if (gemdosRo) std::fprintf(stderr, "[headless] GEMDOS drive write-protected (--gemdos-ro)\n");
     } else if (!cartPath.empty() && autoStart.empty()) {
         if (!machine.loadCart(cartPath)) outFail = true;   // cartouche $FA0000 demandée, introuvable
     }
+    if (gemdosRo && gemdosDir.empty())
+        std::fprintf(stderr, "[headless] --gemdos-ro ignored: requires --gemdos\n");
     // Démarrage automatique (--auto) : INF virtuel servi par la cartouche système.
     if (!autoStart.empty()) {
         if (!cartPath.empty() && gemdosDir.empty())
