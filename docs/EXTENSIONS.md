@@ -180,16 +180,41 @@ fenêtre $FA0000 — le montage est refusé avec message). Auto-test : `--enec-s
 * **Lectures de la page 0** : `TSR` (PTX après émission), `NCR` = 0, `RSR` (PRX, PHY pour
   broadcast/multicast, MPA, DIS en mode moniteur), compteurs `CNTR0-2` effacés à la
   lecture. Ces adresses rendaient `TBCR0` et `RCR/TCR/DCR/IMR`.
-* **Pages 2 et 3** : la page 2 relit `PSTART/PSTOP/TPSR/RCR/TCR/DCR/IMR` ; ses écritures et
-  toute la page 3 (configuration RTL8019AS) sont ignorées. Elles tombaient dans la page 0
-  (`CR=$A2` puis registre 3 écrivait `BNRY`).
+* **Page 2** : elle relit `PSTART/PSTOP/TPSR/RCR/TCR/DCR/IMR` ; ses écritures sont
+  ignorées. Elles tombaient dans la page 0 (`CR=$A2` puis registre 3 écrivait `BNRY`).
 * **Réception** : rien n'entre carte stoppée (`STP`, état de mise sous tension) ; `TXP`
   sous `STP` n'émet rien. `RCR` est honoré : broadcast si `AB`, multicast si `AM` et que le
   hachage CRC désigne un bit posé des `MAR`, adresse physique si `PRO` ou égale aux `PAR` ;
   mode moniteur (`MON`) : rien n'est rangé, `CNTR2` compte. Un pilote doit donc démarrer
   la carte et poser `AB` pour recevoir ARP et DHCP, comme sur le fer.
-* Non modélisés ([F]) : `CLDA`, pointeurs de la page 2, FIFO, paquets courts (`AR`) et
-  erronés (`SEP`), identifiants RTL8019AS `$0A/$0B` (lus 0 faute de la fiche Realtek).
+
+**La puce est une RTL8019AS** (2026-11-12, [B] Realtek, spécification LS003.8 du
+2000-08-20, rapatriée par `tools/setup_silicon_refs.sh`) — celle du NetUSBee et des cartes
+NE2000 les plus courantes sur l'EtherNEC. Là où elle s'écarte de la DP8390D, elle l'emporte :
+
+* **Identifiants** : `$0A/$0B` de la page 0 se lisent `$50`/`$70` (« P », « p »).
+* **`CLDA0/1`** (page 0, `$01/$02`) : fin de la trame lue après une émission
+  (`TPSR·256 + TBCR`), `CURR·256 + 4` après une réception (la DMA locale finit par
+  l'en-tête), `CURR·256` après un rejet.
+* **Page 2** en lecture seule : les pointeurs internes de la DP8390D (Remote/Local Next
+  Packet Pointer, Address Counter) n'existent pas sur la RTL8019AS (`$03`, `$05-$0B`
+  réservés). `RCR`, `TCR` et `DCR` s'y relisent avec leurs bits « Always 1 » ; `DCR.LAS`
+  vaut 1 à la mise sous tension.
+* **Paquets courts (`AR`)** : une trame de moins de 64 octets (FCS compris) est rejetée
+  sauf `AR`. L'émetteur bourre : le NAT, STinG et MiNTnet le font ; seul un bouclage
+  d'une trame trop courte en produit une. `SEP` n'a pas de cas (aucune trame erronée).
+* **Page 3** : `9346CR` (modes normal, auto-load, programmation, écriture de
+  configuration), `BPAGE`, `CONFIG0-4`, `CSNSAV` = 0, `INTR`. Les `CONFIG` ne s'écrivent
+  qu'en mode `EEM=11`, sur les seuls bits que la fiche ouvre (`VERID`, `IRQEN`,
+  `PL/BSELB`, `SLEEP/PWRDN`) ; l'auto-load (`EEM=01`) les recharge et remet `CR` à `$21` ;
+  le port reset ne les touche pas. `PWRDN` coupe émission et réception ; `EEM=10` coupe
+  la DMA. Mode RT jumperless : le readme du NetUSBee fait couper la piste de `JP` une
+  fois l'EEPROM programmée.
+* Restent [F] : le contenu de la 9346 (IRQ, base d'E/S, média, duplex : 0), la 93C46
+  elle-même (`EEDO` lu 0, le programmateur d'EEPROM ne peut pas tourner), la FIFO, la
+  valeur lue des registres réservés, la durée de l'auto-load (instantané, « about 2ms »
+  selon la fiche), le mode horloge arrêtée de `HLTCLK`, et les bits « Always 1 » de
+  `TSR`/`RSR` (le texte p. 14 les dit à 1, la table p. 10 à 0 : gardés à 0).
 
 **PROM d'adresse station** (depuis le 2026-10-20) : 32 octets visibles à RSAR=0 par Remote
 DMA. La MAC y est doublée (octets 0-11) et la signature `WW` ($57) occupe les octets

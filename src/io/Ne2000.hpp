@@ -14,6 +14,13 @@
 //  fenêtre dans Bus::read8Slow quand une NE2000 est attachée — extension NeoST,
 //  cf. docs/EXTENSIONS.md § EtherNEC et docs/HATARI_DIVERGENCES.md § Extensions.
 //
+//  La puce modélisée est la RTL8019AS de Realtek, celle du NetUSBee et des cartes
+//  NE2000 les plus courantes sur l'EtherNEC : cœur DP8390 (fiche National DP8390D)
+//  plus sa page 3 de configuration et ses identifiants « P »/« p » (fiche Realtek
+//  RTL8019AS, spécification LS003.8 du 2000-08-20, extern/datasheets, empreinte
+//  c6147648… — cf. tools/setup_silicon_refs.sh). Là où les deux fiches diffèrent,
+//  la Realtek l'emporte : c'est la puce soudée.
+//
 //  Le modèle DP8390 est classique : registres en pages 0/1/2, tampon en anneau
 //  de réception, DMA distant (Remote DMA) pour transférer trames et registres
 //  entre la RAM tampon (16 Ko à $4000-$7FFF de l'espace NIC) et le CPU. La
@@ -44,7 +51,7 @@ public:
     void setEnabled(bool on) { enabled_ = on; }
     bool enabled() const { return enabled_; }
 
-    Ne2000() { loadProm(); }
+    Ne2000() { loadProm(); powerUpConfig(); }
 
     // Adresse station de la carte : celle que porte la PROM d'adresse (NIC $0000-
     // $001F, lue par Remote DMA). Comme sur une vraie NE2000, le PILOTE la relit
@@ -82,7 +89,14 @@ public:
 
     // Ligne d'interruption vers le CPU (EtherNEC : câblée sur… rien de standard —
     // les pilotes ST tournent en POLLING). Exposée pour complétude/tests.
-    bool irqAsserted() const { return irq_; }
+    // [B] RTL8019AS LS003.8 § 5.1.2.2 CONFIG1, p. 19 : IRQEN à 0 met la ligne en
+    // haute impédance — aucune requête ne sort.
+    bool irqAsserted() const { return irq_ && (config1_ & 0x80); }
+
+    // [B] RTL8019AS LS003.8 § 5.1.2.2, p. 16 (et table p. 10) : identifiants de la
+    // puce, en LECTURE à $0A/$0B de la page 0 (là où s'écrivent RBCR0/1).
+    static constexpr uint8_t kRtlId0 = 0x50;   // « P »
+    static constexpr uint8_t kRtlId1 = 0x70;   // « p »
 
     void serialize(StateArchive& ar);
 
@@ -113,6 +127,17 @@ private:
     uint8_t tsr_ = 0;                   // Transmit Status (reg 4 en lecture)
     uint8_t rsr_ = 0;                   // Receive Status (reg $0C en lecture)
     uint8_t cntr_[3] = {0, 0, 0};       // tally CNTR0-2 (regs $0D-$0F), effacés à la lecture
+    // [B] DP8390D § 10.6, p. 28 ; RTL8019AS p. 15 : Current Local DMA Address, lue en
+    // CLDA0/1 (page 0, $01/$02). Où la DMA locale s'est arrêtée (cf. Ne2000.cpp).
+    uint16_t clda_ = 0;
+    // Page 3 RTL8019AS ([B] LS003.8 § 5.1.2.2, p. 16-23). Survit au port reset : la
+    // configuration ne se perd qu'à l'auto-load, à RSTDRV ou hors tension (p. 28).
+    uint8_t cr9346_ = 0;                // 9346CR : EEM1-0 (bits 7-6), EECS/EESK/EEDI (3-1)
+    uint8_t bpage_ = 0;                 // BPAGE : page de BROM
+    uint8_t config0_ = 0;               // CONFIG0 (seuls VERID, bits 7-6, s'écrivent)
+    uint8_t config1_ = 0x80;            // CONFIG1 : IRQEN (7), IRQS2-0, IOS3-0
+    uint8_t config2_ = 0;               // CONFIG2 : PL1-0, BSELB, BS4-0
+    uint8_t config3_ = 0;               // CONFIG3 : PNP, FUDUP, LEDS1-0, SLEEP, PWRDN, ACTIVEB
 
     // RAM tampon de la NIC (anneau RX + tampon TX). Allouée DÈS la construction :
     // vide tant qu'enabled_ était faux, serialize() écrivait un vecteur de taille 0
@@ -126,6 +151,12 @@ private:
     void page1Write(uint8_t reg, uint8_t v);
     uint8_t page1Read(uint8_t reg);
     uint8_t page2Read(uint8_t reg);
+    uint8_t page3Read(uint8_t reg);
+    void page3Write(uint8_t reg, uint8_t v);
+    void loadConfig();                       // CONFIG1-3 depuis la 9346 et les broches
+    void powerUpConfig();                    // page 3 à la mise sous tension
+    bool localDmaOff() const { return (cr9346_ & 0xC0) == 0x80; }   // EEM=10
+    bool poweredDown() const { return (config3_ & 0x02) != 0; }     // CONFIG3.PWRDN
     bool    multicastHit(const uint8_t* dst) const;   // hachage CRC → MAR
     void    countMissed();                            // CNTR2++ (saturé), ISR.CNT
     void writeReg(uint8_t reg, uint8_t v);   // dispatch selon la page (cr_ bits 6-7)
