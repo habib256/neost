@@ -979,9 +979,14 @@ void Fdc::reset(bool cold) {
         ff8604recent_ = 0;
         // [F] Densité $FF860E (Mega STE) repart en DD à la mise sous tension : sinon un
         // mode HD posé par un programme survivait au hard reset et aux changements de
-        // profil. Hatari ne la remet jamais à zéro ([D] fdc.c:1189-1240 @ f0736b24) ;
-        // à chaud, inconnu, gardée. Tranché par : relecture de $FF860E après RESET
-        // puis après mise sous tension sur un vrai Mega STE.
+        // profil. Hatari ne la remet jamais à zéro ([D] fdc.c:1189-1240 @ f0736b24).
+        // [B] Le latch (PAL22V10 U407) reçoit XRESET, que pilotent la mise sous tension
+        // ET le bouton reset (schéma Mega STE Rev 2, 25 avril 1990, f. 2 et 4/11) ; ses
+        // équations ne sont pas publiées, la valeur après XRESET reste [F]. Le registre
+        // étant en écriture seule (cf. read8), le logiciel ne peut pas l'observer, et le
+        // TOS le réécrit avant tout accès disquette ([C] TOS 2.06 floppy.S flopini,
+        // EmuTOS floppy.c set_density). À chaud : gardée. Tranché par : un dump JEDEC de
+        // U407, ou une lecture du FDC sans TOS après le bouton.
         densityMode_ = 0;
     }
     stepDir_ = 1;
@@ -3361,12 +3366,19 @@ uint8_t Fdc::read8(uint32_t addr) {
         case 0xD: return uint8_t(dmaAddr_);
         // $FF860E : mot de densité (Mega STE/TT) — bit1 densité (0=DD, 1=HD),
         // bit0 fréquence FDC. TOS y écrit 0x0003 pour le mode HD.
+        // ÉCRITURE SEULE sur Mega STE : [B] source du TOS d'Atari, bios/sparrow/flop.s
+        //   (A. Pratt, journal RCS du 1990-11-20, github.com/th-otto/tos3x) : « denselect
+        //   register: it's WRITE ONLY in Mega STE. It's shadowed anyway in the DSB » ; le
+        //   latch est dans la PAL22V10 U407 ([B] schéma Mega STE Rev 2, 25 avril 1990,
+        //   f. 4/11). [D] Hatari (ioMemTabMegaSTE @ f0736b24) relit la valeur écrite : grade
+        //   inférieur, non retenu. Ce que rend la lecture n'est pas documenté : [F] $FF,
+        //   comme les octets non pilotés de ce bloc. Tranché par : une lecture sur le fer.
         case 0xE:
             // Hatari accepte aussi les octets sur la densité (Mega STE câblé
             // par le Bus). Un mot ne facture qu'à son dernier octet $860F.
             if (bus_.ioAccessWidth() == 1) registerWait();
-            return uint8_t(densityMode_ >> 8);
-        case 0xF: registerWait(); return uint8_t(densityMode_);
+            return 0xFF;
+        case 0xF: registerWait(); return 0xFF;
         default:  return 0xFF;
     }
 }
