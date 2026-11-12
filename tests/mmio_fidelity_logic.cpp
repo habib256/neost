@@ -121,7 +121,8 @@ int testMmioFidelity() {
         }
         bus.machine = MachineType::MegaSte;
         bus.write16(0xFF860E, 0xA503);
-        check(bus.read16(0xFF860E) == 0xA503, "Mega STE density word is writable");
+        check(fdc.densityMode() == 0xA503, "Mega STE density word is writable");
+        check(bus.read16(0xFF860E) == 0xFFFF, "Mega STE density word is write-only");
         bus.machine = MachineType::Ste;
         bus.write16(0xFF860E, 0x1234);
         check(bus.read16(0xFF860E) == 0xFFFF, "STE density word is void");
@@ -129,7 +130,7 @@ int testMmioFidelity() {
         check(bus.read8(0xFF860E) == 0xFF && bus.read8(0xFF860F) == 0xFF,
               "STE density bytes are void");
         bus.machine = MachineType::MegaSte;
-        check(bus.read16(0xFF860E) == 0xA503, "STE writes did not alter Mega STE density register");
+        check(fdc.densityMode() == 0xA503, "STE writes did not alter Mega STE density register");
     }
     std::printf("[mmio] %d checks, %d FAIL\n", checks, failures);
     return failures;

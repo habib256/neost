@@ -2183,10 +2183,11 @@ static void testFdcTruthTable() {
     checkBool("statut DMA : bit1 = compteur de secteurs non nul",
               (r.fdc.read8(FDCR + 0x07) & 0x02) != 0, true);
 
-    // --- 4. Densité Mega STE/TT ($FF860E) : mot relisible --------------------
+    // --- 4. Densité Mega STE ($FF860E) : écriture seule ([B] TOS flop.s, Pratt) ---
     r.fdc.write8(FDCR + 0x0E, 0x00);
     r.fdc.write8(FDCR + 0x0F, 0x03);                  // HD
-    checkHex("densité $FF860F relisible", r.fdc.read8(FDCR + 0x0F), 0x03);
+    checkHex("densité $FF860F : HD retenu", r.fdc.densityMode(), 0x03);
+    checkHex("densité $FF860F : écriture seule, relu $FF", r.fdc.read8(FDCR + 0x0F), 0xFF);
 
     // --- 5. Le RESTORE du reset froid se termine, statut propre --------------
     r.settle();
@@ -2370,11 +2371,11 @@ static void testFdcTruthTable() {
     // Un mode HD posé par un programme survivait au hard reset.
     FdcRig d;
     d.fdc.write8(FDCR + 0x0F, 0x03);
-    checkHex("densité : HD posé", d.fdc.read8(FDCR + 0x0F), 0x03);
+    checkHex("densité : HD posé", d.fdc.densityMode(), 0x03);
     d.fdc.reset(/*cold=*/false);
-    checkHex("densité : gardée au reset à chaud", d.fdc.read8(FDCR + 0x0F), 0x03);
+    checkHex("densité : gardée au reset à chaud", d.fdc.densityMode(), 0x03);
     d.fdc.reset(/*cold=*/true);
-    checkHex("densité : DD après mise sous tension", d.fdc.read8(FDCR + 0x0F), 0x00);
+    checkHex("densité : DD après mise sous tension", d.fdc.densityMode(), 0x00);
 }
 
 // -----------------------------------------------------------------------------
