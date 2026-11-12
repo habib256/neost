@@ -17,7 +17,7 @@
 #  hasard ou qui change d'écran à une autre date en donne aussi.
 #
 #  Usage : compare_sound.py SORTIE DISQUE... [--machine st] [--rom roms/etos192fr.img]
-#            [--mem 1] [--frames 2500] [--window 12] [--min-corr 0.7] [--jobs 6] [--launch]
+#            [--mem 1m] [--frames 2500] [--window 12] [--min-corr 0.7] [--jobs 6] [--launch]
 #  --launch : démarre le plus gros programme de la racine (.PRG, .TOS, .APP) par --auto, pour
 #  les titres qui attendent au bureau. .st et .msa seulement ; sans programme, le verdict est « no-program ».
 #  Exige ffmpeg et l'Hatari épinglé ; code 77 sinon. Sortie : SORTIE/summary.json.
@@ -38,6 +38,9 @@ import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from title_cmd import hatari_memsize, parse_mem  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 HEADLESS = ROOT / "build" / ("neost-headless.exe" if sys.platform == "win32" else "neost-headless")
@@ -136,7 +139,7 @@ def main_program(disk: Path) -> str | None:
 
 
 def run_neost(disk: Path, args, wav: Path) -> None:
-    subprocess.run([str(HEADLESS), args.rom, "--machine", args.machine, "--mem", f"{args.mem}m",
+    subprocess.run([str(HEADLESS), args.rom, "--machine", args.machine, "--mem", args.mem,
                     "--disk", str(disk), "--disk-ro", "--frames", str(args.frames), "--sound-dump", str(wav),
                     *(["--auto", args.auto] if args.auto else [])],
                    cwd=ROOT, capture_output=True, timeout=900, check=True)
@@ -151,7 +154,7 @@ def run_hatari(disk: Path, args, work: Path, wav: Path) -> None:
     env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", HATARI_SEED="1", HOME=str(work))
     with (work / "hatari.log").open("w") as log:
         proc = subprocess.Popen([str(HATARI), "--configfile", str(config), "--machine", args.machine,
-                                 "--tos", str(ROOT / args.rom), "--monitor", "rgb", "--memsize", str(args.mem),
+                                 "--tos", str(ROOT / args.rom), "--monitor", "rgb", "--memsize", hatari_memsize(args.mem),
                                  "--cpu-exact", "on", "--compatible", "on", "--patch-tos", "off", "--fast-boot", "off",
                                  "--fastfdc", "off", "--disk-a", str(copy), "--sound", "48000", "--fast-forward", "on",
                                  "--confirm-quit", "off", "--statusbar", "off", "--drive-led", "off", "--frameskips", "0",
@@ -214,7 +217,8 @@ def main() -> int:
     ap.add_argument("disks", nargs="+", type=Path)
     ap.add_argument("--machine", default="st")
     ap.add_argument("--rom", default="roms/etos192fr.img")
-    ap.add_argument("--mem", type=int, default=1)
+    ap.add_argument("--mem", type=parse_mem, default="1m",
+                    help="NeoST label (512k, 1m, 2m, 4m…) or legacy 0/1/2/4 MiB")
     ap.add_argument("--frames", type=int, default=2500)
     ap.add_argument("--window", type=float, default=12.0)
     ap.add_argument("--min-corr", type=float, default=0.7)
