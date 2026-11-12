@@ -145,7 +145,8 @@ std::string stateFilePath(const std::string& exeDir);
 bool parseRtcConfig(const std::string& s, Rtc::DateTime& dt);
 
 // Hygiène d'UNE ligne de neost.cfg, avant toute comparaison de valeur : retire la
-// fin de ligne CRLF et les blancs de queue. Exposée parce que le headless a son
+// fin de ligne CRLF et les blancs de queue — ceux-ci SAUF sur les clés de chemin
+// (rom=, disk=, gemdos=…), où une espace finale fait partie du nom. Exposée parce que le headless a son
 // PROPRE lecteur du même fichier (--from-cfg) : tant que la règle était recopiée
 // là-bas, les deux pouvaient diverger — et elles divergeaient (le headless ne
 // rognait que le '\r', si bien qu'un « machine=st » suivi d'une espace retombait
@@ -154,6 +155,28 @@ void trimConfigLine(std::string& line);
 
 // Applique UNE ligne « clé=valeur » à `c` (partagé par neost.cfg et les profils).
 void parseConfigLine(Config& c, std::string line);
+
+// Coussin audio borné comme Audio::setLatencyMs : [20, 250] ms.
+constexpr int kAudioLatencyMinMs = 20, kAudioLatencyMaxMs = 250;
+constexpr int clampAudioLatencyMs(int ms) {
+    return ms < kAudioLatencyMinMs ? kAudioLatencyMinMs
+         : ms > kAudioLatencyMaxMs ? kAudioLatencyMaxMs : ms;
+}
+
+// Surcharges de SESSION venues de l'environnement (NEOST_GEMDOS_DIR,
+// NEOST_ACSI_IMG) : elles pilotent la machine le temps du lancement, mais ne
+// doivent JAMAIS atterrir dans neost.cfg. `gemdos`/`acsi` = valeur imposée (vide =
+// pas de surcharge) ; `saved*` = valeurs lues dans neost.cfg avant la surcharge.
+struct EnvOverrides {
+    std::string gemdos, acsi;
+    std::string savedGemdos, savedAcsi, savedCart;
+};
+// Ce qu'il faut ÉCRIRE : `c`, où chaque champ encore égal à sa surcharge reprend la
+// valeur du fichier. Un champ que l'utilisateur a changé en séance (montage par le
+// menu, profil) diffère de la surcharge et s'écrit normalement. La cartouche suit le
+// GEMDOS : la cartouche système du HD occupe $FA0000, appShutdown lit donc cart=
+// vide — sans ce retour, le cart= de l'utilisateur était effacé.
+Config persistableConfig(const Config& c, const EnvOverrides& o);
 Config loadConfig(const std::string& exeDir);
 
 // Sérialisation. full=true : neost.cfg complet ; false : profil nommé.

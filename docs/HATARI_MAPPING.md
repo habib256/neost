@@ -298,7 +298,7 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | ikbd.c:1118+ + 1065-1091 (horloge BCD 6301) | Ikbd.cpp:1058-1090, 122-139 | porté | Année 99→00 (Captain Blood). |
 | ikbd.c:386+, 3012+ (code 6301 custom, CRC) | `Ikbd::commonBoot`, `crc32AddByte` | porté (empreinte d'Hatari reprise à l'identique le 2026-10-20 : le vrai CRC32 ne reconnaissait aucun programme réel) | 6 programmes au CRC ; délai 7000 cyc du $83 Froggies porté (pushRxDelayed). |
 | ikbd.c:1736-1757 (PressSTKey) | Ikbd.cpp:917-932 | porté | ScanCodeState, filtrage monitoring. |
-| keymap.c | gui/InputCallbacks.cpp (onKey) + gui/StKeys | volontaire | Plomberie frontend (GLFW vs SDL). |
+| keymap.c | gui/InputCallbacks.cpp (onKey) + gui/StKeys + gui/StKeysSymbolic (tables par pays, aussi Android) | volontaire | Plomberie frontend (GLFW vs SDL). Les 12 tables par pays (US…CZ) sont portées @ f0736b24. |
 | midi.c:143-184 (MIDI_UpdateIRQ + Control_Read) | MidiAcia.cpp:43-64, 241-250 | porté | Wire-OR GPIP4. |
 | midi.c:245-288 (TDR/TSR : vide après 1 bit=256 cyc) | MidiAcia.cpp (write8, advanceTx) | porté TX | Huit formats CR2..4 et /1,/16,/64 ; TDR→TSR après un bit, données et durée mémorisées, attente écrasable, IRQ indépendante et horodatages série (2026-10-18). RX hôte reste 31250 8N1. |
 | acia.c:800–804,451–454,479–484 (diviseur et timer TX générique) | `MidiAcia::write8`, `txClockPhase_` | porté pour reprise BREAK | Phase ancrée au changement CR0..1 et sauvegardée v38 ; libération BREAK au prochain front de cette phase. Changement diviseur en vol recadence les fronts TSR restants ; TDR au repos attend le prochain front de phase CR ; pas de modèle bit à bit. |

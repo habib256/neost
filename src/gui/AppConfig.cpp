@@ -181,8 +181,24 @@ bool parseRtcConfig(const std::string& s, Rtc::DateTime& dt) {
 // clé sur son défaut SILENCIEUX — machine ST demandée, STE démarrée ; 4 Mo
 // demandés, 512 Ko alloués — et rendait tout chemin introuvable. Pire : saveConfig
 // réécrivait ensuite le fichier avec les \r intacts, donc la panne était définitive.
-// Même rognage que SymbolTable (Symbols.cpp). On retire aussi les espaces de fin.
+// Même rognage que SymbolTable (Symbols.cpp). On retire aussi les espaces de fin —
+// SAUF sur les clés de CHEMIN (2026-11-12) : un dossier « /Users/me/Games  » est un
+// nom légal sous macOS et Linux, et le rognage le changeait en un dossier absent ;
+// au démarrage suivant, setDirectory échouait et gemdos= était vidé en silence.
+// Le '\r' reste retiré partout : aucun nom de fichier n'en finit par un, et
+// writeConfigKeys refuse d'écrire une valeur qui contient '\r' ou '\n'.
+static bool isPathKey(const std::string& line) {
+    static const char* const keys[] = {
+        "rom=", "disk=", "diskb=", "cart=", "gemdos=", "acsi=", "gm_soundfont=",
+        "mt32_roms=", "usb1=", "usb2=", "sd2=", "kiosk_romdir=" };
+    for (const char* k : keys)
+        if (line.rfind(k, 0) == 0) return true;
+    return false;
+}
+
 void trimConfigLine(std::string& line) {
+    while (!line.empty() && line.back() == '\r') line.pop_back();
+    if (isPathKey(line)) return;
     while (!line.empty() && (line.back() == '\r' || line.back() == ' ' || line.back() == '\t'))
         line.pop_back();
 }
@@ -313,7 +329,11 @@ void parseConfigLine(Config& c, std::string line) {
         if (std::isnan(c.volume)) c.volume = 1.0f;
         else c.volume = std::clamp(c.volume, 0.0f, 1.0f);
     }
-    else if (line.rfind("audio_latency_ms=", 0) == 0) c.audioLatencyMs = std::atoi(line.substr(17).c_str());
+    // Borné à la LECTURE comme Audio::setLatencyMs ([20, 250] ms, audio/Audio.hpp) :
+    // sans ça, « audio_latency_ms=99999 » (ou négatif) restait affiché et réécrit tel
+    // quel, alors que le son tournait sur une autre valeur.
+    else if (line.rfind("audio_latency_ms=", 0) == 0)
+        c.audioLatencyMs = clampAudioLatencyMs(std::atoi(line.substr(17).c_str()));
     else if (line.rfind("drivesound=", 0) == 0) c.driveSound = (line.substr(11) == "1");
     else if (line.rfind("rewind=", 0) == 0) c.rewind = (line.substr(7) == "1");
     // showCart=/showHd= : clés d'anciennes fenêtres devenues des pages de la
@@ -369,43 +389,54 @@ Config loadConfig(const std::string& exeDir) {
 //     charger un profil ne doit pas déplacer les fenêtres de l'utilisateur.
 // Tout ce qui n'est PAS écrit ici reste donc inchangé au chargement d'un profil
 // (cf. parseConfigLine) — les deux fonctions se répondent, ne toucher qu'ensemble.
+// Une valeur s'écrit sur UNE ligne (2026-11-12). Un nom de fichier peut légalement
+// contenir '\n' sous macOS et Linux : écrit tel quel, « disk=/tmp/x.st\nmachine=megaste »
+// INJECTAIT des clés au relu (la disquette perdue, la machine changée). Une telle
+// valeur est refusée — écrite VIDE, et dite — plutôt qu'échappée : aucun lecteur
+// (GUI, headless --from-cfg, profils) n'aurait su la relire.
+static std::string oneLine(const std::string& v) {
+    if (v.find_first_of("\r\n") == std::string::npos) return v;
+    std::fprintf(stderr, "[cfg] value with a line break not saved: \"%s\"\n", v.c_str());
+    return std::string();
+}
+
 void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
-    f << "rom=" << w.rom << "\ndisk=" << w.disk << "\ndiskb=" << w.diskb
-      << "\ncart=" << w.cart
-      << "\ngemdos=" << w.gemdos << "\nacsi=" << w.acsi
+    f << "rom=" << oneLine(w.rom) << "\ndisk=" << oneLine(w.disk) << "\ndiskb=" << oneLine(w.diskb)
+      << "\ncart=" << oneLine(w.cart)
+      << "\ngemdos=" << oneLine(w.gemdos) << "\nacsi=" << oneLine(w.acsi)
       << "\nmodem=" << (w.modem ? 1 : 0)
       << "\nmidi_loopback=" << (w.midiLoopback ? 1 : 0)
       << "\nmidi_out_gm=" << (w.midiOutGm ? 1 : 0)
-      << "\ngm_soundfont=" << w.gmSoundFont
+      << "\ngm_soundfont=" << oneLine(w.gmSoundFont)
       << "\nmidi_out_port=" << (w.midiOutPort ? 1 : 0)
       << "\nmidi_lead_ms=" << w.midiLeadMs
 
       << "\nmidi_out_mt32=" << (w.midiOutMt32 ? 1 : 0)
-      << "\nmt32_roms=" << w.mt32Roms
-      << "\nmt32_model=" << w.mt32Model
+      << "\nmt32_roms=" << oneLine(w.mt32Roms)
+      << "\nmt32_model=" << oneLine(w.mt32Model)
       << "\nmix_ym=" << w.mixYm << "\nmix_dma=" << w.mixDma
       << "\nmix_drive=" << w.mixDrive << "\nmix_mt32=" << w.mixMt32
       << "\nmix_gm=" << w.mixGm
-      << "\ndongle=" << w.dongle
-      << "\njoy0=" << w.joy0 << "\njoy1=" << w.joy1 << "\nrs232=" << w.rs232
-      << "\nprinter=" << w.printer << "\ncartbutton=" << w.cartbutton
+      << "\ndongle=" << oneLine(w.dongle)
+      << "\njoy0=" << oneLine(w.joy0) << "\njoy1=" << oneLine(w.joy1) << "\nrs232=" << oneLine(w.rs232)
+      << "\nprinter=" << oneLine(w.printer) << "\ncartbutton=" << oneLine(w.cartbutton)
       << "\nmix_dac=" << w.mixDac
       << "\nauto_dongle=" << (w.autoDongle ? 1 : 0)
       << "\nethernec=" << (w.ethernec ? 1 : 0)
       << "\nnetusbee=" << (w.netusbee ? 1 : 0)
-      << "\nusb1=" << w.usb1 << "\nusb2=" << w.usb2
+      << "\nusb1=" << oneLine(w.usb1) << "\nusb2=" << oneLine(w.usb2)
       << "\nnat=" << (w.slirp ? 1 : 0)
       << "\nnat_restricted=" << (w.natRestricted ? 1 : 0)
       << "\nnat_allow_loopback=" << (w.natAllowLoopback ? 1 : 0)
-      << "\nnat_forwards=" << w.natForwards
+      << "\nnat_forwards=" << oneLine(w.natForwards)
       << "\nultrasatan=" << (w.ultrasatan ? 1 : 0)
-      << "\nsd2=" << w.sd2
+      << "\nsd2=" << oneLine(w.sd2)
       << "\nmono=" << (w.mono ? 1 : 0)
-      << "\ncpu=" << w.cpu << "\nmachine=" << w.machine << "\nmem=" << w.mem
+      << "\ncpu=" << oneLine(w.cpu) << "\nmachine=" << oneLine(w.machine) << "\nmem=" << oneLine(w.mem)
       << "\nfpu=" << (w.fpu ? 1 : 0)
       << "\njoyport=" << w.joyport
-      << "\njoymap=" << w.joymap
-      << "\nport0=" << w.port0
+      << "\njoymap=" << oneLine(w.joymap)
+      << "\nport0=" << oneLine(w.port0)
       << "\njoydeadzone=" << w.joydeadzone << "\nfastfdc=" << (w.fastfdc ? 1 : 0)
       << "\nste_pads=" << (w.stePads ? 1 : 0)
       << "\nvolume=" << w.volume
@@ -452,10 +483,23 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
       << "\ncrt_center=" << w.crtParams.centerLighting
       << "\ncrt_gamma=" << w.crtParams.phosphorGamma << "\n";
     if (full) {
-        f << "rtc=" << w.rtc << "\nrtc_saved=" << w.rtcSaved << "\n";
+        f << "rtc=" << oneLine(w.rtc) << "\nrtc_saved=" << w.rtcSaved << "\n";
         // Dossiers ROM additionnels (0..N) : une ligne kiosk_romdir= par dossier.
-        for (const auto& d : w.romDirs) f << "kiosk_romdir=" << d << "\n";
+        for (const auto& d : w.romDirs) f << "kiosk_romdir=" << oneLine(d) << "\n";
     }
+}
+
+Config persistableConfig(const Config& c, const EnvOverrides& o) {
+    Config w = c;
+    if (!o.gemdos.empty() && w.gemdos == o.gemdos) {
+        w.gemdos = o.savedGemdos;
+        // Cartouche système du HD → cart= lu vide en séance : rendre celle du fichier.
+        // (Tant que la surcharge GEMDOS tient, aucune cartouche ne peut avoir été
+        // montée — le montage d'une cartouche démonte le HD et change gemdos=.)
+        if (w.cart.empty()) w.cart = o.savedCart;
+    }
+    if (!o.acsi.empty() && w.acsi == o.acsi) w.acsi = o.savedAcsi;
+    return w;
 }
 
 // Écriture ATOMIQUE : on rédige un fichier temporaire à côté, on vérifie que tout

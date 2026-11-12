@@ -34,6 +34,7 @@
 #include "core/AudioMix.hpp"
 #include "core/Machine.hpp"
 #include "core/Rewind.hpp"
+#include "gui/StKeys.hpp"      // tables symboliques par pays (StKeysSymbolic, sans GLFW)
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl2.h"
@@ -525,6 +526,102 @@ void injectClick(Machine& m, bool right) {
     g_injectHold     = 4;
 }
 
+// ─── Clavier PHYSIQUE (USB/Bluetooth) ────────────────────────────────────────
+// Jusqu'au 2026-11-12, SDL_KEYDOWN ne servait qu'au bouton RETOUR : un clavier
+// branché sur la tablette était ignoré. Même recette que le bureau (gui/StKeys) et
+// qu'Hatari : SYMBOLIQUE d'abord — le keycode SDL d'une touche imprimable EST le
+// caractère de la disposition hôte, exactement ce que mangent les tables par pays
+// (StKeysSymbolic, sans GLFW) — puis POSITIONNEL par le scancode SDL.
+// [D] Hatari src/sdl/keymap.c:424-560 (Keymap_PcToStScanCode) @ f0736b24, avec les
+//     choix du bureau NeoST là où ils diffèrent (Fin = Undo, Impr = Help, AltGr = Alt).
+uint8_t positionalForSdl(SDL_Scancode s) {
+    if (s >= SDL_SCANCODE_A && s <= SDL_SCANCODE_Z) {
+        static const uint8_t az[26] = {
+            0x1E, 0x30, 0x2E, 0x20, 0x12, 0x21, 0x22, 0x23, 0x17, 0x24, 0x25, 0x26, 0x32,
+            0x31, 0x18, 0x19, 0x10, 0x13, 0x1F, 0x14, 0x16, 0x2F, 0x11, 0x2D, 0x15, 0x2C };
+        return az[s - SDL_SCANCODE_A];
+    }
+    if (s >= SDL_SCANCODE_1 && s <= SDL_SCANCODE_0) return uint8_t(0x02 + (s - SDL_SCANCODE_1));
+    if (s >= SDL_SCANCODE_F1 && s <= SDL_SCANCODE_F10) return uint8_t(0x3B + (s - SDL_SCANCODE_F1));
+    switch (s) {
+        case SDL_SCANCODE_ESCAPE:       return 0x01;
+        case SDL_SCANCODE_MINUS:        return 0x0C;
+        case SDL_SCANCODE_EQUALS:       return 0x0D;
+        case SDL_SCANCODE_BACKSPACE:    return 0x0E;
+        case SDL_SCANCODE_TAB:          return 0x0F;
+        case SDL_SCANCODE_LEFTBRACKET:  return 0x1A;
+        case SDL_SCANCODE_RIGHTBRACKET: return 0x1B;
+        case SDL_SCANCODE_RETURN:       return 0x1C;
+        case SDL_SCANCODE_LCTRL: case SDL_SCANCODE_RCTRL: return 0x1D;
+        case SDL_SCANCODE_SEMICOLON:    return 0x27;
+        case SDL_SCANCODE_APOSTROPHE:   return 0x28;
+        case SDL_SCANCODE_GRAVE:        return 0x29;
+        case SDL_SCANCODE_LSHIFT:       return 0x2A;
+        case SDL_SCANCODE_BACKSLASH:    return 0x2B;
+        case SDL_SCANCODE_NONUSHASH:    return 0x2B;
+        case SDL_SCANCODE_COMMA:        return 0x33;
+        case SDL_SCANCODE_PERIOD:       return 0x34;
+        case SDL_SCANCODE_SLASH:        return 0x35;
+        case SDL_SCANCODE_RSHIFT:       return 0x36;
+        case SDL_SCANCODE_LALT: case SDL_SCANCODE_RALT: return 0x38;
+        case SDL_SCANCODE_SPACE:        return 0x39;
+        case SDL_SCANCODE_CAPSLOCK:     return 0x3A;
+        case SDL_SCANCODE_HOME:         return 0x47;
+        case SDL_SCANCODE_UP:           return 0x48;
+        case SDL_SCANCODE_LEFT:         return 0x4B;
+        case SDL_SCANCODE_RIGHT:        return 0x4D;
+        case SDL_SCANCODE_DOWN:         return 0x50;
+        case SDL_SCANCODE_INSERT:       return 0x52;
+        case SDL_SCANCODE_DELETE:       return 0x53;
+        case SDL_SCANCODE_NONUSBACKSLASH: return 0x60;
+        case SDL_SCANCODE_END:          return 0x61;   // Undo (bureau NeoST)
+        case SDL_SCANCODE_UNDO:         return 0x61;
+        case SDL_SCANCODE_PRINTSCREEN:  return 0x62;   // Help
+        case SDL_SCANCODE_HELP:         return 0x62;
+        case SDL_SCANCODE_PAGEUP:       return 0x63;   // ( du pavé ST
+        case SDL_SCANCODE_PAGEDOWN:     return 0x64;   // ) du pavé ST
+        case SDL_SCANCODE_KP_DIVIDE:    return 0x65;
+        case SDL_SCANCODE_KP_MULTIPLY:  return 0x66;
+        case SDL_SCANCODE_KP_7: return 0x67; case SDL_SCANCODE_KP_8: return 0x68;
+        case SDL_SCANCODE_KP_9: return 0x69; case SDL_SCANCODE_KP_4: return 0x6A;
+        case SDL_SCANCODE_KP_5: return 0x6B; case SDL_SCANCODE_KP_6: return 0x6C;
+        case SDL_SCANCODE_KP_1: return 0x6D; case SDL_SCANCODE_KP_2: return 0x6E;
+        case SDL_SCANCODE_KP_3: return 0x6F; case SDL_SCANCODE_KP_0: return 0x70;
+        case SDL_SCANCODE_KP_PERIOD:    return 0x71;
+        case SDL_SCANCODE_KP_ENTER:     return 0x72;
+        case SDL_SCANCODE_KP_MINUS:     return 0x4A;
+        case SDL_SCANCODE_KP_PLUS:      return 0x4E;
+        default:                        return 0;
+    }
+}
+
+uint8_t stScancodeForSdl(const SDL_Keysym& k) {
+    // Imprimable : le keycode SDL est le point de code Unicode de la touche (sans
+    // Maj) dans la disposition hôte. Le pavé numérique a ses propres keycodes
+    // (SDLK_KP_*, hors de cette plage) et passe donc en positionnel.
+    if ((k.sym > 0x20 && k.sym < 0x7F) || (k.sym >= 0xA0 && k.sym < 0x10000)) {
+        const uint8_t sc = neost::stkeys::symbolicForCountry(uint32_t(k.sym));
+        if (sc != 0xFF) return sc;
+    }
+    return positionalForSdl(k.scancode);
+}
+// Scancode ST envoyé au MAKE, par scancode SDL : le BREAK renvoie le MÊME (même si
+// la disposition ou le TOS a changé entre-temps), et une touche relâchée sans MAKE
+// connu (enfoncée menu ouvert, ou avant un RESTART) n'envoie rien.
+uint8_t g_physMake[SDL_NUM_SCANCODES] = {};
+
+// L'état de la machine vient d'être REMPLACÉ (RESTART, retour arrière) : la relâche
+// différée d'une frappe injectée n'a plus de sens. Envoyée quand même, elle livrait
+// un BREAK orphelin au TOS fraîchement redémarré (ou à l'instant restauré, où la
+// touche n'était pas enfoncée). Idem pour les touches physiques tenues.
+void cancelPendingInput() {
+    g_injectHold     = 0;
+    g_injectScancode = 0;
+    g_injectClick    = false;
+    g_injectL = g_injectR = false;
+    for (auto& m : g_physMake) m = 0;
+}
+
 constexpr float kTouchSpeed   = 900.0f;   // pixels ST par unité d'écran normalisée
 constexpr Uint64 kTapMaxMs    = 250;
 constexpr float  kTapMaxTravel = 0.02f;
@@ -656,6 +753,7 @@ void resetSessionGlobals() {
     g_injectScancode = 0;
     g_injectClick    = false;
     g_injectL = g_injectR = false;
+    for (auto& m : g_physMake) m = 0;
 }
 
 }  // namespace
@@ -727,6 +825,7 @@ int main(int argc, char* argv[]) {
     const std::string rom  = dataDir + "/etos192us.img";
     const std::string disk = dataDir + "/diskA.st";
     if (!machine.loadTos(rom)) NEOERR("TOS introuvable: %s", rom.c_str());
+    neost::stkeys::setCountryFromTos(machine.bus.rom);   // pays du TOS → clavier physique
     if (machine.loadDisk(disk)) g_menu.mounted = disk;
     else                        NEOLOG("pas de disquette (%s)", disk.c_str());
     machine.mfp.setColorMonitor(true);
@@ -841,13 +940,34 @@ int main(int argc, char* argv[]) {
                 // On ne sort que par l'entrée QUIT du menu (ou la fermeture par le
                 // système, SDL_QUIT). Répétition ignorée : un appui long ne doit pas
                 // faire clignoter le menu.
-                if (e.key.keysym.sym == SDLK_AC_BACK && !e.key.repeat) {
+                if (e.key.keysym.sym == SDLK_AC_BACK) {
+                    if (e.key.repeat) break;
                     if (g_menu.open || g_menu.keysPage) {
                         g_menu.open = g_menu.keysPage = false;
                     } else {
                         g_menu.open = true;
                         g_menu.reqRescan = true;
                     }
+                    break;
+                }
+                // Clavier physique → IKBD, menu fermé seulement (ouvert, ImGui a la
+                // main). Répétition ignorée : sur un vrai ST c'est le TOS qui répète,
+                // l'IKBD n'émet qu'un MAKE par appui (comme le bureau et Hatari).
+                if (!uiHasInput && !e.key.repeat
+                    && e.key.keysym.scancode < SDL_NUM_SCANCODES
+                    && g_physMake[e.key.keysym.scancode] == 0) {
+                    if (const uint8_t sc = stScancodeForSdl(e.key.keysym)) {
+                        machine.keyEvent(sc, true);
+                        g_physMake[e.key.keysym.scancode] = sc;
+                    }
+                }
+                break;
+            case SDL_KEYUP:
+                // Le BREAK suit son MAKE même menu ouvert (une touche tenue à
+                // l'ouverture ne doit pas rester collée côté ST).
+                if (e.key.keysym.scancode < SDL_NUM_SCANCODES) {
+                    uint8_t& made = g_physMake[e.key.keysym.scancode];
+                    if (made) { machine.keyEvent(made, false); made = 0; }
                 }
                 break;
             default: break;
@@ -869,14 +989,17 @@ int main(int argc, char* argv[]) {
             else NEOERR("image illisible: %s", g_menu.reqMount.c_str());
             g_menu.reqMount.clear();
         }
-        if (g_menu.reqRestart) { machine.hardReset(); g_menu.reqRestart = false; }
+        if (g_menu.reqRestart) { machine.hardReset(); cancelPendingInput(); g_menu.reqRestart = false; }
         if (g_menu.rewindOn != rewind.enabled()) rewind.setEnabled(g_menu.rewindOn);
         if (g_menu.reqRewind) {
             g_menu.reqRewind = false;
             std::string why = "Rewind is off";
             const bool ok = rewind.enabled() && rewind.stepBack(machine, &why);
             g_menu.status = ok ? std::string() : why;
-            if (ok) g_menu.mounted = machine.fdc.mountedPath(0);   // le lecteur a pu changer
+            if (ok) {
+                g_menu.mounted = machine.fdc.mountedPath(0);   // le lecteur a pu changer
+                cancelPendingInput();                           // pas de BREAK orphelin
+            }
             NEOLOG("[rewind] %s (%zu in ring)", ok ? "OK" : why.c_str(), rewind.count());
         }
         if (g_menu.reqQuit)    { running = false; g_menu.reqQuit = false; }

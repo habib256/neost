@@ -517,7 +517,7 @@ attend du matériel.
 
 Redirection des appels GEMDOS d'un lecteur virtuel (C:…) vers un dossier hôte, au
 lieu d'émuler un contrôleur ACSI/IDE. Activé par `--gemdos DIR` (headless) ou, côté
-GUI, par la clé `gemdos=` de `neost.cfg` (page Hard disks, dossier déposé) — `NEOST_GEMDOS_DIR` prime ; **exclusif d'une cartouche externe** (`--cart`).
+GUI, par la clé `gemdos=` de `neost.cfg` (page Hard disks, dossier déposé) — `NEOST_GEMDOS_DIR` prime **le temps de la séance** (comme `NEOST_ACSI_IMG` pour `acsi=` : ni l'un ni l'autre n'est écrit dans `neost.cfg`, cf. `appconfig::persistableConfig`) ; **exclusif d'une cartouche externe** (`--cart`).
 
 Mécanisme (port fidèle, adapté à Moira) :
 

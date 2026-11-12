@@ -147,6 +147,7 @@ add_library(neost_core STATIC
     src/core/Framing.cpp
     src/util/HostPath.cpp
     src/util/ConfigPath.cpp   # A36 : où vit neost.cfg (règle testable)
+    src/util/RomProbe.cpp     # TOS ou disquette ? (argument positionnel du GUI, testable)
     src/gui/AppConfig.cpp)
 
 target_include_directories(neost_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
@@ -169,7 +170,7 @@ set_source_files_properties(
     src/core/Bus.cpp src/core/Shifter.cpp src/core/VideoGlue.cpp
     src/core/VideoCounter.cpp src/core/YM2149.cpp src/core/DmaSound.cpp
     src/core/Blitter.cpp
-    src/core/Machine.cpp src/core/EmuFiber.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/util/HostPath.cpp src/util/ConfigPath.cpp src/gui/AppConfig.cpp
+    src/core/Machine.cpp src/core/EmuFiber.cpp src/core/Rewind.cpp src/core/Tracer.cpp src/core/Symbols.cpp src/io/Mfp.cpp src/io/Ikbd.cpp src/io/Fdc.cpp src/io/StxImage.cpp src/io/WrittenTrack.cpp src/io/IpfImage.cpp src/io/Rtc.cpp src/io/MidiAcia.cpp src/io/Fpu.cpp src/io/GemdosHd.cpp src/io/Acsi.cpp src/io/Scc.cpp src/io/MediaScan.cpp src/io/CompDisks.cpp src/io/Ne2000.cpp src/io/UltraSatan.cpp src/io/Isp1160.cpp src/io/CartridgeKey.cpp src/io/PortDevices.cpp src/io/DongleTable.cpp src/core/Framing.cpp src/util/HostPath.cpp src/util/ConfigPath.cpp src/util/RomProbe.cpp src/gui/AppConfig.cpp
     PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
 
 # =============================================================================
@@ -379,6 +380,8 @@ set_source_files_properties(src/headless/main_headless.cpp src/headless/Server.c
 # logé (le dossier de destination n'était jamais créé) alors que la règle PURE
 # d'A36, elle, était testée. Le fichier ne dépend pas d'ImGui — il compile tel quel
 # contre neost_core.
+# StKeysSymbolic y entre pour les TABLES CLAVIER PAR PAYS du TOS (caractère hôte →
+# scancode ST) : sans GLFW, séparé de StKeys.cpp à cette fin.
 add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp tests/scc_serial_logic.cpp
     tests/scc_rx_fifo_logic.cpp tests/ikbd_cpu_serial_logic.cpp
     tests/midi_serial_logic.cpp tests/ikbd_acia_format_logic.cpp
@@ -441,7 +444,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/mmu_logic.cpp tests/fdc_selection_logic.cpp tests/mmio_fidelity_logic.cpp
     tests/ikbd_response_logic.cpp tests/fdc_timing_logic.cpp tests/ikbd_monitor_logic.cpp
     tests/ikbd_monitor_machine_logic.cpp tests/ikbd_autosend_logic.cpp tests/dmasound_mono_logic.cpp tests/shifter_state_geometry_logic.cpp src/audio/MidiInHost.cpp
-    src/audio/GmSynth.cpp src/gui/AppConfig.cpp)
+    src/audio/GmSynth.cpp src/gui/AppConfig.cpp src/gui/StKeysSymbolic.cpp)
 target_link_libraries(neost-selftest PRIVATE neost_core)
 target_include_directories(neost-selftest PRIVATE "${CMAKE_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/extern/tsf")
@@ -560,6 +563,7 @@ if(ANDROID)
     add_library(neost SHARED
         src/android/main_android.cpp
         src/android/AndroidMenu.cpp
+        src/gui/StKeysSymbolic.cpp   # clavier physique : tables par pays du TOS (sans GLFW)
         "${IMGUI_DIR}/imgui.cpp"
         "${IMGUI_DIR}/imgui_draw.cpp"
         "${IMGUI_DIR}/imgui_tables.cpp"
@@ -602,7 +606,7 @@ if(EMSCRIPTEN)
 
     # gui/StKeys : clavier partagé bureau/web (A21) — seul fichier de gui/ compilé ici,
 # il ne dépend que du GLFW d'Emscripten.
-    add_executable(neost-web src/web/main_web.cpp src/gui/StKeys.cpp)
+    add_executable(neost-web src/web/main_web.cpp src/gui/StKeys.cpp src/gui/StKeysSymbolic.cpp)
     target_link_libraries(neost-web PRIVATE neost_core)
     set_source_files_properties(src/web/main_web.cpp
         PROPERTIES COMPILE_OPTIONS "${NEOST_STRICT_OPTS}")
@@ -761,6 +765,7 @@ add_executable(neost
     src/gui/CrtEffectStack.cpp
     src/gui/KeyboardWindow.cpp
     src/gui/StKeys.cpp
+    src/gui/StKeysSymbolic.cpp
     src/gui/StbImage.cpp
     src/audio/MidiOutHost.cpp
     src/audio/MidiInHost.cpp

@@ -17,9 +17,12 @@
 // =============================================================================
 #include "io/CompDisks.hpp"
 #include "gui/AppConfig.hpp"
+#include "gui/StKeys.hpp"
 #include "util/HostPath.hpp"
 #include "util/JoyScript.hpp"
 #include "util/ConfigPath.hpp"
+#include "util/RomProbe.hpp"
+#include <fstream>
 
 #include <algorithm>
 #include <map>
@@ -593,6 +596,59 @@ static void testTosImageLoad() {
     fs::remove_all(dir, ec);
 }
 
+// ---------------------------------------------------------------------------
+//  Clavier : tables SYMBOLIQUES par pays du TOS (gui/StKeysSymbolic).
+//  [D] Hatari src/sdl/keymap.c:265-420 et 963-1001 @ f0736b24. Jusqu'au
+//  2026-11-12 seuls US/DE/FR/UK étaient portés : un TOS tchèque laissait y/z
+//  croisés, un TOS italien envoyait « à » en $0B (le 0 du ST)… Chaque cas
+//  ci-dessous échoue sans les tables ES/IT/SE/CH/NO/DK/NL/CZ.
+// ---------------------------------------------------------------------------
+static void testStKeysCountries() {
+    using namespace neost::stkeys;
+    std::printf("clavier : tables symboliques par pays du TOS\n");
+    // En-tête ROM minimal : os_conf ($1C) = pays << 1 (bit 0 = PAL, ignoré).
+    auto pays = [](int code) {
+        std::vector<uint8_t> rom(0x40, 0);
+        const int w = (code << 1) | 1;
+        rom[0x1C] = uint8_t(w >> 8);
+        rom[0x1D] = uint8_t(w & 0xFF);
+        setCountryFromTos(rom);
+    };
+    struct Cas { int pays; uint32_t cp; unsigned st; const char* what; };
+    static const Cas cas[] = {
+        {15, 'y', 0x2C, "CZ : y -> $2C (QWERTZ)"},
+        {15, 'z', 0x15, "CZ : z -> $15 (QWERTZ)"},
+        {15, 233, 0x0B, "CZ : é -> $0B"},
+        {15, 345, 0x06, "CZ : ř -> $06 (latin étendu, table par défaut)"},
+        { 5, 224, 0x28, "IT : à -> $28"},
+        { 5, '\'', 0x0C, "IT : ' -> $0C"},
+        { 8, 233, 0x27, "CH-DE : é -> $27"},
+        { 7, 232, 0x1A, "CH-FR : è -> $1A (même table que CH-DE)"},
+        { 4, '-', 0x0C, "ES : - -> $0C"},
+        { 4, 231, 0x29, "ES : ç -> $29"},
+        {14, '-', 0x0C, "NL : - -> $0C"},
+        {14, '\\', 0x60, "NL : \\ -> $60"},
+        { 6, '+', 0x0C, "SE : + -> $0C"},
+        {10, '+', 0x0C, "FI : + -> $0C (table SE)"},
+        {12, '+', 0x0C, "DK : + -> $0C"},
+        {12, 248, 0x28, "DK : ø -> $28"},
+        {11, 248, 0x27, "NO : ø -> $27"},
+        // Témoins : les quatre pays déjà portés ne bougent pas, et un pays sans
+        // table chez Hatari (TR = 9) ou EmuTOS multilingue retombe sur le défaut.
+        { 1, 'y', 0x2C, "DE : y -> $2C"},
+        { 2, 'a', 0x10, "FR : a -> $10"},
+        { 0, '-', 0x0C, "US : - -> $0C"},
+        { 9, '-', 0x35, "TR : - -> $35 (défaut)"},
+        {127, 'y', 0x15, "EmuTOS multilingue : y -> $15 (défaut)"},
+    };
+    for (const Cas& c : cas) {
+        pays(c.pays);
+        checkHex(c.what, symbolicForCountry(c.cp), c.st);
+    }
+    // Décodage UTF-8 des noms de touches à deux octets du latin étendu A.
+    checkHex("utf8First(\"ř\") = U+0159", utf8First("\xC5\x99"), 0x159);
+}
+
 static void testConfigParser() {
     using namespace neost::appconfig;
     std::printf("neost.cfg (analyse / écriture)\n");
@@ -724,7 +780,75 @@ static void testConfigParser() {
         checkStr("trim : que des blancs",  trimmed("  \t\r"),           "");
         // Un blanc INTERNE appartient à la valeur (un chemin peut en contenir).
         checkStr("trim : blanc interne gardé",
-                 trimmed("disk=disks/my game.st "), "disk=disks/my game.st");
+                 trimmed("disk=disks/my game.st"), "disk=disks/my game.st");
+        // Clés de CHEMIN (2026-11-12) : le blanc FINAL appartient lui aussi au nom —
+        // « /Users/me/Games  » est un dossier légal. Le rogner changeait le dossier en
+        // un dossier absent, et gemdos= était vidé en silence au démarrage suivant.
+        // Seul le '\r' du CRLF part.
+        checkStr("trim : chemin, blanc final gardé",
+                 trimmed("gemdos=/Users/me/Games "), "gemdos=/Users/me/Games ");
+        checkStr("trim : chemin, CRLF retiré, blanc gardé",
+                 trimmed("disk=disks/x.st \r"), "disk=disks/x.st ");
+        checkStr("trim : kiosk_romdir, blanc final gardé",
+                 trimmed("kiosk_romdir=/media/roms  "), "kiosk_romdir=/media/roms  ");
+    }
+    // Aller-retour écriture → lecture des chemins hostiles (cas de la chasse du
+    // 2026-11-12) : espace finale préservée, saut de ligne REFUSÉ à l'écriture — il
+    // injectait « machine=megaste » et « mem=4m » au relu.
+    {
+        Config w;
+        w.machine = "st"; w.mem = "512k";
+        w.gemdos = "/Users/me/Games ";
+        w.disk   = "/tmp/evil.st\nmachine=megaste\nmem=4m";
+        w.cart   = "carts/x.stc\r";
+        std::ostringstream o;
+        writeConfigKeys(o, w, true);
+        Config r;
+        std::istringstream in(o.str());
+        std::string l;
+        while (std::getline(in, l)) parseConfigLine(r, l);
+        checkStr("cfg : gemdos à espace finale relu intact", r.gemdos, "/Users/me/Games ");
+        checkStr("cfg : chemin à saut de ligne non écrit", r.disk, "");
+        checkStr("cfg : chemin à \\r non écrit", r.cart, "");
+        checkStr("cfg : pas d'injection de machine=", r.machine, "st");
+        checkStr("cfg : pas d'injection de mem=", r.mem, "512k");
+        checkBool("cfg : aucune ligne « machine=megaste »",
+                  o.str().find("machine=megaste") == std::string::npos, true);
+    }
+    // audio_latency_ms borné à la LECTURE comme Audio::setLatencyMs ([20, 250]) : la
+    // valeur folle restait affichée et réécrite alors que le son tournait sur une autre.
+    {
+        Config c;
+        parseConfigLine(c, "audio_latency_ms=99999");
+        checkInt("latence audio : plafond 250", c.audioLatencyMs, 250);
+        parseConfigLine(c, "audio_latency_ms=-5");
+        checkInt("latence audio : plancher 20", c.audioLatencyMs, 20);
+        parseConfigLine(c, "audio_latency_ms=120");
+        checkInt("latence audio : valeur légale intacte", c.audioLatencyMs, 120);
+    }
+    // NEOST_GEMDOS_DIR / NEOST_ACSI_IMG : surcharges de SÉANCE, jamais écrites.
+    // Avant le 2026-11-12, AppInit les recopiait dans cfg puis sauvegardait — le
+    // gemdos=/acsi= de l'utilisateur était remplacé, et son cart= effacé (la
+    // cartouche système du HD occupe $FA0000, appShutdown lisait cart= vide).
+    {
+        EnvOverrides o;
+        o.gemdos = "/tmp/envhd"; o.acsi = "/tmp/env.img";
+        o.savedGemdos = ""; o.savedAcsi = "hd/mine.img"; o.savedCart = "carts/mine.stc";
+        Config c;
+        c.gemdos = "/tmp/envhd"; c.acsi = "/tmp/env.img"; c.cart = "";
+        const Config w = persistableConfig(c, o);
+        checkStr("env : gemdos= du fichier conservé", w.gemdos, "");
+        checkStr("env : acsi= du fichier conservé",   w.acsi,   "hd/mine.img");
+        checkStr("env : cart= du fichier rendu",      w.cart,   "carts/mine.stc");
+        // Un changement fait EN SÉANCE (menu, profil) s'écrit normalement.
+        Config u = c;
+        u.gemdos = "/Users/me/hd"; u.acsi = "";
+        const Config wu = persistableConfig(u, o);
+        checkStr("env : gemdos choisi en séance écrit", wu.gemdos, "/Users/me/hd");
+        checkStr("env : acsi démonté en séance écrit",  wu.acsi,   "");
+        // Sans surcharge, rien ne change.
+        const Config wn = persistableConfig(c, EnvOverrides{});
+        checkStr("env : sans surcharge, gemdos tel quel", wn.gemdos, "/tmp/envhd");
     }
     // Valeurs hostiles bornées : une deadzone > 0.95 rendait le menu de la borne
     // incontrôlable, un volume hors [0,1] saturait la sortie.
@@ -2615,6 +2739,53 @@ static void testFixBools() {
     checkBool("un octet nul reste FAUX", f.flag, false);
 }
 
+// ---------------------------------------------------------------------------
+//  Premier argument positionnel du GUI : TOS, disquette, ou refus (util/RomProbe).
+//  Jusqu'au 2026-11-12, `neost jeu.st` chargeait la disquette dans la fenêtre ROM
+//  (Bus::loadTos accepte 1 octet à 1 Mo) et la persistait en rom=.
+// ---------------------------------------------------------------------------
+static void testRomProbe() {
+    std::printf("argument positionnel : TOS, disquette ou refus (RomProbe)\n");
+    namespace fs = std::filesystem;
+    using namespace neost::romprobe;
+    const fs::path base = fs::temp_directory_path() / "neost-selftest-romprobe";
+    std::error_code ec;
+    fs::remove_all(base, ec);
+    fs::create_directories(base, ec);
+    auto make = [&](const char* name, std::vector<uint8_t> head, std::size_t size) {
+        head.resize(size, 0);
+        std::ofstream(base / name, std::ios::binary)
+            .write(reinterpret_cast<const char*>(head.data()), std::streamsize(head.size()));
+        return (base / name).string();
+    };
+    // [C] TOS 1.00 = $601E, 1.02+ et EmuTOS = $602E, version à l'offset 2.
+    const std::string tos100 = make("tos100.img", {0x60, 0x1E, 0x01, 0x00}, 192 * 1024);
+    const std::string etos   = make("etos256.img", {0x60, 0x2E, 0x02, 0x06}, 256 * 1024);
+    const std::string dump1  = make("tos104de.img", {0x60, 0x2E, 0x01, 0x04}, 196607);  // un octet de moins
+    const std::string badSz  = make("short.img", {0x60, 0x2E, 0x01, 0x04}, 100 * 1024);
+    // Une disquette .st : secteur de boot (BRA.S $60xx fréquent ! — l'en-tête TOS ne
+    // suffit pas sans la taille) de 720 Ko.
+    const std::string st     = make("game.st", {0x60, 0x38, 0x01, 0x00}, 720 * 1024);
+    const std::string msa    = make("GAME.MSA", {0x0E, 0x0F, 0x00, 0x09}, 4096);
+    const std::string junk   = make("notes.txt", {'h', 'e', 'l', 'l'}, 300);
+    const std::string tosNamedSt = make("tos.st", {0x60, 0x2E, 0x01, 0x62}, 256 * 1024);
+
+    checkBool("TOS 1.00 ($601E, 192 Ko) → ROM", classifyPositional(tos100) == Positional::Rom, true);
+    checkBool("EmuTOS ($602E, 256 Ko) → ROM",   classifyPositional(etos) == Positional::Rom, true);
+    checkBool("dump à un octet près → ROM",      classifyPositional(dump1) == Positional::Rom, true);
+    checkBool("en-tête TOS, taille fausse → refus", classifyPositional(badSz) == Positional::Invalid, true);
+    checkBool("disquette .st (720 Ko) → disquette", classifyPositional(st) == Positional::Floppy, true);
+    checkBool("disquette .MSA (casse) → disquette", classifyPositional(msa) == Positional::Floppy, true);
+    checkBool("fichier quelconque → refus",      classifyPositional(junk) == Positional::Invalid, true);
+    checkBool("chemin absent → refus",
+              classifyPositional((base / "absent.st").string()) == Positional::Invalid, true);
+    checkBool("l'en-tête prime : TOS nommé .st → ROM",
+              classifyPositional(tosNamedSt) == Positional::Rom, true);
+    checkBool("taille 1 Mo + 2 Ko refusée", tosRomSize(1024u * 1024u + 2048u), false);
+    checkBool("taille 512 Ko acceptée",     tosRomSize(512u * 1024u), true);
+    fs::remove_all(base, ec);
+}
+
 static void testConfigWriteCreatesDir() {
     std::printf("neost.cfg — l'écriture CRÉE son dossier (A12)\n");
     namespace fs = std::filesystem;
@@ -3250,9 +3421,11 @@ int main() {
     testMissingHwHint();
     testTosImageLoad();
     testConfigParser();
+    testStKeysCountries();
     testRamDisplay();
     testConfigPath();
     testConfigWriteCreatesDir();
+    testRomProbe();
     testFixBools();
     testChannelMask();
     std::printf("[selftest-logic] %d OK, %d FAIL\n", g_ok, g_fail);
