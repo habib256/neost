@@ -28,7 +28,10 @@
 // étalons 19/0, différentiel 14/14. Le sync-driven reste accessible en OPT-IN pour A/B.
 
 // Choisit une machine compatible avec la ROM originale. Les adaptations de
-// TOS_CheckSysConfig d'Hatari visant TT/Falcon restent hors champ NeoST.
+// TOS_CheckSysConfig d'Hatari visant TT/Falcon restent hors champ NeoST : ces
+// ROM (3.0x, 4.x, 2.07) ne basculent rien ici, Bus::loadTos les REFUSE avec un
+// message (tosUnsupportedMachine, MachineType.hpp) — on ne rétrograde pas un TOS
+// 68030 vers une machine qui ne peut pas l'exécuter.
 MachineType Machine::adjustMachineForTos(MachineType requested, const std::string& romPath) {
     std::ifstream f(romPath, std::ios::binary);
     if (!f) return requested;                 // introuvable → loadTos signalera l'erreur
@@ -348,6 +351,28 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::TIMER_B, [this] { onTimerB(); });
     gemdos.setPartitionCountProvider([this] { return fdc.acsiPartitionCount(); });
     gemdos.setFloppyProvider([this] { return fdc.inserted(0); });
+    // Heure GEMDOS d'un fichier créé sur le lecteur hôte : la puce d'horloge — la RTC d'un
+    // Mega, l'IKBD ailleurs. Format DOS (heure, date depuis 1980). Ce que chaque TOS en
+    // fait (ou n'en fait pas) : cf. GemdosHd::emulatedNow.
+    gemdos.setClockProvider([this](uint16_t& tw, uint16_t& dw) {
+        int y, mo, d, h, mi, s;
+        if (machineIsMega(bus.machine)) {
+            const Rtc::DateTime t = rtc.getDateTime();
+            y = t.year; mo = t.month; d = t.day; h = t.hour; mi = t.min; s = t.sec;   // année depuis 1980
+        } else {
+            uint8_t c[6];
+            ikbd.clockBcd(c);
+            auto dec = [](uint8_t v) { return (v >> 4) * 10 + (v & 15); };
+            const int yy = dec(c[0]);                     // 2 chiffres : 80..99 → 19xx
+            y = (yy >= 80 ? 1900 + yy : 2000 + yy) - 1980;
+            mo = dec(c[1]); d = dec(c[2]); h = dec(c[3]); mi = dec(c[4]); s = dec(c[5]);
+        }
+        if (y < 0 || y > 127 || mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59 || s > 59)
+            return false;
+        tw = uint16_t((s >> 1) | (mi << 5) | (h << 11));
+        dw = uint16_t(d | (mo << 5) | (y << 9));
+        return true;
+    });
     mfp.setTimerBEdgeSink([this](bool start) { retargetTimerB(start); });
     mfp.setTbiPulseSink([this](bool on) { onTbiPulseMode(on); });
     sched.setCallback(Scheduler::TBI_EDGE, [this] { onTbiEdge(); });
@@ -970,7 +995,7 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 63; // GEMDOS : 40 handles hôte en 88..127 (v62 : Fforce par processus, handle détruit ; v61 : processus, attributs, alias 8.3)
+static constexpr uint16_t kStateVersion = 64; // empreintes ACSI, NE2000 TSR/RSR/CNTR, GEMDOS ProcPaths::ran, Shifter noscroll (v63 : 40 handles hôte en 88..127 ; v62 : Fforce par processus, handle détruit ; v61 : processus, attributs, alias 8.3)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
@@ -1055,7 +1080,8 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint8_t flags = uint8_t((gemdos.active() ? 1u : 0u)
                             | (ne2000.enabled() ? 2u : 0u) | (usatanOn_ ? 4u : 0u)
                             | (isp1160.enabled() ? 8u : 0u)
-                            | (dongle.attached() ? 16u : 0u));   // clé Cubase (v14)
+                            | (dongle.attached() ? 16u : 0u)     // clé Cubase (v14)
+                            | (fdc.acsiAnyImage() ? 32u : 0u));  // image(s) ACSI (v64)
     uint32_t cartFp = cartFingerprint(bus.cart);
     // Empreinte de l'IMAGE ROM elle-même. `tosV` ci-dessus ne porte que les 2 octets de
     // version lus à l'offset 2 : il ne sépare pas deux ROM de même version, alors que la
@@ -1070,6 +1096,15 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint8_t sessionCfg[kSessionCfgSize];
     sessionConfig(sessionCfg);
     for (uint8_t& b : sessionCfg) ar(b);
+    // v64 — empreinte de l'image ACSI de chaque cible (chemin + taille, 0 = vide). La
+    // config des cibles n'est pas dans le flux (Acsi::serialize : « même config
+    // requise »), mais rien ne la VÉRIFIAIT : un état pris avec --acsi img se rechargeait
+    // sans disque dur, ou sur une autre image, et le TOS restauré lisait des
+    // partitions, une FAT en cache et des secteurs qui n'étaient plus les siens.
+    // Refusé par stateHeaderOk, comme l'USB refuse un autre média (UsbDevice::serialize).
+    uint32_t acsiFp[kAcsiTargets];
+    acsiFingerprints(acsiFp);
+    for (uint32_t& v : acsiFp) ar(v);
     // CRC32 du payload (tout ce qui suit ce champ) : écrit par saveState (patch à
     // l'offset fixe 13), vérifié par loadState AVANT toute restauration. Dans le
     // flux symétrique il vaut 0 — seul le patch post-sérialisation le remplit.
@@ -1196,11 +1231,12 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     mapAt("fin", ar.saveSize());
 }
 
-// En-tête d'un .state v60 : magic(4) version(2) machine(1) ram(4) tos(2) flags(1)
-// cartFp(4) romFp(4) sessionCfg(8) crc32(4) — le CRC du payload reste le DERNIER champ
-// de l'en-tête. (v19 à v59 : sans sessionCfg, 26 octets.)
+// En-tête d'un .state v64 : magic(4) version(2) machine(1) ram(4) tos(2) flags(1)
+// cartFp(4) romFp(4) sessionCfg(8) acsiFp(8×4) crc32(4) — le CRC du payload reste le
+// DERNIER champ de l'en-tête. (v60 à v63 : sans acsiFp ; v19 à v59 : sans sessionCfg.)
 static constexpr std::size_t kStateCfgOffset   = 22;
-static constexpr std::size_t kStateCrcOffset   = kStateCfgOffset + Machine::kSessionCfgSize;
+static constexpr std::size_t kStateAcsiOffset  = kStateCfgOffset + Machine::kSessionCfgSize;
+static constexpr std::size_t kStateCrcOffset   = kStateAcsiOffset + 4 * Machine::kAcsiTargets;
 static constexpr std::size_t kStateHeaderSize  = kStateCrcOffset + 4;
 
 // CRC32 (IEEE, réflexe, sans table) du payload : détecte un fichier corrompu de la
@@ -1334,6 +1370,10 @@ void Machine::sessionConfig(uint8_t out[kSessionCfgSize]) const {
     out[7] = 0;
 }
 
+void Machine::acsiFingerprints(uint32_t out[kAcsiTargets]) const {
+    for (std::size_t t = 0; t < kAcsiTargets; ++t) out[t] = fdc.acsiImageFingerprint(int(t));
+}
+
 // Contrôle d'en-tête SEUL, sans rien restaurer : le retour arrière l'appelle avant de
 // remonter la disquette de l'instantané — restoreMedia réécrit l'image et son fichier
 // hôte, ce qui ne se défait pas si l'état est ensuite refusé (périphérique branché ou
@@ -1387,19 +1427,45 @@ bool Machine::stateHeaderOk(const uint8_t* data, std::size_t n) {
     const uint8_t  curFlags  = uint8_t((gemdos.active() ? 1u : 0u)
                                        | (ne2000.enabled() ? 2u : 0u) | (usatanOn_ ? 4u : 0u)
                                        | (isp1160.enabled() ? 8u : 0u)
-                                       | (dongle.attached() ? 16u : 0u));
+                                       | (dongle.attached() ? 16u : 0u)
+                                       | (fdc.acsiAnyImage() ? 32u : 0u));
     const uint32_t curCartFp = cartFingerprint(bus.cart);
     if (flags != curFlags) {
         std::fprintf(stderr, "[state] rejected: peripheral config mismatch — GEMDOS HD "
                      "%s->%s, EtherNEC %s->%s, UltraSatan %s->%s, "
-                     "NetUSBee %s->%s, Cubase dongle %s->%s (these must match the save)\n",
+                     "NetUSBee %s->%s, Cubase dongle %s->%s, ACSI image %s->%s "
+                     "(these must match the save)\n",
                      (flags & 1) ? "active" : "inactive", (curFlags & 1) ? "active" : "inactive",
                      (flags & 2) ? "active" : "inactive", (curFlags & 2) ? "active" : "inactive",
                      (flags & 4) ? "active" : "inactive", (curFlags & 4) ? "active" : "inactive",
                      (flags & 8) ? "active" : "inactive", (curFlags & 8) ? "active" : "inactive",
-                     (flags & 16) ? "active" : "inactive", (curFlags & 16) ? "active" : "inactive");
-        lastStateError_ = "State needs the same hard disk / network / dongle setup";
+                     (flags & 16) ? "active" : "inactive", (curFlags & 16) ? "active" : "inactive",
+                     (flags & 32) ? "mounted" : "none", (curFlags & 32) ? "mounted" : "none");
+        lastStateError_ = ((flags ^ curFlags) == 32u)
+            ? ((flags & 32) ? "State needs the ACSI hard disk image it was saved with"
+                            : "State was saved without an ACSI hard disk image")
+            : "State needs the same hard disk / network / dongle setup";
         return false;
+    }
+    // Même présence, mais la bonne image sur la bonne cible ? Chemin ET taille : une
+    // image redimensionnée a une autre géométrie que celle que le TOS a mise en cache.
+    {
+        uint32_t curAcsi[kAcsiTargets];
+        acsiFingerprints(curAcsi);
+        for (std::size_t t = 0; t < kAcsiTargets; ++t) {
+            uint32_t fileFp;
+            std::memcpy(&fileFp, data + kStateAcsiOffset + 4 * t, 4);
+            if (fileFp == curAcsi[t]) continue;
+            std::fprintf(stderr, "[state] rejected: ACSI target %zu: %s (fingerprint "
+                         "%08x vs %08x) — mount the same image path and size\n", t,
+                         !fileFp ? "the save had no image there"
+                                 : !curAcsi[t] ? "the save's image is not mounted"
+                                               : "a different image than at save",
+                         fileFp, curAcsi[t]);
+            lastStateError_ = "State needs the same ACSI hard disk image on target "
+                            + std::to_string(t);
+            return false;
+        }
     }
     if (cartFp != curCartFp) {
         std::fprintf(stderr, "[state] rejected: the mounted cartridge is not the one from "

@@ -28,9 +28,11 @@
 #  montage de la DISQUETTE LIVRÉE (elle avait été écrasée et livrée illisible
 #  pendant des mois, issue #38) et montage d'un dossier hôte en HD GEMDOS par
 #  chemin ABSOLU (forme native de l'hôte : le lecteur C: était mort sur tous les
-#  paquets Windows, issue #37). Ces deux dernières phases sont la leçon des deux
-#  seuls défauts jamais signalés sur un paquet publié : le binaire démarrait, les
-#  DONNÉES et les MONTAGES n'étaient testés par personne.
+#  paquets Windows, issue #37), où un programme de l'invité (C:\AUTO) lit un
+#  fichier et en écrit la copie dans un sous-dossier, vérifiée côté hôte. Ces
+#  deux dernières phases sont la leçon des deux seuls défauts jamais signalés
+#  sur un paquet publié : le binaire démarrait, les DONNÉES et les MONTAGES
+#  n'étaient testés par personne.
 #  La 5e phase (2026-09-01, chantier A12) ferme un trou de la même famille : les
 #  quatre premières ÉCRIVENT dans le paquet (captures, journaux, dossier GEMDOS),
 #  donc elles exigent un dossier EXTRAIT — jamais le support que l'utilisateur
@@ -974,6 +976,10 @@ jobs:
     if: github.ref_type == 'tag'
     permissions:
       contents: read
+      # Le job release-watch de tests.yml demande actions: read. Il ne tourne pas sur
+      # un tag, mais un workflow appelé ne peut demander plus que son appelant ne
+      # lui accorde : sans cette ligne, l'appel serait refusé avant de démarrer.
+      actions: read
     uses: ./.github/workflows/tests.yml
 
   publish:

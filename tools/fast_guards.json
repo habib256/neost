@@ -22,7 +22,7 @@
       "since": "2026-07-09",
       "last_real_catch": null
     },
-    "Fuzzing des parseurs d'images disquette (.msa / .dim / .stx)": {
+    "Fuzzing des parseurs d'images disquette (.msa / .dim / .stx / .ipf, .wd1772, FDC)": {
       "since": "2026-08-27",
       "last_real_catch": null
     },

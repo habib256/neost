@@ -177,6 +177,11 @@ void Ikbd::initClockFromHostTime() {
 }
 
 uint8_t Ikbd::read8(uint32_t addr) {
+    // Comme write8 et MidiAcia::read8 : un front TX passé mais pas encore dispatché
+    // (lecture en cours d'instruction) a déjà transféré TDR → TSR. Sans ce rattrapage,
+    // le statut rendait un TDRE périmé à 0 ([B] MC6850 § Status Register p. 8 : TDRE
+    // remonte au transfert).
+    if (sched_) catchUpCpuTx(sched_->liveNow());
     if ((addr & 2) == 0) {
         // $FFFC00 : statut, [B] MC6850 § Status Register p. 8-9.
         // TDRE = 0 de l'écriture de TDR au transfert vers TSR, 1 sinon, que TIE soit armé ou non ;
@@ -341,6 +346,17 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
             scheduleCpuTx();
         }
         raiseIfReady();
+        return;
+    }
+    // Master reset MAINTENU (CR1-0 = 11) : l'émetteur est tenu initialisé, l'octet est JETÉ
+    // (ni TDR plein, ni départ à la sortie du reset), comme dans MidiAcia::write8.
+    // [B] Motorola MC6850 § Counter Divide Select Bits p. 8 (« initializes both the receiver and
+    //     transmitter ») et § Interrupt Request p. 6 (« maintained in the Reset condition ») : TDRE
+    //     se relit à 1, TDR vide, dès la sortie — garder l'octet ferait partir un TDR déclaré vide.
+    // [D] MiSTery gen_uart.v:299-318 @ a00deb5 : reset logiciel en impulsion, l'écriture y partirait.
+    //     Grade inférieur, non retenu. Sans cette garde, le 6301 recevait ET exécutait la commande.
+    if ((control_ & 0x03) == 0x03) {
+        trace("acia-write data=$%02X result=reset-drop", v);
         return;
     }
     trace("acia-write data=$%02X tdr-full=%d", v, !tdre_);
@@ -1543,7 +1559,7 @@ void Ikbd::onRxDeliver() {
         // [B] Motorola MC6850 (extern/datasheets/MC6850.pdf) § Counter Divide Select
         //     Bits p. 8 (« master reset which clears the Status Register […] and
         //     initializes both the receiver and transmitter ») et § Interrupt Request
-        //     p. 7 (ACIA « maintained in the Reset condition »).
+        //     p. 6 (ACIA « maintained in the Reset condition »).
         // [D] Hatari acia.c:1038 @ f0736b24 — ACIA_Clock_RX tourne pendant le reset et
         //     pose RDRF : défaut d'Hatari, NON porté. Sans cette garde, une touche pressée
         //     puis relâchée pendant un reset tenu donnait RDRF puis overrun à la sortie,

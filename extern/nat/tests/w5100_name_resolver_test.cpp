@@ -83,7 +83,8 @@ void testFailureIsCachedToo()
 //
 // A name that failed while the host network was still coming up stayed
 // unresolvable until a cold boot. Once the failure is older than its
-// lifetime, the next OPEN asks again; a positive answer never expires.
+// lifetime, the next OPEN asks again. A success lives longer (kPositiveTtl,
+// see testSuccessExpires).
 void testFailureExpires()
 {
     std::atomic<int> calls{ 0 };
@@ -107,6 +108,35 @@ void testFailureExpires()
     assert(calls == 2);                       // success is not re-queried
 
     std::printf("  a failed lookup expires and is asked again: OK\n");
+}
+
+// ── A success expires too, after the TTL the virtual DNS announces ───────
+//
+// NeoST: a positive answer was kept for the whole session while the proxy
+// told the guest to re-ask after 60 s, so a moved host stayed unreachable.
+void testSuccessExpires()
+{
+    std::atomic<int> calls{ 0 };
+    std::atomic<uint32_t> answer{ 0x0100000Au };
+    W5100NameResolver resolver([&](const std::string&) {
+        ++calls;
+        return answer.load();
+    });
+    static_assert(W5100NameResolver::kPositiveTtl.count() == 60,
+                  "kept equal to the TTL NatDns announces");
+    resolver.setPositiveTtl(std::chrono::milliseconds(20 * pom2test::timeScale()));
+
+    assert(resolver.resolve("moved.test", 1000).address == 0x0100000Au);
+    assert(resolver.peek("moved.test").status == Status::Resolved);
+    assert(calls == 1);
+    answer = 0x0200000Au;
+    std::this_thread::sleep_for(std::chrono::milliseconds(40 * pom2test::timeScale()));
+    assert(resolver.peek("moved.test").status == Status::Pending);   // stale = unknown
+    const auto r = resolver.resolve("moved.test", 1000);
+    assert(r.status == Status::Resolved && r.address == 0x0200000Au);
+    assert(calls == 2);
+
+    std::printf("  a resolved address expires and is asked again: OK\n");
 }
 
 // ── A slow lookup times out, then lands via poll() ───────────────────────
@@ -272,6 +302,7 @@ int main()
     testCacheAvoidsSecondLookup();
     testFailureIsCachedToo();
     testFailureExpires();
+    testSuccessExpires();
     testSlowLookupTimesOutThenArrives();
     testInFlightLookupsAreCapped();
     testNewLookupsAreRateLimited();

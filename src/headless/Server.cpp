@@ -295,7 +295,14 @@ int run(Machine& machine, const Options& opts) {
             if (!arity(a, 1, 1) || !slotIndex(a[0], s)) { if (!reply("err save expects a slot index")) return 1; continue; }
             std::vector<uint8_t> saved;
             if (!machine.saveState(saved)) {
-                if (!reply("err cannot snapshot GEMDOS host files")) return 1;
+                // Le MOTIF de la machine, pas une cause supposée : le refus le plus courant
+                // n'est pas un fichier GEMDOS disparu mais une instruction garée (blit HOG à
+                // cheval sur la fin de trame, Machine::kParkedReason) — le client doit lire
+                // « réessaie plus tard », pas « disque hôte cassé ».
+                const std::string why = machine.lastStateError().empty()
+                    ? std::string("cannot snapshot the GEMDOS host files")
+                    : machine.lastStateError();
+                if (!reply("err save: " + why)) return 1;
                 continue;
             }
             slots[s].data = std::move(saved);
@@ -312,9 +319,24 @@ int run(Machine& machine, const Options& opts) {
             std::size_t s = 0;
             if (!arity(a, 1, 1) || !slotIndex(a[0], s)) { if (!reply("err load expects a slot index")) return 1; continue; }
             if (!slots[s].used) { if (!reply("err slot " + a[0] + " is empty")) return 1; continue; }
-            if (!machine.loadState(slots[s].data.data(), slots[s].data.size())) {
-                if (!reply("err state in slot " + a[0] + " rejected — reason on stderr (CRC, "
-                           "version, ROM, machine or RAM mismatch, or truncated)")) return 1;
+            const std::vector<uint8_t>& st = slots[s].data;
+            // Instruction garée (blit HOG à cheval sur la fin de trame) : « load » remplace
+            // TOUT l'état, comme un reset — l'instruction en cours n'a plus d'avenir. On
+            // valide d'abord l'en-tête (sans toucher la session : un état refusé ne doit
+            // pas couper le blit pour rien), puis on abandonne l'instruction et on charge.
+            // Avant, le refus de Machine::loadState (kParkedReason) remontait ici comme un
+            // « err » sans motif, et tools/opendst_explore.py s'arrête sur tout err.
+            if (machine.parkedInInstruction()) {
+                if (!machine.stateHeaderOk(st.data(), st.size())) {
+                    if (!reply("err load: " + machine.lastStateError())) return 1;
+                    continue;
+                }
+                machine.requestParkedAbort();   // headless : coroutine synchrone, abandon sur place
+            }
+            if (!machine.loadState(st.data(), st.size())) {
+                if (!reply("err load: " + (machine.lastStateError().empty()
+                                           ? std::string("state rejected")
+                                           : machine.lastStateError()))) return 1;
                 continue;
             }
             frame = slots[s].frame;

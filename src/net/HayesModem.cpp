@@ -76,7 +76,7 @@ void HayesModem::hangup(bool notify) {
         fd_ = neonet::kInvalidSocket;
     }
     dataMode_ = false;
-    plusCount_ = 0;
+    plusCount_ = 0; escArmed_ = false;
     mfp_.setRs232Dcd(false);                     // porteuse tombée
     if (notify && hadCall) sendStr("NO CARRIER");
 }
@@ -119,7 +119,7 @@ void HayesModem::dial(const std::string& target) {
     }
     dial_ = std::move(job);
     dialLabel_ = host + ":" + std::to_string(port);
-    plusCount_ = 0;
+    plusCount_ = 0; escArmed_ = false;
     mtrace("dialing", dialLabel_);
 }
 
@@ -216,7 +216,7 @@ void HayesModem::onPortA(uint8_t a) {
     mtrace("DTR dropped, &D", std::to_string(dtrMode_));
     switch (dtrMode_) {
     case 1:
-        if (dataMode_) { dataMode_ = false; plusCount_ = 0; sendStr("OK"); }
+        if (dataMode_) { dataMode_ = false; plusCount_ = 0; escArmed_ = false; sendStr("OK"); }
         break;
     case 2:
         hangup(true);
@@ -247,23 +247,26 @@ void HayesModem::onTx(uint8_t b) {
         return;
     }
     if (dataMode_) {
-        // Échappement « +++ » (simplifié, sans garde de silence).
+        // Échappement « +++ » AVEC temps de garde (2026-11-12). [E] Usage Hayes (brevet
+        // US 4 549 302, Heatherington, non relu ici ; registre S12 = 50 × 1/50 s) : une
+        // seconde de silence, trois '+' rapprochés, une seconde de silence — poll() conclut.
+        // Sans garde, tout « +++ » d'un transfert binaire (ZMODEM, archive, image)
+        // basculait en mode commande, avalait les trois octets et répondait « OK » au
+        // milieu du flux. Le temps se compte en appels de poll() (une trame émulée,
+        // déterministe) : 1 s à 50 Hz, ~0,83 s à 60 Hz, ~0,7 s en haute résolution.
+        const bool quiet = idlePolls_ >= kGuardPolls;
+        idlePolls_ = 0;
+        if (escArmed_) flushPlus();              // silence final rompu : c'étaient des données
         if (b == '+') {
-            if (++plusCount_ >= 3) {
-                dataMode_ = false;
-                plusCount_ = 0;
-                sendStr("OK");
+            if (plusCount_ > 0 && quiet) flushPlus();   // '+' trop espacés : données, on repart
+            if (plusCount_ > 0 || quiet) {
+                if (++plusCount_ == 3) escArmed_ = true;   // reste à voir le silence final
                 return;
             }
         } else if (plusCount_ > 0) {
-            // Les '+' retenus étaient des données : on les envoie avant l'octet.
-            for (int i = 0; i < plusCount_; ++i) {
-                const uint8_t plus = '+';
-                neonet::sockSend(fd_, &plus, 1);
-            }
-            plusCount_ = 0;
+            flushPlus();                         // les '+' retenus étaient des données
         }
-        if (b != '+' && neonet::socketValid(fd_) && neonet::sockSend(fd_, &b, 1) < 0)
+        if (neonet::socketValid(fd_) && neonet::sockSend(fd_, &b, 1) < 0)
             hangup(true);                        // connexion morte
         return;
     }
@@ -286,7 +289,27 @@ void HayesModem::onTx(uint8_t b) {
     if (b >= 0x20 && cmd_.size() < 200) cmd_ += char(b);
 }
 
+// '+' retenus (début d'échappement avorté) : c'étaient des données.
+void HayesModem::flushPlus() {
+    for (int i = 0; i < plusCount_; ++i) {
+        const uint8_t plus = '+';
+        if (neonet::socketValid(fd_)) neonet::sockSend(fd_, &plus, 1);
+    }
+    plusCount_ = 0; escArmed_ = false;
+}
+
 void HayesModem::poll() {
+    // Temps de garde de « +++ » (cf. onTx) : une trame de plus sans octet émis.
+    if (idlePolls_ < kGuardPolls) ++idlePolls_;
+    if (dataMode_ && plusCount_ > 0 && idlePolls_ >= kGuardPolls) {
+        if (escArmed_) {                         // « +++ » encadré de silence : échappement
+            dataMode_ = false;
+            plusCount_ = 0; escArmed_ = false;
+            sendStr("OK");
+        } else {
+            flushPlus();                         // un ou deux '+' isolés : données
+        }
+    }
     // Issue d'une numérotation : relevée ici, à la trame, jamais sur le fil hôte.
     if (dial_) {
         neonet::SocketHandle fd = neonet::kInvalidSocket;
@@ -312,7 +335,7 @@ void HayesModem::poll() {
                 if (neonet::socketValid(fd_)) neonet::sockClose(fd_);
                 fd_ = fd;
                 dataMode_ = true;
-                plusCount_ = 0;
+                plusCount_ = 0; escArmed_ = false;
                 mtrace("connected to", dialLabel_);
                 const int baud = mfp_.serialBaud() > 0 ? mfp_.serialBaud() : 9600;
                 sendStr("CONNECT " + std::to_string(baud));

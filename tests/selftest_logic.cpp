@@ -17,9 +17,12 @@
 // =============================================================================
 #include "io/CompDisks.hpp"
 #include "gui/AppConfig.hpp"
+#include "gui/StKeys.hpp"
 #include "util/HostPath.hpp"
 #include "util/JoyScript.hpp"
 #include "util/ConfigPath.hpp"
+#include "util/RomProbe.hpp"
+#include <fstream>
 
 #include <algorithm>
 #include <map>
@@ -49,6 +52,7 @@
 #include "util/MouseScale.hpp"
 #include "core/MachineType.hpp"
 #include <filesystem>
+#include <fstream>
 
 #include <cstdio>
 #include <cstring>
@@ -153,7 +157,7 @@ bool testSccEomReset(); // commande WR0 de remise à zéro du latch EOM
 int testMachineTimerBAer(); // recalage immédiat Timer B après changement AER3
 int testMfpMmioDecode(); // pairs fautifs, mots partiels et impairs void MFP
 bool testPsgOddWrite(); // ombres impaires PSG selon largeur du Bus
-int testDmaSoundMmioState(); // octet FF8920 conservé dans les sauvegardes
+int testDmaSoundMmioState(); // octet FF8920 relu à zéro, mode sauvegardé
 bool testPsgReset(); // image des registres et silence après reset PSG
 bool testYmC10Noise(); // filtre C10 aux coupures du circuit, bruit R6=0 égal à R6=1
 int testBlitterRmw(); // atomicité TAS devant une échéance blitter
@@ -167,6 +171,7 @@ int testGemdosDtaReuse(); // recherches DTA indépendantes, réutilisation et er
 int testGemdosProcess(); // dossier/lecteur par processus, alias 8.3, Fdatime, attributs, Fforce
 int testMfpUnderrunClear(); // délai matériel avant effacement UE
 int testFdcLiveMedia(); // sélection live et validation CHS du nouveau média
+int testFdcMountGuards(); // .dim lâche, une image un lecteur, écriture sans disque, ACSI des états
 int testMidiRxPhase(); // horloge MIDI RX continue
 bool testSccAutoEnables(); // qualification CTS/DCD des canaux SCC
 int testMachineMfpTx(); // émission via Bus/Machine
@@ -483,6 +488,166 @@ static void testMissingHwHint() {
     // une autre cause, et pointer le profil enverrait l'utilisateur sur une fausse piste.
     checkBool("RAM $001000 → aucun conseil",  mmioNeedsBetterMachine(0x001000, MachineType::St, m), false);
     checkBool("vidéo $FF8240 → aucun conseil", mmioNeedsBetterMachine(0xFF8240, MachineType::St, m), false);
+    // Registres propres au Mega STE au-delà du SCU : cache/CPU, densité HD, FPU.
+    checkBool("cache/CPU $FF8E21 sur STE → manquant", mmioNeedsBetterMachine(0xFF8E21, MachineType::Ste, m), true);
+    checkStr ("… nommé « Mega STE cache/CPU control »", m.chip ? m.chip : "", "Mega STE cache/CPU control");
+    checkBool("cache/CPU sur MegaSTE → rien", mmioNeedsBetterMachine(0xFF8E21, MachineType::MegaSte, m), false);
+    checkBool("densité $FF860E sur ST → manquant", mmioNeedsBetterMachine(0xFF860E, MachineType::St, m), true);
+    checkStr ("… profil conseillé « megaste »",   m.needs ? m.needs : "", "megaste");
+    checkBool("densité sur MegaSTE → rien", mmioNeedsBetterMachine(0xFF860E, MachineType::MegaSte, m), false);
+    checkBool("FPU $FFFA40 sur STE → manquant", mmioNeedsBetterMachine(0xFFFA40, MachineType::Ste, m), true);
+    checkStr ("… nommé « MC68881 FPU »",       m.chip ? m.chip : "", "MC68881 FPU");
+    checkBool("MFP $FFFA3F → aucun conseil", mmioNeedsBetterMachine(0xFFFA3F, MachineType::St, m), false);
+}
+
+// -----------------------------------------------------------------------------
+//  Images TOS et cartouche : implantation, refus TT/Falcon, format .STC.
+//  - TOS 1.06 US de 192 Ko s'annonce à $E00000 (en-tête, offset 8) : la règle « par
+//    taille » le posait à $FC0000, vecteur de reset dans le vide, 68000 halté.
+//  - TOS 3.0x / 4.x / 2.07 (TT, Falcon) : refusés, l'ancienne ROM reste en place.
+//  - .STC = 4 octets factices + 128 Ko : refusée avant (> 128 Ko).
+// -----------------------------------------------------------------------------
+static void testTosImageLoad() {
+    std::printf("Images TOS (os_base, TT/Falcon) et cartouches .STC\n");
+    namespace fs = std::filesystem;
+    const fs::path dir = fs::temp_directory_path() / "neost-selftest-tos";
+    std::error_code ec;
+    fs::remove_all(dir, ec);
+    fs::create_directories(dir, ec);
+    // Image synthétique : BRA.S $602E, version, PC de reset, os_base, signature ETOS.
+    auto makeTos = [&](const char* name, std::size_t size, uint16_t ver, uint32_t base,
+                       bool etos = false) {
+        std::vector<uint8_t> d(size, 0xFF);
+        auto be32 = [&](std::size_t o, uint32_t v) {
+            if (o + 4 > d.size()) return;
+            d[o] = uint8_t(v >> 24); d[o + 1] = uint8_t(v >> 16);
+            d[o + 2] = uint8_t(v >> 8); d[o + 3] = uint8_t(v);
+        };
+        if (size >= 4) { d[0] = 0x60; d[1] = 0x2E; d[2] = uint8_t(ver >> 8); d[3] = uint8_t(ver); }
+        be32(4, base + 0x30);
+        be32(8, base);
+        if (etos) be32(0x2C, 0x45544F53u);
+        const fs::path p = dir / name;
+        std::ofstream(p, std::ios::binary).write(reinterpret_cast<const char*>(d.data()),
+                                                 static_cast<std::streamsize>(d.size()));
+        return p.string();
+    };
+    Bus bus(512u * 1024u);
+    auto orEmpty = [](const char* s) { return std::string(s ? s : ""); };
+
+    // Le cas rapporté : 192 Ko annoncé à $E00000.
+    checkBool("TOS 1.06 192 Ko @E00000 se charge",
+              bus.loadTos(makeTos("t106.img", 192 * 1024, 0x0106, 0xE00000)), true);
+    checkHex ("… posé à $E00000 (en-tête), pas $FC0000 (taille)", bus.romBase, 0xE00000);
+    checkHex ("… vecteur PC lu à $4 = $E00030",
+              (unsigned(bus.read8(4)) << 24) | (unsigned(bus.read8(5)) << 16) |
+              (unsigned(bus.read8(6)) << 8) | bus.read8(7), 0xE00030);
+    // Les ROM historiques ne bougent pas.
+    bus.loadTos(makeTos("t104.img", 192 * 1024, 0x0104, 0xFC0000));
+    checkHex ("TOS 1.04 192 Ko @FC0000 → $FC0000", bus.romBase, 0xFC0000);
+    bus.loadTos(makeTos("t206.img", 256 * 1024, 0x0206, 0xE00000));
+    checkHex ("TOS 2.06 256 Ko @E00000 → $E00000", bus.romBase, 0xE00000);
+    // En-tête inexploitable : repli sur la taille (règle d'avant).
+    bus.loadTos(makeTos("raw16.img", 16 * 1024, 0x0000, 0x12345678));
+    checkHex ("16 Ko sans os_base → $FC0000 (taille)", bus.romBase, 0xFC0000);
+    bus.loadTos(makeTos("raw256.img", 256 * 1024, 0x0206, 0x4E714E71));
+    checkHex ("256 Ko sans os_base → $E00000 (taille)", bus.romBase, 0xE00000);
+    // $FC0000 au-delà de 224 Ko : en-tête refusé ([D] Hatari) → taille → $E00000.
+    bus.loadTos(makeTos("fc256.img", 256 * 1024, 0x0104, 0xFC0000));
+    checkHex ("256 Ko annoncé $FC0000 → $E00000 (>224 Ko)", bus.romBase, 0xE00000);
+    // 224 Ko à $FC0000 : admis, ramené à la fenêtre de 192 Ko (pas d'aliasing sur $FF0000).
+    bus.loadTos(makeTos("fc224.img", 224 * 1024, 0x0104, 0xFC0000));
+    checkHex ("224 Ko annoncé $FC0000 → $FC0000", bus.romBase, 0xFC0000);
+    checkInt ("… tronqué à la fenêtre de 192 Ko", long(bus.rom.size()), 192L * 1024);
+
+    // TT / Falcon : refus, la ROM en place survit.
+    checkStr ("TOS 3.06 → TT",     orEmpty(tosUnsupportedMachine(0x0306, false, 512 * 1024)), "TT");
+    checkStr ("TOS 4.04 → Falcon", orEmpty(tosUnsupportedMachine(0x0404, false, 512 * 1024)), "Falcon");
+    checkStr ("TOS 2.07 (Sparrow) → Falcon", orEmpty(tosUnsupportedMachine(0x0207, false, 256 * 1024)), "Falcon");
+    checkBool("TOS 2.06 admis", tosUnsupportedMachine(0x0206, false, 256 * 1024) == nullptr, true);
+    checkBool("TOS 1.62 admis", tosUnsupportedMachine(0x0162, false, 256 * 1024) == nullptr, true);
+    checkBool("EmuTOS 512 Ko (toutes machines) admis",
+              tosUnsupportedMachine(0x0306, true, 512 * 1024) == nullptr, true);
+    bus.loadTos(makeTos("ok206.img", 256 * 1024, 0x0206, 0xE00000));
+    checkBool("TOS 4.04 refusé par loadTos",
+              bus.loadTos(makeTos("t404.img", 512 * 1024, 0x0404, 0xE00000)), false);
+    checkBool("TOS 3.06 refusé par loadTos",
+              bus.loadTos(makeTos("t306.img", 512 * 1024, 0x0306, 0xE00000)), false);
+    checkBool("TOS 2.07 refusé par loadTos",
+              bus.loadTos(makeTos("t207.img", 256 * 1024, 0x0207, 0xE00000)), false);
+    checkHex ("… la ROM précédente (2.06) reste en place", bus.tosVersion, 0x0206);
+    checkInt ("… avec sa taille", long(bus.rom.size()), 256L * 1024);
+
+    // Cartouches.
+    auto makeCart = [&](const char* name, std::size_t size, std::size_t magicAt) {
+        std::vector<uint8_t> d(size, 0);
+        if (magicAt + 4 <= size) { d[magicAt] = 0xAB; d[magicAt + 1] = 0xCD; d[magicAt + 2] = 0xEF; d[magicAt + 3] = 0x42; }
+        const fs::path p = dir / name;
+        std::ofstream(p, std::ios::binary).write(reinterpret_cast<const char*>(d.data()),
+                                                 static_cast<std::streamsize>(d.size()));
+        return p.string();
+    };
+    checkBool(".STC (0x20004 o) acceptée", bus.loadCart(makeCart("c.stc", 0x20004, 4)), true);
+    checkInt ("… 128 Ko posés", long(bus.cart.size()), 0x20000L);
+    checkHex ("… en-tête factice sauté : magic à $FA0000",
+              (unsigned(bus.cart[0]) << 24) | (unsigned(bus.cart[1]) << 16) |
+              (unsigned(bus.cart[2]) << 8) | bus.cart[3], 0xABCDEF42u);
+    checkBool("128 Ko brut accepté", bus.loadCart(makeCart("c.bin", 0x20000, 0)), true);
+    checkBool("0x20005 o refusé",    bus.loadCart(makeCart("c5.bin", 0x20005, 4)), false);
+    fs::remove_all(dir, ec);
+}
+
+// ---------------------------------------------------------------------------
+//  Clavier : tables SYMBOLIQUES par pays du TOS (gui/StKeysSymbolic).
+//  [D] Hatari src/sdl/keymap.c:265-420 et 963-1001 @ f0736b24. Jusqu'au
+//  2026-11-12 seuls US/DE/FR/UK étaient portés : un TOS tchèque laissait y/z
+//  croisés, un TOS italien envoyait « à » en $0B (le 0 du ST)… Chaque cas
+//  ci-dessous échoue sans les tables ES/IT/SE/CH/NO/DK/NL/CZ.
+// ---------------------------------------------------------------------------
+static void testStKeysCountries() {
+    using namespace neost::stkeys;
+    std::printf("clavier : tables symboliques par pays du TOS\n");
+    // En-tête ROM minimal : os_conf ($1C) = pays << 1 (bit 0 = PAL, ignoré).
+    auto pays = [](int code) {
+        std::vector<uint8_t> rom(0x40, 0);
+        const int w = (code << 1) | 1;
+        rom[0x1C] = uint8_t(w >> 8);
+        rom[0x1D] = uint8_t(w & 0xFF);
+        setCountryFromTos(rom);
+    };
+    struct Cas { int pays; uint32_t cp; unsigned st; const char* what; };
+    static const Cas cas[] = {
+        {15, 'y', 0x2C, "CZ : y -> $2C (QWERTZ)"},
+        {15, 'z', 0x15, "CZ : z -> $15 (QWERTZ)"},
+        {15, 233, 0x0B, "CZ : é -> $0B"},
+        {15, 345, 0x06, "CZ : ř -> $06 (latin étendu, table par défaut)"},
+        { 5, 224, 0x28, "IT : à -> $28"},
+        { 5, '\'', 0x0C, "IT : ' -> $0C"},
+        { 8, 233, 0x27, "CH-DE : é -> $27"},
+        { 7, 232, 0x1A, "CH-FR : è -> $1A (même table que CH-DE)"},
+        { 4, '-', 0x0C, "ES : - -> $0C"},
+        { 4, 231, 0x29, "ES : ç -> $29"},
+        {14, '-', 0x0C, "NL : - -> $0C"},
+        {14, '\\', 0x60, "NL : \\ -> $60"},
+        { 6, '+', 0x0C, "SE : + -> $0C"},
+        {10, '+', 0x0C, "FI : + -> $0C (table SE)"},
+        {12, '+', 0x0C, "DK : + -> $0C"},
+        {12, 248, 0x28, "DK : ø -> $28"},
+        {11, 248, 0x27, "NO : ø -> $27"},
+        // Témoins : les quatre pays déjà portés ne bougent pas, et un pays sans
+        // table chez Hatari (TR = 9) ou EmuTOS multilingue retombe sur le défaut.
+        { 1, 'y', 0x2C, "DE : y -> $2C"},
+        { 2, 'a', 0x10, "FR : a -> $10"},
+        { 0, '-', 0x0C, "US : - -> $0C"},
+        { 9, '-', 0x35, "TR : - -> $35 (défaut)"},
+        {127, 'y', 0x15, "EmuTOS multilingue : y -> $15 (défaut)"},
+    };
+    for (const Cas& c : cas) {
+        pays(c.pays);
+        checkHex(c.what, symbolicForCountry(c.cp), c.st);
+    }
+    // Décodage UTF-8 des noms de touches à deux octets du latin étendu A.
+    checkHex("utf8First(\"ř\") = U+0159", utf8First("\xC5\x99"), 0x159);
 }
 
 static void testConfigParser() {
@@ -616,7 +781,75 @@ static void testConfigParser() {
         checkStr("trim : que des blancs",  trimmed("  \t\r"),           "");
         // Un blanc INTERNE appartient à la valeur (un chemin peut en contenir).
         checkStr("trim : blanc interne gardé",
-                 trimmed("disk=disks/my game.st "), "disk=disks/my game.st");
+                 trimmed("disk=disks/my game.st"), "disk=disks/my game.st");
+        // Clés de CHEMIN (2026-11-12) : le blanc FINAL appartient lui aussi au nom —
+        // « /Users/me/Games  » est un dossier légal. Le rogner changeait le dossier en
+        // un dossier absent, et gemdos= était vidé en silence au démarrage suivant.
+        // Seul le '\r' du CRLF part.
+        checkStr("trim : chemin, blanc final gardé",
+                 trimmed("gemdos=/Users/me/Games "), "gemdos=/Users/me/Games ");
+        checkStr("trim : chemin, CRLF retiré, blanc gardé",
+                 trimmed("disk=disks/x.st \r"), "disk=disks/x.st ");
+        checkStr("trim : kiosk_romdir, blanc final gardé",
+                 trimmed("kiosk_romdir=/media/roms  "), "kiosk_romdir=/media/roms  ");
+    }
+    // Aller-retour écriture → lecture des chemins hostiles (cas de la chasse du
+    // 2026-11-12) : espace finale préservée, saut de ligne REFUSÉ à l'écriture — il
+    // injectait « machine=megaste » et « mem=4m » au relu.
+    {
+        Config w;
+        w.machine = "st"; w.mem = "512k";
+        w.gemdos = "/Users/me/Games ";
+        w.disk   = "/tmp/evil.st\nmachine=megaste\nmem=4m";
+        w.cart   = "carts/x.stc\r";
+        std::ostringstream o;
+        writeConfigKeys(o, w, true);
+        Config r;
+        std::istringstream in(o.str());
+        std::string l;
+        while (std::getline(in, l)) parseConfigLine(r, l);
+        checkStr("cfg : gemdos à espace finale relu intact", r.gemdos, "/Users/me/Games ");
+        checkStr("cfg : chemin à saut de ligne non écrit", r.disk, "");
+        checkStr("cfg : chemin à \\r non écrit", r.cart, "");
+        checkStr("cfg : pas d'injection de machine=", r.machine, "st");
+        checkStr("cfg : pas d'injection de mem=", r.mem, "512k");
+        checkBool("cfg : aucune ligne « machine=megaste »",
+                  o.str().find("machine=megaste") == std::string::npos, true);
+    }
+    // audio_latency_ms borné à la LECTURE comme Audio::setLatencyMs ([20, 250]) : la
+    // valeur folle restait affichée et réécrite alors que le son tournait sur une autre.
+    {
+        Config c;
+        parseConfigLine(c, "audio_latency_ms=99999");
+        checkInt("latence audio : plafond 250", c.audioLatencyMs, 250);
+        parseConfigLine(c, "audio_latency_ms=-5");
+        checkInt("latence audio : plancher 20", c.audioLatencyMs, 20);
+        parseConfigLine(c, "audio_latency_ms=120");
+        checkInt("latence audio : valeur légale intacte", c.audioLatencyMs, 120);
+    }
+    // NEOST_GEMDOS_DIR / NEOST_ACSI_IMG : surcharges de SÉANCE, jamais écrites.
+    // Avant le 2026-11-12, AppInit les recopiait dans cfg puis sauvegardait — le
+    // gemdos=/acsi= de l'utilisateur était remplacé, et son cart= effacé (la
+    // cartouche système du HD occupe $FA0000, appShutdown lisait cart= vide).
+    {
+        EnvOverrides o;
+        o.gemdos = "/tmp/envhd"; o.acsi = "/tmp/env.img";
+        o.savedGemdos = ""; o.savedAcsi = "hd/mine.img"; o.savedCart = "carts/mine.stc";
+        Config c;
+        c.gemdos = "/tmp/envhd"; c.acsi = "/tmp/env.img"; c.cart = "";
+        const Config w = persistableConfig(c, o);
+        checkStr("env : gemdos= du fichier conservé", w.gemdos, "");
+        checkStr("env : acsi= du fichier conservé",   w.acsi,   "hd/mine.img");
+        checkStr("env : cart= du fichier rendu",      w.cart,   "carts/mine.stc");
+        // Un changement fait EN SÉANCE (menu, profil) s'écrit normalement.
+        Config u = c;
+        u.gemdos = "/Users/me/hd"; u.acsi = "";
+        const Config wu = persistableConfig(u, o);
+        checkStr("env : gemdos choisi en séance écrit", wu.gemdos, "/Users/me/hd");
+        checkStr("env : acsi démonté en séance écrit",  wu.acsi,   "");
+        // Sans surcharge, rien ne change.
+        const Config wn = persistableConfig(c, EnvOverrides{});
+        checkStr("env : sans surcharge, gemdos tel quel", wn.gemdos, "/tmp/envhd");
     }
     // Valeurs hostiles bornées : une deadzone > 0.95 rendait le menu de la borne
     // incontrôlable, un volume hors [0,1] saturait la sortie.
@@ -661,6 +894,7 @@ static void testConfigParser() {
         Config a;
         a.rom = "roms/tos206fr.img"; a.disk = "disks/x.st"; a.diskb = "disks/y.st";
         a.cart = "carts/z.img";      a.gemdos = "/srv/gemdos"; a.acsi = "hd/c.img";
+        a.gemdosRo = true;
         a.machine = "megaste";       a.mem = "4m";  a.mono = true;  a.fpu = true;
         a.modem = true;              a.ethernec = true;
         a.netusbee = true;           a.slirp = true;
@@ -683,6 +917,7 @@ static void testConfigParser() {
 
         checkStr("aller-retour rom",      b.rom,     a.rom);
         checkStr("aller-retour gemdos",   b.gemdos,  a.gemdos);
+        checkBool("aller-retour gemdos_ro", b.gemdosRo == a.gemdosRo, true);
         checkStr("aller-retour machine",  b.machine, a.machine);
         checkStr("aller-retour mem",      b.mem,     a.mem);
         checkStr("aller-retour joymap",   b.joymap,  a.joymap);
@@ -899,6 +1134,28 @@ static void testCartridgeKey() {
         k2.cartRead(0xFB00B4, true);
         checkBool("auto : A7..A1 ≠ 0 → clé noire", k2.wantsUds(), true);
     }
+    {   // Chargement d'état (2026-11-12) : le modèle de clé est de la CONFIG. Le flux
+        // l'écrasait (m & 7) — config de la session perdue, et valeur hors de
+        // l'énumération sur un flux forgé. Il doit être refusé, pas adopté.
+        std::vector<uint8_t> buf;
+        { CartridgeKey k; k.setModel(CartridgeKey::Model::Cubase3);
+          StateArchive s = StateArchive::saver(buf); k.serialize(s); }
+        CartridgeKey same; same.setModel(CartridgeKey::Model::Cubase3);
+        { StateArchive l = StateArchive::loader(buf.data(), buf.size()); same.serialize(l);
+          checkBool("état clé : même modèle → accepté", l.ok() && same.model() == CartridgeKey::Model::Cubase3, true); }
+        CartridgeKey other; other.setModel(CartridgeKey::Model::Cubase2);
+        { StateArchive l = StateArchive::loader(buf.data(), buf.size()); other.serialize(l);
+          checkBool("état clé : autre modèle → refusé, config intacte",
+                    !l.ok() && other.model() == CartridgeKey::Model::Cubase2, true); }
+        std::vector<uint8_t> forged = buf; forged[0] = 7;      // octet du modèle
+        CartridgeKey f; f.setModel(CartridgeKey::Model::Cubase3);
+        { StateArchive l = StateArchive::loader(forged.data(), forged.size()); f.serialize(l);
+          checkBool("état clé : modèle forgé (7) → refusé", !l.ok() && f.model() == CartridgeKey::Model::Cubase3, true); }
+        std::vector<uint8_t> badChosen = buf; badChosen[1] = 5;  // octet de la variante
+        CartridgeKey g; g.setModel(CartridgeKey::Model::Cubase3);
+        { StateArchive l = StateArchive::loader(badChosen.data(), badChosen.size()); g.serialize(l);
+          checkBool("état clé : variante forgée (5) → refusée", !l.ok(), true); }
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -972,6 +1229,20 @@ static void testPortDevices() {
         PD n; n.plug(PD::Port::Rs232, PD::Device::Bat2); n.pressButton(mfp);
         checkBool("bouton : sans effet sans bouton branché", !n.buttonPressed(), true);
         checkBool("reset : relâche le bouton, garde le périphérique", [&] { d.pressButton(mfp); d.reset(); return !d.buttonPressed() && d.hasButton(); }(), true);
+    }
+    {   // Chargement d'état (2026-11-12) : les périphériques branchés sont de la config,
+        // déjà comparés par l'en-tête ; un flux qui en nomme d'autres est refusé au lieu
+        // d'écraser la session.
+        std::vector<uint8_t> buf;
+        { PD d; d.plug(PD::Port::CartButton, PD::Device::Multiface);
+          StateArchive s = StateArchive::saver(buf); d.serialize(s); }
+        PD same; same.plug(PD::Port::CartButton, PD::Device::Multiface);
+        { StateArchive l = StateArchive::loader(buf.data(), buf.size()); same.serialize(l);
+          checkBool("état ports : mêmes périphériques → accepté", l.ok(), true); }
+        PD other; other.plug(PD::Port::CartButton, PD::Device::Urc);
+        { StateArchive l = StateArchive::loader(buf.data(), buf.size()); other.serialize(l);
+          checkBool("état ports : autre périphérique → refusé, config intacte",
+                    !l.ok() && other.at(PD::Port::CartButton) == PD::Device::Urc, true); }
     }
 }
 
@@ -2094,6 +2365,16 @@ static void testFdcTruthTable() {
     checkHex("BPB MSA : spt 11 persisté", g.bus.ram[0x2018], 11);
     checkHex("BPB MSA : données encore présentes", sector(false, 0, 2) & 0x10, 0);
     checkHex("BPB MSA : données préservées au repli", g.bus.ram[0x2000], 0x5A);
+
+    // --- Densité $FF860E (Mega STE) : DD après mise sous tension -------------
+    // Un mode HD posé par un programme survivait au hard reset.
+    FdcRig d;
+    d.fdc.write8(FDCR + 0x0F, 0x03);
+    checkHex("densité : HD posé", d.fdc.read8(FDCR + 0x0F), 0x03);
+    d.fdc.reset(/*cold=*/false);
+    checkHex("densité : gardée au reset à chaud", d.fdc.read8(FDCR + 0x0F), 0x03);
+    d.fdc.reset(/*cold=*/true);
+    checkHex("densité : DD après mise sous tension", d.fdc.read8(FDCR + 0x0F), 0x00);
 }
 
 // -----------------------------------------------------------------------------
@@ -2459,6 +2740,53 @@ static void testFixBools() {
     StateArchive l3 = StateArchive::loader(buf.data(), buf.size());
     Agg f{}; l3(f); l3.fixBools(f.flag);
     checkBool("un octet nul reste FAUX", f.flag, false);
+}
+
+// ---------------------------------------------------------------------------
+//  Premier argument positionnel du GUI : TOS, disquette, ou refus (util/RomProbe).
+//  Jusqu'au 2026-11-12, `neost jeu.st` chargeait la disquette dans la fenêtre ROM
+//  (Bus::loadTos accepte 1 octet à 1 Mo) et la persistait en rom=.
+// ---------------------------------------------------------------------------
+static void testRomProbe() {
+    std::printf("argument positionnel : TOS, disquette ou refus (RomProbe)\n");
+    namespace fs = std::filesystem;
+    using namespace neost::romprobe;
+    const fs::path base = fs::temp_directory_path() / "neost-selftest-romprobe";
+    std::error_code ec;
+    fs::remove_all(base, ec);
+    fs::create_directories(base, ec);
+    auto make = [&](const char* name, std::vector<uint8_t> head, std::size_t size) {
+        head.resize(size, 0);
+        std::ofstream(base / name, std::ios::binary)
+            .write(reinterpret_cast<const char*>(head.data()), std::streamsize(head.size()));
+        return (base / name).string();
+    };
+    // [C] TOS 1.00 = $601E, 1.02+ et EmuTOS = $602E, version à l'offset 2.
+    const std::string tos100 = make("tos100.img", {0x60, 0x1E, 0x01, 0x00}, 192 * 1024);
+    const std::string etos   = make("etos256.img", {0x60, 0x2E, 0x02, 0x06}, 256 * 1024);
+    const std::string dump1  = make("tos104de.img", {0x60, 0x2E, 0x01, 0x04}, 196607);  // un octet de moins
+    const std::string badSz  = make("short.img", {0x60, 0x2E, 0x01, 0x04}, 100 * 1024);
+    // Une disquette .st : secteur de boot (BRA.S $60xx fréquent ! — l'en-tête TOS ne
+    // suffit pas sans la taille) de 720 Ko.
+    const std::string st     = make("game.st", {0x60, 0x38, 0x01, 0x00}, 720 * 1024);
+    const std::string msa    = make("GAME.MSA", {0x0E, 0x0F, 0x00, 0x09}, 4096);
+    const std::string junk   = make("notes.txt", {'h', 'e', 'l', 'l'}, 300);
+    const std::string tosNamedSt = make("tos.st", {0x60, 0x2E, 0x01, 0x62}, 256 * 1024);
+
+    checkBool("TOS 1.00 ($601E, 192 Ko) → ROM", classifyPositional(tos100) == Positional::Rom, true);
+    checkBool("EmuTOS ($602E, 256 Ko) → ROM",   classifyPositional(etos) == Positional::Rom, true);
+    checkBool("dump à un octet près → ROM",      classifyPositional(dump1) == Positional::Rom, true);
+    checkBool("en-tête TOS, taille fausse → refus", classifyPositional(badSz) == Positional::Invalid, true);
+    checkBool("disquette .st (720 Ko) → disquette", classifyPositional(st) == Positional::Floppy, true);
+    checkBool("disquette .MSA (casse) → disquette", classifyPositional(msa) == Positional::Floppy, true);
+    checkBool("fichier quelconque → refus",      classifyPositional(junk) == Positional::Invalid, true);
+    checkBool("chemin absent → refus",
+              classifyPositional((base / "absent.st").string()) == Positional::Invalid, true);
+    checkBool("l'en-tête prime : TOS nommé .st → ROM",
+              classifyPositional(tosNamedSt) == Positional::Rom, true);
+    checkBool("taille 1 Mo + 2 Ko refusée", tosRomSize(1024u * 1024u + 2048u), false);
+    checkBool("taille 512 Ko acceptée",     tosRomSize(512u * 1024u), true);
+    fs::remove_all(base, ec);
 }
 
 static void testConfigWriteCreatesDir() {
@@ -2934,6 +3262,200 @@ static void testCompDisks() {
     }
 }
 
+// -----------------------------------------------------------------------------
+//  Lot « puces » du 2026-11-12 : chaque défaut corrigé a sa table, puce nue +
+//  Scheduler, sans machine ni ROM. Chacune échoue sur le code d'avant le correctif.
+// -----------------------------------------------------------------------------
+
+// [B] MC6850 § Counter Divide Select Bits p. 8, § Interrupt Request p. 6 : sous master
+// reset maintenu (CR1-0=11), l'émetteur est initialisé ; un octet écrit n'en sort jamais.
+static void testAciaResetHoldsTx() {
+    std::printf("ACIA 6850 (écriture TDR sous master reset maintenu, TDRE rattrapé)\n");
+    {   // MIDI : rien sur MIDI OUT, ni pendant le reset, ni à sa sortie.
+        Scheduler sched; Mfp mfp; MidiAcia midi(mfp); int64_t live = 0;
+        midi.setScheduler(&sched); sched.setLiveClock([&] { return live; });
+        sched.setCallback(Scheduler::MIDI_TX, [&] { midi.onTxEmpty(); });
+        int out = 0;
+        midi.setMidiSinkTimed([&](uint8_t, int64_t) { ++out; });
+        midi.write8(0xFFFC04, 0x03);
+        midi.write8(0xFFFC06, 0xAA);
+        live = 5000; sched.runTo(live);
+        checkInt("MIDI : TDR écrit sous reset tenu → 0 octet émis", out, 0);
+        midi.write8(0xFFFC04, 0x15);
+        live = 20000; sched.runTo(live);
+        checkInt("MIDI : sortie du reset → toujours 0 octet", out, 0);
+        checkHex("MIDI : TDRE relu à 1 après la sortie", midi.read8(0xFFFC04) & 0x02, 0x02);
+        midi.write8(0xFFFC06, 0x90);
+        live = 40000; sched.runTo(live);
+        checkInt("MIDI : écriture hors reset → 1 octet émis", out, 1);
+    }
+    {   // IKBD : la commande écrite sous reset n'est ni reçue ni exécutée par le 6301.
+        auto answered = [](bool holdReset) {
+            Mfp mfp; Scheduler s; Ikbd ikbd{mfp}; int64_t live = 0;
+            ikbd.setScheduler(&s); s.setLiveClock([&] { return live; });
+            s.setCallback(Scheduler::IKBD_TX, [&] { ikbd.onTxEmpty(); });
+            s.setCallback(Scheduler::IKBD_RX, [&] { ikbd.onRxDeliver(); });
+            s.setCallback(Scheduler::IKBD, [&] { ikbd.onResetResponse(); });
+            auto adv = [&](int64_t t) { live = t; s.runTo(t); };
+            ikbd.write8(0xFFFC00, 0x96);
+            adv(1000000);                                       // boot du 6301 passé
+            while (ikbd.read8(0xFFFC00) & 1) (void)ikbd.read8(0xFFFC02);
+            if (holdReset) ikbd.write8(0xFFFC00, 0x03);
+            live = 1000100; ikbd.write8(0xFFFC02, 0x1C);        // INTERROGATE TIME-OF-DAY CLOCK
+            adv(1030000);
+            ikbd.write8(0xFFFC00, 0x96);
+            int n = 0;                                          // 7 octets attendus hors reset
+            for (int i = 0; i < 40; ++i) {
+                adv(live + 20000);
+                if (ikbd.read8(0xFFFC00) & 1) { (void)ikbd.read8(0xFFFC02); ++n; }
+            }
+            return n;
+        };
+        checkInt ("IKBD : $1C hors reset → 7 octets d'horloge", answered(false), 7);
+        checkInt ("IKBD : $1C écrit sous reset tenu → aucune réponse", answered(true), 0);
+    }
+    {   // IKBD : statut lu après le front de transfert, événement pas encore dispatché.
+        Mfp mfp; Scheduler s; Ikbd ikbd{mfp}; int64_t live = 0;
+        ikbd.setScheduler(&s); s.setLiveClock([&] { return live; });
+        s.setCallback(Scheduler::IKBD_TX, [&] { ikbd.onTxEmpty(); });
+        s.setCallback(Scheduler::IKBD_RX, [&] { ikbd.onRxDeliver(); });
+        ikbd.write8(0xFFFC00, 0x96); live = 100; ikbd.write8(0xFFFC02, 0x11);
+        checkHex("IKBD : TDRE tombe à l'écriture", ikbd.read8(0xFFFC00) & 0x02, 0x00);
+        const int64_t due = s.rawCyclesUntil(Scheduler::IKBD_TX);
+        live = 100 + due + 8;                 // CPU en pleine instruction, front passé
+        checkHex("IKBD : TDRE remonté au transfert (lecture non dispatchée)",
+                 ikbd.read8(0xFFFC00) & 0x02, 0x02);
+    }
+}
+
+// $FF8920 (octet pair relu à zéro) : tests/dmasound_mmio_state_logic.cpp, appelé par main().
+
+// Pro Sound Designer : le bloc DC du DAC ne doit produire ni échelon au branchement,
+// ni échelon au chargement d'un état (portsApply(fromLoad) re-câble le DAC déjà branché).
+static void testYmDacContinuity() {
+    std::printf("YM2149 + DAC Pro Sound (bloc DC continu au branchement et au chargement)\n");
+    constexpr uint32_t kRate = 48000, kFrames = 960;
+    constexpr int64_t kFrameCycles = 160256;
+    auto make = [](YM2149& p) {
+        p.reset();
+        p.setCycleClock([] { return int64_t(0); });
+        p.setPortBDac(true);                       // R15 = 0 : niveau DAC −0,5 (pleine échelle)
+    };
+    YM2149 a; make(a);
+    std::vector<float> fa(kFrames), fb(kFrames);
+    a.synthesizeFrame(fa.data(), kFrames, kRate, kFrameCycles);
+    checkBool("branchement R15=0 : 1er échantillon sans échelon", std::fabs(fa[0]) < 0.01f, true);
+    for (int i = 0; i < 20; ++i) a.synthesizeFrame(fa.data(), kFrames, kRate, kFrameCycles);
+    std::vector<uint8_t> buf;
+    { StateArchive s = StateArchive::saver(buf); a.serialize(s); }
+    // Retour arrière dans la même session : même instance, puis re-câblage du DAC.
+    YM2149 b; make(b);
+    for (int i = 0; i < 21; ++i) b.synthesizeFrame(fb.data(), kFrames, kRate, kFrameCycles);
+    { StateArchive l = StateArchive::loader(buf.data(), buf.size()); b.serialize(l);
+      checkBool("état YM rechargé", l.ok(), true); }
+    b.setPortBDac(true);                           // ce que fait Machine::portsApply(fromLoad)
+    a.synthesizeFrame(fa.data(), kFrames, kRate, kFrameCycles);
+    b.synthesizeFrame(fb.data(), kFrames, kRate, kFrameCycles);
+    float worst = 0.0f;
+    for (uint32_t i = 0; i < kFrames; ++i) worst = std::max(worst, std::fabs(fa[i] - fb[i]));
+    checkBool("chargement : sortie identique au flux continu (écart < 1e-3)", worst < 1e-3f, true);
+}
+
+// [B] MC68901 janv. 1984 § 5.1.1 p. 5-1 : une donnée non nulle ne se relit jamais $00,
+// et le compte vaut ceil(reste / prescaler) sans troncature intermédiaire.
+static void testMfpTimerLiveRead() {
+    std::printf("MFP (relecture du compteur vivant d'un délai, échéance après 130 h)\n");
+    struct Probe { const char* name; uint32_t data, ctrlReg; uint8_t d, ctrl;
+                   Scheduler::Source src; int timer; int64_t cycles; };
+    const Probe probes[] = {
+        {"Timer A /4 donnée 1",    0xFFFA1F, 0xFFFA19, 1,   0x01, Scheduler::TIMER_A, 0, 4000},
+        {"Timer A /4 donnée 10",   0xFFFA1F, 0xFFFA19, 10,  0x01, Scheduler::TIMER_A, 0, 20000},
+        {"Timer D /4 donnée 2",    0xFFFA25, 0xFFFA1D, 2,   0x01, Scheduler::TIMER_D, 3, 4000},
+        {"Timer C /64 donnée 192", 0xFFFA23, 0xFFFA1D, 192, 0x50, Scheduler::TIMER_C, 2, 200000},
+    };
+    for (const Probe& p : probes) {
+        Scheduler s; int64_t clk = 0; s.setLiveClock([&] { return clk; });
+        Mfp m; m.setScheduler(&s);
+        s.setCallback(p.src, [&] { m.onTimerExpire(p.timer); });
+        m.write8(p.data, p.d);
+        m.write8(p.ctrlReg, p.ctrl);
+        long zeros = 0, above = 0;
+        for (clk = 0; clk < p.cycles; ++clk) {
+            if (s.peekNextDue() >= 0 && clk >= s.peekNextDue()) s.runTo(clk);
+            const uint8_t v = m.read8(p.data);
+            if (v == 0) ++zeros;
+            if (v > p.d) ++above;
+        }
+        char what[96];
+        std::snprintf(what, sizeof what, "%s : jamais relu $00", p.name);
+        checkInt(what, zeros, 0);
+        std::snprintf(what, sizeof what, "%s : jamais au-dessus de la donnée", p.name);
+        checkInt(what, above, 0);
+    }
+    {   // Donnée $00 (256) arrêtée avant le premier décompte : le compteur reste $00.
+        Scheduler s; int64_t clk = 1000; s.setLiveClock([&] { return clk; });
+        Mfp m; m.setScheduler(&s);
+        m.write8(0xFFFA1F, 0x00);
+        m.write8(0xFFFA19, 0x07);             // /200
+        clk = 1002;
+        m.write8(0xFFFA19, 0x00);             // arrêt
+        checkHex("Timer A donnée $00 arrêté aussitôt : compteur $00 (256)", m.read8(0xFFFA1F), 0x00);
+    }
+    // Premier délai d'un timer lancé après une longue durée émulée : k·31333·256 débordait.
+    for (double hours : {1.0, 131.0, 1000.0}) {
+        Scheduler s; int64_t clk = int64_t(hours * 3600 * 8021248.0);
+        s.setLiveClock([&] { return clk; });
+        s.runTo(clk);
+        Mfp m; m.setScheduler(&s);
+        m.write8(0xFFFA23, 192);
+        m.write8(0xFFFA1D, 0x50);             // Timer C /64 : 40106,24 cycles CPU
+        const int64_t rem = s.rawCyclesUntil(Scheduler::TIMER_C);
+        char what[96];
+        std::snprintf(what, sizeof what, "Timer C lancé à %.0f h : 1re échéance dans [40106, 40110]", hours);
+        checkBool(what, rem >= 40106 && rem <= 40110, true);
+    }
+}
+
+// [D] stBlitter.sv:115,132,616 @ a00deb5b : compteurs d'adresse [23:1], rebouclage 16 Mo.
+static void testBlitterAddressWrap() {
+    std::printf("Blitter (compteurs d'adresse 24 bits, rebouclage relu)\n");
+    auto rd16 = [](BlitRig& r, uint32_t off) {
+        return unsigned(r.blit.read8(BLT + off) << 8 | r.blit.read8(BLT + off + 1));
+    };
+    {   // Destination qui franchit $FFFFFE vers le haut.
+        BlitRig r;
+        r.blit.write16(BLT + 0x20, 2);  r.blit.write16(BLT + 0x22, 2);
+        r.blit.write32(BLT + 0x24, SRC);
+        r.blit.write16(BLT + 0x28, 0xFFFF); r.blit.write16(BLT + 0x2A, 0xFFFF);
+        r.blit.write16(BLT + 0x2C, 0xFFFF);
+        r.blit.write16(BLT + 0x2E, 2);  r.blit.write16(BLT + 0x30, 2);
+        r.blit.write32(BLT + 0x32, 0xFFFFFC);
+        r.blit.write16(BLT + 0x36, 2);  r.blit.write16(BLT + 0x38, 1);
+        r.blit.write8 (BLT + 0x3A, 2);  r.blit.write8 (BLT + 0x3B, 3);
+        r.blit.write16(BLT + 0x3C, 0xC000);
+        r.sched.runTo(r.sched.nextDue());
+        checkBool("dst montante : blit achevé", r.blit.busy(), false);
+        checkHex("dst montante : $FF8A32 relu", rd16(r, 0x32), 0x0000);
+        checkHex("dst montante : $FF8A34 relu", rd16(r, 0x34), 0x0000);
+    }
+    {   // Source qui passe sous 0.
+        BlitRig r;
+        r.blit.write16(BLT + 0x20, 0xFFFE); r.blit.write16(BLT + 0x22, 0xFFFE);
+        r.blit.write32(BLT + 0x24, 0x000002);
+        r.blit.write16(BLT + 0x28, 0xFFFF); r.blit.write16(BLT + 0x2A, 0xFFFF);
+        r.blit.write16(BLT + 0x2C, 0xFFFF);
+        r.blit.write16(BLT + 0x2E, 2);  r.blit.write16(BLT + 0x30, 2);
+        r.blit.write32(BLT + 0x32, DST);
+        r.blit.write16(BLT + 0x36, 2);  r.blit.write16(BLT + 0x38, 1);
+        r.blit.write8 (BLT + 0x3A, 2);  r.blit.write8 (BLT + 0x3B, 3);
+        r.blit.write16(BLT + 0x3C, 0xC000);
+        r.sched.runTo(r.sched.nextDue());
+        checkBool("src descendante : blit achevé", r.blit.busy(), false);
+        checkHex("src descendante : $FF8A24 relu", rd16(r, 0x24), 0x00FF);
+        checkHex("src descendante : $FF8A26 relu", rd16(r, 0x26), 0xFFFE);
+    }
+}
+
 int main() {
     testCompDisks();
     testDongleTable();
@@ -2949,6 +3471,10 @@ int main() {
     testRtcSecond();
     testBlitterTruthTable();
     testDmaSoundTruthTable();
+    testAciaResetHoldsTx();
+    testYmDacContinuity();
+    testMfpTimerLiveRead();
+    testBlitterAddressWrap();
     testFdcTruthTable();
     if (testSccBrg()) ++g_ok; else ++g_fail;
     if (testSccSerial()) ++g_ok; else ++g_fail;
@@ -3057,6 +3583,7 @@ int main() {
     if (const int failures = testGemdosProcess()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpUnderrunClear()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcLiveMedia()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcMountGuards()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiRxPhase()) g_fail += failures; else ++g_ok;
     if (testSccAutoEnables()) ++g_ok; else ++g_fail;
     if (const int failures = testMachineMfpTx()) g_fail += failures; else ++g_ok;
@@ -3094,10 +3621,13 @@ int main() {
     testPrecomposeUtf8();
     testMouseScale();
     testMissingHwHint();
+    testTosImageLoad();
     testConfigParser();
+    testStKeysCountries();
     testRamDisplay();
     testConfigPath();
     testConfigWriteCreatesDir();
+    testRomProbe();
     testFixBools();
     testChannelMask();
     std::printf("[selftest-logic] %d OK, %d FAIL\n", g_ok, g_fail);

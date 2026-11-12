@@ -30,6 +30,7 @@
 #include "gui/StScreenView.hpp"
 #include "net/NetBackend.hpp"
 #include "util/HostPath.hpp"   // chemins hôte : UNE définition d'« absolu »
+#include "util/RomProbe.hpp"   // en-tête TOS (glisser-déposer, argument positionnel)
 #include "net/NatBackend.hpp"
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
@@ -130,31 +131,40 @@ bool fileExists(const std::string& p) {
     return std::filesystem::exists(p, ec) && !ec;
 }
 
-// Mêmes bornes que Bus::loadTos (1 octet à 1 Mo, la fenêtre ROM à $E00000) : ce qui
-// passe ici sera chargé, ce qui échoue ici aurait laissé l'ancienne ROM en place.
-bool romLoadable(const std::string& p) {
+// Machine non émulée (« TT », « Falcon ») visée par le TOS de ce fichier, sinon
+// nullptr — même règle que Bus::loadTos (tosUnsupportedMachine, MachineType.hpp).
+const char* tosFileUnsupportedMachine(const std::string& p) {
     std::error_code ec;
-    if (!fs::is_regular_file(p, ec) || ec) return false;
     const std::uintmax_t n = fs::file_size(p, ec);
-    return !ec && n > 0 && n <= 1024u * 1024u;
+    if (ec) return nullptr;
+    uint8_t h[0x30] = {};
+    std::ifstream f(p, std::ios::binary);
+    if (!f) return nullptr;
+    f.read(reinterpret_cast<char*>(h), sizeof h);
+    const std::size_t got = static_cast<std::size_t>(f.gcount());
+    return tosUnsupportedMachine(tosHeaderVersion(h, got), tosHeaderIsEmuTos(h, got),
+                                 static_cast<std::size_t>(n));
 }
 
-// [C] En-tête système du TOS (TOS 1.00 à 4.x, EmuTOS) : un BRA.S vers le code de
-// démarrage en premier mot — $601E sur TOS 1.00, dont l'en-tête est plus court,
-// $602E ensuite (relevé sur les images de roms/ : tos100*.img = $601E, tos102 à
-// tos206 et etos* = $602E) — puis la version en mot big-endian à l'offset 2
-// (cf. Machine::adjustMachineForTos). Ne tester que $602E rangeait TOS 1.00 parmi
-// les disques durs ACSI au glisser-déposer.
-bool looksLikeTosHeader(const std::string& path, std::uintmax_t& size) {
+// Mêmes bornes que Bus::loadTos (1 octet à 1 Mo, la fenêtre ROM à $E00000 ; TOS du
+// TT/Falcon refusé) : ce qui passe ici sera chargé, ce qui échoue ici aurait laissé
+// l'ancienne ROM en place. Rend "" si chargeable, sinon le message de la barre d'état.
+std::string romUnloadableReason(const std::string& p) {
+    const std::string name = fs::path(p).filename().string();
     std::error_code ec;
-    size = fs::file_size(path, ec);
-    if (ec) { size = 0; return false; }
-    uint8_t h[4] = {0, 0, 0, 0};
-    std::ifstream f(path, std::ios::binary);
-    if (!f || !f.read(reinterpret_cast<char*>(h), 4)) return false;
-    if (h[0] != 0x60 || (h[1] != 0x1E && h[1] != 0x2E)) return false;
-    const unsigned ver = (unsigned(h[2]) << 8) | h[3];
-    return ver >= 0x0100 && ver <= 0x04FF;     // TOS 1.00 (1985) .. 4.x (Falcon)
+    if (!fs::is_regular_file(p, ec) || ec) return "ROM not found: " + name;
+    const std::uintmax_t n = fs::file_size(p, ec);
+    if (ec || n == 0 || n > 1024u * 1024u) return "Not a TOS ROM (size): " + name;
+    if (const char* m = tosFileUnsupportedMachine(p))
+        return std::string("TT/Falcon TOS not supported (") + m + " ROM): " + name;
+    return "";
+}
+bool romLoadable(const std::string& p) { return romUnloadableReason(p).empty(); }
+
+// [C] En-tête système du TOS — la règle vit dans util/RomProbe (testée par
+// neost-selftest), partagée avec l'argument positionnel du lancement.
+bool looksLikeTosHeader(const std::string& path, std::uintmax_t& size) {
+    return neost::romprobe::looksLikeTosHeader(path, size);
 }
 // Un chemin ABSOLU ne se combine avec rien : le préfixer d'un dossier de base est
 // exactement ce qui produisait « C:\…\NeoST\C:\Temp\atari » sous Windows (issue #37).
@@ -182,7 +192,9 @@ std::string pickTosForMachine(const std::string& machine,
     if (machine != "megaste") return "";
     { std::ifstream f(resolveData(curRomLogical, exeDir), std::ios::binary);
       if (f) { uint8_t b[2] = {0, 0}; f.seekg(2); f.read(reinterpret_cast<char*>(b), 2);
-               if (((b[0] << 8) | b[1]) >= 0x0200) return ""; } }   // déjà compatible
+               if (((b[0] << 8) | b[1]) >= 0x0200          // déjà compatible…
+                   && !tosFileUnsupportedMachine(resolveData(curRomLogical, exeDir)))
+                   return ""; } }                           // …sauf TOS TT/Falcon
     std::string cc = fs::path(curRomLogical).stem().string();       // ex. "tos162fr"
     cc = (cc.size() >= 2) ? cc.substr(cc.size() - 2) : std::string();
     if (cc.size() != 2 || !std::isalpha((unsigned char)cc[0]) || !std::isalpha((unsigned char)cc[1]))
@@ -239,7 +251,10 @@ void saveConfig(App& A, const std::string& exeDir, Config& c, Machine* machine, 
         kioskOut.rtcSaved = c.rtcSaved;
         src = &kioskOut;
     }
-    const Config& w = *src;
+    // Surcharges d'environnement (NEOST_GEMDOS_DIR, NEOST_ACSI_IMG) : jamais écrites.
+    // (La borne repart de cfgPristine, lu AVANT qu'elles ne s'appliquent.)
+    const Config envOut = persistableConfig(*src, A.envOverrides);
+    const Config& w = envOut;
     std::string err;
     if (!writeConfigAtomic(cfgPath(exeDir), w, /*full=*/true, /*cwdFallback=*/true, err))
         std::fprintf(stderr, "[cfg] %s — configuration NOT saved\n", err.c_str());
@@ -593,8 +608,9 @@ void App::applyConfig() {
         std::fprintf(stderr, "[main] WARNING ROM not loadable: %s — keeping the previous "
                              "machine (%s, %s)\n", badRom.c_str(),
                      A.hwMachine.c_str(), A.hwRom.c_str());
-        A.stateMsg = "ROM not found: " + fs::path(badRom).filename().string()
-                   + " - previous machine kept";
+        A.stateMsg = romUnloadableReason(badRom);
+        if (A.stateMsg.empty()) A.stateMsg = "ROM not loadable: " + fs::path(badRom).filename().string();
+        A.stateMsg += " - previous machine kept";
         A.stateMsgFrames = 300;
         cfg.rom = A.hwRom; cfg.machine = A.hwMachine; cfg.mem = A.hwMem; cfg.fpu = A.hwFpu;
         saveConfig(A, exeDir, cfg, &machine);
@@ -634,7 +650,34 @@ void App::applyConfig() {
     // peut monter OU démonter, et reconfigure() ne touche pas à ces montages.
     // Idem ACSI (le montage survit à reconfigure, on ne remonte que si absent).
     if (cfg.gemdos.empty()) machine.gemdos.unmount();
-    else                    machine.gemdos.setDirectory(A.resolvePath(cfg.gemdos));
+    else if (!machine.gemdos.setDirectory(A.resolvePath(cfg.gemdos))) {
+        // Dossier disparu (clé USB retirée, profil périmé) : setDirectory garde alors
+        // « le montage précédent » — mais l'eject ci-dessus vient d'en retirer la
+        // cartouche système. Restait un HD actif sans son pilote : C: ne revenait
+        // jamais, et rien ne le disait. On démonte PROPREMENT et on le dit ; gemdos=
+        // est vidé comme au démarrage (même règle : un dossier invalide ne se mémorise
+        // pas), et le message nomme le dossier pour qu'on puisse le remonter.
+        // Exception : si c'était la surcharge NEOST_GEMDOS_DIR, la valeur du fichier
+        // reprend la main (même règle qu'au démarrage, AppInit) au lieu d'être perdue.
+        const std::string lost = cfg.gemdos;
+        bool ok = false;
+        if (!A.envOverrides.gemdos.empty() && cfg.gemdos == A.envOverrides.gemdos) {
+            A.envOverrides.gemdos.clear();
+            cfg.gemdos = A.envOverrides.savedGemdos;
+            ok = !cfg.gemdos.empty() && machine.gemdos.setDirectory(A.resolvePath(cfg.gemdos));
+        }
+        if (!ok) {
+            machine.gemdos.unmount();
+            cfg.gemdos.clear();
+        }
+        A.stateMsg = "GEMDOS folder not found: " + lost
+                   + (ok ? " - using " + cfg.gemdos : std::string(" - hard disk unmounted"));
+        A.stateMsgFrames = 300;
+        std::fprintf(stderr, "[main] GEMDOS folder not found: %s — %s\n", lost.c_str(),
+                     ok ? "back to the configured folder" : "GEMDOS HD unmounted");
+        A.cfgUiResync = true;
+    }
+    machine.gemdos.setWriteProtect(cfg.gemdosRo);   // un profil peut aussi la changer
     if (cfg.acsi.empty())   machine.fdc.unmountAcsi();
     else {
         // Remonter aussi quand la config désigne une AUTRE image : le seul test

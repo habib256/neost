@@ -64,7 +64,11 @@ public:
     // Décodage d'une lecture dans la fenêtre cartouche ($FA0000-$FBFFFF). Renvoie
     // true et pose `out` si l'adresse est un accès EtherNEC ; false sinon (la
     // lecture retombe sur la ROM cartouche / le comportement par défaut).
-    bool cartRead(uint32_t addr, uint8_t& out);
+    // `first` : vrai pour le premier octet d'un cycle bus (accès octet, ou octet
+    // PAIR d'un mot). Un move.w n'est qu'UN cycle /ROM3 ou /ROM4 : l'effet de bord
+    // (écriture registre, avance du Remote DMA, TXP) ne joue qu'une fois, et
+    // l'octet impair rend $FF — la carte ne pilote que D8-D15 (cf. Ne2000.cpp).
+    bool cartRead(uint32_t addr, uint8_t& out, bool first);
 
     // Pompe le backend : intègre les trames reçues dans l'anneau (à appeler une
     // fois par trame émulée, comme le poll du modem). Lève l'IRQ si armée.
@@ -104,6 +108,11 @@ private:
     uint8_t mac_[6] = {kDefaultMac[0], kDefaultMac[1], kDefaultMac[2],
                        kDefaultMac[3], kDefaultMac[4], kDefaultMac[5]};   // PROM d'adresse
     uint8_t mar_[8] = {0};              // filtre multicast (page 1)
+    // [B] DP8390D § 10.3, p. 24-26 et § 10.9, p. 29 : registres d'ÉTAT, en lecture
+    // seule à la place des registres de configuration de même adresse (page 0).
+    uint8_t tsr_ = 0;                   // Transmit Status (reg 4 en lecture)
+    uint8_t rsr_ = 0;                   // Receive Status (reg $0C en lecture)
+    uint8_t cntr_[3] = {0, 0, 0};       // tally CNTR0-2 (regs $0D-$0F), effacés à la lecture
 
     // RAM tampon de la NIC (anneau RX + tampon TX). Allouée DÈS la construction :
     // vide tant qu'enabled_ était faux, serialize() écrivait un vecteur de taille 0
@@ -116,6 +125,9 @@ private:
     uint8_t page0Read(uint8_t reg);
     void page1Write(uint8_t reg, uint8_t v);
     uint8_t page1Read(uint8_t reg);
+    uint8_t page2Read(uint8_t reg);
+    bool    multicastHit(const uint8_t* dst) const;   // hachage CRC → MAR
+    void    countMissed();                            // CNTR2++ (saturé), ISR.CNT
     void writeReg(uint8_t reg, uint8_t v);   // dispatch selon la page (cr_ bits 6-7)
     uint8_t readReg(uint8_t reg);
     void    advanceRemoteDma();      // RSAR++, enroulé à PSTOP (fiche § 9.0)

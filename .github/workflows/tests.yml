@@ -307,3 +307,46 @@ jobs:
           ASAN_OPTIONS: halt_on_error=1:detect_leaks=0:abort_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: python3 tools/run_all.py --tier fast
+
+  # ----------------------------------------------------------- release-watch --
+  # « Artefacts (release) » tourne aussi à chaque push de main, mais personne ne le
+  # regardait : des runs rouges le 2026-11-12 (smoke des paquets, puis `hdiutil
+  # create` « Resource busy » sur macOS) sont passés inaperçus derrière des Tests
+  # verts. Ce job rappelle, à chaque push de main, la conclusion du DERNIER run
+  # TERMINÉ de release.yml sur main (celui du commit courant tourne encore en
+  # parallèle) : rouge → annotation et résumé du run, jamais un échec — les Tests
+  # disent si le code est sain, pas si un runner de paquets a eu un aléa. Lecture
+  # seule (actions: read). Rien sur un tag : ce fichier y est appelé par release.yml.
+  release-watch:
+    name: Veille Artefacts (release) sur main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    steps:
+      - name: Dernier run terminé de release.yml sur main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          # Les runs ANNULÉS (concurrency: cancel-in-progress, un push chasse l'autre)
+          # ne disent rien : on remonte au dernier run qui a conclu.
+          last=$(gh run list --workflow release.yml --branch main --status completed -L20 \
+                   --json conclusion,url,headSha \
+                   -q 'map(select(.conclusion != "cancelled" and .conclusion != "skipped"))
+                       | .[0] // empty | "\(.conclusion) \(.url) \(.headSha[0:8])"' || true)
+          echo "dernier run : ${last:-aucun}"
+          set -- $last
+          case "${1:-}" in
+            success|"") ;;
+            *)
+              echo "::warning title=Artefacts (release) rouge sur main::conclusion « $1 » au commit $3 — $2 (docs/RELEASE.md, étape 6)"
+              {
+                echo "### Artefacts (release) : $1 sur main"
+                echo
+                echo "Dernier run terminé : $2 (commit \`$3\`). Ne pas taguer avant qu'il repasse au vert (docs/RELEASE.md, étape 6)."
+              } >> "$GITHUB_STEP_SUMMARY"
+              ;;
+          esac

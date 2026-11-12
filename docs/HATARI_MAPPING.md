@@ -256,7 +256,7 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | dmaSnd.c:727-741 (STE_HBL_Update) | DmaSound.cpp:209-214 ← Machine.cpp:582 | porté | Même granularité ligne des deux côtés. |
 | dmaSnd.c:587-676 (consommation FIFO au rééchantillonnage) | DmaSound.cpp:179-207 + anneau 155-177 | volontaire | Consommation au rythme DAC daté + capture ; architecture assumée (DmaSound.hpp:167-178). |
 | dmaSnd.c:748-761, 825-848 (GetFrameCount) | `DmaSound::liveCounter/onHbl/fifoPull` | déjà porté, requalifié 2026-10-19 | Compteur vivant sans refill à la lecture ; FIFO entretenue au HBL ou lorsqu’elle se vide. |
-| dmaSnd.c:768-818 (SoundControl R/W) | `DmaSound::read8/write8` | porté | $FF8900 pair vaut zéro. $FF8920 est un octet scratch relisible, pas un zéro constant ; désormais sauvegardé en v42. |
+| dmaSnd.c:768-818 (SoundControl R/W) | `DmaSound::read8/write8` | volontaire (2026-11-12) | $FF8900 pair vaut zéro. $FF8920 pair relu 0, écriture ignorée ([B] manuel TT030 p. 26 « 0000 0000 a000 00bb », [D] MiSTery gstshifter.v:125) ; Hatari en fait un octet scratch, non suivi. |
 | dmaSnd.c:855-976 + m68000.c:958-971 (FrameStart/End + MaskAddressHigh) | `DmaSound::write8` | déjà porté, requalifié 2026-10-19 | Adresses paires ; octets hauts début/fin masqués à $3F pour les profils exposés avec RAM ≤4 Mo. |
 | dmaSnd.c:983-1026 (SoundModeCtrl) | DmaSound.cpp:582-592 | porté | Masque 0x8F, updateDac avant changement. |
 | dmaSnd.c:1037-1076 (Microwire shift 16×8 cyc) | `DmaSound::onMicrowireShift/catchUpMicrowire/advanceMicrowire` | corrigé | Retard consommé sans dérive, au plus 16 fronts ; départ liveNow+8. MMIO Data/Mask rattrape les fronts dus avant accès, sans dispatch global ; mot et écritures occupées préservés. |
@@ -266,7 +266,7 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | dmaSnd.c:538-680 (routage mixing + mix) | `DmaSound::mixSegment`, kDmaGain | déjà porté avec choix | Routage et niveau ¾, signe DMA négatif du LMC déjà présents. DC-hold reste le choix déclaré ; ancienne mention de signe manquant périmée. |
 | dmaSnd.c:1315-1348 + 577-580 (LowPass FIR) | DmaSound.cpp:469-477, 642-648 | porté | (1,2,1)/4 exact. |
 | dmaSnd.c:689-713, 1262-1462 (Apply_LMC + shelves Savinkoff) | `DmaSound::applyTone/applyToneStereo/applyHpfStereo` | déjà porté, revérifié | Shelves Savinkoff premier ordre, coupures 118.2763/8438.756 Hz et HPF après mélange STE présents. Ancienne entrée RBJ/HPF incorrecte périmée, aucun nouveau port de filtre. |
-| dmaSnd.c:282-289 (MemorySnapShot), stMemory.c STMemory_MemorySnapShot_Capture | `DmaSound::serialize` | porté | État runtime et registres sauvegardés ; octet scratch $FF8920 ajouté en v42, comme l’IoMem compris dans le snapshot Hatari. |
+| dmaSnd.c:282-289 (MemorySnapShot), stMemory.c STMemory_MemorySnapShot_Capture | `DmaSound::serialize` | porté | État runtime et registres sauvegardés ; l’ex-octet scratch $FF8920 (v42) reste dans le flux, inerte depuis 2026-11-12. |
 
 ## 7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c)
 
@@ -298,7 +298,7 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | ikbd.c:1118+ + 1065-1091 (horloge BCD 6301) | Ikbd.cpp:1058-1090, 122-139 | porté | Année 99→00 (Captain Blood). |
 | ikbd.c:386+, 3012+ (code 6301 custom, CRC) | `Ikbd::commonBoot`, `crc32AddByte` | porté (empreinte d'Hatari reprise à l'identique le 2026-10-20 : le vrai CRC32 ne reconnaissait aucun programme réel) | 6 programmes au CRC ; délai 7000 cyc du $83 Froggies porté (pushRxDelayed). |
 | ikbd.c:1736-1757 (PressSTKey) | Ikbd.cpp:917-932 | porté | ScanCodeState, filtrage monitoring. |
-| keymap.c | gui/InputCallbacks.cpp (onKey) + gui/StKeys | volontaire | Plomberie frontend (GLFW vs SDL). |
+| keymap.c | gui/InputCallbacks.cpp (onKey) + gui/StKeys + gui/StKeysSymbolic (tables par pays, aussi Android) | volontaire | Plomberie frontend (GLFW vs SDL). Les 12 tables par pays (US…CZ) sont portées @ f0736b24. |
 | midi.c:143-184 (MIDI_UpdateIRQ + Control_Read) | MidiAcia.cpp:43-64, 241-250 | porté | Wire-OR GPIP4. |
 | midi.c:245-288 (TDR/TSR : vide après 1 bit=256 cyc) | MidiAcia.cpp (write8, advanceTx) | porté TX | Huit formats CR2..4 et /1,/16,/64 ; TDR→TSR après un bit, données et durée mémorisées, attente écrasable, IRQ indépendante et horodatages série (2026-10-18). RX hôte reste 31250 8N1. |
 | acia.c:800–804,451–454,479–484 (diviseur et timer TX générique) | `MidiAcia::write8`, `txClockPhase_` | porté pour reprise BREAK | Phase ancrée au changement CR0..1 et sauvegardée v38 ; libération BREAK au prochain front de cette phase. Changement diviseur en vol recadence les fronts TSR restants ; TDR au repos attend le prochain front de phase CR ; pas de modèle bit à bit. |

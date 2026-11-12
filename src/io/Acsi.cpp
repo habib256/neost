@@ -188,6 +188,21 @@ bool Acsi::anyEnabled() const {
     for (const auto& d : devs_) if (d.enabled) return true;
     return false;
 }
+bool Acsi::anyImage() const {
+    for (const auto& d : devs_) if (d.enabled && d.fp) return true;
+    return false;
+}
+uint32_t Acsi::imageFingerprint(int target) const {
+    if (target < 0 || target >= MAX_DEVS) return 0;
+    const Dev& d = devs_[target];
+    if (!d.enabled || !d.fp) return 0;
+    uint32_t h = 2166136261u;                                   // FNV-1a 32 bits
+    auto mix = [&h](uint8_t b) { h ^= b; h *= 16777619u; };
+    for (char c : d.path) mix(uint8_t(c));
+    const uint64_t bytes = uint64_t(d.hdSize) * d.blockSize;
+    for (int i = 0; i < 8; ++i) mix(uint8_t(bytes >> (8 * i)));
+    return h ? h : 1u;                                          // 0 = « pas d'image »
+}
 bool Acsi::targetEnabled() const {
     return target_ >= 0 && target_ < MAX_DEVS && devs_[target_].enabled;
 }

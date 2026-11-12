@@ -107,7 +107,7 @@ void Bus::serialize(StateArchive& ar) {
 }
 
 // Broche /RESET du 68000 (instruction RESET, $4E70). Port de customreset()
-// (cpu/hatari-glue.c:54) : IKBD, Glue vidéo, PSG et FDC repartent à zéro, le CPU
+// ([D] cpu/hatari-glue.c:54 @ f0736b24) : IKBD, Glue vidéo, PSG et FDC repartent à zéro, le CPU
 // et l'ordonnanceur NON (seule la ligne /RESET des périphériques est assertée).
 // Sans cela, un loader de jeu/démo qui fait « reset » pour faire taire la machine
 // héritée du TOS gardait le YM en train de jouer, les timers MFP du TOS armés (IRQ
@@ -119,11 +119,14 @@ void Bus::peripheralReset() {
     if (ikbd)    ikbd->resetHw();          // IKBD_Reset(false) : SCI + boot ROM
     // Fréquence + résolution posées EN DIRECT, sans repasser par le bus. C'est bien ce
     // que fait Hatari : Video_Reset_Glue appelle IoMem_WriteByte, documenté « write 8-bit
-    // byte into IO memory space WITHOUT interception » (includes/ioMem.h:86) — un simple
+    // byte into IO memory space WITHOUT interception » ([D] includes/ioMem.h:86 @ f0736b24) — un simple
     // IoMem[addr] = v, qui n'appelle jamais Video_Sync_WriteByte. Router par Bus::write8
     // injectait au contraire un événement freq DATÉ dans la machine d'états de la Glue
     // (celle qui pilote la détection des retraits de bordure) à chaque « reset », plus
     // des wait-states de bus qu'Hatari n'ajoute pas.
+    // + sur STE, ce que RESB efface aussi dans le GST MCU ($FF820F, base vidéo, NOSCROLL) :
+    // [B] ST-4081 feuilles 10 et 12, détail dans Shifter::resetGlue. Le son DMA continue (SNDON
+    // ne voit pas RESB, feuille 13).
     if (shifter) shifter->resetGlue(mfp && !mfp->colorMonitor());   // $FF820A = 0 + $FF8260
     if (psg)     psg->reset();             // PSG_Reset
     if (mfp)     mfp->resetChip();         // MFP_Reset_All
@@ -146,14 +149,38 @@ bool Bus::loadTos(const std::string& path) {
         return false;
     }
     f.seekg(0);
-    rom.resize(static_cast<std::size_t>(n));
-    f.read(reinterpret_cast<char*>(rom.data()), n);
+    std::vector<uint8_t> img(static_cast<std::size_t>(n));
+    f.read(reinterpret_cast<char*>(img.data()), n);
 
-    // L'emplacement de la ROM dépend de la version de TOS (cf. stmap) : un TOS
-    // de 192 Ko vit à $FC0000, sinon (224/256 Ko) à $E00000.
-    romBase = (rom.size() <= 192u * 1024u) ? stmap::ROM_FC0000 : stmap::ROM_E00000;
+    // TOS du TT ou du Falcon : refusé AVANT de toucher à la ROM en place (cf.
+    // tosUnsupportedMachine) — le frontal garde l'ancienne ROM ou sort en erreur.
+    const uint16_t ver = tosHeaderVersion(img.data(), img.size());
+    if (const char* target = tosUnsupportedMachine(ver, tosHeaderIsEmuTos(img.data(), img.size()),
+                                                   img.size())) {
+        std::fprintf(stderr, "[Bus] TOS %X.%02X is for the Atari %s: TT/Falcon TOS not supported "
+                             "(NeoST emulates ST, Mega ST, STE and Mega STE): %s\n",
+                     ver >> 8, ver & 0xFF, target, path.c_str());
+        return false;
+    }
+    rom = std::move(img);
+
+    // Implantation : l'en-tête (os_base, offset 8) fait foi, la taille en repli
+    // (cf. tosImageBase, MachineType.hpp).
+    bool baseFromHeader = false;
+    romBase = tosImageBase(rom.data(), rom.size(), &baseFromHeader);
+    if (!baseFromHeader)
+        std::fprintf(stderr, "[Bus] TOS header gives no valid os_base: placed by size at $%06X\n",
+                     romBase);
+    // [D] Hatari tos.c:1043 @ f0736b24 admet jusqu'à 224 Ko à $FC0000, mais la fenêtre
+    // décodée n'y fait que 192 Ko (romWindowSize) et le chemin rapide de read8 servirait
+    // rom[] au-delà, sur $FF0000-$FF7FFF qui doit fauter : on ne garde que la fenêtre.
+    if (romBase == stmap::ROM_FC0000 && rom.size() > 0x30000u) {
+        std::fprintf(stderr, "[Bus] TOS at $FC0000 larger than the 192 KB ROM window: "
+                             "%zu bytes beyond $FEFFFF dropped\n", rom.size() - 0x30000u);
+        rom.resize(0x30000u);
+    }
     // Version du TOS : mot big-endian de l'en-tête à l'offset 2 (cf. adjustMachineForTos).
-    tosVersion = rom.size() >= 4 ? uint16_t((rom[2] << 8) | rom[3]) : 0;
+    tosVersion = ver;
     // Vecteurs reset $0-$7 : le GLUE les mappe sur la ROM en permanence — on les
     // recopie en RAM dès le chargement (et à chaque reset, cf. seedResetVectors).
     seedResetVectors();
@@ -170,14 +197,19 @@ bool Bus::loadCart(const std::string& path) {
     }
     const std::streamsize n = f.tellg();
     const std::size_t maxSize = stmap::CART_END - stmap::CART_BASE;   // 128 Ko
-    if (n <= 0 || static_cast<std::size_t>(n) > maxSize) {
-        std::fprintf(stderr, "[Bus] invalid cartridge (%lld B, max %zu B): %s\n",
-                     static_cast<long long>(n), maxSize, path.c_str());
+    // Image .STC : les 128 Ko de la ROM précédés d'un en-tête factice de 4 octets
+    // (0x20004 octets en tout), qu'on saute. Avant, la borne de 128 Ko la refusait
+    // (« invalid cartridge ») — Cumana OS-9, SYSINFO.STC.
+    // [D] Hatari cart.c:67-84 @ f0736b24 — même taille exacte, même saut.
+    const bool stc = static_cast<std::size_t>(n) == maxSize + 4;
+    if (n <= 0 || (static_cast<std::size_t>(n) > maxSize && !stc)) {
+        std::fprintf(stderr, "[Bus] invalid cartridge (%lld B, max %zu B, or %zu B for .STC): %s\n",
+                     static_cast<long long>(n), maxSize, maxSize + 4, path.c_str());
         return false;
     }
-    f.seekg(0);
-    cart.resize(static_cast<std::size_t>(n));
-    f.read(reinterpret_cast<char*>(cart.data()), n);
+    f.seekg(stc ? 4 : 0);
+    cart.resize(stc ? maxSize : static_cast<std::size_t>(n));
+    f.read(reinterpret_cast<char*>(cart.data()), static_cast<std::streamsize>(cart.size()));
 
     // Le magic du long word de tête révèle le type de cartouche (cf. stmap).
     const uint32_t magic = cart.size() >= 4
@@ -447,16 +479,17 @@ uint8_t Bus::read8Slow(uint32_t addr) {
     // sans effet sur sa valeur. [C] FreeMiNT 098f002a isp116x.h ; cf. Isp1160.hpp.
     bool ispHit = false;
     uint8_t ispVal = 0xFF;
-    if (isp1160 && addr >= stmap::CART_BASE && addr < stmap::CART_END) {
-        const bool first = ioAccessWidth_ < 2 || (addr & 1) == 0;
-        ispHit = isp1160->cartRead(addr, ispVal, first);
-    }
+    const bool cartFirst = ioAccessWidth_ < 2 || (addr & 1) == 0;   // 1er octet du cycle bus
+    if (isp1160 && addr >= stmap::CART_BASE && addr < stmap::CART_END)
+        ispHit = isp1160->cartRead(addr, ispVal, cartFirst);
     if (ne2000 && addr >= stmap::CART_BASE && addr < stmap::CART_END) {
         uint8_t v;
         // [B] NetUSBee program_spec.txt (archive 11/2007), Network Data Reads :
         // A15=0, la RTL8019 pilote D8-D15. Le latch LSB USB ne pilote pas
         // les données ; son accès fantôme ne doit pas masquer le CR par $FF.
-        if (ne2000->cartRead(addr, v)) return v;
+        // Un mot = UN cycle /ROM : l'effet de bord ne joue qu'au 1er octet, l'octet
+        // impair rend $FF (D0-D7 non pilotés) — cf. Ne2000::cartRead.
+        if (ne2000->cartRead(addr, v, cartFirst)) return v;
     }
     if (ispHit) return ispVal;
 

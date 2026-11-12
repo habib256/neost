@@ -332,7 +332,9 @@ spec512, scroll fin STE de base, masquage palette par machine : **conformes**.
   porté dans `Shifter`, `VideoCounter` et la Glue ; cinq étalons oracle générés
   `scroll_336*`. L'état scroll/prefetch/latch de chaque ligne est mémorisé même avant
   la première écriture palette, afin qu'un re-rendu tardif ne modifie pas les lignes
-  passées. Sauvegardes v20. Obsession et Pacemaker restent à vérifier sur leurs disques.
+  passées. Sauvegardes v20. Obsession (démo v1.1 et v1.0) et Pacemaker 1 Mo, relevés le
+  2026-11-12 : `move.w #1,$FF8264` puis `clr.b $FF8264`, 16 à 20 cycles plus tard — dans la
+  fenêtre. La fenêtre elle-même est retirée le même jour (entrée « NOSCROLL » ci-dessous).
 - ✅ **VBlank (2026-10-18)** : comparateurs 50/60 Hz et remise à ON au VSYNC
   portés ; lignes masquées à la palette 0 sans avancer la base vidéo. Deux étalons
   oracle `vblank_on/off` gardent le masquage et son évitement (640 → 0 px pour on).
@@ -1412,6 +1414,26 @@ visent le vrai STE, mais aucun relevé sur machine ne l'a confirmé.
   écrite par le DMA. Hatari (`stMemory.c STMemory_DMA_ReadByte/WriteByte @ f0736b24`) lit le plan CPU (ROM lisible)
   et perd une écriture en `$0-$7`. Sans effet jusqu'à 4 Mo hors de `$0-$7` : le compteur DMA y tient sur 22 bits.
   Ne pas réaligner.
+- **NOSCROLL du STE, sans fenêtre de temps** (2026-11-12) : `$FF8264/65` sont deux registres dans deux puces. Le
+  décalage (Shifter) suit toute écriture ; NOSCROLL (GST MCU, prefetch) ne suit que les accès qui activent LDS
+  (`$FF8265` en octet, `$FF8264` en mot) et vaut « octet bas nul ». [B] ST-4081 feuille 3 (P3051 : SCRLSEL =
+  `$FF8264-5` ET ILDS) et feuille 10 (latch PA017) ; [D] `gstmcu.v:233,340 @ 4a6db7cc`. Hatari
+  (`Video_HorScroll_Write`, `video.c:5876 @ f0736b24`) ne pose le latch 336 px que si `$8264=0` suit `$8265>0` de
+  40 cycles au plus dans la même VBL, et rend un octet `$8264>0` toujours sans prefetch. Banc fx68k + GSTMCU, écart
+  de 48 et 100 cycles : 62 913 px faux avant, une ligne après. A/B de 11 titres STE (Obsession v1.0 et v1.1,
+  Pacemaker et Pacemaker 1 Mo, Just Musix 2, More or Less Zero, Cernit Trandafir, Double Rez Trouble, E605,
+  Stardust, Eliminator ; 452 captures sur 12 000 trames) : 0 image changée. `scroll_336_late` passe à `rtl`.
+  Ne pas réaligner. [F] Une lecture ouvre aussi SCRLSEL : non modélisé.
+- **Instruction RESET sur STE** (2026-11-12) : RESB efface aussi `$FF820F`, la base vidéo et remet NOSCROLL à 1.
+  [B] ST-4081 feuilles 10 et 12 (PA016/PA017, PC075…, PC085…, PC094…, PC102…) ; [D] `gstmcu.v:340,401-405 @
+  4a6db7cc`. Hatari (`customreset`, `cpu/hatari-glue.c:54 @ f0736b24`) ne touche qu'à `$FF820A/60`. Le TOS 1.62
+  et 2.06 ne réécrivent ni `$FF820F` ni `$FF8264/65` à l'amorçage : sans ce reset, une largeur de ligne laissée par
+  un programme survivait au RESET. Le son DMA n'est PAS coupé : [B] feuille 13, SNDON (PD105) ne se remet qu'à PORB,
+  ITESTB et STOFF — `gstmcu.v:438` le coupe sur resb, écart du RTL non suivi. Décalage du Shifter gardé ([F]).
+  Ne pas réaligner.
+- **Relecture de `$FF820A` sur STE** : le bit 0 (synchro externe) est mémorisé et relu, comme chez Hatari.
+  [B] ST-4081 feuille 10 : bascule EXTS (PA034) relue sur ID8 par PA037. `gstmcu.v:375-380 @ 4a6db7cc` relit
+  `{pal, 0}` : MiSTery omet la synchro externe. Ne pas s'aligner sur le RTL.
 
 - **Compteur du son DMA sur STE** (2026-11-04) : il avance hors de DE, mot par mot, pas seulement au HBL (`DmaSnd_STE_HBL_Update`). [B] ST-4081 feuille 20, [D] `mcucontrol.v` @ `4a6db7cc`, `tools/make_stcpu_snd.py`. `dmasnd_poll` reposé. Ne pas réaligner.
 - **Prise des HBL et VBL sur STE** (2026-11-04) : broche levée au cycle exact et vue par `POLL_IPL`, au lieu du commit au dispatch (`intlev_load → ipl_fetch_now`). [D] fx68k @ `0602ee46` + gstmcu @ `4a6db7cc`,
@@ -2513,9 +2535,15 @@ mid-trame toujours capturée (l'écrêtage sur ce signal synthétique extrême e
 - ✅ **Snapshot scratch DMA son (2026-10-19)** : $FF8920 désormais sérialisé
   en v42 ; un état non nul retrouve sa valeur dans la même instance ou une
   instance neuve. Reset composant chaud/froid conserve l’octet, comme avant.
-- **[BASSE] $FF8900 octet pair lit 0x00** (registre MOT, ioMemTabSTE.c:142) et **$FF8920 =
-  octet scratch relisible** (non intercepté chez Hatari) — l'ancien 0xFF figé faisait
-  échouer un `move.w $FF8900,d0` de diagnostic.
+- **[BASSE] $FF8900 octet pair lit 0x00** (registre MOT, ioMemTabSTE.c:142) — l'ancien 0xFF
+  figé faisait échouer un `move.w $FF8900,d0` de diagnostic.
+- **[BASSE, volontaire 2026-11-12] $FF8920 octet pair relu 0x00, écriture ignorée** — Hatari
+  (`ioMemTabSTE.c:162 @ f0736b24`, non intercepté) en fait un octet scratch relisible, que NeoST
+  suivait depuis le 2026-10-19. [B] *Atari TT030 Hardware Reference Manual*, page « DMA SOUND
+  SUBSYSTEM » (p. 26 du PDF, sha256 `93c17bee`) : « 8920 RW 0000 0000 a000 00bb », zéros explicites
+  là où les registres voisins portent « ---- ---- » ; [D] MiSTery `gstshifter.v:96,125 @ 4a6db7c`
+  ne pose que l'octet bas. ⚠ Page du TT, bloc son DMA identique au STE ; tranché pour le STE par
+  une lecture de $FF8920 sur le fer. Le champ v42 reste dans le flux de save-state, inerte.
 - **[BASSE] `NEOST_PAL_TRACE(_ALL)` : 1re ouverture du run en "w"** — un fichier survivant
   concaténait les sessions (« frame 0.. » dupliqués, diff désynchronisé).
 - **[BASSE] headless : `--load-state` écrasait `--joy`** (hostJoy_/stePads restaurés) —
@@ -2720,9 +2748,20 @@ Information*, janvier 1984, § 5.1.1 p. 5-1 et Fig. 5-3 p. 5-6/5-7
 (`MC68901_Jan84.pdf`, SHA-256 préfixe `5441a092`) : le compteur reste à 01
 jusqu'à l'impulsion suivante ; l'arrêt inhibe le comptage et perd seulement le
 résidu du prescaler. Hatari `mfp.c:1563-1577,1606-1620 @ f0736b24` force au
-contraire la recharge dans ce dernier intervalle. La lecture dans le dernier cycle MFP fractionnaire reste inchangée :
-la borner à 1 fait diverger `mfp_poll` de 16 pixels. Sa datation exacte reste
-à établir par une sonde distincte ; aucune référence pixel n’est recalée.
+contraire la recharge dans ce dernier intervalle.
+
+**Lecture dans le dernier cycle MFP fractionnaire (2026-11-12), grade B** :
+`Mfp::liveTimerCount` rend `ceil(reste / prescaler)` sur le reste EXACT (sous-cycles
+CPU), plafonné au compte de départ de la période. La même fiche, § 5.1.1 p. 5-1 :
+chaque impulsion décrémente, à 01 la suivante recharge — une donnée non nulle ne se
+relit jamais $00. Tronquer d'abord le reste en cycles MFP entiers (ce que faisait
+NeoST, comme `MFP_CYCLE_TO_REG` d'Hatari `mfp.c:393 @ f0736b24` sur un reste déjà
+entier) rendait un cran trop bas pendant la fraction de cycle MFP qui précède chaque
+décompte, et $00 juste avant l'échéance. Le plafond couvre la fraction de cycle MFP
+d'un départ frais, avant que le prescaler n'attaque. `mfp_poll` (snapshot) a été
+recalé : 352 px sur 25 lignes, TOUTES TADR = ancien + 1, IPRA inchangé, dont les deux
+lignes qui relisaient $00 (y = 51 et 100) et relisent maintenant $01. A/B de la
+collection : cf. la note de l'étalon. Tests : `testMfpTimerLiveRead` (selftest).
 
 Le test de `tests/mfp_pulse_logic.cpp` couvre les quatre timers, quatre dates
 avant expiration, la lecture, l'arrêt, l'attente arrêté et la reprise : 64

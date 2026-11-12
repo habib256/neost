@@ -274,6 +274,9 @@ public:
         udp_.closeAll();
         dns_.clear();
         dns6_.clear();
+        // NeoST: the resolver cache did not follow the NIC through a power
+        // cycle; a name cached before it answered after it.
+        if (resolver_) resolver_->clearCache();
         dnsGuests6_.clear();
         peers6_.clear();
         aliasOf6_.clear();

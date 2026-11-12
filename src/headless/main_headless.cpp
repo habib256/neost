@@ -84,7 +84,8 @@ void usage() {
         "  --trace-from N    only enable the trace from frame N onwards\n"
         "  --regs            append the register state to every instruction\n"
         "  --irq             also trace the interrupts taken\n"
-        "  --until-pc HEX    stop as soon as PC reaches this address (hex)\n"
+        "  --until-pc HEX    stop as soon as PC reaches this address (hex; instruction-exact,\n"
+        "                    BEFORE executing it - a temporary --break without the dump)\n"
         "  --break HEX       PC breakpoint (instruction-exact, repeatable): stops BEFORE\n"
         "                    executing the instruction, dumps the registers, exits\n"
         "  --symbols FILE    symbol table (nm-style .sym OR a TOS $601A executable)\n"
@@ -163,6 +164,8 @@ void usage() {
         "  --cart FILE       mount a cartridge ($FA0000): diagnostic Test Kit, etc.\n"
         "  --gemdos DIR      GEMDOS hard disk: map DIR onto C: (GEMDOS calls redirected\n"
         "                    to the host, Hatari-style; exclusive with --cart)\n"
+        "  --gemdos-ro       with --gemdos: write-protect the drive (writes return EWRPRO,\n"
+        "                    the host folder is left untouched; neost.cfg gemdos_ro=1)\n"
         "  --auto PRG        autostart PRG after boot (e.g. A:\\EMAIL.PRG; no drive = C:\\),\n"
         "                    through a virtual DESKTOP/NEWDESK/EMUDESK.INF, like Hatari --auto;\n"
         "                    TOS 1.04+ or EmuTOS; installs the GEMDOS system cartridge\n"
@@ -456,6 +459,86 @@ int enecSelfTest(Machine& machine) {
     bool wrapOk = rsarWrapped;
     for (uint8_t b : wrap) wrapOk = wrapOk && rd(0x10) == b;
     check(wrapOk, "remote DMA wraps PSTOP -> PSTART");
+
+    // --- 7. Un accès MOT n'est qu'UN cycle /ROM (2026-11-12) -------------------
+    // Chaque octet rejouait l'effet de bord : un move.w au port données mangeait
+    // 2 octets de Remote DMA, un move.w de CR=$26 émettait la trame deux fois.
+    // L'octet impair rend $FF (D8-D15 seuls pilotés, cf. Ne2000::cartRead).
+    struct CountLoop final : NetBackend {
+        int sent = 0;
+        std::deque<std::vector<uint8_t>> q;
+        const char* name() const override { return "count"; }
+        void send(const uint8_t* f, int n) override { ++sent; q.emplace_back(f, f + n); }
+        bool recv(std::vector<uint8_t>& o) override {
+            if (q.empty()) return false;
+            o = std::move(q.front()); q.pop_front(); return true;
+        }
+    } cnt;
+    machine.ne2000.setBackend(&cnt);
+    wr(0x08, 0); wr(0x09, 0); wr(0x0A, 4); wr(0x0B, 0);
+    wr(0x00, 0x0A);                                   // Remote Read de la PROM
+    const uint16_t w = bus.read16(Ne2000::READ_BASE + 0x10u * 512u);
+    check(w == uint16_t((Ne2000::kDefaultMac[0] << 8) | 0xFF) && rd(0x08) == 1,
+          "word read of data port = 1 byte");
+    wr(0x04, kTxPage); wr(0x05, uint8_t(sizeof frame)); wr(0x06, 0);
+    (void)bus.read16(Ne2000::WRITE_BASE + 0x26u * 2u);   // move.w : CR <- $26 (TXP)
+    check(cnt.sent == 1, "word write of CR=TXP sends once");
+
+    // --- 8. Registres d'état de la page 0 ([B] DP8390D p. 17, 24, 26, 29) ------
+    // TSR rendait TBCR0 ($20 = FU pour 32 octets), $0C-$0F rendaient RCR/TCR/DCR/IMR.
+    check(rd(0x04) == 0x01 && rd(0x05) == 0, "TSR = PTX, NCR = 0 after TX");
+    wr(0x07, 0xFF);
+    machine.ne2000.poll();                            // la trame broadcast revient
+    check(rd(0x0C) == 0x21, "RSR = PRX|PHY (broadcast)");
+    check(rd(0x0D) == 0 && rd(0x0E) == 0 && rd(0x0F) == 0, "tally counters read 0");
+
+    // --- 9. Pages 2 et 3 n'écrivent plus dans la page 0 -----------------------
+    const uint8_t bnry0 = rd(0x03);
+    wr(0x00, 0xA2);                                   // page 2
+    wr(0x03, 0x77);                                   // Remote Next Packet Pointer
+    const bool p2read = rd(0x01) == kRxStart && rd(0x02) == kRxStop && rd(0x0C) == 0x04;
+    wr(0x00, 0xE2);                                   // page 3
+    wr(0x03, 0x78);
+    wr(0x00, 0x22);                                   // retour page 0
+    check(p2read && rd(0x03) == bnry0, "page 2/3 writes leave BNRY, page 2 reads config");
+
+    // --- 10. Carte stoppée : ni réception ni émission ([B] CR p. 19) ----------
+    uint8_t bc[60] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1, 2, 3, 4, 5, 6, 0x08, 0x06};
+    wr(0x00, 0x21); wr(0x07, 0xFF);
+    cnt.q.clear(); cnt.send(bc, sizeof bc); cnt.sent = 0;
+    machine.ne2000.poll();
+    wr(0x00, 0x25);                                   // TXP sous STP
+    check(!(rd(0x07) & 0x03) && cnt.sent == 0, "stopped NIC: no RX, no TX");
+
+    // --- 11. Filtres RCR : AB, AM + hachage MAR, MON ([B] RCR p. 25) ----------
+    auto rxOne = [&](const uint8_t* f) {
+        wr(0x07, 0xFF);
+        cnt.send(f, 60); machine.ne2000.poll();
+        return (rd(0x07) & 0x01) != 0;
+    };
+    wr(0x00, 0x22); wr(0x0C, 0x00);                   // started, RCR = 0
+    const bool abOff = !rxOne(bc);
+    wr(0x0C, 0x04);
+    const bool abOn = rxOne(bc);
+    check(abOff && abOn, "RCR.AB gates broadcast");
+    uint8_t mc[60] = {0x01, 0x00, 0x5E, 0x00, 0x00, 0x01, 1, 2, 3, 4, 5, 6, 0x08, 0x00};
+    wr(0x0C, 0x08);                                   // AM, MAR à 0 (reset)
+    const bool mcHashMiss = !rxOne(mc);
+    wr(0x00, 0x62);
+    for (uint8_t r = 0x08; r <= 0x0F; ++r) wr(r, 0xFF);
+    wr(0x00, 0x22);
+    const bool mcHashHit = rxOne(mc);
+    wr(0x0C, 0x00);
+    const bool amOff = !rxOne(mc);
+    check(mcHashMiss && mcHashHit && amOff, "RCR.AM + MAR hash gate multicast");
+    wr(0x0C, 0x24);                                   // MON | AB
+    const bool monNoBuf = !rxOne(bc);
+    const uint8_t rsrMon = rd(0x0C);
+    const uint8_t c2a = rd(0x0F), c2b = rd(0x0F);
+    check(monNoBuf && (rsrMon & 0x50) == 0x50 && c2a == 1 && c2b == 0,
+          "monitor mode: not buffered, CNTR2 counts");
+    wr(0x0C, 0x04);
+    machine.ne2000.setBackend(nullptr);
 
     std::fprintf(stderr, "[enec-selftest] %d passed, %d failed\n", passed, failed);
     return failed == 0 ? 0 : 1;
@@ -1313,6 +1396,44 @@ uint8_t stScancode(char c) {
         default: return 0x00;
     }
 }
+
+// --- Analyse STRICTE des valeurs d'options (2026-11-12) -----------------------
+// atoi rendait 0 pour « abc » et strtoul(…, 16) 0 pour « $FC0052 » : un --break posé
+// en $000000, un --reset-at à la trame 0, un --trace-from qui tracait tout — chacun
+// en silence, code 0. strtoul en base 0 lisait en plus « 010 » en OCTAL (8 octets).
+// Toute valeur se lit désormais en entier : le jeton est consommé jusqu'au bout,
+// sinon message clair et code 2 (erreur d'usage, comme une option inconnue).
+[[noreturn]] void badArg(const char* opt, const char* txt, const char* expect) {
+    std::fprintf(stderr, "%s expects %s (got '%s')\n", opt, expect, txt);
+    std::exit(2);
+}
+// Entier DÉCIMAL dans [lo, hi]. long long : `long` n'a que 32 bits sous Windows.
+long long argInt(const char* opt, const char* txt, long long lo, long long hi) {
+    char* end = nullptr;
+    errno = 0;
+    const long long v = std::strtoll(txt, &end, 10);
+    if (end == txt || *end || errno == ERANGE || v < lo || v > hi) {
+        char want[96];
+        std::snprintf(want, sizeof want, "a decimal integer in %lld..%lld", lo, hi);
+        badArg(opt, txt, want);
+    }
+    return v;
+}
+// Numéro de trame : même borne que --frames.
+int argFrame(const char* opt, const char* txt) { return int(argInt(opt, txt, 0, 100000000LL)); }
+// Adresse ou valeur HEXA : « FC0052 », « $FC0052 » ou « 0xFC0052 » (la grammaire de
+// --joy, --hash-ram et du serveur, util/JoyScript.hpp).
+uint32_t argHex(const char* opt, const char* txt) {
+    uint32_t v = 0;
+    if (!neost::joyscript::parseHexU32(txt, v))
+        badArg(opt, txt, "a hex value (FC0052, $FC0052 or 0xFC0052)");
+    return v;
+}
+// Nombre non signé 32 bits : décimal, ou hexa préfixé ($ / 0x). Jamais d'octal.
+uint32_t argU32(const char* opt, const char* txt) {
+    if (txt[0] == '$' || (txt[0] == '0' && (txt[1] == 'x' || txt[1] == 'X'))) return argHex(opt, txt);
+    return uint32_t(argInt(opt, txt, 0, 0xFFFFFFFFLL));
+}
 } // namespace
 
 int main(int argc, char** argv) {
@@ -1343,6 +1464,7 @@ int main(int argc, char** argv) {
     std::string autoStart;                       // --auto PRG : démarrage automatique (INF virtuel)
     std::string printerPath;                     // --printer FILE : capture Centronics (port parallèle)
     std::string gemdosDir;                       // --gemdos DIR : disque dur GEMDOS (dossier hôte)
+    bool        gemdosRo = false;                // --gemdos-ro : lecteur GEMDOS protégé en écriture
     std::string acsiImg;                         // --acsi IMG : image disque dur ACSI (cible 0)
     bool        modemFlag      = false;          // --modem : modem Hayes sur l'USART
     bool        ethernecFlag   = false;          // --ethernec : NE2000 port cartouche
@@ -1387,6 +1509,7 @@ int main(int argc, char** argv) {
     bool        haveJoy    = false;   // --joy : maintient un état joystick pendant le run
     uint8_t     joy0Hold   = 0, joy1Hold = 0;  // bits ST (haut$01 bas$02 gauche$04 droite$08 feu$80)
     bool        loopback   = false;   // « branche » le connecteur de bouclage RS232 (test S)
+    bool        midiLoopbackCfg = false;  // midi_loopback= de neost.cfg : fiche MIDI seule, dès le boot
     int         loopbackAt = -1;      // --loopback-at N : trame de branchement EXPLICITE (sinon auto)
     int         resetAt = -1;         // --reset-at N : reset à chaud (bouton) avant la trame N
     bool        dmaFixture = false;   // boîtier de test DMA du kit Field Service (test D)
@@ -1527,7 +1650,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--serial-dump")) serialDumpPath = next(a);
         else if (!std::strcmp(a, "--scc-dump")) sccDumpPath = next(a);
         else if (!std::strcmp(a, "--trace"))      tracePath = next(a);
-        else if (!std::strcmp(a, "--trace-from")) traceFrom = std::atoi(next(a));
+        else if (!std::strcmp(a, "--trace-from")) traceFrom = argFrame(a, next(a));
         else if (!std::strcmp(a, "--regs"))       regs      = true;
         else if (!std::strcmp(a, "--irq"))        irq       = true;
         else if (!std::strcmp(a, "--screenshot")) shotPath  = next(a);
@@ -1542,10 +1665,11 @@ int main(int argc, char** argv) {
         }
         else if (!std::strcmp(a, "--fastfdc"))    fastFdc   = true;
         else if (!std::strcmp(a, "--ste-pads"))   stePads   = true;
-        else if (!std::strcmp(a, "--fdc-seed"))   { fdcSeed = (uint32_t)std::strtoul(next(a), nullptr, 0); haveFdcSeed = true; }
+        else if (!std::strcmp(a, "--fdc-seed"))   { fdcSeed = argU32(a, next(a)); haveFdcSeed = true; }
         else if (!std::strcmp(a, "--disk-ro"))    diskRo    = true;
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--gemdos"))     gemdosDir = next(a);
+        else if (!std::strcmp(a, "--gemdos-ro"))  gemdosRo = true;
         else if (!std::strcmp(a, "--printer"))    printerPath = next(a);
         else if (!std::strcmp(a, "--console-log")) consoleLogPath = next(a);
         else if (!std::strcmp(a, "--auto"))       autoStart = next(a);
@@ -1562,7 +1686,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--nat-allow-loopback")) { slirpFlag = true; natAllowLoopback = true; }
         else if (!std::strcmp(a, "--nat-forwards")) { slirpFlag = true; natForwards = next(a); }
         else if (!std::strcmp(a, "--ultrasatan"))      ultrasatan = true;
-        else if (!std::strcmp(a, "--ultrasatan-id"))   { ultrasatan = true; ultrasatanId = std::atoi(next(a)); }
+        else if (!std::strcmp(a, "--ultrasatan-id"))   { ultrasatan = true; ultrasatanId = int(argInt(a, next(a), 0, 6)); }
         else if (!std::strcmp(a, "--sd1"))             { ultrasatan = true; sd1Img = next(a); }
         else if (!std::strcmp(a, "--sd2"))             { ultrasatan = true; sd2Img = next(a); }
         else if (!std::strcmp(a, "--midi-dump")) midiDumpPath = next(a);
@@ -1576,8 +1700,13 @@ int main(int argc, char** argv) {
         // Le canal s'applique au dernier appareil déclaré : un séparateur DANS la
         // valeur aurait buté sur les noms ALSA, qui contiennent déjà « : ».
         else if (!std::strcmp(a, "--midi-in-channel")) {
-            const int ch = std::atoi(next(a));
-            if (!midiInDevices.empty() && ch >= 1 && ch <= 16) midiInDevices.back().forceChannel = ch;
+            const int ch = int(argInt(a, next(a), 1, 16));
+            if (midiInDevices.empty()) {
+                std::fprintf(stderr, "--midi-in-channel applies to the previous --midi-in-device "
+                                     "(none given yet)\n");
+                return 2;
+            }
+            midiInDevices.back().forceChannel = ch;
         }
         else if (!std::strcmp(a, "--midi-list")) midiList = true;
         else if (!std::strcmp(a, "--dongle"))    dongleModel  = next(a);
@@ -1587,14 +1716,14 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--no-auto-dongle")) noAutoDongle = true;
         else if (!std::strcmp(a, "--key-log"))   keyLogPath   = next(a);
         else if (!std::strcmp(a, "--key-replay")) keyReplayPath = next(a);
-        else if (!std::strcmp(a, "--button-at")) buttonAtFrame = std::atoi(next(a));
+        else if (!std::strcmp(a, "--button-at")) buttonAtFrame = argFrame(a, next(a));
         else if (!std::strcmp(a, "--azerty"))   g_azerty = true;
         else if (!std::strcmp(a, "--midi-net")) {
             // "host:port" ou "host:port:listen" (le port d'écoute par défaut est 6820).
             std::string s = next(a);
             const auto p1 = s.find(':');
             const auto p2 = (p1 == std::string::npos) ? std::string::npos : s.find(':', p1 + 1);
-            if (p2 != std::string::npos) { midiNetListen = std::atoi(s.c_str() + p2 + 1); s = s.substr(0, p2); }
+            if (p2 != std::string::npos) { midiNetListen = int(argInt(a, s.c_str() + p2 + 1, 1, 65535)); s = s.substr(0, p2); }
             midiNetPeer = s;
         }
         else if (!std::strcmp(a, "--walk-mouse")) walkMouse = true;
@@ -1620,8 +1749,8 @@ int main(int argc, char** argv) {
             haveJoy = true;
         }
         else if (!std::strcmp(a, "--loopback"))   loopback  = true;
-        else if (!std::strcmp(a, "--loopback-at")) { loopback = true; loopbackAt = std::atoi(next(a)); }
-        else if (!std::strcmp(a, "--reset-at"))    resetAt = std::atoi(next(a));
+        else if (!std::strcmp(a, "--loopback-at")) { loopback = true; loopbackAt = argFrame(a, next(a)); }
+        else if (!std::strcmp(a, "--reset-at"))    resetAt = argFrame(a, next(a));
         else if (!std::strcmp(a, "--dma-fixture")) dmaFixture = true;
         else if (!std::strcmp(a, "--mono"))       machineMono = true;
         else if (!std::strcmp(a, "--glue-selftest")) glueSelfTest = true;
@@ -1637,16 +1766,16 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--netusbee-selftest")) netusbeeSelfTestFlag = true;
         else if (!std::strcmp(a, "--nat-selftest") || !std::strcmp(a, "--slirp-selftest")) slirpSelfTestFlag = true;
         else if (!std::strcmp(a, "--shot-every"))  {
-            shotEvery = std::atoi(next(a)); shotPrefix = next(a);
+            shotEvery = int(argInt(a, next(a), 0, 100000000LL)); shotPrefix = next(a);
             if (shotEvery <= 0)             // le préfixe a été consommé pour rien : le dire
                 std::fprintf(stderr, "[headless] --shot-every %d: no periodic capture "
                              "will be taken\n", shotEvery);
         }
-        else if (!std::strcmp(a, "--shot-from"))   shotFrom = std::atoi(next(a));
-        else if (!std::strcmp(a, "--keys-at"))     { const int f = std::atoi(next(a)); keysAtList.emplace_back(f, next(a)); }
-        else if (!std::strcmp(a, "--disk-at"))     { const int f = std::atoi(next(a)); diskAtList.emplace_back(f, next(a)); }
-        else if (!std::strcmp(a, "--key-down"))    { const int f = std::atoi(next(a)); keyDownList.emplace_back(f, next(a)[0]); }
-        else if (!std::strcmp(a, "--key-up"))      { const int f = std::atoi(next(a)); keyUpList.emplace_back(f, next(a)[0]); }
+        else if (!std::strcmp(a, "--shot-from"))   shotFrom = argFrame(a, next(a));
+        else if (!std::strcmp(a, "--keys-at"))     { const int f = argFrame(a, next(a)); keysAtList.emplace_back(f, next(a)); }
+        else if (!std::strcmp(a, "--disk-at"))     { const int f = argFrame(a, next(a)); diskAtList.emplace_back(f, next(a)); }
+        else if (!std::strcmp(a, "--key-down"))    { const int f = argFrame(a, next(a)); keyDownList.emplace_back(f, next(a)[0]); }
+        else if (!std::strcmp(a, "--key-up"))      { const int f = argFrame(a, next(a)); keyUpList.emplace_back(f, next(a)[0]); }
         // ⚠ --joy-at prend DEUX arguments : les temporaires sont OBLIGATOIRES. Un
         // emplace_back(next(a), next(a)) aurait un ordre d'évaluation NON SPÉCIFIÉ, et
         // inverserait la trame et la valeur au gré du compilateur.
@@ -1655,13 +1784,17 @@ int main(int argc, char** argv) {
             // « else if » ne relâchait JAMAIS ; < 0, ph ne l'atteignait pas — touches
             // collées jusqu'à la fin du run (auto-répétition TOS). Borne haute : une
             // heure à 60 Hz, pour que keyHold + 2 ne déborde pas.
-            keyHold = std::atoi(next(a));
-            if (keyHold < 1 || keyHold > 216000) {
-                std::fprintf(stderr, "--key-hold must be between 1 and 216000 frames\n");
+            const char* txt = next(a);
+            char* end = nullptr;
+            errno = 0;
+            const long long v = std::strtoll(txt, &end, 10);
+            if (end == txt || *end || errno == ERANGE || v < 1 || v > 216000) {
+                std::fprintf(stderr, "--key-hold must be between 1 and 216000 frames (got '%s')\n", txt);
                 return 2;
             }
+            keyHold = int(v);
         }
-        else if (!std::strcmp(a, "--scancode-at"))  { const int f = std::atoi(next(a));
+        else if (!std::strcmp(a, "--scancode-at"))  { const int f = argFrame(a, next(a));
                                                      std::vector<uint8_t> sc;
                                                      const char* const list = next(a);
                                                      for (const char* t = list; *t; ) {
@@ -1680,7 +1813,7 @@ int main(int argc, char** argv) {
                                                      }
                                                      scanAtList.emplace_back(f, std::move(sc)); }
         else if (!std::strcmp(a, "--joy-at")) {
-            const int f = std::atoi(next(a));
+            const int f = argFrame(a, next(a));
             const std::string txt = next(a);
             uint32_t v = 0;
             if (!neost::joyscript::parseHexU32(txt, v) || v > 0xFF) {   // hexa, comme --joy et « joy »
@@ -1689,7 +1822,7 @@ int main(int argc, char** argv) {
             }
             joyAtList.emplace_back(f, uint8_t(v));
         }
-        else if (!std::strcmp(a, "--mouse-at"))    { const int f = std::atoi(next(a)); mouseAtList.emplace_back(f, next(a)); }
+        else if (!std::strcmp(a, "--mouse-at"))    { const int f = argFrame(a, next(a)); mouseAtList.emplace_back(f, next(a)); }
         else if (!std::strcmp(a, "--mouse-step")) {
             const char* value = next(a);
             char* end = nullptr;
@@ -1701,7 +1834,7 @@ int main(int argc, char** argv) {
             mouseStep = int(step);
         }
         else if (!std::strcmp(a, "--joy-script")) {
-            const int f = std::atoi(next(a));
+            const int f = argFrame(a, next(a));
             const char* txt = next(a);
             std::vector<uint8_t> masks; std::string jerr;
             if (!neost::joyscript::parse(txt, masks, jerr)) {
@@ -1711,7 +1844,7 @@ int main(int argc, char** argv) {
             joyScrList.emplace_back(f, std::move(masks));
         }
         else if (!std::strcmp(a, "--joy-script-file")) {
-            const int f = std::atoi(next(a));
+            const int f = argFrame(a, next(a));
             const char* path = next(a);
             // is_regular_file AVANT d'ouvrir : sous Linux, ouvrir un RÉPERTOIRE réussit
             // et c'est la lecture qui lève une ios_failure non rattrapée — « --joy-script-file
@@ -1741,8 +1874,8 @@ int main(int argc, char** argv) {
             }
             if (!observe::addProbe(probeSet, p, e)) { std::fprintf(stderr, "--probe: %s\n", e.c_str()); return 2; }
         }
-        else if (!std::strcmp(a, "--state-hash-every")) stateHashEvery = std::atoi(next(a));
-        else if (!std::strcmp(a, "--arch-hash-every")) archHashEvery = std::atoi(next(a));
+        else if (!std::strcmp(a, "--state-hash-every")) stateHashEvery = int(argInt(a, next(a), 0, 1000000000LL));
+        else if (!std::strcmp(a, "--arch-hash-every")) archHashEvery = int(argInt(a, next(a), 0, 1000000000LL));
         else if (!std::strcmp(a, "--probe-every")) {
             // Strict : « abc » et « 0 » devenaient 1 en silence, à rebours de la rigueur
             // affichée pour --probe et --server-slots.
@@ -1786,9 +1919,9 @@ int main(int argc, char** argv) {
             if (v > 4096)
                 std::fprintf(stderr, "[headless] --server-slots %ld clamped to %d\n", v, serverSlots);
         }
-        else if (!std::strcmp(a, "--dump-at"))     { dumpAtFrame = std::atoi(next(a));
-                                                     dumpAddr = (uint32_t)std::strtoul(next(a), nullptr, 16);
-                                                     dumpLen  = (uint32_t)std::strtoul(next(a), nullptr, 0);
+        else if (!std::strcmp(a, "--dump-at"))     { dumpAtFrame = argFrame(a, next(a));
+                                                     dumpAddr = argHex(a, next(a)) & 0xFFFFFFu;
+                                                     dumpLen  = argU32(a, next(a));
                                                      dumpPath = next(a);
                                                      // L'adresse se replie sur 24 bits : au-delà de 16 Mo le dump
                                                      // ne ferait que boucler (FFFFFFFF = 4 Go de fichier).
@@ -1857,6 +1990,7 @@ int main(int argc, char** argv) {
             if (!fc.diskb.empty())  diskBPath = resolve(fc.diskb);
             if (!fc.cart.empty())   cartPath  = resolve(fc.cart);
             if (!fc.gemdos.empty()) gemdosDir = resolve(fc.gemdos);
+            if (fc.gemdosRo)        gemdosRo = true;
             if (!fc.acsi.empty())   acsiImg   = resolve(fc.acsi);
             modemFlag    = fc.modem;
             ethernecFlag = fc.ethernec;
@@ -1877,6 +2011,10 @@ int main(int argc, char** argv) {
             fastFdc      = fc.fastfdc;
             stePads      = fc.stePads;
             fpuPresent   = fc.fpu;
+            // Fiche MIDI OUT→IN du GUI (menu Machine) : branchée dès le boot, comme
+            // App::applyConfig. Oubliée jusqu'au 2026-11-12 — un rejeu de séquenceur
+            // configuré en boucle MIDI tournait câble débranché.
+            midiLoopbackCfg = fc.midiLoopback;
             // UltraSatan comme App::usatanApply : cibles 0-1, slot 1 = l'image acsi=
             // (déjà montée sur la cible 0 ci-dessus, laissée en place par
             // l'activation), slot 2 = sd2=, lu seulement quand l'interface est cochée.
@@ -1907,18 +2045,33 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "[headless] config taken from %s\n", p);
         }
         else if (!std::strcmp(a, "--cpu"))        cpuCore   = Cpu68k::parseCore(next(a));
-        else if (!std::strcmp(a, "--machine"))    machType  = parseMachine(next(a));
+        // --machine / --mem : une valeur inconnue tombait sur STE / 512k avec un simple
+        // avertissement et le run rendait 0 — un « --machine mega-ste » mesurait un autre
+        // matériel en vert. La ligne de commande refuse (code 2) ; neost.cfg (--from-cfg),
+        // écrit par le GUI, garde la politique tolérante du GUI.
+        else if (!std::strcmp(a, "--machine")) {
+            const char* v = next(a);
+            if (std::strcmp(v, "st") && std::strcmp(v, "megast") && std::strcmp(v, "ste")
+                && std::strcmp(v, "megaste"))
+                badArg(a, v, "st, megast, ste or megaste");
+            machType = parseMachine(v);
+        }
         else if (!std::strcmp(a, "--fpu"))        fpuPresent = true;
-        else if (!std::strcmp(a, "--mem"))        ramBytes  = parseRamBytes(next(a));
-        else if (!std::strcmp(a, "--until-pc"))   { untilPc = (uint32_t)std::strtoul(next(a), nullptr, 16); haveUntil = true; }
-        else if (!std::strcmp(a, "--break"))      breakAddrs.push_back((uint32_t)std::strtoul(next(a), nullptr, 16));
-        else if (!std::strcmp(a, "--watch"))      watchAddrs.push_back((uint32_t)std::strtoul(next(a), nullptr, 16));
+        else if (!std::strcmp(a, "--mem")) {
+            const char* v = next(a);
+            ramBytes = parseRamBytes(v);
+            if (std::strcmp(ramLabel(ramBytes), v) && std::strcmp(v, "2.5m"))
+                badArg(a, v, "256k, 512k, 1m, 2m, 2176k, 2560k or 4m");
+        }
+        else if (!std::strcmp(a, "--until-pc"))   { untilPc = argHex(a, next(a)); haveUntil = true; }
+        else if (!std::strcmp(a, "--break"))      breakAddrs.push_back(argHex(a, next(a)));
+        else if (!std::strcmp(a, "--watch"))      watchAddrs.push_back(argHex(a, next(a)));
         else if (!std::strcmp(a, "--save-state-test")) saveStateTest = true;
         else if (!std::strcmp(a, "--save-state")) saveStatePath = next(a);
         else if (!std::strcmp(a, "--load-state")) loadStatePath = next(a);
         else if (!std::strcmp(a, "--break-sym"))  breakSyms.emplace_back(next(a));
         else if (!std::strcmp(a, "--symbols"))    symbolsPath = next(a);
-        else if (!std::strcmp(a, "--symbols-base")) symBase = (uint32_t)std::strtoul(next(a), nullptr, 16);
+        else if (!std::strcmp(a, "--symbols-base")) symBase = argHex(a, next(a));
         else if (!std::strcmp(a, "-h") || !std::strcmp(a, "--help")) { usage(); return 0; }
         else if (a[0] == '-')                     { std::fprintf(stderr, "unknown option: %s\n", a); usage(); return 2; }
         else                                      romPath   = a;
@@ -1948,6 +2101,64 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[headless] --probe-every and --trace - both write stdout; "
                              "trace to a file instead\n");
         return 2;
+    }
+
+    // --server : la boucle de commandes REMPLACE la boucle --frames, seul lecteur des
+    // entrées datées, des arrêts et des empreintes périodiques. Ces options étaient
+    // ignorées EN SILENCE (« --server --keys-at 50 X » : aucune touche, code 0 ;
+    // « --trace-from » : trace vide en vert). Refus d'usage (code 2), comme --break —
+    // AVANT de bâtir la machine : une faute de recette ne coûte pas un boot.
+    if (serverMode) {
+        if (tracePath == "-") {
+            std::fprintf(stderr, "[server] --trace - would corrupt the protocol on stdout; "
+                                 "trace to a file instead\n");
+            return 2;
+        }
+        // Points d'arrêt : leur unique lecteur est la boucle --frames. En serveur, un
+        // hit GELAIT le CPU et le protocole continuait de répondre « ok frame=… » sur
+        // une machine figée — mesuré : compteur 200 Hz arrêté à la trame 10, RC=0.
+        // --until-pc pose le même point d'arrêt temporaire.
+        if (!breakAddrs.empty() || !watchAddrs.empty() || !breakSyms.empty() || haveUntil) {
+            std::fprintf(stderr, "[server] --break/--watch/--break-sym/--until-pc are not "
+                                 "supported in server mode (a hit would freeze the CPU "
+                                 "silently); use the --frames loop\n");
+            return 2;
+        }
+        // Pompes hôte (modem, anneau MIDI, NE2000) : appelées UNIQUEMENT par la boucle
+        // --frames — en serveur elles étaient annoncées puis jamais servies (file UDP
+        // jamais drainée, mesuré). Et elles cassent le déterminisme que le serveur
+        // vend (docs/OPENDST.md § 1) : refus, pas avertissement.
+        if (modemFlag || !midiNetPeer.empty() || ethernecFlag || netusbeeFlag || slirpFlag) {
+            std::fprintf(stderr, "[server] --modem/--midi-net/--ethernec/--netusbee/--nat are "
+                                 "not supported in server mode: their host pumps only run in the "
+                                 "--frames loop, and they break determinism\n");
+            return 2;
+        }
+        // Entrées datées et séquences post-boucle : le client les envoie par commande.
+        std::string refused;
+        auto refuse = [&](bool used, const char* opt) { if (used) refused += refused.empty() ? opt : std::string(", ") + opt; };
+        refuse(!keys.empty(), "--keys");
+        refuse(!keysAtList.empty(), "--keys-at");
+        refuse(!scanAtList.empty(), "--scancode-at");
+        refuse(!keyDownList.empty(), "--key-down");
+        refuse(!keyUpList.empty(), "--key-up");
+        refuse(!joyAtList.empty(), "--joy-at");
+        refuse(!joyScrList.empty(), "--joy-script/--joy-script-file");
+        refuse(!mouseAtList.empty(), "--mouse-at");
+        refuse(!diskAtList.empty(), "--disk-at");
+        refuse(resetAt >= 0, "--reset-at");
+        refuse(buttonAtFrame >= 0, "--button-at");
+        refuse(loopback, "--loopback/--loopback-at");
+        refuse(walkMouse, "--walk-mouse");
+        refuse(stateHashEvery > 0, "--state-hash-every");
+        refuse(archHashEvery > 0, "--arch-hash-every");
+        refuse(traceFrom > 0, "--trace-from");
+        if (!refused.empty()) {
+            std::fprintf(stderr, "[server] %s: not supported in server mode — only the --frames "
+                                 "loop applies them (use the joy/play/key/mouse/insert/observe "
+                                 "commands)\n", refused.c_str());
+            return 2;
+        }
     }
 
     // --joy-script-compile : écrit le script COMPILÉ (un masque par trame) et sort.
@@ -2050,10 +2261,16 @@ int main(int argc, char** argv) {
     if (!gemdosDir.empty()) {
         if (!cartPath.empty())
             std::fprintf(stderr, "[headless] --cart ignored: incompatible with --gemdos\n");
-        machine.gemdos.setDirectory(gemdosDir);
+        // Dossier introuvable : la machine démarrait sans C:, code 0 (et --server
+        // annonçait la session). Un média demandé et absent fait échouer le run.
+        if (!machine.gemdos.setDirectory(gemdosDir)) outFail = true;
+        machine.gemdos.setWriteProtect(gemdosRo);
+        if (gemdosRo) std::fprintf(stderr, "[headless] GEMDOS drive write-protected (--gemdos-ro)\n");
     } else if (!cartPath.empty() && autoStart.empty()) {
         if (!machine.loadCart(cartPath)) outFail = true;   // cartouche $FA0000 demandée, introuvable
     }
+    if (gemdosRo && gemdosDir.empty())
+        std::fprintf(stderr, "[headless] --gemdos-ro ignored: requires --gemdos\n");
     // Démarrage automatique (--auto) : INF virtuel servi par la cartouche système.
     if (!autoStart.empty()) {
         if (!cartPath.empty() && gemdosDir.empty())
@@ -2064,11 +2281,14 @@ int main(int argc, char** argv) {
     // cartouche système, donc n'existe qu'avec --gemdos.
     static FILE* consoleLog = nullptr;
     if (!consoleLogPath.empty()) {
-        if (gemdosDir.empty())
+        // Sortie demandée et non produite : code ≠ 0 (le relevé est LU par un runner).
+        if (gemdosDir.empty()) {
             std::fprintf(stderr, "[headless] --console-log ignored: requires --gemdos\n");
-        else if (!(consoleLog = std::fopen(consoleLogPath.c_str(), "wb")))
+            outFail = true;
+        } else if (!(consoleLog = std::fopen(consoleLogPath.c_str(), "wb"))) {
             std::fprintf(stderr, "[headless] cannot open %s for the console\n", consoleLogPath.c_str());
-        else
+            outFail = true;
+        } else
             machine.gemdos.setConsoleSink([](const std::string& t) {
                 std::fwrite(t.data(), 1, t.size(), consoleLog);
                 std::fflush(consoleLog);
@@ -2078,12 +2298,24 @@ int main(int argc, char** argv) {
     if (!printerPath.empty()) {
         if (machine.setPrinterFile(printerPath))
             std::fprintf(stderr, "[headless] Centronics printer → %s\n", printerPath.c_str());
-        else
+        else {
             std::fprintf(stderr, "[headless] cannot open %s for the printer\n", printerPath.c_str());
+            outFail = true;
+        }
     }
     // Disque dur ACSI (--acsi/--hd) : le TOS détecte le périphérique, lit la table de
     // partitions et monte les partitions FAT (C:, D:…). Indépendant du GEMDOS HD.
-    if (!acsiImg.empty() && machine.fdc.mountAcsi(acsiImg))
+    // Image introuvable : même règle que --disk — le run échoue au lieu de démarrer
+    // sans disque dur en rendant 0 (et --server refuse de démarrer).
+    auto acsiMount = [&](const std::string& img, int target, const char* opt) {
+        if (img.empty()) return false;
+        if (machine.fdc.mountAcsi(img, target)) return true;
+        std::fprintf(stderr, "[headless] %s: cannot mount %s on ACSI target %d\n",
+                     opt, img.c_str(), target);
+        outFail = true;
+        return false;
+    };
+    if (acsiMount(acsiImg, 0, "--acsi"))
         std::fprintf(stderr, "[headless] ACSI: %d partition(s) detected\n",
                      machine.fdc.acsiPartitionCount());
     // UltraSatan (--ultrasatan…) : 2 slots SD sur les cibles N/N+1. Une image --acsi
@@ -2094,9 +2326,9 @@ int main(int argc, char** argv) {
             return 2;
         }
         machine.enableUltraSatan(ultrasatanId);
-        if (!sd1Img.empty() && machine.fdc.mountAcsi(sd1Img, ultrasatanId))
+        if (acsiMount(sd1Img, ultrasatanId, "--sd1"))
             std::fprintf(stderr, "[headless] UltraSatan slot 1: %s\n", sd1Img.c_str());
-        if (!sd2Img.empty() && machine.fdc.mountAcsi(sd2Img, ultrasatanId + 1))
+        if (acsiMount(sd2Img, ultrasatanId + 1, "--sd2"))
             std::fprintf(stderr, "[headless] UltraSatan slot 2: %s\n", sd2Img.c_str());
         std::fprintf(stderr, "[headless] UltraSatan on ACSI targets %d-%d (%d partition(s))\n",
                      ultrasatanId, ultrasatanId + 1, machine.fdc.acsiPartitionCount());
@@ -2332,6 +2564,10 @@ int main(int argc, char** argv) {
     machine.usatan.setDateTime(UltraSatan::DateTime{2026, 1, 1, 12, 0, 0});
 
     machine.reset();
+    if (midiLoopbackCfg) {   // --from-cfg midi_loopback=1 : la fiche MIDI OUT→IN du GUI
+        machine.midi.setLoopback(true);
+        std::fprintf(stderr, "[headless] MIDI loopback cable plugged (midi_loopback=1)\n");
+    }
 
     // Joystick maintenu (--joy) : pose l'état hôte sur l'IKBD (lu aux interrogations
     // $16 et au report auto $14). Constant pour tout le run — utile pour piloter un
@@ -2382,15 +2618,48 @@ int main(int argc, char** argv) {
     };
 
     // Exécution déterministe : nombre fixe de trames (pas de Date/random/sleep).
-    // Note : --until-pc s'évalue par trame (granularité d'une trame), suffisant
-    // pour borner une capture autour d'un point d'intérêt.
     // Symboles (débogueur) : charge la table puis résout les breakpoints par nom.
     if (!symbolsPath.empty()) {
         if (symbols.load(symbolsPath, symBase))
             std::fprintf(stderr, "[headless] symbols: %zu loaded from %s\n",
                          symbols.count(), symbolsPath.c_str());
-        else
+        else {
             std::fprintf(stderr, "[headless] symbols: failed to load %s\n", symbolsPath.c_str());
+            outFail = true;
+        }
+    }
+    // Restaure un état AVANT de tourner (config machine identique requise). Placé
+    // AVANT les auto-tests --save-state-test / --rewind-test : ils l'ignoraient, et
+    // « --load-state scène.state --save-state-test » testait le boot à froid en vert.
+    if (!loadStatePath.empty()) {
+        // Un échec DOIT teinter le code de sortie, comme toutes les autres E/S fichier :
+        // sinon un runner d'oracle « restaurer l'état → tourner N trames → diffier »
+        // repart d'un boot à froid et rend un vert silencieux sur la mauvaise scène.
+        if (!machine.loadStateFile(loadStatePath)) {
+            std::fprintf(stderr, "[headless] FAILED to restore state %s\n", loadStatePath.c_str());
+            outFail = true;
+        } else {
+            std::fprintf(stderr, "[headless] state restored from %s\n", loadStatePath.c_str());
+            // --joy est posé AVANT ce point (après reset) mais l'état restauré
+            // rétablit hostJoy_/stePads sauvegardés (généralement neutres) : sans
+            // cette repose, « --load-state titre.state --joy 0x80 » n'appuyait
+            // jamais le feu, silencieusement.
+            if (haveJoy) {
+                machine.ikbd.setJoystick(joy0Hold, joy1Hold);
+                machine.bus.setStePadInput(joy0Hold, joy1Hold);
+                std::fprintf(stderr, "[headless] joystick re-applied after restore: port1=$%02X port0=$%02X\n",
+                             joy1Hold, joy0Hold);
+            }
+        }
+    }
+    // Les deux auto-tests sortent AVANT le bilan de fin de run : un média demandé et
+    // introuvable (--disk, --acsi, --gemdos…) ou un --load-state refusé y rendait 0 —
+    // le test passait sur une autre machine que celle demandée. Refus explicite.
+    if ((rewindTest || saveStateTest) && outFail) {
+        std::fprintf(stderr, "[headless] %s refused: a startup step failed (see above) — "
+                             "the test would not run on the machine you asked for\n",
+                     rewindTest ? "--rewind-test" : "--save-state-test");
+        return 1;
     }
     // Retour arrière : on reprend un instantané de l'anneau, l'état doit être celui de
     // l'instant visé à l'octet, et la partie rejouée depuis là doit retomber au même point.
@@ -2503,29 +2772,20 @@ int main(int argc, char** argv) {
         uint32_t a = 0;
         if (symbols.lookup(s, a)) { machine.cpu.setBreakpoint(a);
             std::fprintf(stderr, "[headless] symbol breakpoint '%s' → $%06X\n", s.c_str(), a); }
-        else std::fprintf(stderr, "[headless] unknown symbol: '%s'\n", s.c_str());
-    }
-    if (!loadStatePath.empty()) {   // restaure un état AVANT de tourner (config machine identique requise)
-        // Un échec DOIT teinter le code de sortie, comme toutes les autres E/S fichier :
-        // sinon un runner d'oracle « restaurer l'état → tourner N trames → diffier »
-        // repart d'un boot à froid et rend un vert silencieux sur la mauvaise scène.
-        if (!machine.loadStateFile(loadStatePath)) {
-            std::fprintf(stderr, "[headless] FAILED to restore state %s\n", loadStatePath.c_str());
+        else {
+            // Point d'arrêt demandé et jamais posé : le run filait jusqu'au bout et
+            // rendait 0 — l'arrêt attendu n'avait simplement pas lieu.
+            std::fprintf(stderr, "[headless] unknown symbol: '%s'\n", s.c_str());
             outFail = true;
-        } else {
-            std::fprintf(stderr, "[headless] state restored from %s\n", loadStatePath.c_str());
-            // --joy est posé AVANT ce point (après reset) mais l'état restauré
-            // rétablit hostJoy_/stePads sauvegardés (généralement neutres) : sans
-            // cette repose, « --load-state titre.state --joy 0x80 » n'appuyait
-            // jamais le feu, silencieusement.
-            if (haveJoy) {
-                machine.ikbd.setJoystick(joy0Hold, joy1Hold);
-                machine.bus.setStePadInput(joy0Hold, joy1Hold);
-                std::fprintf(stderr, "[headless] joystick re-applied after restore: port1=$%02X port0=$%02X\n",
-                             joy1Hold, joy0Hold);
-            }
         }
     }
+    // --until-pc : point d'arrêt TEMPORAIRE, à l'instruction près. Le PC n'était
+    // comparé qu'en FIN DE TRAME : l'adresse n'était « atteinte » que si une trame s'y
+    // terminait par hasard, et la trace courait jusqu'au bout. Posé seulement s'il
+    // n'est pas déjà un --break (même arrêt, mais rapport de --break).
+    const bool untilIsBreak = haveUntil
+        && std::find(breakAddrs.begin(), breakAddrs.end(), untilPc) != breakAddrs.end();
+    if (haveUntil && !untilIsBreak) machine.cpu.setBreakpoint(untilPc);
     // Mode serveur : la boucle de commandes REMPLACE la boucle --frames. Tout ce qui
     // précède — machine, médias, éventuel --load-state — est le point de départ commun
     // aux deux modes, et c'est ce qui garantit qu'un rejeu au tuyau vaut le rejeu en
@@ -2537,33 +2797,7 @@ int main(int argc, char** argv) {
                                  "and 'hello' would advertise media it never had\n");
             return 1;
         }
-        if (tracePath == "-") {
-            std::fprintf(stderr, "[server] --trace - would corrupt the protocol on stdout; "
-                                 "trace to a file instead\n");
-            return 2;
-        }
-        // Points d'arrêt : leur unique lecteur est la boucle --frames. En serveur, un
-        // hit GELAIT le CPU et le protocole continuait de répondre « ok frame=… » sur
-        // une machine figée — mesuré : compteur 200 Hz arrêté à la trame 10, RC=0.
-        if (!breakAddrs.empty() || !watchAddrs.empty() || !breakSyms.empty()) {
-            std::fprintf(stderr, "[server] --break/--watch/--break-sym are not supported in "
-                                 "server mode (a hit would freeze the CPU silently); use the "
-                                 "--frames loop\n");
-            return 2;
-        }
-        // Pompes hôte (modem, anneau MIDI, NE2000) : appelées UNIQUEMENT par la boucle
-        // --frames — en serveur elles étaient annoncées puis jamais servies (file UDP
-        // jamais drainée, mesuré). Et elles cassent le déterminisme que le serveur
-        // vend (docs/OPENDST.md § 1) : refus, pas avertissement.
-        if (modemFlag || !midiNetPeer.empty() || ethernecFlag || netusbeeFlag || slirpFlag) {
-            std::fprintf(stderr, "[server] --modem/--midi-net/--ethernec/--netusbee/--nat are "
-                                 "not supported in server mode: their host pumps only run in the "
-                                 "--frames loop, and they break determinism\n");
-            return 2;
-        }
-        if (!joyScrList.empty())
-            std::fprintf(stderr, "[server] ignoring --joy-script/--joy-script-file: "
-                                 "use the 'play' command instead\n");
+        // (Options d'entrée, d'arrêt et de pompe hôte : refusées dès l'analyse, plus haut.)
         if (!shotPath.empty() || !soundDumpPath.empty() || !saveStatePath.empty()
             || !serialDumpPath.empty() || !midiDumpPath.empty()
             || shotEvery > 0 || dumpAtFrame >= 0 || probeEvery > 0)
@@ -2584,9 +2818,20 @@ int main(int argc, char** argv) {
 #endif
                       + " machine=" + machineName(machType) + " ram=" + ramLabel(ramBytes)
                       + " tos=" + romPath;
+        // Tout ce qui change ce que la machine exécute est annoncé : un client qui
+        // rejoue une archive compare cette ligne, et --mono/--fpu/--cart/--gemdos/
+        // --acsi/--fdc-seed en étaient absents (deux sessions différentes, même hello).
+        auto orDash = [](const std::string& s) { return s.empty() ? std::string("-") : s; };
+        const bool fpuOn = fpuPresent && machType == MachineType::MegaSte;
         so.identityTail = std::string(" driveb=") + (driveB ? "on" : "off")
                       + " fastfdc=" + (fastFdc ? "1" : "0")    // plus de tampon fixe : un chemin
                                                               // long coupait la ligne au milieu
+                      + " mono=" + (machineMono ? "1" : "0")
+                      + " fpu=" + (fpuOn ? "1" : "0")
+                      + " cart=" + orDash(gemdosDir.empty() && autoStart.empty() ? cartPath : std::string())
+                      + " gemdos=" + orDash(gemdosDir)
+                      + " acsi=" + orDash(acsiImg)
+                      + " fdcseed=" + (haveFdcSeed ? std::to_string(fdcSeed) : std::string("-"))
                       + " commit=" + neost::build::kCommit     // identité de build : un client
                       + " built="  + neost::build::kDate;      // refuse un binaire périmé
         const int rc = server::run(machine, so);
@@ -2634,11 +2879,19 @@ int main(int argc, char** argv) {
         for (const auto& e : joyAtList)   late("--joy-at", e.first);
         for (const auto& e : mouseAtList) late("--mouse-at", e.first);
         for (const auto& e : diskAtList)  late("--disk-at", e.first);
+        // Oubliées jusqu'au 2026-11-12 : un reset, un bouton ou une touche tenue datés
+        // au-delà du run n'avaient pas lieu, sans un mot.
+        for (const auto& e : keyDownList) late("--key-down", e.first);
+        for (const auto& e : keyUpList)   late("--key-up", e.first);
+        for (const auto& e : joyScrList)  late("--joy-script", e.first);
+        if (resetAt >= 0)       late("--reset-at", resetAt);
+        if (buttonAtFrame >= 0) late("--button-at", buttonAtFrame);
         if (loopback && loopbackAtFrame >= frames)
             std::fprintf(stderr, "[headless] WARNING: --loopback would plug at frame %d, never "
                                  "reached (--frames %d)\n", loopbackAtFrame, frames);
     }
     int  framesRun = 0;           // trames RÉELLEMENT exécutées (un break peut écourter)
+    bool stoppedEarly = false;    // arrêt sur --break/--watch/--until-pc (CPU figé)
     // Instruments de fin de trame, partagés par la boucle principale et par les
     // séquences post-boucle (--keys, --walk-mouse). `done` = trames exécutées
     // jusqu'ici, touches comprises : P<done>.ppm, « state-hash frame=<done> » et
@@ -2799,8 +3052,11 @@ int main(int argc, char** argv) {
         }
         for (const auto& ja : joyAtList) {
             if (frame != ja.first) continue;
-            machine.ikbd.setJoystick(0, ja.second);
-            machine.bus.setStePadInput(0, ja.second);   // joypads STE ($FF9200/02)
+            // --joy-at ne règle que le port 1 : le port 0 garde le --joy P1,P0 tenu (il
+            // était remis à 0, ce qui lâchait la souris/le second joystick tenu).
+            const uint8_t p0 = haveJoy ? joy0Hold : 0;
+            machine.ikbd.setJoystick(p0, ja.second);
+            machine.bus.setStePadInput(p0, ja.second);   // joypads STE ($FF9200/02)
             std::fprintf(stderr, "[headless] joystick applied at frame %d: port1=$%02X\n", frame, ja.second);
         }
         // Script souris daté (--mouse-at) : 1 token = 1 trame. Pilote un menu souris.
@@ -2849,6 +3105,7 @@ int main(int argc, char** argv) {
         }
         // Script joystick daté (--joy-script) : 1 token = 1 trame. Pulse feu / déplace
         // une sélection dans un menu joystick (ex. menu Vroom atteint au feu).
+        bool scriptActive = false, scriptEnded = false;
         for (const auto& js : joyScrList) {
             const std::vector<uint8_t>& joyScr = js.second;
             if (frame < js.first) continue;
@@ -2858,7 +3115,21 @@ int main(int argc, char** argv) {
                 machine.ikbd.setJoystick(0, st);
                 machine.bus.setStePadInput(0, st);   // joypads STE ($FF9200/02)
                 machine.cpu.updateIpl();
+                scriptActive = true;
+            } else if (idx == (int)joyScr.size()) {
+                scriptEnded = true;
             }
+        }
+        // Fin de fenêtre d'un script : le --joy TENU reprend (l'aide le promet — le script
+        // ne le masque que « pendant cette fenêtre »). Le port restait jusque-là sur le
+        // dernier masque du script : « --joy 80 --joy-script 10 . » lâchait le feu pour
+        // tout le reste du run.
+        if (scriptEnded && !scriptActive && haveJoy) {
+            machine.ikbd.setJoystick(joy0Hold, joy1Hold);
+            machine.bus.setStePadInput(joy0Hold, joy1Hold);
+            machine.cpu.updateIpl();
+            std::fprintf(stderr, "[headless] joystick script ended at frame %d: held --joy "
+                                 "restored (port1=$%02X port0=$%02X)\n", frame, joy1Hold, joy0Hold);
         }
         machine.runFrame();
         hashLines(frame + 1);
@@ -2932,9 +3203,21 @@ int main(int argc, char** argv) {
                 machine.shifter.snapSideTrickLines(), machine.shifter.snapLiveHeight(),
                 machine.shifter.width(), machine.shifter.height(), ct, ch, cw);
           } }
+        // Son et capture périodique de la trame AVANT les arrêts : la trame d'un --break
+        // a bien été jouée (le CPU s'est figé en cours de route, les puces ont fini la
+        // trame) — elle sortait sans son ni P<F>.ppm, le WAV et la série d'images
+        // s'arrêtant une trame avant l'arrêt annoncé.
+        if (soundDump) dumpFrame();
+        periodicShot(frame + 1);
         if (machine.cpu.breakpointHit()) {
             const uint32_t bpa = machine.cpu.breakpointHitAddr();
             const bool     isW = machine.cpu.breakpointHitIsWatch();
+            stoppedEarly = true;
+            // --until-pc : point d'arrêt temporaire, rapport à part (pas un BREAK).
+            if (!isW && haveUntil && !untilIsBreak && bpa == untilPc) {
+                std::fprintf(stderr, "[headless] PC=$%06X reached at frame %d\n", untilPc, frame);
+                break;
+            }
             const uint32_t pc  = machine.cpu.pc();
             char dis[256]; machine.cpu.disassemble(dis, pc);   // toujours l'instruction au PC
             uint32_t off = 0;
@@ -2951,12 +3234,16 @@ int main(int argc, char** argv) {
                                                      r, machine.cpu.reg(r), r, machine.cpu.reg(8 + r));
             break;
         }
-        if (soundDump) dumpFrame();
-        periodicShot(frame + 1);
-        if (haveUntil && machine.cpu.pc() == untilPc) {
-            std::fprintf(stderr, "[headless] PC=$%06X reached at frame %d\n", untilPc, frame);
-            break;
-        }
+    }
+    // Arrêt sur --break / --watch / --until-pc : le CPU est FIGÉ sur le point d'arrêt.
+    // --walk-mouse et --keys tournaient quand même — des trames sur un CPU gelé, puis
+    // « keys injected » — et l'état final n'était plus celui de l'arrêt. On les saute,
+    // et on le dit ; les sorties de fin de run décrivent l'instant de l'arrêt.
+    if (stoppedEarly && (walkMouse || !keys.empty())) {
+        std::fprintf(stderr, "[headless] --keys/--walk-mouse skipped: the run stopped on a "
+                             "breakpoint (the CPU is frozen there)\n");
+        walkMouse = false;
+        keys.clear();
     }
     // Séquences post-boucle (--walk-mouse, --keys) : elles tournent AVANT les
     // instruments de fin de run. Jusqu'au 2026-11-11 elles venaient après : la
@@ -3098,9 +3385,18 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[headless] RS-232 serial port (%zu bytes):\n%s\n",
                      serialOut.size(), serialOut.c_str());
     if (!sccDumpPath.empty()) {
+        // Vérifiée comme --serial-dump : ouverture, écriture et fermeture étaient
+        // ignorées, et un dossier inexistant rendait 0 sans fichier.
         if (FILE* sf = std::fopen(sccDumpPath.c_str(), "wb")) {
-            std::fwrite(sccDump.data(), 1, sccDump.size(), sf);
-            std::fclose(sf);
+            const size_t put = std::fwrite(sccDump.data(), 1, sccDump.size(), sf);
+            if (put != sccDump.size() || std::fclose(sf) != 0) {
+                std::fprintf(stderr, "[headless] FAILED SCC dump %s — %zu/%zu bytes "
+                             "written (disk full?)\n", sccDumpPath.c_str(), put, sccDump.size());
+                outFail = true;
+            }
+        } else {
+            std::fprintf(stderr, "[headless] cannot write the SCC dump %s\n", sccDumpPath.c_str());
+            outFail = true;
         }
     }
     if (!midiDumpPath.empty()) {
@@ -3179,5 +3475,17 @@ int main(int argc, char** argv) {
         outFail = true;
     }
     if (keyLog) { machine.dongle.setLog(nullptr); std::fclose(keyLog); }
+    // Relevé console (--console-log) : les écritures du puits n'étaient jamais
+    // vérifiées — un disque plein laissait un relevé tronqué en vert.
+    if (consoleLog) {
+        machine.gemdos.setConsoleSink({});
+        const bool bad = std::ferror(consoleLog) != 0;
+        if (std::fclose(consoleLog) != 0 || bad) {
+            std::fprintf(stderr, "[headless] FAILED console log %s (disk full?)\n",
+                         consoleLogPath.c_str());
+            outFail = true;
+        }
+        consoleLog = nullptr;
+    }
     return outFail ? 1 : 0;   // une sortie fichier a échoué → visible du runner
 }

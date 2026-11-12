@@ -34,6 +34,40 @@ def parse_seed(text: str) -> int:
     return value
 
 
+# Tailles de ST-RAM : le libellé de neost-headless --mem → la valeur de Hatari --memsize
+# (en Kio, [D] Hatari stMemory.c STMemory_RAM_Validate_Size_KB @ épingle de
+# docs/HATARI_AUTOMATION.md). Seules les tailles que les DEUX émulateurs acceptent.
+MEM_KB = {"256k": 256, "512k": 512, "1m": 1024, "2m": 2048, "2176k": 2176, "2560k": 2560, "4m": 4096}
+# Valeur à passer à Hatari --memsize. Le PARSEUR d'options d'Hatari borne l'entier à
+# 0..1024 ([D] options.c:1918 @ f0736b24, Opt_Int(…, 0, 1024)) avant la validation en Kio :
+# 2048 ou 4096 sont refusés (« Error while parsing argument »), il faut 2 ou 4 (Mio). Les
+# tailles 2176k et 2560k, au-delà de 1024 Kio sans être des Mio entiers, ne passent pas.
+def hatari_memsize(label: str) -> str:
+    kb = MEM_KB[label]
+    if kb <= 1024:
+        return str(kb)
+    if kb % 1024 == 0:
+        return str(kb // 1024)
+    raise SystemExit(f"Hatari cannot be given {label} of ST-RAM on its command line "
+                     f"(--memsize is bounded to 1024 by its option parser)")
+# Ancienne notation entière (en Mio, 0 = 512 Kio comme Hatari) : gardée pour les manifestes.
+_MEM_LEGACY = {"0": "512k", "1": "1m", "2": "2m", "4": "4m"}
+
+
+def parse_mem(text: str) -> str:
+    """--mem : un libellé NeoST (512k, 1m…) ou l'entier historique 0/1/2/4 (Mio).
+
+    « --mem 3 » devenait « 3m » côté NeoST — taille inconnue, repliée sur 512k avec
+    un simple avertissement — et 3 Mio côté Hatari : les deux machines comparées
+    n'avaient pas la même mémoire. Refusé désormais.
+    """
+    label = _MEM_LEGACY.get(text, text.lower())
+    if label not in MEM_KB:
+        raise argparse.ArgumentTypeError(
+            f"unsupported RAM size '{text}' (use {', '.join(MEM_KB)} or 0/1/2/4 MiB)")
+    return label
+
+
 def parse_key(text: str) -> tuple[int, int]:
     at, _, code = text.partition(":")
     return int(at), int(code)
@@ -90,7 +124,7 @@ def build_parser(description: str | None = None) -> argparse.ArgumentParser:
     ap.add_argument("disks", nargs="+", type=Path)
     ap.add_argument("--machine", default="ste")
     ap.add_argument("--rom", default="roms/tos162uk.img")
-    ap.add_argument("--mem", type=int, default=1)
+    ap.add_argument("--mem", type=parse_mem, default="1m", help="ST-RAM : 512k, 1m, 2m, 4m… (ou 0/1/2/4 Mio)")
     ap.add_argument("--fdc-seed", type=parse_seed, help="graine de l'angle disquette NeoST (défaut du cœur si omise)")
     ap.add_argument("--hatari-seed", type=parse_seed, default=1, help="graine indépendante d'Hatari (défaut : 1)")
     ap.add_argument("--frames", default="1000,2000,4000")
@@ -153,7 +187,7 @@ def neost_cmd(disk: Path, args: argparse.Namespace, work: Path, shot_prefix: Pat
     """
     copy = work / ("n" + disk.suffix)
     shutil.copy(disk, copy)
-    cmd = [str(HEADLESS), args.rom, "--machine", args.machine, "--mem", f"{args.mem}m",
+    cmd = [str(HEADLESS), args.rom, "--machine", args.machine, "--mem", args.mem,
            *(["--disk", str(copy)] if not args.gemdos else
              # Lecteur vide comme Hatari : sans --disk, le headless monterait disks/diskA.st.
              ["--gemdos", str(args.gemdos.resolve()), "--no-disk"]),

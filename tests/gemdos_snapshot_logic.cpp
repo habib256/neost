@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <chrono>
+#include <thread>
 
 namespace {
 struct Rig {
@@ -191,6 +192,36 @@ int testGemdosSnapshot() {
         r.cpu.setReg(0,0x6000); r.hd.handleOpcode(9);
         eq("Pexec reprend le bon programme",r.bus.peek16(0x6100),0x4E75);
         eq("Pexec réussi",r.cpu.sr()&4,4);
+    }
+    // Dossier courant détruit (par l'invité ou l'hôte) : la sauvegarde le ramène à la
+    // racine au lieu de refuser tout état jusqu'à la fin de la session.
+    {
+        fs::create_directory(root/"GONE");
+        Rig r(root.string()); eq("cwd GONE",r.chdir("C:\\GONE"),0);
+        fs::remove(root/"GONE");
+        const auto saved=r.save(); eq("save avec dossier courant disparu",saved.empty(),false);
+        eq("reprise",r.load(saved),true);
+        r.bus.write8(0x3100,0x7F); r.bus.write32(0x1008,0x3100); r.bus.write16(0x100C,3);
+        eq("Dgetpath après reprise",r.trap(0x47),0); eq("ramené à la racine",r.bus.peek8(0x3100),0);
+    }
+    // Fichier créé par l'invité : daté par l'horloge ÉMULÉE (ixcreat), et un Fwrite ne
+    // touche pas à la date. L'empreinte du fichier dans l'état ne dépend donc plus de
+    // l'horloge murale : deux runs identiques donnent le même état.
+    {
+        std::vector<uint8_t> states[2];
+        for(int run=0;run<2;++run) {
+            Rig r(root.string()); r.machine->ikbd.setClock(26,1,1,12,0,0);
+            const int h=r.open("C:\\DET.TXT",0,true); eq("Fcreate DET",h>=88,true);
+            eq("Fwrite DET",r.write(h,"abc"),3);
+            eq("Fsfirst DET",r.first("C:\\DET.TXT"),0);
+            eq("date = horloge émulée (2026-01-01)",r.bus.peek16(0x2800+24),(46<<9)|(1<<5)|1);
+            eq("heure = horloge émulée (12:00:00)",r.bus.peek16(0x2800+22),12<<11);
+            states[run]=r.save(); r.close(h);
+            eq("date gardée après Fclose",r.first("C:\\DET.TXT")==0 && r.bus.peek16(0x2800+24)==((46<<9)|(1<<5)|1),true);
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));   // l'horloge murale avance
+        }
+        eq("même état d'un run à l'autre",states[0]==states[1],true);
+        fs::remove(root/"DET.TXT");
     }
     std::printf("[gemdos-snapshot] %d checks, %d FAIL\n",checks,failures);
     return failures;

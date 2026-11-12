@@ -124,6 +124,17 @@ void MidiAcia::write8(uint32_t addr, uint8_t v) {
         raiseIfReady();
         return;
     }
+    // Master reset MAINTENU (CR1-0 = 11) : l'émetteur est tenu initialisé, l'octet
+    // écrit dans TDR n'arme rien et n'est jamais émis — il est JETÉ, pas gardé.
+    // [B] Motorola MC6850 § Counter Divide Select Bits p. 8 : le master reset
+    //     « initializes both the receiver and transmitter » ; § Interrupt Request p. 6 :
+    //     TDRE inhibé « being maintained in the Reset condition », et il se relit à 1
+    //     (TDR vide, « new data may be entered », § Status Register p. 8) dès la sortie.
+    //     Garder l'octet contredirait ce TDRE=1 : un caractère partirait d'un TDR déclaré vide.
+    // [D] MiSTery gen_uart.v:299-318 @ a00deb5 traite le reset logiciel comme une impulsion
+    //     (sreset retombe dès la désélection) : l'écriture suivante y serait émise. Grade
+    //     inférieur à la fiche, non retenu. Hatari acia.c ne garde pas non plus l'émetteur en reset.
+    if ((control_ & 0x03) == 0x03) return;
     // acia.c ACIA_Write_TDR : une seule case d'attente, écrasable même pleine.
     // Le temps MMIO est l'horloge CPU vive, pas la fin du dernier quantum.
     if (!sched_) {
@@ -192,7 +203,7 @@ void MidiAcia::pushRx(uint8_t v, int64_t when) {
     // acia.c RX STOP_BIT : si RDR est encore plein, le nouvel octet est
     // perdu. Le registre à décalage ne stocke pas une seconde trame achevée.
     // Master reset MAINTENU (CR1-0 = 11) : récepteur tenu en reset, l'octet est perdu.
-    // [B] Motorola MC6850 § Counter Divide Select Bits p. 8, § Interrupt Request p. 7.
+    // [B] Motorola MC6850 § Counter Divide Select Bits p. 8, § Interrupt Request p. 6.
     // [D] Hatari acia.c:1038 @ f0736b24 le reçoit quand même : défaut non porté
     //     (cf. Ikbd::onRxDeliver).
     if ((control_ & 0x03) == 0x03) return;

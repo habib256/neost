@@ -390,6 +390,50 @@ static bool decodeDim(const std::vector<uint8_t>& raw, std::vector<uint8_t>& out
     return true;
 }
 
+// Droit d'écriture du PROPRIÉTAIRE sur le fichier image (Hatari Floppy_IsWriteProtected,
+// mode automatique). Via std::filesystem : <sys/stat.h> manque hors POSIX, et sous
+// Windows l'implémentation reflète l'attribut « lecture seule » dans owner_write.
+static bool hostFileWritable(const std::string& path) {
+    std::error_code ec;
+    const std::filesystem::perms pm = std::filesystem::status(path, ec).permissions();
+    return !ec && (pm & std::filesystem::perms::owner_write) != std::filesystem::perms::none;
+}
+
+// Les QUATRE octets d'identité qu'Hatari teste ([D] floppies/dim.c:75 @ f0736b24) :
+// ID 'BB', non compressée (0x03 = 0), piste de début 0 (0x0A = 0).
+static bool dimSignature(const std::vector<uint8_t>& raw) {
+    return raw.size() >= 32u + 512u && raw[0] == 0x42 && raw[1] == 0x42
+        && raw[0x03] == 0 && raw[0x0A] == 0;
+}
+
+// Extension `ext` (avec le point, en minuscules) du chemin, sans tenir compte de la casse.
+static bool hasExtension(const std::string& path, const char* ext) {
+    const std::size_t n = std::strlen(ext);
+    if (path.size() < n) return false;
+    for (std::size_t i = 0; i < n; ++i)
+        if (std::tolower(static_cast<unsigned char>(path[path.size() - n + i])) != ext[i])
+            return false;
+    return true;
+}
+
+// .DIM à en-tête « LÂCHE » : signature présente, mais champs de géométrie à 0 ou
+// incohérents avec la taille (padding en queue). decodeDim la refuse — à raison quand
+// on détecte par contenu —, et elle partait alors en RAW avec ses 32 octets d'en-tête :
+// chaque secteur décalé de 32 octets, BPB illisible, disquette inutilisable. Hatari la
+// monte sans broncher : DIM_ReadDisk ne teste que la signature puis retire l'en-tête
+// ([D] floppies/dim.c:75-90 @ f0736b24). Ce chemin exige en plus l'EXTENSION .dim
+// (comme Hatari, qui ne lit l'en-tête que d'un fichier DIM_FileNameIsDIM) : une .st
+// dont le secteur de boot commence par $4242 (« clr.w d2 ») n'y entre pas. Et un
+// contenu au secteur près ((taille − 32) multiple de 512), sans quoi rien ne dit
+// où commencent les secteurs.
+static bool decodeDimLax(const std::string& path, const std::vector<uint8_t>& raw,
+                         std::vector<uint8_t>& out) {
+    if (!hasExtension(path, ".dim") || !dimSignature(raw)) return false;
+    if ((raw.size() - 32u) % 512u != 0) return false;
+    out.assign(raw.begin() + 32, raw.end());
+    return true;
+}
+
 // -----------------------------------------------------------------------------
 //  Ré-encodage .MSA — port de MSA_WriteDisk / MSA_FindRunOfBytes
 //  (extern/hatari/src/floppies/msa.c:275-420). Symétrique de decodeMsa ci-dessus.
@@ -629,8 +673,50 @@ bool Fdc::msaSelfTest() {
     return fail == 0;
 }
 
+bool Fdc::sameHostFile(const std::string& a, const std::string& b) {
+    namespace fs = std::filesystem;
+    if (a.empty() || b.empty()) return false;
+    std::error_code ec;
+    if (fs::equivalent(a, b, ec) && !ec) return true;
+    std::error_code e1, e2;
+    const fs::path ca = fs::weakly_canonical(a, e1), cb = fs::weakly_canonical(b, e2);
+    if (!e1 && !e2) return ca == cb;
+    return fs::path(a).lexically_normal() == fs::path(b).lexically_normal();
+}
+
+// Fichier compagnon des écritures STX/IPF (cf. Hatari STX_FileNameToSave) : extension
+// .stx ou .ipf remplacée par .wd1772. Deux images distinctes « jeu.stx » et « jeu.ipf »
+// partagent donc le même compagnon.
+static std::string wd1772Companion(const std::string& path) {
+    std::string out = path;
+    if (hasExtension(out, ".stx") || hasExtension(out, ".ipf")) out.resize(out.size() - 4);
+    return out + ".wd1772";
+}
+
 bool Fdc::loadImage(const std::string& path, int drive) {
     FloppyDisk& dk = drive_[drive & 1];
+    // UNE image, UN lecteur. Le même fichier dans A et dans B donnait deux copies en
+    // mémoire réécrivant chacune le même fichier hôte : en .msa, chaque écriture
+    // ré-encode tout le fichier depuis SA copie et efface celles de l'autre lecteur ; en
+    // .st, chaque lecteur garde une FAT périmée ; en STX, les deux partagent le .wd1772.
+    // Refus, comme Hatari ([D] floppy.c:403-408 @ f0736b24, « Cannot insert same floppy
+    // to multiple drives »). La garde est ICI, avant tout effet, pour que chaque frontal
+    // en profite : elle ne vivait que dans la GUI, si bien que --disk X --diskb X, la
+    // commande « insert » du serveur, diskb= au démarrage ou le web passaient. Un
+    // compagnon .wd1772 commun (jeu.stx en A, jeu.ipf en B) est refusé pour la même raison.
+    {
+        const FloppyDisk& other = drive_[(drive & 1) ^ 1];
+        const bool clash = other.present() && (sameHostFile(path, other.path)
+            || (other.imgType == FloppyDisk::IMG_STX && !other.wd1772Path.empty()
+                && (hasExtension(path, ".stx") || hasExtension(path, ".ipf"))
+                && sameHostFile(wd1772Companion(path), other.wd1772Path)));
+        if (clash) {
+            std::fprintf(stderr, "[FDC] refused: %s is already in drive %c "
+                                 "(one image cannot be in both drives)\n",
+                         path.c_str(), (drive & 1) ? 'A' : 'B');
+            return false;
+        }
+    }
     dk.hostWriteBack = true;                     // réglage propre au montage précédent
     touchMedia(dk);                         // même un échec peut avoir touché l'image
     const bool wasPresent = dk.present();   // disque déjà monté → échange à chaud
@@ -719,20 +805,18 @@ bool Fdc::loadImage(const std::string& path, int drive) {
             if (wasPresent) transitionSetState(drive, FloppyDisk::TRANS_EJECT);
             transitionSetState(drive, FloppyDisk::TRANS_INSERT);
         }
-        dk.writeProtect = false;                 // écritures en overlay (persisté en .wd1772)
+        // Écritures en overlay (persistées dans le .wd1772), mais la languette suit les
+        // droits du fichier image, comme pour une .st : Hatari applique le même
+        // Floppy_IsWriteProtected à tous les formats, STX compris ([D] floppy.c:205-225
+        // @ f0736b24, mode automatique : stat() de sFileName). Une .stx mise en lecture
+        // seule par l'utilisateur restait inscriptible — et son .wd1772 grossissait.
+        dk.writeProtect = !hostFileWritable(path);
         updateFloppyDensity(drive & 1);
         // Fichier compagnon des écritures (cf. Hatari STX_FileNameToSave) : on
         // remplace l'extension .stx (ou .ipf) par .wd1772 et on recharge les
         // overlays d'une session précédente s'il existe. L'IPF elle-même n'est
         // JAMAIS réécrite.
-        dk.wd1772Path = path;
-        if (dk.wd1772Path.size() >= 4) {
-            std::string ext = dk.wd1772Path.substr(dk.wd1772Path.size() - 4);
-            for (char& c : ext) c = char(std::tolower(static_cast<unsigned char>(c)));
-            if (ext == ".stx" || ext == ".ipf")
-                dk.wd1772Path.resize(dk.wd1772Path.size() - 4);
-        }
-        dk.wd1772Path += ".wd1772";
+        dk.wd1772Path = wd1772Companion(path);
         if (dk.stx->loadWd1772(dk.wd1772Path))
             std::fprintf(stderr, "[FDC] writes restored: %s (%zu sector(s), %zu track(s))\n",
                          dk.wd1772Path.c_str(), dk.stx->saveSectors.size(), dk.stx->saveTracks.size());
@@ -772,6 +856,16 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         dk.image = std::move(conv);
         dk.imgFormat = FloppyDisk::FMT_DIM;
         std::fprintf(stderr, "[FDC] .dim image (32 B header stripped): %s\n", path.c_str());
+    } else if (decodeDimLax(path, raw, conv)) {
+        // En-tête lâche : contenu au bon offset, mais LECTURE SEULE (dk.raw = false
+        // neutralise writeBack et force WPRT plus bas). Un en-tête qui ne rend pas
+        // compte de la taille ne garantit pas que la queue du fichier soit de la piste :
+        // on ne réécrit pas un fichier qu'on ne comprend qu'à moitié.
+        dk.image = std::move(conv);
+        dk.imgFormat = FloppyDisk::FMT_DIM;
+        dk.raw = false;
+        std::fprintf(stderr, "[FDC] %s: .dim header with inconsistent geometry — 32 B header "
+                             "stripped, mounted READ-ONLY\n", path.c_str());
     } else {
         // Un en-tête .msa PLAUSIBLE (mêmes contrôles que decodeMsa) qui ne se décode
         // pas ne doit surtout pas repartir en « .st brut inscriptible » : dk.raw
@@ -789,8 +883,7 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         // est aussi l'encodage de « clr.w d2 », début plausible d'un secteur de boot —
         // sniffer 2 octets mettait des .ST parfaitement valides en LECTURE SEULE, et les
         // sauvegardes en jeu cessaient de persister sans le moindre message.
-        const bool dimLike = raw.size() >= 32u + 512u && raw[0] == 0x42 && raw[1] == 0x42
-                          && raw[0x03] == 0 && raw[0x0A] == 0;
+        const bool dimLike = dimSignature(raw);
         dk.image = std::move(raw);               // .st brut
         dk.raw   = !msaLike && !dimLike;
         if (msaLike)
@@ -823,16 +916,10 @@ bool Fdc::loadImage(const std::string& path, int drive) {
     // le statut type I) — si bien que sur toute .msa/.dim les sauvegardes en jeu, les
     // high-scores et les écritures depuis le bureau échouaient « disque protégé »
     // alors que la même disquette en .st fonctionnait.
-    // `!dk.raw` subsiste pour le seul cas où l'on ne SAIT PAS ré-encoder : STX, ou
-    // en-tête .msa/.dim reconnu mais indécodable. Y écrire détruirait le fichier.
-    // Permission d'écriture du PROPRIÉTAIRE, via std::filesystem : <sys/stat.h>
-    // manque hors POSIX, et sous Windows l'implémentation reflète l'attribut
-    // « lecture seule » dans owner_write — même sémantique qu'Hatari.
-    std::error_code stec;
-    const std::filesystem::perms pm = std::filesystem::status(path, stec).permissions();
-    const bool writable = !stec &&
-        (pm & std::filesystem::perms::owner_write) != std::filesystem::perms::none;
-    dk.writeProtect = !dk.raw || !writable;
+    // `!dk.raw` subsiste pour le seul cas où l'on ne SAIT PAS réécrire sans risque :
+    // en-tête .msa/.dim reconnu mais indécodable, ou .dim à en-tête lâche. Y écrire
+    // détruirait le fichier (les STX ont leur propre branche, plus haut).
+    dk.writeProtect = !dk.raw || !hostFileWritable(path);
 
     // Densité déduite de la géométrie (18 spt → HD 1,44 Mo, 36 spt → ED) — sur
     // Mega STE, TOS doit accorder $FF860E à cette densité pour lire le disque.
@@ -890,6 +977,12 @@ void Fdc::reset(bool cold) {
         tr_ = 0;
         dr_ = 0;
         ff8604recent_ = 0;
+        // [F] Densité $FF860E (Mega STE) repart en DD à la mise sous tension : sinon un
+        // mode HD posé par un programme survivait au hard reset et aux changements de
+        // profil. Hatari ne la remet jamais à zéro ([D] fdc.c:1189-1240 @ f0736b24) ;
+        // à chaud, inconnu, gardée. Tranché par : relecture de $FF860E après RESET
+        // puis après mise sous tension sur un vrai Mega STE.
+        densityMode_ = 0;
     }
     stepDir_ = 1;
 
@@ -2683,7 +2776,12 @@ int Fdc::updateWriteSectors() {
         // @ f0736b24) : l'erreur tombait sans démarrage.
         // Re-testée à chaque secteur d'un multi-secteurs (retour par MOTORON ; [B] p. 1-11,
         // connecteur 4 de la p. 1-9).
-        if (driveSel_ >= 0 && drive_[driveSel_].present() && drive_[driveSel_].writeProtect) {
+        // Sans disquette, le lecteur présente WPRT actif — la règle que le statut type I
+        // applique déjà ([D] fdc.c:4875-4880 @ f0736b24) — et la puce termine donc
+        // sur WRITE PROTECT ([B] WD177X-00 p. 1-9). Ne tester la languette que d'un
+        // disque PRÉSENT laissait la commande chercher un ID sous une tête sans média :
+        // BUSY sans fin, INTRQ jamais levée.
+        if (driveSel_ >= 0 && (!drive_[driveSel_].present() || drive_[driveSel_].writeProtect)) {
             updateStr(0, STR_WPRT);
             fdcCycles = cmdComplete(true);
             break;
@@ -2909,7 +3007,9 @@ int Fdc::updateWriteTrack() {
         // en Lost Data, AVANT d'attendre l'index. Ici rien de tout cela : écart non corrigé. Sur ST,
         // [D] fdc.c:145-149, 5515 @ f0736b24 dit DRQ toujours servi ; seule la date du départ change, d'au
         // plus un tour si l'index tombe dans ces 3 octets. Compteur DMA nul : [F], cf. WS.
-        if (driveSel_ >= 0 && drive_[driveSel_].present() && drive_[driveSel_].writeProtect) {
+        // Sans disquette : WPRT, comme WRITE SECTOR ci-dessus ([B] p. 1-14 ; règle du
+        // lecteur vide [D] fdc.c:4875-4880 @ f0736b24).
+        if (driveSel_ >= 0 && (!drive_[driveSel_].present() || drive_[driveSel_].writeProtect)) {
             updateStr(0, STR_WPRT);
             fdcCycles = cmdComplete(true);
             break;
@@ -3534,14 +3634,35 @@ bool Fdc::restoreMedia(int drive, const MediaCopy& copy) {
     }
     const bool isStx = dk.imgType == FloppyDisk::IMG_STX;
     if (!dk.present() || dk.path != copy.path || isStx != copy.stx) {
+        // Disquettes échangées entre A et B depuis la copie : l'image visée est dans
+        // l'AUTRE lecteur, et loadImage refuserait de la monter deux fois. On l'en sort ;
+        // le retour arrière restaure les deux lecteurs, l'autre récupère donc le sien
+        // juste après (sa génération a changé, au plus tard par cette éjection).
+        if (sameHostFile(copy.path, drive_[(drive & 1) ^ 1].path)) eject((drive & 1) ^ 1);
         if (!loadImage(copy.path, drive)) return false;
     }
     dk.hostWriteBack = copy.hostWriteBack;              // remonté : garde sa protection
     if (!copy.stx) {
+        // Le fichier hôte ne se réécrit que là où son contenu DIFFÈRE de la copie. Tant
+        // que la recopie est active, dk.image est le fichier (relu par loadImage, ou tenu
+        // à jour par writeBack à chaque écriture) : comparer à dk.image, c'est comparer
+        // au fichier. Tout réécrire à chaque retour arrière ré-encodait un .msa que le
+        // programme n'avait jamais touché (simple éjection, échange de disquette) — un
+        // fichier de l'utilisateur rebâti par notre encodeur, sans écriture invitée. Sur
+        // une .st, seule la plage modifiée repart.
+        const std::size_t n = copy.image.size();
+        std::size_t lo = 0, hi = 0;
+        const bool sameSize = dk.image.size() == n;
+        if (sameSize) {
+            while (lo < n && dk.image[lo] == copy.image[lo]) ++lo;
+            hi = n;
+            while (hi > lo && dk.image[hi - 1] == copy.image[hi - 1]) --hi;
+        }
         dk.image      = copy.image;
         dk.stOverride = copy.stOverride;
         refreshImageGeometry(dk);
-        writeBack(dk, 0, dk.image.size());              // le fichier hôte revient au même instant
+        if (!sameSize)  writeBack(dk, 0, dk.image.size());   // le fichier hôte revient au même instant
+        else if (lo < hi) writeBack(dk, lo, hi - lo);
     }
     dk.gen = copy.gen;
     return true;
@@ -3630,6 +3751,47 @@ bool Fdc::mediaSelfTest() {
     const auto copyEmpty = copyMedia(1);
     check(loadImage(pathA, 1), "mount A again");
     check(restoreMedia(1, *copyEmpty) && !dk.present(), "restore an empty drive");
+
+    // Disquettes ÉCHANGÉES entre A et B depuis la copie : chaque image visée est dans
+    // l'autre lecteur, que loadImage refuse de doubler — restoreMedia l'en sort.
+    eject(1);
+    check(loadImage(pathA, 0) && loadImage(pathB, 1), "mount A and B");
+    const auto copy0 = copyMedia(0), copy1 = copyMedia(1);
+    eject(0); eject(1);
+    check(loadImage(pathB, 0) && loadImage(pathA, 1), "swap A and B");
+    check(restoreMedia(0, *copy0) && restoreMedia(1, *copy1)
+          && drive_[0].path == pathA && dk.path == pathB, "restore across an A/B swap");
+    eject(0); eject(1);
+
+    // Un retour arrière SANS écriture invitée ne réécrit pas le fichier : un .msa aux
+    // pistes stockées non compressées (légal) ressortait recompressé par encodeMsa.
+    {
+        const std::string pathM = (dir / "m.msa").string();
+        std::vector<uint8_t> msa = {0x0E, 0x0F, 0, 9, 0, 1, 0, 0, 0, 79};
+        for (std::size_t t = 0; t < 160; ++t) {               // 80 pistes × 2 faces, en clair
+            msa.push_back(uint8_t(4608 >> 8)); msa.push_back(uint8_t(4608 & 0xFF));
+            msa.insert(msa.end(), imageA.begin() + std::ptrdiff_t(t * 4608),
+                       imageA.begin() + std::ptrdiff_t((t + 1) * 4608));
+        }
+        writeFile(pathM, msa);
+        check(loadImage(pathM, 1), "mount uncompressed .msa");
+        const auto copyM = copyMedia(1);
+        eject(1);
+        check(restoreMedia(1, *copyM) && dk.image == imageA, "restore .msa after an eject");
+        check(readFile(pathM) == msa, ".msa file untouched without a guest write");
+        // Une écriture annulée, elle, revient bien dans le fichier.
+        for (int i = 0; i < 512; ++i) dk.image[off + i] = 0xEE;
+        writeBack(dk, off, 512u);
+        check(restoreMedia(1, *copyM) && dk.image == imageA, "restore .msa after a write");
+        std::vector<uint8_t> back;
+        {
+            std::ifstream f(pathM, std::ios::binary);
+            back.assign(std::istreambuf_iterator<char>(f), {});
+        }
+        std::vector<uint8_t> decoded;
+        check(diskimg::decodeContainer(back, decoded) && decoded == imageA,
+              ".msa file restored after a write");
+    }
 
     eject(1);
     hostWriteBack_ = savedWriteBack;

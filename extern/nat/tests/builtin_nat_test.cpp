@@ -182,7 +182,7 @@ struct FakeNetwork final : HostNetwork {
 
 struct Names {
     std::map<std::string, W5100Resolver::Result> answers;   ///< absent = pending
-    int resolves = 0, peeks = 0;
+    int resolves = 0, peeks = 0, clears = 0;
 };
 
 struct FakeResolver final : W5100Resolver {
@@ -199,7 +199,7 @@ struct FakeResolver final : W5100Resolver {
         return lookup(name);
     }
     void poll() override {}
-    void clearCache() override {}
+    void clearCache() override { ++names.clears; }
     Result lookup(const std::string& name) const
     {
         const auto it = names.answers.find(name);
@@ -1385,6 +1385,7 @@ void testAudit20261111()
         CHECK(rig.world.live.size() == 3);
         rig.net->nicReset();
         CHECK(rig.world.live.size() == 1 && rig.frames().empty());
+        CHECK(rig.names.clears == 1);                // NeoST: the resolver cache too
         rig.names.answers["pending.example"] = {W5100Resolver::Status::Resolved, 1};
         rig.pump(1);
         CHECK(rig.frames().empty());                                         // forgotten

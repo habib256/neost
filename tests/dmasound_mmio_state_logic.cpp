@@ -1,4 +1,6 @@
-// FF8920 : octet sans interception STE, sauvegardé comme l'IoMem d'Hatari.
+// FF8920 : octet pair du Sound Mode Control, relu à zéro et sans bit écrivable.
+// [B] Atari TT030 Hardware Reference Manual p. 26 (« 8920 RW 0000 0000 a000 00bb ») ;
+// [D] MiSTery gstshifter.v:96,125 @ 4a6db7c. Hatari (octet scratch) n'est pas suivi.
 #include "core/Bus.hpp"
 #include "core/DmaSound.hpp"
 #include <cstdio>
@@ -17,10 +19,14 @@ int testDmaSoundMmioState() {
         DmaSound snd(bus);
         bus.machine = machine;
         bus.dmasnd = &snd;
-        eq("scratch initial",bus.read8(0xFF8920),0);
+        eq("octet pair initial",bus.read8(0xFF8920),0);
         bus.write16(0xFF8920,0xA583);
-        eq("écriture mot scratch",bus.read8(0xFF8920),0xA5);
+        eq("écriture mot : octet pair relu 0",bus.read8(0xFF8920),0);
+        eq("lecture mot : octet pair 0",bus.read16(0xFF8920),0x0083);
         eq("mode compagnon",bus.read8(0xFF8921),0x83);
+        bus.write8(0xFF8920,0xFF);
+        eq("écriture octet pair ignorée",bus.read8(0xFF8920),0);
+        eq("mode intact",bus.read8(0xFF8921),0x83);
         std::vector<uint8_t> state;
         {
             auto ar = StateArchive::saver(state);
@@ -32,7 +38,7 @@ int testDmaSoundMmioState() {
             snd.serialize(ar);
             eq("archive valide", ar.ok(), true);
         }
-        eq("scratch restauré même instance",bus.read8(0xFF8920),0xA5);
+        eq("octet pair après chargement",bus.read8(0xFF8920),0);
         eq("mode restauré",bus.read8(0xFF8921),0x83);
         Bus freshBus;
         DmaSound fresh(freshBus);
@@ -43,12 +49,7 @@ int testDmaSoundMmioState() {
             fresh.serialize(ar);
             eq("archive instance neuve", ar.ok(), true);
         }
-        eq("scratch restauré instance neuve",freshBus.read8(0xFF8920),0xA5);
-        bus.write8(0xFF8920,0xA5);
-        snd.reset(false);
-        eq("reset chaud garde scratch",bus.read8(0xFF8920),0xA5);
-        snd.reset(true);
-        eq("reset froid composant garde scratch",bus.read8(0xFF8920),0xA5);
+        eq("mode restauré instance neuve",freshBus.read8(0xFF8921),0x83);
         bus.write8(0xFF8903,0xFF);
         bus.write8(0xFF890F,0xFF);
         eq("masque début",bus.read8(0xFF8903),0x3F);

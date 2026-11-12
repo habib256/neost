@@ -63,8 +63,17 @@
 //  ceci n'est appelé.
 // -----------------------------------------------------------------------------
 EM_JS(int, neost_jspi_ready, (), { return Module.neostJspi === true ? 1 : 0; });
+// Rattrapage (Module.neostParkBudget, posé par la boucle de la page, main_web.cpp) :
+// tant qu'il reste du budget et que la trame suivante est DÉJÀ due, la promesse rendue
+// est déjà résolue — la pile repart à la microtâche suivante au lieu d'attendre le
+// prochain requestAnimationFrame. Jusqu'à 1 + budget trames par tour, comme
+// FramePacer::kMaxCatchUp hors instruction garée.
 EM_JS(void, neost_jspi_park, (), {
     Module._neost_web_parked_frame();
+    if (Module.neostParkBudget > 0 && Module._neost_web_park_due(performance.now())) {
+        Module.neostParkBudget--;
+        return Promise.resolve();
+    }
     return new Promise((res) => { Module.neostParkResolve = res; });
 });
 EM_JS(void, neost_jspi_release, (), {
@@ -100,9 +109,15 @@ bool EmuFiber::resume(const std::function<void()>& body) {
 }
 
 void EmuFiber::yield() {
+    // RAII : si neost_jspi_park lève (neost_web_parked_frame en faute, exception JS
+    // rattrapée par -fwasm-exceptions), parked_ restait VRAI à jamais — resume() ne
+    // faisait plus rien, la machine était gelée, et save-state/reset refusés.
+    struct Unpark {
+        bool& p;
+        ~Unpark() { p = false; }
+    } unpark{parked_};
     parked_ = true;
     neost_jspi_park();              // suspend la pile wasm ; revient à la reprise
-    parked_ = false;
     if (abortReq_) { abortReq_ = false; throw Abort{}; }
 }
 

@@ -23,6 +23,8 @@
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test (domaine public).
 # =============================================================================
+import os
+import re
 import subprocess
 import tempfile
 import sys
@@ -33,7 +35,9 @@ ROOT = Path(__file__).resolve().parent.parent
 # n'existe pas et la suite se déclare « non bâtie » — la seule plateforme livrée
 # où les tests ne pouvaient pas tourner du tout.
 _EXE = ".exe" if sys.platform == "win32" else ""
-HEADLESS = ROOT / "build" / ("neost-headless" + _EXE)
+# NEOST_HEADLESS : un autre binaire — c'est ainsi qu'on vérifie qu'un contrôle est
+# ROUGE sur l'ancien comportement (binaire d'avant le correctif).
+HEADLESS = Path(os.environ.get("NEOST_HEADLESS") or ROOT / "build" / ("neost-headless" + _EXE))
 ROM = ROOT / "roms" / "etos192fr.img"          # ROM LIBRE : ces tests survivent au
                                                # retrait des TOS Atari propriétaires.
 
@@ -54,6 +58,183 @@ def check(name, cond, why, detail=""):
         if detail:
             print(f"       observé : {detail.strip()[:300]}")
         fails.append(name)
+
+
+def rc_of(args, stdin=None, timeout=180):
+    """(code, sortie) d'une invocation BRUTE (la ROM et --frames sont à la charge de l'appelant)."""
+    cp = subprocess.run([str(HEADLESS)] + [str(a) for a in args], cwd=ROOT, input=stdin,
+                        capture_output=True, text=True, timeout=timeout)
+    return cp.returncode, cp.stdout + cp.stderr
+
+
+def lot_2026_11_12() -> None:
+    """Pannes silencieuses du headless relevées le 2026-11-12 (C1-C9 du lot de correction).
+
+    Chaque contrôle est ROUGE sur le binaire d'avant (NEOST_HEADLESS=ancien binaire)."""
+    rom = str(ROM)
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        missing = tmp / "absent" / "nowhere"          # dossier inexistant : ni lu ni écrit
+
+        # Une adresse sûrement exécutée en trame 0 : la 6ᵉ instruction du boot, relevée
+        # à la trace (aucune adresse codée en dur : la ROM peut changer).
+        rc_of([rom, "--frames", "1", "--trace", tmp / "boot.txt"])
+        pcs = [m.group(1).upper() for m in
+               (re.match(r"^([0-9A-Fa-f]{5,8}):", l) for l in
+                (tmp / "boot.txt").read_text(errors="replace").splitlines()[:200]) if m]
+        k = next((i for i in range(5, len(pcs)) if pcs[i] not in pcs[:i]), None)
+        target = pcs[k].lstrip("0") if k is not None else None
+        check("lot 11-12 : adresse de boot relevée à la trace", target is not None,
+              "la trace d'une trame doit lister les premières instructions du TOS.")
+        if target is None:
+            return
+
+        # --- C1 : --save-state-test / --rewind-test refusent un démarrage raté --
+        # Le bug : ils sortaient avant le bilan outFail et ignoraient --load-state —
+        # disquette introuvable ou état refusé, le test passait en vert sur le boot nu.
+        for test in ("--save-state-test", "--rewind-test"):
+            rc, out = rc_of([rom, "--frames", "5", test, "--disk", tmp / "absent.st"])
+            check(f"C1 {test} avec --disk introuvable échoue", rc != 0,
+                  "un média demandé et absent ne doit pas laisser l'auto-test passer.", out[-300:])
+        rc, out = rc_of([rom, "--frames", "5", "--save-state-test", "--load-state", tmp / "absent.state"])
+        check("C1 --save-state-test honore --load-state (état introuvable → échec)", rc != 0,
+              "--load-state était ignoré par l'auto-test.", out[-300:])
+
+        # --- C2 : --acsi / --sd1 / --gemdos introuvables -------------------------
+        for opt, val in (("--acsi", tmp / "absent.img"), ("--sd1", tmp / "absent.img"),
+                         ("--gemdos", missing)):
+            rc, out = rc_of([rom, "--frames", "5", opt, val])
+            check(f"C2 {opt} introuvable → code ≠ 0", rc != 0,
+                  "la machine démarrait sans le disque demandé, code 0.", out[-300:])
+        rc, out = rc_of([rom, "--gemdos", missing, "--server"], stdin="hello\nquit\n")
+        check("C2 --server refuse de démarrer sans le --gemdos demandé",
+              rc != 0 and "ok neost=" not in out,
+              "hello annonçait une session à qui il manquait son disque.", out[-300:])
+
+        # --- C3 : --server refuse les options qu'il ne lit pas --------------------
+        for extra in (["--keys-at", "5", "A"], ["--keys", "A"], ["--reset-at", "5"],
+                      ["--joy-at", "5", "80"], ["--walk-mouse"], ["--state-hash-every", "1"],
+                      ["--trace", tmp / "s.txt", "--trace-from", "5"], ["--until-pc", target]):
+            rc, out = rc_of([rom, *extra, "--server"], stdin="quit\n")
+            check(f"C3 --server refuse {extra[0] if extra[0] != '--trace' else '--trace-from'}",
+                  rc == 2, "l'option était ignorée en silence (aucun effet, code 0).", out[-300:])
+
+        # --- C4 : --until-pc à l'instruction près ---------------------------------
+        # Le bug : PC comparé en FIN DE TRAME — l'adresse n'était presque jamais
+        # « atteinte » et la trace courait jusqu'au bout.
+        rc, out = rc_of([rom, "--frames", "5", "--until-pc", target, "--trace", tmp / "u.txt"])
+        lines = (tmp / "u.txt").read_text(errors="replace").splitlines() if (tmp / "u.txt").exists() else []
+        check("C4 --until-pc s'arrête AVANT l'instruction visée",
+              rc == 0 and f"PC=${int(target, 16):06X} reached at frame 0" in out and len(lines) == k,
+              "le run doit s'arrêter dès que le PC atteint l'adresse, trace comprise.",
+              f"code {rc}, {len(lines)} ligne(s) de trace (attendu {k}) {out[-200:]}")
+
+        # --- C5 : après un --break, ni --keys ni --walk-mouse ; trame du break capturée
+        rc, out = rc_of([rom, "--frames", "5", "--break", target, "--keys", "A",
+                         "--shot-every", "1", tmp / "b_"])
+        check("C5 --keys n'est pas « injecté » sur un CPU figé par --break",
+              "keys injected" not in out and "skipped" in out,
+              "les touches tournaient sur un CPU gelé et s'annonçaient injectées.", out[-300:])
+        check("C5 la trame du --break a sa capture --shot-every", (tmp / "b_00001.ppm").exists(),
+              "la trame du break sortait sans capture périodique (ni son).", out[-300:])
+
+        # --- C6 : analyse stricte des valeurs --------------------------------------
+        rc, out = rc_of([rom, "--frames", "5", "--break", "$" + target])
+        check("C6 --break $ADDR est lu en hexa (et non comme 0)",
+              f"BREAK ${int(target, 16):06X}" in out, "strtoul lisait « $FC0052 » comme 0.", out[-300:])
+        for extra in (["--reset-at", "abc"], ["--trace-from", "x1"], ["--fdc-seed", "abc"],
+                      ["--until-pc", "zz"], ["--ultrasatan-id", "9"], ["--state-hash-every", "1x"]):
+            rc, out = rc_of([rom, "--frames", "5", *extra])
+            check(f"C6 {' '.join(extra)} est refusé (code 2)", rc == 2,
+                  "atoi/strtoul rendaient 0 en silence.", out[-300:])
+        dump = tmp / "d.bin"
+        rc, out = rc_of([rom, "--frames", "3", "--dump-at", "2", "0", "010", dump])
+        check("C6 --dump-at LEN se lit en décimal (010 = 10 octets, pas 8)",
+              rc == 0 and dump.exists() and dump.stat().st_size == 10,
+              "la longueur était lue en base 0 (octal).", f"code {rc}")
+
+        # --- C7 : late() prévient pour toutes les injections datées ---------------
+        rc, out = rc_of([rom, "--frames", "10", "--reset-at", "50", "--key-down", "60", "a",
+                         "--key-up", "70", "a", "--button-at", "80", "--joy-script", "90", "F"])
+        for opt in ("--reset-at", "--key-down", "--key-up", "--button-at", "--joy-script"):
+            check(f"C7 {opt} au-delà du run est signalé",
+                  f"WARNING: {opt} at frame" in out, "l'injection n'avait pas lieu, sans un mot.",
+                  out[-300:])
+
+        # --- C8 : sorties en échec → code ≠ 0 ----------------------------------------
+        sym = tmp / "t.sym"
+        sym.write_text("00fc0030 T _start\n")
+        for name, extra in (("--scc-dump", ["--scc-dump", missing / "s.bin"]),
+                            ("--printer", ["--printer", missing / "p.txt"]),
+                            ("--console-log sans --gemdos", ["--console-log", tmp / "c.txt"]),
+                            ("--symbols introuvable", ["--symbols", tmp / "absent.sym"]),
+                            ("--break-sym inconnu", ["--symbols", sym, "--break-sym", "nope"])):
+            rc, out = rc_of([rom, "--frames", "3", *extra])
+            check(f"C8 {name} → code ≠ 0", rc != 0,
+                  "une sortie demandée et non produite rendait 0.", out[-300:])
+
+        # --- C9 : --from-cfg rejoue midi_loopback= ------------------------------------
+        cfg = tmp / "neost.cfg"
+        cfg.write_text(f"rom={ROM}\nmachine=st\nmidi_loopback=1\n")
+        rc, out = rc_of(["--from-cfg", cfg, "--frames", "2"])
+        check("C9 --from-cfg rejoue midi_loopback=", "MIDI loopback cable plugged" in out,
+              "la fiche MIDI OUT→IN du GUI était oubliée au rejeu.", out[-300:])
+
+        # --- Soupçons confirmés -----------------------------------------------------
+        for extra in (["--machine", "mega-ste"], ["--mem", "3m"]):
+            rc, out = rc_of([rom, "--frames", "2", *extra])
+            check(f"{' '.join(extra)} est refusé (code 2)", rc == 2,
+                  "une valeur inconnue tournait en STE / 512k, code 0.", out[-300:])
+        rc, out = rc_of([rom, "--mono", "--fdc-seed", "7", "--server"], stdin="hello\nquit\n")
+        check("hello annonce --mono et --fdc-seed", " mono=1 " in out and " fdcseed=7 " in out,
+              "deux sessions différentes avaient le même hello.", out[-300:])
+        rc, out = rc_of([rom, "--frames", "20", "--joy", "80", "--joy-script", "5", "..."])
+        check("--joy tenu reprend à la fin d'un --joy-script", "held --joy restored" in out,
+              "le port restait sur le dernier masque du script.", out[-300:])
+
+        # --- D : outils Python -------------------------------------------------------
+        tools = ROOT / "tools"
+        a, b = tmp / "a.txt", tmp / "b.txt"
+        a.write_text("FC0030: bra $fc004e\nFC004E: move.w #$2700,sr\nFC0052: cmpi.b\n")
+        b.write_text("FC0030: bra $fc004e\n")
+        td_rc = subprocess.run([sys.executable, str(tools / "trace_diff.py"), str(a), str(b),
+                                "--neost-format", "neost", "--hatari-format", "neost"],
+                               capture_output=True, text=True).returncode
+        check("D trace_diff : une trace tronquée n'est pas « identique »", td_rc == 1,
+              "le préfixe commun seul concluait « Identiques », code 0.")
+        td_rc = subprocess.run([sys.executable, str(tools / "trace_diff.py"), str(a), str(a),
+                                "--regs", "--neost-format", "neost", "--hatari-format", "neost"],
+                               capture_output=True, text=True).returncode
+        check("D trace_diff : --regs sans registre dans les traces échoue", td_rc == 1,
+              "« registres inclus » s'affichait sans aucun registre comparé.")
+        big = tmp / "big.ppm"
+        big.write_bytes(b"P6\n500 300\n255\n" + bytes(500 * 300 * 3))
+        ref = tmp / "ref.ppm"
+        ref.write_bytes(b"P6\n416 276\n255\n" + bytes(416 * 276 * 3))
+        cs_rc = subprocess.run([sys.executable, str(tools / "compare_screenshot.py"), str(big),
+                                str(ref), "--crop", "buffer"], capture_output=True).returncode
+        check("D compare_screenshot : une image de taille inattendue est refusée", cs_rc == 2,
+              "elle était recadrée au centre et comparée (vert possible).")
+        tc = subprocess.run([sys.executable, "-c",
+                             "import title_cmd as t; a = t.parse(['o', 'd.st', '--mem', '3']); print(a.mem)"],
+                            cwd=tools, capture_output=True, text=True)
+        tc1 = subprocess.run([sys.executable, "-c",
+                              "import title_cmd as t; from pathlib import Path; "
+                              "a = t.parse(['o', 'd.st', '--mem', '1']); "
+                              "print(t.neost_cmd.__module__, a.mem)"],
+                             cwd=tools, capture_output=True, text=True)
+        check("D title_cmd : --mem 3 refusé, --mem 1 = 1m des deux côtés",
+              tc.returncode != 0 and tc1.stdout.split()[-1:] == ["1m"],
+              "« --mem 3 » devenait 3m (512k) côté NeoST et 3 Mio côté Hatari.",
+              tc.stdout + tc.stderr[-200:] + tc1.stdout)
+        hs = subprocess.run([sys.executable, "-c",
+                             "import subprocess, run_hatari_suite as s; "
+                             "print(s.headless_failed('x', subprocess.CompletedProcess([], 1, '', 'boom')), "
+                             "s.headless_failed('x', subprocess.CompletedProcess([], 0, '', '')))"],
+                            cwd=tools, capture_output=True, text=True)
+        check("D run_hatari_suite : un code ≠ 0 du headless fait échouer le cas",
+              hs.stdout.strip().endswith("True False"),
+              "le code de retour du headless était ignoré.", hs.stdout + hs.stderr[-200:])
 
 
 def main() -> int:
@@ -236,6 +417,8 @@ def main() -> int:
               "--tolerate doit exclure les pixels de sa zone du compte.")
         check("comparateur : le même nombre de pixels HORS zone échoue", cmp_rc("out.ppm") == 1,
               "832 pixels faux ailleurs que dans la zone ne doivent pas passer pour l'écart connu.")
+
+    lot_2026_11_12()
 
     # --- GUI : la seule surface testable SANS ÉCRAN (chantier A8) --------------
     # Le GUI est un angle mort total — aucun test ne le couvrait, et c'est pourtant

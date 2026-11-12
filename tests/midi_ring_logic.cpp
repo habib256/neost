@@ -35,6 +35,8 @@ int ingestChecks() {
     const uint8_t raw = 0x42;
     expect(!r.ingest(&raw, 1, up, 5), "legacy one-byte datagram dropped");
     expect(feed(pkt(8, 0, {0x80}), up, 6), "new session from the same source resyncs");
+    expect(!feed(pkt(7, 13, {0x13}), up, 6), "late datagram of the retired session dropped");
+    expect(!feed(pkt(8, 0, {0x80}), up, 6), "current session not reset by it (duplicate)");
     expect(feed(pkt(9, 50, {0xF8}), other, 6 + MidiRing::kRelatchMs + 1),
            "silent upstream replaced after kRelatchMs");
     expect(!feed(pkt(8, 1, {0x01}), up, 6 + MidiRing::kRelatchMs + 2),
@@ -45,7 +47,7 @@ int ingestChecks() {
     while (r.tryPop(b)) got.push_back(b);
     expect(got == want, "delivered bytes are exactly the accepted payloads, in order");
     const MidiRing::Stats& st = r.stats();
-    expect(st.accepted == 4 && st.duplicate == 2 && st.foreign == 2 && st.malformed == 1
+    expect(st.accepted == 4 && st.duplicate == 4 && st.foreign == 2 && st.malformed == 1
            && st.lost == 1, "statistics");
     return fails;
 }

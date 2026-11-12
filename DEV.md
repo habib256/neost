@@ -344,7 +344,14 @@ trame ~900 (~400 avec la disquette).
 `--keys` et `--walk-mouse` tournent **après** les `--frames` trames (`--keys` : 4 trames par
 caractère, puis encore `--frames` trames), mais **avant** tous les instruments de fin de
 run : `--save-state`, `--sound-dump`, la sonde finale et `--screenshot` décrivent le même
-instant, et les empreintes périodiques continuent de compter pendant ces trames.
+instant, et les empreintes périodiques continuent de compter pendant ces trames. Un arrêt
+sur `--break`/`--watch`/`--until-pc` (CPU figé) les **saute** et le dit ; `--until-pc` est
+un point d'arrêt temporaire, à l'instruction près (il comparait le PC en fin de trame).
+**Valeurs d'options strictes** (2026-11-12) : trames et compteurs en décimal, adresses en
+hexa (`FC0052`, `$FC0052`, `0xFC0052`), `--machine`/`--mem` dans leur liste ; une valeur
+illisible sort en code 2 au lieu de valoir 0. Un média demandé et introuvable (`--disk`,
+`--acsi`, `--sd1/2`, `--gemdos`, `--cart`) ou une sortie non écrite (`--scc-dump`,
+`--printer`, `--console-log`, `--symbols`, `--break-sym` inconnu) rend un code ≠ 0.
 `--shot-every N P` écrit `P<F>.ppm` après F trames : c'est exactement l'image de
 `--frames F --screenshot` (avant le 2026-11-11, l'index valait F−1). Pilotage daté (menus de jeux/démos) :
 `--keys-at N "STR"` (scancodes étendus : flèches `<>[]`, Esc `=`, F1-F5 `!@#$%`, `.` et
@@ -517,7 +524,9 @@ attend du matériel.
 
 Redirection des appels GEMDOS d'un lecteur virtuel (C:…) vers un dossier hôte, au
 lieu d'émuler un contrôleur ACSI/IDE. Activé par `--gemdos DIR` (headless) ou, côté
-GUI, par la clé `gemdos=` de `neost.cfg` (page Hard disks, dossier déposé) — `NEOST_GEMDOS_DIR` prime ; **exclusif d'une cartouche externe** (`--cart`).
+GUI, par la clé `gemdos=` de `neost.cfg` (page Hard disks, dossier déposé) — `NEOST_GEMDOS_DIR` prime **le temps de la séance** (comme `NEOST_ACSI_IMG` pour `acsi=` : ni l'un ni l'autre n'est écrit dans `neost.cfg`, cf. `appconfig::persistableConfig`) ; **exclusif d'une cartouche externe** (`--cart`).
+`--gemdos-ro` (clé `gemdos_ro=1`, sans interface) le protège en écriture : toute
+écriture rend EWRPRO, le dossier hôte n'est pas touché.
 
 Mécanisme (port fidèle, adapté à Moira) :
 

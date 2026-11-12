@@ -66,6 +66,13 @@ struct Rig {
         return r;
     }
     int handleOp(uint16_t call,uint16_t h) { bus.write16(0x1008,h); return trap(call); }
+    int frename(const std::string& from,const std::string& to) {
+        str(from);
+        for(size_t i=0;i<=to.size();++i) bus.write8(NAME+0x80+uint32_t(i),i<to.size()?uint8_t(to[i]):0);
+        bus.write16(0x1008,0); bus.write32(0x100A,NAME); bus.write32(0x100E,NAME+0x80);
+        return trap(0x56);
+    }
+    int fforce(uint16_t stdh,uint16_t h) { bus.write16(0x1008,stdh); bus.write16(0x100A,h); return trap(0x46); }
     int write(uint16_t h,const char* s) {
         const uint32_t n=uint32_t(std::strlen(s));
         for(uint32_t i=0;i<n;++i) bus.write8(BUF+i,uint8_t(s[i]));
@@ -298,8 +305,150 @@ int testGemdosProcess() {
         // Système de fichiers sans attributs étendus (tmpfs ancien) : session seulement.
         const bool persisted = again.named(0x43,"HID.TXT",0,0)==0x02;
         if(!persisted) std::fprintf(stderr,"[gemdos-process] note: no xattr support in %s\n",work.string().c_str());
-        else equal("caché retrouvé au remontage",again.named(0x43,"HID.TXT",0,0),0x02);
+        else {
+            equal("caché retrouvé au remontage",again.named(0x43,"HID.TXT",0,0),0x02);
+            // Frename d'un fichier dont l'attribut n'a été vu que sur l'hôte : la source
+            // lue APRÈS rename() rendait 0 et effaçait l'attribut étendu emporté.
+            equal("Frename HID.TXT",again.frename("HID.TXT","HID2.TXT"),0);
+            equal("caché garde son attribut sous le nouveau nom",again.named(0x43,"HID2.TXT",0,0),0x02);
+            again.named(0x43,"HID2.TXT",1,0);
+            again.named(0x41,"HID2.TXT");
+        }
 #endif
+    }
+
+    // --- Lot GEMDOS hôte du 2026-11-12 -------------------------------------------------
+    // Frename d'un fichier OUVERT : archive et date Fdatime posées à la fermeture sur le
+    // NOUVEAU nom (TOS 1.04, 2.06, EmuTOS exécutés depuis une disquette, banc A/B).
+    {
+        const int w=rig.named(0x3C,"W.TXT");
+        equal("Fattrib efface l'archive",rig.named(0x43,"W.TXT",1,0),0);
+        equal("Fdatime posé",rig.fdatime(uint16_t(w),0x6000,0x1421,1),0);
+        equal("Fwrite",rig.write(uint16_t(w),"xyz"),3);
+        equal("Frename ouvert",rig.frename("W.TXT","W2.TXT"),0);
+        equal("Fclose après Frename",rig.handleOp(0x3E,uint16_t(w)),0);
+        equal("archive sur le nouveau nom",rig.named(0x43,"W2.TXT",0,0),0x20);
+        equal("Fsfirst W2.TXT",rig.named(0x4E,"W2.TXT",0),0);
+        equal("date Fdatime sur le nouveau nom",rig.bus.read16(0x4000+24),0x1421);
+        equal("rien recréé sous l'ancien nom",std::filesystem::exists(work/"W.TXT"),false);
+        rig.named(0x41,"W2.TXT");
+    }
+    // Fforce vers un handle hôte FERMÉ : EIHNDL, la redirection reste (ixforce).
+    {
+        const int o=rig.named(0x3C,"F.TXT");
+        equal("Fforce(1, fichier)",rig.fforce(1,uint16_t(o)),0);
+        equal("Fforce(1, handle fermé)",rig.fforce(1,100),-37);
+        equal("intercepté (pas au TOS)",rig.intercepted,true);
+        equal("toujours redirigé",rig.write(1,"z"),1);
+        equal("Fwrite(1) intercepté",rig.intercepted,true);
+        rig.handleOp(0x3E,1);
+        rig.handleOp(0x3E,uint16_t(o));
+        std::ifstream f(work/"F.TXT"); std::string c; std::getline(f,c);
+        same("sortie restée dans le fichier",c,"z");
+        rig.named(0x41,"F.TXT");
+    }
+    // Fcreate qui échoue (fichier hôte sans droit de lecture) : le handle ouvert sur
+    // l'ancien fichier n'est pas délié.
+    {
+        const int a=rig.named(0x3C,"WO.TXT");
+        std::filesystem::permissions(work/"WO.TXT",std::filesystem::perms::owner_write);
+        const int b=rig.named(0x3C,"WO.TXT");
+        if(b>=0) std::fprintf(stderr,"[gemdos-process] note: fopen(wb+) without read permission succeeded (root?)\n");
+        else {
+            equal("Fcreate refusé",b,-36);
+            equal("l'ancien handle écrit toujours",rig.write(uint16_t(a),"k"),1);
+        }
+        std::filesystem::permissions(work/"WO.TXT",std::filesystem::perms::owner_all);
+        rig.handleOp(0x3E,uint16_t(a));
+        if(b>=0) rig.handleOp(0x3E,uint16_t(b));
+        rig.named(0x41,"WO.TXT");
+    }
+    // Fsnext sur la DTA d'un Fsfirst raté : ENMFIL, pas les fichiers d'une autre DTA.
+    {
+        rig.bus.write32(PARENT+0x20,0x4200);               // DTA neuve (sans marque NeoST)
+        equal("Fsfirst raté (DTA 1)",rig.named(0x4E,"NOPE*.XYZ",0),-33);
+        rig.bus.write32(PARENT+0x20,0x4300);               // autre DTA neuve
+        equal("Fsfirst (DTA 2)",rig.named(0x4E,"*.*",0),0);
+        rig.bus.write32(PARENT+0x20,0x4200);
+        equal("Fsnext DTA 1",rig.trap(0x4F),-49);
+        rig.bus.write32(PARENT+0x20,0x4000);
+    }
+    // Lecteur protégé (--gemdos-ro) : EWRPRO, hôte intact.
+    {
+        std::ofstream(work/"RO.TXT")<<"ro";
+        rig.gemdos.setWriteProtect(true);
+        equal("RO Fcreate",rig.named(0x3C,"NEWRO.TXT"),-13);
+        equal("RO rien créé",std::filesystem::exists(work/"NEWRO.TXT"),false);
+        equal("RO Dcreate",rig.named(0x39,"DRO"),-13);
+        equal("RO Fdelete",rig.named(0x41,"RO.TXT"),-13);
+        equal("RO Frename",rig.frename("RO.TXT","RO2.TXT"),-13);
+        equal("RO Fattrib en écriture",rig.named(0x43,"RO.TXT",1,0x02),-13);
+        const int h=rig.named(0x3D,"RO.TXT",2);
+        equal("RO Fopen en écriture ouvre",h>=64,true);
+        equal("RO Fwrite",rig.write(uint16_t(h),"x"),-13);
+        rig.handleOp(0x3E,uint16_t(h));
+        rig.gemdos.setWriteProtect(false);
+        std::ifstream f(work/"RO.TXT"); std::string c; std::getline(f,c);
+        same("RO contenu intact",c,"ro");
+        equal("RO.TXT toujours là",std::filesystem::exists(work/"RO.TXT"),true);
+    }
+    // Processus tué sans Pterm (Ctrl-C : xterm interne du TOS, aucun trap). Son parent
+    // reprend : les fichiers du mort sont fermés, son dossier et ses Fforce oubliés ;
+    // l'enfant suivant né à la même basepage repart de l'état du parent. TOS 1.04 et
+    // EmuTOS exécutés (programmes sur A:, fichiers sur A: puis C:).
+    {
+        rig.run(PARENT);
+        rig.dsetpath("\\");
+        rig.bus.write32(CHILD+0x08,0x9000);
+        rig.bus.write8(CHILD+0x37,2);
+        rig.run(CHILD);
+        const int leak=rig.named(0x3C,"LEAK.TXT");
+        equal("enfant Fcreate",leak>=64,true);
+        equal("enfant Dsetpath",rig.dsetpath("\\SUB"),0);
+        equal("enfant Fforce(1)",rig.fforce(1,uint16_t(leak)),0);
+        rig.run(PARENT);                                   // ^C : pas de Pterm
+        equal("parent détruit le fichier du mort",rig.named(0x41,"LEAK.TXT"),0);
+        rig.run(CHILD);                                    // autre enfant, même basepage
+        same("nouvel enfant : dossier du parent",rig.dgetpath(),"");
+        rig.write(1,"con");
+        equal("nouvel enfant : sortie au TOS",rig.intercepted,false);
+        rig.trap(0x00);
+        rig.run(PARENT);
+        // Un fichier du mort ne doit pas non plus épuiser la table : 40 Fcreate de
+        // suite par un enfant tué, puis un autre enfant qui en ouvre encore.
+        rig.run(CHILD);
+        for(int i=0;i<40;++i) rig.named(0x3C,"E"+std::to_string(i)+".TXT");
+        rig.run(PARENT);
+        rig.trap(0x19);                                    // un appel du parent (son Pexec suivant)
+        rig.run(CHILD);
+        const int more=rig.named(0x3C,"MORE.TXT");
+        equal("handles du mort rendus",more>=64,true);
+        rig.handleOp(0x3E,uint16_t(more));
+        rig.trap(0x00);
+        rig.run(PARENT);
+        for(int i=0;i<40;++i) rig.named(0x41,"E"+std::to_string(i)+".TXT");
+        rig.named(0x41,"MORE.TXT");
+    }
+    // Collision 8.3 sur un système de fichiers sensible à la casse : « ABC.TXT » et
+    // « abc.txt » ; Fsfirst nomme le premier (ordre des octets) ABC.TXT, l'autre
+    // ABC~1.TXT, et chacun s'ouvre par CE nom.
+    {
+        std::filesystem::create_directory(work/"CS");
+        std::ofstream(work/"CS"/"ABC.TXT")<<"U";
+        std::ofstream(work/"CS"/"abc.txt")<<"l";
+        int n=0; for(auto& e:std::filesystem::directory_iterator(work/"CS")) { (void)e; ++n; }
+        if(n!=2) std::fprintf(stderr,"[gemdos-process] note: case-insensitive host FS, 8.3 collision check skipped\n");
+        else {
+            const int u=rig.named(0x3D,"CS\\ABC.TXT");
+            equal("ABC.TXT → le fichier ABC.TXT",rig.readByte(uint16_t(u)),'U');
+            rig.handleOp(0x3E,uint16_t(u));
+            const int l=rig.named(0x3D,"CS\\ABC~1.TXT");
+            equal("ABC~1.TXT → abc.txt",rig.readByte(uint16_t(l)),'l');
+            rig.handleOp(0x3E,uint16_t(l));
+            const int lc=rig.named(0x3D,"CS\\Abc.Txt");
+            equal("casse quelconque → le nom 8.3, pas le premier de readdir",rig.readByte(uint16_t(lc)),'U');
+            rig.handleOp(0x3E,uint16_t(lc));
+        }
     }
 
     std::fprintf(stderr,"[gemdos-process] %d checks, %d FAIL\n",checks,failures);
