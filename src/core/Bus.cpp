@@ -207,9 +207,20 @@ bool Bus::loadCart(const std::string& path) {
                      static_cast<long long>(n), maxSize, maxSize + 4, path.c_str());
         return false;
     }
+    // Lu dans un tampon À PART : une lecture courte (fichier tronqué pendant la
+    // lecture, support défaillant) refuse l'image et laisse la cartouche précédente
+    // en place, comme les refus de taille ci-dessus. On posait ce qui avait été lu,
+    // le reste à zéro, sans le dire. [D] Hatari file.c File_ReadAsIs @ f0736b24 garde
+    // le compte réel de fread, que Cart_LoadImage juge ensuite.
     f.seekg(stc ? 4 : 0);
-    cart.resize(stc ? maxSize : static_cast<std::size_t>(n));
-    f.read(reinterpret_cast<char*>(cart.data()), static_cast<std::streamsize>(cart.size()));
+    std::vector<uint8_t> image(stc ? maxSize : static_cast<std::size_t>(n));
+    f.read(reinterpret_cast<char*>(image.data()), static_cast<std::streamsize>(image.size()));
+    if (static_cast<std::size_t>(f.gcount()) != image.size()) {
+        std::fprintf(stderr, "[Bus] cartridge read failed (%lld of %zu B): %s\n",
+                     static_cast<long long>(f.gcount()), image.size(), path.c_str());
+        return false;
+    }
+    cart.swap(image);
 
     // Le magic du long word de tête révèle le type de cartouche (cf. stmap).
     const uint32_t magic = cart.size() >= 4

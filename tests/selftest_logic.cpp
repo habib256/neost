@@ -597,6 +597,21 @@ static void testTosImageLoad() {
               (unsigned(bus.cart[2]) << 8) | bus.cart[3], 0xABCDEF42u);
     checkBool("128 Ko brut accepté", bus.loadCart(makeCart("c.bin", 0x20000, 0)), true);
     checkBool("0x20005 o refusé",    bus.loadCart(makeCart("c5.bin", 0x20005, 4)), false);
+    checkInt ("… la cartouche précédente reste (128 Ko)", long(bus.cart.size()), 0x20000L);
+    checkBool("fichier vide refusé", bus.loadCart(makeCart("c0.bin", 0, 0)), false);
+    checkBool("fichier absent refusé", bus.loadCart((dir / "absent.stc").string()), false);
+    checkInt ("… la cartouche précédente reste toujours", long(bus.cart.size()), 0x20000L);
+    // Image brute quelconque plus courte que la fenêtre (ici 40 octets) : posée telle
+    // quelle à $FA0000, le reste du port lit $FF comme un port vide. [D] Hatari
+    // cart.c:117 @ f0736b24 (memset $FF de la fenêtre, puis copie de l'image).
+    checkBool("image brute de 40 o acceptée", bus.loadCart(makeCart("c40.bin", 40, 0)), true);
+    checkHex ("… magic lu à $FA0000 par le bus",
+              (unsigned(bus.read8(0xFA0000)) << 24) | (unsigned(bus.read8(0xFA0001)) << 16) |
+              (unsigned(bus.read8(0xFA0002)) << 8) | bus.read8(0xFA0003), 0xABCDEF42u);
+    checkHex ("… dernier octet de l'image ($FA0027)", bus.read8(0xFA0027), 0x00u);
+    checkHex ("… au-delà de l'image : $FF ($FA0028)", bus.read8(0xFA0028), 0xFFu);
+    checkHex ("… /ROM3 vide : $FF ($FB0000)", bus.read8(0xFB0000), 0xFFu);
+    bus.ejectCart();
     fs::remove_all(dir, ec);
 }
 
