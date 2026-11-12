@@ -135,7 +135,10 @@ void usage() {
         "                    (repeatable)\n"
         "  --mouse-step N    displacement per L/R/U/D token (1..127, default 8)\n"
         "  --joy P1[,P0]     hold a joystick state (bits up$01 down$02 l$04 r$08 fire$80)\n"
-        "  --disk FILE       mount an image in drive A (default: drive A stays empty)\n"
+        "  --disk FILE       mount an image in drive A (default disks/diskA.st, relative to\n"
+        "                    the current directory, writes kept in RAM; drive A stays\n"
+        "                    empty if it is absent)\n"
+        "  --no-disk         leave drive A empty (no default floppy)\n"
         "  --disk-at N FILE  swap the disk in drive A at frame N (repeatable)\n"
         "  --diskb FILE      mount an image in drive B (second drive)\n"
         "  --drive-b on|off  connect drive B (default on). off = single-drive ST:\n"
@@ -1319,11 +1322,13 @@ int main(int argc, char** argv) {
                                       // (fenêtrer un diff oracle sur une scène tardive — menu
                                       // de démo — sans traîner des Go de boot)
     std::string shotPath;
-    // Lecteur A VIDE sans --disk (2026-11-11). La disquette « disks/diskA.st » était
-    // montée par défaut, résolue par rapport au RÉPERTOIRE COURANT et en écriture : la
-    // même commande donnait deux empreintes selon le dossier de lancement, et un test
-    // d'écriture pouvait altérer la disquette livrée. Une recette qui la veut la nomme.
-    std::string diskPath;
+    // Sans --disk, « disks/diskA.st » est montée d'office (décision d'auteur, rétablie
+    // le 2026-11-12 après un jour de lecteur vide) : lecteur vide, EmuTOS attend le
+    // délai de la disquette absente et n'atteint le bureau que vers la trame ~900 au
+    // lieu de ~400. Résolue par rapport au RÉPERTOIRE COURANT ; absente, le lecteur
+    // reste vide sans échec. Ses écritures restent en RAM (fichier suivi par git) ;
+    // --no-disk laisse le lecteur vide.
+    std::string diskPath = "disks/diskA.st";
     bool        diskRequested = false;   // --disk explicite (ou neost.cfg) : son absence est alors fatale
     std::string diskBPath;                       // lecteur B (optionnel, --diskb)
     bool        driveB     = true;    // --drive-b off : lecteur B débranché (_nflops = 1)
@@ -1527,6 +1532,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--irq"))        irq       = true;
         else if (!std::strcmp(a, "--screenshot")) shotPath  = next(a);
         else if (!std::strcmp(a, "--disk"))       { diskPath  = next(a); diskRequested = true; }
+        else if (!std::strcmp(a, "--no-disk"))    { diskPath.clear(); diskRequested = false; }
         else if (!std::strcmp(a, "--diskb"))      diskBPath = next(a);
         else if (!std::strcmp(a, "--drive-b")) {
             const char* v = next(a);
@@ -1997,7 +2003,8 @@ int main(int argc, char** argv) {
     }
     // En mode serveur, « hello » ANNONCE les médias : démarrer sans la disquette
     // demandée servirait au pilote un bureau nu en lui affirmant qu'il a le jeu.
-    // Sans --disk, le lecteur A reste vide (plus de disquette implicite).
+    // Sans --disk, la disquette par défaut est un confort : son absence (binaire installé,
+    // autre répertoire, borne) laisse le lecteur vide sans faire échouer le run.
     // Lecteur B débranché (--drive-b off) : posé AVANT le boot, le TOS ne compte qu'un
     // lecteur. Une image --diskb n'y aurait aucun sens : refusée, et dit.
     machine.fdc.setDriveEnabled(1, driveB);
@@ -2005,9 +2012,21 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[headless] --diskb ignored: drive B is disconnected (--drive-b off)\n");
         diskBPath.clear();
     }
+    if (diskPath.empty()) {
+        std::fprintf(stderr, "[headless] drive A: empty (--no-disk)\n");
+    } else if (std::error_code ec; !diskRequested && !std::filesystem::is_regular_file(diskPath, ec)) {
+        std::fprintf(stderr, "[headless] drive A: empty (default %s not found)\n", diskPath.c_str());
+        diskPath.clear();
+    }
     const bool diskAOk = diskPath.empty() || machine.loadDisk(diskPath);   // lecteur A (optionnel)
-    if (diskPath.empty())
-        std::fprintf(stderr, "[headless] drive A: empty (no --disk)\n");    const bool diskBOk = diskBPath.empty() || machine.loadDiskB(diskBPath);
+    // La disquette par défaut est suivie par git (issue #38 : écrasée par un test
+    // d'écriture et livrée illisible) : ses écritures restent en RAM, l'invité n'y voit
+    // aucune différence. Une disquette NOMMÉE (--disk) garde le write-through.
+    if (diskAOk && !diskPath.empty() && !diskRequested) {
+        machine.fdc.setDiskHostWriteBack(0, false);
+        std::fprintf(stderr, "[headless] drive A: default %s, writes stay in RAM\n", diskPath.c_str());
+    }
+    const bool diskBOk = diskBPath.empty() || machine.loadDiskB(diskBPath);
     // Un média DEMANDÉ et introuvable fait échouer le run dans TOUS les modes : sinon la
     // machine démarrait sans lui et rendait une capture « valide », code 0 — faux vert
     // pour tout outil qui ne vérifie pas le fichier avant de lancer.

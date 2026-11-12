@@ -631,6 +631,7 @@ bool Fdc::msaSelfTest() {
 
 bool Fdc::loadImage(const std::string& path, int drive) {
     FloppyDisk& dk = drive_[drive & 1];
+    dk.hostWriteBack = true;                     // réglage propre au montage précédent
     touchMedia(dk);                         // même un échec peut avoir touché l'image
     const bool wasPresent = dk.present();   // disque déjà monté → échange à chaud
     std::ifstream f(path, std::ios::binary | std::ios::ate);
@@ -1690,7 +1691,7 @@ Fdc::FloppyDisk::StOverrideTrack* Fdc::stOverrideHere() {
 void Fdc::writeBack(FloppyDisk& dk, uint64_t off, uint64_t len) {
     touchMedia(dk);   // l'image en mémoire a changé, persistée ou non (--disk-ro)
     if (!dk.raw || dk.path.empty() || off + len > dk.image.size()) return;
-    if (!hostWriteBack_) return;    // A14 (--disk-ro) : RAM seulement, le fichier est intact
+    if (!hostWriteBack_ || !dk.hostWriteBack) return;   // A14 (--disk-ro) : RAM seulement, le fichier est intact
 
     if (dk.imgFormat == FloppyDisk::FMT_MSA) {
         // .MSA : format COMPRIMÉ par piste — aucune correspondance entre un offset de
@@ -1993,7 +1994,7 @@ void Fdc::stxPersist(FloppyDisk& dk) {
     ++stxWrites_;     // l'overlay STX a changé : le retour arrière ne le franchit pas
     touchMedia(dk);
     if (dk.wd1772Path.empty()) return;
-    if (!hostWriteBack_) return;    // A14 (--disk-ro) : pas de fichier compagnon .wd1772
+    if (!hostWriteBack_ || !dk.hostWriteBack) return;   // A14 (--disk-ro) : pas de fichier compagnon .wd1772
     if (!dk.stx->saveWd1772(dk.wd1772Path)) {
         static bool warned = false;
         if (!warned) {
@@ -3504,6 +3505,7 @@ struct Fdc::MediaCopy {
     uint64_t    gen = 0;
     std::string path;                                   // "" = lecteur vide
     bool        stx = false;
+    bool        hostWriteBack = true;                   // réglage de la disquette (cf. FloppyDisk)
     std::vector<uint8_t> image;                         // contenu .ST (vide pour un STX)
     std::map<int, FloppyDisk::StOverrideTrack> stOverride;
 };
@@ -3514,6 +3516,7 @@ std::shared_ptr<const Fdc::MediaCopy> Fdc::copyMedia(int drive) const {
     copy->gen  = dk.gen;
     copy->path = dk.present() ? dk.path : std::string();
     copy->stx  = dk.imgType == FloppyDisk::IMG_STX;
+    copy->hostWriteBack = dk.hostWriteBack;
     if (!copy->stx) {
         copy->image      = dk.image;
         copy->stOverride = dk.stOverride;
@@ -3533,6 +3536,7 @@ bool Fdc::restoreMedia(int drive, const MediaCopy& copy) {
     if (!dk.present() || dk.path != copy.path || isStx != copy.stx) {
         if (!loadImage(copy.path, drive)) return false;
     }
+    dk.hostWriteBack = copy.hostWriteBack;              // remonté : garde sa protection
     if (!copy.stx) {
         dk.image      = copy.image;
         dk.stOverride = copy.stOverride;

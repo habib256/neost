@@ -6,6 +6,19 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Headless : disquette A montée d'office, smoke des paquets (2026-11-12)
+
+- **Headless.** Sans `--disk`, `disks/diskA.st` est de nouveau montée d'office (décision
+  d'auteur, retour sur celle de la veille) : lecteur vide, EmuTOS attend le délai de la
+  disquette absente et n'atteint le bureau que vers la trame ~900 au lieu de ~400. Absente du
+  répertoire courant, le lecteur reste vide sans échec ; `--no-disk` le laisse vide. Ses
+  écritures restent en RAM (`Fdc::setDiskHostWriteBack`, par disquette, gardé par le retour
+  arrière) : le fichier suivi par git n'est plus modifiable par un run. `title_cmd` passe
+  `--no-disk` avec `--gemdos`, comme Hatari qui tourne lecteur vide.
+- **Smoke des paquets.** Le boot à 500 trames capturait un écran encore effacé depuis le
+  lecteur vide : le workflow « Artefacts (release) » était rouge sur tous les paquets de
+  bureau depuis `f54bb5e`, sans consommateur hors tag.
+
 ## Blit HOG long sur le web et Android (2026-11-12)
 
 - **Android et ASan.** La coroutine de `runFrame` (`core/EmuFiber`) a un troisième dorsal : un

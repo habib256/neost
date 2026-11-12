@@ -335,9 +335,12 @@ python3 tools/run_etalons.py
 
 Options : `--cpu moira` (seul cœur, optionnel), `--machine st|megast|ste|megaste`,
 `--mem 256k|512k|1m|2m|2176k|2560k|4m` (`2.5m` = alias de `2560k`), `--cart FILE`, `--disk`, `--diskb`, `--mono`, `--until-pc HEX`,
-`--walk-mouse`, `--keys "STR"`, `--loopback`. **Sans `--disk`, le lecteur A reste vide**
-(depuis le 2026-11-11 ; `disks/diskA.st` était montée d'office, depuis le répertoire
-courant et en écriture) : une recette qui veut la disquette publique la nomme.
+`--walk-mouse`, `--keys "STR"`, `--loopback`. **Sans `--disk`, `disks/diskA.st` est montée
+d'office**, résolue depuis le répertoire courant ; ses écritures restent en RAM (le fichier
+est suivi par git), une disquette nommée par `--disk` garde le write-through. Absente, le
+lecteur reste vide sans échec. `--no-disk` laisse le lecteur vide :
+EmuTOS attend alors le délai de la disquette absente et n'atteint le bureau que vers la
+trame ~900 (~400 avec la disquette).
 `--keys` et `--walk-mouse` tournent **après** les `--frames` trames (`--keys` : 4 trames par
 caractère, puis encore `--frames` trames), mais **avant** tous les instruments de fin de
 run : `--save-state`, `--sound-dump`, la sonde finale et `--screenshot` décrivent le même

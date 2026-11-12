@@ -67,11 +67,11 @@ if [ -n "$WANT_VERSION" ]; then
 fi
 
 # --- 2) Boot EmuTOS : la capture ne doit pas être uniforme ------------------
-# Lecteur A VIDE (sans --disk, depuis le 2026-11-11) : EmuTOS attend le délai de la
-# disquette absente avant le bureau, qui n'apparaît que vers la trame ~900 en 60 Hz
-# (vers ~400 avec une disquette). À 500 trames l'écran est encore effacé, uniforme.
-say "2/5 boot EmuTOS sans disquette (1500 trames)"
-"./$EXE" "$ROM" --frames 1500 --screenshot smoke_boot.ppm
+# Sans --disk, le headless monte disks/diskA.st (relative au répertoire courant, ici
+# le paquet) : le bureau apparaît vers la trame ~400. Lecteur vide (--no-disk), EmuTOS
+# attend le délai de la disquette absente et ne l'atteint que vers ~900.
+say "2/5 boot EmuTOS (500 trames)"
+"./$EXE" "$ROM" --frames 500 --screenshot smoke_boot.ppm
 python3 "$REPO/tools/check_ppm_nonuniform.py" smoke_boot.ppm
 
 # --- 3) DISQUETTE LIVRÉE : montée, et réellement formatée (issue #38) -------
@@ -144,8 +144,7 @@ else
     # au RÉPERTOIRE COURANT. Sans chemin absolu la disquette n'est pas trouvée et
     # le run échoue — le contrôle rougirait pour une raison qui n'a rien à voir
     # avec la lecture seule. (Mesuré le 2026-09-01 ; le frontend GUI, lui, résout
-    # par rapport au binaire. Depuis le 2026-11-11, sans --disk, le lecteur A du
-    # headless reste vide.)
+    # par rapport au binaire.)
     ( cd "$RO_WORK" && "$PKG/$EXE" "$PKG/$ROM" --disk "$PKG/$DISK" \
         --frames 500 --screenshot "$RO_WORK/ro.ppm" ) \
         || { echo "ERREUR : le binaire livré échoue quand son paquet est en lecture seule" >&2
