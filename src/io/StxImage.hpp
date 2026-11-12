@@ -122,7 +122,8 @@ public:
     // priorité, et PERSISTÉES dans un fichier compagnon « .wd1772 » (format
     // compatible avec le conteneur Hatari : blocs SECT/TRCK, multi-octets BE,
     // trailer NDAM optionnel pour la DAM (ignoré et perdu si réécrit par Hatari) ;
-    // une piste créée par addTrack porte ses blocs en NTRK/NSCT, cf. saveWd1772).
+    // une piste créée par addTrack porte ses blocs en NTRK/NSCT, et un WRITE SECTOR
+    // sur une piste réécrite par WRITE TRACK va en NSCT, cf. saveWd1772).
     struct SaveSector {
         uint8_t  track = 0, side = 0;
         uint16_t bitPos = 0;

@@ -408,18 +408,32 @@ void StxImage::reinterpretSaveTrack(Track& t) {
 //  Bloc TRCK (12 o + données) : "TRCK", u32BE longueur (8+taille), piste, face,
 //    u16BE taille du flux écrit, données (flux WRITE TRACK brut).
 //
-//  Extension NeoST, piste ABSENTE de l'image d'origine (Track::added, créée par un
-//  WRITE TRACK) : ses blocs s'appellent NTRK (même disposition que TRCK) et NSCT
-//  (même disposition que SECT, NDAM compris), et ne comptent PAS dans les nombres
-//  de l'en-tête. Raison : [D] Hatari stx.c:677-685 et 648-657 @ f0736b24
-//  (STX_LoadSaveFile) rejette le fichier ENTIER — SECT/TRCK des autres pistes
-//  compris, avec une alerte — dès qu'un TRCK ne trouve pas sa piste (STX_FindTrack)
-//  ou qu'un SECT ne trouve pas son secteur ; il saute en revanche un bloc inconnu
-//  (stx.c:692-699, « unknown block, skipping ») et n'indexe ses tableaux, alloués
-//  d'après l'en-tête, que sur les SECT/TRCK. Un .wd1772 de NeoST reste ainsi lisible
-//  par Hatari, qui ignore la seule piste ajoutée (qu'il ne sait pas créer).
+//  Extensions NeoST, blocs qu'Hatari ne saurait pas rattacher :
+//   - NTRK (même disposition que TRCK) : piste ABSENTE de l'image d'origine
+//     (Track::added, créée par un WRITE TRACK) ;
+//   - NSCT (même disposition que SECT, NDAM compris) : tout WRITE SECTOR dont la
+//     position n'est pas celle d'un secteur D'ORIGINE de sa piste — piste ajoutée,
+//     ou piste existante réécrite par WRITE TRACK, dont les secteurs sont ceux de la
+//     piste RÉINTERPRÉTÉE (Track::writeSectors) et n'ont pas leurs positions dans
+//     l'image Pasti.
+//  Ni l'un ni l'autre ne compte dans les nombres de l'en-tête. Raison : [D] Hatari
+//  stx.c:677-685 et 648-657 @ f0736b24 (STX_LoadSaveFile) rejette le fichier ENTIER
+//  — SECT/TRCK des autres pistes compris, avec une alerte — dès qu'un TRCK ne trouve
+//  pas sa piste (STX_FindTrack) ou qu'un SECT ne trouve pas son secteur
+//  (STX_FindSector_By_Position, stx.c:1377-1396 : égalité de BitPosition parmi les
+//  secteurs de l'image, jamais parmi une piste écrite, qu'Hatari ne réinterprète
+//  pas — « TODO : compute interpreted track », stx.c:771) ; il saute en revanche un
+//  bloc inconnu (stx.c:692-699, « unknown block, skipping ») et n'indexe ses
+//  tableaux, alloués d'après l'en-tête, que sur les SECT/TRCK. Un .wd1772 de NeoST
+//  reste ainsi lisible par Hatari, qui garde les écritures qu'il sait placer et
+//  ignore les autres (il relit de toute façon les secteurs d'origine d'une piste
+//  réécrite). Un SECT dont la position tomberait par hasard sur celle d'un secteur
+//  d'origine serait pire qu'un rejet — Hatari le poserait sur le mauvais secteur :
+//  le test porte donc sur la piste réécrite, pas seulement sur la position.
 //  NeoST relit TRCK et NTRK, SECT et NSCT, à l'identique : un TRCK visant une piste
-//  absente crée la piste lui aussi.
+//  absente crée la piste lui aussi, et les SECT sont relus APRÈS les TRCK (positions
+//  de la piste réinterprétée). Un ancien .wd1772 de NeoST (SECT sur piste réécrite)
+//  se relit donc tel quel et repart en NSCT à la sauvegarde suivante.
 // =============================================================================
 static inline void wr16be(std::vector<uint8_t>& v, uint16_t x) {
     v.push_back(uint8_t(x >> 8)); v.push_back(uint8_t(x));
@@ -440,9 +454,19 @@ bool StxImage::saveWd1772(const std::string& path) const {
         const Track* t = findTrack(track, side);
         return t && t->added;
     };
+    // SECT seulement si Hatari retrouve le secteur : piste d'origine NON réécrite
+    // (sinon la position est celle de la piste réinterprétée) et position égale à
+    // celle d'un secteur de l'image ([D] STX_FindSector_By_Position @ f0736b24).
+    auto hatariSect = [this](const SaveSector& ss) {
+        const Track* t = findTrack(ss.track, ss.side);
+        if (!t || t->added || t->saveTrackIndex >= 0 || t->writeReinterpreted) return false;
+        for (const Sector& sec : t->sectors)
+            if (sec.bitPosition == ss.bitPos) return true;
+        return false;
+    };
     uint32_t nbSect = 0, nbUsed = 0, nbTrck = 0;
     for (const SaveSector& ss : saveSectors)
-        if (ss.used) { nbUsed++; if (!added(ss.track, ss.side)) nbSect++; }
+        if (ss.used) { nbUsed++; if (hatariSect(ss)) nbSect++; }
     for (const SaveTrack& st : saveTracks)
         if (!added(st.track, st.side)) nbTrck++;
     if (nbUsed == 0 && saveTracks.empty()) return true;   // rien à sauver → pas de fichier
@@ -456,8 +480,8 @@ bool StxImage::saveWd1772(const std::string& path) const {
 
     for (const SaveSector& ss : saveSectors) {
         if (!ss.used) continue;                           // invalidé par un WRITE TRACK
-        if (added(ss.track, ss.side)) out.insert(out.end(), {'N','S','C','T'});
-        else                          out.insert(out.end(), {'S','E','C','T'});
+        if (hatariSect(ss)) out.insert(out.end(), {'S','E','C','T'});
+        else                out.insert(out.end(), {'N','S','C','T'});
         const bool deleted = ss.dataMark == 0xF8;
         wr32be(out, uint32_t(16 + ss.data.size() + (deleted ? 5 : 0)));
         out.push_back(ss.track);
