@@ -115,6 +115,9 @@ vecteur parasite `$60` qu'Hatari laisse en TODO.
 
 ### Écarts voulus — ne pas réaligner
 
+- **BREAK reçu par l'USART** · voulu [B] · basse · 2026-11-12 — Hatari ne reçoit pas de BREAK ; NeoST
+  pose B et l'IRQ de fin de BREAK en bouclage ([B] MC68901 fig. 6-3, § 6.2.3, `Mfp::receiveSerialBreak`).
+
 - **Quartz maître au choix** · extension · basse · 2026-11-12 — NeoST permet le quartz STF NTSC
   (32 042 400 Hz) ou STE NTSC (32 215 905 Hz) ; Hatari définit ces valeurs
   (`clocks_timings.c:138,144 @ f0736b24`) mais garde le PAL (`:178`). Au défaut, aucun écart. Le YM
@@ -1119,6 +1122,14 @@ supprimé : tout y était implémenté.
 
 ### Écarts voulus — ne pas réaligner
 
+- **IKBD `$19` selon la ROM** · voulu [C] · basse · 2026-11-12 — Hatari scrute toutes les ~1 ms avec des
+  dixièmes de 100 ms et sans anti-rebond ; NeoST suit la ROM 6301 : dixièmes de 101 ms, prédiviseur par
+  axe phasé à l'appui, anti-rebond de 4 ms (directions) et 9 ms (feu), bascule VX sans émission si TX=0,
+  directions opposées ignorées (`Ikbd::sendKeycodeJoystick`).
+- **Liaison ACIA→SCI** · voulu [B]/[C] · basse · 2026-11-12 — Hatari émet toujours en 8N1 et ignore
+  l'erreur de trame ; NeoST émet le format du CR ([B] MC6850 § Word Select) et applique le gestionnaire
+  ORFE de la ROM ($FF40) et le reset par BREAK ($FE29/$F00B) (`Ikbd::sciFramingError`).
+
 - **Octets impairs `$FFFC01/03/05/07` sur STE** · voulu [D-netlist] · basse · 2026-11-11 —
   Hatari les tient « void » (`ioMemTabSTE.c`, `IoMem_VoidRead/Write`, sans attente). Le GST MCU
   sélectionne l'ACIA sans UDS/LDS et pose VPA sur tout `$FFFC00-$FFFDFF` ([D]
@@ -1580,6 +1591,9 @@ des adresses impaires. Référence matérielle : Zilog UM0109 (UM010902-0609) ; 
   X21 et autres fonctions de WR7' hors périmètre.
 
 ### Écarts voulus — ne pas réaligner
+
+- **Caractère nul de fin de BREAK** · voulu [B] · basse · 2026-11-12 — à la fin d'un BREAK bouclé, un
+  caractère nul entre dans la FIFO ([B] Zilog UM0109 p. 58 et 98) ; absent chez Hatari.
 
 - **All Sent toujours à 1 en synchrone et SDLC** · voulu [B] · basse · 2026-11-10 — UM010902-0609
   RR1 D0 p. 180 (« This bit is always set in synchronous and SDLC modes ») : `Scc::read8`

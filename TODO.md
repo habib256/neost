@@ -171,8 +171,9 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   dizaines de ppm (HWTST : STE PAL 8 020 7xx-8 021 2xx Hz), soit ~50 cycles par ppm sur ce trajet. À poser :
   une graine de tolérance du quartz MFP (±ppm), en option (`docs/CASE_STUDIES.md`). Tranché par : la
   dispersion des quartz MFP relevée sur plusieurs machines.
-- **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
-  caractère, phase du premier front TC, forme d'onde BREAK physique.
+- **USART** · P3 ⭘ — modèle synchrone (SCR, M, F/S), réacquisition et CIP au milieu d'un caractère (récepteur
+  bit à bit, § 6.1.1), phase du premier front TC. BREAK reçu en bouclage fait le 2026-11-12 ; [F] sa date de
+  détection et le canal de l'IRQ de fin de BREAK : tranché par SO et IPRA relevés sur un 68901.
 
 ### 3.3 Blitter
 
@@ -235,27 +236,33 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.6 Clavier — IKBD HD6301, ACIA 6850, MIDI
 
-- **Liaison série physique** · P3 ⭘ — formats et diviseurs autres que /64 8N1, phase SCI
-  sortante exacte ; ligne BREAK et erreurs de trame hors modèle.
+- **Liaison série physique** · P3 ⭘ — formats du 6850 émis bit à bit au /64, erreur de trame et BREAK vus par
+  la ROM depuis le 2026-11-12. Restent : diviseurs /16 et /1 côté CPU→IKBD (échantillonnage du SCI, 8 × 7812,5
+  bauds, HD6301 p. 1247) ; PE/FE de l'ACIA clavier pour les formats non 8N1 ; phase SCI sortante. [F] erreur
+  de trame pendant la fenêtre de reset.
 - **Cadence du SCI de l'IKBD** · P3 ⏸ source · [D] — 1024 cycles par bit, comme Hatari, qui
   suppose un CPU à 8 MHz. La fiche du HD6301 (table 2-6-1 p. 153) donne 128 µs par bit avec un
   quartz de 4 MHz, soit 1026,7 cycles du CPU PAL : 27 cycles de plus par octet. Tranche : le
   quartz sur le schéma de la carte ST, ou le document Atari du protocole IKBD ; puis A/B de la
   porte et des parcours.
-- **Firmware IKBD, restes face à la ROM** · P3 ⭘ — `$19` scruté toutes les 1 ms (la ROM le fait à
-  chaque tour) ; l'état hôte ne change qu'aux événements de l'hôte ; code 6301 custom
-  (`Execute`). Les délais de `$18` sont comptés sur la ROM, pas mesurés sur un IKBD.
-- **ACIA MIDI** · P3 ⭘ — source RX hôte limitée au câble 31 250 bauds 8N1 ; BREAK non simulé.
+- **Firmware IKBD, restes face à la ROM** · P3 ⭘ — `$19` suit la ROM depuis le 2026-11-12. Restent : code 6301
+  custom (`Execute`) sans cœur HD6301 ; délais de `$18` comptés sur la ROM, pas mesurés sur un IKBD ; [F] latence
+  du tour de boucle de `$19` et valeur de `$9F` à l'entrée.
+- **ACIA MIDI** · P3 ⭘ — source RX hôte au câble 8N1 : le 7 bits + parité (strip D7, PE) est tranché par la fiche
+  ([B] MC6850 p. 6 et 9) mais pas modélisé ; le format TX est figé au chargement du TSR (comme Hatari) alors
+  que la fiche le rend effectif immédiatement ; BREAK non simulé.
 - **ACIA : octets impairs sur ST et Mega STE** · P3 ⏸ source · [F] — vides comme Hatari ; le STE
   suit le GST MCU depuis le 2026-11-11 (cycle de la puce, écriture sur le registre pair, attente
   E-clock sur `$FFFC00-$FFFDFF`). Tranche : la netlist du GLUE du ST, ou de la MCU du Mega STE.
 
 ### 3.7 Mega STE — SCC Z85C30, RTC RP5C15, cache
 
-- **SCC, restes** · P3 ⭘ — autres fonctions de WR7', FIFO SDLC, DPLL, série hôte ; phase de
-  bit, erreurs RX de BREAK, X21 ; Hunt bit à bit ; parité/framing des formats discordants.
-- **RTC, restes** · P3 ⭘ — sorties CLKOUT/ALARM, modes TEST ; lecture TEST/RESET à zéro selon
-  MAME, sans mesure du bus flottant.
+- **SCC, restes** · P3 ⭘ — caractère nul de fin de BREAK fait le 2026-11-12. Restent : délai de la détection BREAK
+  et garde WR3 Rx Enable (le test « I SCC » du diagnostic s'en sert) ; parité RX (PE du caractère nul en parité
+  impaire) ; autres fonctions de WR7', FIFO SDLC, DPLL, série hôte, X21, Hunt bit à bit, formats discordants.
+- **RTC, restes** · P3 ⏸ source — TEST (« LSI inspection », fiche EK-086-9908), relecture de Eh/Fh non définie
+  par la fiche, CLKOUT/ALARM sans câblage sourcé. Tranché par : le schéma Mega ST/STE, ou une relecture de
+  `$FFFC3D/3F` sur le fer.
 - **Matrice DD/HD × cache** · P3 ⭘ — balayage systématique si un titre l'exige.
 
 ### 3.8 TOS, GEMDOS, cartouche

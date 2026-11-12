@@ -6,7 +6,7 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
-## Chasse aux P3 ; format d'état v66 (2026-11-12)
+## Chasse aux P3 ; format d'état v67 (2026-11-12)
 
 Tous les P3 ouverts (⭘) du `TODO.md` attaqués en lots parallèles ; les ⏸ (matériel, source,
 cœur) restent en attente de leur ressource.
@@ -86,6 +86,18 @@ cœur) restent en attente de leur ressource.
   à tort « libneost.so absent ». A9 : pages du menu borne (`kioskPage*`) et requêtes de la
   Configuration (`consume*Requests`) découpées, déplacements mécaniques. Anneau MIDI saisissable
   dans la page MIDI (`midi_net=`). Banc JSPI sous Firefox 160 (WebDriver BiDi).
+- **Puces série.** `$19` de l'IKBD selon la ROM 6301 ([C] désassemblage MiSTery `IKBD.ASM` :
+  anti-rebond 4 et 9 ms, dixièmes de 101 ms, compteurs RX/TX/VX, directions opposées ignorées) ;
+  liaison ACIA→SCI dans les 8 formats du 6850 au /64 ([B] MC6850 § Word Select), erreur de trame
+  et BREAK vus par la ROM ([B] HD6301 p. 155, [C] $FF40 : commande avortée, sortie retenue
+  jusqu'à la ligne au repos, reset après ~205 ms de BREAK) ; BREAK reçu par l'USART du MFP en
+  bouclage ([B] MC68901 fig. 6-3, § 6.2.3) ; caractère nul de fin de BREAK du SCC ([B] UM0109
+  p. 58 et 98). Diagnostic Mega STE 11/11, 27 parcours sans écart. RTC : la fiche ne tranche rien
+  de plus.
+- **Format d'état v67.** v66 (`Shifter::scrollWrites_`, lot vidéo) et les champs du lot puces série
+  (anti-rebond `$19`, réveil SCI, BREAK du MFP) étaient arrivés tous deux en v66 : fusionnés en v67.
+  Restes de fusion corrigés : fin de trame DMA, MTC et tics 1 ms de l'IKBD sur l'horloge CPU en
+  service (`cpuHzInt()`), pas sur le quartz par défaut.
 - **Outils.** `compare_sound.py --mem` passe par `title_cmd.parse_mem` : même taille des deux
   côtés, `--mem 0` ne devient plus « 0m ».
 

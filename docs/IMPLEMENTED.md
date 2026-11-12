@@ -324,7 +324,7 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   GSTMCU au pixel hors lignes de bascule ; étalon `rtl_lomedlo`.
 - **STE : scroll fin écrit en plein DE** (2026-11-12) : `$FF8264/65` décale aussitôt le reste de
   la ligne courante, daté comme une écriture palette ; banc `--kind scroll` 60/64 (21 avant).
-  `Shifter::scrollWrites_` sérialisé : format d'état v66.
+  `Shifter::scrollWrites_` sérialisé (format d'état v66, v67 après fusion).
 - **Canal « longueurs de ligne par-ligne » ACTIVÉ par défaut (2026-07-08)** : le port
   `HBL_Pos/nCyclesPerLine` (chaque « Freq_match » de la Glue fixe la position de l'IRQ HBL et
   la longueur — 224/508/512 — de la ligne courante, cumul `lineCarry_` pour les suivantes)
@@ -787,6 +787,15 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   dans `tests/machine_timer_b_aer_logic.cpp`. Aucun logiciel réel connu ne l'exerce.
 
 ## Clavier, souris, joystick (ACIA 6850 / IKBD HD6301)
+
+- **Puces série, chasse aux P3 (2026-11-12)** — **`$19` selon la ROM** : anti-rebond $F681/$F186 (4/9 tics de
+  1 ms), prédiviseur de 100 ms par axe chargé à l'appui → dixième = 101 ms, compteurs RX/TX/VX, bascule sans
+  émission si TX=0, directions opposées ignorées ; évaluation aux tics OCF et aux changements de l'hôte.
+  **Liaison CPU→IKBD** : formats CR4..2 émis bit à bit au /64, format relu à chaque bit ; erreur de trame selon
+  le gestionnaire ROM $FF40 (WU, TIE coupé, commande avortée et paramètres jetés), réception ignorée jusqu'à
+  dix « 1 », reprise au tic suivant ; BREAK ≥ ~205 ms → reset IKBD et `$F1`. /16 et /1 : repli d'un bit de 1024
+  cycles. **USART MFP** : BREAK reçu en bouclage (mot nul + B, un seul mot par BREAK, IRQ de fin de BREAK).
+  **SCC** : un caractère nul dans la FIFO à la fin d'un BREAK bouclé.
 - **Souris Desktop sans capture** (2026-10-19) : option Input persistée
   (`desktop_mouse=1`). Coordonnées de l'image converties avec UV, bordures,
   résolution, zoom et courbure CRT ; retour de position GEM pour réaligner
