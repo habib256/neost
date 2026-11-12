@@ -856,13 +856,37 @@ void Mfp::storeStoppedCounter(int timer, int64_t when) {
         const int64_t dueSub = timerDueSub_[timer];
         if (dueSub > 0 && sched_->rawCyclesUntil(kTimerSrc[timer]) != INT64_MIN) {
             const int64_t remSub = dueSub - when * 256;
-            const int64_t remMfp = remSub > 0 ? (remSub * 9600 / 31333) >> 8 : 0;
-            const int     div    = kMfpDiv[ctrl];
-            if (remSub > 0)
-                count = static_cast<uint8_t>(std::max<int64_t>(1, (remMfp + div - 1) / div) & 0xFF);
+            // Même compte que readTimerData (liveTimerCount). L'ancien plancher
+            // `max(1, …)` ne faisait que masquer le $00 de l'arrondi par défaut ; le
+            // compte exact est ≥ 1 dès que remSub > 0.
+            if (remSub > 0) {
+                const uint8_t start = timerCounterRef(timer);
+                count = static_cast<uint8_t>(
+                    liveTimerCount(remSub, kMfpDiv[ctrl], start ? start : 256) & 0xFF);
+            }
         }
     }
     timerCounterRef(timer) = count;
+}
+
+// Compteur vivant d'un délai, `remSub` sous-cycles CPU (8 bits de fraction) avant
+// l'échéance (> 0), prescaler `div`, période partie du compte `start` (1..256).
+// [B] MC68901 janv. 1984 § 5.1.1 p. 5-1 : chaque impulsion de comptage (tous les `div`
+//     cycles d'horloge des timers) décrémente ; à 01 la suivante RECHARGE. Le compteur vaut
+//     donc k tant que le reste est dans ]div·(k−1), div·k] cycles MFP, et une donnée non
+//     nulle ne se relit jamais $00 : count = ceil(reste / div), EXACT, sans tronquer d'abord
+//     le reste en cycles MFP entiers. Tronquer (ce que faisait ce code, comme [D] Hatari
+//     MFP_CYCLE_TO_REG mfp.c:393 @ f0736b24 sur un reste déjà entier) rend un cran trop bas
+//     pendant la fraction de cycle MFP qui précède chaque décompte — et $00 juste avant
+//     l'échéance. Grade inférieur, non suivi.
+// Plafond `start` : après un départ frais, le prescaler n'attaque qu'au front d'horloge
+//     suivant (scheduleTimerAt) ; pendant cette fraction de cycle MFP le reste dépasse
+//     div·start, et le compteur vaut encore `start`, pas start+1.
+int Mfp::liveTimerCount(int64_t remSub, int div, int start) {
+    if (remSub <= 0) return 0;
+    const int64_t unit  = 31333LL * 256 * div;      // un décompte, en sous-cycles CPU ×9600
+    const int64_t count = (remSub * 9600 + unit - 1) / unit;
+    return static_cast<int>(std::min<int64_t>(count, start));
 }
 
 // [B] MC68901 § 5.1.1 p. 5-1, § 5.2.1 p. 5-5 ; écart sur la capture DS : cf. Mfp.hpp.
@@ -895,16 +919,29 @@ uint8_t Mfp::readTimerData(int timer) const {
             // même effet en avançant les timers (MFP_UpdateTimers) avant la lecture.
             // Sans ce repli, l'écrêtage à 0 rend la valeur de recharge ILLISIBLE
             // (Captain Blood compare TADR au compteur vivant et ne sort jamais).
+            // Compte de départ de la période en cours : le compteur suivi (départ frais ou
+            // dernière recharge) ; après repli, la recharge qui vient d'avoir lieu.
+            int start;
+            switch (timer) {
+                case 0:  start = taCounter_; break;
+                case 1:  start = tbCounter_; break;
+                case 2:  start = tcCounter_; break;
+                default: start = tdCounter_; break;
+            }
             if (remSub <= 0) {
                 const int64_t periodSub = timerPeriodSubCycles(timer, /*fromCounter=*/false);
                 if (periodSub > 0) remSub = periodSub - ((-remSub) % periodSub);
                 else               remSub = 0;
+                switch (timer) {
+                    case 0:  start = taReload_;    break;
+                    case 1:  start = tbReload_;    break;
+                    case 2:  start = timer_[0x23]; break;
+                    default: start = timer_[0x25]; break;
+                }
             }
-            // Sous-cycles CPU → cycles MFP : inverse EXACTE de timerPeriodSubCycles
-            // (× 31333/9600 avec 8 bits de fraction), la fraction n'étant lâchée qu'ici.
-            const int64_t remMfp = (remSub * 9600 / 31333) >> 8;
-            const int     div    = kMfpDiv[ctrl];
-            const int64_t count  = (remMfp + div - 1) / div;       // ceil (round vers le haut)
+            // Sous-cycles CPU → décomptes : inverse EXACTE de timerPeriodSubCycles, ceil
+            // sans troncature intermédiaire en cycles MFP (cf. liveTimerCount, [B] § 5.1.1).
+            const int count = liveTimerCount(remSub, kMfpDiv[ctrl], start ? start : 256);
             return static_cast<uint8_t>(count & 0xFF);             // 256 → 0
         }
     }
@@ -955,8 +992,12 @@ void Mfp::scheduleTimerAt(int timer, int64_t anchor, bool fromCounter) {
     // [F] Origine de la grille : front 0 au cycle CPU 0 ; la phase réelle à la mise sous
     // tension est inconnue. Tranché par : rien d'observable sans relevé des deux horloges.
     if (!reload) {
-        const int64_t k = (anchor * 9600 + 31333 - 1) / 31333;          // premier front ≥ anchor
-        anchorSub = (k * 31333 * 256 + 9600 - 1) / 9600;
+        // Premier front ≥ anchor : ceil(anchor·9600 / 31333), par quotient et reste.
+        const int64_t k = (anchor / 31333) * 9600 + ((anchor % 31333) * 9600 + 31333 - 1) / 31333;
+        // ceil(k·31333·256 / 9600) sans former k·31333·256, qui déborde int64 passé
+        // ~1,15e12 fronts (≈ 130 h émulées) : k = q·9600 + r.
+        const int64_t q = k / 9600, r = k % 9600;
+        anchorSub = q * 31333 * 256 + (r * 31333 * 256 + 9600 - 1) / 9600;
     }
     int64_t nextSub = anchorSub + periodSub;
     const int64_t nowSub = sched_->liveNow() * 256;

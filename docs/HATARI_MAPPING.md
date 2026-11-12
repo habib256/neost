@@ -256,7 +256,7 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | dmaSnd.c:727-741 (STE_HBL_Update) | DmaSound.cpp:209-214 ← Machine.cpp:582 | porté | Même granularité ligne des deux côtés. |
 | dmaSnd.c:587-676 (consommation FIFO au rééchantillonnage) | DmaSound.cpp:179-207 + anneau 155-177 | volontaire | Consommation au rythme DAC daté + capture ; architecture assumée (DmaSound.hpp:167-178). |
 | dmaSnd.c:748-761, 825-848 (GetFrameCount) | `DmaSound::liveCounter/onHbl/fifoPull` | déjà porté, requalifié 2026-10-19 | Compteur vivant sans refill à la lecture ; FIFO entretenue au HBL ou lorsqu’elle se vide. |
-| dmaSnd.c:768-818 (SoundControl R/W) | `DmaSound::read8/write8` | porté | $FF8900 pair vaut zéro. $FF8920 est un octet scratch relisible, pas un zéro constant ; désormais sauvegardé en v42. |
+| dmaSnd.c:768-818 (SoundControl R/W) | `DmaSound::read8/write8` | volontaire (2026-11-12) | $FF8900 pair vaut zéro. $FF8920 pair relu 0, écriture ignorée ([B] manuel TT030 p. 26 « 0000 0000 a000 00bb », [D] MiSTery gstshifter.v:125) ; Hatari en fait un octet scratch, non suivi. |
 | dmaSnd.c:855-976 + m68000.c:958-971 (FrameStart/End + MaskAddressHigh) | `DmaSound::write8` | déjà porté, requalifié 2026-10-19 | Adresses paires ; octets hauts début/fin masqués à $3F pour les profils exposés avec RAM ≤4 Mo. |
 | dmaSnd.c:983-1026 (SoundModeCtrl) | DmaSound.cpp:582-592 | porté | Masque 0x8F, updateDac avant changement. |
 | dmaSnd.c:1037-1076 (Microwire shift 16×8 cyc) | `DmaSound::onMicrowireShift/catchUpMicrowire/advanceMicrowire` | corrigé | Retard consommé sans dérive, au plus 16 fronts ; départ liveNow+8. MMIO Data/Mask rattrape les fronts dus avant accès, sans dispatch global ; mot et écritures occupées préservés. |
@@ -266,7 +266,7 @@ CPU revendiqué. Masques de largeur MMIO et rebouclage en RAM conservés.
 | dmaSnd.c:538-680 (routage mixing + mix) | `DmaSound::mixSegment`, kDmaGain | déjà porté avec choix | Routage et niveau ¾, signe DMA négatif du LMC déjà présents. DC-hold reste le choix déclaré ; ancienne mention de signe manquant périmée. |
 | dmaSnd.c:1315-1348 + 577-580 (LowPass FIR) | DmaSound.cpp:469-477, 642-648 | porté | (1,2,1)/4 exact. |
 | dmaSnd.c:689-713, 1262-1462 (Apply_LMC + shelves Savinkoff) | `DmaSound::applyTone/applyToneStereo/applyHpfStereo` | déjà porté, revérifié | Shelves Savinkoff premier ordre, coupures 118.2763/8438.756 Hz et HPF après mélange STE présents. Ancienne entrée RBJ/HPF incorrecte périmée, aucun nouveau port de filtre. |
-| dmaSnd.c:282-289 (MemorySnapShot), stMemory.c STMemory_MemorySnapShot_Capture | `DmaSound::serialize` | porté | État runtime et registres sauvegardés ; octet scratch $FF8920 ajouté en v42, comme l’IoMem compris dans le snapshot Hatari. |
+| dmaSnd.c:282-289 (MemorySnapShot), stMemory.c STMemory_MemorySnapShot_Capture | `DmaSound::serialize` | porté | État runtime et registres sauvegardés ; l’ex-octet scratch $FF8920 (v42) reste dans le flux, inerte depuis 2026-11-12. |
 
 ## 7. IKBD / ACIA / MIDI (acia.c, ikbd.c, midi.c)
 

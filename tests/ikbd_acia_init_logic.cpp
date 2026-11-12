@@ -48,7 +48,7 @@ int testIkbdAciaInit() {
         rig.ikbd.write8(0xFFFC00, 3);
         rig.ikbd.keyEvent(0x3C, true);
         rig.advance(40960);
-        // [B] MC6850 § Counter Divide Select Bits p. 8, § Interrupt Request p. 7 : le
+        // [B] MC6850 § Counter Divide Select Bits p. 8, § Interrupt Request p. 6 : le
         // récepteur est TENU en reset tant que CR1-0 = 11 — l'octet arrivé entre-temps
         // est perdu. (L'attendu précédent, « reçu pendant le reset », était celui
         // d'Hatari acia.c:1038 @ f0736b24, grade D.)

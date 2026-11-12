@@ -228,10 +228,20 @@ public:
     // à la voie YM. [E] R-2R non signé, 128 = repos : affirmé sans source, ici comme dans
     // io/PortDevices.hpp. Le HPF aval ôte la composante continue.
     void setPortBDac(bool on) {
-        portBDac_ = on; audioRegs_[15] = regs_[15];
-        // Bloc DC PROPRE au DAC, amorcé sur le niveau courant : brancher le DAC ne
-        // produit pas d'échelon (sinon : un clic plein niveau quand R15 vaut 0 ou $FF).
-        dacLevel_ = dacHpX1_ = dacHpY0_ = on ? dacRaw(audioRegs_[15]) : 0.0f;
+        const bool wasOn = portBDac_;
+        portBDac_ = on;
+        // DAC déjà branché (re-câblage au chargement d'un état, retour arrière) : le bloc DC
+        // continue tel quel, et audioRegs_ (restauré, écritures R15 en file comprises) aussi.
+        // Le réamorcer faisait sortir un échelon plein niveau (−16352 au 1er échantillon quand
+        // R15 vaut 0) qui mettait ~140 ms à s'éteindre à chaque chargement.
+        if (on && wasOn) return;
+        audioRegs_[15] = regs_[15];
+        // Bloc DC PROPRE au DAC, amorcé au branchement : entrée précédente = niveau courant,
+        // SORTIE précédente = 0. Avec y[n] = x[n] − x[n−1] + p·y[n−1], un niveau constant sort
+        // alors à 0 dès le 1er échantillon. L'ancien amorçage y = x sortait p·x ≈ x : le clic
+        // plein niveau (R15 = 0 ou $FF) que ce bloc devait justement éviter.
+        dacLevel_ = dacHpX1_ = on ? dacRaw(audioRegs_[15]) : 0.0f;
+        dacHpY0_ = 0.0f;
     }
     bool portBDac() const { return portBDac_; }
     void setPortBDacGain(float g) { dacGain_ = g; }   // fader page Sound (1 = neutre)

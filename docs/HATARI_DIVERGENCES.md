@@ -2535,9 +2535,15 @@ mid-trame toujours capturée (l'écrêtage sur ce signal synthétique extrême e
 - ✅ **Snapshot scratch DMA son (2026-10-19)** : $FF8920 désormais sérialisé
   en v42 ; un état non nul retrouve sa valeur dans la même instance ou une
   instance neuve. Reset composant chaud/froid conserve l’octet, comme avant.
-- **[BASSE] $FF8900 octet pair lit 0x00** (registre MOT, ioMemTabSTE.c:142) et **$FF8920 =
-  octet scratch relisible** (non intercepté chez Hatari) — l'ancien 0xFF figé faisait
-  échouer un `move.w $FF8900,d0` de diagnostic.
+- **[BASSE] $FF8900 octet pair lit 0x00** (registre MOT, ioMemTabSTE.c:142) — l'ancien 0xFF
+  figé faisait échouer un `move.w $FF8900,d0` de diagnostic.
+- **[BASSE, volontaire 2026-11-12] $FF8920 octet pair relu 0x00, écriture ignorée** — Hatari
+  (`ioMemTabSTE.c:162 @ f0736b24`, non intercepté) en fait un octet scratch relisible, que NeoST
+  suivait depuis le 2026-10-19. [B] *Atari TT030 Hardware Reference Manual*, page « DMA SOUND
+  SUBSYSTEM » (p. 26 du PDF, sha256 `93c17bee`) : « 8920 RW 0000 0000 a000 00bb », zéros explicites
+  là où les registres voisins portent « ---- ---- » ; [D] MiSTery `gstshifter.v:96,125 @ 4a6db7c`
+  ne pose que l'octet bas. ⚠ Page du TT, bloc son DMA identique au STE ; tranché pour le STE par
+  une lecture de $FF8920 sur le fer. Le champ v42 reste dans le flux de save-state, inerte.
 - **[BASSE] `NEOST_PAL_TRACE(_ALL)` : 1re ouverture du run en "w"** — un fichier survivant
   concaténait les sessions (« frame 0.. » dupliqués, diff désynchronisé).
 - **[BASSE] headless : `--load-state` écrasait `--joy`** (hostJoy_/stePads restaurés) —
@@ -2742,9 +2748,20 @@ Information*, janvier 1984, § 5.1.1 p. 5-1 et Fig. 5-3 p. 5-6/5-7
 (`MC68901_Jan84.pdf`, SHA-256 préfixe `5441a092`) : le compteur reste à 01
 jusqu'à l'impulsion suivante ; l'arrêt inhibe le comptage et perd seulement le
 résidu du prescaler. Hatari `mfp.c:1563-1577,1606-1620 @ f0736b24` force au
-contraire la recharge dans ce dernier intervalle. La lecture dans le dernier cycle MFP fractionnaire reste inchangée :
-la borner à 1 fait diverger `mfp_poll` de 16 pixels. Sa datation exacte reste
-à établir par une sonde distincte ; aucune référence pixel n’est recalée.
+contraire la recharge dans ce dernier intervalle.
+
+**Lecture dans le dernier cycle MFP fractionnaire (2026-11-12), grade B** :
+`Mfp::liveTimerCount` rend `ceil(reste / prescaler)` sur le reste EXACT (sous-cycles
+CPU), plafonné au compte de départ de la période. La même fiche, § 5.1.1 p. 5-1 :
+chaque impulsion décrémente, à 01 la suivante recharge — une donnée non nulle ne se
+relit jamais $00. Tronquer d'abord le reste en cycles MFP entiers (ce que faisait
+NeoST, comme `MFP_CYCLE_TO_REG` d'Hatari `mfp.c:393 @ f0736b24` sur un reste déjà
+entier) rendait un cran trop bas pendant la fraction de cycle MFP qui précède chaque
+décompte, et $00 juste avant l'échéance. Le plafond couvre la fraction de cycle MFP
+d'un départ frais, avant que le prescaler n'attaque. `mfp_poll` (snapshot) a été
+recalé : 352 px sur 25 lignes, TOUTES TADR = ancien + 1, IPRA inchangé, dont les deux
+lignes qui relisaient $00 (y = 51 et 100) et relisent maintenant $01. A/B de la
+collection : cf. la note de l'étalon. Tests : `testMfpTimerLiveRead` (selftest).
 
 Le test de `tests/mfp_pulse_logic.cpp` couvre les quatre timers, quatre dates
 avant expiration, la lecture, l'arrêt, l'attente arrêté et la reprise : 64
