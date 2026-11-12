@@ -363,6 +363,7 @@ private:
     std::function<bool()> floppyProvider_;               // idem
     std::function<bool(uint16_t&, uint16_t&)> clockProvider_;   // idem
     bool emulatedNow(time_t& t);                          // horloge émulée → time_t hôte
+    bool romGemdosClock(uint16_t& tw, uint16_t& dw);      // date/heure tenues par le GEMDOS de la ROM
     // INF virtuel d'autostart (TosOverride d'inffile.c).
     std::string autoPrg_;                                 // « A:\EMAIL.PRG » ; vide = inactif
     FILE*       infFile_   = nullptr;                     // contenu virtuel (fichier temporaire)

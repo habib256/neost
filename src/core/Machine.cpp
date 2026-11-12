@@ -351,9 +351,9 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::TIMER_B, [this] { onTimerB(); });
     gemdos.setPartitionCountProvider([this] { return fdc.acsiPartitionCount(); });
     gemdos.setFloppyProvider([this] { return fdc.inserted(0); });
-    // Heure GEMDOS d'un fichier créé sur le lecteur hôte : la puce d'horloge — la RTC d'un
-    // Mega, l'IKBD ailleurs. Format DOS (heure, date depuis 1980). Ce que chaque TOS en
-    // fait (ou n'en fait pas) : cf. GemdosHd::emulatedNow.
+    // Heure GEMDOS d'un fichier créé sur le lecteur hôte, quand les variables du GEMDOS de
+    // la ROM restent introuvables (GemdosHd::romGemdosClock) : la puce d'horloge — la RTC
+    // d'un Mega, l'IKBD ailleurs. Format DOS (heure, date depuis 1980). Cf. emulatedNow.
     gemdos.setClockProvider([this](uint16_t& tw, uint16_t& dw) {
         int y, mo, d, h, mi, s;
         if (machineIsMega(bus.machine)) {
