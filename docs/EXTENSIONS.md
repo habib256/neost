@@ -169,7 +169,22 @@ python3 tools/make_sting_test.py /tmp/sting.st <dossier sting126> <dossier ENEC.
 
 Sans réseau, le 2026-11-04, le pilote charge et le port s'active sous TOS 1.02 et 1.04 sur ST, TOS 1.62 sur STE, TOS 2.06 sur Mega STE et EmuTOS. TOS 2.06 attend au démarrage, sur plus de 4000 trames : SPACE passe cette attente, et les étapes sortent en moins de 2500 trames.
 
-Rejoué le 2026-11-04 avec `disks/sting_ethernec.st` : `DNS=138.197.157.224`, puis `HTTP/1.1 200 OK` depuis theoldnet.com, sur 4 runs de suite. Le premier run du jour avait échoué en DNS (`err -17`), sans que la cause soit identifiée ni l'échec reproduit. C'est ce banc qui a démasqué l'inversion des fenêtres ROM3/ROM4 (cf. EtherNEC ci-dessous). Restent le
+Rejoué le 2026-11-04 avec `disks/sting_ethernec.st` : `DNS=138.197.157.224`, puis `HTTP/1.1 200 OK` depuis theoldnet.com, sur 4 runs de suite. Le premier run du jour avait échoué en DNS (`err -17`), sans que la cause soit identifiée ni l'échec reproduit.
+
+**Trace du fil** (2026-11-12) : `NEOST_SLIRP_TRACE=1` journalise sur stderr, au passage
+entre la NE2000 et le NAT, chaque requête DNS de l'invité (`id`, nom, type), sa réponse
+(RCODE, nombre de réponses, délai en ms) et les SYN/RST TCP. Avant, la variable ne traçait
+que la trame de `--nat-selftest`, rien du trafic d'un vrai STinG. Le même jour, quatre
+premiers runs (un processus neuf chacun, `--frames 3500`) : DNS bon les quatre fois, 581 ms
+au premier (cache de l'hôte froid), puis 12, 2 et 2 ms ; l'échec `err -17` n'est pas revenu.
+STinG rend `err -17` pour toute réponse inutilisable : un `REFUSED` de la liste blanche
+donne exactement ce code. Un prochain `err -17` se lira donc à la trace : RCODE 2 (SERVFAIL
+à l'échéance de 8 s ou faute de jeton), 3 (NXDOMAIN de l'hôte), ou aucune réponse. Ces
+runs ont aussi montré que la suite TCP dépend de l'hôte : quatre fois, le SYN vers
+`138.197.157.224:80` n'a reçu aucun SYN-ACK (le `connect` du binaire fraîchement compilé
+n'aboutissait pas — filtre applicatif de l'hôte, sans preuve), puis il a abouti au cinquième.
+Et theoldnet.com répond désormais `403 Forbidden` à une requête sans `User-Agent` (celle de
+`STGTEST.PRG` ; `curl -H "User-Agent:"` aussi), là où il rendait `200 OK` le 2026-11-04. C'est ce banc qui a démasqué l'inversion des fenêtres ROM3/ROM4 (cf. EtherNEC ci-dessous). Restent le
 navigateur (CAB) en GUI et la consignation dans `docs/CASE_STUDIES.md` — cf. `TODO.md`.
 
 **Livré dans les paquets (2026-11-11)** : `disks/sting_ethernec.st`, la disquette de boot STinG 1.26
