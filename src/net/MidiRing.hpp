@@ -92,6 +92,8 @@ private:
     bool        haveSrc_ = false;
     std::string src_;
     uint32_t    srcSession_ = 0;
+    uint32_t    oldSession_ = 0;                 // session retirée (même source)
+    bool        haveOldSession_ = false;
     uint32_t    lastSeq_ = 0;
     int64_t     lastRxMs_ = 0;
     bool        warnedMalformed_ = false;

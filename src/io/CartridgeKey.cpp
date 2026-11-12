@@ -298,5 +298,19 @@ void CartridgeKey::serialize(StateArchive& ar) {
     uint8_t m = uint8_t(model_), c = uint8_t(chosen_);
     ar(m); ar(c); ar(locked_); ar(d_); ar(r_);
     ar(n_); ar(feedb1_);                     // clé Notator (v15)
-    if (ar.loading()) { model_ = Model(m & 7); chosen_ = Model(c & 7); rom4Pending_ = -1; }
+    // Le modèle branché est de la CONFIG, pas de l'état : l'en-tête l'a déjà comparé
+    // (Machine::sessionConfig, octet 0). Le restaurer depuis le flux écrasait la
+    // config de la session et, sur un flux forgé, posait une valeur hors de
+    // l'énumération (m & 7 → 5..7). On refuse au lieu d'adopter.
+    if (ar.loading()) {
+        ar.check(m == uint8_t(model_), "CartridgeKey : modele de cle different de la session");
+        // chosen_ : None, ou le modèle fixé ; en Auto, la variante détectée (2 ou 3).
+        const Model cm = Model(c);
+        const bool okChosen = cm == Model::None
+            || (model_ == Model::Auto ? (cm == Model::Cubase2 || cm == Model::Cubase3)
+                                      : cm == model_);
+        ar.check(okChosen, "CartridgeKey : variante choisie invalide");
+        if (okChosen) chosen_ = cm;
+        rom4Pending_ = -1;
+    }
 }

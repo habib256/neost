@@ -447,16 +447,17 @@ uint8_t Bus::read8Slow(uint32_t addr) {
     // sans effet sur sa valeur. [C] FreeMiNT 098f002a isp116x.h ; cf. Isp1160.hpp.
     bool ispHit = false;
     uint8_t ispVal = 0xFF;
-    if (isp1160 && addr >= stmap::CART_BASE && addr < stmap::CART_END) {
-        const bool first = ioAccessWidth_ < 2 || (addr & 1) == 0;
-        ispHit = isp1160->cartRead(addr, ispVal, first);
-    }
+    const bool cartFirst = ioAccessWidth_ < 2 || (addr & 1) == 0;   // 1er octet du cycle bus
+    if (isp1160 && addr >= stmap::CART_BASE && addr < stmap::CART_END)
+        ispHit = isp1160->cartRead(addr, ispVal, cartFirst);
     if (ne2000 && addr >= stmap::CART_BASE && addr < stmap::CART_END) {
         uint8_t v;
         // [B] NetUSBee program_spec.txt (archive 11/2007), Network Data Reads :
         // A15=0, la RTL8019 pilote D8-D15. Le latch LSB USB ne pilote pas
         // les données ; son accès fantôme ne doit pas masquer le CR par $FF.
-        if (ne2000->cartRead(addr, v)) return v;
+        // Un mot = UN cycle /ROM : l'effet de bord ne joue qu'au 1er octet, l'octet
+        // impair rend $FF (D0-D7 non pilotés) — cf. Ne2000::cartRead.
+        if (ne2000->cartRead(addr, v, cartFirst)) return v;
     }
     if (ispHit) return ispVal;
 

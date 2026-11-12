@@ -159,7 +159,27 @@ int main() {
         r.modem.onPortA(0xFF);
         expect(r.modem.connected() && r.modem.dataMode(), "&D0: DTR drop ignored");
         r.out.clear();
+        // Temps de garde (2026-11-12) : un « +++ » au milieu des données n'échappe
+        // pas, il est transmis tel quel ; un « +++ » suivi trop tôt d'un octet non plus.
+        r.type("a+++b");
+        for (int i = 0; i < 60; ++i) r.modem.poll();
+        expect(r.modem.dataMode() && r.out.empty(), "+++ inside data stays data");
         r.type("+++");
+        r.type("c");                              // le silence final est rompu
+        for (int i = 0; i < 60; ++i) r.modem.poll();
+        expect(r.modem.dataMode() && r.out.empty(), "+++ without trailing guard stays data");
+        {
+            std::string got;
+            uint8_t b[64];
+            const auto end = Clock::now() + std::chrono::milliseconds(1000);
+            while (got.size() < 9 && Clock::now() < end) {
+                const int rc = neonet::sockRecv(peer, b, int(sizeof b), 50);
+                if (rc > 0) got.append(reinterpret_cast<char*>(b), std::size_t(rc));
+            }
+            expect(got == "a+++b+++c", "peer received the '+' bytes unchanged");
+        }
+        r.type("+++");                            // silence avant (60 trames), puis…
+        expect(r.waitFor("OK", 2000), "+++ framed by guard time escapes");
         r.type("ATH\r");
         expect(!r.modem.connected(), "+++ then ATH hangs up");
         expect(r.out.find("OK") != std::string::npos, "ATH answered OK");

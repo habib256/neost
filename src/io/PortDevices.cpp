@@ -137,8 +137,13 @@ void PortDevices::onVbl(Mfp& mfp) {
 }
 
 void PortDevices::serialize(StateArchive& ar) {
-    // Les périphériques branchés (config) voyagent avec l'état volatil : l'appelant
-    // (Machine) compare et avertit si le snapshot en attend d'autres.
-    for (auto& d : dev_) { uint8_t b = uint8_t(d); ar(b); if (ar.loading()) d = Device(b < uint8_t(Device::Count) ? b : 0); }
+    // Les périphériques branchés (config) voyagent avec l'état volatil, mais l'en-tête
+    // les a déjà comparés (Machine::sessionConfig, octets 1-5) : au chargement, ils
+    // doivent être ceux de la session. Un écart (flux forgé) est refusé au lieu
+    // d'écraser la config — comme la clé cartouche (CartridgeKey::serialize).
+    for (auto& d : dev_) {
+        uint8_t b = uint8_t(d); ar(b);
+        if (ar.loading()) ar.check(b == uint8_t(d), "PortDevices : peripherique different de la session");
+    }
     ar(serial_); ar(timing_); ar(osc_[0]); ar(osc_[1]); ar(pressed_);
 }

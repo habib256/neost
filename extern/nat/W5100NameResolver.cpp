@@ -88,6 +88,12 @@ bool W5100NameResolver::takeRateToken()
     return true;
 }
 
+bool W5100NameResolver::fresh(const CacheEntry& e) const
+{
+    const auto age = std::chrono::steady_clock::now() - e.stored;
+    return age < (e.address ? positiveTtl_ : failureTtl_);
+}
+
 W5100Resolver::Result W5100NameResolver::peek(const std::string& name)
 {
     Result out;
@@ -95,13 +101,10 @@ W5100Resolver::Result W5100NameResolver::peek(const std::string& name)
     const auto cached = cache_.find(name);
     if (cached == cache_.end()) return out;
     const CacheEntry& e = cached->second;
-    if (e.address) {
-        out.status  = Status::Resolved;
-        out.address = e.address;
-    } else if (std::chrono::steady_clock::now() - e.stored < failureTtl_) {
-        out.status = Status::Failed;
-    }
-    return out;     // a failure past its lifetime reads as "not known"
+    if (!fresh(e)) return out;      // an entry past its lifetime reads as "not known"
+    out.status  = e.address ? Status::Resolved : Status::Failed;
+    out.address = e.address;
+    return out;
 }
 
 W5100Resolver::Result W5100NameResolver::resolve(const std::string& name,
@@ -112,12 +115,12 @@ W5100Resolver::Result W5100NameResolver::resolve(const std::string& name,
     const auto cached = cache_.find(name);
     if (cached != cache_.end()) {
         const CacheEntry& e = cached->second;
-        if (e.address || std::chrono::steady_clock::now() - e.stored < failureTtl_) {
+        if (fresh(e)) {
             out.status  = e.address ? Status::Resolved : Status::Failed;
             out.address = e.address;
             return out;
         }
-        cache_.erase(cached);   // a failure past its lifetime: ask again
+        cache_.erase(cached);   // an answer past its lifetime: ask again
     }
 
     // A cache MISS is the only thing that puts a query on the wire, so the

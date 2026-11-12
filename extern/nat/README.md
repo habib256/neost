@@ -26,6 +26,17 @@ Adaptations locales :
   demandée ne peut pas prendre son port hôte. NeoST refuse alors le backend
   entier ; il ne prétend pas avoir appliqué une liste partielle.
 - Les tests à base d'assertions sont compilés sans NDEBUG, même en Release.
+- `W5100NameResolver` (2026-11-12) : une adresse résolue expire aussi, après
+  `kPositiveTtl` = 60 s, la durée que le DNS virtuel annonce à l'invité
+  (`NatDns.cpp`, `kTtlSeconds`). En amont, elle ne périmait jamais : l'invité qui
+  redemandait après 60 s recevait la première réponse pour toute la session.
+  Test : `testSuccessExpires`.
+- `BuiltinNat::nicReset` (2026-11-12) vide aussi le cache du résolveur
+  (`clearCache`), que la mise sous tension de la carte laissait intact. Test : cas 5b
+  de `builtin_nat_test.cpp` (compteur `clears`).
+
+Ces deux défauts existent aussi dans POM2 à la reprise `4625ec82` ; ils sont à
+remonter en amont, et une prochaine reprise doit garder ces lignes.
 
 Le port conserve les horloges hôte et les injections de tests ; il ne change
 aucun cycle du ST. Le trafic réel est extérieur au contrat de déterminisme
