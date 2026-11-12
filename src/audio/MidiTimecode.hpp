@@ -121,6 +121,9 @@ inline void fullFrame(const Timecode& tc, int rate, uint8_t out[10]) {
 class Generator {
 public:
     explicit Generator(double cpuHz) : hz_(cpuHz) {}
+    // Horloge CPU en service (quartz choisi) : relue avant chaque usage par MidiOutHost ;
+    // elle ne change qu'au redémarrage de la machine, jamais au milieu d'un morceau.
+    void setCpuHz(double cpuHz) { if (cpuHz > 0) hz_ = cpuHz; }
 
     void setRate(int r) {
         if (!validRate(r)) r = 0;

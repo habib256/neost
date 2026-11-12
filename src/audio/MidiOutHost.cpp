@@ -57,6 +57,7 @@ void MidiOutHost::anchor(int64_t cycle, std::chrono::steady_clock::time_point ho
         anchorCycle_ = cycle; anchorHost_ = hostTime; anchored_ = true;
         // Une trame sans octet du ST (entre deux horloges lentes) doit tout de même
         // faire partir les Quarter Frames dus : l'ancre de trame les rattrape.
+        mtc_.setCpuHz(neost::pacing::cpuHz());
         mtc_.advance(cycle, [this](const uint8_t* m, int l, int64_t c) { injectAt_(m, l, c); });
     }
     cv_.notify_one();
@@ -71,7 +72,7 @@ void MidiOutHost::setMtcRate(int rate) {
 
 std::chrono::steady_clock::time_point MidiOutHost::whenFor_(int64_t cycle) const {
     if (!anchored_) return std::chrono::steady_clock::now();
-    const double dt = double(cycle - anchorCycle_) / kCpuHz;
+    const double dt = double(cycle - anchorCycle_) / neost::pacing::cpuHz();
     return anchorHost_ + std::chrono::microseconds(int64_t(dt * 1e6))
          + std::chrono::milliseconds(leadMs_.load(std::memory_order_relaxed));
 }
@@ -108,6 +109,7 @@ void MidiOutHost::byteAt(uint8_t b, int64_t cycle) {
         // MTC : les Quarter Frames dus AVANT cet octet partent avant lui ; un
         // Start/Continue/SPP peut ensuite produire un Full Frame, daté de cet octet.
         const auto inject = [this](const uint8_t* m, int l, int64_t c) { injectAt_(m, l, c); };
+        mtc_.setCpuHz(neost::pacing::cpuHz());
         if (mtcRate_.load(std::memory_order_relaxed)) mtc_.advance(cycle, inject);
         // L'ordre des octets est SACRÉ (running status, SysEx) : jamais avant le précédent.
         if (!queue_.empty() && when < queue_.back().when) when = queue_.back().when;
