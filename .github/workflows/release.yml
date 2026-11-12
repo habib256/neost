@@ -23,8 +23,9 @@
 #
 #
 #  Chaque job SMOKE-LANCE le paquet via neost-headless (déterministe, sans
-#  affichage) — tools/smoke_package.sh, 5 phases : --version, boot EmuTOS 500
-#  trames (le bureau apparaît vers la trame ~400) + capture PPM non uniforme,
+#  affichage) — tools/smoke_package.sh, 5 phases : --version, boot EmuTOS sans
+#  disquette, 1500 trames (le bureau apparaît vers la trame ~900, lecteur vide) +
+#  capture PPM non uniforme,
 #  montage de la DISQUETTE LIVRÉE (elle avait été écrasée et livrée illisible
 #  pendant des mois, issue #38) et montage d'un dossier hôte en HD GEMDOS par
 #  chemin ABSOLU (forme native de l'hôte : le lecteur C: était mort sur tous les

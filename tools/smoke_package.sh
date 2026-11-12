@@ -3,7 +3,7 @@
 #  smoke_package.sh — Smoke-test du PAQUET LIVRÉ (AppImage, .app, .zip Windows).
 #
 #  Pourquoi ce script existe : jusqu'ici la CI ne faisait qu'AMORCER le binaire
-#  du paquet (--version + 500 trames d'EmuTOS + capture non uniforme). Elle
+#  du paquet (--version + un boot d'EmuTOS + capture non uniforme). Elle
 #  n'ouvrait jamais ni la disquette ni le disque dur EMBARQUÉS — deux défauts
 #  livrés pendant des mois sont passés par ce trou :
 #    · #38 — disks/diskA.st écrasée par un test d'écriture secteur : plus aucun
@@ -67,8 +67,11 @@ if [ -n "$WANT_VERSION" ]; then
 fi
 
 # --- 2) Boot EmuTOS : la capture ne doit pas être uniforme ------------------
-say "2/5 boot EmuTOS (500 trames)"
-"./$EXE" "$ROM" --frames 500 --screenshot smoke_boot.ppm
+# Lecteur A VIDE (sans --disk, depuis le 2026-11-11) : EmuTOS attend le délai de la
+# disquette absente avant le bureau, qui n'apparaît que vers la trame ~900 en 60 Hz
+# (vers ~400 avec une disquette). À 500 trames l'écran est encore effacé, uniforme.
+say "2/5 boot EmuTOS sans disquette (1500 trames)"
+"./$EXE" "$ROM" --frames 1500 --screenshot smoke_boot.ppm
 python3 "$REPO/tools/check_ppm_nonuniform.py" smoke_boot.ppm
 
 # --- 3) DISQUETTE LIVRÉE : montée, et réellement formatée (issue #38) -------
