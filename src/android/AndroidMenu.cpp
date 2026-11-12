@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <filesystem>
 
+#include "android/AndroidRoms.hpp"
 #include "imgui.h"
 #include "io/MediaScan.hpp"
 
@@ -73,6 +74,9 @@ void AndroidMenu::draw(float uiScale) {
     // Discret mais toujours atteignable : sur un téléphone il n'y a ni touche F9
     // ni bouton START garanti, et un menu qu'on ne sait pas ouvrir n'existe pas.
     if (!open && !keysPage) {
+        // Menu refermé par RETOUR, START ou RESUME depuis la page ROM : il se
+        // rouvrira sur la page principale, pas sur la liste des ROM.
+        romPage = false;
         ImGui::SetNextWindowPos(ImVec2(6.0f * uiScale, 6.0f * uiScale));
         ImGui::SetNextWindowBgAlpha(0.35f);
         ImGui::Begin("##openbtn", nullptr,
@@ -147,11 +151,53 @@ void AndroidMenu::draw(float uiScale) {
     const float line = ImGui::GetTextLineHeight();
     const float rowH = line * 1.9f;           // cible tactile : ~9 mm sur un téléphone
 
+    // --- PAGE ROM : même panneau, la liste des EmuTOS embarquées --------------
+    // Grammaire de la ludothèque : rangées énormes et tapables, la ROM chargée en
+    // vert. Choisir redémarre À FROID (une autre ROM, c'est un autre OS : rien de
+    // la session ne lui survit) — le libellé le dit avant qu'on tape.
+    if (romPage) {
+        ImGui::TextColored(kYellow, "SYSTEM ROM");
+        ImGui::SameLine();
+        ImGui::TextDisabled("  tap to switch  ·  cold restart");
+        {
+            const float bw = line * 6.0f;
+            ImGui::SameLine(ImGui::GetContentRegionAvail().x - bw + ImGui::GetCursorPosX());
+            if (ImGui::Button("BACK", ImVec2(bw, rowH * 0.8f))) romPage = false;
+        }
+        ImGui::Separator();
+        ImGui::BeginChild("##roms", ImVec2(0, 0), true);
+        for (int i = 0; i < kAndroidRomCount; ++i) {
+            const bool cur = (i == romCur);
+            if (cur) ImGui::PushStyleColor(ImGuiCol_Text, kGreen);
+            ImGui::PushID(i);
+            char label[128];
+            std::snprintf(label, sizeof label, "%s%s", cur ? "> " : "  ", kAndroidRoms[i].label);
+            if (ImGui::Selectable(label, cur, 0, ImVec2(0, rowH))) {
+                // La ROM déjà chargée ne redémarre rien : on referme la page.
+                if (!cur) { reqRom = i; open = false; }
+                romPage = false;
+            }
+            ImGui::PopID();
+            if (cur) ImGui::PopStyleColor();
+        }
+        ImGui::Spacing();
+        ImGui::TextDisabled("192K = Atari ST, 256K = STE. US = 60 Hz, FR = 50 Hz and French keyboard.");
+        ImGui::TextDisabled("The choice is kept for the next launch.");
+        ImGui::EndChild();
+        ImGui::End();
+        return;
+    }
+
     ImGui::TextColored(kYellow, "MENU");
     ImGui::SameLine();
     ImGui::TextDisabled("  tap a game to insert it  ·  no reboot");
     {
-        const float bw = line * 6.0f;
+        // Largeur au moins celle du libellé le plus long : à 6 hauteurs de ligne,
+        // « REWIND: OFF » sortait de son bouton (« OF » visible) sur l'émulateur
+        // Android 1080×2400 (capture du 2026-11-12) — la police à chasse fixe de
+        // ce menu est plus large que la hauteur de ligne ne le laisse supposer.
+        const float bw = std::max(line * 6.0f, ImGui::CalcTextSize("REWIND: OFF").x
+                                               + 2.0f * ImGui::GetStyle().FramePadding.x);
         const float sp = ImGui::GetStyle().ItemSpacing.x;
         ImGui::SameLine(ImGui::GetContentRegionAvail().x - 2.0f * bw - sp + ImGui::GetCursorPosX());
         // Bascule du retour arrière : éteint par défaut, comme l'option du bureau.
@@ -206,10 +252,10 @@ void AndroidMenu::draw(float uiScale) {
     }
     ImGui::EndChild();
 
-    // Cinq actions côte à côte, largeur égale (cf. la réserve `footer`).
+    // Six actions côte à côte, largeur égale (cf. la réserve `footer`).
     {
         const float sp = ImGui::GetStyle().ItemSpacing.x;
-        const float bw = (ImGui::GetContentRegionAvail().x - 4.0f * sp) / 5.0f;
+        const float bw = (ImGui::GetContentRegionAvail().x - 5.0f * sp) / 6.0f;
         if (actionRow("RESTART", kOrange, ImVec2(bw, rowH))) { reqRestart = true; open = false; }
         ImGui::SameLine();
         // Le menu se referme : le recul se voit aussitôt, la partie reprend de là.
@@ -220,6 +266,8 @@ void AndroidMenu::draw(float uiScale) {
         }
         ImGui::SameLine();
         if (actionRow("RESCAN", ImVec4(0.60f, 0.95f, 0.60f, 1.0f), ImVec2(bw, rowH))) reqRescan = true;
+        ImGui::SameLine();
+        if (actionRow("ROM", ImVec4(0.85f, 0.70f, 1.00f, 1.0f), ImVec2(bw, rowH))) romPage = true;
         ImGui::SameLine();
         if (actionRow("QUIT", ImVec4(1.00f, 0.50f, 0.40f, 1.0f), ImVec2(bw, rowH)))   reqQuit = true;
     }
