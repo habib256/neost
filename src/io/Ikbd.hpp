@@ -657,7 +657,8 @@ private:
     // (après $14 puis $1A, $94 répond toujours $14). Rapporté par $9A.
     bool joysticksEnabled_ = true;
     // Joystick en keycode ($19) : RX RY TX TY VX VY (dixièmes de seconde), touche
-    // tenue par axe (0 = aucune), instant de l'appui et de la dernière émission.
+    // tenue par axe (0 = aucune), instant de l'appui (phase du prédiviseur $A2/$A3) et du
+    // dernier rechargement de $A6 ou $A8 (émission, ou bascule en phase VX).
     uint8_t kjParam_[6] = {};
     uint8_t kjKey_[2] = {};
     int64_t kjStart_[2] = {};
