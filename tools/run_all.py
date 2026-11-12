@@ -66,7 +66,7 @@ FAST = [
     # ::parse sont les seules fonctions qui digèrent un fichier venu de l'extérieur.
     # 20 000 itérations déterministes (graine fixe) — le verdict est reproductible,
     # et le job `sanitizers` de la CI rend le harnais MORDANT (ASan/UBSan).
-    ("Fuzzing des parseurs d'images disquette (.msa / .dim / .stx)",
+    ("Fuzzing des parseurs d'images disquette (.msa / .dim / .stx / .ipf, .wd1772, FDC)",
      [str(ROOT / "build" / ("neost-fuzz-disk" + _EXE))]),
     # A20 : WRITE TRACK STX (reinterpretSaveTrack + round-trip .wd1772) sur une image
     # FORGÉE en mémoire — le seul test du parseur Pasti, resté EXCLUDE_FROM_ALL et

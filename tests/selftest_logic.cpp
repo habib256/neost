@@ -171,6 +171,7 @@ int testGemdosDtaReuse(); // recherches DTA indépendantes, réutilisation et er
 int testGemdosProcess(); // dossier/lecteur par processus, alias 8.3, Fdatime, attributs, Fforce
 int testMfpUnderrunClear(); // délai matériel avant effacement UE
 int testFdcLiveMedia(); // sélection live et validation CHS du nouveau média
+int testFdcMountGuards(); // .dim lâche, une image un lecteur, écriture sans disque, ACSI des états
 int testMidiRxPhase(); // horloge MIDI RX continue
 bool testSccAutoEnables(); // qualification CTS/DCD des canaux SCC
 int testMachineMfpTx(); // émission via Bus/Machine
@@ -3384,6 +3385,7 @@ int main() {
     if (const int failures = testGemdosProcess()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpUnderrunClear()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcLiveMedia()) g_fail += failures; else ++g_ok;
+    if (const int failures = testFdcMountGuards()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiRxPhase()) g_fail += failures; else ++g_ok;
     if (testSccAutoEnables()) ++g_ok; else ++g_fail;
     if (const int failures = testMachineMfpTx()) g_fail += failures; else ++g_ok;

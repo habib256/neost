@@ -524,7 +524,10 @@ Protocoles, références primaires, limites et banc USB4TOS : **[NETUSBEE.md](NE
   négatif** : la même carte sous Hatari (`--acsi`, `--rs232-out`) donne `uscdrv PASS` et les six
   verdicts matériels **FAIL** — le test ne passe pas par construction.
 * Save-states : **v12** (UltraSatan + ISP1160 sérialisés) ; drapeaux d'en-tête (v13) bit2 = UltraSatan,
-  bit3 = NetUSBee — les configs save/load doivent concorder).
+  bit3 = NetUSBee — les configs save/load doivent concorder). Les images ACSI (cartes SD
+  UltraSatan comprises) sont vérifiées aussi : bit5 = au moins une image montée, et une
+  empreinte par cible (chemin + taille) dans l'en-tête ; un état repris sans l'image, avec une
+  autre ou sur une autre cible est refusé avec son motif (`lastStateError`).
 
 ## Clé Steinberg — dongle Cubase sur le port cartouche (`--dongle`, GUI Dongles)
 

@@ -104,9 +104,16 @@ public:
     void setDiskHostWriteBack(int drive, bool on) { drive_[drive & 1].hostWriteBack = on; }
     bool fastFdc() const { return fastFloppy_; }
 
-    // Monte/éjecte une image (.st ou .msa) dans le lecteur `drive` (0 = A, 1 = B).
+    // Monte/éjecte une image (.st, .msa, .dim, .stx, .ipf) dans le lecteur `drive`
+    // (0 = A, 1 = B). Refuse l'image déjà montée dans l'AUTRE lecteur (cf. sameHostFile) :
+    // la garde vit ici, et non dans chaque frontal, pour couvrir GUI, headless
+    // (--disk X --diskb X), serveur, web et Android d'un coup.
     bool loadImage(const std::string& path, int drive = 0);
     void eject(int drive = 0);
+    // Deux chemins désignent-ils le MÊME fichier hôte ? Canonique d'abord (liens,
+    // « ./ », casse d'un système de fichiers qui l'ignore), lexical en repli quand l'un
+    // des deux n'existe pas. Publique : la GUI s'en sert pour son message.
+    static bool sameHostFile(const std::string& a, const std::string& b);
 
     // Auto-test déterministe du couple encodeMsa/decodeMsa (aucun disque requis) :
     // le ré-encodage .MSA réécrit le fichier de l'utilisateur, un aller-retour non
@@ -122,6 +129,10 @@ public:
     bool mountAcsi(const std::string& path, int target = 0) { return acsi_.mount(target, path); }
     void unmountAcsi() { acsi_.unmountAll(); }   // le TOS ne le verra qu'au prochain boot
     bool acsiActive() const { return acsi_.anyEnabled(); }
+    // Empreinte de l'image montée sur `target` (chemin + taille), 0 si aucune — portée
+    // par l'en-tête des save-states (Machine::stateHeaderOk), cf. Acsi::imageFingerprint.
+    uint32_t acsiImageFingerprint(int target) const { return acsi_.imageFingerprint(target); }
+    bool acsiAnyImage() const { return acsi_.anyImage(); }
     const std::string& acsiMountedPath(int target = 0) const { return acsi_.mountedPath(target); }
     int  acsiPartitionCount() const { return acsi_.partitionCount(); }
     // UltraSatan (extension NeoST, cf. io/UltraSatan.hpp) : 2 slots SD sur 2 cibles.

@@ -267,6 +267,9 @@ public:
     std::string lastStateError_;
     static constexpr std::size_t kSessionCfgSize = 8;
     void sessionConfig(uint8_t out[kSessionCfgSize]) const;
+    // Empreinte de l'image ACSI de chaque cible (en-tête des états, v64).
+    static constexpr std::size_t kAcsiTargets = 8;
+    void acsiFingerprints(uint32_t out[kAcsiTargets]) const;
     // Empreinte INDÉPENDANTE DU CŒUR CPU (porte d'échange, docs/CPU_SWAP_GATE.md) :
     // `machine` hache l'archive du save-state privée de son en-tête (version de format)
     // et de la section CPU ; `cpu` hache Cpu68k::archState(). FNV-1a 64 bits.

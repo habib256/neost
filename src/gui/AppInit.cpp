@@ -452,9 +452,10 @@ int appInit(App& A, int argc, char** argv) {
     if (!machine.loadDisk(diskPath))
         std::fprintf(stderr, "[main] No floppy mounted (%s).\n", diskPath.c_str());
     // Lecteur B mémorisé (diskb=) : remonté au démarrage comme le A. Silencieux si
-    // l'image a disparu — un second lecteur vide est un état parfaitement normal.
+    // l'image a disparu — un second lecteur vide est un état parfaitement normal. Un
+    // diskb= identique au disk= est refusé par Fdc::loadImage (une image, un lecteur).
     if (!cfg.diskb.empty() && !machine.fdc.loadImage(resolveData(cfg.diskb, exeDir), 1)) {
-        std::fprintf(stderr, "[main] Drive B: image not found (%s).\n", cfg.diskb.c_str());
+        std::fprintf(stderr, "[main] Drive B: not mounted (%s).\n", cfg.diskb.c_str());
         cfg.diskb.clear();
     }
     if (!cartPath.empty() && !machine.loadCart(cartPath))

@@ -2053,17 +2053,10 @@ static void renderImGui(App& A, Frame& F) {
     ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 }
 
-// Deux chemins désignent-ils le MÊME fichier ? Canonique d'abord (equivalent : liens,
-// « ./ », casse d'un système de fichiers qui l'ignore), lexical en repli quand l'un
-// des deux n'existe pas (equivalent rend alors une erreur).
+// Deux chemins désignent-ils le MÊME fichier ? Même règle que la garde du cœur
+// (Fdc::loadImage) : la GUI la consulte d'abord pour afficher son message.
 static bool sameHostFile(const std::string& a, const std::string& b) {
-    if (a.empty() || b.empty()) return false;
-    std::error_code ec;
-    if (fs::equivalent(a, b, ec) && !ec) return true;
-    std::error_code e1, e2;
-    const fs::path ca = fs::weakly_canonical(a, e1), cb = fs::weakly_canonical(b, e2);
-    if (!e1 && !e2) return ca == cb;
-    return fs::path(a).lexically_normal() == fs::path(b).lexically_normal();
+    return Fdc::sameHostFile(a, b);
 }
 
 // Glisser-déposer → requêtes de montage.
@@ -2175,12 +2168,8 @@ static void consumeMediaRequests(App& A, Frame& F) {
     std::string& reqMountAcsi = F.reqMountAcsi;
     bool& reqEjectGemdos = F.reqEjectGemdos;
     bool& reqEjectAcsi = F.reqEjectAcsi;
-    // UNE image, UN lecteur. Monter le même fichier dans A et dans B donnait deux
-    // copies en mémoire réécrivant chacune le même fichier hôte : en .msa, chaque
-    // écriture ré-encode tout le fichier et efface celles de l'autre lecteur ; en .st,
-    // la FAT se corrompt. Refus, comme Hatari :
-    // [D] Hatari floppy.c:403-408 @ f0736b24 — « Cannot insert same floppy to
-    //     multiple drives ».
+    // UNE image, UN lecteur : Fdc::loadImage le refuse lui-même ([D] Hatari
+    // floppy.c:403-408 @ f0736b24) ; la GUI le teste AVANT pour afficher pourquoi.
     // Les deux lecteurs changent dans la même trame (profil, dépôt de deux images) :
     // B est libéré d'abord s'il va être remplacé ou vidé, sinon un échange A↔B serait
     // refusé à tort.
