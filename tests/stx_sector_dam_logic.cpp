@@ -198,15 +198,37 @@ int testStxSectorDam() {
             ++payload;
         }
         // Le trailer est optionnel : injecter une extension reconnue ou
-        // incomplète dans le SECT réel, en conservant les données et le TRCK.
+        // incomplète dans le bloc secteur réel, en conservant les données et le TRCK.
+        // Le secteur vit sur une piste réécrite par WRITE TRACK : sa position est celle
+        // de la piste réinterprétée, qu'Hatari ne retrouverait pas parmi les secteurs
+        // d'origine ([D] stx.c:648-657 @ f0736b24, fichier entier rejeté). Il part donc
+        // en NSCT, hors compteur SECT de l'en-tête ; même disposition que SECT.
         const auto companion = work / (initialMark == 0xF8 ? "deleted.wd1772" : "normal.wd1772");
         std::ifstream input(companion, std::ios::binary);
         std::vector<uint8_t> persisted((std::istreambuf_iterator<char>(input)), {});
         input.close();
         const bool headerOk = persisted.size() >= 36 &&
-            std::equal(persisted.begin() + 16, persisted.begin() + 20, "SECT");
-        check.equal("compagnon SECT standard", headerOk, true);
+            std::equal(persisted.begin() + 16, persisted.begin() + 20, "NSCT");
+        check.equal("compagnon : secteur de piste réécrite en NSCT", headerOk, true);
         if (!headerOk) return check.failures;
+        check.equal("compteur SECT de l'en-tête nul",
+                    persisted[8] | persisted[9] | persisted[10] | persisted[11], 0);
+        // Un .wd1772 écrit avant ce changement portait ce bloc en SECT : il se relit tel quel.
+        {
+            auto legacy = persisted;
+            std::copy_n("SECT", 4, legacy.begin() + 16);
+            legacy[11] = 1;
+            FILE* output = std::fopen(companion.string().c_str(), "wb");
+            if (!output) return 1;
+            const bool written = std::fwrite(legacy.data(), 1, legacy.size(), output) == legacy.size();
+            std::fclose(output);
+            if (!written) return 1;
+            Rig restored;
+            check.equal("montage ancien compagnon (SECT)", restored.fdc.loadImage(path.string()), true);
+            restored.select(5);
+            // Dernière commande $A9 : marque effacée, portée par le trailer NDAM.
+            verifyTrack(check, restored, 0xF8, uint8_t(payload - 1));
+        }
         check.equal("version compagnon inchangée", persisted[6] == 1 && persisted[7] == 0, true);
         const uint32_t blockLen = uint32_t(persisted[20]) << 24 | uint32_t(persisted[21]) << 16 |
                                   uint32_t(persisted[22]) << 8 | persisted[23];

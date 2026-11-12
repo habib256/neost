@@ -1,0 +1,29 @@
+{
+ "_comment": "Recettes des traces de référence Hatari pour tools/trace_diff.py (tools/make_ref_traces.py). Chaque entrée reprend les entrées d'un parcours de tests/replays/replays.json et trace une fenêtre de trames : NeoST [neost_from, neost_from+frames], Hatari à partir de hatari_from (décalage mesuré entre les émulateurs). Échelon hatari (grade D). Les traces dérivent de médias privés et ne se versionnent pas : elles se régénèrent sous build/ref-traces/.",
+ "traces": [
+  {
+   "id": "lemmings_menu_entry",
+   "replay": "lemmings",
+   "note": "Entrée du menu animé, premier PC $4370 : NeoST trame 2615, Hatari VBL 3159 (décalage 544, docs/CASE_STUDIES.md § Lemmings).",
+   "neost_from": 2614,
+   "frames": 3,
+   "hatari_from": 3158,
+   "align_pc": "4370"
+  },
+  {
+   "id": "arkanoid2_round1",
+   "note": "Arkanoid II (Replicants, trainer) lancé par --auto sous TOS 1.04 UK : ESPACE passe l'intro des Replicants et l'histoire, « 1 » démarre la partie ; balle en jeu au ROUND 01. Décalage mesuré le 2026-11-12 : NeoST 5100/5400 = Hatari 5099/5399 (0,02 %). L'Arkanoid de 1987 n'est plus dans les médias (docs/CASE_STUDIES.md).",
+   "disk": "disks/st/Arkanoid II - Revenge of Doh (1988)(Imagine)[cr Replicants][t].st",
+   "machine": "st",
+   "rom": "roms/tos104uk.img",
+   "mem": 1,
+   "auto": "A:\\DOH1.TOS",
+   "keys": [1500, 2500, 3500],
+   "scancodes": [[4600, 2]],
+   "neost_from": 5400,
+   "frames": 2,
+   "hatari_from": 5399,
+   "align_pc": "6776A"
+  }
+ ]
+}

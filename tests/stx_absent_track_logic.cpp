@@ -114,11 +114,13 @@ bool sectorIs(Rig& r, uint8_t track, uint8_t side, uint8_t sector) {
 }
 
 // Lit le .wd1772 comme STX_LoadSaveFile d'Hatari @ f0736b24 (stx.c:548-702) :
-// compteurs d'en-tête = nombre de blocs SECT/TRCK, chaque SECT/TRCK sur une piste de
-// l'image d'origine, sinon Hatari rejette le fichier entier. Renvoie le nombre de
-// blocs NTRK + NSCT (sautés par Hatari comme blocs inconnus), -1 si incompatible.
-int hatariCompatibleExtraBlocks(const std::vector<uint8_t>& in,
-                                const std::vector<std::pair<int, int>>& original) {
+// compteurs d'en-tête = nombre de blocs SECT/TRCK ; chaque TRCK sur une piste de
+// l'image d'origine (STX_FindTrack), chaque SECT sur la position d'un secteur
+// d'origine (STX_FindSector_By_Position, stx.c:1377-1396 : égalité de BitPosition
+// parmi les secteurs de l'image), sinon Hatari rejette le fichier entier. `original`
+// est l'image seule, sans .wd1772. Renvoie le nombre de blocs NTRK + NSCT (sautés par
+// Hatari comme blocs inconnus), -1 si incompatible.
+int hatariCompatibleExtraBlocks(const std::vector<uint8_t>& in, const StxImage& original) {
     if (in.size() < 16 || std::memcmp(in.data(), "WD1772", 6) != 0) return -1;
     auto be32 = [&](size_t p) {
         return (uint32_t(in[p]) << 24) | (uint32_t(in[p + 1]) << 16) | (uint32_t(in[p + 2]) << 8) | in[p + 3];
@@ -130,10 +132,16 @@ int hatariCompatibleExtraBlocks(const std::vector<uint8_t>& in,
         const uint32_t len = be32(p + 4);
         if (p + 4 + len > in.size() || len < 6) return -1;
         const int track = in[p + 8], side = in[p + 9];
-        const bool known = std::find(original.begin(), original.end(),
-                                     std::make_pair(track, side)) != original.end();
-        if (!std::memcmp(&in[p], "SECT", 4)) { ++sect; if (!known) return -1; }
-        else if (!std::memcmp(&in[p], "TRCK", 4)) { ++trck; if (!known) return -1; }
+        const StxImage::Track* t = original.findTrack(track, side);
+        if (!std::memcmp(&in[p], "SECT", 4)) {
+            ++sect;
+            if (!t) return -1;
+            const uint16_t pos = uint16_t((in[p + 10] << 8) | in[p + 11]);
+            if (std::none_of(t->sectors.begin(), t->sectors.end(),
+                             [&](const StxImage::Sector& s) { return s.bitPosition == pos; }))
+                return -1;
+        }
+        else if (!std::memcmp(&in[p], "TRCK", 4)) { ++trck; if (!t) return -1; }
         else if (!std::memcmp(&in[p], "NSCT", 4) || !std::memcmp(&in[p], "NTRK", 4)) ++extra;
         p += 4 + len;
     }
@@ -220,9 +228,14 @@ int testStxAbsentTrack() {
         c.equal("secteur 2 face 1", r.readSector(2), true);
         c.equal("données face 1", sectorIs(r, 0, 1, 2), true);
 
-        // 3) Face 0 piste 0 (présente) reformatée : bloc TRCK standard, compté.
+        // 3) Face 0 piste 0 (présente) reformatée : bloc TRCK standard, compté. Un
+        //    WRITE SECTOR sur cette piste réécrite porte la position de la piste
+        //    réinterprétée, qu'Hatari ne retrouve pas parmi les secteurs d'origine :
+        //    bloc NSCT, hors compteurs (sinon Hatari rejette tout le .wd1772).
         r.select(0);
-        c.equal("WRITE TRACK piste présente", r.writeTrack(formatFlux(0, 0, 1)), true);
+        c.equal("WRITE TRACK piste présente", r.writeTrack(formatFlux(0, 0, 2)), true);
+        c.equal("WRITE SECTOR piste réécrite", r.writeSector(2, 0x5A), true);
+        c.equal("WRITE SECTOR piste réécrite sans erreur", r.reg(0) & 0x5C, 0);
 
         // 4) Save-state : le média est hors instantané, la piste créée reste lisible.
         std::vector<uint8_t> bytes;
@@ -239,13 +252,15 @@ int testStxAbsentTrack() {
         c.equal("données après restauration", sectorIs(r, 82, 0, 3), true);
     }
 
-    // 5) Le .wd1772 reste lisible par Hatari : SECT/TRCK sur des pistes d'origine,
-    //    compteurs exacts ; les pistes créées sont en NTRK/NSCT (trois NTRK, un NSCT).
+    // 5) Le .wd1772 reste lisible par Hatari : SECT/TRCK sur des pistes et des
+    //    secteurs d'origine, compteurs exacts ; les pistes créées sont en NTRK/NSCT
+    //    (trois NTRK, un NSCT), le secteur de la piste réécrite en NSCT (un de plus).
     {
         std::ifstream f(work / "single.wd1772", std::ios::binary);
         const std::vector<uint8_t> wd((std::istreambuf_iterator<char>(f)), {});
-        c.equal("format .wd1772 compatible Hatari",
-                hatariCompatibleExtraBlocks(wd, {{0, 0}}), 4);
+        StxImage original;
+        c.equal("parse STX d'origine", original.parse(image), true);
+        c.equal("format .wd1772 compatible Hatari", hatariCompatibleExtraBlocks(wd, original), 5);
     }
 
     // 6) Rechargement : les pistes créées reviennent, face 1 comprise.
@@ -262,6 +277,9 @@ int testStxAbsentTrack() {
         c.equal("SEEK piste 0", r.seek(0), true);
         c.equal("piste 0 reformatée", r.readSector(1), true);
         c.equal("données piste 0 reformatée", sectorIs(r, 0, 0, 1), true);
+        c.equal("secteur réécrit de la piste reformatée", r.readSector(2), true);
+        c.equal("secteur réécrit sans erreur", r.reg(0) & 0x1C, 0);
+        c.equal("WRITE SECTOR piste réécrite rechargé (NSCT)", r.bus.ram[0x2000 + 100], 0x5A);
         r.select(1);
         c.equal("vérif face 1 rechargée", r.seekVerify(0), true);
         c.equal("vérif face 1 rechargée sans RNF", r.reg(0) & 0x18, 0);
