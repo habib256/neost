@@ -47,7 +47,9 @@ REF_CASES = ROOT / "tests" / "reference" / "stcpu_raster_cases.json"
 # Cas fixes, en plus du balayage : (forme, largeur, date). Date 436 : moyenne au cycle 84 de la
 # ligne 74 dans NeoST. Haute résolution aux cycles des étalons blankline_stop_ste (108 → 204,
 # STOP_MIDDLE) et blankline_node_late_ste (56 → 104), ligne 74 (NEOST_SYNC_TRACE).
-CASES = [("med2", w, 436) for w in (8, 12, 16, 20)] + [("hi", 96, 460), ("hi", 48, 408)]
+# $FF8265 en plein DE (5 pendant 8 cycles) à deux dates de la ligne : le décalage change aussitôt.
+CASES = ([("med2", w, 436) for w in (8, 12, 16, 20)] + [("hi", 96, 460), ("hi", 48, 408)]
+         + [("scroll", 8, 200), ("scroll", 8, 304)])
 FRAMES = 12
 PIPELINE, FIRST_LINE = 528, 65  # tools/run_gstmcu_bench.py, low_pal : 1er pixel et 1re ligne affichée
 

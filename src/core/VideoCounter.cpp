@@ -84,7 +84,7 @@ void Shifter::endVideoLine() {
     // retombe sur la relecture RAM de fin de trame. Discrimine « instant de capture
     // faux » vs « autre cause » quand un moteur redessine en course avec le faisceau.
     static const bool noSnap = envFlag("NEOST_NO_SNAP", false);
-    if (!noSnap && (!glue_.syncWrites.empty() || spec512Active_ || shifterStopLine_ >= 0) && bpl > 0 &&
+    if (!noSnap && (!glue_.syncWrites.empty() || spec512Active_ || shifterStopLine_ >= 0 || !scrollWrites_.empty()) && bpl > 0 &&
         sl >= 0 && sl < static_cast<int>(lineSnapLen_.size())) {
         int n = bpl + scrollCounterAdvance(sl) + 8;
         if (n > kLineSnapBytes - kSnapLead) n = kLineSnapBytes - kSnapLead;

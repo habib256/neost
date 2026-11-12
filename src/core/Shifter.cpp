@@ -201,6 +201,7 @@ void Shifter::reset() {
     // état cohérent pour les lectures $FF8205/07/09 d'ici là.
     glue_.syncWrites.clear();
     colorWrites_.clear();
+    scrollWrites_.clear();
     paletteAccesses_ = 0;
     spec512Active_   = false;
     glue_.bordersTrick    = false;
@@ -344,6 +345,7 @@ void Shifter::beginFrame() {
     // courante devient la base du replay (= état de fin de trame précédente ; les
     // écritures palette de CETTE trame seront rejouées par-dessus, datées).
     colorWrites_.clear();
+    scrollWrites_.clear();
     paletteAccesses_ = 0;
     spec512Active_   = false;
     frameStartPalette_ = palette;
@@ -683,7 +685,7 @@ void Shifter::finishFrame() {
     const bool stoppedLine = std::any_of(lineScrollSnap_.begin(), lineScrollSnap_.end(),
         [](uint8_t m) { return (m & 0x80) != 0; });
     if (glue_.bordersTrick || spec512Active_ || maskedLine || shifterStopLine_ >= 0 || stoppedLine
-        || !glue_.phaseEvents.empty()
+        || !glue_.phaseEvents.empty() || !scrollWrites_.empty()
         || glue_.vblankAtLine(vg.dispStartLine + vg.displayLines - 1))
         renderGlueFrame();
 
@@ -938,6 +940,10 @@ void Shifter::renderGlueFrame() {
     // à chaque trame, puis suivie événement par événement, lignes croissantes.
     std::size_t phaseNext = 0;
     int curPhase = 0;
+    // Décalage fin écrit en plein DE (scrollWrites_, STE) : données brutes de la ligne, sans
+    // scroll, que le reste de la ligne relit au nouveau décalage.
+    uint8_t idxRaw[1072];
+    std::size_t scrollNext = 0;
     const int wsInc = glue::timing(bus_.machine).inc;              // re-normalisation des DE stockés (cf. plus bas)
     // Résolution au début de la ligne, relue au fil des écritures datées (lignes croissantes).
     std::size_t resWrite = 0;
@@ -1163,6 +1169,15 @@ void Shifter::renderGlueFrame() {
         // effacé EN COURSE avec le faisceau, ex. robot du menu Cuddly), sinon repli
         // relecture RAM en fin de trame (lignes non committées : bordure haute
         // ouverte, bas de trame au-delà des lignes actives).
+        while (scrollNext < scrollWrites_.size()
+               && scrollWrites_[scrollNext].frameCycle < static_cast<int64_t>(sl) * cpl)
+            ++scrollNext;
+        const std::size_t swBegin = scrollNext;
+        while (scrollNext < scrollWrites_.size()
+               && scrollWrites_[scrollNext].frameCycle < static_cast<int64_t>(sl + 1) * cpl)
+            ++scrollNext;
+        const std::size_t swEnd = scrollNext;
+        const bool scrollSplit = swBegin < swEnd && !lineMed && !lineBorder;
         if (nPix > 0 && !lineBlank && !lineStopped) {
             // Les slots de capture portent kSnapLead octets de garde en tête :
             // un offset source négatif (scroll hard / stab med, ≥ −kSnapLead)
@@ -1184,7 +1199,25 @@ void Shifter::renderGlueFrame() {
             };
             decodeAt(idx, phaseA);
             if (phaseSplit) decodeAt(idx2, phaseB);
+            if (scrollSplit) {                             // 2 groupes de marge : prefetch, décalage
+                const int src = medSrcBytes + phaseA / 2;
+                if (haveSnap)
+                    decodeWindowIndicesFromBytes(lineSnap_.data() + static_cast<std::size_t>(sl) * kLineSnapBytes
+                                                     + kSnapLead + src,
+                                                 lineSnapLen_[sl] - src, nPix + 32, idxRaw, false, 0, false);
+                else
+                    decodeWindowIndices(addr + static_cast<uint32_t>(static_cast<int32_t>(src)), nPix + 32,
+                                        idxRaw, false, 0, false);
+            }
         }
+        const int nRaw = ((nPix + 32 + 15) / 16) * 16;
+        // Le pixel p (depuis DE) d'une ligne au décalage c vaut D[p + c] avec prefetch (la ligne
+        // a commencé 16 px plus tôt), D[p + c − 16] sans (le Shifter retarde de 16 − c px), et
+        // D[p] ou D[p + 16] à c = 0. [D] gstshifter.v:296-299 @ 4a6db7cc (ste_shifted[c − 1],
+        // retard 16 − c) ; même loi que decodeWindowIndices pour une ligne entière.
+        const bool linePrefetched = lineScroll != 0 && linePref;
+        int swCount = -1;                                  // −1 : décalage du début de ligne
+        std::size_t swCur = swBegin;
         // Toute la ligne vient |p| px plus tôt, comme le premier rechargement : la fenêtre
         // d'émission glisse avec elle (le modèle montre les premiers pixels dans la bordure
         // gauche et la bordure droite |p| px plus tôt), la source restant indexée depuis ds.
@@ -1232,8 +1265,10 @@ void Shifter::renderGlueFrame() {
                     dst[x] = stColorToArgb(pal[0]);
                     continue;
                 }
-                const bool segB = phaseSplit
-                    && static_cast<int64_t>(sl) * cpl + cyc - kSpec512AlignCyc >= phaseFc;
+                const int64_t pixT = static_cast<int64_t>(sl) * cpl + cyc - kSpec512AlignCyc;
+                const bool segB = phaseSplit && pixT >= phaseFc;
+                while (swCur < swEnd && scrollWrites_[swCur].frameCycle <= pixT)
+                    swCount = scrollWrites_[swCur++].count;
                 const int  shSeg = segB ? shEff - phaseA + phaseB : shEff;
                 const uint8_t* idxSeg = segB ? idx2 : idx;
                 int s = lineMed ? ((cyc - ds) * 2 + medSrcPx)
@@ -1246,6 +1281,10 @@ void Shifter::renderGlueFrame() {
                     // Moyenne exacte par composante, arrondie vers le bas comme la réduction 2×
                     // de compare_screenshot.py (_downscale2).
                     dst[x] = 0xFF000000u | (((a & b) + (((a ^ b) & 0x00FEFEFE) >> 1)) & 0x00FFFFFF);
+                } else if (scrollSplit && swCount >= 0) {
+                    const int r = (cyc - ds) * ppc + (x % ppc) - shSeg
+                                + (linePrefetched ? 16 : 0) + (swCount ? swCount - 16 : 0);
+                    dst[x] = stColorToArgb(pal[(r >= 0 && r < nRaw) ? idxRaw[r] : 0]);
                 } else {
                     dst[x] = stColorToArgb(pal[idxSeg[s]]);   // dans la fenêtre → contenu
                 }
@@ -1663,6 +1702,19 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
                 } else {
                     newHwScrollCount_ = sc; newHwScrollPrefetch_ = prefetch;
                     newSteBorderFlag_ = add16;
+                    // Le décalage, lui, change aussitôt dans le Shifter : [D] gstshifter.v:160 @ 4a6db7cc
+                    // (pixel_offset, bascule D au front de fin d'écriture) lu sans latch par
+                    // shifted_color_index (:296-299). Banc fx68k + GSTMCU (run_stcpu_raster.py --kind
+                    // scroll) : le reste de la ligne glisse ; 60 dates sur 64 identiques au pixel, datées
+                    // comme la palette sans réglage (21 sur 64 avant). Hatari ([D] video.c:5876 @ f0736b24,
+                    // Video_HorScroll_Write) attend la ligne suivante, comme NeoST avant le 2026-11-12.
+                    // Aucun logiciel connu n'écrit ce registre en plein DE. [F] Tranché par : une
+                    // capture sur STE.
+                    if (liveFrameClock_) {
+                        const int64_t fc = liveFrameClock_();
+                        if (fc >= 0 && fc <= INT32_MAX)
+                            scrollWrites_.push_back({ static_cast<int32_t>(fc), sc });
+                    }
                 }
             }
             return;

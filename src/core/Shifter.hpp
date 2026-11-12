@@ -765,6 +765,11 @@ private:
     // Une écriture palette dans la trame, datée au cycle (façon CyclePalettes[]).
     struct ColorWrite { int32_t frameCycle; uint16_t colour; uint8_t index; uint32_t pc; };
     std::vector<ColorWrite>  colorWrites_;          // écritures palette de la trame (ordre d'exécution)
+    // Décalage fin STE ($FF8264/65) écrit pendant qu'une ligne s'affiche (format v66) : le Shifter
+    // l'applique aussitôt, au pixel près, le reste de la ligne (cf. renderGlueFrame) ; la ligne
+    // suivante le prend par le chemin différé habituel (newHwScrollCount_).
+    struct ScrollWrite { int32_t frameCycle; uint8_t count; };
+    std::vector<ScrollWrite> scrollWrites_;
     std::array<uint16_t, 16> frameStartPalette_{};  // palette au début de trame (base du replay)
     uint16_t leftBorderPal0_ = 0;                   // registre 0 de la ligne PRÉCÉDENTE (couleur du
                                                     // bord GAUCHE : sorti cyc ~0-56 AVANT l'écriture
@@ -982,6 +987,10 @@ public:
             // avec une valeur choisis. Le chemin live pose toujours 0..15
             // (recordColorWrite) — même garde que YM2149 sur RegEvent::reg.
             a.check(c.index < 16, "Shifter::colorWrites_[].index >= 16");
+        });
+        ar.objVec(scrollWrites_, 5, [](StateArchive& a, ScrollWrite& w) {
+            a(w.frameCycle); a(w.count);
+            a.check(w.count < 16, "Shifter::scrollWrites_[].count >= 16");   // idx2[p + décalage]
         });
         ar(frameStartPalette_);
         ar(leftBorderPal0_);
