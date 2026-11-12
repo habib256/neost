@@ -2100,11 +2100,17 @@ fidèles à Hatari, pas des bugs.
   sources qu'avaient déjà CoreMIDI et ALSA — énumération, aiguillage par canal, fusion,
   canalisation, panique, apprentissage d'identifiant. Windows y gagne même un
   **identifiant unique** (chemin d'interface `DRV_QUERYDEVICEINTERFACE`, hub et prise
-  compris) là où ALSA n'en a aucun, et `timeBeginPeriod(1)` tant qu'une sortie est
+  compris), comme ALSA depuis le 2026-11-12 (adresse USB de la carte, `audio/MidiAlsa.hpp`,
+  ⚠ compilé, jamais exécuté sous Linux), et `timeBeginPeriod(1)` tant qu'une sortie est
   ouverte ramène la gigue de livraison de σ 5,34 ms à **σ 0,30 ms** (mesuré sur
   matériel réel). Seul manque, **irréductible sans pilote tiers** : le port virtuel
   « NeoST MIDI OUT » — Windows n'a aucune API pour en créer un (loopMIDI le fournit, et
   son port apparaît alors comme un appareil ordinaire).
+  **Splitter clavier** (2026-11-12) : zones de notes par source MIDI IN → canal et
+  transposition (`audio/MidiZones.hpp`, 4ᵉ champ de `midi_in_devices=`, `--midi-in-zones`).
+  **MTC en sortie** (2026-11-12) : code temporel tiré du transport du ST vers les sorties
+  hôtes (`audio/MidiTimecode.hpp`, `midi_mtc=`) ; ⚠ pas encore essayé contre un logiciel
+  hôte réel.
   `audio/MidiOutHost`, `audio/MidiInHost`, `audio/MidiWinmm.hpp`, `audio/Mt32Synth`,
   `audio/GmSynth`.
 

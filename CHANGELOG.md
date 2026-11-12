@@ -35,6 +35,15 @@ cœur) restent en attente de leur ressource.
   2026-07-08 recontrôlées une à une (verdicts dans l'archive). Nouveau
   `docs/MAME_DIVERGENCES.md` : 41 écarts contre MAME `ce391499d37d` ; aucun où une source de
   rang supérieur donne tort à NeoST, quatre où MAME a tort ([B] WD177X, Zilog UM0109, MC68901).
+- **Station MIDI.** Splitter clavier : chaque source MIDI IN hôte se découpe en zones (plage
+  de notes → canal, transposition), après le canal forcé et avant la fusion
+  (`src/audio/MidiZones.hpp`, 4ᵉ champ de `midi_in_devices=`, champ GUI, `--midi-in-zones`).
+  Homonymes sous ALSA : identifiant stable tiré de l'adresse USB du nom long de la carte
+  (`alsa:usb-…/port`), énumération commune `MidiAlsa.hpp` ; le backend ALSA n'était compilé par
+  aucun job : la CI l'installe et le vérifie (job GUI). MTC en sortie : code temporel tiré du
+  transport du ST (Start/Stop/Continue, SPP, horloge), Quarter et Full Frames 24/25/29,97 DF/30
+  ([B] spécification MTC de la MMA), `midi_mtc=`. Unitor et Midex : protocole introuvable, besoin
+  écrit ; Windows MIDI Services : port virtuel non retenu.
 - **Outils.** `compare_sound.py --mem` passe par `title_cmd.parse_mem` : même taille des deux
   côtés, `--mem 0` ne devient plus « 0m ».
 

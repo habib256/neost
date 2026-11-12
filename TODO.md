@@ -415,12 +415,16 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 ### Station MIDI
 Cas visé : le ST mène la séance (Cubase, Notator), un Mac porte les AU/VST. La sortie est au
 niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
-- **Interfaces multi-ports** · P3 ⭘ — C-Lab Unitor, Steinberg Midex (32/64 canaux, SMPTE) ; la
-  clé de l'Unitor-N est émulée, pas le boîtier.
-- **Splitter clavier** · P3 ⭘ — une source = un canal ; pas de zones.
-- **Synchro SMPTE/MTC** · P3 ⭘ — l'horloge MIDI traverse, le code temporel de l'Unitor non.
-- **Port virtuel sous Windows** · P3 ⭘ — aucune API winmm/WinRT 1.0 ; loopMIDI en contournement.
-- **Appareils homonymes sous ALSA** · P3 ⭘ — indiscernables quand un seul est branché.
+- **Interfaces multi-ports** · P3 ⏸ source — C-Lab Unitor, Steinberg Midex : la clé Unitor-N est émulée, pas
+  les boîtiers. Aucun protocole publié (ni Hatari ni MAME ne les émulent). Débloqué par un schéma [B], un
+  relevé de carte et de PAL [A], ou le pilote Unitor/M.ROS capturé en mémoire [C]. → `docs/EXTENSIONS.md`
+- **Synchro SMPTE/MTC** · P3 ◐ — MTC tiré du transport du ST vers les sorties hôtes (`midi_mtc=`), éprouvé en
+  selftest. Restent l'essai contre un logiciel hôte réel et le SMPTE de l'Unitor (même blocage que ci-dessus).
+- **ALSA : identifiants réels** · P3 ⭘ — l'identifiant stable `alsa:<adresse USB>/<port>` est compilé (syntaxe
+  vérifiée contre alsa-lib 1.1.3), jamais exécuté : `--midi-list` sur un Linux avec deux claviers identiques.
+- **Port virtuel sous Windows** · P3 ⏸ décision — Windows MIDI Services évalué le 2026-11-12 : héberger un
+  port exige le SDK C++/WinRT et un runtime séparé, hors MinGW ; ne pas implémenter. Les paires de bouclage
+  de *MIDI Settings* (ou loopMIDI) suffisent, à confirmer sur un vrai Windows.
 - **Anneau MIDI** · P3 ◐ — réception headless cadencée livrée ; restent la saisie du pair dans
   le GUI et un test à deux nœuds (un seul processus, bloqué par A33, § 9).
 
@@ -442,6 +446,9 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
   vrai clavier physique (couche `.kl/.kcm`, disposition AZERTY choisie dans Android), jamais exercé.
 - **Explorateur de bitmaps** · P3 ⭘ — la RAM en plans ST avec la palette courante, dans le
   débogueur. Modèle : ASE `DebugWindow`.
+- **Paquets Linux sans MIDI ALSA ?** · P2 ⭘ — ni l'image bionic (`Dockerfile.bionic`) ni bookworm
+  (`build_in_bookworm_arm64.sh`) n'installent `libasound2-dev` : les AppImage partent sans doute sans MIDI
+  hôte. La CI compile ALSA depuis le 2026-11-12 (job GUI) ; ajouter le paquet aux images et vérifier.
 - **A12 — validation des paquets sur machines hôtes** · P1 ⏸ matériel — macOS arm64 passé (sauf
   le pas visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun
   budget temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et
