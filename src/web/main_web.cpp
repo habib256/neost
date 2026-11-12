@@ -464,17 +464,27 @@ neost::pacing::FramePacer g_framePacer;
 // reprise, ils attendent donc la fin du déroulement (cf. Machine::requestParkedAbort).
 std::vector<std::function<void()>> g_deferred;
 
-void whenUnparked(std::function<void()> order) {
-    if (g_machine->requestParkedAbort()) { g_deferred.push_back(std::move(order)); return; }
-    order();
-}
-
 bool applyDeferred() {
     if (g_deferred.empty()) return false;
     std::vector<std::function<void()>> orders;
     orders.swap(g_deferred);
     for (auto& o : orders) o();
     return true;
+}
+
+void whenUnparked(std::function<void()> order) {
+    if (g_machine->requestParkedAbort()) { g_deferred.push_back(std::move(order)); return; }
+    // Trame en échec (exception remontée jusqu'à la page, cf. neost_jspi_start_loop) :
+    // les ordres différés qu'elle n'a pas appliqués passent d'abord, dans l'ordre.
+    applyDeferred();
+    order();
+    // L'état est remplacé : une boucle arrêtée sur une trame en échec repart.
+    EM_ASM({
+        if (Module.neostHalted) {
+            Module.neostHalted = false;
+            if (Module.onFrameResumed) Module.onFrameResumed();
+        }
+    });
 }
 
 void presentFrame();
@@ -588,10 +598,12 @@ void presentFrame() {
 // =============================================================================
 EM_JS(void, neost_jspi_start_loop, (), {
     const tick = Module.neostTickPromising;
-    let busy = false;
+    let busy = false, dead = false;
     Module.neostParkBudget = 0;
+    Module.neostHalted = false;
     function frame() {
         requestAnimationFrame(frame);
+        if (dead || Module.neostHalted) return;
         if (busy) {
             // Instruction garée : relancée quand la trame suivante est due. Jusqu'à
             // 4 trames par tour en rattrapage (FramePacer::kMaxCatchUp) : celle-ci,
@@ -609,9 +621,25 @@ EM_JS(void, neost_jspi_start_loop, (), {
         // d'un tour précédent pour une instruction qui se garerait pendant celui-ci.
         Module.neostParkBudget = 0;
         busy = true;
+        // Trame en échec. Un piège wasm ou abort() (WebAssembly.RuntimeError) laisse
+        // le runtime dans un état inconnu : arrêt définitif, rechargement demandé. Une
+        // exception C++ ou JS remontée de la pile (garée ou non) coupe seulement
+        // l'instruction en cours, comme un abandon : la machine reste arrêtée — rien
+        // ne tourne sur un état à moitié exécuté — jusqu'à un ordre qui le remplace
+        // (reset, ROM, moniteur : whenUnparked remet neostHalted). EmuFiber a remis
+        // parked_ (garde RAII de yield) : ces ordres s'appliquent sur-le-champ.
+        // Avant, busy restait vrai dans les deux cas : la boucle ne relançait plus la
+        // trame, et seule une page rechargée repartait (mesuré, check_web_jspi.mjs).
         tick().then(() => { busy = false; }, (e) => {
             console.error('[web] frame failed:', e);
-            if (Module.onAbort) Module.onAbort(String(e));
+            busy = false;
+            if (e instanceof WebAssembly.RuntimeError) {
+                dead = true;
+                if (Module.onAbort) Module.onAbort(String(e));
+                return;
+            }
+            Module.neostHalted = true;
+            if (Module.onFrameFailed) Module.onFrameFailed(String(e));
         });
     }
     requestAnimationFrame(frame);
@@ -625,9 +653,12 @@ extern "C" {
 // Un tour de boucle sous JSPI (appelé par la page via WebAssembly.promising) : seul
 // contexte où la pile wasm peut être suspendue.
 EMSCRIPTEN_KEEPALIVE void neost_web_tick() {
-    EmuFiber::setHostCanSuspend(true);
+    // RAII : une trame en échec (exception) ne laisse pas le drapeau levé.
+    struct CanSuspend {
+        CanSuspend() { EmuFiber::setHostCanSuspend(true); }
+        ~CanSuspend() { EmuFiber::setHostCanSuspend(false); }
+    } canSuspend;
     mainLoopBody();
-    EmuFiber::setHostCanSuspend(false);
     applyDeferred();
 }
 

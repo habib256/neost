@@ -2514,6 +2514,55 @@ static void testPacing() {
         g.resync(500.0);
         checkInt("après resync : la trame courante est due", g.runDue(500.0, oneFrame), 1);
     }
+
+    // --- 7. Cadence par créneaux (web, blit HOG garé par JSPI) ----------------
+    // La page rejoue, à chaque tour de requestAnimationFrame, le protocole de
+    // neost_jspi_start_loop (src/web/main_web.cpp) et de neost_jspi_park
+    // (core/EmuFiber.cpp) : une trame si due(), puis jusqu'à 3 de plus tant que la
+    // suivante est déjà due. Le rattrapage doit valoir celui de runDue : un écran à
+    // 10 Hz sur une machine à 50 Hz rattrape 4 trames par tour. due() abandonnait le
+    // retard AVANT de jouer (au-delà de 4 trames de dette, recalage sur maintenant) :
+    // une seule trame par tour, mesuré dans Chrome 157 (tools/check_web_jspi.mjs).
+    {
+        auto parkedTurn = [](FramePacer& p, double now) {
+            const int64_t fc = 313 * 512;              // 19,978 ms
+            int n = 0;
+            if (!p.due(now, fc)) return 0;
+            p.advance(fc); ++n;                        // relance par la boucle rAF
+            for (int budget = 3; budget > 0 && p.due(now, fc); --budget) {
+                p.advance(fc); ++n;                    // rattrapage (neostParkBudget)
+            }
+            return n;
+        };
+        auto runDueTurn = [](FramePacer& p, double now) {
+            return p.runDue(now, [] { return int64_t(313 * 512); });
+        };
+        FramePacer a, b;
+        int pa = 0, rb = 0, maxA = 0;
+        for (int t = 0; t <= 30; ++t) {                // 3 s de tours à 10 Hz
+            const int x = parkedTurn(a, 1000.0 + 100.0 * t);
+            pa += x; maxA = std::max(maxA, x);
+            rb += runDueTurn(b, 1000.0 + 100.0 * t);
+        }
+        std::printf("  (rAF 10 Hz, machine 50 Hz : garé %d trames, runDue %d)\n", pa, rb);
+        checkInt("garé, rAF 10 Hz : 4 trames par tour, comme runDue", pa, rb);
+        checkInt("garé, rAF 10 Hz : jamais plus de kMaxCatchUp par tour", maxA,
+                 FramePacer::kMaxCatchUp);
+        FramePacer c, d;
+        int pc = 0, rd = 0;
+        for (int t = 0; t <= 75; ++t) {                // 3 s de tours à 25 Hz : 2 par tour
+            pc += parkedTurn(c, 1000.0 + 40.0 * t);
+            rd += runDueTurn(d, 1000.0 + 40.0 * t);
+        }
+        checkBool("garé, rAF 25 Hz : la cadence suit le temps émulé (±1 trame)",
+                  std::abs(pc - rd) <= 1 && rd >= 150, true);
+        // Long sommeil (onglet en arrière-plan) : 4 trames, puis le retard est
+        // abandonné — le tour suivant, 10 ms plus tard, n'en joue qu'une.
+        FramePacer e;
+        parkedTurn(e, 1000.0);
+        checkInt("garé, après 10 s : plafonné à 4 trames", parkedTurn(e, 11000.0), 4);
+        checkInt("garé, puis la dette n'est pas traînée", parkedTurn(e, 11010.0), 1);
+    }
 }
 
 
