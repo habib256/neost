@@ -19,7 +19,11 @@ Posé le 2026-11-04. Instrument : `tools/run_glue_sweep.py`.
 Le chemin CPU de NeoST date les deux à AS + 8. Pour `$FF8260`, c'est donc la même date. Pour `$FF820A`, le modèle réagit 3 cycles avant NeoST : une question ouverte, que de vraies démos empêchent de trancher en faveur du modèle. → [`STCPU_BENCH.md`](STCPU_BENCH.md)
 
 **HSYNC parasite.** Une impulsion haute résolution vers le cycle 28 fait retomber HSYNC une fois de plus, sans commencer de ligne : DE reste en place, et le banc l'ignore
-dans son comptage. NeoST ne modélise pas ce front, qu'un programme ne peut pas lire. Effet sur un moniteur réel inconnu.
+dans son comptage. Cause dans le modèle : HSYNC tombe quand le compteur horizontal égale une constante qui dépend de MDE1, 101 en basse et moyenne
+résolution, 121 en haute (`gstmcu.v:803-819 @ 4a6db7cc`, `hsyncgen.v:21-24`, relevé des schémas de Zietz). Le compteur passe par 121 sur une ligne
+basse résolution ; si MDE1 vaut 1 à cet instant, la comparaison haute résolution déclenche. Le front qui la termine arme aussi la requête HBL
+(`gstmcu.v:320`, `hintb` latché au front montant d'HSYNC) : un programme qui laisse passer l'HBL verrait une requête de plus. NeoST ne modélise
+ni ce front ni cette requête, qu'aucun logiciel connu ne provoque. Effet sur un moniteur réel inconnu.
 
 ## Résultat (2026-11-04)
 
@@ -66,5 +70,16 @@ Les 42 écarts restants sont tous en haute résolution, les fenêtres du modèle
 
 Au-delà de ces largeurs, une impulsion enjambe HSYNC et le rechargement du compteur : les écarts se multiplient, hors du verdict. Aucun logiciel connu ne les emploie.
 
+**Cause de la DE précoce à 44** (lecture du modèle, 2026-11-12, non portée) : `gstmcu.v:860-893 @ 4a6db7cc`. Le début de DE se décide au compteur
+`hdec` (pas de 4 cycles) : à 12 en PAL, à 11 en NTSC, à 2 en haute résolution. L'impulsion de début traverse ensuite une chaîne de registres, quatre
+étages en basse résolution, un seul en haute. Posée pendant que l'impulsion PAL est au premier étage, la haute résolution la prend par le chemin
+court : DE commence à 44 au lieu de 56, soit 12 cycles et les 6 octets de plus. Si elle reste posée au-delà de la décision de longueur de ligne,
+vers 56, la ligne devient une ligne de 224 cycles dont la DE haute résolution finit à 176. Les deux premières lignes du tableau ci-dessus en
+découlent. Les 42 écarts à 60 Hz tombent 4 cycles plus tôt, comme la décision NTSC à 11 : même cause probable, non vérifiée écart par écart.
+
 **Fin de DE du retrait droit** : 464 dans le modèle, 460 chez NeoST (`HSync_On_Off_Low`) pour les mêmes 44 octets, soit la largeur juste chez le modèle. Hors du cadre rendu, qui s'arrête au
 cycle 424. Tolérance écrite dans l'outil, code inchangé.
+
+**Au pixel (2026-11-12)** : le balayage ne compare pas le pixel, `tools/run_stcpu_raster.py` le fait pour deux impulsions, celles des étalons
+`blankline_stop_ste` et `blankline_node_late_ste`. Toute la trame concorde au modèle, bord de fin de STOP_MIDDLE compris, sauf 3 px à la colonne de
+l'écriture : le Shifter du modèle sort du monochrome le temps de la bascule (bloc « moyen »), ce que NeoST ne rend pas. → [`REFERENCE_LADDER.md`](REFERENCE_LADDER.md)

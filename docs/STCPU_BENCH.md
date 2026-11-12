@@ -64,7 +64,7 @@ Le mécanisme existait, en essai (`NEOST_PIN_ARM`), écarté le 2026-07-02 parce
 |---|---|---|
 | `$FF820F` (`offset`) | 64 sur 64 | Identique depuis la coupure 8 cycles plus tôt, sans effet sur Pacemaker, More or Less Zero et Double Rez Trouble |
 | Couleur 0 (`palette`) | 37 sur 64 | La couleur change 4 pixels plus tôt, en bordure comme dans l'image. **Le modèle a tort** : 13 images Spectrum 512 réelles sortent exactes à 0 pixel avec NeoST, et de 10 à 1 118 pixels faux avec ce décalage (`tools/run_spec512_truth.py`). |
-| `$FF8265` en plein DE (`scroll`) | 21 sur 64 | Les pixels se décalent aussitôt, le temps de l'impulsion ; NeoST attend la ligne suivante |
+| `$FF8265` en plein DE (`scroll`) | 60 sur 64 (21 avant le 2026-11-12) | Les pixels se décalent aussitôt, le temps de l'impulsion. NeoST le fait aussi depuis le 2026-11-12, daté comme une écriture palette, sans réglage. Restent 392 et 408 (l'impulsion tombe vers le cycle 40, où le modèle décide du préchargement de la ligne : toute la trame décale, déjà faux avant) et 440-448 (2 et 3 px en tête de ligne) |
 | `$FF8207` en plein DE (`counter`) | 23 sur 64 | Le reste de la ligne vient de la nouvelle adresse ; NeoST attend la ligne suivante, comme Hatari. Hors DE : identique. |
 
 ## Le compteur du son DMA

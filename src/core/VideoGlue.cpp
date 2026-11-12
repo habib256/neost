@@ -889,10 +889,8 @@ void VideoGlue::updateGlueState(int line, int lineCycles, bool writeToRes, int f
 // V2 — port de Video_WriteToGlueRes ([D] video.c:1622 @ f0736b24), post-traitement d'une
 // écriture $FF8260 APRÈS la machine d'état commune. Les fenêtres LINE_* sont des
 // constantes FIXES (hors table wakestate). Non portés, documentés : les hacks
-// « TEMP » Closure/DOLB (reniflage du PC/opcode chez Hatari, [D] video.c:1808-1836 @ f0736b24)
-// et le hardscroll 4 px plein écran de Paulo Simoes (med@84 → lo@92-104,
-// [D] video.c:1772 @ f0736b24 — nécessite l'ajustement du pointeur vidéo par ligne ;
-// à porter avec un étalon dédié).
+// « TEMP » Closure/DOLB (reniflage du PC/opcode chez Hatari, [D] video.c:1808-1836 @ f0736b24).
+// Le hardscroll 4 px plein écran de Paulo Simoes est porté à part (detectPhaseScroll).
 void VideoGlue::updateGlueRes(int line, int lineCycles, int prevRes, int newRes) {
     using namespace glue;
     const Timing& T = timing(*machine);
@@ -967,9 +965,56 @@ void VideoGlue::updateGlueRes(int line, int lineCycles, int prevRes, int newRes)
     }
 }
 
+// Hardscroll 4 px « LO/MED/LO » de Paulo Simoes (beescrn4.prg, shforstv) : la moyenne
+// résolution posée au cycle 84 d'une ligne, la basse reposée 8 à 20 cycles plus tard.
+// Détection d'Hatari ([D] video.c:1772-1803 @ f0736b24 : ResPosMed.LineCycles == 84, retour
+// à 92/96/100/104). NeoST exige en plus la MÊME ligne : Hatari ne compare que des cycles-ligne.
+//
+// Ce que la bascule fait, d'après le modèle du Shifter. [D] shifter_video.v @ 4a6db7cc (bloc
+// « moyen ») : le compteur de pixels (pixCntr) avance à l'horloge pixel, deux fois plus vite
+// en moyenne résolution ; le rechargement attend pixCntr = 15 ET quatre mots chargés (rdelay).
+// D cycles en moyenne avancent le compteur de D pixels : le rechargement vient D cycles plus
+// tôt, avec les quatre derniers mots reçus, soit D/4 mots plus tôt. L'image glisse de D px
+// (modulo 16) vers la gauche et les plans tournent de D/2 octets. Le MMU n'en sait rien
+// (aucune entrée du Shifter dans gstmcu.v) : le compteur vidéo et la RAM lue sont inchangés.
+// Banc fx68k @ 0602ee46 + GSTMCU @ 4a6db7cc (tools/run_stcpu_raster.py, cas med2) : bascules de
+// 8, 12, 16 et 20 cycles → −8, −12, 0 et −4 px, plans tournés d'autant, la phase s'additionnant
+// d'une bascule à l'autre. Toutes les lignes sont identiques au pixel, sauf les deux lignes de
+// bascule (15 à 44 px) : le Shifter y sort des pixels moyenne résolution pendant la fenêtre,
+// non modélisé, et la colonne exacte du rechargement dépend de sa phase. Sans ce port :
+// 9 232 px faux sur 31 lignes (largeur 8). [A] tiers, Paulo Simoes (ljbk), atari-forum t=24855 (« horizontal scrolling on
+// ST »), relu par extrait de recherche le 2026-11-12 : le scroll « 4 pixels » décale l'écran
+// de 0, 4, 8 ou 12 px en laissant au Shifter un nombre de mots « dans la poche », et dépend
+// du wakestate (sous-état « band »). Protocole et machine non consignés : témoin, pas mesure.
+//
+// ⚠ Divergence assumée avec Hatari, qui rend +13/+9/+5/+1 px (le jeu du retrait gauche
+// de ST Connexion, recopié) et recule le pointeur vidéo de 0/2/4/6 octets : les mêmes plans
+// que le modèle, mais l'image 13 px plus à droite, la ligne de la bascule décalée en entier,
+// et le compteur vidéo modifié. Aucune image réelle ne tranche : beescrn4.prg n'est pas au
+// dépôt.
+// [F] La phase est CUMULATIVE et persiste d'une trame à l'autre dans le modèle (rien ne la
+// remet à zéro hors du reset). NeoST, comme Hatari et le scroll « Shifter arrêté », la remet
+// à 0 à chaque trame : un programme qui ne refait pas sa bascule à chaque trame sortirait
+// autrement. Tranché par : beescrn4.prg sur NeoST, ou une capture sur STF.
+// [F] Toute bascule moyenne pendant DE agit ainsi dans le modèle ; seule la fenêtre
+// d'Hatari est portée, pour ne pas toucher aux overscans moyenne résolution réglés sur de
+// vraies démos (No Cooper, Closure).
+void VideoGlue::detectPhaseScroll(int line, int lineCycles, int32_t frameCycle, int prevRes, int newRes) {
+    if (newRes == 1) { medLine = line; medCyc = lineCycles; return; }
+    if (newRes != 0 || prevRes != 1 || frame.mode != kLow) return;
+    const int d = lineCycles - medCyc;
+    if (medLine == line && medCyc == 84 && d >= 8 && d <= 20 && (d & 3) == 0) {
+        const int prev = phaseEvents.empty() ? 0 : phaseEvents.back().phase;
+        const int phase = -(((-prev) + d) & 15);           // 0, −4, −8 ou −12
+        phaseEvents.push_back({ frameCycle, line, phase });
+    }
+}
+
 void VideoGlue::replayGlue() {
     bordersTrick = false;
     lateHiOn = false;                               // le rejeu repart du début de trame, pas de l'état laissé par le direct
+    phaseEvents.clear();
+    medLine = medCyc = -1;
     if (frame.mode == kHigh) return;                // mono : pas de bordures modélisées
 
     const VideoGeometry g = frame.geo;
@@ -1057,6 +1102,7 @@ void VideoGlue::replayGlue() {
             // Video_WriteToGlueRes. Le cycle passé est BRUT (les fenêtres LINE_*
             // d'Hatari se comparent avant le latch res −1, [D] video.c:1622-1634 @ f0736b24).
             if (w.isRes) updateGlueRes(line, lc, prevRes, curRes);
+            if (w.isRes) detectPhaseScroll(line, lc, w.frameCycle, prevRes, curRes);
             if (lineLen && cyclesLine > 0) len = cyclesLine;
             // Chantier V3 : dire à quelle ligne l'écriture a RÉELLEMENT été
             // attribuée dans CE replay, et avec quelle longueur de ligne
