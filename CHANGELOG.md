@@ -79,6 +79,13 @@ cœur) restent en attente de leur ressource.
   `run_hwtst_loop.py` retrouve le quartz choisi. Défauts inchangés (A/B arch-hash et audio
   identiques) ; quartz et phase dans l'octet libre de `sessionConfig`. Course TOS 2.06 UK : 3/256
   sous 7 phases, 0/256 sous les deux autres quartz.
+- **GUI et frontends.** Explorateur de bitmaps dans le débogueur (1/2/4 plans, palette courante
+  ou gris, zoom, « Follow screen » ; décodage dans `core/BitmapView`, lecture sans effet de bord
+  par `Bus::peekMapped8`). Pages Dongles du web et d'Android, format `dongles.cfg` partagé
+  (`io/DongleTable`) ; APK vérifié sur l'émulateur arm64 API 36 ; `build_apk.sh` ne signale plus
+  à tort « libneost.so absent ». A9 : pages du menu borne (`kioskPage*`) et requêtes de la
+  Configuration (`consume*Requests`) découpées, déplacements mécaniques. Anneau MIDI saisissable
+  dans la page MIDI (`midi_net=`). Banc JSPI sous Firefox 160 (WebDriver BiDi).
 - **Outils.** `compare_sound.py --mem` passe par `title_cmd.parse_mem` : même taille des deux
   côtés, `--mem 0` ne devient plus « 0m ».
 

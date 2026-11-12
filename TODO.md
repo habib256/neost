@@ -176,11 +176,10 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.3 Blitter
 
-- **Blit HOG long : Windows, Android et Safari non vérifiés** · P3 ⭘ — coroutine compilée
-  seulement en croisé pour Windows (fibres) et Android (fil dédié, vérifié sous macOS et en CI).
-  Web : JSPI et rattrapage de 4 trames par tour vérifiés sous Chrome 157
-  (`tools/check_web_jspi.mjs`) ; Safari et Firefox non essayés, et un navigateur sans
-  `WebAssembly.Suspending` exécute le blit d'un seul tenant.
+- **Blit HOG long : Windows, Android et Safari non vérifiés** · P3 ⭘ — coroutine compilée seulement en croisé
+  pour Windows (fibres) et Android (fil dédié). Web : vérifié sous Chrome 157 et Firefox 160
+  (`tools/check_web_jspi.mjs --browser`, WebDriver BiDi) ; cadence de Firefox sans écran non établie (sous
+  60 tours rAF/s avant le blit, contrôles sautés). Safari non pilotable sans « Allow remote automation ».
 - **DMA externe prioritaire sur le blitter en HOG** · P3 ⭘ · [F] — netlist 4082, DMARQ,
   confiance basse.
 - **Résidu blitter/IRQ Mega STE 16 MHz** · P2 ⏸ IACK — comparaison temporelle exacte ; deux
@@ -408,7 +407,6 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   réservé du modem vers le NAT intégré), composeur de STinG.
 - **Banc STinG → theoldnet.com** · P3 ⭘ — le site répond 403 à une requête sans User-Agent depuis 2026-11 :
   ajouter un User-Agent à STGTEST ou changer de cible ; les docs qui attendent « 200 » sont à revoir.
-- **Dongles dans les frontends WASM/Android** · P3 ⭘ — pas de page Dongles.
 - **Passerelle intégrée au NAT** · P3 ⏸ décision — relais TLS côté hôte pour HTTP, IMAP, SMTP et
   FTP, aux ports des clients AERA ; les services lourds (images, scripts, PDF) restent à une
   AERA externe. Lire d'abord le protocole d'EWeb sur le fil, avec la vraie passerelle.
@@ -426,8 +424,8 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 - **Port virtuel sous Windows** · P3 ⏸ décision — Windows MIDI Services évalué le 2026-11-12 : héberger un
   port exige le SDK C++/WinRT et un runtime séparé, hors MinGW ; ne pas implémenter. Les paires de bouclage
   de *MIDI Settings* (ou loopMIDI) suffisent, à confirmer sur un vrai Windows.
-- **Anneau MIDI** · P3 ◐ — réception headless cadencée livrée ; restent la saisie du pair dans
-  le GUI et un test à deux nœuds (un seul processus, bloqué par A33, § 9).
+- **Anneau MIDI** · P3 ◐ — réception headless cadencée et saisie du pair dans le GUI (page MIDI, `midi_net=`)
+  livrées ; reste un test à deux nœuds (un seul processus, bloqué par A33, § 9).
 
 ---
 
@@ -445,8 +443,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 - **Android : clavier physique sur un appareil réel** · P3 ⭘ — clavier (US et FR) et page ROM
   (quatre EmuTOS, choix persistant) exécutés sur l'émulateur arm64 API 36 le 2026-11-12. Reste un
   vrai clavier physique (couche `.kl/.kcm`, disposition AZERTY choisie dans Android), jamais exercé.
-- **Explorateur de bitmaps** · P3 ⭘ — la RAM en plans ST avec la palette courante, dans le
-  débogueur. Modèle : ASE `DebugWindow`.
 - **Paquets Linux sans MIDI ALSA ?** · P2 ⭘ — ni l'image bionic (`Dockerfile.bionic`) ni bookworm
   (`build_in_bookworm_arm64.sh`) n'installent `libasound2-dev` : les AppImage partent sans doute sans MIDI
   hôte. La CI compile ALSA depuis le 2026-11-12 (job GUI) ; ajouter le paquet aux images et vérifier.
@@ -468,10 +464,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 Issue de l'audit du 2026-08-27 et des revues suivantes ; le soldé est au `CHANGELOG.md`.
 Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
 
-- **A9 — `appLoop` découpée** · P3 ◐ — `main()` tient en 10 lignes ; les 28 phases sont des
-  fonctions statiques `(App&, Frame&)`. Plus grosse pièce restante :
-  `runKioskMenu` — 380 lignes d'un seul tenant. Prochain pas éventuel : sortir ses pages,
-  puis `consumeConfigRequests` (219 lignes). Déplacements mécaniques uniquement.
 - **A38 — tenue du registre** · P3 ⭘ — `tools/fast_guards.json` inscrit les étapes du palier
   `fast` ; consigner chaque vrai déclenchement dans le commit qui corrige le défaut.
 - **A39 — modules jamais audités** · P3 ◐ — `src/net` relu le 2026-11-11 ; le bac à sable GEMDOS est jugé

@@ -2348,6 +2348,11 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
   par défaut `02:4E:53:54:00:01` ; les PAR restent au pilote.
 
 ## Frontend & outillage
+
+- **Explorateur de bitmaps** (2026-11-12, débogueur, `core/BitmapView`) : RAM en 1/2/4 plans, palette
+  courante ou gris, zoom ×1-×8, suit l'écran (base vidéo, résolution, largeur STE) ; lecture sans effet de bord.
+- **Dongles sur les trois frontends** (2026-11-12) : pages du web et d'Android, format `dongles.cfg` partagé.
+  **Anneau MIDI** réglable dans la page MIDI du GUI (`midi_net=`).
 - **Capture souris accessible sans bouton central (2026-08-15)** : clic molette ou
   **Ctrl+Alt+G** pour accrocher/décrocher la souris dans les frontends bureau et Web ;
   seul ce chord est réservé à l'hôte, tandis que `G` seul reste transmis à l'IKBD.
