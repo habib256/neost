@@ -743,6 +743,12 @@ Hatari (2 cycles bus), sans mesure physique.
   parce qu'Hatari rejette le `.wd1772` entier quand un TRCK ou un SECT ne trouve pas sa piste
   (`stx.c:677-685`, `648-657`) et saute les blocs inconnus (`stx.c:692-699`). Test :
   `tests/stx_absent_track_logic.cpp`.
+- **`.wd1772` : secteurs d'une piste réécrite** · assumé · basse · 2026-11-12 — Hatari ne
+  réinterprète pas un TRCK (« TODO : compute interpreted track », `stx.c:771 @ f0736b24`) et ne
+  place un SECT que sur un secteur d'origine (`STX_FindSector_By_Position`, `stx.c:1377-1396`) :
+  un SECT écrit sur une piste réécrite faisait rejeter tout le fichier. NeoST écrit ces secteurs
+  en `NSCT`, qu'Hatari saute ; Hatari relit donc les secteurs d'origine de ces pistes :
+  divergence de contenu assumée, plus de rejet. Test : `tests/stx_sector_dam_logic.cpp`.
 - **WRITE TRACK `.ST`, emplacement des ID** · voulu [B] · 2026-10-19, révisé le 2026-10-22 et
   le 2026-10-24 — un flux qui colle à la géométrie de l'image (C/H = tête et face, numéros
   1..spt uniques, 512 o) est écrit dans le `.st` ; un flux non représentable n'est plus rejeté

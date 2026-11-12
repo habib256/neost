@@ -209,15 +209,13 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   réinterprétée en secteurs (CRC régénéré, statut neutralisé), READ TRACK rend cette
   reconstruction : seule divergence de sévérité moyenne assumée, sans promesse de flux brut.
   Tranche : relecture sur un vrai lecteur d'une piste écrite par un jeu (sauvegarde), ou IPF.
-- **SECT sur une piste STX réécrite par WRITE TRACK** · P3 ⭘ — la position du secteur est celle de
-  la piste réinterprétée : Hatari ne la retrouve pas et rejette tout le `.wd1772` (préexistant).
-  Les pistes ajoutées par WRITE TRACK (2026-11-12) vont en blocs `NTRK`/`NSCT`, qu'Hatari saute.
 - **Densité `$FF860E` après XRESET** · P3 ⏸ source · [F] — registre en écriture seule sur Mega
   STE ([B] TOS `bios/sparrow/flop.s`, Pratt 1990), latch dans la PAL22V10 U407 qui reçoit XRESET
   (mise sous tension et bouton, schéma Mega STE Rev 2 f. 2 et 4/11) ; équations non publiées.
   NeoST : DD au reset à froid, gardée à chaud, relue `$FF`. Inobservable par le logiciel, réécrite
   par le TOS avant tout accès. Tranche : un dump JEDEC de U407/UA02.
-- **ACSI : essai Idris OS** · P3 ⭘ — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté.
+- **ACSI : essai Idris OS** · P3 ⏸ média — délai de fin de DMA repris d'Hatari pour lui ; jamais tenté. Aucune
+  image libre : le dépôt de préservation 9nut/IDRIS-OS-for-Atari-ST n'a pas de licence (vérifié le 2026-11-12).
 - **Compteur DMA en écriture** · P3 ⏸ source · [F] — décrémenté au 33ᵉ rechargement de 16 octets
   (Hatari, NeoST) contre le 32ᵉ (MiSTery `dma.v`) ; ni l'archive des ASIC Atari ni le manuel TT ne
   décrivent la puce C025913. L'ID sans données relancé jusqu'au 5ᵉ index n'a pas encore été
@@ -273,7 +271,7 @@ Dangerous II, Stardust, Spectrum 512 STE, Blood Money, Arkanoid, Wings of Death�
 
 | Titre | Prio | Symptôme | Piste |
 |-------|------|----------|-------|
-| **Lemmings** `[cr BBC][a]` | P3 ◐ | Menu et premier niveau gardés (`lemmings_first_level`). | Attribuer des compétences et terminer un niveau. |
+| **Lemmings** `[cr BBC][a]` | P3 ◐ | Menu, premier niveau terminé avec un Digger, bilan et présentation du niveau 2 gardés (`lemmings_first_level`, `lemmings_level1_complete`, 0,0 %). | Niveaux suivants (Floater au niveau 2). |
 | **Vroom** `[cr Elite]`, intro sous TOS 2.06 | P2 ⏸ matériel | Trame rayée transitoire, 20/1 000 trames, reproduite aussi par Hatari ; la sonde GSTMCU retrouve 230/184 octets. | Mesurer latence VBL et fréquence de la séquence sur STE réel avant tout recalage CPU/GLUE (`tools/probe_vroom_intro_glue.py`). |
 | **Switchblade** `[cr Replicants][t +2]` | P3 ⏸ relevé | Graine 8 débloquée par la cadence FDC/DMA ; seule la datation émulée change. | Relever la probabilité de collision sur un vrai ST. |
 | **Shadow Warriors** (2Hot2Handle) | P3 ⏸ média | Version Ocean jouée sans écart (`shadow_warrior_st`) ; le disque 2Hot2Handle manque. | S'il revient, essayer la touche 1. |
@@ -302,7 +300,7 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
   (N), niveau (F1) et instructions à l'identique, puis diverge, même avec `--hatari-delay`.
   Super Hang-On, Nitro, Dynamite Dux et Cybernoid II : en jeu, parties divergentes.
   → `docs/CASE_STUDIES.md`, `docs/OPENDST.md`
-- **Passe de la collection** · P3 ⭘ — 94 images en ST et en STE : A/B du 2026-11-10 identique à
+- **Passe de la collection** · P3 ⭘ — 96 images (`cpu_swap_gate.py --suite collection` : ST, STE et Mega STE) ; A/B du 2026-11-10 identique à
   l'octet sur 185 cas sur 188 ; passe d'angle du 2026-11-04 (5 graines), seul Vroom change de
   sort. À refaire après tout changement de timing. Super Off Road attend son disque de données
   et Chessmaster plante sous TOS 1.62, chez les deux émulateurs.
@@ -362,8 +360,8 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **Écarts MAME [F] à trancher** · P3 ⭘ — MA-1 (remappage RAS/CAS du ST : 4 cas sur 6 diffèrent de MAME, NeoST
   suit Hatari) et MA-20 (FIFO DMA en écriture, 32ᵉ contre 33ᵉ bloc) ; le blitter, la vidéo et le Mega STE de
   MAME ne sont pas dans le clone. → [`docs/MAME_DIVERGENCES.md`](docs/MAME_DIVERGENCES.md)
-- **Traces Hatari de référence pour `trace_diff`** · P3 ⭘ — Arkanoid et autres.
-- **Étalon spec512 en overscan** · P3 ⭘ — si une démo libre à bordures ouvertes est rapatriée.
+- **Étalon spec512 en overscan** · P3 ⏸ média — aucune démo libre à bordures ouvertes et palette Spectrum 512
+  trouvée (2026-11-12) ; à défaut, un étalon généré à bordures ouvertes, sur le modèle de `make_spec512_test.py`.
 
 > **Les références se bâtissent** : `extern/hatari`, `extern/fx68k`, `extern/mistery`,
 > `extern/mame` (les seuls fichiers cités) et `extern/datasheets` sont gitignorés, absents d'une machine fraîche. `tools/setup_hatari.sh` et

@@ -44,6 +44,16 @@ cœur) restent en attente de leur ressource.
   transport du ST (Start/Stop/Continue, SPP, horloge), Quarter et Full Frames 24/25/29,97 DF/30
   ([B] spécification MTC de la MMA), `midi_mtc=`. Unitor et Midex : protocole introuvable, besoin
   écrit ; Windows MIDI Services : port virtuel non retenu.
+- **STX.** Un WRITE SECTOR sur une piste réécrite par WRITE TRACK part en bloc NSCT : Hatari
+  (`stx.c @ f0736b24`, qui ne place un SECT que sur un secteur d'origine) relit désormais le
+  `.wd1772` de NeoST au lieu de le rejeter en entier ; les anciens fichiers se relisent.
+- **Lemmings.** Nouveau parcours `lemmings_level1_complete` (Digger, 10 lemmings sur 10 sauvés,
+  niveau 2 présenté), 0,0 % contre Hatari aux cinq étapes. `lemmings_first_level` passe au
+  décalage 0 : à 545, il ne passait qu'à 0,4 et 0,47 %.
+- **Traces de référence.** `tools/make_ref_traces.py` et `tests/traces/ref_traces.json` : traces
+  NeoST et Hatari de la même fenêtre pour `trace_diff`, sorties hors dépôt (`build/ref-traces/`).
+  Recettes : menu de Lemmings (divergence à l'instruction 10, IRQ clavier datée autrement) et
+  Arkanoid II en jeu ; des points de départ d'enquête, pas des défauts établis.
 - **Outils.** `compare_sound.py --mem` passe par `title_cmd.parse_mem` : même taille des deux
   côtés, `--mem 0` ne devient plus « 0m ».
 
