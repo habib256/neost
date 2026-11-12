@@ -30,7 +30,10 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-HEADLESS = ROOT / "build" / ("neost-headless.exe" if os.name == "nt" else "neost-headless")
+# NEOST_HEADLESS : un autre binaire (ex. build -DNEOST_EMUFIBER_THREAD=ON, le dorsal
+# d'Android vérifié sur un bureau).
+HEADLESS = Path(os.environ.get("NEOST_HEADLESS") or
+                ROOT / "build" / ("neost-headless.exe" if os.name == "nt" else "neost-headless"))
 ROM = ROOT / "roms" / "etos256us.img"
 FRAMES = 360
 
@@ -78,8 +81,9 @@ def main() -> int:
         print(f"[hog-park] {what:<62} {'OK' if ok else 'FAIL'}")
         if not ok: fails.append(what)
 
-    # Web, Android et ASan n'ont pas de coroutine (core/EmuFiber.cpp) : le blit s'y
-    # exécute d'un seul tenant. On y vérifie alors ce qui vaut dans ce mode — la trame
+    # Un build sans coroutine (core/EmuFiber.cpp : tous les dorsaux natifs en ont une
+    # depuis le fil dédié d'Android et d'ASan ; reste le web sans JSPI, hors de ce
+    # banc) exécute le blit d'un seul tenant. On y vérifie alors ce qui vaut dans ce mode — la trame
     # suivante à l'heure pendant le blit, et un programme sain après un reset — au lieu
     # d'exiger une instruction garée que ce build ne sait pas faire.
     ver = subprocess.run([str(HEADLESS), "--version"], capture_output=True, text=True)

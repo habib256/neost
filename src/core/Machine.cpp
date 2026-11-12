@@ -757,6 +757,10 @@ void Machine::runFrame() {
     if (fiber_) {
         const std::function<void()> body = [this] { runFrameBody_(); };
         fiber_->resume(body);
+        // Web (JSPI) : l'instruction garée a été déroulée à sa reprise, après
+        // requestParkedAbort — on remet ici ce qu'abortParked_ remet après un abandon
+        // synchrone. L'appelant va remplacer l'état (reset, reconfiguration).
+        if (fiber_->takeAborted()) { sched.endRun(); frameInProgress_ = false; }
         return;
     }
     runFrameBody_();
@@ -766,6 +770,14 @@ void Machine::setFrameFiber(bool on) {
     if (parkedInInstruction()) return;
     if (on && EmuFiber::supported()) { if (!fiber_) fiber_ = std::make_unique<EmuFiber>(); }
     else fiber_.reset();
+}
+
+bool Machine::requestParkedAbort() {
+    if (!parkedInInstruction()) return false;
+    if (EmuFiber::synchronous()) { abortParked_(); return false; }
+    std::fprintf(stderr, "[fiber] parked instruction abandoned (blitter transfer cut)\n");
+    fiber_->requestAbort();
+    return true;
 }
 
 void Machine::abortParked_() {

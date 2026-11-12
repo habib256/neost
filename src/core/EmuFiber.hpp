@@ -19,11 +19,23 @@
 //  swapcontext fait un appel système pour le masque de signaux), contre ~3 ms
 //  d'émulation.
 //
-//  Plates-formes : ucontext (Linux, macOS), fibres Win32 (Windows). Ailleurs — web
-//  (Emscripten), Android (bionic n'a pas makecontext) — et sous AddressSanitizer (qui
-//  ne suit pas une bascule de pile sans annotations), supported() rend faux : la
-//  Machine garde alors le comportement d'un seul tenant (trames closes comptées par
-//  lastRunFrames, l'hôte reprend la main à la fin de l'instruction).
+//  Plates-formes (dorsaux, cf. EmuFiber.cpp) :
+//    • ucontext — Linux, macOS : bascule de pile sur le même fil ;
+//    • fibres Win32 — Windows ;
+//    • fil dédié — Android (bionic n'a pas makecontext) et AddressSanitizer (qui ne
+//      suit pas une bascule de pile sans annotations) : la pile d'émulation est celle
+//      d'un second fil, et les deux fils se passent la main sous verrou — un seul
+//      tourne à la fois, jamais en concurrence. Même sémantique que les bascules ;
+//      coût ~10-50 µs par trame (deux réveils de fil) ;
+//    • JSPI — web (Emscripten), si le navigateur a WebAssembly.Suspending : yield
+//      suspend la pile wasm jusqu'à la promesse que la page résout à la trame
+//      suivante. La pile ne se reprend pas sur demande (la reprise passe par la
+//      boucle d'événements du navigateur) : resume() d'une exécution garée et abort()
+//      ne sont pas synchrones — cf. requestAbort et le frontend web. Sans JSPI
+//      (navigateur trop ancien), supported() rend faux.
+//  Quand supported() rend faux (ou NEOST_NO_FIBER=1), la Machine garde le
+//  comportement d'un seul tenant (trames closes comptées par lastRunFrames, l'hôte
+//  reprend la main à la fin de l'instruction).
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
@@ -41,6 +53,9 @@ public:
     struct Abort {};
 
     static bool supported();
+    // Vrai si resume() d'une exécution garée et abort() se font sur place (tous les
+    // dorsaux sauf JSPI, où la reprise passe par la boucle d'événements de la page).
+    static bool synchronous();
 
     EmuFiber();
     ~EmuFiber();
@@ -62,6 +77,17 @@ public:
     // si rien n'est garé. L'état de la machine est alors celui d'une instruction coupée :
     // l'appelant doit le remplacer (reset, chargement d'état) ou le détruire.
     void abort();
+    // Demande d'abandon sans attendre : sur un dorsal synchrone, c'est abort() ; sur
+    // JSPI, la pile garée est relancée et lève Abort à sa reprise — resume() (en
+    // cours, en haut de la pile web) l'intercepte et aborted() le signale ensuite.
+    void requestAbort();
+    // Vrai (une fois) si la dernière exécution a été déroulée par requestAbort (JSPI) :
+    // l'appelant remet ce qu'abort() remettrait (cf. Machine::runFrame).
+    bool takeAborted() { const bool a = aborted_; aborted_ = false; return a; }
+
+    // JSPI : vrai pendant que la page exécute la trame par l'export « promising » —
+    // seul contexte où la pile wasm peut être suspendue (posé par le frontend web).
+    static void setHostCanSuspend(bool on);
 
     // Pile d'émulation : l'instruction garée porte toute la chaîne Moira → sync →
     // blitter → ordonnanceur → fin de trame (rendu, spec512).
@@ -70,12 +96,13 @@ public:
 private:
     friend void emuFiberEnter(EmuFiber* f);   // point d'entrée de la pile d'émulation
     struct Impl;                    // contexte de la plate-forme (cf. EmuFiber.cpp)
-    void runJobs();                 // boucle de la pile d'émulation
+    void runJobs();                 // boucle de la pile d'émulation (sauf JSPI)
     void switchToFiber();
     void switchToHost();
 
     Impl* impl_ = nullptr;
     std::function<void()> job_{};   // copie : le corps garé survit à l'appel de resume
     std::exception_ptr error_{};
-    bool inside_ = false, parked_ = false, abortReq_ = false;
+    bool inside_ = false, parked_ = false, abortReq_ = false, aborted_ = false;
+    bool quit_ = false;             // fil dédié : la boucle runJobs s'arrête (destruction)
 };

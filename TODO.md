@@ -167,11 +167,11 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.3 Blitter
 
-- **Blit HOG long sans coroutine : web, Android, ASan** *(proposé)* · P3 ⏸ décision — `runFrame`
-  rend la main à chaque trame grâce à `core/EmuFiber` (ucontext sous Linux et macOS, fibres sous
-  Windows) ; le web (pas de `makecontext`, `emscripten_fiber` possible avec Asyncify), Android
-  (bionic sans `makecontext`) et les builds ASan gardent l'exécution d'un seul tenant : un blit de
-  plusieurs secondes y fige encore l'hôte. La version Windows n'est que compilée en croisé.
+- **Blit HOG long : Windows, Android et Safari non vérifiés** · P3 ⭘ — la coroutine de
+  `runFrame` (`core/EmuFiber`) n'est que compilée en croisé pour Windows (fibres) et Android
+  (fil dédié, le même dorsal que les builds ASan, vérifié sous macOS et en CI). Sur le web, JSPI
+  est vérifié sous Chrome 157 ; un navigateur sans `WebAssembly.Suspending` retombe sur
+  l'exécution d'un seul tenant (l'onglet se fige le temps du blit).
 
 Accord au cycle avec `stBlitter.sv` et fx68k sur 78 programmes, ST à 8 MHz → `docs/STBLITTER_BENCH.md`.
 Extension du banc à 16 MHz → § 2.

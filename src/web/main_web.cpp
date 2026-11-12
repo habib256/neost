@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -426,18 +427,10 @@ void produceAudioFrame() {
     EM_ASM({ if (window.neostAudioPush) window.neostAudioPush($0, $1); }, st, n);
 }
 
-// Boucle principale appelée par requestAnimationFrame. Une trame émulée par
-// rappel (≈ 60 Hz ici, contre 50 Hz réels : la machine tourne légèrement vite,
-// acceptable pour un test navigateur).
-void mainLoop() {
-    // À la toute première trame, on signale à la page que le runtime tourne
-    // (le statut "Prêt" s'affiche alors de façon fiable, cf. shell.html).
-    static bool announced = false;
-    if (!announced) {
-        announced = true;
-        EM_ASM({ if (window.neostOnReady) window.neostOnReady(); });
-    }
-
+// Entrées hôte (souris capturée, manettes) → machine. Appelé à chaque tour de la
+// boucle, et pendant un blit HOG garé (neost_web_park_due) : l'IKBD n'est pas arrêté
+// par le blitter, il continue d'échantillonner.
+void pollHostInput() {
     glfwPollEvents();
 
     if (g_mouseCaptured) {                  // mouvement relatif → paquet IKBD
@@ -462,7 +455,32 @@ void mainLoop() {
     }
 
     g_machine->cpu.updateIpl();
+}
 
+neost::pacing::FramePacer g_framePacer;
+
+// Ordres de la page qui remplacent l'état de la machine (reset, ROM, moniteur) reçus
+// pendant qu'une instruction est garée (JSPI) : la pile garée ne se déroule qu'à sa
+// reprise, ils attendent donc la fin du déroulement (cf. Machine::requestParkedAbort).
+std::vector<std::function<void()>> g_deferred;
+
+void whenUnparked(std::function<void()> order) {
+    if (g_machine->requestParkedAbort()) { g_deferred.push_back(std::move(order)); return; }
+    order();
+}
+
+bool applyDeferred() {
+    if (g_deferred.empty()) return false;
+    std::vector<std::function<void()>> orders;
+    orders.swap(g_deferred);
+    for (auto& o : orders) o();
+    return true;
+}
+
+void presentFrame();
+
+// Exécute les trames dues (0, 1 ou plus) ; rend leur nombre.
+int runDueFrames() {
     // CADENCE : sur le TEMPS ÉMULÉ, pas sur requestAnimationFrame.
     //
     // La boucle exécutait UNE trame par tick rAF, c'est-à-dire à la fréquence de
@@ -478,19 +496,39 @@ void mainLoop() {
     // spiraler après un onglet mis en arrière-plan (rAF y est suspendu).
     // A28 : la boucle de rattrapage est PARTAGÉE (core/Pacing.hpp) — même
     // algorithme, au caractère près, que celle du frontend Android.
-    static neost::pacing::FramePacer g_framePacer;
     const double nowMs = emscripten_get_now();
-    const int ran = g_framePacer.runDue(nowMs, [] {
+    return g_framePacer.runDue(nowMs, [] {
         g_machine->runFrame();
+        // Instruction garée déroulée (ordre de la page reçu pendant un blit HOG) :
+        // l'état est celui d'une instruction coupée, l'ordre différé le remplace.
+        if (applyDeferred()) return g_machine->frameCycles();
         produceAudioFrame();          // le son suit la trame, pas le rythme de l'écran
         g_rewind.onFrame(*g_machine);
         return g_machine->frameCycles();
     });
+}
 
+// Un tour de boucle : entrées, trames dues, affichage.
+void mainLoopBody() {
+    // À la toute première trame, on signale à la page que le runtime tourne
+    // (le statut "Prêt" s'affiche alors de façon fiable, cf. shell.html).
+    static bool announced = false;
+    if (!announced) {
+        announced = true;
+        EM_ASM({ if (window.neostOnReady) window.neostOnReady(); });
+    }
+    pollHostInput();
     // Aucune trame due (écran plus rapide que la machine) : rien de neuf à
     // montrer, on garde l'image précédente plutôt que de re-téléverser la même.
-    if (ran == 0) return;
+    if (runDueFrames() == 0) return;
+    presentFrame();
+}
 
+// Boucle sans JSPI : appelée par requestAnimationFrame (emscripten_set_main_loop).
+void mainLoop() { mainLoopBody(); }
+
+// Affiche la dernière trame émulée.
+void presentFrame() {
     const int w = g_machine->shifter.width(), h = g_machine->shifter.height();
     uploadFrame(g_machine->shifter.pixels(), w, h);
 
@@ -527,15 +565,89 @@ void mainLoop() {
 } // namespace
 
 // =============================================================================
+//  Boucle JSPI : la trame peut rendre la main AU MILIEU d'une instruction.
+//
+//  Un blit HOG parti dans une instruction tient le CPU jusqu'à sa fin — plusieurs
+//  secondes pour un grand blit. Sur le bureau, la coroutine de runFrame (core/EmuFiber)
+//  rend la main à chaque fin de trame ; sur le web, c'est JSPI : la page appelle la
+//  trame par un export « promising » (neost_web_tick, enveloppé à l'instanciation par
+//  web/shell.html), et EmuFiber::yield suspend la pile wasm. Avant de suspendre, la
+//  trame close est livrée (neost_web_parked_frame : son, image, cadence) ; la boucle
+//  ci-dessous relance la pile quand la trame suivante est due (neost_web_park_due).
+//
+//  ⚠ La boucle est en JS PUR (requestAnimationFrame → export promising), et non dans
+//  emscripten_set_main_loop : la pile « ombre » d'Emscripten (variables en mémoire
+//  linéaire) est partagée par toutes les entrées dans le wasm. Pendant la suspension,
+//  le pointeur de pile reste au fond de la pile suspendue, et les appels ré-entrants
+//  (rappels clavier, neost_web_park_due) empilent EN DESSOUS. Une frame wasm sous
+//  l'export (la boucle C d'emscripten_set_main_loop) remettrait au contraire le
+//  pointeur en haut en sortant : les appels suivants écraseraient la pile suspendue.
+//
+//  Navigateur sans JSPI (ou page ?fiber=0) : boucle classique, le blit HOG d'un seul
+//  tenant (l'onglet se fige le temps du blit).
+// =============================================================================
+EM_JS(void, neost_jspi_start_loop, (), {
+    const tick = Module.neostTickPromising;
+    let busy = false;
+    Module.neostParkBudget = 0;
+    function frame() {
+        requestAnimationFrame(frame);
+        if (busy) {
+            // Instruction garée : relancée quand la trame suivante est due. Jusqu'à
+            // 4 trames par tour en rattrapage (FramePacer::kMaxCatchUp), cf.
+            // neost_jspi_park.
+            if (Module.neostParkResolve && Module._neost_web_park_due(performance.now())) {
+                Module.neostParkBudget = 3;
+                const r = Module.neostParkResolve;
+                Module.neostParkResolve = null;
+                r();
+            }
+            return;
+        }
+        busy = true;
+        tick().then(() => { busy = false; }, (e) => {
+            console.error('[web] frame failed:', e);
+            if (Module.onAbort) Module.onAbort(String(e));
+        });
+    }
+    requestAnimationFrame(frame);
+});
+
+// =============================================================================
 //  API exportée vers le JavaScript de la page (shell HTML).
 // =============================================================================
 extern "C" {
+
+// Un tour de boucle sous JSPI (appelé par la page via WebAssembly.promising) : seul
+// contexte où la pile wasm peut être suspendue.
+EMSCRIPTEN_KEEPALIVE void neost_web_tick() {
+    EmuFiber::setHostCanSuspend(true);
+    mainLoopBody();
+    EmuFiber::setHostCanSuspend(false);
+    applyDeferred();
+}
+
+// Trame close pendant une instruction garée (appelé par EmuFiber::yield, juste avant
+// la suspension) : comme la fin du lambda de runDueFrames puis presentFrame. Le retour
+// arrière ne prend pas d'instantané d'une instruction garée (Rewind::onFrame l'ignore).
+EMSCRIPTEN_KEEPALIVE void neost_web_parked_frame() {
+    produceAudioFrame();
+    g_framePacer.advance(g_machine->frameCycles());
+    presentFrame();
+}
+
+// Instruction garée : la trame suivante est-elle due ? Les entrées sont relevées au
+// passage (rAF continue de tourner pendant le blit).
+EMSCRIPTEN_KEEPALIVE int neost_web_park_due(double nowMs) {
+    pollHostInput();
+    return g_framePacer.due(nowMs, g_machine->frameCycles()) ? 1 : 0;
+}
 
 // Reset À CHAUD (bouton RESET de la machine) : les puces repartent aux valeurs de
 // reset, la RAM est CONSERVÉE — le TOS voit son « memvalid » intact et refait un
 // boot court.
 EMSCRIPTEN_KEEPALIVE void neost_reset() {
-    if (g_machine) g_machine->reset();
+    if (g_machine) whenUnparked([] { g_machine->reset(); });
 }
 
 // Reset À FROID (power-cycle) : efface la ST-RAM, donc le TOS refait un boot
@@ -544,7 +656,7 @@ EMSCRIPTEN_KEEPALIVE void neost_reset() {
 // web était le seul frontend à ne pas l'exposer, alors même que son bouton
 // s'annonçait « Cold reset of the machine ».
 EMSCRIPTEN_KEEPALIVE void neost_hard_reset() {
-    if (g_machine) g_machine->hardReset();
+    if (g_machine) whenUnparked([] { g_machine->hardReset(); });
 }
 
 // Charge une autre ROM TOS (déjà présente dans le FS virtuel) et redémarre À FROID,
@@ -568,16 +680,19 @@ EMSCRIPTEN_KEEPALIVE int neost_load_tos(const char* path) {
     // STE→ST d'un vieux TOS était définitive — recharger ensuite un TOS moderne
     // laissait la session en ST jusqu'au rechargement de la page.
     const MachineType adj = Machine::adjustMachineForTos(g_reqMachine, path);
-    if (adj != g_machine->bus.machine)
-        g_machine->reconfigure(g_machine->bus.ram.size(), CpuCore::Moira, adj);
     // Vidé dans TOUS les cas, comme le bureau : un instantané pris sous l'ancienne
     // ROM y ramènerait la RAM d'un autre OS sous la nouvelle.
     g_rewind.clear();
     neost::stkeys::setCountryFromTos(g_machine->bus.rom);   // pays clavier de la nouvelle ROM
-    // À FROID : un reset() à chaud gardait la RAM de l'ancien OS et son
-    // « memvalid » — le nouveau TOS faisait un boot court sur des variables
-    // système qui ne sont pas les siennes.
-    g_machine->hardReset();
+    // Reconfiguration et reset après le déroulement d'une instruction garée (JSPI).
+    whenUnparked([adj] {
+        if (adj != g_machine->bus.machine)
+            g_machine->reconfigure(g_machine->bus.ram.size(), CpuCore::Moira, adj);
+        // À FROID : un reset() à chaud gardait la RAM de l'ancien OS et son
+        // « memvalid » — le nouveau TOS faisait un boot court sur des variables
+        // système qui ne sont pas les siennes.
+        g_machine->hardReset();
+    });
     return 1;
 }
 
@@ -586,7 +701,7 @@ EMSCRIPTEN_KEEPALIVE int neost_load_tos(const char* path) {
 EMSCRIPTEN_KEEPALIVE void neost_set_mono(int mono) {
     if (!g_machine) return;
     g_machine->mfp.setColorMonitor(mono == 0);
-    g_machine->reset();
+    whenUnparked([] { g_machine->reset(); });
 }
 
 // Monte une image déjà écrite dans le FS virtuel (cf. shell : dépôt de fichier
@@ -609,7 +724,7 @@ EMSCRIPTEN_KEEPALIVE int neost_mount_disk(const char* path, int reset) {
     // reqHardReset). Un reset à chaud laisse la RAM de la session précédente et
     // son « memvalid » : le TOS saute le boot complet, et une démo chargée par
     // dessus les restes d'une autre peut démarrer de travers.
-    if (reset) g_machine->hardReset();
+    if (reset) whenUnparked([] { g_machine->hardReset(); });
     return 1;
 }
 
@@ -810,6 +925,13 @@ int main(int argc, char** argv) {
 
     std::printf("[web] NeoST started. Middle mouse button or Ctrl+Alt+G = capture/release.\n");
 
+    // JSPI disponible (posé par la page à l'instanciation) : boucle JS pure, cf.
+    // neost_jspi_start_loop. main() rend alors la main sans arrêter le runtime.
+    if (EmuFiber::supported() && machine.frameFiber()) {
+        std::printf("[web] JSPI: long blitter transfers yield every frame.\n");
+        neost_jspi_start_loop();
+        emscripten_exit_with_live_runtime();
+    }
     // fps=0 → requestAnimationFrame ; simulate_infinite_loop=1 → main() ne rend
     // pas la main (le cœur reste vivant via la Machine statique).
     emscripten_set_main_loop(mainLoop, 0, 1);

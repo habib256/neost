@@ -22,8 +22,16 @@
 #  endif
 #endif
 
-#if defined(__EMSCRIPTEN__) || defined(__ANDROID__) || defined(EMUFIBER_ASAN)
-#  define EMUFIBER_NONE 1
+// EMUFIBER_FORCE_THREAD (posé par l'option CMake « …_EMUFIBER_THREAD ») force le dorsal « fil dédié » sur un bureau :
+// c'est celui d'Android, qu'on vérifie ainsi sous Linux et macOS.
+#if defined(__EMSCRIPTEN__)
+#  define EMUFIBER_JSPI 1
+#  include <emscripten.h>
+#elif defined(__ANDROID__) || defined(EMUFIBER_ASAN) || defined(EMUFIBER_FORCE_THREAD)
+#  define EMUFIBER_THREAD 1
+#  include <condition_variable>
+#  include <mutex>
+#  include <pthread.h>
 #elif defined(_WIN32)
 #  define EMUFIBER_WIN32 1
 #  include <windows.h>
@@ -40,15 +48,79 @@
 #  include <ucontext.h>
 #endif
 
-#if defined(EMUFIBER_NONE)
+#if defined(EMUFIBER_JSPI)
+
+// -----------------------------------------------------------------------------
+//  Web : JSPI (JavaScript Promise Integration). Pas de seconde pile à nous : la
+//  page appelle la trame par un export « promising » (WebAssembly.promising), et
+//  neost_jspi_park, importé « Suspending », rend une promesse — le moteur suspend
+//  alors toute la pile wasm jusqu'à l'export, la page reprend la main. Elle livre la
+//  trame close (neost_web_parked_frame, appelé AVANT la suspension), puis résout la
+//  promesse quand la trame suivante est due : la pile repart dans yield.
+//  Les deux fonctions JS ci-dessous sont des imports « env » ; web/shell.html
+//  enveloppe neost_jspi_park dans WebAssembly.Suspending à l'instanciation et pose
+//  Module.neostJspi. Sans JSPI dans le navigateur, supported() rend faux et rien de
+//  ceci n'est appelé.
+// -----------------------------------------------------------------------------
+EM_JS(int, neost_jspi_ready, (), { return Module.neostJspi === true ? 1 : 0; });
+EM_JS(void, neost_jspi_park, (), {
+    Module._neost_web_parked_frame();
+    return new Promise((res) => { Module.neostParkResolve = res; });
+});
+EM_JS(void, neost_jspi_release, (), {
+    const r = Module.neostParkResolve;
+    Module.neostParkResolve = null;
+    if (r) r();
+});
+
+namespace { bool g_hostCanSuspend = false; }
 
 struct EmuFiber::Impl {};
-bool EmuFiber::supported() { return false; }
+bool EmuFiber::supported() { return neost_jspi_ready() != 0; }
+bool EmuFiber::synchronous() { return false; }
+void EmuFiber::setHostCanSuspend(bool on) { g_hostCanSuspend = on; }
 EmuFiber::EmuFiber() = default;
-EmuFiber::~EmuFiber() = default;
-bool EmuFiber::resume(const std::function<void()>& body) { body(); return false; }
-void EmuFiber::yield() {}
-void EmuFiber::abort() {}
+EmuFiber::~EmuFiber() = default;   // la page ne détruit pas la Machine (statique)
+
+bool EmuFiber::resume(const std::function<void()>& body) {
+    // Une exécution garée ne se reprend que par la page (promesse résolue) : un appel
+    // pendant la suspension (rappel JS ré-entrant) ne fait rien.
+    if (parked_) return true;
+    inside_ = g_hostCanSuspend;
+    try {
+        body();
+    } catch (const Abort&) {
+        aborted_ = true;            // déroulée par requestAbort : l'appelant remet l'état
+    } catch (...) {
+        inside_ = false;
+        throw;
+    }
+    inside_ = false;
+    return false;
+}
+
+void EmuFiber::yield() {
+    parked_ = true;
+    neost_jspi_park();              // suspend la pile wasm ; revient à la reprise
+    parked_ = false;
+    if (abortReq_) { abortReq_ = false; throw Abort{}; }
+}
+
+void EmuFiber::requestAbort() {
+    if (!parked_) return;
+    abortReq_ = true;
+    neost_jspi_release();           // la pile reprend (microtâche) et lève Abort
+}
+
+void EmuFiber::abort() {
+    if (!parked_) return;
+    // Ne peut pas dérouler sur place : le frontend web diffère reset, reconfiguration
+    // et chargement de ROM jusqu'à la fin du déroulement (requestAbort). Arriver ici
+    // est un défaut du frontend — on s'arrête net plutôt que de corrompre l'état.
+    std::fprintf(stderr, "[fiber] synchronous abort requested while parked (JSPI)\n");
+    std::abort();
+}
+
 void EmuFiber::runJobs() {}
 void EmuFiber::switchToFiber() {}
 void EmuFiber::switchToHost() {}
@@ -75,6 +147,26 @@ static void fiberEntry() {
 }
 #endif
 
+#if defined(EMUFIBER_THREAD)
+// Fil dédié : la pile d'émulation est celle d'un second fil. `fiberTurn` dit qui a
+// la main ; chaque bascule la passe sous le verrou et attend qu'elle revienne. Un seul
+// fil tourne à la fois : le verrou ordonne aussi les écritures (happens-before), l'état
+// de la Machine se lit donc de part et d'autre comme sur un seul fil.
+struct EmuFiber::Impl {
+    pthread_t thread{};
+    std::mutex m;
+    std::condition_variable cv;
+    bool fiberTurn = false;
+    bool quit = false;
+};
+
+static void* fiberThreadEntry(void* arg) {
+    EmuFiber* f = static_cast<EmuFiber*>(arg);
+    emuFiberEnter(f);               // revient quand la destruction arrête la boucle
+    return nullptr;
+}
+#endif
+
 #if defined(EMUFIBER_WIN32)
 struct EmuFiber::Impl {
     void* host = nullptr;
@@ -84,8 +176,20 @@ static void CALLBACK fiberEntryWin(void* arg) { emuFiberEnter(static_cast<EmuFib
 #endif
 
 bool EmuFiber::supported() { return true; }
+bool EmuFiber::synchronous() { return true; }
+void EmuFiber::setHostCanSuspend(bool) {}
+void EmuFiber::requestAbort() { abort(); }
 
-void emuFiberEnter(EmuFiber* f) { f->runJobs(); }
+void emuFiberEnter(EmuFiber* f) {
+#if defined(EMUFIBER_THREAD)
+    {   // le fil attend son premier tour (≙ makecontext : rien ne tourne avant resume)
+        std::unique_lock<std::mutex> lk(f->impl_->m);
+        f->impl_->cv.wait(lk, [f] { return f->impl_->fiberTurn || f->impl_->quit; });
+        if (f->impl_->quit) return;
+    }
+#endif
+    f->runJobs();
+}
 
 EmuFiber::EmuFiber() : impl_(new Impl) {
 #if defined(EMUFIBER_UCONTEXT)
@@ -103,6 +207,15 @@ EmuFiber::EmuFiber() : impl_(new Impl) {
     impl_->fiber.uc_stack.ss_size = kStackBytes;
     impl_->fiber.uc_link = nullptr;              // runJobs ne revient jamais
     makecontext(&impl_->fiber, fiberEntry, 0);
+#elif defined(EMUFIBER_THREAD)
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, kStackBytes);
+    if (pthread_create(&impl_->thread, &attr, fiberThreadEntry, this) != 0) {
+        std::fprintf(stderr, "[fiber] cannot start the emulation thread\n");
+        std::abort();
+    }
+    pthread_attr_destroy(&attr);
 #else
     impl_->fiber = CreateFiber(kStackBytes, fiberEntryWin, this);
     if (!impl_->fiber) {
@@ -116,6 +229,14 @@ EmuFiber::~EmuFiber() {
     abort();   // une instruction garée est déroulée tant que la Machine vit
 #if defined(EMUFIBER_UCONTEXT)
     munmap(impl_->map, impl_->mapBytes);
+#elif defined(EMUFIBER_THREAD)
+    {   // le fil attend son tour (jamais lancé, ou rendu la main) : on l'arrête
+        std::lock_guard<std::mutex> lk(impl_->m);
+        impl_->quit = true;
+        quit_ = true;
+    }
+    impl_->cv.notify_all();
+    pthread_join(impl_->thread, nullptr);
 #else
     DeleteFiber(impl_->fiber);
 #endif
@@ -127,6 +248,11 @@ void EmuFiber::switchToFiber() {
 #if defined(EMUFIBER_UCONTEXT)
     g_starting = this;              // lu une seule fois, à la première entrée
     swapcontext(&impl_->host, &impl_->fiber);
+#elif defined(EMUFIBER_THREAD)
+    std::unique_lock<std::mutex> lk(impl_->m);
+    impl_->fiberTurn = true;
+    impl_->cv.notify_all();
+    impl_->cv.wait(lk, [this] { return !impl_->fiberTurn; });
 #else
     if (!IsThreadAFiber()) ConvertThreadToFiber(nullptr);
     impl_->host = GetCurrentFiber();
@@ -138,6 +264,11 @@ void EmuFiber::switchToFiber() {
 void EmuFiber::switchToHost() {
 #if defined(EMUFIBER_UCONTEXT)
     swapcontext(&impl_->fiber, &impl_->host);
+#elif defined(EMUFIBER_THREAD)
+    std::unique_lock<std::mutex> lk(impl_->m);
+    impl_->fiberTurn = false;
+    impl_->cv.notify_all();
+    impl_->cv.wait(lk, [this] { return impl_->fiberTurn || impl_->quit; });
 #else
     SwitchToFiber(impl_->host);
 #endif
@@ -157,6 +288,7 @@ void EmuFiber::runJobs() {
         job = nullptr;
         parked_ = false;
         switchToHost();
+        if (quit_) return;          // fil dédié : destruction de l'EmuFiber
     }
 }
 

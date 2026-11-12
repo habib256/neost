@@ -150,6 +150,18 @@ add_library(neost_core STATIC
     src/gui/AppConfig.cpp)
 
 target_include_directories(neost_core PUBLIC "${CMAKE_SOURCE_DIR}/src")
+
+# Coroutine de runFrame (core/EmuFiber) : Android et les builds ASan prennent le
+# dorsal « fil dédié » (pthread). NEOST_EMUFIBER_THREAD le force sur un bureau, pour
+# vérifier sous Linux et macOS le dorsal qu'Android embarque.
+option(NEOST_EMUFIBER_THREAD "Coroutine de runFrame sur un fil dédié (dorsal Android)" OFF)
+if(NEOST_EMUFIBER_THREAD)
+    set_property(SOURCE src/core/EmuFiber.cpp APPEND PROPERTY COMPILE_DEFINITIONS EMUFIBER_FORCE_THREAD=1)
+endif()
+if(NOT EMSCRIPTEN AND NOT WIN32)
+    find_package(Threads REQUIRED)
+    target_link_libraries(neost_core PUBLIC Threads::Threads)
+endif()
 # (Cpu68k.cpp est traité à part : il inclut l'en-tête tiers Moira.h → C++20 sans
 #  -Wpedantic strict, cf. le bloc Moira plus bas.)
 set_source_files_properties(
@@ -601,7 +613,13 @@ if(EMSCRIPTEN)
         "-sUSE_GLFW=3"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,FS,HEAPF32"
-        "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_hard_reset,_neost_set_mono,_neost_mount_disk,_neost_mount_disk_b,_neost_load_tos,_neost_set_kbd_joystick,_neost_set_joy_deadzone,_neost_set_fullscreen,_neost_set_auto_zoom,_neost_audio_open,_neost_audio_close,_neost_audio_set_queued,_neost_set_volume,_neost_get_volume,_neost_set_rewind,_neost_rewind,_malloc,_free"
+        "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_hard_reset,_neost_set_mono,_neost_mount_disk,_neost_mount_disk_b,_neost_load_tos,_neost_set_kbd_joystick,_neost_set_joy_deadzone,_neost_set_fullscreen,_neost_set_auto_zoom,_neost_audio_open,_neost_audio_close,_neost_audio_set_queued,_neost_set_volume,_neost_get_volume,_neost_set_rewind,_neost_rewind,_neost_web_tick,_neost_web_parked_frame,_neost_web_park_due,_malloc,_free"
+        # JSPI (blit HOG long, cf. src/web/main_web.cpp) : web/shell.html enveloppe
+        # l'import env.neost_jspi_park et l'export neost_web_tick PAR LEUR NOM à
+        # l'instanciation — les noms d'imports et d'exports ne doivent pas être minifiés.
+        # DECLARE_ASM_MODULE_EXPORTS=0 est le réglage public qui coupe cette
+        # minification (tools/link.py : MINIFY_WASM_EXPORT_NAMES = 0, réglage interne).
+        "-sDECLARE_ASM_MODULE_EXPORTS=0"
         "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/web/shell.html")
     # Garde au lien : les ports Emscripten (GLFW…) livrent des fonctions non
     # implémentées sous forme de stubs abort("X not implemented.") qui se lient
