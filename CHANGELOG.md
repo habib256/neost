@@ -6,6 +6,33 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Blit HOG long sur le web et Android (2026-11-12)
+
+- **Android et ASan.** La coroutine de `runFrame` (`core/EmuFiber`) a un troisième dorsal : un
+  fil dédié de 16 Mio de pile, en alternance stricte avec l'hôte (un seul des deux tourne, la
+  main passe sous verrou deux fois par trame). Bionic n'a pas `makecontext`, et ASan ne suit pas
+  une bascule de pile : les deux prennent ce dorsal, ce qui le fait tourner en CI (job ASan,
+  `check_hog_park.py`). `-DNEOST_EMUFIBER_THREAD=ON` le force sur un bureau ; le banc hog-park y
+  passe en entier, `NEOST_HEADLESS=` pour le lui désigner. Coût mesuré sur 3 000 trames : nul
+  seul (2,00 s contre 2,01 s), 3 à 5 % avec 16 instances sur 8 cœurs.
+- **Web.** JSPI : la page appelle la trame par un export `WebAssembly.promising`, et
+  `EmuFiber::yield` suspend la pile wasm sur un import `WebAssembly.Suspending` ; la trame close
+  est livrée avant la suspension (son, image, cadence), la page relance la pile quand la suivante
+  est due. Asyncify était exclu : incompatible avec les exceptions wasm, dont Moira a besoin. La
+  trame est pilotée par une boucle `requestAnimationFrame` en JS pur : une frame wasm sous
+  l'export remettrait en sortie le pointeur de la pile « ombre » d'Emscripten au-dessus de la
+  pile suspendue, que les appels ré-entrants écraseraient. La pile garée ne se déroule pas sur
+  demande : reset, ROM, moniteur et montage avec reset reçus pendant le garage attendent le
+  déroulement (`Machine::requestParkedAbort`). Sans JSPI ou avec `?fiber=0`, exécution d'un seul
+  tenant. Vérifié sous Chrome 157 headless avec un blit de 4 096 × 1 000 mots sur STE :
+  245 trames livrées pendant le blit, aucun écart de plus de 17 ms entre deux rAF (483 ms
+  avec `?fiber=0`) ; un reset en plein blit l'abandonne, le TOS redémarre et le second blit va
+  à son terme. Les noms d'imports et d'exports ne sont plus minifiés
+  (`-sDECLARE_ASM_MODULE_EXPORTS=0`).
+- **Shell web.** Emscripten 6.0.8 réécrivait l'échappement hexadécimal du caractère nul d'une
+  regex du shell (nom de disquette déposée) en un vrai octet NUL : la regex invalide arrêtait
+  tout le script de la page construite localement. Classe réécrite sans cet échappement.
+
 ## Blit HOG : la trame continue, l'hôte reprend la main (2026-11-11)
 
 - **Blitter.** Un blit HOG parti dans une instruction ne fige plus la trame : à la fin de trame

@@ -1499,7 +1499,7 @@ int main(int argc, char** argv) {
 #endif
             // Deuxième ligne (la première est lue par check_release / run_perfbench) : un
             // banc qui exige une instruction garée (check_hog_park) sait si ce build le peut
-            // — web, Android et ASan n'ont pas de coroutine (cf. core/EmuFiber.cpp).
+            // — NEOST_NO_FIBER=1 la coupe (cf. core/EmuFiber.cpp pour les dorsaux).
             std::printf("emulation fiber: %s\n", EmuFiber::supported() ? "yes" : "no");
             return 0;
         }

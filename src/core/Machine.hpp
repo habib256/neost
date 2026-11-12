@@ -236,6 +236,12 @@ public:
     // Coupé, un tel blit rend la main à la fin de l'instruction (cf. lastRunFrames).
     // Sans effet tant qu'une instruction est garée.
     void setFrameFiber(bool on);
+    // Abandon d'une instruction garée demandé par l'hôte AVANT un reset, une
+    // reconfiguration ou un chargement de ROM. Sur une coroutine synchrone, fait sur
+    // place (rend faux). Sur le web (JSPI), la pile garée ne se déroule qu'à sa reprise
+    // par la boucle de la page : rend vrai, et l'hôte attend la fin de la trame en cours
+    // (runFrame rend la main, parkedInInstruction() faux) pour appliquer son ordre.
+    bool requestParkedAbort();
     bool frameFiber() const { return fiber_ != nullptr; }
 
     // Débogueur : avance d'UNE instruction 68000 en gardant l'ordonnanceur EN LOCKSTEP

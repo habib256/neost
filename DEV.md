@@ -158,12 +158,20 @@ instruction tient le CPU jusqu'à la fin du transfert, parfois plusieurs seconde
 trame est franchie à son heure dans le temps émulé (`Scheduler::syncToRollingFrames` →
 `Machine::rollFrameInInstruction_` : la trame est close, la suivante amorcée), et `runFrame`
 tourne sur une coroutine (`core/EmuFiber` : ucontext sous Linux et macOS, fibres sous
-Windows) qui **gare** l'instruction et rend la main à l'hôte ; l'appel suivant la reprend.
+Windows, fil dédié en alternance stricte sous Android et ASan, JSPI sur le web) qui **gare**
+l'instruction et rend la main à l'hôte ; l'appel suivant la reprend.
 Pendant le garage, `Machine::parkedInInstruction()` est vrai : save-state, chargement, retour
 arrière et pas-à-pas sont refusés avec un motif (`lastStateError`), reset et reconfiguration
-abandonnent l'instruction. Le web et Android n'ont pas de coroutine (ni `NEOST_NO_FIBER=1`) :
-`runFrame` y rend la main à la fin de l'instruction et `lastRunFrames()` dit combien de
-trames il a closes. Accord à l'octet entre les deux modes : `tools/check_hog_park.py`.
+abandonnent l'instruction. Sur le web, la pile garée ne se reprend que par la boucle de la
+page : la trame est pilotée par une boucle `requestAnimationFrame` en JS pur (jamais une frame
+wasm sous l'export, sinon la pile « ombre » d'Emscripten serait écrasée pendant la
+suspension), et reset, chargement de ROM et changement de moniteur reçus pendant le garage
+attendent le déroulement (`Machine::requestParkedAbort`, `whenUnparked` de
+`src/web/main_web.cpp`). Navigateur sans JSPI, `?fiber=0` ou `NEOST_NO_FIBER=1` :
+`runFrame` rend la main à la fin de l'instruction et `lastRunFrames()` dit combien de
+trames il a closes. Accord à l'octet entre les deux modes : `tools/check_hog_park.py`
+(`NEOST_HEADLESS=` pour un autre binaire, p. ex. `-DNEOST_EMUFIBER_THREAD=ON`, le dorsal
+d'Android vérifié sur un bureau).
 
 ## Le Bus
 

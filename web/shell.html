@@ -345,6 +345,37 @@
         }
       }
     };
+    // JSPI (JavaScript Promise Integration) : un blit HOG de plusieurs secondes rend
+    // la main à chaque trame au lieu de figer l'onglet (cf. src/web/main_web.cpp,
+    // neost_jspi_start_loop, et src/core/EmuFiber.cpp). Il faut, AVANT l'instanciation,
+    // envelopper l'import qui suspend (WebAssembly.Suspending) et, après, l'export de
+    // la trame (WebAssembly.promising). Sans JSPI dans le navigateur, ou avec ?fiber=0,
+    // instanciation ordinaire : le blit se fait d'un seul tenant.
+    Module.instantiateWasm = function (imports, done) {
+      var jspi = typeof WebAssembly.Suspending === 'function' &&
+                 typeof WebAssembly.promising === 'function' &&
+                 new URLSearchParams(location.search).get('fiber') !== '0' &&
+                 imports.env && typeof imports.env.neost_jspi_park === 'function';
+      if (jspi) imports.env.neost_jspi_park = new WebAssembly.Suspending(imports.env.neost_jspi_park);
+      var url = 'index.wasm';
+      function go(r) {
+        if (jspi) {
+          Module.neostTickPromising = WebAssembly.promising(r.instance.exports.neost_web_tick);
+          Module.neostJspi = true;
+        }
+        done(r.instance, r.module);
+      }
+      function fail(e) { if (Module.onAbort) Module.onAbort('wasm instantiation: ' + e); }
+      function viaBuffer() {
+        return fetch(url).then(function (r) { return r.arrayBuffer(); })
+          .then(function (b) { return WebAssembly.instantiate(b, imports); });
+      }
+      // instantiateStreaming exige le type MIME application/wasm : repli sur le tampon.
+      (WebAssembly.instantiateStreaming
+        ? WebAssembly.instantiateStreaming(fetch(url), imports).catch(viaBuffer)
+        : viaBuffer()).then(go, fail);
+      return {};
+    };
     Module.setStatus('Loading the WebAssembly module…');
 
     function setStatusOk(text) {
@@ -952,8 +983,11 @@
         // déposer la disquette 2 ne doit pas écraser la 1, qui porte peut-être une
         // sauvegarde. L'extension est mise en minuscules : le FDC détecte aussi par
         // contenu, mais STX (Pasti) se repère par son en-tête + extension.
+        // Caractères de contrôle : tout ce qui précède l'espace, écrit SANS l'échappement
+        // hexadécimal du caractère nul — Emscripten 6.0.8 le réécrit dans le shell en un
+        // vrai octet NUL, et la regex invalide arrêtait tout le script de la page.
         var base = file.name.slice(0, file.name.length - m[0].length)
-                            .replace(/[\/\\\x00-\x1f]/g, '_').slice(0, 120) || 'floppy';
+                            .replace(/[\/\\]|[^ -\uffff]/g, '_').slice(0, 120) || 'floppy';
         var path = '/uploads/' + base + '.' + m[1].toLowerCase();
         try {
           try { Module.FS.mkdir('/uploads'); } catch (e) { /* déjà là */ }
