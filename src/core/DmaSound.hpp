@@ -28,6 +28,9 @@ class DmaSound {
 public:
     // Le DMA peut-il chercher un mot maintenant ? Posé par Machine : hors DE sur STE, jamais ailleurs.
     std::function<bool()> fetchWindowOpen;
+    // Premier cycle live ≥ t où le DMA peut chercher (fenêtre hors DE). Posé par Machine sur
+    // STE, avec fetchWindowOpen ; nul ailleurs : la fin de trame reste alors datée au HBL.
+    std::function<int64_t(int64_t)> fetchWindowFrom;
 
     explicit DmaSound(Bus& bus) : bus_(bus) {}
 
@@ -47,6 +50,14 @@ public:
     // vrai matériel) → XSINT/Timer A. Appelé par Machine::onHbl (STE/Mega STE).
     void onHbl();
 
+    // Événement Scheduler::DMASND (STE) : date le fetch du DERNIER mot de la trame, donc
+    // XSINT/Timer A, au lieu d'attendre le HBL suivant (cf. armFrameEnd).
+    void onFetchEvent();
+
+    // Ligne RESB du GST MCU (instruction RESET du 68000, STE) : remet à zéro ce que la
+    // netlist y relie dans le son DMA — détail et feuilles dans DmaSound.cpp.
+    void resbReset();
+
     // MMIO $FF8900-$FF8925 (octets ; le 68000 y fait des mots big-endian).
     uint8_t read8(uint32_t addr);
     void    write8(uint32_t addr, uint8_t v);
@@ -61,6 +72,22 @@ public:
     // jusqu'à la sortie au lieu d'être moyennée. Applique le routage de mixage LMC1992
     // (mixing==1 → YM+DMA ; sinon DMA seul écrase YM) comme `mix`. DMA à l'arrêt → YM
     // recopié sur les deux canaux (choix NeoST : pas de mute du YM hors lecture DMA).
+    // Ce que disent les sources sur l'état au repos (item TODO « Tenue du dernier échantillon DMA ») :
+    // [B] Schéma STE C300780-001 rév. A (3 oct. 1989, feuille 5, sha256 408a1394) : chaque voie
+    //     passe par un registre 74F374 (U500/U501) chargé par XLD, venu du Shifter, puis un
+    //     DAC0802 (U502/U503), un tampon LF347, une liaison 47 µF (C586/C587, scan peu lisible) sur
+    //     100 kΩ (R545/R546) et un filtre MF4 ; le YM (GIL/GIR) entre au LMC1992 par ses
+    //     propres liaisons 47 µF (C544/C547).
+    //     Le registre garde son octet entre deux XLD : sans nouvelle impulsion, le DAC tient le
+    //     dernier échantillon, et la liaison capacitive en efface la composante continue.
+    // [F] Inconnu : le GST Shifter cesse-t-il d'émettre XLD quand sa FIFO est vide ou SNDON
+    //     tombé, ou charge-t-il une valeur neutre ? Sa netlist manque.
+    // [D] Hatari dmaSnd.c:547-574 @ f0736b24 et MiSTery gstshifter.v:436-455 @ 4a6db7cc tiennent
+    //     tous deux le dernier échantillon. Hatari applique aussi le routage LMC au repos (YM
+    //     coupé si mixing ≠ 1), ce que le câblage analogique rend plausible, mais la table de
+    //     vérité du sélecteur d'entrées du LMC1992 n'est pas dans le dépôt.
+    // NeoST garde le zéro au repos et le YM intact, en attente d'arbitrage (TODO.md, « Tenue du
+    // dernier échantillon DMA »).
     //
     // Modèle « push » horodaté (comme le YM2149) : si une horloge frame-relative est
     // câblée (setCycleClock), les transitions PLAY/STOP de la trame sont rejouées à leur
@@ -176,6 +203,7 @@ private:
     int8_t  fifoPull();              // tire l'octet le plus ancien (refill si vide, ≙ DmaSnd_FIFO_PullByte)
     void    fifoSetStereo();         // réaligne la FIFO sur frontière paire (≙ DmaSnd_FIFO_SetStereo)
     void    updateDac();             // consomme au rythme DAC jusqu'à liveNow → capture_ (≙ Sound_Update)
+    void    armFrameEnd();           // (re)date l'événement DMASND du fetch du dernier mot (STE)
     // Anneau de CAPTURE des octets tirés par le DAC : produit par le cœur (updateDac),
     // consommé par le rendu audio (mixSegment/mix). Taille FIXE (jamais de realloc :
     // le chemin WASM lit depuis un autre thread), les plus vieux octets sont jetés si

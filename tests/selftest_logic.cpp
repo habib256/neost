@@ -2417,6 +2417,56 @@ static void testDmaSoundTruthTable() {
         checkBool("compteur 22 bits : trame finie après le bouclage",
                   (w.snd.read8(SND + 0x01) & 1) == 0, true);
     }
+
+    // --- 8. RESB (instruction RESET) : début, fin écrite et compteur à 0 -------
+    // [B] ST-4081 feuilles 13, 14 et 17 (cf. DmaSound::resbReset) : PLAY et la fin
+    // latchée de la trame en cours (second étage SFT) restent.
+    {
+        SndRig w;
+        w.setStart(0x020000);
+        w.setEnd(0x020100);
+        w.snd.write8(SND + 0x21, 0x83);
+        w.snd.write8(SND + 0x01, 0x03);                  // PLAY + REPEAT
+        for (int i = 0; i < 4; ++i) { w.sched.runTo(w.sched.now() + 512); w.snd.onHbl(); }
+        w.snd.resbReset();
+        checkHex("RESB : début (haut) à 0", w.snd.read8(SND + 0x03), 0x00);
+        checkHex("RESB : début (bas) à 0",  w.snd.read8(SND + 0x07), 0x00);
+        checkHex("RESB : PLAY et REPEAT tiennent", w.snd.read8(SND + 0x01), 0x03);
+        checkInt("RESB : compteur à 0 en pleine lecture", long(w.counter()), 0);
+        checkHex("RESB : fin relue = second étage, gardé", w.snd.read8(SND + 0x11), 0x01);
+        w.snd.write8(SND + 0x01, 0x00);
+        checkHex("RESB : à l'arrêt, la fin écrite relit 0", w.snd.read8(SND + 0x11), 0x00);
+    }
+
+    // --- 9. Fin de trame datée au fetch, hors DE -----------------------------
+    // [B] ST-4081 feuille 20 : le MCU cherche dès que la FIFO a de la place, hors DE.
+    // Trame mono 50 kHz de 64 octets : le dernier mot entre quand le DAC a tiré 56
+    // octets, au cycle 8972, ligne 17 en plein DE (cycle 268 de la ligne) : fetch à la
+    // fin de DE, 17×512 + 376 = 9080. Au HBL seul (Hatari) : 17×512 + 508 = 9212.
+    {
+        auto endCycle = [](bool window) {
+            SndRig w;
+            if (window) {
+                w.snd.fetchWindowFrom = [](int64_t t) {
+                    const int64_t c = t % 512;
+                    return (c >= 56 && c < 376) ? t + (376 - c) : t;
+                };
+                w.sched.setCallback(Scheduler::DMASND, [&w] { w.snd.onFetchEvent(); });
+            }
+            w.setStart(0x020000);
+            w.setEnd(0x020040);
+            w.snd.write8(SND + 0x21, 0x83);
+            w.snd.write8(SND + 0x01, 0x01);
+            for (int64_t t = 1; t < 20 * 512; ++t) {
+                w.sched.runTo(t);
+                if (t % 512 == 508) w.snd.onHbl();
+                if (!(w.snd.read8(SND + 0x01) & 1)) return t;
+            }
+            return int64_t(-1);
+        };
+        checkInt("fin de trame au HBL sans fenêtre (Mega STE, Hatari)", long(endCycle(false)), 9212);
+        checkInt("fin de trame à la sortie de DE (STE)", long(endCycle(true)), 9080);
+    }
 }
 
 // -----------------------------------------------------------------------------

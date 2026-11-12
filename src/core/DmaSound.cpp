@@ -223,6 +223,49 @@ void DmaSound::onHbl() {
     fifoRefill();
     updateDac();
     fifoRefill();
+    armFrameEnd();
+}
+
+// Fin de trame datée au fetch du dernier mot (STE).
+// [B] ST-4081 feuille 20 (ST4081S.PDF, sha256 935c4dd9) : SNDEN = HDE1 latché bas (PK016) et
+//     SREQ (PK024) — le MCU cherche un mot dès que la FIFO du Shifter a de la place, sur les
+//     créneaux hors DE horizontal. La fin de trame (STOFF, SINTSB → SFRAME, PK054-PK063) suit le
+//     comparateur SND = SFT, donc le fetch du dernier mot.
+// [D] gstmcu mcucontrol.v:94-113 et sndcnt.v @ 4a6db7cc : même chaîne.
+// [D] Hatari dmaSnd.c:727-741 @ f0736b24 ne refait le plein qu'au HBL (cycle 508) : la fin de
+//     trame y arrive jusqu'à 132 cycles (50 Hz, DE fini à 376) ou 136 cycles (60 Hz, 372) trop
+//     tard. Non retenu sur STE ; le Mega STE (sans netlist) garde ce modèle.
+// Le fetch est glouton : le dernier mot entre dès que la FIFO a, en cumul, la place de tous les
+// octets restants. On date donc l'instant où le DAC en aura assez consommé (même arithmétique
+// que updateDac), puis on le repousse à la sortie de DE. Profondeur de FIFO : 8 octets d'Hatari,
+// le modèle a 7 mots (gstshifter.v:414-419, choix d'auteur) — [F] la date dépend de ce choix.
+void DmaSound::armFrameEnd() {
+    if (!sched_ || !fetchWindowFrom) return;
+    sched_->cancel(Scheduler::DMASND);
+    if (!playing_) return;
+    if ((ctrl_ & 0x02) && frameEndAddr_ == frameStartAddr_) return;   // trame 2^22 octets : pas d'IRQ
+    uint32_t remain = (frameEndAddr_ - curAddr_) & 0x3FFFFE;           // octets encore à chercher
+    if (remain == 0) remain = 0x400000;                                 // fin < début : tour complet
+    const int64_t need = int64_t(remain) - (8 - int64_t(fifoNb_));     // à consommer par le DAC d'abord
+    const int64_t step = (mode_ & 0x80) ? 1 : 2;                        // octets par échantillon
+    const int64_t samples = need > 0 ? (need + step - 1) / step : 0;
+    const int64_t rate = int64_t(kRate[mode_ & 0x03]);
+    int64_t t = dacLast_;
+    if (samples > 0) t += (samples * CPU_HZ - dacRem_ + rate - 1) / rate;
+    const int64_t now = sched_->liveNow();
+    if (t < now) t = now;
+    sched_->schedule(Scheduler::DMASND, fetchWindowFrom(t));
+}
+
+void DmaSound::onFetchEvent() {
+    if (!playing_) return;
+    static const bool trace = std::getenv("NEOST_DMASND_TRACE") != nullptr;
+    if (trace && sched_)
+        std::fprintf(stderr, "DMA snd end-of-frame fetch event due=%lld live=%lld adr=%x end=%x nb %d\n",
+                     (long long)sched_->firingDue(), (long long)sched_->liveNow(), curAddr_, frameEndAddr_, fifoNb_);
+    updateDac();
+    fifoRefill();
+    armFrameEnd();
 }
 
 void DmaSound::reset(bool cold) {
@@ -244,6 +287,7 @@ void DmaSound::reset(bool cold) {
     startAddr_ = endAddr_ = curAddr_ = 0;          // Hatari met start/end à 0 même au warm reset (fix 'Brace')
     mwShift_ = 0; mwSteps_ = 0;                     // transfert série Microwire éventuel annulé
     setXsint(false);                               // son DMA inactif au reset → XSINT BAS
+    if (sched_) sched_->cancel(Scheduler::DMASND); // plus de fin de trame à dater
     // Le LMC1992/Microwire n'a PAS de broche de reset : ses registres (volumes, basses/
     // aigus, mixage) PERSISTENT au reset à chaud (cf. Hatari, bloc `if (bCold)`). On ne
     // les réinitialise qu'à FROID. NeoST garde des défauts à 0 dB (et non muets comme le
@@ -252,6 +296,38 @@ void DmaSound::reset(bool cold) {
         mwMaster_ = 40; mwLeft_ = 20; mwRight_ = 20;   // LMC1992 à 0 dB
         mwBass_ = 6; mwTreble_ = 6; mwMixing_ = 0;
     }
+}
+
+// Ligne RESB (instruction RESET du 68000) sur le son DMA du STE. Relevé de la netlist :
+// [B] ST-4081 feuille 13 (« SOUND REGISTERS », ST4081S.PDF, sha256 935c4dd9) : les verrous du
+//     registre de début SFB<21:1> ont leur XR tiré de NA2(LRESB, PORB) — PD086/PD085 (octet bas),
+//     PD096/PD095 (moyen), PD104/PD103 (haut). Le contrôle (SNDON PD105, SFREP et les bits 2-3
+//     PD106-PD108) n'a pour reset que PD109 = AA2(PORB, ITESTB) et, pour SNDON, STOFF (PD110) :
+//     ni PLAY ni REPEAT ne tombent, la lecture continue.
+// [B] feuille 14 : le premier étage de la fin (verrous écrits par WSFTxB, PE060, PE077, PE078…)
+//     est remis par NA2(LRESB, PORB) (PE068/PE067, PE086/PE085) ; le second étage SFT, chargé
+//     par SFRAME (PE051, PE069, PE087…), ne voit que PORB (PE058/PE059). La fin de la trame en
+//     cours reste donc celle qui a été latchée.
+// [B] feuille 17 (« SOUND ADDRESS COUNTER ») : le XR des cellules du compteur SND vient de
+//     AA2(PORB, LRESB) (PH075 → PH073 → PH074). Le compteur repart de 0 en pleine lecture ; à
+//     l'arrêt il recopie SFB, qui vaut 0 aussi.
+// [B] feuille 20 : PK008 = AA2(PORB, LRESB) remet PK010, PK016 et PK024 (IDE, HDE1 et SREQ
+//     latchés) : pas de fetch pendant l'impulsion, sans effet durable ici.
+// [D] gstmcu.v:434-447 et sndcnt.v @ 4a6db7cc : SFB, premier étage SFT et compteur sur resb,
+//     second étage sur porb seul — d'accord. gstmcu.v:437-438 remet aussi le contrôle et SNDON
+//     sur resb : écart du RTL à la netlist, non suivi.
+// [D] Hatari customreset (cpu/hatari-glue.c:54 @ f0736b24) ne touche pas au son DMA : écart
+//     voulu, la netlist prime.
+// La FIFO et le DAC sont dans le GST Shifter, sans netlist : [F] RESET les touche-t-il ?
+// gstshifter.v:438-462 @ 4a6db7cc vide la FIFO sur resb, mais ce Shifter est une conception
+// propre. Gardés. Tranché par : le schéma du GST Shifter.
+// STE seulement, comme la relecture de la fin (steNetlist) : le Mega STE garde Hatari.
+void DmaSound::resbReset() {
+    updateDac();                                       // consommation due datée avant l'impulsion
+    startAddr_ = 0;                                    // SFB
+    endAddr_   = 0;                                    // premier étage SFT ; frameEndAddr_ (second) gardé
+    curAddr_   = 0;                                    // compteur SND (à l'arrêt, recopie de SFB = 0)
+    armFrameEnd();                                     // la trame en cours a changé de longueur
 }
 
 // Décode une commande LMC1992 reçue par microwire (port dmaSnd.c:DmaSnd_InterruptHandler_Microwire).
@@ -609,6 +685,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
                 recordEvent(1);                        // STOP daté (modèle push audio)
                 setXsint(false);                       // arrêt : XSINT → BAS (la FIFO finit de se vider)
             }
+            armFrameEnd();                             // trame (re)partie ou close : fin à redater
             break;
         }
         // Adresses 24 bits (paires forcées : bit0 de l'octet bas ignoré). Octet
@@ -639,7 +716,7 @@ void DmaSound::write8(uint32_t addr, uint8_t v) {
             updateDac();
             const uint8_t newMode = v & 0x83;
             if ((mode_ & 0x80) && !(newMode & 0x80)) fifoSetStereo();
-            if (newMode != mode_) { mode_ = newMode; recordEvent(2); }   // MODE daté (cadence du rendu)
+            if (newMode != mode_) { mode_ = newMode; recordEvent(2); armFrameEnd(); }   // MODE daté ; cadence DAC changée
             break;
         }
         // Microwire : mots 16 bits ($FF8922 data, $FF8924 mask). Pendant un

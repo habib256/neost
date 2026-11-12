@@ -305,7 +305,7 @@ void Shifter::resizeFor(Mode m) {
 //    à l'amorçage, pas $FF820F ni $FF8264/65 (TOS 1.62/2.06 : aucune écriture relevée).
 //  • Le son DMA n'est PAS coupé : [B] feuille 13, le latch SNDON (PD105) n'a pour reset que
 //    PORB, ITESTB (PD109) et STOFF (PD110), pas LRESB. [D] gstmcu.v:438 @ 4a6db7cc le coupe
-//    sur resb : écart du RTL, non suivi.
+//    sur resb : écart du RTL, non suivi. Ses adresses, elles, tombent : DmaSound::resbReset.
 void Shifter::resetGlue(bool mono) {
     sync = 0;                                   // $FF820A = 0 → 60 Hz
     mode = mono ? Mode::High : Mode::Low;       // ST_HIGH_RES / ST_LOW_RES

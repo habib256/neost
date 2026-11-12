@@ -201,10 +201,14 @@ public:
     // ctor ET à reconfigure — sinon une bascule ST→STE par la config gardait le modèle
     // « remplissage au HBL », et STE→Mega STE gardait celui du STE.
     void wireDmaFetchWindow() {
-        if (machineType_ == MachineType::Ste)
+        if (machineType_ == MachineType::Ste) {
             dmasnd.fetchWindowOpen = [this] { return shifter.outsideHorizontalDe(); };
-        else
+            // Cycle live ↔ frame-relatif : même ancre que setLiveFrameClock (Machine.cpp).
+            dmasnd.fetchWindowFrom = [this](int64_t t) { return frameStart_ + shifter.fetchWindowFrom(t - frameStart_); };
+        } else {
             dmasnd.fetchWindowOpen = nullptr;
+            dmasnd.fetchWindowFrom = nullptr;
+        }
     }
 
     // Exécute UNE trame complète : 313 lignes de cycles CPU, 4 tics Timer C

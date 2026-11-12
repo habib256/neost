@@ -334,6 +334,10 @@ public:
     // Le faisceau est-il hors de la fenêtre DE horizontale de la ligne courante ? Fréquence courante, y compris
     // sur les lignes de bordure : c'est HDE1, pas DE. [D] gstmcu @ 4a6db7cc, hdegen.v, cf. DmaSound::liveCounter.
     bool outsideHorizontalDe();
+    // Premier cycle frame-relatif ≥ fc hors de la fenêtre DE horizontale, même règle
+    // qu'outsideHorizontalDe. La ligne courante vient de la grille réelle ; les suivantes
+    // sont extrapolées sur la grille nominale. Sert à dater le fetch du son DMA (STE).
+    int64_t fetchWindowFrom(int64_t fc);
     void glueBenchReplay(const std::vector<std::array<int, 4>>& writes, uint8_t sync = 0x02);
     GlueProbe glueBenchLine(int line) const;
 
