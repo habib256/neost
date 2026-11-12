@@ -46,6 +46,9 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 std::string acsi;     // image disque dur ACSI cible 0 (vide = off)
                 bool modem = false;   // modem Hayes sur l'USART (pont AT → TCP)
                 bool midiLoopback = false; // fiche de bouclage MIDI OUT→IN (diagnostics ; OFF = vrai ST)
+                // Anneau MIDI sur UDP (MIDI Maze en ligne) : "hôte:port[:écoute]" du pair
+                // aval, comme --midi-net du headless ; vide = anneau débranché.
+                std::string midiNet;
                 bool midiOutGm = false;    // MIDI OUT → synthé GM intégré (DLSMusicDevice macOS / TinySoundFont ailleurs)
                 // Banque du synthé GM hors macOS : fichier .sf2 ou dossier à fouiller ;
                 // repli sur les banques système. NeoST livre TimGM6mb dans roms/gm/.

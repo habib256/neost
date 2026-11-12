@@ -50,6 +50,7 @@
 #include "net/NatBackend.hpp"
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
+#include "net/MidiRing.hpp"
 #endif
 #include "audio/Audio.hpp"
 #include "audio/DriveSound.hpp"
@@ -430,6 +431,9 @@ static void runDueFrames(App& A) {
         while (clock::now() >= emuNext && ran < 6) {
 #ifdef NEOST_WITH_NET
             if (hayesModem) hayesModem->poll();   // TCP entrant → file RX du MFP
+            // Anneau MIDI : émet la trame précédente, collecte l'amont dans le tampon
+            // de gigue (MIDI_RX le consomme au débit série), comme le headless.
+            if (A.midiRing) A.midiRing->poll([](uint8_t) { return false; });
 #endif
             if (machine.ne2000.enabled()) machine.ne2000.poll();   // trames RX → anneau
             // Sortie MIDI horodatée : cette trame DOIT commencer à emuNext (temps réel).
@@ -1005,6 +1009,21 @@ static void syncConfigUi(App& A, Frame& F) {
     cfgUi.midiInOpen    = midiIn.openNames();
     cfgUi.midiInBytes   = midiIn.delivered();
     cfgUi.midiLateBytes = midiOut.lateBytes();
+    // Anneau MIDI : état et preuve de vie (datagrammes reçus et perdus).
+    cfgUi.midiNetStatus = A.midiRingStatus;
+    cfgUi.midiNetOpen = false;
+    cfgUi.midiNetRx = cfgUi.midiNetLost = 0;
+#ifdef NEOST_WITH_NET
+    if (A.midiRing) {
+        cfgUi.midiNetOpen = true;
+        cfgUi.midiNetRx   = A.midiRing->stats().accepted;
+        cfgUi.midiNetLost = A.midiRing->stats().lost;
+    }
+#endif
+    if (!cfgUi.midiNetInit) {        // sème le champ depuis la config (une fois)
+        std::snprintf(cfgUi.midiNetEdit, sizeof cfgUi.midiNetEdit, "%s", cfg.midiNet.c_str());
+        cfgUi.midiNetInit = true;
+    }
     if (!cfgUi.mixInit) {            // sème les faders depuis la config (une fois)
         cfgUi.mixYm = cfg.mixYm; cfgUi.mixDma = cfg.mixDma; cfgUi.mixDac = cfg.mixDac;
         cfgUi.mixDrive = cfg.mixDrive; cfgUi.mixMt32 = cfg.mixMt32; cfgUi.mixGm = cfg.mixGm;
@@ -1207,6 +1226,15 @@ static void consumeMixMidiRequests(App& A, Frame& F) {
                                       cfgUi.reqMidiLoopback = -1;
                                       machine.midi.setLoopback(cfg.midiLoopback);
                                       saveConfig(A, exeDir, cfg, &machine); }
+    // Anneau MIDI (page MIDI) : la saisie est gardée telle quelle, comme le nom d'un
+    // appareil MIDI débranché. Illisible, pair inconnu ou port d'écoute occupé :
+    // l'état de la page le dit, et « Connect » re-tente.
+    if (cfgUi.reqMidiNet) {
+        cfgUi.reqMidiNet = false;
+        cfg.midiNet = cfgUi.reqMidiNetSpec;
+        A.midiRingApply();
+        saveConfig(A, exeDir, cfg, &machine);
+    }
 }
 
 // Page Dongles : périphériques des ports et clé cartouche.
@@ -1525,11 +1553,14 @@ static void consumeProfileRequests(App& A, Frame& F) {
             // rejoués ici, et la page Sound ressème ses faders.
             mt32.close();
             gm.close();
-            A.midiOutApply();
+            // L'anneau MIDI du profil (midi_net=) aussi : midiRingApply rouvre ou
+            // ferme l'anneau puis rejoue midiOutApply et midiInApply.
+            A.midiRingApply();
             audio.setMixGains(cfg.mixYm, cfg.mixDma, cfg.mixDrive, cfg.mixMt32, cfg.mixGm);
             machine.psg.setPortBDacGain(cfg.mixDac);
             cfgUi.mixInit = false;
             cfgUi.natInit = false;
+            cfgUi.midiNetInit = false;
             saveConfig(A, exeDir, cfg, &machine);
             reqRebuild = true;        // modèle/RAM/FPU/ROM/cartouche/HD/moniteur/FDC (+ UltraSatan)
             cfgUi.pendInit = false;   // resème les champs « en attente »
@@ -2670,6 +2701,18 @@ void appShutdown(App& A) {
     ImGui::DestroyContext();
     // Arrêt : plus aucun octet MIDI vers des objets en cours de destruction (sink → midiOut/mt32/gm).
     machine.midi.setMidiSinkTimed({});
+#ifdef NEOST_WITH_NET
+    // Anneau MIDI : la source MIDI IN pointe sur lui ; bilan au journal (le seul
+    // témoin hors de la page MIDI de ce qui a traversé l'anneau).
+    if (A.midiRing) {
+        machine.midi.setRxSource({});
+        const MidiRing::Stats& st = A.midiRing->stats();
+        std::fprintf(stderr, "[midi-ring] closed: %llu datagrams in, %llu lost, %llu foreign, "
+                     "%llu malformed\n", (unsigned long long)st.accepted, (unsigned long long)st.lost,
+                     (unsigned long long)st.foreign, (unsigned long long)st.malformed);
+        A.midiRing.reset();
+    }
+#endif
     audio.setMt32(nullptr);
     audio.setGm(nullptr);
     mt32.close();

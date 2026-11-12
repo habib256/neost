@@ -213,6 +213,7 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("acsi=", 0) == 0) c.acsi = line.substr(5);
     else if (line.rfind("modem=", 0) == 0) c.modem = (line.substr(6) == "1");
     else if (line.rfind("midi_loopback=", 0) == 0) c.midiLoopback = (line.substr(14) == "1");
+    else if (line.rfind("midi_net=", 0) == 0) c.midiNet = line.substr(9);
     else if (line.rfind("midi_out_gm=", 0) == 0) c.midiOutGm = (line.substr(12) == "1");
     else if (line.rfind("gm_soundfont=", 0) == 0) c.gmSoundFont = line.substr(13);
     else if (line.rfind("midi_out_port=", 0) == 0) c.midiOutPort = (line.substr(14) == "1");
@@ -408,6 +409,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
       << "\ngemdos=" << oneLine(w.gemdos) << "\ngemdos_ro=" << (w.gemdosRo ? 1 : 0) << "\nacsi=" << oneLine(w.acsi)
       << "\nmodem=" << (w.modem ? 1 : 0)
       << "\nmidi_loopback=" << (w.midiLoopback ? 1 : 0)
+      << "\nmidi_net=" << oneLine(w.midiNet)
       << "\nmidi_out_gm=" << (w.midiOutGm ? 1 : 0)
       << "\ngm_soundfont=" << oneLine(w.gmSoundFont)
       << "\nmidi_out_port=" << (w.midiOutPort ? 1 : 0)

@@ -106,6 +106,34 @@ bool MidiRing::ingest(const uint8_t* d, int n, const std::string& source, int64_
 
 MidiRing::~MidiRing() { close(); }
 
+bool MidiRing::parseSpec(const std::string& spec, std::string& peer, int& listenPort,
+                         std::string* err) {
+    auto fail = [err](const char* why) { if (err) *err = why; return false; };
+    auto portOf = [](const std::string& s, int& out) {
+        if (s.empty() || s.size() > 5) return false;
+        int v = 0;
+        for (char c : s) { if (c < '0' || c > '9') return false; v = v * 10 + (c - '0'); }
+        if (v < 1 || v > 65535) return false;
+        out = v;
+        return true;
+    };
+    std::string s = spec;
+    while (!s.empty() && (s.back() == ' ' || s.back() == '\t')) s.pop_back();
+    while (!s.empty() && (s.front() == ' ' || s.front() == '\t')) s.erase(0, 1);
+    const auto p1 = s.find(':');
+    if (p1 == std::string::npos) return fail("expected host:port[:listen]");
+    if (p1 == 0) return fail("missing host");
+    const auto p2 = s.find(':', p1 + 1);
+    int port = 0, listen = kDefaultListen;
+    if (!portOf(s.substr(p1 + 1, p2 == std::string::npos ? std::string::npos : p2 - p1 - 1), port))
+        return fail("peer port must be 1-65535");
+    if (p2 != std::string::npos && !portOf(s.substr(p2 + 1), listen))
+        return fail("listen port must be 1-65535");
+    peer = s.substr(0, p1) + ":" + std::to_string(port);
+    listenPort = listen;
+    return true;
+}
+
 bool MidiRing::open(const std::string& peer, int listenPort) {
     neonet::netInitOnce();
     close();

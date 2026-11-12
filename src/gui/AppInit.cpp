@@ -560,8 +560,9 @@ int appInit(App& A, int argc, char** argv) {
     // que l'objet Audio n'existe. On la corrige juste après audio.start().
     uint32_t& audioRate = A.audioRate;   // 48 kHz par défaut (cf. App.hpp)
     midiOut.setLeadMs(cfg.midiLeadMs);
-    A.midiOutApply();
-    A.midiInApply();
+    // midiRingApply ouvre l'anneau MIDI (midi_net=) s'il est demandé, puis câble
+    // MIDI OUT et MIDI IN (midiOutApply, midiInApply).
+    A.midiRingApply();
     if (A.midiLearnUids()) saveConfig(A, exeDir, cfg, &machine);
     machine.mfp.setColorMonitor(!cfg.mono);   // moniteur mémorisé (avant le reset)
     machine.fdc.setFastFdc(cfg.fastfdc);      // FDC rapide mémorisé (accès disque ÷10)

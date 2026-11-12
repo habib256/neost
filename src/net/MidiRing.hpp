@@ -57,6 +57,13 @@ public:
     // `peer` = "hôte:port" du pair AVAL (où envoyer). `listenPort` = port UDP
     // local d'écoute (d'où arrive l'amont). Renvoie false si le socket échoue.
     bool open(const std::string& peer, int listenPort);
+    // Spécification de l'anneau telle que la saisit l'utilisateur (`--midi-net`,
+    // champ de la page MIDI du GUI, `midi_net=` de neost.cfg) : "hôte:port" ou
+    // "hôte:port:écoute", écoute par défaut kDefaultListen. Rend false (et la raison
+    // dans `err`, en anglais) si un port manque ou sort de 1-65535, ou si l'hôte est vide.
+    static constexpr int kDefaultListen = 6820;
+    static bool parseSpec(const std::string& spec, std::string& peer, int& listenPort,
+                          std::string* err = nullptr);
     void close();
     ~MidiRing();
 

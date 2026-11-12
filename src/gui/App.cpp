@@ -32,6 +32,7 @@
 #include "util/HostPath.hpp"   // chemins hôte : UNE définition d'« absolu »
 #include "util/RomProbe.hpp"   // en-tête TOS (glisser-déposer, argument positionnel)
 #include "net/NatBackend.hpp"
+#include "net/MidiRing.hpp"    // déclarations seules sans NEOST_WITH_NET (unique_ptr complet)
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
 #endif
@@ -526,13 +527,59 @@ void App::midiOutApply() {
             cfg.midiOutMt32 = false;
         }
     } else mt32.close();
-    if (midiOut.anyOpen() || mt32.isOpen() || gm.isOpen())
-        machine.midi.setMidiSinkTimed([&midiOut, &mt32, &gm](uint8_t b, int64_t c) {
+    // L'anneau MIDI (midiRingApply) reçoit le même flux : le puits daté est
+    // exclusif dans MidiAcia (il passe avant le puits simple), il relaie donc aussi.
+    MidiRing* ring = A.midiRing.get();
+    if (midiOut.anyOpen() || mt32.isOpen() || gm.isOpen() || ring)
+        machine.midi.setMidiSinkTimed([&midiOut, &mt32, &gm, ring](uint8_t b, int64_t c) {
             if (midiOut.anyOpen()) midiOut.byteAt(b, c);
             mt32.byteAt(b, c);
             gm.byteAt(b, c);
+#ifdef NEOST_WITH_NET
+            if (ring) ring->sendByte(b);
+#else
+            (void)ring;
+#endif
         });
     else machine.midi.setMidiSinkTimed({});
+}
+
+// Anneau MIDI sur UDP (MIDI Maze en ligne), le --midi-net du headless : MIDI OUT part
+// vers le pair aval, MIDI IN vient de l'amont. Un seul câble DIN IN : l'anneau ouvert
+// remplace les appareils MIDI IN hôtes (midiInApply). Pas de reset : l'anneau est un
+// câble, MIDI Maze le voit dès son prochain octet.
+void App::midiRingApply() {
+    App& A = *this;
+    Machine& machine = *A.machine;
+    // Débrancher d'abord les puits qui pointent sur l'ancien anneau.
+    machine.midi.setMidiSinkTimed({});
+    machine.midi.setRxSource({});
+    A.midiRing.reset();
+    A.midiRingStatus.clear();
+#ifdef NEOST_WITH_NET
+    const std::string& spec = A.cfg.midiNet;
+    if (!spec.empty()) {
+        std::string peer, err;
+        int listen = 0;
+        if (!MidiRing::parseSpec(spec, peer, listen, &err)) {
+            A.midiRingStatus = "Off: " + err;
+        } else {
+            auto r = std::make_unique<MidiRing>();
+            if (r->open(peer, listen)) {
+                A.midiRing = std::move(r);
+                A.midiRingStatus = "OUT -> " + peer + ", IN <- udp:" + std::to_string(listen);
+            } else {
+                A.midiRingStatus = "Off: cannot open the UDP ring (unknown host or port "
+                                 + std::to_string(listen) + " busy)";
+            }
+        }
+        std::fprintf(stderr, "[midi-ring] %s\n", A.midiRingStatus.c_str());
+    }
+#else
+    if (!A.cfg.midiNet.empty()) A.midiRingStatus = "Off: this build has no network backend";
+#endif
+    A.midiOutApply();
+    A.midiInApply();
 }
 
 // Entrée matérielle : même politique que la destination — on garde le nom, on
@@ -549,6 +596,15 @@ void App::midiInApply() {
     // L'ACIA TIRE les octets sur son horloge série (2560 cycles/octet), au lieu
     // d'une rafale par trame qui plafonnait l'entrée à ~143 o/s. Cf. MidiAcia::
     // setRxSource. La lambda survit à un débranchement : tryPop rend false.
+#ifdef NEOST_WITH_NET
+    // Un seul câble DIN IN : l'anneau MIDI ouvert passe avant les appareils hôtes
+    // (même règle que le headless). La collecte UDP est faite une fois par trame
+    // (runDueFrames), MIDI_RX consomme le tampon au débit série.
+    if (MidiRing* ring = A.midiRing.get()) {
+        machine.midi.setRxSource([ring](uint8_t& b) { return ring->tryPop(b); });
+        return;
+    }
+#endif
     if (midiIn.isOpen()) machine.midi.setRxSource([&midiIn](uint8_t& b) { return midiIn.tryPop(b); });
     else                 machine.midi.setRxSource({});
 }
