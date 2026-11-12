@@ -2020,7 +2020,9 @@ bool GemdosHd::gemFattrib(uint32_t p) {
     return true;
 }
 
-bool GemdosHd::gemForce(uint32_t p) {
+int GemdosHd::gemForce(uint32_t p) {
+    // L'appel que la cartouche relance pour la sonde (ci-dessous) va au TOS tel quel.
+    if ((callingPC_ & 0x00FFFFFF) == CART_RETRAP_RET) return false;
     // Mots SIGNÉS : un handle BIOS (CON = −1, AUX = −2, PRN = −3) est négatif.
     int std_ = (int16_t)readWord(p);
     int own = (int16_t)readWord(p + 2);
@@ -2040,12 +2042,43 @@ bool GemdosHd::gemForce(uint32_t p) {
         // à naître hérite de la nouvelle. [C] EmuTOS fshand.c ixforce, proc.c
         // init_pd_files @ 5679730f (p_uft par processus, recopié à la création) ; TOS
         // 1.04, 1.62, 2.06 et EmuTOS exécutés (banc A/B : Fforce(1, CON) dans un enfant).
-        if (forcedHandle(std_) >= 0) setForcedHandle(std_, -1);
-        return false;
+        if (forcedHandle(std_) < 0) return false;   // rien à défaire : le TOS seul
+        // ... mais seulement si le TOS ACCEPTE ce handle. [C] EmuTOS fshand.c ixforce
+        // @ 5679730f : un handle ≥ 6 que getofd ne connaît pas (fermé, jamais ouvert, hors
+        // table) rend EIHNDL AVANT d'écrire p_uft ; un négatif est rangé tel quel. Atari
+        // TOS a ses propres bornes (table de 40 ou 75 handles selon la version) : plutôt
+        // que de les modéliser par ROM, on lui pose la question. Même mécanisme que Pexec :
+        // l'appel est recopié sous la pile superviseur et la cartouche le relance (trap #1
+        // à $FA0038, servi par le TOS : cf. CART_RETRAP_RET) ; refusé (D0 < 0), elle rend
+        // la main avec l'erreur du TOS et la redirection hôte reste ; accepté (D0 = 0),
+        // elle exécute l'opcode 9 → forceAccepted, qui la défait. TOS 1.04, 2.06 et
+        // EmuTOS exécutés (banc A/B, Fforce(1, handle du TOS fermé) sous redirection).
+        const uint32_t a7 = reg(15) - 16;          // 16 octets : la cartouche fait lea 16(sp)
+        setAreg(7, a7);
+        flushCache();
+        writeWord(a7, 0x46);
+        writeWord(a7 + 2, readWord(p));            // l'ordre de l'appelant : le TOS juge
+        writeWord(a7 + 4, readWord(p + 2));
+        for (uint32_t o = 6; o < 16; o += 2) writeWord(a7 + o, 0);
+        savedPexecParams_ = FFORCE_PROBE | uint32_t(std_) << 16;
+        return -1;
     }
     setForcedHandle(std_, idx);
     setD0(cpu_, GEMDOS_EOK);
     return true;
+}
+
+// Le TOS a accepté le Fforce sondé par gemForce : le handle standard est désormais le
+// sien, la redirection hôte de CE processus tombe. D0 (= 0, celui du TOS) est rendu tel
+// quel à l'appelant (Z → rte).
+void GemdosHd::forceAccepted() {
+    const int std_ = int((savedPexecParams_ >> 16) & 0xFF);
+    savedPexecParams_ = 0;
+    if (forcedHandle(std_) >= 0) setForcedHandle(std_, -1);
+    uint16_t sr = getSR();
+    sr &= ~SR_OVERFLOW;
+    sr |= SR_ZERO;
+    setSR(sr);
 }
 
 bool GemdosHd::gemGetDir(uint32_t p) {
@@ -2960,7 +2993,10 @@ int GemdosHd::trap() {
     case 0x41: finished = gemFDelete(params); break;
     case 0x42: finished = gemLSeek(params); break;
     case 0x43: finished = gemFattrib(params); break;
-    case 0x46: finished = gemForce(params); break;
+    case 0x46:
+        finished = gemForce(params);
+        if (finished == -1) { sr |= SR_OVERFLOW; finished = true; }   // sonde : cf. gemForce
+        break;
     case 0x47: finished = gemGetDir(params); break;
     case 0x4b:
         finished = gemPexec(params);
@@ -3035,7 +3071,13 @@ void GemdosHd::sysInit() {
 bool GemdosHd::handleOpcode(uint16_t opcode) {
     switch (opcode) {
     case 0x0008: trap(); break;           // GEMDOS  → dispatch (pose Z/V dans SR)
-    case 0x0009: pexecBpCreated(); break; // PEXEC   → charge+relocalise
+    case 0x0009:                          // PEXEC   → charge+relocalise
+        // … ou 2e phase d'une sonde Fforce acceptée par le TOS (cf. gemForce). La
+        // cartouche n'arrive ici qu'avec D0 ≥ 0 : une basepage pour Pexec 5/7, 0 pour
+        // Fforce — la sonde est vérifiée deux fois, par la marque et par D0.
+        if ((savedPexecParams_ & 0xFF000000u) == FFORCE_PROBE && reg(0) == 0) forceAccepted();
+        else pexecBpCreated();
+        break;
     case 0x000a: sysInit(); break;        // SYSINIT → hook + masque lecteurs
     default: return false;
     }

@@ -93,6 +93,9 @@ public:
     // les octets que sysInit mute ici — la valeur ne doit pas être dupliquée en dur.
     static constexpr uint32_t CART_OLDGEMDOS = 0xFA0024u;
     static constexpr uint32_t CART_GEMDOS    = 0xFA002Au;
+    // Retour du trap #1 que la cartouche relance elle-même (branche « pexec », $FA0038) :
+    // un appel qui revient là vient de NeoST, pas du programme (cf. gemForce).
+    static constexpr uint32_t CART_RETRAP_RET = 0xFA003Au;
 
 
     // Reset du système de fichiers GEMDOS (ferme les fichiers ouverts, ré-init des
@@ -285,7 +288,12 @@ private:
     uint16_t currentDrive_ = 0;   // lecteur courant (0=A, 2=C…)
     uint32_t actPd_ = 0;          // adresse du pointeur de basepage courant
     uint32_t callingPC_ = 0;      // PC de l'appelant GEMDOS
+    // 2e phase en attente de l'opcode 9 : l'adresse des paramètres d'un Pexec, OU une
+    // sonde Fforce (FFORCE_PROBE | std << 16 | handle) — jamais les deux à la fois,
+    // l'une et l'autre ne vivent qu'entre le trap relancé par la cartouche et l'opcode 9.
+    // Un seul mot, déjà sérialisé : la sonde survit à un save-state sans changer le format.
     uint32_t savedPexecParams_ = 0;
+    static constexpr uint32_t FFORCE_PROBE = 0xFF000000u;   // jamais une adresse de RAM
     bool     initGemdos_ = false;
     uint32_t connectedDriveMask_ = 0;
     int      bootDrive_ = 0;      // lecteur de boot (→ currentDrive_ au reset)
@@ -341,7 +349,8 @@ private:
     bool gemFDelete(uint32_t p);
     bool gemLSeek(uint32_t p);
     bool gemFattrib(uint32_t p);
-    bool gemForce(uint32_t p);
+    int  gemForce(uint32_t p);       // -1 : sonde, le TOS tranche (cf. forceAccepted)
+    void forceAccepted();            // 2e phase de la sonde Fforce (opcode 9, D0 = 0)
     bool gemGetDir(uint32_t p);
     int  gemPexec(uint32_t p);
     bool gemPterm(uint32_t p);

@@ -43,14 +43,37 @@ struct Rig {
     void str(const std::string& s) {
         for(size_t i=0;i<=s.size();++i) bus.write8(NAME+uint32_t(i),i<s.size()?uint8_t(s[i]):0);
     }
+    int  tosAnswer = 0;            // D0 que rend le « TOS » à un appel relancé par la cartouche
+    bool relaunched = false;       // l'appel est passé par la branche « pexec » de la cartouche
+    bool relaunchServedByHost = false;
     int trap(uint16_t call) {
         bus.write16(0x1000,0x2700);
         bus.write32(0x1002,0x2000);
         bus.write16(0x1006,call);
         cpu.setSr(0x2700);
         gemdos.handleOpcode(8);
-        intercepted = (cpu.sr() & 4) != 0;
+        relaunched = (cpu.sr() & 2) != 0;
+        intercepted = !relaunched && (cpu.sr() & 4) != 0;
+        if (relaunched) cartRelaunch();
+        cpu.setReg(15, 0x1000);
         return int32_t(cpu.reg(0));
+    }
+    // Branche « pexec » de la cartouche ($FA0038) : trap #1 sur le bloc que NeoST a posé
+    // sous la pile (servi ici par le TOS, qui rend tosAnswer), lea 16(sp), puis rte si
+    // D0 < 0, sinon l'opcode 9.
+    void cartRelaunch() {
+        const uint32_t sp = cpu.reg(15);
+        bus.write16(sp-6,0x2700);
+        bus.write32(sp-4,GemdosHd::CART_RETRAP_RET);
+        cpu.setReg(15,sp-6);
+        cpu.setSr(0x2700);
+        gemdos.handleOpcode(8);
+        relaunchServedByHost = (cpu.sr() & 4) != 0;
+        cpu.setReg(0,uint32_t(tosAnswer));
+        cpu.setReg(15,sp+16);
+        if (tosAnswer < 0) return;
+        cpu.setSr(0x2700);
+        gemdos.handleOpcode(9);
     }
     int named(uint16_t call,const std::string& s,uint16_t w1=0,uint16_t w2=0) {
         str(s); bus.write32(0x1008,NAME); bus.write16(0x100C,w1); bus.write16(0x100E,w2);
@@ -211,12 +234,28 @@ int testGemdosProcess() {
     equal("Fforce(1, fichier hôte)",rig.trap(0x46),0);
     equal("Fwrite(1) part dans le fichier",rig.write(1,"ab"),2);
     equal("intercepté",rig.intercepted,true);
-    rig.bus.write16(0x1008,1); rig.bus.write16(0x100A,6);   // handle sauvé par Fdup(1)
-    rig.trap(0x46);
+    // Le TOS refuse le handle (jamais ouvert, fermé) : EIHNDL rendu tel quel, la
+    // redirection hôte reste. [C] EmuTOS fshand.c ixforce @ 5679730f ; banc A/B.
+    rig.tosAnswer=-37;
+    equal("Fforce(1, handle du TOS fermé) : D0 du TOS",rig.fforce(1,40),-37);
+    equal("… posé au TOS par la cartouche",rig.relaunched,true);
+    equal("… relance servie par le TOS, pas par l'hôte",rig.relaunchServedByHost,false);
+    equal("… redirection gardée : Fwrite(1) dans le fichier",rig.write(1,"x"),1);
+    equal("… intercepté",rig.intercepted,true);
+    rig.tosAnswer=0;
+    equal("Fforce(1, TOS) accepté",rig.fforce(1,6),0);     // handle sauvé par Fdup(1)
     equal("Fforce(1, TOS) rendu au TOS",rig.intercepted,false);
+    equal("… par la cartouche",rig.relaunched,true);
     rig.write(1,"cd");
     equal("Fwrite(1) au TOS ensuite",rig.intercepted,false);
+    rig.fforce(1,6);
+    equal("Fforce sans redirection hôte : au TOS directement",rig.relaunched,false);
+    equal("… non intercepté",rig.intercepted,false);
     rig.handleOp(0x3E,uint16_t(o));
+    {
+        std::ifstream f(work/"O.TXT"); std::string c; std::getline(f,c);
+        same("O.TXT : la sortie d'avant le Fforce refusé et celle d'après",c,"abx");
+    }
 
     // --- Restes du banc A/B, 2026-11-11 (TOS 1.04, 1.62, 2.06 et EmuTOS exécutés) ---
     // Fopen et Fdelete d'un dossier : EFILNF (recherche FA_NORM), pas EACCDN.
