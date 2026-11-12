@@ -153,7 +153,7 @@ bool testSccEomReset(); // commande WR0 de remise à zéro du latch EOM
 int testMachineTimerBAer(); // recalage immédiat Timer B après changement AER3
 int testMfpMmioDecode(); // pairs fautifs, mots partiels et impairs void MFP
 bool testPsgOddWrite(); // ombres impaires PSG selon largeur du Bus
-int testDmaSoundMmioState(); // octet FF8920 conservé dans les sauvegardes
+int testDmaSoundMmioState(); // octet FF8920 relu à zéro, mode sauvegardé
 bool testPsgReset(); // image des registres et silence après reset PSG
 bool testYmC10Noise(); // filtre C10 aux coupures du circuit, bruit R6=0 égal à R6=1
 int testBlitterRmw(); // atomicité TAS devant une échéance blitter
@@ -2934,6 +2934,200 @@ static void testCompDisks() {
     }
 }
 
+// -----------------------------------------------------------------------------
+//  Lot « puces » du 2026-11-12 : chaque défaut corrigé a sa table, puce nue +
+//  Scheduler, sans machine ni ROM. Chacune échoue sur le code d'avant le correctif.
+// -----------------------------------------------------------------------------
+
+// [B] MC6850 § Counter Divide Select Bits p. 8, § Interrupt Request p. 6 : sous master
+// reset maintenu (CR1-0=11), l'émetteur est initialisé ; un octet écrit n'en sort jamais.
+static void testAciaResetHoldsTx() {
+    std::printf("ACIA 6850 (écriture TDR sous master reset maintenu, TDRE rattrapé)\n");
+    {   // MIDI : rien sur MIDI OUT, ni pendant le reset, ni à sa sortie.
+        Scheduler sched; Mfp mfp; MidiAcia midi(mfp); int64_t live = 0;
+        midi.setScheduler(&sched); sched.setLiveClock([&] { return live; });
+        sched.setCallback(Scheduler::MIDI_TX, [&] { midi.onTxEmpty(); });
+        int out = 0;
+        midi.setMidiSinkTimed([&](uint8_t, int64_t) { ++out; });
+        midi.write8(0xFFFC04, 0x03);
+        midi.write8(0xFFFC06, 0xAA);
+        live = 5000; sched.runTo(live);
+        checkInt("MIDI : TDR écrit sous reset tenu → 0 octet émis", out, 0);
+        midi.write8(0xFFFC04, 0x15);
+        live = 20000; sched.runTo(live);
+        checkInt("MIDI : sortie du reset → toujours 0 octet", out, 0);
+        checkHex("MIDI : TDRE relu à 1 après la sortie", midi.read8(0xFFFC04) & 0x02, 0x02);
+        midi.write8(0xFFFC06, 0x90);
+        live = 40000; sched.runTo(live);
+        checkInt("MIDI : écriture hors reset → 1 octet émis", out, 1);
+    }
+    {   // IKBD : la commande écrite sous reset n'est ni reçue ni exécutée par le 6301.
+        auto answered = [](bool holdReset) {
+            Mfp mfp; Scheduler s; Ikbd ikbd{mfp}; int64_t live = 0;
+            ikbd.setScheduler(&s); s.setLiveClock([&] { return live; });
+            s.setCallback(Scheduler::IKBD_TX, [&] { ikbd.onTxEmpty(); });
+            s.setCallback(Scheduler::IKBD_RX, [&] { ikbd.onRxDeliver(); });
+            s.setCallback(Scheduler::IKBD, [&] { ikbd.onResetResponse(); });
+            auto adv = [&](int64_t t) { live = t; s.runTo(t); };
+            ikbd.write8(0xFFFC00, 0x96);
+            adv(1000000);                                       // boot du 6301 passé
+            while (ikbd.read8(0xFFFC00) & 1) (void)ikbd.read8(0xFFFC02);
+            if (holdReset) ikbd.write8(0xFFFC00, 0x03);
+            live = 1000100; ikbd.write8(0xFFFC02, 0x1C);        // INTERROGATE TIME-OF-DAY CLOCK
+            adv(1030000);
+            ikbd.write8(0xFFFC00, 0x96);
+            int n = 0;                                          // 7 octets attendus hors reset
+            for (int i = 0; i < 40; ++i) {
+                adv(live + 20000);
+                if (ikbd.read8(0xFFFC00) & 1) { (void)ikbd.read8(0xFFFC02); ++n; }
+            }
+            return n;
+        };
+        checkInt ("IKBD : $1C hors reset → 7 octets d'horloge", answered(false), 7);
+        checkInt ("IKBD : $1C écrit sous reset tenu → aucune réponse", answered(true), 0);
+    }
+    {   // IKBD : statut lu après le front de transfert, événement pas encore dispatché.
+        Mfp mfp; Scheduler s; Ikbd ikbd{mfp}; int64_t live = 0;
+        ikbd.setScheduler(&s); s.setLiveClock([&] { return live; });
+        s.setCallback(Scheduler::IKBD_TX, [&] { ikbd.onTxEmpty(); });
+        s.setCallback(Scheduler::IKBD_RX, [&] { ikbd.onRxDeliver(); });
+        ikbd.write8(0xFFFC00, 0x96); live = 100; ikbd.write8(0xFFFC02, 0x11);
+        checkHex("IKBD : TDRE tombe à l'écriture", ikbd.read8(0xFFFC00) & 0x02, 0x00);
+        const int64_t due = s.rawCyclesUntil(Scheduler::IKBD_TX);
+        live = 100 + due + 8;                 // CPU en pleine instruction, front passé
+        checkHex("IKBD : TDRE remonté au transfert (lecture non dispatchée)",
+                 ikbd.read8(0xFFFC00) & 0x02, 0x02);
+    }
+}
+
+// $FF8920 (octet pair relu à zéro) : tests/dmasound_mmio_state_logic.cpp, appelé par main().
+
+// Pro Sound Designer : le bloc DC du DAC ne doit produire ni échelon au branchement,
+// ni échelon au chargement d'un état (portsApply(fromLoad) re-câble le DAC déjà branché).
+static void testYmDacContinuity() {
+    std::printf("YM2149 + DAC Pro Sound (bloc DC continu au branchement et au chargement)\n");
+    constexpr uint32_t kRate = 48000, kFrames = 960;
+    constexpr int64_t kFrameCycles = 160256;
+    auto make = [](YM2149& p) {
+        p.reset();
+        p.setCycleClock([] { return int64_t(0); });
+        p.setPortBDac(true);                       // R15 = 0 : niveau DAC −0,5 (pleine échelle)
+    };
+    YM2149 a; make(a);
+    std::vector<float> fa(kFrames), fb(kFrames);
+    a.synthesizeFrame(fa.data(), kFrames, kRate, kFrameCycles);
+    checkBool("branchement R15=0 : 1er échantillon sans échelon", std::fabs(fa[0]) < 0.01f, true);
+    for (int i = 0; i < 20; ++i) a.synthesizeFrame(fa.data(), kFrames, kRate, kFrameCycles);
+    std::vector<uint8_t> buf;
+    { StateArchive s = StateArchive::saver(buf); a.serialize(s); }
+    // Retour arrière dans la même session : même instance, puis re-câblage du DAC.
+    YM2149 b; make(b);
+    for (int i = 0; i < 21; ++i) b.synthesizeFrame(fb.data(), kFrames, kRate, kFrameCycles);
+    { StateArchive l = StateArchive::loader(buf.data(), buf.size()); b.serialize(l);
+      checkBool("état YM rechargé", l.ok(), true); }
+    b.setPortBDac(true);                           // ce que fait Machine::portsApply(fromLoad)
+    a.synthesizeFrame(fa.data(), kFrames, kRate, kFrameCycles);
+    b.synthesizeFrame(fb.data(), kFrames, kRate, kFrameCycles);
+    float worst = 0.0f;
+    for (uint32_t i = 0; i < kFrames; ++i) worst = std::max(worst, std::fabs(fa[i] - fb[i]));
+    checkBool("chargement : sortie identique au flux continu (écart < 1e-3)", worst < 1e-3f, true);
+}
+
+// [B] MC68901 janv. 1984 § 5.1.1 p. 5-1 : une donnée non nulle ne se relit jamais $00,
+// et le compte vaut ceil(reste / prescaler) sans troncature intermédiaire.
+static void testMfpTimerLiveRead() {
+    std::printf("MFP (relecture du compteur vivant d'un délai, échéance après 130 h)\n");
+    struct Probe { const char* name; uint32_t data, ctrlReg; uint8_t d, ctrl;
+                   Scheduler::Source src; int timer; int64_t cycles; };
+    const Probe probes[] = {
+        {"Timer A /4 donnée 1",    0xFFFA1F, 0xFFFA19, 1,   0x01, Scheduler::TIMER_A, 0, 4000},
+        {"Timer A /4 donnée 10",   0xFFFA1F, 0xFFFA19, 10,  0x01, Scheduler::TIMER_A, 0, 20000},
+        {"Timer D /4 donnée 2",    0xFFFA25, 0xFFFA1D, 2,   0x01, Scheduler::TIMER_D, 3, 4000},
+        {"Timer C /64 donnée 192", 0xFFFA23, 0xFFFA1D, 192, 0x50, Scheduler::TIMER_C, 2, 200000},
+    };
+    for (const Probe& p : probes) {
+        Scheduler s; int64_t clk = 0; s.setLiveClock([&] { return clk; });
+        Mfp m; m.setScheduler(&s);
+        s.setCallback(p.src, [&] { m.onTimerExpire(p.timer); });
+        m.write8(p.data, p.d);
+        m.write8(p.ctrlReg, p.ctrl);
+        long zeros = 0, above = 0;
+        for (clk = 0; clk < p.cycles; ++clk) {
+            if (s.peekNextDue() >= 0 && clk >= s.peekNextDue()) s.runTo(clk);
+            const uint8_t v = m.read8(p.data);
+            if (v == 0) ++zeros;
+            if (v > p.d) ++above;
+        }
+        char what[96];
+        std::snprintf(what, sizeof what, "%s : jamais relu $00", p.name);
+        checkInt(what, zeros, 0);
+        std::snprintf(what, sizeof what, "%s : jamais au-dessus de la donnée", p.name);
+        checkInt(what, above, 0);
+    }
+    {   // Donnée $00 (256) arrêtée avant le premier décompte : le compteur reste $00.
+        Scheduler s; int64_t clk = 1000; s.setLiveClock([&] { return clk; });
+        Mfp m; m.setScheduler(&s);
+        m.write8(0xFFFA1F, 0x00);
+        m.write8(0xFFFA19, 0x07);             // /200
+        clk = 1002;
+        m.write8(0xFFFA19, 0x00);             // arrêt
+        checkHex("Timer A donnée $00 arrêté aussitôt : compteur $00 (256)", m.read8(0xFFFA1F), 0x00);
+    }
+    // Premier délai d'un timer lancé après une longue durée émulée : k·31333·256 débordait.
+    for (double hours : {1.0, 131.0, 1000.0}) {
+        Scheduler s; int64_t clk = int64_t(hours * 3600 * 8021248.0);
+        s.setLiveClock([&] { return clk; });
+        s.runTo(clk);
+        Mfp m; m.setScheduler(&s);
+        m.write8(0xFFFA23, 192);
+        m.write8(0xFFFA1D, 0x50);             // Timer C /64 : 40106,24 cycles CPU
+        const int64_t rem = s.rawCyclesUntil(Scheduler::TIMER_C);
+        char what[96];
+        std::snprintf(what, sizeof what, "Timer C lancé à %.0f h : 1re échéance dans [40106, 40110]", hours);
+        checkBool(what, rem >= 40106 && rem <= 40110, true);
+    }
+}
+
+// [D] stBlitter.sv:115,132,616 @ a00deb5b : compteurs d'adresse [23:1], rebouclage 16 Mo.
+static void testBlitterAddressWrap() {
+    std::printf("Blitter (compteurs d'adresse 24 bits, rebouclage relu)\n");
+    auto rd16 = [](BlitRig& r, uint32_t off) {
+        return unsigned(r.blit.read8(BLT + off) << 8 | r.blit.read8(BLT + off + 1));
+    };
+    {   // Destination qui franchit $FFFFFE vers le haut.
+        BlitRig r;
+        r.blit.write16(BLT + 0x20, 2);  r.blit.write16(BLT + 0x22, 2);
+        r.blit.write32(BLT + 0x24, SRC);
+        r.blit.write16(BLT + 0x28, 0xFFFF); r.blit.write16(BLT + 0x2A, 0xFFFF);
+        r.blit.write16(BLT + 0x2C, 0xFFFF);
+        r.blit.write16(BLT + 0x2E, 2);  r.blit.write16(BLT + 0x30, 2);
+        r.blit.write32(BLT + 0x32, 0xFFFFFC);
+        r.blit.write16(BLT + 0x36, 2);  r.blit.write16(BLT + 0x38, 1);
+        r.blit.write8 (BLT + 0x3A, 2);  r.blit.write8 (BLT + 0x3B, 3);
+        r.blit.write16(BLT + 0x3C, 0xC000);
+        r.sched.runTo(r.sched.nextDue());
+        checkBool("dst montante : blit achevé", r.blit.busy(), false);
+        checkHex("dst montante : $FF8A32 relu", rd16(r, 0x32), 0x0000);
+        checkHex("dst montante : $FF8A34 relu", rd16(r, 0x34), 0x0000);
+    }
+    {   // Source qui passe sous 0.
+        BlitRig r;
+        r.blit.write16(BLT + 0x20, 0xFFFE); r.blit.write16(BLT + 0x22, 0xFFFE);
+        r.blit.write32(BLT + 0x24, 0x000002);
+        r.blit.write16(BLT + 0x28, 0xFFFF); r.blit.write16(BLT + 0x2A, 0xFFFF);
+        r.blit.write16(BLT + 0x2C, 0xFFFF);
+        r.blit.write16(BLT + 0x2E, 2);  r.blit.write16(BLT + 0x30, 2);
+        r.blit.write32(BLT + 0x32, DST);
+        r.blit.write16(BLT + 0x36, 2);  r.blit.write16(BLT + 0x38, 1);
+        r.blit.write8 (BLT + 0x3A, 2);  r.blit.write8 (BLT + 0x3B, 3);
+        r.blit.write16(BLT + 0x3C, 0xC000);
+        r.sched.runTo(r.sched.nextDue());
+        checkBool("src descendante : blit achevé", r.blit.busy(), false);
+        checkHex("src descendante : $FF8A24 relu", rd16(r, 0x24), 0x00FF);
+        checkHex("src descendante : $FF8A26 relu", rd16(r, 0x26), 0xFFFE);
+    }
+}
+
 int main() {
     testCompDisks();
     testDongleTable();
@@ -2949,6 +3143,10 @@ int main() {
     testRtcSecond();
     testBlitterTruthTable();
     testDmaSoundTruthTable();
+    testAciaResetHoldsTx();
+    testYmDacContinuity();
+    testMfpTimerLiveRead();
+    testBlitterAddressWrap();
     testFdcTruthTable();
     if (testSccBrg()) ++g_ok; else ++g_fail;
     if (testSccSerial()) ++g_ok; else ++g_fail;

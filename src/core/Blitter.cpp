@@ -635,6 +635,12 @@ bool Blitter::runSlice(int maxBusAccesses) {
     // REFERAIT la lecture source (double srcShift → pipeline skew corrompu, mots
     // perdus au bord des icônes GEM — bug débusqué à la fenêtre [BW] du walk-mouse).
     haveSrc_ = haveSrc; haveDst_ = haveDst; dstWord_ = dstWord;
+    // Les compteurs d'adresse n'ont que 23 bits (A23-A1) : un incrément qui passe sous 0
+    // ou au-delà de $FFFFFE reboucle dans les 16 Mo, il ne déborde pas dans un octet
+    // haut. [D] stBlitter.sv:115,132,616 @ a00deb5b : srcAddr/dstAddr en [23:1], relus
+    // { 8'h0, addr[23:16] }. readWord/writeWord masquaient déjà l'accès ; sans masque
+    // ici, $FF8A24/$FF8A32 relisaient $FF/$01 au lieu du rebouclage.
+    srcAddr &= 0xFFFFFE; dstAddr &= 0xFFFFFE;
     wr16(0x24, uint16_t(srcAddr >> 16)); wr16(0x26, uint16_t(srcAddr));
     wr16(0x32, uint16_t(dstAddr >> 16)); wr16(0x34, uint16_t(dstAddr));
     wr16(0x36, xCount);

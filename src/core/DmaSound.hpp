@@ -233,7 +233,7 @@ public:
     bool     steNetlist = true;
 private:
     uint8_t  mode_ = 0;              // $FF8921 : bits0-1 fréquence, bit7 = mono
-    uint8_t  pad20_ = 0;             // $FF8920 : octet scratch non intercepté, état MMIO sauvegardé
+    uint8_t  pad20_ = 0;             // ex-octet scratch $FF8920 (relu 0 depuis 2026-11-12) : gardé pour le format v42+, inerte
     uint32_t startAddr_ = 0;         // $FF8903/05/07
     uint32_t endAddr_   = 0;         // $FF890F/11/13
     uint32_t curAddr_   = 0;         // adresse de FETCH du DMA (avance par MOTS, cf. fifoRefill)

@@ -127,6 +127,9 @@ public:
     // front montant de DS, pas à l'accès en cours ; [D] mfp_timer.v:88-92 @ a00deb5b suit la fiche.
     // Ce code rend le compteur à l'accès en cours : écart non corrigé.
     uint8_t readTimerData(int timer) const;
+    // Compteur vivant (1..256) d'un délai à `remSub` sous-cycles CPU (×256) de son
+    // échéance, prescaler `div`, période partie de `start` (1..256). Cf. Mfp.cpp.
+    static int liveTimerCount(int64_t remSub, int div, int start);
     // Échéance atteinte : lève l'IRQ du timer et le replanifie (mode délai).
     void    onTimerExpire(int timer);
 
