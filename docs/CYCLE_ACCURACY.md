@@ -209,6 +209,10 @@ HSYNC/VDE et la couleur du blanking restent à mesurer sur Atari.
   vidéo et re-rendu par ligne portés. Cinq étalons générés `scroll_336*` couvrent
   activation octet/mot, délai dépassé, annulation et activation mi-écran suivie d'une
   palette tardive. Obsession et Pacemaker n'ont pas été rejoués dans cette passe.
+  **2026-11-12 : la fenêtre de 40 cycles est retirée.** NOSCROLL est un latch sans base
+  de temps, ouvert par tout accès LDS à `$FF8264-5` ([B] ST-4081 feuilles 3 et 10) ; un
+  octet en `$FF8264` ne touche que le décalage. Obsession et Pacemaker posent le latch
+  16 à 20 cycles après `$FF8265` : inchangés. `scroll_336_late` attend désormais 336 px.
 - **`RestartVideoCounter` ligne 310/260** : ✅ **PORTÉ (2026-07-02)** — événement
   `Scheduler::VC_RESTART` (`src/core/Machine.cpp:385-389` callback, `:454-460` planification).
   Le couplage à la géométrie par-ligne (V3) pour les bascules 50/60 Hz en cours de trame est

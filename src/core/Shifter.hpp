@@ -308,17 +308,10 @@ public:
     // registres couleur survit au reset, seul TOS la reprogramme). Appelé par
     // Machine::reset() (branché par l'orchestrateur).
     void reset();
-    // Broche /RESET du 68000 (instruction RESET) : port de Video_Reset_Glue
-    // ([D] video.c:904 @ f0736b24) — SEULEMENT la fréquence et la résolution, PAS l'adresse écran ni
-    // la palette (Video_Reset, lui, remet videoBase à 0 ; customreset() n'appelle que
-    // Video_Reset_Glue). `mono` vient du bit 7 du GPIP (moniteur branché).
-    void resetGlue(bool mono) {
-        sync = 0;                                   // $FF820A = 0 → 60 Hz
-        mode = mono ? Mode::High : Mode::Low;       // ST_HIGH_RES / ST_LOW_RES
-        // Video_Reset_Glue écrit IoMem[$FF8260] sans passer par le handler : la valeur
-        // est la même côté Shifter, sans toucher au filtre Res_Shifter.
-        shifterRes_ = static_cast<uint8_t>(mode);
-    }
+    // Broche /RESET du 68000 (instruction RESET) : ce que la ligne RESB remet à zéro dans
+    // la Glue (ST) ou le GST MCU (STE). `mono` vient du bit 7 du GPIP (moniteur branché).
+    // Détail et preuves : Shifter.cpp.
+    void resetGlue(bool mono);
 
     // Auto-test DÉTERMINISTE de la machine Glue (chemin STF) : injecte des écritures
     // freq/res synthétiques à des cycles EXACTS et vérifie l'état d'affichage résultant
@@ -534,12 +527,12 @@ public:
     uint8_t hwScrollReg8264_ = 0;
 
 private:
-    // Latch STE 336 px : $8265>0 puis $8264=0, même trame et au plus 40 cycles.
-    // Le timestamp ne représente que la dernière écriture POSITIVE à $8265 ;
-    // −1 signifie aucune écriture positive valable dans la trame courante.
+    // Latch STE 336 px : décalage nul alors que NOSCROLL = 0 (cf. write8 $FF8264/65).
     bool steBorderFlag_ = false;
     bool newSteBorderFlag_ = false;
-    int32_t lastScroll8265Cycle_ = -1;
+    // Latch NOSCROLL du GST MCU ([B] ST-4081 feuille 10, PA017) : 1 = pas de prefetch.
+    // Posé par tout accès LDS à $FF8264-5, mis à 1 par RESB ; cf. write8 et resetGlue.
+    bool noscroll_ = true;
     static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
     // Géométrie du tampon imposée par une résolution verrouillée (seule source de
     // vérité, partagée par resizeFor et la validation du save-state).
@@ -851,9 +844,7 @@ public:
         ar(hwScrollReg8264_);
         ar(steBorderFlag_);
         ar(newSteBorderFlag_);
-        ar(lastScroll8265Cycle_);
-        ar.check(lastScroll8265Cycle_ >= -1 && lastScroll8265Cycle_ <= 1048576,
-                 "Shifter::lastScroll8265Cycle_ hors bornes");
+        ar(noscroll_);
 
         // --- Compteur d'adresse vidéo matérialisé + écritures STE différées ---
         ar(vc_.frameBase);

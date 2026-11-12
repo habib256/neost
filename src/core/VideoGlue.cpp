@@ -1368,10 +1368,46 @@ bool Shifter::glueSelfTest() {
         chk("336 persists VBL", steBorderFlag_, true);
         write8(0xFF8265, 0);
         chk("336 clear 8265", steBorderFlag_, false);
+        // NOSCROLL n'a pas de fenêtre de temps ([B] ST-4081 feuille 10, cf. write8) : la
+        // fenêtre de 40 cycles d'Hatari refusait ces deux séquences.
         load(armed); fc = 144; write8(0xFF8264, 0);
-        chk("336 rejects >40", steBorderFlag_, false);
+        chk("336 accepts >40", steBorderFlag_, true);
         load(armed); beginFrame(); fc = 104; write8(0xFF8264, 0);
-        chk("336 rejects next VBL", steBorderFlag_, false);
+        chk("336 accepts next VBL", steBorderFlag_, true);
+        // Un octet $FF8264 > 0 ne touche que le décalage : après $FF8265 > 0, le prefetch reste.
+        load(armed); write8(0xFF8264, 3);
+        chk("8264 keeps prefetch", hwScrollPrefetch, true);
+        chk("8264 offset", hwScrollCount, 3);
+        chk("8264 stride prefetch", scrollCounterAdvance(), 8);
+        // … et sans $FF8265 > 0 préalable (NOSCROLL = 1 depuis le reset) : pas de prefetch.
+        reset(); sync = 2; beginFrame(); write8(0xFF8264, 3);
+        chk("8264 no prefetch", hwScrollPrefetch, false);
+        chk("8264 stride", scrollCounterAdvance(), 0);
+        // Mot en $FF8264 : seul l'octet bas compte (D0-D3 pour le Shifter comme pour NOSCROLL).
+        bus_.write16(0xFF8264, 0x0500);
+        chk("word lo=0 offset", hwScrollCount, 0);
+        chk("word lo=0 no 336", steBorderFlag_, false);
+        bus_.write16(0xFF8264, 0x0003);
+        chk("word lo=3 offset", hwScrollCount, 3);
+        chk("word lo=3 prefetch", hwScrollPrefetch, true);
+        // RESET (RESB) : NOSCROLL à 1, largeur de ligne et base vidéo à 0 ; le décalage du
+        // Shifter reste ([F], cf. resetGlue). Puis $FF820A garde la synchro externe (bit 0).
+        write8(0xFF820F, 0x55); write8(0xFF8203, 0x12); write8(0xFF8265, 0); write8(0xFF8264, 0);
+        write8(0xFF8265, 5); write8(0xFF8264, 0);
+        chk("pre-RESET 336", steBorderFlag_, true);
+        resetGlue(false);
+        chk("RESET noscroll", noscroll_, true);
+        chk("RESET 336 off", steBorderFlag_, false);
+        chk("RESET line width", lineWidth, 0);
+        chk("RESET video base", static_cast<int>(videoBase), 0);
+        chk("RESET sync", sync, 0);
+        write8(0xFF8264, 0);
+        chk("RESET then 8264=0 no 336", steBorderFlag_, false);
+        write8(0xFF820A, 0x03);
+        chk("820A ext sync read", read8(0xFF820A), 0xFF);
+        write8(0xFF820A, 0x02);
+        chk("820A pal read", read8(0xFF820A), 0xFE);
+        reset(); sync = 2; beginFrame();
 
         fc = 100 * cpl + 100;
         write8(0xFF8265, 4); fc += 16; write8(0xFF8264, 0);
