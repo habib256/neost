@@ -250,22 +250,29 @@ corrections expérimentales. Aucun échec promu en référence. Voir
 
 ### P2 — Son DMA STE (`dmaSnd.c:737`)
 
-✅ **FIFO 8 octets PORTÉE** (`src/core/DmaSound.cpp:94` `fifoRefill`, `:131` `fifoPull`),
-ainsi que le gain LMC ×2 (S3, `kLmcMakeup`, `:436-450`).
+✅ **FIFO 8 octets PORTÉE** (`src/core/DmaSound.cpp:105` `fifoRefill`, `:142` `fifoPull`),
+ainsi que le gain LMC ×2 (S3, `kLmcMakeup`, `:458-480`).
 
 ✅ **Compteur `$FF8909/0B/0D` au cycle PORTÉ (2026-08-06)** : `DmaSound::liveCounter`
-(`DmaSound.cpp:500-510`) est un port de `DmaSnd_GetFrameCount` — il appelle `updateDac`
+(`DmaSound.cpp:516`) est un port de `DmaSnd_GetFrameCount` — il appelle `updateDac`
 (≙ `Sound_Update`) à la lecture, et rend l'adresse de DÉBUT à l'arrêt. Il ne refill PAS la
 FIFO au passage : le refill reste quantifié au HBL (`onHbl`) ou déclenché à vide (`fifoPull`),
 ce qui est le comportement voulu — un poll serré dans une ligne doit voir l'adresse sauter par
 paquets, pas avancer en continu.
 
-**Reste** : confirmer cette quantification à l'oracle (aucun A/B Hatari n'a encore été fait sur
-un poll serré de `$FF8909/0B/0D`). Étalon : STE_Test.
+**Confronté à l'oracle le 2026-09-02** (étalon `dmasnd_poll`, poll serré de `$FF8909/0B/0D`) :
+sur la fenêtre des 100 polls, NeoST et Hatari avancent le compteur de 382 octets exactement ;
+NeoST rend le découpage par HBL idéal du débit (sauts de 6 et de 8), Hatari un découpage hérité
+de son rééchantillonnage hôte, non reproductible d'un run à l'autre — d'où une référence
+`snapshot` (`HATARI_DIVERGENCES.md` § 5). **Reste** : la fin de trame (TODO « IRQ de fin de trame
+du son DMA »). Étalon : STE_Test.
 
 ### P2 — Restes vidéo « plan »
 
-`VIDEO_ENDLINE` distinct du HBL ; VBL au cycle exact (vraie fin de trame + offset 64/68) ; phase
+Fait depuis l'inventaire : longueur de la ligne qui commence lue sur les registres vivants, et
+fin de trame recalculée sur la longueur réelle de sa dernière ligne (2026-10-22,
+`Machine::syncFrameEnd_`). Reste : `VIDEO_ENDLINE` distinct du HBL ; VBL au cycle exact
+(offset 64/68) ; phase
 exacte du tic Timer C (au cycle de programmation) ; lecture compteur à cheval sur deux lignes
 (`Video_CalculateAddress`).
 

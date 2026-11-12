@@ -189,8 +189,11 @@ ROM et moniteur en plein blit, `?fiber=0`, exception injectée dans une trame ga
 
 Tout accès CPU passe par `Bus::read8/16/32` et `write8/16/32` (assemblage **big-endian** :
 toujours assembler les mots octet par octet). Aiguillage : RAM (`$0`), ROM (`romBase`), MMIO
-(`$FF8000+`). `mmioRead8`/`mmioWrite8` routent vers Shifter (`$FF8200`), FDC/DMA (`$FF8600`),
-PSG (`$FF8800`), son DMA (`$FF8900`), MFP (`$FFFA00`), ACIA (`$FFFC00`), RTC (`$FFFC21`).
+(`$FF8000+`). `mmioRead8`/`mmioWrite8` routent, par la table `Bus::mmioTable` (plages
+disjointes, vérifiées par `Bus::mmioTableDisjoint`), vers Shifter (`$FF8200`), FDC/DMA
+(`$FF8600`), PSG (`$FF8800`), son DMA (`$FF8900`), blitter (`$FF8A00`), SCC (`$FF8C80`), SCU
+(`$FF8E01`), cache et vitesse du Mega STE (`$FF8E21`), joypads du STE (`$FF9200`), MFP
+(`$FFFA00`), FPU (`$FFFA40`), ACIA clavier (`$FFFC00`) et MIDI (`$FFFC04`), RTC (`$FFFC21`).
 
 `busFault(addr)` renvoie vrai pour les adresses non décodées qui doivent faire une **bus
 error**. Modèle **WHITELIST** porté de Hatari (`ioMem.c`) : tout `$FF8000-$FFFFFF` faute SAUF
