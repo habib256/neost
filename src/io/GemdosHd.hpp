@@ -26,6 +26,7 @@
 #pragma once
 #include <cstdint>
 #include <cstdio>
+#include <ctime>
 #include <functional>
 #include <map>
 #include <string>
