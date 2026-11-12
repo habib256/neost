@@ -3493,6 +3493,76 @@ bool GemdosHd::sandboxSelfTest() {
                "nom accentue NFD -> NFC", nfc.c_str(), got.c_str()); }
     }
 
+    // --- Une garde PAR COUCHE (A39, 2026-11-12) -----------------------------------
+    // Les cas « inside » ci-dessus jugent la SORTIE de toute la chaîne : un « ..\X » que
+    // le parseur cesserait de rabattre serait encore tenu par la garde terminale (qui
+    // rend un chemin refusé, lui aussi sous la racine) — une couche pouvait donc régresser
+    // en silence derrière l'autre. Ici chaque couche est jugée SEULE, sur une entrée que
+    // seule elle doit tenir, et par une issue qui n'appartient qu'à elle :
+    //   1. normalisation « / » → « \ » et 2. parseur (« .. » rabattu tant que
+    //      sep >= minlen) : le nom est RAMENÉ à la racine (racine/X), jamais refusé ;
+    //   3. garde terminale clampToSandbox, appelée directement sur un chemin hôte BRUT
+    //      (ce que recopient les sorties anticipées du parseur) : « .. » lexical, dossier
+    //      frère au préfixe commun, lien sortant → REFUSÉ ;
+    //   4. lien pendant (realpath échoue, le préfixe passe) → REFUSÉ ;
+    //   5. dernier composant non résolu : un lien intérieur reste LUI-MÊME (Fdelete et
+    //      Frename agissent sur le lien, pas sur sa cible).
+    // Les liens (3 sortant, 4, 5) supposent create_symlink : sautés, et dits, là où
+    // l'hôte le refuse (Windows sans le privilège).
+    {
+        const std::string sep(1, PATHSEP);
+        const std::string refusedMark(300, '~');
+        auto refusedPath = [&](const std::string& h) { return h.find(refusedMark) != std::string::npos; };
+        auto layer = [&](const char* what, bool ok, const std::string& got) {
+            if (ok) ++pass;
+            else { ++fail; std::fprintf(stderr, "  FAIL couche %-38s -> %s\n", what, got.c_str()); }
+        };
+        auto pulled = [&](const char* what, const char* gemName) {   // couches 1 et 2
+            createHostFileName(2, gemName, host);
+            layer(what, !refusedPath(host) && physicalCanon(host) == rootCanon + "X", host);
+        };
+        auto guard = [&](const std::string& raw) {                   // couches 3 à 5
+            std::string o = raw;
+            clampToSandbox(emudrives_[0], "<selftest>", o);
+            return o;
+        };
+        pulled("2 parseur : ..\\..\\X ramene",            "..\\..\\X");
+        pulled("2 parseur : \\..\\X ramene",              "\\..\\X");
+        pulled("1 normalisation : ../../X ramene",        "../../X");
+        pulled("1 normalisation : C:/../X ramene",        "C:/../X");
+        // Sortie anticipée du parseur (composant inexistant) : le reste part BRUT vers
+        // la couche 3, qui doit refuser.
+        createHostFileName(2, "SUB\\NOPE\\..\\..\\..\\X", host);
+        layer("2→3 suffixe brut apres inexistant", refusedPath(host), host);
+
+        std::string g = guard(rootCanon + ".." + sep + "X");
+        layer("3 garde : racine/../X", refusedPath(g), g);
+        g = guard(rootCanon + "SUB" + sep + ".." + sep + ".." + sep + "X");
+        layer("3 garde : racine/SUB/../../X", refusedPath(g), g);
+        std::string sibling = rootCanon;
+        sibling.pop_back();                                          // sans séparateur final
+        g = guard(sibling + "EVIL" + sep + "X");
+        layer("3 garde : frere racineEVIL/X", refusedPath(g), g);
+        g = guard(rootCanon + "SUB" + sep + "FILE.TXT");
+        layer("3 garde : chemin legitime intact", g == rootCanon + "SUB" + sep + "FILE.TXT", g);
+
+        std::error_code lec;
+        stdfs::create_symlink(root.parent_path(), root / "OUT", lec);
+        if (!lec) stdfs::create_symlink(root.parent_path() / "neost-gemdos-selftest-absent", root / "DANGLE", lec);
+        if (!lec) stdfs::create_symlink(root / "SUB" / "FILE.TXT", root / "LNK", lec);
+        if (lec) {
+            std::fprintf(stderr, "  note: symlinks unavailable (%s), layers 3-5 link cases skipped\n",
+                         lec.message().c_str());
+        } else {
+            g = guard(rootCanon + "OUT" + sep + "X");
+            layer("3 garde : lien sortant OUT/X", refusedPath(g), g);
+            g = guard(rootCanon + "DANGLE");
+            layer("4 lien pendant", refusedPath(g), g);
+            g = guard(rootCanon + "LNK");
+            layer("5 lien interieur garde son nom", g == rootCanon + "LNK", g);
+        }
+    }
+
     // --- Zones lisibles par un appel GEMDOS : RAM, ROM TOS et port cartouche -------
     // Le TOS lit un tampon Fwrite ou un nom de fichier n'importe où ; le port
     // cartouche était refusé (audit codes d'erreur face à gemdos.c, 2026-10-20).
