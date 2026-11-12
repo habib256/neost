@@ -300,8 +300,8 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         // [D] Hatari acia.c:795-805,452-455 @ f0736b24 ACIA_Write_CR/ACIA_Set_Timers_IKBD : seul un
         // changement de CR0..1 non reset redémarre le timer série. [F] Fiche muette sur ce compteur :
         // il pourrait tourner librement. Tranché par : une capture de Tx Data autour d'une écriture de CR
-        // sur un vrai 6850. La tranche
-        // CPU→IKBD reste bornée à /64 8N1 ; mémoriser sa phase TX.
+        // sur un vrai 6850. La tranche CPU→IKBD suit tous les formats du CR au /64 ;
+        // mémoriser sa phase TX.
         const bool dividerChanged = (v & 3) != 3 && (v & 3) != (control_ & 3);
         if (dividerChanged) {
             // [D] Hatari acia.c:801-804 @ f0736b24 ACIA_Write_CR : seul un changement du diviseur hors
@@ -338,8 +338,8 @@ void Ikbd::write8(uint32_t addr, uint8_t v) {
         // normalement ; le TDR reste plein tant que CR demande le break.
         // [F] Fiche muette sur le caractère en cours, et MiSTery gen_uart.v:296 @ a00deb5 force la ligne à 0
         // aussitôt. Tranché par : une capture de Tx Data sur un vrai 6850 pendant un caractère.
-        // Le niveau bas est consommé par le SCI ; ses erreurs ne sont pas exposées
-        // comme un registre CPU (le 6301 reste un modèle de firmware).
+        // Le niveau bas est vu par le SCI : trame nulle, erreur de trame et gestionnaire
+        // ORFE de la ROM ($FF40), puis reset si le BREAK dure (cf. sciWakeCleared).
         if (sched_) {
             if (!txShifting_ && (wasBreak || dividerChanged))
                 txNextBitCycle_ = nextTxClock(sched_->liveNow());
@@ -387,6 +387,13 @@ void Ikbd::receiveSerialByte(uint8_t v) {
         if (heldByte_ < 0 && !heldOverrun_) heldByte_ = v;
         else { heldByte_ = -1; heldOverrun_ = true; }
         trace("reset-window data=$%02X %s", v, heldOverrun_ ? "overrun" : "held");
+        return;
+    }
+    // [C] ROM $FF13, $FF33-$FF3D : paramètres restants d'une commande avortée par une
+    // erreur de trame, jetés un à un.
+    if (sciDiscard_ > 0) {
+        --sciDiscard_;
+        trace("sci-discard data=$%02X left=%d", v, int(sciDiscard_));
         return;
     }
 
@@ -668,17 +675,32 @@ void Ikbd::dispatchCommand() {
             // produit des flèches (cf. sendKeycodeJoystick). Paramètres RX RY TX TY
             // VX VY en dixièmes de seconde.
             stopJoystickSampling();
+            // ROM $FA2E-$FA34 : $94, $A1 et les prédiviseurs $A2/$A3 remis à zéro.
             for (int i = 0; i < 6; ++i) kjParam_[i] = inBuf_[1 + i];
             kjKey_[0] = kjKey_[1] = 0;
             kjStart_[0] = kjStart_[1] = kjLast_[0] = kjLast_[1] = 0;
             kjFire_ = false;
+            {
+                // $9B (feux) est tenu à jour dans tous les modes ($F186) : l'état courant
+                // est déjà accepté. $9F n'est suivi que lorsque le port 0 sert un
+                // joystick ($F681). [F] Quartet du joystick 0 pris au repos à l'entrée :
+                // un manche déjà tenu passe par l'anti-rebond de 4 ms. Tranché par la
+                // valeur de $9F laissée par le mode précédent, relevée sur un IKBD.
+                uint8_t j0 = 0, j1 = 0;
+                const bool wasJoy = port0Joy_;
+                port0Joy_ = true;
+                readJoystickState(j0, j1);
+                port0Joy_ = wasJoy;
+                kjFireStable_ = kjFireCand_ = (j0 & 0x80) != 0;
+                kjDirStable_ = kjDirCand_ = 0;
+                kjFireSince_ = kjDirSince_ = -1;
+            }
             joyMode_ = JOY_KEYCODE;
             joysticksEnabled_ = true;
             port0ToJoystick();
-            joystickMonitorPeriod_ = kKeycodePollCycles;
+            joystickMonitorPeriod_ = kKeycodePollCycles;   // drapeau « scrutation propre »
             if (sched_) sched_->cancel(Scheduler::IKBD_AUTOSEND);
-            if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR,
-                                         firmwareEventTime() + kKeycodePollCycles);
+            if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR, firmwareEventTime());
             break;
         case 0x16: {
             // $16 = « interroger les joysticks » : l'IKBD répond après traitement par
@@ -844,8 +866,8 @@ void Ikbd::resetHw() {
     // [B] MC6850 Pin Assignment p. 1, § Counter Divide Select Bits p. 8 : seul CR0=CR1=1 remet la puce à zéro.
     // Le Scheduler NeoST n'est pas effacé par Machine::reset : conserver
     // l'échéance TX déjà armée, sans annuler ni recharger le TDR.
-    // Le transit /64 8N1 est assemblé bit par bit, y compris après reset SCI.
-    // Les autres formats/diviseurs gardent le repli historique 8N1/1024 cycles.
+    // Le transit /64 est assemblé bit par bit dans tous les formats du CR, y compris
+    // après reset SCI. Les diviseurs /16 et /1 gardent le repli de 1024 cycles par bit.
     bootRom();                       // IKBD_Boot_ROM(false) — reset à chaud
     raiseIfReady();                   // republie les causes ACIA après reset MFP
 }
@@ -880,6 +902,10 @@ void Ikbd::bootRom() {
     joyMode_       = JOY_AUTO;                // ROM $F113 : $CA = $28
     kjKey_[0] = kjKey_[1] = 0;
     kjFire_        = false;
+    kjDirSince_ = kjFireSince_ = -1;
+    // ROM $F02A : TRCSR = $1A efface WU ; $D4 et $CB sont dans la RAM effacée.
+    sciWake_ = false; sciOnes_ = 0; sciErrorAt_ = sciResumeAt_ = -1;
+    sciDropOutput_ = false; sciDiscard_ = 0;
     fireShift_     = 0;
     fireCount_     = 8;
     monitorContinuous_ = false;
@@ -1026,6 +1052,8 @@ void Ikbd::onJoystickMonitor() {
         return;
     }
     if (joyMode_ == JOY_KEYCODE) {
+        // Prochaine évaluation au tic 1 ms suivant (grille OCF, pas la date de $19).
+        scheduleKeycodePoll(due >= 0 ? due : sched_->liveNow());
         uint8_t joy0 = 0, joy1 = 0;
         readJoystickState(joy0, joy1);
         if (joysticksEnabled_ && !duringResetCriticalTime_) sendKeycodeJoystick(joy0);
@@ -1180,42 +1208,116 @@ void Ikbd::sendAutoInput() {
     bOldR_ = right;
 }
 
+// Grille de l'interruption 1 ms du 6301 (OCF, ROM $FD9D) : k-ième tic depuis
+// ocfOrigin_, exact au cycle près (même calcul que addOcfDelay).
+int64_t Ikbd::ocfTick(int64_t k) const {
+    return ocfOrigin_ + (k * neost::pacing::cpuHzInt() + 500) / 1000;   // quartz en service
+}
+
+// Indice du dernier tic 1 ms <= t (-1 avant le premier).
+int64_t Ikbd::ocfIndexAtOrBefore(int64_t t) const {
+    if (t < ocfOrigin_) return -1;
+    int64_t k = (t - ocfOrigin_) * 1000 / neost::pacing::cpuHzInt();
+    while (ocfTick(k + 1) <= t) ++k;
+    while (k >= 0 && ocfTick(k) > t) --k;
+    return k;
+}
+
+// [C] ROM 6301 $F7E3 et $FE7D-$FEA6 (MiSTery ikbd/rom/IKBD.ASM) : à l'appui, le
+// prédiviseur de l'axe ($A2/$A3) est chargé à 100 ; l'interruption 1 ms le décrémente
+// et, quand il est DÉJÀ à zéro, le recharge à 100 et décompte d'un dixième $A4..$A9.
+// Le premier dixième tombe donc au 101ᵉ tic après l'appui, les suivants tous les
+// 101 tics : un « dixième » de $19 dure 101 ms, pas 100.
+int64_t Ikbd::keycodeTenths(int64_t since, int64_t t) const {
+    const int64_t k0 = ocfIndexAtOrBefore(since) + 1;   // premier tic après l'appui
+    const int64_t kt = ocfIndexAtOrBefore(t);
+    if (kt < k0 + 100) return 0;
+    return (kt - k0 - 100) / 101 + 1;
+}
+
 void Ikbd::sendKeycodeJoystick(uint8_t joy0) {
-    // Joystick 0 en touches ($19, ROM $FA21 et $F87A) : par axe, une paire make+break
-    // à l'appui, puis une tous les TX pendant RX, puis une tous les VX (0 = aucune).
-    // Les directions opposées enfoncées ensemble sont ignorées. Feu : $74 à l'appui,
-    // $F4 au relâchement. Unités : dixièmes de seconde (prédiviseur 100 ms, $FE7D).
+    // Joystick 0 en touches ($19), tour de boucle de la ROM : anti-rebond du feu
+    // ($F186) et des directions ($F681), puis axe X, axe Y ($F7A6-$F87C) et feu
+    // ($F87E). Évalué à chaque tic 1 ms (les compteurs ne changent qu'aux
+    // interruptions) et à chaque changement de l'état hôte (cf. setJoystick) :
+    // l'entrée ne change qu'à ces instants, la ROM ne verrait rien de plus en la
+    // relisant à chaque tour.
+    // [F] Latence du tour de boucle après l'interruption ou le changement (quelques
+    // dizaines de µs, plus 128/215 µs de gestionnaire) non comptée. Tranché par le
+    // décompte des cycles de la boucle $F13A -> $F681 -> $F7A6 sur la ROM.
     if (!sched_) return;
-    const int64_t kTenth = neost::pacing::cpuHzInt() / 10;
     const int64_t now = firmwareEventTime();
-    struct Axis { uint8_t neg, pos, keyNeg, keyPos; };
-    static constexpr Axis kAxes[2] = { {0x04, 0x08, 0x4B, 0x4D},    // X : gauche/droite
-                                       {0x01, 0x02, 0x48, 0x50} };  // Y : haut/bas
+    const int64_t kNow = ocfIndexAtOrBefore(now);
+
+    // [C] ROM $F186-$F1AD : anti-rebond du feu. $9D posé à 1 à la détection, +1 à chaque
+    // tic ($FE6E) ; à 10, le candidat $9C est accepté dans $9B s'il tient toujours.
+    const bool fireRaw = joy0 & 0x80;
+    if (kjFireSince_ >= 0 && kNow - ocfIndexAtOrBefore(kjFireSince_) >= 9) {
+        if (fireRaw == kjFireCand_) kjFireStable_ = kjFireCand_;
+        kjFireSince_ = -1;
+    }
+    if (kjFireSince_ < 0 && fireRaw != kjFireStable_) { kjFireCand_ = fireRaw; kjFireSince_ = now; }
+
+    // [C] ROM $F681-$F6A1 : même mécanisme pour les directions ($9E, seuil 5 ; candidat
+    // $A0, état accepté $9F), bit par bit : un bit qui a rebougé garde son ancien état.
+    const uint8_t dirRaw = joy0 & 0x0F;
+    if (kjDirSince_ >= 0 && kNow - ocfIndexAtOrBefore(kjDirSince_) >= 4) {
+        kjDirStable_ = uint8_t(((dirRaw ^ kjDirCand_) & kjDirStable_) | (dirRaw & kjDirCand_));
+        kjDirSince_ = -1;
+    }
+    if (kjDirSince_ < 0 && dirRaw != kjDirStable_) { kjDirCand_ = dirRaw; kjDirSince_ = now; }
+
+    // [C] ROM $F7B0-$F86C, par axe (X puis Y). $94 = direction tenue (kjKey_),
+    // $A4/$A5 = RX restant, $A6/$A7 = TX restant, $A8/$A9 = VX restant, $A1 bits 5/6 =
+    // phase VX. Les compteurs se déduisent des dixièmes écoulés depuis l'appui
+    // (kjStart_) et depuis le dernier rechargement (kjLast_).
+    struct Axis { uint8_t mask, neg, keyNeg, keyPos; };
+    static constexpr Axis kAxes[2] = { {0x0C, 0x04, 0x4B, 0x4D},    // X : gauche/droite
+                                       {0x03, 0x01, 0x48, 0x50} };  // Y : haut/bas
     for (int a = 0; a < 2; ++a) {
-        const bool neg = joy0 & kAxes[a].neg, pos = joy0 & kAxes[a].pos;
-        const uint8_t key = (neg == pos) ? 0 : (neg ? kAxes[a].keyNeg : kAxes[a].keyPos);
-        auto emit = [&] { if (rxFree(2)) { pushRx(key); pushRx(uint8_t(key | 0x80)); } };
-        if (key != kjKey_[a]) {
+        const uint8_t dir = kjDirStable_ & kAxes[a].mask;
+        if (!dir) { kjKey_[a] = 0; continue; }           // $F7BC : compteurs effacés, rien n'est émis
+        if (dir == kAxes[a].mask) continue;              // $F7CD : directions opposées, rien ne change
+        const uint8_t key = (dir & kAxes[a].neg) ? kAxes[a].keyNeg : kAxes[a].keyPos;
+        // $F84E : la paire make+break part d'un bloc ; $FD34 la jette si le tampon est plein.
+        auto emit = [&] { kjLast_[a] = now; if (rxFree(2)) { pushRx(key); pushRx(uint8_t(key | 0x80)); } };
+        if (key != kjKey_[a]) {                          // $F7D4 : nouvel appui
             kjKey_[a] = key;
-            if (!key) continue;
-            kjStart_[a] = kjLast_[a] = now;
+            kjStart_[a] = now;
             emit();
             continue;
         }
-        if (!key) continue;
-        const int64_t r = kjParam_[a] * kTenth;           // RX / RY
-        const bool repeatPhase = now - kjStart_[a] < r;
-        const int64_t every = (repeatPhase ? kjParam_[2 + a] : kjParam_[4 + a]) * kTenth;
-        if (every > 0 && now - kjLast_[a] >= every) {
+        const int rx = kjParam_[a], tx = kjParam_[2 + a], vx = kjParam_[4 + a];
+        const int64_t tenths = keycodeTenths(kjStart_[a], now);
+        const int64_t atReload = keycodeTenths(kjStart_[a], kjLast_[a]);
+        const int64_t sinceReload = tenths - atReload;
+        if (rx == 0 || atReload >= rx) {                 // $F80D : phase VX, une paire tous les VX
+            if (vx && sinceReload >= vx) emit();
+        } else if (tx && sinceReload >= tx) {            // $F82B : $A6 échu, répétition
+            emit();                                      // ($F835 : bascule en VX si $A4 l'est aussi)
+        } else if (tenths >= rx) {                       // $F81F : $A4 échu, bascule sans émettre
             kjLast_[a] = now;
-            emit();
         }
     }
-    const bool fire = joy0 & 0x80;
-    if (fire != kjFire_ && rxFree(1)) {
-        kjFire_ = fire;
-        pushRx(fire ? 0x74 : 0xF4);
+    // [C] ROM $F87E-$F89E : $74 à l'appui, $F4 au relâchement ; $A1 bit 1 est mis à
+    // jour avant l'envoi, que $FD34 jette si le tampon est plein.
+    if (kjFireStable_ != kjFire_) {
+        kjFire_ = kjFireStable_;
+        if (rxFree(1)) pushRx(kjFire_ ? 0x74 : 0xF4);
     }
+}
+
+void Ikbd::scheduleKeycodePoll(int64_t after) {
+    if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR, ocfTick(ocfIndexAtOrBefore(after) + 1));
+}
+
+void Ikbd::setJoystick(uint8_t joy0, uint8_t joy1) {
+    const bool changed = hostJoy_[0] != joy0 || hostJoy_[1] != joy1;
+    hostJoy_[0] = joy0; hostJoy_[1] = joy1;
+    // $19 : la ROM relit le port à chaque tour de boucle ; un changement de l'hôte est
+    // vu tout de suite, sans attendre le prochain tic 1 ms.
+    if (changed && sched_ && joyMode_ == JOY_KEYCODE && joystickMonitorPeriod_ > 0)
+        sched_->schedule(Scheduler::IKBD_MONITOR, sched_->liveNow());
 }
 
 void Ikbd::updateInternalAbsPos(int dx, int dy) {
@@ -1451,6 +1553,9 @@ bool Ikbd::rxFree(std::size_t n) const {
     // RDR de l'ACIA vivent hors du tampon. Un appel de $FD34 est admis entier ou
     // jeté : un paquet teste sa taille totale avant son premier pushRx.
     constexpr std::size_t kBufSize = 21;
+    // ROM $FD34 : $CB bit 4 (posé par le gestionnaire ORFE) jette l'envoi entier jusqu'au
+    // tic de reprise ($FE44).
+    if (sciDropOutput_ && (sciErrorAt_ >= 0 || firmwareEventTime() < sciResumeAt_)) return false;
     return rx_.size() <= kBufSize && n <= kBufSize - rx_.size();
 }
 
@@ -1518,6 +1623,9 @@ void Ikbd::armRx(int64_t baseCycle) {
         return;
     }
     if (rx_.empty() || outputBlocked()) return;
+    // Après une erreur de trame, TIE n'est rétabli qu'au tic de reprise ($FE47).
+    if (baseCycle < sciResumeAt_ && (baseCycle >= 0 || firmwareEventTime() < sciResumeAt_))
+        baseCycle = sciResumeAt_;
     if (sched_) {
         // Check_New_TDR est appelé en SCI IDLE uniquement : un seul octet
         // sort de la file avant DATA/STOP, sans préchargement du suivant.
@@ -1610,9 +1718,11 @@ void Ikbd::raiseIfReady(int64_t when) {
 int64_t Ikbd::nextTxClock(int64_t at) const {
     // [D] Hatari acia.c:452-455,801-805 @ f0736b24 ACIA_Set_Timers_IKBD : la phase change avec le diviseur CR.
     // [B] MC6850 § Control Register p. 8 : (CR & $1F) == $16 est /64 8N1.
-    // Port borné au format ST /64 8N1 ; les autres modes conservent le repli
-    // historique, sans prétendre reconstruire la réception physique du 6301.
-    const int64_t phase = (control_ & 0x1F) == 0x16 ? txClockPhase_ : 0;
+    // Phase gardée pour tout format au /64. [F] Aux /16 et /1, l'ACIA émet 4 ou 64 fois
+    // plus vite que le SCI n'échantillonne (8 × 7812,5 bauds, HD6301 Handbook p. 1247) :
+    // repli d'un bit de 1024 cycles, sans forme d'onde. Tranché par l'échantillonnage du
+    // SCI sur la ligne réelle, à modéliser.
+    const int64_t phase = (control_ & 0x03) == 0x02 ? txClockPhase_ : 0;
     const int64_t elapsed = (at % kAciaTxBitCycles - phase + kAciaTxBitCycles)
                             % kAciaTxBitCycles;
     return at + kAciaTxBitCycles - elapsed;
@@ -1626,9 +1736,47 @@ void Ikbd::onTxEmpty() {
     advanceTx(at);
 }
 
+// [B] MC6850 § Word Select Bits p. 8 : 000 7E2, 001 7O2, 010 7E1, 011 7O1, 100 8N2, 101 8N1,
+// 110 8E1, 111 8O1. Nombre de bits du caractère après le start.
+int Ikbd::aciaFrameBits() const {
+    const int format = (control_ >> 2) & 7;
+    const int data = (format & 4) ? 8 : 7;
+    const int parity = (format == 4 || format == 5) ? 0 : 1;
+    const int stops = (format == 0 || format == 1 || format == 4) ? 2 : 1;
+    return data + parity + stops;
+}
+
+// Niveau du bit `index` (0 = premier bit de donnée) : données, parité, stops à 1.
+// [B] MC6850 § Parity Error p. 9 : parité impaire = nombre total de « 1 » impair ; CR2 = 1 → impaire.
+bool Ikbd::aciaFrameBit(int index) const {
+    const int format = (control_ >> 2) & 7;
+    const int data = (format & 4) ? 8 : 7;
+    if (index < data) return (txShiftData_ >> index) & 1;
+    if (index == data && format != 4 && format != 5) {
+        int ones = 0;
+        for (int i = 0; i < data; ++i) ones += (txShiftData_ >> i) & 1;
+        return ((ones & 1) != 0) != ((format & 1) != 0);
+    }
+    return true;
+}
+
 // Récepteur 6301 : ikbd.c IKBD_SCI_Get_Line_RX. Tout zéro en IDLE est
-// un start, huit bits LSB suivent ; un stop nul abandonne la trame.
+// un start, huit bits LSB suivent ; un stop nul est une erreur de trame.
+// [B] HD6301 Handbook p. 155 : la trame du SCI fait toujours 10 bits (8N1) ; un caractère
+// 7 bits + parité y arrive avec la parité en bit 7, un 8 bits + parité y perd sa parité
+// comme bit de stop.
 void Ikbd::clockSciRx(bool bit) {
+    if (sciWake_) {
+        // [B] HD6301 Handbook TRCSR bit 0 p. 152 : sous WU, rien n'est assemblé ; dix « 1 »
+        // consécutifs effacent WU.
+        if (!bit) { sciOnes_ = 0; return; }
+        if (++sciOnes_ >= 10) {
+            sciWake_ = false;
+            sciOnes_ = 0;
+            sciWakeCleared(firmwareEventTime());
+        }
+        return;
+    }
     if (sciRxState_ == 0) {
         if (!bit) { sciRxState_ = 1; sciRxByte_ = 0; sciRxBitsLeft_ = 8; }
     } else if (sciRxState_ == 1) {
@@ -1638,8 +1786,55 @@ void Ikbd::clockSciRx(bool bit) {
     } else {
         sciRxState_ = 0;
         if (bit) receiveSerialByte(sciRxByte_);
-        else trace("sci-drop data=$%02X reason=invalid-stop", sciRxByte_);
+        else {
+            trace("sci-drop data=$%02X reason=invalid-stop", sciRxByte_);
+            sciFramingError();
+        }
     }
+}
+
+// [C] ROM 6301 $FF40-$FF6D, appelé par l'interruption SCI sur ORFE ($FEE6).
+void Ikbd::sciFramingError() {
+    // Pendant l'initialisation (sei $F010 … cli $F139), l'interruption n'est pas servie.
+    // [F] ORFE resterait posé jusqu'au cli ; le caractère est simplement perdu ici.
+    // Tranché par : une erreur de trame provoquée pendant le reset d'un IKBD.
+    if (duringResetCriticalTime_ || exeMode_ || memLoadLeft_ > 0) return;
+    sciWake_ = true;                       // $FF42 : WU
+    sciOnes_ = 0;
+    sciErrorAt_ = firmwareEventTime();     // $FF4F : $D4 = 1 (WU ne peut pas s'effacer en 128 µs)
+    sciResumeAt_ = -1;
+    sciDropOutput_ = true;                 // $FF52 : $CB bit 4 ; $FF55 : TIE coupé
+    // $FF58-$FF6B : une commande en cours perd le caractère fautif comme paramètre, les
+    // suivants sont jetés ; sinon $CB est remis à zéro, PAUSE (bit 3) excepté, bit 4 compris.
+    int discard = 0;
+    if (cmdExpected_ > 0 && inBufLen_ > 0) discard = cmdExpected_ - inBufLen_ - 1;
+    inBufLen_ = 0;
+    cmdExpected_ = 0;
+    sciDiscard_ = uint8_t(discard > 0 ? discard : 0);
+    if (!sciDiscard_) sciDropOutput_ = false;
+    trace("sci-framing-error discard=%d", int(sciDiscard_));
+}
+
+// WU effacé à `at` : reprise au tic 1 ms suivant ($FE3E-$FE4C), ou reset si $D4 a
+// atteint $CD pendant que la ligne restait basse ($FE2D-$FE3B, $F00B).
+void Ikbd::sciWakeCleared(int64_t at) {
+    if (sciErrorAt_ < 0) return;
+    const int64_t kError = ocfIndexAtOrBefore(sciErrorAt_);
+    const int64_t ticksLow = ocfIndexAtOrBefore(at - 1) - kError;   // tics vus avec WU posé
+    sciErrorAt_ = -1;
+    if (ticksLow >= 0xCD - 1) {
+        // $D4 = 1 + tics : $CD au 204ᵉ, saut au 205ᵉ ; $F00B attend ensuite WU effacé.
+        const int64_t rebootAt = std::max(at, ocfTick(kError + 0xCD));
+        trace("sci-break-reset ms=%lld", (long long)ticksLow);
+        const int64_t previous = cpuSerialEventCycle_;
+        cpuSerialEventCycle_ = rebootAt;
+        bootRom();
+        cpuSerialEventCycle_ = previous;
+        return;
+    }
+    sciResumeAt_ = ocfTick(ocfIndexAtOrBefore(at) + 1);
+    trace("sci-wake resume=%lld", (long long)sciResumeAt_);
+    armRx(sciResumeAt_);
 }
 
 // Progresser aux fronts physiques sans installer un événement par bit. Au repos
@@ -1650,9 +1845,19 @@ void Ikbd::catchUpCpuTx(int64_t at) {
         const bool breaking = (control_ & 0x60) == 0x60;
         if (!txShifting_ && sciRxState_ == 0 && (tdre_ || breaking)) {
             const int64_t clocks = (at - txNextBitCycle_) / kAciaTxBitCycles + 1;
-            const int64_t skip = breaking ? clocks / 10 * 10 : clocks;
+            int64_t skip = 0;
+            if (sciWake_) {
+                // Sous WU : la ligne basse remet le compte à zéro ; au repos, les « 1 »
+                // s'accumulent, le dixième passe par clockSciRx (reprise datée).
+                if (breaking) {
+                    sciOnes_ = 0;
+                    skip = clocks;
+                } else {
+                    skip = std::min<int64_t>(clocks, 9 - sciOnes_);
+                    sciOnes_ = uint8_t(sciOnes_ + skip);
+                }
+            } else if (!breaking) skip = clocks;   // le BREAK passe bit à bit jusqu'à l'erreur de trame
             if (skip) {
-                if (breaking) sciRxByte_ = 0; // un cycle complet de dix LOW abandonne RSR=0
                 txNextBitCycle_ += skip * kAciaTxBitCycles;
                 continue;
             }
@@ -1660,8 +1865,8 @@ void Ikbd::catchUpCpuTx(int64_t at) {
         bool bit = true;
         bool ended = false;
         if (txShifting_) {
-            if (txBitIndex_ < 8) bit = (txShiftData_ >> txBitIndex_++) & 1;
-            else { txShifting_ = false; txBitIndex_ = 0; ended = true; }
+            if (txBitIndex_ + 1 < aciaFrameBits()) bit = aciaFrameBit(txBitIndex_++);
+            else { txShifting_ = false; txBitIndex_ = 0; ended = true; }   // dernier stop
         } else if (breaking) bit = false;
         else if (!tdre_) {
             txShiftData_ = txData_; txShifting_ = true; txBitIndex_ = 0;
@@ -1690,9 +1895,14 @@ void Ikbd::scheduleCpuTx() {
     sched_->cancel(Scheduler::IKBD_TX);
     if (!txNextBitCycle_) return;
     int64_t due = INT64_MAX;
-    if (txShifting_) due = txNextBitCycle_ + (8 - txBitIndex_) * kAciaTxBitCycles;
-    else if (!tdre_ && (control_ & 0x60) != 0x60) due = txNextBitCycle_;
-    if (sciRxState_ && (txShifting_ || (control_ & 0x60) != 0x60)) {
+    const bool breaking = (control_ & 0x60) == 0x60;
+    if (txShifting_)
+        due = txNextBitCycle_ + std::max(0, aciaFrameBits() - 1 - int(txBitIndex_)) * kAciaTxBitCycles;
+    else if (!tdre_ && !breaking) due = txNextBitCycle_;
+    else if (breaking && !sciWake_) due = txNextBitCycle_;   // BREAK : trame nulle → erreur de trame datée
+    else if (sciWake_ && !breaking)                          // dixième « 1 » au repos : WU s'efface
+        due = txNextBitCycle_ + (9 - sciOnes_) * kAciaTxBitCycles;
+    if (sciRxState_) {
         const int64_t stop = txNextBitCycle_ + sciRxBitsLeft_ * kAciaTxBitCycles;
         due = std::min(due, stop);
     }

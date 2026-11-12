@@ -261,8 +261,14 @@ int testIkbdResponses() {
             r.sched.setCallback(Scheduler::IKBD_MONITOR, [&r] { r.ikbd.onJoystickMonitor(); });
             for (int i = 0; i < 21; ++i) r.ikbd.onVbl(20000);
             r.command({0x19, 0, 0, 0, 0, 0, 0});
-            r.ikbd.setJoystick(0x08 | 0x80, 0); r.advance(8100);
-            const auto b = collect(r, 3);
+            // ROM $F681/$F186 : directions acceptées au 4ᵉ tic 1 ms, feu au 9ᵉ.
+            // runTo ne sert chaque source qu'une fois : un pas par milliseconde.
+            r.ikbd.setJoystick(0x08 | 0x80, 0);
+            std::vector<int> b;
+            for (int64_t t = 1000; t <= 120000; t += 1000) {
+                r.advance(t);
+                if (r.ready()) b.push_back(r.data());
+            }
             c.equal("$19 right make", b.size() > 0 ? b[0] : -1, 0x4D);
             c.equal("$19 right break", b.size() > 1 ? b[1] : -1, 0xCD);
             c.equal("$19 fire make", b.size() > 2 ? b[2] : -1, 0x74);

@@ -259,6 +259,8 @@ public:
         ar(rxOverrun_);
         ar(rxPendingOverrun_);
         ar.check(!rxPendingOverrun_ || (rxFull_ && !rxOverrun_), "Mfp::pending RX overrun");
+        ar(rxBreakLine_); ar(rxBreakAcked_); ar(rxBreakPending_);   // v66 : BREAK reçu en bouclage
+        ar.check(!rxBreakPending_ || rxFull_, "Mfp::pending RX break");
         // loopback_ (bouchon RS-232) N'EST PLUS sérialisé depuis v51 : propriété de
         // banc posée par le frontal, comme les bouchons MIDI (MidiAcia) et SCC.
 
@@ -543,6 +545,17 @@ public:
     bool    rxFull_   = false;
     bool    rxOverrun_ = false;   // [B] MC68901 Fig. 6-3 p. 6-4 : OE visible après lecture UDR, acquitté par RSR
     bool    rxPendingOverrun_ = false; // pertes retenues derrière un RDR encore plein
+    // [B] MC68901 Fig. 6-3 p. 6-5 (F/S or B) et § 6.2.3 p. 6-5 : un mot tout à zéro sans stop
+    // est une indication de BREAK (B, interruption) ; B retombe quand un bit non nul arrive ET
+    // que le RSR a été lu depuis le début du BREAK, avec une interruption de fin de BREAK.
+    // Buffer plein : pas d'overrun, seul B apparaît à la lecture de l'UDR. Source : la sortie
+    // SO de l'émetteur en bouclage (H/L = 11 ou prise externe).
+    bool    rxBreakLine_ = false;     // ligne RX tenue au BREAK (vue par le récepteur)
+    bool    rxBreakAcked_ = false;    // RSR lu depuis le début du BREAK
+    bool    rxBreakPending_ = false;  // B à publier à la lecture de l'UDR (buffer plein)
+    void    receiveSerialBreak(int64_t when);
+    void    receiveSerialBreakEnd(int64_t when);
+    void    clearSerialBreak(int64_t when);
     // File RX côté hôte (cf. receiveByte) : bornée, livrée octet par octet au
     // débit série par l'événement SERIAL_RX. serialRxArmed_ = échéance en vol.
     static constexpr std::size_t kHostRxMax = 4096;

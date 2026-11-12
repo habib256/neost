@@ -1,5 +1,5 @@
 // Break ACIA : acia.c ACIA_Write_CR / ACIA_Clock_TX (repos seulement).
-// Les formats/diviseurs non 8N1 /64 exigent encore une vraie ligne série.
+// Formats du 6850 émis bit à bit au /64 ; les diviseurs /16 et /1 restent sans échantillonnage SCI.
 #include "io/Ikbd.hpp"
 #include "io/Mfp.hpp"
 #include <cstdio>
@@ -28,7 +28,8 @@ int testIkbdAciaFormat() {
         Rig r; r.k.write8(0,0xF6); r.k.write8(2,0x1C);
         eq("break holds TDR",r.status()&2,0);
         eq("break disables TX IRQ",r.status()&0x80,0);
-        eq("no TX deadline during break",r.s.cyclesUntil(Scheduler::IKBD_TX),-1);
+        // Le BREAK garde une échéance : le SCI doit voir sa trame nulle (erreur de trame, ROM $FF40).
+        eq("BREAK deadline serves the SCI framing error",r.s.cyclesUntil(Scheduler::IKBD_TX),1024);
         r.at(20000); eq("break does not run command",r.response(),-1);
         eq("break does not deliver command response",r.status()&1,0);
         r.k.write8(0,0xB6);
@@ -41,13 +42,13 @@ int testIkbdAciaFormat() {
         r.k.write8(2,0x16); r.k.write8(0,0xF6);
         r.at(10240); eq("active TSR finishes during break",r.response(),7168);
         eq("queued TDR remains full",r.status()&2,0);
-        eq("no queued transmission during break",r.s.cyclesUntil(Scheduler::IKBD_TX),-1);
+        eq("BREAK frame deadline, not a queued transmission",r.s.cyclesUntil(Scheduler::IKBD_TX),1024);
         r.k.write8(0,0x96); r.at(11264);
         eq("queued TDR resumes",r.status()&2,2);
     }
     {
         Rig r; r.k.write8(2,0x1C); r.at(500); r.k.write8(0,0xF6);
-        eq("break before start cancels deadline",r.s.cyclesUntil(Scheduler::IKBD_TX),-1);
+        eq("break before start: deadline now serves the BREAK frame",r.s.cyclesUntil(Scheduler::IKBD_TX),524);
         r.at(12000); eq("cancelled start did not parse",r.response(),-1);
         std::vector<uint8_t> b; auto save=StateArchive::saver(b); r.k.serialize(save); r.s.serialize(save);
         Rig restored; auto load=StateArchive::loader(b.data(),b.size()); restored.k.serialize(load); restored.s.serialize(load);

@@ -445,6 +445,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/fdc_acsi_logic.cpp tests/fdc_register_logic.cpp tests/machine_scc_logic.cpp
     tests/mmu_logic.cpp tests/fdc_selection_logic.cpp tests/mmio_fidelity_logic.cpp
     tests/ikbd_response_logic.cpp tests/fdc_timing_logic.cpp tests/ikbd_monitor_logic.cpp
+    tests/ikbd_keycode_logic.cpp tests/ikbd_sci_framing_logic.cpp tests/mfp_break_rx_logic.cpp
     tests/ikbd_monitor_machine_logic.cpp tests/ikbd_autosend_logic.cpp tests/dmasound_mono_logic.cpp tests/shifter_state_geometry_logic.cpp src/audio/MidiInHost.cpp
     src/audio/GmSynth.cpp src/gui/AppConfig.cpp src/gui/StKeysSymbolic.cpp)
 target_link_libraries(neost-selftest PRIVATE neost_core)

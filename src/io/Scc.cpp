@@ -936,7 +936,7 @@ void Scc::writeControl(int c, uint8_t value) {
         // l'on revient avant le stop, ce fragment n'est plus un octet intact.
         if (activeReg_ == 14 && (value & 0x18) == 0x10) ch.rxReceiveEligible = false;
     }
-    const uint8_t oldWr1 = ch.WR[1], oldWr4 = ch.WR[4], oldWr11 = ch.WR[11];
+    const uint8_t oldWr1 = ch.WR[1], oldWr4 = ch.WR[4], oldWr5 = ch.WR[5], oldWr11 = ch.WR[11];
     // [B] UM0109 WR15 D0 p.174, p.157 : WR7' = Active_Reg==7 et WR15 bit0=1
     if (activeReg_ == 7 && (ch.WR[15] & 1)) ch.WR7p = value;
     else ch.WR[activeReg_] = value;
@@ -988,10 +988,18 @@ void Scc::writeControl(int c, uint8_t value) {
         // émis doit revenir). [B] UM0109 p.58 : fin de break = second front ext-status.
         // ⚠ [B] UM0109 p.58, RR0 D7 p.175 : Break suppose un caractère nul avec erreur de framing,
         //    et sa fin laisse un caractère nul dans la FIFO. Ici RR0 D7 suit l'écriture de WR5, sans
-        //    délai, sans WR3 Rx Enable, sans octet nul. Écart non corrigé.
+        //    délai et sans WR3 Rx Enable (écart non corrigé : le test « I SCC » s'en sert).
+        // [B] UM0109 p.58 (RR0 D7) et p.98 (Asynchronous Mode) : « A single null character is left in
+        //    the Receive FIFO each time that the break condition is terminated », sans framing error.
+        //    Livré ici à la fin du BREAK bouclé, en asynchrone et récepteur validé.
+        //    [F] Le Parity Error que la p.98 annonce en parité impaire n'est pas posé : la FIFO
+        //    NeoST ne calcule aucune parité RX. Tranché par la même page une fois la parité RX modélisée.
         if (extLoopback_ || (ch.WR[14] & 0x10)) {
             if (value & 0x10) updateRR0Set(c, RR0_BREAK_ABORT);
-            else              updateRR0Clear(c, RR0_BREAK_ABORT);
+            else {
+                updateRR0Clear(c, RR0_BREAK_ABORT);
+                if ((oldWr5 & WR5_SEND_BREAK) && (ch.WR[4] & 0x0c)) deliverByte(c, 0x00);
+            }
         }
         if (extLoopback_) {
             if (value & 0x80) updateRR0Set(c, RR0_SYNC_HUNT);
