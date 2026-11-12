@@ -53,7 +53,68 @@ inline bool mmioNeedsBetterMachine(uint32_t addr, MachineType cur, MissingHw& ou
     // SCU et SCC : Mega STE (et TT, non émulé).
     if (a >= 0xFF8E00u && a <= 0xFF8E0Fu && cur != MachineType::MegaSte) { out = {"Mega STE SCU", "megaste"}; return true; }
     if (a >= 0xFF8C80u && a <= 0xFF8C87u && cur != MachineType::MegaSte) { out = {"SCC 85C30", "megaste"}; return true; }
+    // [D] Hatari ioMem.c:206-212 @ f0736b24 — registre cache/CPU du Mega STE ($FF8E21,
+    // octets voisins $FF8E20,22,23 void), absent du STE ; c'est le premier accès d'un TOS 2.x
+    // ou d'un programme qui règle les 16 MHz.
+    if (a >= 0xFF8E20u && a <= 0xFF8E23u && cur != MachineType::MegaSte) { out = {"Mega STE cache/CPU control", "megaste"}; return true; }
+    // [D] Hatari ioMem.c:231-232 et ioMemTabSTE.c:134 @ f0736b24 — densité DD/HD du
+    // contrôleur disquette ($FF860E), câblée sur Mega STE ; le STE la lit « void »
+    // (pas de faute, donc pas de bandeau), le ST et le Mega ST fautent.
+    if (a >= 0xFF860Eu && a <= 0xFF860Fu && cur != MachineType::MegaSte) { out = {"floppy density (HD) register", "megaste"}; return true; }
+    // MC68881 optionnel du Mega STE ($FFFA40-$FFFA5F, cf. io/Fpu.hpp). Il ne faute
+    // QUE si le socket est vide : une faute ici, même sur Mega STE, veut dire « sans FPU ».
+    if (a >= 0xFFFA40u && a <= 0xFFFA5Fu) { out = {"MC68881 FPU", "megaste with the FPU fitted"}; return true; }
     return false;
+}
+
+// --- En-tête système d'une image TOS ----------------------------------------
+// [C] En-tête OSHEADER du TOS (TOS 1.00 à 4.x, EmuTOS ; relevé sur les images de
+// roms/) : version en mot big-endian à l'offset 2, os_base (adresse où la ROM se
+// croit implantée) en long big-endian à l'offset 8 ; EmuTOS signe « ETOS » à $2C.
+inline uint16_t tosHeaderVersion(const uint8_t* img, std::size_t n) {
+    return n >= 4 ? uint16_t((img[2] << 8) | img[3]) : 0;
+}
+inline bool tosHeaderIsEmuTos(const uint8_t* img, std::size_t n) {
+    return n >= 0x30 && img[0x2C] == 'E' && img[0x2D] == 'T' && img[0x2E] == 'O' && img[0x2F] == 'S';
+}
+
+// Adresse d'implantation d'une image TOS ($FC0000 ou $E00000).
+// L'en-tête fait foi : c'est lui que le code de la ROM suppose (vecteur PC de reset,
+// adresses absolues). Avant, la TAILLE seule tranchait (≤ 192 Ko → $FC0000) et une
+// image TOS 1.06 US de 192 Ko, qui s'annonce à $E00000 (PC $E00030), était posée à
+// $FC0000 : le vecteur de reset pointait dans le vide, le 68000 haltait au reset.
+// [D] Hatari tos.c:1028,1042-1045 @ f0736b24 — os_base lu à l'offset 8 ; seules
+// $E00000 et $FC0000 sont admises, $FC0000 jusqu'à 224 Ko.
+// Repli sur la taille quand l'en-tête est inexploitable (image de test sans en-tête,
+// TOS 0.00 de 16 Ko) : c'était la règle d'avant, rien ne change pour ces images.
+// `fromHeader` (optionnel) dit laquelle des deux règles a tranché.
+inline uint32_t tosImageBase(const uint8_t* img, std::size_t n, bool* fromHeader = nullptr) {
+    const uint32_t hdr = n >= 12
+        ? (uint32_t(img[8]) << 24) | (uint32_t(img[9]) << 16) | (uint32_t(img[10]) << 8) | img[11]
+        : 0;
+    const bool okE00 = hdr == 0xE00000u;
+    const bool okFC0 = hdr == 0xFC0000u && n <= 224u * 1024u;
+    if (fromHeader) *fromHeader = okE00 || okFC0;
+    if (okE00) return 0xE00000u;
+    if (okFC0) return 0xFC0000u;
+    return n <= 192u * 1024u ? 0xFC0000u : 0xE00000u;
+}
+
+// Machine NON émulée visée par un TOS : "TT" (TOS 3.0x), "Falcon" (TOS 4.x et 2.07,
+// le TOS du prototype « Sparrow » du Falcon), sinon nullptr.
+// [D] Hatari tos.c:857-879 @ f0736b24 — TOS_CheckSysConfig bascule ces versions en
+// TT / Falcon ; tos.c:103,487 @ f0736b24 — 2.07 = matériel « Sparrow » (Falcon).
+// Ces ROM sont du code 68030 qui touche des registres TT/Falcon (TOS 4.04 écrit
+// $FF8940, absent du ST) : sur un ST elles glissent en bus error, écran noir, sans
+// un mot. NeoST les refuse au chargement — le TT et le Falcon sont le cap suivant
+// (docs/HYPOTHESES_ST.md), rien n'en est émulé.
+// Exception, comme Hatari (tos.c:1054-1059 @ f0736b24) : EmuTOS ≥ 512 Ko sert toutes
+// les machines et n'est pas jugé sur sa version.
+inline const char* tosUnsupportedMachine(uint16_t ver, bool emuTos, std::size_t size) {
+    if (emuTos && size >= 512u * 1024u) return nullptr;
+    if ((ver & 0x0F00u) == 0x0300u) return "TT";
+    if ((ver & 0x0F00u) == 0x0400u || ver == 0x0207u) return "Falcon";
+    return nullptr;
 }
 
 inline MachineType parseMachine(const std::string& s) {

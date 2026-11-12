@@ -94,10 +94,12 @@ public:
     // (rechargées depuis leurs fichiers). L'état MMIO complet du Bus viendra ensuite.
     void serialize(StateArchive& ar);
 
-    // Charge une image TOS ; positionne romBase selon la taille (192/256 Ko).
+    // Charge une image TOS ; romBase lue dans l'en-tête (os_base, offset 8), la taille
+    // en repli (tosImageBase). Refuse (false) les TOS du TT/Falcon (tosUnsupportedMachine).
     bool loadTos(const std::string& path);
 
-    // Charge une image de cartouche (port $FA0000, 128 Ko max) : ROM de
+    // Charge une image de cartouche (port $FA0000, 128 Ko max ; .STC = 4 octets
+    // factices + 128 Ko, en-tête sauté) : ROM de
     // diagnostic (Test Kit) ou cartouche applicative. Le TOS détecte le magic
     // et amorce. Renvoie false si le fichier est introuvable ou trop gros.
     bool loadCart(const std::string& path);

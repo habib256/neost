@@ -1275,8 +1275,7 @@ static void consumeConfigRequests(App& A, Frame& F) {
         // sélection laissaient le modèle appliqué sans sa ROM, et le rom= fantôme était
         // déjà persisté. Refus : rien ne change, les champs en attente restent affichés.
         if (!romLoadable(resolveData(rom, exeDir))) {
-            A.stateMsg = "ROM not found: " + fs::path(rom).filename().string()
-                       + " - machine unchanged";
+            A.stateMsg = romUnloadableReason(resolveData(rom, exeDir)) + " - machine unchanged";
             A.stateMsgFrames = 300;
             std::fprintf(stderr, "[cfg] apply refused: ROM %s not loadable\n", rom.c_str());
         } else {
@@ -1366,7 +1365,8 @@ static void consumeProfileRequests(App& A, Frame& F) {
             // ROM restent ceux qui tournent). Appliquer le modèle sans sa ROM laissait
             // une machine hybride, puis « Starting without a TOS » au lancement suivant.
             if (p.rom != cfg.rom && !romLoadable(resolveData(p.rom, exeDir))) {
-                note("ROM", p.rom);
+                note(tosFileUnsupportedMachine(resolveData(p.rom, exeDir))
+                         ? "TT/Falcon ROM (not supported)" : "ROM", p.rom);
                 p.rom = cfg.rom; p.machine = cfg.machine; p.mem = cfg.mem; p.fpu = cfg.fpu;
             }
             if (!p.cart.empty() && p.cart != cfg.cart && !fileExists(resolveData(p.cart, exeDir))) {
@@ -2094,6 +2094,9 @@ static void handleDrops(App& A, Frame& F) {
                 ++floppies;
             } else if (ext == ".hd" || ext == ".acsi" || ext == ".vhd" || ext == ".raw") {
                 reqMountAcsi = d;
+            } else if (ext == ".stc") {
+                // Image de cartouche .STC (en-tête factice de 4 octets, cf. Bus::loadCart).
+                reqMountCart = d;
             } else if (ext == ".img" || ext == ".rom" || ext == ".bin") {
                 // `.img` désigne aussi bien un TOS qu'une cartouche ou un disque dur
                 // (roms/, carts/ et hd/ en sont tous pleins) : trancher sur l'en-tête et

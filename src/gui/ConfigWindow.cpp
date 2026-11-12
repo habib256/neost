@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 
 #include "imgui.h"
 
@@ -81,6 +82,11 @@ bool machineForcedByTos(const std::string& requested, MachineType real,
         why = req == MachineType::MegaSte ? "this TOS cannot run a Mega STE"
                                           : "this TOS cannot run an STE";
         advice = "Pick an STE ROM (EmuTOS 256 KB, TOS 1.62 or 2.06) on the ROM / TOS page.";
+    } else if (real == MachineType::Ste && req == MachineType::MegaSte) {
+        // Mega STE ramené en STE : TOS < 2.00 (1.06, 1.62), qui ignore cache/SCU/16 MHz.
+        // « Pick an ST ROM » était faux ici : il faut une ROM Mega STE.
+        why = "this TOS cannot run a Mega STE";
+        advice = "Pick a Mega STE ROM (TOS 2.06 or EmuTOS 256 KB) on the ROM / TOS page.";
     } else if (real == MachineType::Ste) {
         why = "this TOS is STE-only";
         advice = "Pick an ST ROM (TOS 1.00-1.04, EmuTOS 192 KB) on the ROM / TOS page.";
@@ -249,8 +255,19 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                 const std::string name = p.filename().string();
                 if (ImGui::RadioButton(name.c_str(), name == curName)) ui.pendRom = p.string();
                 ImGui::SameLine();
-                if (romIsNtsc(name)) ImGui::TextColored(ImVec4(1.f, .6f, .2f, 1.f), "60 Hz NTSC");
-                else                 ImGui::TextDisabled("50 Hz PAL");
+                // TOS du TT/Falcon : listé, mais Bus::loadTos le refusera (Apply le dit).
+                uint8_t h[0x30] = {};
+                std::ifstream rf(p, std::ios::binary);
+                rf.read(reinterpret_cast<char*>(h), sizeof h);
+                const std::size_t got = static_cast<std::size_t>(rf.gcount());
+                std::error_code ecs;
+                const std::uintmax_t fsz = fs::file_size(p, ecs);
+                if (const char* tgt = tosUnsupportedMachine(tosHeaderVersion(h, got),
+                                                            tosHeaderIsEmuTos(h, got),
+                                                            ecs ? 0 : std::size_t(fsz)))
+                    ImGui::TextColored(ImVec4(1.f, .35f, .3f, 1.f), "%s TOS - not supported", tgt);
+                else if (romIsNtsc(name)) ImGui::TextColored(ImVec4(1.f, .6f, .2f, 1.f), "60 Hz NTSC");
+                else                      ImGui::TextDisabled("50 Hz PAL");
             }
         } else {
             ImGui::TextDisabled("(roms/ folder not found)");

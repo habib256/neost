@@ -146,14 +146,38 @@ bool Bus::loadTos(const std::string& path) {
         return false;
     }
     f.seekg(0);
-    rom.resize(static_cast<std::size_t>(n));
-    f.read(reinterpret_cast<char*>(rom.data()), n);
+    std::vector<uint8_t> img(static_cast<std::size_t>(n));
+    f.read(reinterpret_cast<char*>(img.data()), n);
 
-    // L'emplacement de la ROM dépend de la version de TOS (cf. stmap) : un TOS
-    // de 192 Ko vit à $FC0000, sinon (224/256 Ko) à $E00000.
-    romBase = (rom.size() <= 192u * 1024u) ? stmap::ROM_FC0000 : stmap::ROM_E00000;
+    // TOS du TT ou du Falcon : refusé AVANT de toucher à la ROM en place (cf.
+    // tosUnsupportedMachine) — le frontal garde l'ancienne ROM ou sort en erreur.
+    const uint16_t ver = tosHeaderVersion(img.data(), img.size());
+    if (const char* target = tosUnsupportedMachine(ver, tosHeaderIsEmuTos(img.data(), img.size()),
+                                                   img.size())) {
+        std::fprintf(stderr, "[Bus] TOS %X.%02X is for the Atari %s: TT/Falcon TOS not supported "
+                             "(NeoST emulates ST, Mega ST, STE and Mega STE): %s\n",
+                     ver >> 8, ver & 0xFF, target, path.c_str());
+        return false;
+    }
+    rom = std::move(img);
+
+    // Implantation : l'en-tête (os_base, offset 8) fait foi, la taille en repli
+    // (cf. tosImageBase, MachineType.hpp).
+    bool baseFromHeader = false;
+    romBase = tosImageBase(rom.data(), rom.size(), &baseFromHeader);
+    if (!baseFromHeader)
+        std::fprintf(stderr, "[Bus] TOS header gives no valid os_base: placed by size at $%06X\n",
+                     romBase);
+    // [D] Hatari tos.c:1043 @ f0736b24 admet jusqu'à 224 Ko à $FC0000, mais la fenêtre
+    // décodée n'y fait que 192 Ko (romWindowSize) et le chemin rapide de read8 servirait
+    // rom[] au-delà, sur $FF0000-$FF7FFF qui doit fauter : on ne garde que la fenêtre.
+    if (romBase == stmap::ROM_FC0000 && rom.size() > 0x30000u) {
+        std::fprintf(stderr, "[Bus] TOS at $FC0000 larger than the 192 KB ROM window: "
+                             "%zu bytes beyond $FEFFFF dropped\n", rom.size() - 0x30000u);
+        rom.resize(0x30000u);
+    }
     // Version du TOS : mot big-endian de l'en-tête à l'offset 2 (cf. adjustMachineForTos).
-    tosVersion = rom.size() >= 4 ? uint16_t((rom[2] << 8) | rom[3]) : 0;
+    tosVersion = ver;
     // Vecteurs reset $0-$7 : le GLUE les mappe sur la ROM en permanence — on les
     // recopie en RAM dès le chargement (et à chaque reset, cf. seedResetVectors).
     seedResetVectors();
@@ -170,14 +194,19 @@ bool Bus::loadCart(const std::string& path) {
     }
     const std::streamsize n = f.tellg();
     const std::size_t maxSize = stmap::CART_END - stmap::CART_BASE;   // 128 Ko
-    if (n <= 0 || static_cast<std::size_t>(n) > maxSize) {
-        std::fprintf(stderr, "[Bus] invalid cartridge (%lld B, max %zu B): %s\n",
-                     static_cast<long long>(n), maxSize, path.c_str());
+    // Image .STC : les 128 Ko de la ROM précédés d'un en-tête factice de 4 octets
+    // (0x20004 octets en tout), qu'on saute. Avant, la borne de 128 Ko la refusait
+    // (« invalid cartridge ») — Cumana OS-9, SYSINFO.STC.
+    // [D] Hatari cart.c:67-84 @ f0736b24 — même taille exacte, même saut.
+    const bool stc = static_cast<std::size_t>(n) == maxSize + 4;
+    if (n <= 0 || (static_cast<std::size_t>(n) > maxSize && !stc)) {
+        std::fprintf(stderr, "[Bus] invalid cartridge (%lld B, max %zu B, or %zu B for .STC): %s\n",
+                     static_cast<long long>(n), maxSize, maxSize + 4, path.c_str());
         return false;
     }
-    f.seekg(0);
-    cart.resize(static_cast<std::size_t>(n));
-    f.read(reinterpret_cast<char*>(cart.data()), n);
+    f.seekg(stc ? 4 : 0);
+    cart.resize(stc ? maxSize : static_cast<std::size_t>(n));
+    f.read(reinterpret_cast<char*>(cart.data()), static_cast<std::streamsize>(cart.size()));
 
     // Le magic du long word de tête révèle le type de cartouche (cf. stmap).
     const uint32_t magic = cart.size() >= 4

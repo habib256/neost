@@ -130,14 +130,35 @@ bool fileExists(const std::string& p) {
     return std::filesystem::exists(p, ec) && !ec;
 }
 
-// Mêmes bornes que Bus::loadTos (1 octet à 1 Mo, la fenêtre ROM à $E00000) : ce qui
-// passe ici sera chargé, ce qui échoue ici aurait laissé l'ancienne ROM en place.
-bool romLoadable(const std::string& p) {
+// Machine non émulée (« TT », « Falcon ») visée par le TOS de ce fichier, sinon
+// nullptr — même règle que Bus::loadTos (tosUnsupportedMachine, MachineType.hpp).
+const char* tosFileUnsupportedMachine(const std::string& p) {
     std::error_code ec;
-    if (!fs::is_regular_file(p, ec) || ec) return false;
     const std::uintmax_t n = fs::file_size(p, ec);
-    return !ec && n > 0 && n <= 1024u * 1024u;
+    if (ec) return nullptr;
+    uint8_t h[0x30] = {};
+    std::ifstream f(p, std::ios::binary);
+    if (!f) return nullptr;
+    f.read(reinterpret_cast<char*>(h), sizeof h);
+    const std::size_t got = static_cast<std::size_t>(f.gcount());
+    return tosUnsupportedMachine(tosHeaderVersion(h, got), tosHeaderIsEmuTos(h, got),
+                                 static_cast<std::size_t>(n));
 }
+
+// Mêmes bornes que Bus::loadTos (1 octet à 1 Mo, la fenêtre ROM à $E00000 ; TOS du
+// TT/Falcon refusé) : ce qui passe ici sera chargé, ce qui échoue ici aurait laissé
+// l'ancienne ROM en place. Rend "" si chargeable, sinon le message de la barre d'état.
+std::string romUnloadableReason(const std::string& p) {
+    const std::string name = fs::path(p).filename().string();
+    std::error_code ec;
+    if (!fs::is_regular_file(p, ec) || ec) return "ROM not found: " + name;
+    const std::uintmax_t n = fs::file_size(p, ec);
+    if (ec || n == 0 || n > 1024u * 1024u) return "Not a TOS ROM (size): " + name;
+    if (const char* m = tosFileUnsupportedMachine(p))
+        return std::string("TT/Falcon TOS not supported (") + m + " ROM): " + name;
+    return "";
+}
+bool romLoadable(const std::string& p) { return romUnloadableReason(p).empty(); }
 
 // [C] En-tête système du TOS (TOS 1.00 à 4.x, EmuTOS) : un BRA.S vers le code de
 // démarrage en premier mot — $601E sur TOS 1.00, dont l'en-tête est plus court,
@@ -182,7 +203,9 @@ std::string pickTosForMachine(const std::string& machine,
     if (machine != "megaste") return "";
     { std::ifstream f(resolveData(curRomLogical, exeDir), std::ios::binary);
       if (f) { uint8_t b[2] = {0, 0}; f.seekg(2); f.read(reinterpret_cast<char*>(b), 2);
-               if (((b[0] << 8) | b[1]) >= 0x0200) return ""; } }   // déjà compatible
+               if (((b[0] << 8) | b[1]) >= 0x0200          // déjà compatible…
+                   && !tosFileUnsupportedMachine(resolveData(curRomLogical, exeDir)))
+                   return ""; } }                           // …sauf TOS TT/Falcon
     std::string cc = fs::path(curRomLogical).stem().string();       // ex. "tos162fr"
     cc = (cc.size() >= 2) ? cc.substr(cc.size() - 2) : std::string();
     if (cc.size() != 2 || !std::isalpha((unsigned char)cc[0]) || !std::isalpha((unsigned char)cc[1]))
@@ -593,8 +616,9 @@ void App::applyConfig() {
         std::fprintf(stderr, "[main] WARNING ROM not loadable: %s — keeping the previous "
                              "machine (%s, %s)\n", badRom.c_str(),
                      A.hwMachine.c_str(), A.hwRom.c_str());
-        A.stateMsg = "ROM not found: " + fs::path(badRom).filename().string()
-                   + " - previous machine kept";
+        A.stateMsg = romUnloadableReason(badRom);
+        if (A.stateMsg.empty()) A.stateMsg = "ROM not loadable: " + fs::path(badRom).filename().string();
+        A.stateMsg += " - previous machine kept";
         A.stateMsgFrames = 300;
         cfg.rom = A.hwRom; cfg.machine = A.hwMachine; cfg.mem = A.hwMem; cfg.fpu = A.hwFpu;
         saveConfig(A, exeDir, cfg, &machine);

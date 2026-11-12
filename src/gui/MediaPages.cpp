@@ -171,7 +171,7 @@ void drawCartPage(const std::string& cartsDir, const std::string& mounted,
             if (e.is_regular_file(ec2)) {
                 std::string ext = e.path().extension().string();
                 for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
-                if (ext == ".bin" || ext == ".img" || ext == ".rom") {
+                if (ext == ".bin" || ext == ".img" || ext == ".rom" || ext == ".stc") {
                     const std::string name = e.path().filename().string();
                     ImGui::PushID(name.c_str());
                     if (name == mountedName) {
