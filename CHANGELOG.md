@@ -6,6 +6,37 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Restes de la chasse : fiches, horloge GEMDOS, STX, Android ; format d'état v65 (2026-11-12)
+
+- **RTL8019AS selon sa fiche.** [B] Realtek RTL8019AS LS003.8 (2000-08-20), rapatriée par
+  `setup_silicon_refs.sh` : identifiants « P »/« p » en page 0, CLDA, page 2 en lecture seule
+  (bits « Always 1 »), RCR.AR (trame courte rejetée), page 3 (9346CR, BPAGE, CONFIG0-4, CSNSAV,
+  INTR, PWRDN). `--enec-selftest` 28/28 ; STinG, USB4TOS verts.
+- **Horloge GEMDOS.** Un fichier créé sur le lecteur hôte prend la date et l'heure que tient le
+  GEMDOS de la ROM (deux mots de RAM, routines Tgetdate/Tgettime retrouvées par la table des
+  fonctions, sans table par version) : date de la ROM sur un ST sans horloge, « 2054 » de TOS
+  2.06 en ST, Tsetdate/Tsettime de l'invité. Nouveau banc hors palier `tools/run_gemdos_clock.py`
+  (C: contre A: dans le même run) : 16/16 TOS US, 11/11 autres pays, contre 6/16.
+- **STX.** Un WRITE TRACK sur une piste absente de l'image (pistes 80-82, face 1 d'une simple
+  face) la crée au lieu de LOST DATA ([B] WD177X-00 p. 1-13, contre [D] Hatari). Persistée en
+  blocs `NTRK`/`NSCT` du `.wd1772`, qu'Hatari saute au lieu de rejeter le fichier.
+- **`$FF860E` en écriture seule sur Mega STE** ([B] source du TOS, `bios/sparrow/flop.s`, Pratt
+  1990) : relu `$FF` au lieu de la valeur écrite (Hatari). Latch U407 alimenté par XRESET (schéma
+  Mega STE Rev 2). Diagnostic Mega STE 11/11.
+- **`$FF8920`** : source STE en plus du manuel TT, l'addendum développeur STE de mai 1989.
+- **RTC figée du headless** : 1er janvier 2026 et non 2006 (l'année compte depuis 1980).
+- **Android.** Page ROM (quatre EmuTOS, choix gardé dans `rom.cfg`, la machine suit la ROM) ;
+  clavier US et FR et changement de ROM exécutés sur l'émulateur arm64 API 36 ; « REWIND: OFF »
+  ne déborde plus. L'APK se construit maintenant sur ce poste (NDK 27, JDK 17).
+- **Web, JSPI essayé dans Chrome 157** (`tools/check_web_jspi.mjs`, CDP brut, hors palier) : le
+  rattrapage d'une instruction garée s'effondrait sous un rAF lent (`FramePacer::due` abandonnait
+  le retard avant de jouer : rAF à 10 Hz → 10 trames/s) ; il vaut maintenant celui de `runDue`,
+  4 trames par tour (40 trames/s). Une exception dans une trame arrête la machine sans figer la
+  page (reset, ROM ou moniteur la relancent ; un piège wasm reste fatal). Blit 4 096 × 1 000 mots :
+  245 trames à 60 Hz, 205 à 50 Hz, 292 en mono 71 Hz, au plus 17,8 ms entre deux rAF ; reset,
+  ROM et moniteur en plein blit appliqués sur-le-champ.
+- **Format d'état v65.** Registres RTL8019AS.
+
 ## Deux chasses aux bugs, neuf lots de correction ; format d'état v64 (2026-11-12)
 
 Douze agents en lecture seule (deux chasses), puis neuf lots en worktrees fusionnés.
