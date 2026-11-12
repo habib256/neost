@@ -319,6 +319,10 @@ void App::modemApply(bool on) {
     if (on && !hayesModem) {
         hayesModem = std::make_unique<HayesModem>(machine.mfp);
         HayesModem* m = hayesModem.get();
+        if (!m->setAllowedDomains(A.cfg.netAllowDomains)) {
+            A.stateMsg = "Modem: invalid domain allowlist";
+            A.stateMsgFrames = 150;
+        }
         machine.mfp.setSerialSink([m](uint8_t b) { m->onTx(b); });
         machine.setRs232LineSink([m](uint8_t a) { m->onPortA(a); });   // DTR, reset
     } else if (!on && hayesModem) {
@@ -347,7 +351,8 @@ void App::natApply(bool on) {
             A.stateMsg = "Host networking is disabled (NEOST_WITH_NET=OFF)";
             A.stateMsgFrames = 150;
             cfg.slirp = false;
-        } else if (!natNet.open(NatBackend::Options{cfg.natRestricted, cfg.natAllowLoopback, cfg.natForwards})) {
+        } else if (!natNet.open(NatBackend::Options{cfg.natRestricted, cfg.natAllowLoopback,
+                                                   cfg.natForwards, cfg.netAllowDomains})) {
             A.stateMsg = "NAT: " + natNet.lastError();
             A.stateMsgFrames = 150;
             cfg.slirp = false;

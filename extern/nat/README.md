@@ -36,7 +36,20 @@ Adaptations locales :
   de `builtin_nat_test.cpp` (compteur `clears`).
 
 Ces deux défauts existent aussi dans POM2 à la reprise `4625ec82` ; ils sont à
-remonter en amont, et une prochaine reprise doit garder ces lignes.
+remonter en amont, et une prochaine reprise doit garder ces lignes. Correctif
+porté le 2026-11-12 sur la branche locale POM2 `nat-dns-cache-from-neost`
+(non poussée, non fusionnée).
+
+- `NatAllowlist.*` (2026-11-12, propre à NeoST) : liste blanche de domaines,
+  OFF par défaut (`BuiltinNatOptions::allowedDomains`). `DnsProxy::setGate`
+  répond REFUSED hors liste et apprend les adresses A/AAAA rendues ;
+  `BuiltinNat::routePeer` refuse (`Route::Gated`) toute destination que le DNS
+  n'a pas rendue pour un nom listé ; `nicReset` oublie ces adresses. Test : cas
+  15 de `builtin_nat_test.cpp`.
+- `builtin_nat_test.cpp` cas 13 (2026-11-12) : le port publié n'est retenu que si
+  TCP ET UDP l'ont pris (`isValid()`). Le port libre venait d'un écouteur TCP seul ;
+  sous Winsock, l'UDP du même numéro était tenu ailleurs (run CI 43225255791 :
+  « could not bind host port 61684 », 31 s d'attente de « udp A »).
 
 Le port conserve les horloges hôte et les injections de tests ; il ne change
 aucun cycle du ST. Le trafic réel est extérieur au contrat de déterminisme

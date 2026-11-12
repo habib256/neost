@@ -19,6 +19,7 @@
 #include <thread>
 
 #include "net/Socket.hpp"
+#include "NatAllowlist.h"   // nat::domainAllowed (extern/nat, même règle que le NAT)
 
 namespace {
 void mtrace(const char* what, const std::string& detail) {
@@ -87,6 +88,10 @@ void HayesModem::resetProfile() {                // ATZ / AT&F : profil d'usine
     dtrMode_ = 2;
 }
 
+bool HayesModem::setAllowedDomains(const std::string& text) {
+    return nat::parseAllowedDomains(text, allowed_);
+}
+
 void HayesModem::dial(const std::string& target) {
     // ATD[T|P] hôte:port — la partie numérotation tolère espaces et virgules.
     std::string t;
@@ -98,6 +103,16 @@ void HayesModem::dial(const std::string& target) {
     const std::string host = colon == std::string::npos ? t : t.substr(0, colon);
     const int port = colon == std::string::npos ? 23 : std::atoi(t.c_str() + colon + 1);
     if (host.empty() || port <= 0 || port > 65535) { sendStr("ERROR"); return; }
+    // Liste blanche (2026-11-12) : refus AVANT toute résolution — un nom hors
+    // liste ne part pas au résolveur de l'hôte. Le journal le dit toujours, pas
+    // seulement sous NEOST_NET_TRACE ; l'ST lit un NO CARRIER ordinaire, que tous
+    // les terminaux et scripts de numérotation connaissent.
+    if (!allowed_.empty() && !nat::domainAllowed(allowed_, host)) {
+        std::fprintf(stderr, "[WARN] Net: modem dial to %s refused — not in the domain "
+                             "allowlist (net_allow_domains)\n", host.c_str());
+        sendStr("NO CARRIER");
+        return;
+    }
 
     // La résolution DNS et la connexion (jusqu'à 5 s) tournent hors du fil
     // d'émulation : elles le gelaient, GUI compris. L'issue est relevée par poll().

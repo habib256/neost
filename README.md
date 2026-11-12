@@ -164,7 +164,9 @@ with `--ethernec --nat` or the Network page. The guest keeps 10.0.2.15/24, gatew
 and DNS 10.0.2.3; it needs STinG/ENEC or another ST TCP/IP stack. TCP/UDP port forwards,
 IPv6 and IP fragments are supported: `--nat-forwards 'tcp:0.0.0.0:6502:23'` publishes guest
 TCP port 23 on host port 6502. Ethernet broadcasts and non-IP protocols stay on the virtual
-network. See [network extensions](docs/EXTENSIONS.md).
+network. An optional domain allowlist (`--net-allow-domains example.org,10.1.2.3`, off by
+default) limits what the NAT and the Hayes modem may reach. See
+[network extensions](docs/EXTENSIONS.md).
 
 **Cabinet mode** (`--kiosk`, or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd>) — exclusive full screen, no window
 chrome, configuration frozen so the cabinet always restarts identical, and an in-game

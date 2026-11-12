@@ -96,6 +96,36 @@ Les options `--nat-restricted` et `--nat-allow-loopback` correspondent à
 services virtuels mais refuse les relais et les publications. L'accès aux
 services loopback de l'hôte est désactivé par défaut.
 
+**Liste blanche de domaines** (2026-11-12, OFF par défaut) : `--net-allow-domains L`,
+clé `net_allow_domains=` (rejouée par `--from-cfg`), champ **Allowed domains** de la page
+Network. Elle vaut pour les deux backends sortants : le NAT et le modem Hayes.
+`L` liste des domaines ou des adresses IPv4, séparés par virgules, points-virgules ou
+blancs (64 au plus) ; `example.org` couvre `example.org` et `www.example.org`, pas
+`badexample.org` ; `*.example.org` s'écrit aussi. Une liste invalide fait échouer
+l'ouverture du NAT (et `neost-headless` sort en erreur), sans liste partielle.
+
+- **NAT** : le DNS virtuel répond `REFUSED` (RCODE 5, [B] RFC 1035 § 4.1.1) à tout nom
+  hors liste, en A comme en natif, sans interroger l'hôte. Le trafic TCP/UDP que l'invité
+  engage ne sort que vers une adresse que ce DNS a rendue pour un nom de la liste, depuis
+  la dernière mise sous tension de la carte, ou vers une adresse IPv4 listée. Une adresse
+  écrite en dur par l'invité est refusée : RST en TCP, datagramme jeté en UDP. Les services
+  virtuels, les publications de ports (trafic entrant) et le loopback de l'hôte, qui a son
+  propre interrupteur (`nat_allow_loopback`), ne sont pas filtrés.
+- **Modem** : `ATD` vers un hôte hors liste répond `NO CARRIER` sans résolution ni
+  connexion.
+- **Journal** (stderr, en anglais) : `DNS query for "x" refused — not in the domain
+  allowlist` pour les 16 premiers noms distincts, `guest TCP to a.b.c.d:p refused — not an
+  address of a domain in the allowlist` une fois par session, `modem dial to x refused` à
+  chaque numérotation. Le nom du backend annonce `domain allowlist of N`.
+- **Limite** : une adresse partagée (CDN, hébergement mutualisé) ouvre tous les sites
+  qu'elle sert ; NeoST ne lit ni l'en-tête HTTP `Host` ni le SNI TLS. La liste filtre des
+  noms et des adresses, pas des contenus.
+
+Code : `extern/nat/NatAllowlist.*` (adaptation locale, cf. `extern/nat/README.md`).
+Tests : `neost-nat-test` cas [15] (analyse, appariement, DNS refusé, adresse apprise,
+adresse en dur refusée en UDP et TCP, oubli au reset de la carte, loopback),
+`neost-modem-test` cas 6.
+
 Publication explicite de services, également réglable dans la page Network :
 
 ```sh
@@ -139,7 +169,22 @@ python3 tools/make_sting_test.py /tmp/sting.st <dossier sting126> <dossier ENEC.
 
 Sans réseau, le 2026-11-04, le pilote charge et le port s'active sous TOS 1.02 et 1.04 sur ST, TOS 1.62 sur STE, TOS 2.06 sur Mega STE et EmuTOS. TOS 2.06 attend au démarrage, sur plus de 4000 trames : SPACE passe cette attente, et les étapes sortent en moins de 2500 trames.
 
-Rejoué le 2026-11-04 avec `disks/sting_ethernec.st` : `DNS=138.197.157.224`, puis `HTTP/1.1 200 OK` depuis theoldnet.com, sur 4 runs de suite. Le premier run du jour avait échoué en DNS (`err -17`), sans que la cause soit identifiée ni l'échec reproduit. C'est ce banc qui a démasqué l'inversion des fenêtres ROM3/ROM4 (cf. EtherNEC ci-dessous). Restent le
+Rejoué le 2026-11-04 avec `disks/sting_ethernec.st` : `DNS=138.197.157.224`, puis `HTTP/1.1 200 OK` depuis theoldnet.com, sur 4 runs de suite. Le premier run du jour avait échoué en DNS (`err -17`), sans que la cause soit identifiée ni l'échec reproduit.
+
+**Trace du fil** (2026-11-12) : `NEOST_SLIRP_TRACE=1` journalise sur stderr, au passage
+entre la NE2000 et le NAT, chaque requête DNS de l'invité (`id`, nom, type), sa réponse
+(RCODE, nombre de réponses, délai en ms) et les SYN/RST TCP. Avant, la variable ne traçait
+que la trame de `--nat-selftest`, rien du trafic d'un vrai STinG. Le même jour, quatre
+premiers runs (un processus neuf chacun, `--frames 3500`) : DNS bon les quatre fois, 581 ms
+au premier (cache de l'hôte froid), puis 12, 2 et 2 ms ; l'échec `err -17` n'est pas revenu.
+STinG rend `err -17` pour toute réponse inutilisable : un `REFUSED` de la liste blanche
+donne exactement ce code. Un prochain `err -17` se lira donc à la trace : RCODE 2 (SERVFAIL
+à l'échéance de 8 s ou faute de jeton), 3 (NXDOMAIN de l'hôte), ou aucune réponse. Ces
+runs ont aussi montré que la suite TCP dépend de l'hôte : quatre fois, le SYN vers
+`138.197.157.224:80` n'a reçu aucun SYN-ACK (le `connect` du binaire fraîchement compilé
+n'aboutissait pas — filtre applicatif de l'hôte, sans preuve), puis il a abouti au cinquième.
+Et theoldnet.com répond désormais `403 Forbidden` à une requête sans `User-Agent` (celle de
+`STGTEST.PRG` ; `curl -H "User-Agent:"` aussi), là où il rendait `200 OK` le 2026-11-04. C'est ce banc qui a démasqué l'inversion des fenêtres ROM3/ROM4 (cf. EtherNEC ci-dessous). Restent le
 navigateur (CAB) en GUI et la consignation dans `docs/CASE_STUDIES.md` — cf. `TODO.md`.
 
 **Livré dans les paquets (2026-11-11)** : `disks/sting_ethernec.st`, la disquette de boot STinG 1.26

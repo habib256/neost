@@ -7,6 +7,7 @@
 #include "BuiltinNatBackend.h"
 
 #include "Logger.h"
+#include "NatAllowlist.h"
 #include "NatDhcp.h"
 #include "NatDns.h"
 #include "NatGuestSink.h"
@@ -184,6 +185,7 @@ public:
     BuiltinNat(const BuiltinNatOptions& options, std::unique_ptr<HostNetwork> network,
                std::unique_ptr<W5100Resolver> resolver)
         : policy_{ options.allowHostLoopback, options.restricted },
+          gate_(options.allowedDomains),
           nowMs_(options.nowMs),
           network_(std::move(network)),
           resolver_(std::move(resolver)),
@@ -193,7 +195,7 @@ public:
           tcp_(*this, network_.get(),
                [this](uint32_t destination, uint16_t port, Endpoint& host) {
                    const Route r = routePeer(destination, port, true, host);
-                   if (r != Route::Host) noteRefused(destination, port, "TCP");
+                   if (r == Route::Refused || r == Route::Dns) noteRefused(destination, port, "TCP");
                    return r == Route::Host;
                })
     {
@@ -205,9 +207,12 @@ public:
         }
         // One DNS budget for the backend, whichever family the guest asks in.
         dns6_.shareBudgetWith(dns_);
+        if (gate_.active()) { dns_.setGate(&gate_); dns6_.setGate(&gate_); }
         name_ = std::string("built-in NAT (guest 10.0.2.15, gw 10.0.2.2, dns 10.0.2.3") +
                 (policy_.restricted ? ", restricted" : "") +
-                (policy_.allowHostLoopback ? ", host loopback ALLOWED" : "") + ")";
+                (policy_.allowHostLoopback ? ", host loopback ALLOWED" : "") +
+                (gate_.active() ? ", domain allowlist of " +
+                                      std::to_string(options.allowedDomains.size()) : "") + ")";
         log().info("Net", "built-in virtual network up — " + name_);
     }
 
@@ -277,6 +282,7 @@ public:
         // NeoST: the resolver cache did not follow the NIC through a power
         // cycle; a name cached before it answered after it.
         if (resolver_) resolver_->clearCache();
+        gate_.forget();                 // NeoST: the guest's resolver cache is gone too
         dnsGuests6_.clear();
         peers6_.clear();
         aliasOf6_.clear();
@@ -414,6 +420,8 @@ private:
             case Route::Refused:
                 noteRefused(packet.destination, datagram.destinationPort, "UDP");
                 break;
+            case Route::Gated:          // already noted by routePeer
+                break;
         }
     }
 
@@ -451,11 +459,40 @@ private:
     }
 
     // ── GuestSink ─────────────────────────────────────────────────────────
+    /// Refused by the fence: Route::Refused, for the caller to note. Refused
+    /// by the domain allowlist: Route::Gated, already noted here.
     Route routePeer(uint32_t destination, uint16_t port, bool tcp, Endpoint& host)
     {
         const auto found = peers6_.find(destination);
-        if (found != peers6_.end()) return routeDestination6(found->second.first, port, tcp, policy_, host);
-        return routeDestination(destination, port, tcp, policy_, host);
+        const Route r = found != peers6_.end()
+                            ? routeDestination6(found->second.first, port, tcp, policy_, host)
+                            : routeDestination(destination, port, tcp, policy_, host);
+        if (r != Route::Host || gatePasses(host)) return r;
+        noteGateRefused(found != peers6_.end() ? colons(found->second.first) : dotted(destination),
+                        port, tcp ? "TCP" : "UDP");
+        return Route::Gated;
+    }
+
+    /// NeoST: the domain allowlist at the fence. The host's loopback, which
+    /// the fence lets through only on its own opt-in, is not the Internet
+    /// the list is about.
+    bool gatePasses(const Endpoint& host) const
+    {
+        if (!gate_.active()) return true;
+        Ipv6 loopback6{}; loopback6[15] = 1;
+        if (!host.isIpv6 && (host.ip >> 24) == 127) return true;
+        if (host.isIpv6 && host.ipv6 == loopback6) return true;
+        return gate_.reaches(host);
+    }
+    void noteGateRefused(const std::string& destination, uint16_t port, const char* what)
+    {
+        ++framesDropped_;
+        if (gateWarned_) return;
+        gateWarned_ = true;
+        log().warn("Net", std::string("built-in NAT: guest ") + what + " to " + destination +
+                              ":" + std::to_string(port) +
+                              " refused — not an address of a domain in the allowlist "
+                              "(net_allow_domains; said once)");
     }
 
     void queue6(const Ipv6& source, const Ipv6& destination, uint8_t protocol, Bytes payload, uint8_t hop = 64)
@@ -520,8 +557,13 @@ private:
         if (ip.protocol == kProtoUdp) {
             Endpoint host;
             const uint16_t port = rd16(ip.payload.data + 2);
-            if (routeDestination6(ip.destination, port, false, policy_, host) == Route::Refused) {
+            const Route r = routeDestination6(ip.destination, port, false, policy_, host);
+            if (r == Route::Refused) {
                 noteRefused6(ip.destination, port, "UDP");
+                return;
+            }
+            if (r == Route::Host && !gatePasses(host)) {
+                noteGateRefused(colons(ip.destination), port, "UDP");
                 return;
             }
         }
@@ -699,6 +741,7 @@ private:
     }
 
     RoutePolicy                    policy_;
+    DomainGate                     gate_;       ///< NeoST: the domain allowlist
     std::function<uint64_t()>      nowMs_;
     std::unique_ptr<HostNetwork>   network_;
     std::unique_ptr<W5100Resolver> resolver_;
@@ -731,6 +774,7 @@ private:
     uint32_t                       guestIp_  = kGuestIp;
     uint16_t                       nextIpId_ = 0;
     bool                           refusalWarned_ = false;
+    bool                           gateWarned_ = false;
     bool                           valid_ = true;
     std::string                    name_;
 };

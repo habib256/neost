@@ -1249,6 +1249,14 @@ static void consumeConfigRequests(App& A, Frame& F) {
             cfg.natRestricted = cfgUi.natRestricted;
             cfg.natAllowLoopback = cfgUi.natAllowLoopback;
             cfg.natForwards = cfgUi.natForwards;
+            cfg.netAllowDomains = cfgUi.netAllowDomains;
+#ifdef NEOST_WITH_NET
+            // Le modem suit la même liste, sans attendre de le rallumer.
+            if (A.hayesModem && !A.hayesModem->setAllowedDomains(cfg.netAllowDomains)) {
+                A.stateMsg = "Modem: invalid domain allowlist";
+                A.stateMsgFrames = 150;
+            }
+#endif
             cfgUi.reqNatOptions = false;
         }
         if (cfgUi.reqNat >= 0) cfg.slirp = (cfgUi.reqNat == 1);

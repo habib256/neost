@@ -186,7 +186,7 @@ if(NEOST_WITH_NET)
     set(NEOST_NAT_DIR "${CMAKE_SOURCE_DIR}/extern/nat")
     add_library(neost_nat STATIC
         ${NEOST_NAT_DIR}/BuiltinNatBackend.cpp ${NEOST_NAT_DIR}/NatPacket.cpp
-        ${NEOST_NAT_DIR}/NatDhcp.cpp ${NEOST_NAT_DIR}/NatDns.cpp
+        ${NEOST_NAT_DIR}/NatDhcp.cpp ${NEOST_NAT_DIR}/NatDns.cpp ${NEOST_NAT_DIR}/NatAllowlist.cpp
         ${NEOST_NAT_DIR}/NatUdp.cpp ${NEOST_NAT_DIR}/NatTcp.cpp
         ${NEOST_NAT_DIR}/NatHostSockets.cpp ${NEOST_NAT_DIR}/W5100NameResolver.cpp)
     target_include_directories(neost_nat PUBLIC "${NEOST_NAT_DIR}")

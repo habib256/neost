@@ -111,6 +111,7 @@ struct ConfigUi {
     bool natInit = false, reqNatOptions = false;
     bool natRestricted = false, natAllowLoopback = false;
     char natForwards[2048] = {};
+    char netAllowDomains[2048] = {};
     int  reqNat = -1;                   // NE2000 : Internet réel via NAT intégré (0/1)
     int  reqUltraSatan = -1;              // UltraSatan sur les IDs ACSI 0-1 (0/1)
     std::string reqMountSd2;              // image SD du slot 2 (ID 1)

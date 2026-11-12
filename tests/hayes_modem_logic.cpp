@@ -4,7 +4,8 @@
 //   cmake --build build --target neost-modem-test && ./build/neost-modem-test
 // Vérifie : chaîne AT multiple, ATDT asynchrone (le fil d'émulation ne bloque pas),
 // raccroché sur chute de DTR (&D2) et non (&D0), abandon d'une numérotation par un
-// caractère, et raccroché au reset du PSG (lignes du port A au repos).
+// caractère, raccroché au reset du PSG (lignes du port A au repos) et liste blanche
+// de domaines (numérotation hors liste refusée sans toucher au réseau).
 #include "net/HayesModem.hpp"
 #include "core/YM2149.hpp"
 #include "io/Mfp.hpp"
@@ -220,8 +221,29 @@ int main() {
         psg.setPortALineSink({});
     }
 
+    // 6) Liste blanche de domaines (2026-11-12) : hors liste, NO CARRIER sans
+    //    numéroter ; une adresse listée passe.
+    {
+        Rig r;
+        expect(r.modem.setAllowedDomains("bbs.example.org"), "allowlist parsed");
+        r.type(dialCmd(srv.port));
+        expect(!r.modem.dialing(), "allowlist: a dial outside the list never starts");
+        expect(r.out.find("NO CARRIER") != std::string::npos, "allowlist: refusal is NO CARRIER");
+        const neonet::SocketHandle none = srv.accept(200);
+        expect(!neonet::socketValid(none), "allowlist: nothing reached the server");
+        neonet::sockClose(none);
+        r.out.clear();
+        expect(!r.modem.setAllowedDomains("bad..name"), "invalid allowlist rejected");
+        expect(r.modem.setAllowedDomains("bbs.example.org, 127.0.0.1"), "allowlist with an address");
+        r.type(dialCmd(srv.port));
+        expect(r.waitFor("CONNECT", 3000), "allowlist: a listed address connects");
+        const neonet::SocketHandle peer = srv.accept(1000);
+        expect(neonet::socketValid(peer), "allowlist: server accepted the listed dial");
+        neonet::sockClose(peer);
+    }
+
     if (fails) return 1;
     std::fprintf(stderr, "[modem-test] AT chain, async dial, DTR &D2/&D0, dial abort, "
-                         "PSG reset: OK\n");
+                         "PSG reset, domain allowlist: OK\n");
     return 0;
 }
