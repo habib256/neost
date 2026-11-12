@@ -124,6 +124,9 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   référence était fausse de 24 px, vérifié pixel-à-pixel contre Hatari). Reste (pièce vidéo) : le
   moteur fullscreen d'EL verrouille à 72 % avec ses impulsions freq à −16 vs oracle → micro-sauts
   de scroll résiduels (cf. doc maître, bloc 2026-07-02).
+- **Attente STOP sur la grille du 68000** (2026-11-12) : le saut d'horloge garde la grille de 2 cycles ;
+  une échéance impaire est servie au cycle pair suivant (`NEOST_STOP_PHASE`, garde
+  `run_closure_intro_guard.py`). Corrige les trames isolées du grand logo de Closure.
 - **Saut STOP : double comptage du quantum CORRIGÉ (5ᵉ passe, 2026-07-02) — lock moteur EL
   100 %.** Dans le chemin STOP de `Cpu68k::run` (modèle bloc), `setClock(jumpTo)` +
   `syncTo(jumpTo)` avançaient `sched.now_`, mais le retour `ran` (et `cyclesRunInQuantum`)

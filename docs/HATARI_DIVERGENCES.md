@@ -1871,6 +1871,13 @@ documentés, aucun écart accidentel).
 
 ### Refermés
 
+- **Saut STOP hors de la grille paire** · refermé · haute · 2026-11-12 — NeoST saute à l'événement
+  suivant au lieu de rejouer STOP par pas de 4 comme Hatari (`gencpu.c:7018 @ f0736b24`) ; le saut
+  pouvait poser l'horloge sur un cycle impair (échéance du Timer D) et décaler l'IACK de 4 cycles :
+  trames isolées dans Closure. Le saut garde maintenant la parité du 68000 ([B] M68000UM Rev 8 § 8),
+  ce qui égale Hatari sur Closure (écriture ligne 33 au cycle 468 sur toutes les trames). Garde :
+  `tools/run_closure_intro_guard.py`.
+
 - **[CPU2] Phase mi-accès à 16 MHz** · requalifié le 2026-11-12 — `chipWait16` n'avait pas reçu
   la correction de phase mi-accès `(c − 2)` appliquée à `chipWait8` le 2026-07-02 ; il n'existe plus :
   l'accès Mega STE 16 MHz passe par `readMste16Mhz`/`writeMste16Mhz`, dont la qualification du

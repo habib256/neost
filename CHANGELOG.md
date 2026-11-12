@@ -8,6 +8,21 @@ l'ordre inverse. Version courante : **0.6.4**.
 
 ## Chasse aux P3 ; format d'état v67 (2026-11-12)
 
+- **Closure : plus de trames isolées dans le grand logo.** Signalé par l'auteur : de temps en temps,
+  une trame noire ou brouillée pendant le logo X-DISTING (~1 300-2 300), aucune chez Hatari.
+  Régression du 2026-10-22 (`2fc53a8`, réveil quantifié du STOP, trouvé par bissection) sur un
+  défaut plus ancien du saut d'attente STOP de `Cpu68k::run`, qui posait l'horloge du 68000 sur
+  l'échéance du Timer D, souvent impaire : la HBL réveillait le CPU un cycle trop tard, l'IACK
+  partait 4 cycles plus loin, et la file de compensation E-clock de la démo tombait à faux
+  (écriture `$FF820A` de la ligne 33 hors du cycle 468, qu'Hatari tient sur 513 trames sur 513).
+  Le saut avance désormais d'un nombre pair de cycles, une échéance impaire servie au cycle pair
+  suivant ([B] M68000UM Rev 8 § 8, [D] `fx68k.sv:177-197 @ 0602ee46`, [D] Hatari
+  `gencpu.c:7018 @ f0736b24`) ; `NEOST_STOP_PHASE=0` rend l'ancien saut. Correctif minimal du cœur
+  gelé (§ 9), justifié parce qu'il casse un titre. Trames fautives 52 / 96 / 85 → 0 (TOS 1.02 UK /
+  EmuTOS / `--fastfdc`). Nouvelle garde `tools/run_closure_intro_guard.py` au palier `full`
+  (trames 1 700-2 000 une à une, ~8 s) : l'étalon `closure` ne regardait qu'une image. `nocooper`
+  recalé d'une trame (6933 → 6932, référence inchangée). 27 parcours contre Hatari sans écart.
+
 Tous les P3 ouverts (⭘) du `TODO.md` attaqués en lots parallèles ; les ⏸ (matériel, source,
 cœur) restent en attente de leur ressource.
 
