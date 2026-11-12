@@ -12,9 +12,14 @@
 #  puis relit les deux entrées par Fsfirst (DTA : heure, date). La disquette fait foi
 #  (échelon `rom`, grade C : c'est le GEMDOS de la ROM qui écrit l'entrée FAT).
 #
+#    · Dcreate CLKD sur C: et A:, encadré de même ;
+#    · Tsetdate 2004-08-15 / Tsettime 11:30:00, puis CLKD\IN.TXT créé dans chacun, et
+#      les deux dossiers relus.
 #  Verdict par création : date de C: = date de A:, heure de C: et de A: dans
 #  l'encadrement Tgettime avant/après (pas de 2 s du format), écart C:/A: ≤ 2 pas
-#  (le temps d'écrire la disquette). Le dossier créé (Dcreate) est affiché, non jugé.
+#  (le temps d'écrire la disquette). Pour l'entrée créée dans le dossier : chaque
+#  dossier garde la date de son Dcreate (sur la FAT, l'entrée du dossier n'est pas
+#  récrite ; sur l'hôte, NeoST rétablit la date que l'hôte change).
 #
 #  Hors palier : les TOS Atari sont des médias privés (roms/, gitignoré). Les ROM
 #  absentes sont sautées ; EmuTOS (libre) suit la puce d'horloge.
@@ -34,12 +39,15 @@ ALIAS = {'tos102megafr': 'TOS v1.02 (1987)(Atari)(Mega ST)(FR)[MEGA TOS]'}
 
 SET_DATE = ((2003 - 1980) << 9) | (7 << 5) | 14
 SET_TIME = (10 << 11) | (20 << 5) | (30 >> 1)
+SET_DATE2 = ((2004 - 1980) << 9) | (8 << 5) | 15
+SET_TIME2 = (11 << 11) | (30 << 5) | 0
 
 
 def mk_prog():
     d = Data()
     for n, s in (('cclk', 'C:\\CLK.TXT'), ('aclk', 'A:\\CLK.TXT'), ('cset', 'C:\\SET.TXT'),
-                 ('aset', 'A:\\SET.TXT'), ('cdir', 'C:\\CLKD'), ('adir', 'A:\\CLKD')):
+                 ('aset', 'A:\\SET.TXT'), ('cdir', 'C:\\CLKD'), ('adir', 'A:\\CLKD'),
+                 ('cin', 'C:\\CLKD\\IN.TXT'), ('ain', 'A:\\CLKD\\IN.TXT')):
         d.s(n, s)
     d.b('dta', 44)
     T = []
@@ -47,17 +55,25 @@ def mk_prog():
         kw.setdefault('save', 0xFFFF); T.append(dict(id=id, fn=fn, args=args, **kw))
     DT = ('a', 'dta', 22, 4)                         # d_time, d_date
     t(0x10, 0x1A, [A('dta')])                        # Fsetdta
-    def creation(base, c, a):
+    def creation(base, c, a, folder=False):
         t(base + 0, 0x2A, []); t(base + 1, 0x2C, [])            # Tgetdate, Tgettime
-        t(base + 2, 0x3C, [A(c), W(0)], save=1); t(base + 3, 0x3E, [('sw', 1)])
-        t(base + 4, 0x3C, [A(a), W(0)], save=1); t(base + 5, 0x3E, [('sw', 1)])
+        if folder:                                              # Dcreate
+            t(base + 2, 0x39, [A(c)]); t(base + 4, 0x39, [A(a)])
+        else:                                                   # Fcreate + Fclose
+            t(base + 2, 0x3C, [A(c), W(0)], save=1); t(base + 3, 0x3E, [('sw', 1)])
+            t(base + 4, 0x3C, [A(a), W(0)], save=1); t(base + 5, 0x3E, [('sw', 1)])
         t(base + 6, 0x2A, []); t(base + 7, 0x2C, [])
-        t(base + 8, 0x4E, [A(c), W(0)], dump=DT); t(base + 9, 0x4E, [A(a), W(0)], dump=DT)
+        attr = 0x10 if folder else 0
+        t(base + 8, 0x4E, [A(c), W(attr)], dump=DT); t(base + 9, 0x4E, [A(a), W(attr)], dump=DT)
     creation(0x20, 'cclk', 'aclk')
     t(0x30, 0x2B, [W(SET_DATE)]); t(0x31, 0x2D, [W(SET_TIME)])
     creation(0x40, 'cset', 'aset')
-    t(0x50, 0x39, [A('cdir')]); t(0x51, 0x39, [A('adir')])
-    t(0x52, 0x4E, [A('cdir'), W(0x10)], dump=DT); t(0x53, 0x4E, [A('adir'), W(0x10)], dump=DT)
+    creation(0x60, 'cdir', 'adir', folder=True)
+    # Puis une entrée créée DANS le dossier, un autre jour : la date du dossier ne bouge pas
+    t(0x70, 0x2B, [W(SET_DATE2)]); t(0x71, 0x2D, [W(SET_TIME2)])
+    t(0x72, 0x3C, [A('cin'), W(0)], save=1); t(0x73, 0x3E, [('sw', 1)])
+    t(0x74, 0x3C, [A('ain'), W(0)], save=1); t(0x75, 0x3E, [('sw', 1)])
+    t(0x76, 0x4E, [A('cdir'), W(0x10)], dump=DT); t(0x77, 0x4E, [A('adir'), W(0x10)], dump=DT)
     p = Prog(d); p.table('main', T)
     return build(p)
 
@@ -99,6 +115,22 @@ def judge(r, base, label):
     return ok, txt
 
 
+def entry(b):
+    return fmt((b >> 24) << 8 | ((b >> 16) & 0xFF), ((b >> 8) & 0xFF) << 8 | (b & 0xFF))
+
+
+def judge_kept(r):
+    """Le dossier garde la date de son Dcreate après une entrée créée dedans un autre jour."""
+    keys = (0x68, 0x69, 0x72, 0x74, 0x76, 0x77)
+    if any(k not in r for k in keys): return False, 'entry inside: missing output'
+    if any(r[k][0] & 0x80000000 for k in (0x72, 0x74)): return False, 'entry inside: Fcreate failed'
+    if any(r[k][0] != 0 or len(r[k]) < 2 for k in (0x68, 0x69, 0x76, 0x77)):
+        return False, 'entry inside: Fsfirst failed'
+    ok = r[0x76][1] == r[0x68][1] and r[0x77][1] == r[0x69][1]
+    return ok, (f'entry inside: C: {entry(r[0x68][1])} -> {entry(r[0x76][1])}  '
+                f'A: {entry(r[0x69][1])} -> {entry(r[0x77][1])}')
+
+
 def main():
     ap = argparse.ArgumentParser(description='GEMDOS clock bench: date of a file created on '
                                  'the host drive (C:) vs the floppy (A:), same run')
@@ -134,15 +166,13 @@ def main():
     for spec, w, p in jobs:
         p.wait()
         r = parse(os.path.join(w, 'ser.txt'))
-        res = [judge(r, 0x20, 'boot'), judge(r, 0x40, 'Tset')]
+        res = [judge(r, 0x20, 'boot'), judge(r, 0x40, 'Tset'), judge(r, 0x60, 'Dcreate'),
+               judge_kept(r)]
         ok = all(x[0] for x in res)
         bad += not ok
         print(f'{"PASS" if ok else "FAIL"} {spec}')
         for good, txt in res:
             if args.verbose or not good: print('   ', txt)
-        if args.verbose and 0x52 in r and 0x53 in r and len(r[0x52]) > 1 and len(r[0x53]) > 1:
-            def e(b): return fmt((b >> 24) << 8 | ((b >> 16) & 0xFF), ((b >> 8) & 0xFF) << 8 | (b & 0xFF))
-            print(f'    Dcreate (not judged): C: {e(r[0x52][1])}  A: {e(r[0x53][1])}')
     for s in skipped: print(f'SKIP {s} (ROM missing)')
     print(f'{len(jobs) - bad}/{len(jobs)} PASS, runs in {out}')
     return 1 if bad or not jobs else 0

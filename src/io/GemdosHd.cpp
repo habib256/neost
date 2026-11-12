@@ -241,6 +241,40 @@ static bool hostFileReadOnly(const std::string& host) {
     return (convertAttribute(st.st_mode, host.c_str()) & FA_READONLY) != 0;
 }
 
+// Date du dossier qui CONTIENT une entrée que l'invité crée, détruit ou renomme. Sur la
+// FAT, la date d'un sous-dossier est celle de SON entrée dans le dossier parent, posée par
+// Dcreate ; ajouter, retirer ou renommer une entrée DANS ce sous-dossier n'écrit que ses
+// propres secteurs, jamais l'entrée qui le décrit. [C] EmuTOS fsdir.c xmkdir (date posée
+// une fois, à la création) et fsopnclo.c ixcreat (seule la nouvelle entrée est écrite)
+// @ 5679730f ; TOS 1.00 à 2.06 et EmuTOS exécutés (tools/run_gemdos_clock.py : Dcreate,
+// changement d'heure, Fcreate dedans, la date du dossier sur A: ne bouge pas). L'hôte,
+// lui, met le dossier à son heure à chaque entrée : on la rétablit en sortie d'appel.
+// Hors service avec l'heure de l'hôte (hostTime_, convention d'Hatari).
+class ParentDirTime {
+public:
+    ParentDirTime(const std::string& entry, bool on) {
+        if (!on) return;
+        std::string e = entry;
+        while (e.size() > 1 && (e.back() == '/' || e.back() == '\\')) e.pop_back();
+        dir_ = std::filesystem::path(e).parent_path();
+        std::error_code ec;
+        if (!dir_.empty()) time_ = std::filesystem::last_write_time(dir_, ec);
+        ok_ = !dir_.empty() && !ec;
+    }
+    ~ParentDirTime() {
+        if (!ok_) return;
+        std::error_code ec;
+        const auto now = std::filesystem::last_write_time(dir_, ec);
+        if (!ec && now != time_) std::filesystem::last_write_time(dir_, time_, ec);
+    }
+    ParentDirTime(const ParentDirTime&) = delete;
+    ParentDirTime& operator=(const ParentDirTime&) = delete;
+private:
+    std::filesystem::path dir_;
+    std::filesystem::file_time_type time_{};
+    bool ok_ = false;
+};
+
 // errno → code d'erreur GEMDOS (errno2gemdos). etype: false=fichier, true=chemin.
 uint32_t errno2gemdos(int error, bool pathType) {
     switch (error) {
@@ -1587,7 +1621,20 @@ bool GemdosHd::gemMkDir(uint32_t p) {
     if (drive == -1) return false;
     if (writeProtect_) { setD0(cpu_, GEMDOS_EWRPRO); return true; }
     std::string host; createHostFileName(drive, name, host);
-    if (mkdir(host.c_str(), 0755) == 0) setD0(cpu_, GEMDOS_EOK);
+    const ParentDirTime keep(host, !hostTime_);
+    if (mkdir(host.c_str(), 0755) == 0) {
+        // Date du dossier créé : l'heure GEMDOS de la machine émulée, comme un Fcreate
+        // (cf. gemCreate, emulatedNow) — l'hôte posait la sienne. [C] EmuTOS fsdir.c
+        // xmkdir @ 5679730f (entrée datée de current_time/current_date) ; TOS 1.00 à
+        // 2.06 et EmuTOS exécutés (tools/run_gemdos_clock.py, Dcreate sur A: et C:).
+        // Elle tient ensuite : une entrée créée dedans ne la change pas (ParentDirTime).
+        time_t created;
+        if (!hostTime_ && emulatedNow(created)) {
+            struct utimbuf tb; tb.actime = created; tb.modtime = created;
+            utime(host.c_str(), &tb);
+        }
+        setD0(cpu_, GEMDOS_EOK);
+    }
     else setD0(cpu_, errno2gemdos(errno, true));
     return true;
 }
@@ -1599,6 +1646,7 @@ bool GemdosHd::gemRmDir(uint32_t p) {
     if (drive == -1) return false;
     if (writeProtect_) { setD0(cpu_, GEMDOS_EWRPRO); return true; }
     std::string host; createHostFileName(drive, name, host);
+    const ParentDirTime keep(host, !hostTime_);
     if (rmdir(host.c_str()) == 0) setD0(cpu_, GEMDOS_EOK);
     else setD0(cpu_, errno2gemdos(errno, true));
     return true;
@@ -1668,6 +1716,7 @@ bool GemdosHd::gemCreate(uint32_t p) {
     std::string host; createHostFileName(drive, name, host);
     int idx = findFreeFileHandle();
     if (idx == -1) { setD0(cpu_, GEMDOS_ENHNDL); return true; }
+    const ParentDirTime keep(host, !hostTime_);
     // Fcreate d'un fichier existant le détruit d'abord (ixdel) : même règle que
     // Fdelete pour un fichier encore ouvert ([C] EmuTOS fsopnclo.c ixcreat @ 5679730f).
     // Un dossier ou un fichier en lecture seule est refusé avant, par fopen (EACCDN).
@@ -1932,6 +1981,7 @@ bool GemdosHd::gemFDelete(uint32_t p) {
     { struct stat st;
       if (stat(host.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) { setD0(cpu_, GEMDOS_EFILNF); return true; } }
     if (openByOther(host)) { setD0(cpu_, GEMDOS_EACCDN); return true; }
+    const ParentDirTime keep(host, !hostTime_);
 #if defined(_WIN32)
     markDeleted(host);                 // Windows ne détruit pas un fichier encore ouvert
     const bool gone = unlink(host.c_str()) == 0;
@@ -2327,6 +2377,7 @@ bool GemdosHd::gemRename(uint32_t p) {
         struct stat src {};
         const bool isDir = stat(oldHost.c_str(), &src) == 0 && S_ISDIR(src.st_mode);
         const uint8_t bits = isDir ? 0 : extraAttrOf(oldHost);   // avant que la source disparaisse
+        const ParentDirTime keepOld(oldHost, !hostTime_), keepNew(newHost, !hostTime_);
         if (rename(oldHost.c_str(), newHost.c_str()) == 0) {
             renameHostEntry(oldHost, newHost, bits, isDir);
             setD0(cpu_, GEMDOS_EOK);
