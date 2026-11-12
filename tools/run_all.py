@@ -436,22 +436,48 @@ def report_guards(durations) -> None:
             print(f"    {label} — {what} il y a {age} jours")
 
 
+# Le 77 ne dit pas si l'étape a tourné en partie (2026-11-12). En CI, « P2 étalons pixel »
+# exécutait 44 étalons et en sautait 12 faute de ROM, et le bilan la rangeait parmi les
+# étapes « NON EXÉCUTÉE(S) », comme si rien n'avait tourné. Les sous-suites qui ont
+# exécuté une partie de leurs cas l'écrivent avant de sortir en 77 ; on lit leur sortie
+# au passage pour ranger l'étape en « PARTIELLE ». Libellé et compte seulement : le
+# code de sortie et les seuils ne changent pas.
+PARTIAL_RE = re.compile(r"couverture AMPUTÉE|verdicts présents identiques")
+
+
+def run_step(cmd) -> tuple[int, bool]:
+    """Lance une étape en recopiant sa sortie ; rend (code, couverture partielle annoncée)."""
+    partial = False
+    env = dict(os.environ, PYTHONUNBUFFERED="1")   # sortie au fil de l'eau malgré le tube
+    with subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE, env=env,
+                          text=True, errors="replace", bufsize=1) as proc:
+        for line in proc.stdout:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+            partial = partial or bool(PARTIAL_RE.search(line))
+    return proc.returncode, partial
+
+
 def run_tier(steps, skipped=(), fast=False) -> int:
     ok = True
     skipped = list(skipped)
+    partial = []
     durations = {}
     for label, cmd in steps:
-        print(f"\n########## {label} ##########")
+        print(f"\n########## {label} ##########", flush=True)
         start = time.monotonic()
         fresh = FRESH_OUTPUTS.get(label)
         if fresh is not None:
             fresh.unlink(missing_ok=True)
-        rc = subprocess.run(cmd, cwd=ROOT).returncode
+        rc, ran_part = run_step(cmd)
         if fresh is not None and rc == 0 and not fresh.is_file():
             print(f"  {fresh.relative_to(ROOT)} non recréé par l'étape")
             rc = 1
         durations[label] = time.monotonic() - start
-        if rc == EXIT_SKIPPED:
+        if rc == EXIT_SKIPPED and ran_part:
+            partial.append(label)
+            print(f"  → PARTIELLE, recensée ({label})")
+        elif rc == EXIT_SKIPPED:
             skipped.append(label)
             print(f"  → SAUTÉE, recensée ({label})")
         elif rc != 0:
@@ -460,6 +486,11 @@ def run_tier(steps, skipped=(), fast=False) -> int:
     print("\n" + ("=" * 60))
     if fast:
         report_guards(durations)
+    if partial:
+        print(f"⚠ {len(partial)} étape(s) PARTIELLE(S) — exécutées, mais une partie de leurs cas "
+              "sautée faute de données non redistribuables (détail dans leur sortie) :")
+        for label in partial:
+            print(f"    · {label}")
     if skipped:
         print(f"⚠ {len(skipped)} étape(s) NON EXÉCUTÉE(S) — données non redistribuables "
               "absentes (restauration : tools/private_assets.sh unpack) :")
@@ -468,8 +499,8 @@ def run_tier(steps, skipped=(), fast=False) -> int:
     if not ok:
         print("ÉCHEC — voir ci-dessus")
         return 1
-    print("TOUS LES PALIERS OK" + (" — COUVERTURE AMPUTÉE (voir les étapes sautées)"
-                                   if skipped else ""))
+    print("TOUS LES PALIERS OK" + (" — COUVERTURE AMPUTÉE (voir les étapes partielles ou sautées)"
+                                   if skipped or partial else ""))
     return 0
 
 

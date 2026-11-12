@@ -210,9 +210,18 @@ root) alors que le retrait du droit d'écriture capture la même propriété par
 MSYS2 il est largement inopérant — la phase y est faible, et c'est écrit dans le script
 plutôt que sous-entendu.
 📌 Trouvé en la posant : `neost-headless` résout `disks/diskA.st` par rapport au
-RÉPERTOIRE COURANT, là où le frontend GUI résout par rapport au binaire. Lancé d'ailleurs
-que du paquet, le headless perd donc la disquette embarquée — sans conséquence (c'est
-l'outil de débogage, lancé depuis le dépôt), mais la phase passe ses chemins en absolu.
+RÉPERTOIRE COURANT, là où le frontend GUI résout par rapport au binaire. C'est toujours
+vrai (revérifié le 2026-11-12, disquette par défaut rétablie le même jour) :
+- **sans `--disk`**, la disquette par défaut `disks/diskA.st` est cherchée dans le
+  répertoire courant ; lancé d'ailleurs que du paquet, le headless ne la trouve pas et
+  démarre **lecteur vide, sans échec** (`drive A: empty (default disks/diskA.st not
+  found)`). Trouvée, elle est montée et ses écritures restent en RAM : le fichier
+  livré n'est jamais modifié ;
+- **`--disk` relatif** se résout lui aussi par rapport au répertoire courant, mais un
+  média NOMMÉ et introuvable fait **échouer** le run (code 1).
+
+Sans conséquence pour l'utilisateur (le headless est l'outil de débogage, lancé depuis
+le dépôt) ; la phase 5 passe donc ROM et disquette en chemins **absolus**.
 
 **La garde UNITAIRE est posée et vérifiée par mutation.** `tests/selftest_logic.cpp` teste
 désormais l'ÉCRITURE et non plus seulement la règle : écrire une config dans un dossier

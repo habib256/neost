@@ -203,9 +203,18 @@ et la CI (`.github/workflows/pi-borne.yml`) le fait déjà pour l'artefact
 
 Le parcours d'entraînement est `packaging/raspberry/pgo_train.sh`. Il couvre
 volontairement plusieurs familles de charge (boot ST et STE, 50 et 60 Hz, haute
-résolution monochrome, un jeu, une démo à retraits de bordure, les auto-tests) :
-**un profil trop étroit est pire que pas de profil**, il fait déclarer « froid » du
-code qui ne l'est pas.
+résolution monochrome, démos à retraits de bordure et musique YM, Spectrum 512,
+blitter, son DMA, les auto-tests) : **un profil trop étroit est pire que pas de
+profil**, il fait déclarer « froid » du code qui ne l'est pas.
+
+Chaque famille a une charge **publique** — EmuTOS (`etos192fr/us`, `etos256fr/us`) et
+disquettes suivies par git (`disks/diskA.st`, `disks/etalons/` : No Cooper, Cuddly
+Demos, `spec512_view`, `blitter_hog`, `dmasnd_poll`) — que le script **exige** : moins
+de `PGO_MIN_PUBLIC` réussites (défaut : toutes, 13) et le build échoue. Les TOS Atari
+et les jeux privés ne sont que des charges optionnelles, sautées en leur absence.
+Jusqu'au 2026-11-12, toutes les charges sauf une exigeaient `tos102uk`/`tos162uk` ou
+un jeu privé : en CI, le profil livré dans les paquets Pi n'avait vu qu'un boot
+EmuTOS de 300 trames, sans que rien ne le signale.
 
 ### ⚠ Le piège du PGO, qui coûte le gain sans rien dire
 
