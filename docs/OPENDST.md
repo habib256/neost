@@ -206,6 +206,15 @@ espaces, ne pas le découper en `clé=valeur` ; et `import` remet la datation de
 à **0** (un fichier ne porte pas de numéro de trame), là où `save`/`load` la conservent.
 `play` pilote le port 1 et **neutralise le port 0**, comme `--joy-script`.
 
+**Options refusées** (code 2, avant le boot) : ce que seule la boucle `--frames` applique —
+entrées datées (`--keys`, `--keys-at`, `--scancode-at`, `--key-down/up`, `--joy-at`,
+`--joy-script*`, `--mouse-at`, `--disk-at`, `--reset-at`, `--button-at`), `--loopback*`,
+`--walk-mouse`, arrêts (`--break`, `--watch`, `--break-sym`, `--until-pc`), empreintes
+périodiques (`--state-hash-every`, `--arch-hash-every`), `--trace-from`, et les pompes
+hôte réseau. Elles étaient ignorées en silence jusqu'au 2026-11-12 ; les sorties de fin
+de run (`--screenshot`, `--save-state`…) restent seulement signalées. Un média demandé et
+introuvable (`--disk`, `--acsi`, `--sd1/2`, `--gemdos`, `--cart`) empêche le démarrage.
+
 ```
 $ printf 'hello\nplay R*20 [DF]*8\nsave 0\nrun 40\nload 0\nquit\n' \
       | ./build/neost-headless <rom> --machine st --disk <jeu> --fastfdc \
@@ -268,7 +277,7 @@ Arité stricte : un argument de trop est une erreur.
 
 | commande | réponse | sémantique et bornes |
 |---|---|---|
-| `hello` | `ok neost=… machine=… ram=… tos=… disk=… diskb=… driveb=on\|off fastfdc=… commit=… built=…` | informatif : les chemins peuvent contenir des espaces ; `disk`/`diskb` = image montée **à l'instant**, `-` si le lecteur est vide. `commit` = hash court de HEAD, suffixé `+xxxxxxxx` si l'arbre de travail diffère de HEAD, `nogit` hors dépôt ; `built` = ISO 8601 sans espace. Un banc compare `commit` à `git rev-parse --short=12 HEAD` et **refuse un binaire périmé** (même valeur en tête de `--version`) |
+| `hello` | `ok neost=… machine=… ram=… tos=… disk=… diskb=… driveb=on\|off fastfdc=… mono=0\|1 fpu=0\|1 cart=… gemdos=… acsi=… fdcseed=… commit=… built=…` | informatif : les chemins peuvent contenir des espaces ; `disk`/`diskb` = image montée **à l'instant**, `-` si le lecteur est vide. `cart`/`gemdos`/`acsi` : `-` si absent ; `fdcseed` : `-` sans `--fdc-seed` (depuis le 2026-11-12 : deux sessions de matériel différent ne partagent plus le même `hello`). `commit` = hash court de HEAD, suffixé `+xxxxxxxx` si l'arbre de travail diffère de HEAD, `nogit` hors dépôt ; `built` = ISO 8601 sans espace. Un banc compare `commit` à `git rev-parse --short=12 HEAD` et **refuse un binaire périmé** (même valeur en tête de `--version`) |
 | `run N` | `ok <champs>` | N trames, 0 ≤ N ≤ 10 000 000 ; entrées inchangées |
 | `play SCRIPT` | `ok <champs>` | grammaire § 3 ; un masque **posé avant** chaque trame ; le dernier masque **reste posé** ; le port 0 est **mis à zéro** pendant le script ; total ≤ 10 M trames ; un script fautif ne joue **rien** |
 | `joy P1 [P0]` | `ok` | état tenu jusqu'au prochain `joy`/`play` ; bits haut 01 bas 02 gauche 04 droite 08 feu 80 |
@@ -276,8 +285,8 @@ Arité stricte : un argument de trop est une erreur.
 | `mouse DX DY BTN` | `ok` | relatif, DX/DY ∈ [−32768, 32767], BTN 0..3 (bit 0 gauche, bit 1 droite) |
 | `peek ADR LEN` | `ok <2·LEN chiffres hexa>` | 1 ≤ LEN ≤ 4096 ; adresse 24 bits, reboucle ; **sans effet de bord**, l'espace I/O `$FF8000+` se lit `FF` |
 | `observe` | `ok <champs>` | sans avancer |
-| `save N` | `ok bytes=<taille>` | emplacement 0 ≤ N < `--server-slots` (64 par défaut, max 4096) ; mémorise l'état, la trame **et le joystick tenu** |
-| `load N` | `ok <champs>` | restaure les trois ; `err` si vide ou refusé (raison sur stderr) — la machine reste intacte |
+| `save N` | `ok bytes=<taille>` | emplacement 0 ≤ N < `--server-slots` (64 par défaut, max 4096) ; mémorise l'état, la trame **et le joystick tenu**. `err save: <motif>` sinon — notamment pendant un blit HOG à cheval sur la fin de trame (instruction garée, `The CPU is halted by a blitter transfer…`) : réessayer après quelques `run` |
+| `load N` | `ok <champs>` | restaure les trois ; `err load: <motif>` si vide ou refusé (CRC, version, ROM, machine…) — la machine reste intacte. Pendant une instruction garée, l'en-tête est validé puis l'instruction est **abandonnée** (comme un reset) et l'état chargé |
 | `export N FICHIER` | `ok bytes=<taille>` | le fichier est relisible par `--load-state` et par `import` |
 | `import N FICHIER` | `ok bytes=<taille>` | magie vérifiée à l'import ; la trame de l'emplacement devient **0** (un fichier ne la porte pas). Le joystick tenu n'est pas remis à 0 : le `load` qui suit reprend celui que l'état porte, comme `--load-state FICHIER` (depuis le 2026-10-20) |
 | `probe NOM=ADR:LEN` | `ok` | ajoute une sonde (LEN 1, 2 ou 4) ; nom ≤ 64 caractères, unique |

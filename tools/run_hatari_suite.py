@@ -94,11 +94,25 @@ def run_auto(drive: Path, prg, machine, mem, rom, extra=()) -> subprocess.Comple
     return subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=300)
 
 
+def headless_failed(name: str, log: subprocess.CompletedProcess) -> bool:
+    """Le headless a-t-il échoué ? Son code de sortie était ignoré : une capture
+    (--scc-dump, --console-log) non écrite ou un --gemdos introuvable laissait le
+    verdict se juger sur un fichier absent ou PÉRIMÉ — et une sortie juste par hasard
+    passait."""
+    if log.returncode == 0:
+        return False
+    print(f"  FAIL {name}: neost-headless exited with code {log.returncode}")
+    print("\n".join("    " + l for l in (log.stdout + log.stderr).splitlines()[-5:]))
+    return True
+
+
 def run_console_case(name, prg, source, machine, mem, rom) -> bool:
     with tempfile.TemporaryDirectory(prefix="neost-hatari-suite-") as tmp:
         drive, console = Path(tmp) / "C", Path(tmp) / "console.txt"
         drive.mkdir()
         log = run_auto(drive, prg, machine, mem, rom, ("--console-log", str(console)))
+        if headless_failed(name, log):
+            return False
         text = console.read_text(errors="replace") if console.exists() else ""
         tests = [l.strip() for l in text.splitlines() if l.startswith("Test '")]
         want = len(re.findall(r'^\t\{ "', (SUITE / source).read_text(), re.M))
@@ -117,6 +131,8 @@ def run_serial_case(name, prg, flag, machine, mem, rom) -> bool:
         drive, dump = Path(tmp) / "C", Path(tmp) / "out.txt"
         drive.mkdir()
         log = run_auto(drive, prg, machine, mem, rom, (flag, str(dump)))
+        if headless_failed(name, log):
+            return False
         raw = dump.read_bytes() if dump.exists() else b""
         if flag == "--midi-dump":               # une ligne « <cycle> <hex> » par octet
             raw = bytes(int(l.split()[1], 16) for l in raw.decode().splitlines() if len(l.split()) == 2)
@@ -132,6 +148,8 @@ def run_case(name, prg, produced, reference, machine, mem, rom) -> bool:
     with tempfile.TemporaryDirectory(prefix="neost-hatari-suite-") as tmp:
         drive = Path(tmp)
         log = run_auto(drive, prg, machine, mem, rom)
+        if headless_failed(name, log):
+            return False
         out = drive / produced
         if not out.exists():
             print(f"  FAIL {name}: {produced} absent (code {log.returncode})")

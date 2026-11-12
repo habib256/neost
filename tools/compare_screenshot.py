@@ -227,10 +227,10 @@ def _align_buffer(w: int, h: int, px: bytes) -> tuple[int, int, bytes]:
         y0 = (h - bh * 2) // 2
         cropped = _crop(px, w, h, x0, y0, bw * 2, bh * 2)
         return _downscale2(cropped, bw * 2, bh * 2)
-    if w >= bw and h >= bh:
-        x0 = (w - bw) // 2
-        y0 = (h - bh) // 2
-        return bw, bh, _crop(px, w, h, x0, y0, bw, bh)
+    # Toute autre taille reste TELLE QUELLE : on recadrait au centre n'importe quelle
+    # image plus grande que le buffer (une capture 640×400, une image d'un autre
+    # outil…) et la comparaison portait alors sur un morceau arbitraire, parfois en
+    # vert. compare() refuse ce qui n'est ni le buffer ni le plein écran 2× d'Hatari.
     return w, h, px
 
 
@@ -266,6 +266,13 @@ def compare(a_path: Path, b_path: Path, crop: str = "active",
         x = y = ax = ay = bx = by = 0
     else:
         x, y, cw, ch = _region(crop)
+        # Les zones « active »/« buffer » sont des coordonnées du buffer NeoST 416×276 :
+        # elles n'ont de sens que sur lui (ou sur le plein écran Hatari 2×, ramené à lui).
+        for name, (iw, ih) in (("A", (aw, ah)), ("B", (bw, bh))):
+            if (iw, ih) != (BUFFER[2], BUFFER[3]):
+                raise ValueError(f"{name} : taille inattendue {iw}x{ih} pour crop {crop} "
+                                 f"(attendu {BUFFER[2]}x{BUFFER[3]} ou {2 * BUFFER[2]}x"
+                                 f"{2 * BUFFER[3]} ; --crop full compare deux images de même taille)")
         if aw < x + cw or ah < y + ch:
             raise ValueError(f"A trop petit pour crop {crop} : {aw}x{ah}")
         if bw < x + cw or bh < y + ch:
