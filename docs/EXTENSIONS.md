@@ -252,9 +252,10 @@ Deux différences de Windows méritent d'être connues avant de câbler un studi
   créer un port que les autres applications voient — il y faut un **pilote** (loopMIDI,
   LoopBe1). Une fois installé, son port apparaît dans les listes ci-dessous comme
   n'importe quel appareil, **en destination et en source** : le câblage vers un DAW est
-  alors complet, sans que NeoST ait à s'en mêler. (Windows MIDI Services, la pile MIDI
-  2.0 de Windows 11, sait le faire nativement mais s'installe à part et exigerait une
-  pile WinRT/COM que le zip autonome ne peut pas emporter.)
+  alors complet, sans que NeoST ait à s'en mêler. Sous Windows 11 avec **Windows MIDI
+  Services**, une **paire de bouclage** créée dans l'application *MIDI Settings* tient
+  le même rôle sans pilote tiers ; héberger soi-même un port n'y est pas envisagé (cf.
+  *Port virtuel sous Windows* ci-dessous).
 - **Un port MIDI est exclusif.** Là où ALSA et CoreMIDI multiplexent, un DAW ouvert sur
   le clavier empêche NeoST de l'ouvrir : `MMSYSERR_ALLOCATED`, journalisé en clair
   (`device busy - another application holds it`).
@@ -446,6 +447,96 @@ Mesuré A/B sur 40 échéances de 50 ms vers le Circuit Tracks :
 |---|---|---|---|
 | minuteur 1 ms **posé** | 50,00 ms | **0,30 ms** | 0,90 ms |
 | minuteur 1 ms absent | 50,09 ms | 5,34 ms | 13,10 ms |
+
+### Code temporel MTC en sortie (`midi_mtc=`)
+
+Un logiciel hôte qui ne se cale **que** sur un code temporel (Logic Pro ne suit pas
+l'horloge MIDI en esclave) ne tire rien de l'horloge que le ST émet. Sur un vrai studio
+c'était le travail d'un convertisseur SMPTE — l'Unitor ou le Midex, non émulés (section
+suivante). NeoST suit donc le **transport du ST** et en tire du MIDI Time Code, intercalé
+dans la livraison horodatée vers **toutes** les sorties hôtes (port virtuel compris) :
+
+- **Format** : Quarter Frames `F1 0nnn dddd` (quatre par image, huit pièces sur deux
+  images, le temps codé est celui de la pièce 0) et Full Frame `F0 7F 7F 01 01 hh mm ss
+  ff F7` à chaque repositionnement. Cadences 24, 25, 29,97 *drop-frame*, 30.
+  [B] MMA, *MIDI Time Code* (1987), lu à travers deux transcriptions concordantes —
+  l'original n'est pas dans `extern/datasheets`.
+- **Temps** : le temps **émulé** écoulé depuis le départ, exact quel que soit le tempo ;
+  le départ est la première horloge `$F8` qui suit Start/Continue. Un Song Position
+  Pointer se convertit par l'historique des doubles-croches jouées (exact pour un retour
+  en arrière), au-delà par le dernier tempo mesuré (approché si le tempo change).
+- **Choix** : origine 00:00:00:00, pas de décalage ; rien n'entre dans la machine, rien
+  ne sort si le programme ST n'émet pas d'horloge.
+
+Réglage : page MIDI, *MIDI Time Code out* (`midi_mtc=0|24|25|29|30`, 29 = 29,97 DF ;
+coupé par défaut). Code : `src/audio/MidiTimecode.hpp` (pur), injection dans
+`MidiOutHost` (messages complets rangés à leur échéance, jamais au milieu d'un message
+du ST). Éprouvé par `neost-selftest` (*MIDI Time Code*) : étiquettes drop-frame, pièces,
+Full Frame, 200 Quarter Frames en 2 s à 25 i/s datés à la première horloge, retour par
+SPP. ⚠ **Pas encore essayé** contre un logiciel hôte réel (Logic, Reaper) ni sur un
+séquenceur ST réel émettant son horloge.
+
+### Interfaces multi-ports et SMPTE (Unitor, Midex) : ce qui manque pour émuler le boîtier
+
+Ce qui est émulé de ces boîtiers, c'est la **clé** de l'Unitor-N (`--dongle notator`).
+Le boîtier lui-même — ports MIDI supplémentaires, lecteur/générateur SMPTE — ne l'est
+pas, faute de **toute** description de son protocole :
+
+| Boîtier | Ce que l'on sait (sources) | Ce qui manque |
+|---|---|---|
+| C-Lab **Unitor** / Unitor 2 / Unitor-N | 2 MIDI IN (II, III) et 2 MIDI OUT (E, F) en plus de ceux du ST, SMPTE/EBU en lecture et écriture, un « Multi-port » D-15, et un passage du port cartouche pour une clé (notator.atari.org, page Unitor ; *Sound On Sound*, revues Unitor 1989 et Unitor 2 1992, muzines.co.uk). Notator/Creator 3 exige « UNITOR SMPTE/MIDI Unit » pour le mode SMPTE (chaînes de `CREATOR.RSC`, médias privés) | le **plan d'adresses** sur le port cartouche (lecture seule : les écritures passent forcément par les lignes d'adresse, comme NetUSBee et EtherNEC), la puce série des ports E/F (ACIA ? UART ?), le format sous lequel le temps SMPTE parvient au logiciel (registres ou MTC), le rôle du D-15 |
+| Steinberg **Midex** / Midex+ | port cartouche, 4 MIDI OUT supplémentaires, lecteur/générateur SMPTE ; pilote M.ROS (`v2.03`) copié sur la disquette Cubase (revue *Midex+*, muzines.co.uk) | idem : plan d'adresses, puces, protocole du pilote M.ROS |
+
+**Ni Hatari ni MAME** n'émulent ces boîtiers (aucune occurrence dans
+`extern/hatari/src` ni `extern/mame/src`), et aucune rétro-ingénierie publique n'a été
+trouvée (recherche du 2026-11-12). Trois sources débloqueraient le travail, par ordre de
+grade :
+
+1. **[B] Schéma ou manuel de service** du boîtier (C-Lab, Steinberg) : plan d'adresses et
+   puces d'un coup.
+2. **[A] Photographies de la carte** (références des puces) **+ relevé des PAL/GAL** de
+   décodage, comme l'a été l'EP600 de la clé Notator.
+3. **[C] Désassemblage du pilote** : le module Midex de M.ROS, ou le code Unitor de
+   Notator/Creator — le `NOTATOR.PRG` des médias privés ne fait que 41 Ko et ne contient
+   pas ces chaînes, le code utile est vraisemblablement chargé ou déchiffré à
+   l'exécution (protection de la clé) : il faudrait le capturer en mémoire sous NeoST,
+   clé émulée, puis le lire. C'est le chemin le plus accessible sans matériel, mais il ne
+   donne que le contrat attendu par le logiciel, pas le silicium.
+
+Sans l'une de ces sources, un « Unitor » serait inventé, et un logiciel qui l'interroge
+ne le reconnaîtrait pas.
+
+### Port virtuel sous Windows : Windows MIDI Services
+
+La pile MIDI de Windows 11 (**Windows MIDI Services**, déployée progressivement en
+2025-2026) sait créer des ports que les autres applications voient, ce que ni winmm ni
+WinRT MIDI 1.0 ne savaient faire. Évaluation du 2026-11-12, sur la documentation
+Microsoft (microsoft.github.io/MIDI) :
+
+- **Héberger un port depuis NeoST** passe par le *Windows MIDI Services App SDK* :
+  classes `MidiVirtualDeviceManager` (appareil virtuel, **UMP / MIDI 2.0** — « only apps
+  using the new SDK, and which are MIDI 2.0-aware, can define and host Virtual Devices »)
+  ou `MidiLoopbackEndpointManager` (paires de bouclage transitoires). Projection
+  **C++/WinRT** générée depuis des métadonnées NuGet, et un **runtime du SDK installé à
+  part** que l'application doit amorcer (`MidiDesktopAppSdkInitializer`) et, s'il manque,
+  faire installer. C++/WinRT n'est pas pris en charge officiellement par MinGW-w64 GCC
+  (projet communautaire `mingw-w64-cppwinrt`, coroutines expérimentales). Et la visibilité
+  d'un port créé à l'exécution par les applications **winmm** reste documentée comme
+  délicate (« challenges around port numbers with dynamically-created endpoints »).
+- **Sans une ligne de code**, la même pile offre des **paires de bouclage** créées dans
+  l'application *MIDI Settings*, persistantes, que les applications winmm voient comme
+  des ports ordinaires — NeoST les liste alors en destination **et** en source, comme un
+  port loopMIDI. La même pile rend aussi les ports winmm **multi-clients**, ce qui lève
+  l'exclusivité décrite plus haut là où elle est installée.
+
+**Recommandation : ne pas l'implémenter.** Le coût (chaîne C++/WinRT hors de MinGW,
+runtime à faire installer, appareil MIDI 2.0 pour un flux MIDI 1.0) est sans rapport avec
+le gain, puisque les paires de bouclage de *MIDI Settings* — ou loopMIDI avant Windows
+MIDI Services — donnent déjà le câblage sans code. À rouvrir seulement si Microsoft
+expose la création de port dans le SDK Windows standard (sans runtime séparé) avec une
+interface C, ou si la chaîne Windows de NeoST passe à MSVC ou clang. ⚠ Rien de cela
+n'est vérifié sur un Windows réel : à confirmer à la prochaine session Windows (paire
+créée dans *MIDI Settings*, vue par `neost-headless --midi-list`).
 
 ## Anneau MIDI réseau — MIDIMaze en ligne (`--midi-net H:P[:L]`)
 
