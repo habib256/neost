@@ -269,6 +269,12 @@ un poll serré de `$FF8909/0B/0D`). Étalon : STE_Test.
 exacte du tic Timer C (au cycle de programmation) ; lecture compteur à cheval sur deux lignes
 (`Video_CalculateAddress`).
 
+Phase de l'horloge MFP face au CPU : front 0 au cycle 0 par défaut, déplaçable par
+`--mfp-phase-seed` (64 pas d'1/64 de cycle MFP), et rapport CPU/MFP réglable par `--quartz`
+(`DEV.md` § Modèle d'horloge). La phase ne décale un timer que d'au plus un cycle MFP
+(≈ 3,26 cycles CPU) ; le rapport, lui, déplace le Timer C de ε × (cycles écoulés depuis son
+armement) — mesure sur la course TOS 2.06 : `docs/CASE_STUDIES.md`.
+
 ### P3 — Précision « démos extrêmes »
 
 - **Wakeup states WS1-4** (`video.c:626`) : 4 jeux de timings ±1 cyc. La table est portée
