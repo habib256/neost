@@ -6,6 +6,38 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
+## Chasse aux P3 (2026-11-12)
+
+Tous les P3 ouverts (⭘) du `TODO.md` attaqués en lots parallèles ; les ⏸ (matériel, source,
+cœur) restent en attente de leur ressource.
+
+- **GEMDOS hôte, Fforce.** `Fforce(std, handle du TOS)` sous redirection hôte n'en défait la
+  redirection que si le TOS l'accepte : la cartouche lui relance l'appel, comme pour Pexec ; un
+  EIHNDL laisse la sortie dans le fichier ([C] EmuTOS `fshand.c` ixforce @ 5679730f). Banc A/B
+  0x130-0x13B (TOS 1.04, 2.06, EmuTOS), total normalisé inchangé à 79 ; état v65 inchangé.
+- **GEMDOS hôte, dates des dossiers.** Dcreate date le dossier à l'heure du GEMDOS émulé, et la
+  date d'un dossier ne bouge plus quand on crée, détruit ou renomme une entrée dedans, comme sur
+  la FAT ([C] EmuTOS `fsdir.c` xmkdir @ 5679730f). `run_gemdos_clock.py` 16/16.
+- **Cartouche.** Une lecture courte de l'image est refusée, la cartouche précédente reste ;
+  selftest du port générique (tailles, .STC, $FF au-delà de l'image et sur /ROM3 vide).
+- **A39.** Bac à sable GEMDOS jugé couche par couche (12 cas ; la mutation du parseur, masquée
+  jusqu'ici par la garde terminale, est détectée).
+- **Réseau.** Liste blanche de domaines optionnelle pour le NAT et le modem
+  (`--net-allow-domains`, `net_allow_domains=`, champ « Allowed domains ») : REFUSED hors liste
+  ([B] RFC 1035 § 4.1.1), adresses apprises du DNS, refus journalisés. Test NAT [13] robuste sous
+  Winsock : le port « libre » venait d'un écouteur TCP seul, l'UDP pouvait être pris ; il est
+  désormais retenu seulement si TCP et UDP l'ont. `NEOST_SLIRP_TRACE` trace le DNS et les SYN/RST
+  d'un vrai STinG. Installation de STinG documentée ; correctif du cache DNS porté sur une
+  branche POM2 (`nat-dns-cache-from-neost`, non poussée).
+- **Documentation.** `HATARI_DIVERGENCES.md` rangé par sous-système (2 855 → 2 093 lignes, une
+  entrée par écart, la plus récente fait foi), récits des onze passes déplacés ici à leur date.
+  Les 38 rangées « Docs à corriger » et 36 « Prochains travaux » de l'audit de cartographie du
+  2026-07-08 recontrôlées une à une (verdicts dans l'archive). Nouveau
+  `docs/MAME_DIVERGENCES.md` : 41 écarts contre MAME `ce391499d37d` ; aucun où une source de
+  rang supérieur donne tort à NeoST, quatre où MAME a tort ([B] WD177X, Zilog UM0109, MC68901).
+- **Outils.** `compare_sound.py --mem` passe par `title_cmd.parse_mem` : même taille des deux
+  côtés, `--mem 0` ne devient plus « 0m ».
+
 ## Restes de la chasse : fiches, horloge GEMDOS, STX, Android ; format d'état v65 (2026-11-12)
 
 - **RTL8019AS selon sa fiche.** [B] Realtek RTL8019AS LS003.8 (2000-08-20), rapatriée par

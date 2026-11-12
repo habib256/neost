@@ -1889,6 +1889,18 @@ montage sont suivis, même modèle de confiance qu'Hatari (2026-07-12).
 Tranchés par le vrai TOS exécuté (banc `tools/run_gemdos_ab.py`, TOS 1.04, 2.06, EmuTOS) et
 [C] EmuTOS `proc.c @ 5679730f` ; Hatari [D] `gemdos.c`.
 
+- **Fforce vers un handle du TOS sous redirection hôte** · voulu [C] · basse · 2026-11-12 — NeoST
+  fait trancher le TOS (la cartouche lui relance l'appel, comme pour Pexec) et ne défait la
+  redirection que s'il accepte ; un EIHNDL la laisse en place. Hatari `gemdos.c @ f0736b24` la
+  défait avant la réponse du TOS. Preuve : [C] EmuTOS `fshand.c` ixforce @ 5679730f. Garde :
+  `run_gemdos_ab.py` cas 0x130-0x13B.
+- **Date des dossiers hôtes** · voulu [C] · basse · 2026-11-12 — Dcreate date le dossier à
+  l'horloge du GEMDOS émulé ; la date du dossier contenant est rétablie après
+  Fcreate/Dcreate/Ddelete/Fdelete/Frename, comme sur la FAT (la date d'un dossier est celle de son
+  entrée dans le parent). Hatari laisse l'heure de l'hôte. Preuve : [C] EmuTOS `fsdir.c` xmkdir
+  @ 5679730f. Garde : `run_gemdos_clock.py` 16/16. [F] Windows : `utime` de MinGW sur un dossier
+  non vérifié.
+
 - **Dossier courant par processus** · voulu [C] · 2026-11-11 — rangé par basepage, hérité du
   parent, oublié à Pterm ; Hatari le tient global (un enfant qui fait Dsetpath le change pour
   son parent). Lecteur courant lu dans `p_curdrv` (basepage + `$37`). « X:NOM » et « X: »
@@ -1990,6 +2002,11 @@ Tranchés par le vrai TOS exécuté (banc `tools/run_gemdos_ab.py`, TOS 1.04, 2.
   Indépendante de Vroom. `docs/CASE_STUDIES.md`, cas TOS 2.06.
 
 ### Écarts voulus — ne pas réaligner
+
+- **Cartouche ROM : lecture courte refusée** · assumé · basse · 2026-11-12 — une image lue
+  incomplètement est refusée, la cartouche précédente reste montée ; Hatari `cart.c @ f0736b24`
+  juge la taille réellement lue. Son minimum de 40 octets ([D], arbitraire) n'est pas porté.
+  Garde : selftest du port générique.
 
 - **ROM TOS exécutée intacte** · voulu [C] · 2026-11-04 — les patchs de checksum, de boot DMA
   et les variables RAM préremplies d'Hatari ne sont pas portés (audit

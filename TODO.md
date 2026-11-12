@@ -257,14 +257,8 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   (`tools/run_gemdos_ab.py`, TOS 1.04, 2.06, EmuTOS), tous de convention : ordre de listage (FAT
   contre hôte trié), lecteur de boot, carte des lecteurs, Dfree, étiquette de volume, octets
   après le NUL d'un nom. Les E/S sur un fichier détruit encore ouvert rendent EINTRN [F].
-- **Date d'un dossier créé par Dcreate sur le lecteur hôte** · P3 ⭘ — garde l'heure de l'hôte ;
-  les fichiers prennent celle du GEMDOS de la ROM depuis le 2026-11-12 (`tools/run_gemdos_clock.py`,
-  16/16). La date d'un dossier hôte bouge de toute façon dès qu'on y crée une entrée.
-- **Fforce vers un handle TOS invalide** · P3 ⭘ — fait encore tomber la redirection hôte, faute de
-  voir la réponse du TOS (vers un handle hôte fermé : EIHNDL sans rien changer, corrigé).
 - **Tailles de RAM sans source** · P3 ⏸ source · [E] — 256k et 2176k sur STE/Mega STE, Mega STE
   sous 1 Mo : acceptées sans document (barrettes 30 broches, banque minimale probable de 512 Ko).
-- **Port cartouche générique** `$FA0000-$FBFFFF` · P3 ⭘ — au-delà du système GEMDOS ; `cart.c`.
 
 ---
 
@@ -365,9 +359,9 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 - **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **44 étalons pixel sur 56** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → ci-dessus.
-- **Comparaison MAME ↔ NeoST** · P3 ⭘ — memory map, bus errors, FIFO FDC/MMU, blitter, SCC.
-- **`compare_sound.py --mem N`** · P3 ⭘ — passe encore `Nm` au headless (qui refuse désormais une
-  taille inconnue) : aligner sur `title_cmd.parse_mem`.
+- **Écarts MAME [F] à trancher** · P3 ⭘ — MA-1 (remappage RAS/CAS du ST : 4 cas sur 6 diffèrent de MAME, NeoST
+  suit Hatari) et MA-20 (FIFO DMA en écriture, 32ᵉ contre 33ᵉ bloc) ; le blitter, la vidéo et le Mega STE de
+  MAME ne sont pas dans le clone. → [`docs/MAME_DIVERGENCES.md`](docs/MAME_DIVERGENCES.md)
 - **Traces Hatari de référence pour `trace_diff`** · P3 ⭘ — Arkanoid et autres.
 - **Étalon spec512 en overscan** · P3 ⭘ — si une démo libre à bordures ouvertes est rapatriée.
 
@@ -404,17 +398,16 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   ne tourne pas), registres réservés lus 0, FIFO, durée de l'auto-load, HLTCLK mode 2, TSR bits 5/1
   et RSR bit 3 (fiche contradictoire p. 10/14). Tranché par : un dump de la page 3 et de la 9346
   d'un vrai NetUSBee. La fiche LS003.8 tranche le reste depuis le 2026-11-12.
-- **NAT : correctifs à remonter dans POM2** · P3 ⭘ — cache DNS positif à 60 s et vidé au reset de
-  la carte (2026-11-12, `extern/nat/README`) ; même défaut dans POM2 `4625ec82`.
-- **Test NAT UDP intermittent sous Winsock** · P3 ⭘ — `extern/nat/tests/builtin_nat_test.cpp:1581`
-  (relais UDP, « udp A » jamais reçu) a échoué une fois en CI Windows le 2026-11-12 (run 43225255791,
-  `c0cf2dc`, sans changement du NAT depuis le dernier vert), puis passé à la relance. Délai de
-  `until` ou ordre des sondes Winsock à regarder s'il revient.
-- **STinG, premier run en échec DNS** · P3 ⭘ · [F] — `err -17` au tout premier `--slirp` du 2026-11-04, puis 4 succès d'affilée, alors que le `--slirp-selftest` en ligne passait juste après. Le filtre de l'hôte reste la piste la plus simple, sans preuve. À regarder si l'échec revient, avec `NEOST_SLIRP_TRACE=1`.
-- **Modem / STinG** · P3 ⭘ — documenter l'installation dans `docs/TEST_SOFTWARE.md` ; banc SLIP
-  de bout en bout.
+- **NAT : correctifs à remonter dans POM2** · P3 ◐ — cache DNS positif à 60 s et vidé au reset de la carte :
+  porté sur la branche POM2 `nat-dns-cache-from-neost` (`9e15c67d`, non poussée). Reste à la fusionner dans
+  POM2, puis à reprendre la révision au `extern/nat/README`.
+- **STinG, premier run en échec DNS** · P3 ⭘ · [F] — `err -17` au tout premier `--slirp` du 2026-11-04, puis 4 succès d'affilée, alors que le `--slirp-selftest` en ligne passait juste après. Le filtre de l'hôte reste la piste la plus simple, sans preuve. À regarder si l'échec revient, avec `NEOST_SLIRP_TRACE=1`, qui trace désormais le DNS (RCODE, délai) et les SYN/RST d'un vrai STinG. Essayé le 2026-11-12 sur quatre premiers runs : non reproduit (581 ms à froid). `err -17` = toute réponse DNS inutilisable, REFUSED compris.
+- **Modem / STinG** · P3 ◐ — installation documentée (`docs/TEST_SOFTWARE.md` § 4 quater). Banc SLIP de bout
+  en bout bloqué : `SERIAL.STX` absent (archive STinG 1.26), pas de pair SLIP côté hôte (piste : un numéro
+  réservé du modem vers le NAT intégré), composeur de STinG.
+- **Banc STinG → theoldnet.com** · P3 ⭘ — le site répond 403 à une requête sans User-Agent depuis 2026-11 :
+  ajouter un User-Agent à STGTEST ou changer de cible ; les docs qui attendent « 200 » sont à revoir.
 - **Dongles dans les frontends WASM/Android** · P3 ⭘ — pas de page Dongles.
-- **Liste blanche de domaines** · P3 ⭘ — optionnelle, pour les backends sortants.
 - **Passerelle intégrée au NAT** · P3 ⏸ décision — relais TLS côté hôte pour HTTP, IMAP, SMTP et
   FTP, aux ports des clients AERA ; les services lourds (images, scripts, PDF) restent à une
   AERA externe. Lire d'abord le protocole d'EWeb sur le fil, avec la vraie passerelle.
@@ -473,17 +466,9 @@ Ce qui touche `src/core/Cpu68k.cpp` attend l'échange → § 9.
   puis `consumeConfigRequests` (219 lignes). Déplacements mécaniques uniquement.
 - **A38 — tenue du registre** · P3 ⭘ — `tools/fast_guards.json` inscrit les étapes du palier
   `fast` ; consigner chaque vrai déclenchement dans le commit qui corrige le défaut.
-- **A39 — modules jamais audités** · P3 ◐ — `src/net` relu le 2026-11-11 (modem Hayes, anneau MIDI,
-  sockets, adaptateur NAT) : un défaut corrigé, le `connect` refusé sous Windows qui attendait tout
-  le délai. Reste un test par COUCHE du bac à sable GEMDOS, à décider (couple test et implémentation).
-- **`HATARI_DIVERGENCES.md` rangé par passe d'audit** · P3 ⭘ *(proposé)* — 2 675 lignes : le détail
-  par sous-système, puis onze passes datées et des sections du jour en queue. Le même
-  écart se lit à plusieurs endroits. Fondre les passes dans le détail par sous-système,
-  les récits au `CHANGELOG.md`. Outil de garde : `tools/check_doc_anchors.py`.
-- **Audit de cartographie du 2026-07-08, rangées non revues** · P3 ⭘ *(proposé)* — les tables
-  « Docs à corriger » et « Prochains travaux » de `HATARI_MAPPING.md` sont archivées
-  (`docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`). Les candidats de code sont clos ou
-  repris ici ; les corrections de doc demandées n'ont pas été recontrôlées une à une.
+- **A39 — modules jamais audités** · P3 ◐ — `src/net` relu le 2026-11-11 ; le bac à sable GEMDOS est jugé
+  couche par couche depuis le 2026-11-12 (`--gemdos-selftest`, 30 cas : normalisation, parseur, garde
+  terminale, liens pendants et intérieurs). Reste à désigner le prochain module jamais audité.
 
 ### Garde-fous (à NE PAS faire)
 - **Croire que la liste se vide** : auditer coûte une journée, réparer des semaines. Arbitrer

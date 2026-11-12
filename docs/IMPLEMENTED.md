@@ -287,7 +287,7 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   suivantes décalées de 0/4/8/12 px, compteur vidéo −0/−2/−4/−6 octets en fin de ligne
   (scroll hard Troed/Sync) ; une ligne restée arrêtée sort noire, bordures intactes.
   glue-selftest +36 vérifications ; aucun logiciel réel connu ne l'exerce. Incertitudes et
-  non-modélisés : `docs/HATARI_DIVERGENCES.md` § *Nouveaux — BASSES* (Vidéo).
+  non-modélisés : `docs/HATARI_DIVERGENCES.md` § 2 (Vidéo).
 - **Compteur vidéo sur 22 bits (B15, 2026-10-20)** : `kVideoAddrMask` = $3FFFFF sur
   ST/Mega ST/STE/Mega STE (≙ `DMA_MaskAddressHigh` $3F d'Hatari) — repli à l'avance de
   ligne, au restart, en lecture/écriture `$FF8205/07/09`, à la capture par ligne et sur
@@ -697,7 +697,7 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
 - **Repos GPIP d'après le matériel (2026-10-20)** : bit 6 (RI, récepteur MC1489 à entrée
   ouverte) = 1 et bit 3 (GPU_DONE) = 1 sans blitter (pull-up R4) → `$FFFA01` au repos
   **$F9** sur ST, **$F1** sur Mega ST/STE/Mega STE (Hatari : $B1, artefact de reset).
-  Sources et réserves : `docs/HATARI_DIVERGENCES.md` § *Cas où NeoST améliore Hatari*.
+  Sources et réserves : `docs/HATARI_DIVERGENCES.md`, rubriques « Écarts voulus » de chaque sous-système.
 - **IRQ GPIP front-déclenchées réévaluées à l'écriture AER** (`$FFFA03`, port
   `MFP_GPIP_Update_Interrupt`) : état = GPIP ^ AER ; basculer le front actif (AER) alors
   qu'une ligne d'entrée est déjà au niveau correspondant lève le canal — même sans
@@ -1300,7 +1300,7 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   (headless) ou `NEOST_GEMDOS_DIR` (GUI). Exclusif d'une cartouche externe.
 - **Par processus** (2026-11-11) : lecteur courant lu dans `p_curdrv` de la basepage,
   dossier courant rangé par basepage (hérité, oublié à Pterm), « X:NOM » relatif au dossier
-  courant de X. Fforce vers un handle du TOS défait la redirection hôte, Fdatime survit à un
+  courant de X. Fforce vers un handle du TOS : le TOS tranche (relance par la cartouche) ; accepté, la redirection hôte tombe pour ce processus, refusé, EIHNDL et la redirection reste (2026-11-12) ; Dcreate date le dossier à l'horloge du GEMDOS émulé, et la date d'un dossier ne change pas quand on y crée, détruit ou renomme une entrée (hors `hostTime`) ; Fdatime survit à un
   Fwrite, attributs caché/système/archive retenus pour la session, alias 8.3 `~N` pour deux
   noms hôtes tronqués pareil. Pexec 0 sous TOS 1.00/1.02 sans fuite. Banc
   `tools/run_gemdos_ab.py` (disquette contre dossier sous trois TOS) ; save-state v61.
@@ -1637,7 +1637,7 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
 - **Bus — largeur d'accès `ioAccessWidth_` non fuitée par le blitter** : `write16`/`write32`
   restaurent la largeur sauvegardée avant leur `return` de la branche blitter ; sans ça, après le
   1ᵉʳ blit mot, les bus-errors d'accès **octet** ($FF9200/lightpen/FDC) restaient désarmées en
-  permanence. Cf. `docs/HATARI_DIVERGENCES.md` §2ᵉ passe (BUS-LEAK).
+  permanence. Cf. `docs/HATARI_DIVERGENCES.md` § 7 (BUS-LEAK).
 - **Séparation user/supervisor** (`Bus::busFaultN(addr, n, write)`, port des banques
   `SysMem_*`/`ROMmem_*` de `cpu/memory.c` + `is_super_access` d'`ioMem.c`) — pour TOUS
   les modèles : en mode **utilisateur** (bit S=0, lu via `Cpu68k::supervisor()`), tout
@@ -1653,7 +1653,7 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
 - **Décodage STE d'après la netlist Atari du GST MCU (4081)** (2026-10-22) : ROM $E00000-$EBFFFF,
   /ROM5-/ROM6 ($D00000-$D7FFFF) et /ROMP ($FE0000-$FE1FFF) en bus ouvert, registre
   « gamecart » `$FF9000` (port cartouche déplacé en $D80000-$DFFFFF), `$FF8001` sur 4 bits,
-  banque « 11 » = 2 Mo. Détail → `docs/HATARI_DIVERGENCES.md` § Bus.
+  banque « 11 » = 2 Mo. Détail → `docs/HATARI_DIVERGENCES.md` § 7.
 - **STE (netlist 4081)** (2026-10-22) : délai de bus error, pads en lecture seule, `$FF8901`, fin du son
   DMA figée par trame.
 - **Bus STE** (2026-11-04) : latence de DTACK par zone mesurée sur le GSTMCU et lue sur la netlist ST-4081. `$FF8920-3F` passe par le créneau de la RAM, `$FF820A`
@@ -1724,7 +1724,7 @@ fidèles à Hatari, pas des bugs.
 - **Blitter — ligne GPU_DONE (GPIP3) ré-armée à chaque blit** (port `Blitter_Start`) : la ligne est
   dé-assertée (« pas fini ») au (re)démarrage de chaque blit et rabaissée à l'achèvement, au lieu de
   rester « fini » dès le 1ᵉʳ blit → un programme qui scrute GPIP3 / son IRQ pour la fin de blit voit
-  désormais un front correct à chaque blit. Cf. `docs/HATARI_DIVERGENCES.md` §2ᵉ passe (BL-GPIP3).
+  désormais un front correct à chaque blit. Cf. `docs/HATARI_DIVERGENCES.md` § 8 (BL-GPIP3).
 - **Blitter — audit de correspondance ligne à ligne vs `blitter.c` (2026-07-07)** : cœur de
   données, restart/pause, 0→65536, GPIP3, arbitration, bug « 63 accès » confirmés fidèles.
   Trois résidus corrigés : **accès bus = modèle DMA** (`Blitter::readWord/writeWord` porte
@@ -1732,7 +1732,7 @@ fidèles à Hatari, pas des bugs.
   vecteurs `$0-$7` protégés en écriture comme `SysMem_wput`) ; **masques matériels à l'écriture**
   des incréments (`&0xFFFE`) et adresses src/dst (`&0x00FFFFFE`) via `regWriteMask` ;
   **`busCountError_` remis à zéro** à chaque entrée en PRE_START (blitter.c:1457).
-  Étalons `run_etalons.py` TOUS OK. Cf. `docs/HATARI_DIVERGENCES.md` § Blitter.
+  Étalons `run_etalons.py` TOUS OK. Cf. `docs/HATARI_DIVERGENCES.md` § 8.
 - **Blitter — partage de bus non-hog cycle-exact (2ᵉ passe, 2026-07-07 soir)** : les deux
   dernières divergences de timing portées depuis le modèle CE d'Hatari (celui de l'oracle).
   **Suspension MID-WORD** (`BLITTER_CONTINUE_LATER_IF_MAX_BUS_REACHED`) : la tranche rend le
@@ -2080,6 +2080,7 @@ fidèles à Hatari, pas des bugs.
 
 ## Ports, cartouches et clés
 - **Périphériques des ports** (`PortDevices`, un par port : `joy0=`/`joy1=`/`rs232=`/`printer=`/`cartbutton=`, `--plug PORT=DEVICE`, page Dongles, auto-branchement `disks/dongles.txt`, save-state v16, format courant v17) — 2026-08-23, **OFF par défaut**. Onze périphériques de Steem SSE : Leader Board / 10th Frame (joystick 1, haut+bas), Cricket Captain / Soccer Manager (joystick 0) et Rugby Coach (joystick 1) (oscillateur `%1100`/`%1101`), B.A.T. II (CTS=0), Music Master (DTR→DCD +200 cycles), Jeanne d'Arc (DCD sur décroissance RTS|DTR), Pro Sound Designer (DAC 8 bits port parallèle, rejoué par le YM), boutons Multiface ST (GPIP7) / Ultimate Ripper (RI) avec `--button-at`. Protocoles Steem/WinUAE, aucun jeu à clé dans le dépôt. Cf. `docs/EXTENSIONS.md`.
+- **Cartouche ROM** (`--cart`) : image brute ≤ 128 Ko ou `.STC` de 0x20004 octets (en-tête sauté), $FF au-delà de l'image ; refus de taille, de fichier vide ou absent, ou de lecture courte (2026-11-12), sans perdre la cartouche montée ; selftest du port générique.
 - **Port cartouche abstrait** (`core/CartDevice.hpp`) — 2026-08-23 : abonnés aux signaux /ROM3, /ROM4, /UDS, consultés par le `Bus` dans l'ordre ; plusieurs clés possibles. **Oracle de rejeu** : `--key-log` / `--key-replay` (format `R3`/`R4`/`U`), cf. `docs/EXTENSIONS.md`.
 - **Clé C-Lab Notator / Creator** (`CartridgeKey::Model::Notator`, `--dongle notator`, page Dongles) — 2026-08-23, **OFF par défaut**. EP600 : armement `FEEDB1 := STER` sur /ROM4 (`$FA00EA`), 8 bascules D actives bas cadencées par UDS (désarmée) ou par la descente de /ROM3 (armée, lecture après horloge), resets asynchrones D9 (A4·A2) / D8 (A3·A1). Équations TPH (atari-forum t=43078, 10/2025) via le firmware SidecarTridge `md-notator`. Crochet `Bus → rom4Read`. Save-state v15. ⚠ Pas confrontée à un Notator réel.
 - **Clé Steinberg** (`CartridgeKey`, `/ROM3` `$FB0000-$FBFFFF`, `--dongle cubase2|cubase3|auto`, page Dongles, `dongle=`) — 2026-08-23, **OFF par défaut**. Clé **rouge** (Cubase 3.10 / Score / Audio : EPLD 5C060, 16 bascules T, entrée A8, sortie D8, cadencée par /ROM3) et clé **noire** (Cubase 2.01 : PAL16R8, A1-A8 → D8-D15, cadencée par **chaque** front /UDS du CPU — crochet dans `NeostMoira`, « au mieux »). Équations transcrites de MiSTery (`cubase2_dongle.v`, `cubase3_dongle.v`). Invisible du TOS (/ROM4 seul sondé), cohabite avec le HD GEMDOS. ⚠ Pas encore confrontée à un vrai Cubase 3.10 (aucun logiciel à clé dans le dépôt) ; auto-test de transcription dans `neost-selftest`.
@@ -2121,7 +2122,7 @@ Récits de passes entières ; le détail daté est au [`../CHANGELOG.md`](../CHA
   depuis portée en unités ×256 le 2026-08-14).
   Deux chantiers ciblés et testables documentés : lignes raster transitoires SHO (3 candidats +
   traces) et son YM STE (S3 gain LMC ×2 + S4, oracle `--ym-mixing model`). Cf.
-  `docs/HATARI_DIVERGENCES.md` § 5ᵉ passe.
+  `docs/HATARI_DIVERGENCES.md` (sous-systèmes) ; récit au `CHANGELOG.md`, 2026-07-07.
 - **Restes de la chasse (2026-11-12)** : RTL8019AS selon sa fiche Realtek (pages 0-3, AR,
   CLDA) ; fichiers créés sur le lecteur hôte datés par le GEMDOS de la ROM (TOS 1.00 à 2.06,
   EmuTOS) ; WRITE TRACK d'une piste STX absente (blocs `NTRK`/`NSCT`, `StxImage::addTrack`) ;
@@ -2182,7 +2183,7 @@ Récits de passes entières ; le détail daté est au [`../CHANGELOG.md`](../CHA
     saturation −$6001/$E000, port exact `floatx80_scale` — le clamp ±32768 faussait
     la bande étroite au-delà) ; ±inf décodé S/D avec mantisse 0 (forme canonique).
   - **Hygiène** : `*.state` ignoré (F5 écrit à la racine), `a.out` dé-traqué.
-    Divergences basses restantes consignées → `docs/HATARI_DIVERGENCES.md` § 6ᵉ passe.
+    Divergences basses restantes consignées → `docs/HATARI_DIVERGENCES.md`, numéros suffixés « (6ᵉ p.) ».
   - **Release** : **LICENSE GPLv3** à la racine (texte canonique gnu.org, choix
     utilisateur — compatible avec le portage Hatari GPLv2+) + section Licence/crédits
     dans le README (Moira MIT, imgui, miniaudio, EmuTOS) ; `extern/capsimg`
@@ -2273,11 +2274,12 @@ Récits de passes entières ; le détail daté est au [`../CHANGELOG.md`](../CHA
 ## Réseau — extensions NeoST (INACTIVES par défaut, cf. `docs/EXTENSIONS.md`)
 
 Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consignées dans
-`docs/HATARI_DIVERGENCES.md` § Extensions) ; OFF par défaut, **sans effet sur les
+`docs/HATARI_DIVERGENCES.md` § 16) ; OFF par défaut, **sans effet sur les
 étalons** (réseau jamais ouvert par `run_all.py`). Cœur sans socket : `neost_core`
 *signale*, la lib `neost_net` (frontends) *fait l'I/O* — patron `Fdc::soundSink_`/
 `Mfp::serialSink_`.
 
+- **Liste blanche de domaines** (2026-11-12, `--net-allow-domains`, `net_allow_domains=`, page Network) : le DNS virtuel du NAT répond REFUSED hors liste ([B] RFC 1035 § 4.1.1) et apprend les adresses A/AAAA rendues ; le trafic de l'invité ne sort que vers elles ou une IPv4 listée (RST en TCP, datagramme jeté en UDP) ; le modem répond NO CARRIER hors liste. Ni les services virtuels, ni les publications, ni le loopback ne sont filtrés. Tests : `neost-nat-test` [15], `neost-modem-test` 6.
 - **Modem Hayes sur RS-232** (`net/HayesModem`, `--modem`) : commandes `AT` sur l'USART
   MFP → **pont TCP réel** (`ATDT hôte:port` → `CONNECT`, `+++`/`ATH`, DCD suit la
   porteuse). Débloque STiK/STinG (SLIP/PPP), terminaux, BBS. Depuis le 2026-11-11 :
