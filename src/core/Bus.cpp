@@ -126,8 +126,10 @@ void Bus::peripheralReset() {
     // des wait-states de bus qu'Hatari n'ajoute pas.
     // + sur STE, ce que RESB efface aussi dans le GST MCU ($FF820F, base vidéo, NOSCROLL) :
     // [B] ST-4081 feuilles 10 et 12, détail dans Shifter::resetGlue. Le son DMA continue (SNDON
-    // ne voit pas RESB, feuille 13).
+    // ne voit pas RESB, feuille 13), mais ses registres de début et de fin écrits et son compteur
+    // tombent à 0 (feuilles 13, 14 et 17) : DmaSound::resbReset, STE seulement.
     if (shifter) shifter->resetGlue(mfp && !mfp->colorMonitor());   // $FF820A = 0 + $FF8260
+    if (dmasnd && machine == MachineType::Ste) dmasnd->resbReset();
     if (psg)     psg->reset();             // PSG_Reset
     if (mfp)     mfp->resetChip();         // MFP_Reset_All
     if (fdc)     fdc->reset(/*cold=*/false);   // FDC_Reset(false)

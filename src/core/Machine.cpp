@@ -404,8 +404,9 @@ void Machine::installSchedulerCallbacks() {
     sched.setCallback(Scheduler::SCC_RX_B, [this] { scc.onSerialEvent(1, false); cpu.updateIpl(); });
     // (Scheduler::FDC_INDEX n'est plus utilisé : l'index est géré dans la machine
     // à états du FDC — comptage de tours pour spin-up / arrêt moteur, bit INDEX.)
-    // (Scheduler::DMASND n'est plus armé : la fin de trame du son DMA STE est
-    // détectée au FETCH de la FIFO 8 octets, cadencée par le HBL — DmaSound::onHbl.)
+    // Son DMA STE : fetch du dernier mot de la trame, daté hors DE (DmaSound::armFrameEnd).
+    // Fin de trame → XSINT → Timer A / GPIP7. Mega STE : jamais armé, fin au HBL.
+    sched.setCallback(Scheduler::DMASND, [this] { dmasnd.onFetchEvent(); cpu.updateIpl(); });
     // Réponse de reset du clavier ($F1) : l'IKBD l'a datée → on l'émet + IRQ ACIA.
     sched.setCallback(Scheduler::IKBD,   [this] { ikbd.onResetResponse(); cpu.updateIpl(); });
     // Livraison cadencée IKBD → ACIA (un octet série ≈ 10240 cycles) : l'octet en

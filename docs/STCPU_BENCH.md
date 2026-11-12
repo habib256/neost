@@ -73,7 +73,9 @@ Le mécanisme existait, en essai (`NEOST_PIN_ARM`), écarté le 2026-07-02 parce
 
 Sur STE, `DmaSound::liveCounter` refait maintenant le plein à la lecture quand le faisceau est hors de DE. Marches par ligne, 50 kHz stéréo : 1538 contre 1650 sur le modèle, 750 avant. La valeur n'est pas comparée : le modèle a une FIFO de 7 mots par choix d'auteur (`gstshifter.v:414-419`), et NeoST garde les 8 octets d'Hatari. Le banc vérifie la forme : aucune marche pendant 288 cycles au moins, des deux côtés.
 
-**Limite** : la fin de trame et son IRQ restent datées au HBL, sauf si le programme lit le compteur. Le plein hors de DE n'a pas son propre événement. Écart d'au plus 136 cycles, non mesuré sur un logiciel.
+**Fin de trame** (2026-11-12) : le fetch du dernier mot a son événement, `Scheduler::DMASND` (`DmaSound::armFrameEnd`). Il est daté à l'instant où le DAC a libéré la place des octets restants, repoussé à la fin de DE ; XSINT, Timer A et GPIP7 suivent. Avant, au HBL : jusqu'à 132 cycles (50 Hz) ou 136 (60 Hz) de retard. Table de vérité : `neost-selftest`, section son DMA, cas 9 (trame mono de 64 octets finie au cycle 9080 au lieu de 9212). La date dépend encore de la profondeur de FIFO (8 octets, choix d'auteur, [F]). Le Mega STE garde la fin au HBL.
+
+**Limite** : les fetchs intermédiaires restent groupés au HBL (ou à la lecture du compteur, ou à l'événement de fin) ; seul un programme qui réécrit le tampon dans la ligne même du fetch verrait la différence.
 
 ## Ce que ça ne dit pas
 

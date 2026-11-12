@@ -1189,6 +1189,23 @@ bool Shifter::outsideHorizontalDe() {
     return cyc < on || cyc >= off;
 }
 
+int64_t Shifter::fetchWindowFrom(int64_t fc) {
+    if (!liveFrameClock_) return fc;
+    const int64_t now = liveFrameClock_();
+    if (now < 0 || fc < now) return fc;
+    int line = 0, cyc = 0;
+    realLinePos(now, line, cyc);
+    const int cpl = geometry().cyclesPerLine;
+    if (cpl <= 0) return fc;
+    const glue::Timing& T = glue::timing(bus_.machine);
+    const bool ntsc = (sync & 0x02) == 0;
+    const int on = ntsc ? T.HDE_On_Low_60 : T.HDE_On_Low_50, off = ntsc ? T.HDE_Off_Low_60 : T.HDE_Off_Low_50;
+    const int64_t lineStart = now - cyc;
+    const int c = static_cast<int>((fc - lineStart) % cpl);
+    const int end = off < cpl ? off : cpl;        // haute résolution : DE court jusqu'à la fin de ligne
+    return (c >= on && c < end) ? fc + (end - c) : fc;
+}
+
 void Shifter::glueBenchReplay(const std::vector<std::array<int, 4>>& writes, uint8_t sync) {
     frameMode_ = Mode::Low;
     frameSync_ = sync;
