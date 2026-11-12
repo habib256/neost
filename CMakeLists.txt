@@ -409,7 +409,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/midi_tx_reclock_logic.cpp tests/ikbd_tx_control_logic.cpp tests/scc_break_status_logic.cpp
     tests/midi_tx_phase_logic.cpp tests/ikbd_tx_phase_logic.cpp tests/scc_status_modes_logic.cpp
     tests/mfp_break_logic.cpp tests/scc_auto_echo_logic.cpp
-    tests/stx_written_track_logic.cpp
+    tests/stx_written_track_logic.cpp tests/stx_absent_track_logic.cpp
     tests/mfp_async_break_logic.cpp tests/scc_echo_receive_logic.cpp tests/acsi_transfer_logic.cpp
     tests/scc_local_loopback_logic.cpp tests/mfp_gpip_lines_logic.cpp
     tests/fdc_media_change_logic.cpp tests/scc_eom_reset_logic.cpp tests/machine_timer_b_aer_logic.cpp

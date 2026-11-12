@@ -94,7 +94,6 @@ bool StxImage::parse(std::vector<uint8_t> raw) {
     revision_        = base[11];
 
     const uint8_t* p = base + 16;
-    tracks_.reserve(tracksCountHdr_);
 
     for (int t = 0; t < tracksCountHdr_; ++t) {
         if (16u > std::size_t(end - p)) return false;
@@ -259,10 +258,44 @@ int StxImage::tracksPerSide() const {
 }
 
 StxImage::Track* StxImage::findTrack(int track, int side) {
+    return const_cast<Track*>(static_cast<const StxImage*>(this)->findTrack(track, side));
+}
+
+const StxImage::Track* StxImage::findTrack(int track, int side) const {
+    // Hors format, rien : le masque ci-dessous replierait la piste 200 sur la 72 ou
+    // la face 2 sur la face 0 (blocs .wd1772 forgés). Le FDC ne demande que 0..90 / 0..1.
+    if (track < 0 || track > 0x7f || side < 0 || side > 1) return nullptr;
     const uint8_t want = uint8_t((track & 0x7f) | (side << 7));
-    for (Track& t : tracks_)
+    for (const Track& t : tracks_)
         if (t.trackNumber == want) return &t;
     return nullptr;
+}
+
+// [B] WD177X-00 p. 1-13 (SHA-256 a2b26709…fe8388), Write Track : « Formatting the
+// disk is accomplished by positioning the R/W head over the desired track number and
+// issuing the Write Track Command » ; l'écriture va d'un index au suivant, et LOST
+// DATA ne signale qu'un registre de données non chargé à temps. Rien n'y dépend de
+// ce que la piste portait : une piste que l'image ne décrit pas (jamais formatée, ou
+// non capturée par l'outil d'imagerie) se formate comme une autre.
+// [D] Hatari stx.c:2036-2042 @ f0736b24 (FDC_WriteTrack_STX) rend LOST DATA et
+// perd l'écriture quand STX_FindTrack échoue : NeoST s'en écarte (grade B > D).
+StxImage::Track* StxImage::addTrack(int track, int side) {
+    // trackNumber = bits 0-6 piste, bit 7 face : rien d'autre n'est représentable.
+    if (track < 0 || track > 0x7f || side < 0 || side > 1) return nullptr;
+    if (Track* t = findTrack(track, side)) return t;
+    tracks_.emplace_back();
+    Track& t = tracks_.back();
+    t.trackNumber = uint8_t(track | (side << 7));
+    // Piste vide « à bloc secteur » : mfmSize se lit alors en octets (cf.
+    // Fdc::bytesPerTrackStx). [F] Un tour DD standard (6 268 octets, BYTES_PER_TRACK
+    // de Fdc.cpp, [D] fdc.c:410 @ f0736b24) tant qu'aucun flux n'a été écrit ; ensuite
+    // la longueur du flux fait foi (writeMfmSize), comme sur une piste existante.
+    // Tranché par : la durée d'un tour mesurée sur un disque formaté par un vrai ST
+    // (la vitesse du lecteur fixe la longueur, pas l'image).
+    t.flags   = TRACK_FLAG_SECTOR_BLOCK;
+    t.mfmSize = 6268;
+    t.added   = true;
+    return &t;
 }
 
 // Retrouve un secteur par sa position angulaire — c'est la clé d'association des
@@ -374,6 +407,19 @@ void StxImage::reinterpretSaveTrack(Track& t) {
 //    Absente pour FB à l'écriture ; les anciens SECT sans trailer signifient FB.
 //  Bloc TRCK (12 o + données) : "TRCK", u32BE longueur (8+taille), piste, face,
 //    u16BE taille du flux écrit, données (flux WRITE TRACK brut).
+//
+//  Extension NeoST, piste ABSENTE de l'image d'origine (Track::added, créée par un
+//  WRITE TRACK) : ses blocs s'appellent NTRK (même disposition que TRCK) et NSCT
+//  (même disposition que SECT, NDAM compris), et ne comptent PAS dans les nombres
+//  de l'en-tête. Raison : [D] Hatari stx.c:677-685 et 648-657 @ f0736b24
+//  (STX_LoadSaveFile) rejette le fichier ENTIER — SECT/TRCK des autres pistes
+//  compris, avec une alerte — dès qu'un TRCK ne trouve pas sa piste (STX_FindTrack)
+//  ou qu'un SECT ne trouve pas son secteur ; il saute en revanche un bloc inconnu
+//  (stx.c:692-699, « unknown block, skipping ») et n'indexe ses tableaux, alloués
+//  d'après l'en-tête, que sur les SECT/TRCK. Un .wd1772 de NeoST reste ainsi lisible
+//  par Hatari, qui ignore la seule piste ajoutée (qu'il ne sait pas créer).
+//  NeoST relit TRCK et NTRK, SECT et NSCT, à l'identique : un TRCK visant une piste
+//  absente crée la piste lui aussi.
 // =============================================================================
 static inline void wr16be(std::vector<uint8_t>& v, uint16_t x) {
     v.push_back(uint8_t(x >> 8)); v.push_back(uint8_t(x));
@@ -388,21 +434,30 @@ static inline uint32_t rd32be(const uint8_t* p) {
 }
 
 bool StxImage::saveWd1772(const std::string& path) const {
-    uint32_t nbSect = 0;
+    // Piste ajoutée (absente de l'image d'origine) → blocs NSCT/NTRK, hors compteurs
+    // de l'en-tête (cf. l'en-tête de section : Hatari indexe ses tableaux sur eux).
+    auto added = [this](uint8_t track, uint8_t side) {
+        const Track* t = findTrack(track, side);
+        return t && t->added;
+    };
+    uint32_t nbSect = 0, nbUsed = 0, nbTrck = 0;
     for (const SaveSector& ss : saveSectors)
-        if (ss.used) nbSect++;
-    if (nbSect == 0 && saveTracks.empty()) return true;   // rien à sauver → pas de fichier
+        if (ss.used) { nbUsed++; if (!added(ss.track, ss.side)) nbSect++; }
+    for (const SaveTrack& st : saveTracks)
+        if (!added(st.track, st.side)) nbTrck++;
+    if (nbUsed == 0 && saveTracks.empty()) return true;   // rien à sauver → pas de fichier
 
     std::vector<uint8_t> out;
     out.insert(out.end(), {'W','D','1','7','7','2'});
     out.push_back(1);                                     // version
     out.push_back(0);                                     // révision
     wr32be(out, nbSect);
-    wr32be(out, uint32_t(saveTracks.size()));
+    wr32be(out, nbTrck);
 
     for (const SaveSector& ss : saveSectors) {
         if (!ss.used) continue;                           // invalidé par un WRITE TRACK
-        out.insert(out.end(), {'S','E','C','T'});
+        if (added(ss.track, ss.side)) out.insert(out.end(), {'N','S','C','T'});
+        else                          out.insert(out.end(), {'S','E','C','T'});
         const bool deleted = ss.dataMark == 0xF8;
         wr32be(out, uint32_t(16 + ss.data.size() + (deleted ? 5 : 0)));
         out.push_back(ss.track);
@@ -421,7 +476,8 @@ bool StxImage::saveWd1772(const std::string& path) const {
         if (deleted) out.insert(out.end(), {'N','D','A','M', ss.dataMark});
     }
     for (const SaveTrack& st : saveTracks) {
-        out.insert(out.end(), {'T','R','C','K'});
+        if (added(st.track, st.side)) out.insert(out.end(), {'N','T','R','K'});
+        else                          out.insert(out.end(), {'T','R','C','K'});
         wr32be(out, uint32_t(8 + st.data.size()));
         out.push_back(st.track);
         out.push_back(st.side);
@@ -493,7 +549,10 @@ bool StxImage::loadWd1772(const std::string& path) {
         const std::size_t next = p + 4 + blockLen;        // cf. Hatari : ID(4) + longueur
         if (blockLen < 4 || next > in.size()) break;      // bloc tronqué → on s'arrête là
 
-        if (std::memcmp(&in[p], "SECT", 4) == 0 && blockLen >= 16 && !wantTrack) {
+        // NSCT/NTRK : mêmes dispositions que SECT/TRCK, pour une piste ajoutée.
+        const bool isSect = std::memcmp(&in[p], "SECT", 4) == 0 || std::memcmp(&in[p], "NSCT", 4) == 0;
+        const bool isTrck = std::memcmp(&in[p], "TRCK", 4) == 0 || std::memcmp(&in[p], "NTRK", 4) == 0;
+        if (isSect && blockLen >= 16 && !wantTrack) {
             SaveSector ss;
             const uint8_t* q = &in[p + 8];
             ss.track    = q[0];
@@ -535,7 +594,7 @@ bool StxImage::loadWd1772(const std::string& path) {
                 std::fprintf(stderr, "[STX] %s: SECT block with no sector (track %d side %d "
                              "bitpos %d) — ignored\n", path.c_str(), ss.track, ss.side, ss.bitPos);
             }
-        } else if (std::memcmp(&in[p], "TRCK", 4) == 0 && blockLen >= 8 && wantTrack) {
+        } else if (isTrck && blockLen >= 8 && wantTrack) {
             SaveTrack st;
             const uint8_t* q = &in[p + 8];
             st.track = q[0];
@@ -543,17 +602,19 @@ bool StxImage::loadWd1772(const std::string& path) {
             const uint16_t size = rd16be(q + 2);
             if (std::size_t(8) + size > blockLen) break;
             st.data.assign(q + 4, q + 4 + size);
-            Track* t = findTrack(st.track, st.side);
+            // Piste absente de l'image : un WRITE TRACK l'avait créée (cf. addTrack),
+            // on la recrée. Hors format (piste > 127, face > 1) : bloc ignoré.
+            Track* t = addTrack(st.track, st.side);
             if (t) {
                 saveTracks.push_back(std::move(st));
                 t->saveTrackIndex = int(saveTracks.size()) - 1;
                 reinterpretSaveTrack(*t);          // flux rechargé → secteurs lisibles
             } else {
-                std::fprintf(stderr, "[STX] %s: TRCK block with no track (track %d side %d) "
-                             "— ignored\n", path.c_str(), st.track, st.side);
+                std::fprintf(stderr, "[STX] %s: %.4s block outside the STX format (track %d "
+                             "side %d) — ignored\n", path.c_str(),
+                             reinterpret_cast<const char*>(&in[p]), st.track, st.side);
             }
-        } else if (wantTrack && std::memcmp(&in[p], "SECT", 4) != 0
-                              && std::memcmp(&in[p], "TRCK", 4) != 0) {
+        } else if (wantTrack && !isSect && !isTrck) {
             std::fprintf(stderr, "[STX] %s: unknown block \"%.4s\" — ignored\n",
                          path.c_str(), reinterpret_cast<const char*>(&in[p]));
         }

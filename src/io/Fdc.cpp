@@ -820,6 +820,8 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         if (dk.stx->loadWd1772(dk.wd1772Path))
             std::fprintf(stderr, "[FDC] writes restored: %s (%zu sector(s), %zu track(s))\n",
                          dk.wd1772Path.c_str(), dk.stx->saveSectors.size(), dk.stx->saveTracks.size());
+        // Un bloc NTRK a pu recréer une face 1 formatée lors d'une session précédente.
+        dk.sides = dk.stx->sides();
         // Hatari FDC_InsertFloppy : chaque nouveau média reçoit sa propre phase, même
         // lors d'un remplacement à chaud moteur déjà lancé (même bloc que la branche .ST).
         if ((drive & 1) == driveSel_) {
@@ -2055,10 +2057,22 @@ uint8_t Fdc::writeSectorStx(int size) {
 // aussitôt ce flux en secteurs lisibles (reinterpretSaveTrack) → les LECTURES
 // suivantes voient le nouveau contenu. Le write track PRIME sur les 'write sector'
 // précédents de la piste, qui sont invalidés.
+//
+// Piste ABSENTE de l'image (au-delà de sa dernière piste, face 1 d'une STX simple
+// face) : [B] WD177X-00 p. 1-13 — formater, c'est placer la tête sur la piste voulue
+// et lancer Write Track ; LOST DATA ne signale qu'un registre de données non servi.
+// La piste est donc créée dans l'image (StxImage::addTrack) puis traitée comme une
+// autre, et persistée en bloc NTRK. [D] Hatari stx.c:2036-2042 @ f0736b24 rend LOST
+// DATA et perd l'écriture : défaut, non reproduit (B > D).
 uint8_t Fdc::writeTrackStx() {
     FloppyDisk& dk = drive_[driveSel_];
     StxImage::Track* t = dk.stx->findTrack(dk.headTrack, side_);
-    if (!t) return STR_LOST;
+    if (!t) {
+        t = dk.stx->addTrack(dk.headTrack, side_);
+        // Inatteignable (tête ≤ MAX_TRACK = 90, face 0/1) : garde du format STX.
+        if (!t) return STR_LOST;
+        dk.sides = dk.stx->sides();      // face 1 créée : verifyTrack la tient pour présente
+    }
 
     if (t->saveTrackIndex < 0) {
         dk.stx->saveTracks.emplace_back();

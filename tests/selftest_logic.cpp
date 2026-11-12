@@ -147,6 +147,7 @@ bool testSccStatusModes(); // qualification Sync/Hunt et BREAK selon WR4/WR11
 int testMfpBreak(); // BREAK ne commande que le mode USART asynchrone
 bool testSccAutoEcho(); // sortie TSR déconnectée quand Auto Echo a priorité
 int testStxWrittenTrack(); // une piste STX effacée ne ressuscite pas ses anciens secteurs
+int testStxAbsentTrack(); // WRITE TRACK crée la piste absente d’une STX, relue et persistée
 int testMfpAsyncBreak(); // cadence BREAK, fin TE et reprise asynchrones
 bool testSccEchoReceive(); // écho hôte des formats RX connus
 int testAcsiTransfer(); // statut SCSI d'une erreur de plage DMA
@@ -3560,6 +3561,7 @@ int main() {
     if (const int failures = testMfpBreak()) g_fail += failures; else ++g_ok;
     if (testSccAutoEcho()) ++g_ok; else ++g_fail;
     if (const int failures = testStxWrittenTrack()) g_fail += failures; else ++g_ok;
+    if (const int failures = testStxAbsentTrack()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpAsyncBreak()) g_fail += failures; else ++g_ok;
     if (testSccEchoReceive()) ++g_ok; else ++g_fail;
     if (const int failures = testAcsiTransfer()) g_fail += failures; else ++g_ok;
