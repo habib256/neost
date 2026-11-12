@@ -47,7 +47,7 @@ ROM = "roms/etos192fr.img"
 DISK = "disks/etalons/closure.msa"
 EXIT_SKIPPED = 77
 # Fenêtre par défaut (EmuTOS 192 FR, FDC normal) : choisie après les flashs voulus du logo,
-# où l'ancien saut STOP faisait 36 trames fautives sur 301 (0 depuis). ~37 s.
+# où l'ancien saut STOP faisait 36 trames fautives sur 301 (0 depuis). 8 s au repos, ~37 s machine chargée.
 FROM, TO = 1700, 2000
 SYNC_PC, SYNC_LINE, SYNC_CYC = "02061a", 33, 468
 

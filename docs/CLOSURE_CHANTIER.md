@@ -514,10 +514,16 @@ l'effet, présentes chez Hatari aussi) :
 Après correction, la liste des trames sombres de TOS 1.02 UK est exactement celle d'Hatari
 décalée d'une trame (flashs 1 448-1 525 contre 1 449-1 526, fin 2 327-2 333 contre 2 328-2 334).
 
-**Garde** : `tools/run_closure_intro_guard.py`, palier `full` (~37 s) — EmuTOS 192 FR, 300
+**Garde** : `tools/run_closure_intro_guard.py`, palier `full` (8 s au repos, ~37 s machine chargée) — EmuTOS 192 FR, 300
 trames (1 700-2 000) capturées une à une ; échoue si l'écriture `pc=$2061A` quitte le cycle 468
 sur une seule trame depuis le boot, ou si une trame de la fenêtre s'éteint ou retrouve sa
 bordure gauche. Avant correction : 110 écarts et 36 trames fautives dans la fenêtre.
+
+**Étalons** : le palier `full` reste vert sauf `nocooper` (ref_kind hatari), dont la capture
+glisse d'une trame — l'empreinte d'état diverge dès la trame ~170 du boot EmuTOS, la démo
+démarre une trame plus tôt ; la trame 6932 rend 0 px contre la même référence (6933 : 19 069
+px, l'écart d'animation déjà noté aux recalages précédents). `frames` 6933 → 6932, référence
+inchangée ; `NEOST_STOP_PHASE=0` rend 0 px à 6933.
 
 **Recette** : `NEOST_SYNC_TRACE=1` (écritures `$FF820A`/`$FF8260` avec ligne et cycle) suffit
 à voir le décrochage sans capture ; côté Hatari `--trace video_sync,video_hbl` (≈ 1,2 Go pour
