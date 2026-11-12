@@ -406,6 +406,10 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   d'un vrai NetUSBee. La fiche LS003.8 tranche le reste depuis le 2026-11-12.
 - **NAT : correctifs à remonter dans POM2** · P3 ⭘ — cache DNS positif à 60 s et vidé au reset de
   la carte (2026-11-12, `extern/nat/README`) ; même défaut dans POM2 `4625ec82`.
+- **Test NAT UDP intermittent sous Winsock** · P3 ⭘ — `extern/nat/tests/builtin_nat_test.cpp:1581`
+  (relais UDP, « udp A » jamais reçu) a échoué une fois en CI Windows le 2026-11-12 (run 43225255791,
+  `c0cf2dc`, sans changement du NAT depuis le dernier vert), puis passé à la relance. Délai de
+  `until` ou ordre des sondes Winsock à regarder s'il revient.
 - **STinG, premier run en échec DNS** · P3 ⭘ · [F] — `err -17` au tout premier `--slirp` du 2026-11-04, puis 4 succès d'affilée, alors que le `--slirp-selftest` en ligne passait juste après. Le filtre de l'hôte reste la piste la plus simple, sans preuve. À regarder si l'échec revient, avec `NEOST_SLIRP_TRACE=1`.
 - **Modem / STinG** · P3 ⭘ — documenter l'installation dans `docs/TEST_SOFTWARE.md` ; banc SLIP
   de bout en bout.
