@@ -42,6 +42,7 @@ namespace neost::appconfig {
 // clavier des jeux — Cuddly, Captain Blood…) ; F11/menu l'activent à la session.
 struct Config { std::string rom; std::string disk; std::string diskb; std::string cart; bool mono = false;
                 std::string gemdos;   // HD GEMDOS : dossier hôte monté en C: (vide = off)
+                bool gemdosRo = false; // HD GEMDOS protégé en écriture (EWRPRO, hôte intact)
                 std::string acsi;     // image disque dur ACSI cible 0 (vide = off)
                 bool modem = false;   // modem Hayes sur l'USART (pont AT → TCP)
                 bool midiLoopback = false; // fiche de bouclage MIDI OUT→IN (diagnostics ; OFF = vrai ST)

@@ -117,6 +117,10 @@ public:
         clockMicro_ = 0;
     }
 
+    // Relit l'horloge IKBD (YY MM DD hh mm ss, BCD) sans rien changer : date que le GEMDOS
+    // hôte donne à un fichier créé par l'invité (GemdosHd::setClockProvider).
+    void    clockBcd(uint8_t out[6]) const { for (int i = 0; i < 6; ++i) out[i] = clock_[i]; }
+
     // Événement clavier venant de l'hôte (scancode ST déjà traduit).
     void keyEvent(uint8_t scancode, bool pressed);
 

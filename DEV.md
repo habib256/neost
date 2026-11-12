@@ -515,6 +515,8 @@ attend du matériel.
 Redirection des appels GEMDOS d'un lecteur virtuel (C:…) vers un dossier hôte, au
 lieu d'émuler un contrôleur ACSI/IDE. Activé par `--gemdos DIR` (headless) ou, côté
 GUI, par la clé `gemdos=` de `neost.cfg` (page Hard disks, dossier déposé) — `NEOST_GEMDOS_DIR` prime ; **exclusif d'une cartouche externe** (`--cart`).
+`--gemdos-ro` (clé `gemdos_ro=1`, sans interface) le protège en écriture : toute
+écriture rend EWRPRO, le dossier hôte n'est pas touché.
 
 Mécanisme (port fidèle, adapté à Moira) :
 

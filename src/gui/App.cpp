@@ -635,6 +635,7 @@ void App::applyConfig() {
     // Idem ACSI (le montage survit à reconfigure, on ne remonte que si absent).
     if (cfg.gemdos.empty()) machine.gemdos.unmount();
     else                    machine.gemdos.setDirectory(A.resolvePath(cfg.gemdos));
+    machine.gemdos.setWriteProtect(cfg.gemdosRo);   // un profil peut aussi la changer
     if (cfg.acsi.empty())   machine.fdc.unmountAcsi();
     else {
         // Remonter aussi quand la config désigne une AUTRE image : le seul test

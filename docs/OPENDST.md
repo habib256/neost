@@ -66,6 +66,16 @@ l'horloge murale et le réseau, et détruisent la reproductibilité : `--slirp`,
 backend, et l'horloge de l'UltraSatan (`--ultrasatan`). Elles sont toutes **OFF par
 défaut** : il suffit de ne pas les demander.
 
+**Lecteur GEMDOS hôte (`--gemdos`)** : permis, à condition de figer aussi le dossier. Le
+chemin absolu du montage entre dans l'état, et les dates que l'invité lit (Fsfirst,
+Fdatime) sont celles des fichiers hôtes — la convention d'Hatari. Un fichier que l'invité
+CRÉE prend l'heure de l'horloge émulée (figée ci-dessous), un Fwrite ne change pas la date
+d'un fichier (comme le TOS, qui ne la pose qu'à la création et par Fdatime) : deux runs
+identiques donnent le même état. À préparer donc : le même chemin, les mêmes fichiers avec
+les mêmes dates (`cp -p`, `touch -t`), un dossier remis à neuf avant chaque run, et le
+même fuseau horaire sur l'hôte (les dates GEMDOS sont en heure locale). `--gemdos-ro`
+protège le dossier en écriture (EWRPRO), utile pour rejouer sans le remettre à neuf.
+
 `neost-headless` fige les horloges IKBD, RTC et UltraSatan au 1er janvier 2026, 12 h. `--state-hash-every N` hache l'état complet, et la première ligne qui diffère date une perte de déterminisme. `tools/run_determinism.py` le contrôle au palier `fast`, reprise de save-state comprise.
 
 Vérification en une commande, à refaire après tout changement de configuration :
