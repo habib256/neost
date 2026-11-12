@@ -75,7 +75,7 @@ correction de fidélité.
 | Lot | But | Items (titre → §) | Prio |
 |-----|-----|-------------------|------|
 | **0. Jalons de version** | Trois versions sur le cœur actuel, auxquelles tout se compare ensuite | **0.6.3** publiée le 2026-11-10 (`355b6c0`) ; **0.6.4** publiée le 2026-11-11 (`bf5d61f`) ; **0.6.5** juste avant l'intégration du cœur POM68K → § 7 | P1 |
-| **1. Filet** | Que l'échange se juge en une commande, sur plus que 56 étalons | Porte élargie, Mega STE 16 MHz, banc fx68k étendu et sort des `.state` (refus explicite) : faits → § 2 | P1 |
+| **1. Filet** | Que l'échange se juge en une commande, sur plus que 57 étalons | Porte élargie, Mega STE 16 MHz, banc fx68k étendu et sort des `.state` (refus explicite) : faits → § 2 | P1 |
 | **2. Silicium hors cœur** | Fermer ce que les sources déjà en main tranchent | restes MFP de la fiche et WS3 en attente de source, DMA disque relevé et reporté au § 9 → § 3 ; étalons `rtl` en cours de ligne, relevés de tiers, documents primaires → § 5 | P2 |
 | **3. Logithèque** | Plus aucun plantage que le vrai matériel n'aurait pas | TOS 2.06 UK jugé (course réelle de la ROM), parcours étendus (son, STE, parties longues) → § 4 | P2 |
 | **4. Livrable** | Ce qui sert l'utilisateur sans toucher à l'émulation | Pilotes EtherNEC, EWeb par le NAT → § 6-7 | P2 |
@@ -91,7 +91,7 @@ externe (⏸).
 
 Ce qui doit exister **avant** le commit de l'échange pour qu'il se juge sur pièces.
 Procédure et contrat → [`docs/CPU_SWAP_GATE.md`](docs/CPU_SWAP_GATE.md). La porte rejoue
-**56 étalons, 28 parcours (27 de compatibilité et le diagnostic Magic Pockets), la collection en ST, STE et Mega STE, et 42 sondes Mega STE**
+**57 étalons, 29 parcours (28 de compatibilité et le diagnostic Magic Pockets), la collection en ST, STE et Mega STE, et 42 sondes Mega STE**
 (8, 16 et 16 MHz + cache : blitter/IRQ, bus/cache, DMA disquette, blit sur ses propres registres).
 
 - **Enregistrer la référence** · P1 ⏸ cœur — `cpu_swap_gate.py --record` sur le commit de la
@@ -119,16 +119,19 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   fin de DE a son événement Timer B distinct du HBL, et la lecture du compteur concorde au RTL sur STE
   (47 999 sur 48 000, `docs/STCPU_BENCH.md`). Restent ST et Mega ST, sans netlist, et la phase du Timer C
   (→ « Phase de l'horloge du MFP au reset »). → `docs/CYCLE_ACCURACY.md` § 4
-- **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P3 ⭘ · [F] — la fin de DE à 164 et les 54 octets concordent avec le modèle (`docs/GLUE_SWEEP.md`) ; Hatari rend trois pixels de plus, et le HSYNC parasite vers le cycle 28 n'est pas modélisé. Sondes `blankline_stop_st/ste` en snapshot.
+- **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P3 ⭘ · [F] — la fin de DE à 164 et les 54 octets concordent avec le modèle au pixel (`run_stcpu_raster`, cas `hi_96_460`), contre les trois pixels de plus d'Hatari. Le HSYNC parasite vers le cycle 28 vient d'un comparateur du compteur horizontal (`gstmcu.v:803-819`) et arme aussi la requête HBL dans le modèle (`gstmcu.v:320`) : un programme pourrait le voir. Rien n'est porté. → `docs/GLUE_SWEEP.md`
 - **STE, impulsions restantes face au modèle** · P3 ⭘ · [D] — DE précoce à 44, 14 impulsions sur 2560 en écart à 50 Hz, 42 sur 2560 à 60 Hz, toutes en haute résolution, et les
-  largeurs au-delà de 32 qui enjambent HSYNC. Hors logiciel connu. → `docs/GLUE_SWEEP.md`
-- **Écritures en plein DE sur STE** · P3 ⭘ · [D] — `$FF8207` et `$FF8265` agissent aussitôt sur le modèle, à la ligne suivante chez NeoST et Hatari. Aucun logiciel connu n'en dépend. Porter `$FF8207` demande un rendu en deux segments par ligne.
+  largeurs au-delà de 32 qui enjambent HSYNC. Hors logiciel connu. Cause lue dans le modèle : la décision de DE
+  passe par 4 étages en basse résolution, 1 en haute (`gstmcu.v:860-893`) ; non portée. → `docs/GLUE_SWEEP.md`
+- **`$FF8207` en plein DE sur STE** · P3 ⭘ · [D] — le modèle lit le reste de la ligne à la nouvelle adresse ;
+  NeoST et Hatari attendent la ligne suivante. `$FF8265` est fait (2026-11-12). Il faut changer de source au
+  milieu de la capture d'une ligne. Aucun logiciel connu n'en dépend.
+- **Hardscroll LO/MED/LO : persistance d'une trame à l'autre** · P3 ⏸ source · [F] — le modèle garde la phase du
+  Shifter au-delà de la VBL, NeoST la remet à 0 comme Hatari. Tranché par : beescrn4.prg, ou une capture sur STF.
 - **NOSCROLL et décalage du Shifter STE** · P3 ⏸ source · [F] — depuis le 2026-11-12 le latch
   suit tout accès LDS à `$FF8264-5` ([B] ST-4081 f. 3 et 10). Restent : une LECTURE de `$FF8265`
   active-t-elle SCRLSEL (porte sans R/W) ? le GST Shifter efface-t-il son décalage au RESET ?
   Tranche : une mesure sur un STE, ou le schéma du GST Shifter.
-- **Hardscroll 4 px de Paulo Simoes** · P3 ⭘ · [D] — seul reste des tricks par changement de
-  résolution (`video.c`, bloc V2) ; aucun titre de la collection ne l'exerce.
 - **Offsets de datation dérivés d'Hatari** · P2 ⏸ source — la lecture du compteur est confirmée sur STE (47 999 lectures sur 48 000, `docs/STCPU_BENCH.md`). `kVideoCounterReadOffsetCyc`,
   `kSyncWriteOffsetCyc`, `kSpec512AlignCyc` : fidèles à `Video_CalculateAddress`, donc [D].
   `$FF820A` : le modèle réagit à AS + 5, NeoST et Hatari datent à AS + 8. Avancer casse de vraies démos STE, donc non retenu,
@@ -309,7 +312,7 @@ Récit, traces et recettes de chacun : [`docs/CASE_STUDIES.md`](docs/CASE_STUDIE
 
 ## 5. 🪜 Harnais et preuve
 
-41 étalons `hatari`, 12 `snapshot`, 3 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
+40 étalons `hatari`, 10 `snapshot`, 7 `rtl` ; les 8 verdicts `buserror-*` sont les seuls au
 contact du matériel, par des relevés de tiers. Le banc fx68k ajoute 48 variantes `rtl` pour
 le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
 
@@ -342,9 +345,9 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   restants attendent un relevé sur le fer, ou sont gardés parce qu'un jeu contredit la fiche.
   Restent les GLUE/MMU sans schéma, et le SCC en synchrone, SDLC et DMA.
 - **`union_demo` à monter en `hatari`** · P3 ⭘ — référence `snapshot`. `compare_titles` en 1 Mo sans `--fastfdc` concorde, 0,04 % au plus à 3000, 3900 et 6000. L'oracle de l'étalon, en 512 Ko, ne trouve aucune trame exacte dans ±90, avec ou sans `--fastfdc`. Tenter 1 Mo ; une égalité exacte manque peut-être à cause de 46 pixels résiduels, situés sur le scroller du bas : sur certaines lignes, quelques pixels prennent la couleur d'un cran voisin, 43 à la trame 3900. Cause non cherchée. Tenté en 1 Mo le 2026-11-11 : aucune trame identique dans ±90, ni avec ni sans `--fastfdc` ; la plus proche diffère de 5 213 px (avec) et 9 077 px (sans), toutes au bord de la fenêtre. Une fenêtre de ±300 (avec `--fastfdc`) ne trouve rien non plus : l'écart n'est pas un décalage de numérotation.
-- **Monter les 12 snapshots** · P3 ⭘ — `blankline_*` et `freq_switch` visent `rtl`, et leur machine GLUE est déjà
-  confrontée au modèle (`docs/GLUE_SWEEP.md`), pas leurs pixels ; `closure` et
-  `overscan_top` s'expliquent déjà face à Hatari (A41, définitif).
+- **Monter les 10 snapshots** · P3 ⭘ — `blankline_stop_ste` et `blankline_node_late_ste` sont montés en `rtl`
+  (2026-11-12). `freq_switch` et `blankline_*_st` n'ont pas de modèle ST ; `closure` et `overscan_top`
+  s'expliquent déjà face à Hatari (A41, définitif pour les 27 px de la ligne 0).
 
 ### Instruments
 
@@ -354,7 +357,7 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   DIVU/DIVS ; le résidu blitter/IRQ Mega STE attend la capture IACK. → `docs/HATARI_MEGASTE_AUDIT.md`
 - **`screen/flixfull.prg`** · P3 ⭘ · [F] — NeoST est 4 px à gauche d'Hatari sur toute la ligne, ST comme STE. Écritures et décisions du GLUE identiques (LEFT_OFF + RIGHT_OFF, DE 5 à 463, 230 octets) :
   l'écart est dans la recopie de la ligne. Aucun témoin réel ne dit qui a raison, et le Shifter du modèle n'est pas fiable à ce grain. Tranche : une capture sur machine.
-- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **44 étalons pixel sur 56** tournent
+- **A10 — étalons adossés à une ROM Atari** · P3 ◐ — **45 étalons pixel sur 57** tournent
   sans TOS Atari. Les trois `spectrum512_diapo*` restent des SKIP recensés (migration EmuTOS
   réfutée, ne pas retenter) ; leur motif est rendu par `spec512_view`. `union_demo` → ci-dessus.
 - **Écarts MAME [F] à trancher** · P3 ⭘ — MA-1 (remappage RAS/CAS du ST : 4 cas sur 6 diffèrent de MAME, NeoST

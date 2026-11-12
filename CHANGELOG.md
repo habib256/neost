@@ -6,7 +6,7 @@ l'ordre inverse. Version courante : **0.6.4**.
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
 
-## Chasse aux P3 (2026-11-12)
+## Chasse aux P3 ; format d'état v66 (2026-11-12)
 
 Tous les P3 ouverts (⭘) du `TODO.md` attaqués en lots parallèles ; les ⏸ (matériel, source,
 cœur) restent en attente de leur ressource.
@@ -54,6 +54,14 @@ cœur) restent en attente de leur ressource.
   NeoST et Hatari de la même fenêtre pour `trace_diff`, sorties hors dépôt (`build/ref-traces/`).
   Recettes : menu de Lemmings (divergence à l'instruction 10, IRQ clavier datée autrement) et
   Arkanoid II en jeu ; des points de départ d'enquête, pas des défauts établis.
+- **Vidéo.** Hardscroll 4 px LO/MED/LO de Paulo Simoes porté selon le modèle du Shifter (phase
+  −D px modulo 16, plans tournés, compteur intact) : toutes les lignes concordent au banc fx68k
+  + GSTMCU sauf les lignes de bascule ; nouvel étalon `rtl_lomedlo`. STE : `$FF8264/65` écrit en
+  plein DE décale aussitôt le reste de la ligne (banc 60/64 contre 21 ; format d'état v66).
+  `blankline_stop_ste` et `blankline_node_late_ste` passent de `snapshot` à `rtl` ; le bord de fin
+  de STOP_MIDDLE concorde au modèle au pixel, contre les trois pixels de plus d'Hatari.
+  `GLUE_SWEEP.md` : causes de la DE précoce à 44 et du HSYNC parasite, lues dans le modèle. A/B :
+  4 932 captures identiques sur 344 scénarios (57 étalons, 96 disques × ST, STE, Mega STE).
 - **Outils.** `compare_sound.py --mem` passe par `title_cmd.parse_mem` : même taille des deux
   côtés, `--mem 0` ne devient plus « 0m ».
 

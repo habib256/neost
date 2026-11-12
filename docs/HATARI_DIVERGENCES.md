@@ -338,7 +338,8 @@ redondantes (`Shifter::recordSyncWrite`, `VideoGlue.cpp:329` ≙ `ShifterFrame.F
   fenêtre NO_DE (36,40] de `VideoGlue.cpp` contre `video.c` et la netlist. (Le décalage de
   4 px d'une ligne `left+2` à ces phases, lui, est un écart voulu : « Lignes 60 Hz isolées »
   ci-dessous.)
-- **Résidu STOP_MIDDLE de trois pixels** · ouvert · basse · 2026-10-19 — les captures ST/STE
+- **Résidu STOP_MIDDLE de trois pixels** · voulu [D-RTL] · basse · 2026-10-19, tranché le 2026-11-12 — le
+  bord de fin de NeoST concorde au modèle GSTMCU au pixel (`run_stcpu_raster`, cas `hi_96_460`) ; les captures ST/STE
   de `blankline_stop_*` diffèrent d'Hatari de trois pixels au dernier groupe de plans, premier
   écart `(156,65)` du buffer 416×276 ; chacune des 61 captures Hatari 350-410 est identique.
   `Video_CopyScreenLineColor` (`video.c @ f0736b24`) recopie 54 octets puis efface la suite du
@@ -367,8 +368,7 @@ redondantes (`Shifter::recordSyncWrite`, `VideoGlue.cpp:329` ≙ `ShifterFrame.F
 - **Quirks E605/Tekila sur `$FF8205/07/09` pendant DE** · ouvert, différé · basse — exceptions
   par opcode (FIXME, partielles) d'Hatari, pas un défaut matériel démontré dans NeoST (audit
   du 2026-10-19) ; port différé jusqu'à reproduction sur E605 ou Tekila.
-- **V2, restes** · ouvert · basse — hardscroll 4 px plein écran de Paulo Simoes (med@84 →
-  lo@92-104, ajuste le pointeur vidéo par ligne, `video.c:1755-1789`, étalon requis) ; hacks
+- **V2, restes** · ouvert · basse — hacks
   « TEMP » Closure/DOLB d'Hatari (`video.c:1791-1834`, reniflage de PC/opcode, non portables) ;
   rendu med 640 natif dans une trame mixte (buffer 416, réduction ×2 documentée).
 - **Shifter arrêté (res 3), incertitudes** · ouvert [F] · basse · 2026-10-20 — noir franc ou
@@ -384,6 +384,16 @@ redondantes (`Shifter::recordSyncWrite`, `VideoGlue.cpp:329` ≙ `ShifterFrame.F
   basse — Hatari saute la haute résolution ; surcoût pur, rendu inchangé.
 
 ### Écarts voulus — ne pas réaligner
+
+- **Hardscroll 4 px LO/MED/LO de Paulo Simoes** · voulu [D-RTL] · basse · 2026-11-12 — porté selon le
+  modèle du Shifter (`shifter_video.v @ 4a6db7cc`) : phase −D px modulo 16, plans tournés, compteur
+  vidéo intact, jusqu'à la fin de la trame. Hatari (`video.c:1772-1803 @ f0736b24`) rend
+  +13/+9/+5/+1 px, recule `pVideoRaster` et décale toute la ligne de bascule ; le modèle et le seul
+  témoin tiers (ljbk, atari-forum t=24855 : 0/4/8/12 px) le contredisent. Aucun titre de la
+  collection. Garde : étalon `rtl_lomedlo`, cas fixes de `tests/reference/stcpu_raster_cases.json`.
+- **`$FF8264/65` écrit en plein DE (STE)** · voulu [D-RTL] · basse · 2026-11-12 — NeoST décale aussitôt
+  le reste de la ligne, comme le modèle (banc `--kind scroll` 60/64) ; Hatari attend la ligne
+  suivante (`video.c:5876 @ f0736b24`). `$FF8207` reste à la ligne suivante (TODO).
 
 - **NOSCROLL du STE, sans fenêtre de temps** · voulu [B] · basse · 2026-11-12 —
   `$FF8264/65` sont deux registres dans deux puces : le décalage (Shifter) suit toute

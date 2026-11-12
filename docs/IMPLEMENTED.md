@@ -314,9 +314,17 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   — support liste `keys_at` ajouté au runner). Selftest : 4 scénarios V2 (31 ST / 34 STE).
   Étalons TOUS OK, spectrum/Cuddly byte-identiques. L'« écart 891 px » de l'écran principal
   était un artefact de phase de touche (0 px à sa phase, texte scrollé 2 px/trame). Restent
-  documentés : hardscroll 4 px Paulo Simoes (med@84, pointeur vidéo par ligne), hacks TEMP
-  Closure/DOLB (reniflage PC chez Hatari), med 640 natif en trame mixte (alias $FF8261
-  porté le 2026-10-20, cf. plus haut).
+  documentés : hacks TEMP Closure/DOLB (reniflage PC chez Hatari), med 640 natif en trame
+  mixte (alias $FF8261 porté le 2026-10-20, cf. plus haut).
+- **Hardscroll 4 px LO/MED/LO de Paulo Simoes** (2026-11-12, `VideoGlue::detectPhaseScroll`) :
+  détection d'Hatari (`video.c:1772-1803 @ f0736b24`, même ligne exigée), loi du modèle du
+  Shifter (`shifter_video.v @ 4a6db7cc`) : une bascule moyenne de D cycles recule la phase de
+  D px modulo 16 et tourne les plans de D/2 octets, cumulatif jusqu'à la fin de la trame,
+  compteur vidéo intact. [D] modèle, écart assumé avec Hatari (+13/+9/+5/+1 px). Banc fx68k +
+  GSTMCU au pixel hors lignes de bascule ; étalon `rtl_lomedlo`.
+- **STE : scroll fin écrit en plein DE** (2026-11-12) : `$FF8264/65` décale aussitôt le reste de
+  la ligne courante, daté comme une écriture palette ; banc `--kind scroll` 60/64 (21 avant).
+  `Shifter::scrollWrites_` sérialisé : format d'état v66.
 - **Canal « longueurs de ligne par-ligne » ACTIVÉ par défaut (2026-07-08)** : le port
   `HBL_Pos/nCyclesPerLine` (chaque « Freq_match » de la Glue fixe la position de l'IRQ HBL et
   la longueur — 224/508/512 — de la ligne courante, cumul `lineCarry_` pour les suivantes)
