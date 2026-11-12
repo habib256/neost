@@ -157,14 +157,20 @@ def main() -> int:
           "un run sans option doit émuler et rapporter « video: … Hz » ; s'il affiche "
           "l'aide, tous les autres tests mesureraient du vide.", out)
 
-    # --- Lecteur A vide sans --disk (2026-11-11) -------------------------------
-    # Le bug : « disks/diskA.st » était montée par défaut, résolue depuis le
-    # RÉPERTOIRE COURANT et en écriture — la même commande rendait deux empreintes
-    # selon le dossier de lancement. Une recette qui veut une disquette la nomme.
-    check("sans --disk, le lecteur A reste VIDE (pas de disquette implicite)",
-          "drive a: empty" in out.lower(),
-          "un run sans --disk ne doit monter aucune image : sinon son résultat dépend "
-          "du dossier d'où il est lancé.", out)
+    # --- Disquette A par défaut, --no-disk (2026-11-12) ------------------------
+    # Le bug : du 2026-11-11 au 2026-11-12, sans --disk le lecteur A restait vide ;
+    # EmuTOS attendait alors le délai de la disquette absente (bureau vers ~900 trames
+    # au lieu de ~400) et tout boot sans --disk ralentissait (smoke des paquets rouge,
+    # PGO des paquets Pi entraîné sans le chemin FDC). Décision d'auteur : montée d'office.
+    # run() tourne depuis la racine du dépôt (cwd=ROOT), où la disquette existe.
+    check("sans --disk, disks/diskA.st est montée d'office",
+          "drive a: empty" not in out.lower(),
+          "un run sans --disk doit monter la disquette par défaut : lecteur vide, "
+          "EmuTOS met deux fois plus de trames à atteindre le bureau.", out)
+    out = run(["--no-disk"], frames=30)
+    check("--no-disk laisse le lecteur A vide, et le dit",
+          "drive a: empty (--no-disk)" in out.lower(),
+          "l'option doit exister pour les recettes qui veulent un lecteur vide.", out)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)

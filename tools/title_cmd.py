@@ -154,7 +154,9 @@ def neost_cmd(disk: Path, args: argparse.Namespace, work: Path, shot_prefix: Pat
     copy = work / ("n" + disk.suffix)
     shutil.copy(disk, copy)
     cmd = [str(HEADLESS), args.rom, "--machine", args.machine, "--mem", f"{args.mem}m",
-           *(["--disk", str(copy)] if not args.gemdos else ["--gemdos", str(args.gemdos.resolve())]),
+           *(["--disk", str(copy)] if not args.gemdos else
+             # Lecteur vide comme Hatari : sans --disk, le headless monterait disks/diskA.st.
+             ["--gemdos", str(args.gemdos.resolve()), "--no-disk"]),
            "--frames", str(max(args.frames) + 1)]
     if shot_prefix is not None:
         step = reduce(gcd, args.frames) or 1

@@ -100,6 +100,8 @@ public:
     // (dk.writeProtect), qui elle changerait ce que le programme observe.
     void setHostWriteBack(bool on) { hostWriteBack_ = on; }
     bool hostWriteBack() const { return hostWriteBack_; }
+    // Même chose pour la seule disquette montée dans `drive` (jusqu'au prochain montage).
+    void setDiskHostWriteBack(int drive, bool on) { drive_[drive & 1].hostWriteBack = on; }
     bool fastFdc() const { return fastFloppy_; }
 
     // Monte/éjecte une image (.st ou .msa) dans le lecteur `drive` (0 = A, 1 = B).
@@ -309,6 +311,10 @@ private:
         int  density = 1;                       // densité du média : 1=DD, 2=HD, 4=ED (cf. Hatari FloppyDensity)
         int  headTrack = 0;                     // position PHYSIQUE de la tête (≠ registre TR)
         bool writeProtect = false;              // protégé en écriture
+        // Écritures recopiées dans le FICHIER hôte de CETTE disquette (en plus du réglage
+        // global setHostWriteBack). Remis à vrai à chaque montage ; le headless le coupe
+        // pour sa disquette par défaut (disks/diskA.st, suivie par git).
+        bool hostWriteBack = true;
         // `raw` = le fichier hôte peut être RÉ-ÉCRIT depuis `image`. Vrai pour les trois
         // conteneurs du modèle .ST (brut, .msa, .dim, cf. imgFormat) ; faux seulement pour
         // une image qu'on sait ne pas savoir ré-encoder (STX, ou en-tête .msa/.dim reconnu
