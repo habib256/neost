@@ -92,6 +92,15 @@ exactement la contrainte d'un téléphone :
 - `REWIND` recule d'environ une seconde et referme le menu. Comme sur le bureau, le
   retour arrière est **éteint par défaut** : la bascule `REWIND: OFF/ON` est en tête du
   menu. Budget de 24 Mo, une vingtaine de secondes. Un refus s'affiche en pied de menu.
+- page **DONGLES** (2026-11-12), la page Dongles du bureau au doigt : une rangée par
+  emplacement (clé du port cartouche, puis joystick 0 et 1, RS-232, imprimante, bouton de
+  cartouche) avec ce qui y est branché ; taper une rangée ouvre la liste de ses choix
+  (« wrong port for this game » quand le jeu sonde l'autre port). Brancher ne redémarre
+  rien. Un bouton Multiface/Ultimate Ripper branché ajoute `PRESS … BUTTON`, qui referme
+  le menu. Le choix vit dans `files/data/dongles.cfg`, au format partagé avec le web
+  (`io/DongleTable.hpp`, `formatDongleSetup` : `cart=cubase3`, `joy1=leaderboard`…), et
+  se rebranche au lancement. La table `disks/dongles.txt` du bureau (branchement
+  automatique selon le nom de l'image) n'est pas reprise.
 
 Le tri de la ludothèque n'est pas réécrit : `io/MediaScan` est **partagé** avec la
 borne (scan borné, détection des suites, ordre de proximité).
@@ -108,6 +117,8 @@ Le menu ne dépend que d'ImGui et de `io/MediaScan` : une cible de bureau le des
 ```sh
 cmake --build build --target neost-menu-preview
 ./build/neost-menu-preview disks/st 2.0
+# page ouverte d'emblée et capture PPM à la 5ᵉ trame (puis sortie) :
+./build/neost-menu-preview disks/st 2.0 dongles:2 /tmp/dongles.ppm   # menu|keys|rom|dongles[:N]
 ```
 
 C'est ainsi qu'a été trouvée l'erreur de mise à l'échelle du premier jet (tailles en

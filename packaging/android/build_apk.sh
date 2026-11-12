@@ -43,8 +43,13 @@ APK=$(find app/build/outputs/apk -name '*.apk' -newer gradlew | head -1)
 
 # Garde-fou : un APK sans sa bibliothèque native ou sans EmuTOS se lance et
 # meurt à l'écran noir, sans rien dire. On le vérifie ici, pas chez l'utilisateur.
+# La liste est lue UNE fois : `unzip -l | grep -q` sous `set -o pipefail` échouait
+# quand grep trouvait tôt et sortait — unzip, encore en train d'écrire, prenait
+# SIGPIPE et le tube rendait faux (vu le 2026-11-12 : « libneost.so absent » d'un APK
+# qui le contenait).
+LISTING=$(unzip -l "$APK")
 for entry in lib/arm64-v8a/libneost.so lib/arm64-v8a/libSDL2.so assets/etos192us.img; do
-    if ! unzip -l "$APK" | grep -q "$entry"; then
+    if ! grep -q "$entry" <<<"$LISTING"; then
         echo "ERREUR : $entry absent de $APK" >&2
         exit 1
     fi

@@ -213,6 +213,7 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("acsi=", 0) == 0) c.acsi = line.substr(5);
     else if (line.rfind("modem=", 0) == 0) c.modem = (line.substr(6) == "1");
     else if (line.rfind("midi_loopback=", 0) == 0) c.midiLoopback = (line.substr(14) == "1");
+    else if (line.rfind("midi_net=", 0) == 0) c.midiNet = line.substr(9);
     else if (line.rfind("midi_out_gm=", 0) == 0) c.midiOutGm = (line.substr(12) == "1");
     else if (line.rfind("gm_soundfont=", 0) == 0) c.gmSoundFont = line.substr(13);
     else if (line.rfind("midi_out_port=", 0) == 0) c.midiOutPort = (line.substr(14) == "1");
@@ -355,6 +356,7 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("showDisk=", 0) == 0) c.showFloppy = (line.substr(9) == "1");
     else if (line.rfind("showHex=", 0) == 0) c.showHex = (line.substr(8) == "1");
     else if (line.rfind("showCpu=", 0) == 0) c.showCpu = (line.substr(8) == "1");
+    else if (line.rfind("showBitmap=", 0) == 0) c.showBitmap = (line.substr(11) == "1");
     else if (line.rfind("showJoy=", 0) == 0) c.showJoy = (line.substr(8) == "1");
     else if (line.rfind("showKbd=", 0) == 0) c.showKbd = (line.substr(8) == "1");
     else if (line.rfind("showCfg=", 0) == 0) c.showCfg = (line.substr(8) == "1");
@@ -420,6 +422,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
       << "\ngemdos=" << oneLine(w.gemdos) << "\ngemdos_ro=" << (w.gemdosRo ? 1 : 0) << "\nacsi=" << oneLine(w.acsi)
       << "\nmodem=" << (w.modem ? 1 : 0)
       << "\nmidi_loopback=" << (w.midiLoopback ? 1 : 0)
+      << "\nmidi_net=" << oneLine(w.midiNet)
       << "\nmidi_out_gm=" << (w.midiOutGm ? 1 : 0)
       << "\ngm_soundfont=" << oneLine(w.gmSoundFont)
       << "\nmidi_out_port=" << (w.midiOutPort ? 1 : 0)
@@ -481,6 +484,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
     if (full)
         f << "showHex=" << (w.showHex ? 1 : 0)
           << "\nshowCpu=" << (w.showCpu ? 1 : 0)
+          << "\nshowBitmap=" << (w.showBitmap ? 1 : 0)
           << "\nshowJoy=" << (w.showJoy ? 1 : 0)
           << "\nshowKbd=" << (w.showKbd ? 1 : 0)
           << "\nshowCfg=" << (w.showCfg ? 1 : 0)

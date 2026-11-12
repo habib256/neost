@@ -930,6 +930,29 @@ uint8_t Bus::peek8(uint32_t addr) const {
     return 0xFF;                             // MMIO / trous : neutre, sans dispatch
 }
 
+bool Bus::peekMapped8(uint32_t addr, uint8_t& v) const {
+    addr &= stmap::ADDR_MASK;
+    if (addr < 0x400000) {
+        const int64_t phys = mmuTranslate(addr);
+        if (phys < 0) return false;
+        v = ram[static_cast<std::size_t>(phys)];
+        return true;
+    }
+    if (addr >= romBase && addr < romBase + rom.size()) { v = rom[addr - romBase]; return true; }
+    if (steCartWindow(addr)) {
+        const uint32_t off = ((addr >= 0xDC0000u) ? 0x10000u : 0u) | (addr & 0xFFFFu);
+        if (off >= cart.size()) return false;
+        v = cart[off];
+        return true;
+    }
+    if (!steCartRelocated() && !cart.empty()
+        && addr >= stmap::CART_BASE && addr < stmap::CART_BASE + cart.size()) {
+        v = cart[addr - stmap::CART_BASE];
+        return true;
+    }
+    return false;
+}
+
 // Vecteurs reset $0-$7 : recopie ROM → RAM (STMemory_SetDefaultConfig). Écrit la
 // RAM physique directement — l'écriture CPU y fauterait (miroir ROM, cf. busFaultN).
 // Le CPU ne lit plus cette copie (read8Slow sert la ROM) ; la vidéo et les DMA,

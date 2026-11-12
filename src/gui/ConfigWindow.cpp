@@ -739,6 +739,39 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         ImGui::TextDisabled("  A real ST has none. Cubase MIDI Thru = feedback.");
         ImGui::Separator();
 
+        // Anneau MIDI sur UDP (MIDI Maze en ligne) : le --midi-net du headless. Le
+        // MIDI OUT part vers le pair AVAL, le MIDI IN vient de l'amont sur le port
+        // d'écoute local ; un anneau ouvert remplace les appareils MIDI IN hôtes.
+        ImGui::TextDisabled("MIDI RING OVER UDP (MIDI Maze online)");
+        ImGui::SetNextItemWidth(220.0f);
+        const bool netEnter = ImGui::InputTextWithHint("##midinet", "next ST: host:port[:listen]",
+                                                       ui.midiNetEdit, sizeof ui.midiNetEdit,
+                                                       ImGuiInputTextFlags_EnterReturnsTrue);
+        // Le champ ne garde pas le clavier du ST (cf. drawHexViewer).
+        if (ImGui::IsItemDeactivated()) ImGui::SetWindowFocus(nullptr);
+        ImGui::SameLine();
+        if ((ImGui::Button(ui.midiNetOpen ? "Reconnect" : "Connect") || netEnter) && ui.midiNetEdit[0]) {
+            ui.reqMidiNet = true;
+            ui.reqMidiNetSpec = ui.midiNetEdit;
+        }
+        ImGui::SameLine();
+        ImGui::BeginDisabled(!ui.midiNetOpen && cfg.midiNet.empty());
+        if (ImGui::Button("Off##midinet")) {
+            ui.reqMidiNet = true;
+            ui.reqMidiNetSpec.clear();
+        }
+        ImGui::EndDisabled();
+        if (ui.midiNetOpen)
+            ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.5f, 1.0f), "  %s  (%llu datagrams in, %llu lost)",
+                               ui.midiNetStatus.c_str(), (unsigned long long)ui.midiNetRx,
+                               (unsigned long long)ui.midiNetLost);
+        else if (!ui.midiNetStatus.empty())
+            ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.4f, 1.0f), "  %s", ui.midiNetStatus.c_str());
+        else
+            ImGui::TextDisabled("  Off. Listen port defaults to 6820; each ST sends to the next one.");
+        ImGui::TextDisabled("  When on, it replaces the host MIDI IN devices (one DIN IN).");
+        ImGui::Separator();
+
         ImGui::TextDisabled("Steinberg key (Cubase 2/3): see the Dongles page.");
         ImGui::Separator();
 

@@ -302,7 +302,7 @@ int appInit(App& A, int argc, char** argv) {
     A.cfg = loadConfig(exeDir);
     Config& cfg = A.cfg;
     A.cfgPristine = cfg;      // référence figée pour le mode borne (cf. saveConfig)
-    A.showHex = cfg.showHex; A.showCpu = cfg.showCpu;
+    A.showHex = cfg.showHex; A.showCpu = cfg.showCpu; A.showBitmap = cfg.showBitmap;
     A.showJoy = cfg.showJoy; A.showCfg = cfg.showCfg; A.showFloppy = cfg.showFloppy;
     A.showKbd = cfg.showKbd;
     // Disposition ancrée : un imgui.ini écrit par une version antérieure garde des
@@ -572,8 +572,9 @@ int appInit(App& A, int argc, char** argv) {
     uint32_t& audioRate = A.audioRate;   // 48 kHz par défaut (cf. App.hpp)
     midiOut.setLeadMs(cfg.midiLeadMs);
     midiOut.setMtcRate(cfg.midiMtc);
-    A.midiOutApply();
-    A.midiInApply();
+    // midiRingApply ouvre l'anneau MIDI (midi_net=) s'il est demandé, puis câble
+    // MIDI OUT et MIDI IN (midiOutApply, midiInApply).
+    A.midiRingApply();
     if (A.midiLearnUids()) saveConfig(A, exeDir, cfg, &machine);
     machine.mfp.setColorMonitor(!cfg.mono);   // moniteur mémorisé (avant le reset)
     machine.fdc.setFastFdc(cfg.fastfdc);      // FDC rapide mémorisé (accès disque ÷10)

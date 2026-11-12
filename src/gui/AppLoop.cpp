@@ -50,6 +50,7 @@
 #include "net/NatBackend.hpp"
 #ifdef NEOST_WITH_NET
 #include "net/HayesModem.hpp"
+#include "net/MidiRing.hpp"
 #endif
 #include "audio/Audio.hpp"
 #include "audio/DriveSound.hpp"
@@ -430,6 +431,9 @@ static void runDueFrames(App& A) {
         while (clock::now() >= emuNext && ran < 6) {
 #ifdef NEOST_WITH_NET
             if (hayesModem) hayesModem->poll();   // TCP entrant → file RX du MFP
+            // Anneau MIDI : émet la trame précédente, collecte l'amont dans le tampon
+            // de gigue (MIDI_RX le consomme au débit série), comme le headless.
+            if (A.midiRing) A.midiRing->poll([](uint8_t) { return false; });
 #endif
             if (machine.ne2000.enabled()) machine.ne2000.poll();   // trames RX → anneau
             // Sortie MIDI horodatée : cette trame DOIT commencer à emuNext (temps réel).
@@ -785,6 +789,7 @@ static void drawMenuBar(App& A, Frame& F) {
             ImGui::MenuItem(ICON_FA_GAMEPAD " Joystick",     nullptr, &A.showJoy);
             ImGui::MenuItem(ICON_FA_KEYBOARD " Keyboard",     nullptr, &A.showKbd);
             ImGui::MenuItem(ICON_FA_BUG " Debugger",        nullptr, &A.showDbg);
+            ImGui::MenuItem(ICON_FA_PALETTE " Bitmap explorer", nullptr, &A.showBitmap);
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help")) {
@@ -1004,6 +1009,21 @@ static void syncConfigUi(App& A, Frame& F) {
     cfgUi.midiInOpen    = midiIn.openNames();
     cfgUi.midiInBytes   = midiIn.delivered();
     cfgUi.midiLateBytes = midiOut.lateBytes();
+    // Anneau MIDI : état et preuve de vie (datagrammes reçus et perdus).
+    cfgUi.midiNetStatus = A.midiRingStatus;
+    cfgUi.midiNetOpen = false;
+    cfgUi.midiNetRx = cfgUi.midiNetLost = 0;
+#ifdef NEOST_WITH_NET
+    if (A.midiRing) {
+        cfgUi.midiNetOpen = true;
+        cfgUi.midiNetRx   = A.midiRing->stats().accepted;
+        cfgUi.midiNetLost = A.midiRing->stats().lost;
+    }
+#endif
+    if (!cfgUi.midiNetInit) {        // sème le champ depuis la config (une fois)
+        std::snprintf(cfgUi.midiNetEdit, sizeof cfgUi.midiNetEdit, "%s", cfg.midiNet.c_str());
+        cfgUi.midiNetInit = true;
+    }
     if (!cfgUi.mixInit) {            // sème les faders depuis la config (une fois)
         cfgUi.mixYm = cfg.mixYm; cfgUi.mixDma = cfg.mixDma; cfgUi.mixDac = cfg.mixDac;
         cfgUi.mixDrive = cfg.mixDrive; cfgUi.mixMt32 = cfg.mixMt32; cfgUi.mixGm = cfg.mixGm;
@@ -1055,21 +1075,12 @@ static void pollMidiDevices(App& A, Frame& F) {
     }
 }
 
-// Requêtes de la fenêtre Configuration (hors profils).
-static void consumeConfigRequests(App& A, Frame& F) {
+// Cartouche, disques durs GEMDOS/ACSI et UltraSatan.
+static void consumeStorageRequests(App& A, Frame& F) {
     Machine& machine = *A.machine;
     Config& cfg = A.cfg;
     const std::string& exeDir = A.exeDir;
-    const std::string& romsDir = A.romsDir;
-    MidiOutHost& midiOut = *A.midiOut;
-    Mt32Synth& mt32 = *A.mt32;
-    GmSynth& gm = *A.gm;
-    Audio& audio = *A.audio;
-    DriveSound& drive = *A.drive;
-    bool& driveSoundOn = A.driveSoundOn;
     bool& reqHardReset = F.reqHardReset;
-    bool& reqRebuild = F.reqRebuild;
-    int& reqMonitor = F.reqMonitor;
     ConfigUi& cfgUi = *F.cfgUi;
     std::string& reqMountCart = F.reqMountCart;
     bool& reqEjectCart = F.reqEjectCart;
@@ -1113,6 +1124,16 @@ static void consumeConfigRequests(App& A, Frame& F) {
         reqHardReset = true;
         cfgUi.reqEjectSd2 = false;
     }
+}
+
+// Moniteur, borne, volume, FDC rapide, ports manette du STE.
+static void consumeMachineRequests(App& A, Frame& F) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    Audio& audio = *A.audio;
+    int& reqMonitor = F.reqMonitor;
+    ConfigUi& cfgUi = *F.cfgUi;
     if (cfgUi.reqMonitor >= 0) { reqMonitor = cfgUi.reqMonitor; cfgUi.reqMonitor = -1; }
     if (cfgUi.reqKiosk)       { A.kioskSwitchReq = 1; cfgUi.reqKiosk = false; }
     if (cfgUi.reqVolume >= 0.0f) {
@@ -1135,6 +1156,15 @@ static void consumeConfigRequests(App& A, Frame& F) {
         saveConfig(A, exeDir, cfg, &machine);
         cfgUi.reqStePads = -1;
     }
+}
+
+// Modem Hayes et EtherNEC.
+static void consumeSerialNetRequests(App& A, Frame& F) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    bool& reqHardReset = F.reqHardReset;
+    ConfigUi& cfgUi = *F.cfgUi;
     if (cfgUi.reqModem >= 0) {
         cfg.modem = (cfgUi.reqModem == 1);
 #ifdef NEOST_WITH_NET
@@ -1154,6 +1184,16 @@ static void consumeConfigRequests(App& A, Frame& F) {
         reqHardReset = true;             // le pilote sonde la carte au boot
         cfgUi.reqEther = -1;
     }
+}
+
+// Mélangeur et destinations/sources MIDI.
+static void consumeMixMidiRequests(App& A, Frame& F) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    MidiOutHost& midiOut = *A.midiOut;
+    Audio& audio = *A.audio;
+    ConfigUi& cfgUi = *F.cfgUi;
     if (cfgUi.mixDirty) {
         cfg.mixYm = cfgUi.mixYm; cfg.mixDma = cfgUi.mixDma; cfg.mixDac = cfgUi.mixDac;
         cfg.mixDrive = cfgUi.mixDrive; cfg.mixMt32 = cfgUi.mixMt32; cfg.mixGm = cfgUi.mixGm;
@@ -1191,6 +1231,23 @@ static void consumeConfigRequests(App& A, Frame& F) {
                                       cfgUi.reqMidiLoopback = -1;
                                       machine.midi.setLoopback(cfg.midiLoopback);
                                       saveConfig(A, exeDir, cfg, &machine); }
+    // Anneau MIDI (page MIDI) : la saisie est gardée telle quelle, comme le nom d'un
+    // appareil MIDI débranché. Illisible, pair inconnu ou port d'écoute occupé :
+    // l'état de la page le dit, et « Connect » re-tente.
+    if (cfgUi.reqMidiNet) {
+        cfgUi.reqMidiNet = false;
+        cfg.midiNet = cfgUi.reqMidiNetSpec;
+        A.midiRingApply();
+        saveConfig(A, exeDir, cfg, &machine);
+    }
+}
+
+// Page Dongles : périphériques des ports et clé cartouche.
+static void consumeDongleRequests(App& A, Frame& F) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    ConfigUi& cfgUi = *F.cfgUi;
     if (cfgUi.reqPlugPort >= 0) {
         const auto p = PortDevices::Port(cfgUi.reqPlugPort);
         const auto d = PortDevices::Device(cfgUi.reqPlugDev);
@@ -1213,6 +1270,17 @@ static void consumeConfigRequests(App& A, Frame& F) {
             A.stateMsgFrames = 150;
         }
     }
+}
+
+// Panique MIDI et modèle du MT-32.
+static void consumeSynthRequests(App& A, Frame& F) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    MidiOutHost& midiOut = *A.midiOut;
+    Mt32Synth& mt32 = *A.mt32;
+    GmSynth& gm = *A.gm;
+    ConfigUi& cfgUi = *F.cfgUi;
     // Panique : on la passe À TOUTES les destinations. Le MT-32 et le synthé GM
     // intégré sont des synthés à part (ils ne voient pas le flux de MidiOutHost) :
     // leur panic() agit sur le moteur lui-même. Les contrôleurs étaient autrefois
@@ -1232,6 +1300,15 @@ static void consumeConfigRequests(App& A, Frame& F) {
         mt32.close();                    // rouvre avec le modèle demandé
         A.midiOutApply(); saveConfig(A, exeDir, cfg, &machine);
     }
+}
+
+// NetUSBee (carte et ports USB) et NAT.
+static void consumeUsbNatRequests(App& A, Frame& F) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    bool& reqHardReset = F.reqHardReset;
+    ConfigUi& cfgUi = *F.cfgUi;
     if (cfgUi.reqNetUsbee >= 0) {
         cfg.netusbee = (cfgUi.reqNetUsbee == 1);
         A.netUsbeeApply(cfg.netusbee);     // peut refuser (cartouche)
@@ -1271,6 +1348,14 @@ static void consumeConfigRequests(App& A, Frame& F) {
         // « câble » change — la bascule boucle locale ↔ Internet est à chaud.
         cfgUi.reqNat = -1;
     }
+}
+
+// Bruits du lecteur, retour arrière, sauvegarde rapide.
+static void consumeSessionRequests(App& A, Frame& F) {
+    Config& cfg = A.cfg;
+    DriveSound& drive = *A.drive;
+    bool& driveSoundOn = A.driveSoundOn;
+    ConfigUi& cfgUi = *F.cfgUi;
     if (cfgUi.driveSound != driveSoundOn) {
         driveSoundOn = cfgUi.driveSound; drive.setEnabled(driveSoundOn);
         cfg.driveSound = driveSoundOn;   // persisté par cfgDirty (la case l'a levé)
@@ -1287,6 +1372,16 @@ static void consumeConfigRequests(App& A, Frame& F) {
         loadQuickState(A, "\xef\x80\x9e State restored");
         cfgUi.reqLoadState = false;
     }
+}
+
+// « Appliquer et redémarrer » et réglages d'affichage modifiés.
+static void consumeApplyRequests(App& A, Frame& F) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    const std::string& romsDir = A.romsDir;
+    bool& reqRebuild = F.reqRebuild;
+    ConfigUi& cfgUi = *F.cfgUi;
     // « Appliquer et redémarrer » : les quatre réglages matériels d'un coup,
     // UN seul rebuild. Mega STE + TOS trop ancien → on remonte un TOS ≥ 2.06,
     // sinon « choisir Mega STE » redonnait un simple STE (cf. pickTosForMachine).
@@ -1322,6 +1417,20 @@ static void consumeConfigRequests(App& A, Frame& F) {
         saveConfig(A, exeDir, cfg, &machine);
         cfgUi.cfgDirty = false;
     }
+}
+
+// Requêtes de la fenêtre Configuration (hors profils). A9 : un groupe par
+// fonction, appelés dans l'ordre où ils étaient traités d'un seul tenant.
+static void consumeConfigRequests(App& A, Frame& F) {
+    consumeStorageRequests(A, F);
+    consumeMachineRequests(A, F);
+    consumeSerialNetRequests(A, F);
+    consumeMixMidiRequests(A, F);
+    consumeDongleRequests(A, F);
+    consumeSynthRequests(A, F);
+    consumeUsbNatRequests(A, F);
+    consumeSessionRequests(A, F);
+    consumeApplyRequests(A, F);
 }
 
 // Requêtes de la page Profiles de la fenêtre Configuration.
@@ -1459,11 +1568,14 @@ static void consumeProfileRequests(App& A, Frame& F) {
             // rejoués ici, et la page Sound ressème ses faders.
             mt32.close();
             gm.close();
-            A.midiOutApply();
+            // L'anneau MIDI du profil (midi_net=) aussi : midiRingApply rouvre ou
+            // ferme l'anneau puis rejoue midiOutApply et midiInApply.
+            A.midiRingApply();
             audio.setMixGains(cfg.mixYm, cfg.mixDma, cfg.mixDrive, cfg.mixMt32, cfg.mixGm);
             machine.psg.setPortBDacGain(cfg.mixDac);
             cfgUi.mixInit = false;
             cfgUi.natInit = false;
+            cfgUi.midiNetInit = false;
             saveConfig(A, exeDir, cfg, &machine);
             reqRebuild = true;        // modèle/RAM/FPU/ROM/cartouche/HD/moniteur/FDC (+ UltraSatan)
             cfgUi.pendInit = false;   // resème les champs « en attente »
@@ -1518,6 +1630,7 @@ static void drawSideWindows(App& A, Frame& F) {
                                        resolveData("pic/Black_Keyboard_AtariST.jpeg", exeDir));
     else            keyboardWindowReleaseAll(machine);   // fenêtre masquée : rien d'enfoncé
     if (A.showDbg)  drawDebugger(A, machine);
+    if (A.showBitmap) drawBitmapExplorer(A, machine);
     if (A.showCrt) {                     // fenêtre de réglages CRT
         bool crtChanged = false;
         drawCrtSettings(A, crtChanged);
@@ -1573,6 +1686,279 @@ static void drawDesktopChrome(App& A, Frame& F) {
     drawSideWindows(A, F);
 }
 
+// --- Pages du menu borne (A9 : sorties de runKioskMenu, sans changement) --------
+// Ce que runKioskMenu lit des manettes et du clavier pour la page courante : les
+// FRONTS de (A) et (B), les directions tenues et le pas de répétition temporelle.
+struct KioskNav {
+    bool ok, cancel;                       // (A)/Entrée et (B)/Échap, au front montant
+    bool up, down, left, right, pgUp, pgDn;
+    bool step;                             // pas de navigation (front ou répétition)
+};
+
+// « Quitter ? » : A/Entrée confirme, B/Échap revient à la liste.
+static void kioskPageQuit(App& A, const KioskNav& nav) {
+    if (nav.ok) glfwSetWindowShouldClose(A.window, GLFW_TRUE);
+    if (nav.cancel) A.kioskPage = KIOSK_PAGE_LIST;
+}
+
+// Grille de touches : navigation 2D. (A) envoie une frappe brève au ST (le jeu
+// tourne derrière), (B) revient au menu.
+static void kioskPageKeys(App& A, const KioskNav& nav) {
+    Machine& machine = *A.machine;
+    if (nav.step) {
+        int row = 0;
+        for (int r = 0; r < KIOSK_KEY_ROWN; ++r)
+            if (A.kioskKeySel >= KIOSK_KEY_ROWS[r][0] && A.kioskKeySel < KIOSK_KEY_ROWS[r][1]) row = r;
+        int col = A.kioskKeySel - KIOSK_KEY_ROWS[row][0];
+        if (nav.up || nav.down) {
+            row = (row + (nav.down ? 1 : -1) + KIOSK_KEY_ROWN) % KIOSK_KEY_ROWN;
+            const int len = KIOSK_KEY_ROWS[row][1] - KIOSK_KEY_ROWS[row][0];
+            if (col >= len) col = len - 1;
+        } else {   // gauche/droite : dans la rangée, avec butée
+            const int len = KIOSK_KEY_ROWS[row][1] - KIOSK_KEY_ROWS[row][0];
+            col += nav.right ? 1 : -1;
+            if (col < 0) col = 0;
+            if (col >= len) col = len - 1;
+        }
+        A.kioskKeySel = KIOSK_KEY_ROWS[row][0] + col;
+    }
+    // On ne pose une nouvelle frappe QUE si la précédente a fini son
+    // maintien (A.kioskInjectHold == 0) : sinon un 2ᵉ appui < 4 trames
+    // écraserait A.kioskKeyRelease → le MAKE précédent n'aurait jamais
+    // son BREAK (touche « collée » côté ST).
+    if (nav.ok && A.kioskInjectHold == 0) {
+        const KioskKey& k = KIOSK_KEYS[A.kioskKeySel];
+        if (k.kind == 0) {                       // touche clavier ST
+            machine.keyEvent(k.scancode, true);
+            A.kioskKeyRelease = k.scancode;
+        } else {                                 // clic souris (G/D)
+            const bool L = (k.kind == 1), R = (k.kind == 2);
+            machine.mouseEvent(0, 0, L, R);
+            A.kioskMouseRelL = L; A.kioskMouseRelR = R;
+        }
+        A.kioskInjectHold = 4;                   // ~4 trames de maintien
+    }
+    if (nav.cancel) A.kioskDiskMenu = false;   // (B) ferme → reprise du jeu
+}
+
+// Navigateur : [0] valider · [1] .. · [2..2+S) raccourcis · [reste] sous-dossiers.
+static void kioskPageBrowse(App& A, const KioskNav& nav) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    const std::string& disksDir = A.disksDir;
+    const int nShort = (int)A.browseShortcutPaths.size();
+    const int total  = 2 + nShort + (int)A.browseSubdirs.size();
+    if (nav.step && (nav.up || nav.down)) {
+        A.browseSel += nav.down ? 1 : -1;
+        A.browseSel = (A.browseSel % total + total) % total;
+    }
+    if (nav.ok) {
+        if (A.browseSel == 0) {                    // valider CE dossier → l'ajoute
+            // REFUS de la racine et du dossier personnel : kioskScanDisks
+            // les parcourrait RÉCURSIVEMENT, sans limite de profondeur ni
+            // de temps, DANS le thread GUI — la borne se figerait plusieurs
+            // minutes à chaque ouverture du menu, sans aucun retour.
+            // Comparaison CANONIQUE des deux côtés : l'égalité de chemins
+            // brute se contournait par une simple barre oblique finale
+            // (« /home/x/ » ≠ « /home/x »), et /home — le PARENT de tous
+            // les dossiers personnels, donc pire encore — passait tout droit.
+            // On refuse donc aussi tout ANCÊTRE du dossier personnel.
+            std::error_code cec;
+            fs::path bp = fs::weakly_canonical(fs::path(A.browseDir), cec);
+            if (cec) bp = fs::path(A.browseDir).lexically_normal();
+            const char* home = std::getenv("HOME");
+            if (!home || !*home) home = std::getenv("USERPROFILE");
+            bool tooBroad = (bp == bp.root_path());
+            if (!tooBroad && home && *home) {
+                std::error_code hec;
+                fs::path hp = fs::weakly_canonical(fs::path(home), hec);
+                if (hec) hp = fs::path(home).lexically_normal();
+                // bp == hp, ou bp est un ancêtre de hp (/home, /) → refus.
+                const std::string relToHome = hp.lexically_relative(bp).generic_string();
+                tooBroad = (bp == hp)
+                        || (!relToHome.empty() && relToHome.rfind("..", 0) != 0);
+            }
+            if (tooBroad) {
+                A.stateMsg = "Folder too broad (root / home) — refused";
+                A.stateMsgFrames = 180;
+            } else {
+            if (std::find(A.kioskRomDirs.begin(), A.kioskRomDirs.end(), A.browseDir)
+                    == A.kioskRomDirs.end())
+                A.kioskRomDirs.push_back(A.browseDir);
+            cfg.romDirs = A.kioskRomDirs;
+            saveConfig(A, exeDir, cfg, &machine, true);   // persiste MÊME en kiosk
+            kioskScanDisks(A, disksDir, machine.fdc.mountedPath());
+            A.kioskDiskSel = 0; A.romDirSel = 0;
+            A.kioskPage = KIOSK_PAGE_ROMDIRS;          // retour au gestionnaire
+            }
+        } else if (A.browseSel == 1) {             // .. parent
+            const fs::path p(A.browseDir);
+            if (p.has_parent_path() && p.parent_path() != p)
+                A.browseDir = p.parent_path().string();
+            kioskScanBrowse(A, A.browseDir);
+        } else if (A.browseSel < 2 + nShort) {     // raccourci (racine / volume monté)
+            A.browseDir = A.browseShortcutPaths[A.browseSel - 2];
+            kioskScanBrowse(A, A.browseDir);
+        } else {                                   // descendre dans un sous-dossier
+            A.browseDir = A.browseSubdirs[A.browseSel - 2 - nShort];
+            kioskScanBrowse(A, A.browseDir);
+        }
+    }
+    if (nav.cancel) A.kioskPage = KIOSK_PAGE_ROMDIRS;   // (B) annuler
+}
+
+// Affectation des manettes : haut/bas sélectionne une manette PRÉSENTE, (A) fait
+// tourner son rôle AUTO → PORT 1 → PORT 0 → OFF → AUTO (persisté par GUID via
+// joymap=), (B) revient.
+static void kioskPageJoy(App& A, const KioskNav& nav) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    int jids[GLFW_JOYSTICK_LAST + 1]; int nj = 0;
+    for (int j = GLFW_JOYSTICK_1; j <= GLFW_JOYSTICK_LAST; ++j)
+        if (glfwJoystickPresent(j)) jids[nj++] = j;
+    if (nj > 0) {
+        if (A.kioskJoySel >= nj) A.kioskJoySel = nj - 1;
+        if (nav.step && (nav.up || nav.down)) {
+            A.kioskJoySel += nav.down ? 1 : -1;
+            A.kioskJoySel = (A.kioskJoySel % nj + nj) % nj;
+        }
+        if (nav.ok) {
+            const std::string guid = joyGuid(jids[A.kioskJoySel]);
+            if (!guid.empty()) {
+                const auto it = A.joyRoleByGuid.find(guid);
+                const int8_t cur = (it != A.joyRoleByGuid.end())
+                                       ? it->second : int8_t(stjoy::ROLE_AUTO);
+                int8_t next;
+                switch (cur) {                       // AUTO→P1→P0→OFF→AUTO
+                    case stjoy::ROLE_AUTO:  next = stjoy::ROLE_PORT1; break;
+                    case stjoy::ROLE_PORT1: next = stjoy::ROLE_PORT0; break;
+                    case stjoy::ROLE_PORT0: next = stjoy::ROLE_OFF;   break;
+                    default:                next = stjoy::ROLE_AUTO;  break;
+                }
+                if (next == stjoy::ROLE_AUTO) A.joyRoleByGuid.erase(guid);
+                else                          A.joyRoleByGuid[guid] = next;
+                cfg.joymap = joymapSerialize(A);      // persiste (comme ROM FOLDERS)
+                saveConfig(A, exeDir, cfg, &machine, true);
+            }
+        }
+    }
+    if (nav.cancel) { A.kioskPage = KIOSK_PAGE_LIST; A.kioskZone = KIOSK_ZONE_ACTIONS; }
+}
+
+// Gestion : [0] « + ADD » (→ navigateur), [1..N] dossiers (FEU = retirer).
+static void kioskPageRomDirs(App& A, const KioskNav& nav) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    const std::string& disksDir = A.disksDir;
+    const int total = 1 + (int)A.kioskRomDirs.size();
+    if (nav.step && (nav.up || nav.down)) {
+        A.romDirSel += nav.down ? 1 : -1;
+        A.romDirSel = (A.romDirSel % total + total) % total;
+    }
+    if (nav.ok) {
+        if (A.romDirSel == 0) {                    // + ADD A FOLDER → navigateur
+            std::error_code ec2;
+            fs::path start = (!A.kioskRomDirs.empty() &&
+                              fs::is_directory(A.kioskRomDirs.back(), ec2))
+                                 ? fs::path(A.kioskRomDirs.back()) : fs::path(disksDir);
+            fs::path abs = fs::absolute(start, ec2);   // absolu → « .. » remonte jusqu'à /
+            A.browseDir = (ec2 ? start : abs).lexically_normal().string();
+            kioskComputeShortcuts(A);
+            kioskScanBrowse(A, A.browseDir);
+            A.kioskPage = KIOSK_PAGE_BROWSE;
+        } else {                                   // retirer ce dossier (croix ❌)
+            const int idx = A.romDirSel - 1;
+            if (idx >= 0 && idx < (int)A.kioskRomDirs.size())
+                A.kioskRomDirs.erase(A.kioskRomDirs.begin() + idx);
+            cfg.romDirs = A.kioskRomDirs;
+            saveConfig(A, exeDir, cfg, &machine, true);
+            kioskScanDisks(A, disksDir, machine.fdc.mountedPath());
+            A.kioskDiskSel = 0;
+            if (A.romDirSel > (int)A.kioskRomDirs.size())
+                A.romDirSel = (int)A.kioskRomDirs.size();
+        }
+    }
+    // (B) revient à la liste, focus sur les actions (d'où l'on venait).
+    if (nav.cancel) { A.kioskPage = KIOSK_PAGE_LIST; A.kioskZone = KIOSK_ZONE_ACTIONS; }
+}
+
+// KIOSK_PAGE_LIST — deux menus (intérieur / extérieur).
+static void kioskPageList(App& A, Frame& F, const KioskNav& nav) {
+    Machine& machine = *A.machine;
+    Config& cfg = A.cfg;
+    const std::string& exeDir = A.exeDir;
+    const std::string& disksDir = A.disksDir;
+    bool& reqHardReset = F.reqHardReset;
+    std::string& reqMount = F.reqMount;
+    const int nd = (int)A.kioskDisks.size();
+    // GAUCHE/DROITE : bascule d'un menu à l'autre (front, non répété).
+    static bool pSwap = false;
+    const bool swapNow = nav.left || nav.right;
+    if (swapNow && !pSwap)
+        A.kioskZone = (A.kioskZone == KIOSK_ZONE_LIST) ? KIOSK_ZONE_ACTIONS
+                                                       : KIOSK_ZONE_LIST;
+    pSwap = swapNow;
+    // HAUT/BAS : navigue DANS le menu focalisé (chacun boucle sur lui-même).
+    // L1/R1 (pgUp/pgDn) : saut de PAGE dans la liste des jeux (défilement rapide).
+    if (nav.step) {
+        if (A.kioskZone == KIOSK_ZONE_LIST) {
+            if (nd > 0) {
+                const int kPage = 10;   // taille du saut rapide L1/R1
+                int delta = 0;
+                if      (nav.down) delta =  1;
+                else if (nav.up)   delta = -1;
+                else if (nav.pgDn) delta =  kPage;
+                else if (nav.pgUp) delta = -kPage;
+                if (delta != 0) {
+                    A.kioskDiskSel += delta;
+                    if (delta == 1 || delta == -1)   // pas-à-pas : boucle
+                        A.kioskDiskSel = (A.kioskDiskSel % nd + nd) % nd;
+                    else                             // saut de page : butée
+                        A.kioskDiskSel = std::max(0, std::min(nd - 1, A.kioskDiskSel));
+                }
+            }
+        } else if (nav.up || nav.down) {
+            A.kioskActSel += nav.down ? 1 : -1;
+            A.kioskActSel = (A.kioskActSel % 6 + 6) % 6;
+        }
+    }
+    // FEU (A/Entrée) : déclenche l'item surligné du menu focalisé.
+    if (nav.ok) {
+        if (A.kioskZone == KIOSK_ZONE_LIST) {
+            // Borne défensive : la liste peut avoir rétréci (dossier ROM
+            // débranché) sans que le curseur ait bougé depuis.
+            if (nd > 0) reqMount = A.kioskDisks[std::min(std::max(0, A.kioskDiskSel), nd - 1)];  // INSÉRER à chaud
+        } else {
+            switch (A.kioskActSel) {
+                case 0: reqHardReset = F.userHardReset = true;   // Redémarrer
+                        A.kioskDiskMenu = false; break;
+                case 1: A.kioskPage = KIOSK_PAGE_KEYS;    // Clavier & souris
+                        A.kioskKeySel = 0; break;
+                case 2: A.kioskPage = KIOSK_PAGE_JOY;     // Joysticks (affectation)
+                        A.kioskJoySel = 0; break;
+                case 3:                                   // Dossiers ROM (gestion)
+                    if (kioskPruneRomDirs(A)) {           // retire les disparus + persiste
+                        cfg.romDirs = A.kioskRomDirs;
+                        saveConfig(A, exeDir, cfg, &machine, true);
+                        kioskScanDisks(A, disksDir, machine.fdc.mountedPath());
+                        A.kioskDiskSel = 0;   // la liste vient de rétrécir : l'ancien index pointerait hors du vecteur
+                    }
+                    A.romDirSel = 0;
+                    A.kioskPage = KIOSK_PAGE_ROMDIRS; break;
+                case 4:                                   // Mode bureau (GUI)
+                        A.kioskSwitchReq = 2;
+                        A.kioskDiskMenu = false; break;
+                case 5: A.kioskPage = KIOSK_PAGE_QUIT; break;  // Quitter
+            }
+        }
+    }
+    // (B) reprendre le jeu : ferme le menu.
+    if (nav.cancel) A.kioskDiskMenu = false;
+}
+
 // Dessin : menu in-game du kiosk (navigation manette/clavier + rendu).
 static void runKioskMenu(App& A, Frame& F) {
     using clock = std::chrono::steady_clock;
@@ -1581,8 +1967,6 @@ static void runKioskMenu(App& A, Frame& F) {
     const std::string& exeDir = A.exeDir;
     const std::string& disksDir = A.disksDir;
     GLFWwindow* const window = A.window;
-    bool& reqHardReset = F.reqHardReset;
-    std::string& reqMount = F.reqMount;
     // La navigation du menu ne consulte QUE les manettes réellement affectées à
     // un port ST (assign >= 0). Sans ce filtre, une manette explicitement mise
     // sur OFF pilotait quand même le menu : un encodeur arcade dont l'axe Y
@@ -1702,245 +2086,16 @@ static void runKioskMenu(App& A, Frame& F) {
         const bool step = navRepeat.tick(navHeld, std::chrono::duration_cast<std::chrono::milliseconds>(
                                                       clock::now().time_since_epoch()).count());
 
-        if (A.kioskPage == KIOSK_PAGE_QUIT) {
-            // « Quitter ? » : A/Entrée confirme, B/Échap revient à la liste.
-            if (okNow && !pOk) glfwSetWindowShouldClose(window, GLFW_TRUE);
-            if (caNow && !pCancel) A.kioskPage = KIOSK_PAGE_LIST;
-
-        } else if (A.kioskPage == KIOSK_PAGE_KEYS) {
-            // Grille de touches : navigation 2D. (A) envoie une frappe brève au
-            // ST (le jeu tourne derrière), (B) revient au menu.
-            if (step) {
-                int row = 0;
-                for (int r = 0; r < KIOSK_KEY_ROWN; ++r)
-                    if (A.kioskKeySel >= KIOSK_KEY_ROWS[r][0] && A.kioskKeySel < KIOSK_KEY_ROWS[r][1]) row = r;
-                int col = A.kioskKeySel - KIOSK_KEY_ROWS[row][0];
-                if (up || down) {
-                    row = (row + (down ? 1 : -1) + KIOSK_KEY_ROWN) % KIOSK_KEY_ROWN;
-                    const int len = KIOSK_KEY_ROWS[row][1] - KIOSK_KEY_ROWS[row][0];
-                    if (col >= len) col = len - 1;
-                } else {   // gauche/droite : dans la rangée, avec butée
-                    const int len = KIOSK_KEY_ROWS[row][1] - KIOSK_KEY_ROWS[row][0];
-                    col += right ? 1 : -1;
-                    if (col < 0) col = 0;
-                    if (col >= len) col = len - 1;
-                }
-                A.kioskKeySel = KIOSK_KEY_ROWS[row][0] + col;
-            }
-            // On ne pose une nouvelle frappe QUE si la précédente a fini son
-            // maintien (A.kioskInjectHold == 0) : sinon un 2ᵉ appui < 4 trames
-            // écraserait A.kioskKeyRelease → le MAKE précédent n'aurait jamais
-            // son BREAK (touche « collée » côté ST).
-            if (okNow && !pOk && A.kioskInjectHold == 0) {
-                const KioskKey& k = KIOSK_KEYS[A.kioskKeySel];
-                if (k.kind == 0) {                       // touche clavier ST
-                    machine.keyEvent(k.scancode, true);
-                    A.kioskKeyRelease = k.scancode;
-                } else {                                 // clic souris (G/D)
-                    const bool L = (k.kind == 1), R = (k.kind == 2);
-                    machine.mouseEvent(0, 0, L, R);
-                    A.kioskMouseRelL = L; A.kioskMouseRelR = R;
-                }
-                A.kioskInjectHold = 4;                   // ~4 trames de maintien
-            }
-            if (caNow && !pCancel) A.kioskDiskMenu = false;   // (B) ferme → reprise du jeu
-
-        } else if (A.kioskPage == KIOSK_PAGE_BROWSE) {
-            // Navigateur : [0] valider · [1] .. · [2..2+S) raccourcis · [reste] sous-dossiers.
-            const int nShort = (int)A.browseShortcutPaths.size();
-            const int total  = 2 + nShort + (int)A.browseSubdirs.size();
-            if (step && (up || down)) {
-                A.browseSel += down ? 1 : -1;
-                A.browseSel = (A.browseSel % total + total) % total;
-            }
-            if (okNow && !pOk) {
-                if (A.browseSel == 0) {                    // valider CE dossier → l'ajoute
-                    // REFUS de la racine et du dossier personnel : kioskScanDisks
-                    // les parcourrait RÉCURSIVEMENT, sans limite de profondeur ni
-                    // de temps, DANS le thread GUI — la borne se figerait plusieurs
-                    // minutes à chaque ouverture du menu, sans aucun retour.
-                    // Comparaison CANONIQUE des deux côtés : l'égalité de chemins
-                    // brute se contournait par une simple barre oblique finale
-                    // (« /home/x/ » ≠ « /home/x »), et /home — le PARENT de tous
-                    // les dossiers personnels, donc pire encore — passait tout droit.
-                    // On refuse donc aussi tout ANCÊTRE du dossier personnel.
-                    std::error_code cec;
-                    fs::path bp = fs::weakly_canonical(fs::path(A.browseDir), cec);
-                    if (cec) bp = fs::path(A.browseDir).lexically_normal();
-                    const char* home = std::getenv("HOME");
-                    if (!home || !*home) home = std::getenv("USERPROFILE");
-                    bool tooBroad = (bp == bp.root_path());
-                    if (!tooBroad && home && *home) {
-                        std::error_code hec;
-                        fs::path hp = fs::weakly_canonical(fs::path(home), hec);
-                        if (hec) hp = fs::path(home).lexically_normal();
-                        // bp == hp, ou bp est un ancêtre de hp (/home, /) → refus.
-                        const std::string relToHome = hp.lexically_relative(bp).generic_string();
-                        tooBroad = (bp == hp)
-                                || (!relToHome.empty() && relToHome.rfind("..", 0) != 0);
-                    }
-                    if (tooBroad) {
-                        A.stateMsg = "Folder too broad (root / home) — refused";
-                        A.stateMsgFrames = 180;
-                    } else {
-                    if (std::find(A.kioskRomDirs.begin(), A.kioskRomDirs.end(), A.browseDir)
-                            == A.kioskRomDirs.end())
-                        A.kioskRomDirs.push_back(A.browseDir);
-                    cfg.romDirs = A.kioskRomDirs;
-                    saveConfig(A, exeDir, cfg, &machine, true);   // persiste MÊME en kiosk
-                    kioskScanDisks(A, disksDir, machine.fdc.mountedPath());
-                    A.kioskDiskSel = 0; A.romDirSel = 0;
-                    A.kioskPage = KIOSK_PAGE_ROMDIRS;          // retour au gestionnaire
-                    }
-                } else if (A.browseSel == 1) {             // .. parent
-                    const fs::path p(A.browseDir);
-                    if (p.has_parent_path() && p.parent_path() != p)
-                        A.browseDir = p.parent_path().string();
-                    kioskScanBrowse(A, A.browseDir);
-                } else if (A.browseSel < 2 + nShort) {     // raccourci (racine / volume monté)
-                    A.browseDir = A.browseShortcutPaths[A.browseSel - 2];
-                    kioskScanBrowse(A, A.browseDir);
-                } else {                                   // descendre dans un sous-dossier
-                    A.browseDir = A.browseSubdirs[A.browseSel - 2 - nShort];
-                    kioskScanBrowse(A, A.browseDir);
-                }
-            }
-            if (caNow && !pCancel) A.kioskPage = KIOSK_PAGE_ROMDIRS;   // (B) annuler
-
-        } else if (A.kioskPage == KIOSK_PAGE_JOY) {
-            // Affectation des manettes : haut/bas sélectionne une manette
-            // PRÉSENTE, (A) fait tourner son rôle AUTO → PORT 1 → PORT 0 →
-            // OFF → AUTO (persisté par GUID via joymap=), (B) revient.
-            int jids[GLFW_JOYSTICK_LAST + 1]; int nj = 0;
-            for (int j = GLFW_JOYSTICK_1; j <= GLFW_JOYSTICK_LAST; ++j)
-                if (glfwJoystickPresent(j)) jids[nj++] = j;
-            if (nj > 0) {
-                if (A.kioskJoySel >= nj) A.kioskJoySel = nj - 1;
-                if (step && (up || down)) {
-                    A.kioskJoySel += down ? 1 : -1;
-                    A.kioskJoySel = (A.kioskJoySel % nj + nj) % nj;
-                }
-                if (okNow && !pOk) {
-                    const std::string guid = joyGuid(jids[A.kioskJoySel]);
-                    if (!guid.empty()) {
-                        const auto it = A.joyRoleByGuid.find(guid);
-                        const int8_t cur = (it != A.joyRoleByGuid.end())
-                                               ? it->second : int8_t(stjoy::ROLE_AUTO);
-                        int8_t next;
-                        switch (cur) {                       // AUTO→P1→P0→OFF→AUTO
-                            case stjoy::ROLE_AUTO:  next = stjoy::ROLE_PORT1; break;
-                            case stjoy::ROLE_PORT1: next = stjoy::ROLE_PORT0; break;
-                            case stjoy::ROLE_PORT0: next = stjoy::ROLE_OFF;   break;
-                            default:                next = stjoy::ROLE_AUTO;  break;
-                        }
-                        if (next == stjoy::ROLE_AUTO) A.joyRoleByGuid.erase(guid);
-                        else                          A.joyRoleByGuid[guid] = next;
-                        cfg.joymap = joymapSerialize(A);      // persiste (comme ROM FOLDERS)
-                        saveConfig(A, exeDir, cfg, &machine, true);
-                    }
-                }
-            }
-            if (caNow && !pCancel) { A.kioskPage = KIOSK_PAGE_LIST; A.kioskZone = KIOSK_ZONE_ACTIONS; }
-
-        } else if (A.kioskPage == KIOSK_PAGE_ROMDIRS) {
-            // Gestion : [0] « + ADD » (→ navigateur), [1..N] dossiers (FEU = retirer).
-            const int total = 1 + (int)A.kioskRomDirs.size();
-            if (step && (up || down)) {
-                A.romDirSel += down ? 1 : -1;
-                A.romDirSel = (A.romDirSel % total + total) % total;
-            }
-            if (okNow && !pOk) {
-                if (A.romDirSel == 0) {                    // + ADD A FOLDER → navigateur
-                    std::error_code ec2;
-                    fs::path start = (!A.kioskRomDirs.empty() &&
-                                      fs::is_directory(A.kioskRomDirs.back(), ec2))
-                                         ? fs::path(A.kioskRomDirs.back()) : fs::path(disksDir);
-                    fs::path abs = fs::absolute(start, ec2);   // absolu → « .. » remonte jusqu'à /
-                    A.browseDir = (ec2 ? start : abs).lexically_normal().string();
-                    kioskComputeShortcuts(A);
-                    kioskScanBrowse(A, A.browseDir);
-                    A.kioskPage = KIOSK_PAGE_BROWSE;
-                } else {                                   // retirer ce dossier (croix ❌)
-                    const int idx = A.romDirSel - 1;
-                    if (idx >= 0 && idx < (int)A.kioskRomDirs.size())
-                        A.kioskRomDirs.erase(A.kioskRomDirs.begin() + idx);
-                    cfg.romDirs = A.kioskRomDirs;
-                    saveConfig(A, exeDir, cfg, &machine, true);
-                    kioskScanDisks(A, disksDir, machine.fdc.mountedPath());
-                    A.kioskDiskSel = 0;
-                    if (A.romDirSel > (int)A.kioskRomDirs.size())
-                        A.romDirSel = (int)A.kioskRomDirs.size();
-                }
-            }
-            // (B) revient à la liste, focus sur les actions (d'où l'on venait).
-            if (caNow && !pCancel) { A.kioskPage = KIOSK_PAGE_LIST; A.kioskZone = KIOSK_ZONE_ACTIONS; }
-
-        } else {   // KIOSK_PAGE_LIST — deux menus (intérieur / extérieur)
-            const int nd = (int)A.kioskDisks.size();
-            // GAUCHE/DROITE : bascule d'un menu à l'autre (front, non répété).
-            static bool pSwap = false;
-            const bool swapNow = left || right;
-            if (swapNow && !pSwap)
-                A.kioskZone = (A.kioskZone == KIOSK_ZONE_LIST) ? KIOSK_ZONE_ACTIONS
-                                                               : KIOSK_ZONE_LIST;
-            pSwap = swapNow;
-            // HAUT/BAS : navigue DANS le menu focalisé (chacun boucle sur lui-même).
-            // L1/R1 (pgUp/pgDn) : saut de PAGE dans la liste des jeux (défilement rapide).
-            if (step) {
-                if (A.kioskZone == KIOSK_ZONE_LIST) {
-                    if (nd > 0) {
-                        const int kPage = 10;   // taille du saut rapide L1/R1
-                        int delta = 0;
-                        if      (down) delta =  1;
-                        else if (up)   delta = -1;
-                        else if (pgDn) delta =  kPage;
-                        else if (pgUp) delta = -kPage;
-                        if (delta != 0) {
-                            A.kioskDiskSel += delta;
-                            if (delta == 1 || delta == -1)   // pas-à-pas : boucle
-                                A.kioskDiskSel = (A.kioskDiskSel % nd + nd) % nd;
-                            else                             // saut de page : butée
-                                A.kioskDiskSel = std::max(0, std::min(nd - 1, A.kioskDiskSel));
-                        }
-                    }
-                } else if (up || down) {
-                    A.kioskActSel += down ? 1 : -1;
-                    A.kioskActSel = (A.kioskActSel % 6 + 6) % 6;
-                }
-            }
-            // FEU (A/Entrée) : déclenche l'item surligné du menu focalisé.
-            if (okNow && !pOk) {
-                if (A.kioskZone == KIOSK_ZONE_LIST) {
-                    // Borne défensive : la liste peut avoir rétréci (dossier ROM
-                    // débranché) sans que le curseur ait bougé depuis.
-                    if (nd > 0) reqMount = A.kioskDisks[std::min(std::max(0, A.kioskDiskSel), nd - 1)];  // INSÉRER à chaud
-                } else {
-                    switch (A.kioskActSel) {
-                        case 0: reqHardReset = F.userHardReset = true;   // Redémarrer
-                                A.kioskDiskMenu = false; break;
-                        case 1: A.kioskPage = KIOSK_PAGE_KEYS;    // Clavier & souris
-                                A.kioskKeySel = 0; break;
-                        case 2: A.kioskPage = KIOSK_PAGE_JOY;     // Joysticks (affectation)
-                                A.kioskJoySel = 0; break;
-                        case 3:                                   // Dossiers ROM (gestion)
-                            if (kioskPruneRomDirs(A)) {           // retire les disparus + persiste
-                                cfg.romDirs = A.kioskRomDirs;
-                                saveConfig(A, exeDir, cfg, &machine, true);
-                                kioskScanDisks(A, disksDir, machine.fdc.mountedPath());
-                                A.kioskDiskSel = 0;   // la liste vient de rétrécir : l'ancien index pointerait hors du vecteur
-                            }
-                            A.romDirSel = 0;
-                            A.kioskPage = KIOSK_PAGE_ROMDIRS; break;
-                        case 4:                                   // Mode bureau (GUI)
-                                A.kioskSwitchReq = 2;
-                                A.kioskDiskMenu = false; break;
-                        case 5: A.kioskPage = KIOSK_PAGE_QUIT; break;  // Quitter
-                    }
-                }
-            }
-            // (B) reprendre le jeu : ferme le menu.
-            if (caNow && !pCancel) A.kioskDiskMenu = false;
-        }
+        // Une page par fonction (A9) : chacune reçoit les fronts et directions
+        // lus ci-dessus. La chaîne reste exclusive : une page qui en ouvre une autre
+        // ne la traite qu'au tour suivant, comme avant le découpage.
+        const KioskNav nav{ okNow && !pOk, caNow && !pCancel, up, down, left, right, pgUp, pgDn, step };
+        if      (A.kioskPage == KIOSK_PAGE_QUIT)    kioskPageQuit(A, nav);
+        else if (A.kioskPage == KIOSK_PAGE_KEYS)    kioskPageKeys(A, nav);
+        else if (A.kioskPage == KIOSK_PAGE_BROWSE)  kioskPageBrowse(A, nav);
+        else if (A.kioskPage == KIOSK_PAGE_JOY)     kioskPageJoy(A, nav);
+        else if (A.kioskPage == KIOSK_PAGE_ROMDIRS) kioskPageRomDirs(A, nav);
+        else                                        kioskPageList(A, F, nav);
         pOk = okNow; pCancel = caNow;
 
         drawKioskDiskMenu(A, disksDir, machine.fdc.mountedPath());
@@ -2546,7 +2701,7 @@ void appShutdown(App& A) {
     cfg.diskb = machine.fdc.mountedPath(1);   // le lecteur B se resynchronise comme le A
     cfg.cart = machine.bus.mountedCartPath();
     cfg.mono = !machine.mfp.colorMonitor();
-    cfg.showHex = A.showHex; cfg.showCpu = A.showCpu;
+    cfg.showHex = A.showHex; cfg.showCpu = A.showCpu; cfg.showBitmap = A.showBitmap;
     cfg.showJoy = A.showJoy; cfg.showCfg = A.showCfg; cfg.showFloppy = A.showFloppy;
     cfg.showKbd = A.showKbd;
     saveConfig(A, exeDir, cfg, &machine);
@@ -2561,6 +2716,18 @@ void appShutdown(App& A) {
     ImGui::DestroyContext();
     // Arrêt : plus aucun octet MIDI vers des objets en cours de destruction (sink → midiOut/mt32/gm).
     machine.midi.setMidiSinkTimed({});
+#ifdef NEOST_WITH_NET
+    // Anneau MIDI : la source MIDI IN pointe sur lui ; bilan au journal (le seul
+    // témoin hors de la page MIDI de ce qui a traversé l'anneau).
+    if (A.midiRing) {
+        machine.midi.setRxSource({});
+        const MidiRing::Stats& st = A.midiRing->stats();
+        std::fprintf(stderr, "[midi-ring] closed: %llu datagrams in, %llu lost, %llu foreign, "
+                     "%llu malformed\n", (unsigned long long)st.accepted, (unsigned long long)st.lost,
+                     (unsigned long long)st.foreign, (unsigned long long)st.malformed);
+        A.midiRing.reset();
+    }
+#endif
     audio.setMt32(nullptr);
     audio.setGm(nullptr);
     mt32.close();

@@ -35,6 +35,7 @@
 #include "core/AudioMix.hpp"
 #include "core/Machine.hpp"
 #include "core/Rewind.hpp"
+#include "io/DongleTable.hpp"   // dongles.cfg (format partagé avec le web)
 #include "gui/StKeys.hpp"      // tables symboliques par pays (StKeysSymbolic, sans GLFW)
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
@@ -315,11 +316,12 @@ uint64_t fnv1a(uint64_t h, const void* p, size_t n) {
     return h;
 }
 
-// Contenu d'un petit fichier texte (le témoin), ou "" s'il est absent.
+// Contenu d'un petit fichier texte (le témoin, rom.cfg, dongles.cfg), ou "" s'il est
+// absent. 512 octets : dongles.cfg plein (clé + cinq ports) en fait un peu plus de 100.
 std::string readSmallFile(const std::string& p) {
     std::string s;
     if (FILE* f = std::fopen(p.c_str(), "rb")) {
-        char b[128];
+        char b[512];
         const size_t n = std::fread(b, 1, sizeof b, f);
         std::fclose(f);
         s.assign(b, n);
@@ -730,6 +732,37 @@ void saveRomChoice(const std::string& dataDir, int index) {
         NEOERR("ROM choice not saved");
 }
 
+// --- Dongles : choix persistant (page DONGLES du menu) ------------------------
+// <données>/dongles.cfg, au format partagé avec le web (io/DongleTable.hpp,
+// formatDongleSetup) : `cart=…` puis `joy0=…`… avec les identifiants de neost.cfg.
+// Absent ou abîmé : rien de branché, jamais d'erreur.
+constexpr const char* kDongleFile = "dongles.cfg";
+
+neost::DongleSetup currentDongles(const Machine& m) {
+    neost::DongleSetup s;
+    s.key = m.dongle.model();
+    for (int p = 0; p < int(PortDevices::Port::Count); ++p)
+        s.dev[p] = m.ports.at(PortDevices::Port(p));
+    return s;
+}
+
+void saveDongles(const std::string& dataDir, const Machine& m) {
+    const std::string s = neost::formatDongleSetup(currentDongles(m));
+    const std::vector<uint8_t> buf(s.begin(), s.end());
+    if (!writeFileAtomic(dataDir + "/" + kDongleFile, buf)) NEOERR("dongles not saved");
+}
+
+// Rebranche ce que dongles.cfg décrit (au lancement). Pas de carte réseau sur ce
+// frontend : setDongle ne peut pas refuser le port cartouche.
+void loadDongles(const std::string& dataDir, Machine& m) {
+    const neost::DongleSetup s = neost::parseDongleSetup(readSmallFile(dataDir + "/" + kDongleFile));
+    m.setDongle(s.key);
+    for (int p = 0; p < int(PortDevices::Port::Count); ++p)
+        m.plugPort(PortDevices::Port(p), s.dev[p]);
+    const std::string txt = neost::formatDongleSetup(s);
+    if (!txt.empty()) NEOLOG("dongles: %s", txt.c_str());
+}
+
 // Charge la ROM `index` et démarre la machine À FROID sur le profil qu'elle exige.
 // Même recette que le changement de ROM du web (neost_load_tos) et du bureau :
 //  · charger D'ABORD — Bus::loadTos refuse un fichier absent ou de taille invalide
@@ -867,6 +900,7 @@ int main(int argc, char* argv[]) {
         switchRom(machine, dataDir, romIdx);
     }
     g_menu.romCur = romIdx;
+    loadDongles(dataDir, machine);     // page DONGLES : ce qui était branché la dernière fois
     const std::string disk = dataDir + "/diskA.st";
     if (machine.loadDisk(disk)) g_menu.mounted = disk;
     else                        NEOLOG("pas de disquette (%s)", disk.c_str());
@@ -1047,6 +1081,19 @@ int main(int argc, char* argv[]) {
                 g_menu.status = "ROM not loadable";
             }
         }
+        // Page DONGLES : brancher ne redémarre rien (le logiciel sonde quand il veut).
+        if (g_menu.reqCartKey >= 0) {
+            machine.setDongle(CartridgeKey::Model(std::min(g_menu.reqCartKey, neost::kCartKeyModelCount - 1)));
+            g_menu.reqCartKey = -1;
+            saveDongles(dataDir, machine);
+        }
+        if (g_menu.reqPlugPort >= 0) {
+            if (g_menu.reqPlugPort < int(PortDevices::Port::Count)
+                && machine.plugPort(PortDevices::Port(g_menu.reqPlugPort), PortDevices::Device(g_menu.reqPlugDev)))
+                saveDongles(dataDir, machine);
+            g_menu.reqPlugPort = g_menu.reqPlugDev = -1;
+        }
+        if (g_menu.reqPortButton) { g_menu.reqPortButton = false; machine.pressPortButton(); }
         if (g_menu.rewindOn != rewind.enabled()) rewind.setEnabled(g_menu.rewindOn);
         if (g_menu.reqRewind) {
             g_menu.reqRewind = false;
@@ -1115,6 +1162,11 @@ int main(int argc, char* argv[]) {
         // manette que le jeu attend.
         if (g_menu.open) ImGui::GetIO().ConfigFlags |=  ImGuiConfigFlags_NavEnableGamepad;
         else             ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NavEnableGamepad;
+        // Ce qui est branché (page DONGLES) : le menu ne voit pas la machine. Relu
+        // à chaque rendu — un retour arrière restaure aussi les ports.
+        g_menu.cartKey = int(machine.dongle.model());
+        for (int p = 0; p < int(PortDevices::Port::Count); ++p)
+            g_menu.portDev[p] = int(machine.ports.at(PortDevices::Port(p)));
         g_menu.draw(g_uiScale);
         ImGui::Render();
         int dw = 0, dh = 0;

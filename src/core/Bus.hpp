@@ -213,6 +213,11 @@ public:
     // wait states — cf. Cpu68k::read16Dasm).
     uint8_t  peek8 (uint32_t addr) const;
     uint16_t peek16(uint32_t addr) const { return uint16_t((peek8(addr) << 8) | peek8(addr + 1)); }
+    // Lecture sans effet de bord pour l'explorateur de bitmaps : la RAM telle que la
+    // voient la vidéo et les DMA (MMU seul, PAS de ROM en $0-$7), puis ROM et
+    // cartouche comme peek8. Renvoie false sur un trou (banque vide, MMIO, espace non
+    // décodé) : l'explorateur l'affiche alors comme tel au lieu d'un faux $FF.
+    bool peekMapped8(uint32_t addr, uint8_t& v) const;
 
     // Recopie des vecteurs reset SSP/PC ($0-$7) depuis la ROM en RAM — port de
     // STMemory_SetDefaultConfig ([D] stMemory.c:230 @ f0736b24) : sur le vrai ST le GLUE mappe

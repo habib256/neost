@@ -40,6 +40,7 @@
 #include "io/MidiAcia.hpp"
 #include "io/Ikbd.hpp"
 #include "io/Rtc.hpp"
+#include "core/BitmapView.hpp"
 #include "core/Bus.hpp"
 #include "core/Cpu68k.hpp"
 #include "core/Blitter.hpp"
@@ -1036,6 +1037,76 @@ static void testConfigParser() {
 //  de référence n'est publiée) : elles gardent la TRANSCRIPTION des équations à
 //  l'identique, elles ne prouvent pas la clé. Les propriétés, elles, sont connues.
 // -----------------------------------------------------------------------------
+// Explorateur de bitmaps (core/BitmapView) : la règle des plans entrelacés, la
+// géométrie, la polarité monochrome et les trous du plan mémoire.
+// [B] Atari ST Hardware Specification (Atari Corp., 1985), § Video Display — groupe
+// de 16 pixels = N mots consécutifs, le mot k porte le bit k de l'index, bit 15 à
+// gauche.
+static void testBitmapView() {
+    std::printf("Explorateur de bitmaps (plans ST -> ARGB)\n");
+    neost::BitmapLayout l;
+    l.planes = 4; l.strideBytes = 160; l.height = 200;
+    checkInt("basse : 320 px", neost::bitmapWidthPx(l), 320);
+    checkInt("basse : 32000 octets", long(neost::bitmapBytes(l)), 32000);
+    l.planes = 2;
+    checkInt("moyenne : 640 px", neost::bitmapWidthPx(l), 640);
+    l.planes = 1; l.strideBytes = 80;
+    checkInt("haute : 640 px", neost::bitmapWidthPx(l), 640);
+    l.planes = 3;
+    checkInt("plans 3 -> 4", neost::bitmapPlanes(l.planes), 4);
+    l.planes = 4; l.strideBytes = 10;                 // queue incomplète : pas de pixel
+    checkInt("queue incomplète ignorée", neost::bitmapWidthPx(l), 16);
+
+    // Un groupe 4 plans : plan0=$8000, plan1=$4000, plan2=$2000, plan3=$1001.
+    // pixel 0 → 1, pixel 1 → 2, pixel 2 → 4, pixel 3 → 8, pixel 15 → 8, le reste 0.
+    const uint8_t g4[8] = {0x80, 0x00, 0x40, 0x00, 0x20, 0x00, 0x10, 0x01};
+    checkInt("px0 = 1", neost::bitmapPixelIndex(g4, 4, 0), 1);
+    checkInt("px1 = 2", neost::bitmapPixelIndex(g4, 4, 1), 2);
+    checkInt("px2 = 4", neost::bitmapPixelIndex(g4, 4, 2), 4);
+    checkInt("px3 = 8", neost::bitmapPixelIndex(g4, 4, 3), 8);
+    checkInt("px4 = 0", neost::bitmapPixelIndex(g4, 4, 4), 0);
+    checkInt("px15 = 8", neost::bitmapPixelIndex(g4, 4, 15), 8);
+    // Les mêmes octets en 2 plans : deux groupes de 16 px ($8000/$4000, $2000/$1001).
+    checkInt("2 plans px0 = 1", neost::bitmapPixelIndex(g4, 2, 0), 1);
+    checkInt("2 plans px1 = 2", neost::bitmapPixelIndex(g4, 2, 1), 2);
+    checkInt("2 plans px16 = 0", neost::bitmapPixelIndex(g4, 2, 16), 0);
+    checkInt("2 plans px18 = 1", neost::bitmapPixelIndex(g4, 2, 18), 1);
+    checkInt("2 plans px19 = 2", neost::bitmapPixelIndex(g4, 2, 19), 2);
+    checkInt("2 plans px31 = 2", neost::bitmapPixelIndex(g4, 2, 31), 2);
+
+    // Palette : couleur ST $0RGB → ARGB comme le Shifter ; monochrome selon reg0.
+    uint16_t st[16] = {0x777, 0x700, 0x070, 0x007};
+    uint32_t pal[16];
+    neost::bitmapPalette(st, 4, false, false, pal);
+    checkHex("pal0 = blanc ST", pal[0], 0xFFEEEEEEu);
+    checkHex("pal1 = rouge ST", pal[1], 0xFFEE0000u);
+    neost::bitmapPalette(st, 1, true, false, pal);   // reg0 non nul : fond blanc
+    checkHex("mono normal : 0 blanc", pal[0], 0xFFFFFFFFu);
+    checkHex("mono normal : 1 noir", pal[1], 0xFF000000u);
+    st[0] = 0x000;                                    // reg0 nul : vidéo inverse
+    neost::bitmapPalette(st, 1, true, false, pal);
+    checkHex("mono inverse : 0 noir", pal[0], 0xFF000000u);
+    checkHex("mono inverse : 1 blanc", pal[1], 0xFFFFFFFFu);
+    neost::bitmapPalette(st, 2, false, true, pal);   // gris sur 4 index
+    checkHex("gris 0", pal[0], 0xFF000000u);
+    checkHex("gris 3", pal[3], 0xFFFFFFFFu);
+
+    // Décodage complet, 1 ligne, 2 groupes ; le 2ᵉ a un octet hors plan mémoire.
+    l.planes = 4; l.strideBytes = 16; l.height = 1;
+    uint8_t src[16] = {0x80, 0x00, 0x40, 0x00, 0x20, 0x00, 0x10, 0x01};
+    uint8_t valid[16];
+    std::memset(valid, 1, sizeof valid);
+    valid[15] = 0;
+    for (int i = 0; i < 16; ++i) pal[i] = 0xFF000000u | uint32_t(i);
+    uint32_t out[32] = {};
+    neost::decodeBitmap(l, src, valid, pal, 0xFFABCDEFu, out);
+    checkHex("décodé px0", out[0], 0xFF000001u);
+    checkHex("décodé px3", out[3], 0xFF000008u);
+    checkHex("décodé px15", out[15], 0xFF000008u);
+    checkHex("groupe partiel = trou", out[16], 0xFFABCDEFu);
+    checkHex("groupe partiel = trou (fin)", out[31], 0xFFABCDEFu);
+}
+
 // Libellé RAM de la barre d'état : calculé depuis les octets. La chaîne de
 // ternaires qu'il remplace affichait « 4 MB » pour 2176k/2560k (et pour toute
 // valeur qu'elle ne connaissait pas).
@@ -1280,6 +1351,27 @@ static void testDongleTable() {
     checkBool("sans correspondance → vide", neost::matchDongleRules(rules, "disks/diskA.st").empty(), true);
     const auto r2 = neost::parseDongleTable("# c\n  foo = joy0:leaderboard # ok\nbar = rs232:leaderboard\nbaz\nqux = cart:nope\n", &bad);
     checkBool("analyse : commentaires, espaces, lignes invalides comptées", r2.size() == 1 && bad == 3 && r2[0].pattern == "foo", true);
+
+    // Branchements choisis à la main (page Dongles du web et d'Android).
+    neost::DongleSetup s;
+    s.key = CartridgeKey::Model::Cubase3;
+    s.dev[std::size_t(PortDevices::Port::Joy1)]  = PortDevices::Device::LeaderBoard;
+    s.dev[std::size_t(PortDevices::Port::Rs232)] = PortDevices::Device::Bat2;
+    const std::string txt = neost::formatDongleSetup(s);
+    checkStr("format : cart puis ports", txt, "cart=cubase3\njoy1=leaderboard\nrs232=bat2\n");
+    const auto back = neost::parseDongleSetup(txt);
+    checkBool("aller-retour", back.key == s.key
+              && back.dev[std::size_t(PortDevices::Port::Joy1)] == PortDevices::Device::LeaderBoard
+              && back.dev[std::size_t(PortDevices::Port::Rs232)] == PortDevices::Device::Bat2
+              && back.dev[std::size_t(PortDevices::Port::Joy0)] == PortDevices::Device::None, true);
+    checkStr("vide → texte vide", neost::formatDongleSetup(neost::DongleSetup{}), "");
+    // Abîmé : clé inconnue, périphérique hors de son connecteur, port inconnu → ignorés.
+    const auto bad2 = neost::parseDongleSetup("cart=nope\nprinter=leaderboard\nfoo=urc\n# x\n joy0 = cricket \r\n");
+    checkBool("abîmé : seul joy0=cricket survit", bad2.key == CartridgeKey::Model::None
+              && bad2.dev[std::size_t(PortDevices::Port::Printer)] == PortDevices::Device::None
+              && bad2.dev[std::size_t(PortDevices::Port::Joy0)] == PortDevices::Device::Cricket, true);
+    checkStr("identifiant cubase2", neost::cartKeyId(CartridgeKey::Model::Cubase2), "cubase2");
+    checkBool("identifiant inconnu → None", neost::cartKeyFromId("x") == CartridgeKey::Model::None, true);
 }
 
 // -----------------------------------------------------------------------------
@@ -4124,6 +4216,7 @@ int main() {
     testConfigParser();
     testStKeysCountries();
     testRamDisplay();
+    testBitmapView();
     testConfigPath();
     testConfigWriteCreatesDir();
     testRomProbe();

@@ -12,11 +12,17 @@
 
 #include "android/AndroidRoms.hpp"
 #include "imgui.h"
+#include "io/DongleTable.hpp"
 #include "io/MediaScan.hpp"
+#include "io/PortDevices.hpp"
 
 namespace fs = std::filesystem;
 
 namespace neost {
+
+static_assert(sizeof(AndroidMenu::portDev) / sizeof(AndroidMenu::portDev[0])
+                  == std::size_t(PortDevices::Port::Count),
+              "AndroidMenu::portDev must have one slot per PortDevices::Port");
 
 // Même table que le menu borne (main.cpp, KIOSK_KEYS) : F1-F8, chiffres, puis
 // les touches dont les jeux ST ont réellement besoin + les deux clics souris.
@@ -77,6 +83,7 @@ void AndroidMenu::draw(float uiScale) {
         // Menu refermé par RETOUR, START ou RESUME depuis la page ROM : il se
         // rouvrira sur la page principale, pas sur la liste des ROM.
         romPage = false;
+        donglePage = false; dongleSlot = -1;
         ImGui::SetNextWindowPos(ImVec2(6.0f * uiScale, 6.0f * uiScale));
         ImGui::SetNextWindowBgAlpha(0.35f);
         ImGui::Begin("##openbtn", nullptr,
@@ -188,6 +195,114 @@ void AndroidMenu::draw(float uiScale) {
         return;
     }
 
+    // --- PAGE DONGLES : même panneau, deux niveaux ----------------------------
+    // Vue d'ensemble = une rangée par emplacement (clé cartouche, puis les cinq
+    // ports) avec ce qui y est branché ; taper une rangée ouvre la liste de ses
+    // choix, grammaire de la page ROM. Brancher ne redémarre rien : le logiciel
+    // sonde sa clé quand il le veut, comme sur le fer (la page Dongles du bureau
+    // fait de même).
+    if (donglePage) {
+        using Port = PortDevices::Port;
+        using Dev  = PortDevices::Device;
+        static const char* const kPortNames[] = {
+            "JOYSTICK 0 (MOUSE)", "JOYSTICK 1", "RS-232", "PRINTER", "CARTRIDGE BUTTON" };
+        static_assert(sizeof(kPortNames) / sizeof(kPortNames[0]) == std::size_t(Port::Count),
+                      "kPortNames must follow PortDevices::Port");
+        ImGui::TextColored(kYellow, "DONGLES");
+        ImGui::SameLine();
+        if (dongleSlot < 0)
+            ImGui::TextDisabled("  tap a slot to change it  ·  no reboot");
+        else
+            ImGui::TextDisabled("  %s  ·  tap to plug  ·  no reboot",
+                                dongleSlot == 0 ? "CARTRIDGE KEY" : kPortNames[dongleSlot - 1]);
+        {
+            const float bw = line * 6.0f;
+            ImGui::SameLine(ImGui::GetContentRegionAvail().x - bw + ImGui::GetCursorPosX());
+            if (ImGui::Button("BACK", ImVec2(bw, rowH * 0.8f))) {
+                if (dongleSlot >= 0) dongleSlot = -1; else donglePage = false;
+            }
+        }
+        ImGui::Separator();
+        ImGui::BeginChild("##dongles", ImVec2(0, 0), true);
+        // Une rangée tapable « libellé ... valeur », la valeur en vert si branchée.
+        auto slotRow = [&](int id, const char* name, const char* value, bool plugged) {
+            ImGui::PushID(id);
+            const ImVec2 p0 = ImGui::GetCursorPos();
+            const bool hit = ImGui::Selectable("##slot", false, 0, ImVec2(0, rowH));
+            ImGui::SetCursorPos(ImVec2(p0.x, p0.y + (rowH - line) * 0.5f));
+            ImGui::TextUnformatted(name);
+            ImGui::SameLine(p0.x + line * 14.0f);
+            ImGui::TextColored(plugged ? kGreen : kDim, "%s", value);
+            ImGui::SetCursorPos(ImVec2(p0.x, p0.y + rowH + ImGui::GetStyle().ItemSpacing.y));
+            ImGui::PopID();
+            return hit;
+        };
+        // Une rangée de choix, grammaire de la page ROM (« > » + vert = branché).
+        auto choiceRow = [&](int id, const char* label, bool cur) {
+            if (cur) ImGui::PushStyleColor(ImGuiCol_Text, kGreen);
+            ImGui::PushID(id);
+            char lab[160];
+            std::snprintf(lab, sizeof lab, "%s%s", cur ? "> " : "  ", label);
+            const bool hit = ImGui::Selectable(lab, cur, 0, ImVec2(0, rowH));
+            ImGui::PopID();
+            if (cur) ImGui::PopStyleColor();
+            return hit;
+        };
+
+        if (dongleSlot < 0) {
+            const auto key = CartridgeKey::Model(cartKey);
+            if (slotRow(0, "CARTRIDGE KEY", cartKeyLabel(key), key != CartridgeKey::Model::None))
+                dongleSlot = 0;
+            for (int p = 0; p < int(Port::Count); ++p) {
+                const Dev d = Dev(portDev[p]);
+                if (slotRow(1 + p, kPortNames[p], PortDevices::label(d), d != Dev::None))
+                    dongleSlot = 1 + p;
+            }
+            // Bouton de cartouche branché : le presser referme le menu, la machine
+            // reprend et voit l'appui (Multiface : GPIP7, Ripper : RI, jusqu'au VBL).
+            const Dev btn = Dev(portDev[int(Port::CartButton)]);
+            if (btn != Dev::None) {
+                ImGui::Spacing();
+                const bool mf = btn == Dev::Multiface;
+                ImGui::PushStyleColor(ImGuiCol_Text, kOrange);
+                if (ImGui::Selectable(mf ? "  PRESS FREEZE BUTTON" : "  PRESS RIPPER BUTTON",
+                                      false, 0, ImVec2(0, rowH))) {
+                    reqPortButton = true;
+                    open = false;
+                }
+                ImGui::PopStyleColor();
+            }
+            ImGui::Spacing();
+            ImGui::TextDisabled("A game only probes the port it expects: plug the key there.");
+            ImGui::TextDisabled("Pro Sound Designer is an 8-bit DAC, not a key. Kept for the next launch.");
+        } else if (dongleSlot == 0) {
+            for (int m = 0; m < kCartKeyModelCount; ++m)
+                if (choiceRow(m, cartKeyLabel(CartridgeKey::Model(m)), m == cartKey)) {
+                    if (m != cartKey) reqCartKey = m;
+                    dongleSlot = -1;
+                }
+            ImGui::Spacing();
+            ImGui::TextDisabled("On /ROM3 ($FB0000), invisible to TOS. Cubase Lite needs none.");
+        } else {
+            const int p = dongleSlot - 1;
+            for (int di = 0; di < int(Dev::Count); ++di) {
+                const Dev d = Dev(di);
+                if (!PortDevices::fits(Port(p), d)) continue;
+                const bool home = d == Dev::None || PortDevices::defaultPort(d) == Port(p);
+                char lab[128];
+                std::snprintf(lab, sizeof lab, "%s%s", PortDevices::label(d),
+                              home ? "" : "  (wrong port for this game)");
+                if (choiceRow(di, lab, di == portDev[p])) {
+                    if (di != portDev[p]) { reqPlugPort = p; reqPlugDev = di; }
+                    dongleSlot = -1;
+                }
+            }
+        }
+        ImGui::EndChild();
+        ImGui::End();
+        return;
+    }
+
     ImGui::TextColored(kYellow, "MENU");
     ImGui::SameLine();
     ImGui::TextDisabled("  tap a game to insert it  ·  no reboot");
@@ -252,10 +367,10 @@ void AndroidMenu::draw(float uiScale) {
     }
     ImGui::EndChild();
 
-    // Six actions côte à côte, largeur égale (cf. la réserve `footer`).
+    // Sept actions côte à côte, largeur égale (cf. la réserve `footer`).
     {
         const float sp = ImGui::GetStyle().ItemSpacing.x;
-        const float bw = (ImGui::GetContentRegionAvail().x - 5.0f * sp) / 6.0f;
+        const float bw = (ImGui::GetContentRegionAvail().x - 6.0f * sp) / 7.0f;
         if (actionRow("RESTART", kOrange, ImVec2(bw, rowH))) { reqRestart = true; open = false; }
         ImGui::SameLine();
         // Le menu se referme : le recul se voit aussitôt, la partie reprend de là.
@@ -268,6 +383,10 @@ void AndroidMenu::draw(float uiScale) {
         if (actionRow("RESCAN", ImVec4(0.60f, 0.95f, 0.60f, 1.0f), ImVec2(bw, rowH))) reqRescan = true;
         ImGui::SameLine();
         if (actionRow("ROM", ImVec4(0.85f, 0.70f, 1.00f, 1.0f), ImVec2(bw, rowH))) romPage = true;
+        ImGui::SameLine();
+        if (actionRow("DONGLES", ImVec4(0.95f, 0.85f, 0.55f, 1.0f), ImVec2(bw, rowH))) {
+            donglePage = true; dongleSlot = -1;
+        }
         ImGui::SameLine();
         if (actionRow("QUIT", ImVec4(1.00f, 0.50f, 0.40f, 1.0f), ImVec2(bw, rowH)))   reqQuit = true;
     }

@@ -53,8 +53,30 @@ int ingestChecks() {
 }
 } // namespace
 
+// Saisie de l'anneau (champ de la page MIDI du GUI, midi_net= de neost.cfg).
+int specChecks() {
+    int fails = 0;
+    auto expect = [&](bool ok, const char* what) {
+        if (!ok) { std::fprintf(stderr, "[midi-ring] FAIL: %s\n", what); ++fails; }
+    };
+    std::string peer, err;
+    int listen = 0;
+    expect(MidiRing::parseSpec("192.168.1.20:6820", peer, listen) && peer == "192.168.1.20:6820"
+           && listen == MidiRing::kDefaultListen, "host:port, default listen port");
+    expect(MidiRing::parseSpec(" peer.local:7000:7001 ", peer, listen) && peer == "peer.local:7000"
+           && listen == 7001, "host:port:listen, spaces trimmed");
+    expect(!MidiRing::parseSpec("peer.local", peer, listen, &err) && !err.empty(), "port missing");
+    expect(!MidiRing::parseSpec(":6820", peer, listen), "host missing");
+    expect(!MidiRing::parseSpec("h:0", peer, listen), "peer port 0 refused");
+    expect(!MidiRing::parseSpec("h:70000", peer, listen), "peer port above 65535 refused");
+    expect(!MidiRing::parseSpec("h:6820:x", peer, listen), "listen port not a number");
+    expect(!MidiRing::parseSpec("h:68a0", peer, listen), "peer port not a number");
+    return fails;
+}
+
 int main() {
     if (const int f = ingestChecks()) return 10 + f;
+    if (const int f = specChecks()) return 30 + f;
     MidiRing ring;
     bool opened = false;
     for (int port = 49152; port < 49252 && !opened; ++port)

@@ -220,6 +220,21 @@
         <span id="joyDzValue" class="badge">0.30</span>
       </div>
     </fieldset>
+
+    <fieldset id="dongleBox">
+      <legend>Dongles</legend>
+      <!-- Peuplé au démarrage depuis le cœur (neost_cart_key_label, neost_port_device_label) :
+           la page ne recopie ni les libellés ni la compatibilité des connecteurs. -->
+      <div class="row">
+        <label for="cartKeySel" style="font-size:0.78rem;color:var(--muted);min-width:7.5em">Cartridge key</label>
+        <select id="cartKeySel" title="Steinberg / C-Lab key on /ROM3 ($FB0000), invisible to TOS. Cubase Lite needs none."></select>
+      </div>
+      <div id="portRows"></div>
+      <div class="row" style="margin-top:0.45rem">
+        <button id="btnPortButton" hidden title="Multiface: pulls the monitor line (GPIP7) low until the next VBL. Ultimate Ripper: pulls RI (GPIP6). Load its ROM as a cartridge first.">Press button</button>
+        <span class="badge" title="A game only probes the port it expects: plug the key there. Plugging never reboots. The choice is kept in this browser.">kept in this browser · no reboot</span>
+      </div>
+    </fieldset>
   </div>
 
   <details>
@@ -412,7 +427,78 @@
       if (window.neostApplyVolume) neostApplyVolume();   // volume initial du curseur
       if (rewindOn) Module.ccall('neost_set_rewind', null, ['number'], [1]);   // basculé avant la fin du chargement
       if (window.neostApplyJoyDeadzone) neostApplyJoyDeadzone();   // zone morte du curseur
+      initDongles();     // page Dongles : peuple les listes, rebranche le choix gardé
     };
+
+    // ===== Dongles ==============================================================
+    // Même page que le bureau (Configuration → Dongles) et le menu Android : une clé
+    // sur le port cartouche, un périphérique par port. Libellés et compatibilité des
+    // connecteurs viennent du cœur ; le choix se garde dans localStorage au format
+    // partagé avec Android (neost_get_dongles / neost_set_dongles). localStorage peut
+    // manquer (navigation privée, stockage bloqué) : la page marche alors sans mémoire.
+    var DONGLE_KEY = 'neost.dongles';
+    var PORT_NAMES = ['Joystick 0 (mouse)', 'Joystick 1', 'RS-232', 'Printer', 'Cartridge button'];
+    function saveDongles() {
+      try { localStorage.setItem(DONGLE_KEY, Module.ccall('neost_get_dongles', 'string', [], [])); } catch (e) {}
+    }
+    function refreshPortButton() {
+      var dev = parseInt(document.getElementById('portSel4').value, 10) || 0;
+      var btn = document.getElementById('btnPortButton');
+      btn.hidden = (dev === 0);
+      btn.textContent = /Multiface/.test(document.getElementById('portSel4').selectedOptions[0].textContent)
+        ? 'Press FREEZE button' : 'Press RIPPER button';
+    }
+    function initDongles() {
+      var saved = null;
+      try { saved = localStorage.getItem(DONGLE_KEY); } catch (e) {}
+      if (saved) Module.ccall('neost_set_dongles', 'number', ['string'], [saved]);
+      var cart = document.getElementById('cartKeySel');
+      cart.innerHTML = '';
+      for (var m = 0; ; ++m) {
+        var lab = Module.ccall('neost_cart_key_label', 'string', ['number'], [m]);
+        if (!lab) break;
+        cart.add(new Option(lab, String(m)));
+      }
+      cart.value = String(Module.ccall('neost_get_cart_key', 'number', [], []));
+      cart.onchange = function () {
+        Module.ccall('neost_set_cart_key', null, ['number'], [parseInt(this.value, 10) || 0]);
+        saveDongles();
+        focusScreen();
+      };
+      var rows = document.getElementById('portRows');
+      rows.innerHTML = '';
+      var nDev = Module.ccall('neost_port_device_count', 'number', [], []);
+      PORT_NAMES.forEach(function (name, p) {
+        var row = document.createElement('div');
+        row.className = 'row';
+        row.style.marginTop = '0.35rem';
+        var lab = document.createElement('label');
+        lab.htmlFor = 'portSel' + p;
+        lab.textContent = name;
+        lab.style.cssText = 'font-size:0.78rem;color:var(--muted);min-width:7.5em';
+        var sel = document.createElement('select');
+        sel.id = 'portSel' + p;
+        for (var d = 0; d < nDev; ++d) {
+          var t = Module.ccall('neost_port_device_label', 'string', ['number', 'number'], [p, d]);
+          if (t) sel.add(new Option(t, String(d)));
+        }
+        sel.value = String(Module.ccall('neost_get_port_device', 'number', ['number'], [p]));
+        sel.onchange = function () {
+          Module.ccall('neost_plug_port', null, ['number', 'number'], [p, parseInt(this.value, 10) || 0]);
+          saveDongles();
+          if (p === 4) refreshPortButton();
+          focusScreen();
+        };
+        row.appendChild(lab);
+        row.appendChild(sel);
+        rows.appendChild(row);
+      });
+      refreshPortButton();
+      document.getElementById('btnPortButton').onclick = function () {
+        Module.ccall('neost_press_port_button', null, [], []);
+        focusScreen();
+      };
+    }
 
     // ===== Sortie son de la machine (YM2149 + DMA STE) ========================
     // MODÈLE « PUSH », comme le frontend natif. Le cœur produit le son PAR TRAME

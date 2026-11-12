@@ -36,6 +36,16 @@ struct AndroidMenu {
     bool keysPage  = false;    // page clavier (machine qui TOURNE)
     bool romPage   = false;    // page ROM système (dans le menu : machine en pause)
     int  romCur    = 0;        // index de la ROM chargée dans kAndroidRoms (AndroidRoms.hpp)
+    // Page DONGLES (dans le menu : machine en pause) : clé du port cartouche et un
+    // périphérique par port, comme la page Dongles du bureau. `dongleSlot` = -1 pour
+    // la vue d'ensemble, 0 pour la clé cartouche, 1 + index de PortDevices::Port pour
+    // un port (liste des choix).
+    bool donglePage = false;
+    int  dongleSlot = -1;
+    // Ce qui est branché, recopié par la boucle AVANT draw (le menu ne voit pas la
+    // machine) : CartridgeKey::Model et PortDevices::Device par port.
+    int  cartKey    = 0;
+    int  portDev[5] = {};
     int  diskSel   = 0;
     std::vector<std::string> disks;   // ludothèque, remplie par refresh()
     std::string dataDir;              // stockage INTERNE : données embarquées (diskA…)
@@ -56,6 +66,10 @@ struct AndroidMenu {
     int  reqKeyPress = -1;     // index dans kKeys : touche à envoyer au ST
     int  reqClick    = 0;      // 1 = clic gauche, 2 = clic droit
     int  reqRom      = -1;     // index dans kAndroidRoms : changer de ROM (boot À FROID)
+    int  reqCartKey  = -1;     // CartridgeKey::Model à brancher sur le port cartouche
+    int  reqPlugPort = -1;     // PortDevices::Port …
+    int  reqPlugDev  = -1;     // … et le PortDevices::Device à y brancher
+    bool reqPortButton = false; // presser le bouton FREEZE/RIPPER (Multiface, URC)
 
     // Relit la ludothèque (io/MediaScan) et recale la sélection sur le monté.
     void refresh();

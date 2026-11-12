@@ -81,6 +81,15 @@ struct ConfigUi {
     int  reqMidiOutGm = -1, reqMidiOutPort = -1, reqMidiOutMt32 = -1, reqMt32Model = -1;
     bool reqMidiPanic = false;            // bouton « All notes off » de la page MIDI
     int  reqMidiLoopback = -1;            // case OUT->IN de la page MIDI
+    // Anneau MIDI sur UDP (page MIDI) : champ « hôte:port[:écoute] » semé une fois
+    // depuis cfg.midiNet, requête de (re)connexion, état relu par la boucle.
+    char midiNetEdit[128] = "";
+    bool midiNetInit = false;
+    bool reqMidiNet = false;
+    std::string reqMidiNetSpec;           // "" = débrancher
+    std::string midiNetStatus;            // lecture : App::midiRingStatus
+    bool midiNetOpen = false;             // lecture : anneau ouvert
+    uint64_t midiNetRx = 0, midiNetLost = 0;   // lecture : datagrammes reçus / perdus
     // Appareils MIDI hôtes (page MIDI). Les listes sont RAFRAÎCHIES PAR LA BOUCLE, pas
     // par la page : énumérer CoreMIDI 60 fois par seconde pour dessiner deux menus
     // déroulants serait absurde, et un appareil branché à chaud n'a pas besoin

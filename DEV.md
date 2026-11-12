@@ -44,6 +44,8 @@ src/
                             divergente qui rendait les samples inaudibles en WASM.
     Framing.{hpp,cpp}       Région de CONTENU de la trame (zoom adaptatif) : une seule
                             règle pour le kiosk, la fenêtre bureau et le plein écran WASM.
+    BitmapView.{hpp,cpp}    Mémoire lue en plans ST (1/2/4) → ARGB, pour l'explorateur de
+                            bitmaps du débogueur ; testé dans neost-selftest.
     Machine.{hpp,cpp}       Assemble tout + runFrame() événementiel.
     Scheduler.hpp           Ordonnanceur d'événements datés (cycles).
     Tracer.{hpp,cpp}        Trace d'instructions/IRQ.  Symbols.{hpp,cpp} : .sym / TOS $601A.
@@ -78,11 +80,15 @@ src/
                             chemins, fenêtre, Machine, montages, hôtes audio/MIDI/réseau,
                             ImGui. Renvoie < 0 pour « boucler », sinon un code de sortie.
     AppLoop.cpp             La boucle (entrées → trames dues → dessin → requêtes → swap)
-                            et l'arrêt. ⚠ Encore d'un seul tenant — déplacée, pas découpée.
+                            et l'arrêt, en phases `(App&, Frame&)` (A9). Le menu borne :
+                            `runKioskMenu` — 140 lignes de lecture des entrées, une
+                            fonction par page (`kioskPage*`) ; les requêtes de la
+                            Configuration : neuf groupes `consume*Requests`.
     ConfigWindow.{hpp,cpp}  Fenêtre « Configuration » (14 pages) + fenêtre Disquettes.
                             `ConfigUi` porte les requêtes ; la fenêtre ne monte rien.
     KioskMenu.{hpp,cpp}     Menu plein écran de la borne + scrutations (jeux, dossiers).
-    DebugWindows.{hpp,cpp}  Hexa, CPU, joystick, débogueur.
+    DebugWindows.{hpp,cpp}  Hexa, CPU, joystick, débogueur, explorateur de bitmaps
+                            (décodage dans core/BitmapView, lecture par Bus::peekMapped8).
     StScreenView.{hpp,cpp}  `GlScreen` (texture ARGB du Shifter) + passe CRT + les deux
                             cadrages (viewport borne / fenêtre bureau), même zoom adaptatif.
     InputCallbacks.{hpp,cpp} Callbacks GLFW clavier/souris (signature imposée → `app()`).
@@ -195,12 +201,18 @@ la trame suivante est due, et `neost_jspi_park` enchaîne jusqu'à 3 trames de p
 qu'elles sont déjà dues (`Module.neostParkBudget`, 4 par tour au plus). Une exception qui
 remonte d'une trame arrête la machine sans figer la page (`Module.neostHalted`, statut
 « Emulation stopped ») ; reset, ROM ou moniteur la relancent. Banc dans un vrai navigateur,
-hors paliers (Chrome et le build Emscripten requis) : `node tools/check_web_jspi.mjs`
-(`--only nominal,catchup,orders,fiber0,exception`, `CHROME=`, `NEOST_WASM_DIR=`). Il sert
-`wasm/` en local, pilote Chrome sans écran par CDP et instrumente la page par un script injecté
+hors paliers (un navigateur et le build Emscripten requis) : `node tools/check_web_jspi.mjs`
+(`--browser chrome|firefox`, `--only nominal,catchup,orders,fiber0,exception`, `CHROME=`,
+`FIREFOX=`, `NEOST_WASM_DIR=`). Il sert `wasm/` en local, pilote le navigateur sans écran
+(Chrome par CDP, Firefox par WebDriver BiDi, servi par Firefox lui-même : ni geckodriver
+ni Playwright) et instrumente la page par un script injecté
 (aucun crochet dans le code livré) : trames livrées pendant un blit HOG de 4 096 × 1 000 mots
 monté en disquette de boot, rAF bridé à 30 et 10 Hz, budget forcé à 0 pour comparer, reset,
-ROM et moniteur en plein blit, `?fiber=0`, exception injectée dans une trame garée.
+ROM et moniteur en plein blit, `?fiber=0`, exception injectée dans une trame garée. Les
+contrôles de CADENCE sur le rAF natif sont sautés (SKIP, pas FAIL) quand le navigateur tourne
+sous la fréquence de la machine avant le blit (témoin « before the blit … rAF turns/s ») ;
+le parcage, les ordres, l'exception et le rattrapage sur rAF bridé restent contrôlés. Safari
+n'est pas pilotable sans « Allow remote automation » coché par l'utilisateur.
 
 ## Le Bus
 

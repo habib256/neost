@@ -608,6 +608,18 @@ réseau ne constitue pas une extension du RDR.
 
 En headless, un anneau ouvert prend la place des appareils MIDI IN hôtes sur cette
 entrée DIN ; si les deux ont été demandés, le choix est signalé dans le journal.
+
+**Dans le GUI** (2026-11-12) : page *Configuration → MIDI*, section *MIDI ring over UDP* —
+on saisit le pair aval `hôte:port[:écoute]` (même grammaire que `--midi-net`, analysée par
+`MidiRing::parseSpec`), *Connect* ouvre l'anneau sans redémarrer, *Off* le débranche ; la
+saisie est gardée dans `neost.cfg` (`midi_net=`) et rejouée au lancement et au chargement
+d'un profil. La page affiche l'état (ou la raison d'un échec : saisie illisible, hôte
+inconnu, port d'écoute occupé) et les datagrammes reçus et perdus ; le journal en fait le
+bilan à la fermeture. Comme en headless, l'anneau ouvert remplace les appareils MIDI IN
+hôtes ; le MIDI OUT part vers l'anneau **en plus** des sorties hôtes (synthés, CoreMIDI,
+MT-32). Vérifié le 2026-11-12 : un pair factice (Python, 127.0.0.1) envoie 8 datagrammes
+v1 au GUI lancé avec `midi_net=127.0.0.1:47101:47102` → « 8 datagrams in, 0 lost ». Le test
+à deux nœuds reste ouvert (A33).
 Le contrôle local `tests/midi_ring_logic.cpp` (cible `neost-midi-ring-test`, lancée
 par le palier `fast` quand `NEOST_WITH_NET` est actif) reçoit 20 octets dans l’ordre en
 51200 cycles, portés par un seul datagramme (127.0.0.1 uniquement), et rejette doublon,

@@ -34,6 +34,7 @@
 #include "core/Framing.hpp"
 #include "core/Machine.hpp"
 #include "core/Rewind.hpp"
+#include "io/DongleTable.hpp"
 #include "io/JoystickInput.hpp"
 
 namespace {
@@ -839,6 +840,78 @@ EMSCRIPTEN_KEEPALIVE void neost_set_volume(float v) {
     g_masterVol = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
 }
 EMSCRIPTEN_KEEPALIVE float neost_get_volume() { return g_masterVol; }
+
+// --- Dongles (page « Dongles » du shell) --------------------------------------
+// Clé du port cartouche et un périphérique par port, comme la page Dongles du
+// bureau et celle du menu Android. Les libellés et la compatibilité des connecteurs
+// viennent du cœur (io/PortDevices, io/DongleTable) : le shell n'en recopie rien.
+// Brancher ne redémarre pas — le logiciel sonde sa clé quand il le veut. Appliqué
+// hors instruction garée (whenUnparked) : la clé cartouche s'accroche au Bus.
+
+// Libellé de la clé cartouche `m` (ordre de CartridgeKey::Model), nullptr au-delà.
+EMSCRIPTEN_KEEPALIVE const char* neost_cart_key_label(int m) {
+    if (m < 0 || m >= neost::kCartKeyModelCount) return nullptr;
+    return neost::cartKeyLabel(CartridgeKey::Model(m));
+}
+EMSCRIPTEN_KEEPALIVE int neost_port_device_count() { return int(PortDevices::Device::Count); }
+// Libellé du périphérique `dev` sur le port `port` ("" s'il n'y entre pas), suffixé
+// quand ce n'est pas le port que le jeu sonde.
+EMSCRIPTEN_KEEPALIVE const char* neost_port_device_label(int port, int dev) {
+    static std::string s;
+    s.clear();
+    if (port < 0 || port >= int(PortDevices::Port::Count) || dev < 0 || dev >= int(PortDevices::Device::Count))
+        return s.c_str();
+    const auto p = PortDevices::Port(port);
+    const auto d = PortDevices::Device(dev);
+    if (!PortDevices::fits(p, d)) return s.c_str();
+    s = PortDevices::label(d);
+    if (d != PortDevices::Device::None && PortDevices::defaultPort(d) != p) s += " (wrong port for this game)";
+    return s.c_str();
+}
+EMSCRIPTEN_KEEPALIVE void neost_set_cart_key(int m) {
+    if (!g_machine || m < 0 || m >= neost::kCartKeyModelCount) return;
+    whenUnparked([m] { g_machine->setDongle(CartridgeKey::Model(m)); });
+}
+EMSCRIPTEN_KEEPALIVE void neost_plug_port(int port, int dev) {
+    if (!g_machine || port < 0 || port >= int(PortDevices::Port::Count)
+        || dev < 0 || dev >= int(PortDevices::Device::Count)) return;
+    whenUnparked([port, dev] { g_machine->plugPort(PortDevices::Port(port), PortDevices::Device(dev)); });
+}
+EMSCRIPTEN_KEEPALIVE void neost_press_port_button() {
+    if (g_machine) whenUnparked([] { g_machine->pressPortButton(); });
+}
+// Branchements au format partagé avec Android (io/DongleTable.hpp, formatDongleSetup) :
+// la page les range dans localStorage et les rend au chargement suivant.
+EMSCRIPTEN_KEEPALIVE const char* neost_get_dongles() {
+    static std::string s;
+    neost::DongleSetup d;
+    if (g_machine) {
+        d.key = g_machine->dongle.model();
+        for (int p = 0; p < int(PortDevices::Port::Count); ++p)
+            d.dev[p] = g_machine->ports.at(PortDevices::Port(p));
+    }
+    s = neost::formatDongleSetup(d);
+    return s.c_str();
+}
+// Rebranche ce que `text` décrit ; rend le nombre d'emplacements occupés. Un texte
+// abîmé ne branche que ce qu'il décrit correctement (parseDongleSetup).
+EMSCRIPTEN_KEEPALIVE int neost_set_dongles(const char* text) {
+    if (!g_machine || !text) return 0;
+    const neost::DongleSetup d = neost::parseDongleSetup(text);
+    int n = d.key != CartridgeKey::Model::None ? 1 : 0;
+    for (int p = 0; p < int(PortDevices::Port::Count); ++p) n += d.dev[p] != PortDevices::Device::None ? 1 : 0;
+    whenUnparked([d] {
+        g_machine->setDongle(d.key);
+        for (int p = 0; p < int(PortDevices::Port::Count); ++p)
+            g_machine->plugPort(PortDevices::Port(p), d.dev[p]);
+    });
+    return n;
+}
+EMSCRIPTEN_KEEPALIVE int neost_get_cart_key() { return g_machine ? int(g_machine->dongle.model()) : 0; }
+EMSCRIPTEN_KEEPALIVE int neost_get_port_device(int port) {
+    if (!g_machine || port < 0 || port >= int(PortDevices::Port::Count)) return 0;
+    return int(g_machine->ports.at(PortDevices::Port(port)));
+}
 
 } // extern "C"
 

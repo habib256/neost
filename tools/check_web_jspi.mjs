@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // =============================================================================
-//  check_web_jspi.mjs — le blit HOG long garé par JSPI, mesuré dans un vrai Chrome
+//  check_web_jspi.mjs — le blit HOG long garé par JSPI, mesuré dans Chrome ou Firefox
 //
 //  Sur le web, un blit HOG de plusieurs secondes gare l'instruction qui l'a lancé
 //  (core/EmuFiber.cpp, dorsal JSPI) : la page livre chaque trame close pendant le
 //  blit et relance la pile quand la suivante est due (src/web/main_web.cpp,
 //  neost_jspi_start_loop). Ce banc construit une disquette dont le secteur de boot
 //  lance un blit HOG de 4 096 × N mots, la monte dans la page (wasm/index.html,
-//  servie en local) et pilote Chrome sans écran par CDP. Il instrumente la page
+//  servie en local) et pilote le navigateur sans écran. Il instrumente la page
 //  par un script injecté AVANT son chargement — aucun crochet dans le code livré :
 //    - chaque trame livrée pendant le blit : Module._neost_web_parked_frame enveloppé ;
 //    - les tours de requestAnimationFrame : une boucle témoin, et sur demande un rAF
@@ -27,12 +27,22 @@
 //    exception : la page le dit et reste vivante, la machine s'arrête, et le bouton
 //               Reset la relance (parked_ remis).
 //
-//  Prérequis (hors paliers de run_all : Chrome et le build Emscripten requis) :
+//  Navigateurs (--browser) : chrome (défaut, CDP) ou firefox (WebDriver BiDi, que
+//  Firefox sert lui-même avec --remote-debugging-port : ni geckodriver ni Playwright).
+//  Safari n'est pas pilotable sans que l'utilisateur coche « Allow remote automation »
+//  (safaridriver le refuse sinon) : hors de ce banc.
+//  Les contrôles de CADENCE (fréquence des trames livrées, tour rAF le plus long) sont
+//  SAUTÉS, pas échoués, quand le navigateur tourne sous la fréquence de la machine
+//  AVANT le blit (témoin « before the blit … rAF turns/s ») : hôte surchargé ou rendu
+//  logiciel, rien qui dise quoi que ce soit de JSPI. Le parcage lui-même reste vérifié.
+//
+//  Prérequis (hors paliers de run_all : un navigateur et le build Emscripten requis) :
 //    emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release -DNEOST_WEB_FREE_ONLY=ON
 //    cmake --build build-web -j --target neost-web        # → wasm/index.html
-//    node tools/check_web_jspi.mjs [--only nom,nom] [--ycount N] [--verbose]
-//  Variables : CHROME (binaire), NEOST_WASM_DIR (défaut wasm/). Node ≥ 22, ou Node 20
-//  (le script se relance lui-même avec --experimental-websocket).
+//    node tools/check_web_jspi.mjs [--browser chrome|firefox] [--only nom,nom]
+//                                  [--ycount N] [--verbose]
+//  Variables : CHROME, FIREFOX (binaires), NEOST_WASM_DIR (défaut wasm/). Node ≥ 22, ou
+//  Node 20 (le script se relance lui-même avec --experimental-websocket).
 //
 //  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test (domaine public).
 // =============================================================================
@@ -203,22 +213,116 @@ class Cdp {
     if (r.result?.exceptionDetails) throw new Error(`${expr}: ${r.result.exceptionDetails.text}`);
     return r.result?.result?.value;
   }
+  // Interface commune aux deux pilotes (Cdp, Bidi) : script injecté avant le
+  // chargement, navigation, version, fermeture.
+  async addInit(source) {
+    return (await this.send('Page.addScriptToEvaluateOnNewDocument', { source })).result.identifier;
+  }
+  async removeInit(id) { await this.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: id }); }
+  async navigate(url) { await this.send('Page.navigate', { url }); }
+  async version() { return (await this.send('Browser.getVersion')).result?.product; }
+  close() { this.ws.close(); }
+}
+
+// -----------------------------------------------------------------------------
+//  Firefox : WebDriver BiDi, servi par Firefox lui-même (--remote-debugging-port),
+//  sans geckodriver. Même interface que Cdp. Les valeurs reviennent en JSON (la
+//  sérialisation BiDi des objets est bornée en profondeur ; __jt est un objet de
+//  tableaux).
+// -----------------------------------------------------------------------------
+function firefoxPath() {
+  if (process.env.FIREFOX) return process.env.FIREFOX;
+  const c = ['/Applications/Firefox.app/Contents/MacOS/firefox', '/usr/bin/firefox'];
+  return c.find((p) => fs.existsSync(p));
+}
+
+async function launchFirefox(bin, profile) {
+  // Profil jetable : son et lecture automatique permis, aucun écran de premier
+  // lancement, minuteurs des onglets d'arrière-plan non bridés (comme Chrome ici).
+  fs.writeFileSync(path.join(profile, 'user.js'), [
+    ['media.autoplay.default', 0], ['media.autoplay.blocking_policy', 0],
+    ['browser.shell.checkDefaultBrowser', false], ['datareporting.policy.dataSubmissionEnabled', false],
+    ['toolkit.telemetry.reportingpolicy.firstRun', false], ['browser.aboutwelcome.enabled', false],
+    ['browser.startup.homepage_override.mstone', 'ignore'], ['dom.timeout.enable_budget_timer_throttling', false],
+    ['remote.active-protocols', 1], ['dom.max_script_run_time', 0], ['dom.max_chrome_script_run_time', 0],
+  ].map(([k, v]) => `user_pref(${JSON.stringify(k)}, ${JSON.stringify(v)});`).join('\n') + '\n');
+  const proc = spawn(bin, ['--headless', '--no-remote', '--profile', profile,
+    '--remote-debugging-port', '0', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  let err = '';
+  const url = await new Promise((res, rej) => {
+    proc.stderr.on('data', (d) => {
+      err += d;
+      const m = /WebDriver BiDi listening on (ws:\/\/[^\s]+)/.exec(err);
+      if (m) res(m[1]);
+    });
+    proc.on('exit', () => rej(new Error('Firefox exited:\n' + err)));
+  });
+  return { proc, url };
+}
+
+class Bidi {
+  static async open(url) {
+    const c = new Bidi();
+    c.ws = new WebSocket(url.replace(/\/$/, '') + '/session');
+    c.id = 0; c.pending = new Map(); c.logs = [];
+    c.ws.onmessage = (e) => {
+      const m = JSON.parse(e.data);
+      if (m.id && c.pending.has(m.id)) { c.pending.get(m.id)(m); c.pending.delete(m.id); }
+      else if (m.method === 'log.entryAdded')
+        c.logs.push((m.params.type === 'javascript' ? '[uncaught] ' : '') + m.params.text);
+    };
+    await new Promise((r, j) => { c.ws.onopen = r; c.ws.onerror = j; });
+    const s = await c.send('session.new', { capabilities: {} });
+    if (s.type === 'error') throw new Error(`session.new: ${s.message}`);
+    c.caps = s.result.capabilities;
+    c.ctx = (await c.send('browsingContext.getTree', {})).result.contexts[0].context;
+    await c.send('session.subscribe', { events: ['log.entryAdded'] });
+    return c;
+  }
+  // Borne de 90 s : une page bloquée (blit d'un seul tenant sous ?fiber=0) retarde la
+  // réponse, elle ne doit pas figer le banc.
+  send(method, params = {}) {
+    return new Promise((r, j) => {
+      const i = ++this.id;
+      const t = setTimeout(() => { this.pending.delete(i); j(new Error(`${method}: no answer in 90 s`)); }, 90000);
+      this.pending.set(i, (m) => { clearTimeout(t); r(m); });
+      this.ws.send(JSON.stringify({ id: i, method, params }));
+    });
+  }
+  async ev(expr) {
+    const r = await this.send('script.evaluate', {
+      expression: `(async () => JSON.stringify(await (${expr})))()`,
+      target: { context: this.ctx }, awaitPromise: true, resultOwnership: 'none' });
+    if (r.type === 'error') throw new Error(`${expr}: ${r.message}`);
+    if (r.result.type === 'exception') throw new Error(`${expr}: ${r.result.exceptionDetails.text}`);
+    const v = r.result.result;
+    return v.type === 'string' ? JSON.parse(v.value) : undefined;
+  }
+  async addInit(source) {
+    return (await this.send('script.addPreloadScript',
+                            { functionDeclaration: `() => { ${source} }` })).result.script;
+  }
+  async removeInit(id) { await this.send('script.removePreloadScript', { script: id }); }
+  async navigate(url) {
+    await this.send('browsingContext.navigate', { context: this.ctx, url, wait: 'none' });
+  }
+  async version() { return `${this.caps.browserName} ${this.caps.browserVersion}`; }
+  close() { this.send('session.end').catch(() => {}); this.ws.close(); }
 }
 
 // -----------------------------------------------------------------------------
 //  Mesures
 // -----------------------------------------------------------------------------
 async function loadPage(cdp, base, query, cfg) {
-  const ident = (await cdp.send('Page.addScriptToEvaluateOnNewDocument',
-                                { source: probeSource(cfg) })).result.identifier;
+  const ident = await cdp.addInit(probeSource(cfg));
   cdp.logs.length = 0;
-  await cdp.send('Page.navigate', { url: `${base}/index.html${query}` });
+  await cdp.navigate(`${base}/index.html${query}`);
   let ok = false;
   for (let i = 0; i < 300 && !ok; i++) {
     await sleep(100);
     try { ok = await cdp.ev('typeof ready !== "undefined" && ready === true'); } catch {}
   }
-  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: ident });
+  await cdp.removeInit(ident);
   if (!ok) throw new Error('page not ready:\n' + cdp.logs.join('\n'));
   return await cdp.ev('Module.neostJspi === true');
 }
@@ -298,15 +402,27 @@ async function main() {
   if (!fs.existsSync(path.join(wasmDir, 'index.html'))) {
     console.error(`SKIP: ${wasmDir}/index.html missing (build the neost-web target)`); return 1;
   }
-  const bin = chromePath();
-  if (!bin) { console.error('SKIP: Chrome not found (set CHROME)'); return 1; }
+  const browser = argValue('--browser', 'chrome');
+  if (browser !== 'chrome' && browser !== 'firefox') {
+    console.error(`unknown --browser ${browser} (chrome | firefox)`); return 1;
+  }
+  const bin = browser === 'firefox' ? firefoxPath() : chromePath();
+  if (!bin) { console.error(`SKIP: ${browser} not found (set ${browser.toUpperCase()})`); return 1; }
 
   const srv = await serve(wasmDir);
   const base = `http://127.0.0.1:${srv.address().port}`;
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'neost-jspi-'));
-  const { proc, port } = await launchChrome(bin, profile);
-  const cdp = await Cdp.open(port);
-  const ver = (await cdp.send('Browser.getVersion')).result?.product;
+  let proc, cdp;
+  if (browser === 'firefox') {
+    const ff = await launchFirefox(bin, profile);
+    proc = ff.proc;
+    cdp = await Bidi.open(ff.url);
+  } else {
+    const ch = await launchChrome(bin, profile);
+    proc = ch.proc;
+    cdp = await Cdp.open(ch.port);
+  }
+  const ver = await cdp.version();
   console.log(`[web-jspi] ${ver}, blit 4096 x ${ycount} words, page ${base}`);
   const disk = hogDisk(4096, ycount);
 
@@ -316,17 +432,36 @@ async function main() {
     if (!ok) fails.push(what);
   };
   const near = (fps, hz, tol = 0.04) => Math.abs(fps - hz) <= hz * tol;
+  // Contrôles de CADENCE sautés (pas échoués) quand le navigateur n'atteint pas la
+  // fréquence de la machine avant même le blit : hôte surchargé, rendu logiciel du
+  // navigateur sans écran… JSPI n'y est pour rien et le chiffre ne dirait rien de lui.
+  const skipped = [];
+  const timed = (s, hz, what) => {
+    if (s && s.idleHz >= hz * 0.9) return true;
+    const why = s ? `browser at ${s.idleHz.toFixed(0)} rAF turns/s before the blit` : 'no blit';
+    console.log(`[web-jspi]   ${what.padEnd(70)} SKIP (${why})`);
+    skipped.push(what);
+    return false;
+  };
   const want = (name) => only.length === 0 || only.includes(name);
   const logsHave = (re) => cdp.logs.some((l) => re.test(l));
 
   // Une page, un blit : rend les statistiques (null : pas de blit garé).
   async function blit(name, query, cfg, setup) {
     const jspi = await loadPage(cdp, base, query, cfg);
+    // Témoin hors blit : tours rAF par seconde, machine en marche (boot EmuTOS). Un
+    // navigateur qui n'atteint pas la fréquence de la machine ICI ne l'atteindra pas
+    // pendant le blit non plus : c'est alors le rendu ou l'émulation, pas JSPI.
+    const t0 = await cdp.ev('__jt.ticks.length');
+    await sleep(2000);
+    const idleHz = ((await cdp.ev('__jt.ticks.length')) - t0) / 2;
     await writeDisk(cdp, disk);
     await setup();
     const s = await waitBlit(cdp);
-    console.log(`[web-jspi] ${name}: ${fmt(s)}${jspi ? '' : ' (no JSPI)'}`);
+    console.log(`[web-jspi] ${name}: ${fmt(s)}${jspi ? '' : ' (no JSPI)'}; ` +
+                `before the blit ${idleHz.toFixed(0)} rAF turns/s`);
     if (verbose) console.log(cdp.logs.join('\n'));
+    if (s) s.idleHz = idleHz;
     return s;
   }
   const bootHog = async () => { await mount(cdp, 1); };
@@ -334,20 +469,27 @@ async function main() {
   try {
     if (want('nominal')) {
       const s60 = await blit('nominal 60 Hz', '?machine=ste', {}, bootHog);
-      check(s60 && near(s60.fps, 60), 'STE 60 Hz: delivered frames follow emulated time');
-      check(s60 && s60.maxGap < 34, 'STE 60 Hz: no rAF turn blocked by the blit (< 34 ms)');
+      check(s60 && s60.frames > 100, 'STE 60 Hz: the blit is parked (frames delivered during it)');
+      if (timed(s60, 60, 'STE 60 Hz: cadence (delivered frames, rAF turns)')) {
+        check(near(s60.fps, 60), 'STE 60 Hz: delivered frames follow emulated time');
+        check(s60.maxGap < 34, 'STE 60 Hz: no rAF turn blocked by the blit (< 34 ms)');
+      }
       check(s60 && s60.maxPerTurn <= 4, 'STE 60 Hz: at most 4 frames per rAF turn');
       const s50 = await blit('nominal 50 Hz', '?machine=ste', {}, async () => {
         await mount(cdp, 0); await loadTos(cdp, '/roms/etos256fr.img'); });
-      check(s50 && near(s50.fps, 50), 'STE 50 Hz (EmuTOS FR): delivered frames follow emulated time');
-      check(s50 && s50.maxGap < 34, 'STE 50 Hz: no rAF turn blocked by the blit');
+      check(s50 && s50.frames > 100, 'STE 50 Hz: the blit is parked (frames delivered during it)');
+      if (timed(s50, 50, 'STE 50 Hz: cadence (delivered frames, rAF turns)')) {
+        check(near(s50.fps, 50), 'STE 50 Hz (EmuTOS FR): delivered frames follow emulated time');
+        check(s50.maxGap < 34, 'STE 50 Hz: no rAF turn blocked by the blit');
+      }
     }
     if (want('catchup')) {
       const mono = async () => {
         await mount(cdp, 0); await cdp.ev("Module.ccall('neost_set_mono', null, ['number'], [1])"); };
       const m71 = await blit('mono 71 Hz, budget', '?machine=ste', {}, mono);
       const m71n = await blit('mono 71 Hz, no budget', '?machine=ste', { noBudget: true }, mono);
-      check(m71 && near(m71.fps, 71.4), 'mono 71 Hz on the browser rAF: catch-up keeps 71 Hz');
+      if (timed(m71, 60, 'mono 71 Hz on the browser rAF: catch-up keeps 71 Hz'))
+        check(near(m71.fps, 71.4), 'mono 71 Hz on the browser rAF: catch-up keeps 71 Hz');
       check(m71n && m71n.fps < 64, 'mono 71 Hz without the budget: capped by the rAF (control)');
       const r30 = await blit('rAF 30 Hz, budget', '?machine=ste', { rafHz: 30 }, bootHog);
       const r30n = await blit('rAF 30 Hz, no budget', '?machine=ste', { rafHz: 30, noBudget: true }, bootHog);
@@ -369,6 +511,9 @@ async function main() {
       ];
       for (const [what, call, hz] of orders) {
         await loadPage(cdp, base, '?machine=ste', {});
+        const idle0 = await cdp.ev('__jt.ticks.length');   // témoin, cf. blit()
+        await sleep(2000);
+        const idleHz = ((await cdp.ev('__jt.ticks.length')) - idle0) / 2;
         await writeDisk(cdp, disk);
         await mount(cdp, 1);
         const t0 = Date.now();
@@ -393,7 +538,10 @@ async function main() {
         }
         check(logsHave(/parked instruction abandoned/), `${what} mid-blit: parked instruction abandoned`);
         check(late === 0, `${what} mid-blit: applied at once (no parked frame after it)`);
-        check(s && s.frames > 100 && near(s.fps, hz), `${what}: machine reboots, second blit at ${hz} Hz`);
+        check(s && s.frames > 100, `${what}: machine reboots, second blit parked`);
+        if (s) s.idleHz = idleHz;
+        if (timed(s, 60, `${what}: second blit at ${hz} Hz`))
+          check(near(s.fps, hz), `${what}: second blit at ${hz} Hz`);
       }
     }
     if (want('fiber0')) {
@@ -413,6 +561,9 @@ async function main() {
       // et le bouton Reset la relance sur-le-champ — parked_ a été remis (garde RAII
       // d'EmuFiber::yield), le reset n'est donc pas différé à jamais.
       await loadPage(cdp, base, '?machine=ste', { throwAt: 30 });
+      const idle0 = await cdp.ev('__jt.ticks.length');   // témoin, cf. blit()
+      await sleep(2000);
+      const idleHz = ((await cdp.ev('__jt.ticks.length')) - idle0) / 2;
       await writeDisk(cdp, disk);
       await mount(cdp, 1);
       const t0 = Date.now();
@@ -435,14 +586,18 @@ async function main() {
       console.log(`[web-jspi] after Reset: status "${st2}", ${fmt(s)}`);
       if (verbose) console.log(cdp.logs.join('\n'));
       check(!logsHave(/parked instruction abandoned/), 'exception: parked_ cleared, Reset not deferred');
-      check(s && s.frames > 100 && near(s.fps, 60), 'exception: Reset restarts the machine (second blit)');
+      check(s && s.frames > 100, 'exception: Reset restarts the machine (second blit)');
+      if (s) s.idleHz = idleHz;
+      if (timed(s, 60, 'exception: second blit at 60 Hz'))
+        check(near(s.fps, 60), 'exception: second blit at 60 Hz');
     }
   } finally {
-    cdp.ws.close();
+    cdp.close();
     proc.kill();
     srv.close();
     try { fs.rmSync(profile, { recursive: true, force: true }); } catch {}
   }
+  if (skipped.length) console.log(`[web-jspi] skipped (host or browser too slow): ${skipped.join(', ')}`);
   console.log(`[web-jspi] ${fails.length ? 'FAILED: ' + fails.join(', ') : 'all green'}`);
   return fails.length ? 1 : 0;
 }

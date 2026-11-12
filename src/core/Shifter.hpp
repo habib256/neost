@@ -511,8 +511,12 @@ public:
     // (lineCarry_) pour décaler les lignes suivantes. Gated NEOST_LINELEN côté Machine.
     void setLineGeom(std::function<void(int, int, int)> fn) { lineGeom_ = fn; glue_.lineGeom = std::move(fn); }
 
+    // $0RGB → ARGB8888, la conversion du rendu ; publique pour l'explorateur de bitmaps
+    // (core/BitmapView), qui doit sortir les mêmes teintes que l'écran.
+    static uint32_t stColorToArgb(uint16_t c);
+
     // --- État exposé au débogueur (lecture directe) -------------------------
-    uint32_t videoBase = 0;                 // adresse RAM du framebuffer (registres haut/milieu/bas)
+    uint32_t videoBase = 0;                // adresse RAM du framebuffer (registres haut/milieu/bas)
     std::array<uint16_t, 16> palette{};     // 16 registres couleur $FF8240 ($0RGB, 3 bits/canal)
     Mode mode = Mode::Low;                  // moniteur couleur → basse résolution par défaut
     // Registre de synchro $FF820A : bit1 = 50/60 Hz (1 = 50 Hz), bit0 = sync externe.
@@ -545,7 +549,6 @@ private:
     // Latch NOSCROLL du GST MCU ([B] ST-4081 feuille 10, PA017) : 1 = pas de prefetch.
     // Posé par tout accès LDS à $FF8264-5, mis à 1 par RESB ; cf. write8 et resetGlue.
     bool noscroll_ = true;
-    static uint32_t stColorToArgb(uint16_t c);   // $0RGB → ARGB8888
     // Géométrie du tampon imposée par une résolution verrouillée (seule source de
     // vérité, partagée par resizeFor et la validation du save-state).
     struct FrameGeometry { int w, h, ah, x, y; };

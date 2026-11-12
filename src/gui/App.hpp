@@ -54,6 +54,7 @@ class Ikbd;
 class Machine;
 class MidiInHost;
 class MidiOutHost;
+class MidiRing;
 class Mt32Synth;
 class GmSynth;
 class NetBackend;
@@ -246,6 +247,7 @@ struct App {
 
     // ─── Fenêtres masquables ─────────────────────────────────────────────────
     bool showHex = true, showCpu = true;   // fenêtres d'inspection
+    bool showBitmap = false;               // explorateur de bitmaps (RAM en plans ST)
     bool showJoy = false;                  // fenêtre joystick (visualisation live)
     bool showKbd = false;                  // fenêtre clavier virtuel (photo pic/, touches cliquables)
     bool showCfg = true;                   // fenêtre Configuration
@@ -326,6 +328,10 @@ struct App {
     // `audio` en deuxième). `hayesModem` référence machine.mfp : avant `machine`.
     std::unique_ptr<Machine>        machine;
     std::unique_ptr<HayesModem>     hayesModem;   // nul tant que le modem est OFF
+    // Anneau MIDI sur UDP (midi_net=, page MIDI) : nul tant qu'il est débranché.
+    // L'ACIA (machine.midi) le référence par pointeur : avant `machine`, comme le modem.
+    std::unique_ptr<MidiRing>       midiRing;
+    std::string midiRingStatus;            // dernier état, affiché par la page MIDI
     std::unique_ptr<NetBackendNull> etherNull;
     std::unique_ptr<NatBackend>   natNet;
     std::unique_ptr<MidiOutHost>    midiOut;
@@ -389,6 +395,9 @@ struct App {
     void netUsbeeApply(bool on);
     void midiOutApply();
     void midiInApply();
+    // Ouvre (ou ferme) l'anneau MIDI selon cfg.midiNet, puis recâble MIDI OUT et
+    // MIDI IN (midiOutApply/midiInApply le prennent en compte).
+    void midiRingApply();
     bool midiLearnUids();
     // Réseau, clé cartouche et périphériques des ports depuis `cfg`, dans UN SEUL
     // ordre — celui du démarrage — partagé par AppInit et le chargement d'un profil.
