@@ -303,6 +303,28 @@ simultanément sur deux pistes. Ce que le séquenceur ST en fait le regarde — 
 complets et Notator savent enregistrer plusieurs canaux sur plusieurs pistes, Cubase
 Lite non.
 
+**Splitter clavier — des zones par source.** Un canal par source ne suffit pas pour
+jouer basse et piano sur un seul clavier maître. Chaque source peut donc être découpée
+en **zones** : une plage de notes, un canal, une transposition éventuelle, appliquées
+après le canal forcé et avant la fusion. Grammaire : `lo-hi:canal[±demi-tons]`, zones
+séparées par des virgules, 60 = do central, canal 0 = celui de la source. Exemple :
+`0-59:2,60-127:1+12` (main gauche sur le canal 2, main droite sur le canal 1 une octave
+plus haut). Règles, choisies et non imitées d'un appareil (`src/audio/MidiZones.hpp`) :
+
+| Message | Routage |
+|---|---|
+| Note On/Off, pression polyphonique | vers **chaque** zone qui contient la note (chevauchement = superposition), transposée ; hors de toute zone ou hors 0-127 après transposition : **jetée** (sa Note Off aussi, rien ne reste tenu) ; deux zones qui produiraient le même message ne le doublent pas |
+| Contrôleurs, pédale, pitch bend, programme, pression de canal | **une fois par canal distinct** des zones : une pédale de maintien qui ne tiendrait que la moitié du clavier serait un piège |
+| Système (horloge, SysEx, start/stop) | intact |
+
+Réglage : 4ᵉ champ de `midi_in_devices=` (`nom|canal|uid|zones`), écrit seulement quand
+la source a des zones — une config sans splitter garde sa ligne d'avant, octet pour
+octet ; un champ illisible est ignoré en entier, avec un message au journal. GUI : champ
+*zones* à droite du canal de chaque source (validé par Entrée). Headless :
+`--midi-in-zones SPEC`, appliqué au `--midi-in-device` précédent. Éprouvé par
+`neost-selftest` (*Splitter clavier*) : grammaire, refus, routage, chemin complet
+jusqu'à l'ACIA et persistance.
+
 GUI : Configuration → **MIDI**. La sortie est une **matrice** appareils × 16 canaux (un
 clic par affectation, `all` / `none` par ligne) ; l'entrée, une liste d'appareils avec le
 canal forcé de chacun. Headless : `--midi-list` énumère les entrées,

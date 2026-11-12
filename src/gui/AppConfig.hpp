@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 
+#include "audio/MidiZones.hpp"
 #include "gui/CrtParams.h"
 #include "io/Rtc.hpp"
 
@@ -66,7 +67,10 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 // (ALSA) ou si la config précède son introduction. Sans lui, deux
                 // appareils du MÊME MODÈLE sont indistinguables — cf. MidiEndpoint.hpp.
                 struct MidiOutDev { std::string name; uint16_t channels = 0xFFFF; std::string uid; };
-                struct MidiInDev  { std::string name; int channel = 0; std::string uid; };
+                // `zones` : splitter clavier (plages de notes → canal, transposition),
+                // vide = la source entière sur `channel`. Cf. audio/MidiZones.hpp.
+                struct MidiInDev  { std::string name; int channel = 0; std::string uid;
+                                    std::vector<neost::midi::KeyZone> zones; };
                 std::vector<MidiOutDev> midiOutDevices;
                 std::vector<MidiInDev>  midiInDevices;
                 // Avance de livraison du MIDI OUT, en ms (0-200). Arbitrage

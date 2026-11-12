@@ -226,8 +226,15 @@ void parseConfigLine(Config& c, std::string line) {
         c.midiInDevices.clear();
         for (const auto& r : decodeRecords(line.substr(16))) {
             const int ch = r.size() > 1 ? std::atoi(r[1].c_str()) : 0;
-            c.midiInDevices.push_back({r[0], (ch >= 1 && ch <= 16) ? ch : 0,
-                                       r.size() > 2 ? r[2] : std::string()});
+            Config::MidiInDev d{r[0], (ch >= 1 && ch <= 16) ? ch : 0,
+                                r.size() > 2 ? r[2] : std::string(), {}};
+            // 4e champ (splitter), absent des neost.cfg d'avant : aucune zone. Une
+            // chaîne illisible est IGNORÉE plutôt qu'à moitié appliquée — parseZones
+            // rend alors une liste vide (cf. MidiZones.hpp).
+            if (r.size() > 3 && !neost::midi::parseZones(r[3], d.zones))
+                std::fprintf(stderr, "[config] midi_in_devices: zones \"%s\" of \"%s\" "
+                             "unreadable - ignored\n", r[3].c_str(), r[0].c_str());
+            c.midiInDevices.push_back(std::move(d));
         }
     }
     // HÉRITÉ (clés répétables, format du 2026-08-29 au matin) : encore LU pour qu'un
@@ -453,9 +460,14 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
           << formatChannelMask(w.midiOutDevices[i].channels) << '|'
           << escapeField(w.midiOutDevices[i].uid);
     f << "\nmidi_in_devices=";
-    for (std::size_t i = 0; i < w.midiInDevices.size(); ++i)
+    for (std::size_t i = 0; i < w.midiInDevices.size(); ++i) {
         f << (i ? ";" : "") << escapeField(w.midiInDevices[i].name) << '|'
           << w.midiInDevices[i].channel << '|' << escapeField(w.midiInDevices[i].uid);
+        // Le 4e champ n'est écrit QUE s'il porte des zones : un studio sans splitter
+        // garde, octet pour octet, la ligne qu'il avait avant son introduction.
+        if (!w.midiInDevices[i].zones.empty())
+            f << '|' << escapeField(neost::midi::formatZones(w.midiInDevices[i].zones));
+    }
     f << "\n";
     if (full)
         f << "showHex=" << (w.showHex ? 1 : 0)

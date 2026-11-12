@@ -672,7 +672,7 @@ static void testConfigParser() {
         // séparateur au départ, et que l'échappement lève.
         const std::string tordu = "Ac;me | Piano \\ 2";
         c.midiOutDevices = {{tordu, 0x000F, "111"}, {"Circuit Tracks MIDI", 0x0200, "-901138834"}};
-        c.midiInDevices  = {{tordu, 3, "222"}, {"Circuit Tracks MIDI", 0, ""}};
+        c.midiInDevices  = {{tordu, 3, "222", {}}, {"Circuit Tracks MIDI", 0, "", {}}};
 
         std::ostringstream os;
         writeConfigKeys(os, c, true);
@@ -1514,6 +1514,151 @@ static void testMidiHomonymes() {
 //  On éprouve ici le chemin de production complet — MidiInHost + MidiAcia + Scheduler
 //  — sans le moindre appareil branché.
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+//  SPLITTER CLAVIER — zones de notes → canal (audio/MidiZones.hpp)
+//
+//  Une source = un canal ne suffit pas pour jouer basse et piano sur un seul
+//  clavier maître. Grammaire, routage des notes et des contrôleurs, persistance dans
+//  neost.cfg, et le chemin complet MidiInHost → ACIA du ST.
+// -----------------------------------------------------------------------------
+static void testMidiZones() {
+    std::printf("Splitter clavier (zones MIDI IN)\n");
+    using namespace neost::appconfig;
+    using neost::midi::KeyZone;
+    using neost::midi::parseZones;
+    using neost::midi::formatZones;
+
+    // (1) GRAMMAIRE : la forme canonique se relit à l'identique ; espaces tolérés ;
+    //     une note seule vaut une plage d'une note ; transposition négative.
+    {
+        std::vector<KeyZone> z;
+        checkBool("zones : basse/piano lus", parseZones(" 0-59:2 , 60-127:1+12 ", z), true);
+        checkBool("zones : deux zones", z.size() == 2, true);
+        checkBool("zones : zone 2 = 60-127 canal 1 +12",
+                  z.size() == 2 && z[1] == KeyZone{60, 127, 1, 12}, true);
+        checkStr("zones : forme canonique", formatZones(z), "0-59:2,60-127:1+12");
+        checkBool("zones : note seule et transposition négative",
+                  parseZones("36:10-24", z) && z.size() == 1 && z[0] == KeyZone{36, 36, 10, -24}, true);
+        checkStr("zones : note seule réécrite", formatZones(z), "36:10-24");
+        checkBool("zones : chaîne vide = aucune zone, valide", parseZones("", z) && z.empty(), true);
+    }
+    // (2) REFUS : une zone à moitié comprise jouerait au mauvais endroit en silence.
+    //     Tout ou rien — la liste rendue est vide.
+    {
+        std::vector<KeyZone> z;
+        const char* const mauvais[] = {"0-59", "0-128:1", "60-50:1", "0-59:17", "0-59:1+200",
+                                       "0-59:1,", "a-b:1", "0-59:1;60-127:2", "0-59:1|x",
+                                       "00000-5:1"};
+        bool tousRefuses = true;
+        for (const char* m : mauvais)
+            if (parseZones(m, z) || !z.empty()) { tousRefuses = false; std::printf("    accepté : %s\n", m); }
+        checkBool("zones : les chaînes fautives sont refusées en bloc", tousRefuses, true);
+    }
+
+    // Chemin COMPLET MidiInHost (canalisation + zones + fusion) : on lit le flux fusionné.
+    const auto drain = [](MidiInHost& in) {
+        std::vector<uint8_t> flux; uint8_t b = 0;
+        while (in.tryPop(b)) flux.push_back(b);
+        return flux;
+    };
+    std::vector<KeyZone> split;
+    parseZones("0-59:2,60-127:1+12", split);
+
+    // (3) NOTES : main gauche canal 2, main droite canal 1 une octave plus haut ; la
+    //     Note Off suit EXACTEMENT le même chemin, sinon la note resterait tenue.
+    {
+        MidiInHost in;
+        const uint8_t s[] = {0x90, 48, 100,  0x90, 64, 90,  0x80, 48, 0,  0x80, 64, 0};
+        in.pushForTest(0, s, sizeof s, 0, split);
+        const std::vector<uint8_t> attendu = {0x91, 48, 100,  0x90, 76, 90,
+                                              0x81, 48, 0,    0x80, 76, 0};
+        checkBool("zones : chaque main sur son canal, Note Off comprise", drain(in) == attendu, true);
+    }
+    // (4) CONTRÔLEURS : la pédale de maintien va à TOUTES les zones (une fois par canal
+    //     distinct) ; le système (horloge) passe intact, une seule fois.
+    {
+        MidiInHost in;
+        const uint8_t s[] = {0xB0, 64, 127, 0xF8, 0xE0, 0x00, 0x50};
+        in.pushForTest(0, s, sizeof s, 0, split);
+        const std::vector<uint8_t> attendu = {0xB1, 64, 127,  0xB0, 64, 127,  0xF8,
+                                              0xE1, 0x00, 0x50,  0xE0, 0x00, 0x50};
+        checkBool("zones : pédale et pitch bend sur chaque canal de zone", drain(in) == attendu, true);
+    }
+    // (5) CANAL 0 = celui de la source APRÈS forçage ; note hors zone JETÉE ;
+    //     transposition qui sort du clavier MIDI : jetée aussi.
+    {
+        MidiInHost in;
+        std::vector<KeyZone> z;
+        parseZones("0-59:0,100-127:3+40", z);
+        const uint8_t s[] = {0x90, 40, 64,   // zone 1, canal de la source → forcé 5
+                             0x90, 70, 64,   // hors zone : jetée
+                             0x90, 100, 64}; // 100+40 = 140 > 127 : jetée
+        in.pushForTest(0, s, sizeof s, 5, z);
+        const std::vector<uint8_t> attendu = {0x94, 40, 64};
+        checkBool("zones : canal 0 = forçage de la source ; hors zone et hors clavier jetés",
+                  drain(in) == attendu, true);
+    }
+    // (6) SUPERPOSITION : deux zones qui se chevauchent jouent deux sons ; deux zones
+    //     qui produiraient le MÊME message ne le doublent pas.
+    {
+        MidiInHost in;
+        std::vector<KeyZone> z;
+        parseZones("0-127:1,0-127:2+7,40-80:1", z);
+        const uint8_t s[] = {0x90, 60, 64};
+        in.pushForTest(0, s, sizeof s, 0, z);
+        const std::vector<uint8_t> attendu = {0x90, 60, 64,  0x91, 67, 64};
+        checkBool("zones : superposition sans doublon", drain(in) == attendu, true);
+    }
+    // (7) SANS zones : le comportement d'avant, octet pour octet (canalisation seule).
+    {
+        MidiInHost in;
+        const uint8_t s[] = {0x90, 60, 64, 0xB0, 1, 10};
+        in.pushForTest(0, s, sizeof s, 2);
+        const std::vector<uint8_t> attendu = {0x91, 60, 64, 0xB1, 1, 10};
+        checkBool("zones : aucune zone = canalisation seule, inchangée", drain(in) == attendu, true);
+    }
+    // (8) JUSQU'AU ST : le flux découpé traverse l'ACIA au débit du câble.
+    {
+        Mfp mfp; Scheduler sched; MidiAcia midi{mfp}; MidiInHost in;
+        midi.setScheduler(&sched);
+        sched.setCallback(Scheduler::MIDI_RX, [&midi] { midi.onRxPace(); });
+        midi.setRxSource([&in](uint8_t& b) { return in.tryPop(b); });
+        const uint8_t s[] = {0x90, 48, 100, 0x90, 64, 90};
+        in.pushForTest(0, s, sizeof s, 0, split);
+        std::vector<uint8_t> recu;
+        for (int i = 0; i < 100 && recu.size() < 6; ++i) {
+            sched.runTo(sched.now() + 640);
+            while (midi.read8(0xFFFC04) & 0x01) recu.push_back(midi.read8(0xFFFC06));
+        }
+        const std::vector<uint8_t> attendu = {0x91, 48, 100, 0x90, 76, 90};
+        checkBool("zones : le ST lit les deux mains sur deux canaux", recu == attendu, true);
+    }
+    // (9) PERSISTANCE : 4e champ de midi_in_devices=, écrit seulement s'il y a des
+    //     zones — une config sans splitter garde la ligne qu'elle avait.
+    {
+        Config c;
+        c.midiInDevices = {{"Keystation 88", 0, "uid1", split}, {"Pad", 10, "", {}}};
+        std::ostringstream os;
+        writeConfigKeys(os, c, true);
+        const std::string texte = os.str();
+        checkBool("zones cfg : 4e champ écrit pour la source découpée",
+                  texte.find("Keystation 88|0|uid1|0-59:2,60-127:1+12") != std::string::npos, true);
+        checkBool("zones cfg : pas de 4e champ sans zones",
+                  texte.find("Pad|10|\n") != std::string::npos, true);
+        Config relu;
+        std::istringstream is(texte);
+        std::string ligne;
+        while (std::getline(is, ligne)) parseConfigLine(relu, ligne);
+        checkBool("zones cfg : relues à l'identique",
+                  relu.midiInDevices.size() == 2 && relu.midiInDevices[0].zones == split
+                  && relu.midiInDevices[1].zones.empty(), true);
+        Config fautif;
+        parseConfigLine(fautif, "midi_in_devices=Pad|0||0-59");
+        checkBool("zones cfg : champ illisible ignoré, l'appareil reste",
+                  fautif.midiInDevices.size() == 1 && fautif.midiInDevices[0].zones.empty(), true);
+    }
+}
+
 static void testMidiInJitter() {
     std::printf("MIDI IN hôte (horloge série → ACIA)\n");
     constexpr uint32_t kCtrl = 0xFFFC04, kData = 0xFFFC06;
@@ -3572,6 +3717,7 @@ int main() {
     testMidiInJitter();
     testGmSynth();
     testMidiHomonymes();
+    testMidiZones();
     testIkbdTdre();
     testIkbdProtocol();
     testRtcSecond();

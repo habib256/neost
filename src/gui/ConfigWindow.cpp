@@ -651,7 +651,35 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                         }
                         ImGui::EndCombo();
                     }
-                    next.push_back({r.name, chan, r.uid});
+                    // SPLITTER : plages de notes → canal (+ transposition), cf.
+                    // audio/MidiZones.hpp. Appliqué à la touche Entrée seulement —
+                    // chaque application rouvre les appareils, pas à chaque frappe.
+                    std::vector<neost::midi::KeyZone> zones =
+                        on ? cfg.midiInDevices[std::size_t(r.cfgIdx)].zones
+                           : std::vector<neost::midi::KeyZone>{};
+                    ImGui::SameLine();
+                    char zbuf[160];
+                    std::snprintf(zbuf, sizeof zbuf, "%s", neost::midi::formatZones(zones).c_str());
+                    ImGui::SetNextItemWidth(200.f);
+                    static std::string zonesError;   // dernier refus, affiché sous la liste
+                    if (ImGui::InputTextWithHint("##zones", "zones: 0-59:2,60-127:1+12", zbuf,
+                                                 sizeof zbuf, ImGuiInputTextFlags_EnterReturnsTrue)) {
+                        std::vector<neost::midi::KeyZone> parsed;
+                        if (neost::midi::parseZones(zbuf, parsed)) {
+                            zones = parsed; changed = true; zonesError.clear();
+                        } else {
+                            zonesError = std::string("Zones not understood: \"") + zbuf + "\"";
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Keyboard split: low-high:channel[+/-semitones],...\n"
+                                          "60 = middle C. Channel 0 = the device's channel.\n"
+                                          "Notes outside every zone are dropped; pedal,\n"
+                                          "bend and controllers go to every zone's channel.\n"
+                                          "Empty = no split. Press Enter to apply.");
+                    if (!zonesError.empty())
+                        ImGui::TextColored(ImVec4(1.f, .5f, .4f, 1.f), "  %s", zonesError.c_str());
+                    next.push_back({r.name, chan, r.uid, zones});
                 }
                 ImGui::PopID();
             }

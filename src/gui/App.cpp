@@ -544,7 +544,7 @@ void App::midiInApply() {
     MidiInHost& midiIn = *A.midiIn;
     std::vector<MidiInHost::Want> want;
     want.reserve(cfg.midiInDevices.size());
-    for (const auto& d : cfg.midiInDevices) want.push_back({d.name, d.channel, d.uid});
+    for (const auto& d : cfg.midiInDevices) want.push_back({d.name, d.channel, d.uid, d.zones});
     midiIn.setDevices(want);
     // L'ACIA TIRE les octets sur son horloge série (2560 cycles/octet), au lieu
     // d'une rafale par trame qui plafonnait l'entrée à ~143 o/s. Cf. MidiAcia::

@@ -56,14 +56,18 @@ void MidiInHost::feed(Device& d, const uint8_t* data, std::size_t n) {
 }
 
 void MidiInHost::emitMessage(Device& d, const uint8_t* msg, int len) {
-    if (len <= 0) return;
-    uint8_t head = msg[0];
-    // CANALISATION : le quartet de canal des messages de VOIE ($80-$EF) est
-    // réécrit. Les messages système ($F0-$FF) n'ont pas de canal — on n'y touche
-    // pas, sinon on casserait horloge, SysEx et start/stop.
-    if (d.forceChannel >= 1 && d.forceChannel <= 16 && head >= 0x80 && head < 0xF0)
-        head = uint8_t((head & 0xF0) | uint8_t(d.forceChannel - 1));
+    // CANALISATION puis ZONES (cf. MidiZones.hpp) : le quartet de canal des messages
+    // de VOIE ($80-$EF) est réécrit, et une source découpée en zones peut rendre
+    // plusieurs messages pour un seul (superposition) ou aucun (note hors zone). Les
+    // messages système ($F0-$FF) n'ont pas de canal et passent intacts — y toucher
+    // casserait horloge, SysEx et start/stop.
+    neost::midi::routeVoice(msg, len, d.forceChannel, d.zones,
+                            [this](const uint8_t* m, int l) { enqueue(m, l); });
+}
 
+void MidiInHost::enqueue(const uint8_t* msg, int len) {
+    if (len <= 0) return;
+    const uint8_t head = msg[0];
     std::lock_guard<std::mutex> lk(mtx_);
     // Running status : on ne réécrit le statut que s'il a CHANGÉ dans le flux
     // fusionné. Une source seule garde donc son running status (le flux ne
@@ -109,7 +113,8 @@ bool MidiInHost::tryPop(uint8_t& out) {
     return true;
 }
 
-MidiInHost::Device* MidiInHost::deviceForTest(int slot, int forceChannel) {
+MidiInHost::Device* MidiInHost::deviceForTest(int slot, int forceChannel,
+                                              const std::vector<neost::midi::KeyZone>& zones) {
     while (int(devices_.size()) <= slot) {
         auto d = std::make_unique<Device>();
         d->owner = this;
@@ -117,11 +122,13 @@ MidiInHost::Device* MidiInHost::deviceForTest(int slot, int forceChannel) {
         devices_.push_back(std::move(d));
     }
     devices_[std::size_t(slot)]->forceChannel = forceChannel;
+    devices_[std::size_t(slot)]->zones = zones;
     return devices_[std::size_t(slot)].get();
 }
 
-void MidiInHost::pushForTest(int slot, const uint8_t* data, std::size_t n, int forceChannel) {
-    feed(*deviceForTest(slot, forceChannel), data, n);
+void MidiInHost::pushForTest(int slot, const uint8_t* data, std::size_t n, int forceChannel,
+                             const std::vector<neost::midi::KeyZone>& zones) {
+    feed(*deviceForTest(slot, forceChannel, zones), data, n);
 }
 
 std::vector<neost::midi::Endpoint> MidiInHost::openEndpoints() const {
@@ -296,12 +303,12 @@ std::size_t MidiInHost::setDevices(const std::vector<Want>& want) {
         }
         if (foundC < 0 || snd_seq_connect_from(seq, port, foundC, foundP) < 0) continue;
         auto d = std::make_unique<Device>();
-        d->owner = this; d->name = target; d->forceChannel = w.forceChannel;
+        d->owner = this; d->name = target; d->forceChannel = w.forceChannel; d->zones = w.zones;
         d->src = (uint32_t(foundC) << 8 | uint32_t(foundP)) + 1;
         devices_.push_back(std::move(d));
-        std::fprintf(stderr, "[midi-in] \"%s\" -> MIDI IN (ALSA %d:%d)%s\n",
+        std::fprintf(stderr, "[midi-in] \"%s\" -> MIDI IN (ALSA %d:%d)%s%s\n",
                      target.c_str(), foundC, foundP,
-                     w.forceChannel ? " channelized" : "");
+                     w.forceChannel ? " channelized" : "", w.zones.empty() ? "" : " zoned");
     }
     snd_seq_port_info_free(pi); snd_seq_client_info_free(ci);
     if (devices_.empty()) {
@@ -342,7 +349,7 @@ std::size_t MidiInHost::setDevices(const std::vector<Want>& want) {
         if (!found) continue;
         auto d = std::make_unique<Device>();
         d->owner = this; d->name = ep.name; d->uid = ep.uid;
-        d->forceChannel = w.forceChannel; d->src = found;
+        d->forceChannel = w.forceChannel; d->zones = w.zones; d->src = found;
         Device* dp = d.get();
         // Dans la liste AVANT la connexion : le callback valide l'appartenance
         // sous devMtx_, et un premier paquet peut arriver dès ConnectSource.
@@ -358,9 +365,9 @@ std::size_t MidiInHost::setDevices(const std::vector<Want>& want) {
             std::fprintf(stderr, "[midi-in] cannot connect \"%s\"\n", w.name.c_str());
             continue;
         }
-        std::fprintf(stderr, "[midi-in] \"%s\" -> MIDI IN (CoreMIDI uid %s)%s\n",
+        std::fprintf(stderr, "[midi-in] \"%s\" -> MIDI IN (CoreMIDI uid %s)%s%s\n",
                      ep.name.c_str(), ep.uid.c_str(),
-                     w.forceChannel ? " channelized" : "");
+                     w.forceChannel ? " channelized" : "", w.zones.empty() ? "" : " zoned");
         // Repli par NOM assumé (un clavier remplacé par le même modèle doit marcher
         // sans toucher la config) — mais plus en silence : l'identifiant dit que ce
         // n'est PAS la machine configurée, l'utilisateur doit pouvoir le lire.
@@ -397,7 +404,7 @@ std::size_t MidiInHost::setDevices(const std::vector<Want>& want) {
         }
         auto d = std::make_unique<Device>();
         d->owner = this; d->name = ep.name; d->uid = ep.uid;
-        d->forceChannel = w.forceChannel; d->src = reinterpret_cast<uintptr_t>(h);
+        d->forceChannel = w.forceChannel; d->zones = w.zones; d->src = reinterpret_cast<uintptr_t>(h);
         // Tampons SysEx armés AVANT le démarrage : un dump de patch envoyé dans la
         // seconde qui suit ne doit pas tomber faute de tampon libre.
         auto* bufs = new InBuffers();
@@ -417,10 +424,10 @@ std::size_t MidiInHost::setDevices(const std::vector<Want>& want) {
             std::lock_guard<std::mutex> lk(devMtx_);
             devices_.push_back(std::move(d));
         }
-        std::fprintf(stderr, "[midi-in] \"%s\" -> MIDI IN (winmm #%u%s%s)%s\n",
+        std::fprintf(stderr, "[midi-in] \"%s\" -> MIDI IN (winmm #%u%s%s)%s%s\n",
                      ep.name.c_str(), unsigned(devs[std::size_t(idx)].id),
                      ep.uid.empty() ? "" : ", uid ", ep.uid.c_str(),
-                     w.forceChannel ? " channelized" : "");
+                     w.forceChannel ? " channelized" : "", w.zones.empty() ? "" : " zoned");
         // Repli par NOM : sous Windows l'identifiant porte le CHEMIN USB, donc un
         // simple changement de prise le fait varier — d'où le « ? » du message.
         if (!w.uid.empty() && !ep.uid.empty() && ep.uid != w.uid)
