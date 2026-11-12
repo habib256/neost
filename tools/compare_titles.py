@@ -55,7 +55,7 @@ HEADLESS = ROOT / "build" / "neost-headless"
 HATARI = ROOT / "extern" / "hatari" / "build" / "src" / "hatari"
 
 
-from title_cmd import (KEY_HOLD, build_parser, finish_args, mouse_events, neost_cmd,  # noqa: E402,F401
+from title_cmd import (KEY_HOLD, MEM_KB, build_parser, finish_args, mouse_events, neost_cmd,  # noqa: E402,F401
                        parse_key, parse_mouse, parse_seed, parse_swap, swap_copy)
 
 
@@ -172,7 +172,7 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
     # Comparer le TOS original, y compris ses tests RAM et attentes de boot.
     # --patch-tos contrôle aussi les variables système préremplies par Hatari.
     cmd = [str(HATARI), "--machine", args.machine, "--tos", str(ROOT / args.rom), "--monitor", "rgb",
-           "--memsize", str(args.mem), "--cpu-exact", "on", "--compatible", "on",
+           "--memsize", str(MEM_KB[args.mem]), "--cpu-exact", "on", "--compatible", "on",
            "--patch-tos", "off", "--fast-boot", "off", "--fastfdc", "off",
            *(["--disk-a", str(copy)] if not args.gemdos else ["--harddrive", str(args.gemdos.resolve())]),
            "--sound", "25033", "--fast-forward", "on", "--confirm-quit", "off", "--statusbar", "off",
@@ -278,6 +278,11 @@ def one(disk: Path, args, out: Path) -> dict:
                 img.save(out / f"{key}_{f}_n.png")
                 if match:
                     match.save(out / f"{key}_{f}_h.png")
+                else:
+                    # Aucune image Hatari dans la fenêtre : l'image d'une passe PRÉCÉDENTE
+                    # dans le même dossier de sortie restait là, et la planche la montrait
+                    # en regard de NeoST comme si elle venait de ce run.
+                    (out / f"{key}_{f}_h.png").unlink(missing_ok=True)
                 res["frames"][str(f)] = {"diff": pct, "hatari_vbl": vbl,
                                          "colors": len(img.getcolors(1 << 20) or []),
                                          "neost_rgb_sha256": hashlib.sha256(img.tobytes()).hexdigest(),
@@ -341,6 +346,14 @@ def main() -> int:
         cols = "  ".join(f"{f}:{v['diff']:>6}%@{v['hatari_vbl']}" for f, v in r["frames"].items())
         print(f"{r['disk'][:42]:42} {cols} {r.get('error', '')}")
     sheet(rows, args.out)
+    # Une ligne en erreur n'a rien comparé : le code de sortie le dit. Avant, une passe
+    # dont TOUTES les lignes avaient échoué (binaire absent, Hatari planté) rendait 0.
+    failed = [r for r in rows if r.get("error")]
+    for r in failed:
+        print(f"[compare_titles] {r['disk']}: {r['error']}", file=sys.stderr)
+    if failed:
+        print(f"[compare_titles] {len(failed)}/{len(rows)} title(s) not compared", file=sys.stderr)
+        return 1
     return 0
 
 

@@ -241,6 +241,9 @@ def main():
                     help="HARNAIS TIMING : pour chaque PC-repère (hex), compare la "
                          "période (cycles/itér) Moira vs WinUAE. Exige les colonnes "
                          "cycle (NEOST_TRACE_CYC=1 ; Hatari cpu_video_cycles).")
+    ap.add_argument('--allow-prefix', action='store_true',
+                    help="accepte (code 0) des traces de longueurs différentes identiques "
+                         "sur leur préfixe commun ; sinon c'est un échec")
     ap.add_argument('-C', '--context', type=int, default=6,
                     help="lignes de contexte autour de la divergence (défaut 6)")
     ap.add_argument('--no-color', action='store_true', help="désactive la couleur")
@@ -266,6 +269,7 @@ def main():
               f"(reste {len(a)} / {len(b)} insn)")
 
     n = min(len(a), len(b))
+    regs_checked = 0                        # instructions dont les registres ont VRAIMENT été comparés
     for i in range(n):
         # 1) Divergence de flux : les PC ne correspondent plus.
         if a[i].pc != b[i].pc:
@@ -277,6 +281,8 @@ def main():
         # 2) Divergence de registres : même PC mais état CPU différent.
         if args.regs and a[i].regs and b[i].regs:
             common = set(a[i].regs) & set(b[i].regs)
+            if common:
+                regs_checked += 1
             diff = [(r, a[i].regs[r], b[i].regs[r])
                     for r in sorted(common) if a[i].regs[r] != b[i].regs[r]]
             if diff:
@@ -287,11 +293,33 @@ def main():
                 show_window(a, b, i, args.context, col)
                 return 1
 
-    print(color(f"\n✓ Identiques sur {n} instructions"
-                f"{' (registres inclus)' if args.regs else ''}.", '1;32', col))
+    # Ce qui a été comparé, et rien de plus. Avant le 2026-11-12, une trace TRONQUÉE
+    # (disque plein, run écourté, trace vide) concluait « Identiques » en code 0 sur le
+    # seul préfixe commun, et « (registres inclus) » s'affichait dès que --regs était
+    # demandé, même si aucune des deux traces ne portait de registres.
+    if args.regs:
+        regs_note = (f" (registres comparés sur {regs_checked}/{n})" if regs_checked
+                     else " (AUCUN registre comparé : absents d'au moins une trace)")
+    else:
+        regs_note = ""
     if len(a) != len(b):
-        print(f"  (longueurs différentes : NeoST={len(a)}, Hatari={len(b)} — "
-              f"l'une s'arrête avant l'autre)")
+        msg = (f"\n✗ TRACES DE LONGUEURS DIFFÉRENTES : NeoST={len(a)}, Hatari={len(b)} — "
+               f"seul le préfixe commun ({n} instructions) est identique{regs_note}.")
+        if not args.allow_prefix:
+            print(color(msg, '1;31', col))
+            print("  (une trace tronquée n'est pas une égalité ; --allow-prefix accepte "
+                  "explicitement l'égalité sur le préfixe)")
+            return 1
+        print(color(msg.replace('✗', '~', 1), '1;33', col) + "  [--allow-prefix]")
+    if n == 0:
+        print(color("\n✗ Aucune instruction comparée (trace vide).", '1;31', col))
+        return 1
+    if args.regs and not regs_checked:
+        print(color(f"\n✗ Flux identique sur {n} instructions, mais --regs demandé et "
+                    f"AUCUN registre comparé (absents d'au moins une trace : NeoST --regs, "
+                    f"Hatari --trace cpu_regs).", '1;31', col))
+        return 1
+    print(color(f"\n✓ Identiques sur {n} instructions{regs_note}.", '1;32', col))
     return 0
 
 

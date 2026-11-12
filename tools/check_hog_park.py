@@ -137,6 +137,28 @@ def main() -> int:
         check("parked instruction abandoned" in sv.stderr,
               "sortie : l'instruction garée est déroulée, sans plantage")
 
+        # Serveur (OpenDST) pendant une instruction garée : « save » doit dire POURQUOI
+        # il refuse (il répondait « cannot snapshot GEMDOS host files », faux), et
+        # « load » — qui remplace tout l'état, comme un reset — abandonne l'instruction
+        # garée et charge (il répondait un « err » sans motif ; opendst_explore.py
+        # s'arrête sur tout err).
+        srv_cmds = ["run 300", "save 0", f"run {stop - 300}", "save 1", "load 0",
+                    "save 2", "run 5", "quit"]
+        cmd = [str(HEADLESS), str(ROM), "--machine", "megaste", "--gemdos", str(gem),
+               "--auto", "C:\\HOGBLIT.PRG", "--server"]
+        e = dict(os.environ); e.pop("NEOST_NO_FIBER", None)
+        sp = subprocess.run(cmd, input="\n".join(srv_cmds) + "\n", capture_output=True,
+                            text=True, env=e, timeout=300)
+        rep = sp.stdout.splitlines()
+        ok_shape = len(rep) == len(srv_cmds)
+        check(ok_shape and rep[3].startswith("err save:") and "halted by a blitter transfer" in rep[3],
+              "serveur : « save » garé dit le motif (instruction garée)")
+        check(ok_shape and rep[4].startswith("ok frame=300 "),
+              "serveur : « load » garé abandonne l'instruction et charge")
+        check(ok_shape and rep[5].startswith("ok bytes=") and rep[6].startswith("ok frame=")
+              and sp.returncode == 0 and "parked instruction abandoned" in sp.stderr,
+              "serveur : la session repart saine après le chargement")
+
         rs = run(gem, ["--frames", "900", "--reset-at", str(first + 2),
                        "--probe", "cnt=600:4", "--probe-every", "50",
                        "--state-hash-every", "50"])

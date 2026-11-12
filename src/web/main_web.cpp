@@ -594,8 +594,9 @@ EM_JS(void, neost_jspi_start_loop, (), {
         requestAnimationFrame(frame);
         if (busy) {
             // Instruction garée : relancée quand la trame suivante est due. Jusqu'à
-            // 4 trames par tour en rattrapage (FramePacer::kMaxCatchUp), cf.
-            // neost_jspi_park.
+            // 4 trames par tour en rattrapage (FramePacer::kMaxCatchUp) : celle-ci,
+            // puis 3 de plus que neost_jspi_park (core/EmuFiber.cpp) enchaîne sans
+            // attendre tant qu'elles sont déjà dues.
             if (Module.neostParkResolve && Module._neost_web_park_due(performance.now())) {
                 Module.neostParkBudget = 3;
                 const r = Module.neostParkResolve;
@@ -604,6 +605,9 @@ EM_JS(void, neost_jspi_start_loop, (), {
             }
             return;
         }
+        // Tour ordinaire : son propre rattrapage (runDueFrames) ; pas de budget hérité
+        // d'un tour précédent pour une instruction qui se garerait pendant celui-ci.
+        Module.neostParkBudget = 0;
         busy = true;
         tick().then(() => { busy = false; }, (e) => {
             console.error('[web] frame failed:', e);
