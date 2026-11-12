@@ -978,6 +978,34 @@ la fenêtre ±30 et le seuil 0,5 % sont conservés ; aucun niveau terminé ni
 compétence attribuée n'est revendiqué. Le rejeu du menu reste distinct.
 Ces verdicts sont `hatari`, assortis de garde-fous `snapshot`, sans mesure matérielle.
 
+**Suite du 2026-11-12 : compétence attribuée et niveau terminé.** `lemmings_level1_complete`
+reprend la même entrée, puis choisit le Digger dans le panneau (souris à 6150 : un pas à
+gauche, 21 vers le bas, clic tenu 4 trames), remonte de 15 pas sur la corniche et clique toutes
+les 6 trames jusqu'à 7153. Un seul creuseur est attribué, vers 6750 ; les dix lemmings
+tombent dans le puits et rejoignent la sortie : « You rescued 100% », code du niveau 2
+`IJJLDNCCCN` ; un clic à 9100 ouvre la présentation du niveau 2 (« Only floaters can survive
+this »). Contre Hatari, 0,0 % aux cinq étapes 6800, 7200, 7800 (dans le niveau, décalage 0 ou
+−1), 8700 et 9700 (écrans fixes, trouvés 38 à 40 VBL plus tôt chez Hatari) ; empreintes RGB
+posées sur les cinq scènes inspectées. Échelon `hatari`, sans mesure matérielle.
+
+Recette du curseur, utile à d'autres parcours : 8 px par pas, 1 pour 1 ; il part du haut de
+l'écran, au milieu ; l'amener à un bord fait **défiler le niveau** (ne pas « caler » le curseur
+dans un coin). Un clic ne prend un lemming que si le point chaud tombe sur son corps : un ou
+deux pas plus haut (16 ou 17 pas de remontée) ne prennent rien ; même à la bonne hauteur, un
+clic toutes les 20 trames n'a rien pris pendant 300 trames ; une variante un pas plus bas, clics toutes les 6 trames, attribue quatre creuseurs
+et **diverge** d'Hatari (OUT 6 / IN 40 % contre OUT 8 / IN 20 % à 7300, à une trame de phase
+près entre les émulateurs), avant que les deux sauvent tout le monde. Le parcours retenu est
+celui qui n'attribue qu'une fois.
+
+Le décalage du premier parcours est corrigé au passage : `lemmings_first_level` gardait le 545
+du menu, faux une fois le niveau lancé par le clic de 6000. La meilleure image Hatari tombait
+alors à 0,4 % (8000) et 0,47 % (10000), marcheurs ailleurs, sous le seuil par la seule petite
+taille des sprites ; à 0, 0,0 % (7999 et 9999). Recette :
+
+```sh
+/usr/bin/python3 tools/run_game_replay.py --only lemmings_first_level,lemmings_level1_complete
+```
+
 Chessmaster arrive à l'échiquier ; les clics isolés ou prolongés sur e2 puis e4 ne déplacent
 aucune pièce : le jeu attend un glisser-déposer. Depuis le 2026-11-10, les jetons `l/r/u/d`
 (bouton gauche tenu) le permettent : e2-e4 à 4000, réponse e7-e6, accord Hatari à 5000 et 7000.
