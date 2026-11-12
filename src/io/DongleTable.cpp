@@ -84,4 +84,58 @@ const char* defaultDongleTable() {
         "cubase audio    = cart:cubase3\n";
 }
 
+// --- Branchements choisis à la main -------------------------------------------
+namespace {
+// Indexé par CartridgeKey::Model. Libellés repris de la page Dongles du bureau.
+struct KeyEntry { const char* id; const char* label; };
+constexpr KeyEntry kKeys[kCartKeyModelCount] = {
+    { "",        "None" },
+    { "cubase2", "Black key (Cubase 2.01)" },
+    { "cubase3", "Red key (Cubase 3.1 / Score / Audio)" },
+    { "auto",    "Auto (red/black)" },
+    { "notator", "C-Lab key (Notator / Creator)" },
+};
+std::size_t ki(CartridgeKey::Model m) {
+    return std::size_t(m) < std::size_t(kCartKeyModelCount) ? std::size_t(m) : 0;
+}
+}  // namespace
+
+const char* cartKeyId(CartridgeKey::Model m)    { return kKeys[ki(m)].id; }
+const char* cartKeyLabel(CartridgeKey::Model m) { return kKeys[ki(m)].label; }
+CartridgeKey::Model cartKeyFromId(const std::string& id) {
+    if (id.empty()) return CartridgeKey::Model::None;
+    for (int i = 1; i < kCartKeyModelCount; ++i)
+        if (id == kKeys[i].id) return CartridgeKey::Model(i);
+    return CartridgeKey::Model::None;
+}
+
+std::string formatDongleSetup(const DongleSetup& s) {
+    std::string out;
+    if (s.key != CartridgeKey::Model::None)
+        out += std::string("cart=") + cartKeyId(s.key) + "\n";
+    for (std::size_t p = 0; p < std::size_t(PortDevices::Port::Count); ++p)
+        if (s.dev[p] != PortDevices::Device::None)
+            out += std::string(PortDevices::portId(PortDevices::Port(p))) + "=" + PortDevices::id(s.dev[p]) + "\n";
+    return out;
+}
+
+DongleSetup parseDongleSetup(const std::string& text) {
+    DongleSetup s;
+    std::istringstream in(text);
+    std::string line;
+    while (std::getline(in, line)) {
+        line = trim(line);
+        const auto eq = line.find('=');
+        if (line.empty() || line[0] == '#' || eq == std::string::npos) continue;
+        const std::string slot = lower(trim(line.substr(0, eq)));
+        const std::string what = lower(trim(line.substr(eq + 1)));
+        if (slot == "cart") { s.key = cartKeyFromId(what); continue; }
+        bool ok = true;
+        const PortDevices::Port p = PortDevices::portFromId(slot.c_str(), &ok);
+        const PortDevices::Device d = PortDevices::fromId(what.c_str());
+        if (ok && PortDevices::fits(p, d)) s.dev[std::size_t(p)] = d;
+    }
+    return s;
+}
+
 }  // namespace neost

@@ -1336,6 +1336,27 @@ static void testDongleTable() {
     checkBool("sans correspondance → vide", neost::matchDongleRules(rules, "disks/diskA.st").empty(), true);
     const auto r2 = neost::parseDongleTable("# c\n  foo = joy0:leaderboard # ok\nbar = rs232:leaderboard\nbaz\nqux = cart:nope\n", &bad);
     checkBool("analyse : commentaires, espaces, lignes invalides comptées", r2.size() == 1 && bad == 3 && r2[0].pattern == "foo", true);
+
+    // Branchements choisis à la main (page Dongles du web et d'Android).
+    neost::DongleSetup s;
+    s.key = CartridgeKey::Model::Cubase3;
+    s.dev[std::size_t(PortDevices::Port::Joy1)]  = PortDevices::Device::LeaderBoard;
+    s.dev[std::size_t(PortDevices::Port::Rs232)] = PortDevices::Device::Bat2;
+    const std::string txt = neost::formatDongleSetup(s);
+    checkStr("format : cart puis ports", txt, "cart=cubase3\njoy1=leaderboard\nrs232=bat2\n");
+    const auto back = neost::parseDongleSetup(txt);
+    checkBool("aller-retour", back.key == s.key
+              && back.dev[std::size_t(PortDevices::Port::Joy1)] == PortDevices::Device::LeaderBoard
+              && back.dev[std::size_t(PortDevices::Port::Rs232)] == PortDevices::Device::Bat2
+              && back.dev[std::size_t(PortDevices::Port::Joy0)] == PortDevices::Device::None, true);
+    checkStr("vide → texte vide", neost::formatDongleSetup(neost::DongleSetup{}), "");
+    // Abîmé : clé inconnue, périphérique hors de son connecteur, port inconnu → ignorés.
+    const auto bad2 = neost::parseDongleSetup("cart=nope\nprinter=leaderboard\nfoo=urc\n# x\n joy0 = cricket \r\n");
+    checkBool("abîmé : seul joy0=cricket survit", bad2.key == CartridgeKey::Model::None
+              && bad2.dev[std::size_t(PortDevices::Port::Printer)] == PortDevices::Device::None
+              && bad2.dev[std::size_t(PortDevices::Port::Joy0)] == PortDevices::Device::Cricket, true);
+    checkStr("identifiant cubase2", neost::cartKeyId(CartridgeKey::Model::Cubase2), "cubase2");
+    checkBool("identifiant inconnu → None", neost::cartKeyFromId("x") == CartridgeKey::Model::None, true);
 }
 
 // -----------------------------------------------------------------------------

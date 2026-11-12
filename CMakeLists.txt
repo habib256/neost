@@ -619,7 +619,7 @@ if(EMSCRIPTEN)
         "-sUSE_GLFW=3"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,FS,HEAPF32"
-        "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_hard_reset,_neost_set_mono,_neost_mount_disk,_neost_mount_disk_b,_neost_load_tos,_neost_set_kbd_joystick,_neost_set_joy_deadzone,_neost_set_fullscreen,_neost_set_auto_zoom,_neost_audio_open,_neost_audio_close,_neost_audio_set_queued,_neost_set_volume,_neost_get_volume,_neost_set_rewind,_neost_rewind,_neost_web_tick,_neost_web_parked_frame,_neost_web_park_due,_malloc,_free"
+        "-sEXPORTED_FUNCTIONS=_main,_neost_reset,_neost_hard_reset,_neost_set_mono,_neost_mount_disk,_neost_mount_disk_b,_neost_load_tos,_neost_set_kbd_joystick,_neost_set_joy_deadzone,_neost_set_fullscreen,_neost_set_auto_zoom,_neost_audio_open,_neost_audio_close,_neost_audio_set_queued,_neost_set_volume,_neost_get_volume,_neost_set_rewind,_neost_rewind,_neost_web_tick,_neost_web_parked_frame,_neost_web_park_due,_neost_cart_key_label,_neost_port_device_count,_neost_port_device_label,_neost_set_cart_key,_neost_plug_port,_neost_press_port_button,_neost_get_dongles,_neost_set_dongles,_neost_get_cart_key,_neost_get_port_device,_malloc,_free"
         # JSPI (blit HOG long, cf. src/web/main_web.cpp) : web/shell.html enveloppe
         # l'import env.neost_jspi_park et l'export neost_web_tick PAR LEUR NOM à
         # l'instanciation — les noms d'imports et d'exports ne doivent pas être minifiés.

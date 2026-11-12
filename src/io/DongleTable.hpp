@@ -43,4 +43,29 @@ std::vector<DongleRule> matchDongleRules(const std::vector<DongleRule>& rules, c
 // disks/dongles.txt si le fichier n'existe pas.
 const char* defaultDongleTable();
 
+// --- Branchements choisis à la main (page Dongles des frontends) ---------------
+// Le bureau les range dans neost.cfg (dongle=, joy0=…) ; le web et Android n'ont pas
+// de neost.cfg : ils partagent ce petit format, une ligne `emplacement=identifiant`
+// avec les MÊMES identifiants que neost.cfg et dongles.txt :
+//
+//      cart=cubase3
+//      joy1=leaderboard
+//
+// Emplacement absent = vide. Un identifiant inconnu, ou un périphérique qui n'entre
+// pas dans ce port, est ignoré (jamais d'erreur : un fichier abîmé ne doit pas
+// empêcher la machine de démarrer).
+struct DongleSetup {
+    CartridgeKey::Model key = CartridgeKey::Model::None;
+    PortDevices::Device dev[std::size_t(PortDevices::Port::Count)] = {};
+};
+std::string formatDongleSetup(const DongleSetup& s);
+DongleSetup parseDongleSetup(const std::string& text);
+
+// Identifiants et libellés des clés cartouche, dans l'ordre de CartridgeKey::Model
+// (identifiants de neost.cfg `dongle=` et de dongles.txt `cart:`).
+constexpr int kCartKeyModelCount = 5;
+const char* cartKeyId(CartridgeKey::Model m);          // "" pour None
+const char* cartKeyLabel(CartridgeKey::Model m);
+CartridgeKey::Model cartKeyFromId(const std::string& id);   // None si inconnu
+
 }  // namespace neost
