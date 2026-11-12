@@ -5,7 +5,8 @@
 
 > **Statut : RÉSOLU.** Closure boote depuis le Cycle 5 (2026-08-12) et atteint la
 > parité visuelle au Cycle 6 ; c'est aujourd'hui l'étalon `closure` de
-> `tools/etalons.json`. Ce document est le **journal d'enquête** : les `fichier:ligne`
+> `tools/etalons.json`. Le Cycle 7 (2026-11-12) a retiré les trames isolées du grand
+> logo, gardées depuis par `tools/run_closure_intro_guard.py`. Ce document est le **journal d'enquête** : les `fichier:ligne`
 > et les questions « à trancher » des cycles 1-3 datent de l'époque.
 
 ## Chaîne déductive — ce qui est PROUVÉ (2026-08-11)
@@ -453,3 +454,85 @@ lignes. Vérifié : logo intro net trame 700 (2756 px ≈ oracle 11204/4), grand
 logo intact trame 1400, banc full 39/39 VERT, Cuddly/EL/SHO/LX
 pixel-identiques (la capture change pour TOUTES les lignes → banc obligatoire,
 passé).
+
+## Cycle 7 (2026-11-12) — trames isolées du grand logo : le saut STOP perdait la phase du 68000
+
+**Symptôme** (signalé par l'auteur) : pendant le grand logo X-DISTING (trames ~1 300-2 300),
+une trame **noire** (quelques lignes fines) ou **brouillée** (bordure gauche revenue, bruit
+horizontal) entre deux trames normales, de temps en temps. Hatari, même configuration : aucune.
+Déterministe, identique en headless et dans le GUI, présent sous TOS 1.02 UK, EmuTOS 192 FR et
+`--fastfdc` (seule la position change). L'étalon `closure` (une image, trame 10 490) ne pouvait
+pas le voir.
+
+**Régression.** Absent au commit de pose de l'étalon (`66722fa`, 2026-08-30), présent en 0.6.3.
+Bissection sur la branche principale : dernier bon `6243c93`, premier mauvais la fusion
+`fb70af8` (« troisième passe MiSTer : STOP+8 et réveil quantifié »), et dans celle-ci le commit
+`2fc53a8` (« STOP 4(0/0) et réveil quantifié (fx68k) », 2026-10-22 : 39 écarts ; le commit suivant de la fusion, `1613cd6`, les porte à 156). Ce commit n'est pas faux en lui-même : il a rendu visible un défaut
+plus ancien du saut d'attente STOP de `Cpu68k::run` (cf. plus bas).
+
+**Le calage de la démo** (trace NeoST, mêmes PC chez Hatari) : la VBL ($24B70) arme le Timer A
+en délai ($FA1F=$63, /50) et recopie dans `$205BC` l'entrée suivante d'une **file de cinq
+instructions** (`$15C-$16F`). Le Timer A (`$2059E`) fait `stop #$2100` deux fois : la première
+prend la HBL déjà pendante, la seconde attend la HBL suivante. L'IACK auto-vectorisée de cette
+HBL attend l'E-clock (0-8 cycles) ; une trame dure 160 256 cycles ≡ 6 (mod 10), donc la gigue
+tourne sur cinq valeurs — Hatari `--trace video_hbl` : `e_clock_jitter` 2, 6, 0, 4, 8 à la
+ligne 33 — et la file la compense (`or.l d0,d0` / `nop`, 16-12-16-12-8 cycles). Résultat chez
+Hatari : l'écriture `$FF820A` de `pc=$2061A` tombe **ligne 33, cycle 468 sur 513 trames sur 513**.
+
+**La première différence de datation** (TOS 1.02 UK, trame 1353, première trame fautive) :
+NeoST écrit à 476 au lieu de 468, puis 464, 464, 468… Remonté cycle par cycle (sonde
+temporaire sur `iackSyncBefore` et sur le saut STOP) : l'IACK du second réveil tombe à
+`bus=216764344` au lieu de `…340` (+4), donc E-clock 6 au lieu de 0. En amont, pendant le STOP,
+la dernière échéance avant la HBL est celle du **Timer D** (source 5, période 26,08 cycles :
+données 2, prédiviseur /4, horloge USART), à `…327`, **impaire**. Le saut d'attente posait
+l'horloge du 68000 SUR cette échéance ; le pas de STOP de Moira (2 cycles) l'amenait à `…329`
+alors que la HBL était due à `…328` ; le réveil quantifié de `2fc53a8` (prise à la fin de
+l'itération de 4 cycles comptée depuis le STOP) arrondissait à `…332`. Au commit parent, le
+même cycle de retard existait déjà mais ne déplaçait pas l'IACK (0 écart sur 1 010 trames) ;
+depuis, il coûte 4 cycles, la file compense la mauvaise phase et la trame décroche (puis une
+ou deux trames de rattrapage, d'où les grappes).
+
+**Correction** (`src/core/Cpu68k.cpp`, `g_stopPhase`, défaut ON) : le saut d'attente STOP
+avance d'un nombre **pair** de cycles CPU ; une échéance impaire est servie au cycle pair
+suivant. Sources : [B] M68000UM Rev 8 § 8 (toutes les durées en nombres pairs de périodes
+CLK) ; [D] fx68k.sv:177-197 @ 0602ee46 (séquenceur à micro-cycles de 2 horloges) ; [D] Hatari
+gencpu.c:7018 @ f0736b24 (`do_cycles_stop(4)` depuis l'entrée du STOP, que les événements ne
+déplacent pas). Ni `extern/moira` ni le modèle de STOP ne changent : seul le saut d'horloge
+de NeoST, qui n'existe pas sur le matériel, cesse de déplacer le 68000 hors de sa grille.
+`NEOST_STOP_PHASE=0` restaure l'ancien saut (A/B, `tools/env_locks.json`).
+
+**Mesures** (fenêtre 1 300-2 400, ST 1 Mo, `tools/run_closure_intro_guard.py --from 1300
+--to 2400`) — trames fautives hors flashs voulus (les paires sombres à période 4 et la fin de
+l'effet, présentes chez Hatari aussi) :
+
+| Configuration | Écritures ligne 33 ≠ 468 | Trames fautives | après |
+|---|---|---|---|
+| TOS 1.02 UK, FDC normal | 86 | 52 | 0 / 0 |
+| EmuTOS 192 FR, FDC normal | 130 | 96 | 0 / 0 |
+| TOS 1.02 UK, `--fastfdc` | 159 | 85 | 0 / 0 |
+
+Après correction, la liste des trames sombres de TOS 1.02 UK est exactement celle d'Hatari
+décalée d'une trame (flashs 1 448-1 525 contre 1 449-1 526, fin 2 327-2 333 contre 2 328-2 334).
+
+**Garde** : `tools/run_closure_intro_guard.py`, palier `full` (8 s au repos, ~37 s machine chargée) — EmuTOS 192 FR, 300
+trames (1 700-2 000) capturées une à une ; échoue si l'écriture `pc=$2061A` quitte le cycle 468
+sur une seule trame depuis le boot, ou si une trame de la fenêtre s'éteint ou retrouve sa
+bordure gauche. Avant correction : 110 écarts et 36 trames fautives dans la fenêtre.
+
+**Étalons** : le palier `full` reste vert sauf `nocooper` (ref_kind hatari), dont la capture
+glisse d'une trame — l'empreinte d'état diverge dès la trame ~170 du boot EmuTOS, la démo
+démarre une trame plus tôt ; la trame 6932 rend 0 px contre la même référence (6933 : 19 069
+px, l'écart d'animation déjà noté aux recalages précédents). `frames` 6933 → 6932, référence
+inchangée ; `NEOST_STOP_PHASE=0` rend 0 px à 6933.
+
+**A/B** (`NEOST_STOP_PHASE=0` enregistré, défaut vérifié) : `cpu_swap_gate.py` — 39 scénarios
+sur 411 changent d'empreinte : les 33 étalons qui bootent EmuTOS (divergence dès la trame 170,
+le bureau d'EmuTOS attend en STOP), un parcours (`just_musix_ste`) et cinq titres de la
+collection en STE/Mega STE (Enchanted Land, Nitro, DHS Just Musix 2 ×2, DHS More or Less
+Zero) ; aucun en ST/TOS 1.04, aucune sonde Mega STE. Captures toutes les 250 trames de ces six
+scénarios : identiques à l'octet. Étalons 56/56 verts (dont `nocooper` recalé), parcours contre
+Hatari 27/27.
+
+**Recette** : `NEOST_SYNC_TRACE=1` (écritures `$FF820A`/`$FF8260` avec ligne et cycle) suffit
+à voir le décrochage sans capture ; côté Hatari `--trace video_sync,video_hbl` (≈ 1,2 Go pour
+1 900 trames : filtrer au fil de l'eau).
