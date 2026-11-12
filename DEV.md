@@ -461,6 +461,9 @@ FC0030: bra     $fc004e
   SDL_VIDEODRIVER=dummy hatari --trace cpu_disasm,cpu_regs --log-file hatari.txt --tos ... --disk-a ...
   python3 tools/trace_diff.py neost.txt hatari.txt --align-pc FC0030 --regs
   ```
+  Pour un jeu, les deux traces d'une fenêtre de trames, mêmes entrées que son parcours :
+  `tools/make_ref_traces.py` (recettes `tests/traces/ref_traces.json`, sorties hors dépôt
+  sous `build/ref-traces/`) → `docs/HATARI_AUTOMATION.md` § Traces de référence.
 - **Comparaisons temporelles IRQ** : `python3 tools/run_timing_oracle.py`
   compare les timers MFP (délai + Timer B vidéo), le son DMA STE, les rafales
   DMA disquette et le blitter HOG/partagé aux traces de référence Hatari,

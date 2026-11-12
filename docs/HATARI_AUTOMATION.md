@@ -725,3 +725,39 @@ des pixels RGB NeoST, publié sous `neost_rgb_sha256` dans le résumé.
 C'est une garde **snapshot**, distincte de la référence **hatari** : deux
 menus identiques ne doivent pas valider une course. Ne pas renouveler ces
 empreintes sans inspecter les scènes et justifier le changement.
+
+## Traces de référence pour `trace_diff` (2026-11-12)
+
+`tools/make_ref_traces.py` produit, pour chaque titre de `tests/traces/ref_traces.json`, une
+trace NeoST et une trace Hatari de la même fenêtre de jeu, avec les mêmes entrées, puis les
+passe à `trace_diff.py`. Une entrée reprend un parcours de `tests/replays/replays.json`
+(`replay`) ou écrit le sien (disque, ROM, `keys`, `scancodes`, `mouse`, `auto`…). NeoST trace
+les trames `[neost_from, neost_from + frames]` (`--trace --trace-from --regs --irq`) ; Hatari
+arme `cpu_disasm,cpu_regs` à la VBL `hatari_from` puis le coupe deux VBL après la fin, par son
+débogueur (`b VBL = … :once :trace :file`). Les deux débuts diffèrent du décalage **mesuré**
+entre les émulateurs (`compare_titles.py`, meilleure image dans une fenêtre), et `align_pc`
+choisit le PC où `trace_diff` commence la comparaison.
+
+```sh
+/usr/bin/python3 tools/make_ref_traces.py --list
+/usr/bin/python3 tools/make_ref_traces.py                      # tout, dans build/ref-traces/
+/usr/bin/python3 tools/make_ref_traces.py --only arkanoid2_round1 --out /tmp/refs
+```
+
+Chaque capture laisse `neost.trace`, `hatari.trace`, `flow.txt` (flux seul), `registers.txt`
+(flux et registres) et `capture.json` (commandes exactes, empreintes des médias, de la ROM et
+des deux binaires, révision Hatari). Le code 0 dit que les captures sont faites, **pas** qu'elles
+concordent : lire `flow.txt`. Les traces dérivent de médias privés (jeux, TOS Atari) et ne se
+versionnent pas ; seule la recette l'est. Pillow est exigé par le pilote d'entrées, d'où le
+`python3` du système sous macOS.
+
+Premières références (2026-11-12, Hatari `f0736b24`) :
+
+| Entrée | Fenêtres | Ancre | Première divergence |
+|--------|----------|-------|---------------------|
+| `lemmings_menu_entry` (parcours `lemmings`) | NeoST 2614-2617, Hatari 3158-3163 | `$4370` | instruction 10 : NeoST entre dans le gestionnaire ACIA `$21A4` (paquet IKBD), Hatari continue `$24C4` : datation d'une IRQ clavier asynchrone. |
+| `arkanoid2_round1` (Arkanoid II, `--auto`, TOS 1.04 UK) | NeoST 5400-5402, Hatari 5399-5403 | `$6776A`, entrée de la VBL | la VBL elle-même concorde (100 instructions) ; au `rte`, NeoST revient dans l'attente `$67630` (compteur `$61398` < 2), Hatari dans celle de `$65080` : la boucle principale n'est pas à la même phase de la trame. |
+
+Ce sont des points de départ d'enquête, pas des défauts établis ; la règle de `CLAUDE.md`
+s'applique (comparer les sources avant de désassembler). L'Arkanoid de 1987, cas tranché de
+`CASE_STUDIES.md`, n'a plus de disque : sa recette s'ajoutera quand l'image reviendra.
