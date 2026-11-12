@@ -69,6 +69,7 @@
 #include "gui/NavRepeat.hpp"
 #include "gui/AppConfig.hpp"
 #include "util/MouseScale.hpp"
+#include "util/RomProbe.hpp"
 #include "gui/StKeys.hpp"   // neost.cfg : structure, analyse, écriture, profils
 
 namespace fs = std::filesystem;
@@ -409,13 +410,17 @@ static void runDueFrames(App& A) {
             A.dbgStepInstr = false;
             // Instruction garée au milieu d'un blit HOG : pas de pas-à-pas avant qu'elle
             // se termine (Machine::parkedInInstruction) — « Step frame » l'avance.
+            // ⚠ else : jusqu'au 2026-11-12 le refus s'affichait PUIS stepInstruction
+            // (qui refuse lui aussi, sans bruit) et surtout clearEvents partaient quand
+            // même — les écritures PSG/DMA de la trame garée étaient jetées pour rien.
             if (machine.parkedInInstruction()) {
                 A.stateMsg = "Step refused: the CPU is halted by a blitter transfer (use Step frame)";
                 A.stateMsgFrames = 180;
+            } else {
+                machine.stepInstruction();
+                machine.psg.clearEvents();
+                machine.dmasnd.clearEvents();
             }
-            machine.stepInstruction();
-            machine.psg.clearEvents();
-            machine.dmasnd.clearEvents();
         }
     } else {
         // 6 trames max ≈ 120 ms de retard résorbable d'un coup : un stall GUI
@@ -555,7 +560,7 @@ static bool loadQuickState(App& A, const char* okText) {
         A.stateMsg = "No saved state yet (F5 saves one)";
     } else {
         ok = machine.loadStateFile(path);
-        if (ok)                                    A.stateMsg = okText;
+        if (ok)                                    { A.stateMsg = okText; A.cancelKioskInject(); }
         else if (!machine.lastStateError().empty()) A.stateMsg = "State refused: " + machine.lastStateError();
         else                                       A.stateMsg = "State file unreadable";
     }
@@ -565,26 +570,36 @@ static bool loadQuickState(App& A, const char* okText) {
     return ok;
 }
 
+// Sauvegarde dans le slot (F5, menu Machine, page Emulation), avec la RAISON d'un
+// échec — pendant de loadQuickState. Le menu et la page Configuration affichaient
+// « Save failed » nu (sans même remettre lastStateError à zéro), alors que F5 disait
+// déjà pourquoi l'état était refusé (blit en vol, invariant…) : un seul chemin.
+static bool saveQuickState(App& A, const char* okText) {
+    Machine& machine = *A.machine;
+    const std::string path = stateFilePath(A.exeDir);
+    machine.lastStateError_.clear();
+    const bool ok = machine.saveStateFile(path);
+    A.stateMsg = ok ? std::string(okText)
+               : machine.lastStateError().empty() ? "Save failed (" + path + ")"
+               : "Save refused: " + machine.lastStateError();
+    A.stateMsgFrames = ok ? 120 : 300;            // un refus se lit plus lentement
+    std::fprintf(stderr, "[state] save %s -> %s%s%s\n", ok ? "OK" : "FAILED", path.c_str(),
+                 ok ? "" : " : ", ok ? "" : A.stateMsg.c_str());
+    return ok;
+}
+
 // Save-state rapide F5/F7, à la frontière de trame.
 static void handleQuickState(App& A) {
     Machine& machine = *A.machine;
-    const std::string& exeDir = A.exeDir;
     // Save-state rapide (F5 sauver / F7 charger) — slot fichier unique neost.state, à
     // la frontière de trame. En kiosk la config est figée mais l'état de jeu, lui, se
     // sauve/charge (ce n'est pas la config). Fronts montants.
     {
         // Demandes latchées dans onKey (cf. le commentaire Alt+Entrée : la scrutation
         // glfwGetKey ratait un appui bref posé/relâché entre deux tours).
-        const std::string statePath = stateFilePath(exeDir);
         if (A.saveStateReq) {
             A.saveStateReq = false;
-            machine.lastStateError_.clear();
-            const bool ok = machine.saveStateFile(statePath);
-            A.stateMsg = ok ? "\xef\x83\x87 State saved (F5)"
-                       : machine.lastStateError().empty() ? "Save failed"
-                       : "Save refused: " + machine.lastStateError();
-            A.stateMsgFrames = 120;
-            std::fprintf(stderr, "[state] save %s → %s\n", ok ? "OK" : "FAILED", statePath.c_str());
+            saveQuickState(A, "\xef\x83\x87 State saved (F5)");
         }
         if (A.loadStateReq) {
             A.loadStateReq = false;
@@ -594,6 +609,7 @@ static void handleQuickState(App& A) {
             A.rewindReq = false;
             std::string why = "Not while debugging";     // le pas-à-pas s'arrête en milieu de trame
             const bool ok = !A.dbgPaused && A.rewind.stepBack(machine, &why);
+            if (ok) A.cancelKioskInject();               // pas de BREAK orphelin
             A.stateMsg = ok ? "\xef\x80\x9e Rewind" : why;
             A.stateMsgFrames = 120;
             std::fprintf(stderr, "[rewind] %s (%zu in ring)\n", ok ? "OK" : why.c_str(), A.rewind.count());
@@ -714,11 +730,8 @@ static void drawMenuBar(App& A, Frame& F) {
                 A.showCfg = true; A.cfgPage = kCfgProfiles;
             }
             ImGui::Separator();
-            if (ImGui::MenuItem(ICON_FA_SAVE " Save state", "F5")) {
-                const bool ok = machine.saveStateFile(stateFilePath(exeDir));
-                A.stateMsg = ok ? "\xef\x83\x87 State saved" : "Save failed";
-                A.stateMsgFrames = 120;
-            }
+            if (ImGui::MenuItem(ICON_FA_SAVE " Save state", "F5"))
+                saveQuickState(A, "\xef\x83\x87 State saved");
             if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN " Load state", "F7"))
                 loadQuickState(A, "\xef\x80\x9e State restored");
             if (ImGui::MenuItem(ICON_FA_REDO " Rewind", "Ctrl+Alt+R", false, A.rewind.count() > 0))
@@ -1254,9 +1267,8 @@ static void consumeConfigRequests(App& A, Frame& F) {
         cfg.rewind = cfgUi.rewind;       // persisté par cfgDirty (la case l'a levé)
     }
     if (cfgUi.reqSaveState) {
-        const bool ok = machine.saveStateFile(stateFilePath(exeDir));
-        A.stateMsg = ok ? "\xef\x83\x87 State saved" : "Save failed";
-        A.stateMsgFrames = 120; cfgUi.reqSaveState = false;
+        saveQuickState(A, "\xef\x83\x87 State saved");
+        cfgUi.reqSaveState = false;
     }
     if (cfgUi.reqLoadState) {
         loadQuickState(A, "\xef\x80\x9e State restored");
@@ -2110,11 +2122,7 @@ static void handleDrops(App& A, Frame& F) {
                 //  · Sinon : cartouche jusqu'à 128 Ko, disque dur au-delà.
                 std::uintmax_t sz = 0;
                 const bool tosHdr = looksLikeTosHeader(d, sz);
-                bool romSize = false;
-                for (std::uintmax_t k : { 192u, 256u, 512u, 1024u }) {
-                    const std::uintmax_t want = k * 1024u;
-                    if (sz + 1024u >= want && sz <= want + 1024u && sz <= 1024u * 1024u) romSize = true;
-                }
+                const bool romSize = neost::romprobe::tosRomSize(sz);   // règle partagée, testée
                 const std::uintmax_t fsz = fs::file_size(d, ec);
                 if (tosHdr && romSize) {
                     cfg.rom = d; saveConfig(A, exeDir, cfg, &machine); reqRebuild = true;
@@ -2373,6 +2381,8 @@ static void applyRequests(App& A, Frame& F) {
     }
     if (reqHardReset) machine.hardReset(); // power-cycle (RAM effacée, boot à froid)
     if (reqReset)     machine.reset();     // reset « doux » (RAM conservée)
+    // Pas de BREAK différé (page Clavier de la borne) vers une machine qui redémarre.
+    if (reqHardReset || reqReset || reqRebuild || reqMonitor >= 0) A.cancelKioskInject();
 }
 
 // Présentation : diagnostic NEOST_WBAND_DIAG (bandes horizontales).

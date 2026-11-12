@@ -147,6 +147,13 @@ struct App {
     bool kioskMouseRelL  = false;          // clic gauche à relâcher
     bool kioskMouseRelR  = false;          // clic droit à relâcher
     int  kioskInjectHold = 0;              // trames restantes avant relâche
+    // L'état machine vient d'être REMPLACÉ (reset, reconfiguration, état rechargé,
+    // retour arrière) : la relâche en attente n'a plus de MAKE en face. L'envoyer
+    // quand même livrait un BREAK orphelin au TOS qui redémarre (2026-11-12).
+    void cancelKioskInject() {
+        kioskInjectHold = 0; kioskKeyRelease = -1;
+        kioskMouseRelL = kioskMouseRelR = false;
+    }
     // Dossiers ROM/disques ADDITIONNELS (action « ADD ROM FOLDER ») : scannés en PLUS
     // de disks/ pour la liste des jeux, persistés dans neost.cfg (kiosk_romdir=).
     std::vector<std::string> kioskRomDirs;
@@ -169,6 +176,12 @@ struct App {
     // le mode borne réécrit (cf. saveConfig), et non la structure de travail salie en
     // séance.
     neost::appconfig::Config cfgPristine;
+    // NEOST_GEMDOS_DIR / NEOST_ACSI_IMG : surcharges de SESSION. Jusqu'au 2026-11-12
+    // elles étaient écrites dans cfg puis sauvegardées dès le démarrage — un lancement
+    // de test remplaçait durablement le gemdos=/acsi= de l'utilisateur (et effaçait son
+    // cart=, la cartouche système du HD occupant $FA0000). saveConfig écrit désormais
+    // persistableConfig(cfg, envOverrides) : la surcharge ne quitte pas la séance.
+    neost::appconfig::EnvOverrides envOverrides;
     // Mode HARNAIS (--run-frames, A9a 2026-08-27) : un run de test ne doit laisser
     // AUCUNE trace dans l'état utilisateur. Le gel est CENTRAL parce que saveConfig a
     // une demi-douzaine d'appelants — démarrage (rom=), résolution MIDI à la première

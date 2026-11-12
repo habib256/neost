@@ -57,6 +57,7 @@
 #include "io/DongleTable.hpp"
 #include "core/Framing.hpp"
 #include "util/HostPath.hpp"   // chemins hôte : UNE définition d'« absolu »
+#include "util/RomProbe.hpp"   // argument positionnel : TOS, disquette ou refus
 #include "gui/App.hpp"      // état du frontend (ex-globaux g_*)
 #include "gui/ConfigWindow.hpp"   // fenêtre Configuration + fenêtre Disquettes
 #include "gui/CrtUi.hpp"          // presets et réglages des effets CRT
@@ -139,6 +140,7 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
             std::printf(
                 "NeoST - Atari ST emulator\n"
                 "Usage: neost [options] [<rom.img> [<disk.st>]]\n"
+                "       neost [options] <disk.st|.msa|.dim|.stx|.ipf>\n"
                 "\n"
                 "  --help, -h            this help\n"
                 "  --version             build identity\n"
@@ -163,7 +165,8 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
                 "                        1/2 = left/right click, . = idle (1 frame each)\n"
                 "\n"
                 "Without a positional argument, the last ROM from neost.cfg is reloaded\n"
-                "(or EmuTOS US). Headless runs: see neost-headless --help.\n");
+                "(or EmuTOS US). A first argument that is a floppy image (not a TOS ROM)\n"
+                "boots that floppy on the last ROM. Headless runs: see neost-headless --help.\n");
             return 0;
         }
         if      (a == "--kiosk")           A.kiosk = A.kioskLaunched = true;
@@ -249,7 +252,7 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
     // Les overrides CLI priment sur le cfg (et resteront cohérents si le panneau
     // déclenche un save ultérieur en mode fenêtré).
     cfg.crt = A.crtOn; cfg.crtParams = A.crtParams;
-    if (audioLatencyCli > 0) cfg.audioLatencyMs = audioLatencyCli;
+    if (audioLatencyCli > 0) cfg.audioLatencyMs = clampAudioLatencyMs(audioLatencyCli);
     return -1;
 }
 
@@ -322,10 +325,44 @@ int appInit(App& A, int argc, char** argv) {
     std::vector<std::string> pos;
     if (const int rc = parseCommandLine(A, argc, argv, pos); rc >= 0) return rc;
     // Sans argument positionnel, ./neost recharge le dernier ROM (ou EmuTOS US).
-    const std::string romLogical = !pos.empty() ? pos[0] : defRom;
+    // Le premier positionnel est REGARDÉ avant d'être pris pour une ROM (util/RomProbe) :
+    // jusqu'au 2026-11-12, `neost jeu.st` chargeait la disquette dans la fenêtre ROM
+    // (Bus::loadTos accepte 1 octet à 1 Mo) ET la persistait en rom= — le lancement
+    // suivant, sans argument, repartait sur la même ROM absurde. Désormais :
+    //  · en-tête TOS + taille de ROM → ROM, comme avant ;
+    //  · image disquette existante (seul argument) → lecteur A, sur la ROM mémorisée ;
+    //  · autre chose (fichier absent, en-tête faux) → refus explicite, code 2, avant
+    //    toute fenêtre — rien n'est chargé ni persisté.
+    std::string romArg, floppyArg;
+    if (!pos.empty()) {
+        using neost::romprobe::Positional;
+        switch (neost::romprobe::classifyPositional(resolveData(pos[0], exeDir))) {
+            case Positional::Rom:
+                romArg = pos[0];
+                break;
+            case Positional::Floppy:
+                if (pos.size() > 1) {
+                    std::fprintf(stderr, "[main] '%s' is a floppy image, not a TOS ROM: "
+                                         "expected <rom.img> [<disk.st>] or a single <disk.st>\n",
+                                 pos[0].c_str());
+                    return 2;
+                }
+                floppyArg = pos[0];
+                std::fprintf(stderr, "[main] '%s' is a floppy image: inserted in drive A "
+                                     "(ROM: %s)\n", pos[0].c_str(), defRom.c_str());
+                break;
+            case Positional::Invalid:
+                std::fprintf(stderr, "[main] '%s' is neither a TOS ROM image ($601E/$602E "
+                                     "header, 192/256/512/1024 KB) nor a floppy image "
+                                     "(.st .msa .dim .stx .ipf): refused\n", pos[0].c_str());
+                return 2;
+        }
+    }
+    const std::string romLogical = !romArg.empty() ? romArg : defRom;
     const std::string tosPath  = resolveData(romLogical, exeDir);
     const std::string defDisk  = cfg.disk.empty() ? std::string("disks/diskA.st") : cfg.disk;
-    const std::string diskPath = resolveData(pos.size() > 1 ? pos[1] : defDisk, exeDir);
+    const std::string diskPath = resolveData(!floppyArg.empty() ? floppyArg
+                                             : pos.size() > 1 ? pos[1] : defDisk, exeDir);
     const std::string cartPath = cfg.cart.empty() ? std::string() : resolveData(cfg.cart, exeDir);
     A.disksDir = resolveData("disks", exeDir);   // dossier pour la Disk Library
     A.compDisks.load(resolveData("data/compdisks/CompDisks.json", exeDir));   // absent : listes nues
@@ -427,21 +464,47 @@ int appInit(App& A, int argc, char** argv) {
     // avec une cartouche externe. Mémorisé dans neost.cfg (gemdos=) et configurable
     // via le menu Machine → Disque dur ; NEOST_GEMDOS_DIR prime. Cf. io/GemdosHd.hpp
     // et l'option --gemdos du headless.
-    if (const char* gd = std::getenv("NEOST_GEMDOS_DIR")) cfg.gemdos = gd;
-    if (const char* hd = std::getenv("NEOST_ACSI_IMG"))   cfg.acsi  = hd;
+    // Les variables d'environnement sont des surcharges de SÉANCE (A.envOverrides) :
+    // elles pilotent la machine, jamais neost.cfg — cf. persistableConfig. Une
+    // surcharge invalide (dossier/image absents) est dite et la valeur du fichier
+    // reprend la main, au lieu de l'effacer.
+    A.envOverrides.savedGemdos = cfg.gemdos;
+    A.envOverrides.savedAcsi   = cfg.acsi;
+    A.envOverrides.savedCart   = cfg.cart;
+    if (const char* gd = std::getenv("NEOST_GEMDOS_DIR"); gd && *gd) {
+        A.envOverrides.gemdos = gd; cfg.gemdos = gd;
+    }
+    if (const char* hd = std::getenv("NEOST_ACSI_IMG"); hd && *hd) {
+        A.envOverrides.acsi = hd; cfg.acsi = hd;
+    }
     if (!cfg.gemdos.empty()) {
         if (!cartPath.empty())
             std::fprintf(stderr, "[main] cartridge ignored: incompatible with GEMDOS HD\n");
-        if (!machine.gemdos.setDirectory(A.resolvePath(cfg.gemdos)))
-            cfg.gemdos.clear();                // dossier invalide → on ne le mémorise pas
+        bool ok = machine.gemdos.setDirectory(A.resolvePath(cfg.gemdos));
+        if (!ok && !A.envOverrides.gemdos.empty()) {
+            std::fprintf(stderr, "[main] NEOST_GEMDOS_DIR ignored (not a usable folder): %s\n",
+                         A.envOverrides.gemdos.c_str());
+            A.envOverrides.gemdos.clear();
+            cfg.gemdos = A.envOverrides.savedGemdos;
+            ok = cfg.gemdos.empty() || machine.gemdos.setDirectory(A.resolvePath(cfg.gemdos));
+        }
+        if (!ok) cfg.gemdos.clear();           // dossier invalide → on ne le mémorise pas
     }
     // Disque dur ACSI (image brute, cible 0) : le TOS lit la table de partitions et
     // monte C:/D:… Mémorisé (acsi=) et configurable via le menu ; NEOST_ACSI_IMG
-    // prime. Cf. io/Acsi.hpp.
+    // prime (le temps de la séance). Cf. io/Acsi.hpp.
     if (!cfg.acsi.empty()) {
-        if (machine.fdc.mountAcsi(A.resolvePath(cfg.acsi)))
+        bool ok = machine.fdc.mountAcsi(A.resolvePath(cfg.acsi));
+        if (!ok && !A.envOverrides.acsi.empty()) {
+            std::fprintf(stderr, "[main] NEOST_ACSI_IMG ignored (not a usable image): %s\n",
+                         A.envOverrides.acsi.c_str());
+            A.envOverrides.acsi.clear();
+            cfg.acsi = A.envOverrides.savedAcsi;
+            ok = cfg.acsi.empty() || machine.fdc.mountAcsi(A.resolvePath(cfg.acsi));
+        }
+        if (ok && !cfg.acsi.empty())
             std::fprintf(stderr, "[main] ACSI : %d partition(s)\n", machine.fdc.acsiPartitionCount());
-        else cfg.acsi.clear();                 // image invalide → idem
+        else if (!ok) cfg.acsi.clear();        // image invalide → idem
     }
     A.usatanApply();
     // Modem Hayes (modem= dans neost.cfg) : commandes AT sur l'USART → pont TCP.
@@ -501,7 +564,10 @@ int appInit(App& A, int argc, char** argv) {
     machine.bus.setFpuPresent(cfg.fpu && machType0 == MachineType::MegaSte);
     machine.reset();
     loadRtcFromConfig(machine, cfg);                 // horloge Mega : reprise neost.cfg + pont hôte
-    cfg.rom = romLogical; saveConfig(A, exeDir, cfg, &machine);
+    // rom= ne retient QUE ce qui a été chargé (A.hwValid, posé par le loadTos réussi
+    // plus haut) : un chemin de ROM faux ne doit pas remplacer le dernier bon.
+    if (A.hwValid) cfg.rom = romLogical;
+    saveConfig(A, exeDir, cfg, &machine);
 
     // Son : un seul périphérique (Audio) mixe le YM2149 ET les bruits mécaniques
     // du lecteur. Le cœur émet des FdcSound, DriveSound joue les WAV de

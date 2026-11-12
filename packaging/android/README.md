@@ -22,7 +22,9 @@ commité** (`extern/SDL2`, comme Hatari) — `fetch_sdl.sh` le récupère.
 se pilote au doigt, une manette physique tient le port joystick 1, et un **menu**
 permet de changer de disquette, de redémarrer et d'envoyer des touches. Pas encore de
 stick virtuel, ni de sélecteur de ROM, ni de réglages machine. Un clavier physique
-(Bluetooth, USB) n'est pas encore relayé au ST au-delà du bouton Retour.
+(Bluetooth, USB) est relayé au ST menu fermé (depuis le 2026-11-12) : symbolique
+d'abord, selon le pays du TOS (`gui/StKeysSymbolic`, tables partagées avec le bureau),
+positionnel sinon — non vérifié sur un appareil réel.
 
 Le **bouton Retour** d'Android (et le geste de bord, le clic droit sous DeX/ChromeOS)
 est piégé (`SDL_HINT_ANDROID_TRAP_BACK_BUTTON`) : il **ouvre et ferme le menu**, il ne
