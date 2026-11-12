@@ -2421,6 +2421,26 @@ static void testPacing() {
     checkBool("frameNanos cohérent avec frameMillis",
               std::llabs(frameNanos(313 * 512) - 19978000) < 5000, true);
 
+    // --- 1 bis. Le quartz choisi en option (core/Pacing.hpp) ------------------
+    // Défaut PAL : 8 021 248 / 8 021 247 (l'écart d'1 Hz d'avant l'option). 32,215905 MHz :
+    // la même trame NTSC dure 133 604 / 8 053 976 s = 16,589 ms. Remis au défaut ensuite.
+    {
+        using neost::pacing::Quartz;
+        Quartz q = Quartz::Pal;
+        checkBool("quartz défaut = PAL", neost::pacing::quartz() == Quartz::Pal, true);
+        checkBool("quartz défaut : cpuHz 8 021 248", neost::pacing::cpuHzInt() == 8021248, true);
+        checkBool("quartz défaut : busHz 8 021 247", neost::pacing::busHzExact() == 8021247, true);
+        checkBool("parseQuartz 32216", neost::pacing::parseQuartz("32216", q) && q == Quartz::Q32216, true);
+        checkBool("parseQuartz alias ntsc-stf", neost::pacing::parseQuartz("ntsc-stf", q) && q == Quartz::Q32042, true);
+        checkBool("parseQuartz refuse auto (résolu par Machine)", neost::pacing::parseQuartz("auto", q), false);
+        neost::pacing::setQuartzGlobal(Quartz::Q32216);
+        checkBool("quartz 32216 : cpuHz 8 053 976", neost::pacing::cpuHzInt() == 8053976, true);
+        checkBool("quartz 32216 : trame NTSC ≈ 16,589 ms",
+                  std::fabs(frameMillis(263 * 508) - 16.589) < 0.001, true);
+        neost::pacing::setQuartzGlobal(Quartz::Pal);
+        checkBool("quartz rendu au défaut", neost::pacing::cpuHzInt() == kCpuHzInt, true);
+    }
+
     // --- 2. Report fractionnaire : le débit MOYEN colle au temps émulé -------
     // 160 256 cyc à 48 kHz = 959,03… échantillons. Sans report, tronquer à 959 à
     // chaque trame perdrait ~1,7 échantillon par seconde — l'anneau se viderait,

@@ -34,6 +34,7 @@
 #include "core/Bus.hpp"
 #include "core/YM2149.hpp"
 #include "io/Mfp.hpp"
+#include "core/Pacing.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -159,7 +160,9 @@ enum {
 // [B] WD177X-00 p. 1-5 : horloge de 8 MHz, base des délais de la fiche. [D] fdc.c:385 @ f0736b24 :
 // 8,021247 MHz sur ST, hors de la tolérance de 0,1 % de la p. 1-2.
 static constexpr int64_t MFM_BYTE         = 4 * 8 * 8;     // 256 cyc : 4µs/bit × 8 bits × 8 MHz ([B] p. 1-1 : 250 kbit/s en MFM)
-static constexpr int64_t CYCLES_PER_REV   = 1604249;       // 300 tr/min ([B] p. 1-7) @ 8,021247 MHz ([D] fdc.c:385) → ~200 ms
+// Tour de disquette : 300 tr/min ([B] p. 1-7), soit 1/5 s d'horloge bus — 1 604 249 cycles à
+// 8,021247 MHz ([D] fdc.c:385 @ f0736b24). La rotation est MÉCANIQUE : elle suit le temps réel,
+// donc le quartz choisi (neost::pacing::busHzExact, cf. cyclesPerRev).
 // [D] fdc.c:405, 422-423 @ f0736b24 : 3710 µs × 8 = 29680, à l'horloge STANDARD 8 MHz d'Hatari, PAS
 // au 8,021 MHz machine. Relevé d'un tiers sur STF rapporté par Hatari, 1,5 à 4 ms selon le lecteur.
 // [B] p. 1-23 n'exige que tIP ≥ 20 µs : la durée vient du lecteur, la fiche ne la fixe pas.
@@ -1162,13 +1165,17 @@ int Fdc::bytesPerTrackStx(int track, int side) const {
 // [D] Hatari clocks_timings.c:137-146,218-241,270-276 @ f0736b24 : bus PAL
 // à 8 021 247 Hz ; même SCLK FDC sur Mega STE. Le Scheduler compte en cycles BUS.
 // Arrondi par événement comme FDC_FdcCyclesToCpuCycles (fdc.c:1009-1021).
+// Horloge bus : celle du quartz en service (neost::pacing::busHzExact, 8 021 247 au défaut) ;
+// SCLK, oscillateur à part, ne la suit pas.
 int64_t Fdc::fdcToBusCycles(int64_t cycles) const {
     if (bus_.machine == MachineType::St || bus_.machine == MachineType::MegaSt) return cycles;
-    return (cycles * 8021247 + 8010613 / 2) / 8010613;
+    const int64_t bus = neost::pacing::busHzExact();
+    return (cycles * bus + 8010613 / 2) / 8010613;
 }
 int64_t Fdc::busToFdcCycles(int64_t cycles) const {
     if (bus_.machine == MachineType::St || bus_.machine == MachineType::MegaSt) return cycles;
-    return (cycles * 8010613 + 8021247 / 2) / 8021247;
+    const int64_t bus = neost::pacing::busHzExact();
+    return (cycles * 8010613 + bus / 2) / bus;
 }
 
 // Période d'un tour : constante pour .ST, dérivée de la longueur de piste pour STX
@@ -1178,7 +1185,7 @@ int64_t Fdc::cyclesPerRev() const {
         const int sz = bytesPerTrackStx(drive_[driveSel_].headTrack, side_);
         return fdcToBusCycles(int64_t(sz) * MFM_BYTE / densityFactor());
     }
-    return CYCLES_PER_REV;
+    return neost::pacing::busHzExact() / 5;   // 1 604 249 au quartz par défaut
 }
 
 // Relit lecteur/face du PSG ; au changement de lecteur, réinitialise la référence

@@ -140,7 +140,7 @@ int64_t Scc::nextBrgPeriod(int c) {
     auto& ch = chn_[c];
     // [B] UM0109 p.72-73, p.168 : le compteur repasse à zéro toutes les TC+2 horloges.
     const int tc = (int(ch.WR[13]) << 8) | ch.WR[12];
-    const int64_t total = neost::pacing::kCpuHzInt * (tc + 2) + ch.brgFraction;
+    const int64_t total = neost::pacing::cpuHzInt() * (tc + 2) + ch.brgFraction;
     const uint32_t fraction = uint32_t(total % ch.brgSource);
     const int64_t period = total / ch.brgSource + (fraction != 0) - (ch.brgFraction != 0);
     ch.brgFraction = fraction;
@@ -157,7 +157,7 @@ void Scc::updateBrg(int c) {
     // [B] UM0109 WR14 D1 p.172 : source du BRG = PCLK si 1, sinon /RTxC.
     // [D] Hatari scc.c:40-41,108 @ f0736b24 — sur Mega STE, PCLK = CLK8 et /RTxC = 3,672 MHz.
     //     Tranché par : le schéma du Mega STE.
-    const uint32_t source = (ch.WR[14] & 2) ? uint32_t(neost::pacing::kCpuHzInt) : 3672000;
+    const uint32_t source = (ch.WR[14] & 2) ? uint32_t(neost::pacing::cpuHzInt()) : 3672000;
     // [B] UM0109 figure p.72 : ZC précède le diviseur /2 et le multiplicateur WR4.
     // [B] UM0109 p.72, WR12 p.167 : une nouvelle constante n'entre au compteur qu'au
     // prochain rechargement.
@@ -178,7 +178,7 @@ void Scc::onBrgEvent(int c) {
     const int64_t due = sched_->firingDue();
     const int64_t anchor = due >= 0 ? due : sched_->liveNow();
     // [B] UM0109 p.59/p.177, figure p.72 : RR0 ZC reste haut un cycle source, jusqu'au rechargement.
-    const int64_t pulseTotal = neost::pacing::kCpuHzInt + ch.brgFraction;
+    const int64_t pulseTotal = neost::pacing::cpuHzInt() + ch.brgFraction;
     ch.brgPulseStart = anchor;
     ch.brgPulseEnd = anchor + pulseTotal / ch.brgSource
         + (pulseTotal % ch.brgSource != 0) - (ch.brgFraction != 0);
@@ -603,7 +603,7 @@ int64_t Scc::serialPeriod(int c, bool tx, bool advance) {
     // [D] Hatari scc.c:40-43,108-109 @ f0736b24 — /RTxC = 3,672 MHz, /TRxCB = BCLK 2,4576 MHz.
     // [F] /TRxCA est LCLK, broche du connecteur, et non BCLK : Hatari scc.c:42 @ f0736b24,1001-1003
     //     @ f0736b24 marque ce repli d'un TODO, NeoST le reprend. Tranché par : le schéma.
-    const int64_t freq = source == 2 ? ((ch.WR[14] & 2) ? neost::pacing::kCpuHzInt : 3'672'000)
+    const int64_t freq = source == 2 ? ((ch.WR[14] & 2) ? neost::pacing::cpuHzInt() : 3'672'000)
                                      : (source == 0 ? 3'672'000 : 2'457'600);
     // [B] UM0109 WR12/13 p.168 : BRG = source / [2*(TC+2)]. La cadence des
     // caractères ne doit pas hériter de l'arrondi du timer Zero Count historique.
@@ -611,7 +611,7 @@ int64_t Scc::serialPeriod(int c, bool tx, bool advance) {
     {
         const uint32_t divisor = uint32_t(2 * freq);
         const uint32_t previous = ch.serialDivisor[tx] == divisor ? ch.serialFraction[tx] : 0;
-        const int64_t total = neost::pacing::kCpuHzInt * mult * halfBits * divider + previous;
+        const int64_t total = neost::pacing::cpuHzInt() * mult * halfBits * divider + previous;
         const uint32_t fraction = uint32_t(total % divisor);
         // Échéances ceil(cumul) : ne jamais finir avant le dernier bit. La
         // différence des deux plafonds reste exacte lorsque le reste revient à 0.

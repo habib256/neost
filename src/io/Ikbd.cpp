@@ -626,7 +626,8 @@ void Ikbd::dispatchCommand() {
         case 0x17:
             // $17 = SET JOYSTICK MONITORING (cf. Hatari IKBD_Cmd_SetJoystickMonitoring) :
             // octet 1 = taux en 1/100 s, zéro ramené à un ; même base fixe
-            // 8021247 Hz que Hatari. Cette cadence reste commune à tous les
+            // 8021247 Hz que Hatari (busHzExact au quartz par défaut ; un autre quartz
+            // la suit, l'IKBD comptant sur son propre oscillateur). Cette cadence reste commune à tous les
             // reports jusqu’au boot ROM, même après sortie du mode monitoring.
             // Taux 0 : la ROM ($F778) envoie en continu, soit au débit de la ligne
             // (2 octets par échantillon).
@@ -637,7 +638,7 @@ void Ikbd::dispatchCommand() {
             if (sched_) sched_->cancel(Scheduler::IKBD_AUTOSEND);
             if (inBuf_[1]) {
                 monitorContinuous_ = false;
-                joystickMonitorPeriod_ = int64_t(8021247) * inBuf_[1] / 100;
+                joystickMonitorPeriod_ = neost::pacing::busHzExact() * inBuf_[1] / 100;
                 if (sched_) sched_->schedule(Scheduler::IKBD_MONITOR,
                                              firmwareEventTime() + joystickMonitorPeriod_);
             } else {
@@ -1000,7 +1001,8 @@ void Ikbd::onJoystickMonitor() {
         // ROM $F8A2 : un échantillon par tour de boucle. Sous pause ($F17B) ou ligne
         // occupée ($D7 bit 7), le tour se fait sans échantillon. P22 (feu du joystick
         // 1, actif bas) entre par la droite de $A4 ; au 8ᵉ, $A4 part dans le TDR.
-        auto us = [](int64_t v) { return (v * neost::pacing::kCpuHzInt + 500000) / 1000000; };
+        const int64_t hz = neost::pacing::cpuHzInt();   // quartz CPU en service (l'IKBD a le sien)
+        auto us = [hz](int64_t v) { return (v * hz + 500000) / 1000000; };
         const int64_t base = due >= 0 ? due : sched_->liveNow();
         if (pauseOutput_ || duringResetCriticalTime_) {
             sched_->schedule(Scheduler::IKBD_MONITOR, addOcfDelay(base, us(34)));
@@ -1040,9 +1042,9 @@ int64_t Ikbd::addOcfDelay(int64_t start, int64_t cycles) const {
     // 1 ms = 8 021,248 cycles CPU (8 021 248 Hz) : le k-ième tic est calculé EXACTEMENT
     // depuis l'origine. Arrondi à 8 021, la phase dérivait de 0,248 cycle par ms et
     // perdait une période entière en ~4 s de jeu.
-    constexpr int64_t kHz = neost::pacing::kCpuHzInt;
-    auto us = [](int64_t v) { return (v * kHz + 500000) / 1000000; };
-    auto tickAt = [this](int64_t k) { return ocfOrigin_ + (k * kHz + 500) / 1000; };
+    const int64_t kHz = neost::pacing::cpuHzInt();   // quartz CPU en service (l'IKBD a le sien)
+    auto us = [kHz](int64_t v) { return (v * kHz + 500000) / 1000000; };
+    auto tickAt = [this, kHz](int64_t k) { return ocfOrigin_ + (k * kHz + 500) / 1000; };
     int64_t end = start + cycles;
     int64_t k = (start >= ocfOrigin_) ? (start - ocfOrigin_) * 1000 / kHz : 0;
     while (k > 0 && tickAt(k) > start) --k;   // premier tic strictement après start
@@ -1184,7 +1186,7 @@ void Ikbd::sendKeycodeJoystick(uint8_t joy0) {
     // Les directions opposées enfoncées ensemble sont ignorées. Feu : $74 à l'appui,
     // $F4 au relâchement. Unités : dixièmes de seconde (prédiviseur 100 ms, $FE7D).
     if (!sched_) return;
-    constexpr int64_t kTenth = neost::pacing::kCpuHzInt / 10;
+    const int64_t kTenth = neost::pacing::cpuHzInt() / 10;
     const int64_t now = firmwareEventTime();
     struct Axis { uint8_t neg, pos, keyNeg, keyPos; };
     static constexpr Axis kAxes[2] = { {0x04, 0x08, 0x4B, 0x4D},    // X : gauche/droite

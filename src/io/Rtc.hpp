@@ -72,17 +72,16 @@ private:
     void advanceDays(uint64_t days);            // fins de mois, cycles de 100 ans
     void tickOneSecond();    // +1 s avec retenue calendaire BCD complète (jusqu'à l'année)
 
-    // Longueur d'UNE SECONDE en cycles CPU. Valeur de repli = fréquence CPU PAL ;
+    // Longueur d'UNE SECONDE en cycles CPU. Valeur de repli = quartz CPU en service ;
     // la Machine la recale sur la base de temps RÉELLE de la trame émulée (cf.
     // setSecondCycles). Une constante figée faisait dériver l'horloge contre le
     // reste de la machine — cf. secondCycles_.
-    static constexpr int64_t CPU_HZ = neost::pacing::kCpuHzInt;   // A28 : core/Pacing.hpp
 
     std::function<int64_t()> now_;
     int64_t baseCycle_ = 0;  // cycle du dernier top de seconde (phase du diviseur 1 Hz)
     // Cycles pour une seconde, recalé chaque trame par la Machine sur la géométrie
     // vidéo courante (trame × Hz). Config dérivée → hors save-state.
-    int64_t secondCycles_ = CPU_HZ;
+    int64_t secondCycles_ = neost::pacing::cpuHzInt();
     bool    timerCarry_ = false; // carry sous-seconde retenu pendant TIMER EN=0
     bool    primed_    = false;  // baseCycle_ calé sur le 1er accès (évite un rattrapage géant au boot)
 

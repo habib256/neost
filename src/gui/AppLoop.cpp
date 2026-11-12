@@ -1294,6 +1294,7 @@ static void consumeConfigRequests(App& A, Frame& F) {
             cfg.machine = cfgUi.pendMachine;
             cfg.mem     = cfgUi.pendMem;
             cfg.fpu     = cfgUi.pendFpu;
+            cfg.quartz  = cfgUi.pendQuartz;
             cfg.rom     = rom;
             saveConfig(A, exeDir, cfg, &machine);
             reqRebuild = true;

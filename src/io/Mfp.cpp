@@ -5,6 +5,7 @@
 // =============================================================================
 #include "io/Mfp.hpp"
 #include "core/Pacing.hpp"   // kCpuHzInt — UNE horloge CPU pour tout l'arbre
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -206,7 +207,7 @@ void Mfp::scheduleSerialRx(bool continuation) {
     // des changements de débit, sans timestamp Q32 borné.
     if (serialRxDivisor_ != divisor) serialRxRemainder_ = 0;
     serialRxDivisor_ = divisor;
-    const int64_t numerator = neost::pacing::kCpuHzInt * halfBits * serialClockFactor_;
+    const int64_t numerator = clkCpuHz_ * halfBits * serialClockFactor_;
     const int64_t total = numerator + serialRxRemainder_;
     serialRxCycle_ += total / divisor;
     serialRxRemainder_ = total % divisor;
@@ -274,7 +275,7 @@ int64_t Mfp::serialTcCycles() const {
     const uint8_t ucr = timer_[0x29];
     const bool asynchronous = (ucr & 0x18) != 0;
     const int clockDivisor = asynchronous && !(ucr & 0x80) ? 1 : 16;
-    return (neost::pacing::kCpuHzInt * 2 * serialClockFactor_ / clockDivisor + 2457599) / 2457600;
+    return (clkCpuHz_ * 2 * serialClockFactor_ / clockDivisor + 2457599) / 2457600;
 }
 
 void Mfp::scheduleSerialTxHalfBits(int halfBits, bool continuation) {
@@ -282,10 +283,10 @@ void Mfp::scheduleSerialTxHalfBits(int halfBits, bool continuation) {
     if (!continuation) { serialTxCycle_ = sched_->liveNow(); serialTxRemainder_ = 0; }
     if (serialTxDivisor_ != divisor) serialTxRemainder_ = 0;
     serialTxDivisor_ = divisor;
-    const int64_t total = neost::pacing::kCpuHzInt * halfBits * serialClockFactor_ + serialTxRemainder_;
+    const int64_t total = clkCpuHz_ * halfBits * serialClockFactor_ + serialTxRemainder_;
     serialTxCycle_ += total / divisor;
     serialTxRemainder_ = total % divisor;
-    const int64_t bit = neost::pacing::kCpuHzInt * 2 * serialClockFactor_;
+    const int64_t bit = clkCpuHz_ * 2 * serialClockFactor_;
     serialTxFrameClearCycle_ = serialTxCycle_ + (serialTxRemainder_ + bit + divisor - 1) / divisor;
     serialTxBusy_ = true;
     sched_->schedule(Scheduler::SERIAL_TX, serialTxCycle_ + (serialTxRemainder_ != 0));
@@ -675,7 +676,8 @@ void Mfp::updateSerialConfig() {
 //  Timers en mode DÉLAI (A/C/D) datés sur l'ordonnanceur (cf. docs/CYCLE_ACCURACY).
 //  [B] MC68901 Fig. 7-3 p. 7-3 : 2,4576 MHz. [D] CPU et ratio : Hatari cycInt.c:38-45 @ f0736b24.
 //  Le MFP tourne à 2457600 Hz, le CPU à 8021248 Hz : ratio EXACT 31333/9600
-//  (même conversion entière qu'Hatari cycInt.c, sans flottant).
+//  (même conversion entière qu'Hatari cycInt.c, sans flottant). Ce rapport est celui du
+//  quartz PAL par défaut ; un autre quartz CPU (setClock) donne cpuHz/2 457 600, réduit.
 // -----------------------------------------------------------------------------
 // [B] MC68901 Fig. 5-3 p. 5-6 : codes de contrôle et prescalers.
 // Prescalers MFP et utilitaires communs aux timers. Ctrl 8 = event-count, géré par
@@ -784,7 +786,7 @@ int64_t Mfp::timerPeriodSubCycles(int timer, bool fromCounter) const {
     // UNE FOIS à 1/256 cycle, puis cette fraction est conservée entre les périodes.
     // L'ancien calcul tronquait à chaque recharge en cycles entiers (ex. Timer C
     // 200 Hz : 40106 au lieu de 40106,238), d'où une dérive monotone timer/faisceau.
-    return ((mfpCycles << 8) * 31333) / 9600;
+    return ((mfpCycles << 8) * clkNum_) / clkDen_;
 }
 
 int64_t Mfp::timerPeriodCycles(int timer, bool fromCounter) const {
@@ -882,10 +884,10 @@ void Mfp::storeStoppedCounter(int timer, int64_t when) {
 // Plafond `start` : après un départ frais, le prescaler n'attaque qu'au front d'horloge
 //     suivant (scheduleTimerAt) ; pendant cette fraction de cycle MFP le reste dépasse
 //     div·start, et le compteur vaut encore `start`, pas start+1.
-int Mfp::liveTimerCount(int64_t remSub, int div, int start) {
+int Mfp::liveTimerCount(int64_t remSub, int div, int start) const {
     if (remSub <= 0) return 0;
-    const int64_t unit  = 31333LL * 256 * div;      // un décompte, en sous-cycles CPU ×9600
-    const int64_t count = (remSub * 9600 + unit - 1) / unit;
+    const int64_t unit  = clkNum_ * 256 * div;      // un décompte, en sous-cycles CPU ×clkDen_
+    const int64_t count = (remSub * clkDen_ + unit - 1) / unit;
     return static_cast<int>(std::min<int64_t>(count, start));
 }
 
@@ -894,7 +896,7 @@ int Mfp::liveTimerCount(int64_t remSub, int div, int start) {
 // données reflète le COMPTEUR qui décompte (data → 1 → recharge), pas la valeur
 // de recharge figée. On le reconstruit depuis les cycles CPU restants avant
 // l'IRQ programmée : count = ceil(cyclesMfpRestants / prescaler), avec la
-// conversion CPU→MFP inverse de timerPeriodCycles (× 9600 / 31333).
+// conversion CPU→MFP inverse de timerPeriodCycles (× 9600 / 31333 au quartz par défaut).
 uint8_t Mfp::readTimerData(int timer) const {
     const int ctrl = delayCtrl(timerCtrl(timer));
     // Mode délai (ctrl 1-7) ET échéance armée → compteur vivant (MFP_CYCLE_TO_REG).
@@ -955,6 +957,38 @@ uint8_t Mfp::readTimerData(int timer) const {
     }
 }
 
+// Rapport CPU/MFP et phase de la grille des fronts MFP (cf. Mfp.hpp). Le front k tombe
+// au cycle CPU t_k = (k·num + φ)/den, avec num/den = cpuHz/2 457 600 réduit et
+// φ = phase64·num/64 ∈ [0, num) : un décalage de phase64/64 de cycle MFP.
+// [B] MC68901 janv. 1984 § 5.1.1 p. 5-1 et Fig. 7-3 p. 7-3 : l'horloge des timers est
+//     un quartz externe de 2,4576 MHz, sans relation de phase avec l'horloge du CPU.
+// [F] La phase à la mise sous tension n'a aucune source : elle n'est qu'une option tirée
+//     par graine, pour explorer ce que le fer explore à chaque allumage.
+void Mfp::setClock(int64_t cpuHz, int phase64) {
+    if (cpuHz <= 0) cpuHz = neost::pacing::kCpuHzInt;
+    phase64 = std::clamp(phase64, 0, kPhaseSteps - 1);
+    int64_t a = cpuHz, b = 2457600;
+    while (b) { const int64_t t = a % b; a = b; b = t; }       // pgcd
+    clkCpuHz_   = cpuHz;
+    clkNum_     = cpuHz / a;
+    clkDen_     = 2457600 / a;
+    clkPhase64_ = phase64;
+    clkPhi_     = clkNum_ * phase64 / kPhaseSteps;
+}
+
+// Premier front ≥ anchor : k = ceil((anchor·den − φ)/num), puis ceil(t_k·256). Calcul par
+// quotient et reste, sans former anchor·den ni k·num·256, qui déborderaient int64 passé
+// ~1,15e12 fronts (≈ 130 h émulées). Avec φ = 0 et 31 333/9 600, c'est exactement le
+// calcul d'avant l'option (mêmes entiers, mêmes arrondis).
+int64_t Mfp::firstEdgeSubAtOrAfter(int64_t anchor) const {
+    const int64_t num = clkNum_, den = clkDen_;
+    const int64_t a = anchor / num, b = anchor % num;            // anchor = a·num + b
+    const int64_t x = b * den - clkPhi_;                         // ∈ ]−num, num·den[
+    const int64_t k = a * den + (x > 0 ? (x + num - 1) / num : 0);
+    const int64_t q = k / den, r = k % den;                      // k = q·den + r
+    return q * num * 256 + ((r * num + clkPhi_) * 256 + den - 1) / den;
+}
+
 void Mfp::scheduleTimer(int timer) {
     // Programmation FRAÎCHE (démarrage via TxCR) : ancrée sur l'horloge live, le
     // cycle absolu EXACT de l'écriture (et non le début du quantum) — un timer
@@ -989,16 +1023,11 @@ void Mfp::scheduleTimerAt(int timer, int64_t anchor, bool fromCounter) {
     // front suivant de cette horloge : le délai réel varie d'une fraction de cycle MFP selon
     // la phase de l'écriture. Lethal Xcess calibre sa bordure haute sur cette gigue ; [D] Hatari
     // mfp.c:1386-1392 @ f0736b24 l'imite par un aléa réservé à ce jeu (PC $14D72).
-    // [F] Origine de la grille : front 0 au cycle CPU 0 ; la phase réelle à la mise sous
-    // tension est inconnue. Tranché par : rien d'observable sans relevé des deux horloges.
-    if (!reload) {
-        // Premier front ≥ anchor : ceil(anchor·9600 / 31333), par quotient et reste.
-        const int64_t k = (anchor / 31333) * 9600 + ((anchor % 31333) * 9600 + 31333 - 1) / 31333;
-        // ceil(k·31333·256 / 9600) sans former k·31333·256, qui déborde int64 passé
-        // ~1,15e12 fronts (≈ 130 h émulées) : k = q·9600 + r.
-        const int64_t q = k / 9600, r = k % 9600;
-        anchorSub = q * 31333 * 256 + (r * 31333 * 256 + 9600 - 1) / 9600;
-    }
+    // [F] Origine de la grille : par défaut front 0 au cycle CPU 0 ; la phase réelle à la
+    // mise sous tension est inconnue (deux oscillateurs libres). setClock la déplace en
+    // option, par pas de 1/64 de cycle MFP. Tranché par : rien d'observable sans relevé des
+    // deux horloges.
+    if (!reload) anchorSub = firstEdgeSubAtOrAfter(anchor);
     int64_t nextSub = anchorSub + periodSub;
     const int64_t nowSub = sched_->liveNow() * 256;
     if (nextSub <= nowSub) {
@@ -1238,6 +1267,45 @@ bool Mfp::mfpSelfTest() {
         chk((n + " période sub-cycle").c_str(), m.timerDueSub_[c.timer], c.sub);
         for (int i = 1; i < 25; ++i) m.scheduleTimerAt(c.timer, 0, /*fromCounter=*/false);
         chk((n + " reste accumulé x25").c_str(), s.rawCyclesUntil(src), c.x25);
+    }
+
+    // --- (d bis) Horloge choisie : quartz CPU et phase de la grille MFP ---------------
+    // Défaut explicite = grille d'avant l'option : setClock(8 021 248, 0) rend 31 333/9 600.
+    // Attendus calculés hors du code (Python, fractions exactes).
+    {
+        Mfp m;
+        m.setClock(8021248, 0);
+        chk("horloge défaut num", long(m.clockNum()), 31333);
+        chk("horloge défaut den", long(m.clockDen()), 9600);
+        // Grille historique : premier front ≥ 1000 = ceil(1000·9600/31333) = 307 →
+        // ceil(307·31333·256/9600) = 256513.
+        chk("front ≥1000 phase 0", long(m.firstEdgeSubAtOrAfter(1000)), 256513);
+        chk("front ≥0 phase 0", long(m.firstEdgeSubAtOrAfter(0)), 0);
+        // Phase 32/64 : φ = 31333·32/64 = 15666 ; front 0 à 15666/9600 cycle CPU.
+        m.setClock(8021248, 32);
+        chk("front ≥0 phase 32", long(m.firstEdgeSubAtOrAfter(0)), 418);       // ceil(15666·256/9600)
+        // ≥1000 : k = ceil((9 600 000 − 15666)/31333) = 306 → ceil((306·31333+15666)·256/9600).
+        chk("front ≥1000 phase 32", long(m.firstEdgeSubAtOrAfter(1000)), 256096);
+        // Monotonie et pas : deux fronts consécutifs sont à 31333·256/9600 ≈ 835,5 sous-cycles.
+        const int64_t e0 = m.firstEdgeSubAtOrAfter(5000);
+        const int64_t e1 = m.firstEdgeSubAtOrAfter((e0 >> 8) + 1);
+        chk("pas de la grille phase 32", long((e1 - e0 >= 835 && e1 - e0 <= 836) ? 1 : 0), 1);
+        chk("front ≥ ancre phase 32", long(e0 >= 5000 * 256 ? 1 : 0), 1);
+        // Quartz 32,215905 MHz : 8 053 976 / 2 457 600 = 1 006 747 / 307 200.
+        m.setClock(8053976, 0);
+        chk("quartz 32216 num", long(m.clockNum()), 1006747);
+        chk("quartz 32216 den", long(m.clockDen()), 307200);
+        // Quartz 32,0424 MHz : 8 010 600 / 2 457 600 = 13 351 / 4 096.
+        m.setClock(8010600, 0);
+        chk("quartz 32042 num", long(m.clockNum()), 13351);
+        chk("quartz 32042 den", long(m.clockDen()), 4096);
+        // Timer C 200 Hz (12 288 cycles MFP) à 8 010 600 Hz : 12288·256·13351/4096 = 10253568
+        // sous-cycles, soit 40 053 cycles pile.
+        Scheduler s;
+        m.setScheduler(&s);
+        m.timer_[0x1D] = 0x50; m.timer_[0x23] = 192; m.tcCounter_ = 192;
+        m.scheduleTimerAt(2, 0, /*fromCounter=*/true);
+        chk("TimerC période quartz 32042", long(m.timerDueSub_[2]), 10253568);
     }
 
     // --- (e) reset() RELÂCHE toutes les lignes d'ENTRÉE ------------------------------

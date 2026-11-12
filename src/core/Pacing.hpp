@@ -18,20 +18,23 @@
 // =============================================================================
 #pragma once
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
+#include <cstring>
 
 namespace neost::pacing {
 
-// Horloge CPU/bus du ST (PAL). LA référence : tout ce qui convertit des cycles
-// émulés en temps réel passe par ici.
+// Horloge CPU/bus du ST (PAL), VALEUR PAR DÉFAUT. Le quartz réellement en service se
+// lit par cpuHz()/cpuHzInt() (plus bas) : il peut être choisi en option (setQuartz).
+// LA référence : tout ce qui convertit des cycles émulés en temps réel passe par ici.
 // [D] Hatari clocks_timings.c @ f0736b24 : quartz 32 084 988 Hz / 4 = 8 021 247 Hz.
 // [A] Relevés HWTST de tiers (atari-forum t=24862, 2013-2016), horloge CPU mesurée contre
 //     le quartz MFP de 2,4576 MHz : STE et Mega STE PAL 8 020 7xx-8 021 2xx Hz (Jungsi,
 //     Cyprian, AtariZoll) — concordant. Les STF PAL varient : Troed et exxos ont des STFM à
 //     32,084988 MHz (8,02 MHz), mais un Mega ST4, un 520 STF FR et un 1040 STF tournent à
 //     8,0097-8,0101 MHz (quartz 32,0424 MHz) et un 1040 STF UK à 8,0064 MHz. 8,02 MHz est
-//     donc un cas réel du ST ; les autres quartz ne sont pas modélisés, ni l'horloge NTSC
-//     (Mega STE NTSC mesuré à 8,0540 MHz) : NeoST, comme Hatari, garde l'horloge PAL.
+//     donc un cas réel du ST ; c'est le DÉFAUT. Les autres quartz (et l'horloge NTSC du
+//     Mega STE, mesurée à 8,0540 MHz) se choisissent en option : cf. Quartz ci-dessous.
 inline constexpr double kCpuHz = 8021248.0;
 // Même horloge, en ENTIER : les puces qui comptent des cycles émulés (RTC,
 // son DMA, UltraSatan) travaillent en int64 et n'ont que faire d'un double.
@@ -43,13 +46,90 @@ inline constexpr double kCpuHz = 8021248.0;
 // peut pas inclure ceci — il LIT donc « cpu_hz= » dans l'en-tête du dump.
 inline constexpr int64_t kCpuHzInt = 8021248;
 
+// -----------------------------------------------------------------------------
+//  Quartz maître choisi EN OPTION (TODO « Horloges NTSC et quartz STF à 32,0424 MHz »).
+//
+//  Le ST tire CPU, bus, GLUE/MMU, Shifter, blitter et (sur ST) FDC et YM du MÊME quartz
+//  maître, divisé par 4 pour le CPU. Tout ce qui se compte en cycles émulés suit donc le
+//  quartz sans rien changer : géométrie vidéo, DMA disque, accès bus. Ce qui en DÉPEND
+//  vraiment, ce sont les horloges INDÉPENDANTES converties en cycles : quartz du MFP
+//  (2,4576 MHz : timers et USART), oscillateur SCLK du STE (son DMA, FDC), quartz de
+//  l'IKBD, RTxC du SCC, ISP1160, et le temps réel de l'hôte (cadence des trames, audio,
+//  MIDI). Ceux-là lisent cpuHzInt()/busHzExact() ; aucun autre point du code.
+//
+//  [A] Relevés HWTST de tiers (atari-forum t=24862, cf. kCpuHz) : Mega STE NTSC à
+//      8,0540 MHz ; Mega ST4, 520 STF FR et 1040 STF à 8,0097-8,0101 MHz ; STE/Mega STE PAL
+//      et STFM de Troed et exxos à 8,021 MHz.
+//  [D] Hatari clocks_timings.c:137-151 @ f0736b24 : quartz 32 084 988 (PAL), 32 042 400
+//      (« STF NTSC ») et 32 215 905 Hz (« STE NTSC », 9 × 3,579545 MHz). Les relevés A
+//      tombent sur ces trois quartz à la tolérance près (le relevé est fait contre le quartz
+//      du MFP, lui-même à quelques dizaines de ppm) — sauf le 1040 STF UK à 8,0064 MHz, quartz
+//      inconnu, non modélisé.
+//
+//  Le DÉFAUT reste le PAL historique : aucune référence ne bouge. Il garde son écart
+//  interne d'1 Hz (cpuHz 8 021 248 pour le rapport MFP exact 31 333/9 600, busHzExact
+//  8 021 247 = 32 084 988/4 pour FDC STE, rotation disque et grille 250 kHz du YM), tel
+//  qu'il existait avant l'option ; les autres quartz n'ont qu'une valeur, mclk/4.
+//
+//  Process-global : une seule Machine par processus (GUI, headless, web, Android). La
+//  valeur change hors émulation (Machine::setQuartz, avant le boot ou à la reconfiguration)
+//  ; atomique pour qu'un fil audio ne lise jamais une valeur déchirée.
+// -----------------------------------------------------------------------------
+enum class Quartz : uint8_t { Pal = 0, Q32042 = 1, Q32216 = 2 };
+inline constexpr int kQuartzCount = 3;
+
+struct QuartzInfo {
+    const char* name;     // nom CLI / neost.cfg (en anglais : interface)
+    int64_t mclkHz;       // quartz maître
+    int64_t cpuHz;        // horloge CPU pour MFP, temps réel, IKBD, SCC, USB
+    int64_t busHz;        // horloge bus exacte (mclk/4) : FDC STE, rotation, YM 250 kHz
+    const char* label;    // libellé GUI
+};
+inline const QuartzInfo& quartzInfo(Quartz q) {
+    static const QuartzInfo k[kQuartzCount] = {
+        {"pal",   32084988, kCpuHzInt, 8021247, "32.084988 MHz (PAL, default)"},
+        {"32042", 32042400, 8010600,   8010600, "32.0424 MHz (STF NTSC, some PAL STF/Mega ST)"},
+        {"32216", 32215905, 8053976,   8053976, "32.215905 MHz (STE/Mega STE NTSC)"},
+    };
+    const int i = int(q);
+    return k[(i >= 0 && i < kQuartzCount) ? i : 0];
+}
+// « pal », « 32042 », « 32216 » ; alias « ntsc-stf », « ntsc-ste ». Faux si inconnu.
+inline bool parseQuartz(const char* s, Quartz& out) {
+    if (!s) return false;
+    for (int i = 0; i < kQuartzCount; ++i)
+        if (!std::strcmp(s, quartzInfo(Quartz(i)).name)) { out = Quartz(i); return true; }
+    if (!std::strcmp(s, "ntsc-stf")) { out = Quartz::Q32042; return true; }
+    if (!std::strcmp(s, "ntsc-ste")) { out = Quartz::Q32216; return true; }
+    return false;
+}
+
+namespace detail {
+inline std::atomic<int64_t> gCpuHz{kCpuHzInt};
+inline std::atomic<int64_t> gBusHz{8021247};
+inline std::atomic<uint8_t> gQuartz{0};
+}
+inline int64_t cpuHzInt()   { return detail::gCpuHz.load(std::memory_order_relaxed); }
+inline double  cpuHz()      { return double(cpuHzInt()); }
+inline int64_t busHzExact() { return detail::gBusHz.load(std::memory_order_relaxed); }
+inline Quartz  quartz()     { return Quartz(detail::gQuartz.load(std::memory_order_relaxed)); }
+// Bas niveau : ne touche QUE les valeurs globales. Une machine en service passe par
+// Machine::setQuartz, qui recale aussi le rapport du MFP.
+inline void setQuartzGlobal(Quartz q) {
+    const QuartzInfo& i = quartzInfo(q);
+    detail::gCpuHz.store(i.cpuHz, std::memory_order_relaxed);
+    detail::gBusHz.store(i.busHz, std::memory_order_relaxed);
+    detail::gQuartz.store(uint8_t(q), std::memory_order_relaxed);
+}
+
 // Durée RÉELLE d'une trame émulée. La cadence suit la GÉOMÉTRIE, jamais un 20 ms
 // figé : 313×512 ≈ 19,97 ms (PAL 50 Hz), 263×508 ≈ 16,65 ms (NTSC 60 Hz),
 // 501×224 ≈ 13,99 ms (mono 71 Hz). Un bridage fixe à 20 ms ralentissait un écran
-// 60 Hz de ~17 % — musique traînante et anneau audio affamé.
-inline double  frameMillis(int64_t frameCycles) { return double(frameCycles) * 1000.0 / kCpuHz; }
+// 60 Hz de ~17 % — musique traînante et anneau audio affamé. Et elle suit le QUARTZ :
+// à 8,054 MHz la même trame dure 0,41 % de moins.
+inline double  frameMillis(int64_t frameCycles) { return double(frameCycles) * 1000.0 / cpuHz(); }
 inline int64_t frameNanos (int64_t frameCycles) {
-    return static_cast<int64_t>(double(frameCycles) * 1e9 / kCpuHz);
+    return static_cast<int64_t>(double(frameCycles) * 1e9 / cpuHz());
 }
 
 // -----------------------------------------------------------------------------
@@ -72,7 +152,7 @@ public:
     // là aurait doublé le gain du servo).
     int samplesForFrame(int64_t frameCycles, uint32_t rate,
                         int cushionFrames, int queuedFrames) {
-        carry_ += double(frameCycles) * double(rate) / kCpuHz;
+        carry_ += double(frameCycles) * double(rate) / cpuHz();
         int n = int(carry_);
         carry_ -= n;                     // report FRACTIONNAIRE : le débit moyen
                                          // colle exactement au temps émulé

@@ -57,8 +57,6 @@ public:
     void setGain(float g) { gain_ = g; }
 
 private:
-    // A28 : UNE seule définition de l'horloge CPU/bus, dans core/Pacing.hpp.
-    static constexpr double kCpuHz = neost::pacing::kCpuHz;
     struct Event { int64_t cycle; uint32_t msg; std::vector<uint8_t> sysex; };
 
     void* synth_ = nullptr;                  // MT32Emu::Synth

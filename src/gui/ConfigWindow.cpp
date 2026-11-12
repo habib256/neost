@@ -107,6 +107,7 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
     if (!ui.pendInit) {
         ui.pendMachine = cfg.machine; ui.pendMem = cfg.mem;
         ui.pendRom = cfg.rom;         ui.pendFpu = cfg.fpu;
+        ui.pendQuartz = cfg.quartz;
         ui.pendInit = true;
     }
 
@@ -207,6 +208,22 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         ImGui::EndDisabled();
         if (ui.pendMachine != "megaste")
             ImGui::TextDisabled("(FPU socket: Mega STE only)");
+        ImGui::Separator();
+        // Quartz maître (core/Pacing.hpp) : change le rapport CPU/MFP, la cadence réelle et
+        // l'audio, pas le compte des cycles. Défaut PAL : toutes les références y sont prises.
+        ImGui::TextDisabled("Master quartz");
+        {
+            static const char* qids[] = { "pal", "32042", "32216", "auto" };
+            static const char* qlabels[] = { "32.084988 MHz (PAL, default)",
+                                             "32.0424 MHz (NTSC STF, some PAL STF/Mega ST)",
+                                             "32.215905 MHz (NTSC STE/Mega STE)",
+                                             "Auto (machine + ROM region)" };
+            for (int i = 0; i < 4; ++i)
+                if (ImGui::RadioButton(qlabels[i], ui.pendQuartz == qids[i])) ui.pendQuartz = qids[i];
+            ImGui::TextWrapped("Measured on real machines (HWTST): 8.021 MHz on PAL STE and "
+                               "most STFM, 8.010 MHz on some STF and Mega ST, 8.054 MHz on "
+                               "an NTSC Mega STE. Changes the CPU/MFP timer ratio.");
+        }
         ImGui::Separator();
         ImGui::TextWrapped("A TOS ≤ 1.04 booted on an STE/Mega STE switches NeoST to ST "
                            "mode (like Hatari): those TOS versions know nothing of the "
@@ -950,6 +967,7 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
     if (ui.pendMachine != cfg.machine) ++pending;
     if (ui.pendMem     != cfg.mem)     ++pending;
     if (ui.pendFpu     != cfg.fpu)     ++pending;
+    if (ui.pendQuartz  != cfg.quartz)  ++pending;
     if (fs::path(ui.pendRom).filename() != fs::path(cfg.rom).filename()) ++pending;
     if (pending > 0) {
         // Texte PUIS boutons sur leur propre ligne : ancrée sur le côté, la fenêtre

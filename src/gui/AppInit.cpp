@@ -433,6 +433,17 @@ int appInit(App& A, int argc, char** argv) {
     // retenue) : la page Memory compare ui.pendMem aux identifiants de ses boutons
     // radio, et un alias n'en cochait aucun.
     cfg.mem = ramLabel(parseRamBytes(cfg.mem));
+    // Quartz maître (neost.cfg « quartz= ») posé AVANT la construction, comme le headless.
+    {
+        neost::pacing::Quartz q = neost::pacing::Quartz::Pal;
+        if (!cfg.quartz.empty() && !Machine::resolveQuartz(cfg.quartz, machType0, tosPath, q))
+            std::fprintf(stderr, "[main] quartz=%s unknown (pal, 32042, 32216, auto) - using pal\n",
+                         cfg.quartz.c_str());
+        neost::pacing::setQuartzGlobal(q);
+        if (q != neost::pacing::Quartz::Pal)
+            std::fprintf(stderr, "[main] quartz: %s (CPU %lld Hz)\n",
+                         neost::pacing::quartzInfo(q).label, (long long)neost::pacing::cpuHzInt());
+    }
     A.machine = std::make_unique<Machine>(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu),
                                           machType0);   // RAM + cœur + modèle (cfg, ajusté au TOS)
     Machine& machine = *A.machine;

@@ -88,8 +88,6 @@ public:
 private:
     enum class Pending : uint8_t { None = 0, Clock, Name, Settings };
 
-    static constexpr int64_t CPU_HZ = neost::pacing::kCpuHzInt;   // A28 : core/Pacing.hpp
-
     std::function<int64_t()> now_;
     int64_t  baseCycle_ = 0;      // cycle du dernier calage de l'horloge
     int64_t  baseSecs_  = 0;      // secondes depuis 2000-01-01 00:00:00 à baseCycle_

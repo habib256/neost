@@ -149,6 +149,14 @@ void usage() {
         "  --ste-pads        STE joypad ports (DB15) follow the ST joysticks\n"
         "                    (default: idle, no joypad plugged in)\n"
         "  --fdc-seed N      seed of the disk angle drawn at first spin-up (default: fixed)\n"
+        "  --mfp-phase-seed N  seed of the MFP timer clock phase against the CPU clock\n"
+        "                    (64 steps of 1/64 MFP cycle; 0 = default: MFP edge 0 at CPU\n"
+        "                    cycle 0). On real hardware the two oscillators are free.\n"
+        "  --quartz Q        master quartz: pal (32.084988 MHz, default), 32042\n"
+        "                    (32.0424 MHz: NTSC STF, some PAL STF/Mega ST), 32216\n"
+        "                    (32.215905 MHz: NTSC STE/Mega STE), or auto (from the\n"
+        "                    machine and the ROM region). Changes the CPU/MFP ratio,\n"
+        "                    audio and real-time pacing; cycle counts stay the same\n"
         "  --disk-ro         floppy writes stay in RAM: the host .st/.msa/.dim file\n"
         "                    (and the .wd1772 STX overlay) is never modified. The\n"
         "                    guest still reads back what it wrote — this protects the\n"
@@ -1054,10 +1062,10 @@ int netusbeeSelfTest(Machine& machine) {
     machine.isp1160.setClock([&] { return usbCycles; });
     machine.isp1160.reset();
     wr32(Isp1160::HCCONTROL,0x80);
-    usbCycles = neost::pacing::kCpuHzInt;
+    usbCycles = neost::pacing::cpuHzInt();
     check(rd32(Isp1160::HCFMNUM) == 1000, "USB clock: 1000 frames per emulated second");
     wr32(Isp1160::HCCONTROL,0);
-    usbCycles += neost::pacing::kCpuHzInt;
+    usbCycles += neost::pacing::cpuHzInt();
     check(rd32(Isp1160::HCFMNUM) == 1000, "USB clock stops outside operational state");
     machine.isp1160.setClock([&machine] { return machine.sched.liveNow(); });
 
@@ -1544,6 +1552,8 @@ int main(int argc, char** argv) {
     bool        stePads    = false;   // --ste-pads : ports DB15 du STE branchés sur les joysticks
     uint32_t    fdcSeed    = 0;       // --fdc-seed : angle de la disquette au premier tour moteur
     bool        haveFdcSeed = false;
+    uint32_t    mfpPhaseSeed = 0;     // --mfp-phase-seed : phase de l'horloge MFP (0 = historique)
+    std::string quartzSpec = "pal";   // --quartz : quartz maître (core/Pacing.hpp)
     bool        diskRo     = false;   // A14 (--disk-ro) : les écritures ne touchent PAS le fichier hôte
     std::string romPath    = "roms/etos192us.img";
     std::string cartPath;
@@ -1753,6 +1763,8 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--fastfdc"))    fastFdc   = true;
         else if (!std::strcmp(a, "--ste-pads"))   stePads   = true;
         else if (!std::strcmp(a, "--fdc-seed"))   { fdcSeed = argU32(a, next(a)); haveFdcSeed = true; }
+        else if (!std::strcmp(a, "--mfp-phase-seed")) mfpPhaseSeed = argU32(a, next(a));
+        else if (!std::strcmp(a, "--quartz"))     quartzSpec = next(a);
         else if (!std::strcmp(a, "--disk-ro"))    diskRo    = true;
         else if (!std::strcmp(a, "--cart"))       cartPath  = next(a);
         else if (!std::strcmp(a, "--gemdos"))     gemdosDir = next(a);
@@ -2068,7 +2080,7 @@ int main(int argc, char** argv) {
             // ou l'option CLI déjà lue. Les booléens n'ont pas ce problème : leurs
             // défauts Config et headless coïncident (false), et le GUI écrit toutes
             // les clés de toute façon (writeConfigKeys full=true).
-            fc.machine.clear(); fc.mem.clear(); fc.cpu.clear();
+            fc.machine.clear(); fc.mem.clear(); fc.cpu.clear(); fc.quartz.clear();
             std::string ln;
             while (std::getline(cf, ln))
                 neost::appconfig::parseConfigLine(fc, std::move(ln));
@@ -2094,6 +2106,7 @@ int main(int argc, char** argv) {
             if (!fc.machine.empty()) machType = parseMachine(fc.machine.c_str());
             if (!fc.mem.empty())     ramBytes = parseRamBytes(fc.mem.c_str());
             if (!fc.cpu.empty())     cpuCore  = Cpu68k::parseCore(fc.cpu.c_str());
+            if (!fc.quartz.empty())  quartzSpec = fc.quartz;
             machineMono  = fc.mono;
             fastFdc      = fc.fastfdc;
             stePads      = fc.stePads;
@@ -2272,7 +2285,22 @@ int main(int argc, char** argv) {
 
     // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
     machType = Machine::adjustMachineForTos(machType, romPath);
+    // Horloges de session AVANT la construction : tout ce qui convertit du temps réel en
+    // cycles (IKBD, RTC, USB, son) part ainsi du bon quartz dès le premier événement.
+    neost::pacing::Quartz quartz = neost::pacing::Quartz::Pal;
+    if (!Machine::resolveQuartz(quartzSpec, machType, romPath, quartz)) {
+        std::fprintf(stderr, "[headless] --quartz: unknown value '%s' "
+                             "(pal, 32042, 32216, auto)\n", quartzSpec.c_str());
+        return 2;
+    }
+    neost::pacing::setQuartzGlobal(quartz);
     Machine machine(ramBytes, cpuCore, machType);
+    const int mfpPhase = Machine::mfpPhaseForSeed(mfpPhaseSeed);
+    machine.setClocks(quartz, mfpPhase);
+    if (quartz != neost::pacing::Quartz::Pal || mfpPhase != 0)
+        std::fprintf(stderr, "[headless] clocks: quartz %s (%s, CPU %lld Hz) | MFP phase %d/64\n",
+                     neost::pacing::quartzInfo(quartz).name, neost::pacing::quartzInfo(quartz).label,
+                     (long long)neost::pacing::cpuHzInt(), mfpPhase);
     if (fpuPresent) {
         if (machType == MachineType::MegaSte) machine.bus.setFpuPresent(true);
         else std::fprintf(stderr, "[headless] --fpu ignored: the 68881 socket only exists "
@@ -2689,9 +2717,8 @@ int main(int argc, char** argv) {
                                               64u << 20));
     }
     auto dumpFrame = [&]() {
-        static constexpr double CPU_HZ = neost::pacing::kCpuHz;   // A28
         const int64_t fc = machine.frameCycles();
-        dumpCarry += double(fc) * kDumpRate / CPU_HZ;
+        dumpCarry += double(fc) * kDumpRate / neost::pacing::cpuHz();   // A28, quartz en service
         const int n = int(dumpCarry);
         dumpCarry -= n;
         if (n <= 0) return;
@@ -2922,6 +2949,8 @@ int main(int argc, char** argv) {
                       + " gemdos=" + orDash(gemdosDir)
                       + " acsi=" + orDash(acsiImg)
                       + " fdcseed=" + (haveFdcSeed ? std::to_string(fdcSeed) : std::string("-"))
+                      + " quartz=" + neost::pacing::quartzInfo(neost::pacing::quartz()).name
+                      + " mfpphase=" + std::to_string(machine.mfp.clockPhase64())
                       + " commit=" + neost::build::kCommit     // identité de build : un client
                       + " built="  + neost::build::kDate;      // refuse un binaire périmé
         const int rc = server::run(machine, so);
@@ -3495,7 +3524,7 @@ int main(int argc, char** argv) {
             // tools/midi_compare.py, qui convertit les cycles en secondes avec.
             // Un littéral ici aurait pu mentir sur les cycles du fichier lui-même.
             std::fprintf(mf, "# NeoST MIDI OUT dump — cpu_hz=%lld — '<cycle> <byte hex>'\n",
-                         (long long)neost::pacing::kCpuHzInt);
+                         (long long)neost::pacing::cpuHzInt());
             for (const auto& [cyc, b] : midiDump)
                 std::fprintf(mf, "%lld %02X\n", (long long)cyc, b);
             const bool midiOk = !std::ferror(mf) && (std::fclose(mf) == 0);

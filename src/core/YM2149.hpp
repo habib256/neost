@@ -10,7 +10,7 @@
 //  [B] YM2149 p. 1 et p. 4 : 3 voies carrées + bruit + enveloppe, pilotés par 16 registres ;
 //  brochage compatible AY-3-8910.
 //  [D] psg.c:103-104 @ f0736b24 : l'accès CPU se fait en 2 temps via $FF8800 (sélection
-//  registre) puis $FF8802 (donnée). Horloge du PSG : cf. CLOCK_HZ et YM_250_HZ.
+//  registre) puis $FF8802 (donnée). Horloge du PSG : cf. CLOCK_HZ et ym250Hz().
 //
 //  Synthèse : la classe produit directement des échantillons (synthesize) que
 //  le backend miniaudio tire depuis le thread audio. Le mixage des 3 voies passe
@@ -28,12 +28,13 @@
 #include <array>
 #include <functional>
 #include <vector>
+#include "core/Pacing.hpp"
 #include "core/StateArchive.hpp"
 
 class YM2149 {
 public:
     // Horloge nominale du PSG sur Atari ST : 2 MHz, constante que rien ne lit (fréquence
-    // réelle : cf. YM_250_HZ). [D] psg.c:94,98 @ f0736b24 : CLOCK à 2 MHz, SEL en l'air.
+    // réelle : cf. ym250Hz()). [D] psg.c:94,98 @ f0736b24 : CLOCK à 2 MHz, SEL en l'air.
     // [B] YM2149 Broches § 5 p. 3 : SEL a un pull-up, et SEL haut prend l'horloge d'entrée
     // comme horloge maître, sans la diviser.
     // [B] YM2149 § (1) p. 5 : la fréquence d'une voie vaut fMaster / (16·TP).
@@ -364,7 +365,13 @@ private:
     // (STE), qu'Hatari ne retient pas ([D] clocks_timings.c:178 @ f0736b24) ; la hauteur bougerait de
     // −2,3 ou +7,1 cents. Tranché par : la fréquence de sortie mesurée sur une machine NTSC.
     // L'ancien 250 000 rond jouait ~4,6 cents trop bas sur toutes les machines.
-    static constexpr int   YM_250_HZ       = 250'663;
+    // Le quartz se choisit désormais en option (neost::pacing::Quartz) : la grille suit
+    // l'horloge bus exacte (mclk/4) ÷ 32 — 250 663 au défaut, 250 331 à 32,0424 MHz, 251 686 à
+    // 32,215905 MHz. Le YM reste ainsi à 32 cycles bus par pas, quel que soit le quartz.
+    // ⚠ [D] clocks_timings.c:222-223,243 @ f0736b24 : sur STE, Hatari tire CLK2 du YM de SCLK
+    // (oscillateur U303, 8 010 613 Hz) et non du quartz vidéo — soit 250 331 au lieu de 250 663,
+    // −2,3 cents. NeoST garde le YM sur l'horloge bus pour ST et STE ; écart non tranché.
+    static int ym250Hz() { return int(neost::pacing::busHzExact() / 32); }
     static constexpr uint32_t YM_SQUARE_UP = 0x1f;
 
     std::array<uint16_t, 3> tonePer_{}, toneCnt_{};

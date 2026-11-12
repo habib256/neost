@@ -59,8 +59,6 @@ public:
     void setGain(float g) { gain_ = g; }
 
 private:
-    // A28 : UNE seule définition de l'horloge CPU/bus, dans core/Pacing.hpp.
-    static constexpr double kCpuHz = neost::pacing::kCpuHz;
     // Messages de VOIE seulement (3 octets max) : un synthé GM n'a rien à faire des
     // SysEx (pas de patchs à charger, contrairement au MT-32) ni du temps réel.
     struct Event { int64_t cycle; uint8_t msg[3]; int len; };

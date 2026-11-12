@@ -59,7 +59,7 @@ void MidiOutHost::byteAt(uint8_t b, int64_t cycle) {
         std::lock_guard<std::mutex> lk(mtx_);
         if (!anchored_) { when = std::chrono::steady_clock::now(); }
         else {
-            const double dt = double(cycle - anchorCycle_) / kCpuHz;
+            const double dt = double(cycle - anchorCycle_) / neost::pacing::cpuHz();
             when = anchorHost_ + std::chrono::microseconds(int64_t(dt * 1e6))
                  + std::chrono::milliseconds(leadMs_.load(std::memory_order_relaxed));
             // Déjà passé : l'avance n'a pas suffi à absorber le retard de la boucle,

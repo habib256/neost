@@ -67,6 +67,7 @@ struct ConfigUi {
 
     // Réglages matériels EN ATTENTE (cf. « Appliquer et redémarrer »).
     std::string pendMachine, pendMem, pendRom;
+    std::string pendQuartz;       // quartz maître : pal, 32042, 32216, auto (cf. core/Pacing.hpp)
     bool pendFpu  = false;
     bool pendInit = false;        // faux tant que les champs ci-dessus n'ont pas été semés
 

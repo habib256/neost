@@ -308,6 +308,7 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("machine=", 0) == 0) c.machine = line.substr(8);
     else if (line.rfind("mem=", 0)  == 0) c.mem  = line.substr(4);
     else if (line.rfind("fpu=", 0)  == 0) c.fpu  = (line.substr(4) == "1");
+    else if (line.rfind("quartz=", 0) == 0) c.quartz = line.substr(7);
     else if (line.rfind("joyport=", 0) == 0) c.joyport = (line.substr(8) == "0") ? 0 : 1;
     else if (line.rfind("joymap=", 0) == 0) c.joymap = line.substr(7);
     else if (line.rfind("port0=", 0) == 0) c.port0 = (line.substr(6) == "auto") ? "auto" : "mouse";
@@ -435,6 +436,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
       << "\nmono=" << (w.mono ? 1 : 0)
       << "\ncpu=" << oneLine(w.cpu) << "\nmachine=" << oneLine(w.machine) << "\nmem=" << oneLine(w.mem)
       << "\nfpu=" << (w.fpu ? 1 : 0)
+      << "\nquartz=" << oneLine(w.quartz)
       << "\njoyport=" << w.joyport
       << "\njoymap=" << oneLine(w.joymap)
       << "\nport0=" << oneLine(w.port0)

@@ -592,6 +592,17 @@ bool App::midiLearnUids() {
 // psg/dmasnd restent valides), recharge la ROM, repose le moniteur, puis reset.
 // C'est un hard reset avec les nouveaux paramètres — aucun redémarrage de l'appli.
 // Le disque monté est conservé.
+// Quartz de session (neost.cfg « quartz= », core/Pacing.hpp), résolu contre le modèle et
+// la ROM qui vont tourner. Valeur inconnue : défaut PAL, et le journal le dit.
+static neost::pacing::Quartz quartzFromConfig(const std::string& spec, MachineType mt,
+                                              const std::string& romP) {
+    neost::pacing::Quartz q = neost::pacing::Quartz::Pal;
+    if (!spec.empty() && !Machine::resolveQuartz(spec, mt, romP, q))
+        std::fprintf(stderr, "[cfg] quartz=%s unknown (pal, 32042, 32216, auto) - using pal\n",
+                     spec.c_str());
+    return q;
+}
+
 void App::applyConfig() {
     App& A = *this;
     A.desktopPointer.reset();
@@ -623,6 +634,9 @@ void App::applyConfig() {
     }
     // Abaisse la machine si le TOS ne la supporte pas (TOS <= 1.04 → ST), comme Hatari.
     MachineType machTypeR = Machine::adjustMachineForTos(parseMachine(cfg.machine), romP);
+    // Horloges AVANT la reconfiguration, qui est un boot à froid : la phase MFP reste celle
+    // de la session (0 dans le GUI), le quartz suit la config.
+    machine.setClocks(quartzFromConfig(cfg.quartz, machTypeR, romP), machine.mfp.clockPhase64());
     machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu), machTypeR);
     bool romOk = machine.loadTos(romP);
     if (!romOk && A.hwValid && resolveData(A.hwRom, exeDir) != romP) {
@@ -631,6 +645,7 @@ void App::applyConfig() {
         revertToApplied(romP);
         romP = resolveData(cfg.rom, exeDir);
         machTypeR = Machine::adjustMachineForTos(parseMachine(cfg.machine), romP);
+        machine.setClocks(quartzFromConfig(cfg.quartz, machTypeR, romP), machine.mfp.clockPhase64());
         machine.reconfigure(parseRamBytes(cfg.mem), Cpu68k::parseCore(cfg.cpu), machTypeR);
         romOk = machine.loadTos(romP);
     }

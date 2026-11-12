@@ -101,13 +101,13 @@ public:
         // normalisation existe pour fermer.
         for (auto& ch : chn_) {
             ar.fixBools(ch.rr0Latched, ch.breakRaw, ch.txWritten, ch.tsrFull, ch.txActive, ch.txInterrupted, ch.rtsAsserted, ch.rxFirstArmed, ch.rxFirstPending, ch.rxLocked, ch.rxEchoStarted, ch.rxEchoEligible, ch.rxReceiveEligible);
-            ar.check(ch.txRemaining >= 0 && ch.txRemaining <= 64 * neost::pacing::kCpuHzInt,
+            ar.check(ch.txRemaining >= 0 && ch.txRemaining <= 64 * neost::pacing::cpuHzInt(),
                      "Scc::BREAK TX remainder out of range");
             ar.check(!ch.txInterrupted || ch.txActive, "Scc::interrupted TX without active frame");
             ar.check(!ch.txRemaining || (ch.txInterrupted && ch.txActive), "Scc::BREAK remainder without active frame");
             ar.check(ch.breakPending <= 3, "Scc::invalid BREAK edge mask");
             ar.check(!ch.txActive || ch.tsrFull, "Scc::active TX without TSR");
-            ar.check(ch.brgSource == 0 || ch.brgSource == 3672000 || ch.brgSource == neost::pacing::kCpuHzInt,
+            ar.check(ch.brgSource == 0 || ch.brgSource == 3672000 || ch.brgSource == neost::pacing::cpuHzInt(),
                      "Scc::invalid BRG source");
             ar.check(ch.brgSource ? ch.brgFraction < ch.brgSource : ch.brgFraction == 0,
                      "Scc::invalid BRG fraction");
@@ -117,7 +117,7 @@ public:
             for (int i = 0; i < 2; ++i) {
                 ar.check(ch.serialDivisor[i] == 0 || ch.serialDivisor[i] == 2*3672000
                          || ch.serialDivisor[i] == 2*2457600
-                         || ch.serialDivisor[i] == 2*neost::pacing::kCpuHzInt, "Scc::invalid serial clock divisor");
+                         || ch.serialDivisor[i] == 2*neost::pacing::cpuHzInt(), "Scc::invalid serial clock divisor");
                 ar.check(ch.serialDivisor[i] ? ch.serialFraction[i] < ch.serialDivisor[i]
                          : ch.serialFraction[i] == 0, "Scc::invalid serial clock fraction");
             }
@@ -132,7 +132,7 @@ public:
             ar(period);
             // [B] UM0109 p.72-73 : un chargement de plus, d'où l'intervalle ZC de TC+2.
             // La borne « au moins deux cycles, au plus une seconde » est une garde de NeoST.
-            ar.check((period == 0 || period >= 2) && period <= neost::pacing::kCpuHzInt,
+            ar.check((period == 0 || period >= 2) && period <= neost::pacing::cpuHzInt(),
                      "Scc::BRG period out of range");
         }
         // writeControl fait « ch.WR[activeReg_] = value » : un état forgé passant le CRC
