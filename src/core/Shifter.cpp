@@ -683,6 +683,7 @@ void Shifter::finishFrame() {
     const bool stoppedLine = std::any_of(lineScrollSnap_.begin(), lineScrollSnap_.end(),
         [](uint8_t m) { return (m & 0x80) != 0; });
     if (glue_.bordersTrick || spec512Active_ || maskedLine || shifterStopLine_ >= 0 || stoppedLine
+        || !glue_.phaseEvents.empty()
         || glue_.vblankAtLine(vg.dispStartLine + vg.displayLines - 1))
         renderGlueFrame();
 
@@ -932,6 +933,11 @@ void Shifter::renderGlueFrame() {
     // au groupe de 16 + groupe scroll (nDec ≤ 1040). L'ancien [960] débordait la
     // pile sur ce cas pathologique (nPix clampé ci-dessous par ceinture ET bretelles).
     uint8_t idx[1072];
+    uint8_t idx2[1072];                                            // 2ᵉ segment d'une ligne (phase changée en cours de ligne)
+    // Phase du Shifter (hardscroll « LO/MED/LO », cf. VideoGlue::detectPhaseScroll) : remise à 0
+    // à chaque trame, puis suivie événement par événement, lignes croissantes.
+    std::size_t phaseNext = 0;
+    int curPhase = 0;
     const int wsInc = glue::timing(bus_.machine).inc;              // re-normalisation des DE stockés (cf. plus bas)
     // Résolution au début de la ligne, relue au fil des écritures datées (lignes croissantes).
     std::size_t resWrite = 0;
@@ -1042,7 +1048,24 @@ void Shifter::renderGlueFrame() {
         // decodeWindowIndices décode des GROUPES de 16 px (+1 groupe si scroll avec
         // prefetch, ou offset 16 sans prefetch) : la plage valide de idx est
         // [0, nDec) — marge pour le DisplayPixelShift et le scroll.
-        const int  nDec = lineHasDE ? ((nPix + 15) / 16) * 16 + (lineScroll ? 16 : 0) : 0;
+        // Phase du Shifter sur CETTE ligne : celle d'avant la bascule, et celle d'après si une
+        // bascule tombe sur la ligne. Basse résolution sans retrait gauche ni moyenne : le seul
+        // cas que le banc confronte au modèle.
+        int phaseA = curPhase, phaseB = curPhase;
+        int64_t phaseFc = -1;
+        while (phaseNext < glue_.phaseEvents.size() && glue_.phaseEvents[phaseNext].line <= sl) {
+            const VideoGlue::PhaseEvent& ev = glue_.phaseEvents[phaseNext++];
+            if (ev.line < sl) phaseA = ev.phase;
+            else if (phaseFc < 0) phaseFc = ev.frameCycle;
+            phaseB = curPhase = ev.phase;
+        }
+        if (phaseFc < 0) phaseA = phaseB;
+        const bool phaseLine = !lineMed && ppc == 1
+            && !(bm & (glue::LEFT_OFF | glue::LEFT_OFF_MED | glue::LEFT_OFF_2_STE));
+        if (!phaseLine) phaseA = phaseB = 0;
+        const bool phaseSplit = phaseA != phaseB;
+        const int  nPixDec = nPix;
+        const int  nDec = lineHasDE ? ((nPixDec + 15) / 16) * 16 + (lineScroll ? 16 : 0) : 0;
         // Décalage SOURCE de la ligne med overscan, en OCTETS sur la base de
         // décodage : Hatari VideoOffset = −champ MED_OFFSET (0 No Cooper, −2 PYM)
         // là où le chemin LOW validé (LEFT_OFF) vaut −2 → différentiel
@@ -1146,15 +1169,29 @@ void Shifter::renderGlueFrame() {
             // reste DANS le slot — pas de repli RAM (qui ré-introduirait
             // l'artefact « dessin en course avec le faisceau », cf. kSnapLead).
             const bool haveSnap = snapHere;
-            if (haveSnap)
-                decodeWindowIndicesFromBytes(lineSnap_.data() + static_cast<std::size_t>(sl) * kLineSnapBytes
-                                                 + kSnapLead + medSrcBytes,
-                                             lineSnapLen_[sl] - medSrcBytes, nPix, idx, lineMed,
-                                             lineScroll, linePref);
-            else
-                decodeWindowIndices(addr + static_cast<uint32_t>(static_cast<int32_t>(medSrcBytes)), nPix, idx, lineMed,
-                                    lineScroll, linePref);
+            // Phase p (0/−4/−8/−12 px) : le Shifter recharge p/4 mots plus tôt, la source
+            // recule de p/2 octets (rotation des plans), l'image glisse de |p| px à gauche.
+            auto decodeAt = [&](uint8_t* out, int phase) {
+                const int src = medSrcBytes + phase / 2;
+                if (haveSnap)
+                    decodeWindowIndicesFromBytes(lineSnap_.data() + static_cast<std::size_t>(sl) * kLineSnapBytes
+                                                     + kSnapLead + src,
+                                                 lineSnapLen_[sl] - src, nPixDec, out, lineMed,
+                                                 lineScroll, linePref);
+                else
+                    decodeWindowIndices(addr + static_cast<uint32_t>(static_cast<int32_t>(src)), nPixDec, out, lineMed,
+                                        lineScroll, linePref);
+            };
+            decodeAt(idx, phaseA);
+            if (phaseSplit) decodeAt(idx2, phaseB);
         }
+        // Toute la ligne vient |p| px plus tôt, comme le premier rechargement : la fenêtre
+        // d'émission glisse avec elle (le modèle montre les premiers pixels dans la bordure
+        // gauche et la bordure droite |p| px plus tôt), la source restant indexée depuis ds.
+        shEff += phaseA;
+        // Colonne de la bascule : la date d'une écriture du Shifter au pixel suit la latence
+        // des données, celle de la palette (kSpec512AlignCyc, réglé sur 13 images Spectrum 512
+        // réelles), qu'une palette ait été écrite dans la trame ou non.
 
         // Ligne basse rés décalée par Shifter arrêté : chez Hatari TOUTE la ligne de
         // 416 px (bordures comprises) glisse de |shift| px à gauche ([D] video.c:4294 @ f0736b24+) —
@@ -1163,7 +1200,7 @@ void Shifter::renderGlueFrame() {
         // source restant indexée depuis ds (s = 0 au premier pixel émis).
         const int winShift = (stopShifted && !lineMed && ppc == 1) ? shift : 0;
         if (winShift) shEff = winShift;
-        const int wds = ds + winShift, wde = de + winShift;
+        const int wds = ds + winShift + phaseA, wde = de + winShift + phaseB;
         uint32_t* dst = frame_.data() + static_cast<std::size_t>(row) * W;
         for (int x = 0; x < W; ++x) {
             const int cyc = visFirst + x / ppc;            // cycle du pixel balayé à cette colonne
@@ -1195,8 +1232,12 @@ void Shifter::renderGlueFrame() {
                     dst[x] = stColorToArgb(pal[0]);
                     continue;
                 }
+                const bool segB = phaseSplit
+                    && static_cast<int64_t>(sl) * cpl + cyc - kSpec512AlignCyc >= phaseFc;
+                const int  shSeg = segB ? shEff - phaseA + phaseB : shEff;
+                const uint8_t* idxSeg = segB ? idx2 : idx;
                 int s = lineMed ? ((cyc - ds) * 2 + medSrcPx)
-                                : ((cyc - ds) * ppc + (x % ppc) - shEff + lineScroll);
+                                : ((cyc - ds) * ppc + (x % ppc) - shSeg + lineScroll);
                 if (s < 0) s = 0; else if (s >= nDec) s = nDec - 1;
                 if (lineMed) {
                     const int s2 = (s + 1 < nDec) ? s + 1 : s;
@@ -1206,7 +1247,7 @@ void Shifter::renderGlueFrame() {
                     // de compare_screenshot.py (_downscale2).
                     dst[x] = 0xFF000000u | (((a & b) + (((a ^ b) & 0x00FEFEFE) >> 1)) & 0x00FFFFFF);
                 } else {
-                    dst[x] = stColorToArgb(pal[idx[s]]);   // dans la fenêtre → contenu
+                    dst[x] = stColorToArgb(pal[idxSeg[s]]);   // dans la fenêtre → contenu
                 }
             } else {
                 dst[x] = stColorToArgb(pal[0]);            // hors fenêtre / bordure / blank → registre 0

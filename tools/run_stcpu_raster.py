@@ -9,8 +9,17 @@
 #  Haute résolution (`--kind hi`) hors verdict : après une impulsion, le Shifter du modèle, bloc « moyen »,
 #  garde une phase de 8 pixels jusqu'à la trame suivante. Effet réel ou non, rien ne le dit.
 #
+#  Cas fixes (CASES) : le hardscroll « LO/MED/LO » de Paulo Simoes (`med2` de make_stcpu_raster.py),
+#  quatre largeurs de bascule moyenne résolution posées deux fois dans la trame — toutes les lignes hors
+#  des deux lignes de bascule sont identiques au modèle ; sur elles, la fenêtre moyenne elle-même et la
+#  colonne exacte du rechargement restent en écart (cf. VideoGlue::detectPhaseScroll). Puis les deux
+#  impulsions haute résolution des étalons blankline_stop_ste et blankline_node_late_ste, aux mêmes
+#  cycles : 3 px d'écart chacune, à la colonne de l'écriture (le Shifter sort du monochrome le temps de
+#  la bascule, non modélisé). Verdict : le compte par ligne égale tests/reference/stcpu_raster_cases.json.
+#
 #  Usage : run_stcpu_raster.py [--rebuild] [--write-refs] [--kind f60] [--width 8] [--step 8] [--jobs 8]
-#  Code : 0 si les dates en écart égalent tests/reference/stcpu_raster.json ; 1 sinon ; 77 sans outillage.
+#  Code : 0 si les dates en écart égalent tests/reference/stcpu_raster.json, et les cas fixes
+#  tests/reference/stcpu_raster_cases.json ; 1 sinon ; 77 sans outillage.
 #
 #  (c) 2026 VERHILLE Arnaud — projet NeoST. Outil de test.
 # =============================================================================
@@ -34,6 +43,11 @@ import make_stcpu_raster as raster  # noqa: E402
 HEADLESS = ROOT / "build" / "neost-headless"
 OUT = ROOT / "tests" / "out" / "stcpu_raster"
 REF = ROOT / "tests" / "reference" / "stcpu_raster.json"
+REF_CASES = ROOT / "tests" / "reference" / "stcpu_raster_cases.json"
+# Cas fixes, en plus du balayage : (forme, largeur, date). Date 436 : moyenne au cycle 84 de la
+# ligne 74 dans NeoST. Haute résolution aux cycles des étalons blankline_stop_ste (108 → 204,
+# STOP_MIDDLE) et blankline_node_late_ste (56 → 104), ligne 74 (NEOST_SYNC_TRACE).
+CASES = [("med2", w, 436) for w in (8, 12, 16, 20)] + [("hi", 96, 460), ("hi", 48, 408)]
 FRAMES = 12
 PIPELINE, FIRST_LINE = 528, 65  # tools/run_gstmcu_bench.py, low_pal : 1er pixel et 1re ligne affichée
 
@@ -72,7 +86,7 @@ def one(sc) -> dict:
     words = list(struct.unpack(f"<{len(raw) // 2}H", raw))
     starts = falling(words, 13)
     w, h, pix = read_ppm(ppm)
-    wrong, lines = 0, set()
+    wrong, lines, per_line = 0, set(), {}
     for y in range(h):
         li = FIRST_LINE + y - 29
         if not 0 <= li < len(starts) - 1:
@@ -85,7 +99,8 @@ def one(sc) -> dict:
             if tuple(((line[t] >> s) & 15) * 17 for s in (8, 4, 0)) != tuple(pix[(y * w + x) * 3:(y * w + x) * 3 + 3]):
                 wrong += 1
                 lines.add(y)
-    return {"date": date, "wrong": wrong, "lines": sorted(lines)}
+                per_line[str(y)] = per_line.get(str(y), 0) + 1
+    return {"date": date, "wrong": wrong, "lines": sorted(lines), "per_line": per_line}
 
 
 def main() -> int:
@@ -115,16 +130,24 @@ def main() -> int:
     print(f"{len(results) - len(bad)}/{len(results)} dates identiques au pixel ({a.kind}, largeur {a.width})")
     if (a.kind, a.width, a.step) != ("f60", 8, 8):
         return 0
+    with ThreadPoolExecutor(a.jobs) as pool:
+        cases = {f"{k}_{w}_{d}": r["per_line"] for (k, w, d), r in zip(CASES, pool.map(one, CASES))}
+    for name, per in cases.items():
+        print(f"  {name:<14} : {sum(per.values()):5d} px, lignes {sorted(per, key=int)}")
     if a.write_refs:
         REF.write_text(json.dumps(bad, indent=0, sort_keys=True) + "\n")
+        REF_CASES.write_text(json.dumps(cases, indent=0, sort_keys=True) + "\n")
         return 0
-    if not REF.exists():
-        return 1 if bad else 0
-    if json.loads(REF.read_text()) != bad:
+    status = 0
+    if REF.exists() and json.loads(REF.read_text()) != bad or not REF.exists() and bad:
         print("BANC AU PIXEL : verdicts changés")
-        return 1
-    print("BANC AU PIXEL OK : verdicts identiques à la référence")
-    return 0
+        status = 1
+    if REF_CASES.exists() and json.loads(REF_CASES.read_text()) != cases:
+        print("BANC AU PIXEL : cas fixes changés (LO/MED/LO, impulsions haute résolution)")
+        status = 1
+    if status == 0:
+        print("BANC AU PIXEL OK : verdicts identiques à la référence")
+    return status
 
 
 if __name__ == "__main__":

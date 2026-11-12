@@ -82,6 +82,12 @@ public:
     };
     std::vector<GlueLine> lines;               // état par scanline (taille lpf+2)
     bool lateHiOn = false;                     // rejeu STE : haute résolution posée dans (40, 56]
+    // Hardscroll 4 px « LO/MED/LO » (Paulo Simoes, cf. VideoGlue::replayGlue) : chaque bascule
+    // détectée change la phase du Shifter à partir de sa date. Dérivé des syncWrites à chaque
+    // rejeu, donc NON SÉRIALISÉ : rien à sauver que les écritures ne portent déjà.
+    struct PhaseEvent { int32_t frameCycle; int line; int phase; };   // phase après : 0/−4/−8/−12 px
+    std::vector<PhaseEvent> phaseEvents;
+    int medLine = -1, medCyc = -1;             // dernière bascule MED vue par le rejeu
     std::vector<int64_t>* benchLineStarts = nullptr;    // banc seul : débuts de ligne vus par le rejeu
     std::vector<int64_t> benchStarts;
     int  vdeOn   = 63;                       // nStartHBL : 1ʳᵉ ligne affichée (peut baisser → top retiré)
@@ -138,6 +144,8 @@ public:
     // (LEFT_OFF_MED), variante courte STE, stab med et scrolls « hardware »
     // 13/9/5/1 px. `prevRes`/`newRes` = valeur $FF8260&3 avant/après l'écriture.
     void updateGlueRes(int line, int lineCycles, int prevRes, int newRes);
+    // Hardscroll 4 px « LO/MED/LO » : remplit phaseEvents (cf. VideoGlue.cpp).
+    void detectPhaseScroll(int line, int lineCycles, int32_t frameCycle, int prevRes, int newRes);
     // Machine Glue LIVE : curseur incrémental qui fait tourner startHBL/updateGlueState
     // AU FIL de la trame (mêmes structures que replayGlue, qui ré-écrase tout en fin de
     // trame). Permet à videoCounter() de refléter EN DIRECT la fenêtre DE réelle de la

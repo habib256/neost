@@ -29,8 +29,17 @@ LINE = 512
 
 
 # forme : (registre, valeur active, valeur de retour, inutilisé).
-KINDS = {"hi": (0xFF8260, 2, 0, 0), "f60": (0xFF820A, 0, 2, 0),
+KINDS = {"hi": (0xFF8260, 2, 0, 0), "f60": (0xFF820A, 0, 2, 0), "med": (0xFF8260, 1, 0, 0),
+         "med2": (0xFF8260, 1, 0, 0),
          "scroll": (0xFF8265, 5, 0, 0), "offset": (0xFF820F, 8, 0, 0)}
+
+
+# med2 : hardscroll « LO/MED/LO » (Paulo Simoes) posé deux fois dans la trame, à MED2_GAP lignes
+# d'écart, de largeur `width` puis MED2_SECOND[width] : 16 cycles de moyenne résolution en tout,
+# la phase du Shifter revient donc à 0 à chaque trame et les deux côtés partent du même état.
+# La phase persiste d'une trame à l'autre dans le modèle, pas dans NeoST (cf. VideoGlue.cpp).
+MED2_GAP = 30
+MED2_SECOND = {8: 8, 12: 20, 16: 16, 20: 12}
 
 
 # forme maintenue : (registre, valeur), jamais rétablie. C'est l'usage des jeux STE.
@@ -90,6 +99,15 @@ def build(kind: str, width: int, date: int) -> bytes:
     if kind in HOLD:                           # écrit une fois par trame et laissé en place
         target, value = HOLD[kind]
         p.w(0x13FC, value & 0xFF).l(target)    # move.b #value,target.l
+    elif kind == "med2":
+        second = MED2_SECOND[width]
+        p.w(0x1684)                            # move.b d4,(a3)
+        p.w(*([NOP] * ((width - 8) // 4)))
+        p.w(0x1685)                            # move.b d5,(a3)
+        p.w(*([NOP] * ((MED2_GAP * LINE - width - 8) // 4)))
+        p.w(0x1684)
+        p.w(*([NOP] * ((second - 8) // 4)))
+        p.w(0x1685)
     elif kind in KINDS:
         p.w(0x1684)                            # move.b d4,(a3)
         p.w(*([NOP] * ((width - 8) // 4)))

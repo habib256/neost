@@ -17,9 +17,9 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `hardware` | A | Relevé sur machine réelle, propre ou publié par un tiers nommé | 0 étalons |
 | `primary` | B | Attendu calculé depuis une fiche, un schéma, une netlist Atari | 0 étalons |
 | `rom` | C | Verdict d'un programme ou d'une ROM Atari | 0 étalons |
-| `rtl` | D | Simulation d'un RTL dérivé du silicium ou d'un schéma | 4 étalons |
+| `rtl` | D | Simulation d'un RTL dérivé du silicium ou d'un schéma | 7 étalons |
 | `hatari` | D | Capture de l'Hatari épinglé | 40 étalons |
-| `snapshot` | aucun | Self-capture NeoST : non-régression, aucune preuve | 12 étalons |
+| `snapshot` | aucun | Self-capture NeoST : non-régression, aucune preuve | 10 étalons |
 
 ## Les verdicts hors étalons pixel
 
@@ -111,6 +111,20 @@ Hatari sont identiques entre eux sur ces écrans, à 0 pixel sur tout le buffer.
 
 ⚠ Écran statique : ces étalons ne disent rien des écritures en cours de ligne. Ces lignes
 comparent des modèles entre eux, pas au silicium, et NeoST a pris ces valeurs chez Hatari.
+
+**En cours de ligne (2026-11-12)**, `tools/run_stcpu_raster.py` rejoue des cas fixes sur fx68k +
+GSTMCU, verdicts dans `tests/reference/stcpu_raster_cases.json` :
+
+- **Impulsions haute résolution** de `blankline_stop_ste` (108 → 204, STOP_MIDDLE) et
+  `blankline_node_late_ste` (56 → 104), aux mêmes cycles : identiques au pixel, sauf 3 px à la
+  colonne de l'écriture, où le Shifter du modèle sort du monochrome le temps de la bascule. Le
+  bord de fin de STOP_MIDDLE concorde au modèle, pas aux trois pixels de plus d'Hatari. Les deux
+  étalons sont montés en `rtl`, leur référence reste la capture NeoST.
+- **Hardscroll « LO/MED/LO »** de Paulo Simoes (moyenne au cycle 84 pendant 8 à 20 cycles) : la
+  phase du Shifter recule de D px modulo 16, plans tournés d'autant, à partir de la bascule et
+  jusqu'à la fin de la trame. Toutes les lignes concordent, sauf les lignes de bascule, où le
+  modèle sort des pixels moyenne résolution pendant la fenêtre. Hatari rend l'image 13 px plus à
+  droite. Étalon `rtl_lomedlo`, référence simulée.
 
 ## Les règles d'arbitrage
 
