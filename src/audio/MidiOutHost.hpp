@@ -214,7 +214,7 @@ private:
         uint8_t msg[10] = {};
     };
     // Générateur MTC (sous mtx_) et son injection dans la file, triée par échéance.
-    neost::midi::mtc::Generator mtc_{kCpuHz};
+    neost::midi::mtc::Generator mtc_{neost::pacing::kCpuHz};   // recalé sur cpuHz() à chaque usage
     std::chrono::steady_clock::time_point whenFor_(int64_t cycle) const;   // (mtx_ pris)
     void injectAt_(const uint8_t* msg, int len, int64_t cycle);           // (mtx_ pris)
     std::mutex mtx_;

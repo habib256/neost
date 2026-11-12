@@ -253,7 +253,7 @@ void DmaSound::armFrameEnd() {
     const int64_t samples = need > 0 ? (need + step - 1) / step : 0;
     const int64_t rate = int64_t(kRate[mode_ & 0x03]);
     int64_t t = dacLast_;
-    if (samples > 0) t += (samples * CPU_HZ - dacRem_ + rate - 1) / rate;
+    if (samples > 0) t += (samples * neost::pacing::cpuHzInt() - dacRem_ + rate - 1) / rate;
     const int64_t now = sched_->liveNow();
     if (t < now) t = now;
     sched_->schedule(Scheduler::DMASND, fetchWindowFrom(t));
