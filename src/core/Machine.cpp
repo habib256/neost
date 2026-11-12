@@ -995,7 +995,7 @@ static uint32_t cartFingerprint(const std::vector<uint8_t>& cart) {
 // A17 (2026-08-27) : le numéro de version vivait EN DUR à deux endroits (écriture ici,
 // contrôle dans loadStateFile) — et ils s'étaient déjà désynchronisés : le message de
 // rejet annonçait « writes v16 » alors que le build écrivait v17. Constante unique.
-static constexpr uint16_t kStateVersion = 64; // empreintes ACSI, NE2000 TSR/RSR/CNTR, GEMDOS ProcPaths::ran, Shifter noscroll (v63 : 40 handles hôte en 88..127 ; v62 : Fforce par processus, handle détruit ; v61 : processus, attributs, alias 8.3)
+static constexpr uint16_t kStateVersion = 65; // RTL8019AS : CLDA, 9346CR, BPAGE, CONFIG0-3 (v64 : empreintes ACSI, NE2000 TSR/RSR/CNTR, GEMDOS ProcPaths::ran, Shifter noscroll ; v63 : 40 handles hôte en 88..127 ; v62 : Fforce par processus, handle détruit ; v61 : processus, attributs, alias 8.3)
 static uint32_t stateCrc32(const uint8_t* p, std::size_t n);   // défini plus bas
 void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     uint32_t magic   = 0x4E535453u;   // 'NSTS'
