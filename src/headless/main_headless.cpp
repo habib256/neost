@@ -418,7 +418,9 @@ int enecSelfTest(Machine& machine) {
     // --- 4. Transmission → backend boucle → réception dans l'anneau -----------
     wr(0x04, kTxPage);                        // TPSR = page de départ TX
     wr(0x05, uint8_t(sizeof frame)); wr(0x06, 0);   // TBCR
-    wr(0x0C, 0x04);                           // RCR : accepte broadcast (AB)
+    // RCR : broadcast (AB) + AR — la trame de test (32 octets) est un « runt » que
+    // la RTL8019AS rejette sans AR ([B] LS003.8 RCR, p. 14 ; cf. contrôle 13).
+    wr(0x0C, 0x06);
     wr(0x00, 0x26);                           // CR : TXP + STA (page 0)
     machine.ne2000.poll();                    // la trame émise revient en réception
     const uint8_t isr = rd(0x07);
@@ -496,7 +498,8 @@ int enecSelfTest(Machine& machine) {
     const uint8_t bnry0 = rd(0x03);
     wr(0x00, 0xA2);                                   // page 2
     wr(0x03, 0x77);                                   // Remote Next Packet Pointer
-    const bool p2read = rd(0x01) == kRxStart && rd(0x02) == kRxStop && rd(0x0C) == 0x04;
+    // RCR relu avec ses bits 7-6 « Always 1 » ([B] RTL8019AS LS003.8 p. 14).
+    const bool p2read = rd(0x01) == kRxStart && rd(0x02) == kRxStop && rd(0x0C) == 0xC6;
     wr(0x00, 0xE2);                                   // page 3
     wr(0x03, 0x78);
     wr(0x00, 0x22);                                   // retour page 0
@@ -538,6 +541,90 @@ int enecSelfTest(Machine& machine) {
     check(monNoBuf && (rsrMon & 0x50) == 0x50 && c2a == 1 && c2b == 0,
           "monitor mode: not buffered, CNTR2 counts");
     wr(0x0C, 0x04);
+
+    // --- 12. Identifiants RTL8019AS et relectures de la page 2 ----------------
+    // [B] RTL8019AS LS003.8 p. 10 et 16 : « P » / « p » en $0A/$0B de la page 0
+    // (lus 0 avant le 2026-11-12). Page 2 : TCR bits 7-5 et DCR bit 7 « Always 1 »,
+    // DCR.LAS à 1 à la mise sous tension (p. 13), le test n'écrit jamais DCR.
+    const bool ids = rd(0x0A) == 0x50 && rd(0x0B) == 0x70;
+    wr(0x00, 0xA2);
+    const bool p2ones = rd(0x0D) == 0xE0 && rd(0x0E) == 0x84;
+    wr(0x00, 0x22);
+    check(ids && p2ones, "RTL8019AS ID P/p, page-2 always-1 bits");
+
+    // --- 13. CLDA et paquets courts (AR) --------------------------------------
+    // CLDA ($01/$02 de la page 0) rendait 0. Après émission : fin de la trame lue
+    // (TPSR·256 + TBCR) ; après réception : en-tête écrit à CURR·256 (+4) ; un runt
+    // rejeté (AR=0) ramène la DMA à CURR·256 sans rien ranger ([B] DP8390D § 7.0).
+    auto clda = [&]() { const uint8_t lo = rd(0x01); const uint8_t hi = rd(0x02);
+                        return uint16_t(lo | (hi << 8)); };
+    auto curr = [&]() { wr(0x00, 0x62); const uint8_t c = rd(0x07); wr(0x00, 0x22); return c; };
+    cnt.q.clear(); cnt.sent = 0;
+    wr(0x07, 0xFF);
+    wr(0x04, kTxPage); wr(0x05, uint8_t(sizeof frame)); wr(0x06, 0);
+    wr(0x00, 0x26);                                   // TXP : la trame de 32 octets part
+    const bool cldaTx = clda() == uint16_t(kTxPage * 256u + sizeof frame) && cnt.sent == 1;
+    const uint8_t curr0 = curr();
+    machine.ne2000.poll();                            // AR=0 : runt rejeté
+    const bool runtDropped = !(rd(0x07) & 0x01) && curr() == curr0
+                          && clda() == uint16_t(curr0 << 8);
+    wr(0x0C, 0x06);                                   // AB | AR
+    cnt.send(frame, sizeof frame); machine.ne2000.poll();
+    const bool runtKept = (rd(0x07) & 0x01) && clda() == uint16_t((curr0 << 8) + 4);
+    wr(0x0C, 0x04);
+    check(cldaTx && runtDropped && runtKept, "CLDA after TX/RX, RCR.AR gates runts");
+
+    // --- 14. Page 3 RTL8019AS ([B] LS003.8 p. 11, 16-23) ----------------------
+    // Lue 0 et écritures ignorées avant le 2026-11-12. Mise sous tension : 9346CR=0,
+    // CONFIG0=0 (VERID 00), CONFIG1=$80 (IRQEN), CSNSAV=0. Les CONFIG ne s'écrivent
+    // qu'en mode « config write enable » (EEM=11) ; VERID écrivable = RTL8019AS.
+    wr(0x00, 0xE2);                                   // page 3
+    const bool p3up = rd(0x01) == 0x00 && rd(0x03) == 0x00 && rd(0x04) == 0x80
+                   && rd(0x08) == 0x00;
+    wr(0x04, 0x00);                                   // EEM=00 : ignoré
+    const bool cfgLocked = rd(0x04) == 0x80;
+    wr(0x01, 0xC0);                                   // EEM=11
+    wr(0x03, 0xC0); wr(0x04, 0x00);
+    const bool cfgOpen = rd(0x01) == 0xC0 && rd(0x03) == 0xC0 && rd(0x04) == 0x00;
+    wr(0x02, 0x5A);
+    const bool bpage = rd(0x02) == 0x5A;
+    check(p3up && cfgLocked && cfgOpen && bpage, "page 3: power-up, W* only under EEM=11");
+    // INTR suit la ligne choisie par IRQS (INT0 ici) si IRQEN.
+    wr(0x00, 0x22); wr(0x0F, 0x01); wr(0x07, 0xFF);
+    cnt.send(bc, sizeof bc); machine.ne2000.poll();   // PRX levé, masqué par IMR
+    wr(0x00, 0xE2);
+    const bool intrOff = rd(0x0B) == 0x00 && !machine.ne2000.irqAsserted();   // IRQEN=0
+    wr(0x04, 0x80);
+    const bool intrOn = rd(0x0B) == 0x01 && machine.ne2000.irqAsserted();
+    wr(0x00, 0x22); wr(0x07, 0xFF); wr(0x0F, 0x00);
+    check(intrOff && intrOn, "page 3: INTR and IRQ follow CONFIG1.IRQEN");
+    // PWRDN : ni émission ni réception ; le port reset ne touche pas la page 3 ;
+    // l'auto-load (EEM=01) recharge CONFIG1-3, remet EEM à 00 et CR à $21.
+    wr(0x00, 0xE2); wr(0x06, 0x02); wr(0x04, 0x00);   // PWRDN, IRQEN=0
+    wr(0x00, 0x22);
+    cnt.q.clear(); cnt.sent = 0;
+    cnt.send(bc, sizeof bc); cnt.sent = 0;
+    machine.ne2000.poll();
+    wr(0x04, kTxPage); wr(0x05, 60); wr(0x06, 0);
+    wr(0x00, 0x26);
+    const bool pwrdn = !(rd(0x07) & 0x01) && cnt.sent == 0;
+    wr(0x1F, 0);                                      // port reset
+    wr(0x00, 0xE1);
+    const bool survives = rd(0x06) == 0x02 && rd(0x04) == 0x00 && rd(0x01) == 0xC0;
+    wr(0x01, 0x40);                                   // auto-load
+    const bool crBack = rd(0x00) == 0x21;             // CR = $21 : retour en page 0
+    wr(0x00, 0xE1);
+    const bool autoload = crBack && rd(0x01) == 0x00 && rd(0x04) == 0x80 && rd(0x06) == 0x00;
+    check(pwrdn && survives && autoload, "page 3: PWRDN, reset port, auto-load");
+    // EEM=10 (programmation de la 9346) : DMA locale et distante coupées.
+    wr(0x00, 0xE1); wr(0x01, 0x80); wr(0x00, 0x21);
+    wr(0x08, 0); wr(0x09, 0); wr(0x0A, 2); wr(0x0B, 0);
+    wr(0x00, 0x0A);
+    const uint8_t eemByte = rd(0x10);
+    const bool eemDma = eemByte == 0 && rd(0x08) == 0;
+    wr(0x00, 0xE1); wr(0x01, 0x00); wr(0x00, 0x21);
+    check(eemDma, "9346 programming mode disables remote DMA");
+
     machine.ne2000.setBackend(nullptr);
 
     std::fprintf(stderr, "[enec-selftest] %d passed, %d failed\n", passed, failed);
