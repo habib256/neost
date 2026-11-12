@@ -329,6 +329,67 @@ doublure à l'unisson ou note répétée sans trou → note coupée à 2 ms (`--
 convertisseur) ; **armure (méta 0x59) en cours de morceau → piste de notes jetée à
 l'import** (le convertisseur ne garde que celle du tick 0).
 
+## 4 quater. Réseau — installer STinG (EtherNEC + NAT, modem)
+
+STinG 1.26 (freeware, P. Rottengatter et R. Andersson) est la pile TCP/IP de référence
+des bancs réseau. → réf. NeoST : `Ne2000`, `NatBackend`, `HayesModem` ; modèle et preuves
+dans [`EXTENSIONS.md`](EXTENSIONS.md). Hatari n'émule ni l'EtherNEC ni le NAT : pas d'oracle.
+
+### Par l'EtherNEC et le NAT (chemin livré)
+
+`disks/sting_ethernec.st` est prêt (versionné, licences de STinG et d'`ENEC.STX` dans
+`packaging/licenses/THIRD-PARTY.txt`). Son contenu, et ce qu'il faut recopier pour installer à la main
+sur un autre disque :
+
+| Fichier | Rôle |
+|---------|------|
+| `AUTO\STING.PRG` | noyau STinG 1.26, chargé au démarrage |
+| `AUTO\STING.INF` | une ligne : le dossier des modules, `A:\STING\` (à corriger sur C:) |
+| `AUTO\STGTEST.PRG` | PRG NeoST (`tools/make_sting_test.py`) : configure le port puis DNS + GET HTTP, verdict à l'écran et sur RS-232 |
+| `STING\TCP.STX`, `UDP.STX`, `RESOLVE.STX` | modules de protocole STinG 1.26 |
+| `STING\ENEC.STX` | pilote EtherNEC (GPL-2, T. Redelberger, v1.15), port « EtherNet » |
+| `STING\DEFAULT.CFG` | `NAMESERVER = 10.0.2.3`, `DNS_SAVE = FALSE`, `DOMAIN = sting.org` |
+| `STING\ROUTE.TAB` | `0.0.0.0 0.0.0.0 EtherNet 10.0.2.2` : tout part à la passerelle du NAT |
+
+L'adresse du port (`10.0.2.15`, masque `255.255.255.0`) se règle d'ordinaire dans
+`STNGPORT.CPX`, accessoire GEM inutilisable en AUTO : `STGTEST.PRG` la pose par l'API STinG
+(cookie `STiK`). Sous GEM, `STNGPORT.CPX` avec ces valeurs fait la même chose (le NAT sert
+aussi DHCP, que STinG 1.26 n'utilise pas).
+
+GUI : page **Network**, cocher **EtherNEC** puis **Real Internet for the NE2000**, insérer
+le disque, redémarrer. Headless :
+
+```sh
+./build/neost-headless roms/etos256us.img --ethernec --nat --disk disks/sting_ethernec.st \
+    --frames 3500 --serial-dump /tmp/ser.txt   # attendu : DNS=a.b.c.d puis HTTP/1.x (403 :
+                                               # theoldnet veut un User-Agent, 2026-11-12)
+python3 tools/run_nat_sting.py                 # même chemin, sans Internet (localhost)
+```
+
+Sur disque dur (EWeb, CAB) : `tools/make_hd_image.py --no-driver` avec `AUTO`, `STING` et
+`EMUDESK.INF` (`#Z`), `STING.INF` pointé sur `C:\STING\` ; le `--gemdos` occupe le port
+cartouche de l'EtherNEC et ne convient donc pas (recette EWeb, `TODO.md`).
+
+### Par le modem Hayes en SLIP (banc à poser)
+
+Le modem (`--modem`) est un pont transparent `ATDT hôte:port` ↔ socket TCP. Pour STinG en
+SLIP, il manque trois choses, recensées le 2026-11-12 :
+
+1. **`SERIAL.STX`**, le module STinG des ports série (« Modem 1 » = USART du MFP) : il est
+   dans l'archive STinG 1.26 mais **pas** sur `disks/sting_ethernec.st` ni ailleurs dans le
+   dépôt. `tools/make_sting_test.py` ne le recopie pas.
+2. **Un pair SLIP côté hôte** : après `CONNECT`, les octets sont des trames SLIP (RFC 1055)
+   qu'il faut router. NeoST n'en a pas ; sous Linux `slattach` ou un `slirp` en mode SLIP
+   derrière un serveur TCP feraient l'affaire, rien de tel sur macOS sans Docker. Piste
+   retenue : un numéro réservé du modem branché sur le NAT intégré, qui jouerait le serveur
+   de terminaux d'un fournisseur d'accès de l'époque.
+3. **La numérotation** : STinG ne compose pas lui-même ; il faut son `DIALER` (dans
+   l'archive) ou un PRG qui envoie `ATDT …` avant d'activer le port, avec `ROUTE.TAB` sur
+   `Modem 1` et une adresse IP fixe.
+
+Sans ces trois pièces, le seul chemin modem vérifié reste le pont octets ↔ TCP sans pile
+TCP/IP côté ST (`tools/make_net_test.py`, `EXTENSIONS.md` § Modem).
+
 ## Suite headless NeoST (`tools/run_etalons.py`)
 
 Infra de non-régression par captures PPM (déterministe, sans GUI) :
