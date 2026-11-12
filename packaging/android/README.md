@@ -20,11 +20,32 @@ commité** (`extern/SDL2`, comme Hatari) — `fetch_sdl.sh` le récupère.
 
 **État actuel** : la machine démarre sur EmuTOS, l'image et le son sont là, la souris
 se pilote au doigt, une manette physique tient le port joystick 1, et un **menu**
-permet de changer de disquette, de redémarrer et d'envoyer des touches. Pas encore de
-stick virtuel, ni de sélecteur de ROM, ni de réglages machine. Un clavier physique
-(Bluetooth, USB) est relayé au ST menu fermé (depuis le 2026-11-12) : symbolique
-d'abord, selon le pays du TOS (`gui/StKeysSymbolic`, tables partagées avec le bureau),
-positionnel sinon — non vérifié sur un appareil réel.
+permet de changer de disquette et de **ROM système**, de redémarrer et d'envoyer des
+touches. Pas encore de stick virtuel ni de réglages machine. Un clavier physique
+(Bluetooth, USB) est relayé au ST menu fermé : symbolique d'abord, selon le pays du TOS
+(`gui/StKeysSymbolic`, tables partagées avec le bureau), positionnel sinon. Clavier,
+tactile et changement de ROM ont été **exécutés sur l'émulateur Android arm64 (API 36)**
+le 2026-11-12 (§ *Essayer sur l'émulateur Android*) — toujours jamais sur un appareil
+réel.
+
+## La ROM système
+
+La page **ROM** du menu propose les quatre EmuTOS embarquées (`src/android/AndroidRoms.hpp`,
+liste unique que parcourent aussi le déballage et la lecture du choix) :
+
+| ROM | Machine | Balayage | Clavier |
+|---|---|---|---|
+| `etos192us` (défaut) | ST | 60 Hz | US |
+| `etos192fr` | ST | 50 Hz | FR (AZERTY) |
+| `etos256us` | STE | 60 Hz | US |
+| `etos256fr` | STE | 50 Hz | FR (AZERTY) |
+
+Choisir une ROM **redémarre à froid** (autre OS : RAM, retour arrière et touches tenues
+sont vidés) ; la disquette reste dans le lecteur. Le profil suit la ROM (192 Ko = ST,
+256 Ko = STE, puis `adjustMachineForTos` comme les autres frontends), et le **pays du
+clavier physique** est relu dans l'en-tête de la nouvelle ROM. Le choix est gardé dans
+`files/data/rom.cfg` (un nom de fichier de la table ; tout autre contenu ramène
+`etos192us`) et repris au lancement suivant.
 
 Le **bouton Retour** d'Android (et le geste de bord, le clic droit sous DeX/ChromeOS)
 est piégé (`SDL_HINT_ANDROID_TRAP_BACK_BUTTON`) : il **ouvre et ferme le menu**, il ne
@@ -104,6 +125,14 @@ export JAVA_HOME=~/jdk17          # cf. le piège jlink ci-dessous
 ./build_apk.sh debug              # → app/build/outputs/apk/debug/app-debug.apk
 ```
 
+Sur le Mac de développement (2026-11-12), le SDK d'Android Studio
+(`~/Library/Android/sdk`) n'avait ni `sdkmanager` ni NDK : on y a déballé les
+*command-line tools* (`cmdline-tools/latest`, archive `commandlinetools-mac-*` de
+dl.google.com), puis installé `platforms;android-34`, `ndk;27.2.12479018` et
+`cmake;3.22.1` par `sdkmanager --sdk_root=$HOME/Library/Android/sdk`, sans aucun
+privilège. Le JDK 23 du système est trop récent pour Gradle 8.9 : un Temurin 17
+déballé n'importe où suffit (`JAVA_HOME=…/Contents/Home`).
+
 Le natif est bâti par le **CMakeLists racine** du dépôt (branche `if(ANDROID)`), pas
 par un fichier dupliqué ici : une seule définition de `neost_core` pour les quatre
 plateformes.
@@ -139,6 +168,52 @@ avec un appareil sous la main, pas à l'aveugle.
 - **La garde SDL bloquait le cœur seul.** `-DNEOST_ANDROID_APP=OFF` construit
   `neost_core` + `neost-headless` pour arm64 **sans** SDL : c'est ainsi qu'on valide
   le cœur sur l'architecture cible (cf. ci-dessous).
+
+## Essayer sur l'émulateur Android
+
+Un émulateur n'est pas un appareil (GPU logiciel SwiftShader, pas de tactile ni de
+thermique réels) — mais il exécute l'APK **livré**, entier : SDL, GLES2, ImGui, le
+cœur, et le chemin des touches d'Android jusqu'à l'IKBD. C'est ce que QEMU (ci-dessous)
+ne fait pas. Sur Apple Silicon, l'image `arm64-v8a` tourne en virtualisation native.
+
+```sh
+SDK=~/Library/Android/sdk; ADB=$SDK/platform-tools/adb
+# ⚠ -cores 4 -memory 3072 : l'AVD par défaut (1 cœur, 2 Go) swappe et SystemUI
+#   part en ANR — l'émulation n'avance plus et rien ne répond aux entrées.
+$SDK/emulator/emulator -avd Medium_Phone_API_36 -no-window -no-audio -no-snapshot \
+    -no-boot-anim -cores 4 -memory 3072 &
+$ADB wait-for-device
+until [ "$($ADB shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; do sleep 3; done
+$ADB shell settings put secure immersive_mode_confirmations confirmed   # bulle plein écran
+$ADB install -r NeoST-*-android-arm64-debug.apk      # artefact CI : gh run download
+$ADB shell am start -n net.gistlabs.neost.debug/net.gistlabs.neost.NeoSTActivity
+$ADB exec-out screencap -p > shot.png                # 2400×1080, paysage
+$ADB logcat -s SDL/APP                               # journaux du frontend
+```
+
+**Piloter.** Le tactile est un pavé relatif : `input swipe X0 Y0 X1 Y1 600` déplace la
+souris (≈ 1,4 pixel d'écran par pixel de glissé à l'échelle de ce téléphone),
+`input tap` clique **là où est la souris**, pas là où l'on tape. ⚠ Le point chaud de la
+flèche GEM est sa **pointe** : viser un bouton par le milieu de la flèche rate le clic.
+Les touches : `input keyevent KEYCODE_A`, et les accords par
+`input keycombination -t 200 KEYCODE_CTRL_LEFT KEYCODE_O` (API 33+ ; `-t` tient
+l'accord 200 ms, la valeur jouée ici). Elles passent par le clavier
+virtuel d'Android (source `KEYBOARD`) puis le même `onKey` de SDL qu'un clavier USB.
+`adb emu event send EV_KEY:…` (le clavier `qwerty2` de l'émulateur) n'atteint **pas**
+l'invité sur l'émulateur 35.4 : `getevent` ne voit rien passer.
+
+**Recette jouée le 2026-11-12** (APK de la CI `ede89f6` pour le clavier US, puis un APK
+debug construit sur ce poste avec la page ROM) — EmuTOS 192 US : `Ctrl+R` ouvre
+« Switch resolution? », `Ctrl+O` sur l'icône DISK A ouvre la fenêtre du lecteur, `Ctrl+N` la boîte NEW FOLDER, où `A Q W Z M 1 2`
+s'inscrivent `AQWZM12`, `Échap` vide le champ et `Entrée` valide (sablier, dossier
+créé). Puis page ROM → `etos192fr` : redémarrage sur le bureau français, et les mêmes touches
+`A Q W Z M` s'inscrivent encore `AQWZM` sous le TOS français — la table AZERTY du pays
+a pris le relais (en positionnel pur, ce serait `QAZW,`). Relance de l'application :
+la ROM FR est reprise (`rom.cfg`). `etos256fr` démarre en STE (bureau à l'icône
+IMPRIMANTE), et le retour à `etos192us` repasse en ST. Captures : non versionnées.
+
+Ce que l'émulateur **ne** prouve pas : la couche `.kl`/`.kcm` d'un vrai clavier
+(disposition choisie dans les réglages Android, AZERTY physique), que `input` court-circuite.
 
 ## Vérifier sans appareil
 
@@ -180,6 +255,6 @@ directement (`adb install -r app-debug.apk`) mais ne se publie pas.
 
 ## Reste à faire
 
-Stick et boutons virtuels · import de disquettes (SAF) · sélecteur de ROM · réglages
-(machine, RAM, volume, zoom) · sauvegarde d'état · bruits de lecteur · effets CRT
+Stick et boutons virtuels · import de disquettes (SAF) · import de ROM utilisateur ·
+réglages (RAM, volume, zoom) · sauvegarde d'état · bruits de lecteur · effets CRT
 (portage du GLSL de bureau vers ES 3) · **mesures et essais sur appareil réel**.

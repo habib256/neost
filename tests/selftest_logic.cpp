@@ -51,6 +51,8 @@
 #include <cmath>
 #include "util/MouseScale.hpp"
 #include "core/MachineType.hpp"
+#include "core/Machine.hpp"
+#include "android/AndroidRoms.hpp"
 #include <filesystem>
 #include <fstream>
 
@@ -2747,6 +2749,59 @@ static void testFixBools() {
 //  Jusqu'au 2026-11-12, `neost jeu.st` chargeait la disquette dans la fenêtre ROM
 //  (Bus::loadTos accepte 1 octet à 1 Mo) et la persistait en rom=.
 // ---------------------------------------------------------------------------
+// Les ROM système de l'APK Android (src/android/AndroidRoms.hpp) : la table que
+// parcourent le déballage, la page ROM du menu et la lecture du choix enregistré.
+// Confrontée aux VRAIES ROM du dépôt (roms/etos*.img, suivies) : une entrée qui
+// annoncerait le mauvais profil ou le mauvais pays se verrait ici, pas sur un
+// téléphone. Jusqu'au 2026-11-12, seule etos192us se chargeait.
+static void testAndroidRoms() {
+    using namespace neost;
+    std::printf("Android : ROM système (table, choix persistant, vraies ROM)\n");
+    // --- Choix persistant : aller-retour, tolérance, repli -------------------
+    for (int i = 0; i < kAndroidRomCount; ++i)
+        checkInt("rom.cfg : aller-retour", parseAndroidRomChoice(formatAndroidRomChoice(i)), i);
+    checkInt("rom.cfg absent/vide -> défaut", parseAndroidRomChoice(""), kAndroidRomDefault);
+    checkInt("rom.cfg CRLF + blancs", parseAndroidRomChoice("  etos256fr.img\r\n"), 3);
+    checkInt("rom.cfg inconnu -> défaut", parseAndroidRomChoice("tos206fr.img\n"), kAndroidRomDefault);
+    checkInt("rom.cfg chemin -> défaut (jamais un chemin arbitraire)",
+             parseAndroidRomChoice("/sdcard/evil/etos192fr.img"), kAndroidRomDefault);
+    checkInt("index hors table -> défaut", parseAndroidRomChoice(formatAndroidRomChoice(99)),
+             kAndroidRomDefault);
+    checkStr("défaut = etos192us", kAndroidRoms[kAndroidRomDefault].file, "etos192us.img");
+
+    // --- Les vraies ROM : taille, profil, pays, balayage ----------------------
+    // [C] En-tête TOS : version à +2, os_conf à +$1C (pays << 1 | PAL).
+    for (int i = 0; i < kAndroidRomCount; ++i) {
+        const AndroidRom& r = kAndroidRoms[i];
+        const std::string path = std::string("roms/") + r.file;
+        std::ifstream f(path, std::ios::binary);
+        std::vector<uint8_t> rom((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+        char what[160];
+        std::snprintf(what, sizeof what, "%s : présente dans roms/", r.file);
+        checkBool(what, rom.size() >= 0x40, true);
+        if (rom.size() < 0x40) continue;
+        // 192 Ko = build « Atari ST », 256 Ko = STE (programme le SCU).
+        const MachineType bySize = rom.size() == 192u * 1024u ? MachineType::St : MachineType::Ste;
+        std::snprintf(what, sizeof what, "%s : profil de la table = profil de sa taille", r.file);
+        checkInt(what, int(r.machine), int(bySize));
+        // Le garde des autres frontends ne doit RIEN changer au profil de la table.
+        std::snprintf(what, sizeof what, "%s : adjustMachineForTos garde le profil", r.file);
+        checkInt(what, int(Machine::adjustMachineForTos(r.machine, path)), int(r.machine));
+        // Le pays de la ROM arme le clavier physique : 'a' est en $10 sous TOS FR
+        // (AZERTY), en $1E sous TOS US.
+        const bool fr = std::strstr(r.file, "fr") != nullptr;
+        stkeys::setCountryFromTos(rom);
+        std::snprintf(what, sizeof what, "%s : 'a' -> scancode du pays", r.file);
+        checkHex(what, stkeys::symbolicForCountry('a'), fr ? 0x10u : 0x1Eu);
+        // Le libellé du menu annonce le balayage que la ROM impose (os_conf bit 0).
+        const bool pal = (rom[0x1D] & 1) != 0;
+        std::snprintf(what, sizeof what, "%s : libellé « %s » = os_conf PAL", r.file,
+                      pal ? "50 Hz" : "60 Hz");
+        checkBool(what, std::strstr(r.label, pal ? "50 Hz" : "60 Hz") != nullptr, true);
+    }
+    stkeys::setCountryFromTos({});   // ne pas laisser un pays armé aux tests suivants
+}
+
 static void testRomProbe() {
     std::printf("argument positionnel : TOS, disquette ou refus (RomProbe)\n");
     namespace fs = std::filesystem;
@@ -3628,6 +3683,7 @@ int main() {
     testConfigPath();
     testConfigWriteCreatesDir();
     testRomProbe();
+    testAndroidRoms();
     testFixBools();
     testChannelMask();
     std::printf("[selftest-logic] %d OK, %d FAIL\n", g_ok, g_fail);

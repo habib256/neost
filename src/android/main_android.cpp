@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "android/AndroidMenu.hpp"
+#include "android/AndroidRoms.hpp"
 #include "audio/SampleRing.hpp"
 #include "core/AudioMix.hpp"
 #include "core/Machine.hpp"
@@ -356,13 +357,12 @@ std::string prepareData() {
     //     doit pouvoir les remplacer ;
     //   · ÉCRITE PAR L'UTILISATEUR — diskA.st : le FDC y recopie chaque secteur écrit
     //     (write-through), c'est donc SA disquette dès le premier lancement.
-    static const char* kRomAssets[] = {
-        "etos192us.img", "etos192fr.img", "etos256us.img", "etos256fr.img",
-    };
+    // Les ROM : la table de AndroidRoms.hpp, la même que la page ROM du menu.
+    std::vector<const char*> kRomAssets;
+    for (const neost::AndroidRom& r : neost::kAndroidRoms) kRomAssets.push_back(r.file);
     static const char* kUserAssets[] = { "diskA.st" };
-    static const char* kAssets[] = {   // tous, pour la purge des reliques ci-dessous
-        "etos192us.img", "etos192fr.img", "etos256us.img", "etos256fr.img", "diskA.st",
-    };
+    std::vector<const char*> kAssets(kRomAssets);   // tous, pour la purge des reliques
+    for (const char* a : kUserAssets) kAssets.push_back(a);
     // ⚠ PURGER LES RELIQUES DE LA RACINE, et pas seulement déballer ailleurs. Le
     // sous-dossier déplace la DESTINATION, mais c'est le nom SOURCE qui est relatif :
     // tant qu'un fichier du même nom traîne à la racine du stockage interne — déballé
@@ -383,7 +383,7 @@ std::string prepareData() {
     // l'empreinte change exactement quand les octets changent, ni plus ni moins.
     // Coût : relire ~900 Ko d'assets à chaque lancement, quelques millisecondes.
     const std::string stampPath = dir + "/.assets-stamp";
-    std::vector<std::vector<uint8_t>> roms(sizeof kRomAssets / sizeof kRomAssets[0]);
+    std::vector<std::vector<uint8_t>> roms(kRomAssets.size());
     uint64_t h = 0xCBF29CE484222325ull;
     for (size_t i = 0; i < roms.size(); ++i) {
         readAsset(kRomAssets[i], roms[i]);           // absent → vide, compté tel quel
@@ -719,6 +719,40 @@ uint8_t readPad(SDL_GameController* pad) {
     return b;
 }
 
+// --- ROM système : choix persistant (page ROM du menu) ------------------------
+// Le choix vit dans <données>/rom.cfg, un nom de fichier de kAndroidRoms ; tout
+// autre contenu (absent, abîmé, ROM retirée d'un APK plus récent) ramène la ROM
+// par défaut — jamais un chemin arbitraire. Écrit atomiquement, comme le reste.
+void saveRomChoice(const std::string& dataDir, int index) {
+    const std::string s = neost::formatAndroidRomChoice(index);
+    const std::vector<uint8_t> buf(s.begin(), s.end());
+    if (!writeFileAtomic(dataDir + "/" + neost::kAndroidRomChoiceFile, buf))
+        NEOERR("ROM choice not saved");
+}
+
+// Charge la ROM `index` et démarre la machine À FROID sur le profil qu'elle exige.
+// Même recette que le changement de ROM du web (neost_load_tos) et du bureau :
+//  · charger D'ABORD — Bus::loadTos refuse un fichier absent ou de taille invalide
+//    AVANT de toucher à la ROM courante ; en cas d'échec la machine reste INTACTE ;
+//  · profil : la machine de la table, passée par adjustMachineForTos comme
+//    partout (un TOS <= 1.04 sur STE halterait le CPU) ;
+//  · pays du clavier physique relu dans la nouvelle ROM ;
+//  · reconfigure() efface la RAM mais ne repose pas le moniteur : on le repose ;
+//  · hardReset : un reset à chaud garderait la RAM et le « memvalid » de l'ancien OS.
+bool switchRom(Machine& m, const std::string& dataDir, int index) {
+    if (index < 0 || index >= neost::kAndroidRomCount) return false;
+    const neost::AndroidRom& r = neost::kAndroidRoms[index];
+    const std::string path = dataDir + "/" + r.file;
+    if (!m.loadTos(path)) { NEOERR("ROM not loadable: %s - previous ROM kept", path.c_str()); return false; }
+    const MachineType mt = Machine::adjustMachineForTos(r.machine, path);
+    if (mt != m.machineType()) m.reconfigure(m.bus.ram.size(), CpuCore::Moira, mt);
+    neost::stkeys::setCountryFromTos(m.bus.rom);   // pays du TOS → clavier physique
+    m.mfp.setColorMonitor(true);
+    m.hardReset();
+    NEOLOG("ROM: %s (%s)", r.file, machineName(mt));
+    return true;
+}
+
 // --- Relance dans le même processus -------------------------------------------
 // SDL2 n'appelle PAS exit() quand SDL_main rend la main : si Android relance
 // l'activité alors que le processus vit encore, SDL_main est rappelé avec TOUTES
@@ -820,15 +854,22 @@ int main(int argc, char* argv[]) {
 
     // Machine par défaut : ST 1 Mo + EmuTOS 192 Ko (le build « Atari ST »), comme
     // la démo web — c'est la machine de référence des jeux et démos de l'époque.
+    // La ROM est celle du dernier choix (page ROM du menu, rom.cfg), sinon celle-là.
     static Machine machine(1024u * 1024u, CpuCore::Moira, MachineType::St);
     g_machine = &machine;
-    const std::string rom  = dataDir + "/etos192us.img";
+    int romIdx = neost::parseAndroidRomChoice(
+        readSmallFile(dataDir + "/" + neost::kAndroidRomChoiceFile));
+    // switchRom fait déjà un hardReset ; celui d'après la pose des horloges
+    // (plus bas) reste, il est sans effet de plus. ROM choisie illisible → repli
+    // sur la ROM par défaut.
+    if (!switchRom(machine, dataDir, romIdx) && romIdx != neost::kAndroidRomDefault) {
+        romIdx = neost::kAndroidRomDefault;
+        switchRom(machine, dataDir, romIdx);
+    }
+    g_menu.romCur = romIdx;
     const std::string disk = dataDir + "/diskA.st";
-    if (!machine.loadTos(rom)) NEOERR("TOS introuvable: %s", rom.c_str());
-    neost::stkeys::setCountryFromTos(machine.bus.rom);   // pays du TOS → clavier physique
     if (machine.loadDisk(disk)) g_menu.mounted = disk;
     else                        NEOLOG("pas de disquette (%s)", disk.c_str());
-    machine.mfp.setColorMonitor(true);
     g_menu.refresh();
 
     // MODÈLE « PUSH » : sans ces deux horloges, synthesizeFrame rend un jeu de
@@ -990,6 +1031,22 @@ int main(int argc, char* argv[]) {
             g_menu.reqMount.clear();
         }
         if (g_menu.reqRestart) { machine.hardReset(); cancelPendingInput(); g_menu.reqRestart = false; }
+        if (g_menu.reqRom >= 0) {
+            const int want = g_menu.reqRom;
+            g_menu.reqRom = -1;
+            if (switchRom(machine, dataDir, want)) {
+                g_menu.romCur = want;
+                g_menu.status.clear();
+                saveRomChoice(dataDir, want);
+                // Un autre OS : un instantané pris sous l'ancienne ROM y ramènerait
+                // la RAM d'un autre système (le web et le bureau vident aussi).
+                rewind.clear();
+                cancelPendingInput();                  // pas de BREAK orphelin
+                framePacer.resync(double(SDL_GetTicks64()));   // 50 <-> 60 Hz : autre trame
+            } else {
+                g_menu.status = "ROM not loadable";
+            }
+        }
         if (g_menu.rewindOn != rewind.enabled()) rewind.setEnabled(g_menu.rewindOn);
         if (g_menu.reqRewind) {
             g_menu.reqRewind = false;
