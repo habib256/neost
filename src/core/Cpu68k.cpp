@@ -183,6 +183,24 @@ CpuState* g_cur = nullptr;
     // SYNC(4)+SYNC(4) stock — fidèle Hatari iack_cycle. =0 → ancien modèle willInterrupt
     // (lead constant, sur-compte +8, phase E-clock détruite par l'alignement du push).
     bool    g_iackAt      = []{ const char* s = std::getenv("NEOST_IACK_AT"); return s ? std::atoi(s) != 0 : true; }();
+    // Saut d'attente STOP (Cpu68k::run) : garder la phase du 68000. Le cœur vit sur une grille
+    // de 2 cycles CLK qui ne bouge jamais :
+    // [B] M68000UM Rev 8 (sha256 e41cbe7e) § 8 p. 8-1 sqq. : toutes les durées d'instruction et
+    //     d'exception sont des nombres PAIRS de périodes CLK (cycle de bus = 4 périodes, même page).
+    // [D] fx68k.sv:177-197 @ 0602ee46 : le séquenceur n'avance qu'aux sous-cycles T1-T4, soit un
+    //     micro-cycle toutes les 2 horloges ; le STOP n'échantillonne l'IPL que sur ce pas.
+    // [D] Hatari gencpu.c:7018 @ f0736b24 (do_cycles_stop(4)) : STOP rejoué tous les 4 cycles
+    //     DEPUIS son entrée, les événements ne déplacent pas cette grille.
+    // L'ancien saut posait l'horloge SUR l'échéance du prochain événement. Le Timer D tourne à
+    // 26,08 cycles (données 2, prédiviseur /4 : horloge USART), ses échéances tombent souvent impaires :
+    // après un tel saut, le pas de 2 du STOP de Moira courait sur la grille impaire, et la HBL
+    // suivante réveillait le CPU un cycle trop tard → IACK alignée quatre cycles plus loin →
+    // attente E-clock fausse. Closure (Sync) se cale par « stop #$2100 » ×2 puis compense la
+    // gigue E-clock par une file de cinq instructions (une par phase : 160 256 ≡ 6 mod 10) ; une
+    // IACK décalée rendait la file fausse et la trame sortait noire ou brouillée (86 trames
+    // fautives sur 1 300-2 400 en TOS 1.02 UK, 0 après ; Hatari : 0). Mesure et recette :
+    // docs/CLOSURE_CHANTIER.md § Cycle 7. NEOST_STOP_PHASE=0 restaure l'ancien saut (A/B).
+    bool    g_stopPhase   = []{ const char* s = std::getenv("NEOST_STOP_PHASE"); return s ? std::atoi(s) != 0 : true; }();
     // DEEP (opt-in NEOST_IPLDELAY) : règle cpuipldelay de WinUAE (ipl_fetch_next, [D] newcpu.c:4982 @ f0736b24).
     // Moira reconnaît l'IPL IMMÉDIATEMENT (POLL_IPL = reg.ipl = ipl) ; WinUAE DIFFÈRE la
     // reconnaissance d'une instruction si le pin IPL a changé < 4 cyc avant le point
@@ -1194,8 +1212,16 @@ int Cpu68k::run(int cycles) {
             const int64_t busNow = busOfClock(state_->moira->getClock());
             if (busNow >= targetBus) break;
             const int64_t nd = state_->sched ? state_->sched->peekNextDue() : -1;
-            const int64_t jumpTo = (nd > busNow && nd < targetBus) ? nd : targetBus;
-            state_->moira->setClock(cpuClockForBus(jumpTo));
+            int64_t jumpTo = (nd > busNow && nd < targetBus) ? nd : targetBus;
+            // PHASE DU 68000 GARDÉE PENDANT LE SAUT (2026-11-12, cf. g_stopPhase) : le saut
+            // avance d'un nombre PAIR de cycles CPU ; une échéance impaire est servie au
+            // cycle pair suivant, le premier où le 68000 peut voir l'IPL.
+            moira::i64 jumpClk = cpuClockForBus(jumpTo);
+            if (g_stopPhase && ((jumpClk - state_->moira->getClock()) & 1)) {
+                ++jumpClk;
+                jumpTo = busOfClock(jumpClk);
+            }
+            state_->moira->setClock(jumpClk);
             // REBASE **AVANT** le dispatch — l'ordre compte. syncTo() exécute les
             // callbacks, et ceux-ci lisent l'heure via Machine::liveNow() = sched.now() +
             // cpu.cyclesRunInQuantum(). Rebaser après laissait cyclesRunInQuantum() valoir

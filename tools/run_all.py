@@ -302,6 +302,11 @@ FULL = FAST + [
     # sans les RTL épinglés → SKIP recensé (77).
     ("Banc blitter ↔ stBlitter.sv (accès et dates, contre le RTL)",
      [sys.executable, str(TOOLS / "run_stblitter_bench.py")]),
+    # Closure (Sync) trame par trame (EmuTOS, ~37 s) : le saut d'attente STOP gardait mal la
+    # phase du 68000 et le grand logo sortait des trames noires ou brouillées isolées, qu'un
+    # étalon d'UNE image ne voit pas (2026-11-12, docs/CLOSURE_CHANTIER.md § Cycle 7).
+    ("Closure : grand logo sans trame isolée (300 trames, calage HBL constant)",
+     [sys.executable, str(TOOLS / "run_closure_intro_guard.py")]),
     ("P2 provenance des références",
      [sys.executable, str(TOOLS / "run_etalons.py"), "--verify-refs"]),
     ("P2 étalons pixel (oracle + snapshots)",

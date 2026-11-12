@@ -19,6 +19,7 @@
   "NEOST_IACK_SYNC": "resynchronisation d'horloge à l'IACK (défaut ON).",
   "NEOST_IACK_LEAD": "avance de l'IACK (défaut 14).",
   "NEOST_IACK_AT": "IACK daté au cycle (défaut ON).",
+  "NEOST_STOP_PHASE": "saut d'attente STOP qui garde la phase de 2 cycles du 68000 : une échéance impaire (Timer D, 26,08 cycles) est servie au cycle pair suivant (défaut ON, 2026-11-12 — trames isolées du logo de Closure). =0 restaure l'ancien saut posé sur l'échéance.",
   "NEOST_IPLDELAY": "délai de propagation de l'IPL (défaut OFF).",
   "NEOST_IPLDELAY_CYC": "valeur du délai IPL (défaut 4 cyc).",
   "NEOST_IPLFETCH": "IPL échantillonné au fetch (défaut OFF).",
