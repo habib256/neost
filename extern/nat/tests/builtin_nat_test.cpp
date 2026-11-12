@@ -1530,15 +1530,27 @@ void testRealSockets()
 void testTwoNatInstances()
 {
     std::printf("[13] two NAT instances, real TCP/UDP, wildcard LAN publication\n");
-    Listener reservation;
-    CHECK(reservation.port != 0);
-    if (!reservation.port) return;
-    const auto port = reservation.port;
-    closeHostSocket(reservation.fd);
-    BuiltinNatOptions serverOptions;
-    serverOptions.forwards = {{true,{0,port},6502},{false,{0,port},6502}};
+    // NeoST 2026-11-12 (CI Windows, run 43225255791): the free port came from a
+    // TCP listener only, and TCP and UDP have separate port spaces. The UDP
+    // forward could not bind (the NAT said so: "could not bind host port
+    // 61684", isValid() false), the test went on and waited 31 s for "udp A"
+    // at a port nobody held. A port is now kept only once BOTH publications
+    // took it; an open that fails every time is still a failure.
     Rig server, client;
-    server.net = makeBuiltinNatBackend(serverOptions);
+    uint16_t port = 0;
+    for (int attempt = 0; attempt < 8 && !port; ++attempt) {
+        Listener reservation;
+        if (!reservation.port) break;
+        const auto candidate = reservation.port;
+        closeHostSocket(reservation.fd);
+        BuiltinNatOptions serverOptions;
+        serverOptions.forwards = {{true,{0,candidate},6502},{false,{0,candidate},6502}};
+        server.net = makeBuiltinNatBackend(serverOptions);
+        if (server.net->isValid()) port = candidate;
+        else std::printf("  port %u taken for TCP or UDP, another one\n", unsigned(candidate));
+    }
+    CHECK(port != 0);
+    if (!port) return;
     BuiltinNatOptions clientOptions; clientOptions.allowHostLoopback = true;
     client.net = makeBuiltinNatBackend(clientOptions);
     // Give the listening backend its guest's MAC before any inbound SYN.
