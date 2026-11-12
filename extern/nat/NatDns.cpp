@@ -6,6 +6,7 @@
 
 #include "NatDns.h"
 
+#include "NatAllowlist.h"
 #include "W5100Resolver.h"
 #include "ThreadGuard.h"
 
@@ -20,6 +21,9 @@ namespace {
 constexpr std::size_t kHeader = 12;
 constexpr uint16_t kTypeA = 1, kClassIn = 1;
 constexpr uint8_t  kNoError = 0, kFormErr = 1, kServFail = 2, kNxDomain = 3, kNotImp = 4;
+// [B] RFC 1035 § 4.1.1: RCODE 5, "Refused - The name server refuses to
+// perform the specified operation for policy reasons" (NeoST allowlist).
+constexpr uint8_t  kRefused = 5;
 constexpr uint32_t kTtlSeconds = 60;
 
 struct Question {
@@ -130,6 +134,12 @@ void DnsProxy::handleQuery(uint16_t guestPort, View payload, uint16_t flags, uin
         emit(guestPort, reply(asked, kNxDomain, nullptr));
         return;
     }
+    // NeoST: the domain allowlist, before any host lookup — a refused name
+    // never reaches the host resolver, in any record type.
+    if (gate_ && !gate_->admitName(question.name)) {
+        emit(guestPort, reply(asked, kRefused, nullptr));
+        return;
+    }
     if (question.type != kTypeA) {
         queryRaw(guestPort, asked, nowMs, emit);
         return;
@@ -158,6 +168,7 @@ void DnsProxy::handleQuery(uint16_t guestPort, View payload, uint16_t flags, uin
         const W5100Resolver::Result r = resolver_->resolve(question.name, 0);
         switch (r.status) {
             case W5100Resolver::Status::Resolved:
+                if (gate_) gate_->learn4(rd32(reinterpret_cast<const uint8_t*>(&r.address)));
                 emit(guestPort, reply(asked, kNoError,
                                       reinterpret_cast<const uint8_t*>(&r.address)));
                 return;
@@ -190,10 +201,11 @@ void DnsProxy::pump(uint64_t nowMs, const Emit& emit)
         // another lookup (and spend another rate token) on every pump.
         const W5100Resolver::Result r = resolver_->peek(p.name);
         bool done = true;
-        if (r.status == W5100Resolver::Status::Resolved)
+        if (r.status == W5100Resolver::Status::Resolved) {
+            if (gate_) gate_->learn4(rd32(reinterpret_cast<const uint8_t*>(&r.address)));
             emit(p.guestPort, reply(p.query, kNoError,
                                     reinterpret_cast<const uint8_t*>(&r.address)));
-        else if (r.status == W5100Resolver::Status::Failed)
+        } else if (r.status == W5100Resolver::Status::Failed)
             emit(p.guestPort, reply(p.query, kNxDomain, nullptr));
         else if (nowMs >= p.deadlineMs)
             emit(p.guestPort, reply(p.query, kServFail, nullptr));
@@ -264,6 +276,8 @@ void DnsProxy::pumpRaw(uint64_t now, const Emit& emit)
             rd16(answer.data() + 4) != 1 || !parseQuestion({answer.data(), answer.size()}, returned) ||
             !equalName(returned.name, asked.name) || returned.type != asked.type || returned.klass != kClassIn)
             answer = reply(it->query, kServFail, nullptr);
+        else if (gate_)
+            gate_->learnWire(answer);
         wr16(answer.data(), rd16(it->query.data()));
         emit(it->port, answer);
         it = raw_.erase(it);

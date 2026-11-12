@@ -84,6 +84,7 @@ enum class Route : uint8_t {
     Refused,    ///< reset (TCP) or drop (UDP)
     Host,       ///< relay to `host`
     Dns,        ///< UDP to the virtual DNS server: answered here
+    Gated,      ///< NeoST: passed the fence, refused by the domain allowlist
 };
 
 struct RoutePolicy {
@@ -116,6 +117,12 @@ struct BuiltinNatOptions {
     /// nothing else. Key `uthernet_slirp_restricted` — the name is
     /// historical, the decision is the same one.
     bool restricted = false;
+    /// NeoST: the domain allowlist (NatAllowlist.h, parseAllowedDomains).
+    /// Empty — the default — leaves the guest free; otherwise the DNS server
+    /// answers only listed domains and the guest reaches only the addresses
+    /// it handed back for them (or a listed IPv4 address). Key
+    /// `net_allow_domains`.
+    std::vector<std::string> allowedDomains;
     /// Milliseconds, monotonic. Empty selects the host's steady clock; a
     /// test supplies its own so retransmission and idle timeouts are exact.
     std::function<uint64_t()> nowMs;

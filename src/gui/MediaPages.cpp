@@ -531,6 +531,8 @@ void drawNetworkPage(bool modemOn, bool etherOn,
             ui.natRestricted = ui.cfg->natRestricted;
             ui.natAllowLoopback = ui.cfg->natAllowLoopback;
             std::snprintf(ui.natForwards, sizeof(ui.natForwards), "%s", ui.cfg->natForwards.c_str());
+            std::snprintf(ui.netAllowDomains, sizeof(ui.netAllowDomains), "%s",
+                          ui.cfg->netAllowDomains.c_str());
             ui.natInit = true;
         }
         ImGui::Checkbox("Restricted: virtual services only", &ui.natRestricted);
@@ -539,6 +541,9 @@ void drawNetworkPage(bool modemOn, bool etherOn,
         ImGui::TextDisabled("tcp:127.0.0.1:6502:23;udp:0.0.0.0:6503:6502");
         ImGui::TextWrapped("Use 0.0.0.0 to publish on the LAN. Remote guests connect to this "
                            "computer's LAN address and host port. Ethernet broadcasts stay local.");
+        ImGui::InputText("Allowed domains", ui.netAllowDomains, sizeof(ui.netAllowDomains));
+        ImGui::TextDisabled("Empty = no limit. example.org, 10.1.2.3 \xe2\x80\x94 also applies to"
+                            " the Hayes modem");
         if (ImGui::Button("Apply NAT settings")) ui.reqNatOptions = true;
     }
 }

@@ -13,6 +13,9 @@ public:
         bool restricted = false;
         bool allowHostLoopback = false;
         std::string forwards;
+        // Liste blanche de domaines (net_allow_domains) : vide = invité libre.
+        // Syntaxe et portée : extern/nat/NatAllowlist.h.
+        std::string allowDomains;
     };
     NatBackend();
     ~NatBackend() override;

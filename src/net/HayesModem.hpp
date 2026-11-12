@@ -31,6 +31,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "io/Mfp.hpp"
 #include "net/Socket.hpp"
@@ -51,6 +52,10 @@ public:
     bool dialing() const { return dial_ != nullptr; }
     bool dataMode() const { return dataMode_; }
     void hangup(bool notify);
+    // Liste blanche de domaines (net_allow_domains, syntaxe d'extern/nat/NatAllowlist.h) ;
+    // vide = toute destination. Une numérotation hors liste répond NO CARRIER et le dit
+    // au journal, sans toucher au réseau. Liste invalide : false, l'ancienne reste.
+    bool setAllowedDomains(const std::string& text);
 
     struct DialJob;             // numérotation en vol (partagée avec son fil hôte)
 
@@ -73,6 +78,7 @@ private:
     int  idlePolls_ = kGuardPolls;   // trames écoulées depuis le dernier octet émis (saturé)
     bool escArmed_ = false;          // trois '+' vus, en attente du silence final
     std::string cmd_;           // ligne AT en cours d'accumulation
+    std::vector<std::string> allowed_;   // liste blanche de domaines (vide = OFF)
 
     void out(uint8_t b);
     void sendStr(const std::string& s);       // → ST (ajoute CRLF)

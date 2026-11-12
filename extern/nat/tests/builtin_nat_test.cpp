@@ -30,6 +30,7 @@
 //      with the opt-in and never without it.
 
 #include "BuiltinNatBackend.h"
+#include "NatAllowlist.h"
 #include "NatDhcp.h"
 #include "NatDns.h"
 #include "NatHost.h"
@@ -1394,6 +1395,119 @@ void testAudit20261111()
     }
 }
 
+// ── 15. The domain allowlist (NeoST 2026-11-12) ──────────────────────────
+
+void testAllowlist()
+{
+    std::printf("[15] domain allowlist: names at the DNS server, addresses at the fence\n");
+    // The list as written by the user.
+    std::vector<std::string> list{"untouched"};
+    CHECK(parseAllowedDomains("Example.COM, *.atari.org;.foo.net  8.8.8.8 example.com.", list));
+    CHECK((list == std::vector<std::string>{"example.com", "atari.org", "foo.net", "8.8.8.8"}));
+    std::vector<std::string> kept = list;
+    const std::string longLabel(64, 'x');
+    for (const char* bad : {"a..b", "a b;c?d", "*.", ".", longLabel.c_str()})
+        CHECK(!parseAllowedDomains(bad, list) && list == kept);
+    CHECK(parseAllowedDomains(" ; , ", list) && list.empty());
+    // The match: the domain and its subdomains, on a label boundary.
+    const std::vector<std::string> allowed{"example.com", "8.8.8.8"};
+    CHECK(domainAllowed(allowed, "example.com") && domainAllowed(allowed, "WWW.Example.Com."));
+    CHECK(!domainAllowed(allowed, "badexample.com") && !domainAllowed(allowed, "com"));
+    CHECK(!domainAllowed(allowed, "example.com.evil") && !domainAllowed(allowed, ""));
+    CHECK(domainAllowed(allowed, "8.8.8.8") && !domainAllowed({}, "example.com"));
+
+    // An inactive gate lets everything through.
+    DomainGate off;
+    CHECK(!off.active() && off.reaches(Endpoint{kOtherIp, 53}));
+    // A native answer teaches its A and AAAA records.
+    DomainGate gate({"example"});
+    gate.learnWire(rawDnsAnswer(dnsQuery(1, "peer.example", 28)));
+    Endpoint six; six.isIpv6 = true;
+    six.ipv6 = Ipv6{0x20,1,0x48,0x60,0,0,0,0,0,0,0,0,0,0,0x88,0x88};
+    CHECK(gate.reaches(six) && gate.learned() == 1);
+    six.ipv6[15] = 0x89;
+    CHECK(!gate.reaches(six));
+    // An IPv4-mapped IPv6 address obeys the IPv4 entries.
+    gate.learn4(kPublicIp);
+    six.ipv6 = Ipv6{0,0,0,0,0,0,0,0,0,0,0xff,0xff,93,184,216,34};
+    CHECK(gate.reaches(six));
+    gate.forget();
+    CHECK(!gate.reaches(six) && gate.learned() == 0);
+
+    // The backend.
+    Rig rig;
+    auto open = [&rig](std::vector<std::string> domains, bool loopback = false) {
+        BuiltinNatOptions o;
+        o.allowedDomains = std::move(domains);
+        o.allowHostLoopback = loopback;
+        o.nowMs = [&rig] { return rig.clock; };
+        rig.net = makeBuiltinNatBackend(o, std::make_unique<FakeNetwork>(rig.world),
+                                        std::make_unique<FakeResolver>(rig.names));
+    };
+    open({"example.com", "8.8.8.8"});
+    CHECK(rig.net->name().find("domain allowlist of 2") != std::string_view::npos);
+    uint32_t wire = 0;
+    const uint8_t quad[4] = { 93, 184, 216, 34 };
+    std::memcpy(&wire, quad, 4);
+    rig.names.answers["www.example.com"] = { W5100Resolver::Status::Resolved, wire };
+    rig.names.answers["evil.example"] = { W5100Resolver::Status::Resolved, wire };
+
+    // Before any answer, the address is unknown: refused, nothing opened.
+    rig.sendUdp(kPublicIp, 7000, 69, text("early"));
+    CHECK(rig.world.opened == 0 && rig.frames().empty());
+
+    // A name outside the list: REFUSED, and the host resolver never asked.
+    const int before = rig.names.resolves;
+    rig.sendUdp(kDnsIp, 7001, kDnsPort, dnsQuery(0x1501, "evil.example"));
+    DnsAnswer a = oneDnsAnswer(rig, 7001);
+    CHECK(a.id == 0x1501 && a.rcode == 5 && a.answers == 0 && rig.names.resolves == before);
+    rig.sendUdp(kDnsIp, 7001, kDnsPort, dnsQuery(0x1502, "evil.example", 28));
+    CHECK(oneDnsAnswer(rig, 7001).rcode == 5);
+
+    // A name inside it: answered, and its address opens.
+    rig.sendUdp(kDnsIp, 7002, kDnsPort, dnsQuery(0x1503, "www.example.com"));
+    a = oneDnsAnswer(rig, 7002);
+    CHECK(a.rcode == 0 && a.address == kPublicIp);
+    rig.sendUdp(kPublicIp, 7003, 69, text("RRQ"));
+    CHECK(rig.world.opened == 1);
+    FakeSocket* s = rig.world.last();
+    CHECK(s && !s->tcp && s->datagramsOut.size() == 1 && s->datagramsOut[0].first.ip == kPublicIp);
+
+    // A listed IPv4 address needs no DNS; another address stays shut, to
+    // UDP and to TCP (reset, no host socket).
+    rig.sendUdp(kOtherIp, 7004, 53, text("q"));
+    CHECK(rig.world.opened == 2);
+    const uint32_t stranger = 0x01020304;
+    rig.sendUdp(stranger, 7005, 53, text("q"));
+    CHECK(rig.world.opened == 2);
+    rig.sendTcp(stranger, 7006, 80, kTcpSyn, kGuestIsn, 0);
+    rig.pump(10);
+    const auto seg = rig.segments();
+    CHECK(rig.world.opened == 2 && seg.size() == 1 && (seg[0].flags & kTcpRst));
+    // TCP to the learned address goes out.
+    rig.sendTcp(kPublicIp, 7007, 80, kTcpSyn, kGuestIsn, 0);
+    CHECK(rig.world.opened == 3 && rig.world.last()->tcp && rig.world.last()->connectCalled);
+
+    // The card's power cycle forgets the learned addresses with the cache.
+    rig.net->nicReset();
+    rig.frames();
+    const int opened = rig.world.opened;
+    rig.sendUdp(kPublicIp, 7008, 69, text("late"));
+    CHECK(rig.world.opened == opened);
+    rig.sendUdp(kDnsIp, 7009, kDnsPort, dnsQuery(0x1504, "www.example.com"));
+    CHECK(oneDnsAnswer(rig, 7009).rcode == 0);
+    rig.sendUdp(kPublicIp, 7008, 69, text("again"));
+    CHECK(rig.world.opened == opened + 1);
+
+    // The host's loopback keeps its own opt-in.
+    open({"example.com"}, true);
+    const int beforeLoopback = rig.world.opened;
+    rig.sendUdp(kGatewayIp, 7010, 6503, text("hi"));
+    CHECK(rig.world.opened == beforeLoopback + 1 &&
+          rig.world.last()->datagramsOut.size() == 1 &&
+          rig.world.last()->datagramsOut[0].first.ip == kLoopbackIp);
+}
+
 // ── 7. Real sockets, on 127.0.0.1 ────────────────────────────────────────
 
 #if POM2_HAS_SOCKETS
@@ -1699,6 +1813,7 @@ int main()
     testRealSockets();
     testTwoNatInstances();
     testRealIpv6();
+    testAllowlist();
     if (failures) { std::printf("builtin_nat: %d check(s) failed\n", failures); return 1; }
     std::printf("builtin_nat: OK\n");
     return 0;

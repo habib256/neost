@@ -34,6 +34,8 @@ class W5100Resolver;
 
 namespace detail {
 
+class DomainGate;
+
 inline constexpr uint16_t kDnsPort = 53;
 
 class DnsProxy
@@ -62,6 +64,10 @@ public:
     /// backend's two proxies are one limit (four lookups a second, eight
     /// workers) rather than two.
     void shareBudgetWith(const DnsProxy& other) { workers_ = other.workers_; }
+    /// NeoST: the domain allowlist (NatAllowlist.h). A name it refuses is
+    /// answered REFUSED; the addresses of an allowed name are taught to it.
+    /// Null (the default) or an inactive gate change nothing.
+    void setGate(DomainGate* gate) { gate_ = gate; }
     void pump(uint64_t nowMs, const Emit& emit);
     void clear() { pending_.clear(); raw_.clear(); }
     std::size_t pending() const { return pending_.size() + raw_.size(); }
@@ -87,6 +93,7 @@ private:
     std::vector<RawPending> raw_;
     std::shared_ptr<Workers> workers_ = std::make_shared<Workers>();
     Lookup lookup_;
+    DomainGate* gate_ = nullptr;
     void handleQuery(uint16_t guestPort, View payload, uint16_t flags, uint64_t nowMs,
                      const Emit& emit);
     void queryRaw(uint16_t port, const Bytes& query, uint64_t now, const Emit& emit);

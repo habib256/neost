@@ -98,6 +98,7 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 bool natRestricted = false;
                 bool natAllowLoopback = false;
                 std::string natForwards; // tcp|udp:adresse-hôte:port-hôte:port-ST, séparés par ;
+                std::string netAllowDomains; // liste blanche sortante (NAT et modem) ; vide = OFF
                 bool ultrasatan = false; // UltraSatan sur les cibles ACSI 0-1 (slot 1 = acsi, slot 2 = sd2)
                 std::string sd2;       // image SD du slot 2 de l'UltraSatan (cible 1 ; vide = slot vide)
                 std::string cpu = "moira"; std::string machine = "st";

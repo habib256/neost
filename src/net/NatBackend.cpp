@@ -1,6 +1,7 @@
 #include "net/NatBackend.hpp"
 #ifdef NEOST_WITH_NET
 #include "BuiltinNatBackend.h"
+#include "NatAllowlist.h"
 #endif
 
 struct NatBackend::Impl {
@@ -32,6 +33,10 @@ bool NatBackend::open(const Options& options) {
     }
     if (options.restricted && !config.forwards.empty()) {
         error_ = "Restricted NAT cannot publish ports";
+        return false;
+    }
+    if (!nat::parseAllowedDomains(options.allowDomains, config.allowedDomains)) {
+        error_ = "Invalid domain allowlist: expected names or IPv4 addresses separated by commas";
         return false;
     }
     config.restricted = options.restricted;

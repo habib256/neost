@@ -96,6 +96,36 @@ Les options `--nat-restricted` et `--nat-allow-loopback` correspondent à
 services virtuels mais refuse les relais et les publications. L'accès aux
 services loopback de l'hôte est désactivé par défaut.
 
+**Liste blanche de domaines** (2026-11-12, OFF par défaut) : `--net-allow-domains L`,
+clé `net_allow_domains=` (rejouée par `--from-cfg`), champ **Allowed domains** de la page
+Network. Elle vaut pour les deux backends sortants : le NAT et le modem Hayes.
+`L` liste des domaines ou des adresses IPv4, séparés par virgules, points-virgules ou
+blancs (64 au plus) ; `example.org` couvre `example.org` et `www.example.org`, pas
+`badexample.org` ; `*.example.org` s'écrit aussi. Une liste invalide fait échouer
+l'ouverture du NAT (et `neost-headless` sort en erreur), sans liste partielle.
+
+- **NAT** : le DNS virtuel répond `REFUSED` (RCODE 5, [B] RFC 1035 § 4.1.1) à tout nom
+  hors liste, en A comme en natif, sans interroger l'hôte. Le trafic TCP/UDP que l'invité
+  engage ne sort que vers une adresse que ce DNS a rendue pour un nom de la liste, depuis
+  la dernière mise sous tension de la carte, ou vers une adresse IPv4 listée. Une adresse
+  écrite en dur par l'invité est refusée : RST en TCP, datagramme jeté en UDP. Les services
+  virtuels, les publications de ports (trafic entrant) et le loopback de l'hôte, qui a son
+  propre interrupteur (`nat_allow_loopback`), ne sont pas filtrés.
+- **Modem** : `ATD` vers un hôte hors liste répond `NO CARRIER` sans résolution ni
+  connexion.
+- **Journal** (stderr, en anglais) : `DNS query for "x" refused — not in the domain
+  allowlist` pour les 16 premiers noms distincts, `guest TCP to a.b.c.d:p refused — not an
+  address of a domain in the allowlist` une fois par session, `modem dial to x refused` à
+  chaque numérotation. Le nom du backend annonce `domain allowlist of N`.
+- **Limite** : une adresse partagée (CDN, hébergement mutualisé) ouvre tous les sites
+  qu'elle sert ; NeoST ne lit ni l'en-tête HTTP `Host` ni le SNI TLS. La liste filtre des
+  noms et des adresses, pas des contenus.
+
+Code : `extern/nat/NatAllowlist.*` (adaptation locale, cf. `extern/nat/README.md`).
+Tests : `neost-nat-test` cas [15] (analyse, appariement, DNS refusé, adresse apprise,
+adresse en dur refusée en UDP et TCP, oubli au reset de la carte, loopback),
+`neost-modem-test` cas 6.
+
 Publication explicite de services, également réglable dans la page Network :
 
 ```sh

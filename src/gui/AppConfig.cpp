@@ -300,6 +300,7 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("nat_restricted=", 0) == 0) c.natRestricted = (line.substr(15) == "1");
     else if (line.rfind("nat_allow_loopback=", 0) == 0) c.natAllowLoopback = (line.substr(19) == "1");
     else if (line.rfind("nat_forwards=", 0) == 0) c.natForwards = line.substr(13);
+    else if (line.rfind("net_allow_domains=", 0) == 0) c.netAllowDomains = line.substr(18);
     else if (line.rfind("slirp=", 0) == 0)    c.slirp    = (line.substr(6) == "1");
     else if (line.rfind("ultrasatan=", 0) == 0) c.ultrasatan = (line.substr(11) == "1");
     else if (line.rfind("sd2=", 0) == 0) c.sd2 = line.substr(4);
@@ -430,6 +431,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
       << "\nnat_restricted=" << (w.natRestricted ? 1 : 0)
       << "\nnat_allow_loopback=" << (w.natAllowLoopback ? 1 : 0)
       << "\nnat_forwards=" << oneLine(w.natForwards)
+      << "\nnet_allow_domains=" << oneLine(w.netAllowDomains)
       << "\nultrasatan=" << (w.ultrasatan ? 1 : 0)
       << "\nsd2=" << oneLine(w.sd2)
       << "\nmono=" << (w.mono ? 1 : 0)

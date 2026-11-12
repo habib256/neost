@@ -190,6 +190,9 @@ void usage() {
         "                    (STinG + ENEC.STX). --nat-restricted = virtual services only\n"
         "  --nat-allow-loopback  allow connections to host loopback (off by default)\n"
         "  --nat-forwards F  publish TCP/UDP ports: tcp:127.0.0.1:6502:23;udp:0.0.0.0:6503:6502\n"
+        "  --net-allow-domains L  outbound allowlist for --nat and --modem (off by default):\n"
+        "                    domains (subdomains included) or IPv4 addresses, comma-separated;\n"
+        "                    other names get DNS REFUSED / NO CARRIER, other addresses are dropped\n"
         "                    --slirp/--slirp-restricted remain aliases for --nat/--nat-restricted\n"
         "  --ultrasatan      UltraSatan SD interface on the ACSI bus: 2 slots on targets\n"
         "                    N and N+1 (default 0-1), JOOKIE INQUIRY, RTC, 'US' commands\n"
@@ -1561,6 +1564,7 @@ int main(int argc, char** argv) {
     bool        slirpRestricted = false;
     bool        natAllowLoopback = false;
     std::string natForwards;         // publications explicites de ports hôte
+    std::string netAllowDomains;     // liste blanche de domaines (NAT et modem ; vide = OFF)
     bool        ultrasatan     = false;          // --ultrasatan : interface SD sur le bus ACSI
     int         ultrasatanId   = 0;              // --ultrasatan-id N : première cible (0-6)
     std::string sd1Img, sd2Img;                  // --sd1/--sd2 IMG : images des slots SD
@@ -1772,6 +1776,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(a, "--nat-restricted") || !std::strcmp(a, "--slirp-restricted")) { slirpFlag = true; slirpRestricted = true; }
         else if (!std::strcmp(a, "--nat-allow-loopback")) { slirpFlag = true; natAllowLoopback = true; }
         else if (!std::strcmp(a, "--nat-forwards")) { slirpFlag = true; natForwards = next(a); }
+        else if (!std::strcmp(a, "--net-allow-domains")) netAllowDomains = next(a);
         else if (!std::strcmp(a, "--ultrasatan"))      ultrasatan = true;
         else if (!std::strcmp(a, "--ultrasatan-id"))   { ultrasatan = true; ultrasatanId = int(argInt(a, next(a), 0, 6)); }
         else if (!std::strcmp(a, "--sd1"))             { ultrasatan = true; sd1Img = next(a); }
@@ -2091,6 +2096,7 @@ int main(int argc, char** argv) {
             slirpRestricted = fc.natRestricted;
             natAllowLoopback = fc.natAllowLoopback;
             natForwards = fc.natForwards;
+            netAllowDomains = fc.netAllowDomains;
             if (!fc.machine.empty()) machType = parseMachine(fc.machine.c_str());
             if (!fc.mem.empty())     ramBytes = parseRamBytes(fc.mem.c_str());
             if (!fc.cpu.empty())     cpuCore  = Cpu68k::parseCore(fc.cpu.c_str());
@@ -2444,7 +2450,13 @@ int main(int argc, char** argv) {
             m->onTx(b);
         });
         machine.setRs232LineSink([m](uint8_t a) { m->onPortA(a); });   // DTR, reset
-        std::fprintf(stderr, "[headless] Hayes modem on RS-232 (ATDT host:port)\n");
+        if (!m->setAllowedDomains(netAllowDomains)) {
+            std::fprintf(stderr, "[headless] --net-allow-domains: invalid list '%s'\n",
+                         netAllowDomains.c_str());
+            return 1;
+        }
+        std::fprintf(stderr, "[headless] Hayes modem on RS-232 (ATDT host:port)%s\n",
+                     netAllowDomains.empty() ? "" : ", domain allowlist on");
     }
 #else
     if (modemFlag)
@@ -2455,7 +2467,8 @@ int main(int argc, char** argv) {
     NetBackendLoop enecLoop;
     NatBackend   natNet;
     if ((ethernecFlag || netusbeeFlag) && slirpFlag) {
-        if (natNet.open(NatBackend::Options{slirpRestricted, natAllowLoopback, natForwards})) {
+        if (natNet.open(NatBackend::Options{slirpRestricted, natAllowLoopback, natForwards,
+                                            netAllowDomains})) {
             machine.ne2000.setBackend(&natNet);
         } else {
             std::fprintf(stderr, "[headless] --nat: %s\n",
