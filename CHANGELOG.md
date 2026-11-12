@@ -69,6 +69,16 @@ cœur) restent en attente de leur ressource.
   STE inchangé. Étalons inchangés ; E605 STE, dont le lecteur enchaîne sur cette IRQ : WAV
   légèrement différent après 36 s (2 à 6 % d'amplitude). Tenue du dernier échantillon : sources
   relevées ([B] schéma STE C300780-001 f. 5), décision proposée, comportement inchangé.
+- **Horloges en option.** `--quartz pal|32042|32216|auto` (headless, `--from-cfg`), `quartz=` dans
+  `neost.cfg` et page Machine du GUI : quartz maître de 32,084988 MHz (défaut), 32,0424 ou
+  32,215905 MHz ([A] relevés HWTST : 8,010 MHz sur des STF et Mega ST, 8,054 MHz sur un Mega STE
+  NTSC) ; `auto` lit la région dans l'en-tête de la ROM ([C] `os_conf`). Le rapport CPU/MFP, SCLK
+  vers bus, IKBD, SCC, USB, le YM, la cadence réelle, l'audio et le MIDI hôte (MTC compris)
+  suivent le quartz (`neost::pacing::cpuHz()`/`busHzExact()`) ; tout ce qui se compte en cycles
+  reste. `--mfp-phase-seed N` : phase de l'horloge des timers MFP tirée d'une graine.
+  `run_hwtst_loop.py` retrouve le quartz choisi. Défauts inchangés (A/B arch-hash et audio
+  identiques) ; quartz et phase dans l'octet libre de `sessionConfig`. Course TOS 2.06 UK : 3/256
+  sous 7 phases, 0/256 sous les deux autres quartz.
 - **Outils.** `compare_sound.py --mem` passe par `title_cmd.parse_mem` : même taille des deux
   côtés, `--mem 0` ne devient plus « 0m ».
 

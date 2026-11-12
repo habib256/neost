@@ -115,6 +115,12 @@ vecteur parasite `$60` qu'Hatari laisse en TODO.
 
 ### Écarts voulus — ne pas réaligner
 
+- **Quartz maître au choix** · extension · basse · 2026-11-12 — NeoST permet le quartz STF NTSC
+  (32 042 400 Hz) ou STE NTSC (32 215 905 Hz) ; Hatari définit ces valeurs
+  (`clocks_timings.c:138,144 @ f0736b24`) mais garde le PAL (`:178`). Au défaut, aucun écart. Le YM
+  du STE reste sur l'horloge bus chez NeoST, sur SCLK chez Hatari (−2,3 cents, TODO « YM du STE sur
+  SCLK ? »).
+
 - **Lecture du compteur dans le dernier cycle MFP fractionnaire** · voulu [B] · basse ·
   2026-11-12 — `Mfp::liveTimerCount` (`Mfp.cpp:885`) rend `ceil(reste / prescaler)` sur le
   reste EXACT (sous-cycles CPU), plafonné au compte de départ de la période. [B] MC68901

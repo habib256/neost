@@ -617,6 +617,12 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
 - **GLUE du STE** (2026-11-04) : confrontée au modèle GSTMCU, impulsion par impulsion, à chaque phase de la ligne : 2546 sur 2560 en accord à 50 Hz, 2518 sur 2560 sur un écran entier à 60 Hz. → `docs/GLUE_SWEEP.md`
 
 ## Interruptions (MFP 68901)
+
+- **Quartz maître au choix** (2026-11-12, `--quartz`, `quartz=`, page Machine) : PAL 32,084988 MHz par
+  défaut, 32,0424 et 32,215905 MHz, `auto` selon la machine et la région de la ROM. Les horloges
+  indépendantes passent par `neost::pacing::cpuHzInt()/busHzExact()`. Phase de l'horloge des timers MFP
+  réglable par graine (`--mfp-phase-seed`, pas de 1/64 de cycle MFP). Les deux sont portées par l'en-tête
+  des états.
 - IER/IPR/IMR/ISR + registre vecteur, modes auto et software-EOI.
 - **Bascule software→automatique (VR bit3 1→0) efface les in-service ISRA/ISRB**
   (port `MFP_VectorReg_WriteByte`) : sinon un in-service resté posé bloquerait pour

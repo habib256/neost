@@ -117,8 +117,8 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 - **Restes vidéo au cycle** · P3 ⭘ — la VBL est datée à la fin de trame + 64/68 (`Machine.cpp`), la
   fin de DE a son événement Timer B distinct du HBL, et la lecture du compteur concorde au RTL sur STE
-  (47 999 sur 48 000, `docs/STCPU_BENCH.md`). Restent ST et Mega ST, sans netlist, et la phase du Timer C
-  (→ « Phase de l'horloge du MFP au reset »). → `docs/CYCLE_ACCURACY.md` § 4
+  (47 999 sur 48 000, `docs/STCPU_BENCH.md`). Restent ST et Mega ST, sans netlist, et la tolérance du quartz
+  MFP (→ « Tolérance du quartz MFP »). → `docs/CYCLE_ACCURACY.md` § 4
 - **Bord de fin STOP_MIDDLE et signaux HSYNC/VDE** · P3 ⭘ · [F] — la fin de DE à 164 et les 54 octets concordent avec le modèle au pixel (`run_stcpu_raster`, cas `hi_96_460`), contre les trois pixels de plus d'Hatari. Le HSYNC parasite vers le cycle 28 vient d'un comparateur du compteur horizontal (`gstmcu.v:803-819`) et arme aussi la requête HBL dans le modèle (`gstmcu.v:320`) : un programme pourrait le voir. Rien n'est porté. → `docs/GLUE_SWEEP.md`
 - **STE, impulsions restantes face au modèle** · P3 ⭘ · [D] — DE précoce à 44, 14 impulsions sur 2560 en écart à 50 Hz, 42 sur 2560 à 60 Hz, toutes en haute résolution, et les
   largeurs au-delà de 32 qui enjambent HSYNC. Hors logiciel connu. Cause lue dans le modèle : la décision de DE
@@ -164,10 +164,13 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 - **Fiche contre code, restes de l'audit** · P2 ⏸ source · [B] contre [D] — marqués `⚠` dans `src/io/Mfp.cpp` et `Mfp.hpp`. TxDR : la fiche fixe la règle (« captured on the last low-to-high transition of the DS pin », MC68901 § 5.2.1 p. 5-5, relu le 2026-11-11) mais pas la date de ce front face à l'horloge où NeoST lit (`liveNow`), qui dépend du placement des états d'attente du MFP dans le cycle : 2 à 6 cycles, de sens non établi, et `mfp_poll` concorde aujourd'hui à l'octet avec Hatari. Prescaler changé en marche : MC68901 (1 à 200 cycles) contre MK68901 (jusqu'à 200 fois la donnée). Tranche : la datation des états S d'un accès MFP sur le fer, ou un relevé de tiers. UE corrigé (`0ce2471`).
 - **Jitter des périodes Timer B** · P2 ⏸ cœur · [F] — sonde Super Hang-On : NeoST {512, 516, 508,
   520}, Hatari {512, 520, 504}. Dépend de la prise d'IPL (§ 9) : à rejouer après l'échange.
-- **Phase de l'horloge du MFP au reset** · P3 ⭘ · [F] — front 0 au cycle CPU 0 et rapport exact
-  31 333/9 600 : la phase du Timer C face à la VBL est une fonction déterministe de la durée du
-  boot. Sur le fer, deux oscillateurs. Une phase tirée au reset (en option, déterministe par
-  graine) rendrait réaliste la fréquence des courses comme celle de TOS 2.06 UK (`docs/CASE_STUDIES.md`).
+- **Tolérance du quartz MFP** · P3 ⭘ · [F] — la phase au reset est posée en option (`--mfp-phase-seed`, pas
+  d'1/64 de cycle MFP) et ne change rien à la course de TOS 2.06 UK (3/256 sous 7 phases) : elle décale un
+  timer d'au plus 3,26 cycles CPU. Ce qui fige le réseau de trajectoires, c'est le rapport exact CPU/MFP ; un
+  autre quartz (`--quartz 32042|32216`) donne 0/256. Sur le fer, les deux quartz s'écartent de quelques
+  dizaines de ppm (HWTST : STE PAL 8 020 7xx-8 021 2xx Hz), soit ~50 cycles par ppm sur ce trajet. À poser :
+  une graine de tolérance du quartz MFP (±ppm), en option (`docs/CASE_STUDIES.md`). Tranché par : la
+  dispersion des quartz MFP relevée sur plusieurs machines.
 - **USART** · P3 ⭘ — modèle synchrone, réacquisition après réactivation au milieu d'un
   caractère, phase du premier front TC, forme d'onde BREAK physique.
 
@@ -186,6 +189,9 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
 
 ### 3.4 Son — YM2149, DMA STE, Microwire
 
+- **YM du STE sur SCLK ?** · P3 ⏸ source · [D] — Hatari `clocks_timings.c:222-223,243 @ f0736b24` tire CLK2
+  du YM de l'oscillateur U303 (8 010 613 Hz) sur STE/Mega STE : 250 331 pas/s contre 250 663 chez NeoST,
+  −2,3 cents. Tranché par : le schéma STE C300780 (feuille de l'U303) ou une fréquence de sortie mesurée.
 - **Microwire : écriture pendant un décalage** · P3 ⏸ source · [F] — la démo Systematic Error
   (validée sur le fer) écrit le masque en plein décalage et exclut seulement le masque pris sans
   arrêt ni relance (`docs/CASE_STUDIES.md`). Ignorer (Hatari, NeoST) et arrêter (MiSTery) restent
@@ -331,13 +337,6 @@ le cœur. → [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md)
   bride BLANK du ST (diodes CR1-CR3, transcription KiCad du schéma C070231). Les notes de Steven
   Tattersall ne contiennent aucune mesure. Un relevé entre en `hardware` s'il nomme machine et
   protocole.
-- **Horloges NTSC et quartz STF à 32,0424 MHz** · P3 ⭘ · [A] — NeoST, comme Hatari, cadence le CPU
-  à 8,021 MHz quelle que soit la ROM (`kCpuHz`, `core/Pacing.hpp`). Relevés HWTST : Mega STE NTSC
-  à 8,0540 MHz ; Mega ST4 et plusieurs STF PAL à 8,0097-8,0101 MHz ; 1040 STF UK à 8,0064 MHz.
-  Le rapport CPU/MFP change donc de -0,14 % à +0,41 % selon la machine : Troed craignait que
-  Closure échoue sur 8,05 MHz. Option envisagée : un quartz choisi par machine et région, le
-  défaut restant 8,021 MHz pour ne déplacer aucune référence. Le rapport `31333/9600` du MFP
-  (`io/Mfp.cpp`) et `kCpuHz` sont les deux points à paramétrer.
 - **Documents primaires manquants** · P2 ⏸ source — HD6301 rapatrié le 2026-11-10 (Hitachi, *HD6301/HD6303 Series Handbook*, 1989) ; restent les schémas GLUE/MMU ST et Mega STE,
   schéma du Shifter ST. chzsoft.de consulté le 2026-11-10 : seul le GSTMCU du STE y est.
 - **A43 — dette de preuve** · P2 ⏸ — tout commentaire cite ses références (règle : `CLAUDE.md`) ;
