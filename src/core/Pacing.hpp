@@ -151,10 +151,17 @@ public:
     // pendant un blit HOG, où la trame est livrée par la pile suspendue (JSPI) et
     // reprise par la page. due() dit si la trame suivante est échue (un retard de
     // plus de kMaxCatchUp trames est abandonné, comme dans runDue) ; advance()
-    // compte la trame livrée.
+    // compte la trame livrée. L'hôte borne lui-même à kMaxCatchUp trames par tour
+    // (la page : neostParkBudget).
+    // Le retard au-delà de kMaxCatchUp trames est abandonné, mais on garde les
+    // kMaxCatchUp trames que runDue jouerait encore dans ce tour : recaler sur
+    // `nowMs` AVANT de jouer ne laissait qu'une trame par tour dès que l'écran tombait
+    // sous le cinquième de la fréquence de la machine (rAF à 10 Hz : 10 trames/s au
+    // lieu de 40, mesuré dans Chrome, tools/check_web_jspi.mjs).
     bool due(double nowMs, int64_t frameCycles) {
         if (!armed_) resync(nowMs);
-        if (nowMs - nextMs_ > kMaxCatchUp * frameMillis(frameCycles)) nextMs_ = nowMs;
+        const double cap = kMaxCatchUp * frameMillis(frameCycles);
+        if (nowMs - nextMs_ > cap) nextMs_ = nowMs - cap;
         return nowMs >= nextMs_;
     }
     void advance(int64_t frameCycles) { nextMs_ += frameMillis(frameCycles); }
