@@ -24,6 +24,11 @@
 //  complets et Notator savent enregistrer plusieurs canaux sur plusieurs pistes,
 //  Cubase Lite non.
 //
+//  ── ZONES (splitter clavier) ─────────────────────────────────────────────────
+//  Une source peut en plus être DÉCOUPÉE en plages de notes, chacune sur son canal
+//  et avec sa transposition (main gauche basse canal 2, main droite piano canal 1).
+//  Appliqué APRÈS le forçage de canal, AVANT la fusion. Règles : MidiZones.hpp.
+//
 //  ── Running status ───────────────────────────────────────────────────────────
 //  Le statut n'est ré-émis dans le flux fusionné que s'il a CHANGÉ : une source
 //  seule garde donc son running status (le flux ne grossit pas), et deux sources
@@ -58,6 +63,7 @@
 
 #include "audio/MidiEndpoint.hpp"
 #include "audio/MidiMessageParser.hpp"
+#include "audio/MidiZones.hpp"
 
 #ifdef __APPLE__
 struct MIDIPacketList;   // avancé : évite d'inclure CoreMIDI.h dans tout le GUI
@@ -74,6 +80,8 @@ public:
         // deux claviers du même modèle portent le MÊME nom, et seul l'identifiant les
         // sépare de façon stable.
         std::string uid;
+        // Splitter : vide = la source entière sur un canal (forceChannel).
+        std::vector<neost::midi::KeyZone> zones;
     };
 
     MidiInHost() = default;
@@ -109,7 +117,8 @@ public:
     // Source SYNTHÉTIQUE (sans backend ni appareil) : neost-selftest éprouve ainsi
     // la fusion, la canalisation et la saturation sur une machine où rien n'est
     // branché — donc aussi en CI. `slot` distingue les sources à fusionner.
-    void pushForTest(int slot, const uint8_t* data, std::size_t n, int forceChannel = 0);
+    void pushForTest(int slot, const uint8_t* data, std::size_t n, int forceChannel = 0,
+                     const std::vector<neost::midi::KeyZone>& zones = {});
 
 private:
     // ~2 trames de MIDI saturé : de quoi absorber une rafale, pas de quoi stocker.
@@ -119,6 +128,7 @@ private:
         std::string name;
         std::string uid;
         int forceChannel = 0;              // 0 = tel quel, 1-16 = canalisé
+        std::vector<neost::midi::KeyZone> zones;   // splitter ; vide = aucun
         neost::midi::Parser parser;        // décodeur PROPRE à cette source
         MidiInHost* owner = nullptr;       // pour le callback CoreMIDI (srcConnRefCon)
         // uintptr_t : un HMIDIIN fait 64 bits. CoreMIDI (MIDIEndpointRef) et ALSA
@@ -131,8 +141,10 @@ private:
     };
 
     void feed(Device& d, const uint8_t* data, std::size_t n);   // octets → décodeur
-    void emitMessage(Device& d, const uint8_t* msg, int len);   // message → file fusionnée
-    Device* deviceForTest(int slot, int forceChannel);
+    void emitMessage(Device& d, const uint8_t* msg, int len);   // message → canal/zones
+    void enqueue(const uint8_t* msg, int len);                  // message routé → file fusionnée
+    Device* deviceForTest(int slot, int forceChannel,
+                          const std::vector<neost::midi::KeyZone>& zones);
     void closeBackend();                                        // ferme client/port/thread
 
 #ifdef __APPLE__

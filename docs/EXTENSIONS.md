@@ -287,7 +287,7 @@ particularités de Windows :
 | Backend | CoreMIDI | séquenceur ALSA | **winmm** |
 | Destinations matérielles | ✅ | ✅ | ✅ |
 | Sources matérielles | ✅ | ✅ | ✅ |
-| Identifiant unique | `kMIDIPropertyUniqueID` | ❌ (nom seul) | **chemin d'interface USB** |
+| Identifiant unique | `kMIDIPropertyUniqueID` | **adresse USB de la carte** (nom long) | **chemin d'interface USB** |
 | Port virtuel « NeoST MIDI OUT » | ✅ | ✅ | ❌ — **pilote tiers** (loopMIDI) |
 | Ouverture concurrente d'un port | multiplexée | multiplexée | **EXCLUSIVE** |
 
@@ -297,22 +297,38 @@ Deux différences de Windows méritent d'être connues avant de câbler un studi
   créer un port que les autres applications voient — il y faut un **pilote** (loopMIDI,
   LoopBe1). Une fois installé, son port apparaît dans les listes ci-dessous comme
   n'importe quel appareil, **en destination et en source** : le câblage vers un DAW est
-  alors complet, sans que NeoST ait à s'en mêler. (Windows MIDI Services, la pile MIDI
-  2.0 de Windows 11, sait le faire nativement mais s'installe à part et exigerait une
-  pile WinRT/COM que le zip autonome ne peut pas emporter.)
+  alors complet, sans que NeoST ait à s'en mêler. Sous Windows 11 avec **Windows MIDI
+  Services**, une **paire de bouclage** créée dans l'application *MIDI Settings* tient
+  le même rôle sans pilote tiers ; héberger soi-même un port n'y est pas envisagé (cf.
+  *Port virtuel sous Windows* ci-dessous).
 - **Un port MIDI est exclusif.** Là où ALSA et CoreMIDI multiplexent, un DAW ouvert sur
   le clavier empêche NeoST de l'ouvrir : `MMSYSERR_ALLOCATED`, journalisé en clair
   (`device busy - another application holds it`).
 
-L'**identifiant unique**, lui, est meilleur que sous Linux : `DRV_QUERYDEVICEINTERFACE`
+L'**identifiant unique**, lui, existe : `DRV_QUERYDEVICEINTERFACE`
 rend le chemin d'interface du périphérique
 (`\\?\usb#vid_1235&pid_0139&mi_00#6&33d600c&0&0000#{...}`), dont la partie médiane est
 le chemin **physique** — hub et prise. Deux appareils du même modèle branchés ensemble
 sont donc discernables, comme sous CoreMIDI. ⚠ Corollaire : **changer de prise USB change
 l'identifiant** ; le repli par nom rattrape le cas, avec son avertissement au journal.
 Les synthés logiciels du système (« Microsoft GS Wavetable Synth ») ne sont pas des
-périphériques et rendent une chaîne vide : identifiant vide, repli par nom — le régime
-dans lequel ALSA vit tout entier.
+périphériques et rendent une chaîne vide : identifiant vide, repli par nom.
+
+**Sous Linux, l'adresse de la carte.** Le séquenceur ALSA n'a pas d'identifiant
+d'appareil (`client:port` change à chaque branchement) : deux claviers du même modèle
+n'étaient discernables que branchés **ensemble**, et un seul branché allait à la
+première ligne homonyme de la config, avec le canal ou le masque de l'autre. Mais un
+client noyau appartient à une carte (`snd_seq_client_info_get_card`, alsa-lib ≥ 1.1.2),
+et le nom long d'une carte USB se termine par son adresse — `Keystation 88 at
+usb-0000:00:14.0-2, full speed` (Linux `sound/usb/card.c`, `usb_audio_make_longname`).
+L'identifiant est cette adresse plus le numéro de port : `alsa:usb-0000:00:14.0-2/0`.
+Même régime que sous Windows : stable tant qu'on garde la prise, appris à la première
+ouverture, repli par nom (avec avertissement) si l'on change de prise. Un client
+logiciel (FluidSynth, un DAW) ou un pilote qui pose un nom long sans adresse garde un
+identifiant vide. Énumération commune aux deux sens : `src/audio/MidiAlsa.hpp` ;
+extraction de l'adresse : `alsaBusAddress`/`alsaUid` (`MidiEndpoint.hpp`, fonctions
+pures éprouvées par `neost-selftest`). ⚠ Compilé (CI : job GUI, `libasound2-dev`) mais
+**jamais exécuté** sur une machine Linux avec un appareil réel.
 
 | Réglage | `neost.cfg` (UNE ligne, comme toute autre clé) | Effet |
 |---|---|---|
@@ -348,6 +364,28 @@ simultanément sur deux pistes. Ce que le séquenceur ST en fait le regarde — 
 complets et Notator savent enregistrer plusieurs canaux sur plusieurs pistes, Cubase
 Lite non.
 
+**Splitter clavier — des zones par source.** Un canal par source ne suffit pas pour
+jouer basse et piano sur un seul clavier maître. Chaque source peut donc être découpée
+en **zones** : une plage de notes, un canal, une transposition éventuelle, appliquées
+après le canal forcé et avant la fusion. Grammaire : `lo-hi:canal[±demi-tons]`, zones
+séparées par des virgules, 60 = do central, canal 0 = celui de la source. Exemple :
+`0-59:2,60-127:1+12` (main gauche sur le canal 2, main droite sur le canal 1 une octave
+plus haut). Règles, choisies et non imitées d'un appareil (`src/audio/MidiZones.hpp`) :
+
+| Message | Routage |
+|---|---|
+| Note On/Off, pression polyphonique | vers **chaque** zone qui contient la note (chevauchement = superposition), transposée ; hors de toute zone ou hors 0-127 après transposition : **jetée** (sa Note Off aussi, rien ne reste tenu) ; deux zones qui produiraient le même message ne le doublent pas |
+| Contrôleurs, pédale, pitch bend, programme, pression de canal | **une fois par canal distinct** des zones : une pédale de maintien qui ne tiendrait que la moitié du clavier serait un piège |
+| Système (horloge, SysEx, start/stop) | intact |
+
+Réglage : 4ᵉ champ de `midi_in_devices=` (`nom|canal|uid|zones`), écrit seulement quand
+la source a des zones — une config sans splitter garde sa ligne d'avant, octet pour
+octet ; un champ illisible est ignoré en entier, avec un message au journal. GUI : champ
+*zones* à droite du canal de chaque source (validé par Entrée). Headless :
+`--midi-in-zones SPEC`, appliqué au `--midi-in-device` précédent. Éprouvé par
+`neost-selftest` (*Splitter clavier*) : grammaire, refus, routage, chemin complet
+jusqu'à l'ACIA et persistance.
+
 GUI : Configuration → **MIDI**. La sortie est une **matrice** appareils × 16 canaux (un
 clic par affectation, `all` / `none` par ligne) ; l'entrée, une liste d'appareils avec le
 canal forcé de chacun. Headless : `--midi-list` énumère les entrées,
@@ -362,11 +400,11 @@ Quatre choix de conception, chacun payé par un piège réel :
   périphérique renumérote tous les autres : une config mémorisée en index se serait mise
   à piloter le mauvais appareil au branchement suivant. Mais le nom seul ne suffit pas
   non plus — deux machines du **même modèle** portent exactement le même nom. La config
-  mémorise donc `kMIDIPropertyUniqueID` (CoreMIDI) à côté du nom, et l'appariement fait
+  mémorise donc un identifiant unique (CoreMIDI, winmm, ALSA : tableau ci-dessus) à côté
+  du nom, et l'appariement fait
   deux passes : identifiant d'abord, nom ensuite, en n'attribuant **jamais deux fois le
   même point de terminaison**. Deux claviers identiques s'ouvrent chacun sur le sien,
-  y compris sous ALSA (pas d'identifiant stable, mais la non-réattribution suffit quand
-  les deux sont branchés). L'identifiant est **appris** à la première ouverture, donc
+  y compris sans identifiant (client logiciel), tant que les deux sont branchés. L'identifiant est **appris** à la première ouverture, donc
   une config qui ne connaît qu'un nom devient sûre d'elle-même. Interface : suffixe
   « #1 / #2 » sur les homonymes. Logique d'appariement : `src/audio/MidiEndpoint.hpp`,
   fonction PURE — c'est ce qui la rend testable sans deux appareils identiques sous la
@@ -454,6 +492,96 @@ Mesuré A/B sur 40 échéances de 50 ms vers le Circuit Tracks :
 |---|---|---|---|
 | minuteur 1 ms **posé** | 50,00 ms | **0,30 ms** | 0,90 ms |
 | minuteur 1 ms absent | 50,09 ms | 5,34 ms | 13,10 ms |
+
+### Code temporel MTC en sortie (`midi_mtc=`)
+
+Un logiciel hôte qui ne se cale **que** sur un code temporel (Logic Pro ne suit pas
+l'horloge MIDI en esclave) ne tire rien de l'horloge que le ST émet. Sur un vrai studio
+c'était le travail d'un convertisseur SMPTE — l'Unitor ou le Midex, non émulés (section
+suivante). NeoST suit donc le **transport du ST** et en tire du MIDI Time Code, intercalé
+dans la livraison horodatée vers **toutes** les sorties hôtes (port virtuel compris) :
+
+- **Format** : Quarter Frames `F1 0nnn dddd` (quatre par image, huit pièces sur deux
+  images, le temps codé est celui de la pièce 0) et Full Frame `F0 7F 7F 01 01 hh mm ss
+  ff F7` à chaque repositionnement. Cadences 24, 25, 29,97 *drop-frame*, 30.
+  [B] MMA, *MIDI Time Code* (1987), lu à travers deux transcriptions concordantes —
+  l'original n'est pas dans `extern/datasheets`.
+- **Temps** : le temps **émulé** écoulé depuis le départ, exact quel que soit le tempo ;
+  le départ est la première horloge `$F8` qui suit Start/Continue. Un Song Position
+  Pointer se convertit par l'historique des doubles-croches jouées (exact pour un retour
+  en arrière), au-delà par le dernier tempo mesuré (approché si le tempo change).
+- **Choix** : origine 00:00:00:00, pas de décalage ; rien n'entre dans la machine, rien
+  ne sort si le programme ST n'émet pas d'horloge.
+
+Réglage : page MIDI, *MIDI Time Code out* (`midi_mtc=0|24|25|29|30`, 29 = 29,97 DF ;
+coupé par défaut). Code : `src/audio/MidiTimecode.hpp` (pur), injection dans
+`MidiOutHost` (messages complets rangés à leur échéance, jamais au milieu d'un message
+du ST). Éprouvé par `neost-selftest` (*MIDI Time Code*) : étiquettes drop-frame, pièces,
+Full Frame, 200 Quarter Frames en 2 s à 25 i/s datés à la première horloge, retour par
+SPP. ⚠ **Pas encore essayé** contre un logiciel hôte réel (Logic, Reaper) ni sur un
+séquenceur ST réel émettant son horloge.
+
+### Interfaces multi-ports et SMPTE (Unitor, Midex) : ce qui manque pour émuler le boîtier
+
+Ce qui est émulé de ces boîtiers, c'est la **clé** de l'Unitor-N (`--dongle notator`).
+Le boîtier lui-même — ports MIDI supplémentaires, lecteur/générateur SMPTE — ne l'est
+pas, faute de **toute** description de son protocole :
+
+| Boîtier | Ce que l'on sait (sources) | Ce qui manque |
+|---|---|---|
+| C-Lab **Unitor** / Unitor 2 / Unitor-N | 2 MIDI IN (II, III) et 2 MIDI OUT (E, F) en plus de ceux du ST, SMPTE/EBU en lecture et écriture, un « Multi-port » D-15, et un passage du port cartouche pour une clé (notator.atari.org, page Unitor ; *Sound On Sound*, revues Unitor 1989 et Unitor 2 1992, muzines.co.uk). Notator/Creator 3 exige « UNITOR SMPTE/MIDI Unit » pour le mode SMPTE (chaînes de `CREATOR.RSC`, médias privés) | le **plan d'adresses** sur le port cartouche (lecture seule : les écritures passent forcément par les lignes d'adresse, comme NetUSBee et EtherNEC), la puce série des ports E/F (ACIA ? UART ?), le format sous lequel le temps SMPTE parvient au logiciel (registres ou MTC), le rôle du D-15 |
+| Steinberg **Midex** / Midex+ | port cartouche, 4 MIDI OUT supplémentaires, lecteur/générateur SMPTE ; pilote M.ROS (`v2.03`) copié sur la disquette Cubase (revue *Midex+*, muzines.co.uk) | idem : plan d'adresses, puces, protocole du pilote M.ROS |
+
+**Ni Hatari ni MAME** n'émulent ces boîtiers (aucune occurrence dans
+`extern/hatari/src` ni `extern/mame/src`), et aucune rétro-ingénierie publique n'a été
+trouvée (recherche du 2026-11-12). Trois sources débloqueraient le travail, par ordre de
+grade :
+
+1. **[B] Schéma ou manuel de service** du boîtier (C-Lab, Steinberg) : plan d'adresses et
+   puces d'un coup.
+2. **[A] Photographies de la carte** (références des puces) **+ relevé des PAL/GAL** de
+   décodage, comme l'a été l'EP600 de la clé Notator.
+3. **[C] Désassemblage du pilote** : le module Midex de M.ROS, ou le code Unitor de
+   Notator/Creator — le `NOTATOR.PRG` des médias privés ne fait que 41 Ko et ne contient
+   pas ces chaînes, le code utile est vraisemblablement chargé ou déchiffré à
+   l'exécution (protection de la clé) : il faudrait le capturer en mémoire sous NeoST,
+   clé émulée, puis le lire. C'est le chemin le plus accessible sans matériel, mais il ne
+   donne que le contrat attendu par le logiciel, pas le silicium.
+
+Sans l'une de ces sources, un « Unitor » serait inventé, et un logiciel qui l'interroge
+ne le reconnaîtrait pas.
+
+### Port virtuel sous Windows : Windows MIDI Services
+
+La pile MIDI de Windows 11 (**Windows MIDI Services**, déployée progressivement en
+2025-2026) sait créer des ports que les autres applications voient, ce que ni winmm ni
+WinRT MIDI 1.0 ne savaient faire. Évaluation du 2026-11-12, sur la documentation
+Microsoft (microsoft.github.io/MIDI) :
+
+- **Héberger un port depuis NeoST** passe par le *Windows MIDI Services App SDK* :
+  classes `MidiVirtualDeviceManager` (appareil virtuel, **UMP / MIDI 2.0** — « only apps
+  using the new SDK, and which are MIDI 2.0-aware, can define and host Virtual Devices »)
+  ou `MidiLoopbackEndpointManager` (paires de bouclage transitoires). Projection
+  **C++/WinRT** générée depuis des métadonnées NuGet, et un **runtime du SDK installé à
+  part** que l'application doit amorcer (`MidiDesktopAppSdkInitializer`) et, s'il manque,
+  faire installer. C++/WinRT n'est pas pris en charge officiellement par MinGW-w64 GCC
+  (projet communautaire `mingw-w64-cppwinrt`, coroutines expérimentales). Et la visibilité
+  d'un port créé à l'exécution par les applications **winmm** reste documentée comme
+  délicate (« challenges around port numbers with dynamically-created endpoints »).
+- **Sans une ligne de code**, la même pile offre des **paires de bouclage** créées dans
+  l'application *MIDI Settings*, persistantes, que les applications winmm voient comme
+  des ports ordinaires — NeoST les liste alors en destination **et** en source, comme un
+  port loopMIDI. La même pile rend aussi les ports winmm **multi-clients**, ce qui lève
+  l'exclusivité décrite plus haut là où elle est installée.
+
+**Recommandation : ne pas l'implémenter.** Le coût (chaîne C++/WinRT hors de MinGW,
+runtime à faire installer, appareil MIDI 2.0 pour un flux MIDI 1.0) est sans rapport avec
+le gain, puisque les paires de bouclage de *MIDI Settings* — ou loopMIDI avant Windows
+MIDI Services — donnent déjà le câblage sans code. À rouvrir seulement si Microsoft
+expose la création de port dans le SDK Windows standard (sans runtime séparé) avec une
+interface C, ou si la chaîne Windows de NeoST passe à MSVC ou clang. ⚠ Rien de cela
+n'est vérifié sur un Windows réel : à confirmer à la prochaine session Windows (paire
+créée dans *MIDI Settings*, vue par `neost-headless --midi-list`).
 
 ## Anneau MIDI réseau — MIDIMaze en ligne (`--midi-net H:P[:L]`)
 

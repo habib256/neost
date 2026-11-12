@@ -12,7 +12,10 @@
 //
 //  D'où le couple (nom, identifiant unique) :
 //    · CoreMIDI fournit kMIDIPropertyUniqueID, stable d'un branchement à l'autre ;
-//    · ALSA n'a pas d'équivalent (client:port change à chaque fois) → uid vide.
+//    · winmm, le chemin d'interface USB (cf. MidiWinmm.hpp) ;
+//    · ALSA n'a pas d'identifiant d'appareil (client:port change à chaque
+//      branchement) — mais la carte son du client porte l'ADRESSE USB dans son nom
+//      long : alsaUid() ci-dessous en tire un identifiant (cf. MidiAlsa.hpp).
 //
 //  L'appariement ci-dessous marche dans les deux cas, et c'est pour ça qu'il est
 //  écrit ICI, en fonction PURE : il se teste sans le moindre appareil branché.
@@ -106,6 +109,45 @@ inline bool learnUids(std::vector<Wanted>& want, const std::vector<Endpoint>& op
             }
     }
     return learned;
+}
+
+// ── ALSA : un identifiant tiré de l'ADRESSE de la carte ───────────────────────
+// Sous ALSA, deux claviers du même modèle n'étaient discernables que branchés
+// ENSEMBLE (règle « jamais deux fois le même point »). Un seul branché, la première
+// ligne de config homonyme le prenait — avec le canal ou le masque de l'autre.
+//
+// Le séquenceur ne donne rien de stable, mais un client NOYAU appartient à une carte
+// (snd_seq_client_info_get_card), et le nom long de la carte se termine par son
+// adresse de bus. Pour l'USB, que tous les claviers maîtres utilisent :
+//   Source : Linux sound/usb/card.c:526-590 @ v6.6, usb_audio_make_longname — nom long
+//       = « <fabricant> <produit> at <chemin>, <vitesse> speed », où <chemin> vient
+//       de usb_make_path (include/linux/usb.h:951-957 @ v6.6) :
+//       « usb-<bus>-<devpath> », p. ex. « usb-0000:00:14.0-2 » ou « …-1.4 ».
+// <bus> est le contrôleur, <devpath> la PRISE (hub compris) : stable d'un
+// branchement et d'un démarrage à l'autre tant qu'on garde la même prise — le même
+// régime que l'identifiant winmm. Changer de prise change l'identifiant ; le repli
+// par nom de matchEndpoints rattrape ce cas.
+// Le nom long d'une carte PCI finit de même par son adresse (« … at 0xf7f10000 irq
+// 33 ») : l'extraction ci-dessous ne présume pas de l'USB.
+//
+// Rend l'adresse : ce qui suit le DERNIER « at » jusqu'à la première virgule.
+// Vide si le nom long n'en a pas (préréglage du pilote sans chemin, client logiciel).
+inline std::string alsaBusAddress(const std::string& longname) {
+    const std::size_t at = longname.rfind(" at ");
+    if (at == std::string::npos) return {};
+    std::string addr = longname.substr(at + 4, longname.find(", ", at + 4) - (at + 4));
+    while (!addr.empty() && addr.back() == ' ') addr.pop_back();
+    return addr;
+}
+
+// Identifiant d'un PORT de séquenceur : adresse de la carte + numéro de port du
+// client noyau (un appareil à plusieurs prises MIDI expose un port par prise, et ce
+// numéro ne dépend que de l'appareil). Vide quand l'adresse manque : mieux vaut pas
+// d'identifiant qu'un identifiant partagé par deux homonymes.
+inline std::string alsaUid(const std::string& longname, int port) {
+    const std::string addr = alsaBusAddress(longname);
+    if (addr.empty() || port < 0) return {};
+    return "alsa:" + addr + "/" + std::to_string(port);
 }
 
 // Étiquette d'affichage : le nom seul quand il est unique, suffixé « #n » quand

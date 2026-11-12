@@ -209,6 +209,9 @@ void usage() {
         "  --midi-in-channel N  force the PREVIOUS --midi-in-device onto channel N\n"
         "                    (1-16). Without it two keyboards both sending on channel 1\n"
         "                    are indistinguishable to the sequencer\n"
+        "  --midi-in-zones SPEC  split the PREVIOUS --midi-in-device into key zones:\n"
+        "                    low-high:channel[+/-semitones],... (60 = middle C,\n"
+        "                    channel 0 = the device's own). E.g. 0-59:2,60-127:1+12\n"
         "  --midi-list       list the host MIDI input devices then exit\n"
         "  --dongle MODEL    Steinberg key on the cartridge port (/ROM3, $FB0000):\n"
         "                    cubase3 (red key: Cubase 3.10/Score/Audio), cubase2 (black\n"
@@ -1799,6 +1802,20 @@ int main(int argc, char** argv) {
                 return 2;
             }
             midiInDevices.back().forceChannel = ch;
+        }
+        // Splitter clavier du dernier appareil déclaré (grammaire : audio/MidiZones.hpp).
+        else if (!std::strcmp(a, "--midi-in-zones")) {
+            const char* spec = next(a);
+            if (midiInDevices.empty()) {
+                std::fprintf(stderr, "--midi-in-zones applies to the previous --midi-in-device "
+                                     "(none given yet)\n");
+                return 2;
+            }
+            if (!neost::midi::parseZones(spec, midiInDevices.back().zones)) {
+                std::fprintf(stderr, "--midi-in-zones: cannot read \"%s\" "
+                                     "(expected e.g. 0-59:2,60-127:1+12)\n", spec);
+                return 2;
+            }
         }
         else if (!std::strcmp(a, "--midi-list")) midiList = true;
         else if (!std::strcmp(a, "--dongle"))    dongleModel  = next(a);

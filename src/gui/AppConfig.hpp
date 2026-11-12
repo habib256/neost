@@ -26,6 +26,8 @@
 #include <string>
 #include <vector>
 
+#include "audio/MidiTimecode.hpp"
+#include "audio/MidiZones.hpp"
 #include "gui/CrtParams.h"
 #include "io/Rtc.hpp"
 
@@ -62,16 +64,23 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 // ENTRÉE : une FUSION. Chaque source peut être forcée sur son canal,
                 // sans quoi deux claviers émettant tous deux sur le canal 1 seraient
                 // inséparables et finiraient sur la même piste du séquenceur.
-                // `uid` : identifiant unique de l'hôte (CoreMIDI), vide si indisponible
-                // (ALSA) ou si la config précède son introduction. Sans lui, deux
+                // `uid` : identifiant unique de l'hôte (CoreMIDI ; chemin USB sous winmm ;
+                // adresse de la carte sous ALSA), vide si indisponible (client logiciel)
+                // ou si la config précède son introduction. Sans lui, deux
                 // appareils du MÊME MODÈLE sont indistinguables — cf. MidiEndpoint.hpp.
                 struct MidiOutDev { std::string name; uint16_t channels = 0xFFFF; std::string uid; };
-                struct MidiInDev  { std::string name; int channel = 0; std::string uid; };
+                // `zones` : splitter clavier (plages de notes → canal, transposition),
+                // vide = la source entière sur `channel`. Cf. audio/MidiZones.hpp.
+                struct MidiInDev  { std::string name; int channel = 0; std::string uid;
+                                    std::vector<neost::midi::KeyZone> zones; };
                 std::vector<MidiOutDev> midiOutDevices;
                 std::vector<MidiInDev>  midiInDevices;
                 // Avance de livraison du MIDI OUT, en ms (0-200). Arbitrage
                 // gigue/latence : cf. MidiOutHost::setLeadMs et son témoin lateBytes.
                 int midiLeadMs = 30;
+                // MIDI Time Code tiré du transport du ST, vers les sorties hôtes :
+                // 0 = coupé, 24, 25, 29 (= 29,97 drop-frame), 30. Cf. MidiTimecode.hpp.
+                int midiMtc = 0;
                 // ACTIF PAR DÉFAUT depuis que Munt est vendorisé (extern/mt32emu) : la
                 // bibliothèque est toujours là, il n'y a plus de raison d'attendre que
                 // l'utilisateur découvre l'option. Sans ROM Roland dans mt32Roms,

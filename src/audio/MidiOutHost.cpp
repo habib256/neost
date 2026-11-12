@@ -5,12 +5,15 @@
 // =============================================================================
 #include "audio/MidiOutHost.hpp"
 
+#include <algorithm>
+
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 
 #if defined(NEOST_MIDI_ALSA)
 #include <alsa/asoundlib.h>
+#include "audio/MidiAlsa.hpp"
 #endif
 
 #ifdef __APPLE__
@@ -49,8 +52,41 @@ MidiOutHost::~MidiOutHost() {
 //  Livraison horodatée
 // -----------------------------------------------------------------------------
 void MidiOutHost::anchor(int64_t cycle, std::chrono::steady_clock::time_point hostTime) {
+    {
+        std::lock_guard<std::mutex> lk(mtx_);
+        anchorCycle_ = cycle; anchorHost_ = hostTime; anchored_ = true;
+        // Une trame sans octet du ST (entre deux horloges lentes) doit tout de même
+        // faire partir les Quarter Frames dus : l'ancre de trame les rattrape.
+        mtc_.advance(cycle, [this](const uint8_t* m, int l, int64_t c) { injectAt_(m, l, c); });
+    }
+    cv_.notify_one();
+}
+
+void MidiOutHost::setMtcRate(int rate) {
+    if (!neost::midi::mtc::validRate(rate)) rate = 0;
     std::lock_guard<std::mutex> lk(mtx_);
-    anchorCycle_ = cycle; anchorHost_ = hostTime; anchored_ = true;
+    mtcRate_.store(rate, std::memory_order_relaxed);
+    mtc_.setRate(rate);
+}
+
+std::chrono::steady_clock::time_point MidiOutHost::whenFor_(int64_t cycle) const {
+    if (!anchored_) return std::chrono::steady_clock::now();
+    const double dt = double(cycle - anchorCycle_) / kCpuHz;
+    return anchorHost_ + std::chrono::microseconds(int64_t(dt * 1e6))
+         + std::chrono::milliseconds(leadMs_.load(std::memory_order_relaxed));
+}
+
+// Un message MTC complet, rangé à SON échéance parmi les octets du ST. Insérer au
+// milieu de la file est sans danger : il n'est jamais décodé avec eux (cf. Pending).
+void MidiOutHost::injectAt_(const uint8_t* msg, int len, int64_t cycle) {
+    if (len <= 0 || len > int(sizeof(Pending::msg))) return;
+    Pending p;
+    p.when = whenFor_(cycle);
+    p.len = uint8_t(len);
+    for (int i = 0; i < len; ++i) p.msg[i] = msg[i];
+    const auto pos = std::upper_bound(queue_.begin(), queue_.end(), p.when,
+        [](const std::chrono::steady_clock::time_point& w, const Pending& q) { return w < q.when; });
+    queue_.insert(pos, p);
 }
 
 void MidiOutHost::byteAt(uint8_t b, int64_t cycle) {
@@ -69,9 +105,18 @@ void MidiOutHost::byteAt(uint8_t b, int64_t cycle) {
             if (when < std::chrono::steady_clock::now())
                 lateBytes_.fetch_add(1, std::memory_order_relaxed);
         }
+        // MTC : les Quarter Frames dus AVANT cet octet partent avant lui ; un
+        // Start/Continue/SPP peut ensuite produire un Full Frame, daté de cet octet.
+        const auto inject = [this](const uint8_t* m, int l, int64_t c) { injectAt_(m, l, c); };
+        if (mtcRate_.load(std::memory_order_relaxed)) mtc_.advance(cycle, inject);
         // L'ordre des octets est SACRÉ (running status, SysEx) : jamais avant le précédent.
         if (!queue_.empty() && when < queue_.back().when) when = queue_.back().when;
-        queue_.push_back({when, b});
+        Pending p;
+        p.when = when; p.b = b;
+        queue_.push_back(p);
+        // Le générateur suit le transport même coupé : l'activer en pleine lecture
+        // part alors de la bonne position.
+        mtc_.observe(b, cycle, inject);
     }
     cv_.notify_one();
 }
@@ -89,10 +134,11 @@ void MidiOutHost::workerLoop() {
         const auto when = queue_.front().when;
         cv_.wait_until(lk, when);
         while (!stop_ && !queue_.empty() && queue_.front().when <= std::chrono::steady_clock::now()) {
-            const uint8_t b = queue_.front().b;
+            const Pending p = queue_.front();
             queue_.pop_front();
             lk.unlock();
-            parse(b);
+            if (p.len) emit(p.msg, p.len);     // message NeoST (MTC) : déjà complet
+            else       parse(p.b);
             lk.lock();
         }
     }
@@ -379,30 +425,11 @@ std::string displayName(MIDIObjectRef obj) {
 std::vector<neost::midi::Endpoint> MidiOutHost::destinations() {
     std::vector<neost::midi::Endpoint> out;
 #if defined(NEOST_MIDI_ALSA)
-    snd_seq_t* seq = nullptr;
-    if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) return out;
-    const int self = snd_seq_client_id(seq);
-    snd_seq_client_info_t* ci = nullptr; snd_seq_port_info_t* pi = nullptr;
-    snd_seq_client_info_malloc(&ci); snd_seq_port_info_malloc(&pi);
-    snd_seq_client_info_set_client(ci, -1);
-    while (snd_seq_query_next_client(seq, ci) >= 0) {
-        const int cid = snd_seq_client_info_get_client(ci);
-        if (cid == self || cid == SND_SEQ_CLIENT_SYSTEM) continue;   // pas nous, pas le système
-        snd_seq_port_info_set_client(pi, cid);
-        snd_seq_port_info_set_port(pi, -1);
-        while (snd_seq_query_next_port(seq, pi) >= 0) {
-            const unsigned caps = snd_seq_port_info_get_capability(pi);
-            if ((caps & (SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE))
-                != (SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE)) continue;
-            // uid VIDE : ALSA n'a pas d'équivalent stable (client:port change à chaque
-            // branchement). L'appariement retombe sur le nom + « jamais deux fois le
-            // même point », ce qui sépare tout de même deux homonymes présents ensemble.
-            out.push_back({std::string(snd_seq_client_info_get_name(ci)) + ": "
-                           + snd_seq_port_info_get_name(pi), std::string()});
-        }
-    }
-    snd_seq_port_info_free(pi); snd_seq_client_info_free(ci);
-    snd_seq_close(seq);
+    // Une DESTINATION s'écrit et se laisse abonner : WRITE | SUBS_WRITE. Identifiant
+    // tiré de l'adresse de la carte (cf. MidiAlsa.hpp), vide pour un client logiciel :
+    // l'appariement retombe alors sur le nom + « jamais deux fois le même point ».
+    out = neost::midi::alsa::endpoints(neost::midi::alsa::enumerate(
+        SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE));
 #elif defined(__APPLE__)
     const ItemCount n = MIDIGetNumberOfDestinations();
     for (ItemCount i = 0; i < n; ++i) {
@@ -435,40 +462,26 @@ std::size_t MidiOutHost::setDestinations(const std::vector<Dest>& want) {
     std::lock_guard<std::mutex> lk(outMtx_);
     if (!ensurePort_()) return 0;
 #if defined(NEOST_MIDI_ALSA)
-    snd_seq_t* seq = static_cast<snd_seq_t*>(seq_);
-    snd_seq_client_info_t* ci = nullptr; snd_seq_port_info_t* pi = nullptr;
-    snd_seq_client_info_malloc(&ci); snd_seq_port_info_malloc(&pi);
+    // Appariement refait sur la session du port : l'index rendu désigne directement
+    // client et port (cf. MidiAlsa.hpp ; `pick` sert aux autres backends).
+    const auto ports = neost::midi::alsa::enumerate(
+        static_cast<snd_seq_t*>(seq_), SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE);
+    const std::vector<int> pickA = neost::midi::matchEndpoints(keys, neost::midi::alsa::endpoints(ports));
     for (std::size_t w = 0; w < want.size(); ++w) {
-        if (pick[w] < 0) continue;                // absent : l'appelant re-tentera
-        const std::string& target = have[std::size_t(pick[w])].name;
-        int foundC = -1, foundP = -1, seen = 0;
-        // Le rang compte : deux ports homonymes existent, il faut CELUI qu'on a apparié.
-        int rank = 0;
-        for (int e = 0; e < pick[w]; ++e) if (have[std::size_t(e)].name == target) ++rank;
-        snd_seq_client_info_set_client(ci, -1);
-        while (foundC < 0 && snd_seq_query_next_client(seq, ci) >= 0) {
-            const int cid = snd_seq_client_info_get_client(ci);
-            if (cid == snd_seq_client_id(seq) || cid == SND_SEQ_CLIENT_SYSTEM) continue;
-            snd_seq_port_info_set_client(pi, cid);
-            snd_seq_port_info_set_port(pi, -1);
-            while (snd_seq_query_next_port(seq, pi) >= 0) {
-                const unsigned caps = snd_seq_port_info_get_capability(pi);
-                if ((caps & (SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE))
-                    != (SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE)) continue;
-                if (std::string(snd_seq_client_info_get_name(ci)) + ": "
-                    + snd_seq_port_info_get_name(pi) == target && seen++ == rank) {
-                    foundC = cid; foundP = snd_seq_port_info_get_port(pi);
-                    break;
-                }
-            }
-        }
-        if (foundC < 0) continue;
-        dests_.push_back({target, want[w].channels,
-                          (uint32_t(foundC) << 8 | uint32_t(foundP)) + 1, std::string()});
-        std::fprintf(stderr, "[midi-out] MIDI OUT -> \"%s\" (ALSA %d:%d) channels $%04X\n",
-                     target.c_str(), foundC, foundP, unsigned(want[w].channels));
+        if (pickA[w] < 0) continue;               // absent : l'appelant re-tentera
+        const auto& pt = ports[std::size_t(pickA[w])];
+        dests_.push_back({pt.ep.name, want[w].channels,
+                          (uint32_t(pt.client) << 8 | uint32_t(pt.port)) + 1, pt.ep.uid});
+        std::fprintf(stderr, "[midi-out] MIDI OUT -> \"%s\" (ALSA %d:%d%s%s) channels $%04X\n",
+                     pt.ep.name.c_str(), pt.client, pt.port,
+                     pt.ep.uid.empty() ? "" : ", uid ", pt.ep.uid.c_str(),
+                     unsigned(want[w].channels));
+        if (!want[w].uid.empty() && !pt.ep.uid.empty() && pt.ep.uid != want[w].uid)
+            std::fprintf(stderr, "[midi-out] note: \"%s\" opened by NAME — its unique id "
+                         "differs (configured %s, found %s): other USB port, or "
+                         "same-model replacement?\n",
+                         pt.ep.name.c_str(), want[w].uid.c_str(), pt.ep.uid.c_str());
     }
-    snd_seq_port_info_free(pi); snd_seq_client_info_free(ci);
 #elif defined(__APPLE__)
     if (!outPort_) {
         MIDIPortRef port = 0;

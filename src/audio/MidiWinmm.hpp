@@ -14,12 +14,12 @@
 //      \\?\usb#vid_1235&pid_0139&mi_00#6&33d600c&0&0000#{6994ad04-...}
 //  — où « 6&33d600c&0&0000 » est le chemin PHYSIQUE (hub et prise). Deux appareils
 //  identiques branchés ensemble ont donc deux identifiants différents : Windows
-//  rejoint CoreMIDI, là où ALSA n'a toujours rien de stable à offrir.
+//  rejoint CoreMIDI (ALSA, lui, tire l'adresse USB du nom long de la carte : MidiAlsa.hpp).
 //  ⚠ Ce chemin contient la PRISE : rebrancher ailleurs change l'identifiant. Le
 //  repli par nom de MidiEndpoint.hpp rattrape ce cas (avec son avertissement).
 //  ⚠ Les synthés logiciels du système (« Microsoft GS Wavetable Synth ») ne sont pas
 //  des périphériques et rendent une chaîne vide : identifiant vide, repli par nom —
-//  exactement le régime dans lequel ALSA vit tout entier.
+//  le régime des clients logiciels sous ALSA.
 //
 //  Les constantes DRV_* vivent dans mmddk.h, du DDK, que MinGW ne livre pas : elles
 //  sont posées ici à leur valeur documentée.

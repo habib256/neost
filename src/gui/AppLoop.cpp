@@ -1175,6 +1175,11 @@ static void consumeConfigRequests(App& A, Frame& F) {
         midiOut.setLeadMs(cfg.midiLeadMs);
         saveConfig(A, exeDir, cfg, &machine);
     }
+    if (cfgUi.reqMidiMtc >= 0) {
+        cfg.midiMtc = cfgUi.reqMidiMtc; cfgUi.reqMidiMtc = -1;
+        midiOut.setMtcRate(cfg.midiMtc);
+        saveConfig(A, exeDir, cfg, &machine);
+    }
     if (cfgUi.midiDevsDirty) {
         cfgUi.midiDevsDirty = false;
         cfg.midiOutDevices = cfgUi.reqMidiOut;
@@ -1423,6 +1428,7 @@ static void consumeProfileRequests(App& A, Frame& F) {
             // profil les portait, la session gardait les anciens.
             A.rewind.setEnabled(cfg.rewind || A.rewindAt > 0);
             A.midiOut->setLeadMs(cfg.midiLeadMs);
+            A.midiOut->setMtcRate(cfg.midiMtc);
             // Disquettes : A.applyConfig() ne touche PAS aux lecteurs (« le disque
             // monté est conservé ») → on monte/éjecte explicitement ce que dit le
             // profil, par les requêtes normales de montage.
