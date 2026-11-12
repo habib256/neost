@@ -100,7 +100,10 @@ CLAIMS = [
     # garder est celui de la plus grosse pièce restée d'un seul tenant, le menu
     # kiosk. Marge 3 % : elle bouge à chaque édition légitime ; au-delà, la doc
     # raconte une autre fonction que celle du dépôt.
-    ("TODO.md", r"`runKioskMenu` — (\d+) lignes d'un seul tenant",
+    # A9 (2026-11-12) : les pages du menu borne sont sorties de runKioskMenu ; le
+    # chiffre vit désormais dans la carte des sources de DEV.md (l'item du TODO se
+    # ferme), même marge.
+    ("DEV.md", r"`runKioskMenu` — (\d+) lignes",
      lambda: func_line_count("src/gui/AppLoop.cpp", "runKioskMenu"), 0.03),
     # L'échelle des références : son tableau ne doit pas raconter un vert plus fort
     # que le manifeste.
