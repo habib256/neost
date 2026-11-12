@@ -107,7 +107,7 @@ void Bus::serialize(StateArchive& ar) {
 }
 
 // Broche /RESET du 68000 (instruction RESET, $4E70). Port de customreset()
-// (cpu/hatari-glue.c:54) : IKBD, Glue vidéo, PSG et FDC repartent à zéro, le CPU
+// ([D] cpu/hatari-glue.c:54 @ f0736b24) : IKBD, Glue vidéo, PSG et FDC repartent à zéro, le CPU
 // et l'ordonnanceur NON (seule la ligne /RESET des périphériques est assertée).
 // Sans cela, un loader de jeu/démo qui fait « reset » pour faire taire la machine
 // héritée du TOS gardait le YM en train de jouer, les timers MFP du TOS armés (IRQ
@@ -119,11 +119,14 @@ void Bus::peripheralReset() {
     if (ikbd)    ikbd->resetHw();          // IKBD_Reset(false) : SCI + boot ROM
     // Fréquence + résolution posées EN DIRECT, sans repasser par le bus. C'est bien ce
     // que fait Hatari : Video_Reset_Glue appelle IoMem_WriteByte, documenté « write 8-bit
-    // byte into IO memory space WITHOUT interception » (includes/ioMem.h:86) — un simple
+    // byte into IO memory space WITHOUT interception » ([D] includes/ioMem.h:86 @ f0736b24) — un simple
     // IoMem[addr] = v, qui n'appelle jamais Video_Sync_WriteByte. Router par Bus::write8
     // injectait au contraire un événement freq DATÉ dans la machine d'états de la Glue
     // (celle qui pilote la détection des retraits de bordure) à chaque « reset », plus
     // des wait-states de bus qu'Hatari n'ajoute pas.
+    // + sur STE, ce que RESB efface aussi dans le GST MCU ($FF820F, base vidéo, NOSCROLL) :
+    // [B] ST-4081 feuilles 10 et 12, détail dans Shifter::resetGlue. Le son DMA continue (SNDON
+    // ne voit pas RESB, feuille 13).
     if (shifter) shifter->resetGlue(mfp && !mfp->colorMonitor());   // $FF820A = 0 + $FF8260
     if (psg)     psg->reset();             // PSG_Reset
     if (mfp)     mfp->resetChip();         // MFP_Reset_All

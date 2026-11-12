@@ -16,9 +16,10 @@
 #      16 premiers px de chaque ligne sont couleur 0 (affichage inset).
 #
 #  Mode 336 : séquence $FF8265>0 puis $FF8264=0, affichage 16 px plus tôt
-#  et stride de 168 octets. Les témoins 336_late (>40 cycles), 336_clear
-#  (annulation par une nouvelle écriture) et 336_word (premier accès mot)
-#  distinguent ce latch d'un simple scroll fin. 336_split l'active au milieu
+#  et stride de 168 octets. Les témoins 336_late (48 cycles : hors de la
+#  fenêtre de 40 cycles d'Hatari, mais la netlist ST-4081 n'en a pas — même image
+#  que 336), 336_clear (annulation par une nouvelle écriture) et 336_word (premier
+#  accès mot) distinguent ce latch d'un simple scroll fin. 336_split l'active au milieu
 #  de l'écran, à chaque VBL (STOP), puis touche la palette plus bas : le replay
 #  doit connaître les latches antérieurs même sans capture RAM sur ces lignes.
 #  Usage : make_scroll_test.py <out.st> <8265|8264|off|336[_late|_clear|_word|_split]> [scroll=4]
@@ -106,7 +107,7 @@ elif mode.startswith('336') and mode != '336_split':
         w(0x11FC, scroll, 0x8265)
     if mode == '336_late':
         for _ in range(12):
-            w(0x4E71)            # 48 cycles : hors fenêtre Hatari de 40 cycles
+            w(0x4E71)            # 48 cycles : hors fenêtre Hatari de 40 cycles (sans effet sur le fer)
     w(0x4238, 0x8264)             # clr.b $8264.w → latch +16 pixels
     if mode == '336_clear':
         w(0x4238, 0x8265)         # toute nouvelle écriture annule le latch

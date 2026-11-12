@@ -196,8 +196,9 @@ public:
     //     exigent ixdmab (:190-191), donc ni ROM, ni cartouche, ni vecteurs $0-$7 servis
     //     par la ROM, ni MMIO. L'adresse posée est le compteur DMA (`ADDR = dma_reg`,
     //     :134), 22 bits sans RAM étendue (:1137) — ce que dmaAddressMask garantit déjà
-    //     jusqu'à 4 Mo. [D] Hatari stMemory.c STMemory_DMA_ReadByte/WriteByte lit le plan
-    //     CPU (ROM lisible, écriture en $0-$7 perdue) : écart voulu, RTL d'abord.
+    //     jusqu'à 4 Mo. [D] Hatari stMemory.c:748,762 @ f0736b24 (STMemory_DMA_ReadByte/
+    //     WriteByte) lit le plan CPU (ROM lisible, écriture en $0-$7 perdue) : écart voulu,
+    //     RTL d'abord.
     // Jamais de bus error : une banque vide relit le bus ouvert ([F], cf. ramSpaceRead8),
     // une écriture y est perdue. Ni wait state ni test superviseur (propres au CPU).
     uint8_t  dmaRead8 (uint32_t addr);

@@ -147,12 +147,12 @@ Shifter::Shifter(Bus& bus) : bus_(bus) {
     syncGlueFrame();
 }
 
-// Remise à zéro au RESET machine — port fidèle de Video_Reset ([D] video.c:810 @ f0736b24).
+// Remise à zéro au RESET machine — port fidèle de Video_Reset ([D] video.c:812 @ f0736b24).
 // Hatari remet : la base vidéo (VideoBase = 0), les registres STE (LineWidth,
 // HWScrollCount) et leurs modifications DIFFÉRÉES (NewLineWidth/NewHWScrollCount
 // = −1, VideoCounterDelayedOffset = 0), l'état mémorisé de la Glue
 // (ShifterFrame.Freq/Res = −1) et les lignes par-trame (Video_InitShifterLines).
-// Video_Reset_Glue ([D] video.c:904 @ f0736b24) remet en plus freq $FF820A = 0 et la résolution
+// Video_Reset_Glue ([D] video.c:906 @ f0736b24) remet en plus freq $FF820A = 0 et la résolution
 // à basse (moniteur couleur — le mono est piloté ailleurs, bit7 GPIP).
 // ⚠ Video_Reset ne touche PAS la palette : les registres couleur survivent au
 // reset (vérifié : aucun accès à HBLPalettes/IoMem $FF8240 dans Video_Reset).
@@ -171,7 +171,7 @@ void Shifter::reset() {
     hwScrollReg8264_     = 0;
     steBorderFlag_       = false;
     newSteBorderFlag_    = false;
-    lastScroll8265Cycle_ = -1;
+    noscroll_            = true;   // [B] ST-4081 feuille 10 : NOSCROLL à 1 au reset
     newLineWidth_        = -1;
     newHwScrollCount_    = -1;
     newHwScrollPrefetch_ = false;
@@ -283,13 +283,48 @@ void Shifter::resizeFor(Mode m) {
     frame_.assign(static_cast<std::size_t>(w) * h, 0xFF000000u);
 }
 
+// Broche /RESET du 68000 (instruction RESET, Bus::peripheralReset).
+//  • ST et STE : fréquence $FF820A = 0 (60 Hz) et résolution basse — port de
+//    Video_Reset_Glue ([D] video.c:906 @ f0736b24, appelé par customreset,
+//    cpu/hatari-glue.c:54 @ f0736b24). [B] ST-4081 feuille 10 : PAL (PA027), synchro
+//    externe (PA034) et MDE0/MDE1 (PA033/PA024) ont leur XR tiré de NA2(RESB, PORB) (PA039).
+//    La palette n'a pas d'entrée de reset (Video_Reset ne la touche pas non plus).
+//  • STE seulement — le GST MCU efface aussi, sur la même ligne :
+//    - la largeur de ligne $FF820F et la base vidéo $FF8201/03/0D : [B] ST-4081 feuille 12,
+//      bascules HOFF (PC075…) et base (PC085…, PC094…, PC102…) remises par LRESB
+//      (PC084/PC083, PC093) ; [D] gstmcu.v:401-405 @ 4a6db7cc ;
+//    - NOSCROLL, remis à 1 : [B] feuille 10, latch PA017, XS = NA2(RES, PORB) (PA016) ;
+//      [D] gstmcu.v:340 @ 4a6db7cc. Le scroll ne prefetche plus, le latch 336 px tombe.
+//    Hatari (customreset) ne touche à aucun des trois : écart voulu, la netlist prime.
+//    Le DÉCALAGE de pixels du Shifter ($FF8265, 4 bits) est GARDÉ : [D] gstshifter.v:142-146
+//    @ a00deb5b l'efface, mais ce Shifter de MiSTery est une conception propre, pas un relevé
+//    du GST Shifter ; Hatari le garde. [F] Inconnu : le GST Shifter reçoit-il RESET ? Tranché
+//    par : son schéma ou une mesure ($FF8265=5, RESET, relecture et image) sur un STE.
+//    Le compteur vidéo continue (il n'est pas dans ces latches) ; le TOS reprogramme la base
+//    à l'amorçage, pas $FF820F ni $FF8264/65 (TOS 1.62/2.06 : aucune écriture relevée).
+//  • Le son DMA n'est PAS coupé : [B] feuille 13, le latch SNDON (PD105) n'a pour reset que
+//    PORB, ITESTB (PD109) et STOFF (PD110), pas LRESB. [D] gstmcu.v:438 @ 4a6db7cc le coupe
+//    sur resb : écart du RTL, non suivi.
+void Shifter::resetGlue(bool mono) {
+    sync = 0;                                   // $FF820A = 0 → 60 Hz
+    mode = mono ? Mode::High : Mode::Low;       // ST_HIGH_RES / ST_LOW_RES
+    // Video_Reset_Glue écrit IoMem[$FF8260] sans passer par le handler : la valeur
+    // est la même côté Shifter, sans toucher au filtre Res_Shifter.
+    shifterRes_ = static_cast<uint8_t>(mode);
+    if (!machineIsSte(bus_.machine)) return;
+    lineWidth = 0; newLineWidth_ = -1;
+    videoBase = 0;
+    noscroll_ = true;
+    hwScrollPrefetch = false; steBorderFlag_ = false;
+    newHwScrollPrefetch_ = false; newSteBorderFlag_ = false;
+}
+
 // Verrouille la résolution ET la fréquence de la trame : le décodage ligne à
 // ligne s'y tient (un changement de $FF8260 ou $FF820A en cours de trame ne prend
 // effet qu'à la suivante, comme l'ancien renderFrame qui figeait la rés. au moment
 // du décodage). La géométrie de la trame (cycles/ligne, lignes/trame) découle de
 // ce couple — cf. geometry() — et est lue par Machine juste après cet appel.
 void Shifter::beginFrame() {
-    lastScroll8265Cycle_ = -1;   // la paire d'écritures doit appartenir à la même VBL
     // État de LIGNE de la Glue, hors save-state : remis à zéro à chaque trame pour que
     // le direct, le rejeu de fin de trame et une reprise d'état partent du même point.
     glue_.lateHiOn = false;
@@ -1408,6 +1443,11 @@ uint8_t Shifter::read8(uint32_t addr) {
     // Synchro $FF820A : bits inutilisés 2-7 forcés à 1 (ST et STE), cf. Hatari
     // Video_Sync_ReadByte (IoMem[0xff820a] |= 0xfc). On NE masque PAS le champ
     // stocké `sync` : videoCounter() s'en sert toujours via `sync & 2`.
+    // Le bit 0 (synchro externe) est MÉMORISÉ et relu sur STE : [B] ST-4081 feuille 10
+    // (ST4081S.PDF, sha256 935c4dd9), bascule DPR PA034 (D = ID8, horloge SYNCSEL en
+    // écriture, sortie EXTS) relue sur ID8 par le tampon trois états PA037, à côté de PAL
+    // (PA027 → PA030 sur ID9). [D] gstmcu.v:375-380 @ 4a6db7cc relit {pal, 0} : MiSTery n'a
+    // pas de synchro externe, il omet EXTS — ne pas s'aligner sur lui. ST : pas de netlist.
     if (addr == 0xFF820A) return static_cast<uint8_t>((sync & 0x03) | 0xFC);
     // Largeur de ligne STE $FF820F : sur ST/MegaST le registre n'existe pas —
     // zone void → 0xFF (absent de ioMemTable_ST ; Video_LineWidth_ReadByte n'y
@@ -1532,23 +1572,47 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
         case 0xFF8261:
             if (bus_.ioAccessWidth() == 1) { syncCpuBus(); writeShifterRes(v & 0x3); }
             return;
-        // Scroll fin horizontal STE — port Video_HorScroll_Write : $FF8264 sans
-        // prefetch, $FF8265 avec. Applicable IMMÉDIATEMENT si l'affichage de la ligne
-        // courante n'a pas commencé (cycle ≤ HDE_On, ou faisceau hors zone affichée) ;
-        // sinon la nouvelle valeur est DIFFÉRÉE à la fin de la ligne (NewHWScrollCount,
-        // cf. endVideoLine). Étalons : Mindrewind, Digiworld 2, cool_ste.
+        // Scroll fin horizontal STE. Deux registres dans deux puces :
+        //  • le DÉCALAGE (4 bits) vit dans le Shifter, et toute écriture le pose, en $FF8264
+        //    comme en $FF8265 (le 68000 recopie un octet sur D0-D7, que lit le Shifter :
+        //    [D] gstshifter.v:160 @ a00deb5b, A=$32 → MDOUT[3:0]) ;
+        //  • NOSCROLL vit dans le GST MCU et décide du PREFETCH (affichage avancé de 16 px).
+        //    [B] ST-4081 feuille 3 (ST4081S.PDF, sha256 935c4dd9), porte P3051 : SCRLSEL =
+        //    $FF8264-5 ET ILDS. Feuille 10, latch LHS PA017 : G = SCRLSEL, D = NOR4(ID3..ID0).
+        //    [D] gstmcu.v:233,340 @ 4a6db7cc, hdegen.v:69-70. Seul un accès qui active LDS
+        //    ($FF8265 en octet, ou $FF8264 en mot, dont le Bus livre l'octet bas ici) le change :
+        //    NOSCROLL = (octet bas & $0F) == 0. Un octet en $FF8264 ne touche que le décalage.
+        // D'où, sans aucune fenêtre de temps : décalage > 0 et NOSCROLL = 0 → scroll avec
+        // prefetch ; décalage > 0 et NOSCROLL = 1 → sans prefetch (304 px, cf. renderLine) ;
+        // décalage = 0 et NOSCROLL = 0 → le latch 336 px, qui dure jusqu'au prochain accès LDS.
+        // ⚠ [D] Hatari Video_HorScroll_Write (video.c:5876 @ f0736b24) ne pose le latch 336 que
+        // si $FF8264 = 0 suit $FF8265 > 0 de 40 cycles au plus, dans la même VBL, et fait
+        // d'un octet $FF8264 > 0 un scroll sans prefetch quel que soit $FF8265 : la netlist
+        // prime. Banc fx68k + GSTMCU (écart de 48 et 100 cycles) : 62 913 px faux avant, une
+        // seule ligne (celle de l'écriture) après. Les logiciels réels relevés (Obsession,
+        // Pacemaker : move.w #1,$8264 puis clr.b $8264, 16 à 20 cycles) restent identiques.
+        // [F] Une LECTURE active aussi SCRLSEL (pas de R/W dans P3051) : NOSCROLL prendrait
+        // alors ce que le Shifter pose sur D0-D3. Non modélisé — tranché par une mesure.
+        // Calendrier (port Video_HorScroll_Write) : applicable IMMÉDIATEMENT si l'affichage de
+        // la ligne courante n'a pas commencé (cycle ≤ HDE_On, ou faisceau hors zone affichée) ;
+        // sinon DIFFÉRÉ à la fin de la ligne (NewHWScrollCount, cf. endVideoLine).
+        // ST : pas de registre ; zone void sans wait state, en écriture comme en lecture
+        // ([D] ioMemTabST.c:72 @ f0736b24, IoMem_VoidWrite). [F] ST sans netlist de la GLUE.
         case 0xFF8264: case 0xFF8265:
-            syncCpuBus();
             if (ste) {
-                const uint8_t sc       = v & 0x0F;
-                const bool    prefetch = (addr == 0xFF8265);
-                const int64_t fc = beamClock_ ? beamClock_() : 0;
-                const bool add16 = !prefetch && sc == 0 && lastScroll8265Cycle_ >= 0
-                    && fc >= lastScroll8265Cycle_ && fc - lastScroll8265Cycle_ <= 40;
-                if (prefetch) lastScroll8265Cycle_ = sc ? static_cast<int32_t>(fc) : -1;
+                syncCpuBus();
+                const uint8_t sc  = v & 0x0F;
+                const bool    lds = (addr == 0xFF8265);
                 // $FF8264 : mémorise l'octet BRUT pour la relecture (Hatari laisse
                 // IoMem tel quel — la lecture n'est pas interceptée, [D] video.c:5846 @ f0736b24).
-                if (!prefetch) hwScrollReg8264_ = v;
+                if (!lds) hwScrollReg8264_ = v;
+                // Moitié haute d'un mot : le Shifter ne lit que D0-D3, la moitié basse suit.
+                if (!lds && bus_.ioAccessWidth() != 1) return;
+                if (lds) noscroll_ = (sc == 0);
+                // Codage d'Hatari gardé là où les modèles s'accordent : prefetch = 1 après
+                // $FF8265, même à 0 ; latch 336 = prefetch 0 + drapeau.
+                const bool prefetch = lds || (!noscroll_ && sc != 0);
+                const bool add16    = !noscroll_ && sc == 0;
                 int line = 0, cyc = 0;
                 const Geometry g = geometry();
                 const bool active = beamPos(line, cyc) && beamLineActive(line);

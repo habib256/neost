@@ -371,7 +371,7 @@
    "max_diff_px": 0,
    "ref_kind": "hatari",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-18. Séquence $8265>0 puis $8264=0 dans les 40 cycles de la même VBL. Référence produite par Hatari, pas par NeoST. Les variantes late et clear gardent le refus/annulation ; split garde le latch par ligne lors du re-rendu palette."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-18. Séquence $8265>0 puis $8264=0 dans les 40 cycles de la même VBL. Référence produite par Hatari, pas par NeoST. La variante clear garde l'annulation, split le latch par ligne lors du re-rendu palette ; late (sans fenêtre, d'après la netlist) n'est plus jugée par Hatari depuis le 2026-11-12."
   },
   {
    "id": "scroll_336_word",
@@ -392,11 +392,11 @@
    "max_diff_px": 0,
    "ref_kind": "hatari",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-18. Séquence $8265>0 puis $8264=0 dans les 40 cycles de la même VBL. Référence produite par Hatari, pas par NeoST. Les variantes late et clear gardent le refus/annulation ; split garde le latch par ligne lors du re-rendu palette."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-18. Séquence $8265>0 puis $8264=0 dans les 40 cycles de la même VBL. Référence produite par Hatari, pas par NeoST. La variante clear garde l'annulation, split le latch par ligne lors du re-rendu palette ; late (sans fenêtre, d'après la netlist) n'est plus jugée par Hatari depuis le 2026-11-12."
   },
   {
    "id": "scroll_336_late",
-   "name": "Latch STE 336 pixels : séquence trop tardive refusée",
+   "name": "Latch STE 336 pixels : séquence tardive (48 cycles) acceptée",
    "subsystem": "shifter/hscroll",
    "rom": "roms/etos256us.img",
    "rom_note": "ROM libre ; secteur de boot autonome généré, sans logiciel propriétaire.",
@@ -411,9 +411,8 @@
    "frame": 380,
    "crop": "buffer",
    "max_diff_px": 0,
-   "ref_kind": "hatari",
-   "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-18. Séquence $8265>0 puis $8264=0 dans les 40 cycles de la même VBL. Référence produite par Hatari, pas par NeoST. Les variantes late et clear gardent le refus/annulation ; split garde le latch par ligne lors du re-rendu palette."
+   "ref_kind": "rtl",
+   "ref_note": "Reposé le 2026-11-12. $8264=0 arrive 48 cycles après $8265>0, hors de la fenêtre de 40 cycles qu'Hatari (f0736b24) exige : Hatari refuse le latch, la netlist le pose. [B] ST-4081 feuilles 3 et 10 : NOSCROLL est un latch transparent ouvert par SCRLSEL (= $FF8264-5 et LDS), sans aucune base de temps ; un octet en $8264 ne l'ouvre pas. [D] Banc fx68k @ 0602ee46 + GSTMCU @ 4a6db7cc (même séquence, 48 et 100 cycles) : 62 913 px d'écart avec l'ancien modèle, une ligne avec le nouveau. L'image attendue est donc celle de scroll_336 : la référence est une COPIE de scroll_336.png (oracle Hatari de la séquence dans la fenêtre), à 0 px. Le grade est celui du RTL, le plus faible maillon. Ne pas régénérer par --oracle."
   },
   {
    "id": "scroll_336_clear",
@@ -434,7 +433,7 @@
    "max_diff_px": 0,
    "ref_kind": "hatari",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-18. Séquence $8265>0 puis $8264=0 dans les 40 cycles de la même VBL. Référence produite par Hatari, pas par NeoST. Les variantes late et clear gardent le refus/annulation ; split garde le latch par ligne lors du re-rendu palette."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-18. Séquence $8265>0 puis $8264=0 dans les 40 cycles de la même VBL. Référence produite par Hatari, pas par NeoST. La variante clear garde l'annulation, split le latch par ligne lors du re-rendu palette ; late (sans fenêtre, d'après la netlist) n'est plus jugée par Hatari depuis le 2026-11-12."
   },
   {
    "id": "scroll_336_split",
@@ -455,7 +454,7 @@
    "max_diff_px": 0,
    "ref_kind": "hatari",
    "oracle_scan": 30,
-   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-18. Séquence $8265>0 puis $8264=0 dans les 40 cycles de la même VBL. Référence produite par Hatari, pas par NeoST. Les variantes late et clear gardent le refus/annulation ; split garde le latch par ligne lors du re-rendu palette."
+   "ref_note": "Oracle Hatari épinglé f0736b24, 2026-10-18. Séquence $8265>0 puis $8264=0 dans les 40 cycles de la même VBL. Référence produite par Hatari, pas par NeoST. La variante clear garde l'annulation, split le latch par ligne lors du re-rendu palette ; late (sans fenêtre, d'après la netlist) n'est plus jugée par Hatari depuis le 2026-11-12."
   },
   {
    "id": "blitter_timer",

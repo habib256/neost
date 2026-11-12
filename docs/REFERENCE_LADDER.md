@@ -17,8 +17,8 @@ Du plus fort au plus faible. Les chiffres sont recomptés par `tools/check_doc_c
 | `hardware` | A | Relevé sur machine réelle, propre ou publié par un tiers nommé | 0 étalons |
 | `primary` | B | Attendu calculé depuis une fiche, un schéma, une netlist Atari | 0 étalons |
 | `rom` | C | Verdict d'un programme ou d'une ROM Atari | 0 étalons |
-| `rtl` | D | Simulation d'un RTL dérivé du silicium ou d'un schéma | 3 étalons |
-| `hatari` | D | Capture de l'Hatari épinglé | 41 étalons |
+| `rtl` | D | Simulation d'un RTL dérivé du silicium ou d'un schéma | 4 étalons |
+| `hatari` | D | Capture de l'Hatari épinglé | 40 étalons |
 | `snapshot` | aucun | Self-capture NeoST : non-régression, aucune preuve | 12 étalons |
 
 ## Les verdicts hors étalons pixel
