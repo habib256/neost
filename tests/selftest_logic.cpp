@@ -1454,6 +1454,42 @@ static void testMidiHomonymes() {
                   cfgw[0].uid == "111" && cfgw[1].uid.empty(), true);
     }
 
+    // (6d) ALSA : l'identifiant tiré du NOM LONG de la carte (adresse USB, cf.
+    //      MidiEndpoint.hpp). Noms longs au format de usb_audio_make_longname.
+    {
+        using neost::midi::alsaBusAddress;
+        using neost::midi::alsaUid;
+        checkStr("alsa : adresse USB extraite",
+                 alsaBusAddress("Novation Circuit Tracks at usb-0000:00:14.0-2, full speed"),
+                 "usb-0000:00:14.0-2");
+        checkStr("alsa : prise derrière un hub",
+                 alsaBusAddress("M-Audio Keystation 88 at usb-0000:00:1d.0-1.4, full speed"),
+                 "usb-0000:00:1d.0-1.4");
+        // Un produit dont le NOM contient « at » : c'est le DERNIER qui compte.
+        checkStr("alsa : « at » dans le nom du produit",
+                 alsaBusAddress("Beat at Home Pad at usb-0000:00:14.0-3, high speed"),
+                 "usb-0000:00:14.0-3");
+        checkStr("alsa : sans vitesse", alsaBusAddress("Foo at usb-0000:00:14.0-5"),
+                 "usb-0000:00:14.0-5");
+        // Préréglage du pilote sans chemin, ou client sans carte : PAS d'identifiant.
+        checkStr("alsa : pas d'adresse, pas d'identifiant", alsaUid("Roland UM-ONE", 0), "");
+        checkStr("alsa : identifiant = adresse + port",
+                 alsaUid("Novation Circuit Tracks at usb-0000:00:14.0-2, full speed", 0),
+                 "alsa:usb-0000:00:14.0-2/0");
+
+        // LE scénario de l'item : deux claviers du même modèle, identifiants appris
+        // (prises 2 et 3), puis UN SEUL branché — celui de la prise 3. Avant, sans
+        // identifiant, la PREMIÈRE ligne homonyme le prenait, avec le canal de l'autre.
+        const std::string longA = "Keystation 88 at usb-0000:00:14.0-2, full speed";
+        const std::string longB = "Keystation 88 at usb-0000:00:14.0-3, full speed";
+        const std::vector<Endpoint> seulB = {{"Keystation 88: Keystation 88 MIDI 1", alsaUid(longB, 0)}};
+        const auto pick = matchEndpoints({{"Keystation 88: Keystation 88 MIDI 1", alsaUid(longA, 0)},
+                                          {"Keystation 88: Keystation 88 MIDI 1", alsaUid(longB, 0)}},
+                                         seulB);
+        checkBool("alsa : un seul homonyme branché va à SA ligne",
+                  pick.size() == 2 && pick[0] == -1 && pick[1] == 0, true);
+    }
+
     // (7) GARDE de la reconnexion à 1 Hz : countMatchable dit ce qu'une re-tentative
     //     OUVRIRAIT. Le bug chassé le 2026-08-30 : la garde comparait au CONFIGURÉ,
     //     donc un appareil durablement absent déclenchait la re-tentative à chaque

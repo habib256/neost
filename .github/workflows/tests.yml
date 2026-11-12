@@ -191,11 +191,18 @@ jobs:
           # Dépôt Microsoft de l'image runner : inutile ici, et ses 403 font échouer l'update.
           sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
           sudo apt-get update -o Acquire::Retries=3
+          # libasound2-dev : sans elle, CMake ne définit pas NEOST_MIDI_ALSA et le
+          # backend MIDI ALSA (MidiInHost, MidiOutHost, MidiAlsa.hpp) n'était compilé
+          # par AUCUN job — ni ici, ni dans les images de release. Le runner n'a pas
+          # de séquenceur : il est compilé, pas exécuté.
           sudo apt-get install -y --no-install-recommends \
-            cmake g++ libglfw3-dev libgl1-mesa-dev libgl1-mesa-dri xvfb
+            cmake g++ libglfw3-dev libgl1-mesa-dev libgl1-mesa-dri xvfb libasound2-dev
 
       - name: Configurer
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Le backend MIDI ALSA est bien compilé
+        run: grep -q "NEOST_MIDI_ALSA" build/CMakeFiles/neost.dir/flags.make
 
       # La cible `neost` (GUI) n'était compilée par AUCUN job de tests — release.yml
       # la bâtit, mais sans jamais l'EXÉCUTER. Chantier A8, dernière marche.

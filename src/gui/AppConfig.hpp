@@ -63,8 +63,9 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 // ENTRÉE : une FUSION. Chaque source peut être forcée sur son canal,
                 // sans quoi deux claviers émettant tous deux sur le canal 1 seraient
                 // inséparables et finiraient sur la même piste du séquenceur.
-                // `uid` : identifiant unique de l'hôte (CoreMIDI), vide si indisponible
-                // (ALSA) ou si la config précède son introduction. Sans lui, deux
+                // `uid` : identifiant unique de l'hôte (CoreMIDI ; chemin USB sous winmm ;
+                // adresse de la carte sous ALSA), vide si indisponible (client logiciel)
+                // ou si la config précède son introduction. Sans lui, deux
                 // appareils du MÊME MODÈLE sont indistinguables — cf. MidiEndpoint.hpp.
                 struct MidiOutDev { std::string name; uint16_t channels = 0xFFFF; std::string uid; };
                 // `zones` : splitter clavier (plages de notes → canal, transposition),

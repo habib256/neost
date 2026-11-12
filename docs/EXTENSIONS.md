@@ -242,7 +242,7 @@ particularités de Windows :
 | Backend | CoreMIDI | séquenceur ALSA | **winmm** |
 | Destinations matérielles | ✅ | ✅ | ✅ |
 | Sources matérielles | ✅ | ✅ | ✅ |
-| Identifiant unique | `kMIDIPropertyUniqueID` | ❌ (nom seul) | **chemin d'interface USB** |
+| Identifiant unique | `kMIDIPropertyUniqueID` | **adresse USB de la carte** (nom long) | **chemin d'interface USB** |
 | Port virtuel « NeoST MIDI OUT » | ✅ | ✅ | ❌ — **pilote tiers** (loopMIDI) |
 | Ouverture concurrente d'un port | multiplexée | multiplexée | **EXCLUSIVE** |
 
@@ -259,15 +259,30 @@ Deux différences de Windows méritent d'être connues avant de câbler un studi
   le clavier empêche NeoST de l'ouvrir : `MMSYSERR_ALLOCATED`, journalisé en clair
   (`device busy - another application holds it`).
 
-L'**identifiant unique**, lui, est meilleur que sous Linux : `DRV_QUERYDEVICEINTERFACE`
+L'**identifiant unique**, lui, existe : `DRV_QUERYDEVICEINTERFACE`
 rend le chemin d'interface du périphérique
 (`\\?\usb#vid_1235&pid_0139&mi_00#6&33d600c&0&0000#{...}`), dont la partie médiane est
 le chemin **physique** — hub et prise. Deux appareils du même modèle branchés ensemble
 sont donc discernables, comme sous CoreMIDI. ⚠ Corollaire : **changer de prise USB change
 l'identifiant** ; le repli par nom rattrape le cas, avec son avertissement au journal.
 Les synthés logiciels du système (« Microsoft GS Wavetable Synth ») ne sont pas des
-périphériques et rendent une chaîne vide : identifiant vide, repli par nom — le régime
-dans lequel ALSA vit tout entier.
+périphériques et rendent une chaîne vide : identifiant vide, repli par nom.
+
+**Sous Linux, l'adresse de la carte.** Le séquenceur ALSA n'a pas d'identifiant
+d'appareil (`client:port` change à chaque branchement) : deux claviers du même modèle
+n'étaient discernables que branchés **ensemble**, et un seul branché allait à la
+première ligne homonyme de la config, avec le canal ou le masque de l'autre. Mais un
+client noyau appartient à une carte (`snd_seq_client_info_get_card`, alsa-lib ≥ 1.1.2),
+et le nom long d'une carte USB se termine par son adresse — `Keystation 88 at
+usb-0000:00:14.0-2, full speed` (Linux `sound/usb/card.c`, `usb_audio_make_longname`).
+L'identifiant est cette adresse plus le numéro de port : `alsa:usb-0000:00:14.0-2/0`.
+Même régime que sous Windows : stable tant qu'on garde la prise, appris à la première
+ouverture, repli par nom (avec avertissement) si l'on change de prise. Un client
+logiciel (FluidSynth, un DAW) ou un pilote qui pose un nom long sans adresse garde un
+identifiant vide. Énumération commune aux deux sens : `src/audio/MidiAlsa.hpp` ;
+extraction de l'adresse : `alsaBusAddress`/`alsaUid` (`MidiEndpoint.hpp`, fonctions
+pures éprouvées par `neost-selftest`). ⚠ Compilé (CI : job GUI, `libasound2-dev`) mais
+**jamais exécuté** sur une machine Linux avec un appareil réel.
 
 | Réglage | `neost.cfg` (UNE ligne, comme toute autre clé) | Effet |
 |---|---|---|
@@ -339,11 +354,11 @@ Quatre choix de conception, chacun payé par un piège réel :
   périphérique renumérote tous les autres : une config mémorisée en index se serait mise
   à piloter le mauvais appareil au branchement suivant. Mais le nom seul ne suffit pas
   non plus — deux machines du **même modèle** portent exactement le même nom. La config
-  mémorise donc `kMIDIPropertyUniqueID` (CoreMIDI) à côté du nom, et l'appariement fait
+  mémorise donc un identifiant unique (CoreMIDI, winmm, ALSA : tableau ci-dessus) à côté
+  du nom, et l'appariement fait
   deux passes : identifiant d'abord, nom ensuite, en n'attribuant **jamais deux fois le
   même point de terminaison**. Deux claviers identiques s'ouvrent chacun sur le sien,
-  y compris sous ALSA (pas d'identifiant stable, mais la non-réattribution suffit quand
-  les deux sont branchés). L'identifiant est **appris** à la première ouverture, donc
+  y compris sans identifiant (client logiciel), tant que les deux sont branchés. L'identifiant est **appris** à la première ouverture, donc
   une config qui ne connaît qu'un nom devient sûre d'elle-même. Interface : suffixe
   « #1 / #2 » sur les homonymes. Logique d'appariement : `src/audio/MidiEndpoint.hpp`,
   fonction PURE — c'est ce qui la rend testable sans deux appareils identiques sous la

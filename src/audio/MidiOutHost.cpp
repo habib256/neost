@@ -11,6 +11,7 @@
 
 #if defined(NEOST_MIDI_ALSA)
 #include <alsa/asoundlib.h>
+#include "audio/MidiAlsa.hpp"
 #endif
 
 #ifdef __APPLE__
@@ -379,30 +380,11 @@ std::string displayName(MIDIObjectRef obj) {
 std::vector<neost::midi::Endpoint> MidiOutHost::destinations() {
     std::vector<neost::midi::Endpoint> out;
 #if defined(NEOST_MIDI_ALSA)
-    snd_seq_t* seq = nullptr;
-    if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) return out;
-    const int self = snd_seq_client_id(seq);
-    snd_seq_client_info_t* ci = nullptr; snd_seq_port_info_t* pi = nullptr;
-    snd_seq_client_info_malloc(&ci); snd_seq_port_info_malloc(&pi);
-    snd_seq_client_info_set_client(ci, -1);
-    while (snd_seq_query_next_client(seq, ci) >= 0) {
-        const int cid = snd_seq_client_info_get_client(ci);
-        if (cid == self || cid == SND_SEQ_CLIENT_SYSTEM) continue;   // pas nous, pas le système
-        snd_seq_port_info_set_client(pi, cid);
-        snd_seq_port_info_set_port(pi, -1);
-        while (snd_seq_query_next_port(seq, pi) >= 0) {
-            const unsigned caps = snd_seq_port_info_get_capability(pi);
-            if ((caps & (SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE))
-                != (SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE)) continue;
-            // uid VIDE : ALSA n'a pas d'équivalent stable (client:port change à chaque
-            // branchement). L'appariement retombe sur le nom + « jamais deux fois le
-            // même point », ce qui sépare tout de même deux homonymes présents ensemble.
-            out.push_back({std::string(snd_seq_client_info_get_name(ci)) + ": "
-                           + snd_seq_port_info_get_name(pi), std::string()});
-        }
-    }
-    snd_seq_port_info_free(pi); snd_seq_client_info_free(ci);
-    snd_seq_close(seq);
+    // Une DESTINATION s'écrit et se laisse abonner : WRITE | SUBS_WRITE. Identifiant
+    // tiré de l'adresse de la carte (cf. MidiAlsa.hpp), vide pour un client logiciel :
+    // l'appariement retombe alors sur le nom + « jamais deux fois le même point ».
+    out = neost::midi::alsa::endpoints(neost::midi::alsa::enumerate(
+        SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE));
 #elif defined(__APPLE__)
     const ItemCount n = MIDIGetNumberOfDestinations();
     for (ItemCount i = 0; i < n; ++i) {
@@ -435,40 +417,26 @@ std::size_t MidiOutHost::setDestinations(const std::vector<Dest>& want) {
     std::lock_guard<std::mutex> lk(outMtx_);
     if (!ensurePort_()) return 0;
 #if defined(NEOST_MIDI_ALSA)
-    snd_seq_t* seq = static_cast<snd_seq_t*>(seq_);
-    snd_seq_client_info_t* ci = nullptr; snd_seq_port_info_t* pi = nullptr;
-    snd_seq_client_info_malloc(&ci); snd_seq_port_info_malloc(&pi);
+    // Appariement refait sur la session du port : l'index rendu désigne directement
+    // client et port (cf. MidiAlsa.hpp ; `pick` sert aux autres backends).
+    const auto ports = neost::midi::alsa::enumerate(
+        static_cast<snd_seq_t*>(seq_), SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE);
+    const std::vector<int> pickA = neost::midi::matchEndpoints(keys, neost::midi::alsa::endpoints(ports));
     for (std::size_t w = 0; w < want.size(); ++w) {
-        if (pick[w] < 0) continue;                // absent : l'appelant re-tentera
-        const std::string& target = have[std::size_t(pick[w])].name;
-        int foundC = -1, foundP = -1, seen = 0;
-        // Le rang compte : deux ports homonymes existent, il faut CELUI qu'on a apparié.
-        int rank = 0;
-        for (int e = 0; e < pick[w]; ++e) if (have[std::size_t(e)].name == target) ++rank;
-        snd_seq_client_info_set_client(ci, -1);
-        while (foundC < 0 && snd_seq_query_next_client(seq, ci) >= 0) {
-            const int cid = snd_seq_client_info_get_client(ci);
-            if (cid == snd_seq_client_id(seq) || cid == SND_SEQ_CLIENT_SYSTEM) continue;
-            snd_seq_port_info_set_client(pi, cid);
-            snd_seq_port_info_set_port(pi, -1);
-            while (snd_seq_query_next_port(seq, pi) >= 0) {
-                const unsigned caps = snd_seq_port_info_get_capability(pi);
-                if ((caps & (SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE))
-                    != (SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE)) continue;
-                if (std::string(snd_seq_client_info_get_name(ci)) + ": "
-                    + snd_seq_port_info_get_name(pi) == target && seen++ == rank) {
-                    foundC = cid; foundP = snd_seq_port_info_get_port(pi);
-                    break;
-                }
-            }
-        }
-        if (foundC < 0) continue;
-        dests_.push_back({target, want[w].channels,
-                          (uint32_t(foundC) << 8 | uint32_t(foundP)) + 1, std::string()});
-        std::fprintf(stderr, "[midi-out] MIDI OUT -> \"%s\" (ALSA %d:%d) channels $%04X\n",
-                     target.c_str(), foundC, foundP, unsigned(want[w].channels));
+        if (pickA[w] < 0) continue;               // absent : l'appelant re-tentera
+        const auto& pt = ports[std::size_t(pickA[w])];
+        dests_.push_back({pt.ep.name, want[w].channels,
+                          (uint32_t(pt.client) << 8 | uint32_t(pt.port)) + 1, pt.ep.uid});
+        std::fprintf(stderr, "[midi-out] MIDI OUT -> \"%s\" (ALSA %d:%d%s%s) channels $%04X\n",
+                     pt.ep.name.c_str(), pt.client, pt.port,
+                     pt.ep.uid.empty() ? "" : ", uid ", pt.ep.uid.c_str(),
+                     unsigned(want[w].channels));
+        if (!want[w].uid.empty() && !pt.ep.uid.empty() && pt.ep.uid != want[w].uid)
+            std::fprintf(stderr, "[midi-out] note: \"%s\" opened by NAME — its unique id "
+                         "differs (configured %s, found %s): other USB port, or "
+                         "same-model replacement?\n",
+                         pt.ep.name.c_str(), want[w].uid.c_str(), pt.ep.uid.c_str());
     }
-    snd_seq_port_info_free(pi); snd_seq_client_info_free(ci);
 #elif defined(__APPLE__)
     if (!outPort_) {
         MIDIPortRef port = 0;
