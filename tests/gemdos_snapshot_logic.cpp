@@ -1,6 +1,5 @@
 // Reprise par les appels GEMDOS publics : handles, modes, recherches et rollback.
 #include "core/Machine.hpp"
-#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -211,7 +210,13 @@ int testGemdosSnapshot() {
     {
         std::vector<uint8_t> states[2];
         for(int run=0;run<2;++run) {
+            // Horloges figées comme dans le headless : la RTC et l'UltraSatan, éteintes,
+            // restent sérialisées et sont ensemencées par l'heure de l'hôte à la
+            // construction — deux Machines construites de part et d'autre d'un changement
+            // de seconde divergeaient (intermittent, fréquent sous ASan, plus lent).
             Rig r(root.string()); r.machine->ikbd.setClock(26,1,1,12,0,0);
+            r.machine->rtc.setDateTime(Rtc::DateTime{0,0,12,1,1,1,26});
+            r.machine->usatan.setDateTime(UltraSatan::DateTime{2026,1,1,12,0,0});
             const int h=r.open("C:\\DET.TXT",0,true); eq("Fcreate DET",h>=88,true);
             eq("Fwrite DET",r.write(h,"abc"),3);
             eq("Fsfirst DET",r.first("C:\\DET.TXT"),0);
@@ -222,18 +227,6 @@ int testGemdosSnapshot() {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));   // l'horloge murale avance
         }
         eq("même état d'un run à l'autre",states[0]==states[1],true);
-        if(states[0]!=states[1]) {   // diagnostic : premier octet divergent et son voisinage
-            const std::size_t n=std::min(states[0].size(),states[1].size());
-            std::size_t at=0; while(at<n && states[0][at]==states[1][at]) ++at;
-            std::fprintf(stderr,"[gemdos-snapshot] tailles %zu/%zu, premier écart à %zu\n",
-                         states[0].size(),states[1].size(),at);
-            for(int run=0;run<2;++run) {
-                std::fprintf(stderr,"  run %d :",run);
-                for(std::size_t i=at>32?at-32:0;i<std::min(states[run].size(),at+32);++i)
-                    std::fprintf(stderr,"%s%02x",i==at?" [":" ",states[run][i]);
-                std::fprintf(stderr,"\n");
-            }
-        }
         fs::remove(root/"DET.TXT");
     }
     std::printf("[gemdos-snapshot] %d checks, %d FAIL\n",checks,failures);
