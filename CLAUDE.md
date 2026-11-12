@@ -46,7 +46,8 @@ clos et ne fait plus foi va dans `docs/archive/` (hors contrôle d'ancres).
 | Doc | Contenu |
 |-----|---------|
 | [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md) | **Échelle des références** : contre quoi chaque verdict du harnais est vrai (`hardware` > `primary` > `rom` > `rtl` > `hatari` > `snapshot`), règles d'arbitrage. **À lire avant de conclure « fidèle » sur un vert.** |
-| [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md) | **Inventaire maître** des écarts NeoST↔Hatari (sévérité + `fichier:ligne`). |
+| [`docs/HATARI_DIVERGENCES.md`](docs/HATARI_DIVERGENCES.md) | **Inventaire maître** des écarts NeoST↔Hatari, rangé par sous-système (sévérité + `fichier:ligne`) ; le récit des passes d'audit est au `CHANGELOG.md`. |
+| [`docs/MAME_DIVERGENCES.md`](docs/MAME_DIVERGENCES.md) | Écarts NeoST↔**MAME** (`ce391499d37d`) : plan mémoire, bus errors, FDC/DMA, SCC ; MAME est grade D, comme Hatari. |
 | [`docs/HATARI_MAPPING.md`](docs/HATARI_MAPPING.md) | Correspondances Hatari↔NeoST↔docs. **À consulter AVANT tout audit.** |
 | [`docs/HATARI_AUTOMATION.md`](docs/HATARI_AUTOMATION.md) | Exécuter Hatari en **oracle headless** (boot → PNG, traces, `--cmd-fifo`). |
 | [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md) | **Cas tranchés** : titres corrigés OU jugés fidèles, avec la recette. À lire avant de rouvrir un « bug ». |
