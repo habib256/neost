@@ -401,9 +401,13 @@ std::string autoDongleSync(App& A, Machine& machine, neost::appconfig::Config& c
 
 // ─── Services libres (ils ne touchent pas à l'état, ou seulement au gel) ────
 bool fileExists(const std::string& p);
-// Bus::loadTos accepterait-il ce fichier ? (présent, régulier, 1 octet à 1 Mo). Test
-// fait AVANT d'appliquer un modèle, pour ne jamais le laisser sans sa ROM.
+// Bus::loadTos accepterait-il ce fichier ? (présent, régulier, 1 octet à 1 Mo, pas un
+// TOS du TT/Falcon). Test fait AVANT d'appliquer un modèle, pour ne jamais le laisser
+// sans sa ROM. romUnloadableReason rend "" si oui, sinon le message à afficher.
 bool romLoadable(const std::string& resolvedPath);
+std::string romUnloadableReason(const std::string& resolvedPath);
+// « TT » / « Falcon » si ce fichier est un TOS de machine non émulée, sinon nullptr.
+const char* tosFileUnsupportedMachine(const std::string& resolvedPath);
 // Le fichier a-t-il l'en-tête d'un TOS : BRA.S ($601E pour TOS 1.00, $602E ensuite)
 // puis une version plausible à l'offset 2 ? `size` reçoit la taille du fichier.
 bool looksLikeTosHeader(const std::string& path, std::uintmax_t& size);

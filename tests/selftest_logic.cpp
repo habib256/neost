@@ -49,6 +49,7 @@
 #include "util/MouseScale.hpp"
 #include "core/MachineType.hpp"
 #include <filesystem>
+#include <fstream>
 
 #include <cstdio>
 #include <cstring>
@@ -483,6 +484,113 @@ static void testMissingHwHint() {
     // une autre cause, et pointer le profil enverrait l'utilisateur sur une fausse piste.
     checkBool("RAM $001000 → aucun conseil",  mmioNeedsBetterMachine(0x001000, MachineType::St, m), false);
     checkBool("vidéo $FF8240 → aucun conseil", mmioNeedsBetterMachine(0xFF8240, MachineType::St, m), false);
+    // Registres propres au Mega STE au-delà du SCU : cache/CPU, densité HD, FPU.
+    checkBool("cache/CPU $FF8E21 sur STE → manquant", mmioNeedsBetterMachine(0xFF8E21, MachineType::Ste, m), true);
+    checkStr ("… nommé « Mega STE cache/CPU control »", m.chip ? m.chip : "", "Mega STE cache/CPU control");
+    checkBool("cache/CPU sur MegaSTE → rien", mmioNeedsBetterMachine(0xFF8E21, MachineType::MegaSte, m), false);
+    checkBool("densité $FF860E sur ST → manquant", mmioNeedsBetterMachine(0xFF860E, MachineType::St, m), true);
+    checkStr ("… profil conseillé « megaste »",   m.needs ? m.needs : "", "megaste");
+    checkBool("densité sur MegaSTE → rien", mmioNeedsBetterMachine(0xFF860E, MachineType::MegaSte, m), false);
+    checkBool("FPU $FFFA40 sur STE → manquant", mmioNeedsBetterMachine(0xFFFA40, MachineType::Ste, m), true);
+    checkStr ("… nommé « MC68881 FPU »",       m.chip ? m.chip : "", "MC68881 FPU");
+    checkBool("MFP $FFFA3F → aucun conseil", mmioNeedsBetterMachine(0xFFFA3F, MachineType::St, m), false);
+}
+
+// -----------------------------------------------------------------------------
+//  Images TOS et cartouche : implantation, refus TT/Falcon, format .STC.
+//  - TOS 1.06 US de 192 Ko s'annonce à $E00000 (en-tête, offset 8) : la règle « par
+//    taille » le posait à $FC0000, vecteur de reset dans le vide, 68000 halté.
+//  - TOS 3.0x / 4.x / 2.07 (TT, Falcon) : refusés, l'ancienne ROM reste en place.
+//  - .STC = 4 octets factices + 128 Ko : refusée avant (> 128 Ko).
+// -----------------------------------------------------------------------------
+static void testTosImageLoad() {
+    std::printf("Images TOS (os_base, TT/Falcon) et cartouches .STC\n");
+    namespace fs = std::filesystem;
+    const fs::path dir = fs::temp_directory_path() / "neost-selftest-tos";
+    std::error_code ec;
+    fs::remove_all(dir, ec);
+    fs::create_directories(dir, ec);
+    // Image synthétique : BRA.S $602E, version, PC de reset, os_base, signature ETOS.
+    auto makeTos = [&](const char* name, std::size_t size, uint16_t ver, uint32_t base,
+                       bool etos = false) {
+        std::vector<uint8_t> d(size, 0xFF);
+        auto be32 = [&](std::size_t o, uint32_t v) {
+            if (o + 4 > d.size()) return;
+            d[o] = uint8_t(v >> 24); d[o + 1] = uint8_t(v >> 16);
+            d[o + 2] = uint8_t(v >> 8); d[o + 3] = uint8_t(v);
+        };
+        if (size >= 4) { d[0] = 0x60; d[1] = 0x2E; d[2] = uint8_t(ver >> 8); d[3] = uint8_t(ver); }
+        be32(4, base + 0x30);
+        be32(8, base);
+        if (etos) be32(0x2C, 0x45544F53u);
+        const fs::path p = dir / name;
+        std::ofstream(p, std::ios::binary).write(reinterpret_cast<const char*>(d.data()),
+                                                 static_cast<std::streamsize>(d.size()));
+        return p.string();
+    };
+    Bus bus(512u * 1024u);
+    auto orEmpty = [](const char* s) { return std::string(s ? s : ""); };
+
+    // Le cas rapporté : 192 Ko annoncé à $E00000.
+    checkBool("TOS 1.06 192 Ko @E00000 se charge",
+              bus.loadTos(makeTos("t106.img", 192 * 1024, 0x0106, 0xE00000)), true);
+    checkHex ("… posé à $E00000 (en-tête), pas $FC0000 (taille)", bus.romBase, 0xE00000);
+    checkHex ("… vecteur PC lu à $4 = $E00030",
+              (unsigned(bus.read8(4)) << 24) | (unsigned(bus.read8(5)) << 16) |
+              (unsigned(bus.read8(6)) << 8) | bus.read8(7), 0xE00030);
+    // Les ROM historiques ne bougent pas.
+    bus.loadTos(makeTos("t104.img", 192 * 1024, 0x0104, 0xFC0000));
+    checkHex ("TOS 1.04 192 Ko @FC0000 → $FC0000", bus.romBase, 0xFC0000);
+    bus.loadTos(makeTos("t206.img", 256 * 1024, 0x0206, 0xE00000));
+    checkHex ("TOS 2.06 256 Ko @E00000 → $E00000", bus.romBase, 0xE00000);
+    // En-tête inexploitable : repli sur la taille (règle d'avant).
+    bus.loadTos(makeTos("raw16.img", 16 * 1024, 0x0000, 0x12345678));
+    checkHex ("16 Ko sans os_base → $FC0000 (taille)", bus.romBase, 0xFC0000);
+    bus.loadTos(makeTos("raw256.img", 256 * 1024, 0x0206, 0x4E714E71));
+    checkHex ("256 Ko sans os_base → $E00000 (taille)", bus.romBase, 0xE00000);
+    // $FC0000 au-delà de 224 Ko : en-tête refusé ([D] Hatari) → taille → $E00000.
+    bus.loadTos(makeTos("fc256.img", 256 * 1024, 0x0104, 0xFC0000));
+    checkHex ("256 Ko annoncé $FC0000 → $E00000 (>224 Ko)", bus.romBase, 0xE00000);
+    // 224 Ko à $FC0000 : admis, ramené à la fenêtre de 192 Ko (pas d'aliasing sur $FF0000).
+    bus.loadTos(makeTos("fc224.img", 224 * 1024, 0x0104, 0xFC0000));
+    checkHex ("224 Ko annoncé $FC0000 → $FC0000", bus.romBase, 0xFC0000);
+    checkInt ("… tronqué à la fenêtre de 192 Ko", long(bus.rom.size()), 192L * 1024);
+
+    // TT / Falcon : refus, la ROM en place survit.
+    checkStr ("TOS 3.06 → TT",     orEmpty(tosUnsupportedMachine(0x0306, false, 512 * 1024)), "TT");
+    checkStr ("TOS 4.04 → Falcon", orEmpty(tosUnsupportedMachine(0x0404, false, 512 * 1024)), "Falcon");
+    checkStr ("TOS 2.07 (Sparrow) → Falcon", orEmpty(tosUnsupportedMachine(0x0207, false, 256 * 1024)), "Falcon");
+    checkBool("TOS 2.06 admis", tosUnsupportedMachine(0x0206, false, 256 * 1024) == nullptr, true);
+    checkBool("TOS 1.62 admis", tosUnsupportedMachine(0x0162, false, 256 * 1024) == nullptr, true);
+    checkBool("EmuTOS 512 Ko (toutes machines) admis",
+              tosUnsupportedMachine(0x0306, true, 512 * 1024) == nullptr, true);
+    bus.loadTos(makeTos("ok206.img", 256 * 1024, 0x0206, 0xE00000));
+    checkBool("TOS 4.04 refusé par loadTos",
+              bus.loadTos(makeTos("t404.img", 512 * 1024, 0x0404, 0xE00000)), false);
+    checkBool("TOS 3.06 refusé par loadTos",
+              bus.loadTos(makeTos("t306.img", 512 * 1024, 0x0306, 0xE00000)), false);
+    checkBool("TOS 2.07 refusé par loadTos",
+              bus.loadTos(makeTos("t207.img", 256 * 1024, 0x0207, 0xE00000)), false);
+    checkHex ("… la ROM précédente (2.06) reste en place", bus.tosVersion, 0x0206);
+    checkInt ("… avec sa taille", long(bus.rom.size()), 256L * 1024);
+
+    // Cartouches.
+    auto makeCart = [&](const char* name, std::size_t size, std::size_t magicAt) {
+        std::vector<uint8_t> d(size, 0);
+        if (magicAt + 4 <= size) { d[magicAt] = 0xAB; d[magicAt + 1] = 0xCD; d[magicAt + 2] = 0xEF; d[magicAt + 3] = 0x42; }
+        const fs::path p = dir / name;
+        std::ofstream(p, std::ios::binary).write(reinterpret_cast<const char*>(d.data()),
+                                                 static_cast<std::streamsize>(d.size()));
+        return p.string();
+    };
+    checkBool(".STC (0x20004 o) acceptée", bus.loadCart(makeCart("c.stc", 0x20004, 4)), true);
+    checkInt ("… 128 Ko posés", long(bus.cart.size()), 0x20000L);
+    checkHex ("… en-tête factice sauté : magic à $FA0000",
+              (unsigned(bus.cart[0]) << 24) | (unsigned(bus.cart[1]) << 16) |
+              (unsigned(bus.cart[2]) << 8) | bus.cart[3], 0xABCDEF42u);
+    checkBool("128 Ko brut accepté", bus.loadCart(makeCart("c.bin", 0x20000, 0)), true);
+    checkBool("0x20005 o refusé",    bus.loadCart(makeCart("c5.bin", 0x20005, 4)), false);
+    fs::remove_all(dir, ec);
 }
 
 static void testConfigParser() {
@@ -2130,6 +2238,16 @@ static void testFdcTruthTable() {
     checkHex("BPB MSA : spt 11 persisté", g.bus.ram[0x2018], 11);
     checkHex("BPB MSA : données encore présentes", sector(false, 0, 2) & 0x10, 0);
     checkHex("BPB MSA : données préservées au repli", g.bus.ram[0x2000], 0x5A);
+
+    // --- Densité $FF860E (Mega STE) : DD après mise sous tension -------------
+    // Un mode HD posé par un programme survivait au hard reset.
+    FdcRig d;
+    d.fdc.write8(FDCR + 0x0F, 0x03);
+    checkHex("densité : HD posé", d.fdc.read8(FDCR + 0x0F), 0x03);
+    d.fdc.reset(/*cold=*/false);
+    checkHex("densité : gardée au reset à chaud", d.fdc.read8(FDCR + 0x0F), 0x03);
+    d.fdc.reset(/*cold=*/true);
+    checkHex("densité : DD après mise sous tension", d.fdc.read8(FDCR + 0x0F), 0x00);
 }
 
 // -----------------------------------------------------------------------------
@@ -3130,6 +3248,7 @@ int main() {
     testPrecomposeUtf8();
     testMouseScale();
     testMissingHwHint();
+    testTosImageLoad();
     testConfigParser();
     testRamDisplay();
     testConfigPath();

@@ -28,7 +28,10 @@
 // étalons 19/0, différentiel 14/14. Le sync-driven reste accessible en OPT-IN pour A/B.
 
 // Choisit une machine compatible avec la ROM originale. Les adaptations de
-// TOS_CheckSysConfig d'Hatari visant TT/Falcon restent hors champ NeoST.
+// TOS_CheckSysConfig d'Hatari visant TT/Falcon restent hors champ NeoST : ces
+// ROM (3.0x, 4.x, 2.07) ne basculent rien ici, Bus::loadTos les REFUSE avec un
+// message (tosUnsupportedMachine, MachineType.hpp) — on ne rétrograde pas un TOS
+// 68030 vers une machine qui ne peut pas l'exécuter.
 MachineType Machine::adjustMachineForTos(MachineType requested, const std::string& romPath) {
     std::ifstream f(romPath, std::ios::binary);
     if (!f) return requested;                 // introuvable → loadTos signalera l'erreur

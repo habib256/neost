@@ -890,6 +890,12 @@ void Fdc::reset(bool cold) {
         tr_ = 0;
         dr_ = 0;
         ff8604recent_ = 0;
+        // [F] Densité $FF860E (Mega STE) repart en DD à la mise sous tension : sinon un
+        // mode HD posé par un programme survivait au hard reset et aux changements de
+        // profil. Hatari ne la remet jamais à zéro ([D] fdc.c:1189-1240 @ f0736b24) ;
+        // à chaud, inconnu, gardée. Tranché par : relecture de $FF860E après RESET
+        // puis après mise sous tension sur un vrai Mega STE.
+        densityMode_ = 0;
     }
     stepDir_ = 1;
 

@@ -57,7 +57,7 @@ masques d'IRQ USB (Isp1160.cpp:75, 279), masque RAS/CAS dans une banque (Bus.cpp
 | src/core/Bus.cpp:219-275, 278-327 | MMU ST/STE : deux banques de 128 Ko/512 Ko/2 Mo, `mmuXlatSTF`/`mmuXlatSTE` | structurel (autres contrôleurs mémoire ; à court-circuiter) |
 | src/core/Bus.cpp:63-67 | save-state : liste fermée des tailles de RAM (≤ 4096 Ko) | trivial |
 | src/core/MachineType.hpp:75-120 | `parseRamBytes`/`ramLabel`/`memConfigForBytes` : 256 Ko à 4 Mo | local |
-| src/core/Bus.cpp:142, 154 | TOS ≤ 1 Mo ; `romBase` déduite de la taille (≤ 192 Ko → $FC0000) | trivial (TOS 3.x/4.x : 512 Ko à $E00000) |
+| src/core/Bus.cpp `loadTos`, src/core/MachineType.hpp `tosImageBase`/`tosUnsupportedMachine` | TOS ≤ 1 Mo ; `romBase` lue dans l'en-tête (os_base, offset 8 ; repli sur la taille) ; TOS 3.0x/4.x/2.07 **refusés** au chargement | trivial (lever le refus quand le TT/Falcon existe ; 512 Ko à $E00000 déjà pris par l'en-tête) |
 | src/core/Bus.hpp:202-204 | `romWindowSize` : 768 Ko sur STE, 1 Mo sinon | local |
 | src/core/Bus.cpp:537-556 | listes blanches `ST_OK`/`STE_OK` des bus errors | structurel (tables TT et Falcon à écrire) |
 | src/core/Bus.cpp:560 | `ioFault_.assign(0x8000, 1)` : IO = 32 Ko à $FF8000 | local |
