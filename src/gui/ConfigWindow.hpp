@@ -95,6 +95,7 @@ struct ConfigUi {
     uint64_t midiInBytes = 0;             // lecture : octets entrés dans le ST (preuve de vie)
     uint64_t midiLateBytes = 0;           // lecture : octets sortis en retard (avance trop courte)
     int  reqMidiLead = -1;                // requête : nouvelle avance en ms
+    int  reqMidiMtc = -1;                 // requête : cadence MTC (0 coupé, 24/25/29/30)
     int  reqDongle = -1;                  // clé cartouche : 0 none, 1 cubase2, 2 cubase3, 3 auto, 4 notator
     int  reqPlugPort = -1, reqPlugDev = -1; // page Dongles : brancher reqPlugDev sur reqPlugPort
     bool reqPortButton = false;           // bouton Multiface / Ultimate Ripper (page Dongles)

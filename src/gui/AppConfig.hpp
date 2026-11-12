@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 
+#include "audio/MidiTimecode.hpp"
 #include "audio/MidiZones.hpp"
 #include "gui/CrtParams.h"
 #include "io/Rtc.hpp"
@@ -77,6 +78,9 @@ struct Config { std::string rom; std::string disk; std::string diskb; std::strin
                 // Avance de livraison du MIDI OUT, en ms (0-200). Arbitrage
                 // gigue/latence : cf. MidiOutHost::setLeadMs et son témoin lateBytes.
                 int midiLeadMs = 30;
+                // MIDI Time Code tiré du transport du ST, vers les sorties hôtes :
+                // 0 = coupé, 24, 25, 29 (= 29,97 drop-frame), 30. Cf. MidiTimecode.hpp.
+                int midiMtc = 0;
                 // ACTIF PAR DÉFAUT depuis que Munt est vendorisé (extern/mt32emu) : la
                 // bibliothèque est toujours là, il n'y a plus de raison d'attendre que
                 // l'utilisateur découvre l'option. Sans ROM Roland dans mt32Roms,

@@ -560,6 +560,7 @@ int appInit(App& A, int argc, char** argv) {
     // que l'objet Audio n'existe. On la corrige juste après audio.start().
     uint32_t& audioRate = A.audioRate;   // 48 kHz par défaut (cf. App.hpp)
     midiOut.setLeadMs(cfg.midiLeadMs);
+    midiOut.setMtcRate(cfg.midiMtc);
     A.midiOutApply();
     A.midiInApply();
     if (A.midiLearnUids()) saveConfig(A, exeDir, cfg, &machine);

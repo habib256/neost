@@ -1695,6 +1695,130 @@ static void testMidiZones() {
     }
 }
 
+// -----------------------------------------------------------------------------
+//  MIDI TIME CODE tiré du transport du ST (audio/MidiTimecode.hpp)
+//
+//  Le format (Quarter Frame, Full Frame, drop-frame) puis le générateur : un ST qui
+//  émet Start et son horloge doit produire le code temporel du temps ÉMULÉ écoulé,
+//  et un retour par Song Position Pointer doit retomber sur le temps déjà joué.
+// -----------------------------------------------------------------------------
+static void testMidiTimecode() {
+    std::printf("MIDI Time Code (transport du ST → MTC)\n");
+    namespace mtc = neost::midi::mtc;
+    using mtc::Timecode;
+
+    // (1) Étiquettes. 25 i/s : image 1500 = 1 min. Drop-frame 29,97 : la minute 1
+    //     commence à ;02 (numéros 0 et 1 sautés), la minute 10 à ;00 (non sautée).
+    checkBool("mtc : 25 i/s, 1500 images = 00:01:00:00",
+              mtc::fromFrames(1500, 25) == Timecode{0, 1, 0, 0}, true);
+    checkBool("mtc : 30 i/s, 108000 images = 01:00:00:00",
+              mtc::fromFrames(108000, 30) == Timecode{1, 0, 0, 0}, true);
+    checkBool("mtc : drop-frame, image 1800 = 00:01:00;02",
+              mtc::fromFrames(1800, 29) == Timecode{0, 1, 0, 2}, true);
+    checkBool("mtc : drop-frame, image 1799 = 00:00:59;29",
+              mtc::fromFrames(1799, 29) == Timecode{0, 0, 59, 29}, true);
+    checkBool("mtc : drop-frame, image 17982 = 00:10:00;00 (minute 10 non sautée)",
+              mtc::fromFrames(17982, 29) == Timecode{0, 10, 0, 0}, true);
+
+    // (2) Quarter Frames et Full Frame de 01:23:45:17 en 25 i/s (code de cadence 1).
+    {
+        const Timecode tc{1, 23, 45, 17};
+        const uint8_t attendu[8] = {0x01, 0x11, 0x2D, 0x32, 0x47, 0x51, 0x61, 0x72};
+        bool ok = true;
+        for (int p = 0; p < 8; ++p) ok = ok && mtc::quarterFrameData(tc, 25, p) == attendu[p];
+        checkBool("mtc : huit pièces de 01:23:45:17 @ 25", ok, true);
+        uint8_t ff[10];
+        mtc::fullFrame(tc, 25, ff);
+        const uint8_t ffAttendu[10] = {0xF0, 0x7F, 0x7F, 0x01, 0x01, 0x21, 23, 45, 17, 0xF7};
+        checkBool("mtc : Full Frame", std::memcmp(ff, ffAttendu, 10) == 0, true);
+        checkHex("mtc : pièce 7 en drop-frame (code 2)", mtc::quarterFrameData(tc, 29, 7), 0x74);
+    }
+
+    // (3) GÉNÉRATEUR. 120 BPM = 48 horloges/s. Start au cycle 1000, première horloge
+    //     au cycle 2000 : c'est ELLE le temps 0 (l'esclave part à l'horloge suivante).
+    const double hz = neost::pacing::kCpuHz;
+    const int64_t clk = int64_t(hz / 48.0);
+    struct Msg { std::vector<uint8_t> b; int64_t c; };
+    std::vector<Msg> sortie;
+    const auto emit = [&sortie](const uint8_t* m, int l, int64_t c) {
+        sortie.push_back({std::vector<uint8_t>(m, m + l), c});
+    };
+    mtc::Generator g(hz);
+    g.setRate(25);
+    int64_t c = 1000;
+    g.observe(0xFA, c, emit);
+    checkBool("mtc : Start → Full Frame 00:00:00:00",
+              sortie.size() == 1 && sortie[0].b.size() == 10 && sortie[0].b[5] == 0x20
+              && sortie[0].b[6] == 0 && sortie[0].b[7] == 0 && sortie[0].b[8] == 0, true);
+    sortie.clear();
+    c = 2000;
+    const int64_t t0 = c;
+    // Deux secondes d'horloge (96 horloges), le générateur avancé à chaque horloge.
+    for (int i = 0; i < 96; ++i) {
+        g.advance(c, emit);
+        g.observe(0xF8, c, emit);
+        c += clk;
+    }
+    g.advance(t0 + int64_t(2.0 * hz) - 1, emit);
+    // 2 s à 25 i/s = 50 images = 200 Quarter Frames.
+    checkInt("mtc : 200 Quarter Frames en 2 s @ 25", long(sortie.size()), 200);
+    checkBool("mtc : le premier part à la première horloge",
+              !sortie.empty() && sortie[0].c == t0 && sortie[0].b[0] == 0xF1 && sortie[0].b[1] == 0x00, true);
+    {
+        // Le 9e (pièce 0 du 2e groupe) code l'image 2, à 2/25 s du départ.
+        const bool ok = sortie.size() > 8 && sortie[8].b[1] == 0x02
+                     && std::llabs(sortie[8].c - (t0 + int64_t(hz * 2.0 / 25.0))) <= 1;
+        checkBool("mtc : 2e groupe = image 2, à 80 ms", ok, true);
+        // Pièces 0..7 dans l'ordre, et le dernier groupe code 00:00:01:23 (image 48).
+        bool ordre = true;
+        for (std::size_t i = 0; i < sortie.size(); ++i) ordre = ordre && (sortie[i].b[1] >> 4) == int(i & 7);
+        checkBool("mtc : pièces 0-7 en ordre croissant", ordre, true);
+        const std::size_t g0 = sortie.size() - 8;
+        const int f = (sortie[g0].b[1] & 0x0F) | ((sortie[g0 + 1].b[1] & 1) << 4);
+        const int s = (sortie[g0 + 2].b[1] & 0x0F) | ((sortie[g0 + 3].b[1] & 3) << 4);
+        checkBool("mtc : dernier groupe = 00:00:01:23", s == 1 && f == 23, true);
+    }
+
+    // (4) Stop, SPP sur la double-croche 8 (= 1 s à 120 BPM), Continue : Full Frame
+    //     00:00:01:00 — lu dans l'HISTORIQUE de ce qui a été joué.
+    g.observe(0xFC, c, emit);
+    sortie.clear();
+    c += 100000;
+    g.observe(0xF2, c, emit); g.observe(0x08, c, emit); g.observe(0x00, c, emit);
+    checkBool("mtc : SPP → Full Frame 00:00:01:00",
+              sortie.size() == 1 && sortie[0].b.size() == 10 && sortie[0].b[7] == 1 && sortie[0].b[8] == 0, true);
+    sortie.clear();
+    g.observe(0xFB, c, emit);
+    c += 50000;
+    const int64_t t1 = c;
+    g.observe(0xF8, c, emit);                  // départ à cette horloge
+    g.advance(t1 + 64, emit);       // 64 cycles : la troncature de la période
+    checkBool("mtc : Continue repart en Quarter Frames à 00:00:01:00",
+              sortie.size() >= 2 && std::llabs(sortie.back().c - t1) <= 64 && sortie.back().b[0] == 0xF1
+              && sortie.back().b[1] == 0x00, true);
+
+    // (5) Coupé : rien ne sort, mais le transport est suivi.
+    {
+        mtc::Generator off(hz);
+        std::vector<Msg> rien;
+        const auto e2 = [&rien](const uint8_t* m, int l, int64_t cc) {
+            rien.push_back({std::vector<uint8_t>(m, m + l), cc});
+        };
+        off.observe(0xFA, 0, e2); off.observe(0xF8, 10, e2); off.advance(int64_t(hz), e2);
+        checkBool("mtc : coupé, rien ne sort", rien.empty() && off.running(), true);
+    }
+
+    // (6) Config : midi_mtc relu, valeur inconnue → coupé.
+    {
+        using namespace neost::appconfig;
+        Config cfg;
+        parseConfigLine(cfg, "midi_mtc=29");
+        checkInt("mtc cfg : 29,97 relu", cfg.midiMtc, 29);
+        parseConfigLine(cfg, "midi_mtc=26");
+        checkInt("mtc cfg : cadence inconnue → coupé", cfg.midiMtc, 0);
+    }
+}
+
 static void testMidiInJitter() {
     std::printf("MIDI IN hôte (horloge série → ACIA)\n");
     constexpr uint32_t kCtrl = 0xFFFC04, kData = 0xFFFC06;
@@ -3754,6 +3878,7 @@ int main() {
     testGmSynth();
     testMidiHomonymes();
     testMidiZones();
+    testMidiTimecode();
     testIkbdTdre();
     testIkbdProtocol();
     testRtcSecond();

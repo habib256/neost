@@ -610,6 +610,25 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                 ImGui::TextDisabled("  Lower = more direct to play, less slack for a"
                                     " GUI hiccup.");
         }
+        // MTC : un code temporel tiré du transport du ST (Start/Stop/Continue, SPP,
+        // horloge), pour un logiciel hôte qui ne suit pas l'horloge MIDI en esclave.
+        {
+            static const int   rates[]  = {0, 24, 25, 29, 30};
+            static const char* labels[] = {"off", "24 fps", "25 fps", "29.97 drop", "30 fps"};
+            int cur = 0;
+            for (int i = 0; i < 5; ++i) if (rates[i] == cfg.midiMtc) cur = i;
+            ImGui::SetNextItemWidth(140.f);
+            if (ImGui::BeginCombo("MIDI Time Code out", labels[cur])) {
+                for (int i = 0; i < 5; ++i)
+                    if (ImGui::Selectable(labels[i], i == cur)) ui.reqMidiMtc = rates[i];
+                ImGui::EndCombo();
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Generated from the ST's MIDI clock, Start/Stop/Continue\n"
+                                  "and Song Position, sent to every host output (virtual\n"
+                                  "port included). For a host app that chases timecode\n"
+                                  "only. The ST program must send MIDI clock.");
+        }
         ImGui::Separator();
 
         ImGui::TextDisabled("MIDI IN of the ST (ACIA 6850)");
@@ -661,14 +680,16 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                     char zbuf[160];
                     std::snprintf(zbuf, sizeof zbuf, "%s", neost::midi::formatZones(zones).c_str());
                     ImGui::SetNextItemWidth(200.f);
-                    static std::string zonesError;   // dernier refus, affiché sous la liste
+                    // Dernier refus, affiché sous la SEULE ligne qui l'a provoqué.
+                    static std::string zonesError, zonesErrorRow;
                     if (ImGui::InputTextWithHint("##zones", "zones: 0-59:2,60-127:1+12", zbuf,
                                                  sizeof zbuf, ImGuiInputTextFlags_EnterReturnsTrue)) {
                         std::vector<neost::midi::KeyZone> parsed;
                         if (neost::midi::parseZones(zbuf, parsed)) {
-                            zones = parsed; changed = true; zonesError.clear();
+                            zones = parsed; changed = true; zonesError.clear(); zonesErrorRow.clear();
                         } else {
                             zonesError = std::string("Zones not understood: \"") + zbuf + "\"";
+                            zonesErrorRow = r.name + '\n' + r.uid;
                         }
                     }
                     if (ImGui::IsItemHovered())
@@ -677,7 +698,7 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                                           "Notes outside every zone are dropped; pedal,\n"
                                           "bend and controllers go to every zone's channel.\n"
                                           "Empty = no split. Press Enter to apply.");
-                    if (!zonesError.empty())
+                    if (!zonesError.empty() && zonesErrorRow == r.name + '\n' + r.uid)
                         ImGui::TextColored(ImVec4(1.f, .5f, .4f, 1.f), "  %s", zonesError.c_str());
                     next.push_back({r.name, chan, r.uid, zones});
                 }

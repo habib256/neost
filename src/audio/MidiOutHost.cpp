@@ -5,6 +5,8 @@
 // =============================================================================
 #include "audio/MidiOutHost.hpp"
 
+#include <algorithm>
+
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -50,8 +52,41 @@ MidiOutHost::~MidiOutHost() {
 //  Livraison horodatée
 // -----------------------------------------------------------------------------
 void MidiOutHost::anchor(int64_t cycle, std::chrono::steady_clock::time_point hostTime) {
+    {
+        std::lock_guard<std::mutex> lk(mtx_);
+        anchorCycle_ = cycle; anchorHost_ = hostTime; anchored_ = true;
+        // Une trame sans octet du ST (entre deux horloges lentes) doit tout de même
+        // faire partir les Quarter Frames dus : l'ancre de trame les rattrape.
+        mtc_.advance(cycle, [this](const uint8_t* m, int l, int64_t c) { injectAt_(m, l, c); });
+    }
+    cv_.notify_one();
+}
+
+void MidiOutHost::setMtcRate(int rate) {
+    if (!neost::midi::mtc::validRate(rate)) rate = 0;
     std::lock_guard<std::mutex> lk(mtx_);
-    anchorCycle_ = cycle; anchorHost_ = hostTime; anchored_ = true;
+    mtcRate_.store(rate, std::memory_order_relaxed);
+    mtc_.setRate(rate);
+}
+
+std::chrono::steady_clock::time_point MidiOutHost::whenFor_(int64_t cycle) const {
+    if (!anchored_) return std::chrono::steady_clock::now();
+    const double dt = double(cycle - anchorCycle_) / kCpuHz;
+    return anchorHost_ + std::chrono::microseconds(int64_t(dt * 1e6))
+         + std::chrono::milliseconds(leadMs_.load(std::memory_order_relaxed));
+}
+
+// Un message MTC complet, rangé à SON échéance parmi les octets du ST. Insérer au
+// milieu de la file est sans danger : il n'est jamais décodé avec eux (cf. Pending).
+void MidiOutHost::injectAt_(const uint8_t* msg, int len, int64_t cycle) {
+    if (len <= 0 || len > int(sizeof(Pending::msg))) return;
+    Pending p;
+    p.when = whenFor_(cycle);
+    p.len = uint8_t(len);
+    for (int i = 0; i < len; ++i) p.msg[i] = msg[i];
+    const auto pos = std::upper_bound(queue_.begin(), queue_.end(), p.when,
+        [](const std::chrono::steady_clock::time_point& w, const Pending& q) { return w < q.when; });
+    queue_.insert(pos, p);
 }
 
 void MidiOutHost::byteAt(uint8_t b, int64_t cycle) {
@@ -70,9 +105,18 @@ void MidiOutHost::byteAt(uint8_t b, int64_t cycle) {
             if (when < std::chrono::steady_clock::now())
                 lateBytes_.fetch_add(1, std::memory_order_relaxed);
         }
+        // MTC : les Quarter Frames dus AVANT cet octet partent avant lui ; un
+        // Start/Continue/SPP peut ensuite produire un Full Frame, daté de cet octet.
+        const auto inject = [this](const uint8_t* m, int l, int64_t c) { injectAt_(m, l, c); };
+        if (mtcRate_.load(std::memory_order_relaxed)) mtc_.advance(cycle, inject);
         // L'ordre des octets est SACRÉ (running status, SysEx) : jamais avant le précédent.
         if (!queue_.empty() && when < queue_.back().when) when = queue_.back().when;
-        queue_.push_back({when, b});
+        Pending p;
+        p.when = when; p.b = b;
+        queue_.push_back(p);
+        // Le générateur suit le transport même coupé : l'activer en pleine lecture
+        // part alors de la bonne position.
+        mtc_.observe(b, cycle, inject);
     }
     cv_.notify_one();
 }
@@ -90,10 +134,11 @@ void MidiOutHost::workerLoop() {
         const auto when = queue_.front().when;
         cv_.wait_until(lk, when);
         while (!stop_ && !queue_.empty() && queue_.front().when <= std::chrono::steady_clock::now()) {
-            const uint8_t b = queue_.front().b;
+            const Pending p = queue_.front();
             queue_.pop_front();
             lk.unlock();
-            parse(b);
+            if (p.len) emit(p.msg, p.len);     // message NeoST (MTC) : déjà complet
+            else       parse(p.b);
             lk.lock();
         }
     }

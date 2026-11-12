@@ -36,6 +36,7 @@
 #pragma once
 #include "audio/MidiEndpoint.hpp"
 #include "audio/MidiMessageParser.hpp"
+#include "audio/MidiTimecode.hpp"
 #include "core/Pacing.hpp"
 #include <atomic>
 #include <chrono>
@@ -132,8 +133,18 @@ public:
     void anchor(int64_t cycle, std::chrono::steady_clock::time_point hostTime);
     void byteAt(uint8_t b, int64_t cycle);
 
+    // --- MIDI Time Code tiré du transport du ST (cf. MidiTimecode.hpp) ----------
+    // 0 = coupé ; 24, 25, 29 (= 29,97 drop-frame), 30. Suit Start/Stop/Continue, le
+    // Song Position Pointer et l'horloge que le ST émet, et intercale Quarter Frames
+    // et Full Frames dans la livraison HORODATÉE, entre deux messages du ST — vers
+    // toutes les destinations et le port virtuel, comme tout message système. Pour
+    // un logiciel hôte qui ne se cale que sur un code temporel (Logic Pro).
+    void setMtcRate(int rate);
+    int  mtcRate() const { return mtcRate_.load(std::memory_order_relaxed); }
+
 private:
     std::atomic<int> leadMs_{kDefaultLeadMs};
+    std::atomic<int> mtcRate_{0};
     // Octets déjà en retard au moment d'être programmés : l'avance était trop courte
     // pour absorber le retard de la boucle hôte. Lu par l'interface.
     std::atomic<uint64_t> lateBytes_{0};
@@ -192,8 +203,20 @@ private:
     void emit(const uint8_t* msg, int len);     // message complet → synthé + port
     void parse(uint8_t b);                      // octet → parseur → emit (thread de livraison)
 
-    // File horodatée + thread de livraison.
-    struct Pending { std::chrono::steady_clock::time_point when; uint8_t b; };
+    // File horodatée + thread de livraison. `len` = 0 : un octet du ST, à décoder ;
+    // `len` > 0 : un message COMPLET produit par NeoST (MTC), livré tel quel — il
+    // s'intercale entre deux octets du ST sans jamais toucher au décodeur, donc sans
+    // couper le message en cours.
+    struct Pending {
+        std::chrono::steady_clock::time_point when;
+        uint8_t b = 0;
+        uint8_t len = 0;
+        uint8_t msg[10] = {};
+    };
+    // Générateur MTC (sous mtx_) et son injection dans la file, triée par échéance.
+    neost::midi::mtc::Generator mtc_{kCpuHz};
+    std::chrono::steady_clock::time_point whenFor_(int64_t cycle) const;   // (mtx_ pris)
+    void injectAt_(const uint8_t* msg, int len, int64_t cycle);           // (mtx_ pris)
     std::mutex mtx_;
     std::condition_variable cv_;
     std::deque<Pending> queue_;

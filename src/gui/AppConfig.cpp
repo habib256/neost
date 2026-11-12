@@ -255,6 +255,10 @@ void parseConfigLine(Config& c, std::string line) {
     else if (line.rfind("midi_out_channels=", 0) == 0) {
         if (!c.midiOutDevices.empty()) c.midiOutDevices.back().channels = parseChannelMask(line.substr(18));
     }
+    else if (line.rfind("midi_mtc=", 0) == 0) {
+        const int v = std::atoi(line.substr(9).c_str());
+        c.midiMtc = neost::midi::mtc::validRate(v) ? v : 0;
+    }
     else if (line.rfind("midi_lead_ms=", 0) == 0) {
         const int v = std::atoi(line.substr(13).c_str());
         c.midiLeadMs = (v < 0) ? 0 : (v > 200 ? 200 : v);
@@ -418,6 +422,7 @@ void writeConfigKeys(std::ostream& f, const Config& w, bool full) {
       << "\ngm_soundfont=" << oneLine(w.gmSoundFont)
       << "\nmidi_out_port=" << (w.midiOutPort ? 1 : 0)
       << "\nmidi_lead_ms=" << w.midiLeadMs
+      << "\nmidi_mtc=" << w.midiMtc
 
       << "\nmidi_out_mt32=" << (w.midiOutMt32 ? 1 : 0)
       << "\nmt32_roms=" << oneLine(w.mt32Roms)
