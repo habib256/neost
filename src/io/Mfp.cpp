@@ -110,6 +110,7 @@ void Mfp::resetChip() {
     timer_[0x27] = timer_[0x29] = timer_[0x2B] = 0;
     timer_[0x2D] &= uint8_t(~0x01);
     rxFull_ = rxOverrun_ = rxPendingOverrun_ = false;
+    rxBreakLine_ = rxBreakAcked_ = rxBreakPending_ = false;
     if (sched_) sched_->cancel(Scheduler::SERIAL_TX);
     serialTxBusy_ = false; serialTxKind_ = 0;
     updateSerialConfig();
@@ -240,6 +241,41 @@ void Mfp::receiveSerialByte(uint8_t byte, int64_t when) {
     raiseAt(SRC_RXFULL, when);
 }
 
+// [B] MC68901 Fig. 6-3 p. 6-5 : en asynchrone, « a break is detected when an all zero data word
+// with no stop bit is received » ; le mot nul part au buffer avec B. § 6.2.1 p. 6-4 : une erreur
+// passe par le canal d'erreur s'il est validé, sinon par celui de buffer plein.
+// [F] Date de détection : fin du premier intervalle BREAK de l'émetteur (un caractère), pas
+// l'échantillon du bit de stop attendu. Tranché par : SO et IRQ relevés ensemble sur un 68901.
+void Mfp::receiveSerialBreak(int64_t when) {
+    if (rxBreakLine_) return;                       // le BREAK continue : un seul mot
+    rxBreakLine_ = true;
+    rxBreakAcked_ = false;
+    if (!(timer_[0x2B] & 1) || !(timer_[0x29] & 0x18)) return;   // RE=0, ou format synchrone
+    if (rxOverrun_) return;                         // assemblage bloqué jusqu'à la lecture du RSR
+    if (rxFull_) { rxBreakPending_ = true; return; }   // § 6.2.3 cas 1 et 2 : B (et OE) à la lecture UDR
+    rxByte_ = 0;
+    rxFull_ = true;
+    timer_[0x2B] |= 0x08;
+    raiseAt((iera & 0x08) ? SRC_RXERR : SRC_RXFULL, when);
+}
+
+// La ligne repasse au mark (stop de fin de BREAK, ou TE coupé : SO forcé haut en bouclage).
+void Mfp::receiveSerialBreakEnd(int64_t when) {
+    if (!rxBreakLine_) return;
+    rxBreakLine_ = false;
+    if (rxBreakAcked_) clearSerialBreak(when);
+}
+
+// [B] MC68901 Fig. 6-3 p. 6-5 : « An end of break interrupt will be generated when the bit is
+// cleared ». [F] Canal de cette interruption : celui des erreurs, comme le début du BREAK.
+// Tranché par : IPRA relu après une fin de BREAK sur un 68901.
+void Mfp::clearSerialBreak(int64_t when) {
+    if (!(timer_[0x2B] & 0x08) || !(timer_[0x29] & 0x18)) return;
+    timer_[0x2B] &= uint8_t(~0x08);
+    rxBreakAcked_ = false;
+    raiseAt((iera & 0x08) ? SRC_RXERR : SRC_RXFULL, when);
+}
+
 // [B] MC68901 § 6.3 p. 6-6 : tampon et registre à décalage, END à chaque frontière pendant BREAK.
 // Transport TX asynchrone à deux registres : TDR écrasable, TSR en vol.
 // Le chargement initial est immédiat (phase du front TC non modélisée), puis les
@@ -315,8 +351,15 @@ void Mfp::advanceSerialTx(int64_t when) {
     if (serialTxKind_ != 0) {
         const uint8_t kind = serialTxKind_;
         serialTxKind_ = 0;
-        if (!(timer_[0x2D] & 1)) { finishSerialTx(when); return; }
+        if (!(timer_[0x2D] & 1)) {
+            // [B] MC68901 Fig. 6-4 p. 6-7 : émetteur coupé en bouclage, SO forcé haut.
+            if (loopback_ || internalSerialLoopback()) receiveSerialBreakEnd(when);
+            finishSerialTx(when);
+            return;
+        }
         const bool sendBreak = (timer_[0x2D] & 8) && (timer_[0x29] & 0x18);
+        if (kind == 1 && sendBreak && (loopback_ || internalSerialLoopback()))
+            receiveSerialBreak(when);
         if (kind == 1 && sendBreak) {
             // [B] MK68901 p. 18 ; MC68HC901 § 7.3.2 p. 7-8 : TSR inchangé ;
             // UE et IPR doivent être libres
@@ -406,6 +449,11 @@ uint8_t Mfp::read8(uint32_t addr) {
         case 0x2B: {                 // RSR : bit7 = Buffer Full ; bit6 = Overrun Error
             const uint8_t v = uint8_t((timer_[0x2B] & 0x3F) | (rxFull_ ? 0x80 : 0) | (rxOverrun_ ? 0x40 : 0));
             rxOverrun_ = false;      // les bits d'erreur du RSR se vident à la LECTURE (pas l'UDR)
+            // B lu : le BREAK est acquitté ; si la ligne est déjà revenue au mark, B retombe.
+            if ((v & 0x08) && (timer_[0x29] & 0x18)) {
+                rxBreakAcked_ = true;
+                if (!rxBreakLine_) clearSerialBreak(sched_ ? sched_->liveNow() : 0);
+            }
             return v;
         }
         case 0x2D:
@@ -430,6 +478,13 @@ uint8_t Mfp::read8(uint32_t addr) {
             // [D] MAME mc68901.cpp:539-554 @ ce391499d37d (REGISTER_UDR) retourne toujours le registre RX, même BF=0.
             // Une lecture vide ne révèle pas le registre TX distinct.
             rxFull_ = false;
+            if (rxBreakPending_) {
+                // [B] MC68901 § 6.2.3 p. 6-5 : B seul (cas 1), ou B et OE (cas 2), à la lecture de l'UDR.
+                rxBreakPending_ = false;
+                timer_[0x2B] |= 0x08;
+                if (!rxPendingOverrun_)
+                    raiseAt((iera & 0x08) ? SRC_RXERR : SRC_RXFULL, sched_ ? sched_->liveNow() : 0);
+            }
             if (rxPendingOverrun_) {
                 rxPendingOverrun_ = false;
                 rxOverrun_ = true;
@@ -564,6 +619,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                        // sans effacer les données RX ni les IRQ MFP déjà pendantes.
                        timer_[0x2B] = 0;
                        rxFull_ = rxOverrun_ = rxPendingOverrun_ = false;
+                       rxBreakAcked_ = rxBreakPending_ = false;
                    } else {
                        // [B] MC68901 Fig. 6-3 p. 6-4 et p. 6-5 ; [D] MAME mc68901.cpp:927-955 @ ce391499d37d (REGISTER_RSR) :
                        // seuls RE/SS sont contrôlables ;
@@ -586,6 +642,7 @@ void Mfp::write8(uint32_t addr, uint8_t v) {
                        if (sched_ && serialTxKind_ == 1 && !((v & 8) && (timer_[0x29] & 0x18))) {
                            sched_->cancel(Scheduler::SERIAL_TX);
                            serialTxBusy_ = false; serialTxKind_ = 2;
+                           if (loopback_ || internalSerialLoopback()) receiveSerialBreakEnd(writeEventTime());
                            // [F] Déduction du « end-of-break stop bit » ([B] MC68901 § 6.3 p. 6-6 le nomme,
                            // MC68HC901 p. 7-8) : un bit de mark avant TDR/UE. Tranché par une capture de SO. Ancrage MMIO,
                            // phase TC initiale non modélisée, pas de mesure matérielle.

@@ -195,6 +195,9 @@ int testMmuMapping(); // trou MMU STF et distinction reset chaud/froid
 int testFdcSelection(); // sélection PSG et index vivant avant accès WD1772
 int testMmioFidelity(); // lectures octet blitter et registre de densité disque
 int testIkbdResponses(); // délais firmware des réponses IKBD
+int testIkbdKeycode();   // $19 selon la ROM 6301 (anti-rebond, dixièmes de 101 ms)
+int testIkbdSciFraming(); // ACIA→SCI : formats, erreur de trame, BREAK (ROM $FF40/$FE29)
+int testMfpBreakRx();     // USART MFP : BREAK reçu en bouclage (B, fin de BREAK)
 int testFdcTiming(); // attentes des registres FDC et ancrage anti-dérive
 int testIkbdMonitor(); // taux d'échantillonnage joystick $17
 int testIkbdMonitorMachine(); // câblage du timer dans la machine complète
@@ -3711,6 +3714,9 @@ int main() {
     if (const int failures = testFdcSelection()) g_fail += failures; else ++g_ok;
     if (const int failures = testMmioFidelity()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdResponses()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdKeycode()) g_fail += failures; else ++g_ok;
+    if (const int failures = testIkbdSciFraming()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpBreakRx()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcTiming()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdMonitor()) g_fail += failures; else ++g_ok;
     if (const int failures = testIkbdMonitorMachine()) g_fail += failures; else ++g_ok;

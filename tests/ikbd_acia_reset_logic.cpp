@@ -94,7 +94,8 @@ int testIkbdAciaReset() {
         rig.ikbd.write8(0, 0xF6); rig.ikbd.write8(2, 0);
         rig.ikbd.resetHw();
         equal("BREAK conserve TDR bloqué", rig.status() & 2, 0);
-        equal("BREAK conserve absence échéance", rig.scheduler.cyclesUntil(Scheduler::IKBD_TX), -1);
+        // Échéance du BREAK : sa trame nulle mène à l'erreur de trame vue par le SCI (ROM $FF40).
+        equal("BREAK garde l'échéance de sa trame", rig.scheduler.cyclesUntil(Scheduler::IKBD_TX), 1024);
         rig.ikbd.write8(0, 0x96);
         equal("libération BREAK reprend TDR", rig.scheduler.cyclesUntil(Scheduler::IKBD_TX), 1024);
     }

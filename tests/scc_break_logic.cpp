@@ -53,6 +53,8 @@ bool testSccBreak() {
         loop.sched.runTo(10);loop.wr(3,0xc1);loop.wr(5,0xf8);loop.wr(3,0xe1);loop.sched.runTo(100);
         check((loop.rr(0)&0x80) && !(loop.rr(0)&0x20),"BREAK visible in loopback even with CTS inactive");
         loop.wr(5,0xe8);loop.sched.runTo(130);
+        // [B] UM0109 p.58/p.98 : la fin du BREAK laisse un seul caractère nul dans la FIFO.
+        check((loop.rr(0)&1) && loop.rr(8)==0,"BREAK end leaves a single null character");
         check(!(loop.rr(0)&1) && !(loop.rr(0)&4),"interrupted frame omitted from RX and CTS retains TDR");
         loop.wr(5,0xea);loop.sched.runTo(170);
         check((loop.rr(0)&1),"CTS assertion resumes intact TDR after BREAK");

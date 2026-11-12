@@ -101,7 +101,7 @@ public:
     // « jeux »). Bits : haut $01 / bas $02 / gauche $04 / droite $08 / feu $80
     // (cf. Hatari ATARIJOY_BITMASK_*, joy.h). Lu à chaque interrogation $16 et,
     // en mode auto ($14), à chaque trame via sendAutoJoysticks.
-    void    setJoystick(uint8_t joy0, uint8_t joy1) { hostJoy_[0] = joy0; hostJoy_[1] = joy1; }
+    void    setJoystick(uint8_t joy0, uint8_t joy1);
     // Relit l'état hôte TENU (brut, sans la sonde ni le masquage souris de
     // readJoystickState) : le mode serveur s'en sert pour reprendre l'entrée qu'un
     // --joy ou un état restauré a posée, au lieu de supposer 0.
@@ -186,7 +186,12 @@ public:
         ar(txClockPhase_);
         ar(txNextBitCycle_); ar(txBitIndex_);
         ar(sciRxState_); ar(sciRxByte_); ar(sciRxBitsLeft_);
-        ar.check(txNextBitCycle_ >= 0 && txBitIndex_ <= 8, "Ikbd::TX bit state");
+        ar.check(txNextBitCycle_ >= 0 && txBitIndex_ <= 10, "Ikbd::TX bit state");
+        // v66 : réveil du SCI et reprise après une erreur de trame (ROM $FF40, $FE29).
+        ar(sciWake_); ar(sciOnes_); ar(sciErrorAt_); ar(sciResumeAt_);
+        ar(sciDropOutput_); ar(sciDiscard_);
+        ar.check(sciOnes_ < 10 && sciDiscard_ <= 7 && sciErrorAt_ >= -1 && sciResumeAt_ >= -1 &&
+                 (!sciWake_ || sciErrorAt_ >= 0), "Ikbd::SCI wake-up state");
         ar.check(sciRxState_ <= 2 && sciRxBitsLeft_ <= 8 &&
                  (sciRxState_ == 1 ? sciRxBitsLeft_ > 0 : sciRxBitsLeft_ == 0),
                  "Ikbd::SCI receive state");
@@ -291,6 +296,10 @@ public:
         ar.check(kjStart_[0] >= 0 && kjStart_[1] >= 0 && kjLast_[0] >= kjStart_[0]
                  && kjLast_[1] >= kjStart_[1], "Ikbd::keycode joystick times hors domaine");
         ar(kjFire_);
+        ar(kjDirStable_); ar(kjDirCand_); ar(kjDirSince_);   // v66 : anti-rebond de $19
+        ar(kjFireStable_); ar(kjFireCand_); ar(kjFireSince_);
+        ar.check(kjDirStable_ <= 0x0F && kjDirCand_ <= 0x0F && kjDirSince_ >= -1 && kjFireSince_ >= -1,
+                 "Ikbd::anti-rebond $19 hors domaine");
         ar(fireShift_);                       // v52 : surveillance du tir ($18)
         ar(fireCount_);
         ar(monitorContinuous_);
@@ -417,7 +426,8 @@ private:
     // Joystick 0 en keycode ($19, ROM $FA21) et surveillance du tir ($18, $FA12).
     void sendKeycodeJoystick(uint8_t joy0);
     void stopJoystickSampling();             // quitte $17/$18 : retour à la scrutation normale
-    bool outputBlocked() const { return pauseOutput_ && pauseKeep_ == 0; }
+    // PAUSE ($13), ou TIE coupé par le gestionnaire ORFE jusqu'au retour de la ligne au repos.
+    bool outputBlocked() const { return (pauseOutput_ && pauseKeep_ == 0) || sciErrorAt_ >= 0; }
     void liftPause();
 
     // Mise à jour de la position absolue à partir du Δ de la trame, en mode absolu
@@ -498,7 +508,30 @@ private:
     void catchUpCpuTx(int64_t at);
     void scheduleCpuTx();
     int64_t txNextBitCycle_ = 0;
-    uint8_t txBitIndex_ = 0; // prochain bit TSR : 0..7 données (LSB d'abord, [B] MC6850 Table 1 p. 7), 8 stop
+    // Prochain bit du TSR après le start : données LSB d'abord ([B] MC6850 Table 1 p. 7), parité,
+    // stops ; 8 à 10 bits selon CR4..CR2 (cf. aciaFrameBits).
+    uint8_t txBitIndex_ = 0;
+    // [B] MC6850 § Word Select Bits p. 8 : format lu à chaque bit, « not buffered and therefore
+    // become effective immediately ».
+    int  aciaFrameBits() const;
+    bool aciaFrameBit(int index) const;
+    // --- Liaison ACIA → SCI : erreur de trame et BREAK (v66) ---
+    // [B] HD6301 Handbook (Hitachi 1989) § SCI Receive Operation p. 155 : dixième bit à 0 → ORFE,
+    // RDRF non posé ; TRCSR bit 0 WU p. 152 : effacé par dix « 1 » consécutifs.
+    // [C] ROM 6301 $FF40-$FF6D (MiSTery ikbd/rom/IKBD.ASM), gestionnaire ORFE : lit le RDR, pose
+    // WU, compte $D4 = 1, coupe TIE (sortie retenue), et abandonne la commande en cours — les
+    // paramètres restants sont jetés ($CB bit 5) et les nouveaux envois aussi ($CB bit 4).
+    // [C] ROM $FE29-$FE4C, à chaque tic 1 ms : WU encore posé → $D4 + 1 ; WU effacé → $D4 = 0,
+    // TIE et envois rétablis ; $D4 = $CD → saut en $F00B : attente de la ligne au repos puis
+    // reset ($F010, comme $80 $01). Un BREAK tenu ~205 ms réinitialise donc l'IKBD.
+    bool    sciWake_ = false;        // WU du TRCSR
+    uint8_t sciOnes_ = 0;            // « 1 » consécutifs reçus sous WU
+    int64_t sciErrorAt_ = -1;        // date du gestionnaire ORFE ; -1 : $D4 = 0
+    int64_t sciResumeAt_ = -1;       // tic 1 ms qui relâche la sortie (dernière erreur)
+    bool    sciDropOutput_ = false;  // $CB bit 4 : $FD34 jette les nouveaux envois
+    uint8_t sciDiscard_ = 0;         // $CB bit 5 + compte : paramètres d'une commande avortée
+    void    sciFramingError();
+    void    sciWakeCleared(int64_t at);
     uint8_t sciRxState_ = 0, sciRxByte_ = 0, sciRxBitsLeft_ = 0;
     void advanceTx(int64_t at); // front TX échéancé, indépendant du retard CPU
     // Phase TX /64 8N1, origine du diviseur modulo 1024. [D] Hatari acia.c:801-805 @ f0736b24 la pose au
@@ -630,6 +663,16 @@ private:
     int64_t kjStart_[2] = {};
     int64_t kjLast_[2] = {};
     bool    kjFire_ = false;
+    // Anti-rebond de la ROM vu par $19 (v66) : directions du joystick 0 ($9F accepté,
+    // $A0 candidat, détection datée au cycle, -1 = au repos) et feu ($9B, $9C).
+    uint8_t kjDirStable_ = 0, kjDirCand_ = 0;
+    int64_t kjDirSince_ = -1;
+    bool    kjFireStable_ = false, kjFireCand_ = false;
+    int64_t kjFireSince_ = -1;
+    int64_t ocfTick(int64_t k) const;
+    int64_t ocfIndexAtOrBefore(int64_t t) const;
+    int64_t keycodeTenths(int64_t since, int64_t t) const;
+    void    scheduleKeycodePoll(int64_t after);
     // Surveillance du tir ($18) : registre $A4 (échantillons entrant par la droite)
     // et compteur $A5 (8 → 0). Délais comptés sur la ROM, cycles HD6301 à 1 MHz :
     // boucle $F13A → $F171 → $F8A2 → $F13A = 177 µs bouton enfoncé (SEC), 180 µs
