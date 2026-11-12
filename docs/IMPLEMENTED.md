@@ -1395,6 +1395,9 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   un **bruitage one-shot court** intra-trame n'est plus avalé et la **queue d'un sample** n'est
   plus écrêtée par l'effacement CPU du bit PLAY. Le PSG gagne aussi le **read-latch `$FF8800`**
   et le **strobe Centronics** (port B). Chemin mono WASM inchangé. Boot ST/STE non régressé.
+- **RESET et fin de trame du son DMA (STE, 2026-11-12)** : RESB remet SFB, le premier étage de la fin et
+  le compteur à 0, contrôle et second étage gardés (`DmaSound::resbReset`, [B] ST-4081 f. 13/14/17) ; fin de
+  trame datée par `Scheduler::DMASND` au fetch du dernier mot, à la sortie de DE ([B] f. 20) ; Mega STE au HBL.
 - **Bit PLAY ($FF8901) auto-effacé en fin de trame DMA one-shot** dans le MOTEUR DMA
   (fin de trame détectée AU FETCH dans `DmaSound::fifoRefill`, port
   `DmaSnd_EndOfFrameReached` dmaSnd.c:510) et plus

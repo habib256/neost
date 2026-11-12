@@ -193,21 +193,22 @@ ici ne figure que ce qui demande une décision ou une source. Le 68000 lui-même
   la donnée en cours de décalage n'est exercée par aucun logiciel connu. Tranche : la musique de
   la démo enregistrée sur un vrai STE, ou la netlist du Shifter STE.
 
-- **RESB et le son DMA** · P3 ⭘ · [B] — l'instruction RESET efface le registre de début de trame
-  (ST-4081 f. 13, PD086/PD096/PD104), non modélisé ; SNDON, lui, n'est pas remis par RESB
-  (contre `gstmcu.v:438`).
 - **Bits 2-3 de `$FF8921` et relecture de `$FF8920` sur STE** · P3 ⏸ matériel · [B] — `$FF8920`
   relu 0 : [B] STE Developer Information Addendum (25 mai 1989), « FF8920 0000 0000 m000 00rr »,
   sans légende (« 0 » = relu 0 ou écrire 0 ?). Masque de `$FF8921` : 0x83 (addendum, MAME,
   MiSTery) contre 0x8F (Hatari, FAQ STE de Paranoid, sans mesure décrite). Tranche : une lecture
   sur un STE.
-- **IRQ de fin de trame du son DMA, datée au HBL** · P3 ⭘ · [D] — le fetch suit désormais la fin de DE à la lecture du compteur (`docs/STCPU_BENCH.md`), mais la fin de trame n'a pas son événement propre : au plus 136 cycles de retard. Profondeur réelle de la FIFO : 8 octets d'Hatari contre 7 mots du modèle, choix d'auteur. Tranche : relevé sur STE.
-- **Tenue du dernier échantillon DMA** · P3 ⭘ · [D] — Hatari tient le niveau continu du dernier
-  échantillon et coupe le YM si le mixage l'exclut, après une trame sans boucle
-  (`dmaSnd.c`) ; NeoST a fait un autre choix, noté dans `src/core/DmaSound.hpp`. À trancher
-  avant toute comparaison de WAV bit à bit.
-- **Préchargement DMA en écriture** · P3 ⭘ · [F] — `dma.v:277 @ a00deb5b`, modèle comportemental :
-  simple témoin. Tranche : netlist du DMA.
+- **Profondeur réelle de la FIFO du son DMA** · P3 ⏸ source · [F] — 8 octets (Hatari) contre 7 mots (modèle
+  `gstshifter.v:414-419`) ; elle fixe la date du fetch du dernier mot, donc de XSINT et du Timer A (datés au
+  fetch hors DE depuis le 2026-11-12). Tranche : netlist du GST Shifter ou relevé sur STE.
+- **Tenue du dernier échantillon DMA** · P3 ⏸ décision · [B]/[F] — schéma STE C300780-001 f. 5 : registre
+  74F374 chargé par XLD avant le DAC0802, donc le DAC tient son octet ; inconnu : XLD cesse-t-il FIFO vide
+  (Shifter sans netlist). Hatari et MiSTery tiennent. Proposition : tenir sur STE ; mute du YM au repos
+  (mixing ≠ 1) en attente de la fiche LMC1992 ou de l'addendum STE (code 0 = −12 dB ?). Sources dans
+  `src/core/DmaSound.hpp`. À trancher avant toute comparaison de WAV bit à bit.
+- **Préchargement DMA en écriture** · P3 ⏸ source · [F] — `dma.v:277 @ a00deb5b`, modèle comportemental :
+  simple témoin. ST-4081 n'a que le compteur d'adresse (f. 16) ; la FIFO est dans la puce DMA, absente de
+  l'archive ASIC. Tranche : netlist du DMA.
 - **WRITE TRACK / READ TRACK sur STX** · P3 ⭘ · [D] D1/D2 — la piste réécrite est
   réinterprétée en secteurs (CRC régénéré, statut neutralisé), READ TRACK rend cette
   reconstruction : seule divergence de sévérité moyenne assumée, sans promesse de flux brut.

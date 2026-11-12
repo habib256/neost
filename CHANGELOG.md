@@ -62,6 +62,13 @@ cœur) restent en attente de leur ressource.
   de STOP_MIDDLE concorde au modèle au pixel, contre les trois pixels de plus d'Hatari.
   `GLUE_SWEEP.md` : causes de la DE précoce à 44 et du HSYNC parasite, lues dans le modèle. A/B :
   4 932 captures identiques sur 344 scénarios (57 étalons, 96 disques × ST, STE, Mega STE).
+- **Son DMA STE.** L'instruction RESET met à 0 le début, la fin écrite et le compteur ; PLAY,
+  REPEAT et la fin latchée tiennent ([B] ST-4081 f. 13, 14, 17, `DmaSound::resbReset`). La fin
+  de trame (XSINT, Timer A, GPIP7) est datée au fetch du dernier mot, repoussé à la fin de DE
+  ([B] f. 20, événement `Scheduler::DMASND`), au lieu du HBL : jusqu'à 136 cycles plus tôt. Mega
+  STE inchangé. Étalons inchangés ; E605 STE, dont le lecteur enchaîne sur cette IRQ : WAV
+  légèrement différent après 36 s (2 à 6 % d'amplitude). Tenue du dernier échantillon : sources
+  relevées ([B] schéma STE C300780-001 f. 5), décision proposée, comportement inchangé.
 - **Outils.** `compare_sound.py --mem` passe par `title_cmd.parse_mem` : même taille des deux
   côtés, `--mem 0` ne devient plus « 0m ».
 
