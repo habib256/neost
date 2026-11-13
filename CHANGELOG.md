@@ -41,12 +41,12 @@ strictes du headless, Windows au-delà de 4 Gio).
 
 ## Dongles joystick au bon port ; tir au Ctrl gauche (2026-11-13)
 
-- **Dongles joystick : seulement sur le bon port** (demande de l'auteur). Les deux ports joystick
-  ont le même connecteur, et les menus proposaient chaque clé sur les deux, avec « wrong port for
-  this game » sur l'un. `PortDevices::offered` ne la propose plus que sur le port que sonde son
-  logiciel — GUI (`ConfigWindow.cpp`), web (`neost_port_device_label`), Android (`AndroidMenu.cpp`).
-  `fits` reste la règle du branchement (`--plug`, `disks/dongles.txt`) ; une clé branchée ailleurs
-  reste listée pour pouvoir la débrancher.
+- **Dongles joystick : seulement sur le bon port** (décision de l'auteur). Les deux ports joystick
+  ont le même connecteur, et chaque clé joystick se proposait et se branchait sur les deux, avec
+  « wrong port for this game » sur l'un — alors que le jeu n'en lit qu'un. `PortDevices::fits` ne
+  l'accepte plus que sur le port que sonde son logiciel : menus GUI, web et Android, `--plug`
+  (refus explicite), `disks/dongles.txt` et `neost.cfg`. Plus rien ne pouvant la brancher
+  ailleurs, aucun cas « mauvais port » à débrancher.
 - **Joystick au clavier : le Ctrl gauche tire aussi.** Le tir n'était que sur le Ctrl droit (comme
   Hatari) ; un MacBook n'en a pas, le tir y était inaccessible (signalé par l'auteur).
   `stjoy::kbdBit` et `stjoy::compose` prennent les deux Ctrl, bureau et web ; tant que l'émulation

@@ -854,9 +854,8 @@ EMSCRIPTEN_KEEPALIVE const char* neost_cart_key_label(int m) {
     return neost::cartKeyLabel(CartridgeKey::Model(m));
 }
 EMSCRIPTEN_KEEPALIVE int neost_port_device_count() { return int(PortDevices::Device::Count); }
-// Libellé du périphérique `dev` sur le port `port` ("" s'il n'est pas proposé : seul le
-// port que sonde son logiciel le propose, PortDevices::offered), suffixé quand il est
-// branché ailleurs que sur ce port (--plug, dongles.txt) — listé pour le débrancher.
+// Libellé du périphérique `dev` sur le port `port` ("" s'il n'y va pas : seul le port
+// que sonde son logiciel le reçoit, PortDevices::fits).
 EMSCRIPTEN_KEEPALIVE const char* neost_port_device_label(int port, int dev) {
     static std::string s;
     s.clear();
@@ -864,10 +863,8 @@ EMSCRIPTEN_KEEPALIVE const char* neost_port_device_label(int port, int dev) {
         return s.c_str();
     const auto p = PortDevices::Port(port);
     const auto d = PortDevices::Device(dev);
-    const bool plugged = g_machine && g_machine->ports.at(p) == d;
-    if (!PortDevices::offered(p, d) && !plugged) return s.c_str();
+    if (!PortDevices::fits(p, d)) return s.c_str();
     s = PortDevices::label(d);
-    if (!PortDevices::offered(p, d)) s += " (wrong port for this game)";
     return s.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void neost_set_cart_key(int m) {

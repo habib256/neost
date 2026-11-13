@@ -410,13 +410,8 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
             if (ImGui::BeginCombo(portNames[pi], PortDevices::label(cur))) {
                 for (int di = 0; di < int(PortDevices::Device::Count); ++di) {
                     const auto d = PortDevices::Device(di);
-                    // Seulement le bon port (PortDevices::offered) ; ce qui est déjà branché
-                    // ailleurs (--plug, dongles.txt) reste listé pour pouvoir le débrancher.
-                    if (!PortDevices::offered(port, d) && d != cur) continue;
-                    const bool home = PortDevices::offered(port, d);
-                    char lab[96];
-                    std::snprintf(lab, sizeof lab, "%s%s", PortDevices::label(d), home ? "" : "  (wrong port for this game)");
-                    if (ImGui::Selectable(lab, cur == d)) { ui.reqPlugPort = pi; ui.reqPlugDev = di; }
+                    if (!PortDevices::fits(port, d)) continue;   // seulement le port de son jeu
+                    if (ImGui::Selectable(PortDevices::label(d), cur == d)) { ui.reqPlugPort = pi; ui.reqPlugDev = di; }
                 }
                 ImGui::EndCombo();
             }

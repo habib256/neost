@@ -47,11 +47,12 @@ PortDevices::Device PortDevices::fromId(const char* s) {
 }
 bool PortDevices::fits(Port p, Device d) {
     if (d == Device::None) return true;
-    const Port home = defaultPort(d);
-    // Les deux ports joystick ont le même connecteur DE-9 : une clé joystick entre
-    // dans l'un comme dans l'autre (pas forcément celui que le jeu sonde).
-    if (home == Port::Joy0 || home == Port::Joy1) return p == Port::Joy0 || p == Port::Joy1;
-    return p == home;
+    // Un seul port par périphérique : celui que sonde son logiciel. Les deux ports
+    // joystick ont pourtant le même connecteur DE-9, et une clé joystick entrait dans
+    // l'un comme dans l'autre — mais le jeu n'en lit qu'un, et sur l'autre elle ne sert
+    // à rien. Décision de l'auteur (2026-11-13) : ne plus la proposer ni la brancher
+    // ailleurs (menus GUI/web/Android, --plug, dongles.txt, neost.cfg).
+    return p == defaultPort(d);
 }
 
 bool PortDevices::plug(Port p, Device d) {

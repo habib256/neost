@@ -1312,23 +1312,23 @@ static void testPortDevices() {
         bool ok = true; PD::portFromId("bogus", &ok);
         return PD::fromId("bogus") == PD::Device::None && PD::fromId(nullptr) == PD::Device::None && !ok;
     }(), true);
-    {   // Connecteurs : une clé joystick entre dans les deux ports DE-9, pas ailleurs.
+    {   // Un seul port par clé : celui que sonde son jeu (décision du 2026-11-13).
         PD d;
-        checkBool("fits : leaderboard → joy0/joy1 oui, rs232 non",
-                  d.plug(PD::Port::Joy0, PD::Device::LeaderBoard) && d.plug(PD::Port::Joy1, PD::Device::LeaderBoard)
+        checkBool("fits : leaderboard → joy1 seulement (ni joy0 ni rs232)",
+                  d.plug(PD::Port::Joy1, PD::Device::LeaderBoard) && !d.plug(PD::Port::Joy0, PD::Device::LeaderBoard)
                   && !d.plug(PD::Port::Rs232, PD::Device::LeaderBoard) && !d.plug(PD::Port::Joy0, PD::Device::Bat2), true);
         checkBool("defaultPort : leaderboard → joy1, cricket → joy0, prosound → printer",
                   PD::defaultPort(PD::Device::LeaderBoard) == PD::Port::Joy1 && PD::defaultPort(PD::Device::Cricket) == PD::Port::Joy0
                   && PD::defaultPort(PD::Device::ProSound) == PD::Port::Printer, true);
         d.unplugAll(); checkBool("unplugAll", !d.any(), true);
     }
-    {   // Leader Board dans le port 1 : haut+bas, port 0 intact ; dans le port 0 : l'inverse.
+    {   // Leader Board dans le port 1 : haut+bas, port 0 intact ; refusée dans le port 0.
         PD d; d.plug(PD::Port::Joy1, PD::Device::LeaderBoard);
         uint8_t j0 = 0x80, j1 = 0x04; d.onJoystick(j0, j1);
         checkBool("leaderboard (joy1) : joy1 |= haut+bas, joy0 intact", j0 == 0x80 && j1 == 0x07, true);
-        PD w; w.plug(PD::Port::Joy0, PD::Device::LeaderBoard);
-        j0 = 0; j1 = 0; w.onJoystick(j0, j1);
-        checkBool("leaderboard (mauvais port) : joy0 seulement", j0 == 0x03 && j1 == 0, true);
+        PD w;
+        checkBool("leaderboard (mauvais port) : refusée, rien ne change",
+                  !w.plug(PD::Port::Joy0, PD::Device::LeaderBoard) && !w.any(), true);
     }
     {   // Cricket + Leader Board coexistent ; oscillateur indépendant par port.
         PD d; d.plug(PD::Port::Joy0, PD::Device::Cricket); d.plug(PD::Port::Joy1, PD::Device::Rugby);
@@ -1401,7 +1401,7 @@ static void testDongleTable() {
     const auto n = neost::matchDongleRules(rules, "/x/NOTATOR_SL_3.21.msa");
     checkBool("NOTATOR (majuscules) → cart:notator", n.size() == 1 && n[0].cart && n[0].key == CartridgeKey::Model::Notator, true);
     checkBool("sans correspondance → vide", neost::matchDongleRules(rules, "disks/diskA.st").empty(), true);
-    const auto r2 = neost::parseDongleTable("# c\n  foo = joy0:leaderboard # ok\nbar = rs232:leaderboard\nbaz\nqux = cart:nope\n", &bad);
+    const auto r2 = neost::parseDongleTable("# c\n  foo = joy1:leaderboard # ok\nbar = joy0:leaderboard\nbaz\nqux = cart:nope\n", &bad);
     checkBool("analyse : commentaires, espaces, lignes invalides comptées", r2.size() == 1 && bad == 3 && r2[0].pattern == "foo", true);
 
     // Branchements choisis à la main (page Dongles du web et d'Android).

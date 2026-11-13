@@ -823,9 +823,10 @@ Tout ce qui se branchait sur un port **autre que la cartouche** pour qu'un logic
 sonde. Classe `PortDevices` (`src/io/PortDevices.{hpp,cpp}`) : le modèle est **physique**,
 un périphérique optionnel par port — joystick 0, joystick 1, RS-232, imprimante, bouton de
 cartouche — et ils **coexistent** (Leader Board dans le joystick 1 + DAC Pro Sound sur
-l'imprimante + clé Cubase dans la cartouche, comme sur une vraie machine). On peut aussi se
-tromper de port, comme avec l'objet : une clé joystick entre dans les deux DE-9, le jeu
-n'en sonde qu'un (le GUI signale « wrong port for this game »). `--plug PORT=DEVICE`
+l'imprimante + clé Cubase dans la cartouche, comme sur une vraie machine). Chaque clé ne se
+branche que sur le port que sonde son jeu : sur le fer, une clé joystick entre dans les deux
+DE-9, mais l'autre port ne sert à rien, et NeoST ne la propose ni ne la branche plus ailleurs
+(décision de l'auteur, 2026-11-13 ; `PortDevices::fits`). `--plug PORT=DEVICE`
 (répétable) ou `--adapter DEVICE` (port par défaut) en headless ; `joy0=`, `joy1=`,
 `rs232=`, `printer=`, `cartbutton=` dans `neost.cfg` (l'ancien `adapter=` est relu) ; page
 **Dongles**. `--from-cfg` rejoue ces cinq clés ainsi que `dongle=` et `auto_dongle=` par
