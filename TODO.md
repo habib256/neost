@@ -438,10 +438,6 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 ## 7. 📦 Livraison et interface
 
-- **Release 0.6.5, la dernière sur le Moira de NeoST** · P1 ⏸ cœur — posée **juste avant
-  l'intégration du cœur POM68K**, quand l'auteur le déclare prêt. Palier `full` et CI verts,
-  filet du § 2 en place ; la référence de `cpu_swap_gate.py` s'enregistre sur son commit.
-  Elle reste la version de repli tant que POM68K n'a pas fait ses preuves.
 - **Retour arrière : essais à la main** · P3 ⭘ — livré dans le GUI de bureau, le web et
   Android (2026-11-11), jugé par `--rewind-test` ; le GUI réel recule aussi (`--rewind-at N`).
   Le bouton *Back* du web a reculé deux fois dans Chrome sans écran, piloté par CDP (refus

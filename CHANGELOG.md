@@ -1,10 +1,73 @@
 # Changelog — NeoST
 
 (c) 2026 VERHILLE Arnaud. **La chronologie** : releases, puis les chantiers datés dans
-l'ordre inverse. Version courante : **0.6.4**.
+l'ordre inverse. Version courante : **0.6.5**.
 
 - « NeoST gère-t-il X ? » → [`docs/IMPLEMENTED.md`](docs/IMPLEMENTED.md) (inventaire par puce)
 - « Que reste-t-il ? » → [`TODO.md`](TODO.md)
+
+## 0.6.5 — la dernière sur le Moira de NeoST (2026-11-13)
+
+Dernière version sur le cœur 68000 actuel : la suivante intégrera celui de POM68K. Elle reste
+la version de repli tant que le nouveau cœur n'a pas fait ses preuves, et la référence de la
+porte d'échange s'enregistre sur son commit.
+
+**Retour arrière** : un état par seconde gardé en mémoire, Ctrl+Alt+R recule (GUI de bureau,
+web, Android ; éteint par défaut). Les disquettes reculent avec la machine, fichier hôte
+compris.
+
+**Fidélité** : Closure ne montre plus de trames noires dans son grand logo (saut STOP sur la
+grille paire du 68000), et l'image du personnage ne clignote plus dans ses bordures (trames
+moyennes rendues bordées). Fin de trame du son DMA datée au dernier mot lu, RESET du son DMA,
+hardscroll LO/MED/LO et écritures `$FF8264` en pleine ligne selon le modèle du Shifter,
+compteur DMA sur 22 bits, lecture de `$0-$7` en ROM, IKBD `$19` et BREAK des puces série
+selon leurs fiches et la ROM 6301. Quartz au choix (`--quartz`, page Machine) d'après des
+relevés de vrais ST.
+
+**Jeux** : Lemmings joué jusqu'au niveau 2, Pacemaker, Obsession et Extase rejoints aux
+parcours contre Hatari, 27 en tout. Le son de 95 titres comparé à Hatari. TOS 1.06 US
+démarre ; les TOS TT/Falcon sont refusés proprement.
+
+**Usage** : le zoom adaptatif ne cadre plus de bande noire au-dessus d'Enchanted Land ; douze dispositions de clavier de plus ; disquettes de menus nommées d'après le
+catalogue CompDisks ; explorateur de bitmaps dans le débogueur ; splitter clavier et MTC
+pour la station MIDI ; liste blanche de domaines pour le NAT et le modem ; la disquette
+STinG + EtherNEC est livrée ; page ROM et dongles sur Android ; un blit HOG long ne fige
+plus le web ni Android.
+
+**Robustesse** : deux chasses aux bugs (images forgées, GEMDOS hôte par processus, options
+strictes du headless, Windows au-delà de 4 Gio).
+
+**Sauvegardes** : format **v67** (v59 à la 0.6.4) ; les anciens états ne se rechargent pas.
+
+## Closure : bordures des trames moyennes ; zoom adaptatif d'Enchanted Land (2026-11-13)
+
+Deux défauts signalés par l'auteur juste avant la 0.6.5.
+
+- **Closure : l'image clignotait dans les bandes blanches, juste après la partie SYNC.** Scène de
+  l'image du personnage (trames 2603-3130) : elle déborde dans les bordures haute et basse. Mesuré par
+  `NEOST_FRAMING_DIAG=1` : 3 trames sur 8 sortaient en 640×200 **sans bordure**, les 5 autres en
+  416×276. Cause : `Shifter::beginFrame` verrouille le mode de la trame avant qu'elle ne coure ; une
+  trame qui démarre en moyenne ne prenait le chemin bas (bordé, résolution décidée ligne par ligne)
+  que si la trame précédente avait écrit une résolution autre que moyenne. Sinon, chemin moyenne,
+  qui n'a pas de bordure : le haut et le bas de l'image disparaissaient une trame sur trois, et le
+  buffer changeant de géométrie, le zoom adaptatif sautait avec lui. Une trame moyenne prend
+  désormais aussi le chemin bas quand la trame précédente a ouvert une bordure
+  (`glue_.bordersTrick`, `vOverscan` — sérialisés). Plus aucune trame 640×200 sur les 12 000 premières trames de la démo,
+  cadre fixe `top=0 h=276` de 2604 à 3846. [D] Hatari `conv_st.c:150-153`,
+  `convert/med640x32.c:19-31` @ f0736b24 : la conversion moyenne parcourt la même fenêtre bordée
+  que la basse. Reste [F] : la 1ʳᵉ trame qui ouvre ses bordures en moyenne les perd encore (le
+  pronostic porte sur la trame d'avant). Les lignes moyennes du chemin bas gardent la convention du
+  pixel pair (buffer à 1 px/cycle).
+  Une première tentative, côté cadrage seul (cadre retenu en unités physiques, débordement du
+  buffer peint aux frontends), stabilisait le zoom mais pas l'image : abandonnée, la cause était
+  dans le rendu.
+- **Enchanted Land : bande noire au-dessus de l'image.** Le jeu ouvre la bordure haute pour son
+  scrolling (`live=0+229`) mais laisse ses ~30 premières lignes noires ; le cadre les montrait sur
+  tous les écrans (capture de l'auteur, « GRAPHIXX BY »). `core/Framing.cpp` ignore désormais une
+  bordure haute ou basse **entièrement** noire, la zone active restant le plancher : Enchanted Land
+  retombe sur `top=29 h=200 w=320`. Tout ou rien, et pas en plein overscan (bordures latérales
+  ouvertes) : rogner ligne à ligne faisait « respirer » le zoom des scènes de Closure qui font
+  entrer leur image dans la bordure (trames 4178, 5703). Closure garde ses cadres d'avant.
 
 ## Chasse aux P3 ; format d'état v67 (2026-11-12)
 
