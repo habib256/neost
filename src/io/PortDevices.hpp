@@ -80,6 +80,11 @@ public:
     static Device      fromId(const char* s);          // None si inconnu
     static Port        defaultPort(Device d);          // le port que le logiciel sonde
     static bool        fits(Port p, Device d);         // compatibilité physique (connecteur)
+    // Proposé dans les menus (GUI, web, Android) : seulement sur le port que sonde
+    // son logiciel. Les deux ports joystick ont le même connecteur, mais une clé
+    // joystick sur l'autre port ne sert à rien — l'auteur ne veut la voir que dans le
+    // bon (2026-11-13). `fits` reste la règle du BRANCHEMENT (--plug, dongles.txt).
+    static bool        offered(Port p, Device d) { return d == Device::None || defaultPort(d) == p; }
 
     // Branche `d` sur `p` (None = débranche). Faux si le connecteur ne convient pas.
     bool   plug(Port p, Device d);

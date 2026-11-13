@@ -139,7 +139,7 @@ you are actually running.
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> | Toggle kiosk (cabinet) mode |
 | *Windows → Keyboard* | On-screen ST keyboard (photo): click any key, sticky Shift/Control/Alternate |
 | *Machine → MIDI* | Real MIDI devices in and out, built-in GM synth, Roland MT-32/CM-32L (Munt, ROMs in `roms/mt32/`), or a virtual port (macOS/Linux; on Windows install loopMIDI) |
-| <kbd>F11</kbd> | Keyboard joystick (arrows + right Ctrl) |
+| <kbd>F11</kbd> | Keyboard joystick (arrows + Ctrl, left or right) |
 | <kbd>F12</kbd> | Kiosk: keyboard & mouse overlay |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>G</kbd> | Capture / release the mouse |
 | Middle mouse button | Capture / release the mouse |

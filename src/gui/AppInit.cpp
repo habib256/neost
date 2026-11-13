@@ -760,7 +760,7 @@ int appInit(App& A, int argc, char** argv) {
     std::printf("[main] Middle mouse button or Ctrl+Alt+G: capture/release mouse | "
                 "Reset button in the CPU window | close the window: quit\n");
     std::printf("[main] Joystick: USB pad auto-detected (port 1) | F11 = keyboard "
-                "emulation (arrows + right Ctrl) | \"Joystick\" menu\n");
+                "emulation (arrows + Ctrl) | \"Joystick\" menu\n");
 
     // Bridage à la durée ÉMULÉE de chaque trame : indispensable pour que le temps
     // émulé colle au temps réel — sinon le compteur 200 Hz d'EmuTOS s'emballe et les

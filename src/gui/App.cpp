@@ -899,7 +899,7 @@ void App::switchKioskMode(bool on) {
                              vm ? vm->width : A.winW, vm ? vm->height : A.winH,
                              vm ? vm->refreshRate : GLFW_DONT_CARE);
         // Borne : curseur masqué, souris capturée, joystick clavier armé (une
-        // borne se joue au joystick — flèches + Ctrl droit, sans menu pour l'activer).
+        // borne se joue au joystick — flèches + Ctrl, sans menu pour l'activer).
         A.mouseCaptured = true;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         if (glfwRawMouseMotionSupported())

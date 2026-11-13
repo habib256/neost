@@ -287,8 +287,10 @@ void AndroidMenu::draw(float uiScale) {
             const int p = dongleSlot - 1;
             for (int di = 0; di < int(Dev::Count); ++di) {
                 const Dev d = Dev(di);
-                if (!PortDevices::fits(Port(p), d)) continue;
-                const bool home = d == Dev::None || PortDevices::defaultPort(d) == Port(p);
+                // Seulement le bon port (PortDevices::offered) ; ce qui est branché ailleurs
+                // reste listé pour pouvoir le débrancher.
+                if (!PortDevices::offered(Port(p), d) && di != portDev[p]) continue;
+                const bool home = PortDevices::offered(Port(p), d);
                 char lab[128];
                 std::snprintf(lab, sizeof lab, "%s%s", PortDevices::label(d),
                               home ? "" : "  (wrong port for this game)");

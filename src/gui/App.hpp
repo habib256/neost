@@ -233,7 +233,7 @@ struct App {
     bool  mouseCaptureToggleReq = false;   // molette / Ctrl+Alt+G → bascule dans la boucle
     bool  dbgMouse = false;                // NEOST_DEBUG_MOUSE=1 → trace les paquets souris
     bool  dbgJoy   = false;                // NEOST_DEBUG_JOY=1 → trace l'état brut des manettes
-    bool  kbdJoy = false;                  // émulation joystick au clavier (flèches + Ctrl droit)
+    bool  kbdJoy = false;                  // émulation joystick au clavier (flèches + Ctrl)
     int   kbdJoyPort = 1;                  // port ST visé par l'émulation clavier (0/1)
     bool  port0Auto = false;               // port 0 : "auto" (2e manette y va seule) vs "mouse"
     bool  port0Joystick = false;           // calculé chaque trame : un joystick OCCUPE le port 0
@@ -372,7 +372,7 @@ struct App {
     int  shotWinMax = 0, shotWinDone = 0;
     // Réglage « joystick au clavier » à RENDRE en quittant la borne. Initialisé à
     // false et non à kbdJoy : lancé en --kiosk, kbdJoy vaut déjà true, et la sortie
-    // vers le bureau avalerait les flèches + Ctrl droit du ST sans rien afficher.
+    // vers le bureau avalerait les flèches + Ctrl du ST sans rien afficher.
     bool kbdJoyDesk = false;
 
     App();

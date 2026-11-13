@@ -46,7 +46,7 @@ Rewind g_rewind;
 constexpr std::size_t kWebRewindBudget = 32u << 20;
 MachineType g_reqMachine = MachineType::St;  // machine DEMANDÉE (?machine=…) — cf. neost_load_tos
 GLFWwindow* g_window = nullptr;
-bool   g_kbdJoy = false;                 // émulation joystick clavier (flèches + Ctrl droit)
+bool   g_kbdJoy = false;                 // émulation joystick clavier (flèches + Ctrl)
 int    g_kbdJoyPort = 1;                 // port ST visé par l'émulation clavier
 float  g_joyDeadzone = 0.30f;            // zone morte centrale des sticks analogiques
 
@@ -770,7 +770,7 @@ EMSCRIPTEN_KEEPALIVE void neost_mount_disk_b(const char* path) {
     g_machine->fdc.loadImage(path, 1);
 }
 
-// Émulation joystick au clavier (flèches + Ctrl droit) : enabled != 0 active,
+// Émulation joystick au clavier (flèches + Ctrl) : enabled != 0 active,
 // port = 0/1 (défaut 1 = port « jeux »). Les manettes physiques (API Gamepad du
 // navigateur) sont toujours scrutées, indépendamment de ce réglage.
 EMSCRIPTEN_KEEPALIVE void neost_set_kbd_joystick(int enabled, int port) {
@@ -854,8 +854,9 @@ EMSCRIPTEN_KEEPALIVE const char* neost_cart_key_label(int m) {
     return neost::cartKeyLabel(CartridgeKey::Model(m));
 }
 EMSCRIPTEN_KEEPALIVE int neost_port_device_count() { return int(PortDevices::Device::Count); }
-// Libellé du périphérique `dev` sur le port `port` ("" s'il n'y entre pas), suffixé
-// quand ce n'est pas le port que le jeu sonde.
+// Libellé du périphérique `dev` sur le port `port` ("" s'il n'est pas proposé : seul le
+// port que sonde son logiciel le propose, PortDevices::offered), suffixé quand il est
+// branché ailleurs que sur ce port (--plug, dongles.txt) — listé pour le débrancher.
 EMSCRIPTEN_KEEPALIVE const char* neost_port_device_label(int port, int dev) {
     static std::string s;
     s.clear();
@@ -863,9 +864,10 @@ EMSCRIPTEN_KEEPALIVE const char* neost_port_device_label(int port, int dev) {
         return s.c_str();
     const auto p = PortDevices::Port(port);
     const auto d = PortDevices::Device(dev);
-    if (!PortDevices::fits(p, d)) return s.c_str();
+    const bool plugged = g_machine && g_machine->ports.at(p) == d;
+    if (!PortDevices::offered(p, d) && !plugged) return s.c_str();
     s = PortDevices::label(d);
-    if (d != PortDevices::Device::None && PortDevices::defaultPort(d) != p) s += " (wrong port for this game)";
+    if (!PortDevices::offered(p, d)) s += " (wrong port for this game)";
     return s.c_str();
 }
 EMSCRIPTEN_KEEPALIVE void neost_set_cart_key(int m) {

@@ -39,6 +39,20 @@ strictes du headless, Windows au-delà de 4 Gio).
 
 **Sauvegardes** : format **v67** (v59 à la 0.6.4) ; les anciens états ne se rechargent pas.
 
+## Dongles joystick au bon port ; tir au Ctrl gauche (2026-11-13)
+
+- **Dongles joystick : seulement sur le bon port** (demande de l'auteur). Les deux ports joystick
+  ont le même connecteur, et les menus proposaient chaque clé sur les deux, avec « wrong port for
+  this game » sur l'un. `PortDevices::offered` ne la propose plus que sur le port que sonde son
+  logiciel — GUI (`ConfigWindow.cpp`), web (`neost_port_device_label`), Android (`AndroidMenu.cpp`).
+  `fits` reste la règle du branchement (`--plug`, `disks/dongles.txt`) ; une clé branchée ailleurs
+  reste listée pour pouvoir la débrancher.
+- **Joystick au clavier : le Ctrl gauche tire aussi.** Le tir n'était que sur le Ctrl droit (comme
+  Hatari) ; un MacBook n'en a pas, le tir y était inaccessible (signalé par l'auteur).
+  `stjoy::kbdBit` et `stjoy::compose` prennent les deux Ctrl, bureau et web ; tant que l'émulation
+  est active, le Ctrl gauche est détourné du clavier ST, comme les flèches. Libellés, README,
+  aide du web et `docs/KIOSK.md` suivent.
+
 ## Web : Cubase Lite retiré du bundle (2026-11-13)
 
 - Décision de l'auteur : la disquette Cubase Lite se lance sous TOS 1.04 et ne fonctionne pas

@@ -95,7 +95,8 @@ exactement la contrainte d'un téléphone :
 - page **DONGLES** (2026-11-12), la page Dongles du bureau au doigt : une rangée par
   emplacement (clé du port cartouche, puis joystick 0 et 1, RS-232, imprimante, bouton de
   cartouche) avec ce qui y est branché ; taper une rangée ouvre la liste de ses choix
-  (« wrong port for this game » quand le jeu sonde l'autre port). Brancher ne redémarre
+  (une clé joystick n'est proposée que sur le port que sonde son jeu, depuis le 2026-11-13 ;
+  branchée ailleurs par `dongles.txt`, elle reste listée pour la débrancher). Brancher ne redémarre
   rien. Un bouton Multiface/Ultimate Ripper branché ajoute `PRESS … BUTTON`, qui referme
   le menu. Le choix vit dans `files/data/dongles.cfg`, au format partagé avec le web
   (`io/DongleTable.hpp`, `formatDongleSetup` : `cart=cubase3`, `joy1=leaderboard`…), et
