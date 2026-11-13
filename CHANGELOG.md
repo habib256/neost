@@ -57,6 +57,9 @@ strictes du headless, Windows au-delà de 4 Gio).
 - **Page web** (captures de l'auteur) : la pastille « or drop a floppy on the screen » passe à la
   ligne au lieu de déborder du cadre Floppies (`.badge.wrap`) ; le cadre Joystick affiche les
   touches (flèches, Alt droit) quand le joystick clavier est actif (`#joyKeysHint`).
+  Nouveau logo choisi par l'auteur : une barre jaune inclinée pleine hauteur, deux barres à
+  mi-hauteur et deux pieds courts — un clin d'œil au Fuji sans en reprendre la silhouette (SVG
+  intégré, `.fuji`).
 
 ## Web : Cubase Lite retiré du bundle (2026-11-13)
 
