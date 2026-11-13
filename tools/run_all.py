@@ -162,6 +162,10 @@ FAST = [
     # Détecteur de wakestate de Troed : longueur d'une ligne composée, sans Hatari ni disque privé.
     ("WSDETECT (Troed/SYNC : longueur de ligne par wakestate et par machine)",
      [sys.executable, str(TOOLS / "run_wsdetect.py")]),
+    # Reset à chaud (bouton Reset, Apply d'une config dans le GUI) : la trame repart sur la
+    # grille de 4 cycles du bus RAM. Hors grille, Spectrum 512 sortait brouillé (2026-11-13).
+    ("Reset à chaud : début de trame sur la grille de 4 cycles du bus",
+     [sys.executable, str(TOOLS / "check_frame_grid.py")]),
     # Retour arrière : média écrit, changé et éjecté annulé ; état à l'octet ; reprise identique.
     ("Retour arrière (disquette restaurée, état à l'octet, reprise identique)",
      # --disk explicite : sans disquette, la partie « média éjecté puis rendu » est sautée.

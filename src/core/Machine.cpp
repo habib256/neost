@@ -947,7 +947,25 @@ void Machine::rollFrameInInstruction_() {
 // frameInProgress_).
 void Machine::beginFrame_() {
     if (frameStartInit_) frameStart_ += static_cast<int64_t>(lpf_) * cpl_ - (lineLenOn_ ? lineCarry_ : 0);
-    else { frameStart_ = sched.now(); frameStartInit_ = true; }
+    else {
+        // Ré-ancrage après un reset : sur la GRILLE de 4 cycles du bus RAM, pas sur
+        // l'heure brute. Le CPU s'aligne sur cette grille absolue (Cpu68k::alignRamBus,
+        // (horloge + cpuBias) & 3) et la vidéo se date depuis frameStart_ : le modèle
+        // suppose donc frameStart_ ≡ 0 (mod 4), ce que garantit le démarrage à froid
+        // (horloge à 0). Un reset à chaud — Apply d'une config dans le GUI — arrive en
+        // fin de trame, quand l'horloge a dépassé frameEnd_ de la durée d'une instruction :
+        // un nombre pair quelconque. À 2 (mod 4), toute la vidéo glissait de 2 cycles
+        // contre les accès du CPU. Mesuré le 2026-11-13 : diaporama Spectrum 512, bascule
+        // ST → STE (TOS 1.02 FR → 1.62 UK) par reconfigure() + reset() à la trame 500 ou
+        // 1000 (horloge ≡ 2 mod 4) → image brouillée ; à 999 ou 1001 (≡ 0) → intacte, comme
+        // un démarrage direct en STE et comme Hatari. On arrondit à la grille SUIVANTE :
+        // la trame commence au plus 3 cycles plus tard, jamais dans le passé.
+        // [E] Le MMU du ST découpe la RAM en créneaux de 4 cycles partagés entre le CPU et
+        // la vidéo : les deux restent en phase sur le matériel, quel que soit le reset.
+        const int64_t now = sched.now();
+        frameStart_ = now + ((4 - (now & 3)) & 3);
+        frameStartInit_ = true;
+    }
     static const bool frameDiag = std::getenv("NEOST_FRAME_DIAG") != nullptr;
     if (frameDiag)
         std::fprintf(stderr, "[FRM] start=%lld mod4=%d lpf=%d cpl=%d\n",

@@ -39,6 +39,27 @@ strictes du headless, Windows au-delà de 4 Gio).
 
 **Sauvegardes** : format **v67** (v59 à la 0.6.4) ; les anciens états ne se rechargent pas.
 
+## Reset à chaud : la trame reste sur la grille du bus (2026-11-13)
+
+- **Signalé par l'auteur : Spectrum 512 brouillé « en ST et en STE ».** Capture : l'abeille du
+  diaporama (`disks/etalons/spectrum_512_auto_diapo.st`) en traînées horizontales, sous 1040 STE /
+  TOS 1.62 UK. En headless, dans le GUI lancé à froid et chez Hatari, la même config rendait l'image
+  intacte (0,0 % d'écart, 15 000 trames). Le défaut ne venait que d'un **Apply en cours de route**
+  (ST/TOS 1.02 FR → STE/TOS 1.62 UK) : `reconfigure()` + `reset()` sur la machine vivante.
+- **Cause.** Après un reset, `Machine::beginFrame_` ré-ancrait la trame sur l'heure brute
+  (`frameStart_ = sched.now()`). Le CPU s'aligne sur une grille ABSOLUE de 4 cycles
+  (`Cpu68k::alignRamBus`) et la vidéo se date depuis `frameStart_` : le modèle suppose
+  `frameStart_ ≡ 0 (mod 4)`, ce que le démarrage à froid garantit (horloge à 0). Un reset à chaud
+  tombe en fin de trame, après un dépassement d'une instruction : bascule à la trame 500 ou 1000,
+  horloge ≡ 2 (mod 4), image brouillée ; à 999 ou 1001, ≡ 0, intacte. Trouvé par états hybrides
+  (sections du save-state échangées entre bascule et démarrage direct : seul l'échange
+  en-tête+CPU+ordonnanceur répare).
+- **Correctif.** Le ré-ancrage arrondit à la grille de 4 cycles SUIVANTE (au plus 3 cycles plus
+  tard, jamais dans le passé). Vaut pour tout reset à chaud : bouton Reset, Apply, borne.
+  Bascule à la trame 500 et 1000 : abeille intacte. Garde au palier `fast` :
+  `tools/check_frame_grid.py` (12 resets à chaud sous EmuTOS, toutes les trames à 0 mod 4 ; sans le
+  correctif, le reset de la trame 46 sort à 2 mod 4). Paliers `fast` et `full` verts.
+
 ## Le modèle choisit son TOS (2026-11-13)
 
 - **Signalé par l'auteur : Systematic Error « plante en deux bombes en ST et en STE ».** En ST,
