@@ -218,7 +218,7 @@ the Falcon, which NeoST does not yet. NeoST exists to be opened up.
 
 ## Where it stands
 
-**0.6.3.** EmuTOS and TOS 1.02/1.62/2.06 boot; all three Field Service diagnostic
+**0.6.5.** EmuTOS and TOS 1.02/1.06/1.62/2.06 boot; all three Field Service diagnostic
 cartridges pass their internal tests, the Mega STE's Q suite 12/12. Demanding games and
 demos run: Enchanted Land, Super Hang-On, Lethal Xcess, The Cuddly Demos, No Cooper,
 Closure. The whole thing is validated by a tiered regression suite ending in a
@@ -227,7 +227,7 @@ pixel-exact comparison against the Hatari oracle (`tools/run_all.py --tier full`
 The long game is **cycle accuracy** — borders and the fine timing of games and demos.
 What is left, honestly listed: [`TODO.md`](TODO.md) and
 [`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md). Next on the horizon: the **TT and the
-Falcon**, on a new 68000/68030/68040 core.
+Falcon**, on a new 68000 Moira core with 68020/68030/68040 CPUs, a JIT and an MMU.
 
 The interface and log messages are in English; code comments and documentation are in
 French.
