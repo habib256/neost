@@ -39,6 +39,14 @@ strictes du headless, Windows au-delà de 4 Gio).
 
 **Sauvegardes** : format **v67** (v59 à la 0.6.4) ; les anciens états ne se rechargent pas.
 
+## Web : Cubase Lite retiré du bundle (2026-11-13)
+
+- Décision de l'auteur : la disquette Cubase Lite se lance sous TOS 1.04 et ne fonctionne pas
+  sous EmuTOS, seul TOS du web (`NEOST_WEB_FREE_ONLY`) — le menu du web proposait donc un
+  logiciel qui ne démarre pas. Retiré de `NEOST_WEB_DEMOS` (`CMakeLists.txt`) ; le bundle
+  embarque EmuTOS, `diskA.st` et les trois démos. Les paquets bureau le gardent
+  (`packaging/stage_free_data.sh`), on peut y poser un TOS.
+
 ## Reset à chaud : la trame reste sur la grille du bus (2026-11-13)
 
 - **Signalé par l'auteur : Spectrum 512 brouillé « en ST et en STE ».** Capture : l'abeille du

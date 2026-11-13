@@ -684,9 +684,12 @@ if(EMSCRIPTEN)
         set(NEOST_WEB_DEMOS
             disks/etalons/cuddly_demos.msa
             disks/etalons/nocooper.msa
-            disks/etalons/closure.msa
-            # Freeware Steinberg (26.04.1999), même fichier que stage_free_data.sh.
-            disks/cubase_lite.st)
+            disks/etalons/closure.msa)
+        # Cubase Lite n'est PAS embarqué dans le web (décision du mainteneur, 2026-11-13) :
+        # sa disquette se lance sous TOS 1.04 (DESKTOP.INF #Z, cf. THIRD-PARTY.txt) et ne
+        # fonctionne pas sous EmuTOS — or le web n'a que EmuTOS (NEOST_WEB_FREE_ONLY). Le
+        # proposer dans le menu, c'était offrir un logiciel qui ne démarre pas. Les paquets
+        # bureau le gardent (stage_free_data.sh) : l'utilisateur peut y poser son TOS.
 
         # Manquer une donnée doit se dire AU CONFIGURE, en nommant le fichier :
         # laissée au file_packager, l'absence sort au LIEN, noyée dans la ligne de
