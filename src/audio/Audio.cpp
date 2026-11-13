@@ -50,17 +50,31 @@ void Audio::render(float* out, uint32_t frames, uint32_t /*sampleRate*/) {
     static int dbg = 0;
     if (dbg < 3 && neost::log::verbose()) { std::fprintf(stderr, "[Audio] callback: %u frames (ring %zu floats, cushion %u frames)\n",
                                 frames, ring_.available(), primeSamples_); ++dbg; }
+    bool fadeIn = false;
     if (!primed_) {
-        // Démarrage : latence cible complète. Reprise : seuil court mais jamais plus
-        // petit que la demande courante, sinon le callback se remettrait aussitôt en
-        // underrun structurel si CoreAudio négocie un bloc de plus de 20 ms.
-        const uint32_t threshold = played_ ? std::max(recoverSamples_, frames) : primeSamples_;
-        if (ring_.available() < size_t(threshold) * 2) { std::fill(out, out + need, 0.0f); return; }
+        // Démarrage : latence cible complète. Reprise : petit coussin après un
+        // micro-décrochage, coussin complet après une vraie coupure, jamais moins que la
+        // demande courante (cf. neost::pacing::refillThreshold).
+        const uint32_t threshold = neost::pacing::refillThreshold(
+            played_, dryFrames_, frames, primeSamples_, recoverSamples_, longGapFrames_);
+        if (ring_.available() < size_t(threshold) * 2) {
+            std::fill(out, out + need, 0.0f);
+            if (played_ && dryFrames_ < 0x7FFFFFFFu - frames) dryFrames_ += frames;
+            return;
+        }
+        fadeIn  = played_;                                // reprise après coupure : fondu
         primed_ = true;                                   // coussin atteint → on démarre la lecture
         played_ = true;
+        dryFrames_ = 0;
     }
-    if (ring_.pull(out, need) < need) {                     // underrun → on reconstitue le coussin
+    const size_t got = ring_.pull(out, need);
+    if (fadeIn) neost::pacing::fadeStereo(out, frames, std::min<uint32_t>(frames, rate_ / 500), true);
+    if (got < need) {                                       // underrun → on reconstitue le coussin
+        // Fondu de sortie sur la fin de ce qui restait (~2 ms) : la coupure franche cliquait.
+        const uint32_t validFrames = uint32_t(got / 2);
+        neost::pacing::fadeStereo(out, validFrames, std::min<uint32_t>(validFrames, rate_ / 500), false);
         primed_ = false;
+        dryFrames_ = frames - validFrames;                  // à sec depuis ce bloc
         underruns_.fetch_add(1, std::memory_order_relaxed); // diagnostic « son haché »
     }
 }
@@ -206,6 +220,8 @@ bool Audio::start() {
     rate_    = dev->sampleRate ? dev->sampleRate : cfg.sampleRate;  // fréquence réelle négociée
     primeSamples_ = rate_ * latencyMs_ / 1000; // coussin ≈ latencyMs_ (défaut 85 ms) à la fréquence réelle
     recoverSamples_ = std::max(1u, rate_ / 50); // ≈20 ms ; render() le monte à la taille du callback si besoin
+    longGapFrames_  = std::max(1u, rate_ / 20); // ≈50 ms à sec = vraie coupure (cf. refillThreshold)
+    dryFrames_      = 0;
     ring_.clear();
     primed_      = false;                     // ré-amorçage propre
     played_      = false;

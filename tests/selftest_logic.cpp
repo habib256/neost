@@ -515,6 +515,25 @@ static void testMissingHwHint() {
 //  - TOS 3.0x / 4.x / 2.07 (TT, Falcon) : refusés, l'ancienne ROM reste en place.
 //  - .STC = 4 octets factices + 128 Ko : refusée avant (> 128 Ko).
 // -----------------------------------------------------------------------------
+// Reprise du son après un underrun (core/Pacing.hpp, 2026-11-13).
+static void testAudioRefill() {
+    std::printf("Reprise du son après un underrun\n");
+    using neost::pacing::refillThreshold;
+    // 48 kHz : coussin 4080 frames (85 ms), reprise courte 960 (20 ms), coupure ≥ 2400 (50 ms).
+    checkInt("avant la 1re lecture : coussin complet", refillThreshold(false, 0, 441, 4080, 960, 2400), 4080);
+    checkInt("micro-décrochage (10 ms à sec) : reprise courte", refillThreshold(true, 480, 441, 4080, 960, 2400), 960);
+    checkInt("vraie coupure (200 ms à sec) : coussin complet", refillThreshold(true, 9600, 441, 4080, 960, 2400), 4080);
+    checkInt("jamais moins qu'un bloc backend", refillThreshold(true, 0, 2048, 4080, 960, 2400), 2048);
+    float b[8] = {1, 1, 1, 1, 1, 1, 1, 1};   // 4 frames stéréo
+    neost::pacing::fadeStereo(b, 4, 4, true);
+    checkBool("fondu d'entrée : 0 au début, croissant, canaux égaux",
+              b[0] == 0.0f && b[2] > b[0] && b[4] > b[2] && b[6] > b[4] && b[6] < 1.0f && b[1] == b[0], true);
+    float c[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+    neost::pacing::fadeStereo(c, 4, 2, false);
+    checkBool("fondu de sortie : 2 dernières frames, décroissant, début intact",
+              c[0] == 1.0f && c[2] == 1.0f && c[4] < 1.0f && c[6] < c[4] && c[6] > 0.0f, true);
+}
+
 // TOS assorti à la machine choisie (core/TosChoice, page Machine du GUI, 2026-11-13).
 static void testTosChoice() {
     std::printf("Choix du TOS assorti à la machine\n");
@@ -4277,6 +4296,7 @@ int main() {
     testMissingHwHint();
     testTosImageLoad();
     testTosChoice();
+    testAudioRefill();
     testConfigParser();
     testStKeysCountries();
     testRamDisplay();

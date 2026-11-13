@@ -62,6 +62,14 @@ Demande de l'auteur : le terminal du GUI était trop bavard, et sa relecture a m
   famille) ; la page le dit. Sept tables de vérité au selftest (977 OK).
 - **« cartridge ejected: » sans nom** : c'était le pilote du disque dur GEMDOS, retiré et réinstallé à
   chaque reconfiguration. Il n'est plus annoncé.
+- **Tampon audio : reprise sur coussin complet après une vraie coupure.** Les « ring underrun » de
+  la trace tombaient après une bascule borne/bureau ou un Apply (l'émulation s'arrête un instant)
+  et s'enchaînaient : la lecture reprenait toujours sur ~20 ms (« ring 1934 » floats), et
+  l'asservissement (≤ 0,8 % par trame) mettait ~8 s à regarnir les 85 ms — le moindre à-coup
+  recoupait le son. `neost::pacing::refillThreshold` : après ≥ 50 ms à sec, reprise sur le coussin
+  complet (l'attente se fond dans la coupure) ; un micro-décrochage garde la reprise courte. Fondus
+  de ~2 ms à la coupure et à la reprise (`fadeStereo`) : la coupure franche cliquait. Bureau
+  seulement ; Android reprenait déjà sur le coussin complet. Six tests au selftest (983 OK).
 - **Logo web** : les barres rouge et bleue montent à un tiers de la hauteur (escalier vers le centre).
 
 ## Dongles joystick au bon port ; tir au clavier sur Alt droit (2026-11-13)

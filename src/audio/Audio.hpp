@@ -113,6 +113,8 @@ private:
     uint32_t           recoverSamples_ = 960;// ré-amorce courte après underrun (≈20 ms, au moins 1 callback)
     bool               primed_ = false;  // (thread audio) : l'anneau a-t-il atteint le coussin ? sinon → silence
     bool               played_ = false;  // premier amorçage terminé ; ensuite recoverSamples_ suffit
+    uint32_t           dryFrames_ = 0;   // (thread audio) frames jouées à sec depuis l'underrun
+    uint32_t           longGapFrames_ = 2400; // à sec au-delà (≈50 ms) → reprise sur coussin complet
 
     // Diagnostic « son haché » : nombre d'underruns de l'anneau (le thread audio a
     // voulu drainer plus que produit → courte ré-amorce ~20 ms avant la reprise).

@@ -133,6 +133,38 @@ inline int64_t frameNanos (int64_t frameCycles) {
 }
 
 // -----------------------------------------------------------------------------
+//  Reprise de la lecture après un underrun : quel remplissage attendre (en FRAMES).
+// -----------------------------------------------------------------------------
+// Avant la première lecture : le coussin complet `prime`. Après un MICRO-décrochage
+// (l'anneau à sec moins de `longGap`) : un petit coussin `recover`, pour ne pas avaler
+// une note de plus. Après une VRAIE coupure (à sec ≥ `longGap` : l'émulation s'est
+// arrêtée — bascule borne/bureau, Apply, chargement), le coussin COMPLET. Jusqu'au
+// 2026-11-13 on reprenait toujours sur ~20 ms ; l'asservissement (≤ 0,8 % par trame)
+// mettait ~8 s à regarnir les 85 ms, et pendant ce temps le moindre à-coup de l'hôte
+// recoupait le son — les « ring underrun » s'enchaînaient dans la trace de l'auteur.
+// L'attente ajoutée (≤ 85 ms) se fond dans une coupure déjà audible. Jamais moins
+// qu'un bloc du backend `block`, sinon le callback suivant recouperait aussitôt.
+inline uint32_t refillThreshold(bool played, uint32_t dryFrames, uint32_t block,
+                                uint32_t prime, uint32_t recover, uint32_t longGap) {
+    if (!played) return prime;
+    const uint32_t want = dryFrames >= longGap ? prime : recover;
+    return want > block ? want : block;
+}
+
+// Fondu linéaire de `n` frames stéréo entrelacées (n ≤ frames du bloc) : `up` = entrée
+// (0 → 1) au début de `buf`, sinon sortie (1 → 0) sur les `n` DERNIÈRES frames de `buf`
+// (`frames` frames valides). Évite le clic d'une coupure ou d'une reprise franche.
+inline void fadeStereo(float* buf, uint32_t frames, uint32_t n, bool up) {
+    if (n > frames) n = frames;
+    if (n == 0) return;
+    for (uint32_t i = 0; i < n; ++i) {
+        const float g = up ? float(i) / float(n) : float(n - i) / float(n + 1);
+        const uint32_t f = up ? i : frames - n + i;
+        buf[2 * f] *= g; buf[2 * f + 1] *= g;
+    }
+}
+
+// -----------------------------------------------------------------------------
 //  Servo audio : combien d'échantillons produire pour la trame qui vient.
 // -----------------------------------------------------------------------------
 class AudioPacer {
