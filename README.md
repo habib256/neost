@@ -218,7 +218,7 @@ The goal is what a real Atari ST does — not what another emulator does. In pra
    [`docs/REFERENCE_LADDER.md`](docs/REFERENCE_LADDER.md).
 
 If you want an emulator to *use*, use Hatari — it is excellent, and it covers the TT and
-the Falcon, which NeoST does not yet. NeoST exists to be opened up.
+the Falcon, which NeoST does not. NeoST exists to be opened up.
 
 ## Where it stands
 
@@ -230,8 +230,7 @@ pixel-exact comparison against the Hatari oracle (`tools/run_all.py --tier full`
 
 The long game is **cycle accuracy** — borders and the fine timing of games and demos.
 What is left, honestly listed: [`TODO.md`](TODO.md) and
-[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md). Next on the horizon: the **TT and the
-Falcon**, on a new 68000 Moira core with 68020/68030/68040 CPUs, a JIT and an MMU.
+[`docs/CYCLE_ACCURACY.md`](docs/CYCLE_ACCURACY.md).
 
 The interface and log messages are in English; code comments and documentation are in
 French.
