@@ -24,6 +24,7 @@
 #define ICON_FA_ADJUST        "\xef\x81\x82"
 #define ICON_FA_EJECT         "\xef\x81\x92"
 #define ICON_FA_WARNING       "\xef\x81\xb1"   // U+F071 exclamation-triangle — CPU halté (A42)
+#define ICON_FA_INFO_CIRCLE   "\xef\x81\x9a"   // U+F05A info-circle — ROM choisie avec la machine
 #define ICON_FA_HDD           "\xef\x82\xa0"
 #define ICON_FA_FOLDER_OPEN   "\xef\x81\xbc"
 #define ICON_FA_SAVE          "\xef\x83\x87"

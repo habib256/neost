@@ -21,6 +21,7 @@
 #include "audio/Mt32Synth.hpp"
 #include "audio/GmSynth.hpp"
 #include "core/Machine.hpp"
+#include "core/TosChoice.hpp"
 #include "gui/App.hpp"
 #include "gui/CrtUi.hpp"
 #include "gui/JoyMap.hpp"
@@ -95,6 +96,54 @@ bool machineForcedByTos(const std::string& requested, MachineType real,
         advice = "The TOS in ROM decides the model: change it on the ROM / TOS page.";
     }
     return true;
+}
+
+// Choisir une machine choisit aussi un TOS qui la fait tourner (demande de l'auteur,
+// 2026-11-13). Sans cela, « STE » avec tos102uk démarrait en ST sans qu'on le voie
+// vraiment (adjustMachineForTos) : Systematic Error plantait en deux bombes sur le
+// blitter absent. Si le TOS en attente convient, on n'y touche pas ; sinon on prend
+// dans roms/ le meilleur candidat (core/TosChoice.hpp : même famille, même pays, TOS
+// d'origine de la machine). Aucun candidat : on laisse la ROM, et l'avertissement
+// « Running as … » de la page le dira après Apply.
+static void pickRomForMachine(ConfigUi& ui, const std::string& machineId) {
+    ui.romAutoNote.clear();
+    const MachineType m = parseMachine(machineId);
+    neost::TosInfo cur;
+    const bool haveCur = neost::readTosInfo(ui.pendRom, cur);
+    if (haveCur && neost::tosRunsMachine(cur, m)) return;
+    std::error_code ec;
+    if (!fs::is_directory(ui.romsDir, ec)) return;
+    std::vector<fs::path> paths;
+    fs::directory_iterator it(ui.romsDir, fs::directory_options::skip_permission_denied, ec), end;
+    while (!ec && it != end) {
+        std::error_code ec2;
+        if (it->is_regular_file(ec2)) {
+            std::string ext = it->path().extension().string();
+            for (auto& ch : ext) ch = (char)std::tolower((unsigned char)ch);
+            if (ext == ".img" || ext == ".rom") paths.push_back(it->path());
+        }
+        it.increment(ec);
+    }
+    std::sort(paths.begin(), paths.end(), [](const fs::path& a, const fs::path& b) {
+        std::string x = a.filename().string(), y = b.filename().string();
+        for (auto& ch : x) ch = (char)std::tolower((unsigned char)ch);
+        for (auto& ch : y) ch = (char)std::tolower((unsigned char)ch);
+        return x < y;
+    });
+    std::vector<neost::TosInfo> infos;
+    std::vector<fs::path> ok;
+    for (const auto& p : paths) {
+        neost::TosInfo t;
+        if (neost::readTosInfo(p.string(), t)) { infos.push_back(t); ok.push_back(p); }
+    }
+    const int i = neost::pickTosForMachine(m, haveCur ? &cur : nullptr, infos);
+    if (i < 0) {
+        ui.romAutoNote = "No TOS for this model in " + ui.romsDir + "/ - ROM left unchanged.";
+        return;
+    }
+    ui.pendRom = ok[static_cast<std::size_t>(i)].string();
+    ui.romAutoNote = "ROM switched to " + ok[static_cast<std::size_t>(i)].filename().string()
+                   + " to match this model.";
 }
 
 void drawConfigWindow(App& A, ConfigUi& ui) {
@@ -199,7 +248,14 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         static const char* labels[] = { "ST", "Mega ST", "STE", "Mega STE" };
         static const char* ids[]    = { "st", "megast", "ste", "megaste" };
         for (int i = 0; i < 4; ++i)
-            if (ImGui::RadioButton(labels[i], ui.pendMachine == ids[i])) ui.pendMachine = ids[i];
+            if (ImGui::RadioButton(labels[i], ui.pendMachine == ids[i])) {
+                // Re-cliquer le modèle déjà coché le recale aussi : une config enregistrée
+                // « ste » + tos102uk (qui tourne en ST) se répare d'un clic.
+                ui.pendMachine = ids[i];
+                pickRomForMachine(ui, ui.pendMachine);
+            }
+        if (!ui.romAutoNote.empty())
+            ImGui::TextColored(ImVec4(.5f, .85f, 1.f, 1.f), ICON_FA_INFO_CIRCLE " %s", ui.romAutoNote.c_str());
         ImGui::Separator();
         // Le socket MC68881 n'existe QUE sur Mega STE (cf. Fpu.hpp) ; ailleurs il n'y a
         // rien à peupler et « not found » est le comportement fidèle.
@@ -225,9 +281,10 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                                "an NTSC Mega STE. Changes the CPU/MFP timer ratio.");
         }
         ImGui::Separator();
-        ImGui::TextWrapped("A TOS ≤ 1.04 booted on an STE/Mega STE switches NeoST to ST "
-                           "mode (like Hatari): those TOS versions know nothing of the "
-                           "extra hardware.");
+        ImGui::TextWrapped("Picking a model also picks a TOS that runs it from roms/ "
+                           "(same family and country when possible). A TOS ≤ 1.04 booted "
+                           "on an STE/Mega STE switches NeoST to ST mode (like Hatari): "
+                           "those TOS versions know nothing of the extra hardware.");
         break;
     }
     case kCfgMem: {

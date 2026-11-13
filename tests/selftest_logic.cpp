@@ -52,6 +52,7 @@
 #include <cmath>
 #include "util/MouseScale.hpp"
 #include "core/MachineType.hpp"
+#include "core/TosChoice.hpp"
 #include "core/Machine.hpp"
 #include "android/AndroidRoms.hpp"
 #include <filesystem>
@@ -514,6 +515,54 @@ static void testMissingHwHint() {
 //  - TOS 3.0x / 4.x / 2.07 (TT, Falcon) : refusés, l'ancienne ROM reste en place.
 //  - .STC = 4 octets factices + 128 Ko : refusée avant (> 128 Ko).
 // -----------------------------------------------------------------------------
+// TOS assorti à la machine choisie (core/TosChoice, page Machine du GUI, 2026-11-13).
+static void testTosChoice() {
+    std::printf("Choix du TOS assorti à la machine\n");
+    using neost::TosInfo;
+    auto T = [](uint16_t ver, bool emu, int country, bool ntsc, std::size_t kb) {
+        TosInfo t; t.ver = ver; t.emuTos = emu; t.country = country; t.ntsc = ntsc;
+        t.size = kb * 1024u; return t;
+    };
+    // Relevé de roms/ (pays : 0 US, 1 DE, 2 FR, 3 UK).
+    const std::vector<TosInfo> c = {
+        T(0x0104, true,  2, false, 192),   // 0 etos192fr
+        T(0x0104, true,  0, true,  192),   // 1 etos192us
+        T(0x0206, true,  2, false, 256),   // 2 etos256fr
+        T(0x0206, true,  0, true,  256),   // 3 etos256us
+        T(0x0102, false, 3, false, 192),   // 4 tos102uk
+        T(0x0104, false, 3, false, 192),   // 5 tos104uk
+        T(0x0106, false, 3, false, 256),   // 6 tos106uk
+        T(0x0162, false, 3, false, 256),   // 7 tos162uk
+        T(0x0162, false, 2, false, 256),   // 8 tos162fr
+        T(0x0206, false, 3, false, 256),   // 9 tos206uk
+        T(0x0306, false, 3, false, 512),   // 10 tos306uk (TT)
+        T(0x0404, false, 3, false, 512),   // 11 tos404 (Falcon)
+    };
+    const TosInfo tos102uk = c[4], etos192fr = c[0], tos162uk = c[7];
+    checkBool("TOS 1.02 fait tourner un ST", neost::tosRunsMachine(tos102uk, MachineType::St), true);
+    checkBool("TOS 1.02 ne fait pas tourner un STE", neost::tosRunsMachine(tos102uk, MachineType::Ste), false);
+    checkBool("TOS 1.62 ne fait pas tourner un Mega STE", neost::tosRunsMachine(tos162uk, MachineType::MegaSte), false);
+    checkBool("EmuTOS 256 ne fait pas tourner un ST", neost::tosRunsMachine(c[2], MachineType::St), false);
+    checkBool("TOS 3.06 (TT) exclu", neost::tosRunsMachine(c[10], MachineType::Ste), false);
+    checkInt("tos102uk → STE : tos162uk (famille, pays, TOS d'origine)",
+             neost::pickTosForMachine(MachineType::Ste, &tos102uk, c), 7);
+    checkInt("tos102uk → Mega STE : tos206uk",
+             neost::pickTosForMachine(MachineType::MegaSte, &tos102uk, c), 9);
+    checkInt("tos162uk → ST : tos104uk",
+             neost::pickTosForMachine(MachineType::St, &tos162uk, c), 5);
+    checkInt("etos192fr → STE : etos256fr (EmuTOS reste EmuTOS)",
+             neost::pickTosForMachine(MachineType::Ste, &etos192fr, c), 2);
+    const TosInfo tos102de = T(0x0102, false, 1, false, 192);
+    checkInt("tos102de, pas de 1.62 DE → STE : PAL d'abord (tos162fr ou uk, pas us)",
+             neost::pickTosForMachine(MachineType::Ste, &tos102de, c) == 7
+             || neost::pickTosForMachine(MachineType::Ste, &tos102de, c) == 8, 1);
+    const std::vector<TosInfo> onlyEmu = { c[0], c[1], c[2], c[3] };
+    checkInt("tos102uk → STE sans TOS Atari : etos256fr (PAL)",
+             neost::pickTosForMachine(MachineType::Ste, &tos102uk, onlyEmu), 2);
+    const std::vector<TosInfo> onlySt = { c[4], c[5] };
+    checkInt("aucun TOS STE → -1", neost::pickTosForMachine(MachineType::Ste, &tos102uk, onlySt), -1);
+}
+
 static void testTosImageLoad() {
     std::printf("Images TOS (os_base, TT/Falcon) et cartouches .STC\n");
     namespace fs = std::filesystem;
@@ -4219,6 +4268,7 @@ int main() {
     testMouseScale();
     testMissingHwHint();
     testTosImageLoad();
+    testTosChoice();
     testConfigParser();
     testStKeysCountries();
     testRamDisplay();

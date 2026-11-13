@@ -28,7 +28,7 @@ relevés de vrais ST.
 parcours contre Hatari, 27 en tout. Le son de 95 titres comparé à Hatari. TOS 1.06 US
 démarre ; les TOS TT/Falcon sont refusés proprement.
 
-**Usage** : le zoom adaptatif ne cadre plus de bande noire au-dessus d'Enchanted Land ; douze dispositions de clavier de plus ; disquettes de menus nommées d'après le
+**Usage** : choisir un modèle dans la configuration choisit aussi un TOS qui le fait tourner ; le zoom adaptatif ne cadre plus de bande noire au-dessus d'Enchanted Land ; douze dispositions de clavier de plus ; disquettes de menus nommées d'après le
 catalogue CompDisks ; explorateur de bitmaps dans le débogueur ; splitter clavier et MTC
 pour la station MIDI ; liste blanche de domaines pour le NAT et le modem ; la disquette
 STinG + EtherNEC est livrée ; page ROM et dongles sur Android ; un blit HOG long ne fige
@@ -38,6 +38,22 @@ plus le web ni Android.
 strictes du headless, Windows au-delà de 4 Gio).
 
 **Sauvegardes** : format **v67** (v59 à la 0.6.4) ; les anciens états ne se rechargent pas.
+
+## Le modèle choisit son TOS (2026-11-13)
+
+- **Signalé par l'auteur : Systematic Error « plante en deux bombes en ST et en STE ».** En ST,
+  c'est fidèle : le secteur de boot (« Virus Protector v1.42 ») écrit `$FF8A28` (PC `$00AA6A`),
+  un registre du blitter qu'un ST n'a pas — erreur de bus, deux bombes, et Hatari affiche les deux
+  mêmes (ST, TOS 1.04). Le « STE » ne l'était pas : `neost.cfg` portait `machine=ste` avec
+  `tos102uk`, que `adjustMachineForTos` rétrograde en ST. En vrai STE (TOS 1.62, 1 Mo) la démo
+  tourne 5 000 trames sans une erreur de bus.
+- **Choisir un modèle choisit aussi son TOS** (page Machine). Si la ROM en attente ne fait pas
+  tourner le modèle, `core/TosChoice` prend dans `roms/` le meilleur candidat : même famille
+  (TOS Atari ou EmuTOS), même pays lu dans l'en-tête (`os_conf`), à défaut même fréquence, puis le
+  TOS d'origine de la machine (1.04/1.02/1.00 ; 1.62/1.06/2.06/2.05 ; 2.06/2.05). Sans candidat,
+  la ROM reste et la page le dit. Re-cliquer le modèle coché recale une config déjà enregistrée.
+  Sur `roms/` : tos102uk → STE tos162uk, → Mega STE tos206uk ; etos192us → STE etos256us ;
+  tos206fr → ST tos104fr. Tables de vérité au palier `fast` (`neost-selftest`).
 
 ## Closure : bordures des trames moyennes ; zoom adaptatif d'Enchanted Land (2026-11-13)
 

@@ -67,6 +67,9 @@ struct ConfigUi {
 
     // Réglages matériels EN ATTENTE (cf. « Appliquer et redémarrer »).
     std::string pendMachine, pendMem, pendRom;
+    // Dernier changement de ROM fait par le choix de la machine (page Machine), à
+    // afficher sous les boutons ; vide sinon. Cf. core/TosChoice.hpp.
+    std::string romAutoNote;
     std::string pendQuartz;       // quartz maître : pal, 32042, 32216, auto (cf. core/Pacing.hpp)
     bool pendFpu  = false;
     bool pendInit = false;        // faux tant que les champs ci-dessus n'ont pas été semés
