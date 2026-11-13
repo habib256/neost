@@ -9,6 +9,8 @@
 #include "core/Framing.hpp"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 #include "core/Shifter.hpp"
 
@@ -65,8 +67,8 @@ void stContentRegion(const Shifter& sh, int& cTop, int& cH, int& cW) {
     // sur Enchanted Land il coupait les 2 dernières lignes de l'image, et sur
     // l'étalon overscan_top les 29 lignes du haut, que ce programme dessine
     // vraiment (mesuré : sa boîte de contenu commence à y=0).
-    const int liveTop = std::max(0, sh.snapLiveTop());
-    const int liveBot = std::min(sh.height(), liveTop + std::max(1, sh.snapLiveHeight()));
+    int liveTop = std::max(0, sh.snapLiveTop());
+    int liveBot = std::min(sh.height(), liveTop + std::max(1, sh.snapLiveHeight()));
 
     // --- LARGEUR : la moitié LATÉRALE du trick, en PROPORTION -------------------
     // `snapBordersOpen()` est vrai dès qu'une bordure — HAUTE, BASSE ou LATÉRALE —
@@ -77,6 +79,35 @@ void stContentRegion(const Shifter& sh, int& cTop, int& cH, int& cW) {
     // désormais sur la PROPORTION de lignes réellement élargies (cf. kSideNum/Den).
     const int shown = std::max(1, liveBot - liveTop);
     const bool wide = sh.snapSideTrickLines() * kSideDen >= shown * kSideNum;
+
+    // --- BORDURE OUVERTE MAIS NOIRE (corrigé le 2026-11-13, Enchanted Land) ------
+    // Ouvrir la bordure ne veut pas dire y dessiner. Enchanted Land retire la bordure
+    // haute pour son scrolling (`live=0+229`), mais ses ~30 premières lignes restent
+    // NOIRES : le cadre montrait une bande noire au-dessus du ciel, stable, sur tous
+    // les écrans du jeu (capture de l'auteur, écran « GRAPHIXX BY »). Une bordure
+    // haute (ou basse) dont TOUTES les lignes sont noires est donc ignorée — la zone
+    // active reste le plancher du cadre. Le noir seul compte : une bordure peinte d'un
+    // dégradé (raster) est du contenu.
+    // ⚠ TOUT OU RIEN, et PAS en plein overscan. Rogner ligne à ligne faisait grandir
+    // le cadre d'une poignée de lignes à chaque trame quand une scène de Closure fait
+    // entrer son image dans la bordure (trames 4178, 5703) : le zoom « respirait ».
+    // Une bordure compte donc entière dès qu'une seule de ses lignes porte du contenu,
+    // et le plein overscan (bordures latérales ouvertes, `wide`) garde l'étendue live
+    // telle quelle : son image occupe l'écran entier par construction.
+    const int aTop = sh.activeTop(), aBot = aTop + sh.activeHeight();
+    const uint32_t* px = sh.pixels();
+    const int W = sh.width();
+    auto blackRows = [&](int y0, int y1) {
+        for (int y = y0; y < y1; ++y) {
+            const uint32_t* r = px + static_cast<std::size_t>(y) * W;
+            for (int x = 0; x < W; ++x) if (r[x] & 0xFFFFFFu) return false;
+        }
+        return true;
+    };
+    if (px && !wide && !latchWide) {
+        if (liveTop < aTop && blackRows(liveTop, std::min(aTop, liveBot))) liveTop = aTop;
+        if (liveBot > aBot && blackRows(std::max(aBot, liveTop), liveBot)) liveBot = aBot;
+    }
 
     // --- HYSTÉRÉSIS : le cadre ne RÉTRÉCIT jamais tant que le latch tient ---------
     // Même intention que les deux latches d'origine — « cadrages francs, jamais au

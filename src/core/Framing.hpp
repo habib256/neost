@@ -15,7 +15,8 @@
 //     AFFICHE vraiment — étendue verticale live, et largeur élargie aux bordures
 //     latérales SEULEMENT si elles débordent sur une part significative des lignes.
 //     Hystérésis (latch ~0,6 s) + rétention de l'UNION des étendues vues pendant le
-//     latch : le cadre ne rétrécit jamais en cours de scène.
+//     latch : le cadre ne rétrécit jamais en cours de scène. Une bordure haute ou
+//     basse entièrement NOIRE ne compte pas (Enchanted Land l'ouvre sans y dessiner).
 //
 //  ⚠ CE QUE LA RÈGLE PRÉCÉDENTE RATAIT (corrigé le 2026-09-02). Elle ne connaissait
 //  que deux cas — « zone active » ou « buffer entier » — et décidait des DEUX sur un

@@ -338,6 +338,22 @@ void Shifter::beginFrame() {
     if (mode == Mode::Medium)
         for (const auto& w : glue_.syncWrites)
             if (w.isRes && (w.val & 3) != 1) { frameMode_ = Mode::Low; break; }
+    // Même chemin bas (bordé) pour une trame moyenne quand la trame précédente a OUVERT une
+    // bordure (glue_.bordersTrick / vOverscan, résultat du replay de fin de trame, sérialisés).
+    // Le chemin moyenne n'a pas de bordure : leur contenu disparaissait. Mesuré sur Closure,
+    // trames 2603-3130 (l'image du personnage sur fond blanc, juste après la partie SYNC) :
+    // 3 trames sur 8 démarraient en moyenne sans écriture « basse » dans la trame d'avant,
+    // passaient en 640×200 sans bordure, et le haut et le bas de l'image, dessinés DANS les
+    // bordures, clignotaient (rapport de l'auteur, 2026-11-13). Le chemin bas décode les
+    // lignes moyennes ligne par ligne (lineMed, cf. renderGlueFrame).
+    // [D] Hatari conv_st.c:150-153 + convert/med640x32.c:19-31 @ f0736b24 — la conversion
+    // moyenne parcourt la MÊME fenêtre bordée que la basse (STScreenStartHorizLine..End,
+    // STScreenLeftSkipBytes) et choisit la résolution ligne par ligne.
+    // [F] Le pronostic se fait sur la trame PRÉCÉDENTE (le mode se verrouille avant que la
+    // trame ne coure) : la 1ʳᵉ trame qui ouvre ses bordures en moyenne les perd encore.
+    // Tranché par : un buffer qui changerait de géométrie en fin de trame.
+    if (frameMode_ == Mode::Medium && (glue_.bordersTrick || glue_.vOverscan != 0))
+        frameMode_ = Mode::Low;
     frameSync_ = sync;
     syncGlueFrame();                  // A32 : mode et fréquence de la trame enfin verrouillés
     resizeFor(frameMode_);
