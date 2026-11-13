@@ -74,7 +74,7 @@ le reste est ci-dessous.
 
 ## Dossiers des versions passées
 
-0.6.4, 0.6.3, 0.6.2 et 0.6.1 : [`archive/RELEASES_PASSEES.md`](archive/RELEASES_PASSEES.md).
+0.6.5, 0.6.4, 0.6.3, 0.6.2 et 0.6.1 : [`archive/RELEASES_PASSEES.md`](archive/RELEASES_PASSEES.md).
 
 ## Ce qui BLOQUE encore une release publique
 

@@ -3,6 +3,23 @@
 > **Archive.** Extrait de [`../RELEASE.md`](../RELEASE.md) le 2026-11-10 : dossiers « jour J » et notes
 > publiques des versions déjà publiées. La procédure en vigueur est dans `RELEASE.md`.
 
+## Dossier 0.6.5 — 2026-11-13
+
+✅ **Exécuté le 2026-11-13.** Tag annoté `0.6.5` posé sur `b3ced82`, après les CI de ce commit
+vertes (Tests et Artefacts) et le site web redéployé depuis lui ; workflow du tag réussi, Release
+publiée avec les 8 paquets et `SHA256SUMS.txt`. [Notes publiques en anglais](../release-notes/0.6.5.md),
+posées par `gh release edit 0.6.5 --notes-file docs/release-notes/0.6.5.md`. Format de sauvegarde v67
+(v59 à la 0.6.4). Dernière version sur le Moira de NeoST : la référence de `cpu_swap_gate.py`
+s'enregistre sur ce commit (non versionnée, cf. `CPU_SWAP_GATE.md`).
+
+Le tag a été posé trois fois. Sur `2a3cefc` d'abord, puis retiré avant publication pour embarquer le
+retrait de Cubase Lite du web, les dongles au bon port et le tir à l'Alt droit ; sur `d076ca0`
+ensuite, où le job macOS a été annulé par GitHub (runner perdu après 15 min, aucune étape en échec,
+journal absent — un aléa, cf. procédure § 6) ; retiré enfin parce que son message et le README de ce
+commit annonçaient le futur cœur CPU, que le mainteneur garde comme chantier interne (décision du
+2026-11-13 : aucune promesse publique sur la migration ni le TT/Falcon). Aucune Release n'avait été
+créée entre-temps.
+
 ## Dossier 0.6.4 — 2026-11-11
 
 ✅ **Exécuté le 2026-11-11.** Tag annoté `0.6.4` posé sur `bf5d61f`, après le palier `full`
