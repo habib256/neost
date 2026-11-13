@@ -438,6 +438,21 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 
 ## 7. 📦 Livraison et interface
 
+*Après la 0.6.5 : idées relevées le 2026-11-13 dans [BMAtariST v0.1.1](https://github.com/jhonnaker1/bmatarist/releases/tag/v0.1.1)
+(Hatari non modifié, bare metal sur Raspberry Pi avec Circle, GPL-3.0 comme NeoST).*
+
+- **Disquettes `.zip` et `.gz` ouvertes directement** · P2 ⭘ — monter l'image qu'elles contiennent sans
+  décompression manuelle (cas Bruce Lee, 2026-11-13). BMAtariST le fait pour tous ses formats ; choisir
+  l'image si l'archive en contient plusieurs, réécriture dans l'archive ou à côté, à trancher.
+- **Vérifier un état sauvegardé juste après l'écriture** · P3 ⭘ — le relire et contrôler son CRC
+  (déjà vérifié au chargement) ; un état raté est supprimé et le menu le dit, comme BMAtariST 0.1.1.
+- **Format `.scp` (SuperCard Pro, flux magnétique)** · P3 ⭘ — lu par BMAtariST via Hatari ; NeoST lit
+  `.st/.msa/.dim/.stx/.ipf`. Confronter au modèle FDC des `.stx`.
+- **Borne Pi : écran calé sur la fréquence du ST** · P3 ⭘ — passer l'écran à 50/60/71 Hz (KMS sous
+  Linux) et rythmer l'émulation sur ses rafraîchissements, pour un défilement sans à-coup ;
+  `AudioPacer` garde déjà le son en phase. BMAtariST le fait sur Pi 4/5.
+- **Borne Pi : joysticks câblés sur le GPIO** · P3 ⭘ — vraies manettes d'arcade sur le connecteur du Pi
+  (libgpiod), en plus des manettes USB.
 - **Retour arrière : essais à la main** · P3 ⭘ — livré dans le GUI de bureau, le web et
   Android (2026-11-11), jugé par `--rewind-test` ; le GUI réel recule aussi (`--rewind-at N`).
   Le bouton *Back* du web a reculé deux fois dans Chrome sans écran, piloté par CDP (refus
@@ -449,6 +464,11 @@ niveau (gigue σ 0,4-1,7 ms, `run_midi_sequencer.py`).
 - **Paquets Linux sans MIDI ALSA ?** · P2 ⭘ — ni l'image bionic (`Dockerfile.bionic`) ni bookworm
   (`build_in_bookworm_arm64.sh`) n'installent `libasound2-dev` : les AppImage partent sans doute sans MIDI
   hôte. La CI compile ALSA depuis le 2026-11-12 (job GUI) ; ajouter le paquet aux images et vérifier.
+- **Borne Raspberry Pi « bare metal » : NeoST sur Circle** · P3 ⏸ A12 + cœur — remplacer Hatari par
+  `neost_core` dans le cadre de BMAtariST : sa frontière matérielle tient dans `src/host.h` (image RGB565,
+  son 16 bits, touches USB, souris, manettes), Hatari s'y branche par `src/port/`. À lever : `EmuFiber`
+  (mode sans fibre du web), `std::filesystem` absent de newlib, et d'abord la VITESSE de NeoST sur un
+  Pi 4/5 (A12). Leur simulateur PC permet de mettre la couche au point sur Mac. Après l'échange du cœur.
 - **A12 — validation des paquets sur machines hôtes** · P1 ⏸ matériel — macOS arm64 passé (sauf
   le pas visuel en session graphique). Restent les pas 3 à 5 pour **Raspberry Pi** (aucun
   budget temps réel mesuré), **Windows** (jamais lancé hors CI), **APK** (QEMU seul) et
