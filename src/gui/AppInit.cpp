@@ -652,8 +652,8 @@ int appInit(App& A, int argc, char** argv) {
     // Callbacks installés AVANT ImGui : ImGui chaîne les nôtres derrière les siens.
     A.ikbd = &machine.ikbd;
     // Émulation joystick clavier : off en mode normal (elle avale les flèches),
-    // mais ON d'emblée en KIOSK — une borne se joue au joystick (flèches + Ctrl
-    // droit = feu), sans menu pour l'activer. F11 la rebascule si besoin (jeu clavier).
+    // mais ON d'emblée en KIOSK — une borne se joue au joystick (flèches + Alt droit
+    // = feu), sans menu pour l'activer. F11 la rebascule si besoin (jeu clavier).
     A.kbdJoy     = A.kiosk;
     A.kbdJoyPort = cfg.joyport;
     A.port0Auto  = (cfg.port0 == "auto");
@@ -760,7 +760,7 @@ int appInit(App& A, int argc, char** argv) {
     std::printf("[main] Middle mouse button or Ctrl+Alt+G: capture/release mouse | "
                 "Reset button in the CPU window | close the window: quit\n");
     std::printf("[main] Joystick: USB pad auto-detected (port 1) | F11 = keyboard "
-                "emulation (arrows + Ctrl) | \"Joystick\" menu\n");
+                "emulation (arrows + right Alt) | \"Joystick\" menu\n");
 
     // Bridage à la durée ÉMULÉE de chaque trame : indispensable pour que le temps
     // émulé colle au temps réel — sinon le compteur 200 Hz d'EmuTOS s'emballe et les

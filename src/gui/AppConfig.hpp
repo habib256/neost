@@ -40,7 +40,7 @@ namespace neost::appconfig {
 // Défaut machine : 512 Ko ST + cœur Moira.
 // joyport = port ST visé par l'émulation joystick clavier (0 ou 1, défaut 1 =
 // port « jeux »). L'activation de cette émulation N'EST PAS persistée : elle
-// démarre toujours OFF (elle avale flèches + Ctrl, ce qui « casse » le
+// démarre toujours OFF (elle avale flèches + Alt droit, ce qui « casse » le
 // clavier des jeux — Cuddly, Captain Blood…) ; F11/menu l'activent à la session.
 struct Config { std::string rom; std::string disk; std::string diskb; std::string cart; bool mono = false;
                 std::string gemdos;   // HD GEMDOS : dossier hôte monté en C: (vide = off)

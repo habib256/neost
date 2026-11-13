@@ -113,7 +113,7 @@ void drawJoystickWindow(App& A, GLFWwindow* win, uint8_t lastJoy0, uint8_t lastJ
     ImGui::Begin("Joystick", &A.showJoy);
 
     // --- Réglages (modifient les globals ; resauve via A.joyCfgDirty) -----------
-    if (ImGui::Checkbox("Keyboard emulation (arrows + Ctrl)", &A.kbdJoy)) A.joyCfgDirty = true;
+    if (ImGui::Checkbox("Keyboard emulation (arrows + right Alt)", &A.kbdJoy)) A.joyCfgDirty = true;
     ImGui::SameLine(); ImGui::TextDisabled("(F11)");
     ImGui::Text("Emulated port:"); ImGui::SameLine();
     if (ImGui::RadioButton("1 (games)", A.kbdJoyPort == 1)) { A.kbdJoyPort = 1; A.joyCfgDirty = true; }

@@ -788,7 +788,7 @@ void App::applyConfig() {
 // ⚠ À n'appeler qu'entre deux runFrame (loadState refuse le milieu de trame).
 // kbdJoyDesk : réglage « joystick au clavier » à rendre au bureau. Initialisé à
 // false et NON à A.kbdJoy — à ce point A.kbdJoy vaut A.kiosk, donc lancé en borne
-// on capturerait true et la sortie vers le bureau avalerait les flèches + Ctrl
+// on capturerait true et la sortie vers le bureau avalerait les flèches + Alt droit
 // droit du ST sans rien afficher. La branche GUI→KIOSK le rafraîchit ensuite.
 void App::toggleFullscreen() {
     if (kiosk) { switchKioskMode(false); return; }
@@ -899,7 +899,7 @@ void App::switchKioskMode(bool on) {
                              vm ? vm->width : A.winW, vm ? vm->height : A.winH,
                              vm ? vm->refreshRate : GLFW_DONT_CARE);
         // Borne : curseur masqué, souris capturée, joystick clavier armé (une
-        // borne se joue au joystick — flèches + Ctrl, sans menu pour l'activer).
+        // borne se joue au joystick — flèches + Alt droit, sans menu pour l'activer).
         A.mouseCaptured = true;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         if (glfwRawMouseMotionSupported())

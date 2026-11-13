@@ -44,10 +44,12 @@ enum : int8_t { ROLE_AUTO = -1, ROLE_PORT0 = 0, ROLE_PORT1 = 1, ROLE_OFF = 2 };
 // composeAux() chaque trame et envoie make/break IKBD sur les FRONTS.
 enum : uint8_t { AUX_SPACE = 0x01, AUX_RETURN = 0x02 };
 
-// Mapping clavier de l'émulation : flèches + Ctrl, GAUCHE OU DROIT. Hatari ne prend que
-// le Ctrl droit ; un MacBook n'en a pas (Control à gauche seulement) et le tir y était
-// inaccessible (signalé par l'auteur, 2026-11-13). Le Ctrl gauche tire donc aussi — tant
-// que l'émulation est active, il est détourné du clavier ST, comme les flèches.
+// Mapping clavier de l'émulation : flèches + Alt DROIT (Option droite sur Mac).
+// Hatari tire au Ctrl droit ; un MacBook n'en a pas (Control à gauche seulement) et le tir
+// y était inaccessible. Le tir au Ctrl gauche aurait, lui, privé le ST de sa touche Control
+// tant que l'émulation tourne. Choix de l'auteur (2026-11-13) : Alt DROIT seul, présente
+// sur tous les claviers, Mac compris ; les deux Ctrl et l'Alt gauche restent au ST. Les raccourcis
+// du frontend (Ctrl+Alt+G…) lisent l'état des touches et ne sont pas touchés.
 // Renvoie le bit ST d'une touche GLFW, ou 0. Sert AUSSI au frontend pour
 // DÉTOURNER ces touches du clavier ST quand l'émulation est active (sans quoi la
 // touche aurait un double effet : direction joystick ET scancode clavier).
@@ -57,8 +59,7 @@ inline uint8_t kbdBit(int glfwKey) {
         case GLFW_KEY_DOWN:          return DOWN;
         case GLFW_KEY_LEFT:          return LEFT;
         case GLFW_KEY_RIGHT:         return RIGHT;
-        case GLFW_KEY_LEFT_CONTROL:
-        case GLFW_KEY_RIGHT_CONTROL: return FIRE;
+        case GLFW_KEY_RIGHT_ALT:     return FIRE;
         default:                     return 0;
     }
 }
@@ -256,8 +257,7 @@ inline void compose(GLFWwindow* win, bool kbdEnabled, int kbdPort, float deadzon
         if (glfwGetKey(win, GLFW_KEY_DOWN)          == GLFW_PRESS) k |= DOWN;
         if (glfwGetKey(win, GLFW_KEY_LEFT)          == GLFW_PRESS) k |= LEFT;
         if (glfwGetKey(win, GLFW_KEY_RIGHT)         == GLFW_PRESS) k |= RIGHT;
-        if (glfwGetKey(win, GLFW_KEY_LEFT_CONTROL)  == GLFW_PRESS
-            || glfwGetKey(win, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS) k |= FIRE;
+        if (glfwGetKey(win, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS) k |= FIRE;
         p[kbdPort & 1] |= k;
     }
 

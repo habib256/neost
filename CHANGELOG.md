@@ -39,7 +39,7 @@ strictes du headless, Windows au-delà de 4 Gio).
 
 **Sauvegardes** : format **v67** (v59 à la 0.6.4) ; les anciens états ne se rechargent pas.
 
-## Dongles joystick au bon port ; tir au Ctrl gauche (2026-11-13)
+## Dongles joystick au bon port ; tir au clavier sur Alt droit (2026-11-13)
 
 - **Dongles joystick : seulement sur le bon port** (décision de l'auteur). Les deux ports joystick
   ont le même connecteur, et chaque clé joystick se proposait et se branchait sur les deux, avec
@@ -47,11 +47,16 @@ strictes du headless, Windows au-delà de 4 Gio).
   l'accepte plus que sur le port que sonde son logiciel : menus GUI, web et Android, `--plug`
   (refus explicite), `disks/dongles.txt` et `neost.cfg`. Plus rien ne pouvant la brancher
   ailleurs, aucun cas « mauvais port » à débrancher.
-- **Joystick au clavier : le Ctrl gauche tire aussi.** Le tir n'était que sur le Ctrl droit (comme
-  Hatari) ; un MacBook n'en a pas, le tir y était inaccessible (signalé par l'auteur).
-  `stjoy::kbdBit` et `stjoy::compose` prennent les deux Ctrl, bureau et web ; tant que l'émulation
-  est active, le Ctrl gauche est détourné du clavier ST, comme les flèches. Libellés, README,
-  aide du web et `docs/KIOSK.md` suivent.
+- **Joystick au clavier : le tir passe sur Alt droit (Option droite sur Mac).** Le tir n'était
+  que sur le Ctrl droit (comme Hatari) ; un MacBook n'en a pas, le tir y était inaccessible
+  (signalé par l'auteur). Un tir au Ctrl gauche aurait privé le ST de sa touche Control tant que
+  l'émulation tourne : l'auteur a choisi l'Alt droit seul, présent sur tous les claviers.
+  `stjoy::kbdBit` et `stjoy::compose`, bureau et web ; les deux Ctrl et l'Alt gauche restent au ST. Alt+Entrée et
+  les accords Ctrl+Alt du frontend sont traités avant le détournement. Libellés, README, aide du
+  web et `docs/KIOSK.md` suivent.
+- **Page web** (captures de l'auteur) : la pastille « or drop a floppy on the screen » passe à la
+  ligne au lieu de déborder du cadre Floppies (`.badge.wrap`) ; le cadre Joystick affiche les
+  touches (flèches, Alt droit) quand le joystick clavier est actif (`#joyKeysHint`).
 
 ## Web : Cubase Lite retiré du bundle (2026-11-13)
 

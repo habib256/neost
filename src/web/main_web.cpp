@@ -46,7 +46,7 @@ Rewind g_rewind;
 constexpr std::size_t kWebRewindBudget = 32u << 20;
 MachineType g_reqMachine = MachineType::St;  // machine DEMANDÉE (?machine=…) — cf. neost_load_tos
 GLFWwindow* g_window = nullptr;
-bool   g_kbdJoy = false;                 // émulation joystick clavier (flèches + Ctrl)
+bool   g_kbdJoy = false;                 // émulation joystick clavier (flèches + Alt droit)
 int    g_kbdJoyPort = 1;                 // port ST visé par l'émulation clavier
 float  g_joyDeadzone = 0.30f;            // zone morte centrale des sticks analogiques
 
@@ -354,7 +354,7 @@ void onKey(GLFWwindow* w, int key, int /*scancode*/, int action, int mods) {
             return;
         }
     }
-    // Émulation joystick clavier active : les touches du joystick (flèches + Ctrl
+    // Émulation joystick clavier active : les touches du joystick (flèches + Alt droit
     // droit) pilotent la manette et ne sont PAS transmises au clavier ST.
     if (g_kbdJoy && stjoy::kbdBit(key)) return;
     // Ctrl+Alt+R : retour arrière, même accord que le bureau ; R seul va à l'IKBD.
@@ -770,7 +770,7 @@ EMSCRIPTEN_KEEPALIVE void neost_mount_disk_b(const char* path) {
     g_machine->fdc.loadImage(path, 1);
 }
 
-// Émulation joystick au clavier (flèches + Ctrl) : enabled != 0 active,
+// Émulation joystick au clavier (flèches + Alt droit) : enabled != 0 active,
 // port = 0/1 (défaut 1 = port « jeux »). Les manettes physiques (API Gamepad du
 // navigateur) sont toujours scrutées, indépendamment de ce réglage.
 EMSCRIPTEN_KEEPALIVE void neost_set_kbd_joystick(int enabled, int port) {

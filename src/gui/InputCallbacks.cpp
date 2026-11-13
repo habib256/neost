@@ -160,8 +160,8 @@ void onKey(GLFWwindow*, int key, int scancode, int action, int mods) {
     // touche restait collée côté ST. C'est exactement l'invariant que le commentaire du
     // bloc de relâchement énonce, et que les trois filtres voisins respectent déjà.
     if (A.kiosk && (key == GLFW_KEY_F9 || key == GLFW_KEY_F10)) return;
-    // Émulation joystick clavier active : les touches du joystick (flèches + Ctrl
-    // droit) pilotent la manette et NE sont PAS transmises au clavier ST (sinon
+    // Émulation joystick clavier active : les touches du joystick (flèches + Alt droit,
+    // cf. stjoy::kbdBit) pilotent la manette et NE sont PAS transmises au clavier ST (sinon
     // double effet) ; elles sont scrutées par trame dans la boucle (cf. stjoy::compose).
     if (A.kbdJoy && stjoy::kbdBit(key)) return;
     // Overlay kiosk de choix de disquette ouvert : le clavier pilote l'overlay

@@ -87,6 +87,11 @@
       border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.6rem;
       white-space: nowrap;
     }
+    /* Pastille de texte LONG (aide du glisser-déposer) : elle passe à la ligne au lieu de
+       déborder de son cadre (capture de l'auteur, 2026-11-13, cadre Floppies). */
+    .badge.wrap { white-space: normal; border-radius: 10px; line-height: 1.35; max-width: 100%; }
+    /* Aide des touches du joystick clavier : visible seulement quand l'émulation est active. */
+    .keyhint { font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; }
     .iconbtn {
       background: var(--panel2); color: var(--text); border: 1px solid var(--border);
       border-radius: 6px; padding: 0.25rem 0.55rem; font-size: 0.8rem; cursor: pointer;
@@ -185,7 +190,7 @@
         <button id="btnMount" class="primary" title="Mount in A: and reboot">Mount A: + Reset</button>
         <button id="btnMountB" title="Mount the selected floppy in drive B (no reset)">→ B:</button>
         <button id="btnDownloadA" disabled title="Save the floppy in drive A: to your computer, with everything the ST wrote to it. Writes only live in this page: they are lost when it is closed or reloaded.">⤓ Download A:</button>
-        <span class="badge" title="Drop a .st / .msa / .dim / .stx / .ipf file on the screen: it goes into A: without a reset (swap disks mid-game). Hold Shift while dropping to mount it and reboot.">or drop a floppy on the screen (Shift = + Reset)</span>
+        <span class="badge wrap" title="Drop a .st / .msa / .dim / .stx / .ipf file on the screen: it goes into A: without a reset (swap disks mid-game). Hold Shift while dropping to mount it and reboot.">or drop a floppy on the screen (Shift = + Reset)</span>
       </div>
     </fieldset>
 
@@ -207,11 +212,14 @@
     <fieldset>
       <legend>Joystick</legend>
       <div class="row">
-        <button id="btnJoy" class="toggle" title="Arrows + Ctrl = joystick (USB pads work too, and are always detected)">Keyboard joystick: off</button>
+        <button id="btnJoy" class="toggle" title="Arrows + right Alt = joystick (USB pads work too, and are always detected)">Keyboard joystick: off</button>
         <select id="joyPortSel" title="Which of the ST's two DE-9 ports the keyboard joystick is plugged into">
           <option value="1">Port 1 (games)</option>
           <option value="0">Port 0 (mouse port)</option>
         </select>
+      </div>
+      <div id="joyKeysHint" class="keyhint" hidden>
+        Arrows = directions &middot; <kbd>right Alt</kbd> (right Option on a Mac) = fire
       </div>
       <div class="row" style="margin-top:0.45rem">
         <label for="joyDzSlider" style="font-size:0.78rem;color:var(--muted)">Dead zone</label>
@@ -241,7 +249,7 @@
     <summary>Help &amp; shortcuts</summary>
     <ul>
       <li><b>Mouse</b>: click the middle button (usually the wheel), or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>G</kbd>, to <b>capture or release</b> it (GEM cursor). While it is captured, <kbd>Esc</kbd> belongs to the browser and releases it (a browser rule the page cannot change); otherwise <kbd>Esc</kbd> and <kbd>Del</kbd> are sent to the ST.</li>
-      <li><b>Keyboard</b>: routed to the IKBD; letters follow your keyboard layout and the TOS language (AZERTY under a French TOS), other keys are positional (US layout). <b>Keyboard joystick</b>: arrows + <kbd>Ctrl</kbd> (left or right) = fire, on the port picked in the Joystick box (port 1 by default).</li>
+      <li><b>Keyboard</b>: routed to the IKBD; letters follow your keyboard layout and the TOS language (AZERTY under a French TOS), other keys are positional (US layout). <b>Keyboard joystick</b>: arrows + <kbd>right Alt</kbd> (right Option on a Mac) = fire, on the port picked in the Joystick box (port 1 by default).</li>
       <li><b>USB pads</b>: detected automatically — first pad on port 1, second on port 0. The <b>dead zone</b> slider only affects analog sticks, not the D-pad.</li>
       <li><b>Reset</b>: a <b>cold</b> reset (power-cycle) — ST-RAM is wiped and TOS boots from scratch, which is also what "Mount A: + Reset" and <kbd>Shift</kbd>+drop do.</li>
       <li><b>Keys the browser would take</b> (F1–F12, arrows, Space, Page Up/Down, Ctrl/Alt+letter) go to the ST while the screen has the focus or the mouse is captured: click the screen first.</li>
@@ -931,6 +939,7 @@
       callKbdJoy(joyOn);
       this.textContent = joyOn ? 'Keyboard joystick: on' : 'Keyboard joystick: off';
       this.classList.toggle('on', joyOn);
+      document.getElementById('joyKeysHint').hidden = !joyOn;
       document.getElementById('canvas').focus();
     });
 

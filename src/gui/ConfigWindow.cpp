@@ -862,7 +862,7 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
             const bool kbdHere = A.kbdJoy && A.kbdJoyPort == port;
             char cur[160];
             if (pinnedJid >= 0)      std::snprintf(cur, sizeof cur, "Pad: %s", padName(pinnedJid));
-            else if (kbdHere)        std::snprintf(cur, sizeof cur, "Keyboard joystick (arrows + Ctrl)");
+            else if (kbdHere)        std::snprintf(cur, sizeof cur, "Keyboard joystick (arrows + right Alt)");
             else if (port == 0)      std::snprintf(cur, sizeof cur, A.port0Auto ? (autoJid >= 0 ? "Auto: 2nd pad (%s)" : "Auto: 2nd pad (none yet)") : "Mouse", autoJid >= 0 ? padName(autoJid) : "");
             else                     std::snprintf(cur, sizeof cur, autoJid >= 0 ? "Auto: first pad (%s)" : "Auto: first pad (none detected)", autoJid >= 0 ? padName(autoJid) : "");
             ImGui::SetNextItemWidth(320);
@@ -879,7 +879,7 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                         unpin(1); if (kbdHere) A.kbdJoyPort = 0; A.joyCfgDirty = true;
                     }
                 }
-                if (ImGui::Selectable("Keyboard joystick (arrows + Ctrl)", kbdHere && pinnedJid < 0)) {
+                if (ImGui::Selectable("Keyboard joystick (arrows + right Alt)", kbdHere && pinnedJid < 0)) {
                     unpin(port); A.kbdJoy = true; A.kbdJoyPort = port; A.joyCfgDirty = true;
                 }
                 for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid) {
