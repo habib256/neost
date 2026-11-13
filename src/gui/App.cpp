@@ -9,6 +9,8 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "gui/App.hpp"
+#include "util/Log.hpp"
+#include "gui/MachineSummary.hpp"
 
 #include <cstdio>
 #include <filesystem>
@@ -769,9 +771,11 @@ void App::applyConfig() {
     machine.bus.stePadsWired = cfg.stePads;
     machine.bus.setFpuPresent(cfg.fpu && machTypeR == MachineType::MegaSte);
     machine.reset();
-    std::fprintf(stderr, "[main] live reconfigure: core %s | machine %s | RAM %s\n",
-                 Cpu68k::coreName(machine.cpu.core()),
-                 machineName(machTypeR), cfg.mem.c_str());
+    if (neost::log::verbose())
+        std::fprintf(stderr, "[main] live reconfigure: core %s | machine %s | RAM %s\n",
+                     Cpu68k::coreName(machine.cpu.core()),
+                     machineName(machTypeR), cfg.mem.c_str());
+    else std::fprintf(stderr, "%s\n", neost::machineSummary(machine, romP).c_str());
 }
 
 // ─── Bascule GUI ⇄ kiosk à chaud ────────────────────────────────────────
@@ -949,5 +953,5 @@ void App::switchKioskMode(bool on) {
     A.stateMsg = A.kiosk ? "\xef\x84\x88 Kiosk mode (Alt+Enter to go back)"
                          : "\xef\x84\x88 Desktop mode (Alt+Enter for full screen)";
     A.stateMsgFrames = 120;
-    std::fprintf(stderr, "[kiosk] switched → %s\n", A.kiosk ? "KIOSK" : "DESKTOP");
+    if (neost::log::verbose()) std::fprintf(stderr, "[kiosk] switched → %s\n", A.kiosk ? "KIOSK" : "DESKTOP");
 }

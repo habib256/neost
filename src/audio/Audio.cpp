@@ -8,6 +8,7 @@
 // =============================================================================
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
+#include "util/Log.hpp"
 
 #include "audio/Audio.hpp"
 #include "audio/DriveSound.hpp"
@@ -47,7 +48,7 @@ void Audio::render(float* out, uint32_t frames, uint32_t /*sampleRate*/) {
     // callbacks). Un bloc PLUS GRAND que le coussin (primeSamples_) rendrait
     // l'underrun STRUCTUREL : chaque callback viderait l'anneau tout juste amorcé.
     static int dbg = 0;
-    if (dbg < 3) { std::fprintf(stderr, "[Audio] callback: %u frames (ring %zu floats, cushion %u frames)\n",
+    if (dbg < 3 && neost::log::verbose()) { std::fprintf(stderr, "[Audio] callback: %u frames (ring %zu floats, cushion %u frames)\n",
                                 frames, ring_.available(), primeSamples_); ++dbg; }
     if (!primed_) {
         // Démarrage : latence cible complète. Reprise : seuil court mais jamais plus
@@ -162,7 +163,12 @@ void Audio::produceFrame(int64_t frameCycles, int64_t frameEndCycle) {
     ++calls;
     if (underrunMuteFrames_ > 0) --underrunMuteFrames_;
     const uint32_t u = underruns_.load(std::memory_order_relaxed);
-    if (u != underrunsSeen_ && underrunMuteFrames_ <= 0) {
+    // Terminal sobre (GUI) : un décrochage ISOLÉ — bascule borne/bureau, Apply, chargement
+    // d'une disquette, l'émulation s'est arrêtée un instant — n'est pas un défaut. On ne
+    // prévient que s'il se RÉPÈTE (3 depuis le dernier message), signe que l'hôte ne tient
+    // pas la cadence. En --verbose, chaque décrochage est signalé comme avant.
+    const bool report = neost::log::verbose() ? (u != underrunsSeen_) : (u >= underrunsSeen_ + 3);
+    if (report && underrunMuteFrames_ <= 0) {
         const double secs = std::chrono::duration<double>(dclock::now() - t0).count();
         // ⚠ « 50/60 » était FAUX en haute résolution : le mode mono tourne à 71,2 Hz,
         // et l'on y lisait « 71.4 real frames/s (expected ~50/60) » comme un emballement
@@ -212,8 +218,9 @@ bool Audio::start() {
     }
     device_  = dev;
     started_ = true;
-    std::printf("[Audio] miniaudio started: %u Hz STEREO, latency ~%u ms (push model: timestamped PSG + DMA L/R + drive)\n",
-                rate_, primeSamples_ * 1000 / rate_);
+    if (neost::log::verbose())
+        std::printf("[Audio] miniaudio started: %u Hz STEREO, latency ~%u ms (push model: timestamped PSG + DMA L/R + drive)\n",
+                    rate_, primeSamples_ * 1000 / rate_);
     std::fflush(stdout);   // visible même si l'appli est tuée (diagnostic)
     return true;
 }

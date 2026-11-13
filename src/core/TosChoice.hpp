@@ -51,4 +51,12 @@ bool tosRunsMachine(const TosInfo& t, MachineType m);
 // Égalité : l'ordre de `cands` (l'appelant les trie par nom).
 int pickTosForMachine(MachineType m, const TosInfo* cur, const std::vector<TosInfo>& cands);
 
+// L'inverse, pour la page ROM : le modèle à retenir quand on choisit le TOS `t` alors
+// que `cur` est en attente. `cur` s'il convient ; sinon le plus proche qui convient —
+// ST ↔ Mega ST, STE ↔ Mega STE d'abord, puis l'autre famille. Sans modèle possible
+// (TOS du TT/Falcon), `cur` reste (Bus::loadTos refusera la ROM, et le dira).
+// Sans cela, choisir tos102uk alors que STE était coché faisait rétrograder la
+// machine à l'Apply (« TOS 1.02 only runs in ST mode — switching ste -> ST »).
+MachineType pickMachineForTos(MachineType cur, const TosInfo& t);
+
 }  // namespace neost

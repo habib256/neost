@@ -561,6 +561,14 @@ static void testTosChoice() {
              neost::pickTosForMachine(MachineType::Ste, &tos102uk, onlyEmu), 2);
     const std::vector<TosInfo> onlySt = { c[4], c[5] };
     checkInt("aucun TOS STE → -1", neost::pickTosForMachine(MachineType::Ste, &tos102uk, onlySt), -1);
+    // Inverse (page ROM) : le modèle suit la ROM choisie.
+    checkBool("STE + tos102uk → ST", neost::pickMachineForTos(MachineType::Ste, tos102uk) == MachineType::St, true);
+    checkBool("Mega STE + tos102uk → Mega ST", neost::pickMachineForTos(MachineType::MegaSte, tos102uk) == MachineType::MegaSt, true);
+    checkBool("ST + tos162uk → STE", neost::pickMachineForTos(MachineType::St, tos162uk) == MachineType::Ste, true);
+    checkBool("Mega STE + tos162uk → STE", neost::pickMachineForTos(MachineType::MegaSte, tos162uk) == MachineType::Ste, true);
+    checkBool("Mega ST + tos206uk → Mega STE", neost::pickMachineForTos(MachineType::MegaSt, c[9]) == MachineType::MegaSte, true);
+    checkBool("STE + tos206uk → STE (convient)", neost::pickMachineForTos(MachineType::Ste, c[9]) == MachineType::Ste, true);
+    checkBool("STE + TOS 3.06 (TT) → STE (refusé au chargement)", neost::pickMachineForTos(MachineType::Ste, c[10]) == MachineType::Ste, true);
 }
 
 static void testTosImageLoad() {

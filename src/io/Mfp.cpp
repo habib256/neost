@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Mfp.hpp"
+#include "util/Log.hpp"
 #include "core/Pacing.hpp"   // kCpuHzInt — UNE horloge CPU pour tout l'arbre
 #include <algorithm>
 #include <cstdio>
@@ -714,6 +715,7 @@ void Mfp::updateSerialConfig() {
     static const int  kMaxLogs = 8;
     static int        nLogs    = 0;
     static const bool traceAll = std::getenv("NEOST_MFP_TRACE") != nullptr;
+    if (!traceAll && !neost::log::verbose()) return;   // terminal sobre du GUI (util/Log.hpp)
     if (!traceAll && nLogs > kMaxLogs) return;
     if (!traceAll && nLogs == kMaxLogs) {
         ++nLogs;

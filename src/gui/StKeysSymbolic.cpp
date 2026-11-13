@@ -8,6 +8,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "gui/StKeys.hpp"
+#include "util/Log.hpp"
 
 #include <cstdio>
 
@@ -218,7 +219,7 @@ void setCountryFromTos(const std::vector<uint8_t>& rom) {
     static const char* names[] = {"US", "DE", "FR", "UK", "ES", "IT", "SE", "CH-FR",
                                   "CH-DE", nullptr, "FI", "NO", "DK", nullptr, "NL", "CZ"};
     const char* n = (g_kbdCountry >= 0 && g_kbdCountry <= 15) ? names[g_kbdCountry] : nullptr;
-    std::fprintf(stderr, "[kbd] TOS layout: %s (symbolic mapping)\n",
+    if (neost::log::verbose()) std::fprintf(stderr, "[kbd] TOS layout: %s (symbolic mapping)\n",
                  n ? n : g_kbdCountry == 127 ? "multilingual (default)" : "other (default)");
 }
 

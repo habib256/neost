@@ -1,6 +1,7 @@
 // NeoST — pile d'effets CRT universelle (portée de POM2, VERHILLE Arnaud 2026).
 
 #include "gui/CrtEffectStack.h"
+#include "util/Log.hpp"
 #include "gui/OpenGLShader.h"
 
 #include <algorithm>
@@ -403,7 +404,7 @@ bool CrtEffectStack::initialize()
     glBindBuffer(GL_ARRAY_BUFFER, 0);   // ne pas laisser le VBO lié (cf. process())
 
     ready = true;
-    std::fprintf(stderr, "[CRT] CRT effect stack ready\n");
+    if (neost::log::verbose()) std::fprintf(stderr, "[CRT] CRT effect stack ready\n");
     return true;
 }
 

@@ -4,6 +4,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "core/Bus.hpp"
+#include "util/Log.hpp"
 #include "core/Scheduler.hpp"
 #include "core/StateArchive.hpp"
 #include "core/Shifter.hpp"
@@ -186,8 +187,9 @@ bool Bus::loadTos(const std::string& path) {
     // Vecteurs reset $0-$7 : le GLUE les mappe sur la ROM en permanence — on les
     // recopie en RAM dès le chargement (et à chaque reset, cf. seedResetVectors).
     seedResetVectors();
-    std::fprintf(stderr, "[Bus] TOS loaded: %s (%zu KB @ $%06X, version $%04X)\n",
-                 path.c_str(), rom.size() / 1024, romBase, tosVersion);
+    if (neost::log::verbose())   // terminal sobre du GUI : le résumé de la machine le dit
+        std::fprintf(stderr, "[Bus] TOS loaded: %s (%zu KB @ $%06X, version $%04X)\n",
+                     path.c_str(), rom.size() / 1024, romBase, tosVersion);
     return true;
 }
 
@@ -239,7 +241,10 @@ bool Bus::loadCart(const std::string& path) {
 }
 
 void Bus::ejectCart() {
-    if (!cart.empty())
+    // Sans chemin, ce n'est pas une cartouche de l'utilisateur mais le pilote du disque dur
+    // GEMDOS (posé par GemdosHd, retiré puis réinstallé à chaque reconfiguration) : le dire
+    // « cartridge ejected: » avec un nom vide, c'était du bruit — on se tait.
+    if (!cart.empty() && !cartPath_.empty())
         std::fprintf(stderr, "[Bus] cartridge ejected: %s\n", cartPath_.c_str());
     cart.clear();
     cartPath_.clear();

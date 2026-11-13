@@ -39,6 +39,31 @@ strictes du headless, Windows au-delà de 4 Gio).
 
 **Sauvegardes** : format **v67** (v59 à la 0.6.4) ; les anciens états ne se rechargent pas.
 
+## Terminal sobre ; la page ROM choisit le modèle (2026-11-13)
+
+Demande de l'auteur : le terminal du GUI était trop bavard, et sa relecture a montré trois défauts.
+
+- **Bandeau puis terminal sobre.** Le GUI commence par « NeoST <version> » puis « GPL-3.0 - (c)
+  2026 VERHILLE Arnaud », puis une ligne de résumé (`[NeoST] STE | 1 MB | tos162uk.img (TOS 1.62,
+  50 Hz)`, `gui/MachineSummary.hpp`), une ligne par disquette (`[disk] A: <nom>`) ou Apply, et les
+  vrais avertissements. Le détail (rappels de callback audio, version GLSL, reprogrammations de
+  l'USART du MFP, décompression .msa, bascules borne/bureau, chemins complets) passe derrière
+  `--verbose` / `NEOST_VERBOSE=1` : un seul interrupteur, `util/Log.hpp`, ACTIF par défaut pour que
+  le headless, le web et Android ne changent pas (`tools/smoke_package.sh` lit « drive A: » et
+  « HDD GEMDOS »). Les décrochages du son ISOLÉS (bascule borne, Apply, chargement) ne sont plus
+  signalés ; trois de suite, oui.
+- **« Joystick: USB pad auto-detected (port 1) » était faux** : texte figé, affiché manette branchée
+  ou non. La ligne nomme désormais chaque manette présente et le port qu'elle pilote
+  (`resolveAssign`, mêmes rôles que la boucle), ou dit qu'il n'y en a pas.
+- **La page ROM choisit le modèle.** Choisir `tos102uk` avec STE coché faisait rétrograder la
+  machine à l'Apply (« TOS 1.02 only runs in ST mode — switching ste -> ST »), seul le terminal le
+  disait. `core/TosChoice` gagne l'inverse de `pickTosForMachine` : `pickMachineForTos` garde le
+  modèle s'il convient, sinon prend le plus proche (ST ↔ Mega ST, STE ↔ Mega STE, puis l'autre
+  famille) ; la page le dit. Sept tables de vérité au selftest (977 OK).
+- **« cartridge ejected: » sans nom** : c'était le pilote du disque dur GEMDOS, retiré et réinstallé à
+  chaque reconfiguration. Il n'est plus annoncé.
+- **Logo web** : les barres rouge et bleue montent à un tiers de la hauteur (escalier vers le centre).
+
 ## Dongles joystick au bon port ; tir au clavier sur Alt droit (2026-11-13)
 
 - **Dongles joystick : seulement sur le bon port** (décision de l'auteur). Les deux ports joystick

@@ -174,6 +174,10 @@ menu on **START** to swap games, remap pads or send keystrokes without ever leav
 screen. The whole thing is drivable from a gamepad. Details, including the Raspberry Pi
 cabinet build: [`docs/KIOSK.md`](docs/KIOSK.md).
 
+**Terminal output** is kept short: the version and licence, a one-line summary of the
+machine, one line per disk you mount or config you apply, and real warnings. Run
+`neost --verbose` (or set `NEOST_VERBOSE=1`) for the full technical log.
+
 **CRT look** (`--crt`, or *Display → CRT effects*) — an opt-in shader pass that puts the
 glass of an old monitor back in front of the pixels: barrel geometry, scanlines, shadow
 mask, phosphor persistence. Presets `light`, `arcade`, `phosphor`, then tweak every

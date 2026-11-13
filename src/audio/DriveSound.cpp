@@ -10,6 +10,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "miniaudio.h"
+#include "util/Log.hpp"
 
 #include "audio/DriveSound.hpp"
 
@@ -70,7 +71,7 @@ bool DriveSound::init(const std::string& dir, uint32_t sampleRate) {
     }
 
     ok_ = true;
-    std::printf("[DriveSound] ready (%s, mixed into the YM2149)\n", dir.c_str());
+    if (neost::log::verbose()) std::printf("[DriveSound] ready (%s, mixed into the YM2149)\n", dir.c_str());
     return true;
 }
 

@@ -15,6 +15,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/GemdosHd.hpp"
+#include "util/Log.hpp"
 #include "core/Bus.hpp"
 #include "util/HostPath.hpp"
 #include "core/Cpu68k.hpp"
@@ -436,10 +437,18 @@ bool GemdosHd::setDirectory(const std::string& hostDir) {
     mountedDirectory_ = absDir;
     installSystemCart();
     currentDrive_ = (uint16_t)bootDrive_;
+    // Terminal sobre (GUI, cf. util/Log.hpp) : une ligne quand le dossier CHANGE, pas à
+    // chaque reconfiguration (le montage est refait après chaque Apply).
+    static std::string lastShown;
     for (auto& d : emudrives_)
-        if (d.used)
-            std::fprintf(stderr, "[gemdos] HDD GEMDOS : %c: <-> %s\n",
-                         'A' + d.driveNumber, d.hdEmuDir.c_str());
+        if (d.used) {
+            if (neost::log::verbose())
+                std::fprintf(stderr, "[gemdos] HDD GEMDOS : %c: <-> %s\n",
+                             'A' + d.driveNumber, d.hdEmuDir.c_str());
+            else if (d.hdEmuDir != lastShown)
+                std::fprintf(stderr, "[disk] %c: %s\n", 'A' + d.driveNumber, d.hdEmuDir.c_str());
+            lastShown = d.hdEmuDir;
+        }
     return true;
 }
 

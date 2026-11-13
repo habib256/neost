@@ -146,6 +146,24 @@ static void pickRomForMachine(ConfigUi& ui, const std::string& machineId) {
                    + " to match this model.";
 }
 
+// L'inverse de pickRomForMachine (page ROM) : choisir une ROM qui ne fait pas tourner
+// le modèle coché recale le modèle (core/TosChoice.hpp, pickMachineForTos). Sans cela,
+// tos102uk choisi sous « STE » faisait rétrograder la machine à l'Apply, et seul un
+// message du terminal le disait (relevé par l'auteur, 2026-11-13).
+static void pickMachineForRom(ConfigUi& ui) {
+    ui.romAutoNote.clear();
+    neost::TosInfo t;
+    if (!neost::readTosInfo(ui.pendRom, t)) return;
+    const MachineType cur = parseMachine(ui.pendMachine);
+    const MachineType m = neost::pickMachineForTos(cur, t);
+    if (m == cur) return;
+    static const char* ids[]    = { "st", "megast", "ste", "megaste" };
+    static const char* labels[] = { "ST", "Mega ST", "STE", "Mega STE" };
+    const int i = m == MachineType::St ? 0 : m == MachineType::MegaSt ? 1 : m == MachineType::Ste ? 2 : 3;
+    ui.pendMachine = ids[i];
+    ui.romAutoNote = std::string("Model switched to ") + labels[i] + " to match this TOS.";
+}
+
 void drawConfigWindow(App& A, ConfigUi& ui) {
     ImGui::SetNextWindowSize(ImVec2(560, 520), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(ICON_FA_COG " Configuration", &A.showCfg)) { ImGui::End(); return; }
@@ -303,6 +321,8 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
         break;
     }
     case kCfgRom: {
+        if (!ui.romAutoNote.empty())
+            ImGui::TextColored(ImVec4(.5f, .85f, 1.f, 1.f), ICON_FA_INFO_CIRCLE " %s", ui.romAutoNote.c_str());
         ImGui::TextDisabled("TOS images in %s/", ui.romsDir.c_str());
         std::error_code ec;
         if (fs::is_directory(ui.romsDir, ec)) {
@@ -327,7 +347,10 @@ void drawConfigWindow(App& A, ConfigUi& ui) {
                       [&](const fs::path& a, const fs::path& b) { return key(a) < key(b); });
             for (const auto& p : roms) {
                 const std::string name = p.filename().string();
-                if (ImGui::RadioButton(name.c_str(), name == curName)) ui.pendRom = p.string();
+                if (ImGui::RadioButton(name.c_str(), name == curName) && name != curName) {
+                    ui.pendRom = p.string();
+                    pickMachineForRom(ui);
+                }
                 ImGui::SameLine();
                 // TOS du TT/Falcon : listé, mais Bus::loadTos le refusera (Apply le dit).
                 uint8_t h[0x30] = {};

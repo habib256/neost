@@ -27,6 +27,7 @@
 //  (c) 2026 VERHILLE Arnaud — projet NeoST.
 // =============================================================================
 #include "io/Fdc.hpp"
+#include "util/Log.hpp"
 #include "io/WrittenTrack.hpp"
 #include "io/IpfImage.hpp"
 #include "io/DiskImageCodec.hpp"
@@ -831,7 +832,9 @@ bool Fdc::loadImage(const std::string& path, int drive) {
             indexTime_ = 0;
             if (str_ & STR_MOTOR) indexInit();
         }
-        std::fprintf(stderr, "[FDC] drive %c: %s (%s, %d tracks, %d side(s))\n",
+        if (!neost::log::verbose())
+            std::fprintf(stderr, "[disk] %c: %s\n", drive & 1 ? 'B' : 'A', neost::log::baseName(path).c_str());
+        else std::fprintf(stderr, "[FDC] drive %c: %s (%s, %d tracks, %d side(s))\n",
                      drive & 1 ? 'B' : 'A', path.c_str(), fmt, tps, dk.sides);
         return true;
     }
@@ -856,7 +859,7 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         dk.imgFormat = FloppyDisk::FMT_MSA;
         dk.msaSpt = (raw[2] << 8) | raw[3];
         dk.msaSides = ((raw[4] << 8) | raw[5]) + 1;
-        std::fprintf(stderr, "[FDC] .msa image decompressed: %s\n", path.c_str());
+        if (neost::log::verbose()) std::fprintf(stderr, "[FDC] .msa image decompressed: %s\n", path.c_str());
     } else if (decodeDim(raw, conv)) {
         dk.image = std::move(conv);
         dk.imgFormat = FloppyDisk::FMT_DIM;
@@ -935,7 +938,9 @@ bool Fdc::loadImage(const std::string& path, int drive) {
         indexTime_ = 0;
         if (str_ & STR_MOTOR) indexInit();
     }
-    std::fprintf(stderr, "[FDC] drive %c: %s (%zu KB, %d sectors/track, %d sides%s%s)\n",
+    if (!neost::log::verbose())
+        std::fprintf(stderr, "[disk] %c: %s\n", drive & 1 ? 'B' : 'A', neost::log::baseName(path).c_str());
+    else std::fprintf(stderr, "[FDC] drive %c: %s (%zu KB, %d sectors/track, %d sides%s%s)\n",
                  drive & 1 ? 'B' : 'A', path.c_str(), dk.image.size() / 1024, dk.spt, dk.sides,
                  dk.density == 4 ? ", ED" : dk.density == 2 ? ", HD" : "",
                  dk.writeProtect ? ", write-protected" : "");

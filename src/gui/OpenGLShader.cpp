@@ -12,6 +12,7 @@
 // restent exposés — l'immediate mode et le shader coexistent.
 
 #include "OpenGLShader.h"
+#include "util/Log.hpp"
 
 #include <cstddef>
 #include <cstdio>
@@ -233,8 +234,9 @@ unsigned int compileShaderProgram(const char* vertexBody,
             reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
         std::string chosen(versionLine + std::strlen("#version "));
         while (!chosen.empty() && chosen.back() == '\n') chosen.pop_back();
-        std::fprintf(stderr, "[CRT] GLSL %s (driver: %s)\n",
-                     chosen.c_str(), sl ? sl : "?");
+        if (neost::log::verbose())
+            std::fprintf(stderr, "[CRT] GLSL %s (driver: %s)\n",
+                         chosen.c_str(), sl ? sl : "?");
     }
 
     unsigned int prog = glCreateProgram();

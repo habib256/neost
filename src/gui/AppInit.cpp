@@ -64,6 +64,8 @@
 #include "gui/DebugWindows.hpp"   // hexa, CPU, joystick, débogueur
 #include "gui/DockLayout.hpp"     // ancrage + taille de la fenêtre hôte
 #include "gui/InputCallbacks.hpp" // callbacks GLFW clavier/souris
+#include "util/Log.hpp"
+#include "gui/MachineSummary.hpp"
 #include "gui/JoyMap.hpp"         // manettes hôte → ports ST, par GUID
 #include "gui/KioskMenu.hpp"      // menu plein écran de la borne
 #include "gui/StScreenView.hpp"   // texture de l'écran ST + cadrages borne/bureau
@@ -121,6 +123,11 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
     // Cibles du parseur (--kiosk-monitor, --run-frames, --shot, --scancode-at,
     // --key-hold, --joy-at, --mouse-at) : elles vivent dans App, avec le pourquoi
     // de chacune — cf. gui/App.hpp § « Harnais d'injection ».
+    // Terminal SOBRE par défaut (util/Log.hpp) : résumé de la machine, une ligne par
+    // action, les vrais avertissements. --verbose ou NEOST_VERBOSE=1 rendent tout.
+    neost::log::setVerbose(std::getenv("NEOST_VERBOSE") != nullptr);
+    for (int i = 1; i < argc; ++i)
+        if (argv[i] && std::string(argv[i]) == "--verbose") neost::log::setVerbose(true);
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i] ? argv[i] : "";
         if (a == "--version") {           // identité de build (release-readiness)
@@ -144,6 +151,7 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
                 "\n"
                 "  --help, -h            this help\n"
                 "  --version             build identity\n"
+                "  --verbose             detailed terminal log (also NEOST_VERBOSE=1)\n"
                 "  --kiosk               kiosk (arcade cabinet) mode\n"
                 "  --kiosk-monitor N     monitor index for kiosk mode\n"
                 "  --audio-latency MS    audio cushion in ms (default 85, clamped 20-250;\n"
@@ -169,7 +177,8 @@ static int parseCommandLine(App& A, int argc, char** argv, std::vector<std::stri
                 "boots that floppy on the last ROM. Headless runs: see neost-headless --help.\n");
             return 0;
         }
-        if      (a == "--kiosk")           A.kiosk = A.kioskLaunched = true;
+        if      (a == "--verbose")         { /* lu avant la boucle */ }
+        else if (a == "--kiosk")           A.kiosk = A.kioskLaunched = true;
         //   --run-frames N : quitte proprement après N trames ÉMULÉES (pas affichées).
         //   --shot PATH    : dump du framebuffer ST en PPM juste avant cette sortie.
         //   Chantier A8 : c'est la brique qui rend le GUI observable par un harnais —
@@ -298,6 +307,25 @@ int appInit(App& A, int argc, char** argv) {
         return (i == std::string::npos) ? std::string(".") : a0.substr(0, i);
     }();
     const std::string& exeDir = A.exeDir;
+    // Bandeau, PREMIÈRES lignes du terminal (demande de l'auteur, 2026-11-13) : nom et
+    // version, puis licence et auteur. Toujours affiché — sobre ou --verbose — sauf pour
+    // --help et --version, qui ont leur propre sortie.
+    {
+        bool infoOnly = false;
+        for (int i = 1; i < argc; ++i) {
+            const std::string a = argv[i] ? argv[i] : "";
+            if (a == "--help" || a == "-h" || a == "--version") infoOnly = true;
+        }
+        if (!infoOnly) {
+#ifdef NEOST_VERSION
+            std::printf("NeoST %s - Atari ST, STE & Mega STE emulator\n", NEOST_VERSION);
+#else
+            std::printf("NeoST - Atari ST, STE & Mega STE emulator\n");
+#endif
+            std::printf("GPL-3.0 - (c) 2026 VERHILLE Arnaud\n");
+            std::fflush(stdout);
+        }
+    }
     // Préférences mémorisées (dernier ROM + type de moniteur).
     A.cfg = loadConfig(exeDir);
     Config& cfg = A.cfg;
@@ -448,9 +476,10 @@ int appInit(App& A, int argc, char** argv) {
                                           machType0);   // RAM + cœur + modèle (cfg, ajusté au TOS)
     Machine& machine = *A.machine;
     A.rewind.setEnabled(cfg.rewind || A.rewindAt > 0);
-    std::fprintf(stderr, "[main] CPU core: %s | machine: %s | RAM: %s\n",
-                 Cpu68k::coreName(machine.cpu.core()),
-                 machineName(machType0), cfg.mem.c_str());
+    if (neost::log::verbose())
+        std::fprintf(stderr, "[main] CPU core: %s | machine: %s | RAM: %s\n",
+                     Cpu68k::coreName(machine.cpu.core()),
+                     machineName(machType0), cfg.mem.c_str());
     if (!machine.loadTos(tosPath)) {
         std::fprintf(stderr, "[main] Starting without a TOS (the CPU will run on nothing).\n");
     } else {
@@ -460,6 +489,7 @@ int appInit(App& A, int argc, char** argv) {
         A.hwValid = true;
     }
     neost::stkeys::setCountryFromTos(machine.bus.rom);    // pays du TOS → surcharges keymap (FR/DE/UK…)
+    if (!neost::log::verbose()) std::fprintf(stderr, "%s\n", neost::machineSummary(machine, tosPath).c_str());
     if (!machine.loadDisk(diskPath))
         std::fprintf(stderr, "[main] No floppy mounted (%s).\n", diskPath.c_str());
     // Lecteur B mémorisé (diskb=) : remonté au démarrage comme le A. Silencieux si
@@ -757,10 +787,28 @@ int appInit(App& A, int argc, char** argv) {
     if (uiLayoutOutdated) A.dockReset = true;
     ImGui_ImplOpenGL2_Init();
 
-    std::printf("[main] Middle mouse button or Ctrl+Alt+G: capture/release mouse | "
-                "Reset button in the CPU window | close the window: quit\n");
-    std::printf("[main] Joystick: USB pad auto-detected (port 1) | F11 = keyboard "
-                "emulation (arrows + right Alt) | \"Joystick\" menu\n");
+    std::printf("[main] Mouse: middle click or Ctrl+Alt+G | F11: keyboard joystick "
+                "(arrows + right Alt) | Ctrl+Alt+R: rewind (when enabled)\n");
+    // Manettes RÉELLEMENT présentes, avec le port qu'elles pilotent. La ligne disait
+    // « USB pad auto-detected (port 1) » à chaque lancement, manette branchée ou non
+    // (texte figé, relevé par l'auteur le 2026-11-13). Une manette branchée plus tard
+    // est prise à chaud sans message.
+    {
+        int8_t roles[GLFW_JOYSTICK_LAST + 1], assign[GLFW_JOYSTICK_LAST + 1];
+        joyResolveRoles(A, roles);
+        stjoy::resolveAssign(roles, assign, A.port0Auto);
+        int n = 0;
+        for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid) {
+            if (!glfwJoystickPresent(jid)) continue;
+            const char* name = glfwJoystickIsGamepad(jid) ? glfwGetGamepadName(jid) : glfwGetJoystickName(jid);
+            if (assign[jid] >= 0)
+                std::printf("[main] Joystick: %s -> port %d\n", name ? name : "USB pad", int(assign[jid]));
+            else
+                std::printf("[main] Joystick: %s (not assigned)\n", name ? name : "USB pad");
+            ++n;
+        }
+        if (n == 0) std::printf("[main] Joystick: no USB pad detected (plug one in any time)\n");
+    }
 
     // Bridage à la durée ÉMULÉE de chaque trame : indispensable pour que le temps
     // émulé colle au temps réel — sinon le compteur 200 Hz d'EmuTOS s'emballe et les

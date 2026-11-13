@@ -86,4 +86,18 @@ int pickTosForMachine(MachineType m, const TosInfo* cur, const std::vector<TosIn
     return best;
 }
 
+MachineType pickMachineForTos(MachineType cur, const TosInfo& t) {
+    if (tosRunsMachine(t, cur)) return cur;
+    using M = MachineType;
+    M order[3];
+    switch (cur) {
+    case M::St:      order[0] = M::MegaSt;  order[1] = M::Ste;     order[2] = M::MegaSte; break;
+    case M::MegaSt:  order[0] = M::St;      order[1] = M::MegaSte; order[2] = M::Ste;     break;
+    case M::Ste:     order[0] = M::MegaSte; order[1] = M::St;      order[2] = M::MegaSt;  break;
+    case M::MegaSte: order[0] = M::Ste;     order[1] = M::MegaSt;  order[2] = M::St;      break;
+    }
+    for (M m : order) if (tosRunsMachine(t, m)) return m;
+    return cur;
+}
+
 }  // namespace neost
