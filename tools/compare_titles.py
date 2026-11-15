@@ -169,11 +169,13 @@ def hatari_shots(disk: Path, args, work: Path) -> Path:
         (work / f"s{vbl}.ini").write_text("\n".join(lines) + "\n")
     parse = work / "start.ini"
     parse.write_text(f"b VBL = {wanted[0]} :once :trace :file {work / f's{wanted[0]}.ini'}\n")
-    # Comparer le TOS original, y compris ses tests RAM et attentes de boot.
-    # --patch-tos contrôle aussi les variables système préremplies par Hatari.
+    # Le disque GEMDOS virtuel exige linitialisation du lecteur de boot ($446).
+    # Avec --patch-tos off, EmuTOS cherche A:\EMUDESK.INF au lieu de C: et ne
+    # lance rien. A/B Blue Period, 2026-11-15, Hatari @ f0736b24. Le boot rapide
+    # reste désactivé; une disquette native conserve --patch-tos off.
     cmd = [str(HATARI), "--machine", args.machine, "--tos", str(ROOT / args.rom), "--monitor", "rgb",
            "--memsize", hatari_memsize(args.mem), "--cpu-exact", "on", "--compatible", "on",
-           "--patch-tos", "off", "--fast-boot", "off", "--fastfdc", "off",
+           "--patch-tos", "on" if args.gemdos else "off", "--fast-boot", "off", "--fastfdc", "off",
            *(["--disk-a", str(copy)] if not args.gemdos else ["--harddrive", str(args.gemdos.resolve())]),
            "--sound", "25033", "--fast-forward", "on", "--confirm-quit", "off", "--statusbar", "off",
            "--drive-led", "off", "--frameskips", "0", "--alert-level", "fatal",

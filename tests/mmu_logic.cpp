@@ -142,6 +142,28 @@ int testMmuMapping() {
         check(bus.read8(0xE00010) == 0x77, "DMA write beyond RAM space is lost");
     }
 
+    // Busdisplay : le mot disponible à LOAD ne doit pas devenir celui de fin de ligne.
+    {
+        Bus bus(1024 * 1024); MmuGlue glue; bus.glue = &glue;
+        bus.machine = MachineType::St; bus.write8(0xFF8001, 5);
+        bus.latchCpuDb(0x1234, 100); bus.latchCpuDb(0xABCD, 104);
+        check(bus.videoRead16At(0x2F0000, 100) == 0x1234, "video keeps old bus word");
+        check(bus.videoRead16At(0x2F0000, 103) == 0x1234, "video between bus transitions");
+        check(bus.videoRead16At(0x2F0000, 104) == 0xABCD, "video sees new bus word");
+        bus.ram[0x1000]=0x56; bus.ram[0x1001]=0x78;
+        check(bus.videoRead16At(0x1000, 100) == 0x5678, "installed RAM drives video bus");
+        for (uint32_t i=0; i<2048; ++i) bus.latchCpuDb(uint16_t(i), 108+4*i);
+        check(bus.videoRead16At(0x2F0000, 108+4*1500) == 1500, "video ring wrap preserves time");
+        std::vector<uint8_t> state; auto save=StateArchive::saver(state); bus.serialize(save);
+        bus.latchCpuDb(0, 0);
+        auto load=StateArchive::loader(state.data(),state.size()); bus.serialize(load);
+        check(load.ok() && bus.videoRead16At(0x2F0000,108+4*1500)==1500,
+              "video bus history survives save-state");
+        bus.latchCpuDb(0x4321, 0);
+        check(bus.videoRead16At(0x2F0000,0)==0x4321 && bus.videoBusCount==1,
+              "CPU clock reset discards stale history");
+    }
+
     std::printf("[mmu] %d checks, %d FAIL\n", checks, failures);
     return failures;
 }

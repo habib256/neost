@@ -180,7 +180,13 @@ int main() {
             expect(got == "a+++b+++c", "peer received the '+' bytes unchanged");
         }
         r.type("+++");                            // silence avant (60 trames), puis…
-        expect(r.waitFor("OK", 2000), "+++ framed by guard time escapes");
+        // Le temps de garde est défini en trames émulées, pas en secondes hôtes.
+        // waitFor(2000) n'exécutait que 38 polls sur cette machine : faux échec.
+        for (int i = 0; i < 49; ++i) r.modem.poll();
+        expect(r.modem.dataMode() && r.out.empty(), "+++ guard has not elapsed at frame 49");
+        r.modem.poll();
+        expect(!r.modem.dataMode() && r.out == "OK\r\n",
+               "+++ framed by guard time escapes at frame 50");
         r.type("ATH\r");
         expect(!r.modem.connected(), "+++ then ATH hangs up");
         expect(r.out.find("OK") != std::string::npos, "ATH answered OK");

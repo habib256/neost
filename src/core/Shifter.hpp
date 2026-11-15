@@ -222,15 +222,20 @@ struct VideoCounter {
     void clearPendingWrites() { delayedOffset = 0; delayedAddr = -1; }
     void clearStopInc() { stopInc = 0; }
     void setStopInc(int inc) { stopInc = inc; }
-    // Début de trame : la base du restart de fin de trame s'il a eu lieu, sinon `videoBase`.
+    // Fin de VSYNC : retenir la dernière base, y compris une écriture après le
+    // début du reload. Le compteur reste transparent pendant VSYNC : GSTMCU
+    // 4a6db7cc, vid_xll/vid_xlm/vid_xlh = wloc* & frame ([D]).
     void beginFrame(uint32_t videoBase, uint32_t mask) {
-        frameBase   = ((restartBase >= 0) ? static_cast<uint32_t>(restartBase) : videoBase) & mask;
+        frameBase   = videoBase & mask;
         restartBase = -1;
         lineBase    = frameBase;
         lineY       = 0;
     }
     // Trame rendue d'un bloc : `lines` lignes déjà committées depuis `base`.
     void latchFrame(uint32_t base, int lines) { frameBase = base; lineBase = base; lineY = lines; }
+    void baseWritten(uint32_t base) {
+        if (restartBase >= 0) restartBase = base & kAddrMask;
+    }
     void restart(uint32_t base, int line) { restartBase = static_cast<int64_t>(base); restartLine = line; }
     // Fin d'une ligne active ([D] video.c:3853-3873, 4007, 4410-4423 @ f0736b24) : stride réel
     // `bpl`, `extra` (prefetch scroll + line-offset STE) sur une ligne affichée seulement, puis

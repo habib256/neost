@@ -122,6 +122,10 @@ def headless_cmd(entry: dict) -> list[str]:
         cmd += ["--disk", str(ROOT / disk), "--disk-ro"]
     if entry.get("keys"):
         cmd += ["--keys", entry["keys"]]
+    if entry.get("key_hold"):
+        cmd += ["--key-hold", str(entry["key_hold"])]
+    for n, codes in entry.get("scancodes_at", []):
+        cmd += ["--scancode-at", str(n), codes]
     if entry.get("keys_at"):                 # [trame, "touches"] ou liste de paires — pilotage daté
         ka = entry["keys_at"]
         pairs = ka if isinstance(ka[0], list) else [ka]
@@ -135,7 +139,12 @@ def headless_cmd(entry: dict) -> list[str]:
 def run_headless_capture(entry: dict, out_ppm: Path) -> int:
     cmd = headless_cmd(entry) + ["--screenshot", str(out_ppm)]
     print("  $", " ".join(cmd))
-    r = run_timed(cmd, 900, cwd=ROOT)
+    r = run_timed(cmd, 900, cwd=ROOT, capture_output=True, text=True)
+    log = (r.stdout or "") + (r.stderr or "")
+    out_ppm.with_suffix(".log").write_text(log)
+    if r.returncode == 0 and "CPU halted" in log:
+        print("  ÉCHEC : CPU halted (le headless peut retourner 0 après une double faute)")
+        return 1
     return r.returncode
 
 

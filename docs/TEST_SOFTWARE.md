@@ -47,11 +47,7 @@ commutations de palette par ligne ne tombent plus au bon endroit : l'image sort
 le remède est une ROM européenne. Repères d'aire non-noire pour la diapo « coucher de
 soleil » : **0,555 = rendu correct (PAL)**, **0,475 = déchiré (NTSC)**.
 
-**Couverture de la suite** (recomptée 2026-11-04 : 55 étalons « machine », hors les
-11 auto-tests) : `ste` ×28, `st` ×25 et `megast` ×2 ; ROM libres `etos192fr` ×20, `etos256fr` ×12 et `etos256us` ×11 ;
-ROM Atari propriétaires `tos102uk` ×4, `tos104uk` ×2, `tos100uk`, `tos106uk`, `tos162uk`, `tos162us`, `tos205fr` et `tos206uk` ×1 ;
-512 Ko ×44, 1 Mo ×8 et 4 Mo ×3 ; `fastfdc` ×37. Les étalons `boot_tos*` (2026-11-04) couvrent chaque TOS présent, Mega ST
-compris, jusqu'au bureau, et pas au-delà. Le MegaSTE reste gardé par `tools/run_megaste_diag.py`, hors de ce manifeste. Une suite verte ne prouve rien hors de ces
+**Couverture de la suite** (recomptée 2026-11-15 : 67 étalons « machine », hors auto-tests) : `ste` ×34, `st` ×31, `megast` ×2. Les nouveaux étalons de démo utilisent 1 ou 2 Mo et des TOS Atari privés. Le MegaSTE reste gardé par `tools/run_megaste_diag.py`, hors manifeste. Une suite verte ne prouve rien hors de ces
 configurations : devant un rapport « ça plante dans le GUI », commencer par lire
 `neost.cfg` et rejouer la scène avec `--from-cfg neost.cfg --disk <image>`
 (+ `--shot-every N PRÉFIXE` pour voir *où* ça casse) avant de soupçonner une
@@ -390,6 +386,37 @@ SLIP, il manque trois choses, recensées le 2026-11-12 :
 Sans ces trois pièces, le seul chemin modem vérifié reste le pont octets ↔ TCP sans pile
 TCP/IP côté ST (`tools/make_net_test.py`, `EXTENSIONS.md` § Modem).
 
+## Démos ajoutées le 15 novembre 2026
+
+Les huit productions sont dans **Floppies**, sous `etalons/demos/` (neuf images avec
+les deux disques de Punish Your Machine). Le nom indique machine et RAM. PAL 50 Hz :
+TOS 1.02 UK pour ST, TOS 1.04 UK pour Ika et shforstv, TOS 1.62 UK pour STE.
+Les ROM Atari restent privées. Le scan Floppies se rafraîchit automatiquement sous
+deux secondes, ou par **Refresh**. Les versions AUTO de Blue Period, Infinite Live,
+Ika et shforstv démarrent sans disque dur virtuel; exécutables inchangés.
+
+| Production | Étalon(s) | Portée du verdict |
+|---|---|---|
+| Blue Period | `blue_period` | Effet observé identique à Hatari, grade D ; retour visuel utilisateur positif dans NeoST le 2026-11-15 |
+| Infinite Live of the Blitter | `infinite_live_blitter` | Capture isolée identique à Hatari, grade D ; utilisateur signale un nuage de points suspect et un clignotement du scroll final, à investiguer ; EmuTOS revient au bureau |
+| The Overscan Demos | `overscan_demos` | Snapshot menu/scroller, écart Hatari non tranché |
+| Suretrip 49% | `suretrip49_tunnel` | Snapshot du tunnel divergent ; défaut possible signalé dans le README party |
+| The LoSTE Screens | `loste_sowatt_st`, `loste_newyear_ste` | Fullscreens atteints sous TOS Atari, comparaison Hatari non tranchée ; EmuTOS bloque le chargement |
+| Ika I Compofylla | `ika_compofylla` | Motifs busdisplay et scroll après correction de l’historique CPU ; snapshot, phase matérielle à confirmer |
+| shforstv | `shforstv` | Snapshot forêt en mouvement depuis disquette AUTO ; Espace à 2020, capture à 2400 |
+| Punish Your Machine | `punish_your_machine` | Crédits du menu seulement ; parties techniques non couvertes |
+
+Un snapshot vert signifie uniquement « comportement inchangé », même lorsque le
+comportement est incorrect. Les améliorations à faire vivent au TODO, item
+**Démos du 15 novembre : rendu et couverture à compléter**. Audio non validé.
+
+Le harnais `compare_titles.py` active désormais `--patch-tos on` avec un disque
+GEMDOS virtuel : sous EmuTOS, `off` empêchait de choisir C: comme lecteur de boot.
+Le boot rapide reste désactivé et les disquettes natives conservent `off`. A/B
+Blue Period contre Hatari `f0736b24`, `Fopen A:\EMUDESK.INF` sans démarrage contre
+`Fopen C:\EMUDESK.INF` puis `Pexec C:\BLUE_PRD.PRG`. Cela corrige le protocole
+de comparaison ; aucune modification de l'émulation matérielle n'en découle.
+
 ## Suite headless NeoST (`tools/run_etalons.py`)
 
 Infra de non-régression par captures PPM (déterministe, sans GUI) :
@@ -639,3 +666,5 @@ halt NeoST. La réussite d'un autre moment d'appui ne ferme pas ce défaut.
 Les archives se rejouent seulement avec `--manifest tests/replays/archive/vroom_retired.json`
 et `--only`, après restauration explicite du média privé correspondant.
 Recettes et preuves : [CASE_STUDIES.md](CASE_STUDIES.md#vroom-ste--vérifier-la-conduite-et-larrêt-audio-2026-11-05).
+
+Le parcours `shforstv_ste` complète le parcours STF : TOS 1.62 UK, 2 Mo, Espace à 2020, défilement à 2400. Il garde le réveil STOP/HBL corrigé ; snapshot de non-régression, sans verdict matériel.

@@ -80,6 +80,9 @@ void Bus::serialize(StateArchive& ar) {
 
     // Latch du bus de données (relu par la zone RAM « void » — cf. cpuDb).
     ar(cpuDb);
+    ar(videoBusClock); ar(videoBusWord); ar(videoBusNext); ar(videoBusCount);
+    ar.check(videoBusNext < kVideoBusHistory && videoBusCount <= kVideoBusHistory,
+             "video bus history outside bounds");
 
     // Fenêtres de comptage bus du blitter non-hog (bookkeeping possédé par le Bus).
     ar(blitterWinStart);
@@ -903,6 +906,22 @@ uint8_t Bus::ramSpaceRead8(uint32_t addr) {
     // exactement cpuDb, comme VoidMem_wget. [F] valeur du bus ouvert, cf. read8Slow.
     if (ioAccessWidth_ >= 2) return uint8_t((addr & 1) ? cpuDb : cpuDb >> 8);
     return uint8_t(cpuDb);                       // accès octet : VoidMem_bget
+}
+
+// DMA vidéo : les banques présentes conservent leur chemin MMU ; une banque
+// absente relit le mot du bus à la date de LOAD, pas à la fin de la ligne.
+uint16_t Bus::videoRead16At(uint32_t addr, int64_t clock) {
+    addr &= 0x3FFFFFu;
+    if (addr + 1 < mmuFastLimit() || mmuTranslate(addr) >= 0) return ramCycleRead16(addr);
+    if (!videoBusCount) return cpuDb;
+    const uint32_t first = (videoBusNext + kVideoBusHistory - videoBusCount) % kVideoBusHistory;
+    uint32_t lo = 0, hi = videoBusCount;
+    while (lo < hi) {
+        const uint32_t mid = lo + (hi - lo) / 2;
+        if (videoBusClock[(first + mid) % kVideoBusHistory] <= clock) lo = mid + 1;
+        else hi = mid;
+    }
+    return lo ? videoBusWord[(first + lo - 1) % kVideoBusHistory] : 0;
 }
 
 uint16_t Bus::ramCycleRead16Slow(uint32_t addr) {

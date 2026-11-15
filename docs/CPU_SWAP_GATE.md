@@ -73,6 +73,15 @@ une régression du cœur.
 Relevé le 2026-11-10 dans `src/core/Cpu68k.cpp` (classe `NeostMoira`). Tout ce qui suit doit
 exister dans le cœur POM68K, avec la même sémantique en 68000.
 
+### Mots du bus CPU pour la vidéo
+
+Depuis le correctif Ika du 15 novembre 2026, les adaptateurs mémoire transmettent
+chaque mot observé à `Bus::latchCpuDb(value, busOfClock(getClock()))`. Les octets
+conservent la duplication sur les deux voies du modèle existant. Le nouveau cœur
+doit préserver la valeur **et la date en cycles bus** : la vidéo consulte cet
+historique pour la RAM absente. L’historique fait partie de l’état machine v68.
+Aucun changement du cœur vendorisé ; ajout limité à l’adaptateur `latchDb`.
+
 ### Méthodes surchargées
 
 | Méthode | Usage dans NeoST |

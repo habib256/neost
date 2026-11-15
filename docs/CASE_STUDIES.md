@@ -1184,3 +1184,142 @@ laisse sortir la boucle de `tests/dmasound_microwire_timing_logic.cpp` et ne cha
 NeoST garde la règle d'Hatari, marquée [F]. Ce qui tranchera : la musique de la démo enregistrée
 sur un vrai STE (aigus relevés de 12 dB ou non), ou la netlist du Shifter STE (l'archive des ASIC
 n'a que le GSTMCU).
+
+
+## shforstv : ligne suivante invalidée
+
+Le 15 novembre 2026, la forêt au repos est correcte mais le défilement activé par
+Espace brouille les plans. ST, 1 Mo, TOS 1.04 UK PAL, conteneur AUTO du catalogue ;
+Espace à 2020, capture à 2400. Les flèches et la souris seules ne lancent pas cette
+séquence. L’image originale et les captures de diagnostic sont dans
+`build/demo-fixes/` (non versionnées).
+
+Le compteur live mémorisait une ligne BLANK + RIGHT_OFF avec un départ DE à −1 :
+`glueLineBytes` rendait alors le défaut 160 octets au lieu de 204. Toutes les lignes
+suivantes partaient 44 octets trop tôt. Une requête Timer B avait déjà initialisé
+N+1 ; le hi/lo de fin N annulait ensuite son retrait gauche et remettait son
+départ à −1. Le rejeu chronologique de fin de trame initialisait correctement N+1,
+mais les captures de RAM avaient déjà enregistré les mauvaises adresses.
+
+Correction : lorsqu’une écriture de N invalide le départ d’une ligne N+1 déjà
+préparée, réappliquer son initialisation avant de consommer ses écritures. Aucun
+changement des fenêtres matérielles de bordure ni du cœur CPU. Le banc GLUE
+reproduit l’ordre Timer B → hi/lo → BLANK + RIGHT_OFF et exige 204 octets en live
+comme au rejeu. Le premier essai, qui interdisait toute anticipation, a été écarté
+car il régressait `freq_switch` et `loste_newyear_ste`.
+
+Preuve : défaut interne déterministe et comparaison live/rejeu ; les captures
+de défilement retrouvent une forêt lisible. Ce correctif ne tranche pas le
+décalage horizontal statique de 4 pixels face à Hatari ni tous les timings du ST.
+
+
+## Ika : affichage du bus CPU
+
+Le 15 novembre 2026, l’introduction d’Ika I Compofylla fonctionne mais la partie
+busdisplay montre des rayures. ST, 1 Mo, TOS 1.04 UK, PAL, disquette AUTO du catalogue.
+L’auteur décrit son mécanisme dans [Anatomy of a Compofylla](https://beyondbrown.mooo.com/post/anatomy/)
+(11 juillet 2024, sections « Stale is the new fresh » et « Like clockwork ») :
+l’adresse vidéo vise une banque absente ; le Shifter ingère les mots du bus CPU,
+un mot tous les quatre cycles. Les couleurs masquent les plans des opcodes.
+
+NeoST capturait toute la ligne après son exécution et répétait donc le dernier
+mot CPU. L’historique circulaire conserve maintenant 1024 transitions datées ;
+la vidéo recherche la dernière transition antérieure ou égale à chaque LOAD.
+La RAM présente conserve son chemin MMU. Ce changement ne détecte aucun titre.
+L’historique est sérialisé (v68), afin de conserver la reprise déterministe.
+
+Le prototype a comparé les phases 0, ±4 et ±8 cycles : 0 reproduit les rayures,
+±4 mêlent graphismes et opcodes. Le banc GSTMCU épinglé (`4a6db7ccf0e2bfbeaa90353717262185cf1d908d`,
+MiSTery `a00deb5b4e964124987d80ae854163b3edbd7555`) fournit un appui indépendant :
+DE monte à 108 cycles après HSYNC, LOAD monte à 114, 118, 122, 126, puis recharge
+Shifter à 127. Mesure du **RTL**, grade D, en modes ST et STE ; elle ne vaut pas
+mesure du silicium ST. La phase retenue DE+6 produit les motifs et le scroll,
+encore lisibles aux trames 4000, 5000, 6000 et 7000. Les barres verticales entre
+motif et scroll sont expliquées par l’auteur : opcode du retrait de bordure droite.
+
+Le relevé est reproductible avec `python3 tools/probe_video_load.py --st`
+(Verilator et `extern/mistery/gstmcu` requis ; `--rtl` accepte un autre chemin).
+Sans `--st`, le banc utilise le mode STE. Les captures de diagnostic se trouvent
+dans `build/demo-fixes/`.
+Le modèle reste limité aux mots CPU ; les autres maîtres du bus et la phase
+sur un véritable ST restent à vérifier. L’étalon est un snapshot de non-régression,
+explicitement remplacé parce que son ancienne référence conservait les rayures.
+
+
+## Infinite Live : comparaison temporelle du scroll
+
+Le 15 novembre 2026, le dernier scroll signalé clignotant a été comparé sur
+seize trames consécutives (11996 à 12011), STE, 2 Mo, TOS 1.62 UK, disquette AUTO.
+Avec un décalage **fixe** de −2 VBL, chaque image NeoST est identique à Hatari ;
+aucun choix de meilleure trame ni compensation variable. Les baisses périodiques
+de pixels clairs sont communes aux deux émulateurs. Cela écarte une divergence
+sur cette séquence, sans prouver la fidélité matérielle. Le nuage de points
+et les autres instants restent à confronter au matériel (voir le TODO).
+
+Recette : `tools/compare_titles.py` avec un chemin de sortie absolu,
+`--frames 11996,11997,11998,11999,12000,12001,12002,12003,12004,12005,12006,12007,12008,12009,12010,12011`
+et `--offset -2 --window 0 --step 1`. Résultats dans
+`build/demo-fixes/infinite-temporal/summary.json`.
+
+
+## shforstv : flash après Espace en STF (2026-11-15)
+
+La pause est celle de la démo. Recette : ST, 1 Mo, TOS 1.04 UK,
+`shforstv - Paulo Simoes (ST 1MB).st`, Espace aux trames 2020, 2600 et 3000,
+maintenu huit trames. La trame 3002 mélangeait l’ancienne base $00CF00
+et le nouveau programme de lignes ; 3001 et 3003 étaient lisibles.
+La démo écrit $00D000 à 310:82, après le début du restart à 310:56.
+
+La VSYNC maintient le rechargement ; elle ne fige pas seulement la base sur
+son premier front. Le compteur suit désormais les écritures $FF8201/03/0D
+pendant cette fenêtre, puis retient la dernière base au début de trame.
+Six assertions MMIO gardent aussi le cas négatif : une écriture après VSYNC
+ne change pas le compteur courant.
+
+Preuves : [B] le manuel de service Atari ST décrit le rechargement par VSYNC
+([§ Video Subsystem](https://www.atarimania.com/documents/atari_520st_service_manual.pdf)).
+[D] GSTMCU `4a6db7cc`, `mcucontrol.v:61-75` et `gstmcu.v:1071-1081` : `frame`
+est l’inverse de VSYNC échantillonnée, `vid_xl* = wloc* & frame` maintient la
+charge. La sonde `python3 tools/probe_video_load.py --rtl build/demo-fixes/mistery/gstmcu --out build/demo-fixes/reload-proof --reload`
+mesure $1F8000 avant, $1F3400 après une écriture pendant VSYNC, puis encore
+$1F3400 après une écriture $1F5600 hors VSYNC : PASS. Ce modèle est celui du
+GSTMCU STE ; la phase exacte sur un vrai STF reste sans mesure.
+Hatari `f0736b24` relit également la base dans `Video_ClearOnVBL`.
+
+Ce correctif ne résout pas la désynchronisation STE de cette démo.
+
+
+## shforstv STE : réveil STOP après une HBL préarmée (2026-11-15)
+
+Recette : STE, 2 Mo, TOS 1.62 UK, disquette shforstv du catalogue. Espace
+à 2020, pause à 2600, reprise à 3000, maintien huit trames, contrôle jusqu’à 4000.
+La détection STE est correcte. À la trame 1516, le synchroniseur revenait du
+second STOP douze cycles trop tard : l’écriture haute résolution tombait à
+34:4 au lieu de 33:504. La bordure gauche n’était plus retirée, le compteur
+vidéo lu par le programme différait ; les impulsions suivantes tombaient à
+52/64 et raccourcissaient une ligne à 224 cycles. La forêt devenait noire.
+
+Cause interne : la broche HBL peut monter dans le dernier SYNC(2) d’un STOP.
+`raiseHbl` reconnaissait alors `hblPinFired` et sautait le commit du niveau
+échantillonné, pourtant effectué par son autre chemin lorsque le CPU est arrêté.
+Une scrutation supplémentaire pouvait rater le créneau E-clock et coûter
+12 cycles. Le commit STOP est maintenant commun aux deux chemins ; la broche
+n’est pas réarmée et le comportement pendant une instruction reste inchangé.
+
+Preuve indépendante du titre : `tests/cpu_stop_irq_logic.cpp` exécute deux STOP
+puis 512 lectures du compteur. Un callback sans effet est inséré à chacune des
+huit phases précédant HBL. Avant : phases 509/510, 84 octets changés chacune.
+Après : dix assertions réussies, aucune lecture changée. C’est un invariant
+interne, pas une mesure matérielle. [D] Le banc CPU + GSTMCU (fx68k `0602ee46`,
+GSTMCU `4a6db7cc`) conserve tous ses verdicts à 50/60 Hz, dont les 256 lectures
+HBL/STOP identiques au modèle. Le prototype est également vérifié depuis un
+boot neuf jusqu’à 4000, défilement et pause/reprise compris. L’étalon
+`shforstv_ste` conserve la forêt à 2400 ; c’est un snapshot, pas une certification
+matérielle au pixel.
+
+Validation après intégration : `python3 tools/run_all.py --tier full` termine
+avec code 0 ; les 67 étalons machine et le boot GUI passent. Neuf étapes
+optionnelles sont sautées (ressources absentes aux chemins habituels) ; le banc
+CPU + GSTMCU a été exécuté séparément ci-dessus. Journal local :
+`build/demo-fixes/full-stop-authorized.log`. Graphify absent de cet hôte :
+carte non régénérée.

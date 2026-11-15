@@ -1,5 +1,51 @@
 # Changelog — NeoST
 
+## 2026-11-15 — shforstv STE : réveil STOP/HBL
+
+- Une HBL préarmée doit être présentée au CPU arrêté lors de son dispatch,
+  comme une HBL qui n’a pas été préarmée. Le chemin omettait ce commit et
+  ajoutait parfois 12 cycles au réveil : retrait gauche raté, puis écran noir.
+- Régression interne : deux STOP, 512 lectures vidéo, huit positions d’un
+  événement sans effet avant HBL. Deux positions changeaient 84 lectures ;
+  les huit sont maintenant invariantes. Aucun changement du cœur Moira vendorisé.
+- Banc CPU + GSTMCU épinglé : résultats conservés à 50 et 60 Hz. Nouveau
+  snapshot `shforstv_ste` ; catalogue porté à 67 étalons machine.
+
+## 2026-11-15 — shforstv : flash de reprise STF
+
+- Compteur vidéo maintenu en rechargement pendant VSYNC : une écriture de base
+  après le début du restart appartient encore à la trame suivante. shforstv
+  écrit à la ligne 310, cycle 82 ; l’ancienne base figée au cycle 56 produisait
+  une image corrompue après Espace. Correctif général, sans détection du titre.
+- Six vérifications MMIO ST/STE : écriture pendant VSYNC, base retenue à sa fin,
+  absence de reload après VSYNC. Sonde GSTMCU reproductible `probe_video_load.py --reload`.
+- Les corruptions STE de shforstv restent distinctes et ouvertes ; les essais
+  désactivant les longueurs de ligne ou déplaçant HBL ne sont pas intégrés.
+
+## 2026-11-15 — busdisplay Ika et scrolling shforstv
+
+- Corrigé le départ d’une ligne vidéo préparée par Timer B puis invalidée par
+  une annulation de bordure sur la ligne précédente : 204 octets lus au lieu du
+  défaut 160, sans décaler tous les plans suivants. Test de régression GLUE ajouté.
+- Diagnostic complémentaire : PYM après deux Espace identique à Hatari à VBL9000
+  (ST/TOS1.04 UK, rendu 1 et 2 Mo identique). Infinite Live : motifs suspects aussi
+  présents dans Hatari. Ces accords ne remplacent pas une capture matérielle.
+- Busdisplay Ika : historique horodaté des mots CPU, relu mot par mot par la vidéo
+  lorsque la RAM est absente. Motifs tournants et texte retrouvés, phase DE+6
+  issue du RTL GSTMCU ; exactitude sur silicium ST encore à confirmer.
+- Tests de chronologie, rebouclage, RAM présente, sérialisation et remise à zéro.
+  Format d’état v68 : les anciennes sauvegardes v67 sont refusées explicitement.
+- Étalons : Ika remplace son ancien snapshot incorrect ; shforstv couvre désormais
+  le défilement activé par Espace.
+
+## Huit démos ajoutées aux étalons et à Floppies (2026-11-15)
+
+- Neuf scénarios : Blue Period et Infinite Live adossés à deux captures Hatari exactes, sept snapshots explicites pour les six autres productions (LoSTE en ST et STE). Ika conserve un défaut connu, les parties non couvertes sont nommées au catalogue et au TODO.
+- Neuf disquettes visibles dans `etalons/demos/`, dont deux pour Punish Your Machine. Conteneurs AUTO pour les exécutables fournis, sans patch binaire; TOS privés aux chemins usuels, non versionnés.
+- Comparaison GEMDOS : initialisation Hatari du lecteur virtuel activée, boot rapide conservé désactivé. Le runner des étalons accepte les scancodes datés et refuse un CPU halted même lorsque le headless retourne zéro.
+
+- Test modem : le temps de garde de +++ est vérifié aux trames 49 et 50, indépendamment de la vitesse hôte. L’ancien délai mural de deux secondes ne laissait passer que 38 polls ici, faux échec reproduit.
+
 (c) 2026 VERHILLE Arnaud. **La chronologie** : releases, puis les chantiers datés dans
 l'ordre inverse. Version courante : **0.6.5**.
 

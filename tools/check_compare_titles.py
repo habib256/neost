@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from compare_titles import Image, mouse_events, parse_mouse, pixel_difference, read_neost_frames
 import compare_titles
+import run_etalons
 import run_game_replay
 
 
@@ -47,6 +48,32 @@ def main() -> int:
             with patch.object(run_game_replay.subprocess, "run",
                               return_value=SimpleNamespace(returncode=0, stdout="", stderr="")):
                 assert run_game_replay.play_snapshot(spec, root)[0] == 1
+    # Une capture identique ne doit jamais valider une double faute masquée par exit 0.
+    with TemporaryDirectory() as tmp:
+        out = Path(tmp) / "capture.ppm"
+        for message, expected in (("CPU halted", 1), ("normal completion", 0)):
+            with patch.object(run_etalons, "headless_cmd", return_value=["headless"]), \
+                 patch.object(run_etalons, "run_timed", return_value=SimpleNamespace(
+                     returncode=0, stdout="", stderr=message)):
+                assert run_etalons.run_headless_capture({}, out) == expected
+        assert out.with_suffix(".log").read_text() == "normal completion"
+    # Le démarrage du disque virtuel a besoin de variables système initialisées.
+    # Garder le protocole natif sans patch pour une disquette ordinaire.
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp); disk = root / "source.st"; disk.write_bytes(b"source")
+        for gemdos, expected in ((None, "off"), (root, "on")):
+            work = root / expected; work.mkdir()
+            args = SimpleNamespace(frames=[10], offset=0, window=0, step=1,
+                hatari_delay=0, hatari_delay_from=0, swap=[], machine="ste", rom=disk,
+                mem="2m", gemdos=gemdos, disk_b=None, auto=None, hatari_trace=None,
+                hatari_seed=1, joy=None, key=[], mouse=[])
+            with patch.object(compare_titles.subprocess, "run", return_value=SimpleNamespace(
+                    returncode=0, stdout="", stderr="", check_returncode=lambda: None)) as run:
+                compare_titles.hatari_shots(disk, args, work)
+                cmd = run.call_args.args[0]
+                assert cmd[cmd.index("--patch-tos") + 1] == expected
+                assert cmd[cmd.index("--fast-boot") + 1] == "off"
+
     black = Image.new("RGB", (2, 1))
     assert pixel_difference(black, black) == 0
     for color in ((1, 0, 0), (0, 1, 0), (0, 0, 1)):

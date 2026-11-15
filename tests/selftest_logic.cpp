@@ -159,6 +159,7 @@ bool testSccLocalLoopback(); // multiplexage RxD et sortie TxD en boucle locale
 int testMfpGpipLines(); // fronts BUSY/XSINT et qualification GPIO
 int testFdcMediaChange(); // première et dernière actions de changement de média
 bool testSccEomReset(); // commande WR0 de remise à zéro du latch EOM
+int testCpuStopIrq(); // réveil STOP indépendant des événements sans effet
 int testMachineTimerBAer(); // recalage immédiat Timer B après changement AER3
 int testMfpMmioDecode(); // pairs fautifs, mots partiels et impairs void MFP
 bool testPsgOddWrite(); // ombres impaires PSG selon largeur du Bus
@@ -4236,6 +4237,7 @@ int main() {
     if (const int failures = testMfpGpipLines()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcMediaChange()) g_fail += failures; else ++g_ok;
     if (testSccEomReset()) ++g_ok; else ++g_fail;
+    if (const int failures = testCpuStopIrq()) g_fail += failures; else ++g_ok;
     if (const int failures = testMachineTimerBAer()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpMmioDecode()) g_fail += failures; else ++g_ok;
     if (testPsgOddWrite()) ++g_ok; else ++g_fail;

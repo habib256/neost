@@ -91,9 +91,24 @@ void Shifter::endVideoLine() {
         uint8_t* snap = lineSnap_.data() + static_cast<std::size_t>(sl) * kLineSnapBytes;
         // kSnapLead octets de garde AVANT la base de ligne (offsets sources
         // négatifs du scroll hard, cf. déclaration kSnapLead) puis la ligne.
-        for (int i = 0; i < n + kSnapLead; ++i)
-            snap[i] = bus_.ramCycleRead8((vc_.lineBase - static_cast<uint32_t>(kSnapLead)
-                                  + static_cast<uint32_t>(i)) & kVideoAddrMask);   // DMA vidéo 22 bits
+        const int64_t frameStart = bus_.cpu && liveFrameClock_
+            ? bus_.cpu->busClockNow() - liveFrameClock_() : 0;
+        const int64_t lineStart = sl <= glue_.liveLine && lineLenAttrEnv()
+            ? glue_.lineStart[sl] : int64_t(sl) * geometry().cyclesPerLine;
+        int fetchStart = geometry().lineStartCycle;
+        if (glue_.lines[sl].displayStartCycle >= 0)
+            fetchStart = glue_.lines[sl].displayStartCycle - glue::timing(bus_.machine).inc;
+        if (hwScrollCount && hwScrollPrefetch) fetchStart -= 16;
+        // [D] GSTMCU mcucontrol.v:190-195 @ 4a6db7cc (MiSTery a00deb5b) :
+        // le premier front montant LOAD est à DE+6 cycles, puis tous les 4 cycles.
+        // Relevé par tools/probe_video_load.py. [F] phase sur silicium ST
+        // à mesurer ; le RTL configuré ST/STE et l'exemple de tIn fournissent le témoin.
+        for (int i = 0; i < n + kSnapLead; i += 2) {
+            const uint16_t word = bus_.videoRead16At(
+                (vc_.lineBase - kSnapLead + i) & kVideoAddrMask,
+                frameStart + lineStart + fetchStart + 6 + (i - kSnapLead) * 2);
+            snap[i] = uint8_t(word >> 8); snap[i + 1] = uint8_t(word);
+        }
         lineSnapLen_[sl] = static_cast<uint16_t>(n);
     }
     // Métadonnées TOUJOURS capturées, même sans copie RAM : une première écriture
@@ -175,7 +190,7 @@ void Shifter::commitScanline(int line) {
 // (≠ début de trame NeoST) : un jeu double-buffer qui pose sa nouvelle base dans
 // son handler VBL (APRÈS la ligne 0) est donc bien pris en compte — c'est ce que
 // mesure le stabilisateur beam-sync d'Enchanted Land en jeu (poll $FF8209).
-// Les lectures des lignes ≥ restart renvoient cette base figée (videoCounter).
+// VSYNC garde le reload actif : baseWritten actualise cette base jusqu’à beginFrame.
 void Shifter::restartVideoCounter(int line) {
     vc_.restart(videoBase & kVideoAddrMask, line);
 }
@@ -265,10 +280,9 @@ uint32_t VideoCounter::read(int64_t fc, GlueView& glue, bool lineLenRead) const 
             X = static_cast<int>(fc - glue.lineStart(wl));
         }
     }
-    // Compteur REDÉMARRÉ en fin de trame (port Video_RestartVideoCounter, ligne
-    // 310/260 cycle 56) : les lectures au-delà renvoient la base rechargée, FIGÉE
-    // jusqu'au DE de la trame suivante (chez Hatari, pVideoRaster vaut alors
-    // &STRam[VideoBase] et plus rien ne l'avance avant la prochaine ligne affichée).
+    // VSYNC maintient le rechargement actif : les changements de la base
+    // restent visibles jusqu'à sa fin, ce n'est pas un latch sur son seul front.
+    // [D] GSTMCU 4a6db7cc, gstmcu.v:1071-1081, mcucontrol.v:61-75.
     if (restartBase >= 0 && line >= restartLine)
         return static_cast<uint32_t>(restartBase) & kAddrMask;
     int dispStart = glue.liveStartHBL();

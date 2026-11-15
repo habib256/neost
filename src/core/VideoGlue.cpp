@@ -138,6 +138,15 @@ void VideoGlue::liveGlueCatchUp(int targetLine) {
                 // Hatari `video_border_h` (les « detect ... » de Video_Update_Glue_State).
                 static const bool glueDiag = std::getenv("NEOST_GLUE_DIAG") != nullptr;
                 updateGlueState(wl, lc, w.isRes, freqHz);
+                // Une requête Timer B peut avoir préparé N+1 avant les dernières
+                // écritures de N. Une annulation de retrait gauche remet alors
+                // son départ à -1 : réappliquer l'initialisation avant de consommer
+                // les écritures de N+1, comme dans le rejeu chronologique.
+                // Régression : shforstv, ligne BLANK + RIGHT_OFF comptée 160 au
+                // lieu de 204 octets ; tous les plans suivants étaient décalés.
+                if (wl < liveLine && lines[wl + 1].displayStartCycle < 0)
+                    startHBL(wl + 1, liveRes,
+                             liveRes == 2 ? 71 : (liveFreq50 ? 50 : 60));
                 // Canal HBL_Pos/nCyclesPerLine → Machine (reprogramme l'IRQ HBL de la
                 // ligne et cumule le raccourcissement) — gated NEOST_LINELEN côté Machine.
                 if (hblPos > 0 && lineGeom) lineGeom(wl, hblPos, cyclesLine);
@@ -1408,7 +1417,7 @@ bool Shifter::glueSelfTest() {
         const auto oldLive = liveFrameClock_;
         int64_t fc = 100;
         beamClock_ = [&] { return fc; };
-        liveFrameClock_ = {};
+        setLiveFrameClock({});
         reset(); sync = 2; beginFrame();
         auto save = [&] {
             std::vector<uint8_t> bytes;
@@ -1488,7 +1497,7 @@ bool Shifter::glueSelfTest() {
         chk("336 metadata next line", lineScrollSnap_[101], 0x60);
         reset();
         chk("336 reset", steBorderFlag_, false);
-        beamClock_ = oldBeam; liveFrameClock_ = oldLive;
+        beamClock_ = oldBeam; setLiveFrameClock(oldLive);
     }
 
     // B15 — compteur et fetch vidéo repliés sur 22 bits ; $FF8261 (Shifter seul) et
@@ -1498,7 +1507,7 @@ bool Shifter::glueSelfTest() {
         const auto oldLive = liveFrameClock_;
         int64_t fc = 0;
         beamClock_      = [&] { return fc; };
-        liveFrameClock_ = [&] { return fc; };
+        setLiveFrameClock([&] { return fc; });
         // 1. Le compteur avance au-delà de $3FFFFF → reprend en $000000.
         reset(); mode = Mode::Low; sync = 2; videoBase = 0x3FFF00; beginFrame();
         chk("b15 frame base", vc_.frameBase, 0x3FFF00);
@@ -1667,7 +1676,7 @@ bool Shifter::glueSelfTest() {
             chk("stop state inc",   vc_.stopInc, -6);
         }
         reset();
-        beamClock_ = oldBeam; liveFrameClock_ = oldLive;
+        beamClock_ = oldBeam; setLiveFrameClock(oldLive);
     }
 
     // VBlank : limites du comparateur502, quatre checks et forçage par VSYNC.
@@ -1825,6 +1834,35 @@ bool Shifter::glueSelfTest() {
     chk("vblank state missed check", glue_.vblankAtLine(308), false);
     chk("vblank state vsync", glue_.vblankAtLine(310), true);
     reset();
+
+    // Régression shforstv : Timer B demande N+1 pendant N, puis le hi/lo
+    // de fin N annule un retrait gauche. N+1 doit retrouver son
+    // départ nominal après cette annulation, sinon 44 octets se perdent.
+    {
+        const auto oldClock = liveFrameClock_;
+        const auto oldMachine = bus_.machine;
+        bus_.machine = MachineType::St;
+        int64_t fc = 100 * cpl + 400;
+        setLiveFrameClock([&] { return fc; });
+        reset(); mode = Mode::Low; sync = 2; beginFrame();
+        glue_.liveGlueCatchUp(101);
+        chk("future line prepared", glue_.liveLine, 101);
+        auto put = [&](int line, int cycle, bool res, uint8_t value) {
+            fc = int64_t(line) * cpl + cycle;
+            glue_.syncWrites.push_back({int32_t(fc), value, res});
+            glue_.liveGlueCatchUp(line);
+        };
+        put(100, 444, true, 2); put(100, 456, true, 0);
+        put(101, 28, false, 0); put(101, 36, false, 2);
+        put(101, 376, false, 0); put(101, 384, false, 2);
+        fc = 102 * cpl; glue_.liveGlueCatchUp(102);
+        chk("late border live start", glue_.lines[101].displayStartCycle, glue::kStf.HDE_On_Low_50);
+        chk("late border live bytes", glueLineBytes(101), 204);
+        const int liveBytes = glueLineBytes(101);
+        glue_.replayGlue();
+        chk("late border replay bytes", glueLineBytes(101), liveBytes);
+        bus_.machine = oldMachine; setLiveFrameClock(oldClock); reset();
+    }
 
     std::fprintf(stderr, "[glue-selftest] %d OK, %d FAIL\n", pass, fail);
     return fail == 0;

@@ -21,6 +21,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <array>
 #include <algorithm>
 
 class Shifter;
@@ -399,6 +400,28 @@ public:
     // de 0 : rien ne pilote le bus, il garde sa dernière valeur (cf. Hatari
     // VoidMem_bget/wget → regs.db).
     uint16_t cpuDb = 0;
+    // [B] tIn/Newline, Anatomy of a Compofylla (2024-07-11), « Like clockwork » :
+    // en RAM absente le Shifter ingère les mots CPU successifs, un mot / 4 cycles.
+    // https://beyondbrown.mooo.com/post/anatomy/ ; cadence relatée, phase à confirmer.
+    // Historique borné : couvre plusieurs lignes, consommé au commit HBL.
+    // [F] Seuls les mots CPU sont suivis ici ; autres maîtres du bus à modéliser.
+    static constexpr uint32_t kVideoBusHistory = 1024;
+    std::array<int64_t, kVideoBusHistory> videoBusClock{};
+    std::array<uint16_t, kVideoBusHistory> videoBusWord{};
+    uint32_t videoBusNext = 0, videoBusCount = 0;
+    void latchCpuDb(uint16_t value, int64_t clock) {
+        cpuDb = value;
+        if (videoBusCount && clock < videoBusClock[(videoBusNext - 1) % kVideoBusHistory]) {
+            videoBusNext = videoBusCount = 0; // remise à zéro de l'horloge CPU
+            videoBusClock.fill(0); videoBusWord.fill(0);
+        }
+        videoBusClock[videoBusNext] = clock;
+        videoBusWord[videoBusNext] = value;
+        videoBusNext = (videoBusNext + 1) % kVideoBusHistory;
+        if (videoBusCount < kVideoBusHistory) ++videoBusCount;
+    }
+    uint16_t videoRead16At(uint32_t addr, int64_t clock);
+
 
     // Données brutes exposées au débogueur (visualiseur hexa ImGui). Pas de
     // getters : l'accès direct est l'objet même de la "boîte à hack".

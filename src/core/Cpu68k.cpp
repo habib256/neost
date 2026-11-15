@@ -541,8 +541,8 @@ public:
     // Chaque accès CPU abouti latche le « dernier mot du bus de données » dans
     // Bus::cpuDb (≈ regs.db du cœur UAE : mot = valeur, octet = dupliqué sur les
     // deux voies — cf. cpu_prefetch.h). Les lectures en RAM « void » le relisent.
-    void latchDb(moira::u16 v) const { g_cur->bus->cpuDb = v; }
-    void latchDb8(moira::u8 v) const { g_cur->bus->cpuDb = moira::u16((moira::u16(v) << 8) | v); }
+    void latchDb(moira::u16 v) const { g_cur->bus->latchCpuDb(v, busOfClock(getClock())); }
+    void latchDb8(moira::u8 v) const { latchDb(moira::u16((moira::u16(v) << 8) | v)); }
 
     // Aligner le DÉBUT du cycle RAM, avant SYNC(2), comme wait_cpu_cycle_read
     // d'Hatari. Au milieu du cycle, une tranche blitter peut déjà avoir tourné :
@@ -1544,7 +1544,19 @@ void Cpu68k::raiseVbl() {
 }
 
 void Cpu68k::raiseHbl() {
-    if (state_->hblPinFired) { state_->hblPinFired = false; neostUpdateIpl(false); return; }
+    if (state_->hblPinFired) {
+        state_->hblPinFired = false;
+        // La broche peut monter dans le dernier SYNC(2) d'un STOP, avant son
+        // dispatch. Comme dans le chemin non préarmé ci-dessous, le CPU arrêté
+        // doit voir le niveau dès ce dispatch. Sans commit, un événement tiers
+        // juste avant HBL ajoutait une itération de STOP, puis parfois 10 cycles
+        // d'E-clock : shforstv ratait son retrait gauche en STE (+12 cycles).
+        // Ne pas réarmer hblPending : l'IACK a pu déjà acquitter la broche.
+        // Test interne : 512 lectures identiques avec/sans événement sans effet
+        // aux huit phases précédant HBL ; deux phases échouaient avant.
+        neostUpdateIpl((g_raiseCommit & 1) != 0 && state_->moira->stoppedState());
+        return;
+    }
     if (state_->hblPinDue >= 0) { state_->hblPinDue = -1; recomputePinNextDue(); }
     state_->hblPending = true;
     // même modèle que raiseVbl + fenêtre d'échantillonnage (cf. g_raiseWindow)

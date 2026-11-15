@@ -219,6 +219,21 @@ date entre parenthèses après le titre — jamais dans un bloc « compléments 
   d'etos192 sur MegaSTE (SCU non programmé). Pour le STE/Mega STE : EmuTOS 256 Ko ou TOS 1.62/2.06.
 
 ## Vidéo (Shifter)
+
+- **Busdisplay CPU** (2026-11-15) : les lectures vidéo de RAM absente consultent
+  l’historique des mots CPU à la date de chaque LOAD, au lieu du mot de fin de
+  ligne. Corrige les rayures d’Ika I Compofylla. Historique sérialisé, format
+  d’état v68. Cadence 4 cycles ; phase DE+6 appuyée par le RTL GSTMCU, encore
+  à mesurer sur ST réel ; autres maîtres du bus non suivis par cet historique.
+  → `docs/CASE_STUDIES.md`, « Ika : affichage du bus CPU ».
+
+
+- **GLUE live, annulation tardive de bordure** (2026-11-15) : une ligne suivante
+  préparée par Timer B est réinitialisée si le hi/lo précédent invalide son départ.
+  Corrige la perte de 44 octets par ligne de synchronisation dans le défilement de
+  shforstv. Régression sans ROM dans `glueSelfTest`, comparaison du compteur live
+  et du rejeu. → `docs/CASE_STUDIES.md`, « shforstv : ligne suivante invalidée ».
+
 - **Mode STE 336 px (2026-10-18)** : `$FF8265>0` suivi de `$FF8264=0` dans les
   40 cycles de la même VBL ouvre 16 pixels à gauche et consomme 168 octets par
   ligne en basse résolution. Le compteur MMU, l'application différée en fin de
@@ -2549,3 +2564,23 @@ Ces fonctionnalités **n'existent pas dans Hatari** (extensions assumées, consi
 - **The Cuddly Demos** : menu fullscreen statique stable (flicker résolu par VDE_On live) ;
   conforme aux briques d'Hatari.
 - **Couverture** (2026-11-04) : étalons `boot_tos*`, chaque TOS présent jusqu'au bureau, Mega ST compris. `--disk-at` change la disquette en cours.
+
+
+### Rechargement du compteur pendant VSYNC (2026-11-15)
+
+Les écritures de base $FF8201/03 (et $FF820D sur STE) pendant le reload de fin
+de trame actualisent le compteur ; le début de trame retient la dernière base.
+Une écriture hors VSYNC ne modifie pas le compteur courant. Six assertions
+MMIO et la sonde GSTMCU `probe_video_load.py --reload` couvrent la distinction.
+Cas corrigé : shforstv STF, image corrompue unique à la reprise par Espace.
+Preuves et limites : `CASE_STUDIES.md`, « shforstv : flash après Espace ».
+
+
+### Réveil STOP avec HBL préarmée (2026-11-15)
+
+Le dispatch HBL committe le niveau d’interruption d’un CPU arrêté même si
+la broche a déjà été levée par le préarmement. Il ne réarme pas une IRQ déjà
+acquittée. Dix assertions gardent l’indépendance à un événement sans effet
+avant HBL ; le banc CPU + GSTMCU garde ses verdicts à 50 et 60 Hz.
+Cas corrigé : shforstv STE, retrait gauche raté puis forêt noire.
+Voir `CASE_STUDIES.md`, « shforstv STE : réveil STOP après une HBL préarmée ».

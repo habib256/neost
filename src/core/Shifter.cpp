@@ -384,11 +384,10 @@ void Shifter::beginFrame() {
     // suivante — comme sur le vrai matériel. Les écritures différées (NewHWScrollCount,
     // NewLineWidth, offset compteur) ne sont PAS effacées : Hatari ne les purge qu'au
     // reset vidéo, elles s'appliquent à la prochaine fin de ligne active.
-    // Base de trame : si le RESTART fin-de-trame (ligne 310/260, port
-    // Video_RestartVideoCounter) a eu lieu, c'est SA base (relue à cet instant)
-    // qui fait foi — une écriture $FF8201/03 entre la ligne 310 et la ligne 0
-    // n'est PAS reprise (comme Hatari). Sinon (mono, ou freq inadaptée à la
-    // ligne de restart), latch classique au début de trame.
+    // VSYNC recharge continûment le compteur : retenir la base à sa FIN,
+    // donc aussi une écriture entre le début du restart (310/260) et la ligne 0.
+    // shforstv écrit à 310:82 en sortie de pause ; figer à 310:56 mélangeait
+    // l'ancienne base et le nouveau programme de lignes pendant une trame.
     vc_.beginFrame(videoBase, kVideoAddrMask);   // base de trame, restart consommé, ligne 0
     // Scroll hard « Shifter arrêté » : comme le DisplayPixelShift d'Hatari
     // (Video_InitShifterLines à chaque VBL), le décalage ne vaut que pour la trame
@@ -1604,10 +1603,12 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
             // STE/TT : écrire l'octet haut/milieu remet à 0 l'octet bas $FF820D
             // (cf. Hatari Video_ScreenBase_WriteByte).
             if (ste) videoBase &= 0xFFFF00;
+            vc_.baseWritten(videoBase);
             return;
         case 0xFF8203:
             videoBase = (videoBase & 0xFF0000) | (uint32_t(v) << 8);
             if (ste) videoBase &= 0xFFFF00;
+            vc_.baseWritten(videoBase);
             // DIAG beam-sync (gated NEOST_BASE_TRACE) : ligne/cycle/valeur des écritures de
             // base vidéo. Une base jittery trame à trame (joueur immobile) = la boucle de
             // calibration fullscreen du jeu ne converge pas (résidu phase CPU↔faisceau),
@@ -1631,7 +1632,10 @@ void Shifter::write8(uint32_t addr, uint8_t v) {
             return;
         // Octet bas de la base vidéo $FF820D (STE) : bit0 ignoré (aligné pair).
         case 0xFF820D:
-            if (ste) videoBase = (videoBase & 0xFFFF00) | (uint32_t(v) & ~1u);
+            if (ste) {
+                videoBase = (videoBase & 0xFFFF00) | (uint32_t(v) & ~1u);
+                vc_.baseWritten(videoBase);
+            }
             return;
         // Largeur de ligne STE $FF820F — port Video_LineWidth_WriteByte : applicable
         // IMMÉDIATEMENT si le Display-Enable de la ligne courante n'est pas terminé

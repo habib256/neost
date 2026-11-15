@@ -1,5 +1,6 @@
 // Registres MMIO : tables ioMem ST/STE et handlers blitter.c Hatari f0736b24.
 #include "core/Bus.hpp"
+#include "core/Shifter.hpp"
 #include "core/Blitter.hpp"
 #include "core/YM2149.hpp"
 #include "io/Fdc.hpp"
@@ -13,6 +14,30 @@ int testMmioFidelity() {
         ++checks;
         if (!ok) { ++failures; std::fprintf(stderr, "[mmio] FAIL: %s\n", label); }
     };
+    // [D] GSTMCU 4a6db7cc : reload maintenu pendant VSYNC. Régression
+    // shforstv : changement de base à 310:82, après le début de VSYNC.
+    for (MachineType profile : {MachineType::St, MachineType::Ste}) {
+        Bus bus;
+        bus.machine = profile;
+        Shifter sh(bus);
+        auto counter = [&] {
+            return (uint32_t(sh.read8(0xFF8205)) << 16)
+                 | (uint32_t(sh.read8(0xFF8207)) << 8) | sh.read8(0xFF8209);
+        };
+        int64_t fc = 0;
+        sh.setBeamClock([&] { return fc; });
+        sh.videoBase = 0x10000;
+        sh.beginFrame();
+        fc = 310 * 512 + 80;
+        sh.restartVideoCounter(310);
+        sh.write8(0xFF8203, 0x34);
+        check(counter() == 0x13400, "VSYNC reload follows a late base write");
+        sh.beginFrame();
+        fc = 8 * 512;
+        check(counter() == 0x13400, "next frame keeps the final VSYNC base");
+        sh.write8(0xFF8203, 0x56);
+        check(counter() == 0x13400, "base write outside VSYNC does not reload counter");
+    }
     constexpr uint32_t base = 0xFF8A00;
     for (MachineType profile : {MachineType::MegaSt, MachineType::Ste, MachineType::MegaSte}) {
         Bus bus;
