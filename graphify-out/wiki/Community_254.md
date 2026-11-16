@@ -1,12 +1,13 @@
 # Community 254
 
-> 23 nodes
+> 27 nodes
 
 ## Key Concepts
 
-- **Logiciels étalons — cas limites d'émulation** (13 connections) — `docs/TEST_SOFTWARE.md`
+- **Logiciels étalons — cas limites d'émulation** (15 connections) — `docs/TEST_SOFTWARE.md`
 - **Suite headless NeoST (`tools/run_etalons.py`)** (7 connections) — `docs/TEST_SOFTWARE.md`
 - **⚠ Configuration : PAL/NTSC et couverture de la suite** (4 connections) — `docs/TEST_SOFTWARE.md`
+- **4 quater. Réseau — installer STinG (EtherNEC + NAT, modem)** (3 connections) — `docs/TEST_SOFTWARE.md`
 - **1. Shifter / synchro CPU-vidéo** (2 connections) — `docs/TEST_SOFTWARE.md`
 - **Lignes masquées ST/STE (2026-10-19)** (2 connections) — `docs/TEST_SOFTWARE.md`
 - **2. MFP 68901 / interruptions** (1 connections) — `docs/TEST_SOFTWARE.md`
@@ -17,20 +18,22 @@
 - **5. Suites de test automatisées** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **Auto-tests logique pure (P0 — ms, sans boot ni oracle)** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **Auto-tests à verdict série (P1 — s, déterministe, sans oracle)** (1 connections) — `docs/TEST_SOFTWARE.md`
+- **Démos ajoutées le 15 novembre 2026** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **Les images disquette ne sont plus modifiées par les runs (A14, 2026-08-28)** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **Orchestration par paliers + hook pre-push** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **Ordre de débogage affichage conseillé** (1 connections) — `docs/TEST_SOFTWARE.md`
+- **Par l'EtherNEC et le NAT (chemin livré)** (1 connections) — `docs/TEST_SOFTWARE.md`
+- **Par le modem Hayes en SLIP (banc à poser)** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **Pont config GUI↔headless (P3)** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **Provenance des références & diff par ligne (P2)** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **Quirk connu — PAS un bug d'émulation** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **Reprise FDC du 2026-11-04** (1 connections) — `docs/TEST_SOFTWARE.md`
 - **ROM libres vs ROM propriétaires (depuis le 2026-08-19)** (1 connections) — `docs/TEST_SOFTWARE.md`
-- **Vroom : périmètre des parcours STE (2026-11-05)** (1 connections) — `docs/TEST_SOFTWARE.md`
-- **Étalons qui BOOTENT un disque : `oracle_scan` (2026-08-19)** (1 connections) — `docs/TEST_SOFTWARE.md`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 88](Community_88.md) (1 shared connections)
+- [Community 317](Community_317.md) (1 shared connections)
 - [Community 232](Community_232.md) (1 shared connections)
 
 ## Source Files
@@ -39,7 +42,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 23 (96%)
+- EXTRACTED: 27 (96%)
 - INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,6 +1,6 @@
 # Community 125
 
-> 21 nodes
+> 22 nodes
 
 ## Key Concepts
 
@@ -20,6 +20,7 @@
 - **geometry** (2 connections) — `tests/machine_timer_b_aer_logic.cpp`
 - **count** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
 - **failures** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
+- **Geometry** (1 connections)
 - **Machine** (1 connections)
 - **unique_ptr** (1 connections)
 - **frameStart** (1 connections) — `tests/machine_timer_b_aer_logic.cpp`
@@ -28,9 +29,8 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (4 shared connections)
-- [Community 359](Community_359.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 

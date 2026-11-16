@@ -1,10 +1,10 @@
 # Community 13
 
-> 79 nodes
+> 82 nodes
 
 ## Key Concepts
 
-- **DmaSound** (117 connections) — `src/core/DmaSound.hpp`
+- **DmaSound** (123 connections) — `src/core/DmaSound.hpp`
 - **Bus** (3 connections) — `src/core/DmaSound.hpp`
 - **Scheduler** (3 connections) — `src/core/DmaSound.hpp`
 - **Mfp** (2 connections) — `src/core/DmaSound.hpp`
@@ -13,6 +13,8 @@
 - **.setScheduler()** (2 connections) — `src/core/DmaSound.hpp`
 - **function** (2 connections)
 - **.clearEvents()** (1 connections) — `src/core/DmaSound.hpp`
+- **.lmcBass()** (1 connections) — `src/core/DmaSound.hpp`
+- **.lmcTreble()** (1 connections) — `src/core/DmaSound.hpp`
 - **.playing()** (1 connections) — `src/core/DmaSound.hpp`
 - **aHaveCur_** (1 connections) — `src/core/DmaSound.hpp`
 - **aMode_** (1 connections) — `src/core/DmaSound.hpp`
@@ -27,15 +29,14 @@
 - **by2_** (1 connections) — `src/core/DmaSound.hpp`
 - **by2R_** (1 connections) — `src/core/DmaSound.hpp`
 - **cap_** (1 connections) — `src/core/DmaSound.hpp`
-- **capLimit_** (1 connections) — `src/core/DmaSound.hpp`
-- **capR_** (1 connections) — `src/core/DmaSound.hpp`
-- *... and 54 more nodes in this community*
+- *... and 57 more nodes in this community*
 
 ## Relationships
 
-- [Community 48](Community_48.md) (27 shared connections)
-- [Community 55](Community_55.md) (8 shared connections)
-- [Community 102](Community_102.md) (5 shared connections)
+- [Community 48](Community_48.md) (30 shared connections)
+- [Community 446](Community_446.md) (8 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 - [Community 243](Community_243.md) (1 shared connections)
 - [Community 380](Community_380.md) (1 shared connections)
 
@@ -45,7 +46,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 123 (100%)
+- EXTRACTED: 129 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

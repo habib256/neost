@@ -1,14 +1,13 @@
 # Community 332
 
-> 12 nodes
+> 11 nodes
 
 ## Key Concepts
 
 - **Validation sur matériel réel — registre par cible** (11 connections) — `docs/HW_VALIDATION.md`
 - **Ce qui se vérifie STATIQUEMENT, sans la cible (2026-09-01)** (2 connections) — `docs/HW_VALIDATION.md`
-- **macOS arm64 — ◐ passe faite le 2026-09-01, le VISUEL reste** (2 connections) — `docs/HW_VALIDATION.md`
 - **Raspberry Pi (borne) — ⭘ aucun budget temps réel mesuré** (2 connections) — `docs/HW_VALIDATION.md`
-- **Android arm64 — ⭘ jamais posé sur un appareil** (1 connections) — `docs/HW_VALIDATION.md`
+- **Android arm64 — ◐ émulateur arm64 API 36, jamais posé sur un appareil** (1 connections) — `docs/HW_VALIDATION.md`
 - **La mesure de débit : `--budget`** (1 connections) — `docs/HW_VALIDATION.md`
 - **Le protocole d'une passe** (1 connections) — `docs/HW_VALIDATION.md`
 - **⚠ Le trou structurel que cette passe a mis au jour** (1 connections) — `docs/HW_VALIDATION.md`
@@ -19,9 +18,9 @@
 
 ## Relationships
 
+- [Community 273](Community_273.md) (1 shared connections)
+- [Community 232](Community_232.md) (1 shared connections)
 - [Community 101](Community_101.md) (1 shared connections)
-- [Community 227](Community_227.md) (1 shared connections)
-- [Community 354](Community_354.md) (1 shared connections)
 
 ## Source Files
 
@@ -29,8 +28,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 12 (86%)
-- INFERRED: 2 (14%)
+- EXTRACTED: 12 (92%)
+- INFERRED: 1 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

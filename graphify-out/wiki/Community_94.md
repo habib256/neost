@@ -1,6 +1,6 @@
 # Community 94
 
-> 30 nodes
+> 29 nodes
 
 ## Key Concepts
 
@@ -19,7 +19,6 @@
 - **.advance()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **.next()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **.select()** (2 connections) — `tests/fdc_track_id_location_logic.cpp`
-- **WD1772 : piste sans ID et face absente du média (2026-11-10)** (2 connections) — `docs/HATARI_DIVERGENCES.md`
 - **.Rig()** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **count** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
 - **failures** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
@@ -29,22 +28,23 @@
 - **Scheduler** (1 connections)
 - **YM2149** (1 connections)
 - **bus** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
-- *... and 5 more nodes in this community*
+- **fdc** (1 connections) — `tests/fdc_track_id_location_logic.cpp`
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 105](Community_105.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 31](Community_31.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
 - `tests/fdc_track_id_location_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 48 (96%)
+- EXTRACTED: 47 (96%)
 - INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 

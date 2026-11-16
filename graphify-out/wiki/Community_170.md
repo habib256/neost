@@ -1,29 +1,39 @@
 # Community 170
 
-> 11 nodes
+> 19 nodes
 
 ## Key Concepts
 
+- **testBlitterRmw()** (10 connections) — `tests/blitter_rmw_logic.cpp`
+- **word** (6 connections) — `tools/gstmcu_bench.cpp`
 - **testFdcTiming()** (5 connections) — `tests/fdc_timing_logic.cpp`
 - **duration()** (5 connections) — `tests/ste_cmap_slot_logic.cpp`
-- **word** (5 connections) — `tools/gstmcu_bench.cpp`
+- **Checks** (4 connections) — `tests/blitter_rmw_logic.cpp`
 - **Checks** (4 connections) — `tests/fdc_timing_logic.cpp`
+- **.step()** (3 connections) — `tests/blitter_rmw_logic.cpp`
 - **.execute()** (3 connections) — `tests/fdc_timing_logic.cpp`
 - **testSteCmapSlot()** (3 connections) — `tests/ste_cmap_slot_logic.cpp`
+- **.equal()** (2 connections) — `tests/blitter_rmw_logic.cpp`
+- **main()** (2 connections) — `tests/blitter_rmw_logic.cpp`
+- **.copyToOperand()** (2 connections) — `tests/blitter_rmw_logic.cpp`
 - **.MegaSteRig()** (2 connections) — `tests/blitter_rmw_logic.cpp`
 - **.equal()** (2 connections) — `tests/fdc_timing_logic.cpp`
 - **main()** (2 connections) — `tests/fdc_timing_logic.cpp`
+- **count** (1 connections) — `tests/blitter_rmw_logic.cpp`
+- **failures** (1 connections) — `tests/blitter_rmw_logic.cpp`
 - **count** (1 connections) — `tests/fdc_timing_logic.cpp`
 - **failures** (1 connections) — `tests/fdc_timing_logic.cpp`
 
 ## Relationships
 
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 41](Community_41.md) (4 shared connections)
-- [Community 132](Community_132.md) (1 shared connections)
+- [Community 102](Community_102.md) (8 shared connections)
+- [Community 132](Community_132.md) (4 shared connections)
+- [Community 252](Community_252.md) (4 shared connections)
+- [Community 41](Community_41.md) (3 shared connections)
 - [Community 192](Community_192.md) (1 shared connections)
 - [Community 394](Community_394.md) (1 shared connections)
 - [Community 272](Community_272.md) (1 shared connections)
+- [Community 452](Community_452.md) (1 shared connections)
 
 ## Source Files
 
@@ -34,8 +44,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 16 (70%)
-- INFERRED: 7 (30%)
+- EXTRACTED: 31 (76%)
+- INFERRED: 10 (24%)
 - AMBIGUOUS: 0 (0%)
 
 ---

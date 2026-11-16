@@ -1,41 +1,41 @@
 # Community 140
 
-> 22 nodes
+> 19 nodes
 
 ## Key Concepts
 
 - **YM2149.cpp** (25 connections) — `src/core/YM2149.cpp`
-- **.synthesizeFrame()** (9 connections) — `src/core/YM2149.hpp`
+- **.synthesizeFrame()** (11 connections) — `src/core/YM2149.hpp`
 - **.doSamples250()** (7 connections) — `src/core/YM2149.hpp`
+- **.nextResampleWeightedN()** (7 connections) — `src/core/YM2149.hpp`
 - **.renderHost()** (7 connections) — `src/core/YM2149.hpp`
-- **.nextResampleWeightedN()** (6 connections) — `src/core/YM2149.hpp`
 - **.applyRegs()** (6 connections) — `src/core/YM2149.hpp`
 - **.synthBlock()** (6 connections) — `src/core/YM2149.hpp`
 - **Le PSG grésillait dans Super Hang-On : un digidrum à 45 kHz décimé de 61 % (2026-09-02)** (6 connections) — `CHANGELOG.md`
-- **** (5 connections) — `src/core/YM2149.cpp`
 - **.updateFromRegs()** (5 connections) — `src/core/YM2149.hpp`
-- **.ensureMargin()** (4 connections) — `src/core/YM2149.hpp`
+- **.applyLpfStf250()** (5 connections) — `src/core/YM2149.hpp`
+- **.ensureMargin()** (5 connections) — `src/core/YM2149.hpp`
+- **.synthesize()** (4 connections) — `src/core/YM2149.hpp`
+- **.ym250Hz()** (4 connections) — `src/core/YM2149.hpp`
 - **.applyPwm250()** (3 connections) — `src/core/YM2149.hpp`
 - **fixedToSample()** (2 connections) — `src/core/YM2149.cpp`
 - **rndCompute()** (2 connections) — `src/core/YM2149.cpp`
 - **sampleToFixed()** (2 connections) — `src/core/YM2149.cpp`
 - **tonePeriod()** (2 connections) — `src/core/YM2149.cpp`
-- **.reset()** (2 connections) — `src/core/YM2149.hpp`
 - **mergeVoice()** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_DOWN** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_GODOWN** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_GOUP** (1 connections) — `src/core/YM2149.cpp`
-- **ENV_UP** (1 connections) — `src/core/YM2149.cpp`
 
 ## Relationships
 
-- [Community 28](Community_28.md) (11 shared connections)
-- [Community 102](Community_102.md) (4 shared connections)
+- [Community 28](Community_28.md) (14 shared connections)
 - [Community 48](Community_48.md) (3 shared connections)
-- [Community 176](Community_176.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
 - [Community 4](Community_4.md) (2 shared connections)
 - [Community 399](Community_399.md) (2 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
+- [Community 392](Community_392.md) (1 shared connections)
+- [Community 446](Community_446.md) (1 shared connections)
+- [Community 473](Community_473.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
@@ -46,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 45 (69%)
-- INFERRED: 20 (31%)
+- EXTRACTED: 43 (61%)
+- INFERRED: 27 (39%)
 - AMBIGUOUS: 0 (0%)
 
 ---

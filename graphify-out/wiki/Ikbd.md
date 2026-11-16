@@ -1,6 +1,6 @@
 # Ikbd
 
-> God node · 190 connections · `src/io/Ikbd.hpp`
+> God node · 211 connections · `src/io/Ikbd.hpp`
 
 **Community:** [Community 7](Community_7.md)
 
@@ -34,30 +34,30 @@
 - tdre_ `EXTRACTED`
 - txData_ `EXTRACTED`
 - txShiftData_ `EXTRACTED`
-- *…and 83 more `defines` connection(s) not listed (lowest-degree first to go)*
+- *…and 95 more `defines` connection(s) not listed (lowest-degree first to go)*
 
 ### method
 - .dispatchCommand() `EXTRACTED`
-- .sendAutoInput() `EXTRACTED`
 - .rxFree() `EXTRACTED`
-- .onLineIdle() `EXTRACTED`
+- .sendAutoInput() `EXTRACTED`
 - .firmwareEventTime() `EXTRACTED`
+- .onLineIdle() `EXTRACTED`
+- .catchUpCpuTx() `EXTRACTED`
 - .armRx() `EXTRACTED`
+- .bootRom() `EXTRACTED`
 - .pushRxDelayed() `EXTRACTED`
 - .customWriteDispatch() `EXTRACTED`
+- .sendKeycodeJoystick() `EXTRACTED`
 - .sendRelMousePacket() `EXTRACTED`
-- .catchUpCpuTx() `EXTRACTED`
-- .bootRom() `EXTRACTED`
 - .customReadDispatch() `EXTRACTED`
 - .sendCursorKeys() `EXTRACTED`
+- .sciWakeCleared() `EXTRACTED`
+- .ocfIndexAtOrBefore() `EXTRACTED`
+- .onJoystickMonitor() `EXTRACTED`
 - .customCodeCrcForTest() `EXTRACTED`
 - .exitExeMode() `EXTRACTED`
 - .readJoystickState() `EXTRACTED`
-- .sendKeycodeJoystick() `EXTRACTED`
-- .liftPause() `EXTRACTED`
-- .sendAbsMousePos() `EXTRACTED`
-- .lineFree() `EXTRACTED`
-- *…and 57 more `method` connection(s) not listed (lowest-degree first to go)*
+- *…and 66 more `method` connection(s) not listed (lowest-degree first to go)*
 
 ### references
 - [Mfp](Mfp.md) `EXTRACTED`

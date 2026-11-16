@@ -1,62 +1,63 @@
 # Community 63
 
-> 41 nodes
+> 46 nodes
 
 ## Key Concepts
 
-- **StxImage** (30 connections) — `src/io/StxImage.hpp`
-- **StxImage.cpp** (22 connections) — `src/io/StxImage.cpp`
-- **FDC WD1772 + DMA + STX — `Fdc.cpp`, `StxImage.cpp` ↔ `fdc.c`, `floppies/stx.c`** (15 connections) — `docs/HATARI_DIVERGENCES.md`
-- **main()** (11 connections) — `tests/stx_writetrack_test.cpp`
-- **stx_writetrack_test.cpp** (11 connections) — `tests/stx_writetrack_test.cpp`
-- **.parse()** (10 connections) — `src/io/StxImage.hpp`
-- **.loadWd1772()** (9 connections) — `src/io/StxImage.hpp`
-- **.reinterpretSaveTrack()** (8 connections) — `src/io/StxImage.hpp`
-- **.findTrack()** (7 connections) — `src/io/StxImage.hpp`
+- **StxImage** (33 connections) — `src/io/StxImage.hpp`
+- **StxImage.cpp** (25 connections) — `src/io/StxImage.cpp`
+- **main()** (15 connections) — `tests/stx_writetrack_test.cpp`
+- **stx_writetrack_test.cpp** (14 connections) — `tests/stx_writetrack_test.cpp`
+- **.loadWd1772()** (11 connections) — `src/io/StxImage.hpp`
+- **.findTrack()** (10 connections) — `src/io/StxImage.hpp`
+- **.saveWd1772()** (8 connections) — `src/io/StxImage.hpp`
+- **WrittenTrack.hpp** (7 connections) — `src/io/WrittenTrack.hpp`
+- **.addTrack()** (6 connections) — `src/io/StxImage.hpp`
 - **.findSectorByPosition()** (6 connections) — `src/io/StxImage.hpp`
-- **.saveWd1772()** (6 connections) — `src/io/StxImage.hpp`
+- **.reinterpretSaveTrack()** (6 connections) — `src/io/StxImage.hpp`
 - **.buildSectorsSimple()** (6 connections) — `src/io/StxImage.hpp`
 - **SaveTrack** (5 connections) — `src/io/StxImage.hpp`
+- **parse()** (5 connections) — `src/io/WrittenTrack.cpp`
 - **forgeFlux()** (5 connections) — `tests/stx_writetrack_test.cpp`
-- **forgeStx()** (5 connections) — `tests/stx_writetrack_test.cpp`
-- **crc16()** (4 connections) — `src/io/StxImage.cpp`
+- **add()** (4 connections) — `tests/stx_writetrack_test.cpp`
+- **WrittenTrack.cpp** (4 connections) — `src/io/WrittenTrack.cpp`
+- **cassert** (4 connections)
+- **.sides()** (3 connections) — `src/io/StxImage.hpp`
+- **.tracksPerSide()** (3 connections) — `src/io/StxImage.hpp`
+- **crc16()** (3 connections) — `src/io/StxImage.cpp`
+- **originalTrackBytes()** (3 connections) — `src/io/StxImage.cpp`
 - **wr16be()** (3 connections) — `src/io/StxImage.cpp`
 - **wr32be()** (3 connections) — `src/io/StxImage.cpp`
-- **add()** (3 connections) — `tests/stx_writetrack_test.cpp`
 - **expect()** (3 connections) — `tests/stx_writetrack_test.cpp`
-- **.sides()** (2 connections) — `src/io/StxImage.hpp`
-- **.tracksPerSide()** (2 connections) — `src/io/StxImage.hpp`
-- **rd16be()** (2 connections) — `src/io/StxImage.cpp`
-- **rd16le()** (2 connections) — `src/io/StxImage.cpp`
-- **rd32be()** (2 connections) — `src/io/StxImage.cpp`
-- *... and 16 more nodes in this community*
+- *... and 21 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (15 shared connections)
-- [Community 31](Community_31.md) (13 shared connections)
-- [Community 24](Community_24.md) (6 shared connections)
-- [Community 172](Community_172.md) (5 shared connections)
-- [Community 163](Community_163.md) (2 shared connections)
-- [Community 325](Community_325.md) (2 shared connections)
-- [Community 95](Community_95.md) (2 shared connections)
+- [Community 102](Community_102.md) (12 shared connections)
+- [Community 31](Community_31.md) (12 shared connections)
+- [Community 287](Community_287.md) (11 shared connections)
+- [Community 172](Community_172.md) (9 shared connections)
+- [Community 201](Community_201.md) (5 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 238](Community_238.md) (2 shared connections)
 - [Community 78](Community_78.md) (1 shared connections)
 - [Community 23](Community_23.md) (1 shared connections)
-- [Community 238](Community_238.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
+- [Community 183](Community_183.md) (1 shared connections)
 
 ## Source Files
 
-- `docs/HATARI_DIVERGENCES.md`
 - `src/io/StxImage.cpp`
 - `src/io/StxImage.hpp`
+- `src/io/WrittenTrack.cpp`
+- `src/io/WrittenTrack.hpp`
 - `tests/stx_writetrack_test.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 91 (71%)
-- INFERRED: 37 (29%)
+- EXTRACTED: 113 (79%)
+- INFERRED: 30 (21%)
 - AMBIGUOUS: 0 (0%)
 
 ---

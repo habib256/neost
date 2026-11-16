@@ -1,10 +1,11 @@
 # Community 128
 
-> 20 nodes
+> 21 nodes
 
 ## Key Concepts
 
 - **Tracer** (19 connections) — `src/core/Tracer.hpp`
+- **Tracer.cpp** (7 connections) — `src/core/Tracer.cpp`
 - **.open()** (4 connections) — `src/core/Tracer.hpp`
 - **.close()** (4 connections) — `src/core/Tracer.hpp`
 - **Cpu68k** (3 connections) — `src/core/Tracer.hpp`
@@ -27,17 +28,19 @@
 
 ## Relationships
 
-- [Community 399](Community_399.md) (4 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
+- [Community 4](Community_4.md) (3 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
 
 ## Source Files
 
+- `src/core/Tracer.cpp`
 - `src/core/Tracer.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 27 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 30 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

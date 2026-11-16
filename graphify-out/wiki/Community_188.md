@@ -4,7 +4,7 @@
 
 ## Key Concepts
 
-- **Dev** (13 connections) — `src/io/Acsi.hpp`
+- **Dev** (14 connections) — `src/io/Acsi.hpp`
 - **blockSize** (1 connections) — `src/io/Acsi.hpp`
 - **enabled** (1 connections) — `src/io/Acsi.hpp`
 - **fp** (1 connections) — `src/io/Acsi.hpp`
@@ -21,6 +21,7 @@
 ## Relationships
 
 - [Community 103](Community_103.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
 
 ## Source Files
 
@@ -28,8 +29,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 13 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 13 (93%)
+- INFERRED: 1 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

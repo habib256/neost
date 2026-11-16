@@ -1,24 +1,39 @@
 # Community 422
 
-> 2 nodes
+> 13 nodes
 
 ## Key Concepts
 
-- **Moira::dump8()** (2 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- **u8** (1 connections)
+- **ProcPaths** (12 connections) — `src/io/GemdosHd.hpp`
+- **ParentDirTime** (7 connections) — `src/io/GemdosHd.cpp`
+- **.ParentDirTime()** (3 connections) — `src/io/GemdosHd.cpp`
+- **file_time_type** (1 connections)
+- **path** (1 connections)
+- **dir_** (1 connections) — `src/io/GemdosHd.cpp`
+- **ok_** (1 connections) — `src/io/GemdosHd.cpp`
+- **time_** (1 connections) — `src/io/GemdosHd.cpp`
+- **forced** (1 connections) — `src/io/GemdosHd.hpp`
+- **parent** (1 connections) — `src/io/GemdosHd.hpp`
+- **path** (1 connections) — `src/io/GemdosHd.hpp`
+- **ran** (1 connections) — `src/io/GemdosHd.hpp`
+- **tbase** (1 connections) — `src/io/GemdosHd.hpp`
 
 ## Relationships
 
-- [Community 2](Community_2.md) (1 shared connections)
+- [Community 36](Community_36.md) (5 shared connections)
+- [Community 123](Community_123.md) (1 shared connections)
+- [Community 17](Community_17.md) (1 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/MoiraDasm_cpp.h`
+- `src/io/GemdosHd.cpp`
+- `src/io/GemdosHd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 2 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 19 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

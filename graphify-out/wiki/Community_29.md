@@ -1,10 +1,10 @@
 # Community 29
 
-> 53 nodes
+> 52 nodes
 
 ## Key Concepts
 
-- **UltraSatan** (35 connections) — `src/io/UltraSatan.hpp`
+- **UltraSatan** (34 connections) — `src/io/UltraSatan.hpp`
 - **UltraSatan.cpp** (20 connections) — `src/io/UltraSatan.cpp`
 - **DateTime** (7 connections) — `src/io/UltraSatan.hpp`
 - **Pending** (6 connections) — `src/io/UltraSatan.hpp`
@@ -29,13 +29,14 @@
 - **function** (2 connections)
 - **.dataLen()** (1 connections) — `src/io/UltraSatan.hpp`
 - **.isWrite()** (1 connections) — `src/io/UltraSatan.hpp`
-- *... and 28 more nodes in this community*
+- *... and 27 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 83](Community_83.md) (2 shared connections)
 - [Community 399](Community_399.md) (2 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
@@ -45,8 +46,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 76 (92%)
-- INFERRED: 7 (8%)
+- EXTRACTED: 75 (91%)
+- INFERRED: 7 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

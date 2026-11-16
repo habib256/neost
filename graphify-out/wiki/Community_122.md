@@ -1,6 +1,6 @@
 # Community 122
 
-> 24 nodes
+> 25 nodes
 
 ## Key Concepts
 
@@ -10,6 +10,7 @@
 - **.selectTarget()** (6 connections) — `src/io/Acsi.hpp`
 - **send()** (6 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **sense()** (6 connections) — `tests/acsi_large_bounds_logic.cpp`
+- **.writeToDisk()** (5 connections) — `src/io/Acsi.hpp`
 - **command()** (5 connections) — `tests/acsi_large_bounds_logic.cpp`
 - **Checks** (4 connections) — `tests/acsi_capacity_limit_logic.cpp`
 - **Checks** (4 connections) — `tests/acsi_large_bounds_logic.cpp`
@@ -31,10 +32,12 @@
 
 ## Relationships
 
-- [Community 103](Community_103.md) (18 shared connections)
-- [Community 102](Community_102.md) (10 shared connections)
+- [Community 103](Community_103.md) (11 shared connections)
+- [Community 83](Community_83.md) (10 shared connections)
+- [Community 349](Community_349.md) (9 shared connections)
 - [Community 212](Community_212.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
+- [Community 252](Community_252.md) (2 shared connections)
+- [Community 175](Community_175.md) (1 shared connections)
 
 ## Source Files
 
@@ -44,8 +47,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 38 (61%)
-- INFERRED: 24 (39%)
+- EXTRACTED: 40 (61%)
+- INFERRED: 26 (39%)
 - AMBIGUOUS: 0 (0%)
 
 ---

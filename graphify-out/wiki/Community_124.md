@@ -1,16 +1,19 @@
 # Community 124
 
-> 21 nodes
+> 24 nodes
 
 ## Key Concepts
 
 - **** (32 connections) — `src/io/JoystickInput.hpp`
 - **compose()** (5 connections) — `src/io/JoystickInput.hpp`
 - **debug()** (5 connections) — `src/io/JoystickInput.hpp`
+- **resolveAssign()** (5 connections) — `src/io/JoystickInput.hpp`
 - **composeAux()** (4 connections) — `src/io/JoystickInput.hpp`
 - **readStick()** (4 connections) — `src/io/JoystickInput.hpp`
-- **resolveAssign()** (4 connections) — `src/io/JoystickInput.hpp`
+- **Terminal sobre ; la page ROM choisit le modèle (2026-11-13)** (4 connections) — `CHANGELOG.md`
 - **readAux()** (3 connections) — `src/io/JoystickInput.hpp`
+- **readStickRaw()** (3 connections) — `src/io/JoystickInput.hpp`
+- **fadeStereo()** (2 connections) — `src/core/Pacing.hpp`
 - **GLFWwindow** (2 connections)
 - **Signature** (2 connections) — `packaging/android/README.md`
 - **kbdBit()** (1 connections) — `src/io/JoystickInput.hpp`
@@ -28,22 +31,29 @@
 
 ## Relationships
 
-- [Community 4](Community_4.md) (8 shared connections)
-- [Community 68](Community_68.md) (3 shared connections)
-- [Community 67](Community_67.md) (3 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
+- [Community 443](Community_443.md) (3 shared connections)
+- [Community 68](Community_68.md) (2 shared connections)
 - [Community 214](Community_214.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 460](Community_460.md) (1 shared connections)
+- [Community 223](Community_223.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 386](Community_386.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
 - [Community 355](Community_355.md) (1 shared connections)
 
 ## Source Files
 
+- `CHANGELOG.md`
 - `packaging/android/README.md`
+- `src/core/Pacing.hpp`
 - `src/io/JoystickInput.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 41 (91%)
-- INFERRED: 4 (9%)
+- EXTRACTED: 43 (84%)
+- INFERRED: 8 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,59 +1,62 @@
 # Community 30
 
-> 23 nodes
+> 55 nodes
 
 ## Key Concepts
 
-- **Moira.h** (32 connections) — `extern/moira/Moira/Moira.h`
-- **.execute()** (9 connections) — `extern/moira/Moira/Moira.h`
-- **.processException()** (8 connections) — `extern/moira/Moira/Moira.h`
-- **.halt()** (6 connections) — `extern/moira/Moira/Moira.h`
-- **Moira::jumpToVector()** (6 connections) — `extern/moira/Moira/MoiraDataflow_cpp.h`
-- **.reset()** (5 connections) — `extern/moira/Moira/Moira.h`
-- **.executeUntil()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **read16OnReset()** (4 connections) — `extern/moira/Moira/Moira.h`
-- **MoiraConfig.h** (4 connections) — `extern/moira/Moira/MoiraConfig.h`
-- **cassert** (4 connections)
-- **didChangeCAAR()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **didChangeCACR()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **didJumpToVector()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **didReachBreakpoint()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **didReachCatchpoint()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **didReachSoftstop()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **.willProcessFault()** (3 connections) — `extern/moira/Moira/Moira.h`
-- **Patch local : reset gardé (2026-07-08)** (3 connections) — `extern/moira/NEOST_VENDOR.md`
-- **cpuDidHalt()** (2 connections) — `extern/moira/Moira/Moira.h`
-- **cpuDidReset()** (2 connections) — `extern/moira/Moira/Moira.h`
-- **didReachSoftwareTrap()** (2 connections) — `extern/moira/Moira/Moira.h`
-- **i64** (2 connections)
-- **looping()** (1 connections) — `extern/moira/Moira/Moira.h`
+- **gen.py** (19 connections) — `tools/gemdos_ab/gen.py`
+- **run_gemdos_clock.py** (15 connections) — `tools/run_gemdos_clock.py`
+- **main()** (14 connections) — `tools/run_gemdos_ab.py`
+- **run_gemdos_ab.py** (14 connections) — `tools/run_gemdos_ab.py`
+- **mk_main()** (12 connections) — `tools/gemdos_ab/cases_main.py`
+- **mk_host()** (11 connections) — `tools/gemdos_ab/cases_host.py`
+- **mk_rel()** (11 connections) — `tools/gemdos_ab/cases_host.py`
+- **main()** (11 connections) — `tools/run_gemdos_clock.py`
+- **mk_leak()** (9 connections) — `tools/gemdos_ab/cases_main.py`
+- **A()** (9 connections) — `tools/gemdos_ab/gen.py`
+- **floppy()** (9 connections) — `tools/gemdos_ab/gen.py`
+- **cases_host.py** (9 connections) — `tools/gemdos_ab/cases_host.py`
+- **Prog** (8 connections) — `tools/gemdos_ab/gen.py`
+- **build()** (8 connections) — `tools/gemdos_ab/gen.py`
+- **W()** (8 connections) — `tools/gemdos_ab/gen.py`
+- **mk_prog()** (8 connections) — `tools/run_gemdos_clock.py`
+- **L()** (7 connections) — `tools/gemdos_ab/gen.py`
+- **cases_main.py** (7 connections) — `tools/gemdos_ab/cases_main.py`
+- **Data** (6 connections) — `tools/gemdos_ab/gen.py`
+- **.b()** (6 connections) — `tools/gemdos_ab/gen.py`
+- **.s()** (6 connections) — `tools/gemdos_ab/gen.py`
+- **judge()** (6 connections) — `tools/run_gemdos_clock.py`
+- **.table()** (5 connections) — `tools/gemdos_ab/gen.py`
+- **enc_table()** (4 connections) — `tools/gemdos_ab/gen.py`
+- **SW()** (4 connections) — `tools/gemdos_ab/gen.py`
+- *... and 30 more nodes in this community*
 
 ## Relationships
 
-- [Community 16](Community_16.md) (14 shared connections)
-- [Community 314](Community_314.md) (10 shared connections)
-- [Community 64](Community_64.md) (8 shared connections)
-- [Community 58](Community_58.md) (4 shared connections)
-- [Community 166](Community_166.md) (4 shared connections)
-- [Community 57](Community_57.md) (3 shared connections)
-- [Community 333](Community_333.md) (2 shared connections)
-- [Community 134](Community_134.md) (2 shared connections)
-- [Community 299](Community_299.md) (1 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 27](Community_27.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
+- [Community 18](Community_18.md) (11 shared connections)
+- [Community 160](Community_160.md) (7 shared connections)
+- [Community 3](Community_3.md) (5 shared connections)
+- [Community 151](Community_151.md) (5 shared connections)
+- [Community 26](Community_26.md) (4 shared connections)
+- [Community 8](Community_8.md) (3 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 237](Community_237.md) (1 shared connections)
+- [Community 300](Community_300.md) (1 shared connections)
+- [Community 416](Community_416.md) (1 shared connections)
+- [Community 291](Community_291.md) (1 shared connections)
 
 ## Source Files
 
-- `extern/moira/Moira/Moira.h`
-- `extern/moira/Moira/MoiraConfig.h`
-- `extern/moira/Moira/MoiraDataflow_cpp.h`
-- `extern/moira/NEOST_VENDOR.md`
+- `tools/gemdos_ab/cases_host.py`
+- `tools/gemdos_ab/cases_main.py`
+- `tools/gemdos_ab/gen.py`
+- `tools/run_gemdos_ab.py`
+- `tools/run_gemdos_clock.py`
 
 ## Audit Trail
 
-- EXTRACTED: 64 (74%)
-- INFERRED: 22 (26%)
+- EXTRACTED: 134 (82%)
+- INFERRED: 29 (18%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,60 +1,62 @@
 # Community 218
 
-> 24 nodes
+> 30 nodes
 
 ## Key Concepts
 
-- **string** (17 connections)
+- **string** (28 connections)
+- **Audit Hatari, 7ᵉ à 9ᵉ passes : chasses après le gain de performance (2026-08-06)** (14 connections) — `CHANGELOG.md`
 - **.initDrives()** (13 connections) — `src/io/GemdosHd.hpp`
 - **.setDirectory()** (8 connections) — `src/io/GemdosHd.hpp`
-- **8ᵉ passe — workflow (6 chasseurs + vérif adversariale, 2026-08-06)** (8 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.reset()** (7 connections) — `src/io/GemdosHd.hpp`
-- **A39 — le disque dur GEMDOS passe son premier audit, et reçoit son premier test (2026-08-28)** (7 connections) — `CHANGELOG.md`
+- **A39 — le disque dur GEMDOS passe son premier audit, et reçoit son premier test (2026-08-28)** (8 connections) — `CHANGELOG.md`
+- **.atariNames()** (7 connections) — `src/io/GemdosHd.hpp`
+- **.closeFileHandle()** (7 connections) — `src/io/GemdosHd.hpp`
+- **.setExtraAttr()** (6 connections) — `src/io/GemdosHd.hpp`
 - **makeAbsoluteName()** (6 connections) — `src/io/GemdosHd.cpp`
 - **physicalCanon()** (6 connections) — `src/io/GemdosHd.cpp`
+- **.hostRamPtr()** (5 connections) — `src/core/Bus.hpp`
+- **.extraAttrOf()** (5 connections) — `src/io/GemdosHd.hpp`
 - **.initCurPaths()** (5 connections) — `src/io/GemdosHd.hpp`
-- **.clearAllInternalDTAs()** (5 connections) — `src/io/GemdosHd.hpp`
-- **.hostRamPtr()** (4 connections) — `src/core/Bus.hpp`
+- **.renameHostEntry()** (4 connections) — `src/io/GemdosHd.hpp`
+- **.openByOther()** (4 connections) — `src/io/GemdosHd.hpp`
 - **cleanFileName()** (4 connections) — `src/io/GemdosHd.cpp`
 - **Retours 0.5.2 : HD GEMDOS sous Windows, disquette livrée (2026-08-16)** (4 connections) — `CHANGELOG.md`
-- **.installSystemCart()** (3 connections) — `src/io/GemdosHd.hpp`
-- **.driveMask()** (3 connections) — `src/io/GemdosHd.hpp`
-- **.clearInternalDTA()** (3 connections) — `src/io/GemdosHd.hpp`
 - **.addRemainingPath()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.installSystemCart()** (3 connections) — `src/io/GemdosHd.hpp`
+- **.markDeleted()** (3 connections) — `src/io/GemdosHd.hpp`
 - **addSlash()** (3 connections) — `src/io/GemdosHd.cpp`
 - **dirExists()** (3 connections) — `src/io/GemdosHd.cpp`
 - **.clampToSandbox()** (3 connections) — `src/io/GemdosHd.hpp`
-- **hostDriveFolderExists()** (3 connections) — `src/io/GemdosHd.cpp`
-- **.createHostFileName()** (2 connections) — `src/io/GemdosHd.hpp`
-- **.gemChDir()** (2 connections) — `src/io/GemdosHd.hpp`
-- **host2atari()** (2 connections) — `src/io/GemdosHd.cpp`
+- **host2atari()** (3 connections) — `src/io/GemdosHd.cpp`
+- **hostAttrRead()** (3 connections) — `src/io/GemdosHd.cpp`
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
-- [Community 36](Community_36.md) (21 shared connections)
-- [Community 17](Community_17.md) (12 shared connections)
-- [Community 258](Community_258.md) (5 shared connections)
+- [Community 36](Community_36.md) (28 shared connections)
+- [Community 17](Community_17.md) (15 shared connections)
+- [Community 258](Community_258.md) (6 shared connections)
+- [Community 444](Community_444.md) (5 shared connections)
+- [Community 203](Community_203.md) (3 shared connections)
+- [Community 130](Community_130.md) (3 shared connections)
 - [Community 14](Community_14.md) (2 shared connections)
-- [Community 130](Community_130.md) (2 shared connections)
-- [Community 203](Community_203.md) (1 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 105](Community_105.md) (1 shared connections)
-- [Community 27](Community_27.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
+- [Community 450](Community_450.md) (1 shared connections)
+- [Community 422](Community_422.md) (1 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
 - `src/core/Bus.hpp`
 - `src/io/GemdosHd.cpp`
 - `src/io/GemdosHd.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 57 (66%)
-- INFERRED: 29 (34%)
+- EXTRACTED: 82 (67%)
+- INFERRED: 40 (33%)
 - AMBIGUOUS: 0 (0%)
 
 ---

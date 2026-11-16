@@ -21,8 +21,8 @@
 - [Community 102](Community_102.md) (4 shared connections)
 - [Community 75](Community_75.md) (3 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
-- [Community 51](Community_51.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 419](Community_419.md) (1 shared connections)
 
 ## Source Files
 

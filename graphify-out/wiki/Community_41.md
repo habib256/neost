@@ -1,78 +1,78 @@
 # Community 41
 
-> 193 nodes
+> 98 nodes
 
 ## Key Concepts
 
-- **main()** (161 connections) — `tests/selftest_logic.cpp`
-- **.saver()** (96 connections) — `src/core/StateArchive.hpp`
-- **.loader()** (93 connections) — `src/core/StateArchive.hpp`
-- **selftest_logic.cpp** (75 connections) — `tests/selftest_logic.cpp`
-- **Scc.hpp** (42 connections) — `src/io/Scc.hpp`
-- **checkBool()** (28 connections) — `tests/selftest_logic.cpp`
-- **testCartridgeKey()** (13 connections) — `tests/selftest_logic.cpp`
-- **checkStr()** (12 connections) — `tests/selftest_logic.cpp`
-- **testBlitterRmw()** (10 connections) — `tests/blitter_rmw_logic.cpp`
-- **testIkbdSciReset()** (10 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **testSccMieIus()** (10 connections) — `tests/scc_mie_ius_logic.cpp`
-- **ikbd_sci_reset_logic.cpp** (10 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **compareSci()** (9 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **testFdcTruthTable()** (9 connections) — `tests/selftest_logic.cpp`
-- **testGemdosDtaReuse()** (8 connections) — `tests/gemdos_dta_reuse_logic.cpp`
-- **testDmaSoundTruthTable()** (8 connections) — `tests/selftest_logic.cpp`
-- **testIkbdProtocol()** (8 connections) — `tests/selftest_logic.cpp`
-- **Oracle** (7 connections) — `tests/ikbd_sci_reset_logic.cpp`
-- **netusbeeSelfTest()** (7 connections) — `src/headless/main_headless.cpp`
+- **.saver()** (103 connections) — `src/core/StateArchive.hpp`
+- **.loader()** (100 connections) — `src/core/StateArchive.hpp`
 - **testMfpInternalLoopback()** (7 connections) — `tests/mfp_internal_loopback_logic.cpp`
-- **testBlitterTruthTable()** (7 connections) — `tests/selftest_logic.cpp`
-- **mfp_internal_loopback_logic.cpp** (7 connections) — `tests/mfp_internal_loopback_logic.cpp`
 - **testMfpClock()** (6 connections) — `tests/mfp_clock_logic.cpp`
 - **testMfpTurnaround()** (6 connections) — `tests/mfp_turnaround_logic.cpp`
-- **testMmioFidelity()** (6 connections) — `tests/mmio_fidelity_logic.cpp`
-- *... and 168 more nodes in this community*
+- **testMmuMapping()** (6 connections) — `tests/mmu_logic.cpp`
+- **testRtcLongPhase()** (6 connections) — `tests/rtc_long_phase_logic.cpp`
+- **testDmaSoundMicrowireByte()** (5 connections) — `tests/dmasound_microwire_byte_logic.cpp`
+- **testDmaSoundMmioState()** (5 connections) — `tests/dmasound_mmio_state_logic.cpp`
+- **testIkbdTxControl()** (5 connections) — `tests/ikbd_tx_control_logic.cpp`
+- **testIkbdTxPhase()** (5 connections) — `tests/ikbd_tx_phase_logic.cpp`
+- **testMfpAsyncBreak()** (5 connections) — `tests/mfp_async_break_logic.cpp`
+- **testMfpBreak()** (5 connections) — `tests/mfp_break_logic.cpp`
+- **testMfpGpipLines()** (5 connections) — `tests/mfp_gpip_lines_logic.cpp`
+- **testMfpRxEnable()** (5 connections) — `tests/mfp_rx_enable_logic.cpp`
+- **testMfpRxFormat()** (5 connections) — `tests/mfp_rx_format_logic.cpp`
+- **testMfpRxTiming()** (5 connections) — `tests/mfp_rx_timing_logic.cpp`
+- **testMfpTx()** (5 connections) — `tests/mfp_tx_logic.cpp`
+- **testMfpUnderrunClear()** (5 connections) — `tests/mfp_underrun_clear_logic.cpp`
+- **testMfpUnderrun()** (5 connections) — `tests/mfp_underrun_logic.cpp`
+- **testMfpVectorRegister()** (5 connections) — `tests/mfp_vector_register_logic.cpp`
+- **testMidiTxControl()** (5 connections) — `tests/midi_tx_control_logic.cpp`
+- **testMidiTxPhase()** (5 connections) — `tests/midi_tx_phase_logic.cpp`
+- **testMidiTxReclock()** (5 connections) — `tests/midi_tx_reclock_logic.cpp`
+- **testRtcBank()** (5 connections) — `tests/rtc_bank_logic.cpp`
+- *... and 73 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (129 shared connections)
-- [Community 4](Community_4.md) (28 shared connections)
-- [Community 150](Community_150.md) (10 shared connections)
-- [Community 194](Community_194.md) (6 shared connections)
-- [Community 216](Community_216.md) (6 shared connections)
-- [Community 147](Community_147.md) (6 shared connections)
-- [Community 197](Community_197.md) (6 shared connections)
-- [Community 101](Community_101.md) (6 shared connections)
-- [Community 38](Community_38.md) (5 shared connections)
-- [Community 228](Community_228.md) (5 shared connections)
-- [Community 182](Community_182.md) (4 shared connections)
-- [Community 98](Community_98.md) (4 shared connections)
+- [Community 287](Community_287.md) (61 shared connections)
+- [Community 252](Community_252.md) (57 shared connections)
+- [Community 386](Community_386.md) (15 shared connections)
+- [Community 102](Community_102.md) (11 shared connections)
+- [Community 419](Community_419.md) (4 shared connections)
+- [Community 38](Community_38.md) (4 shared connections)
+- [Community 376](Community_376.md) (4 shared connections)
+- [Community 164](Community_164.md) (4 shared connections)
+- [Community 182](Community_182.md) (3 shared connections)
+- [Community 170](Community_170.md) (3 shared connections)
+- [Community 116](Community_116.md) (3 shared connections)
+- [Community 88](Community_88.md) (2 shared connections)
 
 ## Source Files
 
 - `src/core/StateArchive.hpp`
-- `src/headless/main_headless.cpp`
-- `src/io/Scc.hpp`
-- `tests/blitter_rmw_logic.cpp`
 - `tests/dmasound_microwire_byte_logic.cpp`
 - `tests/dmasound_mmio_state_logic.cpp`
-- `tests/gemdos_dta_reuse_logic.cpp`
-- `tests/ikbd_sci_reset_logic.cpp`
 - `tests/ikbd_tx_control_logic.cpp`
 - `tests/ikbd_tx_phase_logic.cpp`
-- `tests/machine_mfp_tx_logic.cpp`
 - `tests/mfp_async_break_logic.cpp`
 - `tests/mfp_break_logic.cpp`
+- `tests/mfp_break_rx_logic.cpp`
 - `tests/mfp_clock_logic.cpp`
 - `tests/mfp_gpip_lines_logic.cpp`
 - `tests/mfp_internal_loopback_logic.cpp`
-- `tests/mfp_pulse_logic.cpp`
 - `tests/mfp_rx_enable_logic.cpp`
 - `tests/mfp_rx_format_logic.cpp`
 - `tests/mfp_rx_timing_logic.cpp`
+- `tests/mfp_turnaround_logic.cpp`
+- `tests/mfp_tx_logic.cpp`
+- `tests/mfp_underrun_clear_logic.cpp`
+- `tests/mfp_underrun_logic.cpp`
+- `tests/mfp_vector_register_logic.cpp`
+- `tests/midi_rx_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 686 (81%)
-- INFERRED: 156 (19%)
+- EXTRACTED: 349 (88%)
+- INFERRED: 47 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,16 +1,17 @@
 # Community 157
 
-> 16 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **NetBackend** (8 connections) — `src/net/NetBackend.hpp`
+- **NetBackend** (9 connections) — `src/net/NetBackend.hpp`
 - **NetBackendLoop** (8 connections) — `src/net/NetBackend.hpp`
 - **NetBackendNull** (5 connections) — `src/net/NetBackend.hpp`
 - **.recv()** (2 connections) — `src/net/NetBackend.hpp`
 - **.recv()** (2 connections) — `src/net/NetBackend.hpp`
 - **.name()** (1 connections) — `src/net/NetBackend.hpp`
 - **.~NetBackend()** (1 connections) — `src/net/NetBackend.hpp`
+- **.nicReset()** (1 connections) — `src/net/NetBackend.hpp`
 - **.poll()** (1 connections) — `src/net/NetBackend.hpp`
 - **.recv()** (1 connections) — `src/net/NetBackend.hpp`
 - **.send()** (1 connections) — `src/net/NetBackend.hpp`
@@ -24,7 +25,7 @@
 ## Relationships
 
 - [Community 4](Community_4.md) (3 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 287](Community_287.md) (3 shared connections)
 
 ## Source Files
 
@@ -32,7 +33,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 21 (100%)
+- EXTRACTED: 22 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

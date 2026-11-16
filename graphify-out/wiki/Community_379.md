@@ -1,13 +1,15 @@
 # Community 379
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
-- **setup_silicon_refs.sh** (3 connections) — `tools/setup_silicon_refs.sh`
-- **setup_silicon_refs.sh script** (3 connections) — `tools/setup_silicon_refs.sh`
+- **setup_silicon_refs.sh** (5 connections) — `tools/setup_silicon_refs.sh`
+- **setup_silicon_refs.sh script** (5 connections) — `tools/setup_silicon_refs.sh`
 - **doc()** (2 connections) — `tools/setup_silicon_refs.sh`
+- **docgz()** (2 connections) — `tools/setup_silicon_refs.sh`
 - **fetch()** (2 connections) — `tools/setup_silicon_refs.sh`
+- **fetch_sparse()** (2 connections) — `tools/setup_silicon_refs.sh`
 
 ## Relationships
 
@@ -19,7 +21,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 9 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

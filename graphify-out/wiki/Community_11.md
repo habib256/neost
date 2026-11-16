@@ -1,15 +1,16 @@
 # Community 11
 
-> 92 nodes
+> 107 nodes
 
 ## Key Concepts
 
-- **ConfigUi** (98 connections) — `src/gui/ConfigWindow.hpp`
+- **ConfigUi** (114 connections) — `src/gui/ConfigWindow.hpp`
 - **Machine** (2 connections) — `src/gui/ConfigWindow.hpp`
 - **cartsDir** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **cfg** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **cfgDirty** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **color** (1 connections) — `src/gui/ConfigWindow.hpp`
+- **compDisks** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **curAcsi** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **curGemdos** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **curSd2** (1 connections) — `src/gui/ConfigWindow.hpp`
@@ -25,18 +26,18 @@
 - **midiInDevs** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **midiInOpen** (1 connections) — `src/gui/ConfigWindow.hpp`
 - **midiLateBytes** (1 connections) — `src/gui/ConfigWindow.hpp`
-- **midiOutDevs** (1 connections) — `src/gui/ConfigWindow.hpp`
-- **midiOutOpen** (1 connections) — `src/gui/ConfigWindow.hpp`
-- **mixDac** (1 connections) — `src/gui/ConfigWindow.hpp`
-- **mixDirty** (1 connections) — `src/gui/ConfigWindow.hpp`
-- *... and 67 more nodes in this community*
+- **midiNetEdit** (1 connections) — `src/gui/ConfigWindow.hpp`
+- **midiNetInit** (1 connections) — `src/gui/ConfigWindow.hpp`
+- **midiNetLost** (1 connections) — `src/gui/ConfigWindow.hpp`
+- *... and 82 more nodes in this community*
 
 ## Relationships
 
 - [Community 264](Community_264.md) (2 shared connections)
 - [Community 4](Community_4.md) (2 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 415](Community_415.md) (1 shared connections)
 - [Community 21](Community_21.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
 - [Community 220](Community_220.md) (1 shared connections)
 - [Community 200](Community_200.md) (1 shared connections)
 
@@ -46,7 +47,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 99 (100%)
+- EXTRACTED: 115 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

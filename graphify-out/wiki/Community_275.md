@@ -1,10 +1,10 @@
 # Community 275
 
-> 20 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **Chantier CLOSURE (Sync) — état de l'enquête** (10 connections) — `docs/CLOSURE_CHANTIER.md`
+- **Chantier CLOSURE (Sync) — état de l'enquête** (11 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle 5 (2026-08-12) — LE FIX : datation par parité d'`into` ; la démo VIT** (4 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle 6 (2026-08-12) — le hachis cerné : motifs de transitoires hors répertoire** (4 connections) — `docs/CLOSURE_CHANTIER.md`
 - **.timerBFrameCycleForLine()** (3 connections) — `src/core/Shifter.hpp`
@@ -17,6 +17,7 @@
 - **Cycle 6 — addendum : logo d'intro (kSnapLead)** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle 6 — confirmations finales (couleurs décalées)** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle 6 — RÉSOLUTION : le port manquant du scroll hardware STF (X-DISTING)** (1 connections) — `docs/CLOSURE_CHANTIER.md`
+- **Cycle 7 (2026-11-12) — trames isolées du grand logo : le saut STOP perdait la phase du 68000** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Cycle Timer B, suite (débogage) — état précis** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Diags ajoutés au Cycle 5** (1 connections) — `docs/CLOSURE_CHANTIER.md`
 - **Diags AJOUTÉS pendant l'enquête (commités ou à committer)** (1 connections) — `docs/CLOSURE_CHANTIER.md`
@@ -40,8 +41,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 20 (83%)
-- INFERRED: 4 (17%)
+- EXTRACTED: 21 (84%)
+- INFERRED: 4 (16%)
 - AMBIGUOUS: 0 (0%)
 
 ---

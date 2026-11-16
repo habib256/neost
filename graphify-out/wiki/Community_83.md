@@ -1,57 +1,69 @@
 # Community 83
 
-> 25 nodes
+> 33 nodes
 
 ## Key Concepts
 
-- **run_nat_sting.py** (14 connections) — `tools/run_nat_sting.py`
-- **make_sting_test.py** (10 connections) — `tools/make_sting_test.py`
-- **main()** (9 connections) — `tools/run_nat_sting.py`
-- **replace_program()** (8 connections) — `tools/run_nat_sting.py`
-- **build_floppy()** (7 connections) — `tools/make_sting_test.py`
-- **socket** (7 connections)
-- **build_prg()** (6 connections) — `tools/make_sting_test.py`
-- **build_code()** (5 connections) — `tools/make_sting_test.py`
-- **main()** (5 connections) — `tools/make_sting_test.py`
-- **handle()** (5 connections) — `tools/net_gateway80.py`
-- **net_gateway80.py** (5 connections) — `tools/net_gateway80.py`
-- **threading** (4 connections)
-- **net_localdns.py** (3 connections) — `tools/net_localdns.py`
-- **alloc()** (2 connections) — `tools/make_sting_test.py`
-- **set_fat()** (2 connections) — `tools/make_sting_test.py`
-- **pump()** (2 connections) — `tools/net_gateway80.py`
-- **chain()** (2 connections) — `tools/run_nat_sting.py`
-- **replace()** (2 connections) — `tools/run_nat_sting.py`
-- **cl_off()** (1 connections) — `tools/make_sting_test.py`
-- **entry()** (1 connections) — `tools/make_sting_test.py`
-- **rd()** (1 connections) — `tools/make_sting_test.py`
-- **qname()** (1 connections) — `tools/net_localdns.py`
-- **serve()** (1 connections) — `tools/run_nat_sting.py`
-- **STinG/ENEC → NAT → HTTP loopback, avec DNS localhost, sans accès Internet. Le…** (1 connections) — `tools/run_nat_sting.py`
-- **Remplace AUTO/STGTEST.PRG dans les clusters déjà alloués du FAT12.** (1 connections) — `tools/run_nat_sting.py`
+- **MidiRing.cpp** (24 connections) — `src/net/MidiRing.cpp`
+- **Socket.cpp** (24 connections) — `src/net/Socket.cpp`
+- **hayes_modem_logic.cpp** (20 connections) — `tests/hayes_modem_logic.cpp`
+- **Acsi.hpp** (13 connections) — `src/io/Acsi.hpp`
+- **UltraSatan.hpp** (12 connections) — `src/io/UltraSatan.hpp`
+- **acsi_capacity_limit_logic.cpp** (12 connections) — `tests/acsi_capacity_limit_logic.cpp`
+- **acsi_large_bounds_logic.cpp** (12 connections) — `tests/acsi_large_bounds_logic.cpp`
+- **midi_ring_logic.cpp** (11 connections) — `tests/midi_ring_logic.cpp`
+- **unistd** (9 connections)
+- **socket** (8 connections)
+- **acsi_partitions_logic.cpp** (7 connections) — `tests/acsi_partitions_logic.cpp`
+- **.parseSpec()** (5 connections) — `src/net/MidiRing.hpp`
+- **.encode()** (5 connections) — `src/net/MidiRing.hpp`
+- **.ingest()** (5 connections) — `src/net/MidiRing.hpp`
+- **ingestChecks()** (4 connections) — `tests/midi_ring_logic.cpp`
+- **in** (4 connections)
+- **inet** (4 connections)
+- **stat** (4 connections)
+- **winsock2** (4 connections)
+- **ws2tcpip** (4 connections)
+- **.midiRingApply()** (3 connections) — `src/gui/App.hpp`
+- **rtrace()** (3 connections) — `src/net/MidiRing.cpp`
+- **main()** (3 connections) — `tests/midi_ring_logic.cpp`
+- **specChecks()** (3 connections) — `tests/midi_ring_logic.cpp`
+- **string** (3 connections)
+- *... and 8 more nodes in this community*
 
 ## Relationships
 
-- [Community 3](Community_3.md) (5 shared connections)
-- [Community 18](Community_18.md) (5 shared connections)
-- [Community 8](Community_8.md) (4 shared connections)
+- [Community 4](Community_4.md) (25 shared connections)
+- [Community 287](Community_287.md) (15 shared connections)
+- [Community 102](Community_102.md) (15 shared connections)
+- [Community 122](Community_122.md) (10 shared connections)
+- [Community 60](Community_60.md) (7 shared connections)
+- [Community 364](Community_364.md) (6 shared connections)
+- [Community 136](Community_136.md) (5 shared connections)
+- [Community 399](Community_399.md) (5 shared connections)
 - [Community 34](Community_34.md) (4 shared connections)
-- [Community 160](Community_160.md) (4 shared connections)
-- [Community 441](Community_441.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
-- [Community 399](Community_399.md) (1 shared connections)
+- [Community 220](Community_220.md) (2 shared connections)
+- [Community 349](Community_349.md) (2 shared connections)
+- [Community 103](Community_103.md) (2 shared connections)
 
 ## Source Files
 
-- `tools/make_sting_test.py`
-- `tools/net_gateway80.py`
-- `tools/net_localdns.py`
-- `tools/run_nat_sting.py`
+- `src/gui/App.hpp`
+- `src/io/Acsi.hpp`
+- `src/io/UltraSatan.hpp`
+- `src/net/MidiRing.cpp`
+- `src/net/MidiRing.hpp`
+- `src/net/Socket.cpp`
+- `tests/acsi_capacity_limit_logic.cpp`
+- `tests/acsi_large_bounds_logic.cpp`
+- `tests/acsi_partitions_logic.cpp`
+- `tests/hayes_modem_logic.cpp`
+- `tests/midi_ring_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 62 (95%)
-- INFERRED: 3 (5%)
+- EXTRACTED: 165 (99%)
+- INFERRED: 1 (1%)
 - AMBIGUOUS: 0 (0%)
 
 ---

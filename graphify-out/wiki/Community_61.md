@@ -1,10 +1,10 @@
 # Community 61
 
-> 37 nodes
+> 39 nodes
 
 ## Key Concepts
 
-- **Audio** (51 connections) — `src/audio/Audio.hpp`
+- **Audio** (53 connections) — `src/audio/Audio.hpp`
 - **DmaSound** (2 connections) — `src/audio/Audio.hpp`
 - **DriveSound** (2 connections) — `src/audio/Audio.hpp`
 - **YM2149** (2 connections) — `src/audio/Audio.hpp`
@@ -22,14 +22,14 @@
 - **dma_** (1 connections) — `src/audio/Audio.hpp`
 - **drive_** (1 connections) — `src/audio/Audio.hpp`
 - **driveScratch_** (1 connections) — `src/audio/Audio.hpp`
+- **dryFrames_** (1 connections) — `src/audio/Audio.hpp`
 - **gainDma_** (1 connections) — `src/audio/Audio.hpp`
 - **gainDrive_** (1 connections) — `src/audio/Audio.hpp`
 - **gainGm_** (1 connections) — `src/audio/Audio.hpp`
 - **gainMt32_** (1 connections) — `src/audio/Audio.hpp`
 - **gainYm_** (1 connections) — `src/audio/Audio.hpp`
 - **gm_** (1 connections) — `src/audio/Audio.hpp`
-- **masterVol_** (1 connections) — `src/audio/Audio.hpp`
-- *... and 12 more nodes in this community*
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
@@ -40,8 +40,8 @@
 - [Community 425](Community_425.md) (2 shared connections)
 - [Community 187](Community_187.md) (1 shared connections)
 - [Community 292](Community_292.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 228](Community_228.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 - [Community 307](Community_307.md) (1 shared connections)
 
 ## Source Files
@@ -50,7 +50,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 56 (100%)
+- EXTRACTED: 58 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

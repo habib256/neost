@@ -1,15 +1,20 @@
 # Community 355
 
-> 10 nodes
+> 15 nodes
 
 ## Key Concepts
 
-- **Paquet Android** (9 connections) — `packaging/android/README.md`
+- **Paquet Android** (14 connections) — `packaging/android/README.md`
+- **Le menu, décalqué de la borne** (3 connections) — `packaging/android/README.md`
 - **android/README.md** (2 connections) — `packaging/android/README.md`
-- **Le menu, décalqué de la borne** (2 connections) — `packaging/android/README.md`
+- **La ROM système** (2 connections) — `packaging/android/README.md`
 - **Ce que c'est (et ce que ce n'est pas)** (1 connections) — `packaging/android/README.md`
 - **Construire** (1 connections) — `packaging/android/README.md`
 - **Données embarquées, et la licence** (1 connections) — `packaging/android/README.md`
+- **Essayer sur l'émulateur Android** (1 connections) — `packaging/android/README.md`
+- **Mises à jour de l'APK et données déballées** (1 connections) — `packaging/android/README.md`
+- **Où mettre ses disquettes** (1 connections) — `packaging/android/README.md`
+- **Pages de 16 Ko (Android 15)** (1 connections) — `packaging/android/README.md`
 - **Reste à faire** (1 connections) — `packaging/android/README.md`
 - **Trois pièges rencontrés** (1 connections) — `packaging/android/README.md`
 - **Voir le menu sans téléphone** (1 connections) — `packaging/android/README.md`
@@ -18,6 +23,8 @@
 ## Relationships
 
 - [Community 232](Community_232.md) (1 shared connections)
+- [Community 138](Community_138.md) (1 shared connections)
+- [Community 99](Community_99.md) (1 shared connections)
 - [Community 124](Community_124.md) (1 shared connections)
 
 ## Source Files
@@ -26,8 +33,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 11 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 16 (89%)
+- INFERRED: 2 (11%)
 - AMBIGUOUS: 0 (0%)
 
 ---

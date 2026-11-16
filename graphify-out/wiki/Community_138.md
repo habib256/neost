@@ -1,67 +1,70 @@
 # Community 138
 
-> 34 nodes
+> 35 nodes
 
 ## Key Concepts
 
-- **saveConfig()** (26 connections) — `src/gui/App.cpp`
-- **appInit()** (22 connections) — `src/gui/AppInit.cpp`
-- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (18 connections) — `CHANGELOG.md`
-- **consumeConfigRequests()** (12 connections) — `src/gui/AppLoop.cpp`
-- **resolveData()** (11 connections) — `src/gui/App.cpp`
-- **parseCommandLine()** (7 connections) — `src/gui/AppInit.cpp`
-- **Mega ST / Mega STE — RTC, SCU, cache, SCC** (7 connections) — `docs/IMPLEMENTED.md`
-- **.switchKioskMode()** (6 connections) — `src/gui/App.hpp`
-- **autoDongleRetract()** (6 connections) — `src/gui/App.cpp`
-- **fileExists()** (6 connections) — `src/gui/App.cpp`
-- **loadRtcFromConfig()** (5 connections) — `src/gui/App.cpp`
-- **snapshotRtc()** (5 connections) — `src/gui/App.cpp`
-- **appShutdown()** (5 connections) — `src/gui/AppLoop.cpp`
-- **renderDockSpace()** (5 connections) — `src/gui/DockLayout.cpp`
-- **string** (5 connections)
+- **appInit()** (23 connections) — `src/gui/AppInit.cpp`
+- **.adjustMachineForTos()** (22 connections) — `src/core/Machine.hpp`
+- **A9 — `main.cpp` passe de 5 100 lignes à 28 (2026-08-30)** (19 connections) — `CHANGELOG.md`
+- **.applyConfig()** (16 connections) — `src/gui/App.hpp`
+- **consumeProfileRequests()** (14 connections) — `src/gui/AppLoop.cpp`
+- **resolveData()** (13 connections) — `src/gui/App.cpp`
+- **string** (12 connections)
+- **parseRamBytes()** (11 connections) — `src/core/MachineType.hpp`
+- **machineName()** (9 connections) — `src/core/MachineType.hpp`
+- **consumeApplyRequests()** (9 connections) — `src/gui/AppLoop.cpp`
+- **parseCommandLine()** (8 connections) — `src/gui/AppInit.cpp`
+- **Audit Hatari, 10ᵉ passe : le banc Super Hang-On, la chaîne son STE et sa chasse, en détail (2026-08-06/07)** (8 connections) — `CHANGELOG.md`
+- **fileExists()** (7 connections) — `src/gui/App.cpp`
+- **quartzFromConfig()** (6 connections) — `src/gui/App.cpp`
+- **romLoadable()** (6 connections) — `src/gui/App.cpp`
+- **romUnloadableReason()** (6 connections) — `src/gui/App.cpp`
+- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
+- **pickTosForMachine()** (5 connections) — `src/gui/App.cpp`
 - **.resolvePath()** (4 connections) — `src/gui/App.hpp`
-- **pickTosForMachine()** (4 connections) — `src/gui/App.cpp`
-- **main()** (4 connections) — `src/main.cpp`
-- **Machine** (4 connections)
+- **.setHpfBypass()** (4 connections) — `src/core/YM2149.hpp`
+- **looksLikeTosHeader()** (4 connections) — `src/gui/App.cpp`
 - **.usatanApply()** (3 connections) — `src/gui/App.hpp`
 - **.etherApply()** (3 connections) — `src/gui/App.hpp`
-- **.toggleFullscreen()** (3 connections) — `src/gui/App.hpp`
-- **applyDockLayout()** (3 connections) — `src/gui/DockLayout.cpp`
-- **registerWindowSettings()** (3 connections) — `src/gui/DockLayout.cpp`
-- **App** (3 connections)
-- *... and 9 more nodes in this community*
+- **clampAudioLatencyMs()** (3 connections) — `src/gui/AppConfig.hpp`
+- **deleteProfile()** (3 connections) — `src/gui/AppConfig.cpp`
+- *... and 10 more nodes in this community*
 
 ## Relationships
 
+- [Community 214](Community_214.md) (19 shared connections)
 - [Community 4](Community_4.md) (17 shared connections)
-- [Community 214](Community_214.md) (13 shared connections)
-- [Community 394](Community_394.md) (8 shared connections)
-- [Community 51](Community_51.md) (7 shared connections)
-- [Community 101](Community_101.md) (6 shared connections)
-- [Community 248](Community_248.md) (6 shared connections)
-- [Community 1](Community_1.md) (5 shared connections)
-- [Community 204](Community_204.md) (4 shared connections)
-- [Community 21](Community_21.md) (4 shared connections)
-- [Community 22](Community_22.md) (3 shared connections)
-- [Community 281](Community_281.md) (3 shared connections)
-- [Community 130](Community_130.md) (3 shared connections)
+- [Community 101](Community_101.md) (7 shared connections)
+- [Community 417](Community_417.md) (7 shared connections)
+- [Community 394](Community_394.md) (6 shared connections)
+- [Community 68](Community_68.md) (4 shared connections)
+- [Community 1](Community_1.md) (4 shared connections)
+- [Community 325](Community_325.md) (4 shared connections)
+- [Community 223](Community_223.md) (4 shared connections)
+- [Community 130](Community_130.md) (4 shared connections)
+- [Community 419](Community_419.md) (3 shared connections)
+- [Community 252](Community_252.md) (3 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/IMPLEMENTED.md`
+- `docs/HATARI_MAPPING.md`
+- `docs/archive/HATARI_MAPPING_AUDIT_2026-07.md`
+- `src/core/Machine.hpp`
+- `src/core/MachineType.hpp`
+- `src/core/YM2149.hpp`
 - `src/gui/App.cpp`
 - `src/gui/App.hpp`
+- `src/gui/AppConfig.cpp`
+- `src/gui/AppConfig.hpp`
 - `src/gui/AppInit.cpp`
 - `src/gui/AppLoop.cpp`
-- `src/gui/DockLayout.cpp`
-- `src/io/Scu.hpp`
-- `src/main.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 77 (52%)
-- INFERRED: 70 (48%)
+- EXTRACTED: 95 (51%)
+- INFERRED: 91 (49%)
 - AMBIGUOUS: 0 (0%)
 
 ---

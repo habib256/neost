@@ -1,10 +1,10 @@
 # Community 43
 
-> 43 nodes
+> 41 nodes
 
 ## Key Concepts
 
-- **CrtEffectStack** (47 connections) — `src/gui/CrtEffectStack.h`
+- **CrtEffectStack** (45 connections) — `src/gui/CrtEffectStack.h`
 - **.process()** (4 connections) — `src/gui/CrtEffectStack.h`
 - **.createTextures()** (3 connections) — `src/gui/CrtEffectStack.h`
 - **.CrtEffectStack()** (2 connections) — `src/gui/CrtEffectStack.h`
@@ -24,12 +24,12 @@
 - **pingPongIdx** (1 connections) — `src/gui/CrtEffectStack.h`
 - **program** (1 connections) — `src/gui/CrtEffectStack.h`
 - **ready** (1 connections) — `src/gui/CrtEffectStack.h`
-- **srcH_** (1 connections) — `src/gui/CrtEffectStack.h`
-- **srcW_** (1 connections) — `src/gui/CrtEffectStack.h`
 - **uBarrel** (1 connections) — `src/gui/CrtEffectStack.h`
 - **uBrightness** (1 connections) — `src/gui/CrtEffectStack.h`
 - **uCenterLighting** (1 connections) — `src/gui/CrtEffectStack.h`
-- *... and 18 more nodes in this community*
+- **uContrast** (1 connections) — `src/gui/CrtEffectStack.h`
+- **uHue** (1 connections) — `src/gui/CrtEffectStack.h`
+- *... and 16 more nodes in this community*
 
 ## Relationships
 
@@ -37,7 +37,7 @@
 - [Community 129](Community_129.md) (2 shared connections)
 - [Community 1](Community_1.md) (1 shared connections)
 - [Community 4](Community_4.md) (1 shared connections)
-- [Community 67](Community_67.md) (1 shared connections)
+- [Community 443](Community_443.md) (1 shared connections)
 
 ## Source Files
 
@@ -45,7 +45,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 50 (96%)
+- EXTRACTED: 48 (96%)
 - INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 

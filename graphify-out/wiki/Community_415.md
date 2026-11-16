@@ -1,32 +1,46 @@
 # Community 415
 
-> 3 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **.triggerBusError()** (5 connections) — `src/core/Cpu68k.hpp`
-- **Bug hunt 11ᵉ passe : 24 correctifs sur six sous-systèmes, save-state v51 (2026-10-20)** (4 connections) — `CHANGELOG.md`
-- **CPU (Moira + intégration) — suivi (audit vendor 2026-08-13)** (2 connections) — `docs/HATARI_DIVERGENCES.md`
+- **CompDiskCatalog** (19 connections) — `src/io/CompDisks.hpp`
+- **CompDiskInfo** (7 connections) — `src/io/CompDisks.hpp`
+- **Key** (4 connections) — `src/io/CompDisks.hpp`
+- **.size()** (4 connections) — `src/io/CompDisks.hpp`
+- **string** (3 connections)
+- **size_t** (2 connections)
+- **number** (2 connections) — `src/io/CompDisks.hpp`
+- **byNumber_** (1 connections) — `src/io/CompDisks.hpp`
+- **byStem_** (1 connections) — `src/io/CompDisks.hpp`
+- **entries_** (1 connections) — `src/io/CompDisks.hpp`
+- **fileKeys_** (1 connections) — `src/io/CompDisks.hpp`
+- **teamKeys_** (1 connections) — `src/io/CompDisks.hpp`
+- **games** (1 connections) — `src/io/CompDisks.hpp`
+- **name** (1 connections) — `src/io/CompDisks.hpp`
+- **team** (1 connections) — `src/io/CompDisks.hpp`
+- **unordered_map** (1 connections)
+- **letters** (1 connections) — `src/io/CompDisks.hpp`
 
 ## Relationships
 
-- [Community 27](Community_27.md) (2 shared connections)
-- [Community 9](Community_9.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 203](Community_203.md) (1 shared connections)
-- [Community 88](Community_88.md) (1 shared connections)
-- [Community 176](Community_176.md) (1 shared connections)
+- [Community 303](Community_303.md) (4 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 1](Community_1.md) (1 shared connections)
+- [Community 11](Community_11.md) (1 shared connections)
+- [Community 325](Community_325.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
-- `src/core/Cpu68k.hpp`
+- `src/io/CompDisks.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (56%)
-- INFERRED: 4 (44%)
+- EXTRACTED: 29 (91%)
+- INFERRED: 3 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

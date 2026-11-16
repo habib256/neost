@@ -1,27 +1,57 @@
 # Community 270
 
-> 5 nodes
+> 27 nodes
 
 ## Key Concepts
 
-- **** (5 connections) — `src/io/Ikbd.cpp`
-- **ACIA_IRQ** (1 connections) — `src/io/Ikbd.cpp`
-- **ACIA_OVRN** (1 connections) — `src/io/Ikbd.cpp`
-- **ACIA_RDRF** (1 connections) — `src/io/Ikbd.cpp`
-- **ACIA_TDRE** (1 connections) — `src/io/Ikbd.cpp`
+- **VideoCounter** (28 connections) — `src/core/Shifter.hpp`
+- **A32 : l'état du compteur vidéo n'est plus écrit que par ses méthodes (2026-11-11)** (8 connections) — `CHANGELOG.md`
+- **WriteMode** (5 connections) — `src/core/Shifter.hpp`
+- **.advanceLine()** (3 connections) — `src/core/Shifter.hpp`
+- **.applyWrite()** (3 connections) — `src/core/Shifter.hpp`
+- **.latchFrame()** (2 connections) — `src/core/Shifter.hpp`
+- **.resetAll()** (2 connections) — `src/core/Shifter.hpp`
+- **.restart()** (2 connections) — `src/core/Shifter.hpp`
+- **.setStopInc()** (2 connections) — `src/core/Shifter.hpp`
+- **.baseWritten()** (1 connections) — `src/core/Shifter.hpp`
+- **.beginFrame()** (1 connections) — `src/core/Shifter.hpp`
+- **.clearPendingWrites()** (1 connections) — `src/core/Shifter.hpp`
+- **.clearStopInc()** (1 connections) — `src/core/Shifter.hpp`
+- **.read()** (1 connections) — `src/core/Shifter.hpp`
+- **.setLineForTest()** (1 connections) — `src/core/Shifter.hpp`
+- **delayedAddr** (1 connections) — `src/core/Shifter.hpp`
+- **delayedOffset** (1 connections) — `src/core/Shifter.hpp`
+- **frameBase** (1 connections) — `src/core/Shifter.hpp`
+- **kAddrMask** (1 connections) — `src/core/Shifter.hpp`
+- **lineBase** (1 connections) — `src/core/Shifter.hpp`
+- **lineY** (1 connections) — `src/core/Shifter.hpp`
+- **restartBase** (1 connections) — `src/core/Shifter.hpp`
+- **restartLine** (1 connections) — `src/core/Shifter.hpp`
+- **stopInc** (1 connections) — `src/core/Shifter.hpp`
+- **DelayedAbsolute** (1 connections) — `src/core/Shifter.hpp`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 171](Community_171.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 288](Community_288.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 237](Community_237.md) (1 shared connections)
+- [Community 218](Community_218.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
+- [Community 328](Community_328.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Ikbd.cpp`
+- `CHANGELOG.md`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 29 (71%)
+- INFERRED: 12 (29%)
 - AMBIGUOUS: 0 (0%)
 
 ---

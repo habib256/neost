@@ -1,26 +1,25 @@
 # Community 51
 
-> 48 nodes
+> 44 nodes
 
 ## Key Concepts
 
-- **PortDevices** (40 connections) — `src/io/PortDevices.hpp`
-- **main()** (38 connections) — `src/headless/main_headless.cpp`
+- **PortDevices** (50 connections) — `src/io/PortDevices.hpp`
 - **PortDevices.cpp** (24 connections) — `src/io/PortDevices.cpp`
-- **Port** (16 connections) — `src/io/PortDevices.hpp`
-- **.at()** (11 connections) — `src/io/PortDevices.hpp`
-- **consumeMediaRequests()** (9 connections) — `src/gui/AppLoop.cpp`
-- **.defaultPort()** (8 connections) — `src/io/PortDevices.hpp`
-- **.fits()** (8 connections) — `src/io/PortDevices.hpp`
+- **.at()** (12 connections) — `src/io/PortDevices.hpp`
+- **.draw()** (11 connections) — `src/android/AndroidMenu.hpp`
+- **.fits()** (11 connections) — `src/io/PortDevices.hpp`
+- **.label()** (9 connections) — `src/io/PortDevices.hpp`
+- **.id()** (8 connections) — `src/io/PortDevices.hpp`
 - **Device** (8 connections)
-- **.id()** (7 connections) — `src/io/PortDevices.hpp`
-- **.label()** (7 connections) — `src/io/PortDevices.hpp`
-- **.fromId()** (6 connections) — `src/io/PortDevices.hpp`
+- **.defaultPort()** (7 connections) — `src/io/PortDevices.hpp`
+- **.portId()** (6 connections) — `src/io/PortDevices.hpp`
+- **Port** (6 connections)
 - **Entry** (5 connections) — `src/io/PortDevices.cpp`
-- **.portId()** (5 connections) — `src/io/PortDevices.hpp`
-- **.portFromId()** (5 connections) — `src/io/PortDevices.hpp`
 - **.plug()** (5 connections) — `src/io/PortDevices.hpp`
+- **actionRow()** (5 connections) — `src/android/AndroidMenu.cpp`
 - **di()** (5 connections) — `src/io/PortDevices.cpp`
+- **neost_port_device_label()** (5 connections) — `src/web/main_web.cpp`
 - **.joyOverlay()** (4 connections) — `src/io/PortDevices.hpp`
 - **.onJoystick()** (4 connections) — `src/io/PortDevices.hpp`
 - **.pressButton()** (4 connections) — `src/io/PortDevices.hpp`
@@ -28,35 +27,37 @@
 - **.onPortA()** (4 connections) — `src/io/PortDevices.hpp`
 - **.serialize()** (3 connections) — `src/io/PortDevices.hpp`
 - **.gpipRead()** (3 connections) — `src/io/PortDevices.hpp`
+- **lowerOf()** (3 connections) — `src/android/AndroidMenu.cpp`
 - **Mfp** (3 connections)
-- *... and 23 more nodes in this community*
+- *... and 19 more nodes in this community*
 
 ## Relationships
 
-- [Community 138](Community_138.md) (7 shared connections)
-- [Community 394](Community_394.md) (6 shared connections)
-- [Community 248](Community_248.md) (5 shared connections)
+- [Community 99](Community_99.md) (14 shared connections)
+- [Community 68](Community_68.md) (6 shared connections)
+- [Community 419](Community_419.md) (5 shared connections)
 - [Community 4](Community_4.md) (5 shared connections)
-- [Community 99](Community_99.md) (4 shared connections)
-- [Community 186](Community_186.md) (4 shared connections)
-- [Community 249](Community_249.md) (4 shared connections)
-- [Community 119](Community_119.md) (4 shared connections)
-- [Community 136](Community_136.md) (3 shared connections)
-- [Community 10](Community_10.md) (2 shared connections)
-- [Community 168](Community_168.md) (2 shared connections)
-- [Community 291](Community_291.md) (2 shared connections)
+- [Community 330](Community_330.md) (4 shared connections)
+- [Community 168](Community_168.md) (4 shared connections)
+- [Community 228](Community_228.md) (3 shared connections)
+- [Community 325](Community_325.md) (3 shared connections)
+- [Community 214](Community_214.md) (2 shared connections)
+- [Community 448](Community_448.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 182](Community_182.md) (1 shared connections)
 
 ## Source Files
 
-- `src/gui/AppLoop.cpp`
-- `src/headless/main_headless.cpp`
+- `src/android/AndroidMenu.cpp`
+- `src/android/AndroidMenu.hpp`
 - `src/io/PortDevices.cpp`
 - `src/io/PortDevices.hpp`
+- `src/web/main_web.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 137 (84%)
-- INFERRED: 27 (16%)
+- EXTRACTED: 130 (88%)
+- INFERRED: 17 (12%)
 - AMBIGUOUS: 0 (0%)
 
 ---

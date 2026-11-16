@@ -1,19 +1,19 @@
 # Community 7
 
-> 114 nodes
+> 126 nodes
 
 ## Key Concepts
 
-- **Ikbd** (190 connections) — `src/io/Ikbd.hpp`
+- **Ikbd** (211 connections) — `src/io/Ikbd.hpp`
 - **Mfp** (2 connections) — `src/io/Ikbd.hpp`
 - **.setJoystickProbe()** (2 connections) — `src/io/Ikbd.hpp`
 - **.setScheduler()** (2 connections) — `src/io/Ikbd.hpp`
 - **function** (2 connections)
 - **Scheduler** (2 connections)
+- **.clockBcd()** (1 connections) — `src/io/Ikbd.hpp`
 - **.desktopMouseReady()** (1 connections) — `src/io/Ikbd.hpp`
 - **.hostJoystick()** (1 connections) — `src/io/Ikbd.hpp`
 - **.setClock()** (1 connections) — `src/io/Ikbd.hpp`
-- **.setJoystick()** (1 connections) — `src/io/Ikbd.hpp`
 - **array** (1 connections)
 - **deque** (1 connections)
 - **absMaxX_** (1 connections) — `src/io/Ikbd.hpp`
@@ -29,16 +29,16 @@
 - **chaosFirst_** (1 connections) — `src/io/Ikbd.hpp`
 - **chaosIgnore_** (1 connections) — `src/io/Ikbd.hpp`
 - **chaosIndex_** (1 connections) — `src/io/Ikbd.hpp`
-- *... and 89 more nodes in this community*
+- *... and 101 more nodes in this community*
 
 ## Relationships
 
-- [Community 171](Community_171.md) (31 shared connections)
-- [Community 47](Community_47.md) (20 shared connections)
-- [Community 59](Community_59.md) (13 shared connections)
-- [Community 331](Community_331.md) (7 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 364](Community_364.md) (1 shared connections)
+- [Community 171](Community_171.md) (25 shared connections)
+- [Community 370](Community_370.md) (19 shared connections)
+- [Community 421](Community_421.md) (15 shared connections)
+- [Community 47](Community_47.md) (13 shared connections)
+- [Community 331](Community_331.md) (9 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
 - [Community 290](Community_290.md) (1 shared connections)
 - [Community 233](Community_233.md) (1 shared connections)
 - [Community 255](Community_255.md) (1 shared connections)
@@ -50,7 +50,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 193 (100%)
+- EXTRACTED: 214 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,9 +1,10 @@
 # Community 350
 
-> 6 nodes
+> 7 nodes
 
 ## Key Concepts
 
+- **gemdos_drive_mapping_logic.cpp** (11 connections) — `tests/gemdos_drive_mapping_logic.cpp`
 - **testGemdosDriveMapping()** (5 connections) — `tests/gemdos_drive_mapping_logic.cpp`
 - **Checks** (4 connections) — `tests/gemdos_drive_mapping_logic.cpp`
 - **.equal()** (2 connections) — `tests/gemdos_drive_mapping_logic.cpp`
@@ -13,9 +14,11 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 177](Community_177.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 102](Community_102.md) (5 shared connections)
+- [Community 177](Community_177.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
@@ -23,8 +26,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 9 (90%)
-- INFERRED: 1 (10%)
+- EXTRACTED: 17 (94%)
+- INFERRED: 1 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,17 +1,20 @@
 # Community 78
 
-> 34 nodes
+> 36 nodes
 
 ## Key Concepts
 
-- **FloppyDisk** (36 connections) — `src/io/Fdc.hpp`
+- **FloppyDisk** (38 connections) — `src/io/Fdc.hpp`
 - **ImgFormat** (4 connections) — `src/io/Fdc.hpp`
 - **TransitionPhase** (4 connections) — `src/io/Fdc.hpp`
 - **ImgType** (3 connections) — `src/io/Fdc.hpp`
 - **.mountAcsi()** (2 connections) — `src/io/Fdc.hpp`
 - **string** (2 connections)
 - **density** (1 connections) — `src/io/Fdc.hpp`
+- **gen** (1 connections) — `src/io/Fdc.hpp`
 - **headTrack** (1 connections) — `src/io/Fdc.hpp`
+- **hostWriteBack** (1 connections) — `src/io/Fdc.hpp`
+- **image** (1 connections) — `src/io/Fdc.hpp`
 - **imgFormat** (1 connections) — `src/io/Fdc.hpp`
 - **imgType** (1 connections) — `src/io/Fdc.hpp`
 - **msaSides** (1 connections) — `src/io/Fdc.hpp`
@@ -26,19 +29,17 @@
 - **transitionEndVbl2** (1 connections) — `src/io/Fdc.hpp`
 - **transitionPhase** (1 connections) — `src/io/Fdc.hpp`
 - **transitionPhase2** (1 connections) — `src/io/Fdc.hpp`
-- **wd1772Path** (1 connections) — `src/io/Fdc.hpp`
-- **writeProtect** (1 connections) — `src/io/Fdc.hpp`
-- **map** (1 connections)
-- *... and 9 more nodes in this community*
+- *... and 11 more nodes in this community*
 
 ## Relationships
 
-- [Community 24](Community_24.md) (6 shared connections)
+- [Community 149](Community_149.md) (6 shared connections)
 - [Community 12](Community_12.md) (2 shared connections)
-- [Community 121](Community_121.md) (2 shared connections)
-- [Community 212](Community_212.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 - [Community 63](Community_63.md) (1 shared connections)
+- [Community 95](Community_95.md) (1 shared connections)
+- [Community 121](Community_121.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,7 +47,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 46 (100%)
+- EXTRACTED: 48 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

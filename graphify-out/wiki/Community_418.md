@@ -1,28 +1,41 @@
 # Community 418
 
-> 3 nodes
+> 16 nodes
 
 ## Key Concepts
 
-- **mmu_logic.cpp** (6 connections) — `tests/mmu_logic.cpp`
-- **testMmuMapping()** (4 connections) — `tests/mmu_logic.cpp`
-- **main()** (2 connections) — `tests/mmu_logic.cpp`
+- **Rig** (13 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **testIkbdMouseMonitor()** (9 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.command()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.due()** (3 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **main()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.advance()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **.data()** (2 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **initializer_list** (2 connections)
+- **.Rig()** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **Ikbd** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **ikbd** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **live** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **mfp** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
+- **sched** (1 connections) — `tests/ikbd_mouse_monitor_logic.cpp`
 
 ## Relationships
 
-- [Community 4](Community_4.md) (2 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 182](Community_182.md) (1 shared connections)
-- [Community 41](Community_41.md) (1 shared connections)
+- [Community 287](Community_287.md) (4 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 77](Community_77.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/mmu_logic.cpp`
+- `tests/ikbd_mouse_monitor_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (78%)
-- INFERRED: 2 (22%)
+- EXTRACTED: 25 (96%)
+- INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

@@ -1,10 +1,10 @@
 # Community 1
 
-> 149 nodes
+> 164 nodes
 
 ## Key Concepts
 
-- **App** (168 connections) — `src/gui/App.hpp`
+- **App** (189 connections) — `src/gui/App.hpp`
 - **Audio** (2 connections) — `src/gui/App.hpp`
 - **DriveSound** (2 connections) — `src/gui/App.hpp`
 - **GLFWwindow** (2 connections) — `src/gui/App.hpp`
@@ -15,10 +15,12 @@
 - **Machine** (2 connections) — `src/gui/App.hpp`
 - **MidiInHost** (2 connections) — `src/gui/App.hpp`
 - **MidiOutHost** (2 connections) — `src/gui/App.hpp`
+- **MidiRing** (2 connections) — `src/gui/App.hpp`
 - **Mt32Synth** (2 connections) — `src/gui/App.hpp`
 - **NatBackend** (2 connections) — `src/gui/App.hpp`
 - **NetBackendNull** (2 connections) — `src/gui/App.hpp`
 - **.App()** (2 connections) — `src/gui/App.hpp`
+- **.cancelKioskInject()** (1 connections) — `src/gui/App.hpp`
 - **audio** (1 connections) — `src/gui/App.hpp`
 - **audioRate** (1 connections) — `src/gui/App.hpp`
 - **autoCartKey** (1 connections) — `src/gui/App.hpp`
@@ -27,24 +29,22 @@
 - **browseDir** (1 connections) — `src/gui/App.hpp`
 - **browseSel** (1 connections) — `src/gui/App.hpp`
 - **browseShortcutLabels** (1 connections) — `src/gui/App.hpp`
-- **browseShortcutPaths** (1 connections) — `src/gui/App.hpp`
-- **browseSubdirs** (1 connections) — `src/gui/App.hpp`
-- *... and 124 more nodes in this community*
+- *... and 139 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (15 shared connections)
-- [Community 138](Community_138.md) (5 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
+- [Community 4](Community_4.md) (17 shared connections)
+- [Community 138](Community_138.md) (4 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
 - [Community 200](Community_200.md) (2 shared connections)
+- [Community 204](Community_204.md) (2 shared connections)
+- [Community 298](Community_298.md) (1 shared connections)
 - [Community 21](Community_21.md) (1 shared connections)
+- [Community 454](Community_454.md) (1 shared connections)
 - [Community 90](Community_90.md) (1 shared connections)
 - [Community 43](Community_43.md) (1 shared connections)
 - [Community 129](Community_129.md) (1 shared connections)
 - [Community 119](Community_119.md) (1 shared connections)
-- [Community 361](Community_361.md) (1 shared connections)
-- [Community 40](Community_40.md) (1 shared connections)
-- [Community 22](Community_22.md) (1 shared connections)
 
 ## Source Files
 
@@ -52,7 +52,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 182 (100%)
+- EXTRACTED: 204 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

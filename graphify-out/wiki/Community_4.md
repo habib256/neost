@@ -1,54 +1,55 @@
 # Community 4
 
-> 138 nodes
+> 129 nodes
 
 ## Key Concepts
 
-- **cstdint** (86 connections)
-- **AppLoop.cpp** (82 connections) — `src/gui/AppLoop.cpp`
-- **string** (65 connections)
-- **AppInit.cpp** (59 connections) — `src/gui/AppInit.cpp`
-- **Machine.hpp** (50 connections) — `src/core/Machine.hpp`
-- **main_headless.cpp** (50 connections) — `src/headless/main_headless.cpp`
-- **App.cpp** (44 connections) — `src/gui/App.cpp`
-- **App.hpp** (41 connections) — `src/gui/App.hpp`
-- **Pacing.hpp** (35 connections) — `src/core/Pacing.hpp`
-- **ConfigWindow.cpp** (23 connections) — `src/gui/ConfigWindow.cpp`
-- **MidiInHost.hpp** (20 connections) — `src/audio/MidiInHost.hpp`
+- **cstdint** (95 connections)
+- **string** (81 connections)
+- **AppInit.cpp** (63 connections) — `src/gui/AppInit.cpp`
+- **main_headless.cpp** (57 connections) — `src/headless/main_headless.cpp`
+- **App.cpp** (56 connections) — `src/gui/App.cpp`
+- **App.hpp** (44 connections) — `src/gui/App.hpp`
+- **ConfigWindow.cpp** (30 connections) — `src/gui/ConfigWindow.cpp`
+- **MachineType.hpp** (28 connections) — `src/core/MachineType.hpp`
+- **DebugWindows.cpp** (24 connections) — `src/gui/DebugWindows.cpp`
+- **MidiInHost.hpp** (21 connections) — `src/audio/MidiInHost.hpp`
+- **MidiEndpoint.hpp** (20 connections) — `src/audio/MidiEndpoint.hpp`
+- **map** (20 connections) — `src/core/EmuFiber.cpp`
+- **cmath** (20 connections)
+- **MidiOutHost.hpp** (19 connections) — `src/audio/MidiOutHost.hpp`
+- **AppConfig.hpp** (19 connections) — `src/gui/AppConfig.hpp`
 - **KioskMenu.cpp** (19 connections) — `src/gui/KioskMenu.cpp`
 - **Observe.hpp** (19 connections) — `src/headless/Observe.hpp`
-- **cmath** (19 connections)
-- **MidiOutHost.hpp** (18 connections) — `src/audio/MidiOutHost.hpp`
-- **memory** (18 connections)
-- **Audio.cpp** (17 connections) — `src/audio/Audio.cpp`
+- **Audio.cpp** (18 connections) — `src/audio/Audio.cpp`
+- **GemdosHd.hpp** (18 connections) — `src/io/GemdosHd.hpp`
+- **cstddef** (18 connections)
 - **Audio.hpp** (17 connections) — `src/audio/Audio.hpp`
-- **MidiEndpoint.hpp** (17 connections) — `src/audio/MidiEndpoint.hpp`
-- **DebugWindows.cpp** (17 connections) — `src/gui/DebugWindows.cpp`
 - **MediaPages.cpp** (17 connections) — `src/gui/MediaPages.cpp`
-- **Rtc.hpp** (17 connections) — `src/io/Rtc.hpp`
+- **Log.hpp** (17 connections) — `src/util/Log.hpp`
+- **ConfigWindow.hpp** (16 connections) — `src/gui/ConfigWindow.hpp`
 - **imgui** (16 connections)
-- **AppConfig.hpp** (15 connections) — `src/gui/AppConfig.hpp`
-- **ConfigWindow.hpp** (14 connections) — `src/gui/ConfigWindow.hpp`
-- *... and 113 more nodes in this community*
+- *... and 104 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (169 shared connections)
-- [Community 399](Community_399.md) (35 shared connections)
-- [Community 214](Community_214.md) (28 shared connections)
-- [Community 41](Community_41.md) (28 shared connections)
+- [Community 102](Community_102.md) (101 shared connections)
+- [Community 287](Community_287.md) (65 shared connections)
+- [Community 214](Community_214.md) (47 shared connections)
+- [Community 83](Community_83.md) (25 shared connections)
+- [Community 399](Community_399.md) (25 shared connections)
+- [Community 252](Community_252.md) (19 shared connections)
+- [Community 1](Community_1.md) (17 shared connections)
 - [Community 138](Community_138.md) (17 shared connections)
-- [Community 248](Community_248.md) (16 shared connections)
-- [Community 1](Community_1.md) (15 shared connections)
-- [Community 228](Community_228.md) (14 shared connections)
-- [Community 204](Community_204.md) (14 shared connections)
-- [Community 186](Community_186.md) (11 shared connections)
-- [Community 92](Community_92.md) (10 shared connections)
-- [Community 91](Community_91.md) (10 shared connections)
+- [Community 91](Community_91.md) (15 shared connections)
+- [Community 419](Community_419.md) (14 shared connections)
+- [Community 325](Community_325.md) (13 shared connections)
+- [Community 204](Community_204.md) (13 shared connections)
 
 ## Source Files
 
 - `src/BuildInfo.hpp`
+- `src/android/AndroidMenu.cpp`
 - `src/android/AndroidMenu.hpp`
 - `src/audio/Audio.cpp`
 - `src/audio/Audio.hpp`
@@ -59,20 +60,19 @@
 - `src/audio/MidiInHost.hpp`
 - `src/audio/MidiMessageParser.hpp`
 - `src/audio/MidiOutHost.hpp`
+- `src/audio/MidiZones.hpp`
 - `src/audio/Mt32Synth.hpp`
 - `src/audio/SampleRing.hpp`
-- `src/core/AudioMix.cpp`
 - `src/core/AudioMix.hpp`
+- `src/core/BitmapView.hpp`
 - `src/core/CartDevice.hpp`
-- `src/core/Framing.hpp`
-- `src/core/Machine.hpp`
-- `src/core/MmuGlue.hpp`
-- `src/core/Pacing.hpp`
+- `src/core/EmuFiber.cpp`
+- `src/core/EmuFiber.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 996 (100%)
-- INFERRED: 5 (0%)
+- EXTRACTED: 1041 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

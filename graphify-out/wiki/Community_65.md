@@ -1,17 +1,21 @@
 # Community 65
 
-> 16 nodes
+> 23 nodes
 
 ## Key Concepts
 
+- **fx68k_bench.cpp** (19 connections) — `tools/fx68k_bench.cpp`
 - **Access** (10 connections) — `tools/fx68k_bench.cpp`
+- **cpuCycle()** (6 connections) — `tools/fx68k_bench.cpp`
 - **main()** (6 connections) — `tools/fx68k_bench.cpp`
-- **cpuCycle()** (5 connections) — `tools/fx68k_bench.cpp`
-- **observe()** (5 connections) — `tools/fx68k_bench.cpp`
+- **observe()** (6 connections) — `tools/fx68k_bench.cpp`
 - **halfCycle()** (4 connections) — `tools/fx68k_bench.cpp`
 - **setIpl()** (4 connections) — `tools/fx68k_bench.cpp`
+- **IrqEv** (3 connections) — `tools/fx68k_bench.cpp`
 - **emit()** (3 connections) — `tools/fx68k_bench.cpp`
 - **size** (3 connections) — `tools/fx68k_bench.cpp`
+- **arbitrate()** (2 connections) — `tools/fx68k_bench.cpp`
+- **berrWindow()** (2 connections) — `tools/fx68k_bench.cpp`
 - **ramWord()** (2 connections) — `tools/fx68k_bench.cpp`
 - **data** (2 connections) — `tools/fx68k_bench.cpp`
 - **addr** (1 connections) — `tools/fx68k_bench.cpp`
@@ -20,10 +24,15 @@
 - **read** (1 connections) — `tools/fx68k_bench.cpp`
 - **strobed** (1 connections) — `tools/fx68k_bench.cpp`
 - **t** (1 connections) — `tools/fx68k_bench.cpp`
+- **level** (1 connections) — `tools/fx68k_bench.cpp`
+- **t** (1 connections) — `tools/fx68k_bench.cpp`
+- **vfx68k** (1 connections)
 
 ## Relationships
 
-- [Community 399](Community_399.md) (8 shared connections)
+- [Community 399](Community_399.md) (3 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
 
 ## Source Files
 
@@ -31,7 +40,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 29 (100%)
+- EXTRACTED: 44 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

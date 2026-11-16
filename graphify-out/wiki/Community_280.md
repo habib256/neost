@@ -1,13 +1,14 @@
 # Community 280
 
-> 4 nodes
+> 5 nodes
 
 ## Key Concepts
 
-- **pgo_train.sh** (3 connections) — `packaging/raspberry/pgo_train.sh`
-- **pgo_train.sh script** (3 connections) — `packaging/raspberry/pgo_train.sh`
+- **pgo_train.sh** (4 connections) — `packaging/raspberry/pgo_train.sh`
+- **pgo_train.sh script** (4 connections) — `packaging/raspberry/pgo_train.sh`
 - **have()** (2 connections) — `packaging/raspberry/pgo_train.sh`
-- **run()** (2 connections) — `packaging/raspberry/pgo_train.sh`
+- **opt()** (2 connections) — `packaging/raspberry/pgo_train.sh`
+- **pub()** (2 connections) — `packaging/raspberry/pgo_train.sh`
 
 ## Relationships
 
@@ -19,7 +20,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
+- EXTRACTED: 7 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

@@ -1,12 +1,11 @@
 # Community 115
 
-> 15 nodes
+> 14 nodes
 
 ## Key Concepts
 
 - **StopRig** (13 connections) — `tests/scc_rx_stop_logic.cpp`
 - **testSccRxStop()** (9 connections) — `tests/scc_rx_stop_logic.cpp`
-- **scc_rx_stop_logic.cpp** (6 connections) — `tests/scc_rx_stop_logic.cpp`
 - **.write()** (3 connections) — `tests/scc_rx_stop_logic.cpp`
 - **main()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
 - **.pop()** (2 connections) — `tests/scc_rx_stop_logic.cpp`
@@ -22,8 +21,9 @@
 
 ## Relationships
 
-- [Community 41](Community_41.md) (4 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 287](Community_287.md) (4 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
@@ -31,7 +31,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 26 (96%)
+- EXTRACTED: 23 (96%)
 - INFERRED: 1 (4%)
 - AMBIGUOUS: 0 (0%)
 

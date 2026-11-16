@@ -1,37 +1,63 @@
 # Community 223
 
-> 11 nodes
+> 32 nodes
 
 ## Key Concepts
 
-- **run_selftests.py** (14 connections) — `tools/run_selftests.py`
-- **run_one()** (7 connections) — `tools/run_selftests.py`
-- **ensure_rom_asset()** (5 connections) — `tools/run_selftests.py`
-- **run_timed()** (5 connections) — `tools/run_selftests.py`
-- **is_untracked()** (4 connections) — `tools/run_selftests.py`
-- **main()** (4 connections) — `tools/run_selftests.py`
-- **rom_is_free()** (3 connections) — `tools/run_selftests.py`
-- **load_manifest()** (2 connections) — `tools/run_selftests.py`
-- **parse_verdicts()** (2 connections) — `tools/run_selftests.py`
-- **EmuTOS (`roms/etos*.img`) est livré avec le dépôt : son absence est une casse.…** (1 connections) — `tools/run_selftests.py`
-- **Vrai si git ne versionne PAS `path` (étalon gitignoré). Sans git (archive…** (1 connections) — `tools/run_selftests.py`
+- **runKioskMenu()** (17 connections) — `src/gui/AppLoop.cpp`
+- **KioskNav** (16 connections) — `src/gui/AppLoop.cpp`
+- **joyResolveRoles()** (9 connections) — `src/gui/JoyMap.cpp`
+- **kioskScanDisks()** (9 connections) — `src/gui/KioskMenu.cpp`
+- **kioskPageBrowse()** (8 connections) — `src/gui/AppLoop.cpp`
+- **kioskPageList()** (8 connections) — `src/gui/AppLoop.cpp`
+- **kioskPageRomDirs()** (8 connections) — `src/gui/AppLoop.cpp`
+- **kioskPageJoy()** (7 connections) — `src/gui/AppLoop.cpp`
+- **JoyMap.cpp** (7 connections) — `src/gui/JoyMap.cpp`
+- **joymapSerialize()** (6 connections) — `src/gui/JoyMap.cpp`
+- **drawKioskDiskMenu()** (6 connections) — `src/gui/KioskMenu.cpp`
+- **kioskScanBrowse()** (6 connections) — `src/gui/KioskMenu.cpp`
+- **joyGuid()** (5 connections) — `src/gui/JoyMap.cpp`
+- **joymapParse()** (5 connections) — `src/gui/JoyMap.cpp`
+- **App** (5 connections)
+- **kioskComputeShortcuts()** (4 connections) — `src/gui/KioskMenu.cpp`
+- **kioskPruneRomDirs()** (4 connections) — `src/gui/KioskMenu.cpp`
+- **App** (3 connections)
+- **string** (3 connections)
+- **string** (3 connections)
+- **FPU transcendantes bit-exact, suite Hatari rejouée, nouveaux étalons et sondes (2026-10-20)** (3 connections) — `CHANGELOG.md`
+- **low** (2 connections) — `src/io/SoftFloatX80.hpp`
+- **Paquet Android : premier APK qui tourne (2026-08-11)** (2 connections) — `CHANGELOG.md`
+- **cancel** (1 connections) — `src/gui/AppLoop.cpp`
+- **down** (1 connections) — `src/gui/AppLoop.cpp`
+- *... and 7 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (6 shared connections)
-- [Community 26](Community_26.md) (2 shared connections)
-- [Community 160](Community_160.md) (2 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 34](Community_34.md) (1 shared connections)
+- [Community 214](Community_214.md) (23 shared connections)
+- [Community 4](Community_4.md) (7 shared connections)
+- [Community 138](Community_138.md) (4 shared connections)
+- [Community 248](Community_248.md) (2 shared connections)
+- [Community 325](Community_325.md) (2 shared connections)
+- [Community 204](Community_204.md) (2 shared connections)
+- [Community 15](Community_15.md) (2 shared connections)
+- [Community 130](Community_130.md) (2 shared connections)
+- [Community 21](Community_21.md) (1 shared connections)
+- [Community 455](Community_455.md) (1 shared connections)
+- [Community 51](Community_51.md) (1 shared connections)
+- [Community 442](Community_442.md) (1 shared connections)
 
 ## Source Files
 
-- `tools/run_selftests.py`
+- `CHANGELOG.md`
+- `src/gui/AppLoop.cpp`
+- `src/gui/JoyMap.cpp`
+- `src/gui/KioskMenu.cpp`
+- `src/io/SoftFloatX80.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 29 (97%)
-- INFERRED: 1 (3%)
+- EXTRACTED: 65 (64%)
+- INFERRED: 37 (36%)
 - AMBIGUOUS: 0 (0%)
 
 ---

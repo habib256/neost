@@ -1,12 +1,12 @@
 # Community 8
 
-> 64 nodes
+> 63 nodes
 
 ## Key Concepts
 
-- **Asm** (39 connections) — `tools/make_usatan_test.py`
+- **Asm** (41 connections) — `tools/make_usatan_test.py`
+- **make_usatan_test.py** (17 connections) — `tools/make_usatan_test.py`
 - **make_mfp_iack_probe.py** (16 connections) — `tools/make_mfp_iack_probe.py`
-- **make_usatan_test.py** (16 connections) — `tools/make_usatan_test.py`
 - **build_floppy()** (15 connections) — `tools/make_usatan_test.py`
 - **make_gemdos_irq_test.py** (14 connections) — `tools/make_gemdos_irq_test.py`
 - **check_server_media.py** (12 connections) — `tools/check_server_media.py`
@@ -29,21 +29,22 @@
 - **.cmd()** (4 connections) — `tools/check_server_media.py`
 - **build_prg()** (4 connections) — `tools/make_gemdos_irq_test.py`
 - **check_rw_pos()** (4 connections) — `tools/make_gemdos_irq_test.py`
-- *... and 39 more nodes in this community*
+- *... and 38 more nodes in this community*
 
 ## Relationships
 
 - [Community 3](Community_3.md) (22 shared connections)
-- [Community 160](Community_160.md) (11 shared connections)
-- [Community 18](Community_18.md) (10 shared connections)
-- [Community 83](Community_83.md) (4 shared connections)
+- [Community 18](Community_18.md) (8 shared connections)
+- [Community 151](Community_151.md) (6 shared connections)
+- [Community 160](Community_160.md) (5 shared connections)
+- [Community 34](Community_34.md) (4 shared connections)
+- [Community 227](Community_227.md) (4 shared connections)
+- [Community 30](Community_30.md) (3 shared connections)
 - [Community 207](Community_207.md) (3 shared connections)
 - [Community 26](Community_26.md) (2 shared connections)
-- [Community 227](Community_227.md) (2 shared connections)
 
 ## Source Files
 
-- `tools/analyze_megaste_blitter_gap.py`
 - `tools/check_server_media.py`
 - `tools/make_gemdos_irq_test.py`
 - `tools/make_mfp_iack_probe.py`
@@ -54,7 +55,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 180 (94%)
+- EXTRACTED: 182 (94%)
 - INFERRED: 12 (6%)
 - AMBIGUOUS: 0 (0%)
 

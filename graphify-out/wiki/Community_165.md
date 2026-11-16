@@ -1,31 +1,35 @@
 # Community 165
 
-> 17 nodes
+> 19 nodes
 
 ## Key Concepts
 
-- **compare_screenshot.py** (17 connections) — `tools/compare_screenshot.py`
+- **compare_screenshot.py** (18 connections) — `tools/compare_screenshot.py`
 - **_load_image()** (8 connections) — `tools/compare_screenshot.py`
 - **compare()** (7 connections) — `tools/compare_screenshot.py`
 - **_align_buffer()** (5 connections) — `tools/compare_screenshot.py`
-- **main()** (4 connections) — `tools/compare_screenshot.py`
+- **main()** (5 connections) — `tools/compare_screenshot.py`
 - **_read_png()** (4 connections) — `tools/compare_screenshot.py`
 - **_read_ppm()** (4 connections) — `tools/compare_screenshot.py`
 - **Path** (4 connections)
 - **_crop()** (3 connections) — `tools/compare_screenshot.py`
 - **_downscale2()** (3 connections) — `tools/compare_screenshot.py`
+- **parse_zone()** (3 connections) — `tools/compare_screenshot.py`
 - **_print_report()** (3 connections) — `tools/compare_screenshot.py`
 - **_region()** (2 connections) — `tools/compare_screenshot.py`
 - **_rgb()** (2 connections) — `tools/compare_screenshot.py`
 - **skip_to_nl()** (1 connections) — `tools/compare_screenshot.py`
 - **Moyenne 2×2 — oracle Hatari plein écran → résolution NeoST.** (1 connections) — `tools/compare_screenshot.py`
 - **Recadre un plein écran Hatari 2× sur le buffer NeoST 416×276.** (1 connections) — `tools/compare_screenshot.py`
+- **« X,Y,W,H » → rectangle ; refuse une zone vide ou négative.** (1 connections) — `tools/compare_screenshot.py`
 - **Décodeur PNG en Python pur (zlib seulement) : 8 bits, gris/RGB/RGBA (± alpha),…** (1 connections) — `tools/compare_screenshot.py`
 
 ## Relationships
 
-- [Community 18](Community_18.md) (7 shared connections)
-- [Community 160](Community_160.md) (3 shared connections)
+- [Community 18](Community_18.md) (5 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 26](Community_26.md) (2 shared connections)
+- [Community 151](Community_151.md) (1 shared connections)
 
 ## Source Files
 
@@ -33,7 +37,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 40 (100%)
+- EXTRACTED: 43 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

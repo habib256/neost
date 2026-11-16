@@ -1,22 +1,24 @@
 # Community 331
 
-> 7 nodes
+> 9 nodes
 
 ## Key Concepts
 
-- **.catchUpCpuTx()** (8 connections) — `src/io/Ikbd.hpp`
-- **.scheduleCpuTx()** (5 connections) — `src/io/Ikbd.hpp`
+- **.catchUpCpuTx()** (11 connections) — `src/io/Ikbd.hpp`
+- **.scheduleCpuTx()** (6 connections) — `src/io/Ikbd.hpp`
 - **.write8()** (5 connections) — `src/io/Ikbd.hpp`
 - **.resetHw()** (5 connections) — `src/io/Ikbd.hpp`
 - **.nextTxClock()** (4 connections) — `src/io/Ikbd.hpp`
-- **.clockSciRx()** (3 connections) — `src/io/Ikbd.hpp`
+- **.aciaFrameBits()** (4 connections) — `src/io/Ikbd.hpp`
+- **.read8()** (4 connections) — `src/io/Ikbd.hpp`
+- **.aciaFrameBit()** (3 connections) — `src/io/Ikbd.hpp`
 - **.advanceTx()** (3 connections) — `src/io/Ikbd.hpp`
 
 ## Relationships
 
-- [Community 171](Community_171.md) (7 shared connections)
-- [Community 7](Community_7.md) (7 shared connections)
-- [Community 47](Community_47.md) (1 shared connections)
+- [Community 171](Community_171.md) (9 shared connections)
+- [Community 7](Community_7.md) (9 shared connections)
+- [Community 370](Community_370.md) (3 shared connections)
 
 ## Source Files
 
@@ -24,8 +26,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 14 (58%)
-- INFERRED: 10 (42%)
+- EXTRACTED: 18 (55%)
+- INFERRED: 15 (45%)
 - AMBIGUOUS: 0 (0%)
 
 ---

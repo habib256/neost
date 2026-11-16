@@ -1,39 +1,59 @@
 # Community 325
 
-> 7 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **le16()** (10 connections) — `src/io/UsbDevice.cpp`
-- **le32()** (10 connections) — `src/io/UsbDevice.cpp`
-- **writeStx()** (8 connections) — `tests/stx_data_crc_write_logic.cpp`
-- **sourceImage()** (5 connections) — `tests/fdc_sector_size_switch_logic.cpp`
-- **crc16()** (3 connections) — `tests/stx_data_crc_write_logic.cpp`
-- **initializer_list** (1 connections)
-- **path** (1 connections)
+- **drawConfigWindow()** (32 connections) — `src/gui/ConfigWindow.cpp`
+- **parseMachine()** (10 connections) — `src/core/MachineType.hpp`
+- **IconButton()** (7 connections) — `src/gui/UiCommon.cpp`
+- **pickRomForMachine()** (6 connections) — `src/gui/ConfigWindow.cpp`
+- **drawHardDiskPage()** (6 connections) — `src/gui/MediaPages.cpp`
+- **drawFloppyWindow()** (5 connections) — `src/gui/ConfigWindow.cpp`
+- **drawFloppyPage()** (5 connections) — `src/gui/MediaPages.cpp`
+- **Chemins hôte unifiés, logique pure testable, `main.cpp` dégrossi (2026-08-17)** (5 connections) — `CHANGELOG.md`
+- **profileFileName()** (4 connections) — `src/gui/AppConfig.cpp`
+- **pickMachineForRom()** (4 connections) — `src/gui/ConfigWindow.cpp`
+- **drawCartPage()** (4 connections) — `src/gui/MediaPages.cpp`
+- **hardDiskDriveLetters()** (4 connections) — `src/gui/MediaPages.cpp`
+- **ConfigUi** (4 connections)
+- **string** (4 connections)
+- **romIsNtsc()** (3 connections) — `src/gui/ConfigWindow.cpp`
+- **drawNetworkPage()** (3 connections) — `src/gui/MediaPages.cpp`
+- **pathEntryRow()** (3 connections) — `src/gui/MediaPages.cpp`
+- **string** (3 connections)
+- **App** (2 connections)
+- **ConfigUi** (1 connections)
+- **size_t** (1 connections)
 
 ## Relationships
 
-- [Community 102](Community_102.md) (5 shared connections)
-- [Community 22](Community_22.md) (4 shared connections)
-- [Community 69](Community_69.md) (2 shared connections)
-- [Community 71](Community_71.md) (2 shared connections)
-- [Community 72](Community_72.md) (2 shared connections)
-- [Community 63](Community_63.md) (2 shared connections)
-- [Community 82](Community_82.md) (2 shared connections)
-- [Community 174](Community_174.md) (2 shared connections)
-- [Community 86](Community_86.md) (1 shared connections)
+- [Community 4](Community_4.md) (13 shared connections)
+- [Community 214](Community_214.md) (7 shared connections)
+- [Community 138](Community_138.md) (4 shared connections)
+- [Community 101](Community_101.md) (3 shared connections)
+- [Community 51](Community_51.md) (3 shared connections)
+- [Community 42](Community_42.md) (3 shared connections)
+- [Community 417](Community_417.md) (3 shared connections)
+- [Community 394](Community_394.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 204](Community_204.md) (2 shared connections)
+- [Community 223](Community_223.md) (2 shared connections)
+- [Community 419](Community_419.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/UsbDevice.cpp`
-- `tests/fdc_sector_size_switch_logic.cpp`
-- `tests/stx_data_crc_write_logic.cpp`
+- `CHANGELOG.md`
+- `src/core/MachineType.hpp`
+- `src/gui/AppConfig.cpp`
+- `src/gui/ConfigWindow.cpp`
+- `src/gui/MediaPages.cpp`
+- `src/gui/UiCommon.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (53%)
-- INFERRED: 14 (47%)
+- EXTRACTED: 51 (59%)
+- INFERRED: 35 (41%)
 - AMBIGUOUS: 0 (0%)
 
 ---

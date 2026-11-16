@@ -1,6 +1,6 @@
 # Community 377
 
-> 4 nodes
+> 6 nodes
 
 ## Key Concepts
 
@@ -8,13 +8,14 @@
 - **Moira::dasmIncRead()** (3 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmRead()** (3 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::disassemble()** (3 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **Moira::dump8()** (2 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
+- **u8** (1 connections)
 
 ## Relationships
 
-- [Community 2](Community_2.md) (6 shared connections)
+- [Community 2](Community_2.md) (7 shared connections)
+- [Community 64](Community_64.md) (2 shared connections)
 - [Community 16](Community_16.md) (1 shared connections)
-- [Community 64](Community_64.md) (1 shared connections)
-- [Community 30](Community_30.md) (1 shared connections)
 
 ## Source Files
 
@@ -23,8 +24,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 9 (75%)
-- INFERRED: 3 (25%)
+- EXTRACTED: 11 (79%)
+- INFERRED: 3 (21%)
 - AMBIGUOUS: 0 (0%)
 
 ---

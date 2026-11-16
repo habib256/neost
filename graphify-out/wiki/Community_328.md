@@ -1,32 +1,51 @@
 # Community 328
 
-> 9 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **VideoCounterState** (10 connections) — `src/core/Shifter.hpp`
-- **delayedAddr** (1 connections) — `src/core/Shifter.hpp`
-- **delayedOffset** (1 connections) — `src/core/Shifter.hpp`
-- **frameBase** (1 connections) — `src/core/Shifter.hpp`
-- **lineBase** (1 connections) — `src/core/Shifter.hpp`
-- **lineY** (1 connections) — `src/core/Shifter.hpp`
-- **restartBase** (1 connections) — `src/core/Shifter.hpp`
-- **restartLine** (1 connections) — `src/core/Shifter.hpp`
-- **stopInc** (1 connections) — `src/core/Shifter.hpp`
+- **GlueView** (27 connections) — `src/core/Shifter.hpp`
+- **VideoCounter::read()** (2 connections) — `src/core/VideoCounter.cpp`
+- **.blankLines()** (1 connections) — `src/core/Shifter.hpp`
+- **.catchUp()** (1 connections) — `src/core/Shifter.hpp`
+- **.frame()** (1 connections) — `src/core/Shifter.hpp`
+- **.~GlueView()** (1 connections) — `src/core/Shifter.hpp`
+- **.hasSyncWrites()** (1 connections) — `src/core/Shifter.hpp`
+- **.lineBytes()** (1 connections) — `src/core/Shifter.hpp`
+- **.lineCount()** (1 connections) — `src/core/Shifter.hpp`
+- **.lineStart()** (1 connections) — `src/core/Shifter.hpp`
+- **.lineStartCount()** (1 connections) — `src/core/Shifter.hpp`
+- **.lineState()** (1 connections) — `src/core/Shifter.hpp`
+- **.lineWidthWords()** (1 connections) — `src/core/Shifter.hpp`
+- **.liveLine()** (1 connections) — `src/core/Shifter.hpp`
+- **.liveStartHBL()** (1 connections) — `src/core/Shifter.hpp`
+- **.scrollAdvance()** (1 connections) — `src/core/Shifter.hpp`
+- **.scrollPrefetch()** (1 connections) — `src/core/Shifter.hpp`
+- **.steBorder()** (1 connections) — `src/core/Shifter.hpp`
+- **.traceSyncWrites()** (1 connections) — `src/core/Shifter.hpp`
+- **.vdeEnd()** (1 connections) — `src/core/Shifter.hpp`
+- **.vdeStart()** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
-- [Community 5](Community_5.md) (1 shared connections)
+- [Community 412](Community_412.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
+- [Community 270](Community_270.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 237](Community_237.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
 
 ## Source Files
 
 - `src/core/Shifter.hpp`
+- `src/core/VideoCounter.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 10 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 24 (86%)
+- INFERRED: 4 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---

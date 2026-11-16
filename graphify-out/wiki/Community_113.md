@@ -1,12 +1,11 @@
 # Community 113
 
-> 27 nodes
+> 21 nodes
 
 ## Key Concepts
 
 - **DriveSound** (18 connections) — `src/audio/DriveSound.hpp`
-- **FdcSound** (10 connections) — `src/io/Fdc.hpp`
-- **DriveSound.cpp** (10 connections) — `src/audio/DriveSound.cpp`
+- **DriveSound.cpp** (11 connections) — `src/audio/DriveSound.cpp`
 - **.shutdown()** (6 connections) — `src/audio/DriveSound.hpp`
 - **.init()** (4 connections) — `src/audio/DriveSound.hpp`
 - **.motorStop()** (4 connections) — `src/audio/DriveSound.hpp`
@@ -26,31 +25,25 @@
 - **startupPath_** (1 connections) — `src/audio/DriveSound.hpp`
 - **tick_** (1 connections) — `src/audio/DriveSound.hpp`
 - **string** (1 connections)
-- **Index** (1 connections) — `src/io/Fdc.hpp`
-- **MotorOff** (1 connections) — `src/io/Fdc.hpp`
-- **MotorOn** (1 connections) — `src/io/Fdc.hpp`
-- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
-- [Community 12](Community_12.md) (1 shared connections)
-- [Community 101](Community_101.md) (1 shared connections)
-- [Community 48](Community_48.md) (1 shared connections)
+- [Community 4](Community_4.md) (4 shared connections)
 - [Community 60](Community_60.md) (1 shared connections)
 - [Community 175](Community_175.md) (1 shared connections)
+- [Community 101](Community_101.md) (1 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
 
 ## Source Files
 
 - `src/audio/DriveSound.cpp`
 - `src/audio/DriveSound.hpp`
-- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 39 (85%)
-- INFERRED: 7 (15%)
+- EXTRACTED: 33 (87%)
+- INFERRED: 5 (13%)
 - AMBIGUOUS: 0 (0%)
 
 ---

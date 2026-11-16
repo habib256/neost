@@ -4,15 +4,15 @@
 
 ## Key Concepts
 
-- **run_etalons.py** (28 connections) — `tools/run_etalons.py`
+- **run_etalons.py** (29 connections) — `tools/run_etalons.py`
 - **run_one()** (12 connections) — `tools/run_etalons.py`
 - **main()** (11 connections) — `tools/run_etalons.py`
 - **run_timed()** (10 connections) — `tools/run_etalons.py`
 - **oracle_scan_pick()** (8 connections) — `tools/run_etalons.py`
 - **Path** (7 connections)
+- **run_headless_capture()** (6 connections) — `tools/run_etalons.py`
 - **compare_shots()** (5 connections) — `tools/run_etalons.py`
 - **run_hatari_oracle()** (5 connections) — `tools/run_etalons.py`
-- **run_headless_capture()** (5 connections) — `tools/run_etalons.py`
 - **verify_refs()** (5 connections) — `tools/run_etalons.py`
 - **ensure_disk()** (4 connections) — `tools/run_etalons.py`
 - **headless_cmd()** (4 connections) — `tools/run_etalons.py`
@@ -34,9 +34,11 @@
 ## Relationships
 
 - [Community 18](Community_18.md) (6 shared connections)
-- [Community 160](Community_160.md) (4 shared connections)
-- [Community 26](Community_26.md) (3 shared connections)
+- [Community 26](Community_26.md) (4 shared connections)
 - [Community 227](Community_227.md) (2 shared connections)
+- [Community 160](Community_160.md) (2 shared connections)
+- [Community 151](Community_151.md) (2 shared connections)
+- [Community 301](Community_301.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
@@ -46,7 +48,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 78 (98%)
+- EXTRACTED: 80 (98%)
 - INFERRED: 2 (2%)
 - AMBIGUOUS: 0 (0%)
 

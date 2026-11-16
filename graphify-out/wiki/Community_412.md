@@ -1,27 +1,43 @@
 # Community 412
 
-> 4 nodes
+> 17 nodes
 
 ## Key Concepts
 
-- **Checks** (4 connections) — `tests/ipf_image_logic.cpp`
-- **.equal()** (2 connections) — `tests/ipf_image_logic.cpp`
-- **count** (1 connections) — `tests/ipf_image_logic.cpp`
-- **failures** (1 connections) — `tests/ipf_image_logic.cpp`
+- **Frame** (12 connections) — `src/core/Shifter.hpp`
+- **VideoGeometry** (9 connections) — `src/core/Shifter.hpp`
+- **.frame()** (3 connections) — `src/core/Shifter.hpp`
+- **cyclesPerLine** (1 connections) — `src/core/Shifter.hpp`
+- **displayLines** (1 connections) — `src/core/Shifter.hpp`
+- **geo** (1 connections) — `src/core/Shifter.hpp`
+- **hi** (1 connections) — `src/core/Shifter.hpp`
+- **lineStartCycle** (1 connections) — `src/core/Shifter.hpp`
+- **mode** (1 connections) — `src/core/Shifter.hpp`
+- **startRes** (1 connections) — `src/core/Shifter.hpp`
+- **sync** (1 connections) — `src/core/Shifter.hpp`
+- **cyclesPerLine** (1 connections) — `src/core/Shifter.hpp`
+- **displayLines** (1 connections) — `src/core/Shifter.hpp`
+- **dispStartLine** (1 connections) — `src/core/Shifter.hpp`
+- **lineEndCycle** (1 connections) — `src/core/Shifter.hpp`
+- **linesPerFrame** (1 connections) — `src/core/Shifter.hpp`
+- **lineStartCycle** (1 connections) — `src/core/Shifter.hpp`
 
 ## Relationships
 
+- [Community 396](Community_396.md) (2 shared connections)
+- [Community 328](Community_328.md) (1 shared connections)
 - [Community 102](Community_102.md) (1 shared connections)
-- [Community 163](Community_163.md) (1 shared connections)
+- [Community 359](Community_359.md) (1 shared connections)
+- [Community 5](Community_5.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/ipf_image_logic.cpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 5 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 21 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

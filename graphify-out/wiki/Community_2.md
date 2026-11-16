@@ -1,6 +1,6 @@
 # Community 2
 
-> 132 nodes
+> 131 nodes
 
 ## Key Concepts
 
@@ -29,22 +29,22 @@
 - **Moira::dasmAndiRg()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmAndisr()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
 - **Moira::dasmAndRgEa()** (4 connections) — `extern/moira/Moira/MoiraDasm_cpp.h`
-- *... and 107 more nodes in this community*
+- *... and 106 more nodes in this community*
 
 ## Relationships
 
 - [Community 326](Community_326.md) (24 shared connections)
 - [Community 167](Community_167.md) (15 shared connections)
 - [Community 263](Community_263.md) (9 shared connections)
-- [Community 377](Community_377.md) (6 shared connections)
+- [Community 377](Community_377.md) (7 shared connections)
 - [Community 314](Community_314.md) (3 shared connections)
 - [Community 109](Community_109.md) (3 shared connections)
 - [Community 131](Community_131.md) (2 shared connections)
+- [Community 450](Community_450.md) (1 shared connections)
 - [Community 414](Community_414.md) (1 shared connections)
 - [Community 76](Community_76.md) (1 shared connections)
 - [Community 57](Community_57.md) (1 shared connections)
 - [Community 104](Community_104.md) (1 shared connections)
-- [Community 422](Community_422.md) (1 shared connections)
 
 ## Source Files
 

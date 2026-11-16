@@ -1,12 +1,11 @@
 # Community 195
 
-> 14 nodes
+> 13 nodes
 
 ## Key Concepts
 
 - **BrgEchoRig** (12 connections) — `tests/scc_echo_brg_config_logic.cpp`
 - **testSccEchoBrgConfig()** (8 connections) — `tests/scc_echo_brg_config_logic.cpp`
-- **scc_echo_brg_config_logic.cpp** (6 connections) — `tests/scc_echo_brg_config_logic.cpp`
 - **.write()** (3 connections) — `tests/scc_echo_brg_config_logic.cpp`
 - **.available()** (2 connections) — `tests/scc_echo_brg_config_logic.cpp`
 - **.BrgEchoRig()** (2 connections) — `tests/scc_echo_brg_config_logic.cpp`
@@ -21,8 +20,9 @@
 
 ## Relationships
 
-- [Community 41](Community_41.md) (4 shared connections)
-- [Community 102](Community_102.md) (3 shared connections)
+- [Community 287](Community_287.md) (4 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
@@ -30,8 +30,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 24 (96%)
-- INFERRED: 1 (4%)
+- EXTRACTED: 21 (95%)
+- INFERRED: 1 (5%)
 - AMBIGUOUS: 0 (0%)
 
 ---

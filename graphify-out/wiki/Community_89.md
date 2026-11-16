@@ -1,52 +1,53 @@
 # Community 89
 
-> 54 nodes
+> 45 nodes
 
 ## Key Concepts
 
-- **Ne2000** (53 connections) — `src/io/Ne2000.hpp`
-- **Ne2000.cpp** (24 connections) — `src/io/Ne2000.cpp`
-- **.writeReg()** (6 connections) — `src/io/Ne2000.hpp`
-- **.setIsr()** (6 connections) — `src/io/Ne2000.hpp`
-- **.readReg()** (5 connections) — `src/io/Ne2000.hpp`
-- **.transmit()** (5 connections) — `src/io/Ne2000.hpp`
-- **.loadProm()** (5 connections) — `src/io/Ne2000.hpp`
+- **Ne2000** (76 connections) — `src/io/Ne2000.hpp`
 - **NetBackend** (4 connections) — `src/io/Ne2000.hpp`
-- **.remoteDmaReadByte()** (4 connections) — `src/io/Ne2000.hpp`
-- **.remoteDmaWriteByte()** (4 connections) — `src/io/Ne2000.hpp`
-- **.deliverFrame()** (4 connections) — `src/io/Ne2000.hpp`
-- **.page0Read()** (3 connections) — `src/io/Ne2000.hpp`
-- **.page0Write()** (3 connections) — `src/io/Ne2000.hpp`
-- **.page1Read()** (3 connections) — `src/io/Ne2000.hpp`
-- **.page1Write()** (3 connections) — `src/io/Ne2000.hpp`
-- **.poll()** (3 connections) — `src/io/Ne2000.hpp`
-- **.serialize()** (3 connections) — `src/io/Ne2000.hpp`
-- **.setMac()** (3 connections) — `src/io/Ne2000.hpp`
-- **.reset()** (3 connections) — `src/io/Ne2000.hpp`
-- **.trace()** (2 connections) — `src/io/Ne2000.hpp`
-- **.cartRead()** (2 connections) — `src/io/Ne2000.hpp`
 - **.backend()** (2 connections) — `src/io/Ne2000.hpp`
-- **.Ne2000()** (2 connections) — `src/io/Ne2000.hpp`
 - **.setBackend()** (2 connections) — `src/io/Ne2000.hpp`
 - **.enabled()** (1 connections) — `src/io/Ne2000.hpp`
-- *... and 29 more nodes in this community*
+- **.irqAsserted()** (1 connections) — `src/io/Ne2000.hpp`
+- **.mac()** (1 connections) — `src/io/Ne2000.hpp`
+- **.setEnabled()** (1 connections) — `src/io/Ne2000.hpp`
+- **bnry_** (1 connections) — `src/io/Ne2000.hpp`
+- **bpage_** (1 connections) — `src/io/Ne2000.hpp`
+- **clda_** (1 connections) — `src/io/Ne2000.hpp`
+- **cntr_** (1 connections) — `src/io/Ne2000.hpp`
+- **config0_** (1 connections) — `src/io/Ne2000.hpp`
+- **config1_** (1 connections) — `src/io/Ne2000.hpp`
+- **config2_** (1 connections) — `src/io/Ne2000.hpp`
+- **config3_** (1 connections) — `src/io/Ne2000.hpp`
+- **cr_** (1 connections) — `src/io/Ne2000.hpp`
+- **cr9346_** (1 connections) — `src/io/Ne2000.hpp`
+- **curr_** (1 connections) — `src/io/Ne2000.hpp`
+- **dcr_** (1 connections) — `src/io/Ne2000.hpp`
+- **imr_** (1 connections) — `src/io/Ne2000.hpp`
+- **irq_** (1 connections) — `src/io/Ne2000.hpp`
+- **isr_** (1 connections) — `src/io/Ne2000.hpp`
+- **kDefaultMac** (1 connections) — `src/io/Ne2000.hpp`
+- **kMemSize** (1 connections) — `src/io/Ne2000.hpp`
+- *... and 20 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (6 shared connections)
-- [Community 399](Community_399.md) (2 shared connections)
-- [Community 249](Community_249.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 371](Community_371.md) (18 shared connections)
+- [Community 462](Community_462.md) (6 shared connections)
+- [Community 474](Community_474.md) (5 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 481](Community_481.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Ne2000.cpp`
 - `src/io/Ne2000.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 82 (85%)
-- INFERRED: 15 (15%)
+- EXTRACTED: 79 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

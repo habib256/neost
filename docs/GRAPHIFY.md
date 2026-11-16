@@ -38,7 +38,7 @@ les sauvegardes datées et les métadonnées locales d'exécution sont ignorés
 par `graphify-out/.gitignore`.
 
 Les documents et images n'ont pas fait l'objet d'une extraction sémantique.
-Le parseur a signalé six fichiers avec erreurs de syntaxe, notamment certains
+Le parseur a signalé neuf fichiers avec erreurs de syntaxe, notamment certains
 en-têtes Moira : leurs symboles ou relations peuvent être incomplets. Certains
 fichiers de données ou déclarations ne produisent aucun symbole. Les relations
 inférées doivent être vérifiées dans les sources avant une décision technique.

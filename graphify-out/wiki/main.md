@@ -1,33 +1,33 @@
 # main()
 
-> God node · 161 connections · `tests/selftest_logic.cpp`
+> God node · 185 connections · `tests/selftest_logic.cpp`
 
-**Community:** [Community 41](Community_41.md)
+**Community:** [Community 252](Community_252.md)
 
 ## Connections by Relation
 
 ### calls
+- testStxAbsentTrack() `INFERRED`
+- testCartridgeKey() `EXTRACTED`
 - testIpfImage() `INFERRED`
 - testStxSectorDam() `INFERRED`
+- testGemdosProcess() `INFERRED`
 - testAcsiIrqTiming() `INFERRED`
 - testStxDeletedTrack() `INFERRED`
 - testStxSectorRewrite() `INFERRED`
+- testGemdosSnapshot() `INFERRED`
 - testFdcMediaChange() `INFERRED`
 - testFdcSelection() `INFERRED`
 - testIkbdResponses() `INFERRED`
 - testIkbdOutputCapacity() `INFERRED`
 - testAcsiCapacityLimit() `INFERRED`
-- testGemdosSnapshot() `INFERRED`
 - testFdcTrackIdLocation() `INFERRED`
-- testCartridgeKey() `EXTRACTED`
+- testPacing() `EXTRACTED`
+- testConfigParser() `EXTRACTED`
 - testAcsiWriteDestination() `INFERRED`
+- testFdcWrittenMarks() `INFERRED`
 - testFdcSectorSizeSwitch() `INFERRED`
-- testStxWrittenTrack() `INFERRED`
-- testIkbdMonitor() `INFERRED`
-- testFdcForceInterrupt() `INFERRED`
-- testSccChannelReset() `INFERRED`
-- testSccRxErrorIrq() `INFERRED`
-- *…and 140 more `calls` connection(s) not listed (lowest-degree first to go)*
+- *…and 164 more `calls` connection(s) not listed (lowest-degree first to go)*
 
 ### contains
 - selftest_logic.cpp `EXTRACTED`

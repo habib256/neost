@@ -1,33 +1,44 @@
 # Community 376
 
-> 5 nodes
+> 19 nodes
 
 ## Key Concepts
 
-- **rtc_long_phase_logic.cpp** (9 connections) — `tests/rtc_long_phase_logic.cpp`
-- **testRtcLongPhase()** (6 connections) — `tests/rtc_long_phase_logic.cpp`
-- **limits** (5 connections)
-- **main()** (2 connections) — `tests/rtc_long_phase_logic.cpp`
-- **rtcAddress()** (2 connections) — `tests/rtc_long_phase_logic.cpp`
+- **Rig** (16 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **testIkbdSciFraming()** (10 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **testMidiBreak()** (5 connections) — `tests/midi_break_logic.cpp`
+- **index()** (3 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **.cr()** (3 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **tick()** (3 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **.count()** (2 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **.runTo()** (2 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **.send()** (2 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **.Rig()** (1 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **Ikbd** (1 connections)
+- **Mfp** (1 connections)
+- **pair** (1 connections)
+- **Scheduler** (1 connections)
+- **got** (1 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **k** (1 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **live** (1 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **m** (1 connections) — `tests/ikbd_sci_framing_logic.cpp`
+- **s** (1 connections) — `tests/ikbd_sci_framing_logic.cpp`
 
 ## Relationships
 
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 4](Community_4.md) (3 shared connections)
-- [Community 102](Community_102.md) (2 shared connections)
-- [Community 386](Community_386.md) (1 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 22](Community_22.md) (1 shared connections)
-- [Community 297](Community_297.md) (1 shared connections)
+- [Community 287](Community_287.md) (6 shared connections)
+- [Community 41](Community_41.md) (4 shared connections)
+- [Community 252](Community_252.md) (2 shared connections)
 
 ## Source Files
 
-- `tests/rtc_long_phase_logic.cpp`
+- `tests/ikbd_sci_framing_logic.cpp`
+- `tests/midi_break_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 17 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 31 (91%)
+- INFERRED: 3 (9%)
 - AMBIGUOUS: 0 (0%)
 
 ---

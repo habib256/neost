@@ -1,33 +1,42 @@
 # Community 364
 
-> 6 nodes
+> 20 nodes
 
 ## Key Concepts
 
-- **MouseMode** (7 connections) — `src/io/Ikbd.hpp`
-- **Relecture adversariale pré-release (2026-08-01)** (4 connections) — `CHANGELOG.md`
-- **ABS** (1 connections) — `src/io/Ikbd.hpp`
-- **CURSOR** (1 connections) — `src/io/Ikbd.hpp`
-- **OFF** (1 connections) — `src/io/Ikbd.hpp`
-- **REL** (1 connections) — `src/io/Ikbd.hpp`
+- **Rig** (9 connections) — `tests/hayes_modem_logic.cpp`
+- **Listener** (7 connections) — `tests/hayes_modem_logic.cpp`
+- **main()** (7 connections) — `tests/hayes_modem_logic.cpp`
+- **string** (4 connections)
+- **dialCmd()** (3 connections) — `tests/hayes_modem_logic.cpp`
+- **.accept()** (3 connections) — `tests/hayes_modem_logic.cpp`
+- **peerSeesEof()** (3 connections) — `tests/hayes_modem_logic.cpp`
+- **.waitFor()** (3 connections) — `tests/hayes_modem_logic.cpp`
+- **SocketHandle** (3 connections)
+- **expect()** (2 connections) — `tests/hayes_modem_logic.cpp`
+- **.open()** (2 connections) — `tests/hayes_modem_logic.cpp`
+- **.type()** (2 connections) — `tests/hayes_modem_logic.cpp`
+- **.~Listener()** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **HayesModem** (1 connections)
+- **Mfp** (1 connections)
+- **fd** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **port** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **mfp** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **modem** (1 connections) — `tests/hayes_modem_logic.cpp`
+- **out** (1 connections) — `tests/hayes_modem_logic.cpp`
 
 ## Relationships
 
-- [Community 47](Community_47.md) (1 shared connections)
-- [Community 7](Community_7.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 110](Community_110.md) (1 shared connections)
-- [Community 24](Community_24.md) (1 shared connections)
+- [Community 83](Community_83.md) (6 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/Ikbd.hpp`
+- `tests/hayes_modem_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 7 (70%)
-- INFERRED: 3 (30%)
+- EXTRACTED: 30 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

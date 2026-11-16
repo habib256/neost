@@ -1,29 +1,46 @@
 # Community 318
 
-> 6 nodes
+> 23 nodes
 
 ## Key Concepts
 
-- **Fault** (7 connections) — `src/core/Cpu68k.hpp`
-- **.lastFault()** (3 connections) — `src/core/Cpu68k.hpp`
-- **addr** (1 connections) — `src/core/Cpu68k.hpp`
-- **pc** (1 connections) — `src/core/Cpu68k.hpp`
-- **valid** (1 connections) — `src/core/Cpu68k.hpp`
-- **write** (1 connections) — `src/core/Cpu68k.hpp`
+- **Rig** (16 connections) — `tests/ikbd_keycode_logic.cpp`
+- **testIkbdKeycode()** (9 connections) — `tests/ikbd_keycode_logic.cpp`
+- **Checks** (4 connections) — `tests/ikbd_keycode_logic.cpp`
+- **index()** (3 connections) — `tests/ikbd_keycode_logic.cpp`
+- **.command()** (3 connections) — `tests/ikbd_keycode_logic.cpp`
+- **tick()** (3 connections) — `tests/ikbd_keycode_logic.cpp`
+- **.equal()** (2 connections) — `tests/ikbd_keycode_logic.cpp`
+- **.count()** (2 connections) — `tests/ikbd_keycode_logic.cpp`
+- **.first()** (2 connections) — `tests/ikbd_keycode_logic.cpp`
+- **.runTo()** (2 connections) — `tests/ikbd_keycode_logic.cpp`
+- **initializer_list** (2 connections)
+- **.Rig()** (1 connections) — `tests/ikbd_keycode_logic.cpp`
+- **count** (1 connections) — `tests/ikbd_keycode_logic.cpp`
+- **failures** (1 connections) — `tests/ikbd_keycode_logic.cpp`
+- **Ikbd** (1 connections)
+- **Mfp** (1 connections)
+- **pair** (1 connections)
+- **Scheduler** (1 connections)
+- **got** (1 connections) — `tests/ikbd_keycode_logic.cpp`
+- **ikbd** (1 connections) — `tests/ikbd_keycode_logic.cpp`
+- **live** (1 connections) — `tests/ikbd_keycode_logic.cpp`
+- **mfp** (1 connections) — `tests/ikbd_keycode_logic.cpp`
+- **sched** (1 connections) — `tests/ikbd_keycode_logic.cpp`
 
 ## Relationships
 
-- [Community 27](Community_27.md) (3 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 287](Community_287.md) (7 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.hpp`
+- `tests/ikbd_keycode_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 9 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 33 (97%)
+- INFERRED: 1 (3%)
 - AMBIGUOUS: 0 (0%)
 
 ---

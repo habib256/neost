@@ -5,7 +5,7 @@
 ## Key Concepts
 
 - **Rig** (19 connections) — `tests/gemdos_snapshot_logic.cpp`
-- **testGemdosSnapshot()** (14 connections) — `tests/gemdos_snapshot_logic.cpp`
+- **testGemdosSnapshot()** (15 connections) — `tests/gemdos_snapshot_logic.cpp`
 - **.trap()** (9 connections) — `tests/gemdos_snapshot_logic.cpp`
 - **.string()** (7 connections) — `tests/gemdos_snapshot_logic.cpp`
 - **string** (6 connections)
@@ -28,9 +28,11 @@
 
 ## Relationships
 
-- [Community 41](Community_41.md) (3 shared connections)
-- [Community 4](Community_4.md) (2 shared connections)
 - [Community 102](Community_102.md) (2 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 450](Community_450.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
@@ -38,8 +40,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 51 (98%)
-- INFERRED: 1 (2%)
+- EXTRACTED: 51 (96%)
+- INFERRED: 2 (4%)
 - AMBIGUOUS: 0 (0%)
 
 ---

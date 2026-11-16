@@ -14,8 +14,8 @@
 - **outputs()** (5 connections) — `src/audio/MidiWinmm.hpp`
 - **reFind()** (4 connections) — `src/audio/MidiWinmm.hpp`
 - **UINT** (4 connections)
+- **windows** (4 connections)
 - **MMRESULT** (3 connections)
-- **windows** (3 connections)
 - **errorText()** (2 connections) — `src/audio/MidiWinmm.hpp`
 - **DWORD_PTR** (2 connections)
 - **HANDLE** (2 connections)
@@ -27,10 +27,11 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (4 shared connections)
+- [Community 287](Community_287.md) (4 shared connections)
 - [Community 220](Community_220.md) (3 shared connections)
 - [Community 4](Community_4.md) (3 shared connections)
-- [Community 230](Community_230.md) (1 shared connections)
+- [Community 42](Community_42.md) (1 shared connections)
+- [Community 59](Community_59.md) (1 shared connections)
 - [Community 36](Community_36.md) (1 shared connections)
 
 ## Source Files
@@ -39,7 +40,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 47 (100%)
+- EXTRACTED: 48 (100%)
 - INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 

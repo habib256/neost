@@ -6,7 +6,7 @@
 
 - **Server.cpp** (18 connections) — `src/headless/Server.cpp`
 - **run()** (13 connections) — `src/headless/Server.cpp`
-- **JoyScript.hpp** (12 connections) — `src/util/JoyScript.hpp`
+- **JoyScript.hpp** (13 connections) — `src/util/JoyScript.hpp`
 - **Slot** (8 connections) — `src/headless/Server.cpp`
 - **parseHexU32()** (7 connections) — `src/util/JoyScript.hpp`
 - **parse()** (6 connections) — `src/util/JoyScript.hpp`
@@ -33,11 +33,12 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (8 shared connections)
-- [Community 4](Community_4.md) (7 shared connections)
+- [Community 4](Community_4.md) (8 shared connections)
+- [Community 287](Community_287.md) (7 shared connections)
 - [Community 186](Community_186.md) (2 shared connections)
-- [Community 41](Community_41.md) (2 shared connections)
+- [Community 252](Community_252.md) (2 shared connections)
 - [Community 399](Community_399.md) (2 shared connections)
+- [Community 102](Community_102.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,7 +47,7 @@
 
 ## Audit Trail
 
-- EXTRACTED: 64 (97%)
+- EXTRACTED: 65 (97%)
 - INFERRED: 2 (3%)
 - AMBIGUOUS: 0 (0%)
 

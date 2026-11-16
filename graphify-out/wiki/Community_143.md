@@ -28,15 +28,15 @@
 
 ## Relationships
 
-- [Community 102](Community_102.md) (8 shared connections)
 - [Community 217](Community_217.md) (8 shared connections)
-- [Community 305](Community_305.md) (4 shared connections)
+- [Community 287](Community_287.md) (7 shared connections)
+- [Community 305](Community_305.md) (3 shared connections)
 - [Community 302](Community_302.md) (3 shared connections)
 - [Community 304](Community_304.md) (3 shared connections)
 - [Community 4](Community_4.md) (3 shared connections)
+- [Community 183](Community_183.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
 - [Community 31](Community_31.md) (1 shared connections)
-- [Community 163](Community_163.md) (1 shared connections)
-- [Community 172](Community_172.md) (1 shared connections)
 - [Community 399](Community_399.md) (1 shared connections)
 - [Community 239](Community_239.md) (1 shared connections)
 

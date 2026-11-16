@@ -1,10 +1,10 @@
 # Community 52
 
-> 40 nodes
+> 39 nodes
 
 ## Key Concepts
 
-- **Rtc** (29 connections) — `src/io/Rtc.hpp`
+- **Rtc** (28 connections) — `src/io/Rtc.hpp`
 - **Rtc.cpp** (15 connections) — `src/io/Rtc.cpp`
 - **DateTime** (8 connections) — `src/io/Rtc.hpp`
 - **.advanceWholeSeconds()** (8 connections) — `src/io/Rtc.hpp`
@@ -18,22 +18,23 @@
 - **.advanceSeconds()** (3 connections) — `src/io/Rtc.hpp`
 - **.initFromHostTime()** (3 connections) — `src/io/Rtc.hpp`
 - **.catchUp()** (3 connections) — `src/io/Rtc.hpp`
+- **.serialize()** (3 connections) — `src/io/Rtc.hpp`
 - **.read8()** (2 connections) — `src/io/Rtc.hpp`
-- **.serialize()** (2 connections) — `src/io/Rtc.hpp`
 - **.setClock()** (2 connections) — `src/io/Rtc.hpp`
 - **DateTime** (2 connections)
 - **function** (2 connections)
+- **now_** (2 connections) — `src/io/Rtc.hpp`
 - **Rtc::Rtc()** (1 connections) — `src/io/Rtc.cpp`
 - **.setSecondCycles()** (1 connections) — `src/io/Rtc.hpp`
 - **day** (1 connections) — `src/io/Rtc.hpp`
 - **hour** (1 connections) — `src/io/Rtc.hpp`
 - **min** (1 connections) — `src/io/Rtc.hpp`
-- **month** (1 connections) — `src/io/Rtc.hpp`
-- *... and 15 more nodes in this community*
+- *... and 14 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (3 shared connections)
+- [Community 386](Community_386.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 

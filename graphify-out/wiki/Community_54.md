@@ -1,24 +1,25 @@
 # Community 54
 
-> 29 nodes
+> 30 nodes
 
 ## Key Concepts
 
-- **BareMoira** (25 connections) — `tools/moira_bare_bench.cpp`
+- **BareMoira** (27 connections) — `tools/moira_bare_bench.cpp`
+- **.busError()** (8 connections) — `tools/moira_bare_bench.cpp`
 - **.emit()** (8 connections) — `tools/moira_bare_bench.cpp`
+- **.read16()** (8 connections) — `tools/moira_bare_bench.cpp`
+- **u32** (8 connections)
+- **.read8()** (7 connections) — `tools/moira_bare_bench.cpp`
+- **.write16()** (7 connections) — `tools/moira_bare_bench.cpp`
+- **.write8()** (7 connections) — `tools/moira_bare_bench.cpp`
+- **.berrWindow()** (6 connections) — `tools/moira_bare_bench.cpp`
 - **.fc()** (6 connections) — `tools/moira_bare_bench.cpp`
-- **.read16()** (6 connections) — `tools/moira_bare_bench.cpp`
-- **u32** (6 connections)
-- **.read8()** (5 connections) — `tools/moira_bare_bench.cpp`
-- **.write16()** (5 connections) — `tools/moira_bare_bench.cpp`
-- **.write8()** (5 connections) — `tools/moira_bare_bench.cpp`
 - **u16** (5 connections)
 - **IrqEv** (4 connections) — `tools/moira_bare_bench.cpp`
 - **.read16OnReset()** (4 connections) — `tools/moira_bare_bench.cpp`
 - **.readIrqUserVector()** (4 connections) — `tools/moira_bare_bench.cpp`
 - **u8** (4 connections)
 - **V3 est CLOS : l'attribution de ligne à la grille réelle devient le défaut — et le verrou ne faisait rien (2026-09-01)** (3 connections) — `CHANGELOG.md`
-- **.sync()** (2 connections) — `tools/moira_bare_bench.cpp`
 - **main()** (2 connections) — `tools/moira_bare_bench.cpp`
 - **i64** (2 connections)
 - **.BareMoira()** (1 connections) — `tools/moira_bare_bench.cpp`
@@ -28,16 +29,17 @@
 - **nEmit** (1 connections) — `tools/moira_bare_bench.cpp`
 - **out** (1 connections) — `tools/moira_bare_bench.cpp`
 - **ram** (1 connections) — `tools/moira_bare_bench.cpp`
-- **tOrigin** (1 connections) — `tools/moira_bare_bench.cpp`
-- *... and 4 more nodes in this community*
+- *... and 5 more nodes in this community*
 
 ## Relationships
 
 - [Community 399](Community_399.md) (2 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
-- [Community 299](Community_299.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 333](Community_333.md) (1 shared connections)
+- [Community 166](Community_166.md) (1 shared connections)
+- [Community 314](Community_314.md) (1 shared connections)
 - [Community 130](Community_130.md) (1 shared connections)
-- [Community 110](Community_110.md) (1 shared connections)
+- [Community 396](Community_396.md) (1 shared connections)
 
 ## Source Files
 
@@ -46,8 +48,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 53 (93%)
-- INFERRED: 4 (7%)
+- EXTRACTED: 65 (93%)
+- INFERRED: 5 (7%)
 - AMBIGUOUS: 0 (0%)
 
 ---

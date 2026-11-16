@@ -1,45 +1,55 @@
 # Community 56
 
-> 20 nodes
+> 48 nodes
 
 ## Key Concepts
 
-- **HayesModem** (17 connections) — `src/net/HayesModem.hpp`
-- **HayesModem.cpp** (13 connections) — `src/net/HayesModem.cpp`
+- **HayesModem** (37 connections) — `src/net/HayesModem.hpp`
+- **HayesModem.cpp** (24 connections) — `src/net/HayesModem.cpp`
+- **.sendStr()** (10 connections) — `src/net/HayesModem.hpp`
+- **HayesModem::DialJob** (9 connections) — `src/net/HayesModem.cpp`
+- **.hangup()** (9 connections) — `src/net/HayesModem.hpp`
 - **.execute()** (8 connections) — `src/net/HayesModem.hpp`
-- **.sendStr()** (7 connections) — `src/net/HayesModem.hpp`
-- **.hangup()** (7 connections) — `src/net/HayesModem.hpp`
-- **.dial()** (6 connections) — `src/net/HayesModem.hpp`
-- **.onTx()** (5 connections) — `src/net/HayesModem.hpp`
+- **.onTx()** (8 connections) — `src/net/HayesModem.hpp`
+- **.poll()** (7 connections) — `src/net/HayesModem.hpp`
+- **.out()** (7 connections) — `src/net/HayesModem.hpp`
+- **mtrace()** (7 connections) — `src/net/HayesModem.cpp`
+- **.onPortA()** (6 connections) — `src/net/HayesModem.hpp`
+- **.cancelDial()** (6 connections) — `src/net/HayesModem.hpp`
+- **string** (6 connections)
+- **.resetProfile()** (5 connections) — `src/net/HayesModem.hpp`
+- **dial_** (5 connections) — `src/net/HayesModem.hpp`
+- **.flushPlus()** (4 connections) — `src/net/HayesModem.hpp`
 - **.HayesModem()** (4 connections) — `src/net/HayesModem.hpp`
-- **mtrace()** (4 connections) — `src/net/HayesModem.cpp`
-- **string** (4 connections)
-- **.poll()** (3 connections) — `src/net/HayesModem.hpp`
+- **.setAllowedDomains()** (3 connections) — `src/net/HayesModem.hpp`
+- **toSt_** (2 connections) — `src/net/HayesModem.hpp`
 - **Mfp** (2 connections)
+- **Effets CRT : version GLSL choisie à l'exécution (débloque le Raspberry Pi) (2026-08-07)** (2 connections) — `CHANGELOG.md`
 - **.connected()** (1 connections) — `src/net/HayesModem.hpp`
-- **cmd_** (1 connections) — `src/net/HayesModem.hpp`
-- **dataMode_** (1 connections) — `src/net/HayesModem.hpp`
-- **echo_** (1 connections) — `src/net/HayesModem.hpp`
-- **fd_** (1 connections) — `src/net/HayesModem.hpp`
-- **plusCount_** (1 connections) — `src/net/HayesModem.hpp`
-- **SocketHandle** (1 connections)
-- **string** (1 connections)
+- **.dataMode()** (1 connections) — `src/net/HayesModem.hpp`
+- **.dialing()** (1 connections) — `src/net/HayesModem.hpp`
+- **DialJob** (1 connections)
+- *... and 23 more nodes in this community*
 
 ## Relationships
 
-- [Community 4](Community_4.md) (4 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
+- [Community 40](Community_40.md) (1 shared connections)
 - [Community 399](Community_399.md) (1 shared connections)
-- [Community 102](Community_102.md) (1 shared connections)
+- [Community 394](Community_394.md) (1 shared connections)
+- [Community 130](Community_130.md) (1 shared connections)
 
 ## Source Files
 
+- `CHANGELOG.md`
 - `src/net/HayesModem.cpp`
 - `src/net/HayesModem.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 37 (79%)
-- INFERRED: 10 (21%)
+- EXTRACTED: 81 (77%)
+- INFERRED: 24 (23%)
 - AMBIGUOUS: 0 (0%)
 
 ---

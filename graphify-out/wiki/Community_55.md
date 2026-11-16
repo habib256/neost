@@ -1,48 +1,65 @@
 # Community 55
 
-> 17 nodes
+> 27 nodes
 
 ## Key Concepts
 
-- **.fifoRefill()** (14 connections) — `src/core/DmaSound.hpp`
-- **.updateDac()** (11 connections) — `src/core/DmaSound.hpp`
-- **4. Ce qui RESTE — l'angle « précision cycle »** (8 connections) — `docs/CYCLE_ACCURACY.md`
-- **.liveCounter()** (7 connections) — `src/core/DmaSound.hpp`
-- **.fifoPull()** (4 connections) — `src/core/DmaSound.hpp`
-- **.capPush()** (4 connections) — `src/core/DmaSound.hpp`
-- **.onHbl()** (4 connections) — `src/core/DmaSound.hpp`
-- **.capAvail()** (3 connections) — `src/core/DmaSound.hpp`
+- **machineIsSte()** (23 connections) — `src/core/MachineType.hpp`
+- **.~Machine()** (15 connections) — `src/core/Machine.hpp`
+- **.reconfigure()** (14 connections) — `src/core/Machine.hpp`
+- **machineHasBlitter()** (10 connections) — `src/core/MachineType.hpp`
+- **.scheduleFrameEvents()** (9 connections) — `src/core/Machine.hpp`
+- **.abortParked_()** (8 connections) — `src/core/Machine.hpp`
+- **kHblOff()** (8 connections) — `src/core/Machine.cpp`
+- **.parkedInInstruction()** (7 connections) — `src/core/Machine.hpp`
+- **.onHbl()** (6 connections) — `src/core/Machine.hpp`
+- **.supported()** (5 connections) — `src/core/EmuFiber.hpp`
+- **.setFrameFiber()** (5 connections) — `src/core/Machine.hpp`
+- **.requestParkedAbort()** (5 connections) — `src/core/Machine.hpp`
+- **.hardReset()** (5 connections) — `src/core/Machine.hpp`
+- **.reset()** (5 connections) — `src/core/Machine.hpp`
+- **IACK MFP +4 cyc (raster Super Hang-On verrouillé à l'oracle) + chaîne son STE fidèle (2026-08-06/07)** (4 connections) — `CHANGELOG.md`
+- **.write16()** (3 connections) — `src/core/Bus.hpp`
+- **.write32()** (3 connections) — `src/core/Bus.hpp`
+- **.synchronous()** (3 connections) — `src/core/EmuFiber.hpp`
+- **.syncFrameEnd_()** (3 connections) — `src/core/Machine.hpp`
+- **.wireDmaFetchWindow()** (3 connections) — `src/core/Machine.hpp`
+- **.wakestate()** (3 connections) — `src/core/Shifter.hpp`
 - **Passe de cohérence doc ↔ code (2026-08-19)** (3 connections) — `CHANGELOG.md`
-- **P2 — Son DMA STE (`dmaSnd.c:737`)** (3 connections) — `docs/CYCLE_ACCURACY.md`
-- **fetchWindowOpen** (2 connections) — `src/core/DmaSound.hpp`
-- **Le fetch du son DMA se mesure enfin — et c'est l'oracle qui ne se reproduit pas (2026-09-02)** (2 connections) — `CHANGELOG.md`
-- **Passe de cohérence doc ↔ code, 2ᵉ tour (2026-08-19)** (2 connections) — `CHANGELOG.md`
-- **✅ Beam-sync : CLOS (2026-07-09, complété 2026-08-06) — ex-P1 de tête** (1 connections) — `docs/CYCLE_ACCURACY.md`
-- **P2 — Restes vidéo « plan »** (1 connections) — `docs/CYCLE_ACCURACY.md`
-- **P3 — Horloges & divers** (1 connections) — `docs/CYCLE_ACCURACY.md`
-- **P3 — Précision « démos extrêmes »** (1 connections) — `docs/CYCLE_ACCURACY.md`
+- **.claimsBlitter()** (2 connections) — `src/core/Bus.hpp`
+- **.claimsStePads()** (2 connections) — `src/core/Bus.hpp`
+- **.timerBPos()** (2 connections) — `src/core/Machine.hpp`
+- *... and 2 more nodes in this community*
 
 ## Relationships
 
-- [Community 48](Community_48.md) (13 shared connections)
-- [Community 13](Community_13.md) (8 shared connections)
-- [Community 39](Community_39.md) (4 shared connections)
+- [Community 10](Community_10.md) (21 shared connections)
+- [Community 394](Community_394.md) (7 shared connections)
+- [Community 102](Community_102.md) (7 shared connections)
+- [Community 14](Community_14.md) (6 shared connections)
+- [Community 203](Community_203.md) (5 shared connections)
+- [Community 59](Community_59.md) (4 shared connections)
+- [Community 182](Community_182.md) (4 shared connections)
+- [Community 88](Community_88.md) (4 shared connections)
+- [Community 288](Community_288.md) (3 shared connections)
 - [Community 130](Community_130.md) (3 shared connections)
-- [Community 88](Community_88.md) (2 shared connections)
-- [Community 394](Community_394.md) (1 shared connections)
-- [Community 37](Community_37.md) (1 shared connections)
-- [Community 317](Community_317.md) (1 shared connections)
+- [Community 27](Community_27.md) (2 shared connections)
+- [Community 4](Community_4.md) (2 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/CYCLE_ACCURACY.md`
-- `src/core/DmaSound.hpp`
+- `src/core/Bus.hpp`
+- `src/core/EmuFiber.hpp`
+- `src/core/Machine.cpp`
+- `src/core/Machine.hpp`
+- `src/core/MachineType.hpp`
+- `src/core/Shifter.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 25 (48%)
-- INFERRED: 27 (52%)
+- EXTRACTED: 63 (51%)
+- INFERRED: 60 (49%)
 - AMBIGUOUS: 0 (0%)
 
 ---

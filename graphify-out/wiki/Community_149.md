@@ -1,50 +1,62 @@
 # Community 149
 
-> 58 nodes
+> 42 nodes
 
 ## Key Concepts
 
-- **** (55 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80** (38 connections)
-- **float_status** (35 connections)
-- **packFloatx80()** (27 connections) — `src/io/SoftFloatFpsp.hpp`
-- **propagateFloatx80NaNOneArg()** (25 connections) — `src/io/SoftFloatFpsp.hpp`
-- **extractFloatx80Exp()** (24 connections) — `src/io/SoftFloatFpsp.hpp`
-- **extractFloatx80Frac()** (24 connections) — `src/io/SoftFloatFpsp.hpp`
-- **extractFloatx80Sign()** (23 connections) — `src/io/SoftFloatFpsp.hpp`
-- **float_raise()** (23 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_etox()** (23 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_logn()** (23 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_lognp1()** (22 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_sinh()** (22 connections) — `src/io/SoftFloatFpsp.hpp`
-- **resetPrec()** (22 connections) — `src/io/SoftFloatFpsp.hpp`
-- **setPrec()** (22 connections) — `src/io/SoftFloatFpsp.hpp`
-- **float64_to_floatx80()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_add()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_etoxm1()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_mul()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_tan()** (21 connections) — `src/io/SoftFloatFpsp.hpp`
-- **float32_to_floatx80()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_acos()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_asin()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_atan()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
-- **floatx80_cos()** (20 connections) — `src/io/SoftFloatFpsp.hpp`
-- *... and 33 more nodes in this community*
+- **Fdc.cpp** (131 connections) — `src/io/Fdc.cpp`
+- **.loadImage()** (22 connections) — `src/io/Fdc.hpp`
+- **.writeBack()** (13 connections) — `src/io/Fdc.hpp`
+- **.writeTrackBuffer()** (12 connections) — `src/io/Fdc.hpp`
+- **.mediaSelfTest()** (12 connections) — `src/io/Fdc.hpp`
+- **.writeSectorST()** (11 connections) — `src/io/Fdc.hpp`
+- **.eject()** (11 connections) — `src/io/Fdc.hpp`
+- **.restoreMedia()** (10 connections) — `src/io/Fdc.hpp`
+- **.present()** (9 connections) — `src/io/Fdc.hpp`
+- **Débogage headless (l'outil n°1)** (9 connections) — `DEV.md`
+- **.refreshImageGeometry()** (8 connections) — `src/io/Fdc.hpp`
+- **.stOverrideFromBuffer()** (8 connections) — `src/io/Fdc.hpp`
+- **.sameHostFile()** (8 connections) — `src/io/Fdc.hpp`
+- **decodeMsa()** (8 connections) — `src/io/Fdc.cpp`
+- **.touchMedia()** (8 connections) — `src/io/Fdc.hpp`
+- **.parseWrittenTrack()** (7 connections) — `src/io/Fdc.hpp`
+- **.msaSelfTest()** (7 connections) — `src/io/Fdc.hpp`
+- **string** (7 connections)
+- **.stxPersist()** (6 connections) — `src/io/Fdc.hpp`
+- **.copyMedia()** (6 connections) — `src/io/Fdc.hpp`
+- **decodeDim()** (6 connections) — `src/io/Fdc.cpp`
+- **decodeDimLax()** (6 connections) — `src/io/Fdc.cpp`
+- **encodeMsa()** (6 connections) — `src/io/Fdc.cpp`
+- **.writeTrackStx()** (5 connections) — `src/io/Fdc.hpp`
+- **.transitionSetState()** (5 connections) — `src/io/Fdc.hpp`
+- *... and 17 more nodes in this community*
 
 ## Relationships
 
-- [Community 15](Community_15.md) (17 shared connections)
-- [Community 20](Community_20.md) (1 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
+- [Community 24](Community_24.md) (39 shared connections)
+- [Community 95](Community_95.md) (31 shared connections)
+- [Community 12](Community_12.md) (22 shared connections)
+- [Community 31](Community_31.md) (22 shared connections)
+- [Community 121](Community_121.md) (11 shared connections)
+- [Community 287](Community_287.md) (11 shared connections)
+- [Community 102](Community_102.md) (9 shared connections)
+- [Community 78](Community_78.md) (6 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
+- [Community 298](Community_298.md) (2 shared connections)
+- [Community 176](Community_176.md) (2 shared connections)
+- [Community 3](Community_3.md) (2 shared connections)
 
 ## Source Files
 
-- `src/io/SoftFloatFpsp.hpp`
+- `CHANGELOG.md`
+- `DEV.md`
+- `src/io/Fdc.cpp`
+- `src/io/Fdc.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 463 (97%)
-- INFERRED: 16 (3%)
+- EXTRACTED: 214 (73%)
+- INFERRED: 80 (27%)
 - AMBIGUOUS: 0 (0%)
 
 ---

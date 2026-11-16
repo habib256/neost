@@ -1,42 +1,52 @@
 # Community 262
 
-> 9 nodes
+> 29 nodes
 
 ## Key Concepts
 
-- **Bug hunt multi-agents (2026-07-29)** (10 connections) — `CHANGELOG.md`
-- **.fifoPush()** (9 connections) — `src/io/Fdc.hpp`
-- **dmaAddressMask()** (8 connections) — `src/io/Fdc.cpp`
-- **.fifoPull()** (7 connections) — `src/io/Fdc.hpp`
-- **.billDmaCycles()** (5 connections) — `src/io/Fdc.hpp`
-- **.noteFifoFlush()** (4 connections) — `src/io/Fdc.hpp`
-- **.writeDmaAddressByte()** (4 connections) — `src/io/Fdc.hpp`
-- **dmaMaskAddressHigh()** (3 connections) — `src/io/Fdc.cpp`
-- **size_t** (2 connections)
+- **Rig** (23 connections) — `tests/fdc_written_marks_logic.cpp`
+- **testFdcWrittenMarks()** (13 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.command()** (5 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.reg()** (5 connections) — `tests/fdc_written_marks_logic.cpp`
+- **Checks** (4 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.data()** (4 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.dma()** (4 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.finish()** (3 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.mode()** (3 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.equal()** (2 connections) — `tests/fdc_written_marks_logic.cpp`
+- **main()** (2 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.irq()** (2 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.select()** (2 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.next()** (1 connections) — `tests/fdc_written_marks_logic.cpp`
+- **.Rig()** (1 connections) — `tests/fdc_written_marks_logic.cpp`
+- **count** (1 connections) — `tests/fdc_written_marks_logic.cpp`
+- **failures** (1 connections) — `tests/fdc_written_marks_logic.cpp`
+- **Bus** (1 connections)
+- **Fdc** (1 connections)
+- **Mfp** (1 connections)
+- **Scheduler** (1 connections)
+- **YM2149** (1 connections)
+- **bus** (1 connections) — `tests/fdc_written_marks_logic.cpp`
+- **fdc** (1 connections) — `tests/fdc_written_marks_logic.cpp`
+- **indexes** (1 connections) — `tests/fdc_written_marks_logic.cpp`
+- *... and 4 more nodes in this community*
 
 ## Relationships
 
-- [Community 24](Community_24.md) (11 shared connections)
-- [Community 12](Community_12.md) (5 shared connections)
-- [Community 95](Community_95.md) (5 shared connections)
-- [Community 88](Community_88.md) (3 shared connections)
-- [Community 39](Community_39.md) (1 shared connections)
-- [Community 130](Community_130.md) (1 shared connections)
-- [Community 288](Community_288.md) (1 shared connections)
-- [Community 15](Community_15.md) (1 shared connections)
-- [Community 31](Community_31.md) (1 shared connections)
-- [Community 359](Community_359.md) (1 shared connections)
+- [Community 102](Community_102.md) (4 shared connections)
+- [Community 287](Community_287.md) (2 shared connections)
+- [Community 172](Community_172.md) (2 shared connections)
+- [Community 149](Community_149.md) (1 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `CHANGELOG.md`
-- `src/io/Fdc.cpp`
-- `src/io/Fdc.hpp`
+- `tests/fdc_written_marks_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 21 (51%)
-- INFERRED: 20 (49%)
+- EXTRACTED: 46 (94%)
+- INFERRED: 3 (6%)
 - AMBIGUOUS: 0 (0%)
 
 ---

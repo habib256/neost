@@ -1,43 +1,56 @@
 # Community 59
 
-> 16 nodes
+> 52 nodes
 
 ## Key Concepts
 
-- **.customWriteDispatch()** (8 connections) — `src/io/Ikbd.hpp`
-- **.exitExeMode()** (6 connections) — `src/io/Ikbd.hpp`
-- **.receiveSerialByte()** (6 connections) — `src/io/Ikbd.hpp`
-- **.customCodeCrcForTest()** (6 connections) — `src/io/Ikbd.hpp`
-- **.loadMemoryByte()** (5 connections) — `src/io/Ikbd.hpp`
-- **.froggiesWrite()** (5 connections) — `src/io/Ikbd.hpp`
-- **.cmdLength()** (5 connections) — `src/io/Ikbd.hpp`
-- **crc32AddByte()** (5 connections) — `src/io/Ikbd.cpp`
-- **crc32Reset()** (5 connections) — `src/io/Ikbd.cpp`
-- **.commonBoot()** (4 connections) — `src/io/Ikbd.hpp`
-- **.chaosWrite()** (4 connections) — `src/io/Ikbd.hpp`
-- **.dragonnelsWrite()** (3 connections) — `src/io/Ikbd.hpp`
-- **.audioSculptureWrite()** (3 connections) — `src/io/Ikbd.hpp`
-- **.armCommonBootForTest()** (3 connections) — `src/io/Ikbd.hpp`
-- **.commandLengthForTest()** (2 connections) — `src/io/Ikbd.hpp`
-- **size_t** (2 connections)
+- **EmuFiber** (30 connections) — `src/core/EmuFiber.hpp`
+- **EmuFiber.cpp** (28 connections) — `src/core/EmuFiber.cpp`
+- **impl_** (16 connections) — `src/core/EmuFiber.hpp`
+- **emuFiberEnter()** (6 connections) — `src/core/EmuFiber.cpp`
+- **.abort()** (5 connections) — `src/core/EmuFiber.hpp`
+- **.runJobs()** (4 connections) — `src/core/EmuFiber.hpp`
+- **.switchToFiber()** (4 connections) — `src/core/EmuFiber.hpp`
+- **.switchToHost()** (4 connections) — `src/core/EmuFiber.hpp`
+- **.resume()** (4 connections) — `src/core/EmuFiber.hpp`
+- **EM_JS()** (4 connections) — `src/core/EmuFiber.cpp`
+- **.yield()** (3 connections) — `src/core/EmuFiber.hpp`
+- **.requestAbort()** (3 connections) — `src/core/EmuFiber.hpp`
+- **.EmuFiber()** (3 connections) — `src/core/EmuFiber.hpp`
+- **.setHostCanSuspend()** (2 connections) — `src/core/EmuFiber.hpp`
+- **fiberEntry()** (2 connections) — `src/core/EmuFiber.cpp`
+- **fiberEntryWin()** (2 connections) — `src/core/EmuFiber.cpp`
+- **fiberThreadEntry()** (2 connections) — `src/core/EmuFiber.cpp`
+- **emscripten** (2 connections)
+- **Abort** (1 connections) — `src/core/EmuFiber.hpp`
+- **.onFiber()** (1 connections) — `src/core/EmuFiber.hpp`
+- **.parked()** (1 connections) — `src/core/EmuFiber.hpp`
+- **.takeAborted()** (1 connections) — `src/core/EmuFiber.hpp`
+- **exception_ptr** (1 connections)
+- **Module** (1 connections)
+- **neost_jspi_park** (1 connections)
+- *... and 27 more nodes in this community*
 
 ## Relationships
 
-- [Community 171](Community_171.md) (16 shared connections)
-- [Community 7](Community_7.md) (13 shared connections)
-- [Community 47](Community_47.md) (5 shared connections)
-- [Community 38](Community_38.md) (1 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
+- [Community 4](Community_4.md) (6 shared connections)
+- [Community 55](Community_55.md) (4 shared connections)
+- [Community 10](Community_10.md) (1 shared connections)
+- [Community 287](Community_287.md) (1 shared connections)
+- [Community 399](Community_399.md) (1 shared connections)
+- [Community 126](Community_126.md) (1 shared connections)
+- [Community 83](Community_83.md) (1 shared connections)
+- [Community 68](Community_68.md) (1 shared connections)
 
 ## Source Files
 
-- `src/io/Ikbd.cpp`
-- `src/io/Ikbd.hpp`
+- `src/core/EmuFiber.cpp`
+- `src/core/EmuFiber.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 38 (70%)
-- INFERRED: 16 (30%)
+- EXTRACTED: 80 (92%)
+- INFERRED: 7 (8%)
 - AMBIGUOUS: 0 (0%)
 
 ---

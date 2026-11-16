@@ -1,31 +1,51 @@
 # Community 349
 
-> 5 nodes
+> 21 nodes
 
 ## Key Concepts
 
-- **.willExecute()** (8 connections) — `src/core/Cpu68k.cpp`
-- **.didExecute()** (7 connections) — `src/core/Cpu68k.cpp`
-- **Mode** (2 connections)
-- **Size** (2 connections)
-- **trapObserver** (2 connections) — `src/core/Cpu68k.cpp`
+- **Acsi.cpp** (39 connections) — `src/io/Acsi.cpp`
+- **.emulateCommand()** (16 connections) — `src/io/Acsi.hpp`
+- **.usatanSlot()** (11 connections) — `src/io/Acsi.hpp`
+- **.prepRespBuf()** (10 connections) — `src/io/Acsi.hpp`
+- **.feedByte()** (10 connections) — `src/io/Acsi.hpp`
+- **.lba()** (8 connections) — `src/io/Acsi.hpp`
+- **.count()** (7 connections) — `src/io/Acsi.hpp`
+- **.cmdInquiry()** (7 connections) — `src/io/Acsi.hpp`
+- **.cmdReadSector()** (7 connections) — `src/io/Acsi.hpp`
+- **.cmdWriteSector()** (7 connections) — `src/io/Acsi.hpp`
+- **.cmdRequestSense()** (6 connections) — `src/io/Acsi.hpp`
+- **.executeUltraSatan()** (5 connections) — `src/io/Acsi.hpp`
+- **.cmdReadCapacity()** (5 connections) — `src/io/Acsi.hpp`
+- **.cmdTestUnitReady()** (4 connections) — `src/io/Acsi.hpp`
+- **.cmdModeSense()** (4 connections) — `src/io/Acsi.hpp`
+- **.cmdSeek()** (4 connections) — `src/io/Acsi.hpp`
+- **.cmdReportLuns()** (4 connections) — `src/io/Acsi.hpp`
+- **.cmdFormatDrive()** (3 connections) — `src/io/Acsi.hpp`
+- **.lun()** (3 connections) — `src/io/Acsi.hpp`
+- **rdInt24()** (2 connections) — `src/io/Acsi.cpp`
+- **rdInt32()** (2 connections) — `src/io/Acsi.cpp`
 
 ## Relationships
 
-- [Community 9](Community_9.md) (5 shared connections)
-- [Community 0](Community_0.md) (2 shared connections)
-- [Community 64](Community_64.md) (2 shared connections)
-- [Community 247](Community_247.md) (1 shared connections)
-- [Community 66](Community_66.md) (1 shared connections)
+- [Community 103](Community_103.md) (23 shared connections)
+- [Community 122](Community_122.md) (9 shared connections)
+- [Community 212](Community_212.md) (7 shared connections)
+- [Community 175](Community_175.md) (2 shared connections)
+- [Community 83](Community_83.md) (2 shared connections)
+- [Community 102](Community_102.md) (2 shared connections)
+- [Community 399](Community_399.md) (2 shared connections)
+- [Community 4](Community_4.md) (1 shared connections)
 
 ## Source Files
 
-- `src/core/Cpu68k.cpp`
+- `src/io/Acsi.cpp`
+- `src/io/Acsi.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 15 (94%)
-- INFERRED: 1 (6%)
+- EXTRACTED: 60 (57%)
+- INFERRED: 46 (43%)
 - AMBIGUOUS: 0 (0%)
 
 ---

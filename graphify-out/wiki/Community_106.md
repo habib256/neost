@@ -1,11 +1,10 @@
 # Community 106
 
-> 34 nodes
+> 28 nodes
 
 ## Key Concepts
 
 - **StePads** (34 connections) — `src/io/StePads.hpp`
-- **** (9 connections) — `src/io/StePads.hpp`
 - **.readButtonsDip()** (3 connections) — `src/io/StePads.hpp`
 - **.readDirections()** (3 connections) — `src/io/StePads.hpp`
 - **.sel()** (3 connections) — `src/io/StePads.hpp`
@@ -20,27 +19,27 @@
 - **.setMegaSte()** (1 connections) — `src/io/StePads.hpp`
 - **.writeSelectByte()** (1 connections) — `src/io/StePads.hpp`
 - **.writeSelectWord()** (1 connections) — `src/io/StePads.hpp`
-- **DOWN** (1 connections) — `src/io/StePads.hpp`
-- **FIRE** (1 connections) — `src/io/StePads.hpp`
 - **StateArchive** (1 connections)
-- **LEFT** (1 connections) — `src/io/StePads.hpp`
-- **RIGHT** (1 connections) — `src/io/StePads.hpp`
 - **analog_** (1 connections) — `src/io/StePads.hpp`
 - **ANALOG_MAX** (1 connections) — `src/io/StePads.hpp`
 - **ANALOG_MID** (1 connections) — `src/io/StePads.hpp`
 - **ANALOG_MIN** (1 connections) — `src/io/StePads.hpp`
-- *... and 9 more nodes in this community*
+- **hasAnalog_** (1 connections) — `src/io/StePads.hpp`
+- **megaSte_** (1 connections) — `src/io/StePads.hpp`
+- **MEGASTE_DIP** (1 connections) — `src/io/StePads.hpp`
+- **oe_** (1 connections) — `src/io/StePads.hpp`
+- **pad0_** (1 connections) — `src/io/StePads.hpp`
+- *... and 3 more nodes in this community*
 
 ## Relationships
 
-- [Community 102](Community_102.md) (2 shared connections)
 - [Community 175](Community_175.md) (2 shared connections)
-- [Community 4](Community_4.md) (1 shared connections)
 - [Community 60](Community_60.md) (1 shared connections)
 - [Community 14](Community_14.md) (1 shared connections)
-- [Community 352](Community_352.md) (1 shared connections)
-- [Community 105](Community_105.md) (1 shared connections)
-- [Community 291](Community_291.md) (1 shared connections)
+- [Community 463](Community_463.md) (1 shared connections)
+- [Community 433](Community_433.md) (1 shared connections)
+- [Community 258](Community_258.md) (1 shared connections)
+- [Community 3](Community_3.md) (1 shared connections)
 
 ## Source Files
 
@@ -48,8 +47,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 43 (91%)
-- INFERRED: 4 (9%)
+- EXTRACTED: 35 (90%)
+- INFERRED: 4 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

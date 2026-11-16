@@ -1,34 +1,53 @@
 # Community 201
 
-> 10 nodes
+> 36 nodes
 
 ## Key Concepts
 
-- **BlitRig** (11 connections) — `tests/selftest_logic.cpp`
-- **Bus** (3 connections)
-- **.peek16()** (2 connections) — `tests/selftest_logic.cpp`
-- **.poke16()** (2 connections) — `tests/selftest_logic.cpp`
-- **.program()** (2 connections) — `tests/selftest_logic.cpp`
-- **.BlitRig()** (1 connections) — `tests/selftest_logic.cpp`
-- **blit** (1 connections) — `tests/selftest_logic.cpp`
-- **bus** (1 connections) — `tests/selftest_logic.cpp`
-- **sched** (1 connections) — `tests/selftest_logic.cpp`
-- **Blitter** (1 connections)
+- **Rig** (27 connections) — `tests/stx_absent_track_logic.cpp`
+- **testStxAbsentTrack()** (25 connections) — `tests/stx_absent_track_logic.cpp`
+- **.finish()** (8 connections) — `tests/stx_absent_track_logic.cpp`
+- **.reg()** (8 connections) — `tests/stx_absent_track_logic.cpp`
+- **hatariCompatibleExtraBlocks()** (7 connections) — `tests/stx_absent_track_logic.cpp`
+- **.data()** (7 connections) — `tests/stx_absent_track_logic.cpp`
+- **.dma()** (7 connections) — `tests/stx_absent_track_logic.cpp`
+- **.writeSector()** (7 connections) — `tests/stx_absent_track_logic.cpp`
+- **.writeTrack()** (7 connections) — `tests/stx_absent_track_logic.cpp`
+- **.mode()** (5 connections) — `tests/stx_absent_track_logic.cpp`
+- **.readSector()** (5 connections) — `tests/stx_absent_track_logic.cpp`
+- **Checks** (4 connections) — `tests/stx_absent_track_logic.cpp`
+- **formatFlux()** (4 connections) — `tests/stx_absent_track_logic.cpp`
+- **.seek()** (4 connections) — `tests/stx_absent_track_logic.cpp`
+- **.seekVerify()** (4 connections) — `tests/stx_absent_track_logic.cpp`
+- **sectorIs()** (4 connections) — `tests/stx_absent_track_logic.cpp`
+- **pattern()** (3 connections) — `tests/stx_absent_track_logic.cpp`
+- **.equal()** (2 connections) — `tests/stx_absent_track_logic.cpp`
+- **main()** (2 connections) — `tests/stx_absent_track_logic.cpp`
+- **.irq()** (2 connections) — `tests/stx_absent_track_logic.cpp`
+- **.select()** (2 connections) — `tests/stx_absent_track_logic.cpp`
+- **.next()** (1 connections) — `tests/stx_absent_track_logic.cpp`
+- **.Rig()** (1 connections) — `tests/stx_absent_track_logic.cpp`
+- **count** (1 connections) — `tests/stx_absent_track_logic.cpp`
+- **failures** (1 connections) — `tests/stx_absent_track_logic.cpp`
+- *... and 11 more nodes in this community*
 
 ## Relationships
 
-- [Community 41](Community_41.md) (4 shared connections)
-- [Community 301](Community_301.md) (2 shared connections)
-- [Community 219](Community_219.md) (1 shared connections)
+- [Community 102](Community_102.md) (8 shared connections)
+- [Community 63](Community_63.md) (5 shared connections)
+- [Community 287](Community_287.md) (4 shared connections)
+- [Community 172](Community_172.md) (3 shared connections)
+- [Community 41](Community_41.md) (2 shared connections)
+- [Community 252](Community_252.md) (1 shared connections)
 
 ## Source Files
 
-- `tests/selftest_logic.cpp`
+- `tests/stx_absent_track_logic.cpp`
 
 ## Audit Trail
 
-- EXTRACTED: 16 (100%)
-- INFERRED: 0 (0%)
+- EXTRACTED: 82 (90%)
+- INFERRED: 9 (10%)
 - AMBIGUOUS: 0 (0%)
 
 ---

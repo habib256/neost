@@ -1,66 +1,64 @@
 # Community 160
 
-> 52 nodes
+> 32 nodes
 
 ## Key Concepts
 
-- **sys** (105 connections)
-- **os** (47 connections)
-- **main()** (11 connections) — `tools/opendst_oracle.py`
+- **os** (64 connections)
+- **make_ref_traces.py** (14 connections) — `tools/make_ref_traces.py`
 - **fetch_etalons.py** (10 connections) — `tools/fetch_etalons.py`
-- **opendst_oracle.py** (10 connections) — `tools/opendst_oracle.py`
+- **capture()** (9 connections) — `tools/make_ref_traces.py`
 - **fetch_disk.py** (9 connections) — `tools/fetch_disk.py`
-- **opendst_memdiff.py** (9 connections) — `tools/opendst_memdiff.py`
-- **Server** (8 connections) — `tools/opendst_explore.py`
 - **main()** (8 connections) — `tools/opendst_explore.py`
-- **main()** (7 connections) — `tools/opendst_memdiff.py`
 - **opendst_explore.py** (7 connections) — `tools/opendst_explore.py`
-- **Server** (6 connections) — `tools/opendst_memdiff.py`
-- **run()** (6 connections) — `tools/opendst_oracle.py`
+- **main()** (6 connections) — `tools/make_ref_traces.py`
 - **audit_citations.py** (6 connections) — `tools/audit_citations.py`
 - **zipfile** (6 connections)
 - **main()** (5 connections) — `tools/fetch_disk.py`
 - **download_zip_member()** (5 connections) — `tools/fetch_etalons.py`
-- **opendst.py** (5 connections) — `tools/opendst.py`
+- **build()** (5 connections) — `tools/make_blitter_programs.py`
+- **entry_args()** (5 connections) — `tools/make_ref_traces.py`
+- **random** (5 connections)
 - **download()** (4 connections) — `tools/fetch_disk.py`
 - **find_download_links()** (4 connections) — `tools/fetch_disk.py`
-- **.cmd()** (4 connections) — `tools/opendst_explore.py`
-- **main()** (4 connections) — `tools/opendst.py`
-- **random** (4 connections)
+- **hatari_cmd()** (4 connections) — `tools/make_ref_traces.py`
+- **sha()** (4 connections) — `tools/make_ref_traces.py`
+- **source()** (4 connections) — `tools/make_ref_traces.py`
+- **Path** (4 connections)
 - **fetch_entry()** (3 connections) — `tools/fetch_etalons.py`
 - **main()** (3 connections) — `tools/fetch_etalons.py`
-- *... and 27 more nodes in this community*
+- **urllib_request** (2 connections)
+- **src()** (1 connections) — `tools/audit_citations.py`
+- *... and 7 more nodes in this community*
 
 ## Relationships
 
-- [Community 18](Community_18.md) (43 shared connections)
-- [Community 3](Community_3.md) (24 shared connections)
-- [Community 227](Community_227.md) (18 shared connections)
-- [Community 8](Community_8.md) (11 shared connections)
-- [Community 26](Community_26.md) (9 shared connections)
-- [Community 34](Community_34.md) (9 shared connections)
-- [Community 207](Community_207.md) (7 shared connections)
-- [Community 151](Community_151.md) (5 shared connections)
-- [Community 146](Community_146.md) (5 shared connections)
-- [Community 49](Community_49.md) (4 shared connections)
-- [Community 83](Community_83.md) (4 shared connections)
-- [Community 165](Community_165.md) (3 shared connections)
+- [Community 18](Community_18.md) (26 shared connections)
+- [Community 227](Community_227.md) (10 shared connections)
+- [Community 151](Community_151.md) (9 shared connections)
+- [Community 26](Community_26.md) (7 shared connections)
+- [Community 30](Community_30.md) (7 shared connections)
+- [Community 207](Community_207.md) (6 shared connections)
+- [Community 8](Community_8.md) (5 shared connections)
+- [Community 3](Community_3.md) (4 shared connections)
+- [Community 34](Community_34.md) (4 shared connections)
+- [Community 73](Community_73.md) (3 shared connections)
+- [Community 273](Community_273.md) (3 shared connections)
+- [Community 453](Community_453.md) (2 shared connections)
 
 ## Source Files
 
 - `tools/audit_citations.py`
-- `tools/check_ppm_nonuniform.py`
 - `tools/fetch_disk.py`
 - `tools/fetch_etalons.py`
-- `tools/opendst.py`
+- `tools/make_blitter_programs.py`
+- `tools/make_ref_traces.py`
 - `tools/opendst_explore.py`
-- `tools/opendst_memdiff.py`
-- `tools/opendst_oracle.py`
 
 ## Audit Trail
 
-- EXTRACTED: 253 (100%)
-- INFERRED: 1 (0%)
+- EXTRACTED: 152 (100%)
+- INFERRED: 0 (0%)
 - AMBIGUOUS: 0 (0%)
 
 ---

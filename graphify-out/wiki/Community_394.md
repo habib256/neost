@@ -1,66 +1,66 @@
 # Community 394
 
-> 30 nodes
+> 33 nodes
 
 ## Key Concepts
 
-- **MachineType** (24 connections) — `src/core/MachineType.hpp`
-- **.adjustMachineForTos()** (17 connections) — `src/core/Machine.hpp`
-- **.applyConfig()** (12 connections) — `src/gui/App.hpp`
-- **.reconfigure()** (10 connections) — `src/core/Machine.hpp`
-- **machineHasBlitter()** (10 connections) — `src/core/MachineType.hpp`
-- **machineHasDmaSound()** (10 connections) — `src/core/MachineType.hpp`
-- **parseRamBytes()** (10 connections) — `src/core/MachineType.hpp`
-- **main()** (9 connections) — `src/web/main_web.cpp`
-- **machineName()** (8 connections) — `src/core/MachineType.hpp`
-- **parseMachine()** (8 connections) — `src/core/MachineType.hpp`
-- **Bug hunt de la 10ᵉ passe (workflow 6 chasseurs + vérif adversariale, 2026-08-07)** (8 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.buildIoFault()** (7 connections) — `src/core/Bus.hpp`
-- **ramLabel()** (6 connections) — `src/core/MachineType.hpp`
-- **testRamDisplay()** (6 connections) — `tests/selftest_logic.cpp`
-- **ramDisplayName()** (5 connections) — `src/core/MachineType.hpp`
-- **size_t** (4 connections)
-- **IACK MFP +4 cyc (raster Super Hang-On verrouillé à l'oracle) + chaîne son STE fidèle (2026-08-06/07)** (4 connections) — `CHANGELOG.md`
-- **.write16()** (3 connections) — `src/core/Bus.hpp`
-- **.write32()** (3 connections) — `src/core/Bus.hpp`
-- **string** (3 connections)
-- **Cas où NeoST améliore Hatari (choix à préserver / documenter)** (3 connections) — `docs/HATARI_DIVERGENCES.md`
-- **.claimsBlitter()** (2 connections) — `src/core/Bus.hpp`
+- **MachineType** (38 connections) — `src/core/MachineType.hpp`
+- **TosInfo** (12 connections) — `src/core/TosChoice.hpp`
+- **machineHasDmaSound()** (11 connections) — `src/core/MachineType.hpp`
+- **TosChoice.cpp** (9 connections) — `src/core/TosChoice.cpp`
+- **Hypothèses ST dans le code — ce que le TT et le Falcon remettent en cause** (9 connections) — `docs/HYPOTHESES_ST.md`
+- **mmioNeedsBetterMachine()** (7 connections) — `src/core/MachineType.hpp`
+- **pickTosForMachine()** (6 connections) — `src/core/TosChoice.cpp`
+- **tosRunsMachine()** (6 connections) — `src/core/TosChoice.cpp`
+- **3. Types de machine** (6 connections) — `docs/HYPOTHESES_ST.md`
+- **AndroidRom** (5 connections) — `src/android/AndroidRoms.hpp`
+- **pickMachineForTos()** (5 connections) — `src/core/TosChoice.cpp`
+- **1. Masques d'adresse 24 bits** (5 connections) — `docs/HYPOTHESES_ST.md`
+- **5. Vidéo, par classe** (4 connections) — `docs/HYPOTHESES_ST.md`
+- **versionRank()** (3 connections) — `src/core/TosChoice.cpp`
+- **system_error** (3 connections)
 - **.claimsDmaSnd()** (2 connections) — `src/core/Bus.hpp`
 - **.machineType()** (2 connections) — `src/core/Machine.hpp`
-- **size_t** (2 connections)
-- *... and 5 more nodes in this community*
+- **Inventaire des hypothèses ST dans le code (2026-11-10)** (2 connections) — `CHANGELOG.md`
+- **Chiffrage** (2 connections) — `docs/HYPOTHESES_ST.md`
+- **file** (1 connections) — `src/android/AndroidRoms.hpp`
+- **label** (1 connections) — `src/android/AndroidRoms.hpp`
+- **machine** (1 connections) — `src/android/AndroidRoms.hpp`
+- **MegaSt** (1 connections) — `src/core/MachineType.hpp`
+- **MegaSte** (1 connections) — `src/core/MachineType.hpp`
+- **St** (1 connections) — `src/core/MachineType.hpp`
+- *... and 8 more nodes in this community*
 
 ## Relationships
 
-- [Community 14](Community_14.md) (9 shared connections)
-- [Community 182](Community_182.md) (9 shared connections)
-- [Community 399](Community_399.md) (9 shared connections)
-- [Community 138](Community_138.md) (8 shared connections)
-- [Community 10](Community_10.md) (6 shared connections)
-- [Community 203](Community_203.md) (6 shared connections)
-- [Community 51](Community_51.md) (6 shared connections)
-- [Community 27](Community_27.md) (3 shared connections)
-- [Community 41](Community_41.md) (3 shared connections)
+- [Community 55](Community_55.md) (7 shared connections)
+- [Community 138](Community_138.md) (6 shared connections)
+- [Community 203](Community_203.md) (5 shared connections)
+- [Community 4](Community_4.md) (5 shared connections)
+- [Community 10](Community_10.md) (3 shared connections)
+- [Community 396](Community_396.md) (3 shared connections)
+- [Community 214](Community_214.md) (3 shared connections)
+- [Community 417](Community_417.md) (3 shared connections)
+- [Community 102](Community_102.md) (3 shared connections)
+- [Community 14](Community_14.md) (2 shared connections)
 - [Community 192](Community_192.md) (2 shared connections)
-- [Community 68](Community_68.md) (2 shared connections)
-- [Community 135](Community_135.md) (2 shared connections)
+- [Community 325](Community_325.md) (2 shared connections)
 
 ## Source Files
 
 - `CHANGELOG.md`
-- `docs/HATARI_DIVERGENCES.md`
+- `docs/HYPOTHESES_ST.md`
+- `src/android/AndroidRoms.hpp`
 - `src/core/Bus.hpp`
 - `src/core/Machine.hpp`
 - `src/core/MachineType.hpp`
-- `src/gui/App.hpp`
-- `src/web/main_web.cpp`
-- `tests/selftest_logic.cpp`
+- `src/core/TosChoice.cpp`
+- `src/core/TosChoice.hpp`
 
 ## Audit Trail
 
-- EXTRACTED: 74 (54%)
-- INFERRED: 64 (46%)
+- EXTRACTED: 76 (70%)
+- INFERRED: 32 (30%)
 - AMBIGUOUS: 0 (0%)
 
 ---

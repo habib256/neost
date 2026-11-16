@@ -1,15 +1,17 @@
 # Community 107
 
-> 57 nodes
+> 71 nodes
 
 ## Key Concepts
 
-- **Asm** (37 connections) — `tools/make_fx68k_programs.py`
-- **make_fx68k_programs.py** (33 connections) — `tools/make_fx68k_programs.py`
-- **sentinel()** (21 connections) — `tools/make_fx68k_programs.py`
-- **prologue()** (14 connections) — `tools/make_fx68k_programs.py`
+- **Asm** (43 connections) — `tools/make_fx68k_programs.py`
+- **make_fx68k_programs.py** (39 connections) — `tools/make_fx68k_programs.py`
+- **sentinel()** (26 connections) — `tools/make_fx68k_programs.py`
+- **prologue()** (19 connections) — `tools/make_fx68k_programs.py`
 - **prelude_ea()** (11 connections) — `tools/make_fx68k_programs.py`
 - **reload_a0()** (9 connections) — `tools/make_fx68k_programs.py`
+- **build()** (8 connections) — `tools/make_fx68k_programs.py`
+- **prog_berr()** (6 connections) — `tools/make_fx68k_programs.py`
 - **prog_ea_alu()** (6 connections) — `tools/make_fx68k_programs.py`
 - **prog_ea_alu_mem()** (6 connections) — `tools/make_fx68k_programs.py`
 - **prog_ea_move_l()** (6 connections) — `tools/make_fx68k_programs.py`
@@ -17,26 +19,24 @@
 - **prog_ea_unary()** (6 connections) — `tools/make_fx68k_programs.py`
 - **prog_misc_extra()** (6 connections) — `tools/make_fx68k_programs.py`
 - **prog_movem()** (6 connections) — `tools/make_fx68k_programs.py`
+- **prog_double_fault()** (5 connections) — `tools/make_fx68k_programs.py`
+- **prog_double_fault_addr()** (5 connections) — `tools/make_fx68k_programs.py`
+- **prog_double_fault_trap()** (5 connections) — `tools/make_fx68k_programs.py`
+- **prog_double_fault_vec()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_exceptions()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_flow()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_irq_mulu()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_irq_nop()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_mixed()** (5 connections) — `tools/make_fx68k_programs.py`
 - **prog_rmw_long()** (5 connections) — `tools/make_fx68k_programs.py`
-- **prog_stop_irq()** (5 connections) — `tools/make_fx68k_programs.py`
-- **prog_stop_pending()** (5 connections) — `tools/make_fx68k_programs.py`
-- **handlers()** (4 connections) — `tools/make_fx68k_programs.py`
-- **prog_alu_loops()** (4 connections) — `tools/make_fx68k_programs.py`
-- **prog_reset_nop()** (4 connections) — `tools/make_fx68k_programs.py`
-- **prog_tas()** (4 connections) — `tools/make_fx68k_programs.py`
-- *... and 32 more nodes in this community*
+- *... and 46 more nodes in this community*
 
 ## Relationships
 
-- [Community 100](Community_100.md) (6 shared connections)
-- [Community 227](Community_227.md) (1 shared connections)
+- [Community 100](Community_100.md) (4 shared connections)
+- [Community 227](Community_227.md) (2 shared connections)
 - [Community 3](Community_3.md) (1 shared connections)
-- [Community 160](Community_160.md) (1 shared connections)
+- [Community 151](Community_151.md) (1 shared connections)
 - [Community 18](Community_18.md) (1 shared connections)
 
 ## Source Files
@@ -45,8 +45,8 @@
 
 ## Audit Trail
 
-- EXTRACTED: 122 (87%)
-- INFERRED: 19 (13%)
+- EXTRACTED: 151 (86%)
+- INFERRED: 24 (14%)
 - AMBIGUOUS: 0 (0%)
 
 ---
