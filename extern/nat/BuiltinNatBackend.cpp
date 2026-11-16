@@ -339,8 +339,14 @@ private:
         // Reserved aliases are private relay identifiers, never IPv4 routes.
         if ((packet.destination & 0xffff0000) == 0xf0000000) return;
         // The guest's address is whatever it uses — a static configuration
-        // need not be the DHCP lease.
-        if (packet.source != 0) guestIp_ = packet.source;
+        // need not be the DHCP lease. Not, though, an address the virtual
+        // network owns or one no host can hold: one packet sourced from the
+        // gateway made onArp stop answering for the gateway (NeoST fuzz,
+        // 2026-11-16).
+        const uint32_t top = packet.source >> 24;
+        if (packet.source != 0 && packet.source != kGatewayIp && packet.source != kDnsIp &&
+            top != 127 && top < 224)
+            guestIp_ = packet.source;
 
         switch (packet.protocol) {
             case kProtoIcmp: onIcmp(packet); break;

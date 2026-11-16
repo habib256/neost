@@ -50,6 +50,12 @@ porté le 2026-11-12 sur la branche locale POM2 `nat-dns-cache-from-neost`
   TCP ET UDP l'ont pris (`isValid()`). Le port libre venait d'un écouteur TCP seul ;
   sous Winsock, l'UDP du même numéro était tenu ailleurs (run CI 43225255791 :
   « could not bind host port 61684 », 31 s d'attente de « udp A »).
+- `BuiltinNat::onIpv4` (2026-11-16) : l'adresse de l'invité n'est plus apprise d'une
+  source réservée (passerelle, DNS, 127/8, 224/4 et au-delà). En amont, un seul
+  paquet émis depuis 10.0.2.2 faisait de la passerelle « l'invité » et `onArp`
+  cessait de répondre pour elle : l'invité se coupait lui-même du réseau. Trouvé par
+  fuzz de trames (17,6 M trames sous ASan/UBSan, aucun autre défaut). Test : cas 3
+  de `builtin_nat_test.cpp`. Présent aussi dans POM2 : à remonter, et à garder.
 
 Le port conserve les horloges hôte et les injections de tests ; il ne change
 aucun cycle du ST. Le trafic réel est extérieur au contrat de déterminisme

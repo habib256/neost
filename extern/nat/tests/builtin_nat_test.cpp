@@ -507,6 +507,15 @@ void testLocalServices()
     sendArp(rig, 0, kGatewayIp);
     CHECK(rig.frames().empty());
 
+    // A packet whose source is the gateway, the DNS, loopback or broadcast is
+    // not the guest's address: ARP for the gateway still gets its answer.
+    for (uint32_t forged : { kGatewayIp, kDnsIp, 0x7F000001u, 0xFFFFFFFFu }) {
+        rig.sendIp(kPublicIp, kProtoUdp, Bytes(8, 0), forged);
+        (void)rig.frames();
+        sendArp(rig, kGuestIp, kGatewayIp);
+        CHECK(rig.frames().size() == 1);
+    }
+
     // Ping the gateway.
     Bytes echo = { kIcmpEchoRequest, 0, 0, 0, 0x12, 0x34, 0x00, 0x01, 'p', 'o', 'm', '2' };
     wr16(echo.data() + 2, checksum(echo.data(), echo.size()));

@@ -1,5 +1,21 @@
 # Changelog — NeoST
 
+## 2026-11-16 — Fuzz côté invité : registres d'E/S, NAT et modem
+
+- Fuzz des registres d'E/S sous ASan + UBSan : du code 68000 aléatoire, lancé à chaque
+  VBL après un boot EmuTOS, martèle MMU, vidéo, FDC/DMA, PSG, son DMA, blitter,
+  SCC/SCU/FPU, MFP, ACIA, RTC et le port cartouche. 5 000 itérations sur ST, Mega ST,
+  STE et Mega STE, avec NetUSBee (clavier et disque USB), ACSI et UltraSatan : aucune
+  violation, et chaque état sauvé ensuite se recharge. Harnais hors dépôt.
+- NAT, fuzz des trames de l'invité (hôte factice, 17,6 M trames, 94 % des lignes) :
+  aucune violation mémoire. Un défaut de logique : un paquet émis depuis la passerelle
+  (10.0.2.2) en faisait l'adresse de l'invité, et le NAT ne répondait plus à l'ARP de
+  la passerelle. `BuiltinNat::onIpv4` ignore désormais les sources réservées
+  (`extern/nat/README.md`, cas 3 de `builtin_nat_test.cpp`).
+- Modem : `ATDhôte:4294967319` composait le port 23 (`std::atoi` sans contrôle de
+  débordement). Le port n'accepte plus que 1 à 5 chiffres, de 1 à 65535 ; sinon `ERROR`.
+  Test dans `tests/hayes_modem_logic.cpp`.
+
 ## 2026-11-16 — Save-states forgés : débordements signés dans la validation
 
 - Fuzz des save-states sous ASan + UBSan : 24 000 fichiers mutés champ par champ

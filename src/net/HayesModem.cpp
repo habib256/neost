@@ -101,7 +101,14 @@ void HayesModem::dial(const std::string& target) {
         t.erase(0, 1);
     const auto colon = t.rfind(':');
     const std::string host = colon == std::string::npos ? t : t.substr(0, colon);
-    const int port = colon == std::string::npos ? 23 : std::atoi(t.c_str() + colon + 1);
+    // Port : chiffres seuls, borné AVANT conversion. std::atoi ne détecte pas le
+    // débordement : « ATDhost:4294967319 » composait le port 23 (fuzz du 2026-11-16).
+    int port = 23;
+    if (colon != std::string::npos) {
+        const std::string p = t.substr(colon + 1);
+        port = !p.empty() && p.size() <= 5
+               && p.find_first_not_of("0123456789") == std::string::npos ? std::stoi(p) : 0;
+    }
     if (host.empty() || port <= 0 || port > 65535) { sendStr("ERROR"); return; }
     // Liste blanche (2026-11-12) : refus AVANT toute résolution — un nom hors
     // liste ne part pas au résolveur de l'hôte. Le journal le dit toujours, pas

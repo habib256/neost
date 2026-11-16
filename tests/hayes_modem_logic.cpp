@@ -125,6 +125,14 @@ int main() {
         r.out.clear();
         r.type("AT+FCLASS=0\r");
         expect(r.out == "OK\r\n", "extended command tolerated");
+        // Port hors bornes ou non numérique : refusé, sans numéroter. std::atoi
+        // repliait 4294967319 sur 23 (fuzz du 2026-11-16).
+        for (const char* bad : { "ATDT127.0.0.1:4294967319\r", "ATDT127.0.0.1:23abc\r",
+                                 "ATDT127.0.0.1:0\r", "ATDT127.0.0.1:65536\r" }) {
+            r.out.clear();
+            r.type(bad);
+            expect(r.out == "ERROR\r\n" && !r.modem.dialing(), "bad dial port rejected");
+        }
     }
 
     // 2) ATDT asynchrone, puis chute de DTR sous &D2 (défaut).
