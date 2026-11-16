@@ -289,6 +289,18 @@ public:
         ar(currentInt_);
         ar(pendingTime_);      // C-array int64_t[16]
         ar(pendingTimeMin_);
+        // Dates forgées : updateIrq calcule irqTime_ + kIrqDelayToCpu, et irqTime_ vient
+        // de earliestEligible() — kNever si un bit pendant n'a pas de date. raiseAt pose
+        // toujours bit ET date : un pendant sans date finie n'existe que dans un fichier
+        // forgé (débordement signé relevé par UBSan, fuzz du 2026-11-16). Bornes larges,
+        // elles ne visent que l'absurde.
+        ar.check(irqTime_ > -(1LL << 62) && irqTime_ < (1LL << 62), "Mfp::irqTime_ hors bornes");
+        for (int s = 0; s < 16; ++s) {
+            const uint8_t ipr = s >= 8 ? ipra : iprb;
+            if (ipr & (1u << (s & 7)))
+                ar.check(pendingTime_[s] > -(1LL << 62) && pendingTime_[s] < (1LL << 62),
+                         "Mfp::pendingTime_ d'une source pendante hors bornes");
+        }
 
         // --- Config USART effective (dérivée du Timer D / UCR) -----------------------
         ar(serialBaud_);

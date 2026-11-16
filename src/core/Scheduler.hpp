@@ -484,11 +484,15 @@ public:
         // gel définitif reproduit. Une échéance doit être soit inactive, soit dans une
         // fenêtre plausible autour de `now_` (le passé récent existe : une échéance déjà
         // due mais pas encore servie).
-        ar.check(now_ >= 0);
+        ar.check(now_ >= 0 && now_ <= (1LL << 62));
+        // ar.check n'interrompt pas l'évaluation : borner `now_` avant d'en dériver la
+        // fenêtre, sinon un now_ forgé déjà rejeté fait déborder `now_ ± 2³²` (UBSan,
+        // fuzz du 2026-11-16).
+        const int64_t now = now_ < 0 ? 0 : (now_ > (1LL << 62) ? (1LL << 62) : now_);
         for (int64_t d : due_)
-            ar.check(d == kInactive || (d >= now_ - (1LL << 32) && d <= now_ + (1LL << 40)));
-        ar.check(nextDue_   == kInactive || (nextDue_   >= now_ - (1LL << 32) && nextDue_   <= now_ + (1LL << 40)));
-        ar.check(runTarget_ == kInactive || (runTarget_ >= now_ - (1LL << 32) && runTarget_ <= now_ + (1LL << 40)));
+            ar.check(d == kInactive || (d >= now - (1LL << 32) && d <= now + (1LL << 40)));
+        ar.check(nextDue_   == kInactive || (nextDue_   >= now - (1LL << 32) && nextDue_   <= now + (1LL << 40)));
+        ar.check(runTarget_ == kInactive || (runTarget_ >= now - (1LL << 32) && runTarget_ <= now + (1LL << 40)));
     }
 
 private:

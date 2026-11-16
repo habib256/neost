@@ -1178,6 +1178,19 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     // Scheduler::now_ forgés). Aucun `ar.check` ne couvrait cette section.
     // Bornes larges à dessein : elles ne visent que l'absurde, pas la validation fine.
     ar.check(cpl_ > 0 && cpl_ <= 4096 && lpf_ > 0 && lpf_ <= 4096);
+    // ar.check n'interrompt pas l'évaluation : un champ forgé, déjà rejeté, faisait
+    // ensuite déborder les bornes calculées à partir de lui (`2 * lpf_`,
+    // `8 * lpf_ * cpl_`, `frameEnd_ - now` — débordements signés relevés par UBSan,
+    // fuzz du 2026-11-16). Les bornes se calculent donc sur des copies ramenées dans
+    // leur domaine valide ; chaque champ garde son propre contrôle, si bien qu'une
+    // copie bornée ne fait jamais passer une valeur hors domaine.
+    constexpr int64_t kClockMax = int64_t(1) << 61;
+    const int64_t lpfB = std::clamp<int64_t>(lpf_, 1, 4096);
+    const int64_t cplB = std::clamp<int64_t>(cpl_, 1, 4096);
+    ar.check(frameStart_ <= kClockMax && frameEnd_ <= kClockMax,
+             "Machine::frameStart_/frameEnd_ hors bornes");
+    const int64_t frameStartB = std::clamp<int64_t>(frameStart_, 0, kClockMax);
+    const int64_t frameEndB   = std::clamp<int64_t>(frameEnd_,   0, kClockMax);
     // Bornées EN HAUT aussi : ces trois compteurs de ligne servent de cible aux
     // boucles de rattrapage du Shifter (« while (vc_.lineY < y) endVideoLine(); »
     // dans commitScanline/videoCounter). Un hblLine_ forgé à ~2³¹ les rend
@@ -1188,12 +1201,11 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     // Bornes HAUTES aussi : un dispStart_ forgé à ~2³¹ fait déborder
     // « dispStart_ + renderLine_ » (signé, indéfini) et planifie RENDER dans le passé.
     ar.check(disp_ >= 0 && deEnd_ >= 0 && dispStart_ >= 0
-             && disp_ <= 2 * lpf_ && dispStart_ <= 2 * lpf_ && deEnd_ <= 1024,
+             && disp_ <= 2 * lpfB && dispStart_ <= 2 * lpfB && deEnd_ <= 1024,
              "Machine::disp_/dispStart_/deEnd_ hors bornes");
     ar.check(frameStart_ >= 0 && frameEnd_ >= frameStart_
-             && frameEnd_ - frameStart_ <= 8 * int64_t(lpf_) * int64_t(cpl_));
-    ar.check(lineCarry_ >= -int64_t(lpf_) * int64_t(cpl_)
-             && lineCarry_ <=  int64_t(lpf_) * int64_t(cpl_));
+             && frameEndB - frameStartB <= 8 * lpfB * cplB);
+    ar.check(lineCarry_ >= -lpfB * cplB && lineCarry_ <= lpfB * cplB);
     // curLineLen_ = longueur réelle en CYCLES de la ligne HBL courante (224..512 ;
     // peut dépasser cpl_ en overscan → lineCarry_ négatif). Consommé une fois par
     // advanceLine (lineCarry_ += cpl_ - curLineLen_, Machine.cpp:422) : forgé absurde
@@ -1226,14 +1238,19 @@ void Machine::serializeState(StateArchive& ar, bool hostFiles) {
     // blit en mode hog de ~4 M cycles (2 Mo remplis sur STE) laissait sched.now() en
     // avance sur la fenêtre de trame et tout état pris alors était refusé à tort.
     {
-        const int64_t slack = 64 * int64_t(lpf_) * int64_t(cpl_);
-        const int64_t now = sched.now();
-        ar.check(frameEnd_ - now <= slack && now - frameStart_ <= slack,
+        const int64_t slack = 64 * lpfB * cplB;
+        // sched.now() et l'horloge CPU ont leurs propres contrôles ; bornées ici pour
+        // que les différences ci-dessous ne débordent pas (cf. lpfB plus haut).
+        const int64_t now = std::clamp<int64_t>(sched.now(), -kClockMax, kClockMax);
+        ar.check(frameEndB - now <= slack && now - frameStartB <= slack,
                  "Machine::frameStart_/frameEnd_ désancrés de l'horloge maître");
         // Même ancrage pour l'horloge du 68000 (Moira::clock + cpuBias), que rien ne
         // liait à l'ordonnanceur : décalée de 2^40 dans un état forgé, le premier IACK
         // y faisait sauter sched.now() et la machine restait gelée sans erreur.
-        const int64_t cpuNow = cpu.busClockOfInstance();   // pas g_cur : autre Machine active possible
+        const int64_t cpuNowRaw = cpu.busClockOfInstance();   // pas g_cur : autre Machine active possible
+        ar.check(cpuNowRaw >= -kClockMax && cpuNowRaw <= kClockMax,
+                 "Cpu68k : horloge du CPU hors bornes");
+        const int64_t cpuNow = std::clamp<int64_t>(cpuNowRaw, -kClockMax, kClockMax);
         ar.check(cpuNow - now <= slack && now - cpuNow <= slack,
                  "Cpu68k : horloge du CPU désancrée de l'horloge maître");
     }

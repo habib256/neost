@@ -402,7 +402,7 @@ add_executable(neost-selftest tests/selftest_logic.cpp tests/selftest_scc.cpp te
     tests/scc_clock_logic.cpp tests/mfp_turnaround_logic.cpp
     tests/scc_brg_clock_logic.cpp tests/mfp_underrun_logic.cpp
     tests/fdc_force_interrupt_logic.cpp
-    tests/scc_zero_count_logic.cpp tests/mfp_underrun_clear_logic.cpp tests/fdc_live_media_logic.cpp
+    tests/scc_zero_count_logic.cpp tests/mfp_underrun_clear_logic.cpp tests/mfp_state_forgery_logic.cpp tests/fdc_live_media_logic.cpp
     tests/fdc_mount_guard_logic.cpp
     tests/scc_rx_parity_logic.cpp tests/rtc_bank_logic.cpp
     tests/rtc_timer_logic.cpp tests/scc_ext_status_logic.cpp

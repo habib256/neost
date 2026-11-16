@@ -1,5 +1,24 @@
 # Changelog — NeoST
 
+## 2026-11-16 — Save-states forgés : débordements signés dans la validation
+
+- Fuzz des save-states sous ASan + UBSan : 24 000 fichiers mutés champ par champ
+  (RAM exclue, CRC recalculé), rechargés puis émulés 20 trames. Cinq fichiers
+  fautifs, trois défauts, tous des débordements d'entier signé (comportement
+  indéfini) ; aucun accès mémoire hors bornes.
+- `ar.check` n'interrompt pas l'évaluation : un champ déjà rejeté servait encore
+  à calculer les bornes suivantes. `Machine::serializeState` (`2 * lpf_`,
+  `8 * lpf_ * cpl_`, `frameEnd_ - now`, horloge CPU) et `Scheduler::serialize`
+  (`now_ ± 2³²`) calculent désormais sur des copies bornées ; chaque champ garde
+  son propre contrôle.
+- MFP : un bit IPR posé sans date d'arrivée (`pendingTime_ = kNever`) faisait
+  déborder `irqTime_ + kIrqDelayToCpu` en cours d'émulation. `raiseAt` pose
+  toujours les deux ; le chargement refuse maintenant le cas forgé et borne
+  `irqTime_`. Test `tests/mfp_state_forgery_logic.cpp`, qui échoue sans le correctif.
+- Sans effet sur un état valide : format inchangé (v68), paliers `fast` et `full` verts.
+  Passés aussi sous sanitizers sans erreur : 22 étalons (démos, auto-tests, boots
+  TOS), `neost-selftest` et 80 000 itérations du fuzzer de disquettes.
+
 ## 2026-11-15 — shforstv STE : réveil STOP/HBL
 
 - Une HBL préarmée doit être présentée au CPU arrêté lors de son dispatch,

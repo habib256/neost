@@ -176,6 +176,7 @@ int testGemdosDirectoryEntries(); // points en sous-dossier selon masque et attr
 int testGemdosDtaReuse(); // recherches DTA indépendantes, réutilisation et erreurs
 int testGemdosProcess(); // dossier/lecteur par processus, alias 8.3, Fdatime, attributs, Fforce
 int testMfpUnderrunClear(); // délai matériel avant effacement UE
+int testMfpStateForgery(); // save-state : source pendante sans date rejetée
 int testFdcLiveMedia(); // sélection live et validation CHS du nouveau média
 int testFdcMountGuards(); // .dim lâche, une image un lecteur, écriture sans disque, ACSI des états
 int testMidiRxPhase(); // horloge MIDI RX continue
@@ -4254,6 +4255,7 @@ int main() {
     if (const int failures = testGemdosDtaReuse()) g_fail += failures; else ++g_ok;
     if (const int failures = testGemdosProcess()) g_fail += failures; else ++g_ok;
     if (const int failures = testMfpUnderrunClear()) g_fail += failures; else ++g_ok;
+    if (const int failures = testMfpStateForgery()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcLiveMedia()) g_fail += failures; else ++g_ok;
     if (const int failures = testFdcMountGuards()) g_fail += failures; else ++g_ok;
     if (const int failures = testMidiRxPhase()) g_fail += failures; else ++g_ok;
